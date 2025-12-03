@@ -1,0 +1,762 @@
+// roomManager.js
+
+// Globale Raumdaten
+let rooms = [];
+let currentRoomId = 0;
+
+// Optional: Basisgröße für Räume
+const ROOM_W = 1200;
+const ROOM_H = 600;
+
+function createRooms() {
+  const rightPadding = typeof WORLD_RIGHT_PADDING === 'number' ? WORLD_RIGHT_PADDING : 0;
+  const roomWidth = ROOM_W + rightPadding;
+  // Einfacher Graph: 3 Räume linear verbunden
+  // Du kannst das später prozedural bauen.
+  rooms = [
+    makeRoom(0, {
+      exits: [
+        {
+          to: 1,
+          x: roomWidth - Phaser.Math.Between(20, 1000),
+          y: ROOM_H - Phaser.Math.Between(20, 400),
+        },
+      ],
+    }),
+    makeRoom(1, {
+      exits: [
+        {
+          to: 2,
+          x: roomWidth - Phaser.Math.Between(20, 100),
+          y: ROOM_H - Phaser.Math.Between(20, 400),
+        },
+      ],
+    }),
+    makeRoom(2, {
+      exits: [
+        {
+          to: 0,
+          x: roomWidth - Phaser.Math.Between(20, 100),
+          y: ROOM_H - Phaser.Math.Between(20, 400),
+        },
+      ],
+    }),
+  ];
+}
+
+function makeRoom(id, opts) {
+  const rightPadding = typeof WORLD_RIGHT_PADDING === 'number' ? WORLD_RIGHT_PADDING : 0;
+  return {
+    id,
+    width: ROOM_W + rightPadding,
+    height: ROOM_H,
+    w: ROOM_W + rightPadding,
+    h: ROOM_H,
+    exits: opts.exits || [], // Treppen/Übergänge
+    // pro Raum eigene Wave-Parameter (du kannst das verfeinern)
+    enemiesPerWave: 4,
+    wave: 1,
+    cleared: false,
+  };
+}
+
+function ensureObstacleColliders(scene) {
+  if (!scene || !obstacles || typeof obstacles.getChildren !== 'function') return;
+  const world = scene.physics?.world;
+  if (!world) return;
+  const staticBodyType = Phaser?.Physics?.Arcade?.STATIC_BODY;
+
+  obstacles.getChildren().forEach((child) => {
+    if (!child) return;
+    if (!child.body) {
+      if (staticBodyType) world.enable(child, staticBodyType);
+      else {
+        world.enable(child);
+      }
+    }
+    if (child.body) {
+      child.body.setAllowGravity?.(false);
+      child.body.setImmovable?.(true);
+      child.body.moves = false;
+      child.refreshBody?.();
+    }
+  });
+
+  if (typeof obstacles.refresh === 'function') {
+    obstacles.refresh();
+  }
+}
+
+/**
+ * Betritt einen Raum: setzt WorldBounds, platziert Hindernisse,
+ * baut Treppen, sperrt sie bis Raumwelle clear ist.
+ */
+function enterRoom(scene, roomId) {
+  currentRoomId = roomId;
+
+  let room = rooms[roomId];
+
+  if (!scene || !room) {
+    //createRooms();
+    room = rooms[roomId];
+  }
+
+  // 1) Alles Alte bereinigen
+  const rightPadding = typeof WORLD_RIGHT_PADDING === 'number' ? WORLD_RIGHT_PADDING : 0;
+  scene.physics.world.setBounds(0, 0, ROOM_W + rightPadding, ROOM_H); // wird gleich auf echte Raumgroesse aktualisiert
+  scene.cameras.main.setBounds(0, 0, ROOM_W + rightPadding, ROOM_H);
+
+  enemies?.clear(true, true);
+  enemyProjectiles?.clear(true, true);
+  lootGroup?.clear(true, true);
+  if (Array.isArray(scene?._activeLootSprites)) {
+    scene._activeLootSprites.slice().forEach((loot) => loot?.destroy?.());
+    scene._activeLootSprites.length = 0;
+  } else if (scene) {
+    scene._activeLootSprites = [];
+  }
+  if (scene) {
+    if (Array.isArray(scene._templateWalls)) {
+      scene._templateWalls.forEach((wall) => wall?.destroy?.());
+      scene._templateWalls.length = 0;
+    } else {
+      scene._templateWalls = [];
+    }
+  }
+  if (obstacles && typeof obstacles.clear === 'function') {
+    obstacles.clear(true, true);
+  }
+
+  const needsNewStairsGroup =
+    !scene.stairsGroup ||
+    scene.stairsGroup.scene !== scene ||
+    !scene.stairsGroup.children ||
+    typeof scene.stairsGroup.children.size !== 'number';
+
+  if (needsNewStairsGroup) {
+    if (scene.stairsGroup?.destroy) {
+      try {
+        scene.stairsGroup.destroy(true);
+      } catch (err) {
+        console.warn('[enterRoom] old stairsGroup destroy failed', err);
+      }
+    }
+    scene.stairsGroup = scene.physics.add.staticGroup();
+  } else {
+    scene.stairsGroup.clear(true, true);
+  }
+
+  // Fog reset
+  scene.exploredRT?.clear();
+  scene.spotlightRT?.clear();
+
+  // 1) Raum bauen: 4/5 Random, 1/5 Template
+  let builtMeta = null;
+  let pickedType = null;
+
+  const pickTemplate = Math.random() < 4 / 5;
+  if (pickTemplate) {
+    builtMeta = buildTemplateRoom(scene);
+    pickedType = "template";
+  }
+  if (!builtMeta) {
+    builtMeta = buildRandomRoom(scene, room);
+    pickedType = "random";
+  }
+
+  const builtWidth = (builtMeta?.w ?? room?.width ?? ROOM_W) + rightPadding;
+  const builtHeight = builtMeta?.h ?? room?.height ?? ROOM_H;
+
+  scene.physics.world.setBounds(0, 0, builtWidth, builtHeight);
+  scene.cameras.main.setBounds(0, 0, builtWidth, builtHeight);
+
+  ensureObstacleColliders(scene);
+
+  if (scene._playerObstacleCollider) {
+    scene._playerObstacleCollider.destroy();
+    scene._playerObstacleCollider = null;
+  }
+  if (scene._enemyObstacleCollider) {
+    scene._enemyObstacleCollider.destroy();
+    scene._enemyObstacleCollider = null;
+  }
+  if (scene._projectileObstacleCollider) {
+    scene._projectileObstacleCollider.destroy();
+    scene._projectileObstacleCollider = null;
+  }
+  scene._playerObstacleCollider = scene.physics.add.collider(player, obstacles);
+  scene._enemyObstacleCollider = scene.physics.add.collider(enemies, obstacles);
+  scene._projectileObstacleCollider = scene.physics.add.collider(enemyProjectiles, obstacles, (proj) => {
+    if (proj && proj.active) proj.destroy();
+  });
+
+  recomputeAccessibleArea(scene);
+
+  // 2) Stairs aufbauen und sperren
+  scene.stairsGroup.clear(true, true);
+  (builtMeta.doors || []).forEach((d) => {
+    const stair = scene.stairsGroup.create(d.x, d.y, "stairDown");
+    stair.setData("locked", true);
+    stair.setData("dir", d.dir || null);
+    stair.setAlpha(0.9).refreshBody();
+  });
+
+  // Overlap Spieler ↔ Stairs
+  scene.physics.add.overlap(
+    player,
+    scene.stairsGroup,
+    onStairOverlap,
+    null,
+    scene,
+  );
+
+  // 3) Raumstatus setzen
+  scene.currentRoom = {
+    id: roomId,
+    name: builtMeta.name,
+    origin: builtMeta.origin,
+    w: builtMeta.w,
+    h: builtMeta.h,
+    doors: builtMeta.doors,
+    kind: pickedType,
+    isLarge: !!builtMeta.isLarge,
+    enteredAt: scene.time?.now ?? performance.now()
+  };
+
+  scene._largeRoomIsActive = !!builtMeta.isLarge;
+  scene._largeRoomEnterTime = scene.currentRoom.enteredAt;
+  scene._largeRoomHintShown = false;
+  scene._largeRoomHintUnlocked = false;
+  if (typeof LARGE_ROOM_HINT_DELAY === 'number') {
+    scene._largeRoomHintUnlockAt = scene._largeRoomIsActive
+      ? scene._largeRoomEnterTime + LARGE_ROOM_HINT_DELAY
+      : Infinity;
+  } else {
+    scene._largeRoomHintUnlockAt = Infinity;
+  }
+  if (Array.isArray(scene._enemyDirectionIndicators)) {
+    scene._enemyDirectionIndicators.forEach((indicator) => indicator?.label?.destroy?.());
+  }
+  scene._enemyDirectionIndicators = null;
+  if (typeof hideEnemyDirectionIndicators === 'function') {
+    hideEnemyDirectionIndicators(scene);
+  }
+
+  // 4) Waves fuer den Raum setzen
+  window.waveInProgress = false;
+  window.spawnedEnemiesInWave = 0;
+
+  let savedDepth = window.DUNGEON_DEPTH;
+  if (typeof savedDepth !== 'number' || !isFinite(savedDepth)) {
+    savedDepth = room?.wave || 1;
+  }
+
+  let depth;
+  if (typeof window.SELECTED_WAVE_OVERRIDE === 'number') {
+    depth = Math.max(1, Math.round(window.SELECTED_WAVE_OVERRIDE));
+    window.SELECTED_WAVE_OVERRIDE = null;
+  } else {
+    depth = Math.max(1, Math.round(savedDepth));
+  }
+
+  window.DUNGEON_DEPTH = depth;
+  window.NEXT_DUNGEON_DEPTH = depth + 1;
+  if (room) room.wave = depth;
+
+  const targetWave = Math.max(1, depth);
+  const baseEnemies =
+    typeof window.computeWaveEnemyTotal === "function"
+      ? window.computeWaveEnemyTotal(targetWave)
+      : 4 + (targetWave - 1) * 2;
+
+  enemiesPerWave = window.enemiesPerWave = baseEnemies;
+  if (room) room.enemiesPerWave = baseEnemies;
+  currentWave = Math.max(0, depth - 1);
+  window.currentWave = currentWave;
+
+  spawnInterval = Math.max(200, 1000 - 50 * (depth - 1) + 50);
+  window.spawnInterval = spawnInterval;
+
+  if (typeof recomputeSpawnFromWave === "function") recomputeSpawnFromWave();
+
+  // 5) Türen sperren bis Clear
+  lockStairs(scene, true);
+
+
+  // 6) Start der Welle
+  if (typeof startNextWave === "function") {
+    startNextWave.call(scene, false);
+    window.currentWave = currentWave;
+    window.spawnInterval = spawnInterval;
+  }
+}
+
+function onStairOverlap(player, stair) {
+  // nur wenn freigeschaltet
+  if (stair.getData("locked")) return;
+
+  //const toId = stair.getData('to');
+  const toId = 1; // mal testweise, bin nicht sicher wo die roomId überall verwendet wird
+
+  const depthBase = Math.max(
+    1,
+    typeof window.NEXT_DUNGEON_DEPTH === 'number' && isFinite(window.NEXT_DUNGEON_DEPTH)
+      ? window.NEXT_DUNGEON_DEPTH
+      : (window.DUNGEON_DEPTH || 1) + 1,
+    (currentWave || 0) + 1
+  );
+  window.SELECTED_WAVE_OVERRIDE = depthBase;
+
+  // Betritt Zielraum…
+  enterRoom(obstacles.scene, toId);
+}
+
+/** Türen/Treppen sperren/freischalten */
+function lockStairs(scene, lock) {
+  scene.stairsGroup.children.iterate(
+    (s) => s && s.setData("locked", !!lock) && s.setAlpha(lock ? 0.6 : 1),
+  );
+}
+
+/**
+ * Raum „cleared“ markieren und Türen freischalten.
+ * Aufrufst du, wenn Raum‑Wave erledigt ist.
+ */
+function markRoomCleared() {
+  const scene = obstacles.scene;
+  const room = rooms[currentRoomId];
+  if (!scene || !room) return;
+
+  room.cleared = true;
+  lockStairs(scene, false);
+  // Nächste Raum‑Wave vorbereiten (wenn du pro Raum mehrere willst)
+  room.wave += 1;
+  // Aktualisiere gespeicherte Gegnerzahl anhand der festen Progression
+  room.enemiesPerWave =
+    typeof window.computeWaveEnemyTotal === "function"
+      ? window.computeWaveEnemyTotal(room.wave)
+      : 4 + Math.max(0, room.wave - 1) * 2;
+  const completed = Math.max(currentWave || 1, window.DUNGEON_DEPTH || 1);
+  window.DUNGEON_DEPTH = completed;
+  window.NEXT_DUNGEON_DEPTH = completed + 1;
+  saveGame(scene);
+}
+
+function initFogOfWar() {
+  const scene = this;
+  const W = scene.scale.width;
+  const H = scene.scale.height;
+
+  scene.exploredRT = scene.make
+    .renderTexture({ x: 0, y: 0, width: W, height: H, add: false })
+    .setOrigin(0, 0)
+    .setScrollFactor(0);
+
+  scene.spotlightRT = scene.make
+    .renderTexture({ x: 0, y: 0, width: W, height: H, add: true })
+    .setOrigin(0, 0)
+    .setScrollFactor(0)
+    .setDepth(900);
+
+  scene._visionGfx = scene.add
+    .graphics()
+    .setScrollFactor(0)
+    .setDepth(899)
+    .setVisible(false);
+
+  scene.fogUnseen = scene.add.graphics().setScrollFactor(0).setDepth(1000);
+  scene.fogUnseen.fillStyle(0x000000, 1).fillRect(0, 0, W, H);
+  scene.fogUnseenMask = new Phaser.Display.Masks.BitmapMask(
+    scene,
+    scene.exploredRT,
+  );
+  scene.fogUnseen.setMask(scene.fogUnseenMask);
+  scene.fogUnseen.mask.invertAlpha = true;
+
+  // Gegner-Masken-Gfx bleibt wie gehabt
+  scene._enemyVisionMaskGfx = scene.add
+    .graphics()
+    .setVisible(false)
+    .setScrollFactor(1);
+  scene._enemyVisionMask = scene._enemyVisionMaskGfx.createGeometryMask();
+  scene._enemyVisionMask.setInvertAlpha(false);
+  if (scene.enemyLayer) scene.enemyLayer.setMask(scene._enemyVisionMask);
+
+  // optionale Felder fuer Throttling
+  scene._lastVisX = scene._lastVisY = undefined;
+  scene._visTick = 0;
+}
+
+function updateFogOfWar() {
+  const scene = this;
+  if (!scene.spotlightRT || !scene.exploredRT || !player) return;
+
+  const cam = scene.cameras.main;
+  const px = player.x,
+    py = player.y;
+
+  // 1) Welt-Polygon
+  const ptsWorld = computeVisionPolygon(scene, px, py);
+
+  // 2) Explored-Stamp mit Pad, damit Waende nicht schwarz bleiben
+  const ptsScreenExplored = ptsWorld.map((p) => ({
+    x: p.x + p.dx * VISION_PAD_EXPLORED - cam.scrollX,
+    y: p.y + p.dy * VISION_PAD_EXPLORED - cam.scrollY,
+  }));
+  scene._visionGfx.clear().fillStyle(0xffffff, 1);
+  drawFilledPolygon(scene._visionGfx, ptsScreenExplored);
+  scene.exploredRT.draw(scene._visionGfx);
+
+  // 3) Spotlight-Loch mit UI-Pad
+  const ptsScreenUI = ptsWorld.map((p) => ({
+    x: p.x + p.dx * VISION_PAD_UI - cam.scrollX,
+    y: p.y + p.dy * VISION_PAD_UI - cam.scrollY,
+  }));
+  scene.spotlightRT.clear();
+  scene.spotlightRT.fill(0x000000, 0.4);
+  scene._visionGfx.clear().fillStyle(0xffffff, 1);
+  drawFilledPolygon(scene._visionGfx, ptsScreenUI);
+  scene.spotlightRT.erase(scene._visionGfx);
+
+  // 4) Gegner-Maske mit kleinem Pad
+  if (scene._enemyVisionMaskGfx) {
+    const g = scene._enemyVisionMaskGfx;
+    g.clear().fillStyle(0xffffff, 1);
+    const ptsEnemy = ptsWorld.map((p) => ({
+      x: p.x + p.dx * VISION_PAD_ENEMY,
+      y: p.y + p.dy * VISION_PAD_ENEMY,
+    }));
+    drawFilledPolygon(g, ptsEnemy);
+  }
+
+  scene._visionGfx.clear();
+}
+
+function buildRandomRoom(scene, room) {
+  // Hindernisse neu platzieren
+  placeObstaclesForWave();
+
+  // Doors aus room.exits
+  const doors = (room.exits || []).map((ex) => ({
+    x: ex.x,
+    y: ex.y,
+    dir: ex.dir || null,
+  }));
+  if (obstacles && typeof obstacles.refresh === 'function') {
+    obstacles.refresh();
+  } else if (obstacles && obstacles.children) {
+    obstacles.children.iterate((child) => child?.refreshBody?.());
+  }
+  return {
+    type: "random",
+    name: room.name || "Random",
+    origin: { x: 0, y: 0 },
+    w: room.width || room.w,
+    h: room.height || room.h,
+    doors,
+  };
+}
+
+// --- Vision Tuning ---
+const VISION_RADIUS = 220;
+const VISION_RAYS = 192;
+const VISION_STEP = 4; // feiner an die Wand
+const VISION_WALL_BACKOFF = 0; // nicht vor der Wand zurueckspringen
+const VISION_PAD_EXPLORED = 64; // wie weit "in die Wand" als bereits gesehen
+const VISION_PAD_UI = 64; // Spotlight-Loch
+const VISION_PAD_ENEMY = 64; // Gegner-Maske
+
+function isBlockedByObstacle(x, y) {
+  const list = obstacles?.getChildren?.() || [];
+  for (let i = 0; i < list.length; i++) {
+    const go = list[i];
+    if (!go || !go.texture || go.texture.key !== "obstacleWall") continue; // nur Waende blocken
+
+    const b = go.body;
+    if (!b || !b.enable) continue;
+
+    if (typeof b.hitTest === "function") {
+      if (b.hitTest(x, y)) return true;
+    } else {
+      const r = b.getBounds ? b.getBounds() : go.getBounds?.();
+      if (r && r.contains(x, y)) return true;
+    }
+  }
+  return false;
+}
+
+function computeVisionPolygon(scene, ox, oy) {
+  const pts = [];
+  for (let i = 0; i < VISION_RAYS; i++) {
+    const t = (i / VISION_RAYS) * Math.PI * 2;
+    const dx = Math.cos(t),
+      dy = Math.sin(t);
+
+    let hitX = ox + dx * VISION_RADIUS;
+    let hitY = oy + dy * VISION_RADIUS;
+
+    for (let r = VISION_STEP; r <= VISION_RADIUS; r += VISION_STEP) {
+      const px = ox + dx * r;
+      const py = oy + dy * r;
+      if (isBlockedByObstacle(px, py)) {
+        // stoppe an erster Wand
+        hitX = px - dx * 0;
+        hitY = py - dy * 0;
+        break;
+      }
+    }
+    // merke Treffpunkt und Ray-Richtung
+    pts.push({ x: hitX, y: hitY, dx, dy });
+  }
+  return pts;
+}
+
+function drawFilledPolygon(gfx, pts) {
+  if (!pts || pts.length < 3) return;
+  gfx.beginPath();
+  gfx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) gfx.lineTo(pts[i].x, pts[i].y);
+  gfx.closePath();
+  gfx.fillPath();
+}
+
+const ROOM_SPAWN_HALF_SIZE = 24;
+const ROOM_SPAWN_PAD = 4;
+const ACCESS_GRID_SIZE = 32;
+const MIN_PLAYER_SPAWN_DISTANCE = 160;
+
+function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
+  if (!obstacles || typeof obstacles.getChildren !== "function") return false;
+  if (!Phaser || !Phaser.Geom || !Phaser.Geom.Rectangle) return false;
+
+  const candidateRect = new Phaser.Geom.Rectangle(
+    px - halfSize,
+    py - halfSize,
+    halfSize * 2,
+    halfSize * 2
+  );
+
+  const list = obstacles.getChildren();
+  for (let i = 0; i < list.length; i++) {
+    const o = list[i];
+    if (!o || !o.body || !o.body.enable) continue;
+
+    const bounds = o.getBounds ? o.getBounds() : o.body?.getBounds?.();
+    if (!bounds) continue;
+
+    const inflated = new Phaser.Geom.Rectangle(
+      bounds.x - ROOM_SPAWN_PAD,
+      bounds.y - ROOM_SPAWN_PAD,
+      bounds.width + ROOM_SPAWN_PAD * 2,
+      bounds.height + ROOM_SPAWN_PAD * 2
+    );
+
+    if (Phaser.Geom.Intersects.RectangleToRectangle(candidateRect, inflated)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function recomputeAccessibleArea(scene, options = {}) {
+  if (!scene || !scene.physics || !scene.physics.world) {
+    if (scene) {
+      scene._accessibleArea = null;
+      scene.isPointAccessible = null;
+      scene.pickAccessibleSpawnPoint = null;
+    }
+    return null;
+  }
+
+  const activePlayer = player && player.body ? player : null;
+  if (!activePlayer) {
+    scene._accessibleArea = null;
+    scene.isPointAccessible = null;
+    scene.pickAccessibleSpawnPoint = null;
+    return null;
+  }
+
+  const bounds = scene.physics.world.bounds;
+  if (!bounds) {
+    scene._accessibleArea = null;
+    scene.isPointAccessible = null;
+    scene.pickAccessibleSpawnPoint = null;
+    return null;
+  }
+
+  const cellSize = Math.max(16, Math.floor(options.cellSize || ACCESS_GRID_SIZE));
+  const cols = Math.max(1, Math.ceil(bounds.width / cellSize));
+  const rows = Math.max(1, Math.ceil(bounds.height / cellSize));
+  const blockCache = new Map();
+  const keyFor = (cx, cy) => `${cx}|${cy}`;
+
+  const isBlocked = (cx, cy) => {
+    if (cx < 0 || cy < 0 || cx >= cols || cy >= rows) return true;
+    const key = keyFor(cx, cy);
+    if (blockCache.has(key)) return blockCache.get(key);
+
+    const centerX = bounds.x + cx * cellSize + cellSize / 2;
+    const centerY = bounds.y + cy * cellSize + cellSize / 2;
+    let blocked = false;
+
+    if (
+      centerX - ROOM_SPAWN_HALF_SIZE < bounds.x ||
+      centerX + ROOM_SPAWN_HALF_SIZE > bounds.x + bounds.width ||
+      centerY - ROOM_SPAWN_HALF_SIZE < bounds.y ||
+      centerY + ROOM_SPAWN_HALF_SIZE > bounds.y + bounds.height
+    ) {
+      blocked = true;
+    } else {
+      blocked = isSpawnPositionBlocked(centerX, centerY, ROOM_SPAWN_HALF_SIZE);
+    }
+
+    blockCache.set(key, blocked);
+    return blocked;
+  };
+
+  let startCX = Phaser.Math.Clamp(Math.floor((activePlayer.x - bounds.x) / cellSize), 0, cols - 1);
+  let startCY = Phaser.Math.Clamp(Math.floor((activePlayer.y - bounds.y) / cellSize), 0, rows - 1);
+
+  if (isBlocked(startCX, startCY)) {
+    let found = null;
+    const maxRadius = Math.max(cols, rows);
+    for (let radius = 1; radius < maxRadius && !found; radius++) {
+      for (let dx = -radius; dx <= radius && !found; dx++) {
+        for (let dy = -radius; dy <= radius && !found; dy++) {
+          const cx = startCX + dx;
+          const cy = startCY + dy;
+          if (cx < 0 || cy < 0 || cx >= cols || cy >= rows) continue;
+          if (!isBlocked(cx, cy)) {
+            found = { cx, cy };
+          }
+        }
+      }
+    }
+    if (found) {
+      startCX = found.cx;
+      startCY = found.cy;
+    }
+  }
+
+  if (isBlocked(startCX, startCY)) {
+    scene._accessibleArea = null;
+    scene.isPointAccessible = null;
+    scene.pickAccessibleSpawnPoint = null;
+    return null;
+  }
+
+  const queue = [{ cx: startCX, cy: startCY }];
+  const visited = new Set([keyFor(startCX, startCY)]);
+  const reachableCells = [];
+  const fallbackCandidates = [];
+  const spawnCandidates = [];
+  const minDist = Math.max(0, options.minSpawnDistance || MIN_PLAYER_SPAWN_DISTANCE);
+  const minDistSq = minDist * minDist;
+
+  while (queue.length) {
+    const { cx, cy } = queue.shift();
+    const centerX = bounds.x + cx * cellSize + cellSize / 2;
+    const centerY = bounds.y + cy * cellSize + cellSize / 2;
+
+    reachableCells.push({ cx, cy, x: centerX, y: centerY });
+    fallbackCandidates.push({ x: centerX, y: centerY });
+
+    const dx = centerX - activePlayer.x;
+    const dy = centerY - activePlayer.y;
+    if (dx * dx + dy * dy >= minDistSq) {
+      spawnCandidates.push({ x: centerX, y: centerY });
+    }
+
+    const neighbors = [
+      { cx: cx + 1, cy },
+      { cx: cx - 1, cy },
+      { cx, cy: cy + 1 },
+      { cx, cy: cy - 1 },
+    ];
+
+    for (let i = 0; i < neighbors.length; i++) {
+      const n = neighbors[i];
+      if (n.cx < 0 || n.cy < 0 || n.cx >= cols || n.cy >= rows) continue;
+      const key = keyFor(n.cx, n.cy);
+      if (visited.has(key)) continue;
+      if (isBlocked(n.cx, n.cy)) continue;
+      visited.add(key);
+      queue.push(n);
+    }
+  }
+
+  const candidates = spawnCandidates.length ? spawnCandidates : fallbackCandidates.slice();
+  const accessibleArea = {
+    cellSize,
+    cols,
+    rows,
+    bounds: {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+    },
+    reachableCells,
+    visited,
+    spawnCandidates: candidates,
+    fallbackCandidates,
+    minSpawnDistance: minDist,
+    jitter: Math.max(4, Math.floor(cellSize * 0.35)),
+    updatedAt: (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now(),
+  };
+
+  scene._accessibleArea = accessibleArea;
+
+  scene.isPointAccessible = function isPointAccessible(x, y) {
+    const grid = scene._accessibleArea;
+    if (!grid) return true;
+    const cx = Math.floor((x - grid.bounds.x) / grid.cellSize);
+    const cy = Math.floor((y - grid.bounds.y) / grid.cellSize);
+    if (cx < 0 || cy < 0 || cx >= grid.cols || cy >= grid.rows) return false;
+    return grid.visited.has(`${cx}|${cy}`);
+  };
+
+  scene.pickAccessibleSpawnPoint = function pickAccessibleSpawnPoint(opts = {}) {
+    const grid = scene._accessibleArea;
+    if (!grid) return null;
+    const pool = grid.spawnCandidates && grid.spawnCandidates.length
+      ? grid.spawnCandidates
+      : grid.fallbackCandidates;
+    if (!pool || !pool.length) return null;
+
+    const active = player && player.active ? player : null;
+    const minDistance = Math.max(0, opts.minDistance ?? grid.minSpawnDistance);
+    const minDistSqPick = minDistance * minDistance;
+    const maxAttempts = Math.max(1, opts.maxAttempts ?? 24);
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      const candidate = pool[idx];
+      if (!candidate) continue;
+      if (!active || !minDistSqPick) {
+        return { x: candidate.x, y: candidate.y };
+      }
+      const dx = candidate.x - active.x;
+      const dy = candidate.y - active.y;
+      if (dx * dx + dy * dy >= minDistSqPick) {
+        return { x: candidate.x, y: candidate.y };
+      }
+    }
+
+    const fallback = pool[Math.floor(Math.random() * pool.length)];
+    return fallback ? { x: fallback.x, y: fallback.y } : null;
+  };
+
+  return accessibleArea;
+}
+
+window.isSpawnPositionBlocked = isSpawnPositionBlocked;
+window.recomputeAccessibleArea = recomputeAccessibleArea;
+
+// Export in globalen Namespace
+window.createRooms = createRooms;
+window.enterRoom = enterRoom;
+window.markRoomCleared = markRoomCleared;
+window.lockStairs = lockStairs;
+window.rooms = () => rooms;
+window.currentRoomId = () => currentRoomId;

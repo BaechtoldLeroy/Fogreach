@@ -1,0 +1,968 @@
+const ITEM_RARITY_META = {
+  common:    { color: '#ffffff', label: 'Gewöhnlich' },
+  rare:      { color: '#4cc3ff', label: 'Selten' },
+  epic:      { color: '#c17bff', label: 'Episch' },
+  legendary: { color: '#ffb347', label: 'Legendär' }
+};
+
+const getRarityMeta = (it) => {
+  if (!it) return ITEM_RARITY_META.common;
+  return ITEM_RARITY_META[it.rarity] || ITEM_RARITY_META.common;
+};
+
+const getRarityColor = (it) => getRarityMeta(it).color;
+const getRarityLabel = (it) => it?.rarityLabel || getRarityMeta(it).label;
+const getItemLevel = (it) => {
+  if (!it) return 0;
+  if (typeof it.itemLevel === 'number') return it.itemLevel;
+  const compute = window.computeItemLevelFromStats;
+  if (typeof compute === 'function') {
+    const lvl = compute(it, window.DUNGEON_DEPTH || 1);
+    it.itemLevel = lvl;
+    return lvl;
+  }
+  return 1;
+};
+
+// --------------------------------------------------
+//  Material Management (Eisenbrocken counter)
+// --------------------------------------------------
+const MATERIAL_DISPLAY_NAMES = {
+  MAT: 'Eisenbrocken'
+};
+
+const FALLBACK_ITEM_ICONS = {
+  weapon: 'itWeapon',
+  head: 'itHead',
+  body: 'itBody',
+  boots: 'itBoots',
+  consumable: 'itConsumable',
+  material: 'itMat'
+};
+
+const UPGRADEABLE_TYPES = new Set(['weapon', 'head', 'body', 'boots']);
+
+let materialCounts = window.materialCounts;
+if (!materialCounts || typeof materialCounts !== 'object') {
+  materialCounts = {};
+}
+if (typeof materialCounts.MAT !== 'number') {
+  materialCounts.MAT = 0;
+}
+window.materialCounts = materialCounts;
+
+const getItemMaterialKey = (item) => {
+  if (!item || typeof item !== 'object') return null;
+  if (typeof item.materialKey === 'string' && item.materialKey.length) return item.materialKey;
+  if (typeof item.baseMaterialKey === 'string' && item.baseMaterialKey.length) return item.baseMaterialKey;
+  if (typeof item.key === 'string' && item.key.length) return item.key;
+  return null;
+};
+
+function getMaterialCount(key) {
+  if (!key) return 0;
+  const store = window.materialCounts || materialCounts;
+  const raw = store?.[key];
+  return typeof raw === 'number' && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+}
+
+function changeMaterialCount(key, delta) {
+  if (!key || typeof delta !== 'number' || !Number.isFinite(delta)) return;
+  const store = window.materialCounts || materialCounts;
+  const current = store?.[key] || 0;
+  const next = Math.max(0, Math.round(current + delta));
+  store[key] = next;
+}
+
+function addMaterialToStorage(item, amount = 1, { silent = false } = {}) {
+  const key = getItemMaterialKey(item);
+  if (!key) return false;
+  changeMaterialCount(key, amount);
+  if (!silent) updateMaterialCounterUI();
+  return true;
+}
+
+function spendMaterialFromStorage(key, amount) {
+  if (!key) return false;
+  const current = getMaterialCount(key);
+  if (amount <= 0) return true;
+  if (current < amount) return false;
+  changeMaterialCount(key, -amount);
+  updateMaterialCounterUI();
+  return true;
+}
+
+function setMaterialCounts(snapshot) {
+  const store = window.materialCounts || materialCounts;
+  Object.keys(store).forEach((key) => { store[key] = 0; });
+  store.MAT = store.MAT || 0;
+  if (snapshot && typeof snapshot === 'object') {
+    Object.entries(snapshot).forEach(([key, value]) => {
+      const num = Number(value);
+      if (Number.isFinite(num) && num > 0) {
+        store[key] = Math.max(0, Math.floor(num));
+      }
+    });
+  }
+  updateMaterialCounterUI();
+}
+
+function siphonMaterialsFromInventory() {
+  if (typeof inventory === 'undefined' || !Array.isArray(inventory)) return;
+  let updated = false;
+  for (let i = 0; i < inventory.length; i++) {
+    const item = inventory[i];
+    if (!item || item.type !== 'material') continue;
+    const handled = addMaterialToStorage(item, item.amount || 1, { silent: true });
+    if (handled) {
+      inventory[i] = null;
+      updated = true;
+    }
+  }
+  if (updated) {
+    updateMaterialCounterUI();
+  }
+}
+
+function isValidGameObject(obj) {
+  if (!obj) return false;
+  const scene = obj.scene;
+  if (!scene || !scene.sys) return false;
+  if (scene.sys.isDestroyed) return false;
+  if (obj.destroyed || obj._destroyed) return false;
+  return true;
+}
+
+function updateMaterialCounterUI() {
+  const counterText = (typeof invUI !== 'undefined' && invUI && invUI.materialsText)
+    ? invUI.materialsText
+    : null;
+  if (!isValidGameObject(counterText)) {
+    if (invUI && invUI.materialsText === counterText) {
+      invUI.materialsText = null;
+    }
+    return;
+  }
+  const label = MATERIAL_DISPLAY_NAMES.MAT || 'Material';
+  counterText.setText(`${label}: ${getMaterialCount('MAT')}`);
+}
+
+const getTextureManager = () => {
+  const maybeInvUI = (typeof invUI !== 'undefined') ? invUI : null;
+  const managers = [
+    maybeInvUI?.panel?.scene?.textures,
+    tooltip?.scene?.textures,
+    window.game?.textures,
+    window.Phaser?.Scene?.systems?.textures
+  ];
+  for (const mgr of managers) {
+    if (mgr && typeof mgr.exists === 'function') return mgr;
+  }
+  return null;
+};
+
+function resolveItemIconKey(item) {
+  if (!item) return null;
+  const textures = getTextureManager();
+  const hasTexture = (key) => !textures || (key && textures.exists(key));
+  const genericIcons = new Set(['itMat', 'lootTexture', 'chest_small', 'chest_medium', 'chest_large', 'uiSlot']);
+  if (item.iconKey && hasTexture(item.iconKey)) {
+    if (item.type && item.type !== 'material' && genericIcons.has(item.iconKey)) {
+      // prefer type-based fallback over generic chest/material icons
+    } else {
+      return item.iconKey;
+    }
+  }
+  const fallback = FALLBACK_ITEM_ICONS[item.type];
+  if (fallback && hasTexture(fallback)) return fallback;
+  return hasTexture('itMat') ? 'itMat' : null;
+}
+
+const SLOT_BASE_ALPHA = 0.32;
+const SLOT_HOVER_ALPHA = 0.62;
+const SLOT_EMPTY_HOVER_ALPHA = 0.4;
+
+function parseTintColor(value, fallback = 0xffffff) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    let hex = value.trim();
+    if (hex.startsWith('#')) hex = hex.slice(1);
+    const num = parseInt(hex, 16);
+    if (Number.isFinite(num)) return num;
+  }
+  return fallback;
+}
+
+function setSpriteTint(sprite, color) {
+  if (!sprite) return;
+  if (typeof sprite.setTintFill === 'function') sprite.setTintFill(color);
+  else if (typeof sprite.setTint === 'function') sprite.setTint(color);
+}
+
+function setSlotHighlight(target, item) {
+  if (!isValidGameObject(target)) return;
+  let highlight = target.__hoverHighlight;
+  if (!isValidGameObject(highlight)) {
+    highlight = null;
+    target.__hoverHighlight = null;
+  }
+  const hasItem = !!item;
+  const tintColor = hasItem ? parseTintColor(getRarityColor(item), 0xffffff) : null;
+
+  if (highlight) {
+    if (hasItem) {
+      setSpriteTint(highlight, tintColor);
+      highlight.setAlpha(SLOT_BASE_ALPHA);
+      highlight.setVisible(true);
+    } else {
+      highlight.setVisible(false);
+      highlight.setAlpha(0);
+    }
+  } else {
+    if (hasItem) {
+      setSpriteTint(target, tintColor);
+      if (typeof target.setAlpha === 'function') target.setAlpha(SLOT_BASE_ALPHA);
+    } else {
+      if (typeof target.clearTint === 'function') target.clearTint();
+      if (typeof target.setAlpha === 'function') target.setAlpha(1);
+    }
+  }
+
+  target.__highlightTintColor = tintColor;
+  target.__highlightBaseAlpha = hasItem ? SLOT_BASE_ALPHA : 0;
+  target.__hasBaseHighlight = hasItem;
+  target.__hoverTintApplied = false;
+  target.__hoverTempHighlight = false;
+}
+
+function getEquippedLevelForType(type) {
+  if (!type || typeof equipment !== 'object' || !equipment) return 0;
+  const equippedItem = equipment[type];
+  if (!equippedItem) return 0;
+  return getItemLevel(equippedItem);
+}
+
+function isItemUpgrade(item) {
+  if (!item || !UPGRADEABLE_TYPES.has(item.type)) return false;
+  const itemLevel = getItemLevel(item);
+  const equippedLevel = getEquippedLevelForType(item.type);
+  return itemLevel > equippedLevel;
+}
+
+function applySlotHoverTint(target, item) {
+  if (!isValidGameObject(target)) return;
+  let highlight = target.__hoverHighlight;
+  if (!isValidGameObject(highlight)) {
+    highlight = null;
+    target.__hoverHighlight = null;
+  }
+  const hasItem = !!item;
+  const tintColor = hasItem
+    ? (target.__highlightTintColor ?? parseTintColor(getRarityColor(item), 0xffffff))
+    : parseTintColor('#777777', 0x777777);
+
+  if (highlight) {
+    if (!highlight.visible) {
+      setSpriteTint(highlight, tintColor);
+      highlight.setVisible(true);
+      target.__hoverTempHighlight = !target.__hasBaseHighlight;
+    } else if (hasItem) {
+      setSpriteTint(highlight, tintColor);
+    }
+    const alpha = hasItem ? SLOT_HOVER_ALPHA : SLOT_EMPTY_HOVER_ALPHA;
+    highlight.setAlpha(alpha);
+  } else {
+    setSpriteTint(target, tintColor);
+    if (typeof target.setAlpha === 'function') {
+      target.setAlpha(hasItem ? SLOT_HOVER_ALPHA : SLOT_EMPTY_HOVER_ALPHA);
+    }
+  }
+
+  target.__hoverTintApplied = true;
+}
+
+function clearSlotHoverTint(target) {
+  if (!isValidGameObject(target) || !target.__hoverTintApplied) return;
+  let highlight = target.__hoverHighlight;
+  if (!isValidGameObject(highlight)) {
+    highlight = null;
+    target.__hoverHighlight = null;
+  }
+  if (highlight) {
+    if (target.__hasBaseHighlight) {
+      highlight.setAlpha(target.__highlightBaseAlpha ?? SLOT_BASE_ALPHA);
+    } else if (target.__hoverTempHighlight) {
+      highlight.setVisible(false);
+      highlight.setAlpha(0);
+    } else {
+      highlight.setVisible(false);
+      highlight.setAlpha(0);
+    }
+  } else {
+    if (target.__hasBaseHighlight) {
+      const tintColor = target.__highlightTintColor ?? 0xffffff;
+      setSpriteTint(target, tintColor);
+      if (typeof target.setAlpha === 'function') {
+        target.setAlpha(target.__highlightBaseAlpha ?? SLOT_BASE_ALPHA);
+      }
+    } else {
+      if (typeof target.clearTint === 'function') target.clearTint();
+      if (typeof target.setAlpha === 'function') target.setAlpha(1);
+    }
+  }
+  target.__hoverTintApplied = false;
+  target.__hoverTempHighlight = false;
+}
+
+if (typeof window !== 'undefined') {
+  window.getMaterialCount = getMaterialCount;
+  window.addMaterialToStorage = addMaterialToStorage;
+  window.spendMaterialFromStorage = spendMaterialFromStorage;
+  window.updateMaterialCounterUI = updateMaterialCounterUI;
+  window.siphonMaterialsFromInventory = siphonMaterialsFromInventory;
+  window.getItemMaterialKey = getItemMaterialKey;
+  window.setMaterialCounts = setMaterialCounts;
+  window.destroyInventoryUI = destroyInventoryUI;
+}
+
+function initInventoryUI() {
+  const scene = this;
+  const BASE_W = 1200;
+  const BASE_H = 600;
+
+  // Panelgröße
+  const PANEL_W = 800, PANEL_H = 480;
+  const GRID_COLS = INV_COLS, GRID_ROWS = INV_ROWS;
+
+  // Overlay
+  const overlay = scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x000000, 0.35)
+    .setOrigin(0).setDepth(9998).setScrollFactor(0).setVisible(false)
+    .setInteractive();
+  overlay.setName?.('InventoryOverlay');
+  overlay.on('pointerdown', () => closeInventory());
+
+  // Panel
+  const panel = scene.add.container(scene.scale.width / 2, scene.scale.height / 2)
+    .setDepth(10000).setScrollFactor(0).setVisible(false);
+  if (typeof panel.setName === 'function') panel.setName('InventoryPanel');
+
+  const panelBg = scene.add.image(0, 0, 'uiPanel').setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0);
+  panel.add(panelBg);
+
+  const title = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 12, 'Inventar', {
+    fontSize: '28px', fill: '#fff', fontStyle: 'bold'
+  }).setOrigin(0, 0).setScrollFactor(0);
+  panel.add(title);
+
+  const help = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 50,
+    'Klicke/Tippe ein Item → Ausrüsten / Benutzen / Entfernen',
+    { fontSize: '14px', fill: '#ccc' }).setOrigin(0, 0).setScrollFactor(0);
+  panel.add(help);
+
+  const materialCounter = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 78, '', {
+    fontSize: '18px',
+    fill: '#f4d06f'
+  }).setOrigin(0, 0).setScrollFactor(0);
+  panel.add(materialCounter);
+  invUI.materialsText = materialCounter;
+  updateMaterialCounterUI();
+
+  const btnClose = scene.add.text(PANEL_W / 2 - 16, -PANEL_H / 2 + 16, '✕', {
+    fontSize: '18px', fill: '#fff', backgroundColor: '#333', padding: { x: 8, y: 6 }
+  }).setOrigin(1, 0).setScrollFactor(0).setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => closeInventory());
+  panel.add(btnClose);
+
+  // --- Equipment links, aber innerhalb Panel ---
+  // Tooltip Setup (vor Slot-Events verfügbar machen)
+  const createTooltipBox = (bgColor = 0x000000) => {
+    const container = scene.add.container(0, 0);
+    container.setDepth(10001);
+    if (typeof container.setScrollFactor === 'function') {
+      container.setScrollFactor(0);
+    }
+    container.setVisible(false);
+    const bg = scene.add.graphics();
+    if (typeof bg.setScrollFactor === 'function') bg.setScrollFactor(0);
+    container.add(bg);
+    const title = scene.add.text(0, 0, '', { fontSize: '14px', fontStyle: 'bold', color: '#ffffff' });
+    if (typeof title.setScrollFactor === 'function') title.setScrollFactor(0);
+    const body = scene.add.text(0, 0, '', { fontSize: '12px', color: '#ffffff' });
+    if (typeof body.setScrollFactor === 'function') body.setScrollFactor(0);
+    container.add([title, body]);
+    container.bg = bg;
+    container.title = title;
+    container.body = body;
+    container.bgColor = bgColor;
+    container._width = 0;
+    container._height = 0;
+    return container;
+  };
+
+  const layoutTooltipBox = (box) => {
+    if (!box || !box.title || !box.body || !box.bg) return;
+    const paddingX = 10;
+    const paddingY = 8;
+    const gap = box.title.text && box.body.text ? 6 : 0;
+    box.title.setPosition(paddingX, paddingY);
+    box.body.setPosition(paddingX, paddingY + (box.title.text ? box.title.height + gap : 0));
+    const contentWidth = Math.max(
+      box.title.text ? box.title.width : 0,
+      box.body.text ? box.body.width : 0
+    );
+    const contentHeight = (box.title.text ? box.title.height : 0)
+      + (box.body.text ? gap + box.body.height : 0);
+    const totalWidth = Math.max(32, paddingX * 2 + contentWidth);
+    const totalHeight = Math.max(24, paddingY * 2 + contentHeight);
+    box.bg.clear();
+    box.bg.fillStyle(box.bgColor, 0.92);
+    box.bg.fillRoundedRect(0, 0, totalWidth, totalHeight, 8);
+    box._width = totalWidth;
+    box._height = totalHeight;
+  };
+
+  const tooltipBox = createTooltipBox(0x000000);
+  if (typeof tooltipBox.setName === 'function') tooltipBox.setName('InventoryTooltip');
+  tooltip = tooltipBox;
+
+  const ensureCompareTooltip = () => {
+    if (tooltip.compareBox) return tooltip.compareBox;
+    tooltip.compareBox = createTooltipBox(0x111111);
+    if (typeof tooltip.compareBox.setName === 'function') tooltip.compareBox.setName('InventoryTooltipCompare');
+    return tooltip.compareBox;
+  };
+
+  const hideTooltip = () => {
+    if (tooltip) tooltip.setVisible(false);
+    if (tooltip?.compareBox) tooltip.compareBox.setVisible(false);
+  };
+
+  const formatItemTooltip = (it, heading) => {
+    if (!it) return { title: '', body: '' };
+    const bodyLines = [];
+    if (heading) bodyLines.push(heading);
+    bodyLines.push(`Seltenheit: ${getRarityLabel(it)}`);
+    const lvl = getItemLevel(it);
+    bodyLines.push(`Item Level: ${lvl}`);
+    if (it.type) bodyLines.push(`Typ: ${(it.type || '').toUpperCase()}`);
+
+    const pushStat = (label, value, decimals = 1, suffix = '') => {
+      const num = Number(value) || 0;
+      if (num <= 0) return;
+      bodyLines.push(`${label}: +${num.toFixed(decimals)}${suffix}`);
+    };
+
+    pushStat('HP', it.hp, 1);
+    pushStat('Damage', it.damage, 1);
+    pushStat('Speed', it.speed, 2);
+    pushStat('Range', it.range, 1);
+    pushStat('Armor', (it.armor || 0) * 100, 1, '%');
+    pushStat('Crit', (it.crit || 0) * 100, 1, '%');
+    pushStat('Move', it.move, 1);
+    if (Array.isArray(it.attackEffects) && it.attackEffects.length) {
+      const labels = (typeof ABILITY_LABELS !== 'undefined' ? ABILITY_LABELS : (window?.ABILITY_LABELS || {}));
+      it.attackEffects.forEach((effect) => {
+        if (!effect) return;
+        const name = labels[effect.ability] || effect.ability || 'Attack';
+        const pct = Math.round(Math.max(0, (effect.value || 0) * 100));
+        if (pct <= 0) return;
+        if (effect.stat === 'cooldown') {
+          bodyLines.push(`${name}: -${pct}% Cooldown`);
+        } else if (effect.stat === 'damage') {
+          bodyLines.push(`${name}: +${pct}% Damage`);
+        }
+      });
+    }
+    return {
+      title: it.name || 'Unbekanntes Item',
+      body: bodyLines.join('\n')
+    };
+  };
+
+  const applyTooltipContent = (box, item, heading) => {
+    if (!box || !item || !box.title || !box.body) return false;
+    const info = formatItemTooltip(item, heading);
+    box.title.setText(info.title || '');
+    box.title.setStyle({ color: getRarityColor(item) });
+    box.body.setText(info.body || '');
+    box.body.setStyle({ color: '#ffffff' });
+    layoutTooltipBox(box);
+    return true;
+  };
+
+  const positionTooltipBox = (box, x, y) => {
+    if (!box) return;
+    box.setPosition(x, y);
+    box.setVisible(true);
+  };
+
+  const showItemTooltip = (pointer, it, compare) => {
+    if (!tooltip) return;
+    if (!it) {
+      hideTooltip();
+      return;
+    }
+
+    applyTooltipContent(tooltip, it);
+    positionTooltipBox(tooltip, pointer.x + 16, pointer.y + 16);
+
+    if (compare && compare !== it) {
+      const compareBox = ensureCompareTooltip();
+      if (applyTooltipContent(compareBox, compare, 'Ausgerüstet')) {
+        const compareX = tooltip.x + tooltip._width + 12;
+        positionTooltipBox(compareBox, compareX, tooltip.y);
+      }
+    } else if (tooltip.compareBox) {
+      tooltip.compareBox.setVisible(false);
+    }
+  };
+
+const equipKeys = ['weapon', 'head', 'body', 'boots'];
+const EQUIP_X = -PANEL_W / 2 + 160;  // Slots leicht nach rechts
+const EQUIP_Y0 = -PANEL_H / 2 + 160;
+const EQUIP_STEP = 90;
+
+  for (let i = 0; i < equipKeys.length; i++) {
+    const y = EQUIP_Y0 + i * EQUIP_STEP;
+
+    const slot = scene.add.image(EQUIP_X, y, 'uiSlot')
+      .setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    slot.on('pointerdown', () => {
+      selectEquipSlot(equipKeys[i]);
+      hideTooltip();
+      clearSlotHoverTint(slot);
+    });
+    slot.on('pointerover', (pointer) => {
+      const item = equipment[equipKeys[i]];
+      applySlotHoverTint(slot, item);
+      showItemTooltip(pointer, item);
+    });
+    slot.on('pointermove', (pointer) => {
+      if (tooltip?.visible) {
+        const item = equipment[equipKeys[i]];
+        applySlotHoverTint(slot, item);
+        showItemTooltip(pointer, item);
+      }
+    });
+    slot.on('pointerout', () => {
+      clearSlotHoverTint(slot);
+      hideTooltip();
+    });
+    panel.add(slot);
+
+    const highlight = scene.add.image(EQUIP_X, y, 'uiSlot')
+      .setOrigin(0.5).setScrollFactor(0).setVisible(false).setAlpha(SLOT_BASE_ALPHA);
+    panel.add(highlight);
+    slot.__hoverHighlight = highlight;
+
+    const icon = scene.add.image(EQUIP_X, y, 'itMat').setOrigin(0.5).setVisible(false).setScrollFactor(0);
+    panel.add(icon);
+
+    invUI.equip[equipKeys[i]] = { slot, icon, highlight };
+  }
+
+  // --- Grid rechts ---
+  invUI.slots = [];
+  let idx = 0;
+
+  const GRID_X0 = -PANEL_W / 2 + 260;
+  const GRID_Y0 = -PANEL_H / 2 + 100;
+  const GRID_W = PANEL_W - 320;
+  const GRID_H = PANEL_H - 160;
+
+  const cellW = GRID_W / GRID_COLS;
+  const cellH = GRID_H / GRID_ROWS;
+
+  const SLOT_W = 96, SLOT_H = 64;
+
+  // Slots etwas größer
+  const slotScaleX = (cellW * 0.95) / SLOT_W;
+  const slotScaleY = (cellH * 0.95) / SLOT_H;
+  const slotScale = Math.min(slotScaleX, slotScaleY, 0.65);
+
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const x = GRID_X0 + c * cellW + cellW / 2;
+      const y = GRID_Y0 + r * cellH + cellH / 2;
+
+      const bg = scene.add.image(x, y, 'uiSlot').setOrigin(0.5).setScale(slotScale).setScrollFactor(0).setInteractive({ useHandCursor: true });
+      bg.idx = idx;
+      bg.on('pointerdown', () => {
+        selectInventorySlot(bg.idx);
+        hideTooltip();
+        clearSlotHoverTint(bg);
+      });
+      bg.on('pointerover', (pointer) => {
+        const item = inventory[bg.idx];
+        const compare = item && equipment[item.type];
+        applySlotHoverTint(bg, item);
+        showItemTooltip(pointer, item, compare);
+      });
+      bg.on('pointermove', (pointer) => {
+        if (tooltip?.visible) {
+          const item = inventory[bg.idx];
+          const compare = item && equipment[item.type];
+          applySlotHoverTint(bg, item);
+          showItemTooltip(pointer, item, compare);
+        }
+      });
+      bg.on('pointerout', () => {
+        clearSlotHoverTint(bg);
+        hideTooltip();
+      });
+      panel.add(bg);
+
+      const highlight = scene.add.image(x, y, 'uiSlot').setOrigin(0.5).setScale(slotScale).setScrollFactor(0).setVisible(false).setAlpha(SLOT_BASE_ALPHA);
+      panel.add(highlight);
+      bg.__hoverHighlight = highlight;
+
+      const icon = scene.add.image(x, y - 10, 'itMat').setOrigin(0.5).setVisible(false).setScale(slotScale * 0.8).setScrollFactor(0);
+      panel.add(icon);
+
+      const indicator = scene.add.image(
+        x + slotScale * SLOT_W * 0.28,
+        y - slotScale * SLOT_H * 0.35,
+        'uiItemBetter'
+      ).setOrigin(0.5).setScale(Math.min(0.55, slotScale * 0.6)).setScrollFactor(0).setVisible(false);
+      indicator.setAlpha(0.9);
+      indicator.setDepth((panel.depth || 10000) + 5);
+      panel.add(indicator);
+
+      const label = scene.add.text(x, y + 20, '', {
+        fontSize: '15px', fill: '#fff', fontStyle: 'bold'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setVisible(false);
+      panel.add(label);
+
+      invUI.slots.push({ bg, icon, label, highlight, indicator });
+      idx++;
+    }
+  }
+
+  // --- Buttons ---
+  const btnPortal = scene.add.text(PANEL_W / 2 - 16, -PANEL_H / 2 + 52, 'Stadtportal', {
+    fontSize: '16px',
+    fill: '#fff',
+    backgroundColor: '#486c1d',
+    padding: { x: 12, y: 6 }
+  })
+    .setOrigin(1, 0)
+    .setScrollFactor(0)
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => {
+      closeInventory();
+      if (typeof leaveDungeonForHub === 'function') {
+        leaveDungeonForHub(scene, { reason: 'portal' });
+      }
+    });
+  panel.add(btnPortal);
+
+  const btnY = PANEL_H / 2 - 32; // etwas mehr Abstand zur Unterkante
+  const btnEquip = scene.add.text(-70, btnY, 'Ausrüsten', { fontSize: '16px', fill: '#fff', backgroundColor: '#47a', padding: { x: 10, y: 6 } })
+    .setOrigin(0.5, 1).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => equipSelectedItem.call(scene));
+  const btnDrop = scene.add.text(70, btnY, 'Entfernen', { fontSize: '16px', fill: '#fff', backgroundColor: '#a44', padding: { x: 10, y: 6 } })
+    .setOrigin(0.5, 1).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => dropSelectedItem());
+  panel.add([btnEquip, btnDrop]);
+
+  updateMaterialCounterUI();
+
+  invUI.panel = panel;
+  invUI.overlay = overlay;
+  invUI.hideTooltip = hideTooltip;
+  invUI.showTooltip = showItemTooltip;
+  invUI.btnPortal = btnPortal;
+  invUI.btnEquip = btnEquip;
+  invUI.btnDrop = btnDrop;
+  invUI._destroyed = false;
+
+  function place() {
+    const w = scene.scale.width;
+    const h = scene.scale.height;
+    invUI.overlay.setSize(w, h);
+    const s = Math.min(w / BASE_W, h / BASE_H);
+    invUI.panel.setScale(s);
+    invUI.panel.setPosition(w / 2, h / 2);
+  }
+  invUI._scene = scene;
+  invUI._placeHandler = place;
+  place();
+  scene.scale.on('resize', place);
+}
+
+function selectInventorySlot(i) {
+  invSelected = i;
+  refreshInventoryUI();
+  invUI.hideTooltip?.();
+}
+
+function selectEquipSlot(slotKey) {
+  // Optional: spätere Features (unequip etc.)
+  invUI.hideTooltip?.();
+}
+
+// Stattet Item mit Typ & Stats aus: {type, key, name, iconKey, damage?, speed?, range?, hp?, move?}
+function makeItem(opts) {
+  const type = opts?.type;
+  return Object.assign({
+    type: 'material',   // 'weapon' | 'head' | 'body' | 'boots' | 'consumable' | 'material'
+    key: 'GEN',
+    name: 'Item',
+    iconKey: FALLBACK_ITEM_ICONS[type] || 'itMat',
+    rarity: 'common',
+    rarityLabel: 'Gewöhnlich',
+    rarityValue: 1,
+    itemLevel: 1,
+    hp: 0,
+    damage: 0,
+    speed: 0,
+    range: 0,
+    armor: 0,
+    crit: 0,
+    move: 0,
+    attackEffects: []
+  }, opts || {});
+}
+
+function recalcDerived(oldItemHp = 0, newItemHp = 0) {
+  // 1) Alle Boni aus aktueller Ausrüstung aufsummieren
+  const sum = { damage: 0, speed: 0, range: 0, maxHP: 0, move: 0, armor: 0, crit: 0 };
+  Object.values(equipment).forEach(it => {
+    if (!it) return;
+    sum.damage += (it.damage || 0);
+    sum.speed += (it.speed || 0);
+    sum.range += (it.range || 0);
+    sum.maxHP += (it.hp || 0);
+    sum.move += (it.move || 0);
+    sum.armor += (it.armor || 0);
+    sum.crit += (it.crit || 0);
+  });
+
+  // 2) Neue "abgeleitete" Stats einmalig aus Basis + Summe
+  weaponDamage = baseStats.damage + sum.damage;
+  weaponAttackSpeed = Math.max(0.2, baseStats.speed + sum.speed);
+  attackRange = Math.max(20, baseStats.range + sum.range);
+  playerSpeed = Math.max(60, baseStats.move + sum.move);
+  playerArmor = Phaser.Math.Clamp((baseStats.armor || 0) + sum.armor, 0, 0.85);
+  playerCritChance = Phaser.Math.Clamp((baseStats.crit || 0) + sum.crit, 0, 0.9);
+
+  // 3) Max-Health neu bestimmen (Basis + Gear)
+  const newMaxHealth = Math.max(1, Math.round((baseStats.maxHP || 0) + sum.maxHP));
+  if (typeof setPlayerMaxHealth === 'function') {
+    setPlayerMaxHealth(newMaxHealth, { updateUi: false });
+  } else {
+    const previousMax = Math.max(1, playerMaxHealth || 1);
+    playerMaxHealth = newMaxHealth;
+    const delta = newMaxHealth - previousMax;
+    playerHealth = Phaser.Math.Clamp(playerHealth + delta, 0, playerMaxHealth);
+  }
+
+  if (typeof resetAbilityBonuses === 'function') {
+    resetAbilityBonuses();
+    Object.values(equipment).forEach((it) => {
+      if (!it || !Array.isArray(it.attackEffects)) return;
+      it.attackEffects.forEach((effect) => {
+        if (typeof applyAbilityEffect === 'function') {
+          applyAbilityEffect(effect);
+        }
+      });
+    });
+  }
+
+  // 3.5) Skill-Effekte ON TOP of equipment (nicht applySkillEffects() rufen - Rekursion!)
+  if (typeof window.calculateSkillEffects === 'function') {
+    const skillEffects = window.calculateSkillEffects();
+    
+    // Add skill bonuses to already-calculated equipment stats
+    weaponDamage += skillEffects.weaponDamage || 0;
+    weaponAttackSpeed += skillEffects.weaponAttackSpeed || 0;
+    attackRange += skillEffects.attackRange || 0;
+    playerMaxHealth += skillEffects.playerMaxHealth || 0;
+    playerArmor = Math.min(0.85, playerArmor + (skillEffects.playerArmor || 0));
+    playerSpeed += skillEffects.playerSpeed || 0;
+    playerCritChance = Math.min(0.9, playerCritChance + (skillEffects.playerCritChance || 0));
+    window.PLAYER_DODGE_CHANCE = skillEffects.dodgeChance > 0 ? Math.min(0.5, skillEffects.dodgeChance) : 0;
+    window.PLAYER_HEALTH_REGEN = skillEffects.healthRegen > 0 ? skillEffects.healthRegen : 0;
+    
+    // Update actual player health if max increased
+    if (skillEffects.playerMaxHealth > 0) {
+      playerHealth = Math.min(playerHealth, playerMaxHealth);
+    }
+  }
+
+  // 4) HUD aktualisieren
+  if (weaponStatsText) {
+    weaponStatsText.setText(
+      `Damage: ${weaponDamage}  Speed: ${weaponAttackSpeed.toFixed(2)}  Range: ${attackRange}` +
+      `\nArmor: ${(playerArmor * 100).toFixed(0)}%  Crit: ${(playerCritChance * 100).toFixed(1)}%`
+    );
+  }
+  if (typeof updateHUD === 'function') {
+    updateHUD();
+  }
+}
+
+function openInventory() {
+  invOpen = true;
+  player?.setVelocity(0, 0);
+  siphonMaterialsFromInventory();
+  refreshInventoryUI();
+  invUI.overlay.setVisible(true);
+  invUI.panel.setVisible(true);
+}
+
+function closeInventory() {
+  invOpen = false;
+  if (invUI.panel?.setVisible) invUI.panel.setVisible(false);
+  if (invUI.overlay?.setVisible) invUI.overlay.setVisible(false);
+  invUI.hideTooltip?.();
+}
+
+function destroyInventoryUI() {
+  if (!invUI || invUI._destroyed) {
+    invOpen = false;
+    return;
+  }
+  invUI._destroyed = true;
+
+  try {
+    if (invUI?._scene && invUI._placeHandler) {
+      invUI._scene.scale?.off?.('resize', invUI._placeHandler);
+    }
+  } catch (err) {
+    console.warn('[destroyInventoryUI] unable to unbind resize', err);
+  }
+
+  if (invUI.panel?.setVisible) invUI.panel.setVisible(false);
+  if (invUI.overlay?.setVisible) invUI.overlay.setVisible(false);
+  if (tooltip?.setVisible) tooltip.setVisible(false);
+  if (tooltip?.compareBox?.setVisible) tooltip.compareBox.setVisible(false);
+
+  invUI.panel = null;
+  invUI.overlay = null;
+  invUI.slots = [];
+  invUI.equip = {};
+  invUI.btnPortal = null;
+  invUI.btnEquip = null;
+  invUI.btnDrop = null;
+  invUI.materialsText = null;
+  invUI.hideTooltip = null;
+  invUI.showTooltip = null;
+  invUI._scene = null;
+  invUI._placeHandler = null;
+  if (typeof tooltip !== 'undefined') {
+    tooltip = null;
+  }
+  invOpen = false;
+}
+
+function refreshInventoryUI() {
+  updateMaterialCounterUI();
+  if (!invUI || !Array.isArray(invUI.slots) || invUI.slots.length !== INV_SLOTS) {
+    return;
+  }
+  // Grid
+  for (let i = 0; i < INV_SLOTS; i++) {
+    const it = inventory[i];
+    const slot = invUI.slots[i];
+    if (!slot) continue;
+    const bg = isValidGameObject(slot.bg) ? slot.bg : null;
+    if (!bg) continue;
+    const icon = isValidGameObject(slot.icon) ? slot.icon : null;
+    const label = isValidGameObject(slot.label) ? slot.label : null;
+    const indicator = isValidGameObject(slot.indicator) ? slot.indicator : null;
+    bg.setTexture(i === invSelected ? 'uiSlotSel' : 'uiSlot');
+    setSlotHighlight(bg, it);
+    if (it) {
+      const iconKey = resolveItemIconKey(it);
+      if (icon && iconKey) icon.setTexture(iconKey);
+      if (icon) icon.setVisible(true);
+      if (label) {
+        label.setText('');
+        label.setVisible(false);
+      }
+      if (indicator) {
+        indicator.setVisible(isItemUpgrade(it));
+      }
+    } else {
+      if (icon) icon.setVisible(false);
+      if (label) {
+        label.setText('');
+        label.setVisible(false);
+      }
+      if (indicator) {
+        indicator.setVisible(false);
+      }
+    }
+  }
+
+  // Equipment
+  Object.entries(invUI.equip || {}).forEach(([k, ui]) => {
+    const it = equipment[k];
+    if (!ui) return;
+    const slot = isValidGameObject(ui.slot) ? ui.slot : null;
+    const icon = isValidGameObject(ui.icon) ? ui.icon : null;
+    if (!slot) return;
+    setSlotHighlight(slot, it);
+    if (it) {
+      const iconKey = resolveItemIconKey(it);
+      if (icon && iconKey) icon.setTexture(iconKey);
+      if (icon) icon.setVisible(true);
+    } else if (icon) {
+      icon.setVisible(false);
+    }
+  });
+}
+
+function equipSelectedItem() {
+  if (invSelected < 0) return;
+  const it = inventory[invSelected];
+  if (!it) return;
+
+  // nur Gear ausrüstbar
+  if (['weapon', 'head', 'body', 'boots'].includes(it.type)) {
+    const slotKey = it.type;
+
+    // HP-Bonus des alten Items in diesem Slot merken
+    const oldItem = equipment[slotKey] || null;
+    const oldItemHp = oldItem && oldItem.hp ? oldItem.hp : 0;
+
+    // neues Item einlegen + Inventarslot leeren
+    equipment[slotKey] = it;
+    inventory[invSelected] = null;
+    invSelected = -1;
+
+    // recalc: altes HP rausrechnen, neues rein (nur Delta!)
+    const newItemHp = it.hp || 0;
+    recalcDerived(oldItemHp, newItemHp);
+
+    refreshInventoryUI();
+  }
+}
+
+function useSelectedItem() {
+  if (invSelected < 0) return;
+  const it = inventory[invSelected];
+  if (!it) return;
+
+  if (it.type === 'consumable') {
+    // Verbrauchs-Item entfernen
+    inventory[invSelected] = null;
+    invSelected = -1;
+    refreshInventoryUI();
+    if (typeof updateHUD === 'function') updateHUD();
+  }
+}
+
+function dropSelectedItem() {
+  if (invSelected < 0) return;
+  const it = inventory[invSelected];
+  if (!it) return;
+
+  // optional: als Loot droppen
+  // spawnLoot.call(this, player.x, player.y, it); // wenn du willst
+
+  inventory[invSelected] = null;
+  invSelected = -1;
+  refreshInventoryUI();
+}

@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2025-10-19T16:02:57Z",
+  "count": 16,
+  "templates": [
+    "Arena",
+    "BridgeOverGap",
+    "Cathedral",
+    "CelestialGardens",
+    "Checkerboard",
+    "CirclePillars",
+    "Crosshall",
+    "CrossroadChamber",
+    "Crossroads",
+    "Crypt_Small_Altar",
+    "GrandBazaar",
+    "MazeLite",
+    "Spiral",
+    "ThroneRoom",
+    "Treasure_Small",
+    "TreasureVault"
+  ]
+}
