@@ -40,6 +40,17 @@ preload() {
   this.load.image('ground', 'ground.png');
   this.load.image('ground_dirt', 'ground_dirt.png');
   this.load.image('ground_street', 'ground_street.png');
+  
+  // Neue Tilemap Texturen laden
+  this.load.setPath('assets/tilesmap');
+  this.load.image('tile_grass', 'grass.png');
+  this.load.image('tile_ground', 'ground.png');
+  this.load.image('tile_grass_bottom_ground_top', 'grass_bottom_ground_top.png');
+  this.load.image('tile_grass_left_ground_right', 'grass_left_ground_right.png');
+  this.load.image('tile_grass_right_ground_left', 'grass_right_ground_left.png');
+  this.load.image('tile_grass_top_ground_bottom', 'grass_top_ground_bottom.png');
+  this.load.setPath('assets/sprites');
+  
   this.load.once('filecomplete-image-ground', () => {
     if (this._perfMonitor) {
       this._perfMonitor.endTimer('preload_ground', 'assetLoading');
@@ -68,12 +79,12 @@ preload() {
     this.cameras.main.setBounds(0, 0, W, H);
     this.physics.world.setBounds(0, 0, W, H);
 
-    // Bodentextur als TileSprite
-    this._groundTile = this.add.tileSprite(0, 0, W, H, 'ground')
+    // Bodentextur als TileSprite mit neuen Gras-Tiles
+    this._groundTile = this.add.tileSprite(0, 0, W, H, 'tile_grass')
     .setOrigin(0, 0)
     .setDepth(-10)          // sicher unter allem
     .setScrollFactor(1, 1) // explizit weltfest
-    .setTileScale(0.1, 0.1);
+    .setTileScale(1, 1);
     
     if (this._perfMonitor) this._perfMonitor.endTimer('create_world_setup');
 
@@ -544,7 +555,50 @@ preload() {
       return tiles;
     };
     
-    const g = this.add.graphics().setDepth(5); // For decorative elements only 
+    const g = this.add.graphics().setDepth(5); // For decorative elements only
+    
+    // Helper für Übergangs-Tiles (Gras zu Boden)
+    const placeTransitionTiles = (x, y, w, h, depth = 0) => {
+      const tiles = [];
+      const texture = this.textures.get('tile_ground');
+      if (!texture) return tiles;
+      const tileW = texture.source[0].width;
+      const tileH = texture.source[0].height;
+      
+      // Innenfläche mit Boden-Tiles füllen
+      for (let ty = y + tileH; ty < y + h - tileH; ty += tileH) {
+        for (let tx = x + tileW; tx < x + w - tileW; tx += tileW) {
+          const tile = this.add.image(tx, ty, 'tile_ground').setOrigin(0, 0).setDepth(depth);
+          tiles.push(tile);
+        }
+      }
+      
+      // Oberer Rand (Gras oben, Boden unten)
+      for (let tx = x + tileW; tx < x + w - tileW; tx += tileW) {
+        const tile = this.add.image(tx, y, 'tile_grass_top_ground_bottom').setOrigin(0, 0).setDepth(depth);
+        tiles.push(tile);
+      }
+      
+      // Unterer Rand (Gras unten, Boden oben)
+      for (let tx = x + tileW; tx < x + w - tileW; tx += tileW) {
+        const tile = this.add.image(tx, y + h - tileH, 'tile_grass_bottom_ground_top').setOrigin(0, 0).setDepth(depth);
+        tiles.push(tile);
+      }
+      
+      // Linker Rand (Gras links, Boden rechts)
+      for (let ty = y + tileH; ty < y + h - tileH; ty += tileH) {
+        const tile = this.add.image(x, ty, 'tile_grass_left_ground_right').setOrigin(0, 0).setDepth(depth);
+        tiles.push(tile);
+      }
+      
+      // Rechter Rand (Gras rechts, Boden links)
+      for (let ty = y + tileH; ty < y + h - tileH; ty += tileH) {
+        const tile = this.add.image(x + w - tileW, ty, 'tile_grass_right_ground_left').setOrigin(0, 0).setDepth(depth);
+        tiles.push(tile);
+      }
+      
+      return tiles;
+    };
 
     // Hol dir Gebaeude fuer dynamische Platzierung
     const rathaus = (this.buildings || []).find(b => b.id === 'rathaus');
@@ -596,73 +650,16 @@ preload() {
       overlayJitter: 1,
     });
     
-    // Perimeter um Gebäude mit Dirt
-    const PERIMETER_WIDTH = 48;
+    // Perimeter um Gebäude mit neuen Übergangs-Tiles
+    const PERIMETER_WIDTH = 64;
     [rathaus, schmiede, druckerei].forEach(building => {
       if (!building) return;
-      placeTiles(
+      placeTransitionTiles(
         building.x - PERIMETER_WIDTH, 
         building.y - PERIMETER_WIDTH,
         building.w + PERIMETER_WIDTH * 2,
-        PERIMETER_WIDTH,
-        'ground_dirt',
-        1,
-        {
-          jitter: 0.5,
-          tintRange: 0.14,
-          overlayVariants: true,
-          overlayAlpha: 0.52,
-          overlayTintRange: 0.1,
-          overlayJitter: 1,
-        }
-      );
-      placeTiles(
-        building.x - PERIMETER_WIDTH,
-        building.y + building.h,
-        building.w + PERIMETER_WIDTH * 2,
-        PERIMETER_WIDTH,
-        'ground_dirt',
-        1,
-        {
-          jitter: 0.5,
-          tintRange: 0.14,
-          overlayVariants: true,
-          overlayAlpha: 0.52,
-          overlayTintRange: 0.1,
-          overlayJitter: 1,
-        }
-      );
-      placeTiles(
-        building.x - PERIMETER_WIDTH,
-        building.y,
-        PERIMETER_WIDTH,
-        building.h,
-        'ground_dirt',
-        1,
-        {
-          jitter: 0.5,
-          tintRange: 0.14,
-          overlayVariants: true,
-          overlayAlpha: 0.52,
-          overlayTintRange: 0.1,
-          overlayJitter: 1,
-        }
-      );
-      placeTiles(
-        building.x + building.w,
-        building.y,
-        PERIMETER_WIDTH,
-        building.h,
-        'ground_dirt',
-        1,
-        {
-          jitter: 0.5,
-          tintRange: 0.14,
-          overlayVariants: true,
-          overlayAlpha: 0.52,
-          overlayTintRange: 0.1,
-          overlayJitter: 1,
-        }
+        building.h + PERIMETER_WIDTH * 2,
+        1
       );
     });
 
