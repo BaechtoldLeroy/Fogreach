@@ -562,38 +562,40 @@ preload() {
       const tiles = [];
       const texture = this.textures.get('tile_ground');
       if (!texture) return tiles;
-      const tileW = texture.source[0].width;
-      const tileH = texture.source[0].height;
+      const origW = texture.source[0].width;
+      const origH = texture.source[0].height;
+      const scaleX = TILE_SIZE / origW;
+      const scaleY = TILE_SIZE / origH;
       
       // Innenfläche mit Boden-Tiles füllen
-      for (let ty = y + tileH; ty < y + h - tileH; ty += tileH) {
-        for (let tx = x + tileW; tx < x + w - tileW; tx += tileW) {
-          const tile = this.add.image(tx, ty, 'tile_ground').setOrigin(0, 0).setDepth(depth);
+      for (let ty = y + TILE_SIZE; ty < y + h - TILE_SIZE; ty += TILE_SIZE) {
+        for (let tx = x + TILE_SIZE; tx < x + w - TILE_SIZE; tx += TILE_SIZE) {
+          const tile = this.add.image(tx, ty, 'tile_ground').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
           tiles.push(tile);
         }
       }
       
       // Oberer Rand (Gras oben, Boden unten)
-      for (let tx = x + tileW; tx < x + w - tileW; tx += tileW) {
-        const tile = this.add.image(tx, y, 'tile_grass_top_ground_bottom').setOrigin(0, 0).setDepth(depth);
+      for (let tx = x + TILE_SIZE; tx < x + w - TILE_SIZE; tx += TILE_SIZE) {
+        const tile = this.add.image(tx, y, 'tile_grass_top_ground_bottom').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
         tiles.push(tile);
       }
       
       // Unterer Rand (Gras unten, Boden oben)
-      for (let tx = x + tileW; tx < x + w - tileW; tx += tileW) {
-        const tile = this.add.image(tx, y + h - tileH, 'tile_grass_bottom_ground_top').setOrigin(0, 0).setDepth(depth);
+      for (let tx = x + TILE_SIZE; tx < x + w - TILE_SIZE; tx += TILE_SIZE) {
+        const tile = this.add.image(tx, y + h - TILE_SIZE, 'tile_grass_bottom_ground_top').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
         tiles.push(tile);
       }
       
       // Linker Rand (Gras links, Boden rechts)
-      for (let ty = y + tileH; ty < y + h - tileH; ty += tileH) {
-        const tile = this.add.image(x, ty, 'tile_grass_left_ground_right').setOrigin(0, 0).setDepth(depth);
+      for (let ty = y + TILE_SIZE; ty < y + h - TILE_SIZE; ty += TILE_SIZE) {
+        const tile = this.add.image(x, ty, 'tile_grass_left_ground_right').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
         tiles.push(tile);
       }
       
       // Rechter Rand (Gras rechts, Boden links)
-      for (let ty = y + tileH; ty < y + h - tileH; ty += tileH) {
-        const tile = this.add.image(x + w - tileW, ty, 'tile_grass_right_ground_left').setOrigin(0, 0).setDepth(depth);
+      for (let ty = y + TILE_SIZE; ty < y + h - TILE_SIZE; ty += TILE_SIZE) {
+        const tile = this.add.image(x + w - TILE_SIZE, ty, 'tile_grass_right_ground_left').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
         tiles.push(tile);
       }
       
