@@ -80,11 +80,17 @@ preload() {
     this.physics.world.setBounds(0, 0, W, H);
 
     // Bodentextur als TileSprite mit neuen Gras-Tiles
+    const grassTexture = this.textures.get('tile_grass');
+    const grassOrigW = grassTexture.source[0].width;
+    const grassOrigH = grassTexture.source[0].height;
+    const grassScaleX = 32 / grassOrigW;
+    const grassScaleY = 32 / grassOrigH;
+    
     this._groundTile = this.add.tileSprite(0, 0, W, H, 'tile_grass')
     .setOrigin(0, 0)
     .setDepth(-10)          // sicher unter allem
     .setScrollFactor(1, 1) // explizit weltfest
-    .setTileScale(1, 1);
+    .setTileScale(grassScaleX, grassScaleY);
     
     if (this._perfMonitor) this._perfMonitor.endTimer('create_world_setup');
 
