@@ -43,7 +43,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx serve . --listen tcp://0.0.0.0:5000 -s"
+args = "npx serve . -l tcp://0.0.0.0:5000 -s"
 waitForPort = 5000
 
 [[ports]]
