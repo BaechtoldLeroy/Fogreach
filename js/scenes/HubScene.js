@@ -85,6 +85,7 @@ preload() {
     const grassOrigH = grassTexture.source[0].height;
     const grassScaleX = 32 / grassOrigW;
     const grassScaleY = 32 / grassOrigH;
+    console.log('Grass texture size:', grassOrigW, 'x', grassOrigH, 'Scale:', grassScaleX, grassScaleY);
     
     this._groundTile = this.add.tileSprite(0, 0, W, H, 'tile_grass')
     .setOrigin(0, 0)
