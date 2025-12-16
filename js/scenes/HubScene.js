@@ -37,26 +37,24 @@ preload() {
   });
   
   if (this._perfMonitor) this._perfMonitor.startTimer('preload_ground');
-  this.load.image('ground', 'ground.png');
-  this.load.image('ground_dirt', 'ground_dirt.png');
-  this.load.image('ground_street', 'ground_street.png');
   
-  // Neue Tilemap Texturen laden
+  // Tilemap Texturen laden
   this.load.setPath('assets/tilesmap');
   this.load.image('tile_grass', 'grass.png');
   this.load.image('tile_ground', 'ground.png');
+  this.load.image('tile_ground_street', 'ground_street.png');
   this.load.image('tile_grass_bottom_ground_top', 'grass_bottom_ground_top.png');
   this.load.image('tile_grass_left_ground_right', 'grass_left_ground_right.png');
   this.load.image('tile_grass_right_ground_left', 'grass_right_ground_left.png');
   this.load.image('tile_grass_top_ground_bottom', 'grass_top_ground_bottom.png');
   this.load.setPath('assets/sprites');
   
-  this.load.once('filecomplete-image-ground', () => {
+  this.load.once('filecomplete-image-tile_ground', () => {
     if (this._perfMonitor) {
       this._perfMonitor.endTimer('preload_ground', 'assetLoading');
-      this._perfMonitor.trackAssetLoad('ground', 'terrain');
-      this._perfMonitor.trackAssetLoad('ground_dirt', 'terrain');
-      this._perfMonitor.trackAssetLoad('ground_street', 'terrain');
+      this._perfMonitor.trackAssetLoad('tile_ground', 'terrain');
+      this._perfMonitor.trackAssetLoad('tile_grass', 'terrain');
+      this._perfMonitor.trackAssetLoad('tile_ground_street', 'terrain');
     }
   });
   
@@ -79,17 +77,6 @@ preload() {
     this.cameras.main.setBounds(0, 0, W, H);
     this.physics.world.setBounds(0, 0, W, H);
 
-    // Bodentextur als TileSprite mit neuen Gras-Tiles
-    const grassTexture = this.textures.get('tile_grass');
-    const grassOrigW = grassTexture.source[0].width;
-    const grassOrigH = grassTexture.source[0].height;
-    const grassScaleX = 32 / grassOrigW;
-    const grassScaleY = 32 / grassOrigH;
-    this._groundTile = this.add.tileSprite(0, 0, W, H, 'tile_grass')
-    .setOrigin(0, 0)
-    .setDepth(-10)          // sicher unter allem
-    .setScrollFactor(1, 1) // explizit weltfest
-    .setTileScale(grassScaleX, grassScaleY);
     
     if (this._perfMonitor) this._perfMonitor.endTimer('create_world_setup');
 
@@ -302,450 +289,145 @@ preload() {
     }
   }
 
-  // Boden: Platz, Wege, ein wenig Struktur (dynamisch zur Gebäudeanordnung)
   _drawHubGround(W, H) {
-    const TILE_SIZE = 32; // Size of ground tiles
-
-    if (!this._groundVariantCache) this._groundVariantCache = new Map();
-
-    const ensureGroundVariants = (textureKey) => {
-      if (this._groundVariantCache.has(textureKey)) {
-        return this._groundVariantCache.get(textureKey);
-      }
-
-      const texture = this.textures.get(textureKey);
-      if (!texture) {
-        this._groundVariantCache.set(textureKey, []);
-        return [];
-      }
-
-      const baseImage = texture.getSourceImage();
-      const w = baseImage.width;
-      const h = baseImage.height;
-      const variantCount = 6;
-      const createdKeys = [];
-
-      for (let i = 0; i < variantCount; i++) {
-        const variantKey = `${textureKey}__variant_${i}`;
-        if (this.textures.exists(variantKey)) {
-          createdKeys.push(variantKey);
-          continue;
-        }
-
-        const canvasTexture = this.textures.createCanvas(variantKey, w, h);
-        const ctx = canvasTexture.context;
-
-        ctx.clearRect(0, 0, w, h);
-        ctx.drawImage(baseImage, 0, 0, w, h);
-
-        const fadeEdge = (dir, thickness) => {
-          if (thickness <= 0) return;
-          ctx.save();
-          ctx.globalCompositeOperation = 'destination-out';
-          ctx.globalAlpha = Phaser.Math.FloatBetween(0.45, 0.7);
-          let gradient;
-          switch (dir) {
-            case 'left':
-              gradient = ctx.createLinearGradient(thickness, 0, 0, 0);
-              break;
-            case 'right':
-              gradient = ctx.createLinearGradient(w - thickness, 0, w, 0);
-              break;
-            case 'top':
-              gradient = ctx.createLinearGradient(0, thickness, 0, 0);
-              break;
-            case 'bottom':
-            default:
-              gradient = ctx.createLinearGradient(0, h - thickness, 0, h);
-              break;
-          }
-          const edgeStrength = Phaser.Math.FloatBetween(0.55, 0.85);
-          gradient.addColorStop(0, 'rgba(0,0,0,0)');
-          gradient.addColorStop(1, `rgba(0,0,0,${edgeStrength})`);
-          ctx.fillStyle = gradient;
-          if (dir === 'left') ctx.fillRect(0, 0, thickness, h);
-          if (dir === 'right') ctx.fillRect(w - thickness, 0, thickness, h);
-          if (dir === 'top') ctx.fillRect(0, 0, w, thickness);
-          if (dir === 'bottom') ctx.fillRect(0, h - thickness, w, thickness);
-          ctx.restore();
-        };
-
-        const fadeCorners = () => {
-          ctx.save();
-          ctx.globalCompositeOperation = 'destination-out';
-          ctx.globalAlpha = Phaser.Math.FloatBetween(0.5, 0.75);
-          const corners = [
-            { x: 0, y: 0 },
-            { x: w, y: 0 },
-            { x: 0, y: h },
-            { x: w, y: h },
-          ];
-          corners.forEach(({ x, y }) => {
-            const radius = Phaser.Math.FloatBetween(w * 0.12, w * 0.22);
-            const grad = ctx.createRadialGradient(
-              x,
-              y,
-              0,
-              x,
-              y,
-              radius
-            );
-            const cornerStrength = Phaser.Math.FloatBetween(0.55, 0.8);
-            grad.addColorStop(0, `rgba(0,0,0,${cornerStrength})`);
-            grad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fill();
-          });
-          ctx.restore();
-        };
-
-        const applyTintNoise = () => {
-          ctx.save();
-          ctx.globalAlpha = 0.16;
-          ctx.globalCompositeOperation = 'multiply';
-          const passes = 3;
-          for (let p = 0; p < passes; p++) {
-            const shade = Phaser.Math.Between(205, 240);
-            ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
-            const fw = Phaser.Math.FloatBetween(w * 0.45, w * 0.75);
-            const fh = Phaser.Math.FloatBetween(h * 0.45, h * 0.75);
-            const fx = Phaser.Math.FloatBetween(-w * 0.25, w * 0.25);
-            const fy = Phaser.Math.FloatBetween(-h * 0.25, h * 0.25);
-            ctx.fillRect(fx, fy, fw, fh);
-          }
-          ctx.restore();
-        };
-
-        fadeEdge('left', Phaser.Math.FloatBetween(w * 0.06, w * 0.16));
-        fadeEdge('right', Phaser.Math.FloatBetween(w * 0.06, w * 0.16));
-        fadeEdge('top', Phaser.Math.FloatBetween(h * 0.06, h * 0.16));
-        fadeEdge('bottom', Phaser.Math.FloatBetween(h * 0.06, h * 0.16));
-        fadeCorners();
-        applyTintNoise();
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = 1;
-
-        canvasTexture.refresh();
-        createdKeys.push(variantKey);
-      }
-
-      this._groundVariantCache.set(textureKey, createdKeys);
-      return createdKeys;
+    const TILE_SIZE = 32;
+    const allTempTiles = [];
+    
+    const getScale = (texKey) => {
+      const tex = this.textures.get(texKey);
+      if (!tex) return { x: 1, y: 1 };
+      return { x: TILE_SIZE / tex.source[0].width, y: TILE_SIZE / tex.source[0].height };
     };
     
-    // Helper function to place tiles
-    const placeTiles = (x, y, w, h, textureKey, depth = 1, options = {}) => {
-      const tiles = [];
+    const placeTile = (tx, ty, texKey, tint = null) => {
+      const s = getScale(texKey);
+      const tile = this.add.image(tx, ty, texKey).setOrigin(0, 0).setScale(s.x, s.y).setDepth(0);
+      if (tint) tile.setTint(tint);
+      allTempTiles.push(tile);
+      return tile;
+    };
+    
+    const fillArea = (x, y, w, h, texKey, options = {}) => {
+      const { tintVariation = 0.05, jitter = 0 } = options;
       const startX = Math.floor(x / TILE_SIZE) * TILE_SIZE;
       const startY = Math.floor(y / TILE_SIZE) * TILE_SIZE;
       const endX = Math.ceil((x + w) / TILE_SIZE) * TILE_SIZE;
       const endY = Math.ceil((y + h) / TILE_SIZE) * TILE_SIZE;
       
-      // Get actual sprite dimensions for scaling
-      const texture = this.textures.get(textureKey);
-      const spriteWidth = texture.source[0].width;
-      const spriteHeight = texture.source[0].height;
-      const scaleX = TILE_SIZE / spriteWidth;
-      const scaleY = TILE_SIZE / spriteHeight;
-      const {
-        randomRotation = true,
-        randomFlip = true,
-        tintRange = 0.08,
-        baseTint = 0xffffff,
-        jitter = 0,
-        variants = null,
-        useBaseTexture = false,
-        coverEdges = false,
-        overlayVariants = false,
-        overlayBlend = Phaser.BlendModes.MULTIPLY,
-        overlayAlpha = 0.55,
-        overlayTintRange = 0.1,
-        overlayJitter = 1.2,
-      } = options;
-      const baseLocked = useBaseTexture || overlayVariants;
-      const effectiveRotation = baseLocked ? false : randomRotation;
-      const effectiveFlip = baseLocked ? false : randomFlip;
-      const effectiveJitter = baseLocked ? 0 : jitter;
-      const tintClamp = (v) => Phaser.Math.Clamp(v, 0, 255);
-      const variantKeys = useBaseTexture ? [] : (variants || ensureGroundVariants(textureKey));
-      const overlayKeys = overlayVariants ? (variants || ensureGroundVariants(textureKey)) : null;
-      
       for (let ty = startY; ty < endY; ty += TILE_SIZE) {
         for (let tx = startX; tx < endX; tx += TILE_SIZE) {
-          // Only place tile if center is within the area
-          const centerX = tx + TILE_SIZE / 2;
-          const centerY = ty + TILE_SIZE / 2;
-          if (coverEdges || (centerX >= x && centerX < x + w && centerY >= y && centerY < y + h)) {
-            const chosenKey = (variantKeys && variantKeys.length)
-              ? Phaser.Utils.Array.GetRandom(variantKeys)
-              : textureKey;
-            const baseKey = baseLocked ? textureKey : chosenKey;
-
-            const tile = this.add.image(tx, ty, baseKey)
-              .setOrigin(0, 0)
-              .setScale(scaleX, scaleY)
-              .setDepth(depth);
-
-            if (effectiveRotation) {
-              const angle = Phaser.Utils.Array.GetRandom([0, 90, 180, 270]);
-              if (angle !== 0) tile.setAngle(angle);
-            }
-
-            if (effectiveFlip) {
-              tile.setFlipX(Math.random() < 0.5);
-              tile.setFlipY(Math.random() < 0.5);
-            }
-
-            if (tintRange > 0) {
-              const brightnessFactor = 1 + Phaser.Math.FloatBetween(-tintRange, tintRange);
-              const baseColor = Phaser.Display.Color.ValueToColor(baseTint);
-              const tintR = tintClamp(baseColor.red * brightnessFactor);
-              const tintG = tintClamp(baseColor.green * brightnessFactor);
-              const tintB = tintClamp(baseColor.blue * brightnessFactor);
-              tile.setTint(Phaser.Display.Color.GetColor(tintR, tintG, tintB));
-            } else if (baseTint !== 0xffffff) {
-              tile.setTint(baseTint);
-            }
-
-            if (effectiveJitter > 0) {
-              tile.setPosition(
-                tx + Phaser.Math.FloatBetween(-effectiveJitter, effectiveJitter),
-                ty + Phaser.Math.FloatBetween(-effectiveJitter, effectiveJitter)
-              );
-            }
-            tiles.push(tile);
-
-            if (overlayKeys && overlayKeys.length) {
-              const overlayKey = Phaser.Utils.Array.GetRandom(overlayKeys);
-              const overlay = this.add.image(tx, ty, overlayKey)
-                .setOrigin(0, 0)
-                .setScale(scaleX, scaleY)
-                .setDepth(depth + 0.01)
-                .setBlendMode(overlayBlend)
-                .setAlpha(overlayAlpha);
-
-              if (randomRotation) {
-                const overlayAngle = Phaser.Utils.Array.GetRandom([0, 90, 180, 270]);
-                if (overlayAngle !== 0) overlay.setAngle(overlayAngle);
-              }
-
-              if (randomFlip) {
-                overlay.setFlipX(Math.random() < 0.5);
-                overlay.setFlipY(Math.random() < 0.5);
-              }
-
-              if (overlayTintRange > 0) {
-                const overlayFactor = 1 + Phaser.Math.FloatBetween(-overlayTintRange, overlayTintRange);
-                const overlayColor = Phaser.Display.Color.ValueToColor(baseTint);
-                const oR = tintClamp(overlayColor.red * overlayFactor);
-                const oG = tintClamp(overlayColor.green * overlayFactor);
-                const oB = tintClamp(overlayColor.blue * overlayFactor);
-                overlay.setTint(Phaser.Display.Color.GetColor(oR, oG, oB));
-              }
-
-              if (overlayJitter > 0) {
-                overlay.setPosition(
-                  tx + Phaser.Math.FloatBetween(-overlayJitter, overlayJitter),
-                  ty + Phaser.Math.FloatBetween(-overlayJitter, overlayJitter)
-                );
-              }
-
-              tiles.push(overlay);
-            }
+          let tint = null;
+          if (tintVariation > 0) {
+            const f = 1 + Phaser.Math.FloatBetween(-tintVariation, tintVariation);
+            const v = Math.round(255 * f);
+            tint = Phaser.Display.Color.GetColor(Phaser.Math.Clamp(v, 200, 255), Phaser.Math.Clamp(v, 200, 255), Phaser.Math.Clamp(v, 200, 255));
+          }
+          const tile = placeTile(tx, ty, texKey, tint);
+          if (jitter > 0) {
+            tile.x += Phaser.Math.FloatBetween(-jitter, jitter);
+            tile.y += Phaser.Math.FloatBetween(-jitter, jitter);
           }
         }
       }
-      return tiles;
     };
     
-    const g = this.add.graphics().setDepth(5); // For decorative elements only
-    
-    // Helper für Übergangs-Tiles (Gras zu Boden)
-    const placeTransitionTiles = (x, y, w, h, depth = 0) => {
-      const tiles = [];
-      const texture = this.textures.get('tile_ground');
-      if (!texture) return tiles;
-      const origW = texture.source[0].width;
-      const origH = texture.source[0].height;
-      const scaleX = TILE_SIZE / origW;
-      const scaleY = TILE_SIZE / origH;
-      
-      // Innenfläche mit Boden-Tiles füllen
-      for (let ty = y + TILE_SIZE; ty < y + h - TILE_SIZE; ty += TILE_SIZE) {
-        for (let tx = x + TILE_SIZE; tx < x + w - TILE_SIZE; tx += TILE_SIZE) {
-          const tile = this.add.image(tx, ty, 'tile_ground').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
-          tiles.push(tile);
-        }
+    const placeTransitionEdges = (zoneX, zoneY, zoneW, zoneH) => {
+      const s = getScale('tile_grass_top_ground_bottom');
+      for (let tx = zoneX; tx < zoneX + zoneW; tx += TILE_SIZE) {
+        const tTop = this.add.image(tx, zoneY - TILE_SIZE, 'tile_grass_top_ground_bottom').setOrigin(0, 0).setScale(s.x, s.y).setDepth(0);
+        allTempTiles.push(tTop);
+        const tBot = this.add.image(tx, zoneY + zoneH, 'tile_grass_bottom_ground_top').setOrigin(0, 0).setScale(s.x, s.y).setDepth(0);
+        allTempTiles.push(tBot);
       }
-      
-      // Oberer Rand (Gras oben, Boden unten)
-      for (let tx = x + TILE_SIZE; tx < x + w - TILE_SIZE; tx += TILE_SIZE) {
-        const tile = this.add.image(tx, y, 'tile_grass_top_ground_bottom').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
-        tiles.push(tile);
+      for (let ty = zoneY; ty < zoneY + zoneH; ty += TILE_SIZE) {
+        const tLeft = this.add.image(zoneX - TILE_SIZE, ty, 'tile_grass_left_ground_right').setOrigin(0, 0).setScale(s.x, s.y).setDepth(0);
+        allTempTiles.push(tLeft);
+        const tRight = this.add.image(zoneX + zoneW, ty, 'tile_grass_right_ground_left').setOrigin(0, 0).setScale(s.x, s.y).setDepth(0);
+        allTempTiles.push(tRight);
       }
-      
-      // Unterer Rand (Gras unten, Boden oben)
-      for (let tx = x + TILE_SIZE; tx < x + w - TILE_SIZE; tx += TILE_SIZE) {
-        const tile = this.add.image(tx, y + h - TILE_SIZE, 'tile_grass_bottom_ground_top').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
-        tiles.push(tile);
-      }
-      
-      // Linker Rand (Gras links, Boden rechts)
-      for (let ty = y + TILE_SIZE; ty < y + h - TILE_SIZE; ty += TILE_SIZE) {
-        const tile = this.add.image(x, ty, 'tile_grass_left_ground_right').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
-        tiles.push(tile);
-      }
-      
-      // Rechter Rand (Gras rechts, Boden links)
-      for (let ty = y + TILE_SIZE; ty < y + h - TILE_SIZE; ty += TILE_SIZE) {
-        const tile = this.add.image(x + w - TILE_SIZE, ty, 'tile_grass_right_ground_left').setOrigin(0, 0).setScale(scaleX, scaleY).setDepth(depth);
-        tiles.push(tile);
-      }
-      
-      return tiles;
     };
 
-    // Hol dir Gebaeude fuer dynamische Platzierung
     const rathaus = (this.buildings || []).find(b => b.id === 'rathaus');
     const schmiede = (this.buildings || []).find(b => b.id === 'archivschmiede');
     const druckerei = (this.buildings || []).find(b => b.id === 'druckerei');
 
-    // Fallback falls nichts gefunden wurde
-    if (!rathaus) {
-      const blvX = 160, blvW = 1728, blvY = 900, blvH = 56;
-      placeTiles(blvX, blvY - blvH / 2, blvW, blvH, 'ground_street', 2, {
-        jitter: 0.4,
-        useBaseTexture: true,
-        overlayVariants: true,
-        overlayAlpha: 0.5,
-        overlayTintRange: 0.08,
-      });
-      return;
-    }
-
-    // Plaza direkt VOR der Rathausfassade
-    const baseY = rathaus.y + rathaus.h;
-    const plazaPadTop = 8;
-    const plazaY = baseY + plazaPadTop;
-    const freeBelow = H - plazaY - 160;
-    const plazaH = Math.max(200, Math.min(320, freeBelow));
-    const plaza = { x: rathaus.x, y: plazaY, w: rathaus.w, h: plazaH };
-
-    // Rathausplatz mit Street Tiles
-    placeTiles(plaza.x, plaza.y, plaza.w, plaza.h, 'ground_street', 2, {
-      jitter: 0.35,
-      tintRange: 0.04,
-      useBaseTexture: true,
-      coverEdges: true,
-      overlayVariants: true,
-      overlayAlpha: 0.45,
-      overlayTintRange: 0.09,
-      overlayJitter: 0.8,
-    });
-    // Boulevard unter dem Platz
+    const baseY = rathaus ? rathaus.y + rathaus.h : 848;
+    const plazaY = baseY + 8;
+    const plazaH = Math.max(200, Math.min(320, H - plazaY - 160));
+    const plaza = rathaus ? { x: rathaus.x, y: plazaY, w: rathaus.w, h: plazaH } : { x: 736, y: 856, w: 768, h: 200 };
     const blvX = 160, blvW = 1728, blvH = 80;
     const blvY = Math.min(H - 180, plaza.y + plaza.h + 60);
-    placeTiles(blvX, blvY - blvH / 2, blvW, blvH, 'ground_street', 2, {
-      jitter: 0.4,
-      tintRange: 0.05,
-      useBaseTexture: true,
-      overlayVariants: true,
-      overlayAlpha: 0.48,
-      overlayTintRange: 0.08,
-      overlayJitter: 1,
-    });
-    
-    // Perimeter um Gebäude mit neuen Übergangs-Tiles
-    const PERIMETER_WIDTH = 64;
-    [rathaus, schmiede, druckerei].forEach(building => {
-      if (!building) return;
-      placeTransitionTiles(
-        building.x - PERIMETER_WIDTH, 
-        building.y - PERIMETER_WIDTH,
-        building.w + PERIMETER_WIDTH * 2,
-        building.h + PERIMETER_WIDTH * 2,
-        1
-      );
+
+    fillArea(0, 0, W, H, 'tile_grass', { tintVariation: 0.04 });
+
+    const DIRT_PAD = 48;
+    const DIRT_SOFT = 32;
+    [rathaus, schmiede, druckerei].forEach(b => {
+      if (!b) return;
+      const dx = b.x - DIRT_PAD - DIRT_SOFT;
+      const dy = b.y - DIRT_PAD - DIRT_SOFT;
+      const dw = b.w + (DIRT_PAD + DIRT_SOFT) * 2;
+      const dh = b.h + (DIRT_PAD + DIRT_SOFT) * 2;
+      fillArea(dx, dy, dw, dh, 'tile_ground', { tintVariation: 0.06 });
+      
+      const innerX = Math.floor(dx / TILE_SIZE) * TILE_SIZE;
+      const innerY = Math.floor(dy / TILE_SIZE) * TILE_SIZE;
+      const innerW = Math.ceil(dw / TILE_SIZE) * TILE_SIZE;
+      const innerH = Math.ceil(dh / TILE_SIZE) * TILE_SIZE;
+      placeTransitionEdges(innerX, innerY, innerW, innerH);
     });
 
-    // Anschlussband Plaza ↔ Boulevard
+    fillArea(plaza.x, plaza.y, plaza.w, plaza.h, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.5 });
+    fillArea(blvX, blvY - blvH / 2, blvW, blvH, 'tile_ground_street', { tintVariation: 0.05, jitter: 0.5 });
+
     const cx = plaza.x + plaza.w / 2;
     const bandW = Math.min(220, Math.round(plaza.w * 0.28));
-    const bandH = 40;
-    placeTiles(cx - bandW / 2, blvY - bandH / 2, bandW, bandH, 'ground_street', 2, {
-      jitter: 0.35,
-      tintRange: 0.04,
-      useBaseTexture: true,
-      coverEdges: true,
-      overlayVariants: true,
-      overlayAlpha: 0.46,
-      overlayTintRange: 0.09,
-      overlayJitter: 0.8,
-    });
+    const bandTop = plaza.y + plaza.h;
+    const bandBot = blvY - blvH / 2;
+    if (bandBot > bandTop) {
+      fillArea(cx - bandW / 2, bandTop, bandW, bandBot - bandTop, 'tile_ground_street', { tintVariation: 0.04 });
+    }
 
-    // Wege zu Schmiede und Druckerei mit Tiles
     const pathW = 64;
     const pSrcY = plaza.y + plaza.h;
-
     if (schmiede) {
       const sx = schmiede.x + schmiede.w / 2;
       const sy = schmiede.y + schmiede.h;
       const sSrcX = Phaser.Math.Clamp(plaza.x + plaza.w * 0.25, plaza.x + 24, plaza.x + plaza.w - 24);
-      
-      // Simple rectangular path with tiles
       const minX = Math.min(sSrcX, sx) - pathW / 2;
       const maxX = Math.max(sSrcX, sx) + pathW / 2;
       const minY = Math.min(pSrcY, sy);
       const maxY = Math.max(pSrcY, sy);
-      
-      placeTiles(minX, minY, maxX - minX, maxY - minY, 'ground_street', 2, {
-        jitter: 0.35,
-        tintRange: 0.04,
-        useBaseTexture: true,
-        coverEdges: true,
-        overlayVariants: true,
-        overlayAlpha: 0.46,
-        overlayTintRange: 0.09,
-        overlayJitter: 0.8,
-      });
+      fillArea(minX, minY, maxX - minX, maxY - minY, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
     }
-
     if (druckerei) {
       const dx = druckerei.x + druckerei.w / 2;
       const dy = druckerei.y + druckerei.h;
       const dSrcX = Phaser.Math.Clamp(plaza.x + plaza.w * 0.75, plaza.x + 24, plaza.x + plaza.w - 24);
-      
-      // Simple rectangular path with tiles
       const minX = Math.min(dSrcX, dx) - pathW / 2;
       const maxX = Math.max(dSrcX, dx) + pathW / 2;
       const minY = Math.min(pSrcY, dy);
       const maxY = Math.max(pSrcY, dy);
-      
-      placeTiles(minX, minY, maxX - minX, maxY - minY, 'ground_street', 2, {
-        jitter: 0.35,
-        tintRange: 0.04,
-        useBaseTexture: true,
-        coverEdges: true,
-        overlayVariants: true,
-        overlayAlpha: 0.46,
-        overlayTintRange: 0.09,
-        overlayJitter: 0.8,
-      });
+      fillArea(minX, minY, maxX - minX, maxY - minY, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
     }
 
-    // Laternen am Platz
-    this._spawnLantern(plaza.x + 28, plaza.y + plaza.h + 6, 6);                 // unten links
-    this._spawnLantern(plaza.x + plaza.w - 28, plaza.y + plaza.h + 6, 6);       // unten rechts
-    this._spawnLantern(plaza.x + 28, plaza.y + 10, 6);                           // oben links
-    this._spawnLantern(plaza.x + plaza.w - 28, plaza.y + 10, 6);                 // oben rechts
+    this._hubGroundRT = this.add.renderTexture(0, 0, W, H).setOrigin(0, 0).setDepth(0);
+    allTempTiles.forEach(tile => {
+      this._hubGroundRT.draw(tile, tile.x, tile.y);
+    });
+    allTempTiles.forEach(tile => tile.destroy());
 
-    // Zwei Laternen am Boulevard
+    if (this._groundTile) {
+      this._groundTile.destroy();
+      this._groundTile = null;
+    }
+
+    this._spawnLantern(plaza.x + 28, plaza.y + plaza.h + 6, 6);
+    this._spawnLantern(plaza.x + plaza.w - 28, plaza.y + plaza.h + 6, 6);
+    this._spawnLantern(plaza.x + 28, plaza.y + 10, 6);
+    this._spawnLantern(plaza.x + plaza.w - 28, plaza.y + 10, 6);
     this._spawnLantern(480, blvY + blvH / 2 + 6, 5);
     this._spawnLantern(1568, blvY + blvH / 2 + 6, 5);
-
-    // Sitzbaenke und Pflanzkuebel fuer Stimmung
     this._spawnBench(plaza.x + 90, plaza.y + 42, 6);
     this._spawnBench(plaza.x + plaza.w - 90, plaza.y + 42, 6);
     this._spawnPlanter(plaza.x + 160, plaza.y + 70, 5);

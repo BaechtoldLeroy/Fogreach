@@ -1,0 +1,75 @@
+Ziel
+Implementiere eine klare Untergrund Zonenlogik (Stone, Dirt, Grass) inkl. Gebaeude, so dass das visuell wie ein geplanter Hub wirkt und keine sichtbare Tile Wiederholung entsteht. Nutze die vorhandenen Tile Grafiken und halte die Loesung performant.
+
+Vorhandene Tiles (genau diese 7 Keys existieren)
+
+* ground_street
+* grass
+* ground
+* grass_bottom_ground_top
+* grass_left_ground_right
+* grass_right_ground_left
+* grass_top_ground_bottom
+
+Kontext
+
+* Weltgroesse: W = 2048, H = 1536
+* Buildings aus HUB_LAYOUT (rathaus, archivschmiede, druckerei) mit x,y,w,h, door, entrances
+* Es existiert placeTiles(x, y, w, h, textureKey, depth, options) wie im Code (inkl. ensureGroundVariants, overlayVariants, coverEdges, jitter, tintRange, useBaseTexture)
+* Es existiert this._groundTile = tileSprite('ground') auf depth -10 (darf bleiben, aber Ground soll final ueber eine RenderTexture gebacken werden)
+* Es existieren bereits Plaza, Boulevard, Band Plaza ↔ Boulevard, Wege zu Schmiede und Druckerei
+* Es gibt Laternen, Baenke, Pflanzkuebel
+
+Wichtige Anforderungen
+
+1. Performance: Keine tausenden Images dauerhaft. Alle Ground Tiles muessen am Ende in eine RenderTexture gebacken werden und die temporaren Images muessen zerstoert werden. Ergebnis: genau 1 Ground Objekt (RenderTexture) fuer alle Bodenlayer.
+2. _drawHubGround darf nur in create laufen, nicht pro Frame.
+3. Materialzonen:
+
+   * GRASS: Standard Restflaeche
+   * STONE: Plaza, Band, Boulevard, Wege mit ground_street (mit Overlay Variants)
+   * DIRT: verwende ground als Dirt (da es kein ground_dirt gibt)
+   * Grass to Dirt / Grass to Stone Uebergaenge sollen ueber die 4 Transition Tiles erfolgen:
+     grass_bottom_ground_top
+     grass_top_ground_bottom
+     grass_left_ground_right
+     grass_right_ground_left
+     Ziel: keine harten Rechteckkanten, sondern saubere Raender.
+5. Depth Regeln:
+
+   * Ground RT auf depth 0
+   * Props und Gebaeude darueber
+6. Code Stil:
+
+   * Minimal, gut lesbar, keine komplexen Masken/Boolean Ops, keine neuen Klassenhierarchien
+
+Implementationsplan (muss umgesetzt werden)
+A) Erzeuge zuerst eine GRASS Basisschicht ueber die ganze Welt (Tiles, mit leichter Variation).
+B) Zeichne dann DIRT Zonen (mit 'ground') in folgenden Bereichen:
+
+* Perimeter um alle Gebaeude (48px)
+* Zusaetzlicher soft Ring (96px) um Gebaeude
+  C) Zeichne dann STONE Zonen (ground_street):
+* Plaza vor Rathaus
+* Band Plaza ↔ Boulevard
+* Boulevard
+* Wege zu Schmiede und Druckerei
+  D) Zeichne Uebergangsraender:
+* Zwischen GRASS und DIRT nutze die passenden grass_**ground** Tiles entlang der Kanten der Dirt Zonen.
+* Zwischen GRASS und STONE nutze ebenfalls die gleichen Transition Tiles, aber mit ground_street als Innenbereich (falls du es simpel halten willst: mach dort einen 1 Tile breiten ground Ring, dann Transitions gegen grass).
+  E) Backe alles in eine RenderTexture this._hubGroundRT und destroy alle temporaren Tile Images.
+
+Lieferumfang
+
+* Gib mir den finalen Code fuer _drawHubGround(W, H) inkl. aller neuen Helper innerhalb der Funktion oder als private Methoden.
+* Gib mir die RenderTexture Baking Helper Funktion.
+* Achte darauf, dass der Code die vorhandenen Variablen nutzt: plaza, blvY, blvH, etc. Du darfst die Berechnungen in _drawHubGround leicht anpassen, aber nicht die Szene Architektur umbauen.
+
+Akzeptanzkriterien
+
+* Am Ende existiert genau 1 Ground RenderTexture Objekt fuer alle Bodenlayer.
+* Grass ist ueberall ausserhalb von Stone und Dirt.
+* Stone Achse und Wege sind klar sichtbar.
+* Dirt um Gebaeude ist sichtbar und hat saubere Uebergaenge zum Grass.
+* Keine sichtbare Tile Wiederholung auf der Stone Achse (nutze overlayVariants).
+* Kein Redraw im update.
