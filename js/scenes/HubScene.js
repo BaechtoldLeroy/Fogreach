@@ -101,7 +101,7 @@ preload() {
     }
 
     // Spieler - startet auf dem Boulevard
-    this.player = this.physics.add.sprite(1024, 650, textureKey, 0)
+    this.player = this.physics.add.sprite(1024, 612, textureKey, 0)
       .setCollideWorldBounds(true);
 
     if (typeof applyPlayerDisplaySettings === 'function') {
@@ -351,61 +351,77 @@ preload() {
     const schmiede = (this.buildings || []).find(b => b.id === 'archivschmiede');
     const druckerei = (this.buildings || []).find(b => b.id === 'druckerei');
 
-    const plazaY = rathaus ? rathaus.y + rathaus.h + 16 : 424;
-    const plazaH = 140;
-    const plazaW = 400;
-    const plazaX = rathaus ? rathaus.x + (rathaus.w - plazaW) / 2 : W / 2 - plazaW / 2;
+    const rathausBottom = rathaus ? rathaus.y + rathaus.h : 336;
+    const plazaY = rathausBottom + 20;
+    const plazaH = 160;
+    const plazaW = 480;
+    const plazaX = rathaus ? rathaus.x + (rathaus.w - plazaW) / 2 + 30 : W / 2 - plazaW / 2;
     const plaza = { x: plazaX, y: plazaY, w: plazaW, h: plazaH };
 
-    const blvH = 56;
-    const blvY = 620;
-    const blvX = 200;
-    const blvW = W - 400;
+    const leftCourtyard = { x: plazaX - 180, y: plazaY + 40, w: 140, h: 100 };
+    const rightCourtyard = { x: plazaX + plazaW + 60, y: plazaY + 20, w: 120, h: 120 };
+
+    const blvH = 64;
+    const blvY = 580;
+    const blvX = 180;
+    const blvW = W - 360;
 
     fillArea(0, 0, W, H, 'tile_grass', { tintVariation: 0.04 });
 
-    const DIRT_PAD = 40;
-    const DIRT_SOFT = 24;
-    [rathaus, schmiede, druckerei].forEach(b => {
+    const DIRT_PAD = 48;
+    const DIRT_SOFT = 28;
+    
+    if (rathaus) {
+      const dx = rathaus.x - DIRT_PAD;
+      const dy = rathaus.y - 20;
+      const dw = rathaus.w + DIRT_PAD * 2;
+      const dh = rathaus.h + DIRT_PAD + 40;
+      fillArea(dx, dy, dw, dh, 'tile_ground', { tintVariation: 0.06 });
+    }
+
+    [schmiede, druckerei].forEach(b => {
       if (!b) return;
       const dx = b.x - DIRT_PAD - DIRT_SOFT;
-      const dy = b.y - DIRT_PAD - DIRT_SOFT;
+      const dy = b.y - DIRT_PAD;
       const dw = b.w + (DIRT_PAD + DIRT_SOFT) * 2;
-      const dh = b.h + (DIRT_PAD + DIRT_SOFT) * 2;
+      const dh = b.h + DIRT_PAD * 2 + 40;
       fillArea(dx, dy, dw, dh, 'tile_ground', { tintVariation: 0.06 });
-      
-      const innerX = Math.floor(dx / TILE_SIZE) * TILE_SIZE;
-      const innerY = Math.floor(dy / TILE_SIZE) * TILE_SIZE;
-      const innerW = Math.ceil(dw / TILE_SIZE) * TILE_SIZE;
-      const innerH = Math.ceil(dh / TILE_SIZE) * TILE_SIZE;
-      placeTransitionEdges(innerX, innerY, innerW, innerH);
     });
 
     fillArea(plaza.x, plaza.y, plaza.w, plaza.h, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.5 });
+    
+    fillArea(leftCourtyard.x, leftCourtyard.y, leftCourtyard.w, leftCourtyard.h, 'tile_ground_street', { tintVariation: 0.05, jitter: 0.3 });
+    fillArea(rightCourtyard.x, rightCourtyard.y, rightCourtyard.w, rightCourtyard.h, 'tile_ground_street', { tintVariation: 0.05, jitter: 0.3 });
+    
+    fillArea(leftCourtyard.x + leftCourtyard.w, leftCourtyard.y + 30, plaza.x - (leftCourtyard.x + leftCourtyard.w), 40, 'tile_ground_street', { tintVariation: 0.04 });
+    fillArea(plaza.x + plaza.w, rightCourtyard.y + 40, rightCourtyard.x - (plaza.x + plaza.w), 40, 'tile_ground_street', { tintVariation: 0.04 });
+
     fillArea(blvX, blvY, blvW, blvH, 'tile_ground_street', { tintVariation: 0.05, jitter: 0.5 });
 
-    const cx = plaza.x + plaza.w / 2;
-    const bandW = 80;
+    const cx = plaza.x + plaza.w / 2 - 20;
+    const bandW = 72;
     const bandTop = plaza.y + plaza.h;
     const bandBot = blvY;
     if (bandBot > bandTop) {
       fillArea(cx - bandW / 2, bandTop, bandW, bandBot - bandTop, 'tile_ground_street', { tintVariation: 0.04 });
     }
 
-    const pathW = 48;
+    const pathW = 52;
     if (schmiede) {
       const sx = schmiede.x + schmiede.w / 2;
-      const buildingBottom = schmiede.y + schmiede.h + 20;
-      const pathTop = Math.min(buildingBottom, blvY);
-      const pathBottom = Math.max(buildingBottom, blvY + blvH);
-      fillArea(sx - pathW / 2, pathTop, pathW, pathBottom - pathTop, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
+      const pathTop = blvY + blvH;
+      const pathBottom = schmiede.y - 20;
+      if (pathBottom > pathTop) {
+        fillArea(sx - pathW / 2, pathTop, pathW, pathBottom - pathTop, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
+      }
     }
     if (druckerei) {
       const dx = druckerei.x + druckerei.w / 2;
-      const buildingBottom = druckerei.y + druckerei.h + 20;
-      const pathTop = Math.min(buildingBottom, blvY);
-      const pathBottom = Math.max(buildingBottom, blvY + blvH);
-      fillArea(dx - pathW / 2, pathTop, pathW, pathBottom - pathTop, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
+      const pathTop = blvY + blvH;
+      const pathBottom = druckerei.y - 20;
+      if (pathBottom > pathTop) {
+        fillArea(dx - pathW / 2, pathTop, pathW, pathBottom - pathTop, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
+      }
     }
 
     this._hubGroundRT = this.add.renderTexture(0, 0, W, H).setOrigin(0, 0).setDepth(0);
@@ -419,42 +435,110 @@ preload() {
       this._groundTile = null;
     }
 
-    this._spawnDecorations(rathaus, schmiede, druckerei, plaza, blvX, blvY, blvW, blvH);
+    this._spawnDecorations(rathaus, schmiede, druckerei, plaza, leftCourtyard, rightCourtyard, blvX, blvY, blvW, blvH);
+    this._spawnUpperCityWall(rathaus, W);
   }
 
-  _spawnDecorations(rathaus, schmiede, druckerei, plaza, blvX, blvY, blvW, blvH) {
+  _spawnUpperCityWall(rathaus, W) {
+    if (!rathaus) return;
+    
+    const wallY = rathaus.y - 10;
+    const wallH = rathaus.h + 60;
+    
+    const leftWallX = 0;
+    const leftWallW = rathaus.x - 40;
+    if (leftWallW > 80) {
+      this._spawnCityBlock(leftWallX + 20, wallY + 30, leftWallW - 40, wallH - 40, 4);
+      this._spawnCityBlock(leftWallX + 60, wallY + 10, 160, 80, 5);
+      this._spawnCityBlock(leftWallX + 250, wallY + 50, 120, 100, 4);
+      if (leftWallW > 400) {
+        this._spawnCityBlock(leftWallX + 400, wallY + 20, 140, 90, 5);
+      }
+    }
+    
+    const rightWallX = rathaus.x + rathaus.w + 40;
+    const rightWallW = W - rightWallX;
+    if (rightWallW > 80) {
+      this._spawnCityBlock(rightWallX + 20, wallY + 40, rightWallW - 60, wallH - 50, 4);
+      this._spawnCityBlock(rightWallX + 40, wallY + 15, 150, 85, 5);
+      if (rightWallW > 300) {
+        this._spawnCityBlock(rightWallX + 220, wallY + 35, 130, 95, 4);
+      }
+    }
+    
+    const colliderY = rathaus.y - 30;
+    const colliderH = 60;
+    const leftCollider = this.buildingGroup.create(leftWallW / 2, colliderY + colliderH / 2, null);
+    leftCollider.setSize(leftWallW, colliderH).setVisible(false).setImmovable(true);
+    leftCollider.body.setOffset(-leftWallW / 2, -colliderH / 2);
+    
+    const rightCollider = this.buildingGroup.create(rightWallX + rightWallW / 2, colliderY + colliderH / 2, null);
+    rightCollider.setSize(rightWallW, colliderH).setVisible(false).setImmovable(true);
+    rightCollider.body.setOffset(-rightWallW / 2, -colliderH / 2);
+  }
+
+  _spawnCityBlock(x, y, w, h, depth = 4) {
+    const g = this.add.graphics().setDepth(depth);
+    g.fillStyle(0x2a2a2a, 1).fillRect(x, y, w, h);
+    g.fillStyle(0x1a1a1a, 1).fillRect(x, y, w, 16);
+    const roofH = 20;
+    g.fillStyle(0x1e1e1e, 1);
+    g.beginPath();
+    g.moveTo(x - 4, y);
+    g.lineTo(x + w / 2, y - roofH);
+    g.lineTo(x + w + 4, y);
+    g.closePath();
+    g.fillPath();
+    const windowCount = Math.floor(w / 50);
+    for (let i = 0; i < windowCount; i++) {
+      const wx = x + 20 + i * 45;
+      const wy = y + 28;
+      g.fillStyle(0x3a3a3a, 0.6).fillRect(wx, wy, 18, 24);
+      g.fillStyle(0x4a4a3a, 0.3).fillRect(wx + 2, wy + 2, 14, 20);
+    }
+    g.fillStyle(0x000000, 0.25).fillRect(x, y + h, w, 10);
+    return g;
+  }
+
+  _spawnDecorations(rathaus, schmiede, druckerei, plaza, leftCourtyard, rightCourtyard, blvX, blvY, blvW, blvH) {
     if (rathaus) {
-      const wingW = 120, wingH = 80;
-      const wingY = rathaus.y + 40;
-      this._spawnWallWing(rathaus.x - wingW - 10, wingY, wingW, wingH, 4);
-      this._spawnWallWing(rathaus.x + rathaus.w + 10, wingY, wingW, wingH, 4);
+      const wingW = 100, wingH = 70;
+      const wingY = rathaus.y + rathaus.h - 60;
+      this._spawnWallWing(rathaus.x - wingW - 8, wingY, wingW, wingH, 4);
+      this._spawnWallWing(rathaus.x + rathaus.w + 8, wingY, wingW, wingH, 4);
     }
 
-    this._spawnLantern(plaza.x + 20, plaza.y + plaza.h - 10, 6);
-    this._spawnLantern(plaza.x + plaza.w - 20, plaza.y + plaza.h - 10, 6);
-    this._spawnPlanter(plaza.x + 60, plaza.y + 30, 6);
-    this._spawnPlanter(plaza.x + plaza.w - 60, plaza.y + 30, 6);
-    this._spawnBench(plaza.x + plaza.w / 2 - 50, plaza.y + plaza.h - 30, 6);
-    this._spawnBench(plaza.x + plaza.w / 2 + 50, plaza.y + plaza.h - 30, 6);
+    this._spawnLantern(plaza.x + 30, plaza.y + 20, 6);
+    this._spawnLantern(plaza.x + plaza.w - 30, plaza.y + 20, 6);
+    this._spawnLantern(plaza.x + plaza.w / 2, plaza.y + plaza.h - 20, 6);
+    
+    this._spawnPlanter(plaza.x + 80, plaza.y + plaza.h - 40, 6);
+    this._spawnPlanter(plaza.x + plaza.w - 80, plaza.y + plaza.h - 40, 6);
+    this._spawnBench(plaza.x + plaza.w / 2 - 80, plaza.y + 60, 6);
+    this._spawnBench(plaza.x + plaza.w / 2 + 80, plaza.y + 60, 6);
 
-    this._spawnLantern(blvX + 60, blvY + blvH + 10, 5);
-    this._spawnLantern(blvX + blvW - 60, blvY + blvH + 10, 5);
-    this._spawnLantern(blvX + blvW / 2 - 200, blvY + blvH + 10, 5);
-    this._spawnLantern(blvX + blvW / 2 + 200, blvY + blvH + 10, 5);
+    this._spawnLantern(leftCourtyard.x + 20, leftCourtyard.y + leftCourtyard.h - 10, 5);
+    this._spawnPlanter(leftCourtyard.x + leftCourtyard.w - 30, leftCourtyard.y + 20, 5);
+    
+    this._spawnLantern(rightCourtyard.x + rightCourtyard.w - 20, rightCourtyard.y + 20, 5);
+    this._spawnBench(rightCourtyard.x + 30, rightCourtyard.y + rightCourtyard.h - 30, 5);
+
+    this._spawnLantern(blvX + 80, blvY + blvH + 15, 5);
+    this._spawnLantern(blvX + blvW - 80, blvY + blvH + 15, 5);
+    this._spawnLantern(blvX + blvW / 2, blvY + blvH + 15, 5);
+    this._spawnPlanter(blvX + 200, blvY - 20, 5);
+    this._spawnPlanter(blvX + blvW - 200, blvY - 20, 5);
 
     if (schmiede) {
-      const sx = schmiede.x + schmiede.w / 2;
-      const sy = schmiede.y + schmiede.h + 30;
-      this._spawnLantern(sx - 40, sy, 5);
-      this._spawnLantern(sx + 40, sy, 5);
-      this._spawnPlanter(schmiede.x - 30, schmiede.y + schmiede.h - 40, 4);
+      this._spawnLantern(schmiede.x - 20, schmiede.y + schmiede.h / 2, 5);
+      this._spawnLantern(schmiede.x + schmiede.w + 20, schmiede.y + schmiede.h / 2, 5);
+      this._spawnPlanter(schmiede.x + 30, schmiede.y - 30, 4);
+      this._spawnBench(schmiede.x + schmiede.w - 60, schmiede.y - 35, 4);
     }
     if (druckerei) {
-      const dx = druckerei.x + druckerei.w / 2;
-      const dy = druckerei.y + druckerei.h + 30;
-      this._spawnLantern(dx - 40, dy, 5);
-      this._spawnLantern(dx + 40, dy, 5);
-      this._spawnPlanter(druckerei.x + druckerei.w + 30, druckerei.y + druckerei.h - 40, 4);
+      this._spawnLantern(druckerei.x - 20, druckerei.y + druckerei.h / 2, 5);
+      this._spawnLantern(druckerei.x + druckerei.w + 20, druckerei.y + druckerei.h / 2, 5);
+      this._spawnPlanter(druckerei.x + druckerei.w - 30, druckerei.y - 30, 4);
     }
   }
 

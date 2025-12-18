@@ -4,7 +4,7 @@ const HUB_LAYOUT = {
     {
       id: 'rathaus',
       title: 'Rathaus',
-      x: 640, y: 120, w: 768, h: 288, depth: 5,
+      x: 640, y: 48, w: 768, h: 288, depth: 5,
       color: 0x6b5b4b, roofColor: 0x3b2b1b,
       door: { x: 336, y: 192, w: 96, h: 88 },
       entrances: [

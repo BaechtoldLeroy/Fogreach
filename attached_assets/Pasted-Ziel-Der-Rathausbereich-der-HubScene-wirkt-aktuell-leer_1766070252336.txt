@@ -1,0 +1,73 @@
+Ziel
+
+Der Rathausbereich der HubScene wirkt aktuell leer und rechteckig. Deine Aufgabe ist es, ohne neue Tiles oder Assets das Stadtlayout so anzupassen, dass das Rathaus eingebettet wirkt, der obere Bereich geschlossen ist und die grossen braunen Flaechen organischer und dichter erscheinen.
+
+Weltgroesse bleibt unveraendert.
+
+Kernprobleme (die du loesen sollst)
+
+Das Rathaus ist nicht die obere Stadtgrenze
+Der Spieler kann sich oberhalb des Rathauses bewegen, was die Autoritaet und Dichte zerstoert.
+
+Die grosse braune Flaeche ist ein perfektes Rechteck
+Das wirkt technisch und leer, selbst mit Transition Tiles.
+
+Seitliche Strukturen wirken isoliert
+Linke und rechte dunkle Bloecke sind nicht in das Stadtgefuege eingebunden.
+
+Umsetzungspflicht (konkret)
+1) Obere Stadtgrenze schliessen
+
+Verschiebe das Rathaus weiter nach oben, so dass oberhalb davon kein sinnvoller Spielraum mehr bleibt.
+
+Implementiere eine durchgehende obere Bebauung links und rechts des Rathauses:
+
+Nutze einfache Graphics (dunkle Steinrechtecke, angedeutete Daechern).
+
+Diese Silhouetten muessen optisch mit dem Rathaus verschmelzen.
+
+Setze eine unsichtbare Collider Linie entlang der oberen Stadtkante, damit der Spieler nicht hinter das Rathaus laufen kann.
+
+2) Braune Zone in Teilraeume gliedern
+
+Teile die grosse Ground Flaeche vor dem Rathaus in:
+
+einen zentralen Vorplatz (Plaza)
+
+zwei seitliche Hofbereiche
+
+Diese Teilbereiche sollen unterschiedliche Breiten und Tiefen haben, nicht symmetrisch.
+
+Die Aussenkante der Ground Zone darf nicht mehr rechteckig sein:
+
+Zerlege sie in mehrere abgestufte Segmente (Stufenform).
+
+4) Seitliche Strukturen anbinden
+
+Die dunklen seitlichen Bloecke muessen visuell Teil der Stadt werden:
+
+Verbinde sie mit kurzen Street oder Ground Streifen an die Hauptflaeche.
+
+Alternativ: ziehe sie bis an die Ground Zone heran.
+
+Sie duerfen nicht frei im Grass stehen.
+
+5) Dichte ohne neue Assets
+
+Setze Laternen, Baenke oder Pflanzkuebel gezielt:
+
+an Engstellen
+
+an Kanten von Plaetzen
+
+am Uebergang zwischen Teilraeumen
+
+Keine zufaellige Verteilung.
+
+Akzeptanzkriterien
+
+Oberhalb des Rathauses fuehlt sich die Stadt geschlossen an.
+
+Die Ground Flaeche vor dem Rathaus wirkt wie mehrere verbundene Raeume, nicht wie ein grosses Rechteck.
+
+Der Gesamteindruck ist dichter, staedtischer, weniger “leere Testflaeche”.
