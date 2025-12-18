@@ -76,6 +76,15 @@ StartScene.prototype.preload = function () {
   this.load.image('npc_schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
   this.load.image('npc_spaeherin', 'assets/sprites/spaeherin.png');
   this.load.image('npc_drucker', 'assets/sprites/setzer_thom.png');
+  
+  const templateNames = [
+    "Arena", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
+    "CirclePillars", "Crosshall", "CrossroadChamber", "Crossroads", "Crypt_Small_Altar",
+    "GrandBazaar", "MazeLite", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault"
+  ];
+  for (const name of templateNames) {
+    this.load.json(name, `js/roomTemplates/${name}.json`);
+  }
 };
 
 StartScene.prototype.create = function () {
@@ -222,91 +231,25 @@ StartScene.prototype.create = function () {
   // -------------- Loader-Logik fuer RoomTemplates ----------------
 
   function loadRoomTemplatesAndStart() {
-    // roomTemplates.js dynamisch laden, falls noch nicht da
-    if (!window.RoomTemplates) {
-      const s = document.createElement("script");
-      s.src = "js/roomTemplates.js";
-      s.dataset.rtLoaded = "1";
-      s.onload = () => loadManifestAndTemplates.call(this);
-      document.head.appendChild(s);
-    } else {
-      loadManifestAndTemplates.call(this);
-    }
-  }
-
-  async function loadManifestAndTemplates() {
-    // Globales RT Objekt sicherstellen
     window.RoomTemplates = window.RoomTemplates || {};
     const RT = window.RoomTemplates;
     RT.TEMPLATES = RT.TEMPLATES || {};
-
-    // Manifest laden. Wir probieren beide Basispfade, zuerst js/roomTemplates/
-    const bases = ["js/roomTemplates/", "roomTemplates/"];
-    let baseFound = null;
-    let names = [];
-
-    for (const base of bases) {
-      try {
-        const res = await fetch(base + "manifest.json", { cache: "no-store" });
-        if (res.ok) {
-          const m = await res.json();
-          if (Array.isArray(m.templates) && m.templates.length) {
-            names = m.templates;
-            baseFound = base;
-            RT.MANIFEST = names.slice(); // optional fuer Debug
-            break;
-          }
-        }
-      } catch (e) {
-        console.warn("[StartScene] Manifest fetch Fehler fuer", base, e);
+    
+    const templateNames = [
+      "Arena", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
+      "CirclePillars", "Crosshall", "CrossroadChamber", "Crossroads", "Crypt_Small_Altar",
+      "GrandBazaar", "MazeLite", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault"
+    ];
+    
+    for (const name of templateNames) {
+      const tpl = this.cache.json.get(name);
+      if (tpl) {
+        RT.TEMPLATES[name] = tpl;
       }
     }
-
-    if (!baseFound) {
-      console.error("[StartScene] Kein manifest.json gefunden. Pfade pruefen.");
-      return;
-    }
-
-    // Alle Templates aus dem gefundenen Basisordner laden
-    const loaded = await Promise.all(
-      names.map(async (name) => {
-        const url = `${baseFound}${name}.json`;
-
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) {
-          console.warn("[StartScene] HTTP", res.status, url);
-          return false;
-        }
-        const tpl = await res.json();
-        // minimale Struktur pruefen
-        if (
-          !tpl ||
-          !tpl.size ||
-          !tpl.size.tile ||
-          !tpl.layout ||
-          !Array.isArray(tpl.layout.walls)
-        ) {
-          console.warn("[StartScene] Ungueltiges Template:", name);
-          return false;
-        }
-        RT.TEMPLATES[name] = tpl;
-
-        // optional: auch in Phaser JSON Cache legen, falls anderer Code darauf zugreift
-        try {
-          const cache = this.cache && this.cache.json;
-          if (cache && !cache.get(name)) cache.add(name, tpl);
-        } catch {}
-
-        return true;
-      }),
-    );
-
-    // fuer andere Module bequem
+    
+    RT.MANIFEST = templateNames.slice();
     window.game = this.game;
-
-    // Alter Aufruf direkt in GameScene
-    //this.scene.start("GameScene");
-    // Jetzt in die HubScene wechseln
     this.scene.start("HubScene", { gameState: { hubPhase: 0 } });
   }
 };

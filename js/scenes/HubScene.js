@@ -436,7 +436,7 @@ preload() {
     }
 
     this._spawnDecorations(rathaus, schmiede, druckerei, plaza, leftCourtyard, rightCourtyard, blvX, blvY, blvW, blvH);
-    this._spawnUpperCityWall(rathaus, W);
+    this._pendingUpperCityWall = { rathaus, W };
   }
 
   _spawnUpperCityWall(rathaus, W) {
@@ -678,9 +678,19 @@ if (b.id === 'archivschmiede' && this.textures.exists('archivschmiede')) {
 
 // --- Rathaus (proportional zur Höhe)
 if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
-  const placed = this._placeBuildingImageFitHeight(b, 'rathaus', 50); // ↓ 500px tiefer
+  const placed = this._placeBuildingImageFitHeight(b, 'rathaus', 50);
+  
+  if (this._pendingUpperCityWall) {
+    const actualRathaus = {
+      x: placed.baseX - placed.scaledW / 2,
+      y: placed.baseY - placed.scaledH,
+      w: placed.scaledW,
+      h: placed.scaledH
+    };
+    this._spawnUpperCityWall(actualRathaus, this._pendingUpperCityWall.W);
+    this._pendingUpperCityWall = null;
+  }
 
-  // Eingangszonen beibehalten (für Interaktion)
   if (b.entrances) {
     for (const e of b.entrances) {
       let zw = e.w, zh = e.h;
