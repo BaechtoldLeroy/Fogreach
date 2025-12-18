@@ -100,8 +100,8 @@ preload() {
       normalizePlayerDirectionalFrames(this);
     }
 
-    // Spieler
-    this.player = this.physics.add.sprite(300, 900, textureKey, 0)
+    // Spieler - startet auf dem Boulevard
+    this.player = this.physics.add.sprite(1024, 650, textureKey, 0)
       .setCollideWorldBounds(true);
 
     if (typeof applyPlayerDisplaySettings === 'function') {
@@ -351,17 +351,21 @@ preload() {
     const schmiede = (this.buildings || []).find(b => b.id === 'archivschmiede');
     const druckerei = (this.buildings || []).find(b => b.id === 'druckerei');
 
-    const baseY = rathaus ? rathaus.y + rathaus.h : 848;
-    const plazaY = baseY + 8;
-    const plazaH = Math.max(200, Math.min(320, H - plazaY - 160));
-    const plaza = rathaus ? { x: rathaus.x, y: plazaY, w: rathaus.w, h: plazaH } : { x: 736, y: 856, w: 768, h: 200 };
-    const blvX = 160, blvW = 1728, blvH = 80;
-    const blvY = Math.min(H - 180, plaza.y + plaza.h + 60);
+    const plazaY = rathaus ? rathaus.y + rathaus.h + 16 : 424;
+    const plazaH = 140;
+    const plazaW = 400;
+    const plazaX = rathaus ? rathaus.x + (rathaus.w - plazaW) / 2 : W / 2 - plazaW / 2;
+    const plaza = { x: plazaX, y: plazaY, w: plazaW, h: plazaH };
+
+    const blvH = 56;
+    const blvY = 620;
+    const blvX = 200;
+    const blvW = W - 400;
 
     fillArea(0, 0, W, H, 'tile_grass', { tintVariation: 0.04 });
 
-    const DIRT_PAD = 48;
-    const DIRT_SOFT = 32;
+    const DIRT_PAD = 40;
+    const DIRT_SOFT = 24;
     [rathaus, schmiede, druckerei].forEach(b => {
       if (!b) return;
       const dx = b.x - DIRT_PAD - DIRT_SOFT;
@@ -378,37 +382,30 @@ preload() {
     });
 
     fillArea(plaza.x, plaza.y, plaza.w, plaza.h, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.5 });
-    fillArea(blvX, blvY - blvH / 2, blvW, blvH, 'tile_ground_street', { tintVariation: 0.05, jitter: 0.5 });
+    fillArea(blvX, blvY, blvW, blvH, 'tile_ground_street', { tintVariation: 0.05, jitter: 0.5 });
 
     const cx = plaza.x + plaza.w / 2;
-    const bandW = Math.min(220, Math.round(plaza.w * 0.28));
+    const bandW = 80;
     const bandTop = plaza.y + plaza.h;
-    const bandBot = blvY - blvH / 2;
+    const bandBot = blvY;
     if (bandBot > bandTop) {
       fillArea(cx - bandW / 2, bandTop, bandW, bandBot - bandTop, 'tile_ground_street', { tintVariation: 0.04 });
     }
 
-    const pathW = 64;
-    const pSrcY = plaza.y + plaza.h;
+    const pathW = 48;
     if (schmiede) {
       const sx = schmiede.x + schmiede.w / 2;
-      const sy = schmiede.y + schmiede.h;
-      const sSrcX = Phaser.Math.Clamp(plaza.x + plaza.w * 0.25, plaza.x + 24, plaza.x + plaza.w - 24);
-      const minX = Math.min(sSrcX, sx) - pathW / 2;
-      const maxX = Math.max(sSrcX, sx) + pathW / 2;
-      const minY = Math.min(pSrcY, sy);
-      const maxY = Math.max(pSrcY, sy);
-      fillArea(minX, minY, maxX - minX, maxY - minY, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
+      const buildingBottom = schmiede.y + schmiede.h + 20;
+      const pathTop = Math.min(buildingBottom, blvY);
+      const pathBottom = Math.max(buildingBottom, blvY + blvH);
+      fillArea(sx - pathW / 2, pathTop, pathW, pathBottom - pathTop, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
     }
     if (druckerei) {
       const dx = druckerei.x + druckerei.w / 2;
-      const dy = druckerei.y + druckerei.h;
-      const dSrcX = Phaser.Math.Clamp(plaza.x + plaza.w * 0.75, plaza.x + 24, plaza.x + plaza.w - 24);
-      const minX = Math.min(dSrcX, dx) - pathW / 2;
-      const maxX = Math.max(dSrcX, dx) + pathW / 2;
-      const minY = Math.min(pSrcY, dy);
-      const maxY = Math.max(pSrcY, dy);
-      fillArea(minX, minY, maxX - minX, maxY - minY, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
+      const buildingBottom = druckerei.y + druckerei.h + 20;
+      const pathTop = Math.min(buildingBottom, blvY);
+      const pathBottom = Math.max(buildingBottom, blvY + blvH);
+      fillArea(dx - pathW / 2, pathTop, pathW, pathBottom - pathTop, 'tile_ground_street', { tintVariation: 0.04, jitter: 0.4 });
     }
 
     this._hubGroundRT = this.add.renderTexture(0, 0, W, H).setOrigin(0, 0).setDepth(0);
@@ -422,16 +419,53 @@ preload() {
       this._groundTile = null;
     }
 
-    this._spawnLantern(plaza.x + 28, plaza.y + plaza.h + 6, 6);
-    this._spawnLantern(plaza.x + plaza.w - 28, plaza.y + plaza.h + 6, 6);
-    this._spawnLantern(plaza.x + 28, plaza.y + 10, 6);
-    this._spawnLantern(plaza.x + plaza.w - 28, plaza.y + 10, 6);
-    this._spawnLantern(480, blvY + blvH / 2 + 6, 5);
-    this._spawnLantern(1568, blvY + blvH / 2 + 6, 5);
-    this._spawnBench(plaza.x + 90, plaza.y + 42, 6);
-    this._spawnBench(plaza.x + plaza.w - 90, plaza.y + 42, 6);
-    this._spawnPlanter(plaza.x + 160, plaza.y + 70, 5);
-    this._spawnPlanter(plaza.x + plaza.w - 160, plaza.y + 70, 5);
+    this._spawnDecorations(rathaus, schmiede, druckerei, plaza, blvX, blvY, blvW, blvH);
+  }
+
+  _spawnDecorations(rathaus, schmiede, druckerei, plaza, blvX, blvY, blvW, blvH) {
+    if (rathaus) {
+      const wingW = 120, wingH = 80;
+      const wingY = rathaus.y + 40;
+      this._spawnWallWing(rathaus.x - wingW - 10, wingY, wingW, wingH, 4);
+      this._spawnWallWing(rathaus.x + rathaus.w + 10, wingY, wingW, wingH, 4);
+    }
+
+    this._spawnLantern(plaza.x + 20, plaza.y + plaza.h - 10, 6);
+    this._spawnLantern(plaza.x + plaza.w - 20, plaza.y + plaza.h - 10, 6);
+    this._spawnPlanter(plaza.x + 60, plaza.y + 30, 6);
+    this._spawnPlanter(plaza.x + plaza.w - 60, plaza.y + 30, 6);
+    this._spawnBench(plaza.x + plaza.w / 2 - 50, plaza.y + plaza.h - 30, 6);
+    this._spawnBench(plaza.x + plaza.w / 2 + 50, plaza.y + plaza.h - 30, 6);
+
+    this._spawnLantern(blvX + 60, blvY + blvH + 10, 5);
+    this._spawnLantern(blvX + blvW - 60, blvY + blvH + 10, 5);
+    this._spawnLantern(blvX + blvW / 2 - 200, blvY + blvH + 10, 5);
+    this._spawnLantern(blvX + blvW / 2 + 200, blvY + blvH + 10, 5);
+
+    if (schmiede) {
+      const sx = schmiede.x + schmiede.w / 2;
+      const sy = schmiede.y + schmiede.h + 30;
+      this._spawnLantern(sx - 40, sy, 5);
+      this._spawnLantern(sx + 40, sy, 5);
+      this._spawnPlanter(schmiede.x - 30, schmiede.y + schmiede.h - 40, 4);
+    }
+    if (druckerei) {
+      const dx = druckerei.x + druckerei.w / 2;
+      const dy = druckerei.y + druckerei.h + 30;
+      this._spawnLantern(dx - 40, dy, 5);
+      this._spawnLantern(dx + 40, dy, 5);
+      this._spawnPlanter(druckerei.x + druckerei.w + 30, druckerei.y + druckerei.h - 40, 4);
+    }
+  }
+
+  _spawnWallWing(x, y, w, h, depth = 4) {
+    const g = this.add.graphics().setDepth(depth);
+    g.fillStyle(0x3a3a3a, 1).fillRect(x, y, w, h);
+    g.fillStyle(0x2a2a2a, 1).fillRect(x, y, w, 12);
+    g.fillStyle(0x4a4a4a, 0.3).fillRect(x + 10, y + 20, 20, 30);
+    g.fillRect(x + w - 30, y + 20, 20, 30);
+    g.fillStyle(0x000000, 0.2).fillRect(x, y + h, w, 8);
+    return g;
   }
 
   _spawnLantern(x, y, depth = 5) {

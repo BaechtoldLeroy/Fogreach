@@ -1,0 +1,75 @@
+Du bist mein Development Agent und sollst den Code direkt anpassen. 
+
+Ziel
+Die HubScene soll staedtebaulich dichter wirken. Die drei Gebaeude sollen nicht mehr verloren stehen, sondern logisch in eine kompakte Stadtstruktur eingebettet werden. Fokus: Layout, nicht neue Assets.
+
+Rahmenbedingungen
+
+* Phaser Scene: HubScene
+* Weltgroesse bleibt: W = 2048, H = 1536
+* Es gibt genau diese drei Buildings im HUB_LAYOUT: rathaus, archivschmiede, druckerei
+* Ground System existiert bereits und darf bleiben (egal ob tileSprite oder RenderTexture). Du sollst nur die Layout Logik und die Platzierung verbessern.
+* Nutze vorhandene Spawn Helfer: _spawnLantern, _spawnBench, _spawnPlanter (keine neuen Spritesheets noetig).
+* Keine neuen Tile Keys voraussetzen. Keine neuen externen Assets.
+* Minimaler, lesbarer Code.
+
+Was umgesetzt werden soll
+
+1. Rathaus als obere Stadtgrenze
+
+* Verschiebe das Rathaus nach oben, so dass es die Oberkante der Stadt definiert.
+* Oberhalb des Rathauses darf praktisch kein begehbarer Raum mehr sein.
+* Erzeuge links und rechts vom Rathaus angedeutete Seitenfluegel oder Mauern als simple Graphics Silhouetten (Rechtecke, abgesetzte Dacher, dunkle Steinfarbe). Diese Elemente sind rein dekorativ, sollen aber die obere Kante optisch schliessen.
+* Optional: Setze unsichtbare Collider entlang der oberen Kante, damit der Spieler nicht hinter das Rathaus laufen kann, falls das bisher moeglich ist.
+
+2. Plaza kompakter und eingerahmt
+
+* Der Bereich direkt vor dem Rathaus (Plaza) soll schmaler und klar eingerahmt sein.
+* Fasse Plaza als definierte Zone zusammen: vor der Rathausfront, mittig, nicht zu gross.
+* Setze 2 bis 4 dekorative Objekte (Baenke, Pflanzkuebel, Laternen) so, dass sie die Plaza Raender definieren und nicht nur zufaellig verteilt sind.
+
+3. Boulevard als Rueckgrat
+
+* Der Boulevard soll die zentrale horizontale Achse sein.
+* Platziere Boulevard so, dass er klar unterhalb der Plaza liegt.
+* Alle Wege sollen an Boulevard andocken.
+
+4. Archivschmiede und Druckerei in die Achse ziehen
+
+* Ziehe Archivschmiede und Druckerei naeher an Boulevard und leicht Richtung Mitte, damit die Stadt dichter wirkt.
+* Sie sollen nicht symmetrisch sein, aber klar als zwei Seitenbereiche erscheinen, die vom Boulevard aus erreichbar sind.
+* Beide sollen einen kleinen Vorplatz bekommen, definiert durch Deko (Laternen oder Pflanzkuebel), so dass es wie Eingangsbereiche wirkt.
+
+5. Wege: nicht als riesige Rechtecke
+
+* Wege sollen optisch wie echte Strassen wirken: eher schmal, mit klarer Richtung.
+* Vermeide grosse rechteckige Flaechen, die wie “zufaellig gefuellt” aussehen.
+* Wenn du schon rechteckige Platzierung verwendest: mache sie schmaler und fuehre sie in 2 Segmenten (erst vertikal, dann horizontal), so dass es wie eine Kurve wirkt.
+
+Konkrete Implementationsanweisungen
+A) Passe in hubLayout.js (HUB_LAYOUT) die x,y,w,h fuer die drei Buildings an.
+
+* Rathaus: nach oben, zentral, so dass noch Platz fuer Plaza darunter ist.
+* Archivschmiede: links unten, aber naeher an Boulevard.
+* Druckerei: rechts unten, aber naeher an Boulevard.
+
+B) Passe in _drawHubGround(W,H) die Berechnung von plaza, boulevard, band und paths so an, dass sie zum neuen Layout passen.
+
+* Plaza: kleiner und vor Rathaus.
+* Boulevard: klare horizontale Achse.
+* Verbindung Plaza → Boulevard: schmal, mittig.
+* Pfade vom Boulevard zu Schmiede und Druckerei: je ein schmaler Abzweiger.
+
+C) Dekoration zur Verdichtung
+
+* Setze Laternen paarweise entlang Plaza und entlang Boulevard.
+* Setze 1 bis 2 Baenke oder Pflanzkuebel als “Rahmen” links und rechts am Plaza.
+* Optional: Setze eine kleine “Gasse” zwischen Schmiede und Druckerei, indem du 2 Laternen oder Planter so stellst, dass sie eine Engstelle suggerieren.
+
+Akzeptanzkriterien
+
+* Rathaus definiert klar die obere Stadtgrenze, Spielerfokus nach oben.
+* Plaza wirkt wie ein Platz, nicht wie leere Flaeche.
+* Boulevard ist sichtbar und fuehlt sich wie Hauptachse an.
+* Schmiede und Druckerei sind naeher dran und wirken wie Stadtquartiere, nicht Einzelhaeuser.
+* Insgesamt weniger Leere, ohne neue Assets.
