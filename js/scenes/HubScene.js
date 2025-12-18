@@ -442,39 +442,41 @@ preload() {
   _spawnUpperCityWall(rathaus, W) {
     if (!rathaus) return;
     
-    const wallY = rathaus.y - 10;
-    const wallH = rathaus.h + 60;
+    const wallY = rathaus.y;
+    const wallH = rathaus.h;
     
-    const leftWallX = 0;
-    const leftWallW = rathaus.x - 40;
-    if (leftWallW > 80) {
-      this._spawnCityBlock(leftWallX + 20, wallY + 30, leftWallW - 40, wallH - 40, 4);
-      this._spawnCityBlock(leftWallX + 60, wallY + 10, 160, 80, 5);
-      this._spawnCityBlock(leftWallX + 250, wallY + 50, 120, 100, 4);
-      if (leftWallW > 400) {
-        this._spawnCityBlock(leftWallX + 400, wallY + 20, 140, 90, 5);
+    const leftEndX = rathaus.x;
+    const rightStartX = rathaus.x + rathaus.w;
+    
+    if (leftEndX > 60) {
+      this._spawnCityBlock(0, wallY, leftEndX - 10, wallH, 4);
+      if (leftEndX > 200) {
+        this._spawnCityBlock(40, wallY - 15, Math.min(180, leftEndX - 80), 70, 5);
       }
     }
     
-    const rightWallX = rathaus.x + rathaus.w + 40;
-    const rightWallW = W - rightWallX;
-    if (rightWallW > 80) {
-      this._spawnCityBlock(rightWallX + 20, wallY + 40, rightWallW - 60, wallH - 50, 4);
-      this._spawnCityBlock(rightWallX + 40, wallY + 15, 150, 85, 5);
-      if (rightWallW > 300) {
-        this._spawnCityBlock(rightWallX + 220, wallY + 35, 130, 95, 4);
+    const rightWallW = W - rightStartX;
+    if (rightWallW > 60) {
+      this._spawnCityBlock(rightStartX + 10, wallY, rightWallW - 10, wallH, 4);
+      if (rightWallW > 200) {
+        this._spawnCityBlock(rightStartX + 50, wallY - 15, Math.min(180, rightWallW - 80), 70, 5);
       }
     }
     
-    const colliderY = rathaus.y - 30;
-    const colliderH = 60;
-    const leftCollider = this.buildingGroup.create(leftWallW / 2, colliderY + colliderH / 2, null);
-    leftCollider.setSize(leftWallW, colliderH).setVisible(false).setImmovable(true);
-    leftCollider.body.setOffset(-leftWallW / 2, -colliderH / 2);
+    const colliderY = 0;
+    const colliderH = rathaus.y + rathaus.h * 0.6;
     
-    const rightCollider = this.buildingGroup.create(rightWallX + rightWallW / 2, colliderY + colliderH / 2, null);
-    rightCollider.setSize(rightWallW, colliderH).setVisible(false).setImmovable(true);
-    rightCollider.body.setOffset(-rightWallW / 2, -colliderH / 2);
+    const leftZone = this.add.zone(leftEndX / 2, colliderH / 2, leftEndX, colliderH);
+    this.physics.add.existing(leftZone, true);
+    this.buildingGroup.add(leftZone);
+    
+    const rightZone = this.add.zone(rightStartX + rightWallW / 2, colliderH / 2, rightWallW, colliderH);
+    this.physics.add.existing(rightZone, true);
+    this.buildingGroup.add(rightZone);
+    
+    const topZone = this.add.zone(W / 2, rathaus.y / 2, W, rathaus.y);
+    this.physics.add.existing(topZone, true);
+    this.buildingGroup.add(topZone);
   }
 
   _spawnCityBlock(x, y, w, h, depth = 4) {
