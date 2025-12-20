@@ -17,8 +17,8 @@ const config = {
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 1200,    // initiale Spiel-Breite
-    height: 600    // initiale Spiel-Höhe
+    width: 960,     // Canvas-Breite (Player 72px = 15% von 480px)
+    height: 480     // Canvas-Höhe
   },
   backgroundColor: '#2d2d2d',
   physics: {
