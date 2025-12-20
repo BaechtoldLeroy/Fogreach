@@ -16,7 +16,7 @@ const PLAYER_WIDTH_STRETCH = 1;
 const PLAYER_SIDEWAYS_SCALE = 0.8;
 const PLAYER_RIGHT_LEFT_WIDTH_MULT = 1.15;
 const PLAYER_FRONT_BACK_WIDTH_MULT = 1.4;
-const PLAYER_VISUAL_SCALE = 0.48; // Scale down to original size (29x72) while keeping high-res texture (60x150)
+const PLAYER_VISUAL_SCALE = 0.6; // Scale to ~15% screen height (36x90) at 600px canvas height
 const PLAYER_DIRECTION_FRAME_SHIFTS = {
   '02': 10
 };
