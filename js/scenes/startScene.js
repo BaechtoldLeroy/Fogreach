@@ -250,7 +250,7 @@ StartScene.prototype.create = function () {
     
     RT.MANIFEST = templateNames.slice();
     window.game = this.game;
-    this.scene.start("HubScene", { gameState: { hubPhase: 0 } });
+    this.scene.start("HubSceneV2");
   }
 };
 

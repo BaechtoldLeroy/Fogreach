@@ -26,7 +26,7 @@ const config = {
     fps: 60,
     arcade: { gravity: { y: 0 }, debug: false }
   },
-  scene: [StartScene, HubScene, TestTerrainScene, GameScene],
+  scene: [StartScene, HubSceneV2, TestTerrainScene, GameScene],
   plugins: {
     global: [{
       key: 'rexVirtualJoystick',
