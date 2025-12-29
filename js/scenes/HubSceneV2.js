@@ -20,13 +20,13 @@ const HUB_HITBOXES = {
     { id: 'druckerei_entrance', x: 668, y: 366, w: 64, h: 34, label: 'Druckerei [E]' }
   ],
   npcs: [
-    { id: 'branka', name: 'Schmiedemeisterin Branka', x: 300, y: 416 },
-    { id: 'thom',   name: 'Setzer Thom',              x: 700, y: 416 },
-    { id: 'mara',   name: 'Mara',                     x: 512, y: 304 }
+    { id: 'branka', name: 'Schmiedemeisterin Branka', x: 300, y: 416, texture: 'schmiedemeisterin', scale: 0.08 },
+    { id: 'thom',   name: 'Setzer Thom',              x: 700, y: 416, texture: 'setzer_thom', scale: 0.17 },
+    { id: 'mara',   name: 'Mara',                     x: 512, y: 304, texture: 'spaeherin', scale: 0.0792 }
   ]
 };
 
-const HUB_DEBUG = false;
+const HUB_DEBUG = true;
 const SCALE_FACTOR = 1536 / 960;
 
 class HubSceneV2 extends Phaser.Scene {
@@ -36,6 +36,9 @@ class HubSceneV2 extends Phaser.Scene {
 
   preload() {
     this.load.image('hubscene_bg', 'assets/hubscene.png');
+    this.load.image('schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
+    this.load.image('setzer_thom', 'assets/sprites/setzer_thom.png');
+    this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
   }
 
   create() {
@@ -65,6 +68,22 @@ class HubSceneV2 extends Phaser.Scene {
   createColliders() {
     this.colliderGroup = this.physics.add.staticGroup();
     
+    const colors = {
+      'city_silhouette_wall': 0xff0000,
+      'rathaus_body': 0xff4400,
+      'rathaus_steps': 0xff8800,
+      'fountain': 0x0088ff,
+      'planter_left': 0x00ff00,
+      'planter_right': 0x00ff00,
+      'bench_left': 0x884400,
+      'bench_right': 0x884400,
+      'lamp_left': 0xffff00,
+      'lamp_right': 0xffff00,
+      'archivschmiede_body': 0x8800ff,
+      'druckerei_body': 0xff00ff,
+      'boulevard_edge': 0x444444
+    };
+    
     HUB_HITBOXES.colliders.forEach(c => {
       const sx = c.x * SCALE_FACTOR;
       const sy = c.y * SCALE_FACTOR;
@@ -77,9 +96,18 @@ class HubSceneV2 extends Phaser.Scene {
       zone.setData('id', c.id);
       
       if (HUB_DEBUG) {
-        const rect = this.add.rectangle(sx + sw / 2, sy + sh / 2, sw, sh, 0xff0000, 0.3);
-        rect.setStrokeStyle(2, 0xff0000);
+        const color = colors[c.id] || 0xff0000;
+        const rect = this.add.rectangle(sx + sw / 2, sy + sh / 2, sw, sh, color, 0.35);
+        rect.setStrokeStyle(2, color);
         rect.setDepth(1000);
+        
+        const label = this.add.text(sx + sw / 2, sy + sh / 2, c.id, {
+          fontSize: '10px',
+          fontFamily: 'monospace',
+          color: '#ffffff',
+          backgroundColor: '#000000aa',
+          padding: { x: 2, y: 1 }
+        }).setOrigin(0.5).setDepth(1001);
       }
     });
   }
@@ -111,9 +139,17 @@ class HubSceneV2 extends Phaser.Scene {
       this.entranceLabels.push({ zone, label: labelText });
       
       if (HUB_DEBUG) {
-        const rect = this.add.rectangle(sx + sw / 2, sy + sh / 2, sw, sh, 0x00ff00, 0.3);
-        rect.setStrokeStyle(2, 0x00ff00);
+        const rect = this.add.rectangle(sx + sw / 2, sy + sh / 2, sw, sh, 0x00ff00, 0.4);
+        rect.setStrokeStyle(3, 0x00ff00);
         rect.setDepth(1000);
+        
+        const debugLabel = this.add.text(sx + sw / 2, sy + sh / 2, e.id, {
+          fontSize: '10px',
+          fontFamily: 'monospace',
+          color: '#00ff00',
+          backgroundColor: '#000000cc',
+          padding: { x: 2, y: 1 }
+        }).setOrigin(0.5).setDepth(1001);
       }
     });
   }
@@ -126,12 +162,11 @@ class HubSceneV2 extends Phaser.Scene {
       const sy = npc.y * SCALE_FACTOR;
       
       let sprite;
-      const spriteKey = this.getNPCSpriteKey(npc.id);
       
-      if (this.textures.exists(spriteKey)) {
-        sprite = this.add.sprite(sx, sy, spriteKey);
+      if (this.textures.exists(npc.texture)) {
+        sprite = this.add.sprite(sx, sy, npc.texture);
         sprite.setOrigin(0.5, 1);
-        sprite.setScale(0.5);
+        if (npc.scale) sprite.setScale(npc.scale);
       } else {
         sprite = this.add.rectangle(sx, sy - 40, 40, 80, 0x8844aa);
         sprite.setStrokeStyle(2, 0xffffff);
@@ -152,19 +187,19 @@ class HubSceneV2 extends Phaser.Scene {
       this.npcs.push({ sprite, nameText, data: npc });
       
       if (HUB_DEBUG) {
-        const marker = this.add.circle(sx, sy, 8, 0x0000ff, 0.8);
+        const marker = this.add.circle(sx, sy, 10, 0x00ffff, 0.8);
+        marker.setStrokeStyle(2, 0xffffff);
         marker.setDepth(1000);
+        
+        const npcLabel = this.add.text(sx, sy + 15, npc.id, {
+          fontSize: '10px',
+          fontFamily: 'monospace',
+          color: '#00ffff',
+          backgroundColor: '#000000cc',
+          padding: { x: 2, y: 1 }
+        }).setOrigin(0.5, 0).setDepth(1001);
       }
     });
-  }
-
-  getNPCSpriteKey(id) {
-    const mapping = {
-      'branka': 'schmiedemeisterin',
-      'thom': 'setzer_thom',
-      'mara': 'spaeherin'
-    };
-    return mapping[id] || id;
   }
 
   createPlayer() {
