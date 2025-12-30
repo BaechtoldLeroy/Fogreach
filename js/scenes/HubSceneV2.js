@@ -12,18 +12,51 @@ const HUB_HITBOXES = {
     { id: 'druckerei_body',       x: 652, y: 244, w: 148, h: 62 }
   ],
   entrances: [
-    { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]' },
-    { id: 'schmiede_entrance',  x: 292, y: 318, w: 64, h: 34, label: 'Werkstatt [E]' },
-    { id: 'druckerei_entrance', x: 668, y: 334, w: 64, h: 34, label: 'Druckerei [E]' }
+    { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]', target: 'GameScene' },
+    { id: 'schmiede_entrance',  x: 292, y: 318, w: 64, h: 34, label: 'Werkstatt [E]', target: 'workshop' },
+    { id: 'druckerei_entrance', x: 668, y: 334, w: 64, h: 34, label: 'Druckerei [E]', target: 'druckerei' }
   ],
   npcs: [
-    { id: 'branka', name: 'Schmiedemeisterin Branka', x: 300, y: 416, texture: 'schmiedemeisterin', scale: 0.08 },
-    { id: 'thom',   name: 'Setzer Thom',              x: 700, y: 416, texture: 'setzer_thom', scale: 0.17 },
-    { id: 'mara',   name: 'Mara',                     x: 512, y: 322, texture: 'spaeherin', scale: 0.0792 }
+    { 
+      id: 'branka', 
+      name: 'Schmiedemeisterin Branka', 
+      x: 300, y: 416, 
+      texture: 'schmiedemeisterin', 
+      scale: 0.08,
+      lines: [
+        'Stahl allein schneidet die Luegen des Rates nicht. Erst wenn jede Klinge Wissen traegt, faellt ihre Maske.',
+        'Im Keller unter dem Rathaus lagern Protokolle aus Daemonenverhoeren. Bring mir Abschriften, und ich veredele deine Artefakte.',
+        'Sprich draussen leise. Die Aufseher des Kettenrats tragen inzwischen die Farben der Stadtgarde.'
+      ]
+    },
+    { 
+      id: 'thom', 
+      name: 'Setzer Thom', 
+      x: 700, y: 416, 
+      texture: 'setzer_thom', 
+      scale: 0.17,
+      lines: [
+        'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Traeume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
+        'Bring mir Beweise aus dem Rathauskeller. Jede Spalte, die wir drucken, nimmt der Angst einen Zoll.',
+        'Verteile nichts Ungeprueftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
+      ]
+    },
+    { 
+      id: 'mara', 
+      name: 'Mara vom Untergrund', 
+      x: 512, y: 322, 
+      texture: 'spaeherin', 
+      scale: 0.0792,
+      lines: [
+        'Die Schreiber des Rates markieren Haeuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
+        'Der Zeremonienmeister besitzt neue Siegel. Sie holen Daemonen als stilles Archiv.',
+        'Sichere Augen im Rathauskeller. Jedes Siegel, das du brichst, lockert ihre Ketten an der Stadt.'
+      ]
+    }
   ]
 };
 
-const HUB_DEBUG = true;
+const HUB_DEBUG = false;
 const SCALE_FACTOR = 1536 / 960;
 
 class HubSceneV2 extends Phaser.Scene {
@@ -48,18 +81,36 @@ class HubSceneV2 extends Phaser.Scene {
     bg.setOrigin(0, 0);
     bg.setScale(1.0);
 
+    this._dialogOpen = false;
+    this._activeInteractable = null;
+    this._dialogContainer = null;
+
     this.createColliders();
     this.createEntrances();
     this.createNPCs();
     this.createPlayer();
+    this.createPrompt();
     
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.interactKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.input.keyboard.on('keydown-E', this._handleInteract, this);
     
     if (this.player) {
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
       this.physics.add.collider(this.player, this.colliderGroup);
     }
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard.off('keydown-E', this._handleInteract, this);
+    });
+  }
+
+  createPrompt() {
+    this.prompt = this.add.text(0, 0, '', {
+      fontFamily: 'monospace',
+      fontSize: 16,
+      backgroundColor: '#000a',
+      padding: { x: 6, y: 3 }
+    }).setOrigin(0.5, 1).setDepth(1000).setVisible(false);
   }
 
   createColliders() {
@@ -130,7 +181,7 @@ class HubSceneV2 extends Phaser.Scene {
         padding: { x: 6, y: 3 }
       }).setOrigin(0.5, 1).setDepth(200).setVisible(false);
       
-      this.entranceLabels.push({ zone, label: labelText });
+      this.entranceLabels.push({ zone, label: labelText, data: e });
       
       if (HUB_DEBUG) {
         const rect = this.add.rectangle(sx + sw / 2, sy + sh / 2, sw, sh, 0x00ff00, 0.4);
@@ -238,74 +289,237 @@ class HubSceneV2 extends Phaser.Scene {
     const p = this.player;
     let inputX = 0, inputY = 0;
     
-    if (this.cursors.left.isDown) inputX -= 1;
-    if (this.cursors.right.isDown) inputX += 1;
-    if (this.cursors.up.isDown) inputY -= 1;
-    if (this.cursors.down.isDown) inputY += 1;
-    
-    const len = Math.hypot(inputX, inputY) || 1;
-    const speed = (typeof playerSpeed !== 'undefined' ? playerSpeed : 220);
-    const velX = (inputX / len) * speed;
-    const velY = (inputY / len) * speed;
-    
-    p.setVelocity(velX, velY);
-    p.setDepth(p.y);
-    
-    if (typeof updatePlayerSpriteAnimation === 'function') {
-      updatePlayerSpriteAnimation(p, velX, velY);
+    if (!this._dialogOpen) {
+      if (this.cursors.left.isDown) inputX -= 1;
+      if (this.cursors.right.isDown) inputX += 1;
+      if (this.cursors.up.isDown) inputY -= 1;
+      if (this.cursors.down.isDown) inputY += 1;
+      const len = Math.hypot(inputX, inputY) || 1;
+      const speed = (typeof playerSpeed !== 'undefined' ? playerSpeed : 220);
+      const velX = (inputX / len) * speed;
+      const velY = (inputY / len) * speed;
+      p.setVelocity(velX, velY);
+      if (typeof updatePlayerSpriteAnimation === 'function') {
+        updatePlayerSpriteAnimation(p, velX, velY);
+      }
+    } else {
+      p.setVelocity(0, 0);
+      if (typeof updatePlayerSpriteAnimation === 'function') {
+        updatePlayerSpriteAnimation(p, 0, 0);
+      }
     }
     
-    this.updateEntranceLabels();
-    this.updateNPCLabels();
-    this.checkInteraction();
+    p.setDepth(p.y);
+    this._refreshInteractionPrompt();
+    
+    if (this.prompt) {
+      this.prompt.setPosition(p.x, p.y - 52);
+    }
   }
 
-  updateEntranceLabels() {
-    if (!this.player || !this.entranceLabels) return;
+  _refreshInteractionPrompt() {
+    if (this._dialogOpen || !this.player?.body) return;
     
-    this.entranceLabels.forEach(({ zone, label }) => {
+    const playerBounds = this.player.getBounds();
+    let active = null;
+    let activeLabel = null;
+
+    for (const { zone, label, data } of this.entranceLabels) {
       const bounds = zone.getBounds();
-      const playerBounds = this.player.getBounds();
-      const overlaps = Phaser.Geom.Rectangle.Overlaps(bounds, playerBounds);
-      label.setVisible(overlaps);
-    });
-  }
+      if (Phaser.Geom.Rectangle.Overlaps(bounds, playerBounds)) {
+        active = { type: 'entrance', data, zone };
+        activeLabel = data.label;
+        label.setVisible(true);
+      } else {
+        label.setVisible(false);
+      }
+    }
 
-  updateNPCLabels() {
-    if (!this.player || !this.npcs) return;
-    
-    const interactDist = 80;
-    
-    this.npcs.forEach(({ sprite, nameText, data }) => {
+    const interactDist = 100;
+    for (const { sprite, nameText, data } of this.npcs) {
       const npcX = data.x * SCALE_FACTOR;
       const npcY = data.y * SCALE_FACTOR;
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npcX, npcY);
-      nameText.setVisible(dist < interactDist);
-    });
+      if (dist < interactDist) {
+        active = { type: 'npc', data };
+        activeLabel = `${data.name} [E]`;
+        nameText.setVisible(true);
+      } else {
+        nameText.setVisible(false);
+      }
+    }
+
+    if (active) {
+      this._activeInteractable = active;
+      this.prompt.setText(activeLabel);
+      this.prompt.setVisible(true);
+    } else {
+      this._activeInteractable = null;
+      this.prompt.setVisible(false);
+    }
   }
 
-  checkInteraction() {
-    if (!Phaser.Input.Keyboard.JustDown(this.interactKey)) return;
+  _handleInteract() {
+    if (this._dialogOpen) return;
+    const current = this._activeInteractable;
+    if (!current) return;
     
-    this.entranceLabels.forEach(({ zone, label }) => {
-      if (label.visible) {
-        const entranceId = zone.getData('id');
-        this.handleEntranceInteraction(entranceId);
+    this._activeInteractable = null;
+    this.prompt.setVisible(false);
+
+    if (current.type === 'npc') {
+      this._showNpcDialogue(current.data);
+    } else if (current.type === 'entrance') {
+      this._enterLocation(current.data);
+    }
+  }
+
+  _showNpcDialogue(npcData) {
+    console.log('[HubSceneV2] Opening NPC dialogue for:', npcData.name);
+    this._dialogOpen = true;
+
+    if (this._dialogContainer) {
+      this._dialogContainer.destroy(true);
+      this._dialogContainer = null;
+    }
+
+    const cam = this.cameras.main;
+    const cx = cam.width / 2;
+    const cy = cam.height - 180;
+
+    const container = this.add.container(cx, cy).setDepth(1500).setScrollFactor(0);
+    const panelWidth = 520;
+    const pad = 24;
+    const innerWidth = panelWidth - pad * 2;
+
+    const title = npcData.name || 'Gespraech';
+    const header = this.add.text(0, 0, title, {
+      fontFamily: 'serif',
+      fontSize: 22,
+      color: '#f1e9d8'
+    }).setWordWrapWidth(innerWidth).setVisible(false);
+
+    const bodyLines = npcData.lines || [];
+    const body = bodyLines.join('\n\n');
+    const bodyText = this.add.text(0, 0, body, {
+      fontFamily: 'monospace',
+      fontSize: 16,
+      color: '#d8d2c3',
+      wordWrap: { width: innerWidth }
+    }).setVisible(false);
+
+    const headerHeight = header.height;
+    const bodyHeight = bodyText.height;
+    const hintHeight = 22;
+    const panelHeight = Math.max(200, Math.ceil(pad + headerHeight + 12 + bodyHeight + pad + hintHeight));
+
+    const g = this.add.graphics();
+    g.fillStyle(0x0c0c11, 0.94).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
+    g.lineStyle(2, 0x484850, 0.9).strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
+    container.add(g);
+
+    header.setPosition(-panelWidth / 2 + pad, -panelHeight / 2 + pad).setVisible(true);
+    bodyText.setPosition(-panelWidth / 2 + pad, header.y + headerHeight + 12).setVisible(true);
+    container.add(header);
+    container.add(bodyText);
+
+    const hintY = panelHeight / 2 - pad * 0.75;
+
+    if (npcData.id === 'mara') {
+      const skillsBtn = this.add.text(0, hintY - 40, '[ Skills lernen ] (K)', {
+        fontFamily: 'monospace',
+        fontSize: 16,
+        color: '#ffffff',
+        backgroundColor: '#2a5a8a',
+        padding: { x: 14, y: 8 }
+      }).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+      
+      skillsBtn.on('pointerdown', (pointer, x, y, event) => {
+        event.stopPropagation();
+        this._closeDialog();
+        this.time.delayedCall(100, () => {
+          if (typeof this._showSkillTreeUI === 'function') {
+            this._showSkillTreeUI();
+          }
+        });
+      });
+      container.add(skillsBtn);
+    }
+
+    const hintText = this.add.text(0, hintY, 'E / Leer / ESC: schliessen', {
+      fontFamily: 'monospace',
+      fontSize: 14,
+      color: '#b2aba0'
+    }).setOrigin(0.5, 1);
+    container.add(hintText);
+
+    this._dialogContainer = container;
+
+    const keyClosers = [];
+    const closeDialog = () => this._closeDialog(keyClosers);
+
+    const bindClose = (eventName) => {
+      const handler = () => closeDialog();
+      this.input.keyboard.on(eventName, handler);
+      keyClosers.push({ eventName, handler });
+    };
+
+    this.time.delayedCall(0, () => {
+      bindClose('keydown-E');
+      bindClose('keydown-SPACE');
+      bindClose('keydown-ESC');
+      bindClose('keydown-ENTER');
+
+      if (npcData.id === 'mara') {
+        const skillHandler = () => {
+          this._closeDialog(keyClosers);
+          this.time.delayedCall(100, () => {
+            if (typeof this._showSkillTreeUI === 'function') {
+              this._showSkillTreeUI();
+            }
+          });
+        };
+        this.input.keyboard.on('keydown-K', skillHandler);
+        keyClosers.push({ eventName: 'keydown-K', handler: skillHandler });
       }
     });
+
+    this._currentKeyClosers = keyClosers;
+    this.input.once('pointerdown', closeDialog);
+  }
+
+  _closeDialog(keyClosers) {
+    if (!this._dialogOpen) return;
+    this._dialogOpen = false;
     
-    this.npcs.forEach(({ sprite, nameText, data }) => {
-      if (nameText.visible) {
-        this.handleNPCInteraction(data);
-      }
-    });
+    if (this._dialogContainer) {
+      this._dialogContainer.destroy(true);
+      this._dialogContainer = null;
+    }
+
+    const closers = keyClosers || this._currentKeyClosers || [];
+    while (closers.length) {
+      const { eventName, handler } = closers.pop();
+      this.input.keyboard.off(eventName, handler);
+    }
+    this._currentKeyClosers = null;
   }
 
-  handleEntranceInteraction(entranceId) {
-    console.log('Entering:', entranceId);
-  }
-
-  handleNPCInteraction(npcData) {
-    console.log('Talking to:', npcData.name);
+  _enterLocation(entranceData) {
+    console.log('[HubSceneV2] Entering:', entranceData.id, '-> target:', entranceData.target);
+    
+    if (entranceData.target === 'GameScene') {
+      this.scene.start('GameScene');
+    } else if (entranceData.target === 'workshop') {
+      this._showNpcDialogue({
+        name: 'Werkstatt',
+        lines: ['Die Werkstatt ist derzeit geschlossen.', 'Komm spaeter wieder.']
+      });
+    } else if (entranceData.target === 'druckerei') {
+      this._showNpcDialogue({
+        name: 'Druckerei',
+        lines: ['Die Druckerpresse ruht.', 'Setzer Thom wird sie bald wieder anwerfen.']
+      });
+    }
   }
 }
