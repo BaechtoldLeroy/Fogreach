@@ -509,7 +509,43 @@ class HubSceneV2 extends Phaser.Scene {
     console.log('[HubSceneV2] Entering:', entranceData.id, '-> target:', entranceData.target);
     
     if (entranceData.target === 'GameScene') {
-      this.scene.start('GameScene');
+      this._openWaveSelectDialog((selectedWave, selectedDifficulty) => {
+        window.SELECTED_WAVE_OVERRIDE = selectedWave;
+        window.DUNGEON_DEPTH = selectedWave;
+        window.NEXT_DUNGEON_DEPTH = selectedWave + 1;
+        const difficulty = (typeof selectedDifficulty === 'number' && Number.isFinite(selectedDifficulty) && selectedDifficulty > 0)
+          ? selectedDifficulty
+          : (typeof window.getDifficultyMultiplier === 'function' ? window.getDifficultyMultiplier() : 1);
+        window.DIFFICULTY_MULTIPLIER = difficulty;
+        window.__LAST_SELECTED_DIFFICULTY__ = difficulty;
+        try {
+          localStorage.setItem('demonfall_lastDifficulty', JSON.stringify(difficulty));
+        } catch (err) {
+          console.warn('[HubSceneV2] Unable to persist last difficulty', err);
+        }
+
+        if (typeof saveGame === 'function') {
+          try {
+            saveGame(this);
+          } catch (err) {
+            console.warn('[HubSceneV2] saveGame before dungeon failed', err);
+          }
+        }
+
+        if (window.__LAST_SAVE_SNAPSHOT__) {
+          try {
+            window.pendingLoadedSave = JSON.parse(JSON.stringify(window.__LAST_SAVE_SNAPSHOT__));
+          } catch (err) {
+            console.warn('[HubSceneV2] snapshot clone failed', err);
+            window.pendingLoadedSave = window.__LAST_SAVE_SNAPSHOT__;
+          }
+        }
+
+        this.cameras.main.fadeOut(250, 0, 0, 0);
+        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+          this.scene.start('GameScene');
+        });
+      });
     } else if (entranceData.target === 'workshop') {
       this._showNpcDialogue({
         name: 'Werkstatt',
@@ -521,5 +557,247 @@ class HubSceneV2 extends Phaser.Scene {
         lines: ['Die Druckerpresse ruht.', 'Setzer Thom wird sie bald wieder anwerfen.']
       });
     }
+  }
+
+  _openWaveSelectDialog(onConfirm) {
+    if (this._dialogOpen) return;
+
+    this._dialogOpen = true;
+    this._activeInteractable = null;
+    this.prompt.setVisible(false);
+
+    const cam = this.cameras.main;
+    const cx = cam.width / 2;
+    const cy = cam.height / 2;
+
+    const overlay = this.add.rectangle(cx, cy, cam.width, cam.height, 0x000000, 0.45)
+      .setDepth(1595)
+      .setScrollFactor(0);
+
+    const container = this.add.container(cx, cy).setDepth(1600).setScrollFactor(0);
+
+    const panelWidth = 440;
+    const panelHeight = 280;
+    const pad = 22;
+    const g = this.add.graphics();
+    g.fillStyle(0x101018, 0.95).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
+    g.lineStyle(2, 0x4a4a6a, 0.9).strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
+    container.add(g);
+
+    const savedInfo = (() => {
+      if (window.__LAST_SAVE_SNAPSHOT__) return window.__LAST_SAVE_SNAPSHOT__;
+      try {
+        const raw = localStorage.getItem('demonfall_save_v1');
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        return {};
+      }
+    })();
+
+    const savedDepth = typeof savedInfo?.dungeonDepth === 'number' ? savedInfo.dungeonDepth : null;
+    const savedDifficulty = typeof savedInfo?.difficultyMultiplier === 'number' ? savedInfo.difficultyMultiplier : null;
+    const storedDifficulty = (() => {
+      try {
+        const raw = localStorage.getItem('demonfall_lastDifficulty');
+        if (!raw) return null;
+        const val = Number(JSON.parse(raw));
+        return Number.isFinite(val) && val > 0 ? val : null;
+      } catch (err) {
+        return null;
+      }
+    })();
+    const runtimeDepth = Math.max(1, Math.floor(window.DUNGEON_DEPTH || window.currentWave || 1));
+    const defaultDepth = savedDepth ? Math.max(1, Math.round(savedDepth)) : runtimeDepth;
+    let selected = Phaser.Math.Clamp(defaultDepth, 1, 99);
+    const minWave = 1;
+    const maxWave = 99;
+    const difficultyRuntime = (typeof window.getDifficultyMultiplier === 'function')
+      ? window.getDifficultyMultiplier()
+      : (typeof window.DIFFICULTY_MULTIPLIER === 'number' ? window.DIFFICULTY_MULTIPLIER : 1);
+    const diffMin = 0.25;
+    const diffMax = 5;
+    const diffStep = 0.25;
+    const rememberedDifficulty = (typeof window.__LAST_SELECTED_DIFFICULTY__ === 'number' && Number.isFinite(window.__LAST_SELECTED_DIFFICULTY__) && window.__LAST_SELECTED_DIFFICULTY__ > 0)
+      ? window.__LAST_SELECTED_DIFFICULTY__
+      : null;
+    const initialDifficulty = rememberedDifficulty
+      ? rememberedDifficulty
+      : (storedDifficulty ?? (savedDifficulty && Number.isFinite(savedDifficulty) ? savedDifficulty : difficultyRuntime));
+    let difficulty = Phaser.Math.Clamp(Number(initialDifficulty) || 1, diffMin, diffMax);
+
+    const persistDifficultySelection = (value) => {
+      const val = Phaser.Math.Clamp(Number(value) || 1, diffMin, diffMax);
+      window.__LAST_SELECTED_DIFFICULTY__ = val;
+      window.DIFFICULTY_MULTIPLIER = val;
+      try {
+        localStorage.setItem('demonfall_lastDifficulty', JSON.stringify(val));
+      } catch (err) {
+        console.warn('[HubSceneV2] Unable to persist difficulty selection', err);
+      }
+    };
+    persistDifficultySelection(difficulty);
+
+    const title = this.add.text(0, -panelHeight / 2 + pad, 'Rathauskeller betreten', {
+      fontFamily: 'serif',
+      fontSize: 24,
+      color: '#f2e9d8'
+    }).setOrigin(0.5, 0);
+    container.add(title);
+
+    const subtitle = this.add.text(0, title.y + title.height + 12, 'Waehle das Start-Level (Schwierigkeit)', {
+      fontFamily: 'monospace',
+      fontSize: 16,
+      color: '#c8c2b5'
+    }).setOrigin(0.5, 0);
+    container.add(subtitle);
+
+    const waveLabel = this.add.text(0, subtitle.y + subtitle.height + 18, 'Dungeon Level', {
+      fontFamily: 'monospace',
+      fontSize: 18,
+      color: '#cfd0ff'
+    }).setOrigin(0.5, 0.5);
+    container.add(waveLabel);
+
+    const waveText = this.add.text(0, waveLabel.y + 52, '', {
+      fontFamily: 'serif',
+      fontSize: 48,
+      color: '#ffe28a'
+    }).setOrigin(0.5, 0.5);
+    container.add(waveText);
+
+    const difficultyLabel = this.add.text(0, waveText.y + 68, 'Schwierigkeits-Multiplikator', {
+      fontFamily: 'monospace',
+      fontSize: 18,
+      color: '#cfd0ff'
+    }).setOrigin(0.5, 0.5);
+    container.add(difficultyLabel);
+
+    const difficultyText = this.add.text(0, difficultyLabel.y + 40, '', {
+      fontFamily: 'serif',
+      fontSize: 42,
+      color: '#ffaaff'
+    }).setOrigin(0.5, 0.5);
+    container.add(difficultyText);
+
+    const formatDifficulty = (value) => {
+      const rounded = Math.round(value * 100) / 100;
+      return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(2)}x`;
+    };
+
+    const updateDisplay = () => {
+      waveText.setText(`${selected}`);
+      difficultyText.setText(formatDifficulty(difficulty));
+    };
+    updateDisplay();
+
+    const makeButton = (label, x, y, handler, style = {}) => {
+      const txt = this.add.text(x, y, label, Object.assign({
+        fontFamily: 'monospace',
+        fontSize: 20,
+        backgroundColor: '#2a2a3d',
+        color: '#ffffff',
+        padding: { x: 12, y: 6 }
+      }, style)).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      txt.on('pointerdown', () => handler());
+      txt.on('pointerover', () => txt.setStyle({ backgroundColor: '#3a3a5a' }));
+      txt.on('pointerout', () => txt.setStyle({ backgroundColor: style.backgroundColor || '#2a2a3d' }));
+      container.add(txt);
+      return txt;
+    };
+
+    const adjustWave = (delta) => {
+      selected += delta;
+      if (selected < minWave) selected = minWave;
+      if (selected > maxWave) selected = maxWave;
+      updateDisplay();
+    };
+
+    makeButton('−', -120, waveText.y, () => adjustWave(-1), { fontSize: 28, padding: { x: 18, y: 8 } });
+    makeButton('+', 120, waveText.y, () => adjustWave(1), { fontSize: 28, padding: { x: 18, y: 8 } });
+
+    const adjustDifficulty = (steps) => {
+      const raw = difficulty + steps * diffStep;
+      const clamped = Phaser.Math.Clamp(raw, diffMin, diffMax);
+      const stepped = Math.round(clamped / diffStep) * diffStep;
+      difficulty = Number(stepped.toFixed(2));
+      persistDifficultySelection(difficulty);
+      updateDisplay();
+    };
+
+    makeButton('−', -120, difficultyText.y, () => adjustDifficulty(-1), { fontSize: 28, padding: { x: 18, y: 8 } });
+    makeButton('+', 120, difficultyText.y, () => adjustDifficulty(1), { fontSize: 28, padding: { x: 18, y: 8 } });
+
+    const info = this.add.text(0, difficultyText.y + 48, 'Links/Rechts Level aendern - Hoch/Runter Multiplikator\nEnter/Space starten - ESC zurueck', {
+      fontFamily: 'monospace',
+      fontSize: 14,
+      color: '#9aa2c0'
+    }).setOrigin(0.5, 0);
+    info.setWordWrapWidth(panelWidth - pad * 2);
+    container.add(info);
+
+    const confirm = () => {
+      cleanup();
+      if (typeof onConfirm === 'function') onConfirm(selected, difficulty);
+      persistDifficultySelection(difficulty);
+    };
+
+    const cancel = () => {
+      cleanup();
+    };
+
+    makeButton('Starten', -80, info.y + info.height + 32, confirm, { backgroundColor: '#3d6a3d' });
+    makeButton('Abbrechen', 120, info.y + info.height + 32, cancel, { backgroundColor: '#6a3d3d' });
+
+    const onKeyDown = (event) => {
+      switch (event.code) {
+        case 'ArrowLeft':
+        case 'Minus':
+        case 'NumpadSubtract':
+          event?.preventDefault?.();
+          adjustWave(-1);
+          break;
+        case 'ArrowRight':
+        case 'Equal':
+        case 'NumpadAdd':
+          event?.preventDefault?.();
+          adjustWave(1);
+          break;
+        case 'ArrowUp':
+        case 'KeyW':
+          event?.preventDefault?.();
+          adjustDifficulty(1);
+          break;
+        case 'ArrowDown':
+        case 'KeyS':
+          event?.preventDefault?.();
+          adjustDifficulty(-1);
+          break;
+        case 'Enter':
+        case 'NumpadEnter':
+        case 'Space':
+          event?.preventDefault?.();
+          confirm();
+          break;
+        case 'Escape':
+          event?.preventDefault?.();
+          cancel();
+          break;
+        default:
+          break;
+      }
+    };
+
+    this.input.keyboard.on('keydown', onKeyDown);
+
+    const cleanup = () => {
+      if (!container.active) return;
+      container.destroy(true);
+      overlay?.destroy();
+      this._dialogOpen = false;
+      this._dialogContainer = null;
+      this.input.keyboard.off('keydown', onKeyDown);
+    };
+
+    this._dialogContainer = container;
   }
 }
