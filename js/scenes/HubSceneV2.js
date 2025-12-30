@@ -1,20 +1,20 @@
 const HUB_HITBOXES = {
   colliders: [
-    { id: 'city_silhouette_wall', x: 0,   y: 40,  w: 960, h: 92 },
+    { id: 'city_silhouette_wall', x: 0,   y: 200, w: 960, h: 92 },
     { id: 'rathaus_body',         x: 368, y: 110, w: 224, h: 168 },
     { id: 'rathaus_steps',        x: 430, y: 280, w: 100, h: 16 },
-    { id: 'fountain',             x: 444, y: 336, w: 72,  h: 26 },
-    { id: 'planter_left',         x: 356, y: 314, w: 38,  h: 22 },
-    { id: 'planter_right',        x: 566, y: 314, w: 38,  h: 22 },
-    { id: 'bench_left',           x: 390, y: 472, w: 48,  h: 2 },
-    { id: 'bench_right',          x: 522, y: 472, w: 48,  h: 2 },
-    { id: 'archivschmiede_body',  x: 220, y: 260, w: 148, h: 62 },
-    { id: 'druckerei_body',       x: 652, y: 260, w: 148, h: 62 }
+    { id: 'fountain',             x: 444, y: 344, w: 72,  h: 26 },
+    { id: 'planter_left',         x: 356, y: 306, w: 38,  h: 22 },
+    { id: 'planter_right',        x: 566, y: 306, w: 38,  h: 22 },
+    { id: 'bench_left',           x: 390, y: 488, w: 48,  h: 2 },
+    { id: 'bench_right',          x: 522, y: 488, w: 48,  h: 2 },
+    { id: 'archivschmiede_body',  x: 220, y: 244, w: 148, h: 62 },
+    { id: 'druckerei_body',       x: 652, y: 244, w: 148, h: 62 }
   ],
   entrances: [
     { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]' },
-    { id: 'schmiede_entrance',  x: 292, y: 334, w: 64, h: 34, label: 'Werkstatt [E]' },
-    { id: 'druckerei_entrance', x: 668, y: 350, w: 64, h: 34, label: 'Druckerei [E]' }
+    { id: 'schmiede_entrance',  x: 292, y: 318, w: 64, h: 34, label: 'Werkstatt [E]' },
+    { id: 'druckerei_entrance', x: 668, y: 334, w: 64, h: 34, label: 'Druckerei [E]' }
   ],
   npcs: [
     { id: 'branka', name: 'Schmiedemeisterin Branka', x: 300, y: 416, texture: 'schmiedemeisterin', scale: 0.08 },
