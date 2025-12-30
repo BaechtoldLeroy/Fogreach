@@ -47,9 +47,6 @@ args = "npx serve . -l tcp://0.0.0.0:5000 -s"
 waitForPort = 5000
 
 [[ports]]
-localPort = 80
-
-[[ports]]
 localPort = 5000
 externalPort = 80
 

@@ -3,26 +3,23 @@ const HUB_HITBOXES = {
     { id: 'city_silhouette_wall', x: 0,   y: 0,   w: 960, h: 92 },
     { id: 'rathaus_body',         x: 368, y: 110, w: 224, h: 168 },
     { id: 'rathaus_steps',        x: 430, y: 280, w: 100, h: 16 },
-    { id: 'fountain',             x: 444, y: 328, w: 72,  h: 52 },
+    { id: 'fountain',             x: 444, y: 328, w: 72,  h: 26 },
     { id: 'planter_left',         x: 356, y: 318, w: 38,  h: 22 },
     { id: 'planter_right',        x: 566, y: 318, w: 38,  h: 22 },
-    { id: 'bench_left',           x: 390, y: 352, w: 96,  h: 16 },
-    { id: 'bench_right',          x: 474, y: 352, w: 96,  h: 16 },
-    { id: 'lamp_left',            x: 348, y: 336, w: 8,   h: 32 },
-    { id: 'lamp_right',           x: 602, y: 336, w: 8,   h: 32 },
-    { id: 'archivschmiede_body',  x: 220, y: 300, w: 180, h: 110 },
-    { id: 'druckerei_body',       x: 620, y: 300, w: 180, h: 110 },
-    { id: 'boulevard_edge',       x: 0,   y: 440, w: 960, h: 12 }
+    { id: 'bench_left',           x: 390, y: 472, w: 96,  h: 16 },
+    { id: 'bench_right',          x: 474, y: 472, w: 96,  h: 16 },
+    { id: 'archivschmiede_body',  x: 220, y: 276, w: 148, h: 62 },
+    { id: 'druckerei_body',       x: 652, y: 276, w: 148, h: 62 }
   ],
   entrances: [
     { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]' },
-    { id: 'schmiede_entrance',  x: 292, y: 366, w: 64, h: 34, label: 'Werkstatt [E]' },
+    { id: 'schmiede_entrance',  x: 292, y: 350, w: 64, h: 34, label: 'Werkstatt [E]' },
     { id: 'druckerei_entrance', x: 668, y: 366, w: 64, h: 34, label: 'Druckerei [E]' }
   ],
   npcs: [
     { id: 'branka', name: 'Schmiedemeisterin Branka', x: 300, y: 416, texture: 'schmiedemeisterin', scale: 0.08 },
     { id: 'thom',   name: 'Setzer Thom',              x: 700, y: 416, texture: 'setzer_thom', scale: 0.17 },
-    { id: 'mara',   name: 'Mara',                     x: 512, y: 304, texture: 'spaeherin', scale: 0.0792 }
+    { id: 'mara',   name: 'Mara',                     x: 512, y: 322, texture: 'spaeherin', scale: 0.0792 }
   ]
 };
 
@@ -77,11 +74,8 @@ class HubSceneV2 extends Phaser.Scene {
       'planter_right': 0x00ff00,
       'bench_left': 0x884400,
       'bench_right': 0x884400,
-      'lamp_left': 0xffff00,
-      'lamp_right': 0xffff00,
       'archivschmiede_body': 0x8800ff,
-      'druckerei_body': 0xff00ff,
-      'boulevard_edge': 0x444444
+      'druckerei_body': 0xff00ff
     };
     
     HUB_HITBOXES.colliders.forEach(c => {
