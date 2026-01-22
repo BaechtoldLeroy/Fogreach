@@ -1001,7 +1001,7 @@ function leaveDungeonForHub(scene, options = {}) {
         return;
       }
       const transitionConfig = {
-        target: 'HubScene',
+        target: 'HubSceneV2',
         duration: skipFade ? 0 : 250,
         moveBelow: true,
         sleep: false,
@@ -1014,7 +1014,7 @@ function leaveDungeonForHub(scene, options = {}) {
         scenePlugin.manager.transition(currentKey, transitionConfig);
       } else {
         console.warn('[leaveDungeonForHub] transition not available, using start fallback');
-        scenePlugin.start('HubScene', transitionConfig.data);
+        scenePlugin.start('HubSceneV2', transitionConfig.data);
       }
       isReturningToHub = false;
     };
