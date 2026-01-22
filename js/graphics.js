@@ -513,7 +513,8 @@ function createEnemyGraphics() {
     g.destroy();
   }
 
-  // 3) Brute (Panzer-Typ)
+  // 3) Brute (Panzer-Typ) - OLD GENERATED GRAPHICS (commented out, using sprite sheets now)
+  /*
   {
     const g = this.add.graphics();
     // Helm
@@ -539,6 +540,15 @@ function createEnemyGraphics() {
     g.fillRect(42, 24, 8, 4);
     g.generateTexture('enemyBrute', 64, 64);
     g.destroy();
+  }
+  */
+  // Brute now uses loaded sprites: brute_left0, brute_right0 (idle/walk), brute_left1/2, brute_right1/2 (attack)
+  // Default texture for spawning uses brute_right0
+  if (this.textures.exists('brute_right0')) {
+    // Create enemyBrute as alias to brute_right0 for initial spawn compatibility
+    if (!this.textures.exists('enemyBrute')) {
+      this.textures.addImage('enemyBrute', this.textures.get('brute_right0').getSourceImage());
+    }
   }
 
   // 4) Magier (Support-Typ)

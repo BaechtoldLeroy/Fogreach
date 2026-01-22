@@ -77,6 +77,14 @@ StartScene.prototype.preload = function () {
   this.load.image('npc_spaeherin', 'assets/sprites/spaeherin.png');
   this.load.image('npc_drucker', 'assets/sprites/setzer_thom.png');
   
+  // Brute enemy sprites
+  this.load.image('brute_left0', 'assets/enemy/brute/left0.png');
+  this.load.image('brute_left1', 'assets/enemy/brute/left1.png');
+  this.load.image('brute_left2', 'assets/enemy/brute/left2.png');
+  this.load.image('brute_right0', 'assets/enemy/brute/right0.png');
+  this.load.image('brute_right1', 'assets/enemy/brute/right1.png');
+  this.load.image('brute_right2', 'assets/enemy/brute/right2.png');
+  
   const templateNames = [
     "Arena", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
     "CirclePillars", "Crosshall", "CrossroadChamber", "Crossroads", "Crypt_Small_Altar",

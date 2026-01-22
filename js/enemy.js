@@ -254,11 +254,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       tint = 0x00ff00;
       break; // grün
     case 3:
-      key = "enemyBrute";
+      key = "brute_right0";
       speed = 50;
       hp = 3;
-      tint = 0x0000ff;
-      break; // blau
+      tint = null; // no tint for sprite-based brute
+      break;
     default:
       key = "enemyMage";
       speed = 60;
@@ -293,8 +293,10 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     scene._needsMask.push(enemy);
   }
 
-  // 4) Tint anwenden
-  enemy.setTint(tint);
+  // 4) Tint anwenden (nur wenn vorhanden)
+  if (tint !== null) {
+    enemy.setTint(tint);
+  }
 
   // 5) Schaden skaliert mit currentWave
   const waveIndex = Math.max(1, (Number.isFinite(currentWave) ? currentWave : 0) + 1);
@@ -320,13 +322,20 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.sepRadius = 110;
     enemy.cohRadius = 260;
   } else if (type === 3) {
-    // Brute (Panzer)
-    enemy.speed = 70; // statt 50
-    enemy.sepWeight = 0.35; // weniger Abstand halten
+    // Brute (Panzer) - uses sprite-based animation
+    enemy.speed = 70;
+    enemy.sepWeight = 0.35;
     enemy.cohWeight = 0.15;
-    enemy.avoidWeight = 0.6; // weniger vor Hindernissen „scheuen“
+    enemy.avoidWeight = 0.6;
     enemy.sepRadius = 80;
     enemy.cohRadius = 160;
+    // Scale down large sprites to fit game scale
+    enemy.setScale(0.08);
+    // Mark as brute for animation handling
+    enemy.isBrute = true;
+    enemy.bruteDirection = 'right';
+    enemy.bruteAttacking = false;
+    enemy.bruteAttackFrame = 0;
   } else {
     // Mage (Fern/Support)
     enemy.kiteRadius = 260;
@@ -481,6 +490,18 @@ function handleEnemies(time, delta = 16) {
     Steering.limit(desired, maxSpeed);
     enemy.body.setVelocity(desired.x, desired.y);
 
+    // Brute sprite animation based on movement direction
+    if (enemy.isBrute && !enemy.bruteAttacking) {
+      const newDir = desired.x >= 0 ? 'right' : 'left';
+      if (newDir !== enemy.bruteDirection) {
+        enemy.bruteDirection = newDir;
+        const idleKey = `brute_${newDir}0`;
+        if (this.textures.exists(idleKey)) {
+          enemy.setTexture(idleKey);
+        }
+      }
+    }
+
     // --- Angriff / Schaden unverändert
     const attackCooldown = 1500;
 
@@ -500,6 +521,32 @@ function handleEnemies(time, delta = 16) {
           time - enemy.lastAttackTime > attackCooldown
         ) {
           enemy.lastAttackTime = time;
+
+          // Brute attack animation
+          if (enemy.isBrute) {
+            enemy.bruteAttacking = true;
+            const dir = enemy.bruteDirection || 'right';
+            const scene = this;
+            // Frame 1 of attack
+            if (scene.textures.exists(`brute_${dir}1`)) {
+              enemy.setTexture(`brute_${dir}1`);
+            }
+            // Frame 2 of attack after 150ms
+            scene.time.delayedCall(150, () => {
+              if (enemy && enemy.active && scene.textures.exists(`brute_${dir}2`)) {
+                enemy.setTexture(`brute_${dir}2`);
+              }
+            });
+            // Return to idle after 300ms
+            scene.time.delayedCall(300, () => {
+              if (enemy && enemy.active) {
+                enemy.bruteAttacking = false;
+                if (scene.textures.exists(`brute_${dir}0`)) {
+                  enemy.setTexture(`brute_${dir}0`);
+                }
+              }
+            });
+          }
 
           // kurzzeitig physischen Block waehrend des Schlages aktivieren
           enemy._meleeCol = enemy._meleeCol || this.physics.add.collider(player, enemy);
