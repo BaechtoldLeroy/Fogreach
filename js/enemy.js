@@ -522,7 +522,7 @@ function handleEnemies(time, delta = 16) {
         ) {
           enemy.lastAttackTime = time;
 
-          // Brute attack animation (600ms total)
+          // Brute attack animation (500ms total, 250ms per frame)
           if (enemy.isBrute) {
             enemy.bruteAttacking = true;
             const dir = enemy.bruteDirection || 'right';
@@ -531,14 +531,14 @@ function handleEnemies(time, delta = 16) {
             if (scene.textures.exists(`brute_${dir}1`)) {
               enemy.setTexture(`brute_${dir}1`);
             }
-            // Frame 2 of attack after 300ms
-            scene.time.delayedCall(300, () => {
+            // Frame 2 of attack after 250ms
+            scene.time.delayedCall(250, () => {
               if (enemy && enemy.active && scene.textures.exists(`brute_${dir}2`)) {
                 enemy.setTexture(`brute_${dir}2`);
               }
             });
-            // Return to idle after 600ms
-            scene.time.delayedCall(600, () => {
+            // Return to idle after 500ms
+            scene.time.delayedCall(500, () => {
               if (enemy && enemy.active) {
                 enemy.bruteAttacking = false;
                 if (scene.textures.exists(`brute_${dir}0`)) {
