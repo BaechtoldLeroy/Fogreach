@@ -134,7 +134,7 @@ function spawnLoot(x, y, maybeItem) {
     const loot = lootGroup.create(x, y, item.iconKey || 'itMat');
     loot.setDisplaySize(32, 24);
     loot.setData('item', item);
-    loot.setDepth(5);
+    loot.setDepth(80);
     trackLootSprite(scene || loot.scene, loot);
   } else if (roll < 50) {
     spawnPickup.call(this, x, y, 'health');
@@ -150,6 +150,7 @@ function spawnPickup(x, y, type) {
   if (!targetScene?.physics) return null;
   const loot = targetScene.physics.add.sprite(x, y, key);
   loot.lootType = type;
+  loot.setDepth(80);
   targetScene.physics.add.overlap(player, loot, collectLoot, null, targetScene);
   trackLootSprite(targetScene || loot.scene, loot);
 }
