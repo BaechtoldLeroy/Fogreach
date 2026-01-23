@@ -577,7 +577,7 @@ class HubSceneV2 extends Phaser.Scene {
     const container = this.add.container(cx, cy).setDepth(1600).setScrollFactor(0);
 
     const panelWidth = 440;
-    const panelHeight = 280;
+    const panelHeight = 340;
     const pad = 22;
     const g = this.add.graphics();
     g.fillStyle(0x101018, 0.95).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
@@ -727,7 +727,40 @@ class HubSceneV2 extends Phaser.Scene {
     makeButton('−', -120, difficultyText.y, () => adjustDifficulty(-1), { fontSize: 28, padding: { x: 18, y: 8 } });
     makeButton('+', 120, difficultyText.y, () => adjustDifficulty(1), { fontSize: 28, padding: { x: 18, y: 8 } });
 
-    const info = this.add.text(0, difficultyText.y + 48, 'Links/Rechts Level aendern - Hoch/Runter Multiplikator\nEnter/Space starten - ESC zurueck', {
+    // Background toggle checkbox
+    let useBg = window.USE_RATHAUSKELLER_BG === true;
+    const bgCheckboxY = difficultyText.y + 50;
+    
+    const bgCheckbox = this.add.graphics();
+    const drawCheckbox = () => {
+      bgCheckbox.clear();
+      bgCheckbox.lineStyle(2, 0xaaaacc, 1);
+      bgCheckbox.strokeRect(-100, bgCheckboxY - 10, 20, 20);
+      if (useBg) {
+        bgCheckbox.fillStyle(0x88cc88, 1);
+        bgCheckbox.fillRect(-96, bgCheckboxY - 6, 12, 12);
+      }
+    };
+    drawCheckbox();
+    container.add(bgCheckbox);
+    
+    const bgLabel = this.add.text(-70, bgCheckboxY, 'Hintergrundbild verwenden', {
+      fontFamily: 'monospace',
+      fontSize: 16,
+      color: '#c8c2b5'
+    }).setOrigin(0, 0.5);
+    container.add(bgLabel);
+    
+    const bgHitArea = this.add.rectangle(-20, bgCheckboxY, 200, 24, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    bgHitArea.on('pointerdown', () => {
+      useBg = !useBg;
+      window.USE_RATHAUSKELLER_BG = useBg;
+      drawCheckbox();
+    });
+    container.add(bgHitArea);
+
+    const info = this.add.text(0, bgCheckboxY + 40, 'Links/Rechts Level aendern - Hoch/Runter Multiplikator\nEnter/Space starten - ESC zurueck - B Hintergrund', {
       fontFamily: 'monospace',
       fontSize: 14,
       color: '#9aa2c0'
@@ -781,6 +814,12 @@ class HubSceneV2 extends Phaser.Scene {
         case 'Escape':
           event?.preventDefault?.();
           cancel();
+          break;
+        case 'KeyB':
+          event?.preventDefault?.();
+          useBg = !useBg;
+          window.USE_RATHAUSKELLER_BG = useBg;
+          drawCheckbox();
           break;
         default:
           break;
