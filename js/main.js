@@ -708,6 +708,9 @@ function preload() {
     preloadPlayerDirectionalFrames(this.load);
   }
 
+  // Rathauskeller background image
+  this.load.image('rathauskeller_bg', 'js/roomTemplates/rathauskeller.png');
+
   // nur Loot-Placeholder (wir generieren Textures im Create)
   if (!this.textures.exists('lootTexture')) {
     this.textures.generate('lootTexture', {
@@ -764,6 +767,22 @@ function create() {
   qKey = this.input.keyboard.addKey('Q');
   fKey = this.input.keyboard.addKey('F');
   this.input.keyboard.on('keydown-I', () => { invOpen ? closeInventory() : openInventory(); });
+
+  // 4.3.1 Rathauskeller background toggle (B key)
+  this.rathauskellerBg = null;
+  this.rathauskellerBgVisible = false;
+  this.input.keyboard.on('keydown-B', () => {
+    if (!this.textures.exists('rathauskeller_bg')) return;
+    if (!this.rathauskellerBg) {
+      this.rathauskellerBg = this.add.image(480, 240, 'rathauskeller_bg');
+      this.rathauskellerBg.setDisplaySize(960, 480);
+      this.rathauskellerBg.setScrollFactor(0);
+      this.rathauskellerBg.setDepth(-100);
+      this.rathauskellerBg.setVisible(false);
+    }
+    this.rathauskellerBgVisible = !this.rathauskellerBgVisible;
+    this.rathauskellerBg.setVisible(this.rathauskellerBgVisible);
+  });
 
   // 4.4 UI-Elemente initialisieren
   initUI.call(this);
