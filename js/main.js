@@ -773,7 +773,8 @@ function create() {
     this.rathauskellerBg = this.add.image(480, 240, 'rathauskeller_bg');
     this.rathauskellerBg.setDisplaySize(960, 480);
     this.rathauskellerBg.setScrollFactor(0);
-    this.rathauskellerBg.setDepth(-100);
+    this.rathauskellerBg.setDepth(50);
+    this.rathauskellerBg.setAlpha(0.85);
   }
 
   // 4.4 UI-Elemente initialisieren
