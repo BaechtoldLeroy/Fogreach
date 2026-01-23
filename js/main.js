@@ -1476,7 +1476,7 @@ function initializeGameObjects() {
     this.scale.height / 2,
     textureKey,
     0
-  ).setCollideWorldBounds(true);
+  ).setCollideWorldBounds(true).setDepth(100);
 
   if (typeof applyPlayerDisplaySettings === 'function') {
     applyPlayerDisplaySettings(player);
