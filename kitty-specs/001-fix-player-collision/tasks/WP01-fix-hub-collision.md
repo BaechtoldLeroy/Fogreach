@@ -219,3 +219,7 @@ physics: {
 - Try diagonal movement against building corners
 - Verify entrance prompts still appear at doors
 - Check for "stuck" spots where player can't escape collision zones
+
+## Activity Log
+
+- 2026-04-02T22:36:55Z – unknown – shell_pid=30356 – lane=done – Done override: Implemented in worktree, pending merge
