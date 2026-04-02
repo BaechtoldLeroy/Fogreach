@@ -228,3 +228,7 @@ The GameScene is defined in `js/main.js` (~1529 lines). It generates dungeon roo
 - Try to "wiggle through" obstacles by rapidly alternating directions
 - Check that enemy AI isn't broken by obstacle collision changes
 - Verify projectiles still destroy on wall impact
+
+## Activity Log
+
+- 2026-04-02T22:36:56Z – unknown – shell_pid=8248 – lane=done – Done override: Implemented in worktree, pending merge
