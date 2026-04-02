@@ -1482,6 +1482,8 @@ function initializeGameObjects() {
     applyPlayerDisplaySettings(player);
   }
 
+  player.body.setMaxVelocity(220, 220);
+
   const f = player.frame;
   if (f) {
     console.log('[playerSprite] frame', f.width, f.height, 'cut', f.cutWidth, f.cutHeight, 'trimmed', f.trimmed, 'x', f.x, 'y', f.y, 'sourceSize', f.sourceSize);
@@ -1506,6 +1508,7 @@ function initializeGameObjects() {
   lootGroup = this.physics.add.group();
   this.enemyLayer = this.add.layer().setDepth(50);
   this.physics.world.setBounds(0, 0, this.scale.width + WORLD_RIGHT_PADDING, this.scale.height, true, true, true, true);
+  this.physics.world.TILE_BIAS = 24;
 
   if (typeof window.spawnObstacle === 'function') {
     this.spawnObstacle = window.spawnObstacle.bind(this);

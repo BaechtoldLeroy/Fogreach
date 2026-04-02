@@ -76,6 +76,7 @@ preload() {
     const W = 2048, H = 1536;
     this.cameras.main.setBounds(0, 0, W, H);
     this.physics.world.setBounds(0, 0, W, H);
+    this.physics.world.TILE_BIAS = 24;
 
     
     if (this._perfMonitor) this._perfMonitor.endTimer('create_world_setup');
@@ -637,6 +638,7 @@ _placeBuildingImageFitHeight(b, texKey, extraYOffset = 0) {
 
   const collider = this.buildingGroup.create(baseX, baseY - scaledH / 2, null);
   collider.setSize(scaledW, scaledH).setVisible(false);
+  collider.refreshBody();
 
   return { spr, scaledW, scaledH, baseX, baseY };
 }
@@ -757,6 +759,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
           null
         );
         customCollider.setSize(result.meta.size.w - 12, result.meta.size.h - 28).setVisible(false);
+        customCollider.refreshBody();
         // Standard-Kollider überspringen
         continue;
       } else {
@@ -768,6 +771,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
       // Kollision: statische Huelle
       const collider = this.buildingGroup.create(b.x + b.w / 2, b.y + b.h / 2, null);
       collider.setSize(b.w, b.h).setVisible(false);
+      collider.refreshBody();
 
       // Eingangszonen
       if (b.entrances) {

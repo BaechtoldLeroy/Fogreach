@@ -73,9 +73,10 @@ class HubSceneV2 extends Phaser.Scene {
 
   create() {
     const W = 1536, H = 1024;
-    
+
     this.cameras.main.setBounds(0, 0, W, H);
     this.physics.world.setBounds(0, 0, W, H);
+    this.physics.world.TILE_BIAS = 24;
 
     const bg = this.add.image(0, 0, 'hubscene_bg');
     bg.setOrigin(0, 0);
@@ -97,6 +98,7 @@ class HubSceneV2 extends Phaser.Scene {
     if (this.player) {
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
       this.physics.add.collider(this.player, this.colliderGroup);
+      this.physics.add.collider(this.player, this.npcGroup);
     }
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -138,6 +140,7 @@ class HubSceneV2 extends Phaser.Scene {
       const zone = this.add.zone(sx + sw / 2, sy + sh / 2, sw, sh);
       this.physics.add.existing(zone, true);
       this.colliderGroup.add(zone);
+      zone.body.refreshBody();
       zone.setData('id', c.id);
       
       if (HUB_DEBUG) {
@@ -201,13 +204,14 @@ class HubSceneV2 extends Phaser.Scene {
 
   createNPCs() {
     this.npcs = [];
-    
+    this.npcGroup = this.physics.add.staticGroup();
+
     HUB_HITBOXES.npcs.forEach(npc => {
       const sx = npc.x * SCALE_FACTOR;
       const sy = npc.y * SCALE_FACTOR;
-      
+
       let sprite;
-      
+
       if (this.textures.exists(npc.texture)) {
         sprite = this.add.sprite(sx, sy, npc.texture);
         sprite.setOrigin(0.5, 1);
@@ -216,10 +220,16 @@ class HubSceneV2 extends Phaser.Scene {
         sprite = this.add.rectangle(sx, sy - 40, 40, 80, 0x8844aa);
         sprite.setStrokeStyle(2, 0xffffff);
       }
-      
+
       sprite.setDepth(sy);
       sprite.setData('id', npc.id);
       sprite.setData('name', npc.name);
+
+      const hitW = 30, hitH = 36;
+      const npcZone = this.add.zone(sx, sy - hitH / 2, hitW, hitH);
+      this.physics.add.existing(npcZone, true);
+      this.npcGroup.add(npcZone);
+      npcZone.body.refreshBody();
       
       const nameText = this.add.text(sx, sy - 90, npc.name, {
         fontSize: '12px',
