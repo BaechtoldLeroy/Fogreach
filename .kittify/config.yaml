@@ -1,0 +1,13 @@
+vcs:
+  type: git
+agents:
+  available:
+  - claude
+  selection:
+    preferred_implementer: claude
+    preferred_reviewer: claude
+  auto_commit: true
+project:
+  uuid: 6962904f-d22b-4faf-883f-6b4fa65aaa69
+  slug: demonfall
+  node_id: 94d91ccab90b
