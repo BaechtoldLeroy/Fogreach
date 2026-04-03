@@ -8,40 +8,86 @@ let currentRoomId = 0;
 const ROOM_W = 1200;
 const ROOM_H = 600;
 
+// ---- Dungeon-Run State ----
+// Holds the procedural run configuration for the current dungeon visit.
+let dungeonRun = null; // { templateOrder: string[], totalRooms: number, currentIndex: number }
+
+/**
+ * Fisher-Yates shuffle (in-place).
+ */
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
+}
+
+/**
+ * Compute how many rooms this run should have.
+ * Base 5, +1 per 5 dungeon depth levels, max 10.
+ */
+function computeRunRoomCount() {
+  const depth = Math.max(1, window.DUNGEON_DEPTH || 1);
+  return Math.min(10, 5 + Math.floor((depth - 1) / 5));
+}
+
+/**
+ * Initialise a new procedural dungeon run.
+ * Shuffles the full template pool and picks `totalRooms` unique templates.
+ */
+function initDungeonRun() {
+  const RT = window.RoomTemplates || {};
+  const allNames = Object.keys(RT.TEMPLATES || {});
+  if (!allNames.length) {
+    // Fallback to manifest
+    allNames.push(...(RT.MANIFEST || []));
+  }
+
+  const totalRooms = computeRunRoomCount();
+
+  // Shuffle and pick without repeats
+  const shuffled = shuffleArray(allNames.slice());
+  const templateOrder = shuffled.slice(0, Math.min(totalRooms, shuffled.length));
+
+  // If we need more rooms than templates, allow wrapping (shouldn't happen with 16 templates / max 10 rooms)
+  while (templateOrder.length < totalRooms) {
+    templateOrder.push(shuffled[templateOrder.length % shuffled.length]);
+  }
+
+  dungeonRun = {
+    templateOrder: templateOrder,
+    totalRooms: totalRooms,
+    currentIndex: 0
+  };
+
+  window.dungeonRun = dungeonRun;
+  console.log('[DungeonRun] Initialized run with ' + totalRooms + ' rooms:', templateOrder);
+  return dungeonRun;
+}
+
 function createRooms() {
+  // Init the procedural run
+  initDungeonRun();
+
   const rightPadding = typeof WORLD_RIGHT_PADDING === 'number' ? WORLD_RIGHT_PADDING : 0;
   const roomWidth = ROOM_W + rightPadding;
-  // Einfacher Graph: 3 Räume linear verbunden
-  // Du kannst das später prozedural bauen.
-  rooms = [
-    makeRoom(0, {
-      exits: [
-        {
-          to: 1,
-          x: roomWidth - Phaser.Math.Between(20, 1000),
-          y: ROOM_H - Phaser.Math.Between(20, 400),
-        },
-      ],
-    }),
-    makeRoom(1, {
-      exits: [
-        {
-          to: 2,
-          x: roomWidth - Phaser.Math.Between(20, 100),
-          y: ROOM_H - Phaser.Math.Between(20, 400),
-        },
-      ],
-    }),
-    makeRoom(2, {
-      exits: [
-        {
-          to: 0,
-          x: roomWidth - Phaser.Math.Between(20, 100),
-          y: ROOM_H - Phaser.Math.Between(20, 400),
-        },
-      ],
-    }),
-  ];
+
+  // Create room entries for each room in the run
+  rooms = [];
+  for (let i = 0; i < dungeonRun.totalRooms; i++) {
+    rooms.push(makeRoom(i, {
+      exits: i < dungeonRun.totalRooms - 1
+        ? [{
+            to: i + 1,
+            x: roomWidth - Phaser.Math.Between(20, 1000),
+            y: ROOM_H - Phaser.Math.Between(20, 400),
+          }]
+        : [] // Last room: no exit (will trigger hub return)
+    }));
+  }
 }
 
 function makeRoom(id, opts) {
@@ -150,18 +196,34 @@ function enterRoom(scene, roomId) {
   scene.exploredRT?.clear();
   scene.spotlightRT?.clear();
 
-  // 1) Raum bauen: 4/5 Random, 1/5 Template
+  // 1) Raum bauen: use procedural template from dungeon run if available
   let builtMeta = null;
   let pickedType = null;
 
-  const pickTemplate = Math.random() < 4 / 5;
-  if (pickTemplate) {
+  const templateName = dungeonRun && dungeonRun.templateOrder[roomId];
+  if (templateName) {
+    builtMeta = buildTemplateRoom(scene, templateName);
+    pickedType = "template";
+  }
+  if (!builtMeta) {
+    // Fallback: random pick from pool
     builtMeta = buildTemplateRoom(scene);
     pickedType = "template";
   }
   if (!builtMeta) {
     builtMeta = buildRandomRoom(scene, room);
     pickedType = "random";
+  }
+
+  // Update dungeon run index
+  if (dungeonRun) {
+    dungeonRun.currentIndex = roomId;
+    window.dungeonRun = dungeonRun;
+  }
+
+  // Update room counter HUD
+  if (typeof updateRoomCounter === 'function') {
+    updateRoomCounter(roomId, dungeonRun ? dungeonRun.totalRooms : rooms.length);
   }
 
   const builtWidth = (builtMeta?.w ?? room?.width ?? ROOM_W) + rightPadding;
@@ -194,7 +256,10 @@ function enterRoom(scene, roomId) {
 
   // 2) Stairs aufbauen und sperren
   scene.stairsGroup.clear(true, true);
-  (builtMeta.doors || []).forEach((d) => {
+  const doorList = builtMeta.doors && builtMeta.doors.length > 0
+    ? builtMeta.doors
+    : [{ x: (builtMeta.w || 800) / 2, y: (builtMeta.h || 600) - 64, dir: null }]; // fallback door
+  doorList.forEach((d) => {
     const stair = scene.stairsGroup.create(d.x, d.y, "stairDown");
     stair.setData("locked", true);
     stair.setData("dir", d.dir || null);
@@ -269,8 +334,20 @@ function enterRoom(scene, roomId) {
       ? window.computeWaveEnemyTotal(targetWave)
       : 4 + (targetWave - 1) * 2;
 
-  enemiesPerWave = window.enemiesPerWave = baseEnemies;
-  if (room) room.enemiesPerWave = baseEnemies;
+  // Difficulty scaling based on room position within the run.
+  // Earlier rooms are easier (fewer enemies), later rooms are harder.
+  // Final room always gets the full difficulty boost.
+  const totalRooms = dungeonRun ? dungeonRun.totalRooms : rooms.length;
+  let roomDifficultyMult = 1.0;
+  if (totalRooms > 1) {
+    const progress = roomId / (totalRooms - 1); // 0.0 to 1.0
+    // Scale from 0.6x (first room) to 1.4x (last room)
+    roomDifficultyMult = 0.6 + 0.8 * progress;
+  }
+  const scaledEnemies = Math.max(2, Math.round(baseEnemies * roomDifficultyMult));
+
+  enemiesPerWave = window.enemiesPerWave = scaledEnemies;
+  if (room) room.enemiesPerWave = scaledEnemies;
   currentWave = Math.max(0, depth - 1);
   window.currentWave = currentWave;
 
@@ -295,8 +372,17 @@ function onStairOverlap(player, stair) {
   // nur wenn freigeschaltet
   if (stair.getData("locked")) return;
 
-  //const toId = stair.getData('to');
-  const toId = 1; // mal testweise, bin nicht sicher wo die roomId überall verwendet wird
+  const nextIndex = currentRoomId + 1;
+  const totalRooms = dungeonRun ? dungeonRun.totalRooms : rooms.length;
+
+  // Last room cleared -> return to hub
+  if (nextIndex >= totalRooms) {
+    const scene = obstacles.scene;
+    if (typeof leaveDungeonForHub === 'function') {
+      leaveDungeonForHub(scene, { reason: 'dungeon_complete' });
+    }
+    return;
+  }
 
   const depthBase = Math.max(
     1,
@@ -307,8 +393,8 @@ function onStairOverlap(player, stair) {
   );
   window.SELECTED_WAVE_OVERRIDE = depthBase;
 
-  // Betritt Zielraum…
-  enterRoom(obstacles.scene, toId);
+  // Betritt naechsten Raum
+  enterRoom(obstacles.scene, nextIndex);
 }
 
 /** Türen/Treppen sperren/freischalten */
@@ -753,6 +839,16 @@ function recomputeAccessibleArea(scene, options = {}) {
 window.isSpawnPositionBlocked = isSpawnPositionBlocked;
 window.recomputeAccessibleArea = recomputeAccessibleArea;
 
+/**
+ * Update room counter HUD text.
+ * Called from enterRoom. The actual text element is created in main.js.
+ */
+function updateRoomCounter(roomIndex, totalRooms) {
+  if (window._roomCounterText && window._roomCounterText.setText) {
+    window._roomCounterText.setText('Raum ' + (roomIndex + 1) + '/' + totalRooms);
+  }
+}
+
 // Export in globalen Namespace
 window.createRooms = createRooms;
 window.enterRoom = enterRoom;
@@ -760,3 +856,5 @@ window.markRoomCleared = markRoomCleared;
 window.lockStairs = lockStairs;
 window.rooms = () => rooms;
 window.currentRoomId = () => currentRoomId;
+window.initDungeonRun = initDungeonRun;
+window.updateRoomCounter = updateRoomCounter;
