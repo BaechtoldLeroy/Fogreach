@@ -140,7 +140,6 @@ class HubSceneV2 extends Phaser.Scene {
       const zone = this.add.zone(sx + sw / 2, sy + sh / 2, sw, sh);
       this.physics.add.existing(zone, true);
       this.colliderGroup.add(zone);
-      zone.body.refreshBody();
       zone.setData('id', c.id);
       
       if (HUB_DEBUG) {
@@ -229,7 +228,6 @@ class HubSceneV2 extends Phaser.Scene {
       const npcZone = this.add.zone(sx, sy - hitH / 2, hitW, hitH);
       this.physics.add.existing(npcZone, true);
       this.npcGroup.add(npcZone);
-      npcZone.body.refreshBody();
       
       const nameText = this.add.text(sx, sy - 90, npc.name, {
         fontSize: '12px',
