@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-03T14:55:23.733612+00:00",
+  "feature_number": "004",
+  "feature_slug": "004-dungeon-variety",
+  "friendly_name": "dungeon variety",
+  "mission": "software-dev",
+  "slug": "004-dungeon-variety",
+  "target_branch": "main"
+}
