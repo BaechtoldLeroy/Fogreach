@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-03T14:55:38.689141+00:00",
+  "feature_number": "010",
+  "feature_slug": "010-skill-tree-expansion",
+  "friendly_name": "skill tree expansion",
+  "mission": "software-dev",
+  "slug": "010-skill-tree-expansion",
+  "target_branch": "main"
+}
