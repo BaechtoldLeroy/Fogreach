@@ -275,6 +275,8 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   enemy.speed = speed;
   enemy.hp = hp;
   enemy.isRanged = isRanged;
+  enemy.enemyType = type; // 1=Imp, 2=Archer, 3=Brute, 4=Mage
+  enemy._originalTint = tint; // store for status effect visual reset
   enemy.rangedAttackRange = isRanged
     ? Math.max(120, rangedAttackRange || DEFAULT_RANGED_ATTACK_RANGE)
     : null;
@@ -380,7 +382,19 @@ function handleEnemies(time, delta = 16) {
       return; // boss handled, skip regular enemy logic
     }
 
-    const maxSpeed = enemy.speed || 80;
+    // Status effect: stunned enemies cannot move or attack
+    if (window.statusEffectManager && window.statusEffectManager.isStunned(enemy)) {
+      enemy.body.setVelocity(0, 0);
+      return;
+    }
+
+    // Status effect: slow reduces max speed
+    let speedMult = 1;
+    if (window.statusEffectManager) {
+      speedMult = window.statusEffectManager.getSpeedMultiplier(enemy);
+    }
+
+    const maxSpeed = (enemy.speed || 80) * speedMult;
     const stopDist = (enemy.body.width + player.body.width) / 1.5;
     const dToPlayer = Phaser.Math.Distance.Between(
       enemy.x,
@@ -565,6 +579,13 @@ function handleEnemies(time, delta = 16) {
           // Schaden wie bisher
           applyPlayerDamage(enemy.damage, this);
           showEnemyMeleeEffect(this, enemy, player);
+
+          // Brute melee: 30% chance to apply STUN on player
+          if (enemy.isBrute && window.statusEffectManager && window.StatusEffectType && player) {
+            if (Math.random() < 0.3) {
+              window.statusEffectManager.applyEffect(player, window.StatusEffectType.STUN, 'brute');
+            }
+          }
         }
       }
     }
@@ -588,6 +609,7 @@ function shootProjectile(enemy) {
     : Math.max(1, Math.round(baseDamage));
   projectile.setData('baseDamage', baseDamage);
   projectile.setData('damage', scaledDamage);
+  projectile.setData('enemyType', enemy.enemyType || 0);
   projectile.baseDamage = baseDamage;
   projectile.damage = scaledDamage;
   enemy.damage = scaledDamage;
@@ -642,8 +664,22 @@ function hitByProjectile(player, projectile) {
     }
   }
 
+  // Apply status effects from enemy projectiles
+  const projEnemyType = projectile?.getData?.('enemyType');
   projectile.destroy();
   applyPlayerDamage(dmg, this);
+
+  if (window.statusEffectManager && window.StatusEffectType && player) {
+    if (projEnemyType === 4) {
+      // Mage projectiles apply SLOW
+      window.statusEffectManager.applyEffect(player, window.StatusEffectType.SLOW, 'mage');
+    } else if (projEnemyType === 2) {
+      // Archer projectiles: 20% chance to apply BLEED
+      if (Math.random() < 0.2) {
+        window.statusEffectManager.applyEffect(player, window.StatusEffectType.BLEED, 'archer');
+      }
+    }
+  }
 }
 
 // ---- einmalige Sicherstellung der Gegner-FX-Texturen

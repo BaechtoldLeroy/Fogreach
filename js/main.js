@@ -307,6 +307,7 @@ let attackBtnCooldownText, spinBtnCooldownText, chargeSlashCooldownText,
 let weaponStatsText, playerHealthText,
   playerXPText, waveText, gameOverText, levelUpText, defeatedEnemiesInWave, joystick;
 let abilityStatusDisplay = {};
+let statusEffectHudIcons = []; // HUD icons for active status effects on player
 const ABILITY_STATUS_STYLES = {
   attack: 0xff4d5a,
   spin: 0x4eddff,
@@ -901,9 +902,87 @@ function grantCheatTestWeapon() {
 }
 
 // ==================================================
+// 5) STATUS EFFECT HUD
+// ==================================================
+const STATUS_EFFECT_COLORS = {
+  poison: 0x44ff44,
+  stun: 0xffff00,
+  slow: 0x4488ff,
+  bleed: 0xff4444
+};
+const STATUS_EFFECT_LABELS = {
+  poison: 'PSN',
+  stun: 'STN',
+  slow: 'SLW',
+  bleed: 'BLD'
+};
+
+function updateStatusEffectHUD(scene) {
+  if (!scene || !player) return;
+
+  const effects = window.statusEffectManager
+    ? window.statusEffectManager.getActiveEffects(player)
+    : [];
+
+  // Remove old icons
+  for (const icon of statusEffectHudIcons) {
+    if (icon && icon.destroy) icon.destroy();
+  }
+  statusEffectHudIcons.length = 0;
+
+  if (effects.length === 0) return;
+
+  // Position below health text (health is at y=68, next row ~y=92)
+  const startX = 16;
+  const startY = 152;
+  const iconSize = 20;
+  const spacing = 4;
+
+  effects.forEach((entry, i) => {
+    const { type, effect } = entry;
+    const color = STATUS_EFFECT_COLORS[type] || 0xffffff;
+    const label = STATUS_EFFECT_LABELS[type] || '?';
+    const remaining = effect.remaining;
+    const ratio = remaining / effect.duration;
+
+    const x = startX + i * (iconSize + spacing + 30);
+    const y = startY;
+
+    // Background box
+    const bg = scene.add.rectangle(x, y, iconSize + 28, iconSize, 0x000000, 0.5)
+      .setOrigin(0, 0).setDepth(1002).setScrollFactor(0);
+    statusEffectHudIcons.push(bg);
+
+    // Colored fill showing remaining duration
+    const fillWidth = Math.max(1, (iconSize + 28) * ratio);
+    const fill = scene.add.rectangle(x, y, fillWidth, iconSize, color, 0.4)
+      .setOrigin(0, 0).setDepth(1003).setScrollFactor(0);
+    statusEffectHudIcons.push(fill);
+
+    // Label text
+    let stackText = '';
+    if (effect.stacks > 1) stackText = ' x' + effect.stacks;
+    const txt = scene.add.text(x + 2, y + 2, label + stackText, {
+      fontSize: '12px',
+      fill: '#ffffff',
+      fontStyle: 'bold'
+    }).setDepth(1004).setScrollFactor(0);
+    statusEffectHudIcons.push(txt);
+
+    // Timer text
+    const secLeft = Math.ceil(remaining / 1000);
+    const timer = scene.add.text(x + iconSize + 12, y + 2, secLeft + 's', {
+      fontSize: '12px',
+      fill: '#cccccc'
+    }).setDepth(1004).setScrollFactor(0);
+    statusEffectHudIcons.push(timer);
+  });
+}
+
+// ==================================================
 // 5) UPDATE
 // ==================================================
-function update(time, delta) {  
+function update(time, delta) {
   if (invOpen) {
     pauseAllMotion.call(this);
     return;
@@ -939,12 +1018,13 @@ function update(time, delta) {
     this._needsMask.length = 0;
   }
 
-  // 5.5 Spin-Attack (Desktop)
-  if (!isMobile && Phaser.Input.Keyboard.JustDown(spinKey)) {
+  // 5.5 Spin-Attack (Desktop) — block abilities while stunned
+  const playerStunned = window.statusEffectManager && window.statusEffectManager.isStunned(player);
+  if (!playerStunned && !isMobile && Phaser.Input.Keyboard.JustDown(spinKey)) {
     spinAttack.call(this);
   }
 
-  if (!isMobile) {
+  if (!playerStunned && !isMobile) {
     if (Phaser.Input.Keyboard.JustDown(eKey)) {
       beginChargedSlash.call(this);
     }
@@ -968,6 +1048,12 @@ function update(time, delta) {
   } else {
     handlePlayerMovement.call(this);
     handlePlayerAttack.call(this);
+  }
+
+  // 5.6b Status effects update
+  if (window.statusEffectManager) {
+    window.statusEffectManager.updateEffects(delta);
+    updateStatusEffectHUD(this);
   }
 
   // 5.7 Spawning neuer Gegner
