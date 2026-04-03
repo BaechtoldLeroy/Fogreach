@@ -443,6 +443,22 @@ function updatePlayerColliderDebug(sprite) {
 function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') {
   if (!enemy) return { damage: 0, isCrit: false };
 
+  // Kettenwächter (Chain Guard): shield blocks the first hit then breaks
+  if (enemy.isChainGuard && enemy.shieldActive) {
+    enemy.shieldActive = false;
+    // Visual feedback: flash white briefly, remove shield tint
+    if (enemy.active && scene?.time) {
+      enemy.setTintFill(0xffffff);
+      scene.time.delayedCall(200, () => {
+        if (enemy && enemy.active) {
+          enemy.clearTint();
+          if (enemy.isElite) enemy.setTint(0xffe066);
+        }
+      });
+    }
+    return { damage: 0, isCrit: false, shieldBlocked: true };
+  }
+
   const critChance = Phaser.Math.Clamp(playerCritChance || 0, 0, 0.95);
   const isCrit = Math.random() < critChance;
   const bonus = getAbilityBonus(abilityKey);
@@ -773,7 +789,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
   if (!scene || !enemy) return;
 
   if (enemy.hp <= 0) {
-    spawnLoot.call(scene, enemy.x, enemy.y);
+    spawnLoot.call(scene, enemy.x, enemy.y, null, enemy);
     enemy.destroy();
     defeatedEnemiesInWave += 1;
     addXP.call(scene);
