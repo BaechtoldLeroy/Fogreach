@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-03T14:55:26.108168+00:00",
+  "feature_number": "005",
+  "feature_slug": "005-status-effects",
+  "friendly_name": "status effects",
+  "mission": "software-dev",
+  "slug": "005-status-effects",
+  "target_branch": "main"
+}
