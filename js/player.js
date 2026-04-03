@@ -682,6 +682,13 @@ function getShieldBashCooldown() {
 function handlePlayerMovement() {
   if (isDashing) return;
 
+  // Stun check: if stunned, stop all movement
+  if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) {
+    player.setVelocity(0, 0);
+    updatePlayerSpriteAnimation(player, 0, 0);
+    return;
+  }
+
   // Eingaben sammeln
   let vx = 0, vy = 0;
   if (cursors.left.isDown)  vx -= 1;
@@ -689,11 +696,17 @@ function handlePlayerMovement() {
   if (cursors.up.isDown)    vy -= 1;
   if (cursors.down.isDown)  vy += 1;
 
+  // Slow check: reduce speed if slowed
+  let effectiveSpeed = playerSpeed;
+  if (window.statusEffectManager) {
+    effectiveSpeed *= window.statusEffectManager.getSpeedMultiplier(player);
+  }
+
   // Richtung normalisieren -> konstante Geschwindigkeit (auch diagonal)
   if (vx !== 0 || vy !== 0) {
     const len = Math.hypot(vx, vy);     // 1 bei gerade, ~1.414 diagonal
-    vx = (vx / len) * playerSpeed;
-    vy = (vy / len) * playerSpeed;
+    vx = (vx / len) * effectiveSpeed;
+    vy = (vy / len) * effectiveSpeed;
 
     player.setVelocity(vx, vy);
     updatePlayerSpriteAnimation(player, vx, vy);
@@ -709,9 +722,22 @@ function handlePlayerMovement() {
 function handleMobileMovement() {
   if (isDashing) return;
 
+  // Stun check: if stunned, stop all movement
+  if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) {
+    player.setVelocity(0, 0);
+    updatePlayerSpriteAnimation(player, 0, 0);
+    return;
+  }
+
   // Wenn kein Joystick existiert, nichts tun
   if (!joystick) {
     return
+  }
+
+  // Slow check: reduce speed if slowed
+  let effectiveSpeed = playerSpeed;
+  if (window.statusEffectManager) {
+    effectiveSpeed *= window.statusEffectManager.getSpeedMultiplier(player);
   }
 
   const force = joystick.force;       // 0.0 … 1.0
@@ -720,8 +746,8 @@ function handleMobileMovement() {
     const rad = Phaser.Math.DegToRad(joystick.angle);
 
     // Geschwindigkeit entlang X/Y
-    const vx = Math.cos(rad) * playerSpeed;
-    const vy = Math.sin(rad) * playerSpeed;
+    const vx = Math.cos(rad) * effectiveSpeed;
+    const vy = Math.sin(rad) * effectiveSpeed;
 
     // Spieler bewegen
     player.setVelocity(vx, vy);
@@ -805,6 +831,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
 
 function attack() {
   if (isAttacking || attackCooldown || isDashing || isChargingSlash) return;
+  if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) return;
 
   isAttacking = true;
 
@@ -871,12 +898,18 @@ function spinAttack() {
 
   // 2) Schaden an allen Gegnern im Umkreis
   const spinBonus = getAbilityBonus('spin');
+  const spinScene = this;
   forEachEnemyInRange(range, (enemy) => {
-    const { isCrit } = dealDamageToEnemy(this, enemy, 1, 'spin');
-    handleEnemyHit(this, enemy, {
+    const { isCrit } = dealDamageToEnemy(spinScene, enemy, 1, 'spin');
+    handleEnemyHit(spinScene, enemy, {
       tint: isCrit ? 0xfff2a6 : 0xffff00,
       duration: isCrit ? 160 : 100
     });
+
+    // Spin attack applies SLOW
+    if (window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
+      window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'spinAttack');
+    }
   }, { requireLineOfSight: true });
 
   // 3) Ende des Spin-State
@@ -966,6 +999,11 @@ function releaseChargedSlash(forceMaxCharge = false) {
       tint: isCrit ? 0xfff2a6 : 0xffd27f,
       duration: isCrit ? 200 : 140
     });
+
+    // Charge slash applies BLEED
+    if (window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
+      window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.BLEED, 'chargeSlash');
+    }
 
     if (!enemy || !enemy.active || !enemy.body) return;
     enemy.body.setVelocity(tempVec.x * knockback, tempVec.y * knockback);
@@ -1185,6 +1223,11 @@ function shieldBash() {
       duration: isCrit ? 200 : 140
     });
 
+    // Shield bash applies STUN
+    if (window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
+      window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.STUN, 'shieldBash');
+    }
+
     if (!enemy || !enemy.active || !enemy.body) return;
     enemy.body.setVelocity(tempVec.x * knockback, tempVec.y * knockback);
     scene.time.delayedCall(180, () => {
@@ -1220,6 +1263,11 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
     tint: isCrit ? 0xfff2a6 : 0xffaa88,
     duration: isCrit ? 200 : 140
   });
+
+  // Dagger throw applies POISON
+  if (window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
+    window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'dagger');
+  }
 
   if (enemy && enemy.active && enemy.body) {
     const dx = enemy.x - projectile.x;
