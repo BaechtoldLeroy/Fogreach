@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-03T17:24:58.347069+00:00",
+  "feature_number": "017",
+  "feature_slug": "017-dungeon-background-art",
+  "friendly_name": "dungeon background art",
+  "mission": "software-dev",
+  "slug": "017-dungeon-background-art",
+  "target_branch": "main"
+}
