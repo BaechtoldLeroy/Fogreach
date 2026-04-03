@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-03T14:55:43.365860+00:00",
+  "feature_number": "012",
+  "feature_slug": "012-particle-effects",
+  "friendly_name": "particle effects",
+  "mission": "software-dev",
+  "slug": "012-particle-effects",
+  "target_branch": "main"
+}
