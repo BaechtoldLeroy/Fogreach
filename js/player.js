@@ -773,6 +773,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
   if (!scene || !enemy) return;
 
   if (enemy.hp <= 0) {
+    if (window.soundManager) window.soundManager.playSFX('enemy_death');
     spawnLoot.call(scene, enemy.x, enemy.y);
     enemy.destroy();
     defeatedEnemiesInWave += 1;
@@ -783,6 +784,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
     }
     return;
   }
+  if (window.soundManager) window.soundManager.playSFX('hit_enemy');
 
   const {
     tint = 0xffff00,
@@ -811,6 +813,7 @@ function attack() {
   if (isAttacking || attackCooldown || isDashing || isChargingSlash) return;
 
   isAttacking = true;
+  if (window.soundManager) window.soundManager.playSFX('attack');
 
   showAttackEffect(this);
 
@@ -856,6 +859,7 @@ function spinAttack() {
 
   isSpinning = true;
   lastSpinTime = now;
+  if (window.soundManager) window.soundManager.playSFX('ability_spin');
 
   startCooldownTimer(this, abilityCooldown, {
     button: spinBtn,
@@ -895,6 +899,7 @@ function beginChargedSlash() {
 
   isChargingSlash = true;
   chargeSlashStartTime = this.time.now;
+  if (window.soundManager) window.soundManager.playSFX('ability_charge');
   if (typeof window.updateAbilityStatus === 'function') {
     window.updateAbilityStatus('charge', { customText: 'Charging...', durationMs: CHARGED_SLASH_MAX_CHARGE });
   }
@@ -1009,6 +1014,7 @@ function dashSlash() {
 
   if (isDashing) return;
   isDashing = true;
+  if (window.soundManager) window.soundManager.playSFX('ability_dash');
 
   const dashRange = getDashSlashRange();
   const dashDistance = getDashSlashDistance();
@@ -1097,6 +1103,7 @@ function throwDagger() {
   if (!this || !player || !playerProjectiles) return;
   if (daggerThrowCooldown || isChargingSlash) return;
 
+  if (window.soundManager) window.soundManager.playSFX('ability_dagger');
   const scene = this;
   ensurePlayerDaggerTexture(scene);
 
@@ -1148,6 +1155,7 @@ function shieldBash() {
   if (!this || !player) return;
   if (shieldBashCooldown || isDashing) return;
 
+  if (window.soundManager) window.soundManager.playSFX('ability_shield');
   const scene = this;
   const range = getShieldBashRange();
   const cooldown = getShieldBashCooldown();
@@ -1252,6 +1260,8 @@ function addXP(amount = 1) {
       playerHealth = Math.min(playerMaxHealth, playerHealth + 2);
     }
     neededXP = 2 * playerLevel;
+
+    if (window.soundManager) window.soundManager.playSFX('level_up');
 
     if (levelUpText) {
       levelUpText.setVisible(true);

@@ -184,6 +184,8 @@ function spawnPickup(x, y, type) {
 }
 
 function collectLoot(playerSprite, loot) {
+  if (window.soundManager) window.soundManager.playSFX('loot_pickup');
+
   // Quest item handling
   if (loot.getData && loot.getData('questItem')) {
     var item = loot.getData('item');

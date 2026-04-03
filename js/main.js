@@ -767,6 +767,9 @@ function create() {
   qKey = this.input.keyboard.addKey('Q');
   fKey = this.input.keyboard.addKey('F');
   this.input.keyboard.on('keydown-I', () => { invOpen ? closeInventory() : openInventory(); });
+  this.input.keyboard.on('keydown-M', () => {
+    if (window.soundManager) window.soundManager.toggleMute();
+  });
 
   // 4.3.1 Rathauskeller background (based on dialog selection)
   if (window.USE_RATHAUSKELLER_BG && this.textures.exists('rathauskeller_bg')) {
@@ -1569,4 +1572,10 @@ function initializeGameObjects() {
   this.physics.add.overlap(player, enemyProjectiles, hitByProjectile, null, this);
   this.physics.add.overlap(playerProjectiles, enemies, handlePlayerProjectileEnemyOverlap, null, this);
   this.physics.add.overlap(player, lootGroup, collectLoot, null, this);
+
+  // Initialize sound manager and start dungeon ambient music
+  if (typeof SoundManager === 'function') {
+    window.soundManager = new SoundManager(this);
+    window.soundManager.playMusic('dungeon_ambient');
+  }
 }
