@@ -1,9 +1,0 @@
-{
-  "created_at": "2026-04-03T15:01:55.745767+00:00",
-  "feature_number": "023",
-  "feature_slug": "023-settings-menu",
-  "friendly_name": "settings menu",
-  "mission": "software-dev",
-  "slug": "023-settings-menu",
-  "target_branch": "main"
-}
