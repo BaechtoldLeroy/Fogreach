@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-03T14:55:52.472792+00:00",
+  "feature_number": "016",
+  "feature_slug": "016-leaderboard-ui",
+  "friendly_name": "leaderboard ui",
+  "mission": "software-dev",
+  "slug": "016-leaderboard-ui",
+  "target_branch": "main"
+}
