@@ -570,6 +570,78 @@ function createEnemyGraphics() {
     g.generateTexture('enemyMage', 64, 64);
     g.destroy();
   }
+
+  // 5) Schattenschleicher (Shadow Creeper) - small dark purple with darker core
+  {
+    const g = this.add.graphics();
+    // Outer body - dark purple
+    g.fillStyle(0x3a0050, 1);
+    g.fillCircle(24, 24, 18);
+    // Darker core
+    g.fillStyle(0x1a0028, 1);
+    g.fillCircle(24, 24, 10);
+    // Glowing eyes
+    g.fillStyle(0xcc00ff, 1);
+    g.fillCircle(20, 20, 3);
+    g.fillCircle(28, 20, 3);
+    // Wispy tendrils
+    g.lineStyle(1, 0x5500aa, 0.6);
+    g.beginPath();
+    g.moveTo(10, 30); g.lineTo(6, 38); g.strokePath();
+    g.beginPath();
+    g.moveTo(38, 30); g.lineTo(42, 38); g.strokePath();
+    g.generateTexture('enemyShadow', 48, 48);
+    g.destroy();
+  }
+
+  // 6) Kettenwächter (Chain Guard) - large gray with shield overlay
+  {
+    const g = this.add.graphics();
+    // Large body - dark gray
+    g.fillStyle(0x444444, 1);
+    g.fillCircle(40, 40, 32);
+    // Armor plates
+    g.fillStyle(0x666666, 1);
+    g.fillCircle(40, 40, 24);
+    // Shield overlay - lighter
+    g.fillStyle(0x888888, 0.7);
+    g.fillCircle(40, 32, 16);
+    // Shield cross pattern
+    g.lineStyle(2, 0xaaaaaa, 0.8);
+    g.lineBetween(40, 18, 40, 46);
+    g.lineBetween(28, 32, 52, 32);
+    // Eyes behind helmet
+    g.fillStyle(0xff4444, 1);
+    g.fillCircle(34, 36, 3);
+    g.fillCircle(46, 36, 3);
+    g.generateTexture('enemyChainGuard', 80, 80);
+    g.destroy();
+  }
+
+  // 7) Flammenweber (Flame Weaver) - medium orange with red center
+  {
+    const g = this.add.graphics();
+    // Outer flames - orange
+    g.fillStyle(0xff6600, 1);
+    g.fillCircle(32, 32, 22);
+    // Inner fire - red
+    g.fillStyle(0xcc0000, 1);
+    g.fillCircle(32, 32, 12);
+    // Bright core
+    g.fillStyle(0xffaa00, 1);
+    g.fillCircle(32, 32, 6);
+    // Flame wisps
+    g.fillStyle(0xff8800, 0.6);
+    g.fillTriangle(32, 6, 28, 16, 36, 16);
+    g.fillTriangle(10, 28, 18, 24, 18, 32);
+    g.fillTriangle(54, 28, 46, 24, 46, 32);
+    // Eyes
+    g.fillStyle(0xffff00, 1);
+    g.fillCircle(28, 28, 3);
+    g.fillCircle(36, 28, 3);
+    g.generateTexture('enemyFlameWeaver', 64, 64);
+    g.destroy();
+  }
 }
 
 function createItemGraphics() {

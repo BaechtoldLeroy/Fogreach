@@ -37,7 +37,8 @@ function startNextWave(noIncrement) {
   spawnInterval = Math.max(200, spawnInterval - 50);
 
   waveInProgress = true;
-  waveText.setText('Dungeon Level: ' + currentWave);
+  const isMiniBossWave = (currentWave % 5 === 0 && currentWave % 10 !== 0);
+  waveText.setText('Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
   spawnedEnemiesInWave = 0;
   window.spawnedEnemiesInWave = 0;
   spawnTimer = 0;
@@ -56,6 +57,18 @@ function startNextWave(noIncrement) {
           spawned += 1;
           spawnedEnemiesInWave = spawned;
         }
+
+        // Mini-boss every 5th wave (but not on 10th/20th/etc. boss waves)
+        if (currentWave % 5 === 0 && currentWave % 10 !== 0 && typeof spawnMiniBoss === 'function') {
+          const miniBoss = spawnMiniBoss.call(scene, 0, 0, 0);
+          if (miniBoss) {
+            spawned += 1;
+            spawnedEnemiesInWave = spawned;
+            // Update total to include mini-boss for wave-end check
+            enemiesPerWave = window.enemiesPerWave = spawned;
+          }
+        }
+
         window.spawnedEnemiesInWave = spawnedEnemiesInWave;
       };
 

@@ -110,7 +110,7 @@ function normalizeItemStatsForRarity(item, rarityValue = 1) {
   return item;
 }
 
-function spawnLoot(x, y, maybeItem) {
+function spawnLoot(x, y, maybeItem, sourceEnemy) {
   const scene = (this && this.physics && this.physics.world) ? this : (obstacles?.scene || window.currentScene);
   if (maybeItem && typeof maybeItem.type === 'string') {
     const typeLower = maybeItem.type.toLowerCase();
@@ -151,11 +151,34 @@ function spawnLoot(x, y, maybeItem) {
     }
   }
 
+  // Elite enemies have higher loot chance and better rarity
+  const isEliteDrop = sourceEnemy && sourceEnemy.isElite;
+  const isMiniBossDrop = sourceEnemy && sourceEnemy.isMiniBoss;
+  const lootChanceBonus = isEliteDrop ? 20 : (isMiniBossDrop ? 30 : 0);
+
   const roll = Phaser.Math.Between(0, 100);
 
-  if (maybeItem || roll < 12) {
+  if (maybeItem || roll < (12 + lootChanceBonus)) {
     const baseItem = maybeItem ? { ...maybeItem } : randomLoot();
-    const rarityValue = baseItem?.rarityValue || getRarityValueFromKey(baseItem?.rarity) || 1;
+    let rarityValue = baseItem?.rarityValue || getRarityValueFromKey(baseItem?.rarity) || 1;
+    // Elite enemies: increase rarity tier by 1; Mini-bosses: by 2
+    if (isEliteDrop && rarityValue < 4) {
+      rarityValue += 1;
+      const upgradedRarity = ITEM_RARITIES.find(r => r.value === rarityValue);
+      if (upgradedRarity) {
+        baseItem.rarity = upgradedRarity.key;
+        baseItem.rarityLabel = upgradedRarity.label;
+        baseItem.rarityValue = rarityValue;
+      }
+    } else if (isMiniBossDrop && rarityValue < 4) {
+      rarityValue = Math.min(4, rarityValue + 2);
+      const upgradedRarity = ITEM_RARITIES.find(r => r.value === rarityValue);
+      if (upgradedRarity) {
+        baseItem.rarity = upgradedRarity.key;
+        baseItem.rarityLabel = upgradedRarity.label;
+        baseItem.rarityValue = rarityValue;
+      }
+    }
     const item = maybeItem
       ? normalizeItemStatsForRarity(scaleItemForDifficulty(baseItem, Math.max(1, currentWave)), rarityValue)
       : normalizeItemStatsForRarity(baseItem, rarityValue);

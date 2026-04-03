@@ -229,8 +229,26 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   }
   
   // 2) Typ-Fallunterscheidung + Key, Speed, HP, Ranged-Flag
-  let type = Phaser.Math.Between(1, 4);
-  if (enemyType > 0 && enemyType < 5) type = enemyType;
+  // Determine available types based on current wave
+  const wave = typeof currentWave === 'number' ? currentWave : 0;
+  let type;
+  if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 7) {
+    type = enemyType;
+  } else {
+    // Wave-based type selection
+    let availableTypes;
+    if (wave <= 3) {
+      availableTypes = [1, 2]; // Imp, Archer
+    } else if (wave <= 6) {
+      availableTypes = [1, 2, 3, 4]; // + Brute, Mage
+    } else if (wave <= 9) {
+      availableTypes = [1, 2, 3, 4, 5]; // + Schattenschleicher
+    } else {
+      availableTypes = [1, 2, 3, 4, 5, 6, 7]; // + Kettenwächter, Flammenweber
+    }
+    type = availableTypes[Phaser.Math.Between(0, availableTypes.length - 1)];
+  }
+
   let key,
     speed,
     hp,
@@ -244,7 +262,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       speed = 80;
       hp = 1;
       tint = 0xff0000;
-      break; // rot
+      break; // Imp - rot
     case 2:
       key = "enemyArcher";
       speed = 140;
@@ -252,13 +270,33 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       isRanged = true;
       rangedAttackRange = 480;
       tint = 0x00ff00;
-      break; // grün
+      break; // Bogenschütze - grün
     case 3:
       key = "brute_right0";
       speed = 50;
       hp = 3;
       tint = null; // no tint for sprite-based brute
-      break;
+      break; // Brute
+    case 5:
+      key = "enemyShadow";
+      speed = 120;
+      hp = 1;
+      tint = 0x6600aa;
+      break; // Schattenschleicher - dark purple
+    case 6:
+      key = "enemyChainGuard";
+      speed = 40;
+      hp = 5;
+      tint = null; // texture already gray
+      break; // Kettenwächter
+    case 7:
+      key = "enemyFlameWeaver";
+      speed = 70;
+      hp = 2;
+      isRanged = true;
+      rangedAttackRange = 400;
+      tint = null; // texture already orange/red
+      break; // Flammenweber
     default:
       key = "enemyMage";
       speed = 60;
@@ -266,7 +304,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       isRanged = true;
       rangedAttackRange = 560;
       tint = 0xaa00ff;
-      break; // lila
+      break; // Magier - lila
   }
 
   // 3) Sprite mit richtigem Key erzeugen
@@ -305,6 +343,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   enemy.baseDamage = Math.max(1, 1 + Math.floor((waveIndex - 1) * 0.25));
   enemy.damage = enemy.baseDamage;
 
+  // Store the enemy type for later reference
+  enemy.enemyType = type;
+
   // 6) Steering-Parameter je Typ (für handleEnemies + Steering.js) ---
   if (type === 1) {
     // Imp (Nahkampf)
@@ -338,6 +379,37 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.bruteDirection = 'right';
     enemy.bruteAttacking = false;
     enemy.bruteAttackFrame = 0;
+  } else if (type === 5) {
+    // Schattenschleicher (Shadow Creeper) - fast melee, teleports when player is close
+    enemy.sepWeight = 0.7;
+    enemy.cohWeight = 0.1;
+    enemy.avoidWeight = 1.2;
+    enemy.sepRadius = 60;
+    enemy.cohRadius = 180;
+    enemy.isShadowCreeper = true;
+    enemy.lastTeleportTime = 0;
+    enemy.setScale(0.7); // smaller size
+  } else if (type === 6) {
+    // Kettenwächter (Chain Guard) - slow tank, has shield that blocks first hit
+    enemy.sepWeight = 0.3;
+    enemy.cohWeight = 0.15;
+    enemy.avoidWeight = 0.5;
+    enemy.sepRadius = 100;
+    enemy.cohRadius = 200;
+    enemy.isChainGuard = true;
+    enemy.shieldActive = true; // blocks first hit, then breaks
+    enemy.setScale(1.2); // large size
+  } else if (type === 7) {
+    // Flammenweber (Flame Weaver) - shoots 3-projectile spread
+    enemy.kiteRadius = 240;
+    enemy.strafeSpeed = 50;
+    enemy.strafeSign = Math.random() < 0.5 ? -1 : 1;
+    enemy.sepWeight = 0.8;
+    enemy.cohWeight = 0.4;
+    enemy.avoidWeight = 1.0;
+    enemy.sepRadius = 100;
+    enemy.cohRadius = 240;
+    enemy.isFlameWeaver = true;
   } else {
     // Mage (Fern/Support)
     enemy.kiteRadius = 260;
@@ -356,11 +428,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.damage = Math.max(1, Math.round(enemy.baseDamage * difficulty));
   }
 
-  const wave = typeof currentWave === 'number' ? currentWave : 0;
-  let eliteChance = 0.15;
-  if (wave <= 2) {
-    eliteChance = 0;
-  } else if (wave <= 5) {
+  // Elite chance: 15% starting from wave 5, ramping up from wave 3
+  let eliteChance = 0;
+  if (wave >= 5) {
+    eliteChance = 0.15;
+  } else if (wave >= 3) {
     eliteChance = 0.05;
   }
 
@@ -388,6 +460,22 @@ function handleEnemies(time, delta = 16) {
       return;
     }
 
+    // Draw mini-boss health bar each frame
+    if (enemy.isMiniBoss && enemy.miniBossBar) {
+      drawMiniBossBar(enemy);
+    }
+
+    // Mini-boss ground slam AoE
+    if (enemy.isMiniBoss && !enemy.isRanged) {
+      if (!enemy.lastSlamTime || time - enemy.lastSlamTime > 4000) {
+        const slamDist = Phaser.Math.Distance.Between(enemy.x, enemy.y, player.x, player.y);
+        if (slamDist <= 120) {
+          enemy.lastSlamTime = time;
+          miniBossSlam.call(this, enemy);
+        }
+      }
+    }
+
     // Status effect: slow reduces max speed
     let speedMult = 1;
     if (window.statusEffectManager) {
@@ -402,6 +490,29 @@ function handleEnemies(time, delta = 16) {
       player.x,
       player.y,
     );
+
+    // Schattenschleicher: teleport when player gets within 100px
+    if (enemy.isShadowCreeper && dToPlayer < 100) {
+      if (!enemy.lastTeleportTime || time - enemy.lastTeleportTime > 2000) {
+        enemy.lastTeleportTime = time;
+        // Teleport to a random offset 80-150px away from current position
+        const teleAngle = Math.random() * Math.PI * 2;
+        const teleDist = 80 + Math.random() * 70;
+        const bounds = this.physics?.world?.bounds;
+        let newX = enemy.x + Math.cos(teleAngle) * teleDist;
+        let newY = enemy.y + Math.sin(teleAngle) * teleDist;
+        if (bounds) {
+          newX = Phaser.Math.Clamp(newX, bounds.x + 32, bounds.x + bounds.width - 32);
+          newY = Phaser.Math.Clamp(newY, bounds.y + 32, bounds.y + bounds.height - 32);
+        }
+        enemy.setPosition(newX, newY);
+        // Brief visual flash
+        enemy.setAlpha(0.3);
+        if (this.tweens) {
+          this.tweens.add({ targets: enemy, alpha: 1, duration: 300 });
+        }
+      }
+    }
 
     // Zielgeschwindigkeit
     let desired = new Phaser.Math.Vector2();
@@ -523,7 +634,12 @@ function handleEnemies(time, delta = 16) {
       if (!enemy.lastShotTime || time - enemy.lastShotTime > 1500) {
         const maxRange = enemy.rangedAttackRange || DEFAULT_RANGED_ATTACK_RANGE;
         if (dToPlayer <= maxRange && Steering.hasLineOfSight(enemy, player, obstacles)) {
-          shootProjectile.call(this, enemy);
+          if (enemy.isFlameWeaver) {
+            // Flammenweber: shoot 3 projectiles in a spread pattern
+            shootSpreadProjectiles.call(this, enemy, 3, Phaser.Math.DegToRad(30));
+          } else {
+            shootProjectile.call(this, enemy);
+          }
           enemy.lastShotTime = time;
         }
       }
@@ -621,6 +737,137 @@ function shootProjectile(enemy) {
     this._needsMaskProj = this._needsMaskProj || [];
     this._needsMaskProj.push(projectile);
   }
+}
+
+// Flammenweber: shoot multiple projectiles in a spread pattern
+function shootSpreadProjectiles(enemy, count, totalSpread) {
+  const scene = this;
+  const base = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+  const baseDamage = enemy.baseDamage || enemy.damage || 1;
+  const projDifficulty = getDifficultyMultiplierValue();
+  const scaledDamage = projDifficulty !== 1
+    ? Math.max(1, Math.round(baseDamage * projDifficulty))
+    : Math.max(1, Math.round(baseDamage));
+
+  for (let i = 0; i < count; i++) {
+    const t = count > 1 ? (i / (count - 1) - 0.5) : 0;
+    const ang = base + t * totalSpread;
+    const proj = scene.physics.add.sprite(enemy.x, enemy.y, "projectileTexture");
+    proj.setDisplaySize(10, 10);
+    proj.body.setCircle(5);
+    enemyProjectiles.add(proj);
+    proj.setVelocity(Math.cos(ang) * 200, Math.sin(ang) * 200);
+    proj.setData('baseDamage', baseDamage);
+    proj.setData('damage', scaledDamage);
+    proj.baseDamage = baseDamage;
+    proj.damage = scaledDamage;
+
+    if (scene._enemyVisionMask && proj.setMask) {
+      proj.setMask(scene._enemyVisionMask);
+    } else {
+      scene._needsMaskProj = scene._needsMaskProj || [];
+      scene._needsMaskProj.push(proj);
+    }
+  }
+  enemy.damage = scaledDamage;
+}
+
+// Mini-Boss: ground slam AoE - damages player if within 120px
+function miniBossSlam(enemy) {
+  const scene = this;
+  const r = 120;
+  const g = scene.add.graphics().setDepth(1001);
+  g.lineStyle(3, 0xff6600, 0.9);
+  g.strokeCircle(enemy.x, enemy.y, r);
+  g.fillStyle(0xff3300, 0.15);
+  g.fillCircle(enemy.x, enemy.y, r);
+  g.alpha = 0.0;
+
+  scene.tweens.add({
+    targets: g,
+    alpha: { from: 0.0, to: 1.0 },
+    duration: 300,
+    yoyo: true,
+    onYoyo: () => {
+      const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, player.x, player.y);
+      if (d <= r + (player.body?.width || 0) * 0.5) {
+        applyPlayerDamage(enemy.damage, scene);
+      }
+    },
+    onComplete: () => g.destroy(),
+  });
+
+  // Camera shake for impact
+  scene.cameras.main.shake(100, 0.003);
+}
+
+/**
+ * Spawnt einen Mini-Boss: verstärkter Gegner mit HP-Balken und Spezialangriff.
+ * Erscheint alle 5 Wellen (nicht die 10er-Boss-Wellen).
+ */
+function spawnMiniBoss(xCoord, yCoord, baseType) {
+  const scene = this && this.sys ? this : window.currentScene || obstacles?.scene;
+  if (!scene) return null;
+
+  // Pick a valid base type for mini-boss (default to a melee type)
+  const type = (typeof baseType === 'number' && baseType >= 1 && baseType <= 7) ? baseType : 3;
+  const enemy = spawnEnemy.call(scene, xCoord || 0, yCoord || 0, type);
+  if (!enemy) return null;
+
+  // Mini-boss stats: 5x HP, 2x damage
+  enemy.isMiniBoss = true;
+  enemy.hp = Math.ceil(enemy.hp * 5);
+  enemy.maxHp = enemy.hp;
+  enemy.baseDamage = Math.ceil((enemy.baseDamage || enemy.damage || 1) * 2);
+  enemy.damage = enemy.baseDamage;
+  enemy.lastSlamTime = 0;
+
+  const difficulty = getDifficultyMultiplierValue();
+  if (difficulty !== 1) {
+    enemy.hp = Math.max(1, Math.round(enemy.hp * difficulty));
+    enemy.damage = Math.max(1, Math.round(enemy.baseDamage * difficulty));
+  }
+
+  // Visual: larger, striped tint pattern
+  const currentScale = enemy.scaleX || 1;
+  enemy.setScale(currentScale * 1.5);
+  enemy.setTint(0xff8800); // orange tint for mini-boss
+
+  // Shimmer effect
+  if (scene.tweens) {
+    scene.tweens.add({
+      targets: enemy,
+      alpha: { from: 0.85, to: 1 },
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  // Simple health bar (like boss but smaller)
+  enemy.miniBossBar = scene.add.graphics().setDepth(1002);
+  enemy.on('destroy', () => enemy.miniBossBar?.destroy());
+
+  return enemy;
+}
+
+// Draw mini-boss health bar (called each frame)
+function drawMiniBossBar(enemy) {
+  const g = enemy.miniBossBar;
+  if (!g) return;
+  g.clear();
+
+  const barW = 60;
+  const barH = 5;
+  const x = enemy.x - barW / 2;
+  const y = enemy.y - enemy.displayHeight / 2 - 12;
+
+  g.fillStyle(0x000000, 0.6);
+  g.fillRect(x - 1, y - 1, barW + 2, barH + 2);
+
+  const pct = Phaser.Math.Clamp(enemy.hp / enemy.maxHp, 0, 1);
+  g.fillStyle(0xff6600, 1);
+  g.fillRect(x, y, barW * pct, barH);
 }
 
 function hitByMelee(playerSprite, enemy) {
@@ -803,20 +1050,21 @@ function showEnemyMeleeEffect(scene, enemy, target) {
 function makeElite(enemy) {
   enemy.isElite = true;
 
-  // Stats
+  // Stats: 2x HP, 1.5x damage, 1.2x speed
   enemy.hp = Math.ceil(enemy.hp * 2);
-  enemy.baseDamage = (enemy.baseDamage || enemy.damage) + 1;
+  enemy.baseDamage = Math.ceil((enemy.baseDamage || enemy.damage || 1) * 1.5);
   enemy.damage = enemy.baseDamage;
   const difficulty = getDifficultyMultiplierValue();
   if (difficulty !== 1) {
     enemy.damage = Math.max(1, Math.round(enemy.baseDamage * difficulty));
   }
-  enemy.speed = Math.round(enemy.speed * 1.15);
+  enemy.speed = Math.round(enemy.speed * 1.2);
 
-  // optisch: größer
-  enemy.setScale(1.15);
+  // Optisch: 1.3x size
+  const currentScale = enemy.scaleX || 1;
+  enemy.setScale(currentScale * 1.3);
 
-  // ✨ Goldener Glow durch Tint-Puls
+  // Goldener Glow / border durch Tint-Puls
   enemy.setTint(0xffe066); // gold
   enemy.scene.tweens.add({
     targets: enemy,
