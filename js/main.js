@@ -1216,6 +1216,8 @@ function initUI() {
     .setDepth(1001).setScrollFactor(0);
   waveText = this.add.text(16, 124, '', { fontSize: '20px', fill: '#ff0' })
     .setDepth(1001).setScrollFactor(0);
+  window._roomCounterText = this.add.text(16, 152, '', { fontSize: '20px', fill: '#aaf' })
+    .setDepth(1001).setScrollFactor(0);
   gameOverText = this.add.text(400, 300, 'DU BIST GESTORBEN\nZurück zur Stadt...', { fontSize: '40px', fill: '#f00', align: 'center' })
     .setDepth(1001).setScrollFactor(0)
     .setOrigin(0.5).setVisible(false);

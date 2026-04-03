@@ -7,9 +7,22 @@
   // 2) Manifest definieren – Namen müssen exakt den JSON-Dateien unter /roomTemplates/ entsprechen
   if (!Array.isArray(RT.MANIFEST)) {
     RT.MANIFEST = [
-      'Crypt_Small_Altar',
+      'Arena',
+      'BridgeOverGap',
+      'Cathedral',
+      'CelestialGardens',
+      'Checkerboard',
+      'CirclePillars',
+      'Crosshall',
+      'CrossroadChamber',
       'Crossroads',
-      'Treasure_Small'
+      'Crypt_Small_Altar',
+      'GrandBazaar',
+      'MazeLite',
+      'Spiral',
+      'ThroneRoom',
+      'Treasure_Small',
+      'TreasureVault'
     ];
   }
 })(window);
@@ -540,18 +553,22 @@ function normalizeTemplateToFixedGrid(tpl) {
   };
 }
 
-function buildTemplateRoom(scene) {
+function buildTemplateRoom(scene, templateName) {
   const RT = window.RoomTemplates;
 
-  const tpl = window.RoomTemplates.pick(scene, {});
-  //const tpl = RT.TEMPLATES?.["TreasureVault"];   // << gewünschter Name hier
+  let tpl;
+  if (templateName && RT.TEMPLATES && RT.TEMPLATES[templateName]) {
+    tpl = RT.TEMPLATES[templateName];
+  } else {
+    tpl = window.RoomTemplates.pick(scene, {});
+  }
+  if (!tpl) return null;
+
   const built = RT.buildRoomFromTemplate(scene, tpl, 0, 0);
 
-  console.log(tpl);
-  
   return {
     type: 'template',
-    name: tpl.name || 'Template',
+    name: tpl.name || templateName || 'Template',
     origin: built.origin,
     w: built.w,
     h: built.h,
