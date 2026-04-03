@@ -391,6 +391,32 @@ class HubSceneV2 extends Phaser.Scene {
       this._dialogContainer = null;
     }
 
+    const qs = window.questSystem;
+    const npcId = npcData.id;
+
+    // Determine quest context for this NPC
+    let questMode = 'flavor'; // flavor | offer | progress | turnin
+    let questData = null;
+
+    if (qs && npcId) {
+      // Check if there is an active quest ready to turn in
+      const activeForNpc = qs.getActiveQuests(npcId);
+      const readyToTurnIn = activeForNpc.find(q => qs.isQuestReadyToComplete(q.id));
+      if (readyToTurnIn) {
+        questMode = 'turnin';
+        questData = readyToTurnIn;
+      } else if (activeForNpc.length > 0) {
+        questMode = 'progress';
+        questData = activeForNpc[0];
+      } else {
+        const available = qs.getAvailableQuests(npcId);
+        if (available.length > 0) {
+          questMode = 'offer';
+          questData = available[0];
+        }
+      }
+    }
+
     const cam = this.cameras.main;
     const cx = cam.width / 2;
     const cy = cam.height - 180;
@@ -400,16 +426,38 @@ class HubSceneV2 extends Phaser.Scene {
     const pad = 24;
     const innerWidth = panelWidth - pad * 2;
 
-    const title = npcData.name || 'Gespraech';
-    const header = this.add.text(0, 0, title, {
+    // Build title and body based on quest mode
+    let titleStr = npcData.name || 'Gespraech';
+    let bodyStr = '';
+    let showAcceptBtn = false;
+    let showCompleteBtn = false;
+
+    if (questMode === 'offer' && questData) {
+      titleStr = npcData.name + ' — Neue Aufgabe';
+      bodyStr = questData.dialogueOffer + '\n\n[' + questData.title + ']\n' + questData.description;
+      showAcceptBtn = true;
+    } else if (questMode === 'progress' && questData) {
+      const obj = questData.objectives[0];
+      const progressStr = obj ? (obj.current + '/' + obj.required) : '';
+      titleStr = npcData.name + ' — ' + questData.title;
+      bodyStr = questData.dialogueProgress + '\n\nFortschritt: ' + progressStr;
+    } else if (questMode === 'turnin' && questData) {
+      titleStr = npcData.name + ' — Aufgabe abgeschlossen!';
+      bodyStr = questData.dialogueComplete;
+      showCompleteBtn = true;
+    } else {
+      // Flavor dialogue (existing behavior)
+      const bodyLines = npcData.lines || [];
+      bodyStr = bodyLines.join('\n\n');
+    }
+
+    const header = this.add.text(0, 0, titleStr, {
       fontFamily: 'serif',
       fontSize: 22,
       color: '#f1e9d8'
     }).setWordWrapWidth(innerWidth).setVisible(false);
 
-    const bodyLines = npcData.lines || [];
-    const body = bodyLines.join('\n\n');
-    const bodyText = this.add.text(0, 0, body, {
+    const bodyText = this.add.text(0, 0, bodyStr, {
       fontFamily: 'monospace',
       fontSize: 16,
       color: '#d8d2c3',
@@ -419,7 +467,8 @@ class HubSceneV2 extends Phaser.Scene {
     const headerHeight = header.height;
     const bodyHeight = bodyText.height;
     const hintHeight = 22;
-    const panelHeight = Math.max(200, Math.ceil(pad + headerHeight + 12 + bodyHeight + pad + hintHeight));
+    const extraBtnHeight = (showAcceptBtn || showCompleteBtn) ? 48 : 0;
+    const panelHeight = Math.max(200, Math.ceil(pad + headerHeight + 12 + bodyHeight + extraBtnHeight + pad + hintHeight));
 
     const g = this.add.graphics();
     g.fillStyle(0x0c0c11, 0.94).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
@@ -432,8 +481,61 @@ class HubSceneV2 extends Phaser.Scene {
     container.add(bodyText);
 
     const hintY = panelHeight / 2 - pad * 0.75;
+    const keyClosers = [];
 
-    if (npcData.id === 'mara') {
+    // Quest Accept button
+    if (showAcceptBtn && questData) {
+      const acceptBtn = this.add.text(0, hintY - 44, '[ Aufgabe annehmen ]', {
+        fontFamily: 'monospace',
+        fontSize: 16,
+        color: '#ffffff',
+        backgroundColor: '#3d6a3d',
+        padding: { x: 14, y: 8 }
+      }).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+
+      acceptBtn.on('pointerdown', (pointer, x, y, event) => {
+        event.stopPropagation();
+        if (qs) qs.acceptQuest(questData.id);
+        this._closeDialog(keyClosers);
+      });
+      container.add(acceptBtn);
+
+      // Also bind A key for accept
+      const acceptKeyHandler = () => {
+        if (qs) qs.acceptQuest(questData.id);
+        this._closeDialog(keyClosers);
+      };
+      this.input.keyboard.on('keydown-A', acceptKeyHandler);
+      keyClosers.push({ eventName: 'keydown-A', handler: acceptKeyHandler });
+    }
+
+    // Quest Complete button
+    if (showCompleteBtn && questData) {
+      const completeBtn = this.add.text(0, hintY - 44, '[ Belohnung abholen ]', {
+        fontFamily: 'monospace',
+        fontSize: 16,
+        color: '#ffffff',
+        backgroundColor: '#6a6a3d',
+        padding: { x: 14, y: 8 }
+      }).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+
+      completeBtn.on('pointerdown', (pointer, x, y, event) => {
+        event.stopPropagation();
+        if (qs) qs.completeQuest(questData.id);
+        this._closeDialog(keyClosers);
+      });
+      container.add(completeBtn);
+
+      const completeKeyHandler = () => {
+        if (qs) qs.completeQuest(questData.id);
+        this._closeDialog(keyClosers);
+      };
+      this.input.keyboard.on('keydown-A', completeKeyHandler);
+      keyClosers.push({ eventName: 'keydown-A', handler: completeKeyHandler });
+    }
+
+    // Mara skill tree button (keep existing behavior)
+    if (npcData.id === 'mara' && questMode === 'flavor') {
       const skillsBtn = this.add.text(0, hintY - 40, '[ Skills lernen ] (K)', {
         fontFamily: 'monospace',
         fontSize: 16,
@@ -441,7 +543,7 @@ class HubSceneV2 extends Phaser.Scene {
         backgroundColor: '#2a5a8a',
         padding: { x: 14, y: 8 }
       }).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
-      
+
       skillsBtn.on('pointerdown', (pointer, x, y, event) => {
         event.stopPropagation();
         this._closeDialog();
@@ -454,7 +556,11 @@ class HubSceneV2 extends Phaser.Scene {
       container.add(skillsBtn);
     }
 
-    const hintText = this.add.text(0, hintY, 'E / Leer / ESC: schliessen', {
+    const hintParts = ['E / Leer / ESC: schliessen'];
+    if (showAcceptBtn) hintParts.push('A: annehmen');
+    if (showCompleteBtn) hintParts.push('A: abholen');
+
+    const hintText = this.add.text(0, hintY, hintParts.join('  |  '), {
       fontFamily: 'monospace',
       fontSize: 14,
       color: '#b2aba0'
@@ -463,7 +569,6 @@ class HubSceneV2 extends Phaser.Scene {
 
     this._dialogContainer = container;
 
-    const keyClosers = [];
     const closeDialog = () => this._closeDialog(keyClosers);
 
     const bindClose = (eventName) => {
@@ -478,7 +583,7 @@ class HubSceneV2 extends Phaser.Scene {
       bindClose('keydown-ESC');
       bindClose('keydown-ENTER');
 
-      if (npcData.id === 'mara') {
+      if (npcData.id === 'mara' && questMode === 'flavor') {
         const skillHandler = () => {
           this._closeDialog(keyClosers);
           this.time.delayedCall(100, () => {

@@ -329,6 +329,10 @@ function markRoomCleared() {
 
   room.cleared = true;
   lockStairs(scene, false);
+  // Quest progress: room cleared
+  if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
+    window.questSystem.updateQuestProgress('explore', 'room', 1);
+  }
   // Nächste Raum‑Wave vorbereiten (wenn du pro Raum mehrere willst)
   room.wave += 1;
   // Aktualisiere gespeicherte Gegnerzahl anhand der festen Progression

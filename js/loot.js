@@ -123,6 +123,34 @@ function spawnLoot(x, y, maybeItem) {
     }
   }
 
+  // Quest document drop (10% chance)
+  if (!maybeItem && window.questSystem) {
+    var activeQuests = window.questSystem.getActiveQuests();
+    var hasFetchQuest = activeQuests.some(function (q) {
+      return q.type === 'fetch' && q.objectives.some(function (o) {
+        return o.type === 'fetch' && o.target === 'document' && o.current < o.required;
+      });
+    });
+    if (hasFetchQuest && Math.random() < 0.10) {
+      var docItem = {
+        type: 'quest_item',
+        key: 'QUEST_DOC',
+        name: 'Protokoll-Abschrift',
+        iconKey: 'itMat',
+        isQuestItem: true,
+        questTarget: 'document'
+      };
+      var docLoot = lootGroup.create(x, y, docItem.iconKey || 'itMat');
+      docLoot.setDisplaySize(28, 22);
+      docLoot.setData('item', docItem);
+      docLoot.setData('questItem', true);
+      docLoot.setDepth(80);
+      docLoot.setTint(0xffdd44);
+      trackLootSprite(scene || docLoot.scene, docLoot);
+      return;
+    }
+  }
+
   const roll = Phaser.Math.Between(0, 100);
 
   if (maybeItem || roll < 12) {
@@ -156,6 +184,17 @@ function spawnPickup(x, y, type) {
 }
 
 function collectLoot(playerSprite, loot) {
+  // Quest item handling
+  if (loot.getData && loot.getData('questItem')) {
+    var item = loot.getData('item');
+    if (item && item.questTarget && window.questSystem) {
+      window.questSystem.updateQuestProgress('fetch', item.questTarget, 1);
+      console.log('[Loot] Collected quest item:', item.name);
+    }
+    loot.destroy();
+    return;
+  }
+
   if (loot.lootType === 'health') {
     if (typeof addPlayerHealth === 'function') {
       addPlayerHealth(2);

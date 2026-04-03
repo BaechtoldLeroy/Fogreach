@@ -777,6 +777,10 @@ function handleEnemyHit(scene, enemy, options = {}) {
     enemy.destroy();
     defeatedEnemiesInWave += 1;
     addXP.call(scene);
+    // Quest progress: enemy kill
+    if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
+      window.questSystem.updateQuestProgress('kill', 'enemy', 1);
+    }
     return;
   }
 
