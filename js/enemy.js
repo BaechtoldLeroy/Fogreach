@@ -374,6 +374,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.cohRadius = 160;
     // Scale down large sprites to fit game scale
     enemy.setScale(0.08);
+    // Crop 2px from top to remove white stripe artifact at small scale
+    const frame = enemy.frame;
+    if (frame) enemy.setCrop(0, 2, frame.width, frame.height - 2);
     // Mark as brute for animation handling
     enemy.isBrute = true;
     enemy.bruteDirection = 'right';

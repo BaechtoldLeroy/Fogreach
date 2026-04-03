@@ -575,6 +575,8 @@ function isBlockedByObstacle(x, y) {
   return false;
 }
 
+const VISION_MIN_RADIUS = 48; // Vision klippt nie enger als 48px
+
 function computeVisionPolygon(scene, ox, oy) {
   const pts = [];
   for (let i = 0; i < VISION_RAYS; i++) {
@@ -589,9 +591,10 @@ function computeVisionPolygon(scene, ox, oy) {
       const px = ox + dx * r;
       const py = oy + dy * r;
       if (isBlockedByObstacle(px, py)) {
-        // stoppe an erster Wand
-        hitX = px - dx * 0;
-        hitY = py - dy * 0;
+        // Mindest-Sichtradius erzwingen, damit Vision an Waenden nicht klippt
+        const clampedR = Math.max(r, VISION_MIN_RADIUS);
+        hitX = ox + dx * clampedR;
+        hitY = oy + dy * clampedR;
         break;
       }
     }
