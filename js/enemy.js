@@ -237,11 +237,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   } else {
     // Wave-based type selection
     let availableTypes;
-    if (wave <= 3) {
+    if (wave <= 2) {
       availableTypes = [1, 2]; // Imp, Archer
-    } else if (wave <= 6) {
+    } else if (wave <= 4) {
       availableTypes = [1, 2, 3, 4]; // + Brute, Mage
-    } else if (wave <= 9) {
+    } else if (wave <= 6) {
       availableTypes = [1, 2, 3, 4, 5]; // + Schattenschleicher
     } else {
       availableTypes = [1, 2, 3, 4, 5, 6, 7]; // + Kettenwächter, Flammenweber

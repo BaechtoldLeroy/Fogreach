@@ -1075,6 +1075,7 @@ function dashSlash() {
   const dashDuration = getDashSlashDuration();
   const dashSpeed = dashDistance / (dashDuration / 1000);
   if (player?.setTint) player.setTint(0x7fd6ff);
+  if (player?.body) player.body.setMaxVelocity(dashSpeed, dashSpeed);
   if (player?.setVelocity) {
     player.setVelocity(dashDir.x * dashSpeed, dashDir.y * dashSpeed);
   }
@@ -1127,6 +1128,7 @@ function dashSlash() {
   scene.time.delayedCall(dashDuration, () => {
     if (player && player.active) {
       player.setVelocity(0, 0);
+      if (player.body) player.body.setMaxVelocity(220, 220);
       if (player.clearTint) player.clearTint();
     }
     isDashing = false;

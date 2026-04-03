@@ -157,20 +157,20 @@
 
     // Grant rewards
     var rewards = def.rewards;
-    if (rewards.xp && typeof window.playerXP !== 'undefined') {
-      if (typeof addXP === 'function') {
-        // addXP adds a small amount each call; we'll add XP directly
-        window.playerXP = (window.playerXP || 0) + rewards.xp;
-        playerXP = window.playerXP;
-        if (typeof updateHUD === 'function') updateHUD();
-      }
+    if (rewards.xp) {
+      window.playerXP = (window.playerXP || 0) + rewards.xp;
+      if (typeof playerXP !== 'undefined') playerXP = window.playerXP;
+      console.log('[QuestSystem] Granted ' + rewards.xp + ' XP');
+      if (typeof updateHUD === 'function') updateHUD();
     }
     if (rewards.materials) {
       Object.keys(rewards.materials).forEach(function (key) {
-        if (typeof addMaterialToStorage === 'function') {
-          addMaterialToStorage({ type: 'material', materialKey: key }, rewards.materials[key]);
-        } else if (typeof changeMaterialCount === 'function') {
+        if (typeof changeMaterialCount === 'function') {
           changeMaterialCount(key, rewards.materials[key]);
+          console.log('[QuestSystem] Granted ' + rewards.materials[key] + ' ' + key);
+        } else if (typeof materialCounts !== 'undefined') {
+          materialCounts[key] = (materialCounts[key] || 0) + rewards.materials[key];
+          console.log('[QuestSystem] Granted ' + rewards.materials[key] + ' ' + key);
         }
       });
     }
