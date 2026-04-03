@@ -29,6 +29,7 @@ function startNextWave(noIncrement) {
     waveInProgress = true;
     waveText.setText('Dungeon Level: ' + currentWave + '  (BOSS)');
     spawnBoss.call(this);        // <-- defined below
+    if (window.soundManager) window.soundManager.playMusic('boss_music');
     return;                      // skip normal spawn setup
   }
 
@@ -85,6 +86,7 @@ function checkWaveEnd(time) {
   if (bossActive) {
     if (!currentBoss || !currentBoss.active) {
       bossActive = false;
+      if (window.soundManager) window.soundManager.playMusic('dungeon_ambient');
       this.time.delayedCall(1000, () => startNextWave.call(this));
     }
     return;

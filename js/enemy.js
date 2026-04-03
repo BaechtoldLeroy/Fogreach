@@ -694,12 +694,18 @@ function applyPlayerDamage(rawDamage, scene) {
     if (typeof updateHUD === 'function') updateHUD();
   }
 
+  if (window.soundManager) window.soundManager.playSFX('hit_player');
+
   if (scene && player) {
     player.setTint(0xff4444);
     scene.time.delayedCall(200, () => player.clearTint(), null, scene);
   }
 
   if (playerHealth <= 0) {
+    if (window.soundManager) {
+      window.soundManager.playSFX('player_death');
+      window.soundManager.stopMusic();
+    }
     player.setTint(0xff0000);
     player.setVelocity(0);
     enemies.clear(true, true);

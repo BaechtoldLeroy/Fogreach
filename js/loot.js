@@ -156,6 +156,7 @@ function spawnPickup(x, y, type) {
 }
 
 function collectLoot(playerSprite, loot) {
+  if (window.soundManager) window.soundManager.playSFX('loot_pickup');
   if (loot.lootType === 'health') {
     if (typeof addPlayerHealth === 'function') {
       addPlayerHealth(2);

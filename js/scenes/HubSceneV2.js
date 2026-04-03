@@ -92,9 +92,18 @@ class HubSceneV2 extends Phaser.Scene {
     this.createPlayer();
     this.createPrompt();
     
+    // Initialize sound manager and start hub ambient music
+    if (typeof SoundManager === 'function') {
+      window.soundManager = new SoundManager(this);
+      window.soundManager.playMusic('hub_ambient');
+    }
+
     this.cursors = this.input.keyboard.createCursorKeys();
     this.input.keyboard.on('keydown-E', this._handleInteract, this);
-    
+    this.input.keyboard.on('keydown-M', () => {
+      if (window.soundManager) window.soundManager.toggleMute();
+    });
+
     if (this.player) {
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
       this.physics.add.collider(this.player, this.colliderGroup);
@@ -103,6 +112,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard.off('keydown-E', this._handleInteract, this);
+      if (window.soundManager) window.soundManager.stopMusic();
     });
   }
 
@@ -374,6 +384,7 @@ class HubSceneV2 extends Phaser.Scene {
     
     this._activeInteractable = null;
     this.prompt.setVisible(false);
+    if (window.soundManager) window.soundManager.playSFX('ui_click');
 
     if (current.type === 'npc') {
       this._showNpcDialogue(current.data);
