@@ -53,7 +53,6 @@ if (typeof window !== 'undefined') {
   window.gotoTestTerrainScene = () => {
     if (!game) return;
     game.scene.stop('StartScene');
-    game.scene.stop('HubScene');
     game.scene.start('TestTerrainScene', { source: 'gotoTestTerrainScene' });
   };
   if (window.__DEV_AUTO_TEST_TERRAIN__ === true) {

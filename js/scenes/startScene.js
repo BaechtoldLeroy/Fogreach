@@ -73,10 +73,6 @@ StartScene.prototype.preload = function () {
     preloadPlayerDirectionalFrames(this.load);
   }
 
-  this.load.image('npc_schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
-  this.load.image('npc_spaeherin', 'assets/sprites/spaeherin.png');
-  this.load.image('npc_drucker', 'assets/sprites/setzer_thom.png');
-  
   // Brute enemy sprites
   this.load.image('brute_left0', 'assets/enemy/brute/left0.png');
   this.load.image('brute_left1', 'assets/enemy/brute/left1.png');

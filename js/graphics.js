@@ -604,34 +604,6 @@ function createParticleTextures() {
   g.destroy();
 }
 
-function createInventoryGraphics() {
-  const g = this.add.graphics();
-
-  // Panel
-  g.fillStyle(0x111111, 0.95);
-  g.fillRoundedRect(0, 0, 560, 360, 12);
-  g.lineStyle(2, 0xffffff, 0.2);
-  g.strokeRoundedRect(0, 0, 560, 360, 12);
-  g.generateTexture('uiPanel', 560, 360);
-  g.clear();
-
-  // Slot Hintergrund
-  g.fillStyle(0x222222, 1);
-  g.fillRoundedRect(0, 0, 120, 60, 8);
-  g.lineStyle(2, 0xffffff, 0.15);
-  g.strokeRoundedRect(0, 0, 120, 60, 8);
-  g.generateTexture('uiSlot', 120, 60);
-  g.clear();
-
-  // Slot ausgewählt
-  g.fillStyle(0x444444, 1);
-  g.fillRoundedRect(0, 0, 120, 60, 8);
-  g.lineStyle(3, 0xffff00, 0.9);
-  g.strokeRoundedRect(0, 0, 120, 60, 8);
-  g.generateTexture('uiSlotSel', 120, 60);
-  g.destroy();
-}
-
 function createProjectileGraphics() {
   const g = this.add.graphics();
 
