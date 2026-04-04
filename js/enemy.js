@@ -301,13 +301,13 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       tint = null;
       break; // Flammenweber
     default:
-      key = tex('sprite_mage', 'enemyMage');
+      key = scene.textures?.exists('mage_right0') ? 'mage_right0' : tex('sprite_mage', 'enemyMage');
       speed = 60;
       hp = 2;
       isRanged = true;
       rangedAttackRange = 560;
-      tint = 0xaa00ff;
-      break; // Magier - lila
+      tint = key.startsWith('mage_') ? null : (key === 'sprite_mage' ? null : 0xaa00ff);
+      break; // Magier
   }
 
   // 3) Sprite mit richtigem Key erzeugen
@@ -440,6 +440,14 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.avoidWeight = 1.1;
     enemy.sepRadius = 120;
     enemy.cohRadius = 280;
+    // Sprite-based mage with animation frames
+    if (key.startsWith('mage_')) {
+      const mageH = enemy.height || 268;
+      enemy.setScale(48 / mageH);
+      enemy.isMage = true;
+      enemy.mageDirection = 'right';
+      enemy.mageAttacking = false;
+    }
   }
 
   const difficulty = getDifficultyMultiplierValue();
@@ -641,9 +649,17 @@ function handleEnemies(time, delta = 16) {
       if (newDir !== enemy.impDirection) {
         enemy.impDirection = newDir;
         const idleKey = `imp_${newDir}0`;
-        if (this.textures.exists(idleKey)) {
-          enemy.setTexture(idleKey);
-        }
+        if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
+      }
+    }
+
+    // Mage sprite animation based on movement direction
+    if (enemy.isMage && !enemy.mageAttacking) {
+      const newDir = desired.x >= 0 ? 'right' : 'left';
+      if (newDir !== enemy.mageDirection) {
+        enemy.mageDirection = newDir;
+        const idleKey = `mage_${newDir}0`;
+        if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
       }
     }
 
@@ -673,6 +689,23 @@ function handleEnemies(time, delta = 16) {
             shootProjectile.call(this, enemy);
           }
           enemy.lastShotTime = time;
+
+          // Mage cast animation on shoot
+          if (enemy.isMage && !enemy.mageAttacking) {
+            enemy.mageAttacking = true;
+            const dir = enemy.mageDirection || 'right';
+            const sc = this;
+            if (sc.textures.exists('mage_' + dir + '1')) enemy.setTexture('mage_' + dir + '1');
+            sc.time.delayedCall(250, () => {
+              if (enemy && enemy.active && sc.textures.exists('mage_' + dir + '2')) enemy.setTexture('mage_' + dir + '2');
+            });
+            sc.time.delayedCall(500, () => {
+              if (enemy && enemy.active) {
+                enemy.mageAttacking = false;
+                if (sc.textures.exists('mage_' + dir + '0')) enemy.setTexture('mage_' + dir + '0');
+              }
+            });
+          }
         }
       }
     } else {
