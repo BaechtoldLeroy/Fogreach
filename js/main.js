@@ -24,7 +24,7 @@ const config = {
   physics: {
     default: 'arcade',
     fps: 60,
-    arcade: { gravity: { y: 0 }, debug: false }
+    arcade: { gravity: { y: 0 }, debug: false, overlapBias: 8, tileBias: 32 }
   },
   scene: [StartScene, HubSceneV2, CraftingScene, TestTerrainScene, GameScene],
   plugins: {
