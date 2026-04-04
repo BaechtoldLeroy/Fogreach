@@ -6,8 +6,8 @@ const HUB_HITBOXES = {
     { id: 'fountain',             x: 444, y: 344, w: 72,  h: 26 },
     { id: 'planter_left',         x: 356, y: 306, w: 38,  h: 22 },
     { id: 'planter_right',        x: 566, y: 306, w: 38,  h: 22 },
-    { id: 'bench_left',           x: 390, y: 488, w: 48,  h: 2 },
-    { id: 'bench_right',          x: 522, y: 488, w: 48,  h: 2 },
+    { id: 'bench_left',           x: 390, y: 484, w: 48,  h: 16 },
+    { id: 'bench_right',          x: 522, y: 484, w: 48,  h: 16 },
     { id: 'archivschmiede_body',  x: 220, y: 244, w: 148, h: 62 },
     { id: 'druckerei_body',       x: 652, y: 244, w: 148, h: 62 }
   ],
