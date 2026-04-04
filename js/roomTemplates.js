@@ -27,6 +27,22 @@
   }
 })(window);
 
+// ========== Room Theme System ==========
+const ROOM_THEMES = {
+  'Crypt_Small_Altar': { floor: 'floor_stone_dark', wall: 'wall_dungeon' },
+  'Cathedral':         { floor: 'floor_tile_ornate', wall: 'wall_stone_large' },
+  'ThroneRoom':        { floor: 'floor_tile_ornate', wall: 'wall_stone_large' },
+  'TreasureVault':     { floor: 'floor_cobble', wall: 'wall_brick' },
+  'Treasure_Small':    { floor: 'floor_cobble', wall: 'wall_brick' },
+  'GrandBazaar':       { floor: 'floor_cobble', wall: 'wall_brick' },
+  '_default':          { floor: 'floor_stone', wall: 'obstacleWall' }
+};
+
+function getRoomTheme(templateName) {
+  if (templateName && ROOM_THEMES[templateName]) return ROOM_THEMES[templateName];
+  return ROOM_THEMES['_default'];
+}
+
 const _MISSING_TEXTURE_WARNINGS = new Set();
 const AUTO_OBSTACLE_TILE_KEYS = new Set([
   'pillar_small',
@@ -219,8 +235,10 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     return bestTile || primary;
   };
 
-  // Preload textures once
-  let floorKey = tpl.tiles?.floor || 'floor_stone';
+  // Preload textures once — apply room theme based on template name
+  const roomTheme = getRoomTheme(tpl.name);
+
+  let floorKey = tpl.tiles?.floor || roomTheme.floor || 'floor_stone';
   if (!warnMissingTexture(scene, floorKey, 'floor tile')) {
     floorKey = 'floor_stone';
   }
@@ -228,11 +246,14 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     floorKey = null;
   }
 
-  let wallTexture = 'obstacleWall';
+  let wallTexture = roomTheme.wall || 'obstacleWall';
   if (!warnMissingTexture(scene, wallTexture, 'wall tile')) {
-    wallTexture = getFallbackTexture(wallTexture);
+    wallTexture = 'obstacleWall';
     if (!warnMissingTexture(scene, wallTexture, 'wall fallback')) {
-      wallTexture = null;
+      wallTexture = getFallbackTexture(wallTexture);
+      if (!warnMissingTexture(scene, wallTexture, 'wall fallback2')) {
+        wallTexture = null;
+      }
     }
   }
 
@@ -276,6 +297,27 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         if (AUTO_OBSTACLE_TILE_KEYS.has(key) && scene.spawnObstacle) {
           const obstacleX = ox + x * T + T / 2;
           const obstacleY = oy + y * T + T / 2;
+
+          // Drop shadow under auto-obstacle
+          if (scene.add?.graphics) {
+            const shadowGfx = scene.add.graphics();
+            shadowGfx.fillStyle(0x000000, 0.25);
+            shadowGfx.fillEllipse(obstacleX, obstacleY + T * 0.35, T * 0.7, T * 0.25);
+            shadowGfx.setDepth(38);
+            templateWalls.push(shadowGfx);
+          }
+
+          // Ambient glow for braziers in grid
+          if ((key === 'brazier' || key === 'brazer') && scene.add?.graphics) {
+            const glowGfx = scene.add.graphics();
+            glowGfx.fillStyle(0xffcc33, 0.15);
+            glowGfx.fillCircle(obstacleX, obstacleY, 48);
+            glowGfx.fillStyle(0xffaa00, 0.08);
+            glowGfx.fillCircle(obstacleX, obstacleY, 32);
+            glowGfx.setDepth(-3);
+            templateWalls.push(glowGfx);
+          }
+
           scene.spawnObstacle(obstacleX, obstacleY, key);
         }
       }
@@ -296,6 +338,17 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
 
   const templateWalls = scene._templateWalls = scene._templateWalls || [];
 
+  // Compute depth tint based on currentWave
+  const wave = typeof window.currentWave === 'number' ? window.currentWave : 0;
+  let depthTint = null;
+  if (wave >= 16) {
+    // Blue-ish tint for deep levels
+    depthTint = 0xccccff;
+  } else if (wave >= 6) {
+    // Slightly darker for mid levels
+    depthTint = 0xe6e6e6;
+  }
+
   if (!skipFloorTiles && floorKey && scene.add?.tileSprite) {
     const floorSprite = scene.add.tileSprite(
       ox + (W * T) / 2,
@@ -306,6 +359,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     );
     floorSprite.setOrigin(0.5);
     floorSprite.setDepth(-5);
+    if (depthTint) floorSprite.setTint(depthTint);
     templateWalls.push(floorSprite);
   }
 
@@ -320,6 +374,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       const sprite = scene.add.tileSprite(cx, cy, widthPx, heightPx, wallTexture);
       sprite.setOrigin(0.5);
       sprite.setDepth(39);
+      if (depthTint) sprite.setTint(depthTint);
       templateWalls.push(sprite);
     }
 
@@ -328,7 +383,29 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     }
   });
 
-  // Objekte
+  // Atmospheric elements: drop shadows, brazier glow, floor details
+  if (scene.add?.graphics) {
+    // Random floor details (cracks & stains) — scatter 3-5 per room
+    const detailCount = Phaser.Math.Between(3, 5);
+    for (let i = 0; i < detailCount; i++) {
+      const dtx = Phaser.Math.Between(2, W - 3);
+      const dty = Phaser.Math.Between(2, H - 3);
+      if (isWalkableTile(dtx, dty)) {
+        const dpx = ox + dtx * T + T / 2;
+        const dpy = oy + dty * T + T / 2;
+        const detailKey = Math.random() < 0.5 ? 'floor_crack' : 'floor_stain';
+        if (scene.textures?.exists?.(detailKey)) {
+          const detail = scene.add.image(dpx, dpy, detailKey);
+          detail.setDepth(-4);
+          detail.setAlpha(0.4 + Math.random() * 0.3);
+          if (detailKey === 'floor_crack') detail.setAngle(Math.random() * 360);
+          templateWalls.push(detail);
+        }
+      }
+    }
+  }
+
+  // Objekte with drop shadows and brazier glow
   tpl.objects?.forEach(o => {
     const px = ox + gx(tpl, o.x) + T / 2;
     const py = oy + gy(tpl, o.y) + T / 2;
@@ -338,6 +415,27 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       warnMissingTexture(scene, fallback, 'object fallback');
       o.type = fallback;
     }
+
+    // Drop shadow under obstacle
+    if (scene.add?.graphics) {
+      const shadowGfx = scene.add.graphics();
+      shadowGfx.fillStyle(0x000000, 0.25);
+      shadowGfx.fillEllipse(px, py + T * 0.35, T * 0.7, T * 0.25);
+      shadowGfx.setDepth(38);
+      templateWalls.push(shadowGfx);
+    }
+
+    // Ambient glow for braziers
+    if ((o.type === 'brazier' || o.type === 'brazer') && scene.add?.graphics) {
+      const glowGfx = scene.add.graphics();
+      glowGfx.fillStyle(0xffcc33, 0.15);
+      glowGfx.fillCircle(px, py, 48);
+      glowGfx.fillStyle(0xffaa00, 0.08);
+      glowGfx.fillCircle(px, py, 32);
+      glowGfx.setDepth(-3);
+      templateWalls.push(glowGfx);
+    }
+
     scene.spawnObstacle(px, py, o.type);
     objectCount++;
   });
