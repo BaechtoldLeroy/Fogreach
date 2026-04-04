@@ -1,73 +1,103 @@
 function createObstacleGraphics() {
   const g = this.add.graphics();
 
-  // Grundflaeche: neutral grauer Stein 32x32
-  g.fillStyle(0x5a5a5a, 1);
+  // ===== floor_stone (32x32) — standard stone floor with rich detail =====
+  // Base fill with subtle gradient bands
+  g.fillStyle(0x585858, 1);
   g.fillRect(0, 0, 32, 32);
-
-  // leichte Marmorierung: weiche Flecken
+  g.fillStyle(0x5e5e5e, 1);
+  g.fillRect(0, 0, 32, 16);
+  g.fillStyle(0x545454, 1);
+  g.fillRect(0, 16, 32, 16);
+  // Stone grain — 5 shades of noise
   g.fillStyle(0x6a6a6a, 0.35);
-  g.fillCircle(10, 10, 6);
-  g.fillCircle(22, 8, 5);
-  g.fillCircle(20, 20, 7);
-  g.fillCircle(8, 22, 5);
-
-  // dunklere Inseln fuer Tiefe
+  g.fillCircle(10, 10, 6); g.fillCircle(22, 8, 5);
+  g.fillCircle(20, 20, 7); g.fillCircle(8, 22, 5);
   g.fillStyle(0x4a4a4a, 0.25);
-  g.fillCircle(14, 14, 4);
-  g.fillCircle(24, 18, 3);
-  g.fillCircle(12, 24, 3);
-
-  // feine Sprenkel, fest definierte Punkte fuer Wiederholbarkeit
-  g.fillStyle(0x7a7a7a, 0.6);
-  [ [5,6],[7,17],[12,9],[15,23],[20,12],[23,27],[26,16],[28,7] ].forEach(([x,y])=>{
+  g.fillCircle(14, 14, 4); g.fillCircle(24, 18, 3); g.fillCircle(12, 24, 3);
+  g.fillStyle(0x727272, 0.2);
+  g.fillCircle(6, 16, 3); g.fillCircle(26, 6, 4); g.fillCircle(18, 28, 3);
+  g.fillStyle(0x505050, 0.15);
+  g.fillCircle(16, 4, 5); g.fillCircle(28, 14, 3);
+  // Mortar lines forming tile grid
+  g.lineStyle(1, 0x3e3e3e, 0.35);
+  g.lineBetween(0, 16, 32, 16);
+  g.lineBetween(16, 0, 16, 32);
+  // Wear marks — small dark scuffs
+  g.fillStyle(0x3a3a3a, 0.2);
+  g.fillRect(4, 10, 3, 1); g.fillRect(20, 22, 4, 1); g.fillRect(12, 28, 2, 1);
+  // Pixel-level noise speckles
+  g.fillStyle(0x7a7a7a, 0.5);
+  [[5,6],[7,17],[12,9],[15,23],[20,12],[23,27],[26,16],[28,7],[3,14],[18,3],[25,20],[10,26]].forEach(([x,y])=>{
     g.fillRect(x, y, 1, 1);
   });
+  g.fillStyle(0x424242, 0.4);
+  [[8,4],[14,20],[22,14],[2,28],[27,2],[30,24]].forEach(([x,y])=>{
+    g.fillRect(x, y, 1, 1);
+  });
+  // Hairline cracks
+  g.lineStyle(1, 0x3c3c3c, 0.4);
+  g.beginPath(); g.moveTo(6, 12); g.lineTo(10, 16); g.lineTo(8, 20); g.strokePath();
+  g.beginPath(); g.moveTo(22, 6); g.lineTo(24, 10); g.lineTo(20, 14); g.strokePath();
+  // Tiny crack near edge
+  g.lineStyle(1, 0x444444, 0.25);
+  g.beginPath(); g.moveTo(28, 24); g.lineTo(30, 28); g.strokePath();
 
-  // sehr feine Haarrisse, dezent
-  g.lineStyle(1, 0x3c3c3c, 0.5);
-  g.beginPath();
-  g.moveTo(6, 12); g.lineTo(10, 16); g.lineTo(8, 20); g.strokePath();
-  g.beginPath();
-  g.moveTo(22, 6); g.lineTo(24, 10); g.lineTo(20, 14); g.strokePath();
-
-  // ganz leichte Kantenbetonung innen, nicht an den Rand zeichnen damit nahtlos bleibt
-  g.lineStyle(1, 0x6e6e6e, 0.25);
-  g.strokeRect(1, 1, 30, 30);
-
-  // Textur erzeugen und Graphics entsorgen
   g.generateTexture('floor_stone', 32, 32);
   g.clear();
   
-  // 1) Ziegelmauer mit Rissen und Tiefenwirkung (64×64)
-  // Grundfarbe
-  g.fillStyle(0x5a5a5a, 1);
+  // ===== obstacleWall (64x64) — detailed brick wall with 3D effect =====
+  g.fillStyle(0x4e4e4e, 1);
   g.fillRect(0, 0, 64, 64);
-  // Mauersteine (helle Oberseite, dunkle Unterseite)
+  // Brick rows with offset pattern and individual color variation
+  const owBrickColors = [0x5a5a5a, 0x5e5e5e, 0x565656, 0x626262, 0x585858];
   for (let by = 0; by < 64; by += 16) {
-    for (let bx = 0; bx < 64; bx += 32) {
-      // Obere Hälfte
-      g.fillStyle(0x6e6e6e, 1);
-      g.fillRect(bx, by, 32, 8);
-      // Untere Hälfte
-      g.fillStyle(0x4a4a4a, 1);
-      g.fillRect(bx, by + 8, 32, 8);
-      // Fugenrand leicht aufhellen
-      g.lineStyle(1, 0x7e7e7e, 1);
-      g.lineBetween(bx, by + 8, bx + 32, by + 8);
+    const rowOffset = (Math.floor(by / 16) % 2) * 16;
+    let ci = 0;
+    for (let bx = -16 + rowOffset; bx < 64; bx += 32) {
+      const brickColor = owBrickColors[(ci + Math.floor(by / 16)) % owBrickColors.length];
+      ci++;
+      const x0 = Math.max(0, bx + 1);
+      const x1 = Math.min(64, bx + 31);
+      if (x1 <= x0) continue;
+      // Brick body
+      g.fillStyle(brickColor, 1);
+      g.fillRect(x0, by + 1, x1 - x0, 14);
+      // Top-edge highlight (3D)
+      g.fillStyle(0x787878, 0.5);
+      g.fillRect(x0, by + 1, x1 - x0, 2);
+      // Bottom-edge shadow (3D)
+      g.fillStyle(0x2e2e2e, 0.4);
+      g.fillRect(x0, by + 13, x1 - x0, 2);
+      // Per-brick surface noise
+      g.fillStyle(0x6a6a6a, 0.15);
+      g.fillCircle(x0 + 8, by + 7, 3);
+      g.fillStyle(0x3e3e3e, 0.1);
+      g.fillCircle(x0 + 18, by + 9, 2);
     }
   }
-  // Vertikale Fugen
-  g.lineStyle(2, 0x3e3e3e, 1);
-  g.lineBetween(32, 0, 32, 64);
-  // Risse
-  g.lineStyle(1, 0x2a2a2a, 1);
-  g.beginPath();
-  g.moveTo(10, 5).lineTo(14, 20).lineTo(8, 35).lineTo(12, 50);
-  g.strokePath();
-  g.beginPath();
-  g.moveTo(50, 15).lineTo(46, 30).lineTo(52, 45);
-  g.strokePath();
+  // Mortar lines
+  g.lineStyle(1, 0x333333, 0.9);
+  for (let by = 0; by <= 64; by += 16) {
+    g.lineBetween(0, by, 64, by);
+  }
+  // Vertical mortar at brick joints
+  g.lineStyle(1, 0x333333, 0.7);
+  for (let by = 0; by < 64; by += 16) {
+    const rowOffset = (Math.floor(by / 16) % 2) * 16;
+    for (let bx = -16 + rowOffset; bx < 80; bx += 32) {
+      if (bx > 0 && bx < 64) g.lineBetween(bx, by, bx, by + 16);
+    }
+  }
+  // Cracks
+  g.lineStyle(1, 0x1e1e1e, 0.7);
+  g.beginPath(); g.moveTo(10, 5); g.lineTo(14, 20); g.lineTo(8, 35); g.lineTo(12, 50); g.strokePath();
+  g.beginPath(); g.moveTo(50, 15); g.lineTo(46, 30); g.lineTo(52, 45); g.strokePath();
+  // Moss spots
+  g.fillStyle(0x2a4a2a, 0.25);
+  g.fillCircle(6, 58, 4); g.fillCircle(54, 62, 3);
+  g.fillStyle(0x1e3e1e, 0.15);
+  g.fillCircle(10, 60, 3);
 
   g.generateTexture('obstacleWall', 64, 64);
   g.clear();
@@ -148,87 +178,217 @@ function createObstacleGraphics() {
 
   // ===== Neue Objekte =====
 
-  // pillar_small 32x32
+  // pillar_small 32x32 — detailed with carved rings
   g.clear();
-  g.fillStyle(0x8a8a8a, 1);           // Steinbasis
-  g.fillRoundedRect(6, 24, 20, 6, 2); // Sockel
-  g.fillStyle(0x9c9c9c, 1);
-  g.fillRoundedRect(10, 6, 12, 20, 3);// Schaft
-  g.fillStyle(0xb0b0b0, 1);
-  g.fillRoundedRect(4, 2, 24, 6, 2);  // Kapitell
-  g.lineStyle(1, 0x6e6e6e, 0.6);      // Fugen
+  // Sockel with shadow
+  g.fillStyle(0x6a6a6a, 1);
+  g.fillRoundedRect(6, 25, 20, 6, 2);
+  g.fillStyle(0x8a8a8a, 1);
+  g.fillRoundedRect(6, 24, 20, 5, 2);
+  // Schaft with gradient
+  g.fillStyle(0x8e8e8e, 1);
+  g.fillRoundedRect(10, 6, 12, 20, 3);
+  // Light side highlight
+  g.fillStyle(0xa8a8a8, 0.4);
+  g.fillRect(10, 6, 4, 20);
+  // Dark side shadow
+  g.fillStyle(0x606060, 0.3);
+  g.fillRect(18, 6, 4, 20);
+  // Carved rings on shaft
+  g.lineStyle(1, 0x6e6e6e, 0.5);
+  g.lineBetween(10, 10, 22, 10);
+  g.lineBetween(10, 16, 22, 16);
+  g.lineBetween(10, 22, 22, 22);
+  // Kapitell with highlight
+  g.fillStyle(0x9a9a9a, 1);
+  g.fillRoundedRect(4, 2, 24, 6, 2);
+  g.fillStyle(0xc0c0c0, 0.4);
+  g.fillRoundedRect(4, 2, 24, 3, 2);
+  // Outline
+  g.lineStyle(1, 0x5a5a5a, 0.5);
   g.strokeRoundedRect(10, 6, 12, 20, 3);
   g.generateTexture('pillar_small', 32, 32);
 
-  // pillar_large 48x48
+  // pillar_large 48x48 — ornate pillar with fluted shaft
   g.clear();
+  // Sockel with 3D edge
+  g.fillStyle(0x5e5e5e, 1);
+  g.fillRoundedRect(6, 39, 36, 8, 3);
   g.fillStyle(0x7a7a7a, 1);
-  g.fillRoundedRect(6, 38, 36, 8, 3);        // Sockel breit
+  g.fillRoundedRect(6, 38, 36, 7, 3);
+  g.fillStyle(0x929292, 0.3);
+  g.fillRoundedRect(6, 38, 36, 3, 3);
+  // Schaft with fluting (vertical grooves)
+  g.fillStyle(0x8a8a8a, 1);
+  g.fillRoundedRect(16, 8, 16, 30, 4);
+  // Flute highlights
+  g.fillStyle(0xa4a4a4, 0.35);
+  g.fillRect(17, 8, 3, 30);
+  g.fillRect(22, 8, 2, 30);
+  g.fillRect(27, 8, 2, 30);
+  // Flute shadows
+  g.fillStyle(0x5a5a5a, 0.25);
+  g.fillRect(20, 8, 2, 30);
+  g.fillRect(25, 8, 2, 30);
+  g.fillRect(30, 8, 2, 30);
+  // Carved rings
+  g.lineStyle(1, 0x6a6a6a, 0.6);
+  g.lineBetween(16, 12, 32, 12);
+  g.lineBetween(16, 20, 32, 20);
+  g.lineBetween(16, 28, 32, 28);
+  g.lineBetween(16, 35, 32, 35);
+  // Kapitell with ornate top
   g.fillStyle(0x9a9a9a, 1);
-  g.fillRoundedRect(18, 8, 12, 30, 4);       // Schaft
-  g.fillStyle(0xbcbcbc, 1);
-  g.fillRoundedRect(8, 2, 32, 10, 3);        // Kapitell
-  g.lineStyle(2, 0x6c6c6c, 0.8);
-  g.strokeRoundedRect(18, 8, 12, 30, 4);
+  g.fillRoundedRect(8, 2, 32, 10, 3);
+  g.fillStyle(0xc0c0c0, 0.4);
+  g.fillRoundedRect(8, 2, 32, 4, 3);
+  // Decorative band on kapitell
+  g.lineStyle(1, 0xbcbcbc, 0.5);
+  g.lineBetween(10, 8, 38, 8);
+  // Outline
+  g.lineStyle(1, 0x4e4e4e, 0.6);
+  g.strokeRoundedRect(16, 8, 16, 30, 4);
   g.generateTexture('pillar_large', 48, 48);
 
-  // statue_knight 48x64
+  // statue_knight 48x64 — detailed knight statue with shading
   g.clear();
-  // Sockel
+  // Sockel with beveled edge
+  g.fillStyle(0x555555, 1);
+  g.fillRoundedRect(8, 53, 32, 10, 2);
   g.fillStyle(0x6e6e6e, 1);
-  g.fillRoundedRect(8, 52, 32, 10, 2);
-  // Figur stilisiert
-  g.fillStyle(0x9d9d9d, 1);
-  g.fillRect(20, 18, 8, 18);          // Oberkoerper
-  g.fillRect(18, 36, 12, 14);         // Huefte
-  g.fillRect(16, 50, 6, 6);           // Bein links
-  g.fillRect(26, 50, 6, 6);           // Bein rechts
-  g.fillStyle(0xbdbdbd, 1);
-  g.fillRect(18, 10, 12, 10);         // Helm
-  g.fillStyle(0x888888, 1);
-  g.fillRect(30, 24, 10, 4);          // Schildkante
-  g.fillStyle(0xaaaaaa, 1);
-  g.fillRect(30, 20, 8, 12);          // Schild
-  g.fillStyle(0xcccccc, 1);
-  g.fillRect(14, 18, 2, 24);          // Waffe Stil
-  g.fillRect(12, 12, 6, 6);           // Klinge
-  // leichte Kanten
-  g.lineStyle(1, 0x5a5a5a, 0.8);
+  g.fillRoundedRect(8, 52, 32, 9, 2);
+  g.fillStyle(0x8a8a8a, 0.35);
+  g.fillRoundedRect(8, 52, 32, 3, 2);
+  // Legs with armor plates
+  g.fillStyle(0x7a7a7a, 1);
+  g.fillRect(16, 44, 6, 10);
+  g.fillRect(26, 44, 6, 10);
+  g.fillStyle(0x8e8e8e, 0.5);
+  g.fillRect(16, 44, 3, 10); g.fillRect(26, 44, 3, 10);
+  // Body — torso armor
+  g.fillStyle(0x8a8a8a, 1);
+  g.fillRect(18, 20, 12, 24);
+  // Chest plate highlight
+  g.fillStyle(0xb0b0b0, 0.4);
+  g.fillRect(18, 20, 6, 12);
+  // Armor shadow
+  g.fillStyle(0x5a5a5a, 0.3);
+  g.fillRect(26, 24, 4, 18);
+  // Belt
+  g.fillStyle(0x5a4a3a, 1);
+  g.fillRect(17, 36, 14, 3);
+  g.fillStyle(0xc9a050, 1);
+  g.fillRect(22, 36, 4, 3);
+  // Helm with visor
+  g.fillStyle(0x9a9a9a, 1);
+  g.fillRect(18, 10, 12, 12);
+  g.fillStyle(0xbcbcbc, 0.5);
+  g.fillRect(18, 10, 12, 5);
+  g.fillStyle(0x4a4a4a, 1);
+  g.fillRect(20, 16, 8, 2); // visor slit
+  // Plume on helm
+  g.fillStyle(0x8a2020, 0.7);
+  g.fillRect(22, 6, 4, 6);
+  // Shield on right arm
+  g.fillStyle(0x7a7a7a, 1);
+  g.fillRect(30, 20, 8, 14);
+  g.fillStyle(0x9a9a9a, 0.5);
+  g.fillRect(30, 20, 8, 6);
+  g.lineStyle(1, 0xaaaaaa, 0.4);
+  g.lineBetween(34, 20, 34, 34);
+  g.lineBetween(30, 27, 38, 27);
+  // Sword on left arm
+  g.fillStyle(0xc0c0c0, 1);
+  g.fillRect(13, 12, 2, 30);
+  g.fillStyle(0xe0e0e0, 0.5);
+  g.fillRect(13, 12, 1, 30);
+  // Crossguard
+  g.fillStyle(0x8a7a50, 1);
+  g.fillRect(10, 18, 8, 2);
+  // Outline
+  g.lineStyle(1, 0x4a4a4a, 0.6);
   g.strokeRoundedRect(8, 52, 32, 10, 2);
   g.generateTexture('statue_knight', 48, 64);
 
-  // brazier 24x32
+  // brazier 24x32 — bright animated-look fire brazier
   g.clear();
-  // Schale
-  g.fillStyle(0x4a4040, 1);
-  g.fillEllipse(12, 20, 20, 8);
-  g.fillStyle(0x5a5050, 1);
-  g.fillEllipse(12, 18, 18, 6);
-  // Flamme stilisiert
-  g.fillStyle(0xffcc33, 1);
-  g.fillTriangle(12, 4, 6, 18, 18, 18);
-  g.fillStyle(0xff6633, 1);
-  g.fillTriangle(12, 8, 9, 18, 15, 18);
-  // Fuss
-  g.fillStyle(0x3a3333, 1);
-  g.fillRect(10, 22, 4, 6);
+  // Stand/legs
+  g.fillStyle(0x3a3030, 1);
+  g.fillRect(5, 24, 3, 6);
+  g.fillRect(16, 24, 3, 6);
+  g.fillStyle(0x4a3a3a, 1);
+  g.fillRect(9, 26, 6, 4);
+  // Bowl — dark iron
+  g.fillStyle(0x3e3535, 1);
+  g.fillEllipse(12, 22, 22, 8);
+  g.fillStyle(0x504545, 1);
+  g.fillEllipse(12, 20, 20, 6);
+  // Bowl inner glow (hot)
+  g.fillStyle(0x8a3000, 0.4);
+  g.fillEllipse(12, 20, 14, 4);
+  // Outer flame — bright yellow
+  g.fillStyle(0xffdd44, 1);
+  g.fillTriangle(12, 2, 4, 18, 20, 18);
+  // Mid flame — orange
+  g.fillStyle(0xff8822, 1);
+  g.fillTriangle(12, 5, 7, 18, 17, 18);
+  // Inner flame — bright white-yellow core
+  g.fillStyle(0xffeeaa, 0.9);
+  g.fillTriangle(12, 8, 9, 16, 15, 16);
+  // Hot core
+  g.fillStyle(0xffffff, 0.6);
+  g.fillTriangle(12, 10, 10, 15, 14, 15);
+  // Sparks (bright dots above flame)
+  g.fillStyle(0xffee66, 0.8);
+  g.fillRect(10, 1, 1, 1); g.fillRect(14, 0, 1, 1); g.fillRect(8, 3, 1, 1);
+  // Bowl rim highlight
+  g.lineStyle(1, 0x6a5a5a, 0.5);
+  g.strokeEllipse(12, 20, 20, 6);
   g.generateTexture('brazier', 24, 32);
 
-  // crate 32x32
+  // crate 32x32 — detailed wooden crate with nails and wood grain
   g.clear();
-  g.fillStyle(0x7a4a1a, 1);  // Holz
+  // Base wood
+  g.fillStyle(0x7a4a1a, 1);
   g.fillRect(0, 0, 32, 32);
-  // Bretter
+  // Individual planks with slight color variation
   g.fillStyle(0x8a5a2a, 1);
-  g.fillRect(2, 6, 28, 4);
-  g.fillRect(2, 14, 28, 4);
-  g.fillRect(2, 22, 28, 4);
-  // Kanten
+  g.fillRect(2, 1, 28, 5);
+  g.fillStyle(0x7e4e1e, 1);
+  g.fillRect(2, 7, 28, 5);
+  g.fillStyle(0x8a5828, 1);
+  g.fillRect(2, 13, 28, 5);
+  g.fillStyle(0x765018, 1);
+  g.fillRect(2, 19, 28, 5);
+  g.fillStyle(0x84562a, 1);
+  g.fillRect(2, 25, 28, 5);
+  // Wood grain lines
+  g.lineStyle(1, 0x604010, 0.25);
+  g.lineBetween(4, 2, 28, 2); g.lineBetween(6, 9, 26, 9);
+  g.lineBetween(3, 15, 29, 15); g.lineBetween(5, 21, 27, 21);
+  g.lineBetween(4, 27, 28, 27);
+  // Iron bands (horizontal)
+  g.fillStyle(0x4a3a1a, 1);
+  g.fillRect(0, 6, 32, 2);
+  g.fillRect(0, 18, 32, 2);
+  // Kanten — darker frame
   g.lineStyle(2, 0x5a3a1a, 1);
   g.strokeRect(1, 1, 30, 30);
-  // Diagonalstreben
-  g.lineStyle(2, 0x704520, 0.9);
+  // Corner braces
+  g.fillStyle(0x3e2e10, 1);
+  g.fillRect(0, 0, 4, 4); g.fillRect(28, 0, 4, 4);
+  g.fillRect(0, 28, 4, 4); g.fillRect(28, 28, 4, 4);
+  // Nails
+  g.fillStyle(0xaaaaaa, 0.7);
+  g.fillRect(2, 2, 1, 1); g.fillRect(29, 2, 1, 1);
+  g.fillRect(2, 29, 1, 1); g.fillRect(29, 29, 1, 1);
+  g.fillRect(15, 6, 1, 1); g.fillRect(15, 18, 1, 1);
+  // Diagonal brace
+  g.lineStyle(2, 0x604018, 0.7);
   g.beginPath(); g.moveTo(3, 29); g.lineTo(29, 3); g.strokePath();
+  // Top edge highlight
+  g.fillStyle(0x9a6a30, 0.3);
+  g.fillRect(1, 1, 30, 1);
   g.generateTexture('crate', 32, 32);
 
   const chestDefs = [
@@ -252,18 +412,33 @@ function createObstacleGraphics() {
     g.fillStyle(0xa15b28, 1).fillRoundedRect(0, 0, w, lidHeight + 4, 6);
     g.fillStyle(0xc97b36, 1).fillRoundedRect(2, 2, w - 4, lidHeight, 5);
 
+    // Lid wood grain
+    g.lineStyle(1, 0x9a6020, 0.2);
+    for (let ly = 3; ly < lidHeight; ly += 3) {
+      g.lineBetween(3, ly, w - 3, ly);
+    }
+
     // Metallband horizontal
     g.fillStyle(0x3d2b1f, 1).fillRect(0, lidHeight + bandY, w, 4);
     // Metallband vertikal (Schlossbereich)
     g.fillRect(Math.floor(w / 2) - 2, lidHeight - 2, 4, baseHeight + 4);
 
-    // Schloss / Verzierung
+    // Schloss / Verzierung — golden gleam
     g.fillStyle(0xe6c97d, 1).fillRect(Math.floor(w / 2) - 3, lidHeight + bandY - 2, 6, 6);
     g.fillRect(Math.floor(w / 2) - 1, lidHeight + bandY + 4, 2, 6);
+    // Gleam highlight on lock
+    g.fillStyle(0xfff0c0, 0.7);
+    g.fillRect(Math.floor(w / 2) - 2, lidHeight + bandY - 1, 2, 2);
 
     // Highlights & Schatten
     g.lineStyle(1, 0xf2d9a0, 0.6).strokeRoundedRect(1, 1, w - 2, lidHeight, 5);
     g.lineStyle(1, 0x6e3f1b, 0.7).strokeRoundedRect(0, lidHeight, w, baseHeight, 4);
+
+    // Gleam on lid — bright diagonal highlight
+    g.fillStyle(0xffe8b0, 0.25);
+    g.fillRect(4, 3, Math.floor(w * 0.4), 2);
+    g.fillStyle(0xfff0c8, 0.15);
+    g.fillRect(4, 5, Math.floor(w * 0.3), 1);
 
     // Kleine Nieten auf dem Band
     g.fillStyle(0xc9b075, 0.9);
@@ -271,6 +446,10 @@ function createObstacleGraphics() {
     for (let x = spacing; x < w; x += spacing) {
       g.fillCircle(x, lidHeight + bandY + 2, 1.2);
     }
+
+    // Bottom shadow
+    g.fillStyle(0x000000, 0.15);
+    g.fillRect(2, lidHeight + baseHeight - 3, w - 4, 2);
 
     g.generateTexture(key, w, h);
   });
@@ -331,33 +510,63 @@ function createObstacleGraphics() {
   // Textur erzeugen
   g.generateTexture('barrel', 24, 32);
   
-  // rubble 32x24
+  // rubble 32x24 — scattered stone rubble with shading
   g.clear();
-  g.fillStyle(0x6e6e6e, 1);
-  g.fillTriangle(4, 22, 12, 8, 20, 22);
-  g.fillStyle(0x7e7e7e, 1);
-  g.fillTriangle(14, 22, 22, 12, 30, 22);
+  // Large chunks with highlight/shadow
   g.fillStyle(0x5a5a5a, 1);
+  g.fillTriangle(4, 22, 12, 8, 20, 22);
+  g.fillStyle(0x727272, 0.5);
+  g.fillTriangle(6, 20, 12, 10, 14, 20);
+  g.fillStyle(0x7e7e7e, 1);
+  g.fillTriangle(14, 22, 22, 10, 30, 22);
+  g.fillStyle(0x909090, 0.4);
+  g.fillTriangle(16, 20, 22, 12, 24, 20);
+  g.fillStyle(0x4e4e4e, 1);
   g.fillTriangle(8, 22, 16, 14, 24, 22);
-  // kleine Brocken
+  // Small scattered pebbles
   g.fillStyle(0x8a8a8a, 1);
-  g.fillRect(6, 20, 2, 2);
-  g.fillRect(26, 20, 2, 2);
-  g.fillRect(18, 18, 2, 2);
+  g.fillRect(2, 20, 2, 2); g.fillRect(26, 19, 3, 3);
+  g.fillRect(18, 17, 2, 2); g.fillRect(10, 20, 2, 1);
+  g.fillStyle(0x6e6e6e, 1);
+  g.fillRect(28, 21, 2, 1); g.fillRect(1, 22, 1, 1);
+  // Dust/debris marks
+  g.fillStyle(0x4a4a4a, 0.3);
+  g.fillCircle(12, 21, 4); g.fillCircle(22, 21, 3);
+  // Crack detail on large chunk
+  g.lineStyle(1, 0x3a3a3a, 0.5);
+  g.beginPath(); g.moveTo(10, 12); g.lineTo(12, 18); g.strokePath();
   g.generateTexture('rubble', 32, 24);
 
-  // altar 48x32
+  // altar 48x32 — ornate stone altar with carved details
   g.clear();
-  // Platte
+  // Legs with shadowed faces
+  g.fillStyle(0x6a6a6a, 1);
+  g.fillRoundedRect(8, 18, 8, 12, 2);
+  g.fillRoundedRect(32, 18, 8, 12, 2);
+  g.fillStyle(0x7e7e7e, 0.4);
+  g.fillRect(8, 18, 4, 12); g.fillRect(32, 18, 4, 12);
+  // Top slab — polished stone
   g.fillStyle(0x8c8c8c, 1);
-  g.fillRoundedRect(4, 4, 40, 12, 4);
-  // Fuesse
-  g.fillStyle(0x7a7a7a, 1);
-  g.fillRoundedRect(8, 18, 8, 10, 2);
-  g.fillRoundedRect(32, 18, 8, 10, 2);
-  // Zierkante
-  g.lineStyle(2, 0xbcbcbc, 0.8);
-  g.strokeRoundedRect(4, 4, 40, 12, 4);
+  g.fillRoundedRect(2, 4, 44, 14, 4);
+  // Top surface highlight
+  g.fillStyle(0xa4a4a4, 0.4);
+  g.fillRoundedRect(2, 4, 44, 6, 4);
+  // Front face shadow
+  g.fillStyle(0x5a5a5a, 0.3);
+  g.fillRect(4, 14, 40, 4);
+  // Carved border pattern
+  g.lineStyle(1, 0xbcbcbc, 0.6);
+  g.strokeRoundedRect(4, 5, 40, 12, 3);
+  // Inner carved line
+  g.lineStyle(1, 0x9a9a9a, 0.3);
+  g.strokeRoundedRect(6, 7, 36, 8, 2);
+  // Center symbol (diamond)
+  g.fillStyle(0xc0c0c0, 0.4);
+  g.fillTriangle(24, 7, 28, 11, 24, 15);
+  g.fillTriangle(24, 7, 20, 11, 24, 15);
+  // Corner accents
+  g.fillStyle(0xaaaaaa, 0.5);
+  g.fillRect(6, 7, 2, 2); g.fillRect(40, 7, 2, 2);
   g.generateTexture('altar', 48, 32);
   
   // Treppe
@@ -400,168 +609,286 @@ function createObstacleGraphics() {
 
   // ===== Room-Theme Floor & Wall Variants =====
 
-  // floor_stone_dark — darker variant for deeper rooms (32x32)
+  // floor_stone_dark — darker variant with dampness and wear (32x32)
   g.clear();
-  g.fillStyle(0x3a3a3a, 1);
+  // Base with subtle banding
+  g.fillStyle(0x333333, 1);
   g.fillRect(0, 0, 32, 32);
-  g.fillStyle(0x454545, 0.35);
-  g.fillCircle(10, 10, 6);
-  g.fillCircle(22, 8, 5);
-  g.fillCircle(20, 20, 7);
-  g.fillCircle(8, 22, 5);
-  g.fillStyle(0x2e2e2e, 0.3);
-  g.fillCircle(14, 14, 4);
-  g.fillCircle(24, 18, 3);
-  g.fillCircle(12, 24, 3);
-  g.fillStyle(0x555555, 0.5);
-  [[5,6],[7,17],[12,9],[15,23],[20,12],[23,27],[26,16],[28,7]].forEach(([px,py])=>{
+  g.fillStyle(0x383838, 1);
+  g.fillRect(0, 0, 16, 16);
+  g.fillStyle(0x303030, 1);
+  g.fillRect(16, 16, 16, 16);
+  // Stone grain — 5 shades
+  g.fillStyle(0x404040, 0.35);
+  g.fillCircle(10, 10, 6); g.fillCircle(22, 8, 5);
+  g.fillCircle(20, 20, 7); g.fillCircle(8, 22, 5);
+  g.fillStyle(0x282828, 0.3);
+  g.fillCircle(14, 14, 4); g.fillCircle(24, 18, 3); g.fillCircle(12, 24, 3);
+  g.fillStyle(0x484848, 0.15);
+  g.fillCircle(4, 28, 4); g.fillCircle(28, 4, 3);
+  // Dampness stains (dark blue-gray)
+  g.fillStyle(0x2a2a34, 0.2);
+  g.fillCircle(8, 14, 5); g.fillCircle(24, 26, 4);
+  // Mortar lines
+  g.lineStyle(1, 0x222222, 0.4);
+  g.lineBetween(0, 16, 32, 16); g.lineBetween(16, 0, 16, 32);
+  // Wear marks
+  g.fillStyle(0x1e1e1e, 0.2);
+  g.fillRect(6, 10, 4, 1); g.fillRect(22, 22, 3, 1);
+  // Speckles
+  g.fillStyle(0x505050, 0.45);
+  [[5,6],[7,17],[12,9],[15,23],[20,12],[23,27],[26,16],[28,7],[3,20],[18,2]].forEach(([px,py])=>{
     g.fillRect(px, py, 1, 1);
   });
-  g.lineStyle(1, 0x222222, 0.5);
-  g.beginPath(); g.moveTo(6, 12); g.lineTo(10, 16); g.lineTo(8, 20); g.strokePath();
-  g.beginPath(); g.moveTo(22, 6); g.lineTo(24, 10); g.lineTo(20, 14); g.strokePath();
-  g.lineStyle(1, 0x484848, 0.25);
-  g.strokeRect(1, 1, 30, 30);
+  // Deep cracks
+  g.lineStyle(1, 0x1a1a1a, 0.5);
+  g.beginPath(); g.moveTo(6, 12); g.lineTo(10, 16); g.lineTo(8, 22); g.strokePath();
+  g.beginPath(); g.moveTo(22, 4); g.lineTo(24, 10); g.lineTo(20, 16); g.strokePath();
+  g.beginPath(); g.moveTo(26, 20); g.lineTo(28, 26); g.strokePath();
   g.generateTexture('floor_stone_dark', 32, 32);
 
-  // floor_cobble — cobblestone for transitional areas (32x32)
+  // floor_cobble — cobblestone with individual stone colors and worn edges (32x32)
   g.clear();
-  g.fillStyle(0x5e5448, 1);
+  // Deep mortar base
+  g.fillStyle(0x3a3228, 1);
   g.fillRect(0, 0, 32, 32);
-  // Cobblestone pattern: rounded stones with mortar gaps
-  g.fillStyle(0x706454, 1);
+  // Individual cobblestones — each a different shade
+  g.fillStyle(0x6a5e4e, 1);
   g.fillRoundedRect(1, 1, 14, 14, 3);
+  g.fillStyle(0x746850, 1);
   g.fillRoundedRect(17, 1, 14, 14, 3);
+  g.fillStyle(0x5e5444, 1);
   g.fillRoundedRect(1, 17, 14, 14, 3);
+  g.fillStyle(0x6e6252, 1);
   g.fillRoundedRect(17, 17, 14, 14, 3);
-  // Lighter highlights on stones
-  g.fillStyle(0x8a7e6e, 0.4);
-  g.fillCircle(6, 6, 4);
-  g.fillCircle(23, 7, 3);
-  g.fillCircle(7, 23, 3);
-  g.fillCircle(24, 24, 4);
-  // Mortar lines (dark gaps between stones)
-  g.lineStyle(1, 0x3a3228, 0.8);
-  g.lineBetween(16, 0, 16, 32);
-  g.lineBetween(0, 16, 32, 16);
-  // Subtle texture speckles
-  g.fillStyle(0x4a4238, 0.4);
-  [[4,12],[10,4],[20,10],[28,20],[12,28],[22,26]].forEach(([px,py])=>{
-    g.fillRect(px, py, 1, 1);
-  });
+  // Top-left highlight on each stone (3D)
+  g.fillStyle(0x8a7e6e, 0.35);
+  g.fillRect(2, 2, 12, 4); g.fillRect(18, 2, 12, 4);
+  g.fillRect(2, 18, 12, 4); g.fillRect(18, 18, 12, 4);
+  // Bottom-right shadow on each stone
+  g.fillStyle(0x3e3828, 0.3);
+  g.fillRect(2, 12, 12, 2); g.fillRect(18, 12, 12, 2);
+  g.fillRect(2, 28, 12, 2); g.fillRect(18, 28, 12, 2);
+  // Surface texture on stones
+  g.fillStyle(0x7a6e5a, 0.2);
+  g.fillCircle(6, 8, 3); g.fillCircle(23, 9, 2);
+  g.fillCircle(8, 24, 2); g.fillCircle(25, 25, 3);
+  g.fillStyle(0x4a4438, 0.2);
+  g.fillCircle(10, 5, 2); g.fillCircle(26, 6, 2);
+  // Mortar lines — deep and uneven
+  g.lineStyle(2, 0x2e2820, 0.9);
+  g.lineBetween(15, 0, 16, 32);
+  g.lineBetween(0, 15, 32, 16);
+  // Tiny pebbles in mortar
+  g.fillStyle(0x5a5040, 0.5);
+  g.fillRect(15, 4, 1, 1); g.fillRect(16, 20, 1, 1);
+  g.fillRect(6, 15, 1, 1); g.fillRect(26, 16, 1, 1);
+  // Wear/chip marks
+  g.fillStyle(0x4e4638, 0.3);
+  g.fillRect(4, 10, 2, 1); g.fillRect(22, 22, 3, 1);
   g.generateTexture('floor_cobble', 32, 32);
 
-  // floor_tile_ornate — decorative tile for special rooms (32x32)
+  // floor_tile_ornate — rich decorative tile with inlay pattern (32x32)
   g.clear();
+  // Base — warm polished stone
   g.fillStyle(0x6a5a4a, 1);
   g.fillRect(0, 0, 32, 32);
-  // Border pattern
+  // Slight gradient for depth
+  g.fillStyle(0x705e4e, 0.3);
+  g.fillRect(0, 0, 32, 16);
+  g.fillStyle(0x5e5040, 0.2);
+  g.fillRect(0, 16, 32, 16);
+  // Triple border pattern
   g.lineStyle(1, 0x8a7a5a, 0.6);
-  g.strokeRect(2, 2, 28, 28);
-  g.lineStyle(1, 0x9a8a6a, 0.4);
-  g.strokeRect(4, 4, 24, 24);
-  // Diamond inlay
-  g.fillStyle(0x7a6a52, 0.8);
-  g.fillTriangle(16, 6, 26, 16, 16, 26);
-  g.fillTriangle(16, 6, 6, 16, 16, 26);
-  // Inner detail
-  g.fillStyle(0x8a7a62, 0.5);
+  g.strokeRect(1, 1, 30, 30);
+  g.lineStyle(1, 0x9a8a6a, 0.5);
+  g.strokeRect(3, 3, 26, 26);
+  g.lineStyle(1, 0x7a6a4a, 0.3);
+  g.strokeRect(5, 5, 22, 22);
+  // Diamond inlay — two-tone
+  g.fillStyle(0x7a6a52, 0.7);
+  g.fillTriangle(16, 7, 25, 16, 16, 25);
+  g.fillTriangle(16, 7, 7, 16, 16, 25);
+  // Diamond highlight (lighter half)
+  g.fillStyle(0x9a8a6a, 0.3);
+  g.fillTriangle(16, 7, 7, 16, 16, 16);
+  // Diamond shadow (darker half)
+  g.fillStyle(0x5a4a3a, 0.2);
+  g.fillTriangle(16, 16, 25, 16, 16, 25);
+  // Center medallion
+  g.fillStyle(0x8a7a62, 0.6);
   g.fillCircle(16, 16, 4);
-  // Corner accents
-  g.fillStyle(0x9a8a6a, 0.6);
+  g.fillStyle(0xa09070, 0.3);
+  g.fillCircle(16, 15, 2);
+  // Corner rosettes
+  g.fillStyle(0x9a8a6a, 0.5);
   [[3,3],[28,3],[3,28],[28,28]].forEach(([px,py])=>{
-    g.fillRect(px, py, 2, 2);
+    g.fillCircle(px, py, 2);
   });
-  // Subtle wear
-  g.fillStyle(0x5a4a3a, 0.3);
-  g.fillCircle(10, 22, 3);
-  g.fillCircle(24, 10, 2);
+  g.fillStyle(0xaa9a7a, 0.3);
+  [[3,3],[28,3]].forEach(([px,py])=>{
+    g.fillRect(px-1, py-1, 1, 1);
+  });
+  // Subtle wear/patina
+  g.fillStyle(0x4a3a2a, 0.2);
+  g.fillCircle(10, 22, 3); g.fillCircle(24, 10, 2);
+  // Grout line at edges
+  g.lineStyle(1, 0x3e3428, 0.3);
+  g.lineBetween(0, 0, 32, 0); g.lineBetween(0, 31, 32, 31);
+  g.lineBetween(0, 0, 0, 32); g.lineBetween(31, 0, 31, 32);
   g.generateTexture('floor_tile_ornate', 32, 32);
 
-  // wall_brick — warmer, more detailed brick wall (64x64)
+  // wall_brick — warm brick wall with individual brick colors and 3D mortar (64x64)
   g.clear();
-  g.fillStyle(0x6a4a3a, 1);
+  g.fillStyle(0x5a3a2a, 1);
   g.fillRect(0, 0, 64, 64);
-  // Brick rows with offset pattern
+  // Brick rows with offset pattern and color variation
+  const wbColors = [0x7a5a42, 0x7e5e46, 0x765640, 0x82624a, 0x745038];
   for (let by = 0; by < 64; by += 16) {
     const rowOffset = (Math.floor(by / 16) % 2) * 16;
+    let ci = 0;
     for (let bx = -16 + rowOffset; bx < 64; bx += 32) {
-      g.fillStyle(0x7a5a42, 1);
-      g.fillRect(Math.max(0, bx + 1), by + 1, 30, 14);
-      g.fillStyle(0x8a6a52, 0.5);
-      g.fillRect(Math.max(0, bx + 2), by + 2, 28, 6);
+      const x0 = Math.max(0, bx + 1);
+      const x1 = Math.min(64, bx + 31);
+      if (x1 <= x0) continue;
+      const bc = wbColors[(ci + Math.floor(by / 16) * 2) % wbColors.length];
+      ci++;
+      // Brick face
+      g.fillStyle(bc, 1);
+      g.fillRect(x0, by + 1, x1 - x0, 14);
+      // Top highlight
+      g.fillStyle(0x9a7a5a, 0.35);
+      g.fillRect(x0, by + 1, x1 - x0, 2);
+      // Bottom shadow
+      g.fillStyle(0x3a2218, 0.3);
+      g.fillRect(x0, by + 13, x1 - x0, 2);
+      // Surface noise
+      g.fillStyle(0x8a6a50, 0.15);
+      g.fillCircle(x0 + 8, by + 7, 3);
     }
   }
   // Mortar lines
-  g.lineStyle(1, 0x4a3228, 0.9);
-  for (let by = 0; by < 64; by += 16) {
+  g.lineStyle(1, 0x3a2218, 0.9);
+  for (let by = 0; by <= 64; by += 16) {
     g.lineBetween(0, by, 64, by);
   }
-  // Crack detail
-  g.lineStyle(1, 0x2a1a10, 0.7);
+  // Vertical mortar
+  g.lineStyle(1, 0x3a2218, 0.7);
+  for (let by = 0; by < 64; by += 16) {
+    const rowOffset = (Math.floor(by / 16) % 2) * 16;
+    for (let bx = -16 + rowOffset; bx < 80; bx += 32) {
+      if (bx > 0 && bx < 64) g.lineBetween(bx, by, bx, by + 16);
+    }
+  }
+  // Cracks
+  g.lineStyle(1, 0x2a1a10, 0.6);
   g.beginPath(); g.moveTo(20, 8); g.lineTo(24, 24); g.lineTo(18, 40); g.strokePath();
+  g.beginPath(); g.moveTo(48, 20); g.lineTo(44, 36); g.strokePath();
+  // Soot/stain
+  g.fillStyle(0x3a2a1a, 0.15);
+  g.fillCircle(40, 56, 6);
   g.generateTexture('wall_brick', 64, 64);
 
-  // wall_stone_large — large cut stone blocks (64x64)
+  // wall_stone_large — massive cut stone blocks with chisel marks (64x64)
   g.clear();
-  g.fillStyle(0x7a7a7a, 1);
+  // Mortar base
+  g.fillStyle(0x4a4a4a, 1);
   g.fillRect(0, 0, 64, 64);
-  // Large stone blocks
-  g.fillStyle(0x8a8a8a, 1);
-  g.fillRect(1, 1, 30, 30);
-  g.fillRect(33, 1, 30, 30);
-  g.fillRect(1, 33, 30, 30);
-  g.fillRect(33, 33, 30, 30);
-  // Highlights
-  g.fillStyle(0x9a9a9a, 0.4);
-  g.fillRect(2, 2, 28, 14);
-  g.fillRect(34, 2, 28, 14);
-  g.fillRect(2, 34, 28, 14);
-  g.fillRect(34, 34, 28, 14);
+  // Four large blocks — each slightly different shade
+  const wslColors = [0x828282, 0x8a8a8a, 0x7e7e7e, 0x868686];
+  const wslBlocks = [[1,1,30,30],[33,1,30,30],[1,33,30,30],[33,33,30,30]];
+  wslBlocks.forEach(([bx,by,bw,bh], i) => {
+    g.fillStyle(wslColors[i], 1);
+    g.fillRect(bx, by, bw, bh);
+    // Top-edge highlight
+    g.fillStyle(0xa0a0a0, 0.35);
+    g.fillRect(bx, by, bw, 3);
+    // Left-edge highlight
+    g.fillStyle(0x969696, 0.2);
+    g.fillRect(bx, by, 3, bh);
+    // Bottom-edge shadow
+    g.fillStyle(0x4e4e4e, 0.35);
+    g.fillRect(bx, by + bh - 3, bw, 3);
+    // Right-edge shadow
+    g.fillStyle(0x565656, 0.2);
+    g.fillRect(bx + bw - 3, by, 3, bh);
+    // Chisel texture — rough surface marks
+    g.fillStyle(0x6a6a6a, 0.2);
+    g.fillCircle(bx + 10, by + 10, 4);
+    g.fillCircle(bx + 20, by + 18, 3);
+    g.fillStyle(0x929292, 0.15);
+    g.fillCircle(bx + 8, by + 22, 3);
+  });
   // Deep mortar joints
-  g.lineStyle(2, 0x4a4a4a, 1);
-  g.lineBetween(32, 0, 32, 64);
-  g.lineBetween(0, 32, 64, 32);
-  // Surface texture
-  g.fillStyle(0x6a6a6a, 0.3);
-  g.fillCircle(16, 16, 6);
-  g.fillCircle(48, 48, 5);
+  g.lineStyle(2, 0x3a3a3a, 1);
+  g.lineBetween(31, 0, 32, 64);
+  g.lineBetween(0, 31, 64, 32);
+  // Joint highlight (top edge of mortar)
+  g.lineStyle(1, 0x5e5e5e, 0.3);
+  g.lineBetween(0, 30, 64, 30);
+  g.lineBetween(30, 0, 30, 64);
+  // Minor crack
+  g.lineStyle(1, 0x3e3e3e, 0.4);
+  g.beginPath(); g.moveTo(44, 4); g.lineTo(48, 16); g.strokePath();
   g.generateTexture('wall_stone_large', 64, 64);
 
-  // wall_dungeon — dark dungeon stone with moss (64x64)
+  // wall_dungeon — oppressive dark dungeon stone with moss and damp (64x64)
   g.clear();
-  g.fillStyle(0x3a3a3a, 1);
+  g.fillStyle(0x2e2e2e, 1);
   g.fillRect(0, 0, 64, 64);
-  // Rough stone blocks
+  // Rough stone blocks with individual shading
+  const wdColors = [0x3e3e3e, 0x424242, 0x3a3a3a, 0x444444, 0x383838, 0x404040, 0x3c3c3c, 0x464646];
+  let wdci = 0;
   for (let by = 0; by < 64; by += 16) {
-    for (let bx = 0; bx < 64; bx += 32) {
-      g.fillStyle(0x4a4a4a, 1);
-      g.fillRect(bx + 1, by + 1, 30, 14);
-      g.fillStyle(0x3e3e3e, 0.6);
-      g.fillRect(bx + 1, by + 8, 30, 7);
+    const rowOff = (Math.floor(by / 16) % 2) * 16;
+    for (let bx = -16 + rowOff; bx < 64; bx += 32) {
+      const x0 = Math.max(0, bx + 1);
+      const x1 = Math.min(64, bx + 31);
+      if (x1 <= x0) continue;
+      g.fillStyle(wdColors[wdci % wdColors.length], 1);
+      wdci++;
+      g.fillRect(x0, by + 1, x1 - x0, 14);
+      // Top highlight
+      g.fillStyle(0x505050, 0.25);
+      g.fillRect(x0, by + 1, x1 - x0, 2);
+      // Bottom shadow
+      g.fillStyle(0x1a1a1a, 0.3);
+      g.fillRect(x0, by + 13, x1 - x0, 2);
     }
   }
   // Mortar
-  g.lineStyle(1, 0x2a2a2a, 1);
-  for (let by = 0; by < 64; by += 16) {
+  g.lineStyle(1, 0x1e1e1e, 1);
+  for (let by = 0; by <= 64; by += 16) {
     g.lineBetween(0, by, 64, by);
   }
-  g.lineBetween(32, 0, 32, 64);
-  // Moss patches (green tint)
-  g.fillStyle(0x2a4a2a, 0.4);
-  g.fillCircle(8, 48, 6);
-  g.fillCircle(52, 56, 5);
-  g.fillCircle(28, 60, 4);
-  g.fillStyle(0x1a3a1a, 0.3);
-  g.fillCircle(12, 52, 4);
-  g.fillCircle(56, 60, 3);
-  // Cracks
-  g.lineStyle(1, 0x1a1a1a, 0.8);
-  g.beginPath(); g.moveTo(10, 5); g.lineTo(14, 20); g.lineTo(8, 35); g.strokePath();
-  g.beginPath(); g.moveTo(50, 10); g.lineTo(46, 28); g.lineTo(52, 42); g.strokePath();
-  // Water stains
-  g.fillStyle(0x2a2a3a, 0.25);
-  g.fillRect(0, 50, 64, 14);
+  // Vertical mortar
+  for (let by = 0; by < 64; by += 16) {
+    const rowOff = (Math.floor(by / 16) % 2) * 16;
+    for (let bx = -16 + rowOff; bx < 80; bx += 32) {
+      if (bx > 0 && bx < 64) g.lineBetween(bx, by, bx, by + 16);
+    }
+  }
+  // Heavy moss patches
+  g.fillStyle(0x2a4a2a, 0.45);
+  g.fillCircle(8, 48, 7); g.fillCircle(52, 56, 6); g.fillCircle(28, 60, 5);
+  g.fillCircle(40, 50, 4); g.fillCircle(16, 58, 5);
+  g.fillStyle(0x1a3a1a, 0.35);
+  g.fillCircle(12, 52, 5); g.fillCircle(56, 60, 4); g.fillCircle(4, 60, 4);
+  g.fillStyle(0x336633, 0.15);
+  g.fillCircle(30, 54, 8);
+  // Cracks — deep and jagged
+  g.lineStyle(1, 0x141414, 0.8);
+  g.beginPath(); g.moveTo(10, 3); g.lineTo(14, 18); g.lineTo(8, 32); g.lineTo(12, 44); g.strokePath();
+  g.beginPath(); g.moveTo(50, 8); g.lineTo(46, 24); g.lineTo(52, 40); g.strokePath();
+  g.beginPath(); g.moveTo(34, 12); g.lineTo(30, 22); g.strokePath();
+  // Water stains — damp gradient at bottom
+  g.fillStyle(0x222230, 0.25);
+  g.fillRect(0, 46, 64, 18);
+  g.fillStyle(0x1e1e2a, 0.15);
+  g.fillRect(0, 38, 64, 10);
+  // Drip marks
+  g.lineStyle(1, 0x202030, 0.2);
+  g.lineBetween(20, 30, 20, 50); g.lineBetween(44, 26, 44, 48);
   g.generateTexture('wall_dungeon', 64, 64);
 
   // Floor detail textures for atmospheric scatter
@@ -578,6 +905,115 @@ function createObstacleGraphics() {
   g.fillStyle(0x2a2a1a, 0.2);
   g.fillCircle(5, 5, 2);
   g.generateTexture('floor_stain', 10, 10);
+
+  // ===== NEW TEXTURES =====
+
+  // floor_blood (32x32) — blood-stained stone floor variant
+  g.clear();
+  // Same stone base as floor_stone
+  g.fillStyle(0x585858, 1);
+  g.fillRect(0, 0, 32, 32);
+  g.fillStyle(0x5e5e5e, 1);
+  g.fillRect(0, 0, 32, 16);
+  // Stone grain
+  g.fillStyle(0x6a6a6a, 0.3);
+  g.fillCircle(10, 10, 5); g.fillCircle(22, 20, 6);
+  g.fillStyle(0x4a4a4a, 0.2);
+  g.fillCircle(14, 14, 4);
+  // Mortar lines
+  g.lineStyle(1, 0x3e3e3e, 0.3);
+  g.lineBetween(0, 16, 32, 16); g.lineBetween(16, 0, 16, 32);
+  // Blood stains — dark crimson pools
+  g.fillStyle(0x4a1010, 0.6);
+  g.fillCircle(12, 14, 7);
+  g.fillStyle(0x5a1818, 0.5);
+  g.fillCircle(18, 18, 5);
+  g.fillStyle(0x3a0808, 0.4);
+  g.fillCircle(8, 20, 4);
+  // Blood splatter
+  g.fillStyle(0x6a2020, 0.35);
+  g.fillCircle(22, 10, 3); g.fillCircle(26, 16, 2);
+  g.fillRect(14, 8, 2, 1); g.fillRect(20, 24, 1, 2);
+  // Dried blood — darker edges
+  g.fillStyle(0x2a0808, 0.3);
+  g.fillCircle(12, 16, 4);
+  g.generateTexture('floor_blood', 32, 32);
+
+  // wall_mossy (64x64) — wall with heavy moss/vine growth
+  g.clear();
+  // Stone base
+  g.fillStyle(0x4a4a4a, 1);
+  g.fillRect(0, 0, 64, 64);
+  // Block pattern
+  for (let by = 0; by < 64; by += 16) {
+    const rowOff = (Math.floor(by / 16) % 2) * 16;
+    for (let bx = -16 + rowOff; bx < 64; bx += 32) {
+      const x0 = Math.max(0, bx + 1);
+      const x1 = Math.min(64, bx + 31);
+      if (x1 <= x0) continue;
+      g.fillStyle(0x565656, 1);
+      g.fillRect(x0, by + 1, x1 - x0, 14);
+    }
+  }
+  // Mortar
+  g.lineStyle(1, 0x2a2a2a, 0.8);
+  for (let by = 0; by <= 64; by += 16) g.lineBetween(0, by, 64, by);
+  g.lineBetween(32, 0, 32, 64); g.lineBetween(16, 16, 16, 32); g.lineBetween(48, 0, 48, 16); g.lineBetween(48, 32, 48, 48);
+  // Heavy moss covering — large patches
+  g.fillStyle(0x2a5a2a, 0.5);
+  g.fillCircle(10, 12, 10); g.fillCircle(30, 20, 12); g.fillCircle(50, 16, 8);
+  g.fillCircle(16, 40, 10); g.fillCircle(44, 44, 12); g.fillCircle(8, 56, 8);
+  g.fillStyle(0x1e4a1e, 0.4);
+  g.fillCircle(20, 16, 8); g.fillCircle(40, 28, 9); g.fillCircle(56, 52, 7);
+  g.fillCircle(24, 48, 8);
+  // Vine lines
+  g.lineStyle(2, 0x1a3a1a, 0.6);
+  g.beginPath(); g.moveTo(4, 0); g.lineTo(8, 16); g.lineTo(6, 32); g.lineTo(10, 48); g.lineTo(6, 64); g.strokePath();
+  g.beginPath(); g.moveTo(36, 0); g.lineTo(32, 20); g.lineTo(38, 40); g.lineTo(34, 64); g.strokePath();
+  g.beginPath(); g.moveTo(56, 0); g.lineTo(52, 24); g.lineTo(58, 48); g.lineTo(54, 64); g.strokePath();
+  // Vine leaves (small green dots along vines)
+  g.fillStyle(0x3a6a2a, 0.5);
+  [[6,10],[8,26],[10,42],[7,58],[34,8],[32,30],[36,50],[54,12],[52,36],[56,56]].forEach(([px,py])=>{
+    g.fillCircle(px, py, 3);
+  });
+  // Lighter moss highlights
+  g.fillStyle(0x4a8a3a, 0.2);
+  g.fillCircle(12, 10, 4); g.fillCircle(32, 18, 5); g.fillCircle(48, 42, 4);
+  g.generateTexture('wall_mossy', 64, 64);
+
+  // torch_glow (48x48) — warm light circle for behind braziers
+  g.clear();
+  // Outer warm glow — mostly transparent
+  g.fillStyle(0xff8800, 0.05);
+  g.fillCircle(24, 24, 24);
+  g.fillStyle(0xffaa22, 0.08);
+  g.fillCircle(24, 24, 20);
+  g.fillStyle(0xffcc44, 0.12);
+  g.fillCircle(24, 24, 14);
+  g.fillStyle(0xffdd66, 0.18);
+  g.fillCircle(24, 24, 8);
+  g.fillStyle(0xffee88, 0.22);
+  g.fillCircle(24, 24, 4);
+  g.generateTexture('torch_glow', 48, 48);
+
+  // cobweb (32x32) — spider web on transparent background
+  g.clear();
+  // Radial threads from top-left corner
+  g.lineStyle(1, 0xdddddd, 0.35);
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(30, 8); g.strokePath();
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(26, 16); g.strokePath();
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(20, 24); g.strokePath();
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(12, 28); g.strokePath();
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(4, 30); g.strokePath();
+  // Cross threads (arcs approximated with lines)
+  g.lineStyle(1, 0xcccccc, 0.2);
+  g.beginPath(); g.moveTo(10, 2); g.lineTo(8, 6); g.lineTo(5, 8); g.lineTo(2, 10); g.strokePath();
+  g.beginPath(); g.moveTo(20, 5); g.lineTo(16, 10); g.lineTo(10, 14); g.lineTo(6, 16); g.lineTo(3, 18); g.strokePath();
+  g.beginPath(); g.moveTo(28, 10); g.lineTo(22, 18); g.lineTo(14, 22); g.lineTo(8, 24); g.lineTo(4, 26); g.strokePath();
+  // Tiny dew drops
+  g.fillStyle(0xffffff, 0.3);
+  g.fillRect(14, 6, 1, 1); g.fillRect(8, 14, 1, 1); g.fillRect(20, 12, 1, 1);
+  g.generateTexture('cobweb', 32, 32);
 
   g.destroy();
 }
