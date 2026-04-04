@@ -261,10 +261,10 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
 
   switch (type) {
     case 1:
-      key = tex('sprite_imp', 'enemyImp');
+      key = scene.textures?.exists('imp_right0') ? 'imp_right0' : tex('sprite_imp', 'enemyImp');
       speed = 80;
       hp = 1;
-      tint = key === 'sprite_imp' ? null : 0xff0000;
+      tint = key.startsWith('imp_') ? null : (key === 'sprite_imp' ? null : 0xff0000);
       break; // Imp
     case 2:
       key = tex('sprite_archer', 'enemyArcher');
@@ -364,6 +364,15 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.avoidWeight = 1.0;
     enemy.sepRadius = 90;
     enemy.cohRadius = 220;
+    // Sprite-based imp with animation frames
+    if (key.startsWith('imp_')) {
+      const impH = enemy.height || 392;
+      enemy.setScale(48 / impH);
+      enemy.isImp = true;
+      enemy.impDirection = 'right';
+      enemy.impAttacking = false;
+      enemy.impAttackFrame = 0;
+    }
   } else if (type === 2) {
     // Archer (Fernkampf)
     enemy.kiteRadius = 220; // Zielabstand zum Spieler
@@ -626,6 +635,18 @@ function handleEnemies(time, delta = 16) {
     Steering.limit(desired, maxSpeed);
     enemy.body.setVelocity(desired.x, desired.y);
 
+    // Imp sprite animation based on movement direction
+    if (enemy.isImp && !enemy.impAttacking) {
+      const newDir = desired.x >= 0 ? 'right' : 'left';
+      if (newDir !== enemy.impDirection) {
+        enemy.impDirection = newDir;
+        const idleKey = `imp_${newDir}0`;
+        if (this.textures.exists(idleKey)) {
+          enemy.setTexture(idleKey);
+        }
+      }
+    }
+
     // Brute sprite animation based on movement direction
     if (enemy.isBrute && !enemy.bruteAttacking) {
       const newDir = desired.x >= 0 ? 'right' : 'left';
@@ -662,6 +683,29 @@ function handleEnemies(time, delta = 16) {
           time - enemy.lastAttackTime > attackCooldown
         ) {
           enemy.lastAttackTime = time;
+
+          // Imp attack animation (400ms total, 200ms per frame)
+          if (enemy.isImp) {
+            enemy.impAttacking = true;
+            const dir = enemy.impDirection || 'right';
+            const scene = this;
+            if (scene.textures.exists(`imp_${dir}1`)) {
+              enemy.setTexture(`imp_${dir}1`);
+            }
+            scene.time.delayedCall(200, () => {
+              if (enemy && enemy.active && scene.textures.exists(`imp_${dir}2`)) {
+                enemy.setTexture(`imp_${dir}2`);
+              }
+            });
+            scene.time.delayedCall(400, () => {
+              if (enemy && enemy.active) {
+                enemy.impAttacking = false;
+                if (scene.textures.exists(`imp_${dir}0`)) {
+                  enemy.setTexture(`imp_${dir}0`);
+                }
+              }
+            });
+          }
 
           // Brute attack animation (500ms total, 250ms per frame)
           if (enemy.isBrute) {
