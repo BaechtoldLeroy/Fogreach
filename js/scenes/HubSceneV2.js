@@ -103,6 +103,10 @@ class HubSceneV2 extends Phaser.Scene {
     this.input.keyboard.on('keydown-M', () => {
       if (window.soundManager) window.soundManager.toggleMute();
     });
+    this.input.keyboard.on('keydown-J', this._handleJournal, this);
+
+    // Check for pending story events and show overlay
+    this._checkStoryEvent();
 
     if (this.player) {
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
@@ -112,6 +116,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard.off('keydown-E', this._handleInteract, this);
+      this.input.keyboard.off('keydown-J', this._handleJournal, this);
       if (window.soundManager) window.soundManager.stopMusic();
     });
   }
@@ -457,8 +462,11 @@ class HubSceneV2 extends Phaser.Scene {
       bodyStr = questData.dialogueComplete;
       showCompleteBtn = true;
     } else {
-      // Flavor dialogue (existing behavior)
-      const bodyLines = npcData.lines || [];
+      // Flavor dialogue — use dynamic story lines if available
+      const storyLines = (window.storySystem && typeof window.storySystem.getNpcDialogue === 'function')
+        ? window.storySystem.getNpcDialogue(npcId)
+        : null;
+      const bodyLines = storyLines || npcData.lines || [];
       bodyStr = bodyLines.join('\n\n');
     }
 
@@ -627,6 +635,27 @@ class HubSceneV2 extends Phaser.Scene {
       this.input.keyboard.off(eventName, handler);
     }
     this._currentKeyClosers = null;
+  }
+
+  _checkStoryEvent() {
+    if (!window.storySystem || typeof window.storySystem.consumePendingEvent !== 'function') return;
+    const eventData = window.storySystem.consumePendingEvent();
+    if (!eventData) return;
+
+    this._dialogOpen = true;
+    window.storySystem.showStoryOverlay(this, eventData, () => {
+      this._dialogOpen = false;
+    });
+  }
+
+  _handleJournal() {
+    if (this._dialogOpen) return;
+    if (!window.storySystem || typeof window.storySystem.showJournalOverlay !== 'function') return;
+
+    this._dialogOpen = true;
+    window.storySystem.showJournalOverlay(this, () => {
+      this._dialogOpen = false;
+    });
   }
 
   _enterLocation(entranceData) {

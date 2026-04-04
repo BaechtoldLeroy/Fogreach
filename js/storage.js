@@ -51,6 +51,13 @@ function saveGame(scene) {
       return null;
     };
 
+    const cloneStory = () => {
+      if (typeof window.storySystem === 'object' && typeof window.storySystem.getStorySaveData === 'function') {
+        return window.storySystem.getStorySaveData();
+      }
+      return null;
+    };
+
     const payload = {
       ts: Date.now(),
       // Core Progress
@@ -77,7 +84,8 @@ function saveGame(scene) {
       equipment: cloneEquipment(equipment),
       materials: cloneMaterials,
       skills: cloneSkills(),
-      quests: cloneQuests()
+      quests: cloneQuests(),
+      story: cloneStory()
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     try {
@@ -242,6 +250,10 @@ function applySaveToState(scene, s) {
 
   if (s.quests && typeof window.questSystem === 'object' && typeof window.questSystem.loadQuestSaveData === 'function') {
     window.questSystem.loadQuestSaveData(s.quests);
+  }
+
+  if (s.story && typeof window.storySystem === 'object' && typeof window.storySystem.loadStorySaveData === 'function') {
+    window.storySystem.loadStorySaveData(s.story);
   }
 
   if (typeof applySkillEffects === 'function') {

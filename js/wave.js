@@ -91,6 +91,11 @@ function checkWaveEnd(time) {
     enemies.countActive(true) === 0) {
     waveInProgress = false;
 
+    // Notify story system of wave completion
+    if (window.storySystem && typeof window.storySystem.onWaveCompleted === 'function') {
+      window.storySystem.onWaveCompleted(currentWave);
+    }
+
     // Raum gilt als geschafft → Treppen freigeben
     if (typeof markRoomCleared === 'function') markRoomCleared();
   }
