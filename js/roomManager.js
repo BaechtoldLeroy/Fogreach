@@ -575,7 +575,7 @@ function isBlockedByObstacle(x, y) {
   return false;
 }
 
-const VISION_MIN_RADIUS = 48; // Vision klippt nie enger als 48px
+const VISION_MIN_RADIUS = 80; // Vision klippt nie enger als 80px
 
 function computeVisionPolygon(scene, ox, oy) {
   const pts = [];

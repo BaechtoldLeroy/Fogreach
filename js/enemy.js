@@ -645,11 +645,17 @@ function handleEnemies(time, delta = 16) {
 
     // Imp sprite animation based on movement direction
     if (enemy.isImp && !enemy.impAttacking) {
-      const newDir = desired.x >= 0 ? 'right' : 'left';
-      if (newDir !== enemy.impDirection) {
-        enemy.impDirection = newDir;
-        const idleKey = `imp_${newDir}0`;
-        if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
+      // Only change direction when there's horizontal movement (avoid flicker on vertical)
+      if (desired.x !== 0) {
+        const newDir = desired.x > 0 ? 'right' : 'left';
+        if (newDir !== enemy.impDirection) {
+          enemy.impDirection = newDir;
+        }
+      }
+      // Always ensure correct texture is applied
+      const idleKey = `imp_${enemy.impDirection}0`;
+      if (this.textures.exists(idleKey) && enemy.texture.key !== idleKey) {
+        enemy.setTexture(idleKey);
       }
     }
 
