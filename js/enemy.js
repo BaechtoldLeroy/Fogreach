@@ -841,13 +841,10 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
     enemy.damage = Math.max(1, Math.round(enemy.baseDamage * difficulty));
   }
 
-  // Visual: slightly larger than regular enemy
-  // Cap display size to max 72px regardless of source texture size
-  const maxDisplayPx = 72;
-  const displayW = enemy.displayWidth || 48;
-  const targetW = Math.min(displayW * 1.5, maxDisplayPx);
-  const srcW = enemy.width || 64;
-  enemy.setScale(targetW / srcW);
+  // Visual: slightly larger than regular enemy, capped at 64px display
+  const maxDisplayPx = 64;
+  const targetW = Math.min((enemy.displayWidth || 48) * 1.3, maxDisplayPx);
+  enemy.setScale(targetW / (enemy.width || 64));
   enemy.setTint(0xff8800); // orange tint for mini-boss
 
   // Shimmer effect
