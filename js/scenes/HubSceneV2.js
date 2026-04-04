@@ -301,19 +301,6 @@ class HubSceneV2 extends Phaser.Scene {
       updatePlayerSpriteAnimation(this.player, 0, 0);
     }
 
-    // Background-preload remaining player directions so they're ready when needed
-    if (typeof ensureDirectionLoaded === 'function') {
-      const directions = ['01', '02', '03', '04', '05', '06', '07'];
-      let i = 0;
-      const loadNext = () => {
-        if (i < directions.length) {
-          ensureDirectionLoaded(this, directions[i++]).then(loadNext);
-        }
-      };
-      // Start background loading after a short delay to let the scene settle
-      this.time.delayedCall(500, loadNext);
-    }
-    
     this.player.setDepth(100);
   }
 

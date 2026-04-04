@@ -44,15 +44,17 @@ const PLAYER_DIRECTION_LOOKUP = PLAYER_DIRECTION_SEQUENCE.reduce((acc, entry) =>
 function preloadPlayerDirectionalFrames(loader) {
   if (!loader) return;
   const textureManager = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
-  // Only load the default direction (dir00) at startup for fast initial load.
-  // Other directions are lazy-loaded on demand via ensureDirectionLoaded().
-  const dirId = PLAYER_DEFAULT_DD;
+  const directionCount = 8;
   const frameCount = 8;
-  for (let frame = 0; frame < frameCount; frame++) {
-    const frameId = frame.toString().padStart(2, '0');
-    const key = `dir${dirId}_f${frameId}`;
-    if (textureManager?.exists?.(key)) continue;
-    loader.image(key, `assets/PlayerSprites/${key}.png`);
+
+  for (let dir = 0; dir < directionCount; dir++) {
+    const dirId = dir.toString().padStart(2, '0');
+    for (let frame = 0; frame < frameCount; frame++) {
+      const frameId = frame.toString().padStart(2, '0');
+      const key = `dir${dirId}_f${frameId}`;
+      if (textureManager?.exists?.(key)) continue;
+      loader.image(key, `assets/PlayerSprites/${key}.png`);
+    }
   }
 }
 
@@ -457,70 +459,20 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
     ? getDirectionFromVelocity(vx, vy, state.direction || PLAYER_DEFAULT_DD)
     : (state.direction || PLAYER_DEFAULT_DD);
 
-  // Check if direction textures are loaded; if not, trigger lazy load
-  const dirTestKey = `dir${direction}_f00`;
-  if (!sprite.scene?.textures?.exists(dirTestKey)) {
-    // Trigger async load for this direction
-    if (state.loadingDir !== direction && sprite.scene) {
-      state.loadingDir = direction;
-      ensureDirectionLoaded(sprite.scene, direction).then(() => {
-        // Clear loading flag when done
-        if (state.loadingDir === direction) {
-          state.loadingDir = null;
-        }
-      });
-    }
-    // While loading, keep using the previous direction's textures
-    const fallbackDir = state.direction || PLAYER_DEFAULT_DD;
-    const fallbackAnimKey = `walk_${fallbackDir}`;
-    const fallbackIdleKey = PLAYER_DIRECTION_LOOKUP[fallbackDir]?.idleKey || `dir${PLAYER_DEFAULT_DD}_f00`;
-
-    if (moving && sprite.scene?.anims?.exists(fallbackAnimKey)) {
-      if (state.playing !== fallbackAnimKey) {
-        sprite.anims.play(fallbackAnimKey, true);
-        state.playing = fallbackAnimKey;
-      }
-    } else {
-      if (state.playing) {
-        sprite.anims.stop();
-        state.playing = null;
-      }
-      if (sprite.scene?.textures?.exists(fallbackIdleKey)) {
-        if (sprite.texture.key !== fallbackIdleKey) {
-          sprite.setTexture(fallbackIdleKey);
-        }
-        sprite.setFrame(0);
-      }
-    }
-    applyPlayerDisplaySettings(sprite);
-    // Don't update state.direction so we keep fallback
-    sprite.setData('animState', state);
-    return;
-  }
-
   const animKey = `walk_${direction}`;
   const idleKey = PLAYER_DIRECTION_LOOKUP[direction]?.idleKey || `dir${PLAYER_DEFAULT_DD}_f00`;
 
-  // Only play animation if both anim AND all frame textures exist
-  const firstFrameKey = `dir${direction}_f00`;
-  const texturesReady = sprite.scene?.textures?.exists(firstFrameKey);
-
-  if (moving && texturesReady && sprite.scene?.anims?.exists(animKey)) {
-    try {
-      if (state.playing !== animKey) {
-        sprite.anims.play(animKey, true);
-        state.playing = animKey;
-      }
-    } catch (e) {
-      // Animation frame not ready yet — stay on idle
-      state.playing = null;
+  if (moving && sprite.scene?.anims?.exists(animKey)) {
+    if (state.playing !== animKey) {
+      sprite.anims.play(animKey, true);
+      state.playing = animKey;
     }
   } else {
     if (state.playing) {
-      try { sprite.anims.stop(); } catch(e) {}
+      sprite.anims.stop();
       state.playing = null;
     }
-    if (texturesReady) {
+    if (sprite.scene?.textures?.exists(idleKey)) {
       if (sprite.texture.key !== idleKey) {
         sprite.setTexture(idleKey);
       }
