@@ -11,67 +11,68 @@ StartScene.prototype.constructor = StartScene;
 StartScene.prototype.preload = function () {
   const width = this.cameras.main.width;
   const height = this.cameras.main.height;
-  
-  const progressBar = this.add.graphics();
+
+  // Dark background for loading screen
+  const bg = this.add.graphics();
+  bg.fillStyle(0x1a1a1a, 1);
+  bg.fillRect(0, 0, width, height);
+
+  // Progress bar container (outline)
   const progressBox = this.add.graphics();
-  progressBox.fillStyle(0x222222, 0.8);
-  progressBox.fillRect(width / 2 - 160, height / 2 - 30, 320, 50);
-  
+  progressBox.lineStyle(2, 0x666666, 1);
+  progressBox.strokeRect(width / 2 - 200, height / 2 - 10, 400, 20);
+
+  // Progress bar fill
+  const progressBar = this.add.graphics();
+
+  // "Laden..." text above the bar
   const loadingText = this.make.text({
     x: width / 2,
-    y: height / 2 - 50,
-    text: 'Lade Assets...',
+    y: height / 2 - 30,
+    text: 'Laden...',
     style: {
       font: '20px monospace',
-      fill: '#ffffff'
+      fill: '#ccaa33'
     }
   });
   loadingText.setOrigin(0.5, 0.5);
-  
+
+  // Percentage text below the bar
   const percentText = this.make.text({
     x: width / 2,
-    y: height / 2,
+    y: height / 2 + 25,
     text: '0%',
     style: {
-      font: '18px monospace',
+      font: '16px monospace',
       fill: '#ffffff'
     }
   });
   percentText.setOrigin(0.5, 0.5);
-  
-  const assetText = this.make.text({
-    x: width / 2,
-    y: height / 2 + 50,
-    text: '',
-    style: {
-      font: '14px monospace',
-      fill: '#888888'
-    }
-  });
-  assetText.setOrigin(0.5, 0.5);
-  
+
   this.load.on('progress', function (value) {
     percentText.setText(parseInt(value * 100) + '%');
     progressBar.clear();
-    progressBar.fillStyle(0xffffff, 1);
-    progressBar.fillRect(width / 2 - 150, height / 2 - 20, 300 * value, 30);
+    progressBar.fillStyle(0xccaa33, 1);
+    progressBar.fillRect(width / 2 - 198, height / 2 - 8, 396 * value, 16);
   });
-  
-  this.load.on('fileprogress', function (file) {
-    assetText.setText('Lade: ' + file.key);
-  });
-  
+
   this.load.on('complete', function () {
+    bg.destroy();
     progressBar.destroy();
     progressBox.destroy();
     loadingText.destroy();
     percentText.destroy();
-    assetText.destroy();
   });
-  
+
+  // Only preload initial direction (dir00) at startup - other directions lazy-loaded
   if (typeof preloadPlayerDirectionalFrames === 'function') {
     preloadPlayerDirectionalFrames(this.load);
   }
+
+  // NPC sprites (loaded here so HubSceneV2 doesn't need to duplicate)
+  this.load.image('schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
+  this.load.image('setzer_thom', 'assets/sprites/setzer_thom.png');
+  this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
 
   // Brute enemy sprites
   this.load.image('brute_left0', 'assets/enemy/brute/left0.png');

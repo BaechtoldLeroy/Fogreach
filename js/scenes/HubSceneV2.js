@@ -66,9 +66,7 @@ class HubSceneV2 extends Phaser.Scene {
 
   preload() {
     this.load.image('hubscene_bg', 'assets/hubscene.png');
-    this.load.image('schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
-    this.load.image('setzer_thom', 'assets/sprites/setzer_thom.png');
-    this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
+    // NPC sprites (schmiedemeisterin, setzer_thom, spaeherin) are loaded in StartScene
   }
 
   create() {
@@ -301,6 +299,19 @@ class HubSceneV2 extends Phaser.Scene {
     }
     if (typeof updatePlayerSpriteAnimation === 'function') {
       updatePlayerSpriteAnimation(this.player, 0, 0);
+    }
+
+    // Background-preload remaining player directions so they're ready when needed
+    if (typeof ensureDirectionLoaded === 'function') {
+      const directions = ['01', '02', '03', '04', '05', '06', '07'];
+      let i = 0;
+      const loadNext = () => {
+        if (i < directions.length) {
+          ensureDirectionLoaded(this, directions[i++]).then(loadNext);
+        }
+      };
+      // Start background loading after a short delay to let the scene settle
+      this.time.delayedCall(500, loadNext);
     }
     
     this.player.setDepth(100);

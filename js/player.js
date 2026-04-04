@@ -44,18 +44,163 @@ const PLAYER_DIRECTION_LOOKUP = PLAYER_DIRECTION_SEQUENCE.reduce((acc, entry) =>
 function preloadPlayerDirectionalFrames(loader) {
   if (!loader) return;
   const textureManager = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
-  const directionCount = 8;
+  // Only load the default direction (dir00) at startup for fast initial load.
+  // Other directions are lazy-loaded on demand via ensureDirectionLoaded().
+  const dirId = PLAYER_DEFAULT_DD;
   const frameCount = 8;
+  for (let frame = 0; frame < frameCount; frame++) {
+    const frameId = frame.toString().padStart(2, '0');
+    const key = `dir${dirId}_f${frameId}`;
+    if (textureManager?.exists?.(key)) continue;
+    loader.image(key, `assets/PlayerSprites/${key}.png`);
+  }
+}
 
-  for (let dir = 0; dir < directionCount; dir++) {
-    const dirId = dir.toString().padStart(2, '0');
-    for (let frame = 0; frame < frameCount; frame++) {
-      const frameId = frame.toString().padStart(2, '0');
-      const key = `dir${dirId}_f${frameId}`;
-      if (textureManager?.exists?.(key)) continue;
-      loader.image(key, `assets/PlayerSprites/${key}.png`);
+// Track which directions are currently being loaded to avoid duplicate requests
+const _directionLoadingPromises = {};
+
+/**
+ * Lazy-load all 8 frames for a given direction on demand.
+ * Returns a Promise that resolves when textures are available.
+ */
+function ensureDirectionLoaded(scene, dd) {
+  const testKey = `dir${dd}_f00`;
+  if (scene.textures.exists(testKey)) return Promise.resolve();
+
+  // If already loading this direction, return the existing promise
+  if (_directionLoadingPromises[dd]) return _directionLoadingPromises[dd];
+
+  const promise = new Promise(resolve => {
+    for (let f = 0; f < 8; f++) {
+      const fk = `dir${dd}_f${f.toString().padStart(2, '0')}`;
+      if (!scene.textures.exists(fk)) {
+        scene.load.image(fk, `assets/PlayerSprites/${fk}.png`);
+      }
+    }
+    scene.load.once('complete', () => {
+      delete _directionLoadingPromises[dd];
+      // Create walk animation for this direction now that frames are loaded
+      ensureDirectionAnimations(scene, dd);
+      // Normalize frames for this direction
+      normalizeDirectionFrames(scene, dd);
+      resolve();
+    });
+    scene.load.start();
+  });
+
+  _directionLoadingPromises[dd] = promise;
+  return promise;
+}
+
+/**
+ * Create walk animation for a single direction (used after lazy-loading).
+ */
+function ensureDirectionAnimations(scene, dd) {
+  if (!scene || !scene.anims) return;
+  const key = `walk_${dd}`;
+  if (scene.anims.exists(key)) return;
+
+  const frames = [];
+  for (let frame = 0; frame < 8; frame++) {
+    const frameId = frame.toString().padStart(2, '0');
+    const textureKey = `dir${dd}_f${frameId}`;
+    if (scene.textures.exists(textureKey)) {
+      frames.push({ key: textureKey });
     }
   }
+  if (!frames.length) return;
+
+  scene.anims.create({
+    key,
+    frames,
+    frameRate: frames.length > 1 ? 10 : 1,
+    repeat: -1
+  });
+}
+
+/**
+ * Normalize frames for a single direction (used after lazy-loading).
+ * Mirrors the logic in normalizePlayerDirectionalFrames but for one direction only.
+ */
+function normalizeDirectionFrames(scene, dd) {
+  if (!scene || !scene.textures) return;
+  const texManager = scene.textures;
+  const shiftY = PLAYER_DIRECTION_FRAME_SHIFTS[dd] || 0;
+  const entries = [];
+  for (let frame = 0; frame < 8; frame++) {
+    const frameId = frame.toString().padStart(2, '0');
+    const key = `dir${dd}_f${frameId}`;
+    if (!texManager.exists(key)) continue;
+    const meta = getDirectionalFrameMeta(scene, key);
+    if (!meta) continue;
+    const texture = texManager.get(key);
+    const src = texture?.getSourceImage();
+    if (!src) continue;
+    entries.push({ key, meta, src });
+  }
+
+  if (!entries.length) return;
+
+  let globalMinX = Infinity, globalMaxX = -Infinity;
+  let globalMinY = Infinity, globalMaxY = -Infinity;
+
+  entries.forEach(({ meta }) => {
+    if (meta.minX < globalMinX) globalMinX = meta.minX;
+    if (meta.maxX > globalMaxX) globalMaxX = meta.maxX;
+    if (meta.minY < globalMinY) globalMinY = meta.minY;
+    if (meta.maxY > globalMaxY) globalMaxY = meta.maxY;
+  });
+
+  if (!Number.isFinite(globalMinX) || !Number.isFinite(globalMaxX) ||
+      !Number.isFinite(globalMinY) || !Number.isFinite(globalMaxY)) {
+    return;
+  }
+
+  const targetWidth = Math.max(1, Math.round(globalMaxX - globalMinX + 1));
+  const targetHeight = Math.max(1, Math.round(globalMaxY - globalMinY + 1));
+  const globalCenterX = (globalMinX + globalMaxX) / 2;
+  const globalFootRel = globalMaxY - globalMinY;
+
+  entries.forEach(({ key, meta, src }) => {
+    const tmpKey = `__norm_${key}`;
+    const canvasTex = texManager.createCanvas(tmpKey, targetWidth, targetHeight);
+    const ctx = canvasTex?.context;
+    if (!ctx) {
+      canvasTex?.destroy();
+      return;
+    }
+
+    ctx.clearRect(0, 0, targetWidth, targetHeight);
+
+    const cropWidth = meta.boundsWidth;
+    const cropHeight = meta.boundsHeight;
+
+    const desiredCenterRel = globalCenterX - globalMinX;
+    const frameCenterRel = meta.centerX - meta.minX;
+    let dx = Math.round(desiredCenterRel - frameCenterRel);
+    let dy = Math.round(globalFootRel - (meta.maxY - meta.minY));
+
+    const maxDx = targetWidth - cropWidth;
+    const maxDy = targetHeight - cropHeight;
+    if (maxDx < 0 || maxDy < 0) {
+      canvasTex.destroy();
+      return;
+    }
+
+    if (dx < 0) dx = 0;
+    if (dx > maxDx) dx = maxDx;
+    if (shiftY !== 0) dy -= shiftY;
+    if (dy < 0) dy = 0;
+    if (dy > maxDy) dy = maxDy;
+
+    ctx.drawImage(src, meta.minX, meta.minY, cropWidth, cropHeight, dx, dy, cropWidth, cropHeight);
+
+    canvasTex.refresh();
+    texManager.remove(key);
+    texManager.addCanvas(key, canvasTex.canvas);
+    canvasTex.destroy();
+    delete PLAYER_FRAME_METADATA[key];
+  });
 }
 
 function getDirectionalFrameMeta(scene, textureKey) {
@@ -303,7 +448,7 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
   if (!sprite.data) sprite.setDataEnabled();
   let state = sprite.getData('animState');
   if (!state) {
-    state = { direction: PLAYER_DEFAULT_DD, playing: null };
+    state = { direction: PLAYER_DEFAULT_DD, playing: null, loadingDir: null };
     sprite.setData('animState', state);
   }
 
@@ -311,6 +456,48 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
   const direction = moving
     ? getDirectionFromVelocity(vx, vy, state.direction || PLAYER_DEFAULT_DD)
     : (state.direction || PLAYER_DEFAULT_DD);
+
+  // Check if direction textures are loaded; if not, trigger lazy load
+  const dirTestKey = `dir${direction}_f00`;
+  if (!sprite.scene?.textures?.exists(dirTestKey)) {
+    // Trigger async load for this direction
+    if (state.loadingDir !== direction && sprite.scene) {
+      state.loadingDir = direction;
+      ensureDirectionLoaded(sprite.scene, direction).then(() => {
+        // Clear loading flag when done
+        if (state.loadingDir === direction) {
+          state.loadingDir = null;
+        }
+      });
+    }
+    // While loading, keep using the previous direction's textures
+    const fallbackDir = state.direction || PLAYER_DEFAULT_DD;
+    const fallbackAnimKey = `walk_${fallbackDir}`;
+    const fallbackIdleKey = PLAYER_DIRECTION_LOOKUP[fallbackDir]?.idleKey || `dir${PLAYER_DEFAULT_DD}_f00`;
+
+    if (moving && sprite.scene?.anims?.exists(fallbackAnimKey)) {
+      if (state.playing !== fallbackAnimKey) {
+        sprite.anims.play(fallbackAnimKey, true);
+        state.playing = fallbackAnimKey;
+      }
+    } else {
+      if (state.playing) {
+        sprite.anims.stop();
+        state.playing = null;
+      }
+      if (sprite.scene?.textures?.exists(fallbackIdleKey)) {
+        if (sprite.texture.key !== fallbackIdleKey) {
+          sprite.setTexture(fallbackIdleKey);
+        }
+        sprite.setFrame(0);
+      }
+    }
+    applyPlayerDisplaySettings(sprite);
+    // Don't update state.direction so we keep fallback
+    sprite.setData('animState', state);
+    return;
+  }
+
   const animKey = `walk_${direction}`;
   const idleKey = PLAYER_DIRECTION_LOOKUP[direction]?.idleKey || `dir${PLAYER_DEFAULT_DD}_f00`;
 
@@ -506,6 +693,7 @@ window.updatePlayerColliderDebug = updatePlayerColliderDebug;
 window.DEBUG_PLAYER_COLLIDER = DEBUG_PLAYER_COLLIDER;
 window.preloadPlayerDirectionalFrames = preloadPlayerDirectionalFrames;
 window.normalizePlayerDirectionalFrames = normalizePlayerDirectionalFrames;
+window.ensureDirectionLoaded = ensureDirectionLoaded;
 window.beginChargedSlash = beginChargedSlash;
 window.releaseChargedSlash = releaseChargedSlash;
 window.dashSlash = dashSlash;
