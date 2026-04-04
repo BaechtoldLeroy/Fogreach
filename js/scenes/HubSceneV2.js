@@ -13,7 +13,7 @@ const HUB_HITBOXES = {
   ],
   entrances: [
     { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]', target: 'GameScene' },
-    { id: 'schmiede_entrance',  x: 292, y: 318, w: 64, h: 34, label: 'Werkstatt [E]', target: 'workshop' },
+    { id: 'schmiede_entrance',  x: 292, y: 318, w: 64, h: 34, label: 'Werkstatt [E]', target: 'CraftingScene' },
     { id: 'druckerei_entrance', x: 668, y: 334, w: 64, h: 34, label: 'Druckerei [E]', target: 'druckerei' }
   ],
   npcs: [
@@ -670,10 +670,13 @@ class HubSceneV2 extends Phaser.Scene {
           this.scene.start('GameScene');
         });
       });
-    } else if (entranceData.target === 'workshop') {
-      this._showNpcDialogue({
-        name: 'Werkstatt',
-        lines: ['Die Werkstatt ist derzeit geschlossen.', 'Komm spaeter wieder.']
+    } else if (entranceData.target === 'CraftingScene') {
+      if (typeof saveGame === 'function') {
+        try { saveGame(this); } catch (err) { console.warn('[HubSceneV2] saveGame before crafting failed', err); }
+      }
+      this.cameras.main.fadeOut(200, 0, 0, 0);
+      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+        this.scene.start('CraftingScene');
       });
     } else if (entranceData.target === 'druckerei') {
       this._showNpcDialogue({
