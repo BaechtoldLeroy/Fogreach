@@ -256,20 +256,21 @@ StartScene.prototype.create = function () {
     const RT = window.RoomTemplates;
     RT.TEMPLATES = RT.TEMPLATES || {};
     
-    const templateNames = [
-      "Arena", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
-      "CirclePillars", "Crosshall", "CrossroadChamber", "Crossroads", "Crypt_Small_Altar",
-      "GrandBazaar", "MazeLite", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault"
+    const allTemplateNames = [
+      "Arena", "ArmoryVault", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
+      "CirclePillars", "CollapsingHall", "Crosshall", "CrossroadChamber", "Crossroads",
+      "Crypt_Small_Altar", "DungeonLibrary", "GrandBazaar", "MazeLite", "PrisonCells",
+      "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault"
     ];
-    
-    for (const name of templateNames) {
+
+    for (const name of allTemplateNames) {
       const tpl = this.cache.json.get(name);
       if (tpl) {
         RT.TEMPLATES[name] = tpl;
       }
     }
-    
-    RT.MANIFEST = templateNames.slice();
+
+    // Don't overwrite RT.MANIFEST — it's set in roomTemplates.js
     window.game = this.game;
     this.scene.start("HubSceneV2");
   }

@@ -76,6 +76,7 @@ function gy(tpl, y) { return y * tpl.size.tile; }
 function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   const ox = originX, oy = originY;
   const T = tpl.size.tile;
+  const templateWalls = scene._templateWalls = scene._templateWalls || [];
 
   const H = tpl.layout.walls.length;
   const W = tpl.layout.walls[0].length;
@@ -325,8 +326,6 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   for (const rect of activeWallSpans.values()) {
     wallRects.push(rect);
   }
-
-  const templateWalls = scene._templateWalls = scene._templateWalls || [];
 
   // Compute depth tint based on currentWave
   const wave = typeof window.currentWave === 'number' ? window.currentWave : 0;
