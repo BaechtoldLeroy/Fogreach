@@ -501,17 +501,26 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
   const animKey = `walk_${direction}`;
   const idleKey = PLAYER_DIRECTION_LOOKUP[direction]?.idleKey || `dir${PLAYER_DEFAULT_DD}_f00`;
 
-  if (moving && sprite.scene?.anims?.exists(animKey)) {
-    if (state.playing !== animKey) {
-      sprite.anims.play(animKey, true);
-      state.playing = animKey;
+  // Only play animation if both anim AND all frame textures exist
+  const firstFrameKey = `dir${direction}_f00`;
+  const texturesReady = sprite.scene?.textures?.exists(firstFrameKey);
+
+  if (moving && texturesReady && sprite.scene?.anims?.exists(animKey)) {
+    try {
+      if (state.playing !== animKey) {
+        sprite.anims.play(animKey, true);
+        state.playing = animKey;
+      }
+    } catch (e) {
+      // Animation frame not ready yet — stay on idle
+      state.playing = null;
     }
   } else {
     if (state.playing) {
-      sprite.anims.stop();
+      try { sprite.anims.stop(); } catch(e) {}
       state.playing = null;
     }
-    if (sprite.scene?.textures?.exists(idleKey)) {
+    if (texturesReady) {
       if (sprite.texture.key !== idleKey) {
         sprite.setTexture(idleKey);
       }
