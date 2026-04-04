@@ -1165,9 +1165,9 @@ function makeElite(enemy) {
   }
   enemy.speed = Math.round(enemy.speed * 1.2);
 
-  // Optisch: 1.3x size
-  const currentScale = enemy.scaleX || 1;
-  enemy.setScale(currentScale * 1.3);
+  // Optisch: 1.3x size, capped at 64px display
+  const eliteTargetW = Math.min((enemy.displayWidth || 48) * 1.3, 64);
+  enemy.setScale(eliteTargetW / (enemy.width || 64));
 
   // Goldener Glow / border durch Tint-Puls
   enemy.setTint(0xffe066); // gold
@@ -1341,7 +1341,16 @@ function makeBoss(boss, def, cycle) {
     boss.damage = Math.max(1, Math.round(boss.baseDamage * difficulty));
   }
 
-  boss.setScale(def.scale);
+  // Scale boss: use def.scale for procedural textures, cap for sprite textures
+  const bossKey = boss.texture?.key || '';
+  if (bossKey.startsWith('sprite_')) {
+    // Sprite-based: target ~96px display
+    const bossTargetPx = 96;
+    boss.setScale(bossTargetPx / (boss.width || 528));
+  } else {
+    // Procedural texture: use def.scale directly
+    boss.setScale(def.scale);
+  }
   boss.setCollideWorldBounds(true);
 
   // Shimmer
