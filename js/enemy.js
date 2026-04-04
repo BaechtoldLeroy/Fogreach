@@ -885,6 +885,11 @@ function hitByMelee(playerSprite, enemy) {
       : Math.max(1, Math.round(baseDamage));
     enemy.damage = scaledDamage;
     applyPlayerDamage(scaledDamage, this);
+    // Particle effects: player hit + screen shake
+    if (window.particleFactory && playerSprite) {
+      window.particleFactory.playerHit(playerSprite.x, playerSprite.y);
+      window.particleFactory.screenShake(100, 0.005);
+    }
   }
 }
 
@@ -918,6 +923,11 @@ function hitByProjectile(player, projectile) {
   const projEnemyType = projectile?.getData?.('enemyType');
   projectile.destroy();
   applyPlayerDamage(dmg, this);
+  // Particle effects: player hit by projectile + screen shake
+  if (window.particleFactory && player) {
+    window.particleFactory.playerHit(player.x, player.y);
+    window.particleFactory.screenShake(100, 0.005);
+  }
 
   if (window.statusEffectManager && window.StatusEffectType && player) {
     if (projEnemyType === 4) {

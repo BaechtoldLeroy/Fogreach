@@ -208,6 +208,10 @@ function spawnPickup(x, y, type) {
 
 function collectLoot(playerSprite, loot) {
   if (window.soundManager) window.soundManager.playSFX('loot_pickup');
+  // Particle effects: loot sparkle
+  if (window.particleFactory && loot) {
+    window.particleFactory.lootSparkle(loot.x, loot.y);
+  }
 
   // Quest item handling
   if (loot.getData && loot.getData('questItem')) {

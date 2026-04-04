@@ -816,6 +816,11 @@ function handleEnemyHit(scene, enemy, options = {}) {
 
   if (enemy.hp <= 0) {
     if (window.soundManager) window.soundManager.playSFX('enemy_death');
+    // Particle effects: death burst + screen shake
+    if (window.particleFactory) {
+      window.particleFactory.deathBurst(enemy.x, enemy.y);
+      window.particleFactory.screenShake(80, 0.003);
+    }
     spawnLoot.call(scene, enemy.x, enemy.y, null, enemy);
     enemy.destroy();
     defeatedEnemiesInWave += 1;
@@ -827,6 +832,10 @@ function handleEnemyHit(scene, enemy, options = {}) {
     return;
   }
   if (window.soundManager) window.soundManager.playSFX('hit_enemy');
+  // Particle effects: blood splat on hit
+  if (window.particleFactory) {
+    window.particleFactory.bloodSplat(enemy.x, enemy.y);
+  }
 
   const {
     tint = 0xffff00,
@@ -872,6 +881,7 @@ function attack() {
     if (dot <= 0.5) return; // ~60° nach vorn
 
     dealDamageToEnemy(this, enemy, 1, 'attack');
+    if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
     handleEnemyHit(this, enemy, { useTween: true, duration: 100 });
   }, { requireLineOfSight: true });
 
@@ -919,12 +929,15 @@ function spinAttack() {
   const y = Math.round(player.y);
   fx.strokeCircle(x, y, range);
   this.time.delayedCall(200, () => fx.destroy(), null, this);
+  // Spin ability trail
+  if (window.particleFactory) window.particleFactory.abilityTrail(x, y, 0x00ff88);
 
   // 2) Schaden an allen Gegnern im Umkreis
   const spinBonus = getAbilityBonus('spin');
   const spinScene = this;
   forEachEnemyInRange(range, (enemy) => {
     const { isCrit } = dealDamageToEnemy(spinScene, enemy, 1, 'spin');
+    if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
     handleEnemyHit(spinScene, enemy, {
       tint: isCrit ? 0xfff2a6 : 0xffff00,
       duration: isCrit ? 160 : 100
@@ -1111,10 +1124,19 @@ function dashSlash() {
   };
 
   applyDashDamage();
+  // Dash ability trail (blue)
+  if (window.particleFactory && player) {
+    window.particleFactory.abilityTrail(player.x, player.y, 0x7fd6ff);
+  }
   const tick = 40;
   const repeat = Math.max(0, Math.floor(dashDuration / tick) - 1);
   for (let i = 1; i <= repeat; i++) {
-    scene.time.delayedCall(i * tick, applyDashDamage);
+    scene.time.delayedCall(i * tick, () => {
+      applyDashDamage();
+      if (window.particleFactory && player && player.active) {
+        window.particleFactory.abilityTrail(player.x, player.y, 0x7fd6ff);
+      }
+    });
   }
 
   showAttackEffect(scene, {

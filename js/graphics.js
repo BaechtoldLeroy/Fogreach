@@ -401,6 +401,28 @@ function createObstacleGraphics() {
   g.destroy();
 }
 
+function createParticleTextures() {
+  // Hard-edge particle: 8x8 white filled circle
+  const g = this.add.graphics();
+  g.fillStyle(0xffffff, 1);
+  g.fillCircle(4, 4, 4);
+  g.generateTexture('particle', 8, 8);
+  g.clear();
+
+  // Soft-edge particle: 8x8 with gradient feel (layered circles)
+  g.fillStyle(0xffffff, 0.3);
+  g.fillCircle(4, 4, 4);
+  g.fillStyle(0xffffff, 0.5);
+  g.fillCircle(4, 4, 3);
+  g.fillStyle(0xffffff, 0.8);
+  g.fillCircle(4, 4, 2);
+  g.fillStyle(0xffffff, 1);
+  g.fillCircle(4, 4, 1);
+  g.generateTexture('particle_soft', 8, 8);
+
+  g.destroy();
+}
+
 function createInventoryGraphics() {
   const g = this.add.graphics();
 
