@@ -1,8 +1,10 @@
+// Dark medieval enemy sprite generator — old-school gritty pixel art style
+// Inspired by Diablo 1, Darkest Dungeon, classic dungeon crawlers
 const { createCanvas } = require('canvas');
 const fs = require('fs');
 const path = require('path');
 
-const PX = 8; // smaller art-pixel for higher detail
+const PX = 4; // smaller pixels = more detail (112x136 effective grid on 448x544)
 
 function p(ctx, x, y, color) {
   ctx.fillStyle = color;
@@ -14,12 +16,6 @@ function block(ctx, x, y, w, h, color) {
   ctx.fillRect(x * PX, y * PX, w * PX, h * PX);
 }
 
-function save(canvas, outPath) {
-  fs.writeFileSync(outPath, canvas.toBuffer('image/png'));
-  console.log('Generated:', path.basename(outPath));
-}
-
-// Color math
 function shade(hex, f) {
   const r = Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(1,3),16)*f)));
   const g = Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(3,5),16)*f)));
@@ -27,923 +23,896 @@ function shade(hex, f) {
   return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
 
-function mix(hex1, hex2, t) {
-  const r1=parseInt(hex1.slice(1,3),16), g1=parseInt(hex1.slice(3,5),16), b1=parseInt(hex1.slice(5,7),16);
-  const r2=parseInt(hex2.slice(1,3),16), g2=parseInt(hex2.slice(3,5),16), b2=parseInt(hex2.slice(5,7),16);
-  const r=Math.round(r1+(r2-r1)*t), g=Math.round(g1+(g2-g1)*t), b=Math.round(b1+(b2-b1)*t);
+function mix(h1, h2, t) {
+  const r1=parseInt(h1.slice(1,3),16),g1=parseInt(h1.slice(3,5),16),b1=parseInt(h1.slice(5,7),16);
+  const r2=parseInt(h2.slice(1,3),16),g2=parseInt(h2.slice(3,5),16),b2=parseInt(h2.slice(5,7),16);
+  const r=Math.round(r1+(r2-r1)*t),g=Math.round(g1+(g2-g1)*t),b=Math.round(b1+(b2-b1)*t);
   return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');
 }
 
-// Dithered fill: alternates between two colors in checkerboard
+// Dither: checkerboard between two colors for gritty texture
 function dither(ctx, x, y, w, h, c1, c2) {
   for (let dy = 0; dy < h; dy++)
     for (let dx = 0; dx < w; dx++)
       p(ctx, x+dx, y+dy, (dx+dy)%2===0 ? c1 : c2);
 }
 
-// Gradient block: vertical gradient from c1 to c2
-function vGrad(ctx, x, y, w, h, c1, c2) {
+// Noisy fill: randomly pick from color array for organic look
+function noiseFill(ctx, x, y, w, h, colors, seed=0) {
+  let s = seed;
+  for (let dy = 0; dy < h; dy++)
+    for (let dx = 0; dx < w; dx++) {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      p(ctx, x+dx, y+dy, colors[s % colors.length]);
+    }
+}
+
+// Organic edge: draw a rough-edged shape (not perfectly rectangular)
+function roughBlock(ctx, x, y, w, h, colors, indent=1) {
+  let s = 42;
   for (let dy = 0; dy < h; dy++) {
-    const t = h > 1 ? dy/(h-1) : 0;
-    const c = mix(c1, c2, t);
-    for (let dx = 0; dx < w; dx++) p(ctx, x+dx, y+dy, c);
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    const li = (s % 3 === 0) ? indent : 0; // random left indent
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    const ri = (s % 3 === 0) ? indent : 0; // random right indent
+    for (let dx = li; dx < w - ri; dx++) {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      p(ctx, x+dx, y+dy, colors[s % colors.length]);
+    }
   }
 }
 
-// Outlined body part with shading (left highlight, right shadow, gradient top-bottom)
-function shadedBlock(ctx, x, y, w, h, base, outline) {
-  const hi = shade(base, 1.25);
-  const dk = shade(base, 0.7);
-  const dd = shade(base, 0.5);
-  // Fill with vertical gradient
-  vGrad(ctx, x+1, y+1, w-2, h-2, hi, dk);
-  // Left edge highlight
-  for (let dy = 1; dy < h-1; dy++) p(ctx, x, y+dy, mix(hi, base, dy/(h-1)));
-  // Right edge shadow
-  for (let dy = 1; dy < h-1; dy++) p(ctx, x+w-1, y+dy, mix(dk, dd, dy/(h-1)));
-  // Top/bottom outline
-  for (let dx = 0; dx < w; dx++) { p(ctx, x+dx, y, outline); p(ctx, x+dx, y+h-1, outline); }
-  // Side outline
-  p(ctx, x, y, outline); p(ctx, x+w-1, y, outline);
-  p(ctx, x, y+h-1, outline); p(ctx, x+w-1, y+h-1, outline);
+function save(canvas, outPath) {
+  fs.writeFileSync(outPath, canvas.toBuffer('image/png'));
+  console.log('Generated:', path.basename(outPath));
 }
 
 // ============================================================
-//  IMP — 56x68 grid (448x544 canvas)
+//  IMP — Hunched, feral little demon. Muted dark reds, bony.
 // ============================================================
 function generateImp(outPath) {
-  const GW = 56, GH = 68;
-  const canvas = createCanvas(GW*PX, GH*PX);
+  const W = 112, H = 136;
+  const canvas = createCanvas(W*PX, H*PX);
   const ctx = canvas.getContext('2d');
 
-  const skin='#b83030', sk1='#cc4040', sk2='#d05050', sk3='#a02828',
-        sk4='#8a1e1e', sk5='#701818', out='#1a0808';
-  const arm='#6a2020', arm1='#7a2828', arm2='#883838', arm3='#5a1818', arm4='#4a1010';
-  const horn='#c8a848', hrn2='#b09030', hrn3='#907828', hrn4='#786020';
-  const eye='#ffe020', eyedk='#ff8800', pupil='#ff2200';
-  const fang='#e8e0d0', fang2='#ccc4b0';
-  const belt='#5a3a18', belt2='#6a4a28', buckle='#c0a040';
+  // Palette: dark muted reds, almost brown
+  const skin = ['#6a2a22','#5e2420','#72302a','#582018','#4e1a14'];
+  const skinHi = ['#7a3830','#843e36'];
+  const skinDk = ['#3e1410','#34100c','#2a0c08'];
+  const bone = ['#c8b8a0','#b8a890','#d0c0a8'];
+  const eye = '#cc8800';
+  const eyeGlow = '#ffaa22';
 
-  // --- Horns (curved, multi-shade) ---
-  p(ctx,14,1,hrn4); p(ctx,15,0,hrn3); p(ctx,16,0,horn); p(ctx,17,0,hrn2);
-  p(ctx,15,1,horn); p(ctx,16,1,shade(horn,1.1)); p(ctx,17,1,horn);
-  p(ctx,15,2,hrn2); p(ctx,16,2,hrn3); p(ctx,17,2,hrn4);
-  p(ctx,16,3,hrn4); p(ctx,16,4,hrn4);
-  // Right horn (mirrored)
-  p(ctx,41,1,hrn4); p(ctx,40,0,hrn3); p(ctx,39,0,horn); p(ctx,38,0,hrn2);
-  p(ctx,40,1,horn); p(ctx,39,1,shade(horn,1.1)); p(ctx,38,1,horn);
-  p(ctx,40,2,hrn2); p(ctx,39,2,hrn3); p(ctx,38,2,hrn4);
-  p(ctx,39,3,hrn4); p(ctx,39,4,hrn4);
-
-  // --- Head (shaded oval) ---
-  vGrad(ctx, 20, 5, 16, 4, sk2, sk1); // top forehead
-  vGrad(ctx, 18, 9, 20, 4, sk1, skin); // upper face
-  vGrad(ctx, 18, 13, 20, 4, skin, sk3); // mid face
-  vGrad(ctx, 19, 17, 18, 4, sk3, sk4); // lower face/jaw
-  vGrad(ctx, 20, 21, 16, 2, sk4, sk5); // chin
-  // Head outline
-  for (let x = 20; x < 36; x++) p(ctx, x, 4, out);
-  for (let x = 18; x < 38; x++) p(ctx, x, 22, out);
-  for (let y = 5; y <= 8; y++) { p(ctx, 19, y, out); p(ctx, 36, y, out); }
-  for (let y = 9; y <= 21; y++) { p(ctx, 17, y, out); p(ctx, 38, y, out); }
-
-  // Brow ridge (dark)
-  for (let x = 19; x <= 36; x++) p(ctx, x, 10, sk5);
-  p(ctx, 18, 10, out); p(ctx, 37, 10, out);
-
-  // --- Eyes (glowing, layered) ---
-  block(ctx, 21, 11, 5, 4, '#110800');
-  block(ctx, 30, 11, 5, 4, '#110800');
-  // Eye glow layers
-  block(ctx, 22, 12, 3, 2, '#cc6600');
-  block(ctx, 31, 12, 3, 2, '#cc6600');
-  p(ctx, 23, 12, eye); p(ctx, 32, 12, eye);
-  p(ctx, 23, 13, pupil); p(ctx, 32, 13, pupil);
-  // Eye shine
-  p(ctx, 24, 12, '#ffffaa'); p(ctx, 33, 12, '#ffffaa');
-
-  // --- Nose ---
-  p(ctx, 27, 15, sk5); p(ctx, 28, 15, sk5);
-  p(ctx, 27, 16, sk4); p(ctx, 28, 16, sk4);
-
-  // --- Mouth + fangs ---
-  block(ctx, 22, 18, 12, 3, '#2a0808');
-  // Upper fangs
-  p(ctx,22,18,fang); p(ctx,23,18,fang2); p(ctx,24,19,fang);
-  p(ctx,33,18,fang); p(ctx,32,18,fang2); p(ctx,31,19,fang);
-  // Lower fangs
-  p(ctx,23,20,fang); p(ctx,32,20,fang);
-  // Tongue
-  p(ctx,27,19,'#cc2244'); p(ctx,28,19,'#cc2244');
-
-  // --- Pointed ears ---
-  vGrad(ctx, 14, 9, 3, 8, sk1, sk4);
-  p(ctx, 13, 10, sk3); p(ctx, 12, 11, sk5);
-  vGrad(ctx, 39, 9, 3, 8, sk1, sk4);
-  p(ctx, 42, 10, sk3); p(ctx, 43, 11, sk5);
-
-  // --- Neck ---
-  vGrad(ctx, 23, 23, 10, 3, sk4, sk5);
-
-  // --- Torso (leather armor with shading) ---
-  vGrad(ctx, 17, 26, 22, 5, arm2, arm1); // upper chest
-  vGrad(ctx, 15, 31, 26, 5, arm1, arm); // mid chest
-  vGrad(ctx, 15, 36, 26, 5, arm, arm3); // lower chest
-  vGrad(ctx, 16, 41, 24, 3, arm3, arm4); // waist
-  // Outline
-  for (let y = 26; y <= 43; y++) { p(ctx, 14, y, out); p(ctx, 41, y, out); }
-
-  // Chest cross-straps with shading
-  for (let i = 0; i < 8; i++) {
-    p(ctx, 19+i, 28+i, belt); p(ctx, 20+i, 28+i, belt2);
-    p(ctx, 37-i, 28+i, belt); p(ctx, 36-i, 28+i, belt2);
+  // Head — slightly too large, hunched forward
+  roughBlock(ctx, 38, 8, 36, 28, skin, 2);
+  noiseFill(ctx, 40, 10, 32, 24, skin, 7);
+  // Brow ridge — heavy, overhanging
+  noiseFill(ctx, 36, 16, 40, 4, skinDk, 3);
+  // Sunken eyes
+  block(ctx, 44, 20, 8, 6, '#0a0404');
+  block(ctx, 62, 20, 8, 6, '#0a0404');
+  p(ctx, 46, 22, eye); p(ctx, 47, 22, eyeGlow); p(ctx, 48, 21, shade(eye,0.6));
+  p(ctx, 64, 22, eye); p(ctx, 65, 22, eyeGlow); p(ctx, 66, 21, shade(eye,0.6));
+  // Snout/mouth — protruding, jagged teeth
+  noiseFill(ctx, 44, 28, 24, 6, skinDk, 11);
+  for (let i = 0; i < 6; i++) {
+    p(ctx, 46+i*3, 28, bone[i%3]); // upper teeth
+    p(ctx, 47+i*3, 33, bone[(i+1)%3]); // lower teeth, offset
   }
-  // Chest scar
-  for (let i = 0; i < 4; i++) { p(ctx, 25+i, 32, sk5); p(ctx, 26+i, 33, mix(sk5,arm,0.5)); }
+  // Horns — curved, cracked
+  for (let i = 0; i < 10; i++) {
+    const hx = 34-Math.floor(i*0.8), hy = 12-i;
+    p(ctx, hx, hy, bone[i%3]); p(ctx, hx+1, hy, shade(bone[0], 0.7));
+  }
+  for (let i = 0; i < 10; i++) {
+    const hx = 78+Math.floor(i*0.8), hy = 12-i;
+    p(ctx, hx, hy, bone[i%3]); p(ctx, hx-1, hy, shade(bone[0], 0.7));
+  }
+  // Pointed ears
+  roughBlock(ctx, 28, 14, 10, 14, skin, 1);
+  roughBlock(ctx, 74, 14, 10, 14, skin, 1);
+  p(ctx, 26, 12, skinDk[0]); p(ctx, 27, 11, skinDk[1]);
+  p(ctx, 85, 12, skinDk[0]); p(ctx, 84, 11, skinDk[1]);
 
-  // Belt with gradient
-  vGrad(ctx, 15, 42, 26, 3, belt2, belt);
-  block(ctx, 26, 42, 4, 3, buckle);
-  p(ctx, 27, 43, shade(buckle, 1.3)); p(ctx, 28, 43, shade(buckle, 0.8));
+  // Neck — thin, sinuous
+  noiseFill(ctx, 48, 36, 16, 6, skinDk, 5);
 
-  // --- Arms with muscle shading ---
-  for (let y = 26; y <= 44; y++) {
-    const t = (y-26)/18;
-    const c = mix(sk1, sk4, t);
-    const ch = shade(c, 1.15);
-    const cd = shade(c, 0.8);
-    // Left arm
-    p(ctx, 10, y, out); p(ctx, 11, y, cd); p(ctx, 12, y, c);
-    p(ctx, 13, y, ch); p(ctx, 14, y, c);
+  // Torso — hunched, lean, visible ribs
+  roughBlock(ctx, 34, 42, 44, 30, skin, 2);
+  noiseFill(ctx, 36, 44, 40, 26, skin, 13);
+  // Rib shadows
+  for (let i = 0; i < 4; i++) {
+    dither(ctx, 40, 48+i*5, 32, 2, skinDk[0], skinDk[1]);
+  }
+  // Chest wound/scar
+  for (let i = 0; i < 6; i++) p(ctx, 52+i, 50+Math.floor(Math.sin(i)*2), '#3a0808');
+
+  // Arms — long, sinewy, clawed
+  for (let y = 42; y <= 82; y++) {
+    const t = (y-42)/40;
+    const arm = skin[Math.floor(t*skin.length)%skin.length];
+    const armD = skinDk[Math.floor(t*2)%skinDk.length];
+    // Left arm (reaching forward)
+    const lx = 24 - Math.floor(t*8);
+    p(ctx,lx,y,armD); p(ctx,lx+1,y,arm); p(ctx,lx+2,y,arm); p(ctx,lx+3,y,armD);
     // Right arm
-    p(ctx, 41, y, c); p(ctx, 42, y, ch); p(ctx, 43, y, c);
-    p(ctx, 44, y, cd); p(ctx, 45, y, out);
+    const rx = 82 + Math.floor(t*4);
+    p(ctx,rx,y,armD); p(ctx,rx+1,y,arm); p(ctx,rx+2,y,arm); p(ctx,rx+3,y,armD);
   }
-  // Claws
-  const clw = [fang, fang2, shade(fang,0.9)];
-  p(ctx,9,45,clw[0]); p(ctx,10,46,clw[1]); p(ctx,11,46,clw[2]);
-  p(ctx,12,45,clw[0]); p(ctx,13,46,clw[1]);
-  p(ctx,42,45,clw[0]); p(ctx,43,46,clw[1]); p(ctx,44,46,clw[2]);
-  p(ctx,45,45,clw[0]); p(ctx,44,45,clw[1]);
+  // Claws — long, sharp, yellowed bone
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 6; j++) {
+      p(ctx, 12+i*3-j, 84+j, bone[j%3]);
+    }
+  }
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 5; j++) {
+      p(ctx, 90+i*3+j, 84+j, bone[j%3]);
+    }
+  }
 
-  // --- Legs with shading ---
-  for (let y = 45; y <= 60; y++) {
-    const t = (y-45)/15;
-    const c = mix(arm3, sk5, t);
-    const ch = shade(c, 1.2);
-    const cd = shade(c, 0.75);
+  // Belt — ragged leather
+  noiseFill(ctx, 36, 70, 40, 4, ['#3a2a18','#2e2010','#342414','#28180c'], 7);
+  p(ctx, 56, 71, '#887044'); // crude buckle
+
+  // Legs — digitigrade, thin
+  for (let y = 74; y <= 110; y++) {
+    const t = (y-74)/36;
+    const c = skin[Math.floor(t*3)%skin.length];
+    const cd = skinDk[Math.floor(t*2)%skinDk.length];
     // Left leg
-    p(ctx,19,y,out); p(ctx,20,y,cd); p(ctx,21,y,c); p(ctx,22,y,ch);
-    p(ctx,23,y,c); p(ctx,24,y,c); p(ctx,25,y,cd); p(ctx,26,y,out);
+    noiseFill(ctx, 38+Math.floor(t*-4), y, 8, 1, [c, cd], y*3);
     // Right leg
-    p(ctx,30,y,out); p(ctx,31,y,cd); p(ctx,32,y,c); p(ctx,33,y,ch);
-    p(ctx,34,y,c); p(ctx,35,y,c); p(ctx,36,y,cd); p(ctx,37,y,out);
+    noiseFill(ctx, 64+Math.floor(t*4), y, 8, 1, [c, cd], y*7);
   }
+  // Feet — clawed
+  noiseFill(ctx, 28, 110, 16, 6, skinDk, 33);
+  noiseFill(ctx, 68, 110, 16, 6, skinDk, 44);
+  p(ctx,27,115,bone[0]); p(ctx,30,116,bone[1]); p(ctx,34,115,bone[2]);
+  p(ctx,69,115,bone[0]); p(ctx,73,116,bone[1]); p(ctx,76,115,bone[2]);
 
-  // --- Feet + toe claws ---
-  vGrad(ctx, 17, 61, 12, 4, sk5, shade(sk5,0.7));
-  vGrad(ctx, 28, 61, 12, 4, sk5, shade(sk5,0.7));
-  // Toe claws
-  p(ctx,17,65,fang); p(ctx,19,65,fang); p(ctx,22,65,fang);
-  p(ctx,28,65,fang); p(ctx,31,65,fang); p(ctx,33,65,fang);
-
-  // --- Tail ---
-  for (let i = 0; i < 7; i++) {
-    const tc = mix(sk3, sk1, i/6);
-    p(ctx, 42+i, 38-Math.floor(i*0.4), tc);
-    p(ctx, 42+i, 39-Math.floor(i*0.4), shade(tc, 0.8));
+  // Tail — thin, whip-like
+  for (let i = 0; i < 20; i++) {
+    const tx = 80+i*1.5, ty = 65+Math.sin(i*0.5)*3;
+    p(ctx, Math.round(tx), Math.round(ty), skinDk[i%3]);
+    p(ctx, Math.round(tx), Math.round(ty)+1, skin[i%skin.length]);
   }
-  // Arrow tip
-  p(ctx,49,36,sk1); p(ctx,50,35,sk2); p(ctx,50,37,sk2);
 
   save(canvas, outPath);
 }
 
 // ============================================================
-//  ARCHER — 56x68 grid
+//  ARCHER — Gaunt, hooded figure with longbow. Dark greens/browns.
 // ============================================================
 function generateArcher(outPath) {
-  const GW = 56, GH = 68;
-  const canvas = createCanvas(GW*PX, GH*PX);
+  const W = 112, H = 136;
+  const canvas = createCanvas(W*PX, H*PX);
   const ctx = canvas.getContext('2d');
 
-  const hood='#2a5a2a', hd1='#3a7a3a', hd2='#4a8a4a', hd3='#1a3a1a', hd4='#0d2a0d';
-  const skin='#c4a882', sk1='#d4b892', sk2='#b09070', sk3='#9a7a5a';
-  const tunic='#1e4a1e', tu1='#2a5a2a', tu2='#3a6a3a', tu3='#0d330d';
-  const leather='#553311', lth1='#6a4422', lth2='#775533', lth3='#442200';
-  const bow='#885522', bow2='#774411', bow3='#996633';
-  const metal='#aaaaaa', met2='#cccccc', string='#ccccaa';
-  const out='#0a1a0a';
+  const cloak = ['#1e3a1e','#1a3018','#223e22','#162a14','#1e341c'];
+  const cloakDk = ['#0e1e0c','#0a180a','#122210'];
+  const skin = ['#8a7a60','#7e6e54','#968868'];
+  const skinDk = ['#5e5040','#524434'];
+  const leather = ['#3a2a14','#2e2010','#342414'];
+  const wood = ['#5a3a1a','#4e3016','#664420'];
+  const metal = ['#888888','#7a7a7a','#969696'];
+  const string = '#aaa888';
 
-  // --- Hood (rounded, shaded) ---
-  vGrad(ctx, 22, 2, 12, 3, hd2, hd1);
-  vGrad(ctx, 20, 5, 16, 4, hd1, hood);
-  vGrad(ctx, 19, 9, 18, 3, hood, hd3);
-  for (let x = 22; x < 34; x++) p(ctx, x, 1, out);
-  for (let y = 2; y <= 4; y++) { p(ctx, 21, y, out); p(ctx, 34, y, out); }
-  for (let y = 5; y <= 11; y++) { p(ctx, 18, y, out); p(ctx, 36, y, out); }
+  // Hood — deep, shadowed
+  roughBlock(ctx, 36, 4, 40, 20, cloak, 2);
+  noiseFill(ctx, 38, 6, 36, 16, cloak, 3);
+  // Hood shadow over face
+  noiseFill(ctx, 40, 18, 32, 6, cloakDk, 5);
 
-  // --- Face (shaded) ---
-  vGrad(ctx, 21, 9, 14, 3, sk1, skin);
-  vGrad(ctx, 21, 12, 14, 4, skin, sk2);
-  vGrad(ctx, 22, 16, 12, 3, sk2, sk3);
-  for (let y = 9; y <= 18; y++) { p(ctx, 20, y, out); p(ctx, 35, y, out); }
-
-  // Eyes (sharp, red)
-  block(ctx, 23, 12, 4, 3, '#1a0800');
-  block(ctx, 30, 12, 4, 3, '#1a0800');
-  p(ctx,24,13,'#ff3300'); p(ctx,25,13,'#ff6600');
-  p(ctx,31,13,'#ff3300'); p(ctx,32,13,'#ff6600');
-  p(ctx,25,12,'#ff886644'); p(ctx,32,12,'#ff886644'); // eye shine
-
-  // Nose + mouth
-  p(ctx,27,15,sk3); p(ctx,28,15,sk3);
-  for (let x = 25; x <= 30; x++) p(ctx, x, 17, sk3);
+  // Face — gaunt, angular, in shadow
+  noiseFill(ctx, 42, 16, 28, 18, skinDk, 7);
+  noiseFill(ctx, 44, 18, 24, 12, skin, 9);
+  // Eyes — sharp red, predatory
+  block(ctx, 48, 22, 6, 3, '#0c0404');
+  block(ctx, 60, 22, 6, 3, '#0c0404');
+  p(ctx,50,23,'#aa2200'); p(ctx,51,23,'#cc3300');
+  p(ctx,62,23,'#aa2200'); p(ctx,63,23,'#cc3300');
+  // Thin mouth
+  noiseFill(ctx, 50, 28, 12, 2, skinDk, 11);
 
   // Neck
-  vGrad(ctx, 24, 19, 8, 2, sk2, sk3);
+  noiseFill(ctx, 48, 34, 16, 4, skinDk, 5);
 
-  // --- Torso (layered tunic) ---
-  vGrad(ctx, 17, 21, 22, 6, tu2, tu1);
-  vGrad(ctx, 15, 27, 26, 6, tu1, tunic);
-  vGrad(ctx, 15, 33, 26, 5, tunic, tu3);
-  for (let y = 21; y <= 37; y++) { p(ctx, 14, y, out); p(ctx, 41, y, out); }
-  // Highlight strip on chest
-  for (let y = 22; y <= 28; y++) p(ctx, 22, y, tu2);
-
-  // Leather straps
-  for (let i = 0; i < 7; i++) {
-    p(ctx, 20+i, 23+i, leather); p(ctx, 21+i, 23+i, lth1);
-    p(ctx, 36-i, 23+i, leather); p(ctx, 35-i, 23+i, lth1);
+  // Torso — lean, cloaked
+  roughBlock(ctx, 30, 38, 52, 28, cloak, 2);
+  noiseFill(ctx, 32, 40, 48, 24, cloak, 17);
+  // Leather straps crossing chest
+  for (let i = 0; i < 10; i++) {
+    p(ctx, 38+i*2, 42+i*2, leather[i%3]);
+    p(ctx, 39+i*2, 42+i*2, leather[(i+1)%3]);
+    p(ctx, 72-i*2, 42+i*2, leather[i%3]);
+    p(ctx, 73-i*2, 42+i*2, leather[(i+1)%3]);
   }
 
   // Belt
-  vGrad(ctx, 15, 37, 26, 3, lth1, leather);
-  block(ctx, 26, 37, 4, 3, lth2);
-  p(ctx, 27, 38, shade(lth2, 1.3));
+  noiseFill(ctx, 32, 64, 48, 4, leather, 13);
+  p(ctx, 55, 65, '#776040'); p(ctx, 56, 65, '#887050');
 
-  // --- Quiver ---
-  for (let y = 10; y <= 34; y++) {
-    p(ctx, 41, y, leather); p(ctx, 42, y, lth1); p(ctx, 43, y, lth2);
+  // Quiver on back
+  for (let y = 16; y <= 60; y++) {
+    p(ctx, 82, y, leather[y%3]); p(ctx, 83, y, leather[(y+1)%3]);
+    p(ctx, 84, y, shade(leather[0], 1.2));
   }
-  // Arrow tips
-  p(ctx,41,9,metal); p(ctx,42,8,met2); p(ctx,43,9,metal);
-  p(ctx,42,10,met2);
+  // Arrow feathers
+  p(ctx,82,14,metal[0]); p(ctx,83,13,metal[1]); p(ctx,84,15,metal[0]);
 
-  // --- Bow + arrow (left side) ---
-  for (let y = 8; y <= 38; y++) {
-    const t = Math.abs(y - 23) / 15;
-    p(ctx, 6 - Math.round(t*2), y, bow);
-    p(ctx, 7 - Math.round(t*2), y, y%3===0 ? bow3 : bow2);
+  // Bow — left side, curved wood with grain
+  for (let y = 10; y <= 80; y++) {
+    const curve = Math.sin((y-10)/70 * Math.PI) * 8;
+    const bx = 14 - Math.round(curve);
+    p(ctx, bx, y, wood[y%3]);
+    p(ctx, bx+1, y, wood[(y+1)%3]);
   }
   // Bowstring
-  for (let y = 10; y <= 36; y++) p(ctx, 9, y, string);
-  // Arrow
-  for (let x = 2; x <= 10; x++) p(ctx, x, 28, x <= 3 ? metal : bow2);
-  p(ctx, 1, 28, met2); // arrowhead tip
-  p(ctx, 1, 27, metal); p(ctx, 1, 29, metal);
+  for (let y = 14; y <= 76; y++) p(ctx, 20, y, string);
+  // Arrow nocked
+  for (let x = 6; x <= 22; x++) {
+    p(ctx, x, 45, wood[x%3]);
+  }
+  p(ctx, 5, 45, metal[0]); p(ctx, 4, 44, metal[1]); p(ctx, 4, 46, metal[1]);
 
-  // --- Arms ---
-  for (let y = 22; y <= 38; y++) {
-    const t = (y-22)/16;
-    // Left arm
-    p(ctx,10,y,mix(tu1,skin,t)); p(ctx,11,y,mix(tu2,skin,t));
-    p(ctx,12,y,mix(tu1,sk2,t));
+  // Arms
+  for (let y = 40; y <= 68; y++) {
+    const t = (y-40)/28;
+    // Left arm (bow hand)
+    const c = cloak[Math.floor(t*3)%cloak.length];
+    p(ctx, 22, y, c); p(ctx, 23, y, shade(c,1.1)); p(ctx, 24, y, c);
     // Right arm
-    p(ctx,42,y,mix(tu1,skin,t)); p(ctx,43,y,mix(tu2,skin,t));
-    p(ctx,44,y,mix(tu1,sk2,t));
+    p(ctx, 84, y, c); p(ctx, 85, y, shade(c,1.1)); p(ctx, 86, y, c);
   }
   // Hands
-  block(ctx, 10, 39, 3, 3, skin); block(ctx, 42, 39, 3, 3, skin);
+  noiseFill(ctx, 20, 68, 6, 4, skin, 19);
+  noiseFill(ctx, 84, 68, 6, 4, skin, 21);
 
-  // --- Legs ---
-  for (let y = 40; y <= 57; y++) {
-    const t = (y-40)/17;
-    const c = mix(tu3, hd4, t);
-    const ch = shade(c, 1.2), cd = shade(c, 0.8);
-    // Left
-    p(ctx,19,y,out); p(ctx,20,y,cd); p(ctx,21,y,c); p(ctx,22,y,ch);
-    p(ctx,23,y,c); p(ctx,24,y,c); p(ctx,25,y,cd); p(ctx,26,y,out);
-    // Right
-    p(ctx,30,y,out); p(ctx,31,y,cd); p(ctx,32,y,c); p(ctx,33,y,ch);
-    p(ctx,34,y,c); p(ctx,35,y,c); p(ctx,36,y,cd); p(ctx,37,y,out);
+  // Legs — wrapped in cloth
+  for (let y = 68; y <= 108; y++) {
+    const t = (y-68)/40;
+    const c = cloakDk[Math.floor(t*2)%cloakDk.length];
+    noiseFill(ctx, 38, y, 12, 1, [c, shade(c,1.1)], y*3);
+    noiseFill(ctx, 60, y, 12, 1, [c, shade(c,1.1)], y*7);
   }
 
-  // Boots (detailed)
-  for (let y = 58; y <= 64; y++) {
-    const t = (y-58)/6;
-    const c = mix(lth1, lth3, t);
-    block(ctx, 17, y, 12, 1, c);
-    block(ctx, 28, y, 12, 1, c);
+  // Boots — worn leather
+  noiseFill(ctx, 34, 108, 18, 8, leather, 23);
+  noiseFill(ctx, 56, 108, 18, 8, leather, 29);
+  // Boot wrappings
+  for (let i = 0; i < 3; i++) {
+    dither(ctx, 36, 110+i*2, 14, 1, leather[0], leather[2]);
+    dither(ctx, 58, 110+i*2, 14, 1, leather[0], leather[2]);
   }
-  // Boot highlight
-  for (let y = 58; y <= 60; y++) { p(ctx, 19, y, lth2); p(ctx, 30, y, lth2); }
-  // Boot strap
-  for (let x = 18; x <= 27; x++) p(ctx, x, 60, leather);
-  for (let x = 29; x <= 38; x++) p(ctx, x, 60, leather);
 
   save(canvas, outPath);
 }
 
 // ============================================================
-//  MAGE — 56x68 grid
+//  MAGE — Hunched sorcerer in tattered robes. Deep purples, sickly.
 // ============================================================
 function generateMage(outPath) {
-  const GW = 56, GH = 68;
-  const canvas = createCanvas(GW*PX, GH*PX);
+  const W = 112, H = 136;
+  const canvas = createCanvas(W*PX, H*PX);
   const ctx = canvas.getContext('2d');
 
-  const rb='#3a1a5a', rb1='#4a2a6a', rb2='#5a3a7a', rb3='#2a0a4a', rb4='#1a0030', rb5='#100020';
-  const skin='#7744aa', sk1='#8855bb', sk2='#9966cc';
-  const beard='#888888', brd2='#777777', brd3='#666666';
-  const hat='#4a1a6a', hat1='#5a2a7a', hat2='#3a0a5a';
-  const gem='#cc44ff', gem2='#ff88ff', gem3='#9922cc';
-  const gold='#ccaa33', gold2='#ddbb44';
-  const staff='#664422', stf2='#553311';
-  const out='#0a0515';
+  const robe = ['#28103a','#22082e','#2e1444','#1e0828','#241038'];
+  const robeDk = ['#140420','#100318','#0c0210'];
+  const skin = ['#584488','#4e3a7a','#624e92'];
+  const skinDk = ['#3a2860','#302050'];
+  const gem = '#8844cc';
+  const gemGlow = '#bb66ff';
+  const staff = ['#3a2810','#2e200c','#44301a'];
+  const bone = ['#b0a088','#a09078','#c0b098'];
 
-  // --- Pointed hat (taller, more detailed) ---
-  p(ctx,28,0,hat1);
-  block(ctx,27,1,3,1,hat1); p(ctx,28,1,shade(hat1,1.2));
-  block(ctx,26,2,5,1,hat);
-  block(ctx,25,3,7,1,hat);
-  block(ctx,24,4,9,1,hat);
-  block(ctx,23,5,11,2,hat);
-  block(ctx,21,7,15,2,hat2);
-  block(ctx,20,9,17,2,shade(hat2,0.8));
-  // Hat band
-  block(ctx,20,10,17,2,gold);
-  p(ctx,28,10,gold2); p(ctx,27,11,shade(gold,0.8));
-  // Star on hat
-  p(ctx,28,4,'#ffdd66'); p(ctx,27,5,'#ffcc44'); p(ctx,29,5,'#ffcc44');
+  // Pointed hat — crooked, tattered
+  for (let y = 0; y < 20; y++) {
+    const w = 2 + y * 0.8;
+    const x0 = 58 - w/2 - Math.sin(y*0.3)*2; // slight bend
+    noiseFill(ctx, Math.round(x0), y, Math.round(w), 1, robe, y*7);
+  }
+  // Hat brim
+  noiseFill(ctx, 34, 18, 44, 4, robe, 33);
+  dither(ctx, 36, 21, 40, 1, robeDk[0], robeDk[1]);
 
-  // --- Head ---
-  vGrad(ctx, 22, 12, 13, 4, sk2, sk1);
-  vGrad(ctx, 22, 16, 13, 4, sk1, skin);
-  for (let y = 12; y <= 19; y++) { p(ctx, 21, y, out); p(ctx, 35, y, out); }
+  // Head — thin, gaunt
+  noiseFill(ctx, 42, 22, 28, 20, skin, 9);
+  noiseFill(ctx, 44, 24, 24, 6, shade(skin[0],1.1), 11);
+  // Sunken glowing eyes
+  block(ctx, 46, 28, 7, 5, '#08001a');
+  block(ctx, 60, 28, 7, 5, '#08001a');
+  p(ctx,48,30,gem); p(ctx,49,30,gemGlow); p(ctx,50,29,shade(gem,0.5));
+  p(ctx,62,30,gem); p(ctx,63,30,gemGlow); p(ctx,64,29,shade(gem,0.5));
+  // Long wispy beard
+  for (let y = 36; y <= 56; y++) {
+    const bw = Math.max(2, 12 - (y-36)/2);
+    const bx = 52 - bw/2;
+    noiseFill(ctx, Math.round(bx), y, Math.round(bw), 1, bone, y*3);
+  }
 
-  // Eyes (glowing purple)
-  block(ctx, 24, 14, 3, 3, '#110022');
-  block(ctx, 30, 14, 3, 3, '#110022');
-  p(ctx,25,15,gem); p(ctx,31,15,gem);
-  p(ctx,25,14,gem2); p(ctx,31,14,gem2); // eye shine
-
-  // --- Beard (flowing, multi-shade) ---
-  for (let y = 18; y <= 30; y++) {
-    const w = y <= 20 ? 10 : y <= 24 ? 8 : y <= 27 ? 6 : y <= 29 ? 4 : 2;
-    const x0 = 28 - Math.floor(w/2);
-    const t = (y-18)/12;
-    const c = mix(beard, brd3, t);
-    for (let x = x0; x < x0+w; x++) {
-      p(ctx, x, y, (x+y)%3===0 ? shade(c,1.1) : c);
+  // Robe body — flowing, tattered
+  for (let y = 40; y <= 126; y++) {
+    const t = (y-40)/86;
+    const w = 40 + t * 20;
+    const x0 = 56 - w/2;
+    const colors = t < 0.3 ? robe : t < 0.7 ? [...robe,...robeDk] : robeDk;
+    noiseFill(ctx, Math.round(x0), y, Math.round(w), 1, colors, y*13);
+    // Tattered edges
+    if (y > 110 && y%3===0) {
+      p(ctx, Math.round(x0)-1, y, robeDk[y%3]);
+      p(ctx, Math.round(x0+w)+1, y, robeDk[(y+1)%3]);
     }
   }
-
-  // --- Robe body ---
-  vGrad(ctx, 17, 22, 23, 5, rb2, rb1);
-  vGrad(ctx, 15, 27, 27, 5, rb1, rb);
-  vGrad(ctx, 14, 32, 29, 4, rb, rb3);
-  for (let y = 22; y <= 35; y++) { p(ctx, 13, y, out); p(ctx, 43, y, out); }
-
-  // Rune symbols (glowing)
-  p(ctx,24,27,gem3); p(ctx,33,27,gem3);
-  p(ctx,26,29,gem); p(ctx,31,29,gem);
-  p(ctx,28,31,gem2);
-  // Connecting lines
-  dither(ctx, 25, 28, 2, 1, gem3, rb);
-  dither(ctx, 31, 28, 2, 1, gem3, rb);
-
-  // Sash
-  block(ctx, 25, 33, 7, 2, gold);
-  p(ctx,28,33,gold2); p(ctx,28,34,shade(gold,0.8));
-
-  // --- Sleeves (wide) ---
-  for (let y = 24; y <= 38; y++) {
-    const t = (y-24)/14;
-    const c = mix(rb1, rb3, t);
-    // Left sleeve
-    for (let x = 7; x <= 14; x++) p(ctx, x, y, x <= 8 ? shade(c,0.8) : x <= 10 ? c : shade(c,1.15));
-    // Right sleeve
-    for (let x = 42; x <= 49; x++) p(ctx, x, y, x >= 48 ? shade(c,0.8) : x >= 46 ? c : shade(c,1.15));
+  // Robe folds
+  for (let y = 50; y <= 120; y++) {
+    p(ctx, 44, y, robeDk[y%3]);
+    p(ctx, 56, y, robeDk[(y+1)%3]);
+    p(ctx, 68, y, robeDk[y%3]);
   }
+  // Rune symbols on robe
+  const runeY = 70;
+  [48,52,56,60,64].forEach((rx,i) => {
+    p(ctx, rx, runeY+i%3, shade(gem, 0.4+i*0.1));
+  });
 
-  // --- Staff ---
-  for (let y = 4; y <= 62; y++) {
-    p(ctx, 51, y, staff); p(ctx, 52, y, stf2);
+  // Staff — gnarled wood
+  for (let y = 8; y <= 120; y++) {
+    const wobble = Math.sin(y*0.15) * 1.5;
+    const sx = 90 + Math.round(wobble);
+    p(ctx, sx, y, staff[y%3]);
+    p(ctx, sx+1, y, staff[(y+1)%3]);
   }
   // Staff orb
-  vGrad(ctx, 49, 0, 6, 6, '#aa22ee', '#6600aa');
-  block(ctx, 50, 1, 4, 4, gem3);
-  p(ctx, 51, 2, gem2); p(ctx, 52, 3, gem);
-  // Orb glow
-  p(ctx,49,0,'#ff66ff44'); p(ctx,54,0,'#ff66ff44');
-  p(ctx,48,3,gem3); p(ctx,55,3,gem3);
+  for (let dy = -6; dy <= 6; dy++) {
+    for (let dx = -6; dx <= 6; dx++) {
+      if (dx*dx+dy*dy <= 36) {
+        const dist = Math.sqrt(dx*dx+dy*dy)/6;
+        p(ctx, 91+dx, 4+dy, mix(gemGlow, gem, dist));
+      }
+    }
+  }
 
-  // --- Casting hand (left) ---
-  block(ctx, 5, 36, 4, 3, skin);
+  // Casting hand (left) — skeletal
+  noiseFill(ctx, 18, 58, 8, 6, skinDk, 17);
   // Magic particles
-  p(ctx,3,34,gem); p(ctx,2,36,gem3); p(ctx,4,38,gem2);
-  p(ctx,1,35,shade(gem,0.5)); p(ctx,3,37,shade(gem,0.6));
+  p(ctx,14,56,gemGlow); p(ctx,16,54,gem); p(ctx,12,58,shade(gem,0.5));
+  p(ctx,18,52,shade(gemGlow,0.6)); p(ctx,10,60,shade(gem,0.3));
 
-  // --- Robe skirt (flowing with folds) ---
-  for (let y = 36; y <= 65; y++) {
-    const w = y < 42 ? 32 : y < 50 ? 34 : y < 58 ? 32 : 28;
-    const x0 = 28 - Math.floor(w/2);
-    const t = (y-36)/29;
-    const c = mix(rb3, rb5, t);
-    for (let x = x0; x < x0+w; x++) {
-      p(ctx, x, y, c);
-    }
-    // Folds (darker vertical lines)
-    if (y >= 38) {
-      p(ctx, 20, y, shade(c, 0.6));
-      p(ctx, 28, y, shade(c, 0.6));
-      p(ctx, 36, y, shade(c, 0.6));
-      // Highlight between folds
-      p(ctx, 24, y, shade(c, 1.3));
-      p(ctx, 32, y, shade(c, 1.3));
-    }
+  // Sleeve
+  for (let y = 42; y <= 62; y++) {
+    const t = (y-42)/20;
+    p(ctx, 24-Math.floor(t*6), y, robe[y%robe.length]);
+    p(ctx, 25-Math.floor(t*6), y, robe[(y+1)%robe.length]);
   }
 
   save(canvas, outPath);
 }
 
 // ============================================================
-//  SHADOW CREEPER — 48x58 grid
+//  SHADOW CREEPER — Twisted, barely visible wraith
 // ============================================================
 function generateShadowCreeper(outPath) {
-  const GW = 48, GH = 58;
-  const canvas = createCanvas(GW*PX, GH*PX);
+  const W = 96, H = 116;
+  const canvas = createCanvas(W*PX, H*PX);
   const ctx = canvas.getContext('2d');
 
-  const body='#140020', bd1='#1e002e', bd2='#220033', bd3='#0c0016', bd4='#08000e';
-  const glow='#cc00ff', glow2='#ff44ff', glow3='#9900bb';
-  const claw='#8800cc', claw2='#6600aa';
+  const body = ['#0e0016','#120020','#0a000e','#10001a'];
+  const bodyDk = ['#06000a','#080010','#040006'];
+  const glow = '#9900dd';
+  const glowHi = '#cc44ff';
 
-  // --- Head (hunched forward, predatory) ---
-  vGrad(ctx, 18, 4, 12, 4, bd2, bd1);
-  vGrad(ctx, 17, 8, 14, 5, bd1, body);
-  for (let y = 4; y <= 12; y++) { p(ctx, 16, y, '#050008'); p(ctx, 31, y, '#050008'); }
-
-  // Glowing eyes (large, menacing)
-  block(ctx, 19, 8, 4, 3, '#0a0015');
-  block(ctx, 26, 8, 4, 3, '#0a0015');
-  p(ctx,20,9,glow); p(ctx,21,9,glow2); p(ctx,22,9,glow);
-  p(ctx,27,9,glow); p(ctx,28,9,glow2); p(ctx,29,9,glow);
+  // Head — elongated, predatory
+  roughBlock(ctx, 32, 8, 30, 18, body, 3);
+  noiseFill(ctx, 34, 10, 26, 14, body, 5);
+  // Eyes — large, glowing, unsettling
+  for (let dy = -3; dy <= 3; dy++)
+    for (let dx = -3; dx <= 3; dx++) {
+      if (dx*dx+dy*dy <= 9) {
+        const d = Math.sqrt(dx*dx+dy*dy)/3;
+        p(ctx, 40+dx, 18+dy, mix(glowHi, glow, d));
+        p(ctx, 56+dx, 18+dy, mix(glowHi, glow, d));
+      }
+    }
   // Eye glow bleed
-  p(ctx,20,8,glow3); p(ctx,21,8,glow3); p(ctx,27,8,glow3); p(ctx,28,8,glow3);
-  p(ctx,20,10,glow3); p(ctx,29,10,glow3);
-
-  // --- Spine/Back (hunched) ---
-  vGrad(ctx, 17, 13, 14, 10, body, bd3);
-  // Spine ridge
-  for (let y = 13; y <= 22; y++) {
-    p(ctx, 24, y, '#330055');
-    p(ctx, 23, y, mix(body, '#330055', 0.3));
+  for (let i = 1; i <= 3; i++) {
+    p(ctx,40,18-4-i,shade(glow,0.3-i*0.08));
+    p(ctx,56,18-4-i,shade(glow,0.3-i*0.08));
   }
 
-  // --- Long arms (thin, sinuous) ---
-  for (let y = 10; y <= 30; y++) {
-    const t = (y-10)/20;
-    const c = mix(bd2, bd3, t);
-    // Left arm
-    const lx = Math.round(10 - t*4);
-    p(ctx, lx, y, c); p(ctx, lx+1, y, shade(c, 1.2)); p(ctx, lx+2, y, c);
+  // Body — thin, hunched, barely there
+  for (let y = 26; y <= 60; y++) {
+    const t = (y-26)/34;
+    const w = 20 + Math.sin(t*Math.PI)*8;
+    const x0 = 48 - w/2;
+    noiseFill(ctx, Math.round(x0), y, Math.round(w), 1, body, y*11);
+  }
+  // Spine protrusions
+  for (let y = 28; y <= 55; y += 3) {
+    p(ctx, 48, y, bodyDk[y%3]);
+    p(ctx, 47, y+1, body[y%body.length]);
+    p(ctx, 49, y+1, body[(y+1)%body.length]);
+  }
+
+  // Arms — incredibly long, thin, multi-jointed
+  for (let y = 20; y <= 74; y++) {
+    const t = (y-20)/54;
+    const c = body[Math.floor(t*3)%body.length];
+    // Left arm — reaching out
+    const lx = 28 - Math.floor(t*16);
+    p(ctx,lx,y,c); p(ctx,lx+1,y,shade(c,1.3)); p(ctx,lx+2,y,c);
     // Right arm
-    const rx = Math.round(35 + t*4);
-    p(ctx, rx, y, c); p(ctx, rx+1, y, shade(c, 1.2)); p(ctx, rx+2, y, c);
+    const rx = 66 + Math.floor(t*12);
+    p(ctx,rx,y,c); p(ctx,rx+1,y,shade(c,1.3)); p(ctx,rx+2,y,c);
   }
-  // Claws (long, sharp, glowing tips)
-  for (let i = 0; i < 4; i++) {
-    p(ctx, 4+i, 31+i, claw2); p(ctx, 5+i, 32+i, claw);
-    p(ctx, 41-i, 31+i, claw2); p(ctx, 42-i, 32+i, claw);
+  // Claws — long curved talons
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 8; j++) {
+      const c = mix(glow, '#1a0028', j/8);
+      p(ctx, 8+i*2-j, 76+j, c);
+      p(ctx, 82+i*2+j, 76+j, c);
+    }
   }
-  // Claw tips glow
-  p(ctx, 7, 34, glow); p(ctx, 8, 35, glow);
-  p(ctx, 38, 34, glow); p(ctx, 39, 35, glow);
 
-  // --- Legs (digitigrade, thin) ---
-  for (let y = 23; y <= 40; y++) {
-    const t = (y-23)/17;
-    const c = mix(body, bd4, t);
-    // Upper legs
-    p(ctx, 19, y, c); p(ctx, 20, y, shade(c,1.2)); p(ctx, 21, y, c);
-    p(ctx, 27, y, c); p(ctx, 28, y, shade(c,1.2)); p(ctx, 29, y, c);
-  }
-  // Backward knee bend
-  for (let y = 38; y <= 46; y++) {
-    const c = mix(bd3, bd4, (y-38)/8);
-    p(ctx, 16, y, c); p(ctx, 17, y, shade(c,1.1)); p(ctx, 18, y, c);
-    p(ctx, 30, y, c); p(ctx, 31, y, shade(c,1.1)); p(ctx, 32, y, c);
+  // Legs — spindly, digitigrade
+  for (let y = 58; y <= 90; y++) {
+    const t = (y-58)/32;
+    const c = bodyDk[Math.floor(t*2)%bodyDk.length];
+    p(ctx, 38-Math.floor(t*6), y, c); p(ctx, 39-Math.floor(t*6), y, body[y%body.length]);
+    p(ctx, 56+Math.floor(t*6), y, c); p(ctx, 57+Math.floor(t*6), y, body[y%body.length]);
   }
   // Feet
-  vGrad(ctx, 13, 47, 8, 3, bd3, bd4);
-  vGrad(ctx, 28, 47, 8, 3, bd3, bd4);
-  // Toe claws
-  p(ctx,12,49,claw); p(ctx,15,50,claw); p(ctx,18,49,claw);
-  p(ctx,28,49,claw); p(ctx,31,50,claw); p(ctx,34,49,claw);
+  noiseFill(ctx, 26, 90, 12, 4, bodyDk, 33);
+  noiseFill(ctx, 60, 90, 12, 4, bodyDk, 37);
 
-  // --- Shadow wisps (atmospheric) ---
-  const wisps = [[8,4],[38,6],[5,20],[42,18],[14,52],[34,54],[24,56],[20,2],[36,3]];
-  wisps.forEach(([wx,wy]) => {
-    p(ctx, wx, wy, '#180028');
-    p(ctx, wx+1, wy+1, '#10001a');
+  // Shadow wisps — ethereal trails
+  const wisps = [[20,6],[72,4],[8,30],[84,26],[14,70],[80,68],[40,98],[56,96]];
+  wisps.forEach(([wx,wy], i) => {
+    for (let j = 0; j < 4; j++) {
+      p(ctx, wx+j, wy+j, shade(body[j%body.length], 0.6));
+    }
   });
 
   save(canvas, outPath);
 }
 
 // ============================================================
-//  CHAIN GUARD — 60x72 grid
+//  CHAIN GUARD — Hulking armored sentinel. Rusted metal, worn.
 // ============================================================
 function generateChainGuard(outPath) {
-  const GW = 60, GH = 72;
-  const canvas = createCanvas(GW*PX, GH*PX);
+  const W = 120, H = 144;
+  const canvas = createCanvas(W*PX, H*PX);
   const ctx = canvas.getContext('2d');
 
-  const ar='#606878', ar1='#7888a0', ar2='#90a0b8', ar3='#4a5a6a', ar4='#384858', ar5='#283848';
-  const chain='#8898a8', ch2='#a0b0c0';
-  const sh='#7888aa', sh1='#99aacc', sh2='#aabbdd', sh3='#556688';
-  const gold='#ccaa33', gold2='#ddbb44';
-  const eye='#ff2200';
-  const wood='#664422', wd2='#553311';
-  const out='#222233';
+  const armor = ['#4a4e56','#444850','#525660','#3e4248'];
+  const armorHi = ['#5e6270','#687080'];
+  const armorDk = ['#2e3038','#282c34','#343840'];
+  const rust = ['#5a3828','#4e3020','#6a4030'];
+  const chain = ['#686e78','#5e6470','#747a84'];
+  const shield = ['#3a4050','#444e60','#4e5868'];
+  const shieldHi = ['#5e6878','#687888'];
+  const gold = ['#8a7830','#7a6828','#9a8838'];
+  const eye = '#aa1100';
+  const wood = ['#3a2810','#2e200c','#44301a'];
 
-  // --- Helmet (detailed) ---
-  vGrad(ctx, 22, 2, 16, 5, ar2, ar1);
-  vGrad(ctx, 20, 7, 20, 6, ar1, ar);
-  vGrad(ctx, 21, 13, 18, 4, ar, ar3);
-  for (let x = 22; x < 38; x++) p(ctx, x, 1, out);
-  for (let y = 2; y <= 16; y++) { p(ctx, 19, y, out); p(ctx, 40, y, out); }
-  // Crown ridge
-  block(ctx, 24, 2, 12, 1, gold);
-  p(ctx, 30, 1, gold2);
-  // Nose guard
-  for (let y = 5; y <= 14; y++) p(ctx, 30, y, ar2);
-  // Visor
-  block(ctx, 24, 9, 12, 5, '#1a0505');
+  // Helmet — heavy, angular, visor down
+  roughBlock(ctx, 36, 4, 48, 28, armor, 2);
+  noiseFill(ctx, 38, 6, 44, 24, armor, 5);
+  // Helmet crest
+  noiseFill(ctx, 44, 2, 32, 4, armorHi, 3);
+  // Visor slit
+  noiseFill(ctx, 42, 16, 36, 8, ['#0a0404','#080202','#0c0606'], 7);
   // Eyes behind visor
-  block(ctx, 26, 10, 3, 2, eye);
-  block(ctx, 33, 10, 3, 2, eye);
-  p(ctx, 27, 10, '#ff6644'); p(ctx, 34, 10, '#ff6644');
+  p(ctx,48,19,eye); p(ctx,49,19,'#cc2200'); p(ctx,50,18,shade(eye,0.5));
+  p(ctx,68,19,eye); p(ctx,69,19,'#cc2200'); p(ctx,70,18,shade(eye,0.5));
+  // Nose guard
+  for (let y = 10; y <= 22; y++) p(ctx, 60, y, armorHi[y%2]);
+  // Rust patches on helmet
+  p(ctx,40,8,rust[0]); p(ctx,41,9,rust[1]); p(ctx,72,12,rust[2]);
 
-  // --- Massive shoulders ---
-  for (let y = 17; y <= 26; y++) {
-    const t = (y-17)/9;
-    const c = mix(ar1, ar3, t);
-    // Left
-    block(ctx, 6, y, 14, 1, c);
-    // Right
-    block(ctx, 40, y, 14, 1, c);
-  }
-  // Shoulder highlights
-  for (let y = 17; y <= 20; y++) { p(ctx, 8, y, ar2); p(ctx, 42, y, ar2); }
+  // Shoulders — massive pauldrons
+  roughBlock(ctx, 8, 32, 24, 16, armor, 2);
+  roughBlock(ctx, 88, 32, 24, 16, armor, 2);
+  noiseFill(ctx, 10, 34, 20, 12, armor, 11);
+  noiseFill(ctx, 90, 34, 20, 12, armor, 13);
   // Rivets
-  p(ctx,9,20,gold); p(ctx,13,20,gold); p(ctx,17,20,gold);
-  p(ctx,43,20,gold); p(ctx,47,20,gold); p(ctx,51,20,gold);
-  // Hanging chains
-  for (let y = 27; y <= 36; y += 2) {
-    p(ctx,8,y,chain); p(ctx,10,y+1,ch2); p(ctx,12,y,chain);
-    p(ctx,48,y,chain); p(ctx,50,y+1,ch2); p(ctx,52,y,chain);
-  }
+  [12,18,24].forEach(x => { p(ctx,x,38,gold[0]); p(ctx,x+72,38,gold[1]); });
+  // Rust on shoulders
+  noiseFill(ctx, 14, 40, 6, 4, rust, 17);
 
-  // --- Chain mail body ---
-  vGrad(ctx, 18, 17, 24, 8, ar1, ar);
-  vGrad(ctx, 18, 25, 24, 8, ar, ar3);
-  vGrad(ctx, 18, 33, 24, 6, ar3, ar4);
-  // Chain mail pattern (detailed dither)
-  for (let y = 20; y <= 36; y += 2)
-    for (let x = 19; x <= 40; x += 3) {
-      p(ctx, x, y, chain); p(ctx, x+1, y+1, ch2);
+  // Chain mail torso
+  for (let y = 32; y <= 72; y++) {
+    noiseFill(ctx, 30, y, 60, 1, chain, y*7);
+    // Chain link pattern
+    if (y%3 === 0) {
+      for (let x = 32; x <= 86; x += 4) p(ctx, x, y, armorHi[x%2]);
     }
+  }
+  // Leather over chainmail
+  roughBlock(ctx, 36, 38, 20, 20, armorDk, 1);
+  roughBlock(ctx, 62, 38, 20, 20, armorDk, 1);
 
   // Belt
-  vGrad(ctx, 18, 38, 24, 3, shade(wood,1.2), wood);
-  block(ctx, 28, 38, 4, 3, gold);
-  p(ctx, 29, 39, gold2);
+  noiseFill(ctx, 30, 72, 60, 6, ['#3a2a14','#2e2010','#342414','#28180c'], 19);
+  p(ctx,58,74,gold[0]); p(ctx,59,74,gold[1]); p(ctx,60,74,gold[2]);
 
-  // --- Shield (left, detailed) ---
-  vGrad(ctx, 0, 20, 10, 6, sh2, sh1);
-  vGrad(ctx, 0, 26, 10, 10, sh1, sh);
-  vGrad(ctx, 0, 36, 10, 6, sh, sh3);
+  // Shield — battered, dented
+  for (let y = 30; y <= 72; y++) {
+    const t = (y-30)/42;
+    const w = 18 - Math.abs(t-0.5)*12;
+    noiseFill(ctx, 2, y, Math.round(w), 1, t<0.5 ? shieldHi : shield, y*5);
+  }
   // Shield boss
-  block(ctx, 3, 29, 4, 4, gold);
-  p(ctx, 4, 30, gold2); p(ctx, 5, 31, shade(gold,0.8));
-  // Shield cross
-  for (let y = 22; y <= 40; y++) p(ctx, 5, y, sh3);
-  for (let x = 1; x <= 9; x++) p(ctx, x, 31, sh3);
-  // Shield edge outline
-  for (let y = 20; y <= 41; y++) p(ctx, 10, y, out);
+  for (let dy = -3; dy <= 3; dy++)
+    for (let dx = -3; dx <= 3; dx++)
+      if (dx*dx+dy*dy <= 9) p(ctx, 10+dx, 52+dy, gold[(dx+dy+6)%3]);
+  // Shield dent
+  p(ctx,8,44,armorDk[0]); p(ctx,9,45,armorDk[1]); p(ctx,7,46,armorDk[2]);
 
-  // --- Mace (right hand) ---
-  for (let y = 12; y <= 36; y++) { p(ctx, 53, y, wood); p(ctx, 54, y, wd2); }
-  // Mace head
-  vGrad(ctx, 51, 6, 6, 8, ar2, ar);
-  block(ctx, 52, 7, 4, 6, ar1);
-  // Spikes
-  p(ctx,50,5,chain); p(ctx,57,5,chain);
-  p(ctx,50,13,chain); p(ctx,57,13,chain);
-  p(ctx,54,4,ch2); p(ctx,54,14,ch2);
+  // Mace — right hand
+  for (let y = 16; y <= 68; y++) p(ctx, 108, y, wood[y%3]);
+  // Mace head — flanged
+  roughBlock(ctx, 104, 8, 10, 12, armor, 1);
+  noiseFill(ctx, 105, 9, 8, 10, armorHi, 23);
+  // Flanges
+  p(ctx,103,8,chain[0]); p(ctx,114,8,chain[1]);
+  p(ctx,103,19,chain[2]); p(ctx,114,19,chain[0]);
 
-  // --- Legs (armored) ---
-  for (let y = 41; y <= 60; y++) {
-    const t = (y-41)/19;
-    const c = mix(ar3, ar5, t);
-    const ch = shade(c, 1.2), cd = shade(c, 0.8);
-    // Left
-    p(ctx,21,y,out); p(ctx,22,y,cd);
-    for (let x = 23; x <= 28; x++) p(ctx, x, y, x<=24?c:x<=26?ch:c);
-    p(ctx,29,y,cd); p(ctx,30,y,out);
-    // Right
-    p(ctx,31,y,out); p(ctx,32,y,cd);
-    for (let x = 33; x <= 38; x++) p(ctx, x, y, x<=34?c:x<=36?ch:c);
-    p(ctx,39,y,cd); p(ctx,40,y,out);
+  // Legs — greaves
+  for (let y = 78; y <= 120; y++) {
+    const t = (y-78)/42;
+    const c = armor[Math.floor(t*3)%armor.length];
+    noiseFill(ctx, 38, y, 14, 1, [c, shade(c,0.85)], y*3);
+    noiseFill(ctx, 66, y, 14, 1, [c, shade(c,0.85)], y*7);
   }
   // Knee guards
-  block(ctx, 23, 51, 6, 3, ar1);
-  block(ctx, 33, 51, 6, 3, ar1);
+  noiseFill(ctx, 40, 96, 10, 4, armorHi, 27);
+  noiseFill(ctx, 68, 96, 10, 4, armorHi, 29);
 
   // Boots
-  vGrad(ctx, 19, 61, 14, 5, ar4, ar5);
-  vGrad(ctx, 29, 61, 14, 5, ar4, ar5);
-  block(ctx, 20, 61, 12, 2, ar3);
-  block(ctx, 30, 61, 12, 2, ar3);
+  noiseFill(ctx, 34, 120, 20, 8, armorDk, 31);
+  noiseFill(ctx, 62, 120, 20, 8, armorDk, 33);
 
   save(canvas, outPath);
 }
 
 // ============================================================
-//  FLAME WEAVER — 56x68 grid
+//  FLAME WEAVER — Burning cultist. Embers, charred robes.
 // ============================================================
 function generateFlameWeaver(outPath) {
-  const GW = 56, GH = 68;
-  const canvas = createCanvas(GW*PX, GH*PX);
+  const W = 112, H = 136;
+  const canvas = createCanvas(W*PX, H*PX);
   const ctx = canvas.getContext('2d');
 
-  const rb='#aa3300', rb1='#cc5511', rb2='#dd6622', rb3='#882200', rb4='#661100', rb5='#440800';
-  const fl1='#ff8800', fl2='#ffaa00', fl3='#ffcc44', fl4='#ffff88';
-  const skin='#cc4400', sk1='#dd5511', sk2='#ee6622';
-  const out='#220800';
+  const robe = ['#5a2200','#4e1a00','#662a00','#421400'];
+  const robeDk = ['#2e0e00','#220800','#1a0400'];
+  const skin = ['#884400','#7a3a00','#994e00'];
+  const flame1 = ['#ff6600','#ee5500','#ff7722'];
+  const flame2 = ['#ffaa00','#ff9900','#ffbb22'];
+  const flame3 = ['#ffdd44','#ffcc22','#ffee66'];
+  const white = '#ffffaa';
+  const char = ['#1a1008','#221810','#140c04'];
 
-  // --- Flame crown (animated-looking, tall) ---
-  const flames = [
-    [20,0,fl2],[22,0,fl1],[24,0,fl3],[26,0,fl1],[28,0,fl2],[30,0,fl3],[32,0,fl1],[34,0,fl2],
-    [19,1,fl1],[21,1,fl3],[23,1,fl2],[25,1,fl4],[27,1,fl3],[29,1,fl1],[31,1,fl4],[33,1,fl2],[35,1,fl1],
-    [18,2,fl1],[20,2,fl2],[22,2,fl3],[24,2,fl1],[26,2,fl2],[28,2,fl3],[30,2,fl1],[32,2,fl2],[34,2,fl3],[36,2,fl1],
-    [17,3,'#ff4400'],[19,3,fl1],[21,3,fl2],[35,3,fl1],[37,3,'#ff4400'],
-  ];
-  flames.forEach(([x,y,c]) => p(ctx, x, y, c));
-  block(ctx, 18, 4, 20, 2, '#ee3300');
-  block(ctx, 19, 4, 18, 1, '#ff4400');
-
-  // --- Head ---
-  vGrad(ctx, 21, 6, 14, 4, sk2, sk1);
-  vGrad(ctx, 21, 10, 14, 4, sk1, skin);
-  for (let y = 6; y <= 13; y++) { p(ctx, 20, y, out); p(ctx, 35, y, out); }
-
-  // Eyes (bright white-yellow, burning)
-  block(ctx, 23, 9, 4, 3, '#331100');
-  block(ctx, 30, 9, 4, 3, '#331100');
-  p(ctx,24,10,fl3); p(ctx,25,10,fl4); p(ctx,26,10,fl3);
-  p(ctx,31,10,fl3); p(ctx,32,10,fl4); p(ctx,33,10,fl3);
-  // Eye glow
-  p(ctx,24,9,fl1); p(ctx,25,9,fl2); p(ctx,31,9,fl1); p(ctx,32,9,fl2);
-
-  // Mouth (inner glow)
-  block(ctx, 25, 12, 6, 1, '#552200');
-  p(ctx,26,12,fl1); p(ctx,29,12,fl1);
-
-  // --- Robe ---
-  vGrad(ctx, 16, 14, 24, 6, rb2, rb1);
-  vGrad(ctx, 14, 20, 28, 6, rb1, rb);
-  vGrad(ctx, 14, 26, 28, 6, rb, rb3);
-  for (let y = 14; y <= 31; y++) { p(ctx, 13, y, out); p(ctx, 42, y, out); }
-
-  // Ember pattern on robe
-  const embers = [[22,18,fl1],[34,20,fl2],[26,24,fl1],[30,17,fl3],[18,22,fl1],[38,24,fl2]];
-  embers.forEach(([x,y,c]) => p(ctx, x, y, c));
-
-  // --- Arms with fire orbs ---
-  for (let y = 16; y <= 28; y++) {
-    const t = (y-16)/12;
-    const c = mix(rb1, rb3, t);
-    p(ctx,8,y,c); p(ctx,9,y,shade(c,1.15)); p(ctx,10,y,c); p(ctx,11,y,shade(c,0.85));
-    p(ctx,44,y,shade(c,0.85)); p(ctx,45,y,c); p(ctx,46,y,shade(c,1.15)); p(ctx,47,y,c);
+  // Flame crown — flickering, organic
+  for (let i = 0; i < 30; i++) {
+    const fx = 30 + i * 1.8;
+    const fh = 8 + Math.sin(i*1.3)*6 + Math.cos(i*0.7)*4;
+    for (let fy = 0; fy < fh; fy++) {
+      const t = fy/fh;
+      const c = t < 0.3 ? flame3[i%3] : t < 0.6 ? flame2[i%3] : flame1[i%3];
+      p(ctx, Math.round(fx), 14-Math.round(fy), c);
+    }
   }
 
-  // Fire orb left
-  block(ctx, 2, 26, 8, 8, fl1);
-  vGrad(ctx, 3, 27, 6, 6, fl2, fl1);
-  block(ctx, 4, 28, 4, 4, fl3);
-  p(ctx, 5, 29, fl4); p(ctx, 6, 30, '#ffffff');
-  // Flames above orb
-  p(ctx,3,24,fl1); p(ctx,5,23,fl2); p(ctx,7,24,fl3); p(ctx,4,22,fl1);
+  // Head — charred, glowing cracks
+  roughBlock(ctx, 38, 14, 36, 22, skin, 2);
+  noiseFill(ctx, 40, 16, 32, 18, [...skin,...char], 9);
+  // Eyes — white-hot
+  block(ctx, 46, 22, 6, 4, '#331100');
+  block(ctx, 62, 22, 6, 4, '#331100');
+  p(ctx,48,23,white); p(ctx,49,24,flame3[0]); p(ctx,50,23,flame2[0]);
+  p(ctx,64,23,white); p(ctx,65,24,flame3[1]); p(ctx,66,23,flame2[1]);
+  // Mouth — inner glow
+  noiseFill(ctx, 50, 30, 12, 3, [...char, flame1[0]], 11);
 
-  // Fire orb right
-  block(ctx, 46, 26, 8, 8, fl1);
-  vGrad(ctx, 47, 27, 6, 6, fl2, fl1);
-  block(ctx, 48, 28, 4, 4, fl3);
-  p(ctx, 49, 29, fl4); p(ctx, 50, 30, '#ffffff');
-  p(ctx,47,24,fl1); p(ctx,49,23,fl2); p(ctx,51,24,fl3);
-
-  // --- Robe bottom ---
-  for (let y = 32; y <= 63; y++) {
-    const w = y < 40 ? 30 : y < 50 ? 28 : y < 58 ? 26 : 22;
-    const x0 = 28 - Math.floor(w/2);
-    const t = (y-32)/31;
-    const c = mix(rb3, rb5, t);
-    for (let x = x0; x < x0+w; x++) p(ctx, x, y, c);
-    // Folds with highlights
-    if (y >= 34) {
-      p(ctx, 20, y, shade(c, 0.6)); p(ctx, 28, y, shade(c, 0.6)); p(ctx, 36, y, shade(c, 0.6));
-      p(ctx, 24, y, shade(c, 1.3)); p(ctx, 32, y, shade(c, 1.3));
+  // Robe — charred, burning edges
+  for (let y = 34; y <= 126; y++) {
+    const t = (y-34)/92;
+    const w = 36 + t * 16;
+    const x0 = 56 - w/2;
+    const colors = t < 0.3 ? robe : t < 0.6 ? [...robe,...robeDk] : [...robeDk,...char];
+    noiseFill(ctx, Math.round(x0), y, Math.round(w), 1, colors, y*13);
+    // Burning edges
+    if (y > 100) {
+      const edgeC = flame1[y%3];
+      p(ctx, Math.round(x0), y, edgeC);
+      p(ctx, Math.round(x0+w), y, edgeC);
+      if (y%4===0) p(ctx, Math.round(x0)-1, y, flame2[y%3]);
     }
+  }
+  // Ember spots on robe
+  const embers = [[44,50],[68,46],[52,62],[64,58],[48,78],[70,74],[40,90],[72,86]];
+  embers.forEach(([ex,ey],i) => {
+    p(ctx,ex,ey,flame1[i%3]); p(ctx,ex+1,ey,flame2[i%3]);
+  });
+
+  // Arms with fire orbs
+  for (let y = 38; y <= 66; y++) {
+    const t = (y-38)/28;
+    const c = robe[Math.floor(t*3)%robe.length];
+    p(ctx,20,y,c); p(ctx,21,y,shade(c,1.1)); p(ctx,22,y,c);
+    p(ctx,88,y,c); p(ctx,89,y,shade(c,1.1)); p(ctx,90,y,c);
+  }
+
+  // Fire orbs — swirling flames
+  for (let dy = -8; dy <= 8; dy++)
+    for (let dx = -8; dx <= 8; dx++) {
+      const d = Math.sqrt(dx*dx+dy*dy);
+      if (d <= 8) {
+        const t = d/8;
+        const c = t < 0.3 ? white : t < 0.5 ? flame3[0] : t < 0.7 ? flame2[0] : flame1[0];
+        p(ctx, 10+dx, 66+dy, c);
+        p(ctx, 100+dx, 66+dy, c);
+      }
+    }
+  // Flame wisps above orbs
+  for (let i = 0; i < 6; i++) {
+    p(ctx, 8+i, 56-i*2, flame2[i%3]);
+    p(ctx, 98+i, 56-i*2, flame1[i%3]);
   }
 
   // Floating embers
-  const sparks = [[10,4,fl3],[44,2,fl2],[6,14,fl1],[50,12,fl2],[3,40,fl1],[52,38,fl3]];
-  sparks.forEach(([x,y,c]) => { p(ctx,x,y,c); p(ctx,x+1,y,shade(c,0.7)); });
+  const sparks = [[16,10],[96,8],[8,30],[102,26],[24,100],[86,96],[50,6],[66,4]];
+  sparks.forEach(([sx,sy],i) => {
+    p(ctx,sx,sy,flame2[i%3]); p(ctx,sx+1,sy-1,flame3[i%3]);
+  });
 
   save(canvas, outPath);
 }
 
-// === BOSSES (66x78 grid) ===
+// ============================================================
+//  BOSSES — Larger canvas (144x168 grid at PX=4 = 576x672)
+// ============================================================
 
 function generateBossChainMaster(outPath) {
-  const GW = 66, GH = 78;
-  const canvas = createCanvas(GW*PX, GH*PX);
+  const W = 132, H = 156;
+  const canvas = createCanvas(W*PX, H*PX);
   const ctx = canvas.getContext('2d');
-  const ar='#667788',ar1='#8899aa',ar2='#a0b0c0',ar3='#4a5a6a',ar4='#384858',ar5='#283848';
-  const chain='#aabbcc',ch2='#c0d0e0';
-  const gold='#ccaa33',gold2='#ddbb44';
-  const eye='#ff0000';
-  const out='#222233';
+
+  const armor = ['#4a5060','#444a58','#525868','#3e4450'];
+  const armorHi = ['#6a7080','#747a8a'];
+  const armorDk = ['#2a3038','#242830'];
+  const chain = ['#7a8090','#6e7484','#868c9a'];
+  const gold = ['#aa8828','#9a7820','#ba9838'];
+  const eye = '#cc0000';
+  const chainLink = ['#8898a8','#7e8e9e','#96a6b6'];
 
   // Horned helmet
-  for(let i=0;i<6;i++){p(ctx,14,i,mix(ar3,ar1,i/5));p(ctx,15,i,mix(ar,ar2,i/5));}
-  for(let i=0;i<6;i++){p(ctx,50,i,mix(ar3,ar1,i/5));p(ctx,51,i,mix(ar,ar2,i/5));}
+  for (let i = 0; i < 16; i++) {
+    p(ctx,24-i,8-Math.floor(i*0.6), armor[i%4]);
+    p(ctx,25-i,8-Math.floor(i*0.6), armorHi[i%2]);
+    p(ctx,108+i,8-Math.floor(i*0.6), armor[i%4]);
+    p(ctx,107+i,8-Math.floor(i*0.6), armorHi[i%2]);
+  }
 
-  // Helmet
-  vGrad(ctx,22,3,22,6,ar2,ar1);
-  vGrad(ctx,20,9,26,8,ar1,ar);
-  vGrad(ctx,21,17,24,4,ar,ar3);
-  for(let x=22;x<44;x++)p(ctx,x,2,out);
-  block(ctx,24,3,18,2,gold);p(ctx,33,2,gold2);
-  // Nose guard
-  for(let y=6;y<=18;y++)p(ctx,33,y,ar2);
+  // Massive helmet
+  roughBlock(ctx, 36, 6, 60, 32, armor, 2);
+  noiseFill(ctx, 38, 8, 56, 28, armor, 5);
+  noiseFill(ctx, 40, 8, 52, 10, armorHi, 7);
+  // Crown
+  noiseFill(ctx, 44, 6, 44, 3, gold, 9);
   // Visor
-  block(ctx,26,11,14,6,  '#0a0505');
-  block(ctx,28,12,4,3,eye);block(ctx,36,12,4,3,eye);
-  p(ctx,29,12,'#ff4444');p(ctx,37,12,'#ff4444');
+  noiseFill(ctx, 44, 20, 44, 10, ['#080404','#0a0606','#060202'], 11);
+  p(ctx,52,24,eye); p(ctx,53,24,'#ff2200'); p(ctx,54,23,shade(eye,0.4));
+  p(ctx,76,24,eye); p(ctx,77,24,'#ff2200'); p(ctx,78,23,shade(eye,0.4));
 
-  // Massive shoulders
-  for(let y=21;y<=32;y++){const t=(y-21)/11;const c=mix(ar1,ar3,t);
-    block(ctx,4,y,16,1,c);block(ctx,46,y,16,1,c);}
-  for(let y=21;y<=24;y++){p(ctx,6,y,ar2);p(ctx,48,y,ar2);}
-  [8,12,16].forEach(x=>{p(ctx,x,25,gold);p(ctx,x+40,25,gold);});
-  for(let y=33;y<=44;y+=2){[7,11,15].forEach(x=>{p(ctx,x,y,chain);p(ctx,x+40,y,chain);});}
+  // Massive body with chain armor
+  for (let y = 38; y <= 100; y++) {
+    noiseFill(ctx, 26, y, 80, 1, chain, y*7);
+    if (y%3===0) for (let x = 28; x <= 102; x+=4) p(ctx,x,y,armorHi[x%2]);
+  }
+  // Shoulder plates
+  roughBlock(ctx, 10, 38, 20, 18, armor, 2);
+  roughBlock(ctx, 102, 38, 20, 18, armor, 2);
+  noiseFill(ctx, 12, 40, 16, 14, armorHi, 13);
+  noiseFill(ctx, 104, 40, 16, 14, armorHi, 15);
+  [14,20,26].forEach(x => { p(ctx,x,44,gold[0]); p(ctx,x+92,44,gold[1]); });
 
-  // Body
-  vGrad(ctx,18,21,30,10,ar1,ar);
-  vGrad(ctx,18,31,30,10,ar,ar3);
-  vGrad(ctx,18,41,30,6,ar3,ar4);
-  for(let y=25;y<=44;y+=2)for(let x=20;x<=46;x+=3){p(ctx,x,y,chain);p(ctx,x+1,y+1,ch2);}
+  // Hanging chains from shoulders
+  for (let y = 56; y <= 80; y+=2) {
+    [12,18,24].forEach(x => p(ctx,x,y,chainLink[y%3]));
+    [108,114,120].forEach(x => p(ctx,x,y,chainLink[(y+1)%3]));
+  }
 
-  // Belt+chains
-  vGrad(ctx,18,46,30,4,shade('#664422',1.1),'#664422');
-  block(ctx,31,46,4,4,gold);p(ctx,32,47,gold2);
-  for(let x=20;x<=46;x+=4)p(ctx,x,49,chain);
+  // Belt + chain decorations
+  noiseFill(ctx, 26, 98, 80, 6, ['#3a2a14','#2e2010','#342414'], 17);
+  for (let x = 30; x <= 100; x+=5) p(ctx,x,100,chainLink[x%3]);
 
-  // Chain whip
-  for(let i=0;i<12;i++){const cx=60+(i%2);p(ctx,cx,18+i*2,chain);p(ctx,cx+1,19+i*2,ch2);}
-
-  // Left fist
-  block(ctx,2,34,5,5,ar3);block(ctx,3,35,3,3,ar);
+  // Chain whip (right hand) — links trailing
+  for (let i = 0; i < 20; i++) {
+    const cx = 122 + Math.sin(i*0.6)*4;
+    const cy = 50 + i*3;
+    p(ctx, Math.round(cx), cy, chainLink[i%3]);
+    p(ctx, Math.round(cx)+1, cy+1, chain[i%chain.length]);
+  }
 
   // Legs
-  for(let y=50;y<=68;y++){const t=(y-50)/18;const c=mix(ar3,ar5,t);
-    const ch=shade(c,1.2),cd=shade(c,0.8);
-    p(ctx,23,y,out);for(let x=24;x<=31;x++)p(ctx,x,y,x<=25?cd:x<=28?ch:cd);p(ctx,32,y,out);
-    p(ctx,34,y,out);for(let x=35;x<=42;x++)p(ctx,x,y,x<=36?cd:x<=39?ch:cd);p(ctx,43,y,out);
+  for (let y = 104; y <= 140; y++) {
+    const t = (y-104)/36;
+    noiseFill(ctx, 38, y, 16, 1, armor, y*3);
+    noiseFill(ctx, 76, y, 16, 1, armor, y*7);
   }
-  block(ctx,25,58,6,3,ar1);block(ctx,36,58,6,3,ar1);
-  vGrad(ctx,21,69,14,5,ar4,ar5);vGrad(ctx,32,69,14,5,ar4,ar5);
+  noiseFill(ctx, 40, 116, 12, 4, armorHi, 27);
+  noiseFill(ctx, 78, 116, 12, 4, armorHi, 29);
 
-  save(canvas,outPath);
+  // Boots
+  noiseFill(ctx, 34, 140, 24, 8, armorDk, 31);
+  noiseFill(ctx, 72, 140, 24, 8, armorDk, 33);
+
+  save(canvas, outPath);
 }
 
 function generateBossCeremonyMaster(outPath) {
-  const GW = 66, GH = 78;
-  const canvas = createCanvas(GW*PX, GH*PX);
+  const W = 132, H = 156;
+  const canvas = createCanvas(W*PX, H*PX);
   const ctx = canvas.getContext('2d');
-  const rb='#2a0044',rb1='#441177',rb2='#552288',rb3='#1a0030',rb4='#0f0020',rb5='#080012';
-  const skin='#5a1177',sk1='#6a2288';
-  const gem_o='#ff6600',gem_p='#cc00cc',glow='#ff44ff';
-  const staff='#553300',stf2='#442200';
-  const gold='#ccaa33';
 
-  // Headdress
-  block(ctx,29,0,8,4,'#550088');block(ctx,28,1,10,2,'#440066');
-  p(ctx,32,0,gem_o);p(ctx,33,1,'#ffaa00');p(ctx,34,0,gem_o);
+  const robe = ['#1e0030','#220038','#180028','#2a0042'];
+  const robeDk = ['#0e0018','#100020','#0a0010'];
+  const skin = ['#4a2868','#3e2058','#563078'];
+  const gem = '#cc44ff';
+  const gemDk = '#8822aa';
+  const fire = ['#ff6600','#ffaa00','#ff8800'];
+  const staff = ['#3a2810','#2e200c','#44301a'];
+  const gold = ['#aa8828','#9a7820'];
+
+  // Tall headdress
+  for (let y = 0; y < 14; y++) {
+    const w = 8 + y;
+    noiseFill(ctx, 66-w/2, y, w, 1, robe, y*7);
+  }
+  p(ctx,64,2,fire[0]); p(ctx,65,1,fire[1]); p(ctx,66,0,fire[2]);
 
   // Hood
-  vGrad(ctx,24,4,18,6,'#3a0055','#2a0040');
-  vGrad(ctx,22,10,22,4,rb1,rb);
+  roughBlock(ctx, 40, 12, 52, 16, robe, 2);
+  noiseFill(ctx, 42, 14, 48, 12, robe, 9);
 
-  // Face
-  vGrad(ctx,26,8,14,6,sk1,skin);
-  vGrad(ctx,26,14,14,4,skin,shade(skin,0.8));
-  block(ctx,29,11,3,3,'#111100');block(ctx,35,11,3,3,'#111100');
-  p(ctx,30,12,gem_o);p(ctx,31,12,'#ffcc00');
-  p(ctx,36,12,gem_o);p(ctx,37,12,'#ffcc00');
-  block(ctx,31,16,4,1,'#220033');
+  // Face — angular, sickly purple
+  noiseFill(ctx, 48, 18, 36, 20, skin, 11);
+  // Glowing orange eyes
+  block(ctx, 54, 26, 8, 5, '#0a0008');
+  block(ctx, 72, 26, 8, 5, '#0a0008');
+  p(ctx,56,28,fire[0]); p(ctx,57,28,fire[1]); p(ctx,58,27,'#ffcc00');
+  p(ctx,74,28,fire[0]); p(ctx,75,28,fire[1]); p(ctx,76,27,'#ffcc00');
 
-  // Robe
-  vGrad(ctx,20,18,26,8,rb2,rb1);
-  vGrad(ctx,18,26,30,8,rb1,rb);
-  vGrad(ctx,16,34,34,6,rb,rb3);
-  // Pentagram
-  p(ctx,33,22,gem_p);p(ctx,30,25,gem_p);p(ctx,36,25,gem_p);
-  p(ctx,31,29,gem_p);p(ctx,35,29,gem_p);
-  for(let x=30;x<=36;x++)p(ctx,x,25,shade(gem_p,0.7));
-
-  // Staff
-  for(let y=6;y<=70;y++){p(ctx,56,y,staff);p(ctx,57,y,stf2);}
-  block(ctx,54,2,6,6,'#8800aa');block(ctx,55,3,4,4,'#aa22dd');
-  p(ctx,56,4,glow);p(ctx,57,5,'#cc44ff');
-
-  // Casting hand
-  block(ctx,10,28,5,4,skin);
-  [glow,shade(glow,0.6),gem_p].forEach((c,i)=>{p(ctx,8+i,26,c);p(ctx,7+i,30,c);});
-
-  // Robe bottom
-  for(let y=40;y<=74;y++){
-    const w=y<50?36:y<60?34:y<68?30:26;
-    const x0=33-Math.floor(w/2);
-    const t=(y-40)/34;const c=mix(rb3,rb5,t);
-    for(let x=x0;x<x0+w;x++)p(ctx,x,y,c);
-    if(y>=42){p(ctx,24,y,shade(c,0.5));p(ctx,33,y,shade(c,0.5));p(ctx,42,y,shade(c,0.5));
-      p(ctx,28,y,shade(c,1.3));p(ctx,38,y,shade(c,1.3));}
+  // Ritual robe — floor-length, flowing
+  for (let y = 36; y <= 148; y++) {
+    const t = (y-36)/112;
+    const w = 50 + t * 24;
+    const x0 = 66 - w/2;
+    const colors = t < 0.2 ? robe : t < 0.6 ? [...robe,...robeDk] : robeDk;
+    noiseFill(ctx, Math.round(x0), y, Math.round(w), 1, colors, y*13);
+  }
+  // Pentagram symbol on chest
+  const pcx = 66, pcy = 60;
+  [[0,-8],[8,-3],[-8,-3],[5,7],[-5,7]].forEach(([dx,dy],i) => {
+    p(ctx,pcx+dx,pcy+dy,gem);
+    p(ctx,pcx+dx+1,pcy+dy,gemDk);
+  });
+  // Connecting lines
+  for (let i = 0; i < 5; i++) {
+    const a1 = i * Math.PI * 2 / 5 - Math.PI/2;
+    const a2 = ((i+2)%5) * Math.PI * 2 / 5 - Math.PI/2;
+    for (let t = 0; t <= 1; t += 0.1) {
+      const lx = pcx + Math.round(Math.cos(a1)*8 + (Math.cos(a2)-Math.cos(a1))*8*t);
+      const ly = pcy + Math.round(Math.sin(a1)*8 + (Math.sin(a2)-Math.sin(a1))*8*t);
+      p(ctx, lx, ly, shade(gem, 0.5));
+    }
   }
 
-  save(canvas,outPath);
+  // Staff — ritual, with skull
+  for (let y = 10; y <= 140; y++) {
+    const wobble = Math.sin(y*0.1)*1;
+    p(ctx, 110+Math.round(wobble), y, staff[y%3]);
+    p(ctx, 111+Math.round(wobble), y, staff[(y+1)%3]);
+  }
+  // Skull atop staff
+  noiseFill(ctx, 106, 4, 10, 8, ['#c8b8a0','#b8a890','#d0c0a8'], 19);
+  block(ctx, 108, 6, 3, 2, '#1a0808');
+  block(ctx, 113, 6, 3, 2, '#1a0808');
+  p(ctx,109,7,gem); p(ctx,114,7,gem);
+
+  // Casting hand with magic
+  noiseFill(ctx, 16, 56, 10, 6, skin, 21);
+  // Magic circle
+  for (let a = 0; a < Math.PI*2; a += 0.3) {
+    const mx = 20 + Math.round(Math.cos(a)*10);
+    const my = 58 + Math.round(Math.sin(a)*10);
+    p(ctx, mx, my, gem);
+  }
+
+  save(canvas, outPath);
 }
 
 function generateBossShadowCouncillor(outPath) {
-  const GW = 66, GH = 78;
-  const canvas = createCanvas(GW*PX, GH*PX);
+  const W = 132, H = 156;
+  const canvas = createCanvas(W*PX, H*PX);
   const ctx = canvas.getContext('2d');
-  const cl='#0a0a0a',cl1='#141414',cl2='#1a1a1a',cl3='#060606',cl4='#030303';
-  const red='#ff0000',red1='#cc0000',red2='#880000',red3='#440000',red4='#220000';
 
-  // Hood
-  vGrad(ctx,22,3,22,6,cl2,cl1);
-  vGrad(ctx,20,9,26,6,cl1,cl);
-  vGrad(ctx,21,15,24,4,cl,cl3);
+  const cloak = ['#060606','#0a0a0a','#040404','#080808'];
+  const cloakDk = ['#020202','#030303','#010101'];
+  const red = '#cc0000';
+  const redDk = '#440000';
+  const redGlow = '#ff2222';
 
-  // Face (void with eyes)
-  block(ctx,24,10,18,8,cl3);
-  // Prominent glowing eyes
-  block(ctx,27,12,5,3,'#1a0000');
-  block(ctx,36,12,5,3,'#1a0000');
-  block(ctx,28,13,3,1,red);block(ctx,37,13,3,1,red);
-  p(ctx,29,13,'#ff4444');p(ctx,38,13,'#ff4444');
-  // Eye glow bleed
-  [27,28,29,30,31].forEach(x=>{p(ctx,x,11,red3);p(ctx,x,15,red3);});
-  [36,37,38,39,40].forEach(x=>{p(ctx,x,11,red3);p(ctx,x,15,red3);});
-  // Veins from eyes
-  for(let i=1;i<=4;i++){p(ctx,26-i,13+i,mix(red2,cl,i/4));p(ctx,42+i,13+i,mix(red2,cl,i/4));}
+  // Hood — massive, void-like
+  roughBlock(ctx, 34, 6, 64, 24, cloak, 3);
+  noiseFill(ctx, 36, 8, 60, 20, cloak, 5);
 
-  // Dark cloak body
-  vGrad(ctx,16,19,34,8,cl1,cl);
-  vGrad(ctx,14,27,38,8,cl,cl3);
-  vGrad(ctx,14,35,38,6,cl3,cl4);
-  // Red energy lines
-  for(let y=22;y<=38;y+=3){p(ctx,20,y,red4);p(ctx,46,y,red4);}
-  p(ctx,28,26,red3);p(ctx,38,28,red3);p(ctx,33,24,'#330000');
-
-  // Shadow tendrils
-  for(let y=20;y<=36;y++){const t=(y-20)/16;const c=mix(cl1,cl3,t);
-    p(ctx,8,y,c);p(ctx,9,y,shade(c,1.2));p(ctx,10,y,c);p(ctx,11,y,shade(c,0.8));
-    p(ctx,55,y,shade(c,0.8));p(ctx,56,y,c);p(ctx,57,y,shade(c,1.2));p(ctx,58,y,c);
+  // Face — pure void with eyes
+  noiseFill(ctx, 42, 16, 48, 18, cloakDk, 7);
+  // Eyes — large, burning red, terrifying
+  for (let dy = -5; dy <= 5; dy++)
+    for (let dx = -5; dx <= 5; dx++) {
+      const d = Math.sqrt(dx*dx+dy*dy);
+      if (d <= 5) {
+        const t = d/5;
+        p(ctx, 52+dx, 26+dy, t < 0.3 ? redGlow : t < 0.6 ? red : redDk);
+        p(ctx, 78+dx, 26+dy, t < 0.3 ? redGlow : t < 0.6 ? red : redDk);
+      }
+    }
+  // Red veins from eyes
+  for (let i = 1; i <= 8; i++) {
+    p(ctx,46-i,28+i, shade(redDk, 1-i*0.1));
+    p(ctx,84+i,28+i, shade(redDk, 1-i*0.1));
+    p(ctx,52,32+i, shade(redDk, 1-i*0.08));
+    p(ctx,78,32+i, shade(redDk, 1-i*0.08));
   }
-  // Tendril tips
-  for(let i=0;i<4;i++){p(ctx,5+i,37+i,cl3);p(ctx,59-i,37+i,cl3);}
-  p(ctx,4,38,red);p(ctx,5,39,red1);
-  p(ctx,61,38,red);p(ctx,60,39,red1);
 
-  // Flowing cloak
-  for(let y=41;y<=74;y++){
-    const w=y<50?40:y<60?36:y<68?30:24;
-    const x0=33-Math.floor(w/2);
-    const t=(y-41)/33;const c=mix(cl3,cl4,t);
-    for(let x=x0;x<x0+w;x++)p(ctx,x,y,c);
-    if(y>=44){p(ctx,22,y,'#020202');p(ctx,33,y,'#020202');p(ctx,44,y,'#020202');}
+  // Cloak body — massive, formless
+  for (let y = 30; y <= 148; y++) {
+    const t = (y-30)/118;
+    const w = 60 + Math.sin(t*Math.PI)*20;
+    const x0 = 66 - w/2;
+    noiseFill(ctx, Math.round(x0), y, Math.round(w), 1, t < 0.5 ? cloak : cloakDk, y*11);
+    // Red energy veins (sparse)
+    if (y%7===0) {
+      p(ctx, Math.round(x0+w*0.2), y, redDk);
+      p(ctx, Math.round(x0+w*0.8), y, redDk);
+    }
   }
-  // Wisps at bottom
-  [[18,72],[25,74],[33,73],[41,74],[48,72]].forEach(([x,y])=>{p(ctx,x,y,cl3);p(ctx,x+1,y+1,cl4);});
 
-  save(canvas,outPath);
+  // Shadow tendrils — arms
+  for (let y = 34; y <= 76; y++) {
+    const t = (y-34)/42;
+    const c = cloak[Math.floor(t*3)%cloak.length];
+    // Left tendril
+    const lx = 28 - Math.floor(t*18);
+    for (let dx = 0; dx < 4; dx++) p(ctx, lx+dx, y, shade(c, 1+dx*0.1));
+    // Right tendril
+    const rx = 100 + Math.floor(t*14);
+    for (let dx = 0; dx < 4; dx++) p(ctx, rx+dx, y, shade(c, 1+dx*0.1));
+  }
+  // Tendril tips — red energy
+  p(ctx,6,78,red); p(ctx,7,79,redGlow); p(ctx,8,80,red);
+  p(ctx,118,78,red); p(ctx,119,79,redGlow); p(ctx,120,80,red);
+
+  // Wisps dissipating at bottom
+  for (let y = 140; y <= 154; y++) {
+    for (let i = 0; i < 8; i++) {
+      const wx = 30 + i*12 + Math.sin(y*0.5+i)*4;
+      p(ctx, Math.round(wx), y, cloakDk[y%3]);
+    }
+  }
+
+  // Floating dark particles
+  const particles = [[20,10],[110,8],[12,50],[118,46],[26,90],[104,88],[40,130],[90,132]];
+  particles.forEach(([px,py],i) => {
+    p(ctx,px,py,cloak[i%cloak.length]);
+    p(ctx,px+1,py+1,cloakDk[i%cloakDk.length]);
+  });
+
+  save(canvas, outPath);
 }
 
 // ---- Generate All ----
@@ -961,4 +930,4 @@ generateBossChainMaster(path.join(enemyDir, 'boss_chain', 'chainmaster.png'));
 generateBossCeremonyMaster(path.join(enemyDir, 'boss_ceremony', 'ceremonymaster.png'));
 generateBossShadowCouncillor(path.join(enemyDir, 'boss_shadow', 'shadowcouncillor.png'));
 
-console.log('\nAll high-detail sprites with gradients generated!');
+console.log('\nAll old-school dark medieval sprites generated!');
