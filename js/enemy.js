@@ -401,7 +401,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.cohRadius = 180;
     enemy.isShadowCreeper = true;
     enemy.lastTeleportTime = 0;
-    enemy.setScale(0.7); // smaller size
+    if (!key.startsWith('sprite_')) enemy.setScale(0.7); // smaller size for procedural texture
   } else if (type === 6) {
     // Kettenwächter (Chain Guard) - slow tank, has shield that blocks first hit
     enemy.sepWeight = 0.3;
@@ -411,7 +411,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.cohRadius = 200;
     enemy.isChainGuard = true;
     enemy.shieldActive = true; // blocks first hit, then breaks
-    enemy.setScale(1.2); // large size
+    if (!key.startsWith('sprite_')) enemy.setScale(1.2); // large size for procedural texture
   } else if (type === 7) {
     // Flammenweber (Flame Weaver) - shoots 3-projectile spread
     enemy.kiteRadius = 240;
