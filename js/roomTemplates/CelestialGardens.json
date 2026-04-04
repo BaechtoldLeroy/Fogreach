@@ -197,7 +197,7 @@
   "spawns": {
     "player": {
       "x": 17,
-      "y": 20
+      "y": 23
     },
     "enemies": [
       {
