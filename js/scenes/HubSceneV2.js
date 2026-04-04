@@ -963,4 +963,370 @@ class HubSceneV2 extends Phaser.Scene {
 
     this._dialogContainer = container;
   }
+
+  _showSkillTreeUI() {
+    console.log('[HubSceneV2] _showSkillTreeUI called');
+    if (!window.SKILL_TREES || typeof window.getMaterialCount !== 'function') {
+      console.warn('[HubSceneV2] Skill system not loaded');
+      return;
+    }
+
+    this._dialogOpen = true;
+    if (this._dialogContainer) {
+      this._dialogContainer.destroy(true);
+      this._dialogContainer = null;
+    }
+
+    const cam = this.cameras.main;
+    const cw = cam.width;
+    const ch = cam.height;
+
+    const overlay = this.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7)
+      .setDepth(2000)
+      .setScrollFactor(0);
+
+    const panelW = Math.min(900, cw - 40);
+    const panelH = Math.min(600, ch - 40);
+    const container = this.add.container(cw / 2, ch / 2).setDepth(2001).setScrollFactor(0);
+    this._dialogContainer = container;
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0a0a12, 0.97);
+    bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
+    bg.lineStyle(3, 0x3a4a7c, 0.9);
+    bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
+    container.add(bg);
+
+    const titleText = this.add.text(0, -panelH / 2 + 20, 'Fertigkeiten bei Mara', {
+      fontFamily: 'serif',
+      fontSize: 28,
+      color: '#e8d4b8'
+    }).setOrigin(0.5, 0);
+    container.add(titleText);
+
+    const currentMaterials = window.getMaterialCount('MAT');
+    const matsText = this.add.text(panelW / 2 - 20, -panelH / 2 + 20, `Eisenbrocken: ${currentMaterials}`, {
+      fontFamily: 'monospace',
+      fontSize: 18,
+      color: '#8cb8ff'
+    }).setOrigin(1, 0);
+    container.add(matsText);
+
+    const treeStartY = titleText.y + titleText.height + 30;
+    const treeHeight = panelH - 140;
+    const treePadding = 20;
+    const trees = Object.values(window.SKILL_TREES);
+    const treeWidth = (panelW - treePadding * (trees.length + 1)) / trees.length;
+
+    let treeX = -panelW / 2 + treePadding;
+    const skillHitAreas = [];
+    const skillNodePositions = {}; // track node positions for connection lines
+
+    const refreshUI = () => {
+      matsText.setText(`Eisenbrocken: ${window.getMaterialCount('MAT')}`);
+    };
+
+    trees.forEach((tree, treeIdx) => {
+      const treeBg = this.add.graphics();
+      treeBg.fillStyle(0x1a1a28, 0.6);
+      treeBg.fillRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 12);
+      treeBg.lineStyle(2, Phaser.Display.Color.HexStringToColor(tree.color).color, 0.5);
+      treeBg.strokeRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 12);
+      container.add(treeBg);
+
+      const treeTitle = this.add.text(treeX + treeWidth / 2, treeStartY + 10, tree.name, {
+        fontFamily: 'serif',
+        fontSize: 18,
+        color: tree.color
+      }).setOrigin(0.5, 0);
+      container.add(treeTitle);
+
+      const skillsByTier = {};
+      tree.skills.forEach(skill => {
+        const tier = skill.tier || 1;
+        if (!skillsByTier[tier]) skillsByTier[tier] = [];
+        skillsByTier[tier].push(skill);
+      });
+
+      const maxTier = Math.max(...Object.keys(skillsByTier).map(Number));
+      const skillBoxHeight = 60;
+      const tierGap = 12;
+      const tierSpacing = skillBoxHeight + tierGap;
+
+      let currentSkillY = treeStartY + treeTitle.height + 30;
+
+      for (let tier = 1; tier <= maxTier; tier++) {
+        const tierSkills = skillsByTier[tier] || [];
+        if (tierSkills.length === 0) continue;
+
+        const horizontalGap = tierSkills.length > 2 ? 6 : 10;
+        const availableWidth = treeWidth - 30;
+        const calculatedWidth = (availableWidth - horizontalGap * Math.max(0, tierSkills.length - 1)) / tierSkills.length;
+        const skillBoxWidth = Math.min(120, calculatedWidth);
+        const skillSpacing = skillBoxWidth + horizontalGap;
+        const fontSize = skillBoxWidth < 70 ? 9 : 11;
+        const costFontSize = skillBoxWidth < 70 ? 12 : 14;
+
+        const totalRowWidth = skillBoxWidth * tierSkills.length + horizontalGap * (tierSkills.length - 1);
+        const startX = treeX + (treeWidth - totalRowWidth) / 2;
+
+        tierSkills.forEach((skill, idx) => {
+          const skillX = startX + skillBoxWidth / 2 + idx * skillSpacing;
+          const skillY = currentSkillY;
+
+          // Track position for connection lines
+          skillNodePositions[skill.id] = {
+            x: skillX,
+            y: skillY + skillBoxHeight / 2
+          };
+
+          const owned = window.hasSkill(skill.id);
+          const canPurchase = window.canPurchaseSkill(skill.id);
+          const isActive = !!skill.isActive;
+
+          let bgColor, borderColor, textColor;
+          if (owned) {
+            bgColor = isActive ? 0x2244aa : Phaser.Display.Color.HexStringToColor(tree.color).color;
+            borderColor = 0xffffff;
+            textColor = '#ffffff';
+          } else if (canPurchase.canPurchase) {
+            bgColor = isActive ? 0x1a2a4a : 0x3a3a4a;
+            borderColor = isActive ? 0x4488ff : Phaser.Display.Color.HexStringToColor(tree.color).color;
+            textColor = '#dddddd';
+          } else {
+            // Locked - gray
+            bgColor = 0x222228;
+            borderColor = 0x3a3a3a;
+            textColor = '#666666';
+          }
+
+          const skillBox = this.add.graphics();
+          skillBox.fillStyle(bgColor, 0.9);
+          skillBox.fillRoundedRect(skillX - skillBoxWidth / 2, skillY, skillBoxWidth, skillBoxHeight, 8);
+          skillBox.lineStyle(2, borderColor, 0.9);
+          skillBox.strokeRoundedRect(skillX - skillBoxWidth / 2, skillY, skillBoxWidth, skillBoxHeight, 8);
+          container.add(skillBox);
+
+          const skillNameText = this.add.text(skillX, skillY + 8, skill.name, {
+            fontFamily: 'Arial',
+            fontSize: fontSize,
+            color: textColor,
+            fontStyle: 'bold',
+            wordWrap: { width: skillBoxWidth - 8 },
+            align: 'center'
+          }).setOrigin(0.5, 0);
+          container.add(skillNameText);
+
+          // Type indicator
+          if (isActive) {
+            const typeIndicator = this.add.text(skillX - skillBoxWidth / 2 + 4, skillY + 2, 'A', {
+              fontFamily: 'Arial',
+              fontSize: 9,
+              color: '#4488ff',
+              fontStyle: 'bold'
+            }).setOrigin(0, 0);
+            container.add(typeIndicator);
+          }
+
+          const costLabel = owned ? '\u2713' : `${skill.cost}`;
+          const costColor = owned ? '#00ff00' : '#ffaa00';
+          const costText = this.add.text(skillX, skillY + skillBoxHeight - 16, costLabel, {
+            fontFamily: 'Arial',
+            fontSize: costFontSize,
+            color: costColor,
+            fontStyle: 'bold'
+          }).setOrigin(0.5, 0.5);
+          container.add(costText);
+
+          // Hit area for interaction
+          const worldX = skillX + container.x;
+          const worldY = skillY + skillBoxHeight / 2 + container.y;
+
+          const hitArea = this.add.rectangle(worldX, worldY, skillBoxWidth, skillBoxHeight, 0xffffff, 0.01)
+            .setOrigin(0.5, 0.5)
+            .setDepth(2050)
+            .setScrollFactor(0)
+            .setInteractive({ useHandCursor: !owned && canPurchase.canPurchase });
+
+          skillHitAreas.push(hitArea);
+
+          hitArea.on('pointerover', () => {
+            if (this._skillTooltip) {
+              this._skillTooltip.destroy(true);
+              this._skillTooltip = null;
+            }
+
+            const tooltipLines = [
+              skill.name,
+              skill.description,
+              '',
+              `Kosten: ${skill.cost} Eisenbrocken`
+            ];
+
+            if (isActive) {
+              tooltipLines.push('Typ: Aktive Fähigkeit');
+            }
+
+            if (skill.requires && skill.requires.length > 0) {
+              tooltipLines.push('');
+              tooltipLines.push('Benötigt:');
+              skill.requires.forEach(reqId => {
+                const reqSkill = window.getSkillById(reqId);
+                const reqName = reqSkill ? reqSkill.name : reqId;
+                const reqHas = window.hasSkill(reqId);
+                tooltipLines.push(`  ${reqHas ? '\u2713' : '\u2717'} ${reqName}`);
+              });
+            }
+
+            if (!canPurchase.canPurchase && !owned) {
+              tooltipLines.push('');
+              tooltipLines.push(`\u274C ${canPurchase.reason}`);
+            }
+
+            const tooltip = this.add.container(0, 0).setDepth(2100);
+            const tooltipBg = this.add.graphics();
+            const tooltipTextObj = this.add.text(0, 0, tooltipLines.join('\n'), {
+              fontFamily: 'monospace',
+              fontSize: 13,
+              color: '#ffffff',
+              backgroundColor: '#1a1a2a',
+              padding: { x: 10, y: 8 }
+            }).setOrigin(0, 0);
+
+            const tooltipW = tooltipTextObj.width + 4;
+            const tooltipH = tooltipTextObj.height + 4;
+
+            tooltipBg.fillStyle(0x1a1a2a, 0.95);
+            tooltipBg.fillRoundedRect(-2, -2, tooltipW, tooltipH, 8);
+            tooltipBg.lineStyle(2, 0x4a6a9c, 0.9);
+            tooltipBg.strokeRoundedRect(-2, -2, tooltipW, tooltipH, 8);
+
+            tooltip.add(tooltipBg);
+            tooltip.add(tooltipTextObj);
+
+            let tooltipX = worldX - tooltipW / 2;
+            let tooltipY = worldY + skillBoxHeight / 2 + 5;
+
+            if (tooltipX < 10) tooltipX = 10;
+            if (tooltipX + tooltipW > cw - 10) tooltipX = cw - tooltipW - 10;
+            if (tooltipY + tooltipH > ch - 10) {
+              tooltipY = worldY - skillBoxHeight / 2 - tooltipH - 5;
+            }
+
+            tooltip.setPosition(tooltipX, tooltipY).setScrollFactor(0);
+            this._skillTooltip = tooltip;
+          });
+
+          hitArea.on('pointerout', () => {
+            if (this._skillTooltip) {
+              this._skillTooltip.destroy(true);
+              this._skillTooltip = null;
+            }
+          });
+
+          hitArea.on('pointerdown', () => {
+            if (owned) return;
+            if (!canPurchase.canPurchase) return;
+
+            console.log('[Skills] Attempting to purchase:', skill.id);
+            const result = window.purchaseSkill(skill.id);
+            if (result.success) {
+              console.log('[Skills] Purchase successful, refreshing UI');
+              closeSkillUI();
+              this.time.delayedCall(50, () => {
+                this._showSkillTreeUI();
+              });
+            } else {
+              console.warn('[Skills] Purchase failed:', result.reason);
+            }
+          });
+        });
+
+        currentSkillY += tierSpacing;
+      }
+
+      treeX += treeWidth + treePadding;
+    });
+
+    // Draw connection lines between skill prerequisites
+    const connectionGraphics = this.add.graphics();
+    connectionGraphics.lineStyle(1.5, 0x6688aa, 0.5);
+    for (const tree of trees) {
+      for (const skill of tree.skills) {
+        if (!skill.requires || !skillNodePositions[skill.id]) continue;
+        const toPos = skillNodePositions[skill.id];
+        for (const reqId of skill.requires) {
+          const fromPos = skillNodePositions[reqId];
+          if (!fromPos) continue;
+          const owned = window.hasSkill(reqId);
+          connectionGraphics.lineStyle(1.5, owned ? 0x88aacc : 0x444466, owned ? 0.6 : 0.3);
+          connectionGraphics.beginPath();
+          connectionGraphics.moveTo(fromPos.x, fromPos.y + 30);
+          connectionGraphics.lineTo(toPos.x, toPos.y - 30);
+          connectionGraphics.strokePath();
+        }
+      }
+    }
+    container.addAt(connectionGraphics, 1); // behind skill boxes but above background
+
+    // Respec button
+    const totalSpent = window.getSkillPointsSpent();
+    if (totalSpent > 0) {
+      const respecCost = Math.ceil(totalSpent * 0.5);
+      const respecBtn = this.add.text(-panelW / 2 + 20, panelH / 2 - 30,
+        `[ Zurücksetzen (${respecCost} Eisenbrocken) ]`, {
+          fontFamily: 'monospace',
+          fontSize: 14,
+          color: '#ff8888',
+          backgroundColor: '#2a1a1a',
+          padding: { x: 10, y: 6 }
+        }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+      container.add(respecBtn);
+
+      respecBtn.on('pointerdown', () => {
+        const result = window.respecSkills();
+        if (result.success) {
+          console.log('[Skills] Respec successful, refunded:', result.refunded);
+          closeSkillUI();
+          this.time.delayedCall(50, () => {
+            this._showSkillTreeUI();
+          });
+        } else {
+          console.warn('[Skills] Respec failed:', result.reason);
+          // Show temporary error message
+          const errText = this.add.text(0, panelH / 2 - 60, result.reason, {
+            fontFamily: 'monospace',
+            fontSize: 14,
+            color: '#ff4444'
+          }).setOrigin(0.5, 0.5).setDepth(2100).setScrollFactor(0);
+          this.time.delayedCall(2000, () => errText.destroy());
+        }
+      });
+    }
+
+    // Close button
+    const closeBtn = this.add.text(0, panelH / 2 - 30, '[ Schließen ]', {
+      fontFamily: 'monospace',
+      fontSize: 18,
+      color: '#ffffff',
+      backgroundColor: '#3a4a7c',
+      padding: { x: 16, y: 8 }
+    }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
+    container.add(closeBtn);
+
+    const closeSkillUI = () => {
+      if (this._skillTooltip) {
+        this._skillTooltip.destroy(true);
+        this._skillTooltip = null;
+      }
+      skillHitAreas.forEach(ha => ha.destroy());
+      this._dialogOpen = false;
+      overlay.destroy();
+      container.destroy(true);
+      this._dialogContainer = null;
+    };
+
+    closeBtn.on('pointerdown', () => closeSkillUI());
+    this.input.keyboard.once('keydown-ESC', closeSkillUI);
+  }
 }

@@ -725,6 +725,8 @@ function preload() {
 // ==================================================
 function create() {
   playerDeathHandled = false;
+  window._secondChanceUsed = false; // Reset Zweite Chance for new dungeon run
+  window._playerInvincible = false; // Reset invincibility flag
   isReturningToHub = false;
   isChargingSlash = false;
   chargeSlashCooldown = false;
@@ -999,11 +1001,34 @@ function update(time, delta) {
   }
 
   if (playerHealth <= 0) {
-    pauseAllMotion.call(this);
-    if (!playerDeathHandled && typeof handlePlayerDeath === 'function') {
-      handlePlayerDeath(this);
+    // Zweite Chance (Second Chance): revive once per dungeon run with 30% HP
+    if (typeof window.hasSkill === 'function' && window.hasSkill('survival_second_chance')
+        && !window._secondChanceUsed) {
+      window._secondChanceUsed = true;
+      const reviveHP = Math.max(1, Math.round(playerMaxHealth * 0.3));
+      if (typeof setPlayerHealth === 'function') {
+        setPlayerHealth(reviveHP);
+      } else {
+        playerHealth = reviveHP;
+      }
+      if (typeof updateHUD === 'function') updateHUD();
+      // Visual feedback: flash white
+      if (player && player.active && player.setTint) {
+        player.setTint(0xffffff);
+        if (this?.time) {
+          this.time.delayedCall(500, () => {
+            if (player && player.active && player.clearTint) player.clearTint();
+          });
+        }
+      }
+      console.log('[Skills] Zweite Chance activated! Revived with', reviveHP, 'HP');
+    } else {
+      pauseAllMotion.call(this);
+      if (!playerDeathHandled && typeof handlePlayerDeath === 'function') {
+        handlePlayerDeath(this);
+      }
+      return;
     }
-    return;
   }
 
   // 5.2 Wave-Abschluss?
