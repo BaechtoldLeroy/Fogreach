@@ -393,28 +393,35 @@ function applyPlayerDisplaySettings(sprite) {
     const scaleY = Math.abs(sprite.scaleY) || 1;
     const colliderReferenceWidth = Math.max(8, window.PLAYER_COLLIDER_WIDTH ?? PLAYER_COLLIDER_WIDTH);
     const colliderReferenceHeight = Math.max(8, window.PLAYER_COLLIDER_HEIGHT ?? PLAYER_COLLIDER_HEIGHT);
-    const headPad = window.PLAYER_COLLIDER_HEAD_CLEARANCE ?? PLAYER_COLLIDER_HEAD_CLEARANCE;
-    const footPad = window.PLAYER_COLLIDER_FOOT_OVERHANG ?? PLAYER_COLLIDER_FOOT_OVERHANG;
 
-    const actualWidth = sprite.displayWidth;
-    const actualHeight = sprite.displayHeight;
+    // Only set body size/offset once (on first call), then keep it stable.
+    // Re-calculating offset every frame based on changing displayWidth/Height
+    // causes the body to drift through colliders (especially when walking up).
+    if (!sprite._bodyInitialized) {
+      const headPad = window.PLAYER_COLLIDER_HEAD_CLEARANCE ?? PLAYER_COLLIDER_HEAD_CLEARANCE;
+      const footPad = window.PLAYER_COLLIDER_FOOT_OVERHANG ?? PLAYER_COLLIDER_FOOT_OVERHANG;
 
-    const desiredCenterX = actualWidth * appliedOriginX;
-    const desiredBottom = actualHeight * baselineOrigin + footPad;
-    const desiredTop = desiredBottom - colliderReferenceHeight - headPad;
-    const desiredLeft = desiredCenterX - colliderReferenceWidth / 2;
+      const actualWidth = sprite.displayWidth;
+      const actualHeight = sprite.displayHeight;
 
-    let offsetX = desiredLeft;
-    let offsetY = desiredTop;
-    if (offsetX < 0) offsetX = 0;
-    if (offsetY < 0) offsetY = 0;
-    const maxOffsetX = actualWidth - colliderReferenceWidth;
-    const maxOffsetY = actualHeight - colliderReferenceHeight;
-    if (offsetX > maxOffsetX) offsetX = maxOffsetX;
-    if (offsetY > maxOffsetY) offsetY = maxOffsetY;
+      const desiredCenterX = actualWidth * appliedOriginX;
+      const desiredBottom = actualHeight * baselineOrigin + footPad;
+      const desiredTop = desiredBottom - colliderReferenceHeight - headPad;
+      const desiredLeft = desiredCenterX - colliderReferenceWidth / 2;
 
-    sprite.body.setSize(colliderReferenceWidth / scaleX, colliderReferenceHeight / scaleY);
-    sprite.body.setOffset(offsetX / scaleX, offsetY / scaleY);
+      let offsetX = desiredLeft;
+      let offsetY = desiredTop;
+      if (offsetX < 0) offsetX = 0;
+      if (offsetY < 0) offsetY = 0;
+      const maxOffsetX = actualWidth - colliderReferenceWidth;
+      const maxOffsetY = actualHeight - colliderReferenceHeight;
+      if (offsetX > maxOffsetX) offsetX = maxOffsetX;
+      if (offsetY > maxOffsetY) offsetY = maxOffsetY;
+
+      sprite.body.setSize(colliderReferenceWidth / scaleX, colliderReferenceHeight / scaleY);
+      sprite.body.setOffset(offsetX / scaleX, offsetY / scaleY);
+      sprite._bodyInitialized = true;
+    }
 
     if (DEBUG_PLAYER_COLLIDER) {
       updatePlayerColliderDebug(sprite);
