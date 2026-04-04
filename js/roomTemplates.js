@@ -7,28 +7,12 @@
   // 2) Manifest definieren – Namen müssen exakt den JSON-Dateien unter /roomTemplates/ entsprechen
   if (!Array.isArray(RT.MANIFEST)) {
     RT.MANIFEST = [
-      'Arena',
       'ArmoryVault',
-      'BridgeOverGap',
-      'Cathedral',
-      'CelestialGardens',
-      'Checkerboard',
-      'CirclePillars',
       'CollapsingHall',
-      'Crosshall',
-      'CrossroadChamber',
-      'Crossroads',
-      'Crypt_Small_Altar',
       'DungeonLibrary',
-      'GrandBazaar',
-      'MazeLite',
       'PrisonCells',
       'RitualChamber',
-      'SewageTunnel',
-      'Spiral',
-      'ThroneRoom',
-      'Treasure_Small',
-      'TreasureVault'
+      'SewageTunnel'
     ];
   }
 })(window);
