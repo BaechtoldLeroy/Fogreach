@@ -792,6 +792,10 @@ function create() {
     normalizePlayerDirectionalFrames(this);
   }
   createAllGraphics.call(this);
+  // Initialize particle effects system
+  if (window.ParticleFactory) {
+    window.particleFactory = new window.ParticleFactory(this);
+  }
   this.initFogOfWar = initFogOfWar.bind(this);
   this.updateFogOfWar = updateFogOfWar.bind(this);
   this.initFogOfWar();
@@ -1595,6 +1599,7 @@ function createAllGraphics() {
   createProjectileGraphics.call(this);
   createInventoryGraphics.call(this);
   createItemGraphics.call(this);
+  createParticleTextures.call(this);
 }
 
 // 6.4 initializeGameObjects: Physics-Gruppen & Kollisionen
