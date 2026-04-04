@@ -256,49 +256,52 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     tint,
     rangedAttackRange = null;
 
+  // Helper: prefer loaded sprite, fall back to procedural texture
+  const tex = (spriteKey, fallback) => scene.textures?.exists(spriteKey) ? spriteKey : fallback;
+
   switch (type) {
     case 1:
-      key = "enemyImp";
+      key = tex('sprite_imp', 'enemyImp');
       speed = 80;
       hp = 1;
-      tint = 0xff0000;
-      break; // Imp - rot
+      tint = key === 'sprite_imp' ? null : 0xff0000;
+      break; // Imp
     case 2:
-      key = "enemyArcher";
+      key = tex('sprite_archer', 'enemyArcher');
       speed = 140;
       hp = 1;
       isRanged = true;
       rangedAttackRange = 480;
-      tint = 0x00ff00;
-      break; // Bogenschütze - grün
+      tint = key === 'sprite_archer' ? null : 0x00ff00;
+      break; // Bogenschütze
     case 3:
       key = "brute_right0";
       speed = 50;
       hp = 3;
-      tint = null; // no tint for sprite-based brute
+      tint = null;
       break; // Brute
     case 5:
-      key = "enemyShadow";
+      key = tex('sprite_shadow', 'enemyShadow');
       speed = 120;
       hp = 1;
-      tint = 0x6600aa;
-      break; // Schattenschleicher - dark purple
+      tint = key === 'sprite_shadow' ? null : 0x6600aa;
+      break; // Schattenschleicher
     case 6:
-      key = "enemyChainGuard";
+      key = tex('sprite_chainguard', 'enemyChainGuard');
       speed = 40;
       hp = 5;
-      tint = null; // texture already gray
+      tint = null;
       break; // Kettenwächter
     case 7:
-      key = "enemyFlameWeaver";
+      key = tex('sprite_flameweaver', 'enemyFlameWeaver');
       speed = 70;
       hp = 2;
       isRanged = true;
       rangedAttackRange = 400;
-      tint = null; // texture already orange/red
+      tint = null;
       break; // Flammenweber
     default:
-      key = "enemyMage";
+      key = tex('sprite_mage', 'enemyMage');
       speed = 60;
       hp = 2;
       isRanged = true;
@@ -331,6 +334,13 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   } else {
     scene._needsMask = scene._needsMask || [];
     scene._needsMask.push(enemy);
+  }
+
+  // 3b) Scale sprite-based enemies to match game scale (~48-64px display)
+  if (key.startsWith('sprite_')) {
+    const targetSize = type === 6 ? 72 : 48; // chain guard bigger
+    const srcW = enemy.width || 448;
+    enemy.setScale(targetSize / srcW);
   }
 
   // 4) Tint anwenden (nur wenn vorhanden)
@@ -1176,7 +1186,8 @@ const BOSS_DEFINITIONS = {
   chainMaster: {
     id: 'chainMaster',
     name: 'Kettenmeister',
-    texture: 'bossChainMaster',
+    texture: 'sprite_boss_chain',
+    fallbackTexture: 'bossChainMaster',
     baseHP: 30,
     baseSpeed: 60,
     baseDamage: 4,
@@ -1188,7 +1199,8 @@ const BOSS_DEFINITIONS = {
   ceremonyMaster: {
     id: 'ceremonyMaster',
     name: 'Zeremonienmeister',
-    texture: 'bossCeremonyMaster',
+    texture: 'sprite_boss_ceremony',
+    fallbackTexture: 'bossCeremonyMaster',
     baseHP: 50,
     baseSpeed: 45,
     baseDamage: 6,
@@ -1200,7 +1212,8 @@ const BOSS_DEFINITIONS = {
   shadowCouncillor: {
     id: 'shadowCouncillor',
     name: 'Schattenrat',
-    texture: 'bossShadowCouncillor',
+    texture: 'sprite_boss_shadow',
+    fallbackTexture: 'bossShadowCouncillor',
     baseHP: 80,
     baseSpeed: 70,
     baseDamage: 8,
@@ -1237,10 +1250,19 @@ function spawnBoss() {
   }
 
   const { def, cycle } = getBossDefinition(currentWave);
-  const textureKey = this.textures?.exists(def.texture) ? def.texture : 'enemyMage';
+  const textureKey = this.textures?.exists(def.texture) ? def.texture
+    : (def.fallbackTexture && this.textures?.exists(def.fallbackTexture)) ? def.fallbackTexture
+    : 'enemyMage';
 
   const boss = enemies.create(x, y, textureKey);
   currentBoss = boss;
+
+  // Scale sprite-based boss textures to game size
+  if (textureKey.startsWith('sprite_')) {
+    const targetSize = 96; // bosses are bigger
+    const srcW = boss.width || 528;
+    boss.setScale(targetSize / srcW);
+  }
 
   makeBoss.call(this, boss, def, cycle);
 

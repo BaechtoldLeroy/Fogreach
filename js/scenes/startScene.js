@@ -84,7 +84,19 @@ StartScene.prototype.preload = function () {
   this.load.image('brute_right0', 'assets/enemy/brute/right0.png');
   this.load.image('brute_right1', 'assets/enemy/brute/right1.png');
   this.load.image('brute_right2', 'assets/enemy/brute/right2.png');
-  
+
+  // Enemy sprites (pixel art)
+  this.load.image('sprite_imp', 'assets/enemy/imp/imp.png');
+  this.load.image('sprite_archer', 'assets/enemy/archer/archer.png');
+  this.load.image('sprite_mage', 'assets/enemy/mage/mage.png');
+  this.load.image('sprite_shadow', 'assets/enemy/shadow/shadow.png');
+  this.load.image('sprite_chainguard', 'assets/enemy/chainguard/chainguard.png');
+  this.load.image('sprite_flameweaver', 'assets/enemy/flameweaver/flameweaver.png');
+  // Boss sprites
+  this.load.image('sprite_boss_chain', 'assets/enemy/boss_chain/chainmaster.png');
+  this.load.image('sprite_boss_ceremony', 'assets/enemy/boss_ceremony/ceremonymaster.png');
+  this.load.image('sprite_boss_shadow', 'assets/enemy/boss_shadow/shadowcouncillor.png');
+
   const templateNames = [
     "Arena", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
     "CirclePillars", "Crosshall", "CrossroadChamber", "Crossroads", "Crypt_Small_Altar",
