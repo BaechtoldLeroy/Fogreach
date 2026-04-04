@@ -398,6 +398,187 @@ function createObstacleGraphics() {
 
   g.generateTexture('stairDown', w, h);
 
+  // ===== Room-Theme Floor & Wall Variants =====
+
+  // floor_stone_dark — darker variant for deeper rooms (32x32)
+  g.clear();
+  g.fillStyle(0x3a3a3a, 1);
+  g.fillRect(0, 0, 32, 32);
+  g.fillStyle(0x454545, 0.35);
+  g.fillCircle(10, 10, 6);
+  g.fillCircle(22, 8, 5);
+  g.fillCircle(20, 20, 7);
+  g.fillCircle(8, 22, 5);
+  g.fillStyle(0x2e2e2e, 0.3);
+  g.fillCircle(14, 14, 4);
+  g.fillCircle(24, 18, 3);
+  g.fillCircle(12, 24, 3);
+  g.fillStyle(0x555555, 0.5);
+  [[5,6],[7,17],[12,9],[15,23],[20,12],[23,27],[26,16],[28,7]].forEach(([px,py])=>{
+    g.fillRect(px, py, 1, 1);
+  });
+  g.lineStyle(1, 0x222222, 0.5);
+  g.beginPath(); g.moveTo(6, 12); g.lineTo(10, 16); g.lineTo(8, 20); g.strokePath();
+  g.beginPath(); g.moveTo(22, 6); g.lineTo(24, 10); g.lineTo(20, 14); g.strokePath();
+  g.lineStyle(1, 0x484848, 0.25);
+  g.strokeRect(1, 1, 30, 30);
+  g.generateTexture('floor_stone_dark', 32, 32);
+
+  // floor_cobble — cobblestone for transitional areas (32x32)
+  g.clear();
+  g.fillStyle(0x5e5448, 1);
+  g.fillRect(0, 0, 32, 32);
+  // Cobblestone pattern: rounded stones with mortar gaps
+  g.fillStyle(0x706454, 1);
+  g.fillRoundedRect(1, 1, 14, 14, 3);
+  g.fillRoundedRect(17, 1, 14, 14, 3);
+  g.fillRoundedRect(1, 17, 14, 14, 3);
+  g.fillRoundedRect(17, 17, 14, 14, 3);
+  // Lighter highlights on stones
+  g.fillStyle(0x8a7e6e, 0.4);
+  g.fillCircle(6, 6, 4);
+  g.fillCircle(23, 7, 3);
+  g.fillCircle(7, 23, 3);
+  g.fillCircle(24, 24, 4);
+  // Mortar lines (dark gaps between stones)
+  g.lineStyle(1, 0x3a3228, 0.8);
+  g.lineBetween(16, 0, 16, 32);
+  g.lineBetween(0, 16, 32, 16);
+  // Subtle texture speckles
+  g.fillStyle(0x4a4238, 0.4);
+  [[4,12],[10,4],[20,10],[28,20],[12,28],[22,26]].forEach(([px,py])=>{
+    g.fillRect(px, py, 1, 1);
+  });
+  g.generateTexture('floor_cobble', 32, 32);
+
+  // floor_tile_ornate — decorative tile for special rooms (32x32)
+  g.clear();
+  g.fillStyle(0x6a5a4a, 1);
+  g.fillRect(0, 0, 32, 32);
+  // Border pattern
+  g.lineStyle(1, 0x8a7a5a, 0.6);
+  g.strokeRect(2, 2, 28, 28);
+  g.lineStyle(1, 0x9a8a6a, 0.4);
+  g.strokeRect(4, 4, 24, 24);
+  // Diamond inlay
+  g.fillStyle(0x7a6a52, 0.8);
+  g.fillTriangle(16, 6, 26, 16, 16, 26);
+  g.fillTriangle(16, 6, 6, 16, 16, 26);
+  // Inner detail
+  g.fillStyle(0x8a7a62, 0.5);
+  g.fillCircle(16, 16, 4);
+  // Corner accents
+  g.fillStyle(0x9a8a6a, 0.6);
+  [[3,3],[28,3],[3,28],[28,28]].forEach(([px,py])=>{
+    g.fillRect(px, py, 2, 2);
+  });
+  // Subtle wear
+  g.fillStyle(0x5a4a3a, 0.3);
+  g.fillCircle(10, 22, 3);
+  g.fillCircle(24, 10, 2);
+  g.generateTexture('floor_tile_ornate', 32, 32);
+
+  // wall_brick — warmer, more detailed brick wall (64x64)
+  g.clear();
+  g.fillStyle(0x6a4a3a, 1);
+  g.fillRect(0, 0, 64, 64);
+  // Brick rows with offset pattern
+  for (let by = 0; by < 64; by += 16) {
+    const rowOffset = (Math.floor(by / 16) % 2) * 16;
+    for (let bx = -16 + rowOffset; bx < 64; bx += 32) {
+      g.fillStyle(0x7a5a42, 1);
+      g.fillRect(Math.max(0, bx + 1), by + 1, 30, 14);
+      g.fillStyle(0x8a6a52, 0.5);
+      g.fillRect(Math.max(0, bx + 2), by + 2, 28, 6);
+    }
+  }
+  // Mortar lines
+  g.lineStyle(1, 0x4a3228, 0.9);
+  for (let by = 0; by < 64; by += 16) {
+    g.lineBetween(0, by, 64, by);
+  }
+  // Crack detail
+  g.lineStyle(1, 0x2a1a10, 0.7);
+  g.beginPath(); g.moveTo(20, 8); g.lineTo(24, 24); g.lineTo(18, 40); g.strokePath();
+  g.generateTexture('wall_brick', 64, 64);
+
+  // wall_stone_large — large cut stone blocks (64x64)
+  g.clear();
+  g.fillStyle(0x7a7a7a, 1);
+  g.fillRect(0, 0, 64, 64);
+  // Large stone blocks
+  g.fillStyle(0x8a8a8a, 1);
+  g.fillRect(1, 1, 30, 30);
+  g.fillRect(33, 1, 30, 30);
+  g.fillRect(1, 33, 30, 30);
+  g.fillRect(33, 33, 30, 30);
+  // Highlights
+  g.fillStyle(0x9a9a9a, 0.4);
+  g.fillRect(2, 2, 28, 14);
+  g.fillRect(34, 2, 28, 14);
+  g.fillRect(2, 34, 28, 14);
+  g.fillRect(34, 34, 28, 14);
+  // Deep mortar joints
+  g.lineStyle(2, 0x4a4a4a, 1);
+  g.lineBetween(32, 0, 32, 64);
+  g.lineBetween(0, 32, 64, 32);
+  // Surface texture
+  g.fillStyle(0x6a6a6a, 0.3);
+  g.fillCircle(16, 16, 6);
+  g.fillCircle(48, 48, 5);
+  g.generateTexture('wall_stone_large', 64, 64);
+
+  // wall_dungeon — dark dungeon stone with moss (64x64)
+  g.clear();
+  g.fillStyle(0x3a3a3a, 1);
+  g.fillRect(0, 0, 64, 64);
+  // Rough stone blocks
+  for (let by = 0; by < 64; by += 16) {
+    for (let bx = 0; bx < 64; bx += 32) {
+      g.fillStyle(0x4a4a4a, 1);
+      g.fillRect(bx + 1, by + 1, 30, 14);
+      g.fillStyle(0x3e3e3e, 0.6);
+      g.fillRect(bx + 1, by + 8, 30, 7);
+    }
+  }
+  // Mortar
+  g.lineStyle(1, 0x2a2a2a, 1);
+  for (let by = 0; by < 64; by += 16) {
+    g.lineBetween(0, by, 64, by);
+  }
+  g.lineBetween(32, 0, 32, 64);
+  // Moss patches (green tint)
+  g.fillStyle(0x2a4a2a, 0.4);
+  g.fillCircle(8, 48, 6);
+  g.fillCircle(52, 56, 5);
+  g.fillCircle(28, 60, 4);
+  g.fillStyle(0x1a3a1a, 0.3);
+  g.fillCircle(12, 52, 4);
+  g.fillCircle(56, 60, 3);
+  // Cracks
+  g.lineStyle(1, 0x1a1a1a, 0.8);
+  g.beginPath(); g.moveTo(10, 5); g.lineTo(14, 20); g.lineTo(8, 35); g.strokePath();
+  g.beginPath(); g.moveTo(50, 10); g.lineTo(46, 28); g.lineTo(52, 42); g.strokePath();
+  // Water stains
+  g.fillStyle(0x2a2a3a, 0.25);
+  g.fillRect(0, 50, 64, 14);
+  g.generateTexture('wall_dungeon', 64, 64);
+
+  // Floor detail textures for atmospheric scatter
+  // crack_detail 8x8
+  g.clear();
+  g.lineStyle(1, 0x222222, 0.6);
+  g.beginPath(); g.moveTo(1, 2); g.lineTo(4, 5); g.lineTo(7, 3); g.strokePath();
+  g.generateTexture('floor_crack', 8, 8);
+
+  // stain_detail 10x10
+  g.clear();
+  g.fillStyle(0x3a3a2a, 0.3);
+  g.fillCircle(5, 5, 4);
+  g.fillStyle(0x2a2a1a, 0.2);
+  g.fillCircle(5, 5, 2);
+  g.generateTexture('floor_stain', 10, 10);
+
   g.destroy();
 }
 
