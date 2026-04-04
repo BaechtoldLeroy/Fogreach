@@ -664,6 +664,127 @@ function createEnemyGraphics() {
     g.generateTexture('enemyFlameWeaver', 64, 64);
     g.destroy();
   }
+
+  // ===== Boss Textures =====
+
+  // Boss 1 - Kettenmeister (Chain Master): large gray figure with chain patterns
+  {
+    const g = this.add.graphics();
+    // Large body - dark gray/silver
+    g.fillStyle(0x555555, 1);
+    g.fillRect(16, 12, 48, 56);
+    // Shoulders - broad armor plates
+    g.fillStyle(0x777777, 1);
+    g.fillRect(8, 16, 16, 16);
+    g.fillRect(56, 16, 16, 16);
+    // Helmet
+    g.fillStyle(0x888888, 1);
+    g.fillRect(24, 2, 32, 18);
+    g.fillStyle(0x444444, 1);
+    g.fillRect(28, 8, 24, 6); // visor slit
+    // Eyes behind visor - red glow
+    g.fillStyle(0xff3333, 1);
+    g.fillCircle(34, 10, 2);
+    g.fillCircle(46, 10, 2);
+    // Chain patterns across body - horizontal links
+    g.lineStyle(2, 0xaaaaaa, 0.9);
+    for (let cy = 24; cy < 64; cy += 10) {
+      g.strokeCircle(30, cy, 4);
+      g.strokeCircle(38, cy, 4);
+      g.strokeCircle(46, cy, 4);
+    }
+    // Chain whip in right hand
+    g.lineStyle(3, 0xcccccc, 1);
+    g.beginPath();
+    g.moveTo(64, 28); g.lineTo(72, 36); g.lineTo(68, 44); g.lineTo(74, 52);
+    g.strokePath();
+    // Legs
+    g.fillStyle(0x444444, 1);
+    g.fillRect(22, 68, 14, 12);
+    g.fillRect(44, 68, 14, 12);
+    g.generateTexture('bossChainMaster', 80, 80);
+    g.destroy();
+  }
+
+  // Boss 2 - Zeremonienmeister (Ceremony Master): purple robed figure with ritual symbols
+  {
+    const g = this.add.graphics();
+    // Robe - dark purple/red
+    g.fillStyle(0x440044, 1);
+    g.fillRect(16, 20, 48, 52);
+    // Robe hem - darker
+    g.fillStyle(0x330022, 1);
+    g.fillRect(12, 56, 56, 16);
+    // Hood - deep purple
+    g.fillStyle(0x550055, 1);
+    g.fillRect(20, 2, 40, 24);
+    g.fillStyle(0x330033, 1);
+    g.fillRect(24, 8, 32, 14); // face shadow
+    // Glowing eyes - yellow/orange
+    g.fillStyle(0xffaa00, 1);
+    g.fillCircle(32, 14, 3);
+    g.fillCircle(48, 14, 3);
+    // Ritual symbols on robe
+    g.lineStyle(1, 0xff0066, 0.8);
+    g.strokeCircle(40, 40, 10);
+    g.strokeCircle(40, 40, 6);
+    // Pentagram-like star
+    g.beginPath();
+    g.moveTo(40, 30); g.lineTo(44, 46); g.lineTo(32, 36); g.lineTo(48, 36); g.lineTo(36, 46); g.lineTo(40, 30);
+    g.strokePath();
+    // Hands with magic glow
+    g.fillStyle(0xff0066, 0.6);
+    g.fillCircle(14, 40, 6);
+    g.fillCircle(66, 40, 6);
+    // Staff
+    g.fillStyle(0x220011, 1);
+    g.fillRect(68, 10, 4, 58);
+    g.fillStyle(0xff0066, 1);
+    g.fillCircle(70, 10, 5);
+    g.generateTexture('bossCeremonyMaster', 80, 80);
+    g.destroy();
+  }
+
+  // Boss 3 - Schattenrat (Shadow Councillor): dark figure with glowing red accents
+  {
+    const g = this.add.graphics();
+    // Body - pure black
+    g.fillStyle(0x111111, 1);
+    g.fillRect(18, 16, 44, 52);
+    // Cloak billowing
+    g.fillStyle(0x0a0a0a, 1);
+    g.fillTriangle(10, 20, 18, 16, 14, 68);
+    g.fillTriangle(70, 20, 62, 16, 66, 68);
+    // Hood
+    g.fillStyle(0x080808, 1);
+    g.fillRect(22, 2, 36, 22);
+    // Face is void - just eyes
+    g.fillStyle(0x050505, 1);
+    g.fillRect(26, 6, 28, 14);
+    // Glowing red eyes - prominent
+    g.fillStyle(0xff0000, 1);
+    g.fillCircle(34, 12, 4);
+    g.fillCircle(46, 12, 4);
+    // Inner eye glow
+    g.fillStyle(0xff4444, 0.6);
+    g.fillCircle(34, 12, 6);
+    g.fillCircle(46, 12, 6);
+    // Red energy veins across body
+    g.lineStyle(1, 0xcc0000, 0.7);
+    g.beginPath();
+    g.moveTo(30, 24); g.lineTo(26, 40); g.lineTo(30, 56); g.strokePath();
+    g.beginPath();
+    g.moveTo(50, 24); g.lineTo(54, 40); g.lineTo(50, 56); g.strokePath();
+    g.beginPath();
+    g.moveTo(34, 30); g.lineTo(46, 30); g.strokePath();
+    g.beginPath();
+    g.moveTo(32, 44); g.lineTo(48, 44); g.strokePath();
+    // Shadow wisps at base
+    g.fillStyle(0x1a0000, 0.5);
+    g.fillEllipse(40, 68, 50, 10);
+    g.generateTexture('bossShadowCouncillor', 80, 80);
+    g.destroy();
+  }
 }
 
 function createItemGraphics() {
