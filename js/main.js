@@ -1643,6 +1643,7 @@ function initializeGameObjects() {
   }
 
   player.body.setMaxVelocity(220, 220);
+  if (player.body.setPushable) player.body.setPushable(false);
 
   const f = player.frame;
   if (f) {
