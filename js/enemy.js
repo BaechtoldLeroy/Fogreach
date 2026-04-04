@@ -546,7 +546,7 @@ function handleEnemies(time, delta = 16) {
         );
       }
 
-      // Keine Sichtlinie? leicht seitlich „zappeln“, um eine Schusslinie zu finden
+      // Keine Sichtlinie? leicht seitlich „zappeln", um eine Schusslinie zu finden
       if (!Steering.hasLineOfSight(enemy, player, obstacles)) {
         desired.add(
           new Phaser.Math.Vector2(
@@ -568,7 +568,7 @@ function handleEnemies(time, delta = 16) {
       if (dToPlayer > stopDist + 40) {
         desired = Steering.seek(enemy, player, maxSpeed);
       } else {
-        // weich abbremsen, aber nicht komplett „einschlafen“
+        // weich abbremsen, aber nicht komplett „einschlafen"
         desired = Steering.arrive(
           enemy,
           player,
@@ -585,7 +585,7 @@ function handleEnemies(time, delta = 16) {
     }
 
     // Repel-Faktor: nahe am Spieler weniger starke Abstoß-/Schwarmkräfte,
-    // damit sie nicht „stecken bleiben“
+    // damit sie nicht „stecken bleiben"
     const baseFade = Phaser.Math.Clamp(dToPlayer / 220, 0, 1);
     const repelFade = enemy.isRanged ? baseFade : Math.max(baseFade, 0.35); // Nahkämpfer nie < 0.35 dämpfen
 
@@ -1364,7 +1364,7 @@ function handleBossAI(time, boss, scene) {
 
   // Pattern timing
   if (time >= boss.nextPatternAt) {
-    const attacks = boss.bossAttacks || [‘chainWhip’, ‘chainPull’, ‘groundChains’];
+    const attacks = boss.bossAttacks || ['chainWhip', 'chainPull', 'groundChains'];
     const p = boss.patternIndex % attacks.length;
     const attackName = attacks[p];
 
