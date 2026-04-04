@@ -98,9 +98,10 @@ StartScene.prototype.preload = function () {
   this.load.image('sprite_boss_shadow', 'assets/enemy/boss_shadow/shadowcouncillor.png');
 
   const templateNames = [
-    "Arena", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
-    "CirclePillars", "Crosshall", "CrossroadChamber", "Crossroads", "Crypt_Small_Altar",
-    "GrandBazaar", "MazeLite", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault"
+    "Arena", "ArmoryVault", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
+    "CirclePillars", "CollapsingHall", "Crosshall", "CrossroadChamber", "Crossroads",
+    "Crypt_Small_Altar", "DungeonLibrary", "GrandBazaar", "MazeLite", "PrisonCells",
+    "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault"
   ];
   for (const name of templateNames) {
     this.load.json(name, `js/roomTemplates/${name}.json`);
