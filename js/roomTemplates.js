@@ -22,6 +22,7 @@ const ROOM_THEMES = {
   'Crypt_Small_Altar': { floor: 'floor_stone_dark', wall: 'wall_dungeon' },
   'Cathedral':         { floor: 'floor_tile_ornate', wall: 'wall_stone_large' },
   'ThroneRoom':        { floor: 'floor_tile_ornate', wall: 'wall_stone_large' },
+  'DungeonLibrary':    { floor: 'floor_tile_ornate', wall: 'wall_stone_large' },
   'TreasureVault':     { floor: 'floor_cobble', wall: 'wall_brick' },
   'Treasure_Small':    { floor: 'floor_cobble', wall: 'wall_brick' },
   'GrandBazaar':       { floor: 'floor_cobble', wall: 'wall_brick' },
@@ -301,10 +302,14 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
           // Ambient glow for braziers in grid
           if ((key === 'brazier' || key === 'brazer') && scene.add?.graphics) {
             const glowGfx = scene.add.graphics();
-            glowGfx.fillStyle(0xffcc33, 0.15);
-            glowGfx.fillCircle(obstacleX, obstacleY, 48);
-            glowGfx.fillStyle(0xffaa00, 0.08);
-            glowGfx.fillCircle(obstacleX, obstacleY, 32);
+            glowGfx.fillStyle(0xff8800, 0.06);
+            glowGfx.fillCircle(obstacleX, obstacleY, 80);
+            glowGfx.fillStyle(0xffaa00, 0.1);
+            glowGfx.fillCircle(obstacleX, obstacleY, 64);
+            glowGfx.fillStyle(0xffcc33, 0.2);
+            glowGfx.fillCircle(obstacleX, obstacleY, 40);
+            glowGfx.fillStyle(0xffdd44, 0.12);
+            glowGfx.fillCircle(obstacleX, obstacleY, 24);
             glowGfx.setDepth(-3);
             templateWalls.push(glowGfx);
           }
@@ -327,15 +332,17 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     wallRects.push(rect);
   }
 
-  // Compute depth tint based on currentWave
+  // Compute depth tint based on currentWave — more aggressive coloring
   const wave = typeof window.currentWave === 'number' ? window.currentWave : 0;
   let depthTint = null;
   if (wave >= 16) {
-    // Blue-ish tint for deep levels
-    depthTint = 0xccccff;
-  } else if (wave >= 6) {
-    // Slightly darker for mid levels
-    depthTint = 0xe6e6e6;
+    depthTint = 0xaab0dd;   // very dark cool
+  } else if (wave >= 9) {
+    depthTint = 0xd0d8ff;   // cool tone
+  } else if (wave >= 4) {
+    depthTint = null;        // neutral — no tint
+  } else if (wave >= 1) {
+    depthTint = 0xffe8d0;   // warm tone
   }
 
   if (!skipFloorTiles && floorKey && scene.add?.tileSprite) {
@@ -350,6 +357,40 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     floorSprite.setDepth(-5);
     if (depthTint) floorSprite.setTint(depthTint);
     templateWalls.push(floorSprite);
+
+    // Scatter 8-12 random "detail tiles" to break up tiling repetition
+    if (scene.add?.graphics) {
+      const scatterCount = Phaser.Math.Between(8, 12);
+      for (let si = 0; si < scatterCount; si++) {
+        const stx = Phaser.Math.Between(2, W - 3);
+        const sty = Phaser.Math.Between(2, H - 3);
+        if (isWalkableTile(stx, sty)) {
+          const spx = ox + stx * T + T / 2;
+          const spy = oy + sty * T + T / 2;
+          const detGfx = scene.add.graphics();
+          const kind = Math.random();
+          if (kind < 0.35) {
+            // Dark spot
+            detGfx.fillStyle(0x000000, 0.1 + Math.random() * 0.15);
+            detGfx.fillCircle(spx, spy, 3 + Math.random() * 4);
+          } else if (kind < 0.65) {
+            // Light spot
+            detGfx.fillStyle(0xffffff, 0.05 + Math.random() * 0.1);
+            detGfx.fillCircle(spx, spy, 2 + Math.random() * 5);
+          } else {
+            // Crack line
+            detGfx.lineStyle(1, 0x000000, 0.1 + Math.random() * 0.15);
+            detGfx.beginPath();
+            detGfx.moveTo(spx - 4, spy);
+            detGfx.lineTo(spx + 2, spy + 4);
+            detGfx.lineTo(spx + 6, spy + 2);
+            detGfx.strokePath();
+          }
+          detGfx.setDepth(-4);
+          templateWalls.push(detGfx);
+        }
+      }
+    }
   }
 
   const canRenderWalls = !!(wallTexture && scene.add?.tileSprite);
@@ -367,15 +408,54 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       templateWalls.push(sprite);
     }
 
+    // Inner shadow border — 2px dark edge where wall meets floor
+    if (scene.add?.graphics) {
+      const shadowGfx = scene.add.graphics();
+      shadowGfx.fillStyle(0x000000, 0.3);
+      const wx0 = ox + rect.x * T;
+      const wy0 = oy + rect.y * T;
+      // Bottom edge shadow (most visible — floor is below)
+      if (rect.y + rect.height < H) {
+        shadowGfx.fillRect(wx0, wy0 + heightPx, widthPx, 2);
+      }
+      // Right edge shadow
+      if (rect.x + rect.width < W) {
+        shadowGfx.fillRect(wx0 + widthPx, wy0, 2, heightPx);
+      }
+      // Top edge shadow (lighter)
+      if (rect.y > 0) {
+        shadowGfx.fillStyle(0x000000, 0.15);
+        shadowGfx.fillRect(wx0, wy0 - 2, widthPx, 2);
+      }
+      // Left edge shadow (lighter)
+      if (rect.x > 0) {
+        shadowGfx.fillStyle(0x000000, 0.15);
+        shadowGfx.fillRect(wx0 - 2, wy0, 2, heightPx);
+      }
+      shadowGfx.setDepth(39);
+      templateWalls.push(shadowGfx);
+
+      // Random damage marks on some wall spans
+      if (widthPx > T * 2 && Math.random() < 0.4) {
+        const dmgGfx = scene.add.graphics();
+        dmgGfx.fillStyle(0x000000, 0.15);
+        const dmgX = wx0 + Phaser.Math.Between(T, widthPx - T);
+        const dmgY = wy0 + Phaser.Math.Between(2, heightPx - 6);
+        dmgGfx.fillRect(dmgX, dmgY, Phaser.Math.Between(4, 10), Phaser.Math.Between(2, 4));
+        dmgGfx.setDepth(39);
+        templateWalls.push(dmgGfx);
+      }
+    }
+
     if (!skipWallObstacles) {
       spawnWallRect(cx, cy, widthPx, heightPx, wallTexture || undefined);
     }
   });
 
-  // Atmospheric elements: drop shadows, brazier glow, floor details
+  // Atmospheric elements: drop shadows, brazier glow, floor details, cobwebs, vignette
   if (scene.add?.graphics) {
-    // Random floor details (cracks & stains) — scatter 3-5 per room
-    const detailCount = Phaser.Math.Between(3, 5);
+    // Random floor details (cracks & stains) — scatter 10-15 per room
+    const detailCount = Phaser.Math.Between(10, 15);
     for (let i = 0; i < detailCount; i++) {
       const dtx = Phaser.Math.Between(2, W - 3);
       const dty = Phaser.Math.Between(2, H - 3);
@@ -386,12 +466,78 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         if (scene.textures?.exists?.(detailKey)) {
           const detail = scene.add.image(dpx, dpy, detailKey);
           detail.setDepth(-4);
-          detail.setAlpha(0.4 + Math.random() * 0.3);
+          detail.setAlpha(0.3 + Math.random() * 0.3);
           if (detailKey === 'floor_crack') detail.setAngle(Math.random() * 360);
           templateWalls.push(detail);
         }
       }
     }
+
+    // Cobweb sprites in corners (where two walls meet at 90 degrees)
+    if (scene.textures?.exists?.('cobweb')) {
+      // Check corner positions for wall adjacency
+      const cornerChecks = [
+        { tx: 1, ty: 1, angle: 0 },         // top-left
+        { tx: W - 2, ty: 1, angle: 90 },     // top-right
+        { tx: W - 2, ty: H - 2, angle: 180 },// bottom-right
+        { tx: 1, ty: H - 2, angle: 270 }     // bottom-left
+      ];
+      // Also check interior corners where wall openings create L-shapes
+      for (let cy2 = 2; cy2 < H - 2; cy2++) {
+        for (let cx2 = 2; cx2 < W - 2; cx2++) {
+          if (!isWalkableTile(cx2, cy2)) continue;
+          // Check if this is an interior corner (wall above and wall to left)
+          const wallAbove = cy2 > 0 && wallsGrid[cy2 - 1] && wallsGrid[cy2 - 1][cx2] !== '.';
+          const wallLeft = cx2 > 0 && wallsGrid[cy2] && wallsGrid[cy2][cx2 - 1] !== '.';
+          const wallRight = cx2 < W - 1 && wallsGrid[cy2] && wallsGrid[cy2][cx2 + 1] !== '.';
+          const wallBelow = cy2 < H - 1 && wallsGrid[cy2 + 1] && wallsGrid[cy2 + 1][cx2] !== '.';
+          if (wallAbove && wallLeft && Math.random() < 0.3) {
+            cornerChecks.push({ tx: cx2, ty: cy2, angle: 0 });
+          } else if (wallAbove && wallRight && Math.random() < 0.3) {
+            cornerChecks.push({ tx: cx2, ty: cy2, angle: 90 });
+          } else if (wallBelow && wallRight && Math.random() < 0.3) {
+            cornerChecks.push({ tx: cx2, ty: cy2, angle: 180 });
+          } else if (wallBelow && wallLeft && Math.random() < 0.3) {
+            cornerChecks.push({ tx: cx2, ty: cy2, angle: 270 });
+          }
+        }
+      }
+      // Place cobwebs (limit to avoid spam)
+      let cobwebCount = 0;
+      for (const cc of cornerChecks) {
+        if (cobwebCount >= 8) break;
+        if (Math.random() < 0.6) {
+          const cpx = ox + cc.tx * T + T / 2;
+          const cpy = oy + cc.ty * T + T / 2;
+          const web = scene.add.image(cpx, cpy, 'cobweb');
+          web.setDepth(-3);
+          web.setAlpha(0.3 + Math.random() * 0.3);
+          web.setAngle(cc.angle);
+          templateWalls.push(web);
+          cobwebCount++;
+        }
+      }
+    }
+
+    // Dark vignette along room edges — subtle darkness near walls
+    const vigGfx = scene.add.graphics();
+    vigGfx.fillStyle(0x000000, 0.1);
+    // Top edge
+    vigGfx.fillRect(ox, oy, W * T, T);
+    // Bottom edge
+    vigGfx.fillRect(ox, oy + (H - 1) * T, W * T, T);
+    // Left edge
+    vigGfx.fillRect(ox, oy, T, H * T);
+    // Right edge
+    vigGfx.fillRect(ox + (W - 1) * T, oy, T, H * T);
+    // Softer second layer
+    vigGfx.fillStyle(0x000000, 0.05);
+    vigGfx.fillRect(ox + T, oy, (W - 2) * T, T);
+    vigGfx.fillRect(ox + T, oy + (H - 2) * T, (W - 2) * T, T);
+    vigGfx.fillRect(ox, oy + T, T, (H - 2) * T);
+    vigGfx.fillRect(ox + (W - 2) * T, oy + T, T, (H - 2) * T);
+    vigGfx.setDepth(-3);
+    templateWalls.push(vigGfx);
   }
 
   // Objekte with drop shadows and brazier glow
@@ -414,13 +560,17 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       templateWalls.push(shadowGfx);
     }
 
-    // Ambient glow for braziers
+    // Ambient glow for braziers — large, warm, and visible
     if ((o.type === 'brazier' || o.type === 'brazer') && scene.add?.graphics) {
       const glowGfx = scene.add.graphics();
-      glowGfx.fillStyle(0xffcc33, 0.15);
-      glowGfx.fillCircle(px, py, 48);
-      glowGfx.fillStyle(0xffaa00, 0.08);
-      glowGfx.fillCircle(px, py, 32);
+      glowGfx.fillStyle(0xff8800, 0.06);
+      glowGfx.fillCircle(px, py, 80);
+      glowGfx.fillStyle(0xffaa00, 0.1);
+      glowGfx.fillCircle(px, py, 64);
+      glowGfx.fillStyle(0xffcc33, 0.2);
+      glowGfx.fillCircle(px, py, 40);
+      glowGfx.fillStyle(0xffdd44, 0.12);
+      glowGfx.fillCircle(px, py, 24);
       glowGfx.setDepth(-3);
       templateWalls.push(glowGfx);
     }
