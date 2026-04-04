@@ -980,6 +980,35 @@ function ensureEnemyMeleeFXTextures(scene) {
 }
 
 function applyPlayerDamage(rawDamage, scene) {
+  // Blitzreflex (Lightning Reflex): if player has invincibility active, ignore damage
+  if (window._playerInvincible) {
+    return 0;
+  }
+
+  // Dodge check (using PLAYER_DODGE_CHANCE)
+  const dodgeChance = window.PLAYER_DODGE_CHANCE || 0;
+  if (dodgeChance > 0 && Math.random() < dodgeChance) {
+    // Dodge successful
+    if (scene && player) {
+      player.setTint(0x88ccff);
+      scene.time.delayedCall(200, () => {
+        if (player && player.active && player.clearTint) player.clearTint();
+      }, null, scene);
+    }
+    // Blitzreflex (Lightning Reflex): dodge triggers 0.5s invincibility
+    if (typeof window.hasSkill === 'function' && window.hasSkill('mobility_lightning_reflex')) {
+      window._playerInvincible = true;
+      if (scene?.time) {
+        scene.time.delayedCall(500, () => {
+          window._playerInvincible = false;
+        });
+      } else {
+        setTimeout(() => { window._playerInvincible = false; }, 500);
+      }
+    }
+    return 0;
+  }
+
   const armor = Phaser.Math.Clamp(playerArmor || 0, 0, 0.9);
   const mitigated = Math.max(1, Math.round(rawDamage * (1 - armor)));
 
@@ -997,20 +1026,72 @@ function applyPlayerDamage(rawDamage, scene) {
     scene.time.delayedCall(200, () => player.clearTint(), null, scene);
   }
 
+  // Dornenrüstung (Thorn Armor): reflect 2 damage back to melee attackers
+  if (typeof window.hasSkill === 'function' && window.hasSkill('survival_thorn_armor')) {
+    if (enemies?.children) {
+      let nearestEnemy = null;
+      let nearestDist = 100; // only reflect to close melee range
+      enemies.children.iterate((e) => {
+        if (!e || !e.active) return;
+        const edx = (e.x || 0) - (player.x || 0);
+        const edy = (e.y || 0) - (player.y || 0);
+        const dist = Math.hypot(edx, edy);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestEnemy = e;
+        }
+      });
+      if (nearestEnemy && typeof nearestEnemy.hp === 'number') {
+        nearestEnemy.hp -= 2;
+        if (nearestEnemy.active && nearestEnemy.setTint && scene?.time) {
+          nearestEnemy.setTint(0xff8844);
+          scene.time.delayedCall(150, () => {
+            if (nearestEnemy && nearestEnemy.active) nearestEnemy.clearTint();
+          });
+        }
+        if (nearestEnemy.hp <= 0 && nearestEnemy.active && typeof handleEnemyHit === 'function') {
+          handleEnemyHit(scene, nearestEnemy, { tint: 0xff8844, duration: 100 });
+        }
+      }
+    }
+  }
+
   if (playerHealth <= 0) {
-    if (window.soundManager) {
-      window.soundManager.playSFX('player_death');
-      window.soundManager.stopMusic();
-    }
-    player.setTint(0xff0000);
-    player.setVelocity(0);
-    enemies.clear(true, true);
-    if (gameOverText) {
-      gameOverText.setText('DU BIST GESTORBEN\nZurück zur Stadt...');
-      gameOverText.setVisible(true);
-    }
-    if (typeof handlePlayerDeath === 'function') {
-      handlePlayerDeath(scene);
+    // Zweite Chance (Second Chance): revive once per dungeon run with 30% HP
+    if (typeof window.hasSkill === 'function' && window.hasSkill('survival_second_chance')
+        && !window._secondChanceUsed) {
+      window._secondChanceUsed = true;
+      const reviveHP = Math.max(1, Math.round(playerMaxHealth * 0.3));
+      if (typeof setPlayerHealth === 'function') {
+        setPlayerHealth(reviveHP);
+      } else {
+        playerHealth = reviveHP;
+      }
+      if (typeof updateHUD === 'function') updateHUD();
+      if (player && player.active && player.setTint) {
+        player.setTint(0xffffff);
+        if (scene?.time) {
+          scene.time.delayedCall(500, () => {
+            if (player && player.active && player.clearTint) player.clearTint();
+          });
+        }
+      }
+      console.log('[Skills] Zweite Chance activated! Revived with', reviveHP, 'HP');
+    } else {
+      if (window.soundManager) {
+        window.soundManager.playSFX('player_death');
+        window.soundManager.stopMusic();
+      }
+      player.setTint(0xff0000);
+      player.setVelocity(0);
+      enemies.clear(true, true);
+      if (gameOverText) {
+        gameOverText.setText('DU BIST GESTORBEN\nZurück zur Stadt...');
+        gameOverText.setVisible(true);
+      }
+      if (typeof handlePlayerDeath === 'function') {
+        handlePlayerDeath(scene);
+      }
     }
   }
 

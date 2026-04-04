@@ -81,6 +81,39 @@ const SKILL_TREES = {
         requires: ['combat_damage_1'],
         tier: 2,
         effect: { attackRange: 20 }
+      },
+      {
+        id: 'combat_poison_blade',
+        name: 'Giftklinge',
+        description: 'Nahkampfangriffe haben 20% Chance, Gift anzuwenden',
+        cost: 8,
+        requires: ['combat_damage_1'],
+        tier: 2,
+        effect: {},
+        isActive: true,
+        activeType: 'poisonBlade'
+      },
+      {
+        id: 'combat_chain_lightning',
+        name: 'Kettenblitz',
+        description: 'Wirbelangriff trifft 1 zusätzlichen Gegner in der Nähe (50% Schaden)',
+        cost: 12,
+        requires: ['combat_speed_1', 'combat_damage_2'],
+        tier: 3,
+        effect: {},
+        isActive: true,
+        activeType: 'chainLightning'
+      },
+      {
+        id: 'combat_lethal_thrust',
+        name: 'Tödlicher Stoß',
+        description: 'Aufgeladener Schlag: +25% kritische Trefferchance',
+        cost: 15,
+        requires: ['combat_crit_1', 'combat_damage_2'],
+        tier: 3,
+        effect: {},
+        isActive: true,
+        activeType: 'lethalThrust'
       }
     ]
   },
@@ -151,6 +184,39 @@ const SKILL_TREES = {
         requires: ['survival_regen_1'],
         tier: 3,
         effect: { healthRegen: 0.4 }
+      },
+      {
+        id: 'survival_thorn_armor',
+        name: 'Dornenrüstung',
+        description: 'Nahkampfangreifer erleiden 2 Schaden zurück',
+        cost: 10,
+        requires: ['survival_armor_1'],
+        tier: 2,
+        effect: {},
+        isActive: true,
+        activeType: 'thornArmor'
+      },
+      {
+        id: 'survival_second_chance',
+        name: 'Zweite Chance',
+        description: 'Einmal pro Dungeon: Bei Tod mit 30% HP wiederbeleben',
+        cost: 20,
+        requires: ['survival_hp_2', 'survival_armor_1'],
+        tier: 3,
+        effect: {},
+        isActive: true,
+        activeType: 'secondChance'
+      },
+      {
+        id: 'survival_life_steal',
+        name: 'Lebensraub',
+        description: '10% des verursachten Schadens heilt den Spieler',
+        cost: 12,
+        requires: ['survival_hp_1', 'survival_regen_1'],
+        tier: 3,
+        effect: {},
+        isActive: true,
+        activeType: 'lifeSteal'
       }
     ]
   },
@@ -203,6 +269,39 @@ const SKILL_TREES = {
         requires: ['mobility_dodge_1', 'mobility_speed_2'],
         tier: 3,
         effect: { dodgeChance: 0.10 }
+      },
+      {
+        id: 'mobility_shadow_step',
+        name: 'Schattensprung',
+        description: 'Sturmangriff-Distanz +50%',
+        cost: 10,
+        requires: ['mobility_speed_2'],
+        tier: 2,
+        effect: {},
+        isActive: true,
+        activeType: 'shadowStep'
+      },
+      {
+        id: 'mobility_wind_gust',
+        name: 'Windstoß',
+        description: 'Dolchwurf durchdringt den ersten Gegner',
+        cost: 8,
+        requires: ['mobility_speed_1'],
+        tier: 2,
+        effect: {},
+        isActive: true,
+        activeType: 'windGust'
+      },
+      {
+        id: 'mobility_lightning_reflex',
+        name: 'Blitzreflex',
+        description: 'Ausweichen gewährt 0.5s Unverwundbarkeit',
+        cost: 15,
+        requires: ['mobility_dodge_1', 'mobility_speed_2'],
+        tier: 3,
+        effect: {},
+        isActive: true,
+        activeType: 'lightningReflex'
       }
     ]
   }
@@ -360,6 +459,49 @@ function resetSkills() {
   applySkillEffects();
 }
 
+function respecSkills() {
+  const totalSpent = getSkillPointsSpent();
+  if (totalSpent === 0) {
+    return { success: false, reason: 'Keine Fähigkeiten zum Zurücksetzen' };
+  }
+
+  const respecCost = Math.ceil(totalSpent * 0.5);
+  const currentMaterials = typeof getMaterialCount === 'function'
+    ? getMaterialCount('MAT')
+    : (window.materialCounts?.MAT || 0);
+
+  if (currentMaterials < respecCost) {
+    return { success: false, reason: `Nicht genug Eisenbrocken (${currentMaterials}/${respecCost})` };
+  }
+
+  // Deduct respec cost
+  const spendSuccess = typeof spendMaterialFromStorage === 'function'
+    ? spendMaterialFromStorage('MAT', respecCost)
+    : false;
+
+  if (!spendSuccess) {
+    return { success: false, reason: 'Fehler beim Ausgeben der Eisenbrocken' };
+  }
+
+  // Refund spent materials minus respec cost
+  const refund = totalSpent - respecCost;
+  if (refund > 0 && typeof changeMaterialCount === 'function') {
+    changeMaterialCount('MAT', refund);
+    if (typeof updateMaterialCounterUI === 'function') updateMaterialCounterUI();
+  }
+
+  // Reset all skills
+  window.playerSkills = {};
+  window._secondChanceUsed = false;
+  applySkillEffects();
+
+  if (typeof saveGame === 'function') {
+    saveGame();
+  }
+
+  return { success: true, refunded: refund, cost: respecCost };
+}
+
 function getSkillPointsSpent() {
   let total = 0;
   for (const skillId of Object.keys(window.playerSkills)) {
@@ -390,5 +532,6 @@ window.purchaseSkill = purchaseSkill;
 window.calculateSkillEffects = calculateSkillEffects;
 window.applySkillEffects = applySkillEffects;
 window.resetSkills = resetSkills;
+window.respecSkills = respecSkills;
 window.getSkillPointsSpent = getSkillPointsSpent;
 window.getSkillTreeStats = getSkillTreeStats;

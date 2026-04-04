@@ -475,6 +475,14 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
     });
   }
 
+  // Lebensraub (Life Steal): 10% of damage dealt heals the player
+  if (typeof window.hasSkill === 'function' && window.hasSkill('survival_life_steal') && damage > 0) {
+    const healAmount = Math.max(1, Math.round(damage * 0.1));
+    if (typeof addPlayerHealth === 'function') {
+      addPlayerHealth(healAmount);
+    }
+  }
+
   return { damage, isCrit };
 }
 
@@ -664,7 +672,12 @@ function getDashSlashRange() {
 }
 
 function getDashSlashDistance() {
-  return getRangeFromBase(DASH_SLASH_DISTANCE_BASE);
+  let dist = getRangeFromBase(DASH_SLASH_DISTANCE_BASE);
+  // Schattensprung (Shadow Step): dash slash distance +50%
+  if (typeof window.hasSkill === 'function' && window.hasSkill('mobility_shadow_step')) {
+    dist *= 1.5;
+  }
+  return dist;
 }
 
 function getDashSlashDuration() {
@@ -883,6 +896,14 @@ function attack() {
     dealDamageToEnemy(this, enemy, 1, 'attack');
     if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
     handleEnemyHit(this, enemy, { useTween: true, duration: 100 });
+
+    // Giftklinge (Poison Blade): 20% chance to apply POISON on melee attacks
+    if (typeof window.hasSkill === 'function' && window.hasSkill('combat_poison_blade')
+        && window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
+      if (Math.random() < 0.2) {
+        window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'poisonBlade');
+      }
+    }
   }, { requireLineOfSight: true });
 
   // Effekt + Angriff abschliessen
@@ -935,6 +956,7 @@ function spinAttack() {
   // 2) Schaden an allen Gegnern im Umkreis
   const spinBonus = getAbilityBonus('spin');
   const spinScene = this;
+  const spinHitEnemies = [];
   forEachEnemyInRange(range, (enemy) => {
     const { isCrit } = dealDamageToEnemy(spinScene, enemy, 1, 'spin');
     if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
@@ -947,7 +969,57 @@ function spinAttack() {
     if (window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
       window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'spinAttack');
     }
+
+    // Giftklinge (Poison Blade): 20% chance to apply POISON on melee attacks
+    if (typeof window.hasSkill === 'function' && window.hasSkill('combat_poison_blade')
+        && window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
+      if (Math.random() < 0.2) {
+        window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'poisonBlade');
+      }
+    }
+
+    if (enemy && enemy.active) spinHitEnemies.push(enemy);
   }, { requireLineOfSight: true });
+
+  // Kettenblitz (Chain Lightning): spin attack chains to 1 nearby enemy for 50% damage
+  if (typeof window.hasSkill === 'function' && window.hasSkill('combat_chain_lightning') && spinHitEnemies.length > 0) {
+    const chainRange = 120;
+    const hitSet = new Set(spinHitEnemies);
+    for (const hitEnemy of spinHitEnemies) {
+      if (!hitEnemy || !hitEnemy.active) continue;
+      let nearestChainTarget = null;
+      let nearestDist = Infinity;
+      if (enemies?.children) {
+        enemies.children.iterate((candidate) => {
+          if (!candidate || !candidate.active || hitSet.has(candidate)) return;
+          const cdx = candidate.x - hitEnemy.x;
+          const cdy = candidate.y - hitEnemy.y;
+          const dist = Math.hypot(cdx, cdy);
+          if (dist < chainRange && dist < nearestDist) {
+            nearestDist = dist;
+            nearestChainTarget = candidate;
+          }
+        });
+      }
+      if (nearestChainTarget) {
+        hitSet.add(nearestChainTarget);
+        dealDamageToEnemy(spinScene, nearestChainTarget, 0.5, 'spin');
+        handleEnemyHit(spinScene, nearestChainTarget, {
+          tint: 0x88ccff,
+          duration: 120
+        });
+        // Visual: chain lightning line
+        const chainFx = spinScene.add.graphics();
+        chainFx.lineStyle(2, 0x88ccff, 0.8);
+        chainFx.beginPath();
+        chainFx.moveTo(hitEnemy.x, hitEnemy.y);
+        chainFx.lineTo(nearestChainTarget.x, nearestChainTarget.y);
+        chainFx.strokePath();
+        spinScene.time.delayedCall(200, () => chainFx.destroy(), null, spinScene);
+        break; // only chain once per spin
+      }
+    }
+  }
 
   // 3) Ende des Spin-State
   this.time.delayedCall(300, () => {
@@ -1018,6 +1090,13 @@ function releaseChargedSlash(forceMaxCharge = false) {
   }
   forward.normalize();
 
+  // Tödlicher Stoß (Lethal Thrust): +25% crit chance for charged slash
+  let _savedCritChance;
+  if (typeof window.hasSkill === 'function' && window.hasSkill('combat_lethal_thrust')) {
+    _savedCritChance = playerCritChance;
+    playerCritChance = Math.min(1, (playerCritChance || 0) + 0.25);
+  }
+
   const tempVec = new Phaser.Math.Vector2();
   const threshold = Math.cos(arcWidth / 2);
 
@@ -1049,6 +1128,11 @@ function releaseChargedSlash(forceMaxCharge = false) {
       if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
     });
   }, { requireLineOfSight: true });
+
+  // Restore crit chance after Tödlicher Stoß
+  if (_savedCritChance !== undefined) {
+    playerCritChance = _savedCritChance;
+  }
 
   isAttacking = true;
   scene.time.delayedCall(220, () => {
@@ -1331,7 +1415,14 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
     });
   }
 
-  projectile.destroy();
+  // Windstoß (Wind Gust): dagger pierces through first enemy
+  if (typeof window.hasSkill === 'function' && window.hasSkill('mobility_wind_gust')
+      && !projectile.getData('hasPierced')) {
+    projectile.setData('hasPierced', true);
+    // Don't destroy, let it continue
+  } else {
+    projectile.destroy();
+  }
 }
 
 function addXP(amount = 1) {
