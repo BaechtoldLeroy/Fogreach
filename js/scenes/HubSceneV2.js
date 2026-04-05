@@ -56,7 +56,7 @@ const HUB_HITBOXES = {
     {
       id: 'aldric',
       name: 'Ratsherr Aldric',
-      x: 480, y: 350,
+      x: 420, y: 380,
       texture: 'ratsherr_aldric',
       scale: 0.09,
       placeholderColor: 0x1a2266,
@@ -75,7 +75,7 @@ const HUB_HITBOXES = {
       scale: 0.08,
       placeholderColor: 0x8b1a1a,
       placeholderAccent: 0x6b4226,
-      visibleFromAct: 'descent',
+      visibleFromAct: 'erste_risse',
       lines: [
         'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
         'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.'
@@ -89,7 +89,7 @@ const HUB_HITBOXES = {
       scale: 0.09,
       placeholderColor: 0x2a2a2a,
       placeholderAccent: 0x888888,
-      visibleFromAct: 'obedience',
+      visibleFromAct: 'treuer_diener',
       lines: [
         'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
         'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'
@@ -263,7 +263,7 @@ class HubSceneV2 extends Phaser.Scene {
     // Determine current story act for NPC visibility
     const currentAct = window.storySystem ? window.storySystem.getCurrentAct() : null;
     const currentActId = currentAct ? currentAct.id : 'awakening';
-    const actOrder = ['awakening', 'obedience', 'descent', 'rebellion', 'revelation'];
+    const actOrder = ['auftrag', 'treuer_diener', 'erste_risse', 'wahrheit', 'bruch', 'rebellion', 'offenbarung'];
     const currentActIndex = actOrder.indexOf(currentActId);
 
     HUB_HITBOXES.npcs.forEach(npc => {
@@ -332,7 +332,7 @@ class HubSceneV2 extends Phaser.Scene {
       let envObject = null;
       if (npc.id === 'elara' && isVisible) {
         // In revelation act, Elara leaves a note ("preparing the plan")
-        if (currentActId === 'revelation') {
+        if (currentActId === 'offenbarung') {
           sprite.setVisible(false);
           sprite.setActive(false);
           // Show a note object instead
