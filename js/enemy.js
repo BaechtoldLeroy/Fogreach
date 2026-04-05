@@ -643,40 +643,43 @@ function handleEnemies(time, delta = 16) {
     Steering.limit(desired, maxSpeed);
     enemy.body.setVelocity(desired.x, desired.y);
 
-    // Imp sprite animation based on movement direction
+    // Sprite direction switching for animated enemies
+    // - Only switch on significant horizontal movement (threshold to avoid flicker)
+    // - Never switch during attack animation
+    // - Cooldown of 200ms between direction changes
+    const DIR_THRESHOLD = 15; // minimum horizontal velocity to trigger direction change
+    const DIR_COOLDOWN = 200; // ms between direction changes
+
     if (enemy.isImp && !enemy.impAttacking) {
-      // Only change direction when there's horizontal movement (avoid flicker on vertical)
-      if (desired.x !== 0) {
+      if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
         if (newDir !== enemy.impDirection) {
           enemy.impDirection = newDir;
+          enemy._lastDirChange = time;
+          const idleKey = `imp_${newDir}0`;
+          if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
         }
-      }
-      // Always ensure correct texture is applied
-      const idleKey = `imp_${enemy.impDirection}0`;
-      if (this.textures.exists(idleKey) && enemy.texture.key !== idleKey) {
-        enemy.setTexture(idleKey);
       }
     }
 
-    // Mage sprite animation based on movement direction
     if (enemy.isMage && !enemy.mageAttacking) {
-      if (desired.x !== 0) {
+      if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
         if (newDir !== enemy.mageDirection) {
           enemy.mageDirection = newDir;
+          enemy._lastDirChange = time;
           const idleKey = `mage_${newDir}0`;
           if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
         }
       }
     }
 
-    // Brute sprite animation based on movement direction
     if (enemy.isBrute && !enemy.bruteAttacking) {
-      if (desired.x !== 0) {
+      if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
         if (newDir !== enemy.bruteDirection) {
           enemy.bruteDirection = newDir;
+          enemy._lastDirChange = time;
           const idleKey = `brute_${newDir}0`;
           if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
         }
@@ -698,17 +701,19 @@ function handleEnemies(time, delta = 16) {
           }
           enemy.lastShotTime = time;
 
-          // Mage cast visual feedback — tint flash
+          // Mage cast animation on shoot (500ms total)
           if (enemy.isMage && !enemy.mageAttacking) {
             enemy.mageAttacking = true;
+            const dir = enemy.mageDirection || 'right';
             const sc = this;
-            const origTint = enemy._originalTint;
-            enemy.setTint(0xaa88ff);
-            sc.time.delayedCall(400, () => {
+            if (sc.textures.exists('mage_' + dir + '1')) enemy.setTexture('mage_' + dir + '1');
+            sc.time.delayedCall(250, () => {
+              if (enemy && enemy.active && sc.textures.exists('mage_' + dir + '2')) enemy.setTexture('mage_' + dir + '2');
+            });
+            sc.time.delayedCall(500, () => {
               if (enemy && enemy.active) {
                 enemy.mageAttacking = false;
-                if (origTint) enemy.setTint(origTint);
-                else enemy.clearTint();
+                if (sc.textures.exists('mage_' + dir + '0')) enemy.setTexture('mage_' + dir + '0');
               }
             });
           }
@@ -723,24 +728,36 @@ function handleEnemies(time, delta = 16) {
         ) {
           enemy.lastAttackTime = time;
 
-          // Attack visual feedback — tint flash + slight scale pulse
-          // (Frame-switching caused ghosting with different sprite sizes)
-          if (enemy.isImp || enemy.isBrute || enemy.isMage) {
-            const attackFlag = enemy.isImp ? 'impAttacking' : enemy.isBrute ? 'bruteAttacking' : 'mageAttacking';
-            enemy[attackFlag] = true;
-            const origTint = enemy._originalTint;
+          // Imp attack animation (400ms total, 200ms per frame)
+          if (enemy.isImp) {
+            enemy.impAttacking = true;
+            const dir = enemy.impDirection || 'right';
             const scene = this;
-            // Flash white on attack
-            enemy.setTint(0xffaaaa);
-            const origScaleX = enemy.scaleX, origScaleY = enemy.scaleY;
-            enemy.setScale(origScaleX * 1.1, origScaleY * 1.1);
-            // Return to normal after 300ms
-            scene.time.delayedCall(300, () => {
+            if (scene.textures.exists(`imp_${dir}1`)) enemy.setTexture(`imp_${dir}1`);
+            scene.time.delayedCall(200, () => {
+              if (enemy && enemy.active && scene.textures.exists(`imp_${dir}2`)) enemy.setTexture(`imp_${dir}2`);
+            });
+            scene.time.delayedCall(400, () => {
               if (enemy && enemy.active) {
-                enemy[attackFlag] = false;
-                enemy.setScale(origScaleX, origScaleY);
-                if (origTint) enemy.setTint(origTint);
-                else enemy.clearTint();
+                enemy.impAttacking = false;
+                if (scene.textures.exists(`imp_${dir}0`)) enemy.setTexture(`imp_${dir}0`);
+              }
+            });
+          }
+
+          // Brute attack animation (500ms total, 250ms per frame)
+          if (enemy.isBrute) {
+            enemy.bruteAttacking = true;
+            const dir = enemy.bruteDirection || 'right';
+            const scene = this;
+            if (scene.textures.exists(`brute_${dir}1`)) enemy.setTexture(`brute_${dir}1`);
+            scene.time.delayedCall(250, () => {
+              if (enemy && enemy.active && scene.textures.exists(`brute_${dir}2`)) enemy.setTexture(`brute_${dir}2`);
+            });
+            scene.time.delayedCall(500, () => {
+              if (enemy && enemy.active) {
+                enemy.bruteAttacking = false;
+                if (scene.textures.exists(`brute_${dir}0`)) enemy.setTexture(`brute_${dir}0`);
               }
             });
           }
