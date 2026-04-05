@@ -1169,8 +1169,8 @@ function hitByProjectile(player, projectile) {
       // Mage projectiles apply SLOW
       window.statusEffectManager.applyEffect(player, window.StatusEffectType.SLOW, 'mage');
     } else if (projEnemyType === 2) {
-      // Archer projectiles: 20% chance to apply BLEED
-      if (Math.random() < 0.2) {
+      // Archer projectiles: 10% chance to apply BLEED
+      if (Math.random() < 0.1) {
         window.statusEffectManager.applyEffect(player, window.StatusEffectType.BLEED, 'archer');
       }
     }

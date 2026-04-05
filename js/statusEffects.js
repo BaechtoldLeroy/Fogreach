@@ -35,12 +35,12 @@ const STATUS_EFFECT_CONFIG = {
     maxStacks: 1
   },
   [StatusEffectType.BLEED]: {
-    duration: 8000,       // 8 seconds
+    duration: 4000,       // 4 seconds (was 8)
     tickInterval: 1000,   // damage every 1 second
     damage: 1,            // 1 dmg per tick
     tint: 0xff4444,       // red
     stackable: true,
-    maxStacks: 5
+    maxStacks: 2          // max 2 stacks (was 5)
   }
 };
 

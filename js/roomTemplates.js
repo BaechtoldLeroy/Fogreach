@@ -705,7 +705,33 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   // --- optionaler Player-Spawn aus dem Template ---
   if (player && tpl.spawns && tpl.spawns.player) {
     const ps = tpl.spawns.player;
-    const tile = findAccessibleTileNear(ps.x, ps.y, 0) || { x: ps.x, y: ps.y };
+    let tile = findAccessibleTileNear(ps.x, ps.y, 0) || { x: ps.x, y: ps.y };
+
+    // Ensure spawn has 3+ tiles clearance from walls in all directions
+    const hasWallClearance = (tx, ty, dist) => {
+      for (let dy = -dist; dy <= dist; dy++)
+        for (let dx = -dist; dx <= dist; dx++) {
+          const cx = tx+dx, cy = ty+dy;
+          if (cy >= 0 && cy < H && cx >= 0 && cx < W && wallsGrid[cy]?.[cx] === '#') return false;
+        }
+      return true;
+    };
+
+    if (!hasWallClearance(tile.x, tile.y, 3)) {
+      // Find a better spawn with clearance
+      let bestTile = tile, bestDist = Infinity;
+      if (accessibleTiles) {
+        accessibleTiles.forEach((key) => {
+          const [tx, ty] = key.split('|').map(Number);
+          if (hasWallClearance(tx, ty, 3)) {
+            const d = Math.abs(tx - ps.x) + Math.abs(ty - ps.y);
+            if (d < bestDist) { bestDist = d; bestTile = { x: tx, y: ty }; }
+          }
+        });
+      }
+      tile = bestTile;
+    }
+
     const px = originX + gx(tpl, tile.x) + T/2;
     const py = originY + gy(tpl, tile.y) + T/2;
 
