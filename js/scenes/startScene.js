@@ -117,7 +117,8 @@ StartScene.prototype.preload = function () {
     "Arena", "ArmoryVault", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
     "CirclePillars", "CollapsingHall", "Crosshall", "CrossroadChamber", "Crossroads",
     "Crypt_Small_Altar", "DungeonLibrary", "GrandBazaar", "MazeLite", "PrisonCells",
-    "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault"
+    "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault",
+    "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt"
   ];
   for (const name of templateNames) {
     this.load.json(name, `js/roomTemplates/${name}.json`);
