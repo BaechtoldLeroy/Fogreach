@@ -314,7 +314,27 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
             templateWalls.push(glowGfx);
           }
 
-          scene.spawnObstacle(obstacleX, obstacleY, key);
+          // Check clearance: only spawn as physics obstacle if 2+ tiles from any wall
+          let autoTooClose = false;
+          const isBraz = key === 'brazier' || key === 'brazer';
+          if (!isBraz) {
+            for (let cdy = -2; cdy <= 2 && !autoTooClose; cdy++) {
+              for (let cdx = -2; cdx <= 2 && !autoTooClose; cdx++) {
+                if (cdx === 0 && cdy === 0) continue;
+                const cx = x + cdx, cy = y + cdy;
+                if (cy >= 0 && cy < H && cx >= 0 && cx < W && wallsGrid[cy]?.[cx] === '#') autoTooClose = true;
+              }
+            }
+          }
+          if (!autoTooClose) {
+            scene.spawnObstacle(obstacleX, obstacleY, key);
+          } else {
+            // Visual only, no physics
+            if (scene.textures?.exists(key)) {
+              const vis = scene.add.image(obstacleX, obstacleY, key).setDepth(40).setAlpha(0.7);
+              templateWalls.push(vis);
+            }
+          }
         }
       }
       x++;

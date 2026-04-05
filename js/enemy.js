@@ -647,8 +647,8 @@ function handleEnemies(time, delta = 16) {
     // - Only switch on significant horizontal movement (threshold to avoid flicker)
     // - Never switch during attack animation
     // - Cooldown of 200ms between direction changes
-    const DIR_THRESHOLD = 40; // minimum horizontal velocity to trigger direction change
-    const DIR_COOLDOWN = 500; // ms between direction changes
+    const DIR_THRESHOLD = 60; // minimum horizontal velocity to trigger direction change
+    const DIR_COOLDOWN = 800; // ms between direction changes
 
     if (enemy.isImp && !enemy.impAttacking) {
       if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
