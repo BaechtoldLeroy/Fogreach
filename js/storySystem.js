@@ -5,116 +5,254 @@
 
   // ---- Act Definitions ----
   const STORY_ACTS = [
-    { id: 'awakening',   name: 'Erwachen',                 triggerWave: 1,  triggerQuests: 0 },
-    { id: 'obedience',   name: 'Gehorsam und Erinnerung',  triggerWave: 10, triggerQuests: 1 },
-    { id: 'descent',     name: 'Der Abstieg',              triggerWave: 20, triggerQuests: 2 },
-    { id: 'rebellion',   name: 'Rebellion',                triggerWave: 30, triggerQuests: 3 },
-    { id: 'revelation',  name: 'Offenbarung',              triggerWave: 40, triggerQuests: 3 }
+    { id: 'auftrag',       name: 'Der Auftrag',                triggerWave: 1,  triggerQuests: 0 },
+    { id: 'treuer_diener', name: 'Der treue Diener',           triggerWave: 6,  triggerQuests: 1 },
+    { id: 'erste_risse',   name: 'Erste Risse',                triggerWave: 11, triggerQuests: 2 },
+    { id: 'wahrheit',      name: 'Die Wahrheit sickert durch', triggerWave: 16, triggerQuests: 3 },
+    { id: 'bruch',         name: 'Der Bruch',                  triggerWave: 21, triggerQuests: 5 },
+    { id: 'rebellion',     name: 'Rebellion',                  triggerWave: 31, triggerQuests: 7 },
+    { id: 'offenbarung',   name: 'Offenbarung',                triggerWave: 41, triggerQuests: 9 }
   ];
 
   // ---- Narrative texts shown at act transitions ----
   const ACT_NARRATIVES = {
-    awakening:  'Du erwachst in der Archivschmiede. Etwas stimmt nicht mit deinen Erinnerungen...',
-    obedience:  'Die Auftraege des Rates werden seltsamer. Branka fluestert von verbotenen Protokollen...',
-    descent:    'Unter dem Rathaus verbirgt sich mehr als alte Akten. Daemonische Siegel leuchten in der Dunkelheit...',
-    rebellion:  'Die Druckerpresse laeuft. Thoms Pamphlete verbreiten sich in der Stadt...',
-    revelation: 'Die letzte Illusion des Kettenrats zerbricht. Licht durchdringt den Nebel...'
+    auftrag:       'Du erwachst in der Archivschmiede. Dein Kopf droehnt. Ein Mann in Ratsketten steht ueber dir: \'Der Keller muss gesaeubert werden, Archivschmied. Wilde Tiere treiben sich dort herum.\'',
+    treuer_diener: 'Ratsherr Aldric klopft dir auf die Schulter. \'Gut gemacht. Aber es gibt groessere Bedrohungen — Eindringlinge stehlen unsere Archive. Wir brauchen dich.\'',
+    erste_risse:   'Die Dokumente des besiegten Anfuehrers tragen das Siegel des Kettenrats. Aldric lacht nervoes: \'Faelschungen. Natuerlich Faelschungen.\' Aber Branka blickt dir schweigend in die Augen.',
+    wahrheit:      'In der Ritualkammer: Blut, Symbole, Ketten. Das ist kein Lager der Eindringlinge. Das ist eine Beschwoerungskammer. Der Rat luegt.',
+    bruch:         '\'Du stellst zu viele Fragen, Archivschmied.\' Aldrics Stimme ist kalt. Hinter ihm stehen bewaffnete Wachen. \'Erledige deinen Auftrag — oder wir erledigen dich.\'',
+    rebellion:     'Die Pamphlete haben gewirkt. Buerger versammeln sich auf dem Platz. Branka schmiedet Waffen fuer den Widerstand. \'Es ist Zeit\', sagt Mara. \'Der Rat faellt heute.\'',
+    offenbarung:   'Die Ratskammer. Die Tuer faellt zu. Und dort steht Elara — neben dem Schattenrat. \'Es tut mir leid\', fluestert sie. \'Aber du verstehst das nicht.\''
   };
 
   // ---- Dynamic NPC dialogue per act ----
   const NPC_DIALOGUE = {
+    aldric: {
+      auftrag: [
+        'Der Keller ist voller Ungeziefer. Raeum das auf, Archivschmied.',
+        'Der Rat hat dich aus gutem Grund hierher gestellt. Zeig, dass du nuetzlich bist.',
+        'Frag nicht so viel. Tu einfach, was man dir sagt.'
+      ],
+      treuer_diener: [
+        'Du hast dich bewaehrt. Jetzt kommen die wahren Aufgaben.',
+        'Eindringlinge bedrohen unsere Archive. Stoppe sie, bevor sie Schaden anrichten.',
+        'Der Rat vertraut dir. Enttaeusche uns nicht.'
+      ],
+      erste_risse: [
+        'Faelschungen, sage ich dir! Glaub nicht alles, was du findest.',
+        'Manche Dokumente sind... vertraulich. Lass die Finger davon.',
+        'Du arbeitest fuer den Rat. Vergiss das nicht.'
+      ],
+      wahrheit: [
+        'Was du gesehen hast, bleibt unter uns. Verstanden?',
+        'Der Rat hat seine Gruende. Hinterfrage sie nicht.',
+        'Noch kannst du zurueck. Waehle weise, Archivschmied.'
+      ],
+      bruch: [
+        'Du stellst zu viele Fragen. Das endet nie gut.',
+        'Ich habe dich gewarnt. Der Rat ist nicht geduldig.',
+        'Letzte Chance, Archivschmied. Gehorche — oder verschwinde.'
+      ],
+      rebellion: [
+        'Du hast deine Wahl getroffen. Dafuer wirst du bezahlen.',
+        'Die Rebellen werden scheitern. Wie alle vor ihnen.',
+        'Der Rat vergibt nicht. Und er vergisst nicht.'
+      ],
+      offenbarung: [
+        'Es ist zu spaet. Fuer uns alle.',
+        'Du haettest gehorchen sollen...',
+        'Fogreach gehoert den Ketten. Das war immer so.'
+      ]
+    },
     branka: {
-      awakening: [
+      auftrag: [
         'Stahl allein schneidet die Luegen des Rates nicht. Erst wenn jede Klinge Wissen traegt, faellt ihre Maske.',
         'Im Keller unter dem Rathaus lagern Protokolle aus Daemonenverhoeren. Bring mir Abschriften, und ich veredele deine Artefakte.',
         'Sprich draussen leise. Die Aufseher des Kettenrats tragen inzwischen die Farben der Stadtgarde.'
       ],
-      obedience: [
+      treuer_diener: [
         'Deine Fortschritte sind bemerkenswert. Die alten Protokolle enthalten mehr, als der Rat zugeben will.',
         'Ich habe verbotene Schmiedetechniken gefunden. Die Daemonen selbst haben sie einst gelehrt.',
         'Der Rat verbietet bestimmte Legierungen. Frag dich, warum.'
       ],
-      descent: [
+      erste_risse: [
+        'Diese Ruestungen... die Masse stimmen nicht. Sie sind fuer Gefangene, nicht fuer Soldaten.',
+        'Ich schmiede, was der Rat verlangt. Aber ich beginne zu zweifeln.',
+        'Jemand muss die Wahrheit herausfinden. Bist du bereit?'
+      ],
+      wahrheit: [
         'Die Siegel unter dem Rathaus pulsieren staerker. Jemand fuettert sie mit Angst.',
         'Ich schmiede jetzt im Verborgenen. Der Rat darf nichts von den neuen Klingen erfahren.',
         'Jede Waffe, die ich fertige, traegt ein Zeichen des Widerstands.'
+      ],
+      bruch: [
+        'Der Rat hat meine Werkstatt durchsucht. Sie wissen, dass ich zweifle.',
+        'Wir brauchen Waffen. Nicht fuer den Rat — fuer UNS.',
+        'Die Zeit der Geheimnisse ist vorbei. Wir muessen handeln.'
       ],
       rebellion: [
         'Die Rebellion braucht Waffen. Ich schmiede Tag und Nacht.',
         'Thoms Pamphlete haben die Buerger wachgeruettelt. Jetzt brauchen sie Stahl, nicht nur Worte.',
         'Der Kettenrat schickt Haescher. Aber unsere Klingen sind schaerfer als ihre Ketten.'
       ],
-      revelation: [
+      offenbarung: [
         'Die letzte Schmiede ist vollendet. Diese Klinge wird den Nebel zerschneiden.',
         'Fogreach erwacht. Nach all den Jahren sehen die Menschen endlich klar.',
         'Was auch geschieht — die Archivschmiede wird nie wieder schweigen.'
       ]
     },
     thom: {
-      awakening: [
+      auftrag: [
         'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Traeume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
         'Bring mir Beweise aus dem Rathauskeller. Jede Spalte, die wir drucken, nimmt der Angst einen Zoll.',
         'Verteile nichts Ungeprueftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
       ],
-      obedience: [
+      treuer_diener: [
         'Die ersten Beweise sind erschuetternd. Der Rat hat Daemonen nicht verbannt — er hat sie eingeladen.',
         'Meine Druckerpresse laeuft heiss. Die Wahrheit will ans Licht.',
         'Jedes Dokument, das du findest, ist eine Kugel gegen die Luegen des Rates.'
       ],
-      descent: [
-        'Unter dem Rathaus gibt es Kammern, die auf keiner Karte stehen. Was verbergen sie dort?',
+      erste_risse: [
+        'Die Dokumente, die du gefunden hast... sie tragen das Siegel des Rats. Offiziell.',
+        'Ich drucke seit Jahren. Aber das hier — das ist groesser als alles zuvor.',
+        'Wir muessen vorsichtig sein. Der Rat hat Augen ueberall.'
+      ],
+      wahrheit: [
+        'Ich habe genug gedruckt, was der Rat will. Zeit fuer die Wahrheit.',
         'Die Druckerpresse braucht mehr Tinte. Die Wahrheit ist umfangreicher als gedacht.',
         'Ich drucke jetzt auch Karten der unterirdischen Gaenge. Mara liefert die Skizzen.'
       ],
+      bruch: [
+        'Der Rat hat meine alte Presse zerstoert. Aber ich habe laengst drei neue versteckt.',
+        'Jeder Durchlauf ist eine Chance, Flugblaetter zu verteilen.',
+        'Die Buerger muessen wissen, was unter ihren Fuessen geschieht.'
+      ],
       rebellion: [
         'Die Pamphlete verbreiten sich wie Feuer! Ganz Fogreach liest unsere Wahrheiten.',
-        'Der Rat hat meine alte Presse zerstoert. Aber ich habe laengst drei neue versteckt.',
-        'Die Buerger kommen nachts zur Druckerei. Sie wollen helfen. Die Rebellion waechst.'
+        'Die Buerger kommen nachts zur Druckerei. Sie wollen helfen. Die Rebellion waechst.',
+        'Jetzt oder nie. Die Wahrheit kann nicht mehr aufgehalten werden.'
       ],
-      revelation: [
+      offenbarung: [
         'Die letzte Ausgabe geht in Druck. Sie enthaelt alles — jeden Namen, jedes Siegel, jede Luege.',
-        'Fogreach wird nie wieder vergessen. Die Wahrheit ist jetzt unauslöschlich.',
+        'Fogreach wird nie wieder vergessen. Die Wahrheit ist jetzt unausloeschlich.',
         'Wenn das hier vorbei ist, drucke ich Geschichtsbuecher. Keine Pamphlete mehr noetig.'
       ]
     },
     mara: {
-      awakening: [
+      auftrag: [
         'Die Schreiber des Rates markieren Haeuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
         'Der Zeremonienmeister besitzt neue Siegel. Sie holen Daemonen als stilles Archiv.',
         'Sichere Augen im Rathauskeller. Jedes Siegel, das du brichst, lockert ihre Ketten an der Stadt.'
       ],
-      obedience: [
+      treuer_diener: [
         'Meine Spaeher haben neue Gaenge unter dem Rathaus entdeckt. Die Siegel werden staerker.',
         'Der Zeremonienmeister wechselt seine Routen. Er ahnt, dass wir ihm folgen.',
         'Jedes gebrochene Siegel schwaecht seinen Griff. Mach weiter.'
       ],
-      descent: [
+      erste_risse: [
+        'Du erinnerst dich nicht. Aber ich kenne dich.',
+        'Die Risse in der Fassade des Rats werden groesser. Nutze sie.',
+        'Vertraue nicht blind. Auch nicht mir. Aber hoer zu.'
+      ],
+      wahrheit: [
+        'Der Kettenmeister bewacht die ersten echten Beweise. Besiege ihn.',
         'Die unterirdischen Gaenge fuehren tiefer als gedacht. Dort unten lebt etwas.',
-        'Ich habe Karten gezeichnet. Die Siegel bilden ein Muster — ein Beschwörungskreis unter der ganzen Stadt.',
+        'Ich habe Karten gezeichnet. Die Siegel bilden ein Muster — ein Beschwoerungskreis unter der ganzen Stadt.'
+      ],
+      bruch: [
+        'Aldric hat seine Maske fallen lassen. Gut. Jetzt wissen alle, woran sie sind.',
+        'Mein Netzwerk ist bereit. Wir brauchen nur noch den Funken.',
         'Wir muessen vorsichtig sein. Der Zeremonienmeister weiss, dass wir kommen.'
       ],
       rebellion: [
+        'Es ist soweit. Der Rat faellt heute.',
         'Mein Netzwerk ist aktiv. Spaeher in jedem Viertel, Augen an jeder Ecke.',
-        'Die unterirdischen Routen sind jetzt unsere Versorgungswege. Der Rat kontrolliert die Strassen, wir den Untergrund.',
-        'Der Zeremonienmeister hat seine letzten Siegel aktiviert. Es ist fast soweit.'
+        'Die unterirdischen Routen sind jetzt unsere Versorgungswege. Der Rat kontrolliert die Strassen, wir den Untergrund.'
       ],
-      revelation: [
-        'Alle Siegel sind kartiert. Der Beschwörungskreis kann gebrochen werden.',
-        'Meine Spaeher melden Licht in den Tunneln. Der Nebel lichtet sich.',
+      offenbarung: [
+        'Unter Fogreach wartet die Wahrheit. Bist du bereit?',
+        'Alle Siegel sind kartiert. Der Beschwoerungskreis kann gebrochen werden.',
         'Fogreach gehoert wieder den Menschen. Nicht den Ketten. Nicht den Daemonen.'
+      ]
+    },
+    harren: {
+      auftrag: [
+        'Ich bin nur ein alter Handwerker. Aber meine Tochter... sie ist alles, was ich habe.',
+        'Hast du Elara gesehen? Sie ist seit Wochen verschwunden.',
+        'Der Rat sagt, sie sei in Sicherheit. Aber ich glaube ihnen nicht.'
+      ],
+      treuer_diener: [
+        'Bitte, finde meine Tochter. Ich flehe dich an.',
+        'Mara hat mir erzaehlt, du seist vertrauenswuerdig. Hilf mir.',
+        'Elara hat ein Tagebuch gefuehrt. Wenn du es findest...'
+      ],
+      erste_risse: [
+        'Du hast Hinweise gefunden? Erzaehl mir alles!',
+        'Elara lebt... das ist alles, was zaehlt.',
+        'Was hat der Rat mit meiner Tochter zu tun?'
+      ],
+      wahrheit: [
+        'Der Rat hat meine Tochter benutzt? Fuer ihre Rituale?',
+        'Ich werde ihnen nie vergeben. Nie.',
+        'Finde Elara. Bring sie zurueck. Bitte.'
+      ],
+      bruch: [
+        'Aldric hat uns alle belogen. Auch ueber Elara.',
+        'Meine Tochter ist staerker, als sie denken. Sie wird ueberleben.',
+        'Ich bin zu alt zum Kaempfen. Aber ich kann helfen.'
+      ],
+      rebellion: [
+        'Finde meine Tochter. Bitte. Bevor es zu spaet ist.',
+        'Die Rebellion gibt mir Hoffnung. Vielleicht sehe ich Elara wieder.',
+        'Ich schmiede keine Waffen. Aber ich versorge die Verwundeten.'
+      ],
+      offenbarung: [
+        'Elara... was haben sie mit dir gemacht?',
+        'Mein Kind. Was auch passiert — ich liebe dich.',
+        'Die Wahrheit tut weh. Aber Luegen toeten.'
+      ]
+    },
+    elara: {
+      erste_risse: [
+        'Ich bin nicht entfuehrt worden. Ich bin geflohen.',
+        'Hier — lies das. Dann verstehst du.',
+        'Der Rat hat mich benutzt. Aber ich habe gelernt.'
+      ],
+      wahrheit: [
+        'Tief unten ist eine Kammer... ich zeige dir wo.',
+        'Die Rituale des Rats nutzen menschliche Energie. Meine Energie.',
+        'Ich kenne ihre Geheimnisse. Alle.'
+      ],
+      bruch: [
+        'Nimm das. Ich habe es fuer dich geschmiedet. Fuer den Fall, dass...',
+        'Aldric wird dich jagen. Sei vorsichtig.',
+        'Ich muss allein weiter. Vertrau mir.'
+      ],
+      rebellion: [
+        'Ich kaempfe auf meine Art. Von innen.',
+        'Der Rat glaubt, ich gehorche wieder. Das ist mein Vorteil.',
+        'Bald ist es soweit. Halte durch.'
+      ],
+      offenbarung: [
+        'Es tut mir leid. Aber du verstehst das nicht.',
+        'Ich musste mich entscheiden. Fuer Fogreach.',
+        'Die Wahrheit ist komplizierter, als du denkst.'
       ]
     }
   };
 
   // ---- Wave Milestone Events ----
   const WAVE_MILESTONES = {
-    10: 'Die ersten Siegel sind gebrochen. Branka wartet auf deinen Bericht.',
-    20: 'Tief unter dem Rathaus findest du Beweise fuer die Rituale des Kettenrats.',
-    30: 'Der Schattenrat ist gefallen. Die Wahrheit kann nicht mehr verborgen werden.'
+    5:  'Die Keller sind gesaeubert. Aber seltsame Symbole an den Waenden lassen dich nicht los...',
+    10: 'Der Anfuehrer der \'Eindringlinge\' ist besiegt. Seine letzten Worte: \'Wir wollten euch nur warnen...\'',
+    15: 'Gefaengniszellen. Nicht fuer Tiere — fuer Menschen. Wer sind die wahren Gefangenen hier?',
+    20: 'Die Ritualkammer. Daemonische Energie. Der Zeremonienmeister faellt — aber was er beschworen hat, lebt weiter.',
+    30: 'Der Schattenrat ist besiegt. Aber Elara ist mit ihm verschwunden. Der Nebel beginnt sich zu lichten.',
+    40: 'Unter Fogreach oeffnet sich eine Dimension aus Ketten und Schatten. Die wahre Quelle des Pakts wartet.'
   };
 
   // ---- Special Ending Text ----
-  const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede haemmert fuer die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nDu hast die Stadt befreit.';
+  const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede haemmert fuer die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nElara steht vor dir. Traenen in den Augen.\n\'Es ist vorbei\', fluestert sie. \'Endlich vorbei.\'\n\nDu hast die Stadt befreit.';
 
   // ---- Story State ----
   let storyState = {
@@ -272,7 +410,7 @@
     var act = getCurrentAct();
     var npcLines = NPC_DIALOGUE[npcId];
     if (!npcLines) return null;
-    return npcLines[act.id] || npcLines.awakening || null;
+    return npcLines[act.id] || npcLines.auftrag || null;
   }
 
   // ---- Journal Data ----
@@ -296,9 +434,11 @@
               else if (u === 'xp_bonus_10') parts.push('+10% XP');
               else if (u === 'shadow_skill') parts.push('Schattenkunst');
               else if (u === 'story_ending') parts.push('Epilog');
+              else if (u === 'elara_trust') parts.push('Elaras Vertrauen');
               else parts.push(u);
             });
           }
+          if (q.rewards.info) parts.push(q.rewards.info);
           rewardStr = parts.join(', ');
         }
         return { title: q.title, description: q.description, rewards: rewardStr, npcId: q.npcId };
