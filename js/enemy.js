@@ -140,8 +140,26 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   const clampX = (value) => Phaser.Math.Clamp(value, Math.min(leftBound, rightBound), Math.max(leftBound, rightBound));
   const clampY = (value) => Phaser.Math.Clamp(value, Math.min(topBound, bottomBound), Math.max(topBound, bottomBound));
 
-  let x = randomIntBetween(leftBound, rightBound);
-  let y = randomIntBetween(topBound, bottomBound);
+  // Pick initial spawn position far from player
+  let x, y;
+  const playerX = player?.x || (leftBound + rightBound) / 2;
+  const playerY = player?.y || (topBound + bottomBound) / 2;
+  // Try up to 20 random positions, pick the one farthest from player
+  let bestX = randomIntBetween(leftBound, rightBound);
+  let bestY = randomIntBetween(topBound, bottomBound);
+  let bestDist = 0;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const tx = randomIntBetween(leftBound, rightBound);
+    const ty = randomIntBetween(topBound, bottomBound);
+    const dist = (tx - playerX) * (tx - playerX) + (ty - playerY) * (ty - playerY);
+    if (dist > bestDist) {
+      bestDist = dist;
+      bestX = tx;
+      bestY = ty;
+    }
+  }
+  x = bestX;
+  y = bestY;
 
   if (xCoordinates > 0 && yCoordinates > 0) {
     x = xCoordinates;
@@ -154,6 +172,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     }
   }
 
+  // Minimum spawn distance from player — enemies should NOT spawn on top of player
+  const MIN_SPAWN_DISTANCE = 200;
+
   const ensureValidSpot = () => {
     if (scene.isPointAccessible && !scene.isPointAccessible(x, y)) {
       return false;
@@ -162,13 +183,10 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       return false;
     }
     if (player && player.active) {
-      const minDistance = scene?._accessibleArea?.minSpawnDistance;
-      if (minDistance && minDistance > 0) {
-        const dx = x - player.x;
-        const dy = y - player.y;
-        if (dx * dx + dy * dy < minDistance * minDistance) {
-          return false;
-        }
+      const dx = x - player.x;
+      const dy = y - player.y;
+      if (dx * dx + dy * dy < MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE) {
+        return false;
       }
     }
     return true;
