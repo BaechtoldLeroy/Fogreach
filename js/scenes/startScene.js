@@ -90,6 +90,14 @@ StartScene.prototype.preload = function () {
   this.load.image('imp_right1', 'assets/enemy/imp/right1.png');
   this.load.image('imp_right2', 'assets/enemy/imp/right2.png');
 
+  // Archer enemy sprites
+  this.load.image('archer_left0', 'assets/enemy/archer/left0.png');
+  this.load.image('archer_left1', 'assets/enemy/archer/left1.png');
+  this.load.image('archer_left2', 'assets/enemy/archer/left2.png');
+  this.load.image('archer_right0', 'assets/enemy/archer/right0.png');
+  this.load.image('archer_right1', 'assets/enemy/archer/right1.png');
+  this.load.image('archer_right2', 'assets/enemy/archer/right2.png');
+
   // Mage enemy sprites
   this.load.image('mage_left0', 'assets/enemy/mage/left0.png');
   this.load.image('mage_left1', 'assets/enemy/mage/left1.png');

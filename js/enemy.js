@@ -267,12 +267,12 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       tint = key.startsWith('imp_') ? null : (key === 'sprite_imp' ? null : 0xff0000);
       break; // Imp
     case 2:
-      key = tex('sprite_archer', 'enemyArcher');
+      key = scene.textures?.exists('archer_right0') ? 'archer_right0' : tex('sprite_archer', 'enemyArcher');
       speed = 140;
       hp = 1;
       isRanged = true;
       rangedAttackRange = 480;
-      tint = key === 'sprite_archer' ? null : 0x00ff00;
+      tint = key.startsWith('archer_') ? null : (key === 'sprite_archer' ? null : 0x00ff00);
       break; // Bogenschütze
     case 3:
       key = "brute_right0";
@@ -383,6 +383,14 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.avoidWeight = 1.2;
     enemy.sepRadius = 110;
     enemy.cohRadius = 260;
+    // Sprite-based archer with animation frames
+    if (key.startsWith('archer_')) {
+      const archerH = enemy.height || 212;
+      enemy.setScale(48 / archerH);
+      enemy.isArcher = true;
+      enemy.archerDirection = 'right';
+      enemy.archerAttacking = false;
+    }
   } else if (type === 3) {
     // Brute (Panzer) - uses sprite-based animation
     enemy.speed = 70;
@@ -662,6 +670,18 @@ function handleEnemies(time, delta = 16) {
       }
     }
 
+    if (enemy.isArcher && !enemy.archerAttacking) {
+      if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
+        const newDir = desired.x > 0 ? 'right' : 'left';
+        if (newDir !== enemy.archerDirection) {
+          enemy.archerDirection = newDir;
+          enemy._lastDirChange = time;
+          const idleKey = `archer_${newDir}0`;
+          if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
+        }
+      }
+    }
+
     if (enemy.isMage && !enemy.mageAttacking) {
       if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
@@ -700,6 +720,23 @@ function handleEnemies(time, delta = 16) {
             shootProjectile.call(this, enemy);
           }
           enemy.lastShotTime = time;
+
+          // Archer shoot animation (400ms: draw → release → idle)
+          if (enemy.isArcher && !enemy.archerAttacking) {
+            enemy.archerAttacking = true;
+            const dir = enemy.archerDirection || 'right';
+            const sc = this;
+            if (sc.textures.exists('archer_' + dir + '1')) enemy.setTexture('archer_' + dir + '1');
+            sc.time.delayedCall(200, () => {
+              if (enemy && enemy.active && sc.textures.exists('archer_' + dir + '2')) enemy.setTexture('archer_' + dir + '2');
+            });
+            sc.time.delayedCall(400, () => {
+              if (enemy && enemy.active) {
+                enemy.archerAttacking = false;
+                if (sc.textures.exists('archer_' + dir + '0')) enemy.setTexture('archer_' + dir + '0');
+              }
+            });
+          }
 
           // Mage cast animation (500ms: windup → cast → idle)
           if (enemy.isMage && !enemy.mageAttacking) {
