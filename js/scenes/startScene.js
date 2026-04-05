@@ -110,6 +110,9 @@ StartScene.prototype.preload = function () {
   this.load.image('sprite_boss_ceremony', 'assets/enemy/boss_ceremony/ceremonymaster.png');
   this.load.image('sprite_boss_shadow', 'assets/enemy/boss_shadow/shadowcouncillor.png');
 
+  // UI/environment sprites
+  this.load.image('stairDown', 'assets/tiles/stairDown.png');
+
   const templateNames = [
     "Arena", "ArmoryVault", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
     "CirclePillars", "CollapsingHall", "Crosshall", "CrossroadChamber", "Crossroads",

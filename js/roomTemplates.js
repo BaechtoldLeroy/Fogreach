@@ -576,14 +576,16 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     }
 
     // Check if object has enough clearance from walls (at least 2 tiles)
-    // to avoid blocking passages. Braziers are visual-only, always place them.
+    // Player body is 34x56px, objects are 32x32. Need 2+ tiles gap.
     const isBrazier = o.type === 'brazier' || o.type === 'brazer';
+    const isRubble = o.type === 'rubble';
     const tileX = Math.floor(o.x), tileY = Math.floor(o.y);
     let tooClose = false;
-    if (!isBrazier && wallsGrid) {
+    if (!isBrazier && !isRubble && wallsGrid) {
       // Check 2-tile radius for walls
-      for (let dy = -1; dy <= 1 && !tooClose; dy++) {
-        for (let dx = -1; dx <= 1 && !tooClose; dx++) {
+      for (let dy = -2; dy <= 2 && !tooClose; dy++) {
+        for (let dx = -2; dx <= 2 && !tooClose; dx++) {
+          if (dx === 0 && dy === 0) continue;
           const cx = tileX + dx, cy = tileY + dy;
           if (cy >= 0 && cy < wallsGrid.length && cx >= 0 && cx < (wallsGrid[cy]?.length || 0)) {
             if (wallsGrid[cy][cx] === '#') tooClose = true;
