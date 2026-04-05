@@ -5,163 +5,323 @@
 
   // ---- Quest Definitions ----
   const QUEST_DEFINITIONS = {
-    // === Branka's Questline (Archivschmiede) ===
-    branka_documents: {
-      id: 'branka_documents',
-      title: 'Verlorene Protokolle',
-      description: 'Finde 3 Protokoll-Abschriften im Rathauskeller und bringe sie zu Branka.',
+    // =======================================================
+    // === Act 1: Der Auftrag ===
+    // =======================================================
+    aldric_cleanup: {
+      id: 'aldric_cleanup',
+      title: 'Saeuberung der Keller',
+      description: 'Besiege 10 Gegner in den Kellern unter der Archivschmiede.',
+      npcId: 'aldric',
+      type: 'kill',
+      chain: 1,
+      objectives: [
+        { type: 'kill', target: 'enemy', current: 0, required: 10 }
+      ],
+      rewards: { xp: 30, materials: { MAT: 5 } },
+      prerequisites: [],
+      requiredAct: 0,
+      dialogueOffer: 'Wilde Tiere in den Kellern. Raeum sie aus.\n\nWillst du diese Aufgabe uebernehmen?',
+      dialogueProgress: 'Die Keller sind noch nicht sicher. Kaempfe weiter.',
+      dialogueComplete: 'Gut. Die Keller sind gesaeubert. Hier ist dein Lohn.'
+    },
+    aldric_patrol: {
+      id: 'aldric_patrol',
+      title: 'Keller-Patrouille',
+      description: 'Raeume 3 Raeume in den Kellern, um alle Gaenge zu sichern.',
+      npcId: 'aldric',
+      type: 'explore',
+      chain: 2,
+      objectives: [
+        { type: 'explore', target: 'room', current: 0, required: 3 }
+      ],
+      rewards: { xp: 40 },
+      prerequisites: [],
+      requiredAct: 0,
+      dialogueOffer: 'Stell sicher, dass alle Gaenge sicher sind. Patrouilliere drei Raeume.\n\nBist du bereit?',
+      dialogueProgress: 'Noch nicht alle Gaenge gesichert. Weiter patrouillieren.',
+      dialogueComplete: 'Alle Gaenge sind sicher. Gute Arbeit, Archivschmied.'
+    },
+
+    // =======================================================
+    // === Act 2: Der treue Diener ===
+    // =======================================================
+    aldric_intruders: {
+      id: 'aldric_intruders',
+      title: 'Die Eindringlinge',
+      description: 'Besiege 20 Eindringlinge, die die Archive des Rats stehlen.',
+      npcId: 'aldric',
+      type: 'kill',
+      chain: 3,
+      objectives: [
+        { type: 'kill', target: 'enemy', current: 0, required: 20 }
+      ],
+      rewards: { xp: 75, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
+      prerequisites: ['aldric_cleanup'],
+      requiredAct: 1,
+      dialogueOffer: 'Fremde stehlen unsere Dokumente. Stoppe sie. Besiege zwanzig dieser Eindringlinge.\n\nNimmst du den Auftrag an?',
+      dialogueProgress: 'Die Eindringlinge treiben noch ihr Unwesen. Kaempfe weiter.',
+      dialogueComplete: 'Hervorragend. Die Eindringlinge sind vertrieben. Nimm dieses Schwert als Zeichen des Vertrauens.'
+    },
+    harren_daughter: {
+      id: 'harren_daughter',
+      title: 'Die verschwundene Tochter',
+      description: 'Durchsuche 5 Raeume und finde Elaras Tagebuch.',
+      npcId: 'harren',
+      type: 'fetch',
+      chain: 1,
+      objectives: [
+        { type: 'explore', target: 'room', current: 0, required: 5 },
+        { type: 'fetch', target: 'diary', current: 0, required: 1 }
+      ],
+      rewards: { xp: 100 },
+      prerequisites: [],
+      requiredAct: 1,
+      dialogueOffer: 'Meine Tochter Elara... bitte finde sie. Durchsuche die Raeume und bring mir ihr Tagebuch.\n\nHilfst du einem alten Mann?',
+      dialogueProgress: 'Hast du etwas gefunden? Bitte such weiter nach Elara...',
+      dialogueComplete: 'Ihr Tagebuch... Danke. Wenigstens weiss ich jetzt, dass sie lebt.'
+    },
+    branka_armor: {
+      id: 'branka_armor',
+      title: 'Neue Ruestungen',
+      description: 'Beschaffe 3 Materialien fuer die vom Rat bestellten Ruestungen.',
       npcId: 'branka',
       type: 'fetch',
       chain: 1,
       objectives: [
-        { type: 'fetch', target: 'document', current: 0, required: 3 }
+        { type: 'fetch', target: 'material', current: 0, required: 3 }
       ],
       rewards: { xp: 50, materials: { MAT: 10 } },
       prerequisites: [],
-      requiredAct: 0,
-      dialogueOffer: 'Im Keller unter dem Rathaus lagern Protokolle aus Daemonenverhoeren. Bring mir drei Abschriften, und ich veredele deine Artefakte.\n\nWillst du diese Aufgabe uebernehmen?',
-      dialogueProgress: 'Hast du die Protokolle schon gefunden? Suche weiter im Rathauskeller — sie verstecken sich zwischen dem Geruempel.',
-      dialogueComplete: 'Ausgezeichnet! Diese Protokolle werden uns helfen, die Wahrheit ans Licht zu bringen. Hier ist deine Belohnung.'
+      requiredAct: 1,
+      dialogueOffer: 'Der Rat will neue Ruestungen. Aber die Plaene... stimmen nicht. Bring mir trotzdem drei Materialien.\n\nHilfst du mir?',
+      dialogueProgress: 'Ich brauche noch mehr Materialien. Such weiter.',
+      dialogueComplete: 'Danke. Aber diese Ruestungen... die Masse sind fuer Gefangene, nicht Soldaten. Etwas stimmt hier nicht.'
     },
-    branka_seals: {
-      id: 'branka_seals',
-      title: 'Daemonische Siegel',
-      description: 'Besiege 5 Elite-Gegner im Rathauskeller, um die daemonischen Siegel zu zerstoeren.',
+
+    // =======================================================
+    // === Act 3: Erste Risse ===
+    // =======================================================
+    mara_contact: {
+      id: 'mara_contact',
+      title: 'Die Spaeherin',
+      description: 'Triff Mara und hoere, was sie zu sagen hat.',
+      npcId: 'mara',
+      type: 'dialogue',
+      chain: 1,
+      objectives: [
+        { type: 'dialogue', target: 'mara_meet', current: 0, required: 1 }
+      ],
+      rewards: { info: 'Maras Netzwerk enthuellt' },
+      prerequisites: [],
+      requiredAct: 2,
+      dialogueOffer: 'Du erinnerst dich nicht. Aber ich kenne dich.\n\nHoer mir zu — es ist wichtig.',
+      dialogueProgress: 'Wir muessen reden. Komm zu mir.',
+      dialogueComplete: 'Jetzt weisst du Bescheid. Mein Netzwerk steht dir offen.'
+    },
+    elara_meeting: {
+      id: 'elara_meeting',
+      title: 'Elaras Geheimnis',
+      description: 'Finde 2 geheime Dokumente, die Elara versteckt hat.',
+      npcId: 'elara',
+      type: 'fetch',
+      chain: 1,
+      objectives: [
+        { type: 'fetch', target: 'document', current: 0, required: 2 }
+      ],
+      rewards: { xp: 100, unlocks: ['elara_trust'] },
+      prerequisites: [],
+      requiredAct: 2,
+      dialogueOffer: 'Ich bin nicht entfuehrt worden. Ich bin geflohen. Hier — lies das.\n\nFinde zwei Dokumente, die ich im Keller versteckt habe.',
+      dialogueProgress: 'Die Dokumente sind gut versteckt. Suche weiter.',
+      dialogueComplete: 'Jetzt siehst du die Wahrheit. Der Rat hat mich benutzt — fuer ihre Rituale.'
+    },
+    branka_doubt: {
+      id: 'branka_doubt',
+      title: 'Zweifel der Schmiedin',
+      description: 'Besiege 5 Elite-Gegner, um Beweise fuer Brankas Verdacht zu finden.',
       npcId: 'branka',
       type: 'kill',
       chain: 2,
       objectives: [
         { type: 'kill', target: 'elite_enemy', current: 0, required: 5 }
       ],
-      rewards: { xp: 100, items: [{ type: 'weapon', key: 'SIEGELBRECHER', name: 'Siegelbrecher', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityValue: 2, itemLevel: 8, damage: 12, speed: 1.0, range: 110, armor: 0, crit: 0.10, hp: 0 }] },
-      prerequisites: ['branka_documents'],
-      requiredAct: 1,
-      dialogueOffer: 'Die Protokolle, die du gebracht hast, enthuellen daemonische Siegel tief im Keller. Elite-Wachen beschuetzen sie.\n\nBesiege fuenf dieser Elite-Gegner, damit ich eine Waffe schmieden kann, die die Siegel bricht.',
-      dialogueProgress: 'Die Elite-Wachen sind zaeh, aber nicht unbesiegbar. Kaempfe weiter — jeder Sieg bringt uns naeher an die Wahrheit.',
-      dialogueComplete: 'Die Siegel fallen! Aus ihren Fragmenten habe ich den Siegelbrecher geschmiedet. Nimm ihn — er wird dir noch gute Dienste leisten.'
+      rewards: { xp: 80 },
+      prerequisites: ['branka_armor'],
+      requiredAct: 2,
+      dialogueOffer: 'Diese Ruestungen sind fuer Gefangene, nicht Soldaten. Hilf mir, Beweise zu finden.\n\nBesiege fuenf Elite-Wachen und bring mir ihre Befehle.',
+      dialogueProgress: 'Die Elite-Wachen tragen die Beweise bei sich. Kaempfe weiter.',
+      dialogueComplete: 'Ich hatte recht. Der Rat baut Gefaengnisse, keine Kasernen. Wir muessen handeln.'
     },
-    branka_truth: {
-      id: 'branka_truth',
-      title: 'Die Wahrheit der Schmiede',
-      description: 'Erreiche Welle 20 im Rathauskeller und kehre zu Branka zurueck.',
-      npcId: 'branka',
+
+    // =======================================================
+    // === Act 4: Die Wahrheit sickert durch ===
+    // =======================================================
+    elara_ritual: {
+      id: 'elara_ritual',
+      title: 'Die Ritualkammer',
+      description: 'Dringe bis Welle 20 vor, um die Ritualkammer des Rats zu finden.',
+      npcId: 'elara',
       type: 'wave',
-      chain: 3,
+      chain: 2,
       objectives: [
         { type: 'wave', target: 'reach_wave', current: 0, required: 20 }
       ],
-      rewards: { xp: 200, unlocks: ['enhanced_crafting'] },
-      prerequisites: ['branka_seals'],
-      requiredAct: 2,
-      dialogueOffer: 'Tief unter dem Rathaus, jenseits von Welle 20, liegt die alte Meisterschmiede. Dort verbergen sich die Geheimnisse der wahren Schmiedekunst.\n\nDringe vor und kehre zurueck — dann zeige ich dir Techniken, die der Rat verboten hat.',
-      dialogueProgress: 'Du musst tiefer vordringen. Welle 20 — dort liegt die alte Meisterschmiede verborgen.',
-      dialogueComplete: 'Du hast die alte Meisterschmiede gefunden! Mit diesem Wissen kann ich nun Waffen schmieden, die der Rat fuerchtet. Die Werkstatt ist jetzt erweitert.'
+      rewards: { xp: 150, items: [{ type: 'accessory', key: 'RITUAL_AMULETT', name: 'Ritualamulett', iconKey: 'itAccessory', rarity: 'epic', rarityLabel: 'Episch', rarityValue: 3, itemLevel: 12, damage: 0, speed: 0, range: 0, armor: 5, crit: 0.05, hp: 20 }] },
+      prerequisites: ['elara_meeting'],
+      requiredAct: 3,
+      dialogueOffer: 'Tief unten ist eine Kammer... ich zeige dir wo. Dringe bis Welle 20 vor.\n\nBist du bereit fuer die Wahrheit?',
+      dialogueProgress: 'Du musst tiefer vordringen. Die Ritualkammer liegt bei Welle 20.',
+      dialogueComplete: 'Du hast sie gefunden. Die Beschwoerungskammer des Rats. Nimm dieses Amulett — es schuetzt vor ihrer dunklen Magie.'
     },
-
-    // === Thom's Questline (Druckerei) ===
-    thom_evidence: {
-      id: 'thom_evidence',
-      title: 'Beweise sammeln',
-      description: 'Besiege 20 Gegner im Rathauskeller, um Beweise fuer die Druckerei zu sichern.',
-      npcId: 'thom',
-      type: 'kill',
-      chain: 1,
-      objectives: [
-        { type: 'kill', target: 'enemy', current: 0, required: 20 }
-      ],
-      rewards: { xp: 75, items: [{ type: 'weapon', key: 'THOM_REWARD', name: 'Druckerpresse-Klinge', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityValue: 2, itemLevel: 5, damage: 8, speed: 1.2, range: 100, armor: 0, crit: 0.08, hp: 0 }] },
-      prerequisites: [],
-      requiredAct: 0,
-      dialogueOffer: 'Bring mir Beweise aus dem Rathauskeller. Jede Spalte, die wir drucken, nimmt der Angst einen Zoll. Besiege 20 Wachen dort unten und sammle ihre Dokumente.\n\nNimmst du den Auftrag an?',
-      dialogueProgress: 'Kaempfe weiter im Rathauskeller. Jeder besiegte Feind bringt uns naeher an die Wahrheit.',
-      dialogueComplete: 'Hervorragend! Mit diesen Beweisen koennen wir endlich drucken, was die Buerger wissen muessen. Nimm diese Klinge als Dank.'
-    },
-    thom_plates: {
-      id: 'thom_plates',
-      title: 'Verbotene Druckplatten',
-      description: 'Finde 5 verbotene Druckplatten in den Tiefen des Rathauskellers.',
+    thom_truth: {
+      id: 'thom_truth',
+      title: 'Verbotene Wahrheiten',
+      description: 'Finde 5 Druckplatten mit den verbotenen Wahrheiten ueber den Rat.',
       npcId: 'thom',
       type: 'fetch',
-      chain: 2,
+      chain: 1,
       objectives: [
         { type: 'fetch', target: 'print_plate', current: 0, required: 5 }
       ],
-      rewards: { xp: 150, materials: { MAT: 20 } },
-      prerequisites: ['thom_evidence'],
-      requiredAct: 1,
-      dialogueOffer: 'Die erste Ausgabe war ein Erfolg! Aber fuer die naechste brauche ich alte Druckplatten — der Rat hat sie im Keller versteckt.\n\nFinde fuenf dieser Platten, und unsere Pamphlete werden unaufhaltsam.',
-      dialogueProgress: 'Die Druckplatten sind irgendwo im Rathauskeller verborgen. Suche weiter — sie leuchten schwach im Dunkeln.',
-      dialogueComplete: 'Fantastisch! Diese Platten sind aus einer Zeit, als die Wahrheit noch gedruckt werden durfte. Hier ist dein Lohn.'
-    },
-    thom_pamphlets: {
-      id: 'thom_pamphlets',
-      title: 'Die Pamphlete verbreiten',
-      description: 'Schliesse 3 Dungeon-Durchlaeufe ab, um die Pamphlete in der Stadt zu verbreiten.',
-      npcId: 'thom',
-      type: 'dungeon_runs',
-      chain: 3,
-      objectives: [
-        { type: 'dungeon_run', target: 'dungeon_complete', current: 0, required: 3 }
-      ],
-      rewards: { xp: 250, unlocks: ['xp_bonus_10'] },
-      prerequisites: ['thom_plates'],
-      requiredAct: 2,
-      dialogueOffer: 'Die Druckerpresse laeuft! Aber die Pamphlete muessen verteilt werden. Jeder Durchlauf durch den Keller ist eine Chance, sie unter den Wachen zu streuen.\n\nSchliesse drei Durchlaeufe ab, und ganz Fogreach wird die Wahrheit lesen.',
-      dialogueProgress: 'Kaempfe dich weiter durch den Rathauskeller. Jeder abgeschlossene Durchlauf verbreitet unsere Botschaft.',
-      dialogueComplete: 'Die ganze Stadt liest unsere Wahrheiten! Die Buerger sind aufgewacht. Als Dank erhaeltst du meinen Segen — deine Erfahrung waechst nun schneller. (+10% XP)'
-    },
-
-    // === Mara's Questline (Untergrund) ===
-    mara_seals: {
-      id: 'mara_seals',
-      title: 'Siegel brechen',
-      description: 'Raeume 5 Raeume im Rathauskeller, um die Siegel des Zeremonenmeisters zu brechen.',
-      npcId: 'mara',
-      type: 'explore',
-      chain: 1,
-      objectives: [
-        { type: 'explore', target: 'room', current: 0, required: 5 }
-      ],
-      rewards: { xp: 100, materials: { MAT: 15 } },
+      rewards: { xp: 100, materials: { MAT: 20 } },
       prerequisites: [],
-      requiredAct: 0,
-      dialogueOffer: 'Der Zeremonienmeister besitzt neue Siegel. Sie holen Daemonen als stilles Archiv. Raeume fuenf Raeume im Rathauskeller, um seine Siegel zu brechen.\n\nBist du bereit?',
-      dialogueProgress: 'Sichere weiter Augen im Rathauskeller. Jedes Siegel, das du brichst, lockert ihre Ketten an der Stadt.',
-      dialogueComplete: 'Die Siegel sind gebrochen. Die Daemonen des Zeremonienmeisters verlieren ihre Macht. Hier — das hast du dir verdient.'
+      requiredAct: 3,
+      dialogueOffer: 'Ich habe genug gedruckt, was der Rat will. Zeit fuer die Wahrheit.\n\nFinde fuenf Druckplatten im Keller — sie enthalten die echte Geschichte.',
+      dialogueProgress: 'Die Druckplatten sind irgendwo im Rathauskeller verborgen. Suche weiter.',
+      dialogueComplete: 'Fantastisch! Diese Platten enthalten Beweise, die der Rat vernichten wollte. Die Wahrheit geht in Druck.'
     },
-    mara_shadow: {
-      id: 'mara_shadow',
-      title: 'Schattenagent',
-      description: 'Besiege den Kettenmeister-Boss bei Welle 10.',
+    mara_warning: {
+      id: 'mara_warning',
+      title: 'Maras Warnung',
+      description: 'Besiege den Kettenmeister-Boss, der die ersten echten Beweise bewacht.',
       npcId: 'mara',
       type: 'boss',
       chain: 2,
       objectives: [
         { type: 'boss_kill', target: 'kettenmeister', current: 0, required: 1 }
       ],
-      rewards: { xp: 200, unlocks: ['shadow_skill'] },
-      prerequisites: ['mara_seals'],
-      requiredAct: 1,
-      dialogueOffer: 'Meine Spaeher berichten: Der Kettenmeister selbst bewacht Welle 10. Er ist der Schluessel zum inneren Kreis des Rates.\n\nBesiege ihn, und ich oeffne dir Tueren, die bisher verschlossen waren.',
-      dialogueProgress: 'Der Kettenmeister wartet bei Welle 10. Sei vorsichtig — er ist staerker als alles, was du bisher gesehen hast.',
-      dialogueComplete: 'Der Kettenmeister ist gefallen! Du hast bewiesen, dass du wuerdig bist. Ich lehre dich nun die Schattenkuenste meines Netzwerks.'
+      rewards: { xp: 200 },
+      prerequisites: ['mara_contact'],
+      requiredAct: 3,
+      dialogueOffer: 'Der Kettenmeister bewacht die ersten echten Beweise. Besiege ihn.\n\nOhne diese Beweise koennen wir nichts beweisen.',
+      dialogueProgress: 'Der Kettenmeister lebt noch. Finde und besiege ihn.',
+      dialogueComplete: 'Der Kettenmeister ist gefallen! Die Beweise sind gesichert. Jetzt kann niemand mehr leugnen, was der Rat getan hat.'
     },
-    mara_inner_circle: {
-      id: 'mara_inner_circle',
-      title: 'Der innere Kreis',
-      description: 'Besiege den Schattenrat-Boss bei Welle 30, um die Wahrheit aufzudecken.',
-      npcId: 'mara',
-      type: 'boss',
+
+    // =======================================================
+    // === Act 5: Der Bruch ===
+    // =======================================================
+    branka_weapons: {
+      id: 'branka_weapons',
+      title: 'Waffen fuer den Widerstand',
+      description: 'Stelle 3 Gegenstaende in der Archivschmiede her.',
+      npcId: 'branka',
+      type: 'craft',
       chain: 3,
+      objectives: [
+        { type: 'craft', target: 'craft_item', current: 0, required: 3 }
+      ],
+      rewards: { xp: 150 },
+      prerequisites: ['branka_doubt'],
+      requiredAct: 4,
+      dialogueOffer: 'Wir brauchen Waffen. Nicht fuer den Rat — fuer UNS.\n\nStelle drei Gegenstaende in der Schmiede her.',
+      dialogueProgress: 'Die Schmiede wartet. Stelle weitere Gegenstaende her.',
+      dialogueComplete: 'Gut geschmiedet. Diese Waffen werden den Unterschied machen.'
+    },
+    thom_pamphlets: {
+      id: 'thom_pamphlets',
+      title: 'Die Pamphlete',
+      description: 'Schliesse 3 Dungeon-Durchlaeufe ab, um Flugblaetter zu verteilen.',
+      npcId: 'thom',
+      type: 'dungeon_runs',
+      chain: 2,
+      objectives: [
+        { type: 'dungeon_run', target: 'dungeon_complete', current: 0, required: 3 }
+      ],
+      rewards: { xp: 200, unlocks: ['xp_bonus_10'] },
+      prerequisites: ['thom_truth'],
+      requiredAct: 4,
+      dialogueOffer: 'Jeder Durchlauf ist eine Chance, Flugblaetter zu verteilen.\n\nSchliesse drei Durchlaeufe ab, und ganz Fogreach wird die Wahrheit lesen.',
+      dialogueProgress: 'Kaempfe dich weiter durch den Rathauskeller. Jeder Durchlauf verbreitet unsere Botschaft.',
+      dialogueComplete: 'Die ganze Stadt liest unsere Wahrheiten! Die Buerger sind aufgewacht. Deine Erfahrung waechst nun schneller. (+10% XP)'
+    },
+    elara_blade: {
+      id: 'elara_blade',
+      title: 'Elaras Geschenk',
+      description: 'Elara hat eine besondere Waffe fuer dich geschmiedet.',
+      npcId: 'elara',
+      type: 'dialogue',
+      chain: 3,
+      elaraGift: true,
+      objectives: [
+        { type: 'dialogue', target: 'elara_gift', current: 0, required: 1 }
+      ],
+      rewards: { xp: 0, items: [{ type: 'weapon', key: 'ELARAS_KLINGE', name: 'Elaras Klinge', iconKey: 'itWeapon', rarity: 'legendary', rarityLabel: 'Legendaer', rarityValue: 4, itemLevel: 15, damage: 22, speed: 1.3, range: 120, armor: 0, crit: 0.15, hp: 0, elaraGift: true }] },
+      prerequisites: ['elara_ritual'],
+      requiredAct: 4,
+      dialogueOffer: 'Nimm das. Ich habe es fuer dich geschmiedet. Fuer den Fall, dass...\n\nNimm Elaras Klinge an?',
+      dialogueProgress: 'Die Klinge wartet auf dich.',
+      dialogueComplete: 'Moege sie dich beschuetzen. Egal was kommt.'
+    },
+
+    // =======================================================
+    // === Act 6: Rebellion ===
+    // =======================================================
+    mara_assault: {
+      id: 'mara_assault',
+      title: 'Der Sturm auf den Rat',
+      description: 'Dringe bis Welle 30 vor, um den Rat zu stuerzen.',
+      npcId: 'mara',
+      type: 'wave',
+      chain: 3,
+      objectives: [
+        { type: 'wave', target: 'reach_wave', current: 0, required: 30 }
+      ],
+      rewards: { xp: 300 },
+      prerequisites: ['mara_warning'],
+      requiredAct: 5,
+      dialogueOffer: 'Es ist soweit. Der Rat faellt heute. Dringe bis Welle 30 vor.\n\nBist du bereit fuer den Sturm?',
+      dialogueProgress: 'Der Rat wartet in der Tiefe. Dringe weiter vor — Welle 30.',
+      dialogueComplete: 'Der Rat ist gestuerzt! Fogreach atmet auf. Aber die Schatten sind noch nicht besiegt...'
+    },
+    harren_rescue: {
+      id: 'harren_rescue',
+      title: 'Rettung oder Beweis',
+      description: 'Besiege den Schattenrat-Boss, um Elara zu finden.',
+      npcId: 'harren',
+      type: 'boss',
+      chain: 2,
       objectives: [
         { type: 'boss_kill', target: 'schattenrat', current: 0, required: 1 }
       ],
+      rewards: { xp: 250 },
+      prerequisites: ['harren_daughter'],
+      requiredAct: 5,
+      dialogueOffer: 'Finde meine Tochter. Bitte. Der Schattenrat haelt sie fest.\n\nBesiege ihn und bring Elara zurueck.',
+      dialogueProgress: 'Der Schattenrat lebt noch. Finde und besiege ihn — fuer Elara.',
+      dialogueComplete: 'Du hast den Schattenrat besiegt. Aber Elara... sie ist mit ihm verschwunden. Was hat das zu bedeuten?'
+    },
+
+    // =======================================================
+    // === Act 7: Offenbarung ===
+    // =======================================================
+    final_truth: {
+      id: 'final_truth',
+      title: 'Die letzte Wahrheit',
+      description: 'Dringe bis Welle 40 vor, um die wahre Quelle des Pakts zu finden.',
+      npcId: 'mara',
+      type: 'wave',
+      chain: 4,
+      objectives: [
+        { type: 'wave', target: 'reach_wave', current: 0, required: 40 }
+      ],
       rewards: { xp: 500, unlocks: ['story_ending'] },
-      prerequisites: ['mara_shadow'],
-      requiredAct: 2,
-      dialogueOffer: 'Der Schattenrat — der wahre Herrscher von Fogreach — verbirgt sich bei Welle 30. Er ist die letzte Kette, die diese Stadt fesselt.\n\nBesiege ihn, und die Wahrheit wird endlich frei.',
-      dialogueProgress: 'Der Schattenrat wartet in der Tiefe bei Welle 30. Bereite dich gut vor — dies ist der finale Kampf.',
-      dialogueComplete: 'Der Schattenrat ist vernichtet! Die Ketten von Fogreach sind gebrochen. Du hast die Stadt befreit.'
+      prerequisites: ['mara_assault'],
+      requiredAct: 6,
+      dialogueOffer: 'Unter Fogreach wartet die Wahrheit. Bist du bereit?\n\nDringe bis Welle 40 vor — in die Dimension aus Ketten und Schatten.',
+      dialogueProgress: 'Die letzte Wahrheit liegt bei Welle 40. Du musst tiefer gehen.',
+      dialogueComplete: 'Die Ketten sind gebrochen. Die Wahrheit ist frei. Fogreach gehoert wieder den Menschen.'
     }
   };
 
@@ -242,6 +402,15 @@
         return { type: o.type, target: o.target, current: 0, required: o.required };
       })
     };
+
+    // Auto-complete dialogue quests immediately upon acceptance
+    if (def.type === 'dialogue') {
+      questState[questId].objectives.forEach(function (obj) {
+        obj.current = obj.required;
+      });
+      console.log('[QuestSystem] Auto-completed dialogue quest:', questId);
+    }
+
     console.log('[QuestSystem] Accepted quest:', questId);
     _notifyUpdate();
     return true;
@@ -318,10 +487,17 @@
   }
 
   /**
+   * Called when an item is crafted. Updates craft-type objectives.
+   */
+  function onItemCrafted() {
+    return updateQuestProgress('craft', 'craft_item', 1);
+  }
+
+  /**
    * Check if all quest chains for all NPCs are completed.
    */
   function areAllQuestChainsComplete() {
-    var chainEnders = ['branka_truth', 'thom_pamphlets', 'mara_inner_circle'];
+    var chainEnders = ['final_truth'];
     return chainEnders.every(function (id) {
       var state = questState[id];
       return state && state.status === 'completed';
@@ -399,8 +575,11 @@
     _initQuestState();
     Object.keys(data).forEach(function (id) {
       if (questState[id]) {
+        // Load known quests from save
         questState[id] = data[id];
       }
+      // Old quest IDs from previous saves are silently ignored,
+      // preserving backward compatibility
     });
     _notifyUpdate();
   }
@@ -448,6 +627,7 @@
     updateQuestProgress: updateQuestProgress,
     onWaveCompleted: onWaveCompleted,
     onBossKilled: onBossKilled,
+    onItemCrafted: onItemCrafted,
     areAllQuestChainsComplete: areAllQuestChainsComplete,
     isQuestReadyToComplete: isQuestReadyToComplete,
     completeQuest: completeQuest,
