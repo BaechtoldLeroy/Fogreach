@@ -980,9 +980,29 @@ function handleEnemyHit(scene, enemy, options = {}) {
     enemy.destroy();
     defeatedEnemiesInWave += 1;
     addXP.call(scene);
+    // Story stats: enemy kill
+    if (window.storySystem && typeof window.storySystem.onEnemyKilled === 'function') {
+      window.storySystem.onEnemyKilled();
+    }
     // Quest progress: enemy kill
     if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
       window.questSystem.updateQuestProgress('kill', 'enemy', 1);
+      // Track elite kills for quest objectives
+      if (enemy.isElite) {
+        window.questSystem.updateQuestProgress('kill', 'elite_enemy', 1);
+      }
+      // Track boss kills for quest objectives
+      if (enemy.isBoss && enemy.bossType) {
+        var bossMapping = {
+          'chainMaster': 'kettenmeister',
+          'ceremonyMaster': 'kettenmeister',
+          'shadowCouncillor': 'schattenrat'
+        };
+        var questBossId = bossMapping[enemy.bossType] || enemy.bossType;
+        if (typeof window.questSystem.onBossKilled === 'function') {
+          window.questSystem.onBossKilled(questBossId);
+        }
+      }
     }
     return;
   }

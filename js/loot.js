@@ -123,31 +123,41 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     }
   }
 
-  // Quest document drop (10% chance)
+  // Quest item drops (10% chance each)
   if (!maybeItem && window.questSystem) {
     var activeQuests = window.questSystem.getActiveQuests();
-    var hasFetchQuest = activeQuests.some(function (q) {
-      return q.type === 'fetch' && q.objectives.some(function (o) {
-        return o.type === 'fetch' && o.target === 'document' && o.current < o.required;
+
+    // Check for active fetch quests and spawn matching quest items
+    var questItemDefs = [
+      { target: 'document', name: 'Protokoll-Abschrift', key: 'QUEST_DOC', tint: 0xffdd44 },
+      { target: 'print_plate', name: 'Verbotene Druckplatte', key: 'QUEST_PLATE', tint: 0x88aaff }
+    ];
+
+    for (var qi = 0; qi < questItemDefs.length; qi++) {
+      var qiDef = questItemDefs[qi];
+      var needsItem = activeQuests.some(function (q) {
+        return q.objectives.some(function (o) {
+          return o.type === 'fetch' && o.target === qiDef.target && o.current < o.required;
+        });
       });
-    });
-    if (hasFetchQuest && Math.random() < 0.10) {
-      var docItem = {
-        type: 'quest_item',
-        key: 'QUEST_DOC',
-        name: 'Protokoll-Abschrift',
-        iconKey: 'itMat',
-        isQuestItem: true,
-        questTarget: 'document'
-      };
-      var docLoot = lootGroup.create(x, y, docItem.iconKey || 'itMat');
-      docLoot.setDisplaySize(28, 22);
-      docLoot.setData('item', docItem);
-      docLoot.setData('questItem', true);
-      docLoot.setDepth(80);
-      docLoot.setTint(0xffdd44);
-      trackLootSprite(scene || docLoot.scene, docLoot);
-      return;
+      if (needsItem && Math.random() < 0.10) {
+        var questItem = {
+          type: 'quest_item',
+          key: qiDef.key,
+          name: qiDef.name,
+          iconKey: 'itMat',
+          isQuestItem: true,
+          questTarget: qiDef.target
+        };
+        var questLoot = lootGroup.create(x, y, questItem.iconKey || 'itMat');
+        questLoot.setDisplaySize(28, 22);
+        questLoot.setData('item', questItem);
+        questLoot.setData('questItem', true);
+        questLoot.setDepth(80);
+        questLoot.setTint(qiDef.tint);
+        trackLootSprite(scene || questLoot.scene, questLoot);
+        return;
+      }
     }
   }
 

@@ -99,6 +99,10 @@ function checkWaveEnd(time) {
     if (window.storySystem && typeof window.storySystem.onWaveCompleted === 'function') {
       window.storySystem.onWaveCompleted(currentWave);
     }
+    // Notify quest system of wave completion
+    if (window.questSystem && typeof window.questSystem.onWaveCompleted === 'function') {
+      window.questSystem.onWaveCompleted(currentWave);
+    }
 
     // Raum gilt als geschafft → Treppen freigeben
     if (typeof markRoomCleared === 'function') markRoomCleared();

@@ -431,42 +431,151 @@ class HubSceneV2 extends Phaser.Scene {
       }
     }
 
+    // Build dialogue pages based on quest mode
+    const pages = [];
+    let titleStr = npcData.name || 'Gespraech';
+
+    // Check for completed quests to reference in dialogue
+    const completedForNpc = (qs && npcId) ? qs.getCompletedQuests(npcId) : [];
+    const completedCount = completedForNpc.length;
+
+    if (questMode === 'offer' && questData) {
+      titleStr = npcData.name + ' — Neue Aufgabe';
+
+      // Reference previous quests in greeting
+      if (completedCount > 0) {
+        const lastCompleted = completedForNpc[completedForNpc.length - 1];
+        pages.push({
+          text: 'Gut, dass du wieder da bist. Dein Erfolg bei "' + lastCompleted.title + '" hat mir Mut gemacht. Es gibt mehr zu tun.',
+          choices: null
+        });
+      }
+
+      // Quest offer text
+      pages.push({
+        text: questData.dialogueOffer,
+        choices: null
+      });
+
+      // Choice page
+      const chainNum = questData.chain || 1;
+      const rewardParts = [];
+      if (questData.rewards.xp) rewardParts.push(questData.rewards.xp + ' XP');
+      if (questData.rewards.materials && questData.rewards.materials.MAT) rewardParts.push(questData.rewards.materials.MAT + ' Eisenbrocken');
+      if (questData.rewards.items && questData.rewards.items.length > 0) rewardParts.push(questData.rewards.items[0].name);
+      if (questData.rewards.unlocks) {
+        questData.rewards.unlocks.forEach(u => {
+          if (u === 'enhanced_crafting') rewardParts.push('Erweiterte Schmiede');
+          else if (u === 'xp_bonus_10') rewardParts.push('+10% XP');
+          else if (u === 'shadow_skill') rewardParts.push('Schattenkunst');
+          else if (u === 'story_ending') rewardParts.push('Epilog');
+        });
+      }
+      const rewardStr = rewardParts.length > 0 ? '\n\nBelohnung: ' + rewardParts.join(', ') : '';
+
+      pages.push({
+        text: '[Aufgabe ' + chainNum + '/3: ' + questData.title + ']\n' + questData.description + rewardStr,
+        choices: [
+          { label: 'Akzeptieren', action: 'accept' },
+          { label: 'Mehr erfahren', action: 'info' },
+          { label: 'Ablehnen', action: 'decline' }
+        ]
+      });
+
+      // Info page (shown if "Mehr erfahren" is chosen)
+      pages.push({
+        text: questData.description + '\n\nDiese Aufgabe ist Teil einer Questkette (' + chainNum + '/3) fuer ' + npcData.name + '.' + rewardStr,
+        choices: [
+          { label: 'Akzeptieren', action: 'accept' },
+          { label: 'Ablehnen', action: 'decline' }
+        ],
+        _isInfoPage: true
+      });
+
+    } else if (questMode === 'progress' && questData) {
+      const obj = questData.objectives[0];
+      const progressStr = obj ? (obj.current + '/' + obj.required) : '';
+      const progressPct = obj ? Math.floor((obj.current / obj.required) * 100) : 0;
+      titleStr = npcData.name + ' — ' + questData.title;
+      pages.push({
+        text: questData.dialogueProgress + '\n\nFortschritt: ' + progressStr + ' (' + progressPct + '%)',
+        choices: null
+      });
+
+    } else if (questMode === 'turnin' && questData) {
+      titleStr = npcData.name + ' — Aufgabe abgeschlossen!';
+      pages.push({
+        text: questData.dialogueComplete,
+        choices: null
+      });
+      // Reward page
+      const rewardParts = [];
+      if (questData.rewards && questData.rewards.xp) rewardParts.push(questData.rewards.xp + ' XP');
+      if (questData.rewards && questData.rewards.materials && questData.rewards.materials.MAT) rewardParts.push(questData.rewards.materials.MAT + ' Eisenbrocken');
+      if (questData.rewards && questData.rewards.items && questData.rewards.items.length > 0) rewardParts.push(questData.rewards.items[0].name);
+      pages.push({
+        text: 'Hier ist deine Belohnung:\n\n' + rewardParts.join('\n') + '\n\nNimm sie — du hast sie dir verdient.',
+        choices: [
+          { label: 'Belohnung abholen', action: 'complete' }
+        ],
+        _isTurnin: true
+      });
+
+    } else {
+      // Flavor dialogue — use dynamic story lines, show as multiple pages
+      const storyLines = (window.storySystem && typeof window.storySystem.getNpcDialogue === 'function')
+        ? window.storySystem.getNpcDialogue(npcId)
+        : null;
+      const bodyLines = storyLines || npcData.lines || [];
+      bodyLines.forEach(line => {
+        pages.push({ text: line, choices: null });
+      });
+    }
+
+    // Ensure at least one page
+    if (pages.length === 0) {
+      pages.push({ text: '...', choices: null });
+    }
+
+    this._showDialoguePages(npcData, titleStr, pages, questMode, questData, 0);
+  }
+
+  _showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex) {
+    if (this._dialogContainer) {
+      this._dialogContainer.destroy(true);
+      this._dialogContainer = null;
+    }
+    // Clean up any existing key closers
+    if (this._currentKeyClosers) {
+      while (this._currentKeyClosers.length) {
+        const { eventName, handler } = this._currentKeyClosers.pop();
+        this.input.keyboard.off(eventName, handler);
+      }
+    }
+
+    const qs = window.questSystem;
+    const npcId = npcData.id;
+    const page = pages[pageIndex];
+    if (!page) {
+      this._dialogOpen = false;
+      return;
+    }
+
+    // Skip info pages unless explicitly navigated to
+    if (page._isInfoPage && !page._showExplicitly) {
+      // This page is only shown via "Mehr erfahren" choice
+      this._dialogOpen = false;
+      return;
+    }
+
     const cam = this.cameras.main;
     const cx = cam.width / 2;
     const cy = cam.height - 180;
 
     const container = this.add.container(cx, cy).setDepth(1500).setScrollFactor(0);
-    const panelWidth = 520;
+    const panelWidth = 540;
     const pad = 24;
     const innerWidth = panelWidth - pad * 2;
-
-    // Build title and body based on quest mode
-    let titleStr = npcData.name || 'Gespraech';
-    let bodyStr = '';
-    let showAcceptBtn = false;
-    let showCompleteBtn = false;
-
-    if (questMode === 'offer' && questData) {
-      titleStr = npcData.name + ' — Neue Aufgabe';
-      bodyStr = questData.dialogueOffer + '\n\n[' + questData.title + ']\n' + questData.description;
-      showAcceptBtn = true;
-    } else if (questMode === 'progress' && questData) {
-      const obj = questData.objectives[0];
-      const progressStr = obj ? (obj.current + '/' + obj.required) : '';
-      titleStr = npcData.name + ' — ' + questData.title;
-      bodyStr = questData.dialogueProgress + '\n\nFortschritt: ' + progressStr;
-    } else if (questMode === 'turnin' && questData) {
-      titleStr = npcData.name + ' — Aufgabe abgeschlossen!';
-      bodyStr = questData.dialogueComplete;
-      showCompleteBtn = true;
-    } else {
-      // Flavor dialogue — use dynamic story lines if available
-      const storyLines = (window.storySystem && typeof window.storySystem.getNpcDialogue === 'function')
-        ? window.storySystem.getNpcDialogue(npcId)
-        : null;
-      const bodyLines = storyLines || npcData.lines || [];
-      bodyStr = bodyLines.join('\n\n');
-    }
 
     const header = this.add.text(0, 0, titleStr, {
       fontFamily: 'serif',
@@ -474,18 +583,22 @@ class HubSceneV2 extends Phaser.Scene {
       color: '#f1e9d8'
     }).setWordWrapWidth(innerWidth).setVisible(false);
 
-    const bodyText = this.add.text(0, 0, bodyStr, {
+    const bodyText = this.add.text(0, 0, page.text, {
       fontFamily: 'monospace',
       fontSize: 16,
       color: '#d8d2c3',
-      wordWrap: { width: innerWidth }
+      wordWrap: { width: innerWidth },
+      lineSpacing: 4
     }).setVisible(false);
 
     const headerHeight = header.height;
     const bodyHeight = bodyText.height;
-    const hintHeight = 22;
-    const extraBtnHeight = (showAcceptBtn || showCompleteBtn) ? 48 : 0;
-    const panelHeight = Math.max(200, Math.ceil(pad + headerHeight + 12 + bodyHeight + extraBtnHeight + pad + hintHeight));
+    const hintHeight = 24;
+    const hasChoices = page.choices && page.choices.length > 0;
+    const choiceHeight = hasChoices ? (page.choices.length * 40 + 10) : 0;
+    const hasNextPage = !hasChoices && pageIndex < pages.length - 1 && !pages[pageIndex + 1]._isInfoPage;
+    const extraBtnHeight = hasChoices ? choiceHeight : 0;
+    const panelHeight = Math.max(180, Math.ceil(pad + headerHeight + 12 + bodyHeight + extraBtnHeight + pad + hintHeight + 10));
 
     const g = this.add.graphics();
     g.fillStyle(0x0c0c11, 0.94).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
@@ -497,62 +610,61 @@ class HubSceneV2 extends Phaser.Scene {
     container.add(header);
     container.add(bodyText);
 
+    // Page indicator for multi-page dialogues
+    const totalVisiblePages = pages.filter(p => !p._isInfoPage).length;
+    const visiblePageIndex = pages.slice(0, pageIndex + 1).filter(p => !p._isInfoPage).length;
+    if (totalVisiblePages > 1 && !hasChoices) {
+      const pageIndicator = this.add.text(panelWidth / 2 - pad, -panelHeight / 2 + pad, visiblePageIndex + '/' + totalVisiblePages, {
+        fontFamily: 'monospace',
+        fontSize: 13,
+        color: '#8a8a9a'
+      }).setOrigin(1, 0);
+      container.add(pageIndicator);
+    }
+
     const hintY = panelHeight / 2 - pad * 0.75;
     const keyClosers = [];
 
-    // Quest Accept button
-    if (showAcceptBtn && questData) {
-      const acceptBtn = this.add.text(0, hintY - 44, '[ Aufgabe annehmen ]', {
-        fontFamily: 'monospace',
-        fontSize: 16,
-        color: '#ffffff',
-        backgroundColor: '#3d6a3d',
-        padding: { x: 14, y: 8 }
-      }).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+    // Choice buttons
+    if (hasChoices) {
+      let btnY = bodyText.y + bodyHeight + 16;
+      page.choices.forEach((choice, idx) => {
+        let bgColor = '#3a3a4a';
+        if (choice.action === 'accept' || choice.action === 'complete') bgColor = '#3d6a3d';
+        else if (choice.action === 'decline') bgColor = '#6a3d3d';
+        else if (choice.action === 'info') bgColor = '#3d4a6a';
 
-      acceptBtn.on('pointerdown', (pointer, x, y, event) => {
-        event.stopPropagation();
-        if (qs) qs.acceptQuest(questData.id);
-        this._closeDialog(keyClosers);
+        const btn = this.add.text(0, btnY, '[ ' + choice.label + ' ]', {
+          fontFamily: 'monospace',
+          fontSize: 16,
+          color: '#ffffff',
+          backgroundColor: bgColor,
+          padding: { x: 14, y: 8 }
+        }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
+
+        btn.on('pointerdown', (pointer, x, y, event) => {
+          event.stopPropagation();
+          this._handleDialogueChoice(choice.action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers);
+        });
+        container.add(btn);
+
+        // Number key shortcut (1, 2, 3)
+        const keyName = 'keydown-' + (idx + 1);
+        // Use the `keydown` event with a code check for number keys
+        const numHandler = (event) => {
+          if (event.code === 'Digit' + (idx + 1)) {
+            this._handleDialogueChoice(choice.action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers);
+          }
+        };
+        this.input.keyboard.on('keydown', numHandler);
+        keyClosers.push({ eventName: 'keydown', handler: numHandler });
+
+        btnY += 38;
       });
-      container.add(acceptBtn);
-
-      // Also bind A key for accept
-      const acceptKeyHandler = () => {
-        if (qs) qs.acceptQuest(questData.id);
-        this._closeDialog(keyClosers);
-      };
-      this.input.keyboard.on('keydown-A', acceptKeyHandler);
-      keyClosers.push({ eventName: 'keydown-A', handler: acceptKeyHandler });
-    }
-
-    // Quest Complete button
-    if (showCompleteBtn && questData) {
-      const completeBtn = this.add.text(0, hintY - 44, '[ Belohnung abholen ]', {
-        fontFamily: 'monospace',
-        fontSize: 16,
-        color: '#ffffff',
-        backgroundColor: '#6a6a3d',
-        padding: { x: 14, y: 8 }
-      }).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
-
-      completeBtn.on('pointerdown', (pointer, x, y, event) => {
-        event.stopPropagation();
-        if (qs) qs.completeQuest(questData.id);
-        this._closeDialog(keyClosers);
-      });
-      container.add(completeBtn);
-
-      const completeKeyHandler = () => {
-        if (qs) qs.completeQuest(questData.id);
-        this._closeDialog(keyClosers);
-      };
-      this.input.keyboard.on('keydown-A', completeKeyHandler);
-      keyClosers.push({ eventName: 'keydown-A', handler: completeKeyHandler });
     }
 
     // Mara skill tree button (keep existing behavior)
-    if (npcData.id === 'mara' && questMode === 'flavor') {
+    if (npcData.id === 'mara' && questMode === 'flavor' && !hasChoices) {
       const skillsBtn = this.add.text(0, hintY - 40, '[ Skills lernen ] (K)', {
         fontFamily: 'monospace',
         fontSize: 16,
@@ -563,7 +675,7 @@ class HubSceneV2 extends Phaser.Scene {
 
       skillsBtn.on('pointerdown', (pointer, x, y, event) => {
         event.stopPropagation();
-        this._closeDialog();
+        this._closeDialog(keyClosers);
         this.time.delayedCall(100, () => {
           if (typeof this._showSkillTreeUI === 'function') {
             this._showSkillTreeUI();
@@ -573,9 +685,15 @@ class HubSceneV2 extends Phaser.Scene {
       container.add(skillsBtn);
     }
 
-    const hintParts = ['E / Leer / ESC: schliessen'];
-    if (showAcceptBtn) hintParts.push('A: annehmen');
-    if (showCompleteBtn) hintParts.push('A: abholen');
+    // Hint text
+    const hintParts = [];
+    if (hasNextPage) {
+      hintParts.push('Leer / Enter: weiter');
+    }
+    if (hasChoices) {
+      hintParts.push('1-' + page.choices.length + ': waehlen');
+    }
+    hintParts.push('ESC: schliessen');
 
     const hintText = this.add.text(0, hintY, hintParts.join('  |  '), {
       fontFamily: 'monospace',
@@ -588,19 +706,36 @@ class HubSceneV2 extends Phaser.Scene {
 
     const closeDialog = () => this._closeDialog(keyClosers);
 
-    const bindClose = (eventName) => {
-      const handler = () => closeDialog();
-      this.input.keyboard.on(eventName, handler);
-      keyClosers.push({ eventName, handler });
-    };
-
     this.time.delayedCall(0, () => {
-      bindClose('keydown-E');
-      bindClose('keydown-SPACE');
-      bindClose('keydown-ESC');
-      bindClose('keydown-ENTER');
+      // ESC always closes
+      const escHandler = () => closeDialog();
+      this.input.keyboard.on('keydown-ESC', escHandler);
+      keyClosers.push({ eventName: 'keydown-ESC', handler: escHandler });
 
-      if (npcData.id === 'mara' && questMode === 'flavor') {
+      if (hasNextPage && !hasChoices) {
+        // Space/Enter/E advance to next page
+        const advanceHandler = () => {
+          this._cleanupKeyClosers(keyClosers);
+          this._showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex + 1);
+        };
+        this.input.keyboard.on('keydown-SPACE', advanceHandler);
+        keyClosers.push({ eventName: 'keydown-SPACE', handler: advanceHandler });
+        this.input.keyboard.on('keydown-ENTER', advanceHandler);
+        keyClosers.push({ eventName: 'keydown-ENTER', handler: advanceHandler });
+        this.input.keyboard.on('keydown-E', advanceHandler);
+        keyClosers.push({ eventName: 'keydown-E', handler: advanceHandler });
+      } else if (!hasChoices) {
+        // Last page without choices — close on space/enter/E
+        const closeHandler = () => closeDialog();
+        this.input.keyboard.on('keydown-SPACE', closeHandler);
+        keyClosers.push({ eventName: 'keydown-SPACE', handler: closeHandler });
+        this.input.keyboard.on('keydown-ENTER', closeHandler);
+        keyClosers.push({ eventName: 'keydown-ENTER', handler: closeHandler });
+        this.input.keyboard.on('keydown-E', closeHandler);
+        keyClosers.push({ eventName: 'keydown-E', handler: closeHandler });
+      }
+
+      if (npcData.id === 'mara' && questMode === 'flavor' && !hasChoices) {
         const skillHandler = () => {
           this._closeDialog(keyClosers);
           this.time.delayedCall(100, () => {
@@ -615,7 +750,51 @@ class HubSceneV2 extends Phaser.Scene {
     });
 
     this._currentKeyClosers = keyClosers;
-    this.input.once('pointerdown', closeDialog);
+    // Click to advance or close (only if no choices)
+    if (!hasChoices) {
+      this.input.once('pointerdown', () => {
+        if (hasNextPage) {
+          this._cleanupKeyClosers(keyClosers);
+          this._showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex + 1);
+        } else {
+          closeDialog();
+        }
+      });
+    }
+  }
+
+  _handleDialogueChoice(action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers) {
+    const qs = window.questSystem;
+
+    if (action === 'accept') {
+      if (qs && questData) qs.acceptQuest(questData.id);
+      this._closeDialog(keyClosers);
+    } else if (action === 'complete') {
+      if (qs && questData) qs.completeQuest(questData.id);
+      this._closeDialog(keyClosers);
+    } else if (action === 'decline') {
+      this._closeDialog(keyClosers);
+    } else if (action === 'info') {
+      // Find and show the info page
+      for (let i = 0; i < pages.length; i++) {
+        if (pages[i]._isInfoPage) {
+          pages[i]._showExplicitly = true;
+          this._cleanupKeyClosers(keyClosers);
+          this._showDialoguePages(npcData, titleStr, pages, questMode, questData, i);
+          return;
+        }
+      }
+      // Fallback: just close
+      this._closeDialog(keyClosers);
+    }
+  }
+
+  _cleanupKeyClosers(keyClosers) {
+    if (!keyClosers) return;
+    while (keyClosers.length) {
+      const { eventName, handler } = keyClosers.pop();
+      this.input.keyboard.off(eventName, handler);
+    }
   }
 
   _closeDialog(keyClosers) {
@@ -642,7 +821,15 @@ class HubSceneV2 extends Phaser.Scene {
 
     this._dialogOpen = true;
     window.storySystem.showStoryOverlay(this, eventData, () => {
-      this._dialogOpen = false;
+      // Check for more pending events (e.g. milestone after act transition)
+      const nextEvent = window.storySystem.consumePendingEvent();
+      if (nextEvent) {
+        window.storySystem.showStoryOverlay(this, nextEvent, () => {
+          this._dialogOpen = false;
+        });
+      } else {
+        this._dialogOpen = false;
+      }
     });
   }
 

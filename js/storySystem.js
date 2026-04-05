@@ -106,12 +106,28 @@
     }
   };
 
+  // ---- Wave Milestone Events ----
+  const WAVE_MILESTONES = {
+    10: 'Die ersten Siegel sind gebrochen. Branka wartet auf deinen Bericht.',
+    20: 'Tief unter dem Rathaus findest du Beweise fuer die Rituale des Kettenrats.',
+    30: 'Der Schattenrat ist gefallen. Die Wahrheit kann nicht mehr verborgen werden.'
+  };
+
+  // ---- Special Ending Text ----
+  const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede haemmert fuer die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nDu hast die Stadt befreit.';
+
   // ---- Story State ----
   let storyState = {
     currentActIndex: 0,
     highestWave: 0,
     eventsSeen: [],       // act IDs whose narrative overlay has been shown
-    pendingEvent: null    // act ID to show on next hub visit
+    pendingEvent: null,   // act ID to show on next hub visit
+    pendingMilestone: null, // wave milestone to show on next hub visit
+    milestonesShown: [],  // wave numbers whose milestones have been shown
+    endingShown: false,   // whether the all-quests-complete ending has been shown
+    totalKills: 0,
+    totalRoomsCleared: 0,
+    totalWavesSurvived: 0
   };
 
   // ---- Core Functions ----
@@ -160,6 +176,13 @@
     if (wave > storyState.highestWave) {
       storyState.highestWave = wave;
     }
+    storyState.totalWavesSurvived = (storyState.totalWavesSurvived || 0) + 1;
+
+    // Check for wave milestones
+    if (WAVE_MILESTONES[wave] && storyState.milestonesShown.indexOf(wave) === -1) {
+      storyState.pendingMilestone = wave;
+      console.log('[StorySystem] Wave milestone queued: ' + wave);
+    }
 
     var completedQuests = _getCompletedQuestCount();
     var newActIndex = _computeActIndex(storyState.highestWave, completedQuests);
@@ -179,22 +202,67 @@
   }
 
   /**
+   * Track enemy kill for stats.
+   */
+  function onEnemyKilled() {
+    storyState.totalKills = (storyState.totalKills || 0) + 1;
+  }
+
+  /**
+   * Track room cleared for stats.
+   */
+  function onRoomCleared() {
+    storyState.totalRoomsCleared = (storyState.totalRoomsCleared || 0) + 1;
+  }
+
+  /**
    * Check for pending story events (call on hub create).
    * Returns { actId, actName, narrative } or null.
    */
   function consumePendingEvent() {
-    if (!storyState.pendingEvent) return null;
-    var actId = storyState.pendingEvent;
-    storyState.pendingEvent = null;
-    storyState.eventsSeen.push(actId);
+    // Priority 1: Act transitions
+    if (storyState.pendingEvent) {
+      var actId = storyState.pendingEvent;
+      storyState.pendingEvent = null;
+      storyState.eventsSeen.push(actId);
 
-    var act = getActById(actId);
-    return {
-      actId: actId,
-      actName: act ? act.name : actId,
-      actNumber: act ? STORY_ACTS.indexOf(act) + 1 : 0,
-      narrative: ACT_NARRATIVES[actId] || ''
-    };
+      var act = getActById(actId);
+      return {
+        actId: actId,
+        actName: act ? act.name : actId,
+        actNumber: act ? STORY_ACTS.indexOf(act) + 1 : 0,
+        narrative: ACT_NARRATIVES[actId] || ''
+      };
+    }
+
+    // Priority 2: Wave milestones
+    if (storyState.pendingMilestone) {
+      var wave = storyState.pendingMilestone;
+      storyState.pendingMilestone = null;
+      storyState.milestonesShown.push(wave);
+
+      return {
+        actId: 'milestone_' + wave,
+        actName: 'Welle ' + wave + ' bezwungen',
+        actNumber: null,
+        narrative: WAVE_MILESTONES[wave] || ''
+      };
+    }
+
+    // Priority 3: All quest chains complete ending
+    if (!storyState.endingShown && window.questSystem && typeof window.questSystem.areAllQuestChainsComplete === 'function') {
+      if (window.questSystem.areAllQuestChainsComplete()) {
+        storyState.endingShown = true;
+        return {
+          actId: 'ending',
+          actName: 'Epilog',
+          actNumber: null,
+          narrative: ALL_QUESTS_ENDING
+        };
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -216,12 +284,30 @@
 
     if (window.questSystem) {
       completedQuests = window.questSystem.getCompletedQuests().map(function (q) {
-        return { title: q.title, description: q.description };
+        var rewardStr = '';
+        if (q.rewards) {
+          var parts = [];
+          if (q.rewards.xp) parts.push(q.rewards.xp + ' XP');
+          if (q.rewards.materials && q.rewards.materials.MAT) parts.push(q.rewards.materials.MAT + ' Eisenbrocken');
+          if (q.rewards.items && q.rewards.items.length > 0) parts.push(q.rewards.items[0].name);
+          if (q.rewards.unlocks) {
+            q.rewards.unlocks.forEach(function (u) {
+              if (u === 'enhanced_crafting') parts.push('Erweiterte Schmiede');
+              else if (u === 'xp_bonus_10') parts.push('+10% XP');
+              else if (u === 'shadow_skill') parts.push('Schattenkunst');
+              else if (u === 'story_ending') parts.push('Epilog');
+              else parts.push(u);
+            });
+          }
+          rewardStr = parts.join(', ');
+        }
+        return { title: q.title, description: q.description, rewards: rewardStr, npcId: q.npcId };
       });
       activeQuests = window.questSystem.getActiveQuests().map(function (q) {
         var obj = q.objectives[0];
         var progress = obj ? (obj.current + '/' + obj.required) : '';
-        return { title: q.title, description: q.description, progress: progress };
+        var progressPct = obj ? Math.floor((obj.current / obj.required) * 100) : 0;
+        return { title: q.title, description: q.description, progress: progress, progressPct: progressPct, npcId: q.npcId };
       });
     }
 
@@ -232,7 +318,10 @@
       highestWave: storyState.highestWave,
       completedQuests: completedQuests,
       activeQuests: activeQuests,
-      totalActs: STORY_ACTS.length
+      totalActs: STORY_ACTS.length,
+      totalKills: storyState.totalKills || 0,
+      totalRoomsCleared: storyState.totalRoomsCleared || 0,
+      totalWavesSurvived: storyState.totalWavesSurvived || 0
     };
   }
 
@@ -243,7 +332,13 @@
       currentActIndex: storyState.currentActIndex,
       highestWave: storyState.highestWave,
       eventsSeen: storyState.eventsSeen.slice(),
-      pendingEvent: storyState.pendingEvent
+      pendingEvent: storyState.pendingEvent,
+      pendingMilestone: storyState.pendingMilestone || null,
+      milestonesShown: (storyState.milestonesShown || []).slice(),
+      endingShown: storyState.endingShown || false,
+      totalKills: storyState.totalKills || 0,
+      totalRoomsCleared: storyState.totalRoomsCleared || 0,
+      totalWavesSurvived: storyState.totalWavesSurvived || 0
     };
   }
 
@@ -253,6 +348,12 @@
     storyState.highestWave = typeof data.highestWave === 'number' ? data.highestWave : 0;
     storyState.eventsSeen = Array.isArray(data.eventsSeen) ? data.eventsSeen.slice() : [];
     storyState.pendingEvent = data.pendingEvent || null;
+    storyState.pendingMilestone = data.pendingMilestone || null;
+    storyState.milestonesShown = Array.isArray(data.milestonesShown) ? data.milestonesShown.slice() : [];
+    storyState.endingShown = !!data.endingShown;
+    storyState.totalKills = typeof data.totalKills === 'number' ? data.totalKills : 0;
+    storyState.totalRoomsCleared = typeof data.totalRoomsCleared === 'number' ? data.totalRoomsCleared : 0;
+    storyState.totalWavesSurvived = typeof data.totalWavesSurvived === 'number' ? data.totalWavesSurvived : 0;
   }
 
   // ---- Story Overlay UI (Phaser scene method) ----
@@ -276,8 +377,9 @@
 
     var container = scene.add.container(w / 2, h / 2).setDepth(6001).setScrollFactor(0);
 
-    // Act number label
-    var actLabel = scene.add.text(0, -80, 'Akt ' + eventData.actNumber, {
+    // Act number label (only for act transitions, not milestones)
+    var actLabelStr = eventData.actNumber ? ('Akt ' + eventData.actNumber) : 'Meilenstein';
+    var actLabel = scene.add.text(0, -80, actLabelStr, {
       fontFamily: 'serif',
       fontSize: 22,
       color: '#a89878'
@@ -365,8 +467,8 @@
       .setScrollFactor(0)
       .setInteractive();
 
-    var panelW = 520;
-    var panelH = 500;
+    var panelW = 560;
+    var panelH = 580;
     var pad = 24;
 
     var container = scene.add.container(w / 2, h / 2).setDepth(6001).setScrollFactor(0);
@@ -378,6 +480,7 @@
 
     var y = -panelH / 2 + pad;
     var innerW = panelW - pad * 2;
+    var leftX = -panelW / 2 + pad;
 
     // Title
     var title = scene.add.text(0, y, 'Tagebuch', {
@@ -386,98 +489,144 @@
       color: '#ffd700'
     }).setOrigin(0.5, 0);
     container.add(title);
-    y += title.height + 16;
+    y += title.height + 14;
 
     // Current act
-    var actInfo = scene.add.text(-panelW / 2 + pad, y,
+    var actInfo = scene.add.text(leftX, y,
       'Akt ' + data.actNumber + ' von ' + data.totalActs + ': ' + data.actName, {
       fontFamily: 'serif',
       fontSize: 18,
       color: '#f1e9d8'
     }).setOrigin(0, 0);
     container.add(actInfo);
-    y += actInfo.height + 8;
+    y += actInfo.height + 6;
 
     // Act narrative
-    var narrative = scene.add.text(-panelW / 2 + pad, y, data.actNarrative, {
+    var narrative = scene.add.text(leftX, y, data.actNarrative, {
       fontFamily: 'serif',
-      fontSize: 15,
+      fontSize: 14,
       color: '#a89878',
       wordWrap: { width: innerW },
       fontStyle: 'italic',
-      lineSpacing: 4
+      lineSpacing: 3
     }).setOrigin(0, 0);
     container.add(narrative);
-    y += narrative.height + 16;
+    y += narrative.height + 14;
 
-    // Highest wave
-    var waveInfo = scene.add.text(-panelW / 2 + pad, y, 'Hoechste Welle: ' + data.highestWave, {
+    // Stats bar
+    var statsStr = 'Hoechste Welle: ' + data.highestWave
+      + '  |  Gegner besiegt: ' + data.totalKills
+      + '  |  Raeume: ' + data.totalRoomsCleared
+      + '  |  Wellen: ' + data.totalWavesSurvived;
+    var statsText = scene.add.text(leftX, y, statsStr, {
       fontFamily: 'monospace',
-      fontSize: 14,
-      color: '#c8c2b5'
+      fontSize: 12,
+      color: '#8a8a9a'
     }).setOrigin(0, 0);
-    container.add(waveInfo);
-    y += waveInfo.height + 16;
+    container.add(statsText);
+    y += statsText.height + 14;
 
-    // Active quests
-    var activeHeader = scene.add.text(-panelW / 2 + pad, y, 'Aktive Aufgaben:', {
+    // Divider
+    var divGfx = scene.add.graphics();
+    divGfx.lineStyle(1, 0x484850, 0.6);
+    divGfx.lineBetween(leftX, y, leftX + innerW, y);
+    container.add(divGfx);
+    y += 10;
+
+    // Active quests with progress bars
+    var activeHeader = scene.add.text(leftX, y, 'Aktive Aufgaben:', {
       fontFamily: 'serif',
-      fontSize: 17,
+      fontSize: 16,
       color: '#88bbff'
     }).setOrigin(0, 0);
     container.add(activeHeader);
     y += activeHeader.height + 6;
 
     if (data.activeQuests.length === 0) {
-      var noActive = scene.add.text(-panelW / 2 + pad + 12, y, 'Keine aktiven Aufgaben', {
+      var noActive = scene.add.text(leftX + 12, y, 'Keine aktiven Aufgaben', {
         fontFamily: 'monospace',
-        fontSize: 14,
+        fontSize: 13,
         color: '#666666'
       }).setOrigin(0, 0);
       container.add(noActive);
       y += noActive.height + 8;
     } else {
       data.activeQuests.forEach(function (q) {
-        var line = scene.add.text(-panelW / 2 + pad + 12, y,
-          '- ' + q.title + '  (' + q.progress + ')', {
+        var line = scene.add.text(leftX + 12, y,
+          q.title + '  (' + q.progress + ')', {
           fontFamily: 'monospace',
-          fontSize: 14,
+          fontSize: 13,
           color: '#d8d2c3',
-          wordWrap: { width: innerW - 12 }
+          wordWrap: { width: innerW - 16 }
         }).setOrigin(0, 0);
         container.add(line);
-        y += line.height + 4;
+        y += line.height + 3;
+
+        // Progress bar
+        var barW = innerW - 16;
+        var barH = 8;
+        var barBg = scene.add.graphics();
+        barBg.fillStyle(0x222230, 0.8).fillRoundedRect(leftX + 12, y, barW, barH, 3);
+        container.add(barBg);
+
+        var fillW = Math.max(2, Math.floor(barW * (q.progressPct / 100)));
+        var barFill = scene.add.graphics();
+        barFill.fillStyle(0x4488ff, 0.9).fillRoundedRect(leftX + 12, y, fillW, barH, 3);
+        container.add(barFill);
+        y += barH + 6;
+
+        // Description
+        var desc = scene.add.text(leftX + 16, y, q.description, {
+          fontFamily: 'monospace',
+          fontSize: 11,
+          color: '#8a8a9a',
+          wordWrap: { width: innerW - 24 }
+        }).setOrigin(0, 0);
+        container.add(desc);
+        y += desc.height + 8;
       });
     }
-    y += 8;
+    y += 6;
 
-    // Completed quests
-    var completedHeader = scene.add.text(-panelW / 2 + pad, y, 'Abgeschlossene Aufgaben:', {
+    // Completed quests with rewards
+    var completedHeader = scene.add.text(leftX, y, 'Abgeschlossene Aufgaben:', {
       fontFamily: 'serif',
-      fontSize: 17,
+      fontSize: 16,
       color: '#88ff88'
     }).setOrigin(0, 0);
     container.add(completedHeader);
     y += completedHeader.height + 6;
 
     if (data.completedQuests.length === 0) {
-      var noCompleted = scene.add.text(-panelW / 2 + pad + 12, y, 'Keine abgeschlossenen Aufgaben', {
+      var noCompleted = scene.add.text(leftX + 12, y, 'Keine abgeschlossenen Aufgaben', {
         fontFamily: 'monospace',
-        fontSize: 14,
+        fontSize: 13,
         color: '#666666'
       }).setOrigin(0, 0);
       container.add(noCompleted);
     } else {
       data.completedQuests.forEach(function (q) {
-        var line = scene.add.text(-panelW / 2 + pad + 12, y,
-          '- ' + q.title, {
+        var line = scene.add.text(leftX + 12, y,
+          '\u2713 ' + q.title, {
           fontFamily: 'monospace',
-          fontSize: 14,
+          fontSize: 13,
           color: '#88aa88',
-          wordWrap: { width: innerW - 12 }
+          wordWrap: { width: innerW - 16 }
         }).setOrigin(0, 0);
         container.add(line);
-        y += line.height + 4;
+        y += line.height + 2;
+
+        if (q.rewards) {
+          var rewardLine = scene.add.text(leftX + 24, y,
+            'Belohnung: ' + q.rewards, {
+            fontFamily: 'monospace',
+            fontSize: 11,
+            color: '#6a8a6a',
+            wordWrap: { width: innerW - 28 }
+          }).setOrigin(0, 0);
+          container.add(rewardLine);
+          y += rewardLine.height + 4;
+        }
       });
     }
 
@@ -512,6 +661,8 @@
     getCurrentActIndex: getCurrentActIndex,
     getActById: getActById,
     onWaveCompleted: onWaveCompleted,
+    onEnemyKilled: onEnemyKilled,
+    onRoomCleared: onRoomCleared,
     consumePendingEvent: consumePendingEvent,
     getNpcDialogue: getNpcDialogue,
     getJournalData: getJournalData,
