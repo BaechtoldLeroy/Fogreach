@@ -927,19 +927,7 @@ function handleEnemies(time, delta = 16) {
             });
           }
 
-          // kurzzeitig physischen Block waehrend des Schlages aktivieren
-          enemy._meleeCol = enemy._meleeCol || this.physics.add.collider(player, enemy);
-          if (enemy._meleeCol) enemy._meleeCol.active = true;
-          const prevImmov = enemy.body.immovable;
-          if (enemy.body.setPushable) enemy.body.setPushable(false);
-          enemy.setImmovable(true);
-          this.time.delayedCall(220, () => {
-            if (enemy && enemy.active) {
-              if (enemy._meleeCol) enemy._meleeCol.active = false;
-              enemy.setImmovable(prevImmov);
-              if (enemy.body.setPushable) enemy.body.setPushable(false);
-            }
-          });
+          // No temporary collider — prevents pushing player through walls
 
           // Schaden wie bisher
           applyPlayerDamage(enemy.damage, this);
@@ -1585,14 +1573,14 @@ function makeBoss(boss, def, cycle) {
     boss.damage = Math.max(1, Math.round(boss.baseDamage * difficulty));
   }
 
-  // Scale boss: use def.scale for procedural textures, cap for sprite textures
+  // Scale boss: cap sprite-based textures, use def.scale for procedural
   const bossKey = boss.texture?.key || '';
-  if (bossKey.startsWith('sprite_')) {
-    // Sprite-based: target ~96px display
+  const isSpriteBasedBoss = bossKey.startsWith('boss_') || bossKey.startsWith('sprite_');
+  if (isSpriteBasedBoss) {
     const bossTargetPx = 96;
-    boss.setScale(bossTargetPx / (boss.width || 528));
+    const srcH = boss.height || 300;
+    boss.setScale(bossTargetPx / srcH);
   } else {
-    // Procedural texture: use def.scale directly
     boss.setScale(def.scale);
   }
   boss.setCollideWorldBounds(true);
