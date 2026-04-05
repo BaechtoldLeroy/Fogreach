@@ -293,7 +293,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       tint = null;
       break; // Kettenwächter
     case 7:
-      key = tex('sprite_flameweaver', 'enemyFlameWeaver');
+      key = scene.textures?.exists('flameweaver_right0') ? 'flameweaver_right0' : tex('sprite_flameweaver', 'enemyFlameWeaver');
       speed = 70;
       hp = 2;
       isRanged = true;
@@ -454,6 +454,13 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.sepRadius = 100;
     enemy.cohRadius = 240;
     enemy.isFlameWeaver = true;
+    if (key.startsWith('flameweaver_')) {
+      const fwH = enemy.height || 231;
+      enemy.setScale(48 / fwH);
+      enemy.isFlameWeaverSprite = true;
+      enemy.flameWeaverDirection = 'right';
+      enemy.flameWeaverAttacking = false;
+    }
   } else {
     // Mage (Fern/Support)
     enemy.kiteRadius = 260;
@@ -698,6 +705,18 @@ function handleEnemies(time, delta = 16) {
       }
     }
 
+    if (enemy.isFlameWeaverSprite && !enemy.flameWeaverAttacking) {
+      if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
+        const newDir = desired.x > 0 ? 'right' : 'left';
+        if (newDir !== enemy.flameWeaverDirection) {
+          enemy.flameWeaverDirection = newDir;
+          enemy._lastDirChange = time;
+          const idleKey = `flameweaver_${newDir}0`;
+          if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
+        }
+      }
+    }
+
     if (enemy.isArcher && !enemy.archerAttacking) {
       if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
@@ -760,6 +779,23 @@ function handleEnemies(time, delta = 16) {
             shootProjectile.call(this, enemy);
           }
           enemy.lastShotTime = time;
+
+          // Flame Weaver cast animation (450ms)
+          if (enemy.isFlameWeaverSprite && !enemy.flameWeaverAttacking) {
+            enemy.flameWeaverAttacking = true;
+            const dir = enemy.flameWeaverDirection || 'right';
+            const sc = this;
+            if (sc.textures.exists('flameweaver_' + dir + '1')) enemy.setTexture('flameweaver_' + dir + '1');
+            sc.time.delayedCall(225, () => {
+              if (enemy && enemy.active && sc.textures.exists('flameweaver_' + dir + '2')) enemy.setTexture('flameweaver_' + dir + '2');
+            });
+            sc.time.delayedCall(450, () => {
+              if (enemy && enemy.active) {
+                enemy.flameWeaverAttacking = false;
+                if (sc.textures.exists('flameweaver_' + dir + '0')) enemy.setTexture('flameweaver_' + dir + '0');
+              }
+            });
+          }
 
           // Archer shoot animation (400ms: draw → release → idle)
           if (enemy.isArcher && !enemy.archerAttacking) {

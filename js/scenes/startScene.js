@@ -98,6 +98,14 @@ StartScene.prototype.preload = function () {
   this.load.image('shadow_right1', 'assets/enemy/shadow/right1.png');
   this.load.image('shadow_right2', 'assets/enemy/shadow/right2.png');
 
+  // Flame Weaver enemy sprites
+  this.load.image('flameweaver_left0', 'assets/enemy/flameweaver/left0.png');
+  this.load.image('flameweaver_left1', 'assets/enemy/flameweaver/left1.png');
+  this.load.image('flameweaver_left2', 'assets/enemy/flameweaver/left2.png');
+  this.load.image('flameweaver_right0', 'assets/enemy/flameweaver/right0.png');
+  this.load.image('flameweaver_right1', 'assets/enemy/flameweaver/right1.png');
+  this.load.image('flameweaver_right2', 'assets/enemy/flameweaver/right2.png');
+
   // Chain Guard enemy sprites
   this.load.image('chainguard_left0', 'assets/enemy/chainguard/left0.png');
   this.load.image('chainguard_left1', 'assets/enemy/chainguard/left1.png');
