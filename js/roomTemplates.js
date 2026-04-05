@@ -12,7 +12,12 @@
       'DungeonLibrary',
       'PrisonCells',
       'RitualChamber',
-      'SewageTunnel'
+      'SewageTunnel',
+      'RathausArchive',
+      'RitualVault',
+      'PrisonDepths',
+      'CouncilChamber',
+      'ForgottenCrypt'
     ];
   }
 })(window);
@@ -26,6 +31,11 @@ const ROOM_THEMES = {
   'TreasureVault':     { floor: 'floor_cobble', wall: 'wall_brick' },
   'Treasure_Small':    { floor: 'floor_cobble', wall: 'wall_brick' },
   'GrandBazaar':       { floor: 'floor_cobble', wall: 'wall_brick' },
+  'RathausArchive':    { floor: 'floor_tile_ornate', wall: 'wall_stone_large' },
+  'RitualVault':       { floor: 'floor_stone_dark', wall: 'wall_dungeon' },
+  'PrisonDepths':      { floor: 'floor_stone_dark', wall: 'wall_brick' },
+  'CouncilChamber':    { floor: 'floor_tile_ornate', wall: 'wall_stone_large' },
+  'ForgottenCrypt':    { floor: 'floor_cobble', wall: 'wall_dungeon' },
   '_default':          { floor: 'floor_stone', wall: 'obstacleWall' }
 };
 

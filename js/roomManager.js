@@ -34,9 +34,43 @@ function computeRunRoomCount() {
   return Math.min(10, 5 + Math.floor((depth - 1) / 5));
 }
 
+// ---- Story Room Descriptions (German) ----
+const ROOM_DESCRIPTIONS = {
+  'RathausArchive': 'Rathaus-Archiv \u2014 Verbotene Protokolle lagern hier...',
+  'RitualVault':    'Ritualkammer \u2014 Daemonische Energie pulsiert in der Luft...',
+  'PrisonDepths':   'Kerkertiefen \u2014 Schreie hallen durch die Gaenge...',
+  'CouncilChamber': 'Ratskammer \u2014 Der Thron des Kettenrats steht verlassen...',
+  'ForgottenCrypt': 'Vergessene Krypta \u2014 Uralte Siegel leuchten schwach...'
+};
+
+// Story-themed room pools by act/wave depth
+const STORY_ROOMS = {
+  act2: ['RathausArchive', 'PrisonDepths'],
+  act3: ['RitualVault', 'ForgottenCrypt'],
+  act4: ['CouncilChamber']
+};
+
+// Final room for milestone waves
+const MILESTONE_FINAL_ROOMS = {
+  10: 'RathausArchive',
+  20: 'RitualVault',
+  30: 'CouncilChamber'
+};
+
+/**
+ * Determine which story act the player is in based on dungeon depth.
+ */
+function getStoryAct(depth) {
+  if (depth >= 30) return 4;
+  if (depth >= 20) return 3;
+  if (depth >= 10) return 2;
+  return 1;
+}
+
 /**
  * Initialise a new procedural dungeon run.
  * Shuffles the full template pool and picks `totalRooms` unique templates.
+ * Story rooms are mixed in based on the current act (wave depth).
  */
 function initDungeonRun() {
   const RT = window.RoomTemplates || {};
@@ -47,14 +81,71 @@ function initDungeonRun() {
   }
 
   const totalRooms = computeRunRoomCount();
+  const depth = Math.max(1, window.DUNGEON_DEPTH || 1);
+  const act = getStoryAct(depth);
 
-  // Shuffle and pick without repeats
-  const shuffled = shuffleArray(allNames.slice());
-  const templateOrder = shuffled.slice(0, Math.min(totalRooms, shuffled.length));
+  // Separate regular rooms from story rooms
+  const allStoryNames = [].concat(STORY_ROOMS.act2, STORY_ROOMS.act3, STORY_ROOMS.act4);
+  const regularNames = allNames.filter(function(n) { return allStoryNames.indexOf(n) === -1; });
 
-  // If we need more rooms than templates, allow wrapping (shouldn't happen with 16 templates / max 10 rooms)
+  // Determine which story rooms are available for this act
+  var storyPool = [];
+  if (act >= 2) storyPool = storyPool.concat(STORY_ROOMS.act2);
+  if (act >= 3) storyPool = storyPool.concat(STORY_ROOMS.act3);
+  if (act >= 4) storyPool = storyPool.concat(STORY_ROOMS.act4);
+
+  // Shuffle both pools
+  shuffleArray(regularNames);
+  shuffleArray(storyPool);
+
+  // Build template order: mix regular and story rooms
+  var templateOrder = [];
+
+  // Determine final room based on milestone depth
+  var finalRoom = null;
+  if (MILESTONE_FINAL_ROOMS[depth] && allNames.indexOf(MILESTONE_FINAL_ROOMS[depth]) !== -1) {
+    finalRoom = MILESTONE_FINAL_ROOMS[depth];
+  }
+
+  // Pick rooms: for acts 2+, include 1-2 story rooms in the middle
+  var storyCount = 0;
+  if (act >= 2 && storyPool.length > 0) {
+    storyCount = Math.min(2, storyPool.length, Math.floor(totalRooms / 3));
+  }
+
+  // Fill regular rooms first (minus story slots and final room slot)
+  var regularCount = totalRooms - storyCount - (finalRoom ? 1 : 0);
+  for (var i = 0; i < regularCount && i < regularNames.length; i++) {
+    templateOrder.push(regularNames[i]);
+  }
+
+  // Insert story rooms at roughly even intervals
+  for (var s = 0; s < storyCount && s < storyPool.length; s++) {
+    var insertAt = Math.floor((s + 1) * templateOrder.length / (storyCount + 1));
+    // Don't insert a room that's also the final room
+    if (storyPool[s] !== finalRoom) {
+      templateOrder.splice(insertAt, 0, storyPool[s]);
+    } else {
+      // Pick another regular room instead
+      var extra = regularNames[regularCount + s];
+      if (extra) templateOrder.splice(insertAt, 0, extra);
+    }
+  }
+
+  // Add final room
+  if (finalRoom) {
+    templateOrder.push(finalRoom);
+  }
+
+  // Pad if needed
   while (templateOrder.length < totalRooms) {
-    templateOrder.push(shuffled[templateOrder.length % shuffled.length]);
+    var padIdx = templateOrder.length % regularNames.length;
+    templateOrder.push(regularNames[padIdx]);
+  }
+
+  // Trim if over
+  if (templateOrder.length > totalRooms) {
+    templateOrder.length = totalRooms;
   }
 
   dungeonRun = {
@@ -64,7 +155,7 @@ function initDungeonRun() {
   };
 
   window.dungeonRun = dungeonRun;
-  console.log('[DungeonRun] Initialized run with ' + totalRooms + ' rooms:', templateOrder);
+  console.log('[DungeonRun] Act ' + act + ' | Initialized run with ' + totalRooms + ' rooms:', templateOrder);
   return dungeonRun;
 }
 
@@ -287,6 +378,27 @@ function enterRoom(scene, roomId) {
     isLarge: !!builtMeta.isLarge,
     enteredAt: scene.time?.now ?? performance.now()
   };
+
+  // Show story room description overlay
+  var roomDescText = ROOM_DESCRIPTIONS[templateName];
+  if (roomDescText && scene && scene.add) {
+    var camW = scene.cameras.main.width;
+    var descLabel = scene.add.text(camW / 2, 60, roomDescText, {
+      fontSize: '18px',
+      fill: '#ffea6a',
+      fontStyle: 'italic',
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      padding: { x: 16, y: 8 },
+      align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1100).setAlpha(1);
+    scene.tweens.add({
+      targets: descLabel,
+      alpha: 0,
+      delay: 2000,
+      duration: 500,
+      onComplete: function() { descLabel.destroy(); }
+    });
+  }
 
   scene._largeRoomIsActive = !!builtMeta.isLarge;
   scene._largeRoomEnterTime = scene.currentRoom.enteredAt;
