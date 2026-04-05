@@ -281,10 +281,10 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       tint = null;
       break; // Brute
     case 5:
-      key = tex('sprite_shadow', 'enemyShadow');
+      key = scene.textures?.exists('shadow_right0') ? 'shadow_right0' : tex('sprite_shadow', 'enemyShadow');
       speed = 120;
       hp = 1;
-      tint = key === 'sprite_shadow' ? null : 0x6600aa;
+      tint = key.startsWith('shadow_') ? null : (key === 'sprite_shadow' ? null : 0x6600aa);
       break; // Schattenschleicher
     case 6:
       key = tex('sprite_chainguard', 'enemyChainGuard');
@@ -416,7 +416,15 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.cohRadius = 180;
     enemy.isShadowCreeper = true;
     enemy.lastTeleportTime = 0;
-    if (!key.startsWith('sprite_')) enemy.setScale(0.7); // smaller size for procedural texture
+    if (key.startsWith('shadow_')) {
+      const shadowH = enemy.height || 241;
+      enemy.setScale(44 / shadowH); // slightly smaller than others
+      enemy.isShadowSprite = true;
+      enemy.shadowDirection = 'right';
+      enemy.shadowAttacking = false;
+    } else if (!key.startsWith('sprite_')) {
+      enemy.setScale(0.7);
+    }
   } else if (type === 6) {
     // Kettenwächter (Chain Guard) - slow tank, has shield that blocks first hit
     enemy.sepWeight = 0.3;
@@ -670,6 +678,18 @@ function handleEnemies(time, delta = 16) {
       }
     }
 
+    if (enemy.isShadowSprite && !enemy.shadowAttacking) {
+      if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
+        const newDir = desired.x > 0 ? 'right' : 'left';
+        if (newDir !== enemy.shadowDirection) {
+          enemy.shadowDirection = newDir;
+          enemy._lastDirChange = time;
+          const idleKey = `shadow_${newDir}0`;
+          if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
+        }
+      }
+    }
+
     if (enemy.isArcher && !enemy.archerAttacking) {
       if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
@@ -764,6 +784,23 @@ function handleEnemies(time, delta = 16) {
           time - enemy.lastAttackTime > attackCooldown
         ) {
           enemy.lastAttackTime = time;
+
+          // Shadow Creeper attack animation (350ms)
+          if (enemy.isShadowSprite) {
+            enemy.shadowAttacking = true;
+            const dir = enemy.shadowDirection || 'right';
+            const scene = this;
+            if (scene.textures.exists(`shadow_${dir}1`)) enemy.setTexture(`shadow_${dir}1`);
+            scene.time.delayedCall(175, () => {
+              if (enemy && enemy.active && scene.textures.exists(`shadow_${dir}2`)) enemy.setTexture(`shadow_${dir}2`);
+            });
+            scene.time.delayedCall(350, () => {
+              if (enemy && enemy.active) {
+                enemy.shadowAttacking = false;
+                if (scene.textures.exists(`shadow_${dir}0`)) enemy.setTexture(`shadow_${dir}0`);
+              }
+            });
+          }
 
           // Imp attack animation (400ms total, 200ms per frame)
           if (enemy.isImp) {
