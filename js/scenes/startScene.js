@@ -137,10 +137,16 @@ StartScene.prototype.preload = function () {
   this.load.image('sprite_shadow', 'assets/enemy/shadow/shadow.png');
   this.load.image('sprite_chainguard', 'assets/enemy/chainguard/chainguard.png');
   this.load.image('sprite_flameweaver', 'assets/enemy/flameweaver/flameweaver.png');
-  // Boss sprites
-  this.load.image('sprite_boss_chain', 'assets/enemy/boss_chain/chainmaster.png');
-  this.load.image('sprite_boss_ceremony', 'assets/enemy/boss_ceremony/ceremonymaster.png');
-  this.load.image('sprite_boss_shadow', 'assets/enemy/boss_shadow/shadowcouncillor.png');
+  // Boss sprites (animated)
+  ['boss_chain', 'boss_ceremony', 'boss_shadow'].forEach(boss => {
+    ['left0','left1','left2','right0','right1','right2'].forEach(frame => {
+      this.load.image(boss + '_' + frame, 'assets/enemy/' + boss + '/' + frame + '.png');
+    });
+  });
+  // Fallbacks
+  this.load.image('sprite_boss_chain', 'assets/enemy/boss_chain/idle.png');
+  this.load.image('sprite_boss_ceremony', 'assets/enemy/boss_ceremony/idle.png');
+  this.load.image('sprite_boss_shadow', 'assets/enemy/boss_shadow/idle.png');
 
   // UI/environment sprites
   this.load.image('stairDown', 'assets/tiles/stairDown.png');

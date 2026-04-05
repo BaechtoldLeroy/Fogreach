@@ -1405,8 +1405,8 @@ const BOSS_DEFINITIONS = {
   chainMaster: {
     id: 'chainMaster',
     name: 'Kettenmeister',
-    texture: 'sprite_boss_chain',
-    fallbackTexture: 'bossChainMaster',
+    texture: 'boss_chain_right0',
+    fallbackTexture: 'sprite_boss_chain',
     baseHP: 30,
     baseSpeed: 60,
     baseDamage: 4,
@@ -1418,8 +1418,8 @@ const BOSS_DEFINITIONS = {
   ceremonyMaster: {
     id: 'ceremonyMaster',
     name: 'Zeremonienmeister',
-    texture: 'sprite_boss_ceremony',
-    fallbackTexture: 'bossCeremonyMaster',
+    texture: 'boss_ceremony_right0',
+    fallbackTexture: 'sprite_boss_ceremony',
     baseHP: 50,
     baseSpeed: 45,
     baseDamage: 6,
@@ -1431,8 +1431,8 @@ const BOSS_DEFINITIONS = {
   shadowCouncillor: {
     id: 'shadowCouncillor',
     name: 'Schattenrat',
-    texture: 'sprite_boss_shadow',
-    fallbackTexture: 'bossShadowCouncillor',
+    texture: 'boss_shadow_right0',
+    fallbackTexture: 'sprite_boss_shadow',
     baseHP: 80,
     baseSpeed: 70,
     baseDamage: 8,
@@ -1476,11 +1476,19 @@ function spawnBoss() {
   const boss = enemies.create(x, y, textureKey);
   currentBoss = boss;
 
-  // Scale sprite-based boss textures to game size
-  if (textureKey.startsWith('sprite_')) {
-    const targetSize = 96; // bosses are bigger
-    const srcW = boss.width || 528;
-    boss.setScale(targetSize / srcW);
+  // Scale boss textures to game size (~96px display)
+  if (textureKey.startsWith('boss_') || textureKey.startsWith('sprite_')) {
+    const targetSize = 96;
+    const srcH = boss.height || 300;
+    boss.setScale(targetSize / srcH);
+  }
+
+  // Boss sprite animation setup
+  if (textureKey.startsWith('boss_')) {
+    const bossPrefix = textureKey.replace('_right0', '').replace('_left0', '');
+    boss._bossPrefix = bossPrefix;
+    boss._bossDirection = 'right';
+    boss._bossAttacking = false;
   }
 
   makeBoss.call(this, boss, def, cycle);
@@ -1612,6 +1620,19 @@ function handleBossAI(time, boss, scene) {
   const uy = d ? dy / d : 0;
   boss.body.setVelocity(ux * desiredSpeed, uy * desiredSpeed);
 
+  // Boss sprite direction switching
+  if (boss._bossPrefix && !boss._bossAttacking) {
+    if (Math.abs(dx) > 30 && (!boss._lastDirChange || time - boss._lastDirChange > 800)) {
+      const newDir = dx > 0 ? 'right' : 'left';
+      if (newDir !== boss._bossDirection) {
+        boss._bossDirection = newDir;
+        boss._lastDirChange = time;
+        const idleKey = boss._bossPrefix + '_' + newDir + '0';
+        if (scene.textures?.exists(idleKey)) boss.setTexture(idleKey);
+      }
+    }
+  }
+
   // Pattern timing
   if (time >= boss.nextPatternAt) {
     const attacks = boss.bossAttacks || ['chainWhip', 'chainPull', 'groundChains'];
@@ -1619,6 +1640,24 @@ function handleBossAI(time, boss, scene) {
     const attackName = attacks[p];
 
     if (BOSS_ATTACK_MAP[attackName]) {
+      // Boss attack animation
+      if (boss._bossPrefix && !boss._bossAttacking) {
+        boss._bossAttacking = true;
+        const dir = boss._bossDirection || 'right';
+        const k1 = boss._bossPrefix + '_' + dir + '1';
+        const k2 = boss._bossPrefix + '_' + dir + '2';
+        const k0 = boss._bossPrefix + '_' + dir + '0';
+        if (scene.textures?.exists(k1)) boss.setTexture(k1);
+        scene.time.delayedCall(400, () => {
+          if (boss?.active && scene.textures?.exists(k2)) boss.setTexture(k2);
+        });
+        scene.time.delayedCall(800, () => {
+          if (boss?.active) {
+            boss._bossAttacking = false;
+            if (scene.textures?.exists(k0)) boss.setTexture(k0);
+          }
+        });
+      }
       BOSS_ATTACK_MAP[attackName].call(scene, boss);
     }
 
