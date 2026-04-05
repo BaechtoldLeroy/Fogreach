@@ -575,7 +575,33 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       templateWalls.push(glowGfx);
     }
 
-    scene.spawnObstacle(px, py, o.type);
+    // Check if object has enough clearance from walls (at least 2 tiles)
+    // to avoid blocking passages. Braziers are visual-only, always place them.
+    const isBrazier = o.type === 'brazier' || o.type === 'brazer';
+    const tileX = Math.floor(o.x), tileY = Math.floor(o.y);
+    let tooClose = false;
+    if (!isBrazier && wallsGrid) {
+      // Check 2-tile radius for walls
+      for (let dy = -1; dy <= 1 && !tooClose; dy++) {
+        for (let dx = -1; dx <= 1 && !tooClose; dx++) {
+          const cx = tileX + dx, cy = tileY + dy;
+          if (cy >= 0 && cy < wallsGrid.length && cx >= 0 && cx < (wallsGrid[cy]?.length || 0)) {
+            if (wallsGrid[cy][cx] === '#') tooClose = true;
+          }
+        }
+      }
+    }
+
+    if (!tooClose || isBrazier) {
+      scene.spawnObstacle(px, py, o.type);
+    } else {
+      // Place visually only (no physics collider)
+      const visualKey = o.type;
+      if (scene.textures?.exists(visualKey)) {
+        const vis = scene.add.image(px, py, visualKey).setDepth(40).setAlpha(0.7);
+        templateWalls.push(vis);
+      }
+    }
     objectCount++;
   });
 
