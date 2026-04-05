@@ -840,6 +840,9 @@ function create() {
 
   enterRoom(this, 0);
 
+  // Initialize minimap after first room is loaded
+  if (typeof initMinimap === 'function') initMinimap(this);
+
   // UI nach Save/Enter aktualisieren
   if (typeof updateHUD === 'function') updateHUD();
   else if (playerHealthText) playerHealthText.setText(`Health: ${playerHealth}/${playerMaxHealth}`);
@@ -1039,6 +1042,9 @@ function update(time, delta) {
 
   // 5.3 FogOfWar
   this.updateFogOfWar();
+
+  // 5.3b Minimap
+  if (typeof updateMinimap === 'function') updateMinimap(this);
 
   // Gegnern die Maske einmalig nachtraeglich geben, falls sie vor Fog init gespawnt wurden
   if (this._enemyVisionMask && this._needsMask && this._needsMask.length) {

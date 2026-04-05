@@ -83,6 +83,12 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   const W = tpl.layout.walls[0].length;
   const wallsGrid = tpl.layout?.walls || [];
 
+  // Store walls grid on the scene for minimap access
+  scene._minimapWallsGrid = wallsGrid;
+  scene._minimapTileSize = T;
+  scene._minimapGridW = W;
+  scene._minimapGridH = H;
+
   const profile = !!window.__DEV_ROOM_PROFILING__;
   const skipFloorTiles = !!window.__DEV_SKIP_FLOOR_TILES__;
   const skipWallObstacles = !!window.__DEV_SKIP_WALL_OBSTACLES__;
