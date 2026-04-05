@@ -41,16 +41,58 @@ const HUB_HITBOXES = {
         'Verteile nichts Ungeprueftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
       ]
     },
-    { 
-      id: 'mara', 
-      name: 'Mara vom Untergrund', 
-      x: 512, y: 322, 
-      texture: 'spaeherin', 
+    {
+      id: 'mara',
+      name: 'Mara vom Untergrund',
+      x: 512, y: 322,
+      texture: 'spaeherin',
       scale: 0.0792,
       lines: [
         'Die Schreiber des Rates markieren Haeuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
         'Der Zeremonienmeister besitzt neue Siegel. Sie holen Daemonen als stilles Archiv.',
         'Sichere Augen im Rathauskeller. Jedes Siegel, das du brichst, lockert ihre Ketten an der Stadt.'
+      ]
+    },
+    {
+      id: 'aldric',
+      name: 'Ratsherr Aldric',
+      x: 480, y: 350,
+      texture: 'ratsherr_aldric',
+      scale: 0.09,
+      placeholderColor: 0x1a2266,
+      placeholderAccent: 0xccaa33,
+      lines: [
+        'Willkommen zurueck, Archivschmied. Der Rat schaetzt deine Dienste.',
+        'Nebenhall ist sicher, solange der Rat wacht. Vergiss das nicht.',
+        'Du hast Talent. Der Rat koennte jemanden wie dich gut gebrauchen — langfristig.'
+      ]
+    },
+    {
+      id: 'elara',
+      name: 'Elara',
+      x: 240, y: 440,
+      texture: 'elara',
+      scale: 0.08,
+      placeholderColor: 0x8b1a1a,
+      placeholderAccent: 0x6b4226,
+      visibleFromAct: 'descent',
+      lines: [
+        'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
+        'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.'
+      ]
+    },
+    {
+      id: 'harren',
+      name: 'Buergermeister Harren',
+      x: 600, y: 380,
+      texture: 'buergermeister_harren',
+      scale: 0.09,
+      placeholderColor: 0x2a2a2a,
+      placeholderAccent: 0x888888,
+      visibleFromAct: 'obedience',
+      lines: [
+        'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
+        'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'
       ]
     }
   ]
@@ -218,20 +260,47 @@ class HubSceneV2 extends Phaser.Scene {
     this.npcs = [];
     this.npcGroup = this.physics.add.staticGroup();
 
+    // Determine current story act for NPC visibility
+    const currentAct = window.storySystem ? window.storySystem.getCurrentAct() : null;
+    const currentActId = currentAct ? currentAct.id : 'awakening';
+    const actOrder = ['awakening', 'obedience', 'descent', 'rebellion', 'revelation'];
+    const currentActIndex = actOrder.indexOf(currentActId);
+
     HUB_HITBOXES.npcs.forEach(npc => {
       const sx = npc.x * SCALE_FACTOR;
       const sy = npc.y * SCALE_FACTOR;
 
-      let sprite;
-
-      if (this.textures.exists(npc.texture)) {
-        sprite = this.add.sprite(sx, sy, npc.texture);
-        sprite.setOrigin(0.5, 1);
-        if (npc.scale) sprite.setScale(npc.scale);
-      } else {
-        sprite = this.add.rectangle(sx, sy - 40, 40, 80, 0x8844aa);
-        sprite.setStrokeStyle(2, 0xffffff);
+      // Check act-based visibility
+      let isVisible = true;
+      if (npc.visibleFromAct) {
+        const requiredIndex = actOrder.indexOf(npc.visibleFromAct);
+        if (requiredIndex >= 0 && currentActIndex < requiredIndex) {
+          isVisible = false;
+        }
       }
+
+      // Generate placeholder texture for NPCs without sprites
+      if (!this.textures.exists(npc.texture)) {
+        const g = this.add.graphics();
+        // Body (robe/cloak)
+        g.fillStyle(npc.placeholderColor || 0x8844aa, 1);
+        g.fillRect(0, 20, 40, 60);
+        // Head
+        g.fillStyle(0xddbba0, 1);
+        g.fillCircle(20, 14, 12);
+        // Accent (chain, cloak trim, etc.)
+        if (npc.placeholderAccent) {
+          g.fillStyle(npc.placeholderAccent, 1);
+          g.fillRect(8, 24, 24, 4);
+        }
+        g.generateTexture(npc.texture, 40, 80);
+        g.destroy();
+      }
+
+      let sprite;
+      sprite = this.add.sprite(sx, sy, npc.texture);
+      sprite.setOrigin(0.5, 1);
+      if (npc.scale) sprite.setScale(npc.scale);
 
       sprite.setDepth(sy);
       sprite.setData('id', npc.id);
@@ -241,7 +310,7 @@ class HubSceneV2 extends Phaser.Scene {
       const npcZone = this.add.zone(sx, sy - hitH / 2, hitW, hitH);
       this.physics.add.existing(npcZone, true);
       this.npcGroup.add(npcZone);
-      
+
       const nameText = this.add.text(sx, sy - 90, npc.name, {
         fontSize: '12px',
         fontFamily: 'serif',
@@ -249,14 +318,42 @@ class HubSceneV2 extends Phaser.Scene {
         backgroundColor: '#000000cc',
         padding: { x: 4, y: 2 }
       }).setOrigin(0.5, 1).setDepth(201).setVisible(false);
-      
-      this.npcs.push({ sprite, nameText, data: npc });
-      
+
+      // Hide NPCs that should not appear in the current act
+      if (!isVisible) {
+        sprite.setVisible(false);
+        sprite.setActive(false);
+        npcZone.setActive(false);
+        // Disable physics body so player cannot collide with hidden NPCs
+        if (npcZone.body) npcZone.body.enable = false;
+      }
+
+      // Elara special states: environmental items when she is absent
+      let envObject = null;
+      if (npc.id === 'elara' && isVisible) {
+        // In revelation act, Elara leaves a note ("preparing the plan")
+        if (currentActId === 'revelation') {
+          sprite.setVisible(false);
+          sprite.setActive(false);
+          // Show a note object instead
+          envObject = this.add.text(sx, sy - 20, '[ Notiz ]\n"Bin im Rathaus.\nWarte auf mich. -E"', {
+            fontSize: '11px',
+            fontFamily: 'monospace',
+            color: '#e8d8a8',
+            backgroundColor: '#2a2018cc',
+            padding: { x: 6, y: 4 },
+            align: 'center'
+          }).setOrigin(0.5, 1).setDepth(sy);
+        }
+      }
+
+      this.npcs.push({ sprite, nameText, data: npc, zone: npcZone, envObject });
+
       if (HUB_DEBUG) {
         const marker = this.add.circle(sx, sy, 10, 0x00ffff, 0.8);
         marker.setStrokeStyle(2, 0xffffff);
         marker.setDepth(1000);
-        
+
         const npcLabel = this.add.text(sx, sy + 15, npc.id, {
           fontSize: '10px',
           fontFamily: 'monospace',
@@ -358,6 +455,11 @@ class HubSceneV2 extends Phaser.Scene {
 
     const interactDist = 100;
     for (const { sprite, nameText, data } of this.npcs) {
+      // Skip hidden/inactive NPCs
+      if (!sprite.visible || !sprite.active) {
+        nameText.setVisible(false);
+        continue;
+      }
       const npcX = data.x * SCALE_FACTOR;
       const npcY = data.y * SCALE_FACTOR;
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npcX, npcY);

@@ -42,12 +42,14 @@
       rebellion: [
         'Die Rebellion braucht Waffen. Ich schmiede Tag und Nacht.',
         'Thoms Pamphlete haben die Buerger wachgeruettelt. Jetzt brauchen sie Stahl, nicht nur Worte.',
-        'Der Kettenrat schickt Haescher. Aber unsere Klingen sind schaerfer als ihre Ketten.'
+        'Der Kettenrat schickt Haescher. Aber unsere Klingen sind schaerfer als ihre Ketten.',
+        'Sei vorsichtig mit ihr. Warum wusste sie, wo die Ritualkammer ist?'
       ],
       revelation: [
         'Die letzte Schmiede ist vollendet. Diese Klinge wird den Nebel zerschneiden.',
         'Fogreach erwacht. Nach all den Jahren sehen die Menschen endlich klar.',
-        'Was auch geschieht — die Archivschmiede wird nie wieder schweigen.'
+        'Was auch geschieht — die Archivschmiede wird nie wieder schweigen.',
+        'Die Klinge die Elara dir gab... das Metall kenne ich. Es kommt aus der Ratskammer.'
       ]
     },
     thom: {
@@ -74,7 +76,8 @@
       revelation: [
         'Die letzte Ausgabe geht in Druck. Sie enthaelt alles — jeden Namen, jedes Siegel, jede Luege.',
         'Fogreach wird nie wieder vergessen. Die Wahrheit ist jetzt unauslöschlich.',
-        'Wenn das hier vorbei ist, drucke ich Geschichtsbuecher. Keine Pamphlete mehr noetig.'
+        'Wenn das hier vorbei ist, drucke ich Geschichtsbuecher. Keine Pamphlete mehr noetig.',
+        'Ich hab Elaras Namen in den alten Druckplatten gefunden. Nicht als Opfer — als Autorin.'
       ]
     },
     mara: {
@@ -102,6 +105,72 @@
         'Alle Siegel sind kartiert. Der Beschwörungskreis kann gebrochen werden.',
         'Meine Spaeher melden Licht in den Tunneln. Der Nebel lichtet sich.',
         'Fogreach gehoert wieder den Menschen. Nicht den Ketten. Nicht den Daemonen.'
+      ]
+    },
+    aldric: {
+      awakening: [
+        'Willkommen zurueck, Archivschmied. Der Rat schaetzt deine Dienste.',
+        'Nebenhall ist sicher, solange der Rat wacht. Vergiss das nicht.',
+        'Du hast Talent. Der Rat koennte jemanden wie dich gut gebrauchen — langfristig.'
+      ],
+      obedience: [
+        'Gute Arbeit im Rathauskeller. Der Rat ist zufrieden mit deinem Fortschritt.',
+        'Halte dich an die Auftraege. Neugier ist keine Tugend in diesen Zeiten.',
+        'Es gibt Belohnungen fuer treue Diener des Rates. Denk daran.'
+      ],
+      descent: [
+        'Du fragst viel. Das ist... nicht noetig. Erledige einfach deinen Auftrag.',
+        'Manche Tueren im Rathauskeller sind aus gutem Grund versiegelt.',
+        'Ich hoere, du sprichst mit... fragwuerdigen Leuten. Das beunruhigt den Rat.'
+      ],
+      rebellion: [
+        'Ich rate dir, nicht weiter zu graben. Zum Wohle aller.',
+        'Der Rat hat laengere Arme, als du denkst. Bedenke das.',
+        'Deine Freunde in der Druckerei machen einen schweren Fehler. Und du mit ihnen.'
+      ],
+      revelation: [
+        'Du bist ein Verraeter, Archivschmied. Der Rat vergisst nicht.',
+        'Die Ketten existieren aus einem Grund. Ohne sie versinkt alles im Chaos.',
+        'Wenn der Nebel zurueckkehrt — und das wird er — wirst du bereuen, was du getan hast.'
+      ]
+    },
+    elara: {
+      descent: [
+        'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
+        'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.',
+        'Sei vorsichtig, wem du vertraust. Nicht jeder, der laechelt, meint es gut.'
+      ],
+      rebellion: [
+        'Pass auf dich auf da unten. Ich will nicht noch jemanden verlieren.',
+        'Ich habe etwas gefunden — alte Aufzeichnungen ueber die Rituale. Nimm sie.',
+        'Manchmal traeum ich von einer Welt ohne Nebel. Glaubst du, die gibt es?'
+      ],
+      revelation: [
+        'Wenn das hier vorbei ist... gibt es da draussen noch eine Welt ohne Nebel? Ich wuerde sie gern mit dir sehen.',
+        'Vertrau mir. Ich weiss, was zu tun ist. Wir koennen das beenden.',
+        'Warte auf mich im Rathaus. Ich bereite alles vor.'
+      ]
+    },
+    harren: {
+      obedience: [
+        'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
+        'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.',
+        'Der Rat verspricht Sicherheit, doch meine Familie zerbricht.'
+      ],
+      descent: [
+        'Hast du Spuren von Elara gefunden? Jeder Tag ohne sie ist eine Ewigkeit.',
+        'Sie war immer so neugierig. Vielleicht zu neugierig fuer diese Stadt.',
+        'Ich bete, dass sie lebt. Mehr kann ich nicht tun.'
+      ],
+      rebellion: [
+        'Du hast sie gefunden? Gott sei Dank. Aber... warum will sie nicht zurueck?',
+        'Sie sagt, sie hat eine Mission. Was fuer eine Mission kann wichtiger sein als Familie?',
+        'Ich verstehe die Welt nicht mehr. Mein eigenes Kind wendet sich von mir ab.'
+      ],
+      revelation: [
+        'Sie hat mich angelogen. All die Jahre. Mein eigenes Kind...',
+        'Vielleicht wusste sie mehr als wir alle. Aber der Schmerz bleibt.',
+        'Wenn das vorbei ist, muss ich lernen, ihr zu vergeben. Oder es zumindest versuchen.'
       ]
     }
   };
