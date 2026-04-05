@@ -701,7 +701,7 @@ function handleEnemies(time, delta = 16) {
           }
           enemy.lastShotTime = time;
 
-          // Mage cast animation on shoot (500ms total)
+          // Mage cast animation (500ms: windup → cast → idle)
           if (enemy.isMage && !enemy.mageAttacking) {
             enemy.mageAttacking = true;
             const dir = enemy.mageDirection || 'right';

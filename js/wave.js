@@ -5,7 +5,11 @@
 // --------------------------------------------------
 function computeWaveEnemyTotal(waveNumber) {
   const wave = Math.max(1, Math.floor(waveNumber || 1));
-  return 4 + (wave - 1) * 2;
+  // Logarithmic scaling: starts at 3, grows slowly, caps at 12
+  // Wave 1: 3, Wave 5: 5, Wave 10: 7, Wave 20: 9, Wave 40: 11
+  const base = 3;
+  const scaled = base + Math.floor(Math.log2(wave) * 1.5);
+  return Math.min(12, scaled);
 }
 window.computeWaveEnemyTotal = computeWaveEnemyTotal;
 
