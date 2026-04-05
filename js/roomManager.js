@@ -351,7 +351,16 @@ function enterRoom(scene, roomId) {
     ? builtMeta.doors
     : [{ x: (builtMeta.w || 800) / 2, y: (builtMeta.h || 600) - 64, dir: null }]; // fallback door
   doorList.forEach((d) => {
-    const stair = scene.stairsGroup.create(d.x, d.y, "stairDown");
+    // Offset stair away from wall into room interior
+    let sx = d.x, sy = d.y;
+    const dir = d.dir || '';
+    if (dir === 'N' || dir === 'n') sy += 64;       // wall at top → move down
+    else if (dir === 'S' || dir === 's') sy -= 64;   // wall at bottom → move up
+    else if (dir === 'W' || dir === 'w') sx += 64;   // wall at left → move right
+    else if (dir === 'E' || dir === 'e') sx -= 64;   // wall at right → move left
+    else sy -= 48; // default: assume bottom wall
+
+    const stair = scene.stairsGroup.create(sx, sy, "stairDown");
     stair.setData("locked", true);
     stair.setData("dir", d.dir || null);
     stair.setAlpha(0.9).refreshBody();
