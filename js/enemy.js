@@ -287,7 +287,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       tint = key.startsWith('shadow_') ? null : (key === 'sprite_shadow' ? null : 0x6600aa);
       break; // Schattenschleicher
     case 6:
-      key = tex('sprite_chainguard', 'enemyChainGuard');
+      key = scene.textures?.exists('chainguard_right0') ? 'chainguard_right0' : tex('sprite_chainguard', 'enemyChainGuard');
       speed = 40;
       hp = 5;
       tint = null;
@@ -434,7 +434,15 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.cohRadius = 200;
     enemy.isChainGuard = true;
     enemy.shieldActive = true; // blocks first hit, then breaks
-    if (!key.startsWith('sprite_')) enemy.setScale(1.2); // large size for procedural texture
+    if (key.startsWith('chainguard_')) {
+      const cgH = enemy.height || 253;
+      enemy.setScale(56 / cgH); // bigger than regular enemies
+      enemy.isChainGuardSprite = true;
+      enemy.chainGuardDirection = 'right';
+      enemy.chainGuardAttacking = false;
+    } else if (!key.startsWith('sprite_')) {
+      enemy.setScale(1.2);
+    }
   } else if (type === 7) {
     // Flammenweber (Flame Weaver) - shoots 3-projectile spread
     enemy.kiteRadius = 240;
@@ -714,6 +722,18 @@ function handleEnemies(time, delta = 16) {
       }
     }
 
+    if (enemy.isChainGuardSprite && !enemy.chainGuardAttacking) {
+      if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
+        const newDir = desired.x > 0 ? 'right' : 'left';
+        if (newDir !== enemy.chainGuardDirection) {
+          enemy.chainGuardDirection = newDir;
+          enemy._lastDirChange = time;
+          const idleKey = `chainguard_${newDir}0`;
+          if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
+        }
+      }
+    }
+
     if (enemy.isBrute && !enemy.bruteAttacking) {
       if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
@@ -784,6 +804,23 @@ function handleEnemies(time, delta = 16) {
           time - enemy.lastAttackTime > attackCooldown
         ) {
           enemy.lastAttackTime = time;
+
+          // Chain Guard attack animation (600ms — heavy, slow)
+          if (enemy.isChainGuardSprite) {
+            enemy.chainGuardAttacking = true;
+            const dir = enemy.chainGuardDirection || 'right';
+            const scene = this;
+            if (scene.textures.exists(`chainguard_${dir}1`)) enemy.setTexture(`chainguard_${dir}1`);
+            scene.time.delayedCall(300, () => {
+              if (enemy && enemy.active && scene.textures.exists(`chainguard_${dir}2`)) enemy.setTexture(`chainguard_${dir}2`);
+            });
+            scene.time.delayedCall(600, () => {
+              if (enemy && enemy.active) {
+                enemy.chainGuardAttacking = false;
+                if (scene.textures.exists(`chainguard_${dir}0`)) enemy.setTexture(`chainguard_${dir}0`);
+              }
+            });
+          }
 
           // Shadow Creeper attack animation (350ms)
           if (enemy.isShadowSprite) {

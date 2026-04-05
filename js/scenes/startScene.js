@@ -98,6 +98,14 @@ StartScene.prototype.preload = function () {
   this.load.image('shadow_right1', 'assets/enemy/shadow/right1.png');
   this.load.image('shadow_right2', 'assets/enemy/shadow/right2.png');
 
+  // Chain Guard enemy sprites
+  this.load.image('chainguard_left0', 'assets/enemy/chainguard/left0.png');
+  this.load.image('chainguard_left1', 'assets/enemy/chainguard/left1.png');
+  this.load.image('chainguard_left2', 'assets/enemy/chainguard/left2.png');
+  this.load.image('chainguard_right0', 'assets/enemy/chainguard/right0.png');
+  this.load.image('chainguard_right1', 'assets/enemy/chainguard/right1.png');
+  this.load.image('chainguard_right2', 'assets/enemy/chainguard/right2.png');
+
   // Archer enemy sprites
   this.load.image('archer_left0', 'assets/enemy/archer/left0.png');
   this.load.image('archer_left1', 'assets/enemy/archer/left1.png');
