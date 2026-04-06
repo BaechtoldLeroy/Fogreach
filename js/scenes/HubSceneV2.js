@@ -56,11 +56,11 @@ const HUB_HITBOXES = {
     {
       id: 'aldric',
       name: 'Ratsherr Aldric',
-      x: 420, y: 380,
+      x: 350, y: 460,
       texture: 'ratsherr_aldric',
-      scale: 0.09,
-      placeholderColor: 0x1a2266,
-      placeholderAccent: 0xccaa33,
+      scale: 0.5,
+      placeholderColor: 0x4466dd,
+      placeholderAccent: 0xffdd44,
       lines: [
         'Willkommen zurueck, Archivschmied. Der Rat schaetzt deine Dienste.',
         'Nebenhall ist sicher, solange der Rat wacht. Vergiss das nicht.',
@@ -70,11 +70,11 @@ const HUB_HITBOXES = {
     {
       id: 'elara',
       name: 'Elara',
-      x: 240, y: 440,
+      x: 180, y: 480,
       texture: 'elara',
-      scale: 0.08,
-      placeholderColor: 0x8b1a1a,
-      placeholderAccent: 0x6b4226,
+      scale: 0.5,
+      placeholderColor: 0xcc2244,
+      placeholderAccent: 0xddaa66,
       visibleFromAct: 'erste_risse',
       lines: [
         'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
@@ -84,11 +84,11 @@ const HUB_HITBOXES = {
     {
       id: 'harren',
       name: 'Buergermeister Harren',
-      x: 600, y: 380,
+      x: 720, y: 470,
       texture: 'buergermeister_harren',
-      scale: 0.09,
-      placeholderColor: 0x2a2a2a,
-      placeholderAccent: 0x888888,
+      scale: 0.5,
+      placeholderColor: 0x665533,
+      placeholderAccent: 0xddcc88,
       visibleFromAct: 'treuer_diener',
       lines: [
         'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
@@ -279,21 +279,50 @@ class HubSceneV2 extends Phaser.Scene {
         }
       }
 
-      // Generate placeholder texture for NPCs without sprites
+      // Generate placeholder texture for NPCs without sprites (larger, more visible)
       if (!this.textures.exists(npc.texture)) {
         const g = this.add.graphics();
+        const W = 100, H = 200;
+
+        // Outline for visibility
+        g.fillStyle(0x000000, 1);
+        g.fillRect(0, 0, W, H);
+
         // Body (robe/cloak)
         g.fillStyle(npc.placeholderColor || 0x8844aa, 1);
-        g.fillRect(0, 20, 40, 60);
+        g.fillRect(8, 60, W-16, H-80);
+
+        // Body shading
+        g.fillStyle(0x000000, 0.3);
+        g.fillRect(W-24, 60, 16, H-80);
+        g.fillStyle(0xffffff, 0.15);
+        g.fillRect(8, 60, 12, H-80);
+
         // Head
         g.fillStyle(0xddbba0, 1);
-        g.fillCircle(20, 14, 12);
-        // Accent (chain, cloak trim, etc.)
+        g.fillCircle(W/2, 40, 28);
+        // Head shading
+        g.fillStyle(0x000000, 0.3);
+        g.fillCircle(W/2 + 8, 40, 22);
+
+        // Eyes
+        g.fillStyle(0x000000, 1);
+        g.fillRect(W/2 - 12, 36, 4, 6);
+        g.fillRect(W/2 + 8, 36, 4, 6);
+
+        // Accent (chain, cloak trim, sash, etc.)
         if (npc.placeholderAccent) {
           g.fillStyle(npc.placeholderAccent, 1);
-          g.fillRect(8, 24, 24, 4);
+          g.fillRect(20, 75, W-40, 8);
+          g.fillRect(20, H-50, W-40, 6);
         }
-        g.generateTexture(npc.texture, 40, 80);
+
+        // Outline border
+        g.lineStyle(3, 0xffffff, 0.8);
+        g.strokeRect(8, 60, W-16, H-80);
+        g.strokeCircle(W/2, 40, 28);
+
+        g.generateTexture(npc.texture, W, H);
         g.destroy();
       }
 
