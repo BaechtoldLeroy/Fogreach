@@ -363,7 +363,7 @@ function enterRoom(scene, roomId) {
     const stair = scene.stairsGroup.create(sx, sy, "stairDown");
     stair.setData("locked", true);
     stair.setData("dir", d.dir || null);
-    stair.setAlpha(0.9).refreshBody();
+    stair.setAlpha(0.9).setDepth(45).refreshBody();
   });
 
   // Overlap Spieler ↔ Stairs

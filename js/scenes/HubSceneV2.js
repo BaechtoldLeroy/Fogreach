@@ -370,7 +370,27 @@ class HubSceneV2 extends Phaser.Scene {
         }
       }
 
-      this.npcs.push({ sprite, nameText, data: npc, zone: npcZone, envObject });
+      // Quest indicator above NPC ("!" for available, "?" for turn-in)
+      const questIndicator = this.add.text(sx, sy - sprite.displayHeight - 10, '', {
+        fontSize: '32px',
+        fontFamily: 'serif',
+        fontStyle: 'bold',
+        color: '#ffdd44',
+        stroke: '#000000',
+        strokeThickness: 4,
+      }).setOrigin(0.5, 1).setDepth(sy + 10).setVisible(false);
+
+      // Float animation
+      this.tweens.add({
+        targets: questIndicator,
+        y: questIndicator.y - 6,
+        duration: 700,
+        ease: 'Sine.easeInOut',
+        yoyo: true,
+        repeat: -1,
+      });
+
+      this.npcs.push({ sprite, nameText, data: npc, zone: npcZone, envObject, questIndicator });
 
       if (HUB_DEBUG) {
         const marker = this.add.circle(sx, sy, 10, 0x00ffff, 0.8);
@@ -452,10 +472,41 @@ class HubSceneV2 extends Phaser.Scene {
     
     p.setDepth(p.y);
     this._refreshInteractionPrompt();
+    this._refreshQuestIndicators();
     
     if (this.prompt) {
       this.prompt.setPosition(p.x, p.y - 52);
     }
+  }
+
+  _refreshQuestIndicators() {
+    const qs = window.questSystem;
+    if (!qs || !this.npcs) return;
+
+    this.npcs.forEach(({ sprite, questIndicator, data }) => {
+      if (!questIndicator || !sprite || !sprite.active) {
+        if (questIndicator) questIndicator.setVisible(false);
+        return;
+      }
+
+      const npcId = data.id;
+      // Check for available quests for this NPC
+      const available = qs.getAvailableQuests ? qs.getAvailableQuests(npcId) : [];
+      // Check for active quests ready to turn in
+      const active = qs.getActiveQuests ? qs.getActiveQuests().filter(q => q.npcId === npcId) : [];
+      const readyToComplete = active.filter(q => qs.isQuestReadyToComplete && qs.isQuestReadyToComplete(q.id));
+
+      if (readyToComplete.length > 0) {
+        questIndicator.setText('?').setColor('#88ff88').setVisible(true);
+      } else if (available.length > 0) {
+        questIndicator.setText('!').setColor('#ffdd44').setVisible(true);
+      } else {
+        questIndicator.setVisible(false);
+      }
+
+      // Keep position above sprite
+      questIndicator.x = sprite.x;
+    });
   }
 
   _refreshInteractionPrompt() {
