@@ -1052,27 +1052,34 @@ function update(time, delta) {
     this._needsMask.length = 0;
   }
 
-  // 5.5 Spin-Attack (Desktop) — block abilities while stunned
+  // 5.5 Active ability slots (Q/E/R/F) — block while stunned
   const playerStunned = window.statusEffectManager && window.statusEffectManager.isStunned(player);
-  if (!playerStunned && !isMobile && Phaser.Input.Keyboard.JustDown(spinKey)) {
-    spinAttack.call(this);
-  }
 
-  if (!playerStunned && !isMobile) {
+  if (!playerStunned && !isMobile && window.AbilitySystem) {
+    // Q -> slot1, E -> slot2, R -> slot3, F -> slot4
+    if (Phaser.Input.Keyboard.JustDown(qKey)) {
+      window.AbilitySystem.tryActivate('slot1', this);
+    }
+    if (Phaser.Input.Keyboard.JustUp(qKey)) {
+      window.AbilitySystem.tryRelease('slot1', this);
+    }
     if (Phaser.Input.Keyboard.JustDown(eKey)) {
-      beginChargedSlash.call(this);
+      window.AbilitySystem.tryActivate('slot2', this);
     }
     if (Phaser.Input.Keyboard.JustUp(eKey)) {
-      releaseChargedSlash.call(this);
-    }
-    if (Phaser.Input.Keyboard.JustDown(qKey)) {
-      dashSlash.call(this);
+      window.AbilitySystem.tryRelease('slot2', this);
     }
     if (Phaser.Input.Keyboard.JustDown(rKey)) {
-      throwDagger.call(this);
+      window.AbilitySystem.tryActivate('slot3', this);
+    }
+    if (Phaser.Input.Keyboard.JustUp(rKey)) {
+      window.AbilitySystem.tryRelease('slot3', this);
     }
     if (fKey && Phaser.Input.Keyboard.JustDown(fKey)) {
-      shieldBash.call(this);
+      window.AbilitySystem.tryActivate('slot4', this);
+    }
+    if (fKey && Phaser.Input.Keyboard.JustUp(fKey)) {
+      window.AbilitySystem.tryRelease('slot4', this);
     }
   }
 

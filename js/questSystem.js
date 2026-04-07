@@ -560,6 +560,9 @@
     }
 
     console.log('[QuestSystem] Completed quest:', questId);
+    if (window.AbilitySystem && typeof window.AbilitySystem.onQuestCompleted === 'function') {
+      window.AbilitySystem.onQuestCompleted(questId);
+    }
     _notifyUpdate();
     return true;
   }

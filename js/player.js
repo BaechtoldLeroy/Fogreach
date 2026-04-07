@@ -643,6 +643,7 @@ window.normalizePlayerDirectionalFrames = normalizePlayerDirectionalFrames;
 window.ensureDirectionLoaded = ensureDirectionLoaded;
 window.beginChargedSlash = beginChargedSlash;
 window.releaseChargedSlash = releaseChargedSlash;
+window.spinAttack = spinAttack;
 window.dashSlash = dashSlash;
 window.throwDagger = throwDagger;
 window.shieldBash = shieldBash;
@@ -984,6 +985,10 @@ function handleEnemyHit(scene, enemy, options = {}) {
     if (window.storySystem && typeof window.storySystem.onEnemyKilled === 'function') {
       window.storySystem.onEnemyKilled();
     }
+    // Ability unlock tracking: enemy kill counter
+    if (window.AbilitySystem && typeof window.AbilitySystem.onEnemyKilled === 'function') {
+      window.AbilitySystem.onEnemyKilled();
+    }
     // Quest progress: enemy kill
     if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
       window.questSystem.updateQuestProgress('kill', 'enemy', 1);
@@ -1001,6 +1006,10 @@ function handleEnemyHit(scene, enemy, options = {}) {
         var questBossId = bossMapping[enemy.bossType] || enemy.bossType;
         if (typeof window.questSystem.onBossKilled === 'function') {
           window.questSystem.onBossKilled(questBossId);
+        }
+        // Ability unlock: notify AbilitySystem with raw bossType id
+        if (window.AbilitySystem && typeof window.AbilitySystem.onBossKilled === 'function') {
+          window.AbilitySystem.onBossKilled(enemy.bossType);
         }
       }
     }
@@ -1087,7 +1096,13 @@ function attack() {
   });
 }
 
+function _abilityGate(id) {
+  if (!window.AbilitySystem) return true;
+  return window.AbilitySystem.isLearned(id);
+}
+
 function spinAttack() {
+  if (!_abilityGate('spinAttack')) return;
   const now = this.time.now;
   const baseCooldown = getSpinCooldown();
   const abilityCooldown = applyCooldownModifier(baseCooldown, 'spin');
@@ -1191,6 +1206,7 @@ function spinAttack() {
 
 function beginChargedSlash() {
   if (!this || !player) return;
+  if (!_abilityGate('chargeSlash')) return;
   if (chargeSlashCooldown || isChargingSlash || isSpinning || isDashing) return;
 
   isChargingSlash = true;
@@ -1315,6 +1331,7 @@ function releaseChargedSlash(forceMaxCharge = false) {
 }
 
 function dashSlash() {
+  if (!_abilityGate('dashSlash')) return;
   if (!this || !player) return;
   if (dashSlashCooldown || isDashing || isSpinning || isChargingSlash) return;
 
@@ -1424,6 +1441,7 @@ function ensurePlayerDaggerTexture(scene) {
 }
 
 function throwDagger() {
+  if (!_abilityGate('daggerThrow')) return;
   if (!this || !player || !playerProjectiles) return;
   if (daggerThrowCooldown || isChargingSlash) return;
 
@@ -1476,6 +1494,7 @@ function throwDagger() {
 }
 
 function shieldBash() {
+  if (!_abilityGate('shieldBash')) return;
   if (!this || !player) return;
   if (shieldBashCooldown || isDashing) return;
 
