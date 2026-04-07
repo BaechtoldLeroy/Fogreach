@@ -157,6 +157,13 @@ class CraftingScene extends Phaser.Scene {
     );
     this.enhanceBtn.container.setVisible(false);
 
+    // Salvage button (recycle to Eisenbrocken)
+    this.salvageBtn = this._createButton(
+      leftX + slotW / 2, enhY + 105, 180, 32,
+      'Zerlegen', () => this._salvageItem()
+    );
+    this.salvageBtn.container.setVisible(false);
+
     // --- Right panel: Crafting recipes ---
     const rightX = W / 2 + 20;
     const rightW = (W / 2) - 50;
@@ -338,6 +345,9 @@ class CraftingScene extends Phaser.Scene {
     this.equipSlotBgs[slot].setFillStyle(0x4a3a1a);
     this.equipSlotBgs[slot].setStrokeStyle(2, 0xd4a543);
 
+    // Always show salvage button when item is selected
+    this.salvageBtn.container.setVisible(true);
+
     // Show enhance info
     const lvl = item.enhanceLevel || 0;
     if (lvl >= 5) {
@@ -419,6 +429,42 @@ class CraftingScene extends Phaser.Scene {
     this._showFeedback(`${item.name} verbessert!`, '#44ff44');
 
     // Flash effect
+    this._flashEffect();
+  }
+
+  // =================== Salvage ===================
+  _salvageItem() {
+    if (!this._selectedSlot) return;
+    const item = equipment[this._selectedSlot];
+    if (!item) return;
+
+    // Salvage value: rarity * 3 + enhance level * 5
+    const rarityValue = item.rarityValue || 1;
+    const enhanceLevel = item.enhanceLevel || 0;
+    const matValue = rarityValue * 3 + enhanceLevel * 5;
+
+    // Remove item from equipment
+    equipment[this._selectedSlot] = null;
+
+    // Add materials
+    if (typeof changeMaterialCount === 'function') {
+      changeMaterialCount('MAT', matValue);
+    } else if (typeof materialCounts !== 'undefined') {
+      materialCounts.MAT = (materialCounts.MAT || 0) + matValue;
+    }
+
+    // Save
+    if (typeof saveGame === 'function') {
+      try { saveGame(this); } catch (e) {}
+    }
+
+    // Refresh UI
+    this._selectedSlot = null;
+    this.enhanceBtn.container.setVisible(false);
+    this.salvageBtn.container.setVisible(false);
+    this.enhanceInfo.setText('Waehle ein Ausruestungsstueck.');
+    this._refreshAll();
+    this._showFeedback(`Zerlegt: +${matValue} Eisenbrocken`, '#ccaa33');
     this._flashEffect();
   }
 

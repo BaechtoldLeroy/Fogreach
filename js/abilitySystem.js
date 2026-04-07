@@ -207,6 +207,10 @@
   // Each ability has an unlock entry. abilities not listed here are
   // unlocked by default at game start.
   const UNLOCK_RULES = {
+    spinAttack:      { type: 'kills',         value: 5,                  hint: 'Besiege 5 Gegner' },
+    chargeSlash:     { type: 'kills',         value: 15,                 hint: 'Besiege 15 Gegner' },
+    dashSlash:       { type: 'kills',         value: 25,                 hint: 'Besiege 25 Gegner' },
+    daggerThrow:     { type: 'wave',          value: 3,                  hint: 'Erreiche Welle 3' },
     shieldBash:      { type: 'kills',         value: 50,                 hint: 'Besiege 50 Gegner' },
     heilwunde:       { type: 'quest',         value: 'branka_documents', hint: 'Schlie\u00DFe Brankas Dokumenten-Quest ab' },
     frostnova:       { type: 'boss',          value: 'chainMaster',      hint: 'Besiege den Kettenmeister' },
@@ -214,19 +218,15 @@
     schattenschritt: { type: 'boss',          value: 'shadowCouncillor', hint: 'Besiege den Schattenrat' }
   };
 
-  // Default-learned abilities (always available from the start).
-  const DEFAULT_LEARNED = [
-    'spinAttack',
-    'chargeSlash',
-    'dashSlash',
-    'daggerThrow'
-  ];
+  // No abilities learned by default — only basic attack (space) is always available.
+  // Player must learn skills through gameplay (kills, quests, bosses).
+  const DEFAULT_LEARNED = [];
 
   const DEFAULT_LOADOUT = {
-    slot1: 'spinAttack',   // Q
-    slot2: 'chargeSlash',  // E
-    slot3: 'dashSlash',    // R
-    slot4: 'daggerThrow'   // F
+    slot1: null,
+    slot2: null,
+    slot3: null,
+    slot4: null
   };
 
   const SLOT_KEYS = ['slot1', 'slot2', 'slot3', 'slot4'];
