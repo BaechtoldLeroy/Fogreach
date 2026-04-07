@@ -573,21 +573,31 @@ function handleEnemies(time, delta = 16) {
     if (enemy.isShadowCreeper && dToPlayer < 100) {
       if (!enemy.lastTeleportTime || time - enemy.lastTeleportTime > 2000) {
         enemy.lastTeleportTime = time;
-        // Teleport to a random offset 80-150px away from current position
-        const teleAngle = Math.random() * Math.PI * 2;
-        const teleDist = 80 + Math.random() * 70;
+        // Try up to 10 random positions, only teleport if accessible
         const bounds = this.physics?.world?.bounds;
-        let newX = enemy.x + Math.cos(teleAngle) * teleDist;
-        let newY = enemy.y + Math.sin(teleAngle) * teleDist;
-        if (bounds) {
-          newX = Phaser.Math.Clamp(newX, bounds.x + 32, bounds.x + bounds.width - 32);
-          newY = Phaser.Math.Clamp(newY, bounds.y + 32, bounds.y + bounds.height - 32);
+        let teleported = false;
+        for (let attempt = 0; attempt < 10; attempt++) {
+          const teleAngle = Math.random() * Math.PI * 2;
+          const teleDist = 80 + Math.random() * 70;
+          let newX = enemy.x + Math.cos(teleAngle) * teleDist;
+          let newY = enemy.y + Math.sin(teleAngle) * teleDist;
+          if (bounds) {
+            newX = Phaser.Math.Clamp(newX, bounds.x + 32, bounds.x + bounds.width - 32);
+            newY = Phaser.Math.Clamp(newY, bounds.y + 32, bounds.y + bounds.height - 32);
+          }
+          // Check accessibility
+          if (this.isPointAccessible && !this.isPointAccessible(newX, newY)) continue;
+          // Check no obstacle blocking
+          if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(newX, newY)) continue;
+          enemy.setPosition(newX, newY);
+          teleported = true;
+          break;
         }
-        enemy.setPosition(newX, newY);
-        // Brief visual flash
-        enemy.setAlpha(0.3);
-        if (this.tweens) {
-          this.tweens.add({ targets: enemy, alpha: 1, duration: 300 });
+        if (teleported) {
+          enemy.setAlpha(0.3);
+          if (this.tweens) {
+            this.tweens.add({ targets: enemy, alpha: 1, duration: 300 });
+          }
         }
       }
     }
