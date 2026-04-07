@@ -494,14 +494,20 @@ class HubSceneV2 extends Phaser.Scene {
       const npcId = data.id;
       // Check for available quests for this NPC
       const available = qs.getAvailableQuests ? qs.getAvailableQuests(npcId) : [];
-      // Check for active quests ready to turn in
+      // Check for active quests for this NPC
       const active = qs.getActiveQuests ? qs.getActiveQuests().filter(q => q.npcId === npcId) : [];
       const readyToComplete = active.filter(q => qs.isQuestReadyToComplete && qs.isQuestReadyToComplete(q.id));
+      const inProgress = active.filter(q => !qs.isQuestReadyToComplete || !qs.isQuestReadyToComplete(q.id));
 
       if (readyToComplete.length > 0) {
+        // Quest abgeschlossen → grünes "?" zur Abgabe
         questIndicator.setText('?').setColor('#88ff88').setVisible(true);
       } else if (available.length > 0) {
+        // Quest verfügbar → goldenes "!"
         questIndicator.setText('!').setColor('#ffdd44').setVisible(true);
+      } else if (inProgress.length > 0) {
+        // Quest angenommen, in Arbeit → graues "…"
+        questIndicator.setText('…').setColor('#aaaaaa').setVisible(true);
       } else {
         questIndicator.setVisible(false);
       }
