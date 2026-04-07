@@ -173,7 +173,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   }
 
   // Minimum spawn distance from player — enemies should NOT spawn on top of player
-  const MIN_SPAWN_DISTANCE = 200;
+  const MIN_SPAWN_DISTANCE = 300;
 
   const ensureValidSpot = () => {
     if (scene.isPointAccessible && !scene.isPointAccessible(x, y)) {
@@ -221,13 +221,20 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     [256, 256], [256, -256], [-256, 256], [-256, -256],
   ];
 
-  // freie Position finden
+  // freie Position finden — auch hier MIN_SPAWN_DISTANCE check
   for (let k = 0; k < tryOffsets.length; k++) {
     const nx = clampX(x + tryOffsets[k][0]);
     const ny = clampY(y + tryOffsets[k][1]);
 
     if (scene.isPointAccessible && !scene.isPointAccessible(nx, ny)) {
       continue;
+    }
+
+    // Reject positions too close to player
+    if (player && player.active) {
+      const pdx = nx - player.x;
+      const pdy = ny - player.y;
+      if (pdx * pdx + pdy * pdy < MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE) continue;
     }
 
     if (!isSpawnBlocked(nx, ny)) {

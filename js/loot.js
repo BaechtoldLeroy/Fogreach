@@ -250,8 +250,36 @@ function collectLoot(playerSprite, loot) {
       && addMaterialToStorage(item, item?.amount || 1);
     if (!isMaterial) {
       const idx = inventory.findIndex((slot) => !slot);
-      if (idx >= 0) inventory[idx] = item;
-      else inventory[0] = item;
+      if (idx >= 0) {
+        inventory[idx] = item;
+      } else {
+        // Inventory full → salvage to Eisenbrocken based on rarity
+        const rarityValue = item?.rarityValue || 1;
+        const matAmount = rarityValue * 2; // common=2, rare=4, epic=6, legendary=8
+        if (typeof changeMaterialCount === 'function') {
+          changeMaterialCount('MAT', matAmount);
+        } else if (typeof materialCounts !== 'undefined') {
+          materialCounts.MAT = (materialCounts.MAT || 0) + matAmount;
+        }
+        // Visual feedback
+        if (this.add && item) {
+          const txt = this.add.text(loot.x, loot.y - 20,
+            '+' + matAmount + ' Eisenbrocken', {
+              fontSize: '14px',
+              fontFamily: 'monospace',
+              color: '#ccaa33',
+              stroke: '#000',
+              strokeThickness: 3
+            }).setOrigin(0.5).setDepth(1500);
+          this.tweens.add({
+            targets: txt,
+            y: txt.y - 30,
+            alpha: 0,
+            duration: 1500,
+            onComplete: () => txt.destroy()
+          });
+        }
+      }
     }
     if (typeof refreshInventoryUI === 'function') refreshInventoryUI();
   }
