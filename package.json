@@ -10,6 +10,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "canvas": "^3.2.3",
     "serve": "^14.2.5"
+  },
+  "devDependencies": {
+    "playwright": "^1.59.1"
   }
 }

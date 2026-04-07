@@ -174,6 +174,16 @@ StartScene.prototype.create = function () {
   if (typeof normalizePlayerDirectionalFrames === 'function') {
     normalizePlayerDirectionalFrames(this);
   }
+
+  // Auto-start support: ?autostart=1 in URL skips menu (for testing)
+  if (typeof window !== 'undefined' && window.location && window.location.search.includes('autostart=1')) {
+    window.__DEV_FORCE_CHEAT__ = true;
+    if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
+    const self = this;
+    setTimeout(() => loadRoomTemplatesAndStart.call(self), 100);
+    return;
+  }
+
   // Vollbild bei erstem Touch
   this.input.addPointer(1);
   /*this.input.on('pointerdown', () => {

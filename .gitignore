@@ -1,0 +1,27 @@
+# Added by Spec Kitty CLI (auto-managed)
+.claude/
+.codex/
+.opencode/
+.windsurf/
+.gemini/
+.cursor/
+.qwen/
+.kilocode/
+.augment/
+.roo/
+.amazonq/
+.agent/
+.github/copilot/
+.kittify/.dashboard
+.kittify/constitution/context-state.json
+.kittify/constitution/directives.yaml
+.kittify/constitution/governance.yaml
+.kittify/constitution/metadata.yaml
+.kittify/constitution/references.yaml
+.kittify/dossiers/
+.kittify/events/
+.kittify/merge-state.json
+.kittify/missions/__pycache__/
+.kittify/runtime/
+.kittify/workspaces/
+test-output/

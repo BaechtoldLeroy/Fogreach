@@ -37,6 +37,7 @@ const config = {
 };
 
 let game = new Phaser.Game(config);
+if (typeof window !== 'undefined') window.game = game;
 const WORLD_RIGHT_PADDING = 256;
 
 // Development flag: enable room template profiling logs by default.
