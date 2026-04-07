@@ -138,6 +138,7 @@ class HubSceneV2 extends Phaser.Scene {
       if (window.soundManager) window.soundManager.toggleMute();
     });
     this.input.keyboard.on('keydown-J', this._handleJournal, this);
+    this.input.keyboard.on('keydown-K', this._handleLoadout, this);
 
     // Check for pending story events and show overlay
     this._checkStoryEvent();
@@ -151,6 +152,7 @@ class HubSceneV2 extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard.off('keydown-E', this._handleInteract, this);
       this.input.keyboard.off('keydown-J', this._handleJournal, this);
+      this.input.keyboard.off('keydown-K', this._handleLoadout, this);
       if (window.soundManager) window.soundManager.stopMusic();
     });
   }
@@ -1016,6 +1018,289 @@ class HubSceneV2 extends Phaser.Scene {
     this._dialogOpen = true;
     window.storySystem.showJournalOverlay(this, () => {
       this._dialogOpen = false;
+    });
+  }
+
+  _handleLoadout() {
+    if (this._loadoutContainer) return;
+    if (this._loadoutSuppressUntil && this.time.now < this._loadoutSuppressUntil) return;
+    if (this._dialogOpen) return;
+    if (!window.AbilitySystem) {
+      console.warn('[HubSceneV2] AbilitySystem not loaded');
+      return;
+    }
+    this._showLoadoutUI();
+  }
+
+  _showLoadoutUI() {
+    this._dialogOpen = true;
+    if (this._loadoutContainer) {
+      this._loadoutContainer.destroy(true);
+      this._loadoutContainer = null;
+    }
+
+    const cam = this.cameras.main;
+    const cw = cam.width;
+    const ch = cam.height;
+
+    const overlay = this.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.78)
+      .setDepth(2000)
+      .setScrollFactor(0)
+      .setInteractive();
+
+    const panelW = Math.min(880, cw - 40);
+    const panelH = Math.min(560, ch - 40);
+    const container = this.add.container(cw / 2, ch / 2).setDepth(2001).setScrollFactor(0);
+    this._loadoutContainer = container;
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0a0a12, 0.97).fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
+    bg.lineStyle(3, 0x4a86ff, 0.9).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
+    container.add(bg);
+
+    const title = this.add.text(0, -panelH / 2 + 16, 'F\u00E4higkeiten-Loadout', {
+      fontFamily: 'serif',
+      fontSize: 28,
+      color: '#e8d4b8'
+    }).setOrigin(0.5, 0);
+    container.add(title);
+
+    const hint = this.add.text(0, -panelH / 2 + 52, 'Klicke auf einen Slot, dann auf eine erlernte F\u00E4higkeit. ESC zum Schlie\u00DFen.', {
+      fontFamily: 'monospace',
+      fontSize: 14,
+      color: '#a0b0d0'
+    }).setOrigin(0.5, 0);
+    container.add(hint);
+
+    // Selection state for swap operation
+    let selectedSlot = null;
+
+    // ---- Pool grid (top area) ----
+    const poolStartY = -panelH / 2 + 90;
+    const poolHeight = panelH - 90 - 140;
+    const allDefs = window.AbilitySystem.getAllAbilityDefs();
+    const cellSize = 88;
+    const gap = 12;
+    const cols = Math.max(4, Math.min(6, Math.floor((panelW - 60) / (cellSize + gap))));
+
+    const poolText = this.add.text(-panelW / 2 + 24, poolStartY, 'Erlernte & verf\u00FCgbare F\u00E4higkeiten', {
+      fontFamily: 'serif',
+      fontSize: 16,
+      color: '#c8d8ff'
+    }).setOrigin(0, 0);
+    container.add(poolText);
+
+    const gridStartY = poolStartY + 30;
+    const poolGfxList = [];
+
+    const renderPool = () => {
+      poolGfxList.forEach((g) => g.destroy());
+      poolGfxList.length = 0;
+
+      const learned = window.AbilitySystem.getLearnedAbilities();
+      const learnedSet = new Set(learned);
+      const ordered = allDefs.slice().sort((a, b) => {
+        const la = learnedSet.has(a.id) ? 0 : 1;
+        const lb = learnedSet.has(b.id) ? 0 : 1;
+        if (la !== lb) return la - lb;
+        return a.name.localeCompare(b.name);
+      });
+
+      ordered.forEach((def, idx) => {
+        const col = idx % cols;
+        const row = Math.floor(idx / cols);
+        const cx = -((cols * (cellSize + gap)) - gap) / 2 + col * (cellSize + gap) + cellSize / 2;
+        const cy = gridStartY + row * (cellSize + gap) + cellSize / 2;
+
+        const isLearnedDef = learnedSet.has(def.id);
+        const equipped = window.AbilitySystem.isEquipped(def.id);
+
+        const cell = this.add.graphics();
+        const fill = isLearnedDef ? 0x1a2238 : 0x0e0e16;
+        const stroke = equipped ? 0xffd166 : (isLearnedDef ? def.color : 0x333344);
+        cell.fillStyle(fill, 0.95).fillRoundedRect(cx - cellSize / 2, cy - cellSize / 2, cellSize, cellSize, 10);
+        cell.lineStyle(equipped ? 3 : 2, stroke, 0.95).strokeRoundedRect(cx - cellSize / 2, cy - cellSize / 2, cellSize, cellSize, 10);
+        container.add(cell);
+        poolGfxList.push(cell);
+
+        const icon = this.add.text(cx, cy - 14, def.icon || '?', {
+          fontFamily: 'serif',
+          fontSize: 26,
+          color: isLearnedDef ? '#ffffff' : '#555566'
+        }).setOrigin(0.5);
+        container.add(icon);
+        poolGfxList.push(icon);
+
+        const nameTxt = this.add.text(cx, cy + 18, def.name, {
+          fontFamily: 'monospace',
+          fontSize: 11,
+          color: isLearnedDef ? '#e0e8ff' : '#666677',
+          align: 'center',
+          wordWrap: { width: cellSize - 6 }
+        }).setOrigin(0.5, 0.5);
+        container.add(nameTxt);
+        poolGfxList.push(nameTxt);
+
+        if (!isLearnedDef) {
+          const rule = window.AbilitySystem.getUnlockRule(def.id);
+          if (rule) {
+            const lockTxt = this.add.text(cx, cy + cellSize / 2 - 6, '\u{1F512}', {
+              fontFamily: 'serif',
+              fontSize: 12,
+              color: '#aa8855'
+            }).setOrigin(0.5, 1);
+            container.add(lockTxt);
+            poolGfxList.push(lockTxt);
+          }
+        }
+
+        // Hit area
+        const hit = this.add.zone(cx, cy, cellSize, cellSize).setOrigin(0.5).setInteractive({ useHandCursor: isLearnedDef });
+        container.add(hit);
+        poolGfxList.push(hit);
+
+        hit.on('pointerover', () => {
+          let tip = def.name + '\n' + def.description;
+          if (!isLearnedDef) {
+            const rule = window.AbilitySystem.getUnlockRule(def.id);
+            if (rule) tip += '\n[Gesperrt: ' + rule.hint + ']';
+          } else if (equipped) {
+            const slot = window.AbilitySystem.getSlotForAbility(def.id);
+            tip += '\n[Ausger\u00FCstet: ' + (window.AbilitySystem.SLOT_KEY_LABELS[slot] || slot) + ']';
+          }
+          tooltip.setText(tip);
+          tooltip.setVisible(true);
+        });
+        hit.on('pointerout', () => tooltip.setVisible(false));
+        hit.on('pointerdown', () => {
+          if (!isLearnedDef) return;
+          if (!selectedSlot) {
+            // Auto: equip into first empty slot or replace slot1
+            let target = window.AbilitySystem.SLOT_KEYS.find((s) => !window.AbilitySystem.getActiveLoadout()[s]);
+            if (!target) target = 'slot1';
+            window.AbilitySystem.setSlot(target, def.id);
+          } else {
+            window.AbilitySystem.setSlot(selectedSlot, def.id);
+            selectedSlot = null;
+          }
+          renderAll();
+        });
+      });
+    };
+
+    // ---- Slot bar (bottom area) ----
+    const slotBarY = panelH / 2 - 80;
+    const slotSize = 96;
+    const slotGap = 24;
+    const slotGfxList = [];
+
+    const renderSlots = () => {
+      slotGfxList.forEach((g) => g.destroy());
+      slotGfxList.length = 0;
+
+      const loadout = window.AbilitySystem.getActiveLoadout();
+      const slots = window.AbilitySystem.SLOT_KEYS;
+      const totalW = slots.length * slotSize + (slots.length - 1) * slotGap;
+      const startX = -totalW / 2 + slotSize / 2;
+
+      slots.forEach((slot, i) => {
+        const cx = startX + i * (slotSize + slotGap);
+        const cy = slotBarY;
+        const abilityId = loadout[slot];
+        const def = abilityId ? window.AbilitySystem.getAbilityDef(abilityId) : null;
+        const isSelected = selectedSlot === slot;
+
+        const slotG = this.add.graphics();
+        slotG.fillStyle(0x141828, 0.95).fillRoundedRect(cx - slotSize / 2, cy - slotSize / 2, slotSize, slotSize, 12);
+        slotG.lineStyle(isSelected ? 4 : 2, isSelected ? 0xffd166 : (def ? def.color : 0x4a4a66), 0.95)
+          .strokeRoundedRect(cx - slotSize / 2, cy - slotSize / 2, slotSize, slotSize, 12);
+        container.add(slotG);
+        slotGfxList.push(slotG);
+
+        const keyLbl = this.add.text(cx - slotSize / 2 + 6, cy - slotSize / 2 + 4, window.AbilitySystem.SLOT_KEY_LABELS[slot], {
+          fontFamily: 'monospace',
+          fontSize: 14,
+          color: '#ffd166'
+        }).setOrigin(0, 0);
+        container.add(keyLbl);
+        slotGfxList.push(keyLbl);
+
+        if (def) {
+          const icon = this.add.text(cx, cy - 8, def.icon || '?', {
+            fontFamily: 'serif',
+            fontSize: 32,
+            color: '#ffffff'
+          }).setOrigin(0.5);
+          container.add(icon);
+          slotGfxList.push(icon);
+
+          const nameTxt = this.add.text(cx, cy + 26, def.name, {
+            fontFamily: 'monospace',
+            fontSize: 11,
+            color: '#e0e8ff',
+            align: 'center',
+            wordWrap: { width: slotSize - 8 }
+          }).setOrigin(0.5);
+          container.add(nameTxt);
+          slotGfxList.push(nameTxt);
+        } else {
+          const empty = this.add.text(cx, cy, '(leer)', {
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: '#666677'
+          }).setOrigin(0.5);
+          container.add(empty);
+          slotGfxList.push(empty);
+        }
+
+        const hit = this.add.zone(cx, cy, slotSize, slotSize).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        container.add(hit);
+        slotGfxList.push(hit);
+
+        hit.on('pointerdown', () => {
+          selectedSlot = (selectedSlot === slot) ? null : slot;
+          renderAll();
+        });
+      });
+    };
+
+    // Tooltip
+    const tooltip = this.add.text(0, panelH / 2 - 18, '', {
+      fontFamily: 'monospace',
+      fontSize: 12,
+      color: '#ffe28a',
+      align: 'center'
+    }).setOrigin(0.5, 1).setVisible(false);
+    container.add(tooltip);
+
+    const renderAll = () => {
+      renderPool();
+      renderSlots();
+    };
+    renderAll();
+
+    // Close handlers
+    const close = () => {
+      if (this._loadoutContainer) {
+        this._loadoutContainer.destroy(true);
+        this._loadoutContainer = null;
+      }
+      overlay.destroy();
+      this.input.keyboard.off('keydown-ESC', close);
+      this.input.keyboard.off('keydown-K', close);
+      this._dialogOpen = false;
+      this._loadoutSuppressUntil = (this.time?.now || 0) + 200;
+    };
+    overlay.on('pointerdown', (pointer, lx, ly) => {
+      // Only close if click is outside panel
+      if (Math.abs(lx - cw / 2) > panelW / 2 || Math.abs(ly - ch / 2) > panelH / 2) {
+        close();
+      }
+    });
+    this.input.keyboard.on('keydown-ESC', close);
+    // Defer K binding so the same keydown-K that opened this UI doesn't close it
+    this.time.delayedCall(50, () => {
+      if (this._loadoutContainer) this.input.keyboard.on('keydown-K', close);
     });
   }
 
