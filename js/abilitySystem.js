@@ -332,6 +332,7 @@
     }
     state.activeLoadout[slot] = abilityId;
     save();
+    if (typeof window._refreshAbilityHUD === 'function') window._refreshAbilityHUD();
     return true;
   }
 
@@ -351,24 +352,99 @@
     try {
       const scene = window.gameScene || (window.game && window.game.scene && window.game.scene.scenes && window.game.scene.scenes.find((s) => s && s.sys && s.sys.isActive()));
       if (!scene || !scene.add) return;
+
+      // Find ability def to get icon + description
+      let def = null;
+      for (const id in ABILITY_DEFS) {
+        if (ABILITY_DEFS[id].name === name) { def = ABILITY_DEFS[id]; break; }
+      }
+
       const cam = scene.cameras?.main;
       const cw = cam ? cam.width : 800;
-      const text = scene.add.text(cw / 2, 80, 'Neue F\u00E4higkeit: ' + name, {
+      const ch = cam ? cam.height : 600;
+
+      const panelW = 480, panelH = 140;
+      const cx = cw / 2, cy = 100;
+
+      const container = scene.add.container(cx, cy).setScrollFactor(0).setDepth(9999);
+
+      // Background panel
+      const bg = scene.add.graphics();
+      bg.fillStyle(0x0a0a14, 0.95).fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
+      bg.lineStyle(3, 0xffd166, 1).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
+      container.add(bg);
+
+      // Header
+      const header = scene.add.text(0, -panelH / 2 + 14, 'NEUE F\u00C4HIGKEIT ERLERNT', {
+        fontFamily: 'serif',
+        fontSize: 14,
+        color: '#ffd166',
+        fontStyle: 'bold',
+      }).setOrigin(0.5, 0);
+      container.add(header);
+
+      // Icon (left side)
+      if (def && def.icon) {
+        const iconBg = scene.add.graphics();
+        iconBg.fillStyle(0x1a2238, 0.9).fillRoundedRect(-panelW / 2 + 16, -panelH / 2 + 38, 64, 64, 8);
+        iconBg.lineStyle(2, def.color || 0xffd166, 0.9).strokeRoundedRect(-panelW / 2 + 16, -panelH / 2 + 38, 64, 64, 8);
+        container.add(iconBg);
+
+        const icon = scene.add.text(-panelW / 2 + 48, -panelH / 2 + 70, def.icon, {
+          fontFamily: 'serif',
+          fontSize: 36,
+          color: '#ffffff',
+        }).setOrigin(0.5);
+        container.add(icon);
+      }
+
+      // Name
+      const nameText = scene.add.text(-panelW / 2 + 96, -panelH / 2 + 38, name, {
         fontFamily: 'serif',
         fontSize: 22,
         color: '#ffe28a',
-        backgroundColor: '#000000',
-        padding: { x: 12, y: 6 }
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(9999);
+        fontStyle: 'bold',
+      }).setOrigin(0, 0);
+      container.add(nameText);
+
+      // Description
+      const descText = scene.add.text(-panelW / 2 + 96, -panelH / 2 + 66, def?.description || '', {
+        fontFamily: 'monospace',
+        fontSize: 12,
+        color: '#c8d8ff',
+        wordWrap: { width: panelW - 120 },
+      }).setOrigin(0, 0);
+      container.add(descText);
+
+      // Footer hint
+      const footer = scene.add.text(0, panelH / 2 - 14, 'Druecke [K] um Loadout zu oeffnen', {
+        fontFamily: 'monospace',
+        fontSize: 11,
+        color: '#88aaff',
+      }).setOrigin(0.5, 1);
+      container.add(footer);
+
+      // Animate in
+      container.setAlpha(0).setScale(0.85);
       scene.tweens.add({
-        targets: text,
+        targets: container,
+        alpha: 1,
+        scale: 1,
+        duration: 280,
+        ease: 'Back.easeOut',
+      });
+
+      // Animate out after 5 seconds
+      scene.tweens.add({
+        targets: container,
         alpha: 0,
-        delay: 2200,
+        delay: 5000,
         duration: 600,
-        onComplete: () => text.destroy()
+        onComplete: () => container.destroy(true),
       });
     } catch (err) {
       // non-fatal
+      console.warn('[AbilitySystem] toast failed', err);
     }
   }
 

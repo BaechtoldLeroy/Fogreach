@@ -1449,13 +1449,38 @@ function initUI() {
       tileEntries.push({ container, key: cfg.key });
     });
 
+    // Map ability key (in HUD config) → ability ID (in AbilitySystem)
+    const HUD_KEY_TO_ABILITY_ID = {
+      attack: null, // attack always visible
+      spin: 'spinAttack',
+      charge: 'chargeSlash',
+      dash: 'dashSlash',
+      dagger: 'daggerThrow',
+      shield: 'shieldBash'
+    };
+
     const positionStatusTiles = (width, height) => {
       const baseX = width - 20 - tileWidth;
       const baseY = 150;
-      tileEntries.forEach(({ container }, index) => {
-        container.setPosition(baseX, baseY + index * tileSpacing);
+      // Show only attack + currently equipped abilities
+      const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
+      const equippedIds = loadout ? new Set(Object.values(loadout).filter(Boolean)) : null;
+
+      let visibleIndex = 0;
+      tileEntries.forEach(({ container, key }) => {
+        const abilityId = HUD_KEY_TO_ABILITY_ID[key];
+        // Always show attack; show others only if equipped
+        const shouldShow = !abilityId || !equippedIds || equippedIds.has(abilityId);
+        container.setVisible(shouldShow);
+        if (shouldShow) {
+          container.setPosition(baseX, baseY + visibleIndex * tileSpacing);
+          visibleIndex++;
+        }
       });
     };
+
+    // Repositions when loadout changes — exposed globally so AbilitySystem can call it
+    window._refreshAbilityHUD = () => positionStatusTiles(this.scale.width, this.scale.height);
 
     positionStatusTiles(this.scale.width, this.scale.height);
     this.scale.on('resize', (gameSize) => {

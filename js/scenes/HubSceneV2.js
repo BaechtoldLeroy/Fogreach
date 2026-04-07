@@ -1160,9 +1160,12 @@ class HubSceneV2 extends Phaser.Scene {
           }
         }
 
-        // Hit area
-        const hit = this.add.zone(cx, cy, cellSize, cellSize).setOrigin(0.5).setInteractive({ useHandCursor: isLearnedDef });
-        container.add(hit);
+        // Hit area — position in WORLD coords (cell pos + container pos), NOT in container
+        const hit = this.add.zone(container.x + cx, container.y + cy, cellSize, cellSize)
+          .setOrigin(0.5)
+          .setScrollFactor(0)
+          .setDepth(2002)
+          .setInteractive({ useHandCursor: isLearnedDef });
         poolGfxList.push(hit);
 
         hit.on('pointerover', () => {
@@ -1259,8 +1262,11 @@ class HubSceneV2 extends Phaser.Scene {
           slotGfxList.push(empty);
         }
 
-        const hit = this.add.zone(cx, cy, slotSize, slotSize).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        container.add(hit);
+        const hit = this.add.zone(container.x + cx, container.y + cy, slotSize, slotSize)
+          .setOrigin(0.5)
+          .setScrollFactor(0)
+          .setDepth(2002)
+          .setInteractive({ useHandCursor: true });
         slotGfxList.push(hit);
 
         hit.on('pointerdown', () => {
