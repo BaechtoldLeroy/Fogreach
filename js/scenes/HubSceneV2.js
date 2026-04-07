@@ -56,7 +56,7 @@ const HUB_HITBOXES = {
     {
       id: 'aldric',
       name: 'Ratsherr Aldric',
-      x: 350, y: 460,
+      x: 480, y: 560,
       texture: 'aldric_right0',
       scale: 0.18,
       lines: [
