@@ -1684,6 +1684,8 @@ function initializeGameObjects() {
   this.physics.add.collider(player, obstacles);
   this.physics.add.collider(player, enemies);
   this.physics.add.collider(enemies, obstacles);
+  // Soft collision between enemies (Diablo 2 style — they push each other)
+  this.physics.add.collider(enemies, enemies);
   // Projektile prallen an Hindernissen ab/werden zerstört
   this.physics.add.collider(enemyProjectiles, obstacles, (proj /* Sprite */, obs) => {
     if (proj && proj.active) proj.destroy();

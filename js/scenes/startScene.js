@@ -151,6 +151,13 @@ StartScene.prototype.preload = function () {
   // UI/environment sprites
   this.load.image('stairDown', 'assets/tiles/stairDown.png');
 
+  // New hub NPCs (Aldric, Elara, Harren)
+  ['aldric', 'elara', 'harren'].forEach(npc => {
+    ['left0','left1','left2','right0','right1','right2'].forEach(frame => {
+      this.load.image(npc + '_' + frame, 'assets/npc/' + npc + '/' + frame + '.png');
+    });
+  });
+
   const templateNames = [
     "Arena", "ArmoryVault", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
     "CirclePillars", "CollapsingHall", "Crosshall", "CrossroadChamber", "Crossroads",

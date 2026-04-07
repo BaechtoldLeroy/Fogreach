@@ -342,7 +342,8 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   enemy.lastAttackTime = 0;
   enemy.setCollideWorldBounds(true); // verhindert das Rauslaufen
   enemy.body.onWorldBounds = true; // optional für blocked-Check
-  if (enemy.body.setPushable) enemy.body.setPushable(false); // Spieler kann keine Gegner wegschieben
+  // Enemies are pushable by other enemies (Diablo 2 style soft collision),
+  // but the player is non-pushable to prevent being pushed through walls.
 
   if (scene.enemyLayer) scene.enemyLayer.add(enemy);
 
