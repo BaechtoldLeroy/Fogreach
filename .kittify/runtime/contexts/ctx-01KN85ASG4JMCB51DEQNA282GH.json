@@ -1,0 +1,18 @@
+{
+  "authoritative_ref": "001-fix-player-collision-WP02",
+  "authoritative_repo": "C:\\Users\\LeroyB\u00e4chtold\\Documents\\Demonfall",
+  "created_at": "2026-04-02T22:34:27.204920+00:00",
+  "created_by": "claude",
+  "dependency_mode": "chained",
+  "execution_mode": "code_change",
+  "feature_slug": "001-fix-player-collision",
+  "mission_id": "001-fix-player-collision",
+  "owned_files": [
+    "js/main.js"
+  ],
+  "project_uuid": "6962904f-d22b-4faf-883f-6b4fa65aaa69",
+  "target_branch": "main",
+  "token": "ctx-01KN85ASG4JMCB51DEQNA282GH",
+  "work_package_id": "WP02",
+  "wp_code": "WP02"
+}

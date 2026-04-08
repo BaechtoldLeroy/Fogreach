@@ -1,9 +1,0 @@
-{
-  "created_at": "2026-04-03T14:55:50.196951+00:00",
-  "feature_number": "015",
-  "feature_slug": "015-pause-menu",
-  "friendly_name": "pause menu",
-  "mission": "software-dev",
-  "slug": "015-pause-menu",
-  "target_branch": "main"
-}

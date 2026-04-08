@@ -360,14 +360,94 @@ function enterRoom(scene, roomId) {
     else if (dir === 'E' || dir === 'e') sx -= 64;   // wall at right → move left
     else sy -= 48; // default: assume bottom wall
 
-    const stair = scene.stairsGroup.create(sx, sy, "stairDown");
+    const STAIR_HALF = 44; // 80px display + 8px margin
+    const STAIR_HALF_SQ = STAIR_HALF * STAIR_HALF;
+
+    // Helper: does any object (physics obstacle OR visual-only template wall)
+    // overlap a square area of side 2*STAIR_HALF centered on (cx, cy)?
+    const checkBucket = (list, cx, cy) => {
+      if (!list) return null;
+      for (let i = 0; i < list.length; i++) {
+        const o = list[i];
+        if (!o || (o.active === false)) continue;
+        if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) continue;
+        const ox = o.x, oy = o.y;
+        const ohw = (o.displayWidth || 32) / 2 + STAIR_HALF;
+        const ohh = (o.displayHeight || 32) / 2 + STAIR_HALF;
+        if (Math.abs(ox - cx) < ohw && Math.abs(oy - cy) < ohh) {
+          return o;
+        }
+      }
+      return null;
+    };
+    const obstacleAt = (cx, cy) => {
+      const fromPhysics = scene.obstacles && scene.obstacles.getChildren
+        ? checkBucket(scene.obstacles.getChildren(), cx, cy)
+        : null;
+      if (fromPhysics) return fromPhysics;
+      // Visual-only objects (statues etc. that were too close to a wall to
+      // become physics obstacles) live on scene._templateWalls.
+      return checkBucket(scene._templateWalls, cx, cy);
+    };
+
+    // 1) First try to NUDGE the stair to a nearby clear spot. This handles
+    //    the common case where the door-derived position lands on a brazier
+    //    or pillar without sacrificing decorative obstacles.
+    const NUDGE_OFFSETS = [
+      [0, 0],
+      [48, 0], [-48, 0], [0, 48], [0, -48],
+      [48, 48], [-48, 48], [48, -48], [-48, -48],
+      [96, 0], [-96, 0], [0, 96], [0, -96],
+    ];
+    let placedX = sx, placedY = sy;
+    let foundClear = false;
+    for (const [dx, dy] of NUDGE_OFFSETS) {
+      const tx = sx + dx, ty = sy + dy;
+      if (!obstacleAt(tx, ty)) {
+        placedX = tx;
+        placedY = ty;
+        foundClear = true;
+        break;
+      }
+    }
+
+    // 2) If every nearby position is blocked, fall back to (sx, sy) and
+    //    forcibly remove any obstacles that overlap it. The stair MUST
+    //    exist near the door so the player can reach the next room.
+    if (!foundClear) {
+      let blocker;
+      let safety = 12;
+      while (safety-- > 0 && (blocker = obstacleAt(placedX, placedY))) {
+        if (blocker.body) blocker.body.enable = false;
+        // Also remove from templateWalls cache if present, so it doesn't
+        // get re-checked in the next iteration.
+        if (Array.isArray(scene._templateWalls)) {
+          const i = scene._templateWalls.indexOf(blocker);
+          if (i >= 0) scene._templateWalls.splice(i, 1);
+        }
+        blocker.destroy();
+      }
+    }
+
+    const stair = scene.stairsGroup.create(placedX, placedY, "stairDown");
     stair.setData("locked", true);
     stair.setData("dir", d.dir || null);
-    stair.setAlpha(0.9).setDepth(45).refreshBody();
+    // Scale 500x500 source down to ~80px tile-fit display size
+    stair.setDisplaySize(80, 80);
+    // Fixed depth 40: above floor decorations (depth 0-30) but below the
+    // enemy layer (depth 50) and player (>= 100), so enemies and the player
+    // always render on top of the stair tile.
+    stair.setAlpha(0.95).setDepth(40).refreshBody();
   });
 
   // Overlap Spieler ↔ Stairs
-  scene.physics.add.overlap(
+  // Tear down any previous overlap registration so we don't accumulate
+  // stale callbacks on every room transition.
+  if (scene._playerStairsOverlap && scene._playerStairsOverlap.destroy) {
+    try { scene._playerStairsOverlap.destroy(); } catch (err) { /* ignore */ }
+    scene._playerStairsOverlap = null;
+  }
+  scene._playerStairsOverlap = scene.physics.add.overlap(
     player,
     scene.stairsGroup,
     onStairOverlap,
@@ -387,6 +467,11 @@ function enterRoom(scene, roomId) {
     isLarge: !!builtMeta.isLarge,
     enteredAt: scene.time?.now ?? performance.now()
   };
+
+  // Grace period: enemies are frozen for 1500ms after room entry so the
+  // player isn't ambushed before they can orient themselves.
+  const nowMs = scene.time?.now ?? performance.now();
+  scene._enemyAttackGraceUntil = nowMs + 1500;
 
   // Show story room description overlay
   var roomDescText = ROOM_DESCRIPTIONS[templateName];

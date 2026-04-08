@@ -49,7 +49,7 @@ function isSpawnBlocked(px, py, halfSize = ENEMY_SPAWN_HALF_SIZE) {
   return false;
 }
 
-function pickAccessibleSpawnPosition(scene, boundsRect, margin, maxAttempts = 6) {
+function pickAccessibleSpawnPosition(scene, boundsRect, margin, maxAttempts = 6, minDistFromPlayer = 0) {
   if (!scene || typeof scene.pickAccessibleSpawnPoint !== "function") {
     return null;
   }
@@ -63,15 +63,28 @@ function pickAccessibleSpawnPosition(scene, boundsRect, margin, maxAttempts = 6)
   const top = boundsRect.top + margin;
   const bottom = boundsRect.bottom - margin;
 
-  const clampCandidate = (cx, cy) => {
+  const minDistSq = minDistFromPlayer * minDistFromPlayer;
+  const isFarEnough = (cx, cy) => {
+    if (minDistSq <= 0 || !player || !player.active) return true;
+    const dx = cx - player.x;
+    const dy = cy - player.y;
+    return dx * dx + dy * dy >= minDistSq;
+  };
+
+  const clampCandidate = (cx, cy, requireDistance = true) => {
     const x = Phaser.Math.Clamp(cx, left, right);
     const y = Phaser.Math.Clamp(cy, top, bottom);
     if (scene.isPointAccessible && !scene.isPointAccessible(x, y)) return null;
     if (isSpawnBlocked(x, y)) return null;
+    if (requireDistance && !isFarEnough(x, y)) return null;
     return { x, y };
   };
 
-  const attempts = Math.max(1, maxAttempts);
+  // Increase attempts when a min-distance is required so we have more chances
+  // to find a tile that's both accessible AND far enough from the player.
+  const baseAttempts = Math.max(1, maxAttempts);
+  const attempts = minDistFromPlayer > 0 ? baseAttempts * 4 : baseAttempts;
+
   for (let attempt = 0; attempt < attempts; attempt++) {
     const base = scene.pickAccessibleSpawnPoint({
       maxAttempts: Math.max(24, attempts * 4),
@@ -83,13 +96,15 @@ function pickAccessibleSpawnPosition(scene, boundsRect, margin, maxAttempts = 6)
       x += Phaser.Math.Between(-jitter, jitter);
       y += Phaser.Math.Between(-jitter, jitter);
     }
-    const candidate = clampCandidate(x, y);
+    const candidate = clampCandidate(x, y, true);
     if (candidate) return candidate;
   }
 
+  // Last-resort: any accessible tile, even if it ignores the distance constraint.
+  // Better to have an enemy somewhere walkable than nowhere.
   const fallback = scene.pickAccessibleSpawnPoint({ maxAttempts: 1 });
   if (fallback) {
-    const candidate = clampCandidate(fallback.x, fallback.y);
+    const candidate = clampCandidate(fallback.x, fallback.y, false);
     if (candidate) return candidate;
   }
 
@@ -161,19 +176,19 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   x = bestX;
   y = bestY;
 
+  // Minimum spawn distance from player — enemies should NOT spawn on top of player
+  const MIN_SPAWN_DISTANCE = 300;
+
   if (xCoordinates > 0 && yCoordinates > 0) {
     x = xCoordinates;
     y = yCoordinates;
   } else {
-    const preferred = pickAccessibleSpawnPosition(scene, usableBounds, margin);
+    const preferred = pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
     if (preferred) {
       x = preferred.x;
       y = preferred.y;
     }
   }
-
-  // Minimum spawn distance from player — enemies should NOT spawn on top of player
-  const MIN_SPAWN_DISTANCE = 300;
 
   const ensureValidSpot = () => {
     if (scene.isPointAccessible && !scene.isPointAccessible(x, y)) {
@@ -193,7 +208,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   };
 
   if (!ensureValidSpot()) {
-    const retry = pickAccessibleSpawnPosition(scene, usableBounds, margin);
+    const retry = pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
     if (retry) {
       x = retry.x;
       y = retry.y;
@@ -246,7 +261,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   }
 
   if (!ensureValidSpot()) {
-    const fallback = pickAccessibleSpawnPosition(scene, usableBounds, margin);
+    const fallback = pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
     if (fallback) {
       x = fallback.x;
       y = fallback.y;
@@ -409,11 +424,12 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.avoidWeight = 1.2;
     enemy.sepRadius = 110;
     enemy.cohRadius = 260;
-    // Sprite-based archer with animation frames
+    // Always flag as archer (independent of sprite variant)
+    enemy.isArcher = true;
     if (key.startsWith('archer_')) {
       const archerH = enemy.height || 212;
       enemy.setScale(48 / archerH);
-      enemy.isArcher = true;
+      enemy.isArcherSprite = true;
       enemy.archerDirection = 'right';
       enemy.archerAttacking = false;
     }
@@ -497,11 +513,12 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.avoidWeight = 1.1;
     enemy.sepRadius = 120;
     enemy.cohRadius = 280;
-    // Sprite-based mage with animation frames
+    // Always flag as mage (independent of sprite variant)
+    enemy.isMage = true;
     if (key.startsWith('mage_')) {
       const mageH = enemy.height || 268;
       enemy.setScale(48 / mageH);
-      enemy.isMage = true;
+      enemy.isMageSprite = true;
       enemy.mageDirection = 'right';
       enemy.mageAttacking = false;
     }
@@ -531,6 +548,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
 function handleEnemies(time, delta = 16) {
   const dt = delta / 1000;
 
+  // Room-entry grace period: enemies stand still and don't attack for a short
+  // window after the player enters a new room, so the player isn't ambushed
+  // before they can react.
+  const inGrace = !!(this && this._enemyAttackGraceUntil && time < this._enemyAttackGraceUntil);
+
   enemies.children.iterate((enemy) => {
     if (!enemy || !enemy.active) return;
 
@@ -541,6 +563,13 @@ function handleEnemies(time, delta = 16) {
 
     // Status effect: stunned enemies cannot move or attack
     if (window.statusEffectManager && window.statusEffectManager.isStunned(enemy)) {
+      enemy.body.setVelocity(0, 0);
+      return;
+    }
+
+    // Grace period: freeze enemies completely. Skip movement + attack logic
+    // until the grace window expires.
+    if (inGrace) {
       enemy.body.setVelocity(0, 0);
       return;
     }
@@ -753,7 +782,7 @@ function handleEnemies(time, delta = 16) {
       }
     }
 
-    if (enemy.isArcher && !enemy.archerAttacking) {
+    if (enemy.isArcherSprite && !enemy.archerAttacking) {
       if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
         if (newDir !== enemy.archerDirection) {
@@ -765,7 +794,7 @@ function handleEnemies(time, delta = 16) {
       }
     }
 
-    if (enemy.isMage && !enemy.mageAttacking) {
+    if (enemy.isMageSprite && !enemy.mageAttacking) {
       if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
         if (newDir !== enemy.mageDirection) {
@@ -834,7 +863,7 @@ function handleEnemies(time, delta = 16) {
           }
 
           // Archer shoot animation (400ms: draw → release → idle)
-          if (enemy.isArcher && !enemy.archerAttacking) {
+          if (enemy.isArcherSprite && !enemy.archerAttacking) {
             enemy.archerAttacking = true;
             const dir = enemy.archerDirection || 'right';
             const sc = this;
@@ -851,7 +880,7 @@ function handleEnemies(time, delta = 16) {
           }
 
           // Mage cast animation (500ms: windup → cast → idle)
-          if (enemy.isMage && !enemy.mageAttacking) {
+          if (enemy.isMageSprite && !enemy.mageAttacking) {
             enemy.mageAttacking = true;
             const dir = enemy.mageDirection || 'right';
             const sc = this;
@@ -963,14 +992,37 @@ function handleEnemies(time, delta = 16) {
   }, this);
 }
 
+// Pick the right projectile texture for this enemy archetype.
+// Type flags (isArcher / isMage / isFlameWeaver) are always set in the
+// enemy setup blocks, so the sprite variant doesn't matter here.
+function getProjectileTextureFor(enemy) {
+  if (!enemy) return 'proj_default';
+  if (enemy.isFlameWeaver) return 'proj_fireball';
+  if (enemy.isMage)        return 'proj_arcane';
+  if (enemy.isArcher)      return 'proj_arrow';
+  return 'proj_default';
+}
+
 function shootProjectile(enemy) {
-  const projectile = this.physics.add.sprite(
-    enemy.x,
-    enemy.y,
-    "projectileTexture",
-  );
-  projectile.setDisplaySize(10, 10); // oder lass es in Originalgröße
-  projectile.body.setCircle(5); // passend zur Form
+  const texKey = getProjectileTextureFor(enemy);
+  const projectile = this.physics.add.sprite(enemy.x, enemy.y, texKey);
+  // Different display sizes per archetype
+  if (texKey === 'proj_arrow') {
+    projectile.setDisplaySize(28, 8);
+    projectile.body.setSize(20, 6);
+    // Rotate arrow so it points towards the player
+    const ang = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+    projectile.setRotation(ang);
+  } else if (texKey === 'proj_fireball') {
+    projectile.setDisplaySize(20, 20);
+    projectile.body.setCircle(8);
+  } else if (texKey === 'proj_arcane') {
+    projectile.setDisplaySize(20, 20);
+    projectile.body.setCircle(8);
+  } else {
+    projectile.setDisplaySize(14, 14);
+    projectile.body.setCircle(6);
+  }
   enemyProjectiles.add(projectile);
   this.physics.moveToObject(projectile, player, 200);
   const baseDamage = enemy.baseDamage || enemy.damage || 1;
@@ -1004,12 +1056,19 @@ function shootSpreadProjectiles(enemy, count, totalSpread) {
     ? Math.max(1, Math.round(baseDamage * projDifficulty))
     : Math.max(1, Math.round(baseDamage));
 
+  const texKey = getProjectileTextureFor(enemy);
   for (let i = 0; i < count; i++) {
     const t = count > 1 ? (i / (count - 1) - 0.5) : 0;
     const ang = base + t * totalSpread;
-    const proj = scene.physics.add.sprite(enemy.x, enemy.y, "projectileTexture");
-    proj.setDisplaySize(10, 10);
-    proj.body.setCircle(5);
+    const proj = scene.physics.add.sprite(enemy.x, enemy.y, texKey);
+    if (texKey === 'proj_arrow') {
+      proj.setDisplaySize(28, 8);
+      proj.body.setSize(20, 6);
+      proj.setRotation(ang);
+    } else {
+      proj.setDisplaySize(20, 20);
+      proj.body.setCircle(8);
+    }
     enemyProjectiles.add(proj);
     proj.setVelocity(Math.cos(ang) * 200, Math.sin(ang) * 200);
     proj.setData('baseDamage', baseDamage);

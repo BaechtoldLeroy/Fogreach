@@ -8,17 +8,23 @@ const GameScene = {
   update
 };
 const config = {
-  pixelArt: true,
+  // pixelArt mode forces NEAREST-NEIGHBOR sampling which looks awful when the
+  // sprites are painted/illustrated style (Branka, Tom, Mara, Aldric...).
+  // The game uses high-res hand-drawn assets, so smooth filtering is correct.
+  pixelArt: false,
   roundPixels: true,
   input: { activePointers: 2 },
   type: Phaser.AUTO,
   parent: 'game-container',
-  render: { pixelArt: true, antialias: false, roundPixels: true },
+  render: { pixelArt: false, antialias: true, roundPixels: true },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: 960,     // Canvas-Breite (Player 72px = 15% von 480px)
-    height: 480     // Canvas-Höhe
+    height: 480,    // Canvas-Hoehe
+    // Render at 2x internal resolution so the upscale to the browser viewport
+    // produces ~4x more pixels per displayed area without changing world coords.
+    zoom: 1
   },
   backgroundColor: '#2d2d2d',
   physics: {
@@ -299,7 +305,7 @@ if (typeof window.ensureDebugPanel !== 'function') {
   };
 }
 
-let player, cursors, spaceKey, rKey, eKey, qKey, fKey;
+let player, cursors, spaceKey, rKey, eKey, qKey, wKey;
 let enemies, enemyProjectiles, playerProjectiles, obstacles, lootGroup;
 let attackBtn, spinBtn, chargeSlashBtn, dashSlashBtn, daggerThrowBtn, shieldBashBtn;
 let attackBtnCooldownText, spinBtnCooldownText, chargeSlashCooldownText,
@@ -354,12 +360,25 @@ window.applyAbilityEffect = applyAbilityEffect;
 
 const ABILITY_STATUS_CONFIG = [
   { key: 'attack', label: 'Attack', control: 'SPACE' },
-  { key: 'spin', label: 'Spin Attack', control: 'SHIFT' },
-  { key: 'charge', label: 'Charged Slash', control: 'E (hold)' },
-  { key: 'dash', label: 'Dash Slash', control: 'Q' },
-  { key: 'dagger', label: 'Throw Dagger', control: 'R' },
-  { key: 'shield', label: 'Shield Bash', control: 'F' }
+  { key: 'spin', label: 'Spin Attack', control: '—' },
+  { key: 'charge', label: 'Charged Slash', control: '—' },
+  { key: 'dash', label: 'Dash Slash', control: '—' },
+  { key: 'dagger', label: 'Throw Dagger', control: '—' },
+  { key: 'shield', label: 'Shield Bash', control: '—' }
 ];
+
+// Maps statusKey (used in updateAbilityStatus) ↔ AbilitySystem ability id
+const STATUS_KEY_TO_ABILITY_ID = {
+  spin: 'spinAttack',
+  charge: 'chargeSlash',
+  dash: 'dashSlash',
+  dagger: 'daggerThrow',
+  shield: 'shieldBash'
+};
+const ABILITY_ID_TO_STATUS_KEY = Object.fromEntries(
+  Object.entries(STATUS_KEY_TO_ABILITY_ID).map(([k, v]) => [v, k])
+);
+const SLOT_KEY_LABELS = { slot1: 'Q', slot2: 'W', slot3: 'E', slot4: 'R' };
 
 const ABILITY_STATUS_LOOKUP = ABILITY_STATUS_CONFIG.reduce((acc, entry) => {
   acc[entry.key] = entry;
@@ -768,10 +787,16 @@ function create() {
   rKey = this.input.keyboard.addKey('R');
   eKey = this.input.keyboard.addKey('E');
   qKey = this.input.keyboard.addKey('Q');
-  fKey = this.input.keyboard.addKey('F');
+  wKey = this.input.keyboard.addKey('W');
   this.input.keyboard.on('keydown-I', () => { invOpen ? closeInventory() : openInventory(); });
   this.input.keyboard.on('keydown-M', () => {
     if (window.soundManager) window.soundManager.toggleMute();
+  });
+  // Loadout overlay (also opens in dungeon, not just in hub)
+  this.input.keyboard.on('keydown-K', () => {
+    if (typeof window.openLoadoutUI === 'function') {
+      window.openLoadoutUI(this);
+    }
   });
 
   // 4.3.1 Rathauskeller background (based on dialog selection)
@@ -1057,29 +1082,29 @@ function update(time, delta) {
   const playerStunned = window.statusEffectManager && window.statusEffectManager.isStunned(player);
 
   if (!playerStunned && !isMobile && window.AbilitySystem) {
-    // Q -> slot1, E -> slot2, R -> slot3, F -> slot4
+    // Q -> slot1, W -> slot2, E -> slot3, R -> slot4
     if (Phaser.Input.Keyboard.JustDown(qKey)) {
       window.AbilitySystem.tryActivate('slot1', this);
     }
     if (Phaser.Input.Keyboard.JustUp(qKey)) {
       window.AbilitySystem.tryRelease('slot1', this);
     }
-    if (Phaser.Input.Keyboard.JustDown(eKey)) {
+    if (wKey && Phaser.Input.Keyboard.JustDown(wKey)) {
       window.AbilitySystem.tryActivate('slot2', this);
     }
-    if (Phaser.Input.Keyboard.JustUp(eKey)) {
+    if (wKey && Phaser.Input.Keyboard.JustUp(wKey)) {
       window.AbilitySystem.tryRelease('slot2', this);
     }
-    if (Phaser.Input.Keyboard.JustDown(rKey)) {
+    if (Phaser.Input.Keyboard.JustDown(eKey)) {
       window.AbilitySystem.tryActivate('slot3', this);
     }
-    if (Phaser.Input.Keyboard.JustUp(rKey)) {
+    if (Phaser.Input.Keyboard.JustUp(eKey)) {
       window.AbilitySystem.tryRelease('slot3', this);
     }
-    if (fKey && Phaser.Input.Keyboard.JustDown(fKey)) {
+    if (Phaser.Input.Keyboard.JustDown(rKey)) {
       window.AbilitySystem.tryActivate('slot4', this);
     }
-    if (fKey && Phaser.Input.Keyboard.JustUp(fKey)) {
+    if (Phaser.Input.Keyboard.JustUp(rKey)) {
       window.AbilitySystem.tryRelease('slot4', this);
     }
   }
@@ -1390,11 +1415,10 @@ function initUI() {
     const tileWidth = 220;
     const tileHeight = 42;
     const tileSpacing = 48;
-    const tileEntries = [];
     const tilePadding = 12;
 
-    ABILITY_STATUS_CONFIG.forEach((cfg) => {
-      const color = ABILITY_STATUS_STYLES[cfg.key] ?? 0xffffff;
+    // Build a single tile (used for both fixed attack tile and 4 slot tiles)
+    const buildTile = (initialLabel, initialKeyLabel, color) => {
       const container = this.add.container(0, 0).setDepth(1001).setScrollFactor(0);
       const bg = this.add.rectangle(0, 0, tileWidth, tileHeight, 0x10131c, 0.65)
         .setOrigin(0, 0)
@@ -1402,94 +1426,152 @@ function initUI() {
       const fill = this.add.rectangle(0, 0, tileWidth, tileHeight, color, 0.28)
         .setOrigin(0, 0)
         .setVisible(false);
-
-      const nameText = this.add.text(tilePadding, 6, cfg.label, {
+      const nameText = this.add.text(tilePadding, 6, initialLabel, {
         fontSize: '14px',
         fill: '#f5f7ff',
         fontStyle: 'bold'
       });
-      const keyText = this.add.text(0, 0, cfg.control, {
+      const keyText = this.add.text(0, 0, initialKeyLabel, {
         fontSize: '12px',
         fill: '#0d1525',
         fontStyle: 'bold'
       }).setOrigin(0.5, 0.5);
-
-      const badgeWidth = Math.max(52, keyText.width + 14);
+      const badgeWidth = 52;
       const badgeHeight = 22;
       const badgeX = tileWidth - tilePadding - badgeWidth;
       const badgeY = 6;
-
       const keyBadge = this.add.rectangle(badgeX, badgeY, badgeWidth, badgeHeight, color, 0.18)
         .setOrigin(0, 0)
         .setStrokeStyle(1, color, 0.6);
-
       keyText.setPosition(badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
-
       const statusText = this.add.text(tilePadding, tileHeight - 6, 'Ready', {
         fontSize: '12px',
         fill: '#78f3c7'
       }).setOrigin(0, 1);
-
       container.add([bg, fill, nameText, keyBadge, keyText, statusText]);
-
-      abilityStatusDisplay[cfg.key] = {
-        container,
-        fill,
-        bg,
-        statusText,
-        width: tileWidth,
-        durationMs: 0,
-        color,
-        labelWidth: badgeX - tilePadding
-      };
-
       nameText.setWordWrapWidth(badgeX - tilePadding * 1.2);
       nameText.setMaxLines(2);
+      return {
+        container, fill, bg, statusText, nameText, keyText, keyBadge,
+        width: tileWidth, durationMs: 0, color,
+        labelWidth: badgeX - tilePadding
+      };
+    };
 
-      tileEntries.push({ container, key: cfg.key });
-    });
+    // Fixed attack tile
+    const attackTile = buildTile('Attack', 'SPACE', ABILITY_STATUS_STYLES.attack);
+    abilityStatusDisplay.attack = attackTile;
 
-    // Map ability key (in HUD config) → ability ID (in AbilitySystem)
-    const HUD_KEY_TO_ABILITY_ID = {
-      attack: null, // attack always visible
-      spin: 'spinAttack',
-      charge: 'chargeSlash',
-      dash: 'dashSlash',
-      dagger: 'daggerThrow',
-      shield: 'shieldBash'
+    // Four slot tiles (Q/W/E/R) — names reassigned dynamically by loadout
+    const slotTiles = {
+      slot1: buildTile('Empty', 'Q', 0x888888),
+      slot2: buildTile('Empty', 'W', 0x888888),
+      slot3: buildTile('Empty', 'E', 0x888888),
+      slot4: buildTile('Empty', 'R', 0x888888)
+    };
+
+    const ABILITY_DEFS = window.AbilitySystem?.ABILITY_DEFS || {};
+
+    const refreshSlotMappings = () => {
+      // Tear down old ability→tile mappings (keep attack)
+      Object.keys(STATUS_KEY_TO_ABILITY_ID).forEach((statusKey) => {
+        delete abilityStatusDisplay[statusKey];
+      });
+
+      const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
+      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
+        const tile = slotTiles[slotKey];
+        const abilityId = loadout ? loadout[slotKey] : null;
+        if (abilityId) {
+          const def = ABILITY_DEFS[abilityId] || window.AbilitySystem?.ABILITY_DEFS?.[abilityId];
+          const displayName = def?.name || abilityId;
+          const statusKey = ABILITY_ID_TO_STATUS_KEY[abilityId];
+          tile.nameText.setText(displayName);
+          // Re-color the keyBadge to ability color
+          const color = statusKey ? (ABILITY_STATUS_STYLES[statusKey] ?? 0xffffff) : 0xffffff;
+          tile.color = color;
+          tile.keyBadge.setFillStyle(color, 0.18);
+          tile.keyBadge.setStrokeStyle(1, color, 0.6);
+          tile.fill.setFillStyle(color);
+          if (statusKey) {
+            abilityStatusDisplay[statusKey] = tile;
+            // Reset to Ready state
+            updateAbilityStatus(statusKey, { remainingMs: 0, durationMs: 0 });
+          }
+        } else {
+          tile.nameText.setText('Empty');
+          tile.color = 0x555555;
+          tile.keyBadge.setFillStyle(0x555555, 0.12);
+          tile.keyBadge.setStrokeStyle(1, 0x555555, 0.4);
+        }
+      });
     };
 
     const positionStatusTiles = (width, height) => {
       const baseX = width - 20 - tileWidth;
       const baseY = 150;
-      // Show only attack + currently equipped abilities
       const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
-      const equippedIds = loadout ? new Set(Object.values(loadout).filter(Boolean)) : null;
 
-      let visibleIndex = 0;
-      tileEntries.forEach(({ container, key }) => {
-        const abilityId = HUD_KEY_TO_ABILITY_ID[key];
-        // Always show attack; show others only if equipped
-        const shouldShow = !abilityId || !equippedIds || equippedIds.has(abilityId);
-        container.setVisible(shouldShow);
-        if (shouldShow) {
-          container.setPosition(baseX, baseY + visibleIndex * tileSpacing);
+      // Attack tile always first
+      attackTile.container.setVisible(true);
+      attackTile.container.setPosition(baseX, baseY);
+      let visibleIndex = 1;
+
+      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
+        const tile = slotTiles[slotKey];
+        const equipped = loadout && loadout[slotKey];
+        if (equipped) {
+          tile.container.setVisible(true);
+          tile.container.setPosition(baseX, baseY + visibleIndex * tileSpacing);
           visibleIndex++;
+        } else {
+          tile.container.setVisible(false);
         }
       });
     };
 
-    // Repositions when loadout changes — exposed globally so AbilitySystem can call it
-    window._refreshAbilityHUD = () => positionStatusTiles(this.scale.width, this.scale.height);
+    // Public refresh: rebuild mappings + reposition (called when loadout changes)
+    window._refreshAbilityHUD = () => {
+      refreshSlotMappings();
+      positionStatusTiles(this.scale.width, this.scale.height);
+    };
 
+    // Dev/test helper: inspect HUD tile visibility
+    window._getAbilityHUDState = () => {
+      const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
+      const list = [{
+        key: 'attack',
+        slot: null,
+        abilityId: null,
+        label: attackTile.nameText.text,
+        keyLabel: attackTile.keyText.text,
+        visible: attackTile.container.visible,
+        x: Math.round(attackTile.container.x),
+        y: Math.round(attackTile.container.y)
+      }];
+      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
+        const tile = slotTiles[slotKey];
+        list.push({
+          key: slotKey,
+          slot: slotKey,
+          abilityId: loadout ? loadout[slotKey] : null,
+          label: tile.nameText.text,
+          keyLabel: tile.keyText.text,
+          visible: tile.container.visible,
+          x: Math.round(tile.container.x),
+          y: Math.round(tile.container.y)
+        });
+      });
+      return list;
+    };
+
+    refreshSlotMappings();
     positionStatusTiles(this.scale.width, this.scale.height);
     this.scale.on('resize', (gameSize) => {
       positionStatusTiles(gameSize.width, gameSize.height);
     });
 
-    ABILITY_STATUS_CONFIG.forEach((cfg) => {
-      updateAbilityStatus(cfg.key, { remainingMs: 0, durationMs: 0 });
-    });
+    updateAbilityStatus('attack', { remainingMs: 0, durationMs: 0 });
   } else {
     abilityStatusDisplay = {};
   }

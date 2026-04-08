@@ -1,0 +1,14 @@
+{
+  "wp_id": "WP02",
+  "feature_slug": "001-fix-player-collision",
+  "worktree_path": ".worktrees\\001-fix-player-collision-WP02",
+  "branch_name": "001-fix-player-collision-WP02",
+  "base_branch": "001-fix-player-collision-WP01",
+  "base_commit": "51df923cc4ebe83143b2bf3e0134b7c7ef9b846f",
+  "dependencies": [
+    "WP01"
+  ],
+  "created_at": "2026-04-02T22:34:38.794741+00:00",
+  "created_by": "implement-command",
+  "vcs_backend": "git"
+}

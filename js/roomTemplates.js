@@ -123,6 +123,23 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       blockedTilesByObjects.add(keyFor(tx, ty));
     }
   });
+
+  // Protected tiles — never spawn an obstacle here, no matter where the
+  // template tries to put one. Covers player spawn, every entrance, and a
+  // 1-tile buffer so the player can step away from doorways.
+  const protectedTiles = new Set();
+  const protect = (tx, ty, radius = 1) => {
+    if (!Number.isFinite(tx) || !Number.isFinite(ty)) return;
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        protectedTiles.add(keyFor(Math.round(tx) + dx, Math.round(ty) + dy));
+      }
+    }
+  };
+  if (tpl.spawns?.player) protect(tpl.spawns.player.x, tpl.spawns.player.y, 1);
+  (tpl.entrances || []).forEach((e) => protect(e.x, e.y, 1));
+  // Loot must remain reachable too — protect with 0 radius (just the tile itself)
+  (tpl.spawns?.loot || []).forEach((l) => protect(l.x, l.y, 0));
   const isWalkableTile = (tx, ty) =>
     tx >= 0 &&
     tx < W &&
@@ -302,7 +319,8 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         wallCount += length;
       } else {
         floorCount++;
-        if (AUTO_OBSTACLE_TILE_KEYS.has(key) && scene.spawnObstacle) {
+        // Skip auto-obstacles on protected tiles (spawn / entrances)
+        if (AUTO_OBSTACLE_TILE_KEYS.has(key) && scene.spawnObstacle && !protectedTiles.has(keyFor(x, y))) {
           const obstacleX = ox + x * T + T / 2;
           const obstacleY = oy + y * T + T / 2;
 
@@ -578,6 +596,13 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
 
   // Objekte with drop shadows and brazier glow
   tpl.objects?.forEach(o => {
+    // Skip object placement entirely if it would land on a protected tile
+    // (player spawn, entrance, or 1-tile buffer around them).
+    const objTx = Math.round(o.x ?? 0);
+    const objTy = Math.round(o.y ?? 0);
+    if (protectedTiles.has(keyFor(objTx, objTy))) {
+      return;
+    }
     const px = ox + gx(tpl, o.x) + T / 2;
     const py = oy + gy(tpl, o.y) + T / 2;
     const typeKey = o.type;
@@ -643,12 +668,57 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     objectCount++;
   });
 
-  // Gegner-Spawns
+  // Gegner-Spawns — enforce a minimum distance from the player spawn so
+  // the player isn't ambushed on entry. If a template tries to spawn an
+  // enemy too close, we relocate it to a distant accessible tile.
+  const SAFE_RADIUS = 6; // tiles
+  const safeRadiusSq = SAFE_RADIUS * SAFE_RADIUS;
+  const spawnTileX = playerStartTile ? playerStartTile.x : null;
+  const spawnTileY = playerStartTile ? playerStartTile.y : null;
+
+  const isFarEnoughFromPlayer = (tx, ty) => {
+    if (spawnTileX == null) return true;
+    const dx = tx - spawnTileX;
+    const dy = ty - spawnTileY;
+    return dx * dx + dy * dy >= safeRadiusSq;
+  };
+
+  // Pre-compute the list of accessible tiles that are also far enough from
+  // the player spawn — used as a fallback pool when a requested tile is too close.
+  const distantAccessibleTiles = [];
+  if (accessibleTiles && spawnTileX != null) {
+    accessibleTiles.forEach((key) => {
+      const [tx, ty] = key.split('|').map(Number);
+      if (isFarEnoughFromPlayer(tx, ty)) {
+        distantAccessibleTiles.push({ x: tx, y: ty });
+      }
+    });
+  }
+
+  const pickDistantTileNear = (baseX, baseY, radius = 0) => {
+    // First try the template-specified location
+    let chosen = findAccessibleTileNear(baseX, baseY, radius);
+    if (chosen && isFarEnoughFromPlayer(chosen.x, chosen.y)) return chosen;
+
+    // Too close — find the nearest accessible tile that IS far enough
+    if (!distantAccessibleTiles.length) return chosen; // no fallback available
+
+    let best = null;
+    let bestDist = Infinity;
+    distantAccessibleTiles.forEach((tile) => {
+      const dx = tile.x - baseX;
+      const dy = tile.y - baseY;
+      const d = dx * dx + dy * dy;
+      if (d < bestDist) { bestDist = d; best = tile; }
+    });
+    return best || chosen;
+  };
+
   tpl.spawns?.enemies?.forEach(s => {
     const baseCount = Math.max(1, Math.round(s.count || 1));
     const spawnCount = Math.max(1, Math.round(baseCount * spawnMultiplier));
     for (let i = 0; i < spawnCount; i++) {
-      const chosen = findAccessibleTileNear(s.x, s.y, s.radius || 0);
+      const chosen = pickDistantTileNear(s.x, s.y, s.radius || 0);
       const px = ox + gx(tpl, chosen.x) + T / 2;
       const py = oy + gy(tpl, chosen.y) + T / 2;
       if (scene.spawnEnemy) scene.spawnEnemy(scene, px, py, s.type);

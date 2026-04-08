@@ -1,0 +1,35 @@
+schema_version: 1.0.0
+mission: software-dev
+profile: minimal
+answers:
+  project_intent: Deliver a combat-driven, lore-rich action RPG (Fogreach) where
+    the player uncovers an occult conspiracy through dungeon exploration, 
+    crafting, and faction decisions - built with Phaser, tilemap levels, and 
+    clean modular JavaScript.
+  languages_frameworks: JavaScript (ES6+), Phaser 3, Tiled tilemaps, HTML5 
+    Canvas. No build framework - keep tooling minimal and repo-local.
+  testing_requirements: No formal test suite. Manual playtesting is primary. For
+    risky logic changes (combat, AI state machines, collision), verify nothing, 
+    we're in proof of concept mode and there are backups
+  quality_gates: Manual playtest passes, no console errors, combat and enemy AI 
+    behave correctly, no regressions in existing scenes.
+  review_policy: No review required. Merge when playtest passes and no console 
+    errors.
+  performance_targets: 60fps on desktop browsers. Scene transitions under 1 
+    second. No memory leaks in long play sessions.
+  deployment_constraints: Browser-based. Must run on Edge desktop. No server 
+    required - static file deployment
+selected_paradigms:
+- clean-code
+- minimal-tooling
+- modular-scenes
+selected_directives:
+- CLEAN_CODE
+- MINIMAL_TOOLING
+- MODULAR_SCENES
+available_tools:
+- git
+- spec-kitty
+- node
+- npm
+- phaser

@@ -47,7 +47,9 @@ if (!materialCounts || typeof materialCounts !== 'object') {
   materialCounts = {};
 }
 if (typeof materialCounts.MAT !== 'number') {
-  materialCounts.MAT = 0;
+  // Test default: start every new run with 20 Eisenbrocken so the forge is
+  // immediately usable for QA. Saved games override this via storage.js.
+  materialCounts.MAT = 20;
 }
 window.materialCounts = materialCounts;
 

@@ -1,0 +1,9 @@
+# Auto-generated from constitution.md — do not edit directly.
+# Run 'spec-kitty constitution sync' to regenerate.
+
+directives:
+- id: DIR-001
+  title: 'Apply doctrine directive `TEST_FIRST` to planning '
+  description: Apply doctrine directive `TEST_FIRST` to planning and implementation decisions.
+  severity: warn
+  applies_to: []

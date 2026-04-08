@@ -69,7 +69,10 @@ class CraftingScene extends Phaser.Scene {
     ];
 
     // --- State ---
-    this._selectedSlot = null; // 'weapon' | 'head' | 'body' | 'boots'
+    // Selection model: { kind: 'equip'|'inv', key: <slot-name|inventory-index> } | null
+    this._selection = null;
+    // Legacy alias kept for any external reads
+    this._selectedSlot = null;
 
     // --- Background ---
     this.add.rectangle(W / 2, H / 2, W, H, COL_BG).setDepth(0);
@@ -99,18 +102,18 @@ class CraftingScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '16px', color: COL_GOLD
     }).setOrigin(0.5, 0).setDepth(10);
 
-    // Equipment slot list
+    // ----- Equipped slots (top of left panel) -----
     const slots = ['weapon', 'head', 'body', 'boots'];
     const slotLabels = { weapon: 'Waffe', head: 'Helm', body: 'Ruestung', boots: 'Stiefel' };
     this.equipSlots = {};
     this.equipSlotBgs = {};
 
-    const slotStartY = panelY + 30;
-    const slotH = 60;
+    const slotStartY = panelY + 24;
+    const slotH = 36;
     const slotW = panelW;
 
     slots.forEach((slot, i) => {
-      const sy = slotStartY + i * (slotH + 8);
+      const sy = slotStartY + i * (slotH + 4);
       const bg = this.add.rectangle(leftX + slotW / 2, sy + slotH / 2, slotW, slotH, COL_SLOT)
         .setDepth(9).setInteractive({ useHandCursor: true });
       bg.setStrokeStyle(2, 0x444444);
@@ -119,47 +122,79 @@ class CraftingScene extends Phaser.Scene {
       const nameStr = item ? this._getEnhancedName(item) : '(leer)';
       const color = item ? (getRarityColor ? getRarityColor(item) : '#ffffff') : COL_DISABLED;
 
-      const label = this.add.text(leftX + 10, sy + 8, slotLabels[slot], {
-        fontFamily: 'monospace', fontSize: '12px', color: COL_GOLD
+      // Compact one-line layout: [Slot] Name (stats)
+      const label = this.add.text(leftX + 8, sy + 4, '[' + slotLabels[slot] + ']', {
+        fontFamily: 'monospace', fontSize: '10px', color: COL_GOLD
       }).setDepth(10);
 
-      const nameText = this.add.text(leftX + 10, sy + 26, nameStr, {
-        fontFamily: 'monospace', fontSize: '14px', color: color
+      const nameText = this.add.text(leftX + 8, sy + 16, nameStr, {
+        fontFamily: 'monospace', fontSize: '11px', color: color
       }).setDepth(10);
 
-      const statsText = this.add.text(leftX + 10, sy + 42, item ? this._getStatsLine(item) : '', {
-        fontFamily: 'monospace', fontSize: '10px', color: '#aaaaaa'
+      const statsText = this.add.text(leftX + 8, sy + 26, item ? this._getStatsLine(item) : '', {
+        fontFamily: 'monospace', fontSize: '9px', color: '#888888'
       }).setDepth(10);
 
-      bg.on('pointerdown', () => this._selectEquipSlot(slot));
+      bg.on('pointerdown', () => this._selectEquip(slot));
       bg.on('pointerover', () => {
-        if (this._selectedSlot !== slot) bg.setFillStyle(COL_BTN_HOVER);
+        if (!this._isSelected('equip', slot)) bg.setFillStyle(COL_BTN_HOVER);
       });
       bg.on('pointerout', () => {
-        if (this._selectedSlot !== slot) bg.setFillStyle(COL_SLOT);
+        if (!this._isSelected('equip', slot)) bg.setFillStyle(COL_SLOT);
       });
 
       this.equipSlots[slot] = { bg, label, nameText, statsText };
       this.equipSlotBgs[slot] = bg;
     });
 
-    // Enhancement info panel
-    const enhY = slotStartY + 4 * (slotH + 8) + 10;
-    this.enhanceInfo = this.add.text(leftX + 10, enhY, 'Waehle ein Ausruestungsstueck zum Verbessern.', {
-      fontFamily: 'monospace', fontSize: '12px', color: COL_PARCHMENT,
-      wordWrap: { width: slotW - 20 }
+    // ----- Inventory list (middle of left panel) -----
+    const invHeaderY = slotStartY + 4 * (slotH + 4) + 8;
+    this.add.text(leftX + 8, invHeaderY, 'Inventar (Equipment)', {
+      fontFamily: 'monospace', fontSize: '10px', color: COL_GOLD
     }).setDepth(10);
 
-    // Enhance button
+    this.invListY = invHeaderY + 14;
+    this.invRowH = 28;
+    this.invMaxRows = 3;
+    this.invScrollOffset = 0; // index of the first visible row
+    this.invRows = [];
+    this.invListBg = this.add.rectangle(
+      leftX + slotW / 2,
+      this.invListY + (this.invRowH * this.invMaxRows) / 2,
+      slotW, this.invRowH * this.invMaxRows, 0x1f1f1f
+    ).setDepth(8).setStrokeStyle(1, 0x444444);
+
+    this.invEmptyText = this.add.text(
+      leftX + slotW / 2,
+      this.invListY + (this.invRowH * this.invMaxRows) / 2,
+      '(keine Equipment-Items)', {
+        fontFamily: 'monospace', fontSize: '10px', color: COL_DISABLED
+      }
+    ).setOrigin(0.5).setDepth(10);
+
+    this.invOverflowText = this.add.text(
+      leftX + slotW - 8,
+      this.invListY + this.invRowH * this.invMaxRows + 2,
+      '', {
+        fontFamily: 'monospace', fontSize: '9px', color: COL_DISABLED
+      }
+    ).setOrigin(1, 0).setDepth(10);
+
+    // ----- Enhance/Salvage section (bottom of left panel) -----
+    const enhY = this.invListY + this.invRowH * this.invMaxRows + 14;
+    this.enhanceInfo = this.add.text(leftX + 8, enhY, 'Klicke einen Slot oder ein Inventar-Item zum Verbessern.', {
+      fontFamily: 'monospace', fontSize: '10px', color: COL_PARCHMENT,
+      wordWrap: { width: slotW - 16 }
+    }).setDepth(10);
+
     this.enhanceBtn = this._createButton(
-      leftX + slotW / 2, enhY + 60, 180, 36,
+      leftX + slotW / 2 - 60, enhY + 40, 110, 26,
       'Verbessern', () => this._enhanceItem()
     );
     this.enhanceBtn.container.setVisible(false);
 
-    // Salvage button (recycle to Eisenbrocken)
     this.salvageBtn = this._createButton(
-      leftX + slotW / 2, enhY + 105, 180, 32,
+      leftX + slotW / 2 + 60, enhY + 40, 110, 26,
       'Zerlegen', () => this._salvageItem()
     );
     this.salvageBtn.container.setVisible(false);
@@ -220,11 +255,30 @@ class CraftingScene extends Phaser.Scene {
     // --- Back button ---
     const backBtn = this._createButton(W / 2, H - 25, 220, 32, 'Zurueck zum Hub [ESC]', () => this._returnToHub());
 
+    // Initial render of inventory list
+    this._refreshInventoryList();
+
+    // Scroll handlers for the inventory list (mousewheel + arrow keys)
+    this.input.on('wheel', (pointer, gameObjects, dx, dy) => {
+      if (dy > 0) this._scrollInventory(1);
+      else if (dy < 0) this._scrollInventory(-1);
+    });
+    this.input.keyboard.on('keydown-DOWN', () => this._scrollInventory(1));
+    this.input.keyboard.on('keydown-UP', () => this._scrollInventory(-1));
+
     // ESC key to return
     this.input.keyboard.on('keydown-ESC', this._returnToHub, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard.off('keydown-ESC', this._returnToHub, this);
+      this.input.keyboard.off('keydown-DOWN');
+      this.input.keyboard.off('keydown-UP');
+      this.input.off('wheel');
     });
+  }
+
+  _scrollInventory(delta) {
+    this.invScrollOffset = Math.max(0, this.invScrollOffset + delta);
+    this._refreshInventoryList();
   }
 
   // =================== Forge Background ===================
@@ -325,30 +379,91 @@ class CraftingScene extends Phaser.Scene {
     return inventory.some(slot => !slot);
   }
 
-  // =================== Equipment Selection ===================
-  _selectEquipSlot(slot) {
+  // =================== Selection ===================
+  _isSelected(kind, key) {
+    return this._selection && this._selection.kind === kind && this._selection.key === key;
+  }
+
+  _getSelectedItem() {
+    if (!this._selection) return null;
+    if (this._selection.kind === 'equip') {
+      return (typeof equipment !== 'undefined') ? equipment[this._selection.key] : null;
+    }
+    if (this._selection.kind === 'inv') {
+      return (typeof inventory !== 'undefined') ? inventory[this._selection.key] : null;
+    }
+    return null;
+  }
+
+  _setSelectedItem(newItem) {
+    if (!this._selection) return;
+    if (this._selection.kind === 'equip') {
+      equipment[this._selection.key] = newItem;
+    } else if (this._selection.kind === 'inv') {
+      inventory[this._selection.key] = newItem;
+      if (typeof window !== 'undefined') window.inventory = inventory;
+    }
+  }
+
+  _clearVisualSelection() {
+    // Reset all equip slot bg
+    Object.keys(this.equipSlotBgs).forEach((slot) => {
+      this.equipSlotBgs[slot].setFillStyle(0x333333);
+      this.equipSlotBgs[slot].setStrokeStyle(2, 0x444444);
+    });
+    // Reset all inventory rows (they're rebuilt on every refresh, but harmless)
+    (this.invRows || []).forEach((row) => {
+      if (row.bg && row.bg.setFillStyle) {
+        row.bg.setFillStyle(0x2a2a2a);
+        row.bg.setStrokeStyle(1, 0x444444);
+      }
+    });
+  }
+
+  _applySelection(kind, key) {
+    this._selection = { kind, key };
+    this._selectedSlot = (kind === 'equip') ? key : null; // legacy alias
+
+    this._clearVisualSelection();
+
+    if (kind === 'equip') {
+      const bg = this.equipSlotBgs[key];
+      if (bg) {
+        bg.setFillStyle(0x4a3a1a);
+        bg.setStrokeStyle(2, 0xd4a543);
+      }
+    } else {
+      const row = (this.invRows || []).find((r) => r.invIndex === key);
+      if (row && row.bg) {
+        row.bg.setFillStyle(0x4a3a1a);
+        row.bg.setStrokeStyle(2, 0xd4a543);
+      }
+    }
+
+    this._showEnhanceInfoForSelection();
+  }
+
+  _selectEquip(slot) {
     const item = (typeof equipment !== 'undefined') ? equipment[slot] : null;
     if (!item) {
       this._showFeedback('Kein Gegenstand in diesem Slot.', '#ff4444');
       return;
     }
+    this._applySelection('equip', slot);
+  }
 
-    // Deselect previous
-    if (this._selectedSlot && this.equipSlotBgs[this._selectedSlot]) {
-      this.equipSlotBgs[this._selectedSlot].setFillStyle(0x333333);
-      this.equipSlotBgs[this._selectedSlot].setStrokeStyle(2, 0x444444);
-    }
+  _selectInventory(idx) {
+    const item = (typeof inventory !== 'undefined') ? inventory[idx] : null;
+    if (!item) return;
+    this._applySelection('inv', idx);
+  }
 
-    this._selectedSlot = slot;
+  _showEnhanceInfoForSelection() {
+    const item = this._getSelectedItem();
+    if (!item) return;
 
-    // Highlight selected
-    this.equipSlotBgs[slot].setFillStyle(0x4a3a1a);
-    this.equipSlotBgs[slot].setStrokeStyle(2, 0xd4a543);
-
-    // Always show salvage button when item is selected
     this.salvageBtn.container.setVisible(true);
 
-    // Show enhance info
     const lvl = item.enhanceLevel || 0;
     if (lvl >= 5) {
       this.enhanceInfo.setText(`${this._getEnhancedName(item)}\nMaximal verbessert! (+5)`);
@@ -376,8 +491,7 @@ class CraftingScene extends Phaser.Scene {
 
   // =================== Enhancement ===================
   _enhanceItem() {
-    if (!this._selectedSlot) return;
-    const item = (typeof equipment !== 'undefined') ? equipment[this._selectedSlot] : null;
+    const item = this._getSelectedItem();
     if (!item) return;
 
     const lvl = item.enhanceLevel || 0;
@@ -423,9 +537,9 @@ class CraftingScene extends Phaser.Scene {
       try { saveGame(this); } catch (e) { console.warn('[CraftingScene] save failed', e); }
     }
 
-    // Refresh UI
+    // Refresh UI (re-applying selection to refresh enhance info)
     this._refreshAll();
-    this._selectEquipSlot(this._selectedSlot);
+    if (this._selection) this._applySelection(this._selection.kind, this._selection.key);
     this._showFeedback(`${item.name} verbessert!`, '#44ff44');
 
     // Flash effect
@@ -434,8 +548,7 @@ class CraftingScene extends Phaser.Scene {
 
   // =================== Salvage ===================
   _salvageItem() {
-    if (!this._selectedSlot) return;
-    const item = equipment[this._selectedSlot];
+    const item = this._getSelectedItem();
     if (!item) return;
 
     // Salvage value: rarity * 3 + enhance level * 5
@@ -443,8 +556,8 @@ class CraftingScene extends Phaser.Scene {
     const enhanceLevel = item.enhanceLevel || 0;
     const matValue = rarityValue * 3 + enhanceLevel * 5;
 
-    // Remove item from equipment
-    equipment[this._selectedSlot] = null;
+    // Remove item from its source (equipment slot or inventory slot)
+    this._setSelectedItem(null);
 
     // Add materials
     if (typeof changeMaterialCount === 'function') {
@@ -458,11 +571,13 @@ class CraftingScene extends Phaser.Scene {
       try { saveGame(this); } catch (e) {}
     }
 
-    // Refresh UI
+    // Clear selection + UI
+    this._selection = null;
     this._selectedSlot = null;
+    this._clearVisualSelection();
     this.enhanceBtn.container.setVisible(false);
     this.salvageBtn.container.setVisible(false);
-    this.enhanceInfo.setText('Waehle ein Ausruestungsstueck.');
+    this.enhanceInfo.setText('Waehle ein Equipment-Item zum Verbessern.');
     this._refreshAll();
     this._showFeedback(`Zerlegt: +${matValue} Eisenbrocken`, '#ccaa33');
     this._flashEffect();
@@ -538,6 +653,95 @@ class CraftingScene extends Phaser.Scene {
         el.craftBtn.bg.setFillStyle(0x222222);
         el.craftBtn.text.setColor('#666666');
       }
+    });
+
+    // Refresh inventory list
+    this._refreshInventoryList();
+  }
+
+  _refreshInventoryList() {
+    // Tear down old rows
+    (this.invRows || []).forEach((row) => {
+      row.bg && row.bg.destroy();
+      row.nameText && row.nameText.destroy();
+      row.statsText && row.statsText.destroy();
+    });
+    this.invRows = [];
+
+    if (typeof inventory === 'undefined' || !Array.isArray(inventory)) {
+      this.invEmptyText.setVisible(true);
+      this.invOverflowText.setText('');
+      return;
+    }
+
+    // Collect all equipment items in inventory (with original index)
+    const EQUIP_TYPES = new Set(['weapon', 'head', 'body', 'boots']);
+    const equipItems = [];
+    for (let i = 0; i < inventory.length; i++) {
+      const it = inventory[i];
+      if (it && EQUIP_TYPES.has(it.type)) {
+        equipItems.push({ idx: i, item: it });
+      }
+    }
+
+    if (equipItems.length === 0) {
+      this.invEmptyText.setVisible(true);
+      this.invOverflowText.setText('');
+      return;
+    }
+    this.invEmptyText.setVisible(false);
+
+    // Clamp scroll offset against the new list length
+    const maxOffset = Math.max(0, equipItems.length - this.invMaxRows);
+    if (this.invScrollOffset > maxOffset) this.invScrollOffset = maxOffset;
+    if (this.invScrollOffset < 0) this.invScrollOffset = 0;
+
+    const visible = equipItems.slice(this.invScrollOffset, this.invScrollOffset + this.invMaxRows);
+
+    // Overflow indicator with scroll position info
+    if (equipItems.length > this.invMaxRows) {
+      const above = this.invScrollOffset;
+      const below = equipItems.length - (this.invScrollOffset + visible.length);
+      const parts = [];
+      if (above > 0) parts.push('\u25B2' + above);
+      if (below > 0) parts.push('\u25BC' + below);
+      this.invOverflowText.setText(parts.join('  ') + '  (Scroll/Pfeiltasten)');
+    } else {
+      this.invOverflowText.setText('');
+    }
+
+    const leftX = 30;
+    const slotW = (this.scale.width / 2) - 50;
+
+    visible.forEach((entry, row) => {
+      const ry = this.invListY + row * this.invRowH + this.invRowH / 2;
+      const isSelected = this._isSelected('inv', entry.idx);
+
+      const bg = this.add.rectangle(leftX + slotW / 2, ry, slotW - 6, this.invRowH - 4,
+        isSelected ? 0x4a3a1a : 0x2a2a2a)
+        .setDepth(9)
+        .setStrokeStyle(isSelected ? 2 : 1, isSelected ? 0xd4a543 : 0x444444)
+        .setInteractive({ useHandCursor: true });
+
+      const SLOT_LABEL = { weapon: 'W', head: 'H', body: 'R', boots: 'S' };
+      const labelTxt = SLOT_LABEL[entry.item.type] || '?';
+      const color = (typeof getRarityColor === 'function') ? getRarityColor(entry.item) : '#ffffff';
+      const nameText = this.add.text(leftX + 12, ry - 8, `[${labelTxt}] ${this._getEnhancedName(entry.item)}`, {
+        fontFamily: 'monospace', fontSize: '11px', color
+      }).setDepth(10);
+      const statsText = this.add.text(leftX + 12, ry + 3, this._getStatsLine(entry.item), {
+        fontFamily: 'monospace', fontSize: '9px', color: '#888888'
+      }).setDepth(10);
+
+      bg.on('pointerdown', () => this._selectInventory(entry.idx));
+      bg.on('pointerover', () => {
+        if (!this._isSelected('inv', entry.idx)) bg.setFillStyle(0x3a3a3a);
+      });
+      bg.on('pointerout', () => {
+        if (!this._isSelected('inv', entry.idx)) bg.setFillStyle(0x2a2a2a);
+      });
+
+      this.invRows.push({ bg, nameText, statsText, invIndex: entry.idx });
     });
   }
 

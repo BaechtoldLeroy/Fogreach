@@ -230,7 +230,7 @@
   };
 
   const SLOT_KEYS = ['slot1', 'slot2', 'slot3', 'slot4'];
-  const SLOT_KEY_LABELS = { slot1: 'Q', slot2: 'E', slot3: 'R', slot4: 'F' };
+  const SLOT_KEY_LABELS = { slot1: 'Q', slot2: 'W', slot3: 'E', slot4: 'R' };
 
   // ---------- State ----------
   const state = {
@@ -353,6 +353,17 @@
       const scene = window.gameScene || (window.game && window.game.scene && window.game.scene.scenes && window.game.scene.scenes.find((s) => s && s.sys && s.sys.isActive()));
       if (!scene || !scene.add) return;
 
+      // Pause gameplay so the player can read the unlock notification.
+      // We pause physics + freeze player velocity. Tweens stay active so the
+      // toast can animate in and out cleanly.
+      const wasPhysicsRunning = !!(scene.physics && scene.physics.world && !scene.physics.world.isPaused);
+      if (scene.physics && scene.physics.pause) {
+        scene.physics.pause();
+      }
+      if (window.player && window.player.body && window.player.body.setVelocity) {
+        window.player.body.setVelocity(0, 0);
+      }
+
       // Find ability def to get icon + description
       let def = null;
       for (const id in ABILITY_DEFS) {
@@ -416,8 +427,8 @@
       }).setOrigin(0, 0);
       container.add(descText);
 
-      // Footer hint
-      const footer = scene.add.text(0, panelH / 2 - 14, 'Druecke [K] um Loadout zu oeffnen', {
+      // Footer hint — now also tells the player how to dismiss the panel
+      const footer = scene.add.text(0, panelH / 2 - 14, '[Leertaste / Klick] fortfahren  -  [K] Loadout', {
         fontFamily: 'monospace',
         fontSize: 11,
         color: '#88aaff',
@@ -434,14 +445,41 @@
         ease: 'Back.easeOut',
       });
 
-      // Animate out after 5 seconds
-      scene.tweens.add({
-        targets: container,
-        alpha: 0,
-        delay: 5000,
-        duration: 600,
-        onComplete: () => container.destroy(true),
+      // ---- Dismiss handler ----
+      // The toast pauses the game until the player presses Space/Enter or clicks.
+      let dismissed = false;
+      const dismiss = () => {
+        if (dismissed) return;
+        dismissed = true;
+        // Detach listeners
+        scene.input.keyboard.off('keydown-SPACE', dismiss);
+        scene.input.keyboard.off('keydown-ENTER', dismiss);
+        scene.input.off('pointerdown', dismiss);
+        // Resume physics
+        if (wasPhysicsRunning && scene.physics && scene.physics.resume) {
+          scene.physics.resume();
+        }
+        // Animate out
+        scene.tweens.add({
+          targets: container,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => container.destroy(true),
+        });
+      };
+
+      // Defer the input bindings by 1 frame so the keypress that opened the
+      // skill (or the click that triggered the unlock) doesn't immediately
+      // close the toast.
+      scene.time.delayedCall(150, () => {
+        if (dismissed) return;
+        scene.input.keyboard.on('keydown-SPACE', dismiss);
+        scene.input.keyboard.on('keydown-ENTER', dismiss);
+        scene.input.on('pointerdown', dismiss);
       });
+
+      // Hard fallback: auto-dismiss after 15 seconds in case input is somehow lost
+      scene.time.delayedCall(15000, dismiss);
     } catch (err) {
       // non-fatal
       console.warn('[AbilitySystem] toast failed', err);
@@ -539,6 +577,32 @@
     return UNLOCK_RULES[id] || null;
   }
 
+  // Wipes persistent ability progress and resets in-memory state.
+  // Called when the player starts a new game so leftover skills from a
+  // previous run don't carry over.
+  function resetForNewGame() {
+    state.learnedAbilities = DEFAULT_LEARNED.slice();
+    state.activeLoadout = Object.assign({}, DEFAULT_LOADOUT);
+    state.enemyKills = 0;
+    state.cooldowns = {};
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      console.warn('[AbilitySystem] resetForNewGame storage clear failed', err);
+    }
+    // Test default: every new run starts with 20 Eisenbrocken so the forge
+    // is immediately usable. Done here (instead of in inventory.js) so that
+    // it ALSO applies to existing saves that get a "neues Spiel" click.
+    if (window.materialCounts) {
+      window.materialCounts.MAT = 20;
+    } else {
+      window.materialCounts = { MAT: 20 };
+    }
+    if (typeof window._refreshAbilityHUD === 'function') {
+      try { window._refreshAbilityHUD(); } catch (e) { /* HUD may not exist yet */ }
+    }
+  }
+
   // ---------- Bootstrap ----------
   load();
 
@@ -551,6 +615,7 @@
     DEFAULT_LEARNED,
     save,
     load,
+    resetForNewGame,
     getAbilityDef,
     getAllAbilityDefs,
     getLearnedAbilities,

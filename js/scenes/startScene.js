@@ -151,6 +151,12 @@ StartScene.prototype.preload = function () {
   // UI/environment sprites
   this.load.image('stairDown', 'assets/tiles/stairDown.png');
 
+  // Enemy projectile sprites — distinct per enemy archetype
+  this.load.image('proj_arrow',    'assets/projectiles/proj_arrow.png');
+  this.load.image('proj_arcane',   'assets/projectiles/proj_arcane.png');
+  this.load.image('proj_fireball', 'assets/projectiles/proj_fireball.png');
+  this.load.image('proj_default',  'assets/projectiles/proj_default.png');
+
   // New hub NPCs (Aldric, Elara, Harren)
   ['aldric', 'elara', 'harren'].forEach(npc => {
     ['left0','left1','left2','right0','right1','right2'].forEach(frame => {
@@ -175,8 +181,13 @@ StartScene.prototype.create = function () {
     normalizePlayerDirectionalFrames(this);
   }
 
-  // Auto-start support: ?autostart=1 in URL skips menu (for testing)
+  // Auto-start support: ?autostart=1 in URL skips menu (for testing).
+  // Treated as a fresh new game — wipe persistent state so test runs are deterministic.
   if (typeof window !== 'undefined' && window.location && window.location.search.includes('autostart=1')) {
+    if (window.clearSave) clearSave();
+    if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
+      window.AbilitySystem.resetForNewGame();
+    }
     window.__DEV_FORCE_CHEAT__ = true;
     if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
     const self = this;
@@ -272,8 +283,10 @@ StartScene.prototype.create = function () {
 
   btn
     .on("pointerdown", () => {
-      if (window.clearSave) {
-        /* optional: clearSave(); */
+      // New game: wipe ALL persistent state so the previous run doesn't leak
+      if (window.clearSave) clearSave();
+      if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
+        window.AbilitySystem.resetForNewGame();
       }
       if (typeof window.pendingLoadedSave !== "undefined") {
         window.pendingLoadedSave = null;
@@ -332,7 +345,10 @@ StartScene.prototype.create = function () {
       "Arena", "ArmoryVault", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",
       "CirclePillars", "CollapsingHall", "Crosshall", "CrossroadChamber", "Crossroads",
       "Crypt_Small_Altar", "DungeonLibrary", "GrandBazaar", "MazeLite", "PrisonCells",
-      "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault"
+      "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault",
+      // Story rooms (gated by act / story system, but must be registered in
+      // RT.TEMPLATES so the room picker can use them)
+      "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt"
     ];
 
     for (const name of allTemplateNames) {

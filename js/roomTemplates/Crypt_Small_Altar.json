@@ -81,16 +81,6 @@
       "y": 15
     },
     {
-      "type": "brazier",
-      "x": 12,
-      "y": 6
-    },
-    {
-      "type": "brazier",
-      "x": 12,
-      "y": 12
-    },
-    {
       "type": "rubble",
       "x": 3,
       "y": 5
@@ -111,16 +101,6 @@
       "y": 14
     },
     {
-      "type": "rubble",
-      "x": 8,
-      "y": 8
-    },
-    {
-      "type": "rubble",
-      "x": 16,
-      "y": 10
-    },
-    {
       "type": "barrel",
       "x": 2,
       "y": 7
@@ -139,16 +119,6 @@
       "type": "crate",
       "x": 21,
       "y": 11
-    },
-    {
-      "type": "statue_knight",
-      "x": 8,
-      "y": 9
-    },
-    {
-      "type": "statue_knight",
-      "x": 16,
-      "y": 9
     }
   ],
   "spawns": {

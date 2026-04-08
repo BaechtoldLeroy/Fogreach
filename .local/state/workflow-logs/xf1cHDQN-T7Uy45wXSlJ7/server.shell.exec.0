@@ -1,0 +1,463 @@
+[1G[0K⠙[1G[0K[41m[37m UPDATE [39m[49m The latest version of `serve` is 14.2.6
+[32m[39m
+[32m   ┌──────────────────────────────────────────┐[39m
+   [32m│[39m                                          [32m│[39m
+   [32m│[39m   [32mServing![39m                               [32m│[39m
+   [32m│[39m                                          [32m│[39m
+   [32m│[39m   [1m- Local:[22m    http://0.0.0.0:5000        [32m│[39m
+   [32m│[39m   [1m- Network:[22m  http://172.31.108.2:5000   [32m│[39m
+   [32m│[39m                                          [32m│[39m
+   [32m│[39m   [90mCopied local address to clipboard![39m     [32m│[39m
+   [32m│[39m                                          [32m│[39m
+[32m   └──────────────────────────────────────────┘[39m
+[32m[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [36mGET /[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 15 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [36mGET /[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [36mGET /js/performanceMonitor.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 3 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [36mGET /js/inventory.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 3 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [36mGET /js/skillSystem.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 3 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [36mGET /js/ai/steering.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:52 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/storage.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/roomManager.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 3 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/player.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/loot.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/wave.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/enemy.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 3 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 5 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 8 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/graphics.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/Archivschmiede.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 3 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 4 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/HubScene.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/hubLayout.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/startScene.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 6 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 4 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 5 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/HubSceneV2.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/TestTerrainScene.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 3 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/leaderboard.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/main.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/performanceMonitor.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/inventory.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/skillSystem.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/ai/steering.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/roomManager.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/storage.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/loot.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/wave.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/enemy.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/player.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/startScene.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/hubLayout.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/Archivschmiede.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/graphics.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/HubScene.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/TestTerrainScene.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/scenes/HubSceneV2.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/leaderboard.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [36mGET /js/main.js[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:53 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 538 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 539 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 545 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 543 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 549 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:54 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 552 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 18 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 19 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 14 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 9 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 13 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:56 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 15 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 11 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 11 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 16 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:57 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 241 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 11 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:59 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:59 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 581 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 470 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 376 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:58 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 317 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:59 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 122 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:49:59 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 134 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 13 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 18 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 21 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:00 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 24 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 14 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:01 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir00_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 25 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 292 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 184 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 184 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 301 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:02 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 9 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 9 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 8 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 11 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 9 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:03 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir01_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 15 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 18 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 20 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 9 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:04 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 9 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 11 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 12 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:05 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir02_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 16 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 9 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 13 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 16 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:06 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 10 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 13 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir03_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 11 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 15 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:07 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 11 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:08 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:08 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 12 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:08 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:08 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:08 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:08 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 12 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/sprites/schmiedemeisterin.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/sprites/spaeherin.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/sprites/setzer_thom.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 99 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 153 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 113 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/left0.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 8 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir04_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/left1.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 8 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/left2.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 8 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/right0.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/right1.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 8 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 8 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/right2.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 7 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Arena.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 4 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:09 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/BridgeOverGap.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir05_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Cathedral.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/CelestialGardens.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Checkerboard.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/CirclePillars.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Crosshall.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/CrossroadChamber.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Crossroads.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Crypt_Small_Altar.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f00.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/GrandBazaar.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir06_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/MazeLite.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Spiral.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/ThroneRoom.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Treasure_Small.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f01.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f02.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f03.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f04.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/TreasureVault.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f06.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f05.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:10 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 3 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/PlayerSprites/dir07_f07.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/sprites/setzer_thom.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/sprites/spaeherin.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/sprites/schmiedemeisterin.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/left1.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/left0.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/right0.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/right1.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/left2.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /assets/enemy/brute/right2.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/BridgeOverGap.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Arena.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Checkerboard.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Cathedral.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/CelestialGardens.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/CirclePillars.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Crosshall.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/CrossroadChamber.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Crossroads.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Crypt_Small_Altar.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/GrandBazaar.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/MazeLite.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Spiral.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/ThroneRoom.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 2 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/Treasure_Small.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/TreasureVault.json[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:11 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 0 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/sprites/spaeherin.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:56 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/sprites/schmiedemeisterin.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/sprites/setzer_thom.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:56 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:56 PM[22m [33m127.0.0.1[39m [32mReturned 304 in 1 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:56 PM[22m [33m127.0.0.1[39m [36mGET /assets/hubscene.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:50:56 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 19 ms[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:51:08 PM[22m [33m127.0.0.1[39m [36mGET /js/roomTemplates/rathauskeller.png[39m
+[44m[1m HTTP [22m[49m [2m4/1/2026 7:51:08 PM[22m [33m127.0.0.1[39m [32mReturned 200 in 4 ms[39m

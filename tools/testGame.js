@@ -124,6 +124,399 @@ const mode = args[0] || '--smoke';
     }
   }
 
+  if (mode === '--loadout' || mode === '--full') {
+    console.log('\n--- Loadout UI Test ---');
+
+    // Note: HUD lives in GameScene, not HubSceneV2 — we'll verify it after entering the dungeon below.
+
+    // Verify new-game reset wiped any leftover ability state from a prior run.
+    // (autostart=1 should call resetForNewGame.)
+    const learnedAtStart = await page.evaluate(() => window.AbilitySystem.getLearnedAbilities());
+    console.log('Learned abilities at fresh start:', learnedAtStart);
+    if (learnedAtStart.length === 0) {
+      console.log('  ✓ New game starts with no learned abilities');
+    } else {
+      console.log('  ✗ NEW GAME LEAKED ABILITIES from previous run:', learnedAtStart);
+    }
+
+    // Force-learn 2 abilities so we have something to click
+    await page.evaluate(() => {
+      if (window.AbilitySystem) {
+        window.AbilitySystem.learnAbility('spinAttack', { silent: true });
+        window.AbilitySystem.learnAbility('chargeSlash', { silent: true });
+      }
+    });
+    console.log('Learned 2 abilities for testing');
+
+    // Open loadout menu (K key)
+    await page.keyboard.press('k');
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '04-loadout-open.png') });
+    console.log('Screenshot: 04-loadout-open.png');
+
+    // Check loadout menu is open
+    const menuOpen = await page.evaluate(() => {
+      const hub = window.game?.scene?.getScene?.('HubSceneV2');
+      return !!hub?._loadoutContainer;
+    });
+    console.log('Loadout menu open:', menuOpen);
+
+    if (menuOpen) {
+      // Find a clickable ability cell (the spinAttack cell)
+      // The cells are interactive zones — find their world position
+      const cellPos = await page.evaluate(() => {
+        const hub = window.game?.scene?.getScene?.('HubSceneV2');
+        if (!hub || !hub._loadoutContainer) return null;
+        // Look for interactive zones in the scene
+        const zones = hub.children.list.filter(c =>
+          c.type === 'Zone' && c.input && c.input.enabled && c.depth >= 2002
+        );
+        if (!zones.length) return { error: 'no zones found' };
+        // Get the canvas position to compute screen coords
+        const canvas = window.game.canvas;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = rect.width / window.game.scale.width;
+        const scaleY = rect.height / window.game.scale.height;
+        return zones.slice(0, 5).map(z => ({
+          x: rect.left + z.x * scaleX,
+          y: rect.top + z.y * scaleY,
+          width: z.width,
+          height: z.height,
+        }));
+      });
+
+      console.log('Found clickable zones:', JSON.stringify(cellPos));
+
+      if (Array.isArray(cellPos) && cellPos.length > 0) {
+        // Get loadout BEFORE click
+        const before = await page.evaluate(() => window.AbilitySystem.getActiveLoadout());
+        console.log('Loadout BEFORE click:', JSON.stringify(before));
+
+        // Click first zone (should be a learned ability cell)
+        const target = cellPos[0];
+        console.log('Clicking zone at', target.x, target.y);
+        await page.mouse.click(target.x, target.y);
+        await page.waitForTimeout(500);
+
+        // Get loadout AFTER click
+        const after = await page.evaluate(() => window.AbilitySystem.getActiveLoadout());
+        console.log('Loadout AFTER click: ', JSON.stringify(after));
+
+        const changed = JSON.stringify(before) !== JSON.stringify(after);
+        console.log(changed ? '✓ CLICK REGISTERED — loadout changed' : '✗ CLICK FAILED — loadout unchanged');
+
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, '05-after-click.png') });
+        console.log('Screenshot: 05-after-click.png');
+
+        // Verify HUD updated to reflect newly equipped ability
+        const hudAfter = await page.evaluate(() => window._getAbilityHUDState && window._getAbilityHUDState());
+        if (Array.isArray(hudAfter)) {
+          const visibleAfter = hudAfter.filter(t => t.visible).map(t => t.key);
+          const equippedIds = Object.values(after || {}).filter(Boolean);
+          console.log('HUD after equip:', visibleAfter, '— equipped IDs:', equippedIds);
+
+          // Expected: attack + one tile per equipped ability
+          const expectedCount = 1 + equippedIds.length;
+          if (visibleAfter.length === expectedCount && visibleAfter.includes('attack')) {
+            console.log('  ✓ HUD updated correctly — shows attack + ' + equippedIds.length + ' equipped');
+          } else {
+            console.log('  ✗ HUD MISMATCH — expected ' + expectedCount + ' tiles, got ' + visibleAfter.length);
+          }
+
+          // Verify no unlearned ability is visible
+          const unlearned = hudAfter.filter(t => t.visible && t.abilityId && !equippedIds.includes(t.abilityId));
+          if (unlearned.length === 0) {
+            console.log('  ✓ No unequipped abilities leaking into HUD');
+          } else {
+            console.log('  ✗ HUD shows unequipped abilities:', unlearned.map(t => t.key));
+          }
+        }
+      }
+    }
+
+    // Close loadout
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+
+    // ---- NPC Interaction / Quest Indicator Test ----
+    console.log('\n--- NPC Interaction Test ---');
+
+    // Helper to read aldric's quest indicator state from the hub scene
+    const readAldricIndicator = () => page.evaluate(() => {
+      const hub = window.game?.scene?.getScene?.('HubSceneV2');
+      if (!hub || !hub.npcs) return { error: 'no hub or npcs' };
+      const aldric = hub.npcs.find(n => n.data && n.data.id === 'aldric');
+      if (!aldric) return { error: 'aldric not found' };
+      const ind = aldric.questIndicator;
+      if (!ind) return { error: 'no questIndicator' };
+      return {
+        text: ind.text,
+        visible: ind.visible,
+        color: ind.style && ind.style.color
+      };
+    });
+
+    const indBefore = await readAldricIndicator();
+    console.log('Aldric indicator BEFORE accept:', JSON.stringify(indBefore));
+    if (indBefore.text === '!' && indBefore.visible) {
+      console.log('  ✓ Available quest shows gold "!"');
+    } else {
+      console.log('  ✗ Expected visible "!" — got', indBefore);
+    }
+
+    // Simulate the player accepting Aldric's quest via the actual handler chain.
+    // This invokes _handleDialogueChoice('accept', ...) which is exactly what
+    // happens when the player clicks "Annehmen" in the dialogue.
+    const acceptResult = await page.evaluate(() => {
+      const hub = window.game.scene.getScene('HubSceneV2');
+      const qs = window.questSystem;
+      if (!hub || !qs) return { error: 'missing hub or questSystem' };
+      const available = qs.getAvailableQuests('aldric');
+      if (!available.length) return { error: 'no available quests for aldric' };
+      const questData = available[0];
+      try {
+        // Mimic the dialog accept path (no real dialog open, but accept logic runs)
+        hub._handleDialogueChoice('accept', { id: 'aldric' }, '', [], 'offer', questData, 0, []);
+      } catch (e) {
+        return { error: 'handler threw: ' + e.message, questId: questData.id };
+      }
+      return { questId: questData.id, activeAfter: qs.getActiveQuests('aldric').map(q => q.id) };
+    });
+    console.log('Accept result:', JSON.stringify(acceptResult));
+
+    await page.waitForTimeout(200);
+
+    const indAfter = await readAldricIndicator();
+    console.log('Aldric indicator AFTER accept: ', JSON.stringify(indAfter));
+    if (indAfter.text === '…' && indAfter.visible) {
+      console.log('  ✓ Accepted quest shows gray "…" — indicator transitioned correctly');
+    } else if (indAfter.text === '!' && indAfter.visible) {
+      console.log('  ✗ INDICATOR DID NOT UPDATE — still shows "!" after accept');
+    } else if (indAfter.text === '?' && indAfter.visible) {
+      console.log('  (quest already ready to complete — shows "?")');
+    } else {
+      console.log('  ✗ Unexpected indicator state:', indAfter);
+    }
+
+    // Walk-up interaction smoke test: verify the dialogue system can be opened
+    // by directly invoking _showNpcDialogue (the same call site _refreshInteractionPrompt uses).
+    const dialogueOpened = await page.evaluate(() => {
+      const hub = window.game.scene.getScene('HubSceneV2');
+      const aldric = hub.npcs.find(n => n.data && n.data.id === 'aldric');
+      if (!aldric) return { error: 'no aldric' };
+      try {
+        hub._showNpcDialogue(aldric.data);
+        return { opened: !!hub._dialogOpen };
+      } catch (e) {
+        return { error: 'showNpcDialogue threw: ' + e.message };
+      }
+    });
+    console.log('Dialogue open via _showNpcDialogue:', JSON.stringify(dialogueOpened));
+    if (dialogueOpened.opened) {
+      console.log('  ✓ NPC dialogue opened successfully');
+    } else {
+      console.log('  ✗ NPC dialogue failed to open:', dialogueOpened);
+    }
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '07-npc-dialogue.png') });
+    console.log('Screenshot: 07-npc-dialogue.png');
+
+    // Close dialogue before warping to GameScene
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+
+    // ---- HUD Verification (requires GameScene) ----
+    console.log('\n--- HUD Verification ---');
+    const expectedLoadout = await page.evaluate(() => window.AbilitySystem.getActiveLoadout());
+    const expectedEquipped = Object.values(expectedLoadout || {}).filter(Boolean);
+    console.log('Equipped abilities going into dungeon:', expectedEquipped);
+
+    // Force-start GameScene directly (skip walking to entrance)
+    await page.evaluate(() => {
+      const hub = window.game.scene.getScene('HubSceneV2');
+      if (hub && hub.scene) {
+        hub.scene.start('GameScene');
+      }
+    });
+
+    // Wait for GameScene to come up and create the HUD
+    try {
+      await page.waitForFunction(() => {
+        const gs = window.game?.scene?.getScene?.('GameScene');
+        return gs && gs.scene.isActive() && typeof window._getAbilityHUDState === 'function';
+      }, { timeout: 15000 });
+      console.log('GameScene + HUD ready');
+    } catch (e) {
+      console.log('✗ GameScene/HUD did not become ready');
+    }
+
+    await page.waitForTimeout(800);
+
+    const hudState = await page.evaluate(() => window._getAbilityHUDState && window._getAbilityHUDState());
+    if (Array.isArray(hudState)) {
+      const visible = hudState.filter(t => t.visible);
+      const visibleKeys = visible.map(t => t.key);
+      console.log('HUD tiles visible:', visibleKeys);
+      console.log('All HUD tiles:', JSON.stringify(hudState));
+
+      const expectedCount = 1 + expectedEquipped.length; // attack + equipped
+      if (visible.length === expectedCount && visibleKeys.includes('attack')) {
+        console.log('  ✓ HUD shows attack + ' + expectedEquipped.length + ' equipped abilities');
+      } else {
+        console.log('  ✗ HUD count wrong — expected ' + expectedCount + ' tiles, got ' + visible.length);
+      }
+
+      // Verify each equipped ability has its slot tile visible with correct ability id
+      const visibleEquippedIds = hudState.filter(t => t.visible && t.abilityId).map(t => t.abilityId);
+      const missing = expectedEquipped.filter(id => !visibleEquippedIds.includes(id));
+      if (missing.length === 0) {
+        console.log('  ✓ All equipped abilities present in HUD');
+      } else {
+        console.log('  ✗ Equipped abilities missing from HUD:', missing);
+      }
+
+      // Verify slot tile labels match the equipped ability name + correct key letter (Q/E/R/F)
+      const expectedSlotKey = { slot1: 'Q', slot2: 'W', slot3: 'E', slot4: 'R' };
+      const labelOk = hudState
+        .filter(t => t.slot && t.visible)
+        .every(t => t.keyLabel === expectedSlotKey[t.slot] && t.label && t.label !== 'Empty');
+      console.log(labelOk
+        ? '  ✓ Slot tile labels match Q/E/R/F binding and ability names'
+        : '  ✗ Slot tile labels mismatched — ' + JSON.stringify(hudState.filter(t => t.slot && t.visible)));
+
+      // Verify no unequipped ability tile leaks in
+      const leaked = hudState.filter(t => t.visible && t.slot && t.abilityId && !expectedEquipped.includes(t.abilityId));
+      if (leaked.length === 0) {
+        console.log('  ✓ No unequipped ability tiles in HUD');
+      } else {
+        console.log('  ✗ Unequipped tiles leaking into HUD:', leaked.map(t => t.key));
+      }
+
+      // Verify visible tiles stack without gaps (y positions strictly increasing)
+      const ys = visible.map(t => t.y).sort((a, b) => a - b);
+      const stacked = ys.every((y, i) => i === 0 || y > ys[i - 1]);
+      console.log(stacked ? '  ✓ Tiles stacked without overlap' : '  ✗ Tiles overlap/misaligned');
+    } else {
+      console.log('  ✗ window._getAbilityHUDState unavailable in GameScene');
+    }
+
+    // HUD region screenshot
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '06-hud-final.png'),
+      clip: { x: 1200, y: 100, width: 336, height: 400 }
+    });
+    console.log('Screenshot: 06-hud-final.png (HUD region)');
+
+    // ---- Crafting Scene: inventory recraft test ----
+    console.log('\n--- Crafting Scene Test ---');
+
+    // Inject an equipment item into inventory, then start CraftingScene
+    const craftSetup = await page.evaluate(() => {
+      if (typeof window.inventory === 'undefined') return { error: 'no inventory global' };
+      // Find an empty slot
+      let idx = -1;
+      for (let i = 0; i < window.inventory.length; i++) {
+        if (!window.inventory[i]) { idx = i; break; }
+      }
+      if (idx < 0) return { error: 'inventory full' };
+      const testItem = {
+        type: 'weapon', key: 'WPN_TEST', name: 'Test-Klinge',
+        rarity: 'common', rarityLabel: 'Gewoehnlich', rarityValue: 1,
+        itemLevel: 1, hp: 0, damage: 5, speed: 0, range: 0, armor: 0, crit: 0,
+        enhanceLevel: 0
+      };
+      window.inventory[idx] = testItem;
+      // Give some Eisenbrocken so enhance is affordable
+      if (typeof window.changeMaterialCount === 'function') {
+        window.changeMaterialCount('MAT', 50);
+      }
+      // Start crafting scene
+      window.game.scene.start('CraftingScene');
+      return { injectedAt: idx, testName: testItem.name };
+    });
+    console.log('Crafting setup:', JSON.stringify(craftSetup));
+
+    try {
+      await page.waitForFunction(() => {
+        const cs = window.game?.scene?.getScene?.('CraftingScene');
+        return cs && cs.scene.isActive() && cs.invRows;
+      }, { timeout: 10000 });
+      console.log('CraftingScene ready');
+    } catch (e) {
+      console.log('✗ CraftingScene did not become ready');
+    }
+
+    await page.waitForTimeout(500);
+
+    const invListState = await page.evaluate(() => {
+      const cs = window.game.scene.getScene('CraftingScene');
+      return {
+        rowCount: cs.invRows.length,
+        rows: cs.invRows.map(r => ({
+          invIndex: r.invIndex,
+          label: r.nameText && r.nameText.text
+        })),
+        emptyTextVisible: cs.invEmptyText && cs.invEmptyText.visible
+      };
+    });
+    console.log('Inventory list state:', JSON.stringify(invListState));
+
+    if (invListState.rowCount > 0 && !invListState.emptyTextVisible) {
+      console.log('  ✓ Inventory list shows ' + invListState.rowCount + ' equipment item(s)');
+    } else {
+      console.log('  ✗ Inventory list empty or not rendered');
+    }
+
+    const testRow = invListState.rows.find(r => r.label && r.label.includes('Test-Klinge'));
+    if (testRow) {
+      console.log('  ✓ Injected test item visible:', testRow.label);
+    } else {
+      console.log('  ✗ Injected test item NOT in list');
+    }
+
+    // Click the test item via internal selection (faster than mouse simulation)
+    const selectResult = await page.evaluate(() => {
+      const cs = window.game.scene.getScene('CraftingScene');
+      const testRow = cs.invRows.find(r => r.nameText && r.nameText.text.includes('Test-Klinge'));
+      if (!testRow) return { error: 'no test row' };
+      cs._selectInventory(testRow.invIndex);
+      return {
+        selection: cs._selection,
+        enhanceBtnVisible: cs.enhanceBtn && cs.enhanceBtn.container.visible,
+        salvageBtnVisible: cs.salvageBtn && cs.salvageBtn.container.visible,
+        infoText: cs.enhanceInfo && cs.enhanceInfo.text
+      };
+    });
+    console.log('After selecting inventory item:', JSON.stringify(selectResult));
+
+    if (selectResult.selection && selectResult.selection.kind === 'inv'
+        && selectResult.enhanceBtnVisible && selectResult.salvageBtnVisible) {
+      console.log('  ✓ Enhance + salvage UI activated for inventory item');
+    } else {
+      console.log('  ✗ UI did not activate correctly for inventory selection');
+    }
+
+    // Trigger enhance and verify the inventory item changed
+    const enhanceResult = await page.evaluate(() => {
+      const cs = window.game.scene.getScene('CraftingScene');
+      const before = JSON.parse(JSON.stringify(window.inventory[cs._selection.key]));
+      cs._enhanceItem();
+      const after = JSON.parse(JSON.stringify(window.inventory[cs._selection.key]));
+      return { before, after };
+    });
+    console.log('Enhance result:', JSON.stringify(enhanceResult));
+
+    if (enhanceResult.after && enhanceResult.after.enhanceLevel === 1
+        && enhanceResult.after.damage > enhanceResult.before.damage) {
+      console.log('  ✓ Inventory item enhanced in place (+1, damage boosted)');
+    } else {
+      console.log('  ✗ Enhance did not modify inventory item correctly');
+    }
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '08-crafting.png') });
+    console.log('Screenshot: 08-crafting.png');
+  }
+
   if (mode === '--dungeon' || mode === '--full') {
     // Walk up toward Rathaus entrance
     console.log('\nWalking up toward Rathaus...');
