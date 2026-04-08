@@ -1031,9 +1031,18 @@ function handleEnemies(time, delta = 16) {
   }, this);
 }
 
-// Pick the right projectile texture for this enemy archetype.
-// Type flags (isArcher / isMage / isFlameWeaver) are always set in the
-// enemy setup blocks, so the sprite variant doesn't matter here.
+/**
+ * Pick the right projectile texture for this enemy archetype.
+ *
+ * Enemy flag convention (set in spawnEnemy):
+ *   - is{Type}        — ALWAYS set for ranged archetypes (Archer/Mage/FlameWeaver),
+ *                       independent of sprite variant. Use these for behavior decisions.
+ *   - is{Type}Sprite  — set ONLY when the enemy uses the directional sprite sheet.
+ *                       Use these for animation flips only.
+ *
+ * @param {{isArcher?: boolean, isMage?: boolean, isFlameWeaver?: boolean}} enemy
+ * @returns {'proj_arrow'|'proj_arcane'|'proj_fireball'|'proj_default'}
+ */
 function getProjectileTextureFor(enemy) {
   if (!enemy) return 'proj_default';
   if (enemy.isFlameWeaver) return 'proj_fireball';
@@ -1065,6 +1074,17 @@ function _configureProjectileShape(proj, texKey, ang) {
   }
 }
 
+/**
+ * Borrow a projectile sprite from the scene's enemy projectile pool, or
+ * create a new one if the pool is empty. The returned sprite is added to
+ * the `enemyProjectiles` group, has its body re-enabled, and its texture
+ * set to `texKey`. Caller must call `_configureProjectileShape()` afterwards.
+ * @param {Phaser.Scene} scene
+ * @param {number} x
+ * @param {number} y
+ * @param {string} texKey
+ * @returns {Phaser.Physics.Arcade.Sprite}
+ */
 function acquireEnemyProjectile(scene, x, y, texKey) {
   const pool = scene._enemyProjectilePool || (scene._enemyProjectilePool = []);
   let proj = null;
@@ -1095,6 +1115,12 @@ function acquireEnemyProjectile(scene, x, y, texKey) {
   return proj;
 }
 
+/**
+ * Return a projectile sprite to the pool. Disables physics, hides the
+ * sprite, and pushes it back to the scene's pool. If the pool is full
+ * (>= ENEMY_PROJECTILE_POOL_MAX), destroys the sprite outright.
+ * @param {Phaser.Physics.Arcade.Sprite|null|undefined} proj
+ */
 function releaseEnemyProjectile(proj) {
   if (!proj) return;
   if (proj.body) {

@@ -390,6 +390,12 @@
     }).map(function (id) { return QUEST_DEFINITIONS[id]; });
   }
 
+  /**
+   * Move a quest from 'available' to 'active' state and initialise its objectives.
+   * Auto-completes dialogue-type quests immediately. Fires onQuestUpdate listeners.
+   * @param {string} questId
+   * @returns {boolean} true if state actually changed, false on unknown id or wrong state
+   */
   function acceptQuest(questId) {
     var def = QUEST_DEFINITIONS[questId];
     if (!def) return false;
@@ -416,6 +422,14 @@
     return true;
   }
 
+  /**
+   * Increment progress on every active quest objective whose (type, target)
+   * tuple matches. Used for kill/explore/collect/dialogue progress events.
+   * @param {string} type   Objective type — 'kill' | 'explore' | 'collect' | 'dialogue' | 'boss_kill' | ...
+   * @param {string} target Objective target — 'enemy' | 'room' | 'item:foo' | a boss key | ...
+   * @param {number} [amount=1] How much to increment (clamped at obj.required)
+   * @returns {boolean} true if any objective changed (and listeners were notified)
+   */
   function updateQuestProgress(type, target, amount) {
     var changed = false;
     Object.keys(questState).forEach(function (id) {

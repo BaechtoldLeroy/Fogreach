@@ -83,7 +83,33 @@ function getFallbackTexture(key) {
 function gx(tpl, x) { return x * tpl.size.tile; }
 function gy(tpl, y) { return y * tpl.size.tile; }
 
-// Template anwenden
+/**
+ * @typedef {Object} RoomTemplate
+ * @property {string} name
+ * @property {{ tile: number, w: number, h: number }} size
+ * @property {{ legend: Object<string,string>, walls: string[] }} layout
+ * @property {{ floor?: string }} [tiles]
+ * @property {Array<{ x: number, y: number, dir?: string }>} [entrances]
+ * @property {Array<{ type: string, x: number, y: number }>} [objects]
+ * @property {{
+ *   player?: { x: number, y: number },
+ *   enemies?: Array<{ type: number, x: number, y: number, count?: number, radius?: number }>,
+ *   loot?: Array<{ x: number, y: number, type: string, locked?: boolean }>
+ * }} [spawns]
+ * @property {{ difficulty?: number, lights?: any[] }} [rules]
+ */
+
+/**
+ * Render a room template into the given Phaser scene at world origin (originX, originY).
+ * Spawns walls, decorative objects, enemies (respecting safe distance from
+ * player spawn), loot, lights, and the protected-tile set used to keep
+ * spawn/entrance/loot tiles obstacle-free.
+ *
+ * @param {Phaser.Scene} scene
+ * @param {RoomTemplate} tpl
+ * @param {number} [originX=0]
+ * @param {number} [originY=0]
+ */
 function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   const ox = originX, oy = originY;
   const T = tpl.size.tile;

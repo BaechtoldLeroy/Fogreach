@@ -290,40 +290,68 @@
   }
 
   // ---------- Public API ----------
+  /**
+   * @typedef {Object} AbilityDef
+   * @property {string} id           Stable identifier (e.g. "spinAttack")
+   * @property {string} name         Human-readable name shown in UI
+   * @property {string} description  One-line description for tooltips
+   * @property {string} icon         Single-character emoji icon
+   * @property {number} color        Hex color used for UI accents
+   * @property {number} [cooldownMs] Per-ability cooldown in ms (optional)
+   */
+
+  /**
+   * @typedef {('slot1'|'slot2'|'slot3'|'slot4')} SlotKey
+   * @typedef {Object<SlotKey, string|null>} ActiveLoadout
+   */
+
+  /** @param {string} id @returns {AbilityDef|null} */
   function getAbilityDef(id) {
     return ABILITY_DEFS[id] || null;
   }
 
+  /** @returns {AbilityDef[]} */
   function getAllAbilityDefs() {
     return Object.values(ABILITY_DEFS);
   }
 
+  /** @returns {string[]} A defensive copy of the learned-ability id list. */
   function getLearnedAbilities() {
     return state.learnedAbilities.slice();
   }
 
+  /** @param {string} id @returns {boolean} */
   function isLearned(id) {
     return state.learnedAbilities.includes(id);
   }
 
+  /** @returns {ActiveLoadout} A defensive copy of the equipped loadout. */
   function getActiveLoadout() {
     return Object.assign({}, state.activeLoadout);
   }
 
+  /** @param {string} id @returns {boolean} */
   function isEquipped(id) {
     return SLOT_KEYS.some((slot) => state.activeLoadout[slot] === id);
   }
 
+  /** @param {string} id @returns {SlotKey|null} */
   function getSlotForAbility(id) {
     return SLOT_KEYS.find((slot) => state.activeLoadout[slot] === id) || null;
   }
 
+  /**
+   * Equip an ability into a slot. Auto-swaps if the ability is already
+   * equipped elsewhere. Pass null to clear the slot.
+   * @param {SlotKey} slot
+   * @param {string|null} abilityId
+   * @returns {boolean} false if invalid slot/id or ability not learned
+   */
   function setSlot(slot, abilityId) {
     if (!SLOT_KEYS.includes(slot)) return false;
     if (abilityId !== null && !ABILITY_DEFS[abilityId]) return false;
     if (abilityId !== null && !isLearned(abilityId)) return false;
 
-    // If ability already equipped in another slot, swap them.
     if (abilityId) {
       const existingSlot = getSlotForAbility(abilityId);
       if (existingSlot && existingSlot !== slot) {
@@ -336,6 +364,13 @@
     return true;
   }
 
+  /**
+   * Mark an ability as learned. Idempotent — calling twice with the same id
+   * is a no-op (returns false).
+   * @param {string} id
+   * @param {{silent?: boolean}} [opts] silent suppresses the unlock toast
+   * @returns {boolean} true on first successful learn, false on duplicate or unknown id
+   */
   function learnAbility(id, opts = {}) {
     if (!ABILITY_DEFS[id]) return false;
     if (state.learnedAbilities.includes(id)) return false;
@@ -579,14 +614,19 @@
 
   // Wipes persistent ability progress and resets in-memory state.
   // Called when the player starts a new game so leftover skills from a
-  // previous run don't carry over.
+  // previous run don't carry over. The actual storage wipe is delegated
+  // to Persistence.clearAllSaves so all subsystems are wiped together.
   function resetForNewGame() {
     state.learnedAbilities = DEFAULT_LEARNED.slice();
     state.activeLoadout = Object.assign({}, DEFAULT_LOADOUT);
     state.enemyKills = 0;
     state.cooldowns = {};
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      if (window.Persistence && typeof window.Persistence.clearAllSaves === 'function') {
+        window.Persistence.clearAllSaves();
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
     } catch (err) {
       console.warn('[AbilitySystem] resetForNewGame storage clear failed', err);
     }
