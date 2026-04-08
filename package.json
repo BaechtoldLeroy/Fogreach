@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tools/runTests.js",
+    "test:unit": "node tools/runTests.js",
+    "test:smoke": "node tools/testGame.js --loadout",
+    "test:all": "node tools/runTests.js && node tools/testGame.js --loadout"
   },
   "keywords": [],
   "author": "",

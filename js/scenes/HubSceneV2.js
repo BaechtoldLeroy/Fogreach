@@ -102,7 +102,19 @@ class HubSceneV2 extends Phaser.Scene {
 
   preload() {
     this.load.image('hubscene_bg', 'assets/hubscene.png');
-    // NPC sprites (schmiedemeisterin, setzer_thom, spaeherin) are loaded in StartScene
+    // Hub-only NPC sprites — deferred from StartScene so the main menu loads
+    // faster. Phaser only loads keys that aren't already in the texture cache,
+    // so re-entering the hub from a dungeon is essentially free.
+    const tex = this.textures;
+    if (!tex.exists('schmiedemeisterin')) this.load.image('schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
+    if (!tex.exists('setzer_thom'))       this.load.image('setzer_thom', 'assets/sprites/setzer_thom.png');
+    if (!tex.exists('spaeherin'))         this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
+    ['aldric', 'elara', 'harren'].forEach((npc) => {
+      ['left0','left1','left2','right0','right1','right2'].forEach((frame) => {
+        const key = npc + '_' + frame;
+        if (!tex.exists(key)) this.load.image(key, 'assets/npc/' + npc + '/' + frame + '.png');
+      });
+    });
   }
 
   create() {

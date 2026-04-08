@@ -686,11 +686,28 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   // Pre-compute the list of accessible tiles that are also far enough from
   // the player spawn — used as a fallback pool when a requested tile is too close.
   const distantAccessibleTiles = [];
+  // Spatial bucket index: maps "bx|by" -> array of tiles in that bucket.
+  // Bucket size = 4 tiles. Lookups search the home bucket + 8 neighbors (3x3),
+  // turning the previous O(n) full-scan into O(k) where k is bucket density.
+  const DISTANT_BUCKET_SIZE = 4;
+  const distantBuckets = new Map();
+  const bucketKey = (bx, by) => `${bx}|${by}`;
+
   if (accessibleTiles && spawnTileX != null) {
     accessibleTiles.forEach((key) => {
       const [tx, ty] = key.split('|').map(Number);
       if (isFarEnoughFromPlayer(tx, ty)) {
-        distantAccessibleTiles.push({ x: tx, y: ty });
+        const tile = { x: tx, y: ty };
+        distantAccessibleTiles.push(tile);
+        const bx = Math.floor(tx / DISTANT_BUCKET_SIZE);
+        const by = Math.floor(ty / DISTANT_BUCKET_SIZE);
+        const k = bucketKey(bx, by);
+        let bucket = distantBuckets.get(k);
+        if (!bucket) {
+          bucket = [];
+          distantBuckets.set(k, bucket);
+        }
+        bucket.push(tile);
       }
     });
   }
@@ -700,17 +717,60 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     let chosen = findAccessibleTileNear(baseX, baseY, radius);
     if (chosen && isFarEnoughFromPlayer(chosen.x, chosen.y)) return chosen;
 
-    // Too close — find the nearest accessible tile that IS far enough
+    // Too close — search the spatial bucket containing baseX/baseY plus its
+    // 8 neighbors. Expand outward in rings of bucket-size if no nearby hit.
     if (!distantAccessibleTiles.length) return chosen; // no fallback available
+
+    const homeBx = Math.floor(baseX / DISTANT_BUCKET_SIZE);
+    const homeBy = Math.floor(baseY / DISTANT_BUCKET_SIZE);
 
     let best = null;
     let bestDist = Infinity;
-    distantAccessibleTiles.forEach((tile) => {
-      const dx = tile.x - baseX;
-      const dy = tile.y - baseY;
-      const d = dx * dx + dy * dy;
-      if (d < bestDist) { bestDist = d; best = tile; }
-    });
+    const checkBucket = (bx, by) => {
+      const bucket = distantBuckets.get(bucketKey(bx, by));
+      if (!bucket) return;
+      for (let i = 0; i < bucket.length; i++) {
+        const tile = bucket[i];
+        const dx = tile.x - baseX;
+        const dy = tile.y - baseY;
+        const d = dx * dx + dy * dy;
+        if (d < bestDist) { bestDist = d; best = tile; }
+      }
+    };
+
+    // Expand search rings until we find at least one candidate (cap at 6 rings).
+    for (let ring = 0; ring <= 6 && best == null; ring++) {
+      if (ring === 0) {
+        checkBucket(homeBx, homeBy);
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          checkBucket(homeBx + dx, homeBy + dy);
+        }
+      } else {
+        // Just the new outer ring at distance `ring + 1`
+        const r = ring + 1;
+        for (let dx = -r; dx <= r; dx++) {
+          checkBucket(homeBx + dx, homeBy - r);
+          checkBucket(homeBx + dx, homeBy + r);
+        }
+        for (let dy = -r + 1; dy <= r - 1; dy++) {
+          checkBucket(homeBx - r, homeBy + dy);
+          checkBucket(homeBx + r, homeBy + dy);
+        }
+      }
+    }
+
+    // Last resort: full scan (shouldn't happen if rings cover the room)
+    if (!best) {
+      for (let i = 0; i < distantAccessibleTiles.length; i++) {
+        const tile = distantAccessibleTiles[i];
+        const dx = tile.x - baseX;
+        const dy = tile.y - baseY;
+        const d = dx * dx + dy * dy;
+        if (d < bestDist) { bestDist = d; best = tile; }
+      }
+    }
+
     return best || chosen;
   };
 

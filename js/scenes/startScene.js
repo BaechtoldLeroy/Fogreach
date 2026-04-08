@@ -12,6 +12,13 @@ StartScene.prototype.preload = function () {
   const width = this.cameras.main.width;
   const height = this.cameras.main.height;
 
+  // Load-time instrumentation: how long does the initial preload take?
+  const preloadStart = performance.now();
+  this.load.once('complete', () => {
+    const elapsed = (performance.now() - preloadStart).toFixed(0);
+    console.log(`[StartScene] preload complete in ${elapsed}ms`);
+  });
+
   // Dark background for loading screen
   const bg = this.add.graphics();
   bg.fillStyle(0x1a1a1a, 1);
@@ -49,11 +56,27 @@ StartScene.prototype.preload = function () {
   });
   percentText.setOrigin(0.5, 0.5);
 
+  // Currently-loading file name
+  const fileText = this.make.text({
+    x: width / 2,
+    y: height / 2 + 50,
+    text: '',
+    style: {
+      font: '12px monospace',
+      fill: '#888888'
+    }
+  });
+  fileText.setOrigin(0.5, 0.5);
+
   this.load.on('progress', function (value) {
     percentText.setText(parseInt(value * 100) + '%');
     progressBar.clear();
     progressBar.fillStyle(0xccaa33, 1);
     progressBar.fillRect(width / 2 - 198, height / 2 - 8, 396 * value, 16);
+  });
+
+  this.load.on('fileprogress', function (file) {
+    fileText.setText('Lade: ' + file.key);
   });
 
   this.load.on('complete', function () {
@@ -62,6 +85,7 @@ StartScene.prototype.preload = function () {
     progressBox.destroy();
     loadingText.destroy();
     percentText.destroy();
+    fileText.destroy();
   });
 
   // Only preload initial direction (dir00) at startup - other directions lazy-loaded
@@ -69,10 +93,8 @@ StartScene.prototype.preload = function () {
     preloadPlayerDirectionalFrames(this.load);
   }
 
-  // NPC sprites (loaded here so HubSceneV2 doesn't need to duplicate)
-  this.load.image('schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
-  this.load.image('setzer_thom', 'assets/sprites/setzer_thom.png');
-  this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
+  // NPC sprites for the hub are now lazy-loaded inside HubSceneV2.preload()
+  // — keeps the StartScene menu reachable in fewer HTTP round-trips.
 
   // Brute enemy sprites
   this.load.image('brute_left0', 'assets/enemy/brute/left0.png');
@@ -157,12 +179,7 @@ StartScene.prototype.preload = function () {
   this.load.image('proj_fireball', 'assets/projectiles/proj_fireball.png');
   this.load.image('proj_default',  'assets/projectiles/proj_default.png');
 
-  // New hub NPCs (Aldric, Elara, Harren)
-  ['aldric', 'elara', 'harren'].forEach(npc => {
-    ['left0','left1','left2','right0','right1','right2'].forEach(frame => {
-      this.load.image(npc + '_' + frame, 'assets/npc/' + npc + '/' + frame + '.png');
-    });
-  });
+  // Hub NPCs (Aldric, Elara, Harren) are also lazy-loaded inside HubSceneV2.preload()
 
   const templateNames = [
     "Arena", "ArmoryVault", "BridgeOverGap", "Cathedral", "CelestialGardens", "Checkerboard",

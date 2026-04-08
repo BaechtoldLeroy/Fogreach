@@ -245,6 +245,9 @@ function enterRoom(scene, roomId) {
 
   enemies?.clear(true, true);
   enemyProjectiles?.clear(true, true);
+  // Pool sprites were just destroyed by the group clear above; reset the pool
+  // so we don't hand out dead references.
+  if (scene) scene._enemyProjectilePool = [];
   lootGroup?.clear(true, true);
   if (Array.isArray(scene?._activeLootSprites)) {
     scene._activeLootSprites.slice().forEach((loot) => loot?.destroy?.());
@@ -340,7 +343,13 @@ function enterRoom(scene, roomId) {
   scene._playerObstacleCollider = scene.physics.add.collider(player, obstacles);
   scene._enemyObstacleCollider = scene.physics.add.collider(enemies, obstacles);
   scene._projectileObstacleCollider = scene.physics.add.collider(enemyProjectiles, obstacles, (proj) => {
-    if (proj && proj.active) proj.destroy();
+    if (proj && proj.active) {
+      if (typeof window.releaseEnemyProjectile === 'function') {
+        window.releaseEnemyProjectile(proj);
+      } else {
+        proj.destroy();
+      }
+    }
   });
 
   recomputeAccessibleArea(scene);

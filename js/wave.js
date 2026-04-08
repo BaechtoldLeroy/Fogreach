@@ -186,7 +186,9 @@ function pauseAllMotion() {
   enemies.children.iterate(e => e.body?.setVelocity(0));
   if (enemyProjectiles?.children) {
     enemyProjectiles.children.iterate(p => { if (p?.destroy) p.destroy(); });
-    // optional (Pool aufräumen): enemyProjectiles.clear(false, true);
+    // Reset pool too — handed-out references are now dead.
+    const scene = window.currentScene || (window.game && window.game.scene && window.game.scene.scenes && window.game.scene.scenes.find(s => s && s.sys && s.sys.isActive()));
+    if (scene) scene._enemyProjectilePool = [];
   }
   if (playerProjectiles?.children) {
     playerProjectiles.children.iterate(p => { if (p?.destroy) p.destroy(); });

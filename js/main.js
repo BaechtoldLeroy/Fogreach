@@ -1801,9 +1801,15 @@ function initializeGameObjects() {
   this.physics.add.collider(enemies, obstacles);
   // Soft collision between enemies (Diablo 2 style — they push each other)
   this.physics.add.collider(enemies, enemies);
-  // Projektile prallen an Hindernissen ab/werden zerstört
+  // Projektile prallen an Hindernissen ab/werden zerstört (oder pool-released)
   this.physics.add.collider(enemyProjectiles, obstacles, (proj /* Sprite */, obs) => {
-    if (proj && proj.active) proj.destroy();
+    if (proj && proj.active) {
+      if (typeof window.releaseEnemyProjectile === 'function') {
+        window.releaseEnemyProjectile(proj);
+      } else {
+        proj.destroy();
+      }
+    }
   });
   this.physics.add.collider(playerProjectiles, obstacles, (proj) => {
     if (proj && proj.active) proj.destroy();

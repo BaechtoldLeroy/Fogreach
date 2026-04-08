@@ -553,6 +553,43 @@ function handleEnemies(time, delta = 16) {
   // before they can react.
   const inGrace = !!(this && this._enemyAttackGraceUntil && time < this._enemyAttackGraceUntil);
 
+  // Spatial hash for steering: O(n²) → O(n*k) where k is the average number
+  // of enemies in adjacent buckets. Cell size is sized to comfortably contain
+  // the largest cohesion radius (~280 px) so each enemy only needs to look
+  // at its home bucket and 8 neighbors.
+  const STEER_CELL = 256;
+  const steerHash = new Map();
+  const steerKey = (cx, cy) => `${cx}|${cy}`;
+  enemies.children.iterate((enemy) => {
+    if (!enemy || !enemy.active) return;
+    const cx = Math.floor(enemy.x / STEER_CELL);
+    const cy = Math.floor(enemy.y / STEER_CELL);
+    const k = steerKey(cx, cy);
+    let bucket = steerHash.get(k);
+    if (!bucket) {
+      bucket = [];
+      steerHash.set(k, bucket);
+    }
+    bucket.push(enemy);
+  });
+
+  // Returns neighbors in the 3x3 cell window around the given enemy.
+  // The list typically holds 1-6 enemies instead of the full enemies group.
+  const getSteerNeighbors = (enemy) => {
+    const cx = Math.floor(enemy.x / STEER_CELL);
+    const cy = Math.floor(enemy.y / STEER_CELL);
+    const out = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const bucket = steerHash.get(steerKey(cx + dx, cy + dy));
+        if (bucket) {
+          for (let i = 0; i < bucket.length; i++) out.push(bucket[i]);
+        }
+      }
+    }
+    return out;
+  };
+
   enemies.children.iterate((enemy) => {
     if (!enemy || !enemy.active) return;
 
@@ -717,7 +754,9 @@ function handleEnemies(time, delta = 16) {
       ),
     );
 
-    const neigh = enemies.getChildren();
+    // Use spatial hash bucket lookup instead of full enemies.getChildren().
+    // Cuts steering cost from O(n²) to O(n*k) where k is local density.
+    const neigh = getSteerNeighbors(enemy);
     desired.add(
       Steering.separation(
         enemy,
@@ -1003,27 +1042,85 @@ function getProjectileTextureFor(enemy) {
   return 'proj_default';
 }
 
+// ---------- Enemy projectile object pool ----------
+// shootProjectile / shootSpreadProjectiles previously created a fresh
+// physics sprite for every shot and destroyed it on impact. With Flame
+// Weavers (3-projectile spread @ 1.5s cooldown × multiple casters) this
+// allocates dozens of sprites per second. The pool reuses inactive
+// projectiles to keep the GC quiet.
+const ENEMY_PROJECTILE_POOL_MAX = 64;
+
+// Configure size + body for a projectile based on its texture key.
+function _configureProjectileShape(proj, texKey, ang) {
+  if (texKey === 'proj_arrow') {
+    proj.setDisplaySize(28, 8);
+    if (proj.body && proj.body.setSize) proj.body.setSize(20, 6);
+    if (typeof ang === 'number') proj.setRotation(ang);
+  } else if (texKey === 'proj_fireball' || texKey === 'proj_arcane') {
+    proj.setDisplaySize(20, 20);
+    if (proj.body && proj.body.setCircle) proj.body.setCircle(8);
+  } else {
+    proj.setDisplaySize(14, 14);
+    if (proj.body && proj.body.setCircle) proj.body.setCircle(6);
+  }
+}
+
+function acquireEnemyProjectile(scene, x, y, texKey) {
+  const pool = scene._enemyProjectilePool || (scene._enemyProjectilePool = []);
+  let proj = null;
+  while (pool.length > 0) {
+    const candidate = pool.pop();
+    if (candidate && candidate.scene) {
+      proj = candidate;
+      break;
+    }
+  }
+  if (proj) {
+    if (proj.body) proj.body.enable = true;
+    proj.setActive(true).setVisible(true);
+    proj.setPosition(x, y);
+    proj.setVelocity(0, 0);
+    proj.setRotation(0);
+    if (proj.texture && proj.texture.key !== texKey) {
+      proj.setTexture(texKey);
+    }
+  } else {
+    proj = scene.physics.add.sprite(x, y, texKey);
+    if (enemyProjectiles && enemyProjectiles.add) enemyProjectiles.add(proj);
+  }
+  // Re-apply mask if the scene needs it (vision FX)
+  if (scene._enemyVisionMask && proj.setMask) {
+    proj.setMask(scene._enemyVisionMask);
+  }
+  return proj;
+}
+
+function releaseEnemyProjectile(proj) {
+  if (!proj) return;
+  if (proj.body) {
+    proj.body.enable = false;
+    if (proj.body.setVelocity) proj.body.setVelocity(0, 0);
+  }
+  proj.setActive(false).setVisible(false);
+  const scene = proj.scene;
+  if (!scene) return;
+  const pool = scene._enemyProjectilePool || (scene._enemyProjectilePool = []);
+  if (pool.length < ENEMY_PROJECTILE_POOL_MAX) {
+    pool.push(proj);
+  } else {
+    proj.destroy();
+  }
+}
+// Expose for collider callbacks in main.js (player ↔ projectile, projectile ↔ wall)
+if (typeof window !== 'undefined') {
+  window.releaseEnemyProjectile = releaseEnemyProjectile;
+}
+
 function shootProjectile(enemy) {
   const texKey = getProjectileTextureFor(enemy);
-  const projectile = this.physics.add.sprite(enemy.x, enemy.y, texKey);
-  // Different display sizes per archetype
-  if (texKey === 'proj_arrow') {
-    projectile.setDisplaySize(28, 8);
-    projectile.body.setSize(20, 6);
-    // Rotate arrow so it points towards the player
-    const ang = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-    projectile.setRotation(ang);
-  } else if (texKey === 'proj_fireball') {
-    projectile.setDisplaySize(20, 20);
-    projectile.body.setCircle(8);
-  } else if (texKey === 'proj_arcane') {
-    projectile.setDisplaySize(20, 20);
-    projectile.body.setCircle(8);
-  } else {
-    projectile.setDisplaySize(14, 14);
-    projectile.body.setCircle(6);
-  }
-  enemyProjectiles.add(projectile);
+  const ang = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+  const projectile = acquireEnemyProjectile(this, enemy.x, enemy.y, texKey);
+  _configureProjectileShape(projectile, texKey, ang);
   this.physics.moveToObject(projectile, player, 200);
   const baseDamage = enemy.baseDamage || enemy.damage || 1;
   const projDifficulty = getDifficultyMultiplierValue();
@@ -1037,10 +1134,9 @@ function shootProjectile(enemy) {
   projectile.damage = scaledDamage;
   enemy.damage = scaledDamage;
 
-  // Maske einmalig setzen oder vormerken
-  if (this._enemyVisionMask && projectile.setMask) {
-    projectile.setMask(this._enemyVisionMask);
-  } else {
+  // Mask is re-applied by acquireEnemyProjectile when the scene has a vision mask;
+  // we still queue the projectile if the mask isn't ready yet (race during scene init).
+  if (!this._enemyVisionMask) {
     this._needsMaskProj = this._needsMaskProj || [];
     this._needsMaskProj.push(projectile);
   }
@@ -1060,25 +1156,14 @@ function shootSpreadProjectiles(enemy, count, totalSpread) {
   for (let i = 0; i < count; i++) {
     const t = count > 1 ? (i / (count - 1) - 0.5) : 0;
     const ang = base + t * totalSpread;
-    const proj = scene.physics.add.sprite(enemy.x, enemy.y, texKey);
-    if (texKey === 'proj_arrow') {
-      proj.setDisplaySize(28, 8);
-      proj.body.setSize(20, 6);
-      proj.setRotation(ang);
-    } else {
-      proj.setDisplaySize(20, 20);
-      proj.body.setCircle(8);
-    }
-    enemyProjectiles.add(proj);
+    const proj = acquireEnemyProjectile(scene, enemy.x, enemy.y, texKey);
+    _configureProjectileShape(proj, texKey, ang);
     proj.setVelocity(Math.cos(ang) * 200, Math.sin(ang) * 200);
     proj.setData('baseDamage', baseDamage);
     proj.setData('damage', scaledDamage);
     proj.baseDamage = baseDamage;
     proj.damage = scaledDamage;
-
-    if (scene._enemyVisionMask && proj.setMask) {
-      proj.setMask(scene._enemyVisionMask);
-    } else {
+    if (!scene._enemyVisionMask) {
       scene._needsMaskProj = scene._needsMaskProj || [];
       scene._needsMaskProj.push(proj);
     }
@@ -1233,7 +1318,7 @@ function hitByProjectile(player, projectile) {
 
   // Apply status effects from enemy projectiles
   const projEnemyType = projectile?.getData?.('enemyType');
-  projectile.destroy();
+  releaseEnemyProjectile(projectile);
   applyPlayerDamage(dmg, this);
   // Particle effects: player hit by projectile + screen shake
   if (window.particleFactory && player) {
