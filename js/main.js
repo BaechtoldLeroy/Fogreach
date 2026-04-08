@@ -8,15 +8,17 @@ const GameScene = {
   update
 };
 const config = {
-  // pixelArt mode forces NEAREST-NEIGHBOR sampling which looks awful when the
-  // sprites are painted/illustrated style (Branka, Tom, Mara, Aldric...).
-  // The game uses high-res hand-drawn assets, so smooth filtering is correct.
-  pixelArt: false,
+  // pixelArt: true keeps Phaser sampling textures with NEAREST filter
+  // (required for the procedurally-generated floor + obstacle textures to
+  // render at all — pixelArt: false produced TileSprites with broken
+  // texture frames). The smooth-look upscale to the viewport happens at
+  // the BROWSER level via image-rendering: auto on the canvas (index.html).
+  pixelArt: true,
   roundPixels: true,
   input: { activePointers: 2 },
   type: Phaser.AUTO,
   parent: 'game-container',
-  render: { pixelArt: false, antialias: true, roundPixels: true },
+  render: { pixelArt: true, antialias: false, roundPixels: true },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -1499,8 +1501,9 @@ function initUI() {
       };
     };
 
-    // Fixed attack tile
+    // Fixed attack tile — uses a sword emoji icon since there's no entry in ABILITY_DEFS
     const attackTile = buildTile('Attack', 'SPACE', ABILITY_STATUS_STYLES.attack);
+    if (attackTile.iconText) attackTile.iconText.setText('\u2694'); // ⚔
     abilityStatusDisplay.attack = attackTile;
 
     // Four slot tiles (Q/W/E/R) — names reassigned dynamically by loadout

@@ -279,6 +279,16 @@
     renderAll();
 
     const close = () => {
+      // Hit zones are scene-level (NOT inside the container, because they
+      // need world coords) so container.destroy(true) doesn't catch them.
+      // Their pointerover closures reference `tooltip` — if we don't destroy
+      // them explicitly, the next stray pointer event after close throws
+      // "Cannot read properties of null (reading 'cut')" when it tries to
+      // setText on the already-destroyed tooltip.
+      poolGfxList.forEach((g) => { if (g && g.destroy) g.destroy(); });
+      poolGfxList.length = 0;
+      slotGfxList.forEach((g) => { if (g && g.destroy) g.destroy(); });
+      slotGfxList.length = 0;
       if (scene._loadoutContainer) {
         scene._loadoutContainer.destroy(true);
         scene._loadoutContainer = null;

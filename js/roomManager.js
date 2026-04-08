@@ -477,10 +477,10 @@ function enterRoom(scene, roomId) {
     enteredAt: scene.time?.now ?? performance.now()
   };
 
-  // Grace period: enemies are frozen for 1500ms after room entry so the
+  // Grace period: enemies are frozen for 500ms after room entry so the
   // player isn't ambushed before they can orient themselves.
   const nowMs = scene.time?.now ?? performance.now();
-  scene._enemyAttackGraceUntil = nowMs + 1500;
+  scene._enemyAttackGraceUntil = nowMs + 500;
 
   // Show story room description overlay
   var roomDescText = ROOM_DESCRIPTIONS[templateName];

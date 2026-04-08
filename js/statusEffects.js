@@ -44,11 +44,25 @@ const STATUS_EFFECT_CONFIG = {
   }
 };
 
+// Per-source duration overrides — lets specific attackers apply shorter or
+// longer status effects than the global default. Source key is the third
+// argument passed to applyEffect().
+const STATUS_EFFECT_SOURCE_OVERRIDES = {
+  STUN: {
+    brute: 600    // brute melee stun is short — was 1500ms global default
+  }
+};
+
 class StatusEffect {
   constructor(type, source) {
     const cfg = STATUS_EFFECT_CONFIG[type];
     this.type = type;
     this.duration = cfg.duration;
+    // Apply source-specific duration override if any
+    const overrides = STATUS_EFFECT_SOURCE_OVERRIDES[type === StatusEffectType.STUN ? 'STUN' : ''];
+    if (overrides && source && Number.isFinite(overrides[source])) {
+      this.duration = overrides[source];
+    }
     this.tickInterval = cfg.tickInterval;
     this.damage = cfg.damage;
     this.stacks = 1;
