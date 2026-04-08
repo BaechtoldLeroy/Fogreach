@@ -32,7 +32,7 @@ const config = {
     fps: 60,
     arcade: { gravity: { y: 0 }, debug: false, overlapBias: 8, tileBias: 32 }
   },
-  scene: [StartScene, HubSceneV2, CraftingScene, TestTerrainScene, GameScene],
+  scene: [StartScene, HubSceneV2, CraftingScene, SettingsScene, TestTerrainScene, GameScene],
   plugins: {
     global: [{
       key: 'rexVirtualJoystick',
@@ -480,6 +480,26 @@ function updateAbilityStatus(key, info = {}) {
     display.bg.setFillStyle(readyFill ? 0x182136 : 0x10131c, readyFill ? 0.85 : 0.65);
     display.bg.setStrokeStyle(1, readyFill ? strokeColor : 0xffffff, readyFill ? 0.5 : 0.18);
   }
+
+  // Radial pie wedge — primary cooldown visual on the icon disk
+  if (display.radialOverlay && Number.isFinite(display.iconR)) {
+    const overlay = display.radialOverlay;
+    overlay.clear();
+    const effectiveDuration = (duration && duration > 0) ? duration : null;
+    if (effectiveDuration && remainingMs > 0 && !ready && !customText) {
+      const clamped = Phaser.Math.Clamp(remainingMs, 0, effectiveDuration);
+      const remainingFraction = clamped / effectiveDuration;
+      // Draw a clockwise wedge from -π/2 (top) covering the REMAINING fraction
+      const startAngle = -Math.PI / 2;
+      const endAngle = startAngle + remainingFraction * Math.PI * 2;
+      overlay.fillStyle(0x000000, 0.55);
+      overlay.beginPath();
+      overlay.moveTo(display.iconCx, display.iconCy);
+      overlay.arc(display.iconCx, display.iconCy, display.iconR, startAngle, endAngle, false);
+      overlay.closePath();
+      overlay.fillPath();
+    }
+  }
 }
 
 window.updateAbilityStatus = updateAbilityStatus;
@@ -797,6 +817,10 @@ function create() {
     if (typeof window.openLoadoutUI === 'function') {
       window.openLoadoutUI(this);
     }
+  });
+  // Settings overlay (O key)
+  this.input.keyboard.on('keydown-O', () => {
+    if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
   });
 
   // 4.3.1 Rathauskeller background (based on dialog selection)
@@ -1423,11 +1447,26 @@ function initUI() {
       const bg = this.add.rectangle(0, 0, tileWidth, tileHeight, 0x10131c, 0.65)
         .setOrigin(0, 0)
         .setStrokeStyle(1, 0xffffff, 0.2);
-      const fill = this.add.rectangle(0, 0, tileWidth, tileHeight, color, 0.28)
+      // Lower-opacity background fill (kept as a secondary indicator while
+      // the radial overlay is the primary cooldown visual).
+      const fill = this.add.rectangle(0, 0, tileWidth, tileHeight, color, 0.15)
         .setOrigin(0, 0)
         .setVisible(false);
-      const nameText = this.add.text(tilePadding, 6, initialLabel, {
-        fontSize: '14px',
+
+      // Radial cooldown icon area on the left of the tile
+      const ICON_R = 14;
+      const ICON_CX = ICON_R + 4;
+      const ICON_CY = tileHeight / 2;
+      const iconBg = this.add.circle(ICON_CX, ICON_CY, ICON_R, 0x1a2238, 0.9)
+        .setStrokeStyle(2, color, 0.8);
+      const iconText = this.add.text(ICON_CX, ICON_CY, '?', {
+        fontSize: '16px', fill: '#ffffff'
+      }).setOrigin(0.5);
+      // Pie wedge overlay (depleted from full to empty as cooldown progresses)
+      const radialOverlay = this.add.graphics();
+
+      const nameText = this.add.text(tilePadding + ICON_R * 2 + 8, 6, initialLabel, {
+        fontSize: '13px',
         fill: '#f5f7ff',
         fontStyle: 'bold'
       });
@@ -1444,15 +1483,17 @@ function initUI() {
         .setOrigin(0, 0)
         .setStrokeStyle(1, color, 0.6);
       keyText.setPosition(badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
-      const statusText = this.add.text(tilePadding, tileHeight - 6, 'Ready', {
-        fontSize: '12px',
+      const statusText = this.add.text(tilePadding + ICON_R * 2 + 8, tileHeight - 6, 'Ready', {
+        fontSize: '11px',
         fill: '#78f3c7'
       }).setOrigin(0, 1);
-      container.add([bg, fill, nameText, keyBadge, keyText, statusText]);
-      nameText.setWordWrapWidth(badgeX - tilePadding * 1.2);
+      container.add([bg, fill, iconBg, radialOverlay, iconText, nameText, keyBadge, keyText, statusText]);
+      nameText.setWordWrapWidth(badgeX - tilePadding - ICON_R * 2 - 12);
       nameText.setMaxLines(2);
       return {
         container, fill, bg, statusText, nameText, keyText, keyBadge,
+        iconText, iconBg, radialOverlay,
+        iconCx: ICON_CX, iconCy: ICON_CY, iconR: ICON_R,
         width: tileWidth, durationMs: 0, color,
         labelWidth: badgeX - tilePadding
       };
@@ -1487,15 +1528,16 @@ function initUI() {
           const displayName = def?.name || abilityId;
           const statusKey = ABILITY_ID_TO_STATUS_KEY[abilityId];
           tile.nameText.setText(displayName);
-          // Re-color the keyBadge to ability color
           const color = statusKey ? (ABILITY_STATUS_STYLES[statusKey] ?? 0xffffff) : 0xffffff;
           tile.color = color;
           tile.keyBadge.setFillStyle(color, 0.18);
           tile.keyBadge.setStrokeStyle(1, color, 0.6);
           tile.fill.setFillStyle(color);
+          // Set icon emoji + recolor radial border
+          if (tile.iconBg) tile.iconBg.setStrokeStyle(2, color, 0.85);
+          if (tile.iconText && def && def.icon) tile.iconText.setText(def.icon);
           if (statusKey) {
             abilityStatusDisplay[statusKey] = tile;
-            // Reset to Ready state
             updateAbilityStatus(statusKey, { remainingMs: 0, durationMs: 0 });
           }
         } else {
@@ -1503,6 +1545,9 @@ function initUI() {
           tile.color = 0x555555;
           tile.keyBadge.setFillStyle(0x555555, 0.12);
           tile.keyBadge.setStrokeStyle(1, 0x555555, 0.4);
+          if (tile.iconText) tile.iconText.setText('');
+          if (tile.iconBg) tile.iconBg.setStrokeStyle(2, 0x555555, 0.5);
+          if (tile.radialOverlay) tile.radialOverlay.clear();
         }
       });
     };

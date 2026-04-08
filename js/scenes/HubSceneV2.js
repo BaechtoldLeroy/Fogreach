@@ -151,6 +151,9 @@ class HubSceneV2 extends Phaser.Scene {
     });
     this.input.keyboard.on('keydown-J', this._handleJournal, this);
     this.input.keyboard.on('keydown-K', this._handleLoadout, this);
+    this.input.keyboard.on('keydown-O', () => {
+      if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
+    });
 
     // Subscribe to quest state changes so the indicator above each NPC updates
     // exactly when accept/complete/abandon happens (instead of polling every frame).

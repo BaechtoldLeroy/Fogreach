@@ -198,9 +198,20 @@ StartScene.prototype.create = function () {
     normalizePlayerDirectionalFrames(this);
   }
 
-  // Auto-start support: ?autostart=1 in URL skips menu (for testing).
+  // Apply persisted settings on game boot (volume, debug flags, etc.)
+  if (typeof window.applyGameSettings === 'function' && typeof window.loadGameSettings === 'function') {
+    try { window.applyGameSettings(window.loadGameSettings()); } catch (e) { /* ignore */ }
+  }
+
+  // Auto-start support: ?autostart=1 in URL OR debug.autostart in settings.
   // Treated as a fresh new game — wipe persistent state so test runs are deterministic.
-  if (typeof window !== 'undefined' && window.location && window.location.search.includes('autostart=1')) {
+  const settingsAutostart = (() => {
+    try {
+      const s = window.loadGameSettings && window.loadGameSettings();
+      return !!(s && s.debug && s.debug.autostart);
+    } catch (e) { return false; }
+  })();
+  if (typeof window !== 'undefined' && window.location && (window.location.search.includes('autostart=1') || settingsAutostart)) {
     if (window.clearSave) clearSave();
     if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
       window.AbilitySystem.resetForNewGame();
@@ -314,6 +325,23 @@ StartScene.prototype.create = function () {
     })
     .on("pointerover", () => btn.setStyle({ fill: hasExistingSave ? '#b0ffb0' : '#ffff00' }))
     .on("pointerout", () => btn.setStyle({ fill: hasExistingSave ? '#88ff88' : '#00ff00' }));
+
+  // EINSTELLUNGEN button below the start button
+  const settingsBtn = this.add
+    .text(400, startY + 56, "EINSTELLUNGEN", {
+      fontSize: "20px",
+      fill: "#cccccc",
+      backgroundColor: "#1a1a1a",
+      padding: { x: 10, y: 5 }
+    })
+    .setOrigin(0.5)
+    .setInteractive({ useHandCursor: true })
+    .setDepth(1001);
+  settingsBtn.on("pointerdown", () => {
+    if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
+  });
+  settingsBtn.on("pointerover", () => settingsBtn.setStyle({ fill: '#ffffff' }));
+  settingsBtn.on("pointerout", () => settingsBtn.setStyle({ fill: '#cccccc' }));
 
   // Optional: Highscores
   if (window.loadScores) {
