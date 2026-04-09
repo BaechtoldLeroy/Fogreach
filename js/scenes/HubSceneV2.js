@@ -970,14 +970,19 @@ class HubSceneV2 extends Phaser.Scene {
       this._dialogContainer = null;
     }
 
-    // Defensive sweep: any leftover dialog game object that for some reason
-    // wasn't part of the destroyed container (e.g., a button created before
-    // the container.add call due to a refactor) gets nuked here so the user
-    // never sees a "shadow" of the previous dialog.
+    // Defensive sweep: nuke ANY game object in the dialog depth range
+    // (1500..1699) that's still on the scene's display list. The dialog
+    // container is at depth 1500. Without this, a "shadow" of the previous
+    // dialog (text background, button, panel graphics) can linger if a
+    // child somehow wasn't part of the destroyed container, or if a
+    // pointer event handler added something outside the container.
     if (this.children && Array.isArray(this.children.list)) {
       const orphans = this.children.list.filter((c) => {
-        if (!c || typeof c.name !== 'string') return false;
-        return c.name === 'npcDialogContainer' || c.name === 'npcDialogChild';
+        if (!c) return false;
+        if (typeof c.name === 'string' &&
+            (c.name === 'npcDialogContainer' || c.name === 'npcDialogChild')) return true;
+        const d = (typeof c.depth === 'number') ? c.depth : -1;
+        return d >= 1500 && d < 1700;
       });
       orphans.forEach((c) => { try { c.destroy(); } catch (e) {} });
     }

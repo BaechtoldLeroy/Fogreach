@@ -961,9 +961,11 @@ function equipSelectedItem() {
     const oldItem = equipment[slotKey] || null;
     const oldItemHp = oldItem && oldItem.hp ? oldItem.hp : 0;
 
-    // neues Item einlegen + Inventarslot leeren
+    // Swap: new item into the equipment slot, old item back into the
+    // inventory slot the new item came from. Without this swap, the old
+    // item would be lost on equip.
     equipment[slotKey] = it;
-    inventory[invSelected] = null;
+    inventory[invSelected] = oldItem || null;
     invSelected = -1;
 
     // recalc: altes HP rausrechnen, neues rein (nur Delta!)
