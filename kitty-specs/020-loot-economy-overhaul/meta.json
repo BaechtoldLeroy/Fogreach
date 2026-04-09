@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-09T12:37:14.200236+00:00",
+  "feature_number": "020",
+  "feature_slug": "020-loot-economy-overhaul",
+  "friendly_name": "loot economy overhaul",
+  "mission": "software-dev",
+  "slug": "020-loot-economy-overhaul",
+  "target_branch": "main"
+}
