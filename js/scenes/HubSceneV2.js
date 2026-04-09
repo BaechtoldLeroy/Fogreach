@@ -788,7 +788,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Mara skill tree button (keep existing behavior)
     if (npcData.id === 'mara' && questMode === 'flavor' && !hasChoices) {
-      const skillsBtn = this.add.text(0, hintY - 40, '[ Skills lernen ] (K)', {
+      const skillsBtn = this.add.text(0, hintY - 80, '[ Skills lernen ] (K)', {
         fontFamily: 'monospace',
         fontSize: 16,
         color: '#ffffff',
@@ -806,6 +806,26 @@ class HubSceneV2 extends Phaser.Scene {
         });
       });
       container.add(skillsBtn);
+
+      // WP06: Schwarzmarkt (shop) button — opens the Mara ShopScene overlay.
+      const shopBtn = this.add.text(0, hintY - 40, '[ Schwarzmarkt oeffnen ] (M)', {
+        fontFamily: 'monospace',
+        fontSize: 16,
+        color: '#ffffff',
+        backgroundColor: '#6a4a1a',
+        padding: { x: 14, y: 8 }
+      }).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+
+      shopBtn.on('pointerdown', (pointer, x, y, event) => {
+        event.stopPropagation();
+        this._closeDialog(keyClosers);
+        this.time.delayedCall(100, () => {
+          if (typeof window.openShopScene === 'function') {
+            window.openShopScene(this);
+          }
+        });
+      });
+      container.add(shopBtn);
     }
 
     // Hint text
@@ -869,6 +889,18 @@ class HubSceneV2 extends Phaser.Scene {
         };
         this.input.keyboard.on('keydown-K', skillHandler);
         keyClosers.push({ eventName: 'keydown-K', handler: skillHandler });
+
+        // WP06: M opens the Schwarzmarkt overlay.
+        const shopHandler = () => {
+          this._closeDialog(keyClosers);
+          this.time.delayedCall(100, () => {
+            if (typeof window.openShopScene === 'function') {
+              window.openShopScene(this);
+            }
+          });
+        };
+        this.input.keyboard.on('keydown-M', shopHandler);
+        keyClosers.push({ eventName: 'keydown-M', handler: shopHandler });
       }
     });
 
