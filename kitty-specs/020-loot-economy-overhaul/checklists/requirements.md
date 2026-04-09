@@ -41,3 +41,12 @@
 - Mara as vendor is decided (Option C from discovery) — no new NPC or hub building required.
 - Health potion mechanics are fully specified (HoT 60% over 3s, F-key, 2s global CD, 4 tiers).
 - Enchanted enemies are fully specified including the affix pool examples and the Champion vs Unique distinction.
+- Ability-modifier affixes (per-ability damage / per-ability cooldown / global modifiers) are documented in FR-029..FR-033 with explicit statKey naming, the AggregatedBonuses cache contract, and the HUD visualization requirement. These add a build-defining layer to the loot loop.
+
+## Final stats
+
+- **33 Functional Requirements** (FR-001 through FR-033)
+- **6 Non-Functional Requirements** with measurable thresholds
+- **5 Constraints**
+- **7 acceptance scenarios** including the build-defining drop scenario
+- **0 NEEDS CLARIFICATION markers**

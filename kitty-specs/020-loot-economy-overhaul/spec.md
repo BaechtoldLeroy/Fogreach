@@ -71,12 +71,16 @@ A player enters wave 7. In one of the rooms, a Brute spawns with a faint orange 
 
 A player has a weapon with one bad affix. They visit Mara → Reroll tab → drop the weapon in → see the cost “120 Gold”. They confirm; the weapon's affixes are re-randomized using its existing `iLevel`. The new roll might be better, worse, or sideways — pure gambling.
 
+### Scenario 7 — Build-defining drop
+
+A player kills a Unique Mage in wave 9. The Mage drops a Rare helm "Charged Hood of Swiftness" with affixes `+18 HP`, `+22% Charged Slash Damage`, `-12% Charged Slash Cooldown`. The player equips it; their HUD radial cooldown for the Charged Slash slot tile starts spinning visibly faster, and the slot tile shows a small `+22%` badge under the ability name. Charged Slash is now their go-to ability for this run — the loot drop *changed how they play*.
+
 ## Functional Requirements
 
 | ID | Requirement | Status |
 |---|---|---|
 | FR-001 | The system MUST define exactly 4 item tiers: Common (0 affixes), Magic (1 affix), Rare (2 affixes), Legendary (3 affixes). | proposed |
-| FR-002 | The system MUST maintain a single affix pool of 15-25 entries, each with: id, displayName, statKey, range (`min`, `max`), tier (1-4), iLevelRequirement. | proposed |
+| FR-002 | The system MUST maintain a single affix pool of 20-30 entries spanning multiple categories: base stats (damage, armor, hp, speed, crit, range), defensive stats (resistances, lifesteal), ability modifiers (per-ability damage bonus, per-ability cooldown reduction), and global modifiers (all-ability damage, all-ability cooldown). Each entry has: id, displayName, statKey, range (`min`, `max`), tier (1-4), iLevelRequirement, weight. | proposed |
 | FR-003 | The system MUST roll affixes for new items using `iLevel` to filter the pool (only affixes whose `iLevelRequirement <= iLevel` are eligible). | proposed |
 | FR-004 | Items MUST track an `iLevel` value, set at creation time from the source's `mLevel` (monster level) or chest level. | proposed |
 | FR-005 | Items MUST track a `requiredLevel` value for equipping; the player MUST be unable to equip items whose `requiredLevel > playerLevel`. | proposed |
@@ -103,6 +107,11 @@ A player has a weapon with one bad affix. They visit Mara → Reroll tab → dro
 | FR-026 | Save migration MUST: (a) strip the old `rarity`, `rarityValue`, `rarityLabel`, `enhanceLevel` fields from existing items, (b) downgrade them all to Common (0 affixes), (c) preserve their base stats and `_baseName`. | proposed |
 | FR-027 | The CraftingScene MUST keep its current Verbessern + Zerlegen functionality but MUST adapt to the new affix-aware item structure (no parallel rarity logic). | proposed |
 | FR-028 | The new game flow MUST seed players with 50 Gold and 2 Minor Health Potions in the starting inventory (in addition to the existing Eisenbrocken default). | proposed |
+| FR-029 | The affix pool MUST include per-ability damage modifiers: for each ability id (`spinAttack`, `chargeSlash`, `dashSlash`, `daggerThrow`, `shieldBash`), one affix that grants `+X% damage` to that ability specifically. Example display name: "Spinning of Fury" → `+25% Spin Attack Damage`. | proposed |
+| FR-030 | The affix pool MUST include per-ability cooldown reduction modifiers: for each ability id, one affix that grants `-X% cooldown` to that ability. Example: "of Swiftness (Charge)" → `-15% Charged Slash Cooldown`. | proposed |
+| FR-031 | The affix pool MUST include global ability modifiers (rarer, higher tier): `+X% All Ability Damage`, `-X% All Ability Cooldowns`. These have `weight` lower than per-ability variants and `iLevelRequirement` set to mid-game (~iLevel 8+). | proposed |
+| FR-032 | The combat code MUST consult the equipped item's affix list when computing ability damage and cooldowns. The lookup MUST be O(1) per ability fire (precompute aggregated bonuses on equip change, not per ability use). | proposed |
+| FR-033 | The HUD ability tile MUST visually reflect a cooldown reduction by showing a faster radial sweep, and MUST visually reflect a damage bonus through a small `+X%` badge near the ability name (only when the bonus is non-zero). | proposed |
 
 ## Non-Functional Requirements
 
@@ -136,6 +145,8 @@ A player has a weapon with one bad affix. They visit Mara → Reroll tab → dro
 | Elite enemy encounters per dungeon run (5 rooms) reaches 3-8 by wave 10 | 3-8 |
 | Player tooltips show affix lines for any Magic+ item | 100% |
 | Reroll cost is balanced so players use it 1-3 times per dungeon run on average | 1-3 |
+| At least 25% of rolled affixes on Magic+ items are ability modifiers (per-ability dmg or cd) | ≥ 25% |
+| Equipped ability-modifier affixes update the HUD ability tile visuals (cooldown speed + bonus badge) within 1 frame | ≤ 16ms |
 
 ## Key Entities
 
@@ -157,10 +168,22 @@ A template entry in the global affix pool.
 - `id`: string
 - `displayName`: string with `{value}` placeholder
 - `position`: `prefix | suffix`
-- `statKey`: string — the stat field to modify (`damage`, `armor`, `hp`, `speed`, `crit`, etc.)
+- `statKey`: string — the stat field to modify. Categories:
+  - **base stats:** `damage`, `armor`, `hp`, `speed`, `crit`, `range`
+  - **defensive:** `resist_fire`, `resist_cold`, `resist_lightning`, `lifesteal`
+  - **per-ability damage:** `dmg_spinAttack`, `dmg_chargeSlash`, `dmg_dashSlash`, `dmg_daggerThrow`, `dmg_shieldBash`
+  - **per-ability cooldown:** `cd_spinAttack`, `cd_chargeSlash`, `cd_dashSlash`, `cd_daggerThrow`, `cd_shieldBash`
+  - **global ability modifiers (rare):** `dmg_all_abilities`, `cd_all_abilities`
+- `valueType`: `flat | percent` — how the rolled value is applied
 - `range`: `{min, max}` — value range to roll
 - `iLevelMin`: number — minimum iLevel where this affix can roll
 - `weight`: number — relative spawn weight in the pool
+
+### `AggregatedBonuses`
+Pre-computed cache of all affix bonuses currently active on the equipped item set, recomputed on equip change so combat code can read in O(1).
+- `flat`: object — sum of flat bonuses by statKey (`{ damage: 5, hp: 30 }`)
+- `percent`: object — sum of percent bonuses by statKey (`{ dmg_spinAttack: 0.25, cd_chargeSlash: -0.15 }`)
+- `version`: number — bumped on every recompute, used by combat code to detect cache invalidation
 
 ### `AffixInstance`
 A rolled affix attached to an Item.
