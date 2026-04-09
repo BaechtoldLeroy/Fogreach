@@ -770,8 +770,21 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   playerArmor = Phaser.Math.Clamp((baseStats.armor || 0) + sum.armor, 0, 0.85);
   playerCritChance = Phaser.Math.Clamp((baseStats.crit || 0) + sum.crit, 0, 0.9);
 
-  // 3) Max-Health neu bestimmen (Basis + Gear)
-  const newMaxHealth = Math.max(1, Math.round((baseStats.maxHP || 0) + sum.maxHP));
+  // 3) Max-Health neu bestimmen (Basis + Gear + Skills).
+  // We must include skill HP here so setPlayerMaxHealth's delta-based
+  // current-HP adjustment doesn't shrink playerHealth on every equip.
+  // Previously the gear-only value was passed first, causing a negative
+  // delta (since the running max already included skills) → playerHealth
+  // dropped by the skill HP amount on every equip even though max didn't
+  // change. We compute skill HP up front and roll it into newMaxHealth.
+  let _skillMaxHpBonus = 0;
+  if (typeof window.calculateSkillEffects === 'function') {
+    try {
+      const _se = window.calculateSkillEffects() || {};
+      _skillMaxHpBonus = _se.playerMaxHealth || 0;
+    } catch (e) { /* swallow */ }
+  }
+  const newMaxHealth = Math.max(1, Math.round((baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus));
   if (typeof setPlayerMaxHealth === 'function') {
     setPlayerMaxHealth(newMaxHealth, { updateUi: false });
   } else {
@@ -793,25 +806,22 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     });
   }
 
-  // 3.5) Skill-Effekte ON TOP of equipment (nicht applySkillEffects() rufen - Rekursion!)
+  // 3.5) Skill-Effekte ON TOP of equipment (nicht applySkillEffects() rufen - Rekursion!).
+  // NOTE: skillEffects.playerMaxHealth was already baked into newMaxHealth
+  // above (step 3), so we DO NOT add it again here. Adding it twice would
+  // double-count skill HP and break the delta-based current-HP adjustment.
   if (typeof window.calculateSkillEffects === 'function') {
     const skillEffects = window.calculateSkillEffects();
-    
+
     // Add skill bonuses to already-calculated equipment stats
     weaponDamage += skillEffects.weaponDamage || 0;
     weaponAttackSpeed += skillEffects.weaponAttackSpeed || 0;
     attackRange += skillEffects.attackRange || 0;
-    playerMaxHealth += skillEffects.playerMaxHealth || 0;
     playerArmor = Math.min(0.85, playerArmor + (skillEffects.playerArmor || 0));
     playerSpeed += skillEffects.playerSpeed || 0;
     playerCritChance = Math.min(0.9, playerCritChance + (skillEffects.playerCritChance || 0));
     window.PLAYER_DODGE_CHANCE = skillEffects.dodgeChance > 0 ? Math.min(0.5, skillEffects.dodgeChance) : 0;
     window.PLAYER_HEALTH_REGEN = skillEffects.healthRegen > 0 ? skillEffects.healthRegen : 0;
-    
-    // Update actual player health if max increased
-    if (skillEffects.playerMaxHealth > 0) {
-      playerHealth = Math.min(playerHealth, playerMaxHealth);
-    }
   }
 
   // 4) HUD aktualisieren
