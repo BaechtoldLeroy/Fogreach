@@ -262,6 +262,14 @@ function enterRoom(scene, roomId) {
     } else {
       scene._templateWalls = [];
     }
+    // Remove baked floor textures from the texture cache so we don't leak
+    // canvases on every room transition.
+    if (Array.isArray(scene._bakedFloorKeys)) {
+      scene._bakedFloorKeys.forEach((key) => {
+        try { scene.textures.removeKey(key); } catch (err) { /* ignore */ }
+      });
+      scene._bakedFloorKeys.length = 0;
+    }
   }
   if (obstacles && typeof obstacles.clear === 'function') {
     obstacles.clear(true, true);

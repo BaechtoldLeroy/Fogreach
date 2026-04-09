@@ -45,6 +45,7 @@ function getRoomTheme(templateName) {
 }
 
 const _MISSING_TEXTURE_WARNINGS = new Set();
+let FLOOR_BAKE_COUNTER = 0;
 const AUTO_OBSTACLE_TILE_KEYS = new Set([
   'pillar_small',
   'pillar_large',
@@ -425,24 +426,45 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     depthTint = 0xffe8d0;   // warm tone
   }
 
-  if (!skipFloorTiles && floorKey && scene.add?.renderTexture) {
-    // Workaround: Phaser TileSprite created from a canvas-generated texture
-    // (graphics.generateTexture('floor_stone', ...)) ends up with texture.key
-    // = null and renders as a transparent rectangle. Use a RenderTexture and
-    // draw the source texture in a tiled pattern instead — this works
-    // reliably with canvas-source textures.
+  if (!skipFloorTiles && floorKey && scene.textures && scene.textures.get(floorKey)) {
+    // Workaround: Phaser 3 TileSprite created from a canvas-generated texture
+    // (graphics.generateTexture('floor_stone', 32, 32)) silently produces a
+    // sprite with texture.key === null that renders as transparent.
+    //
+    // Solution: pre-bake the floor by drawing the source canvas tile into a
+    // LARGER canvas via the native canvas 2D API (hundreds of times faster
+    // than 6400 rt.draw() calls), then register that as a Phaser texture and
+    // display it as a single Image. ~50ms instead of ~60 seconds per room.
     const floorWPx = W * T;
     const floorHPx = H * T;
-    const rt = scene.add.renderTexture(ox, oy, floorWPx, floorHPx).setOrigin(0, 0);
-    rt.setDepth(-5);
-    // Tile the source texture across the render texture
-    for (let ty = 0; ty < H; ty++) {
-      for (let tx = 0; tx < W; tx++) {
-        rt.draw(floorKey, tx * T, ty * T);
+    const sourceTex = scene.textures.get(floorKey);
+    const sourceImg = sourceTex && sourceTex.source && sourceTex.source[0]
+      ? sourceTex.source[0].image
+      : null;
+    if (sourceImg) {
+      const bakedCanvas = document.createElement('canvas');
+      bakedCanvas.width = floorWPx;
+      bakedCanvas.height = floorHPx;
+      const ctx = bakedCanvas.getContext('2d');
+      // Disable smoothing so the procedural pixel art tiles cleanly
+      ctx.imageSmoothingEnabled = false;
+      for (let ty = 0; ty < H; ty++) {
+        for (let tx = 0; tx < W; tx++) {
+          ctx.drawImage(sourceImg, tx * T, ty * T);
+        }
       }
+      // Register the baked canvas as a unique Phaser texture for this room
+      const bakedKey = '__floor_baked_' + (++FLOOR_BAKE_COUNTER);
+      try { scene.textures.removeKey(bakedKey); } catch (e) { /* fresh key */ }
+      scene.textures.addCanvas(bakedKey, bakedCanvas);
+      const floorImg = scene.add.image(ox, oy, bakedKey).setOrigin(0, 0);
+      floorImg.setDepth(-5);
+      if (depthTint) floorImg.setTint(depthTint);
+      templateWalls.push(floorImg);
+      // Track baked texture key so we can remove it on cleanup
+      scene._bakedFloorKeys = scene._bakedFloorKeys || [];
+      scene._bakedFloorKeys.push(bakedKey);
     }
-    if (depthTint) rt.setTint(depthTint);
-    templateWalls.push(rt);
 
     // Scatter 8-12 random "detail tiles" to break up tiling repetition
     if (scene.add?.graphics) {
@@ -456,15 +478,12 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
           const detGfx = scene.add.graphics();
           const kind = Math.random();
           if (kind < 0.35) {
-            // Dark spot
             detGfx.fillStyle(0x000000, 0.1 + Math.random() * 0.15);
             detGfx.fillCircle(spx, spy, 3 + Math.random() * 4);
           } else if (kind < 0.65) {
-            // Light spot
             detGfx.fillStyle(0xffffff, 0.05 + Math.random() * 0.1);
             detGfx.fillCircle(spx, spy, 2 + Math.random() * 5);
           } else {
-            // Crack line
             detGfx.lineStyle(1, 0x000000, 0.1 + Math.random() * 0.15);
             detGfx.beginPath();
             detGfx.moveTo(spx - 4, spy);
