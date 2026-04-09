@@ -6,7 +6,13 @@
 
 (function () {
   const KEYS = Object.freeze({
-    /** Main save game (player stats, inventory, equipment, room progress). */
+    /**
+     * Main save game (player stats, inventory, equipment, room progress).
+     * WP03: also carries `materials.GOLD` (player gold counter). Gold lives
+     * inside the existing `materials` map that storage.js already round-trips,
+     * so no new localStorage key is needed. Old saves without `materials.GOLD`
+     * default to 0 via `LootSystem.getGold` on first read.
+     */
     SAVE: 'demonfall_save_v1',
     /** Learned abilities + active loadout + cooldowns. */
     ABILITIES: 'demonfall_abilities_v1',

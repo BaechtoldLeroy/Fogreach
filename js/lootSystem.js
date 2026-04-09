@@ -377,14 +377,55 @@
     }
     return name;
   }
-  function grantGold(/* amount */) {
-    throw new Error('grantGold: not implemented in WP01 (WP03)');
+  // ---------------------------------------------------------------------------
+  // WP03: Gold Currency
+  //
+  // Gold lives on `window.materialCounts.GOLD` so it rides the existing
+  // save/load pipeline in js/storage.js (which serialises every key of
+  // `window.materialCounts`). HUD refresh hooks into `window._refreshHUD`
+  // (optional — tests and headless runs simply skip it).
+  // ---------------------------------------------------------------------------
+  function _ensureGoldStore() {
+    if (typeof window === 'undefined') return null;
+    if (!window.materialCounts || typeof window.materialCounts !== 'object') {
+      window.materialCounts = {};
+    }
+    if (typeof window.materialCounts.GOLD !== 'number' || !Number.isFinite(window.materialCounts.GOLD)) {
+      window.materialCounts.GOLD = 0;
+    }
+    return window.materialCounts;
   }
+
+  function _refreshGoldHUD() {
+    if (typeof window === 'undefined') return;
+    if (typeof window._refreshHUD === 'function') {
+      try { window._refreshHUD(); } catch (e) { /* swallow HUD errors */ }
+    }
+  }
+
+  function grantGold(amount) {
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    const store = _ensureGoldStore();
+    if (!store) return;
+    store.GOLD = Math.max(0, Math.floor(store.GOLD + amount));
+    _refreshGoldHUD();
+  }
+
   function getGold() {
-    throw new Error('getGold: not implemented in WP01 (WP03)');
+    const store = _ensureGoldStore();
+    if (!store) return 0;
+    return store.GOLD || 0;
   }
-  function spendGold(/* amount */) {
-    throw new Error('spendGold: not implemented in WP01 (WP03)');
+
+  function spendGold(amount) {
+    if (!Number.isFinite(amount) || amount < 0) return false;
+    const store = _ensureGoldStore();
+    if (!store) return false;
+    const current = store.GOLD || 0;
+    if (current < amount) return false;
+    store.GOLD = Math.max(0, Math.floor(current - amount));
+    _refreshGoldHUD();
+    return true;
   }
   function consumePotion(/* slot */) {
     throw new Error('consumePotion: not implemented in WP01 (WP04)');

@@ -239,8 +239,8 @@ test('getBonus returns positive value for cd_* affixes (combat applies sign)', (
 test('stubbed API methods throw "not implemented" errors', () => {
   const sys = freshSystem();
   // WP02 implements rollItem, composeName, migrateSave — they no longer throw.
+  // WP03 implements grantGold, getGold, spendGold — they no longer throw.
   const stubbed = [
-    'grantGold', 'getGold', 'spendGold',
     'consumePotion', 'onPotionKey', 'isPotionOnCooldown',
     'getOrCreateShopState', 'rerollItem'
   ];
@@ -464,4 +464,87 @@ test('migrateSave: handles null/undefined gracefully', () => {
   const sys = freshSystem();
   assert.strictEqual(sys.migrateSave(null), null);
   assert.strictEqual(sys.migrateSave(undefined), undefined);
+});
+
+// ---------------------------------------------------------------------------
+// WP03 — Gold Currency
+// ---------------------------------------------------------------------------
+
+function freshGoldSystem() {
+  resetStore();
+  delete globalThis.window.LootSystem;
+  delete globalThis.window.materialCounts;
+  delete globalThis.window._refreshHUD;
+  globalThis.window.equipment = {};
+  loadGameModule('js/lootSystem.js');
+  return globalThis.window.LootSystem;
+}
+
+test('getGold: returns 0 on a fresh system with no gold stored', () => {
+  const sys = freshGoldSystem();
+  assert.strictEqual(sys.getGold(), 0);
+});
+
+test('grantGold: adds positive amounts and getGold reflects the total', () => {
+  const sys = freshGoldSystem();
+  sys.grantGold(50);
+  assert.strictEqual(sys.getGold(), 50);
+  sys.grantGold(25);
+  assert.strictEqual(sys.getGold(), 75);
+});
+
+test('grantGold: ignores zero, negative, NaN, and non-finite amounts', () => {
+  const sys = freshGoldSystem();
+  sys.grantGold(10);
+  sys.grantGold(0);
+  sys.grantGold(-5);
+  sys.grantGold(NaN);
+  sys.grantGold(Infinity);
+  sys.grantGold('100'); // non-number
+  assert.strictEqual(sys.getGold(), 10);
+});
+
+test('spendGold: deducts when balance is sufficient and returns true', () => {
+  const sys = freshGoldSystem();
+  sys.grantGold(100);
+  const ok = sys.spendGold(40);
+  assert.strictEqual(ok, true);
+  assert.strictEqual(sys.getGold(), 60);
+});
+
+test('spendGold: returns false and does not deduct on insufficient funds', () => {
+  const sys = freshGoldSystem();
+  sys.grantGold(10);
+  const ok = sys.spendGold(999);
+  assert.strictEqual(ok, false);
+  assert.strictEqual(sys.getGold(), 10);
+});
+
+test('spendGold: rejects negative, NaN, and non-finite amounts without mutating balance', () => {
+  const sys = freshGoldSystem();
+  sys.grantGold(50);
+  assert.strictEqual(sys.spendGold(-1), false);
+  assert.strictEqual(sys.spendGold(NaN), false);
+  assert.strictEqual(sys.spendGold(Infinity), false);
+  assert.strictEqual(sys.getGold(), 50);
+});
+
+test('spendGold: allows spending exact balance to zero', () => {
+  const sys = freshGoldSystem();
+  sys.grantGold(25);
+  assert.strictEqual(sys.spendGold(25), true);
+  assert.strictEqual(sys.getGold(), 0);
+  // Can't spend anything after that
+  assert.strictEqual(sys.spendGold(1), false);
+});
+
+test('grantGold / spendGold: trigger window._refreshHUD when defined', () => {
+  const sys = freshGoldSystem();
+  let calls = 0;
+  globalThis.window._refreshHUD = function () { calls++; };
+  sys.grantGold(10);
+  sys.spendGold(5);
+  sys.spendGold(999); // should NOT refresh on failed spend
+  assert.strictEqual(calls, 2);
+  delete globalThis.window._refreshHUD;
 });
