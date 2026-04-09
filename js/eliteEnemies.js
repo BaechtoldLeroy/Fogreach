@@ -264,7 +264,12 @@
               delay: 16,
               loop: true,
               callback: function () {
-                if (!enemy || !enemy.active || !aura || !aura.active) {
+                // Bail if enemy/aura/scene are gone (e.g., scene shutdown
+                // mid-transition to hub). Without this guard the callback
+                // can hit "Cannot read properties of undefined (reading 'sys')"
+                // when Phaser tears down the scene.
+                if (!enemy || !enemy.active || !aura || !aura.active ||
+                    !aura.scene || !aura.scene.sys) {
                   if (auraTimer && typeof auraTimer.remove === 'function') auraTimer.remove();
                   return;
                 }
@@ -299,7 +304,8 @@
               delay: 16,
               loop: true,
               callback: function () {
-                if (!enemy || !enemy.active || !tag || !tag.active) {
+                if (!enemy || !enemy.active || !tag || !tag.active ||
+                    !tag.scene || !tag.scene.sys) {
                   if (tagTimer && typeof tagTimer.remove === 'function') tagTimer.remove();
                   return;
                 }
