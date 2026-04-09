@@ -145,14 +145,33 @@
     Object.freeze({ key: 'BT_WINDLAEUFER', type: 'boots', name: 'Windläufer', iconKey: 'itBoots',
       baseStats: Object.freeze({ speed: 25, crit: 2 }), dropWeight: Object.freeze({ 8: 50, 14: 100 }) })
   ]);
-  const POTION_DEFS = [/* WP04 fills this */];
+  // WP04: 4 health potion tiers (Minor / Normal / Major / Super)
+  const POTION_DEFS = Object.freeze([
+    Object.freeze({
+      potionTier: 1, name: 'Heiltrank (Klein)', healPercent: 0.30, healDurationMs: 3000,
+      goldCost: 25, stackSize: 5, iconKey: 'itPotionMinor', iLevelMin: 1
+    }),
+    Object.freeze({
+      potionTier: 2, name: 'Heiltrank', healPercent: 0.60, healDurationMs: 3000,
+      goldCost: 75, stackSize: 5, iconKey: 'itPotionNormal', iLevelMin: 4
+    }),
+    Object.freeze({
+      potionTier: 3, name: 'Heiltrank (Gross)', healPercent: 1.00, healDurationMs: 3000,
+      goldCost: 200, stackSize: 5, iconKey: 'itPotionMajor', iLevelMin: 8
+    }),
+    Object.freeze({
+      potionTier: 4, name: 'Heiltrank (Super)', healPercent: 1.00, healDurationMs: 3000,
+      goldCost: 500, stackSize: 5, iconKey: 'itPotionSuper', iLevelMin: 12,
+      bonusEffect: Object.freeze({ tempMaxHp: 0.10, durationMs: 30000 })
+    })
+  ]);
 
   // ---------------------------------------------------------------------------
   // Module-private state
   // ---------------------------------------------------------------------------
   const _bonusCache = { flat: {}, percent: {}, version: 0 };
-  // eslint-disable-next-line no-unused-vars
   let _potionCooldownUntil = 0;
+  const POTION_GLOBAL_CD_MS = 2000;
   // eslint-disable-next-line no-unused-vars
   let _shopState = null;
 
@@ -427,14 +446,114 @@
     _refreshGoldHUD();
     return true;
   }
-  function consumePotion(/* slot */) {
-    throw new Error('consumePotion: not implemented in WP01 (WP04)');
-  }
-  function onPotionKey() {
-    throw new Error('onPotionKey: not implemented in WP01 (WP04)');
-  }
+  // ---------------------------------------------------------------------------
+  // WP04: Health Potions — consumePotion / onPotionKey / isPotionOnCooldown
+  // ---------------------------------------------------------------------------
   function isPotionOnCooldown() {
-    throw new Error('isPotionOnCooldown: not implemented in WP01 (WP04)');
+    return Date.now() < _potionCooldownUntil;
+  }
+
+  function _findActiveScene() {
+    if (typeof window === 'undefined') return null;
+    if (window.gameScene && window.gameScene.time) return window.gameScene;
+    try {
+      if (window.game && window.game.scene && Array.isArray(window.game.scene.scenes)) {
+        for (let i = 0; i < window.game.scene.scenes.length; i++) {
+          const s = window.game.scene.scenes[i];
+          if (s && s.sys && typeof s.sys.isActive === 'function' && s.sys.isActive() && s.time) {
+            return s;
+          }
+        }
+      }
+    } catch (e) { /* swallow */ }
+    return null;
+  }
+
+  function _applyHoT(def) {
+    if (typeof window === 'undefined') return;
+    if (typeof window.playerMaxHealth !== 'number') return;
+    if (typeof window.addPlayerHealth !== 'function') return;
+    const totalHeal = Math.round(def.healPercent * window.playerMaxHealth);
+    const tickIntervalMs = 100;
+    const ticks = Math.max(1, Math.floor(def.healDurationMs / tickIntervalMs));
+    const perTick = Math.max(1, Math.floor(totalHeal / ticks));
+    const scene = _findActiveScene();
+    if (!scene || !scene.time || typeof scene.time.delayedCall !== 'function') {
+      // Fallback: instant heal (also used in tests)
+      window.addPlayerHealth(totalHeal);
+    } else {
+      for (let i = 0; i < ticks; i++) {
+        scene.time.delayedCall(i * tickIntervalMs, function () {
+          if (typeof window.addPlayerHealth === 'function') {
+            window.addPlayerHealth(perTick);
+          }
+        });
+      }
+    }
+    // Super tier bonus: temp max HP boost
+    if (def.bonusEffect && def.bonusEffect.tempMaxHp) {
+      const bonus = Math.round(window.playerMaxHealth * def.bonusEffect.tempMaxHp);
+      if (bonus > 0) {
+        window.playerMaxHealth = window.playerMaxHealth + bonus;
+        window.addPlayerHealth(bonus);
+        if (scene && scene.time && typeof scene.time.delayedCall === 'function') {
+          scene.time.delayedCall(def.bonusEffect.durationMs, function () {
+            window.playerMaxHealth = Math.max(1, window.playerMaxHealth - bonus);
+            if (typeof window.playerHealth === 'number' && window.playerHealth > window.playerMaxHealth) {
+              window.playerHealth = window.playerMaxHealth;
+            }
+          });
+        }
+      }
+    }
+  }
+
+  function consumePotion(slot) {
+    if (isPotionOnCooldown()) return false;
+    if (typeof slot !== 'number') return false;
+    if (typeof window === 'undefined' || !Array.isArray(window.inventory)) return false;
+    const item = window.inventory[slot];
+    if (!item || item.type !== 'potion') return false;
+    let def = null;
+    for (let i = 0; i < POTION_DEFS.length; i++) {
+      if (POTION_DEFS[i].potionTier === item.potionTier) { def = POTION_DEFS[i]; break; }
+    }
+    if (!def) return false;
+    _applyHoT(def);
+    const stack = item.stack || 1;
+    if (stack > 1) {
+      item.stack = stack - 1;
+    } else {
+      window.inventory[slot] = null;
+    }
+    _potionCooldownUntil = Date.now() + POTION_GLOBAL_CD_MS;
+    if (typeof window._refreshInventoryHUD === 'function') {
+      try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
+    }
+    return true;
+  }
+
+  function onPotionKey() {
+    if (isPotionOnCooldown()) return false;
+    if (typeof window === 'undefined' || !Array.isArray(window.inventory)) return false;
+    let bestSlot = -1;
+    let bestTier = 0;
+    for (let i = 0; i < window.inventory.length; i++) {
+      const it = window.inventory[i];
+      if (it && it.type === 'potion' && typeof it.potionTier === 'number' && it.potionTier > bestTier) {
+        bestTier = it.potionTier;
+        bestSlot = i;
+      }
+    }
+    if (bestSlot < 0) return false;
+    return consumePotion(bestSlot);
+  }
+
+  function _getPotionCooldownRemaining() {
+    return Math.max(0, _potionCooldownUntil - Date.now());
+  }
+  function _resetPotionCooldown() {
+    _potionCooldownUntil = 0;
   }
   function getOrCreateShopState() {
     throw new Error('getOrCreateShopState: not implemented in WP01 (WP06)');
@@ -520,6 +639,9 @@
     consumePotion: consumePotion,
     onPotionKey: onPotionKey,
     isPotionOnCooldown: isPotionOnCooldown,
+    _getPotionCooldownRemaining: _getPotionCooldownRemaining,
+    _resetPotionCooldown: _resetPotionCooldown,
+    POTION_GLOBAL_CD_MS: POTION_GLOBAL_CD_MS,
     getOrCreateShopState: getOrCreateShopState,
     rerollItem: rerollItem,
     migrateSave: migrateSave,

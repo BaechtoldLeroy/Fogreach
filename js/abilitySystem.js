@@ -638,6 +638,24 @@
     } else {
       window.materialCounts = { MAT: 20 };
     }
+    // FR-028 (WP04): seed 2 Minor health potions in the first empty inventory slot
+    if (Array.isArray(window.inventory)) {
+      for (let i = 0; i < window.inventory.length; i++) {
+        if (!window.inventory[i]) {
+          window.inventory[i] = {
+            type: 'potion',
+            potionTier: 1,
+            name: 'Heiltrank (Klein)',
+            iconKey: 'itPotionMinor',
+            stack: 2
+          };
+          break;
+        }
+      }
+      if (typeof window._refreshInventoryHUD === 'function') {
+        try { window._refreshInventoryHUD(); } catch (e) { /* HUD may not exist yet */ }
+      }
+    }
     if (typeof window._refreshAbilityHUD === 'function') {
       try { window._refreshAbilityHUD(); } catch (e) { /* HUD may not exist yet */ }
     }
