@@ -100,8 +100,30 @@ function pickAccessibleSpawnPosition(scene, boundsRect, margin, maxAttempts = 6,
     if (candidate) return candidate;
   }
 
-  // Last-resort: any accessible tile, even if it ignores the distance constraint.
-  // Better to have an enemy somewhere walkable than nowhere.
+  // Last-resort: in rooms too cramped to satisfy minDistFromPlayer, sample
+  // many accessible tiles and return the one FARTHEST from the player. This
+  // avoids the previous bug where the fallback ignored distance entirely and
+  // dumped every enemy onto the player's tile in dense rooms.
+  if (player && player.active && minDistFromPlayer > 0) {
+    let bestCandidate = null;
+    let bestDistSq = -1;
+    for (let i = 0; i < 40; i++) {
+      const sample = scene.pickAccessibleSpawnPoint({ maxAttempts: 1 });
+      if (!sample) continue;
+      const c = clampCandidate(sample.x, sample.y, false);
+      if (!c) continue;
+      const dx = c.x - player.x;
+      const dy = c.y - player.y;
+      const d = dx * dx + dy * dy;
+      if (d > bestDistSq) {
+        bestDistSq = d;
+        bestCandidate = c;
+      }
+    }
+    if (bestCandidate) return bestCandidate;
+  }
+
+  // Final fallback: any accessible tile (used in tests / when no player exists).
   const fallback = scene.pickAccessibleSpawnPoint({ maxAttempts: 1 });
   if (fallback) {
     const candidate = clampCandidate(fallback.x, fallback.y, false);

@@ -152,7 +152,13 @@ function _dropEnemyGold(scene, enemy) {
   const isBoss = !!(enemy.isBoss || enemy.isMiniBoss);
   const amount = _rollEnemyGoldDrop(level, isBoss);
   if (amount <= 0) return;
-  _spawnGoldPile(scene, enemy.x, enemy.y, amount);
+  // Scatter gold around the enemy so it doesn't perfectly stack on the
+  // XP/health pickup that lootGroup spawns at the same tile.
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 18 + Math.random() * 22; // 18..40 px from enemy
+  const gx = enemy.x + Math.cos(angle) * dist;
+  const gy = enemy.y + Math.sin(angle) * dist;
+  _spawnGoldPile(scene, gx, gy, amount);
 }
 
 function spawnLoot(x, y, maybeItem, sourceEnemy) {

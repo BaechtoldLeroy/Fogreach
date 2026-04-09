@@ -459,6 +459,9 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       scene.textures.addCanvas(bakedKey, bakedCanvas);
       const floorImg = scene.add.image(ox, oy, bakedKey).setOrigin(0, 0);
       floorImg.setDepth(-5);
+      // Tag as floor so the stair-placement fallback in roomManager doesn't
+      // mistake the giant 2560x2560 floor image for an obstacle and destroy it.
+      floorImg.setData('isFloor', true);
       if (depthTint) floorImg.setTint(depthTint);
       templateWalls.push(floorImg);
       // Track baked texture key so we can remove it on cleanup

@@ -388,6 +388,9 @@ function enterRoom(scene, roomId) {
         const o = list[i];
         if (!o || (o.active === false)) continue;
         if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) continue;
+        // Skip the room-wide floor image — it covers the whole room and would
+        // otherwise be wrongly destroyed by the stair-clear fallback below.
+        if (o.getData && o.getData('isFloor')) continue;
         const ox = o.x, oy = o.y;
         const ohw = (o.displayWidth || 32) / 2 + STAIR_HALF;
         const ohh = (o.displayHeight || 32) / 2 + STAIR_HALF;
