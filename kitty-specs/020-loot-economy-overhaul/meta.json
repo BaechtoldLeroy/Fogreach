@@ -2,7 +2,9 @@
   "created_at": "2026-04-09T12:37:14.200236+00:00",
   "feature_number": "020",
   "feature_slug": "020-loot-economy-overhaul",
-  "friendly_name": "loot economy overhaul",
+  "friendly_name": "Loot & Economy Overhaul",
+  "source_description": "Bundles 5 backlog items into a single cohesive economy/itemization foundation: D2-light affix system (4 tiers, single affix pool, hybrid item-level), Gold currency (coexists with Eisenbrocken), Health Potions (4 tiers, F-key, HoT), Mara as Shop & Reroll Vendor, Enchanted (Champion/Unique) enemies. Replaces existing item rarity/affix system entirely.",
+  "vcs": "git",
   "mission": "software-dev",
   "slug": "020-loot-economy-overhaul",
   "target_branch": "main"
