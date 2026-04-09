@@ -341,15 +341,26 @@
     const item = {
       key: base.key,
       type: base.type,
+      name: base.name,
       _baseName: base.name,
       iconKey: base.iconKey,
       tier: tier,
       iLevel: iLevel,
+      itemLevel: iLevel,
       requiredLevel: Math.max(1, iLevel - 2),
       baseStats: JSON.parse(JSON.stringify(base.baseStats)),
       affixes: affixes,
       displayName: ''
     };
+    // Mirror baseStats to top-level fields so legacy readers (inventory
+    // tooltip, equipSelectedItem, recalcDerived, ability code) that look at
+    // it.hp / it.damage / etc. find the values without having to walk the
+    // baseStats subobject.
+    const _statKeys = ['hp', 'damage', 'speed', 'range', 'armor', 'crit', 'move'];
+    for (let _i = 0; _i < _statKeys.length; _i++) {
+      const _k = _statKeys[_i];
+      if (typeof base.baseStats[_k] === 'number') item[_k] = base.baseStats[_k];
+    }
     item.displayName = composeName(item);
     return item;
   }

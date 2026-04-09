@@ -905,9 +905,15 @@ class HubSceneV2 extends Phaser.Scene {
     });
 
     this._currentKeyClosers = keyClosers;
-    // Click to advance or close (only if no choices)
+    // Click to advance or close (only if no choices). Wrap in a flag check
+    // so a click on a dialog button (Schwarzmarkt, Skills) that calls
+    // _closeDialog inside its own handler doesn't accidentally trigger this
+    // scene-level pointerdown a second time and re-open or re-close the
+    // dialog. Phaser scene input listeners are not blocked by GameObject
+    // event.stopPropagation().
     if (!hasChoices) {
       this.input.once('pointerdown', () => {
+        if (!this._dialogOpen) return; // dialog was already closed by a button
         if (hasNextPage) {
           this._cleanupKeyClosers(keyClosers);
           this._showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex + 1);

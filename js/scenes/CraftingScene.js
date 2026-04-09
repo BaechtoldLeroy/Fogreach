@@ -201,16 +201,23 @@ class CraftingScene extends Phaser.Scene {
     // replaces the old enhance flow. Salvage stays for converting unwanted
     // equipment into Eisenbrocken.
     const enhY = this.invListY + this.invRowH * this.invMaxRows + 14;
-    this.enhanceInfo = this.add.text(leftX + 8, enhY, 'Klicke einen Slot oder ein Inventar-Item zum Zerlegen.\nReroll bei Mara im Schwarzmarkt.', {
+    this.enhanceInfo = this.add.text(leftX + 8, enhY, 'Klicke einen Slot oder ein Inventar-Item zum Verbessern oder Zerlegen.\nReroll bei Mara im Schwarzmarkt.', {
       fontFamily: 'monospace', fontSize: '10px', color: COL_PARCHMENT,
       wordWrap: { width: slotW - 16 }
     }).setDepth(10);
 
-    // Verbessern button intentionally removed (WP08 T050).
-    this.enhanceBtn = null;
+    // Post-WP08 hotfix: Verbessern button is BACK, but with new semantics —
+    // it now bumps the item's tier (Common → Magic → Rare → Legendary) and
+    // re-rolls a fresh affix set for the new tier. Cost scales with the
+    // target tier. The reroll vendor at Mara stays for affix-only rerolls.
+    this.enhanceBtn = this._createButton(
+      leftX + slotW / 2 - 60, enhY + 40, 110, 26,
+      'Verbessern', () => this._enhanceItem()
+    );
+    this.enhanceBtn.container.setVisible(false);
 
     this.salvageBtn = this._createButton(
-      leftX + slotW / 2, enhY + 40, 110, 26,
+      leftX + slotW / 2 + 60, enhY + 40, 110, 26,
       'Zerlegen', () => this._salvageItem()
     );
     this.salvageBtn.container.setVisible(false);
@@ -475,15 +482,77 @@ class CraftingScene extends Phaser.Scene {
 
     this.salvageBtn.container.setVisible(true);
 
-    // Tier/affix-aware info panel (no enhance level). Verbessern is gone.
+    // Tier/affix-aware info panel.
     const tier = (typeof item.tier === 'number') ? item.tier : 0;
     const tierLabels = ['Gewoehnlich', 'Magisch', 'Selten', 'Legendaer'];
     const affixCount = Array.isArray(item.affixes) ? item.affixes.length : 0;
-    this.enhanceInfo.setText(
-      `${_composeItemName(item)}\n` +
-      `Tier: ${tierLabels[Math.max(0, Math.min(3, tier))]}  |  Affixe: ${affixCount}\n` +
-      `Reroll verfuegbar bei Mara (Schwarzmarkt).`
-    );
+    const enhanceCost = this._getEnhanceCost(item);
+    const canEnhance = tier < 3;
+    if (this.enhanceBtn) {
+      this.enhanceBtn.container.setVisible(canEnhance);
+    }
+    const lines = [
+      `${_composeItemName(item)}`,
+      `Tier: ${tierLabels[Math.max(0, Math.min(3, tier))]}  |  Affixe: ${affixCount}`
+    ];
+    if (canEnhance) {
+      lines.push(`Verbessern: -> ${tierLabels[tier + 1]} (${enhanceCost} Eisenbrocken)`);
+    } else {
+      lines.push('Bereits Legendaer — keine Verbesserung moeglich.');
+    }
+    lines.push('Reroll verfuegbar bei Mara (Schwarzmarkt).');
+    this.enhanceInfo.setText(lines.join('\n'));
+  }
+
+  _getEnhanceCost(item) {
+    const tier = (typeof item?.tier === 'number') ? item.tier : 0;
+    // Common→Magic=10, Magic→Rare=25, Rare→Legendary=60
+    const costs = [10, 25, 60];
+    return costs[Math.max(0, Math.min(2, tier))];
+  }
+
+  // =================== Enhance (tier bump) ===================
+  _enhanceItem() {
+    const item = this._getSelectedItem();
+    if (!item) return;
+    const tier = (typeof item.tier === 'number') ? item.tier : 0;
+    if (tier >= 3) {
+      this._showFeedback('Item ist bereits Legendaer.', '#ff4444');
+      return;
+    }
+    const cost = this._getEnhanceCost(item);
+    if (getMaterialCount('MAT') < cost) {
+      this._showFeedback(`Nicht genug Eisenbrocken (${cost} noetig).`, '#ff4444');
+      return;
+    }
+    if (typeof changeMaterialCount === 'function') {
+      changeMaterialCount('MAT', -cost);
+    }
+
+    // Bump tier + re-roll affixes for the new tier.
+    const newTier = tier + 1;
+    item.tier = newTier;
+    if (window.LootSystem && typeof window.LootSystem.rollAffixes === 'function') {
+      const iLevel = (typeof item.iLevel === 'number') ? item.iLevel : 1;
+      try {
+        item.affixes = window.LootSystem.rollAffixes(iLevel, newTier, Math.random, item.type);
+      } catch (e) { /* swallow */ }
+    }
+    if (window.LootSystem && typeof window.LootSystem.composeName === 'function') {
+      try { item.displayName = window.LootSystem.composeName(item); } catch (e) {}
+    }
+    // Recompute aggregated bonuses since affixes changed
+    if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
+      try { window.LootSystem.recomputeBonuses(); } catch (e) {}
+    }
+    if (typeof saveGame === 'function') {
+      try { saveGame(this); } catch (e) {}
+    }
+    this._refreshAll();
+    this._showEnhanceInfoForSelection();
+    const tierLabels = ['Gewoehnlich', 'Magisch', 'Selten', 'Legendaer'];
+    this._showFeedback(`Verbessert auf ${tierLabels[newTier]}!`, '#88ff88');
+    this._flashEffect();
   }
 
   // =================== Salvage ===================
@@ -520,7 +589,8 @@ class CraftingScene extends Phaser.Scene {
     this._selectedSlot = null;
     this._clearVisualSelection();
     this.salvageBtn.container.setVisible(false);
-    this.enhanceInfo.setText('Waehle ein Equipment-Item zum Zerlegen.\nReroll bei Mara im Schwarzmarkt.');
+    if (this.enhanceBtn) this.enhanceBtn.container.setVisible(false);
+    this.enhanceInfo.setText('Waehle ein Equipment-Item zum Verbessern oder Zerlegen.\nReroll bei Mara im Schwarzmarkt.');
     this._refreshAll();
     this._showFeedback(`Zerlegt: +${matValue} Eisenbrocken`, '#ccaa33');
     this._flashEffect();
