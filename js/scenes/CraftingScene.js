@@ -1,4 +1,23 @@
 // js/scenes/CraftingScene.js — Archivschmiede Crafting Scene
+// Tier color map (WP08 T050): 0=Common, 1=Magic, 2=Rare, 3=Legendary.
+// Reads window.TIER_COLORS (loot.js) with a local fallback so this module
+// stays scene-graph friendly under the plain IIFE load order.
+const _CRAFT_TIER_COLORS_FALLBACK = ['#cccccc', '#88aaff', '#ffdd44', '#ff8844'];
+const _getTierColor = (item) => {
+  if (!item) return '#666666';
+  const t = Number(item.tier);
+  const idx = Number.isFinite(t) ? Math.max(0, Math.min(3, Math.round(t))) : 0;
+  const arr = (typeof window !== 'undefined' && window.TIER_COLORS) || _CRAFT_TIER_COLORS_FALLBACK;
+  return arr[idx];
+};
+const _composeItemName = (item) => {
+  if (!item) return '(leer)';
+  if (window.LootSystem && typeof window.LootSystem.composeName === 'function') {
+    try { return window.LootSystem.composeName(item); } catch (e) { /* fall through */ }
+  }
+  return item.displayName || item._baseName || item.name || 'Item';
+};
+
 class CraftingScene extends Phaser.Scene {
   constructor() {
     super({ key: 'CraftingScene' });
@@ -22,10 +41,7 @@ class CraftingScene extends Phaser.Scene {
     const COL_RED      = '#ff4444';
     const COL_GREEN    = '#44ff44';
 
-    // --- Enhancement cost table ---
-    this.ENHANCE_COSTS = [5, 10, 20, 40, 80]; // index 0 = cost from +0 to +1
-
-    // --- Crafting recipes ---
+    // --- Crafting recipes (tier 0 / Common items; no affixes). ---
     this.RECIPES = [
       {
         id: 'eisenklinge',
@@ -35,9 +51,9 @@ class CraftingScene extends Phaser.Scene {
         item: {
           type: 'weapon', key: 'WPN_CRAFT', name: 'Eisenklinge',
           iconKey: 'itWeapon',
-          rarity: 'common', rarityLabel: 'Gewoehnlich', rarityValue: 1,
-          itemLevel: 1, hp: 0, damage: 8, speed: 0, range: 0, armor: 0, crit: 0,
-          enhanceLevel: 0
+          tier: 0, affixes: [], iLevel: 1, itemLevel: 1,
+          baseStats: { damage: 8 },
+          hp: 0, damage: 8, speed: 0, range: 0, armor: 0, crit: 0
         }
       },
       {
@@ -48,9 +64,9 @@ class CraftingScene extends Phaser.Scene {
         item: {
           type: 'head', key: 'HD_CRAFT', name: 'Kettenhaube',
           iconKey: 'itHead',
-          rarity: 'common', rarityLabel: 'Gewoehnlich', rarityValue: 1,
-          itemLevel: 1, hp: 0, damage: 0, speed: 0, range: 0, armor: 5, crit: 0,
-          enhanceLevel: 0
+          tier: 0, affixes: [], iLevel: 1, itemLevel: 1,
+          baseStats: { armor: 5 },
+          hp: 0, damage: 0, speed: 0, range: 0, armor: 5, crit: 0
         }
       },
       {
@@ -61,9 +77,9 @@ class CraftingScene extends Phaser.Scene {
         item: {
           type: 'boots', key: 'BT_CRAFT', name: 'Lederstiefel',
           iconKey: 'itBoots',
-          rarity: 'common', rarityLabel: 'Gewoehnlich', rarityValue: 1,
-          itemLevel: 1, hp: 0, damage: 0, speed: 15, range: 0, armor: 0, crit: 0,
-          enhanceLevel: 0
+          tier: 0, affixes: [], iLevel: 1, itemLevel: 1,
+          baseStats: { speed: 15 },
+          hp: 0, damage: 0, speed: 15, range: 0, armor: 0, crit: 0
         }
       }
     ];
@@ -119,8 +135,8 @@ class CraftingScene extends Phaser.Scene {
       bg.setStrokeStyle(2, 0x444444);
 
       const item = (typeof equipment !== 'undefined') ? equipment[slot] : null;
-      const nameStr = item ? this._getEnhancedName(item) : '(leer)';
-      const color = item ? (getRarityColor ? getRarityColor(item) : '#ffffff') : COL_DISABLED;
+      const nameStr = item ? _composeItemName(item) : '(leer)';
+      const color = item ? _getTierColor(item) : COL_DISABLED;
 
       // Compact one-line layout: [Slot] Name (stats)
       const label = this.add.text(leftX + 8, sy + 4, '[' + slotLabels[slot] + ']', {
@@ -180,21 +196,21 @@ class CraftingScene extends Phaser.Scene {
       }
     ).setOrigin(1, 0).setDepth(10);
 
-    // ----- Enhance/Salvage section (bottom of left panel) -----
+    // ----- Salvage section (bottom of left panel) -----
+    // WP08 T050: Verbessern button removed. Reroll vendor at Mara (ShopScene)
+    // replaces the old enhance flow. Salvage stays for converting unwanted
+    // equipment into Eisenbrocken.
     const enhY = this.invListY + this.invRowH * this.invMaxRows + 14;
-    this.enhanceInfo = this.add.text(leftX + 8, enhY, 'Klicke einen Slot oder ein Inventar-Item zum Verbessern.', {
+    this.enhanceInfo = this.add.text(leftX + 8, enhY, 'Klicke einen Slot oder ein Inventar-Item zum Zerlegen.\nReroll bei Mara im Schwarzmarkt.', {
       fontFamily: 'monospace', fontSize: '10px', color: COL_PARCHMENT,
       wordWrap: { width: slotW - 16 }
     }).setDepth(10);
 
-    this.enhanceBtn = this._createButton(
-      leftX + slotW / 2 - 60, enhY + 40, 110, 26,
-      'Verbessern', () => this._enhanceItem()
-    );
-    this.enhanceBtn.container.setVisible(false);
+    // Verbessern button intentionally removed (WP08 T050).
+    this.enhanceBtn = null;
 
     this.salvageBtn = this._createButton(
-      leftX + slotW / 2 + 60, enhY + 40, 110, 26,
+      leftX + slotW / 2, enhY + 40, 110, 26,
       'Zerlegen', () => this._salvageItem()
     );
     this.salvageBtn.container.setVisible(false);
@@ -341,13 +357,6 @@ class CraftingScene extends Phaser.Scene {
     this.matText.setText(`Eisenbrocken: ${count}`);
   }
 
-  _getEnhancedName(item) {
-    if (!item) return '(leer)';
-    const lvl = item.enhanceLevel || 0;
-    const baseName = item._baseName || item.name || 'Item';
-    return lvl > 0 ? `${baseName} +${lvl}` : baseName;
-  }
-
   _getStatsLine(item) {
     if (!item) return '';
     const parts = [];
@@ -359,8 +368,10 @@ class CraftingScene extends Phaser.Scene {
         parts.push(`${labels[s]}:${typeof val === 'number' && val < 1 && val > 0 ? val.toFixed(2) : val}`);
       }
     });
-    const lvl = item.enhanceLevel || 0;
-    if (lvl > 0) parts.push(`(+${lvl})`);
+    // Append a compact affix count, e.g. "[2 affix]" for magic/rare/legendary.
+    if (Array.isArray(item.affixes) && item.affixes.length) {
+      parts.push(`[${item.affixes.length} affix]`);
+    }
     return parts.join(' | ');
   }
 
@@ -464,86 +475,15 @@ class CraftingScene extends Phaser.Scene {
 
     this.salvageBtn.container.setVisible(true);
 
-    const lvl = item.enhanceLevel || 0;
-    if (lvl >= 5) {
-      this.enhanceInfo.setText(`${this._getEnhancedName(item)}\nMaximal verbessert! (+5)`);
-      this.enhanceBtn.container.setVisible(false);
-    } else {
-      const cost = this.ENHANCE_COSTS[lvl];
-      const canAfford = getMaterialCount('MAT') >= cost;
-      const statBonus = '+10% auf alle Werte';
-      this.enhanceInfo.setText(
-        `${this._getEnhancedName(item)}\n` +
-        `Naechste Stufe: +${lvl + 1}  |  ${statBonus}\n` +
-        `Kosten: ${cost} Eisenbrocken` +
-        (canAfford ? '' : '  (nicht genug!)')
-      );
-      this.enhanceBtn.container.setVisible(true);
-      if (canAfford) {
-        this.enhanceBtn.bg.setFillStyle(0x3a3a3a);
-        this.enhanceBtn.text.setColor('#f1e9d8');
-      } else {
-        this.enhanceBtn.bg.setFillStyle(0x222222);
-        this.enhanceBtn.text.setColor('#666666');
-      }
-    }
-  }
-
-  // =================== Enhancement ===================
-  _enhanceItem() {
-    const item = this._getSelectedItem();
-    if (!item) return;
-
-    const lvl = item.enhanceLevel || 0;
-    if (lvl >= 5) {
-      this._showFeedback('Bereits maximal verbessert!', '#ff4444');
-      return;
-    }
-
-    const cost = this.ENHANCE_COSTS[lvl];
-    if (getMaterialCount('MAT') < cost) {
-      this._showFeedback('Nicht genug Eisenbrocken!', '#ff4444');
-      return;
-    }
-
-    // Spend materials
-    spendMaterialFromStorage('MAT', cost);
-
-    // Store base name on first enhancement
-    if (!item._baseName) {
-      item._baseName = item.name;
-    }
-
-    // Increase enhance level
-    item.enhanceLevel = lvl + 1;
-
-    // Boost all non-zero stats by 10%
-    const statKeys = ['hp', 'damage', 'speed', 'range', 'armor', 'crit'];
-    statKeys.forEach(s => {
-      if (typeof item[s] === 'number' && item[s] !== 0) {
-        item[s] = Math.round(item[s] * 1.1 * 100) / 100;
-        // Keep integers for integer stats
-        if (s === 'hp' || s === 'damage' || s === 'range') {
-          item[s] = Math.round(item[s]);
-        }
-      }
-    });
-
-    // Update display name
-    item.name = `${item._baseName} +${item.enhanceLevel}`;
-
-    // Save game
-    if (typeof saveGame === 'function') {
-      try { saveGame(this); } catch (e) { console.warn('[CraftingScene] save failed', e); }
-    }
-
-    // Refresh UI (re-applying selection to refresh enhance info)
-    this._refreshAll();
-    if (this._selection) this._applySelection(this._selection.kind, this._selection.key);
-    this._showFeedback(`${item.name} verbessert!`, '#44ff44');
-
-    // Flash effect
-    this._flashEffect();
+    // Tier/affix-aware info panel (no enhance level). Verbessern is gone.
+    const tier = (typeof item.tier === 'number') ? item.tier : 0;
+    const tierLabels = ['Gewoehnlich', 'Magisch', 'Selten', 'Legendaer'];
+    const affixCount = Array.isArray(item.affixes) ? item.affixes.length : 0;
+    this.enhanceInfo.setText(
+      `${_composeItemName(item)}\n` +
+      `Tier: ${tierLabels[Math.max(0, Math.min(3, tier))]}  |  Affixe: ${affixCount}\n` +
+      `Reroll verfuegbar bei Mara (Schwarzmarkt).`
+    );
   }
 
   // =================== Salvage ===================
@@ -551,10 +491,9 @@ class CraftingScene extends Phaser.Scene {
     const item = this._getSelectedItem();
     if (!item) return;
 
-    // Salvage value: rarity * 3 + enhance level * 5
-    const rarityValue = item.rarityValue || 1;
-    const enhanceLevel = item.enhanceLevel || 0;
-    const matValue = rarityValue * 3 + enhanceLevel * 5;
+    // Salvage value: (tier + 1) * 3 — Common=3, Magic=6, Rare=9, Legendary=12.
+    const tier = (typeof item.tier === 'number') ? item.tier : 0;
+    const matValue = (Math.max(0, Math.min(3, tier)) + 1) * 3;
 
     // Remove item from its source (equipment slot or inventory slot)
     this._setSelectedItem(null);
@@ -571,13 +510,17 @@ class CraftingScene extends Phaser.Scene {
       try { saveGame(this); } catch (e) {}
     }
 
+    // WP08 T048: equipment changed (possibly), recompute aggregated affix bonuses.
+    if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
+      try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
+    }
+
     // Clear selection + UI
     this._selection = null;
     this._selectedSlot = null;
     this._clearVisualSelection();
-    this.enhanceBtn.container.setVisible(false);
     this.salvageBtn.container.setVisible(false);
-    this.enhanceInfo.setText('Waehle ein Equipment-Item zum Verbessern.');
+    this.enhanceInfo.setText('Waehle ein Equipment-Item zum Zerlegen.\nReroll bei Mara im Schwarzmarkt.');
     this._refreshAll();
     this._showFeedback(`Zerlegt: +${matValue} Eisenbrocken`, '#ccaa33');
     this._flashEffect();
@@ -630,8 +573,8 @@ class CraftingScene extends Phaser.Scene {
       const el = this.equipSlots[slot];
       if (!el) return;
       const item = (typeof equipment !== 'undefined') ? equipment[slot] : null;
-      const nameStr = item ? this._getEnhancedName(item) : '(leer)';
-      const color = item ? (typeof getRarityColor === 'function' ? getRarityColor(item) : '#ffffff') : '#666666';
+      const nameStr = item ? _composeItemName(item) : '(leer)';
+      const color = item ? _getTierColor(item) : '#666666';
 
       el.nameText.setText(nameStr);
       el.nameText.setColor(color);
@@ -725,8 +668,8 @@ class CraftingScene extends Phaser.Scene {
 
       const SLOT_LABEL = { weapon: 'W', head: 'H', body: 'R', boots: 'S' };
       const labelTxt = SLOT_LABEL[entry.item.type] || '?';
-      const color = (typeof getRarityColor === 'function') ? getRarityColor(entry.item) : '#ffffff';
-      const nameText = this.add.text(leftX + 12, ry - 8, `[${labelTxt}] ${this._getEnhancedName(entry.item)}`, {
+      const color = _getTierColor(entry.item);
+      const nameText = this.add.text(leftX + 12, ry - 8, `[${labelTxt}] ${_composeItemName(entry.item)}`, {
         fontFamily: 'monospace', fontSize: '11px', color
       }).setDepth(10);
       const statsText = this.add.text(leftX + 12, ry + 3, this._getStatsLine(entry.item), {

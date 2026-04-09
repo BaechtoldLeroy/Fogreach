@@ -1,11 +1,18 @@
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-const ITEM_RARITIES = [
-  { key: 'common', label: 'Gewöhnlich', value: 1, chance: 55 },
-  { key: 'rare', label: 'Selten', value: 2, chance: 25 },
-  { key: 'epic', label: 'Episch', value: 3, chance: 13 },
-  { key: 'legendary', label: 'Legendär', value: 4, chance: 7 }
+// Tier weights mirror the LootSystem tier model (0=Common .. 3=Legendary).
+// The `chance` percentages preserve the historical drop distribution used by
+// legacy randomLoot() while we finish migrating callers onto LootSystem.rollItem.
+const TIER_WEIGHTS = [
+  { tier: 0, chance: 55 },
+  { tier: 1, chance: 25 },
+  { tier: 2, chance: 13 },
+  { tier: 3, chance: 7 }
 ];
+// Tier color map — indexed by item.tier (0=Common .. 3=Legendary). Declared
+// here and re-exported as window.TIER_COLORS so other production modules can
+// share a single source of truth without re-declaring it.
+const LOOT_TIER_COLORS = ['#cccccc', '#88aaff', '#ffdd44', '#ff8844'];
 
 const ITEM_STAT_KEYS = ['hp', 'damage', 'speed', 'range', 'armor', 'crit'];
 const ITEM_ALL_STAT_KEYS = [...ITEM_STAT_KEYS, 'move'];
@@ -60,29 +67,31 @@ function getDifficultyMultiplierValue() {
   return Phaser?.Math?.Clamp ? Phaser.Math.Clamp(raw, 0.1, 10) : Math.min(Math.max(raw, 0.1), 10);
 }
 
-function getRarityValueFromKey(key) {
-  const entry = ITEM_RARITIES.find((r) => r.key === key);
-  return entry ? entry.value : null;
+// Legacy helper kept only so older save blobs (pre-migration) don't crash if
+// any reader passes a string tier key. Always returns a numeric tier (0-3).
+function getTierFromLegacyRarityKey(key) {
+  const map = { common: 0, rare: 1, epic: 2, legendary: 3 };
+  return (typeof key === 'string' && key in map) ? map[key] : null;
 }
 
-function rollAttackEffect(depth, rarityValue, existingIds = []) {
+function rollAttackEffect(depth, tier, existingIds = []) {
   const pool = ATTACK_EFFECT_OPTIONS.filter((opt) => !existingIds.includes(opt.id));
   if (!pool.length) return null;
   const option = Phaser.Utils.Array.GetRandom(pool);
   const depthScale = 1 + Math.min(0.8, Math.max(0, (depth || 1) - 1) * 0.01);
-  const rarityScale = 1 + Math.min(0.6, Math.max(0, (rarityValue || 1) - 1) * 0.12);
+  const tierScale = 1 + Math.min(0.6, Math.max(0, (tier || 0)) * 0.12);
   const raw = Phaser.Math.FloatBetween(option.min, option.max);
-  const value = Number((Math.min(option.max * 1.6, raw * depthScale * rarityScale)).toFixed(3));
+  const value = Number((Math.min(option.max * 1.6, raw * depthScale * tierScale)).toFixed(3));
   return { id: option.id, ability: option.ability, stat: option.stat, value: Math.max(0, value) };
 }
 
-function maybeAttachAttackEffect(item, rarityValue, depth) {
+function maybeAttachAttackEffect(item, tier, depth) {
   if (!item) return;
-  const chance = Math.min(0.65, ATTACK_EFFECT_BASE_CHANCE + (rarityValue || 1) * 0.12);
+  const chance = Math.min(0.65, ATTACK_EFFECT_BASE_CHANCE + ((tier || 0) + 1) * 0.12);
   if (Math.random() > chance) return;
   const statKeys = ITEM_STAT_KEYS.filter((key) => (item[key] || 0) > 0);
   const existingIds = Array.isArray(item.attackEffects) ? item.attackEffects.map((e) => e.id) : [];
-  const effect = rollAttackEffect(depth, rarityValue, existingIds);
+  const effect = rollAttackEffect(depth, tier, existingIds);
   if (!effect) return;
   if (statKeys.length) {
     const removeKey = Phaser.Utils.Array.GetRandom(statKeys);
@@ -93,9 +102,12 @@ function maybeAttachAttackEffect(item, rarityValue, depth) {
   item.itemLevel = computeItemLevelFromStats(item, depth);
 }
 
-function normalizeItemStatsForRarity(item, rarityValue = 1) {
+// Cap an item's non-zero stat count by its tier+1 so that a newly-rolled item
+// doesn't silently outshine its intended tier budget. Keeps the strongest
+// stats and zeros the rest.
+function normalizeItemStatsForTier(item, tier = 0) {
   if (!item) return item;
-  const allowed = Math.max(1, Math.round(Number(rarityValue) || 1));
+  const allowed = Math.max(1, Math.round(Number(tier) || 0) + 1);
   const stats = ITEM_ALL_STAT_KEYS
     .map((key) => ({ key, value: Number(item[key]) || 0 }))
     .filter((entry) => entry.value !== 0);
@@ -218,7 +230,7 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     }
   }
 
-  // Elite enemies have higher loot chance and better rarity
+  // Elite enemies have higher loot chance and better tier
   const isEliteDrop = sourceEnemy && sourceEnemy.isElite;
   const isMiniBossDrop = sourceEnemy && sourceEnemy.isMiniBoss;
   const lootChanceBonus = isEliteDrop ? 20 : (isMiniBossDrop ? 30 : 0);
@@ -227,28 +239,18 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
 
   if (maybeItem || roll < (12 + lootChanceBonus)) {
     const baseItem = maybeItem ? { ...maybeItem } : randomLoot();
-    let rarityValue = baseItem?.rarityValue || getRarityValueFromKey(baseItem?.rarity) || 1;
-    // Elite enemies: increase rarity tier by 1; Mini-bosses: by 2
-    if (isEliteDrop && rarityValue < 4) {
-      rarityValue += 1;
-      const upgradedRarity = ITEM_RARITIES.find(r => r.value === rarityValue);
-      if (upgradedRarity) {
-        baseItem.rarity = upgradedRarity.key;
-        baseItem.rarityLabel = upgradedRarity.label;
-        baseItem.rarityValue = rarityValue;
-      }
-    } else if (isMiniBossDrop && rarityValue < 4) {
-      rarityValue = Math.min(4, rarityValue + 2);
-      const upgradedRarity = ITEM_RARITIES.find(r => r.value === rarityValue);
-      if (upgradedRarity) {
-        baseItem.rarity = upgradedRarity.key;
-        baseItem.rarityLabel = upgradedRarity.label;
-        baseItem.rarityValue = rarityValue;
-      }
+    let tier = (typeof baseItem?.tier === 'number') ? baseItem.tier : 0;
+    // Elite enemies: bump tier by 1; Mini-bosses: by 2 (cap at 3 = Legendary)
+    if (isEliteDrop && tier < 3) {
+      tier = Math.min(3, tier + 1);
+      baseItem.tier = tier;
+    } else if (isMiniBossDrop && tier < 3) {
+      tier = Math.min(3, tier + 2);
+      baseItem.tier = tier;
     }
     const item = maybeItem
-      ? normalizeItemStatsForRarity(scaleItemForDifficulty(baseItem, Math.max(1, currentWave)), rarityValue)
-      : normalizeItemStatsForRarity(baseItem, rarityValue);
+      ? normalizeItemStatsForTier(scaleItemForDifficulty(baseItem, Math.max(1, currentWave)), tier)
+      : normalizeItemStatsForTier(baseItem, tier);
     const loot = lootGroup.create(x, y, item.iconKey || 'itMat');
     loot.setDisplaySize(32, 24);
     loot.setData('item', item);
@@ -310,9 +312,9 @@ function collectLoot(playerSprite, loot) {
       if (idx >= 0) {
         inventory[idx] = item;
       } else {
-        // Inventory full → salvage to Eisenbrocken based on rarity
-        const rarityValue = item?.rarityValue || 1;
-        const matAmount = rarityValue * 2; // common=2, rare=4, epic=6, legendary=8
+        // Inventory full → salvage to Eisenbrocken based on tier
+        const tier = (typeof item?.tier === 'number') ? item.tier : 0;
+        const matAmount = (tier + 1) * 2; // T0=2, T1=4, T2=6, T3=8
         if (typeof changeMaterialCount === 'function') {
           changeMaterialCount('MAT', matAmount);
         } else if (typeof materialCounts !== 'undefined') {
@@ -343,14 +345,14 @@ function collectLoot(playerSprite, loot) {
   loot.destroy();
 }
 
-function pickItemRarity() {
+function pickItemTier() {
   const roll = Phaser.Math.Between(1, 100);
   let acc = 0;
-  for (const r of ITEM_RARITIES) {
-    acc += r.chance;
-    if (roll <= acc) return r;
+  for (const entry of TIER_WEIGHTS) {
+    acc += entry.chance;
+    if (roll <= acc) return entry.tier;
   }
-  return ITEM_RARITIES[0];
+  return 0;
 }
 
 function clampStat(key, value) {
@@ -413,8 +415,8 @@ function scaleItemForDifficulty(item, depth) {
   if (!item) return item;
   const multiplier = getDifficultyMultiplierValue();
   if (multiplier === 1) {
-    const normalizedRarity = item.rarityValue || getRarityValueFromKey(item.rarity) || 1;
-    normalizeItemStatsForRarity(item, normalizedRarity);
+    const tier = (typeof item.tier === 'number') ? item.tier : 0;
+    normalizeItemStatsForTier(item, tier);
     return item;
   }
 
@@ -443,17 +445,17 @@ function scaleItemForDifficulty(item, depth) {
     Math.max(1, Math.round((depth || currentWave || 1) * multiplier))
   );
 
-   const normalizedRarity = item.rarityValue || getRarityValueFromKey(item.rarity) || 1;
-   normalizeItemStatsForRarity(item, normalizedRarity);
+   const tier = (typeof item.tier === 'number') ? item.tier : 0;
+   normalizeItemStatsForTier(item, tier);
 
   return item;
 }
 
-function applyRarityBoosts(potentials, rarityValue, depth) {
+function applyTierBoosts(potentials, tier, depth) {
   const boosted = ITEM_STAT_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {});
   const available = ITEM_STAT_KEYS.filter(key => (potentials[key] ?? 0) > 0);
   const keysPool = available.length ? available : ITEM_STAT_KEYS;
-  const boosts = Math.max(1, rarityValue);
+  const boosts = Math.max(1, (tier || 0) + 1);
 
   for (let i = 0; i < boosts; i++) {
     const statKey = Phaser.Utils.Array.GetRandom(keysPool);
@@ -467,18 +469,19 @@ function applyRarityBoosts(potentials, rarityValue, depth) {
 function addBoostsToItem(item, boosts, depth) {
   const totalBoosts = Math.max(0, boosts);
   if (!totalBoosts) {
-    const rarityValue = item?.rarityValue || getRarityValueFromKey(item?.rarity) || 1;
-    normalizeItemStatsForRarity(item, rarityValue);
+    const tier = (typeof item?.tier === 'number') ? item.tier : 0;
+    normalizeItemStatsForTier(item, tier);
     return;
   }
   const potentials = rollItemStatPotentials(item?.type || 'weapon', depth);
   const available = ITEM_STAT_KEYS.filter(key => (potentials[key] ?? 0) > 0);
   const keysPool = available.length ? available : ITEM_STAT_KEYS;
+  const effectTier = (typeof item?.tier === 'number') ? item.tier : Math.max(0, boosts - 1);
   for (let i = 0; i < totalBoosts; i++) {
     let applied = false;
     if (Math.random() < 0.35) {
       const prevCount = Array.isArray(item.attackEffects) ? item.attackEffects.length : 0;
-      maybeAttachAttackEffect(item, item.rarityValue || boosts, depth);
+      maybeAttachAttackEffect(item, effectTier, depth);
       const newCount = Array.isArray(item.attackEffects) ? item.attackEffects.length : 0;
       if (newCount > prevCount) {
         applied = true;
@@ -493,102 +496,60 @@ function addBoostsToItem(item, boosts, depth) {
   }
   item.itemLevel = computeItemLevelFromStats(item, depth);
 
-  const rarityValue = item.rarityValue || getRarityValueFromKey(item.rarity) || totalBoosts;
-  normalizeItemStatsForRarity(item, rarityValue);
+  const tier = (typeof item.tier === 'number') ? item.tier : Math.max(0, totalBoosts - 1);
+  normalizeItemStatsForTier(item, tier);
 }
 
 function randomLoot() {
   const depth = Math.max(1, currentWave);
-  const rarity = pickItemRarity();
+  const tier = pickItemTier();
   const roll = Phaser.Math.Between(1, 100);
-  const applyDifficulty = (item) => normalizeItemStatsForRarity(scaleItemForDifficulty(item, depth), item.rarityValue || rarity.value || getRarityValueFromKey(item.rarity));
+  const applyDifficulty = (item) => normalizeItemStatsForTier(
+    scaleItemForDifficulty(item, depth),
+    (typeof item.tier === 'number') ? item.tier : tier
+  );
+
+  const buildItem = (opts, slotType) => {
+    const base = rollItemStatPotentials(slotType, depth);
+    const core = applyTierBoosts(base, tier, depth);
+    const itemLevel = computeItemLevelFromStats(core, depth);
+    const item = makeItem(Object.assign({}, opts, {
+      tier,
+      affixes: [],
+      iLevel: itemLevel,
+      itemLevel,
+      baseStats: {
+        damage: core.damage || 0,
+        armor: core.armor || 0,
+        hp: core.hp || 0,
+        speed: core.speed || 0,
+        crit: core.crit || 0,
+        range: core.range || 0
+      },
+      hp: core.hp,
+      damage: core.damage,
+      speed: core.speed,
+      range: core.range,
+      armor: core.armor,
+      crit: core.crit
+    }));
+    item._baseName = item._baseName || item.name;
+    item.displayName = item.displayName || item.name;
+    maybeAttachAttackEffect(item, tier, depth);
+    return applyDifficulty(item);
+  };
 
   if (roll <= 35) {
-    const base = rollItemStatPotentials('weapon', depth);
-    const core = applyRarityBoosts(base, rarity.value, depth);
-    const itemLevel = computeItemLevelFromStats(core, depth);
-    const item = makeItem({
-      type: 'weapon', key: 'WPN', name: 'Klingenschwert',
-      iconKey: 'itWeapon',
-      rarity: rarity.key,
-      rarityLabel: rarity.label,
-      rarityValue: rarity.value,
-      itemLevel,
-      hp: core.hp,
-      damage: core.damage,
-      speed: core.speed,
-      range: core.range,
-      armor: core.armor,
-      crit: core.crit
-    });
-    maybeAttachAttackEffect(item, rarity.value, depth);
-    return applyDifficulty(item);
+    return buildItem({ type: 'weapon', key: 'WPN', name: 'Klingenschwert', iconKey: 'itWeapon' }, 'weapon');
   }
-
   if (roll <= 55) {
-    const base = rollItemStatPotentials('head', depth);
-    const core = applyRarityBoosts(base, rarity.value, depth);
-    const itemLevel = computeItemLevelFromStats(core, depth);
-    const item = makeItem({
-      type: 'head', key: 'HD', name: 'Stahlhelm',
-      iconKey: 'itHead',
-      rarity: rarity.key,
-      rarityLabel: rarity.label,
-      rarityValue: rarity.value,
-      itemLevel,
-      hp: core.hp,
-      damage: core.damage,
-      speed: core.speed,
-      range: core.range,
-      armor: core.armor,
-      crit: core.crit
-    });
-    maybeAttachAttackEffect(item, rarity.value, depth);
-    return applyDifficulty(item);
+    return buildItem({ type: 'head', key: 'HD', name: 'Stahlhelm', iconKey: 'itHead' }, 'head');
   }
-
   if (roll <= 75) {
-    const base = rollItemStatPotentials('body', depth);
-    const core = applyRarityBoosts(base, rarity.value, depth);
-    const itemLevel = computeItemLevelFromStats(core, depth);
-    const item = makeItem({
-      type: 'body', key: 'BD', name: 'Brustplatte',
-      iconKey: 'itBody',
-      rarity: rarity.key,
-      rarityLabel: rarity.label,
-      rarityValue: rarity.value,
-      itemLevel,
-      hp: core.hp,
-      damage: core.damage,
-      speed: core.speed,
-      range: core.range,
-      armor: core.armor,
-      crit: core.crit
-    });
-    maybeAttachAttackEffect(item, rarity.value, depth);
-    return applyDifficulty(item);
+    return buildItem({ type: 'body', key: 'BD', name: 'Brustplatte', iconKey: 'itBody' }, 'body');
   }
-
   if (roll <= 85) {
-    const base = rollItemStatPotentials('boots', depth);
-    const core = applyRarityBoosts(base, rarity.value, depth);
-    const itemLevel = computeItemLevelFromStats(core, depth);
-    const item = makeItem({
-      type: 'boots', key: 'BT', name: 'Stiefel',
-      iconKey: 'itBoots',
-      rarity: rarity.key,
-      rarityLabel: rarity.label,
-      rarityValue: rarity.value,
-      itemLevel,
-      hp: core.hp,
-      damage: core.damage,
-      speed: core.speed,
-      range: core.range,
-      armor: core.armor,
-      crit: core.crit
-    });
-    maybeAttachAttackEffect(item, rarity.value, depth);
-    return applyDifficulty(item);
+    return buildItem({ type: 'boots', key: 'BT', name: 'Stiefel', iconKey: 'itBoots' }, 'boots');
   }
 
   return applyDifficulty(makeItem({
@@ -597,10 +558,11 @@ function randomLoot() {
     materialKey: 'MAT',
     name: 'Eisenbrocken',
     iconKey: 'itMat',
-    rarity: rarity.key,
-    rarityLabel: rarity.label,
-    rarityValue: rarity.value,
-    itemLevel: rarity.value,
+    tier,
+    affixes: [],
+    iLevel: depth,
+    itemLevel: depth,
+    baseStats: {},
     hp: 0,
     damage: 0,
     speed: 0,
@@ -617,9 +579,13 @@ if (typeof window !== 'undefined') {
   window.computeItemLevelFromStats = computeItemLevelFromStats;
   window.rollItemStatPotentials = rollItemStatPotentials;
   window.addBoostsToItem = addBoostsToItem;
-  window.ITEM_RARITIES = ITEM_RARITIES;
-  window.normalizeItemStatsForRarity = normalizeItemStatsForRarity;
-  window.getRarityValueFromKey = getRarityValueFromKey;
+  window.normalizeItemStatsForTier = normalizeItemStatsForTier;
+  window.TIER_COLORS = LOOT_TIER_COLORS;
+  // Legacy aliases for any loose references that haven't been migrated yet
+  // (e.g. js/scenes/HubScene.js is parsed but never instantiated).
+  window.normalizeItemStatsForRarity = normalizeItemStatsForTier;
+  window.getRarityValueFromKey = getTierFromLegacyRarityKey;
+  window.ITEM_RARITIES = [];
   // WP03: expose gold-drop helpers so chest-open code and future systems can
   // spawn gold piles without duplicating the formula.
   window.spawnGoldPile = _spawnGoldPile;

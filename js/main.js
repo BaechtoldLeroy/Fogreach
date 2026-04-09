@@ -947,11 +947,14 @@ function grantCheatTestWeapon() {
     type: 'weapon',
     key: 'dev_cheat_blade',
     name: 'Cheat Relic',
+    _baseName: 'Cheat Relic',
+    displayName: 'Cheat Relic',
     iconKey: 'itWeapon',
-    rarity: 'legendary',
-    rarityLabel: 'Legendär',
-    rarityValue: 4,
+    tier: 3,
+    affixes: [],
+    iLevel: 999,
     itemLevel: 999,
+    baseStats: { damage: 999, range: 500, speed: 3.0, crit: 0.65, hp: 50, armor: 0.25 },
     damage: 999,
     range: 500,
     speed: 3.0,
@@ -966,8 +969,8 @@ function grantCheatTestWeapon() {
   inventory[targetIndex] = weapon;
   if (typeof window !== 'undefined') window.inventory = inventory;
 
-  if (typeof normalizeItemStatsForRarity === 'function') {
-    normalizeItemStatsForRarity(weapon, weapon.rarityValue || 4);
+  if (typeof normalizeItemStatsForTier === 'function') {
+    normalizeItemStatsForTier(weapon, weapon.tier);
   }
 
   if (typeof refreshInventoryUI === 'function') {
@@ -1560,12 +1563,20 @@ function initUI() {
         fontSize: '11px',
         fill: '#78f3c7'
       }).setOrigin(0, 1);
-      container.add([bg, fill, iconBg, radialOverlay, iconText, nameText, keyBadge, keyText, statusText]);
+      // WP08 T046: small bonus badge (bottom-right of tile) that surfaces
+      // aggregated per-ability damage / cooldown affix bonuses. Hidden when
+      // no bonuses apply so it never clutters the HUD.
+      const bonusBadge = this.add.text(tileWidth - tilePadding, tileHeight - 4, '', {
+        fontSize: '10px',
+        fontFamily: 'monospace',
+        fill: '#ffdd66'
+      }).setOrigin(1, 1).setVisible(false);
+      container.add([bg, fill, iconBg, radialOverlay, iconText, nameText, keyBadge, keyText, statusText, bonusBadge]);
       nameText.setWordWrapWidth(badgeX - tilePadding - ICON_R * 2 - 12);
       nameText.setMaxLines(2);
       return {
         container, fill, bg, statusText, nameText, keyText, keyBadge,
-        iconText, iconBg, radialOverlay,
+        iconText, iconBg, radialOverlay, bonusBadge,
         iconCx: ICON_CX, iconCy: ICON_CY, iconR: ICON_R,
         width: tileWidth, durationMs: 0, color,
         labelWidth: badgeX - tilePadding
@@ -1683,6 +1694,28 @@ function initUI() {
             abilityStatusDisplay[statusKey] = tile;
             updateAbilityStatus(statusKey, { remainingMs: 0, durationMs: 0 });
           }
+
+          // WP08 T046: refresh the per-ability bonus badge from LootSystem.
+          const dmgKey = 'dmg_' + abilityId;
+          const cdKey = 'cd_' + abilityId;
+          const dmgBonus = window.LootSystem
+            ? (window.LootSystem.getBonus(dmgKey) + window.LootSystem.getBonus('dmg_all_abilities'))
+            : 0;
+          const cdBonus = window.LootSystem
+            ? (window.LootSystem.getBonus(cdKey) + window.LootSystem.getBonus('cd_all_abilities'))
+            : 0;
+          if (tile.bonusBadge) {
+            if (dmgBonus > 0 || cdBonus > 0) {
+              const parts = [];
+              if (dmgBonus > 0) parts.push(`+${Math.round(dmgBonus * 100)}%`);
+              if (cdBonus > 0) parts.push(`-${Math.round(cdBonus * 100)}% CD`);
+              tile.bonusBadge.setText(parts.join(' '));
+              tile.bonusBadge.setVisible(true);
+            } else {
+              tile.bonusBadge.setText('');
+              tile.bonusBadge.setVisible(false);
+            }
+          }
         } else {
           tile.nameText.setText('Empty');
           tile.color = 0x555555;
@@ -1691,6 +1724,7 @@ function initUI() {
           if (tile.iconText) tile.iconText.setText('');
           if (tile.iconBg) tile.iconBg.setStrokeStyle(2, 0x555555, 0.5);
           if (tile.radialOverlay) tile.radialOverlay.clear();
+          if (tile.bonusBadge) { tile.bonusBadge.setText(''); tile.bonusBadge.setVisible(false); }
         }
       });
     };
@@ -1756,6 +1790,12 @@ function initUI() {
       });
       return list;
     };
+
+    // WP08 T048: aggregate affix bonuses once the HUD refresh hook exists so
+    // the first tile paint already reflects equipped items from the save.
+    if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
+      try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
+    }
 
     refreshSlotMappings();
     positionStatusTiles(this.scale.width, this.scale.height);

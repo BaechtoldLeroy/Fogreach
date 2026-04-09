@@ -1,17 +1,27 @@
-const ITEM_RARITY_META = {
-  common:    { color: '#ffffff', label: 'Gewöhnlich' },
-  rare:      { color: '#4cc3ff', label: 'Selten' },
-  epic:      { color: '#c17bff', label: 'Episch' },
-  legendary: { color: '#ffb347', label: 'Legendär' }
-};
+// Tier color/label maps (indexed by item.tier: 0=Common .. 3=Legendary).
+// Read from window.TIER_COLORS (loot.js) when present so both modules share
+// a single source of truth.
+const INV_TIER_COLORS_FALLBACK = ['#cccccc', '#88aaff', '#ffdd44', '#ff8844'];
+const INV_TIER_LABELS = ['Gewöhnlich', 'Magisch', 'Selten', 'Legendär'];
 
-const getRarityMeta = (it) => {
-  if (!it) return ITEM_RARITY_META.common;
-  return ITEM_RARITY_META[it.rarity] || ITEM_RARITY_META.common;
+const getItemTier = (it) => {
+  if (!it) return 0;
+  const t = Number(it.tier);
+  if (Number.isFinite(t)) return Math.max(0, Math.min(3, Math.round(t)));
+  return 0;
 };
-
-const getRarityColor = (it) => getRarityMeta(it).color;
-const getRarityLabel = (it) => it?.rarityLabel || getRarityMeta(it).label;
+const getItemTierColor = (it) => {
+  const arr = (window && window.TIER_COLORS) || INV_TIER_COLORS_FALLBACK;
+  return arr[getItemTier(it)];
+};
+const getItemTierLabel = (it) => INV_TIER_LABELS[getItemTier(it)];
+const getItemDisplayName = (it) => {
+  if (!it) return '';
+  if (window.LootSystem && typeof window.LootSystem.composeName === 'function') {
+    try { return window.LootSystem.composeName(it); } catch (e) { /* fall through */ }
+  }
+  return it.displayName || it._baseName || it.name || 'Item';
+};
 const getItemLevel = (it) => {
   if (!it) return 0;
   if (typeof it.itemLevel === 'number') return it.itemLevel;
@@ -211,7 +221,7 @@ function setSlotHighlight(target, item) {
     target.__hoverHighlight = null;
   }
   const hasItem = !!item;
-  const tintColor = hasItem ? parseTintColor(getRarityColor(item), 0xffffff) : null;
+  const tintColor = hasItem ? parseTintColor(getItemTierColor(item), 0xffffff) : null;
 
   if (highlight) {
     if (hasItem) {
@@ -262,7 +272,7 @@ function applySlotHoverTint(target, item) {
   }
   const hasItem = !!item;
   const tintColor = hasItem
-    ? (target.__highlightTintColor ?? parseTintColor(getRarityColor(item), 0xffffff))
+    ? (target.__highlightTintColor ?? parseTintColor(getItemTierColor(item), 0xffffff))
     : parseTintColor('#777777', 0x777777);
 
   if (highlight) {
@@ -445,7 +455,7 @@ function initInventoryUI() {
     if (!it) return { title: '', body: '' };
     const bodyLines = [];
     if (heading) bodyLines.push(heading);
-    bodyLines.push(`Seltenheit: ${getRarityLabel(it)}`);
+    bodyLines.push(`Seltenheit: ${getItemTierLabel(it)}`);
     const lvl = getItemLevel(it);
     bodyLines.push(`Item Level: ${lvl}`);
     if (it.type) bodyLines.push(`Typ: ${(it.type || '').toUpperCase()}`);
@@ -463,6 +473,17 @@ function initInventoryUI() {
     pushStat('Armor', (it.armor || 0) * 100, 1, '%');
     pushStat('Crit', (it.crit || 0) * 100, 1, '%');
     pushStat('Move', it.move, 1);
+    // Affix lines (WP02+). Each affix renders its tooltipText with {value} replaced.
+    if (Array.isArray(it.affixes) && it.affixes.length && window.LootSystem?.AFFIX_DEFS) {
+      const defs = window.LootSystem.AFFIX_DEFS;
+      it.affixes.forEach((inst) => {
+        if (!inst) return;
+        const def = defs.find((d) => d.id === inst.defId);
+        if (!def) return;
+        const txt = (def.tooltipText || '').replace('{value}', inst.value);
+        if (txt) bodyLines.push(txt);
+      });
+    }
     if (Array.isArray(it.attackEffects) && it.attackEffects.length) {
       const labels = (typeof ABILITY_LABELS !== 'undefined' ? ABILITY_LABELS : (window?.ABILITY_LABELS || {}));
       it.attackEffects.forEach((effect) => {
@@ -478,7 +499,7 @@ function initInventoryUI() {
       });
     }
     return {
-      title: it.name || 'Unbekanntes Item',
+      title: getItemDisplayName(it) || it.name || 'Unbekanntes Item',
       body: bodyLines.join('\n')
     };
   };
@@ -487,7 +508,7 @@ function initInventoryUI() {
     if (!box || !item || !box.title || !box.body) return false;
     const info = formatItemTooltip(item, heading);
     box.title.setText(info.title || '');
-    box.title.setStyle({ color: getRarityColor(item) });
+    box.title.setStyle({ color: getItemTierColor(item) });
     box.body.setText(info.body || '');
     box.body.setStyle({ color: '#ffffff' });
     layoutTooltipBox(box);
@@ -711,9 +732,10 @@ function makeItem(opts) {
     key: 'GEN',
     name: 'Item',
     iconKey: FALLBACK_ITEM_ICONS[type] || 'itMat',
-    rarity: 'common',
-    rarityLabel: 'Gewöhnlich',
-    rarityValue: 1,
+    tier: 0,
+    affixes: [],
+    iLevel: 1,
+    baseStats: {},
     itemLevel: 1,
     hp: 0,
     damage: 0,
@@ -937,6 +959,11 @@ function equipSelectedItem() {
     // recalc: altes HP rausrechnen, neues rein (nur Delta!)
     const newItemHp = it.hp || 0;
     recalcDerived(oldItemHp, newItemHp);
+
+    // WP08 T048: refresh aggregated affix bonuses whenever equipment changes.
+    if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
+      try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
+    }
 
     refreshInventoryUI();
   }

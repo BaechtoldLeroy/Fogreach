@@ -421,9 +421,9 @@ const mode = args[0] || '--smoke';
       if (idx < 0) return { error: 'inventory full' };
       const testItem = {
         type: 'weapon', key: 'WPN_TEST', name: 'Test-Klinge',
-        rarity: 'common', rarityLabel: 'Gewoehnlich', rarityValue: 1,
-        itemLevel: 1, hp: 0, damage: 5, speed: 0, range: 0, armor: 0, crit: 0,
-        enhanceLevel: 0
+        tier: 0, affixes: [], iLevel: 1, itemLevel: 1,
+        baseStats: { damage: 5 },
+        hp: 0, damage: 5, speed: 0, range: 0, armor: 0, crit: 0
       };
       window.inventory[idx] = testItem;
       // Give some Eisenbrocken so enhance is affordable
@@ -474,7 +474,8 @@ const mode = args[0] || '--smoke';
       console.log('  ✗ Injected test item NOT in list');
     }
 
-    // Click the test item via internal selection (faster than mouse simulation)
+    // Click the test item via internal selection (faster than mouse simulation).
+    // WP08 T050: the Verbessern button was removed; only salvage remains.
     const selectResult = await page.evaluate(() => {
       const cs = window.game.scene.getScene('CraftingScene');
       const testRow = cs.invRows.find(r => r.nameText && r.nameText.text.includes('Test-Klinge'));
@@ -482,39 +483,130 @@ const mode = args[0] || '--smoke';
       cs._selectInventory(testRow.invIndex);
       return {
         selection: cs._selection,
-        enhanceBtnVisible: cs.enhanceBtn && cs.enhanceBtn.container.visible,
         salvageBtnVisible: cs.salvageBtn && cs.salvageBtn.container.visible,
+        enhanceBtnRemoved: cs.enhanceBtn === null,
         infoText: cs.enhanceInfo && cs.enhanceInfo.text
       };
     });
     console.log('After selecting inventory item:', JSON.stringify(selectResult));
 
     if (selectResult.selection && selectResult.selection.kind === 'inv'
-        && selectResult.enhanceBtnVisible && selectResult.salvageBtnVisible) {
-      console.log('  ✓ Enhance + salvage UI activated for inventory item');
+        && selectResult.salvageBtnVisible && selectResult.enhanceBtnRemoved) {
+      console.log('  ✓ Salvage UI activated and Verbessern button removed (WP08)');
     } else {
       console.log('  ✗ UI did not activate correctly for inventory selection');
     }
 
-    // Trigger enhance and verify the inventory item changed
-    const enhanceResult = await page.evaluate(() => {
-      const cs = window.game.scene.getScene('CraftingScene');
-      const before = JSON.parse(JSON.stringify(window.inventory[cs._selection.key]));
-      cs._enhanceItem();
-      const after = JSON.parse(JSON.stringify(window.inventory[cs._selection.key]));
-      return { before, after };
-    });
-    console.log('Enhance result:', JSON.stringify(enhanceResult));
-
-    if (enhanceResult.after && enhanceResult.after.enhanceLevel === 1
-        && enhanceResult.after.damage > enhanceResult.before.damage) {
-      console.log('  ✓ Inventory item enhanced in place (+1, damage boosted)');
-    } else {
-      console.log('  ✗ Enhance did not modify inventory item correctly');
-    }
-
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '08-crafting.png') });
     console.log('Screenshot: 08-crafting.png');
+
+    // ---- Shop Test (WP08 T053) ----
+    // Returns to the hub, injects gold + a magic item, opens the Schwarzmarkt,
+    // switches to Reroll, and verifies LootSystem.rerollItem mutates affixes.
+    console.log('\n--- Shop Test (WP08 T053) ---');
+    // Close CraftingScene first
+    await page.evaluate(() => {
+      const cs = window.game.scene.getScene('CraftingScene');
+      if (cs && cs._returnToHub) { try { cs._returnToHub(); } catch (e) {} }
+    });
+    await page.waitForTimeout(600);
+
+    const shopSetup = await page.evaluate(() => {
+      if (!window.LootSystem) return { error: 'no LootSystem' };
+      if (typeof window.LootSystem.grantGold === 'function') {
+        window.LootSystem.grantGold(1000);
+      }
+      // Inject a forced-tier-1 (Magic) weapon into inventory so reroll has an affix to mutate
+      let magicItem = null;
+      try {
+        magicItem = window.LootSystem.rollItem('WPN_EISENKLINGE', 5, 1);
+      } catch (e) {
+        return { error: 'rollItem failed: ' + e.message };
+      }
+      let injectedAt = -1;
+      for (let i = 0; i < window.inventory.length; i++) {
+        if (!window.inventory[i]) { window.inventory[i] = magicItem; injectedAt = i; break; }
+      }
+      return { injectedAt, tier: magicItem && magicItem.tier, affixCount: magicItem && magicItem.affixes && magicItem.affixes.length };
+    });
+    console.log('Shop setup:', JSON.stringify(shopSetup));
+
+    const shopOpen = await page.evaluate(() => {
+      if (typeof window.openShopScene === 'function') {
+        const hub = window.game.scene.getScene('HubSceneV2');
+        try { window.openShopScene(hub); return { ok: true, method: 'openShopScene' }; }
+        catch (e) { /* fall through to start */ }
+      }
+      // Fallback: register + start ShopScene directly against the SceneManager
+      try {
+        if (window.ShopScene && window.game && window.game.scene) {
+          let registered = null;
+          try { registered = window.game.scene.getScene('ShopScene'); } catch (e) {}
+          if (!registered) {
+            window.game.scene.add('ShopScene', window.ShopScene, false);
+          }
+          window.game.scene.start('ShopScene');
+          return { ok: true, method: 'start' };
+        }
+      } catch (e) { return { ok: false, error: e.message }; }
+      return { ok: false, error: 'no ShopScene export' };
+    });
+    console.log('Shop open attempt:', JSON.stringify(shopOpen));
+
+    let shopActive = false;
+    try {
+      await page.waitForFunction(() => {
+        return window.game && window.game.scene.isActive('ShopScene');
+      }, { timeout: 5000 });
+      shopActive = true;
+      console.log('  ✓ ShopScene activated');
+    } catch (e) {
+      console.log('  ⚠ ShopScene did not become active — exercising LootSystem.rerollItem directly');
+    }
+
+    // Regardless of scene activation, verify the reroll contract works against
+    // the injected item. This is the load-bearing check for T053 — the whole
+    // reason we added a shop block is to catch reroll regressions.
+    const rerollResult = await page.evaluate(() => {
+      const shop = window.game.scene.getScene('ShopScene');
+      if (shop && typeof shop._renderTab === 'function') {
+        try { shop._renderTab('reroll'); } catch (e) { /* ignore */ }
+      }
+      // Prefer items that already have affixes (the injected Magic weapon).
+      // Skip devCheat items and anything with tier 0 or no affixes.
+      const items = (window.inventory || []).filter((it) => it
+        && it.type !== 'potion'
+        && !it.devCheat
+        && typeof it.tier === 'number' && it.tier >= 1
+        && Array.isArray(it.affixes) && it.affixes.length > 0);
+      if (items.length === 0) return { error: 'no reroll-eligible items' };
+      const target = items[0];
+      if (shop) shop.selectedRerollItem = target;
+      const before = JSON.stringify(target.affixes);
+      const cost = (shop && typeof shop._computeRerollCost === 'function')
+        ? shop._computeRerollCost(target)
+        : (window.LootSystem._computeRerollCost ? window.LootSystem._computeRerollCost(target) : 0);
+      const ok = window.LootSystem.rerollItem(target, cost);
+      const after = JSON.stringify(target.affixes);
+      return { ok, changed: before !== after, before, after, cost };
+    });
+    console.log('  Reroll result:', JSON.stringify(rerollResult));
+    if (rerollResult.ok && rerollResult.changed) {
+      console.log('  ✓ Reroll mutated affixes');
+    } else if (rerollResult.ok) {
+      console.log('  ⚠ Reroll succeeded but affixes unchanged (low affix count?)');
+    } else {
+      console.log('  ✗ Reroll failed:', JSON.stringify(rerollResult));
+    }
+
+    if (shopActive) {
+      // Close shop with ESC
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(400);
+      const shopClosed = await page.evaluate(() => !window.game.scene.isActive('ShopScene'));
+      if (shopClosed) console.log('  ✓ Shop closed via ESC');
+      else console.log('  ⚠ Shop did not close via ESC');
+    }
   }
 
   if (mode === '--dungeon' || mode === '--full') {
