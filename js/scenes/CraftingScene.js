@@ -210,14 +210,16 @@ class CraftingScene extends Phaser.Scene {
     // it now bumps the item's tier (Common → Magic → Rare → Legendary) and
     // re-rolls a fresh affix set for the new tier. Cost scales with the
     // target tier. The reroll vendor at Mara stays for affix-only rerolls.
+    // Buttons are pushed down (enhY + 80) so they don't overlap the now
+    // 4-line enhance info text (name / tier+affix count / cost / Mara hint).
     this.enhanceBtn = this._createButton(
-      leftX + slotW / 2 - 60, enhY + 40, 110, 26,
+      leftX + slotW / 2 - 60, enhY + 80, 110, 26,
       'Verbessern', () => this._enhanceItem()
     );
     this.enhanceBtn.container.setVisible(false);
 
     this.salvageBtn = this._createButton(
-      leftX + slotW / 2 + 60, enhY + 40, 110, 26,
+      leftX + slotW / 2 + 60, enhY + 80, 110, 26,
       'Zerlegen', () => this._salvageItem()
     );
     this.salvageBtn.container.setVisible(false);

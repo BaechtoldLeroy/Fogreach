@@ -696,6 +696,7 @@ class HubSceneV2 extends Phaser.Scene {
     const cy = cam.height - 180;
 
     const container = this.add.container(cx, cy).setDepth(1500).setScrollFactor(0);
+    container.setName('npcDialogContainer');
     const panelWidth = 540;
     const pad = 24;
     const innerWidth = panelWidth - pad * 2;
@@ -963,10 +964,22 @@ class HubSceneV2 extends Phaser.Scene {
   _closeDialog(keyClosers) {
     if (!this._dialogOpen) return;
     this._dialogOpen = false;
-    
+
     if (this._dialogContainer) {
       this._dialogContainer.destroy(true);
       this._dialogContainer = null;
+    }
+
+    // Defensive sweep: any leftover dialog game object that for some reason
+    // wasn't part of the destroyed container (e.g., a button created before
+    // the container.add call due to a refactor) gets nuked here so the user
+    // never sees a "shadow" of the previous dialog.
+    if (this.children && Array.isArray(this.children.list)) {
+      const orphans = this.children.list.filter((c) => {
+        if (!c || typeof c.name !== 'string') return false;
+        return c.name === 'npcDialogContainer' || c.name === 'npcDialogChild';
+      });
+      orphans.forEach((c) => { try { c.destroy(); } catch (e) {} });
     }
 
     const closers = keyClosers || this._currentKeyClosers || [];
