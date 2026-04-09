@@ -8,7 +8,11 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: main
+base_commit: f53484c2b991b30ac2a8dec6bbfc2b222f6e88e8
+created_at: '2026-04-09T14:56:47.288804+00:00'
 subtasks: [T001, T002, T003, T004, T005, T006, T007]
+shell_pid: "55372"
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
 authoritative_surface: js/lootSystem.js
