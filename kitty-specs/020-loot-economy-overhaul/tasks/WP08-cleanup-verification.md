@@ -14,6 +14,7 @@ base_commit: f14ce0120dd3fa682ec2d79588a2130bf94fbe9e
 created_at: '2026-04-09T18:24:40.000558+00:00'
 subtasks: [T049, T050, T051, T052, T053]
 shell_pid: "51328"
+agent: "claude"
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
 authoritative_surface: tools/testGame.js
@@ -255,3 +256,7 @@ Read first:
    - Return to hub, save, reload → state preserved
 4. Open an OLD save (one that existed before this feature) — items are downgraded to Common, no crashes.
 5. The 14 quickstart steps are the binding gate. If any fail, the merge is blocked.
+
+## Activity Log
+
+- 2026-04-09T18:24:40Z – claude – shell_pid=51328 – lane=doing – Started implementation via workflow command
