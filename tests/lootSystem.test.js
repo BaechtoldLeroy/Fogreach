@@ -238,13 +238,230 @@ test('getBonus returns positive value for cd_* affixes (combat applies sign)', (
 
 test('stubbed API methods throw "not implemented" errors', () => {
   const sys = freshSystem();
+  // WP02 implements rollItem, composeName, migrateSave — they no longer throw.
   const stubbed = [
-    'rollItem', 'composeName', 'grantGold', 'getGold', 'spendGold',
+    'grantGold', 'getGold', 'spendGold',
     'consumePotion', 'onPotionKey', 'isPotionOnCooldown',
-    'getOrCreateShopState', 'rerollItem', 'migrateSave'
+    'getOrCreateShopState', 'rerollItem'
   ];
   for (const name of stubbed) {
     assert.strictEqual(typeof sys[name], 'function', name + ' should be a function');
     assert.throws(() => sys[name](), /not implemented/, name + ' should throw');
   }
+});
+
+// ---------------------------------------------------------------------------
+// Phase 3 (WP02): ITEM_BASES, rollItem, composeName, migrateSave
+// ---------------------------------------------------------------------------
+
+test('ITEM_BASES has exactly 13 frozen entries with required fields', () => {
+  const sys = freshSystem();
+  assert.strictEqual(sys.ITEM_BASES.length, 13);
+  assert.strictEqual(Object.isFrozen(sys.ITEM_BASES), true);
+  const required = ['key', 'type', 'name', 'iconKey', 'baseStats', 'dropWeight'];
+  const seen = new Set();
+  for (const b of sys.ITEM_BASES) {
+    for (const f of required) {
+      assert.ok(f in b, 'missing field ' + f + ' on ' + b.key);
+    }
+    assert.strictEqual(seen.has(b.key), false, 'duplicate base key: ' + b.key);
+    seen.add(b.key);
+  }
+});
+
+test('rollItem(baseKey, iLevel) returns an item with the right key and shape', () => {
+  const sys = freshSystem();
+  const item = sys.rollItem('WPN_EISENKLINGE', 5);
+  assert.strictEqual(item.key, 'WPN_EISENKLINGE');
+  assert.strictEqual(item.type, 'weapon');
+  assert.strictEqual(item._baseName, 'Eisenklinge');
+  assert.ok(typeof item.tier === 'number' && item.tier >= 0 && item.tier <= 3);
+  assert.strictEqual(item.iLevel, 5);
+  assert.strictEqual(item.requiredLevel, 3);
+  assert.ok(item.baseStats && typeof item.baseStats === 'object');
+  assert.ok(Array.isArray(item.affixes));
+  assert.strictEqual(item.affixes.length, item.tier);
+  assert.ok(typeof item.displayName === 'string' && item.displayName.length > 0);
+});
+
+test('rollItem with forceTier overrides random tier and matches affix count', () => {
+  const sys = freshSystem();
+  for (let t = 0; t <= 3; t++) {
+    const item = sys.rollItem('WPN_EISENKLINGE', 10, t);
+    assert.strictEqual(item.tier, t);
+    assert.strictEqual(item.affixes.length, t);
+  }
+});
+
+test('rollItem deep-copies baseStats so template is not shared/mutated', () => {
+  const sys = freshSystem();
+  const tmpl = sys.ITEM_BASES.find(function (b) { return b.key === 'WPN_EISENKLINGE'; });
+  const item = sys.rollItem('WPN_EISENKLINGE', 5, 0);
+  assert.notStrictEqual(item.baseStats, tmpl.baseStats);
+  // Mutating the rolled item must not throw and must not affect the frozen template
+  item.baseStats.damage = 9999;
+  assert.strictEqual(tmpl.baseStats.damage, 8);
+});
+
+test('rollItem(null, iLevel) picks one of the 13 base keys via weighted drop', () => {
+  const sys = freshSystem();
+  const validKeys = new Set(sys.ITEM_BASES.map(function (b) { return b.key; }));
+  for (let i = 0; i < 20; i++) {
+    const item = sys.rollItem(null, 5, 0);
+    assert.ok(validKeys.has(item.key), 'unexpected key: ' + item.key);
+  }
+});
+
+test('rollItem throws on unknown baseKey', () => {
+  const sys = freshSystem();
+  assert.throws(function () { sys.rollItem('NOPE_NOT_REAL', 5); }, /Unknown item base/);
+});
+
+test('composeName: tier 0 returns _baseName', () => {
+  const sys = freshSystem();
+  const name = sys.composeName({ tier: 0, _baseName: 'Eisenklinge', affixes: [] });
+  assert.strictEqual(name, 'Eisenklinge');
+});
+
+test('composeName: tier 1 with prefix-only affix → "Prefix BaseName"', () => {
+  const sys = freshSystem();
+  const name = sys.composeName({
+    tier: 1, _baseName: 'Eisenklinge',
+    affixes: [{ defId: 'sharp_dmg', value: 20 }]
+  });
+  assert.strictEqual(name, 'Sharp Eisenklinge');
+});
+
+test('composeName: tier 1 with suffix-only affix → "BaseName Suffix"', () => {
+  const sys = freshSystem();
+  const name = sys.composeName({
+    tier: 1, _baseName: 'Eisenklinge',
+    affixes: [{ defId: 'of_health', value: 20 }]
+  });
+  assert.strictEqual(name, 'Eisenklinge of the Bear');
+});
+
+test('composeName: tier 2 with prefix + suffix → "Prefix BaseName Suffix"', () => {
+  const sys = freshSystem();
+  const name = sys.composeName({
+    tier: 2, _baseName: 'Eisenklinge',
+    affixes: [
+      { defId: 'sharp_dmg', value: 20 },
+      { defId: 'of_health', value: 25 }
+    ]
+  });
+  assert.strictEqual(name, 'Sharp Eisenklinge of the Bear');
+});
+
+test('composeName: tier 3 legendary with 4 affixes composes a long name', () => {
+  const sys = freshSystem();
+  const name = sys.composeName({
+    tier: 3, _baseName: 'Sword',
+    affixes: [
+      { defId: 'sharp_dmg', value: 20 },
+      { defId: 'spinning_dmg', value: 15 },
+      { defId: 'of_health', value: 20 },
+      { defId: 'of_precision', value: 5 }
+    ]
+  });
+  // Either full or [Legendary] fallback — both must contain baseName
+  assert.ok(name.indexOf('Sword') !== -1, 'name missing baseName: ' + name);
+  assert.ok(name.length > 'Sword'.length);
+});
+
+test('composeName: tier 3 with very long names falls back to [Legendary]', () => {
+  const sys = freshSystem();
+  // Force a long name by using long affix display names
+  const item = {
+    tier: 3,
+    _baseName: 'Kettenmorgenstern',
+    affixes: [
+      { defId: 'fire_warding', value: 15 },     // 'Fireproof' prefix
+      { defId: 'lightning_warding', value: 15 }, // 'Stormproof' prefix
+      { defId: 'of_swift_charge', value: 12 },   // 'of Swift Charge' suffix
+      { defId: 'of_swift_dagger', value: 12 }    // 'of Swift Dagger' suffix
+    ]
+  };
+  const name = sys.composeName(item);
+  assert.ok(name.indexOf('[Legendary]') !== -1, 'expected legendary fallback, got: ' + name);
+});
+
+test('migrateSave: strips old fields and adds new ones on inventory items', () => {
+  const sys = freshSystem();
+  const save = {
+    inventory: [
+      { name: 'Test Sword', _baseName: 'Test Sword', rarity: 'common', rarityValue: 1, rarityLabel: 'Common', enhanceLevel: 3, damage: 5 }
+    ]
+  };
+  const out = sys.migrateSave(save);
+  const it = out.inventory[0];
+  assert.strictEqual('rarity' in it, false);
+  assert.strictEqual('rarityValue' in it, false);
+  assert.strictEqual('rarityLabel' in it, false);
+  assert.strictEqual('enhanceLevel' in it, false);
+  assert.strictEqual(it.tier, 0);
+  assert.deepStrictEqual(it.affixes, []);
+  assert.strictEqual(it.iLevel, 1);
+  assert.strictEqual(it.requiredLevel, 1);
+  assert.strictEqual(it.baseStats.damage, 5);
+  assert.strictEqual(it.displayName, 'Test Sword');
+});
+
+test('migrateSave: migrates equipment slots and strips old fields', () => {
+  const sys = freshSystem();
+  const save = {
+    equipment: {
+      weapon: { name: 'W', _baseName: 'W', rarity: 'rare', damage: 10 },
+      head: null,
+      body: { name: 'B', _baseName: 'B', rarity: 'common', armor: 4 },
+      boots: null
+    }
+  };
+  sys.migrateSave(save);
+  assert.strictEqual('rarity' in save.equipment.weapon, false);
+  assert.strictEqual(save.equipment.weapon.tier, 0);
+  assert.deepStrictEqual(save.equipment.weapon.affixes, []);
+  assert.strictEqual(save.equipment.weapon.baseStats.damage, 10);
+  assert.strictEqual(save.equipment.body.baseStats.armor, 4);
+  assert.strictEqual(save.equipment.head, null);
+});
+
+test('migrateSave: sets saveVersion to 2', () => {
+  const sys = freshSystem();
+  const save = { inventory: [] };
+  const out = sys.migrateSave(save);
+  assert.strictEqual(out.saveVersion, 2);
+});
+
+test('migrateSave: idempotent — running twice produces identical result', () => {
+  const sys = freshSystem();
+  const save = {
+    inventory: [
+      { name: 'Sword', _baseName: 'Sword', rarity: 'rare', damage: 7 },
+      null,
+      { name: 'Helm', _baseName: 'Helm', rarity: 'common', armor: 3 }
+    ],
+    equipment: {
+      weapon: { name: 'W', _baseName: 'W', rarity: 'common', damage: 5 }
+    }
+  };
+  const once = sys.migrateSave(save);
+  const onceSnap = JSON.parse(JSON.stringify(once));
+  const twice = sys.migrateSave(once);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(twice)), onceSnap);
+});
+
+test('migrateSave: no-op when saveVersion >= 2', () => {
+  const sys = freshSystem();
+  const save = { saveVersion: 2, inventory: [{ rarity: 'should_stay_because_already_migrated' }] };
+  const out = sys.migrateSave(save);
+  // Returns same reference, untouched
+  assert.strictEqual(out, save);
+  assert.strictEqual(out.inventory[0].rarity, 'should_stay_because_already_migrated');
+});
+
+test('migrateSave: handles null/undefined gracefully', () => {
+  const sys = freshSystem();
+  assert.strictEqual(sys.migrateSave(null), null);
+  assert.strictEqual(sys.migrateSave(undefined), undefined);
 });

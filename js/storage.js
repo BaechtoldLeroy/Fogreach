@@ -180,6 +180,16 @@ function clearSave() {
 
 
 function applySaveToState(scene, s) {
+  // Run loot migration first — converts old item structures in-place before
+  // any state assignment. Idempotent; safe on already-migrated saves.
+  if (s && typeof window !== 'undefined' && window.LootSystem && typeof window.LootSystem.migrateSave === 'function') {
+    try {
+      s = window.LootSystem.migrateSave(s);
+    } catch (err) {
+      console.warn('[storage] migrateSave failed', err);
+    }
+  }
+
   // 1) Core-Stats aus Save übernehmen (mit Fallbacks)
   currentWave        = Math.max(0, s.currentWave ?? currentWave);
   const waveForCount = Math.max(1, currentWave || 1);
