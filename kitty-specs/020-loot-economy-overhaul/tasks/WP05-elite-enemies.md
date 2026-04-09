@@ -15,6 +15,7 @@ base_commit: 77c4f48305fd23dc3f6435c056280ccc7568afe1
 created_at: '2026-04-09T17:27:59.413917+00:00'
 subtasks: [T026, T027, T028, T029, T030, T031, T032, T033, T034]
 shell_pid: "56684"
+agent: "claude"
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
 authoritative_surface: js/eliteEnemies.js
@@ -454,3 +455,7 @@ Read first:
 3. Kill a Unique elite — verify a guaranteed Magic+ item is in the drops.
 4. Open DevTools, find the elite enemy via `enemies.children.entries[0]` — verify `_isElite`, `eliteTier`, `eliteAffixes` fields exist.
 5. Wait for the elite to die, then check `aura.active === false` and `nameTag.active === false` — no leak.
+
+## Activity Log
+
+- 2026-04-09T17:28:00Z – claude – shell_pid=56684 – lane=doing – Started implementation via workflow command
