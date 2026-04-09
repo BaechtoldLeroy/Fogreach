@@ -16,6 +16,7 @@ base_commit: d13015d401455e48e3e92138dafdfb19544d645d
 created_at: '2026-04-09T17:47:27.393390+00:00'
 subtasks: [T035, T036, T037, T038, T039, T040, T041, T042, T043]
 shell_pid: "52720"
+agent: "claude"
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
 authoritative_surface: js/scenes/ShopScene.js
@@ -642,3 +643,7 @@ Read first:
 6. Press ESC → shop closes, hub still rendered behind.
 7. Walk away from Mara, then back, open shop → SAME stock (run hasn't changed).
 8. Enter dungeon, complete a run, return to hub, open shop → DIFFERENT stock (new run).
+
+## Activity Log
+
+- 2026-04-09T17:47:27Z – claude – shell_pid=52720 – lane=doing – Started implementation via workflow command
