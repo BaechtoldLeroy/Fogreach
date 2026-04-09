@@ -18,6 +18,7 @@ base_commit: 55a4b21344127a1592d4acdeb7c7fa1d1ffc8f25
 created_at: '2026-04-09T16:24:50.578522+00:00'
 subtasks: [T008, T009, T010, T011, T012, T013]
 shell_pid: "52760"
+agent: "claude"
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
 authoritative_surface: js/storage.js
@@ -386,3 +387,7 @@ Read first:
    ```
    All migrated items show `tier=0`, `!!i.rarity` is false (no old field), `displayName` is set.
 4. Confirm new game still seeds the inventory with a working item set (cheat weapon should still appear).
+
+## Activity Log
+
+- 2026-04-09T16:24:51Z – claude – shell_pid=52760 – lane=doing – Started implementation via workflow command
