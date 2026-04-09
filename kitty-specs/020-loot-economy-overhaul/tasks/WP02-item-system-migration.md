@@ -391,3 +391,4 @@ Read first:
 ## Activity Log
 
 - 2026-04-09T16:24:51Z – claude – shell_pid=52760 – lane=doing – Started implementation via workflow command
+- 2026-04-09T16:30:12Z – claude – shell_pid=52760 – lane=for_review – Item system + migration complete; tests pass
