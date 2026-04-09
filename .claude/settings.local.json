@@ -46,7 +46,8 @@
       "Bash(netstat -ano)",
       "Bash(grep -l \"brazier\" js/roomTemplates/*.json)",
       "Bash(grep -v \"//\")",
-      "Bash(ls js/roomTemplates/*.json)"
+      "Bash(ls js/roomTemplates/*.json)",
+      "Bash(ls test-output/*.png)"
     ]
   }
 }

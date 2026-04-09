@@ -425,18 +425,24 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     depthTint = 0xffe8d0;   // warm tone
   }
 
-  if (!skipFloorTiles && floorKey && scene.add?.tileSprite) {
-    const floorSprite = scene.add.tileSprite(
-      ox + (W * T) / 2,
-      oy + (H * T) / 2,
-      W * T,
-      H * T,
-      floorKey
-    );
-    floorSprite.setOrigin(0.5);
-    floorSprite.setDepth(-5);
-    if (depthTint) floorSprite.setTint(depthTint);
-    templateWalls.push(floorSprite);
+  if (!skipFloorTiles && floorKey && scene.add?.renderTexture) {
+    // Workaround: Phaser TileSprite created from a canvas-generated texture
+    // (graphics.generateTexture('floor_stone', ...)) ends up with texture.key
+    // = null and renders as a transparent rectangle. Use a RenderTexture and
+    // draw the source texture in a tiled pattern instead — this works
+    // reliably with canvas-source textures.
+    const floorWPx = W * T;
+    const floorHPx = H * T;
+    const rt = scene.add.renderTexture(ox, oy, floorWPx, floorHPx).setOrigin(0, 0);
+    rt.setDepth(-5);
+    // Tile the source texture across the render texture
+    for (let ty = 0; ty < H; ty++) {
+      for (let tx = 0; tx < W; tx++) {
+        rt.draw(floorKey, tx * T, ty * T);
+      }
+    }
+    if (depthTint) rt.setTint(depthTint);
+    templateWalls.push(rt);
 
     // Scatter 8-12 random "detail tiles" to break up tiling repetition
     if (scene.add?.graphics) {
