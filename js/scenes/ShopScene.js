@@ -481,7 +481,18 @@
     if (!game || !game.scene) return;
     _ensureShopSceneRegistered(game);
     if (game.scene.isActive && game.scene.isActive('ShopScene')) return;
-    game.scene.launch('ShopScene', {
+    // Phaser SceneManager has start/stop but NOT launch. The launch method
+    // lives on the ScenePlugin attached to a Scene instance, so we have to
+    // call it via parentScene.scene (the plugin) or fall back to a fresh
+    // active scene.
+    const launcher = (parentScene && parentScene.scene && typeof parentScene.scene.launch === 'function')
+      ? parentScene.scene
+      : (function () {
+          const active = game.scene.scenes.find((s) => s && s.sys && s.sys.isActive());
+          return active && active.scene && typeof active.scene.launch === 'function' ? active.scene : null;
+        }());
+    if (!launcher) return;
+    launcher.launch('ShopScene', {
       from: (parentScene && parentScene.scene && parentScene.scene.key) || null
     });
   };

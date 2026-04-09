@@ -782,14 +782,21 @@ function create() {
   isDashing = false;
   abilityStatusDisplay = {};
   const updateWorldBounds = (width, height) => {
+    // Guard: scale resize events can fire after the GameScene has been
+    // shut down (e.g., player accepts a quest in the hub which spawns a
+    // dialog and triggers a scale event). After shutdown, this.physics
+    // and this.cameras.main are null and would throw setBounds on null.
+    if (!this.physics || !this.physics.world || !this.cameras || !this.cameras.main) return;
     const boundsWidth = width + WORLD_RIGHT_PADDING;
     this.physics.world.setBounds(0, 0, boundsWidth, height);
     this.cameras.main.setBounds(0, 0, boundsWidth, height);
   };
 
   updateWorldBounds(this.scale.width, this.scale.height);
-  this.scale.on('resize', (gameSize) => {
-    updateWorldBounds(gameSize.width, gameSize.height);
+  const onResize = (gameSize) => updateWorldBounds(gameSize.width, gameSize.height);
+  this.scale.on('resize', onResize);
+  this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    this.scale.off('resize', onResize);
   });
 
   // 4.1 Vollbild & Touch-Pointer
@@ -1597,13 +1604,15 @@ function initUI() {
       }
       const onCd = typeof window.LootSystem.isPotionOnCooldown === 'function'
         && window.LootSystem.isPotionOnCooldown();
+      const remainMs = (typeof window.LootSystem._getPotionCooldownRemaining === 'function')
+        ? window.LootSystem._getPotionCooldownRemaining() : 0;
       if (bestTier > 0) {
         potionTile.nameText.setText((POTION_NAMES[bestTier] || 'Trank') + ' x' + bestStack);
         if (potionTile.statusText) {
-          potionTile.statusText.setText(onCd ? 'Cooldown' : 'Bereit');
+          potionTile.statusText.setText(onCd ? (remainMs / 1000).toFixed(1) + 's' : 'Bereit');
           potionTile.statusText.setColor(onCd ? '#ffd966' : '#78f3c7');
         }
-        if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, 0x44ff66, 0.85);
+        if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, onCd ? 0xffd966 : 0x44ff66, 0.85);
       } else {
         potionTile.nameText.setText('Kein Trank');
         if (potionTile.statusText) {
@@ -1612,24 +1621,26 @@ function initUI() {
         }
         if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, 0x555555, 0.5);
       }
-      // Cooldown radial — uses the existing buildTile radialOverlay
+      // Cooldown radial — bright green wedge that DEPLETES from full to empty.
       const overlay = potionTile.radialOverlay;
       if (overlay) {
         overlay.clear();
-        if (onCd) {
-          const remainMs = (typeof window.LootSystem._getPotionCooldownRemaining === 'function')
-            ? window.LootSystem._getPotionCooldownRemaining() : 0;
+        if (onCd && remainMs > 0) {
           const fraction = Math.max(0, Math.min(1, remainMs / 2000));
-          if (fraction > 0) {
-            const startAngle = -Math.PI / 2;
-            const endAngle = startAngle + fraction * Math.PI * 2;
-            overlay.fillStyle(0x000000, 0.55);
-            overlay.beginPath();
-            overlay.moveTo(potionTile.iconCx, potionTile.iconCy);
-            overlay.arc(potionTile.iconCx, potionTile.iconCy, potionTile.iconR, startAngle, endAngle, false);
-            overlay.closePath();
-            overlay.fillPath();
-          }
+          const startAngle = -Math.PI / 2;
+          const endAngle = startAngle + fraction * Math.PI * 2;
+          // Solid black backdrop wedge so the icon emoji is dimmed
+          overlay.fillStyle(0x000000, 0.7);
+          overlay.beginPath();
+          overlay.moveTo(potionTile.iconCx, potionTile.iconCy);
+          overlay.arc(potionTile.iconCx, potionTile.iconCy, potionTile.iconR, startAngle, endAngle, false);
+          overlay.closePath();
+          overlay.fillPath();
+          // Bright outline arc for visibility
+          overlay.lineStyle(3, 0xffd966, 1);
+          overlay.beginPath();
+          overlay.arc(potionTile.iconCx, potionTile.iconCy, potionTile.iconR - 1, startAngle, endAngle, false);
+          overlay.strokePath();
         }
       }
     };
