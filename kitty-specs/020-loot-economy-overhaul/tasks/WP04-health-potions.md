@@ -16,6 +16,7 @@ base_commit: 2506bf9adfcd145f6d63a3616ae16908d39f3467
 created_at: '2026-04-09T16:52:06.200804+00:00'
 subtasks: [T020, T021, T022, T023, T024, T025]
 shell_pid: "3884"
+agent: "claude"
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
 authoritative_surface: js/main.js
@@ -342,3 +343,7 @@ Read first:
 4. Wait 2s, press F → works again.
 5. Reach a state where you have multiple potion tiers — F should always pick the HIGHEST tier first.
 6. Super potion (test by injecting via console) → max HP temporarily goes up by 10%, reverts after 30s.
+
+## Activity Log
+
+- 2026-04-09T16:52:06Z – claude – shell_pid=3884 – lane=doing – Started implementation via workflow command
