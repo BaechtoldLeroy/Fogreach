@@ -555,11 +555,68 @@
   function _resetPotionCooldown() {
     _potionCooldownUntil = 0;
   }
-  function getOrCreateShopState() {
-    throw new Error('getOrCreateShopState: not implemented in WP01 (WP06)');
+  // ---------------------------------------------------------------------------
+  // WP06: Shop state (Mara Schwarzmarkt)
+  // ---------------------------------------------------------------------------
+  let _lastShopRunId = null;
+  const SHOP_STOCK_COUNT = 7;
+
+  function _currentRunId() {
+    if (typeof window === 'undefined') return 'default';
+    if (window.dungeonRun && window.dungeonRun.runId) return window.dungeonRun.runId;
+    if (typeof window.currentRunSeed !== 'undefined' && window.currentRunSeed !== null) {
+      return 'seed:' + window.currentRunSeed;
+    }
+    if (typeof window.currentWave === 'number') return 'wave:' + window.currentWave;
+    return 'default';
   }
-  function rerollItem(/* item, costGold */) {
-    throw new Error('rerollItem: not implemented in WP01 (WP06)');
+
+  function _generateShopStock(runId) {
+    const depth = (typeof window !== 'undefined' && typeof window.currentWave === 'number')
+      ? Math.max(1, window.currentWave)
+      : (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number' ? window.DUNGEON_DEPTH : 3);
+    const stock = [];
+    for (let i = 0; i < SHOP_STOCK_COUNT; i++) {
+      try {
+        const it = rollItem(null, depth);
+        if (it) stock.push(it);
+      } catch (err) { /* skip */ }
+    }
+    return stock;
+  }
+
+  function getOrCreateShopState(runIdOverride) {
+    const runId = (typeof runIdOverride !== 'undefined' && runIdOverride !== null)
+      ? runIdOverride
+      : _currentRunId();
+    if (!_shopState || _lastShopRunId !== runId) {
+      _lastShopRunId = runId;
+      _shopState = {
+        currentRunId: runId,
+        generatedAt: Date.now(),
+        itemStock: _generateShopStock(runId)
+      };
+    }
+    return _shopState;
+  }
+
+  function _computeRerollCost(item) {
+    if (!item || typeof item.tier !== 'number') return 0;
+    const tierMult = [1, 2, 4, 8];
+    const t = Math.max(0, Math.min(3, item.tier));
+    const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
+    return Math.max(1, Math.round(50 * tierMult[t] * (1 + iLevel * 0.05)));
+  }
+
+  function rerollItem(item, costGold) {
+    if (!item || typeof item.tier !== 'number') return false;
+    const expected = (typeof costGold === 'number') ? costGold : _computeRerollCost(item);
+    if (!spendGold(expected)) return false;
+    const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
+    const count = Math.max(0, item.tier | 0);
+    item.affixes = rollAffixes(iLevel, count, Math.random, item.type);
+    try { item.displayName = composeName(item); } catch (e) { /* swallow */ }
+    return true;
   }
   function migrateSave(saveData) {
     if (!saveData) return saveData;
@@ -644,6 +701,7 @@
     POTION_GLOBAL_CD_MS: POTION_GLOBAL_CD_MS,
     getOrCreateShopState: getOrCreateShopState,
     rerollItem: rerollItem,
+    _computeRerollCost: _computeRerollCost,
     migrateSave: migrateSave,
 
     // internal cache handle exposed for tests (read-only by convention)
