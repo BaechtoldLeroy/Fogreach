@@ -13,6 +13,7 @@ base_commit: f53484c2b991b30ac2a8dec6bbfc2b222f6e88e8
 created_at: '2026-04-09T14:56:47.288804+00:00'
 subtasks: [T001, T002, T003, T004, T005, T006, T007]
 shell_pid: "55372"
+agent: "claude"
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
 authoritative_surface: js/lootSystem.js
@@ -374,3 +375,7 @@ When reviewing this WP, verify:
 4. The cache is invalidated only on `recomputeBonuses` calls, not on every getBonus.
 5. The script tag in `index.html` is in the right position (after inventory.js, before abilitySystem.js).
 6. No regressions in existing tests (`tools/runTests.js` and `tools/testGame.js --loadout` both green).
+
+## Activity Log
+
+- 2026-04-09T14:56:47Z – claude – shell_pid=55372 – lane=doing – Started implementation via workflow command
