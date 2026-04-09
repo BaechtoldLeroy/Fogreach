@@ -1,7 +1,7 @@
 ---
 work_package_id: WP05
 title: Elite Enemies
-dependencies: [WP02]
+dependencies: []
 requirement_refs:
 - FR-022
 - FR-023
@@ -9,7 +9,7 @@ requirement_refs:
 - FR-025
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: main → main (stacks on WP02)
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T026, T027, T028, T029, T030, T031, T032, T033, T034]
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
@@ -19,8 +19,6 @@ lane: planned
 owned_files:
 - js/eliteEnemies.js
 - js/enemy.js
-- js/loot.js
-- index.html
 - tests/eliteEnemies.test.js
 ---
 

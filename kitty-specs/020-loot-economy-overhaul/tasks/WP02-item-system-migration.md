@@ -1,7 +1,7 @@
 ---
 work_package_id: WP02
 title: Item System & Migration
-dependencies: [WP01]
+dependencies: []
 requirement_refs:
 - FR-001
 - FR-004
@@ -12,17 +12,15 @@ requirement_refs:
 - FR-027
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: main → main (stacks on WP01)
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T008, T009, T010, T011, T012, T013]
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
-authoritative_surface: js/lootSystem.js
+authoritative_surface: js/storage.js
 execution_mode: code_change
 lane: planned
 owned_files:
-- js/lootSystem.js
 - js/storage.js
-- tests/lootSystem.test.js
 ---
 
 # WP02 — Item System & Migration

@@ -1,7 +1,7 @@
 ---
 work_package_id: WP07
 title: Ability Modifier Integration
-dependencies: [WP01]
+dependencies: []
 requirement_refs:
 - FR-029
 - FR-030
@@ -10,7 +10,7 @@ requirement_refs:
 - FR-033
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: main → main (stacks on WP01, parallel-safe with WP02/WP03/WP04)
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T044, T045, T046, T047, T048]
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
@@ -19,9 +19,6 @@ execution_mode: code_change
 lane: planned
 owned_files:
 - js/player.js
-- js/abilitySystem.js
-- js/main.js
-- js/scenes/CraftingScene.js
 ---
 
 # WP07 — Ability Modifier Integration

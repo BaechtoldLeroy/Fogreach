@@ -1,7 +1,7 @@
 ---
 work_package_id: WP04
 title: Health Potions
-dependencies: [WP01]
+dependencies: []
 requirement_refs:
 - FR-013
 - FR-014
@@ -10,15 +10,14 @@ requirement_refs:
 - FR-028
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: main → main (stacks on WP01, parallel-safe with WP02/WP03/WP07)
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T020, T021, T022, T023, T024, T025]
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
-authoritative_surface: js/lootSystem.js
+authoritative_surface: js/main.js
 execution_mode: code_change
 lane: planned
 owned_files:
-- js/lootSystem.js
 - js/main.js
 - js/abilitySystem.js
 ---

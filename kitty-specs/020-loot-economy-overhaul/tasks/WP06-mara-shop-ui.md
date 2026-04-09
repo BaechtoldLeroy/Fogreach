@@ -1,7 +1,7 @@
 ---
 work_package_id: WP06
 title: Mara Shop UI
-dependencies: [WP02, WP03, WP04]
+dependencies: []
 requirement_refs:
 - FR-017
 - FR-018
@@ -10,7 +10,7 @@ requirement_refs:
 - FR-021
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: main → main (stacks on WP02+WP03+WP04)
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T035, T036, T037, T038, T039, T040, T041, T042, T043]
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
@@ -19,10 +19,7 @@ execution_mode: code_change
 lane: planned
 owned_files:
 - js/scenes/ShopScene.js
-- js/lootSystem.js
 - js/scenes/HubSceneV2.js
-- js/main.js
-- index.html
 ---
 
 # WP06 — Mara Shop UI
