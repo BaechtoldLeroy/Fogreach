@@ -604,7 +604,11 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
   const isCrit = Math.random() < critChance;
   const bonus = getAbilityBonus(abilityKey);
   const damageMult = 1 + (bonus.damage || 0);
-  const base = Math.max(1, weaponDamage * multiplier * damageMult);
+  // WP07 T044: Equipment affix damage bonus via LootSystem.getBonus().
+  // Per-ability key maps to the loot stat key (e.g. 'spin' -> 'dmg_spinAttack').
+  // Plain 'attack' only picks up 'dmg_all_abilities' (no per-ability affix).
+  const lootDmgMul = 1 + getLootAbilityDamageBonus(abilityKey);
+  const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul);
   const damage = Math.max(1, Math.round(isCrit ? base * 1.5 : base));
 
   enemy.hp -= damage;
@@ -756,11 +760,63 @@ function getAbilityBonus(key) {
   return source[key] || { damage: 0, cooldown: 0 };
 }
 
+// WP07: Map the player.js short ability keys ('spin','charge','dash','dagger','shield','attack')
+// to the LootSystem statKey suffixes ('spinAttack','chargeSlash',...). Returns null for 'attack'
+// since the plain melee does NOT get a per-ability affix, only 'dmg_all_abilities' / 'cd_all_abilities'.
+function _lootAbilityStatKey(abilityKey) {
+  switch (abilityKey) {
+    case 'spin': return 'spinAttack';
+    case 'charge': return 'chargeSlash';
+    case 'dash': return 'dashSlash';
+    case 'dagger': return 'daggerThrow';
+    case 'shield': return 'shieldBash';
+    default: return null; // 'attack' and anything else → no per-ability affix
+  }
+}
+
+function _getLootBonus(statKey) {
+  if (!statKey) return 0;
+  const LS = window.LootSystem;
+  if (!LS || typeof LS.getBonus !== 'function') return 0;
+  const v = LS.getBonus(statKey);
+  return Number.isFinite(v) ? v : 0;
+}
+
+// WP07 T044: Total damage multiplier fraction from equipped affixes for a given ability.
+// e.g. abilityKey='spin' returns getBonus('dmg_spinAttack') + getBonus('dmg_all_abilities').
+// Plain 'attack' returns only the all-abilities bonus.
+function getLootAbilityDamageBonus(abilityKey) {
+  const suffix = _lootAbilityStatKey(abilityKey);
+  const perAbility = suffix ? _getLootBonus('dmg_' + suffix) : 0;
+  const allAbilities = _getLootBonus('dmg_all_abilities');
+  return perAbility + allAbilities;
+}
+
+// WP07 T045: Total cooldown reduction fraction from equipped affixes for a given ability.
+// Returns the subtractive fraction (e.g. 0.25 → cooldown shrinks by 25%).
+function getLootAbilityCooldownReduction(abilityKey) {
+  const suffix = _lootAbilityStatKey(abilityKey);
+  const perAbility = suffix ? _getLootBonus('cd_' + suffix) : 0;
+  const allAbilities = _getLootBonus('cd_all_abilities');
+  return perAbility + allAbilities;
+}
+
 function applyCooldownModifier(base, key) {
   const bonus = getAbilityBonus(key);
   const mult = Math.max(0.2, 1 - (bonus.cooldown || 0));
-  return base * mult;
+  // WP07 T045: also apply equipment affix cooldown reduction from LootSystem.
+  // cdReductionMul = 1 - cd_<ability> - cd_all_abilities; floor resulting CD at 100ms.
+  const lootCdMul = Math.max(0, 1 - getLootAbilityCooldownReduction(key));
+  const effective = base * mult * lootCdMul;
+  return Math.max(100, effective);
 }
+
+// WP07 T046 NOTE: The HUD bonus badge (+22% / -12% CD text under each ability slot tile)
+// must be added in js/main.js inside buildTile / refreshSlotMappings. That file is owned
+// by another work package, so the badge is deferred to a follow-up WP.
+// WP07 T048 NOTE: Hooking LootSystem.recomputeBonuses() into equip-change events
+// requires edits to js/inventory.js, js/scenes/CraftingScene.js, and js/storage.js,
+// none of which are owned by WP07. Deferred to a follow-up WP.
 
 const CHARGED_SLASH_MIN_CHARGE = 300;
 const CHARGED_SLASH_MAX_CHARGE = 1500;
