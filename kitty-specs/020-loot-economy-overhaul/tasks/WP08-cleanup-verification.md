@@ -2,7 +2,9 @@
 work_package_id: WP08
 title: Cleanup & Verification
 dependencies: [WP01, WP02, WP03, WP04, WP05, WP06, WP07]
-requirement_refs: []
+requirement_refs:
+- FR-026
+- FR-027
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: main → main (final integration WP)
