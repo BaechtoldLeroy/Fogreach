@@ -1,15 +1,15 @@
 {
-  "event_count": 21,
+  "event_count": 24,
   "feature_slug": "020-loot-economy-overhaul",
-  "last_event_id": "01KNSQKZ9T1JJTWN9BQYCN40CY",
-  "materialized_at": "2026-04-09T18:21:07.785009+00:00",
+  "last_event_id": "01KNSSFEBX7S122PP01NQ16FMV",
+  "materialized_at": "2026-04-09T18:53:36.525524+00:00",
   "summary": {
     "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 7,
+    "for_review": 8,
     "in_progress": 0,
     "planned": 0
   },
@@ -62,6 +62,13 @@
       "lane": "for_review",
       "last_event_id": "01KNSQKZ9T1JJTWN9BQYCN40CY",
       "last_transition_at": "2026-04-09T18:21:07.771016+00:00"
+    },
+    "WP08": {
+      "actor": "user",
+      "force_count": 1,
+      "lane": "for_review",
+      "last_event_id": "01KNSSFEBX7S122PP01NQ16FMV",
+      "last_transition_at": "2026-04-09T18:53:36.509445+00:00"
     }
   }
 }
