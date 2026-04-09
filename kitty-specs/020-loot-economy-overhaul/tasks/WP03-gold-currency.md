@@ -16,6 +16,7 @@ base_commit: 503fc4673b7fad055d1625bb27df0edb063af7a9
 created_at: '2026-04-09T16:32:34.363886+00:00'
 subtasks: [T014, T015, T016, T017, T018, T019]
 shell_pid: "47700"
+agent: "claude"
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
 authoritative_surface: js/loot.js
@@ -303,3 +304,7 @@ Read first:
 3. Try to spend more than you have: `spendGold(99999)` → returns false; counter unchanged.
 4. Open a save from before this WP — `materialCounts.GOLD` initializes to 0, no errors.
 5. Check that the existing Eisenbrocken counter still updates when materials are spent at the forge.
+
+## Activity Log
+
+- 2026-04-09T16:32:34Z – claude – shell_pid=47700 – lane=doing – Started implementation via workflow command
