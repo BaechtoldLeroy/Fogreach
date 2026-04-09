@@ -11,7 +11,11 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: 020-loot-economy-overhaul-WP05
+base_commit: d13015d401455e48e3e92138dafdfb19544d645d
+created_at: '2026-04-09T17:47:27.393390+00:00'
 subtasks: [T035, T036, T037, T038, T039, T040, T041, T042, T043]
+shell_pid: "52720"
 history:
 - {ts: '2026-04-09T14:30:00Z', action: created, actor: /spec-kitty.tasks}
 authoritative_surface: js/scenes/ShopScene.js
