@@ -513,9 +513,19 @@ function randomLoot() {
     const base = rollItemStatPotentials(slotType, depth);
     const core = applyTierBoosts(base, tier, depth);
     const itemLevel = computeItemLevelFromStats(core, depth);
+    // Roll affixes via LootSystem so dungeon drops carry the same affix
+    // shape as shop / migration items. Affix count = tier (0..3), matching
+    // rollItem in lootSystem.js. Without this, dropped items showed up in
+    // Mara's reroll tab with no affix lines.
+    let rolledAffixes = [];
+    if (window.LootSystem && typeof window.LootSystem.rollAffixes === 'function' && tier > 0) {
+      try {
+        rolledAffixes = window.LootSystem.rollAffixes(itemLevel, tier, Math.random, opts.type) || [];
+      } catch (e) { /* swallow */ }
+    }
     const item = makeItem(Object.assign({}, opts, {
       tier,
-      affixes: [],
+      affixes: rolledAffixes,
       iLevel: itemLevel,
       itemLevel,
       baseStats: {
@@ -534,7 +544,11 @@ function randomLoot() {
       crit: core.crit
     }));
     item._baseName = item._baseName || item.name;
-    item.displayName = item.displayName || item.name;
+    if (window.LootSystem && typeof window.LootSystem.composeName === 'function') {
+      try { item.displayName = window.LootSystem.composeName(item); } catch (e) { item.displayName = item.displayName || item.name; }
+    } else {
+      item.displayName = item.displayName || item.name;
+    }
     maybeAttachAttackEffect(item, tier, depth);
     return applyDifficulty(item);
   };

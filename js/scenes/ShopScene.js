@@ -329,9 +329,22 @@
     // -----------------------------------------------------------------------
     _renderRerollTab() {
       const { px, py, panelW, panelH } = this._panel;
-      const items = (window.inventory || []).filter(
-        it => it && it.type !== 'potion' && typeof it.tier === 'number'
-      );
+      // Reroll candidates: items in inventory AND currently-equipped items.
+      // Equipped slots get an "[E]" prefix in the row label so the player
+      // can tell them apart.
+      const items = [];
+      (window.inventory || []).forEach((it) => {
+        if (it && it.type !== 'potion' && typeof it.tier === 'number') {
+          items.push({ item: it, source: 'inv', label: '' });
+        }
+      });
+      const eq = window.equipment || {};
+      ['weapon', 'head', 'body', 'boots'].forEach((slot) => {
+        const it = eq[slot];
+        if (it && it.type !== 'potion' && typeof it.tier === 'number') {
+          items.push({ item: it, source: 'equip', label: '[E] ' });
+        }
+      });
 
       if (items.length === 0) {
         const t = this.add.text(px, py, 'Keine reroll-baren Items im Inventar.', {
@@ -346,7 +359,7 @@
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       this.tabBody.push(header);
 
-      if (this.selectedRerollItem && items.indexOf(this.selectedRerollItem) === -1) {
+      if (this.selectedRerollItem && items.findIndex((entry) => entry.item === this.selectedRerollItem) === -1) {
         // Selected item was removed from inventory (e.g. equipped elsewhere)
         this.selectedRerollItem = null;
       }
@@ -401,15 +414,16 @@
           this._renderTab('reroll');
         });
       } else {
-        // List inventory items as clickable rows
-        items.slice(0, 10).forEach((item, idx) => {
-          const ry = py - panelH / 2 + 120 + idx * 26;
+        // List inventory + equipped items as clickable rows
+        items.slice(0, 12).forEach((entry, idx) => {
+          const item = entry.item;
+          const ry = py - panelH / 2 + 120 + idx * 24;
           const color = TIER_COLORS[item.tier || 0] || '#cccccc';
           const rowBg = this.add.rectangle(px, ry, panelW - 60, 22, 0x2a2a2a)
             .setStrokeStyle(1, 0x444444).setScrollFactor(0).setDepth(2003)
             .setInteractive({ useHandCursor: true });
           this.tabBody.push(rowBg);
-          const nameText = this.add.text(px, ry, item.displayName || item._baseName || 'Item', {
+          const nameText = this.add.text(px, ry, entry.label + (item.displayName || item._baseName || 'Item'), {
             fontFamily: 'monospace', fontSize: '12px', color: color
           }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
           this.tabBody.push(nameText);
