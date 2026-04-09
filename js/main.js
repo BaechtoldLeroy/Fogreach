@@ -1703,10 +1703,7 @@ function initUI() {
       // Attack tile always first
       attackTile.container.setVisible(true);
       attackTile.container.setPosition(baseX, baseY);
-      // Potion tile always second (right after attack)
-      potionTile.container.setVisible(true);
-      potionTile.container.setPosition(baseX, baseY + 1 * tileSpacing);
-      let visibleIndex = 2;
+      let visibleIndex = 1;
 
       ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
         const tile = slotTiles[slotKey];
@@ -1719,6 +1716,10 @@ function initUI() {
           tile.container.setVisible(false);
         }
       });
+
+      // Potion tile always LAST (bottom of the bar, below all visible slots)
+      potionTile.container.setVisible(true);
+      potionTile.container.setPosition(baseX, baseY + visibleIndex * tileSpacing);
     };
 
     // Public refresh: rebuild mappings + reposition (called when loadout changes)
