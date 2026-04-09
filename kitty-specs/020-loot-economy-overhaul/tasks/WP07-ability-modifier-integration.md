@@ -215,3 +215,4 @@ Read first:
 ## Activity Log
 
 - 2026-04-09T18:12:09Z – claude – shell_pid=55652 – lane=doing – Started implementation via workflow command
+- 2026-04-09T18:21:07Z – claude – shell_pid=55652 – lane=for_review – Player combat hooks done; HUD badge + equip hook deferred to later WP
