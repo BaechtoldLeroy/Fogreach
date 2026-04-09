@@ -647,3 +647,4 @@ Read first:
 ## Activity Log
 
 - 2026-04-09T17:47:27Z – claude – shell_pid=52720 – lane=doing – Started implementation via workflow command
+- 2026-04-09T17:57:13Z – claude – shell_pid=52720 – lane=for_review – Mara shop complete; tests pass
