@@ -824,6 +824,22 @@ function create() {
   this.input.keyboard.on('keydown-O', () => {
     if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
   });
+  // WP04: F key consumes the highest-tier health potion
+  this.input.keyboard.on('keydown-F', () => {
+    if (window.LootSystem && typeof window.LootSystem.onPotionKey === 'function') {
+      window.LootSystem.onPotionKey();
+    }
+  });
+  // Expose this scene for LootSystem HoT timers
+  window.gameScene = this;
+  this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    this.input.keyboard.off('keydown-F');
+    this.input.keyboard.off('keydown-I');
+    this.input.keyboard.off('keydown-M');
+    this.input.keyboard.off('keydown-K');
+    this.input.keyboard.off('keydown-O');
+    if (window.gameScene === this) window.gameScene = null;
+  });
 
   // 4.3.1 Rathauskeller background (based on dialog selection)
   if (window.USE_RATHAUSKELLER_BG && this.textures.exists('rathauskeller_bg')) {
@@ -1086,6 +1102,31 @@ function update(time, delta) {
         handlePlayerDeath(this);
       }
       return;
+    }
+  }
+
+  // WP04: Redraw potion cooldown HUD indicator
+  if (window.LootSystem && typeof window.LootSystem.isPotionOnCooldown === 'function'
+      && window._potionCdGfx && window._potionCdPos) {
+    window._potionCdGfx.clear();
+    if (window.LootSystem.isPotionOnCooldown()) {
+      const remainMs = (typeof window.LootSystem._getPotionCooldownRemaining === 'function')
+        ? window.LootSystem._getPotionCooldownRemaining() : 0;
+      const total = window.LootSystem.POTION_GLOBAL_CD_MS || 2000;
+      const fraction = Math.max(0, Math.min(1, remainMs / total));
+      const cx = window._potionCdPos.x;
+      const cy = window._potionCdPos.y;
+      window._potionCdGfx.fillStyle(0x222222, 0.6);
+      window._potionCdGfx.fillCircle(cx, cy, 14);
+      window._potionCdGfx.fillStyle(0x44ff44, 0.5);
+      window._potionCdGfx.beginPath();
+      window._potionCdGfx.moveTo(cx, cy);
+      window._potionCdGfx.arc(cx, cy, 14, -Math.PI / 2, -Math.PI / 2 + fraction * Math.PI * 2, false);
+      window._potionCdGfx.closePath();
+      window._potionCdGfx.fillPath();
+      if (window._potionCdLabel) window._potionCdLabel.setVisible(true);
+    } else {
+      if (window._potionCdLabel) window._potionCdLabel.setVisible(false);
     }
   }
 
@@ -1410,6 +1451,15 @@ function initUI() {
     }
   };
   window._refreshHUD();
+
+  // WP04: Potion cooldown HUD indicator (next to player health bar)
+  const potionCdX = 230;
+  const potionCdY = 78;
+  window._potionCdGfx = this.add.graphics().setScrollFactor(0).setDepth(1001);
+  window._potionCdLabel = this.add.text(potionCdX, potionCdY, 'F', {
+    fontFamily: 'monospace', fontSize: '14px', color: '#88ff88'
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(1002).setVisible(false);
+  window._potionCdPos = { x: potionCdX, y: potionCdY };
   gameOverText = this.add.text(400, 300, 'DU BIST GESTORBEN\nZurück zur Stadt...', { fontSize: '40px', fill: '#f00', align: 'center' })
     .setDepth(1001).setScrollFactor(0)
     .setOrigin(0.5).setVisible(false);

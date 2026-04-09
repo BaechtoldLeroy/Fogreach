@@ -240,8 +240,8 @@ test('stubbed API methods throw "not implemented" errors', () => {
   const sys = freshSystem();
   // WP02 implements rollItem, composeName, migrateSave — they no longer throw.
   // WP03 implements grantGold, getGold, spendGold — they no longer throw.
+  // WP04 implements consumePotion, onPotionKey, isPotionOnCooldown — they no longer throw.
   const stubbed = [
-    'consumePotion', 'onPotionKey', 'isPotionOnCooldown',
     'getOrCreateShopState', 'rerollItem'
   ];
   for (const name of stubbed) {
@@ -547,4 +547,104 @@ test('grantGold / spendGold: trigger window._refreshHUD when defined', () => {
   sys.spendGold(999); // should NOT refresh on failed spend
   assert.strictEqual(calls, 2);
   delete globalThis.window._refreshHUD;
+});
+
+// ---------------------------------------------------------------------------
+// WP04: Health Potions
+// ---------------------------------------------------------------------------
+
+function freshPotionSystem() {
+  const sys = freshSystem();
+  sys._resetPotionCooldown();
+  globalThis.window.inventory = [null, null, null, null, null];
+  globalThis.window.playerHealth = 50;
+  globalThis.window.playerMaxHealth = 100;
+  globalThis.window.addPlayerHealth = function (delta) {
+    const max = globalThis.window.playerMaxHealth || 1;
+    globalThis.window.playerHealth = Math.max(0, Math.min(max,
+      (globalThis.window.playerHealth || 0) + delta));
+    return globalThis.window.playerHealth;
+  };
+  return sys;
+}
+
+test('POTION_DEFS has 4 entries with required fields', () => {
+  const sys = freshSystem();
+  assert.strictEqual(sys.POTION_DEFS.length, 4);
+  assert.strictEqual(Object.isFrozen(sys.POTION_DEFS), true);
+  for (const def of sys.POTION_DEFS) {
+    assert.strictEqual(typeof def.potionTier, 'number');
+    assert.strictEqual(typeof def.healPercent, 'number');
+    assert.strictEqual(typeof def.healDurationMs, 'number');
+    assert.strictEqual(typeof def.goldCost, 'number');
+  }
+  // Super tier has bonusEffect
+  const superDef = sys.POTION_DEFS.find((d) => d.potionTier === 4);
+  assert.ok(superDef.bonusEffect);
+  assert.strictEqual(superDef.bonusEffect.tempMaxHp, 0.10);
+});
+
+test('isPotionOnCooldown: false initially', () => {
+  const sys = freshPotionSystem();
+  assert.strictEqual(sys.isPotionOnCooldown(), false);
+});
+
+test('consumePotion: heals, decrements stack, sets cooldown', () => {
+  const sys = freshPotionSystem();
+  globalThis.window.inventory[0] = { type: 'potion', potionTier: 1, stack: 2 };
+  const before = globalThis.window.playerHealth;
+  const ok = sys.consumePotion(0);
+  assert.strictEqual(ok, true);
+  assert.ok(globalThis.window.playerHealth > before, 'should have healed');
+  assert.strictEqual(globalThis.window.inventory[0].stack, 1);
+  assert.strictEqual(sys.isPotionOnCooldown(), true);
+});
+
+test('consumePotion: removes item when stack reaches 0', () => {
+  const sys = freshPotionSystem();
+  globalThis.window.inventory[0] = { type: 'potion', potionTier: 1, stack: 1 };
+  sys.consumePotion(0);
+  assert.strictEqual(globalThis.window.inventory[0], null);
+});
+
+test('consumePotion: returns false on cooldown', () => {
+  const sys = freshPotionSystem();
+  globalThis.window.inventory[0] = { type: 'potion', potionTier: 1, stack: 5 };
+  globalThis.window.inventory[1] = { type: 'potion', potionTier: 1, stack: 5 };
+  assert.strictEqual(sys.consumePotion(0), true);
+  assert.strictEqual(sys.consumePotion(1), false);
+});
+
+test('consumePotion: returns false for non-potion or invalid slot', () => {
+  const sys = freshPotionSystem();
+  assert.strictEqual(sys.consumePotion(0), false);
+  globalThis.window.inventory[0] = { type: 'weapon' };
+  assert.strictEqual(sys.consumePotion(0), false);
+  assert.strictEqual(sys.consumePotion('x'), false);
+});
+
+test('onPotionKey: picks the highest-tier potion in inventory', () => {
+  const sys = freshPotionSystem();
+  globalThis.window.inventory[0] = { type: 'potion', potionTier: 1, stack: 1 };
+  globalThis.window.inventory[2] = { type: 'potion', potionTier: 3, stack: 1 };
+  globalThis.window.inventory[3] = { type: 'potion', potionTier: 2, stack: 1 };
+  const ok = sys.onPotionKey();
+  assert.strictEqual(ok, true);
+  // Tier 3 slot is consumed
+  assert.strictEqual(globalThis.window.inventory[2], null);
+  assert.ok(globalThis.window.inventory[0], 'tier 1 untouched');
+  assert.ok(globalThis.window.inventory[3], 'tier 2 untouched');
+});
+
+test('onPotionKey: returns false when no potions available', () => {
+  const sys = freshPotionSystem();
+  assert.strictEqual(sys.onPotionKey(), false);
+});
+
+test('_getPotionCooldownRemaining: returns positive after consume', () => {
+  const sys = freshPotionSystem();
+  globalThis.window.inventory[0] = { type: 'potion', potionTier: 1, stack: 1 };
+  sys.consumePotion(0);
+  const remaining = sys._getPotionCooldownRemaining();
+  assert.ok(remaining > 0 && remaining <= sys.POTION_GLOBAL_CD_MS);
 });
