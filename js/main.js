@@ -1106,6 +1106,10 @@ function update(time, delta) {
   }
 
   // WP04: Redraw potion cooldown HUD indicator
+  // Drive the potion HUD tile (best-in-inventory + cooldown radial)
+  if (typeof window._refreshPotionTile === 'function') {
+    try { window._refreshPotionTile(); } catch (e) { /* ignore */ }
+  }
   if (window.LootSystem && typeof window.LootSystem.isPotionOnCooldown === 'function'
       && window._potionCdGfx && window._potionCdPos) {
     window._potionCdGfx.clear();
@@ -1452,14 +1456,11 @@ function initUI() {
   };
   window._refreshHUD();
 
-  // WP04: Potion cooldown HUD indicator (next to player health bar)
-  const potionCdX = 230;
-  const potionCdY = 78;
-  window._potionCdGfx = this.add.graphics().setScrollFactor(0).setDepth(1001);
-  window._potionCdLabel = this.add.text(potionCdX, potionCdY, 'F', {
-    fontFamily: 'monospace', fontSize: '14px', color: '#88ff88'
-  }).setOrigin(0.5).setScrollFactor(0).setDepth(1002).setVisible(false);
-  window._potionCdPos = { x: potionCdX, y: potionCdY };
+  // WP04 standalone potion CD indicator removed — replaced by the potion
+  // tile in the attack bar (see buildTile / refreshPotionTile above).
+  window._potionCdGfx = null;
+  window._potionCdLabel = null;
+  window._potionCdPos = null;
   gameOverText = this.add.text(400, 300, 'DU BIST GESTORBEN\nZurück zur Stadt...', { fontSize: '40px', fill: '#f00', align: 'center' })
     .setDepth(1001).setScrollFactor(0)
     .setOrigin(0.5).setVisible(false);
@@ -1569,6 +1570,71 @@ function initUI() {
     if (attackTile.iconText) attackTile.iconText.setText('\u2694'); // ⚔
     abilityStatusDisplay.attack = attackTile;
 
+    // WP04+: Potion tile (always visible, F key). Shows best inventory potion
+    // + stack count, with a 2s cooldown radial driven by LootSystem.
+    const potionTile = buildTile('Kein Trank', 'F', 0x44ff66);
+    if (potionTile.iconText) potionTile.iconText.setText('\u269A'); // ⚚ caduceus
+    if (potionTile.statusText) potionTile.statusText.setText('Leer');
+    potionTile.durationMs = 2000; // global potion cooldown
+    const POTION_NAMES = {
+      1: 'Heiltrank (Klein)',
+      2: 'Heiltrank',
+      3: 'Heiltrank (Gross)',
+      4: 'Heiltrank (Super)'
+    };
+    const refreshPotionTile = () => {
+      if (!window.LootSystem) return;
+      // Find highest-tier potion in inventory
+      let bestTier = 0;
+      let bestStack = 0;
+      const inv = window.inventory || [];
+      for (let i = 0; i < inv.length; i++) {
+        const it = inv[i];
+        if (it && it.type === 'potion' && (it.potionTier || 0) > bestTier) {
+          bestTier = it.potionTier;
+          bestStack = it.stack || 1;
+        }
+      }
+      const onCd = typeof window.LootSystem.isPotionOnCooldown === 'function'
+        && window.LootSystem.isPotionOnCooldown();
+      if (bestTier > 0) {
+        potionTile.nameText.setText((POTION_NAMES[bestTier] || 'Trank') + ' x' + bestStack);
+        if (potionTile.statusText) {
+          potionTile.statusText.setText(onCd ? 'Cooldown' : 'Bereit');
+          potionTile.statusText.setColor(onCd ? '#ffd966' : '#78f3c7');
+        }
+        if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, 0x44ff66, 0.85);
+      } else {
+        potionTile.nameText.setText('Kein Trank');
+        if (potionTile.statusText) {
+          potionTile.statusText.setText('Leer');
+          potionTile.statusText.setColor('#888888');
+        }
+        if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, 0x555555, 0.5);
+      }
+      // Cooldown radial — uses the existing buildTile radialOverlay
+      const overlay = potionTile.radialOverlay;
+      if (overlay) {
+        overlay.clear();
+        if (onCd) {
+          const remainMs = (typeof window.LootSystem._getPotionCooldownRemaining === 'function')
+            ? window.LootSystem._getPotionCooldownRemaining() : 0;
+          const fraction = Math.max(0, Math.min(1, remainMs / 2000));
+          if (fraction > 0) {
+            const startAngle = -Math.PI / 2;
+            const endAngle = startAngle + fraction * Math.PI * 2;
+            overlay.fillStyle(0x000000, 0.55);
+            overlay.beginPath();
+            overlay.moveTo(potionTile.iconCx, potionTile.iconCy);
+            overlay.arc(potionTile.iconCx, potionTile.iconCy, potionTile.iconR, startAngle, endAngle, false);
+            overlay.closePath();
+            overlay.fillPath();
+          }
+        }
+      }
+    };
+    window._refreshPotionTile = refreshPotionTile;
+
     // Four slot tiles (Q/W/E/R) — names reassigned dynamically by loadout
     const slotTiles = {
       slot1: buildTile('Empty', 'Q', 0x888888),
@@ -1626,7 +1692,10 @@ function initUI() {
       // Attack tile always first
       attackTile.container.setVisible(true);
       attackTile.container.setPosition(baseX, baseY);
-      let visibleIndex = 1;
+      // Potion tile always second (right after attack)
+      potionTile.container.setVisible(true);
+      potionTile.container.setPosition(baseX, baseY + 1 * tileSpacing);
+      let visibleIndex = 2;
 
       ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
         const tile = slotTiles[slotKey];
@@ -1947,6 +2016,21 @@ function initializeGameObjects() {
     if (window.soundManager && typeof window.soundManager.playSFX === 'function') {
       try { window.soundManager.playSFX('loot_pickup'); } catch (e) { /* ignore */ }
     }
+    // Floating "+N Gold" pickup text — fades upward over 800ms
+    try {
+      const popup = this.add.text(pile.x, pile.y - 12, '+' + amount + ' Gold', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffd24a',
+        stroke: '#000000', strokeThickness: 3
+      }).setOrigin(0.5, 1).setDepth(120);
+      this.tweens.add({
+        targets: popup,
+        y: pile.y - 36,
+        alpha: 0,
+        duration: 800,
+        ease: 'Cubic.easeOut',
+        onComplete: () => { try { popup.destroy(); } catch (e) {} }
+      });
+    } catch (e) { /* swallow */ }
     pile.destroy();
   }, null, this);
 
