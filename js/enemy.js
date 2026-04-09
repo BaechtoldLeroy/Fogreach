@@ -542,6 +542,19 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     makeElite.call(this, enemy);
   }
 
+  // WP05 — Champion/Unique elite injection (non-breaking, no-op if module missing)
+  if (window.EliteEnemies && typeof window.EliteEnemies.shouldSpawnElite === 'function') {
+    try {
+      const depth = typeof currentWave === 'number' ? currentWave : (window.currentWave || 1);
+      const tier = window.EliteEnemies.shouldSpawnElite(depth);
+      if (tier && typeof window.EliteEnemies.applyEliteToEnemy === 'function') {
+        window.EliteEnemies.applyEliteToEnemy(enemy, tier);
+      }
+    } catch (err) {
+      console.warn('[spawnEnemy] elite injection failed', err);
+    }
+  }
+
   return enemy;
 }
 
