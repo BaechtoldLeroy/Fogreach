@@ -273,6 +273,12 @@ function applySaveToState(scene, s) {
   if (typeof recalcDerived === 'function') {
     recalcDerived(0, 0);
   }
+  // WP08 T048: after equipment has been hydrated from the save, aggregate
+  // all affix bonuses into the LootSystem cache so ability damage/cooldown
+  // bonuses are live immediately.
+  if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
+    try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
+  }
   if (typeof setPlayerHealth === 'function') {
     setPlayerHealth(playerHealth);
   } else {

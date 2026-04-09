@@ -758,3 +758,57 @@ test('getOrCreateShopState: regenerates when runId changes', () => {
   assert.strictEqual(s2.currentRunId, 'run-2');
 });
 
+// ---------------------------------------------------------------------------
+// WP08 T048: equip-change hooks into recomputeBonuses
+// ---------------------------------------------------------------------------
+
+// Build a mock equipped item whose affix values map directly onto the
+// aggregated-bonus cache. We hand-craft defId + value pairs that match real
+// AFFIX_DEFS entries so recomputeBonuses produces the exact keys we expect.
+function mockAbilityItem(sys, defId, value) {
+  // Ensure the def exists so the test is self-validating.
+  const def = sys.AFFIX_DEFS.find((d) => d.id === defId);
+  if (!def) throw new Error('mockAbilityItem: unknown affix def ' + defId);
+  return {
+    type: 'weapon',
+    tier: 1,
+    affixes: [{ defId, value }]
+  };
+}
+
+test('WP08 T048: equipping a per-ability damage item aggregates into getBonus', () => {
+  const sys = freshSystem();
+  globalThis.window.equipment = {
+    weapon: mockAbilityItem(sys, 'spinning_dmg', 25) // 25 percent
+  };
+  sys.recomputeBonuses();
+  // percent affixes are stored as value/100 in the cache
+  assert.strictEqual(sys.getBonus('dmg_spinAttack'), 0.25);
+});
+
+test('WP08 T048: stacking two items sums their per-ability damage bonuses', () => {
+  const sys = freshSystem();
+  globalThis.window.equipment = {
+    weapon: mockAbilityItem(sys, 'spinning_dmg', 20), // +20%
+    body:   mockAbilityItem(sys, 'spinning_dmg', 15)  // +15%
+  };
+  sys.recomputeBonuses();
+  const bonus = sys.getBonus('dmg_spinAttack');
+  // Floating-point friendly comparison
+  assert.ok(Math.abs(bonus - 0.35) < 1e-9, 'expected +35% combined, got ' + bonus);
+});
+
+test('WP08 T048: unequipping drops the bonus back to 0 after recompute', () => {
+  const sys = freshSystem();
+  globalThis.window.equipment = {
+    weapon: mockAbilityItem(sys, 'spinning_dmg', 25)
+  };
+  sys.recomputeBonuses();
+  assert.strictEqual(sys.getBonus('dmg_spinAttack'), 0.25);
+
+  // Simulate unequip
+  globalThis.window.equipment = {};
+  sys.recomputeBonuses();
+  assert.strictEqual(sys.getBonus('dmg_spinAttack'), 0);
+});
+
