@@ -110,8 +110,59 @@ function normalizeItemStatsForRarity(item, rarityValue = 1) {
   return item;
 }
 
+// WP03: Spawn a goldPile sprite at (x, y) worth `amount` gold.
+// Auto-collected by the player-overlap registered in main.js via window.goldGroup.
+// Each pile despawns after 5 minutes to cap sprite count (see feature 020 assumption 7).
+function _spawnGoldPile(scene, x, y, amount) {
+  if (!scene || !scene.physics || !scene.add) return null;
+  if (typeof scene.textures?.exists === 'function' && !scene.textures.exists('goldPile')) return null;
+  const safeAmount = Math.max(1, Math.floor(Number(amount) || 1));
+  const sprite = scene.physics.add.sprite(x, y, 'goldPile');
+  if (!sprite) return null;
+  sprite.setData('goldAmount', safeAmount);
+  sprite.setDepth(80);
+  if (window.goldGroup && typeof window.goldGroup.add === 'function') {
+    window.goldGroup.add(sprite);
+  }
+  trackLootSprite(scene, sprite);
+  if (scene.time && typeof scene.time.delayedCall === 'function') {
+    scene.time.delayedCall(300000, () => {
+      if (sprite && sprite.active) sprite.destroy();
+    });
+  }
+  return sprite;
+}
+
+// WP03: Roll how much gold an enemy drops. Boss: mLevel * 50 (flat, reliable).
+// Regular: 30% chance to drop, 1..(mLevel*5) with ±20% jitter.
+function _rollEnemyGoldDrop(mLevel, isBoss) {
+  const level = Math.max(1, Math.floor(Number(mLevel) || 1));
+  if (isBoss) {
+    const base = level * 50;
+    return Math.max(1, Math.floor(base * (0.8 + Math.random() * 0.4)));
+  }
+  if (Math.random() >= 0.30) return 0;
+  const raw = 1 + Math.floor(Math.random() * (level * 5));
+  return Math.max(1, Math.floor(raw * (0.8 + Math.random() * 0.4)));
+}
+
+function _dropEnemyGold(scene, enemy) {
+  if (!scene || !enemy) return;
+  const level = enemy.iLevel || enemy.mLevel || (typeof currentWave !== 'undefined' ? currentWave : 1) || 1;
+  const isBoss = !!(enemy.isBoss || enemy.isMiniBoss);
+  const amount = _rollEnemyGoldDrop(level, isBoss);
+  if (amount <= 0) return;
+  _spawnGoldPile(scene, enemy.x, enemy.y, amount);
+}
+
 function spawnLoot(x, y, maybeItem, sourceEnemy) {
   const scene = (this && this.physics && this.physics.world) ? this : (obstacles?.scene || window.currentScene);
+  // WP03: enemies always roll a gold drop in addition to their item drop.
+  // Chest-type maybeItem calls go through the early-return path below and
+  // should NOT trigger enemy gold (no sourceEnemy).
+  if (sourceEnemy && scene) {
+    _dropEnemyGold(scene, sourceEnemy);
+  }
   if (maybeItem && typeof maybeItem.type === 'string') {
     const typeLower = maybeItem.type.toLowerCase();
     if (typeLower.startsWith('chest')) {
@@ -563,4 +614,8 @@ if (typeof window !== 'undefined') {
   window.ITEM_RARITIES = ITEM_RARITIES;
   window.normalizeItemStatsForRarity = normalizeItemStatsForRarity;
   window.getRarityValueFromKey = getRarityValueFromKey;
+  // WP03: expose gold-drop helpers so chest-open code and future systems can
+  // spawn gold piles without duplicating the formula.
+  window.spawnGoldPile = _spawnGoldPile;
+  window.rollEnemyGoldDrop = _rollEnemyGoldDrop;
 }

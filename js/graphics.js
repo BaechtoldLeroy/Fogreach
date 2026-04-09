@@ -1595,3 +1595,32 @@ function createPlayerGraphics() {
   g.generateTexture('playerTexture', 128, 128);
   g.destroy();
 }
+
+// WP03: procedural goldPile sprite (stack of coins). Drawn small so it reads
+// clearly on the dungeon floor without competing with item loot.
+function createGoldPileGraphics() {
+  if (!this || !this.add || !this.add.graphics) return;
+  if (this.textures && typeof this.textures.exists === 'function' && this.textures.exists('goldPile')) {
+    return;
+  }
+  const g = this.add.graphics();
+  // Base shadow
+  g.fillStyle(0x000000, 0.4);
+  g.fillEllipse(12, 15, 18, 6);
+  // Coin pile (3 stacked coins, rim + highlight)
+  const coinColors = [0xffd166, 0xffe89a, 0xffd166];
+  for (let i = 0; i < 3; i++) {
+    g.fillStyle(coinColors[i], 1);
+    g.fillCircle(12, 13 - i * 3, 7 - i);
+    g.lineStyle(1, 0xb89030, 0.85);
+    g.strokeCircle(12, 13 - i * 3, 7 - i);
+  }
+  // Specular highlight
+  g.fillStyle(0xffffff, 0.45);
+  g.fillCircle(10, 5, 1.5);
+  g.generateTexture('goldPile', 24, 20);
+  g.destroy();
+}
+if (typeof window !== 'undefined') {
+  window.createGoldPileGraphics = createGoldPileGraphics;
+}

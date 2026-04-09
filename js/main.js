@@ -1397,6 +1397,19 @@ function initUI() {
     .setDepth(1001).setScrollFactor(0);
   window._roomCounterText = this.add.text(16, 152, '', { fontSize: '20px', fill: '#aaf' })
     .setDepth(1001).setScrollFactor(0);
+  // WP03: persistent Gold HUD counter (visible even when inventory closed)
+  window._goldText = this.add.text(16, 180, 'Gold: 0', {
+    fontFamily: 'monospace',
+    fontSize: '18px',
+    fill: '#ffd166'
+  }).setDepth(1001).setScrollFactor(0);
+  window._refreshHUD = function () {
+    if (window._goldText && typeof window._goldText.setText === 'function') {
+      const gold = (window.materialCounts && window.materialCounts.GOLD) || 0;
+      window._goldText.setText('Gold: ' + gold);
+    }
+  };
+  window._refreshHUD();
   gameOverText = this.add.text(400, 300, 'DU BIST GESTORBEN\nZurück zur Stadt...', { fontSize: '40px', fill: '#f00', align: 'center' })
     .setDepth(1001).setScrollFactor(0)
     .setOrigin(0.5).setVisible(false);
@@ -1793,6 +1806,9 @@ function createAllGraphics() {
   createInventoryGraphics.call(this);
   createItemGraphics.call(this);
   createParticleTextures.call(this);
+  if (typeof createGoldPileGraphics === 'function') {
+    createGoldPileGraphics.call(this);
+  }
 }
 
 // 6.4 initializeGameObjects: Physics-Gruppen & Kollisionen
@@ -1836,6 +1852,8 @@ function initializeGameObjects() {
   playerProjectiles = this.physics.add.group();
   obstacles = this.physics.add.staticGroup();
   lootGroup = this.physics.add.group();
+  // WP03: gold piles (auto-collected by player overlap)
+  window.goldGroup = this.physics.add.group();
   this.enemyLayer = this.add.layer().setDepth(50);
   this.physics.world.setBounds(0, 0, this.scale.width + WORLD_RIGHT_PADDING, this.scale.height, true, true, true, true);
   this.physics.world.TILE_BIAS = 24;
@@ -1867,6 +1885,20 @@ function initializeGameObjects() {
   this.physics.add.overlap(player, enemyProjectiles, hitByProjectile, null, this);
   this.physics.add.overlap(playerProjectiles, enemies, handlePlayerProjectileEnemyOverlap, null, this);
   this.physics.add.overlap(player, lootGroup, collectLoot, null, this);
+  // WP03: auto-collect gold piles on overlap. Disable the body immediately to
+  // prevent double-pickup from multi-frame overlap callbacks.
+  this.physics.add.overlap(player, window.goldGroup, (_playerSprite, pile) => {
+    if (!pile || !pile.active || !pile.body) return;
+    pile.body.enable = false;
+    const amount = (typeof pile.getData === 'function' ? pile.getData('goldAmount') : 0) || 1;
+    if (window.LootSystem && typeof window.LootSystem.grantGold === 'function') {
+      window.LootSystem.grantGold(amount);
+    }
+    if (window.soundManager && typeof window.soundManager.playSFX === 'function') {
+      try { window.soundManager.playSFX('loot_pickup'); } catch (e) { /* ignore */ }
+    }
+    pile.destroy();
+  }, null, this);
 
   // Initialize sound manager and start dungeon ambient music
   if (typeof SoundManager === 'function') {
