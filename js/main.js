@@ -1066,6 +1066,27 @@ function updateStatusEffectHUD(scene) {
 // 5) UPDATE
 // ==================================================
 function update(time, delta) {
+  // Track last safe position (not inside an obstacle) to recover from wall-push
+  if (player && player.active && player.body) {
+    let insideObstacle = false;
+    if (obstacles && obstacles.children) {
+      obstacles.children.iterate(obs => {
+        if (!obs || !obs.body || insideObstacle) return;
+        if (Phaser.Geom.Intersects.RectangleToRectangle(player.body, obs.body)) {
+          insideObstacle = true;
+        }
+      });
+    }
+    if (!insideObstacle) {
+      player._safeX = player.x;
+      player._safeY = player.y;
+    } else if (typeof player._safeX === 'number') {
+      // Player got pushed inside a wall — snap back
+      player.setPosition(player._safeX, player._safeY);
+      player.body.setVelocity(0, 0);
+    }
+  }
+
   if (invOpen) {
     pauseAllMotion.call(this);
     return;
@@ -2027,9 +2048,7 @@ function initializeGameObjects() {
   }
 
   this.physics.add.collider(player, obstacles);
-  // No player-enemy collider — enemies pass through the player.
-  // This prevents enemies from pushing the player through walls.
-  // Damage is handled by the existing overlap at line below.
+  this.physics.add.collider(player, enemies);
   this.physics.add.collider(enemies, obstacles);
   // Soft collision between enemies (Diablo 2 style — they push each other)
   this.physics.add.collider(enemies, enemies);
