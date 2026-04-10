@@ -1205,6 +1205,30 @@ function update(time, delta) {
   handleEnemies.call(this, time, delta);
 
   updateEnemyDirectionHint(this, this.time?.now ?? time);
+
+  // Anti-wall-push: if player ended up inside an obstacle after physics,
+  // push them out toward the room center.
+  if (player && player.active && player.body && obstacles && obstacles.children) {
+    const pb = player.body;
+    obstacles.children.iterate(obs => {
+      if (!obs || !obs.body) return;
+      const ob = obs.body;
+      // Check AABB overlap
+      if (pb.right > ob.x && pb.x < ob.right && pb.bottom > ob.y && pb.y < ob.bottom) {
+        // Find smallest push-out direction
+        const pushLeft = pb.right - ob.x;
+        const pushRight = ob.right - pb.x;
+        const pushUp = pb.bottom - ob.y;
+        const pushDown = ob.bottom - pb.y;
+        const min = Math.min(pushLeft, pushRight, pushUp, pushDown);
+        if (min === pushLeft) player.x -= pushLeft;
+        else if (min === pushRight) player.x += pushRight;
+        else if (min === pushUp) player.y -= pushUp;
+        else player.y += pushDown;
+        player.body.setVelocity(0, 0);
+      }
+    });
+  }
 }
 
 function leaveDungeonForHub(scene, options = {}) {
@@ -2027,20 +2051,7 @@ function initializeGameObjects() {
   }
 
   this.physics.add.collider(player, obstacles);
-  // Custom player-enemy collider: skip collision when player is touching
-  // a wall on the side the enemy is pushing from — prevents wall-clip.
-  this.physics.add.collider(player, enemies, null, (pl, en) => {
-    const b = pl.body;
-    if (!b) return true;
-    const dx = en.x - pl.x;
-    const dy = en.y - pl.y;
-    // If enemy pushes player toward a wall the player is already touching, skip
-    if (dx > 0 && b.blocked.left) return false;
-    if (dx < 0 && b.blocked.right) return false;
-    if (dy > 0 && b.blocked.up) return false;
-    if (dy < 0 && b.blocked.down) return false;
-    return true;
-  });
+  this.physics.add.collider(player, enemies);
   this.physics.add.collider(enemies, obstacles);
   // Soft collision between enemies (Diablo 2 style — they push each other)
   this.physics.add.collider(enemies, enemies);
