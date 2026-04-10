@@ -260,9 +260,8 @@
   window.SettingsScene = SettingsScene;
 
   window.openSettingsScene = function (fromScene) {
-    const game = window.game;
-    if (!game) return;
-    if (game.scene.isActive('SettingsScene')) return;
-    game.scene.launch('SettingsScene', { from: fromScene && fromScene.scene && fromScene.scene.key });
+    if (!fromScene || !fromScene.scene) return;
+    if (fromScene.scene.isActive('SettingsScene')) return;
+    fromScene.scene.launch('SettingsScene', { from: fromScene.scene.key });
   };
 })();
