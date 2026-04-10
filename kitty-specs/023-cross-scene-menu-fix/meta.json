@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-10T14:27:25.100165+00:00",
+  "feature_number": "023",
+  "feature_slug": "023-cross-scene-menu-fix",
+  "friendly_name": "cross scene menu fix",
+  "mission": "software-dev",
+  "slug": "023-cross-scene-menu-fix",
+  "target_branch": "main"
+}
