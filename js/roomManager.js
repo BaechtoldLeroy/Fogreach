@@ -73,6 +73,7 @@ function getStoryAct(depth) {
  * Story rooms are mixed in based on the current act (wave depth).
  */
 function initDungeonRun() {
+  if (window.EventSystem && window.EventSystem.reset) window.EventSystem.reset();
   const RT = window.RoomTemplates || {};
   const allNames = Object.keys(RT.TEMPLATES || {});
   if (!allNames.length) {
@@ -326,6 +327,11 @@ function enterRoom(scene, roomId) {
   // Update room counter HUD
   if (typeof updateRoomCounter === 'function') {
     updateRoomCounter(roomId, dungeonRun ? dungeonRun.totalRooms : rooms.length);
+  }
+
+  // Trigger random event system
+  if (window.EventSystem && typeof window.EventSystem.onRoomEnter === 'function') {
+    window.EventSystem.onRoomEnter(scene, roomId);
   }
 
   const builtWidth = (builtMeta?.w ?? room?.width ?? ROOM_W) + rightPadding;
