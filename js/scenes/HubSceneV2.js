@@ -367,7 +367,7 @@ class HubSceneV2 extends Phaser.Scene {
       normalizePlayerDirectionalFrames(this);
     }
 
-    this.player = this.physics.add.sprite(W / 2, H * 0.65, textureKey, 0)
+    this.player = this.physics.add.sprite(W / 2, H * 0.65, textureKey)
       .setCollideWorldBounds(true);
 
     if (typeof applyPlayerDisplaySettings === 'function') {

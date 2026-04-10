@@ -1984,8 +1984,7 @@ function initializeGameObjects() {
   player = this.physics.add.sprite(
     this.scale.width / 2,
     this.scale.height / 2,
-    textureKey,
-    0
+    textureKey
   ).setCollideWorldBounds(true).setDepth(100);
 
   if (typeof applyPlayerDisplaySettings === 'function') {
