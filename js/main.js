@@ -402,8 +402,6 @@ let playerCritChance = 0;
 let neededXP = 2 * playerLevel;
 
 let enemiesPerWave = 4;
-let spawnInterval = 1000;
-let spawnTimer = 0;
 let currentWave = 0;
 let spawnedEnemiesInWave = 0;
 let waveInProgress = false;
@@ -1203,9 +1201,6 @@ function update(time, delta) {
     window.statusEffectManager.updateEffects(delta);
     updateStatusEffectHUD(this);
   }
-
-  // 5.7 Spawning neuer Gegner
-  handleSpawning.call(this, delta);
 
   // 5.8 Gegner-KI
   handleEnemies.call(this, time, delta);

@@ -580,10 +580,6 @@ function enterRoom(scene, roomId) {
   currentWave = Math.max(0, depth - 1);
   window.currentWave = currentWave;
 
-  spawnInterval = Math.max(200, 1000 - 50 * (depth - 1) + 50);
-  window.spawnInterval = spawnInterval;
-
-  if (typeof recomputeSpawnFromWave === "function") recomputeSpawnFromWave();
 
   // 5) Türen sperren bis Clear
   lockStairs(scene, true);
@@ -593,7 +589,6 @@ function enterRoom(scene, roomId) {
   if (typeof startNextWave === "function") {
     startNextWave.call(scene, false);
     window.currentWave = currentWave;
-    window.spawnInterval = spawnInterval;
   }
 }
 

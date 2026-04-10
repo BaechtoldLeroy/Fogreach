@@ -46,15 +46,11 @@ function startNextWave(noIncrement) {
     return;                      // skip normal spawn setup
   }
 
-  // Spawn-Intervall nie unter 200 ms reduzieren
-  spawnInterval = Math.max(200, spawnInterval - 50);
-
   waveInProgress = true;
   const isMiniBossWave = (currentWave % 5 === 0 && currentWave % 10 !== 0);
   waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
   spawnedEnemiesInWave = 0;
   window.spawnedEnemiesInWave = 0;
-  spawnTimer = 0;
 
   // Alle regulären Gegner direkt zu Beginn der Welle erzeugen.
   if (!bossActive && typeof spawnEnemy === 'function') {
@@ -137,14 +133,6 @@ function checkWaveEnd(time) {
     }
     return;
   }
-}
-
-// --------------------------------------------------
-// 6.6 Spawning neuer Gegner
-// --------------------------------------------------
-function handleSpawning(delta) {
-  // Reguläres Spawning deaktiviert, da alle Gegner zu Wellenbeginn erzeugt werden.
-  return;
 }
 
 // --------------------------------------------------
