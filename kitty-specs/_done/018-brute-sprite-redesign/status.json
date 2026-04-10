@@ -1,0 +1,25 @@
+{
+  "event_count": 1,
+  "feature_slug": "018-brute-sprite-redesign",
+  "last_event_id": "01KNVTBWZGYR9M9DQTHHZ5GTEW",
+  "materialized_at": "2026-04-10T14:23:26.368858+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KNVTBWZGYR9M9DQTHHZ5GTEW",
+      "last_transition_at": "2026-04-10T13:47:37.840905+00:00"
+    }
+  }
+}

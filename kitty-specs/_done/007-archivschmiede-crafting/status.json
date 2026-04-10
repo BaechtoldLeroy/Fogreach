@@ -1,0 +1,25 @@
+{
+  "event_count": 1,
+  "feature_slug": "007-archivschmiede-crafting",
+  "last_event_id": "01KNVTBMD2TC2C1SDQMWD9SVMD",
+  "materialized_at": "2026-04-10T14:23:26.344005+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KNVTBMD2TC2C1SDQMWD9SVMD",
+      "last_transition_at": "2026-04-10T13:47:29.059028+00:00"
+    }
+  }
+}

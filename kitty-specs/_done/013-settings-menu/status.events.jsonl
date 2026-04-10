@@ -1,0 +1,1 @@
+{"actor": "claude", "at": "2026-04-10T13:48:45.567142+00:00", "event_id": "01KNVTDZ3Z9EA4YSEZ7VN6XWVT", "evidence": null, "execution_mode": "worktree", "feature_slug": "013-settings-menu", "force": true, "from_lane": "planned", "policy_metadata": null, "reason": "already implemented \u2014 SettingsScene.js exists", "review_ref": null, "to_lane": "done", "wp_id": "WP01"}

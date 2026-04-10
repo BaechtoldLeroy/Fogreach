@@ -1,0 +1,25 @@
+{
+  "event_count": 1,
+  "feature_slug": "008-boss-variety",
+  "last_event_id": "01KNVTBP45Z16F0SJ4SE5CSERC",
+  "materialized_at": "2026-04-10T14:23:26.348542+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KNVTBP45Z16F0SJ4SE5CSERC",
+      "last_transition_at": "2026-04-10T13:47:30.821305+00:00"
+    }
+  }
+}

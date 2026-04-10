@@ -1,1 +1,0 @@
-{"actor": "claude", "at": "2026-04-10T11:16:15.793109+00:00", "event_id": "01KNVHPQSHEFFDBJ2F92KPAY37", "evidence": null, "execution_mode": "worktree", "feature_slug": "006-enemy-variety", "force": true, "from_lane": "planned", "policy_metadata": null, "reason": "implementation complete", "review_ref": null, "to_lane": "for_review", "wp_id": "WP02"}

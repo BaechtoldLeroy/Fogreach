@@ -1,0 +1,25 @@
+{
+  "event_count": 2,
+  "feature_slug": "002-quest-system",
+  "last_event_id": "01KNVTAF4YCJE73SC7NV7GX3V2",
+  "materialized_at": "2026-04-10T14:23:26.323746+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KNVTAF4YCJE73SC7NV7GX3V2",
+      "last_transition_at": "2026-04-10T13:46:50.910203+00:00"
+    }
+  }
+}

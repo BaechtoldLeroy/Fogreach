@@ -1,0 +1,25 @@
+{
+  "event_count": 1,
+  "feature_slug": "013-settings-menu",
+  "last_event_id": "01KNVTDZ3Z9EA4YSEZ7VN6XWVT",
+  "materialized_at": "2026-04-10T14:23:26.364795+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KNVTDZ3Z9EA4YSEZ7VN6XWVT",
+      "last_transition_at": "2026-04-10T13:48:45.567142+00:00"
+    }
+  }
+}

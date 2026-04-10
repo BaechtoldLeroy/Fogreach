@@ -1,0 +1,1 @@
+{"actor": "claude", "at": "2026-04-10T13:47:27.286860+00:00", "event_id": "01KNVTBJNP69GG0M6DCTWNZA7N", "evidence": null, "execution_mode": "worktree", "feature_slug": "005-status-effects", "force": true, "from_lane": "planned", "policy_metadata": null, "reason": "already implemented", "review_ref": null, "to_lane": "done", "wp_id": "WP01"}

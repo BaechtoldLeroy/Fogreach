@@ -1,0 +1,25 @@
+{
+  "event_count": 1,
+  "feature_slug": "010-skill-tree-expansion",
+  "last_event_id": "01KNVTBSH59BHYW5S6B6CC37T7",
+  "materialized_at": "2026-04-10T14:23:26.356576+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KNVTBSH59BHYW5S6B6CC37T7",
+      "last_transition_at": "2026-04-10T13:47:34.309615+00:00"
+    }
+  }
+}

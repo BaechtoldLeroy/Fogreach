@@ -1,0 +1,25 @@
+{
+  "event_count": 2,
+  "feature_slug": "004-dungeon-variety",
+  "last_event_id": "01KNVTAH34BNDSZV2HYR6448D4",
+  "materialized_at": "2026-04-10T14:23:26.331842+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KNVTAH34BNDSZV2HYR6448D4",
+      "last_transition_at": "2026-04-10T13:46:52.900437+00:00"
+    }
+  }
+}
