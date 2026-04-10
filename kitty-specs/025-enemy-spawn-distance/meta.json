@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-10T15:40:42.812095+00:00",
+  "feature_number": "025",
+  "feature_slug": "025-enemy-spawn-distance",
+  "friendly_name": "enemy spawn distance",
+  "mission": "software-dev",
+  "slug": "025-enemy-spawn-distance",
+  "target_branch": "main"
+}
