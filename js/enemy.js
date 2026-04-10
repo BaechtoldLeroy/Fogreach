@@ -383,7 +383,8 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   enemy.rangedAttackRange = isRanged
     ? Math.max(120, rangedAttackRange || DEFAULT_RANGED_ATTACK_RANGE)
     : null;
-  enemy.lastAttackTime = 0;
+  enemy.lastAttackTime = -(Math.floor(Math.random() * 300)); // 0-300ms desync for melee
+  enemy.lastShotTime = -(Math.floor(Math.random() * 500) + 1); // -1 to -501ms ranged fire desync
   enemy.setCollideWorldBounds(true); // verhindert das Rauslaufen
   enemy.body.onWorldBounds = true; // optional für blocked-Check
   // Enemies must NOT be pushable by the player — otherwise the player can
