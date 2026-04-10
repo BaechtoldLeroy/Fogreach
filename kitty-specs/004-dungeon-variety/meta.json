@@ -5,5 +5,7 @@
   "friendly_name": "dungeon variety",
   "mission": "software-dev",
   "slug": "004-dungeon-variety",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "vcs_locked_at": "2026-04-10T11:11:10.734817+00:00"
 }
