@@ -31,18 +31,18 @@ function startNextWave(noIncrement) {
     bossActive = true;
     spawnedEnemiesInWave = 0;    // no regular spawns this wave
     waveInProgress = true;
-    waveText.setText('Dungeon Level: ' + currentWave + '  (BOSS)');
+    waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + '  (BOSS)');
     spawnBoss.call(this);        // <-- defined below
     if (window.soundManager) window.soundManager.playMusic('boss_music');
     return;                      // skip normal spawn setup
   }
 
   // Spawn-Intervall nie unter 200 ms reduzieren
-  spawnInterval = Math.max(200, spawnInterval - 50);
+  spawnInterval = Math.max(400, spawnInterval - 50);
 
   waveInProgress = true;
   const isMiniBossWave = (currentWave % 5 === 0 && currentWave % 10 !== 0);
-  waveText.setText('Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
+  waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
   spawnedEnemiesInWave = 0;
   window.spawnedEnemiesInWave = 0;
   spawnTimer = 0;
@@ -107,8 +107,16 @@ function checkWaveEnd(time) {
       window.AbilitySystem.onWaveCompleted(currentWave);
     }
 
-    // Raum gilt als geschafft → Treppen freigeben
-    if (typeof markRoomCleared === 'function') markRoomCleared();
+    // Brief breathing room after clearing a wave before unlocking stairs
+    if (waveText) waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Wave Cleared!');
+    const scene = this;
+    if (scene?.time?.delayedCall) {
+      scene.time.delayedCall(2000, () => {
+        if (typeof markRoomCleared === 'function') markRoomCleared();
+      });
+    } else {
+      if (typeof markRoomCleared === 'function') markRoomCleared();
+    }
   }
 
   // Boss wave ends when boss is gone

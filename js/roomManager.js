@@ -5,8 +5,8 @@ let rooms = [];
 let currentRoomId = 0;
 
 // Optional: Basisgröße für Räume
-const ROOM_W = 1200;
-const ROOM_H = 600;
+const ROOM_W = 1600;
+const ROOM_H = 800;
 
 // ---- Dungeon-Run State ----
 // Holds the procedural run configuration for the current dungeon visit.
@@ -31,7 +31,7 @@ function shuffleArray(arr) {
  */
 function computeRunRoomCount() {
   const depth = Math.max(1, window.DUNGEON_DEPTH || 1);
-  return Math.min(10, 5 + Math.floor((depth - 1) / 5));
+  return Math.min(12, 7 + Math.floor((depth - 1) / 5));
 }
 
 // ---- Story Room Descriptions (German) ----
@@ -1084,6 +1084,7 @@ function updateRoomCounter(roomIndex, totalRooms) {
   if (window._roomCounterText && window._roomCounterText.setText) {
     window._roomCounterText.setText('Raum ' + (roomIndex + 1) + '/' + totalRooms);
   }
+  window.roomProgressText = 'Raum ' + (roomIndex + 1) + '/' + totalRooms;
 }
 
 // Export in globalen Namespace
