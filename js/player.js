@@ -44,17 +44,15 @@ const PLAYER_DIRECTION_LOOKUP = PLAYER_DIRECTION_SEQUENCE.reduce((acc, entry) =>
 function preloadPlayerDirectionalFrames(loader) {
   if (!loader) return;
   const textureManager = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
-  const directionCount = 8;
-  const frameCount = 8;
-
-  for (let dir = 0; dir < directionCount; dir++) {
-    const dirId = dir.toString().padStart(2, '0');
-    for (let frame = 0; frame < frameCount; frame++) {
-      const frameId = frame.toString().padStart(2, '0');
-      const key = `dir${dirId}_f${frameId}`;
-      if (textureManager?.exists?.(key)) continue;
-      loader.image(key, `assets/PlayerSprites/${key}.png`);
-    }
+  // Only preload initial direction (dir00) at startup — other directions
+  // are lazy-loaded on demand via ensureDirectionLoaded() when the player
+  // actually moves that way. This reduces startup load from ~131 MB to ~16 MB.
+  const dirId = '00';
+  for (let frame = 0; frame < 8; frame++) {
+    const frameId = frame.toString().padStart(2, '0');
+    const key = `dir${dirId}_f${frameId}`;
+    if (textureManager?.exists?.(key)) continue;
+    loader.image(key, `assets/PlayerSprites/${key}.png`);
   }
 }
 
@@ -461,6 +459,17 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
 
   const animKey = `walk_${direction}`;
   const idleKey = PLAYER_DIRECTION_LOOKUP[direction]?.idleKey || `dir${PLAYER_DEFAULT_DD}_f00`;
+
+  // Lazy-load direction sprites on demand if not yet loaded
+  if (direction !== state.direction && state.loadingDir !== direction) {
+    const testKey = `dir${direction}_f00`;
+    if (sprite.scene && !sprite.scene.textures.exists(testKey)) {
+      state.loadingDir = direction;
+      ensureDirectionLoaded(sprite.scene, direction).then(() => {
+        state.loadingDir = null;
+      });
+    }
+  }
 
   if (moving && sprite.scene?.anims?.exists(animKey)) {
     if (state.playing !== animKey) {

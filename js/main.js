@@ -744,9 +744,8 @@ let tooltip;
 // 3) PRELOAD
 // ==================================================
 function preload() {
-  if (typeof preloadPlayerDirectionalFrames === 'function') {
-    preloadPlayerDirectionalFrames(this.load);
-  }
+  // Player sprites are preloaded in StartScene (dir00 only);
+  // other directions lazy-load via ensureDirectionLoaded().
 
   // Rathauskeller background image
   this.load.image('rathauskeller_bg', 'js/roomTemplates/rathauskeller.png');
