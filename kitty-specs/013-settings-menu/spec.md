@@ -21,3 +21,9 @@ Add a settings menu with volume controls, difficulty selection, graphics quality
 - **FR-006**: Persist all settings to localStorage and load them on game start
 - **FR-007**: Settings menu must be openable from the hub scene (via UI button or hotkey) and from the pause menu
 - **FR-008**: Apply difficulty setting to dungeon enemy scaling without requiring a scene restart
+- **FR-009**: All overlay menus (Settings, Inventory, Loadout, Journal) must work in both Hub and Dungeon scenes — keybindings must be registered in both HubSceneV2 and GameScene
+
+## Known Issues (as of 2026-04-10)
+- Inventory (I) only works in Dungeon, not in Hub
+- Journal (J) only works in Hub, not in Dungeon
+- Settings (O) fixed — was using wrong Phaser API (SceneManager vs ScenePlugin)
