@@ -291,22 +291,41 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   }
   
   // 2) Typ-Fallunterscheidung + Key, Speed, HP, Ranged-Flag
-  // Determine available types based on current wave
-  const wave = typeof currentWave === 'number' ? currentWave : 0;
+
+  // Generate procedural textures for animal enemies (once)
+  if (!scene.textures.exists('proc_rat')) {
+    const g = scene.make.graphics({ add: false });
+    g.fillStyle(0x8B4513); g.fillRect(0, 0, 24, 16);
+    g.generateTexture('proc_rat', 24, 16); g.destroy();
+  }
+  if (!scene.textures.exists('proc_bat')) {
+    const g = scene.make.graphics({ add: false });
+    g.fillStyle(0x4B0082); g.fillRect(0, 0, 16, 16);
+    g.generateTexture('proc_bat', 16, 16); g.destroy();
+  }
+  if (!scene.textures.exists('proc_wolf')) {
+    const g = scene.make.graphics({ add: false });
+    g.fillStyle(0x808080); g.fillRect(0, 0, 32, 24);
+    g.generateTexture('proc_wolf', 32, 24); g.destroy();
+  }
+
+  // Determine available types based on dungeon depth (story progression)
+  const depth = window.DUNGEON_DEPTH || 1;
   let type;
-  if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 7) {
+  if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 10) {
     type = enemyType;
   } else {
-    // Wave-based type selection
     let availableTypes;
-    if (wave <= 2) {
-      availableTypes = [1, 2]; // Imp, Archer
-    } else if (wave <= 4) {
-      availableTypes = [1, 2, 3, 4]; // + Brute, Mage
-    } else if (wave <= 6) {
-      availableTypes = [1, 2, 3, 4, 5]; // + Schattenschleicher
+    if (depth <= 2) {
+      availableTypes = [8, 9, 10]; // Animals only
+    } else if (depth <= 4) {
+      availableTypes = [8, 9, 10, 1, 2]; // Animals + Imp, Archer
+    } else if (depth <= 6) {
+      availableTypes = [1, 2, 3, 4]; // Standard enemies
+    } else if (depth <= 8) {
+      availableTypes = [1, 2, 3, 4, 5]; // + Shadow
     } else {
-      availableTypes = [1, 2, 3, 4, 5, 6, 7]; // + Kettenwächter, Flammenweber
+      availableTypes = [1, 2, 3, 4, 5, 6, 7]; // Full roster
     }
     type = availableTypes[Phaser.Math.Between(0, availableTypes.length - 1)];
   }
@@ -362,6 +381,24 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       rangedAttackRange = 400;
       tint = null;
       break; // Flammenweber
+    case 8:
+      key = 'proc_rat';
+      speed = 100;
+      hp = 1;
+      tint = 0x8B4513;
+      break; // Ratte
+    case 9:
+      key = 'proc_bat';
+      speed = 130;
+      hp = 1;
+      tint = 0x4B0082;
+      break; // Fledermaus
+    case 10:
+      key = 'proc_wolf';
+      speed = 90;
+      hp = 2;
+      tint = 0x808080;
+      break; // Wolf
     default:
       key = scene.textures?.exists('mage_right0') ? 'mage_right0' : tex('sprite_mage', 'enemyMage');
       speed = 60;
@@ -376,7 +413,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   const enemy = scene.physics.add.sprite(x, y, key);
   enemies.add(enemy);
   enemy.speed = speed;
-  enemy.hp = hp;
+  const depthForStats = window.DUNGEON_DEPTH || 1;
+  const statScale = 1 + (depthForStats - 1) * 0.1; // +10% per depth level
+  enemy.hp = Math.max(1, Math.round(hp * statScale));
   enemy.isRanged = isRanged;
   enemy.enemyType = type; // 1=Imp, 2=Archer, 3=Brute, 4=Mage
   enemy._originalTint = tint; // store for status effect visual reset
@@ -422,6 +461,8 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
 
   // Store the enemy type for later reference
   enemy.enemyType = type;
+  // Tier for loot/XP scaling: 0=animals, 1=basic, 2=standard, 3=elite
+  enemy.enemyTier = (type >= 8) ? 0 : (type <= 2 ? 1 : (type <= 4 ? 2 : 3));
 
   // 6) Steering-Parameter je Typ (für handleEnemies + Steering.js) ---
   if (type === 1) {
@@ -529,6 +570,30 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       enemy.flameWeaverDirection = 'right';
       enemy.flameWeaverAttacking = false;
     }
+  } else if (type === 8) {
+    // Rat - small, fast melee
+    enemy.sepWeight = 1.0;
+    enemy.cohWeight = 0.2;
+    enemy.avoidWeight = 0.8;
+    enemy.sepRadius = 50;
+    enemy.cohRadius = 150;
+    enemy.setScale(0.6);
+  } else if (type === 9) {
+    // Bat - faster, erratic melee
+    enemy.sepWeight = 1.2;
+    enemy.cohWeight = 0.1;
+    enemy.avoidWeight = 0.9;
+    enemy.sepRadius = 40;
+    enemy.cohRadius = 120;
+    enemy.setScale(0.5);
+  } else if (type === 10) {
+    // Wolf - slightly bigger, tougher melee
+    enemy.sepWeight = 0.8;
+    enemy.cohWeight = 0.3;
+    enemy.avoidWeight = 0.9;
+    enemy.sepRadius = 70;
+    enemy.cohRadius = 180;
+    enemy.setScale(0.9);
   } else {
     // Mage (Fern/Support)
     enemy.kiteRadius = 260;
