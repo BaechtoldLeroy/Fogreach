@@ -453,23 +453,27 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
   }
 
   const moving = vx !== 0 || vy !== 0;
-  const direction = moving
+  const wantedDirection = moving
     ? getDirectionFromVelocity(vx, vy, state.direction || PLAYER_DEFAULT_DD)
     : (state.direction || PLAYER_DEFAULT_DD);
 
-  const animKey = `walk_${direction}`;
-  const idleKey = PLAYER_DIRECTION_LOOKUP[direction]?.idleKey || `dir${PLAYER_DEFAULT_DD}_f00`;
+  // Check if wanted direction is loaded; if not, trigger lazy-load and keep current direction
+  const wantedIdleKey = `dir${wantedDirection}_f00`;
+  const directionLoaded = sprite.scene?.textures?.exists(wantedIdleKey);
+  const direction = directionLoaded ? wantedDirection : (state.direction || PLAYER_DEFAULT_DD);
 
-  // Lazy-load direction sprites on demand if not yet loaded
-  if (direction !== state.direction && state.loadingDir !== direction) {
-    const testKey = `dir${direction}_f00`;
-    if (sprite.scene && !sprite.scene.textures.exists(testKey)) {
-      state.loadingDir = direction;
-      ensureDirectionLoaded(sprite.scene, direction).then(() => {
+  // Lazy-load direction sprites on demand
+  if (!directionLoaded && wantedDirection !== state.loadingDir) {
+    if (sprite.scene) {
+      state.loadingDir = wantedDirection;
+      ensureDirectionLoaded(sprite.scene, wantedDirection).then(() => {
         state.loadingDir = null;
       });
     }
   }
+
+  const animKey = `walk_${direction}`;
+  const idleKey = PLAYER_DIRECTION_LOOKUP[direction]?.idleKey || `dir${PLAYER_DEFAULT_DD}_f00`;
 
   if (moving && sprite.scene?.anims?.exists(animKey)) {
     if (state.playing !== animKey) {
@@ -488,7 +492,7 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
     }
   }
 
-  applyPlayerDisplaySettings(sprite);
+  if (sprite.frame) applyPlayerDisplaySettings(sprite);
   state.direction = direction;
   sprite.setData('animState', state);
 }
