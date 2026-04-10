@@ -3,13 +3,22 @@
 // --------------------------------------------------
 // Wave sizing helper
 // --------------------------------------------------
-function computeWaveEnemyTotal(waveNumber) {
+function computeWaveEnemyTotal(waveNumber, roomAreaPx) {
   const wave = Math.max(1, Math.floor(waveNumber || 1));
   // Logarithmic scaling: starts at 3, grows slowly, caps at 12
   // Wave 1: 3, Wave 5: 5, Wave 10: 7, Wave 20: 9, Wave 40: 11
   const base = 3;
   const scaled = base + Math.floor(Math.log2(wave) * 1.5);
-  return Math.min(12, scaled);
+  const baseCount = Math.min(12, scaled);
+
+  // Scale enemy count by room area — reference area is ~1 million px² (1152x896)
+  // Smaller rooms get fewer enemies, larger rooms get more
+  if (roomAreaPx && roomAreaPx > 0) {
+    const REF_AREA = 1152 * 896; // ~1,032,192 px² (median template size)
+    const areaFactor = Math.sqrt(roomAreaPx / REF_AREA); // sqrt for gentler scaling
+    return Math.max(2, Math.min(16, Math.round(baseCount * areaFactor)));
+  }
+  return baseCount;
 }
 window.computeWaveEnemyTotal = computeWaveEnemyTotal;
 
@@ -38,7 +47,7 @@ function startNextWave(noIncrement) {
   }
 
   // Spawn-Intervall nie unter 200 ms reduzieren
-  spawnInterval = Math.max(400, spawnInterval - 50);
+  spawnInterval = Math.max(200, spawnInterval - 50);
 
   waveInProgress = true;
   const isMiniBossWave = (currentWave % 5 === 0 && currentWave % 10 !== 0);

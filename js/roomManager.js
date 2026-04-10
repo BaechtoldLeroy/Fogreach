@@ -5,8 +5,8 @@ let rooms = [];
 let currentRoomId = 0;
 
 // Optional: Basisgröße für Räume
-const ROOM_W = 1600;
-const ROOM_H = 800;
+const ROOM_W = 1200;
+const ROOM_H = 600;
 
 // ---- Dungeon-Run State ----
 // Holds the procedural run configuration for the current dungeon visit.
@@ -555,9 +555,12 @@ function enterRoom(scene, roomId) {
   if (room) room.wave = depth;
 
   const targetWave = Math.max(1, depth);
+  const builtW = builtMeta?.w ?? room?.width ?? ROOM_W;
+  const builtH = builtMeta?.h ?? room?.height ?? ROOM_H;
+  const roomAreaPx = builtW * builtH;
   const baseEnemies =
     typeof window.computeWaveEnemyTotal === "function"
-      ? window.computeWaveEnemyTotal(targetWave)
+      ? window.computeWaveEnemyTotal(targetWave, roomAreaPx)
       : 4 + (targetWave - 1) * 2;
 
   // Difficulty scaling based on room position within the run.
