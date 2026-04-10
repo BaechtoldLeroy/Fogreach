@@ -622,11 +622,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.damage = Math.max(1, Math.round(enemy.baseDamage * difficulty));
   }
 
-  // Elite chance: 15% starting from wave 5, ramping up from wave 3
+  // Elite chance: 15% starting from depth 5, ramping up from depth 3
   let eliteChance = 0;
-  if (wave >= 5) {
+  if (depth >= 5) {
     eliteChance = 0.15;
-  } else if (wave >= 3) {
+  } else if (depth >= 3) {
     eliteChance = 0.05;
   }
 
