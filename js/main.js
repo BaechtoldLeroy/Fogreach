@@ -1066,27 +1066,6 @@ function updateStatusEffectHUD(scene) {
 // 5) UPDATE
 // ==================================================
 function update(time, delta) {
-  // Track last safe position (not inside an obstacle) to recover from wall-push
-  if (player && player.active && player.body) {
-    let insideObstacle = false;
-    if (obstacles && obstacles.children) {
-      obstacles.children.iterate(obs => {
-        if (!obs || !obs.body || insideObstacle) return;
-        if (Phaser.Geom.Intersects.RectangleToRectangle(player.body, obs.body)) {
-          insideObstacle = true;
-        }
-      });
-    }
-    if (!insideObstacle) {
-      player._safeX = player.x;
-      player._safeY = player.y;
-    } else if (typeof player._safeX === 'number') {
-      // Player got pushed inside a wall — snap back
-      player.setPosition(player._safeX, player._safeY);
-      player.body.setVelocity(0, 0);
-    }
-  }
-
   if (invOpen) {
     pauseAllMotion.call(this);
     return;
@@ -2048,7 +2027,20 @@ function initializeGameObjects() {
   }
 
   this.physics.add.collider(player, obstacles);
-  this.physics.add.collider(player, enemies);
+  // Custom player-enemy collider: skip collision when player is touching
+  // a wall on the side the enemy is pushing from — prevents wall-clip.
+  this.physics.add.collider(player, enemies, null, (pl, en) => {
+    const b = pl.body;
+    if (!b) return true;
+    const dx = en.x - pl.x;
+    const dy = en.y - pl.y;
+    // If enemy pushes player toward a wall the player is already touching, skip
+    if (dx > 0 && b.blocked.left) return false;
+    if (dx < 0 && b.blocked.right) return false;
+    if (dy > 0 && b.blocked.up) return false;
+    if (dy < 0 && b.blocked.down) return false;
+    return true;
+  });
   this.physics.add.collider(enemies, obstacles);
   // Soft collision between enemies (Diablo 2 style — they push each other)
   this.physics.add.collider(enemies, enemies);
