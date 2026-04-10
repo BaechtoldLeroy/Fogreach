@@ -1993,6 +1993,9 @@ function initializeGameObjects() {
 
   player.body.setMaxVelocity(220, 220);
   if (player.body.setPushable) player.body.setPushable(false);
+  // Prevent enemies from displacing the player through walls —
+  // immovable means only the player's own input moves them, enemies bounce off.
+  player.body.setImmovable(true);
 
   const f = player.frame;
   if (f) {
