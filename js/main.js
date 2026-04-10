@@ -1993,9 +1993,6 @@ function initializeGameObjects() {
 
   player.body.setMaxVelocity(220, 220);
   if (player.body.setPushable) player.body.setPushable(false);
-  // Prevent enemies from displacing the player through walls —
-  // immovable means only the player's own input moves them, enemies bounce off.
-  player.body.setImmovable(true);
 
   const f = player.frame;
   if (f) {
@@ -2030,7 +2027,9 @@ function initializeGameObjects() {
   }
 
   this.physics.add.collider(player, obstacles);
-  this.physics.add.collider(player, enemies);
+  // No player-enemy collider — enemies pass through the player.
+  // This prevents enemies from pushing the player through walls.
+  // Damage is handled by the existing overlap at line below.
   this.physics.add.collider(enemies, obstacles);
   // Soft collision between enemies (Diablo 2 style — they push each other)
   this.physics.add.collider(enemies, enemies);
