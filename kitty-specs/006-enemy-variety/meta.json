@@ -5,5 +5,7 @@
   "friendly_name": "enemy variety",
   "mission": "software-dev",
   "slug": "006-enemy-variety",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "vcs_locked_at": "2026-04-10T11:11:04.639981+00:00"
 }
