@@ -386,8 +386,12 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   enemy.lastAttackTime = 0;
   enemy.setCollideWorldBounds(true); // verhindert das Rauslaufen
   enemy.body.onWorldBounds = true; // optional für blocked-Check
-  // Enemies are pushable by other enemies (Diablo 2 style soft collision),
-  // but the player is non-pushable to prevent being pushed through walls.
+  // Enemies must NOT be pushable by the player — otherwise the player can
+  // shove enemies through wall colliders. Phaser 3.50+ body.pushable=false
+  // prevents this while still letting the enemy move under its own velocity.
+  if (typeof enemy.body.pushable !== 'undefined') {
+    enemy.body.pushable = false;
+  }
 
   if (scene.enemyLayer) scene.enemyLayer.add(enemy);
 
@@ -1796,11 +1800,13 @@ function makeBoss(boss, def, cycle) {
     boss.damage = Math.max(1, Math.round(boss.baseDamage * difficulty));
   }
 
-  // Scale boss: cap sprite-based textures, use def.scale for procedural
+  // Scale boss: sprite-based textures normalize to a target pixel size,
+  // then multiply by the per-boss def.scale factor so larger bosses
+  // (Schattenrat scale=1.8) are visually bigger than small ones (1.5).
   const bossKey = boss.texture?.key || '';
   const isSpriteBasedBoss = bossKey.startsWith('boss_') || bossKey.startsWith('sprite_');
   if (isSpriteBasedBoss) {
-    const bossTargetPx = 96;
+    const bossTargetPx = 96 * (def.scale || 1);
     const srcH = boss.height || 300;
     boss.setScale(bossTargetPx / srcH);
   } else {
