@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-10T15:19:33.859342+00:00",
+  "feature_number": "024",
+  "feature_slug": "024-random-event-overhaul",
+  "friendly_name": "random event overhaul",
+  "mission": "software-dev",
+  "slug": "024-random-event-overhaul",
+  "target_branch": "main"
+}
