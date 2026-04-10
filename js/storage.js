@@ -294,7 +294,6 @@ function applySaveToState(scene, s) {
   // 2) Spawn/Progress ableiten
   waveInProgress         = false;
   spawnedEnemiesInWave   = 0;
-  spawnInterval = Math.max(200, 1000 - 50 * (currentWave - 1));
 
   // 3) HUD aktualisieren
   if (weaponStatsText?.setText) {

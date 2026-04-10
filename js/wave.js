@@ -3,13 +3,22 @@
 // --------------------------------------------------
 // Wave sizing helper
 // --------------------------------------------------
-function computeWaveEnemyTotal(waveNumber) {
+function computeWaveEnemyTotal(waveNumber, roomAreaPx) {
   const wave = Math.max(1, Math.floor(waveNumber || 1));
   // Logarithmic scaling: starts at 3, grows slowly, caps at 12
   // Wave 1: 3, Wave 5: 5, Wave 10: 7, Wave 20: 9, Wave 40: 11
   const base = 3;
   const scaled = base + Math.floor(Math.log2(wave) * 1.5);
-  return Math.min(12, scaled);
+  const baseCount = Math.min(12, scaled);
+
+  // Scale enemy count by room area — reference area is ~1 million px² (1152x896)
+  // Smaller rooms get fewer enemies, larger rooms get more
+  if (roomAreaPx && roomAreaPx > 0) {
+    const REF_AREA = 1152 * 896; // ~1,032,192 px² (median template size)
+    const areaFactor = Math.sqrt(roomAreaPx / REF_AREA); // sqrt for gentler scaling
+    return Math.max(2, Math.min(16, Math.round(baseCount * areaFactor)));
+  }
+  return baseCount;
 }
 window.computeWaveEnemyTotal = computeWaveEnemyTotal;
 
@@ -31,21 +40,17 @@ function startNextWave(noIncrement) {
     bossActive = true;
     spawnedEnemiesInWave = 0;    // no regular spawns this wave
     waveInProgress = true;
-    waveText.setText('Dungeon Level: ' + currentWave + '  (BOSS)');
+    waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + '  (BOSS)');
     spawnBoss.call(this);        // <-- defined below
     if (window.soundManager) window.soundManager.playMusic('boss_music');
     return;                      // skip normal spawn setup
   }
 
-  // Spawn-Intervall nie unter 200 ms reduzieren
-  spawnInterval = Math.max(200, spawnInterval - 50);
-
   waveInProgress = true;
   const isMiniBossWave = (currentWave % 5 === 0 && currentWave % 10 !== 0);
-  waveText.setText('Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
+  waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
   spawnedEnemiesInWave = 0;
   window.spawnedEnemiesInWave = 0;
-  spawnTimer = 0;
 
   // Alle regulären Gegner direkt zu Beginn der Welle erzeugen.
   if (!bossActive && typeof spawnEnemy === 'function') {
@@ -107,8 +112,16 @@ function checkWaveEnd(time) {
       window.AbilitySystem.onWaveCompleted(currentWave);
     }
 
-    // Raum gilt als geschafft → Treppen freigeben
-    if (typeof markRoomCleared === 'function') markRoomCleared();
+    // Brief breathing room after clearing a wave before unlocking stairs
+    if (waveText) waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Wave Cleared!');
+    const scene = this;
+    if (scene?.time?.delayedCall) {
+      scene.time.delayedCall(2000, () => {
+        if (typeof markRoomCleared === 'function') markRoomCleared();
+      });
+    } else {
+      if (typeof markRoomCleared === 'function') markRoomCleared();
+    }
   }
 
   // Boss wave ends when boss is gone
@@ -120,14 +133,6 @@ function checkWaveEnd(time) {
     }
     return;
   }
-}
-
-// --------------------------------------------------
-// 6.6 Spawning neuer Gegner
-// --------------------------------------------------
-function handleSpawning(delta) {
-  // Reguläres Spawning deaktiviert, da alle Gegner zu Wellenbeginn erzeugt werden.
-  return;
 }
 
 // --------------------------------------------------

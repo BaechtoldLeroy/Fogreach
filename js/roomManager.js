@@ -31,7 +31,7 @@ function shuffleArray(arr) {
  */
 function computeRunRoomCount() {
   const depth = Math.max(1, window.DUNGEON_DEPTH || 1);
-  return Math.min(10, 5 + Math.floor((depth - 1) / 5));
+  return Math.min(12, 7 + Math.floor((depth - 1) / 5));
 }
 
 // ---- Story Room Descriptions (German) ----
@@ -555,9 +555,12 @@ function enterRoom(scene, roomId) {
   if (room) room.wave = depth;
 
   const targetWave = Math.max(1, depth);
+  const builtW = builtMeta?.w ?? room?.width ?? ROOM_W;
+  const builtH = builtMeta?.h ?? room?.height ?? ROOM_H;
+  const roomAreaPx = builtW * builtH;
   const baseEnemies =
     typeof window.computeWaveEnemyTotal === "function"
-      ? window.computeWaveEnemyTotal(targetWave)
+      ? window.computeWaveEnemyTotal(targetWave, roomAreaPx)
       : 4 + (targetWave - 1) * 2;
 
   // Difficulty scaling based on room position within the run.
@@ -577,10 +580,6 @@ function enterRoom(scene, roomId) {
   currentWave = Math.max(0, depth - 1);
   window.currentWave = currentWave;
 
-  spawnInterval = Math.max(200, 1000 - 50 * (depth - 1) + 50);
-  window.spawnInterval = spawnInterval;
-
-  if (typeof recomputeSpawnFromWave === "function") recomputeSpawnFromWave();
 
   // 5) Türen sperren bis Clear
   lockStairs(scene, true);
@@ -590,7 +589,6 @@ function enterRoom(scene, roomId) {
   if (typeof startNextWave === "function") {
     startNextWave.call(scene, false);
     window.currentWave = currentWave;
-    window.spawnInterval = spawnInterval;
   }
 }
 
@@ -1084,6 +1082,7 @@ function updateRoomCounter(roomIndex, totalRooms) {
   if (window._roomCounterText && window._roomCounterText.setText) {
     window._roomCounterText.setText('Raum ' + (roomIndex + 1) + '/' + totalRooms);
   }
+  window.roomProgressText = 'Raum ' + (roomIndex + 1) + '/' + totalRooms;
 }
 
 // Export in globalen Namespace
