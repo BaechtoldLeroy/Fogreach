@@ -382,22 +382,22 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       tint = null;
       break; // Flammenweber
     case 8:
-      key = 'proc_rat';
+      key = scene.textures?.exists('rat_right0') ? 'rat_right0' : 'proc_rat';
       speed = 100;
       hp = 1;
-      tint = 0x8B4513;
+      tint = key.startsWith('rat_') ? null : 0x8B4513;
       break; // Ratte
     case 9:
-      key = 'proc_bat';
+      key = scene.textures?.exists('bat_right0') ? 'bat_right0' : 'proc_bat';
       speed = 130;
       hp = 1;
-      tint = 0x4B0082;
+      tint = key.startsWith('bat_') ? null : 0x4B0082;
       break; // Fledermaus
     case 10:
-      key = 'proc_wolf';
+      key = scene.textures?.exists('wolf_right0') ? 'wolf_right0' : 'proc_wolf';
       speed = 90;
       hp = 2;
-      tint = 0x808080;
+      tint = key.startsWith('wolf_') ? null : 0x808080;
       break; // Wolf
     default:
       key = scene.textures?.exists('mage_right0') ? 'mage_right0' : tex('sprite_mage', 'enemyMage');
@@ -578,7 +578,15 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.avoidWeight = 0.8;
     enemy.sepRadius = 50;
     enemy.cohRadius = 150;
-    enemy.setScale(0.6);
+    if (key.startsWith('rat_')) {
+      const ratH = enemy.height || 89;
+      enemy.setScale(40 / ratH);
+      enemy.isAnimalSprite = true;
+      enemy.animalPrefix = 'rat';
+      enemy.animalDirection = 'right';
+    } else {
+      enemy.setScale(0.6);
+    }
   } else if (type === 9) {
     // Bat - faster, erratic melee
     enemy.sepWeight = 1.2;
@@ -586,7 +594,15 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.avoidWeight = 0.9;
     enemy.sepRadius = 40;
     enemy.cohRadius = 120;
-    enemy.setScale(0.5);
+    if (key.startsWith('bat_')) {
+      const batH = enemy.height || 129;
+      enemy.setScale(38 / batH);
+      enemy.isAnimalSprite = true;
+      enemy.animalPrefix = 'bat';
+      enemy.animalDirection = 'right';
+    } else {
+      enemy.setScale(0.5);
+    }
   } else if (type === 10) {
     // Wolf - slightly bigger, tougher melee
     enemy.sepWeight = 0.8;
@@ -594,7 +610,15 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.avoidWeight = 0.9;
     enemy.sepRadius = 70;
     enemy.cohRadius = 180;
-    enemy.setScale(0.9);
+    if (key.startsWith('wolf_')) {
+      const wolfH = enemy.height || 90;
+      enemy.setScale(48 / wolfH);
+      enemy.isAnimalSprite = true;
+      enemy.animalPrefix = 'wolf';
+      enemy.animalDirection = 'right';
+    } else {
+      enemy.setScale(0.9);
+    }
   } else {
     // Mage (Fern/Support)
     enemy.kiteRadius = 260;
@@ -969,6 +993,19 @@ function handleEnemies(time, delta = 16) {
           enemy.bruteDirection = newDir;
           enemy._lastDirChange = time;
           const idleKey = `brute_${newDir}0`;
+          if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
+        }
+      }
+    }
+
+    // Animal sprite direction switching (rat, bat, wolf)
+    if (enemy.isAnimalSprite) {
+      if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
+        const newDir = desired.x > 0 ? 'right' : 'left';
+        if (newDir !== enemy.animalDirection) {
+          enemy.animalDirection = newDir;
+          enemy._lastDirChange = time;
+          const idleKey = `${enemy.animalPrefix}_${newDir}0`;
           if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
         }
       }

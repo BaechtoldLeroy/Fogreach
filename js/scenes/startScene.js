@@ -152,6 +152,30 @@ StartScene.prototype.preload = function () {
   this.load.image('mage_right1', 'assets/enemy/mage/right1.png');
   this.load.image('mage_right2', 'assets/enemy/mage/right2.png');
 
+  // Rat directional frames
+  this.load.image('rat_left0', 'assets/enemy/rat/left0.png');
+  this.load.image('rat_left1', 'assets/enemy/rat/left1.png');
+  this.load.image('rat_left2', 'assets/enemy/rat/left2.png');
+  this.load.image('rat_right0', 'assets/enemy/rat/right0.png');
+  this.load.image('rat_right1', 'assets/enemy/rat/right1.png');
+  this.load.image('rat_right2', 'assets/enemy/rat/right2.png');
+
+  // Bat directional frames
+  this.load.image('bat_left0', 'assets/enemy/bat/left0.png');
+  this.load.image('bat_left1', 'assets/enemy/bat/left1.png');
+  this.load.image('bat_left2', 'assets/enemy/bat/left2.png');
+  this.load.image('bat_right0', 'assets/enemy/bat/right0.png');
+  this.load.image('bat_right1', 'assets/enemy/bat/right1.png');
+  this.load.image('bat_right2', 'assets/enemy/bat/right2.png');
+
+  // Wolf directional frames
+  this.load.image('wolf_left0', 'assets/enemy/wolf/left0.png');
+  this.load.image('wolf_left1', 'assets/enemy/wolf/left1.png');
+  this.load.image('wolf_left2', 'assets/enemy/wolf/left2.png');
+  this.load.image('wolf_right0', 'assets/enemy/wolf/right0.png');
+  this.load.image('wolf_right1', 'assets/enemy/wolf/right1.png');
+  this.load.image('wolf_right2', 'assets/enemy/wolf/right2.png');
+
   // Enemy sprites (pixel art)
   this.load.image('sprite_imp', 'assets/enemy/imp/imp.png');
   this.load.image('sprite_archer', 'assets/enemy/archer/archer.png');
