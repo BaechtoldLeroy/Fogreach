@@ -485,7 +485,6 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
       if (sprite.texture.key !== idleKey) {
         sprite.setTexture(idleKey);
       }
-      sprite.setFrame(0);
     }
   }
 
