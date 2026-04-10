@@ -579,8 +579,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.sepRadius = 50;
     enemy.cohRadius = 150;
     if (key.startsWith('rat_')) {
-      const ratH = enemy.height || 89;
-      enemy.setScale(40 / ratH);
+      enemy.setScale(0.28);
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'rat';
       enemy.animalDirection = 'right';
@@ -595,8 +594,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.sepRadius = 40;
     enemy.cohRadius = 120;
     if (key.startsWith('bat_')) {
-      const batH = enemy.height || 129;
-      enemy.setScale(38 / batH);
+      enemy.setScale(0.22);
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'bat';
       enemy.animalDirection = 'right';
@@ -611,8 +609,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.sepRadius = 70;
     enemy.cohRadius = 180;
     if (key.startsWith('wolf_')) {
-      const wolfH = enemy.height || 90;
-      enemy.setScale(48 / wolfH);
+      enemy.setScale(0.35);
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'wolf';
       enemy.animalDirection = 'right';
