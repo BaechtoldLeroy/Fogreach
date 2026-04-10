@@ -1,0 +1,25 @@
+{
+  "event_count": 1,
+  "feature_slug": "019-optimize-loading-time",
+  "last_event_id": "01KNVX20RQ3M55JCA3JRCY5YQH",
+  "materialized_at": "2026-04-10T14:34:39.778096+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KNVX20RQ3M55JCA3JRCY5YQH",
+      "last_transition_at": "2026-04-10T14:34:39.767569+00:00"
+    }
+  }
+}
