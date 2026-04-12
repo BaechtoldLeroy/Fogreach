@@ -828,6 +828,12 @@ function create() {
   this.input.keyboard.on('keydown-O', () => {
     if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
   });
+  // Journal overlay (J key)
+  this.input.keyboard.on('keydown-J', () => {
+    if (window.storySystem && typeof window.storySystem.showJournalOverlay === 'function') {
+      window.storySystem.showJournalOverlay(this);
+    }
+  });
   // WP04: F key consumes the highest-tier health potion
   this.input.keyboard.on('keydown-F', () => {
     if (window.LootSystem && typeof window.LootSystem.onPotionKey === 'function') {
@@ -839,6 +845,7 @@ function create() {
   this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     this.input.keyboard.off('keydown-F');
     this.input.keyboard.off('keydown-I');
+    this.input.keyboard.off('keydown-J');
     this.input.keyboard.off('keydown-M');
     this.input.keyboard.off('keydown-K');
     this.input.keyboard.off('keydown-O');
