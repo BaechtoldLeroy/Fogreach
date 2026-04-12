@@ -33,15 +33,7 @@
       weight: 15,
       minDepth: 3,
       handler: function(scene) {
-        var healed = 0;
-        if (typeof playerHealth !== 'undefined' && typeof playerMaxHealth !== 'undefined') {
-          healed = Math.min(2, playerMaxHealth - playerHealth);
-          if (healed > 0) {
-            playerHealth += healed;
-            window.playerHealth = playerHealth;
-          }
-        }
-        showEventToast(scene, 'Wandernder Haendler heilt dich! +' + Math.max(1, healed) + ' HP');
+        spawnMerchant(scene);
       }
     },
     {
@@ -139,7 +131,108 @@
     }
   }
 
+  // --- Wandering Merchant ---
+  var activeMerchant = null;
+
+  function spawnMerchant(scene) {
+    if (!scene || !scene.add) return;
+    cleanupMerchant();
+
+    // Load merchant texture on-demand if not available
+    var texKey = 'spaeherin';
+    if (!scene.textures.exists(texKey)) {
+      scene.load.image(texKey, 'assets/sprites/spaeherin.png');
+      scene.load.once('complete', function() { _placeMerchant(scene, texKey); });
+      scene.load.start();
+    } else {
+      _placeMerchant(scene, texKey);
+    }
+  }
+
+  function _placeMerchant(scene, texKey) {
+    if (!scene || !scene.add || !scene.physics) return;
+
+    // Find a position away from player
+    var cam = scene.cameras && scene.cameras.main;
+    var bounds = scene.physics.world && scene.physics.world.bounds;
+    var cx = bounds ? bounds.x + bounds.width / 2 : 400;
+    var cy = bounds ? bounds.y + bounds.height / 2 : 300;
+
+    // Place merchant near room center
+    var merchant = scene.physics.add.sprite(cx, cy, texKey);
+    merchant.setDepth(150);
+    merchant.body.setImmovable(true);
+    merchant.body.setAllowGravity(false);
+
+    // Scale to reasonable NPC size
+    var h = merchant.height || 200;
+    merchant.setScale(64 / h);
+
+    // Interaction prompt (floating text above merchant)
+    var prompt = scene.add.text(cx, cy - 45, '[E] Handel', {
+      fontSize: '14px', fill: '#ffdd44', fontFamily: 'monospace',
+      stroke: '#000', strokeThickness: 2, align: 'center'
+    }).setOrigin(0.5).setDepth(151);
+
+    // Track overlap with player
+    var playerRef = window.player || (scene.physics && scene.physics.world &&
+      scene.physics.world.bodies && scene.physics.world.bodies.entries &&
+      Array.from(scene.physics.world.bodies.entries).find(function(b) {
+        return b.gameObject && b.gameObject.body && b.gameObject.body.maxVelocity;
+      }));
+
+    var inRange = false;
+    var interactHandler = null;
+
+    if (typeof player !== 'undefined' && player) {
+      // Check distance each frame
+      var updateEvent = scene.events.on('update', function() {
+        if (!merchant || !merchant.active || !player || !player.active) return;
+        var dx = merchant.x - player.x;
+        var dy = merchant.y - player.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        inRange = dist < 80;
+        prompt.setVisible(inRange);
+        // Update prompt position to follow merchant
+        prompt.setPosition(merchant.x, merchant.y - 45);
+      });
+
+      // E key to interact
+      interactHandler = function() {
+        if (!inRange || !merchant || !merchant.active) return;
+        if (typeof window.openShopScene === 'function') {
+          window.openShopScene(scene);
+        }
+        showEventToast(scene, 'Der wandernde Haendler bietet seine Waren an!');
+      };
+      scene.input.keyboard.on('keydown-E', interactHandler);
+    }
+
+    activeMerchant = {
+      sprite: merchant,
+      prompt: prompt,
+      interactHandler: interactHandler,
+      scene: scene
+    };
+
+    showEventToast(scene, 'Ein wandernder Haendler ist erschienen!');
+  }
+
+  function cleanupMerchant() {
+    if (!activeMerchant) return;
+    if (activeMerchant.sprite && activeMerchant.sprite.destroy) activeMerchant.sprite.destroy();
+    if (activeMerchant.prompt && activeMerchant.prompt.destroy) activeMerchant.prompt.destroy();
+    if (activeMerchant.interactHandler && activeMerchant.scene &&
+        activeMerchant.scene.input && activeMerchant.scene.input.keyboard) {
+      activeMerchant.scene.input.keyboard.off('keydown-E', activeMerchant.interactHandler);
+    }
+    activeMerchant = null;
+  }
+
   function onRoomEnter(scene, roomId) {
+    // Clean up any active merchant from previous room
+    cleanupMerchant();
+
     if (roomId === 0) return;
     var depth = window.DUNGEON_DEPTH || 1;
     if (!shouldTriggerEvent(depth)) return;
@@ -158,6 +251,7 @@
 
   function reset() {
     lastEventId = null;
+    cleanupMerchant();
   }
 
   window.EventSystem = {
