@@ -1012,6 +1012,8 @@ function recomputeAccessibleArea(scene, options = {}) {
     }
   }
 
+  console.log(`[accessibleArea] grid=${cols}x${rows} (${cols*rows} cells), reachable=${reachableCells.length}, spawn=${spawnCandidates.length}, fallback=${fallbackCandidates.length}, start=(${startCX},${startCY})`);
+
   const candidates = spawnCandidates.length ? spawnCandidates : fallbackCandidates.slice();
   const accessibleArea = {
     cellSize,
