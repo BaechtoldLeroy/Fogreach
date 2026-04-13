@@ -199,10 +199,8 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   y = bestY;
 
   // Minimum spawn distance from player — enemies should NOT spawn on top of player
-  // Scale min spawn distance by room size — smaller rooms get shorter distance
-  const roomArea = baseWidth * baseHeight;
-  const REF_AREA = 1152 * 896; // reference median room area
-  const MIN_SPAWN_DISTANCE = Math.max(100, Math.round(300 * Math.sqrt(roomArea / REF_AREA)));
+  // Capped at 300px to avoid unsatisfiable distances in rooms with limited accessible area
+  const MIN_SPAWN_DISTANCE = 300;
 
   const _spawnLog = [];
   _spawnLog.push(`[spawn] room=${baseWidth}x${baseHeight} MIN_DIST=${MIN_SPAWN_DISTANCE} player=(${Math.round(playerX)},${Math.round(playerY)})`);
