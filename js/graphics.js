@@ -1483,7 +1483,7 @@ function createItemGraphics() {
         g.fillStyle(0x0f7f3e, 1);
         g.fillRect(centerX - 4, baseY - 4, 8, 4);
       }
-    }
+    },
     // Potion icons (4 tiers, progressively more vibrant)
     {
       key: 'itPotionMinor',
