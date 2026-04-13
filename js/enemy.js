@@ -293,32 +293,29 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     }
   }
 
-  // Final fallback: if still too close, find farthest point from player
+  // Final fallback: if still too close, sample a grid of points and pick farthest accessible one
   if (player && player.active) {
-    const dx = x - player.x;
-    const dy = y - player.y;
-    if (dx * dx + dy * dy < 100 * 100) { // absolute minimum 100px
-      // Try corners and edges of the room
-      const candidates = [
-        { x: leftBound, y: topBound },
-        { x: rightBound, y: topBound },
-        { x: leftBound, y: bottomBound },
-        { x: rightBound, y: bottomBound },
-        { x: (leftBound + rightBound) / 2, y: topBound },
-        { x: (leftBound + rightBound) / 2, y: bottomBound },
-        { x: leftBound, y: (topBound + bottomBound) / 2 },
-        { x: rightBound, y: (topBound + bottomBound) / 2 },
-      ];
+    const fdx = x - player.x;
+    const fdy = y - player.y;
+    if (fdx * fdx + fdy * fdy < MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE) {
+      const GRID = 6; // 6x6 = 36 sample points
+      const stepX = (rightBound - leftBound) / (GRID + 1);
+      const stepY = (bottomBound - topBound) / (GRID + 1);
       let bestDist = 0;
       let bestPos = null;
-      for (const c of candidates) {
-        if (scene.isPointAccessible && !scene.isPointAccessible(c.x, c.y)) continue;
-        const cdx = c.x - player.x;
-        const cdy = c.y - player.y;
-        const dist = cdx * cdx + cdy * cdy;
-        if (dist > bestDist) {
-          bestDist = dist;
-          bestPos = c;
+      for (let gx = 1; gx <= GRID; gx++) {
+        for (let gy = 1; gy <= GRID; gy++) {
+          const cx = leftBound + gx * stepX;
+          const cy = topBound + gy * stepY;
+          if (scene.isPointAccessible && !scene.isPointAccessible(cx, cy)) continue;
+          if (isSpawnBlocked(cx, cy)) continue;
+          const cdx = cx - player.x;
+          const cdy = cy - player.y;
+          const dist = cdx * cdx + cdy * cdy;
+          if (dist > bestDist) {
+            bestDist = dist;
+            bestPos = { x: cx, y: cy };
+          }
         }
       }
       if (bestPos) {

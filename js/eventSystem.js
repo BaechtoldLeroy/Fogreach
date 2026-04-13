@@ -272,9 +272,6 @@
     cleanupMerchant();
   }
 
-  // DEBUG: force merchant in room 1 — remove after testing
-  window.DEBUG_FORCE_EVENT = { roomId: 1, eventId: 'wandering_merchant' };
-
   window.EventSystem = {
     onRoomEnter: onRoomEnter,
     reset: reset,
