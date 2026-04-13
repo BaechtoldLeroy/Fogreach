@@ -16,7 +16,7 @@ const PLAYER_WIDTH_STRETCH = 1;
 const PLAYER_SIDEWAYS_SCALE = 0.8;
 const PLAYER_RIGHT_LEFT_WIDTH_MULT = 1.15;
 const PLAYER_FRONT_BACK_WIDTH_MULT = 1.4;
-const PLAYER_VISUAL_SCALE = 0.48; // Scale to 72px height (29x72)
+const PLAYER_VISUAL_SCALE = 0.456; // 95% of 0.48 — slightly smaller to fit through tight gaps
 const PLAYER_DIRECTION_FRAME_SHIFTS = {
   '02': 10
 };
