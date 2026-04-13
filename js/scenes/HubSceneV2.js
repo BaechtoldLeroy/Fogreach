@@ -89,6 +89,7 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     // Initialize inventory UI so I-key works in Hub
+    if (typeof createItemGraphics === 'function') createItemGraphics.call(this);
     if (typeof createInventoryGraphics === 'function') createInventoryGraphics.call(this);
     if (typeof initInventoryUI === 'function') initInventoryUI.call(this);
 
