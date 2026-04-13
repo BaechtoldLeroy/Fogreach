@@ -235,6 +235,22 @@
 
     if (roomId === 0) return;
     var depth = window.DUNGEON_DEPTH || 1;
+
+    // Debug: force a specific event in a specific room
+    // Set window.DEBUG_FORCE_EVENT = { roomId: 1, eventId: 'wandering_merchant' }
+    if (window.DEBUG_FORCE_EVENT && window.DEBUG_FORCE_EVENT.roomId === roomId) {
+      var forced = EVENT_TYPES.find(function(e) { return e.id === window.DEBUG_FORCE_EVENT.eventId; });
+      if (forced) {
+        lastEventId = forced.id;
+        if (scene && scene.time && scene.time.delayedCall) {
+          scene.time.delayedCall(800, function() { forced.handler(scene); });
+        } else {
+          forced.handler(scene);
+        }
+        return;
+      }
+    }
+
     if (!shouldTriggerEvent(depth)) return;
 
     var event = pickEvent(depth);
@@ -253,6 +269,9 @@
     lastEventId = null;
     cleanupMerchant();
   }
+
+  // DEBUG: force merchant in room 1 — remove after testing
+  window.DEBUG_FORCE_EVENT = { roomId: 1, eventId: 'wandering_merchant' };
 
   window.EventSystem = {
     onRoomEnter: onRoomEnter,
