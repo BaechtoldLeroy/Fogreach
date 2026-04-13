@@ -331,15 +331,8 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     }
   }
 
-  // Ultimate fallback: if still too close and initial random point was farther, use that
-  if (player && player.active) {
-    const curDist = Phaser.Math.Distance.Between(x, y, player.x, player.y);
-    if (curDist < MIN_SPAWN_DISTANCE && _initialBestDist > curDist) {
-      _spawnLog.push(`[spawn] ULTIMATE FALLBACK: using initial best (${Math.round(_initialBestX)},${Math.round(_initialBestY)}) dist=${Math.round(_initialBestDist)}`);
-      x = _initialBestX;
-      y = _initialBestY;
-    }
-  }
+  // If still too close, accept it — spawning in accessible area close to
+  // the player is better than spawning far away behind walls.
 
   // Log final spawn position
   if (player && player.active) {
