@@ -88,7 +88,12 @@ class HubSceneV2 extends Phaser.Scene {
       this.physics.add.collider(this.player, this.npcGroup);
     }
 
+    // Initialize inventory UI so I-key works in Hub
+    if (typeof createInventoryGraphics === 'function') createInventoryGraphics.call(this);
+    if (typeof initInventoryUI === 'function') initInventoryUI.call(this);
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (typeof destroyInventoryUI === 'function') destroyInventoryUI();
       this.input.keyboard.off('keydown-E', this._handleInteract, this);
       this.input.keyboard.off('keydown-I');
       this.input.keyboard.off('keydown-J', this._handleJournal, this);
