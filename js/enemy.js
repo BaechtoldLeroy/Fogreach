@@ -199,7 +199,10 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   y = bestY;
 
   // Minimum spawn distance from player — enemies should NOT spawn on top of player
-  const MIN_SPAWN_DISTANCE = 300;
+  // Scale min spawn distance by room size — smaller rooms get shorter distance
+  const roomArea = baseWidth * baseHeight;
+  const REF_AREA = 1152 * 896; // reference median room area
+  const MIN_SPAWN_DISTANCE = Math.max(100, Math.round(300 * Math.sqrt(roomArea / REF_AREA)));
 
   if (xCoordinates > 0 && yCoordinates > 0) {
     x = xCoordinates;
@@ -289,7 +292,42 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       y = fallback.y;
     }
   }
-  
+
+  // Final fallback: if still too close, find farthest point from player
+  if (player && player.active) {
+    const dx = x - player.x;
+    const dy = y - player.y;
+    if (dx * dx + dy * dy < 100 * 100) { // absolute minimum 100px
+      // Try corners and edges of the room
+      const candidates = [
+        { x: leftBound, y: topBound },
+        { x: rightBound, y: topBound },
+        { x: leftBound, y: bottomBound },
+        { x: rightBound, y: bottomBound },
+        { x: (leftBound + rightBound) / 2, y: topBound },
+        { x: (leftBound + rightBound) / 2, y: bottomBound },
+        { x: leftBound, y: (topBound + bottomBound) / 2 },
+        { x: rightBound, y: (topBound + bottomBound) / 2 },
+      ];
+      let bestDist = 0;
+      let bestPos = null;
+      for (const c of candidates) {
+        if (scene.isPointAccessible && !scene.isPointAccessible(c.x, c.y)) continue;
+        const cdx = c.x - player.x;
+        const cdy = c.y - player.y;
+        const dist = cdx * cdx + cdy * cdy;
+        if (dist > bestDist) {
+          bestDist = dist;
+          bestPos = c;
+        }
+      }
+      if (bestPos) {
+        x = bestPos.x;
+        y = bestPos.y;
+      }
+    }
+  }
+
   // 2) Typ-Fallunterscheidung + Key, Speed, HP, Ranged-Flag
 
   // Generate procedural textures for animal enemies (once)
