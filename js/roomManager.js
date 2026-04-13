@@ -847,7 +847,7 @@ function drawFilledPolygon(gfx, pts) {
   gfx.fillPath();
 }
 
-const ROOM_SPAWN_HALF_SIZE = 24;
+const ROOM_SPAWN_HALF_SIZE = 12;
 const ROOM_SPAWN_PAD = 4;
 const ACCESS_GRID_SIZE = 32;
 const MIN_PLAYER_SPAWN_DISTANCE = 160;
