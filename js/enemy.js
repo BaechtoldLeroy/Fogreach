@@ -197,6 +197,10 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   }
   x = bestX;
   y = bestY;
+  // Remember the initial farthest-random-point as ultimate fallback
+  const _initialBestX = bestX;
+  const _initialBestY = bestY;
+  const _initialBestDist = Math.sqrt(bestDist);
 
   // Minimum spawn distance from player — enemies should NOT spawn on top of player
   // Capped at 300px to avoid unsatisfiable distances in rooms with limited accessible area
@@ -324,6 +328,16 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
         _spawnLog.push(`[spawn] pickResult: ${pick ? `(${Math.round(pick.x)},${Math.round(pick.y)})` : 'null'}`);
         if (pick) { x = pick.x; y = pick.y; }
       }
+    }
+  }
+
+  // Ultimate fallback: if still too close and initial random point was farther, use that
+  if (player && player.active) {
+    const curDist = Phaser.Math.Distance.Between(x, y, player.x, player.y);
+    if (curDist < MIN_SPAWN_DISTANCE && _initialBestDist > curDist) {
+      _spawnLog.push(`[spawn] ULTIMATE FALLBACK: using initial best (${Math.round(_initialBestX)},${Math.round(_initialBestY)}) dist=${Math.round(_initialBestDist)}`);
+      x = _initialBestX;
+      y = _initialBestY;
     }
   }
 
