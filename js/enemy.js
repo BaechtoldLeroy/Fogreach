@@ -204,14 +204,22 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   const REF_AREA = 1152 * 896; // reference median room area
   const MIN_SPAWN_DISTANCE = Math.max(100, Math.round(300 * Math.sqrt(roomArea / REF_AREA)));
 
+  const _spawnLog = [];
+  _spawnLog.push(`[spawn] room=${baseWidth}x${baseHeight} MIN_DIST=${MIN_SPAWN_DISTANCE} player=(${Math.round(playerX)},${Math.round(playerY)})`);
+  _spawnLog.push(`[spawn] initial best=(${Math.round(x)},${Math.round(y)}) dist=${Math.round(Math.sqrt(bestDist))}`);
+
   if (xCoordinates > 0 && yCoordinates > 0) {
     x = xCoordinates;
     y = yCoordinates;
+    _spawnLog.push(`[spawn] explicit coords=(${x},${y})`);
   } else {
     const preferred = pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
     if (preferred) {
       x = preferred.x;
       y = preferred.y;
+      _spawnLog.push(`[spawn] pickAccessible=(${Math.round(x)},${Math.round(y)})`);
+    } else {
+      _spawnLog.push(`[spawn] pickAccessible=null`);
     }
   }
 
@@ -233,11 +241,17 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   };
 
   if (!ensureValidSpot()) {
+    _spawnLog.push(`[spawn] ensureValid1=FAIL`);
     const retry = pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
     if (retry) {
       x = retry.x;
       y = retry.y;
+      _spawnLog.push(`[spawn] retry=(${Math.round(x)},${Math.round(y)})`);
+    } else {
+      _spawnLog.push(`[spawn] retry=null`);
     }
+  } else {
+    _spawnLog.push(`[spawn] ensureValid1=OK at (${Math.round(x)},${Math.round(y)})`);
   }
 
   const tryOffsets = [
@@ -286,25 +300,41 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   }
 
   if (!ensureValidSpot()) {
+    _spawnLog.push(`[spawn] ensureValid2=FAIL after offsets`);
     const fallback = pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
     if (fallback) {
       x = fallback.x;
       y = fallback.y;
+      _spawnLog.push(`[spawn] fallback2=(${Math.round(x)},${Math.round(y)})`);
+    } else {
+      _spawnLog.push(`[spawn] fallback2=null`);
     }
+  } else {
+    _spawnLog.push(`[spawn] ensureValid2=OK at (${Math.round(x)},${Math.round(y)})`);
   }
 
   // Final fallback: use the scene's accessible-area spawn point picker
-  // which knows about maze corridors and has a pre-computed pool of valid cells
   if (player && player.active) {
     const fdx = x - player.x;
     const fdy = y - player.y;
-    if (fdx * fdx + fdy * fdy < MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE) {
+    const finalDist = Math.sqrt(fdx * fdx + fdy * fdy);
+    if (finalDist < MIN_SPAWN_DISTANCE) {
+      _spawnLog.push(`[spawn] FINAL FALLBACK needed: dist=${Math.round(finalDist)} < ${MIN_SPAWN_DISTANCE}`);
+      _spawnLog.push(`[spawn] pickAccessibleSpawnPoint exists: ${!!scene.pickAccessibleSpawnPoint}`);
       if (scene.pickAccessibleSpawnPoint) {
         const pick = scene.pickAccessibleSpawnPoint({ minDistance: MIN_SPAWN_DISTANCE, maxAttempts: 30 });
+        _spawnLog.push(`[spawn] pickResult: ${pick ? `(${Math.round(pick.x)},${Math.round(pick.y)})` : 'null'}`);
         if (pick) { x = pick.x; y = pick.y; }
       }
     }
   }
+
+  // Log final spawn position
+  if (player && player.active) {
+    const _fd = Math.round(Phaser.Math.Distance.Between(x, y, player.x, player.y));
+    _spawnLog.push(`[spawn] FINAL pos=(${Math.round(x)},${Math.round(y)}) dist=${_fd} ${_fd < MIN_SPAWN_DISTANCE ? '⚠️ TOO CLOSE' : '✓'}`);
+  }
+  console.log(_spawnLog.join('\n'));
 
   // 2) Typ-Fallunterscheidung + Key, Speed, HP, Ranged-Flag
 
