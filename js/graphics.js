@@ -1484,6 +1484,42 @@ function createItemGraphics() {
         g.fillRect(centerX - 4, baseY - 4, 8, 4);
       }
     }
+    // Potion icons (4 tiers, progressively more vibrant)
+    {
+      key: 'itPotionMinor',
+      draw: () => {
+        g.fillStyle(0x444444, 1); g.fillRect(18, 8, 12, 4); // cork
+        g.fillStyle(0x8B0000, 1); g.fillRoundedRect(14, 12, 20, 28, 4); // bottle
+        g.fillStyle(0xCC2222, 0.6); g.fillRoundedRect(18, 16, 12, 18, 2); // liquid
+      }
+    },
+    {
+      key: 'itPotionNormal',
+      draw: () => {
+        g.fillStyle(0x444444, 1); g.fillRect(18, 6, 12, 4);
+        g.fillStyle(0xCC0000, 1); g.fillRoundedRect(12, 10, 24, 32, 5);
+        g.fillStyle(0xFF3333, 0.6); g.fillRoundedRect(16, 14, 16, 22, 3);
+      }
+    },
+    {
+      key: 'itPotionMajor',
+      draw: () => {
+        g.fillStyle(0x666666, 1); g.fillRect(18, 4, 12, 4);
+        g.fillStyle(0xEE0000, 1); g.fillRoundedRect(10, 8, 28, 34, 6);
+        g.fillStyle(0xFF4444, 0.7); g.fillRoundedRect(14, 12, 20, 24, 4);
+        g.fillStyle(0xFFAAAA, 0.4); g.fillCircle(20, 18, 4); // shine
+      }
+    },
+    {
+      key: 'itPotionSuper',
+      draw: () => {
+        g.fillStyle(0xFFD700, 1); g.fillRect(16, 2, 16, 5); // gold cork
+        g.fillStyle(0xFF0000, 1); g.fillRoundedRect(8, 7, 32, 36, 7);
+        g.fillStyle(0xFF5555, 0.7); g.fillRoundedRect(12, 11, 24, 26, 5);
+        g.fillStyle(0xFFCCCC, 0.5); g.fillCircle(20, 16, 5); // shine
+        g.fillStyle(0xFFD700, 0.8); g.fillCircle(28, 14, 3); // sparkle
+      }
+    }
   ];
 
   icons.forEach(({ key, draw }) => {

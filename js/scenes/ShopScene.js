@@ -27,6 +27,9 @@
       this.activeTab = 'items';
       this.tabBody = [];
       this.selectedRerollItem = null;
+      // Dungeon merchant: cheaper prices, better items, no reroll tab
+      this.isDungeonMerchant = !!window._dungeonMerchant;
+      window._dungeonMerchant = false;
       this.shopState = (window.LootSystem && typeof window.LootSystem.getOrCreateShopState === 'function')
         ? window.LootSystem.getOrCreateShopState()
         : { itemStock: [] };
@@ -77,9 +80,9 @@
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       closeBg.on('pointerdown', () => this._close());
 
-      // Tab buttons
+      // Tab buttons (dungeon merchant has no reroll)
       this._tabButtons = {};
-      const tabs = ['items', 'potions', 'reroll'];
+      const tabs = this.isDungeonMerchant ? ['items', 'potions'] : ['items', 'potions', 'reroll'];
       const tabLabels = { items: 'Items', potions: 'Traenke', reroll: 'Reroll' };
       tabs.forEach((t, i) => {
         const tx = px - panelW / 2 + 70 + i * 120;
@@ -205,7 +208,9 @@
       const tierMul = [10, 50, 200, 800];
       const t = Math.max(0, Math.min(3, item.tier || 0));
       const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
-      return Math.max(1, Math.round(tierMul[t] * (1 + iLevel * 0.1)));
+      const base = Math.max(1, Math.round(tierMul[t] * (1 + iLevel * 0.1)));
+      // Dungeon merchant offers 30% discount
+      return this.isDungeonMerchant ? Math.max(1, Math.round(base * 0.7)) : base;
     }
 
     _tryBuyItem(stockIdx, price) {
@@ -259,7 +264,8 @@
         }).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(healText);
 
-        const priceText = this.add.text(px + panelW / 2 - 150, ry + rowH / 2, def.goldCost + ' G', {
+        const potionPrice = this.isDungeonMerchant ? Math.max(1, Math.round(def.goldCost * 0.7)) : def.goldCost;
+        const priceText = this.add.text(px + panelW / 2 - 150, ry + rowH / 2, potionPrice + ' G', {
           fontFamily: 'monospace', fontSize: '12px', color: '#ffd166'
         }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(priceText);
@@ -272,12 +278,13 @@
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
         this.tabBody.push(buyBg);
         this.tabBody.push(buyText);
-        buyBg.on('pointerdown', () => this._tryBuyPotion(def));
+        buyBg.on('pointerdown', () => this._tryBuyPotion(def, potionPrice));
       });
     }
 
-    _tryBuyPotion(def) {
-      if (!window.LootSystem || !window.LootSystem.spendGold(def.goldCost)) {
+    _tryBuyPotion(def, overridePrice) {
+      const cost = overridePrice || def.goldCost;
+      if (!window.LootSystem || !window.LootSystem.spendGold(cost)) {
         this._showToast('Nicht genug Gold');
         return;
       }
@@ -306,7 +313,7 @@
         const slot = window.inventory.findIndex(s => !s);
         if (slot < 0) {
           this._showToast('Inventar voll');
-          window.LootSystem.grantGold(def.goldCost); // refund
+          window.LootSystem.grantGold(cost); // refund
           return;
         }
         window.inventory[slot] = {

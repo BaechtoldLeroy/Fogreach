@@ -164,12 +164,13 @@
     merchant.body.setImmovable(true);
     merchant.body.setAllowGravity(false);
 
-    // Scale to reasonable NPC size
+    // Scale to reasonable NPC size (~120px tall)
     var h = merchant.height || 200;
-    merchant.setScale(64 / h);
+    merchant.setScale(120 / h);
 
     // Interaction prompt (floating text above merchant)
-    var prompt = scene.add.text(cx, cy - 45, '[E] Handel', {
+    var scaledH = 120;
+    var prompt = scene.add.text(cx, cy - scaledH / 2 - 10, '[E] Handel', {
       fontSize: '14px', fill: '#ffdd44', fontFamily: 'monospace',
       stroke: '#000', strokeThickness: 2, align: 'center'
     }).setOrigin(0.5).setDepth(151);
@@ -194,16 +195,17 @@
         inRange = dist < 80;
         prompt.setVisible(inRange);
         // Update prompt position to follow merchant
-        prompt.setPosition(merchant.x, merchant.y - 45);
+        prompt.setPosition(merchant.x, merchant.y - 70);
       });
 
       // E key to interact
       interactHandler = function() {
         if (!inRange || !merchant || !merchant.active) return;
         if (typeof window.openShopScene === 'function') {
+          // Pass dungeon merchant flag for cheaper prices, no reroll tab
+          window._dungeonMerchant = true;
           window.openShopScene(scene);
         }
-        showEventToast(scene, 'Der wandernde Haendler bietet seine Waren an!');
       };
       scene.input.keyboard.on('keydown-E', interactHandler);
     }
