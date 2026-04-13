@@ -63,8 +63,10 @@ class HubSceneV2 extends Phaser.Scene {
     this.input.keyboard.on('keydown-O', () => {
       if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
     });
+    // TODO(023): Inventory in Hub requires inventory UI to be initialized
+    // outside GameScene. For now, show a hint that inventory is dungeon-only.
     this.input.keyboard.on('keydown-I', () => {
-      if (typeof openInventory === 'function' && typeof closeInventory === 'function') {
+      if (typeof openInventory === 'function' && typeof invUI !== 'undefined' && invUI && !invUI._destroyed) {
         if (typeof invOpen !== 'undefined' && invOpen) closeInventory(); else openInventory();
       }
     });
