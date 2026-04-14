@@ -1068,7 +1068,7 @@ function normalizeTemplateToFixedGrid(tpl) {
     size: { tile: TILE_PX, w: targetCols, h: targetRows },
     layout: { ...tpl.layout, walls },
     entrances, exits, objects, spawns,
-    meta: { ...(tpl.meta || {}), isLarge: isLargeTemplate, originalSize }
+    meta: { ...(tpl.meta || {}), isLarge: targetCols >= 40 || targetRows >= 40, originalSize: { w: srcCols, h: srcRows } }
   };
 }
 
