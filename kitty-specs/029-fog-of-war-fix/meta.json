@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-14T15:53:55.176919+00:00",
+  "feature_number": "029",
+  "feature_slug": "029-fog-of-war-fix",
+  "friendly_name": "fog of war fix",
+  "mission": "software-dev",
+  "slug": "029-fog-of-war-fix",
+  "target_branch": "main"
+}
