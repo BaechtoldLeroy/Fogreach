@@ -1009,26 +1009,21 @@ const COLS_TARGET = 80; // 80 * 32 = 2560
 const ROWS_TARGET = 80; // 80 * 32 = 2560
 
 function normalizeTemplateToFixedGrid(tpl) {
-  // 1) Ausgangswerte
+  // Use the template's native size — no padding to 80x80.
+  // Each room renders at its designed dimensions for variety.
   const srcRows = tpl.layout.walls.length;
   const srcCols = tpl.layout.walls[0].length;
-  const originalSize = {
-    w: tpl.size?.w ?? srcCols,
-    h: tpl.size?.h ?? srcRows
-  };
-  const isLargeTemplate =
-    (tpl.size && ((tpl.size.w || 0) >= 80 || (tpl.size.h || 0) >= 80)) ||
-    originalSize.w >= 80 ||
-    originalSize.h >= 80;
+  const targetCols = Math.max(srcCols, tpl.size?.w ?? srcCols);
+  const targetRows = Math.max(srcRows, tpl.size?.h ?? srcRows);
 
   const wallKey =
     Object.keys(tpl.layout.legend || {}).find((key) => tpl.layout.legend[key] === 'wall') || '#';
   // 2) Zielgitter anlegen, default = Wand '#'
-  const target = Array.from({ length: ROWS_TARGET }, () => Array(COLS_TARGET).fill(wallKey));
+  const target = Array.from({ length: targetRows }, () => Array(targetCols).fill(wallKey));
 
-  // 3) Zentrieroffset
-  const offX = Math.floor((COLS_TARGET - srcCols) / 2);
-  const offY = Math.floor((ROWS_TARGET - srcRows) / 2);
+  // 3) No centering offset — use template as-is
+  const offX = 0;
+  const offY = 0;
 
   // 4) Inhalt rueberkopieren (alles ausserhalb wird ignoriert)
   for (let y = 0; y < srcRows; y++) {
@@ -1036,18 +1031,18 @@ function normalizeTemplateToFixedGrid(tpl) {
     for (let x = 0; x < srcCols; x++) {
       const tx = x + offX;
       const ty = y + offY;
-      if (tx >= 0 && tx < COLS_TARGET && ty >= 0 && ty < ROWS_TARGET) {
+      if (tx >= 0 && tx < targetCols && ty >= 0 && ty < targetRows) {
         target[ty][tx] = row[x];
       }
     }
   }
 
   // 5) Optional: Rand als Wand setzen, damit der Raum "geschlossen" ist
-  for (let x = 0; x < COLS_TARGET; x++) {
-    target[0][x] = target[ROWS_TARGET - 1][x] = Object.keys(tpl.layout.legend).find(k => tpl.layout.legend[k] === 'wall') || '#';
+  for (let x = 0; x < targetCols; x++) {
+    target[0][x] = target[targetRows - 1][x] = wallKey;
   }
-  for (let y = 0; y < ROWS_TARGET; y++) {
-    target[y][0] = target[y][COLS_TARGET - 1] = Object.keys(tpl.layout.legend).find(k => tpl.layout.legend[k] === 'wall') || '#';
+  for (let y = 0; y < targetRows; y++) {
+    target[y][0] = target[y][targetCols - 1] = wallKey;
   }
 
   // 6) Arrays zu Strings
@@ -1055,22 +1050,22 @@ function normalizeTemplateToFixedGrid(tpl) {
 
   // 7) Koordinaten verschieben (Entrances, Exits, Objects, Spawns)
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-  const shiftPt = p => ({ ...p, x: clamp(p.x + offX, 1, COLS_TARGET - 2), y: clamp(p.y + offY, 1, ROWS_TARGET - 2) });
+  const shiftPt = p => ({ ...p, x: clamp(p.x + offX, 1, targetCols - 2), y: clamp(p.y + offY, 1, targetRows - 2) });
 
   const entrances = (tpl.entrances || []).map(shiftPt);
   const exits = (tpl.exits || []).map(shiftPt);
-  const objects = (tpl.objects || []).map(o => ({ ...o, x: clamp(o.x + offX, 0, COLS_TARGET - 1), y: clamp(o.y + offY, 0, ROWS_TARGET - 1) }));
+  const objects = (tpl.objects || []).map(o => ({ ...o, x: clamp(o.x + offX, 0, targetCols - 1), y: clamp(o.y + offY, 0, targetRows - 1) }));
 
   const spawns = {
-    enemies: (tpl.spawns?.enemies || []).map(s => ({ ...s, x: clamp(s.x + offX, 1, COLS_TARGET - 2), y: clamp(s.y + offY, 1, ROWS_TARGET - 2) })),
-    loot: (tpl.spawns?.loot || []).map(l => ({ ...l, x: clamp(l.x + offX, 1, COLS_TARGET - 2), y: clamp(l.y + offY, 1, ROWS_TARGET - 2) })),
+    enemies: (tpl.spawns?.enemies || []).map(s => ({ ...s, x: clamp(s.x + offX, 1, targetCols - 2), y: clamp(s.y + offY, 1, targetRows - 2) })),
+    loot: (tpl.spawns?.loot || []).map(l => ({ ...l, x: clamp(l.x + offX, 1, targetCols - 2), y: clamp(l.y + offY, 1, targetRows - 2) })),
     player:  tpl.spawns?.player ? shiftPt(tpl.spawns.player) : undefined
   };
 
-  // 8) Rueckgabe: Tile immer 32, Grid auf Ziel, Pixelmasse konsistent
+  // 8) Rueckgabe: Tile immer 32, Grid = native template size
   return {
     ...tpl,
-    size: { tile: TILE_PX, w: COLS_TARGET, h: ROWS_TARGET },
+    size: { tile: TILE_PX, w: targetCols, h: targetRows },
     layout: { ...tpl.layout, walls },
     entrances, exits, objects, spawns,
     meta: { ...(tpl.meta || {}), isLarge: isLargeTemplate, originalSize }
