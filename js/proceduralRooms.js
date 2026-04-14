@@ -83,7 +83,7 @@
 
   // Carve a doorway in the shared wall between two BSP children
   // width: 3-4 tiles so the player collider reliably fits through
-  function carveDoorway(grid, node, rng, doorwayTiles) {
+  function carveDoorway(grid, node, rng, doorwayTiles, doorways) {
     if (!node.left || !node.right) return;
     var doorWidth = 3 + Math.floor(rng() * 2); // 3-4 tiles
 
@@ -104,6 +104,14 @@
           grid[node.splitPos][dx + i] = '.'; markDoor(dx + i, node.splitPos);
         }
       }
+      // Record center tile of this horizontal-wall doorway (wall runs left-right → 'horizontal')
+      if (doorways) {
+        doorways.push({
+          x: dx + Math.floor(doorWidth / 2),
+          y: node.splitPos,
+          orientation: 'horizontal'
+        });
+      }
     } else if (node.splitAxis === 'v') {
       var overlapY1 = Math.max(node.left.y, node.right.y) + 2;
       var overlapY2 = Math.min(node.left.y + node.left.h, node.right.y + node.right.h) - 2 - doorWidth;
@@ -116,6 +124,14 @@
         if (grid[dy + j] && node.splitPos >= 0 && node.splitPos < grid[dy + j].length) {
           grid[dy + j][node.splitPos] = '.'; markDoor(node.splitPos, dy + j);
         }
+      }
+      // Record center tile of this vertical-wall doorway (wall runs up-down → 'vertical')
+      if (doorways) {
+        doorways.push({
+          x: node.splitPos,
+          y: dy + Math.floor(doorWidth / 2),
+          orientation: 'vertical'
+        });
       }
     }
   }
@@ -248,9 +264,10 @@
     collectInternalNodes(root, internal);
     internal.reverse();
     var doorwayTiles = {}; // 'y|x' -> true, so we can keep objects off these tiles
+    var doorways = [];    // [{x, y, orientation}] center tile of each carved doorway
     internal.forEach(function (node) {
       if (!maybeMergeWall(grid, node, rng)) {
-        carveDoorway(grid, node, rng, doorwayTiles);
+        carveDoorway(grid, node, rng, doorwayTiles, doorways);
       }
     });
 
@@ -383,6 +400,7 @@
       entrances: entrances,
       objects: objects,
       spawns: { player: playerSpawn, enemies: enemies, loot: loot },
+      doorways: doorways,
       _procedural: true,
       _seed: seed
     };

@@ -735,6 +735,15 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     objectCount++;
   });
 
+  // Door spawns — only for procedural rooms that carry doorway data
+  if (tpl._procedural) {
+    (tpl.doorways || []).forEach(d => {
+      const px = ox + gx(tpl, d.x) + T / 2;
+      const py = oy + gy(tpl, d.y) + T / 2;
+      if (window.DoorSystem?.spawnDoor) window.DoorSystem.spawnDoor(scene, px, py, d.orientation);
+    });
+  }
+
   // Gegner-Spawns — enforce a minimum distance from the player spawn so
   // the player isn't ambushed on entry. If a template tries to spawn an
   // enemy too close, we relocate it to a distant accessible tile.
