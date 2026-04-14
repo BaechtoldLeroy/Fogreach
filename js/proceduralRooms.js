@@ -256,19 +256,26 @@
     var botX = findNearestFloorInRow(grid, height - 2, playerSpawn.x);
     if (botX >= 0) entrances.push({ x: botX, y: height - 2, dir: 'S' });
 
-    // 12) Enemy spawns in later chambers (skip first)
+    // 12) Enemy spawns in later chambers (skip first). Large chambers get
+    //     multiple groups scattered within. Total density ~1 enemy per 40
+    //     floor tiles (D2-ish).
     var enemies = [];
     for (var ec = 1; ec < accessibleChambers.length; ec++) {
       var c = accessibleChambers[ec];
-      var groupSize = 1 + Math.floor(rng() * 3);
-      var enemyType = Math.floor(rng() * 4) + 1;
-      enemies.push({
-        type: enemyType,
-        x: c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2)),
-        y: c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2)),
-        count: groupSize,
-        radius: 2
-      });
+      var floorTiles = (c.w - 2) * (c.h - 2);
+      // Groups per chamber scale with chamber area
+      var groups = Math.max(1, Math.floor(floorTiles / 40));
+      for (var g = 0; g < groups; g++) {
+        var groupSize = 2 + Math.floor(rng() * 3); // 2-4 per group (was 1-3)
+        var enemyType = Math.floor(rng() * 4) + 1;
+        enemies.push({
+          type: enemyType,
+          x: c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2)),
+          y: c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2)),
+          count: groupSize,
+          radius: 2
+        });
+      }
     }
 
     // 13) Loot: large chest in last chamber, scattered smaller ones
