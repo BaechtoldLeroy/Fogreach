@@ -833,7 +833,11 @@ function isBlockedByObstacle(x, y) {
   const list = obstacles?.getChildren?.() || [];
   for (let i = 0; i < list.length; i++) {
     const go = list[i];
-    if (!go || !go.texture || go.texture.key !== "obstacleWall") continue; // nur Waende blocken
+    if (!go || !go.texture) continue;
+    const key = go.texture.key;
+    // Wall textures: obstacleWall + any themed wall_* variant
+    const isWall = key === 'obstacleWall' || (typeof key === 'string' && key.startsWith('wall_'));
+    if (!isWall) continue;
 
     const b = go.body;
     if (!b || !b.enable) continue;
