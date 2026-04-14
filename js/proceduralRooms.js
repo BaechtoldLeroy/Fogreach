@@ -82,40 +82,39 @@
   }
 
   // Carve a doorway in the shared wall between two BSP children
-  // width: 2-3 tiles to allow player passage
-  function carveDoorway(grid, node, rng) {
+  // width: 3-4 tiles so the player collider reliably fits through
+  function carveDoorway(grid, node, rng, doorwayTiles) {
     if (!node.left || !node.right) return;
-    var doorWidth = 2 + Math.floor(rng() * 2); // 2-3 tiles
+    var doorWidth = 3 + Math.floor(rng() * 2); // 3-4 tiles
+
+    var markDoor = function (x, y) {
+      if (doorwayTiles) doorwayTiles[y + '|' + x] = true;
+    };
 
     if (node.splitAxis === 'h') {
-      // Horizontal split — doorway runs vertically across the shared wall at splitPos
-      // Shared wall is at y = splitPos (top of right child / bottom of left child)
-      // Pick x within the overlap of both children
       var overlapX1 = Math.max(node.left.x, node.right.x) + 2;
       var overlapX2 = Math.min(node.left.x + node.left.w, node.right.x + node.right.w) - 2 - doorWidth;
       if (overlapX2 < overlapX1) return;
       var dx = overlapX1 + Math.floor(rng() * (overlapX2 - overlapX1 + 1));
-      // Carve doorway — the wall is at y=splitPos-1 and y=splitPos (double wall between chambers)
       for (var i = 0; i < doorWidth; i++) {
         if (grid[node.splitPos - 1] && dx + i >= 0 && dx + i < grid[node.splitPos - 1].length) {
-          grid[node.splitPos - 1][dx + i] = '.';
+          grid[node.splitPos - 1][dx + i] = '.'; markDoor(dx + i, node.splitPos - 1);
         }
         if (grid[node.splitPos] && dx + i >= 0 && dx + i < grid[node.splitPos].length) {
-          grid[node.splitPos][dx + i] = '.';
+          grid[node.splitPos][dx + i] = '.'; markDoor(dx + i, node.splitPos);
         }
       }
     } else if (node.splitAxis === 'v') {
-      // Vertical split — doorway runs horizontally at splitPos
       var overlapY1 = Math.max(node.left.y, node.right.y) + 2;
       var overlapY2 = Math.min(node.left.y + node.left.h, node.right.y + node.right.h) - 2 - doorWidth;
       if (overlapY2 < overlapY1) return;
       var dy = overlapY1 + Math.floor(rng() * (overlapY2 - overlapY1 + 1));
       for (var j = 0; j < doorWidth; j++) {
         if (grid[dy + j] && node.splitPos - 1 >= 0 && node.splitPos - 1 < grid[dy + j].length) {
-          grid[dy + j][node.splitPos - 1] = '.';
+          grid[dy + j][node.splitPos - 1] = '.'; markDoor(node.splitPos - 1, dy + j);
         }
         if (grid[dy + j] && node.splitPos >= 0 && node.splitPos < grid[dy + j].length) {
-          grid[dy + j][node.splitPos] = '.';
+          grid[dy + j][node.splitPos] = '.'; markDoor(node.splitPos, dy + j);
         }
       }
     }
@@ -210,13 +209,11 @@
     //    or carve a doorway. Process internal nodes bottom-up.
     var internal = [];
     collectInternalNodes(root, internal);
-    // Sort internal nodes by depth (deepest first, so siblings connect first)
     internal.reverse();
+    var doorwayTiles = {}; // 'y|x' -> true, so we can keep objects off these tiles
     internal.forEach(function (node) {
-      // Merge attempt first (removes entire shared wall for merged chambers)
       if (!maybeMergeWall(grid, node, rng)) {
-        // Otherwise carve a doorway
-        carveDoorway(grid, node, rng);
+        carveDoorway(grid, node, rng, doorwayTiles);
       }
     });
 
@@ -300,17 +297,34 @@
       }
     }
 
-    // 14) Objects scattered
+    // 14) Objects scattered — avoid doorway tiles (+ 1 tile buffer) so they
+    //     never block passage. Brazier especially must not be near doors.
     var objects = [];
     var objTypes = ['brazier', 'barrel', 'crate', 'rubble'];
+    var isDoorwayOrAdjacent = function (tx, ty) {
+      for (var dy = -1; dy <= 1; dy++) {
+        for (var dx = -1; dx <= 1; dx++) {
+          if (doorwayTiles[(ty + dy) + '|' + (tx + dx)]) return true;
+        }
+      }
+      return false;
+    };
     accessibleChambers.forEach(function (c) {
       var count = Math.floor(rng() * 3);
       for (var o = 0; o < count; o++) {
-        objects.push({
-          type: objTypes[Math.floor(rng() * objTypes.length)],
-          x: c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2)),
-          y: c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2))
-        });
+        // Try up to 6 times to find a non-doorway tile
+        var placed = false;
+        for (var attempt = 0; attempt < 6 && !placed; attempt++) {
+          var ox = c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2));
+          var oy = c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2));
+          if (!isDoorwayOrAdjacent(ox, oy)) {
+            objects.push({
+              type: objTypes[Math.floor(rng() * objTypes.length)],
+              x: ox, y: oy
+            });
+            placed = true;
+          }
+        }
       }
     });
 
