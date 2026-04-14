@@ -163,6 +163,33 @@
     }
   }
 
+  // Weighted random pick: weights is an array of numbers, returns chosen index
+  function weightedPick(rng, weights) {
+    var total = 0;
+    for (var i = 0; i < weights.length; i++) total += weights[i];
+    var r = rng() * total;
+    for (var j = 0; j < weights.length; j++) {
+      r -= weights[j];
+      if (r <= 0) return j;
+    }
+    return weights.length - 1;
+  }
+
+  // Returns an enemy type number (1-6) biased by the current theme
+  function pickEnemyType(rng, theme) {
+    // Types: 1=basic, 2=fast, 3=brute, 4=ranged, 5=shadow, 6=chainguard, 7=imp, 8=mage, 9=archer
+    // We map to the numeric types used in the existing system (1-4 range is safe default)
+    var pools = {
+      crypt:     { types: [5, 1],    weights: [5, 1] },
+      cathedral: { types: [8, 6],    weights: [4, 6] },
+      sewer:     { types: [3, 1, 2], weights: [3, 1, 2] },
+      dungeon:   { types: [1, 2, 3, 4], weights: [1, 1, 1, 1] }
+    };
+    var pool = pools[theme.id] || pools.dungeon;
+    var idx = weightedPick(rng, pool.weights);
+    return pool.types[idx];
+  }
+
   /**
    * Generate a D2-style procedural room.
    * @param {Object} opts - { width, height, seed, name }
@@ -172,9 +199,19 @@
     var width = opts.width || 80;
     var height = opts.height || 80;
     var seed = opts.seed || Math.floor(Math.random() * 1e9);
-    var name = opts.name || ('Procedural_' + seed);
 
     var rng = mulberry32(seed);
+
+    // Theme pool — pick deterministically from the seed
+    var THEMES = [
+      { id: 'crypt',     floor: 'floor_stone_dark', wall: 'wall_dungeon',     tags: ['dark', 'crypt'] },
+      { id: 'cathedral', floor: 'floor_tile_ornate', wall: 'wall_stone_large', tags: ['grand', 'holy'] },
+      { id: 'sewer',     floor: 'floor_cobble',      wall: 'wall_brick',       tags: ['dirty', 'underground'] },
+      { id: 'dungeon',   floor: 'floor_stone',       wall: 'obstacleWall',     tags: ['basic'] }
+    ];
+    var theme = THEMES[Math.floor(rng() * THEMES.length)];
+
+    var name = opts.name || (theme.id + '_Procedural_' + seed);
 
     // 1) All walls grid
     var grid = [];
@@ -264,7 +301,7 @@
       var groups = Math.max(1, Math.floor(floorTiles / 40));
       for (var g = 0; g < groups; g++) {
         var groupSize = 2 + Math.floor(rng() * 3); // 2-4 per group (was 1-3)
-        var enemyType = Math.floor(rng() * 4) + 1;
+        var enemyType = pickEnemyType(rng, theme);
         enemies.push({
           type: enemyType,
           x: c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2)),
@@ -300,7 +337,13 @@
     // 14) Objects scattered — avoid doorway tiles (+ 1 tile buffer) so they
     //     never block passage. Brazier especially must not be near doors.
     var objects = [];
-    var objTypes = ['brazier', 'barrel', 'crate', 'rubble'];
+    var themeObjTypes = {
+      crypt:     ['brazier', 'rubble', 'barrel'],
+      cathedral: ['brazier', 'statue_knight', 'pillar_small'],
+      sewer:     ['barrel', 'crate', 'rubble'],
+      dungeon:   ['brazier', 'barrel', 'crate', 'rubble']
+    };
+    var objTypes = themeObjTypes[theme.id] || themeObjTypes.dungeon;
     var isDoorwayOrAdjacent = function (tx, ty) {
       for (var dy = -1; dy <= 1; dy++) {
         for (var dx = -1; dx <= 1; dx++) {
@@ -330,11 +373,11 @@
 
     return {
       name: name,
-      tags: ['procedural', 'large'],
+      tags: ['procedural', 'large'].concat(theme.tags),
       size: { tile: 32, w: width, h: height },
-      tiles: { floor: 'floor_stone' },
+      tiles: { floor: theme.floor },
       layout: {
-        legend: { '#': 'obstacleWall', '.': 'floor_stone' },
+        legend: { '#': theme.wall, '.': theme.floor },
         walls: walls
       },
       entrances: entrances,
