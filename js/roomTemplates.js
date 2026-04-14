@@ -298,7 +298,11 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     floorKey = null;
   }
 
-  let wallTexture = roomTheme.wall || 'obstacleWall';
+  // Prefer wall texture from legend (procedural rooms set this per theme),
+  // fallback to roomTheme, then obstacleWall.
+  const legendWall = tpl.layout?.legend?.['#'];
+  const legendWallIsTex = typeof legendWall === 'string' && legendWall.startsWith('wall_');
+  let wallTexture = (legendWallIsTex ? legendWall : null) || roomTheme.wall || 'obstacleWall';
   if (!warnMissingTexture(scene, wallTexture, 'wall tile')) {
     wallTexture = 'obstacleWall';
     if (!warnMissingTexture(scene, wallTexture, 'wall fallback')) {
@@ -324,11 +328,12 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         continue;
       }
 
-      if (key === 'wall' || key === 'obstacleWall') {
+      const isWallKey = (k) => k === 'wall' || k === 'obstacleWall' || (typeof k === 'string' && k.startsWith('wall_'));
+      if (isWallKey(key)) {
         const start = x;
         while (x + 1 < W) {
           const nextKey = tpl.layout.legend[row[x + 1]];
-          if (nextKey === 'wall' || nextKey === 'obstacleWall') {
+          if (isWallKey(nextKey)) {
             x++;
           } else {
             break;
