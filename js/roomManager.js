@@ -689,7 +689,6 @@ function initFogOfWar() {
   const scene = this;
   const W = scene.scale.width;
   const H = scene.scale.height;
-  // Oversize the black fog rect to cover viewport edges at any zoom level.
   const camZoom = scene.cameras?.main?.zoom || 1;
   const fogW = Math.ceil(W / camZoom) + 20;
   const fogH = Math.ceil(H / camZoom) + 20;
@@ -711,7 +710,7 @@ function initFogOfWar() {
     .setDepth(899)
     .setVisible(false);
 
-  // Oversize fogUnseen rect to cover viewport at any zoom
+  // Oversize fogUnseen to cover viewport edges at low zoom
   scene.fogUnseen = scene.add.graphics().setScrollFactor(0).setDepth(1000);
   scene.fogUnseen.fillStyle(0x000000, 1);
   scene.fogUnseen.fillRect(-(fogW - W) / 2, -(fogH - H) / 2, fogW, fogH);
