@@ -258,6 +258,10 @@
           aura.fillStyle(picked[0].auraColor, 0.35);
           aura.fillCircle(enemy.x, enemy.y, 36);
           if (typeof aura.setDepth === 'function') aura.setDepth(38);
+          // Put aura in enemyLayer so it respects the enemy vision mask
+          if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
+            scene.enemyLayer.add(aura);
+          }
           enemy._eliteAura = aura;
           if (scene.time && typeof scene.time.addEvent === 'function') {
             const auraTimer = scene.time.addEvent({
@@ -297,6 +301,10 @@
           });
           if (typeof tag.setOrigin === 'function') tag.setOrigin(0.5);
           if (typeof tag.setDepth === 'function') tag.setDepth(51);
+          // Put name tag in enemyLayer so it respects the vision mask
+          if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
+            scene.enemyLayer.add(tag);
+          }
           enemy._eliteNameTag = tag;
           enemy.eliteNameTag = tagText;
           if (scene.time && typeof scene.time.addEvent === 'function') {

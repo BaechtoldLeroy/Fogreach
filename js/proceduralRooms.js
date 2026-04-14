@@ -279,6 +279,17 @@
       }
     });
 
+    // 6b) Re-stamp doorway tiles as floor — removeChamber may have
+    //     filled them back in, blocking previously-carved passages
+    Object.keys(doorwayTiles).forEach(function (key) {
+      var parts = key.split('|');
+      var dy = parseInt(parts[0], 10);
+      var dx = parseInt(parts[1], 10);
+      if (grid[dy] && dx >= 0 && dx < grid[dy].length) {
+        grid[dy][dx] = '.';
+      }
+    });
+
     // 7) Ensure outer border is wall
     for (var bx = 0; bx < width; bx++) { grid[0][bx] = '#'; grid[height - 1][bx] = '#'; }
     for (var by = 0; by < height; by++) { grid[by][0] = '#'; grid[by][width - 1] = '#'; }
