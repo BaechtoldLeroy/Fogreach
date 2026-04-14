@@ -838,11 +838,14 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
 
 function openInventory() {
   invOpen = true;
-  player?.setVelocity(0, 0);
+  // Guard: global `player` may be undefined in Hub (uses this.player)
+  if (typeof player !== 'undefined' && player && player.setVelocity) {
+    player.setVelocity(0, 0);
+  }
   siphonMaterialsFromInventory();
   refreshInventoryUI();
-  invUI.overlay.setVisible(true);
-  invUI.panel.setVisible(true);
+  if (invUI.overlay?.setVisible) invUI.overlay.setVisible(true);
+  if (invUI.panel?.setVisible) invUI.panel.setVisible(true);
 }
 
 function closeInventory() {
