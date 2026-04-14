@@ -701,15 +701,13 @@ function markRoomCleared() {
   const tpl = currentTplName && window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[currentTplName];
   if (tpl && tpl._procedural && !room._rewardGranted) {
     room._rewardGranted = true;
-    if (typeof spawnLoot === 'function' && window.LootSystem && window.LootSystem.rollItem) {
-      const depth = window.DUNGEON_DEPTH || 1;
-      // Force higher tier: bias toward rare/legendary via iLevel boost
-      const boostedILevel = depth + 10;
-      const rewardItem = window.LootSystem.rollItem(null, boostedILevel, 2); // tier 2 = rare
+    if (typeof spawnLoot === 'function') {
+      // Tier: 60% Rare (2), 30% Legendary (3), 10% super-boosted (still 3 but higher iLevel)
+      const tierRoll = Math.random();
+      const rewardTier = tierRoll < 0.6 ? 2 : 3;
       const rx = player ? player.x + 60 : (scene.physics.world.bounds.x + scene.physics.world.bounds.width / 2);
       const ry = player ? player.y + 60 : (scene.physics.world.bounds.y + scene.physics.world.bounds.height / 2);
-      spawnLoot.call(scene, rx, ry, { type: 'chest_large', locked: false, tier: 2 }, null);
-      // Also spawn a visible reward chest in the middle
+      spawnLoot.call(scene, rx, ry, { type: 'chest_large', locked: false, tier: rewardTier }, null);
       if (window.soundManager) try { window.soundManager.playSFX('level_up'); } catch (e) {}
     }
   }

@@ -22,6 +22,7 @@
   function Node(x, y, w, h) {
     this.x = x; this.y = y; this.w = w; this.h = h;
     this.left = null; this.right = null;
+    this.parent = null;
     this.splitAxis = null; // 'h' or 'v'
     this.splitPos = null;  // position of the split line
   }
@@ -54,6 +55,8 @@
       node.left = new Node(node.x, node.y, split, node.h);
       node.right = new Node(node.x + split, node.y, node.w - split, node.h);
     }
+    node.left.parent = node;
+    node.right.parent = node;
     return true;
   }
 
@@ -258,14 +261,55 @@
     // 4) Carve all chambers (as rects with 1-tile walls around each)
     leaves.forEach(function (l) { carveChamber(grid, l); });
 
+    // 4b) Open halls: randomly pick some internal subtrees and flatten them
+    //     into one big open area — no interior walls. Creates large D2-style
+    //     halls mixed with the smaller chambers.
+    var openedSubtrees = new Set();
+    var candidateSubtrees = [];
+    collectInternalNodes(root, candidateSubtrees);
+    // Shuffle for variety
+    for (var si = candidateSubtrees.length - 1; si > 0; si--) {
+      var sj = Math.floor(rng() * (si + 1));
+      var tmp = candidateSubtrees[si]; candidateSubtrees[si] = candidateSubtrees[sj]; candidateSubtrees[sj] = tmp;
+    }
+    // Make 1-2 open halls per room, preferring mid-sized subtrees
+    var openCount = 1 + Math.floor(rng() * 2);
+    var opened = 0;
+    for (var ci = 0; ci < candidateSubtrees.length && opened < openCount; ci++) {
+      var subtree = candidateSubtrees[ci];
+      var subArea = subtree.w * subtree.h;
+      // Skip tiny subtrees (boring) and massive ones (would eat the whole room)
+      if (subArea < 300 || subArea > (width * height * 0.45)) continue;
+      // Check if any ancestor already opened
+      var alreadyOpened = false;
+      var scan = subtree;
+      while (scan) {
+        if (openedSubtrees.has(scan)) { alreadyOpened = true; break; }
+        scan = scan.parent;
+      }
+      if (alreadyOpened) continue;
+      // Carve the whole subtree area as floor (1-tile wall border preserved)
+      for (var oy2 = subtree.y + 1; oy2 < subtree.y + subtree.h - 1; oy2++) {
+        for (var ox2 = subtree.x + 1; ox2 < subtree.x + subtree.w - 1; ox2++) {
+          if (grid[oy2] && ox2 >= 0 && ox2 < grid[oy2].length) grid[oy2][ox2] = '.';
+        }
+      }
+      openedSubtrees.add(subtree);
+      opened++;
+    }
+
     // 5) Connect adjacent chambers — either merge wall (make bigger room)
     //    or carve a doorway. Process internal nodes bottom-up.
+    //    Skip nodes inside opened subtrees (they're already one big hall).
     var internal = [];
     collectInternalNodes(root, internal);
     internal.reverse();
     var doorwayTiles = {}; // 'y|x' -> true, so we can keep objects off these tiles
     var doorways = [];    // [{x, y, orientation}] center tile of each carved doorway
     internal.forEach(function (node) {
+      // If this node or any ancestor is in openedSubtrees, skip — it's a hall
+      var a = node;
+      while (a) { if (openedSubtrees.has(a)) return; a = a.parent; }
       if (!maybeMergeWall(grid, node, rng)) {
         carveDoorway(grid, node, rng, doorwayTiles, doorways);
       }
