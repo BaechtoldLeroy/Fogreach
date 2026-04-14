@@ -1276,6 +1276,15 @@ function update(time, delta) {
     window.DoorSystem.updateDoors(this, player);
   }
 
+  // 5.8c Performance monitor tick
+  if (this._perfMonitor && this._perfMonitor.enabled) {
+    if (typeof this._perfMonitor.updateFPS === 'function') this._perfMonitor.updateFPS();
+    if (typeof this._perfMonitor.updateMemory === 'function') this._perfMonitor.updateMemory();
+    if (this._perfMonitor.overlayVisible && typeof this._perfMonitor.updateOverlay === 'function') {
+      this._perfMonitor.updateOverlay();
+    }
+  }
+
   updateEnemyDirectionHint(this, this.time?.now ?? time);
 
   // Anti-wall-push: if player ended up inside an obstacle after physics,
