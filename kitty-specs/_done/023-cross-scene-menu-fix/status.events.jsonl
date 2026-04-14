@@ -1,0 +1,1 @@
+{"actor": "claude", "at": "2026-04-14T07:53:22.949298+00:00", "event_id": "01KP5FP485G42BH2ZNAXRHC213", "evidence": null, "execution_mode": "worktree", "feature_slug": "023-cross-scene-menu-fix", "force": true, "from_lane": "planned", "policy_metadata": null, "reason": "implemented and tested", "review_ref": null, "to_lane": "done", "wp_id": "WP01"}

@@ -1,0 +1,25 @@
+{
+  "event_count": 1,
+  "feature_slug": "025-enemy-spawn-distance",
+  "last_event_id": "01KP5FP5B0N9Z803S5ZPSK6Z1Q",
+  "materialized_at": "2026-04-14T07:53:24.075862+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KP5FP5B0N9Z803S5ZPSK6Z1Q",
+      "last_transition_at": "2026-04-14T07:53:24.064769+00:00"
+    }
+  }
+}

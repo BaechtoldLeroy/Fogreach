@@ -1,0 +1,1 @@
+{"actor": "claude", "at": "2026-04-14T07:53:24.064769+00:00", "event_id": "01KP5FP5B0N9Z803S5ZPSK6Z1Q", "evidence": null, "execution_mode": "worktree", "feature_slug": "025-enemy-spawn-distance", "force": true, "from_lane": "planned", "policy_metadata": null, "reason": "implemented and tested", "review_ref": null, "to_lane": "done", "wp_id": "WP01"}
