@@ -828,6 +828,15 @@ function create() {
   this.input.keyboard.on('keydown-O', () => {
     if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
   });
+  // Performance overlay (P key) — shows FPS, memory, timing metrics
+  this.input.keyboard.on('keydown-P', () => {
+    if (!this._perfMonitor && window.PerformanceMonitor) {
+      this._perfMonitor = new window.PerformanceMonitor(this);
+    }
+    if (this._perfMonitor && typeof this._perfMonitor.toggleOverlay === 'function') {
+      this._perfMonitor.toggleOverlay();
+    }
+  });
   // Journal overlay (J key)
   this.input.keyboard.on('keydown-J', () => {
     if (window.storySystem && typeof window.storySystem.showJournalOverlay === 'function') {
@@ -849,6 +858,7 @@ function create() {
     this.input.keyboard.off('keydown-M');
     this.input.keyboard.off('keydown-K');
     this.input.keyboard.off('keydown-O');
+    this.input.keyboard.off('keydown-P');
     if (window.gameScene === this) window.gameScene = null;
   });
 
