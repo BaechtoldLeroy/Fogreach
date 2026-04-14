@@ -1420,8 +1420,12 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
     });
   }
 
-  // Simple health bar (like boss but smaller)
+  // Simple health bar (like boss but smaller) — added to enemyLayer so it
+  // respects the fog-of-war vision mask and only shows when enemy is visible
   enemy.miniBossBar = scene.add.graphics().setDepth(1002);
+  if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
+    scene.enemyLayer.add(enemy.miniBossBar);
+  }
   enemy.on('destroy', () => enemy.miniBossBar?.destroy());
 
   return enemy;
