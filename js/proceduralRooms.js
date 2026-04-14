@@ -1,5 +1,7 @@
-// js/proceduralRooms.js — Procedural room generator (BSP + corridors)
+// js/proceduralRooms.js — Procedural room generator (D2-style chambers)
 // Produces templates compatible with the existing roomTemplates.js loader.
+// Style: rooms directly adjacent with doorway openings in shared walls,
+// NOT boxes connected by long corridors.
 
 (function () {
   'use strict';
@@ -16,111 +18,62 @@
     };
   }
 
-  // BSP Node
+  // BSP Node — leaf rects become chambers (no inner padding, walls are shared)
   function Node(x, y, w, h) {
     this.x = x; this.y = y; this.w = w; this.h = h;
     this.left = null; this.right = null;
-    this.room = null; // {x, y, w, h} inner rect
+    this.splitAxis = null; // 'h' or 'v'
+    this.splitPos = null;  // position of the split line
   }
 
   function splitNode(node, minSize, rng) {
     if (node.left || node.right) return false;
 
-    // Decide split direction — prefer the longer axis
+    // Prefer the longer axis
     var splitH = rng() < 0.5;
-    if (node.w > node.h * 1.25) splitH = false;
-    if (node.h > node.w * 1.25) splitH = true;
+    if (node.w > node.h * 1.3) splitH = false;
+    if (node.h > node.w * 1.3) splitH = true;
 
-    var max = (splitH ? node.h : node.w) - minSize;
-    if (max <= minSize) return false;
+    var axisSize = splitH ? node.h : node.w;
+    if (axisSize < minSize * 2 + 1) return false;
 
-    var split = Math.floor(rng() * (max - minSize)) + minSize;
+    // Split position — biased toward the middle but with variance
+    var min = minSize;
+    var max = axisSize - minSize - 1;
+    if (max <= min) return false;
+    var split = min + Math.floor(rng() * (max - min + 1));
 
     if (splitH) {
+      node.splitAxis = 'h';
+      node.splitPos = node.y + split;
       node.left = new Node(node.x, node.y, node.w, split);
       node.right = new Node(node.x, node.y + split, node.w, node.h - split);
     } else {
+      node.splitAxis = 'v';
+      node.splitPos = node.x + split;
       node.left = new Node(node.x, node.y, split, node.h);
       node.right = new Node(node.x + split, node.y, node.w - split, node.h);
     }
     return true;
   }
 
-  function createRooms(node, rng, minRoom) {
-    if (node.left || node.right) {
-      if (node.left) createRooms(node.left, rng, minRoom);
-      if (node.right) createRooms(node.right, rng, minRoom);
-    } else {
-      // Leaf — carve a room inside with some padding
-      var pad = 2;
-      var rx = node.x + pad + Math.floor(rng() * 2);
-      var ry = node.y + pad + Math.floor(rng() * 2);
-      var rw = Math.max(minRoom, node.w - pad * 2 - Math.floor(rng() * 3));
-      var rh = Math.max(minRoom, node.h - pad * 2 - Math.floor(rng() * 3));
-      rw = Math.min(rw, node.w - pad * 2);
-      rh = Math.min(rh, node.h - pad * 2);
-      node.room = { x: rx, y: ry, w: rw, h: rh };
-    }
+  function collectLeaves(node, out) {
+    if (!node.left && !node.right) { out.push(node); return; }
+    if (node.left) collectLeaves(node.left, out);
+    if (node.right) collectLeaves(node.right, out);
   }
 
-  function getRoom(node) {
-    if (node.room) return node.room;
-    var l = node.left ? getRoom(node.left) : null;
-    var r = node.right ? getRoom(node.right) : null;
-    return l || r;
-  }
-
-  function connectNodes(node, grid, rng) {
+  function collectInternalNodes(node, out) {
     if (!node.left || !node.right) return;
-    var lRoom = getRoom(node.left);
-    var rRoom = getRoom(node.right);
-    if (!lRoom || !rRoom) return;
-
-    var lx = lRoom.x + Math.floor(lRoom.w / 2);
-    var ly = lRoom.y + Math.floor(lRoom.h / 2);
-    var rx = rRoom.x + Math.floor(rRoom.w / 2);
-    var ry = rRoom.y + Math.floor(rRoom.h / 2);
-
-    // L-shaped corridor, random bend order
-    var horizFirst = rng() < 0.5;
-    var corridorWidth = 2; // 2-tile wide corridors
-    if (horizFirst) {
-      carveHorizontal(grid, lx, rx, ly, corridorWidth);
-      carveVertical(grid, ly, ry, rx, corridorWidth);
-    } else {
-      carveVertical(grid, ly, ry, lx, corridorWidth);
-      carveHorizontal(grid, lx, rx, ry, corridorWidth);
-    }
-
-    connectNodes(node.left, grid, rng);
-    connectNodes(node.right, grid, rng);
+    out.push(node);
+    collectInternalNodes(node.left, out);
+    collectInternalNodes(node.right, out);
   }
 
-  function carveHorizontal(grid, x1, x2, y, width) {
-    var from = Math.min(x1, x2), to = Math.max(x1, x2);
-    for (var x = from; x <= to; x++) {
-      for (var w = 0; w < width; w++) {
-        if (grid[y + w] && x >= 0 && x < grid[y + w].length) {
-          grid[y + w][x] = '.';
-        }
-      }
-    }
-  }
-
-  function carveVertical(grid, y1, y2, x, width) {
-    var from = Math.min(y1, y2), to = Math.max(y1, y2);
-    for (var y = from; y <= to; y++) {
-      for (var w = 0; w < width; w++) {
-        if (grid[y] && x + w >= 0 && x + w < grid[y].length) {
-          grid[y][x + w] = '.';
-        }
-      }
-    }
-  }
-
-  function carveRoom(grid, room) {
-    for (var y = room.y; y < room.y + room.h; y++) {
-      for (var x = room.x; x < room.x + room.w; x++) {
+  // Carve a chamber: fill the leaf rect with floor, leaving a 1-tile border wall
+  function carveChamber(grid, leaf) {
+    for (var y = leaf.y + 1; y < leaf.y + leaf.h - 1; y++) {
+      for (var x = leaf.x + 1; x < leaf.x + leaf.w - 1; x++) {
         if (grid[y] && x >= 0 && x < grid[y].length) {
           grid[y][x] = '.';
         }
@@ -128,16 +81,92 @@
     }
   }
 
-  function collectAllRooms(node, out) {
-    if (node.room) out.push(node.room);
-    if (node.left) collectAllRooms(node.left, out);
-    if (node.right) collectAllRooms(node.right, out);
+  // Carve a doorway in the shared wall between two BSP children
+  // width: 2-3 tiles to allow player passage
+  function carveDoorway(grid, node, rng) {
+    if (!node.left || !node.right) return;
+    var doorWidth = 2 + Math.floor(rng() * 2); // 2-3 tiles
+
+    if (node.splitAxis === 'h') {
+      // Horizontal split — doorway runs vertically across the shared wall at splitPos
+      // Shared wall is at y = splitPos (top of right child / bottom of left child)
+      // Pick x within the overlap of both children
+      var overlapX1 = Math.max(node.left.x, node.right.x) + 2;
+      var overlapX2 = Math.min(node.left.x + node.left.w, node.right.x + node.right.w) - 2 - doorWidth;
+      if (overlapX2 < overlapX1) return;
+      var dx = overlapX1 + Math.floor(rng() * (overlapX2 - overlapX1 + 1));
+      // Carve doorway — the wall is at y=splitPos-1 and y=splitPos (double wall between chambers)
+      for (var i = 0; i < doorWidth; i++) {
+        if (grid[node.splitPos - 1] && dx + i >= 0 && dx + i < grid[node.splitPos - 1].length) {
+          grid[node.splitPos - 1][dx + i] = '.';
+        }
+        if (grid[node.splitPos] && dx + i >= 0 && dx + i < grid[node.splitPos].length) {
+          grid[node.splitPos][dx + i] = '.';
+        }
+      }
+    } else if (node.splitAxis === 'v') {
+      // Vertical split — doorway runs horizontally at splitPos
+      var overlapY1 = Math.max(node.left.y, node.right.y) + 2;
+      var overlapY2 = Math.min(node.left.y + node.left.h, node.right.y + node.right.h) - 2 - doorWidth;
+      if (overlapY2 < overlapY1) return;
+      var dy = overlapY1 + Math.floor(rng() * (overlapY2 - overlapY1 + 1));
+      for (var j = 0; j < doorWidth; j++) {
+        if (grid[dy + j] && node.splitPos - 1 >= 0 && node.splitPos - 1 < grid[dy + j].length) {
+          grid[dy + j][node.splitPos - 1] = '.';
+        }
+        if (grid[dy + j] && node.splitPos >= 0 && node.splitPos < grid[dy + j].length) {
+          grid[dy + j][node.splitPos] = '.';
+        }
+      }
+    }
+  }
+
+  // Occasionally merge two small adjacent chambers into a bigger room
+  // by removing the entire shared wall instead of just a doorway
+  function maybeMergeWall(grid, node, rng) {
+    if (!node.left || !node.right) return false;
+    // Only merge if both children are leaves and small
+    if (node.left.left || node.right.left) return false;
+    var leftArea = node.left.w * node.left.h;
+    var rightArea = node.right.w * node.right.h;
+    if (leftArea > 80 || rightArea > 80) return false;
+    if (rng() > 0.25) return false; // 25% chance
+
+    // Remove the entire shared wall (both layers)
+    if (node.splitAxis === 'h') {
+      var x1 = Math.max(node.left.x, node.right.x) + 1;
+      var x2 = Math.min(node.left.x + node.left.w, node.right.x + node.right.w) - 1;
+      for (var x = x1; x < x2; x++) {
+        if (grid[node.splitPos - 1]) grid[node.splitPos - 1][x] = '.';
+        if (grid[node.splitPos]) grid[node.splitPos][x] = '.';
+      }
+    } else if (node.splitAxis === 'v') {
+      var y1 = Math.max(node.left.y, node.right.y) + 1;
+      var y2 = Math.min(node.left.y + node.left.h, node.right.y + node.right.h) - 1;
+      for (var y = y1; y < y2; y++) {
+        if (grid[y]) {
+          grid[y][node.splitPos - 1] = '.';
+          grid[y][node.splitPos] = '.';
+        }
+      }
+    }
+    return true;
+  }
+
+  // Randomly remove some inner chambers entirely (create dead-end walls / filler)
+  function removeChamber(grid, leaf) {
+    for (var y = leaf.y; y < leaf.y + leaf.h; y++) {
+      for (var x = leaf.x; x < leaf.x + leaf.w; x++) {
+        if (grid[y] && x >= 0 && x < grid[y].length) {
+          grid[y][x] = '#';
+        }
+      }
+    }
   }
 
   /**
-   * Generate a procedural room template compatible with the existing loader.
+   * Generate a D2-style procedural room.
    * @param {Object} opts - { width, height, seed, name }
-   * @returns template object
    */
   function generate(opts) {
     opts = opts || {};
@@ -148,7 +177,7 @@
 
     var rng = mulberry32(seed);
 
-    // 1) Init grid all walls
+    // 1) All walls grid
     var grid = [];
     for (var y = 0; y < height; y++) {
       var row = new Array(width);
@@ -156,73 +185,96 @@
       grid.push(row);
     }
 
-    // 2) BSP tree
-    var root = new Node(1, 1, width - 2, height - 2);
-    var MIN_NODE_SIZE = 12;
-    var MIN_ROOM_SIZE = 5;
-
-    // Recursively split
+    // 2) BSP split — aim for many small chambers (min 8 tile size)
+    var root = new Node(0, 0, width, height);
+    var MIN_NODE = 9;
     var queue = [root];
-    var iterations = 0;
-    while (queue.length && iterations < 50) {
-      iterations++;
+    var iter = 0;
+    while (queue.length && iter < 200) {
+      iter++;
       var n = queue.shift();
-      if (splitNode(n, MIN_NODE_SIZE, rng)) {
-        queue.push(n.left, n.right);
+      if (splitNode(n, MIN_NODE, rng)) {
+        queue.push(n.left);
+        queue.push(n.right);
       }
     }
 
-    // 3) Carve rooms at leaves
-    createRooms(root, rng, MIN_ROOM_SIZE);
-    var rooms = [];
-    collectAllRooms(root, rooms);
-    rooms.forEach(function (r) { carveRoom(grid, r); });
+    // 3) Collect all leaves (chambers)
+    var leaves = [];
+    collectLeaves(root, leaves);
 
-    // 4) Connect rooms via corridors
-    connectNodes(root, grid, rng);
+    // 4) Carve all chambers (as rects with 1-tile walls around each)
+    leaves.forEach(function (l) { carveChamber(grid, l); });
 
-    // 5) Convert grid rows to strings
+    // 5) Connect adjacent chambers — either merge wall (make bigger room)
+    //    or carve a doorway. Process internal nodes bottom-up.
+    var internal = [];
+    collectInternalNodes(root, internal);
+    // Sort internal nodes by depth (deepest first, so siblings connect first)
+    internal.reverse();
+    internal.forEach(function (node) {
+      // Merge attempt first (removes entire shared wall for merged chambers)
+      if (!maybeMergeWall(grid, node, rng)) {
+        // Otherwise carve a doorway
+        carveDoorway(grid, node, rng);
+      }
+    });
+
+    // 6) Randomly fill some small chambers to create visual asymmetry
+    //    (these become dead-end wall blocks — natural asymmetry like D2)
+    leaves.forEach(function (l) {
+      if (l.w * l.h < 60 && rng() < 0.15) {
+        removeChamber(grid, l);
+      }
+    });
+
+    // 7) Ensure outer border is wall
+    for (var bx = 0; bx < width; bx++) { grid[0][bx] = '#'; grid[height - 1][bx] = '#'; }
+    for (var by = 0; by < height; by++) { grid[by][0] = '#'; grid[by][width - 1] = '#'; }
+
+    // 8) Find accessible chambers (flood from first chamber center)
+    var accessibleChambers = floodAccessible(grid, leaves);
+
+    // Fallback: if flood found nothing, use all leaves
+    if (accessibleChambers.length === 0) accessibleChambers = leaves.slice();
+
+    // 9) Convert to strings
     var walls = grid.map(function (r) { return r.join(''); });
 
-    // 6) Pick player spawn in first room
-    var playerSpawn = rooms[0]
-      ? { x: rooms[0].x + Math.floor(rooms[0].w / 2), y: rooms[0].y + Math.floor(rooms[0].h / 2) }
-      : { x: Math.floor(width / 2), y: Math.floor(height / 2) };
+    // 10) Pick player spawn in first accessible chamber
+    var firstChamber = accessibleChambers[0];
+    var playerSpawn = {
+      x: firstChamber.x + Math.floor(firstChamber.w / 2),
+      y: firstChamber.y + Math.floor(firstChamber.h / 2)
+    };
 
-    // 7) Entrances: one at each edge (find accessible points near edges)
+    // 11) Entrances on edges closest to playerSpawn
     var entrances = [];
-    // North entrance: find leftmost floor in row 1-3
-    for (var ex = 2; ex < width - 2; ex++) {
-      if (grid[1][ex] === '.' || grid[2][ex] === '.') {
-        entrances.push({ x: ex, y: 1, dir: 'N' }); break;
-      }
-    }
-    // South
-    for (var ex2 = 2; ex2 < width - 2; ex2++) {
-      if (grid[height - 2][ex2] === '.' || grid[height - 3][ex2] === '.') {
-        entrances.push({ x: ex2, y: height - 2, dir: 'S' }); break;
-      }
-    }
+    // North: find the floor tile closest to playerSpawn.x in top rows
+    var topX = findNearestFloorInRow(grid, 1, playerSpawn.x);
+    if (topX >= 0) entrances.push({ x: topX, y: 1, dir: 'N' });
+    var botX = findNearestFloorInRow(grid, height - 2, playerSpawn.x);
+    if (botX >= 0) entrances.push({ x: botX, y: height - 2, dir: 'S' });
 
-    // 8) Enemy spawns: scatter 8-15 enemies across accessible rooms (not first room)
+    // 12) Enemy spawns in later chambers (skip first)
     var enemies = [];
-    var enemyCount = 8 + Math.floor(rng() * 8);
-    for (var i = 1; i < rooms.length && enemies.length < enemyCount; i++) {
-      var r = rooms[i];
+    for (var ec = 1; ec < accessibleChambers.length; ec++) {
+      var c = accessibleChambers[ec];
       var groupSize = 1 + Math.floor(rng() * 3);
+      var enemyType = Math.floor(rng() * 4) + 1;
       enemies.push({
-        type: Math.floor(rng() * 4) + 1, // 1-4 (Imp, Archer, Brute, Mage)
-        x: r.x + Math.floor(rng() * r.w),
-        y: r.y + Math.floor(rng() * r.h),
+        type: enemyType,
+        x: c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2)),
+        y: c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2)),
         count: groupSize,
         radius: 2
       });
     }
 
-    // 9) Loot: 1-2 chests in last room, 1-2 small chests elsewhere
+    // 13) Loot: large chest in last chamber, scattered smaller ones
     var loot = [];
-    if (rooms.length >= 2) {
-      var last = rooms[rooms.length - 1];
+    if (accessibleChambers.length >= 2) {
+      var last = accessibleChambers[accessibleChambers.length - 1];
       loot.push({
         x: last.x + Math.floor(last.w / 2),
         y: last.y + Math.floor(last.h / 2),
@@ -230,31 +282,30 @@
         locked: true
       });
     }
-    for (var j = 1; j < rooms.length - 1; j++) {
-      if (rng() < 0.4) {
-        var rr = rooms[j];
+    for (var lc = 1; lc < accessibleChambers.length - 1; lc++) {
+      if (rng() < 0.35) {
+        var lr = accessibleChambers[lc];
         loot.push({
-          x: rr.x + Math.floor(rng() * rr.w),
-          y: rr.y + Math.floor(rng() * rr.h),
+          x: lr.x + 1 + Math.floor(rng() * Math.max(1, lr.w - 2)),
+          y: lr.y + 1 + Math.floor(rng() * Math.max(1, lr.h - 2)),
           type: rng() < 0.3 ? 'chest_medium' : 'chest_small'
         });
       }
     }
 
-    // 10) Objects: braziers, barrels, crates scattered
+    // 14) Objects scattered
     var objects = [];
-    for (var k = 0; k < rooms.length; k++) {
-      var room = rooms[k];
-      var objCount = Math.floor(rng() * 3);
-      for (var o = 0; o < objCount; o++) {
-        var objTypes = ['brazier', 'barrel', 'crate', 'rubble'];
+    var objTypes = ['brazier', 'barrel', 'crate', 'rubble'];
+    accessibleChambers.forEach(function (c) {
+      var count = Math.floor(rng() * 3);
+      for (var o = 0; o < count; o++) {
         objects.push({
           type: objTypes[Math.floor(rng() * objTypes.length)],
-          x: room.x + Math.floor(rng() * room.w),
-          y: room.y + Math.floor(rng() * room.h)
+          x: c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2)),
+          y: c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2))
         });
       }
-    }
+    });
 
     return {
       name: name,
@@ -262,27 +313,72 @@
       size: { tile: 32, w: width, h: height },
       tiles: { floor: 'floor_stone' },
       layout: {
-        legend: {
-          '#': 'obstacleWall',
-          '.': 'floor_stone'
-        },
+        legend: { '#': 'obstacleWall', '.': 'floor_stone' },
         walls: walls
       },
       entrances: entrances,
       objects: objects,
-      spawns: {
-        player: playerSpawn,
-        enemies: enemies,
-        loot: loot
-      },
+      spawns: { player: playerSpawn, enemies: enemies, loot: loot },
       _procedural: true,
       _seed: seed
     };
   }
 
-  // Register globally
-  window.ProceduralRooms = {
-    generate: generate,
-    mulberry32: mulberry32
-  };
+  function findNearestFloorInRow(grid, targetRow, preferredX) {
+    var best = -1;
+    var bestDist = Infinity;
+    // Look in rows near the edge for accessible floor tiles
+    for (var scanRow = targetRow; scanRow < targetRow + 3 && scanRow < grid.length - 1; scanRow++) {
+      for (var x = 1; x < grid[scanRow].length - 1; x++) {
+        if (grid[scanRow][x] === '.') {
+          var d = Math.abs(x - preferredX);
+          if (d < bestDist) { bestDist = d; best = x; }
+        }
+      }
+      if (best >= 0) break;
+    }
+    return best;
+  }
+
+  // Flood-fill from first chamber to find all connected chambers (ordered by discovery)
+  function floodAccessible(grid, leaves) {
+    if (!leaves.length) return [];
+    var startLeaf = leaves[0];
+    var startX = startLeaf.x + Math.floor(startLeaf.w / 2);
+    var startY = startLeaf.y + Math.floor(startLeaf.h / 2);
+    if (grid[startY][startX] !== '.') return [];
+
+    var w = grid[0].length, h = grid.length;
+    var visited = new Array(h);
+    for (var i = 0; i < h; i++) visited[i] = new Array(w).fill(false);
+
+    var queue = [[startX, startY]];
+    visited[startY][startX] = true;
+    var reachableTiles = 0;
+    while (queue.length) {
+      var p = queue.shift();
+      reachableTiles++;
+      var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+      for (var d = 0; d < 4; d++) {
+        var nx = p[0] + dirs[d][0];
+        var ny = p[1] + dirs[d][1];
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        if (visited[ny][nx]) continue;
+        if (grid[ny][nx] !== '.') continue;
+        visited[ny][nx] = true;
+        queue.push([nx, ny]);
+      }
+    }
+
+    // Return leaves that overlap reachable tiles
+    var result = [];
+    leaves.forEach(function (l) {
+      var cx = l.x + Math.floor(l.w / 2);
+      var cy = l.y + Math.floor(l.h / 2);
+      if (visited[cy] && visited[cy][cx]) result.push(l);
+    });
+    return result;
+  }
+
+  window.ProceduralRooms = { generate: generate, mulberry32: mulberry32 };
 })();
