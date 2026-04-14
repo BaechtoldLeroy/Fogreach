@@ -1091,7 +1091,7 @@ function breakDestructibleObstacle(scene, obs) {
     }
     const cam = scene && scene.cameras && scene.cameras.main;
     if (cam && cam.shake) cam.shake(200, 0.006);
-    const trapBonus = 30 + (window.DUNGEON_DEPTH || 1) * 15;
+    const trapBonus = 50 + (window.DUNGEON_DEPTH || 1) * 25;
     if (window.LootSystem && window.LootSystem.grantGold) {
       window.LootSystem.grantGold(trapBonus);
     }

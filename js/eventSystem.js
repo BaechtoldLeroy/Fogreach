@@ -6,39 +6,43 @@
     {
       id: 'treasure_cache',
       name: 'Versteckter Schatz',
-      weight: 25,
+      weight: 30,
       minDepth: 1,
       handler: function(scene) {
+        try { window.soundManager && window.soundManager.playSFX('pickup'); } catch (e) {}
         spawnEventChest(scene, 'chest_medium', false);
-        showEventToast(scene, 'Versteckter Schatz entdeckt!');
+        showEventToast(scene, '🏴 Versteckter Schatz entdeckt!', 'treasure_cache');
       }
     },
     {
       id: 'ambush',
       name: 'Hinterhalt!',
-      weight: 20,
+      weight: 18,
       minDepth: 2,
       handler: function(scene) {
+        try { window.soundManager && window.soundManager.playSFX('enemy_death'); } catch (e) {}
         triggerAmbush(scene);
       }
     },
     {
       id: 'wandering_merchant',
       name: 'Wandernder Haendler',
-      weight: 15,
+      weight: 18,
       minDepth: 3,
       handler: function(scene) {
+        try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
         spawnMerchant(scene);
       }
     },
     {
       id: 'trapped_chest',
       name: 'Verfluchte Truhe',
-      weight: 15,
+      weight: 12,
       minDepth: 2,
       handler: function(scene) {
+        try { window.soundManager && window.soundManager.playSFX('enemy_hit'); } catch (e) {}
         spawnEventChest(scene, 'chest_large', true);
-        showEventToast(scene, 'Eine verfluchte Truhe... vorsichtig!');
+        showEventToast(scene, '💀 Eine verfluchte Truhe... vorsichtig!', 'trapped_chest');
       }
     },
     {
@@ -47,15 +51,19 @@
       weight: 15,
       minDepth: 1,
       handler: function(scene) {
+        try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {
+          try { window.soundManager && window.soundManager.playSFX('click'); } catch (e2) {}
+        }
         spawnLoreFragment(scene);
       }
     },
     {
       id: 'environmental_hazard',
       name: 'Einsturzgefahr',
-      weight: 10,
+      weight: 7,
       minDepth: 4,
       handler: function(scene) {
+        try { window.soundManager && window.soundManager.playSFX('hit'); } catch (e) {}
         triggerRockfall(scene);
       }
     }
@@ -64,8 +72,8 @@
   var lastEventId = null;
 
   function shouldTriggerEvent(depth) {
-    var chance = 0.30 + (depth - 1) * 0.02;
-    return Math.random() < Math.min(0.50, chance);
+    var chance = 0.35 + (depth - 1) * 0.02;
+    return Math.random() < Math.min(0.55, chance);
   }
 
   function pickEvent(depth) {
@@ -83,25 +91,70 @@
     return eligible[eligible.length - 1];
   }
 
-  function showEventToast(scene, message) {
+  var EVENT_ACCENT_COLORS = {
+    treasure_cache:      0xf5c518,
+    ambush:              0xff3333,
+    wandering_merchant:  0x44ddaa,
+    trapped_chest:       0xaa44ff,
+    lore_fragment:       0x66bbff,
+    environmental_hazard: 0xff8833
+  };
+
+  function showEventToast(scene, message, eventId) {
     if (!scene || !scene.add) return;
     var cam = scene.cameras && scene.cameras.main;
-    var toast = scene.add.text(
-      cam ? cam.width / 2 : 600, 80, message,
-      {
-        fontSize: '22px', fill: '#ffdd44', fontFamily: 'monospace',
-        stroke: '#000', strokeThickness: 3, align: 'center'
-      }
-    ).setOrigin(0.5).setDepth(2000).setScrollFactor(0);
+    var cx = cam ? cam.width / 2 : 600;
+    var cy = 90;
+
+    var accentHex = EVENT_ACCENT_COLORS[eventId] || 0xffdd44;
+
+    // Background panel
+    var panelW = Math.min(520, (cam ? cam.width : 800) - 40);
+    var panelH = 52;
+    var panel = scene.add.graphics();
+    panel.fillStyle(0x0d0d1a, 0.88);
+    panel.fillRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 12);
+    panel.lineStyle(2, accentHex, 0.9);
+    panel.strokeRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 12);
+    panel.setDepth(1999).setScrollFactor(0).setAlpha(0).setScale(0.85);
+
+    // Message text
+    var label = scene.add.text(cx, cy, message, {
+      fontSize: '28px', fill: '#ffffff', fontFamily: 'monospace',
+      stroke: '#000000', strokeThickness: 4, align: 'center'
+    }).setOrigin(0.5).setDepth(2000).setScrollFactor(0).setAlpha(0).setScale(0.85);
+
+    var targets = [panel, label];
 
     if (scene.tweens && scene.tweens.add) {
+      // Fade + scale bounce in
       scene.tweens.add({
-        targets: toast, alpha: 0, y: toast.y - 40,
-        duration: 2500, ease: 'Power2',
-        onComplete: function() { toast.destroy(); }
+        targets: targets,
+        alpha: 1,
+        scale: 1,
+        duration: 220,
+        ease: 'Back.Out',
+        onComplete: function() {
+          // Hold, then fade out with upward drift
+          scene.tweens.add({
+            targets: targets,
+            alpha: 0,
+            y: '+=-30',
+            delay: 3200,
+            duration: 550,
+            ease: 'Power2',
+            onComplete: function() {
+              panel.destroy();
+              label.destroy();
+            }
+          });
+        }
       });
     } else {
-      setTimeout(function() { if (toast && toast.destroy) toast.destroy(); }, 2500);
+      setTimeout(function() {
+        if (panel && panel.destroy) panel.destroy();
+        if (label && label.destroy) label.destroy();
+      }, 4000);
     }
   }
 
@@ -191,7 +244,7 @@
       scene: scene
     };
 
-    showEventToast(scene, 'Ein wandernder Haendler ist erschienen!');
+    showEventToast(scene, '🛒 Ein wandernder Haendler ist erschienen!', 'wandering_merchant');
   }
 
   function cleanupMerchant() {
@@ -308,7 +361,7 @@
       }
     });
 
-    showEventToast(scene, 'Ein altes Schriftstück glüht in der Nähe...');
+    showEventToast(scene, '📜 Ein altes Schriftstück glüht in der Nähe...', 'lore_fragment');
   }
 
   function showLoreDialog(scene, loreText, xpBonus) {
@@ -396,7 +449,7 @@
           if (typeof spawnEnemy === 'function') spawnEnemy.call(scene, 0, 0, 'enemy');
         }
         // Bonus reward for surviving
-        var bonusGold = 30 + (window.DUNGEON_DEPTH || 1) * 10;
+        var bonusGold = 50 + (window.DUNGEON_DEPTH || 1) * 20;
         if (window.LootSystem && window.LootSystem.grantGold) {
           // Delayed reward note — gold given when wave clears
           scene._ambushBonus = bonusGold;
@@ -422,7 +475,7 @@
     shadow.fillCircle(px, py, 50);
     shadow.setDepth(1000);
 
-    showEventToast(scene, 'Vorsicht — Decke stürzt ein! AUSWEICHEN!');
+    showEventToast(scene, '🪨 Vorsicht — Decke stürzt ein! AUSWEICHEN!', 'environmental_hazard');
 
     // Pulse the shadow as warning
     if (scene.tweens) {
@@ -455,12 +508,12 @@
             window.playerHealth = playerHealth;
           }
           if (cam && cam.shake) cam.shake(300, 0.008);
-          showEventToast(scene, 'Einsturz! -1 HP');
+          showEventToast(scene, '🪨 Einsturz! -1 HP', 'environmental_hazard');
         } else {
           // Dodged
           var goldReward = 25 + (window.DUNGEON_DEPTH || 1) * 10;
           if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldReward);
-          showEventToast(scene, 'Ausgewichen! +' + goldReward + ' Gold');
+          showEventToast(scene, '🪨 Ausgewichen! +' + goldReward + ' Gold', 'environmental_hazard');
         }
 
         // Cleanup visuals
