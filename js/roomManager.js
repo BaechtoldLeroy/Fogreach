@@ -406,10 +406,10 @@ function enterRoom(scene, roomId) {
   const doorList = builtMeta.doors && builtMeta.doors.length > 0
     ? builtMeta.doors
     : [{ x: (builtMeta.w || 800) / 2, y: (builtMeta.h || 600) - 64, dir: null }]; // fallback door
-  // Get player spawn position in world coords for minimum distance check
-  const playerSpawnX = playerSpawnSpec ? (playerSpawnSpec.x * T + T / 2) : null;
-  const playerSpawnY = playerSpawnSpec ? (playerSpawnSpec.y * T + T / 2) : null;
-  const MIN_STAIR_DISTANCE = 280; // ~9 tiles — stairs must be at least this far from player spawn
+  // Get player position (already placed at template spawn) for min-distance check
+  const playerSpawnX = (player && player.active) ? player.x : null;
+  const playerSpawnY = (player && player.active) ? player.y : null;
+  const MIN_STAIR_DISTANCE = 280; // stairs must be at least this far from player
   const MIN_STAIR_DIST_SQ = MIN_STAIR_DISTANCE * MIN_STAIR_DISTANCE;
 
   doorList.forEach((d) => {
