@@ -825,9 +825,9 @@ const VISION_RADIUS = 220;
 const VISION_RAYS = 192;
 const VISION_STEP = 4; // feiner an die Wand
 const VISION_WALL_BACKOFF = 0; // nicht vor der Wand zurueckspringen
-const VISION_PAD_EXPLORED = 64; // wie weit "in die Wand" als bereits gesehen
-const VISION_PAD_UI = 64; // Spotlight-Loch
-const VISION_PAD_ENEMY = 64; // Gegner-Maske
+const VISION_PAD_EXPLORED = 20; // small overshoot so wall itself is revealed (~half tile)
+const VISION_PAD_UI = 20; // spotlight overshoot (smaller = no see-through walls)
+const VISION_PAD_ENEMY = 8; // enemy mask — tight to walls so enemies stay hidden behind cover
 
 function isBlockedByObstacle(x, y) {
   const list = obstacles?.getChildren?.() || [];
