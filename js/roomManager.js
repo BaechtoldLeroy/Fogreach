@@ -632,6 +632,25 @@ function onStairOverlap(player, stair) {
   // nur wenn freigeschaltet
   if (stair.getData("locked")) return;
 
+  // Require E key to confirm — no accidental room transitions
+  const scene = obstacles?.scene;
+  if (scene && scene.input && scene.input.keyboard) {
+    const eKey = scene.input.keyboard.addKey('E');
+    if (!eKey.isDown) {
+      // Show prompt text above player
+      if (!stair._prompt) {
+        stair._prompt = scene.add.text(stair.x, stair.y - 40, '[E] Nächster Raum', {
+          fontSize: '14px', fill: '#ffdd44', fontFamily: 'monospace',
+          stroke: '#000', strokeThickness: 2
+        }).setOrigin(0.5).setDepth(500);
+        scene.time.delayedCall(150, function () {
+          if (stair._prompt && !stair._prompt._keep) { stair._prompt.destroy(); stair._prompt = null; }
+        });
+      }
+      return;
+    }
+  }
+
   const nextIndex = currentRoomId + 1;
   const totalRooms = dungeonRun ? dungeonRun.totalRooms : rooms.length;
 
