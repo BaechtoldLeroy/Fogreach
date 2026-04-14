@@ -617,8 +617,8 @@ function enterRoom(scene, roomId) {
   window.currentWave = currentWave;
 
 
-  // 5) Türen sperren bis Clear
-  lockStairs(scene, true);
+  // 5) Stairs stay open — player can leave room even with enemies alive
+  lockStairs(scene, false);
 
 
   // 6) Start der Welle
@@ -675,6 +675,26 @@ function markRoomCleared() {
 
   room.cleared = true;
   lockStairs(scene, false);
+
+  // Procedural room reward: spawn a chest with a high-quality item when all
+  // enemies in the room have been defeated.
+  const currentTplName = dungeonRun && dungeonRun.templateOrder && dungeonRun.templateOrder[currentRoomId];
+  const tpl = currentTplName && window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[currentTplName];
+  if (tpl && tpl._procedural && !room._rewardGranted) {
+    room._rewardGranted = true;
+    if (typeof spawnLoot === 'function' && window.LootSystem && window.LootSystem.rollItem) {
+      const depth = window.DUNGEON_DEPTH || 1;
+      // Force higher tier: bias toward rare/legendary via iLevel boost
+      const boostedILevel = depth + 10;
+      const rewardItem = window.LootSystem.rollItem(null, boostedILevel, 2); // tier 2 = rare
+      const rx = player ? player.x + 60 : (scene.physics.world.bounds.x + scene.physics.world.bounds.width / 2);
+      const ry = player ? player.y + 60 : (scene.physics.world.bounds.y + scene.physics.world.bounds.height / 2);
+      spawnLoot.call(scene, rx, ry, { type: 'chest_large', locked: false, tier: 2 }, null);
+      // Also spawn a visible reward chest in the middle
+      if (window.soundManager) try { window.soundManager.playSFX('level_up'); } catch (e) {}
+    }
+  }
+
   // Quest progress: room cleared
   if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
     window.questSystem.updateQuestProgress('explore', 'room', 1);

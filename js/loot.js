@@ -237,7 +237,7 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
 
   const roll = Phaser.Math.Between(0, 100);
 
-  if (maybeItem || roll < (12 + lootChanceBonus)) {
+  if (maybeItem || roll < (5 + lootChanceBonus)) {
     const baseItem = maybeItem ? { ...maybeItem } : randomLoot();
     let tier = (typeof baseItem?.tier === 'number') ? baseItem.tier : 0;
     // Elite enemies: bump tier by 1; Mini-bosses: by 2 (cap at 3 = Legendary)

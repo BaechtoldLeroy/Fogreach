@@ -325,39 +325,32 @@
     for (var ec = 1; ec < accessibleChambers.length; ec++) {
       var c = accessibleChambers[ec];
       var floorTiles = (c.w - 2) * (c.h - 2);
-      // Groups per chamber scale with chamber area
-      var groups = Math.max(1, Math.floor(floorTiles / 40));
+      // Groups per chamber scale with chamber area (denser than before)
+      var groups = Math.max(1, Math.floor(floorTiles / 25));
       for (var g = 0; g < groups; g++) {
-        var groupSize = 2 + Math.floor(rng() * 3); // 2-4 per group (was 1-3)
+        // Group size 4-7 — larger packs like D2 mob density
+        var groupSize = 4 + Math.floor(rng() * 4);
         var enemyType = pickEnemyType(rng, theme);
         enemies.push({
           type: enemyType,
           x: c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2)),
           y: c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2)),
           count: groupSize,
-          radius: 2
+          radius: 3
         });
       }
     }
 
-    // 13) Loot: large chest in last chamber, scattered smaller ones
+    // 13) Loot — sparse. No guaranteed large chest (the cleared-room reward
+    //     chest handles that). Maybe 1 small/medium chest scattered.
     var loot = [];
-    if (accessibleChambers.length >= 2) {
-      var last = accessibleChambers[accessibleChambers.length - 1];
-      loot.push({
-        x: last.x + Math.floor(last.w / 2),
-        y: last.y + Math.floor(last.h / 2),
-        type: 'chest_large',
-        locked: true
-      });
-    }
-    for (var lc = 1; lc < accessibleChambers.length - 1; lc++) {
-      if (rng() < 0.35) {
+    for (var lc = 1; lc < accessibleChambers.length; lc++) {
+      if (rng() < 0.12) { // was 0.35 — now 12% per chamber
         var lr = accessibleChambers[lc];
         loot.push({
           x: lr.x + 1 + Math.floor(rng() * Math.max(1, lr.w - 2)),
           y: lr.y + 1 + Math.floor(rng() * Math.max(1, lr.h - 2)),
-          type: rng() < 0.3 ? 'chest_medium' : 'chest_small'
+          type: rng() < 0.25 ? 'chest_medium' : 'chest_small'
         });
       }
     }

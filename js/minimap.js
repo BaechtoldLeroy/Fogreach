@@ -105,20 +105,38 @@ function updateMinimap(scene) {
     scene._minimapExplored = new Uint8Array(gridW * gridH);
   }
 
-  // Mark tiles around the player as explored (vision radius in tiles)
+  // Mark tiles as explored only if they are visible (line of sight respected)
   if (player && player.active) {
     const origin = scene.currentRoom ? scene.currentRoom.origin : { x: 0, y: 0 };
     const ptx = Math.floor((player.x - origin.x) / tileSize);
     const pty = Math.floor((player.y - origin.y) / tileSize);
-    // Vision radius in tiles (approx matching the fog of war)
     const visionRadius = 8;
+
+    // Helper: is the ray from player center to tile center blocked by walls?
+    const hasLineOfSight = (worldTileX, worldTileY) => {
+      if (typeof isBlockedByObstacle !== 'function') return true;
+      const sx = player.x, sy = player.y;
+      const ex = worldTileX * tileSize + origin.x + tileSize / 2;
+      const ey = worldTileY * tileSize + origin.y + tileSize / 2;
+      const dist = Math.hypot(ex - sx, ey - sy);
+      const steps = Math.max(2, Math.ceil(dist / 16));
+      for (let i = 1; i < steps; i++) {
+        const t = i / steps;
+        const cx = sx + (ex - sx) * t;
+        const cy = sy + (ey - sy) * t;
+        if (isBlockedByObstacle(cx, cy)) return false;
+      }
+      return true;
+    };
 
     for (let dy = -visionRadius; dy <= visionRadius; dy++) {
       for (let dx = -visionRadius; dx <= visionRadius; dx++) {
         if (dx * dx + dy * dy > visionRadius * visionRadius) continue;
         const tx = ptx + dx;
         const ty = pty + dy;
-        if (tx >= 0 && tx < gridW && ty >= 0 && ty < gridH) {
+        if (tx < 0 || tx >= gridW || ty < 0 || ty >= gridH) continue;
+        // Only mark if LOS is clear (respect walls)
+        if (hasLineOfSight(tx, ty)) {
           scene._minimapExplored[ty * gridW + tx] = 1;
         }
       }
