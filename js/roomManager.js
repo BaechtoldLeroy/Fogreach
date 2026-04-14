@@ -668,24 +668,24 @@ function markRoomCleared() {
 
 function initFogOfWar() {
   const scene = this;
-  // Scale fog dimensions by inverse camera zoom so it covers the whole
-  // viewport even when zoomed out. Add a small buffer for safety.
+  // Make fog RT larger than viewport to cover the zoom-out gaps.
+  // The camera zoom of 0.89 means scrollFactor(0) elements shrink by ~11%,
+  // so we size fog at screen/zoom with extra buffer.
   const camZoom = scene.cameras?.main?.zoom || 1;
-  const zoomScale = 1 / camZoom;
-  const W = Math.ceil(scene.scale.width * zoomScale) + 40;
-  const H = Math.ceil(scene.scale.height * zoomScale) + 40;
-  // Offset origin so fog is centered in viewport
-  const ox = -(W - scene.scale.width) / 2;
-  const oy = -(H - scene.scale.height) / 2;
+  const bufferScale = (camZoom < 1) ? (1 / camZoom) + 0.1 : 1.05;
+  const W = Math.ceil(scene.scale.width * bufferScale);
+  const H = Math.ceil(scene.scale.height * bufferScale);
 
   scene.exploredRT = scene.make
-    .renderTexture({ x: ox, y: oy, width: W, height: H, add: false })
-    .setOrigin(0, 0)
+    .renderTexture({ x: 0, y: 0, width: W, height: H, add: false })
+    .setOrigin(0.5, 0.5)
+    .setPosition(scene.scale.width / 2, scene.scale.height / 2)
     .setScrollFactor(0);
 
   scene.spotlightRT = scene.make
-    .renderTexture({ x: ox, y: oy, width: W, height: H, add: true })
-    .setOrigin(0, 0)
+    .renderTexture({ x: 0, y: 0, width: W, height: H, add: true })
+    .setOrigin(0.5, 0.5)
+    .setPosition(scene.scale.width / 2, scene.scale.height / 2)
     .setScrollFactor(0)
     .setDepth(900);
 
@@ -696,9 +696,9 @@ function initFogOfWar() {
     .setVisible(false);
 
   scene.fogUnseen = scene.add.graphics().setScrollFactor(0).setDepth(1000);
-  scene.fogUnseen.fillStyle(0x000000, 1).fillRect(ox, oy, W, H);
-  scene._fogOffsetX = ox;
-  scene._fogOffsetY = oy;
+  scene.fogUnseen.fillStyle(0x000000, 1).fillRect(-W, -H, W * 3, H * 3);
+  scene._fogOffsetX = (W - scene.scale.width) / 2;
+  scene._fogOffsetY = (H - scene.scale.height) / 2;
   scene.fogUnseenMask = new Phaser.Display.Masks.BitmapMask(
     scene,
     scene.exploredRT,
@@ -731,14 +731,14 @@ function updateFogOfWar() {
   // 1) Welt-Polygon
   const ptsWorld = computeVisionPolygon(scene, px, py);
 
-  // Offset for fog RT (it's larger than viewport and centered)
+  // RT origin is centered at viewport center — offset vision polygon accordingly
   const fogOx = scene._fogOffsetX || 0;
   const fogOy = scene._fogOffsetY || 0;
 
   // 2) Explored-Stamp mit Pad, damit Waende nicht schwarz bleiben
   const ptsScreenExplored = ptsWorld.map((p) => ({
-    x: p.x + p.dx * VISION_PAD_EXPLORED - cam.scrollX - fogOx,
-    y: p.y + p.dy * VISION_PAD_EXPLORED - cam.scrollY - fogOy,
+    x: p.x + p.dx * VISION_PAD_EXPLORED - cam.scrollX + fogOx,
+    y: p.y + p.dy * VISION_PAD_EXPLORED - cam.scrollY + fogOy,
   }));
   scene._visionGfx.clear().fillStyle(0xffffff, 1);
   drawFilledPolygon(scene._visionGfx, ptsScreenExplored);
@@ -746,8 +746,8 @@ function updateFogOfWar() {
 
   // 3) Spotlight-Loch mit UI-Pad
   const ptsScreenUI = ptsWorld.map((p) => ({
-    x: p.x + p.dx * VISION_PAD_UI - cam.scrollX - fogOx,
-    y: p.y + p.dy * VISION_PAD_UI - cam.scrollY - fogOy,
+    x: p.x + p.dx * VISION_PAD_UI - cam.scrollX + fogOx,
+    y: p.y + p.dy * VISION_PAD_UI - cam.scrollY + fogOy,
   }));
   scene.spotlightRT.clear();
   scene.spotlightRT.fill(0x000000, 0.4);
