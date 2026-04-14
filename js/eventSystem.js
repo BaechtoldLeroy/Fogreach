@@ -103,26 +103,31 @@
   function showEventToast(scene, message, eventId) {
     if (!scene || !scene.add) return;
     var cam = scene.cameras && scene.cameras.main;
-    var cx = cam ? cam.width / 2 : 600;
+    var camW = cam ? cam.width : 800;
+    var cx = camW / 2;
     var cy = 90;
 
     var accentHex = EVENT_ACCENT_COLORS[eventId] || 0xffdd44;
 
-    // Background panel
-    var panelW = Math.min(520, (cam ? cam.width : 800) - 40);
-    var panelH = 52;
+    // Create label first to measure its width, then size the panel around it.
+    var maxTextWidth = camW - 80; // leave margin
+    var label = scene.add.text(cx, cy, message, {
+      fontSize: '22px', fill: '#ffffff', fontFamily: 'monospace',
+      stroke: '#000000', strokeThickness: 3, align: 'center',
+      wordWrap: { width: maxTextWidth, useAdvancedWrap: true }
+    }).setOrigin(0.5).setDepth(2000).setScrollFactor(0).setAlpha(0).setScale(0.85);
+
+    // Panel sized to fit the rendered text (+padding)
+    var padX = 28, padY = 14;
+    var panelW = Math.min(camW - 40, Math.ceil(label.width) + padX * 2);
+    var panelH = Math.ceil(label.height) + padY * 2;
+
     var panel = scene.add.graphics();
     panel.fillStyle(0x0d0d1a, 0.88);
     panel.fillRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 12);
     panel.lineStyle(2, accentHex, 0.9);
     panel.strokeRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 12);
     panel.setDepth(1999).setScrollFactor(0).setAlpha(0).setScale(0.85);
-
-    // Message text
-    var label = scene.add.text(cx, cy, message, {
-      fontSize: '28px', fill: '#ffffff', fontFamily: 'monospace',
-      stroke: '#000000', strokeThickness: 4, align: 'center'
-    }).setOrigin(0.5).setDepth(2000).setScrollFactor(0).setAlpha(0).setScale(0.85);
 
     var targets = [panel, label];
 
