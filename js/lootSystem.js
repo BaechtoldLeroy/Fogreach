@@ -357,10 +357,16 @@
     // tooltip, equipSelectedItem, recalcDerived, ability code) that look at
     // it.hp / it.damage / etc. find the values without having to walk the
     // baseStats subobject.
+    // NOTE: ITEM_BASES stores speed/armor/crit as percentages (e.g. -10 = -10%)
+    // but recalcDerived adds them as FLAT values. Convert the percent-style
+    // stats to fractions here so summing them in recalcDerived works correctly.
     const _statKeys = ['hp', 'damage', 'speed', 'range', 'armor', 'crit', 'move'];
+    const _percentStats = { speed: true, armor: true, crit: true };
     for (let _i = 0; _i < _statKeys.length; _i++) {
       const _k = _statKeys[_i];
-      if (typeof base.baseStats[_k] === 'number') item[_k] = base.baseStats[_k];
+      if (typeof base.baseStats[_k] === 'number') {
+        item[_k] = _percentStats[_k] ? base.baseStats[_k] / 100 : base.baseStats[_k];
+      }
     }
     item.displayName = composeName(item);
     return item;
