@@ -1385,66 +1385,127 @@ function createItemGraphics() {
       key: 'itWeapon',
       draw: () => {
         const cx = SIZE / 2;
-        g.fillStyle(0xeeeeee, 1);
+        // Shadow
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillRect(cx - 2, 8, 8, 28);
+        // Blade base (slightly richer steel)
+        g.fillStyle(0xc8cdd2, 1);
         g.fillRect(cx - 4, 6, 8, 26);
-        g.fillStyle(0xcfd4d9, 1);
+        // Blade mid sheen
+        g.fillStyle(0xe8edf2, 1);
         g.fillRect(cx - 2, 6, 4, 26);
-        g.fillStyle(0xffd37f, 1);
+        // Blade edge accent
+        g.fillStyle(0xf8fcff, 0.7);
+        g.fillRect(cx - 1, 6, 2, 26);
+        // Guard (warm gold)
+        g.fillStyle(0xd4a030, 1);
         g.fillRect(cx - 10, 24, 20, 4);
-        g.fillStyle(0x6b3e26, 1);
+        // Guard highlight
+        g.fillStyle(0xffe080, 0.5);
+        g.fillRect(cx - 9, 24, 18, 2);
+        // Grip
+        g.fillStyle(0x5c3318, 1);
         g.fillRect(cx - 2, 28, 4, 12);
-        g.fillStyle(0xffd37f, 1);
+        // Pommel
+        g.fillStyle(0xd4a030, 1);
         g.fillCircle(cx, 40, 4);
+        // Top-left highlight
+        g.fillStyle(0xffffff, 0.40);
+        g.fillRect(cx - 3, 7, 2, 6);
       }
     },
     {
       key: 'itHead',
       draw: () => {
         const cx = SIZE / 2;
-        // äußere Haube
-        g.fillStyle(0x4b6074, 1);
+        // Shadow
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillCircle(cx + 2, 20, 16);
+        // Outer helm (darker steel base)
+        g.fillStyle(0x3d5060, 1);
         g.fillCircle(cx, 18, 16);
-        // helle Haube innen
-        g.fillStyle(0x8fa5b8, 1);
+        // Inner dome (lighter)
+        g.fillStyle(0x7a98ae, 1);
         g.fillCircle(cx, 16, 14);
-        // seitliche Wangenstücke
-        g.fillStyle(0x4b6074, 1);
+        // Dome sheen
+        g.fillStyle(0xa8c0d0, 0.5);
+        g.fillCircle(cx - 2, 12, 8);
+        // Cheek guards
+        g.fillStyle(0x3d5060, 1);
         g.fillRect(cx - 18, 24, 8, 12);
         g.fillRect(cx + 10, 24, 8, 12);
-        // Gesichtsschutz
-        g.fillStyle(0x6f8395, 1);
+        // Face guard
+        g.fillStyle(0x607888, 1);
         g.fillRect(cx - 14, 24, 28, 14);
-        // Nasenschutz
-        g.fillStyle(0xbcccdc, 1);
+        // Face guard edge highlight
+        g.fillStyle(0x8fa5b8, 0.4);
+        g.fillRect(cx - 13, 24, 26, 3);
+        // Nose guard
+        g.fillStyle(0xaabccc, 1);
         g.fillRect(cx - 2, 20, 4, 18);
-        // Augenschlitz
-        g.fillStyle(0x141b22, 1);
+        // Eye slot
+        g.fillStyle(0x0d1318, 1);
         g.fillRect(cx - 12, 26, 24, 4);
-        // Spiegelung
-        g.fillStyle(0xd9e4ef, 0.9);
+        // Reflection
+        g.fillStyle(0xe0ecf8, 0.85);
         g.fillCircle(cx + 6, 14, 4);
+        // Top-left highlight
+        g.fillStyle(0xffffff, 0.40);
+        g.fillCircle(cx - 6, 10, 3);
       }
     },
     {
       key: 'itBody',
       draw: () => {
-        g.fillStyle(0x5cb85c, 1);
+        // Shadow
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillRoundedRect(12, 10, 28, 30, 10);
+        // Chest base (richer forest green)
+        g.fillStyle(0x4a9a4a, 1);
         g.fillRoundedRect(10, 8, 28, 30, 10);
-        g.fillStyle(0x3b7e3b, 1);
+        // Mid shadow stripe
+        g.fillStyle(0x2e6a2e, 1);
         g.fillRect(14, 26, 20, 10);
-        g.fillStyle(0x7cd37c, 1);
+        // Collar highlight
+        g.fillStyle(0x82da82, 1);
         g.fillRect(18, 14, 12, 6);
+        // Rivet row
+        g.fillStyle(0xd4a030, 0.8);
+        g.fillCircle(16, 22, 2);
+        g.fillCircle(24, 22, 2);
+        g.fillCircle(32, 22, 2);
+        // Top-left highlight spot
+        g.fillStyle(0xffffff, 0.40);
+        g.fillCircle(15, 13, 4);
       }
     },
     {
       key: 'itBoots',
       draw: () => {
-        g.fillStyle(0xf0ad4e, 1);
-        g.fillRoundedRect(10, 28, 10, 12, 4);
-        g.fillRoundedRect(26, 28, 10, 12, 4);
-        g.fillStyle(0xc27d21, 1);
-        g.fillRect(10, 36, 12, 4);
-        g.fillRect(26, 36, 12, 4);
+        // Shadow
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillRoundedRect(12, 30, 10, 12, 4);
+        g.fillRoundedRect(28, 30, 10, 12, 4);
+        // Boot uppers (warm amber leather)
+        g.fillStyle(0xd4922a, 1);
+        g.fillRoundedRect(10, 16, 10, 24, 4);
+        g.fillRoundedRect(26, 16, 10, 24, 4);
+        // Boot cuff highlight
+        g.fillStyle(0xf0c060, 1);
+        g.fillRect(10, 16, 10, 5);
+        g.fillRect(26, 16, 10, 5);
+        // Sole
+        g.fillStyle(0x7a4a10, 1);
+        g.fillRect(8, 36, 14, 4);
+        g.fillRect(24, 36, 14, 4);
+        // Sole edge
+        g.fillStyle(0x3a2008, 1);
+        g.fillRect(8, 39, 14, 2);
+        g.fillRect(24, 39, 14, 2);
+        // Top-left highlight spots
+        g.fillStyle(0xffffff, 0.40);
+        g.fillCircle(13, 19, 3);
+        g.fillCircle(29, 19, 3);
       }
     },
     {
@@ -1464,12 +1525,28 @@ function createItemGraphics() {
     {
       key: 'itMat',
       draw: () => {
-        g.fillStyle(0x9b9b9b, 1);
+        // Shadow
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillRoundedRect(10, 22, 32, 16, 6);
+        // Base ore chunk (darker stone)
+        g.fillStyle(0x7a7a80, 1);
         g.fillRoundedRect(8, 20, 32, 16, 6);
-        g.fillStyle(0xbfbfbf, 1);
+        // Mid highlight slab
+        g.fillStyle(0xb0b0b8, 1);
         g.fillRoundedRect(12, 18, 24, 12, 4);
-        g.fillStyle(0x6f6f6f, 1);
+        // Top highlight face
+        g.fillStyle(0xd0d0d8, 0.6);
+        g.fillRoundedRect(14, 18, 18, 6, 3);
+        // Bottom shadow
+        g.fillStyle(0x484850, 1);
         g.fillRect(12, 30, 24, 4);
+        // Mineral vein accent
+        g.fillStyle(0xc8a830, 0.5);
+        g.fillRect(16, 22, 6, 2);
+        g.fillRect(26, 25, 4, 2);
+        // Top-left highlight spot
+        g.fillStyle(0xffffff, 0.40);
+        g.fillCircle(14, 20, 3);
       }
     },
     {
@@ -1536,15 +1613,27 @@ function createItemGraphics() {
 function createInventoryGraphics() {
   const g = this.add.graphics();
 
-  // Panel
-  g.fillStyle(0x0e0e0e, 0.95);
+  // ── uiPanel: ornate dungeon-scroll look ──────────────────────────────────
+  // Outer glow: subtle amber tint at low alpha
+  g.fillStyle(0x3a2a1a, 0.10);
+  g.fillRoundedRect(-4, -4, 688, 428, 14);
+  // Base: dark wood
+  g.fillStyle(0x1a1410, 1);
   g.fillRoundedRect(0, 0, 680, 420, 12);
-  g.lineStyle(2, 0xffffff, 0.15);
-  g.strokeRoundedRect(0, 0, 680, 420, 12);
+  // Inner border: gold/bronze, inset 6px
+  g.lineStyle(3, 0xa87940, 1);
+  g.strokeRoundedRect(6, 6, 668, 408, 9);
+  // Corner diamonds (filled triangles forming a diamond shape)
+  const diamondOffsets = [[18, 18], [662, 18], [18, 402], [662, 402]];
+  g.fillStyle(0xa87940, 1);
+  for (const [dx, dy] of diamondOffsets) {
+    g.fillTriangle(dx, dy - 8, dx - 8, dy, dx, dy + 8); // left half
+    g.fillTriangle(dx, dy - 8, dx + 8, dy, dx, dy + 8); // right half
+  }
   g.generateTexture('uiPanel', 680, 420);
   g.clear();
 
-  // Slot normal
+  // ── uiSlot: slot normal ──────────────────────────────────────────────────
   g.fillStyle(0x222222, 1);
   g.fillRoundedRect(0, 0, 96, 64, 8);
   g.lineStyle(2, 0xffffff, 0.12);
@@ -1552,12 +1641,62 @@ function createInventoryGraphics() {
   g.generateTexture('uiSlot', 96, 64);
   g.clear();
 
-  // Slot selected
+  // ── uiSlotSel: slot selected ─────────────────────────────────────────────
   g.fillStyle(0x3a3a3a, 1);
   g.fillRoundedRect(0, 0, 96, 64, 8);
   g.lineStyle(3, 0xffd33b, 0.95);
   g.strokeRoundedRect(0, 0, 96, 64, 8);
   g.generateTexture('uiSlotSel', 96, 64);
+  g.clear();
+
+  // ── hudFrame: 200x40 ornate bar frame ────────────────────────────────────
+  // Dark base
+  g.fillStyle(0x0a0a0a, 1);
+  g.fillRoundedRect(0, 0, 200, 40, 6);
+  // Gold inner border (2px)
+  g.lineStyle(2, 0xa87940, 1);
+  g.strokeRoundedRect(2, 2, 196, 36, 5);
+  // Repeating dots along top edge
+  g.fillStyle(0xa87940, 0.7);
+  for (let x = 10; x < 190; x += 10) {
+    g.fillCircle(x, 5, 1.5);  // top edge dots
+    g.fillCircle(x, 35, 1.5); // bottom edge dots
+  }
+  g.generateTexture('hudFrame', 200, 40);
+  g.clear();
+
+  // ── barFill: 196x36 health gradient (red) ────────────────────────────────
+  // Simulate gradient via stacked horizontal slices from #cc0000 to #660000
+  for (let i = 0; i < 36; i++) {
+    const t = i / 35;
+    // Interpolate R channel 0xcc → 0x66, keep G/B at 0
+    const r = Math.round(0xcc + t * (0x66 - 0xcc));
+    const col = (r << 16) | 0x000000;
+    const alpha = 0.85 + t * 0.15;
+    g.fillStyle(col, alpha);
+    g.fillRect(0, i, 196, 1);
+  }
+  // Bright highlight strip at top
+  g.fillStyle(0xff4444, 0.30);
+  g.fillRect(0, 0, 196, 6);
+  g.generateTexture('barFill', 196, 36);
+  g.clear();
+
+  // ── barFillXP: 196x36 XP gradient (green) ────────────────────────────────
+  for (let i = 0; i < 36; i++) {
+    const t = i / 35;
+    // Interpolate top #00cc44 → bottom #006622
+    const r = 0x00;
+    const gv = Math.round(0xcc + t * (0x66 - 0xcc));
+    const b  = Math.round(0x44 + t * (0x22 - 0x44));
+    const col = (r << 16) | (gv << 8) | b;
+    g.fillStyle(col, 0.9);
+    g.fillRect(0, i, 196, 1);
+  }
+  g.fillStyle(0x44ff88, 0.25);
+  g.fillRect(0, 0, 196, 6);
+  g.generateTexture('barFillXP', 196, 36);
+
   g.destroy();
 }
 
