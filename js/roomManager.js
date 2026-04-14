@@ -694,11 +694,12 @@ function initFogOfWar() {
   const worldW = bounds ? Math.ceil(bounds.width) : W;
   const worldH = bounds ? Math.ceil(bounds.height) : H;
 
-  // exploredRT in WORLD space (scrolls with camera) so explored memory persists
-  scene.exploredRT = scene.make
-    .renderTexture({ x: 0, y: 0, width: worldW, height: worldH, add: false })
-    .setOrigin(0, 0);
-  // No setScrollFactor(0) — this RT is in world coordinates
+  // exploredRT in WORLD space — added to scene (invisible) so BitmapMask
+  // aligns pixel-by-pixel with fogUnseen (also world-space below).
+  scene.exploredRT = scene.add
+    .renderTexture(0, 0, worldW, worldH)
+    .setOrigin(0, 0)
+    .setVisible(false);
 
   // spotlightRT stays screen-space (the dim overlay with vision hole)
   scene.spotlightRT = scene.make
@@ -719,9 +720,11 @@ function initFogOfWar() {
     .setDepth(899)
     .setVisible(false);
 
-  scene.fogUnseen = scene.add.graphics().setScrollFactor(0).setDepth(1000);
+  // fogUnseen is WORLD-sized so it aligns pixel-by-pixel with exploredRT mask.
+  // It scrolls with the camera.
+  scene.fogUnseen = scene.add.graphics().setDepth(1000);
   scene.fogUnseen.fillStyle(0x000000, 1);
-  scene.fogUnseen.fillRect(0, 0, W, H);
+  scene.fogUnseen.fillRect(0, 0, worldW, worldH);
   scene._fogOx = 0;
   scene._fogOy = 0;
   scene.fogUnseenMask = new Phaser.Display.Masks.BitmapMask(
