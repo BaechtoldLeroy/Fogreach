@@ -1261,6 +1261,11 @@ function update(time, delta) {
   // 5.8 Gegner-KI
   handleEnemies.call(this, time, delta);
 
+  // 5.8b Doors auto-open near player
+  if (window.DoorSystem && typeof window.DoorSystem.updateDoors === 'function') {
+    window.DoorSystem.updateDoors(this, player);
+  }
+
   updateEnemyDirectionHint(this, this.time?.now ?? time);
 
   // Anti-wall-push: if player ended up inside an obstacle after physics,
