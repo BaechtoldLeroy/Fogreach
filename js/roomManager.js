@@ -852,7 +852,7 @@ function isBlockedByObstacle(x, y) {
   return false;
 }
 
-const VISION_MIN_RADIUS = 80; // Vision klippt nie enger als 80px
+const VISION_MIN_RADIUS = 0; // No artificial minimum — walls block immediately
 
 function computeVisionPolygon(scene, ox, oy) {
   const pts = [];
