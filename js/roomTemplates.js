@@ -712,9 +712,22 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     if (!tooClose || isBrazier) {
       scene.spawnObstacle(px, py, o.type);
     } else {
-      // Place visually only (no physics collider)
+      // Place visually only (no collision blocking) — but still destructible
+      // if it's a chest/barrel/crate type.
       const visualKey = o.type;
-      if (scene.textures?.exists(visualKey)) {
+      const lowerKey = String(visualKey).toLowerCase();
+      const destructibleTypes = ['barrel', 'crate', 'chest_small', 'chest_medium', 'chest_large', 'rubble'];
+      const isDestructible = destructibleTypes.some(t => lowerKey.startsWith(t));
+
+      if (isDestructible) {
+        // Spawn as obstacle (so destructible logic works) but flag as
+        // walkable so the player can pass through.
+        const o2 = scene.spawnObstacle(px, py, o.type);
+        if (o2) {
+          o2.setAlpha(0.7);
+          o2.setData('walkthrough', true);
+        }
+      } else if (scene.textures?.exists(visualKey)) {
         const vis = scene.add.image(px, py, visualKey).setDepth(40).setAlpha(0.7);
         templateWalls.push(vis);
       }
