@@ -282,6 +282,7 @@
     //     into one big open area — no interior walls. Creates large D2-style
     //     halls mixed with the smaller chambers.
     var openedSubtrees = new Set();
+    var openHallRects = []; // track open hall bounds for extra decoration/spawns
     var candidateSubtrees = [];
     collectInternalNodes(root, candidateSubtrees);
     // Shuffle for variety
@@ -312,6 +313,7 @@
         }
       }
       openedSubtrees.add(subtree);
+      openHallRects.push({ x: subtree.x, y: subtree.y, w: subtree.w, h: subtree.h });
       opened++;
     }
 
@@ -460,6 +462,54 @@
             placed = true;
           }
         }
+      }
+    });
+
+    // 14b) Grand halls get EXTRA decoration and enemies — make them memorable.
+    //      Scatter pillar rows, braziers, statues, and a dense mob pack.
+    var hallObjTypes = ['pillar_large', 'pillar_small', 'brazier', 'statue_knight', 'altar'];
+    openHallRects.forEach(function (hall) {
+      var hallTiles = (hall.w - 2) * (hall.h - 2);
+
+      // Lots of decoration — 1 per 15 tiles
+      var decorCount = Math.max(4, Math.floor(hallTiles / 15));
+      for (var d = 0; d < decorCount; d++) {
+        for (var at = 0; at < 6; at++) {
+          var ox = hall.x + 2 + Math.floor(rng() * Math.max(1, hall.w - 4));
+          var oy = hall.y + 2 + Math.floor(rng() * Math.max(1, hall.h - 4));
+          if (!isDoorwayOrAdjacent(ox, oy)) {
+            // 70% normal obstacles, 30% grand objects
+            var typePool = rng() < 0.3 ? hallObjTypes : objTypes;
+            objects.push({
+              type: typePool[Math.floor(rng() * typePool.length)],
+              x: ox, y: oy
+            });
+            break;
+          }
+        }
+      }
+
+      // Extra enemy packs — 2-3 big groups per hall
+      var extraGroups = 2 + Math.floor(rng() * 2);
+      for (var gg = 0; gg < extraGroups; gg++) {
+        var hx = hall.x + 2 + Math.floor(rng() * Math.max(1, hall.w - 4));
+        var hy = hall.y + 2 + Math.floor(rng() * Math.max(1, hall.h - 4));
+        enemies.push({
+          type: pickEnemyType(rng, theme),
+          x: hx, y: hy,
+          count: 5 + Math.floor(rng() * 4), // 5-8 per pack
+          radius: 4
+        });
+      }
+
+      // Maybe place a medium chest as reward-teaser in the hall
+      if (rng() < 0.4) {
+        var chx = hall.x + Math.floor(hall.w / 2);
+        var chy = hall.y + Math.floor(hall.h / 2);
+        loot.push({
+          x: chx, y: chy,
+          type: rng() < 0.5 ? 'chest_medium' : 'chest_small'
+        });
       }
     });
 
