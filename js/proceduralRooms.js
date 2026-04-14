@@ -85,7 +85,7 @@
   // width: 3-4 tiles so the player collider reliably fits through
   function carveDoorway(grid, node, rng, doorwayTiles, doorways) {
     if (!node.left || !node.right) return;
-    var doorWidth = 3 + Math.floor(rng() * 2); // 3-4 tiles
+    var doorWidth = 4 + Math.floor(rng() * 2); // 4-5 tiles (128-160px)
 
     var markDoor = function (x, y) {
       if (doorwayTiles) doorwayTiles[y + '|' + x] = true;
@@ -140,12 +140,12 @@
   // by removing the entire shared wall instead of just a doorway
   function maybeMergeWall(grid, node, rng) {
     if (!node.left || !node.right) return false;
-    // Only merge if both children are leaves and small
+    // Only merge if both children are leaves
     if (node.left.left || node.right.left) return false;
     var leftArea = node.left.w * node.left.h;
     var rightArea = node.right.w * node.right.h;
-    if (leftArea > 80 || rightArea > 80) return false;
-    if (rng() > 0.25) return false; // 25% chance
+    if (leftArea > 180 || rightArea > 180) return false; // allow larger merges
+    if (rng() > 0.45) return false; // 45% chance (was 25%)
 
     // Remove the entire shared wall (both layers)
     if (node.splitAxis === 'h') {
