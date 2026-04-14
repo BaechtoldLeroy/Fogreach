@@ -1113,29 +1113,28 @@ function breakDestructibleObstacle(scene, obs) {
     window.LootSystem.grantGold(goldDrop + Math.floor(Math.random() * goldDrop));
   }
 
-  // Chests drop items with tier-based probability
-  // Reward chests (marked via obs data 'isRewardChest') always drop
-  // with at least Magic tier, chance for Rare/Legendary.
-  if (tier === 'small' || tier === 'medium' || tier === 'large') {
-    const iLevelMap = { small: 1, medium: 4, large: 8 };
-    const iLevel = (window.DUNGEON_DEPTH || 1) + (iLevelMap[tier] || 1);
-    const isRewardChest = obs.getData && obs.getData('isRewardChest');
-    const dropChance = isRewardChest ? 1.0 : { small: 0.05, medium: 0.10, large: 0.15 }[tier];
+  // Drop items with tier-based probability
+  // Reward chests always drop with min-Magic and higher Rare/Legendary chance.
+  const iLevelMap = { minor: 0, small: 1, medium: 4, large: 8 };
+  const iLevel = (window.DUNGEON_DEPTH || 1) + (iLevelMap[tier] || 0);
+  const isRewardChest = obs.getData && obs.getData('isRewardChest');
+  const dropChance = isRewardChest
+    ? 1.0
+    : { minor: 0.005, small: 0.05, medium: 0.10, large: 0.15 }[tier] || 0;
 
-    if (Math.random() < dropChance) {
-      if (window.LootSystem && window.LootSystem.rollItem) {
-        let item;
-        if (isRewardChest) {
-          // Reward chest: at least Magic (tier 1), with higher chance for Rare/Legendary
-          const roll = Math.random();
-          const forcedTier = roll < 0.15 ? 3 : (roll < 0.45 ? 2 : 1); // 15% leg, 30% rare, 55% magic
-          item = window.LootSystem.rollItem(null, iLevel, forcedTier);
-        } else {
-          item = window.LootSystem.rollItem(null, iLevel);
-        }
-        if (item && typeof spawnLoot === 'function') {
-          spawnLoot.call(scene, x, y, item, null);
-        }
+  if (Math.random() < dropChance) {
+    if (window.LootSystem && window.LootSystem.rollItem) {
+      let item;
+      if (isRewardChest) {
+        // Reward chest: at least Magic, weighted toward better tiers
+        const roll = Math.random();
+        const forcedTier = roll < 0.15 ? 3 : (roll < 0.45 ? 2 : 1);
+        item = window.LootSystem.rollItem(null, iLevel, forcedTier);
+      } else {
+        item = window.LootSystem.rollItem(null, iLevel);
+      }
+      if (item && typeof spawnLoot === 'function') {
+        spawnLoot.call(scene, x, y, item, null);
       }
     }
   }
