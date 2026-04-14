@@ -2091,7 +2091,9 @@ function initializeGameObjects() {
   }
 
   if (this.cameras?.main) {
-    this.cameras.main.setZoom(0.89);
+    // Camera zoom removed — fog of war doesn't work correctly with zoom
+    // (scrollFactor(0) elements get scaled, breaking viewport coverage).
+    // TODO: reinstate zoom only if fog is rewritten with a separate UI camera.
     this.cameras.main.startFollow(player, true, 0.12, 0.12);
     const camWidth = this.cameras.main.width;
     const camHeight = this.cameras.main.height;

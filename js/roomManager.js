@@ -689,21 +689,14 @@ function initFogOfWar() {
   const scene = this;
   const W = scene.scale.width;
   const H = scene.scale.height;
-  const camZoom = scene.cameras?.main?.zoom || 1;
-  // Oversize everything to cover the zoomed viewport with buffer
-  const fogW = Math.ceil(W / camZoom) + 40;
-  const fogH = Math.ceil(H / camZoom) + 40;
-  // Offset so RTs are centered on viewport
-  const ox = -(fogW - W) / 2;
-  const oy = -(fogH - H) / 2;
 
   scene.exploredRT = scene.make
-    .renderTexture({ x: ox, y: oy, width: fogW, height: fogH, add: false })
+    .renderTexture({ x: 0, y: 0, width: W, height: H, add: false })
     .setOrigin(0, 0)
     .setScrollFactor(0);
 
   scene.spotlightRT = scene.make
-    .renderTexture({ x: ox, y: oy, width: fogW, height: fogH, add: true })
+    .renderTexture({ x: 0, y: 0, width: W, height: H, add: true })
     .setOrigin(0, 0)
     .setScrollFactor(0)
     .setDepth(900);
@@ -714,12 +707,11 @@ function initFogOfWar() {
     .setDepth(899)
     .setVisible(false);
 
-  // fogUnseen same size/position as RTs
   scene.fogUnseen = scene.add.graphics().setScrollFactor(0).setDepth(1000);
   scene.fogUnseen.fillStyle(0x000000, 1);
-  scene.fogUnseen.fillRect(ox, oy, fogW, fogH);
-  scene._fogOx = ox;
-  scene._fogOy = oy;
+  scene.fogUnseen.fillRect(0, 0, W, H);
+  scene._fogOx = 0;
+  scene._fogOy = 0;
   scene.fogUnseenMask = new Phaser.Display.Masks.BitmapMask(
     scene,
     scene.exploredRT,
@@ -752,14 +744,10 @@ function updateFogOfWar() {
   // 1) Welt-Polygon
   const ptsWorld = computeVisionPolygon(scene, px, py);
 
-  // RT is offset by (ox, oy) from viewport, so shift draws to land correctly
-  const fogOx = scene._fogOx || 0;
-  const fogOy = scene._fogOy || 0;
-
   // 2) Explored-Stamp mit Pad, damit Waende nicht schwarz bleiben
   const ptsScreenExplored = ptsWorld.map((p) => ({
-    x: p.x + p.dx * VISION_PAD_EXPLORED - cam.scrollX - fogOx,
-    y: p.y + p.dy * VISION_PAD_EXPLORED - cam.scrollY - fogOy,
+    x: p.x + p.dx * VISION_PAD_EXPLORED - cam.scrollX,
+    y: p.y + p.dy * VISION_PAD_EXPLORED - cam.scrollY,
   }));
   scene._visionGfx.clear().fillStyle(0xffffff, 1);
   drawFilledPolygon(scene._visionGfx, ptsScreenExplored);
@@ -767,8 +755,8 @@ function updateFogOfWar() {
 
   // 3) Spotlight-Loch mit UI-Pad
   const ptsScreenUI = ptsWorld.map((p) => ({
-    x: p.x + p.dx * VISION_PAD_UI - cam.scrollX - fogOx,
-    y: p.y + p.dy * VISION_PAD_UI - cam.scrollY - fogOy,
+    x: p.x + p.dx * VISION_PAD_UI - cam.scrollX,
+    y: p.y + p.dy * VISION_PAD_UI - cam.scrollY,
   }));
   scene.spotlightRT.clear();
   scene.spotlightRT.fill(0x000000, 0.4);
