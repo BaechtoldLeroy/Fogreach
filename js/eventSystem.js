@@ -297,7 +297,9 @@
       if (activeLore && !activeLore.picked) {
         activeLore.picked = true;
         var xpBonus = 15 + (window.DUNGEON_DEPTH || 1) * 5;
-        if (typeof playerXP !== 'undefined') {
+        if (typeof addXP === 'function') {
+          addXP.call(scene, xpBonus);
+        } else if (typeof playerXP !== 'undefined') {
           playerXP += xpBonus;
           window.playerXP = playerXP;
         }
