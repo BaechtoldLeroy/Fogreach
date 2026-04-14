@@ -917,8 +917,16 @@ function _buildWallCache() {
     if (!isWall) continue;
     const b = go.body;
     if (!b || !b.enable) continue;
-    const r = b.getBounds ? b.getBounds() : (go.getBounds ? go.getBounds() : null);
-    if (!r) continue;
+    // Phaser body bounds: use position + size directly, no getBounds call
+    const r = {
+      x: b.x, y: b.y,
+      width: b.width || 32, height: b.height || 32,
+      right: b.x + (b.width || 32),
+      bottom: b.y + (b.height || 32),
+      contains: function (px, py) {
+        return px >= this.x && px <= this.right && py >= this.y && py <= this.bottom;
+      }
+    };
     const wall = { go, body: b, rect: r };
     _wallCache.push(wall);
     // Bucket by grid cells
@@ -955,7 +963,7 @@ function isBlockedByObstacle(x, y) {
   for (let i = 0; i < bucket.length; i++) {
     const w = bucket[i];
     if (!w.body.enable) continue;
-    if (w.body.hitTest ? w.body.hitTest(x, y) : (w.rect && w.rect.contains(x, y))) return true;
+    if (w.rect.contains(x, y)) return true;
   }
   return false;
 }
