@@ -138,6 +138,25 @@ function initDungeonRun() {
     templateOrder.push(finalRoom);
   }
 
+  // Inject 1-2 procedural rooms into the run for variety
+  if (window.ProceduralRooms && window.RoomTemplates) {
+    var procCount = 1 + Math.floor(Math.random() * 2); // 1-2 rooms
+    for (var pi = 0; pi < procCount; pi++) {
+      var procWidth = 80 + Math.floor(Math.random() * 40);  // 80-120
+      var procHeight = 80 + Math.floor(Math.random() * 40); // 80-120
+      var procName = 'Procedural_' + Date.now() + '_' + pi;
+      var procTpl = window.ProceduralRooms.generate({
+        width: procWidth,
+        height: procHeight,
+        name: procName
+      });
+      window.RoomTemplates.TEMPLATES[procName] = procTpl;
+      // Insert at a random mid position (not first, not last)
+      var insertPos = 1 + Math.floor(Math.random() * Math.max(1, templateOrder.length - 2));
+      templateOrder.splice(insertPos, 0, procName);
+    }
+  }
+
   // Pad if needed
   while (templateOrder.length < totalRooms) {
     var padIdx = templateOrder.length % regularNames.length;
