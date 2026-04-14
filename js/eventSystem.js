@@ -9,9 +9,8 @@
       weight: 25,
       minDepth: 1,
       handler: function(scene) {
-        var goldAmount = 20 + (window.DUNGEON_DEPTH || 1) * 10;
-        if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldAmount);
-        showEventToast(scene, 'Versteckter Schatz! +' + goldAmount + ' Gold');
+        spawnEventChest(scene, 'chest_medium', false);
+        showEventToast(scene, 'Versteckter Schatz entdeckt!');
       }
     },
     {
@@ -20,11 +19,7 @@
       weight: 20,
       minDepth: 2,
       handler: function(scene) {
-        var extraCount = 2 + Math.floor((window.DUNGEON_DEPTH || 1) / 3);
-        for (var i = 0; i < extraCount; i++) {
-          if (typeof spawnEnemy === 'function') spawnEnemy.call(scene, 0, 0, 'enemy');
-        }
-        showEventToast(scene, 'Hinterhalt! ' + extraCount + ' zusaetzliche Gegner!');
+        triggerAmbush(scene);
       }
     },
     {
@@ -42,13 +37,8 @@
       weight: 15,
       minDepth: 2,
       handler: function(scene) {
-        var goldReward = 30 + (window.DUNGEON_DEPTH || 1) * 15;
-        if (typeof playerHealth !== 'undefined') {
-          playerHealth = Math.max(1, playerHealth - 1);
-          window.playerHealth = playerHealth;
-        }
-        if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldReward);
-        showEventToast(scene, 'Verfluchte Truhe! -1 HP, +' + goldReward + ' Gold');
+        spawnEventChest(scene, 'chest_large', true);
+        showEventToast(scene, 'Eine verfluchte Truhe... vorsichtig!');
       }
     },
     {
@@ -57,12 +47,7 @@
       weight: 15,
       minDepth: 1,
       handler: function(scene) {
-        var xpBonus = 15 + (window.DUNGEON_DEPTH || 1) * 5;
-        if (typeof playerXP !== 'undefined') {
-          playerXP += xpBonus;
-          window.playerXP = playerXP;
-        }
-        showEventToast(scene, 'Altes Schriftstueck gefunden! +' + xpBonus + ' XP');
+        spawnLoreFragment(scene);
       }
     },
     {
@@ -71,18 +56,7 @@
       weight: 10,
       minDepth: 4,
       handler: function(scene) {
-        var dodged = Math.random() > 0.5;
-        if (dodged) {
-          var goldReward = 25 + (window.DUNGEON_DEPTH || 1) * 10;
-          if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldReward);
-          showEventToast(scene, 'Einsturz ausgewichen! +' + goldReward + ' Gold');
-        } else {
-          if (typeof playerHealth !== 'undefined') {
-            playerHealth = Math.max(1, playerHealth - 1);
-            window.playerHealth = playerHealth;
-          }
-          showEventToast(scene, 'Einsturz! -1 HP');
-        }
+        triggerRockfall(scene);
       }
     }
   ];
@@ -231,9 +205,275 @@
     activeMerchant = null;
   }
 
+  // --- Treasure & Trapped Chests ---
+  function spawnEventChest(scene, chestType, isTrapped) {
+    if (!scene || !scene.spawnObstacle) return;
+    var bounds = scene.physics.world && scene.physics.world.bounds;
+    if (!bounds) return;
+    // Pick a position near room center but offset from player
+    var px = bounds.x + bounds.width / 2;
+    var py = bounds.y + bounds.height / 2;
+    if (typeof player !== 'undefined' && player) {
+      var dx = px - player.x, dy = py - player.y;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 200) {
+        // Push chest away from player
+        px = player.x + (dx / (d || 1)) * 250;
+        py = player.y + (dy / (d || 1)) * 250;
+      }
+    }
+    var chest = scene.spawnObstacle(px, py, chestType);
+    if (chest) {
+      chest.setData('eventChest', true);
+      chest.setData('isTrapped', !!isTrapped);
+    }
+  }
+
+  // --- Lore Fragment ---
+  var activeLore = null;
+
+  function spawnLoreFragment(scene) {
+    if (!scene || !scene.add || !scene.physics) return;
+    cleanupLore();
+
+    var bounds = scene.physics.world && scene.physics.world.bounds;
+    var bx = bounds ? bounds.x + bounds.width / 2 : 400;
+    var by = bounds ? bounds.y + bounds.height / 2 : 300;
+    if (typeof player !== 'undefined' && player) {
+      var ang = Math.random() * Math.PI * 2;
+      bx = player.x + Math.cos(ang) * 200;
+      by = player.y + Math.sin(ang) * 200;
+    }
+
+    // Generate procedural scroll texture if missing
+    if (!scene.textures.exists('proc_scroll')) {
+      var g = scene.make.graphics({ add: false });
+      g.fillStyle(0xeed8a0); g.fillRoundedRect(2, 4, 28, 24, 3);
+      g.fillStyle(0x8b6a3a); g.fillRect(2, 4, 28, 3);
+      g.fillStyle(0x8b6a3a); g.fillRect(2, 25, 28, 3);
+      g.lineStyle(1, 0x6a4a20); g.strokeRoundedRect(2, 4, 28, 24, 3);
+      g.fillStyle(0x6a4a20); g.fillRect(8, 12, 16, 1);
+      g.fillRect(8, 16, 14, 1);
+      g.fillRect(8, 20, 18, 1);
+      g.generateTexture('proc_scroll', 32, 32);
+      g.destroy();
+    }
+
+    var scroll = scene.physics.add.sprite(bx, by, 'proc_scroll');
+    scroll.setDepth(50);
+    scroll.body.setAllowGravity(false);
+    scroll.body.setImmovable(true);
+
+    // Glow effect
+    var glow = scene.add.graphics();
+    glow.fillStyle(0xffdd44, 0.2);
+    glow.fillCircle(bx, by, 30);
+    glow.fillStyle(0xffeeaa, 0.15);
+    glow.fillCircle(bx, by, 20);
+    glow.setDepth(49);
+
+    // Tween bobbing
+    if (scene.tweens) {
+      scene.tweens.add({
+        targets: scroll, y: by - 8, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.InOut'
+      });
+    }
+
+    // Lore texts pool
+    var loreTexts = [
+      '...die Schatten flüstern Namen, die niemand mehr aussprechen sollte...',
+      '...der Kettenrat schloss einen Pakt mit etwas Älterem als die Stadt...',
+      '...wer das Siegel bricht, öffnet einen Pfad in beide Richtungen...',
+      '...die Tiere wussten zuerst, dass etwas in den Tiefen wachte...',
+      '...verbrannte Seiten, doch ein Wort bleibt: "Dämmerstein"...',
+      '...wir gruben tiefer als jede Karte erlaubte. Möge man uns vergeben...'
+    ];
+    var chosen = loreTexts[Math.floor(Math.random() * loreTexts.length)];
+
+    activeLore = { sprite: scroll, glow: glow, scene: scene, text: chosen, picked: false };
+
+    // Auto-pickup on overlap
+    scene.physics.add.overlap(player, scroll, function() {
+      if (activeLore && !activeLore.picked) {
+        activeLore.picked = true;
+        var xpBonus = 15 + (window.DUNGEON_DEPTH || 1) * 5;
+        if (typeof playerXP !== 'undefined') {
+          playerXP += xpBonus;
+          window.playerXP = playerXP;
+        }
+        showLoreDialog(scene, chosen, xpBonus);
+        cleanupLore();
+      }
+    });
+
+    showEventToast(scene, 'Ein altes Schriftstück glüht in der Nähe...');
+  }
+
+  function showLoreDialog(scene, loreText, xpBonus) {
+    if (!scene || !scene.add) return;
+    var cam = scene.cameras && scene.cameras.main;
+    var cw = cam ? cam.width : 800;
+    var ch = cam ? cam.height : 600;
+
+    var overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.5)
+      .setScrollFactor(0).setDepth(2500).setInteractive();
+
+    var panelW = Math.min(560, cw - 40);
+    var panelH = 200;
+    var panel = scene.add.rectangle(cw / 2, ch / 2, panelW, panelH, 0x1a1a2a, 0.95)
+      .setScrollFactor(0).setDepth(2501).setStrokeStyle(2, 0xffdd44);
+
+    var title = scene.add.text(cw / 2, ch / 2 - 70, 'Altes Schriftstück', {
+      fontSize: '20px', fill: '#ffdd44', fontFamily: 'serif', fontStyle: 'italic'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
+
+    var body = scene.add.text(cw / 2, ch / 2 - 10, loreText, {
+      fontSize: '14px', fill: '#e8e0c8', fontFamily: 'serif',
+      wordWrap: { width: panelW - 40 }, align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
+
+    var bonus = scene.add.text(cw / 2, ch / 2 + 50, '+' + xpBonus + ' XP', {
+      fontSize: '16px', fill: '#88ff88', fontFamily: 'monospace'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
+
+    var hint = scene.add.text(cw / 2, ch / 2 + 80, '[Klick zum Schließen]', {
+      fontSize: '12px', fill: '#888888', fontFamily: 'monospace'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
+
+    var close = function() {
+      overlay.destroy(); panel.destroy(); title.destroy(); body.destroy(); bonus.destroy(); hint.destroy();
+    };
+    overlay.on('pointerdown', close);
+    if (scene.time && scene.time.delayedCall) {
+      scene.time.delayedCall(8000, close); // auto-close after 8s
+    }
+  }
+
+  function cleanupLore() {
+    if (!activeLore) return;
+    if (activeLore.sprite && activeLore.sprite.destroy) activeLore.sprite.destroy();
+    if (activeLore.glow && activeLore.glow.destroy) activeLore.glow.destroy();
+    activeLore = null;
+  }
+
+  // --- Ambush ---
+  function triggerAmbush(scene) {
+    if (!scene || !scene.add) return;
+    var cam = scene.cameras && scene.cameras.main;
+    var cw = cam ? cam.width : 800;
+    var ch = cam ? cam.height : 600;
+
+    // Big dramatic warning
+    var warn = scene.add.text(cw / 2, ch / 2 - 50, 'HINTERHALT!', {
+      fontSize: '64px', fill: '#ff3333', fontFamily: 'serif', fontStyle: 'bold',
+      stroke: '#000', strokeThickness: 6
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2000).setAlpha(0);
+
+    // Flash + scale pulse
+    if (scene.tweens) {
+      scene.tweens.add({
+        targets: warn, alpha: 1, scale: { from: 0.5, to: 1.2 },
+        duration: 400, yoyo: true, hold: 1200,
+        onComplete: function() { warn.destroy(); }
+      });
+    }
+
+    // Camera shake
+    if (cam && cam.shake) cam.shake(800, 0.005);
+
+    // Sound cue
+    if (window.soundManager && window.soundManager.playSFX) {
+      try { window.soundManager.playSFX('enemy_death'); } catch (e) {}
+    }
+
+    // Spawn enemies after 1.5s warning
+    var extraCount = 2 + Math.floor((window.DUNGEON_DEPTH || 1) / 3);
+    if (scene.time && scene.time.delayedCall) {
+      scene.time.delayedCall(1500, function() {
+        for (var i = 0; i < extraCount; i++) {
+          if (typeof spawnEnemy === 'function') spawnEnemy.call(scene, 0, 0, 'enemy');
+        }
+        // Bonus reward for surviving
+        var bonusGold = 30 + (window.DUNGEON_DEPTH || 1) * 10;
+        if (window.LootSystem && window.LootSystem.grantGold) {
+          // Delayed reward note — gold given when wave clears
+          scene._ambushBonus = bonusGold;
+        }
+      });
+    }
+  }
+
+  // --- Environmental Hazard (rockfall) ---
+  function triggerRockfall(scene) {
+    if (!scene || !scene.add) return;
+    var cam = scene.cameras && scene.cameras.main;
+    var cw = cam ? cam.width : 800;
+    var ch = cam ? cam.height : 600;
+
+    if (typeof player === 'undefined' || !player) return;
+
+    // Show shadow indicator at player position
+    var px = player.x;
+    var py = player.y;
+    var shadow = scene.add.graphics();
+    shadow.fillStyle(0x000000, 0.5);
+    shadow.fillCircle(px, py, 50);
+    shadow.setDepth(1000);
+
+    showEventToast(scene, 'Vorsicht — Decke stürzt ein! AUSWEICHEN!');
+
+    // Pulse the shadow as warning
+    if (scene.tweens) {
+      scene.tweens.add({
+        targets: shadow, alpha: 0.2, duration: 200, yoyo: true, repeat: 5
+      });
+    }
+
+    // After 1.5s check if player moved away
+    if (scene.time && scene.time.delayedCall) {
+      scene.time.delayedCall(1500, function() {
+        // Drop rocks visual
+        var rockGfx = scene.add.graphics();
+        rockGfx.fillStyle(0x4a3a2a, 1);
+        for (var r = 0; r < 8; r++) {
+          var rx = px + (Math.random() - 0.5) * 80;
+          var ry = py + (Math.random() - 0.5) * 80;
+          rockGfx.fillCircle(rx, ry, 6 + Math.random() * 6);
+        }
+        rockGfx.setDepth(60);
+
+        // Check if player still in zone
+        var dx = player.x - px;
+        var dy = player.y - py;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 60) {
+          // Hit
+          if (typeof playerHealth !== 'undefined') {
+            playerHealth = Math.max(1, playerHealth - 1);
+            window.playerHealth = playerHealth;
+          }
+          if (cam && cam.shake) cam.shake(300, 0.008);
+          showEventToast(scene, 'Einsturz! -1 HP');
+        } else {
+          // Dodged
+          var goldReward = 25 + (window.DUNGEON_DEPTH || 1) * 10;
+          if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldReward);
+          showEventToast(scene, 'Ausgewichen! +' + goldReward + ' Gold');
+        }
+
+        // Cleanup visuals
+        scene.time.delayedCall(2000, function() {
+          if (shadow && shadow.destroy) shadow.destroy();
+          if (rockGfx && rockGfx.destroy) rockGfx.destroy();
+        });
+      });
+    }
+  }
+
   function onRoomEnter(scene, roomId) {
-    // Clean up any active merchant from previous room
+    // Clean up any active merchant or lore from previous room
     cleanupMerchant();
+    cleanupLore();
 
     if (roomId === 0) return;
     var depth = window.DUNGEON_DEPTH || 1;
@@ -270,6 +510,7 @@
   function reset() {
     lastEventId = null;
     cleanupMerchant();
+    cleanupLore();
   }
 
   window.EventSystem = {

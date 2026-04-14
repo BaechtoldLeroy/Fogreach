@@ -1073,6 +1073,7 @@ function updateStatusEffectHUD(scene) {
 function breakDestructibleObstacle(scene, obs) {
   if (!obs || !obs.active) return;
   const tier = obs.getData('lootTier') || 'minor';
+  const isTrapped = obs.getData && obs.getData('isTrapped');
   const x = obs.x;
   const y = obs.y;
 
@@ -1080,6 +1081,20 @@ function breakDestructibleObstacle(scene, obs) {
   if (window.particleFactory) {
     window.particleFactory.deathBurst(x, y);
     window.particleFactory.screenShake(50, 0.002);
+  }
+
+  // Trapped chest: damage player + bonus gold
+  if (isTrapped) {
+    if (typeof playerHealth !== 'undefined') {
+      playerHealth = Math.max(1, playerHealth - 1);
+      window.playerHealth = playerHealth;
+    }
+    const cam = scene && scene.cameras && scene.cameras.main;
+    if (cam && cam.shake) cam.shake(200, 0.006);
+    const trapBonus = 30 + (window.DUNGEON_DEPTH || 1) * 15;
+    if (window.LootSystem && window.LootSystem.grantGold) {
+      window.LootSystem.grantGold(trapBonus);
+    }
   }
 
   // Drop loot based on tier
