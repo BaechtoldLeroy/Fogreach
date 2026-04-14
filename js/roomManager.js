@@ -403,6 +403,12 @@ function enterRoom(scene, roomId) {
   const doorList = builtMeta.doors && builtMeta.doors.length > 0
     ? builtMeta.doors
     : [{ x: (builtMeta.w || 800) / 2, y: (builtMeta.h || 600) - 64, dir: null }]; // fallback door
+  // Get player spawn position in world coords for minimum distance check
+  const playerSpawnX = playerSpawnSpec ? (playerSpawnSpec.x * T + T / 2) : null;
+  const playerSpawnY = playerSpawnSpec ? (playerSpawnSpec.y * T + T / 2) : null;
+  const MIN_STAIR_DISTANCE = 280; // ~9 tiles — stairs must be at least this far from player spawn
+  const MIN_STAIR_DIST_SQ = MIN_STAIR_DISTANCE * MIN_STAIR_DISTANCE;
+
   doorList.forEach((d) => {
     // Offset stair away from wall into room interior
     let sx = d.x, sy = d.y;
@@ -412,6 +418,18 @@ function enterRoom(scene, roomId) {
     else if (dir === 'W' || dir === 'w') sx += 64;   // wall at left → move right
     else if (dir === 'E' || dir === 'e') sx -= 64;   // wall at right → move left
     else sy -= 48; // default: assume bottom wall
+
+    // Skip this stair if it would spawn too close to the player's initial position
+    if (playerSpawnX !== null) {
+      const dpx = sx - playerSpawnX;
+      const dpy = sy - playerSpawnY;
+      if (dpx * dpx + dpy * dpy < MIN_STAIR_DIST_SQ) {
+        // Push it farther away from player — direction = from player
+        const dist = Math.sqrt(dpx * dpx + dpy * dpy) || 1;
+        sx = playerSpawnX + (dpx / dist) * MIN_STAIR_DISTANCE;
+        sy = playerSpawnY + (dpy / dist) * MIN_STAIR_DISTANCE;
+      }
+    }
 
     const STAIR_HALF = 44; // 80px display + 8px margin
     const STAIR_HALF_SQ = STAIR_HALF * STAIR_HALF;
