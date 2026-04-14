@@ -305,12 +305,13 @@
 
   function _rollTier(iLevel, rng) {
     if (typeof rng !== 'function') rng = Math.random;
-    const shift = Math.max(0, (iLevel - 5)) * 0.01;
+    // Lower baselines + slower scaling with iLevel
+    const shift = Math.max(0, (iLevel - 5)) * 0.003;
     const weights = [
-      Math.max(0, 0.60 - shift * 1.5), // Common
-      Math.max(0, 0.30 - shift * 0.5), // Magic
-      Math.min(1, 0.08 + shift * 1.0), // Rare
-      Math.min(1, 0.02 + shift * 1.0)  // Legendary
+      Math.max(0, 0.75 - shift * 1.5),  // Common   (was 0.60)
+      Math.max(0, 0.22 - shift * 0.5),  // Magic    (was 0.30)
+      Math.min(1, 0.025 + shift * 1.0), // Rare     (was 0.08)
+      Math.min(1, 0.005 + shift * 1.0)  // Legendary (was 0.02)
     ];
     let total = 0;
     for (let i = 0; i < weights.length; i++) total += weights[i];
