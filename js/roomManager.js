@@ -758,7 +758,8 @@ function markRoomCleared() {
         if (pick) { rx = pick.x; ry = pick.y; }
       }
 
-      spawnLoot.call(scene, rx, ry, { type: 'chest_large', locked: false, tier: rewardTier }, null);
+      const rewardChest = spawnLoot.call(scene, rx, ry, { type: 'chest_large', locked: false, tier: rewardTier }, null);
+      if (rewardChest && rewardChest.setData) rewardChest.setData('isRewardChest', true);
       if (window.soundManager) try { window.soundManager.playSFX('level_up'); } catch (e) {}
     }
   }
