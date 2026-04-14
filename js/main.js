@@ -2086,6 +2086,7 @@ function initializeGameObjects() {
   }
 
   if (this.cameras?.main) {
+    this.cameras.main.setZoom(0.89);
     this.cameras.main.startFollow(player, true, 0.12, 0.12);
     const camWidth = this.cameras.main.width;
     const camHeight = this.cameras.main.height;
