@@ -689,12 +689,18 @@ function initFogOfWar() {
   const scene = this;
   const W = scene.scale.width;
   const H = scene.scale.height;
+  // World bounds — exploredRT covers the full world so explored areas persist
+  const bounds = scene.physics?.world?.bounds;
+  const worldW = bounds ? Math.ceil(bounds.width) : W;
+  const worldH = bounds ? Math.ceil(bounds.height) : H;
 
+  // exploredRT in WORLD space (scrolls with camera) so explored memory persists
   scene.exploredRT = scene.make
-    .renderTexture({ x: 0, y: 0, width: W, height: H, add: false })
-    .setOrigin(0, 0)
-    .setScrollFactor(0);
+    .renderTexture({ x: 0, y: 0, width: worldW, height: worldH, add: false })
+    .setOrigin(0, 0);
+  // No setScrollFactor(0) — this RT is in world coordinates
 
+  // spotlightRT stays screen-space (the dim overlay with vision hole)
   scene.spotlightRT = scene.make
     .renderTexture({ x: 0, y: 0, width: W, height: H, add: true })
     .setOrigin(0, 0)
@@ -704,6 +710,12 @@ function initFogOfWar() {
   scene._visionGfx = scene.add
     .graphics()
     .setScrollFactor(0)
+    .setDepth(899)
+    .setVisible(false);
+
+  // Graphics for drawing vision polygon in WORLD coords (for exploredRT)
+  scene._visionGfxWorld = scene.add
+    .graphics()
     .setDepth(899)
     .setVisible(false);
 
@@ -744,16 +756,18 @@ function updateFogOfWar() {
   // 1) Welt-Polygon
   const ptsWorld = computeVisionPolygon(scene, px, py);
 
-  // 2) Explored-Stamp mit Pad, damit Waende nicht schwarz bleiben
-  const ptsScreenExplored = ptsWorld.map((p) => ({
-    x: p.x + p.dx * VISION_PAD_EXPLORED - cam.scrollX,
-    y: p.y + p.dy * VISION_PAD_EXPLORED - cam.scrollY,
+  // 2) Explored stamp in WORLD coords — exploredRT is a world-sized RT,
+  //    so previously-explored tiles remain painted as the camera scrolls.
+  const ptsWorldExplored = ptsWorld.map((p) => ({
+    x: p.x + p.dx * VISION_PAD_EXPLORED,
+    y: p.y + p.dy * VISION_PAD_EXPLORED,
   }));
-  scene._visionGfx.clear().fillStyle(0xffffff, 1);
-  drawFilledPolygon(scene._visionGfx, ptsScreenExplored);
-  scene.exploredRT.draw(scene._visionGfx);
+  const gfxWorld = scene._visionGfxWorld || scene._visionGfx;
+  gfxWorld.clear().fillStyle(0xffffff, 1);
+  drawFilledPolygon(gfxWorld, ptsWorldExplored);
+  scene.exploredRT.draw(gfxWorld);
 
-  // 3) Spotlight-Loch mit UI-Pad
+  // 3) Spotlight-Loch in SCREEN coords (spotlightRT is screen-space)
   const ptsScreenUI = ptsWorld.map((p) => ({
     x: p.x + p.dx * VISION_PAD_UI - cam.scrollX,
     y: p.y + p.dy * VISION_PAD_UI - cam.scrollY,
