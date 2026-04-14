@@ -359,6 +359,17 @@ function enterRoom(scene, roomId) {
   scene.physics.world.setBounds(0, 0, builtWidth, builtHeight);
   scene.cameras.main.setBounds(0, 0, builtWidth, builtHeight);
 
+  // Reset fog of war for the new room — rebuild RTs sized to new world bounds
+  if (typeof scene.initFogOfWar === 'function') {
+    if (scene.exploredRT && scene.exploredRT.destroy) scene.exploredRT.destroy();
+    if (scene.spotlightRT && scene.spotlightRT.destroy) scene.spotlightRT.destroy();
+    if (scene.fogUnseen && scene.fogUnseen.destroy) scene.fogUnseen.destroy();
+    if (scene._visionGfx && scene._visionGfx.destroy) scene._visionGfx.destroy();
+    if (scene._visionGfxWorld && scene._visionGfxWorld.destroy) scene._visionGfxWorld.destroy();
+    if (scene._enemyVisionMaskGfx && scene._enemyVisionMaskGfx.destroy) scene._enemyVisionMaskGfx.destroy();
+    scene.initFogOfWar();
+  }
+
   ensureObstacleColliders(scene);
 
   if (scene._playerObstacleCollider) {
