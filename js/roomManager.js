@@ -422,15 +422,21 @@ function enterRoom(scene, roomId) {
     else if (dir === 'E' || dir === 'e') sx -= 64;   // wall at right → move left
     else sy -= 48; // default: assume bottom wall
 
-    // Skip this stair if it would spawn too close to the player's initial position
+    // If stair is too close to player, push it away — but clamp to room bounds
     if (playerSpawnX !== null) {
       const dpx = sx - playerSpawnX;
       const dpy = sy - playerSpawnY;
       if (dpx * dpx + dpy * dpy < MIN_STAIR_DIST_SQ) {
-        // Push it farther away from player — direction = from player
-        const dist = Math.sqrt(dpx * dpx + dpy * dpy) || 1;
-        sx = playerSpawnX + (dpx / dist) * MIN_STAIR_DISTANCE;
-        sy = playerSpawnY + (dpy / dist) * MIN_STAIR_DISTANCE;
+        const dist = Math.sqrt(dpx * dpx + dpy * dpy);
+        // If stair is basically on player, pick a random direction
+        const nx = dist > 1 ? dpx / dist : (Math.random() < 0.5 ? 1 : -1);
+        const ny = dist > 1 ? dpy / dist : (Math.random() < 0.5 ? 1 : -1);
+        let newSx = playerSpawnX + nx * MIN_STAIR_DISTANCE;
+        let newSy = playerSpawnY + ny * MIN_STAIR_DISTANCE;
+        // Clamp to room bounds with a small margin
+        newSx = Math.max(50, Math.min(builtWidth - 50, newSx));
+        newSy = Math.max(50, Math.min(builtHeight - 50, newSy));
+        sx = newSx; sy = newSy;
       }
     }
 
