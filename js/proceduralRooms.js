@@ -255,10 +255,27 @@
     }
 
     // 3) Collect all leaves (chambers)
-    var leaves = [];
-    collectLeaves(root, leaves);
+    var allLeaves = [];
+    collectLeaves(root, allLeaves);
 
-    // 4) Carve all chambers (as rects with 1-tile walls around each)
+    // 3b) Mark some leaves as "sealed" — they stay solid wall, never carved.
+    //     Creates inaccessible background structure, like masonry/cliffs in D2.
+    //     Skip if it would seal the very first leaf (player spawn).
+    var sealedLeaves = new Set();
+    for (var li = 1; li < allLeaves.length; li++) {
+      var leaf = allLeaves[li];
+      var area = leaf.w * leaf.h;
+      // Don't seal too-tiny or too-huge leaves. Mid-range 40-200 tiles area.
+      if (area < 40 || area > 200) continue;
+      if (rng() < 0.20) { // 20% of mid-sized leaves stay solid
+        sealedLeaves.add(leaf);
+      }
+    }
+
+    // Active leaves = those that will be carved as chambers
+    var leaves = allLeaves.filter(function (l) { return !sealedLeaves.has(l); });
+
+    // 4) Carve all active chambers (sealed ones remain solid wall)
     leaves.forEach(function (l) { carveChamber(grid, l); });
 
     // 4b) Open halls: randomly pick some internal subtrees and flatten them
@@ -306,10 +323,20 @@
     internal.reverse();
     var doorwayTiles = {}; // 'y|x' -> true, so we can keep objects off these tiles
     var doorways = [];    // [{x, y, orientation}] center tile of each carved doorway
+    // Helper: does a subtree contain any non-sealed leaf?
+    var hasActiveLeaf = function (n) {
+      if (!n) return false;
+      if (!n.left && !n.right) return !sealedLeaves.has(n);
+      return hasActiveLeaf(n.left) || hasActiveLeaf(n.right);
+    };
+
     internal.forEach(function (node) {
-      // If this node or any ancestor is in openedSubtrees, skip — it's a hall
+      // Skip if inside an opened hall
       var a = node;
       while (a) { if (openedSubtrees.has(a)) return; a = a.parent; }
+      // Skip if either child subtree is entirely sealed (no carved chamber to connect)
+      if (!hasActiveLeaf(node.left) || !hasActiveLeaf(node.right)) return;
+
       if (!maybeMergeWall(grid, node, rng)) {
         carveDoorway(grid, node, rng, doorwayTiles, doorways);
       }
