@@ -822,8 +822,8 @@ function buildRandomRoom(scene, room) {
 
 // --- Vision Tuning ---
 const VISION_RADIUS = 220;
-const VISION_RAYS = 192;
-const VISION_STEP = 4; // feiner an die Wand
+const VISION_RAYS = 360;
+const VISION_STEP = 3; // feiner an die Wand
 const VISION_WALL_BACKOFF = 0; // nicht vor der Wand zurueckspringen
 const VISION_PAD_EXPLORED = 20; // small overshoot so wall itself is revealed (~half tile)
 const VISION_PAD_UI = 20; // spotlight overshoot (smaller = no see-through walls)
