@@ -1149,7 +1149,7 @@ function spawnObstacle(x, y, key) {
     textureKey = fallback;
   }
   const o = obstacles.create(x, y, textureKey);
-  
+
   // Standard-Setup
   o.setOrigin(0.5, 0.5);
   o.refreshBody();              // wichtig bei staticGroup
@@ -1159,6 +1159,25 @@ function spawnObstacle(x, y, key) {
   o.setData('type', key);
   if (textureKey !== key) {
     o.setData('textureKey', textureKey);
+  }
+
+  // Destructible/openable types — chests, barrels, crates can be broken for loot
+  const destructibleTypes = ['barrel', 'crate', 'chest_small', 'chest_medium', 'chest_large', 'rubble'];
+  const lowerKey = String(key).toLowerCase();
+  const isDestructible = destructibleTypes.some(t => lowerKey.startsWith(t));
+  if (isDestructible) {
+    o.setData('destructible', true);
+    o.setData('hp', lowerKey.startsWith('chest') ? 1 : 1); // 1 hit destroys
+    // Loot table per type
+    if (lowerKey.startsWith('chest_large')) {
+      o.setData('lootTier', 'large');
+    } else if (lowerKey.startsWith('chest_medium')) {
+      o.setData('lootTier', 'medium');
+    } else if (lowerKey.startsWith('chest')) {
+      o.setData('lootTier', 'small');
+    } else {
+      o.setData('lootTier', 'minor'); // barrel, crate, rubble
+    }
   }
 
   return o;

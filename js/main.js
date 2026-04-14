@@ -1069,6 +1069,41 @@ function updateStatusEffectHUD(scene) {
   });
 }
 
+// Break a destructible obstacle (chest, barrel, crate) and drop loot
+function breakDestructibleObstacle(scene, obs) {
+  if (!obs || !obs.active) return;
+  const tier = obs.getData('lootTier') || 'minor';
+  const x = obs.x;
+  const y = obs.y;
+
+  // Visual feedback: particles + screen shake
+  if (window.particleFactory) {
+    window.particleFactory.deathBurst(x, y);
+    window.particleFactory.screenShake(50, 0.002);
+  }
+
+  // Drop loot based on tier
+  const goldDrop = { minor: 5, small: 15, medium: 35, large: 75 }[tier] || 5;
+  if (window.LootSystem && window.LootSystem.grantGold) {
+    window.LootSystem.grantGold(goldDrop + Math.floor(Math.random() * goldDrop));
+  }
+
+  // Chests also drop an item
+  if (tier === 'small' || tier === 'medium' || tier === 'large') {
+    const iLevelMap = { small: 1, medium: 4, large: 8 };
+    const iLevel = (window.DUNGEON_DEPTH || 1) + (iLevelMap[tier] || 1);
+    if (window.LootSystem && window.LootSystem.rollItem) {
+      const item = window.LootSystem.rollItem(null, iLevel);
+      if (item && typeof spawnLoot === 'function') {
+        spawnLoot.call(scene, x, y, item, null);
+      }
+    }
+  }
+
+  obs.destroy();
+}
+window.breakDestructibleObstacle = breakDestructibleObstacle;
+
 // ==================================================
 // 5) UPDATE
 // ==================================================
@@ -2072,7 +2107,10 @@ function initializeGameObjects() {
       }
     }
   });
-  this.physics.add.collider(playerProjectiles, obstacles, (proj) => {
+  this.physics.add.collider(playerProjectiles, obstacles, (proj, obs) => {
+    if (obs && obs.getData && obs.getData('destructible')) {
+      breakDestructibleObstacle(this, obs);
+    }
     if (proj && proj.active) proj.destroy();
   });
 

@@ -1132,6 +1132,25 @@ function attack() {
     }
   }, { requireLineOfSight: true });
 
+  // Melee can also break destructible obstacles (chests, barrels, crates) in front of player
+  if (obstacles && obstacles.children && typeof window.breakDestructibleObstacle === 'function') {
+    const meleeRange = attackRange;
+    const targets = [];
+    obstacles.children.iterate(obs => {
+      if (!obs || !obs.active || !obs.getData || !obs.getData('destructible')) return;
+      const dx = obs.x - player.x;
+      const dy = obs.y - player.y;
+      const distSq = dx * dx + dy * dy;
+      if (distSq > meleeRange * meleeRange) return;
+      const dist = Math.sqrt(distSq);
+      const ndx = dx / dist;
+      const ndy = dy / dist;
+      const dotO = lastMoveDirection.x * ndx + lastMoveDirection.y * ndy;
+      if (dotO > 0.5) targets.push(obs);
+    });
+    targets.forEach(t => window.breakDestructibleObstacle(this, t));
+  }
+
   // Effekt + Angriff abschliessen
   this.time.delayedCall(200, () => {
     isAttacking = false;
