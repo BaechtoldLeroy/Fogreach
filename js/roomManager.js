@@ -359,6 +359,9 @@ function enterRoom(scene, roomId) {
   scene.physics.world.setBounds(0, 0, builtWidth, builtHeight);
   scene.cameras.main.setBounds(0, 0, builtWidth, builtHeight);
 
+  // New room = new walls — invalidate the wall cache
+  invalidateWallCache();
+
   // Reset fog of war for the new room — rebuild RTs sized to new world bounds
   if (typeof scene.initFogOfWar === 'function') {
     if (scene.exploredRT && scene.exploredRT.destroy) scene.exploredRT.destroy();
@@ -888,35 +891,75 @@ function buildRandomRoom(scene, room) {
 
 // --- Vision Tuning ---
 const VISION_RADIUS = 220;
-const VISION_RAYS = 360;
-const VISION_STEP = 3; // feiner an die Wand
+const VISION_RAYS = 180; // 360 was too heavy on CPU in large rooms
+const VISION_STEP = 6; // coarser = faster, still fine enough for walls
 const VISION_WALL_BACKOFF = 0; // nicht vor der Wand zurueckspringen
 const VISION_PAD_EXPLORED = 20; // small overshoot so wall itself is revealed (~half tile)
 const VISION_PAD_UI = 20; // spotlight overshoot (smaller = no see-through walls)
 const VISION_PAD_ENEMY = 8; // enemy mask — tight to walls so enemies stay hidden behind cover
 
-function isBlockedByObstacle(x, y) {
+// Cached wall list — rebuilt when the obstacles group changes.
+// Plus a spatial grid for fast point-in-wall lookup.
+let _wallCache = null;
+let _wallCacheVersion = -1;
+let _wallGrid = null;
+const WALL_GRID_CELL = 64;
+
+function _buildWallCache() {
   const list = obstacles?.getChildren?.() || [];
+  _wallCache = [];
+  _wallGrid = new Map();
   for (let i = 0; i < list.length; i++) {
     const go = list[i];
     if (!go || !go.texture) continue;
     const key = go.texture.key;
-    // Wall textures: obstacleWall + any themed wall_* variant
     const isWall = key === 'obstacleWall' || (typeof key === 'string' && key.startsWith('wall_'));
     if (!isWall) continue;
-
     const b = go.body;
     if (!b || !b.enable) continue;
-
-    if (typeof b.hitTest === "function") {
-      if (b.hitTest(x, y)) return true;
-    } else {
-      const r = b.getBounds ? b.getBounds() : go.getBounds?.();
-      if (r && r.contains(x, y)) return true;
+    const r = b.getBounds ? b.getBounds() : (go.getBounds ? go.getBounds() : null);
+    if (!r) continue;
+    const wall = { go, body: b, rect: r };
+    _wallCache.push(wall);
+    // Bucket by grid cells
+    const gx0 = Math.floor(r.x / WALL_GRID_CELL);
+    const gy0 = Math.floor(r.y / WALL_GRID_CELL);
+    const gx1 = Math.floor((r.x + r.width) / WALL_GRID_CELL);
+    const gy1 = Math.floor((r.y + r.height) / WALL_GRID_CELL);
+    for (let gy = gy0; gy <= gy1; gy++) {
+      for (let gx = gx0; gx <= gx1; gx++) {
+        const k = gx + '|' + gy;
+        let bucket = _wallGrid.get(k);
+        if (!bucket) { bucket = []; _wallGrid.set(k, bucket); }
+        bucket.push(wall);
+      }
     }
+  }
+  _wallCacheVersion = obstacles?._walls_version || 0;
+}
+
+function invalidateWallCache() {
+  _wallCache = null;
+  _wallGrid = null;
+  if (obstacles) obstacles._walls_version = (obstacles._walls_version || 0) + 1;
+}
+
+function isBlockedByObstacle(x, y) {
+  if (!_wallCache || _wallCacheVersion !== (obstacles?._walls_version || 0)) {
+    _buildWallCache();
+  }
+  const gx = Math.floor(x / WALL_GRID_CELL);
+  const gy = Math.floor(y / WALL_GRID_CELL);
+  const bucket = _wallGrid.get(gx + '|' + gy);
+  if (!bucket) return false;
+  for (let i = 0; i < bucket.length; i++) {
+    const w = bucket[i];
+    if (!w.body.enable) continue;
+    if (w.body.hitTest ? w.body.hitTest(x, y) : (w.rect && w.rect.contains(x, y))) return true;
   }
   return false;
 }
+window.invalidateWallCache = invalidateWallCache;
 
 const VISION_MIN_RADIUS = 0; // No artificial minimum — walls block immediately
 

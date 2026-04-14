@@ -61,6 +61,18 @@ function updateMinimap(scene) {
   scene._minimapFrameCounter = (scene._minimapFrameCounter || 0) + 1;
   if (scene._minimapFrameCounter % 5 !== 0) return;
 
+  // Skip LOS recomputation unless player moved more than half a tile
+  if (player && player.active) {
+    const lx = scene._minimapLastPlayerX || 0;
+    const ly = scene._minimapLastPlayerY || 0;
+    const mv = Math.abs(player.x - lx) + Math.abs(player.y - ly);
+    scene._minimapSkipLOS = mv < 16; // less than half-tile movement
+    if (mv >= 16) {
+      scene._minimapLastPlayerX = player.x;
+      scene._minimapLastPlayerY = player.y;
+    }
+  }
+
   const MAP_W = 160;
   const MAP_H = 120;
 
@@ -106,7 +118,7 @@ function updateMinimap(scene) {
   }
 
   // Mark tiles as explored only if they are visible (line of sight respected)
-  if (player && player.active) {
+  if (player && player.active && !scene._minimapSkipLOS) {
     const origin = scene.currentRoom ? scene.currentRoom.origin : { x: 0, y: 0 };
     const ptx = Math.floor((player.x - origin.x) / tileSize);
     const pty = Math.floor((player.y - origin.y) / tileSize);
