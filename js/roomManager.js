@@ -723,11 +723,35 @@ function markRoomCleared() {
   if (tpl && tpl._procedural && !room._rewardGranted) {
     room._rewardGranted = true;
     if (typeof spawnLoot === 'function') {
-      // Tier: 60% Rare (2), 30% Legendary (3), 10% super-boosted (still 3 but higher iLevel)
       const tierRoll = Math.random();
       const rewardTier = tierRoll < 0.6 ? 2 : 3;
-      const rx = player ? player.x + 60 : (scene.physics.world.bounds.x + scene.physics.world.bounds.width / 2);
-      const ry = player ? player.y + 60 : (scene.physics.world.bounds.y + scene.physics.world.bounds.height / 2);
+
+      // Find a safe floor position near the player — prefer accessible, non-wall
+      let rx = (player ? player.x : 0) + 60;
+      let ry = (player ? player.y : 0) + 60;
+      const tryOffsets = [
+        [60, 0], [-60, 0], [0, 60], [0, -60],
+        [80, 80], [-80, 80], [80, -80], [-80, -80],
+        [120, 0], [-120, 0], [0, 120], [0, -120],
+        [150, 150], [-150, 150], [150, -150], [-150, -150],
+      ];
+      let placed = false;
+      if (player) {
+        for (const [dx, dy] of tryOffsets) {
+          const tx = player.x + dx;
+          const ty = player.y + dy;
+          if (scene.isPointAccessible && !scene.isPointAccessible(tx, ty)) continue;
+          if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(tx, ty)) continue;
+          rx = tx; ry = ty; placed = true;
+          break;
+        }
+      }
+      // Last-ditch fallback: use pickAccessibleSpawnPoint
+      if (!placed && scene.pickAccessibleSpawnPoint) {
+        const pick = scene.pickAccessibleSpawnPoint({ minDistance: 60, maxAttempts: 10 });
+        if (pick) { rx = pick.x; ry = pick.y; }
+      }
+
       spawnLoot.call(scene, rx, ry, { type: 'chest_large', locked: false, tier: rewardTier }, null);
       if (window.soundManager) try { window.soundManager.playSFX('level_up'); } catch (e) {}
     }

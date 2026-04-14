@@ -398,18 +398,18 @@
     for (var ec = 1; ec < accessibleChambers.length; ec++) {
       var c = accessibleChambers[ec];
       var floorTiles = (c.w - 2) * (c.h - 2);
-      // Groups per chamber scale with chamber area (denser than before)
-      var groups = Math.max(1, Math.floor(floorTiles / 25));
+      // Dense mob population — more groups per chamber
+      var groups = Math.max(2, Math.floor(floorTiles / 15));
       for (var g = 0; g < groups; g++) {
-        // Group size 4-7 — larger packs like D2 mob density
-        var groupSize = 4 + Math.floor(rng() * 4);
+        // Larger packs — 6-10 per group (was 4-7)
+        var groupSize = 6 + Math.floor(rng() * 5);
         var enemyType = pickEnemyType(rng, theme);
         enemies.push({
           type: enemyType,
           x: c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2)),
           y: c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2)),
           count: groupSize,
-          radius: 3
+          radius: 4
         });
       }
     }
@@ -489,16 +489,16 @@
         }
       }
 
-      // Extra enemy packs — 2-3 big groups per hall
-      var extraGroups = 2 + Math.floor(rng() * 2);
+      // Extra enemy packs in halls — 4-6 big groups, dense
+      var extraGroups = 4 + Math.floor(rng() * 3);
       for (var gg = 0; gg < extraGroups; gg++) {
         var hx = hall.x + 2 + Math.floor(rng() * Math.max(1, hall.w - 4));
         var hy = hall.y + 2 + Math.floor(rng() * Math.max(1, hall.h - 4));
         enemies.push({
           type: pickEnemyType(rng, theme),
           x: hx, y: hy,
-          count: 5 + Math.floor(rng() * 4), // 5-8 per pack
-          radius: 4
+          count: 8 + Math.floor(rng() * 5), // 8-12 per pack
+          radius: 5
         });
       }
 
