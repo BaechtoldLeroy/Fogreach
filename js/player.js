@@ -1043,7 +1043,9 @@ function handleMobileMovement() {
     ? window.__MOBILE_DEAD_ZONE__ : 0.15;
   let targetVx = 0, targetVy = 0;
   if (force > deadZone) {
-    const analog = (force - deadZone) / (1 - deadZone);
+    // rex plugin can report force > 1 when the thumb drags beyond the base
+    // radius; clamp to prevent runaway speed.
+    const analog = Math.min(1, (force - deadZone) / (1 - deadZone));
     const rad = Phaser.Math.DegToRad(joystick.angle);
     targetVx = Math.cos(rad) * effectiveSpeed * analog;
     targetVy = Math.sin(rad) * effectiveSpeed * analog;

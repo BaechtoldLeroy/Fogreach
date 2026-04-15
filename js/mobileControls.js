@@ -168,6 +168,63 @@
     }
   }
 
+  function _rebuildAbilityButtons() {
+    const scene = state.scene;
+    if (!scene) return;
+
+    // Tear down existing buttons + their cooldown texts (ability buttons only;
+    // joystick, bag, and potion glue stay intact).
+    state.buttons.forEach(({ circle }) => { if (circle && circle.destroy) circle.destroy(); });
+    Object.values(state.cooldownTexts).forEach((t) => { if (t && t.destroy) t.destroy(); });
+    state.buttons = [];
+    state.cooldownTexts = {};
+
+    const handlers = {
+      attack: { onDown: attack,              onUp: null },
+      spin:   { onDown: spinAttack,          onUp: null },
+      charge: { onDown: beginChargedSlash,   onUp: releaseChargedSlash },
+      dash:   { onDown: dashSlash,           onUp: null },
+      dagger: { onDown: throwDagger,         onUp: null },
+      shield: { onDown: shieldBash,          onUp: null },
+      potion: { onDown: _usePotion,          onUp: null },
+    };
+    ABILITY_LAYOUT.forEach((spec) => {
+      if (!_isAbilityVisible(spec)) return;
+      const h = handlers[spec.key];
+      if (!h) return;
+      const { circle, hitHalf } = _makeAbilityButton(scene, spec, h.onDown, h.onUp);
+      state.buttons.push({ spec, circle, hitHalf });
+      if (spec.key === 'attack') window.attackBtn = circle;
+      if (spec.key === 'spin')   window.spinBtn = circle;
+      if (spec.key === 'charge') window.chargeSlashBtn = circle;
+      if (spec.key === 'dash')   window.dashSlashBtn = circle;
+      if (spec.key === 'dagger') window.daggerThrowBtn = circle;
+      if (spec.key === 'shield') window.shieldBashBtn = circle;
+    });
+
+    const cdFor = (key) => {
+      if (!state.buttons.some((b) => b.spec.key === key)) return null;
+      const t = _makeCooldownLabel(scene);
+      state.cooldownTexts[key] = t;
+      return t;
+    };
+    window.attackBtnCooldownText        = cdFor('attack');
+    window.spinBtnCooldownText          = cdFor('spin');
+    window.chargeSlashCooldownText      = cdFor('charge');
+    window.dashSlashCooldownText        = cdFor('dash');
+    window.daggerThrowCooldownText      = cdFor('dagger');
+    window.shieldBashCooldownText       = cdFor('shield');
+
+    _positionAll(scene.scale.width, scene.scale.height);
+    _dispatch('demonfall:mobile-layout-ready', {
+      scene,
+      buttons: state.buttons.map(({ spec, circle, hitHalf }) => ({ spec, circle, hitHalf })),
+      joystick: state.joystick,
+      inventoryBtn: state.inventoryBtn,
+      cooldownTexts: Object.assign({}, state.cooldownTexts),
+    });
+  }
+
   function initMobileControls(scene) {
     state.scene = scene;
     state.buttons = [];
@@ -274,6 +331,16 @@
       inventoryBtn: state.inventoryBtn,
       cooldownTexts: Object.assign({}, state.cooldownTexts),
     });
+
+    // Rebuild mobile buttons whenever the desktop HUD refreshes (i.e. when
+    // the loadout changes or a new ability is learned/equipped).
+    const prevRefresh = window._refreshAbilityHUD;
+    window._refreshAbilityHUD = function () {
+      if (typeof prevRefresh === 'function') {
+        try { prevRefresh.apply(this, arguments); } catch (e) { /* ignore */ }
+      }
+      try { _rebuildAbilityButtons(); } catch (e) { console.warn('[mobileControls] rebuild failed', e); }
+    };
   }
 
   function getMobileAbilityButtonAnchor() {
