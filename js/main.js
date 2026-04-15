@@ -1965,119 +1965,13 @@ function initUI() {
 // 6.2 initControls: Joystick & Buttons
 function initControls() {
   if (isMobile) {
-
-    // 4.3b Inventar-Button
-    const invBtn = this.add.text(this.scale.width - 16, 16, 'Bag',
-      { fontSize: '16px', fill: '#fff', backgroundColor: '#222', padding: { x: 6, y: 4 } })
-      .setOrigin(1, 0).setScrollFactor(0).setDepth(4000).setInteractive()
-      .on('pointerdown', () => { invOpen ? closeInventory() : openInventory(); });
-    this.scale.on('resize', s => invBtn.setPosition(s.width - 16, 16));
-
-
-    // Joystick
-    joystick = this.plugins.get('rexVirtualJoystick').add(this, {
-      x: 100,
-      y: this.scale.height - 100,
-      radius: 60,
-      base: this.add.circle(0, 0, 60, 0x888888, 0.3),
-      thumb: this.add.circle(0, 0, 30, 0xcccccc, 0.5)
-    });
-    joystick.base.setScrollFactor(0).setDepth(100);
-    joystick.thumb.setScrollFactor(0).setDepth(100);
-
-    const abilityButtons = [];
-    const abilityTexts = [];
-
-    const registerAbilityButton = (key, btn, dx, dy) => {
-      abilityButtons.push({ key, btn, dx, dy });
-    };
-
-    const registerAbilityText = (key, text, dx, dy) => {
-      abilityTexts.push({ key, text, dx, dy });
-    };
-
-    const createAbilityButton = (key, dx, dy, radius, color, onDown, onUp) => {
-      const btn = this.add.circle(0, 0, radius, color, 0.6)
-        .setInteractive()
-        .setScrollFactor(0)
-        .setDepth(100);
-      btn.on('pointerdown', () => onDown.call(this));
-      if (onUp) {
-        const release = () => onUp.call(this);
-        btn.on('pointerup', release);
-        btn.on('pointerupoutside', release);
-        btn.on('pointerout', release);
-      }
-      registerAbilityButton(key, btn, dx, dy);
-      return btn;
-    };
-
-    const createCooldownLabel = () => this.add.text(0, 0, '', {
-      fontSize: '18px', fill: '#fff', align: 'center'
-    })
-      .setOrigin(0.5)
-      .setDepth(101)
-      .setScrollFactor(0)
-      .setVisible(false);
-
-    attackBtn = createAbilityButton('attack', -100, -100, 40, 0xff0000, attack);
-    spinBtn = createAbilityButton('spin', -200, -100, 40, 0x00ffff, spinAttack);
-    chargeSlashBtn = createAbilityButton('charge', -100, -190, 34, 0xffaa00, beginChargedSlash, releaseChargedSlash);
-    dashSlashBtn = createAbilityButton('dash', -200, -190, 34, 0x66ccff, dashSlash);
-    daggerThrowBtn = createAbilityButton('dagger', -300, -100, 34, 0xff8800, throwDagger);
-    shieldBashBtn = createAbilityButton('shield', -300, -190, 34, 0x66ffaa, shieldBash);
-
-    attackBtnCooldownText?.destroy();
-    spinBtnCooldownText?.destroy();
-    chargeSlashCooldownText?.destroy();
-    dashSlashCooldownText?.destroy();
-    daggerThrowCooldownText?.destroy();
-    shieldBashCooldownText?.destroy();
-
-    attackBtnCooldownText = createCooldownLabel();
-    spinBtnCooldownText = createCooldownLabel();
-    chargeSlashCooldownText = createCooldownLabel();
-    dashSlashCooldownText = createCooldownLabel();
-    daggerThrowCooldownText = createCooldownLabel();
-    shieldBashCooldownText = createCooldownLabel();
-
-    registerAbilityText('attack', attackBtnCooldownText, -100, -100);
-    registerAbilityText('spin', spinBtnCooldownText, -200, -100);
-    registerAbilityText('charge', chargeSlashCooldownText, -100, -190);
-    registerAbilityText('dash', dashSlashCooldownText, -200, -190);
-    registerAbilityText('dagger', daggerThrowCooldownText, -300, -100);
-    registerAbilityText('shield', shieldBashCooldownText, -300, -190);
-
-    const positionAbilityUI = (width, height) => {
-      abilityButtons.forEach(({ btn, dx, dy }) => btn?.setPosition(width + dx, height + dy));
-      abilityTexts.forEach(({ text, dx, dy }) => text?.setPosition(width + dx, height + dy));
-    };
-
-    positionAbilityUI(this.scale.width, this.scale.height);
-    this.scale.on('resize', (gameSize) => {
-      positionAbilityUI(gameSize.width, gameSize.height);
-    });
+    if (typeof window.initMobileControls === 'function') {
+      window.initMobileControls(this);
+    } else {
+      console.warn('[initControls] mobileControls.js not loaded');
+    }
   } else {
     spinKey = this.input.keyboard.addKey('SHIFT');
-  }
-
-  // UI-Elemente nicht von Fog beeinflussen lassen
-  if (isMobile) {
-    joystick.base.setScrollFactor(0).setDepth(1200).clearMask?.();
-    joystick.thumb.setScrollFactor(0).setDepth(1200).clearMask?.();
-    attackBtn?.setScrollFactor(0).setDepth(1200).clearMask?.();
-    spinBtn?.setScrollFactor(0).setDepth(1200).clearMask?.();
-    chargeSlashBtn?.setScrollFactor(0).setDepth(1200).clearMask?.();
-    dashSlashBtn?.setScrollFactor(0).setDepth(1200).clearMask?.();
-    daggerThrowBtn?.setScrollFactor(0).setDepth(1200).clearMask?.();
-    shieldBashBtn?.setScrollFactor(0).setDepth(1200).clearMask?.();
-    // falls vorhanden:
-    attackBtnCooldownText?.setScrollFactor(0).setDepth(1201);
-    spinBtnCooldownText?.setScrollFactor(0).setDepth(1201);
-    chargeSlashCooldownText?.setScrollFactor(0).setDepth(1201);
-    dashSlashCooldownText?.setScrollFactor(0).setDepth(1201);
-    daggerThrowCooldownText?.setScrollFactor(0).setDepth(1201);
-    shieldBashCooldownText?.setScrollFactor(0).setDepth(1201);
   }
 }
 
