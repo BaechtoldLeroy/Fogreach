@@ -1036,12 +1036,17 @@ function handleMobileMovement() {
     effectiveSpeed *= (1 - 0.6 * moveWeight);
   }
 
+  // WP03: analog force with dead zone. Force < deadZone → zero velocity,
+  // above dead zone → proportional speed up to effectiveSpeed.
   const force = joystick.force;       // 0.0 … 1.0
+  const deadZone = typeof window.__MOBILE_DEAD_ZONE__ === 'number'
+    ? window.__MOBILE_DEAD_ZONE__ : 0.15;
   let targetVx = 0, targetVy = 0;
-  if (force > 0) {
+  if (force > deadZone) {
+    const analog = (force - deadZone) / (1 - deadZone);
     const rad = Phaser.Math.DegToRad(joystick.angle);
-    targetVx = Math.cos(rad) * effectiveSpeed;
-    targetVy = Math.sin(rad) * effectiveSpeed;
+    targetVx = Math.cos(rad) * effectiveSpeed * analog;
+    targetVy = Math.sin(rad) * effectiveSpeed * analog;
     lastMoveDirection.set(Math.cos(rad), Math.sin(rad));
   }
 
