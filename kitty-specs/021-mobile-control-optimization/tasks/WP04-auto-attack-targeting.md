@@ -6,11 +6,7 @@ requirement_refs: [FR-011, FR-012]
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
-base_branch: 021-mobile-control-optimization-WP01
-base_commit: bef362b3c0a28afa183be4e518751b03b1b737b6
-created_at: '2026-04-15T20:03:47.320684+00:00'
 subtasks: [T001, T002, T003]
-shell_pid: "57612"
 history:
 - action: created
   agent: claude
@@ -111,7 +107,3 @@ WP01 exports a helper `setLastMoveDirection(dx, dy)` from mobileControls that th
 ```
 spec-kitty implement WP04 --base WP01
 ```
-
-## Activity Log
-
-- 2026-04-15T20:05:04Z – unknown – shell_pid=57612 – lane=for_review – WP04 complete: nearest-enemy auto-aim on stationary attack.
