@@ -5,6 +5,8 @@
 (function () {
   const STORAGE_KEY = 'demonfall_settings_v1';
 
+  const MOBILE_BUTTON_SCALES = [0.8, 1.0, 1.2];
+
   const DEFAULTS = {
     master: 0.5,
     music: 0.3,
@@ -14,6 +16,12 @@
     debug: {
       autostart: false,
       noFow: false
+    },
+    mobile: {
+      deadZone: 0.15,
+      haptics: true,
+      autoAim: true,
+      buttonScale: 1.0
     }
   };
 
@@ -23,7 +31,8 @@
       if (!raw) return JSON.parse(JSON.stringify(DEFAULTS));
       const parsed = JSON.parse(raw);
       return Object.assign({}, DEFAULTS, parsed, {
-        debug: Object.assign({}, DEFAULTS.debug, parsed.debug || {})
+        debug: Object.assign({}, DEFAULTS.debug, parsed.debug || {}),
+        mobile: Object.assign({}, DEFAULTS.mobile, parsed.mobile || {})
       });
     } catch (err) {
       return JSON.parse(JSON.stringify(DEFAULTS));
@@ -51,6 +60,15 @@
     window.__MOVEMENT_WEIGHT__ = typeof settings.movementWeight === 'number'
       ? Math.max(0, Math.min(1, settings.movementWeight))
       : 0;
+
+    const m = (settings.mobile && typeof settings.mobile === 'object')
+      ? settings.mobile : DEFAULTS.mobile;
+    window.__MOBILE_DEAD_ZONE__ = Math.max(0, Math.min(0.4,
+      typeof m.deadZone === 'number' ? m.deadZone : DEFAULTS.mobile.deadZone));
+    window.__MOBILE_HAPTICS__ = m.haptics !== undefined ? !!m.haptics : true;
+    window.__MOBILE_AUTO_AIM__ = m.autoAim !== undefined ? !!m.autoAim : true;
+    window.__MOBILE_BUTTON_SCALE__ = MOBILE_BUTTON_SCALES.includes(m.buttonScale)
+      ? m.buttonScale : 1.0;
   }
 
   // Expose so other code (e.g. startScene) can apply on game boot
@@ -103,6 +121,22 @@
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'STEUERUNG');
       rowY += 22;
       this._volumeRow(px, rowY, 'Gewicht (D2-Feel)', 'movementWeight', panelW); rowY += 36;
+
+      // -- Mobile section (only on touch devices) --
+      const isTouch = !!(this.sys && this.sys.game && this.sys.game.device
+        && this.sys.game.device.input && this.sys.game.device.input.touch);
+      if (isTouch) {
+        this._sectionLabel(px - panelW / 2 + 20, rowY, 'MOBILE');
+        rowY += 22;
+        this._sliderRow(px, rowY, 'Totzone', 'mobile.deadZone', panelW, {
+          min: 0, max: 0.4, step: 0.05, format: (v) => Math.round(v * 100) + '%'
+        }); rowY += 32;
+        this._toggleRow(px, rowY, 'Vibration', 'mobile.haptics', panelW); rowY += 32;
+        this._toggleRow(px, rowY, 'Auto-Aim', 'mobile.autoAim', panelW); rowY += 32;
+        this._pickerRow(px, rowY, 'Button-Groesse', 'mobile.buttonScale',
+          MOBILE_BUTTON_SCALES, (v) => Math.round(v * 100) + '%', panelW);
+        rowY += 36;
+      }
 
       // -- Debug section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'DEBUG');
@@ -206,6 +240,67 @@
       plusBg.on('pointerdown', () => {
         const cur = this._getSetting(settingKey);
         this._setSetting(settingKey, Math.min(1, Math.round((cur + 0.1) * 10) / 10));
+        refresh();
+      });
+    }
+
+    _sliderRow(centerX, y, label, settingKey, panelW, opts) {
+      const min = (opts && typeof opts.min === 'number') ? opts.min : 0;
+      const max = (opts && typeof opts.max === 'number') ? opts.max : 1;
+      const step = (opts && typeof opts.step === 'number') ? opts.step : 0.1;
+      const fmt = (opts && typeof opts.format === 'function')
+        ? opts.format : (v) => Math.round(v * 100) + '%';
+      const round = (v) => Math.round(v / step) * step;
+      this.add.text(centerX - panelW / 2 + 20, y, label + ':', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
+      }).setScrollFactor(0).setDepth(2002);
+      const valueText = this.add.text(centerX + 60, y, '', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
+      const refresh = () => valueText.setText(fmt(this._getSetting(settingKey)));
+      refresh();
+      const minusBg = this.add.rectangle(centerX + 4, y + 8, 24, 22, 0x2a2a2a)
+        .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2002)
+        .setInteractive({ useHandCursor: true });
+      this.add.text(centerX + 4, y + 8, '-', {
+        fontFamily: 'monospace', fontSize: '14px', color: '#ffffff'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
+      minusBg.on('pointerdown', () => {
+        const cur = this._getSetting(settingKey);
+        this._setSetting(settingKey, Math.max(min, round(cur - step)));
+        refresh();
+      });
+      const plusBg = this.add.rectangle(centerX + 110, y + 8, 24, 22, 0x2a2a2a)
+        .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2002)
+        .setInteractive({ useHandCursor: true });
+      this.add.text(centerX + 110, y + 8, '+', {
+        fontFamily: 'monospace', fontSize: '14px', color: '#ffffff'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
+      plusBg.on('pointerdown', () => {
+        const cur = this._getSetting(settingKey);
+        this._setSetting(settingKey, Math.min(max, round(cur + step)));
+        refresh();
+      });
+    }
+
+    _pickerRow(centerX, y, label, settingKey, options, format, panelW) {
+      this.add.text(centerX - panelW / 2 + 20, y, label + ':', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
+      }).setScrollFactor(0).setDepth(2002);
+      const valueText = this.add.text(centerX + 80, y, '', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
+      const refresh = () => valueText.setText(format(this._getSetting(settingKey)));
+      refresh();
+      const btnBg = this.add.rectangle(centerX + 80, y + 8, 60, 22, 0x2a2a2a)
+        .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2001)
+        .setInteractive({ useHandCursor: true });
+      btnBg.on('pointerdown', () => {
+        const cur = this._getSetting(settingKey);
+        let i = options.indexOf(cur);
+        if (i < 0) i = 0;
+        const next = options[(i + 1) % options.length];
+        this._setSetting(settingKey, next);
         refresh();
       });
     }
