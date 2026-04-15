@@ -1,15 +1,15 @@
 {
-  "event_count": 6,
+  "event_count": 9,
   "feature_slug": "021-mobile-control-optimization",
-  "last_event_id": "01KP9BJ7ZNHNYAFCAW9HPCMM4R",
-  "materialized_at": "2026-04-15T19:58:19.143867+00:00",
+  "last_event_id": "01KP9BVVSY2H8MZBRZ7SP77ZPY",
+  "materialized_at": "2026-04-15T20:03:34.351044+00:00",
   "summary": {
     "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 2,
+    "for_review": 3,
     "in_progress": 0,
     "planned": 0
   },
@@ -27,6 +27,13 @@
       "lane": "for_review",
       "last_event_id": "01KP9BJ7ZNHNYAFCAW9HPCMM4R",
       "last_transition_at": "2026-04-15T19:58:19.125528+00:00"
+    },
+    "WP03": {
+      "actor": "user",
+      "force_count": 0,
+      "lane": "for_review",
+      "last_event_id": "01KP9BVVSY2H8MZBRZ7SP77ZPY",
+      "last_transition_at": "2026-04-15T20:03:34.334384+00:00"
     }
   }
 }
