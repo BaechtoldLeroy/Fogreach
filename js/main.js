@@ -1967,6 +1967,10 @@ function initControls() {
   if (isMobile) {
     if (typeof window.initMobileControls === 'function') {
       window.initMobileControls(this);
+      // The rex joystick lives inside mobileControls.js; main.js's
+      // handleMobileMovement reads the module-scoped `joystick` binding,
+      // so publish it back here.
+      joystick = window.joystick || null;
     } else {
       console.warn('[initControls] mobileControls.js not loaded');
     }

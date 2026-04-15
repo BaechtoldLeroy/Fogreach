@@ -104,10 +104,10 @@
     const btn = scene.add.circle(0, 0, visualRadius, spec.color, 0.6)
       .setScrollFactor(0)
       .setDepth(1200);
-    btn.setInteractive(
-      new Phaser.Geom.Rectangle(-hitHalf, -hitHalf, hitHalf * 2, hitHalf * 2),
-      Phaser.Geom.Rectangle.Contains
-    );
+    // Use default interactive — for Arc the built-in hit test uses the circle
+    // itself. A custom Rectangle hitArea on an Arc GameObject can fail to
+    // register taps depending on Phaser's local-space handling.
+    btn.setInteractive({ useHandCursor: true });
 
     btn.on('pointerdown', () => {
       _dispatch('demonfall:ability-tap', { ability: spec.key });
