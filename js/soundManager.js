@@ -143,6 +143,8 @@ class SoundManager {
         case 'ability_dagger': this._sfxAbilityDagger(now); break;
         case 'ability_shield': this._sfxAbilityShield(now); break;
         case 'loot_pickup': this._sfxLootPickup(now); break;
+        case 'loot_rare': this._sfxLootRare(now); break;
+        case 'loot_legendary': this._sfxLootLegendary(now); break;
         case 'level_up': this._sfxLevelUp(now); break;
         case 'ui_click': this._sfxUIClick(now); break;
         case 'quest_complete': this._sfxQuestComplete(now); break;
@@ -408,6 +410,92 @@ class SoundManager {
   }
 
   // Quest complete: fanfare major chord arpeggio (C-E-G)
+  // Rare drop: bright two-note bell jingle (D2-style chime)
+  _sfxLootRare(t) {
+    const notes = [
+      { f: 988, dur: 0.35 },  // B5
+      { f: 1318, dur: 0.45 }  // E6
+    ];
+    notes.forEach((n, i) => {
+      const offset = i * 0.09;
+      const fundamental = this.context.createOscillator();
+      const overtone = this.context.createOscillator();
+      const gain = this.context.createGain();
+      fundamental.type = 'triangle';
+      overtone.type = 'sine';
+      fundamental.frequency.setValueAtTime(n.f, t + offset);
+      overtone.frequency.setValueAtTime(n.f * 2, t + offset);
+      gain.gain.setValueAtTime(0.0, t + offset);
+      gain.gain.linearRampToValueAtTime(0.28, t + offset + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + offset + n.dur);
+      fundamental.connect(gain);
+      overtone.connect(gain);
+      gain.connect(this._sfxGain);
+      fundamental.start(t + offset);
+      overtone.start(t + offset);
+      fundamental.stop(t + offset + n.dur + 0.02);
+      overtone.stop(t + offset + n.dur + 0.02);
+    });
+  }
+
+  // Legendary drop: grand ascending arpeggio with shimmer (D2 unique-style)
+  _sfxLootLegendary(t) {
+    const notes = [
+      { f: 523, dur: 0.35 },   // C5
+      { f: 784, dur: 0.35 },   // G5
+      { f: 1047, dur: 0.45 },  // C6
+      { f: 1568, dur: 0.80 }   // G6 sustained
+    ];
+    notes.forEach((n, i) => {
+      const offset = i * 0.11;
+      const fundamental = this.context.createOscillator();
+      const overtone = this.context.createOscillator();
+      const detune = this.context.createOscillator();
+      const gain = this.context.createGain();
+      fundamental.type = 'triangle';
+      overtone.type = 'sine';
+      detune.type = 'sine';
+      fundamental.frequency.setValueAtTime(n.f, t + offset);
+      overtone.frequency.setValueAtTime(n.f * 2, t + offset);
+      detune.frequency.setValueAtTime(n.f * 3, t + offset);
+      gain.gain.setValueAtTime(0.0, t + offset);
+      gain.gain.linearRampToValueAtTime(0.30, t + offset + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + offset + n.dur);
+      fundamental.connect(gain);
+      overtone.connect(gain);
+      detune.connect(gain);
+      gain.connect(this._sfxGain);
+      fundamental.start(t + offset);
+      overtone.start(t + offset);
+      detune.start(t + offset);
+      fundamental.stop(t + offset + n.dur + 0.02);
+      overtone.stop(t + offset + n.dur + 0.02);
+      detune.stop(t + offset + n.dur + 0.02);
+    });
+
+    // Shimmer tail — tremolo sine on final note
+    const shimmer = this.context.createOscillator();
+    const shimmerGain = this.context.createGain();
+    const lfo = this.context.createOscillator();
+    const lfoGain = this.context.createGain();
+    shimmer.type = 'sine';
+    shimmer.frequency.setValueAtTime(2093, t + 0.44); // C7
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(14, t + 0.44);
+    lfoGain.gain.setValueAtTime(0.08, t + 0.44);
+    lfo.connect(lfoGain);
+    lfoGain.connect(shimmerGain.gain);
+    shimmerGain.gain.setValueAtTime(0.0, t + 0.44);
+    shimmerGain.gain.linearRampToValueAtTime(0.12, t + 0.46);
+    shimmerGain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+    shimmer.connect(shimmerGain);
+    shimmerGain.connect(this._sfxGain);
+    shimmer.start(t + 0.44);
+    lfo.start(t + 0.44);
+    shimmer.stop(t + 1.22);
+    lfo.stop(t + 1.22);
+  }
+
   _sfxQuestComplete(t) {
     const freqs = [523, 659, 784];
     freqs.forEach((f, i) => {
@@ -451,89 +539,125 @@ class SoundManager {
       } catch (e) { /* already stopped */ }
     });
     this._musicNodes = [];
+    if (this._musicTimers) {
+      this._musicTimers.forEach(id => { try { clearInterval(id); } catch (e) {} });
+      this._musicTimers = [];
+    }
+  }
+
+  // Helper: schedule a sparse arpeggio pattern over a pad.
+  // `notes` is an array of Hz values; plays one every `intervalMs`.
+  _scheduleArpeggio(notes, intervalMs, gainVal, oscType, destGain, filterFreq) {
+    if (!this._musicTimers) this._musicTimers = [];
+    let i = 0;
+    const playOne = () => {
+      if (!this._initialized) return;
+      const t = this.context.currentTime;
+      const f = notes[i % notes.length];
+      i++;
+      const osc = this.context.createOscillator();
+      const gain = this.context.createGain();
+      const filter = this.context.createBiquadFilter();
+      osc.type = oscType || 'sine';
+      osc.frequency.setValueAtTime(f, t);
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(filterFreq || 1200, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(gainVal, t + 1.0);         // slow attack
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + intervalMs / 1000 * 0.9);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(destGain);
+      osc.start(t);
+      osc.stop(t + intervalMs / 1000 + 0.2);
+    };
+    playOne();
+    const id = setInterval(playOne, intervalMs);
+    this._musicTimers.push(id);
   }
 
   // Hub ambient: soft low drone + gentle pad
   _musicHub() {
     const now = this.context.currentTime;
 
-    // Base drone at ~100Hz
-    const drone = this.context.createOscillator();
-    drone.type = 'sine';
-    drone.frequency.setValueAtTime(100, now);
-    const droneGain = this.context.createGain();
-    droneGain.gain.setValueAtTime(0.08, now);
-    drone.connect(droneGain);
-    droneGain.connect(this._musicGain);
-    drone.start(now);
-    this._musicNodes.push(drone, droneGain);
-
-    // Gentle pad at ~300Hz
-    const pad = this.context.createOscillator();
-    pad.type = 'sine';
-    pad.frequency.setValueAtTime(300, now);
+    // Soft breathing pad in D minor — three detuned voices through a lowpass,
+    // amplitude LFO so it swells/recedes instead of droning flatly.
+    const padFreqs = [146.83, 220.00, 293.66]; // D3, A3, D4
+    const filter = this.context.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(900, now);
+    filter.Q.setValueAtTime(0.7, now);
     const padGain = this.context.createGain();
-    padGain.gain.setValueAtTime(0.04, now);
-    // Slow LFO for gentle movement
+    padGain.gain.setValueAtTime(0.0, now);
+    padGain.gain.linearRampToValueAtTime(0.05, now + 3.0); // slow fade-in
+    filter.connect(padGain);
+    padGain.connect(this._musicGain);
+
     const lfo = this.context.createOscillator();
     lfo.type = 'sine';
-    lfo.frequency.setValueAtTime(0.3, now);
+    lfo.frequency.setValueAtTime(0.08, now); // ~12s breath cycle
     const lfoGain = this.context.createGain();
-    lfoGain.gain.setValueAtTime(0.02, now);
+    lfoGain.gain.setValueAtTime(0.025, now);
     lfo.connect(lfoGain);
     lfoGain.connect(padGain.gain);
-    pad.connect(padGain);
-    padGain.connect(this._musicGain);
-    pad.start(now);
     lfo.start(now);
-    this._musicNodes.push(pad, padGain, lfo, lfoGain);
+    this._musicNodes.push(lfo, lfoGain, filter, padGain);
+
+    padFreqs.forEach((f, i) => {
+      const osc = this.context.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, now);
+      osc.detune.setValueAtTime((i - 1) * 6, now); // slight chorus
+      osc.connect(filter);
+      osc.start(now);
+      this._musicNodes.push(osc);
+    });
+
+    // Sparse warm arpeggio on top (notes from D-minor pentatonic, 4-octave)
+    const arp = [587.33, 880.00, 1046.50, 698.46]; // D5, A5, C6, F5
+    this._scheduleArpeggio(arp, 4200, 0.028, 'triangle', this._musicGain, 1500);
   }
 
   // Dungeon ambient: darker drone + dissonant tension
   _musicDungeon() {
     const now = this.context.currentTime;
 
-    // Dark drone at ~80Hz
-    const drone = this.context.createOscillator();
-    drone.type = 'sine';
-    drone.frequency.setValueAtTime(80, now);
-    const droneGain = this.context.createGain();
-    droneGain.gain.setValueAtTime(0.1, now);
-    drone.connect(droneGain);
-    droneGain.connect(this._musicGain);
-    drone.start(now);
-    this._musicNodes.push(drone, droneGain);
+    // Dark breathing pad — open filter so it doesn't sound muffled; no detune
+    // (the detune + lowpass was creating a "dumpf" beating drone).
+    const padFreqs = [73.42, 110.00, 233.08]; // D2, A2, Bb3
+    const filter = this.context.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1600, now);
+    filter.Q.setValueAtTime(0.5, now);
+    const padGain = this.context.createGain();
+    padGain.gain.setValueAtTime(0.0, now);
+    padGain.gain.linearRampToValueAtTime(0.06, now + 4.0);
+    filter.connect(padGain);
+    padGain.connect(this._musicGain);
 
-    // Dissonant layer at tritone interval (~113Hz)
-    const dissonant = this.context.createOscillator();
-    dissonant.type = 'triangle';
-    dissonant.frequency.setValueAtTime(113, now);
-    const disGain = this.context.createGain();
-    disGain.gain.setValueAtTime(0.03, now);
-    // Slow pulse to create tension
+    // Slow swell LFO (~16s cycle) for tension breathing.
     const lfo = this.context.createOscillator();
     lfo.type = 'sine';
-    lfo.frequency.setValueAtTime(0.15, now);
+    lfo.frequency.setValueAtTime(0.06, now);
     const lfoGain = this.context.createGain();
-    lfoGain.gain.setValueAtTime(0.025, now);
+    lfoGain.gain.setValueAtTime(0.03, now);
     lfo.connect(lfoGain);
-    lfoGain.connect(disGain.gain);
-    dissonant.connect(disGain);
-    disGain.connect(this._musicGain);
-    dissonant.start(now);
+    lfoGain.connect(padGain.gain);
     lfo.start(now);
-    this._musicNodes.push(dissonant, disGain, lfo, lfoGain);
+    this._musicNodes.push(lfo, lfoGain, filter, padGain);
 
-    // Subtle high-frequency tension
-    const high = this.context.createOscillator();
-    high.type = 'sine';
-    high.frequency.setValueAtTime(440, now);
-    const highGain = this.context.createGain();
-    highGain.gain.setValueAtTime(0.015, now);
-    high.connect(highGain);
-    highGain.connect(this._musicGain);
-    high.start(now);
-    this._musicNodes.push(high, highGain);
+    padFreqs.forEach((f) => {
+      const osc = this.context.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, now);
+      osc.connect(filter);
+      osc.start(now);
+      this._musicNodes.push(osc);
+    });
+
+    // Rare, sparse high dissonance (every ~7s) in minor second/tritone for unease
+    const stingers = [932.33, 1244.51, 698.46]; // Bb5, Eb6, F5
+    this._scheduleArpeggio(stingers, 7200, 0.018, 'sine', this._musicGain, 2200);
   }
 
   // Boss music: pulsing bass + higher tension
