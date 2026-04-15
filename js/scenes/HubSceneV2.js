@@ -54,6 +54,23 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     this.cursors = this.input.keyboard.createCursorKeys();
+
+    // Mobile: add a fixed virtual joystick in the bottom-left.
+    const isTouch = !!(this.sys && this.sys.game && this.sys.game.device
+      && this.sys.game.device.input && this.sys.game.device.input.touch);
+    if (isTouch && this.plugins.get('rexVirtualJoystick')) {
+      const base = this.add.circle(0, 0, 60, 0x888888, 0.3);
+      const thumb = this.add.circle(0, 0, 30, 0xcccccc, 0.5);
+      this.hubJoystick = this.plugins.get('rexVirtualJoystick').add(this, {
+        x: 100,
+        y: this.scale.height - 100,
+        radius: 60,
+        base,
+        thumb,
+      });
+      base.setScrollFactor(0).setDepth(1200);
+      thumb.setScrollFactor(0).setDepth(1200);
+    }
     this.input.keyboard.on('keydown-E', this._handleInteract, this);
     this.input.keyboard.on('keydown-M', () => {
       if (window.soundManager) window.soundManager.toggleMute();
@@ -407,10 +424,22 @@ class HubSceneV2 extends Phaser.Scene {
       if (this.cursors.right.isDown) inputX += 1;
       if (this.cursors.up.isDown) inputY -= 1;
       if (this.cursors.down.isDown) inputY += 1;
-      const len = Math.hypot(inputX, inputY) || 1;
       const speed = (typeof playerSpeed !== 'undefined' ? playerSpeed : 220);
-      const velX = (inputX / len) * speed;
-      const velY = (inputY / len) * speed;
+      let velX, velY;
+      // Joystick takes precedence on mobile when deflected past dead zone.
+      const jForce = (this.hubJoystick && this.hubJoystick.force) || 0;
+      const deadZone = typeof window.__MOBILE_DEAD_ZONE__ === 'number'
+        ? window.__MOBILE_DEAD_ZONE__ : 0.15;
+      if (jForce > deadZone) {
+        const analog = Math.min(1, (jForce - deadZone) / (1 - deadZone));
+        const rad = Phaser.Math.DegToRad(this.hubJoystick.angle);
+        velX = Math.cos(rad) * speed * analog;
+        velY = Math.sin(rad) * speed * analog;
+      } else {
+        const len = Math.hypot(inputX, inputY) || 1;
+        velX = (inputX / len) * speed * (inputX || inputY ? 1 : 0);
+        velY = (inputY / len) * speed * (inputX || inputY ? 1 : 0);
+      }
       p.setVelocity(velX, velY);
       if (typeof updatePlayerSpriteAnimation === 'function') {
         updatePlayerSpriteAnimation(p, velX, velY);
