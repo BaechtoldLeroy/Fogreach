@@ -68,3 +68,19 @@ spec-kitty constitution context --action review --json
 ```
 
 Use JSON `text` as governance context. If `mode=bootstrap`, follow referenced docs as needed.
+
+## Reference Documents
+
+Constitution references are managed via `references.yaml`. To add a reference document:
+
+```bash
+spec-kitty constitution interview --add-reference <path-or-url>
+```
+
+Reference documents are stored in `.kittify/constitution/library/` and linked in the generated constitution.
+
+## Troubleshooting
+
+- If `constitution status` reports stale, regenerate with `constitution generate --from-interview --force`.
+- If interview answers are missing, rerun `constitution interview` to capture them.
+- Constitution changes require regeneration — editing `constitution.md` directly is not persistent.

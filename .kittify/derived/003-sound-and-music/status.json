@@ -1,0 +1,25 @@
+{
+  "event_count": 1,
+  "feature_slug": "003-sound-and-music",
+  "last_event_id": "01KNVTBGWEC4TNK3G7A9SRTZM6",
+  "materialized_at": "2026-04-10T14:23:26.325408+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KNVTBGWEC4TNK3G7A9SRTZM6",
+      "last_transition_at": "2026-04-10T13:47:25.454793+00:00"
+    }
+  }
+}

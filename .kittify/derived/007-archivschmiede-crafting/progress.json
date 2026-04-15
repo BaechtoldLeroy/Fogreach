@@ -1,0 +1,18 @@
+{
+  "done_count": 1,
+  "feature_slug": "007-archivschmiede-crafting",
+  "per_lane_counts": {
+    "done": 1
+  },
+  "per_wp": [
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP01",
+      "wp_weight": 1.0
+    }
+  ],
+  "percentage": 100.0,
+  "total_count": 1
+}

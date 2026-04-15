@@ -1,0 +1,25 @@
+{
+  "done_count": 2,
+  "feature_slug": "001-fix-player-collision",
+  "per_lane_counts": {
+    "done": 2
+  },
+  "per_wp": [
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP01",
+      "wp_weight": 1.0
+    },
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP02",
+      "wp_weight": 1.0
+    }
+  ],
+  "percentage": 100.0,
+  "total_count": 2
+}

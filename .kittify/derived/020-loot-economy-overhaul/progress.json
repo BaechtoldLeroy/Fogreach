@@ -1,0 +1,67 @@
+{
+  "done_count": 8,
+  "feature_slug": "020-loot-economy-overhaul",
+  "per_lane_counts": {
+    "done": 8
+  },
+  "per_wp": [
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP01",
+      "wp_weight": 1.0
+    },
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP02",
+      "wp_weight": 1.0
+    },
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP03",
+      "wp_weight": 1.0
+    },
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP04",
+      "wp_weight": 1.0
+    },
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP05",
+      "wp_weight": 1.0
+    },
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP06",
+      "wp_weight": 1.0
+    },
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP07",
+      "wp_weight": 1.0
+    },
+    {
+      "fractional_progress": 1.0,
+      "lane": "done",
+      "lane_weight": 1.0,
+      "wp_id": "WP08",
+      "wp_weight": 1.0
+    }
+  ],
+  "percentage": 100.0,
+  "total_count": 8
+}

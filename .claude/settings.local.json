@@ -47,7 +47,25 @@
       "Bash(grep -l \"brazier\" js/roomTemplates/*.json)",
       "Bash(grep -v \"//\")",
       "Bash(ls js/roomTemplates/*.json)",
-      "Bash(ls test-output/*.png)"
+      "Bash(ls test-output/*.png)",
+      "Bash(python -c \"import spec_kitty; print\\(spec_kitty.__file__\\)\")",
+      "Bash(ls *.js *.json)",
+      "Bash(pkill -f \"serve -l 3456\")",
+      "Bash(tasklist)",
+      "Bash(taskkill:*)",
+      "Bash(python -m http.server 3456 --bind 127.0.0.1)",
+      "Bash(xargs -I{} taskkill //PID {} //F)",
+      "Bash(ls -la *.ps1 *.bat serve.*)",
+      "Bash(xargs -I {} taskkill //F //PID {})",
+      "Bash(PORT=3456 npx serve --no-clipboard .)",
+      "Bash(wmic process:*)",
+      "Bash(powershell.exe -Command \"Get-Process -Id 48696 | Format-List Path,CommandLine\")",
+      "Bash(powershell.exe -Command \"\\(Get-CimInstance Win32_Process -Filter 'ProcessId=48696'\\).CommandLine\")",
+      "Bash(./node_modules/.bin/serve -l 3456 -n .)",
+      "Bash(powershell.exe -Command \"\\(Get-CimInstance Win32_Process -Filter 'ProcessId=46592'\\).CommandLine\")",
+      "Bash(powershell.exe -Command \"\\(Get-CimInstance Win32_Process -Filter 'ProcessId=46592'\\).ExecutablePath; \\(Get-Process -Id 46592\\).Path; Get-Process -Id 46592 | Select-Object -ExpandProperty StartInfo | Format-List WorkingDirectory\")",
+      "Bash(rm *)",
+      "Bash(python -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\)\\); print\\('wp_count:', d['wp_count']\\); print\\('deps:', d['dependencies_parsed']\\); print\\('commit:', d.get\\('commit_hash'\\)\\)\")"
     ]
   }
 }

@@ -1,0 +1,20 @@
+{
+  "authoritative_ref": "020-loot-economy-overhaul-WP01",
+  "authoritative_repo": "C:\\Users\\LeroyB\u00e4chtold\\Documents\\Demonfall",
+  "created_at": "2026-04-09T14:56:01.707987+00:00",
+  "created_by": "claude",
+  "dependency_mode": "independent",
+  "execution_mode": "code_change",
+  "feature_slug": "020-loot-economy-overhaul",
+  "mission_id": "020-loot-economy-overhaul",
+  "owned_files": [
+    "js/lootSystem.js",
+    "tests/lootSystem.test.js",
+    "index.html"
+  ],
+  "project_uuid": "6962904f-d22b-4faf-883f-6b4fa65aaa69",
+  "target_branch": "main",
+  "token": "ctx-01KNSBWDNBG80PB4S17X9B3YYB",
+  "work_package_id": "WP01",
+  "wp_code": "WP01"
+}
