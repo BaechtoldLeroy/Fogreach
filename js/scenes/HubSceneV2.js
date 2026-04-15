@@ -70,6 +70,38 @@ class HubSceneV2 extends Phaser.Scene {
       });
       base.setScrollFactor(0).setDepth(1200);
       thumb.setScrollFactor(0).setDepth(1200);
+
+      // Interact button bottom-right so the player can talk to NPCs /
+      // enter buildings without a keyboard.
+      const btnRadius = 38;
+      const sa = window.__SAFE_AREA__ || { top: 0, right: 0, bottom: 0, left: 0 };
+      const bx = this.scale.width - 20 - (sa.right || 0) - btnRadius;
+      const by = this.scale.height - 20 - (sa.bottom || 0) - btnRadius;
+      const btn = this.add.circle(bx, by, btnRadius, 0xffdd44, 0.6)
+        .setScrollFactor(0)
+        .setDepth(1200)
+        .setInteractive({ useHandCursor: true });
+      const btnGlyph = this.add.text(bx, by - 4, '\u270B', {
+        fontSize: Math.round(btnRadius * 0.9) + 'px', color: '#ffffff'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(1201);
+      const btnLabel = this.add.text(bx, by + 18, 'E', {
+        fontSize: '12px', fontStyle: 'bold', color: '#ffffff',
+        stroke: '#000', strokeThickness: 2
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(1201);
+      btn.on('pointerdown', () => this._handleInteract());
+      this._hubMobileInteractBtn = btn;
+      this._hubMobileInteractGlyph = btnGlyph;
+      this._hubMobileInteractLabel = btnLabel;
+
+      const reflowBtn = () => {
+        const s2 = window.__SAFE_AREA__ || sa;
+        const nx = this.scale.width - 20 - (s2.right || 0) - btnRadius;
+        const ny = this.scale.height - 20 - (s2.bottom || 0) - btnRadius;
+        btn.setPosition(nx, ny);
+        btnGlyph.setPosition(nx, ny - 4);
+        btnLabel.setPosition(nx, ny + 18);
+      };
+      this.scale.on('resize', reflowBtn);
     }
     this.input.keyboard.on('keydown-E', this._handleInteract, this);
     this._mobileInteractHandler = () => this._handleInteract();
