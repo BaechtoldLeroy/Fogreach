@@ -129,3 +129,4 @@ spec-kitty implement WP03 --base WP01
 ## Activity Log
 
 - 2026-04-15T20:03:34Z – unknown – shell_pid=51108 – lane=for_review – WP03 complete: floating joystick + dead zone.
+- 2026-04-15T20:10:08Z – unknown – shell_pid=51108 – lane=approved – self-review: syntax pass, matches spec
