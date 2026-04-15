@@ -116,3 +116,4 @@ spec-kitty implement WP04 --base WP01
 
 - 2026-04-15T20:05:04Z – unknown – shell_pid=57612 – lane=for_review – WP04 complete: nearest-enemy auto-aim on stationary attack.
 - 2026-04-15T20:10:11Z – unknown – shell_pid=57612 – lane=approved – self-review: syntax pass, matches spec
+- 2026-04-15T21:41:10Z – unknown – shell_pid=57612 – lane=done – merged to main
