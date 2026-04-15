@@ -132,3 +132,4 @@ spec-kitty implement WP02 --base WP01
 
 - 2026-04-15T19:58:19Z – unknown – shell_pid=17888 – lane=for_review – WP02 complete: emoji icons + labels + cooldown styling + disabled state.
 - 2026-04-15T20:10:04Z – unknown – shell_pid=17888 – lane=approved – self-review: syntax pass, matches spec
+- 2026-04-15T21:41:05Z – unknown – shell_pid=17888 – lane=done – merged to main
