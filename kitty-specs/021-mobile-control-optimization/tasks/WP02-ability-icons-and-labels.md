@@ -127,3 +127,7 @@ If no icon pool exists, fall back to single-letter glyphs from the ability name 
 ```
 spec-kitty implement WP02 --base WP01
 ```
+
+## Activity Log
+
+- 2026-04-15T19:58:19Z – unknown – shell_pid=17888 – lane=for_review – WP02 complete: emoji icons + labels + cooldown styling + disabled state.
