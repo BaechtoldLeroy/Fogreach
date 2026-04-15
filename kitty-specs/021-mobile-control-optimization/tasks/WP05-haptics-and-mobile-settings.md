@@ -152,3 +152,7 @@ Settings plumbing follows the existing `DEFAULTS` / `applySettings()` pattern in
 ```
 spec-kitty implement WP05 --base WP01
 ```
+
+## Activity Log
+
+- 2026-04-15T20:06:55Z – unknown – shell_pid=52552 – lane=for_review – WP05 complete: haptics wrapper + CustomEvent bus subscribers + MOBILE settings section.
