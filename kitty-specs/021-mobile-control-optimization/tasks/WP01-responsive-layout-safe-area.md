@@ -6,11 +6,7 @@ requirement_refs: [FR-001, FR-002, FR-003, FR-004]
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
-base_branch: main
-base_commit: 4844c747a2f54aa54ac24f6f3fbd85e2855e7bb6
-created_at: '2026-04-15T15:15:32.427524+00:00'
 subtasks: [T001, T002, T003, T004, T005, T006]
-shell_pid: "71152"
 history:
 - action: created
   agent: claude
@@ -160,7 +156,3 @@ Design decisions (see `research.md`):
 ```
 spec-kitty implement WP01
 ```
-
-## Activity Log
-
-- 2026-04-15T19:50:47Z – unknown – shell_pid=71152 – lane=for_review – WP01 complete: mobileSafeArea + mobileControls modules; grid layout + 44x44 hit rects + safe-area + event bus.
