@@ -17,12 +17,13 @@
 (function () {
   // Key → { glyph (emoji/unicode), label (1-3 chars), globalCooldownTextName }
   const DECORATION = {
-    attack: { glyph: '\u2694\uFE0F',  label: 'Atk',  cd: 'attackBtnCooldownText'    },
-    spin:   { glyph: '\uD83C\uDF00',  label: 'Spin', cd: 'spinBtnCooldownText'       },
-    charge: { glyph: '\u26A1',        label: 'Ch',   cd: 'chargeSlashCooldownText'   },
-    dash:   { glyph: '\uD83D\uDCA8',  label: 'Ds',   cd: 'dashSlashCooldownText'     },
-    dagger: { glyph: '\uD83D\uDDE1\uFE0F', label: 'Dg', cd: 'daggerThrowCooldownText' },
-    shield: { glyph: '\uD83D\uDEE1\uFE0F', label: 'Sh', cd: 'shieldBashCooldownText' },
+    attack: { glyph: '\u2694\uFE0F',       label: 'Atk',  cd: 'attackBtnCooldownText'    },
+    spin:   { glyph: '\uD83C\uDF00',       label: 'Spin', cd: 'spinBtnCooldownText'       },
+    charge: { glyph: '\u26A1',             label: 'Ch',   cd: 'chargeSlashCooldownText'   },
+    dash:   { glyph: '\uD83D\uDCA8',       label: 'Ds',   cd: 'dashSlashCooldownText'     },
+    dagger: { glyph: '\uD83D\uDDE1\uFE0F', label: 'Dg',   cd: 'daggerThrowCooldownText'   },
+    shield: { glyph: '\uD83D\uDEE1\uFE0F', label: 'Sh',   cd: 'shieldBashCooldownText'    },
+    potion: { glyph: '\uD83E\uDDEA',       label: 'HP',   cd: null                         },
   };
 
   // Per-scene state so we can clean up listeners on re-entry.
@@ -53,7 +54,10 @@
     if (!dec) return null;
 
     const scale = _buttonScale();
-    const radius = spec.baseRadius * scale;
+    // circle's underlying geometry carries the radius after setRadius or at
+    // creation time — prefer it over spec (spec dropped its baseRadius).
+    const baseRadius = (circle && circle.radius) ? circle.radius / scale : 38;
+    const radius = baseRadius * scale;
 
     // Icon glyph (emoji) centered on the button, offset slightly up.
     const icon = scene.add.text(0, 0, dec.glyph, {
