@@ -88,7 +88,14 @@ class HubSceneV2 extends Phaser.Scene {
         fontSize: '12px', fontStyle: 'bold', color: '#ffffff',
         stroke: '#000', strokeThickness: 2
       }).setOrigin(0.5).setScrollFactor(0).setDepth(1201);
-      btn.on('pointerdown', () => this._handleInteract());
+      btn.on('pointerdown', () => {
+        // If a confirmable dialog is open, interact acts as "Starten".
+        if (this._dialogOpen && typeof this._waveDialogConfirm === 'function') {
+          this._waveDialogConfirm();
+          return;
+        }
+        this._handleInteract();
+      });
       this._hubMobileInteractBtn = btn;
       this._hubMobileInteractGlyph = btnGlyph;
       this._hubMobileInteractLabel = btnLabel;
@@ -1389,6 +1396,10 @@ class HubSceneV2 extends Phaser.Scene {
       cleanup();
     };
 
+    // Expose confirm so the mobile interact button can double as the dialog
+    // "Starten" (same as pressing Enter/Space on desktop).
+    this._waveDialogConfirm = confirm;
+
     makeButton('Starten', -80, info.y + info.height + 32, confirm, { backgroundColor: '#3d6a3d' });
     makeButton('Abbrechen', 120, info.y + info.height + 32, cancel, { backgroundColor: '#6a3d3d' });
 
@@ -1446,6 +1457,7 @@ class HubSceneV2 extends Phaser.Scene {
       this._dialogOpen = false;
       this._dialogContainer = null;
       this.input.keyboard.off('keydown', onKeyDown);
+      if (this._waveDialogConfirm === confirm) this._waveDialogConfirm = null;
     };
 
     this._dialogContainer = container;
