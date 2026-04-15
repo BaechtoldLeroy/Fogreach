@@ -160,3 +160,7 @@ Design decisions (see `research.md`):
 ```
 spec-kitty implement WP01
 ```
+
+## Activity Log
+
+- 2026-04-15T19:50:47Z – unknown – shell_pid=71152 – lane=for_review – WP01 complete: mobileSafeArea + mobileControls modules; grid layout + 44x44 hit rects + safe-area + event bus.
