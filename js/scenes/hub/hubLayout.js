@@ -48,7 +48,7 @@ window.HUB_HITBOXES = {
     {
       id: 'mara',
       name: 'Mara vom Untergrund',
-      x: 512, y: 322,
+      x: 512, y: 372,
       texture: 'spaeherin',
       scale: 0.30,
       lines: [
