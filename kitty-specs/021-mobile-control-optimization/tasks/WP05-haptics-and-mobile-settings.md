@@ -153,3 +153,4 @@ spec-kitty implement WP05 --base WP01
 
 - 2026-04-15T20:06:55Z – unknown – shell_pid=52552 – lane=for_review – WP05 complete: haptics wrapper + CustomEvent bus subscribers + MOBILE settings section.
 - 2026-04-15T20:10:15Z – unknown – shell_pid=52552 – lane=approved – self-review: syntax pass, matches spec
+- 2026-04-15T21:41:12Z – unknown – lane=done – merged to main
