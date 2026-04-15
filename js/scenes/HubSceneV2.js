@@ -72,6 +72,8 @@ class HubSceneV2 extends Phaser.Scene {
       thumb.setScrollFactor(0).setDepth(1200);
     }
     this.input.keyboard.on('keydown-E', this._handleInteract, this);
+    this._mobileInteractHandler = () => this._handleInteract();
+    window.addEventListener('demonfall:mobile-interact', this._mobileInteractHandler);
     this.input.keyboard.on('keydown-M', () => {
       if (window.soundManager) window.soundManager.toggleMute();
     });
@@ -113,6 +115,10 @@ class HubSceneV2 extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (typeof destroyInventoryUI === 'function') destroyInventoryUI();
       this.input.keyboard.off('keydown-E', this._handleInteract, this);
+      if (this._mobileInteractHandler) {
+        window.removeEventListener('demonfall:mobile-interact', this._mobileInteractHandler);
+        this._mobileInteractHandler = null;
+      }
       this.input.keyboard.off('keydown-I');
       this.input.keyboard.off('keydown-J', this._handleJournal, this);
       this.input.keyboard.off('keydown-K', this._handleLoadout, this);

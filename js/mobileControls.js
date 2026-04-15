@@ -30,7 +30,8 @@
     { key: 'charge', col: 0, row: 1, color: 0xffaa00, abilityId: 'chargeSlash' },
     { key: 'dash',   col: 1, row: 1, color: 0x66ccff, abilityId: 'dashSlash' },
     { key: 'shield', col: 2, row: 1, color: 0x66ffaa, abilityId: 'shieldBash' },
-    { key: 'potion', col: 3, row: 0, color: 0xd02040, abilityId: null },
+    { key: 'potion',   col: 3, row: 0, color: 0xd02040, abilityId: null },
+    { key: 'interact', col: 3, row: 1, color: 0xffdd44, abilityId: null },
   ];
 
   const BASE_RADIUS = 38;      // uniform button radius for all cells
@@ -168,6 +169,17 @@
     }
   }
 
+  // Interact (equivalent to desktop E key): consumed by stair transitions
+  // (roomManager.onStairOverlap) and hub NPC/entrance interactions
+  // (HubSceneV2._handleInteract). We publish a flag + dispatch an event so
+  // both polling and event-driven listeners can react.
+  function _interact() {
+    window.__MOBILE_INTERACT_ACTIVE__ = true;
+    // Reset next frame so polling handlers see a single tap.
+    setTimeout(() => { window.__MOBILE_INTERACT_ACTIVE__ = false; }, 180);
+    _dispatch('demonfall:mobile-interact', {});
+  }
+
   function _rebuildAbilityButtons() {
     const scene = state.scene;
     if (!scene) return;
@@ -186,7 +198,8 @@
       dash:   { onDown: dashSlash,           onUp: null },
       dagger: { onDown: throwDagger,         onUp: null },
       shield: { onDown: shieldBash,          onUp: null },
-      potion: { onDown: _usePotion,          onUp: null },
+      potion:   { onDown: _usePotion, onUp: null },
+      interact: { onDown: _interact,  onUp: null },
     };
     ABILITY_LAYOUT.forEach((spec) => {
       if (!_isAbilityVisible(spec)) return;
@@ -278,7 +291,8 @@
       dash:   { onDown: dashSlash,           onUp: null },
       dagger: { onDown: throwDagger,         onUp: null },
       shield: { onDown: shieldBash,          onUp: null },
-      potion: { onDown: _usePotion,          onUp: null },
+      potion:   { onDown: _usePotion, onUp: null },
+      interact: { onDown: _interact,  onUp: null },
     };
 
     ABILITY_LAYOUT.forEach((spec) => {

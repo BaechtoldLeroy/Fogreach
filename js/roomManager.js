@@ -663,7 +663,8 @@ function onStairOverlap(player, stair) {
   const scene = obstacles?.scene;
   if (scene && scene.input && scene.input.keyboard) {
     const eKey = scene.input.keyboard.addKey('E');
-    if (!eKey.isDown) {
+    const mobileInteract = !!window.__MOBILE_INTERACT_ACTIVE__;
+    if (!eKey.isDown && !mobileInteract) {
       // Show prompt text above player
       if (!stair._prompt) {
         stair._prompt = scene.add.text(stair.x, stair.y - 40, '[E] Nächster Raum', {

@@ -1967,10 +1967,28 @@ function initControls() {
   if (isMobile) {
     if (typeof window.initMobileControls === 'function') {
       window.initMobileControls(this);
-      // The rex joystick lives inside mobileControls.js; main.js's
-      // handleMobileMovement reads the module-scoped `joystick` binding,
-      // so publish it back here.
-      joystick = window.joystick || null;
+      // mobileControls.js creates the joystick + ability buttons + cooldown
+      // labels and publishes them on window. player.js and ability functions
+      // read the main.js script-scope `let` bindings (not window), so copy
+      // them back here after each (re)build.
+      const syncFromWindow = () => {
+        joystick = window.joystick || null;
+        attackBtn = window.attackBtn || null;
+        spinBtn = window.spinBtn || null;
+        chargeSlashBtn = window.chargeSlashBtn || null;
+        dashSlashBtn = window.dashSlashBtn || null;
+        daggerThrowBtn = window.daggerThrowBtn || null;
+        shieldBashBtn = window.shieldBashBtn || null;
+        attackBtnCooldownText = window.attackBtnCooldownText || null;
+        spinBtnCooldownText = window.spinBtnCooldownText || null;
+        chargeSlashCooldownText = window.chargeSlashCooldownText || null;
+        dashSlashCooldownText = window.dashSlashCooldownText || null;
+        daggerThrowCooldownText = window.daggerThrowCooldownText || null;
+        shieldBashCooldownText = window.shieldBashCooldownText || null;
+      };
+      syncFromWindow();
+      // Re-sync after every rebuild (triggered by loadout changes).
+      window.addEventListener('demonfall:mobile-layout-ready', syncFromWindow);
     } else {
       console.warn('[initControls] mobileControls.js not loaded');
     }

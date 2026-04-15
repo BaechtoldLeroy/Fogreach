@@ -23,7 +23,8 @@
     dash:   { glyph: '\uD83D\uDCA8',       label: 'Ds',   cd: 'dashSlashCooldownText'     },
     dagger: { glyph: '\uD83D\uDDE1\uFE0F', label: 'Dg',   cd: 'daggerThrowCooldownText'   },
     shield: { glyph: '\uD83D\uDEE1\uFE0F', label: 'Sh',   cd: 'shieldBashCooldownText'    },
-    potion: { glyph: '\uD83E\uDDEA',       label: 'HP',   cd: null                         },
+    potion:   { glyph: '\uD83E\uDDEA', label: 'HP',   cd: null },
+    interact: { glyph: '\u270B',       label: 'E',    cd: null },
   };
 
   // Per-scene state so we can clean up listeners on re-entry.
