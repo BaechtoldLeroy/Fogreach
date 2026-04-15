@@ -231,13 +231,14 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
   }
 
   // Elite enemies have higher loot chance and better tier
+  // D2-like drop frequencies: trash rarely drops, elites modestly, minibosses often.
   const isEliteDrop = sourceEnemy && sourceEnemy.isElite;
   const isMiniBossDrop = sourceEnemy && sourceEnemy.isMiniBoss;
-  const lootChanceBonus = isEliteDrop ? 20 : (isMiniBossDrop ? 30 : 0);
+  const lootChanceBonus = isEliteDrop ? 10 : (isMiniBossDrop ? 23 : 0);
 
   const roll = Phaser.Math.Between(0, 100);
 
-  if (maybeItem || roll < (5 + lootChanceBonus)) {
+  if (maybeItem || roll < (2 + lootChanceBonus)) {
     const baseItem = maybeItem ? { ...maybeItem } : randomLoot();
     let tier = (typeof baseItem?.tier === 'number') ? baseItem.tier : 0;
     // Elite enemies: bump tier by 1; Mini-bosses: by 2 (cap at 3 = Legendary)
@@ -256,11 +257,76 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     loot.setData('item', item);
     loot.setDepth(80);
     trackLootSprite(scene || loot.scene, loot);
+    _attachRarityFx(scene || loot.scene, loot, item);
   } else if (roll < 50) {
     spawnPickup.call(this, x, y, 'health');
   } else if (roll < 80) {
     spawnPickup.call(this, x, y, 'xp');
   }
+}
+
+// Rare/Legendary drops get an audio jingle + pulsing colored beacon
+// (D2-style). Tier 2 = rare (gold), Tier 3 = legendary (orange).
+function _attachRarityFx(scene, loot, item) {
+  const tier = item && typeof item.tier === 'number' ? item.tier : 0;
+  if (tier < 2 || !scene || !loot) return;
+
+  const tierHex = [0xcccccc, 0x88aaff, 0xffdd44, 0xff8844][tier] || 0xffffff;
+  const sfxKey = tier >= 3 ? 'loot_legendary' : 'loot_rare';
+  if (window.soundManager && typeof window.soundManager.playSFX === 'function') {
+    try { window.soundManager.playSFX(sfxKey); } catch (e) { /* ignore */ }
+  }
+
+  // Glow beacon under the loot sprite — larger + brighter for legendary
+  const radius = tier >= 3 ? 34 : 26;
+  const glow = scene.add.circle(loot.x, loot.y, radius, tierHex, 0.35);
+  glow.setDepth(79); // under the item sprite (80)
+  glow.setBlendMode(Phaser.BlendModes.ADD);
+  loot.setData('rarityGlow', glow);
+
+  // Pulse tween
+  const pulseTween = scene.tweens.add({
+    targets: glow,
+    scale: { from: 0.8, to: 1.25 },
+    alpha: { from: 0.25, to: 0.55 },
+    duration: tier >= 3 ? 650 : 900,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut'
+  });
+  loot.setData('rarityTween', pulseTween);
+
+  // Legendary: thin outer ring that rotates slowly
+  if (tier >= 3) {
+    const ring = scene.add.circle(loot.x, loot.y, radius + 10, 0xffffff, 0);
+    ring.setStrokeStyle(2, tierHex, 0.7);
+    ring.setDepth(79);
+    ring.setBlendMode(Phaser.BlendModes.ADD);
+    loot.setData('rarityRing', ring);
+    const ringTween = scene.tweens.add({
+      targets: ring,
+      angle: 360,
+      duration: 3000,
+      repeat: -1
+    });
+    loot.setData('rarityRingTween', ringTween);
+  }
+
+  // Keep beacon glued to the loot sprite each frame (bodies may drift on spawn).
+  const updateBeacon = () => {
+    if (!loot.active) return;
+    const g = loot.getData('rarityGlow');
+    const r = loot.getData('rarityRing');
+    if (g) g.setPosition(loot.x, loot.y);
+    if (r) r.setPosition(loot.x, loot.y);
+  };
+  scene.events.on('update', updateBeacon);
+  loot.setData('rarityUpdateFn', updateBeacon);
+  loot.setData('rarityScene', scene);
+
+  // Defensive fallback: also fire on destroy, in case a path reaches destroy()
+  // without going through collectLoot (e.g. scene shutdown).
+  loot.once('destroy', () => _cleanupRarityFx(loot));
 }
 
 function spawnPickup(x, y, type) {
@@ -275,7 +341,29 @@ function spawnPickup(x, y, type) {
   trackLootSprite(targetScene || loot.scene, loot);
 }
 
+function _cleanupRarityFx(loot) {
+  if (!loot || !loot.getData) return;
+  const g = loot.getData('rarityGlow');
+  const r = loot.getData('rarityRing');
+  const pt = loot.getData('rarityTween');
+  const rt = loot.getData('rarityRingTween');
+  const upd = loot.getData('rarityUpdateFn');
+  const fxScene = loot.getData('rarityScene');
+  if (fxScene && fxScene.events && upd) fxScene.events.off('update', upd);
+  if (pt && pt.remove) pt.remove();
+  if (rt && rt.remove) rt.remove();
+  if (g && g.destroy) g.destroy();
+  if (r && r.destroy) r.destroy();
+  loot.setData('rarityGlow', null);
+  loot.setData('rarityRing', null);
+  loot.setData('rarityTween', null);
+  loot.setData('rarityRingTween', null);
+  loot.setData('rarityUpdateFn', null);
+  loot.setData('rarityScene', null);
+}
+
 function collectLoot(playerSprite, loot) {
+  _cleanupRarityFx(loot);
   if (window.soundManager) window.soundManager.playSFX('loot_pickup');
   // Particle effects: loot sparkle
   if (window.particleFactory && loot) {

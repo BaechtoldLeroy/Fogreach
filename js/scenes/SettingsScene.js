@@ -10,6 +10,7 @@
     music: 0.3,
     sfx: 0.7,
     muted: false,
+    movementWeight: 0.0, // 0 = instant (current), 1.0 = D2-like weight
     debug: {
       autostart: false,
       noFow: false
@@ -47,6 +48,9 @@
       if (!settings.muted && window.soundManager.muted) window.soundManager.unmute();
     }
     window.__DEBUG_NO_FOW__ = !!settings.debug.noFow;
+    window.__MOVEMENT_WEIGHT__ = typeof settings.movementWeight === 'number'
+      ? Math.max(0, Math.min(1, settings.movementWeight))
+      : 0;
   }
 
   // Expose so other code (e.g. startScene) can apply on game boot
@@ -94,6 +98,11 @@
       this._volumeRow(px, rowY, 'Musik', 'music', panelW);    rowY += 32;
       this._volumeRow(px, rowY, 'SFX', 'sfx', panelW);        rowY += 32;
       this._toggleRow(px, rowY, 'Stumm', 'muted', panelW);    rowY += 36;
+
+      // -- Controls section --
+      this._sectionLabel(px - panelW / 2 + 20, rowY, 'STEUERUNG');
+      rowY += 22;
+      this._volumeRow(px, rowY, 'Gewicht (D2-Feel)', 'movementWeight', panelW); rowY += 36;
 
       // -- Debug section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'DEBUG');
