@@ -6,7 +6,11 @@ requirement_refs: [FR-005, FR-006, FR-007]
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: 021-mobile-control-optimization-WP01
+base_commit: bef362b3c0a28afa183be4e518751b03b1b737b6
+created_at: '2026-04-15T19:51:40.662981+00:00'
 subtasks: [T001, T002, T003, T004]
+shell_pid: "17888"
 history:
 - action: created
   agent: claude
