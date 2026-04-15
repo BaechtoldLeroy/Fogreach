@@ -1126,9 +1126,9 @@ function breakDestructibleObstacle(scene, obs) {
     if (window.LootSystem && window.LootSystem.rollItem) {
       let item;
       if (isRewardChest) {
-        // Reward chest: at least Magic, weighted toward better tiers
+        // Reward chest: at least Magic. D2-like: 82% Magic / 15% Rare / 3% Legendary.
         const roll = Math.random();
-        const forcedTier = roll < 0.15 ? 3 : (roll < 0.45 ? 2 : 1);
+        const forcedTier = roll < 0.03 ? 3 : (roll < 0.18 ? 2 : 1);
         item = window.LootSystem.rollItem(null, iLevel, forcedTier);
       } else {
         item = window.LootSystem.rollItem(null, iLevel);

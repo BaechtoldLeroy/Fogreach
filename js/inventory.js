@@ -838,8 +838,9 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
 
 function openInventory() {
   invOpen = true;
-  // Guard: global `player` may be undefined in Hub (uses this.player)
-  if (typeof player !== 'undefined' && player && player.setVelocity) {
+  // Guard: global `player` may be undefined in Hub (uses this.player),
+  // or may be a leftover GameScene sprite whose body was destroyed on shutdown.
+  if (typeof player !== 'undefined' && player && player.body && player.setVelocity) {
     player.setVelocity(0, 0);
   }
   siphonMaterialsFromInventory();

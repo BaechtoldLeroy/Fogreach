@@ -906,11 +906,62 @@ function getShieldBashCooldown() {
   return Math.max(SHIELD_BASH_COOLDOWN_MIN, SHIELD_BASH_COOLDOWN_BASE / getAttackSpeedMultiplier());
 }
 
+// Smoothed velocity state for acceleration/deceleration (D2-style weight).
+// weight=0 -> instant setVelocity; weight=1 -> ~180ms time constant.
+let _smoothVelX = 0, _smoothVelY = 0;
+let _lastTargetDirX = 0, _lastTargetDirY = 0;
+let _turnPenaltyUntil = 0;        // timestamp (ms) while turn-cap active
+let _attackCommitUntil = 0;       // timestamp (ms) while attack-commit lingers
+let _prevIsAttacking = false;     // rising-edge detection for attack commit
+const _ATTACK_COMMIT_MS = 420;    // total duration of move-reduction after a swing starts
+
+function _applySmoothedVelocity(targetVx, targetVy, scene) {
+  const weight = typeof window.__MOVEMENT_WEIGHT__ === 'number' ? window.__MOVEMENT_WEIGHT__ : 0;
+  const now = scene && scene.time ? scene.time.now : (performance.now ? performance.now() : Date.now());
+
+  // Turn penalty: sharp direction change (>120°) briefly caps speed (D2 turn-in-place feel).
+  if (weight > 0) {
+    const tLen = Math.hypot(targetVx, targetVy);
+    const lLen = Math.hypot(_lastTargetDirX, _lastTargetDirY);
+    if (tLen > 0 && lLen > 0) {
+      const cos = (targetVx * _lastTargetDirX + targetVy * _lastTargetDirY) / (tLen * lLen);
+      if (cos < -0.5) { // >120° turn
+        _turnPenaltyUntil = now + 100 + weight * 40; // 100–140 ms
+      }
+    }
+    if (tLen > 0) {
+      _lastTargetDirX = targetVx / tLen;
+      _lastTargetDirY = targetVy / tLen;
+    }
+    if (now < _turnPenaltyUntil) {
+      const cap = 1 - 0.3 * weight; // up to 30% speed reduction during turn
+      targetVx *= cap;
+      targetVy *= cap;
+    }
+  }
+
+  if (weight <= 0) {
+    _smoothVelX = targetVx;
+    _smoothVelY = targetVy;
+  } else {
+    const dt = (scene && scene.game && scene.game.loop && scene.game.loop.delta) || 16;
+    const tau = 40 + weight * 140; // 40 ms (barely) … 180 ms (heavy)
+    const k = 1 - Math.exp(-dt / tau);
+    _smoothVelX += (targetVx - _smoothVelX) * k;
+    _smoothVelY += (targetVy - _smoothVelY) * k;
+    if (Math.abs(_smoothVelX) < 1) _smoothVelX = 0;
+    if (Math.abs(_smoothVelY) < 1) _smoothVelY = 0;
+  }
+  player.setVelocity(_smoothVelX, _smoothVelY);
+  return [_smoothVelX, _smoothVelY];
+}
+
 function handlePlayerMovement() {
   if (isDashing) return;
 
-  // Stun check: if stunned, stop all movement
+  // Stun check: if stunned, stop all movement (hard-stop — bypass smoothing)
   if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) {
+    _smoothVelX = 0; _smoothVelY = 0;
     player.setVelocity(0, 0);
     updatePlayerSpriteAnimation(player, 0, 0);
     return;
@@ -928,29 +979,37 @@ function handlePlayerMovement() {
   if (window.statusEffectManager) {
     effectiveSpeed *= window.statusEffectManager.getSpeedMultiplier(player);
   }
+  // Attack commitment: when a swing starts, reduce movement for a fixed window
+  // (longer than the swing itself, so the commit actually reads as weight).
+  const moveWeight = typeof window.__MOVEMENT_WEIGHT__ === 'number' ? window.__MOVEMENT_WEIGHT__ : 0;
+  const nowMs = this && this.time ? this.time.now : (performance.now ? performance.now() : Date.now());
+  if (isAttacking && !_prevIsAttacking) {
+    _attackCommitUntil = nowMs + _ATTACK_COMMIT_MS;
+  }
+  _prevIsAttacking = isAttacking;
+  if (moveWeight > 0 && nowMs < _attackCommitUntil) {
+    effectiveSpeed *= (1 - 0.6 * moveWeight); // up to 60% reduction at max weight
+  }
 
   // Richtung normalisieren -> konstante Geschwindigkeit (auch diagonal)
+  let targetVx = 0, targetVy = 0;
   if (vx !== 0 || vy !== 0) {
     const len = Math.hypot(vx, vy);     // 1 bei gerade, ~1.414 diagonal
-    vx = (vx / len) * effectiveSpeed;
-    vy = (vy / len) * effectiveSpeed;
-
-    player.setVelocity(vx, vy);
-    updatePlayerSpriteAnimation(player, vx, vy);
-
-    // Blickrichtung aktualisieren
-    lastMoveDirection.set(vx, vy).normalize();
-  } else {
-    player.setVelocity(0, 0);
-    updatePlayerSpriteAnimation(player, 0, 0);
+    targetVx = (vx / len) * effectiveSpeed;
+    targetVy = (vy / len) * effectiveSpeed;
+    lastMoveDirection.set(targetVx, targetVy).normalize();
   }
+
+  const [actualVx, actualVy] = _applySmoothedVelocity(targetVx, targetVy, this);
+  updatePlayerSpriteAnimation(player, actualVx, actualVy);
 }
 
 function handleMobileMovement() {
   if (isDashing) return;
 
-  // Stun check: if stunned, stop all movement
+  // Stun check: hard-stop, bypass smoothing
   if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) {
+    _smoothVelX = 0; _smoothVelY = 0;
     player.setVelocity(0, 0);
     updatePlayerSpriteAnimation(player, 0, 0);
     return;
@@ -966,27 +1025,28 @@ function handleMobileMovement() {
   if (window.statusEffectManager) {
     effectiveSpeed *= window.statusEffectManager.getSpeedMultiplier(player);
   }
+  // Attack commitment — see keyboard handler for rationale
+  const moveWeight = typeof window.__MOVEMENT_WEIGHT__ === 'number' ? window.__MOVEMENT_WEIGHT__ : 0;
+  const nowMs = this && this.time ? this.time.now : (performance.now ? performance.now() : Date.now());
+  if (isAttacking && !_prevIsAttacking) {
+    _attackCommitUntil = nowMs + _ATTACK_COMMIT_MS;
+  }
+  _prevIsAttacking = isAttacking;
+  if (moveWeight > 0 && nowMs < _attackCommitUntil) {
+    effectiveSpeed *= (1 - 0.6 * moveWeight);
+  }
 
   const force = joystick.force;       // 0.0 … 1.0
+  let targetVx = 0, targetVy = 0;
   if (force > 0) {
-    // Winkel in Radiant umrechnen
     const rad = Phaser.Math.DegToRad(joystick.angle);
-
-    // Geschwindigkeit entlang X/Y
-    const vx = Math.cos(rad) * effectiveSpeed;
-    const vy = Math.sin(rad) * effectiveSpeed;
-
-    // Spieler bewegen
-    player.setVelocity(vx, vy);
-    updatePlayerSpriteAnimation(player, vx, vy);
-
-    // Merke dir die letzte Bewegungsrichtung für Angriffe
+    targetVx = Math.cos(rad) * effectiveSpeed;
+    targetVy = Math.sin(rad) * effectiveSpeed;
     lastMoveDirection.set(Math.cos(rad), Math.sin(rad));
-  } else {
-    // Kein Druck → stehen bleiben
-    player.setVelocity(0, 0);
-    updatePlayerSpriteAnimation(player, 0, 0);
   }
+
+  const [actualVx, actualVy] = _applySmoothedVelocity(targetVx, targetVy, this);
+  updatePlayerSpriteAnimation(player, actualVx, actualVy);
 }
 
 function handlePlayerAttack() {
