@@ -316,6 +316,8 @@
             callback: function () {
               if (typeof window.playerMaxHealth === 'number') {
                 window.playerHealth = window.playerMaxHealth;
+                // Update the local variable too (main.js uses it)
+                if (typeof playerHealth !== 'undefined') playerHealth = window.playerMaxHealth;
               }
               showEventToast(scene, 'Volle Heilung!', 'healing_fountain');
             }
@@ -544,18 +546,18 @@
   // --- Treasure & Trapped Chests ---
   function spawnEventChest(scene, chestType, isTrapped) {
     if (!scene || !scene.spawnObstacle) return;
-    var bounds = scene.physics.world && scene.physics.world.bounds;
-    if (!bounds) return;
-    // Pick a position near room center but offset from player
-    var px = bounds.x + bounds.width / 2;
-    var py = bounds.y + bounds.height / 2;
-    if (typeof player !== 'undefined' && player) {
-      var dx = px - player.x, dy = py - player.y;
-      var d = Math.sqrt(dx * dx + dy * dy);
-      if (d < 200) {
-        // Push chest away from player
-        px = player.x + (dx / (d || 1)) * 250;
-        py = player.y + (dy / (d || 1)) * 250;
+    // Spawn chest near player (offset 120-200px in random direction)
+    var px = 400, py = 250;
+    if (typeof player !== 'undefined' && player && player.active) {
+      var angle = Math.random() * Math.PI * 2;
+      var dist = 120 + Math.random() * 80;
+      px = player.x + Math.cos(angle) * dist;
+      py = player.y + Math.sin(angle) * dist;
+      // Clamp to world bounds
+      var bounds = scene.physics.world && scene.physics.world.bounds;
+      if (bounds) {
+        px = Math.max(bounds.x + 40, Math.min(bounds.x + bounds.width - 40, px));
+        py = Math.max(bounds.y + 40, Math.min(bounds.y + bounds.height - 40, py));
       }
     }
     var chest = scene.spawnObstacle(px, py, chestType);
