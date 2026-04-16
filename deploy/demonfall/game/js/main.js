@@ -2090,6 +2090,9 @@ function initializeGameObjects() {
   playerProjectiles = this.physics.add.group();
   obstacles = this.physics.add.staticGroup();
   window.obstacles = obstacles;
+  window.enemyProjectiles = enemyProjectiles;
+  window.playerProjectiles = playerProjectiles;
+  window.enemies = enemies;
   lootGroup = this.physics.add.group();
   // WP03: gold piles (auto-collected by player overlap)
   window.goldGroup = this.physics.add.group();

@@ -165,9 +165,9 @@
       );
     }
     // Projectiles + enemies collide with closed doors
-    if (typeof enemyProjectiles !== 'undefined' && enemyProjectiles && !scene._doorEnemyProjCollider) {
+    if (window.enemyProjectiles && !scene._doorEnemyProjCollider) {
       scene._doorEnemyProjCollider = scene.physics.add.collider(
-        enemyProjectiles, scene._doorGroup, function (proj) {
+        window.enemyProjectiles, scene._doorGroup, function (proj) {
           if (proj && proj.active) {
             if (typeof window.releaseEnemyProjectile === 'function') window.releaseEnemyProjectile(proj);
             else proj.destroy();
@@ -175,16 +175,16 @@
         }, doorProcessCb
       );
     }
-    if (typeof playerProjectiles !== 'undefined' && playerProjectiles && !scene._doorPlayerProjCollider) {
+    if (window.playerProjectiles && !scene._doorPlayerProjCollider) {
       scene._doorPlayerProjCollider = scene.physics.add.collider(
-        playerProjectiles, scene._doorGroup, function (proj) {
+        window.playerProjectiles, scene._doorGroup, function (proj) {
           if (proj && proj.active) proj.destroy();
         }, doorProcessCb
       );
     }
-    if (typeof enemies !== 'undefined' && enemies && !scene._doorEnemyCollider) {
+    if (window.enemies && !scene._doorEnemyCollider) {
       scene._doorEnemyCollider = scene.physics.add.collider(
-        enemies, scene._doorGroup, null, doorProcessCb
+        window.enemies, scene._doorGroup, null, doorProcessCb
       );
     }
     var doorGroup = scene._doorGroup;

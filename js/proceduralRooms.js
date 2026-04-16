@@ -109,12 +109,13 @@
         }
       }
       // Record center tile of this horizontal-wall doorway (wall runs left-right → 'horizontal')
+      // width includes +2 clearance tiles carved on each side
       if (doorways) {
         doorways.push({
           x: dx + Math.floor(doorWidth / 2),
           y: node.splitPos,
           orientation: 'horizontal',
-          width: doorWidth
+          width: doorWidth + 2
         });
       }
     } else if (node.splitAxis === 'v') {
@@ -132,12 +133,13 @@
         }
       }
       // Record center tile of this vertical-wall doorway (wall runs up-down → 'vertical')
+      // width includes +2 clearance tiles carved on each side
       if (doorways) {
         doorways.push({
           x: node.splitPos,
           y: dy + Math.floor(doorWidth / 2),
           orientation: 'vertical',
-          width: doorWidth
+          width: doorWidth + 2
         });
       }
     }
