@@ -798,11 +798,35 @@ function create() {
 
   // 4.1 Vollbild & Touch-Pointer
   this.input.addPointer(1);
-  /*this.input.on('pointerdown', () => {
-    if (!this.scale.isFullscreen) {
+
+  // F11 toggles fullscreen
+  this.input.keyboard.on('keydown-F11', (event) => {
+    event.preventDefault();
+    if (this.scale.isFullscreen) {
+      this.scale.stopFullscreen();
+    } else {
       this.scale.startFullscreen();
     }
-  });*/
+    // Sync setting
+    if (typeof window.loadGameSettings === 'function') {
+      var s = window.loadGameSettings();
+      s.fullscreen = this.scale.isFullscreen;
+      try { localStorage.setItem('demonfall_settings_v1', JSON.stringify(s)); } catch (e) {}
+    }
+  });
+
+  // Auto-restore fullscreen preference on first click
+  if (typeof window.loadGameSettings === 'function') {
+    var fsSettings = window.loadGameSettings();
+    if (fsSettings.fullscreen && !this.scale.isFullscreen) {
+      var scaleRef = this.scale;
+      var restoreFs = function () {
+        scaleRef.startFullscreen();
+        document.removeEventListener('pointerdown', restoreFs);
+      };
+      document.addEventListener('pointerdown', restoreFs, { once: true });
+    }
+  }
 
   // 4.2 Plattform erkennen
   isMobile = this.sys.game.device.input.touch;
