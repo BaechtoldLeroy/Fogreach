@@ -1,108 +1,35 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: Mobile Skill Selection
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` | **Date**: 2026-04-16 | **Spec**: `kitty-specs/039-mobile-skill-selection/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Add mobile skill selection UI. Currently mobile shows ability buttons via `js/mobileControls.js` (2x4 grid, bottom-right) but there's no way to change which skills are equipped during gameplay. Desktop uses keyboard shortcuts (K=loadout).
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
+**Language/Version**: JavaScript (ES6, vanilla)
+**Primary Dependencies**: Phaser 3.70.0
+**Testing**: Mobile device testing
+**Target Platform**: Mobile browsers (touch devices)
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+## Approach
 
-## Constitution Check
+1. **Skill bar** — The existing mobile ability buttons (`mobileControls.js`, `mobileAbilityButtons.js`) already show equipped skills. These are the "skill bar". Add long-press or dedicated button to open skill selection.
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+2. **Skill selection overlay** — Modal overlay showing all available skills (from `abilitySystem.js`). Player taps a slot on the bar, then taps a skill from the pool to equip it. Similar to desktop loadout (K key) but touch-optimized.
 
-[Gates determined based on constitution file]
+3. **Cooldown indicators** — Add visual cooldown overlays on mobile ability buttons (radial fill or darkening). Currently cooldowns are tracked in `abilitySystem.js` but not visually shown on mobile buttons.
 
-## Project Structure
+4. **Layout** — Skill selection overlay should be centered, large enough for touch targets (min 44px). Dismiss by tapping outside or a close button.
 
-### Documentation (this feature)
+## Key Files
 
-```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
-```
+- `js/mobileControls.js` — Skill bar, add selection trigger
+- `js/mobileAbilityButtons.js` — Button rendering, add cooldown visuals
+- `js/abilitySystem.js` — Available skills, equipped state, cooldowns
+- `js/inventory.js` — Desktop loadout system (reference implementation)
 
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+## Dependencies
 
-```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
-```
-
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
-
-## Complexity Tracking
-
-*Fill ONLY if Constitution Check has violations that must be justified*
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+- 038-mobile-d2-controls (shares mobile input handling, avoid conflicts)

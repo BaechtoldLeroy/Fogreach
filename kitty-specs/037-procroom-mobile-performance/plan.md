@@ -1,108 +1,44 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: Procroom Mobile Performance
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` | **Date**: 2026-04-16 | **Spec**: `kitty-specs/037-procroom-mobile-performance/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Optimize procedural rooms for mobile. Currently unplayable frame rates on mobile devices. Phaser config: 960x480, arcade physics, procedural textures via Canvas 2D, fog of war with RenderTextures.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
+**Language/Version**: JavaScript (ES6, vanilla)
+**Primary Dependencies**: Phaser 3.70.0 (WebGL, Canvas fallback)
+**Testing**: Mobile device testing, `js/performanceMonitor.js` (P key)
+**Target Platform**: Mid-range mobile browsers
+**Performance Goals**: Stable 30fps+ on mobile
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+## Approach
 
-## Constitution Check
+1. **Profile** — Use `js/performanceMonitor.js` on mobile to identify bottlenecks. Likely suspects:
+   - Fog of war RenderTextures (`roomManager.js`: exploredRT, spotlightRT) — expensive on mobile GPU
+   - Vision polygon computation (`computeVisionPolygon`) — per-frame raycasting
+   - Procedural texture generation (`graphics.js`) — large Canvas 2D operations
+   - Many physics bodies (enemies, obstacles, walls)
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+2. **Fog of war optimization** — Reduce fog update frequency on mobile (every 2-3 frames). Simplify vision polygon (fewer rays). Smaller RT resolution on mobile.
 
-[Gates determined based on constitution file]
+3. **Object culling** — Only update/render objects within camera viewport + margin. Disable physics for off-screen enemies.
 
-## Project Structure
+4. **Texture optimization** — Pre-render procedural textures at room load time instead of per-frame. Cache aggressively.
 
-### Documentation (this feature)
+5. **Mobile quality toggle** — Add "reduced effects" setting in `SettingsScene.js` for mobile (simpler particles, fewer decorations, simplified fog).
 
-```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
-```
+## Key Files
 
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+- `js/roomManager.js` — Fog of war (main bottleneck candidate)
+- `js/proceduralRooms.js` — Room generation timing
+- `js/graphics.js` — Texture generation
+- `js/enemy.js` — Enemy update loops
+- `js/performanceMonitor.js` — Profiling tool
+- `js/scenes/SettingsScene.js` — Quality settings
 
-```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+## Dependencies
 
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
-```
-
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
-
-## Complexity Tracking
-
-*Fill ONLY if Constitution Check has violations that must be justified*
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+- Should be done after 030 (large room variety) and 036 (stairs) to optimize the final room content

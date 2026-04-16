@@ -1,108 +1,38 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: Mobile D2 Controls
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` | **Date**: 2026-04-16 | **Spec**: `kitty-specs/038-mobile-d2-controls/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Add Diablo 2-style tap-to-move and tap-to-attack controls on mobile. Currently mobile uses a virtual joystick (rex plugin, bottom-left) for movement. Desktop already has D2-style click movement via the `movementWeight` setting in SettingsScene (0=instant, 1=D2-like).
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
+**Language/Version**: JavaScript (ES6, vanilla)
+**Primary Dependencies**: Phaser 3.70.0, phaser3-rex-plugins (virtual joystick)
+**Testing**: Mobile device testing
+**Target Platform**: Mobile browsers (touch devices)
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+## Approach
 
-## Constitution Check
+1. **Tap-to-move** — On mobile, detect single taps on walkable floor tiles. Set player target position and move toward it (reuse desktop D2 movement logic with `movementWeight=1`). Coexists with virtual joystick — joystick overrides tap-move when active.
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+2. **Tap-to-attack** — Tap on an enemy to target and auto-attack it. Use hit-testing on enemy sprites. Combine with `mobileAutoAim.js` for ranged abilities.
 
-[Gates determined based on constitution file]
+3. **Hold-to-move** — Holding a position triggers continuous movement toward the touch point. Use pointer move events while pointer is down.
 
-## Project Structure
+4. **Touch priority** — Touch on UI elements (HUD, ability buttons) takes priority over game-world taps. Use Phaser input priority system.
 
-### Documentation (this feature)
+5. **Settings toggle** — Add "D2 Controls" toggle in SettingsScene mobile section. When off, keep classic joystick-only mode.
 
-```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
-```
+## Key Files
 
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+- `js/mobileControls.js` — Add tap-to-move/attack handlers alongside joystick
+- `js/main.js` — Player movement logic, integrate D2-style pathfinding
+- `js/mobileAutoAim.js` — Extend for tap-to-attack targeting
+- `js/scenes/SettingsScene.js` — D2 controls toggle
+- `js/player.js` — Movement target system
 
-```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+## Dependencies
 
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
-```
-
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
-
-## Complexity Tracking
-
-*Fill ONLY if Constitution Check has violations that must be justified*
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+- 037-procroom-mobile-performance should ideally be done first (performance budget)

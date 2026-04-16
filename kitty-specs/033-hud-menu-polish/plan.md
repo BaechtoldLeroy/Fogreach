@@ -1,108 +1,42 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: HUD & Menu Polish
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` | **Date**: 2026-04-16 | **Spec**: `kitty-specs/033-hud-menu-polish/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Fix overlapping UI elements and improve visual consistency across all menus. HUD is built in `js/main.js` (initUI), menus are Phaser scenes (ShopScene, CraftingScene, SettingsScene) rendered as overlays.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
+**Language/Version**: JavaScript (ES6, vanilla)
+**Primary Dependencies**: Phaser 3.70.0 (960x480 canvas, FIT scale mode)
+**Testing**: Manual visual testing on desktop + mobile
+**Target Platform**: Desktop + Mobile browsers
+**Constraints**: No CSS — all UI is Phaser text/graphics objects
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+## Approach
 
-## Constitution Check
+1. **Audit all menus** — Screenshot each menu on desktop (960x480) and mobile (portrait + landscape). Document every overlap, clip, and misalignment.
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+2. **Fix overlaps** — Recalculate positions and sizes for:
+   - Inventory panel (`js/inventory.js`) — equipment slots, grid, Stadtportal button
+   - Shop scene (`js/scenes/ShopScene.js`) — tab headers, item list, gold display
+   - Crafting scene (`js/scenes/CraftingScene.js`) — material counts, recipe slots
+   - Settings scene (`js/scenes/SettingsScene.js`) — sliders, toggles, labels
 
-[Gates determined based on constitution file]
+3. **Responsive layout** — Use game canvas dimensions and safe area insets to position elements. Test at multiple aspect ratios.
 
-## Project Structure
+4. **Visual consistency** — Standardize font sizes, colors, button styles across scenes. Use tier colors consistently.
 
-### Documentation (this feature)
+## Key Files
 
-```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
-```
+- `js/main.js` — HUD initialization (initUI)
+- `js/inventory.js` — Inventory panel layout
+- `js/scenes/ShopScene.js` — Shop layout
+- `js/scenes/CraftingScene.js` — Crafting layout
+- `js/scenes/SettingsScene.js` — Settings layout
+- `js/mobileControls.js` — Mobile ability button layout
 
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+## Dependencies
 
-```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
-```
-
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
-
-## Complexity Tracking
-
-*Fill ONLY if Constitution Check has violations that must be justified*
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+- None (standalone polish task)
