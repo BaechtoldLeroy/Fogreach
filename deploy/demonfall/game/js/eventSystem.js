@@ -6,7 +6,7 @@
     {
       id: 'treasure_cache',
       name: 'Versteckter Schatz',
-      weight: 30,
+      weight: 15,
       minDepth: 1,
       handler: function(scene) {
         try { window.soundManager && window.soundManager.playSFX('pickup'); } catch (e) {}
@@ -17,7 +17,7 @@
     {
       id: 'ambush',
       name: 'Hinterhalt!',
-      weight: 18,
+      weight: 12,
       minDepth: 2,
       handler: function(scene) {
         try { window.soundManager && window.soundManager.playSFX('enemy_death'); } catch (e) {}
@@ -27,7 +27,7 @@
     {
       id: 'wandering_merchant',
       name: 'Wandernder Haendler',
-      weight: 18,
+      weight: 15,
       minDepth: 3,
       handler: function(scene) {
         try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
@@ -37,7 +37,7 @@
     {
       id: 'trapped_chest',
       name: 'Verfluchte Truhe',
-      weight: 12,
+      weight: 8,
       minDepth: 2,
       handler: function(scene) {
         try { window.soundManager && window.soundManager.playSFX('enemy_hit'); } catch (e) {}
@@ -48,7 +48,7 @@
     {
       id: 'lore_fragment',
       name: 'Altes Schriftstueck',
-      weight: 15,
+      weight: 12,
       minDepth: 1,
       handler: function(scene) {
         try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {
@@ -199,6 +199,7 @@
   });
 
   var lastEventId = null;
+  var recentEvents = []; // last 3 event IDs for anti-repetition
 
   function shouldTriggerEvent(depth) {
     var chance = 0.35 + (depth - 1) * 0.02;
@@ -207,7 +208,19 @@
 
   function pickEvent(depth) {
     var eligible = EVENT_TYPES.filter(function(e) {
-      return depth >= e.minDepth && e.id !== lastEventId;
+      if (depth < e.minDepth) return false;
+      if (e.id === lastEventId) return false;
+      // Anti-repetition: reduce weight if event appeared in last 3
+      return true;
+    });
+    // Soft anti-repetition: halve weight of recently seen events
+    eligible = eligible.map(function(e) {
+      var count = 0;
+      for (var i = 0; i < recentEvents.length; i++) {
+        if (recentEvents[i] === e.id) count++;
+      }
+      if (count > 0) return { id: e.id, name: e.name, weight: Math.max(1, Math.floor(e.weight / (count + 1))), minDepth: e.minDepth, handler: e.handler };
+      return e;
     });
     if (!eligible.length) return null;
 
@@ -758,6 +771,8 @@
     if (!event) return;
 
     lastEventId = event.id;
+    recentEvents.push(event.id);
+    if (recentEvents.length > 3) recentEvents.shift();
 
     var dispatchEvent = function () {
       var result = event.handler(scene);
@@ -776,6 +791,7 @@
 
   function reset() {
     lastEventId = null;
+    recentEvents.length = 0;
     cleanupMerchant();
     cleanupLore();
   }
