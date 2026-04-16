@@ -242,6 +242,10 @@
         if (door.body) {
           door.body.enable = false;
         }
+        // Invalidate wall cache so fog of war updates immediately
+        if (typeof window.invalidateWallCache === 'function') {
+          window.invalidateWallCache();
+        }
       } else if (state === 'open' && dist > CLOSE_DIST) {
         // Close the door
         door.setTexture(door.getData('closedKey'));
@@ -250,6 +254,10 @@
         if (door.body) {
           door.body.enable = true;
           door.refreshBody();
+        }
+        // Invalidate wall cache so fog of war updates immediately
+        if (typeof window.invalidateWallCache === 'function') {
+          window.invalidateWallCache();
         }
       }
     }
