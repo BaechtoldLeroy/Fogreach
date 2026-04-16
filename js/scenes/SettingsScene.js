@@ -97,7 +97,7 @@
       this.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7).setScrollFactor(0).setDepth(2000);
 
       const panelW = Math.min(560, cw - 40);
-      const panelH = Math.min(520, ch - 20);
+      const panelH = Math.min(460, ch - 20);
       const px = cw / 2;
       const py = ch / 2;
 
@@ -114,47 +114,41 @@
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
 
       // -- Audio section --
-      let rowY = py - panelH / 2 + 60;
+      let rowY = py - panelH / 2 + 50;
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'AUDIO');
-      rowY += 22;
-      this._volumeRow(px, rowY, 'Master', 'master', panelW); rowY += 28;
-      this._volumeRow(px, rowY, 'Musik', 'music', panelW);    rowY += 28;
-      this._volumeRow(px, rowY, 'SFX', 'sfx', panelW);        rowY += 28;
-      this._toggleRow(px, rowY, 'Stumm', 'muted', panelW);    rowY += 30;
+      rowY += 18;
+      this._volumeRow(px, rowY, 'Master', 'master', panelW); rowY += 24;
+      this._volumeRow(px, rowY, 'Musik', 'music', panelW);    rowY += 24;
+      this._volumeRow(px, rowY, 'SFX', 'sfx', panelW);        rowY += 24;
+      this._toggleRow(px, rowY, 'Stumm', 'muted', panelW);    rowY += 26;
 
       // -- Controls section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'STEUERUNG');
-      rowY += 22;
-      this._volumeRow(px, rowY, 'Gewicht (D2-Feel)', 'movementWeight', panelW); rowY += 30;
+      rowY += 18;
+      this._volumeRow(px, rowY, 'Gewicht (D2)', 'movementWeight', panelW); rowY += 26;
 
       // -- Mobile section (only on touch devices) --
       const isTouch = !!(this.sys && this.sys.game && this.sys.game.device
         && this.sys.game.device.input && this.sys.game.device.input.touch);
       if (isTouch) {
         this._sectionLabel(px - panelW / 2 + 20, rowY, 'MOBILE');
-        rowY += 22;
-        this._sliderRow(px, rowY, 'Totzone', 'mobile.deadZone', panelW, {
-          min: 0, max: 0.4, step: 0.05, format: (v) => Math.round(v * 100) + '%'
-        }); rowY += 32;
-        this._toggleRow(px, rowY, 'Vibration', 'mobile.haptics', panelW); rowY += 32;
-        this._toggleRow(px, rowY, 'Auto-Aim', 'mobile.autoAim', panelW); rowY += 28;
-        this._toggleRow(px, rowY, 'D2 Controls (Tap-to-Move)', 'mobile.d2Controls', panelW); rowY += 28;
-        this._pickerRow(px, rowY, 'Button-Groesse', 'mobile.buttonScale',
-          MOBILE_BUTTON_SCALES, (v) => Math.round(v * 100) + '%', panelW);
-        rowY += 36;
+        rowY += 18;
+        this._toggleRow(px, rowY, 'Vibration', 'mobile.haptics', panelW); rowY += 22;
+        this._toggleRow(px, rowY, 'Auto-Aim', 'mobile.autoAim', panelW); rowY += 22;
+        this._toggleRow(px, rowY, 'D2 Controls', 'mobile.d2Controls', panelW); rowY += 24;
       }
 
       // -- Display section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'ANZEIGE');
-      rowY += 22;
-      this._fullscreenRow(px, rowY, panelW); rowY += 30;
-      this._toggleRow(px, rowY, 'Reduzierte Effekte', 'reducedEffects', panelW); rowY += 30;
+      rowY += 18;
+      this._fullscreenRow(px, rowY, panelW); rowY += 22;
+      this._toggleRow(px, rowY, 'Reduz. Effekte', 'reducedEffects', panelW); rowY += 24;
 
       // -- Debug section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'DEBUG');
-      rowY += 22;
-      this._toggleRow(px, rowY, 'Auto-Start', 'debug.autostart', panelW); rowY += 28;
-      this._toggleRow(px, rowY, 'Kein Nebel d. Krieges', 'debug.noFow', panelW); rowY += 28;
+      rowY += 18;
+      this._toggleRow(px, rowY, 'Auto-Start', 'debug.autostart', panelW); rowY += 22;
+      this._toggleRow(px, rowY, 'Kein Nebel', 'debug.noFow', panelW); rowY += 22;
       this._actionRow(px, rowY, '+100 Eisenbrocken', () => {
         if (typeof window.changeMaterialCount === 'function') {
           window.changeMaterialCount('MAT', 100);

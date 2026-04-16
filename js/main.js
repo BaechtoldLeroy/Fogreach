@@ -1592,23 +1592,21 @@ function handlePlayerDeath(scene) {
 
 // 6.1 initUI: HUD und Buttons
 function initUI() {
-  weaponStatsText = this.add.text(16, 16, 'Damage: 1  Speed: 1.0  Range: 100\nArmor: 0%  Crit: 5%', { fontSize: '20px', fill: '#fff' })
+  // HUD text style with stroke for readability on all backgrounds
+  const hudStyle = { fontFamily: 'monospace', fontSize: '16px', fill: '#fff', stroke: '#000', strokeThickness: 3 };
+  weaponStatsText = this.add.text(16, 12, 'Damage: 1  Speed: 1.0  Range: 100\nArmor: 0%  Crit: 5%', hudStyle)
     .setDepth(1001).setScrollFactor(0)
-    .setLineSpacing(6);
-  playerHealthText = this.add.text(16, 68, '', { fontSize: '20px', fill: '#fff' })
+    .setLineSpacing(4);
+  playerHealthText = this.add.text(16, 56, '', Object.assign({}, hudStyle, { fill: '#fff' }))
     .setDepth(1001).setScrollFactor(0);
-  playerXPText = this.add.text(16, 96, '', { fontSize: '20px', fill: '#0f0' })
+  playerXPText = this.add.text(16, 78, '', Object.assign({}, hudStyle, { fill: '#88ff88' }))
     .setDepth(1001).setScrollFactor(0);
-  waveText = this.add.text(16, 124, '', { fontSize: '20px', fill: '#ff0' })
+  waveText = this.add.text(16, 100, '', Object.assign({}, hudStyle, { fill: '#ffdd44' }))
     .setDepth(1001).setScrollFactor(0);
-  window._roomCounterText = this.add.text(16, 152, '', { fontSize: '20px', fill: '#aaf' })
+  window._roomCounterText = this.add.text(16, 122, '', Object.assign({}, hudStyle, { fill: '#aabbff' }))
     .setDepth(1001).setScrollFactor(0);
-  // WP03: persistent Gold HUD counter (visible even when inventory closed)
-  window._goldText = this.add.text(16, 180, 'Gold: 0', {
-    fontFamily: 'monospace',
-    fontSize: '18px',
-    fill: '#ffd166'
-  }).setDepth(1001).setScrollFactor(0);
+  window._goldText = this.add.text(16, 144, 'Gold: 0', Object.assign({}, hudStyle, { fill: '#ffd166' }))
+    .setDepth(1001).setScrollFactor(0);
   window._refreshHUD = function () {
     if (window._goldText && typeof window._goldText.setText === 'function') {
       const gold = (window.materialCounts && window.materialCounts.GOLD) || 0;
