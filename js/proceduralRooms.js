@@ -224,11 +224,15 @@
     var rng = mulberry32(seed);
 
     // Theme pool — pick deterministically from the seed
+    // Each theme includes cosmetic tints for visual variety (030-large-room-variety)
     var THEMES = [
-      { id: 'crypt',     floor: 'floor_stone_dark', wall: 'wall_dungeon',     tags: ['dark', 'crypt'] },
-      { id: 'cathedral', floor: 'floor_tile_ornate', wall: 'wall_stone_large', tags: ['grand', 'holy'] },
-      { id: 'sewer',     floor: 'floor_cobble',      wall: 'wall_brick',       tags: ['dirty', 'underground'] },
-      { id: 'dungeon',   floor: 'floor_stone',       wall: 'obstacleWall',     tags: ['basic'] }
+      { id: 'crypt',      floor: 'floor_stone_dark',  wall: 'wall_dungeon',     tags: ['dark', 'crypt'],        floorTint: 0xccccdd, wallTint: 0xbbbbcc, propSet: 'ancient' },
+      { id: 'cathedral',  floor: 'floor_tile_ornate', wall: 'wall_stone_large', tags: ['grand', 'holy'],        floorTint: 0xffe8c0, wallTint: 0xffd8a0, propSet: 'ancient' },
+      { id: 'sewer',      floor: 'floor_cobble',      wall: 'wall_brick',       tags: ['dirty', 'underground'], floorTint: 0x99bbaa, wallTint: 0x88aa99, propSet: 'flooded' },
+      { id: 'dungeon',    floor: 'floor_stone',       wall: 'obstacleWall',     tags: ['basic'],                floorTint: 0xffffff, wallTint: 0xffffff, propSet: 'crumbling' },
+      { id: 'overgrown',  floor: 'floor_cobble',      wall: 'wall_brick',       tags: ['nature', 'ruin'],       floorTint: 0xaaddaa, wallTint: 0x99cc99, propSet: 'overgrown' },
+      { id: 'bloodstained', floor: 'floor_stone_dark', wall: 'wall_dungeon',    tags: ['dark', 'horror'],       floorTint: 0xddaaaa, wallTint: 0xcc9999, propSet: 'bloodstained' },
+      { id: 'frozen',     floor: 'floor_stone',       wall: 'wall_stone_large', tags: ['cold', 'ice'],          floorTint: 0xccddff, wallTint: 0xbbccee, propSet: 'ancient' }
     ];
     var theme = THEMES[Math.floor(rng() * THEMES.length)];
 
@@ -528,6 +532,7 @@
       objects: objects,
       spawns: { player: playerSpawn, enemies: enemies, loot: loot },
       doorways: doorways,
+      theme: { id: theme.id, floorTint: theme.floorTint, wallTint: theme.wallTint, propSet: theme.propSet },
       _procedural: true,
       _seed: seed
     };

@@ -430,6 +430,13 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   } else if (wave >= 1) {
     depthTint = 0xffe8d0;   // warm tone
   }
+  // Cosmetic theme tints override depth tint for procedural rooms (030-large-room-variety)
+  let floorTint = depthTint;
+  let wallTint = depthTint;
+  if (tpl.theme) {
+    if (tpl.theme.floorTint && tpl.theme.floorTint !== 0xffffff) floorTint = tpl.theme.floorTint;
+    if (tpl.theme.wallTint && tpl.theme.wallTint !== 0xffffff) wallTint = tpl.theme.wallTint;
+  }
 
   if (!skipFloorTiles && floorKey && scene.textures && scene.textures.get(floorKey)) {
     // Workaround: Phaser 3 TileSprite created from a canvas-generated texture
@@ -467,7 +474,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       // Tag as floor so the stair-placement fallback in roomManager doesn't
       // mistake the giant 2560x2560 floor image for an obstacle and destroy it.
       floorImg.setData('isFloor', true);
-      if (depthTint) floorImg.setTint(depthTint);
+      if (floorTint) floorImg.setTint(floorTint);
       templateWalls.push(floorImg);
       // Track baked texture key so we can remove it on cleanup
       scene._bakedFloorKeys = scene._bakedFloorKeys || [];
@@ -517,7 +524,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       const sprite = scene.add.tileSprite(cx, cy, widthPx, heightPx, wallTexture);
       sprite.setOrigin(0.5);
       sprite.setDepth(39);
-      if (depthTint) sprite.setTint(depthTint);
+      if (wallTint) sprite.setTint(wallTint);
       templateWalls.push(sprite);
     }
 
