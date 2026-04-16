@@ -1467,9 +1467,7 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   _showSkillTreeUI() {
-    console.log('[HubSceneV2] _showSkillTreeUI called');
     if (!window.SKILL_TREES || typeof window.getMaterialCount !== 'function') {
-      console.warn('[HubSceneV2] Skill system not loaded');
       return;
     }
 
@@ -1487,63 +1485,65 @@ class HubSceneV2 extends Phaser.Scene {
       .setDepth(2000)
       .setScrollFactor(0);
 
-    const panelW = Math.min(900, cw - 20);
-    const panelH = Math.min(460, ch - 16);
+    const panelW = Math.min(920, cw - 10);
+    const panelH = Math.min(460, ch - 10);
     const container = this.add.container(cw / 2, ch / 2).setDepth(2001).setScrollFactor(0);
     this._dialogContainer = container;
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x0a0a12, 0.97);
-    bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
-    bg.lineStyle(3, 0x3a4a7c, 0.9);
-    bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
+    bg.fillStyle(0x0c0c14, 0.97);
+    bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
+    bg.lineStyle(2, 0xd4a543, 0.7);
+    bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
     container.add(bg);
 
-    const titleText = this.add.text(0, -panelH / 2 + 12, 'Fertigkeiten', {
-      fontFamily: 'serif',
-      fontSize: 22,
-      color: '#ffd166',
-      fontStyle: 'bold'
-    }).setOrigin(0.5, 0);
+    // Header bar
+    const headerH = 32;
+    const headerBg = this.add.graphics();
+    headerBg.fillStyle(0x1a1a28, 0.9);
+    headerBg.fillRect(-panelW / 2 + 2, -panelH / 2 + 2, panelW - 4, headerH);
+    container.add(headerBg);
+
+    const titleText = this.add.text(-panelW / 2 + 14, -panelH / 2 + 8, 'Fertigkeiten', {
+      fontFamily: 'serif', fontSize: 18, color: '#ffd166', fontStyle: 'bold'
+    }).setOrigin(0, 0);
     container.add(titleText);
 
     const currentMaterials = window.getMaterialCount('MAT');
-    const matsText = this.add.text(panelW / 2 - 16, -panelH / 2 + 14, `Eisenbrocken: ${currentMaterials}`, {
-      fontFamily: 'monospace',
-      fontSize: 14,
-      color: '#8cb8ff'
+    const matsText = this.add.text(panelW / 2 - 14, -panelH / 2 + 10, currentMaterials + ' Eisenbrocken', {
+      fontFamily: 'monospace', fontSize: 12, color: '#8cb8ff'
     }).setOrigin(1, 0);
     container.add(matsText);
 
-    const treeStartY = titleText.y + titleText.height + 14;
-    const treeHeight = panelH - 80;
-    const treePadding = 20;
+    const treeStartY = -panelH / 2 + headerH + 8;
+    const treeBottomY = panelH / 2 - 40; // leave room for close/respec buttons
+    const treeHeight = treeBottomY - treeStartY;
+    const treePadding = 8;
     const trees = Object.values(window.SKILL_TREES);
     const treeWidth = (panelW - treePadding * (trees.length + 1)) / trees.length;
 
     let treeX = -panelW / 2 + treePadding;
     const skillHitAreas = [];
-    const skillNodePositions = {}; // track node positions for connection lines
-
-    const refreshUI = () => {
-      matsText.setText(`Eisenbrocken: ${window.getMaterialCount('MAT')}`);
-    };
+    const skillNodePositions = {};
 
     trees.forEach((tree, treeIdx) => {
+      const treeColor = Phaser.Display.Color.HexStringToColor(tree.color).color;
+
+      // Tree column background
       const treeBg = this.add.graphics();
-      treeBg.fillStyle(0x1a1a28, 0.6);
-      treeBg.fillRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 12);
-      treeBg.lineStyle(2, Phaser.Display.Color.HexStringToColor(tree.color).color, 0.5);
-      treeBg.strokeRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 12);
+      treeBg.fillStyle(0x12121e, 0.7);
+      treeBg.fillRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 8);
+      treeBg.lineStyle(1, treeColor, 0.3);
+      treeBg.strokeRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 8);
       container.add(treeBg);
 
-      const treeTitle = this.add.text(treeX + treeWidth / 2, treeStartY + 10, tree.name, {
-        fontFamily: 'serif',
-        fontSize: 18,
-        color: tree.color
+      // Tree title
+      const treeTitle = this.add.text(treeX + treeWidth / 2, treeStartY + 6, tree.name, {
+        fontFamily: 'serif', fontSize: 14, color: tree.color, fontStyle: 'bold'
       }).setOrigin(0.5, 0);
       container.add(treeTitle);
 
+      // Organize skills by tier
       const skillsByTier = {};
       tree.skills.forEach(skill => {
         const tier = skill.tier || 1;
@@ -1552,103 +1552,78 @@ class HubSceneV2 extends Phaser.Scene {
       });
 
       const maxTier = Math.max(...Object.keys(skillsByTier).map(Number));
-      const skillBoxHeight = 38;
-      const tierGap = 6;
-      const tierSpacing = skillBoxHeight + tierGap;
+      // Calculate box height to fill available space evenly
+      const availableH = treeHeight - 30; // after title
+      const boxH = Math.min(50, Math.floor((availableH - (maxTier - 1) * 4) / maxTier));
+      const tierGap = 4;
 
-      let currentSkillY = treeStartY + treeTitle.height + 16;
+      let currentSkillY = treeStartY + 26;
 
       for (let tier = 1; tier <= maxTier; tier++) {
         const tierSkills = skillsByTier[tier] || [];
         if (tierSkills.length === 0) continue;
 
-        const horizontalGap = tierSkills.length > 3 ? 4 : 6;
-        const availableWidth = treeWidth - 16;
-        const calculatedWidth = (availableWidth - horizontalGap * Math.max(0, tierSkills.length - 1)) / tierSkills.length;
-        const skillBoxWidth = Math.min(100, calculatedWidth);
-        const skillSpacing = skillBoxWidth + horizontalGap;
-        const fontSize = skillBoxWidth < 50 ? 8 : (skillBoxWidth < 80 ? 9 : 10);
-        const costFontSize = skillBoxWidth < 50 ? 10 : 12;
-
-        const totalRowWidth = skillBoxWidth * tierSkills.length + horizontalGap * (tierSkills.length - 1);
-        const startX = treeX + (treeWidth - totalRowWidth) / 2;
+        const hGap = 4;
+        const availW = treeWidth - 12;
+        const boxW = Math.min(110, (availW - hGap * (tierSkills.length - 1)) / tierSkills.length);
+        const totalRowW = boxW * tierSkills.length + hGap * (tierSkills.length - 1);
+        const startX = treeX + (treeWidth - totalRowW) / 2;
 
         tierSkills.forEach((skill, idx) => {
-          const skillX = startX + skillBoxWidth / 2 + idx * skillSpacing;
-          const skillY = currentSkillY;
+          const sx = startX + boxW / 2 + idx * (boxW + hGap);
+          const sy = currentSkillY;
 
-          // Track position for connection lines
-          skillNodePositions[skill.id] = {
-            x: skillX,
-            y: skillY + skillBoxHeight / 2
-          };
+          skillNodePositions[skill.id] = { x: sx, y: sy + boxH / 2 };
 
           const owned = window.hasSkill(skill.id);
           const canPurchase = window.canPurchaseSkill(skill.id);
           const isActive = !!skill.isActive;
 
-          let bgColor, borderColor, textColor;
+          // Colors based on state
+          let bgCol, borderCol, nameCol;
           if (owned) {
-            bgColor = isActive ? 0x2244aa : Phaser.Display.Color.HexStringToColor(tree.color).color;
-            borderColor = 0xffffff;
-            textColor = '#ffffff';
+            bgCol = 0x1a3a1a; borderCol = 0x44cc44; nameCol = '#ffffff';
           } else if (canPurchase.canPurchase) {
-            bgColor = isActive ? 0x1a2a4a : 0x3a3a4a;
-            borderColor = isActive ? 0x4488ff : Phaser.Display.Color.HexStringToColor(tree.color).color;
-            textColor = '#dddddd';
+            bgCol = 0x2a2a3a; borderCol = treeColor; nameCol = '#dddddd';
           } else {
-            // Locked - gray
-            bgColor = 0x222228;
-            borderColor = 0x3a3a3a;
-            textColor = '#666666';
+            bgCol = 0x1a1a1a; borderCol = 0x333333; nameCol = '#555555';
           }
 
-          const skillBox = this.add.graphics();
-          skillBox.fillStyle(bgColor, 0.9);
-          skillBox.fillRoundedRect(skillX - skillBoxWidth / 2, skillY, skillBoxWidth, skillBoxHeight, 8);
-          skillBox.lineStyle(2, borderColor, 0.9);
-          skillBox.strokeRoundedRect(skillX - skillBoxWidth / 2, skillY, skillBoxWidth, skillBoxHeight, 8);
-          container.add(skillBox);
-
-          const skillNameText = this.add.text(skillX, skillY + 4, skill.name, {
-            fontFamily: 'Arial',
-            fontSize: fontSize,
-            color: textColor,
-            fontStyle: 'bold',
-            wordWrap: { width: skillBoxWidth - 6 },
-            align: 'center'
-          }).setOrigin(0.5, 0);
-          container.add(skillNameText);
-
-          // Type indicator
+          // Draw box
+          const box = this.add.graphics();
+          box.fillStyle(bgCol, 0.95);
+          box.fillRoundedRect(sx - boxW / 2, sy, boxW, boxH, 4);
+          box.lineStyle(owned ? 2 : 1, borderCol, 0.9);
+          box.strokeRoundedRect(sx - boxW / 2, sy, boxW, boxH, 4);
+          // Active skill indicator: small colored dot instead of overlapping "A"
           if (isActive) {
-            const typeIndicator = this.add.text(skillX - skillBoxWidth / 2 + 4, skillY + 2, 'A', {
-              fontFamily: 'Arial',
-              fontSize: 9,
-              color: '#4488ff',
-              fontStyle: 'bold'
-            }).setOrigin(0, 0);
-            container.add(typeIndicator);
+            box.fillStyle(0x4488ff, 1);
+            box.fillCircle(sx + boxW / 2 - 6, sy + 6, 3);
           }
+          container.add(box);
 
-          const costLabel = owned ? '\u2713' : `${skill.cost}`;
-          const costColor = owned ? '#00ff00' : '#ffaa00';
-          const costText = this.add.text(skillX, skillY + skillBoxHeight - 12, costLabel, {
-            fontFamily: 'Arial',
-            fontSize: costFontSize,
-            color: costColor,
-            fontStyle: 'bold'
-          }).setOrigin(0.5, 0.5);
+          // Skill name — top half of box
+          const nameFS = boxW < 60 ? 8 : (boxW < 90 ? 9 : 10);
+          const nameText = this.add.text(sx, sy + 4, skill.name, {
+            fontFamily: 'monospace', fontSize: nameFS, color: nameCol,
+            wordWrap: { width: boxW - 8 }, align: 'center', lineSpacing: -1
+          }).setOrigin(0.5, 0);
+          container.add(nameText);
+
+          // Cost — bottom of box, clearly separated
+          const costStr = owned ? '\u2713' : skill.cost + '';
+          const costCol = owned ? '#44ff44' : (canPurchase.canPurchase ? '#ffcc44' : '#555555');
+          const costFS = boxW < 60 ? 9 : 10;
+          const costText = this.add.text(sx, sy + boxH - 4, costStr, {
+            fontFamily: 'monospace', fontSize: costFS, color: costCol, fontStyle: 'bold'
+          }).setOrigin(0.5, 1);
           container.add(costText);
 
-          // Hit area for interaction
-          const worldX = skillX + container.x;
-          const worldY = skillY + skillBoxHeight / 2 + container.y;
-
-          const hitArea = this.add.rectangle(worldX, worldY, skillBoxWidth, skillBoxHeight, 0xffffff, 0.01)
-            .setOrigin(0.5, 0.5)
-            .setDepth(2050)
-            .setScrollFactor(0)
+          // Hit area
+          const worldX = sx + container.x;
+          const worldY = sy + boxH / 2 + container.y;
+          const hitArea = this.add.rectangle(worldX, worldY, boxW, boxH, 0xffffff, 0.01)
+            .setOrigin(0.5, 0.5).setDepth(2050).setScrollFactor(0)
             .setInteractive({ useHandCursor: !owned && canPurchase.canPurchase });
 
           skillHitAreas.push(hitArea);
