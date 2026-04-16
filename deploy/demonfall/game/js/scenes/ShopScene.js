@@ -244,7 +244,7 @@
     _renderPotionsTab() {
       const { px, py, panelW, panelH } = this._panel;
       const startY = py - panelH / 2 + 90;
-      const rowH = 58;
+      const rowH = 48;
       const defs = (window.LootSystem && window.LootSystem.POTION_DEFS) || [];
 
       // Portal scroll row at the top
@@ -263,14 +263,14 @@
         fontFamily: 'monospace', fontSize: '10px', color: '#aaddff'
       }).setScrollFactor(0).setDepth(2003);
       this.tabBody.push(scrollDesc);
-      const scrollPriceText = this.add.text(px + panelW / 2 - 150, scrollY + rowH / 2, scrollPrice + ' G', {
+      const scrollPriceText = this.add.text(px + panelW / 2 - 180, scrollY + rowH / 2, scrollPrice + ' G', {
         fontFamily: 'monospace', fontSize: '12px', color: '#ffd166'
       }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2003);
       this.tabBody.push(scrollPriceText);
-      const scrollBuyBg = this.add.rectangle(px + panelW / 2 - 50, scrollY + rowH / 2, 70, 26, 0x3a3a3a)
+      const scrollBuyBg = this.add.rectangle(px + panelW / 2 - 60, scrollY + rowH / 2, 70, 26, 0x3a3a3a)
         .setStrokeStyle(1, 0xd4a543).setScrollFactor(0).setDepth(2003)
         .setInteractive({ useHandCursor: true });
-      const scrollBuyText = this.add.text(px + panelW / 2 - 50, scrollY + rowH / 2, 'Kaufen 1', {
+      const scrollBuyText = this.add.text(px + panelW / 2 - 60, scrollY + rowH / 2, 'Kaufen', {
         fontFamily: 'monospace', fontSize: '11px', color: '#f1e9d8'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
       this.tabBody.push(scrollBuyBg);
@@ -306,15 +306,15 @@
         this.tabBody.push(healText);
 
         const potionPrice = this.isDungeonMerchant ? Math.max(1, Math.round(def.goldCost * 0.7)) : def.goldCost;
-        const priceText = this.add.text(px + panelW / 2 - 150, ry + rowH / 2, potionPrice + ' G', {
+        const priceText = this.add.text(px + panelW / 2 - 180, ry + rowH / 2, potionPrice + ' G', {
           fontFamily: 'monospace', fontSize: '12px', color: '#ffd166'
         }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(priceText);
 
-        const buyBg = this.add.rectangle(px + panelW / 2 - 50, ry + rowH / 2, 70, 26, 0x3a3a3a)
+        const buyBg = this.add.rectangle(px + panelW / 2 - 60, ry + rowH / 2, 70, 26, 0x3a3a3a)
           .setStrokeStyle(1, 0xd4a543).setScrollFactor(0).setDepth(2003)
           .setInteractive({ useHandCursor: true });
-        const buyText = this.add.text(px + panelW / 2 - 50, ry + rowH / 2, 'Kaufen 1', {
+        const buyText = this.add.text(px + panelW / 2 - 60, ry + rowH / 2, 'Kaufen', {
           fontFamily: 'monospace', fontSize: '11px', color: '#f1e9d8'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
         this.tabBody.push(buyBg);

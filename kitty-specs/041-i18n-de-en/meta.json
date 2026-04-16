@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-16T14:00:00.000000+00:00",
+  "feature_number": "041",
+  "feature_slug": "041-i18n-de-en",
+  "friendly_name": "i18n German/English",
+  "mission": "software-dev",
+  "slug": "041-i18n-de-en",
+  "target_branch": "main"
+}
