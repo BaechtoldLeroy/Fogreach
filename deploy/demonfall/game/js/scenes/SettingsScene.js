@@ -93,7 +93,7 @@
       this.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7).setScrollFactor(0).setDepth(2000);
 
       const panelW = Math.min(560, cw - 40);
-      const panelH = Math.min(420, ch - 40);
+      const panelH = Math.min(520, ch - 20);
       const px = cw / 2;
       const py = ch / 2;
 
@@ -113,15 +113,15 @@
       let rowY = py - panelH / 2 + 60;
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'AUDIO');
       rowY += 22;
-      this._volumeRow(px, rowY, 'Master', 'master', panelW); rowY += 32;
-      this._volumeRow(px, rowY, 'Musik', 'music', panelW);    rowY += 32;
-      this._volumeRow(px, rowY, 'SFX', 'sfx', panelW);        rowY += 32;
-      this._toggleRow(px, rowY, 'Stumm', 'muted', panelW);    rowY += 36;
+      this._volumeRow(px, rowY, 'Master', 'master', panelW); rowY += 28;
+      this._volumeRow(px, rowY, 'Musik', 'music', panelW);    rowY += 28;
+      this._volumeRow(px, rowY, 'SFX', 'sfx', panelW);        rowY += 28;
+      this._toggleRow(px, rowY, 'Stumm', 'muted', panelW);    rowY += 30;
 
       // -- Controls section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'STEUERUNG');
       rowY += 22;
-      this._volumeRow(px, rowY, 'Gewicht (D2-Feel)', 'movementWeight', panelW); rowY += 36;
+      this._volumeRow(px, rowY, 'Gewicht (D2-Feel)', 'movementWeight', panelW); rowY += 30;
 
       // -- Mobile section (only on touch devices) --
       const isTouch = !!(this.sys && this.sys.game && this.sys.game.device
@@ -147,8 +147,8 @@
       // -- Debug section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'DEBUG');
       rowY += 22;
-      this._toggleRow(px, rowY, 'Auto-Start (Menue ueberspringen)', 'debug.autostart', panelW); rowY += 32;
-      this._toggleRow(px, rowY, 'Nebel des Krieges deaktivieren', 'debug.noFow', panelW); rowY += 32;
+      this._toggleRow(px, rowY, 'Auto-Start', 'debug.autostart', panelW); rowY += 28;
+      this._toggleRow(px, rowY, 'Kein Nebel d. Krieges', 'debug.noFow', panelW); rowY += 28;
       this._actionRow(px, rowY, '+100 Eisenbrocken', () => {
         if (typeof window.changeMaterialCount === 'function') {
           window.changeMaterialCount('MAT', 100);
