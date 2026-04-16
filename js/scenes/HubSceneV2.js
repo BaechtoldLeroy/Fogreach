@@ -1717,16 +1717,21 @@ class HubSceneV2 extends Phaser.Scene {
           });
 
           hitArea.on('pointerdown', () => {
+            // On mobile (touch): first tap shows tooltip, second tap buys
+            const isTouch = !!(this.sys?.game?.device?.input?.touch);
+            if (isTouch && !this._skillTooltip) {
+              // Simulate hover — show tooltip on first tap
+              hitArea.emit('pointerover');
+              return;
+            }
+
             if (owned) return;
             if (!canPurchase.canPurchase) return;
 
             const result = window.purchaseSkill(skill.id);
             if (result.success) {
-              // Rebuild UI instantly (no close animation)
               closeSkillUI();
               this._showSkillTreeUI();
-            } else {
-              // Show reason as toast if available
             }
           });
         });
