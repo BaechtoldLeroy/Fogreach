@@ -373,6 +373,8 @@
     const JOYSTICK_ZONE_RADIUS = 120; // px from joystick center
     let holdMoveThrottle = 0;
     scene.input.on('pointerdown', (pointer) => {
+      // D2 controls must be enabled
+      if (window.__MOBILE_D2_CONTROLS__ === false) return;
       // Ignore if tapping on UI (right side ability area or top bar)
       if (pointer.x > scene.scale.width * 0.65 && pointer.y > scene.scale.height * 0.4) return;
       if (pointer.y < 60) return; // top HUD bar

@@ -23,6 +23,7 @@
       deadZone: 0.15,
       haptics: true,
       autoAim: true,
+      d2Controls: true,
       buttonScale: 1.0
     }
   };
@@ -70,6 +71,7 @@
       typeof m.deadZone === 'number' ? m.deadZone : DEFAULTS.mobile.deadZone));
     window.__MOBILE_HAPTICS__ = m.haptics !== undefined ? !!m.haptics : true;
     window.__MOBILE_AUTO_AIM__ = m.autoAim !== undefined ? !!m.autoAim : true;
+    window.__MOBILE_D2_CONTROLS__ = m.d2Controls !== undefined ? !!m.d2Controls : true;
     window.__MOBILE_BUTTON_SCALE__ = MOBILE_BUTTON_SCALES.includes(m.buttonScale)
       ? m.buttonScale : 1.0;
   }
@@ -135,7 +137,8 @@
           min: 0, max: 0.4, step: 0.05, format: (v) => Math.round(v * 100) + '%'
         }); rowY += 32;
         this._toggleRow(px, rowY, 'Vibration', 'mobile.haptics', panelW); rowY += 32;
-        this._toggleRow(px, rowY, 'Auto-Aim', 'mobile.autoAim', panelW); rowY += 32;
+        this._toggleRow(px, rowY, 'Auto-Aim', 'mobile.autoAim', panelW); rowY += 28;
+        this._toggleRow(px, rowY, 'D2 Controls (Tap-to-Move)', 'mobile.d2Controls', panelW); rowY += 28;
         this._pickerRow(px, rowY, 'Button-Groesse', 'mobile.buttonScale',
           MOBILE_BUTTON_SCALES, (v) => Math.round(v * 100) + '%', panelW);
         rowY += 36;
