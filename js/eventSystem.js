@@ -265,11 +265,15 @@
                 return;
               }
               if (Math.random() < 0.4) {
+                // Won: return bet + winnings (net gain = 2x bet)
                 var winnings = cost * 3;
-                if (typeof window.changeMaterialCount === 'function') window.changeMaterialCount('GOLD', winnings);
-                showEventToast(scene, 'Gewonnen! +' + winnings + ' Gold!', 'gambling');
+                if (window.LootSystem && window.LootSystem.grantGold) {
+                  window.LootSystem.grantGold(winnings);
+                }
+                var netGain = winnings - cost;
+                showEventToast(scene, 'Gewonnen! Netto +' + netGain + ' Gold!', 'gambling');
               } else {
-                showEventToast(scene, 'Verloren! -' + cost + ' Gold...', 'gambling');
+                showEventToast(scene, 'Verloren! -' + cost + ' Gold', 'gambling');
               }
             }
           },
