@@ -851,9 +851,16 @@ function initFogOfWar() {
   scene._visTick = 0;
 }
 
+let _fogFrameCounter = 0;
 function updateFogOfWar() {
   const scene = this;
   if (!scene.spotlightRT || !scene.exploredRT || !player) return;
+
+  // Mobile optimization: skip fog updates on alternate frames
+  const isMobileFog = !!(typeof isMobile !== 'undefined' && isMobile);
+  const fogSkipInterval = isMobileFog ? 2 : 1;
+  _fogFrameCounter++;
+  if (_fogFrameCounter % fogSkipInterval !== 0) return;
 
   const cam = scene.cameras.main;
   const px = player.x,
@@ -925,7 +932,10 @@ function buildRandomRoom(scene, room) {
 
 // --- Vision Tuning ---
 const VISION_RADIUS = 220;
-const VISION_RAYS = 180; // 360 was too heavy on CPU in large rooms
+// Mobile gets fewer rays (90 vs 180) to reduce CPU cost
+const VISION_RAYS_DESKTOP = 180;
+const VISION_RAYS_MOBILE = 90;
+const VISION_RAYS = (typeof isMobile !== 'undefined' && isMobile) ? VISION_RAYS_MOBILE : VISION_RAYS_DESKTOP;
 const VISION_STEP = 6; // coarser = faster, still fine enough for walls
 const VISION_WALL_BACKOFF = 0; // nicht vor der Wand zurueckspringen
 const VISION_PAD_EXPLORED = 20; // small overshoot so wall itself is revealed (~half tile)
