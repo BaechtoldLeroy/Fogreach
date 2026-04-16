@@ -1,4 +1,7 @@
 function createObstacleGraphics() {
+  // Cache guard: skip if textures already exist (037-mobile-performance)
+  if (this.textures.exists('floor_stone') && this.textures.exists('obstacleWall')) return;
+
   const g = this.add.graphics();
 
   // ===== floor_stone (32x32) — standard stone floor with rich detail =====

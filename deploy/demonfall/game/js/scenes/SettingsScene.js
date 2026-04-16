@@ -13,6 +13,7 @@
     sfx: 0.7,
     muted: false,
     fullscreen: false,
+    reducedEffects: false, // mobile performance: fewer particles, simpler fog
     movementWeight: 0.0, // 0 = instant (current), 1.0 = D2-like weight
     debug: {
       autostart: false,
@@ -58,6 +59,7 @@
       if (!settings.muted && window.soundManager.muted) window.soundManager.unmute();
     }
     window.__DEBUG_NO_FOW__ = !!settings.debug.noFow;
+    window.__REDUCED_EFFECTS__ = !!settings.reducedEffects;
     window.__MOVEMENT_WEIGHT__ = typeof settings.movementWeight === 'number'
       ? Math.max(0, Math.min(1, settings.movementWeight))
       : 0;
@@ -142,7 +144,8 @@
       // -- Display section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'ANZEIGE');
       rowY += 22;
-      this._fullscreenRow(px, rowY, panelW); rowY += 36;
+      this._fullscreenRow(px, rowY, panelW); rowY += 30;
+      this._toggleRow(px, rowY, 'Reduzierte Effekte', 'reducedEffects', panelW); rowY += 30;
 
       // -- Debug section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, 'DEBUG');
