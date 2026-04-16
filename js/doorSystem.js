@@ -153,9 +153,12 @@
     // obstacles.refresh() re-enables all bodies, which breaks open doors.
     if (!scene._doorGroup) {
       scene._doorGroup = scene.physics.add.staticGroup();
-      // Set up collider with player (with walkthrough check)
+    }
+    // Recreate collider if player reference changed or collider missing
+    var playerRef = (typeof player !== 'undefined') ? player : null;
+    if (playerRef && !scene._doorPlayerCollider) {
       scene._doorPlayerCollider = scene.physics.add.collider(
-        typeof player !== 'undefined' ? player : null,
+        playerRef,
         scene._doorGroup,
         null,
         function (pl, door) {
@@ -205,13 +208,11 @@
     door.setData('closedKey', keys.closedKey);
     door.setData('openKey', keys.openKey);
 
+    // Initialize body first, then set to open
+    door.refreshBody();
     // Start open so the player isn't blocked on room entry
     door.setTexture(keys.openKey);
     door.setData('walkthrough', true);
-    if (door.body) {
-      door.body.enable = false;
-      door.body.checkCollision.none = true;
-    }
 
     // Track all doors on the scene for the update loop
     if (!scene._doors) scene._doors = [];
