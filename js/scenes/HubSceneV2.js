@@ -1720,7 +1720,7 @@ class HubSceneV2 extends Phaser.Scene {
           });
         });
 
-        currentSkillY += tierSpacing;
+        currentSkillY += boxH + tierGap;
       }
 
       treeX += treeWidth + treePadding;

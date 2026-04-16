@@ -366,30 +366,34 @@ function initInventoryUI() {
   const panelBg = scene.add.image(0, 0, 'uiPanel').setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0);
   panel.add(panelBg);
 
-  const title = scene.add.text(-PANEL_W / 2 + 30, -PANEL_H / 2 + 18, 'Inventar', {
-    fontFamily: 'serif', fontSize: '22px', fill: '#ffd166', fontStyle: 'bold',
-    stroke: '#000', strokeThickness: 2
+  // Dark header bar for readable text over the ornate panel background
+  const headerBar = scene.add.graphics();
+  headerBar.fillStyle(0x0c0c14, 0.92);
+  headerBar.fillRect(-PANEL_W / 2 + 4, -PANEL_H / 2 + 4, PANEL_W - 8, 72);
+  headerBar.setScrollFactor(0);
+  panel.add(headerBar);
+
+  const title = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 10, 'Inventar', {
+    fontFamily: 'serif', fontSize: '20px', fill: '#ffd166', fontStyle: 'bold'
   }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(title);
 
-  const help = scene.add.text(-PANEL_W / 2 + 30, -PANEL_H / 2 + 46,
+  const help = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 36,
     'Klicke ein Item zum Ausruesten / Entfernen',
-    { fontSize: '11px', fill: '#dddddd', fontFamily: 'monospace',
-      stroke: '#000000', strokeThickness: 3,
-      backgroundColor: '#00000088', padding: { x: 4, y: 2 }
+    { fontSize: '11px', fill: '#aaaaaa', fontFamily: 'monospace'
     }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(help);
 
-  const materialCounter = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 66, '', {
-    fontSize: '16px',
+  const materialCounter = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 54, '', {
+    fontSize: '14px', fontFamily: 'monospace',
     fill: '#f4d06f'
   }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(materialCounter);
   invUI.materialsText = materialCounter;
   updateMaterialCounterUI();
 
-  const btnClose = scene.add.text(PANEL_W / 2 - 30, -PANEL_H / 2 + 18, '✕', {
-    fontSize: '16px', fill: '#fff', backgroundColor: '#333', padding: { x: 6, y: 4 }
+  const btnClose = scene.add.text(PANEL_W / 2 - 16, -PANEL_H / 2 + 10, '✕', {
+    fontSize: '18px', fill: '#ff6666', fontStyle: 'bold'
   }).setOrigin(1, 0).setScrollFactor(0).setInteractive({ useHandCursor: true })
     .on('pointerdown', () => closeInventory());
   panel.add(btnClose);
