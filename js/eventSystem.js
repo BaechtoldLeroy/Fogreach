@@ -76,16 +76,56 @@
   function spawnEventObject(scene, texKey, color, glowColor, label, onInteract) {
     if (!scene || !scene.add || !scene.physics) return;
 
-    // Generate texture if needed
+    // Generate detailed textures per event type
     if (!scene.textures.exists(texKey)) {
       var g = scene.make.graphics({ add: false });
-      g.fillStyle(color, 1);
-      g.fillRect(4, 4, 24, 28);
-      g.fillStyle(glowColor, 0.5);
-      g.fillCircle(16, 16, 14);
-      g.fillStyle(color, 1);
-      g.fillRect(6, 6, 20, 24);
-      g.generateTexture(texKey, 32, 32);
+      if (texKey === 'evt_fountain') {
+        // Stone basin with glowing water
+        g.fillStyle(0x555566, 1); g.fillRect(6, 20, 20, 10); // base
+        g.fillStyle(0x666677, 1); g.fillRect(4, 18, 24, 4); // rim
+        g.fillStyle(0x777788, 1); g.fillRect(8, 22, 16, 6); // inner
+        g.fillStyle(0x3366aa, 0.8); g.fillEllipse(16, 24, 14, 5); // water
+        g.fillStyle(0x44aaff, 0.4); g.fillEllipse(16, 23, 10, 3); // water glow
+        g.fillStyle(0xffffff, 0.3); g.fillCircle(13, 23, 1.5); // reflection
+        // Pillar
+        g.fillStyle(0x666677, 1); g.fillRect(13, 6, 6, 14);
+        g.fillStyle(0x777788, 1); g.fillRect(12, 4, 8, 4); // capital
+        g.fillStyle(0x44aaff, 0.6); g.fillCircle(16, 4, 3); // glow orb
+        g.fillStyle(0x88ddff, 0.3); g.fillCircle(16, 4, 5); // outer glow
+        g.generateTexture(texKey, 32, 32);
+      } else if (texKey === 'evt_shrine') {
+        // Stone altar with purple crystal
+        g.fillStyle(0x444455, 1); g.fillRect(6, 22, 20, 8); // base
+        g.fillStyle(0x555566, 1); g.fillRect(4, 20, 24, 4); // top slab
+        g.fillStyle(0x333344, 1); g.fillRect(10, 24, 4, 6); // left leg
+        g.fillStyle(0x333344, 1); g.fillRect(18, 24, 4, 6); // right leg
+        // Crystal
+        g.fillStyle(0x6644aa, 1);
+        g.beginPath(); g.moveTo(16, 6); g.lineTo(20, 18); g.lineTo(12, 18); g.closePath(); g.fillPath();
+        g.fillStyle(0x8866cc, 0.7);
+        g.beginPath(); g.moveTo(16, 8); g.lineTo(18, 16); g.lineTo(14, 16); g.closePath(); g.fillPath();
+        g.fillStyle(0xaa88ff, 0.4); g.fillCircle(16, 12, 6); // glow
+        g.generateTexture(texKey, 32, 32);
+      } else if (texKey === 'evt_gamble') {
+        // Wooden table with dice/coins
+        g.fillStyle(0x6b4226, 1); g.fillRect(4, 16, 24, 12); // table top
+        g.fillStyle(0x5a3a1a, 1); g.fillRect(6, 14, 20, 4); // table surface
+        g.fillStyle(0x4a2a10, 1); g.fillRect(8, 26, 4, 4); // left leg
+        g.fillStyle(0x4a2a10, 1); g.fillRect(20, 26, 4, 4); // right leg
+        // Coins
+        g.fillStyle(0xffd700, 1); g.fillCircle(11, 16, 2.5);
+        g.fillStyle(0xffcc00, 1); g.fillCircle(14, 15, 2);
+        g.fillStyle(0xffd700, 1); g.fillCircle(19, 16, 2.5);
+        // Dice
+        g.fillStyle(0xeeeeee, 1); g.fillRect(15, 12, 5, 5);
+        g.fillStyle(0x111111, 1); g.fillCircle(16, 14, 0.5); g.fillCircle(19, 14, 0.5);
+        g.generateTexture(texKey, 32, 32);
+      } else {
+        // Generic fallback
+        g.fillStyle(color, 1); g.fillRect(4, 4, 24, 28);
+        g.fillStyle(glowColor, 0.5); g.fillCircle(16, 16, 14);
+        g.generateTexture(texKey, 32, 32);
+      }
       g.destroy();
     }
 
