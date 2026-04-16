@@ -407,7 +407,8 @@
       for (var sat = 0; sat < 8; sat++) {
         var sx = c.x + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, c.w - STAIR_CLEARANCE * 2));
         var sy = c.y + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, c.h - STAIR_CLEARANCE * 2));
-        if (grid[sy] && grid[sy][sx] === '.' && !isDoorwayOrAdjacent(sx, sy)) {
+        var nearDoor = doorwayTiles[sy + '|' + sx] || doorwayTiles[(sy-1) + '|' + sx] || doorwayTiles[(sy+1) + '|' + sx] || doorwayTiles[sy + '|' + (sx-1)] || doorwayTiles[sy + '|' + (sx+1)];
+        if (grid[sy] && grid[sy][sx] === '.' && !nearDoor) {
           // Check distance from existing entrances
           var tooClose = false;
           for (var ei = 0; ei < entrances.length; ei++) {
