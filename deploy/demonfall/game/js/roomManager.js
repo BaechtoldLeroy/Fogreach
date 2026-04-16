@@ -389,8 +389,12 @@ function enterRoom(scene, roomId) {
     scene._projectileObstacleCollider.destroy();
     scene._projectileObstacleCollider = null;
   }
-  scene._playerObstacleCollider = scene.physics.add.collider(player, obstacles);
-  scene._enemyObstacleCollider = scene.physics.add.collider(enemies, obstacles);
+  scene._playerObstacleCollider = scene.physics.add.collider(player, obstacles, null, (pl, obs) => {
+    return !(obs && obs.getData && obs.getData('walkthrough'));
+  });
+  scene._enemyObstacleCollider = scene.physics.add.collider(enemies, obstacles, null, (en, obs) => {
+    return !(obs && obs.getData && obs.getData('walkthrough'));
+  });
   scene._projectileObstacleCollider = scene.physics.add.collider(enemyProjectiles, obstacles, (proj) => {
     if (proj && proj.active) {
       if (typeof window.releaseEnemyProjectile === 'function') {

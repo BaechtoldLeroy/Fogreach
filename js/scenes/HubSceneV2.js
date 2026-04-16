@@ -1697,12 +1697,12 @@ class HubSceneV2 extends Phaser.Scene {
             tooltip.add(tooltipTextObj);
 
             let tooltipX = worldX - tooltipW / 2;
-            let tooltipY = worldY + skillBoxHeight / 2 + 5;
+            let tooltipY = worldY + boxH / 2 + 5;
 
             if (tooltipX < 10) tooltipX = 10;
             if (tooltipX + tooltipW > cw - 10) tooltipX = cw - tooltipW - 10;
             if (tooltipY + tooltipH > ch - 10) {
-              tooltipY = worldY - skillBoxHeight / 2 - tooltipH - 5;
+              tooltipY = worldY - boxH / 2 - tooltipH - 5;
             }
 
             tooltip.setPosition(tooltipX, tooltipY).setScrollFactor(0);
@@ -1720,16 +1720,13 @@ class HubSceneV2 extends Phaser.Scene {
             if (owned) return;
             if (!canPurchase.canPurchase) return;
 
-            console.log('[Skills] Attempting to purchase:', skill.id);
             const result = window.purchaseSkill(skill.id);
             if (result.success) {
-              console.log('[Skills] Purchase successful, refreshing UI');
+              // Rebuild UI instantly (no close animation)
               closeSkillUI();
-              this.time.delayedCall(50, () => {
-                this._showSkillTreeUI();
-              });
+              this._showSkillTreeUI();
             } else {
-              console.warn('[Skills] Purchase failed:', result.reason);
+              // Show reason as toast if available
             }
           });
         });
