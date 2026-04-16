@@ -154,16 +154,37 @@
     if (!scene._doorGroup) {
       scene._doorGroup = scene.physics.add.staticGroup();
     }
-    // Recreate collider if player reference changed or collider missing
+    // Recreate colliders if missing
     var playerRef = (typeof player !== 'undefined') ? player : null;
+    var doorProcessCb = function (obj, door) {
+      return !(door && door.getData && door.getData('walkthrough'));
+    };
     if (playerRef && !scene._doorPlayerCollider) {
       scene._doorPlayerCollider = scene.physics.add.collider(
-        playerRef,
-        scene._doorGroup,
-        null,
-        function (pl, door) {
-          return !(door && door.getData && door.getData('walkthrough'));
-        }
+        playerRef, scene._doorGroup, null, doorProcessCb
+      );
+    }
+    // Projectiles + enemies collide with closed doors
+    if (typeof enemyProjectiles !== 'undefined' && enemyProjectiles && !scene._doorEnemyProjCollider) {
+      scene._doorEnemyProjCollider = scene.physics.add.collider(
+        enemyProjectiles, scene._doorGroup, function (proj) {
+          if (proj && proj.active) {
+            if (typeof window.releaseEnemyProjectile === 'function') window.releaseEnemyProjectile(proj);
+            else proj.destroy();
+          }
+        }, doorProcessCb
+      );
+    }
+    if (typeof playerProjectiles !== 'undefined' && playerProjectiles && !scene._doorPlayerProjCollider) {
+      scene._doorPlayerProjCollider = scene.physics.add.collider(
+        playerProjectiles, scene._doorGroup, function (proj) {
+          if (proj && proj.active) proj.destroy();
+        }, doorProcessCb
+      );
+    }
+    if (typeof enemies !== 'undefined' && enemies && !scene._doorEnemyCollider) {
+      scene._doorEnemyCollider = scene.physics.add.collider(
+        enemies, scene._doorGroup, null, doorProcessCb
       );
     }
     var doorGroup = scene._doorGroup;
@@ -349,9 +370,12 @@
       try { scene._doorPrompt.destroy(); } catch (e) {}
       scene._doorPrompt = null;
     }
-    if (scene._doorPlayerCollider) {
-      try { scene._doorPlayerCollider.destroy(); } catch (e) {}
-      scene._doorPlayerCollider = null;
+    var colliderKeys = ['_doorPlayerCollider', '_doorEnemyProjCollider', '_doorPlayerProjCollider', '_doorEnemyCollider'];
+    for (var ci = 0; ci < colliderKeys.length; ci++) {
+      if (scene[colliderKeys[ci]]) {
+        try { scene[colliderKeys[ci]].destroy(); } catch (e) {}
+        scene[colliderKeys[ci]] = null;
+      }
     }
     if (scene._doorGroup) {
       try {
