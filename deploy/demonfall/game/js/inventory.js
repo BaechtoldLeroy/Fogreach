@@ -367,7 +367,7 @@ function initInventoryUI() {
   panel.add(panelBg);
 
   const title = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 12, 'Inventar', {
-    fontSize: '28px', fill: '#fff', fontStyle: 'bold'
+    fontFamily: 'serif', fontSize: '24px', fill: '#ffd166', fontStyle: 'bold'
   }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(title);
 
