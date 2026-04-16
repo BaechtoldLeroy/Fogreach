@@ -371,13 +371,13 @@ function initInventoryUI() {
   }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(title);
 
-  const help = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 50,
-    'Klicke/Tippe ein Item → Ausrüsten / Benutzen / Entfernen',
-    { fontSize: '14px', fill: '#ccc' }).setOrigin(0, 0).setScrollFactor(0);
+  const help = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 46,
+    'Klicke ein Item zum Ausruesten / Entfernen',
+    { fontSize: '12px', fill: '#aaa' }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(help);
 
-  const materialCounter = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 78, '', {
-    fontSize: '18px',
+  const materialCounter = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 66, '', {
+    fontSize: '16px',
     fill: '#f4d06f'
   }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(materialCounter);
@@ -671,8 +671,8 @@ const EQUIP_STEP = 90;
     ? window.materialCounts.PORTAL_SCROLL : 0;
   const portalLabel = portalCount > 0 ? 'Stadtportal (' + portalCount + ')' : 'Stadtportal (0)';
   const portalColor = portalCount > 0 ? '#486c1d' : '#333333';
-  const btnPortal = scene.add.text(PANEL_W / 2 - 16, -PANEL_H / 2 + 52, portalLabel, {
-    fontSize: '16px',
+  const btnPortal = scene.add.text(PANEL_W / 2 - 16, -PANEL_H / 2 + 58, portalLabel, {
+    fontSize: '14px',
     fill: portalCount > 0 ? '#fff' : '#888',
     backgroundColor: portalColor,
     padding: { x: 12, y: 6 }
@@ -691,10 +691,10 @@ const EQUIP_STEP = 90;
     });
   panel.add(btnPortal);
 
-  const btnY = PANEL_H / 2 - 32; // etwas mehr Abstand zur Unterkante
-  const btnEquip = scene.add.text(-70, btnY, 'Ausrüsten', { fontSize: '16px', fill: '#fff', backgroundColor: '#47a', padding: { x: 10, y: 6 } })
+  const btnY = PANEL_H / 2 - 24;
+  const btnEquip = scene.add.text(-70, btnY, 'Ausruesten', { fontSize: '14px', fill: '#fff', backgroundColor: '#47a', padding: { x: 10, y: 5 } })
     .setOrigin(0.5, 1).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => equipSelectedItem.call(scene));
-  const btnDrop = scene.add.text(70, btnY, 'Entfernen', { fontSize: '16px', fill: '#fff', backgroundColor: '#a44', padding: { x: 10, y: 6 } })
+  const btnDrop = scene.add.text(70, btnY, 'Entfernen', { fontSize: '14px', fill: '#fff', backgroundColor: '#a44', padding: { x: 10, y: 5 } })
     .setOrigin(0.5, 1).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => dropSelectedItem());
   panel.add([btnEquip, btnDrop]);
 
