@@ -756,6 +756,20 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     });
   }
 
+  // Decorative props — non-collidable visual detail (030-large-room-variety)
+  if (tpl.decorations && tpl.decorations.length > 0) {
+    if (typeof window.createPropTextures === 'function') {
+      window.createPropTextures(scene);
+    }
+    tpl.decorations.forEach(d => {
+      if (!scene.textures.exists(d.type)) return;
+      const dpx = ox + gx(tpl, d.x) + T / 2;
+      const dpy = oy + gy(tpl, d.y) + T / 2;
+      const prop = scene.add.image(dpx, dpy, d.type).setDepth(-2).setAlpha(0.7);
+      templateWalls.push(prop);
+    });
+  }
+
   // Gegner-Spawns — enforce a minimum distance from the player spawn so
   // the player isn't ambushed on entry. If a template tries to spawn an
   // enemy too close, we relocate it to a distant accessible tile.

@@ -519,6 +519,34 @@
       }
     });
 
+    // 15) Decorative props — non-collidable cosmetic detail based on theme
+    var PROP_SETS = {
+      overgrown:    ['prop_cobweb', 'prop_puddle', 'prop_rubble'],
+      flooded:      ['prop_puddle', 'prop_puddle', 'prop_rubble'],
+      crumbling:    ['prop_rubble', 'prop_rubble', 'prop_cobweb'],
+      bloodstained: ['prop_rubble', 'prop_puddle', 'prop_cobweb'],
+      ancient:      ['prop_cobweb', 'prop_rubble', 'prop_barrel']
+    };
+    var propPool = PROP_SETS[theme.propSet] || PROP_SETS.crumbling;
+    var decorations = [];
+    accessibleChambers.forEach(function (c) {
+      var area = c.w * c.h;
+      var propCount = Math.max(1, Math.floor(area / 40)); // ~1 prop per 40 tiles
+      for (var p = 0; p < propCount; p++) {
+        for (var at = 0; at < 4; at++) {
+          var px = c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2));
+          var py = c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2));
+          if (grid[py] && grid[py][px] === '.' && !isDoorwayOrAdjacent(px, py)) {
+            decorations.push({
+              type: propPool[Math.floor(rng() * propPool.length)],
+              x: px, y: py
+            });
+            break;
+          }
+        }
+      }
+    });
+
     return {
       name: name,
       tags: ['procedural', 'large'].concat(theme.tags),
@@ -532,6 +560,7 @@
       objects: objects,
       spawns: { player: playerSpawn, enemies: enemies, loot: loot },
       doorways: doorways,
+      decorations: decorations,
       theme: { id: theme.id, floorTint: theme.floorTint, wallTint: theme.wallTint, propSet: theme.propSet },
       _procedural: true,
       _seed: seed
