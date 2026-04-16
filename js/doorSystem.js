@@ -195,8 +195,10 @@
     // Start open so the player isn't blocked on room entry
     door.setTexture(keys.openKey);
     door.setData('walkthrough', true);
-
-    door.refreshBody();
+    if (door.body) {
+      door.body.enable = false;
+      door.body.checkCollision.none = true;
+    }
 
     // Track all doors on the scene for the update loop
     if (!scene._doors) scene._doors = [];
@@ -219,10 +221,20 @@
       door.setTexture(door.getData('openKey'));
       door.setData('doorState', 'open');
       door.setData('walkthrough', true);
+      // Fully disable physics body so static group can't collide
+      if (door.body) {
+        door.body.enable = false;
+        door.body.checkCollision.none = true;
+      }
     } else {
       door.setTexture(door.getData('closedKey'));
       door.setData('doorState', 'closed');
       door.setData('walkthrough', false);
+      if (door.body) {
+        door.body.enable = true;
+        door.body.checkCollision.none = false;
+        door.body.reset(door.x, door.y);
+      }
     }
     // Invalidate wall cache so fog of war updates immediately
     if (typeof window.invalidateWallCache === 'function') {
