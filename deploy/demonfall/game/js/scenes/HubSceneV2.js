@@ -1632,11 +1632,11 @@ class HubSceneV2 extends Phaser.Scene {
           }).setOrigin(0.5, 1);
           container.add(costText);
 
-          // Hit area
+          // Hit area — use zone for reliable hover/click detection
           const worldX = sx + container.x;
           const worldY = sy + boxH / 2 + container.y;
-          const hitArea = this.add.rectangle(worldX, worldY, boxW, boxH, 0xffffff, 0.01)
-            .setOrigin(0.5, 0.5).setDepth(2050).setScrollFactor(0)
+          const hitArea = this.add.zone(worldX, worldY, boxW, boxH)
+            .setOrigin(0.5, 0.5).setDepth(2200).setScrollFactor(0)
             .setInteractive({ useHandCursor: !owned && canPurchase.canPurchase });
 
           skillHitAreas.push(hitArea);
