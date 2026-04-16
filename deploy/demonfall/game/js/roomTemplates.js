@@ -761,13 +761,26 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     if (typeof window.createPropTextures === 'function') {
       window.createPropTextures(scene);
     }
-    tpl.decorations.forEach(d => {
-      if (!scene.textures.exists(d.type)) return;
+    // Mobile: cap decoration count for performance
+    const isMobileProp = !!(scene.sys?.game?.device?.input?.touch);
+    const maxDecorations = isMobileProp
+      ? Math.min(tpl.decorations.length, Math.floor(tpl.decorations.length * 0.5))
+      : tpl.decorations.length;
+    for (let di = 0; di < maxDecorations; di++) {
+      const d = tpl.decorations[di];
+      if (!scene.textures.exists(d.type)) continue;
       const dpx = ox + gx(tpl, d.x) + T / 2;
       const dpy = oy + gy(tpl, d.y) + T / 2;
-      const prop = scene.add.image(dpx, dpy, d.type).setDepth(-2).setAlpha(0.7);
+      // Subtle visual variety: randomize scale and alpha slightly
+      const scaleVar = 0.85 + Math.random() * 0.3;  // 0.85–1.15
+      const alphaVar = 0.55 + Math.random() * 0.25;  // 0.55–0.80
+      const depthVar = d.type === 'prop_pillar' ? 41 : -2; // pillars render above floor
+      const prop = scene.add.image(dpx, dpy, d.type)
+        .setDepth(depthVar)
+        .setAlpha(alphaVar)
+        .setScale(scaleVar);
       templateWalls.push(prop);
-    });
+    }
   }
 
   // Gegner-Spawns — enforce a minimum distance from the player spawn so
