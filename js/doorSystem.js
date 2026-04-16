@@ -217,6 +217,7 @@
    */
   function toggleDoor(door) {
     var state = door.getData('doorState');
+    console.log('[Door] toggle from', state, 'body:', !!door.body, 'enable:', door.body?.enable);
     if (state === 'closed') {
       door.setTexture(door.getData('openKey'));
       door.setData('doorState', 'open');
@@ -225,6 +226,7 @@
       if (door.body) {
         door.body.enable = false;
         door.body.checkCollision.none = true;
+        console.log('[Door] OPENED — body.enable:', door.body.enable, 'walkthrough:', door.getData('walkthrough'));
       }
     } else {
       door.setTexture(door.getData('closedKey'));
@@ -234,6 +236,7 @@
         door.body.enable = true;
         door.body.checkCollision.none = false;
         door.body.reset(door.x, door.y);
+        console.log('[Door] CLOSED — body.enable:', door.body.enable);
       }
     }
     // Invalidate wall cache so fog of war updates immediately

@@ -385,20 +385,21 @@
     var cam = scene.cameras && scene.cameras.main;
     var camW = cam ? cam.width : 800;
     var cx = camW / 2;
-    var cy = 90;
+    var cy = 80;
 
     var accentHex = EVENT_ACCENT_COLORS[eventId] || 0xffdd44;
 
     // Create label first to measure its width, then size the panel around it.
-    var maxTextWidth = camW - 80; // leave margin
+    var maxTextWidth = camW - 100;
     var label = scene.add.text(cx, cy, message, {
-      fontSize: '22px', fill: '#ffffff', fontFamily: 'monospace',
+      fontSize: '18px', fill: '#ffffff', fontFamily: 'monospace',
       stroke: '#000000', strokeThickness: 3, align: 'center',
-      wordWrap: { width: maxTextWidth, useAdvancedWrap: true }
-    }).setOrigin(0.5).setDepth(2000).setScrollFactor(0).setAlpha(0).setScale(0.85);
+      wordWrap: { width: maxTextWidth, useAdvancedWrap: true },
+      resolution: 2
+    }).setOrigin(0.5).setDepth(2000).setScrollFactor(0).setAlpha(0);
 
     // Panel sized to fit the rendered text (+padding)
-    var padX = 28, padY = 14;
+    var padX = 20, padY = 10;
     var panelW = Math.min(camW - 40, Math.ceil(label.width) + padX * 2);
     var panelH = Math.ceil(label.height) + padY * 2;
 
@@ -407,18 +408,17 @@
     panel.fillRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 12);
     panel.lineStyle(2, accentHex, 0.9);
     panel.strokeRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 12);
-    panel.setDepth(1999).setScrollFactor(0).setAlpha(0).setScale(0.85);
+    panel.setDepth(1999).setScrollFactor(0).setAlpha(0);
 
     var targets = [panel, label];
 
     if (scene.tweens && scene.tweens.add) {
-      // Fade + scale bounce in
+      // Simple fade in (no scale — scale caused text to overflow panel)
       scene.tweens.add({
         targets: targets,
         alpha: 1,
-        scale: 1,
-        duration: 220,
-        ease: 'Back.Out',
+        duration: 250,
+        ease: 'Power2',
         onComplete: function() {
           // Hold, then fade out with upward drift
           scene.tweens.add({
