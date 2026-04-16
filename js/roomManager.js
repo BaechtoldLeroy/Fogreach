@@ -294,6 +294,8 @@ function enterRoom(scene, roomId) {
   if (obstacles && typeof obstacles.clear === 'function') {
     obstacles.clear(true, true);
   }
+  // Clear door tracking list (door sprites were just destroyed with obstacles)
+  if (window.DoorSystem?.clearDoors) window.DoorSystem.clearDoors(scene);
 
   const needsNewStairsGroup =
     !scene.stairsGroup ||
