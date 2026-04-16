@@ -374,8 +374,10 @@ function initInventoryUI() {
 
   const help = scene.add.text(-PANEL_W / 2 + 30, -PANEL_H / 2 + 46,
     'Klicke ein Item zum Ausruesten / Entfernen',
-    { fontSize: '11px', fill: '#bbb', fontFamily: 'monospace',
-      stroke: '#000', strokeThickness: 2 }).setOrigin(0, 0).setScrollFactor(0);
+    { fontSize: '11px', fill: '#dddddd', fontFamily: 'monospace',
+      stroke: '#000000', strokeThickness: 3,
+      backgroundColor: '#00000088', padding: { x: 4, y: 2 }
+    }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(help);
 
   const materialCounter = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 66, '', {
@@ -669,29 +671,39 @@ const EQUIP_STEP = 90;
   }
 
   // --- Buttons ---
-  const portalCount = (window.materialCounts && typeof window.materialCounts.PORTAL_SCROLL === 'number')
-    ? window.materialCounts.PORTAL_SCROLL : 0;
-  const portalLabel = portalCount > 0 ? 'Stadtportal (' + portalCount + ')' : 'Stadtportal (0)';
-  const portalColor = portalCount > 0 ? '#486c1d' : '#333333';
-  const btnPortal = scene.add.text(PANEL_W / 2 - 16, -PANEL_H / 2 + 58, portalLabel, {
-    fontSize: '14px',
-    fill: portalCount > 0 ? '#fff' : '#888',
-    backgroundColor: portalColor,
-    padding: { x: 12, y: 6 }
+  const btnPortal = scene.add.text(PANEL_W / 2 - 30, -PANEL_H / 2 + 58, '', {
+    fontSize: '13px',
+    fill: '#fff',
+    fontFamily: 'monospace',
+    backgroundColor: '#486c1d',
+    padding: { x: 10, y: 5 }
   })
     .setOrigin(1, 0)
     .setScrollFactor(0)
     .setInteractive({ useHandCursor: true })
     .on('pointerdown', () => {
       const scrolls = (window.materialCounts && window.materialCounts.PORTAL_SCROLL) || 0;
-      if (scrolls <= 0) return; // no scrolls available
+      if (scrolls <= 0) return;
       window.materialCounts.PORTAL_SCROLL = scrolls - 1;
+      _refreshPortalButton();
       closeInventory();
       if (typeof leaveDungeonForHub === 'function') {
         leaveDungeonForHub(scene, { reason: 'portal' });
       }
     });
   panel.add(btnPortal);
+  invUI.portalBtn = btnPortal;
+
+  window._refreshPortalButton = function () {
+    const count = (window.materialCounts && typeof window.materialCounts.PORTAL_SCROLL === 'number')
+      ? window.materialCounts.PORTAL_SCROLL : 0;
+    btnPortal.setText('Portal (' + count + ')');
+    btnPortal.setStyle({
+      backgroundColor: count > 0 ? '#486c1d' : '#333333',
+      fill: count > 0 ? '#fff' : '#888'
+    });
+  };
+  window._refreshPortalButton();
 
   const btnY = PANEL_H / 2 - 24;
   const btnEquip = scene.add.text(-70, btnY, 'Ausruesten', { fontSize: '14px', fill: '#fff', backgroundColor: '#47a', padding: { x: 10, y: 5 } })
@@ -850,13 +862,15 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
 
 function openInventory() {
   invOpen = true;
-  // Guard: global `player` may be undefined in Hub (uses this.player),
-  // or may be a leftover GameScene sprite whose body was destroyed on shutdown.
   if (typeof player !== 'undefined' && player && player.body && player.setVelocity) {
     player.setVelocity(0, 0);
   }
   siphonMaterialsFromInventory();
   refreshInventoryUI();
+  // Refresh portal scroll count every time inventory opens
+  if (typeof window._refreshPortalButton === 'function') {
+    window._refreshPortalButton();
+  }
   if (invUI.overlay?.setVisible) invUI.overlay.setVisible(true);
   if (invUI.panel?.setVisible) invUI.panel.setVisible(true);
 }
