@@ -196,6 +196,7 @@
     door.setTexture(keys.openKey);
     if (door.body) {
       door.body.enable = false;
+      door.body.checkCollision.none = true;
     }
 
     door.refreshBody();
@@ -222,12 +223,14 @@
       door.setData('doorState', 'open');
       if (door.body) {
         door.body.enable = false;
+        door.body.checkCollision.none = true;
       }
     } else {
       door.setTexture(door.getData('closedKey'));
       door.setData('doorState', 'closed');
       if (door.body) {
         door.body.enable = true;
+        door.body.checkCollision.none = false;
         door.refreshBody();
       }
     }

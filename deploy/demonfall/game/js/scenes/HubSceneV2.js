@@ -1552,23 +1552,23 @@ class HubSceneV2 extends Phaser.Scene {
       });
 
       const maxTier = Math.max(...Object.keys(skillsByTier).map(Number));
-      const skillBoxHeight = 46;
-      const tierGap = 8;
+      const skillBoxHeight = 38;
+      const tierGap = 6;
       const tierSpacing = skillBoxHeight + tierGap;
 
-      let currentSkillY = treeStartY + treeTitle.height + 30;
+      let currentSkillY = treeStartY + treeTitle.height + 16;
 
       for (let tier = 1; tier <= maxTier; tier++) {
         const tierSkills = skillsByTier[tier] || [];
         if (tierSkills.length === 0) continue;
 
-        const horizontalGap = tierSkills.length > 2 ? 6 : 10;
-        const availableWidth = treeWidth - 30;
+        const horizontalGap = tierSkills.length > 3 ? 4 : 6;
+        const availableWidth = treeWidth - 16;
         const calculatedWidth = (availableWidth - horizontalGap * Math.max(0, tierSkills.length - 1)) / tierSkills.length;
-        const skillBoxWidth = Math.min(120, calculatedWidth);
+        const skillBoxWidth = Math.min(100, calculatedWidth);
         const skillSpacing = skillBoxWidth + horizontalGap;
-        const fontSize = skillBoxWidth < 70 ? 9 : 11;
-        const costFontSize = skillBoxWidth < 70 ? 12 : 14;
+        const fontSize = skillBoxWidth < 50 ? 8 : (skillBoxWidth < 80 ? 9 : 10);
+        const costFontSize = skillBoxWidth < 50 ? 10 : 12;
 
         const totalRowWidth = skillBoxWidth * tierSkills.length + horizontalGap * (tierSkills.length - 1);
         const startX = treeX + (treeWidth - totalRowWidth) / 2;
@@ -1610,12 +1610,12 @@ class HubSceneV2 extends Phaser.Scene {
           skillBox.strokeRoundedRect(skillX - skillBoxWidth / 2, skillY, skillBoxWidth, skillBoxHeight, 8);
           container.add(skillBox);
 
-          const skillNameText = this.add.text(skillX, skillY + 8, skill.name, {
+          const skillNameText = this.add.text(skillX, skillY + 4, skill.name, {
             fontFamily: 'Arial',
             fontSize: fontSize,
             color: textColor,
             fontStyle: 'bold',
-            wordWrap: { width: skillBoxWidth - 8 },
+            wordWrap: { width: skillBoxWidth - 6 },
             align: 'center'
           }).setOrigin(0.5, 0);
           container.add(skillNameText);
@@ -1633,7 +1633,7 @@ class HubSceneV2 extends Phaser.Scene {
 
           const costLabel = owned ? '\u2713' : `${skill.cost}`;
           const costColor = owned ? '#00ff00' : '#ffaa00';
-          const costText = this.add.text(skillX, skillY + skillBoxHeight - 16, costLabel, {
+          const costText = this.add.text(skillX, skillY + skillBoxHeight - 12, costLabel, {
             fontFamily: 'Arial',
             fontSize: costFontSize,
             color: costColor,

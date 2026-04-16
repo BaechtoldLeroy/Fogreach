@@ -634,16 +634,23 @@
       fontSize: '16px', fill: '#88ff88', fontFamily: 'monospace'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
 
-    var hint = scene.add.text(cw / 2, ch / 2 + 80, '[Klick zum Schließen]', {
+    var hint = scene.add.text(cw / 2, ch / 2 + 80, '[Klick / Space / ESC zum Schliessen]', {
       fontSize: '12px', fill: '#888888', fontFamily: 'monospace'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
 
+    var closed = false;
     var close = function() {
+      if (closed) return;
+      closed = true;
+      scene.input.keyboard.off('keydown-SPACE', close);
+      scene.input.keyboard.off('keydown-ESC', close);
       overlay.destroy(); panel.destroy(); title.destroy(); body.destroy(); bonus.destroy(); hint.destroy();
     };
     overlay.on('pointerdown', close);
+    scene.input.keyboard.on('keydown-SPACE', close);
+    scene.input.keyboard.on('keydown-ESC', close);
     if (scene.time && scene.time.delayedCall) {
-      scene.time.delayedCall(8000, close); // auto-close after 8s
+      scene.time.delayedCall(8000, close);
     }
   }
 

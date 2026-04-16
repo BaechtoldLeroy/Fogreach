@@ -366,14 +366,16 @@ function initInventoryUI() {
   const panelBg = scene.add.image(0, 0, 'uiPanel').setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0);
   panel.add(panelBg);
 
-  const title = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 12, 'Inventar', {
-    fontFamily: 'serif', fontSize: '24px', fill: '#ffd166', fontStyle: 'bold'
+  const title = scene.add.text(-PANEL_W / 2 + 30, -PANEL_H / 2 + 18, 'Inventar', {
+    fontFamily: 'serif', fontSize: '22px', fill: '#ffd166', fontStyle: 'bold',
+    stroke: '#000', strokeThickness: 2
   }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(title);
 
-  const help = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 46,
+  const help = scene.add.text(-PANEL_W / 2 + 30, -PANEL_H / 2 + 46,
     'Klicke ein Item zum Ausruesten / Entfernen',
-    { fontSize: '12px', fill: '#aaa' }).setOrigin(0, 0).setScrollFactor(0);
+    { fontSize: '11px', fill: '#bbb', fontFamily: 'monospace',
+      stroke: '#000', strokeThickness: 2 }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(help);
 
   const materialCounter = scene.add.text(-PANEL_W / 2 + 16, -PANEL_H / 2 + 66, '', {
@@ -384,8 +386,8 @@ function initInventoryUI() {
   invUI.materialsText = materialCounter;
   updateMaterialCounterUI();
 
-  const btnClose = scene.add.text(PANEL_W / 2 - 16, -PANEL_H / 2 + 16, '✕', {
-    fontSize: '18px', fill: '#fff', backgroundColor: '#333', padding: { x: 8, y: 6 }
+  const btnClose = scene.add.text(PANEL_W / 2 - 30, -PANEL_H / 2 + 18, '✕', {
+    fontSize: '16px', fill: '#fff', backgroundColor: '#333', padding: { x: 6, y: 4 }
   }).setOrigin(1, 0).setScrollFactor(0).setInteractive({ useHandCursor: true })
     .on('pointerdown', () => closeInventory());
   panel.add(btnClose);
