@@ -280,8 +280,13 @@
           this._showToast('Nicht genug Gold');
           return;
         }
-        if (!window.materialCounts) window.materialCounts = {};
-        window.materialCounts.PORTAL_SCROLL = (window.materialCounts.PORTAL_SCROLL || 0) + 1;
+        if (!window.materialCounts || typeof window.materialCounts !== 'object') window.materialCounts = {};
+        if (typeof window.materialCounts.PORTAL_SCROLL !== 'number') window.materialCounts.PORTAL_SCROLL = 0;
+        window.materialCounts.PORTAL_SCROLL += 1;
+        // Also use changeMaterialCount if available for proper tracking
+        if (typeof window.changeMaterialCount === 'function') {
+          // changeMaterialCount adds delta, but we already incremented, so skip
+        }
         scrollNameText.setText('Portalrolle (' + window.materialCounts.PORTAL_SCROLL + ')');
         this._refreshGold();
         this._showToast('Portalrolle gekauft');

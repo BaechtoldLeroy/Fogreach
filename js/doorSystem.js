@@ -187,10 +187,16 @@
     }
 
     door.setData('isDoor', true);
-    door.setData('doorState', 'closed');
+    door.setData('doorState', 'open');
     door.setData('orientation', orientation);
     door.setData('closedKey', keys.closedKey);
     door.setData('openKey', keys.openKey);
+
+    // Start open so the player isn't blocked on room entry
+    door.setTexture(keys.openKey);
+    if (door.body) {
+      door.body.enable = false;
+    }
 
     door.refreshBody();
 
@@ -288,11 +294,39 @@
     var doors = scene._doors;
     if (!doors || !doors.length) return;
 
+    var nearestDoor = null;
+    var nearestDist = INTERACT_DIST;
+
     for (var i = doors.length - 1; i >= 0; i--) {
       var door = doors[i];
       if (!door || !door.active || door.scene == null) {
         doors.splice(i, 1);
+        continue;
       }
+      // Find nearest door for prompt
+      if (player) {
+        var dx = door.x - player.x;
+        var dy = door.y - player.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestDoor = door;
+        }
+      }
+    }
+
+    // Show/hide [E] prompt above nearest door
+    if (nearestDoor && player) {
+      if (!scene._doorPrompt) {
+        scene._doorPrompt = scene.add.text(0, 0, '[E] Tuer', {
+          fontSize: '12px', fill: '#ffdd44', fontFamily: 'monospace',
+          stroke: '#000', strokeThickness: 2
+        }).setOrigin(0.5).setDepth(500).setScrollFactor(1);
+      }
+      scene._doorPrompt.setPosition(nearestDoor.x, nearestDoor.y - 20);
+      scene._doorPrompt.setVisible(true);
+    } else if (scene._doorPrompt) {
+      scene._doorPrompt.setVisible(false);
     }
   }
 
@@ -303,6 +337,10 @@
   function clearDoors(scene) {
     if (scene && scene._doors) {
       scene._doors.length = 0;
+    }
+    if (scene && scene._doorPrompt) {
+      scene._doorPrompt.destroy();
+      scene._doorPrompt = null;
     }
   }
 
