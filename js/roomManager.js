@@ -225,6 +225,8 @@ function ensureObstacleColliders(scene) {
 
   obstacles.getChildren().forEach((child) => {
     if (!child) return;
+    // Skip doors — they manage their own body state
+    if (child.getData && child.getData('isDoor')) return;
     if (!child.body) {
       if (staticBodyType) world.enable(child, staticBodyType);
       else {

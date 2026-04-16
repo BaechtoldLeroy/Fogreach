@@ -1608,11 +1608,7 @@ class HubSceneV2 extends Phaser.Scene {
           box.fillRoundedRect(sx - boxW / 2, sy, boxW, boxH, 4);
           box.lineStyle(owned ? 2 : 1, borderCol, 0.9);
           box.strokeRoundedRect(sx - boxW / 2, sy, boxW, boxH, 4);
-          // Active skill indicator: small colored dot instead of overlapping "A"
-          if (isActive) {
-            box.fillStyle(0x4488ff, 1);
-            box.fillCircle(sx + boxW / 2 - 6, sy + 6, 3);
-          }
+          // Active skill indicator removed — shown in tooltip instead
           container.add(box);
 
           // Skill name — top half of box

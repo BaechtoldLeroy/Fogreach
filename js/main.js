@@ -2101,14 +2101,9 @@ function initializeGameObjects() {
     this.spawnObstacle = window.spawnObstacle.bind(this);
   }
 
-  this.physics.add.collider(player, obstacles, null, (pl, obs) => {
-    // Walkthrough obstacles (visually-only props) don't block the player
-    return !(obs && obs.getData && obs.getData('walkthrough'));
-  });
+  // Player-obstacle and enemy-obstacle colliders are created in roomManager.js
+  // enterRoom() with walkthrough support — do NOT duplicate here.
   this.physics.add.collider(player, enemies);
-  this.physics.add.collider(enemies, obstacles, null, (en, obs) => {
-    return !(obs && obs.getData && obs.getData('walkthrough'));
-  });
   // Soft collision between enemies (Diablo 2 style — they push each other)
   this.physics.add.collider(enemies, enemies);
   // Projektile prallen an Hindernissen ab/werden zerstört (oder pool-released)
