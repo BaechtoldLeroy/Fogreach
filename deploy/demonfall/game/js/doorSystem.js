@@ -341,21 +341,25 @@
    * @param {Phaser.Scene} scene
    */
   function clearDoors(scene) {
-    if (scene && scene._doors) {
+    if (!scene) return;
+    if (scene._doors) {
       scene._doors.length = 0;
     }
-    if (scene && scene._doorPrompt) {
-      scene._doorPrompt.destroy();
+    if (scene._doorPrompt) {
+      try { scene._doorPrompt.destroy(); } catch (e) {}
       scene._doorPrompt = null;
     }
-    if (scene && scene._doorGroup) {
-      scene._doorGroup.clear(true, true);
-    }
-    if (scene && scene._doorPlayerCollider) {
-      scene._doorPlayerCollider.destroy();
+    if (scene._doorPlayerCollider) {
+      try { scene._doorPlayerCollider.destroy(); } catch (e) {}
       scene._doorPlayerCollider = null;
     }
-    scene._doorGroup = null;
+    if (scene._doorGroup) {
+      try {
+        scene._doorGroup.clear(true, true);
+        scene._doorGroup.destroy(true);
+      } catch (e) {}
+      scene._doorGroup = null;
+    }
   }
 
   // ─── Public API ──────────────────────────────────────────────────────────
