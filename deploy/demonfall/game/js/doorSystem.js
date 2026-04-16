@@ -170,7 +170,7 @@
 
     doorWidthTiles = doorWidthTiles || 4;
     var doorWidthPx = doorWidthTiles * TILE_SIZE;
-    var doorThickness = 12; // pixels — how thick the door panel is
+    var doorThickness = 24; // pixels — thick enough to visually fill the doorway
 
     // Generate textures sized to the doorway
     // For horizontal doorways (wall runs left-right): door spans X, thin in Y

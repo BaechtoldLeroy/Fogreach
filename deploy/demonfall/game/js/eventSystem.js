@@ -310,10 +310,8 @@
           {
             label: 'Trinken (volle Heilung)',
             callback: function () {
-              if (typeof window.playerMaxHealth === 'number') {
-                window.playerHealth = window.playerMaxHealth;
-                // Update the local variable too (main.js uses it)
-                if (typeof playerHealth !== 'undefined') playerHealth = window.playerMaxHealth;
+              if (typeof window.setPlayerHealth === 'function' && typeof window.playerMaxHealth === 'number') {
+                window.setPlayerHealth(window.playerMaxHealth);
               }
               showEventToast(scene, 'Volle Heilung!', 'healing_fountain');
             }
