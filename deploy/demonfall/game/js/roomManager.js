@@ -1051,6 +1051,21 @@ function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
   if (!obstacles || typeof obstacles.getChildren !== "function") return false;
   if (!Phaser || !Phaser.Geom || !Phaser.Geom.Rectangle) return false;
 
+  // Check against the procedural room wall grid (if available)
+  const scene = obstacles.scene;
+  const wallsGrid = scene?._minimapWallsGrid;
+  if (wallsGrid && wallsGrid.length > 0) {
+    const tileSize = scene._minimapTileSize || 32;
+    const tileX = Math.floor(px / tileSize);
+    const tileY = Math.floor(py / tileSize);
+    if (tileY < 0 || tileY >= wallsGrid.length || tileX < 0 || tileX >= (wallsGrid[0]?.length || 0)) {
+      return true; // out of grid = blocked
+    }
+    if (wallsGrid[tileY]?.[tileX] !== '.') {
+      return true; // wall tile = blocked
+    }
+  }
+
   const candidateRect = new Phaser.Geom.Rectangle(
     px - halfSize,
     py - halfSize,
@@ -1136,8 +1151,11 @@ function recomputeAccessibleArea(scene, options = {}) {
     return blocked;
   };
 
-  let startCX = Phaser.Math.Clamp(Math.floor((activePlayer.x - bounds.x) / cellSize), 0, cols - 1);
-  let startCY = Phaser.Math.Clamp(Math.floor((activePlayer.y - bounds.y) / cellSize), 0, rows - 1);
+  // Prefer room entry point as flood-fill seed (guaranteed floor tile)
+  const seedX = scene._roomEntryPoint?.x ?? activePlayer.x;
+  const seedY = scene._roomEntryPoint?.y ?? activePlayer.y;
+  let startCX = Phaser.Math.Clamp(Math.floor((seedX - bounds.x) / cellSize), 0, cols - 1);
+  let startCY = Phaser.Math.Clamp(Math.floor((seedY - bounds.y) / cellSize), 0, rows - 1);
 
   if (isBlocked(startCX, startCY)) {
     let found = null;
@@ -1183,9 +1201,18 @@ function recomputeAccessibleArea(scene, options = {}) {
     reachableCells.push({ cx, cy, x: centerX, y: centerY });
     fallbackCandidates.push({ x: centerX, y: centerY });
 
+    // Check wall adjacency — prefer interior cells for spawning
+    let adjacentToWall = false;
+    for (let adx = -1; adx <= 1 && !adjacentToWall; adx++) {
+      for (let ady = -1; ady <= 1 && !adjacentToWall; ady++) {
+        if (adx === 0 && ady === 0) continue;
+        if (isBlocked(cx + adx, cy + ady)) adjacentToWall = true;
+      }
+    }
+
     const dx = centerX - activePlayer.x;
     const dy = centerY - activePlayer.y;
-    if (dx * dx + dy * dy >= minDistSq) {
+    if (dx * dx + dy * dy >= minDistSq && !adjacentToWall) {
       spawnCandidates.push({ x: centerX, y: centerY });
     }
 

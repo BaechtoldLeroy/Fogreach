@@ -947,7 +947,9 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     const py = originY + gy(tpl, tile.y) + T/2;
 
     player.setPosition(px, py);
-    
+    // Store entry point for flood-fill seed in recomputeAccessibleArea
+    scene._roomEntryPoint = { x: px, y: py };
+
     // Kamera passend ausrichten
     if (scene.cameras?.main) scene.cameras.main.centerOn(px, py);
 
