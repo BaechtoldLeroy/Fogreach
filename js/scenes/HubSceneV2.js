@@ -1505,13 +1505,13 @@ class HubSceneV2 extends Phaser.Scene {
     container.add(headerBg);
 
     const titleText = this.add.text(-panelW / 2 + 14, -panelH / 2 + 8, 'Fertigkeiten', {
-      fontFamily: 'serif', fontSize: 18, color: '#ffd166', fontStyle: 'bold'
+      fontFamily: 'serif', fontSize: 18, color: '#ffd166', fontStyle: 'bold', resolution: 2
     }).setOrigin(0, 0);
     container.add(titleText);
 
     const currentMaterials = window.getMaterialCount('MAT');
     const matsText = this.add.text(panelW / 2 - 14, -panelH / 2 + 10, currentMaterials + ' Eisenbrocken', {
-      fontFamily: 'monospace', fontSize: 12, color: '#8cb8ff'
+      fontFamily: 'monospace', fontSize: 12, color: '#8cb8ff', resolution: 2
     }).setOrigin(1, 0);
     container.add(matsText);
 
@@ -1526,6 +1526,19 @@ class HubSceneV2 extends Phaser.Scene {
     const skillHitAreas = [];
     const skillNodePositions = {};
 
+    // Defined early so hitArea handlers can reference it (const is not hoisted)
+    const closeSkillUI = () => {
+      if (this._skillTooltip) {
+        this._skillTooltip.destroy(true);
+        this._skillTooltip = null;
+      }
+      skillHitAreas.forEach(ha => ha.destroy());
+      this._dialogOpen = false;
+      overlay.destroy();
+      container.destroy(true);
+      this._dialogContainer = null;
+    };
+
     trees.forEach((tree, treeIdx) => {
       const treeColor = Phaser.Display.Color.HexStringToColor(tree.color).color;
 
@@ -1539,7 +1552,7 @@ class HubSceneV2 extends Phaser.Scene {
 
       // Tree title
       const treeTitle = this.add.text(treeX + treeWidth / 2, treeStartY + 6, tree.name, {
-        fontFamily: 'serif', fontSize: 14, color: tree.color, fontStyle: 'bold'
+        fontFamily: 'serif', fontSize: 14, color: tree.color, fontStyle: 'bold', resolution: 2
       }).setOrigin(0.5, 0);
       container.add(treeTitle);
 
@@ -1606,7 +1619,7 @@ class HubSceneV2 extends Phaser.Scene {
           const nameFS = boxW < 60 ? 8 : (boxW < 90 ? 9 : 10);
           const nameText = this.add.text(sx, sy + 4, skill.name, {
             fontFamily: 'monospace', fontSize: nameFS, color: nameCol,
-            wordWrap: { width: boxW - 8 }, align: 'center', lineSpacing: -1
+            wordWrap: { width: boxW - 8 }, align: 'center', lineSpacing: -1, resolution: 2
           }).setOrigin(0.5, 0);
           container.add(nameText);
 
@@ -1615,7 +1628,7 @@ class HubSceneV2 extends Phaser.Scene {
           const costCol = owned ? '#44ff44' : (canPurchase.canPurchase ? '#ffcc44' : '#555555');
           const costFS = boxW < 60 ? 9 : 10;
           const costText = this.add.text(sx, sy + boxH - 4, costStr, {
-            fontFamily: 'monospace', fontSize: costFS, color: costCol, fontStyle: 'bold'
+            fontFamily: 'monospace', fontSize: costFS, color: costCol, fontStyle: 'bold', resolution: 2
           }).setOrigin(0.5, 1);
           container.add(costText);
 
@@ -1665,10 +1678,11 @@ class HubSceneV2 extends Phaser.Scene {
             const tooltipBg = this.add.graphics();
             const tooltipTextObj = this.add.text(0, 0, tooltipLines.join('\n'), {
               fontFamily: 'monospace',
-              fontSize: 13,
+              fontSize: 12,
               color: '#ffffff',
-              backgroundColor: '#1a1a2a',
-              padding: { x: 10, y: 8 }
+              backgroundColor: '#0c0c18',
+              padding: { x: 8, y: 6 },
+              resolution: 2
             }).setOrigin(0, 0);
 
             const tooltipW = tooltipTextObj.width + 4;
@@ -1791,18 +1805,6 @@ class HubSceneV2 extends Phaser.Scene {
       padding: { x: 16, y: 8 }
     }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
     container.add(closeBtn);
-
-    const closeSkillUI = () => {
-      if (this._skillTooltip) {
-        this._skillTooltip.destroy(true);
-        this._skillTooltip = null;
-      }
-      skillHitAreas.forEach(ha => ha.destroy());
-      this._dialogOpen = false;
-      overlay.destroy();
-      container.destroy(true);
-      this._dialogContainer = null;
-    };
 
     closeBtn.on('pointerdown', () => closeSkillUI());
     this.input.keyboard.once('keydown-ESC', closeSkillUI);

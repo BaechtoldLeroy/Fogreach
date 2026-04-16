@@ -366,22 +366,22 @@ function initInventoryUI() {
   const panelBg = scene.add.image(0, 0, 'uiPanel').setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0);
   panel.add(panelBg);
 
-  const title = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 14, 'Inventar', {
-    fontFamily: 'serif', fontSize: '20px', fill: '#ffd166', fontStyle: 'bold',
-    stroke: '#000000', strokeThickness: 4, resolution: 2
+  const title = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 12, 'Inventar', {
+    fontFamily: 'serif', fontSize: '26px', fill: '#ffd166', fontStyle: 'bold',
+    stroke: '#000000', strokeThickness: 5, resolution: 2
   }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(title);
 
-  const help = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 40,
+  const help = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 44,
     'Klicke ein Item zum Ausruesten / Entfernen',
-    { fontSize: '11px', fill: '#cccccc', fontFamily: 'monospace',
-      stroke: '#000000', strokeThickness: 3, resolution: 2
+    { fontSize: '13px', fill: '#dddddd', fontFamily: 'monospace',
+      stroke: '#000000', strokeThickness: 4, resolution: 2
     }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(help);
 
-  const materialCounter = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 58, '', {
-    fontSize: '14px', fontFamily: 'monospace',
-    fill: '#f4d06f', stroke: '#000000', strokeThickness: 3, resolution: 2
+  const materialCounter = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 64, '', {
+    fontSize: '16px', fontFamily: 'monospace',
+    fill: '#f4d06f', stroke: '#000000', strokeThickness: 4, resolution: 2
   }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(materialCounter);
   invUI.materialsText = materialCounter;
