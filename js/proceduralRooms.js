@@ -88,7 +88,7 @@
   // width: 3-4 tiles so the player collider reliably fits through
   function carveDoorway(grid, node, rng, doorwayTiles, doorways) {
     if (!node.left || !node.right) return;
-    var doorWidth = 4 + Math.floor(rng() * 2); // 4-5 tiles (128-160px)
+    var doorWidth = 5 + Math.floor(rng() * 2); // 5-6 tiles (160-192px) — wider for corner clearance
 
     var markDoor = function (x, y) {
       if (doorwayTiles) doorwayTiles[y + '|' + x] = true;
@@ -99,12 +99,13 @@
       var overlapX2 = Math.min(node.left.x + node.left.w, node.right.x + node.right.w) - 2 - doorWidth;
       if (overlapX2 < overlapX1) return;
       var dx = overlapX1 + Math.floor(rng() * (overlapX2 - overlapX1 + 1));
+      // Carve 3 rows (splitPos-1, splitPos, splitPos+1) so corners don't narrow the passage
       for (var i = 0; i < doorWidth; i++) {
-        if (grid[node.splitPos - 1] && dx + i >= 0 && dx + i < grid[node.splitPos - 1].length) {
-          grid[node.splitPos - 1][dx + i] = '.'; markDoor(dx + i, node.splitPos - 1);
-        }
-        if (grid[node.splitPos] && dx + i >= 0 && dx + i < grid[node.splitPos].length) {
-          grid[node.splitPos][dx + i] = '.'; markDoor(dx + i, node.splitPos);
+        for (var row = -1; row <= 1; row++) {
+          var ry = node.splitPos + row;
+          if (grid[ry] && dx + i >= 0 && dx + i < grid[ry].length) {
+            grid[ry][dx + i] = '.'; markDoor(dx + i, ry);
+          }
         }
       }
       // Record center tile of this horizontal-wall doorway (wall runs left-right → 'horizontal')
@@ -121,12 +122,13 @@
       var overlapY2 = Math.min(node.left.y + node.left.h, node.right.y + node.right.h) - 2 - doorWidth;
       if (overlapY2 < overlapY1) return;
       var dy = overlapY1 + Math.floor(rng() * (overlapY2 - overlapY1 + 1));
+      // Carve 3 columns (splitPos-1, splitPos, splitPos+1) so corners don't narrow the passage
       for (var j = 0; j < doorWidth; j++) {
-        if (grid[dy + j] && node.splitPos - 1 >= 0 && node.splitPos - 1 < grid[dy + j].length) {
-          grid[dy + j][node.splitPos - 1] = '.'; markDoor(node.splitPos - 1, dy + j);
-        }
-        if (grid[dy + j] && node.splitPos >= 0 && node.splitPos < grid[dy + j].length) {
-          grid[dy + j][node.splitPos] = '.'; markDoor(node.splitPos, dy + j);
+        for (var col = -1; col <= 1; col++) {
+          var cx = node.splitPos + col;
+          if (grid[dy + j] && cx >= 0 && cx < grid[dy + j].length) {
+            grid[dy + j][cx] = '.'; markDoor(cx, dy + j);
+          }
         }
       }
       // Record center tile of this vertical-wall doorway (wall runs up-down → 'vertical')
