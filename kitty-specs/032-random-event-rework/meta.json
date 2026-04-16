@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-16T12:00:00.000000+00:00",
+  "feature_number": "032",
+  "feature_slug": "032-random-event-rework",
+  "friendly_name": "random event rework",
+  "mission": "software-dev",
+  "slug": "032-random-event-rework",
+  "target_branch": "main"
+}

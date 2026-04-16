@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-16T12:00:00.000000+00:00",
+  "feature_number": "038",
+  "feature_slug": "038-mobile-d2-controls",
+  "friendly_name": "mobile D2 controls",
+  "mission": "software-dev",
+  "slug": "038-mobile-d2-controls",
+  "target_branch": "main"
+}

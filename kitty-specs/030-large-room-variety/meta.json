@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-16T12:00:00.000000+00:00",
+  "feature_number": "030",
+  "feature_slug": "030-large-room-variety",
+  "friendly_name": "large room variety",
+  "mission": "software-dev",
+  "slug": "030-large-room-variety",
+  "target_branch": "main"
+}

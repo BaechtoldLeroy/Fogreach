@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-16T12:00:00.000000+00:00",
+  "feature_number": "040",
+  "feature_slug": "040-fullscreen-option",
+  "friendly_name": "fullscreen option",
+  "mission": "software-dev",
+  "slug": "040-fullscreen-option",
+  "target_branch": "main"
+}

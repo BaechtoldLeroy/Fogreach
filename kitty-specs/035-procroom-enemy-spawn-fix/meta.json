@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-04-16T12:00:00.000000+00:00",
+  "feature_number": "035",
+  "feature_slug": "035-procroom-enemy-spawn-fix",
+  "friendly_name": "procroom enemy spawn fix",
+  "mission": "software-dev",
+  "slug": "035-procroom-enemy-spawn-fix",
+  "target_branch": "main"
+}
