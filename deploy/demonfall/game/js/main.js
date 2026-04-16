@@ -1255,7 +1255,11 @@ function update(time, delta) {
       window.AbilitySystem.tryRelease('slot2', this);
     }
     if (Phaser.Input.Keyboard.JustDown(eKey)) {
-      window.AbilitySystem.tryActivate('slot3', this);
+      // Try door interaction first; only fire ability if no door nearby
+      var doorHandled = window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
+      if (!doorHandled) {
+        window.AbilitySystem.tryActivate('slot3', this);
+      }
     }
     if (Phaser.Input.Keyboard.JustUp(eKey)) {
       window.AbilitySystem.tryRelease('slot3', this);
@@ -1285,9 +1289,19 @@ function update(time, delta) {
   // 5.8 Gegner-KI
   handleEnemies.call(this, time, delta);
 
-  // 5.8b Doors auto-open near player
-  if (window.DoorSystem && typeof window.DoorSystem.updateDoors === 'function') {
-    window.DoorSystem.updateDoors(this, player);
+  // 5.8b Door cleanup + mobile interact
+  if (window.DoorSystem) {
+    if (typeof window.DoorSystem.updateDoors === 'function') {
+      window.DoorSystem.updateDoors(this, player);
+    }
+    // Mobile interact button triggers door toggle
+    if (window.__MOBILE_INTERACT_ACTIVE__ && !window.__doorInteractConsumed) {
+      window.DoorSystem.tryInteractDoor(this, player);
+      window.__doorInteractConsumed = true;
+    }
+    if (!window.__MOBILE_INTERACT_ACTIVE__) {
+      window.__doorInteractConsumed = false;
+    }
   }
 
   // 5.8c Performance monitor tick

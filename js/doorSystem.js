@@ -201,64 +201,97 @@
     return door;
   }
 
-  // ─── Door update (call from main update loop) ─────────────────────────────
+  // ─── Door interaction ──────────────────────────────────────────────────────
 
-  var OPEN_DIST  = 80;   // player within this distance → open door
-  var CLOSE_DIST = 120;  // player beyond this distance → close door
+  var INTERACT_DIST = 100; // player must be within this distance to interact
 
   /**
-   * Update all doors in the scene relative to the player.
+   * Toggle the nearest door's open/closed state.
+   * @param {Phaser.Physics.Arcade.Sprite} door
+   */
+  function toggleDoor(door) {
+    var state = door.getData('doorState');
+    if (state === 'closed') {
+      door.setTexture(door.getData('openKey'));
+      door.setData('doorState', 'open');
+      if (door.body) {
+        door.body.enable = false;
+      }
+    } else {
+      door.setTexture(door.getData('closedKey'));
+      door.setData('doorState', 'closed');
+      if (door.body) {
+        door.body.enable = true;
+        door.refreshBody();
+      }
+    }
+    // Invalidate wall cache so fog of war updates immediately
+    if (typeof window.invalidateWallCache === 'function') {
+      window.invalidateWallCache();
+    }
+  }
+
+  /**
+   * Find the nearest door within interaction range of the player.
+   * @returns {Phaser.Physics.Arcade.Sprite|null}
+   */
+  function findNearestDoor(scene, player) {
+    if (!scene || !player) return null;
+    var doors = scene._doors;
+    if (!doors || !doors.length) return null;
+
+    var px = player.x, py = player.y;
+    var best = null;
+    var bestDist = Infinity;
+
+    for (var i = doors.length - 1; i >= 0; i--) {
+      var door = doors[i];
+      if (!door || !door.active || door.scene == null) {
+        doors.splice(i, 1);
+        continue;
+      }
+      var dx = door.x - px;
+      var dy = door.y - py;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < INTERACT_DIST && dist < bestDist) {
+        bestDist = dist;
+        best = door;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Try to interact with the nearest door. Call when E is pressed.
+   * @param {Phaser.Scene} scene
+   * @param {Phaser.GameObjects.GameObject} player
+   * @returns {boolean} true if a door was toggled
+   */
+  function tryInteractDoor(scene, player) {
+    var door = findNearestDoor(scene, player);
+    if (door) {
+      toggleDoor(door);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Update loop: just cleans up destroyed doors from the tracking list.
    * Call this every frame from the main update loop.
    *
    * @param {Phaser.Scene} scene
    * @param {Phaser.GameObjects.GameObject} player
    */
   function updateDoors(scene, player) {
-    if (!scene || !player) return;
+    if (!scene) return;
     var doors = scene._doors;
     if (!doors || !doors.length) return;
 
-    var px = player.x, py = player.y;
-
     for (var i = doors.length - 1; i >= 0; i--) {
       var door = doors[i];
-
-      // Remove destroyed doors from the list
       if (!door || !door.active || door.scene == null) {
         doors.splice(i, 1);
-        continue;
-      }
-
-      var dx = door.x - px;
-      var dy = door.y - py;
-      var dist = Math.sqrt(dx * dx + dy * dy);
-      var state = door.getData('doorState');
-
-      if (state === 'closed' && dist < OPEN_DIST) {
-        // Open the door
-        door.setTexture(door.getData('openKey'));
-        door.setData('doorState', 'open');
-        // Disable body so the player can pass through
-        if (door.body) {
-          door.body.enable = false;
-        }
-        // Invalidate wall cache so fog of war updates immediately
-        if (typeof window.invalidateWallCache === 'function') {
-          window.invalidateWallCache();
-        }
-      } else if (state === 'open' && dist > CLOSE_DIST) {
-        // Close the door
-        door.setTexture(door.getData('closedKey'));
-        door.setData('doorState', 'closed');
-        // Re-enable body
-        if (door.body) {
-          door.body.enable = true;
-          door.refreshBody();
-        }
-        // Invalidate wall cache so fog of war updates immediately
-        if (typeof window.invalidateWallCache === 'function') {
-          window.invalidateWallCache();
-        }
       }
     }
   }
@@ -279,6 +312,7 @@
     generateDoorTextures: generateDoorTextures,
     spawnDoor: spawnDoor,
     updateDoors: updateDoors,
+    tryInteractDoor: tryInteractDoor,
     clearDoors: clearDoors
   };
 })();
