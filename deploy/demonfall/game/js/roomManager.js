@@ -956,7 +956,11 @@ let _wallGrid = null;
 const WALL_GRID_CELL = 64;
 
 function _buildWallCache() {
-  const list = obstacles?.getChildren?.() || [];
+  // Combine obstacles + door group for wall cache (doors block vision when closed)
+  const obstacleList = obstacles?.getChildren?.() || [];
+  const scene = obstacles?.scene;
+  const doorList = (scene && scene._doorGroup) ? scene._doorGroup.getChildren() : [];
+  const list = obstacleList.concat(doorList);
   _wallCache = [];
   _wallGrid = new Map();
   for (let i = 0; i < list.length; i++) {
