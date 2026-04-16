@@ -537,9 +537,24 @@
           var px = c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2));
           var py = c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2));
           if (grid[py] && grid[py][px] === '.' && !isDoorwayOrAdjacent(px, py)) {
-            decorations.push({
-              type: propPool[Math.floor(rng() * propPool.length)],
-              x: px, y: py
+            var propType = propPool[Math.floor(rng() * propPool.length)];
+            decorations.push({ type: propType, x: px, y: py });
+            break;
+          }
+        }
+      }
+
+      // WP03: Add breakable barrels/crates (collidable, destructible)
+      var breakableCount = Math.max(0, Math.floor(area / 80)); // ~1 per 80 tiles
+      for (var b = 0; b < breakableCount; b++) {
+        for (var bat = 0; bat < 4; bat++) {
+          var bx = c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2));
+          var by = c.y + 1 + Math.floor(rng() * Math.max(1, c.h - 2));
+          if (grid[by] && grid[by][bx] === '.' && !isDoorwayOrAdjacent(bx, by)) {
+            objects.push({
+              type: rng() < 0.5 ? 'barrel' : 'crate',
+              x: bx, y: by,
+              breakable: true
             });
             break;
           }
