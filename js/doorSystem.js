@@ -194,10 +194,7 @@
 
     // Start open so the player isn't blocked on room entry
     door.setTexture(keys.openKey);
-    if (door.body) {
-      door.body.enable = false;
-      door.body.checkCollision.none = true;
-    }
+    door.setData('walkthrough', true);
 
     door.refreshBody();
 
@@ -221,18 +218,11 @@
     if (state === 'closed') {
       door.setTexture(door.getData('openKey'));
       door.setData('doorState', 'open');
-      if (door.body) {
-        door.body.enable = false;
-        door.body.checkCollision.none = true;
-      }
+      door.setData('walkthrough', true);
     } else {
       door.setTexture(door.getData('closedKey'));
       door.setData('doorState', 'closed');
-      if (door.body) {
-        door.body.enable = true;
-        door.body.checkCollision.none = false;
-        door.refreshBody();
-      }
+      door.setData('walkthrough', false);
     }
     // Invalidate wall cache so fog of war updates immediately
     if (typeof window.invalidateWallCache === 'function') {
