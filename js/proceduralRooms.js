@@ -397,6 +397,32 @@
     var botX = findNearestFloorInRow(grid, height - 2, playerSpawn.x);
     if (botX >= 0) entrances.push({ x: botX, y: height - 2, dir: 'S' });
 
+    // 11b) Extra stairs in larger chambers (036-procroom-stairs)
+    var STAIR_MIN_AREA = 200; // minimum chamber area (tiles) for extra stairs
+    var STAIR_CLEARANCE = 3;  // tiles from walls/doors
+    accessibleChambers.forEach(function (c) {
+      var area = c.w * c.h;
+      if (area < STAIR_MIN_AREA) return;
+      // Place 1 extra stair in qualifying chambers
+      for (var sat = 0; sat < 8; sat++) {
+        var sx = c.x + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, c.w - STAIR_CLEARANCE * 2));
+        var sy = c.y + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, c.h - STAIR_CLEARANCE * 2));
+        if (grid[sy] && grid[sy][sx] === '.' && !isDoorwayOrAdjacent(sx, sy)) {
+          // Check distance from existing entrances
+          var tooClose = false;
+          for (var ei = 0; ei < entrances.length; ei++) {
+            var edx = entrances[ei].x - sx;
+            var edy = entrances[ei].y - sy;
+            if (edx * edx + edy * edy < 100) { tooClose = true; break; } // min 10 tiles apart
+          }
+          if (!tooClose) {
+            entrances.push({ x: sx, y: sy, dir: null });
+            break;
+          }
+        }
+      }
+    });
+
     // 12) Enemy spawns in later chambers (skip first). Large chambers get
     //     multiple groups scattered within. Total density ~1 enemy per 40
     //     floor tiles (D2-ish).
