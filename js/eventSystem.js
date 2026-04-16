@@ -143,8 +143,60 @@
     }
   });
 
-  // Reduce treasure_cache weight from 30 to 18 to make room for new events
-  EVENT_TYPES[0].weight = 18;
+  // --- WP03: Elite ambush event ---
+  EVENT_TYPES.push({
+    id: 'elite_ambush',
+    name: 'Elite-Hinterhalt',
+    weight: 8,
+    minDepth: 5,
+    handler: function (scene) {
+      try { window.soundManager && window.soundManager.playSFX('enemy_death'); } catch (e) {}
+      showEventToast(scene, 'Ein maechtiger Feind naehert sich!', 'elite_ambush');
+      if (typeof spawnMiniBoss === 'function') {
+        scene.time.delayedCall(500, function () {
+          spawnMiniBoss.call(scene, 0, 0, 0);
+        });
+      }
+    }
+  });
+
+  // --- WP03: Healing fountain event ---
+  EVENT_TYPES.push({
+    id: 'healing_fountain',
+    name: 'Heilender Brunnen',
+    weight: 10,
+    minDepth: 2,
+    handler: function (scene) {
+      try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
+      return {
+        title: 'Ein leuchtender Brunnen spendet Heilung...',
+        choices: [
+          {
+            label: 'Trinken (volle Heilung)',
+            callback: function () {
+              if (typeof window.playerMaxHealth === 'number') {
+                window.playerHealth = window.playerMaxHealth;
+              }
+              showEventToast(scene, 'Volle Heilung!', 'healing_fountain');
+            }
+          },
+          {
+            label: 'Fuellen (+1 Portalrolle)',
+            callback: function () {
+              if (window.materialCounts) {
+                window.materialCounts.PORTAL_SCROLL = (window.materialCounts.PORTAL_SCROLL || 0) + 1;
+              }
+              showEventToast(scene, '+1 Portalrolle!', 'healing_fountain');
+            }
+          },
+          {
+            label: 'Ignorieren',
+            callback: function () {}
+          }
+        ]
+      };
+    }
+  });
 
   var lastEventId = null;
 
