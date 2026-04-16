@@ -732,8 +732,25 @@ function handleEnemies(time, delta = 16) {
     return out;
   };
 
+  // Camera culling: compute viewport bounds once per frame
+  const cam = this.cameras?.main;
+  const CULL_MARGIN = 160; // px outside viewport to still update
+  let cullLeft = -Infinity, cullRight = Infinity, cullTop = -Infinity, cullBottom = Infinity;
+  if (cam && typeof isMobile !== 'undefined' && isMobile) {
+    cullLeft = cam.scrollX - CULL_MARGIN;
+    cullRight = cam.scrollX + cam.width + CULL_MARGIN;
+    cullTop = cam.scrollY - CULL_MARGIN;
+    cullBottom = cam.scrollY + cam.height + CULL_MARGIN;
+  }
+
   enemies.children.iterate((enemy) => {
     if (!enemy || !enemy.active) return;
+
+    // Camera culling: skip AI for off-screen enemies on mobile
+    if (enemy.x < cullLeft || enemy.x > cullRight || enemy.y < cullTop || enemy.y > cullBottom) {
+      if (enemy.body) enemy.body.setVelocity(0, 0);
+      return;
+    }
 
     if (enemy.isBoss) {
       handleBossAI.call(this, time, enemy, this);
