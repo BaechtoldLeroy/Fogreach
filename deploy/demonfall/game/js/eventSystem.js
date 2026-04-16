@@ -129,19 +129,15 @@
       g.destroy();
     }
 
-    // Find spawn position near room center but away from player
-    var bounds = scene.physics.world && scene.physics.world.bounds;
-    var cx = bounds ? bounds.x + bounds.width / 2 : 400;
-    var cy = bounds ? bounds.y + bounds.height / 2 : 250;
-    if (typeof player !== 'undefined' && player && player.active) {
-      // Offset from player
+    // Find accessible spawn position
+    var cx = 400, cy = 250;
+    if (scene.pickAccessibleSpawnPoint) {
+      var spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 30 });
+      if (spot) { cx = spot.x; cy = spot.y; }
+    } else if (typeof player !== 'undefined' && player && player.active) {
       var angle = Math.random() * Math.PI * 2;
-      cx = player.x + Math.cos(angle) * 180;
-      cy = player.y + Math.sin(angle) * 180;
-      if (bounds) {
-        cx = Math.max(bounds.x + 60, Math.min(bounds.x + bounds.width - 60, cx));
-        cy = Math.max(bounds.y + 60, Math.min(bounds.y + bounds.height - 60, cy));
-      }
+      cx = player.x + Math.cos(angle) * 150;
+      cy = player.y + Math.sin(angle) * 150;
     }
 
     var obj = scene.physics.add.sprite(cx, cy, texKey);
@@ -464,13 +460,20 @@
   function _placeMerchant(scene, texKey) {
     if (!scene || !scene.add || !scene.physics) return;
 
-    // Find a position away from player
-    var cam = scene.cameras && scene.cameras.main;
-    var bounds = scene.physics.world && scene.physics.world.bounds;
-    var cx = bounds ? bounds.x + bounds.width / 2 : 400;
-    var cy = bounds ? bounds.y + bounds.height / 2 : 300;
+    // Find an accessible position using the spawn system
+    var cx = 400, cy = 250;
+    if (scene.pickAccessibleSpawnPoint) {
+      var spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 30 });
+      if (spot) { cx = spot.x; cy = spot.y; }
+    } else {
+      // Fallback: near player
+      if (typeof player !== 'undefined' && player && player.active) {
+        var angle = Math.random() * Math.PI * 2;
+        cx = player.x + Math.cos(angle) * 150;
+        cy = player.y + Math.sin(angle) * 150;
+      }
+    }
 
-    // Place merchant near room center
     var merchant = scene.physics.add.sprite(cx, cy, texKey);
     merchant.setDepth(150);
     merchant.body.setImmovable(true);
@@ -861,7 +864,7 @@
     var btnY = cy;
     for (var i = 0; i < choices.length && i < 3; i++) {
       (function (choice, by) {
-        var btnBg = scene.add.rectangle(cx, by, 240, 34, 0x2a2a2a)
+        var btnBg = scene.add.rectangle(cx, by, 340, 34, 0x2a2a2a)
           .setStrokeStyle(2, 0xd4a543)
           .setScrollFactor(0).setDepth(2502)
           .setInteractive({ useHandCursor: true });

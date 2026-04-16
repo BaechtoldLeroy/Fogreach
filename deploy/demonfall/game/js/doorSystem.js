@@ -203,16 +203,13 @@
     }
 
     door.setData('isDoor', true);
-    door.setData('doorState', 'open');
+    door.setData('doorState', 'closed');
     door.setData('orientation', orientation);
     door.setData('closedKey', keys.closedKey);
     door.setData('openKey', keys.openKey);
+    door.setData('walkthrough', false);
 
-    // Initialize body first, then set to open
     door.refreshBody();
-    // Start open so the player isn't blocked on room entry
-    door.setTexture(keys.openKey);
-    door.setData('walkthrough', true);
 
     // Track all doors on the scene for the update loop
     if (!scene._doors) scene._doors = [];
