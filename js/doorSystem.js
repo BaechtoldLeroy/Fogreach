@@ -149,8 +149,21 @@
   function spawnDoor(scene, x, y, orientation, doorWidthTiles) {
     if (!scene || !scene.physics) return null;
 
-    var obstaclesGroup = window.obstacles;
-    if (!obstaclesGroup) return null;
+    // Doors use their own static group — NOT the obstacles group.
+    // obstacles.refresh() re-enables all bodies, which breaks open doors.
+    if (!scene._doorGroup) {
+      scene._doorGroup = scene.physics.add.staticGroup();
+      // Set up collider with player (with walkthrough check)
+      scene._doorPlayerCollider = scene.physics.add.collider(
+        typeof player !== 'undefined' ? player : null,
+        scene._doorGroup,
+        null,
+        function (pl, door) {
+          return !(door && door.getData && door.getData('walkthrough'));
+        }
+      );
+    }
+    var doorGroup = scene._doorGroup;
 
     doorWidthTiles = doorWidthTiles || 4;
     var doorWidthPx = doorWidthTiles * TILE_SIZE;
@@ -170,8 +183,8 @@
 
     var keys = generateDoorTextures(scene, texW, texH);
 
-    // Create a static physics sprite in the obstacles group
-    var door = obstaclesGroup.create(x, y, keys.closedKey);
+    // Create a static physics sprite in the door group (separate from obstacles)
+    var door = doorGroup.create(x, y, keys.closedKey);
     if (!door) return null;
 
     door.setOrigin(0.5, 0.5);
@@ -217,27 +230,14 @@
    */
   function toggleDoor(door) {
     var state = door.getData('doorState');
-    console.log('[Door] toggle from', state, 'body:', !!door.body, 'enable:', door.body?.enable);
     if (state === 'closed') {
       door.setTexture(door.getData('openKey'));
       door.setData('doorState', 'open');
       door.setData('walkthrough', true);
-      // Fully disable physics body so static group can't collide
-      if (door.body) {
-        door.body.enable = false;
-        door.body.checkCollision.none = true;
-        console.log('[Door] OPENED — body.enable:', door.body.enable, 'walkthrough:', door.getData('walkthrough'));
-      }
     } else {
       door.setTexture(door.getData('closedKey'));
       door.setData('doorState', 'closed');
       door.setData('walkthrough', false);
-      if (door.body) {
-        door.body.enable = true;
-        door.body.checkCollision.none = false;
-        door.body.reset(door.x, door.y);
-        console.log('[Door] CLOSED — body.enable:', door.body.enable);
-      }
     }
     // Invalidate wall cache so fog of war updates immediately
     if (typeof window.invalidateWallCache === 'function') {
@@ -350,6 +350,14 @@
       scene._doorPrompt.destroy();
       scene._doorPrompt = null;
     }
+    if (scene && scene._doorGroup) {
+      scene._doorGroup.clear(true, true);
+    }
+    if (scene && scene._doorPlayerCollider) {
+      scene._doorPlayerCollider.destroy();
+      scene._doorPlayerCollider = null;
+    }
+    scene._doorGroup = null;
   }
 
   // ─── Public API ──────────────────────────────────────────────────────────

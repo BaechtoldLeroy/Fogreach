@@ -392,11 +392,6 @@ function enterRoom(scene, roomId) {
     scene._projectileObstacleCollider = null;
   }
   scene._playerObstacleCollider = scene.physics.add.collider(player, obstacles, null, (pl, obs) => {
-    if (obs && obs.getData && obs.getData('isDoor')) {
-      var wt = obs.getData('walkthrough');
-      console.log('[Collider] door hit, walkthrough:', wt, 'bodyEnable:', obs.body?.enable);
-      return !wt;
-    }
     return !(obs && obs.getData && obs.getData('walkthrough'));
   });
   scene._enemyObstacleCollider = scene.physics.add.collider(enemies, obstacles, null, (en, obs) => {
