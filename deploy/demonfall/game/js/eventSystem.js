@@ -69,17 +69,125 @@
     }
   ];
 
-  // --- New choice-based events (032-random-event-rework WP02) ---
+  // --- Interactable event objects (spawn in room, player presses E to interact) ---
+
+  var activeEventObjects = []; // track spawned event objects for cleanup
+
+  function spawnEventObject(scene, texKey, color, glowColor, label, onInteract) {
+    if (!scene || !scene.add || !scene.physics) return;
+
+    // Generate texture if needed
+    if (!scene.textures.exists(texKey)) {
+      var g = scene.make.graphics({ add: false });
+      g.fillStyle(color, 1);
+      g.fillRect(4, 4, 24, 28);
+      g.fillStyle(glowColor, 0.5);
+      g.fillCircle(16, 16, 14);
+      g.fillStyle(color, 1);
+      g.fillRect(6, 6, 20, 24);
+      g.generateTexture(texKey, 32, 32);
+      g.destroy();
+    }
+
+    // Find spawn position near room center but away from player
+    var bounds = scene.physics.world && scene.physics.world.bounds;
+    var cx = bounds ? bounds.x + bounds.width / 2 : 400;
+    var cy = bounds ? bounds.y + bounds.height / 2 : 250;
+    if (typeof player !== 'undefined' && player && player.active) {
+      // Offset from player
+      var angle = Math.random() * Math.PI * 2;
+      cx = player.x + Math.cos(angle) * 180;
+      cy = player.y + Math.sin(angle) * 180;
+      if (bounds) {
+        cx = Math.max(bounds.x + 60, Math.min(bounds.x + bounds.width - 60, cx));
+        cy = Math.max(bounds.y + 60, Math.min(bounds.y + bounds.height - 60, cy));
+      }
+    }
+
+    var obj = scene.physics.add.sprite(cx, cy, texKey);
+    obj.setDepth(45).setImmovable(true);
+    obj.body.setAllowGravity(false);
+
+    // Prompt text
+    var prompt = scene.add.text(cx, cy - 24, '[E] ' + label, {
+      fontSize: '12px', fill: '#ffdd44', fontFamily: 'monospace',
+      stroke: '#000', strokeThickness: 2
+    }).setOrigin(0.5).setDepth(500).setVisible(false);
+
+    // Glow effect
+    var glow = scene.add.graphics();
+    glow.fillStyle(glowColor, 0.15);
+    glow.fillCircle(cx, cy, 30);
+    glow.setDepth(44);
+
+    var used = false;
+    var updateHandler = function () {
+      if (used || !obj.active || typeof player === 'undefined' || !player) return;
+      var dx = obj.x - player.x;
+      var dy = obj.y - player.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      prompt.setVisible(dist < 80);
+    };
+    scene.events.on('update', updateHandler);
+
+    // E key handler
+    var interactHandler = function () {
+      if (used || !obj.active || typeof player === 'undefined' || !player) return;
+      var dx = obj.x - player.x;
+      var dy = obj.y - player.y;
+      if (Math.sqrt(dx * dx + dy * dy) > 80) return;
+      used = true;
+      scene.input.keyboard.off('keydown-E', interactHandler);
+      scene.events.off('update', updateHandler);
+      prompt.destroy();
+      glow.destroy();
+      obj.destroy();
+      onInteract();
+    };
+    scene.input.keyboard.on('keydown-E', interactHandler);
+
+    // Mobile interact support
+    var mobileHandler = function () {
+      if (!window.__MOBILE_INTERACT_ACTIVE__) return;
+      interactHandler();
+    };
+    scene.events.on('update', mobileHandler);
+
+    activeEventObjects.push({
+      sprite: obj, prompt: prompt, glow: glow,
+      interactHandler: interactHandler, updateHandler: updateHandler, mobileHandler: mobileHandler,
+      scene: scene
+    });
+  }
+
+  function cleanupEventObjects() {
+    activeEventObjects.forEach(function (eo) {
+      if (eo.scene && eo.scene.input && eo.scene.input.keyboard) {
+        eo.scene.input.keyboard.off('keydown-E', eo.interactHandler);
+      }
+      if (eo.scene && eo.scene.events) {
+        eo.scene.events.off('update', eo.updateHandler);
+        eo.scene.events.off('update', eo.mobileHandler);
+      }
+      if (eo.sprite && eo.sprite.destroy) eo.sprite.destroy();
+      if (eo.prompt && eo.prompt.destroy) eo.prompt.destroy();
+      if (eo.glow && eo.glow.destroy) eo.glow.destroy();
+    });
+    activeEventObjects.length = 0;
+  }
+
+  // --- Choice-based events: spawn object, player interacts, then shows dialog ---
+
   EVENT_TYPES.push({
     id: 'shrine_buff',
     name: 'Mystischer Schrein',
     weight: 14,
     minDepth: 2,
     handler: function (scene) {
-      try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
-      return {
-        title: 'Ein mystischer Schrein leuchtet vor dir...',
-        choices: [
+      showEventToast(scene, 'Ein mystischer Schrein erscheint...', 'shrine_buff');
+      spawnEventObject(scene, 'evt_shrine', 0x6644aa, 0xaa88ff, 'Schrein', function () {
+        try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
+        showEventChoiceDialog(scene, 'Mystischer Schrein', [
           {
             label: 'Kraft (+25% Schaden, -15% Ruestung)',
             callback: function () {
@@ -89,19 +197,16 @@
             }
           },
           {
-            label: 'Schutz (+20% Ruestung, -10% Geschw.)',
+            label: 'Schutz (+5 Ruestung, -10% Geschw.)',
             callback: function () {
               window.playerArmor = Math.round((window.playerArmor || 0) + 5);
               window.playerSpeed = Math.round((window.playerSpeed || 200) * 0.9);
               showEventToast(scene, 'Schutz des Schreins: +5 Ruestung!', 'shrine_buff');
             }
           },
-          {
-            label: 'Ignorieren',
-            callback: function () {}
-          }
-        ]
-      };
+          { label: 'Ignorieren', callback: function () {} }
+        ]);
+      });
     }
   });
 
@@ -112,12 +217,12 @@
     minDepth: 3,
     handler: function (scene) {
       var cost = 50 + Math.floor(Math.random() * 50);
-      try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
-      return {
-        title: 'Ein mysterioeser Haendler bietet dir ein Gluecksspiel an...',
-        choices: [
+      showEventToast(scene, 'Ein Spieltisch taucht auf...', 'gambling');
+      spawnEventObject(scene, 'evt_gamble', 0x886622, 0xffcc44, 'Gluecksspiel', function () {
+        try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
+        showEventChoiceDialog(scene, 'Gluecksspiel (' + cost + ' Gold)', [
           {
-            label: 'Wette ' + cost + ' Gold',
+            label: 'Wette ' + cost + ' Gold (40% Chance auf 3x)',
             callback: function () {
               if (!window.LootSystem || !window.LootSystem.spendGold(cost)) {
                 showEventToast(scene, 'Nicht genug Gold!', 'gambling');
@@ -125,25 +230,20 @@
               }
               if (Math.random() < 0.4) {
                 var winnings = cost * 3;
-                if (typeof window.changeMaterialCount === 'function') {
-                  window.changeMaterialCount('GOLD', winnings);
-                }
+                if (typeof window.changeMaterialCount === 'function') window.changeMaterialCount('GOLD', winnings);
                 showEventToast(scene, 'Gewonnen! +' + winnings + ' Gold!', 'gambling');
               } else {
                 showEventToast(scene, 'Verloren! -' + cost + ' Gold...', 'gambling');
               }
             }
           },
-          {
-            label: 'Ablehnen',
-            callback: function () {}
-          }
-        ]
-      };
+          { label: 'Ablehnen', callback: function () {} }
+        ]);
+      });
     }
   });
 
-  // --- WP03: Elite ambush event ---
+  // Elite ambush — fires immediately (no interaction needed)
   EVENT_TYPES.push({
     id: 'elite_ambush',
     name: 'Elite-Hinterhalt',
@@ -160,17 +260,17 @@
     }
   });
 
-  // --- WP03: Healing fountain event ---
+  // Healing fountain — spawn object, interact to choose
   EVENT_TYPES.push({
     id: 'healing_fountain',
     name: 'Heilender Brunnen',
     weight: 10,
     minDepth: 2,
     handler: function (scene) {
-      try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
-      return {
-        title: 'Ein leuchtender Brunnen spendet Heilung...',
-        choices: [
+      showEventToast(scene, 'Ein leuchtender Brunnen erscheint...', 'healing_fountain');
+      spawnEventObject(scene, 'evt_fountain', 0x2266aa, 0x44aaff, 'Brunnen', function () {
+        try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
+        showEventChoiceDialog(scene, 'Heilender Brunnen', [
           {
             label: 'Trinken (volle Heilung)',
             callback: function () {
@@ -183,18 +283,14 @@
           {
             label: 'Fuellen (+1 Portalrolle)',
             callback: function () {
-              if (window.materialCounts) {
-                window.materialCounts.PORTAL_SCROLL = (window.materialCounts.PORTAL_SCROLL || 0) + 1;
-              }
+              if (!window.materialCounts) window.materialCounts = {};
+              window.materialCounts.PORTAL_SCROLL = (window.materialCounts.PORTAL_SCROLL || 0) + 1;
               showEventToast(scene, '+1 Portalrolle!', 'healing_fountain');
             }
           },
-          {
-            label: 'Ignorieren',
-            callback: function () {}
-          }
-        ]
-      };
+          { label: 'Ignorieren', callback: function () {} }
+        ]);
+      });
     }
   });
 
@@ -683,6 +779,10 @@
     var elements = [];
 
     scene._eventChoiceActive = true;
+    // Pause physics — freeze all bodies
+    if (scene.physics && scene.physics.world) {
+      scene.physics.world.pause();
+    }
 
     // Dark overlay
     var overlay = scene.add.rectangle(cx, cy, camW, camH, 0x000000, 0.6)
@@ -699,6 +799,10 @@
 
     var cleanup = function () {
       scene._eventChoiceActive = false;
+      // Resume physics
+      if (scene.physics && scene.physics.world) {
+        scene.physics.world.resume();
+      }
       for (var i = 0; i < elements.length; i++) {
         if (elements[i] && elements[i].destroy) elements[i].destroy();
       }
@@ -794,6 +898,7 @@
     recentEvents.length = 0;
     cleanupMerchant();
     cleanupLore();
+    cleanupEventObjects();
   }
 
   window.EventSystem = {
