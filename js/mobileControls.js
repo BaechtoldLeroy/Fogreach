@@ -369,6 +369,64 @@
       cooldownTexts: Object.assign({}, state.cooldownTexts),
     });
 
+    // --- Tap-to-move + hold-to-move (038-mobile-d2-controls) ---
+    const JOYSTICK_ZONE_RADIUS = 120; // px from joystick center
+    let holdMoveThrottle = 0;
+    scene.input.on('pointerdown', (pointer) => {
+      // Ignore if tapping on UI (right side ability area or top bar)
+      if (pointer.x > scene.scale.width * 0.65 && pointer.y > scene.scale.height * 0.4) return;
+      if (pointer.y < 60) return; // top HUD bar
+      // Ignore if in joystick zone
+      const jx = state.joystick ? state.joystick.base.x : 100;
+      const jy = state.joystick ? state.joystick.base.y : scene.scale.height - 100;
+      const jdx = pointer.x - jx, jdy = pointer.y - jy;
+      if (jdx * jdx + jdy * jdy < JOYSTICK_ZONE_RADIUS * JOYSTICK_ZONE_RADIUS) return;
+      // Ignore if any interactive UI was hit
+      if (pointer.camera && scene.input.hitTestPointer) {
+        const hits = scene.input.hitTestPointer(pointer);
+        if (hits && hits.length > 0) return;
+      }
+      // Convert screen to world coords
+      const cam = scene.cameras.main;
+      if (!cam) return;
+      const worldPt = cam.getWorldPoint(pointer.x, pointer.y);
+      // Check if tapped on an enemy — move toward + attack
+      if (typeof enemies !== 'undefined' && enemies && enemies.children) {
+        let tappedEnemy = null;
+        let bestDist = 40;
+        enemies.children.iterate((e) => {
+          if (!e || !e.active) return;
+          const edx = e.x - worldPt.x, edy = e.y - worldPt.y;
+          const d = Math.hypot(edx, edy);
+          if (d < bestDist) { bestDist = d; tappedEnemy = e; }
+        });
+        if (tappedEnemy) {
+          window.__MOBILE_MOVE_TARGET__ = { x: tappedEnemy.x, y: tappedEnemy.y };
+          if (typeof attack === 'function' && player) {
+            const adist = Math.hypot(tappedEnemy.x - player.x, tappedEnemy.y - player.y);
+            if (adist < (window.attackRange || 60) + 20) attack.call(scene);
+          }
+          return;
+        }
+      }
+      window.__MOBILE_MOVE_TARGET__ = { x: worldPt.x, y: worldPt.y };
+    });
+    scene.input.on('pointermove', (pointer) => {
+      if (!pointer.isDown) return;
+      if (!window.__MOBILE_MOVE_TARGET__) return;
+      // Throttle to ~15 updates/sec
+      const now = Date.now();
+      if (now - holdMoveThrottle < 66) return;
+      holdMoveThrottle = now;
+      const cam = scene.cameras.main;
+      if (!cam) return;
+      const worldPt = cam.getWorldPoint(pointer.x, pointer.y);
+      window.__MOBILE_MOVE_TARGET__ = { x: worldPt.x, y: worldPt.y };
+    });
+    scene.input.on('pointerup', () => {
+      // Don't clear target — let player walk to last tapped position
+    });
+
     // Rebuild mobile buttons whenever the desktop HUD refreshes (i.e. when
     // the loadout changes or a new ability is learned/equipped).
     const prevRefresh = window._refreshAbilityHUD;
