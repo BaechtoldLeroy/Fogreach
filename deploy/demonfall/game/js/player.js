@@ -656,7 +656,22 @@ function hasLineOfSightToEnemy(enemy) {
   if (!enemy || !player || typeof Steering === 'undefined' || !obstacles) {
     return !!enemy;
   }
-  return Steering.hasLineOfSight(player, enemy, obstacles);
+  // Check obstacles first
+  if (!Steering.hasLineOfSight(player, enemy, obstacles)) return false;
+  // Also check closed doors (separate physics group)
+  var scene = player.scene || (obstacles && obstacles.scene);
+  if (scene && scene._doorGroup) {
+    var line = new Phaser.Geom.Line(player.x, player.y, enemy.x, enemy.y);
+    var blocked = false;
+    scene._doorGroup.children.iterate(function (door) {
+      if (blocked || !door || !door.active) return;
+      if (door.getData && door.getData('walkthrough')) return; // open door
+      var r = door.getBounds();
+      if (Phaser.Geom.Intersects.LineToRectangle(line, r)) blocked = true;
+    });
+    if (blocked) return false;
+  }
+  return true;
 }
 
 function forEachEnemyInRange(range, callback, options = {}) {
