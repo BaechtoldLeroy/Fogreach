@@ -403,6 +403,18 @@
     var botX = findNearestFloorInRow(grid, height - 2, playerSpawn.x);
     if (botX >= 0) entrances.push({ x: botX, y: height - 2, dir: 'S' });
 
+    // Fallback: if no edge entrances found, place stairs in accessible chambers
+    if (entrances.length === 0) {
+      for (var ei = 0; ei < accessibleChambers.length && entrances.length < 2; ei++) {
+        var ec = accessibleChambers[ei];
+        var ex = ec.x + Math.floor(ec.w / 2);
+        var ey = ec.y + Math.floor(ec.h / 2);
+        if (grid[ey] && grid[ey][ex] === '.') {
+          entrances.push({ x: ex, y: ey, dir: null });
+        }
+      }
+    }
+
     // 11b) Extra stairs in larger chambers (036-procroom-stairs)
     var STAIR_MIN_AREA = 200; // minimum chamber area (tiles) for extra stairs
     var STAIR_CLEARANCE = 3;  // tiles from walls/doors
