@@ -108,12 +108,13 @@
           grid[node.splitPos][dx + i] = '.'; markDoor(dx + i, node.splitPos);
         }
       }
-      // Record center tile of this horizontal-wall doorway (wall runs left-right → 'horizontal')
+      // Record center of this horizontal-wall doorway (wall runs left-right → 'horizontal')
+      // y is between the two carved rows (splitPos-1 and splitPos)
       // width includes +2 clearance tiles carved on each side
       if (doorways) {
         doorways.push({
           x: dx + Math.floor(doorWidth / 2),
-          y: node.splitPos,
+          y: node.splitPos - 0.5,
           orientation: 'horizontal',
           width: doorWidth + 2
         });
@@ -132,11 +133,12 @@
           grid[dy + j][node.splitPos] = '.'; markDoor(node.splitPos, dy + j);
         }
       }
-      // Record center tile of this vertical-wall doorway (wall runs up-down → 'vertical')
+      // Record center of this vertical-wall doorway (wall runs up-down → 'vertical')
+      // x is between the two carved columns (splitPos-1 and splitPos)
       // width includes +2 clearance tiles carved on each side
       if (doorways) {
         doorways.push({
-          x: node.splitPos,
+          x: node.splitPos - 0.5,
           y: dy + Math.floor(doorWidth / 2),
           orientation: 'vertical',
           width: doorWidth + 2
