@@ -9,9 +9,32 @@
       weight: 15,
       minDepth: 1,
       handler: function(scene) {
-        try { window.soundManager && window.soundManager.playSFX('pickup'); } catch (e) {}
-        spawnEventChest(scene, 'chest_medium', false);
-        showEventToast(scene, '🏴 Versteckter Schatz entdeckt!', 'treasure_cache');
+        showEventToast(scene, 'Etwas Verborgenes schimmert...', 'treasure_cache');
+        var goldAmount = 30 + Math.floor(Math.random() * 40) + (window.DUNGEON_DEPTH || 1) * 15;
+        spawnEventObject(scene, 'evt_treasure', 0xccaa33, 0xffd700, 'Schatz', function () {
+          try { window.soundManager && window.soundManager.playSFX('pickup'); } catch (e) {}
+          showEventChoiceDialog(scene, 'Versteckter Schatz', [
+            {
+              label: 'Gold nehmen (+' + goldAmount + ')',
+              callback: function () {
+                if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldAmount);
+                showEventToast(scene, '+' + goldAmount + ' Gold!', 'treasure_cache');
+              }
+            },
+            {
+              label: 'Gruendlich durchsuchen (Item)',
+              callback: function () {
+                if (window.LootSystem && window.LootSystem.rollItem && typeof spawnLoot === 'function') {
+                  var iLevel = (window.DUNGEON_DEPTH || 1) + 2;
+                  var item = window.LootSystem.rollItem(null, iLevel);
+                  if (item) spawnLoot.call(scene, player.x, player.y - 30, item, null);
+                }
+                showEventToast(scene, 'Ein Gegenstand gefunden!', 'treasure_cache');
+              }
+            },
+            { label: 'Ignorieren', callback: function () {} }
+          ]);
+        });
       }
     },
     {
@@ -40,9 +63,44 @@
       weight: 8,
       minDepth: 2,
       handler: function(scene) {
-        try { window.soundManager && window.soundManager.playSFX('enemy_hit'); } catch (e) {}
-        spawnEventChest(scene, 'chest_large', true);
-        showEventToast(scene, '💀 Eine verfluchte Truhe... vorsichtig!', 'trapped_chest');
+        showEventToast(scene, 'Eine dunkle Aura umgibt etwas...', 'trapped_chest');
+        var goldReward = 60 + Math.floor(Math.random() * 60) + (window.DUNGEON_DEPTH || 1) * 20;
+        spawnEventObject(scene, 'evt_cursed', 0x662244, 0xaa44ff, 'Verfl. Truhe', function () {
+          try { window.soundManager && window.soundManager.playSFX('enemy_hit'); } catch (e) {}
+          showEventChoiceDialog(scene, 'Verfluchte Truhe', [
+            {
+              label: 'Oeffnen (Risiko: -3 HP, Belohnung: ' + goldReward + ' Gold + Item)',
+              callback: function () {
+                // Take damage
+                if (typeof window.setPlayerHealth === 'function') {
+                  window.setPlayerHealth(Math.max(1, (window.playerHealth || 10) - 3));
+                }
+                // Grant gold
+                if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldReward);
+                // Drop rare item
+                if (window.LootSystem && window.LootSystem.rollItem && typeof spawnLoot === 'function') {
+                  var iLevel = (window.DUNGEON_DEPTH || 1) + 4;
+                  var roll = Math.random();
+                  var forcedTier = roll < 0.15 ? 3 : (roll < 0.5 ? 2 : 1);
+                  var item = window.LootSystem.rollItem(null, iLevel, forcedTier);
+                  if (item) spawnLoot.call(scene, player.x, player.y - 30, item, null);
+                }
+                var cam = scene.cameras && scene.cameras.main;
+                if (cam && cam.shake) cam.shake(200, 0.006);
+                showEventToast(scene, 'Fluch! -3 HP, aber gute Beute!', 'trapped_chest');
+              }
+            },
+            {
+              label: 'Vorsichtig oeffnen (kein Risiko, weniger Beute)',
+              callback: function () {
+                var safeGold = Math.floor(goldReward * 0.4);
+                if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(safeGold);
+                showEventToast(scene, '+' + safeGold + ' Gold (sicher)', 'trapped_chest');
+              }
+            },
+            { label: 'In Ruhe lassen', callback: function () {} }
+          ]);
+        });
       }
     },
     {
@@ -119,6 +177,27 @@
         // Dice
         g.fillStyle(0xeeeeee, 1); g.fillRect(15, 12, 5, 5);
         g.fillStyle(0x111111, 1); g.fillCircle(16, 14, 0.5); g.fillCircle(19, 14, 0.5);
+        g.generateTexture(texKey, 32, 32);
+      } else if (texKey === 'evt_treasure') {
+        // Gold pile with sparkle
+        g.fillStyle(0x8B6914, 1); g.fillRect(6, 18, 20, 12); // base chest
+        g.fillStyle(0x7a5a10, 1); g.fillRect(8, 16, 16, 4); // lid
+        g.fillStyle(0x3a3a3a, 1); g.fillRect(14, 18, 4, 3); // lock
+        g.fillStyle(0xffd700, 1); g.fillCircle(10, 14, 3); // coin 1
+        g.fillStyle(0xffcc00, 1); g.fillCircle(16, 12, 3); // coin 2
+        g.fillStyle(0xffd700, 1); g.fillCircle(22, 14, 2.5); // coin 3
+        g.fillStyle(0xffffff, 0.5); g.fillCircle(16, 10, 2); // sparkle
+        g.generateTexture(texKey, 32, 32);
+      } else if (texKey === 'evt_cursed') {
+        // Dark chest with purple aura
+        g.fillStyle(0x331122, 1); g.fillRect(6, 18, 20, 12); // base chest
+        g.fillStyle(0x441133, 1); g.fillRect(8, 16, 16, 4); // lid
+        g.fillStyle(0xaa44ff, 0.4); g.fillCircle(16, 20, 12); // purple aura
+        g.fillStyle(0x222222, 1); g.fillRect(6, 18, 20, 12); // chest over aura
+        g.fillStyle(0x331133, 1); g.fillRect(8, 16, 16, 4); // lid
+        g.fillStyle(0xff2222, 1); g.fillCircle(16, 22, 2); // red eye
+        g.fillStyle(0xaa44ff, 0.6); g.fillCircle(10, 14, 1.5); // particle
+        g.fillStyle(0xaa44ff, 0.4); g.fillCircle(22, 12, 1.5); // particle
         g.generateTexture(texKey, 32, 32);
       } else {
         // Generic fallback
