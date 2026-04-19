@@ -1552,57 +1552,111 @@ function createItemGraphics() {
       draw: () => {
         const cx = SIZE / 2;
         const cy = SIZE / 2;
-        // Vertical bow: curved limbs left of center, string right, arrow nocked
-        // Shadow
-        g.fillStyle(0x1a1a1a, 0.30);
-        g.lineStyle(0, 0, 0);
+        // Big vertical recurve: bold filled crescent, tip flares, taut string
+        // and a clean horizontal arrow. Designed to read at 48×48 thumbnail.
+
+        // Limb-arc geometry
+        const armX = cx + 4;        // arc center sits right of icon center so
+                                    // the bow body bulges left
+        const armR = 22;            // limb radius
+        const startA = Phaser.Math.DegToRad(112);
+        const endA   = Phaser.Math.DegToRad(248);
+
+        // Drop shadow under the bow
+        g.lineStyle(7, 0x000000, 0.30);
         g.beginPath();
-        g.arc(cx + 2, cy + 2, 18, Phaser.Math.DegToRad(110), Phaser.Math.DegToRad(250), false);
+        g.arc(armX + 1, cy + 2, armR, startA, endA, false);
         g.strokePath();
-        // Bow stave (rich brown)
-        g.lineStyle(4, 0x6b3a14, 1);
+
+        // Main wood (warm dark walnut)
+        g.lineStyle(7, 0x6a3818, 1);
         g.beginPath();
-        g.arc(cx + 2, cy, 18, Phaser.Math.DegToRad(110), Phaser.Math.DegToRad(250), false);
+        g.arc(armX, cy, armR, startA, endA, false);
         g.strokePath();
-        // Stave highlight (warm tan inner curve)
-        g.lineStyle(2, 0xb37b3a, 1);
+
+        // Wood grain highlight (slightly inner curve, warmer tone)
+        g.lineStyle(2, 0xc88a44, 1);
         g.beginPath();
-        g.arc(cx + 2, cy, 16, Phaser.Math.DegToRad(115), Phaser.Math.DegToRad(245), false);
+        g.arc(armX, cy, armR - 1, startA + 0.05, endA - 0.05, false);
         g.strokePath();
-        // Tips (darker nocks)
-        g.fillStyle(0x3a1f0a, 1);
-        // top nock
-        const topAngle = Phaser.Math.DegToRad(250);
-        const topX = cx + 2 + Math.cos(topAngle) * 18;
-        const topY = cy + Math.sin(topAngle) * 18;
-        g.fillCircle(topX, topY, 2);
-        // bottom nock
-        const botAngle = Phaser.Math.DegToRad(110);
-        const botX = cx + 2 + Math.cos(botAngle) * 18;
-        const botY = cy + Math.sin(botAngle) * 18;
-        g.fillCircle(botX, botY, 2);
-        // String (taut, drawn back slightly past the stave's chord)
-        g.lineStyle(1, 0xeeeeee, 0.95);
+
+        // Recurve flare at each tip — small inward hook that gives the
+        // silhouette the iconic "horsebow" shape. Computed from the limb
+        // tangent at the start/end angles.
+        const tipPx = (a) => ({ x: armX + Math.cos(a) * armR, y: cy + Math.sin(a) * armR });
+        const top = tipPx(endA);
+        const bot = tipPx(startA);
+
+        // Recurve hooks (curl inward toward center)
+        g.lineStyle(5, 0x6a3818, 1);
         g.beginPath();
-        g.moveTo(topX, topY);
-        g.lineTo(cx + 6, cy); // pull point
-        g.lineTo(botX, botY);
+        g.moveTo(top.x, top.y);
+        g.lineTo(top.x - 4, top.y - 5);
+        g.lineTo(top.x + 1, top.y - 9);
         g.strokePath();
-        // Nocked arrow shaft (pointing right, riding the pull point)
+        g.beginPath();
+        g.moveTo(bot.x, bot.y);
+        g.lineTo(bot.x - 4, bot.y + 5);
+        g.lineTo(bot.x + 1, bot.y + 9);
+        g.strokePath();
+
+        // Brass tip caps
+        g.fillStyle(0xd4a030, 1);
+        g.fillCircle(top.x + 1, top.y - 9, 2);
+        g.fillCircle(bot.x + 1, bot.y + 9, 2);
+        g.fillStyle(0xffe080, 0.7);
+        g.fillCircle(top.x + 1, top.y - 9, 1);
+        g.fillCircle(bot.x + 1, bot.y + 9, 1);
+
+        // String — drawn taut from tip cap to tip cap, with a small pull
+        // notch in the middle where the nocked arrow sits.
+        const pullX = cx + 6;
+        const stringTop = { x: top.x + 1, y: top.y - 9 };
+        const stringBot = { x: bot.x + 1, y: bot.y + 9 };
+
+        // String shadow
+        g.lineStyle(2, 0x000000, 0.35);
+        g.beginPath();
+        g.moveTo(stringTop.x, stringTop.y);
+        g.lineTo(pullX + 1, cy + 1);
+        g.lineTo(stringBot.x, stringBot.y);
+        g.strokePath();
+
+        // String (light, slightly off-white)
+        g.lineStyle(1.5, 0xf2ecd6, 1);
+        g.beginPath();
+        g.moveTo(stringTop.x, stringTop.y);
+        g.lineTo(pullX, cy);
+        g.lineTo(stringBot.x, stringBot.y);
+        g.strokePath();
+
+        // Grip wrap (cord-bound center of the bow)
+        g.fillStyle(0x2a1408, 1);
+        g.fillRect(armX - armR + 0, cy - 6, 6, 12);
+        g.fillStyle(0xa87940, 0.7);
+        g.fillRect(armX - armR + 0, cy - 5, 6, 1);
+        g.fillRect(armX - armR + 0, cy + 0, 6, 1);
+        g.fillRect(armX - armR + 0, cy + 4, 6, 1);
+
+        // Nocked arrow — horizontal, sitting on the string pull-point
+        // Shaft (warm wood)
         g.fillStyle(0xc8a060, 1);
-        g.fillRect(cx + 6, cy - 1, 16, 2);
-        // Arrowhead (steel triangle)
-        g.fillStyle(0xdddddd, 1);
-        g.fillTriangle(cx + 22, cy - 4, cx + 22, cy + 4, cx + 30, cy);
-        // Fletching (red)
+        g.fillRect(pullX, cy - 1, 18, 2);
+        // Shaft shadow stripe
+        g.fillStyle(0x8a6830, 0.5);
+        g.fillRect(pullX, cy + 1, 18, 1);
+        // Arrowhead (steel triangle, slightly outside icon edge for impact)
+        g.fillStyle(0xeeeeee, 1);
+        g.fillTriangle(pullX + 18, cy - 4, pullX + 18, cy + 4, pullX + 24, cy);
+        g.fillStyle(0xb6bcc2, 1);
+        g.fillTriangle(pullX + 18, cy + 1, pullX + 18, cy + 4, pullX + 24, cy);
+        // Fletching (twin red feathers)
         g.fillStyle(0xc0392b, 1);
-        g.fillTriangle(cx + 4, cy - 4, cx + 4, cy + 4, cx + 9, cy);
-        // Grip wrap (centered, cord-bound look)
-        g.fillStyle(0x4a2810, 1);
-        g.fillRect(cx, cy - 4, 4, 8);
-        g.fillStyle(0xa87940, 0.6);
-        g.fillRect(cx, cy - 3, 4, 1);
-        g.fillRect(cx, cy + 2, 4, 1);
+        g.fillTriangle(pullX, cy - 5, pullX + 6, cy - 1, pullX, cy - 1);
+        g.fillTriangle(pullX, cy + 5, pullX + 6, cy + 1, pullX, cy + 1);
+        g.fillStyle(0xff6a4a, 0.6);
+        g.fillTriangle(pullX + 1, cy - 4, pullX + 5, cy - 1, pullX + 1, cy - 1);
+        g.fillTriangle(pullX + 1, cy + 4, pullX + 5, cy + 1, pullX + 1, cy + 1);
       }
     },
     {
