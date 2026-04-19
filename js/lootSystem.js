@@ -29,6 +29,33 @@ if (window.i18n) {
     'loot.affix.of_wisdom': 'der Weisheit',
     'loot.affix.of_greed': 'der Gier',
 
+    // Affix tooltip texts (with {value} placeholder). Used by inventory.js
+    // when rendering item tooltips.
+    'loot.affix.sharp_dmg.tooltip': '+{value}% Schaden',
+    'loot.affix.sturdy_armor.tooltip': '+{value} Rüstung',
+    'loot.affix.of_health.tooltip': '+{value} LP',
+    'loot.affix.swift_speed.tooltip': '+{value}% Tempo',
+    'loot.affix.of_precision.tooltip': '+{value}% Krit-Chance',
+    'loot.affix.of_reach.tooltip': '+{value} Reichweite',
+    'loot.affix.fire_warding.tooltip': '+{value}% Feuerresistenz',
+    'loot.affix.cold_warding.tooltip': '+{value}% Frostresistenz',
+    'loot.affix.lightning_warding.tooltip': '+{value}% Blitzresistenz',
+    'loot.affix.of_the_leech.tooltip': '+{value}% Lebensraub',
+    'loot.affix.spinning_dmg.tooltip': '+{value}% Wirbelangriff-Schaden',
+    'loot.affix.charged_dmg.tooltip': '+{value}% Aufgeladener Schlag-Schaden',
+    'loot.affix.dashing_dmg.tooltip': '+{value}% Sturmhieb-Schaden',
+    'loot.affix.piercing_dmg.tooltip': '+{value}% Dolchwurf-Schaden',
+    'loot.affix.bashing_dmg.tooltip': '+{value}% Schildstoß-Schaden',
+    'loot.affix.of_swift_spin.tooltip': '-{value}% Wirbelangriff-Cooldown',
+    'loot.affix.of_swift_charge.tooltip': '-{value}% Aufgeladener Schlag-Cooldown',
+    'loot.affix.of_swift_dash.tooltip': '-{value}% Sturmhieb-Cooldown',
+    'loot.affix.of_swift_dagger.tooltip': '-{value}% Dolchwurf-Cooldown',
+    'loot.affix.of_swift_bash.tooltip': '-{value}% Schildstoß-Cooldown',
+    'loot.affix.of_might.tooltip': '+{value}% Schaden aller Fähigkeiten',
+    'loot.affix.of_haste.tooltip': '-{value}% Cooldown aller Fähigkeiten',
+    'loot.affix.of_wisdom.tooltip': '+{value}% XP-Gewinn',
+    'loot.affix.of_greed.tooltip': '+{value}% Gold-Find',
+
     'loot.item.WPN_EISENKLINGE': 'Eisenklinge',
     'loot.item.WPN_SCHATTENDOLCH': 'Schattendolch',
     'loot.item.WPN_KETTENMORGENSTERN': 'Kettenmorgenstern',
@@ -73,6 +100,31 @@ if (window.i18n) {
     'loot.affix.of_haste': 'of Haste',
     'loot.affix.of_wisdom': 'of Wisdom',
     'loot.affix.of_greed': 'of Greed',
+
+    'loot.affix.sharp_dmg.tooltip': '+{value}% Damage',
+    'loot.affix.sturdy_armor.tooltip': '+{value} Armor',
+    'loot.affix.of_health.tooltip': '+{value} HP',
+    'loot.affix.swift_speed.tooltip': '+{value}% Speed',
+    'loot.affix.of_precision.tooltip': '+{value}% Crit Chance',
+    'loot.affix.of_reach.tooltip': '+{value} Range',
+    'loot.affix.fire_warding.tooltip': '+{value}% Fire Resist',
+    'loot.affix.cold_warding.tooltip': '+{value}% Cold Resist',
+    'loot.affix.lightning_warding.tooltip': '+{value}% Lightning Resist',
+    'loot.affix.of_the_leech.tooltip': '+{value}% Life Steal',
+    'loot.affix.spinning_dmg.tooltip': '+{value}% Spin Attack Damage',
+    'loot.affix.charged_dmg.tooltip': '+{value}% Charged Slash Damage',
+    'loot.affix.dashing_dmg.tooltip': '+{value}% Dash Slash Damage',
+    'loot.affix.piercing_dmg.tooltip': '+{value}% Dagger Throw Damage',
+    'loot.affix.bashing_dmg.tooltip': '+{value}% Shield Bash Damage',
+    'loot.affix.of_swift_spin.tooltip': '-{value}% Spin Attack Cooldown',
+    'loot.affix.of_swift_charge.tooltip': '-{value}% Charged Slash Cooldown',
+    'loot.affix.of_swift_dash.tooltip': '-{value}% Dash Slash Cooldown',
+    'loot.affix.of_swift_dagger.tooltip': '-{value}% Dagger Throw Cooldown',
+    'loot.affix.of_swift_bash.tooltip': '-{value}% Shield Bash Cooldown',
+    'loot.affix.of_might.tooltip': '+{value}% All Ability Damage',
+    'loot.affix.of_haste.tooltip': '-{value}% All Ability Cooldowns',
+    'loot.affix.of_wisdom.tooltip': '+{value}% XP Gain',
+    'loot.affix.of_greed.tooltip': '+{value}% Gold Find',
 
     'loot.item.WPN_EISENKLINGE': 'Iron Blade',
     'loot.item.WPN_SCHATTENDOLCH': 'Shadow Dagger',
@@ -828,6 +880,17 @@ if (window.i18n) {
     // language. Consumers should prefer this over reading item.displayName
     // (which is snapped at instantiation and may be stale after a switch).
     getLocalizedDisplayName: function (item) { return composeName(item); },
+    // i18n helper: resolve an affix's tooltip string in the active language
+    // with the {value} placeholder filled in. Falls back to def.tooltipText
+    // when no key is registered.
+    getAffixTooltipText: function (def, value) {
+      if (!def) return '';
+      if (window.i18n) {
+        var v = window.i18n.t('loot.affix.' + def.id + '.tooltip', { value: value });
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return (def.tooltipText || '').split('{value}').join(String(value));
+    },
     grantGold: grantGold,
     getGold: getGold,
     spendGold: spendGold,
