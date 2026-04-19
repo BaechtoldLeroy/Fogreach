@@ -8,16 +8,20 @@ function initMinimap(scene) {
   const MAP_W = 160;
   const MAP_H = 120;
   const SCREEN_W = scene.scale.width; // 960
+  // Leave room for the HUDv2 top-right icons (burger + inventory ≈ 44px wide
+  // with 12px margin = 56px). Push the minimap further left so it does not
+  // sit underneath them.
+  const RIGHT_MARGIN = 68;
 
   // RenderTexture for the minimap content
-  scene._minimapRT = scene.add.renderTexture(SCREEN_W - MAP_W - 10, 10, MAP_W, MAP_H)
+  scene._minimapRT = scene.add.renderTexture(SCREEN_W - MAP_W - RIGHT_MARGIN, 10, MAP_W, MAP_H)
     .setScrollFactor(0)
     .setDepth(1500)
     .setOrigin(0, 0);
 
   // Border rectangle behind the minimap
   scene._minimapBorder = scene.add.rectangle(
-    SCREEN_W - MAP_W - 10 - 1, 10 - 1,
+    SCREEN_W - MAP_W - RIGHT_MARGIN - 1, 10 - 1,
     MAP_W + 2, MAP_H + 2,
     0x666666
   )
@@ -46,7 +50,7 @@ function initMinimap(scene) {
 
   // Move the room counter text below the minimap for visual consistency
   if (window._roomCounterText) {
-    window._roomCounterText.setPosition(SCREEN_W - MAP_W - 10, 10 + MAP_H + 4);
+    window._roomCounterText.setPosition(SCREEN_W - MAP_W - RIGHT_MARGIN, 10 + MAP_H + 4);
     window._roomCounterText.setOrigin(0, 0);
     window._roomCounterText.setDepth(1501);
   }
