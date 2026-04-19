@@ -665,6 +665,21 @@ function randomLoot() {
   };
 
   if (roll <= 35) {
+    // 25% of weapon drops are bows (LootSystem.ITEM_BASES has 3 tiered bow
+    // entries with subtype:'bow'; rollItem honors their dropWeight by depth).
+    if (Math.random() < 0.25 && window.LootSystem
+        && typeof window.LootSystem.rollItem === 'function'
+        && Array.isArray(window.LootSystem.ITEM_BASES)) {
+      const bowBases = window.LootSystem.ITEM_BASES
+        .filter((b) => b && b.subtype === 'bow');
+      if (bowBases.length > 0) {
+        const pick = bowBases[Math.floor(Math.random() * bowBases.length)];
+        try {
+          const bow = window.LootSystem.rollItem(pick.key, depth, tier);
+          if (bow) return applyDifficulty(bow);
+        } catch (e) { /* fall through to legacy weapon */ }
+      }
+    }
     return buildItem({ type: 'weapon', key: 'WPN', name: _LOOT_T('loot.legacy.weapon'), nameKey: 'loot.legacy.weapon', iconKey: 'itWeapon' }, 'weapon');
   }
   if (roll <= 55) {

@@ -411,10 +411,35 @@
     if (entrances.length === 0) {
       for (var ei = 0; ei < accessibleChambers.length && entrances.length < 2; ei++) {
         var ec = accessibleChambers[ei];
-        var ex = ec.x + Math.floor(ec.w / 2);
-        var ey = ec.y + Math.floor(ec.h / 2);
-        if (grid[ey] && grid[ey][ex] === '.') {
-          entrances.push({ x: ex, y: ey, dir: null });
+        // Try a few offsets within the chamber, since the geometric center
+        // can land on a wall when chambers were partially carved.
+        var tries = [
+          [Math.floor(ec.w / 2), Math.floor(ec.h / 2)],
+          [Math.floor(ec.w / 3), Math.floor(ec.h / 3)],
+          [Math.floor(ec.w * 2 / 3), Math.floor(ec.h / 3)],
+          [Math.floor(ec.w / 3), Math.floor(ec.h * 2 / 3)]
+        ];
+        for (var ti = 0; ti < tries.length; ti++) {
+          var ex = ec.x + tries[ti][0];
+          var ey = ec.y + tries[ti][1];
+          if (grid[ey] && grid[ey][ex] === '.') {
+            entrances.push({ x: ex, y: ey, dir: null });
+            break;
+          }
+        }
+      }
+    }
+
+    // Last-resort: if we *still* have zero stairs (very rare — chamber
+    // detection misfire), scan the whole grid for the first walkable floor
+    // tile. The player must always have a way out of a procedural room.
+    if (entrances.length === 0) {
+      for (var fy = 1; fy < height - 1 && entrances.length === 0; fy++) {
+        for (var fx = 1; fx < (grid[fy] ? grid[fy].length - 1 : 0); fx++) {
+          if (grid[fy][fx] === '.') {
+            entrances.push({ x: fx, y: fy, dir: null });
+            break;
+          }
         }
       }
     }
