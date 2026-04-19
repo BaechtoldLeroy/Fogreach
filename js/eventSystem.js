@@ -2,44 +2,182 @@
 (function() {
   'use strict';
 
+  if (window.i18n) {
+    window.i18n.register('de', {
+      // Treasure cache
+      'event.treasure.name': 'Versteckter Schatz',
+      'event.treasure.toast_spawn': 'Etwas Verborgenes schimmert...',
+      'event.treasure.object_label': 'Schatz',
+      'event.treasure.choice_gold': 'Gold nehmen (+{amount})',
+      'event.treasure.choice_search': 'Gründlich durchsuchen (Item)',
+      'event.treasure.choice_ignore': 'Ignorieren',
+      'event.treasure.toast_gold': '+{amount} Gold!',
+      'event.treasure.toast_item': 'Ein Gegenstand gefunden!',
+      // Ambush
+      'event.ambush.name': 'Hinterhalt!',
+      // Wandering merchant
+      'event.merchant.name': 'Wandernder Händler',
+      'event.merchant.toast_spawn': '🛒 Ein wandernder Händler ist erschienen!',
+      // Cursed chest
+      'event.cursed.name': 'Verfluchte Truhe',
+      'event.cursed.toast_spawn': 'Eine dunkle Aura umgibt etwas...',
+      'event.cursed.object_label': 'Verfl. Truhe',
+      'event.cursed.choice_open': 'Öffnen (Risiko: -3 HP, Belohnung: {amount} Gold + Item)',
+      'event.cursed.choice_safe': 'Vorsichtig öffnen (kein Risiko, weniger Beute)',
+      'event.cursed.choice_leave': 'In Ruhe lassen',
+      'event.cursed.toast_curse': 'Fluch! -3 HP, aber gute Beute!',
+      'event.cursed.toast_safe': '+{amount} Gold (sicher)',
+      // Lore fragment
+      'event.lore.name': 'Altes Schriftstück',
+      'event.lore.toast_spawn': '📜 Ein altes Schriftstück glüht in der Nähe...',
+      'event.lore.dialog_title': 'Altes Schriftstück',
+      'event.lore.dialog_hint': '[Klick / Space / ESC zum Schliessen]',
+      'event.lore.text.1': '...die Schatten flüstern Namen, die niemand mehr aussprechen sollte...',
+      'event.lore.text.2': '...der Kettenrat schloss einen Pakt mit etwas Älterem als die Stadt...',
+      'event.lore.text.3': '...wer das Siegel bricht, öffnet einen Pfad in beide Richtungen...',
+      'event.lore.text.4': '...die Tiere wussten zuerst, dass etwas in den Tiefen wachte...',
+      'event.lore.text.5': '...verbrannte Seiten, doch ein Wort bleibt: "Dämmerstein"...',
+      'event.lore.text.6': '...wir gruben tiefer als jede Karte erlaubte. Möge man uns vergeben...',
+      // Environmental hazard
+      'event.hazard.name': 'Einsturzgefahr',
+      'event.hazard.toast_spawn': '🪨 Vorsicht — Decke stürzt ein! AUSWEICHEN!',
+      'event.hazard.toast_hit': '🪨 Einsturz! -1 HP',
+      'event.hazard.toast_dodge': '🪨 Ausgewichen! +{amount} Gold',
+      // Shrine
+      'event.shrine.name': 'Mystischer Schrein',
+      'event.shrine.toast_spawn': 'Ein mystischer Schrein erscheint...',
+      'event.shrine.object_label': 'Schrein',
+      'event.shrine.choice_power': 'Kraft (+25% Schaden, -15% Rüstung)',
+      'event.shrine.choice_protection': 'Schutz (+5% Rüstung, -10% Geschw.)',
+      'event.shrine.choice_ignore': 'Ignorieren',
+      'event.shrine.toast_power': 'Kraft des Schreins: +25% Schaden!',
+      'event.shrine.toast_protection': 'Schutz des Schreins: +5% Rüstung!',
+      // Gambling
+      'event.gambling.name': 'Glücksspiel',
+      'event.gambling.toast_spawn': 'Ein Spieltisch taucht auf...',
+      'event.gambling.object_label': 'Glücksspiel',
+      'event.gambling.title': 'Glücksspiel ({cost} Gold)',
+      'event.gambling.choice_bet': 'Wette {cost} Gold (40% Chance auf 3x)',
+      'event.gambling.choice_decline': 'Ablehnen',
+      'event.gambling.toast_no_gold': 'Nicht genug Gold!',
+      'event.gambling.toast_won': 'Gewonnen! Netto +{amount} Gold!',
+      'event.gambling.toast_lost': 'Verloren! -{amount} Gold',
+      // Elite ambush
+      'event.elite.name': 'Elite-Hinterhalt',
+      'event.elite.toast_spawn': 'Ein mächtiger Feind nähert sich!',
+      // Healing fountain
+      'event.fountain.name': 'Heilender Brunnen',
+      'event.fountain.toast_spawn': 'Ein leuchtender Brunnen erscheint...',
+      'event.fountain.object_label': 'Brunnen',
+      'event.fountain.choice_drink': 'Trinken (volle Heilung)',
+      'event.fountain.choice_fill': 'Füllen (+1 Portalrolle)',
+      'event.fountain.choice_ignore': 'Ignorieren',
+      'event.fountain.toast_heal': 'Volle Heilung!',
+      'event.fountain.toast_scroll': '+1 Portalrolle!'
+    });
+    window.i18n.register('en', {
+      'event.treasure.name': 'Hidden Treasure',
+      'event.treasure.toast_spawn': 'Something hidden glimmers...',
+      'event.treasure.object_label': 'Treasure',
+      'event.treasure.choice_gold': 'Take gold (+{amount})',
+      'event.treasure.choice_search': 'Search thoroughly (Item)',
+      'event.treasure.choice_ignore': 'Ignore',
+      'event.treasure.toast_gold': '+{amount} gold!',
+      'event.treasure.toast_item': 'Found an item!',
+      'event.ambush.name': 'Ambush!',
+      'event.merchant.name': 'Wandering Merchant',
+      'event.merchant.toast_spawn': '🛒 A wandering merchant has appeared!',
+      'event.cursed.name': 'Cursed Chest',
+      'event.cursed.toast_spawn': 'A dark aura surrounds something...',
+      'event.cursed.object_label': 'Cursed Chest',
+      'event.cursed.choice_open': 'Open (Risk: -3 HP, Reward: {amount} gold + Item)',
+      'event.cursed.choice_safe': 'Open carefully (no risk, less loot)',
+      'event.cursed.choice_leave': 'Leave alone',
+      'event.cursed.toast_curse': 'Curse! -3 HP, but great loot!',
+      'event.cursed.toast_safe': '+{amount} gold (safe)',
+      'event.lore.name': 'Old Manuscript',
+      'event.lore.toast_spawn': '📜 An old manuscript glows nearby...',
+      'event.lore.dialog_title': 'Old Manuscript',
+      'event.lore.dialog_hint': '[Click / Space / ESC to close]',
+      'event.lore.text.1': '...the shadows whisper names no one should speak anymore...',
+      'event.lore.text.2': '...the Chain Council made a pact with something older than the city...',
+      'event.lore.text.3': '...whoever breaks the seal opens a path in both directions...',
+      'event.lore.text.4': '...the animals knew first that something waited in the depths...',
+      'event.lore.text.5': '...burned pages, but one word remains: "Twilightstone"...',
+      'event.lore.text.6': '...we dug deeper than any map allowed. May we be forgiven...',
+      'event.hazard.name': 'Cave-in Risk',
+      'event.hazard.toast_spawn': '🪨 Watch out — ceiling collapsing! DODGE!',
+      'event.hazard.toast_hit': '🪨 Cave-in! -1 HP',
+      'event.hazard.toast_dodge': '🪨 Dodged! +{amount} gold',
+      'event.shrine.name': 'Mystical Shrine',
+      'event.shrine.toast_spawn': 'A mystical shrine appears...',
+      'event.shrine.object_label': 'Shrine',
+      'event.shrine.choice_power': 'Power (+25% damage, -15% armor)',
+      'event.shrine.choice_protection': 'Protection (+5% armor, -10% speed)',
+      'event.shrine.choice_ignore': 'Ignore',
+      'event.shrine.toast_power': 'Shrine of Power: +25% damage!',
+      'event.shrine.toast_protection': 'Shrine of Protection: +5% armor!',
+      'event.gambling.name': 'Gambling',
+      'event.gambling.toast_spawn': 'A gambling table appears...',
+      'event.gambling.object_label': 'Gambling',
+      'event.gambling.title': 'Gambling ({cost} gold)',
+      'event.gambling.choice_bet': 'Bet {cost} gold (40% chance for 3x)',
+      'event.gambling.choice_decline': 'Decline',
+      'event.gambling.toast_no_gold': 'Not enough gold!',
+      'event.gambling.toast_won': 'You won! Net +{amount} gold!',
+      'event.gambling.toast_lost': 'Lost! -{amount} gold',
+      'event.elite.name': 'Elite Ambush',
+      'event.elite.toast_spawn': 'A mighty foe approaches!',
+      'event.fountain.name': 'Healing Fountain',
+      'event.fountain.toast_spawn': 'A glowing fountain appears...',
+      'event.fountain.object_label': 'Fountain',
+      'event.fountain.choice_drink': 'Drink (full heal)',
+      'event.fountain.choice_fill': 'Fill (+1 portal scroll)',
+      'event.fountain.choice_ignore': 'Ignore',
+      'event.fountain.toast_heal': 'Full heal!',
+      'event.fountain.toast_scroll': '+1 portal scroll!'
+    });
+  }
+  var T = function (key, params) { return window.i18n ? window.i18n.t(key, params) : key; };
+
   var EVENT_TYPES = [
     {
       id: 'treasure_cache',
-      name: 'Versteckter Schatz',
+      name: T('event.treasure.name'),
       weight: 15,
       minDepth: 1,
       handler: function(scene) {
-        showEventToast(scene, 'Etwas Verborgenes schimmert...', 'treasure_cache');
+        showEventToast(scene, T('event.treasure.toast_spawn'), 'treasure_cache');
         var goldAmount = 30 + Math.floor(Math.random() * 40) + (window.DUNGEON_DEPTH || 1) * 15;
-        spawnEventObject(scene, 'evt_treasure', 0xccaa33, 0xffd700, 'Schatz', function () {
+        spawnEventObject(scene, 'evt_treasure', 0xccaa33, 0xffd700, T('event.treasure.object_label'), function () {
           try { window.soundManager && window.soundManager.playSFX('pickup'); } catch (e) {}
-          showEventChoiceDialog(scene, 'Versteckter Schatz', [
+          showEventChoiceDialog(scene, T('event.treasure.name'), [
             {
-              label: 'Gold nehmen (+' + goldAmount + ')',
+              label: T('event.treasure.choice_gold', { amount: goldAmount }),
               callback: function () {
                 if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldAmount);
-                showEventToast(scene, '+' + goldAmount + ' Gold!', 'treasure_cache');
+                showEventToast(scene, T('event.treasure.toast_gold', { amount: goldAmount }), 'treasure_cache');
               }
             },
             {
-              label: 'Gruendlich durchsuchen (Item)',
+              label: T('event.treasure.choice_search'),
               callback: function () {
                 if (window.LootSystem && window.LootSystem.rollItem && typeof spawnLoot === 'function') {
                   var iLevel = (window.DUNGEON_DEPTH || 1) + 2;
                   var item = window.LootSystem.rollItem(null, iLevel);
                   if (item) spawnLoot.call(scene, player.x, player.y - 30, item, null);
                 }
-                showEventToast(scene, 'Ein Gegenstand gefunden!', 'treasure_cache');
+                showEventToast(scene, T('event.treasure.toast_item'), 'treasure_cache');
               }
             },
-            { label: 'Ignorieren', callback: function () {} }
+            { label: T('event.treasure.choice_ignore'), callback: function () {} }
           ]);
         });
       }
     },
     {
       id: 'ambush',
-      name: 'Hinterhalt!',
+      name: T('event.ambush.name'),
       weight: 12,
       minDepth: 2,
       handler: function(scene) {
@@ -49,7 +187,7 @@
     },
     {
       id: 'wandering_merchant',
-      name: 'Wandernder Haendler',
+      name: T('event.merchant.name'),
       weight: 15,
       minDepth: 3,
       handler: function(scene) {
@@ -59,17 +197,17 @@
     },
     {
       id: 'trapped_chest',
-      name: 'Verfluchte Truhe',
+      name: T('event.cursed.name'),
       weight: 8,
       minDepth: 2,
       handler: function(scene) {
-        showEventToast(scene, 'Eine dunkle Aura umgibt etwas...', 'trapped_chest');
+        showEventToast(scene, T('event.cursed.toast_spawn'), 'trapped_chest');
         var goldReward = 60 + Math.floor(Math.random() * 60) + (window.DUNGEON_DEPTH || 1) * 20;
-        spawnEventObject(scene, 'evt_cursed', 0x662244, 0xaa44ff, 'Verfl. Truhe', function () {
+        spawnEventObject(scene, 'evt_cursed', 0x662244, 0xaa44ff, T('event.cursed.object_label'), function () {
           try { window.soundManager && window.soundManager.playSFX('enemy_hit'); } catch (e) {}
-          showEventChoiceDialog(scene, 'Verfluchte Truhe', [
+          showEventChoiceDialog(scene, T('event.cursed.name'), [
             {
-              label: 'Oeffnen (Risiko: -3 HP, Belohnung: ' + goldReward + ' Gold + Item)',
+              label: T('event.cursed.choice_open', { amount: goldReward }),
               callback: function () {
                 // Take damage
                 if (typeof window.setPlayerHealth === 'function') {
@@ -87,25 +225,25 @@
                 }
                 var cam = scene.cameras && scene.cameras.main;
                 if (cam && cam.shake) cam.shake(200, 0.006);
-                showEventToast(scene, 'Fluch! -3 HP, aber gute Beute!', 'trapped_chest');
+                showEventToast(scene, T('event.cursed.toast_curse'), 'trapped_chest');
               }
             },
             {
-              label: 'Vorsichtig oeffnen (kein Risiko, weniger Beute)',
+              label: T('event.cursed.choice_safe'),
               callback: function () {
                 var safeGold = Math.floor(goldReward * 0.4);
                 if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(safeGold);
-                showEventToast(scene, '+' + safeGold + ' Gold (sicher)', 'trapped_chest');
+                showEventToast(scene, T('event.cursed.toast_safe', { amount: safeGold }), 'trapped_chest');
               }
             },
-            { label: 'In Ruhe lassen', callback: function () {} }
+            { label: T('event.cursed.choice_leave'), callback: function () {} }
           ]);
         });
       }
     },
     {
       id: 'lore_fragment',
-      name: 'Altes Schriftstueck',
+      name: T('event.lore.name'),
       weight: 12,
       minDepth: 1,
       handler: function(scene) {
@@ -117,7 +255,7 @@
     },
     {
       id: 'environmental_hazard',
-      name: 'Einsturzgefahr',
+      name: T('event.hazard.name'),
       weight: 7,
       minDepth: 4,
       handler: function(scene) {
@@ -295,35 +433,35 @@
 
   EVENT_TYPES.push({
     id: 'shrine_buff',
-    name: 'Mystischer Schrein',
+    name: T('event.shrine.name'),
     weight: 14,
     minDepth: 2,
     handler: function (scene) {
-      showEventToast(scene, 'Ein mystischer Schrein erscheint...', 'shrine_buff');
-      spawnEventObject(scene, 'evt_shrine', 0x6644aa, 0xaa88ff, 'Schrein', function () {
+      showEventToast(scene, T('event.shrine.toast_spawn'), 'shrine_buff');
+      spawnEventObject(scene, 'evt_shrine', 0x6644aa, 0xaa88ff, T('event.shrine.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
-        showEventChoiceDialog(scene, 'Mystischer Schrein', [
+        showEventChoiceDialog(scene, T('event.shrine.name'), [
           {
-            label: 'Kraft (+25% Schaden, -15% Ruestung)',
+            label: T('event.shrine.choice_power'),
             callback: function () {
               window.eventBuffs = window.eventBuffs || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1 };
               window.eventBuffs.damageMult *= 1.25;
               window.eventBuffs.armorMult *= 0.85;
               if (typeof recalcDerived === 'function') recalcDerived(0, 0);
-              showEventToast(scene, 'Kraft des Schreins: +25% Schaden!', 'shrine_buff');
+              showEventToast(scene, T('event.shrine.toast_power'), 'shrine_buff');
             }
           },
           {
-            label: 'Schutz (+5% Ruestung, -10% Geschw.)',
+            label: T('event.shrine.choice_protection'),
             callback: function () {
               window.eventBuffs = window.eventBuffs || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1 };
               window.eventBuffs.armorAdd += 0.05;
               window.eventBuffs.speedMult *= 0.9;
               if (typeof recalcDerived === 'function') recalcDerived(0, 0);
-              showEventToast(scene, 'Schutz des Schreins: +5% Ruestung!', 'shrine_buff');
+              showEventToast(scene, T('event.shrine.toast_protection'), 'shrine_buff');
             }
           },
-          { label: 'Ignorieren', callback: function () {} }
+          { label: T('event.shrine.choice_ignore'), callback: function () {} }
         ]);
       });
     }
@@ -331,20 +469,20 @@
 
   EVENT_TYPES.push({
     id: 'gambling',
-    name: 'Gluecksspiel',
+    name: T('event.gambling.name'),
     weight: 10,
     minDepth: 3,
     handler: function (scene) {
       var cost = 50 + Math.floor(Math.random() * 50);
-      showEventToast(scene, 'Ein Spieltisch taucht auf...', 'gambling');
-      spawnEventObject(scene, 'evt_gamble', 0x886622, 0xffcc44, 'Gluecksspiel', function () {
+      showEventToast(scene, T('event.gambling.toast_spawn'), 'gambling');
+      spawnEventObject(scene, 'evt_gamble', 0x886622, 0xffcc44, T('event.gambling.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
-        showEventChoiceDialog(scene, 'Gluecksspiel (' + cost + ' Gold)', [
+        showEventChoiceDialog(scene, T('event.gambling.title', { cost: cost }), [
           {
-            label: 'Wette ' + cost + ' Gold (40% Chance auf 3x)',
+            label: T('event.gambling.choice_bet', { cost: cost }),
             callback: function () {
               if (!window.LootSystem || !window.LootSystem.spendGold(cost)) {
-                showEventToast(scene, 'Nicht genug Gold!', 'gambling');
+                showEventToast(scene, T('event.gambling.toast_no_gold'), 'gambling');
                 return;
               }
               if (Math.random() < 0.4) {
@@ -354,13 +492,13 @@
                   window.LootSystem.grantGold(winnings);
                 }
                 var netGain = winnings - cost;
-                showEventToast(scene, 'Gewonnen! Netto +' + netGain + ' Gold!', 'gambling');
+                showEventToast(scene, T('event.gambling.toast_won', { amount: netGain }), 'gambling');
               } else {
-                showEventToast(scene, 'Verloren! -' + cost + ' Gold', 'gambling');
+                showEventToast(scene, T('event.gambling.toast_lost', { amount: cost }), 'gambling');
               }
             }
           },
-          { label: 'Ablehnen', callback: function () {} }
+          { label: T('event.gambling.choice_decline'), callback: function () {} }
         ]);
       });
     }
@@ -369,12 +507,12 @@
   // Elite ambush — fires immediately (no interaction needed)
   EVENT_TYPES.push({
     id: 'elite_ambush',
-    name: 'Elite-Hinterhalt',
+    name: T('event.elite.name'),
     weight: 8,
     minDepth: 5,
     handler: function (scene) {
       try { window.soundManager && window.soundManager.playSFX('enemy_death'); } catch (e) {}
-      showEventToast(scene, 'Ein maechtiger Feind naehert sich!', 'elite_ambush');
+      showEventToast(scene, T('event.elite.toast_spawn'), 'elite_ambush');
       if (typeof spawnMiniBoss === 'function') {
         scene.time.delayedCall(500, function () {
           spawnMiniBoss.call(scene, 0, 0, 0);
@@ -386,32 +524,32 @@
   // Healing fountain — spawn object, interact to choose
   EVENT_TYPES.push({
     id: 'healing_fountain',
-    name: 'Heilender Brunnen',
+    name: T('event.fountain.name'),
     weight: 10,
     minDepth: 2,
     handler: function (scene) {
-      showEventToast(scene, 'Ein leuchtender Brunnen erscheint...', 'healing_fountain');
-      spawnEventObject(scene, 'evt_fountain', 0x2266aa, 0x44aaff, 'Brunnen', function () {
+      showEventToast(scene, T('event.fountain.toast_spawn'), 'healing_fountain');
+      spawnEventObject(scene, 'evt_fountain', 0x2266aa, 0x44aaff, T('event.fountain.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
-        showEventChoiceDialog(scene, 'Heilender Brunnen', [
+        showEventChoiceDialog(scene, T('event.fountain.name'), [
           {
-            label: 'Trinken (volle Heilung)',
+            label: T('event.fountain.choice_drink'),
             callback: function () {
               if (typeof window.setPlayerHealth === 'function' && typeof window.playerMaxHealth === 'number') {
                 window.setPlayerHealth(window.playerMaxHealth);
               }
-              showEventToast(scene, 'Volle Heilung!', 'healing_fountain');
+              showEventToast(scene, T('event.fountain.toast_heal'), 'healing_fountain');
             }
           },
           {
-            label: 'Fuellen (+1 Portalrolle)',
+            label: T('event.fountain.choice_fill'),
             callback: function () {
               if (!window.materialCounts) window.materialCounts = {};
               window.materialCounts.PORTAL_SCROLL = (window.materialCounts.PORTAL_SCROLL || 0) + 1;
-              showEventToast(scene, '+1 Portalrolle!', 'healing_fountain');
+              showEventToast(scene, T('event.fountain.toast_scroll'), 'healing_fountain');
             }
           },
-          { label: 'Ignorieren', callback: function () {} }
+          { label: T('event.fountain.choice_ignore'), callback: function () {} }
         ]);
       });
     }
@@ -617,7 +755,7 @@
       scene: scene
     };
 
-    showEventToast(scene, '🛒 Ein wandernder Haendler ist erschienen!', 'wandering_merchant');
+    showEventToast(scene, T('event.merchant.toast_spawn'), 'wandering_merchant');
   }
 
   function cleanupMerchant() {
@@ -705,16 +843,16 @@
       });
     }
 
-    // Lore texts pool
-    var loreTexts = [
-      '...die Schatten flüstern Namen, die niemand mehr aussprechen sollte...',
-      '...der Kettenrat schloss einen Pakt mit etwas Älterem als die Stadt...',
-      '...wer das Siegel bricht, öffnet einen Pfad in beide Richtungen...',
-      '...die Tiere wussten zuerst, dass etwas in den Tiefen wachte...',
-      '...verbrannte Seiten, doch ein Wort bleibt: "Dämmerstein"...',
-      '...wir gruben tiefer als jede Karte erlaubte. Möge man uns vergeben...'
+    // Lore texts pool — keys resolved at display time
+    var loreKeys = [
+      'event.lore.text.1',
+      'event.lore.text.2',
+      'event.lore.text.3',
+      'event.lore.text.4',
+      'event.lore.text.5',
+      'event.lore.text.6'
     ];
-    var chosen = loreTexts[Math.floor(Math.random() * loreTexts.length)];
+    var chosen = T(loreKeys[Math.floor(Math.random() * loreKeys.length)]);
 
     activeLore = { sprite: scroll, glow: glow, scene: scene, text: chosen, picked: false };
 
@@ -734,7 +872,7 @@
       }
     });
 
-    showEventToast(scene, '📜 Ein altes Schriftstück glüht in der Nähe...', 'lore_fragment');
+    showEventToast(scene, T('event.lore.toast_spawn'), 'lore_fragment');
   }
 
   function showLoreDialog(scene, loreText, xpBonus) {
@@ -751,7 +889,7 @@
     var panel = scene.add.rectangle(cw / 2, ch / 2, panelW, panelH, 0x1a1a2a, 0.95)
       .setScrollFactor(0).setDepth(2501).setStrokeStyle(2, 0xffdd44);
 
-    var title = scene.add.text(cw / 2, ch / 2 - 70, 'Altes Schriftstück', {
+    var title = scene.add.text(cw / 2, ch / 2 - 70, T('event.lore.dialog_title'), {
       fontSize: '20px', fill: '#ffdd44', fontFamily: 'serif', fontStyle: 'italic'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
 
@@ -764,7 +902,7 @@
       fontSize: '16px', fill: '#88ff88', fontFamily: 'monospace'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
 
-    var hint = scene.add.text(cw / 2, ch / 2 + 80, '[Klick / Space / ESC zum Schliessen]', {
+    var hint = scene.add.text(cw / 2, ch / 2 + 80, T('event.lore.dialog_hint'), {
       fontSize: '12px', fill: '#888888', fontFamily: 'monospace'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
 
@@ -855,7 +993,7 @@
     shadow.fillCircle(px, py, 50);
     shadow.setDepth(1000);
 
-    showEventToast(scene, '🪨 Vorsicht — Decke stürzt ein! AUSWEICHEN!', 'environmental_hazard');
+    showEventToast(scene, T('event.hazard.toast_spawn'), 'environmental_hazard');
 
     // Pulse the shadow as warning
     if (scene.tweens) {
@@ -888,12 +1026,12 @@
             window.playerHealth = playerHealth;
           }
           if (cam && cam.shake) cam.shake(300, 0.008);
-          showEventToast(scene, '🪨 Einsturz! -1 HP', 'environmental_hazard');
+          showEventToast(scene, T('event.hazard.toast_hit'), 'environmental_hazard');
         } else {
           // Dodged
           var goldReward = 25 + (window.DUNGEON_DEPTH || 1) * 10;
           if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldReward);
-          showEventToast(scene, '🪨 Ausgewichen! +' + goldReward + ' Gold', 'environmental_hazard');
+          showEventToast(scene, T('event.hazard.toast_dodge', { amount: goldReward }), 'environmental_hazard');
         }
 
         // Cleanup visuals
