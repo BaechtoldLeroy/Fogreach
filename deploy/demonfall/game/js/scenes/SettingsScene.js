@@ -147,6 +147,7 @@
     }
 
     create(data) {
+      console.log('[SettingsScene] create() running, from', data && data.from);
       this.parentSceneKey = data && data.from || null;
       this.settings = loadSettings();
 
@@ -519,16 +520,24 @@
   window.SettingsScene = SettingsScene;
 
   window.openSettingsScene = function (fromScene) {
-    if (!fromScene || !fromScene.scene) return;
-    // Defensive: a zombie SettingsScene instance can linger across hub →
-    // dungeon transitions, leaving isActive() truthy without any visible
-    // overlay. Force-stop before relaunching so the burger-menu entry in
-    // the dungeon HUD reliably opens the settings panel.
+    console.log('[openSettingsScene] called from', fromScene && fromScene.scene && fromScene.scene.key);
+    if (!fromScene || !fromScene.scene) {
+      console.warn('[openSettingsScene] missing fromScene/scene plugin');
+      return;
+    }
     try {
       if (fromScene.scene.isActive('SettingsScene')) {
+        console.log('[openSettingsScene] stopping zombie SettingsScene');
         fromScene.scene.stop('SettingsScene');
       }
-    } catch (e) { /* ignore */ }
-    fromScene.scene.launch('SettingsScene', { from: fromScene.scene.key });
+    } catch (e) {
+      console.warn('[openSettingsScene] stop check threw', e);
+    }
+    try {
+      fromScene.scene.launch('SettingsScene', { from: fromScene.scene.key });
+      console.log('[openSettingsScene] launch dispatched');
+    } catch (e) {
+      console.warn('[openSettingsScene] launch threw', e);
+    }
   };
 })();

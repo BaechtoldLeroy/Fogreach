@@ -455,9 +455,16 @@
       bg.on('pointerover', () => bg.setFillStyle(0x3a3a5a));
       bg.on('pointerout', () => bg.setFillStyle(0x2a2a3d));
       bg.on('pointerdown', () => {
+        console.log('[HUDv2] menu item clicked:', it.label);
+        // Run the action FIRST, then close. delayedCall + close-first was
+        // racy when the parent scene was paused (no time-step → action
+        // never fired). Synchronous order is more reliable.
+        try {
+          if (typeof it.action === 'function') it.action();
+        } catch (e) {
+          console.warn('[HUDv2] menu action threw', e);
+        }
         close();
-        // Defer so overlay-destroy flush completes before launching child UI
-        scene.time.delayedCall(50, it.action);
       });
       btns.push(bg, lbl);
     });
