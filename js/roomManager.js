@@ -3,14 +3,68 @@
 if (window.i18n) {
   window.i18n.register('de', {
     'room.counter': 'Raum {cur}/{total}',
-    'room.stair_prompt': '[E] Nächster Raum'
+    'room.stair_prompt': '[E] Nächster Raum',
+    'room.cleared.1': 'Die Stille kehrt zurück.',
+    'room.cleared.2': 'Der Raum atmet wieder.',
+    'room.cleared.3': 'Boden gewonnen.',
+    'room.cleared.4': 'Die Schatten weichen — vorerst.',
+    'room.cleared.5': 'Ihre Asche staubt im Kerzenlicht.',
+    'room.cleared.6': 'Ein Raum mehr im Rücken der Stadt.',
+    'room.cleared.7': 'Die Ketten werden leichter.'
   });
   window.i18n.register('en', {
     'room.counter': 'Room {cur}/{total}',
-    'room.stair_prompt': '[E] Next room'
+    'room.stair_prompt': '[E] Next room',
+    'room.cleared.1': 'Silence returns.',
+    'room.cleared.2': 'The room breathes again.',
+    'room.cleared.3': 'Ground gained.',
+    'room.cleared.4': 'The shadows recede — for now.',
+    'room.cleared.5': 'Their ashes drift in the candlelight.',
+    'room.cleared.6': 'Another room reclaimed for the city.',
+    'room.cleared.7': 'The chains grow lighter.'
   });
 }
 const _ROOM_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+const _ROOM_CLEARED_KEYS = [
+  'room.cleared.1', 'room.cleared.2', 'room.cleared.3', 'room.cleared.4',
+  'room.cleared.5', 'room.cleared.6', 'room.cleared.7'
+];
+
+// Fade-in/hold/fade-out toast at top-center. Used for room-cleared flavor lines.
+function _showRoomClearedToast(scene) {
+  if (!scene || !scene.add || !scene.tweens) return;
+  const cw = scene.cameras && scene.cameras.main ? scene.cameras.main.width : scene.scale.width;
+  const key = _ROOM_CLEARED_KEYS[Math.floor(Math.random() * _ROOM_CLEARED_KEYS.length)];
+  const txt = scene.add.text(cw / 2, 120, _ROOM_T(key), {
+    fontFamily: 'serif',
+    fontSize: '26px',
+    color: '#ffd166',
+    fontStyle: 'italic',
+    stroke: '#000000',
+    strokeThickness: 4,
+    align: 'center'
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(2200).setAlpha(0);
+
+  // 300ms fade-in, drift up 12px, hold ~2.4s, 300ms fade-out, drift up another 6px
+  scene.tweens.add({
+    targets: txt,
+    alpha: { from: 0, to: 1 },
+    y: { from: 132, to: 120 },
+    duration: 300,
+    ease: 'Sine.Out',
+    onComplete: function () {
+      scene.tweens.add({
+        targets: txt,
+        alpha: { from: 1, to: 0 },
+        y: { from: 120, to: 114 },
+        duration: 300,
+        delay: 2400,
+        ease: 'Sine.In',
+        onComplete: function () { try { txt.destroy(); } catch (e) {} }
+      });
+    }
+  });
+}
 
 // Globale Raumdaten
 let rooms = [];
@@ -742,6 +796,10 @@ function markRoomCleared() {
 
   room.cleared = true;
   lockStairs(scene, false);
+
+  // Flavor toast — random 1-of-7 short cleared-room line, fade in + out
+  // top-center over ~3s. No-op if scene tween system unavailable.
+  try { _showRoomClearedToast(scene); } catch (e) { /* ignore */ }
 
   // Procedural room reward: spawn a chest with a high-quality item when all
   // enemies in the room have been defeated.
