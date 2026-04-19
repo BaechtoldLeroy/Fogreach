@@ -535,7 +535,12 @@
     }
     try {
       fromScene.scene.launch('SettingsScene', { from: fromScene.scene.key });
-      console.log('[openSettingsScene] launch dispatched');
+      // Phaser renders scenes in registration-array order. GameScene sits
+      // AFTER SettingsScene in main.js's `scene: [...]` config, so by
+      // default SettingsScene renders BELOW GameScene and is invisible.
+      // bringToTop forces it to the top of the render order.
+      fromScene.scene.bringToTop('SettingsScene');
+      console.log('[openSettingsScene] launch dispatched + brought to top');
     } catch (e) {
       console.warn('[openSettingsScene] launch threw', e);
     }
