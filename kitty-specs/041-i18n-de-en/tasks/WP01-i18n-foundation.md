@@ -9,7 +9,7 @@ requirement_refs:
 - FR-006
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: Stack from main; no upstream WP.
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T001, T002, T003, T004, T005, T006]
 history:
 - at: '2026-04-19T09:27:55Z'
