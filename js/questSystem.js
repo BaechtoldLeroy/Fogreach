@@ -478,6 +478,72 @@
       'quest.rarity.epic': 'Episch',
       'quest.rarity.legendary': 'Legendär'
     });
+
+    // Convert QUEST_DEFINITIONS title/description/dialogue* to live getters so
+    // ANY consumer reading q.title etc. sees the active language without code
+    // changes. Plain object literals are not frozen, so defineProperty works.
+    Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
+      var q = QUEST_DEFINITIONS[id];
+      QUEST_FIELDS.forEach(function (field) {
+        var key = 'quest.' + id + '.' + field;
+        var fallback = q[field];
+        try {
+          Object.defineProperty(q, field, {
+            get: function () {
+              var v = window.i18n.t(key);
+              return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (fallback || '');
+            },
+            configurable: true, enumerable: true
+          });
+        } catch (e) { /* swallow */ }
+      });
+      // Reward item names + rarity labels: same pattern (only first item used
+      // by HubSceneV2 reward UI, but iterate all for correctness).
+      if (q.rewards && Array.isArray(q.rewards.items)) {
+        q.rewards.items.forEach(function (item) {
+          if (item && item.nameKey) {
+            var nameKey = item.nameKey;
+            var nameFallback = item.name;
+            try {
+              Object.defineProperty(item, 'name', {
+                get: function () {
+                  var v = window.i18n.t(nameKey);
+                  return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (nameFallback || '');
+                },
+                configurable: true, enumerable: true
+              });
+            } catch (e) { /* swallow */ }
+          }
+          if (item && item.rarityKey) {
+            var rkey = item.rarityKey;
+            var rfallback = item.rarityLabel;
+            try {
+              Object.defineProperty(item, 'rarityLabel', {
+                get: function () {
+                  var v = window.i18n.t(rkey);
+                  return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (rfallback || '');
+                },
+                configurable: true, enumerable: true
+              });
+            } catch (e) { /* swallow */ }
+          }
+        });
+      }
+      // Reward info string
+      if (q.rewards && q.rewards.infoKey) {
+        var infoKey = q.rewards.infoKey;
+        var infoFallback = q.rewards.info;
+        try {
+          Object.defineProperty(q.rewards, 'info', {
+            get: function () {
+              var v = window.i18n.t(infoKey);
+              return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (infoFallback || '');
+            },
+            configurable: true, enumerable: true
+          });
+        } catch (e) { /* swallow */ }
+      }
+    });
   }
 
   // ---- i18n helpers ----
