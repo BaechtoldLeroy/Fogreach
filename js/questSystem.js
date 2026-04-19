@@ -56,7 +56,7 @@
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 20 }
       ],
-      rewards: { xp: 75, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
+      rewards: { xp: 75, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', nameKey: 'quest.reward.ALDRIC_SCHWERT', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityKey: 'quest.rarity.rare', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
       prerequisites: ['aldric_cleanup'],
       requiredAct: 1,
       dialogueOffer: 'Fremde stehlen unsere Dokumente. Stoppe sie. Besiege zwanzig dieser Eindringlinge.\n\nNimmst du den Auftrag an?',
@@ -112,7 +112,7 @@
       objectives: [
         { type: 'dialogue', target: 'mara_meet', current: 0, required: 1 }
       ],
-      rewards: { info: 'Maras Netzwerk enthuellt' },
+      rewards: { info: 'Maras Netzwerk enthuellt', infoKey: 'quest.reward.info.mara_contact' },
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Du erinnerst dich nicht. Aber ich kenne dich.\n\nHoer mir zu — es ist wichtig.',
@@ -167,7 +167,7 @@
       objectives: [
         { type: 'wave', target: 'reach_wave', current: 0, required: 20 }
       ],
-      rewards: { xp: 150, items: [{ type: 'accessory', key: 'RITUAL_AMULETT', name: 'Ritualamulett', iconKey: 'itAccessory', rarity: 'epic', rarityLabel: 'Episch', rarityValue: 3, itemLevel: 12, damage: 0, speed: 0, range: 0, armor: 5, crit: 0.05, hp: 20 }] },
+      rewards: { xp: 150, items: [{ type: 'accessory', key: 'RITUAL_AMULETT', name: 'Ritualamulett', nameKey: 'quest.reward.RITUAL_AMULETT', iconKey: 'itAccessory', rarity: 'epic', rarityLabel: 'Episch', rarityKey: 'quest.rarity.epic', rarityValue: 3, itemLevel: 12, damage: 0, speed: 0, range: 0, armor: 5, crit: 0.05, hp: 20 }] },
       prerequisites: ['elara_meeting'],
       requiredAct: 3,
       dialogueOffer: 'Tief unten ist eine Kammer... ich zeige dir wo. Dringe bis Welle 20 vor.\n\nBist du bereit fuer die Wahrheit?',
@@ -257,7 +257,7 @@
       objectives: [
         { type: 'dialogue', target: 'elara_gift', current: 0, required: 1 }
       ],
-      rewards: { xp: 0, items: [{ type: 'weapon', key: 'ELARAS_KLINGE', name: 'Elaras Klinge', iconKey: 'itWeapon', rarity: 'legendary', rarityLabel: 'Legendaer', rarityValue: 4, itemLevel: 15, damage: 22, speed: 1.3, range: 120, armor: 0, crit: 0.15, hp: 0, elaraGift: true }] },
+      rewards: { xp: 0, items: [{ type: 'weapon', key: 'ELARAS_KLINGE', name: 'Elaras Klinge', nameKey: 'quest.reward.ELARAS_KLINGE', iconKey: 'itWeapon', rarity: 'legendary', rarityLabel: 'Legendaer', rarityKey: 'quest.rarity.legendary', rarityValue: 4, itemLevel: 15, damage: 22, speed: 1.3, range: 120, armor: 0, crit: 0.15, hp: 0, elaraGift: true }] },
       prerequisites: ['elara_ritual'],
       requiredAct: 4,
       dialogueOffer: 'Nimm das. Ich habe es fuer dich geschmiedet. Fuer den Fall, dass...\n\nNimm Elaras Klinge an?',
@@ -454,7 +454,29 @@
 
       'quest.final_truth.dialogueOffer': 'Beneath Fogreach the truth waits. Are you ready?\n\nReach wave 40 — into the dimension of chains and shadows.',
       'quest.final_truth.dialogueProgress': 'The final truth lies at wave 40. You must go deeper.',
-      'quest.final_truth.dialogueComplete': 'The chains are broken. The truth is free. Fogreach belongs to its people again.'
+      'quest.final_truth.dialogueComplete': 'The chains are broken. The truth is free. Fogreach belongs to its people again.',
+
+      // === Quest reward strings ===
+      'quest.reward.info.mara_contact': "Mara's network revealed",
+      'quest.reward.ALDRIC_SCHWERT': 'Council Sword',
+      'quest.reward.RITUAL_AMULETT': 'Ritual Amulet',
+      'quest.reward.ELARAS_KLINGE': "Elara's Blade",
+      'quest.rarity.common': 'Common',
+      'quest.rarity.rare': 'Rare',
+      'quest.rarity.epic': 'Epic',
+      'quest.rarity.legendary': 'Legendary'
+    });
+
+    // Auto-add the German reward strings + rarity labels (DE source-of-truth)
+    window.i18n.register('de', {
+      'quest.reward.info.mara_contact': 'Maras Netzwerk enthuellt',
+      'quest.reward.ALDRIC_SCHWERT': 'Ratsschwert',
+      'quest.reward.RITUAL_AMULETT': 'Ritualamulett',
+      'quest.reward.ELARAS_KLINGE': 'Elaras Klinge',
+      'quest.rarity.common': 'Gewöhnlich',
+      'quest.rarity.rare': 'Selten',
+      'quest.rarity.epic': 'Episch',
+      'quest.rarity.legendary': 'Legendär'
     });
   }
 
@@ -813,6 +835,34 @@
     getQuestDialogue: function (q, phase) {
       var key = 'dialogue' + phase[0].toUpperCase() + phase.slice(1);
       return getQuestField(q, key);
+    },
+    // i18n helper for reward strings: prefer rewards.infoKey lookup over the
+    // hardcoded German rewards.info field.
+    getRewardInfo: function (q) {
+      if (!q || !q.rewards) return '';
+      if (window.i18n && q.rewards.infoKey) {
+        var v = window.i18n.t(q.rewards.infoKey);
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return q.rewards.info || '';
+    },
+    // i18n helper for reward item names + rarity labels (consumed by quest
+    // dialog renderers + journal). Snaps onto whichever key the item carries.
+    getRewardItemName: function (item) {
+      if (!item) return '';
+      if (window.i18n && item.nameKey) {
+        var v = window.i18n.t(item.nameKey);
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return item.name || '';
+    },
+    getRewardRarityLabel: function (item) {
+      if (!item) return '';
+      if (window.i18n && item.rarityKey) {
+        var v = window.i18n.t(item.rarityKey);
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return item.rarityLabel || '';
     }
   };
 
