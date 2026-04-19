@@ -1411,11 +1411,11 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
   const enemy = spawnEnemy.call(scene, xCoord || 0, yCoord || 0, type);
   if (!enemy) return null;
 
-  // Mini-boss stats: 5x HP, 2x damage
+  // Mini-boss stats: 5x HP, 1.5x damage
   enemy.isMiniBoss = true;
   enemy.hp = Math.ceil(enemy.hp * 5);
   enemy.maxHp = enemy.hp;
-  enemy.baseDamage = Math.ceil((enemy.baseDamage || enemy.damage || 1) * 2);
+  enemy.baseDamage = Math.ceil((enemy.baseDamage || enemy.damage || 1) * 1.5);
   enemy.damage = enemy.baseDamage;
   enemy.lastSlamTime = 0;
 

@@ -1,5 +1,30 @@
 // startScene.js
 
+if (window.i18n) {
+  window.i18n.register('de', {
+    'start.subtitle': 'Ein Dungeon-Crawler',
+    'start.btn.continue': 'FORTSETZEN',
+    'start.btn.delete_save': 'Spielstand löschen',
+    'start.btn.new_game': 'NEUES SPIEL',
+    'start.btn.start_game': 'SPIEL STARTEN',
+    'start.btn.settings': 'EINSTELLUNGEN',
+    'start.highscores': '🏆 Highscores',
+    'start.highscores.error': 'Fehler beim Laden der Highscores'
+  });
+  window.i18n.register('en', {
+
+    'start.subtitle': 'A dungeon crawler',
+    'start.btn.continue': 'CONTINUE',
+    'start.btn.delete_save': 'Delete save',
+    'start.btn.new_game': 'NEW GAME',
+    'start.btn.start_game': 'START GAME',
+    'start.btn.settings': 'SETTINGS',
+    'start.highscores': '🏆 Highscores',
+    'start.highscores.error': 'Failed to load highscores'
+  });
+}
+const _START_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
 // 1) Scene-Konstruktor
 function StartScene() {
   Phaser.Scene.call(this, { key: "StartScene" });
@@ -24,6 +49,18 @@ StartScene.prototype.preload = function () {
   bg.fillStyle(0x1a1a1a, 1);
   bg.fillRect(0, 0, width, height);
 
+  if (window.i18n) {
+    window.i18n.register('de', {
+      'start.loading': 'Laden...',
+      'start.loading_file': 'Lade: {file}'
+    });
+    window.i18n.register('en', {
+      'start.loading': 'Loading...',
+      'start.loading_file': 'Loading: {file}'
+    });
+  }
+  const T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
   // Progress bar container (outline)
   const progressBox = this.add.graphics();
   progressBox.lineStyle(2, 0x666666, 1);
@@ -36,7 +73,7 @@ StartScene.prototype.preload = function () {
   const loadingText = this.make.text({
     x: width / 2,
     y: height / 2 - 30,
-    text: 'Laden...',
+    text: T('start.loading'),
     style: {
       font: '20px monospace',
       fill: '#ccaa33'
@@ -76,7 +113,7 @@ StartScene.prototype.preload = function () {
   });
 
   this.load.on('fileprogress', function (file) {
-    fileText.setText('Lade: ' + file.key);
+    fileText.setText(T('start.loading_file', { file: file.key }));
   });
 
   this.load.on('complete', function () {
@@ -266,7 +303,7 @@ StartScene.prototype.create = function () {
 
   // Subtitle
   this.add
-    .text(cx, ch * 0.18 + 50, "Ein Dungeon-Crawler", {
+    .text(cx, ch * 0.18 + 50, _START_T('start.subtitle'), {
       fontFamily: 'serif', fontSize: "16px", fill: "#888888"
     })
     .setOrigin(0.5);
@@ -280,7 +317,7 @@ StartScene.prototype.create = function () {
   // Fortsetzen zuerst, wenn Save vorhanden ist
   if (hasExistingSave) {
     const contBtn = this.add
-      .text(cx, ch * 0.38, "FORTSETZEN", {
+      .text(cx, ch * 0.38, _START_T('start.btn.continue'), {
         fontFamily: 'serif', fontSize: "32px",
         fill: "#ffea6a",
         backgroundColor: "#111",
@@ -306,7 +343,7 @@ StartScene.prototype.create = function () {
     contBtn.on('pointerout', () => contBtn.setStyle({ fill: '#ffea6a' }));
 
     const delBtn = this.add
-      .text(cx, ch * 0.48, "Spielstand loeschen", {
+      .text(cx, ch * 0.48, _START_T('start.btn.delete_save'), {
         fontFamily: 'monospace', fontSize: "14px",
         fill: "#ff6666",
         padding: { x: 8, y: 3 }
@@ -326,7 +363,7 @@ StartScene.prototype.create = function () {
 
   // START GAME
   btn = this.add
-    .text(cx, startY, hasExistingSave ? "NEUES SPIEL" : "SPIEL STARTEN", {
+    .text(cx, startY, _START_T(hasExistingSave ? 'start.btn.new_game' : 'start.btn.start_game'), {
       fontFamily: 'serif', fontSize: hasExistingSave ? "24px" : "28px",
       fill: hasExistingSave ? "#88ff88" : "#88ff88",
       backgroundColor: "#1a1a1a",
@@ -352,9 +389,41 @@ StartScene.prototype.create = function () {
     .on("pointerover", () => btn.setStyle({ fill: '#b0ffb0' }))
     .on("pointerout", () => btn.setStyle({ fill: '#88ff88' }));
 
+  // ENDLOS-MODUS button (roguelike: no hub, descend forever, pick 1-of-3
+  // upgrades after each cleared room)
+  const endlessBtn = this.add
+    .text(cx, startY + 92, _START_T('endless.btn.start'), {
+      fontFamily: 'serif', fontSize: '20px',
+      fill: '#ff8866',
+      backgroundColor: '#1a1a1a',
+      padding: { x: 12, y: 5 },
+      fontStyle: 'bold'
+    })
+    .setOrigin(0.5)
+    .setInteractive({ useHandCursor: true })
+    .setDepth(1001);
+  endlessBtn
+    .on('pointerdown', () => {
+      if (window.clearSave) clearSave();
+      if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
+        window.AbilitySystem.resetForNewGame();
+      }
+      if (typeof window.pendingLoadedSave !== 'undefined') {
+        window.pendingLoadedSave = null;
+      }
+      window.__DEV_FORCE_CHEAT__ = false;
+      // Activate endless run BEFORE GameScene boots so initUI sees the flag
+      if (window.Endless && typeof window.Endless.start === 'function') {
+        window.Endless.start();
+      }
+      loadRoomTemplatesAndStart.call(this);
+    })
+    .on('pointerover', () => endlessBtn.setStyle({ fill: '#ffaa88' }))
+    .on('pointerout',  () => endlessBtn.setStyle({ fill: '#ff8866' }));
+
   // EINSTELLUNGEN button below the start button
   const settingsBtn = this.add
-    .text(cx, startY + 48, "EINSTELLUNGEN", {
+    .text(cx, startY + 140, _START_T('start.btn.settings'), {
       fontFamily: 'monospace', fontSize: "16px",
       fill: "#aaaaaa",
       backgroundColor: "#1a1a1a",
@@ -372,7 +441,7 @@ StartScene.prototype.create = function () {
   // Optional: Highscores
   if (window.loadScores) {
     this.add
-      .text(400, 460, "🏆 Highscores", {
+      .text(400, 460, _START_T('start.highscores'), {
         fontSize: "22px",
         fill: "#ffff00",
       })
@@ -396,7 +465,7 @@ StartScene.prototype.create = function () {
       })
       .catch((err) => {
         this.add
-          .text(400, 490, "Fehler beim Laden der Highscores", {
+          .text(400, 490, _START_T('start.highscores.error'), {
             fontSize: "16px",
             fill: "#ff0000",
           })
@@ -431,7 +500,9 @@ StartScene.prototype.create = function () {
 
     // Don't overwrite RT.MANIFEST — it's set in roomTemplates.js
     window.game = this.game;
-    this.scene.start("HubSceneV2");
+    // Endless mode skips the hub and boots straight into the dungeon.
+    const target = (window.__ENDLESS_MODE__ ? 'GameScene' : 'HubSceneV2');
+    this.scene.start(target);
   }
 };
 

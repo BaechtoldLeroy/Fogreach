@@ -1418,6 +1418,223 @@ function createItemGraphics() {
       }
     },
     {
+      key: 'itPortalScroll',
+      draw: () => {
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
+        // Shadow
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillRoundedRect(cx - 11, cy - 14, 22, 30, 4);
+        // Parchment body
+        g.fillStyle(0xe8d8a0, 1);
+        g.fillRoundedRect(cx - 12, cy - 16, 24, 30, 4);
+        // Parchment shading
+        g.fillStyle(0xc8b070, 0.55);
+        g.fillRect(cx - 12, cy + 8, 24, 6);
+        g.fillRect(cx - 12, cy - 16, 24, 4);
+        // Top + bottom rolled edges (darker)
+        g.fillStyle(0x8a6a30, 1);
+        g.fillRect(cx - 14, cy - 18, 28, 4);
+        g.fillRect(cx - 14, cy + 14, 28, 4);
+        // Rolled-edge highlight
+        g.fillStyle(0xd8b878, 0.5);
+        g.fillRect(cx - 13, cy - 17, 26, 1);
+        g.fillRect(cx - 13, cy + 15, 26, 1);
+        // Purple ribbon (portal magic accent)
+        g.fillStyle(0x6a3a8a, 1);
+        g.fillRect(cx - 14, cy - 2, 28, 4);
+        g.fillStyle(0xa874c8, 0.6);
+        g.fillRect(cx - 14, cy - 1, 28, 1);
+        // Rune sigil (light blue glow)
+        g.fillStyle(0x88ccff, 1);
+        g.fillCircle(cx, cy - 7, 3);
+        g.fillStyle(0xffffff, 0.6);
+        g.fillCircle(cx, cy - 7, 1);
+      }
+    },
+    {
+      key: 'itPotionMinor',
+      draw: () => {
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
+        // Shadow
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillEllipse(cx + 1, cy + 16, 20, 6);
+        // Cork
+        g.fillStyle(0x8a5828, 1);
+        g.fillRect(cx - 4, cy - 18, 8, 5);
+        g.fillStyle(0xb87838, 0.6);
+        g.fillRect(cx - 4, cy - 18, 8, 1);
+        // Bottle neck
+        g.fillStyle(0xc8e0a8, 0.65);
+        g.fillRect(cx - 3, cy - 13, 6, 4);
+        // Bottle body (rounded flask)
+        g.fillStyle(0xb04a4a, 0.95);
+        g.fillCircle(cx, cy + 4, 12);
+        g.fillRect(cx - 8, cy - 6, 16, 10);
+        // Liquid sheen
+        g.fillStyle(0xff7878, 0.5);
+        g.fillCircle(cx - 3, cy - 1, 4);
+        // Glass highlight
+        g.fillStyle(0xffffff, 0.35);
+        g.fillRect(cx - 6, cy - 4, 2, 10);
+        // Plus icon
+        g.fillStyle(0xffffff, 0.85);
+        g.fillRect(cx - 1, cy + 2, 3, 9);
+        g.fillRect(cx - 4, cy + 5, 9, 3);
+      }
+    },
+    {
+      key: 'itPotionNormal',
+      draw: () => {
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
+        g.fillStyle(0x1a1a1a, 0.30); g.fillEllipse(cx + 1, cy + 16, 22, 6);
+        g.fillStyle(0x8a5828, 1); g.fillRect(cx - 5, cy - 19, 10, 5);
+        g.fillStyle(0xb87838, 0.6); g.fillRect(cx - 5, cy - 19, 10, 1);
+        g.fillStyle(0xc8e0a8, 0.65); g.fillRect(cx - 4, cy - 14, 8, 4);
+        // Rose-red, larger flask
+        g.fillStyle(0xc04040, 0.95); g.fillCircle(cx, cy + 4, 14);
+        g.fillRect(cx - 9, cy - 7, 18, 11);
+        g.fillStyle(0xff8888, 0.55); g.fillCircle(cx - 4, cy - 1, 5);
+        g.fillStyle(0xffffff, 0.40); g.fillRect(cx - 7, cy - 4, 2, 12);
+        g.fillStyle(0xffffff, 0.85);
+        g.fillRect(cx - 1, cy + 1, 3, 10); g.fillRect(cx - 4, cy + 4, 9, 3);
+      }
+    },
+    {
+      key: 'itPotionMajor',
+      draw: () => {
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
+        g.fillStyle(0x1a1a1a, 0.30); g.fillEllipse(cx + 1, cy + 17, 24, 6);
+        g.fillStyle(0x8a5828, 1); g.fillRect(cx - 5, cy - 20, 10, 5);
+        g.fillStyle(0xb87838, 0.6); g.fillRect(cx - 5, cy - 20, 10, 1);
+        g.fillStyle(0xc8e0a8, 0.65); g.fillRect(cx - 4, cy - 15, 8, 4);
+        // Crimson, even bigger flask
+        g.fillStyle(0xa02828, 1); g.fillCircle(cx, cy + 5, 16);
+        g.fillRect(cx - 11, cy - 8, 22, 13);
+        g.fillStyle(0xff5050, 0.55); g.fillCircle(cx - 4, cy, 6);
+        g.fillStyle(0xffffff, 0.45); g.fillRect(cx - 9, cy - 5, 2, 14);
+        // Gold trim
+        g.fillStyle(0xd4a030, 1); g.fillRect(cx - 11, cy - 2, 22, 2);
+        g.fillStyle(0xffffff, 0.9);
+        g.fillRect(cx - 1, cy + 3, 3, 11); g.fillRect(cx - 5, cy + 6, 11, 3);
+      }
+    },
+    {
+      key: 'itPotionSuper',
+      draw: () => {
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
+        g.fillStyle(0x1a1a1a, 0.30); g.fillEllipse(cx + 1, cy + 18, 26, 6);
+        // Gold cork
+        g.fillStyle(0xd4a030, 1); g.fillRect(cx - 6, cy - 21, 12, 6);
+        g.fillStyle(0xffe080, 0.55); g.fillRect(cx - 6, cy - 21, 12, 1);
+        g.fillStyle(0xc8e0a8, 0.65); g.fillRect(cx - 4, cy - 15, 8, 4);
+        // Deep purple, large flask (Super)
+        g.fillStyle(0x6a2882, 1); g.fillCircle(cx, cy + 5, 17);
+        g.fillRect(cx - 12, cy - 9, 24, 14);
+        g.fillStyle(0xc878ff, 0.55); g.fillCircle(cx - 4, cy, 7);
+        g.fillStyle(0xffffff, 0.5); g.fillRect(cx - 10, cy - 6, 2, 16);
+        // Twin gold trim
+        g.fillStyle(0xd4a030, 1);
+        g.fillRect(cx - 12, cy - 4, 24, 2);
+        g.fillRect(cx - 12, cy + 8, 24, 2);
+        // Star sigil
+        g.fillStyle(0xffe080, 1);
+        g.fillTriangle(cx, cy - 4, cx - 4, cy + 4, cx + 4, cy + 4);
+        g.fillTriangle(cx, cy + 6, cx - 4, cy - 2, cx + 4, cy - 2);
+      }
+    },
+    {
+      key: 'itBow',
+      draw: () => {
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
+        // Big vertical recurve: bold filled crescent, tip flares, taut string
+        // and a clean horizontal arrow. Designed to read at 48×48 thumbnail.
+
+        // Limb-arc geometry
+        const armX = cx + 4;        // arc center sits right of icon center so
+                                    // the bow body bulges left
+        const armR = 22;            // limb radius
+        const startA = Phaser.Math.DegToRad(112);
+        const endA   = Phaser.Math.DegToRad(248);
+
+        // Drop shadow under the bow
+        g.lineStyle(7, 0x000000, 0.30);
+        g.beginPath();
+        g.arc(armX + 1, cy + 2, armR, startA, endA, false);
+        g.strokePath();
+
+        // Main wood (warm dark walnut)
+        g.lineStyle(7, 0x6a3818, 1);
+        g.beginPath();
+        g.arc(armX, cy, armR, startA, endA, false);
+        g.strokePath();
+
+        // Wood grain highlight (slightly inner curve, warmer tone)
+        g.lineStyle(2, 0xc88a44, 1);
+        g.beginPath();
+        g.arc(armX, cy, armR - 1, startA + 0.05, endA - 0.05, false);
+        g.strokePath();
+
+        // Recurve flare at each tip — small inward hook that gives the
+        // silhouette the iconic "horsebow" shape. Computed from the limb
+        // tangent at the start/end angles.
+        const tipPx = (a) => ({ x: armX + Math.cos(a) * armR, y: cy + Math.sin(a) * armR });
+        const top = tipPx(endA);
+        const bot = tipPx(startA);
+
+        // Recurve hooks (curl inward toward center)
+        g.lineStyle(5, 0x6a3818, 1);
+        g.beginPath();
+        g.moveTo(top.x, top.y);
+        g.lineTo(top.x - 4, top.y - 5);
+        g.lineTo(top.x + 1, top.y - 9);
+        g.strokePath();
+        g.beginPath();
+        g.moveTo(bot.x, bot.y);
+        g.lineTo(bot.x - 4, bot.y + 5);
+        g.lineTo(bot.x + 1, bot.y + 9);
+        g.strokePath();
+
+        // Brass tip caps
+        g.fillStyle(0xd4a030, 1);
+        g.fillCircle(top.x + 1, top.y - 9, 2);
+        g.fillCircle(bot.x + 1, bot.y + 9, 2);
+        g.fillStyle(0xffe080, 0.7);
+        g.fillCircle(top.x + 1, top.y - 9, 1);
+        g.fillCircle(bot.x + 1, bot.y + 9, 1);
+
+        // String — straight taut line from tip cap to tip cap (no pull notch
+        // / nocked arrow now). Shadow underneath, light cord on top.
+        const stringTop = { x: top.x + 1, y: top.y - 9 };
+        const stringBot = { x: bot.x + 1, y: bot.y + 9 };
+
+        g.lineStyle(2, 0x000000, 0.35);
+        g.beginPath();
+        g.moveTo(stringTop.x, stringTop.y + 1);
+        g.lineTo(stringBot.x, stringBot.y + 1);
+        g.strokePath();
+
+        g.lineStyle(1.5, 0xf2ecd6, 1);
+        g.beginPath();
+        g.moveTo(stringTop.x, stringTop.y);
+        g.lineTo(stringBot.x, stringBot.y);
+        g.strokePath();
+
+        // Grip wrap (cord-bound center of the bow)
+        g.fillStyle(0x2a1408, 1);
+        g.fillRect(armX - armR + 0, cy - 6, 6, 12);
+        g.fillStyle(0xa87940, 0.7);
+        g.fillRect(armX - armR + 0, cy - 5, 6, 1);
+        g.fillRect(armX - armR + 0, cy + 0, 6, 1);
+        g.fillRect(armX - armR + 0, cy + 4, 6, 1);
+      }
+    },
+    {
       key: 'itHead',
       draw: () => {
         const cx = SIZE / 2;

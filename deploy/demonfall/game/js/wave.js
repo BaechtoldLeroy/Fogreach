@@ -1,0 +1,204 @@
+// wave.js
+
+// --------------------------------------------------
+// Wave sizing helper
+// --------------------------------------------------
+function computeWaveEnemyTotal(waveNumber, roomAreaPx) {
+  const wave = Math.max(1, Math.floor(waveNumber || 1));
+  // Logarithmic wave scaling for the BASE count (room of reference size).
+  // Wave 1: 4, Wave 5: 6, Wave 10: 8, Wave 20: 10, Wave 40: 13
+  const base = 4;
+  const scaled = base + Math.floor(Math.log2(wave) * 1.7);
+  const baseCount = Math.min(14, scaled);
+
+  // Scale enemy count by room area — reference area is the median template
+  // (~1 million px²). Linear scaling for ratio<=1, super-linear (1.05) above
+  // so really big procedural BSP rooms (3-4x) feel properly packed. Caps
+  // raised so the formula can produce a meaningful spike.
+  if (roomAreaPx && roomAreaPx > 0) {
+    const REF_AREA = 1152 * 896; // ~1,032,192 px² (median template size)
+    const ratio = roomAreaPx / REF_AREA;
+    const areaFactor = ratio <= 1 ? ratio : Math.pow(ratio, 1.05);
+    return Math.max(3, Math.min(40, Math.round(baseCount * areaFactor)));
+  }
+  return baseCount;
+}
+window.computeWaveEnemyTotal = computeWaveEnemyTotal;
+
+// --------------------------------------------------
+// 6.5 Wellen-Logik
+// --------------------------------------------------
+function startNextWave(noIncrement) {
+  // Spawn-Tempo ggf. neu berechnen
+  if (!noIncrement) currentWave += 1;
+  window.currentWave = currentWave;
+  window.DUNGEON_DEPTH = currentWave;
+
+  if (playerHealth > 1) {
+    saveGame(this);
+  }
+
+  // Boss every 10th wave
+  if (currentWave % 10 === 0) {
+    bossActive = true;
+    spawnedEnemiesInWave = 0;    // no regular spawns this wave
+    waveInProgress = true;
+    waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + '  (BOSS)');
+    spawnBoss.call(this);        // <-- defined below
+    if (window.soundManager) window.soundManager.playMusic('boss_music');
+    return;                      // skip normal spawn setup
+  }
+
+  waveInProgress = true;
+  const isMiniBossWave = (currentWave % 5 === 0 && currentWave % 10 !== 0);
+  waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
+  spawnedEnemiesInWave = 0;
+  window.spawnedEnemiesInWave = 0;
+
+  // Alle regulären Gegner direkt zu Beginn der Welle erzeugen.
+  if (!bossActive && typeof spawnEnemy === 'function') {
+    const scene = this;
+    const total = computeWaveEnemyTotal(currentWave);
+    enemiesPerWave = window.enemiesPerWave = total;
+    if (total > 0) {
+      let spawned = 0;
+      const spawnBatch = () => {
+        while (spawned < total) {
+          const enemy = spawnEnemy.call(scene, 0, 0, 'enemy');
+          if (!enemy) break;
+          spawned += 1;
+          spawnedEnemiesInWave = spawned;
+        }
+
+        // Mini-boss every 5th wave (but not on 10th/20th/etc. boss waves)
+        if (currentWave % 5 === 0 && currentWave % 10 !== 0 && typeof spawnMiniBoss === 'function') {
+          const miniBoss = spawnMiniBoss.call(scene, 0, 0, 0);
+          if (miniBoss) {
+            spawned += 1;
+            spawnedEnemiesInWave = spawned;
+            // Update total to include mini-boss for wave-end check
+            enemiesPerWave = window.enemiesPerWave = spawned;
+          }
+        }
+
+        window.spawnedEnemiesInWave = spawnedEnemiesInWave;
+      };
+
+      if (this?.time?.delayedCall) {
+        this.time.delayedCall(0, spawnBatch);
+      } else {
+        spawnBatch();
+      }
+    }
+  }
+}
+
+// --------------------------------------------------
+// 6.5b Prüfen, ob die Welle vorbei ist
+// --------------------------------------------------
+function checkWaveEnd(time) {  
+  const total = computeWaveEnemyTotal(currentWave);
+  if (waveInProgress &&
+    spawnedEnemiesInWave >= total &&
+    enemies.countActive(true) === 0) {
+    waveInProgress = false;
+
+    // Notify story system of wave completion
+    if (window.storySystem && typeof window.storySystem.onWaveCompleted === 'function') {
+      window.storySystem.onWaveCompleted(currentWave);
+    }
+    // Notify quest system of wave completion
+    if (window.questSystem && typeof window.questSystem.onWaveCompleted === 'function') {
+      window.questSystem.onWaveCompleted(currentWave);
+    }
+    if (window.AbilitySystem && typeof window.AbilitySystem.onWaveCompleted === 'function') {
+      window.AbilitySystem.onWaveCompleted(currentWave);
+    }
+
+    // Brief breathing room after clearing a wave before unlocking stairs
+    if (waveText) waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Wave Cleared!');
+    const scene = this;
+    if (scene?.time?.delayedCall) {
+      scene.time.delayedCall(2000, () => {
+        if (typeof markRoomCleared === 'function') markRoomCleared();
+      });
+    } else {
+      if (typeof markRoomCleared === 'function') markRoomCleared();
+    }
+  }
+
+  // Boss wave ends when boss is gone
+  if (bossActive) {
+    if (!currentBoss || !currentBoss.active) {
+      bossActive = false;
+      if (window.soundManager) window.soundManager.playMusic('dungeon_ambient');
+      this.time.delayedCall(1000, () => startNextWave.call(this));
+    }
+    return;
+  }
+}
+
+// --------------------------------------------------
+// 6.7 Hindernisse platzieren
+// --------------------------------------------------
+function placeObstaclesForWave() {
+  if (!obstacles || typeof obstacles.clear !== 'function') {
+    return;
+  }
+
+  obstacles.clear(true, true);
+
+  const scene = obstacles.scene;
+  if (!scene || !scene.scale) {
+    return;
+  }
+
+  const W = scene.scale.width;
+  const H = scene.scale.height;
+  const margin = 48;
+
+  // Anzahl pro Welle
+  const count = Math.min(5 + currentWave * 2, 20);
+  const types = ['obstacleWall', 'obstacleTree', 'obstacleRock'];
+
+  for (let i = 0; i < count; i++) {
+    const x = Phaser.Math.Between(margin, W - margin);
+    const y = Phaser.Math.Between(margin, H - margin);
+    const key = Phaser.Utils.Array.GetRandom(types);
+
+    const obs = obstacles
+      .create(x, y, key)
+      .setData('type', key)
+      .setOrigin(0.5, 0.5);
+    obs.refreshBody();
+  }
+
+  if (obstacles && obstacles.children) {
+    obstacles.children.iterate((child) => child?.refreshBody?.());
+    if (typeof obstacles.refresh === 'function') obstacles.refresh();
+  }
+
+  if (typeof window.recomputeAccessibleArea === 'function' && obstacles?.scene) {
+    try {
+      window.recomputeAccessibleArea(obstacles.scene);
+    } catch (err) {
+      console.warn('[placeObstaclesForWave] recomputeAccessibleArea failed', err);
+    }
+  }
+}
+
+// --------------------------------------------------
+// 6.8 Pausieren beim Loot-Dialog
+// --------------------------------------------------
+function pauseAllMotion() {
+  enemies.children.iterate(e => e.body?.setVelocity(0));
+  if (enemyProjectiles?.children) {
+    enemyProjectiles.children.iterate(p => { if (p?.destroy) p.destroy(); });
+    // Reset pool too — handed-out references are now dead.
+    const scene = window.currentScene || (window.game && window.game.scene && window.game.scene.scenes && window.game.scene.scenes.find(s => s && s.sys && s.sys.isActive()));
+    if (scene) scene._enemyProjectilePool = [];
+  }
+  if (playerProjectiles?.children) {
+    playerProjectiles.children.iterate(p => { if (p?.destroy) p.destroy(); });
+  }
+}

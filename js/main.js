@@ -868,7 +868,10 @@ function create() {
   // 4.1 Vollbild & Touch-Pointer
   this.input.addPointer(1);
 
-  // F11 toggles fullscreen
+  // F11 toggles fullscreen. Intentionally NOT persisted: a stored fullscreen
+  // flag was responsible for the "browser regains focus → click triggers
+  // fullscreen" bug, because some browsers + iframe contexts treat the next
+  // user-gesture as permission to re-enter the previously-saved state.
   this.input.keyboard.on('keydown-F11', (event) => {
     event.preventDefault();
     if (this.scale.isFullscreen) {
@@ -876,13 +879,19 @@ function create() {
     } else {
       this.scale.startFullscreen();
     }
-    // Sync setting
-    if (typeof window.loadGameSettings === 'function') {
-      var s = window.loadGameSettings();
-      s.fullscreen = this.scale.isFullscreen;
-      try { localStorage.setItem('demonfall_settings_v1', JSON.stringify(s)); } catch (e) {}
-    }
   });
+
+  // Defensive cleanup: wipe any leftover settings.fullscreen flag from older
+  // builds so the next focus-regain click can't be hijacked into fullscreen.
+  if (typeof window.loadGameSettings === 'function') {
+    try {
+      const s = window.loadGameSettings();
+      if (s && s.fullscreen) {
+        s.fullscreen = false;
+        localStorage.setItem('demonfall_settings_v1', JSON.stringify(s));
+      }
+    } catch (e) { /* ignore */ }
+  }
 
   // (Removed: auto-restore-fullscreen-on-first-pointerdown.) The previous
   // listener attached an auto-fullscreen callback whenever settings.fullscreen

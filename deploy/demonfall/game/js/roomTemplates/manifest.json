@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-04-03T12:00:00Z",
+  "count": 27,
+  "templates": [
+    "Arena",
+    "ArmoryVault",
+    "BridgeOverGap",
+    "Cathedral",
+    "CelestialGardens",
+    "Checkerboard",
+    "CirclePillars",
+    "CollapsingHall",
+    "CouncilChamber",
+    "Crosshall",
+    "CrossroadChamber",
+    "Crossroads",
+    "Crypt_Small_Altar",
+    "DungeonLibrary",
+    "ForgottenCrypt",
+    "GrandBazaar",
+    "MazeLite",
+    "PrisonCells",
+    "PrisonDepths",
+    "RathausArchive",
+    "RitualChamber",
+    "RitualVault",
+    "SewageTunnel",
+    "Spiral",
+    "ThroneRoom",
+    "Treasure_Small",
+    "TreasureVault"
+  ]
+}

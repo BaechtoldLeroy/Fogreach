@@ -1,4 +1,10 @@
 // mobileControls.js — Single entry point for mobile control UI.
+
+if (window.i18n) {
+  window.i18n.register('de', { 'mobile.close': 'Schliessen' });
+  window.i18n.register('en', { 'mobile.close': 'Close' });
+}
+
 //
 // Responsibilities:
 //   - Build the inventory ("Bag") button (top-right, safe-area aware).
@@ -527,7 +533,7 @@
     var closeBg = scene.add.rectangle(cx, cy + 110, 120, 32, 0x3a3a3a)
       .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(4502)
       .setInteractive({ useHandCursor: true });
-    var closeText = scene.add.text(cx, cy + 110, 'Schliessen', {
+    var closeText = scene.add.text(cx, cy + 110, (window.i18n ? window.i18n.t('mobile.close') : 'Schliessen'), {
       fontSize: '13px', fill: '#f1e9d8', fontFamily: 'monospace'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(4503);
     elements.push(closeBg);

@@ -196,7 +196,11 @@
         rowY += 18;
         this._toggleRow(px, rowY, T('settings.mobile.haptics'), 'mobile.haptics', panelW); rowY += 22;
         this._toggleRow(px, rowY, T('settings.mobile.auto_aim'), 'mobile.autoAim', panelW); rowY += 22;
-        this._toggleRow(px, rowY, T('settings.mobile.d2_controls'), 'mobile.d2Controls', panelW); rowY += 24;
+        this._toggleRow(px, rowY, T('settings.mobile.d2_controls'), 'mobile.d2Controls', panelW); rowY += 22;
+        // Mobile fullscreen toggle (mirrored from DISPLAY → Vollbild). Mobile
+        // browsers usually need an explicit user gesture to enter fullscreen,
+        // so the picker click itself is the gesture that actually triggers it.
+        this._fullscreenRow(px, rowY, panelW); rowY += 24;
       }
 
       // -- Display section --
@@ -464,12 +468,12 @@
         .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2001)
         .setInteractive({ useHandCursor: true });
       btnBg.on('pointerdown', () => {
+        // Toggle fullscreen ad-hoc only — never persist the value. Stored
+        // fullscreen flags caused stale auto-restores on focus regain.
         if (self.scale.isFullscreen) {
           self.scale.stopFullscreen();
-          self._setSetting('fullscreen', false);
         } else {
           self.scale.startFullscreen();
-          self._setSetting('fullscreen', true);
         }
         self.time.delayedCall(200, refresh);
       });
@@ -516,7 +520,15 @@
 
   window.openSettingsScene = function (fromScene) {
     if (!fromScene || !fromScene.scene) return;
-    if (fromScene.scene.isActive('SettingsScene')) return;
+    // Defensive: a zombie SettingsScene instance can linger across hub →
+    // dungeon transitions, leaving isActive() truthy without any visible
+    // overlay. Force-stop before relaunching so the burger-menu entry in
+    // the dungeon HUD reliably opens the settings panel.
+    try {
+      if (fromScene.scene.isActive('SettingsScene')) {
+        fromScene.scene.stop('SettingsScene');
+      }
+    } catch (e) { /* ignore */ }
     fromScene.scene.launch('SettingsScene', { from: fromScene.scene.key });
   };
 })();
