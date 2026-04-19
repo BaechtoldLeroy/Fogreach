@@ -3,6 +3,32 @@
 
 if (window.i18n) {
   window.i18n.register('de', {
+    // Affix displayNames (used in composeName to build "Sharp Iron Blade")
+    'loot.affix.sharp_dmg': 'Scharfe',
+    'loot.affix.sturdy_armor': 'Robuste',
+    'loot.affix.of_health': 'des Bären',
+    'loot.affix.swift_speed': 'Flinke',
+    'loot.affix.of_precision': 'der Präzision',
+    'loot.affix.of_reach': 'der Reichweite',
+    'loot.affix.fire_warding': 'Feuerfeste',
+    'loot.affix.cold_warding': 'Frostfeste',
+    'loot.affix.lightning_warding': 'Sturmfeste',
+    'loot.affix.of_the_leech': 'des Egels',
+    'loot.affix.spinning_dmg': 'Wirbelnde',
+    'loot.affix.charged_dmg': 'Geladene',
+    'loot.affix.dashing_dmg': 'Hetzende',
+    'loot.affix.piercing_dmg': 'Durchdringende',
+    'loot.affix.bashing_dmg': 'Schmetternde',
+    'loot.affix.of_swift_spin': 'des schnellen Wirbels',
+    'loot.affix.of_swift_charge': 'der schnellen Ladung',
+    'loot.affix.of_swift_dash': 'des schnellen Hetzens',
+    'loot.affix.of_swift_dagger': 'des schnellen Dolchs',
+    'loot.affix.of_swift_bash': 'des schnellen Schmetterns',
+    'loot.affix.of_might': 'der Macht',
+    'loot.affix.of_haste': 'der Eile',
+    'loot.affix.of_wisdom': 'der Weisheit',
+    'loot.affix.of_greed': 'der Gier',
+
     'loot.item.WPN_EISENKLINGE': 'Eisenklinge',
     'loot.item.WPN_SCHATTENDOLCH': 'Schattendolch',
     'loot.item.WPN_KETTENMORGENSTERN': 'Kettenmorgenstern',
@@ -23,6 +49,31 @@ if (window.i18n) {
     'loot.fallback.item': 'Gegenstand'
   });
   window.i18n.register('en', {
+    'loot.affix.sharp_dmg': 'Sharp',
+    'loot.affix.sturdy_armor': 'Sturdy',
+    'loot.affix.of_health': 'of the Bear',
+    'loot.affix.swift_speed': 'Swift',
+    'loot.affix.of_precision': 'of Precision',
+    'loot.affix.of_reach': 'of Reach',
+    'loot.affix.fire_warding': 'Fireproof',
+    'loot.affix.cold_warding': 'Frostproof',
+    'loot.affix.lightning_warding': 'Stormproof',
+    'loot.affix.of_the_leech': 'of the Leech',
+    'loot.affix.spinning_dmg': 'Spinning',
+    'loot.affix.charged_dmg': 'Charged',
+    'loot.affix.dashing_dmg': 'Dashing',
+    'loot.affix.piercing_dmg': 'Piercing',
+    'loot.affix.bashing_dmg': 'Bashing',
+    'loot.affix.of_swift_spin': 'of Swift Spin',
+    'loot.affix.of_swift_charge': 'of Swift Charge',
+    'loot.affix.of_swift_dash': 'of Swift Dash',
+    'loot.affix.of_swift_dagger': 'of Swift Dagger',
+    'loot.affix.of_swift_bash': 'of Swift Bash',
+    'loot.affix.of_might': 'of Might',
+    'loot.affix.of_haste': 'of Haste',
+    'loot.affix.of_wisdom': 'of Wisdom',
+    'loot.affix.of_greed': 'of Greed',
+
     'loot.item.WPN_EISENKLINGE': 'Iron Blade',
     'loot.item.WPN_SCHATTENDOLCH': 'Shadow Dagger',
     'loot.item.WPN_KETTENMORGENSTERN': 'Chain Morningstar',
@@ -445,25 +496,33 @@ if (window.i18n) {
       }
       if (def) defs.push(def);
     }
+    // Localized affix-name lookup: prefer i18n key over hardcoded displayName
+    function _affixName(def) {
+      if (window.i18n && def && def.id) {
+        var v = window.i18n.t('loot.affix.' + def.id);
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return def ? def.displayName : '';
+    }
     const prefixes = defs.filter(function (d) { return d.position === 'prefix'; });
     const suffixes = defs.filter(function (d) { return d.position === 'suffix'; });
 
     let name = baseName;
     if (item.tier === 1) {
       if (prefixes.length > 0) {
-        name = prefixes[0].displayName + ' ' + baseName;
+        name = _affixName(prefixes[0]) + ' ' + baseName;
       } else if (suffixes.length > 0) {
-        name = baseName + ' ' + suffixes[0].displayName;
+        name = baseName + ' ' + _affixName(suffixes[0]);
       }
     } else if (item.tier === 2) {
-      const p = prefixes[0] ? prefixes[0].displayName : '';
-      const s = suffixes[0] ? suffixes[0].displayName : '';
+      const p = _affixName(prefixes[0]);
+      const s = _affixName(suffixes[0]);
       name = (p + ' ' + baseName + ' ' + s).trim().replace(/\s+/g, ' ');
     } else if (item.tier === 3) {
-      const p1 = prefixes[0] ? prefixes[0].displayName : '';
-      const p2 = prefixes[1] ? prefixes[1].displayName : '';
-      const s1 = suffixes[0] ? suffixes[0].displayName : '';
-      const s2 = suffixes[1] ? suffixes[1].displayName : '';
+      const p1 = _affixName(prefixes[0]);
+      const p2 = _affixName(prefixes[1]);
+      const s1 = _affixName(suffixes[0]);
+      const s2 = _affixName(suffixes[1]);
       name = (p1 + ' ' + p2 + ' ' + baseName + ' ' + s1 + ' ' + s2).trim().replace(/\s+/g, ' ');
       if (name.length > 50) {
         name = (p1 + ' ' + baseName + ' ' + s1 + ' [Legendary]').trim().replace(/\s+/g, ' ');
@@ -786,4 +845,28 @@ if (window.i18n) {
     // internal cache handle exposed for tests (read-only by convention)
     _bonusCache: _bonusCache
   };
+
+  // Re-snap item.displayName for every live item when language changes so
+  // legacy consumers reading item.displayName see the new language without
+  // having to adopt getLocalizedDisplayName everywhere.
+  if (window.i18n) {
+    window.i18n.onChange(function () {
+      var pools = [];
+      if (typeof inventory !== 'undefined' && Array.isArray(inventory)) pools.push(inventory);
+      if (typeof equipment !== 'undefined' && equipment && typeof equipment === 'object') {
+        pools.push(Object.values(equipment));
+      }
+      pools.forEach(function (pool) {
+        pool.forEach(function (item) {
+          if (item && typeof item === 'object') {
+            try { item.displayName = composeName(item); } catch (e) { /* ignore */ }
+          }
+        });
+      });
+      // Trigger HUD repaint (gold text uses _refreshHUD; potion tile uses
+      // its own refresh; both already wired to onChange in main.js — but
+      // repaint here too in case other consumers cache).
+      if (typeof window._refreshHUD === 'function') { try { window._refreshHUD(); } catch (e) {} }
+    });
+  }
 })();
