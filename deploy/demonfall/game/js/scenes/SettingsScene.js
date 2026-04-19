@@ -147,7 +147,6 @@
     }
 
     create(data) {
-      console.log('[SettingsScene] create() running, from', data && data.from);
       this.parentSceneKey = data && data.from || null;
       this.settings = loadSettings();
 
@@ -520,29 +519,25 @@
   window.SettingsScene = SettingsScene;
 
   window.openSettingsScene = function (fromScene) {
-    console.log('[openSettingsScene] called from', fromScene && fromScene.scene && fromScene.scene.key);
-    if (!fromScene || !fromScene.scene) {
-      console.warn('[openSettingsScene] missing fromScene/scene plugin');
-      return;
-    }
+    if (!fromScene || !fromScene.scene) return;
+    // Defensive: a zombie SettingsScene instance can linger across hub →
+    // dungeon transitions, leaving isActive() truthy without any visible
+    // overlay. Force-stop before relaunching so the burger-menu entry in
+    // the dungeon HUD reliably opens the settings panel.
     try {
       if (fromScene.scene.isActive('SettingsScene')) {
-        console.log('[openSettingsScene] stopping zombie SettingsScene');
         fromScene.scene.stop('SettingsScene');
       }
-    } catch (e) {
-      console.warn('[openSettingsScene] stop check threw', e);
-    }
+    } catch (e) { /* ignore */ }
     try {
       fromScene.scene.launch('SettingsScene', { from: fromScene.scene.key });
       // Phaser renders scenes in registration-array order. GameScene sits
       // AFTER SettingsScene in main.js's `scene: [...]` config, so by
-      // default SettingsScene renders BELOW GameScene and is invisible.
-      // bringToTop forces it to the top of the render order.
+      // default SettingsScene would render BELOW GameScene and be invisible.
+      // bringToTop hoists it to the front of the render order.
       fromScene.scene.bringToTop('SettingsScene');
-      console.log('[openSettingsScene] launch dispatched + brought to top');
     } catch (e) {
-      console.warn('[openSettingsScene] launch threw', e);
+      console.warn('[openSettingsScene] launch failed', e);
     }
   };
 })();

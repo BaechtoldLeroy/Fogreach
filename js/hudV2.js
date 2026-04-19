@@ -134,7 +134,6 @@
       .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
     portraitHit.on('pointerdown', (pointer, lx, ly, event) => {
-      console.log('[HUDv2] portrait clicked');
       if (event && event.stopPropagation) event.stopPropagation();
       _openStatsMenu(scene);
     });
@@ -194,7 +193,6 @@
       .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
     burgerHit.on('pointerdown', (pointer, lx, ly, event) => {
-      console.log('[HUDv2] burger clicked');
       if (event && event.stopPropagation) event.stopPropagation();
       _openMenuOverlay(scene);
     });
@@ -455,7 +453,6 @@
       bg.on('pointerover', () => bg.setFillStyle(0x3a3a5a));
       bg.on('pointerout', () => bg.setFillStyle(0x2a2a3d));
       bg.on('pointerdown', () => {
-        console.log('[HUDv2] menu item clicked:', it.label);
         // Run the action FIRST, then close. delayedCall + close-first was
         // racy when the parent scene was paused (no time-step → action
         // never fired). Synchronous order is more reliable.
