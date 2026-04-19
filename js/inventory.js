@@ -19,7 +19,12 @@ if (window.i18n) {
     'inventory.label.hp': 'LP',
     'inventory.attack.cooldown': '{name}: -{pct}% Cooldown',
     'inventory.attack.damage': '{name}: +{pct}% Schaden',
-    'inventory.unknown_item': 'Unbekanntes Item'
+    'inventory.unknown_item': 'Unbekanntes Item',
+    'inventory.title': 'Inventar',
+    'inventory.help': 'Klicke ein Item zum Ausrüsten / Entfernen',
+    'inventory.btn.equip': 'Ausrüsten',
+    'inventory.btn.drop': 'Entfernen',
+    'inventory.btn.portal': 'Portal ({count})'
   });
   window.i18n.register('en', {
     'inventory.tier.common': 'Common',
@@ -38,7 +43,12 @@ if (window.i18n) {
     'inventory.label.hp': 'HP',
     'inventory.attack.cooldown': '{name}: -{pct}% Cooldown',
     'inventory.attack.damage': '{name}: +{pct}% Damage',
-    'inventory.unknown_item': 'Unknown Item'
+    'inventory.unknown_item': 'Unknown Item',
+    'inventory.title': 'Inventory',
+    'inventory.help': 'Click an item to equip / drop',
+    'inventory.btn.equip': 'Equip',
+    'inventory.btn.drop': 'Drop',
+    'inventory.btn.portal': 'Portal ({count})'
   });
 }
 const _INV_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
@@ -411,14 +421,14 @@ function initInventoryUI() {
   const panelBg = scene.add.image(0, 0, 'uiPanel').setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0);
   panel.add(panelBg);
 
-  const title = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 12, 'Inventar', {
+  const title = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 12, _INV_T('inventory.title'), {
     fontFamily: 'serif', fontSize: '26px', fill: '#ffd166', fontStyle: 'bold',
     stroke: '#000000', strokeThickness: 5, resolution: 2
   }).setOrigin(0, 0).setScrollFactor(0);
   panel.add(title);
 
   const help = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 44,
-    'Klicke ein Item zum Ausruesten / Entfernen',
+    _INV_T('inventory.help'),
     { fontSize: '13px', fill: '#dddddd', fontFamily: 'monospace',
       stroke: '#000000', strokeThickness: 4, resolution: 2
     }).setOrigin(0, 0).setScrollFactor(0);
@@ -745,7 +755,7 @@ const EQUIP_STEP = 90;
   window._refreshPortalButton = function () {
     const count = (window.materialCounts && typeof window.materialCounts.PORTAL_SCROLL === 'number')
       ? window.materialCounts.PORTAL_SCROLL : 0;
-    btnPortal.setText('Portal (' + count + ')');
+    btnPortal.setText(_INV_T('inventory.btn.portal', { count: count }));
     btnPortal.setStyle({
       backgroundColor: count > 0 ? '#486c1d' : '#333333',
       fill: count > 0 ? '#fff' : '#888'
@@ -754,9 +764,9 @@ const EQUIP_STEP = 90;
   window._refreshPortalButton();
 
   const btnY = PANEL_H / 2 - 24;
-  const btnEquip = scene.add.text(-70, btnY, 'Ausruesten', { fontSize: '14px', fill: '#fff', backgroundColor: '#47a', padding: { x: 10, y: 5 } })
+  const btnEquip = scene.add.text(-70, btnY, _INV_T('inventory.btn.equip'), { fontSize: '14px', fill: '#fff', backgroundColor: '#47a', padding: { x: 10, y: 5 } })
     .setOrigin(0.5, 1).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => equipSelectedItem.call(scene));
-  const btnDrop = scene.add.text(70, btnY, 'Entfernen', { fontSize: '14px', fill: '#fff', backgroundColor: '#a44', padding: { x: 10, y: 5 } })
+  const btnDrop = scene.add.text(70, btnY, _INV_T('inventory.btn.drop'), { fontSize: '14px', fill: '#fff', backgroundColor: '#a44', padding: { x: 10, y: 5 } })
     .setOrigin(0.5, 1).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => dropSelectedItem());
   panel.add([btnEquip, btnDrop]);
 

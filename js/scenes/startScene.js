@@ -1,5 +1,29 @@
 // startScene.js
 
+if (window.i18n) {
+  window.i18n.register('de', {
+    'start.subtitle': 'Ein Dungeon-Crawler',
+    'start.btn.continue': 'FORTSETZEN',
+    'start.btn.delete_save': 'Spielstand löschen',
+    'start.btn.new_game': 'NEUES SPIEL',
+    'start.btn.start_game': 'SPIEL STARTEN',
+    'start.btn.settings': 'EINSTELLUNGEN',
+    'start.highscores': '🏆 Highscores',
+    'start.highscores.error': 'Fehler beim Laden der Highscores'
+  });
+  window.i18n.register('en', {
+    'start.subtitle': 'A dungeon crawler',
+    'start.btn.continue': 'CONTINUE',
+    'start.btn.delete_save': 'Delete save',
+    'start.btn.new_game': 'NEW GAME',
+    'start.btn.start_game': 'START GAME',
+    'start.btn.settings': 'SETTINGS',
+    'start.highscores': '🏆 Highscores',
+    'start.highscores.error': 'Failed to load highscores'
+  });
+}
+const _START_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
 // 1) Scene-Konstruktor
 function StartScene() {
   Phaser.Scene.call(this, { key: "StartScene" });
@@ -278,7 +302,7 @@ StartScene.prototype.create = function () {
 
   // Subtitle
   this.add
-    .text(cx, ch * 0.18 + 50, "Ein Dungeon-Crawler", {
+    .text(cx, ch * 0.18 + 50, _START_T('start.subtitle'), {
       fontFamily: 'serif', fontSize: "16px", fill: "#888888"
     })
     .setOrigin(0.5);
@@ -292,7 +316,7 @@ StartScene.prototype.create = function () {
   // Fortsetzen zuerst, wenn Save vorhanden ist
   if (hasExistingSave) {
     const contBtn = this.add
-      .text(cx, ch * 0.38, "FORTSETZEN", {
+      .text(cx, ch * 0.38, _START_T('start.btn.continue'), {
         fontFamily: 'serif', fontSize: "32px",
         fill: "#ffea6a",
         backgroundColor: "#111",
@@ -318,7 +342,7 @@ StartScene.prototype.create = function () {
     contBtn.on('pointerout', () => contBtn.setStyle({ fill: '#ffea6a' }));
 
     const delBtn = this.add
-      .text(cx, ch * 0.48, "Spielstand loeschen", {
+      .text(cx, ch * 0.48, _START_T('start.btn.delete_save'), {
         fontFamily: 'monospace', fontSize: "14px",
         fill: "#ff6666",
         padding: { x: 8, y: 3 }
@@ -338,7 +362,7 @@ StartScene.prototype.create = function () {
 
   // START GAME
   btn = this.add
-    .text(cx, startY, hasExistingSave ? "NEUES SPIEL" : "SPIEL STARTEN", {
+    .text(cx, startY, _START_T(hasExistingSave ? 'start.btn.new_game' : 'start.btn.start_game'), {
       fontFamily: 'serif', fontSize: hasExistingSave ? "24px" : "28px",
       fill: hasExistingSave ? "#88ff88" : "#88ff88",
       backgroundColor: "#1a1a1a",
@@ -366,7 +390,7 @@ StartScene.prototype.create = function () {
 
   // EINSTELLUNGEN button below the start button
   const settingsBtn = this.add
-    .text(cx, startY + 48, "EINSTELLUNGEN", {
+    .text(cx, startY + 48, _START_T('start.btn.settings'), {
       fontFamily: 'monospace', fontSize: "16px",
       fill: "#aaaaaa",
       backgroundColor: "#1a1a1a",
@@ -384,7 +408,7 @@ StartScene.prototype.create = function () {
   // Optional: Highscores
   if (window.loadScores) {
     this.add
-      .text(400, 460, "🏆 Highscores", {
+      .text(400, 460, _START_T('start.highscores'), {
         fontSize: "22px",
         fill: "#ffff00",
       })
@@ -408,7 +432,7 @@ StartScene.prototype.create = function () {
       })
       .catch((err) => {
         this.add
-          .text(400, 490, "Fehler beim Laden der Highscores", {
+          .text(400, 490, _START_T('start.highscores.error'), {
             fontSize: "16px",
             fill: "#ff0000",
           })

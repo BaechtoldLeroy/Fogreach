@@ -528,9 +528,14 @@ if (window.i18n) {
 
   function composeName(item) {
     if (!item) return (window.i18n ? window.i18n.t('loot.fallback.item') : 'Item');
+    // Potions: derive i18n key from potionTier when nameKey is missing.
+    let nameKey = item.nameKey;
+    if (!nameKey && item.type === 'potion' && item.potionTier) {
+      nameKey = 'loot.potion.t' + item.potionTier;
+    }
     let baseName;
-    if (window.i18n && item.nameKey) {
-      const v = window.i18n.t(item.nameKey);
+    if (window.i18n && nameKey) {
+      const v = window.i18n.t(nameKey);
       baseName = (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (item._baseName || item.name);
     } else {
       baseName = item._baseName || item.name || (window.i18n ? window.i18n.t('loot.fallback.item') : 'Item');

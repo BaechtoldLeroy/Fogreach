@@ -1,5 +1,17 @@
 // roomManager.js
 
+if (window.i18n) {
+  window.i18n.register('de', {
+    'room.counter': 'Raum {cur}/{total}',
+    'room.stair_prompt': '[E] Nächster Raum'
+  });
+  window.i18n.register('en', {
+    'room.counter': 'Room {cur}/{total}',
+    'room.stair_prompt': '[E] Next room'
+  });
+}
+const _ROOM_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
 // Globale Raumdaten
 let rooms = [];
 let currentRoomId = 0;
@@ -675,7 +687,7 @@ function onStairOverlap(player, stair) {
     if (!eKey.isDown && !mobileInteract) {
       // Show prompt text above player
       if (!stair._prompt) {
-        stair._prompt = scene.add.text(stair.x, stair.y - 40, '[E] Nächster Raum', {
+        stair._prompt = scene.add.text(stair.x, stair.y - 40, _ROOM_T('room.stair_prompt'), {
           fontSize: '14px', fill: '#ffdd44', fontFamily: 'monospace',
           stroke: '#000', strokeThickness: 2
         }).setOrigin(0.5).setDepth(500);
@@ -1327,10 +1339,11 @@ window.recomputeAccessibleArea = recomputeAccessibleArea;
  * Called from enterRoom. The actual text element is created in main.js.
  */
 function updateRoomCounter(roomIndex, totalRooms) {
+  const _roomLabel = _ROOM_T('room.counter', { cur: (roomIndex + 1), total: totalRooms });
   if (window._roomCounterText && window._roomCounterText.setText) {
-    window._roomCounterText.setText('Raum ' + (roomIndex + 1) + '/' + totalRooms);
+    window._roomCounterText.setText(_roomLabel);
   }
-  window.roomProgressText = 'Raum ' + (roomIndex + 1) + '/' + totalRooms;
+  window.roomProgressText = _roomLabel;
 }
 
 // Export in globalen Namespace

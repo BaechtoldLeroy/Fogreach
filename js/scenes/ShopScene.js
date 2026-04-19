@@ -361,7 +361,8 @@
           .setStrokeStyle(1, 0x444444).setScrollFactor(0).setDepth(2002);
         this.tabBody.push(rowBg);
 
-        const nameText = this.add.text(px - panelW / 2 + 24, ry + 10, def.name, {
+        const _potName = (window.i18n ? window.i18n.t('loot.potion.t' + def.potionTier) : def.name);
+        const nameText = this.add.text(px - panelW / 2 + 24, ry + 10, _potName, {
           fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
         }).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(nameText);
@@ -428,12 +429,14 @@
           type: 'potion',
           potionTier: def.potionTier,
           name: def.name,
+          nameKey: 'loot.potion.t' + def.potionTier,
           iconKey: def.iconKey,
           stack: 1
         };
       }
       this._refreshGold();
-      this._showToast(_SHOP_T('shop.toast.bought', { name: def.name }));
+      const potName = (window.i18n ? window.i18n.t('loot.potion.t' + def.potionTier) : def.name);
+      this._showToast(_SHOP_T('shop.toast.bought', { name: potName }));
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }
