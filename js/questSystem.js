@@ -56,7 +56,7 @@
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 20 }
       ],
-      rewards: { xp: 75, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
+      rewards: { xp: 75, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', nameKey: 'quest.reward.ALDRIC_SCHWERT', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityKey: 'quest.rarity.rare', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
       prerequisites: ['aldric_cleanup'],
       requiredAct: 1,
       dialogueOffer: 'Fremde stehlen unsere Dokumente. Stoppe sie. Besiege zwanzig dieser Eindringlinge.\n\nNimmst du den Auftrag an?',
@@ -112,7 +112,7 @@
       objectives: [
         { type: 'dialogue', target: 'mara_meet', current: 0, required: 1 }
       ],
-      rewards: { info: 'Maras Netzwerk enthuellt' },
+      rewards: { info: 'Maras Netzwerk enthuellt', infoKey: 'quest.reward.info.mara_contact' },
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Du erinnerst dich nicht. Aber ich kenne dich.\n\nHoer mir zu — es ist wichtig.',
@@ -167,7 +167,7 @@
       objectives: [
         { type: 'wave', target: 'reach_wave', current: 0, required: 20 }
       ],
-      rewards: { xp: 150, items: [{ type: 'accessory', key: 'RITUAL_AMULETT', name: 'Ritualamulett', iconKey: 'itAccessory', rarity: 'epic', rarityLabel: 'Episch', rarityValue: 3, itemLevel: 12, damage: 0, speed: 0, range: 0, armor: 5, crit: 0.05, hp: 20 }] },
+      rewards: { xp: 150, items: [{ type: 'accessory', key: 'RITUAL_AMULETT', name: 'Ritualamulett', nameKey: 'quest.reward.RITUAL_AMULETT', iconKey: 'itAccessory', rarity: 'epic', rarityLabel: 'Episch', rarityKey: 'quest.rarity.epic', rarityValue: 3, itemLevel: 12, damage: 0, speed: 0, range: 0, armor: 5, crit: 0.05, hp: 20 }] },
       prerequisites: ['elara_meeting'],
       requiredAct: 3,
       dialogueOffer: 'Tief unten ist eine Kammer... ich zeige dir wo. Dringe bis Welle 20 vor.\n\nBist du bereit fuer die Wahrheit?',
@@ -257,7 +257,7 @@
       objectives: [
         { type: 'dialogue', target: 'elara_gift', current: 0, required: 1 }
       ],
-      rewards: { xp: 0, items: [{ type: 'weapon', key: 'ELARAS_KLINGE', name: 'Elaras Klinge', iconKey: 'itWeapon', rarity: 'legendary', rarityLabel: 'Legendaer', rarityValue: 4, itemLevel: 15, damage: 22, speed: 1.3, range: 120, armor: 0, crit: 0.15, hp: 0, elaraGift: true }] },
+      rewards: { xp: 0, items: [{ type: 'weapon', key: 'ELARAS_KLINGE', name: 'Elaras Klinge', nameKey: 'quest.reward.ELARAS_KLINGE', iconKey: 'itWeapon', rarity: 'legendary', rarityLabel: 'Legendaer', rarityKey: 'quest.rarity.legendary', rarityValue: 4, itemLevel: 15, damage: 22, speed: 1.3, range: 120, armor: 0, crit: 0.15, hp: 0, elaraGift: true }] },
       prerequisites: ['elara_ritual'],
       requiredAct: 4,
       dialogueOffer: 'Nimm das. Ich habe es fuer dich geschmiedet. Fuer den Fall, dass...\n\nNimm Elaras Klinge an?',
@@ -324,6 +324,240 @@
       dialogueComplete: 'Die Ketten sind gebrochen. Die Wahrheit ist frei. Fogreach gehoert wieder den Menschen.'
     }
   };
+
+  // ---- i18n bootstrap ----
+  // Auto-register German strings from QUEST_DEFINITIONS so consumers can use
+  // i18n.t('quest.<id>.<field>'). German is source-of-truth — fallback for any
+  // EN translation that is missing returns the German value via the i18n
+  // lookup cascade (active → de → [MISSING:key]).
+  if (window.i18n) {
+    var QUEST_FIELDS = ['title', 'description', 'dialogueOffer', 'dialogueProgress', 'dialogueComplete'];
+    var _autoDe = {};
+    Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
+      var q = QUEST_DEFINITIONS[id];
+      QUEST_FIELDS.forEach(function (field) {
+        if (typeof q[field] === 'string') {
+          _autoDe['quest.' + id + '.' + field] = q[field];
+        }
+      });
+    });
+    // Generic tracker strings
+    _autoDe['quest.tracker.progress'] = '{title}: {cur}/{required}';
+    _autoDe['quest.tracker.short_suffix'] = '..';
+    window.i18n.register('de', _autoDe);
+
+    // English overrides — partial; missing keys gracefully fall back to DE.
+    // Translations will expand iteratively. Quest titles + tracker translated
+    // up front; dialogues to follow.
+    window.i18n.register('en', {
+      'quest.tracker.progress': '{title}: {cur}/{required}',
+      'quest.tracker.short_suffix': '..',
+      'quest.aldric_cleanup.title': 'Cellar Cleanup',
+      'quest.aldric_cleanup.description': 'Defeat 10 enemies in the cellars beneath the Archive Forge.',
+      'quest.aldric_patrol.title': 'Cellar Patrol',
+      'quest.aldric_patrol.description': 'Clear 3 rooms in the cellars to secure all corridors.',
+      'quest.aldric_intruders.title': 'The Intruders',
+      'quest.aldric_intruders.description': 'Defeat 20 intruders raiding the council archives.',
+      'quest.harren_daughter.title': 'The Missing Daughter',
+      'quest.harren_daughter.description': 'Search 5 rooms and find Elara\'s diary.',
+      'quest.branka_armor.title': 'New Armor',
+      'quest.branka_armor.description': 'Gather 3 materials for the council-commissioned armor.',
+      'quest.mara_contact.title': 'The Scout',
+      'quest.mara_contact.description': 'Meet Mara and hear what she has to say.',
+      'quest.elara_meeting.title': "Elara's Secret",
+      'quest.elara_meeting.description': 'Find 2 secret documents Elara has hidden.',
+      'quest.branka_doubt.title': "The Smith's Doubt",
+      'quest.branka_doubt.description': "Defeat 5 elite enemies to find evidence for Branka's suspicions.",
+      'quest.elara_ritual.title': 'The Ritual Chamber',
+      'quest.elara_ritual.description': 'Reach wave 20 to find the council\'s ritual chamber.',
+      'quest.thom_truth.title': 'Forbidden Truths',
+      'quest.thom_truth.description': 'Find 5 print plates with the forbidden truths about the council.',
+      'quest.mara_warning.title': "Mara's Warning",
+      'quest.mara_warning.description': 'Defeat the Chainmaster boss who guards the first real evidence.',
+      'quest.branka_weapons.title': 'Weapons for the Resistance',
+      'quest.branka_weapons.description': 'Craft 3 items at the Archive Forge.',
+      'quest.thom_pamphlets.title': 'The Pamphlets',
+      'quest.thom_pamphlets.description': 'Complete 3 dungeon runs to spread the leaflets.',
+      'quest.elara_blade.title': "Elara's Gift",
+      'quest.elara_blade.description': 'Elara has forged a special weapon for you.',
+      'quest.mara_assault.title': 'Storming the Council',
+      'quest.mara_assault.description': 'Reach wave 30 to topple the council.',
+      'quest.harren_rescue.title': 'Rescue or Evidence',
+      'quest.harren_rescue.description': 'Defeat the Shadow Council boss to find Elara.',
+      'quest.final_truth.title': 'The Final Truth',
+      'quest.final_truth.description': 'Reach wave 40 to find the true source of the pact.',
+
+      // === Quest dialogues — English ===
+      'quest.aldric_cleanup.dialogueOffer': 'Wild beasts in the cellars. Clear them out.\n\nWill you take this task?',
+      'quest.aldric_cleanup.dialogueProgress': 'The cellars are not safe yet. Keep fighting.',
+      'quest.aldric_cleanup.dialogueComplete': 'Good. The cellars are cleared. Here is your reward.',
+
+      'quest.aldric_patrol.dialogueOffer': 'Make sure all corridors are secure. Patrol three rooms.\n\nReady?',
+      'quest.aldric_patrol.dialogueProgress': 'Not all corridors are secure yet. Keep patrolling.',
+      'quest.aldric_patrol.dialogueComplete': 'All corridors are safe. Good work, Archivesmith.',
+
+      'quest.aldric_intruders.dialogueOffer': 'Strangers are stealing our documents. Stop them. Defeat twenty of these intruders.\n\nDo you accept?',
+      'quest.aldric_intruders.dialogueProgress': 'The intruders are still about. Keep fighting.',
+      'quest.aldric_intruders.dialogueComplete': 'Excellent. The intruders are driven off. Take this sword as a token of trust.',
+
+      'quest.harren_daughter.dialogueOffer': "My daughter Elara... please find her. Search the rooms and bring me her diary.\n\nWill you help an old man?",
+      'quest.harren_daughter.dialogueProgress': 'Have you found anything? Please keep looking for Elara...',
+      'quest.harren_daughter.dialogueComplete': 'Her diary... thank you. At least I know now that she is alive.',
+
+      'quest.branka_armor.dialogueOffer': "The council wants new armor. But the plans... they're wrong. Bring me three materials anyway.\n\nWill you help me?",
+      'quest.branka_armor.dialogueProgress': 'I need more materials. Keep searching.',
+      'quest.branka_armor.dialogueComplete': "Thank you. But this armor... the dimensions are for prisoners, not soldiers. Something is wrong here.",
+
+      'quest.mara_contact.dialogueOffer': "You don't remember. But I know you.\n\nListen to me — it's important.",
+      'quest.mara_contact.dialogueProgress': 'We need to talk. Come to me.',
+      'quest.mara_contact.dialogueComplete': 'Now you know. My network is open to you.',
+
+      'quest.elara_meeting.dialogueOffer': "I wasn't kidnapped. I escaped. Here — read this.\n\nFind two documents I hid in the cellar.",
+      'quest.elara_meeting.dialogueProgress': 'The documents are well hidden. Keep searching.',
+      'quest.elara_meeting.dialogueComplete': 'Now you see the truth. The council used me — for their rituals.',
+
+      'quest.branka_doubt.dialogueOffer': 'This armor is for prisoners, not soldiers. Help me find proof.\n\nDefeat five elite guards and bring me their orders.',
+      'quest.branka_doubt.dialogueProgress': 'The elite guards carry the proof on them. Keep fighting.',
+      'quest.branka_doubt.dialogueComplete': 'I was right. The council is building prisons, not barracks. We must act.',
+
+      'quest.elara_ritual.dialogueOffer': "Deep below there is a chamber... I'll show you where. Reach wave 20.\n\nAre you ready for the truth?",
+      'quest.elara_ritual.dialogueProgress': 'You must press deeper. The ritual chamber lies at wave 20.',
+      'quest.elara_ritual.dialogueComplete': "You found it. The council's summoning chamber. Take this amulet — it shields against their dark magic.",
+
+      'quest.thom_truth.dialogueOffer': "I've printed enough of what the council wants. Time for the truth.\n\nFind five print plates in the cellar — they hold the real history.",
+      'quest.thom_truth.dialogueProgress': 'The print plates are hidden somewhere in the town hall cellar. Keep searching.',
+      'quest.thom_truth.dialogueComplete': 'Fantastic! These plates contain proof the council wanted to destroy. The truth goes to print.',
+
+      'quest.mara_warning.dialogueOffer': 'The Chainmaster guards the first real evidence. Defeat him.\n\nWithout that proof we can prove nothing.',
+      'quest.mara_warning.dialogueProgress': 'The Chainmaster still lives. Find and defeat him.',
+      'quest.mara_warning.dialogueComplete': 'The Chainmaster has fallen! The evidence is secure. Now no one can deny what the council has done.',
+
+      'quest.branka_weapons.dialogueOffer': 'We need weapons. Not for the council — for US.\n\nCraft three items at the forge.',
+      'quest.branka_weapons.dialogueProgress': 'The forge waits. Craft more items.',
+      'quest.branka_weapons.dialogueComplete': 'Well forged. These weapons will make the difference.',
+
+      'quest.thom_pamphlets.dialogueOffer': 'Every run is a chance to spread leaflets.\n\nComplete three runs and all of Fogreach will read the truth.',
+      'quest.thom_pamphlets.dialogueProgress': 'Keep fighting through the town hall cellar. Every run spreads our message.',
+      'quest.thom_pamphlets.dialogueComplete': 'The whole city reads our truths! The citizens have awakened. Your experience now grows faster. (+10% XP)',
+
+      'quest.elara_blade.dialogueOffer': "Take this. I forged it for you. In case...\n\nWill you accept Elara's Blade?",
+      'quest.elara_blade.dialogueProgress': 'The blade waits for you.',
+      'quest.elara_blade.dialogueComplete': 'May it protect you. No matter what comes.',
+
+      'quest.mara_assault.dialogueOffer': "It's time. The council falls today. Reach wave 30.\n\nAre you ready for the assault?",
+      'quest.mara_assault.dialogueProgress': 'The council waits in the depths. Press on — wave 30.',
+      'quest.mara_assault.dialogueComplete': 'The council has fallen! Fogreach breathes again. But the shadows are not yet defeated...',
+
+      'quest.harren_rescue.dialogueOffer': 'Find my daughter. Please. The Shadow Council holds her.\n\nDefeat him and bring Elara back.',
+      'quest.harren_rescue.dialogueProgress': 'The Shadow Council still lives. Find and defeat him — for Elara.',
+      'quest.harren_rescue.dialogueComplete': 'You defeated the Shadow Council. But Elara... she vanished with him. What does this mean?',
+
+      'quest.final_truth.dialogueOffer': 'Beneath Fogreach the truth waits. Are you ready?\n\nReach wave 40 — into the dimension of chains and shadows.',
+      'quest.final_truth.dialogueProgress': 'The final truth lies at wave 40. You must go deeper.',
+      'quest.final_truth.dialogueComplete': 'The chains are broken. The truth is free. Fogreach belongs to its people again.',
+
+      // === Quest reward strings ===
+      'quest.reward.info.mara_contact': "Mara's network revealed",
+      'quest.reward.ALDRIC_SCHWERT': 'Council Sword',
+      'quest.reward.RITUAL_AMULETT': 'Ritual Amulet',
+      'quest.reward.ELARAS_KLINGE': "Elara's Blade",
+      'quest.rarity.common': 'Common',
+      'quest.rarity.rare': 'Rare',
+      'quest.rarity.epic': 'Epic',
+      'quest.rarity.legendary': 'Legendary'
+    });
+
+    // Auto-add the German reward strings + rarity labels (DE source-of-truth)
+    window.i18n.register('de', {
+      'quest.reward.info.mara_contact': 'Maras Netzwerk enthuellt',
+      'quest.reward.ALDRIC_SCHWERT': 'Ratsschwert',
+      'quest.reward.RITUAL_AMULETT': 'Ritualamulett',
+      'quest.reward.ELARAS_KLINGE': 'Elaras Klinge',
+      'quest.rarity.common': 'Gewöhnlich',
+      'quest.rarity.rare': 'Selten',
+      'quest.rarity.epic': 'Episch',
+      'quest.rarity.legendary': 'Legendär'
+    });
+
+    // Convert QUEST_DEFINITIONS title/description/dialogue* to live getters so
+    // ANY consumer reading q.title etc. sees the active language without code
+    // changes. Plain object literals are not frozen, so defineProperty works.
+    Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
+      var q = QUEST_DEFINITIONS[id];
+      QUEST_FIELDS.forEach(function (field) {
+        var key = 'quest.' + id + '.' + field;
+        var fallback = q[field];
+        try {
+          Object.defineProperty(q, field, {
+            get: function () {
+              var v = window.i18n.t(key);
+              return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (fallback || '');
+            },
+            configurable: true, enumerable: true
+          });
+        } catch (e) { /* swallow */ }
+      });
+      // Reward item names + rarity labels: same pattern (only first item used
+      // by HubSceneV2 reward UI, but iterate all for correctness).
+      if (q.rewards && Array.isArray(q.rewards.items)) {
+        q.rewards.items.forEach(function (item) {
+          if (item && item.nameKey) {
+            var nameKey = item.nameKey;
+            var nameFallback = item.name;
+            try {
+              Object.defineProperty(item, 'name', {
+                get: function () {
+                  var v = window.i18n.t(nameKey);
+                  return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (nameFallback || '');
+                },
+                configurable: true, enumerable: true
+              });
+            } catch (e) { /* swallow */ }
+          }
+          if (item && item.rarityKey) {
+            var rkey = item.rarityKey;
+            var rfallback = item.rarityLabel;
+            try {
+              Object.defineProperty(item, 'rarityLabel', {
+                get: function () {
+                  var v = window.i18n.t(rkey);
+                  return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (rfallback || '');
+                },
+                configurable: true, enumerable: true
+              });
+            } catch (e) { /* swallow */ }
+          }
+        });
+      }
+      // Reward info string
+      if (q.rewards && q.rewards.infoKey) {
+        var infoKey = q.rewards.infoKey;
+        var infoFallback = q.rewards.info;
+        try {
+          Object.defineProperty(q.rewards, 'info', {
+            get: function () {
+              var v = window.i18n.t(infoKey);
+              return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (infoFallback || '');
+            },
+            configurable: true, enumerable: true
+          });
+        } catch (e) { /* swallow */ }
+      }
+    });
+  }
+
+  // ---- i18n helpers ----
+  // Use these helpers (or i18n.t directly with `quest.<id>.<field>`) instead of
+  // reading quest.title / quest.description directly so the active language is
+  // always honored. Falls back to the original field when i18n is absent.
+  function getQuestField(quest, field) {
+    if (!quest) return '';
+    if (window.i18n) {
+      var v = window.i18n.t('quest.' + quest.id + '.' + field);
+      if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+    }
+    return quest[field] || '';
+  }
 
   // ---- Quest State ----
   // status: 'available' | 'active' | 'completed'
@@ -624,11 +858,19 @@
   function getTrackerText() {
     var active = getActiveQuests();
     if (!active.length) return '';
+    var suffix = (window.i18n ? window.i18n.t('quest.tracker.short_suffix') : '..');
     var lines = [];
     active.forEach(function (q) {
+      var fullTitle = getQuestField(q, 'title');
+      var shortName = fullTitle.length > 16 ? fullTitle.substring(0, 14) + suffix : fullTitle;
       q.objectives.forEach(function (obj) {
-        var shortName = q.title.length > 16 ? q.title.substring(0, 14) + '..' : q.title;
-        lines.push(shortName + ': ' + obj.current + '/' + obj.required);
+        if (window.i18n) {
+          lines.push(window.i18n.t('quest.tracker.progress', {
+            title: shortName, cur: obj.current, required: obj.required
+          }));
+        } else {
+          lines.push(shortName + ': ' + obj.current + '/' + obj.required);
+        }
       });
     });
     return lines.join('\n');
@@ -652,8 +894,50 @@
     loadQuestSaveData: loadQuestSaveData,
     onQuestUpdate: onQuestUpdate,
     offQuestUpdate: offQuestUpdate,
-    getTrackerText: getTrackerText
+    getTrackerText: getTrackerText,
+    getQuestField: getQuestField,
+    getQuestTitle: function (q) { return getQuestField(q, 'title'); },
+    getQuestDescription: function (q) { return getQuestField(q, 'description'); },
+    getQuestDialogue: function (q, phase) {
+      var key = 'dialogue' + phase[0].toUpperCase() + phase.slice(1);
+      return getQuestField(q, key);
+    },
+    // i18n helper for reward strings: prefer rewards.infoKey lookup over the
+    // hardcoded German rewards.info field.
+    getRewardInfo: function (q) {
+      if (!q || !q.rewards) return '';
+      if (window.i18n && q.rewards.infoKey) {
+        var v = window.i18n.t(q.rewards.infoKey);
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return q.rewards.info || '';
+    },
+    // i18n helper for reward item names + rarity labels (consumed by quest
+    // dialog renderers + journal). Snaps onto whichever key the item carries.
+    getRewardItemName: function (item) {
+      if (!item) return '';
+      if (window.i18n && item.nameKey) {
+        var v = window.i18n.t(item.nameKey);
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return item.name || '';
+    },
+    getRewardRarityLabel: function (item) {
+      if (!item) return '';
+      if (window.i18n && item.rarityKey) {
+        var v = window.i18n.t(item.rarityKey);
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return item.rarityLabel || '';
+    }
   };
+
+  // Re-render living quest tracker on language change.
+  if (window.i18n) {
+    window.i18n.onChange(function () {
+      _notifyUpdate();
+    });
+  }
 
   window.questSystem = questSystem;
 })();
