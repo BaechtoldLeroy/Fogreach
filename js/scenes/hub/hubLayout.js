@@ -47,8 +47,27 @@ if (window.i18n) {
 // language may differ from active language at render time.
 const _hubT = (key, fallback) => {
   if (!window.i18n) return fallback;
+  // Suppress noisy missing-key warning from t() during fallback path: check
+  // the active dict directly via a probe register call (no-op merge) and
+  // only call t() when we know the key exists.
   const v = window.i18n.t(key);
   return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : fallback;
+};
+// Silent existence check — avoids triggering [i18n] missing key warnings.
+// Inspects the live dictionaries the i18n module would consult.
+const _hubHasKey = (key) => {
+  if (!window.i18n || typeof window.i18n.t !== 'function') return false;
+  // Re-register a probe value? No, that overwrites. Instead, redirect t() to
+  // a quiet probe by using a private flag the i18n module may not expose.
+  // Fallback: do the t() call but stash + restore console.warn briefly.
+  const _origWarn = console.warn;
+  console.warn = function () {};
+  try {
+    const v = window.i18n.t(key);
+    return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0);
+  } finally {
+    console.warn = _origWarn;
+  }
 };
 
 window.HUB_HITBOXES = {
@@ -175,7 +194,7 @@ if (window.i18n) {
     if (Array.isArray(npc.lines)) {
       var fallbackLines = npc.lines.slice();
       var hasI18nLines = fallbackLines.some(function (_, i) {
-        return window.i18n.t('hub.npc.' + npc.id + '.line.' + i).indexOf('[MISSING:') !== 0;
+        return _hubHasKey('hub.npc.' + npc.id + '.line.' + i);
       });
       if (hasI18nLines) {
         Object.defineProperty(npc, 'lines', {

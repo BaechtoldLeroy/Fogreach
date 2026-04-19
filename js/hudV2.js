@@ -117,6 +117,7 @@
       .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
     portraitHit.on('pointerdown', (pointer, lx, ly, event) => {
+      console.log('[HUDv2] portrait clicked');
       if (event && event.stopPropagation) event.stopPropagation();
       _openStatsMenu(scene);
     });
@@ -176,6 +177,7 @@
       .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
     burgerHit.on('pointerdown', (pointer, lx, ly, event) => {
+      console.log('[HUDv2] burger clicked');
       if (event && event.stopPropagation) event.stopPropagation();
       _openMenuOverlay(scene);
     });

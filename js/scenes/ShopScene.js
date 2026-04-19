@@ -23,7 +23,7 @@
       'shop.tab.items': 'Items',
       'shop.tab.potions': 'Tränke',
       'shop.tab.reroll': 'Reroll',
-      'shop.btn.buy': _SHOP_T('shop.btn.buy'),
+      'shop.btn.buy': 'Kaufen',
       'shop.empty.stock': 'Lager ist leer.',
       'shop.scroll.name': 'Portalrolle ({count})',
       'shop.scroll.desc': 'Teleport zurück zur Stadt',
