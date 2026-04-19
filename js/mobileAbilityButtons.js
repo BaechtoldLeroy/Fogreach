@@ -15,17 +15,44 @@
 // color which is enough visual differentiation at a glance.
 
 (function () {
-  // Key → { glyph (emoji/unicode), label (1-3 chars), globalCooldownTextName }
-  const DECORATION = {
-    attack: { glyph: '\u2694\uFE0F',       label: 'Atk',  cd: 'attackBtnCooldownText'    },
-    spin:   { glyph: '\uD83C\uDF00',       label: 'Spin', cd: 'spinBtnCooldownText'       },
-    charge: { glyph: '\u26A1',             label: 'Ch',   cd: 'chargeSlashCooldownText'   },
-    dash:   { glyph: '\uD83D\uDCA8',       label: 'Ds',   cd: 'dashSlashCooldownText'     },
-    dagger: { glyph: '\uD83D\uDDE1\uFE0F', label: 'Dg',   cd: 'daggerThrowCooldownText'   },
-    shield: { glyph: '\uD83D\uDEE1\uFE0F', label: 'Sh',   cd: 'shieldBashCooldownText'    },
-    potion:   { glyph: '\uD83E\uDDEA', label: 'x0',     cd: null, dynamicLabel: true },
-    interact: { glyph: '\u270B',       label: 'Aktion', cd: null, tapFeedback: true },
+  if (window.i18n) {
+    window.i18n.register('de', {
+      'mobile.btn.attack': 'Angr',
+      'mobile.btn.spin': 'Wirbel',
+      'mobile.btn.charge': 'Ladung',
+      'mobile.btn.dash': 'Sturm',
+      'mobile.btn.dagger': 'Dolch',
+      'mobile.btn.shield': 'Schild',
+      'mobile.btn.interact': 'Aktion'
+    });
+    window.i18n.register('en', {
+      'mobile.btn.attack': 'Atk',
+      'mobile.btn.spin': 'Spin',
+      'mobile.btn.charge': 'Charge',
+      'mobile.btn.dash': 'Dash',
+      'mobile.btn.dagger': 'Dagger',
+      'mobile.btn.shield': 'Shield',
+      'mobile.btn.interact': 'Action'
+    });
+  }
+  const T = (key, fallback) => {
+    if (!window.i18n) return fallback;
+    const v = window.i18n.t(key);
+    return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : fallback;
   };
+
+  // Key → { glyph (emoji/unicode), labelKey (i18n) | label (literal), cd }
+  const DECORATION = {
+    attack: { glyph: '\u2694\uFE0F',       labelKey: 'mobile.btn.attack',   cd: 'attackBtnCooldownText'   },
+    spin:   { glyph: '\uD83C\uDF00',       labelKey: 'mobile.btn.spin',     cd: 'spinBtnCooldownText'     },
+    charge: { glyph: '\u26A1',             labelKey: 'mobile.btn.charge',   cd: 'chargeSlashCooldownText' },
+    dash:   { glyph: '\uD83D\uDCA8',       labelKey: 'mobile.btn.dash',     cd: 'dashSlashCooldownText'   },
+    dagger: { glyph: '\uD83D\uDDE1\uFE0F', labelKey: 'mobile.btn.dagger',   cd: 'daggerThrowCooldownText' },
+    shield: { glyph: '\uD83D\uDEE1\uFE0F', labelKey: 'mobile.btn.shield',   cd: 'shieldBashCooldownText'  },
+    potion:   { glyph: '\uD83E\uDDEA', label: 'x0',                        cd: null, dynamicLabel: true },
+    interact: { glyph: '\u270B',       labelKey: 'mobile.btn.interact',    cd: null, tapFeedback: true  }
+  };
+  const _initialLabel = (dec) => dec.labelKey ? T(dec.labelKey, dec.label || '') : (dec.label || '');
 
   // Per-scene state so we can clean up listeners on re-entry.
   const sceneState = new WeakMap();
@@ -67,7 +94,7 @@
     }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1201);
 
     // Label underneath, inside the button.
-    const label = scene.add.text(0, 0, dec.label, {
+    const label = scene.add.text(0, 0, _initialLabel(dec), {
       fontSize: Math.max(9, Math.round(radius * 0.32)) + 'px',
       fontStyle: 'bold',
       color: '#ffffff',
@@ -104,6 +131,8 @@
       circle,
       icon,
       label,
+      labelKey: dec.labelKey || null,   // for i18n re-render on language change
+      labelLiteral: dec.label || null,  // fallback when no labelKey + dynamic labels
       cdText,
       cdOverlay,
       originalColor: circle.fillColor,
@@ -236,10 +265,26 @@
     const onChanged = () => decorations.forEach((d) => d.place());
     window.addEventListener('demonfall:mobile-layout-changed', onChanged);
 
+    // Refresh i18n labels when the active language changes (the potion
+    // 'x{count}' label is dynamic and skipped — its polling tick rewrites
+    // it each frame regardless of language).
+    const refreshLabels = () => {
+      decorations.forEach((d) => {
+        if (d.label && d.labelKey) {
+          d.label.setText(T(d.labelKey, d.labelLiteral || ''));
+        }
+      });
+    };
+    let unsubI18n = null;
+    if (window.i18n && typeof window.i18n.onChange === 'function') {
+      unsubI18n = window.i18n.onChange(refreshLabels);
+    }
+
     // Clean up on scene shutdown
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       scene.events.off('update', poll);
       window.removeEventListener('demonfall:mobile-layout-changed', onChanged);
+      if (typeof unsubI18n === 'function') { try { unsubI18n(); } catch (e) {} }
       decorations.forEach((d) => {
         d.icon && d.icon.destroy();
         d.label && d.label.destroy();
@@ -248,7 +293,7 @@
       sceneState.delete(scene);
     });
 
-    sceneState.set(scene, { decorations, poll, onChanged });
+    sceneState.set(scene, { decorations, poll, onChanged, unsubI18n });
   }
 
   window.addEventListener('demonfall:mobile-layout-ready', onLayoutReady);
