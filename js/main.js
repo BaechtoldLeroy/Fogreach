@@ -1,4 +1,73 @@
 // ==================================================
+// 0) i18n REGISTRATIONS (HUD / Death / Potion / Gold)
+// ==================================================
+if (window.i18n) {
+  window.i18n.register('de', {
+    'hud.health': 'Gesundheit: {cur}/{max}',
+    'hud.xp': 'Level: {level}  XP: {cur}/{need}',
+    'hud.stats': 'Schaden: {dmg}  Speed: {spd}  Reichweite: {rng}\nRüstung: {arm}%  Krit: {crit}%',
+    'hud.stats.initial': 'Schaden: 1  Speed: 1.0  Reichweite: 100\nRüstung: 0%  Krit: 5%',
+    'hud.gold': 'Gold: {amount}',
+    'hud.gold_popup': '+{amount} Gold',
+    'hud.level_up': 'LEVEL UP!',
+    'hud.dead': 'DU BIST GESTORBEN\nZurück zur Stadt...',
+    'hud.default_player_name': 'Spieler',
+    'hud.slot.attack': 'Angriff',
+    'hud.slot.empty': 'Leer',
+    'hud.potion.empty_label': 'Kein Trank',
+    'hud.potion.ready': 'Bereit',
+    'hud.potion.no_potion': 'Leer',
+    'hud.potion.name.t1': 'Heiltrank (Klein)',
+    'hud.potion.name.t2': 'Heiltrank',
+    'hud.potion.name.t3': 'Heiltrank (Gross)',
+    'hud.potion.name.t4': 'Heiltrank (Super)',
+    'hud.potion.name.default': 'Trank',
+    'hud.ability.ready': 'Bereit'
+  });
+  window.i18n.register('en', {
+    'hud.health': 'Health: {cur}/{max}',
+    'hud.xp': 'Level: {level}  XP: {cur}/{need}',
+    'hud.stats': 'Damage: {dmg}  Speed: {spd}  Range: {rng}\nArmor: {arm}%  Crit: {crit}%',
+    'hud.stats.initial': 'Damage: 1  Speed: 1.0  Range: 100\nArmor: 0%  Crit: 5%',
+    'hud.gold': 'Gold: {amount}',
+    'hud.gold_popup': '+{amount} gold',
+    'hud.level_up': 'LEVEL UP!',
+    'hud.dead': 'YOU ARE DEAD\nReturning to town...',
+    'hud.default_player_name': 'Player',
+    'hud.slot.attack': 'Attack',
+    'hud.slot.empty': 'Empty',
+    'hud.potion.empty_label': 'No Potion',
+    'hud.potion.ready': 'Ready',
+    'hud.potion.no_potion': 'Empty',
+    'hud.potion.name.t1': 'Healing Potion (S)',
+    'hud.potion.name.t2': 'Healing Potion',
+    'hud.potion.name.t3': 'Healing Potion (L)',
+    'hud.potion.name.t4': 'Healing Potion (XL)',
+    'hud.potion.name.default': 'Potion',
+    'hud.ability.ready': 'Ready'
+  });
+}
+const _HUD_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
+// Re-render living HUD elements on language change. Registered once per
+// page-lifetime; safe because updateHUD/_refreshHUD/_refreshPotionTile are
+// guarded with typeof-checks (they may not exist before initUI runs).
+if (window.i18n && !window._i18nHudWired) {
+  window._i18nHudWired = true;
+  window.i18n.onChange(() => {
+    if (typeof updateHUD === 'function') {
+      try { updateHUD(); } catch (e) { /* ignore */ }
+    }
+    if (typeof window._refreshHUD === 'function') {
+      try { window._refreshHUD(); } catch (e) { /* ignore */ }
+    }
+    if (typeof window._refreshPotionTile === 'function') {
+      try { window._refreshPotionTile(); } catch (e) { /* ignore */ }
+    }
+  });
+}
+
+// ==================================================
 // 1) CONFIG & STARTUP
 // ==================================================
 const GameScene = {
@@ -437,7 +506,7 @@ function updateAbilityStatus(key, info = {}) {
   } else if (!ready && remainingMs > 0) {
     statusText = `${(remainingMs / 1000).toFixed(1)}s`;
   } else {
-    statusText = 'Ready';
+    statusText = _HUD_T('hud.ability.ready');
   }
 
   if (display.statusText) {
@@ -520,7 +589,7 @@ function setPlayerHealth(value, updateUi = true) {
   if (updateUi && typeof updateHUD === 'function') {
     updateHUD();
   } else if (updateUi && playerHealthText?.setText) {
-    playerHealthText.setText(`Health: ${playerHealth}/${playerMaxHealth}`);
+    playerHealthText.setText(_HUD_T('hud.health', { cur: playerHealth, max: playerMaxHealth }));
   }
   return playerHealth;
 }
@@ -958,18 +1027,19 @@ function create() {
 
   // UI nach Save/Enter aktualisieren
   if (typeof updateHUD === 'function') updateHUD();
-  else if (playerHealthText) playerHealthText.setText(`Health: ${playerHealth}/${playerMaxHealth}`);
+  else if (playerHealthText) playerHealthText.setText(_HUD_T('hud.health', { cur: playerHealth, max: playerMaxHealth }));
   if (playerXPText) {
     const need = (typeof getNeededXP === 'function') ? getNeededXP(playerLevel) : (2 * playerLevel);
-    playerXPText.setText('Level: ' + playerLevel + ' XP: ' + playerXP + '/' + need);
+    playerXPText.setText(_HUD_T('hud.xp', { level: playerLevel, cur: playerXP, need: need }));
   }
   if (weaponStatsText) {
-    weaponStatsText.setText(
-      'Damage: ' + weaponDamage +
-      '  Speed: ' + weaponAttackSpeed.toFixed(2) +
-      '  Range: ' + attackRange +
-      '\nArmor: ' + (playerArmor * 100).toFixed(0) + '%  Crit: ' + (playerCritChance * 100).toFixed(1) + '%'
-    );
+    weaponStatsText.setText(_HUD_T('hud.stats', {
+      dmg: weaponDamage,
+      spd: weaponAttackSpeed.toFixed(2),
+      rng: attackRange,
+      arm: (playerArmor * 100).toFixed(0),
+      crit: (playerCritChance * 100).toFixed(1)
+    }));
   }
 }
 
@@ -1460,13 +1530,13 @@ function handlePlayerDeath(scene) {
   }
 
   if (gameOverText) {
-    gameOverText.setText('DU BIST GESTORBEN\nZurück zur Stadt...');
+    gameOverText.setText(_HUD_T('hud.dead'));
     gameOverText.setVisible(true);
   }
 
   if (scene && !scene.namePrompted) {
     scene.namePrompted = true;
-    let name = 'Spieler';
+    let name = _HUD_T('hud.default_player_name');
     try {
       const response = window.prompt('Du bist gestorben! Name für die Rangliste:', name);
       if (typeof response === 'string' && response.trim().length) {
@@ -1554,8 +1624,8 @@ function handlePlayerDeath(scene) {
   if (typeof updateHUD === 'function') {
     updateHUD();
   } else {
-    if (playerHealthText) playerHealthText.setText(`Health: ${playerHealth}/${playerMaxHealth}`);
-    if (playerXPText) playerXPText.setText(`Level: ${playerLevel}  XP: ${playerXP}/${neededXP}`);
+    if (playerHealthText) playerHealthText.setText(_HUD_T('hud.health', { cur: playerHealth, max: playerMaxHealth }));
+    if (playerXPText) playerXPText.setText(_HUD_T('hud.xp', { level: playerLevel, cur: playerXP, need: neededXP }));
   }
 
   if (typeof refreshInventoryUI === 'function') {
@@ -1594,7 +1664,7 @@ function handlePlayerDeath(scene) {
 function initUI() {
   // HUD text style with stroke for readability on all backgrounds
   const hudStyle = { fontFamily: 'monospace', fontSize: '16px', fill: '#fff', stroke: '#000', strokeThickness: 3 };
-  weaponStatsText = this.add.text(16, 12, 'Damage: 1  Speed: 1.0  Range: 100\nArmor: 0%  Crit: 5%', hudStyle)
+  weaponStatsText = this.add.text(16, 12, _HUD_T('hud.stats.initial'), hudStyle)
     .setDepth(1001).setScrollFactor(0)
     .setLineSpacing(4);
   playerHealthText = this.add.text(16, 56, '', Object.assign({}, hudStyle, { fill: '#fff' }))
@@ -1605,12 +1675,12 @@ function initUI() {
     .setDepth(1001).setScrollFactor(0);
   window._roomCounterText = this.add.text(16, 122, '', Object.assign({}, hudStyle, { fill: '#aabbff' }))
     .setDepth(1001).setScrollFactor(0);
-  window._goldText = this.add.text(16, 144, 'Gold: 0', Object.assign({}, hudStyle, { fill: '#ffd166' }))
+  window._goldText = this.add.text(16, 144, _HUD_T('hud.gold', { amount: 0 }), Object.assign({}, hudStyle, { fill: '#ffd166' }))
     .setDepth(1001).setScrollFactor(0);
   window._refreshHUD = function () {
     if (window._goldText && typeof window._goldText.setText === 'function') {
       const gold = (window.materialCounts && window.materialCounts.GOLD) || 0;
-      window._goldText.setText('Gold: ' + gold);
+      window._goldText.setText(_HUD_T('hud.gold', { amount: gold }));
     }
   };
   window._refreshHUD();
@@ -1620,10 +1690,10 @@ function initUI() {
   window._potionCdGfx = null;
   window._potionCdLabel = null;
   window._potionCdPos = null;
-  gameOverText = this.add.text(400, 300, 'DU BIST GESTORBEN\nZurück zur Stadt...', { fontSize: '40px', fill: '#f00', align: 'center' })
+  gameOverText = this.add.text(400, 300, _HUD_T('hud.dead'), { fontSize: '40px', fill: '#f00', align: 'center' })
     .setDepth(1001).setScrollFactor(0)
     .setOrigin(0.5).setVisible(false);
-  levelUpText = this.add.text(400, 150, 'LEVEL UP!', { fontSize: '48px', fill: '#0f0' })
+  levelUpText = this.add.text(400, 150, _HUD_T('hud.level_up'), { fontSize: '48px', fill: '#0f0' })
     .setDepth(1001).setScrollFactor(0)
     .setOrigin(0.5).setVisible(false);
 
@@ -1708,7 +1778,7 @@ function initUI() {
         .setOrigin(0, 0)
         .setStrokeStyle(1, color, 0.6);
       keyText.setPosition(badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
-      const statusText = this.add.text(tilePadding + ICON_R * 2 + 8, tileHeight - 6, 'Ready', {
+      const statusText = this.add.text(tilePadding + ICON_R * 2 + 8, tileHeight - 6, _HUD_T('hud.ability.ready'), {
         fontSize: '11px',
         fill: '#78f3c7'
       }).setOrigin(0, 1);
@@ -1733,21 +1803,21 @@ function initUI() {
     };
 
     // Fixed attack tile — uses a sword emoji icon since there's no entry in ABILITY_DEFS
-    const attackTile = buildTile('Attack', 'SPACE', ABILITY_STATUS_STYLES.attack);
+    const attackTile = buildTile(_HUD_T('hud.slot.attack'), 'SPACE', ABILITY_STATUS_STYLES.attack);
     if (attackTile.iconText) attackTile.iconText.setText('\u2694'); // ⚔
     abilityStatusDisplay.attack = attackTile;
 
     // WP04+: Potion tile (always visible, F key). Shows best inventory potion
     // + stack count, with a 2s cooldown radial driven by LootSystem.
-    const potionTile = buildTile('Kein Trank', 'F', 0x44ff66);
+    const potionTile = buildTile(_HUD_T('hud.potion.empty_label'), 'F', 0x44ff66);
     if (potionTile.iconText) potionTile.iconText.setText('\u269A'); // ⚚ caduceus
-    if (potionTile.statusText) potionTile.statusText.setText('Leer');
+    if (potionTile.statusText) potionTile.statusText.setText(_HUD_T('hud.potion.no_potion'));
     potionTile.durationMs = 2000; // global potion cooldown
-    const POTION_NAMES = {
-      1: 'Heiltrank (Klein)',
-      2: 'Heiltrank',
-      3: 'Heiltrank (Gross)',
-      4: 'Heiltrank (Super)'
+    const POTION_NAME_KEYS = {
+      1: 'hud.potion.name.t1',
+      2: 'hud.potion.name.t2',
+      3: 'hud.potion.name.t3',
+      4: 'hud.potion.name.t4'
     };
     const refreshPotionTile = () => {
       if (!window.LootSystem) return;
@@ -1767,16 +1837,17 @@ function initUI() {
       const remainMs = (typeof window.LootSystem._getPotionCooldownRemaining === 'function')
         ? window.LootSystem._getPotionCooldownRemaining() : 0;
       if (bestTier > 0) {
-        potionTile.nameText.setText((POTION_NAMES[bestTier] || 'Trank') + ' x' + bestStack);
+        const potName = _HUD_T(POTION_NAME_KEYS[bestTier] || 'hud.potion.name.default');
+        potionTile.nameText.setText(potName + ' x' + bestStack);
         if (potionTile.statusText) {
-          potionTile.statusText.setText(onCd ? (remainMs / 1000).toFixed(1) + 's' : 'Bereit');
+          potionTile.statusText.setText(onCd ? (remainMs / 1000).toFixed(1) + 's' : _HUD_T('hud.potion.ready'));
           potionTile.statusText.setColor(onCd ? '#ffd966' : '#78f3c7');
         }
         if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, onCd ? 0xffd966 : 0x44ff66, 0.85);
       } else {
-        potionTile.nameText.setText('Kein Trank');
+        potionTile.nameText.setText(_HUD_T('hud.potion.empty_label'));
         if (potionTile.statusText) {
-          potionTile.statusText.setText('Leer');
+          potionTile.statusText.setText(_HUD_T('hud.potion.no_potion'));
           potionTile.statusText.setColor('#888888');
         }
         if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, 0x555555, 0.5);
@@ -1808,10 +1879,10 @@ function initUI() {
 
     // Four slot tiles (Q/W/E/R) — names reassigned dynamically by loadout
     const slotTiles = {
-      slot1: buildTile('Empty', 'Q', 0x888888),
-      slot2: buildTile('Empty', 'W', 0x888888),
-      slot3: buildTile('Empty', 'E', 0x888888),
-      slot4: buildTile('Empty', 'R', 0x888888)
+      slot1: buildTile(_HUD_T('hud.slot.empty'), 'Q', 0x888888),
+      slot2: buildTile(_HUD_T('hud.slot.empty'), 'W', 0x888888),
+      slot3: buildTile(_HUD_T('hud.slot.empty'), 'E', 0x888888),
+      slot4: buildTile(_HUD_T('hud.slot.empty'), 'R', 0x888888)
     };
 
     const ABILITY_DEFS = window.AbilitySystem?.ABILITY_DEFS || {};
@@ -1866,7 +1937,7 @@ function initUI() {
             }
           }
         } else {
-          tile.nameText.setText('Empty');
+          tile.nameText.setText(_HUD_T('hud.slot.empty'));
           tile.color = 0x555555;
           tile.keyBadge.setFillStyle(0x555555, 0.12);
           tile.keyBadge.setStrokeStyle(1, 0x555555, 0.4);
@@ -2144,7 +2215,7 @@ function initializeGameObjects() {
     }
     // Floating "+N Gold" pickup text — fades upward over 800ms
     try {
-      const popup = this.add.text(pile.x, pile.y - 12, '+' + amount + ' Gold', {
+      const popup = this.add.text(pile.x, pile.y - 12, _HUD_T('hud.gold_popup', { amount: amount }), {
         fontFamily: 'monospace', fontSize: '13px', color: '#ffd24a',
         stroke: '#000000', strokeThickness: 3
       }).setOrigin(0.5, 1).setDepth(120);
