@@ -27,7 +27,18 @@ if (window.i18n) {
     'hub.wave_select.info': 'Links/Rechts Level ändern - Hoch/Runter Multiplikator\nEnter/Space starten - ESC zurück - B Hintergrund',
     'hub.wave_select.start': 'Starten',
     'hub.wave_select.cancel': 'Abbrechen',
-    'hub.skills.title': 'Fertigkeiten'
+    'hub.skills.title': 'Fertigkeiten',
+    'hub.skills.materials': '{count} Eisenbrocken',
+    'hub.skills.cost': 'Kosten: {cost} Eisenbrocken',
+    'hub.skills.type_active': 'Typ: Aktive Fähigkeit',
+    'hub.skills.requires': 'Benötigt:',
+    'hub.skills.respec': '[ Zurücksetzen ({cost} Eisenbrocken) ]',
+    'hub.skills.close': '[ Schließen ]',
+    'hub.skills.learn': '[ Skills lernen ] (K)',
+    'hub.skills.shop': '[ Schwarzmarkt ] (M)',
+    'hub.dialog.hint.next': 'Leer / Enter: weiter',
+    'hub.dialog.hint.choose': '1-{count}: wählen',
+    'hub.dialog.hint.close': 'ESC: schliessen'
   });
   window.i18n.register('en', {
     'hub.dialog.greeting': 'Talk',
@@ -54,7 +65,18 @@ if (window.i18n) {
     'hub.wave_select.info': 'Left/Right change level - Up/Down multiplier\nEnter/Space start - ESC back - B background',
     'hub.wave_select.start': 'Start',
     'hub.wave_select.cancel': 'Cancel',
-    'hub.skills.title': 'Skills'
+    'hub.skills.title': 'Skills',
+    'hub.skills.materials': '{count} Iron Chunks',
+    'hub.skills.cost': 'Cost: {cost} Iron Chunks',
+    'hub.skills.type_active': 'Type: Active Ability',
+    'hub.skills.requires': 'Requires:',
+    'hub.skills.respec': '[ Respec ({cost} Iron Chunks) ]',
+    'hub.skills.close': '[ Close ]',
+    'hub.skills.learn': '[ Learn Skills ] (K)',
+    'hub.skills.shop': '[ Black Market ] (M)',
+    'hub.dialog.hint.next': 'Space / Enter: next',
+    'hub.dialog.hint.choose': '1-{count}: choose',
+    'hub.dialog.hint.close': 'ESC: close'
   });
 }
 const _HUB_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
@@ -942,7 +964,7 @@ class HubSceneV2 extends Phaser.Scene {
     // Mara skill tree button (keep existing behavior)
     if (isMaraFlavor) {
       const maraBtnY = bodyText.y + bodyHeight + 16;
-      const skillsBtn = this.add.text(0, maraBtnY, '[ Skills lernen ] (K)', {
+      const skillsBtn = this.add.text(0, maraBtnY, _HUB_T('hub.skills.learn'), {
         fontFamily: 'monospace',
         fontSize: 14,
         color: '#ffffff',
@@ -962,7 +984,7 @@ class HubSceneV2 extends Phaser.Scene {
       container.add(skillsBtn);
 
       // WP06: Schwarzmarkt (shop) button — opens the Mara ShopScene overlay.
-      const shopBtn = this.add.text(0, maraBtnY + 38, '[ Schwarzmarkt ] (M)', {
+      const shopBtn = this.add.text(0, maraBtnY + 38, _HUB_T('hub.skills.shop'), {
         fontFamily: 'monospace',
         fontSize: 14,
         color: '#ffffff',
@@ -985,12 +1007,12 @@ class HubSceneV2 extends Phaser.Scene {
     // Hint text
     const hintParts = [];
     if (hasNextPage) {
-      hintParts.push('Leer / Enter: weiter');
+      hintParts.push(_HUB_T('hub.dialog.hint.next'));
     }
     if (hasChoices) {
-      hintParts.push('1-' + page.choices.length + ': waehlen');
+      hintParts.push(_HUB_T('hub.dialog.hint.choose', { count: page.choices.length }));
     }
-    hintParts.push('ESC: schliessen');
+    hintParts.push(_HUB_T('hub.dialog.hint.close'));
 
     const hintText = this.add.text(0, hintY, hintParts.join('  |  '), {
       fontFamily: 'monospace',
@@ -1573,7 +1595,7 @@ class HubSceneV2 extends Phaser.Scene {
     container.add(titleText);
 
     const currentMaterials = window.getMaterialCount('MAT');
-    const matsText = this.add.text(panelW / 2 - 14, -panelH / 2 + 10, currentMaterials + ' Eisenbrocken', {
+    const matsText = this.add.text(panelW / 2 - 14, -panelH / 2 + 10, _HUB_T('hub.skills.materials', { count: currentMaterials }), {
       fontFamily: 'monospace', fontSize: 12, color: '#8cb8ff', resolution: 2
     }).setOrigin(1, 0);
     container.add(matsText);
@@ -1710,16 +1732,16 @@ class HubSceneV2 extends Phaser.Scene {
               skill.name,
               skill.description,
               '',
-              `Kosten: ${skill.cost} Eisenbrocken`
+              _HUB_T('hub.skills.cost', { cost: skill.cost })
             ];
 
             if (isActive) {
-              tooltipLines.push('Typ: Aktive Fähigkeit');
+              tooltipLines.push(_HUB_T('hub.skills.type_active'));
             }
 
             if (skill.requires && skill.requires.length > 0) {
               tooltipLines.push('');
-              tooltipLines.push('Benötigt:');
+              tooltipLines.push(_HUB_T('hub.skills.requires'));
               skill.requires.forEach(reqId => {
                 const reqSkill = window.getSkillById(reqId);
                 const reqName = reqSkill ? reqSkill.name : reqId;
@@ -1827,7 +1849,7 @@ class HubSceneV2 extends Phaser.Scene {
     if (totalSpent > 0) {
       const respecCost = Math.ceil(totalSpent * 0.5);
       const respecBtn = this.add.text(-panelW / 2 + 20, panelH / 2 - 30,
-        `[ Zurücksetzen (${respecCost} Eisenbrocken) ]`, {
+        _HUB_T('hub.skills.respec', { cost: respecCost }), {
           fontFamily: 'monospace',
           fontSize: 14,
           color: '#ff8888',
@@ -1858,7 +1880,7 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     // Close button
-    const closeBtn = this.add.text(0, panelH / 2 - 30, '[ Schließen ]', {
+    const closeBtn = this.add.text(0, panelH / 2 - 30, _HUB_T('hub.skills.close'), {
       fontFamily: 'monospace',
       fontSize: 18,
       color: '#ffffff',

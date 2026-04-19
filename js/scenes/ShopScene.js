@@ -15,6 +15,60 @@
 
   if (typeof Phaser === 'undefined') return;
 
+  if (window.i18n) {
+    window.i18n.register('de', {
+      'shop.title': 'Schwarzmarkt — Mara',
+      'shop.gold_counter': 'Gold: {amount}',
+      'shop.close': 'Schliessen [ESC]',
+      'shop.tab.items': 'Items',
+      'shop.tab.potions': 'Tränke',
+      'shop.tab.reroll': 'Reroll',
+      'shop.btn.buy': _SHOP_T('shop.btn.buy'),
+      'shop.empty.stock': 'Lager ist leer.',
+      'shop.scroll.name': 'Portalrolle ({count})',
+      'shop.scroll.desc': 'Teleport zurück zur Stadt',
+      'shop.toast.scroll_bought': 'Portalrolle gekauft',
+      'shop.potion.heal_pct': '+{pct}% MaxHP über 3s',
+      'shop.toast.not_enough_gold': 'Nicht genug Gold',
+      'shop.toast.inventory_full': 'Inventar voll',
+      'shop.toast.bought': 'Gekauft: {name}',
+      'shop.reroll.empty': 'Keine reroll-baren Items im Inventar.',
+      'shop.reroll.header_select': 'Wähle ein Item:',
+      'shop.reroll.header_selected': 'Ausgewähltes Item:',
+      'shop.reroll.cost': 'Reroll-Kosten: {cost} Gold',
+      'shop.reroll.btn': 'Reroll',
+      'shop.reroll.cancel': 'Anderes Item',
+      'shop.toast.reroll_unavailable': 'Reroll nicht verfügbar',
+      'shop.toast.reroll_success': 'Reroll erfolgreich!'
+    });
+    window.i18n.register('en', {
+      'shop.title': 'Black Market — Mara',
+      'shop.gold_counter': 'Gold: {amount}',
+      'shop.close': 'Close [ESC]',
+      'shop.tab.items': 'Items',
+      'shop.tab.potions': 'Potions',
+      'shop.tab.reroll': 'Reroll',
+      'shop.btn.buy': 'Buy',
+      'shop.empty.stock': 'Out of stock.',
+      'shop.scroll.name': 'Portal Scroll ({count})',
+      'shop.scroll.desc': 'Teleport back to the city',
+      'shop.toast.scroll_bought': 'Portal scroll bought',
+      'shop.potion.heal_pct': '+{pct}% MaxHP over 3s',
+      'shop.toast.not_enough_gold': 'Not enough gold',
+      'shop.toast.inventory_full': 'Inventory full',
+      'shop.toast.bought': 'Bought: {name}',
+      'shop.reroll.empty': 'No re-rollable items in inventory.',
+      'shop.reroll.header_select': 'Choose an item:',
+      'shop.reroll.header_selected': 'Selected item:',
+      'shop.reroll.cost': 'Reroll cost: {cost} gold',
+      'shop.reroll.btn': 'Reroll',
+      'shop.reroll.cancel': 'Other item',
+      'shop.toast.reroll_unavailable': 'Reroll unavailable',
+      'shop.toast.reroll_success': 'Reroll successful!'
+    });
+  }
+  const _SHOP_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
   const TIER_COLORS = ['#cccccc', '#88aaff', '#ffdd44', '#ff8844'];
 
   class ShopScene extends Phaser.Scene {
@@ -61,12 +115,12 @@
         .strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
 
       // Title
-      this.add.text(px, py - panelH / 2 + 14, 'Schwarzmarkt — Mara', {
+      this.add.text(px, py - panelH / 2 + 14, _SHOP_T('shop.title'), {
         fontFamily: 'serif', fontSize: '22px', color: '#ffd166', fontStyle: 'bold'
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
 
       // Gold counter
-      this.goldText = this.add.text(px - panelW / 2 + 16, py + panelH / 2 - 26, 'Gold: 0', {
+      this.goldText = this.add.text(px - panelW / 2 + 16, py + panelH / 2 - 26, _SHOP_T('shop.gold_counter', { amount: 0 }), {
         fontFamily: 'monospace', fontSize: '14px', color: '#ffd166'
       }).setScrollFactor(0).setDepth(2002);
       this._refreshGold();
@@ -75,7 +129,7 @@
       const closeBg = this.add.rectangle(px + panelW / 2 - 110, py + panelH / 2 - 22, 200, 28, 0x3a3a3a)
         .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(2002)
         .setInteractive({ useHandCursor: true });
-      this.add.text(px + panelW / 2 - 110, py + panelH / 2 - 22, 'Schliessen [ESC]', {
+      this.add.text(px + panelW / 2 - 110, py + panelH / 2 - 22, _SHOP_T('shop.close'), {
         fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       closeBg.on('pointerdown', () => this._close());
@@ -83,7 +137,11 @@
       // Tab buttons (dungeon merchant has no reroll)
       this._tabButtons = {};
       const tabs = this.isDungeonMerchant ? ['items', 'potions'] : ['items', 'potions', 'reroll'];
-      const tabLabels = { items: 'Items', potions: 'Traenke', reroll: 'Reroll' };
+      const tabLabels = {
+        items: _SHOP_T('shop.tab.items'),
+        potions: _SHOP_T('shop.tab.potions'),
+        reroll: _SHOP_T('shop.tab.reroll')
+      };
       tabs.forEach((t, i) => {
         const tx = px - panelW / 2 + 70 + i * 120;
         const ty = py - panelH / 2 + 58;
@@ -116,7 +174,7 @@
 
     _refreshGold() {
       const gold = (window.LootSystem && window.LootSystem.getGold) ? window.LootSystem.getGold() : 0;
-      if (this.goldText) this.goldText.setText('Gold: ' + gold);
+      if (this.goldText) this.goldText.setText(_SHOP_T('shop.gold_counter', { amount: gold }));
     }
 
     _close() {
@@ -155,7 +213,7 @@
       const stock = (this.shopState && this.shopState.itemStock) || [];
 
       if (stock.length === 0) {
-        const t = this.add.text(px, py, 'Lager ist leer.', {
+        const t = this.add.text(px, py, _SHOP_T('shop.empty.stock'), {
           fontFamily: 'monospace', fontSize: '13px', color: '#888888'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(t);
@@ -175,9 +233,13 @@
         this.tabBody.push(nameText);
 
         if (item.affixes && item.affixes.length > 0 && window.LootSystem && window.LootSystem.AFFIX_DEFS) {
+          const getTip = window.LootSystem.getAffixTooltipText;
           const summary = item.affixes.map(a => {
             const def = window.LootSystem.AFFIX_DEFS.find(d => d.id === a.defId);
-            return def ? def.tooltipText.replace('{value}', a.value) : '';
+            if (!def) return '';
+            return (typeof getTip === 'function')
+              ? getTip(def, a.value)
+              : (def.tooltipText || '').replace('{value}', a.value);
           }).filter(Boolean).join('  ');
           const affixText = this.add.text(px - panelW / 2 + 24, ry + 22, summary, {
             fontFamily: 'monospace', fontSize: '10px', color: '#888888',
@@ -195,7 +257,7 @@
         const buyBg = this.add.rectangle(px + panelW / 2 - 50, ry + rowH / 2, 60, 24, 0x3a3a3a)
           .setStrokeStyle(1, 0xd4a543).setScrollFactor(0).setDepth(2003)
           .setInteractive({ useHandCursor: true });
-        const buyText = this.add.text(px + panelW / 2 - 50, ry + rowH / 2, 'Kaufen', {
+        const buyText = this.add.text(px + panelW / 2 - 50, ry + rowH / 2, _SHOP_T('shop.btn.buy'), {
           fontFamily: 'monospace', fontSize: '11px', color: '#f1e9d8'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
         this.tabBody.push(buyBg);
@@ -215,7 +277,7 @@
 
     _tryBuyItem(stockIdx, price) {
       if (!window.LootSystem || !window.LootSystem.spendGold(price)) {
-        this._showToast('Nicht genug Gold');
+        this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
         return;
       }
       const item = this.shopState.itemStock[stockIdx];
@@ -223,7 +285,7 @@
       if (Array.isArray(window.inventory)) {
         const slot = window.inventory.findIndex(s => !s);
         if (slot < 0) {
-          this._showToast('Inventar voll');
+          this._showToast(_SHOP_T('shop.toast.inventory_full'));
           window.LootSystem.grantGold(price); // refund
           return;
         }
@@ -232,7 +294,7 @@
       this.shopState.itemStock.splice(stockIdx, 1);
       this._refreshGold();
       this._renderTab('items');
-      this._showToast('Gekauft: ' + (item.displayName || item._baseName || 'Item'));
+      this._showToast(_SHOP_T('shop.toast.bought', { name: item.displayName || item._baseName || 'Item' }));
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }
@@ -255,11 +317,11 @@
       this.tabBody.push(scrollRowBg);
       const scrollCount = (window.materialCounts && typeof window.materialCounts.PORTAL_SCROLL === 'number')
         ? window.materialCounts.PORTAL_SCROLL : 0;
-      const scrollNameText = this.add.text(px - panelW / 2 + 24, scrollY + 10, 'Portalrolle (' + scrollCount + ')', {
+      const scrollNameText = this.add.text(px - panelW / 2 + 24, scrollY + 10, _SHOP_T('shop.scroll.name', { count: scrollCount }), {
         fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
       }).setScrollFactor(0).setDepth(2003);
       this.tabBody.push(scrollNameText);
-      const scrollDesc = this.add.text(px - panelW / 2 + 24, scrollY + 28, 'Teleport zurueck zur Stadt', {
+      const scrollDesc = this.add.text(px - panelW / 2 + 24, scrollY + 28, _SHOP_T('shop.scroll.desc'), {
         fontFamily: 'monospace', fontSize: '10px', color: '#aaddff'
       }).setScrollFactor(0).setDepth(2003);
       this.tabBody.push(scrollDesc);
@@ -270,14 +332,14 @@
       const scrollBuyBg = this.add.rectangle(px + panelW / 2 - 60, scrollY + rowH / 2, 70, 26, 0x3a3a3a)
         .setStrokeStyle(1, 0xd4a543).setScrollFactor(0).setDepth(2003)
         .setInteractive({ useHandCursor: true });
-      const scrollBuyText = this.add.text(px + panelW / 2 - 60, scrollY + rowH / 2, 'Kaufen', {
+      const scrollBuyText = this.add.text(px + panelW / 2 - 60, scrollY + rowH / 2, _SHOP_T('shop.btn.buy'), {
         fontFamily: 'monospace', fontSize: '11px', color: '#f1e9d8'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
       this.tabBody.push(scrollBuyBg);
       this.tabBody.push(scrollBuyText);
       scrollBuyBg.on('pointerdown', () => {
         if (!window.LootSystem || !window.LootSystem.spendGold(scrollPrice)) {
-          this._showToast('Nicht genug Gold');
+          this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
           return;
         }
         if (!window.materialCounts || typeof window.materialCounts !== 'object') window.materialCounts = {};
@@ -287,9 +349,9 @@
         if (typeof window.changeMaterialCount === 'function') {
           // changeMaterialCount adds delta, but we already incremented, so skip
         }
-        scrollNameText.setText('Portalrolle (' + window.materialCounts.PORTAL_SCROLL + ')');
+        scrollNameText.setText(_SHOP_T('shop.scroll.name', { count: window.materialCounts.PORTAL_SCROLL }));
         this._refreshGold();
-        this._showToast('Portalrolle gekauft');
+        this._showToast(_SHOP_T('shop.toast.scroll_bought'));
       });
 
       // Offset potion rows by 1 to make room for scroll row
@@ -305,7 +367,7 @@
         this.tabBody.push(nameText);
 
         const healPct = Math.round((def.healPercent || 0) * 100);
-        const healText = this.add.text(px - panelW / 2 + 24, ry + 28, '+' + healPct + '% MaxHP ueber 3s', {
+        const healText = this.add.text(px - panelW / 2 + 24, ry + 28, _SHOP_T('shop.potion.heal_pct', { pct: healPct }), {
           fontFamily: 'monospace', fontSize: '10px', color: '#88ff88'
         }).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(healText);
@@ -319,7 +381,7 @@
         const buyBg = this.add.rectangle(px + panelW / 2 - 60, ry + rowH / 2, 70, 26, 0x3a3a3a)
           .setStrokeStyle(1, 0xd4a543).setScrollFactor(0).setDepth(2003)
           .setInteractive({ useHandCursor: true });
-        const buyText = this.add.text(px + panelW / 2 - 60, ry + rowH / 2, 'Kaufen', {
+        const buyText = this.add.text(px + panelW / 2 - 60, ry + rowH / 2, _SHOP_T('shop.btn.buy'), {
           fontFamily: 'monospace', fontSize: '11px', color: '#f1e9d8'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
         this.tabBody.push(buyBg);
@@ -331,12 +393,12 @@
     _tryBuyPotion(def, overridePrice) {
       const cost = overridePrice || def.goldCost;
       if (!window.LootSystem || !window.LootSystem.spendGold(cost)) {
-        this._showToast('Nicht genug Gold');
+        this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
         return;
       }
       if (!Array.isArray(window.inventory)) {
         this._refreshGold();
-        this._showToast('Gekauft: ' + def.name);
+        this._showToast(_SHOP_T('shop.toast.bought', { name: def.name }));
         return;
       }
       let stacked = false;
@@ -358,7 +420,7 @@
       if (!stacked) {
         const slot = window.inventory.findIndex(s => !s);
         if (slot < 0) {
-          this._showToast('Inventar voll');
+          this._showToast(_SHOP_T('shop.toast.inventory_full'));
           window.LootSystem.grantGold(cost); // refund
           return;
         }
@@ -371,7 +433,7 @@
         };
       }
       this._refreshGold();
-      this._showToast('Gekauft: ' + def.name);
+      this._showToast(_SHOP_T('shop.toast.bought', { name: def.name }));
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }
@@ -400,14 +462,14 @@
       });
 
       if (items.length === 0) {
-        const t = this.add.text(px, py, 'Keine reroll-baren Items im Inventar.', {
+        const t = this.add.text(px, py, _SHOP_T('shop.reroll.empty'), {
           fontFamily: 'monospace', fontSize: '13px', color: '#888888'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(t);
         return;
       }
 
-      const header = this.add.text(px, py - panelH / 2 + 92, this.selectedRerollItem ? 'Ausgewaehltes Item:' : 'Waehle ein Item:', {
+      const header = this.add.text(px, py - panelH / 2 + 92, _SHOP_T(this.selectedRerollItem ? 'shop.reroll.header_selected' : 'shop.reroll.header_select'), {
         fontFamily: 'monospace', fontSize: '13px', color: '#cccccc'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       this.tabBody.push(header);
@@ -430,7 +492,10 @@
             ? window.LootSystem.AFFIX_DEFS.find(d => d.id === a.defId)
             : null;
           if (!def) return;
-          const lineText = this.add.text(px, py - panelH / 2 + 144 + i * 18, def.tooltipText.replace('{value}', a.value), {
+          const tipTxt = (typeof window.LootSystem.getAffixTooltipText === 'function')
+            ? window.LootSystem.getAffixTooltipText(def, a.value)
+            : (def.tooltipText || '').replace('{value}', a.value);
+          const lineText = this.add.text(px, py - panelH / 2 + 144 + i * 18, tipTxt, {
             fontFamily: 'monospace', fontSize: '11px', color: '#88ff88'
           }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
           this.tabBody.push(lineText);
@@ -439,7 +504,7 @@
         const cost = (window.LootSystem && typeof window.LootSystem._computeRerollCost === 'function')
           ? window.LootSystem._computeRerollCost(item)
           : 50;
-        const costText = this.add.text(px, py + panelH / 2 - 88, 'Reroll-Kosten: ' + cost + ' Gold', {
+        const costText = this.add.text(px, py + panelH / 2 - 88, _SHOP_T('shop.reroll.cost', { cost: cost }), {
           fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(costText);
@@ -447,7 +512,7 @@
         const rerollBg = this.add.rectangle(px - 70, py + panelH / 2 - 58, 130, 30, 0x3a3a3a)
           .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(2003)
           .setInteractive({ useHandCursor: true });
-        const rerollTxt = this.add.text(px - 70, py + panelH / 2 - 58, 'Reroll', {
+        const rerollTxt = this.add.text(px - 70, py + panelH / 2 - 58, _SHOP_T('shop.reroll.btn'), {
           fontFamily: 'monospace', fontSize: '14px', color: '#f1e9d8'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
         this.tabBody.push(rerollBg);
@@ -457,7 +522,7 @@
         const cancelBg = this.add.rectangle(px + 70, py + panelH / 2 - 58, 130, 30, 0x2a2a2a)
           .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2003)
           .setInteractive({ useHandCursor: true });
-        const cancelTxt = this.add.text(px + 70, py + panelH / 2 - 58, 'Anderes Item', {
+        const cancelTxt = this.add.text(px + 70, py + panelH / 2 - 58, _SHOP_T('shop.reroll.cancel'), {
           fontFamily: 'monospace', fontSize: '11px', color: '#cccccc'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
         this.tabBody.push(cancelBg);
@@ -491,17 +556,17 @@
     _doReroll(cost) {
       if (!this.selectedRerollItem) return;
       if (!window.LootSystem || typeof window.LootSystem.rerollItem !== 'function') {
-        this._showToast('Reroll nicht verfuegbar');
+        this._showToast(_SHOP_T('shop.toast.reroll_unavailable'));
         return;
       }
       const ok = window.LootSystem.rerollItem(this.selectedRerollItem, cost);
       if (!ok) {
-        this._showToast('Nicht genug Gold');
+        this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
         return;
       }
       this._refreshGold();
       this._renderTab('reroll');
-      this._showToast('Reroll erfolgreich!');
+      this._showToast(_SHOP_T('shop.toast.reroll_success'));
       if (typeof window.LootSystem.recomputeBonuses === 'function') {
         try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
       }

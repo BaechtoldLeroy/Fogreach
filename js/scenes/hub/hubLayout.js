@@ -2,6 +2,55 @@
 // and NPC definitions. Pure data — no Phaser dependencies.
 // Loaded into window.HUB_HITBOXES so HubSceneV2 can read it.
 
+if (window.i18n) {
+  window.i18n.register('de', {
+    'hub.entrance.rathaus': 'Rathauskeller [E]',
+    'hub.entrance.schmiede': 'Werkstatt [E]',
+    'hub.entrance.druckerei': 'Druckerei [E]',
+    'hub.npc.branka.name': 'Schmiedemeisterin Branka',
+    'hub.npc.thom.name': 'Setzer Thom',
+    'hub.npc.mara.name': 'Mara vom Untergrund',
+    'hub.npc.aldric.name': 'Ratsherr Aldric',
+    'hub.npc.elara.name': 'Elara',
+    'hub.npc.harren.name': 'Bürgermeister Harren',
+    // Default greeting lines (shown when no quest is active). Quest-aware
+    // lines come from storySystem NPC_DIALOGUE.
+    'hub.npc.aldric.line.0': 'Willkommen zurueck, Archivschmied. Der Rat schaetzt deine Dienste.',
+    'hub.npc.aldric.line.1': 'Nebenhall ist sicher, solange der Rat wacht. Vergiss das nicht.',
+    'hub.npc.aldric.line.2': 'Du hast Talent. Der Rat koennte jemanden wie dich gut gebrauchen — langfristig.',
+    'hub.npc.elara.line.0': 'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
+    'hub.npc.elara.line.1': 'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.',
+    'hub.npc.harren.line.0': 'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
+    'hub.npc.harren.line.1': 'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'
+  });
+  window.i18n.register('en', {
+    'hub.entrance.rathaus': 'Town Hall Cellar [E]',
+    'hub.entrance.schmiede': 'Workshop [E]',
+    'hub.entrance.druckerei': 'Print Shop [E]',
+    'hub.npc.branka.name': 'Smith Master Branka',
+    'hub.npc.thom.name': 'Setter Thom',
+    'hub.npc.mara.name': 'Mara of the Underground',
+    'hub.npc.aldric.name': 'Councillor Aldric',
+    'hub.npc.elara.name': 'Elara',
+    'hub.npc.harren.name': 'Mayor Harren',
+    'hub.npc.aldric.line.0': 'Welcome back, Archivesmith. The council values your service.',
+    'hub.npc.aldric.line.1': 'The side hall is safe as long as the council watches. Do not forget that.',
+    'hub.npc.aldric.line.2': 'You have talent. The council could use someone like you — in the long run.',
+    'hub.npc.elara.line.0': "You don't remember me, do you? I... knew you. Before the accident.",
+    'hub.npc.elara.line.1': 'Do not ask the council. Ask the walls. They remember better than people do.',
+    'hub.npc.harren.line.0': 'My daughter Elara... she has disappeared. Please, help me find her.',
+    'hub.npc.harren.line.1': 'I was once proud of this city. Now I barely recognize it.'
+  });
+}
+
+// i18n helpers used by HubSceneV2 to resolve labels lazily — module-load
+// language may differ from active language at render time.
+const _hubT = (key, fallback) => {
+  if (!window.i18n) return fallback;
+  const v = window.i18n.t(key);
+  return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : fallback;
+};
+
 window.HUB_HITBOXES = {
   colliders: [
     { id: 'city_silhouette_wall', x: 0,   y: 200, w: 960, h: 92 },
@@ -95,3 +144,49 @@ window.HUB_HITBOXES = {
     }
   ]
 };
+
+// Convert fixed labels to live i18n getters so HubSceneV2 + dialog code
+// automatically follow the active language.
+if (window.i18n) {
+  // Entrance labels
+  window.HUB_HITBOXES.entrances.forEach(function (e) {
+    var key = 'hub.entrance.' + (e.target === 'GameScene' ? 'rathaus'
+                              : e.target === 'CraftingScene' ? 'schmiede'
+                              : e.target === 'druckerei' ? 'druckerei' : null);
+    if (!key) return;
+    var fallback = e.label;
+    try {
+      Object.defineProperty(e, 'label', {
+        get: function () { return _hubT(key, fallback); },
+        configurable: true, enumerable: true
+      });
+    } catch (err) { /* swallow */ }
+  });
+  // NPC name + default lines
+  window.HUB_HITBOXES.npcs.forEach(function (npc) {
+    var nameKey = 'hub.npc.' + npc.id + '.name';
+    var nameFallback = npc.name;
+    try {
+      Object.defineProperty(npc, 'name', {
+        get: function () { return _hubT(nameKey, nameFallback); },
+        configurable: true, enumerable: true
+      });
+    } catch (err) { /* swallow */ }
+    if (Array.isArray(npc.lines)) {
+      var fallbackLines = npc.lines.slice();
+      var hasI18nLines = fallbackLines.some(function (_, i) {
+        return window.i18n.t('hub.npc.' + npc.id + '.line.' + i).indexOf('[MISSING:') !== 0;
+      });
+      if (hasI18nLines) {
+        Object.defineProperty(npc, 'lines', {
+          get: function () {
+            return fallbackLines.map(function (orig, i) {
+              return _hubT('hub.npc.' + npc.id + '.line.' + i, orig);
+            });
+          },
+          configurable: true, enumerable: true
+        });
+      }
+    }
+  });
+}

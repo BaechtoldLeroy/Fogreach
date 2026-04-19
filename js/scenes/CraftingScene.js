@@ -1,4 +1,74 @@
 // js/scenes/CraftingScene.js — Archivschmiede Crafting Scene
+
+if (window.i18n) {
+  window.i18n.register('de', {
+    'crafting.title': 'ARCHIVSCHMIEDE',
+    'crafting.materials.counter': 'Eisenbrocken: {count}',
+    'crafting.section.enhance': 'Ausrüstung verbessern',
+    'crafting.section.inventory': 'Inventar (Equipment)',
+    'crafting.section.recipes': 'Schmiedepläne',
+    'crafting.btn.enhance': 'Verbessern',
+    'crafting.btn.salvage': 'Zerlegen',
+    'crafting.btn.craft': 'Schmieden',
+    'crafting.empty_slot': '(leer)',
+    'crafting.slot.weapon': 'Waffe',
+    'crafting.slot.head': 'Helm',
+    'crafting.slot.body': 'Rüstung',
+    'crafting.slot.boots': 'Stiefel',
+    'crafting.recipe.cost': 'Kosten: {cost} Eisenbrocken',
+    'crafting.info.idle': 'Klicke einen Slot oder ein Inventar-Item zum Verbessern oder Zerlegen.\nReroll bei Mara im Schwarzmarkt.',
+    'crafting.info.tier_affix': 'Tier: {tier}  |  Affixe: {count}',
+    'crafting.info.enhance_to': 'Verbessern: -> {tier} ({cost} Eisenbrocken)',
+    'crafting.info.already_legendary': 'Bereits Legendär — keine Verbesserung möglich.',
+    'crafting.info.reroll_hint': 'Reroll verfügbar bei Mara (Schwarzmarkt).',
+    'crafting.feedback.enhanced_to': 'Verbessert auf {tier}!',
+    'crafting.feedback.salvaged': 'Zerlegt: +{amount} Eisenbrocken',
+    'crafting.feedback.no_slot_item': 'Kein Gegenstand in diesem Slot.',
+    'crafting.feedback.already_legendary': 'Item ist bereits Legendär.',
+    'crafting.feedback.not_enough_iron_for': 'Nicht genug Eisenbrocken ({cost} nötig).',
+    'crafting.feedback.not_enough_iron': 'Nicht genug Eisenbrocken!',
+    'crafting.feedback.inventory_full': 'Inventar voll!',
+    'crafting.tier.common': 'Gewöhnlich',
+    'crafting.tier.magic': 'Magisch',
+    'crafting.tier.rare': 'Selten',
+    'crafting.tier.legendary': 'Legendär'
+  });
+  window.i18n.register('en', {
+    'crafting.title': 'ARCHIVE FORGE',
+    'crafting.materials.counter': 'Iron Chunks: {count}',
+    'crafting.section.enhance': 'Enhance Equipment',
+    'crafting.section.inventory': 'Inventory (Equipment)',
+    'crafting.section.recipes': 'Smithing Plans',
+    'crafting.btn.enhance': 'Enhance',
+    'crafting.btn.salvage': 'Salvage',
+    'crafting.btn.craft': 'Forge',
+    'crafting.empty_slot': '(empty)',
+    'crafting.slot.weapon': 'Weapon',
+    'crafting.slot.head': 'Helm',
+    'crafting.slot.body': 'Armor',
+    'crafting.slot.boots': 'Boots',
+    'crafting.recipe.cost': 'Cost: {cost} Iron Chunks',
+    'crafting.info.idle': 'Click a slot or inventory item to enhance or salvage.\nReroll available at Mara in the Black Market.',
+    'crafting.info.tier_affix': 'Tier: {tier}  |  Affixes: {count}',
+    'crafting.info.enhance_to': 'Enhance: -> {tier} ({cost} Iron Chunks)',
+    'crafting.info.already_legendary': 'Already Legendary — no further enhancement.',
+    'crafting.info.reroll_hint': 'Reroll available at Mara (Black Market).',
+    'crafting.feedback.enhanced_to': 'Enhanced to {tier}!',
+    'crafting.feedback.salvaged': 'Salvaged: +{amount} Iron Chunks',
+    'crafting.feedback.no_slot_item': 'No item in this slot.',
+    'crafting.feedback.already_legendary': 'Item is already Legendary.',
+    'crafting.feedback.not_enough_iron_for': 'Not enough Iron Chunks ({cost} needed).',
+    'crafting.feedback.not_enough_iron': 'Not enough Iron Chunks!',
+    'crafting.feedback.inventory_full': 'Inventory full!',
+    'crafting.tier.common': 'Common',
+    'crafting.tier.magic': 'Magic',
+    'crafting.tier.rare': 'Rare',
+    'crafting.tier.legendary': 'Legendary'
+  });
+}
+const _CRAFT_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+const _CRAFT_TIER_KEYS = ['crafting.tier.common', 'crafting.tier.magic', 'crafting.tier.rare', 'crafting.tier.legendary'];
+
 // Tier color map (WP08 T050): 0=Common, 1=Magic, 2=Rare, 3=Legendary.
 // Reads window.TIER_COLORS (loot.js) with a local fallback so this module
 // stays scene-graph friendly under the plain IIFE load order.
@@ -11,7 +81,7 @@ const _getTierColor = (item) => {
   return arr[idx];
 };
 const _composeItemName = (item) => {
-  if (!item) return '(leer)';
+  if (!item) return _CRAFT_T('crafting.empty_slot');
   if (window.LootSystem && typeof window.LootSystem.composeName === 'function') {
     try { return window.LootSystem.composeName(item); } catch (e) { /* fall through */ }
   }
@@ -97,7 +167,7 @@ class CraftingScene extends Phaser.Scene {
     this._drawForgeBackground(W, H);
 
     // --- Title ---
-    this.add.text(W / 2, 20, 'ARCHIVSCHMIEDE', {
+    this.add.text(W / 2, 20, _CRAFT_T('crafting.title'), {
       fontFamily: 'serif', fontSize: '24px', color: '#ffd166',
       fontStyle: 'bold'
     }).setOrigin(0.5, 0).setDepth(10);
@@ -114,13 +184,18 @@ class CraftingScene extends Phaser.Scene {
     const panelW = (W / 2) - 50;
     const panelH = H - 140;
 
-    this.add.text(leftX + panelW / 2, panelY, 'Ausruestung verbessern', {
+    this.add.text(leftX + panelW / 2, panelY, _CRAFT_T('crafting.section.enhance'), {
       fontFamily: 'monospace', fontSize: '16px', color: COL_GOLD
     }).setOrigin(0.5, 0).setDepth(10);
 
     // ----- Equipped slots (top of left panel) -----
     const slots = ['weapon', 'head', 'body', 'boots'];
-    const slotLabels = { weapon: 'Waffe', head: 'Helm', body: 'Ruestung', boots: 'Stiefel' };
+    const slotLabels = {
+      weapon: _CRAFT_T('crafting.slot.weapon'),
+      head: _CRAFT_T('crafting.slot.head'),
+      body: _CRAFT_T('crafting.slot.body'),
+      boots: _CRAFT_T('crafting.slot.boots')
+    };
     this.equipSlots = {};
     this.equipSlotBgs = {};
 
@@ -135,7 +210,7 @@ class CraftingScene extends Phaser.Scene {
       bg.setStrokeStyle(2, 0x444444);
 
       const item = (typeof equipment !== 'undefined') ? equipment[slot] : null;
-      const nameStr = item ? _composeItemName(item) : '(leer)';
+      const nameStr = item ? _composeItemName(item) : _CRAFT_T('crafting.empty_slot');
       const color = item ? _getTierColor(item) : COL_DISABLED;
 
       // Compact one-line layout: [Slot] Name (stats)
@@ -165,7 +240,7 @@ class CraftingScene extends Phaser.Scene {
 
     // ----- Inventory list (middle of left panel) -----
     const invHeaderY = slotStartY + 4 * (slotH + 4) + 8;
-    this.add.text(leftX + 8, invHeaderY, 'Inventar (Equipment)', {
+    this.add.text(leftX + 8, invHeaderY, _CRAFT_T('crafting.section.inventory'), {
       fontFamily: 'monospace', fontSize: '10px', color: COL_GOLD
     }).setDepth(10);
 
@@ -201,7 +276,7 @@ class CraftingScene extends Phaser.Scene {
     // replaces the old enhance flow. Salvage stays for converting unwanted
     // equipment into Eisenbrocken.
     const enhY = this.invListY + this.invRowH * this.invMaxRows + 14;
-    this.enhanceInfo = this.add.text(leftX + 8, enhY, 'Klicke einen Slot oder ein Inventar-Item zum Verbessern oder Zerlegen.\nReroll bei Mara im Schwarzmarkt.', {
+    this.enhanceInfo = this.add.text(leftX + 8, enhY, _CRAFT_T('crafting.info.idle'), {
       fontFamily: 'monospace', fontSize: '10px', color: COL_PARCHMENT,
       wordWrap: { width: slotW - 16 }
     }).setDepth(10);
@@ -214,13 +289,13 @@ class CraftingScene extends Phaser.Scene {
     // 4-line enhance info text (name / tier+affix count / cost / Mara hint).
     this.enhanceBtn = this._createButton(
       leftX + slotW / 2 - 60, enhY + 80, 110, 26,
-      'Verbessern', () => this._enhanceItem()
+      _CRAFT_T('crafting.btn.enhance'), () => this._enhanceItem()
     );
     this.enhanceBtn.container.setVisible(false);
 
     this.salvageBtn = this._createButton(
       leftX + slotW / 2 + 60, enhY + 80, 110, 26,
-      'Zerlegen', () => this._salvageItem()
+      _CRAFT_T('crafting.btn.salvage'), () => this._salvageItem()
     );
     this.salvageBtn.container.setVisible(false);
 
@@ -228,7 +303,7 @@ class CraftingScene extends Phaser.Scene {
     const rightX = W / 2 + 20;
     const rightW = (W / 2) - 50;
 
-    this.add.text(rightX + rightW / 2, panelY, 'Schmiedeplaene', {
+    this.add.text(rightX + rightW / 2, panelY, _CRAFT_T('crafting.section.recipes'), {
       fontFamily: 'monospace', fontSize: '16px', color: COL_GOLD
     }).setOrigin(0.5, 0).setDepth(10);
 
@@ -252,13 +327,13 @@ class CraftingScene extends Phaser.Scene {
       const canAfford = getMaterialCount('MAT') >= recipe.cost;
       const hasSpace = this._hasInventorySpace();
       const costColor = canAfford ? COL_GREEN : COL_RED;
-      const costText = this.add.text(rightX + 10, ry + 42, `Kosten: ${recipe.cost} Eisenbrocken`, {
+      const costText = this.add.text(rightX + 10, ry + 42, _CRAFT_T('crafting.recipe.cost', { cost: recipe.cost }), {
         fontFamily: 'monospace', fontSize: '11px', color: costColor
       }).setDepth(10);
 
       const craftBtn = this._createButton(
         rightX + rightW - 60, ry + recipeH / 2, 100, 30,
-        'Schmieden', () => this._craftRecipe(recipe, i)
+        _CRAFT_T('crafting.btn.craft'), () => this._craftRecipe(recipe, i)
       );
 
       if (!canAfford || !hasSpace) {
@@ -363,7 +438,7 @@ class CraftingScene extends Phaser.Scene {
 
   _updateMatText() {
     const count = getMaterialCount('MAT');
-    this.matText.setText(`Eisenbrocken: ${count}`);
+    this.matText.setText(_CRAFT_T('crafting.materials.counter', { count: count }));
   }
 
   _getStatsLine(item) {
@@ -466,7 +541,7 @@ class CraftingScene extends Phaser.Scene {
   _selectEquip(slot) {
     const item = (typeof equipment !== 'undefined') ? equipment[slot] : null;
     if (!item) {
-      this._showFeedback('Kein Gegenstand in diesem Slot.', '#ff4444');
+      this._showFeedback(_CRAFT_T('crafting.feedback.no_slot_item'), '#ff4444');
       return;
     }
     this._applySelection('equip', slot);
@@ -486,7 +561,7 @@ class CraftingScene extends Phaser.Scene {
 
     // Tier/affix-aware info panel.
     const tier = (typeof item.tier === 'number') ? item.tier : 0;
-    const tierLabels = ['Gewoehnlich', 'Magisch', 'Selten', 'Legendaer'];
+    const tierName = (idx) => _CRAFT_T(_CRAFT_TIER_KEYS[Math.max(0, Math.min(3, idx))]);
     const affixCount = Array.isArray(item.affixes) ? item.affixes.length : 0;
     const enhanceCost = this._getEnhanceCost(item);
     const canEnhance = tier < 3;
@@ -495,14 +570,14 @@ class CraftingScene extends Phaser.Scene {
     }
     const lines = [
       `${_composeItemName(item)}`,
-      `Tier: ${tierLabels[Math.max(0, Math.min(3, tier))]}  |  Affixe: ${affixCount}`
+      _CRAFT_T('crafting.info.tier_affix', { tier: tierName(tier), count: affixCount })
     ];
     if (canEnhance) {
-      lines.push(`Verbessern: -> ${tierLabels[tier + 1]} (${enhanceCost} Eisenbrocken)`);
+      lines.push(_CRAFT_T('crafting.info.enhance_to', { tier: tierName(tier + 1), cost: enhanceCost }));
     } else {
-      lines.push('Bereits Legendaer — keine Verbesserung moeglich.');
+      lines.push(_CRAFT_T('crafting.info.already_legendary'));
     }
-    lines.push('Reroll verfuegbar bei Mara (Schwarzmarkt).');
+    lines.push(_CRAFT_T('crafting.info.reroll_hint'));
     this.enhanceInfo.setText(lines.join('\n'));
   }
 
@@ -519,12 +594,12 @@ class CraftingScene extends Phaser.Scene {
     if (!item) return;
     const tier = (typeof item.tier === 'number') ? item.tier : 0;
     if (tier >= 3) {
-      this._showFeedback('Item ist bereits Legendaer.', '#ff4444');
+      this._showFeedback(_CRAFT_T('crafting.feedback.already_legendary'), '#ff4444');
       return;
     }
     const cost = this._getEnhanceCost(item);
     if (getMaterialCount('MAT') < cost) {
-      this._showFeedback(`Nicht genug Eisenbrocken (${cost} noetig).`, '#ff4444');
+      this._showFeedback(_CRAFT_T('crafting.feedback.not_enough_iron_for', { cost: cost }), '#ff4444');
       return;
     }
     if (typeof changeMaterialCount === 'function') {
@@ -552,8 +627,9 @@ class CraftingScene extends Phaser.Scene {
     }
     this._refreshAll();
     this._showEnhanceInfoForSelection();
-    const tierLabels = ['Gewoehnlich', 'Magisch', 'Selten', 'Legendaer'];
-    this._showFeedback(`Verbessert auf ${tierLabels[newTier]}!`, '#88ff88');
+    this._showFeedback(_CRAFT_T('crafting.feedback.enhanced_to', {
+      tier: _CRAFT_T(_CRAFT_TIER_KEYS[Math.max(0, Math.min(3, newTier))])
+    }), '#88ff88');
     this._flashEffect();
   }
 
@@ -592,9 +668,9 @@ class CraftingScene extends Phaser.Scene {
     this._clearVisualSelection();
     this.salvageBtn.container.setVisible(false);
     if (this.enhanceBtn) this.enhanceBtn.container.setVisible(false);
-    this.enhanceInfo.setText('Waehle ein Equipment-Item zum Verbessern oder Zerlegen.\nReroll bei Mara im Schwarzmarkt.');
+    this.enhanceInfo.setText(_CRAFT_T('crafting.info.idle'));
     this._refreshAll();
-    this._showFeedback(`Zerlegt: +${matValue} Eisenbrocken`, '#ccaa33');
+    this._showFeedback(_CRAFT_T('crafting.feedback.salvaged', { amount: matValue }), '#ccaa33');
     this._flashEffect();
   }
 
@@ -602,11 +678,11 @@ class CraftingScene extends Phaser.Scene {
   _craftRecipe(recipe, index) {
     const cost = recipe.cost;
     if (getMaterialCount('MAT') < cost) {
-      this._showFeedback('Nicht genug Eisenbrocken!', '#ff4444');
+      this._showFeedback(_CRAFT_T('crafting.feedback.not_enough_iron'), '#ff4444');
       return;
     }
     if (!this._hasInventorySpace()) {
-      this._showFeedback('Inventar voll!', '#ff4444');
+      this._showFeedback(_CRAFT_T('crafting.feedback.inventory_full'), '#ff4444');
       return;
     }
 
@@ -645,7 +721,7 @@ class CraftingScene extends Phaser.Scene {
       const el = this.equipSlots[slot];
       if (!el) return;
       const item = (typeof equipment !== 'undefined') ? equipment[slot] : null;
-      const nameStr = item ? _composeItemName(item) : '(leer)';
+      const nameStr = item ? _composeItemName(item) : _CRAFT_T('crafting.empty_slot');
       const color = item ? _getTierColor(item) : '#666666';
 
       el.nameText.setText(nameStr);
