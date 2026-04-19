@@ -767,6 +767,8 @@ if (typeof window !== 'undefined') {
   window.spawnLoot = spawnLoot;
   window.randomLoot = randomLoot;
   window.collectLoot = collectLoot;
+  window.makePotionDrop = _makePotionDrop;
+  window.makePortalScrollDrop = _makePortalScrollDrop;
   window.computeItemLevelFromStats = computeItemLevelFromStats;
   window.rollItemStatPotentials = rollItemStatPotentials;
   window.addBoostsToItem = addBoostsToItem;

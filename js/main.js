@@ -1233,6 +1233,22 @@ function breakDestructibleObstacle(scene, obs) {
     }
   }
 
+  // Independent potion + portal-scroll roll on top of the equipment drop.
+  // Lets Schutt / Fässer (low equipment dropChance) still meaningfully
+  // contribute to consumable supply.
+  const potionChance  = { minor: 0.05, small: 0.08, medium: 0.10, large: 0.12 }[tier] || 0.05;
+  const scrollChance  = { minor: 0.01, small: 0.02, medium: 0.03, large: 0.04 }[tier] || 0.01;
+  const potionOffsetX = 14 + Math.random() * 8;
+  const potionOffsetY = -10 + Math.random() * 12;
+  if (Math.random() < potionChance && typeof window.makePotionDrop === 'function' && typeof spawnLoot === 'function') {
+    const potion = window.makePotionDrop(window.DUNGEON_DEPTH || 1);
+    if (potion) spawnLoot.call(scene, x + potionOffsetX, y + potionOffsetY, potion, null);
+  }
+  if (Math.random() < scrollChance && typeof window.makePortalScrollDrop === 'function' && typeof spawnLoot === 'function') {
+    const scroll = window.makePortalScrollDrop();
+    if (scroll) spawnLoot.call(scene, x - potionOffsetX, y + potionOffsetY, scroll, null);
+  }
+
   obs.destroy();
 }
 window.breakDestructibleObstacle = breakDestructibleObstacle;
