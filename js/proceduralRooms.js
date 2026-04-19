@@ -419,12 +419,46 @@
       }
     }
 
-    // 11b) Cap total stairs at 2 (one entry + one exit). Earlier behavior
-    // (036-procroom-stairs) added 1 extra stair PER qualifying chamber, which
-    // for BSP-split rooms with 3-5 chambers produced 4-7 stairs in a single
-    // room — visually noisy and breaks "next room" pacing. Keep exactly the
-    // N + S edge entrances.
-    if (entrances.length > 2) entrances.length = 2;
+    // 11b) Add up to 1 extra stair in a really large chamber (only if room
+    // total area justifies it). Cap total at 3 stairs to keep the "next
+    // room" pacing intact while still giving big BSP rooms a backup
+    // descent point.
+    var TOTAL_STAIR_CAP = 3;
+    var EXTRA_CHAMBER_MIN_AREA = 320; // ~18×18 floor tiles
+    var STAIR_CLEARANCE = 3;
+    var STAIR_MIN_DIST_SQ = 144; // 12 tiles between stairs
+    if (entrances.length < TOTAL_STAIR_CAP) {
+      // Pick the single largest qualifying chamber
+      var largest = null;
+      for (var lci = 0; lci < accessibleChambers.length; lci++) {
+        var lc = accessibleChambers[lci];
+        if ((lc.w * lc.h) < EXTRA_CHAMBER_MIN_AREA) continue;
+        if (!largest || (lc.w * lc.h) > (largest.w * largest.h)) largest = lc;
+      }
+      if (largest) {
+        for (var sat = 0; sat < 12 && entrances.length < TOTAL_STAIR_CAP; sat++) {
+          var sx = largest.x + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, largest.w - STAIR_CLEARANCE * 2));
+          var sy = largest.y + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, largest.h - STAIR_CLEARANCE * 2));
+          var nearDoor = doorwayTiles[sy + '|' + sx]
+            || doorwayTiles[(sy - 1) + '|' + sx]
+            || doorwayTiles[(sy + 1) + '|' + sx]
+            || doorwayTiles[sy + '|' + (sx - 1)]
+            || doorwayTiles[sy + '|' + (sx + 1)];
+          if (!grid[sy] || grid[sy][sx] !== '.' || nearDoor) continue;
+          var tooClose = false;
+          for (var ei = 0; ei < entrances.length; ei++) {
+            var edx = entrances[ei].x - sx;
+            var edy = entrances[ei].y - sy;
+            if (edx * edx + edy * edy < STAIR_MIN_DIST_SQ) { tooClose = true; break; }
+          }
+          if (!tooClose) {
+            entrances.push({ x: sx, y: sy, dir: null });
+            break;
+          }
+        }
+      }
+    }
+    if (entrances.length > TOTAL_STAIR_CAP) entrances.length = TOTAL_STAIR_CAP;
 
     // 12) Enemy spawns in later chambers (skip first). Large chambers get
     //     multiple groups scattered within. Total density ~1 enemy per 40
