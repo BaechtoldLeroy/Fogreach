@@ -95,60 +95,62 @@
   }
 
   function _buildTopLeft(scene) {
+    // Use absolute scene positions instead of a container — interactive
+    // children inside containers can be flaky for input hit-testing in
+    // Phaser 3, especially when other scene-wide pointer handlers are active.
     const x0 = 12;
     const y0 = 12;
-    const c = scene.add.container(x0, y0).setDepth(HUD_DEPTH).setScrollFactor(0);
 
-    // Portrait — circular frame, clickable
-    const portraitBg = scene.add.circle(PORTRAIT_R, PORTRAIT_R, PORTRAIT_R, 0x10131c, 0.95)
-      .setStrokeStyle(2, 0xd4a543);
-    const portraitGlow = scene.add.circle(PORTRAIT_R, PORTRAIT_R, PORTRAIT_R + 2, 0xff4040, 0)
-      .setStrokeStyle(3, 0xff4040, 0); // visible only at low HP
-    const portraitIcon = scene.add.text(PORTRAIT_R, PORTRAIT_R, '\u2694', {
+    // Portrait — circular frame with clickable hit zone
+    const portraitCx = x0 + PORTRAIT_R;
+    const portraitCy = y0 + PORTRAIT_R;
+    const portraitBg = scene.add.circle(portraitCx, portraitCy, PORTRAIT_R, 0x10131c, 0.95)
+      .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(HUD_DEPTH);
+    const portraitGlow = scene.add.circle(portraitCx, portraitCy, PORTRAIT_R + 2, 0xff4040, 0)
+      .setStrokeStyle(3, 0xff4040, 0).setScrollFactor(0).setDepth(HUD_DEPTH);
+    const portraitIcon = scene.add.text(portraitCx, portraitCy, '\u2694', {
       fontFamily: 'serif', fontSize: '28px', color: '#ffd166'
-    }).setOrigin(0.5);
-    const portraitHit = scene.add.zone(0, 0, PORTRAIT_R * 2, PORTRAIT_R * 2)
-      .setOrigin(0).setInteractive({ useHandCursor: true });
-    portraitHit.on('pointerdown', (pointer, x, y, event) => {
-      event && event.stopPropagation && event.stopPropagation();
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
+    // Dedicated rectangle hit zone above the visual circle (rectangles have
+    // reliable hit-testing across Phaser versions).
+    const portraitHit = scene.add.rectangle(portraitCx, portraitCy, PORTRAIT_R * 2, PORTRAIT_R * 2, 0x000000, 0)
+      .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
+      .setInteractive({ useHandCursor: true });
+    portraitHit.on('pointerdown', (pointer, lx, ly, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
       _openStatsMenu(scene);
     });
 
     // HP bar
-    const hpX = PORTRAIT_R * 2 + 12;
-    const hpY = 6;
+    const hpX = x0 + PORTRAIT_R * 2 + 12;
+    const hpY = y0 + 6;
     const hpFrame = scene.add.rectangle(hpX, hpY, HP_BAR_W, HP_BAR_H, 0x000000, 0.8)
-      .setOrigin(0).setStrokeStyle(2, 0xd4a543);
+      .setOrigin(0).setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(HUD_DEPTH);
     const hpFillBg = scene.add.rectangle(hpX + 2, hpY + 2, HP_BAR_W - 4, HP_BAR_H - 4, 0x3a1010, 1)
-      .setOrigin(0);
+      .setOrigin(0).setScrollFactor(0).setDepth(HUD_DEPTH);
     const hpFill = scene.add.rectangle(hpX + 2, hpY + 2, HP_BAR_W - 4, HP_BAR_H - 4, 0xc0392b, 1)
-      .setOrigin(0);
+      .setOrigin(0).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
     const hpText = scene.add.text(hpX + HP_BAR_W / 2, hpY + HP_BAR_H / 2, '', {
       fontFamily: 'monospace', fontSize: '12px', color: '#ffffff',
       stroke: '#000000', strokeThickness: 3
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(HUD_DEPTH + 2);
 
     // XP bar (thinner, below HP)
     const xpX = hpX;
     const xpY = hpY + HP_BAR_H + 4;
     const xpFrame = scene.add.rectangle(xpX, xpY, XP_BAR_W, XP_BAR_H, 0x000000, 0.8)
-      .setOrigin(0).setStrokeStyle(1, 0x666666);
+      .setOrigin(0).setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(HUD_DEPTH);
     const xpFill = scene.add.rectangle(xpX + 1, xpY + 1, XP_BAR_W - 2, XP_BAR_H - 2, 0x88ff88, 1)
-      .setOrigin(0);
+      .setOrigin(0).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
     const levelText = scene.add.text(xpX, xpY + XP_BAR_H + 2, '', {
       fontFamily: 'monospace', fontSize: '11px', color: '#aabbff',
       stroke: '#000000', strokeThickness: 2
-    }).setOrigin(0, 0);
+    }).setOrigin(0, 0).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
     const goldText = scene.add.text(xpX + XP_BAR_W, xpY + XP_BAR_H + 2, '', {
       fontFamily: 'monospace', fontSize: '11px', color: '#ffd166',
       stroke: '#000000', strokeThickness: 2
-    }).setOrigin(1, 0);
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
 
-    c.add([portraitBg, portraitGlow, portraitIcon, portraitHit,
-           hpFrame, hpFillBg, hpFill, hpText,
-           xpFrame, xpFill, levelText, goldText]);
-
-    HUDv2.elements.topLeft = c;
     HUDv2.elements.portraitGlow = portraitGlow;
     HUDv2.elements.hpFill = hpFill;
     HUDv2.elements.hpText = hpText;
@@ -161,29 +163,36 @@
 
   function _buildTopRight(scene) {
     const cw = scene.cameras.main.width;
-    const x0 = cw - 12;
-    const y0 = 12;
-    const c = scene.add.container(x0, y0).setDepth(HUD_DEPTH).setScrollFactor(0);
 
-    // Burger menu (top icon — directly under top edge)
-    const burgerBg = scene.add.circle(-ICON_R, ICON_R, ICON_R, 0x10131c, 0.95)
-      .setStrokeStyle(2, 0xd4a543).setInteractive({ useHandCursor: true });
-    const burgerIcon = scene.add.text(-ICON_R, ICON_R, '\u2630', {
+    // Burger menu — direct scene children, absolute positions, dedicated hit zone
+    const burgerCx = cw - 12 - ICON_R;
+    const burgerCy = 12 + ICON_R;
+    const burgerBg = scene.add.circle(burgerCx, burgerCy, ICON_R, 0x10131c, 0.95)
+      .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(HUD_DEPTH);
+    const burgerIcon = scene.add.text(burgerCx, burgerCy, '\u2630', {
       fontFamily: 'serif', fontSize: '24px', color: '#ffd166'
-    }).setOrigin(0.5);
-    burgerBg.on('pointerdown', (pointer, x, y, event) => {
-      event && event.stopPropagation && event.stopPropagation();
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
+    const burgerHit = scene.add.rectangle(burgerCx, burgerCy, ICON_R * 2, ICON_R * 2, 0x000000, 0)
+      .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
+      .setInteractive({ useHandCursor: true });
+    burgerHit.on('pointerdown', (pointer, lx, ly, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
       _openMenuOverlay(scene);
     });
 
     // Inventory icon (below burger)
-    const invBg = scene.add.circle(-ICON_R, ICON_R + (ICON_R * 2 + 8), ICON_R, 0x10131c, 0.95)
-      .setStrokeStyle(2, 0xd4a543).setInteractive({ useHandCursor: true });
-    const invIcon = scene.add.text(-ICON_R, ICON_R + (ICON_R * 2 + 8), '\u{1F392}', {
+    const invCx = cw - 12 - ICON_R;
+    const invCy = burgerCy + (ICON_R * 2 + 8);
+    const invBg = scene.add.circle(invCx, invCy, ICON_R, 0x10131c, 0.95)
+      .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(HUD_DEPTH);
+    const invIcon = scene.add.text(invCx, invCy, '\u{1F392}', {
       fontFamily: 'serif', fontSize: '22px'
-    }).setOrigin(0.5);
-    invBg.on('pointerdown', (pointer, x, y, event) => {
-      event && event.stopPropagation && event.stopPropagation();
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
+    const invHit = scene.add.rectangle(invCx, invCy, ICON_R * 2, ICON_R * 2, 0x000000, 0)
+      .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
+      .setInteractive({ useHandCursor: true });
+    invHit.on('pointerdown', (pointer, lx, ly, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
       if (typeof window.openInventory === 'function') {
         window.openInventory();
       } else if (typeof openInventory === 'function') {
@@ -191,8 +200,8 @@
       }
     });
 
-    c.add([burgerBg, burgerIcon, invBg, invIcon]);
-    HUDv2.elements.topRight = c;
+    HUDv2.elements.burgerBg = burgerBg;
+    HUDv2.elements.invBg = invBg;
   }
 
   function _buildVignette(scene) {
