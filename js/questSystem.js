@@ -325,6 +325,83 @@
     }
   };
 
+  // ---- i18n bootstrap ----
+  // Auto-register German strings from QUEST_DEFINITIONS so consumers can use
+  // i18n.t('quest.<id>.<field>'). German is source-of-truth — fallback for any
+  // EN translation that is missing returns the German value via the i18n
+  // lookup cascade (active → de → [MISSING:key]).
+  if (window.i18n) {
+    var QUEST_FIELDS = ['title', 'description', 'dialogueOffer', 'dialogueProgress', 'dialogueComplete'];
+    var _autoDe = {};
+    Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
+      var q = QUEST_DEFINITIONS[id];
+      QUEST_FIELDS.forEach(function (field) {
+        if (typeof q[field] === 'string') {
+          _autoDe['quest.' + id + '.' + field] = q[field];
+        }
+      });
+    });
+    // Generic tracker strings
+    _autoDe['quest.tracker.progress'] = '{title}: {cur}/{required}';
+    _autoDe['quest.tracker.short_suffix'] = '..';
+    window.i18n.register('de', _autoDe);
+
+    // English overrides — partial; missing keys gracefully fall back to DE.
+    // Translations will expand iteratively. Quest titles + tracker translated
+    // up front; dialogues to follow.
+    window.i18n.register('en', {
+      'quest.tracker.progress': '{title}: {cur}/{required}',
+      'quest.tracker.short_suffix': '..',
+      'quest.aldric_cleanup.title': 'Cellar Cleanup',
+      'quest.aldric_cleanup.description': 'Defeat 10 enemies in the cellars beneath the Archive Forge.',
+      'quest.aldric_patrol.title': 'Cellar Patrol',
+      'quest.aldric_patrol.description': 'Clear 3 rooms in the cellars to secure all corridors.',
+      'quest.aldric_intruders.title': 'The Intruders',
+      'quest.aldric_intruders.description': 'Defeat 20 intruders raiding the council archives.',
+      'quest.harren_daughter.title': 'The Missing Daughter',
+      'quest.harren_daughter.description': 'Search 5 rooms and find Elara\'s diary.',
+      'quest.branka_armor.title': 'New Armor',
+      'quest.branka_armor.description': 'Gather 3 materials for the council-commissioned armor.',
+      'quest.mara_contact.title': 'The Scout',
+      'quest.mara_contact.description': 'Meet Mara and hear what she has to say.',
+      'quest.elara_meeting.title': "Elara's Secret",
+      'quest.elara_meeting.description': 'Find 2 secret documents Elara has hidden.',
+      'quest.branka_doubt.title': "The Smith's Doubt",
+      'quest.branka_doubt.description': "Defeat 5 elite enemies to find evidence for Branka's suspicions.",
+      'quest.elara_ritual.title': 'The Ritual Chamber',
+      'quest.elara_ritual.description': 'Reach wave 20 to find the council\'s ritual chamber.',
+      'quest.thom_truth.title': 'Forbidden Truths',
+      'quest.thom_truth.description': 'Find 5 print plates with the forbidden truths about the council.',
+      'quest.mara_warning.title': "Mara's Warning",
+      'quest.mara_warning.description': 'Defeat the Chainmaster boss who guards the first real evidence.',
+      'quest.branka_weapons.title': 'Weapons for the Resistance',
+      'quest.branka_weapons.description': 'Craft 3 items at the Archive Forge.',
+      'quest.thom_pamphlets.title': 'The Pamphlets',
+      'quest.thom_pamphlets.description': 'Complete 3 dungeon runs to spread the leaflets.',
+      'quest.elara_blade.title': "Elara's Gift",
+      'quest.elara_blade.description': 'Elara has forged a special weapon for you.',
+      'quest.mara_assault.title': 'Storming the Council',
+      'quest.mara_assault.description': 'Reach wave 30 to topple the council.',
+      'quest.harren_rescue.title': 'Rescue or Evidence',
+      'quest.harren_rescue.description': 'Defeat the Shadow Council boss to find Elara.',
+      'quest.final_truth.title': 'The Final Truth',
+      'quest.final_truth.description': 'Reach wave 40 to find the true source of the pact.'
+    });
+  }
+
+  // ---- i18n helpers ----
+  // Use these helpers (or i18n.t directly with `quest.<id>.<field>`) instead of
+  // reading quest.title / quest.description directly so the active language is
+  // always honored. Falls back to the original field when i18n is absent.
+  function getQuestField(quest, field) {
+    if (!quest) return '';
+    if (window.i18n) {
+      var v = window.i18n.t('quest.' + quest.id + '.' + field);
+      if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+    }
+    return quest[field] || '';
+  }
+
   // ---- Quest State ----
   // status: 'available' | 'active' | 'completed'
   let questState = {};
@@ -624,11 +701,19 @@
   function getTrackerText() {
     var active = getActiveQuests();
     if (!active.length) return '';
+    var suffix = (window.i18n ? window.i18n.t('quest.tracker.short_suffix') : '..');
     var lines = [];
     active.forEach(function (q) {
+      var fullTitle = getQuestField(q, 'title');
+      var shortName = fullTitle.length > 16 ? fullTitle.substring(0, 14) + suffix : fullTitle;
       q.objectives.forEach(function (obj) {
-        var shortName = q.title.length > 16 ? q.title.substring(0, 14) + '..' : q.title;
-        lines.push(shortName + ': ' + obj.current + '/' + obj.required);
+        if (window.i18n) {
+          lines.push(window.i18n.t('quest.tracker.progress', {
+            title: shortName, cur: obj.current, required: obj.required
+          }));
+        } else {
+          lines.push(shortName + ': ' + obj.current + '/' + obj.required);
+        }
       });
     });
     return lines.join('\n');
@@ -652,8 +737,22 @@
     loadQuestSaveData: loadQuestSaveData,
     onQuestUpdate: onQuestUpdate,
     offQuestUpdate: offQuestUpdate,
-    getTrackerText: getTrackerText
+    getTrackerText: getTrackerText,
+    getQuestField: getQuestField,
+    getQuestTitle: function (q) { return getQuestField(q, 'title'); },
+    getQuestDescription: function (q) { return getQuestField(q, 'description'); },
+    getQuestDialogue: function (q, phase) {
+      var key = 'dialogue' + phase[0].toUpperCase() + phase.slice(1);
+      return getQuestField(q, key);
+    }
   };
+
+  // Re-render living quest tracker on language change.
+  if (window.i18n) {
+    window.i18n.onChange(function () {
+      _notifyUpdate();
+    });
+  }
 
   window.questSystem = questSystem;
 })();
