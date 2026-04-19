@@ -847,6 +847,18 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     window.PLAYER_HEALTH_REGEN = skillEffects.healthRegen > 0 ? skillEffects.healthRegen : 0;
   }
 
+  // 3.6) Event-Buffs (Shrine etc.) als letzte Schicht — überleben Equipment-Recalcs.
+  const buffs = window.eventBuffs;
+  if (buffs) {
+    weaponDamage = Math.max(1, Math.round(weaponDamage * (buffs.damageMult || 1)));
+    playerArmor = Phaser.Math.Clamp(
+      (playerArmor + (buffs.armorAdd || 0)) * (buffs.armorMult || 1),
+      0,
+      0.85
+    );
+    playerSpeed = Math.max(60, Math.round(playerSpeed * (buffs.speedMult || 1)));
+  }
+
   // 4) HUD aktualisieren
   if (weaponStatsText) {
     weaponStatsText.setText(

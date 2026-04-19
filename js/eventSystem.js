@@ -306,17 +306,21 @@
           {
             label: 'Kraft (+25% Schaden, -15% Ruestung)',
             callback: function () {
-              window.weaponDamage = Math.round((window.weaponDamage || 5) * 1.25);
-              window.playerArmor = Math.max(0, Math.round((window.playerArmor || 0) * 0.85));
+              window.eventBuffs = window.eventBuffs || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1 };
+              window.eventBuffs.damageMult *= 1.25;
+              window.eventBuffs.armorMult *= 0.85;
+              if (typeof recalcDerived === 'function') recalcDerived(0, 0);
               showEventToast(scene, 'Kraft des Schreins: +25% Schaden!', 'shrine_buff');
             }
           },
           {
-            label: 'Schutz (+5 Ruestung, -10% Geschw.)',
+            label: 'Schutz (+5% Ruestung, -10% Geschw.)',
             callback: function () {
-              window.playerArmor = Math.round((window.playerArmor || 0) + 5);
-              window.playerSpeed = Math.round((window.playerSpeed || 200) * 0.9);
-              showEventToast(scene, 'Schutz des Schreins: +5 Ruestung!', 'shrine_buff');
+              window.eventBuffs = window.eventBuffs || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1 };
+              window.eventBuffs.armorAdd += 0.05;
+              window.eventBuffs.speedMult *= 0.9;
+              if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+              showEventToast(scene, 'Schutz des Schreins: +5% Ruestung!', 'shrine_buff');
             }
           },
           { label: 'Ignorieren', callback: function () {} }
