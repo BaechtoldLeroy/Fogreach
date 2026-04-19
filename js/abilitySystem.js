@@ -218,6 +218,92 @@
     schattenschritt: { type: 'boss',          value: 'shadowCouncillor', hint: 'Besiege den Schattenrat' }
   };
 
+  // ---------- i18n bootstrap ----------
+  // Auto-register German strings for all abilities + unlock hints, then convert
+  // each def.name / def.description / unlockRule.hint into a getter so existing
+  // consumers (loadoutOverlay tooltip, HUD slot tiles) automatically see the
+  // active language without code changes.
+  if (window.i18n) {
+    var _autoDe = {};
+    Object.keys(ABILITY_DEFS).forEach(function (id) {
+      var d = ABILITY_DEFS[id];
+      if (typeof d.name === 'string') _autoDe['ability.' + id + '.name'] = d.name;
+      if (typeof d.description === 'string') _autoDe['ability.' + id + '.description'] = d.description;
+    });
+    Object.keys(UNLOCK_RULES).forEach(function (id) {
+      var r = UNLOCK_RULES[id];
+      if (r && typeof r.hint === 'string') _autoDe['ability.' + id + '.unlock_hint'] = r.hint;
+    });
+    window.i18n.register('de', _autoDe);
+
+    window.i18n.register('en', {
+      'ability.spinAttack.name': 'Spin Attack',
+      'ability.spinAttack.description': 'AoE spin strike around the player.',
+      'ability.spinAttack.unlock_hint': 'Defeat 5 enemies',
+      'ability.chargeSlash.name': 'Charged Slash',
+      'ability.chargeSlash.description': 'Hold to charge, release for a mighty strike.',
+      'ability.chargeSlash.unlock_hint': 'Defeat 15 enemies',
+      'ability.dashSlash.name': 'Dash Slash',
+      'ability.dashSlash.description': 'Quick forward dash dealing damage.',
+      'ability.dashSlash.unlock_hint': 'Defeat 25 enemies',
+      'ability.daggerThrow.name': 'Dagger Throw',
+      'ability.daggerThrow.description': 'Throws a dagger in the facing direction.',
+      'ability.daggerThrow.unlock_hint': 'Reach wave 3',
+      'ability.shieldBash.name': 'Shield Bash',
+      'ability.shieldBash.description': 'Stuns nearby enemies.',
+      'ability.shieldBash.unlock_hint': 'Defeat 50 enemies',
+      'ability.heilwunde.name': 'Heal Wound',
+      'ability.heilwunde.description': 'Heals 5 HP. Cooldown: 30s.',
+      'ability.heilwunde.unlock_hint': "Complete Branka's documents quest",
+      'ability.frostnova.name': 'Frost Nova',
+      'ability.frostnova.description': 'AoE around the player, slows all nearby enemies.',
+      'ability.frostnova.unlock_hint': 'Defeat the Chainmaster',
+      'ability.blutopfer.name': 'Blood Sacrifice',
+      'ability.blutopfer.description': 'Sacrifice 5 HP for +50% damage (10s).',
+      'ability.blutopfer.unlock_hint': 'Reach wave 15',
+      'ability.schattenschritt.name': 'Shadow Step',
+      'ability.schattenschritt.description': 'Brief invulnerability + speed bonus (3s).',
+      'ability.schattenschritt.unlock_hint': 'Defeat the Shadow Council'
+    });
+
+    // Convert existing value-properties into getters so reads always honor the
+    // active language. NOTE: assigns to non-frozen plain literals, safe.
+    Object.keys(ABILITY_DEFS).forEach(function (id) {
+      var d = ABILITY_DEFS[id];
+      var nameKey = 'ability.' + id + '.name';
+      var descKey = 'ability.' + id + '.description';
+      try {
+        Object.defineProperty(d, 'name', {
+          get: function () {
+            var v = window.i18n.t(nameKey);
+            return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : id;
+          },
+          configurable: true, enumerable: true
+        });
+        Object.defineProperty(d, 'description', {
+          get: function () {
+            var v = window.i18n.t(descKey);
+            return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : '';
+          },
+          configurable: true, enumerable: true
+        });
+      } catch (e) { /* swallow */ }
+    });
+    Object.keys(UNLOCK_RULES).forEach(function (id) {
+      var r = UNLOCK_RULES[id];
+      var hintKey = 'ability.' + id + '.unlock_hint';
+      try {
+        Object.defineProperty(r, 'hint', {
+          get: function () {
+            var v = window.i18n.t(hintKey);
+            return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : '';
+          },
+          configurable: true, enumerable: true
+        });
+      } catch (e) { /* swallow */ }
+    });
+  }
+
   // No abilities learned by default — only basic attack (space) is always available.
   // Player must learn skills through gameplay (kills, quests, bosses).
   const DEFAULT_LEARNED = [];

@@ -307,6 +307,124 @@ const SKILL_TREES = {
   }
 };
 
+// ---------- i18n bootstrap ----------
+// Auto-register German strings from SKILL_TREES, then convert each tree.name +
+// skill.name + skill.description to a getter so existing consumers (skill-tree
+// UI, tooltips) automatically see the active language.
+if (window.i18n) {
+  var _autoSkillDe = {};
+  Object.keys(SKILL_TREES).forEach(function (treeId) {
+    var tree = SKILL_TREES[treeId];
+    if (typeof tree.name === 'string') _autoSkillDe['skill.tree.' + treeId + '.name'] = tree.name;
+    (tree.skills || []).forEach(function (s) {
+      if (typeof s.name === 'string') _autoSkillDe['skill.' + s.id + '.name'] = s.name;
+      if (typeof s.description === 'string') _autoSkillDe['skill.' + s.id + '.description'] = s.description;
+    });
+  });
+  window.i18n.register('de', _autoSkillDe);
+
+  window.i18n.register('en', {
+    'skill.tree.combat.name': 'Combat',
+    'skill.combat_damage_1.name': 'Iron Blade I',
+    'skill.combat_damage_1.description': '+2 weapon damage',
+    'skill.combat_damage_2.name': 'Iron Blade II',
+    'skill.combat_damage_2.description': '+4 weapon damage',
+    'skill.combat_damage_3.name': 'Master Blade',
+    'skill.combat_damage_3.description': '+8 weapon damage',
+    'skill.combat_crit_1.name': 'Precision I',
+    'skill.combat_crit_1.description': '+5% critical hit chance',
+    'skill.combat_crit_2.name': 'Precision II',
+    'skill.combat_crit_2.description': '+10% critical hit chance',
+    'skill.combat_speed_1.name': 'Quick Strikes I',
+    'skill.combat_speed_1.description': '+0.2 attack speed',
+    'skill.combat_speed_2.name': 'Quick Strikes II',
+    'skill.combat_speed_2.description': '+0.3 attack speed',
+    'skill.combat_range_1.name': 'Extended Reach',
+    'skill.combat_range_1.description': '+20 attack range',
+    'skill.combat_poison_blade.name': 'Poison Blade',
+    'skill.combat_poison_blade.description': 'Melee attacks have a 20% chance to apply poison',
+    'skill.combat_chain_lightning.name': 'Chain Lightning',
+    'skill.combat_chain_lightning.description': 'Spin attack hits 1 additional nearby enemy (50% damage)',
+    'skill.combat_lethal_thrust.name': 'Lethal Thrust',
+    'skill.combat_lethal_thrust.description': 'Charged Slash: +25% critical hit chance',
+
+    'skill.tree.survival.name': 'Survival',
+    'skill.survival_hp_1.name': 'Toughness I',
+    'skill.survival_hp_1.description': '+10 maximum health',
+    'skill.survival_hp_2.name': 'Toughness II',
+    'skill.survival_hp_2.description': '+20 maximum health',
+    'skill.survival_hp_3.name': 'Iron Will',
+    'skill.survival_hp_3.description': '+40 maximum health',
+    'skill.survival_armor_1.name': 'Thick Skin I',
+    'skill.survival_armor_1.description': '+5% armor',
+    'skill.survival_armor_2.name': 'Thick Skin II',
+    'skill.survival_armor_2.description': '+10% armor',
+    'skill.survival_regen_1.name': 'Regeneration I',
+    'skill.survival_regen_1.description': 'Heals 1 HP every 5 seconds in the hub',
+    'skill.survival_regen_2.name': 'Regeneration II',
+    'skill.survival_regen_2.description': 'Heals 2 HP every 5 seconds in the hub',
+    'skill.survival_thorn_armor.name': 'Thorn Armor',
+    'skill.survival_thorn_armor.description': 'Melee attackers take 2 damage back',
+    'skill.survival_second_chance.name': 'Second Chance',
+    'skill.survival_second_chance.description': 'Once per dungeon: revive at 30% HP on death',
+    'skill.survival_life_steal.name': 'Life Steal',
+    'skill.survival_life_steal.description': '10% of damage dealt heals the player',
+
+    'skill.tree.mobility.name': 'Mobility',
+    'skill.mobility_speed_1.name': 'Swift Feet I',
+    'skill.mobility_speed_1.description': '+10 movement speed',
+    'skill.mobility_speed_2.name': 'Swift Feet II',
+    'skill.mobility_speed_2.description': '+20 movement speed',
+    'skill.mobility_speed_3.name': 'Wind Walker',
+    'skill.mobility_speed_3.description': '+35 movement speed',
+    'skill.mobility_dodge_1.name': 'Dodge I',
+    'skill.mobility_dodge_1.description': '5% chance to avoid damage',
+    'skill.mobility_dodge_2.name': 'Dodge II',
+    'skill.mobility_dodge_2.description': '10% chance to avoid damage',
+    'skill.mobility_shadow_step.name': 'Shadow Leap',
+    'skill.mobility_shadow_step.description': 'Dash Slash distance +50%',
+    'skill.mobility_wind_gust.name': 'Wind Gust',
+    'skill.mobility_wind_gust.description': 'Dagger Throw pierces the first enemy',
+    'skill.mobility_lightning_reflex.name': 'Lightning Reflex',
+    'skill.mobility_lightning_reflex.description': 'Dodge grants 0.5s of invulnerability'
+  });
+
+  // Convert value-properties to getters for live language switching.
+  Object.keys(SKILL_TREES).forEach(function (treeId) {
+    var tree = SKILL_TREES[treeId];
+    var treeNameKey = 'skill.tree.' + treeId + '.name';
+    try {
+      Object.defineProperty(tree, 'name', {
+        get: function () {
+          var v = window.i18n.t(treeNameKey);
+          return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : treeId;
+        },
+        configurable: true, enumerable: true
+      });
+    } catch (e) { /* swallow */ }
+    (tree.skills || []).forEach(function (s) {
+      var nameKey = 'skill.' + s.id + '.name';
+      var descKey = 'skill.' + s.id + '.description';
+      try {
+        Object.defineProperty(s, 'name', {
+          get: function () {
+            var v = window.i18n.t(nameKey);
+            return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : s.id;
+          },
+          configurable: true, enumerable: true
+        });
+        Object.defineProperty(s, 'description', {
+          get: function () {
+            var v = window.i18n.t(descKey);
+            return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : '';
+          },
+          configurable: true, enumerable: true
+        });
+      } catch (e) { /* swallow */ }
+    });
+  });
+}
+
 function hasSkill(skillId) {
   return !!window.playerSkills[skillId];
 }
