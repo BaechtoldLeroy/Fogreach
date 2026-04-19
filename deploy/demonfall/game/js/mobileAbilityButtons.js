@@ -23,8 +23,8 @@
     dash:   { glyph: '\uD83D\uDCA8',       label: 'Ds',   cd: 'dashSlashCooldownText'     },
     dagger: { glyph: '\uD83D\uDDE1\uFE0F', label: 'Dg',   cd: 'daggerThrowCooldownText'   },
     shield: { glyph: '\uD83D\uDEE1\uFE0F', label: 'Sh',   cd: 'shieldBashCooldownText'    },
-    potion:   { glyph: '\uD83E\uDDEA', label: 'HP',   cd: null },
-    interact: { glyph: '\u270B',       label: 'E',    cd: null },
+    potion:   { glyph: '\uD83E\uDDEA', label: 'x0',     cd: null, dynamicLabel: true },
+    interact: { glyph: '\u270B',       label: 'Aktion', cd: null, tapFeedback: true },
   };
 
   // Per-scene state so we can clean up listeners on re-entry.
@@ -75,9 +75,23 @@
       strokeThickness: 2,
     }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1201);
 
+    // Optional CD overlay text for buttons with no per-ability cooldown text
+    // node (e.g. potion). Only shown when the cooldown is active.
+    let cdOverlay = null;
+    if (spec.key === 'potion') {
+      cdOverlay = scene.add.text(0, 0, '', {
+        fontSize: Math.round(radius * 0.6) + 'px',
+        fontStyle: 'bold',
+        color: '#ffd966',
+        stroke: '#000000',
+        strokeThickness: 4,
+      }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1202).setVisible(false);
+    }
+
     const place = () => {
       icon.setPosition(circle.x, circle.y - radius * 0.12);
       label.setPosition(circle.x, circle.y + radius * 0.55);
+      if (cdOverlay) cdOverlay.setPosition(circle.x, circle.y - radius * 0.12);
     };
     place();
 
@@ -91,8 +105,11 @@
       icon,
       label,
       cdText,
+      cdOverlay,
       originalColor: circle.fillColor,
       place,
+      // Track per-decoration state for polling
+      _lastInteractFlag: false,
     };
   }
 
@@ -104,10 +121,91 @@
     if (dec.label) dec.label.setAlpha(enabled ? 1.0 : 0.5);
   }
 
-  function _pollEnabledState(decorations) {
+  function _countPotionsInInventory() {
+    const inv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : null;
+    if (!inv) return 0;
+    let count = 0;
+    for (let i = 0; i < inv.length; i++) {
+      const it = inv[i];
+      if (it && it.type === 'potion') count += (it.stack || 1);
+    }
+    return count;
+  }
+
+  // Per-button live state polling: cooldown enable/disable, dynamic potion
+  // label (count + cooldown overlay), interact button tap-feedback flash.
+  function _pollEnabledState(decorations, scene) {
     decorations.forEach((dec) => {
+      // Standard cooldown-text-driven enable/disable
       const cdVisible = !!(dec.cdText && dec.cdText.visible);
       _applyEnabledVisual(dec, !cdVisible);
+
+      // Potion-specific: live count + cooldown overlay
+      if (dec.key === 'potion') {
+        const count = _countPotionsInInventory();
+        const labelText = 'x' + count;
+        if (dec.label && dec.label.text !== labelText) {
+          dec.label.setText(labelText);
+          dec.label.setColor(count > 0 ? '#ffffff' : '#888888');
+        }
+        const onCd = !!(window.LootSystem && typeof window.LootSystem.isPotionOnCooldown === 'function'
+          && window.LootSystem.isPotionOnCooldown());
+        const remainMs = onCd && typeof window.LootSystem._getPotionCooldownRemaining === 'function'
+          ? window.LootSystem._getPotionCooldownRemaining() : 0;
+        const usable = count > 0 && !onCd;
+        // Override the cdText-based enable: potion has no cdText node, so we
+        // drive its enabled state directly from count + isPotionOnCooldown.
+        _applyEnabledVisual(dec, usable);
+        if (dec.cdOverlay) {
+          if (onCd && remainMs > 0) {
+            dec.cdOverlay.setText((remainMs / 1000).toFixed(1));
+            dec.cdOverlay.setVisible(true);
+            if (dec.icon) dec.icon.setAlpha(0.35);
+          } else {
+            dec.cdOverlay.setVisible(false);
+          }
+        }
+      }
+
+      // Interact-specific: visual tap-feedback when __MOBILE_INTERACT_ACTIVE__
+      // pulses true (set by mobileControls._interact). One-shot tween.
+      if (dec.key === 'interact') {
+        const active = !!window.__MOBILE_INTERACT_ACTIVE__;
+        if (active && !dec._lastInteractFlag && scene && scene.tweens) {
+          dec._lastInteractFlag = true;
+          // Scale-pulse + color flash on the underlying circle
+          if (dec.circle && dec.circle.setScale) {
+            scene.tweens.add({
+              targets: dec.circle,
+              scale: { from: 1.0, to: 1.25 },
+              duration: 100,
+              yoyo: true,
+              ease: 'Sine.Out'
+            });
+          }
+          if (dec.icon && dec.icon.setScale) {
+            scene.tweens.add({
+              targets: dec.icon,
+              scale: { from: 1.0, to: 1.3 },
+              duration: 100,
+              yoyo: true,
+              ease: 'Sine.Out'
+            });
+          }
+          // Brief brighten of the original tint
+          if (dec.circle && dec.circle.setFillStyle) {
+            const orig = dec.originalColor;
+            dec.circle.setFillStyle(0xffffff, 0.85);
+            if (scene.time && scene.time.delayedCall) {
+              scene.time.delayedCall(120, () => {
+                if (dec.circle && dec.circle.active) dec.circle.setFillStyle(orig, 0.6);
+              });
+            }
+          }
+        } else if (!active && dec._lastInteractFlag) {
+          dec._lastInteractFlag = false;
+        }
+      }
     });
   }
 
@@ -130,7 +228,7 @@
       .map((b) => _decorateButton(scene, b))
       .filter(Boolean);
 
-    const poll = () => _pollEnabledState(decorations);
+    const poll = () => _pollEnabledState(decorations, scene);
     // Poll enabled state each tick — cheap (visibility check on 6 text nodes).
     scene.events.on('update', poll);
 
@@ -145,6 +243,7 @@
       decorations.forEach((d) => {
         d.icon && d.icon.destroy();
         d.label && d.label.destroy();
+        d.cdOverlay && d.cdOverlay.destroy();
       });
       sceneState.delete(scene);
     });
