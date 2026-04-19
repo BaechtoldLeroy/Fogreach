@@ -419,32 +419,12 @@
       }
     }
 
-    // 11b) Extra stairs in larger chambers (036-procroom-stairs)
-    var STAIR_MIN_AREA = 200; // minimum chamber area (tiles) for extra stairs
-    var STAIR_CLEARANCE = 3;  // tiles from walls/doors
-    accessibleChambers.forEach(function (c) {
-      var area = c.w * c.h;
-      if (area < STAIR_MIN_AREA) return;
-      // Place 1 extra stair in qualifying chambers
-      for (var sat = 0; sat < 8; sat++) {
-        var sx = c.x + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, c.w - STAIR_CLEARANCE * 2));
-        var sy = c.y + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, c.h - STAIR_CLEARANCE * 2));
-        var nearDoor = doorwayTiles[sy + '|' + sx] || doorwayTiles[(sy-1) + '|' + sx] || doorwayTiles[(sy+1) + '|' + sx] || doorwayTiles[sy + '|' + (sx-1)] || doorwayTiles[sy + '|' + (sx+1)];
-        if (grid[sy] && grid[sy][sx] === '.' && !nearDoor) {
-          // Check distance from existing entrances
-          var tooClose = false;
-          for (var ei = 0; ei < entrances.length; ei++) {
-            var edx = entrances[ei].x - sx;
-            var edy = entrances[ei].y - sy;
-            if (edx * edx + edy * edy < 100) { tooClose = true; break; } // min 10 tiles apart
-          }
-          if (!tooClose) {
-            entrances.push({ x: sx, y: sy, dir: null });
-            break;
-          }
-        }
-      }
-    });
+    // 11b) Cap total stairs at 2 (one entry + one exit). Earlier behavior
+    // (036-procroom-stairs) added 1 extra stair PER qualifying chamber, which
+    // for BSP-split rooms with 3-5 chambers produced 4-7 stairs in a single
+    // room — visually noisy and breaks "next room" pacing. Keep exactly the
+    // N + S edge entrances.
+    if (entrances.length > 2) entrances.length = 2;
 
     // 12) Enemy spawns in later chambers (skip first). Large chambers get
     //     multiple groups scattered within. Total density ~1 enemy per 40

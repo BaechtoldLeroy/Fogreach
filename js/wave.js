@@ -5,18 +5,21 @@
 // --------------------------------------------------
 function computeWaveEnemyTotal(waveNumber, roomAreaPx) {
   const wave = Math.max(1, Math.floor(waveNumber || 1));
-  // Logarithmic scaling: starts at 3, grows slowly, caps at 12
-  // Wave 1: 3, Wave 5: 5, Wave 10: 7, Wave 20: 9, Wave 40: 11
-  const base = 3;
-  const scaled = base + Math.floor(Math.log2(wave) * 1.5);
-  const baseCount = Math.min(12, scaled);
+  // Logarithmic wave scaling for the BASE count (room of reference size).
+  // Wave 1: 4, Wave 5: 6, Wave 10: 8, Wave 20: 10, Wave 40: 13
+  const base = 4;
+  const scaled = base + Math.floor(Math.log2(wave) * 1.7);
+  const baseCount = Math.min(14, scaled);
 
-  // Scale enemy count by room area — reference area is ~1 million px² (1152x896)
-  // Smaller rooms get fewer enemies, larger rooms get more
+  // Scale enemy count by room area — reference area is the median template
+  // (~1 million px²). Use a near-linear curve (pow 0.85) so big procedural
+  // rooms (2-3x area) actually feel populated. Old sqrt was too gentle and
+  // big rooms read as empty.
   if (roomAreaPx && roomAreaPx > 0) {
     const REF_AREA = 1152 * 896; // ~1,032,192 px² (median template size)
-    const areaFactor = Math.sqrt(roomAreaPx / REF_AREA); // sqrt for gentler scaling
-    return Math.max(2, Math.min(16, Math.round(baseCount * areaFactor)));
+    const ratio = roomAreaPx / REF_AREA;
+    const areaFactor = Math.pow(ratio, 0.85);
+    return Math.max(3, Math.min(28, Math.round(baseCount * areaFactor)));
   }
   return baseCount;
 }
