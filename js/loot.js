@@ -1,3 +1,25 @@
+if (window.i18n) {
+  window.i18n.register('de', {
+    'loot.legacy.weapon': 'Klingenschwert',
+    'loot.legacy.head': 'Stahlhelm',
+    'loot.legacy.body': 'Brustplatte',
+    'loot.legacy.boots': 'Stiefel',
+    'loot.legacy.material': 'Eisenbrocken',
+    'loot.quest_item.QUEST_DOC': 'Protokoll-Abschrift',
+    'loot.quest_item.QUEST_PLATE': 'Verbotene Druckplatte'
+  });
+  window.i18n.register('en', {
+    'loot.legacy.weapon': 'Sword',
+    'loot.legacy.head': 'Steel Helm',
+    'loot.legacy.body': 'Breastplate',
+    'loot.legacy.boots': 'Boots',
+    'loot.legacy.material': 'Iron Chunk',
+    'loot.quest_item.QUEST_DOC': 'Protocol Transcript',
+    'loot.quest_item.QUEST_PLATE': 'Forbidden Print Plate'
+  });
+}
+const _LOOT_T = (key) => (window.i18n ? window.i18n.t(key) : key);
+
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 // Tier weights mirror the LootSystem tier model (0=Common .. 3=Legendary).
@@ -198,8 +220,8 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
 
     // Check for active fetch quests and spawn matching quest items
     var questItemDefs = [
-      { target: 'document', name: 'Protokoll-Abschrift', key: 'QUEST_DOC', tint: 0xffdd44 },
-      { target: 'print_plate', name: 'Verbotene Druckplatte', key: 'QUEST_PLATE', tint: 0x88aaff }
+      { target: 'document', name: _LOOT_T('loot.quest_item.QUEST_DOC'), nameKey: 'loot.quest_item.QUEST_DOC', key: 'QUEST_DOC', tint: 0xffdd44 },
+      { target: 'print_plate', name: _LOOT_T('loot.quest_item.QUEST_PLATE'), nameKey: 'loot.quest_item.QUEST_PLATE', key: 'QUEST_PLATE', tint: 0x88aaff }
     ];
 
     for (var qi = 0; qi < questItemDefs.length; qi++) {
@@ -214,6 +236,7 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
           type: 'quest_item',
           key: qiDef.key,
           name: qiDef.name,
+          nameKey: qiDef.nameKey,
           iconKey: 'itMat',
           isQuestItem: true,
           questTarget: qiDef.target
@@ -642,23 +665,24 @@ function randomLoot() {
   };
 
   if (roll <= 35) {
-    return buildItem({ type: 'weapon', key: 'WPN', name: 'Klingenschwert', iconKey: 'itWeapon' }, 'weapon');
+    return buildItem({ type: 'weapon', key: 'WPN', name: _LOOT_T('loot.legacy.weapon'), nameKey: 'loot.legacy.weapon', iconKey: 'itWeapon' }, 'weapon');
   }
   if (roll <= 55) {
-    return buildItem({ type: 'head', key: 'HD', name: 'Stahlhelm', iconKey: 'itHead' }, 'head');
+    return buildItem({ type: 'head', key: 'HD', name: _LOOT_T('loot.legacy.head'), nameKey: 'loot.legacy.head', iconKey: 'itHead' }, 'head');
   }
   if (roll <= 75) {
-    return buildItem({ type: 'body', key: 'BD', name: 'Brustplatte', iconKey: 'itBody' }, 'body');
+    return buildItem({ type: 'body', key: 'BD', name: _LOOT_T('loot.legacy.body'), nameKey: 'loot.legacy.body', iconKey: 'itBody' }, 'body');
   }
   if (roll <= 85) {
-    return buildItem({ type: 'boots', key: 'BT', name: 'Stiefel', iconKey: 'itBoots' }, 'boots');
+    return buildItem({ type: 'boots', key: 'BT', name: _LOOT_T('loot.legacy.boots'), nameKey: 'loot.legacy.boots', iconKey: 'itBoots' }, 'boots');
   }
 
   return applyDifficulty(makeItem({
     type: 'material',
     key: 'MAT',
     materialKey: 'MAT',
-    name: 'Eisenbrocken',
+    name: _LOOT_T('loot.legacy.material'),
+    nameKey: 'loot.legacy.material',
     iconKey: 'itMat',
     tier,
     affixes: [],

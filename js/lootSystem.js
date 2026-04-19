@@ -1,5 +1,151 @@
 // js/lootSystem.js
 // Loot & Economy Overhaul — Foundation & Affix Engine (WP01).
+
+if (window.i18n) {
+  window.i18n.register('de', {
+    // Affix displayNames (used in composeName to build "Sharp Iron Blade")
+    'loot.affix.sharp_dmg': 'Scharfe',
+    'loot.affix.sturdy_armor': 'Robuste',
+    'loot.affix.of_health': 'des Bären',
+    'loot.affix.swift_speed': 'Flinke',
+    'loot.affix.of_precision': 'der Präzision',
+    'loot.affix.of_reach': 'der Reichweite',
+    'loot.affix.fire_warding': 'Feuerfeste',
+    'loot.affix.cold_warding': 'Frostfeste',
+    'loot.affix.lightning_warding': 'Sturmfeste',
+    'loot.affix.of_the_leech': 'des Egels',
+    'loot.affix.spinning_dmg': 'Wirbelnde',
+    'loot.affix.charged_dmg': 'Geladene',
+    'loot.affix.dashing_dmg': 'Hetzende',
+    'loot.affix.piercing_dmg': 'Durchdringende',
+    'loot.affix.bashing_dmg': 'Schmetternde',
+    'loot.affix.of_swift_spin': 'des schnellen Wirbels',
+    'loot.affix.of_swift_charge': 'der schnellen Ladung',
+    'loot.affix.of_swift_dash': 'des schnellen Hetzens',
+    'loot.affix.of_swift_dagger': 'des schnellen Dolchs',
+    'loot.affix.of_swift_bash': 'des schnellen Schmetterns',
+    'loot.affix.of_might': 'der Macht',
+    'loot.affix.of_haste': 'der Eile',
+    'loot.affix.of_wisdom': 'der Weisheit',
+    'loot.affix.of_greed': 'der Gier',
+
+    // Affix tooltip texts (with {value} placeholder). Used by inventory.js
+    // when rendering item tooltips.
+    'loot.affix.sharp_dmg.tooltip': '+{value}% Schaden',
+    'loot.affix.sturdy_armor.tooltip': '+{value} Rüstung',
+    'loot.affix.of_health.tooltip': '+{value} LP',
+    'loot.affix.swift_speed.tooltip': '+{value}% Tempo',
+    'loot.affix.of_precision.tooltip': '+{value}% Krit-Chance',
+    'loot.affix.of_reach.tooltip': '+{value} Reichweite',
+    'loot.affix.fire_warding.tooltip': '+{value}% Feuerresistenz',
+    'loot.affix.cold_warding.tooltip': '+{value}% Frostresistenz',
+    'loot.affix.lightning_warding.tooltip': '+{value}% Blitzresistenz',
+    'loot.affix.of_the_leech.tooltip': '+{value}% Lebensraub',
+    'loot.affix.spinning_dmg.tooltip': '+{value}% Wirbelangriff-Schaden',
+    'loot.affix.charged_dmg.tooltip': '+{value}% Aufgeladener Schlag-Schaden',
+    'loot.affix.dashing_dmg.tooltip': '+{value}% Sturmhieb-Schaden',
+    'loot.affix.piercing_dmg.tooltip': '+{value}% Dolchwurf-Schaden',
+    'loot.affix.bashing_dmg.tooltip': '+{value}% Schildstoß-Schaden',
+    'loot.affix.of_swift_spin.tooltip': '-{value}% Wirbelangriff-Cooldown',
+    'loot.affix.of_swift_charge.tooltip': '-{value}% Aufgeladener Schlag-Cooldown',
+    'loot.affix.of_swift_dash.tooltip': '-{value}% Sturmhieb-Cooldown',
+    'loot.affix.of_swift_dagger.tooltip': '-{value}% Dolchwurf-Cooldown',
+    'loot.affix.of_swift_bash.tooltip': '-{value}% Schildstoß-Cooldown',
+    'loot.affix.of_might.tooltip': '+{value}% Schaden aller Fähigkeiten',
+    'loot.affix.of_haste.tooltip': '-{value}% Cooldown aller Fähigkeiten',
+    'loot.affix.of_wisdom.tooltip': '+{value}% XP-Gewinn',
+    'loot.affix.of_greed.tooltip': '+{value}% Gold-Find',
+
+    'loot.item.WPN_EISENKLINGE': 'Eisenklinge',
+    'loot.item.WPN_SCHATTENDOLCH': 'Schattendolch',
+    'loot.item.WPN_KETTENMORGENSTERN': 'Kettenmorgenstern',
+    'loot.item.WPN_GLUTAXT': 'Glutaxt',
+    'loot.item.HD_KETTENHAUBE': 'Kettenhaube',
+    'loot.item.HD_BRONZEHELM': 'Bronzehelm',
+    'loot.item.HD_SCHLANGENMASKE': 'Schlangenmaske',
+    'loot.item.BD_LEDERHARNISCH': 'Lederharnisch',
+    'loot.item.BD_PLATTENPANZER': 'Plattenpanzer',
+    'loot.item.BD_SCHATTENKUTTE': 'Schattenkutte',
+    'loot.item.BT_LEDERSTIEFEL': 'Lederstiefel',
+    'loot.item.BT_STAHLSOHLEN': 'Stahlsohlen',
+    'loot.item.BT_WINDLAEUFER': 'Windläufer',
+    'loot.potion.t1': 'Heiltrank (Klein)',
+    'loot.potion.t2': 'Heiltrank',
+    'loot.potion.t3': 'Heiltrank (Gross)',
+    'loot.potion.t4': 'Heiltrank (Super)',
+    'loot.fallback.item': 'Gegenstand'
+  });
+  window.i18n.register('en', {
+    'loot.affix.sharp_dmg': 'Sharp',
+    'loot.affix.sturdy_armor': 'Sturdy',
+    'loot.affix.of_health': 'of the Bear',
+    'loot.affix.swift_speed': 'Swift',
+    'loot.affix.of_precision': 'of Precision',
+    'loot.affix.of_reach': 'of Reach',
+    'loot.affix.fire_warding': 'Fireproof',
+    'loot.affix.cold_warding': 'Frostproof',
+    'loot.affix.lightning_warding': 'Stormproof',
+    'loot.affix.of_the_leech': 'of the Leech',
+    'loot.affix.spinning_dmg': 'Spinning',
+    'loot.affix.charged_dmg': 'Charged',
+    'loot.affix.dashing_dmg': 'Dashing',
+    'loot.affix.piercing_dmg': 'Piercing',
+    'loot.affix.bashing_dmg': 'Bashing',
+    'loot.affix.of_swift_spin': 'of Swift Spin',
+    'loot.affix.of_swift_charge': 'of Swift Charge',
+    'loot.affix.of_swift_dash': 'of Swift Dash',
+    'loot.affix.of_swift_dagger': 'of Swift Dagger',
+    'loot.affix.of_swift_bash': 'of Swift Bash',
+    'loot.affix.of_might': 'of Might',
+    'loot.affix.of_haste': 'of Haste',
+    'loot.affix.of_wisdom': 'of Wisdom',
+    'loot.affix.of_greed': 'of Greed',
+
+    'loot.affix.sharp_dmg.tooltip': '+{value}% Damage',
+    'loot.affix.sturdy_armor.tooltip': '+{value} Armor',
+    'loot.affix.of_health.tooltip': '+{value} HP',
+    'loot.affix.swift_speed.tooltip': '+{value}% Speed',
+    'loot.affix.of_precision.tooltip': '+{value}% Crit Chance',
+    'loot.affix.of_reach.tooltip': '+{value} Range',
+    'loot.affix.fire_warding.tooltip': '+{value}% Fire Resist',
+    'loot.affix.cold_warding.tooltip': '+{value}% Cold Resist',
+    'loot.affix.lightning_warding.tooltip': '+{value}% Lightning Resist',
+    'loot.affix.of_the_leech.tooltip': '+{value}% Life Steal',
+    'loot.affix.spinning_dmg.tooltip': '+{value}% Spin Attack Damage',
+    'loot.affix.charged_dmg.tooltip': '+{value}% Charged Slash Damage',
+    'loot.affix.dashing_dmg.tooltip': '+{value}% Dash Slash Damage',
+    'loot.affix.piercing_dmg.tooltip': '+{value}% Dagger Throw Damage',
+    'loot.affix.bashing_dmg.tooltip': '+{value}% Shield Bash Damage',
+    'loot.affix.of_swift_spin.tooltip': '-{value}% Spin Attack Cooldown',
+    'loot.affix.of_swift_charge.tooltip': '-{value}% Charged Slash Cooldown',
+    'loot.affix.of_swift_dash.tooltip': '-{value}% Dash Slash Cooldown',
+    'loot.affix.of_swift_dagger.tooltip': '-{value}% Dagger Throw Cooldown',
+    'loot.affix.of_swift_bash.tooltip': '-{value}% Shield Bash Cooldown',
+    'loot.affix.of_might.tooltip': '+{value}% All Ability Damage',
+    'loot.affix.of_haste.tooltip': '-{value}% All Ability Cooldowns',
+    'loot.affix.of_wisdom.tooltip': '+{value}% XP Gain',
+    'loot.affix.of_greed.tooltip': '+{value}% Gold Find',
+
+    'loot.item.WPN_EISENKLINGE': 'Iron Blade',
+    'loot.item.WPN_SCHATTENDOLCH': 'Shadow Dagger',
+    'loot.item.WPN_KETTENMORGENSTERN': 'Chain Morningstar',
+    'loot.item.WPN_GLUTAXT': 'Ember Axe',
+    'loot.item.HD_KETTENHAUBE': 'Chain Coif',
+    'loot.item.HD_BRONZEHELM': 'Bronze Helm',
+    'loot.item.HD_SCHLANGENMASKE': 'Serpent Mask',
+    'loot.item.BD_LEDERHARNISCH': 'Leather Harness',
+    'loot.item.BD_PLATTENPANZER': 'Plate Armor',
+    'loot.item.BD_SCHATTENKUTTE': 'Shadow Cloak',
+    'loot.item.BT_LEDERSTIEFEL': 'Leather Boots',
+    'loot.item.BT_STAHLSOHLEN': 'Steel Soles',
+    'loot.item.BT_WINDLAEUFER': 'Wind Walkers',
+    'loot.potion.t1': 'Healing Potion (S)',
+    'loot.potion.t2': 'Healing Potion',
+    'loot.potion.t3': 'Healing Potion (L)',
+    'loot.potion.t4': 'Healing Potion (XL)',
+    'loot.fallback.item': 'Item'
+  });
+}
 //
 // This module exposes the full `window.LootSystem` public API surface defined
 // in kitty-specs/020-loot-economy-overhaul/contracts/lootSystem.api.md.
@@ -339,11 +485,19 @@
     const affixCount = tier;
     const affixes = rollAffixes(iLevel, affixCount, Math.random, base.type);
 
+    const _itemNameKey = 'loot.item.' + base.key;
+    const _localizedBase = (window.i18n
+      ? (function () {
+          const v = window.i18n.t(_itemNameKey);
+          return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : base.name;
+        })()
+      : base.name);
     const item = {
       key: base.key,
       type: base.type,
-      name: base.name,
-      _baseName: base.name,
+      name: _localizedBase,
+      nameKey: _itemNameKey,
+      _baseName: _localizedBase,
       iconKey: base.iconKey,
       tier: tier,
       iLevel: iLevel,
@@ -373,8 +527,14 @@
   }
 
   function composeName(item) {
-    if (!item) return 'Item';
-    const baseName = item._baseName || item.name || 'Item';
+    if (!item) return (window.i18n ? window.i18n.t('loot.fallback.item') : 'Item');
+    let baseName;
+    if (window.i18n && item.nameKey) {
+      const v = window.i18n.t(item.nameKey);
+      baseName = (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (item._baseName || item.name);
+    } else {
+      baseName = item._baseName || item.name || (window.i18n ? window.i18n.t('loot.fallback.item') : 'Item');
+    }
     if (!item.tier || item.tier === 0 || !item.affixes || item.affixes.length === 0) {
       return baseName;
     }
@@ -388,25 +548,33 @@
       }
       if (def) defs.push(def);
     }
+    // Localized affix-name lookup: prefer i18n key over hardcoded displayName
+    function _affixName(def) {
+      if (window.i18n && def && def.id) {
+        var v = window.i18n.t('loot.affix.' + def.id);
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return def ? def.displayName : '';
+    }
     const prefixes = defs.filter(function (d) { return d.position === 'prefix'; });
     const suffixes = defs.filter(function (d) { return d.position === 'suffix'; });
 
     let name = baseName;
     if (item.tier === 1) {
       if (prefixes.length > 0) {
-        name = prefixes[0].displayName + ' ' + baseName;
+        name = _affixName(prefixes[0]) + ' ' + baseName;
       } else if (suffixes.length > 0) {
-        name = baseName + ' ' + suffixes[0].displayName;
+        name = baseName + ' ' + _affixName(suffixes[0]);
       }
     } else if (item.tier === 2) {
-      const p = prefixes[0] ? prefixes[0].displayName : '';
-      const s = suffixes[0] ? suffixes[0].displayName : '';
+      const p = _affixName(prefixes[0]);
+      const s = _affixName(suffixes[0]);
       name = (p + ' ' + baseName + ' ' + s).trim().replace(/\s+/g, ' ');
     } else if (item.tier === 3) {
-      const p1 = prefixes[0] ? prefixes[0].displayName : '';
-      const p2 = prefixes[1] ? prefixes[1].displayName : '';
-      const s1 = suffixes[0] ? suffixes[0].displayName : '';
-      const s2 = suffixes[1] ? suffixes[1].displayName : '';
+      const p1 = _affixName(prefixes[0]);
+      const p2 = _affixName(prefixes[1]);
+      const s1 = _affixName(suffixes[0]);
+      const s2 = _affixName(suffixes[1]);
       name = (p1 + ' ' + p2 + ' ' + baseName + ' ' + s1 + ' ' + s2).trim().replace(/\s+/g, ' ');
       if (name.length > 50) {
         name = (p1 + ' ' + baseName + ' ' + s1 + ' [Legendary]').trim().replace(/\s+/g, ' ');
@@ -708,6 +876,21 @@
     // stubs (later WPs)
     rollItem: rollItem,
     composeName: composeName,
+    // i18n helper: always re-resolves item name + affixes against current
+    // language. Consumers should prefer this over reading item.displayName
+    // (which is snapped at instantiation and may be stale after a switch).
+    getLocalizedDisplayName: function (item) { return composeName(item); },
+    // i18n helper: resolve an affix's tooltip string in the active language
+    // with the {value} placeholder filled in. Falls back to def.tooltipText
+    // when no key is registered.
+    getAffixTooltipText: function (def, value) {
+      if (!def) return '';
+      if (window.i18n) {
+        var v = window.i18n.t('loot.affix.' + def.id + '.tooltip', { value: value });
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+      }
+      return (def.tooltipText || '').split('{value}').join(String(value));
+    },
     grantGold: grantGold,
     getGold: getGold,
     spendGold: spendGold,
@@ -725,4 +908,28 @@
     // internal cache handle exposed for tests (read-only by convention)
     _bonusCache: _bonusCache
   };
+
+  // Re-snap item.displayName for every live item when language changes so
+  // legacy consumers reading item.displayName see the new language without
+  // having to adopt getLocalizedDisplayName everywhere.
+  if (window.i18n) {
+    window.i18n.onChange(function () {
+      var pools = [];
+      if (typeof inventory !== 'undefined' && Array.isArray(inventory)) pools.push(inventory);
+      if (typeof equipment !== 'undefined' && equipment && typeof equipment === 'object') {
+        pools.push(Object.values(equipment));
+      }
+      pools.forEach(function (pool) {
+        pool.forEach(function (item) {
+          if (item && typeof item === 'object') {
+            try { item.displayName = composeName(item); } catch (e) { /* ignore */ }
+          }
+        });
+      });
+      // Trigger HUD repaint (gold text uses _refreshHUD; potion tile uses
+      // its own refresh; both already wired to onChange in main.js — but
+      // repaint here too in case other consumers cache).
+      if (typeof window._refreshHUD === 'function') { try { window._refreshHUD(); } catch (e) {} }
+    });
+  }
 })();
