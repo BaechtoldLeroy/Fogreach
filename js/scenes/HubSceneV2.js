@@ -1,6 +1,64 @@
 // HUB_HITBOXES is now defined in js/scenes/hub/hubLayout.js (loaded before this file).
 const HUB_HITBOXES = window.HUB_HITBOXES;
 
+if (window.i18n) {
+  window.i18n.register('de', {
+    'hub.dialog.greeting': 'Gespräch',
+    'hub.dialog.npc_quest.new_task_suffix': '— Neue Aufgabe',
+    'hub.dialog.npc_quest.completed_suffix': '— Aufgabe abgeschlossen!',
+    'hub.dialog.npc_quest.greeting_returning': 'Gut, dass du wieder da bist. Dein Erfolg bei "{title}" hat mir Mut gemacht. Es gibt mehr zu tun.',
+    'hub.dialog.npc_quest.task_header': '[Aufgabe {chain}/3: {title}]\n{description}{rewards}',
+    'hub.dialog.npc_quest.info_text': '{description}\n\nDiese Aufgabe ist Teil einer Questkette ({chain}/3) für {npc}.{rewards}',
+    'hub.dialog.npc_quest.progress_text': '{dialogue}\n\nFortschritt: {progress} ({pct}%)',
+    'hub.dialog.npc_quest.reward_intro': 'Hier ist deine Belohnung:\n\n{rewards}\n\nNimm sie — du hast sie dir verdient.',
+    'hub.dialog.npc_quest.reward_label': '\n\nBelohnung: {rewards}',
+    'hub.dialog.choice.accept': 'Akzeptieren',
+    'hub.dialog.choice.info': 'Mehr erfahren',
+    'hub.dialog.choice.decline': 'Ablehnen',
+    'hub.dialog.choice.collect': 'Belohnung abholen',
+    'hub.druckerei.name': 'Druckerei',
+    'hub.druckerei.line1': 'Die Druckerpresse ruht.',
+    'hub.druckerei.line2': 'Setzer Thom wird sie bald wieder anwerfen.',
+    'hub.wave_select.title': 'Rathauskeller betreten',
+    'hub.wave_select.subtitle': 'Wähle das Start-Level (Schwierigkeit)',
+    'hub.wave_select.dungeon_level': 'Dungeon Level',
+    'hub.wave_select.difficulty_mult': 'Schwierigkeits-Multiplikator',
+    'hub.wave_select.use_background': 'Hintergrundbild verwenden',
+    'hub.wave_select.info': 'Links/Rechts Level ändern - Hoch/Runter Multiplikator\nEnter/Space starten - ESC zurück - B Hintergrund',
+    'hub.wave_select.start': 'Starten',
+    'hub.wave_select.cancel': 'Abbrechen',
+    'hub.skills.title': 'Fertigkeiten'
+  });
+  window.i18n.register('en', {
+    'hub.dialog.greeting': 'Talk',
+    'hub.dialog.npc_quest.new_task_suffix': '— New Task',
+    'hub.dialog.npc_quest.completed_suffix': '— Task Complete!',
+    'hub.dialog.npc_quest.greeting_returning': 'Good to see you again. Your success on "{title}" gave me courage. There is more to do.',
+    'hub.dialog.npc_quest.task_header': '[Task {chain}/3: {title}]\n{description}{rewards}',
+    'hub.dialog.npc_quest.info_text': '{description}\n\nThis task is part of a quest chain ({chain}/3) for {npc}.{rewards}',
+    'hub.dialog.npc_quest.progress_text': '{dialogue}\n\nProgress: {progress} ({pct}%)',
+    'hub.dialog.npc_quest.reward_intro': 'Here is your reward:\n\n{rewards}\n\nTake it — you have earned it.',
+    'hub.dialog.npc_quest.reward_label': '\n\nReward: {rewards}',
+    'hub.dialog.choice.accept': 'Accept',
+    'hub.dialog.choice.info': 'Learn more',
+    'hub.dialog.choice.decline': 'Decline',
+    'hub.dialog.choice.collect': 'Collect reward',
+    'hub.druckerei.name': 'Print Shop',
+    'hub.druckerei.line1': 'The printing press is idle.',
+    'hub.druckerei.line2': 'Setter Thom will fire it up again soon.',
+    'hub.wave_select.title': 'Enter the Town Hall Cellar',
+    'hub.wave_select.subtitle': 'Choose the starting level (difficulty)',
+    'hub.wave_select.dungeon_level': 'Dungeon Level',
+    'hub.wave_select.difficulty_mult': 'Difficulty Multiplier',
+    'hub.wave_select.use_background': 'Use background image',
+    'hub.wave_select.info': 'Left/Right change level - Up/Down multiplier\nEnter/Space start - ESC back - B background',
+    'hub.wave_select.start': 'Start',
+    'hub.wave_select.cancel': 'Cancel',
+    'hub.skills.title': 'Skills'
+  });
+}
+const _HUB_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
 const HUB_DEBUG = false;
 const SCALE_FACTOR = 1536 / 960;
 
@@ -643,20 +701,20 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Build dialogue pages based on quest mode
     const pages = [];
-    let titleStr = npcData.name || 'Gespraech';
+    let titleStr = npcData.name || _HUB_T('hub.dialog.greeting');
 
     // Check for completed quests to reference in dialogue
     const completedForNpc = (qs && npcId) ? qs.getCompletedQuests(npcId) : [];
     const completedCount = completedForNpc.length;
 
     if (questMode === 'offer' && questData) {
-      titleStr = npcData.name + ' — Neue Aufgabe';
+      titleStr = npcData.name + ' ' + _HUB_T('hub.dialog.npc_quest.new_task_suffix');
 
       // Reference previous quests in greeting
       if (completedCount > 0) {
         const lastCompleted = completedForNpc[completedForNpc.length - 1];
         pages.push({
-          text: 'Gut, dass du wieder da bist. Dein Erfolg bei "' + lastCompleted.title + '" hat mir Mut gemacht. Es gibt mehr zu tun.',
+          text: _HUB_T('hub.dialog.npc_quest.greeting_returning', { title: lastCompleted.title }),
           choices: null
         });
       }
@@ -671,33 +729,35 @@ class HubSceneV2 extends Phaser.Scene {
       const chainNum = questData.chain || 1;
       const rewardParts = [];
       if (questData.rewards.xp) rewardParts.push(questData.rewards.xp + ' XP');
-      if (questData.rewards.materials && questData.rewards.materials.MAT) rewardParts.push(questData.rewards.materials.MAT + ' Eisenbrocken');
+      const _matName = (window.i18n ? window.i18n.t('inventory.material.MAT') : 'Eisenbrocken');
+      if (questData.rewards.materials && questData.rewards.materials.MAT) rewardParts.push(questData.rewards.materials.MAT + ' ' + _matName);
       if (questData.rewards.items && questData.rewards.items.length > 0) rewardParts.push(questData.rewards.items[0].name);
       if (questData.rewards.unlocks) {
         questData.rewards.unlocks.forEach(u => {
-          if (u === 'enhanced_crafting') rewardParts.push('Erweiterte Schmiede');
-          else if (u === 'xp_bonus_10') rewardParts.push('+10% XP');
-          else if (u === 'shadow_skill') rewardParts.push('Schattenkunst');
-          else if (u === 'story_ending') rewardParts.push('Epilog');
+          rewardParts.push(_HUB_T('story.unlock.' + u));
         });
       }
-      const rewardStr = rewardParts.length > 0 ? '\n\nBelohnung: ' + rewardParts.join(', ') : '';
+      const rewardStr = rewardParts.length > 0 ? _HUB_T('hub.dialog.npc_quest.reward_label', { rewards: rewardParts.join(', ') }) : '';
 
       pages.push({
-        text: '[Aufgabe ' + chainNum + '/3: ' + questData.title + ']\n' + questData.description + rewardStr,
+        text: _HUB_T('hub.dialog.npc_quest.task_header', {
+          chain: chainNum, title: questData.title, description: questData.description, rewards: rewardStr
+        }),
         choices: [
-          { label: 'Akzeptieren', action: 'accept' },
-          { label: 'Mehr erfahren', action: 'info' },
-          { label: 'Ablehnen', action: 'decline' }
+          { label: _HUB_T('hub.dialog.choice.accept'), action: 'accept' },
+          { label: _HUB_T('hub.dialog.choice.info'), action: 'info' },
+          { label: _HUB_T('hub.dialog.choice.decline'), action: 'decline' }
         ]
       });
 
       // Info page (shown if "Mehr erfahren" is chosen)
       pages.push({
-        text: questData.description + '\n\nDiese Aufgabe ist Teil einer Questkette (' + chainNum + '/3) fuer ' + npcData.name + '.' + rewardStr,
+        text: _HUB_T('hub.dialog.npc_quest.info_text', {
+          description: questData.description, chain: chainNum, npc: npcData.name, rewards: rewardStr
+        }),
         choices: [
-          { label: 'Akzeptieren', action: 'accept' },
-          { label: 'Ablehnen', action: 'decline' }
+          { label: _HUB_T('hub.dialog.choice.accept'), action: 'accept' },
+          { label: _HUB_T('hub.dialog.choice.decline'), action: 'decline' }
         ],
         _isInfoPage: true
       });
@@ -708,25 +768,28 @@ class HubSceneV2 extends Phaser.Scene {
       const progressPct = obj ? Math.floor((obj.current / obj.required) * 100) : 0;
       titleStr = npcData.name + ' — ' + questData.title;
       pages.push({
-        text: questData.dialogueProgress + '\n\nFortschritt: ' + progressStr + ' (' + progressPct + '%)',
+        text: _HUB_T('hub.dialog.npc_quest.progress_text', {
+          dialogue: questData.dialogueProgress, progress: progressStr, pct: progressPct
+        }),
         choices: null
       });
 
     } else if (questMode === 'turnin' && questData) {
-      titleStr = npcData.name + ' — Aufgabe abgeschlossen!';
+      titleStr = npcData.name + ' ' + _HUB_T('hub.dialog.npc_quest.completed_suffix');
       pages.push({
         text: questData.dialogueComplete,
         choices: null
       });
       // Reward page
       const rewardParts = [];
+      const _matName = (window.i18n ? window.i18n.t('inventory.material.MAT') : 'Eisenbrocken');
       if (questData.rewards && questData.rewards.xp) rewardParts.push(questData.rewards.xp + ' XP');
-      if (questData.rewards && questData.rewards.materials && questData.rewards.materials.MAT) rewardParts.push(questData.rewards.materials.MAT + ' Eisenbrocken');
+      if (questData.rewards && questData.rewards.materials && questData.rewards.materials.MAT) rewardParts.push(questData.rewards.materials.MAT + ' ' + _matName);
       if (questData.rewards && questData.rewards.items && questData.rewards.items.length > 0) rewardParts.push(questData.rewards.items[0].name);
       pages.push({
-        text: 'Hier ist deine Belohnung:\n\n' + rewardParts.join('\n') + '\n\nNimm sie — du hast sie dir verdient.',
+        text: _HUB_T('hub.dialog.npc_quest.reward_intro', { rewards: rewardParts.join('\n') }),
         choices: [
-          { label: 'Belohnung abholen', action: 'complete' }
+          { label: _HUB_T('hub.dialog.choice.collect'), action: 'complete' }
         ],
         _isTurnin: true
       });
@@ -1174,8 +1237,8 @@ class HubSceneV2 extends Phaser.Scene {
       });
     } else if (entranceData.target === 'druckerei') {
       this._showNpcDialogue({
-        name: 'Druckerei',
-        lines: ['Die Druckerpresse ruht.', 'Setzer Thom wird sie bald wieder anwerfen.']
+        name: _HUB_T('hub.druckerei.name'),
+        lines: [_HUB_T('hub.druckerei.line1'), _HUB_T('hub.druckerei.line2')]
       });
     }
   }
@@ -1258,21 +1321,21 @@ class HubSceneV2 extends Phaser.Scene {
     };
     persistDifficultySelection(difficulty);
 
-    const title = this.add.text(0, -panelHeight / 2 + pad, 'Rathauskeller betreten', {
+    const title = this.add.text(0, -panelHeight / 2 + pad, _HUB_T('hub.wave_select.title'), {
       fontFamily: 'serif',
       fontSize: 24,
       color: '#f2e9d8'
     }).setOrigin(0.5, 0);
     container.add(title);
 
-    const subtitle = this.add.text(0, title.y + title.height + 12, 'Waehle das Start-Level (Schwierigkeit)', {
+    const subtitle = this.add.text(0, title.y + title.height + 12, _HUB_T('hub.wave_select.subtitle'), {
       fontFamily: 'monospace',
       fontSize: 16,
       color: '#c8c2b5'
     }).setOrigin(0.5, 0);
     container.add(subtitle);
 
-    const waveLabel = this.add.text(0, subtitle.y + subtitle.height + 18, 'Dungeon Level', {
+    const waveLabel = this.add.text(0, subtitle.y + subtitle.height + 18, _HUB_T('hub.wave_select.dungeon_level'), {
       fontFamily: 'monospace',
       fontSize: 18,
       color: '#cfd0ff'
@@ -1286,7 +1349,7 @@ class HubSceneV2 extends Phaser.Scene {
     }).setOrigin(0.5, 0.5);
     container.add(waveText);
 
-    const difficultyLabel = this.add.text(0, waveText.y + 68, 'Schwierigkeits-Multiplikator', {
+    const difficultyLabel = this.add.text(0, waveText.y + 68, _HUB_T('hub.wave_select.difficulty_mult'), {
       fontFamily: 'monospace',
       fontSize: 18,
       color: '#cfd0ff'
@@ -1365,7 +1428,7 @@ class HubSceneV2 extends Phaser.Scene {
     drawCheckbox();
     container.add(bgCheckbox);
     
-    const bgLabel = this.add.text(-70, bgCheckboxY, 'Hintergrundbild verwenden', {
+    const bgLabel = this.add.text(-70, bgCheckboxY, _HUB_T('hub.wave_select.use_background'), {
       fontFamily: 'monospace',
       fontSize: 16,
       color: '#c8c2b5'
@@ -1381,7 +1444,7 @@ class HubSceneV2 extends Phaser.Scene {
     });
     container.add(bgHitArea);
 
-    const info = this.add.text(0, bgCheckboxY + 40, 'Links/Rechts Level aendern - Hoch/Runter Multiplikator\nEnter/Space starten - ESC zurueck - B Hintergrund', {
+    const info = this.add.text(0, bgCheckboxY + 40, _HUB_T('hub.wave_select.info'), {
       fontFamily: 'monospace',
       fontSize: 14,
       color: '#9aa2c0'
@@ -1403,8 +1466,8 @@ class HubSceneV2 extends Phaser.Scene {
     // "Starten" (same as pressing Enter/Space on desktop).
     this._waveDialogConfirm = confirm;
 
-    makeButton('Starten', -80, info.y + info.height + 32, confirm, { backgroundColor: '#3d6a3d' });
-    makeButton('Abbrechen', 120, info.y + info.height + 32, cancel, { backgroundColor: '#6a3d3d' });
+    makeButton(_HUB_T('hub.wave_select.start'), -80, info.y + info.height + 32, confirm, { backgroundColor: '#3d6a3d' });
+    makeButton(_HUB_T('hub.wave_select.cancel'), 120, info.y + info.height + 32, cancel, { backgroundColor: '#6a3d3d' });
 
     const onKeyDown = (event) => {
       switch (event.code) {
@@ -1504,7 +1567,7 @@ class HubSceneV2 extends Phaser.Scene {
     headerBg.fillRect(-panelW / 2 + 2, -panelH / 2 + 2, panelW - 4, headerH);
     container.add(headerBg);
 
-    const titleText = this.add.text(-panelW / 2 + 14, -panelH / 2 + 8, 'Fertigkeiten', {
+    const titleText = this.add.text(-panelW / 2 + 14, -panelH / 2 + 8, _HUB_T('hub.skills.title'), {
       fontFamily: 'serif', fontSize: 18, color: '#ffd166', fontStyle: 'bold', resolution: 2
     }).setOrigin(0, 0);
     container.add(titleText);
