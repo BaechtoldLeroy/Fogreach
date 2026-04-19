@@ -1,7 +1,52 @@
 // Tier color/label maps (indexed by item.tier: 0=Common .. 3=Legendary).
 // Read from window.TIER_COLORS (loot.js) when present so both modules share
 // a single source of truth.
+if (window.i18n) {
+  window.i18n.register('de', {
+    'inventory.tier.common': 'Gewöhnlich',
+    'inventory.tier.magic': 'Magisch',
+    'inventory.tier.rare': 'Selten',
+    'inventory.tier.legendary': 'Legendär',
+    'inventory.material.MAT': 'Eisenbrocken',
+    'inventory.material.fallback': 'Material',
+    'inventory.label.rarity': 'Seltenheit',
+    'inventory.label.damage': 'Schaden',
+    'inventory.label.speed': 'Tempo',
+    'inventory.label.range': 'Reichweite',
+    'inventory.label.armor': 'Rüstung',
+    'inventory.label.crit': 'Krit',
+    'inventory.label.move': 'Bewegung',
+    'inventory.label.hp': 'LP',
+    'inventory.attack.cooldown': '{name}: -{pct}% Cooldown',
+    'inventory.attack.damage': '{name}: +{pct}% Schaden',
+    'inventory.unknown_item': 'Unbekanntes Item'
+  });
+  window.i18n.register('en', {
+    'inventory.tier.common': 'Common',
+    'inventory.tier.magic': 'Magic',
+    'inventory.tier.rare': 'Rare',
+    'inventory.tier.legendary': 'Legendary',
+    'inventory.material.MAT': 'Iron Chunk',
+    'inventory.material.fallback': 'Material',
+    'inventory.label.rarity': 'Rarity',
+    'inventory.label.damage': 'Damage',
+    'inventory.label.speed': 'Speed',
+    'inventory.label.range': 'Range',
+    'inventory.label.armor': 'Armor',
+    'inventory.label.crit': 'Crit',
+    'inventory.label.move': 'Move',
+    'inventory.label.hp': 'HP',
+    'inventory.attack.cooldown': '{name}: -{pct}% Cooldown',
+    'inventory.attack.damage': '{name}: +{pct}% Damage',
+    'inventory.unknown_item': 'Unknown Item'
+  });
+}
+const _INV_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+const _INV_TIER_KEYS = ['inventory.tier.common', 'inventory.tier.magic', 'inventory.tier.rare', 'inventory.tier.legendary'];
+
 const INV_TIER_COLORS_FALLBACK = ['#cccccc', '#88aaff', '#ffdd44', '#ff8844'];
+// Kept as a tuple so legacy index-based callers still work; values are
+// resolved live via i18n through getItemTierLabel below.
 const INV_TIER_LABELS = ['Gewöhnlich', 'Magisch', 'Selten', 'Legendär'];
 
 const getItemTier = (it) => {
@@ -14,7 +59,7 @@ const getItemTierColor = (it) => {
   const arr = (window && window.TIER_COLORS) || INV_TIER_COLORS_FALLBACK;
   return arr[getItemTier(it)];
 };
-const getItemTierLabel = (it) => INV_TIER_LABELS[getItemTier(it)];
+const getItemTierLabel = (it) => _INV_T(_INV_TIER_KEYS[getItemTier(it)] || _INV_TIER_KEYS[0]);
 const getItemDisplayName = (it) => {
   if (!it) return '';
   if (window.LootSystem && typeof window.LootSystem.composeName === 'function') {
@@ -158,7 +203,7 @@ function updateMaterialCounterUI() {
     }
     return;
   }
-  const label = MATERIAL_DISPLAY_NAMES.MAT || 'Material';
+  const label = _INV_T('inventory.material.MAT') || MATERIAL_DISPLAY_NAMES.MAT || _INV_T('inventory.material.fallback');
   counterText.setText(`${label}: ${getMaterialCount('MAT')}`);
 }
 
@@ -461,7 +506,7 @@ function initInventoryUI() {
     if (!it) return { title: '', body: '' };
     const bodyLines = [];
     if (heading) bodyLines.push(heading);
-    bodyLines.push(`Seltenheit: ${getItemTierLabel(it)}`);
+    bodyLines.push(`${_INV_T('inventory.label.rarity')}: ${getItemTierLabel(it)}`);
     const lvl = getItemLevel(it);
     bodyLines.push(`Item Level: ${lvl}`);
     if (it.type) bodyLines.push(`Typ: ${(it.type || '').toUpperCase()}`);
@@ -472,21 +517,25 @@ function initInventoryUI() {
       bodyLines.push(`${label}: +${num.toFixed(decimals)}${suffix}`);
     };
 
-    pushStat('HP', it.hp, 1);
-    pushStat('Damage', it.damage, 1);
-    pushStat('Speed', it.speed, 2);
-    pushStat('Range', it.range, 1);
-    pushStat('Armor', (it.armor || 0) * 100, 1, '%');
-    pushStat('Crit', (it.crit || 0) * 100, 1, '%');
-    pushStat('Move', it.move, 1);
+    pushStat(_INV_T('inventory.label.hp'), it.hp, 1);
+    pushStat(_INV_T('inventory.label.damage'), it.damage, 1);
+    pushStat(_INV_T('inventory.label.speed'), it.speed, 2);
+    pushStat(_INV_T('inventory.label.range'), it.range, 1);
+    pushStat(_INV_T('inventory.label.armor'), (it.armor || 0) * 100, 1, '%');
+    pushStat(_INV_T('inventory.label.crit'), (it.crit || 0) * 100, 1, '%');
+    pushStat(_INV_T('inventory.label.move'), it.move, 1);
     // Affix lines (WP02+). Each affix renders its tooltipText with {value} replaced.
+    // Prefer LootSystem.getAffixTooltipText (i18n-aware) over the raw def.tooltipText.
     if (Array.isArray(it.affixes) && it.affixes.length && window.LootSystem?.AFFIX_DEFS) {
       const defs = window.LootSystem.AFFIX_DEFS;
+      const getTip = window.LootSystem.getAffixTooltipText;
       it.affixes.forEach((inst) => {
         if (!inst) return;
         const def = defs.find((d) => d.id === inst.defId);
         if (!def) return;
-        const txt = (def.tooltipText || '').replace('{value}', inst.value);
+        const txt = (typeof getTip === 'function')
+          ? getTip(def, inst.value)
+          : (def.tooltipText || '').replace('{value}', inst.value);
         if (txt) bodyLines.push(txt);
       });
     }
@@ -498,14 +547,14 @@ function initInventoryUI() {
         const pct = Math.round(Math.max(0, (effect.value || 0) * 100));
         if (pct <= 0) return;
         if (effect.stat === 'cooldown') {
-          bodyLines.push(`${name}: -${pct}% Cooldown`);
+          bodyLines.push(_INV_T('inventory.attack.cooldown', { name: name, pct: pct }));
         } else if (effect.stat === 'damage') {
-          bodyLines.push(`${name}: +${pct}% Damage`);
+          bodyLines.push(_INV_T('inventory.attack.damage', { name: name, pct: pct }));
         }
       });
     }
     return {
-      title: getItemDisplayName(it) || it.name || 'Unbekanntes Item',
+      title: getItemDisplayName(it) || it.name || _INV_T('inventory.unknown_item'),
       body: bodyLines.join('\n')
     };
   };
@@ -861,10 +910,21 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
 
   // 4) HUD aktualisieren
   if (weaponStatsText) {
-    weaponStatsText.setText(
-      `Damage: ${weaponDamage}  Speed: ${weaponAttackSpeed.toFixed(2)}  Range: ${attackRange}` +
-      `\nArmor: ${(playerArmor * 100).toFixed(0)}%  Crit: ${(playerCritChance * 100).toFixed(1)}%`
-    );
+    // Mirrors the same template HUD uses (main.js hud.stats key).
+    if (window.i18n) {
+      weaponStatsText.setText(window.i18n.t('hud.stats', {
+        dmg: weaponDamage,
+        spd: weaponAttackSpeed.toFixed(2),
+        rng: attackRange,
+        arm: (playerArmor * 100).toFixed(0),
+        crit: (playerCritChance * 100).toFixed(1)
+      }));
+    } else {
+      weaponStatsText.setText(
+        `Damage: ${weaponDamage}  Speed: ${weaponAttackSpeed.toFixed(2)}  Range: ${attackRange}` +
+        `\nArmor: ${(playerArmor * 100).toFixed(0)}%  Crit: ${(playerCritChance * 100).toFixed(1)}%`
+      );
+    }
   }
   if (typeof updateHUD === 'function') {
     updateHUD();

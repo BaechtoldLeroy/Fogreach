@@ -254,6 +254,114 @@
   // ---- Special Ending Text ----
   const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede haemmert fuer die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nElara steht vor dir. Traenen in den Augen.\n\'Es ist vorbei\', fluestert sie. \'Endlich vorbei.\'\n\nDu hast die Stadt befreit.';
 
+  // ---- i18n bootstrap ----
+  // Auto-register all German strings so consumers + EN translations can layer
+  // on top. Convert STORY_ACTS[].name into getters so external readers (HUD,
+  // journal) automatically follow the active language.
+  if (window.i18n) {
+    var _autoStoryDe = {};
+    STORY_ACTS.forEach(function (a) {
+      _autoStoryDe['story.act.' + a.id + '.name'] = a.name;
+      _autoStoryDe['story.act.' + a.id + '.narrative'] = ACT_NARRATIVES[a.id] || '';
+    });
+    Object.keys(WAVE_MILESTONES).forEach(function (wave) {
+      _autoStoryDe['story.milestone.' + wave] = WAVE_MILESTONES[wave];
+    });
+    _autoStoryDe['story.all_quests_ending'] = ALL_QUESTS_ENDING;
+    // NPC dialogues: register every line under story.npc.<npcId>.<actId>.<index>
+    Object.keys(NPC_DIALOGUE).forEach(function (npcId) {
+      var byAct = NPC_DIALOGUE[npcId] || {};
+      Object.keys(byAct).forEach(function (actId) {
+        var lines = byAct[actId] || [];
+        lines.forEach(function (line, i) {
+          _autoStoryDe['story.npc.' + npcId + '.' + actId + '.' + i] = line;
+        });
+      });
+    });
+    window.i18n.register('de', _autoStoryDe);
+
+    // English translations: act names, narratives, milestones, ending,
+    // generic UI helpers. NPC act-dialogues fall back to German via the
+    // i18n cascade until iterative translation work fills them in (~150
+    // lines of lore-heavy text).
+    window.i18n.register('en', {
+      'story.act.auftrag.name': 'The Assignment',
+      'story.act.treuer_diener.name': 'The Loyal Servant',
+      'story.act.erste_risse.name': 'First Cracks',
+      'story.act.wahrheit.name': 'Truth Seeps Through',
+      'story.act.bruch.name': 'The Break',
+      'story.act.rebellion.name': 'Rebellion',
+      'story.act.offenbarung.name': 'Revelation',
+
+      'story.act.auftrag.narrative': "You wake in the Archive Forge. Your head throbs. A man in council chains stands over you: 'The cellar must be cleansed, Archivesmith. Wild beasts are loose down there.'",
+      'story.act.treuer_diener.narrative': "Councillor Aldric pats your shoulder. 'Well done. But greater threats remain — intruders are stealing our archives. We need you.'",
+      'story.act.erste_risse.narrative': "The defeated leader's documents bear the Chain Council's seal. Aldric laughs nervously: 'Forgeries. Forgeries, of course.' But Branka stares at you in silence.",
+      'story.act.wahrheit.narrative': 'In the ritual chamber: blood, symbols, chains. This is no intruder camp. This is a summoning chamber. The council lies.',
+      'story.act.bruch.narrative': "'You ask too many questions, Archivesmith.' Aldric's voice is cold. Armed guards stand behind him. 'Finish your assignment — or we will finish you.'",
+      'story.act.rebellion.narrative': "The pamphlets worked. Citizens gather in the square. Branka forges weapons for the resistance. 'It is time,' Mara says. 'The council falls today.'",
+      'story.act.offenbarung.narrative': "The council chamber. The door slams shut. And there stands Elara — beside the Shadow Council. 'I'm sorry,' she whispers. 'But you don't understand.'",
+
+      'story.milestone.5':  'The cellars are cleared. But strange symbols on the walls won\'t leave your mind...',
+      'story.milestone.10': "The leader of the 'intruders' is defeated. His last words: 'We only meant to warn you...'",
+      'story.milestone.15': 'Prison cells. Not for animals — for people. Who are the real prisoners here?',
+      'story.milestone.20': 'The ritual chamber. Demonic energy. The Ceremoniarch falls — but what he summoned lives on.',
+      'story.milestone.30': 'The Shadow Council is defeated. But Elara has vanished with him. The fog begins to thin.',
+      'story.milestone.40': 'Beneath Fogreach a dimension of chains and shadows opens. The true source of the pact awaits.',
+
+      'story.all_quests_ending': "The chains of Fogreach are broken.\n\nThe printing press spreads the truth.\nThe forge hammers for freedom.\nThe underground network keeps watch.\n\nElara stands before you. Tears in her eyes.\n'It's over,' she whispers. 'Finally over.'\n\nYou have freed the city.",
+
+      'story.milestone.label': 'Wave {wave} cleared',
+      'story.epilog.label': 'Epilogue',
+      'story.unlock.enhanced_crafting': 'Advanced Crafting',
+      'story.unlock.xp_bonus_10': '+10% XP',
+      'story.unlock.shadow_skill': 'Shadow Arts',
+      'story.unlock.story_ending': 'Epilogue',
+      'story.unlock.elara_trust': "Elara's Trust"
+    });
+
+    // German registrations for unlock labels (DE source-of-truth, supplement)
+    window.i18n.register('de', {
+      'story.milestone.label': 'Welle {wave} bezwungen',
+      'story.epilog.label': 'Epilog',
+      'story.unlock.enhanced_crafting': 'Erweiterte Schmiede',
+      'story.unlock.xp_bonus_10': '+10% XP',
+      'story.unlock.shadow_skill': 'Schattenkunst',
+      'story.unlock.story_ending': 'Epilog',
+      'story.unlock.elara_trust': 'Elaras Vertrauen'
+    });
+
+    // Convert STORY_ACTS[].name into getters
+    STORY_ACTS.forEach(function (a) {
+      var nameKey = 'story.act.' + a.id + '.name';
+      try {
+        Object.defineProperty(a, 'name', {
+          get: function () {
+            var v = window.i18n.t(nameKey);
+            return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : a.id;
+          },
+          configurable: true, enumerable: true
+        });
+      } catch (e) { /* swallow */ }
+    });
+  }
+
+  // i18n-aware accessors: prefer these over reading the raw maps directly
+  // so consumers automatically follow the active language.
+  function _i18nLookup(key, fallback) {
+    if (!window.i18n) return fallback;
+    var v = window.i18n.t(key);
+    return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : fallback;
+  }
+  function getActNarrative(actId) {
+    return _i18nLookup('story.act.' + actId + '.narrative', ACT_NARRATIVES[actId] || '');
+  }
+  function getWaveMilestoneText(wave) {
+    return _i18nLookup('story.milestone.' + wave, WAVE_MILESTONES[wave] || '');
+  }
+  function getAllQuestsEnding() {
+    return _i18nLookup('story.all_quests_ending', ALL_QUESTS_ENDING);
+  }
+
   // ---- Story State ----
   let storyState = {
     currentActIndex: 0,
@@ -369,7 +477,7 @@
         actId: actId,
         actName: act ? act.name : actId,
         actNumber: act ? STORY_ACTS.indexOf(act) + 1 : 0,
-        narrative: ACT_NARRATIVES[actId] || ''
+        narrative: getActNarrative(actId)
       };
     }
 
@@ -381,9 +489,9 @@
 
       return {
         actId: 'milestone_' + wave,
-        actName: 'Welle ' + wave + ' bezwungen',
+        actName: _i18nLookup('story.milestone.label', 'Welle {wave} bezwungen').replace('{wave}', wave),
         actNumber: null,
-        narrative: WAVE_MILESTONES[wave] || ''
+        narrative: getWaveMilestoneText(wave)
       };
     }
 
@@ -393,9 +501,9 @@
         storyState.endingShown = true;
         return {
           actId: 'ending',
-          actName: 'Epilog',
+          actName: _i18nLookup('story.epilog.label', 'Epilog'),
           actNumber: null,
-          narrative: ALL_QUESTS_ENDING
+          narrative: getAllQuestsEnding()
         };
       }
     }
@@ -410,7 +518,13 @@
     var act = getCurrentAct();
     var npcLines = NPC_DIALOGUE[npcId];
     if (!npcLines) return null;
-    return npcLines[act.id] || npcLines.auftrag || null;
+    var actLines = npcLines[act.id] || npcLines.auftrag || null;
+    if (!actLines) return null;
+    var actId = npcLines[act.id] ? act.id : 'auftrag';
+    // Resolve each line via i18n (falls back to original German via cascade).
+    return actLines.map(function (line, i) {
+      return _i18nLookup('story.npc.' + npcId + '.' + actId + '.' + i, line);
+    });
   }
 
   // ---- Journal Data ----
@@ -426,35 +540,49 @@
         if (q.rewards) {
           var parts = [];
           if (q.rewards.xp) parts.push(q.rewards.xp + ' XP');
-          if (q.rewards.materials && q.rewards.materials.MAT) parts.push(q.rewards.materials.MAT + ' Eisenbrocken');
-          if (q.rewards.items && q.rewards.items.length > 0) parts.push(q.rewards.items[0].name);
+          if (q.rewards.materials && q.rewards.materials.MAT) {
+            parts.push(q.rewards.materials.MAT + ' ' + _i18nLookup('inventory.material.MAT', 'Eisenbrocken'));
+          }
+          if (q.rewards.items && q.rewards.items.length > 0) {
+            var item = q.rewards.items[0];
+            parts.push((window.questSystem && window.questSystem.getRewardItemName)
+              ? window.questSystem.getRewardItemName(item)
+              : item.name);
+          }
           if (q.rewards.unlocks) {
             q.rewards.unlocks.forEach(function (u) {
-              if (u === 'enhanced_crafting') parts.push('Erweiterte Schmiede');
-              else if (u === 'xp_bonus_10') parts.push('+10% XP');
-              else if (u === 'shadow_skill') parts.push('Schattenkunst');
-              else if (u === 'story_ending') parts.push('Epilog');
-              else if (u === 'elara_trust') parts.push('Elaras Vertrauen');
-              else parts.push(u);
+              parts.push(_i18nLookup('story.unlock.' + u, u));
             });
           }
-          if (q.rewards.info) parts.push(q.rewards.info);
+          if (q.rewards.info) {
+            parts.push((window.questSystem && window.questSystem.getRewardInfo)
+              ? window.questSystem.getRewardInfo(q)
+              : q.rewards.info);
+          }
           rewardStr = parts.join(', ');
         }
-        return { title: q.title, description: q.description, rewards: rewardStr, npcId: q.npcId };
+        var qTitle = window.questSystem && window.questSystem.getQuestTitle
+          ? window.questSystem.getQuestTitle(q) : q.title;
+        var qDesc = window.questSystem && window.questSystem.getQuestDescription
+          ? window.questSystem.getQuestDescription(q) : q.description;
+        return { title: qTitle, description: qDesc, rewards: rewardStr, npcId: q.npcId };
       });
       activeQuests = window.questSystem.getActiveQuests().map(function (q) {
         var obj = q.objectives[0];
         var progress = obj ? (obj.current + '/' + obj.required) : '';
         var progressPct = obj ? Math.floor((obj.current / obj.required) * 100) : 0;
-        return { title: q.title, description: q.description, progress: progress, progressPct: progressPct, npcId: q.npcId };
+        var qTitle = window.questSystem && window.questSystem.getQuestTitle
+          ? window.questSystem.getQuestTitle(q) : q.title;
+        var qDesc = window.questSystem && window.questSystem.getQuestDescription
+          ? window.questSystem.getQuestDescription(q) : q.description;
+        return { title: qTitle, description: qDesc, progress: progress, progressPct: progressPct, npcId: q.npcId };
       });
     }
 
     return {
       actNumber: storyState.currentActIndex + 1,
       actName: act.name,
-      actNarrative: ACT_NARRATIVES[act.id] || '',
+      actNarrative: getActNarrative(act.id),
       highestWave: storyState.highestWave,
       completedQuests: completedQuests,
       activeQuests: activeQuests,
