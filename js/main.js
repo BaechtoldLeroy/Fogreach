@@ -1529,6 +1529,13 @@ function handlePlayerDeath(scene) {
     }
   }
 
+  // Endless mode: own death overlay (depth + best), back to start menu.
+  // Skips the leaderboard prompt + hub return below.
+  if (window.Endless && window.Endless.isActive && window.Endless.isActive()) {
+    try { window.Endless.handleDeath(scene); } catch (e) { console.warn('[Endless] death handler failed', e); }
+    return;
+  }
+
   if (gameOverText) {
     gameOverText.setText(_HUD_T('hud.dead'));
     gameOverText.setVisible(true);

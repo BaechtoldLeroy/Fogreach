@@ -755,9 +755,36 @@ function onStairOverlap(player, stair) {
 
   const nextIndex = currentRoomId + 1;
   const totalRooms = dungeonRun ? dungeonRun.totalRooms : rooms.length;
+  const endlessActive = !!(window.Endless && window.Endless.isActive && window.Endless.isActive());
 
-  // Last room cleared -> return to hub
+  // Last room cleared -> return to hub (NORMAL mode). In endless mode we
+  // skip the hub: the next room is generated procedurally with a deeper
+  // depth and the dungeon run is extended in place.
   if (nextIndex >= totalRooms) {
+    if (endlessActive) {
+      // Generate one more procedural room, extend the run, descend.
+      const newDepth = (window.DUNGEON_DEPTH || 1) + 1;
+      window.DUNGEON_DEPTH = newDepth;
+      window.NEXT_DUNGEON_DEPTH = newDepth;
+      window.SELECTED_WAVE_OVERRIDE = newDepth;
+      if (window.Endless && window.Endless.onDepthAdvance) {
+        try { window.Endless.onDepthAdvance(newDepth); } catch (e) {}
+      }
+      if (window.ProceduralRooms && window.RoomTemplates && dungeonRun) {
+        const w = 90 + Math.floor(Math.random() * 60);  // 90-150 tiles
+        const h = 90 + Math.floor(Math.random() * 60);
+        const procName = 'Endless_' + Date.now() + '_' + nextIndex;
+        const procTpl = window.ProceduralRooms.generate({ width: w, height: h, name: procName });
+        window.RoomTemplates.TEMPLATES[procName] = procTpl;
+        dungeonRun.templateOrder.push(procName);
+        dungeonRun.totalRooms = dungeonRun.templateOrder.length;
+        rooms.push(makeRoom(nextIndex, {
+          exits: [{ to: nextIndex + 1, x: 600, y: 400 }]
+        }));
+      }
+      enterRoom(obstacles.scene, nextIndex);
+      return;
+    }
     const scene = obstacles.scene;
     if (typeof leaveDungeonForHub === 'function') {
       leaveDungeonForHub(scene, { reason: 'dungeon_complete' });
@@ -800,6 +827,14 @@ function markRoomCleared() {
   // Flavor toast — random 1-of-7 short cleared-room line, fade in + out
   // top-center over ~3s. No-op if scene tween system unavailable.
   try { _showRoomClearedToast(scene); } catch (e) { /* ignore */ }
+
+  // Endless mode: re-lock stairs and offer 1-of-3 upgrade cards before
+  // letting the player descend.
+  if (window.Endless && window.Endless.isActive && window.Endless.isActive()) {
+    try { window.Endless.handleRoomCleared(scene); } catch (e) { /* ignore */ }
+  }
+  // Expose lockStairs so endlessMode can re-lock during the pick.
+  window.lockStairs = lockStairs;
 
   // Procedural room reward: spawn a chest with a high-quality item when all
   // enemies in the room have been defeated.

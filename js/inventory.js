@@ -906,6 +906,32 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     window.PLAYER_HEALTH_REGEN = skillEffects.healthRegen > 0 ? skillEffects.healthRegen : 0;
   }
 
+  // 3.55) Endless-mode upgrade buffs (additive, on top of skills, before
+  // event multipliers). Rebuilt fresh per recalc so picked upgrades persist.
+  const endlessBuffs = window.endlessBuffs;
+  if (endlessBuffs) {
+    weaponDamage += endlessBuffs.weaponDamage || 0;
+    weaponAttackSpeed += endlessBuffs.weaponAttackSpeed || 0;
+    attackRange += endlessBuffs.attackRange || 0;
+    playerArmor = Math.min(0.85, playerArmor + (endlessBuffs.playerArmor || 0));
+    playerSpeed += endlessBuffs.playerSpeed || 0;
+    playerCritChance = Math.min(0.95, playerCritChance + (endlessBuffs.playerCritChance || 0));
+    if (endlessBuffs.dodgeChance > 0) {
+      window.PLAYER_DODGE_CHANCE = Math.min(0.5, (window.PLAYER_DODGE_CHANCE || 0) + endlessBuffs.dodgeChance);
+    }
+    if (endlessBuffs.healthRegen > 0) {
+      window.PLAYER_HEALTH_REGEN = (window.PLAYER_HEALTH_REGEN || 0) + endlessBuffs.healthRegen;
+    }
+    if (endlessBuffs.lifesteal > 0) {
+      window.PLAYER_LIFESTEAL = (window.PLAYER_LIFESTEAL || 0) + endlessBuffs.lifesteal;
+    }
+    if (endlessBuffs.playerMaxHealth > 0 && typeof setPlayerMaxHealth === 'function') {
+      // Add max-HP delta into the running newMaxHealth via direct update
+      const bonus = endlessBuffs.playerMaxHealth;
+      setPlayerMaxHealth(playerMaxHealth + bonus, { updateUi: false });
+    }
+  }
+
   // 3.6) Event-Buffs (Shrine etc.) als letzte Schicht — überleben Equipment-Recalcs.
   const buffs = window.eventBuffs;
   if (buffs) {

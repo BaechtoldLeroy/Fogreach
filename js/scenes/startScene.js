@@ -12,6 +12,7 @@ if (window.i18n) {
     'start.highscores.error': 'Fehler beim Laden der Highscores'
   });
   window.i18n.register('en', {
+
     'start.subtitle': 'A dungeon crawler',
     'start.btn.continue': 'CONTINUE',
     'start.btn.delete_save': 'Delete save',
@@ -388,9 +389,41 @@ StartScene.prototype.create = function () {
     .on("pointerover", () => btn.setStyle({ fill: '#b0ffb0' }))
     .on("pointerout", () => btn.setStyle({ fill: '#88ff88' }));
 
+  // ENDLOS-MODUS button (roguelike: no hub, descend forever, pick 1-of-3
+  // upgrades after each cleared room)
+  const endlessBtn = this.add
+    .text(cx, startY + 92, _START_T('endless.btn.start'), {
+      fontFamily: 'serif', fontSize: '20px',
+      fill: '#ff8866',
+      backgroundColor: '#1a1a1a',
+      padding: { x: 12, y: 5 },
+      fontStyle: 'bold'
+    })
+    .setOrigin(0.5)
+    .setInteractive({ useHandCursor: true })
+    .setDepth(1001);
+  endlessBtn
+    .on('pointerdown', () => {
+      if (window.clearSave) clearSave();
+      if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
+        window.AbilitySystem.resetForNewGame();
+      }
+      if (typeof window.pendingLoadedSave !== 'undefined') {
+        window.pendingLoadedSave = null;
+      }
+      window.__DEV_FORCE_CHEAT__ = false;
+      // Activate endless run BEFORE GameScene boots so initUI sees the flag
+      if (window.Endless && typeof window.Endless.start === 'function') {
+        window.Endless.start();
+      }
+      loadRoomTemplatesAndStart.call(this);
+    })
+    .on('pointerover', () => endlessBtn.setStyle({ fill: '#ffaa88' }))
+    .on('pointerout',  () => endlessBtn.setStyle({ fill: '#ff8866' }));
+
   // EINSTELLUNGEN button below the start button
   const settingsBtn = this.add
-    .text(cx, startY + 48, _START_T('start.btn.settings'), {
+    .text(cx, startY + 140, _START_T('start.btn.settings'), {
       fontFamily: 'monospace', fontSize: "16px",
       fill: "#aaaaaa",
       backgroundColor: "#1a1a1a",
