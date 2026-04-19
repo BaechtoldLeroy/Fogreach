@@ -385,7 +385,76 @@
       'quest.harren_rescue.title': 'Rescue or Evidence',
       'quest.harren_rescue.description': 'Defeat the Shadow Council boss to find Elara.',
       'quest.final_truth.title': 'The Final Truth',
-      'quest.final_truth.description': 'Reach wave 40 to find the true source of the pact.'
+      'quest.final_truth.description': 'Reach wave 40 to find the true source of the pact.',
+
+      // === Quest dialogues — English ===
+      'quest.aldric_cleanup.dialogueOffer': 'Wild beasts in the cellars. Clear them out.\n\nWill you take this task?',
+      'quest.aldric_cleanup.dialogueProgress': 'The cellars are not safe yet. Keep fighting.',
+      'quest.aldric_cleanup.dialogueComplete': 'Good. The cellars are cleared. Here is your reward.',
+
+      'quest.aldric_patrol.dialogueOffer': 'Make sure all corridors are secure. Patrol three rooms.\n\nReady?',
+      'quest.aldric_patrol.dialogueProgress': 'Not all corridors are secure yet. Keep patrolling.',
+      'quest.aldric_patrol.dialogueComplete': 'All corridors are safe. Good work, Archivesmith.',
+
+      'quest.aldric_intruders.dialogueOffer': 'Strangers are stealing our documents. Stop them. Defeat twenty of these intruders.\n\nDo you accept?',
+      'quest.aldric_intruders.dialogueProgress': 'The intruders are still about. Keep fighting.',
+      'quest.aldric_intruders.dialogueComplete': 'Excellent. The intruders are driven off. Take this sword as a token of trust.',
+
+      'quest.harren_daughter.dialogueOffer': "My daughter Elara... please find her. Search the rooms and bring me her diary.\n\nWill you help an old man?",
+      'quest.harren_daughter.dialogueProgress': 'Have you found anything? Please keep looking for Elara...',
+      'quest.harren_daughter.dialogueComplete': 'Her diary... thank you. At least I know now that she is alive.',
+
+      'quest.branka_armor.dialogueOffer': "The council wants new armor. But the plans... they're wrong. Bring me three materials anyway.\n\nWill you help me?",
+      'quest.branka_armor.dialogueProgress': 'I need more materials. Keep searching.',
+      'quest.branka_armor.dialogueComplete': "Thank you. But this armor... the dimensions are for prisoners, not soldiers. Something is wrong here.",
+
+      'quest.mara_contact.dialogueOffer': "You don't remember. But I know you.\n\nListen to me — it's important.",
+      'quest.mara_contact.dialogueProgress': 'We need to talk. Come to me.',
+      'quest.mara_contact.dialogueComplete': 'Now you know. My network is open to you.',
+
+      'quest.elara_meeting.dialogueOffer': "I wasn't kidnapped. I escaped. Here — read this.\n\nFind two documents I hid in the cellar.",
+      'quest.elara_meeting.dialogueProgress': 'The documents are well hidden. Keep searching.',
+      'quest.elara_meeting.dialogueComplete': 'Now you see the truth. The council used me — for their rituals.',
+
+      'quest.branka_doubt.dialogueOffer': 'This armor is for prisoners, not soldiers. Help me find proof.\n\nDefeat five elite guards and bring me their orders.',
+      'quest.branka_doubt.dialogueProgress': 'The elite guards carry the proof on them. Keep fighting.',
+      'quest.branka_doubt.dialogueComplete': 'I was right. The council is building prisons, not barracks. We must act.',
+
+      'quest.elara_ritual.dialogueOffer': "Deep below there is a chamber... I'll show you where. Reach wave 20.\n\nAre you ready for the truth?",
+      'quest.elara_ritual.dialogueProgress': 'You must press deeper. The ritual chamber lies at wave 20.',
+      'quest.elara_ritual.dialogueComplete': "You found it. The council's summoning chamber. Take this amulet — it shields against their dark magic.",
+
+      'quest.thom_truth.dialogueOffer': "I've printed enough of what the council wants. Time for the truth.\n\nFind five print plates in the cellar — they hold the real history.",
+      'quest.thom_truth.dialogueProgress': 'The print plates are hidden somewhere in the town hall cellar. Keep searching.',
+      'quest.thom_truth.dialogueComplete': 'Fantastic! These plates contain proof the council wanted to destroy. The truth goes to print.',
+
+      'quest.mara_warning.dialogueOffer': 'The Chainmaster guards the first real evidence. Defeat him.\n\nWithout that proof we can prove nothing.',
+      'quest.mara_warning.dialogueProgress': 'The Chainmaster still lives. Find and defeat him.',
+      'quest.mara_warning.dialogueComplete': 'The Chainmaster has fallen! The evidence is secure. Now no one can deny what the council has done.',
+
+      'quest.branka_weapons.dialogueOffer': 'We need weapons. Not for the council — for US.\n\nCraft three items at the forge.',
+      'quest.branka_weapons.dialogueProgress': 'The forge waits. Craft more items.',
+      'quest.branka_weapons.dialogueComplete': 'Well forged. These weapons will make the difference.',
+
+      'quest.thom_pamphlets.dialogueOffer': 'Every run is a chance to spread leaflets.\n\nComplete three runs and all of Fogreach will read the truth.',
+      'quest.thom_pamphlets.dialogueProgress': 'Keep fighting through the town hall cellar. Every run spreads our message.',
+      'quest.thom_pamphlets.dialogueComplete': 'The whole city reads our truths! The citizens have awakened. Your experience now grows faster. (+10% XP)',
+
+      'quest.elara_blade.dialogueOffer': "Take this. I forged it for you. In case...\n\nWill you accept Elara's Blade?",
+      'quest.elara_blade.dialogueProgress': 'The blade waits for you.',
+      'quest.elara_blade.dialogueComplete': 'May it protect you. No matter what comes.',
+
+      'quest.mara_assault.dialogueOffer': "It's time. The council falls today. Reach wave 30.\n\nAre you ready for the assault?",
+      'quest.mara_assault.dialogueProgress': 'The council waits in the depths. Press on — wave 30.',
+      'quest.mara_assault.dialogueComplete': 'The council has fallen! Fogreach breathes again. But the shadows are not yet defeated...',
+
+      'quest.harren_rescue.dialogueOffer': 'Find my daughter. Please. The Shadow Council holds her.\n\nDefeat him and bring Elara back.',
+      'quest.harren_rescue.dialogueProgress': 'The Shadow Council still lives. Find and defeat him — for Elara.',
+      'quest.harren_rescue.dialogueComplete': 'You defeated the Shadow Council. But Elara... she vanished with him. What does this mean?',
+
+      'quest.final_truth.dialogueOffer': 'Beneath Fogreach the truth waits. Are you ready?\n\nReach wave 40 — into the dimension of chains and shadows.',
+      'quest.final_truth.dialogueProgress': 'The final truth lies at wave 40. You must go deeper.',
+      'quest.final_truth.dialogueComplete': 'The chains are broken. The truth is free. Fogreach belongs to its people again.'
     });
   }
 
