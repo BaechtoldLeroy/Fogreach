@@ -24,6 +24,18 @@ StartScene.prototype.preload = function () {
   bg.fillStyle(0x1a1a1a, 1);
   bg.fillRect(0, 0, width, height);
 
+  if (window.i18n) {
+    window.i18n.register('de', {
+      'start.loading': 'Laden...',
+      'start.loading_file': 'Lade: {file}'
+    });
+    window.i18n.register('en', {
+      'start.loading': 'Loading...',
+      'start.loading_file': 'Loading: {file}'
+    });
+  }
+  const T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
   // Progress bar container (outline)
   const progressBox = this.add.graphics();
   progressBox.lineStyle(2, 0x666666, 1);
@@ -36,7 +48,7 @@ StartScene.prototype.preload = function () {
   const loadingText = this.make.text({
     x: width / 2,
     y: height / 2 - 30,
-    text: 'Laden...',
+    text: T('start.loading'),
     style: {
       font: '20px monospace',
       fill: '#ccaa33'
@@ -76,7 +88,7 @@ StartScene.prototype.preload = function () {
   });
 
   this.load.on('fileprogress', function (file) {
-    fileText.setText('Lade: ' + file.key);
+    fileText.setText(T('start.loading_file', { file: file.key }));
   });
 
   this.load.on('complete', function () {
