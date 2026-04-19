@@ -1203,6 +1203,25 @@ function attack() {
   if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) return;
 
   isAttacking = true;
+
+  // Bow path: spawn an arrow projectile instead of swinging melee. Cooldown
+  // path below still runs so attack speed + AoE-on-cooldown UI works.
+  if (_hasBowEquipped()) {
+    _fireBowArrow(this);
+
+    this.time.delayedCall(120, () => { isAttacking = false; }, null, this);
+    attackCooldown = true;
+    const baseCdB = getMeleeCooldown();
+    const cdB = applyCooldownModifier(baseCdB, 'attack');
+    startCooldownTimer(this, cdB, {
+      button: attackBtn,
+      label: attackBtnCooldownText,
+      statusKey: 'attack',
+      onComplete: () => { attackCooldown = false; }
+    });
+    return;
+  }
+
   if (window.soundManager) window.soundManager.playSFX('attack');
 
   showAttackEffect(this);
@@ -1613,6 +1632,69 @@ function ensurePlayerDaggerTexture(scene) {
   g.destroy();
 }
 
+function ensurePlayerArrowTexture(scene) {
+  if (!scene || scene.textures.exists('playerArrow')) return;
+  const g = scene.make.graphics({ add: false });
+  // Shaft (light brown)
+  g.fillStyle(0xc8a060, 1);
+  g.fillRect(2, 7, 18, 2);
+  // Head (gray triangle)
+  g.fillStyle(0xdddddd, 1);
+  g.fillTriangle(20, 4, 20, 12, 28, 8);
+  // Fletching (red)
+  g.fillStyle(0xc0392b, 1);
+  g.fillTriangle(0, 4, 0, 12, 5, 8);
+  g.generateTexture('playerArrow', 28, 16);
+  g.destroy();
+}
+
+// Returns true when the equipped weapon is a bow (subtype === 'bow').
+function _hasBowEquipped() {
+  const eq = (typeof equipment !== 'undefined') ? equipment : (window && window.equipment);
+  return !!(eq && eq.weapon && eq.weapon.subtype === 'bow');
+}
+
+function _fireBowArrow(scene) {
+  if (!scene || !player || !playerProjectiles) return;
+  ensurePlayerArrowTexture(scene);
+
+  const dir = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
+  if (dir.lengthSq() === 0) dir.set(0, 1);
+  dir.normalize();
+
+  const spawnOffset = 22;
+  const projectile = scene.physics.add.sprite(
+    player.x + dir.x * spawnOffset,
+    player.y + dir.y * spawnOffset,
+    'playerArrow'
+  );
+  projectile.setDepth(70);
+  projectile.setRotation(dir.angle());
+  projectile.setOrigin(0.5, 0.5);
+  projectile.body?.setAllowGravity?.(false);
+  projectile.body?.setSize?.(20, 6);
+  projectile.body?.setOffset?.(4, 5);
+  projectile.setData('damageMult', 1.0);
+  projectile.setData('isBowArrow', true);
+  projectile.setData('knockback', 60);
+
+  playerProjectiles.add(projectile);
+
+  const ARROW_SPEED = 620;
+  projectile.body.setVelocity(dir.x * ARROW_SPEED, dir.y * ARROW_SPEED);
+
+  // Lifespan scales with the player's effective range (so range upgrades /
+  // affixes also extend bow shots). Reference: ~750ms at attackRange ~120.
+  const baseLifespan = 600;
+  const rangeBoost = Math.max(0, (attackRange - 100)) * 4;
+  const lifespan = baseLifespan + rangeBoost;
+  scene.time.delayedCall(lifespan, () => {
+    if (projectile && projectile.active) projectile.destroy();
+  });
+
+  if (window.soundManager) try { window.soundManager.playSFX('attack'); } catch (e) {}
+}
+
 function throwDagger() {
   if (!_abilityGate('daggerThrow')) return;
   if (!this || !player || !playerProjectiles) return;
@@ -1746,16 +1828,19 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
   }
 
   const damageMult = projectile.getData('damageMult') ?? 1;
-  const knockback = projectile.getData('knockback') ?? DAGGER_THROW_KNOCKBACK;
+  const isBowArrow = !!projectile.getData('isBowArrow');
+  const abilityKey = isBowArrow ? 'attack' : 'dagger';
+  const knockback = projectile.getData('knockback')
+    ?? (isBowArrow ? 60 : DAGGER_THROW_KNOCKBACK);
 
-  const { isCrit } = dealDamageToEnemy(scene, enemy, damageMult, 'dagger');
+  const { isCrit } = dealDamageToEnemy(scene, enemy, damageMult, abilityKey);
   handleEnemyHit(scene, enemy, {
     tint: isCrit ? 0xfff2a6 : 0xffaa88,
     duration: isCrit ? 200 : 140
   });
 
-  // Dagger throw applies POISON
-  if (window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
+  // Dagger throw applies POISON; bow arrows do not.
+  if (!isBowArrow && window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
     window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'dagger');
   }
 
@@ -1770,7 +1855,9 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
   }
 
   // Windstoß (Wind Gust): dagger pierces through first enemy
-  if (typeof window.hasSkill === 'function' && window.hasSkill('mobility_wind_gust')
+  // Bow arrows always destroy on first hit (no pierce). Daggers may pierce
+  // once if the player has the Wind Gust skill.
+  if (!isBowArrow && typeof window.hasSkill === 'function' && window.hasSkill('mobility_wind_gust')
       && !projectile.getData('hasPierced')) {
     projectile.setData('hasPierced', true);
     // Don't destroy, let it continue

@@ -60,6 +60,9 @@ if (window.i18n) {
     'loot.item.WPN_SCHATTENDOLCH': 'Schattendolch',
     'loot.item.WPN_KETTENMORGENSTERN': 'Kettenmorgenstern',
     'loot.item.WPN_GLUTAXT': 'Glutaxt',
+    'loot.item.WPN_ESCHENBOGEN': 'Eschenbogen',
+    'loot.item.WPN_HORNBOGEN': 'Hornbogen',
+    'loot.item.WPN_GLUTBOGEN': 'Glutbogen',
     'loot.item.HD_KETTENHAUBE': 'Kettenhaube',
     'loot.item.HD_BRONZEHELM': 'Bronzehelm',
     'loot.item.HD_SCHLANGENMASKE': 'Schlangenmaske',
@@ -130,6 +133,9 @@ if (window.i18n) {
     'loot.item.WPN_SCHATTENDOLCH': 'Shadow Dagger',
     'loot.item.WPN_KETTENMORGENSTERN': 'Chain Morningstar',
     'loot.item.WPN_GLUTAXT': 'Ember Axe',
+    'loot.item.WPN_ESCHENBOGEN': 'Ash Bow',
+    'loot.item.WPN_HORNBOGEN': 'Horn Bow',
+    'loot.item.WPN_GLUTBOGEN': 'Ember Bow',
     'loot.item.HD_KETTENHAUBE': 'Chain Coif',
     'loot.item.HD_BRONZEHELM': 'Bronze Helm',
     'loot.item.HD_SCHLANGENMASKE': 'Serpent Mask',
@@ -266,6 +272,14 @@ if (window.i18n) {
       baseStats: Object.freeze({ damage: 12, speed: -5 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
     Object.freeze({ key: 'WPN_GLUTAXT', type: 'weapon', name: 'Glutaxt', iconKey: 'itWeapon',
       baseStats: Object.freeze({ damage: 15, speed: -10 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
+
+    // Bows (ranged weapons — equipping one swaps default attack to a projectile)
+    Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itWeapon',
+      baseStats: Object.freeze({ damage: 6, range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
+    Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itWeapon',
+      baseStats: Object.freeze({ damage: 9, range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
+    Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itWeapon',
+      baseStats: Object.freeze({ damage: 13, range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
 
     // Helms (3)
     Object.freeze({ key: 'HD_KETTENHAUBE', type: 'head', name: 'Kettenhaube', iconKey: 'itHead',
@@ -495,6 +509,7 @@ if (window.i18n) {
     const item = {
       key: base.key,
       type: base.type,
+      subtype: base.subtype,
       name: _localizedBase,
       nameKey: _itemNameKey,
       _baseName: _localizedBase,
