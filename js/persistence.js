@@ -59,10 +59,54 @@
     return Object.values(KEYS).slice();
   }
 
+  // --- Language helpers (i18n) ---
+  // Language lives inside the existing SETTINGS blob (`demonfall_settings_v1`).
+  // No new localStorage key — keeps the surface minimal and consistent with
+  // other settings that SettingsScene already round-trips.
+
+  const SUPPORTED_LANGS = ['de', 'en'];
+  const DEFAULT_LANG = 'de';
+
+  function readSettingsRaw() {
+    try {
+      const raw = localStorage.getItem(KEYS.SETTINGS);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return (parsed && typeof parsed === 'object') ? parsed : {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function writeSettingsField(field, value) {
+    const current = readSettingsRaw();
+    current[field] = value;
+    try {
+      localStorage.setItem(KEYS.SETTINGS, JSON.stringify(current));
+    } catch (err) {
+      console.warn('[Persistence] writeSettingsField failed', field, err);
+    }
+  }
+
+  function getLanguage() {
+    const lang = readSettingsRaw().language;
+    return SUPPORTED_LANGS.indexOf(lang) !== -1 ? lang : DEFAULT_LANG;
+  }
+
+  function setLanguage(lang) {
+    if (SUPPORTED_LANGS.indexOf(lang) === -1) {
+      console.warn('[Persistence] setLanguage: invalid language', lang);
+      return;
+    }
+    writeSettingsField('language', lang);
+  }
+
   window.Persistence = {
     KEYS,
     clearAllSaves,
     clearEverything,
-    listAllKeys
+    listAllKeys,
+    getLanguage,
+    setLanguage
   };
 })();
