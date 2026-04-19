@@ -649,6 +649,10 @@
 
   // ---------- Unlock Hooks ----------
   function _checkUnlocks(triggerType, value) {
+    // Endless mode: only Endless.apply() may grant abilities (via direct
+    // learnAbility call). Auto-unlocks from kill/wave/boss/quest triggers
+    // are disabled so the upgrade-card pick is the sole acquisition path.
+    if (window.__ENDLESS_MODE__) return;
     Object.keys(UNLOCK_RULES).forEach((id) => {
       if (state.learnedAbilities.includes(id)) return;
       const rule = UNLOCK_RULES[id];

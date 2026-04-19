@@ -465,6 +465,11 @@ function canPurchaseSkill(skillId) {
 }
 
 function purchaseSkill(skillId) {
+  // Endless mode disables the normal skill-tree purchase path. Skills can
+  // only be acquired via the upgrade-card pick after each cleared room.
+  if (window.__ENDLESS_MODE__) {
+    return { success: false, reason: 'Im Endlos-Modus deaktiviert' };
+  }
   const checkResult = canPurchaseSkill(skillId);
   if (!checkResult.canPurchase) {
     return { success: false, reason: checkResult.reason };
