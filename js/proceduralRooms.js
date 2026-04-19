@@ -110,10 +110,13 @@
       }
       // Record center of this horizontal-wall doorway (wall runs left-right → 'horizontal')
       // y is between the two carved rows (splitPos-1 and splitPos)
-      // width includes +2 clearance tiles carved on each side
+      // width includes +2 clearance tiles carved on each side.
+      // (doorWidth - 1) / 2 places the center on the true geometric midpoint
+      // for both odd and even widths — Math.floor used to drift even widths
+      // half a tile into the wall, jamming corners.
       if (doorways) {
         doorways.push({
-          x: dx + Math.floor(doorWidth / 2),
+          x: dx + (doorWidth - 1) / 2,
           y: node.splitPos - 0.5,
           orientation: 'horizontal',
           width: doorWidth + 2
@@ -135,11 +138,12 @@
       }
       // Record center of this vertical-wall doorway (wall runs up-down → 'vertical')
       // x is between the two carved columns (splitPos-1 and splitPos)
-      // width includes +2 clearance tiles carved on each side
+      // width includes +2 clearance tiles carved on each side.
+      // (doorWidth - 1) / 2: see horizontal-wall case above.
       if (doorways) {
         doorways.push({
           x: node.splitPos - 0.5,
-          y: dy + Math.floor(doorWidth / 2),
+          y: dy + (doorWidth - 1) / 2,
           orientation: 'vertical',
           width: doorWidth + 2
         });
