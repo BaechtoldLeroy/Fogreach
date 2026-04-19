@@ -155,19 +155,9 @@ if (window.i18n) {
       state.cooldownTexts[key].setPosition(pos.x, pos.y);
     });
 
-    if (state.inventoryBtn) {
-      const sa = _safeArea();
-      const x = screenW - INV_CORNER_PAD - sa.right;
-      const y = INV_CORNER_PAD + sa.top;
-      state.inventoryBtn.setPosition(x, y);
-      // Re-anchor the hit rect covering the whole button (origin-agnostic).
-      if (state.inventoryBtnHit) {
-        state.inventoryBtnHit.setPosition(x - 22, y + 18);
-      }
-    }
-
-    // (Removed: Skills button positioning. The skill loadout is now
-    // accessible via the HUDv2 burger menu top-right.)
+    // (Removed: Bag + Skills mobile button positioning. Both functions
+    // now live on the HUDv2 top-right icons, shared between desktop and
+    // mobile.)
 
     state.anchor = _anchorOrigin(screenW, screenH);
   }
@@ -252,34 +242,9 @@ if (window.i18n) {
     state.buttons = [];
     state.cooldownTexts = {};
 
-    // ----- Inventory ("Bag") button -----
-    // Invisible transparent rectangle as the interactive hit target (anchored
-    // top-right via its own origin); a visible label rides on top. Using a
-    // rectangle avoids the Text + custom hitArea origin bug that prevented
-    // taps from registering.
-    const bagHitW = 56, bagHitH = 36;
-    const bagHit = scene.add.rectangle(0, 0, bagHitW, bagHitH, 0x222222, 0.85)
-      .setOrigin(0, 0)
-      .setScrollFactor(0)
-      .setDepth(4000)
-      .setStrokeStyle(1, 0x444444)
-      .setInteractive({ useHandCursor: true });
-    bagHit.on('pointerdown', () => {
-      if (typeof invOpen !== 'undefined' && invOpen) {
-        if (typeof closeInventory === 'function') closeInventory();
-      } else if (typeof openInventory === 'function') {
-        openInventory();
-      }
-    });
-    const bagLabel = scene.add.text(0, 0, 'Bag', {
-      fontSize: '16px', fill: '#fff', fontStyle: 'bold'
-    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(4001);
-    state.inventoryBtn = bagLabel;
-    state.inventoryBtnHit = bagHit;
-
-    // (Removed: dedicated 'Skills' mobile button. The HUDv2 burger menu
-    // top-right now exposes the loadout entry, so a separate corner button
-    // is redundant + clutters the touch UI.)
+    // (Removed: dedicated 'Bag' mobile button + 'Skills' mobile button.
+    // Both functions now live on the HUDv2 top-right icons (inventory icon
+    // + burger menu's Loadout entry), shared between desktop and mobile.)
 
     // ----- Joystick (fixed bottom-left) -----
     const joystickBase = scene.add.circle(0, 0, 60, 0x888888, 0.3);
