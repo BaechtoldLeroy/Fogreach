@@ -3,6 +3,26 @@
 // scene._loadoutContainer / scene._loadoutSuppressUntil / scene._dialogOpen.
 
 (function () {
+  if (window.i18n) {
+    window.i18n.register('de', {
+      'loadout.title': 'Fähigkeiten-Loadout',
+      'loadout.hint': 'Klicke auf einen Slot, dann auf eine erlernte Fähigkeit. ESC zum Schliessen.',
+      'loadout.pool_header': 'Erlernte & verfügbare Fähigkeiten',
+      'loadout.locked': '[Gesperrt: {hint}]',
+      'loadout.equipped': '[Ausgerüstet: {slot}]',
+      'loadout.empty_slot': '(leer)'
+    });
+    window.i18n.register('en', {
+      'loadout.title': 'Ability Loadout',
+      'loadout.hint': 'Click a slot, then a learned ability. Press ESC to close.',
+      'loadout.pool_header': 'Learned & available abilities',
+      'loadout.locked': '[Locked: {hint}]',
+      'loadout.equipped': '[Equipped: {slot}]',
+      'loadout.empty_slot': '(empty)'
+    });
+  }
+  const T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
   function openLoadoutUI(scene) {
     if (!scene || !window.AbilitySystem) {
       console.warn('[LoadoutOverlay] missing scene or AbilitySystem');
@@ -33,14 +53,14 @@
     bg.lineStyle(3, 0x4a86ff, 0.9).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
     container.add(bg);
 
-    const title = scene.add.text(0, -panelH / 2 + 16, 'F\u00E4higkeiten-Loadout', {
+    const title = scene.add.text(0, -panelH / 2 + 16, T('loadout.title'), {
       fontFamily: 'serif',
       fontSize: 28,
       color: '#e8d4b8'
     }).setOrigin(0.5, 0);
     container.add(title);
 
-    const hint = scene.add.text(0, -panelH / 2 + 52, 'Klicke auf einen Slot, dann auf eine erlernte F\u00E4higkeit. ESC zum Schlie\u00DFen.', {
+    const hint = scene.add.text(0, -panelH / 2 + 52, T('loadout.hint'), {
       fontFamily: 'monospace',
       fontSize: 14,
       color: '#a0b0d0'
@@ -59,7 +79,7 @@
     const gap = 10;
     const cols = Math.max(3, Math.min(5, Math.floor((panelW - 60) / (cellW + gap))));
 
-    const poolText = scene.add.text(-panelW / 2 + 24, poolStartY, 'Erlernte & verf\u00FCgbare F\u00E4higkeiten', {
+    const poolText = scene.add.text(-panelW / 2 + 24, poolStartY, T('loadout.pool_header'), {
       fontFamily: 'serif',
       fontSize: 16,
       color: '#c8d8ff'
@@ -149,10 +169,10 @@
           let tip = def.name + '\n' + def.description;
           if (!isLearnedDef) {
             const rule = window.AbilitySystem.getUnlockRule(def.id);
-            if (rule) tip += '\n[Gesperrt: ' + rule.hint + ']';
+            if (rule) tip += '\n' + T('loadout.locked', { hint: rule.hint });
           } else if (equipped) {
             const slot = window.AbilitySystem.getSlotForAbility(def.id);
-            tip += '\n[Ausger\u00FCstet: ' + (window.AbilitySystem.SLOT_KEY_LABELS[slot] || slot) + ']';
+            tip += '\n' + T('loadout.equipped', { slot: window.AbilitySystem.SLOT_KEY_LABELS[slot] || slot });
           }
           tooltip.setText(tip);
           tooltip.setVisible(true);
@@ -239,7 +259,7 @@
           container.add(nameTxt);
           slotGfxList.push(nameTxt);
         } else {
-          const empty = scene.add.text(iconCx + 8, cy, '(leer)', {
+          const empty = scene.add.text(iconCx + 8, cy, T('loadout.empty_slot'), {
             fontFamily: 'monospace',
             fontSize: 11,
             color: '#666677'
