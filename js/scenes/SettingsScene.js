@@ -3,6 +3,67 @@
 // Persists everything to localStorage 'demonfall_settings_v1'.
 
 (function () {
+  if (window.i18n) {
+    window.i18n.register('de', {
+      'settings.title': 'Einstellungen',
+      'settings.section.audio': 'AUDIO',
+      'settings.section.controls': 'STEUERUNG',
+      'settings.section.mobile': 'MOBILE',
+      'settings.section.display': 'ANZEIGE',
+      'settings.section.debug': 'DEBUG',
+      'settings.audio.master': 'Master',
+      'settings.audio.music': 'Musik',
+      'settings.audio.sfx': 'SFX',
+      'settings.audio.muted': 'Stumm',
+      'settings.controls.movement_weight': 'Gewicht (D2)',
+      'settings.mobile.haptics': 'Vibration',
+      'settings.mobile.auto_aim': 'Auto-Aim',
+      'settings.mobile.d2_controls': 'D2 Controls',
+      'settings.display.fullscreen': 'Vollbild',
+      'settings.display.reduced_effects': 'Reduz. Effekte',
+      'settings.display.language': 'Sprache',
+      'settings.display.language.de': 'Deutsch',
+      'settings.display.language.en': 'Englisch',
+      'settings.debug.autostart': 'Auto-Start',
+      'settings.debug.no_fow': 'Kein Nebel',
+      'settings.debug.add_iron': '+100 Eisenbrocken',
+      'settings.debug.toast_added_iron': '+100 Eisenbrocken',
+      'settings.close': 'Schliessen [ESC]',
+      'settings.toggle.on': 'AN',
+      'settings.toggle.off': 'AUS'
+    });
+    window.i18n.register('en', {
+      'settings.title': 'Settings',
+      'settings.section.audio': 'AUDIO',
+      'settings.section.controls': 'CONTROLS',
+      'settings.section.mobile': 'MOBILE',
+      'settings.section.display': 'DISPLAY',
+      'settings.section.debug': 'DEBUG',
+      'settings.audio.master': 'Master',
+      'settings.audio.music': 'Music',
+      'settings.audio.sfx': 'SFX',
+      'settings.audio.muted': 'Muted',
+      'settings.controls.movement_weight': 'Weight (D2)',
+      'settings.mobile.haptics': 'Haptics',
+      'settings.mobile.auto_aim': 'Auto-Aim',
+      'settings.mobile.d2_controls': 'D2 Controls',
+      'settings.display.fullscreen': 'Fullscreen',
+      'settings.display.reduced_effects': 'Reduced FX',
+      'settings.display.language': 'Language',
+      'settings.display.language.de': 'German',
+      'settings.display.language.en': 'English',
+      'settings.debug.autostart': 'Autostart',
+      'settings.debug.no_fow': 'No Fog',
+      'settings.debug.add_iron': '+100 Iron Chunks',
+      'settings.debug.toast_added_iron': '+100 Iron Chunks',
+      'settings.close': 'Close [ESC]',
+      'settings.toggle.on': 'ON',
+      'settings.toggle.off': 'OFF'
+    });
+  }
+
+  const T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+
   const STORAGE_KEY = 'demonfall_settings_v1';
 
   const MOBILE_BUTTON_SCALES = [0.8, 1.0, 1.2];
@@ -106,7 +167,7 @@
       panel.lineStyle(3, 0xffd166, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
 
       // Title
-      this.add.text(px, py - panelH / 2 + 16, 'Einstellungen', {
+      this.add.text(px, py - panelH / 2 + 16, T('settings.title'), {
         fontFamily: 'serif',
         fontSize: '24px',
         color: '#ffd166',
@@ -115,44 +176,45 @@
 
       // -- Audio section --
       let rowY = py - panelH / 2 + 50;
-      this._sectionLabel(px - panelW / 2 + 20, rowY, 'AUDIO');
+      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.audio'));
       rowY += 18;
-      this._volumeRow(px, rowY, 'Master', 'master', panelW); rowY += 24;
-      this._volumeRow(px, rowY, 'Musik', 'music', panelW);    rowY += 24;
-      this._volumeRow(px, rowY, 'SFX', 'sfx', panelW);        rowY += 24;
-      this._toggleRow(px, rowY, 'Stumm', 'muted', panelW);    rowY += 26;
+      this._volumeRow(px, rowY, T('settings.audio.master'), 'master', panelW); rowY += 24;
+      this._volumeRow(px, rowY, T('settings.audio.music'), 'music', panelW);    rowY += 24;
+      this._volumeRow(px, rowY, T('settings.audio.sfx'), 'sfx', panelW);        rowY += 24;
+      this._toggleRow(px, rowY, T('settings.audio.muted'), 'muted', panelW);    rowY += 26;
 
       // -- Controls section --
-      this._sectionLabel(px - panelW / 2 + 20, rowY, 'STEUERUNG');
+      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.controls'));
       rowY += 18;
-      this._volumeRow(px, rowY, 'Gewicht (D2)', 'movementWeight', panelW); rowY += 26;
+      this._volumeRow(px, rowY, T('settings.controls.movement_weight'), 'movementWeight', panelW); rowY += 26;
 
       // -- Mobile section (only on touch devices) --
       const isTouch = !!(this.sys && this.sys.game && this.sys.game.device
         && this.sys.game.device.input && this.sys.game.device.input.touch);
       if (isTouch) {
-        this._sectionLabel(px - panelW / 2 + 20, rowY, 'MOBILE');
+        this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.mobile'));
         rowY += 18;
-        this._toggleRow(px, rowY, 'Vibration', 'mobile.haptics', panelW); rowY += 22;
-        this._toggleRow(px, rowY, 'Auto-Aim', 'mobile.autoAim', panelW); rowY += 22;
-        this._toggleRow(px, rowY, 'D2 Controls', 'mobile.d2Controls', panelW); rowY += 24;
+        this._toggleRow(px, rowY, T('settings.mobile.haptics'), 'mobile.haptics', panelW); rowY += 22;
+        this._toggleRow(px, rowY, T('settings.mobile.auto_aim'), 'mobile.autoAim', panelW); rowY += 22;
+        this._toggleRow(px, rowY, T('settings.mobile.d2_controls'), 'mobile.d2Controls', panelW); rowY += 24;
       }
 
       // -- Display section --
-      this._sectionLabel(px - panelW / 2 + 20, rowY, 'ANZEIGE');
+      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.display'));
       rowY += 18;
       this._fullscreenRow(px, rowY, panelW); rowY += 22;
-      this._toggleRow(px, rowY, 'Reduz. Effekte', 'reducedEffects', panelW); rowY += 24;
+      this._toggleRow(px, rowY, T('settings.display.reduced_effects'), 'reducedEffects', panelW); rowY += 22;
+      this._languageRow(px, rowY, panelW); rowY += 24;
 
       // -- Debug section --
-      this._sectionLabel(px - panelW / 2 + 20, rowY, 'DEBUG');
+      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.debug'));
       rowY += 18;
-      this._toggleRow(px, rowY, 'Auto-Start', 'debug.autostart', panelW); rowY += 22;
-      this._toggleRow(px, rowY, 'Kein Nebel', 'debug.noFow', panelW); rowY += 22;
-      this._actionRow(px, rowY, '+100 Eisenbrocken', () => {
+      this._toggleRow(px, rowY, T('settings.debug.autostart'), 'debug.autostart', panelW); rowY += 22;
+      this._toggleRow(px, rowY, T('settings.debug.no_fow'), 'debug.noFow', panelW); rowY += 22;
+      this._actionRow(px, rowY, T('settings.debug.add_iron'), () => {
         if (typeof window.changeMaterialCount === 'function') {
           window.changeMaterialCount('MAT', 100);
-          this._toast('+100 Eisenbrocken');
+          this._toast(T('settings.debug.toast_added_iron'));
         }
       }, panelW);
       rowY += 32;
@@ -163,7 +225,7 @@
         .setStrokeStyle(2, 0xd4a543)
         .setScrollFactor(0).setDepth(2002)
         .setInteractive({ useHandCursor: true });
-      this.add.text(px, closeBtnY, 'Schliessen [ESC]', {
+      this.add.text(px, closeBtnY, T('settings.close'), {
         fontFamily: 'monospace', fontSize: '14px', color: '#f1e9d8'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       closeBg.on('pointerdown', () => this._close());
@@ -175,6 +237,23 @@
 
       // Apply current settings to live systems on open
       applySettings(this.settings);
+
+      // Re-render scene if language changes (e.g. via debug console or
+      // via the language picker). Cleanup on shutdown to avoid leaking the
+      // old scene reference into the subscriber set.
+      if (window.i18n) {
+        this._unsubscribeI18n = window.i18n.onChange(() => {
+          if (this.scene && this.scene.isActive && this.scene.isActive()) {
+            this.scene.restart({ from: this.parentSceneKey });
+          }
+        });
+        this.events.once('shutdown', () => {
+          if (this._unsubscribeI18n) {
+            this._unsubscribeI18n();
+            this._unsubscribeI18n = null;
+          }
+        });
+      }
     }
 
     _sectionLabel(x, y, text) {
@@ -320,8 +399,9 @@
         fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
       const refresh = () => {
-        valueText.setText(this._getSetting(settingKey) ? 'AN' : 'AUS');
-        valueText.setColor(this._getSetting(settingKey) ? '#88ff88' : '#888888');
+        const on = !!this._getSetting(settingKey);
+        valueText.setText(on ? T('settings.toggle.on') : T('settings.toggle.off'));
+        valueText.setColor(on ? '#88ff88' : '#888888');
       };
       refresh();
 
@@ -334,9 +414,38 @@
       });
     }
 
+    _languageRow(centerX, y, panelW) {
+      const supportedLangs = ['de', 'en'];
+      const langLabelKey = (lang) => 'settings.display.language.' + lang;
+      this.add.text(centerX - panelW / 2 + 20, y, T('settings.display.language') + ':', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
+      }).setScrollFactor(0).setDepth(2002);
+
+      const valueText = this.add.text(centerX + 80, y, '', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
+
+      const refresh = () => {
+        const cur = window.Persistence ? window.Persistence.getLanguage() : 'de';
+        valueText.setText(T(langLabelKey(cur)));
+      };
+      refresh();
+
+      const btnBg = this.add.rectangle(centerX + 80, y + 8, 80, 22, 0x2a2a2a)
+        .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2001)
+        .setInteractive({ useHandCursor: true });
+      btnBg.on('pointerdown', () => {
+        const cur = window.Persistence ? window.Persistence.getLanguage() : 'de';
+        const next = supportedLangs[(supportedLangs.indexOf(cur) + 1) % supportedLangs.length];
+        if (window.Persistence) window.Persistence.setLanguage(next);
+        if (window.i18n) window.i18n.setLanguage(next); // triggers onChange → scene.restart
+        refresh();
+      });
+    }
+
     _fullscreenRow(centerX, y, panelW) {
       const self = this;
-      this.add.text(centerX - panelW / 2 + 20, y, 'Vollbild:', {
+      this.add.text(centerX - panelW / 2 + 20, y, T('settings.display.fullscreen') + ':', {
         fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
       }).setScrollFactor(0).setDepth(2002);
 
@@ -346,7 +455,7 @@
 
       const refresh = () => {
         const isFs = !!self.scale.isFullscreen;
-        valueText.setText(isFs ? 'AN' : 'AUS');
+        valueText.setText(isFs ? T('settings.toggle.on') : T('settings.toggle.off'));
         valueText.setColor(isFs ? '#88ff88' : '#888888');
       };
       refresh();
@@ -393,6 +502,10 @@
     _close() {
       this.input.keyboard.off('keydown-ESC');
       this.input.keyboard.off('keydown-O');
+      if (this._unsubscribeI18n) {
+        this._unsubscribeI18n();
+        this._unsubscribeI18n = null;
+      }
       // Resume the parent scene if it was paused (we don't pause currently
       // because we use scene.launch — but stop ourselves)
       this.scene.stop();
