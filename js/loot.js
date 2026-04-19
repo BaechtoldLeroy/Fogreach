@@ -5,6 +5,7 @@ if (window.i18n) {
     'loot.legacy.body': 'Brustplatte',
     'loot.legacy.boots': 'Stiefel',
     'loot.legacy.material': 'Eisenbrocken',
+    'loot.material.portal_scroll': 'Portalrolle',
     'loot.quest_item.QUEST_DOC': 'Protokoll-Abschrift',
     'loot.quest_item.QUEST_PLATE': 'Verbotene Druckplatte'
   });
@@ -14,6 +15,7 @@ if (window.i18n) {
     'loot.legacy.body': 'Breastplate',
     'loot.legacy.boots': 'Boots',
     'loot.legacy.material': 'Iron Chunk',
+    'loot.material.portal_scroll': 'Portal Scroll',
     'loot.quest_item.QUEST_DOC': 'Protocol Transcript',
     'loot.quest_item.QUEST_PLATE': 'Forbidden Print Plate'
   });
@@ -664,7 +666,7 @@ function randomLoot() {
     return applyDifficulty(item);
   };
 
-  if (roll <= 35) {
+  if (roll <= 32) {
     // 25% of weapon drops are bows (LootSystem.ITEM_BASES has 3 tiered bow
     // entries with subtype:'bow'; rollItem honors their dropWeight by depth).
     if (Math.random() < 0.25 && window.LootSystem
@@ -682,14 +684,22 @@ function randomLoot() {
     }
     return buildItem({ type: 'weapon', key: 'WPN', name: _LOOT_T('loot.legacy.weapon'), nameKey: 'loot.legacy.weapon', iconKey: 'itWeapon' }, 'weapon');
   }
-  if (roll <= 55) {
+  if (roll <= 50) {
     return buildItem({ type: 'head', key: 'HD', name: _LOOT_T('loot.legacy.head'), nameKey: 'loot.legacy.head', iconKey: 'itHead' }, 'head');
   }
-  if (roll <= 75) {
+  if (roll <= 68) {
     return buildItem({ type: 'body', key: 'BD', name: _LOOT_T('loot.legacy.body'), nameKey: 'loot.legacy.body', iconKey: 'itBody' }, 'body');
   }
-  if (roll <= 85) {
+  if (roll <= 77) {
     return buildItem({ type: 'boots', key: 'BT', name: _LOOT_T('loot.legacy.boots'), nameKey: 'loot.legacy.boots', iconKey: 'itBoots' }, 'boots');
+  }
+  if (roll <= 89) {
+    // Potion drop — tier scales with dungeon depth.
+    return _makePotionDrop(depth);
+  }
+  if (roll <= 92) {
+    // Portal scroll — material item, increments materialCounts.PORTAL_SCROLL on pickup.
+    return _makePortalScrollDrop();
   }
 
   return applyDifficulty(makeItem({
@@ -711,6 +721,46 @@ function randomLoot() {
     armor: 0,
     crit: 0
   }));
+}
+
+// Build a portal scroll material item — incremented onto materialCounts.PORTAL_SCROLL on pickup.
+function _makePortalScrollDrop() {
+  return {
+    type: 'material',
+    key: 'PORTAL_SCROLL',
+    materialKey: 'PORTAL_SCROLL',
+    name: _LOOT_T('loot.material.portal_scroll'),
+    nameKey: 'loot.material.portal_scroll',
+    iconKey: 'itPortalScroll',
+    amount: 1,
+    tier: 0,
+    affixes: [],
+    iLevel: 1,
+    itemLevel: 1,
+    baseStats: {},
+    hp: 0, damage: 0, speed: 0, range: 0, armor: 0, crit: 0
+  };
+}
+
+// Build a healing potion item with tier scaled to dungeon depth.
+function _makePotionDrop(depth) {
+  let tier;
+  if (depth < 4) tier = 1;
+  else if (depth < 8) tier = Math.random() < 0.6 ? 1 : 2;
+  else if (depth < 13) tier = Math.random() < 0.6 ? 2 : 3;
+  else tier = Math.random() < 0.5 ? 3 : (Math.random() < 0.6 ? 2 : 4);
+
+  const def = (window.LootSystem && Array.isArray(window.LootSystem.POTION_DEFS))
+    ? window.LootSystem.POTION_DEFS.find((p) => p.potionTier === tier)
+    : null;
+  return {
+    type: 'potion',
+    potionTier: tier,
+    name: def ? def.name : 'Heiltrank',
+    nameKey: 'loot.potion.t' + tier,
+    iconKey: def ? def.iconKey : 'itPotionMinor',
+    stack: 1
+  };
 }
 
 if (typeof window !== 'undefined') {

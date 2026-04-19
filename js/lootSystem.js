@@ -274,11 +274,11 @@ if (window.i18n) {
       baseStats: Object.freeze({ damage: 15, speed: -10 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
 
     // Bows (ranged weapons — equipping one swaps default attack to a projectile)
-    Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itWeapon',
+    Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itBow',
       baseStats: Object.freeze({ damage: 6, range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
-    Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itWeapon',
+    Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBow',
       baseStats: Object.freeze({ damage: 9, range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
-    Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itWeapon',
+    Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itBow',
       baseStats: Object.freeze({ damage: 13, range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
 
     // Helms (3)
