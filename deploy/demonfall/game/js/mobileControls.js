@@ -166,16 +166,8 @@ if (window.i18n) {
       }
     }
 
-    // Position Skills button below Bag button
-    if (state.skillBtn) {
-      const sa = _safeArea();
-      const sx = screenW - INV_CORNER_PAD - sa.right;
-      const sy = INV_CORNER_PAD + sa.top + 40;
-      state.skillBtn.setPosition(sx, sy);
-      if (state.skillBtnHit) {
-        state.skillBtnHit.setPosition(sx - 22, sy + 18);
-      }
-    }
+    // (Removed: Skills button positioning. The skill loadout is now
+    // accessible via the HUDv2 burger menu top-right.)
 
     state.anchor = _anchorOrigin(screenW, screenH);
   }
@@ -285,17 +277,9 @@ if (window.i18n) {
     state.inventoryBtn = bagLabel;
     state.inventoryBtnHit = bagHit;
 
-    // ----- Skills button (next to Bag) -----
-    const skillHitW = 56, skillHitH = 36;
-    const skillHit = scene.add.rectangle(0, 0, skillHitW, skillHitH, 0x222244, 0.85)
-      .setOrigin(0, 0).setScrollFactor(0).setDepth(4000)
-      .setStrokeStyle(1, 0x444466).setInteractive({ useHandCursor: true });
-    skillHit.on('pointerdown', () => openSkillSelectionOverlay(scene));
-    const skillLabel = scene.add.text(0, 0, 'Skills', {
-      fontSize: '14px', fill: '#aaf', fontStyle: 'bold'
-    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(4001);
-    state.skillBtn = skillLabel;
-    state.skillBtnHit = skillHit;
+    // (Removed: dedicated 'Skills' mobile button. The HUDv2 burger menu
+    // top-right now exposes the loadout entry, so a separate corner button
+    // is redundant + clutters the touch UI.)
 
     // ----- Joystick (fixed bottom-left) -----
     const joystickBase = scene.add.circle(0, 0, 60, 0x888888, 0.3);
