@@ -73,8 +73,12 @@
 
   function build(scene) {
     if (!scene || !scene.add) return;
-    if (HUDv2.scene === scene && HUDv2.elements) return; // already built for this scene
 
+    // ALWAYS rebuild — scene shutdown destroys all GameObjects, so any prior
+    // HUDv2.elements references are stale (point at dead Phaser objects whose
+    // setSize/setText silently no-op). Returning early on `scene === HUDv2.scene`
+    // was the bug: when the GameScene instance is reused after Hub→Dungeon,
+    // the elements look populated but are unusable.
     HUDv2.scene = scene;
     HUDv2.elements = {};
     HUDv2.lowHpStage = 0;
@@ -83,6 +87,19 @@
     _buildTopLeft(scene);
     _buildTopRight(scene);
     _buildVignette(scene);
+
+    // Reset state on scene shutdown so next build() doesn't trip over dead
+    // tweens / element refs.
+    if (scene.events && typeof scene.events.once === 'function') {
+      scene.events.once('shutdown', () => {
+        if (HUDv2.pulseTween) { try { HUDv2.pulseTween.stop(); } catch (e) {} HUDv2.pulseTween = null; }
+        HUDv2.scene = null;
+        HUDv2.elements = null;
+        HUDv2.lowHpStage = 0;
+        HUDv2._statsContainer = null;
+        HUDv2._menuContainer = null;
+      });
+    }
 
     // Re-render on language change
     if (window.i18n && !HUDv2._i18nWired) {
