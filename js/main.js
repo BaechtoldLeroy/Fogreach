@@ -884,18 +884,11 @@ function create() {
     }
   });
 
-  // Auto-restore fullscreen preference on first click
-  if (typeof window.loadGameSettings === 'function') {
-    var fsSettings = window.loadGameSettings();
-    if (fsSettings.fullscreen && !this.scale.isFullscreen) {
-      var scaleRef = this.scale;
-      var restoreFs = function () {
-        scaleRef.startFullscreen();
-        document.removeEventListener('pointerdown', restoreFs);
-      };
-      document.addEventListener('pointerdown', restoreFs, { once: true });
-    }
-  }
+  // (Removed: auto-restore-fullscreen-on-first-pointerdown.) The previous
+  // listener attached an auto-fullscreen callback whenever settings.fullscreen
+  // was true, which the player frequently triggered by accident on a normal
+  // gameplay click. Fullscreen is now strictly opt-in via F11 or the
+  // Settings menu picker (which calls scale.startFullscreen directly).
 
   // 4.2 Plattform erkennen
   isMobile = this.sys.game.device.input.touch;
