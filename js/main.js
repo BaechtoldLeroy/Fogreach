@@ -1682,8 +1682,23 @@ function initUI() {
       const gold = (window.materialCounts && window.materialCounts.GOLD) || 0;
       window._goldText.setText(_HUD_T('hud.gold', { amount: gold }));
     }
+    if (window.HUDv2 && typeof window.HUDv2.update === 'function') {
+      try { window.HUDv2.update(); } catch (e) { /* ignore */ }
+    }
   };
   window._refreshHUD();
+
+  // Build the modern HUD overlay (Diablo Immortal-style: portrait + HP/XP
+  // bars top-left, burger menu + inventory icons top-right, low-HP vignette).
+  // Hide the legacy text stack so it doesn't visually compete; the bars
+  // re-render the same data via HUDv2.update() (called from updateHUD +
+  // _refreshHUD).
+  if (window.HUDv2 && typeof window.HUDv2.build === 'function') {
+    try { window.HUDv2.build(this); } catch (e) { console.warn('[HUDv2] build failed', e); }
+    [weaponStatsText, playerHealthText, playerXPText, waveText, window._goldText]
+      .forEach(t => { if (t && t.setVisible) try { t.setVisible(false); } catch (e) {} });
+    // _roomCounterText is positioned by minimap.js below the minimap; keep visible.
+  }
 
   // WP04 standalone potion CD indicator removed — replaced by the potion
   // tile in the attack bar (see buildTile / refreshPotionTile above).

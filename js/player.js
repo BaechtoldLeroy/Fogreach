@@ -1817,7 +1817,7 @@ function addXP(amount = 1) {
 function updateHUD() {
   const current = Math.round(Math.max(0, playerHealth));
   const max = Math.round(Math.max(1, playerMaxHealth));
-  
+
   if (playerHealthText?.setText && playerHealthText.scene?.sys?.isActive()) {
     try {
       playerHealthText.setText(`Health: ${current}/${max}`);
@@ -1825,12 +1825,17 @@ function updateHUD() {
       console.warn('[updateHUD] Failed to update health text:', err);
     }
   }
-  
+
   if (playerXPText?.setText && playerXPText.scene?.sys?.isActive()) {
     try {
       playerXPText.setText(`Level: ${playerLevel}  XP: ${playerXP}/${neededXP}`);
     } catch (err) {
       console.warn('[updateHUD] Failed to update XP text:', err);
     }
+  }
+
+  // New HUD bars + portrait halo + low-HP vignette
+  if (window.HUDv2 && typeof window.HUDv2.update === 'function') {
+    try { window.HUDv2.update(); } catch (err) { /* ignore */ }
   }
 }
