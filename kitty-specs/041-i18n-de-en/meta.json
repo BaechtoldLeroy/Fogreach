@@ -5,5 +5,7 @@
   "friendly_name": "i18n German/English",
   "mission": "software-dev",
   "slug": "041-i18n-de-en",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "vcs_locked_at": "2026-04-19T12:10:32.202946+00:00"
 }
