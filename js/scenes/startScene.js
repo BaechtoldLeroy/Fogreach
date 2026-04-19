@@ -500,7 +500,9 @@ StartScene.prototype.create = function () {
 
     // Don't overwrite RT.MANIFEST — it's set in roomTemplates.js
     window.game = this.game;
-    this.scene.start("HubSceneV2");
+    // Endless mode skips the hub and boots straight into the dungeon.
+    const target = (window.__ENDLESS_MODE__ ? 'GameScene' : 'HubSceneV2');
+    this.scene.start(target);
   }
 };
 
