@@ -295,8 +295,10 @@
           : {};
         for (let i = 0; i < slots.length; i++) {
           if (!loadout[slots[i]]) {
-            if (typeof window.AbilitySystem.setActiveLoadout === 'function') {
-              window.AbilitySystem.setActiveLoadout(slots[i], up.abilityId);
+            const setter = window.AbilitySystem.setSlot
+              || window.AbilitySystem.setActiveLoadout; // legacy alias
+            if (typeof setter === 'function') {
+              setter.call(window.AbilitySystem, slots[i], up.abilityId);
             }
             break;
           }
