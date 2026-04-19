@@ -1,5 +1,48 @@
 // js/lootSystem.js
 // Loot & Economy Overhaul — Foundation & Affix Engine (WP01).
+
+if (window.i18n) {
+  window.i18n.register('de', {
+    'loot.item.WPN_EISENKLINGE': 'Eisenklinge',
+    'loot.item.WPN_SCHATTENDOLCH': 'Schattendolch',
+    'loot.item.WPN_KETTENMORGENSTERN': 'Kettenmorgenstern',
+    'loot.item.WPN_GLUTAXT': 'Glutaxt',
+    'loot.item.HD_KETTENHAUBE': 'Kettenhaube',
+    'loot.item.HD_BRONZEHELM': 'Bronzehelm',
+    'loot.item.HD_SCHLANGENMASKE': 'Schlangenmaske',
+    'loot.item.BD_LEDERHARNISCH': 'Lederharnisch',
+    'loot.item.BD_PLATTENPANZER': 'Plattenpanzer',
+    'loot.item.BD_SCHATTENKUTTE': 'Schattenkutte',
+    'loot.item.BT_LEDERSTIEFEL': 'Lederstiefel',
+    'loot.item.BT_STAHLSOHLEN': 'Stahlsohlen',
+    'loot.item.BT_WINDLAEUFER': 'Windläufer',
+    'loot.potion.t1': 'Heiltrank (Klein)',
+    'loot.potion.t2': 'Heiltrank',
+    'loot.potion.t3': 'Heiltrank (Gross)',
+    'loot.potion.t4': 'Heiltrank (Super)',
+    'loot.fallback.item': 'Gegenstand'
+  });
+  window.i18n.register('en', {
+    'loot.item.WPN_EISENKLINGE': 'Iron Blade',
+    'loot.item.WPN_SCHATTENDOLCH': 'Shadow Dagger',
+    'loot.item.WPN_KETTENMORGENSTERN': 'Chain Morningstar',
+    'loot.item.WPN_GLUTAXT': 'Ember Axe',
+    'loot.item.HD_KETTENHAUBE': 'Chain Coif',
+    'loot.item.HD_BRONZEHELM': 'Bronze Helm',
+    'loot.item.HD_SCHLANGENMASKE': 'Serpent Mask',
+    'loot.item.BD_LEDERHARNISCH': 'Leather Harness',
+    'loot.item.BD_PLATTENPANZER': 'Plate Armor',
+    'loot.item.BD_SCHATTENKUTTE': 'Shadow Cloak',
+    'loot.item.BT_LEDERSTIEFEL': 'Leather Boots',
+    'loot.item.BT_STAHLSOHLEN': 'Steel Soles',
+    'loot.item.BT_WINDLAEUFER': 'Wind Walkers',
+    'loot.potion.t1': 'Healing Potion (S)',
+    'loot.potion.t2': 'Healing Potion',
+    'loot.potion.t3': 'Healing Potion (L)',
+    'loot.potion.t4': 'Healing Potion (XL)',
+    'loot.fallback.item': 'Item'
+  });
+}
 //
 // This module exposes the full `window.LootSystem` public API surface defined
 // in kitty-specs/020-loot-economy-overhaul/contracts/lootSystem.api.md.
@@ -339,11 +382,19 @@
     const affixCount = tier;
     const affixes = rollAffixes(iLevel, affixCount, Math.random, base.type);
 
+    const _itemNameKey = 'loot.item.' + base.key;
+    const _localizedBase = (window.i18n
+      ? (function () {
+          const v = window.i18n.t(_itemNameKey);
+          return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : base.name;
+        })()
+      : base.name);
     const item = {
       key: base.key,
       type: base.type,
-      name: base.name,
-      _baseName: base.name,
+      name: _localizedBase,
+      nameKey: _itemNameKey,
+      _baseName: _localizedBase,
       iconKey: base.iconKey,
       tier: tier,
       iLevel: iLevel,
@@ -373,8 +424,14 @@
   }
 
   function composeName(item) {
-    if (!item) return 'Item';
-    const baseName = item._baseName || item.name || 'Item';
+    if (!item) return (window.i18n ? window.i18n.t('loot.fallback.item') : 'Item');
+    let baseName;
+    if (window.i18n && item.nameKey) {
+      const v = window.i18n.t(item.nameKey);
+      baseName = (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (item._baseName || item.name);
+    } else {
+      baseName = item._baseName || item.name || (window.i18n ? window.i18n.t('loot.fallback.item') : 'Item');
+    }
     if (!item.tier || item.tier === 0 || !item.affixes || item.affixes.length === 0) {
       return baseName;
     }
@@ -708,6 +765,10 @@
     // stubs (later WPs)
     rollItem: rollItem,
     composeName: composeName,
+    // i18n helper: always re-resolves item name + affixes against current
+    // language. Consumers should prefer this over reading item.displayName
+    // (which is snapped at instantiation and may be stale after a switch).
+    getLocalizedDisplayName: function (item) { return composeName(item); },
     grantGold: grantGold,
     getGold: getGold,
     spendGold: spendGold,
