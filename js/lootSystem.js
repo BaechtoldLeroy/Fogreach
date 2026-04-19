@@ -806,6 +806,15 @@ if (window.i18n) {
     return _shopState;
   }
 
+  // Invalidate the cached shop state so the next getOrCreateShopState() call
+  // builds a fresh stock roll. Called when the player leaves the hub to enter
+  // the dungeon — Mara's inventory should feel fresh run-to-run rather than
+  // showing the same items the player already browsed.
+  function refreshShop() {
+    _shopState = null;
+    _lastShopRunId = null;
+  }
+
   function _computeRerollCost(item) {
     if (!item || typeof item.tier !== 'number') return 0;
     const tierMult = [1, 2, 4, 8];
@@ -921,6 +930,7 @@ if (window.i18n) {
     _resetPotionCooldown: _resetPotionCooldown,
     POTION_GLOBAL_CD_MS: POTION_GLOBAL_CD_MS,
     getOrCreateShopState: getOrCreateShopState,
+    refreshShop: refreshShop,
     rerollItem: rerollItem,
     _computeRerollCost: _computeRerollCost,
     migrateSave: migrateSave,

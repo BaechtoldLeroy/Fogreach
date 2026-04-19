@@ -1608,25 +1608,20 @@ function createItemGraphics() {
         g.fillCircle(top.x + 1, top.y - 9, 1);
         g.fillCircle(bot.x + 1, bot.y + 9, 1);
 
-        // String — drawn taut from tip cap to tip cap, with a small pull
-        // notch in the middle where the nocked arrow sits.
-        const pullX = cx + 6;
+        // String — straight taut line from tip cap to tip cap (no pull notch
+        // / nocked arrow now). Shadow underneath, light cord on top.
         const stringTop = { x: top.x + 1, y: top.y - 9 };
         const stringBot = { x: bot.x + 1, y: bot.y + 9 };
 
-        // String shadow
         g.lineStyle(2, 0x000000, 0.35);
         g.beginPath();
-        g.moveTo(stringTop.x, stringTop.y);
-        g.lineTo(pullX + 1, cy + 1);
-        g.lineTo(stringBot.x, stringBot.y);
+        g.moveTo(stringTop.x, stringTop.y + 1);
+        g.lineTo(stringBot.x, stringBot.y + 1);
         g.strokePath();
 
-        // String (light, slightly off-white)
         g.lineStyle(1.5, 0xf2ecd6, 1);
         g.beginPath();
         g.moveTo(stringTop.x, stringTop.y);
-        g.lineTo(pullX, cy);
         g.lineTo(stringBot.x, stringBot.y);
         g.strokePath();
 
@@ -1637,26 +1632,6 @@ function createItemGraphics() {
         g.fillRect(armX - armR + 0, cy - 5, 6, 1);
         g.fillRect(armX - armR + 0, cy + 0, 6, 1);
         g.fillRect(armX - armR + 0, cy + 4, 6, 1);
-
-        // Nocked arrow — horizontal, sitting on the string pull-point
-        // Shaft (warm wood)
-        g.fillStyle(0xc8a060, 1);
-        g.fillRect(pullX, cy - 1, 18, 2);
-        // Shaft shadow stripe
-        g.fillStyle(0x8a6830, 0.5);
-        g.fillRect(pullX, cy + 1, 18, 1);
-        // Arrowhead (steel triangle, slightly outside icon edge for impact)
-        g.fillStyle(0xeeeeee, 1);
-        g.fillTriangle(pullX + 18, cy - 4, pullX + 18, cy + 4, pullX + 24, cy);
-        g.fillStyle(0xb6bcc2, 1);
-        g.fillTriangle(pullX + 18, cy + 1, pullX + 18, cy + 4, pullX + 24, cy);
-        // Fletching (twin red feathers)
-        g.fillStyle(0xc0392b, 1);
-        g.fillTriangle(pullX, cy - 5, pullX + 6, cy - 1, pullX, cy - 1);
-        g.fillTriangle(pullX, cy + 5, pullX + 6, cy + 1, pullX, cy + 1);
-        g.fillStyle(0xff6a4a, 0.6);
-        g.fillTriangle(pullX + 1, cy - 4, pullX + 5, cy - 1, pullX + 1, cy - 1);
-        g.fillTriangle(pullX + 1, cy + 4, pullX + 5, cy + 1, pullX + 1, cy + 1);
       }
     },
     {

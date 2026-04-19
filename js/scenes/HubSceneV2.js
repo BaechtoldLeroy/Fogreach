@@ -1244,6 +1244,11 @@ class HubSceneV2 extends Phaser.Scene {
           }
         }
 
+        // Mara's Schwarzmarkt restocks each time the player leaves the hub
+        // for the dungeon — no more stale browsing on re-entry.
+        if (window.LootSystem && typeof window.LootSystem.refreshShop === 'function') {
+          try { window.LootSystem.refreshShop(); } catch (e) { /* ignore */ }
+        }
         this.cameras.main.fadeOut(250, 0, 0, 0);
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
           this.scene.start('GameScene');
