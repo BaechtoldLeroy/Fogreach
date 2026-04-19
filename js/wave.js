@@ -12,14 +12,14 @@ function computeWaveEnemyTotal(waveNumber, roomAreaPx) {
   const baseCount = Math.min(14, scaled);
 
   // Scale enemy count by room area — reference area is the median template
-  // (~1 million px²). Use a near-linear curve (pow 0.85) so big procedural
-  // rooms (2-3x area) actually feel populated. Old sqrt was too gentle and
-  // big rooms read as empty.
+  // (~1 million px²). Linear scaling for ratio<=1, super-linear (1.05) above
+  // so really big procedural BSP rooms (3-4x) feel properly packed. Caps
+  // raised so the formula can produce a meaningful spike.
   if (roomAreaPx && roomAreaPx > 0) {
     const REF_AREA = 1152 * 896; // ~1,032,192 px² (median template size)
     const ratio = roomAreaPx / REF_AREA;
-    const areaFactor = Math.pow(ratio, 0.85);
-    return Math.max(3, Math.min(28, Math.round(baseCount * areaFactor)));
+    const areaFactor = ratio <= 1 ? ratio : Math.pow(ratio, 1.05);
+    return Math.max(3, Math.min(40, Math.round(baseCount * areaFactor)));
   }
   return baseCount;
 }
