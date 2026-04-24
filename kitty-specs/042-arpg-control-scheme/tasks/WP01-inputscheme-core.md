@@ -13,7 +13,7 @@ requirement_refs:
 - NFR-003
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: planning_base=main; merge_target=main; base_branch may be rewritten by /spec-kitty.implement if WP01 is stacked behind another feature.
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T001, T002, T003, T004, T005, T006, T007]
 history:
 - 2026-04-24 — Scaffolded during /spec-kitty.tasks

@@ -9,7 +9,7 @@ requirement_refs:
 - NFR-001
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: planning_base=main; merge_target=main; base_branch will be 042-arpg-control-scheme-WP01 when implemented (stacked on WP01).
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T018, T019, T020, T021, T022]
 history:
 - 2026-04-24 — Scaffolded during /spec-kitty.tasks
