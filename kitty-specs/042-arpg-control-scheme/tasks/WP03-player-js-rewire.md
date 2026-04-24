@@ -3,6 +3,7 @@ work_package_id: WP03
 title: player.js Input Rewire + Sprite Facing
 dependencies: [WP01]
 requirement_refs:
+- FR-004
 - FR-005
 - FR-006
 - FR-007

@@ -3,6 +3,7 @@ work_package_id: WP02
 title: main.js Input Rewire
 dependencies: [WP01]
 requirement_refs:
+- FR-004
 - FR-005
 - FR-008
 - FR-009
