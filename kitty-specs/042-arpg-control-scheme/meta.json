@@ -2,8 +2,10 @@
   "created_at": "2026-04-24T15:47:21.108391+00:00",
   "feature_number": "042",
   "feature_slug": "042-arpg-control-scheme",
-  "friendly_name": "arpg control scheme",
+  "friendly_name": "ARPG Control Scheme",
   "mission": "software-dev",
   "slug": "042-arpg-control-scheme",
-  "target_branch": "main"
+  "source_description": "Optional secondary control scheme: WASD movement, mouse-cursor aim/facing direction, number keys 1-4 for ability slots. Settings toggle (input.scheme: 'classic' | 'arpg'). Classic scheme (arrows + space + QWER) remains default and fully functional.",
+  "target_branch": "main",
+  "vcs": "git"
 }
