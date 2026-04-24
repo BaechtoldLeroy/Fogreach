@@ -1,0 +1,19 @@
+{
+  "blocked_reason": null,
+  "completed_steps": [],
+  "decisions": {},
+  "inputs": {
+    "feature_slug": "041-i18n-de-en"
+  },
+  "issued_step_id": "discovery",
+  "mission_key": "software-dev",
+  "pending_decisions": {},
+  "policy_snapshot": {
+    "default_route": "same_llm_context",
+    "extras": {},
+    "strictness": "medium"
+  },
+  "run_id": "4b70f7830cd84b9ea1efc39fecc15c76",
+  "template_hash": "ea7ee228647d3e45744017bb43106d2f5d5ae7708cd1896de7d8e8ff8d00c88a",
+  "template_path": "C:\\Users\\LeroyB\u00e4chtold\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\specify_cli\\missions\\software-dev\\mission-runtime.yaml"
+}

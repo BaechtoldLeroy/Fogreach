@@ -1,0 +1,74 @@
+{
+  "event_count": 8,
+  "feature_slug": "041-i18n-de-en",
+  "last_event_id": "01KPZPGKVYGM99R2V09V0B8M1P",
+  "materialized_at": "2026-04-24T12:12:57.616558+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 8,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KPZPFY8PT4ZF08YW6F2G3KXE",
+      "last_transition_at": "2026-04-24T12:12:35.478664+00:00"
+    },
+    "WP02": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KPZPGAFM6BCSB6JXDHXY7FKC",
+      "last_transition_at": "2026-04-24T12:12:47.988271+00:00"
+    },
+    "WP03": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KPZPGC32RAXDY50QRP0Z6W6S",
+      "last_transition_at": "2026-04-24T12:12:49.634662+00:00"
+    },
+    "WP04": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KPZPGDN80NAJ2MP4B0Q589TY",
+      "last_transition_at": "2026-04-24T12:12:51.240835+00:00"
+    },
+    "WP05": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KPZPGF6EHP2DC2EPM5WEG0GW",
+      "last_transition_at": "2026-04-24T12:12:52.814198+00:00"
+    },
+    "WP06": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KPZPGGQTC117W6B2R2QZTR3Z",
+      "last_transition_at": "2026-04-24T12:12:54.394847+00:00"
+    },
+    "WP07": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KPZPGJ9387WNWMRN04EBSZ12",
+      "last_transition_at": "2026-04-24T12:12:55.971712+00:00"
+    },
+    "WP08": {
+      "actor": "claude",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KPZPGKVYGM99R2V09V0B8M1P",
+      "last_transition_at": "2026-04-24T12:12:57.598073+00:00"
+    }
+  }
+}
