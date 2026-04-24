@@ -1083,26 +1083,36 @@
       }
     };
 
-    // Buttons
-    var btnY = cy;
+    // Buttons — dynamic height so long labels wrap cleanly inside the box.
+    var BTN_W = Math.min(520, camW - 40);
+    var BTN_PAD_X = 16;
+    var BTN_PAD_Y = 8;
+    var BTN_GAP = 10;
+    var cursorY = cy; // top edge of next button
     for (var i = 0; i < choices.length && i < 3; i++) {
-      (function (choice, by) {
-        var btnBg = scene.add.rectangle(cx, by, 340, 34, 0x2a2a2a)
-          .setStrokeStyle(2, 0xd4a543)
-          .setScrollFactor(0).setDepth(2502)
-          .setInteractive({ useHandCursor: true });
-        var btnText = scene.add.text(cx, by, choice.label, {
-          fontSize: '14px', fill: '#f1e9d8', fontFamily: 'monospace'
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(2503);
-        btnBg.on('pointerover', function () { btnBg.setFillStyle(0x555555); });
-        btnBg.on('pointerout', function () { btnBg.setFillStyle(0x2a2a2a); });
-        btnBg.on('pointerdown', function () {
+      var btnText = scene.add.text(0, 0, choices[i].label, {
+        fontSize: '14px', fill: '#f1e9d8', fontFamily: 'monospace',
+        align: 'center',
+        wordWrap: { width: BTN_W - BTN_PAD_X * 2 }
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2503);
+      var btnH = Math.max(34, btnText.height + BTN_PAD_Y * 2);
+      var by = cursorY + btnH / 2;
+      var btnBg = scene.add.rectangle(cx, by, BTN_W, btnH, 0x2a2a2a)
+        .setStrokeStyle(2, 0xd4a543)
+        .setScrollFactor(0).setDepth(2502)
+        .setInteractive({ useHandCursor: true });
+      btnText.setPosition(cx, by);
+      (function (bg, choice) {
+        bg.on('pointerover', function () { bg.setFillStyle(0x555555); });
+        bg.on('pointerout', function () { bg.setFillStyle(0x2a2a2a); });
+        bg.on('pointerdown', function () {
           cleanup();
           if (typeof choice.callback === 'function') choice.callback();
         });
-        elements.push(btnBg);
-        elements.push(btnText);
-      })(choices[i], btnY + i * 44);
+      })(btnBg, choices[i]);
+      elements.push(btnBg);
+      elements.push(btnText);
+      cursorY = by + btnH / 2 + BTN_GAP;
     }
   }
 
