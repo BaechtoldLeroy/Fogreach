@@ -213,8 +213,7 @@
       this._languageRow(px, rowY, panelW); rowY += 24;
 
       // -- Input section (desktop-only; mobile uses touch controls) --
-      const isTouch = !!(this.sys && this.sys.game && this.sys.game.device
-        && this.sys.game.device.input && this.sys.game.device.input.touch);
+      // Reuse isTouch from the Mobile section gate above.
       if (!isTouch) {
         this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.input'));
         rowY += 18;
