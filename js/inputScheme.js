@@ -89,8 +89,13 @@
       },
       getPointerWorldXY() {
         const p = scene.input && scene.input.activePointer;
-        if (!p) return null;
-        return { x: p.worldX, y: p.worldY };
+        const cam = scene.cameras && scene.cameras.main;
+        if (!p || !cam) return null;
+        // activePointer.worldX/Y are only refreshed on pointer events — a
+        // stationary cursor with a scrolling camera yields stale values.
+        // Transform the current screen coords through the current camera.
+        const wp = cam.getWorldPoint(p.x, p.y);
+        return { x: wp.x, y: wp.y };
       },
       getPlayerPos() {
         const p = window.player;
