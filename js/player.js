@@ -619,11 +619,18 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
     });
   }
 
-  // Lebensraub (Life Steal): 10% of damage dealt heals the player
-  if (typeof window.hasSkill === 'function' && window.hasSkill('survival_life_steal') && damage > 0) {
-    const healAmount = Math.max(1, Math.round(damage * 0.1));
-    if (typeof addPlayerHealth === 'function') {
-      addPlayerHealth(healAmount);
+  // Lebensraub (Life Steal): combine skill + loot affix "of the Leech" + endless buff.
+  if (damage > 0 && typeof addPlayerHealth === 'function') {
+    let lsPct = 0;
+    if (typeof window.hasSkill === 'function' && window.hasSkill('survival_life_steal')) {
+      lsPct += 0.10;
+    }
+    if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
+      lsPct += (window.LootSystem.getBonus('lifesteal') || 0) / 100;
+    }
+    lsPct += window.PLAYER_LIFESTEAL || 0;
+    if (lsPct > 0) {
+      addPlayerHealth(Math.max(1, Math.round(damage * lsPct)));
     }
   }
 

@@ -1334,6 +1334,18 @@ function update(time, delta) {
     }
   }
 
+  // Health regen tick — applies PLAYER_HEALTH_REGEN (HP/sec) when below max.
+  if ((window.PLAYER_HEALTH_REGEN || 0) > 0 && playerHealth > 0 && playerHealth < playerMaxHealth) {
+    window._regenAccumMs = (window._regenAccumMs || 0) + (delta || 0);
+    if (window._regenAccumMs >= 1000) {
+      const seconds = Math.floor(window._regenAccumMs / 1000);
+      window._regenAccumMs -= seconds * 1000;
+      addPlayerHealth(window.PLAYER_HEALTH_REGEN * seconds);
+    }
+  } else {
+    window._regenAccumMs = 0;
+  }
+
   // 5.2 Wave-Abschluss?
   checkWaveEnd.call(this, time);
 

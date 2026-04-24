@@ -906,6 +906,13 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     window.PLAYER_HEALTH_REGEN = skillEffects.healthRegen > 0 ? skillEffects.healthRegen : 0;
   }
 
+  // Reset additive globals that are only written inside the endless block
+  // below — otherwise they accumulate across recalcs instead of rebuilding fresh.
+  window.PLAYER_LIFESTEAL = 0;
+
+  // Lifesteal from weapon affixes lives in LootSystem.getBonus('lifesteal') and
+  // is queried at damage-time, so no explicit copy is needed here.
+
   // 3.55) Endless-mode upgrade buffs (additive, on top of skills, before
   // event multipliers). Rebuilt fresh per recalc so picked upgrades persist.
   const endlessBuffs = window.endlessBuffs;
