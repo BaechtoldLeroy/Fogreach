@@ -943,6 +943,21 @@ function create() {
       window.LootSystem.onPotionKey();
     }
   });
+  // Left-click as attack fallback — keyboard ghosting on membrane boards often
+  // blocks Up+Left+Space, so mouse gives a conflict-free attack trigger.
+  // Desktop only; mobile has its own attack button. Skips clicks on interactive
+  // UI (inventory slots, dialogs, etc.) via the currentlyOver hit-test array.
+  let _mouseAttackHandler = null;
+  if (!isMobile) {
+    _mouseAttackHandler = (pointer, currentlyOver) => {
+      if (pointer.button !== 0) return;
+      if (invOpen || playerDeathHandled || isReturningToHub) return;
+      if (Array.isArray(currentlyOver) && currentlyOver.length > 0) return;
+      if (typeof attack === 'function') attack.call(this);
+    };
+    this.input.on('pointerdown', _mouseAttackHandler);
+  }
+
   // Expose this scene for LootSystem HoT timers
   window.gameScene = this;
   this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -953,6 +968,7 @@ function create() {
     this.input.keyboard.off('keydown-K');
     this.input.keyboard.off('keydown-O');
     this.input.keyboard.off('keydown-P');
+    if (_mouseAttackHandler) this.input.off('pointerdown', _mouseAttackHandler);
     if (window.gameScene === this) window.gameScene = null;
   });
 
