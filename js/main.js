@@ -943,19 +943,42 @@ function create() {
       window.LootSystem.onPotionKey();
     }
   });
+  // Initialise InputScheme with this scene so it can resolve mouse world coords.
+  if (window.InputScheme && typeof window.InputScheme.init === 'function') {
+    window.InputScheme.init(this);
+  }
+
   // Left-click as attack fallback — keyboard ghosting on membrane boards often
   // blocks Up+Left+Space, so mouse gives a conflict-free attack trigger.
   // Desktop only; mobile has its own attack button. Skips clicks on interactive
   // UI (inventory slots, dialogs, etc.) via the currentlyOver hit-test array.
+  // In both schemes, this handler just flags InputScheme; the actual attack is
+  // fired by handlePlayerAttack (which polls InputScheme.isBasicAttackTriggered).
   let _mouseAttackHandler = null;
   if (!isMobile) {
     _mouseAttackHandler = (pointer, currentlyOver) => {
       if (pointer.button !== 0) return;
-      if (invOpen || playerDeathHandled || isReturningToHub) return;
+      if (window.InputScheme && window.InputScheme.shouldSuppressCombatInput()) return;
       if (Array.isArray(currentlyOver) && currentlyOver.length > 0) return;
-      if (typeof attack === 'function') attack.call(this);
+      if (window.InputScheme && typeof window.InputScheme.markPrimaryButtonJustDown === 'function') {
+        window.InputScheme.markPrimaryButtonJustDown();
+      } else if (typeof attack === 'function') {
+        // Defensive fallback if InputScheme somehow failed to load.
+        attack.call(this);
+      }
     };
     this.input.on('pointerdown', _mouseAttackHandler);
+  }
+
+  // HUD slot-badge labels follow the active scheme. Subscribe once so the
+  // badges re-render on scheme changes (e.g., user toggles in SettingsScene).
+  let _unsubInputScheme = null;
+  if (window.InputScheme && typeof window.InputScheme.onChange === 'function') {
+    _unsubInputScheme = window.InputScheme.onChange(() => {
+      if (typeof window._refreshAbilityHUD === 'function') {
+        window._refreshAbilityHUD();
+      }
+    });
   }
 
   // Expose this scene for LootSystem HoT timers
@@ -969,6 +992,10 @@ function create() {
     this.input.keyboard.off('keydown-O');
     this.input.keyboard.off('keydown-P');
     if (_mouseAttackHandler) this.input.off('pointerdown', _mouseAttackHandler);
+    if (typeof _unsubInputScheme === 'function') { try { _unsubInputScheme(); } catch (e) {} }
+    if (window.InputScheme && typeof window.InputScheme.teardown === 'function') {
+      window.InputScheme.teardown();
+    }
     if (window.gameScene === this) window.gameScene = null;
   });
 
@@ -1399,35 +1426,22 @@ function update(time, delta) {
   // 5.5 Active ability slots (Q/E/R/F) — block while stunned
   const playerStunned = window.statusEffectManager && window.statusEffectManager.isStunned(player);
 
-  if (!playerStunned && !isMobile && window.AbilitySystem) {
-    // Q -> slot1, W -> slot2, E -> slot3, R -> slot4
-    if (Phaser.Input.Keyboard.JustDown(qKey)) {
-      window.AbilitySystem.tryActivate('slot1', this);
-    }
-    if (Phaser.Input.Keyboard.JustUp(qKey)) {
-      window.AbilitySystem.tryRelease('slot1', this);
-    }
-    if (wKey && Phaser.Input.Keyboard.JustDown(wKey)) {
-      window.AbilitySystem.tryActivate('slot2', this);
-    }
-    if (wKey && Phaser.Input.Keyboard.JustUp(wKey)) {
-      window.AbilitySystem.tryRelease('slot2', this);
-    }
-    if (Phaser.Input.Keyboard.JustDown(eKey)) {
-      // Try door interaction first; only fire ability if no door nearby
-      var doorHandled = window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
-      if (!doorHandled) {
-        window.AbilitySystem.tryActivate('slot3', this);
+  if (!playerStunned && !isMobile && window.AbilitySystem && window.InputScheme) {
+    // Scheme-aware ability slot dispatch. classic → Q/W/E/R map to slot1-4;
+    // arpg → 1/2/3/4 map to slot1-4. Slot3 keeps its door-first check
+    // (E in classic) so door interactions don't collide with ability activation.
+    for (let slot = 1; slot <= 4; slot++) {
+      if (window.InputScheme.consumeAbilityTrigger(slot)) {
+        if (slot === 3) {
+          const doorHandled = window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
+          if (!doorHandled) window.AbilitySystem.tryActivate('slot3', this);
+        } else {
+          window.AbilitySystem.tryActivate('slot' + slot, this);
+        }
       }
-    }
-    if (Phaser.Input.Keyboard.JustUp(eKey)) {
-      window.AbilitySystem.tryRelease('slot3', this);
-    }
-    if (Phaser.Input.Keyboard.JustDown(rKey)) {
-      window.AbilitySystem.tryActivate('slot4', this);
-    }
-    if (Phaser.Input.Keyboard.JustUp(rKey)) {
-      window.AbilitySystem.tryRelease('slot4', this);
+      if (window.InputScheme.consumeAbilityReleaseTrigger(slot)) {
+        window.AbilitySystem.tryRelease('slot' + slot, this);
+      }
     }
   }
 
@@ -1986,9 +2000,13 @@ function initUI() {
       });
 
       const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
-      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
+      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey, idx) => {
         const tile = slotTiles[slotKey];
         const abilityId = loadout ? loadout[slotKey] : null;
+        // Scheme-aware key label (Q/W/E/R in classic, 1/2/3/4 in arpg).
+        if (tile.keyText && window.InputScheme && typeof window.InputScheme.getSlotLabel === 'function') {
+          tile.keyText.setText(window.InputScheme.getSlotLabel(idx + 1));
+        }
         if (abilityId) {
           const def = ABILITY_DEFS[abilityId] || window.AbilitySystem?.ABILITY_DEFS?.[abilityId];
           const displayName = def?.name || abilityId;
