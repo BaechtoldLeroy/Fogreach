@@ -10,6 +10,7 @@
       'settings.section.controls': 'STEUERUNG',
       'settings.section.mobile': 'MOBILE',
       'settings.section.display': 'ANZEIGE',
+      'settings.section.input': 'EINGABE',
       'settings.section.debug': 'DEBUG',
       'settings.audio.master': 'Master',
       'settings.audio.music': 'Musik',
@@ -38,6 +39,7 @@
       'settings.section.controls': 'CONTROLS',
       'settings.section.mobile': 'MOBILE',
       'settings.section.display': 'DISPLAY',
+      'settings.section.input': 'INPUT',
       'settings.section.debug': 'DEBUG',
       'settings.audio.master': 'Master',
       'settings.audio.music': 'Music',
@@ -210,6 +212,15 @@
       this._toggleRow(px, rowY, T('settings.display.reduced_effects'), 'reducedEffects', panelW); rowY += 22;
       this._languageRow(px, rowY, panelW); rowY += 24;
 
+      // -- Input section (desktop-only; mobile uses touch controls) --
+      const isTouch = !!(this.sys && this.sys.game && this.sys.game.device
+        && this.sys.game.device.input && this.sys.game.device.input.touch);
+      if (!isTouch) {
+        this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.input'));
+        rowY += 18;
+        this._schemeRow(px, rowY, panelW); rowY += 24;
+      }
+
       // -- Debug section --
       this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.debug'));
       rowY += 18;
@@ -255,6 +266,23 @@
           if (this._unsubscribeI18n) {
             this._unsubscribeI18n();
             this._unsubscribeI18n = null;
+          }
+        });
+      }
+
+      // Re-render scene if control scheme changes from outside (e.g. console
+      // command). Kept separate from i18n so external scheme flips while
+      // Settings is open still move the picker highlight.
+      if (window.InputScheme && typeof window.InputScheme.onChange === 'function') {
+        this._unsubscribeInputScheme = window.InputScheme.onChange(() => {
+          if (this.scene && this.scene.isActive && this.scene.isActive()) {
+            this.scene.restart({ from: this.parentSceneKey });
+          }
+        });
+        this.events.once('shutdown', () => {
+          if (this._unsubscribeInputScheme) {
+            this._unsubscribeInputScheme();
+            this._unsubscribeInputScheme = null;
           }
         });
       }
@@ -443,6 +471,38 @@
         const next = supportedLangs[(supportedLangs.indexOf(cur) + 1) % supportedLangs.length];
         if (window.Persistence) window.Persistence.setLanguage(next);
         if (window.i18n) window.i18n.setLanguage(next); // triggers onChange → scene.restart
+        refresh();
+      });
+    }
+
+    _schemeRow(centerX, y, panelW) {
+      const supportedSchemes = ['classic', 'arpg'];
+      const schemeLabelKey = (s) => 'input.scheme.' + s;
+      this.add.text(centerX - panelW / 2 + 20, y, T('settings.input_scheme.label') + ':', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
+      }).setScrollFactor(0).setDepth(2002);
+
+      const valueText = this.add.text(centerX + 80, y, '', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
+
+      const refresh = () => {
+        const cur = (window.InputScheme && window.InputScheme.getScheme)
+          ? window.InputScheme.getScheme() : 'classic';
+        valueText.setText(T(schemeLabelKey(cur)));
+      };
+      refresh();
+
+      const btnBg = this.add.rectangle(centerX + 80, y + 8, 80, 22, 0x2a2a2a)
+        .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2001)
+        .setInteractive({ useHandCursor: true });
+      btnBg.on('pointerdown', () => {
+        const cur = (window.InputScheme && window.InputScheme.getScheme)
+          ? window.InputScheme.getScheme() : 'classic';
+        const next = supportedSchemes[(supportedSchemes.indexOf(cur) + 1) % supportedSchemes.length];
+        if (window.InputScheme && window.InputScheme.setScheme) {
+          window.InputScheme.setScheme(next); // persists + notifies onChange subscribers
+        }
         refresh();
       });
     }
