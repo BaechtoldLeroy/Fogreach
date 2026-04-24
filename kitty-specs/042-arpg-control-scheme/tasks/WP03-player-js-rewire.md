@@ -12,7 +12,11 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: 042-arpg-control-scheme-WP01
+base_commit: 35fa4b61b4783bf6e25c1ae2dcd5c7cdaf8bb033
+created_at: '2026-04-24T16:32:20.101543+00:00'
 subtasks: [T013, T014, T015, T016, T017]
+shell_pid: "31488"
 history:
 - 2026-04-24 — Scaffolded during /spec-kitty.tasks
 authoritative_surface: js/player.js
