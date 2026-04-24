@@ -487,9 +487,8 @@ function updateAbilityStatus(key, info = {}) {
     info = { remainingMs: info };
   }
   const { remainingMs = 0, durationMs = null, customText = null } = info;
-  const cfg = ABILITY_STATUS_LOOKUP[key];
   const display = abilityStatusDisplay[key];
-  if (!cfg || !display) return;
+  if (!display) return;
 
   if (Number.isFinite(durationMs)) {
     display.durationMs = durationMs;
@@ -1334,6 +1333,26 @@ function update(time, delta) {
     }
   }
 
+  // Non-classic ability cooldown tick — classic abilities drive their own HUD
+  // via startCooldownTimer; new abilities (heilwunde, frostnova, blutopfer,
+  // schattenschritt, …) only touch state.cooldowns, so poll per frame.
+  if (window.AbilitySystem && typeof window.AbilitySystem.getCooldownRemaining === 'function') {
+    const loadout = window.AbilitySystem.getActiveLoadout ? window.AbilitySystem.getActiveLoadout() : null;
+    if (loadout) {
+      const now = (this?.time?.now) || Date.now();
+      const defs = window.AbilitySystem.ABILITY_DEFS || {};
+      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slot) => {
+        const id = loadout[slot];
+        if (!id) return;
+        if (ABILITY_ID_TO_STATUS_KEY[id]) return; // classic ability — handled elsewhere
+        const def = defs[id];
+        if (!def || !def.cooldownMs) return;
+        const rem = window.AbilitySystem.getCooldownRemaining(id, now);
+        updateAbilityStatus(id, { remainingMs: rem, durationMs: def.cooldownMs });
+      });
+    }
+  }
+
   // Health regen tick — applies PLAYER_HEALTH_REGEN (HP/sec) when below max.
   if ((window.PLAYER_HEALTH_REGEN || 0) > 0 && playerHealth > 0 && playerHealth < playerMaxHealth) {
     window._regenAccumMs = (window._regenAccumMs || 0) + (delta || 0);
@@ -1940,9 +1959,14 @@ function initUI() {
     const ABILITY_DEFS = window.AbilitySystem?.ABILITY_DEFS || {};
 
     const refreshSlotMappings = () => {
-      // Tear down old ability→tile mappings (keep attack)
+      // Tear down old ability→tile mappings (keep attack).
+      // Classic status keys are removed; non-classic ability-id keys are wiped
+      // below when the slot iteration re-registers the current loadout.
       Object.keys(STATUS_KEY_TO_ABILITY_ID).forEach((statusKey) => {
         delete abilityStatusDisplay[statusKey];
+      });
+      Object.keys(abilityStatusDisplay).forEach((k) => {
+        if (k !== 'attack') delete abilityStatusDisplay[k];
       });
 
       const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
@@ -1954,7 +1978,10 @@ function initUI() {
           const displayName = def?.name || abilityId;
           const statusKey = ABILITY_ID_TO_STATUS_KEY[abilityId];
           tile.nameText.setText(displayName);
-          const color = statusKey ? (ABILITY_STATUS_STYLES[statusKey] ?? 0xffffff) : 0xffffff;
+          // Classic abilities use STATUS_STYLES; new abilities fall back to def.color.
+          const color = statusKey
+            ? (ABILITY_STATUS_STYLES[statusKey] ?? 0xffffff)
+            : (def && typeof def.color === 'number' ? def.color : 0xffffff);
           tile.color = color;
           tile.keyBadge.setFillStyle(color, 0.18);
           tile.keyBadge.setStrokeStyle(1, color, 0.6);
@@ -1965,6 +1992,11 @@ function initUI() {
           if (statusKey) {
             abilityStatusDisplay[statusKey] = tile;
             updateAbilityStatus(statusKey, { remainingMs: 0, durationMs: 0 });
+          } else if (def && def.cooldownMs) {
+            // Non-classic abilities (heilwunde, frostnova, blutopfer,
+            // schattenschritt, …): register under ability id and seed Ready.
+            abilityStatusDisplay[abilityId] = tile;
+            updateAbilityStatus(abilityId, { remainingMs: 0, durationMs: 0 });
           }
 
           // WP08 T046: refresh the per-ability bonus badge from LootSystem.

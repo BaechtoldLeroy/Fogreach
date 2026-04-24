@@ -647,6 +647,13 @@
     return false;
   }
 
+  // Remaining cooldown in ms for a given ability id (0 when ready).
+  function getCooldownRemaining(abilityId, now) {
+    const ready = state.cooldowns[abilityId] || 0;
+    const n = Number.isFinite(now) ? now : Date.now();
+    return Math.max(0, ready - n);
+  }
+
   // ---------- Unlock Hooks ----------
   function _checkUnlocks(triggerType, value) {
     // Endless mode: only Endless.apply() may grant abilities (via direct
@@ -775,6 +782,7 @@
     learnAbility,
     tryActivate,
     tryRelease,
+    getCooldownRemaining,
     onEnemyKilled,
     onBossKilled,
     onQuestCompleted,
