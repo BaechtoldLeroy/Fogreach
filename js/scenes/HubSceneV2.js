@@ -134,6 +134,11 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     this.cursors = this.input.keyboard.createCursorKeys();
+    // Bind InputScheme to this scene so movement polling resolves WASD/arrows
+    // per active scheme. Idempotent — re-init on each scene boot is safe.
+    if (window.InputScheme && typeof window.InputScheme.init === 'function') {
+      window.InputScheme.init(this);
+    }
 
     // Mobile: add a fixed virtual joystick in the bottom-left.
     const isTouch = !!(this.sys && this.sys.game && this.sys.game.device
@@ -545,10 +550,18 @@ class HubSceneV2 extends Phaser.Scene {
     let inputX = 0, inputY = 0;
     
     if (!this._dialogOpen) {
-      if (this.cursors.left.isDown) inputX -= 1;
-      if (this.cursors.right.isDown) inputX += 1;
-      if (this.cursors.up.isDown) inputY -= 1;
-      if (this.cursors.down.isDown) inputY += 1;
+      // Scheme-aware movement (arrows in classic, WASD in arpg). Falls back
+      // to direct cursor reads if InputScheme is unavailable for any reason.
+      if (window.InputScheme && typeof window.InputScheme.getMovementInput === 'function') {
+        const mv = window.InputScheme.getMovementInput();
+        inputX = mv.x;
+        inputY = mv.y;
+      } else {
+        if (this.cursors.left.isDown) inputX -= 1;
+        if (this.cursors.right.isDown) inputX += 1;
+        if (this.cursors.up.isDown) inputY -= 1;
+        if (this.cursors.down.isDown) inputY += 1;
+      }
       const speed = (typeof playerSpeed !== 'undefined' ? playerSpeed : 220);
       let velX, velY;
       // Joystick takes precedence on mobile when deflected past dead zone.
