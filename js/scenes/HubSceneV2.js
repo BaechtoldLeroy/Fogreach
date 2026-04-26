@@ -121,6 +121,13 @@ class HubSceneV2 extends Phaser.Scene {
     this._activeInteractable = null;
     this._dialogContainer = null;
 
+    // Bind InputScheme BEFORE createPlayer — the player's first
+    // updatePlayerSpriteAnimation call reads getAimDirection in ARPG mode,
+    // which needs primitives set up.
+    if (window.InputScheme && typeof window.InputScheme.init === 'function') {
+      window.InputScheme.init(this);
+    }
+
     this.createColliders();
     this.createEntrances();
     this.createNPCs();
@@ -134,11 +141,6 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     this.cursors = this.input.keyboard.createCursorKeys();
-    // Bind InputScheme to this scene so movement polling resolves WASD/arrows
-    // per active scheme. Idempotent — re-init on each scene boot is safe.
-    if (window.InputScheme && typeof window.InputScheme.init === 'function') {
-      window.InputScheme.init(this);
-    }
 
     // Mobile: add a fixed virtual joystick in the bottom-left.
     const isTouch = !!(this.sys && this.sys.game && this.sys.game.device

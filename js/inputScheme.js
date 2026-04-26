@@ -165,9 +165,9 @@
   }
 
   function _requirePrimitives() {
-    if (!primitives) {
-      throw new Error('[InputScheme] not initialized. Call init(scene) or _configureForTest(primitives) first.');
-    }
+    // Returns null when not initialized rather than throwing — callers default
+    // gracefully so an early call (e.g., HubSceneV2.createPlayer running its
+    // first updatePlayerSpriteAnimation before init) never blows up the scene.
     return primitives;
   }
 
@@ -219,6 +219,7 @@
 
   function getMovementInput() {
     const p = _requirePrimitives();
+    if (!p) return { x: 0, y: 0 };
     const scheme = getScheme();
     let vx = 0, vy = 0;
     if (scheme === 'arpg') {
@@ -238,6 +239,7 @@
   function isBasicAttackTriggered() {
     if (shouldSuppressCombatInput()) return false;
     const p = _requirePrimitives();
+    if (!p) return false;
     // Edge-triggered: Space OR primary mouse button. Both schemes honor both
     // (Space is the accessibility fallback for ARPG per FR-010). The mouse
     // flag is set by markPrimaryButtonJustDown() from the consumer's UI-aware
@@ -263,6 +265,7 @@
     if (slotIndex < 1 || slotIndex > 4) return false;
     if (shouldSuppressCombatInput()) return false;
     const p = _requirePrimitives();
+    if (!p) return false;
     const keyName = _slotKey(getScheme(), slotIndex);
     if (!keyName) return false;
     return typeof p.isKeyJustDown === 'function' && p.isKeyJustDown(keyName);
@@ -275,6 +278,7 @@
     // a `isKeyJustUp` primitive if the test harness provides it.
     if (slotIndex < 1 || slotIndex > 4) return false;
     const p = _requirePrimitives();
+    if (!p) return false;
     const keyName = _slotKey(getScheme(), slotIndex);
     if (!keyName) return false;
     if (typeof p.isKeyJustUp !== 'function') return false;
@@ -289,6 +293,11 @@
 
   function getAimDirection(scene, player) {
     const p = _requirePrimitives();
+    if (!p) {
+      // Pre-init fallback — return last known aim so updatePlayerSpriteAnimation
+      // can still pick a default facing without crashing.
+      return { x: state.lastAim.x, y: state.lastAim.y, source: 'lastKnown' };
+    }
     const scheme = getScheme();
 
     if (scheme === 'classic') {
