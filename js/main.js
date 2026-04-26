@@ -1428,11 +1428,18 @@ function update(time, delta) {
 
   if (!playerStunned && !isMobile && window.AbilitySystem && window.InputScheme) {
     // Scheme-aware ability slot dispatch. classic → Q/W/E/R map to slot1-4;
-    // arpg → 1/2/3/4 map to slot1-4. Slot3 keeps its door-first check
-    // (E in classic) so door interactions don't collide with ability activation.
+    // arpg → 1/2/3/4 map to slot1-4. The E key always opens doors regardless
+    // of scheme: in classic this is folded into the slot3 trigger (door first,
+    // then ability); in arpg the slot3 ability is on '3' and E is checked
+    // separately for door-only interaction.
+    const scheme = window.InputScheme.getScheme();
+    if (scheme === 'arpg' && eKey && Phaser.Input.Keyboard.JustDown(eKey)) {
+      if (window.DoorSystem) window.DoorSystem.tryInteractDoor(this, player);
+    }
     for (let slot = 1; slot <= 4; slot++) {
       if (window.InputScheme.consumeAbilityTrigger(slot)) {
-        if (slot === 3) {
+        if (slot === 3 && scheme === 'classic') {
+          // Classic only: E triggers slot3 → check door first, fall through to ability.
           const doorHandled = window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
           if (!doorHandled) window.AbilitySystem.tryActivate('slot3', this);
         } else {
