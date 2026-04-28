@@ -1056,8 +1056,14 @@ function refreshInventoryUI() {
       if (icon && iconKey) icon.setTexture(iconKey);
       if (icon) icon.setVisible(true);
       if (label) {
-        label.setText('');
-        label.setVisible(false);
+        const stack = it.stack || 1;
+        if (stack > 1) {
+          label.setText('x' + stack);
+          label.setVisible(true);
+        } else {
+          label.setText('');
+          label.setVisible(false);
+        }
       }
       if (indicator) {
         indicator.setVisible(isItemUpgrade(it));

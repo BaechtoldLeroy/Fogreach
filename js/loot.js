@@ -420,7 +420,19 @@ function collectLoot(playerSprite, loot) {
     const isMaterial = item?.type === 'material'
       && typeof addMaterialToStorage === 'function'
       && addMaterialToStorage(item, item?.amount || 1);
-    if (!isMaterial) {
+    // Stack potions of the same tier into an existing inventory slot
+    // before falling through to the fresh-slot/full-inventory path.
+    const isStackedPotion = item?.type === 'potion' && (() => {
+      const existing = inventory.findIndex((slot) =>
+        slot && slot.type === 'potion' && slot.potionTier === item.potionTier
+      );
+      if (existing >= 0) {
+        inventory[existing].stack = (inventory[existing].stack || 1) + (item.stack || 1);
+        return true;
+      }
+      return false;
+    })();
+    if (!isMaterial && !isStackedPotion) {
       const idx = inventory.findIndex((slot) => !slot);
       if (idx >= 0) {
         inventory[idx] = item;
