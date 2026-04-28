@@ -1,4 +1,7 @@
 let lastMoveDirection = new Phaser.Math.Vector2(0, 1); // Standard: Blick nach vorn (nach unten)
+// Expose on window so InputScheme.getAimDirection (classic mode) and
+// mobileAutoAim can read/update the same Vector2 instance.
+window.lastMoveDirection = lastMoveDirection;
 
 const PLAYER_FRAME_WIDTH = 125;
 const PLAYER_FRAME_HEIGHT = 500;
