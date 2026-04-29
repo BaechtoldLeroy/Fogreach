@@ -1,4 +1,7 @@
 let lastMoveDirection = new Phaser.Math.Vector2(0, 1); // Standard: Blick nach vorn (nach unten)
+// Expose on window so InputScheme.getAimDirection (classic mode) and
+// mobileAutoAim can read/update the same Vector2 instance.
+window.lastMoveDirection = lastMoveDirection;
 
 const PLAYER_FRAME_WIDTH = 125;
 const PLAYER_FRAME_HEIGHT = 500;
@@ -455,8 +458,29 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
   }
 
   const moving = vx !== 0 || vy !== 0;
-  const direction = moving
-    ? getDirectionFromVelocity(vx, vy, state.direction || PLAYER_DEFAULT_DD)
+  // In ARPG the sprite faces the cursor-based aim instead of the movement
+  // direction — enables strafe/kite play. The dead-zone fallback ('lastKnown')
+  // means hovering the cursor on the player keeps the current facing instead
+  // of snapping back to movement direction.
+  const scheme = (window.InputScheme && typeof window.InputScheme.getScheme === 'function')
+    ? window.InputScheme.getScheme() : 'classic';
+  let facingX = vx, facingY = vy;
+  if (scheme === 'arpg' && window.InputScheme && typeof window.InputScheme.getAimDirection === 'function') {
+    const aim = window.InputScheme.getAimDirection(sprite.scene || null, sprite);
+    if (aim && aim.source === 'cursor') {
+      facingX = aim.x;
+      facingY = aim.y;
+    }
+    // When source is 'lastKnown', keep facing from the cached lastAim so
+    // the sprite doesn't snap to movement direction mid-kite.
+    else if (aim && aim.source === 'lastKnown') {
+      facingX = aim.x;
+      facingY = aim.y;
+    }
+  }
+  const hasFacing = facingX !== 0 || facingY !== 0;
+  const direction = hasFacing
+    ? getDirectionFromVelocity(facingX, facingY, state.direction || PLAYER_DEFAULT_DD)
     : (state.direction || PLAYER_DEFAULT_DD);
 
   const animKey = `walk_${direction}`;
@@ -989,12 +1013,22 @@ function handlePlayerMovement() {
     return;
   }
 
-  // Eingaben sammeln
+  // Eingaben sammeln — scheme-aware via InputScheme (arrows in classic,
+  // WASD in arpg). `lastMoveDirection` is still updated below; it remains
+  // the Classic-scheme aim source AND the ARPG dead-zone fallback for
+  // InputScheme.getAimDirection. Do not stop updating it across schemes.
   let vx = 0, vy = 0;
-  if (cursors.left.isDown)  vx -= 1;
-  if (cursors.right.isDown) vx += 1;
-  if (cursors.up.isDown)    vy -= 1;
-  if (cursors.down.isDown)  vy += 1;
+  if (window.InputScheme && typeof window.InputScheme.getMovementInput === 'function') {
+    const mv = window.InputScheme.getMovementInput();
+    vx = mv.x;
+    vy = mv.y;
+  } else {
+    // Defensive fallback — InputScheme should always be present in this build.
+    if (cursors.left.isDown)  vx -= 1;
+    if (cursors.right.isDown) vx += 1;
+    if (cursors.up.isDown)    vy -= 1;
+    if (cursors.down.isDown)  vy += 1;
+  }
 
   // Slow check: reduce speed if slowed
   let effectiveSpeed = playerSpeed;
@@ -1096,9 +1130,38 @@ function handleMobileMovement() {
 }
 
 function handlePlayerAttack() {
-  if (Phaser.Input.Keyboard.JustDown(spaceKey)) {
+  // InputScheme.isBasicAttackTriggered fires once per Space press OR per
+  // left-mouse-button press (flag set by main.js pointerdown handler). It
+  // already gates on shouldSuppressCombatInput, so no local guard needed.
+  if (window.InputScheme && typeof window.InputScheme.isBasicAttackTriggered === 'function') {
+    if (window.InputScheme.isBasicAttackTriggered()) {
+      attack.call(this);
+    }
+  } else if (Phaser.Input.Keyboard.JustDown(spaceKey)) {
+    // Defensive fallback if InputScheme is not loaded.
     attack.call(this);
   }
+}
+
+// Resolve the current aim as a normalized Phaser.Math.Vector2.
+// In Classic mode this is lastMoveDirection; in ARPG it's the cursor-based
+// aim from InputScheme (with dead-zone fallback to last known). Degenerate
+// (0,0) input is coerced to (0,1) downward — same fallback the ability
+// functions used before this refactor.
+function _getAimVector2(scene) {
+  let ax = 0, ay = 0;
+  if (window.InputScheme && typeof window.InputScheme.getAimDirection === 'function') {
+    const aim = window.InputScheme.getAimDirection(scene || null, player);
+    ax = aim ? aim.x : 0;
+    ay = aim ? aim.y : 0;
+  } else {
+    ax = lastMoveDirection.x;
+    ay = lastMoveDirection.y;
+  }
+  const v = new Phaser.Math.Vector2(ax, ay);
+  if (v.lengthSq() === 0) v.set(0, 1);
+  v.normalize();
+  return v;
 }
 
 function showAttackEffect(scene, options = {}) {
@@ -1112,7 +1175,7 @@ function showAttackEffect(scene, options = {}) {
     duration = 100
   } = options;
 
-  const angle = lastMoveDirection.angle?.() ?? 0;
+  const angle = _getAimVector2(scene).angle();
   const g = scene.add.graphics();
   g.fillStyle(color, alpha);
   g.slice(
@@ -1260,6 +1323,7 @@ function attack() {
   // Melee can also break destructible obstacles (chests, barrels, crates) in front of player
   if (obstacles && obstacles.children && typeof window.breakDestructibleObstacle === 'function') {
     const meleeRange = attackRange;
+    const aim = _getAimVector2(this);
     const targets = [];
     obstacles.children.iterate(obs => {
       if (!obs || !obs.active || !obs.getData || !obs.getData('destructible')) return;
@@ -1270,7 +1334,7 @@ function attack() {
       const dist = Math.sqrt(distSq);
       const ndx = dx / dist;
       const ndy = dy / dist;
-      const dotO = lastMoveDirection.x * ndx + lastMoveDirection.y * ndy;
+      const dotO = aim.x * ndx + aim.y * ndy;
       if (dotO > 0.5) targets.push(obs);
     });
     targets.forEach(t => window.breakDestructibleObstacle(this, t));
@@ -1461,7 +1525,7 @@ function releaseChargedSlash(forceMaxCharge = false) {
     duration: 200
   });
 
-  const forward = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
+  const forward = _getAimVector2(scene);
   if (forward.lengthSq() === 0) {
     forward.set(0, 1);
   }
@@ -1537,9 +1601,7 @@ function dashSlash() {
   const scene = this;
   const baseCooldown = getDashSlashCooldown();
   const finalCooldown = applyCooldownModifier(baseCooldown, 'dash');
-  const dashDir = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
-  if (dashDir.lengthSq() === 0) dashDir.set(0, 1);
-  dashDir.normalize();
+  const dashDir = _getAimVector2(scene);
 
   if (isDashing) return;
   isDashing = true;
@@ -1665,9 +1727,7 @@ function _fireBowArrow(scene) {
   if (!scene || !player || !playerProjectiles) return;
   ensurePlayerArrowTexture(scene);
 
-  const dir = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
-  if (dir.lengthSq() === 0) dir.set(0, 1);
-  dir.normalize();
+  const dir = _getAimVector2(scene);
 
   const spawnOffset = 22;
   const projectile = scene.physics.add.sprite(
@@ -1711,9 +1771,7 @@ function throwDagger() {
   const scene = this;
   ensurePlayerDaggerTexture(scene);
 
-  const dir = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
-  if (dir.lengthSq() === 0) dir.set(0, 1);
-  dir.normalize();
+  const dir = _getAimVector2(scene);
 
   const spawnOffset = 24;
   const projectile = scene.physics.add.sprite(
@@ -1765,9 +1823,7 @@ function shieldBash() {
   const range = getShieldBashRange();
   const cooldown = getShieldBashCooldown();
   const finalCooldown = applyCooldownModifier(cooldown, 'shield');
-  const forward = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
-  if (forward.lengthSq() === 0) forward.set(0, 1);
-  forward.normalize();
+  const forward = _getAimVector2(scene);
 
   showAttackEffect(scene, {
     range,

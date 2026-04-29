@@ -101,12 +101,30 @@
     writeSettingsField('language', lang);
   }
 
+  const SUPPORTED_CONTROL_SCHEMES = ['classic', 'arpg'];
+  const DEFAULT_CONTROL_SCHEME = 'classic';
+
+  function getControlScheme() {
+    const value = readSettingsRaw().controlScheme;
+    return SUPPORTED_CONTROL_SCHEMES.indexOf(value) !== -1 ? value : DEFAULT_CONTROL_SCHEME;
+  }
+
+  function setControlScheme(value) {
+    if (SUPPORTED_CONTROL_SCHEMES.indexOf(value) === -1) {
+      console.warn('[Persistence] setControlScheme: invalid scheme', value);
+      return;
+    }
+    writeSettingsField('controlScheme', value);
+  }
+
   window.Persistence = {
     KEYS,
     clearAllSaves,
     clearEverything,
     listAllKeys,
     getLanguage,
-    setLanguage
+    setLanguage,
+    getControlScheme,
+    setControlScheme
   };
 })();

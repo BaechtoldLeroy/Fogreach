@@ -121,6 +121,13 @@ class HubSceneV2 extends Phaser.Scene {
     this._activeInteractable = null;
     this._dialogContainer = null;
 
+    // Bind InputScheme BEFORE createPlayer — the player's first
+    // updatePlayerSpriteAnimation call reads getAimDirection in ARPG mode,
+    // which needs primitives set up.
+    if (window.InputScheme && typeof window.InputScheme.init === 'function') {
+      window.InputScheme.init(this);
+    }
+
     this.createColliders();
     this.createEntrances();
     this.createNPCs();
@@ -545,10 +552,18 @@ class HubSceneV2 extends Phaser.Scene {
     let inputX = 0, inputY = 0;
     
     if (!this._dialogOpen) {
-      if (this.cursors.left.isDown) inputX -= 1;
-      if (this.cursors.right.isDown) inputX += 1;
-      if (this.cursors.up.isDown) inputY -= 1;
-      if (this.cursors.down.isDown) inputY += 1;
+      // Scheme-aware movement (arrows in classic, WASD in arpg). Falls back
+      // to direct cursor reads if InputScheme is unavailable for any reason.
+      if (window.InputScheme && typeof window.InputScheme.getMovementInput === 'function') {
+        const mv = window.InputScheme.getMovementInput();
+        inputX = mv.x;
+        inputY = mv.y;
+      } else {
+        if (this.cursors.left.isDown) inputX -= 1;
+        if (this.cursors.right.isDown) inputX += 1;
+        if (this.cursors.up.isDown) inputY -= 1;
+        if (this.cursors.down.isDown) inputY += 1;
+      }
       const speed = (typeof playerSpeed !== 'undefined' ? playerSpeed : 220);
       let velX, velY;
       // Joystick takes precedence on mobile when deflected past dead zone.
