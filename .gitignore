@@ -25,3 +25,12 @@
 .kittify/runtime/
 .kittify/workspaces/
 test-output/
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
+
+# Replit local state
+.local/
