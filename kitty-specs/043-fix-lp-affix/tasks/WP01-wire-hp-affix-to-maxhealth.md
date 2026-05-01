@@ -20,6 +20,7 @@ lane: planned
 owned_files:
 - js/inventory.js
 shell_pid: "37668"
+assignee: "claude"
 ---
 
 # WP01 — Wire HP Affix into playerMaxHealth Recompute
@@ -49,3 +50,7 @@ At the end of this WP:
 - All 7 manual verification steps from `plan.md` pass.
 - No console errors during the test run.
 - GitHub Issue [#13](https://github.com/BaechtoldLeroy/Fogreach/issues/13) auto-closed via merge commit message.
+
+## Activity Log
+
+- 2026-05-01T15:34:00Z – unknown – shell_pid=37668 – lane=in_progress – Moved to in_progress
