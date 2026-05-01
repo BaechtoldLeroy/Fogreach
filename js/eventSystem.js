@@ -47,10 +47,10 @@
       'event.shrine.name': 'Mystischer Schrein',
       'event.shrine.toast_spawn': 'Ein mystischer Schrein erscheint...',
       'event.shrine.object_label': 'Schrein',
-      'event.shrine.choice_power': 'Kraft (+25% Schaden, -15% Rüstung)',
+      'event.shrine.choice_power': 'Kraft (+25% Schaden, -{armor}% Rüstung)',
       'event.shrine.choice_protection': 'Schutz (+5% Rüstung, -10% Geschw.)',
       'event.shrine.choice_ignore': 'Ignorieren',
-      'event.shrine.toast_power': 'Kraft des Schreins: +25% Schaden!',
+      'event.shrine.toast_power': 'Kraft des Schreins: +25% Schaden, -{armor}% Rüstung!',
       'event.shrine.toast_protection': 'Schutz des Schreins: +5% Rüstung!',
       // Gambling
       'event.gambling.name': 'Glücksspiel',
@@ -112,10 +112,10 @@
       'event.shrine.name': 'Mystical Shrine',
       'event.shrine.toast_spawn': 'A mystical shrine appears...',
       'event.shrine.object_label': 'Shrine',
-      'event.shrine.choice_power': 'Power (+25% damage, -15% armor)',
+      'event.shrine.choice_power': 'Power (+25% damage, -{armor}% armor)',
       'event.shrine.choice_protection': 'Protection (+5% armor, -10% speed)',
       'event.shrine.choice_ignore': 'Ignore',
-      'event.shrine.toast_power': 'Shrine of Power: +25% damage!',
+      'event.shrine.toast_power': 'Shrine of Power: +25% damage, -{armor}% armor!',
       'event.shrine.toast_protection': 'Shrine of Protection: +5% armor!',
       'event.gambling.name': 'Gambling',
       'event.gambling.toast_spawn': 'A gambling table appears...',
@@ -438,17 +438,24 @@
     minDepth: 2,
     handler: function (scene) {
       showEventToast(scene, T('event.shrine.toast_spawn'), 'shrine_buff');
+      // Altar power debuff scales with player level so the choice stays meaningful in late game.
+      // Base: -30% armor (was -15%). Per-level: +0.5%. Cap: -50% armor.
+      // Armor is clamped 0..0.85 in inventory.recalcDerived, so this never permanently bricks the player.
+      var lvl = (typeof window.playerLevel === 'number') ? window.playerLevel : 1;
+      var debuffPct = Math.min(0.50, 0.30 + lvl * 0.005);
+      var armorMultStep = 1 - debuffPct;
+      var armorPctLabel = Math.round(debuffPct * 100);
       spawnEventObject(scene, 'evt_shrine', 0x6644aa, 0xaa88ff, T('event.shrine.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
         showEventChoiceDialog(scene, T('event.shrine.name'), [
           {
-            label: T('event.shrine.choice_power'),
+            label: T('event.shrine.choice_power', { armor: armorPctLabel }),
             callback: function () {
               window.eventBuffs = window.eventBuffs || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1 };
               window.eventBuffs.damageMult *= 1.25;
-              window.eventBuffs.armorMult *= 0.85;
+              window.eventBuffs.armorMult *= armorMultStep;
               if (typeof recalcDerived === 'function') recalcDerived(0, 0);
-              showEventToast(scene, T('event.shrine.toast_power'), 'shrine_buff');
+              showEventToast(scene, T('event.shrine.toast_power', { armor: armorPctLabel }), 'shrine_buff');
             }
           },
           {
