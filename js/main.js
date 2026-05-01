@@ -999,6 +999,21 @@ function create() {
     if (window.gameScene === this) window.gameScene = null;
   });
 
+  // Issue #20: clean up rare-item VFX (glow/ring/update listener) on scene
+  // shutdown. Each tracked loot sprite has a once('destroy') listener that
+  // calls _cleanupRarityFx (loot.js), so destroying the sprite is sufficient
+  // to tear down the GameObjects, tweens, and per-frame 'update' listener.
+  this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    if (Array.isArray(this._activeLootSprites)) {
+      this._activeLootSprites.slice().forEach((sprite) => {
+        if (sprite && typeof sprite.destroy === 'function') {
+          try { sprite.destroy(); } catch (e) { /* ignore */ }
+        }
+      });
+      this._activeLootSprites.length = 0;
+    }
+  });
+
   // 4.3.1 Rathauskeller background (based on dialog selection)
   if (window.USE_RATHAUSKELLER_BG && this.textures.exists('rathauskeller_bg')) {
     this.rathauskellerBg = this.add.image(480, 240, 'rathauskeller_bg');
