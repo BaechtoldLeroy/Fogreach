@@ -952,7 +952,30 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     const ps = tpl.spawns.player;
     let tile = findAccessibleTileNear(ps.x, ps.y, 0) || { x: ps.x, y: ps.y };
 
-    // Ensure spawn has 3+ tiles clearance from walls in all directions
+    // Object types that act as solid obstacles the player can get wedged
+    // against. Decorative/walk-through types (rubble, brazier glow, loot) are
+    // intentionally excluded — they do not create wedge geometry.
+    // See GitHub Issue #19 (CirclePillars wedge spawn).
+    const BLOCKING_OBJECT_TYPES = new Set([
+      'pillar', 'pillar_small', 'pillar_large',
+      'statue', 'statue_knight',
+      'altar',
+      'crate', 'barrel', 'chest_small', 'chest_medium', 'chest_large'
+    ]);
+    const blockingObjectTiles = [];
+    (tpl.objects || []).forEach((obj) => {
+      if (!obj) return;
+      if (!BLOCKING_OBJECT_TYPES.has(obj.type)) return;
+      const tx = Math.round(obj.x ?? 0);
+      const ty = Math.round(obj.y ?? 0);
+      if (Number.isFinite(tx) && Number.isFinite(ty)) {
+        blockingObjectTiles.push({ x: tx, y: ty });
+      }
+    });
+
+    // Ensure spawn has 3+ tiles clearance from walls AND is not within
+    // 2 tiles of any blocking object (pillars, statues, etc.) — otherwise
+    // the player can spawn wedged between two pillars or pillar+wall.
     const hasWallClearance = (tx, ty, dist) => {
       for (let dy = -dist; dy <= dist; dy++)
         for (let dx = -dist; dx <= dist; dx++) {
@@ -961,14 +984,36 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         }
       return true;
     };
+    const OBJECT_CLEARANCE = 2;
+    const hasObjectClearance = (tx, ty) => {
+      for (const obj of blockingObjectTiles) {
+        const dx = obj.x - tx;
+        const dy = obj.y - ty;
+        if (Math.abs(dx) <= OBJECT_CLEARANCE && Math.abs(dy) <= OBJECT_CLEARANCE) return false;
+      }
+      return true;
+    };
+    const hasSpawnClearance = (tx, ty, wallDist) =>
+      hasWallClearance(tx, ty, wallDist) && hasObjectClearance(tx, ty);
 
-    if (!hasWallClearance(tile.x, tile.y, 3)) {
+    if (!hasSpawnClearance(tile.x, tile.y, 3)) {
       // Find a better spawn with clearance
       let bestTile = tile, bestDist = Infinity;
       if (accessibleTiles) {
         accessibleTiles.forEach((key) => {
           const [tx, ty] = key.split('|').map(Number);
-          if (hasWallClearance(tx, ty, 3)) {
+          if (hasSpawnClearance(tx, ty, 3)) {
+            const d = Math.abs(tx - ps.x) + Math.abs(ty - ps.y);
+            if (d < bestDist) { bestDist = d; bestTile = { x: tx, y: ty }; }
+          }
+        });
+      }
+      // Fallback: relax wall clearance to 2, keep object clearance, in case
+      // a small room has no tile satisfying both at radius 3.
+      if (bestDist === Infinity && accessibleTiles) {
+        accessibleTiles.forEach((key) => {
+          const [tx, ty] = key.split('|').map(Number);
+          if (hasSpawnClearance(tx, ty, 2)) {
             const d = Math.abs(tx - ps.x) + Math.abs(ty - ps.y);
             if (d < bestDist) { bestDist = d; bestTile = { x: tx, y: ty }; }
           }
