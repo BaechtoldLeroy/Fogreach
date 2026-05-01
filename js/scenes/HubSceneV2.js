@@ -1067,6 +1067,21 @@ class HubSceneV2 extends Phaser.Scene {
         keyClosers.push({ eventName: 'keydown-ENTER', handler: closeHandler });
         this.input.keyboard.on('keydown-E', closeHandler);
         keyClosers.push({ eventName: 'keydown-E', handler: closeHandler });
+      } else {
+        // hasChoices: bind E and Enter to the primary choice (#3).
+        // Prefer 'accept' or 'complete' actions; otherwise first listed choice.
+        const primaryChoice =
+          page.choices.find(c => c.action === 'accept' || c.action === 'complete')
+          || page.choices[0];
+        if (primaryChoice) {
+          const primaryHandler = () => {
+            this._handleDialogueChoice(primaryChoice.action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers);
+          };
+          this.input.keyboard.on('keydown-E', primaryHandler);
+          keyClosers.push({ eventName: 'keydown-E', handler: primaryHandler });
+          this.input.keyboard.on('keydown-ENTER', primaryHandler);
+          keyClosers.push({ eventName: 'keydown-ENTER', handler: primaryHandler });
+        }
       }
 
       if (npcData.id === 'mara' && questMode === 'flavor' && !hasChoices) {
