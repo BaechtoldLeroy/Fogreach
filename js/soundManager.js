@@ -126,10 +126,40 @@ class SoundManager {
     return buffer;
   }
 
+  // ---- Pitch variation (Refs #10) ----
+  // SFX whose frequencies are tuned (musical arpeggios, UI tones) opt out so
+  // the variation does not turn pleasant chords into off-key notes. Combat,
+  // movement and basic-pickup SFX get randomized so repeated triggers stop
+  // sounding monotonous.
+  // Range: ±6% (≈ ±100 cents / one semitone). Sweet spot for non-musical SFX.
+  static PITCH_EXEMPT_SFX = new Set([
+    'ui_click',
+    'level_up',
+    'quest_complete',
+    'loot_rare',
+    'loot_legendary'
+  ]);
+  static PITCH_VARIATION = 0.06; // ±6% rate
+
+  _getPitchMul(type, opts) {
+    if (opts && opts.noPitch) return 1;
+    if (SoundManager.PITCH_EXEMPT_SFX.has(type)) return 1;
+    const v = SoundManager.PITCH_VARIATION;
+    return 1 + (Math.random() * 2 - 1) * v;
+  }
+
+  // Apply current pitch multiplier to a frequency. All `_sfx*` helpers route
+  // oscillator/filter frequencies through this so randomization is uniform.
+  _pf(freq) {
+    const m = this._currentPitchMul || 1;
+    return freq * m;
+  }
+
   // ---- SFX Definitions ----
-  playSFX(type) {
+  playSFX(type, opts) {
     if (!this._ensureContext()) return;
     const now = this.context.currentTime;
+    this._currentPitchMul = this._getPitchMul(type, opts);
     try {
       switch (type) {
         case 'attack': this._sfxAttack(now); break;
@@ -153,6 +183,8 @@ class SoundManager {
       }
     } catch (e) {
       console.warn('[SoundManager] SFX error:', type, e);
+    } finally {
+      this._currentPitchMul = 1;
     }
   }
 
@@ -161,8 +193,8 @@ class SoundManager {
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(300, t);
-    osc.frequency.exponentialRampToValueAtTime(150, t + 0.05);
+    osc.frequency.setValueAtTime(this._pf(300), t);
+    osc.frequency.exponentialRampToValueAtTime(this._pf(150), t + 0.05);
     gain.gain.setValueAtTime(0.3, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
     osc.connect(gain);
@@ -176,8 +208,8 @@ class SoundManager {
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, t);
-    osc.frequency.exponentialRampToValueAtTime(400, t + 0.03);
+    osc.frequency.setValueAtTime(this._pf(800), t);
+    osc.frequency.exponentialRampToValueAtTime(this._pf(400), t + 0.03);
     gain.gain.setValueAtTime(0.25, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
     osc.connect(gain);
@@ -191,8 +223,8 @@ class SoundManager {
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(200, t);
-    osc.frequency.exponentialRampToValueAtTime(100, t + 0.08);
+    osc.frequency.setValueAtTime(this._pf(200), t);
+    osc.frequency.exponentialRampToValueAtTime(this._pf(100), t + 0.08);
     gain.gain.setValueAtTime(0.35, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     osc.connect(gain);
@@ -217,8 +249,8 @@ class SoundManager {
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
     osc.type = 'square';
-    osc.frequency.setValueAtTime(600, t);
-    osc.frequency.exponentialRampToValueAtTime(200, t + 0.15);
+    osc.frequency.setValueAtTime(this._pf(600), t);
+    osc.frequency.exponentialRampToValueAtTime(this._pf(200), t + 0.15);
     gain.gain.setValueAtTime(0.2, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
     osc.connect(gain);
@@ -234,8 +266,8 @@ class SoundManager {
     const lfo = this.context.createOscillator();
     const lfoGain = this.context.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, t);
-    osc.frequency.exponentialRampToValueAtTime(80, t + 0.5);
+    osc.frequency.setValueAtTime(this._pf(150), t);
+    osc.frequency.exponentialRampToValueAtTime(this._pf(80), t + 0.5);
     lfo.type = 'sine';
     lfo.frequency.setValueAtTime(8, t);
     lfoGain.gain.setValueAtTime(0.15, t);
@@ -257,9 +289,9 @@ class SoundManager {
     noise.buffer = this._noiseBuffer(0.2);
     const filter = this.context.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(400, t);
-    filter.frequency.exponentialRampToValueAtTime(2000, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(400, t + 0.2);
+    filter.frequency.setValueAtTime(this._pf(400), t);
+    filter.frequency.exponentialRampToValueAtTime(this._pf(2000), t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(this._pf(400), t + 0.2);
     filter.Q.setValueAtTime(2, t);
     const gain = this.context.createGain();
     gain.gain.setValueAtTime(0.25, t);
@@ -277,8 +309,8 @@ class SoundManager {
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(200, t);
-    osc.frequency.exponentialRampToValueAtTime(800, t + 0.3);
+    osc.frequency.setValueAtTime(this._pf(200), t);
+    osc.frequency.exponentialRampToValueAtTime(this._pf(800), t + 0.3);
     gain.gain.setValueAtTime(0.15, t);
     gain.gain.linearRampToValueAtTime(0.25, t + 0.2);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
@@ -294,8 +326,8 @@ class SoundManager {
     noise.buffer = this._noiseBuffer(0.1);
     const filter = this.context.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(1000, t);
-    filter.frequency.exponentialRampToValueAtTime(3000, t + 0.05);
+    filter.frequency.setValueAtTime(this._pf(1000), t);
+    filter.frequency.exponentialRampToValueAtTime(this._pf(3000), t + 0.05);
     filter.Q.setValueAtTime(3, t);
     const gain = this.context.createGain();
     gain.gain.setValueAtTime(0.3, t);
@@ -313,7 +345,7 @@ class SoundManager {
     const osc = this.context.createOscillator();
     const g1 = this.context.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(1200, t);
+    osc.frequency.setValueAtTime(this._pf(1200), t);
     g1.gain.setValueAtTime(0.2, t);
     g1.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
     osc.connect(g1);
@@ -326,7 +358,7 @@ class SoundManager {
     noise.buffer = this._noiseBuffer(0.06);
     const filter = this.context.createBiquadFilter();
     filter.type = 'highpass';
-    filter.frequency.setValueAtTime(2000, t + 0.02);
+    filter.frequency.setValueAtTime(this._pf(2000), t + 0.02);
     const g2 = this.context.createGain();
     g2.gain.setValueAtTime(0.001, t);
     g2.gain.linearRampToValueAtTime(0.15, t + 0.03);
@@ -344,9 +376,9 @@ class SoundManager {
     const osc2 = this.context.createOscillator();
     const gain = this.context.createGain();
     osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(800, t);
+    osc1.frequency.setValueAtTime(this._pf(800), t);
     osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(1200, t);
+    osc2.frequency.setValueAtTime(this._pf(1200), t);
     gain.gain.setValueAtTime(0.25, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
     osc1.connect(gain);
@@ -366,7 +398,7 @@ class SoundManager {
       const gain = this.context.createGain();
       osc.type = 'sine';
       const offset = i * 0.05;
-      osc.frequency.setValueAtTime(f, t + offset);
+      osc.frequency.setValueAtTime(this._pf(f), t + offset);
       gain.gain.setValueAtTime(0.2, t + offset);
       gain.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.1);
       osc.connect(gain);
@@ -384,7 +416,7 @@ class SoundManager {
       const gain = this.context.createGain();
       osc.type = 'sine';
       const offset = i * 0.1;
-      osc.frequency.setValueAtTime(f, t + offset);
+      osc.frequency.setValueAtTime(this._pf(f), t + offset);
       gain.gain.setValueAtTime(0.25, t + offset);
       gain.gain.linearRampToValueAtTime(0.2, t + offset + 0.05);
       gain.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.15);
@@ -400,7 +432,7 @@ class SoundManager {
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(1000, t);
+    osc.frequency.setValueAtTime(this._pf(1000), t);
     gain.gain.setValueAtTime(0.15, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
     osc.connect(gain);
@@ -423,8 +455,8 @@ class SoundManager {
       const gain = this.context.createGain();
       fundamental.type = 'triangle';
       overtone.type = 'sine';
-      fundamental.frequency.setValueAtTime(n.f, t + offset);
-      overtone.frequency.setValueAtTime(n.f * 2, t + offset);
+      fundamental.frequency.setValueAtTime(this._pf(n.f), t + offset);
+      overtone.frequency.setValueAtTime(this._pf(n.f * 2), t + offset);
       gain.gain.setValueAtTime(0.0, t + offset);
       gain.gain.linearRampToValueAtTime(0.28, t + offset + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.001, t + offset + n.dur);
@@ -455,9 +487,9 @@ class SoundManager {
       fundamental.type = 'triangle';
       overtone.type = 'sine';
       detune.type = 'sine';
-      fundamental.frequency.setValueAtTime(n.f, t + offset);
-      overtone.frequency.setValueAtTime(n.f * 2, t + offset);
-      detune.frequency.setValueAtTime(n.f * 3, t + offset);
+      fundamental.frequency.setValueAtTime(this._pf(n.f), t + offset);
+      overtone.frequency.setValueAtTime(this._pf(n.f * 2), t + offset);
+      detune.frequency.setValueAtTime(this._pf(n.f * 3), t + offset);
       gain.gain.setValueAtTime(0.0, t + offset);
       gain.gain.linearRampToValueAtTime(0.30, t + offset + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.001, t + offset + n.dur);
@@ -479,7 +511,7 @@ class SoundManager {
     const lfo = this.context.createOscillator();
     const lfoGain = this.context.createGain();
     shimmer.type = 'sine';
-    shimmer.frequency.setValueAtTime(2093, t + 0.44); // C7
+    shimmer.frequency.setValueAtTime(this._pf(2093), t + 0.44); // C7
     lfo.type = 'sine';
     lfo.frequency.setValueAtTime(14, t + 0.44);
     lfoGain.gain.setValueAtTime(0.08, t + 0.44);
@@ -503,7 +535,7 @@ class SoundManager {
       const gain = this.context.createGain();
       osc.type = 'triangle';
       const offset = i * 0.08;
-      osc.frequency.setValueAtTime(f, t + offset);
+      osc.frequency.setValueAtTime(this._pf(f), t + offset);
       gain.gain.setValueAtTime(0.2, t + offset);
       gain.gain.linearRampToValueAtTime(0.15, t + offset + 0.1);
       gain.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.2);
