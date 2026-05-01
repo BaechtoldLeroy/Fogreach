@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-05-01T14:20:09.841514+00:00",
+  "feature_number": "043",
+  "feature_slug": "043-fix-lp-affix",
+  "friendly_name": "fix lp affix",
+  "mission": "software-dev",
+  "slug": "043-fix-lp-affix",
+  "target_branch": "main"
+}
