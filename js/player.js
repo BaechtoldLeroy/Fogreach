@@ -1623,6 +1623,52 @@ function dashSlash() {
   const knockback = 180;
   const damageMultiplier = 1.1;
 
+  // Track previous position to detect wall crossings (Issue #21).
+  // High dash velocity (~1000 px/s) can tunnel through static obstacle bodies
+  // before the physics collider resolves; we manually raycast each tick.
+  let prevDashX = player.x;
+  let prevDashY = player.y;
+
+  // Returns true if the segment from (fromX,fromY)->(toX,toY) crosses a wall
+  // (obstacle group rectangle or closed door). Mirrors hasLineOfSightToEnemy
+  // but operates on arbitrary points instead of two sprites.
+  const dashCrossedWall = (fromX, fromY, toX, toY) => {
+    const line = new Phaser.Geom.Line(fromX, fromY, toX, toY);
+    if (obstacles && obstacles.children) {
+      let blocked = false;
+      obstacles.children.iterate((o) => {
+        if (blocked || !o) return;
+        if (o.getData && o.getData('walkthrough')) return;
+        if (Phaser.Geom.Intersects.LineToRectangle(line, o.getBounds())) blocked = true;
+      });
+      if (blocked) return true;
+    }
+    if (scene && scene._doorGroup) {
+      let blocked = false;
+      scene._doorGroup.children.iterate((door) => {
+        if (blocked || !door || !door.active) return;
+        if (door.getData && door.getData('walkthrough')) return;
+        if (Phaser.Geom.Intersects.LineToRectangle(line, door.getBounds())) blocked = true;
+      });
+      if (blocked) return true;
+    }
+    return false;
+  };
+
+  const stopDashAtWall = () => {
+    if (!isDashing) return;
+    if (player && player.active) {
+      // Snap back to the last known safe position to undo any tunneling that
+      // happened during this physics step.
+      player.x = prevDashX;
+      player.y = prevDashY;
+      if (player.setVelocity) player.setVelocity(0, 0);
+      if (player.body) player.body.setMaxVelocity(220, 220);
+      if (player.clearTint) player.clearTint();
+    }
+    isDashing = false;
+  };
+
   const applyDashDamage = () => {
     forEachEnemyInRange(dashRange, (enemy, { dx, dy }) => {
       if (dashHits.has(enemy)) return;
@@ -1656,8 +1702,16 @@ function dashSlash() {
   const repeat = Math.max(0, Math.floor(dashDuration / tick) - 1);
   for (let i = 1; i <= repeat; i++) {
     scene.time.delayedCall(i * tick, () => {
+      if (!isDashing || !player || !player.active) return;
+      // Issue #21: abort the dash if we crossed a wall since the last tick.
+      if (dashCrossedWall(prevDashX, prevDashY, player.x, player.y)) {
+        stopDashAtWall();
+        return;
+      }
+      prevDashX = player.x;
+      prevDashY = player.y;
       applyDashDamage();
-      if (window.particleFactory && player && player.active) {
+      if (window.particleFactory) {
         window.particleFactory.abilityTrail(player.x, player.y, 0x7fd6ff);
       }
     });
