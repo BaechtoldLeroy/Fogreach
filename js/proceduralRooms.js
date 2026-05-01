@@ -410,16 +410,71 @@
 
     // 11) Entrances on edges closest to playerSpawn
     var entrances = [];
+
+    // Issue #15: stair distribution.
+    // Track per-stair min spacing + per-quadrant occupancy so multiple stairs
+    // don't cluster in the same chamber or corner. Applies to all placement
+    // paths (edge-based, chamber fallback, and the large-chamber extra).
+    // Distance is squared (avoid sqrt). 14 tiles ≈ 196 — chosen so most BSP
+    // chambers can still fit two stairs end-to-end if needed, while clearly
+    // separating cluster placements.
+    var STAIR_MIN_DIST_SQ = 196; // 14 tiles between any two stairs
+    var LARGE_ROOM_AREA = 4000;  // ≥ ~63×63: quadrant balancing only on large rooms
+    var isLargeRoom = (width * height) >= LARGE_ROOM_AREA;
+    var midX = width / 2;
+    var midY = height / 2;
+    function quadrantOf(qx, qy) {
+      // 0=NW, 1=NE, 2=SW, 3=SE
+      return (qy >= midY ? 2 : 0) + (qx >= midX ? 1 : 0);
+    }
+    var usedQuadrants = new Set();
+    function farFromStairs(sx, sy) {
+      for (var i = 0; i < entrances.length; i++) {
+        var dxs = entrances[i].x - sx;
+        var dys = entrances[i].y - sy;
+        if (dxs * dxs + dys * dys < STAIR_MIN_DIST_SQ) return false;
+      }
+      return true;
+    }
+    // Quadrant gate: on large rooms, reject candidates whose quadrant already
+    // has a stair *if* an empty quadrant is still reachable. Returns true if
+    // accepting is OK.
+    function quadrantOK(sx, sy) {
+      if (!isLargeRoom) return true;
+      if (usedQuadrants.size >= 4) return true; // every quadrant used — anything goes
+      return !usedQuadrants.has(quadrantOf(sx, sy));
+    }
+    function pushStair(stair) {
+      entrances.push(stair);
+      usedQuadrants.add(quadrantOf(stair.x, stair.y));
+    }
+
     // North: find the floor tile closest to playerSpawn.x in top rows
     var topX = findNearestFloorInRow(grid, 1, playerSpawn.x);
-    if (topX >= 0 && farFromSpawn(topX, 1)) entrances.push({ x: topX, y: 1, dir: 'N' });
+    if (topX >= 0 && farFromSpawn(topX, 1) && farFromStairs(topX, 1)) {
+      pushStair({ x: topX, y: 1, dir: 'N' });
+    }
     var botX = findNearestFloorInRow(grid, height - 2, playerSpawn.x);
-    if (botX >= 0 && farFromSpawn(botX, height - 2)) entrances.push({ x: botX, y: height - 2, dir: 'S' });
+    if (botX >= 0 && farFromSpawn(botX, height - 2) && farFromStairs(botX, height - 2)) {
+      pushStair({ x: botX, y: height - 2, dir: 'S' });
+    }
 
-    // Fallback: if no edge entrances found, place stairs in accessible chambers
+    // Fallback: if no edge entrances found, place stairs in accessible chambers.
+    // Iterate chambers and prefer ones in unused quadrants (large rooms only).
     if (entrances.length === 0) {
-      for (var ei = 0; ei < accessibleChambers.length && entrances.length < 2; ei++) {
-        var ec = accessibleChambers[ei];
+      // Sort chambers so unused-quadrant chambers come first (stable otherwise)
+      var fallbackOrder = accessibleChambers.slice();
+      if (isLargeRoom) {
+        fallbackOrder.sort(function (a, b) {
+          var qa = quadrantOf(a.x + a.w / 2, a.y + a.h / 2);
+          var qb = quadrantOf(b.x + b.w / 2, b.y + b.h / 2);
+          var au = usedQuadrants.has(qa) ? 1 : 0;
+          var bu = usedQuadrants.has(qb) ? 1 : 0;
+          return au - bu;
+        });
+      }
+      for (var ei = 0; ei < fallbackOrder.length && entrances.length < 2; ei++) {
+        var ec = fallbackOrder[ei];
         // Try a few offsets within the chamber, since the geometric center
         // can land on a wall when chambers were partially carved.
         var tries = [
@@ -431,8 +486,9 @@
         for (var ti = 0; ti < tries.length; ti++) {
           var ex = ec.x + tries[ti][0];
           var ey = ec.y + tries[ti][1];
-          if (grid[ey] && grid[ey][ex] === '.' && farFromSpawn(ex, ey)) {
-            entrances.push({ x: ex, y: ey, dir: null });
+          if (grid[ey] && grid[ey][ex] === '.' && farFromSpawn(ex, ey)
+              && farFromStairs(ex, ey) && quadrantOK(ex, ey)) {
+            pushStair({ x: ex, y: ey, dir: null });
             break;
           }
         }
@@ -446,7 +502,7 @@
       for (var fy = 1; fy < height - 1 && entrances.length === 0; fy++) {
         for (var fx = 1; fx < (grid[fy] ? grid[fy].length - 1 : 0); fx++) {
           if (grid[fy][fx] === '.') {
-            entrances.push({ x: fx, y: fy, dir: null });
+            pushStair({ x: fx, y: fy, dir: null });
             break;
           }
         }
@@ -456,23 +512,37 @@
     // 11b) Add up to 1 extra stair in a really large chamber (only if room
     // total area justifies it). Cap total at 3 stairs to keep the "next
     // room" pacing intact while still giving big BSP rooms a backup
-    // descent point.
+    // descent point. (#15) Prefer a qualifying chamber whose quadrant has
+    // no stair yet — drives spatial spread instead of stacking on the
+    // single largest chamber.
     var TOTAL_STAIR_CAP = 3;
     var EXTRA_CHAMBER_MIN_AREA = 320; // ~18×18 floor tiles
     var STAIR_CLEARANCE = 3;
-    var STAIR_MIN_DIST_SQ = 144; // 12 tiles between stairs
     if (entrances.length < TOTAL_STAIR_CAP) {
-      // Pick the single largest qualifying chamber
-      var largest = null;
+      // Build qualifying chamber list, preferring those in unused quadrants
+      // on large rooms; tie-break by area (bigger first).
+      var qualifying = [];
       for (var lci = 0; lci < accessibleChambers.length; lci++) {
         var lc = accessibleChambers[lci];
         if ((lc.w * lc.h) < EXTRA_CHAMBER_MIN_AREA) continue;
-        if (!largest || (lc.w * lc.h) > (largest.w * largest.h)) largest = lc;
+        qualifying.push(lc);
       }
-      if (largest) {
-        for (var sat = 0; sat < 12 && entrances.length < TOTAL_STAIR_CAP; sat++) {
-          var sx = largest.x + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, largest.w - STAIR_CLEARANCE * 2));
-          var sy = largest.y + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, largest.h - STAIR_CLEARANCE * 2));
+      qualifying.sort(function (a, b) {
+        if (isLargeRoom) {
+          var qa = quadrantOf(a.x + a.w / 2, a.y + a.h / 2);
+          var qb = quadrantOf(b.x + b.w / 2, b.y + b.h / 2);
+          var au = usedQuadrants.has(qa) ? 1 : 0;
+          var bu = usedQuadrants.has(qb) ? 1 : 0;
+          if (au !== bu) return au - bu;
+        }
+        return (b.w * b.h) - (a.w * a.h);
+      });
+      // Walk preferred chambers; first one that yields an acceptable spot wins.
+      for (var qi = 0; qi < qualifying.length && entrances.length < TOTAL_STAIR_CAP; qi++) {
+        var cand = qualifying[qi];
+        for (var sat = 0; sat < 12; sat++) {
+          var sx = cand.x + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, cand.w - STAIR_CLEARANCE * 2));
+          var sy = cand.y + STAIR_CLEARANCE + Math.floor(rng() * Math.max(1, cand.h - STAIR_CLEARANCE * 2));
           var nearDoor = doorwayTiles[sy + '|' + sx]
             || doorwayTiles[(sy - 1) + '|' + sx]
             || doorwayTiles[(sy + 1) + '|' + sx]
@@ -480,16 +550,10 @@
             || doorwayTiles[sy + '|' + (sx + 1)];
           if (!grid[sy] || grid[sy][sx] !== '.' || nearDoor) continue;
           if (!farFromSpawn(sx, sy)) continue;
-          var tooClose = false;
-          for (var ei = 0; ei < entrances.length; ei++) {
-            var edx = entrances[ei].x - sx;
-            var edy = entrances[ei].y - sy;
-            if (edx * edx + edy * edy < STAIR_MIN_DIST_SQ) { tooClose = true; break; }
-          }
-          if (!tooClose) {
-            entrances.push({ x: sx, y: sy, dir: null });
-            break;
-          }
+          if (!farFromStairs(sx, sy)) continue;
+          if (!quadrantOK(sx, sy)) continue;
+          pushStair({ x: sx, y: sy, dir: null });
+          break;
         }
       }
     }
