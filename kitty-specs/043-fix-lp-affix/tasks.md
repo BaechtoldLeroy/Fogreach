@@ -33,8 +33,8 @@ Single Work Package, 3 subtasks. The fix is a one-hunk change in `js/inventory.j
 **Subtasks**:
 
 - [x] T001 — In `js/inventory.js`, in the stat-recompute path around line 869: read `LootSystem.getBonus('hp')` defensively (matching the pattern at `js/player.js:653`) and add it to `newMaxHealth`. Single hunk, ~3 lines added.
-- [ ] T002 — Manual playtest per the verification strategy in `plan.md` (sections 1–7). Cover: equip, unequip, reroll, save/reload, regression on damage/armor/lifesteal/speed/crit affixes, skill-tree HP bonuses still apply.
-- [ ] T003 — Verify the fix on a save with HP-affixed items already equipped: load → max HP correctly includes affix bonus on first frame. Confirms FR-004 edge case (no double-counting after load).
+- [x] T002 — Manual playtest per the verification strategy in `plan.md` (sections 1–7). Cover: equip, unequip, reroll, save/reload, regression on damage/armor/lifesteal/speed/crit affixes, skill-tree HP bonuses still apply.
+- [x] T003 — Verify the fix on a save with HP-affixed items already equipped: load → max HP correctly includes affix bonus on first frame. Confirms FR-004 edge case (no double-counting after load).
 
 **Owned files**: `js/inventory.js`
 
