@@ -11,14 +11,15 @@ planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 base_branch: main
-base_commit: 8e894e8a47137547d8cae13492a72ee0ef4e6943
-created_at: '2026-05-01T14:28:38.000000+00:00'
+base_commit: 2d056b050f452048faff1c2f23a1992a1ad31aa0
+created_at: '2026-05-01T14:29:27.337686+00:00'
 subtasks: [T001, T002, T003]
 authoritative_surface: js/inventory.js
 execution_mode: code_change
 lane: planned
 owned_files:
 - js/inventory.js
+shell_pid: "37668"
 ---
 
 # WP01 — Wire HP Affix into playerMaxHealth Recompute
