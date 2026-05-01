@@ -399,13 +399,22 @@
       y: firstChamber.y + Math.floor(firstChamber.h / 2)
     };
 
+    // Stairs must spawn far from the player so a proc-room can't be skipped
+    // without combat. ~100 tiles² (10000 px²-equivalent in tile units).
+    var SPAWN_STAIR_MIN_DIST_SQ = 10000;
+    function farFromSpawn(sx, sy) {
+      var dxs = sx - playerSpawn.x;
+      var dys = sy - playerSpawn.y;
+      return (dxs * dxs + dys * dys) >= SPAWN_STAIR_MIN_DIST_SQ;
+    }
+
     // 11) Entrances on edges closest to playerSpawn
     var entrances = [];
     // North: find the floor tile closest to playerSpawn.x in top rows
     var topX = findNearestFloorInRow(grid, 1, playerSpawn.x);
-    if (topX >= 0) entrances.push({ x: topX, y: 1, dir: 'N' });
+    if (topX >= 0 && farFromSpawn(topX, 1)) entrances.push({ x: topX, y: 1, dir: 'N' });
     var botX = findNearestFloorInRow(grid, height - 2, playerSpawn.x);
-    if (botX >= 0) entrances.push({ x: botX, y: height - 2, dir: 'S' });
+    if (botX >= 0 && farFromSpawn(botX, height - 2)) entrances.push({ x: botX, y: height - 2, dir: 'S' });
 
     // Fallback: if no edge entrances found, place stairs in accessible chambers
     if (entrances.length === 0) {
@@ -422,7 +431,7 @@
         for (var ti = 0; ti < tries.length; ti++) {
           var ex = ec.x + tries[ti][0];
           var ey = ec.y + tries[ti][1];
-          if (grid[ey] && grid[ey][ex] === '.') {
+          if (grid[ey] && grid[ey][ex] === '.' && farFromSpawn(ex, ey)) {
             entrances.push({ x: ex, y: ey, dir: null });
             break;
           }
@@ -470,6 +479,7 @@
             || doorwayTiles[sy + '|' + (sx - 1)]
             || doorwayTiles[sy + '|' + (sx + 1)];
           if (!grid[sy] || grid[sy][sx] !== '.' || nearDoor) continue;
+          if (!farFromSpawn(sx, sy)) continue;
           var tooClose = false;
           for (var ei = 0; ei < entrances.length; ei++) {
             var edx = entrances[ei].x - sx;
@@ -484,6 +494,33 @@
       }
     }
     if (entrances.length > TOTAL_STAIR_CAP) entrances.length = TOTAL_STAIR_CAP;
+
+    // 11c) Accessibility filter — drop any stair that landed outside an
+    // accessible chamber (edge-detection / fallback can produce coords in
+    // walled-off pockets, softlocking the player). Must run after all
+    // placement so distance-rejected and accessibility-rejected don't fight.
+    entrances = entrances.filter(function (e) {
+      for (var ac = 0; ac < accessibleChambers.length; ac++) {
+        var c = accessibleChambers[ac];
+        if (e.x >= c.x + 1 && e.x < c.x + c.w - 1 &&
+            e.y >= c.y + 1 && e.y < c.y + c.h - 1) {
+          return true;
+        }
+      }
+      return false;
+    });
+    // Guarantee at least one stair so the player is never softlocked.
+    // Falls back to the center of the first accessible chamber even if it
+    // sits within the spawn-distance threshold — being trapped is worse
+    // than skipping combat.
+    if (entrances.length === 0 && accessibleChambers.length > 0) {
+      var fallback = accessibleChambers[0];
+      entrances.push({
+        x: fallback.x + Math.floor(fallback.w / 2),
+        y: fallback.y + Math.floor(fallback.h / 2),
+        dir: null
+      });
+    }
 
     // 12) Enemy spawns in later chambers (skip first). Large chambers get
     //     multiple groups scattered within. Total density ~1 enemy per 40
