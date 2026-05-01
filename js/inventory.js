@@ -831,6 +831,13 @@ function makeItem(opts) {
 }
 
 function recalcDerived(oldItemHp = 0, newItemHp = 0) {
+  // Refresh affix bonus cache before reading it: callers (equip swap, save
+  // load, endless buffs, events) may have mutated equipment without yet
+  // calling recomputeBonuses, so we ensure freshness here.
+  if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
+    try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
+  }
+
   // 1) Alle Boni aus aktueller Ausrüstung aufsummieren
   const sum = { damage: 0, speed: 0, range: 0, maxHP: 0, move: 0, armor: 0, crit: 0 };
   Object.values(equipment).forEach(it => {
@@ -866,7 +873,10 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
       _skillMaxHpBonus = _se.playerMaxHealth || 0;
     } catch (e) { /* swallow */ }
   }
-  const newMaxHealth = Math.max(1, Math.round((baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus));
+  const _affixHpBonus = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
+    ? (window.LootSystem.getBonus('hp') || 0)
+    : 0;
+  const newMaxHealth = Math.max(1, Math.round((baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus));
   if (typeof setPlayerMaxHealth === 'function') {
     setPlayerMaxHealth(newMaxHealth, { updateUi: false });
   } else {
