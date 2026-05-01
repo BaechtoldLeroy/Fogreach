@@ -319,6 +319,12 @@
                 }
                 tag.x = enemy.x;
                 tag.y = enemy.y - 30;
+                // Tie label visibility to enemy visibility — Text objects bypass
+                // the GeometryMask on enemyLayer, so labels would otherwise show
+                // through closed doors/walls. (Refs #14)
+                if (typeof tag.setVisible === 'function') {
+                  tag.setVisible(enemy.active && enemy.visible);
+                }
               }
             });
             enemy._eliteNameTagTimer = tagTimer;
