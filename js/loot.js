@@ -243,6 +243,15 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
           isQuestItem: true,
           questTarget: qiDef.target
         };
+        // Refs #22: ensure quest items spawn on walkable tiles. If the
+        // enemy died inside/atop a non-walkable tile, nudge the spawn to
+        // an accessible point so the fetch quest stays completable.
+        if (scene && typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(x, y)) {
+          if (typeof scene.pickAccessibleSpawnPoint === 'function') {
+            var safeSpot = scene.pickAccessibleSpawnPoint({ maxAttempts: 5 });
+            if (safeSpot) { x = safeSpot.x; y = safeSpot.y; }
+          }
+        }
         var questLoot = lootGroup.create(x, y, questItem.iconKey || 'itMat');
         questLoot.setDisplaySize(28, 22);
         questLoot.setData('item', questItem);
