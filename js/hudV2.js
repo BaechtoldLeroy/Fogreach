@@ -278,7 +278,7 @@
     if (hpPct < 0.20) hpColor = 0xff2020;
     else if (hpPct < 0.40) hpColor = 0xe06030;
     HUDv2.elements.hpFill.setFillStyle(hpColor);
-    HUDv2.elements.hpText.setText(cur + ' / ' + max);
+    HUDv2.elements.hpText.setText(Math.round(cur) + ' / ' + Math.round(max));
 
     // XP bar
     const xpPct = Math.max(0, Math.min(1, need > 0 ? xp / need : 0));
@@ -367,7 +367,7 @@
     const lvl = (typeof window.playerLevel === 'number') ? window.playerLevel : 1;
 
     const rows = [
-      [T('hud.stats.label.health'), cur + ' / ' + max],
+      [T('hud.stats.label.health'), Math.round(cur) + ' / ' + Math.round(max)],
       [T('hud.stats.label.level'), String(lvl)],
       [T('hud.stats.label.xp'), xp + ' / ' + need],
       [T('hud.stats.label.damage'), String(wpd)],
