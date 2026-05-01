@@ -55,3 +55,4 @@ At the end of this WP:
 
 - 2026-05-01T15:34:00Z – unknown – shell_pid=37668 – lane=in_progress – Moved to in_progress
 - 2026-05-01T15:34:02Z – unknown – shell_pid=37668 – lane=for_review – Moved to for_review
+- 2026-05-01T15:34:03Z – unknown – shell_pid=37668 – lane=approved – Manual playtest passed - LP affix correctly increases max HP on equip
