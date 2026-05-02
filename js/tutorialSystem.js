@@ -292,22 +292,17 @@
       completion: { event: 'hub.returned' }
     },
     {
+      // Final step — auto-dismisses 5s after appearing in the hub. Once
+      // it advances past the last index the tutorial completes for good.
+      // Druckerei was originally the narrative finale here, but it's a
+      // stub (Issue #24 covers the real implementation) so it has been
+      // removed from the tutorial flow until that feature ships.
       id: 'save.notice',
       scene: 'HubSceneV2',
       hintKey: 'tutorial.step.save_notice',
       targetRef: null,
       completion: { auto: true },
       autoDismissMs: 5000
-    },
-    {
-      // Final step — Druckerei is always last in the flow so it is never
-      // skipped, regardless of how the player progresses through the
-      // skill mini-tutorial.
-      id: 'druckerei.visit',
-      scene: 'HubSceneV2',
-      hintKey: 'tutorial.step.druckerei_visit',
-      targetRef: { type: 'entrance', name: 'Druckerei' },
-      completion: { event: 'dialog.closed', matcher: function (p) { return _nameMatches(p && p.npc, 'Setzer Thom'); } }
     }
   ];
 

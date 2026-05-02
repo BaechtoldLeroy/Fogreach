@@ -224,9 +224,11 @@ test('step 11 auto-dismisses after 5000 ms via the injected scheduler', () => {
   // Auto-dismiss must NOT have fired yet.
   p.advanceClock(4999);
   assert.strictEqual(TS.getCurrentStep().id, 'save.notice');
-  // After the configured 5000 ms total, the system advances to step 12.
+  // After the configured 5000 ms total the system advances past the
+  // last step and the tutorial completes.
   p.advanceClock(1);
-  assert.strictEqual(TS.getCurrentStep().id, 'druckerei.visit');
+  assert.strictEqual(TS.isActive(), false);
+  assert.strictEqual(TS.getCurrentStep(), null);
 });
 
 // --- 9. skip(true) deactivates; skip(false) is a no-op --------------------
@@ -386,7 +388,7 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   const { TS, p } = fresh();
   TS.init();
   TS.maybeAutoSkip();
-  // Walk all the way to step 12 (`druckerei.visit`).
+  // Walk all the way to the final step (save.notice).
   TS.report('player.moved', {});
   TS.report('dialog.opened', { npc: 'aldric' });
   TS.report('dialog.closed', { npc: 'aldric' });
@@ -402,13 +404,11 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   TS.report('loadout.opened', {});                                               // -> skill.use
   TS.report('combat.ability.used', { slot: 1 });                                 // -> hub.return.wait
   TS.report('hub.returned', {});                                                 // -> save.notice
-  // Auto-dismiss save.notice.
-  p.advanceClock(5000);
-  assert.strictEqual(TS.getCurrentStep().id, 'druckerei.visit');
-  // Final report — Setzer Thom dialog closes the tutorial.
+  assert.strictEqual(TS.getCurrentStep().id, 'save.notice');
+  // Final tick — save.notice auto-dismisses, completing the tutorial.
   let lastEvent = 'sentinel';
   TS.onChange((step) => { lastEvent = step; });
-  TS.report('dialog.closed', { npc: 'Setzer Thom' });
+  p.advanceClock(5000);
   assert.strictEqual(TS.isActive(), false);
   assert.strictEqual(TS.getCurrentStep(), null);
   assert.strictEqual(lastEvent, null, 'onChange fired with null on completion');

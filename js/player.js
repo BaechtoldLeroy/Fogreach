@@ -634,6 +634,12 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
   const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul);
   const damage = Math.max(1, Math.round(isCrit ? base * 1.5 : base));
 
+  // Snapshot maxHp on first hit so the lazy enemy hp bar (drawn by
+  // handleEnemyHit -> drawEnemyHpBar) has a correct denominator. Many
+  // regular enemies don't carry maxHp on spawn — only mini-bosses /
+  // bosses do — so without this capture the bar would treat the
+  // post-damage hp as 100% and look like the enemy is at full health.
+  if (typeof enemy.maxHp !== 'number') enemy.maxHp = enemy.hp;
   enemy.hp -= damage;
 
   if (isCrit && enemy.active && scene?.time) {
