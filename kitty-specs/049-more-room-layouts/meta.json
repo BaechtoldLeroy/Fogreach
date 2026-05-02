@@ -2,8 +2,10 @@
   "created_at": "2026-05-02T14:22:34.459121+00:00",
   "feature_number": "049",
   "feature_slug": "049-more-room-layouts",
-  "friendly_name": "more room layouts",
+  "friendly_name": "More Room Layouts",
   "mission": "software-dev",
   "slug": "049-more-room-layouts",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "source_description": "Issue #5 — Mehr Layout-Varianten für procedurale Räume. Add 4-6 new room templates (corridors, pillared halls, asymmetric rooms, multi-tier) to reduce repetition. Same RoomTemplates.TEMPLATES registration pattern; integrate with existing room picker."
 }
