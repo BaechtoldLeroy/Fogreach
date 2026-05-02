@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-05-02T11:10:38.927174+00:00",
+  "feature_number": "044",
+  "feature_slug": "044-tutorial-onboarding-flow",
+  "friendly_name": "tutorial onboarding flow",
+  "mission": "software-dev",
+  "slug": "044-tutorial-onboarding-flow",
+  "target_branch": "main"
+}
