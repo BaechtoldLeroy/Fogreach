@@ -695,6 +695,7 @@
 
     console.log('[QuestSystem] Accepted quest:', questId);
     _notifyUpdate();
+    _persistIfPossible();
     return true;
   }
 
@@ -720,8 +721,23 @@
     });
     if (changed) {
       _notifyUpdate();
+      _persistIfPossible();
     }
     return changed;
+  }
+
+  // Trigger a full game save if saveGame is reachable. We save on every
+  // material quest-state change (accept / complete / progress) so a
+  // browser crash mid-dungeon doesn't lose objective progress that
+  // would otherwise sit in memory until the next scene transition.
+  // saveGame writes the entire payload (inventory, equipment, quests,
+  // story, etc.) so it's idempotent — no risk of partial state.
+  function _persistIfPossible() {
+    if (typeof window === 'undefined' || typeof window.saveGame !== 'function') return;
+    try { window.saveGame(); } catch (err) {
+      // Don't let a save failure break gameplay — log once and continue.
+      try { console.warn('[QuestSystem] persist failed', err); } catch (_) {}
+    }
   }
 
   /**
@@ -854,6 +870,7 @@
       window.AbilitySystem.onQuestCompleted(questId);
     }
     _notifyUpdate();
+    _persistIfPossible();
     return true;
   }
 
