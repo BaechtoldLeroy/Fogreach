@@ -20,6 +20,7 @@ base_commit: fd6913880151b93d4c4b89ac5552322b4b7ef960
 created_at: '2026-05-02T12:27:51.447800+00:00'
 subtasks: [T007, T008, T009, T010]
 shell_pid: "22772"
+agent: "claude"
 history:
 - timestamp: '2026-05-02T11:30:00Z'
   actor: tasks-command
@@ -269,3 +270,7 @@ In every case: call `window.TutorialSystem?.report(event, payload)` defensively 
 ```bash
 spec-kitty implement WP03 --feature 044-tutorial-onboarding-flow --base WP02
 ```
+
+## Activity Log
+
+- 2026-05-02T12:27:51Z – claude – shell_pid=22772 – lane=doing – Started implementation via workflow command
