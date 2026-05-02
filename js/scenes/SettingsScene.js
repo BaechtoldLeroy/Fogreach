@@ -11,6 +11,7 @@
       'settings.section.mobile': 'MOBILE',
       'settings.section.display': 'ANZEIGE',
       'settings.section.input': 'EINGABE',
+      'settings.section.tutorial': 'TUTORIAL',
       'settings.section.debug': 'DEBUG',
       'settings.audio.master': 'Master',
       'settings.audio.music': 'Musik',
@@ -40,6 +41,7 @@
       'settings.section.mobile': 'MOBILE',
       'settings.section.display': 'DISPLAY',
       'settings.section.input': 'INPUT',
+      'settings.section.tutorial': 'TUTORIAL',
       'settings.section.debug': 'DEBUG',
       'settings.audio.master': 'Master',
       'settings.audio.music': 'Music',
@@ -160,7 +162,9 @@
       this.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7).setScrollFactor(0).setDepth(2000);
 
       const panelW = Math.min(560, cw - 40);
-      const panelH = Math.min(460, ch - 20);
+      // Bumped from 460 → 540 to fit the Tutorial section (skip + replay)
+      // added by feature 044 without pushing the close button off-screen.
+      const panelH = Math.min(540, ch - 20);
       const px = cw / 2;
       const py = ch / 2;
 
@@ -218,6 +222,56 @@
         this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.input'));
         rowY += 18;
         this._schemeRow(px, rowY, panelW); rowY += 24;
+      }
+
+      // -- Tutorial section (feature 044) --
+      // Skip toggle is enabled only while the tutorial is active; replay
+      // button is always available. Both labels re-render on language change.
+      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.tutorial'));
+      rowY += 18;
+      const skipBtn = this._tutorialButton(px, rowY, T('tutorial.settings.skip_label'), () => {
+        if (!(window.TutorialSystem && window.TutorialSystem.isActive && window.TutorialSystem.isActive())) return;
+        const ok = window.confirm(T('tutorial.skip.confirm'));
+        if (ok && window.TutorialSystem && typeof window.TutorialSystem.skip === 'function') {
+          window.TutorialSystem.skip(true);
+          this._refreshSkipButton();
+        }
+      }, panelW);
+      this._tutorialSkipBtn = skipBtn;
+      rowY += 30;
+      const replayBtn = this._tutorialButton(px, rowY, T('tutorial.settings.replay_label'), () => {
+        const ok = window.confirm(T('tutorial.settings.replay_confirm'));
+        if (ok && window.TutorialSystem && typeof window.TutorialSystem.replay === 'function') {
+          window.TutorialSystem.replay();
+          this._refreshSkipButton();
+        }
+      }, panelW);
+      this._tutorialReplayBtn = replayBtn;
+      rowY += 32;
+
+      // Initial visual state for skip (dimmed when tutorial inactive).
+      this._refreshSkipButton();
+
+      // Re-render skip button when tutorial state changes (e.g. step advance,
+      // external replay/skip). Cleaned up in shutdown.
+      if (window.TutorialSystem && typeof window.TutorialSystem.onChange === 'function') {
+        this._skipUnsub = window.TutorialSystem.onChange(() => this._refreshSkipButton());
+      }
+
+      // Live re-render of tutorial button labels when language toggles. The
+      // existing `_unsubscribeI18n` below restarts the whole scene, which
+      // also covers labels — but we keep this lighter subscription so the
+      // labels update even before the scene restart cycle completes (NFR-03,
+      // "within one frame"). Cleaned up in shutdown.
+      if (window.i18n && typeof window.i18n.onChange === 'function') {
+        this._i18nUnsub = window.i18n.onChange(() => {
+          if (skipBtn && skipBtn.text && skipBtn.text.setText) {
+            skipBtn.text.setText(T('tutorial.settings.skip_label'));
+          }
+          if (replayBtn && replayBtn.text && replayBtn.text.setText) {
+            replayBtn.text.setText(T('tutorial.settings.replay_label'));
+          }
+        });
       }
 
       // -- Debug section --
@@ -550,6 +604,44 @@
       btnBg.on('pointerout', () => btnBg.setFillStyle(0x3a3a3a));
     }
 
+    // Variant of _actionRow that returns { bg, text } refs so callers can
+    // mutate label text live (i18n) and toggle enabled/dimmed state.
+    _tutorialButton(centerX, y, label, callback, panelW) {
+      const bg = this.add.rectangle(centerX, y + 8, 240, 24, 0x3a3a3a)
+        .setStrokeStyle(1, 0xd4a543).setScrollFactor(0).setDepth(2002)
+        .setInteractive({ useHandCursor: true });
+      const text = this.add.text(centerX, y + 8, label, {
+        fontFamily: 'monospace', fontSize: '12px', color: '#f1e9d8'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
+      bg.on('pointerdown', callback);
+      bg.on('pointerover', () => { if (bg._enabled !== false) bg.setFillStyle(0x555555); });
+      bg.on('pointerout',  () => { if (bg._enabled !== false) bg.setFillStyle(0x3a3a3a); });
+      bg._enabled = true;
+      return {
+        bg,
+        text,
+        setEnabled(enabled) {
+          this.bg._enabled = enabled;
+          if (enabled) {
+            this.bg.setFillStyle(0x3a3a3a).setStrokeStyle(1, 0xd4a543);
+            this.text.setColor('#f1e9d8');
+          } else {
+            this.bg.setFillStyle(0x222222).setStrokeStyle(1, 0x555555);
+            this.text.setColor('#666666');
+          }
+        }
+      };
+    }
+
+    // Reflects TutorialSystem.isActive() in the skip button visual state.
+    // Replay button is always enabled — replay works even after completion.
+    _refreshSkipButton() {
+      const active = !!(window.TutorialSystem && typeof window.TutorialSystem.isActive === 'function' && window.TutorialSystem.isActive());
+      if (this._tutorialSkipBtn && typeof this._tutorialSkipBtn.setEnabled === 'function') {
+        this._tutorialSkipBtn.setEnabled(active);
+      }
+    }
+
     _toast(msg) {
       const cam = this.cameras.main;
       const txt = this.add.text(cam.width / 2, cam.height - 60, msg, {
@@ -568,6 +660,17 @@
       if (this._unsubscribeI18n) {
         this._unsubscribeI18n();
         this._unsubscribeI18n = null;
+      }
+      // Tutorial-feature subscriptions (044). Cleaned up alongside the
+      // existing i18n unsubscribe so a late state change cannot resurrect a
+      // destroyed button.
+      if (this._skipUnsub) {
+        this._skipUnsub();
+        this._skipUnsub = null;
+      }
+      if (this._i18nUnsub) {
+        this._i18nUnsub();
+        this._i18nUnsub = null;
       }
       // Resume the parent scene if it was paused (we don't pause currently
       // because we use scene.launch — but stop ourselves)
