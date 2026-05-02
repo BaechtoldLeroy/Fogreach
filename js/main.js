@@ -1943,6 +1943,13 @@ function initUI() {
     if (potionTile.iconText) potionTile.iconText.setText('\u269A'); // ⚚ caduceus
     if (potionTile.statusText) potionTile.statusText.setText(_HUD_T('hud.potion.no_potion'));
     potionTile.durationMs = 2000; // global potion cooldown
+    // Force the potion name onto a single line — the default tile config
+    // allows 2 lines for long ability names but on the potion tile a wrap
+    // pushes the (S/M/L/XL) tier suffix down onto the "bereit" / cooldown
+    // status row, covering it.
+    if (potionTile.nameText && typeof potionTile.nameText.setMaxLines === 'function') {
+      potionTile.nameText.setMaxLines(1);
+    }
     const POTION_NAME_KEYS = {
       1: 'hud.potion.name.t1',
       2: 'hud.potion.name.t2',
@@ -1968,7 +1975,11 @@ function initUI() {
         ? window.LootSystem._getPotionCooldownRemaining() : 0;
       if (bestTier > 0) {
         const potName = _HUD_T(POTION_NAME_KEYS[bestTier] || 'hud.potion.name.default');
-        potionTile.nameText.setText(potName + ' x' + bestStack);
+        // Only render the stack suffix when more than one — saves ~3 chars
+        // ("Heiltrank (S) x1" -> "Heiltrank (S)") so the (S) suffix stays
+        // on the same line as the name.
+        const stackSuffix = bestStack > 1 ? ' x' + bestStack : '';
+        potionTile.nameText.setText(potName + stackSuffix);
         if (potionTile.statusText) {
           potionTile.statusText.setText(onCd ? (remainMs / 1000).toFixed(1) + 's' : _HUD_T('hud.potion.ready'));
           potionTile.statusText.setColor(onCd ? '#ffd966' : '#78f3c7');

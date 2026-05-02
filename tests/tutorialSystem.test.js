@@ -210,10 +210,11 @@ test('step 11 auto-dismisses after 5000 ms via the injected scheduler', () => {
   TS.report('dialog.closed', { npc: 'aldric' });                                // -> dungeon.approach
   TS.report('hub.entrance.approached', { name: 'rathaus_entrance' });           // -> dungeon.enter
   TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });              // -> combat.basics
-  TS.report('combat.hit', { byPlayer: true });                                  // -> combat.potion
-  TS.report('potion.attempted', {});                                            // -> loot.pickup
+  TS.report('combat.hit', { byPlayer: true });                                  // -> loot.wait
+  TS.report('loot.dropped', { itemId: 'x' });                                   // -> loot.pickup
   TS.report('loot.picked', { itemId: 'x' });                                    // -> loot.equip
-  TS.report('inventory.equipped', { slot: 'mainhand' });                        // -> save.notice
+  TS.report('inventory.equipped', { slot: 'mainhand' });                        // -> combat.potion
+  TS.report('potion.attempted', {});                                            // -> save.notice
   assert.strictEqual(TS.getCurrentStep().id, 'save.notice');
   // Auto-dismiss must NOT have fired yet.
   p.advanceClock(4999);
@@ -322,7 +323,7 @@ test('out-of-order report() (e.g., loot.picked during step 7) is dropped', () =>
   assert.strictEqual(TS.getCurrentStep().id, 'combat.basics', 'out-of-order event ignored');
   // Now legitimately advance.
   TS.report('combat.hit', { byPlayer: true });
-  assert.strictEqual(TS.getCurrentStep().id, 'combat.potion');
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.wait');
 });
 
 // --- 14. stored blob with version > 1 is discarded ------------------------
@@ -357,9 +358,10 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   TS.report('hub.entrance.approached', { name: 'rathaus_entrance' });
   TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });
   TS.report('combat.hit', { byPlayer: true });
-  TS.report('potion.attempted', {});
+  TS.report('loot.dropped', { itemId: 'x' });
   TS.report('loot.picked', { itemId: 'x' });
   TS.report('inventory.equipped', { slot: 'mainhand' });
+  TS.report('potion.attempted', {});
   // Auto-dismiss step 11.
   p.advanceClock(5000);
   assert.strictEqual(TS.getCurrentStep().id, 'druckerei.visit');

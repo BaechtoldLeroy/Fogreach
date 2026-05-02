@@ -45,10 +45,13 @@
     'tutorial.step.combat_basics.mobile':     'Joystick bewegt, Angriffs-Knopf greift an',
     'tutorial.step.combat_potion':            'F drücken für Heiltrank',
     'tutorial.step.combat_potion.mobile':     'Tippe den Heiltrank-Knopf',
-    'tutorial.step.loot_pickup':              'Lauf darüber zum Aufheben',
-    'tutorial.step.loot_pickup.mobile':       'Lauf mit dem Joystick darüber zum Aufheben',
-    'tutorial.step.loot_equip':               'Rechtsklick zum Anlegen',
-    'tutorial.step.loot_equip.mobile':        'Item antippen, dann auf den Slot tippen',
+    // loot_wait has no banner (hintKey null in the step) — the banner stays
+    // hidden between combat.basics and the first loot drop, so the player
+    // isn't told to pick something up before there is anything to pick up.
+    'tutorial.step.loot_pickup':              'Ein Item ist gefallen — lauf einfach drüber, um es aufzuheben',
+    'tutorial.step.loot_pickup.mobile':       'Ein Item ist gefallen — bewege dich mit dem Joystick darüber, um es aufzuheben',
+    'tutorial.step.loot_equip':               'Öffne das Inventar (I) und mache Rechtsklick auf das Item, um es anzulegen',
+    'tutorial.step.loot_equip.mobile':        'Öffne das Inventar, tippe das Item an und dann den passenden Ausrüstungs-Slot',
     'tutorial.step.save_notice':              'Dein Fortschritt wird automatisch gespeichert',
     'tutorial.step.druckerei_visit':          'Geh zur Druckerei',
     'tutorial.druckerei.stub':                'Setzer Thom: »Die Druckerei ist noch in Arbeit. Komm bald wieder.«',
@@ -75,10 +78,10 @@
     'tutorial.step.combat_basics.mobile':     'Joystick moves, attack button strikes',
     'tutorial.step.combat_potion':            'Press F to drink a healing potion',
     'tutorial.step.combat_potion.mobile':     'Tap the potion button',
-    'tutorial.step.loot_pickup':              'Walk over it to pick up',
-    'tutorial.step.loot_pickup.mobile':       'Walk over it with the joystick to pick up',
-    'tutorial.step.loot_equip':               'Right-click to equip',
-    'tutorial.step.loot_equip.mobile':        'Tap the item, then tap the slot',
+    'tutorial.step.loot_pickup':              'An item dropped — just walk over it to pick it up',
+    'tutorial.step.loot_pickup.mobile':       'An item dropped — move over it with the joystick to pick it up',
+    'tutorial.step.loot_equip':               'Open the inventory (I) and right-click the item to equip it',
+    'tutorial.step.loot_equip.mobile':        'Open the inventory, tap the item, then tap the matching equipment slot',
     'tutorial.step.save_notice':              'Your progress is saved automatically',
     'tutorial.step.druckerei_visit':          'Go to the printing house',
     'tutorial.druckerei.stub':                "Setzer Thom: 'The printing house is still under construction. Come back soon.'",
@@ -169,15 +172,16 @@
     },
     {
       // Ability slot tutorial deferred until the player actually has an
-      // ability equipped (Phase 2+; tracker TBD). For now teach the
-      // potion key — F drinks the best potion in inventory; the tutorial
-      // advances on key-press regardless of whether a potion was actually
-      // consumed (so empty-inventory players aren't softlocked).
-      id: 'combat.potion',
+      // After the first hit, wait silently until something actually drops
+      // before showing pickup instructions. hintKey:null keeps the banner
+      // hidden so the player isn't told "lauf darüber zum Aufheben"
+      // before there is anything to pick up. Advances when an enemy or
+      // chest first spawns loot in this run.
+      id: 'loot.wait',
       scene: 'GameScene',
-      hintKey: 'tutorial.step.combat_potion',
+      hintKey: null,
       targetRef: null,
-      completion: { event: 'potion.attempted' }
+      completion: { event: 'loot.dropped' }
     },
     {
       id: 'loot.pickup',
@@ -192,6 +196,19 @@
       hintKey: 'tutorial.step.loot_equip',
       targetRef: null,
       completion: { event: 'inventory.equipped' }
+    },
+    {
+      // Potion key tutorial moved AFTER the loot loop so the player has had
+      // a chance to find a potion in the wild before being told to drink
+      // one. Advances on every F-press regardless of whether a potion was
+      // actually consumed (no softlock for empty-inventory players).
+      // The ability tutorial that originally lived in this slot is deferred
+      // until the player actually has an ability equipped (Phase 2+).
+      id: 'combat.potion',
+      scene: 'GameScene',
+      hintKey: 'tutorial.step.combat_potion',
+      targetRef: null,
+      completion: { event: 'potion.attempted' }
     },
     {
       id: 'save.notice',
