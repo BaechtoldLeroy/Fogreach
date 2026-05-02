@@ -274,3 +274,4 @@ spec-kitty implement WP03 --feature 044-tutorial-onboarding-flow --base WP02
 ## Activity Log
 
 - 2026-05-02T12:27:51Z – claude – shell_pid=22772 – lane=doing – Started implementation via workflow command
+- 2026-05-02T12:49:06Z – claude – shell_pid=22772 – lane=for_review – StartScene auto-skip in loadRoomTemplatesAndStart; HubSceneV2 emits 6 hub events at single funnels; Druckerei stub uses 'Setzer Thom' stable name + tutorial.druckerei.stub key. Resumed after agent stall.
