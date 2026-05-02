@@ -1,0 +1,446 @@
+// tutorialSystem.js — first-time-player onboarding state machine.
+//
+// Runs as an IIFE that attaches `window.TutorialSystem`. The module owns its
+// own localStorage key (`demonfall_tutorial_v1`) — never bundled into the main
+// save (Constraint C-07). Scenes report player events via report(eventName,
+// payload); the overlay (js/scenes/tutorialOverlay.js) subscribes via
+// onChange(cb) and renders the current step's hint banner + target highlight.
+//
+// See:
+//   kitty-specs/044-tutorial-onboarding-flow/contracts/tutorial-system-api.md
+//   kitty-specs/044-tutorial-onboarding-flow/data-model.md
+
+(function () {
+  var STORAGE_KEY = 'demonfall_tutorial_v1';
+  var SCHEMA_VERSION = 1;
+  var INIT_STEP_ID = 'init';
+  var FIRST_VISIBLE_STEP_ID = 'movement';
+
+  // --- i18n string tables -------------------------------------------------
+  // Registered once per language at init(). Owned here so the keys ship with
+  // the feature; consumers (overlay, settings, hubLayout for the Druckerei
+  // stub) reference these keys via window.i18n.t(...).
+  var I18N_DE = {
+    'tutorial.step.movement':         'WASD zum Bewegen',
+    'tutorial.step.forge_approach':   'Geh zur Werkstatt',
+    'tutorial.step.forge_dialog':     '[E] um zu sprechen',
+    'tutorial.step.keller_approach':  'Geh zum Rathauskeller',
+    'tutorial.step.keller_enter':     '[E] um den Dungeon zu betreten',
+    'tutorial.step.combat_basics':    'WASD bewegen, LMB/Space angreifen',
+    'tutorial.step.combat_ability':   'Ability-Slot 1 — Q drücken',
+    'tutorial.step.loot_pickup':      'Klick zum Aufheben',
+    'tutorial.step.loot_equip':       'Rechtsklick zum Anlegen',
+    'tutorial.step.save_notice':      'Dein Fortschritt wird automatisch gespeichert',
+    'tutorial.step.druckerei_visit':  'Geh zur Druckerei',
+    'tutorial.druckerei.stub':        'Setzer Thom: »Die Druckerei ist noch in Arbeit. Komm bald wieder.«',
+    'tutorial.skip.confirm':          'Tutorial wirklich überspringen?',
+    'tutorial.settings.skip_label':   'Tutorial überspringen',
+    'tutorial.settings.replay_label': 'Tutorial neu starten',
+    'tutorial.settings.replay_confirm': 'Tutorial wirklich von vorne beginnen?'
+  };
+  var I18N_EN = {
+    'tutorial.step.movement':         'WASD to move',
+    'tutorial.step.forge_approach':   'Go to the workshop',
+    'tutorial.step.forge_dialog':     '[E] to talk',
+    'tutorial.step.keller_approach':  'Go to the town hall cellar',
+    'tutorial.step.keller_enter':     '[E] to enter the dungeon',
+    'tutorial.step.combat_basics':    'WASD to move, LMB/Space to attack',
+    'tutorial.step.combat_ability':   'Ability slot 1 — press Q',
+    'tutorial.step.loot_pickup':      'Click to pick up',
+    'tutorial.step.loot_equip':       'Right-click to equip',
+    'tutorial.step.save_notice':      'Your progress is saved automatically',
+    'tutorial.step.druckerei_visit':  'Go to the printing house',
+    'tutorial.druckerei.stub':        "Setzer Thom: 'The printing house is still under construction. Come back soon.'",
+    'tutorial.skip.confirm':          'Really skip the tutorial?',
+    'tutorial.settings.skip_label':   'Skip tutorial',
+    'tutorial.settings.replay_label': 'Restart tutorial',
+    'tutorial.settings.replay_confirm': 'Really restart the tutorial from the beginning?'
+  };
+
+  // --- Step definitions ---------------------------------------------------
+  // Order is canonical. Index 0 (`init`) is the silent step seeded on New
+  // Game; maybeAutoSkip() advances past it immediately to FIRST_VISIBLE_STEP_ID.
+  // Step 11 (`save.notice`) auto-dismisses after 5000 ms via the scheduler;
+  // its completion has no event match.
+  var STEPS = [
+    {
+      id: INIT_STEP_ID,
+      scene: 'StartScene',
+      hintKey: null,
+      targetRef: null,
+      completion: { auto: true }
+    },
+    {
+      id: 'movement',
+      scene: 'HubSceneV2',
+      hintKey: 'tutorial.step.movement',
+      targetRef: null,
+      completion: { event: 'player.moved' }
+    },
+    {
+      id: 'forge.approach',
+      scene: 'HubSceneV2',
+      hintKey: 'tutorial.step.forge_approach',
+      targetRef: { type: 'entrance', name: 'Werkstatt' },
+      completion: { event: 'hub.entrance.approached', matcher: function (p) { return p && p.name === 'Werkstatt'; } }
+    },
+    {
+      id: 'forge.dialog',
+      scene: 'HubSceneV2',
+      hintKey: 'tutorial.step.forge_dialog',
+      targetRef: { type: 'npc', name: 'Branka' },
+      completion: { event: 'dialog.closed', matcher: function (p) { return p && p.npc === 'Branka'; } }
+    },
+    {
+      id: 'keller.approach',
+      scene: 'HubSceneV2',
+      hintKey: 'tutorial.step.keller_approach',
+      targetRef: { type: 'entrance', name: 'Rathauskeller' },
+      completion: { event: 'hub.entrance.approached', matcher: function (p) { return p && p.name === 'Rathauskeller'; } }
+    },
+    {
+      id: 'keller.enter',
+      scene: 'HubSceneV2',
+      hintKey: 'tutorial.step.keller_enter',
+      targetRef: { type: 'entrance', name: 'Rathauskeller' },
+      completion: { event: 'hub.entrance.entered', matcher: function (p) { return p && p.name === 'Rathauskeller'; } }
+    },
+    {
+      id: 'combat.basics',
+      scene: 'GameScene',
+      hintKey: 'tutorial.step.combat_basics',
+      targetRef: null,
+      completion: { event: 'combat.hit', matcher: function (p) { return p && p.byPlayer === true; } }
+    },
+    {
+      id: 'combat.ability',
+      scene: 'GameScene',
+      hintKey: 'tutorial.step.combat_ability',
+      targetRef: null,
+      completion: { event: 'combat.ability.used' }
+    },
+    {
+      id: 'loot.pickup',
+      scene: 'GameScene',
+      hintKey: 'tutorial.step.loot_pickup',
+      targetRef: null,
+      completion: { event: 'loot.picked' }
+    },
+    {
+      id: 'loot.equip',
+      scene: 'GameScene',
+      hintKey: 'tutorial.step.loot_equip',
+      targetRef: null,
+      completion: { event: 'inventory.equipped' }
+    },
+    {
+      id: 'save.notice',
+      scene: 'HubSceneV2',
+      hintKey: 'tutorial.step.save_notice',
+      targetRef: null,
+      completion: { auto: true },
+      autoDismissMs: 5000
+    },
+    {
+      id: 'druckerei.visit',
+      scene: 'HubSceneV2',
+      hintKey: 'tutorial.step.druckerei_visit',
+      targetRef: { type: 'entrance', name: 'Druckerei' },
+      completion: { event: 'dialog.closed', matcher: function (p) { return p && p.npc === 'Setzer Thom'; } }
+    }
+  ];
+
+  function _stepIndex(id) {
+    for (var i = 0; i < STEPS.length; i++) if (STEPS[i].id === id) return i;
+    return -1;
+  }
+
+  // --- Internal mutable state --------------------------------------------
+  var state = _freshState();
+  var subscribers = new Set();
+  var primitives = _defaultPrimitives();
+  // Single warn-once flag for storage failures (avoids console spam).
+  var _storageWarned = false;
+
+  function _freshState() {
+    return {
+      initialized: false,
+      active: false,
+      currentStepId: null,
+      skipped: false,
+      completedSteps: [],
+      i18nRegistered: false,
+      pendingTimerId: null
+    };
+  }
+
+  function _defaultPrimitives() {
+    var hasWindow = typeof window !== 'undefined';
+    return {
+      storage: (hasWindow && window.localStorage) || {
+        getItem: function () { return null; },
+        setItem: function () {},
+        removeItem: function () {}
+      },
+      i18n: (hasWindow && window.i18n) || {
+        register: function () {}, t: function (k) { return k; }, onChange: function () { return function () {}; }
+      },
+      now: function () { return Date.now(); },
+      scheduler: {
+        setTimeout: function (cb, ms) { return setTimeout(cb, ms); },
+        clearTimeout: function (id) { clearTimeout(id); }
+      },
+      persistence: (hasWindow && window.Persistence) || { hasSave: function () { return false; } }
+    };
+  }
+
+  // --- Persistence -------------------------------------------------------
+
+  function _persist() {
+    var blob = JSON.stringify({
+      version: SCHEMA_VERSION,
+      active: state.active,
+      currentStepId: state.currentStepId,
+      skipped: state.skipped,
+      completedSteps: state.completedSteps.slice()
+    });
+    try {
+      primitives.storage.setItem(STORAGE_KEY, blob);
+    } catch (err) {
+      if (!_storageWarned) {
+        _storageWarned = true;
+        try { console.warn('[TutorialSystem] persist failed; running in-memory only', err); } catch (_) {}
+      }
+    }
+  }
+
+  function _loadPersisted() {
+    var raw;
+    try { raw = primitives.storage.getItem(STORAGE_KEY); } catch (_) { raw = null; }
+    if (!raw) return null;
+    var parsed;
+    try { parsed = JSON.parse(raw); } catch (_) {
+      _clearPersisted();
+      return null;
+    }
+    if (!parsed || typeof parsed !== 'object' || parsed.version !== SCHEMA_VERSION) {
+      _clearPersisted();
+      return null;
+    }
+    return parsed;
+  }
+
+  function _clearPersisted() {
+    try { primitives.storage.removeItem(STORAGE_KEY); } catch (_) {}
+  }
+
+  // --- Subscribers --------------------------------------------------------
+
+  function _notify() {
+    var step = getCurrentStep();
+    subscribers.forEach(function (cb) {
+      try { cb(step); }
+      catch (err) {
+        try { console.error('[TutorialSystem] subscriber threw', err); } catch (_) {}
+      }
+    });
+  }
+
+  // --- Step traversal -----------------------------------------------------
+
+  function _scheduleAutoDismiss(step) {
+    if (!step || !step.autoDismissMs) return;
+    if (state.pendingTimerId !== null) {
+      try { primitives.scheduler.clearTimeout(state.pendingTimerId); } catch (_) {}
+      state.pendingTimerId = null;
+    }
+    state.pendingTimerId = primitives.scheduler.setTimeout(function () {
+      state.pendingTimerId = null;
+      // Only advance if we are still on this step (player may have skipped).
+      if (state.active && state.currentStepId === step.id) {
+        _advance();
+      }
+    }, step.autoDismissMs);
+  }
+
+  function _advance() {
+    var idx = _stepIndex(state.currentStepId);
+    if (idx < 0) {
+      // Defensive: state is corrupt. Mark complete.
+      state.active = false;
+      state.currentStepId = null;
+      _persist();
+      _notify();
+      return;
+    }
+    state.completedSteps.push(state.currentStepId);
+    var nextIdx = idx + 1;
+    if (nextIdx >= STEPS.length) {
+      state.active = false;
+      state.currentStepId = null;
+      _persist();
+      _notify();
+      return;
+    }
+    var next = STEPS[nextIdx];
+    state.currentStepId = next.id;
+    _persist();
+    _notify();
+    if (next.autoDismissMs) _scheduleAutoDismiss(next);
+  }
+
+  // --- Public API ---------------------------------------------------------
+
+  function init() {
+    // Idempotent. Registers i18n exactly once per instance, then loads
+    // persisted state if any. Multiple init() calls are no-ops after the
+    // first successful run.
+    if (state.initialized) return;
+    state.initialized = true;
+    if (!state.i18nRegistered) {
+      try {
+        primitives.i18n.register('de', I18N_DE);
+        primitives.i18n.register('en', I18N_EN);
+        state.i18nRegistered = true;
+      } catch (_) {
+        // Swallow — registration may fail if i18n is unavailable; tutorial
+        // still works with raw keys.
+      }
+    }
+    var persisted = _loadPersisted();
+    if (persisted) {
+      state.active = !!persisted.active;
+      state.currentStepId = persisted.currentStepId || null;
+      state.skipped = !!persisted.skipped;
+      state.completedSteps = Array.isArray(persisted.completedSteps) ? persisted.completedSteps.slice() : [];
+      // If we resumed mid-step-11, re-arm the auto-dismiss timer.
+      var cur = getCurrentStep();
+      if (cur && cur.autoDismissMs) _scheduleAutoDismiss(cur);
+    }
+  }
+
+  function maybeAutoSkip() {
+    if (!state.initialized) init();
+    // Already skipped (this session or a prior one) → nothing to do.
+    if (state.skipped) return true;
+    var hasSave = false;
+    try { hasSave = !!(primitives.persistence && primitives.persistence.hasSave && primitives.persistence.hasSave()); } catch (_) {}
+    if (hasSave) {
+      state.active = false;
+      state.skipped = true;
+      state.currentStepId = null;
+      _persist();
+      _notify();
+      return true;
+    }
+    if (!state.active && !state.currentStepId) {
+      // Fresh seed: start at the silent `init` step, then immediately advance
+      // to the first visible step.
+      state.active = true;
+      state.currentStepId = INIT_STEP_ID;
+      state.completedSteps = [];
+      _advance();
+    }
+    return false;
+  }
+
+  function report(eventName, payload) {
+    if (!state.initialized) return;
+    if (!isActive()) return;
+    var step = getCurrentStep();
+    if (!step || !step.completion) return;
+    if (step.completion.auto) return; // auto-dismiss-only steps cannot be reported
+    if (step.completion.event !== eventName) return;
+    if (typeof step.completion.matcher === 'function' && !step.completion.matcher(payload)) return;
+    _advance();
+  }
+
+  function getCurrentStep() {
+    if (!state.active || !state.currentStepId) return null;
+    var idx = _stepIndex(state.currentStepId);
+    if (idx < 0) return null;
+    var s = STEPS[idx];
+    // Shallow-clone to avoid letting consumers mutate the canonical descriptor.
+    return {
+      id: s.id,
+      scene: s.scene,
+      hintKey: s.hintKey,
+      targetRef: s.targetRef ? { type: s.targetRef.type, name: s.targetRef.name } : null,
+      completion: s.completion,
+      autoDismissMs: s.autoDismissMs || null
+    };
+  }
+
+  function isActive() {
+    return !!(state.active && !state.skipped && state.currentStepId);
+  }
+
+  function skip(confirmedByUser) {
+    if (confirmedByUser !== true) return false;
+    if (state.pendingTimerId !== null) {
+      try { primitives.scheduler.clearTimeout(state.pendingTimerId); } catch (_) {}
+      state.pendingTimerId = null;
+    }
+    state.active = false;
+    state.skipped = true;
+    state.currentStepId = null;
+    _persist();
+    _notify();
+    return true;
+  }
+
+  function replay() {
+    if (state.pendingTimerId !== null) {
+      try { primitives.scheduler.clearTimeout(state.pendingTimerId); } catch (_) {}
+      state.pendingTimerId = null;
+    }
+    _clearPersisted();
+    state.active = true;
+    state.skipped = false;
+    state.currentStepId = INIT_STEP_ID;
+    state.completedSteps = [];
+    // Advance past `init` to the first visible step, persist, notify.
+    _advance();
+  }
+
+  function onChange(cb) {
+    if (typeof cb !== 'function') return function () {};
+    subscribers.add(cb);
+    return function () { subscribers.delete(cb); };
+  }
+
+  function _configureForTest(p) {
+    // Replace primitives (shallow merge so partial overrides work) and reset
+    // in-memory state to a fresh, *uninitialized* form. Tests then call
+    // init() explicitly to exercise the load path against the test's stubs.
+    primitives = _defaultPrimitives();
+    if (p && typeof p === 'object') {
+      if (p.storage) primitives.storage = p.storage;
+      if (p.i18n) primitives.i18n = p.i18n;
+      if (typeof p.now === 'function') primitives.now = p.now;
+      if (p.scheduler) primitives.scheduler = p.scheduler;
+      if (p.persistence) primitives.persistence = p.persistence;
+    }
+    state = _freshState();
+    subscribers.clear();
+    _storageWarned = false;
+  }
+
+  // Auto-init on script load so production callers don't have to wire it.
+  init();
+
+  window.TutorialSystem = {
+    init: init,
+    maybeAutoSkip: maybeAutoSkip,
+    report: report,
+    getCurrentStep: getCurrentStep,
+    isActive: isActive,
+    skip: skip,
+    replay: replay,
+    onChange: onChange,
+    _configureForTest: _configureForTest,
+    _STEPS: STEPS,
+    _STORAGE_KEY: STORAGE_KEY,
+    _SCHEMA_VERSION: SCHEMA_VERSION
+  };
+})();
