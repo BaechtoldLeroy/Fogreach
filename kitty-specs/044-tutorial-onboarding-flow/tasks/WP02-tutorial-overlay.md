@@ -287,3 +287,4 @@ spec-kitty implement WP02 --feature 044-tutorial-onboarding-flow --base WP01
 ## Activity Log
 
 - 2026-05-02T12:20:40Z – claude – shell_pid=6556 – lane=doing – Started implementation via workflow command
+- 2026-05-02T12:26:50Z – claude – shell_pid=6556 – lane=for_review – Tutorial overlay implemented: banner (i18n-aware, depth 1500), pulsing target highlight (depth 1490, 1 Hz Sine.easeInOut yoyo), HUB_HITBOXES + scene-children resolver, script tags wired in index.html. Tests 155/1, smoke errors=0 (pre-existing failures unrelated).
