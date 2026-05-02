@@ -372,6 +372,22 @@
       state.currentStepId = persisted.currentStepId || null;
       state.skipped = !!persisted.skipped;
       state.completedSteps = Array.isArray(persisted.completedSteps) ? persisted.completedSteps.slice() : [];
+
+      // If the persisted currentStepId is not a known step (e.g. saved under
+      // an older version of this module before steps were renamed), don't
+      // leave the system in a "active but no current step" zombie state.
+      // Discard the in-memory currentStepId + active flag so the next
+      // maybeAutoSkip() can either auto-skip (when a save exists) or
+      // fresh-seed at the first visible step. Skipped flag is preserved so
+      // a player who explicitly opted out doesn't get the tutorial back.
+      if (state.active && state.currentStepId && _stepIndex(state.currentStepId) < 0) {
+        try { console.warn('[TutorialSystem] discarding unknown currentStepId:', state.currentStepId); } catch (_) {}
+        state.active = false;
+        state.currentStepId = null;
+        // Persist the cleanup so the next session boots clean too.
+        _persist();
+      }
+
       // If we resumed mid-step-11, re-arm the auto-dismiss timer.
       var cur = getCurrentStep();
       if (cur && cur.autoDismissMs) _scheduleAutoDismiss(cur);
