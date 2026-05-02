@@ -240,3 +240,4 @@ spec-kitty implement WP01 --feature 045-faction-system-mvp
 
 - 2026-05-02T14:49:39Z – claude – shell_pid=9932 – lane=doing – Started implementation via workflow command
 - 2026-05-02T14:52:26Z – claude – shell_pid=9932 – lane=for_review – TEST_FIRST: 15 cases red-then-green; recursion-safe notify; pre-existing lootSystem failure unrelated.
+- 2026-05-02T14:52:56Z – claude – shell_pid=9932 – lane=approved – Self-review approved
