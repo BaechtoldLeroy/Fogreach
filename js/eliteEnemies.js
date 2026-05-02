@@ -319,11 +319,32 @@
                 }
                 tag.x = enemy.x;
                 tag.y = enemy.y - 30;
-                // Tie label visibility to enemy visibility — Text objects bypass
-                // the GeometryMask on enemyLayer, so labels would otherwise show
-                // through closed doors/walls. (Refs #14)
+                // Text objects bypass the GeometryMask on enemyLayer, so we
+                // can't rely on the mask alone to hide labels through closed
+                // doors / walls. Test the enemy's world position against the
+                // cached vision polygon (filled by roomManager.updateFogOfWar
+                // each frame). When the enemy is outside the LOS polygon —
+                // including "behind a closed door" — the label hides. (Refs #14)
                 if (typeof tag.setVisible === 'function') {
-                  tag.setVisible(enemy.active && enemy.visible);
+                  let visible = enemy.active && enemy.visible;
+                  const sc = tag.scene;
+                  const poly = sc && sc._lastVisionPolygon;
+                  if (visible && poly && poly.length >= 6
+                      && typeof window !== 'undefined'
+                      && window.Phaser && window.Phaser.Geom
+                      && window.Phaser.Geom.Polygon) {
+                    try {
+                      // Build a Polygon once, reuse if shape hasn't changed.
+                      if (!sc._lastVisionPolyObj || sc._lastVisionPolyData !== poly) {
+                        sc._lastVisionPolyObj = new window.Phaser.Geom.Polygon(poly);
+                        sc._lastVisionPolyData = poly;
+                      }
+                      visible = window.Phaser.Geom.Polygon.Contains(
+                        sc._lastVisionPolyObj, enemy.x, enemy.y
+                      );
+                    } catch (_) { /* leave visible as the active+visible default */ }
+                  }
+                  tag.setVisible(visible);
                 }
               }
             });

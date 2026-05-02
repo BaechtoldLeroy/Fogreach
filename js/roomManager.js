@@ -980,6 +980,19 @@ function updateFogOfWar() {
   // 1) Welt-Polygon
   const ptsWorld = computeVisionPolygon(scene, px, py);
 
+  // Cache the world-space polygon as a flat [x0,y0, x1,y1, ...] number list
+  // so other systems (enemy name labels, healthbars) can do cheap point-in-
+  // polygon tests without recomputing the LOS each frame. Updated every
+  // fog tick (~60fps on desktop, every other frame on mobile).
+  if (Array.isArray(ptsWorld) && ptsWorld.length >= 3) {
+    const flat = new Array(ptsWorld.length * 2);
+    for (let i = 0; i < ptsWorld.length; i++) {
+      flat[i * 2]     = ptsWorld[i].x;
+      flat[i * 2 + 1] = ptsWorld[i].y;
+    }
+    scene._lastVisionPolygon = flat;
+  }
+
   // 2) Explored stamp in WORLD coords — exploredRT is a world-sized RT,
   //    so previously-explored tiles remain painted as the camera scrolls.
   const ptsWorldExplored = ptsWorld.map((p) => ({
