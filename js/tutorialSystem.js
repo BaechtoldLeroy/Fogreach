@@ -420,14 +420,44 @@
   }
 
   function report(eventName, payload) {
-    if (!state.initialized) return;
-    if (!isActive()) return;
+    if (!state.initialized) {
+      _debugLog(eventName, payload, 'dropped: not initialized');
+      return;
+    }
+    if (!isActive()) {
+      _debugLog(eventName, payload, 'dropped: not active (currentStepId=' + state.currentStepId + ', skipped=' + state.skipped + ')');
+      return;
+    }
     var step = getCurrentStep();
-    if (!step || !step.completion) return;
-    if (step.completion.auto) return; // auto-dismiss-only steps cannot be reported
-    if (step.completion.event !== eventName) return;
-    if (typeof step.completion.matcher === 'function' && !step.completion.matcher(payload)) return;
+    if (!step || !step.completion) {
+      _debugLog(eventName, payload, 'dropped: no step or no completion (currentStepId=' + state.currentStepId + ')');
+      return;
+    }
+    if (step.completion.auto) {
+      _debugLog(eventName, payload, 'dropped: step ' + step.id + ' is auto-dismiss only');
+      return;
+    }
+    if (step.completion.event !== eventName) {
+      _debugLog(eventName, payload, 'dropped: step ' + step.id + ' expects ' + step.completion.event);
+      return;
+    }
+    if (typeof step.completion.matcher === 'function' && !step.completion.matcher(payload)) {
+      _debugLog(eventName, payload, 'dropped: matcher rejected for step ' + step.id);
+      return;
+    }
+    _debugLog(eventName, payload, 'advancing from ' + step.id);
     _advance();
+  }
+
+  // Diagnostic — set window.__TUTORIAL_DEBUG__ = true in DevTools to trace
+  // every report() call (which event, which payload, whether it advanced or
+  // why it was dropped). Off by default to avoid noisy production logs.
+  function _debugLog(eventName, payload, verdict) {
+    try {
+      if (typeof window !== 'undefined' && window.__TUTORIAL_DEBUG__) {
+        console.log('[TutorialSystem.report]', eventName, payload, '->', verdict);
+      }
+    } catch (_) {}
   }
 
   function getCurrentStep() {
