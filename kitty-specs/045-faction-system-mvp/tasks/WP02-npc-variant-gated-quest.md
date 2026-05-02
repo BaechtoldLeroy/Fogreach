@@ -15,6 +15,7 @@ base_commit: 1e8cf39e7c9f08d63257a51a3bb23af73e5b48c8
 created_at: '2026-05-02T14:53:17.506816+00:00'
 subtasks: [T004, T005, T006, T007]
 shell_pid: "30484"
+agent: "claude"
 history:
 - timestamp: '2026-05-02T14:50:00Z'
   actor: tasks-command
@@ -127,3 +128,7 @@ Wire the two showcase consumers from spec FR-09 + FR-10:
 ```bash
 spec-kitty implement WP02 --feature 045-faction-system-mvp --base WP01
 ```
+
+## Activity Log
+
+- 2026-05-02T14:53:17Z – claude – shell_pid=30484 – lane=doing – Started implementation via workflow command
