@@ -962,4 +962,105 @@ if (window.i18n) {
       if (typeof window._refreshHUD === 'function') { try { window._refreshHUD(); } catch (e) {} }
     });
   }
+
+  // -------------------------------------------------------------------------
+  // Tutorial wrappers (feature 044).
+  //
+  // spawnLoot / collectLoot live in loot.js (loads AFTER lootSystem.js).
+  // GameScene is defined inline in main.js (which WP04 must not modify per
+  // its brief). Both globals are wrapped on the next tick so the originals
+  // exist; the GameScene overlay hook polls the global scene manager for up
+  // to 10 s after boot, then attaches a 'create'/'start' listener that
+  // mounts the tutorial overlay whenever GameScene activates with the
+  // tutorial active.
+  // -------------------------------------------------------------------------
+  function _wrapLootGlobals() {
+    if (typeof window === 'undefined') return;
+    if (typeof window.spawnLoot === 'function' && !window.spawnLoot._tutorialWrapped) {
+      var origSpawn = window.spawnLoot;
+      window.spawnLoot = function (x, y, maybeItem, sourceEnemy) {
+        var ret = origSpawn.apply(this, arguments);
+        if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+          try {
+            window.TutorialSystem.report('loot.dropped', { itemId: (maybeItem && maybeItem.id) || null });
+          } catch (_) { /* never crash gameplay */ }
+        }
+        return ret;
+      };
+      window.spawnLoot._tutorialWrapped = true;
+    }
+    if (typeof window.collectLoot === 'function' && !window.collectLoot._tutorialWrapped) {
+      var origCollect = window.collectLoot;
+      window.collectLoot = function (playerSprite, loot) {
+        var item = (loot && loot.getData) ? loot.getData('item') : null;
+        var ret = origCollect.apply(this, arguments);
+        if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+          try {
+            window.TutorialSystem.report('loot.picked', { itemId: (item && item.id) || null });
+          } catch (_) { /* never crash gameplay */ }
+        }
+        return ret;
+      };
+      window.collectLoot._tutorialWrapped = true;
+    }
+  }
+
+  function _hookGameSceneOverlay() {
+    if (typeof window === 'undefined') return false;
+    if (!window.game || !window.game.scene || !window.TutorialOverlay) return false;
+    var scenes = (window.game.scene.scenes || []);
+    var hooked = false;
+    for (var i = 0; i < scenes.length; i++) {
+      var sc = scenes[i];
+      if (!sc || !sc.scene || !sc.events) continue;
+      if (sc.scene.key !== 'GameScene') continue;
+      if (sc._tutorialOverlayHookInstalled) { hooked = true; continue; }
+      sc._tutorialOverlayHookInstalled = true;
+      hooked = true;
+      var mountFor = function (scene) {
+        if (!window.TutorialOverlay || !window.TutorialSystem) return;
+        if (scene._tutorialOverlay) return;
+        if (!window.TutorialSystem.isActive || !window.TutorialSystem.isActive()) return;
+        try {
+          scene._tutorialOverlay = window.TutorialOverlay.create(scene);
+          scene._tutorialOverlay.mount();
+        } catch (e) { /* swallow */ }
+      };
+      sc.events.on('create', (function (s) { return function () { mountFor(s); }; })(sc));
+      sc.events.on('start',  (function (s) { return function () { mountFor(s); }; })(sc));
+      if (sc.scene.isActive && sc.scene.isActive()) mountFor(sc);
+      if (typeof window.TutorialSystem.onChange === 'function' && !sc._tutorialUnsubInstalled) {
+        sc._tutorialUnsubInstalled = true;
+        sc._tutorialUnsub = window.TutorialSystem.onChange((function (s) {
+          return function (step) {
+            if (step) {
+              mountFor(s);
+            } else if (s._tutorialOverlay) {
+              try { s._tutorialOverlay.unmount(); } catch (e) {}
+              s._tutorialOverlay = null;
+            }
+          };
+        })(sc));
+        sc.events.once('shutdown', (function (s) {
+          return function () {
+            if (s._tutorialUnsub) { try { s._tutorialUnsub(); } catch (e) {} s._tutorialUnsub = null; }
+            if (s._tutorialOverlay) { try { s._tutorialOverlay.unmount(); } catch (e) {} s._tutorialOverlay = null; }
+          };
+        })(sc));
+      }
+    }
+    return hooked;
+  }
+
+  if (typeof setTimeout === 'function') {
+    setTimeout(function () {
+      _wrapLootGlobals();
+      var attempts = 0;
+      var poll = function () {
+        if (_hookGameSceneOverlay()) return;
+        if (++attempts < 40) setTimeout(poll, 250); // up to 10 s
+      };
+      poll();
+    }, 0);
+  }
 })();
