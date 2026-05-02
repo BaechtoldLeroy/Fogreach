@@ -157,6 +157,35 @@
     // =======================================================
     // === Act 4: Die Wahrheit sickert durch ===
     // =======================================================
+    // -------------------------------------------------------
+    // Faction-gated showcase quest (feature 045). Only offered
+    // when Resistance standing >= 25. Demonstrates the gate()
+    // predicate path; QA can adjust standing via DevTools to
+    // surface or hide the offer at will.
+    // -------------------------------------------------------
+    resistance_fetch_01: {
+      id: 'resistance_fetch_01',
+      title: 'Botengang fuer die Resistance',
+      description: 'Hol das versiegelte Buendel aus dem Keller. Niemand darf es sehen.',
+      npcId: 'elara',
+      type: 'kill',
+      chain: 0,
+      objectives: [
+        { type: 'kill', target: 'enemy', current: 0, required: 5 }
+      ],
+      rewards: { xp: 25, materials: { MAT: 3 } },
+      prerequisites: [],
+      requiredAct: 0,
+      gate: function () {
+        return !!(window.FactionSystem
+          && typeof window.FactionSystem.getStanding === 'function'
+          && window.FactionSystem.getStanding('resistance') >= 25);
+      },
+      dialogueOffer: 'Es gibt da etwas im Keller... ein Buendel, versiegelt. Bring es mir, ohne dass jemand sieht.\n\nNimmst du den Auftrag an?',
+      dialogueProgress: 'Schau dich im Keller um. Raeum ein paar Wachen aus dem Weg, falls noetig.',
+      dialogueComplete: 'Du hast es. Niemand hat dich gesehen — gut. Die Resistance vergisst das nicht.'
+    },
+
     elara_ritual: {
       id: 'elara_ritual',
       title: 'Die Ritualkammer',
@@ -594,6 +623,19 @@
         for (var i = 0; i < def.prerequisites.length; i++) {
           var preState = questState[def.prerequisites[i]];
           if (!preState || preState.status !== 'completed') return false;
+        }
+      }
+      // Optional gate predicate (feature 045). When set, the quest is only
+      // offered if the predicate returns true. Used for faction-standing
+      // gating; the predicate runs on every offer-list refresh, so it
+      // dynamically appears/disappears as standing changes.
+      if (typeof def.gate === 'function') {
+        try {
+          if (!def.gate()) return false;
+        } catch (_) {
+          // Defensive: a throwing gate shouldn't crash the dialog. Hide the
+          // quest until the gate is fixed.
+          return false;
         }
       }
       return true;
