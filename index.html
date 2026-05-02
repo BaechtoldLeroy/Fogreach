@@ -57,6 +57,11 @@
     <script src="js/scenes/Archivschmiede.js"></script>
     <script src="js/scenes/hubLayout.js"></script>
     <script src="js/loadoutOverlay.js"></script>
+    <!-- Tutorial subsystem (feature 044). Order: state machine first, then
+         overlay (reads window.TutorialSystem at mount). Both must load BEFORE
+         any scene file so scenes can reference the globals at construction. -->
+    <script src="js/tutorialSystem.js"></script>
+    <script src="js/scenes/tutorialOverlay.js"></script>
     <script src="js/scenes/startScene.js"></script>
     <script src="js/scenes/HubScene.js"></script>
     <script src="js/scenes/hub/hubLayout.js"></script>
