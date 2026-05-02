@@ -539,6 +539,43 @@
       _debugLog(eventName, payload, 'dropped: not active (currentStepId=' + state.currentStepId + ', skipped=' + state.skipped + ')');
       return;
     }
+
+    // ---- Global trigger: ability.learned -------------------------------
+    // The skill mini-tutorial (skill.loadout + skill.use) is event-driven
+    // — the player gets an ability via auto-unlock at unpredictable times
+    // (after N kills / wave milestones / quest rewards). The main flow
+    // can be parked anywhere (e.g. dungeon.enter, hub.return.wait,
+    // druckerei.visit) when this happens. Without an interrupt the skill
+    // event would be dropped as "step X expects Y" and the loadout hint
+    // would never appear. Jump straight to skill.loadout from any earlier
+    // step and mark the intervening main-flow steps as completed so the
+    // state stays consistent (no "I skipped druckerei but the system
+    // thinks I'm still on it").
+    if (eventName === 'ability.learned') {
+      var loadoutIdx = _stepIndex('skill.loadout');
+      var hereIdx = _stepIndex(state.currentStepId);
+      // Gate: only fire the global jump once the player has reached the
+      // dungeon (combat.basics or later). An ability learned during the
+      // hub-only intro steps (movement, talking to Aldric) would jump
+      // past the entire main flow, which makes no sense.
+      var gateIdx = _stepIndex('combat.basics');
+      if (loadoutIdx >= 0 && hereIdx >= 0 && hereIdx < loadoutIdx && hereIdx >= gateIdx) {
+        for (var _i = hereIdx; _i < loadoutIdx; _i++) {
+          state.completedSteps.push(STEPS[_i].id);
+        }
+        if (state.pendingTimerId !== null) {
+          try { primitives.scheduler.clearTimeout(state.pendingTimerId); } catch (_) {}
+          state.pendingTimerId = null;
+        }
+        state.currentStepId = 'skill.loadout';
+        state.currentStepShownAt = primitives.now();
+        _persist();
+        _notify();
+        _debugLog(eventName, payload, 'global jump from ' + STEPS[hereIdx].id + ' to skill.loadout');
+        return;
+      }
+    }
+
     var step = getCurrentStep();
     if (!step || !step.completion) {
       _debugLog(eventName, payload, 'dropped: no step or no completion (currentStepId=' + state.currentStepId + ')');
