@@ -158,9 +158,9 @@ File ownership is non-overlapping across all WPs. The state machine (WP01) is th
 **Independent test**: With WP01 merged (WP02 not strictly required), opening Settings shows the two new controls; pressing the skip toggle while the tutorial is active deactivates it after confirmation; pressing the replay button resets state.
 
 **Subtasks**:
-- [ ] T016 — Skip toggle.
-- [ ] T017 — Replay button.
-- [ ] T018 — Live i18n re-render on language change.
+- [x] T016 — Skip toggle.
+- [x] T017 — Replay button.
+- [x] T018 — Live i18n re-render on language change.
 
 **Dependencies**: WP01.
 
