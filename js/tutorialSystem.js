@@ -45,6 +45,8 @@
     'tutorial.step.combat_basics.mobile':     'Joystick bewegt, Angriffs-Knopf greift an',
     'tutorial.step.combat_potion':            'F drücken für Heiltrank',
     'tutorial.step.combat_potion.mobile':     'Tippe den Heiltrank-Knopf',
+    'tutorial.step.journal_hint':             'Ratsherr Aldric hat dir einen Auftrag gegeben — drücke J, um dein Journal zu öffnen',
+    'tutorial.step.journal_hint.mobile':      'Ratsherr Aldric hat dir einen Auftrag gegeben — tippe das Journal-Symbol oben rechts',
     // loot_wait has no banner (hintKey null in the step) — the banner stays
     // hidden between combat.basics and the first loot drop, so the player
     // isn't told to pick something up before there is anything to pick up.
@@ -78,6 +80,8 @@
     'tutorial.step.combat_basics.mobile':     'Joystick moves, attack button strikes',
     'tutorial.step.combat_potion':            'Press F to drink a healing potion',
     'tutorial.step.combat_potion.mobile':     'Tap the potion button',
+    'tutorial.step.journal_hint':             "Councillor Aldric gave you a task — press J to open your journal",
+    'tutorial.step.journal_hint.mobile':      "Councillor Aldric gave you a task — tap the journal icon (top-right)",
     'tutorial.step.loot_pickup':              'An item dropped — just walk over it to pick it up',
     'tutorial.step.loot_pickup.mobile':       'An item dropped — move over it with the joystick to pick it up',
     'tutorial.step.loot_equip':               'Open the inventory (I) and right-click the item to equip it',
@@ -220,6 +224,26 @@
       hintKey: 'tutorial.step.combat_potion',
       targetRef: null,
       completion: { event: 'potion.attempted' }
+    },
+    {
+      // Quest pointer + journal-key hint. Appears immediately after the
+      // potion step (still in the dungeon — both Hub and GameScene bind
+      // J to the journal overlay). Advances when the player presses J.
+      id: 'journal.hint',
+      scene: null, // any scene — banner travels with the player
+      hintKey: 'tutorial.step.journal_hint',
+      targetRef: null,
+      completion: { event: 'journal.opened' }
+    },
+    {
+      // Silent gate — the next visible step (save.notice) only fires once
+      // the player has returned to the hub. Without this gate the save
+      // notice could appear inside the dungeon, which makes no sense.
+      id: 'hub.return.wait',
+      scene: null,
+      hintKey: null,
+      targetRef: null,
+      completion: { event: 'hub.returned' }
     },
     {
       id: 'save.notice',

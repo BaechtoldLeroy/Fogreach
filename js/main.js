@@ -936,6 +936,12 @@ function create() {
     if (window.storySystem && typeof window.storySystem.showJournalOverlay === 'function') {
       window.storySystem.showJournalOverlay(this);
     }
+    // Tutorial: journal.hint step advances on any J press (binding-only
+    // tutorial purpose — works even if the journal overlay itself can't
+    // open for some reason).
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('journal.opened', {});
+    }
   });
   // WP04: F key consumes the highest-tier health potion
   this.input.keyboard.on('keydown-F', () => {

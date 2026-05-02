@@ -1331,6 +1331,12 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   _handleJournal() {
+    // Tutorial: journal.hint step advances on any J press (binding-only
+    // tutorial purpose — fires even when the journal overlay refuses to
+    // open because another dialog is active).
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('journal.opened', {});
+    }
     if (this._dialogOpen) return;
     if (!window.storySystem || typeof window.storySystem.showJournalOverlay !== 'function') return;
 

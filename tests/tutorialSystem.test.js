@@ -214,7 +214,9 @@ test('step 11 auto-dismisses after 5000 ms via the injected scheduler', () => {
   TS.report('loot.dropped', { itemId: 'x' });                                   // -> loot.pickup
   TS.report('loot.picked', { itemId: 'x' });                                    // -> loot.equip
   TS.report('inventory.equipped', { slot: 'mainhand' });                        // -> combat.potion
-  TS.report('potion.attempted', {});                                            // -> save.notice
+  TS.report('potion.attempted', {});                                            // -> journal.hint
+  TS.report('journal.opened', {});                                              // -> hub.return.wait
+  TS.report('hub.returned', {});                                                // -> save.notice
   assert.strictEqual(TS.getCurrentStep().id, 'save.notice');
   // Auto-dismiss must NOT have fired yet.
   p.advanceClock(4999);
@@ -362,6 +364,8 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   TS.report('loot.picked', { itemId: 'x' });
   TS.report('inventory.equipped', { slot: 'mainhand' });
   TS.report('potion.attempted', {});
+  TS.report('journal.opened', {});
+  TS.report('hub.returned', {});
   // Auto-dismiss step 11.
   p.advanceClock(5000);
   assert.strictEqual(TS.getCurrentStep().id, 'druckerei.visit');
