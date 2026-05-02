@@ -489,13 +489,24 @@ function purchaseSkill(skillId) {
   }
   
   window.playerSkills[skillId] = true;
-  
+
   applySkillEffects();
-  
+
   if (typeof saveGame === 'function') {
     saveGame();
   }
-  
+
+  // Tutorial: emit ability.learned for the skill mini-tutorial. Mara's
+  // tree contains passive stat skills, not slot abilities, but the
+  // loadout-binding hint is still useful — once the player picks up
+  // any ability later (auto-unlock from kills/quests/bosses) they'll
+  // already know K opens the loadout screen.
+  if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+    try {
+      window.TutorialSystem.report('ability.learned', { skillId: skillId, source: 'skillTree' });
+    } catch (_) { /* never crash gameplay */ }
+  }
+
   return { success: true, skill };
 }
 
