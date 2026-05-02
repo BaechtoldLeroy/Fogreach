@@ -810,4 +810,28 @@
     getEnemyKills,
     getUnlockRule
   };
+
+  // -------------------------------------------------------------------------
+  // Diagnostic watchdog (#29 stabilization sweep): poll state.learnedAbilities
+  // every 500 ms and log when its length grows. Catches any code path that
+  // bypasses learnAbility() and pushes directly into the array — useful while
+  // we're debugging "no console output when a skill is learned" reports from
+  // the user. Remove once the tutorial flow is verified end-to-end.
+  // -------------------------------------------------------------------------
+  if (typeof window !== 'undefined' && typeof setInterval === 'function') {
+    var _wd_lastLen = state.learnedAbilities.length;
+    setInterval(function () {
+      try {
+        var len = state.learnedAbilities.length;
+        if (len !== _wd_lastLen) {
+          var added = state.learnedAbilities.slice(_wd_lastLen);
+          console.log('[AbilitySystem watchdog] learnedAbilities length',
+                      _wd_lastLen, '->', len,
+                      'newly present:', JSON.stringify(added),
+                      'full list:', JSON.stringify(state.learnedAbilities));
+          _wd_lastLen = len;
+        }
+      } catch (_) { /* ignore */ }
+    }, 500);
+  }
 })();
