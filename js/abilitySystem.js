@@ -469,10 +469,15 @@
     // Tutorial: signal that the player learned a skill so the deferred
     // skill-loadout / skill-use tutorial steps can activate. Fires AFTER
     // persistence so a tutorial replay sees the same state.
+    try { console.log('[AbilitySystem] dispatching ability.learned to TutorialSystem; TS present?', !!window.TutorialSystem, 'id=', id); } catch (_) {}
     if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
       try {
         window.TutorialSystem.report('ability.learned', { abilityId: id });
-      } catch (_) { /* never crash gameplay */ }
+      } catch (e) {
+        try { console.warn('[AbilitySystem] TutorialSystem.report threw', e); } catch (_) {}
+      }
+    } else {
+      try { console.warn('[AbilitySystem] TutorialSystem not available — ability.learned NOT emitted'); } catch (_) {}
     }
     return true;
   }
