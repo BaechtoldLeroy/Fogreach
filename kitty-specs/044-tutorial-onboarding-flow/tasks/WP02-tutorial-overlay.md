@@ -18,6 +18,7 @@ base_commit: c1cb24dbdd3ea093a2788bdc25bdbe11be33d4b1
 created_at: '2026-05-02T12:20:39.565131+00:00'
 subtasks: [T004, T005, T006]
 shell_pid: "6556"
+agent: "claude"
 history:
 - timestamp: '2026-05-02T11:30:00Z'
   actor: tasks-command
@@ -282,3 +283,7 @@ Then update `index.html` to load the two new scripts (`tutorialSystem.js` first,
 ```bash
 spec-kitty implement WP02 --feature 044-tutorial-onboarding-flow --base WP01
 ```
+
+## Activity Log
+
+- 2026-05-02T12:20:40Z – claude – shell_pid=6556 – lane=doing – Started implementation via workflow command
