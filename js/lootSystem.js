@@ -979,10 +979,27 @@ if (window.i18n) {
     if (typeof window.spawnLoot === 'function' && !window.spawnLoot._tutorialWrapped) {
       var origSpawn = window.spawnLoot;
       window.spawnLoot = function (x, y, maybeItem, sourceEnemy) {
-        var ret = origSpawn.apply(this, arguments);
+        // Tutorial: when the system is on the `loot.wait` step (i.e. the
+        // player is about to be told to pick up an item and then equip
+        // it), force the next random drop to be a basic equippable
+        // weapon. Without this, the random loot table can produce a
+        // potion or material and the upcoming "equip" step has nothing
+        // to equip — soft-locking the tutorial. We only override when
+        // the caller didn't already pass an explicit item, so quest
+        // rewards / boss drops are untouched.
+        var item = maybeItem;
+        if (!item && window.TutorialSystem && typeof window.TutorialSystem.getCurrentStep === 'function') {
+          try {
+            var step = window.TutorialSystem.getCurrentStep();
+            if (step && step.id === 'loot.wait' && typeof rollItem === 'function') {
+              item = rollItem('WPN_EISENKLINGE', 1);
+            }
+          } catch (_) { /* fall through to the random drop */ }
+        }
+        var ret = origSpawn.call(this, x, y, item, sourceEnemy);
         if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
           try {
-            window.TutorialSystem.report('loot.dropped', { itemId: (maybeItem && maybeItem.id) || null });
+            window.TutorialSystem.report('loot.dropped', { itemId: (item && item.id) || null });
           } catch (_) { /* never crash gameplay */ }
         }
         return ret;

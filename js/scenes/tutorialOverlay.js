@@ -243,19 +243,30 @@
       if (!s || !s.cameras || !s.cameras.main) return null;
       var cam = s.cameras.main;
       var bgWidth = Math.max(240, Math.floor(cam.width * 0.7));
+      var paddingX = 20;
+      var paddingY = 12;
+      var wrapWidth = Math.max(120, bgWidth - paddingX * 2);
       var x = Math.floor(cam.width / 2);
-      var y = Math.floor(cam.height - BANNER_BOTTOM_OFFSET - BANNER_HEIGHT / 2);
 
-      var bg = s.add.rectangle(x, y, bgWidth, BANNER_HEIGHT, BANNER_BG_COLOR, BANNER_BG_ALPHA)
+      // Build text first with word wrap so its measured height drives the
+      // banner height. Long hint texts ("Ein Item ist gefallen — bewege dich
+      // mit dem Joystick darüber, um es aufzuheben") used to overflow the
+      // fixed-height background; the bg now grows to fit.
+      var txtStyle = {};
+      Object.keys(BANNER_TEXT_STYLE).forEach(function (k) { txtStyle[k] = BANNER_TEXT_STYLE[k]; });
+      txtStyle.wordWrap = { width: wrapWidth, useAdvancedWrap: true };
+      var txt = s.add.text(x, 0, text, txtStyle).setOrigin(0.5).setScrollFactor(0).setDepth(BANNER_TEXT_DEPTH);
+
+      var bgHeight = Math.max(BANNER_HEIGHT, Math.ceil(txt.height + paddingY * 2));
+      var y = Math.floor(cam.height - BANNER_BOTTOM_OFFSET - bgHeight / 2);
+      txt.setY(y);
+
+      var bg = s.add.rectangle(x, y, bgWidth, bgHeight, BANNER_BG_COLOR, BANNER_BG_ALPHA)
         .setStrokeStyle(2, 0xd4a543, 0.9)
         .setScrollFactor(0)
         .setDepth(BANNER_DEPTH);
-      var txt = s.add.text(x, y, text, BANNER_TEXT_STYLE)
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(BANNER_TEXT_DEPTH);
 
-      return { bg: bg, text: txt, width: bgWidth };
+      return { bg: bg, text: txt, width: bgWidth, height: bgHeight, paddingY: paddingY };
     };
 
     overlay._destroyBanner = function () {
@@ -306,6 +317,22 @@
       if (this.banner && this.banner.text) {
         try {
           this.banner.text.setText(label);
+          // Word wrap means a longer/shorter string can change the text
+          // height. Re-fit the bg around the new text so the rectangle
+          // never clips long German hints or leaves a giant gap for short
+          // ones. Width is fixed (camera-relative) so wrap stays stable.
+          var s = this.scene;
+          if (s && s.cameras && s.cameras.main && this.banner.bg) {
+            var cam = s.cameras.main;
+            var newHeight = Math.max(BANNER_HEIGHT, Math.ceil(this.banner.text.height + (this.banner.paddingY || 12) * 2));
+            var newY = Math.floor(cam.height - BANNER_BOTTOM_OFFSET - newHeight / 2);
+            if (newHeight !== this.banner.height) {
+              this.banner.bg.setSize(this.banner.width, newHeight);
+              this.banner.height = newHeight;
+            }
+            this.banner.bg.setPosition(this.banner.bg.x, newY);
+            this.banner.text.setPosition(this.banner.text.x, newY);
+          }
           return;
         } catch (_) {
           // Phaser object torn down behind our back — fall through to rebuild.
