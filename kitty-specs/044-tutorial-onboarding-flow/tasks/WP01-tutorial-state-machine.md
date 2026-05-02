@@ -20,7 +20,8 @@ base_branch: main
 base_commit: 5931da1dee9f15810212e1eba4bdcf506f9fff15
 created_at: '2026-05-02T11:50:46.209891+00:00'
 subtasks: [T001, T002, T003]
-shell_pid: "27776"
+shell_pid: "13352"
+agent: "claude"
 history:
 - timestamp: '2026-05-02T11:30:00Z'
   actor: tasks-command
@@ -374,3 +375,7 @@ Do **not** sketch an implementation alongside the tests. Write tests against the
 ```bash
 spec-kitty implement WP01 --feature 044-tutorial-onboarding-flow
 ```
+
+## Activity Log
+
+- 2026-05-02T11:50:51Z – claude – shell_pid=13352 – lane=doing – Started implementation via workflow command
