@@ -229,3 +229,4 @@ spec-kitty implement WP06 --feature 044-tutorial-onboarding-flow --base WP05
 - 2026-05-02T14:11:04Z – claude – shell_pid=20824 – lane=doing – Started implementation via workflow command
 - 2026-05-02T14:12:55Z – claude – shell_pid=20824 – lane=in_progress – T020 and T021 require manual human run-through; validation log form left in quickstart.md for operator to fill before merge.
 - 2026-05-02T14:12:56Z – claude – shell_pid=20824 – lane=for_review – T019 smoke extension done; T020/T021 left as TBD checklist for human pass.
+- 2026-05-02T14:12:57Z – claude – shell_pid=20824 – lane=approved – Merged
