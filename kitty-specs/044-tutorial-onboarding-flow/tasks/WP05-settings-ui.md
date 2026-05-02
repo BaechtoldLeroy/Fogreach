@@ -15,6 +15,7 @@ base_commit: eb5a8abe29a7bdc869b69afa833e5cceae926715
 created_at: '2026-05-02T12:27:58.243659+00:00'
 subtasks: [T016, T017, T018]
 shell_pid: "2072"
+agent: "claude"
 history:
 - timestamp: '2026-05-02T11:30:00Z'
   actor: tasks-command
@@ -206,3 +207,7 @@ If there are no sections, append the two controls at the bottom with a label/sep
 ```bash
 spec-kitty implement WP05 --feature 044-tutorial-onboarding-flow --base WP01
 ```
+
+## Activity Log
+
+- 2026-05-02T12:27:58Z – claude – shell_pid=2072 – lane=doing – Started implementation via workflow command
