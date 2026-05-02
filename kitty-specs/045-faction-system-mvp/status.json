@@ -1,0 +1,25 @@
+{
+  "event_count": 3,
+  "feature_slug": "045-faction-system-mvp",
+  "last_event_id": "01KQMJTCGXR4RD8BR7EPYPN06V",
+  "materialized_at": "2026-05-02T14:52:26.539987+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 1,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "user",
+      "force_count": 1,
+      "lane": "for_review",
+      "last_event_id": "01KQMJTCGXR4RD8BR7EPYPN06V",
+      "last_transition_at": "2026-05-02T14:52:26.525697+00:00"
+    }
+  }
+}
