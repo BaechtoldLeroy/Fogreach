@@ -79,3 +79,36 @@ Open the printed URL (typically `http://localhost:3000`).
 - `TutorialSystem.replay()` to restart from the first visible step.
 - `TutorialSystem.skip(true)` to dismiss immediately.
 - `localStorage.removeItem('demonfall_tutorial_v1')` to wipe persisted state.
+
+---
+
+## Validation log
+
+**Smoke verification** (automated via Playwright headless Chromium):
+
+- `npm run test:smoke:tutorial` exercises the hub portion of the tutorial:
+  - Resets `demonfall_tutorial_v1` + `demonfall_save_v1` and force-replays via `TutorialSystem.replay()`.
+  - Asserts the state machine is active at step `movement`.
+  - Synthesizes WASD/Arrow movement; asserts advance to `forge.approach`.
+  - Asserts `TutorialOverlay` is mounted on `HubSceneV2`.
+  - Captures screenshot `10-tutorial-active.png`.
+  - Surfaces any console error in the final report.
+
+The combat/loot portion (steps 7-10) and edge cases (auto-skip, replay, mid-tutorial skip, language switch) are **not** covered by the smoke and require manual run-through. Use the form below to record a manual validation pass before merging the feature.
+
+**Manual validation pass**
+
+| Run date | Operator | Browser |
+|----------|----------|---------|
+| _TBD_    | _TBD_    | _TBD_   |
+
+| Scenario | Result | Notes |
+|----------|--------|-------|
+| SC-01 — Happy path 12 steps in 10-15 min | _TBD_ | _Total elapsed: ; console errors: ; visual issues:_ |
+| SC-02 — Auto-skip with existing save | _TBD_ | _Zero overlay frames observed?_ |
+| SC-03 — Mid-tutorial skip toggle deactivates within 1 frame | _TBD_ | _Cancel-on-confirm leaves tutorial active?_ |
+| SC-04 — Replay from Settings restores step 2; save intact | _TBD_ | _localStorage demonfall_save_v1 unchanged?_ |
+| SC-05 — Zero console errors during full run | _TBD_ | _DevTools console clear?_ |
+| SC-06 — All 12 steps render correct DE + EN strings | _TBD_ | _Switch language mid-run; banner re-renders within 1 frame?_ |
+
+Replace _TBD_ values after a manual pass.
