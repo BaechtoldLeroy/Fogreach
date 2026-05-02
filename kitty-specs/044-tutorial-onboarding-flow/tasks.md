@@ -63,9 +63,9 @@ File ownership is non-overlapping across all WPs. The state machine (WP01) is th
 **Independent test**: `npm test` runs all `tests/*.test.js` including the new `tutorialSystem.test.js`. All 15 tutorial tests pass; no regressions in pre-existing tests.
 
 **Subtasks**:
-- [ ] T001 — Write `tests/tutorialSystem.test.js` (RED).
-- [ ] T002 — Implement `js/tutorialSystem.js`.
-- [ ] T003 — Verify GREEN + no regressions.
+- [x] T001 — Write `tests/tutorialSystem.test.js` (RED).
+- [x] T002 — Implement `js/tutorialSystem.js`.
+- [x] T003 — Verify GREEN + no regressions.
 
 **Dependencies**: none.
 
