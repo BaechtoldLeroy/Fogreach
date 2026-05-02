@@ -181,7 +181,7 @@ File ownership is non-overlapping across all WPs. The state machine (WP01) is th
 **Independent test**: `npm run test:smoke` exits 0 with the new tutorial assertions in place. Manual checklist (auto-skip, full happy path, replay, mid-tutorial skip, language switch) all pass.
 
 **Subtasks**:
-- [ ] T019 — Smoke-test extension.
+- [x] T019 — Smoke-test extension.
 - [ ] T020 — Manual happy-path run-through + record.
 - [ ] T021 — Edge-case manual verification (auto-skip, replay, skip-toggle, language switch).
 
