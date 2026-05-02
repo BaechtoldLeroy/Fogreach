@@ -1,15 +1,15 @@
 {
-  "event_count": 3,
+  "event_count": 4,
   "feature_slug": "044-tutorial-onboarding-flow",
-  "last_event_id": "01KQM9MNX60C4370H3D81ZSNNX",
-  "materialized_at": "2026-05-02T12:12:02.358009+00:00",
+  "last_event_id": "01KQMA1Y6AJFWGF8E78QCTWVR2",
+  "materialized_at": "2026-05-02T12:19:16.826095+00:00",
   "summary": {
-    "approved": 0,
+    "approved": 1,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
     "planned": 0
   },
@@ -17,9 +17,9 @@
     "WP01": {
       "actor": "user",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01KQM9MNX60C4370H3D81ZSNNX",
-      "last_transition_at": "2026-05-02T12:12:02.342367+00:00"
+      "lane": "approved",
+      "last_event_id": "01KQMA1Y6AJFWGF8E78QCTWVR2",
+      "last_transition_at": "2026-05-02T12:19:16.810235+00:00"
     }
   }
 }
