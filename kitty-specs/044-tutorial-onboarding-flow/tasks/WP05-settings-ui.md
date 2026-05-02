@@ -213,3 +213,4 @@ spec-kitty implement WP05 --feature 044-tutorial-onboarding-flow --base WP01
 - 2026-05-02T12:27:58Z – claude – shell_pid=2072 – lane=doing – Started implementation via workflow command
 - 2026-05-02T12:44:53Z – claude – shell_pid=2072 – lane=for_review – Tutorial section in Settings; resumed after agent stall.
 - 2026-05-02T14:10:15Z – claude – shell_pid=2072 – lane=approved – Self-review approved
+- 2026-05-02T14:10:43Z – claude – shell_pid=2072 – lane=done – Merged
