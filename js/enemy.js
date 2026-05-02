@@ -2453,3 +2453,36 @@ const BOSS_ATTACK_MAP = {
   darknessWave: bossDarknessWave,
   shadowClones: bossShadowClones,
 };
+
+// ---------------------------------------------------------------------------
+// Tutorial event wrappers (feature 044).
+//
+// The damage funnel `handleEnemyHit(scene, enemy, options)` lives in
+// player.js (not owned by WP04). enemy.js loads after player.js per
+// index.html script order, so we can safely wrap the global from here
+// without touching player.js. One emission per damage application:
+// - combat.hit always (advances tutorial step 7)
+// - combat.kill when the application brought hp to 0 (informational; not
+//   wired to a tutorial step but emitted per the data-model vocabulary).
+// ---------------------------------------------------------------------------
+(function () {
+  if (typeof window === 'undefined') return;
+  if (typeof window.handleEnemyHit !== 'function') return;
+  if (window.handleEnemyHit._tutorialWrapped) return;
+  var orig = window.handleEnemyHit;
+  window.handleEnemyHit = function (scene, enemy, options) {
+    var hpBefore = (enemy && typeof enemy.hp === 'number') ? enemy.hp : null;
+    var ret = orig.apply(this, arguments);
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      try {
+        window.TutorialSystem.report('combat.hit', { byPlayer: true, enemyId: enemy && enemy.id });
+        var hpAfter = (enemy && typeof enemy.hp === 'number') ? enemy.hp : null;
+        if (hpBefore !== null && hpAfter !== null && hpBefore > 0 && hpAfter <= 0) {
+          window.TutorialSystem.report('combat.kill', { enemyType: enemy && enemy.type });
+        }
+      } catch (_) { /* never crash gameplay */ }
+    }
+    return ret;
+  };
+  window.handleEnemyHit._tutorialWrapped = true;
+})();

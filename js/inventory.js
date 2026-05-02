@@ -986,6 +986,10 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
 
 function openInventory() {
   invOpen = true;
+  // Tutorial step trigger (feature 044). Single emission per open.
+  if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+    window.TutorialSystem.report('inventory.opened', {});
+  }
   if (typeof player !== 'undefined' && player && player.body && player.setVelocity) {
     player.setVelocity(0, 0);
   }
@@ -1127,6 +1131,10 @@ function equipSelectedItem() {
     equipment[slotKey] = it;
     inventory[invSelected] = oldItem || null;
     invSelected = -1;
+    // Tutorial step 10 trigger (feature 044). One emission per equip.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('inventory.equipped', { slot: slotKey });
+    }
 
     // recalc: altes HP rausrechnen, neues rein (nur Delta!)
     const newItemHp = it.hp || 0;

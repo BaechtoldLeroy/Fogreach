@@ -624,6 +624,13 @@
       state.cooldowns[abilityId] = now + def.cooldownMs;
     }
 
+    // Tutorial step 8 trigger (feature 044). One emission per successful
+    // activation — placed AFTER cooldown checks so a no-op press doesn't
+    // count.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('combat.ability.used', { slot: slot });
+    }
+
     if (def.type === 'charge' && typeof def.onPress === 'function') {
       def.onPress(scene);
       return true;
