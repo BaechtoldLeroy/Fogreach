@@ -52,6 +52,65 @@
   var HIGHLIGHT_STROKE_W = 3;
   var HIGHLIGHT_PULSE_DURATION_MS = 500; // 1 Hz cycle (yoyo: 500ms each way)
 
+  // ---------- hint key resolution (input-scheme + mobile aware) ----------
+  //
+  // Some hints reference specific bindings that differ by control scheme
+  // (classic = arrows + Space + QWER vs arpg = WASD + LMB + 1234) and by
+  // platform (mobile uses joystick + on-screen buttons). The state machine
+  // owns one base i18n key per step; the overlay tries the most specific
+  // suffixed variant first and falls back to the base when missing.
+  //
+  // Priority: <key>.mobile  (when window.isMobile is truthy)
+  //         > <key>.<scheme> (when InputScheme reports classic/arpg)
+  //         > <key>          (always present)
+
+  function _isMobile() {
+    try {
+      if (typeof window.isMobile === 'boolean') return window.isMobile;
+    } catch (_) {}
+    return false;
+  }
+
+  function _activeScheme() {
+    try {
+      if (window.InputScheme && typeof window.InputScheme.getScheme === 'function') {
+        var s = window.InputScheme.getScheme();
+        if (s === 'classic' || s === 'arpg') return s;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function _i18nLookup(key) {
+    if (!window.i18n || typeof window.i18n.t !== 'function') return null;
+    var v;
+    try { v = window.i18n.t(key); } catch (_) { return null; }
+    if (typeof v !== 'string') return null;
+    // i18n.t returns "[MISSING:<key>]" on miss. Treat that as "not present".
+    if (v.indexOf('[MISSING:') === 0) return null;
+    return v;
+  }
+
+  function resolveHintText(baseKey) {
+    if (!baseKey) return '';
+    // 1) mobile takes precedence over scheme — touch input doesn't have
+    //    a "classic vs arpg" distinction.
+    if (_isMobile()) {
+      var m = _i18nLookup(baseKey + '.mobile');
+      if (m) return m;
+    } else {
+      var scheme = _activeScheme();
+      if (scheme) {
+        var s = _i18nLookup(baseKey + '.' + scheme);
+        if (s) return s;
+      }
+    }
+    // 2) Fall back to the base key. If even that is missing, return the raw
+    //    key so the banner stays visible (better than empty).
+    var base = _i18nLookup(baseKey);
+    return base !== null ? base : baseKey;
+  }
+
   // ---------- target ref resolution ----------
 
   function _matchesName(candidate, refName) {
@@ -137,6 +196,7 @@
       currentTargetRef: null,  // last resolved {type,name} key (string)
       _stepUnsub: null,
       _i18nUnsub: null,
+      _schemeUnsub: null,      // InputScheme.onChange unsubscribe (input-aware hints)
       _shutdownHandler: null,
       _lastStep: null
     };
@@ -197,18 +257,12 @@
         this._destroyBanner();
         return;
       }
-      var raw = step.hintKey;
-      var label = raw;
-      try {
-        if (window.i18n && typeof window.i18n.t === 'function') {
-          var translated = window.i18n.t(raw);
-          // i18n.t returns "[MISSING:key]" on miss; in that case prefer the key
-          // itself over the noisy placeholder.
-          if (typeof translated === 'string' && translated.indexOf('[MISSING:') !== 0) {
-            label = translated;
-          }
-        }
-      } catch (_) { /* swallow — i18n must never break overlay */ }
+      // resolveHintText handles input-scheme + mobile variants and falls
+      // back to the base key when no variant is registered. It also
+      // suppresses the i18n "[MISSING:...]" placeholder.
+      var label;
+      try { label = resolveHintText(step.hintKey); }
+      catch (_) { label = step.hintKey; }
 
       // Update existing banner in place if camera/layout hasn't changed; this
       // avoids a destroy/recreate flicker on language change.
@@ -339,6 +393,29 @@
         try { console.warn('[TutorialOverlay] failed to subscribe to i18n', err); } catch (_) {}
       }
 
+      // Subscribe to control-scheme changes — re-render the banner when the
+      // player flips classic <-> arpg via Settings, so binding-specific
+      // hints stay correct mid-tutorial without a scene reload.
+      try {
+        if (window.InputScheme && typeof window.InputScheme.onChange === 'function') {
+          this._schemeUnsub = window.InputScheme.onChange(function () {
+            var step = null;
+            try {
+              if (window.TutorialSystem && typeof window.TutorialSystem.getCurrentStep === 'function') {
+                step = window.TutorialSystem.getCurrentStep();
+              }
+            } catch (_) {}
+            if (!step) step = self._lastStep;
+            try { self._renderBanner(step); }
+            catch (err) {
+              try { console.error('[TutorialOverlay] scheme re-render failed', err); } catch (_) {}
+            }
+          });
+        }
+      } catch (err) {
+        try { console.warn('[TutorialOverlay] failed to subscribe to InputScheme', err); } catch (_) {}
+      }
+
       // Auto-cleanup on scene shutdown so callers don't have to remember.
       // (WP03/WP04 will also call unmount() explicitly from scene shutdown.)
       try {
@@ -360,8 +437,9 @@
     };
 
     overlay.unmount = function () {
-      if (this._stepUnsub) { try { this._stepUnsub(); } catch (_) {} this._stepUnsub = null; }
-      if (this._i18nUnsub) { try { this._i18nUnsub(); } catch (_) {} this._i18nUnsub = null; }
+      if (this._stepUnsub)   { try { this._stepUnsub(); }   catch (_) {} this._stepUnsub = null; }
+      if (this._i18nUnsub)   { try { this._i18nUnsub(); }   catch (_) {} this._i18nUnsub = null; }
+      if (this._schemeUnsub) { try { this._schemeUnsub(); } catch (_) {} this._schemeUnsub = null; }
       this._shutdownHandler = null;
       this._destroyVisuals();
       this._lastStep = null;
