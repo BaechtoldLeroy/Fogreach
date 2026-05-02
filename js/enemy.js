@@ -775,6 +775,14 @@ function handleEnemies(time, delta = 16) {
       drawMiniBossBar(enemy);
     }
 
+    // Draw the regular enemy hp bar (created lazily on first hit by
+    // handleEnemyHit). Only present after the enemy has taken damage; the
+    // bar tracks the enemy's position so it stays above the head as they
+    // move.
+    if (enemy.hpBar && !enemy.isMiniBoss && !enemy.isBoss) {
+      drawEnemyHpBar(enemy);
+    }
+
     // Mini-boss ground slam AoE
     if (enemy.isMiniBoss && !enemy.isRanged) {
       if (!enemy.lastSlamTime || time - enemy.lastSlamTime > 4000) {
@@ -1469,6 +1477,34 @@ function drawMiniBossBar(enemy) {
 
   const pct = Phaser.Math.Clamp(enemy.hp / enemy.maxHp, 0, 1);
   g.fillStyle(0xff6600, 1);
+  g.fillRect(x, y, barW * pct, barH);
+}
+
+// Generic enemy health bar — created lazily by handleEnemyHit on the first
+// hit and redrawn every frame from the enemy update loop. Smaller than the
+// mini-boss bar (38x3 px) so a roomful of them doesn't clutter the screen.
+function drawEnemyHpBar(enemy) {
+  const g = enemy.hpBar;
+  if (!g) return;
+  g.clear();
+  if (!enemy.active) return;
+  const maxHp = enemy.maxHp || enemy.maxHealth || enemy.hp || 1;
+  const pct = Phaser.Math.Clamp(enemy.hp / maxHp, 0, 1);
+  // No bar once the enemy is dead — the destroy hook removes the graphics
+  // anyway, but skip the draw in case we get one extra update frame first.
+  if (pct <= 0) return;
+  const barW = 38;
+  const barH = 3;
+  const x = enemy.x - barW / 2;
+  const y = enemy.y - (enemy.displayHeight || 24) / 2 - 8;
+  g.fillStyle(0x000000, 0.6);
+  g.fillRect(x - 1, y - 1, barW + 2, barH + 2);
+  // Color shifts red->yellow->green as HP rises (more readable than a single
+  // colour for skimming a roomful of enemies).
+  let color = 0xe53935; // red
+  if (pct > 0.66) color = 0x66bb6a;       // green
+  else if (pct > 0.33) color = 0xfdd835;  // yellow
+  g.fillStyle(color, 1);
   g.fillRect(x, y, barW * pct, barH);
 }
 

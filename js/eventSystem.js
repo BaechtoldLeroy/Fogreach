@@ -779,19 +779,38 @@
   // --- Treasure & Trapped Chests ---
   function spawnEventChest(scene, chestType, isTrapped) {
     if (!scene || !scene.spawnObstacle) return;
-    // Spawn chest near player (offset 120-200px in random direction)
+    // Spawn chest near player. Try up to 16 random offsets (60-220 px) and
+    // pick the first one that isn't blocked by a wall / obstacle. The
+    // previous code used a single fixed-distance angle which would happily
+    // place the chest inside a wall — visible but unreachable. Mirrors
+    // the lore-scroll wall-spawn fix from earlier.
     var px = 400, py = 250;
     if (typeof player !== 'undefined' && player && player.active) {
-      var angle = Math.random() * Math.PI * 2;
-      var dist = 120 + Math.random() * 80;
-      px = player.x + Math.cos(angle) * dist;
-      py = player.y + Math.sin(angle) * dist;
-      // Clamp to world bounds
       var bounds = scene.physics.world && scene.physics.world.bounds;
-      if (bounds) {
-        px = Math.max(bounds.x + 40, Math.min(bounds.x + bounds.width - 40, px));
-        py = Math.max(bounds.y + 40, Math.min(bounds.y + bounds.height - 40, py));
+      var halfSize = 24; // chest sprite half-width-ish
+      var placed = false;
+      for (var attempt = 0; attempt < 16 && !placed; attempt++) {
+        var angle = Math.random() * Math.PI * 2;
+        var dist = 60 + Math.random() * 160;
+        var tx = player.x + Math.cos(angle) * dist;
+        var ty = player.y + Math.sin(angle) * dist;
+        if (bounds) {
+          var margin = halfSize + 16;
+          if (tx < bounds.x + margin || tx > bounds.x + bounds.width - margin) continue;
+          if (ty < bounds.y + margin || ty > bounds.y + bounds.height - margin) continue;
+        }
+        var blocked = false;
+        if (typeof window !== 'undefined' && typeof window.isSpawnPositionBlocked === 'function') {
+          try { blocked = !!window.isSpawnPositionBlocked(tx, ty, halfSize); } catch (_) { blocked = false; }
+        }
+        if (!blocked) {
+          px = tx; py = ty;
+          placed = true;
+        }
       }
+      // Fallback: drop the chest right next to the player (their tile is
+      // guaranteed walkable since they are standing on it).
+      if (!placed) { px = player.x; py = player.y; }
     }
     var chest = scene.spawnObstacle(px, py, chestType);
     if (chest) {

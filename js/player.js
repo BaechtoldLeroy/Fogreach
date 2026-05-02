@@ -1194,6 +1194,23 @@ function showAttackEffect(scene, options = {}) {
 function handleEnemyHit(scene, enemy, options = {}) {
   if (!scene || !enemy) return;
 
+  // Lazy hp bar — every enemy gets a small healthbar above its head once it
+  // takes its first hit. Bosses + mini-bosses have their own bars (boss UI
+  // / drawMiniBossBar) so we skip them. Newly-spawned enemies that haven't
+  // been hit show no bar so the room doesn't read as cluttered.
+  if (enemy.active && enemy.hp > 0 && !enemy.isMiniBoss && !enemy.isBoss) {
+    if (!enemy.hpBar && scene.add && typeof scene.add.graphics === 'function') {
+      enemy.hpBar = scene.add.graphics().setDepth(1001);
+      if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
+        scene.enemyLayer.add(enemy.hpBar);
+      }
+      enemy.on('destroy', () => {
+        try { if (enemy.hpBar) enemy.hpBar.destroy(); } catch (_) {}
+      });
+    }
+    if (enemy.hpBar) drawEnemyHpBar(enemy);
+  }
+
   if (enemy.hp <= 0) {
     if (window.soundManager) window.soundManager.playSFX('enemy_death');
     // Particle effects: death burst + screen shake
