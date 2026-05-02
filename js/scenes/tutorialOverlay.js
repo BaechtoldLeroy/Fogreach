@@ -90,10 +90,16 @@
 
   function _i18nLookup(key) {
     if (!window.i18n || typeof window.i18n.t !== 'function') return null;
+    // Probe with i18n.has() first when available — it's silent on miss,
+    // unlike i18n.t() which logs a [MISSING:key] warning. Resolver
+    // legitimately misses on every render for steps that don't carry
+    // .classic/.arpg/.mobile variants, so we want zero log spam.
+    if (typeof window.i18n.has === 'function') {
+      try { if (!window.i18n.has(key)) return null; } catch (_) {}
+    }
     var v;
     try { v = window.i18n.t(key); } catch (_) { return null; }
     if (typeof v !== 'string') return null;
-    // i18n.t returns "[MISSING:<key>]" on miss. Treat that as "not present".
     if (v.indexOf('[MISSING:') === 0) return null;
     return v;
   }
