@@ -401,6 +401,7 @@
     };
 
     overlay._render = function (step) {
+      var prevStepId = this._lastStep ? this._lastStep.id : null;
       this._lastStep = step || null;
       if (!step) {
         this._destroyVisuals();
@@ -408,6 +409,43 @@
       }
       this._renderBanner(step);
       this._renderHighlight(step);
+      // Apply step-entry effects (freeze) only on actual step transitions —
+      // re-renders triggered by language / scheme changes must NOT re-freeze
+      // physics. Skip the freeze if we're still on the same step we last
+      // rendered.
+      if (step.id !== prevStepId) {
+        this._applyEntryEffects(step);
+      }
+    };
+
+    overlay._applyEntryEffects = function (step) {
+      if (!step || !step.freezePhysicsMs) return;
+      var s = this.scene;
+      if (!s || !s.physics || !s.physics.world) return;
+      try {
+        s.physics.world.pause();
+      } catch (_) { return; }
+      // Cancel any pending resume from a prior freeze (defensive).
+      if (this._freezeTimer && typeof this._freezeTimer.remove === 'function') {
+        try { this._freezeTimer.remove(false); } catch (_) {}
+      }
+      this._freezeTimer = null;
+      try {
+        if (s.time && typeof s.time.delayedCall === 'function') {
+          this._freezeTimer = s.time.delayedCall(step.freezePhysicsMs, (function (scene) {
+            return function () {
+              try { if (scene.physics && scene.physics.world) scene.physics.world.resume(); } catch (_) {}
+            };
+          })(s));
+        } else {
+          // Fallback when no Phaser time plugin is available (tests / headless).
+          // Resume immediately so we don't leave physics paused indefinitely.
+          s.physics.world.resume();
+        }
+      } catch (_) {
+        // If scheduling failed, resume immediately to keep gameplay alive.
+        try { s.physics.world.resume(); } catch (_) {}
+      }
     };
 
     overlay.mount = function () {
@@ -502,6 +540,18 @@
       if (this._stepUnsub)   { try { this._stepUnsub(); }   catch (_) {} this._stepUnsub = null; }
       if (this._i18nUnsub)   { try { this._i18nUnsub(); }   catch (_) {} this._i18nUnsub = null; }
       if (this._schemeUnsub) { try { this._schemeUnsub(); } catch (_) {} this._schemeUnsub = null; }
+      // Cancel any pending freeze-resume timer and ensure physics is running
+      // again — we never want to leave the player softlocked because the
+      // overlay was torn down mid-freeze.
+      if (this._freezeTimer && typeof this._freezeTimer.remove === 'function') {
+        try { this._freezeTimer.remove(false); } catch (_) {}
+        this._freezeTimer = null;
+      }
+      try {
+        if (this.scene && this.scene.physics && this.scene.physics.world && this.scene.physics.world.isPaused) {
+          this.scene.physics.world.resume();
+        }
+      } catch (_) {}
       this._shutdownHandler = null;
       this._destroyVisuals();
       this._lastStep = null;

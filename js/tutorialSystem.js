@@ -133,6 +133,12 @@
       scene: 'HubSceneV2',
       hintKey: 'tutorial.step.movement',
       targetRef: null,
+      // Force the banner to stay visible for at least 5 s so the player
+      // can read "WASD/Pfeiltasten zum Bewegen" before the first frame
+      // of motion advances past it. Movement events that arrive earlier
+      // are dropped silently and the step advances on the next event
+      // after the minimum time has elapsed.
+      minDisplayMs: 5000,
       completion: { event: 'player.moved' }
     },
     {
@@ -188,6 +194,11 @@
       scene: 'GameScene',
       hintKey: 'tutorial.step.loot_pickup',
       targetRef: null,
+      // Briefly freeze physics when this step becomes active so the player
+      // — who is already moving toward the dropped item — can't walk
+      // straight onto it before reading the banner. The overlay handles
+      // the pause/resume against the active scene.
+      freezePhysicsMs: 1500,
       completion: { event: 'loot.picked' }
     },
     {
@@ -247,7 +258,12 @@
       skipped: false,
       completedSteps: [],
       i18nRegistered: false,
-      pendingTimerId: null
+      pendingTimerId: null,
+      // Timestamp (primitives.now()) when the current step was entered.
+      // Used to enforce step.minDisplayMs — events that arrive before the
+      // minimum has elapsed are dropped so a fast player can't blow past
+      // the first banner without reading it.
+      currentStepShownAt: 0
     };
   }
 
@@ -361,6 +377,7 @@
     }
     var next = STEPS[nextIdx];
     state.currentStepId = next.id;
+    state.currentStepShownAt = primitives.now();
     _persist();
     _notify();
     if (next.autoDismissMs) _scheduleAutoDismiss(next);
@@ -409,6 +426,12 @@
       // If we resumed mid-step-11, re-arm the auto-dismiss timer.
       var cur = getCurrentStep();
       if (cur && cur.autoDismissMs) _scheduleAutoDismiss(cur);
+      // Re-set currentStepShownAt so minDisplayMs applies again on resume.
+      // We don't know how long the banner was shown last session, so the
+      // safest behavior is to show it for the full minimum again.
+      if (state.active && state.currentStepId) {
+        state.currentStepShownAt = primitives.now();
+      }
     }
   }
 
@@ -463,6 +486,13 @@
       _debugLog(eventName, payload, 'dropped: matcher rejected for step ' + step.id);
       return;
     }
+    if (step.minDisplayMs && state.currentStepShownAt > 0) {
+      var elapsed = primitives.now() - state.currentStepShownAt;
+      if (elapsed < step.minDisplayMs) {
+        _debugLog(eventName, payload, 'dropped: minDisplayMs not yet elapsed (' + elapsed + 'ms / ' + step.minDisplayMs + 'ms) for step ' + step.id);
+        return;
+      }
+    }
     _debugLog(eventName, payload, 'advancing from ' + step.id);
     _advance();
   }
@@ -489,7 +519,9 @@
       hintKey: s.hintKey,
       targetRef: s.targetRef ? { type: s.targetRef.type, name: s.targetRef.name } : null,
       completion: s.completion,
-      autoDismissMs: s.autoDismissMs || null
+      autoDismissMs: s.autoDismissMs || null,
+      minDisplayMs: s.minDisplayMs || 0,
+      freezePhysicsMs: s.freezePhysicsMs || 0
     };
   }
 

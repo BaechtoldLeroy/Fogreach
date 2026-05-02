@@ -616,13 +616,17 @@ class HubSceneV2 extends Phaser.Scene {
         velY = (inputY / len) * speed * (inputX || inputY ? 1 : 0);
       }
       p.setVelocity(velX, velY);
-      // Tutorial: emit player.moved exactly once per scene-life on first
-      // non-zero motion. Single emission point at the movement funnel.
-      if (!this._movementReported && (velX !== 0 || velY !== 0)) {
-        this._movementReported = true;
-        if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
-          window.TutorialSystem.report('player.moved', { dx: velX, dy: velY });
-        }
+      // Tutorial: emit player.moved on every frame the player has non-zero
+      // velocity. Cannot gate this to a once-per-scene-life signal because
+      // the tutorial may drop the first emission (e.g. step.minDisplayMs
+      // not yet elapsed); we'd then never re-emit and the tutorial would
+      // softlock on the movement step. TutorialSystem.report() short-
+      // -circuits cheaply when the tutorial is inactive or the current
+      // step doesn't expect player.moved, so per-frame calls are fine.
+      if ((velX !== 0 || velY !== 0)
+          && window.TutorialSystem
+          && typeof window.TutorialSystem.report === 'function') {
+        window.TutorialSystem.report('player.moved', { dx: velX, dy: velY });
       }
       if (typeof updatePlayerSpriteAnimation === 'function') {
         updatePlayerSpriteAnimation(p, velX, velY);
