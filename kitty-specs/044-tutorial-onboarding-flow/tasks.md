@@ -133,11 +133,11 @@ File ownership is non-overlapping across all WPs. The state machine (WP01) is th
 **Independent test**: With WP01+WP02 merged, drop a player into a fresh dungeon run with the tutorial active at step 7; banner advances through hit → ability → loot → equip in any reasonable play order.
 
 **Subtasks**:
-- [ ] T011 — Combat hit + kill events.
-- [ ] T012 — Ability event.
-- [ ] T013 — Loot events.
-- [ ] T014 — Inventory events.
-- [ ] T015 — GameScene overlay mount.
+- [x] T011 — Combat hit + kill events.
+- [x] T012 — Ability event.
+- [x] T013 — Loot events.
+- [x] T014 — Inventory events.
+- [x] T015 — GameScene overlay mount.
 
 **Dependencies**: WP01, WP02.
 
