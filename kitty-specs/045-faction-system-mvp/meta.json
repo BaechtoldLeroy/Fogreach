@@ -2,8 +2,10 @@
   "created_at": "2026-05-02T12:30:03.659295+00:00",
   "feature_number": "045",
   "feature_slug": "045-faction-system-mvp",
-  "friendly_name": "faction system mvp",
+  "friendly_name": "Faction System (MVP)",
   "mission": "software-dev",
   "slug": "045-faction-system-mvp",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "source_description": "Issue #25 — Faction-System (MVP). Phase 1 of Vertical Slice Epic #32. Foundation for #24 Printing House (edicts gated by standing) and future Acts 2-5. MVP: 3 factions (Council, Resistance, Independent), -100..+100 standing per faction in localStorage, public API (getStanding/adjustStanding/setStanding), 1-2 NPC greeting variants, 1 standing-gated mission as showcase. Out of scope: branching logic, faction-locked merchants, UI display, sub-factions."
 }
