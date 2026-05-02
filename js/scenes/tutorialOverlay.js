@@ -33,9 +33,15 @@
 (function () {
   'use strict';
 
-  var BANNER_DEPTH    = 1500;
-  var BANNER_TEXT_DEPTH = 1501;
-  var HIGHLIGHT_DEPTH = 1490;
+  // Depth budget — must stay BELOW 1500 because HubSceneV2._closeDialog
+  // does a defensive sweep that destroys every game object with depth in
+  // [1500, 1700). Banner used to live at 1500/1501 and got nuked on every
+  // dialog close, leaving a blank screen for the next step's hint.
+  // Chevron at 1492 sits just below the banner; dialog modals at 1500+
+  // still cover the banner during dialog while the HUD remains readable.
+  var BANNER_DEPTH      = 1495;
+  var BANNER_TEXT_DEPTH = 1496;
+  var HIGHLIGHT_DEPTH   = 1492;
   var BANNER_HEIGHT   = 64;
   var BANNER_BOTTOM_OFFSET = 32; // distance from bottom edge of camera
   var BANNER_BG_COLOR = 0x000000;
