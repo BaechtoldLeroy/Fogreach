@@ -49,8 +49,15 @@
     align: 'center'
   };
   var HIGHLIGHT_COLOR = 0xffd95a; // warm gold; contrasts hub + dungeon palettes
-  var HIGHLIGHT_STROKE_W = 3;
   var HIGHLIGHT_PULSE_DURATION_MS = 500; // 1 Hz cycle (yoyo: 500ms each way)
+  // Chevron / arrow indicator dimensions. The indicator is a downward-pointing
+  // triangle hovering above the target with a slight bob + alpha pulse so the
+  // player's eye is drawn naturally without a hard rectangle outline.
+  var INDICATOR_WIDTH = 36;
+  var INDICATOR_HEIGHT = 28;
+  var INDICATOR_GAP = 18;       // px above target's top edge
+  var INDICATOR_BOB_PX = 6;     // amplitude of the up/down bob
+  var INDICATOR_BOB_DURATION_MS = 700;
 
   // ---------- hint key resolution (input-scheme + mobile aware) ----------
   //
@@ -203,8 +210,9 @@
     var overlay = {
       scene: scene,
       banner: null,            // { bg, text }
-      highlight: null,         // Phaser.Graphics
-      tween: null,
+      highlight: null,         // Phaser.Container holding the chevron Graphics
+      tween: null,             // alpha pulse tween
+      bobTween: null,          // vertical bob tween
       currentTargetRef: null,  // last resolved {type,name} key (string)
       _stepUnsub: null,
       _i18nUnsub: null,
@@ -251,6 +259,11 @@
         try { this.tween.remove(); } catch (_) {}
         this.tween = null;
       }
+      if (this.bobTween) {
+        try { this.bobTween.stop(); } catch (_) {}
+        try { this.bobTween.remove(); } catch (_) {}
+        this.bobTween = null;
+      }
       if (this.highlight) {
         try { this.highlight.destroy(); } catch (_) {}
         this.highlight = null;
@@ -293,28 +306,53 @@
     overlay._drawOutline = function (target) {
       var s = this.scene;
       if (!s || !s.add) return;
+
+      // Anchor the indicator above the target's top edge. Hub doesn't scroll;
+      // dungeon does. The indicator should follow world coords (it tracks
+      // the hitbox/sprite), so we keep the default scroll factor.
+      var anchorX = target.x;
+      var anchorY = target.y - target.h / 2 - INDICATOR_GAP;
+
+      // Container so we can bob + alpha-pulse the whole indicator as one
+      // group instead of the underlying Graphics primitive.
+      var container = s.add.container(anchorX, anchorY);
+      container.setDepth(HIGHLIGHT_DEPTH);
+
+      // Filled downward-pointing triangle (chevron). Apex at (0, halfH);
+      // base spans (-halfW, -halfH) to (+halfW, -halfH). A subtle dark
+      // outline behind the fill keeps it readable against any background.
+      var halfW = INDICATOR_WIDTH / 2;
+      var halfH = INDICATOR_HEIGHT / 2;
       var g = s.add.graphics();
-      g.setDepth(HIGHLIGHT_DEPTH);
-      // Hub doesn't scroll; dungeon does. Highlight should follow world
-      // coords (sit on the hitbox/sprite), so we keep the default scroll
-      // factor (1.0) — do NOT setScrollFactor(0).
-      g.lineStyle(HIGHLIGHT_STROKE_W, HIGHLIGHT_COLOR, 1.0);
-      if (target.kind === 'entrance') {
-        var rx = target.x - target.w / 2;
-        var ry = target.y - target.h / 2;
-        g.strokeRect(rx, ry, target.w, target.h);
-      } else {
-        var r = Math.max(target.w, target.h) * 0.6;
-        g.strokeCircle(target.x, target.y, r);
-      }
-      this.highlight = g;
+      // Drop shadow (offset down 2px, dark, slightly transparent).
+      g.fillStyle(0x000000, 0.45);
+      g.fillTriangle(0, halfH + 2, -halfW, -halfH + 2, halfW, -halfH + 2);
+      // Main fill.
+      g.fillStyle(HIGHLIGHT_COLOR, 1.0);
+      g.fillTriangle(0, halfH, -halfW, -halfH, halfW, -halfH);
+      // Thin dark stroke for crispness.
+      g.lineStyle(2, 0x3d2d05, 0.9);
+      g.strokeTriangle(0, halfH, -halfW, -halfH, halfW, -halfH);
+
+      container.add(g);
+      this.highlight = container;
 
       if (s.tweens && typeof s.tweens.add === 'function') {
         try {
+          // Alpha pulse — soft "look at me" rhythm without flashing.
           this.tween = s.tweens.add({
-            targets: g,
-            alpha: { from: 0.4, to: 1.0 },
+            targets: container,
+            alpha: { from: 0.55, to: 1.0 },
             duration: HIGHLIGHT_PULSE_DURATION_MS,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+          // Vertical bob — the chevron rises and falls so the eye tracks it.
+          this.bobTween = s.tweens.add({
+            targets: container,
+            y: anchorY - INDICATOR_BOB_PX,
+            duration: INDICATOR_BOB_DURATION_MS,
             yoyo: true,
             repeat: -1,
             ease: 'Sine.easeInOut'
