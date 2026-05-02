@@ -109,10 +109,10 @@ File ownership is non-overlapping across all WPs. The state machine (WP01) is th
 **Independent test**: With WP01+WP02 merged, walk a fresh-save player from spawn through step 6 (entering the dungeon). Banner advances at each milestone; highlight outline retargets correctly.
 
 **Subtasks**:
-- [ ] T007 — StartScene auto-skip wire-up.
-- [ ] T008 — HubSceneV2 event emission (6 event types).
-- [ ] T009 — HubSceneV2 overlay mount.
-- [ ] T010 — Druckerei stub dialog (Setzer Thom).
+- [x] T007 — StartScene auto-skip wire-up.
+- [x] T008 — HubSceneV2 event emission (6 event types).
+- [x] T009 — HubSceneV2 overlay mount.
+- [x] T010 — Druckerei stub dialog (Setzer Thom).
 
 **Dependencies**: WP01, WP02.
 
