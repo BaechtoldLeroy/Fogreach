@@ -6,6 +6,7 @@
     "test": "node tools/runTests.js",
     "test:unit": "node tools/runTests.js",
     "test:smoke": "node tools/testGame.js --loadout",
+    "test:smoke:tutorial": "node tools/testGame.js --tutorial",
     "test:all": "node tools/runTests.js && node tools/testGame.js --loadout"
   },
   "keywords": [],

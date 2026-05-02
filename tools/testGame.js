@@ -627,6 +627,82 @@ const mode = args[0] || '--smoke';
     console.log('Screenshot saved: 03-after-interact.png');
   }
 
+  // ---------------------------------------------------------------------------
+  // --tutorial mode (feature 044): walks the hub portion of the tutorial and
+  // verifies the state machine advances through movement -> forge.approach.
+  // Combat steps are not exercised here (steps 7-10 require an active dungeon
+  // run, which is out of scope for a smoke). Manual T020/T021 covers the
+  // full happy path.
+  // ---------------------------------------------------------------------------
+  if (mode === '--tutorial') {
+    console.log('\n=== TUTORIAL SMOKE ===');
+
+    // Reset persisted tutorial + save state via DevTools so the smoke is
+    // deterministic regardless of localStorage contents from prior runs.
+    await page.evaluate(() => {
+      try {
+        localStorage.removeItem('demonfall_tutorial_v1');
+        localStorage.removeItem('demonfall_save_v1');
+      } catch (_) {}
+      // Force-reset the state machine and seed at first visible step.
+      if (window.TutorialSystem && typeof window.TutorialSystem.replay === 'function') {
+        window.TutorialSystem.replay();
+      }
+    });
+    await page.waitForTimeout(500);
+
+    // Assert: tutorial active at step `movement`.
+    const step1 = await page.evaluate(() => {
+      if (!window.TutorialSystem) return { error: 'TutorialSystem missing' };
+      const s = window.TutorialSystem.getCurrentStep();
+      return { active: window.TutorialSystem.isActive(), id: s ? s.id : null };
+    });
+    console.log('After reset:', JSON.stringify(step1));
+    if (!step1.active || step1.id !== 'movement') {
+      console.log('  ✗ Expected tutorial active at step `movement`, got', JSON.stringify(step1));
+    } else {
+      console.log('  ✓ Tutorial active at `movement`');
+    }
+
+    // Move the player one tile to satisfy step `movement`.
+    await page.keyboard.down('ArrowRight');
+    await page.waitForTimeout(300);
+    await page.keyboard.up('ArrowRight');
+    await page.waitForTimeout(300);
+
+    const step2 = await page.evaluate(() => {
+      const s = window.TutorialSystem.getCurrentStep();
+      return s ? s.id : null;
+    });
+    console.log('After movement:', step2);
+    if (step2 !== 'forge.approach') {
+      console.log('  ✗ Expected `forge.approach`, got', step2);
+    } else {
+      console.log('  ✓ Advanced to `forge.approach`');
+    }
+
+    // Verify TutorialOverlay is mounted (banner Phaser GameObject reachable).
+    const overlayInfo = await page.evaluate(() => {
+      const sc = window.game.scene.getScene('HubSceneV2');
+      return {
+        hasOverlay: !!(sc && sc._tutorialOverlay),
+        overlayActive: !!(sc && sc._tutorialOverlay && sc._tutorialOverlay._unsub)
+      };
+    });
+    console.log('Overlay state:', JSON.stringify(overlayInfo));
+    if (!overlayInfo.hasOverlay) {
+      console.log('  ✗ TutorialOverlay not mounted on HubSceneV2');
+    } else {
+      console.log('  ✓ TutorialOverlay mounted');
+    }
+
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '10-tutorial-active.png') });
+    console.log('Screenshot saved: 10-tutorial-active.png');
+
+    // Final assertion: no console errors during this run (already covered by
+    // the global errors[] capture, surfaced in the test report below).
+  }
+
   // Final report
   console.log('\n=== TEST REPORT ===');
   console.log('Active scenes:', sceneInfo.activeScenes);
