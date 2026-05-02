@@ -381,3 +381,4 @@ spec-kitty implement WP01 --feature 044-tutorial-onboarding-flow
 - 2026-05-02T11:50:51Z – claude – shell_pid=13352 – lane=doing – Started implementation via workflow command
 - 2026-05-02T12:12:02Z – claude – shell_pid=13352 – lane=for_review – TEST_FIRST: 15 unit tests written first (RED), then implementation; all 15 GREEN, no regressions in pre-existing tests. lootSystem failure is pre-existing on main, unrelated to this WP.
 - 2026-05-02T12:19:16Z – claude – shell_pid=13352 – lane=approved – Self-review: tests cover full contract (15/15 cases), implementation mirrors inputScheme.js pattern, no regressions. Ready for merge.
+- 2026-05-02T12:20:32Z – claude – shell_pid=13352 – lane=done – Merged into main.
