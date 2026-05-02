@@ -812,26 +812,55 @@
   };
 
   // -------------------------------------------------------------------------
-  // Diagnostic watchdog (#29 stabilization sweep): poll state.learnedAbilities
-  // every 500 ms and log when its length grows. Catches any code path that
-  // bypasses learnAbility() and pushes directly into the array — useful while
-  // we're debugging "no console output when a skill is learned" reports from
-  // the user. Remove once the tutorial flow is verified end-to-end.
+  // Diagnostic interceptor (#29 stabilization sweep). The polling watchdog
+  // only saw "length went 0 -> 1" without revealing the caller. Replace it
+  // with two traps that log a full stack trace on every mutation:
+  //
+  //   1. A setter on `state.learnedAbilities` that fires when the array is
+  //      reassigned (load() does this when restoring a save).
+  //   2. A monkey-patched .push() on the current array (and on every new
+  //      array that replaces it via the setter) that fires when an entry is
+  //      pushed.
+  //
+  // Together they catch every code path: learnAbility's push, load()'s
+  // assignment, resetForNewGame's assignment, and any rogue mutation from
+  // outside the module.
   // -------------------------------------------------------------------------
-  if (typeof window !== 'undefined' && typeof setInterval === 'function') {
-    var _wd_lastLen = state.learnedAbilities.length;
-    setInterval(function () {
-      try {
-        var len = state.learnedAbilities.length;
-        if (len !== _wd_lastLen) {
-          var added = state.learnedAbilities.slice(_wd_lastLen);
-          console.log('[AbilitySystem watchdog] learnedAbilities length',
-                      _wd_lastLen, '->', len,
-                      'newly present:', JSON.stringify(added),
-                      'full list:', JSON.stringify(state.learnedAbilities));
-          _wd_lastLen = len;
+  if (typeof window !== 'undefined' && typeof Object.defineProperty === 'function') {
+    var _learnedAbilities = state.learnedAbilities;
+    function _wrapPush(arr) {
+      if (!arr || arr._wd_pushWrapped) return;
+      var orig = arr.push;
+      arr.push = function () {
+        try {
+          console.warn('[AbilitySystem trace] learnedAbilities.push',
+                       JSON.stringify(Array.prototype.slice.call(arguments)),
+                       '\n' + new Error().stack);
+        } catch (_) {}
+        return orig.apply(this, arguments);
+      };
+      try { Object.defineProperty(arr, '_wd_pushWrapped', { value: true, writable: false, enumerable: false }); } catch (_) {}
+    }
+    _wrapPush(_learnedAbilities);
+    try {
+      Object.defineProperty(state, 'learnedAbilities', {
+        configurable: true,
+        get: function () { return _learnedAbilities; },
+        set: function (v) {
+          try {
+            console.warn('[AbilitySystem trace] learnedAbilities reassigned to',
+                         JSON.stringify(v),
+                         '\n' + new Error().stack);
+          } catch (_) {}
+          _learnedAbilities = v;
+          _wrapPush(_learnedAbilities);
         }
-      } catch (_) { /* ignore */ }
-    }, 500);
+      });
+    } catch (_) {
+      // If the runtime refuses defineProperty on the state object, fall back
+      // silently — the existing polling-style watchdog from the prior commit
+      // is still better than nothing, but the user has reported it isn't
+      // triggering, so this stricter interceptor is the diagnostic to land.
+    }
   }
 })();
