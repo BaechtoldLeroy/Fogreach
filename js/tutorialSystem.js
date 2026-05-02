@@ -248,6 +248,40 @@
       completion: { event: 'journal.opened' }
     },
     {
+      // Skill mini-tutorial — silent wait until the player has learned an
+      // ability. Auto-unlocks fire on kill / wave / quest milestones,
+      // typically while the player is still in the dungeon, so this slot
+      // is positioned BEFORE hub.return.wait. If ability.learned fires
+      // earlier in the flow (e.g. during combat.basics) the event is
+      // buffered and replayed when this step is entered (see report()).
+      id: 'skill.wait',
+      scene: null,
+      hintKey: null,
+      targetRef: null,
+      completion: { event: 'ability.learned' }
+    },
+    {
+      // Loadout binding hint. K is bound to openLoadoutUI in both Hub
+      // (HubSceneV2._handleLoadout) and GameScene (main.js); the
+      // tutorial accepts a loadout-open from either.
+      id: 'skill.loadout',
+      scene: null,
+      hintKey: 'tutorial.step.skill_loadout',
+      targetRef: null,
+      completion: { event: 'loadout.opened' }
+    },
+    {
+      // Skill use binding hint. The .classic/.arpg/.mobile i18n variants
+      // render the correct keys for the active scheme. Advances on
+      // combat.ability.used. No softlock if the player never uses an
+      // ability — the tutorial just parks here.
+      id: 'skill.use',
+      scene: null,
+      hintKey: 'tutorial.step.skill_use',
+      targetRef: null,
+      completion: { event: 'combat.ability.used' }
+    },
+    {
       // Silent gate — the next visible step (save.notice) only fires once
       // the player has returned to the hub. Without this gate the save
       // notice could appear inside the dungeon, which makes no sense.
@@ -266,45 +300,14 @@
       autoDismissMs: 5000
     },
     {
+      // Final step — Druckerei is always last in the flow so it is never
+      // skipped, regardless of how the player progresses through the
+      // skill mini-tutorial.
       id: 'druckerei.visit',
       scene: 'HubSceneV2',
       hintKey: 'tutorial.step.druckerei_visit',
       targetRef: { type: 'entrance', name: 'Druckerei' },
       completion: { event: 'dialog.closed', matcher: function (p) { return _nameMatches(p && p.npc, 'Setzer Thom'); } }
-    },
-    {
-      // Skill mini-tutorial — fires only after the player has actually
-      // learned an ability. The wait step has no banner, so the player
-      // sees no UI between druckerei.visit and the first ability learn.
-      // If they never learn an ability, the tutorial silently parks here
-      // forever (no softlock, just no further hints).
-      id: 'skill.wait',
-      scene: null,
-      hintKey: null,
-      targetRef: null,
-      completion: { event: 'ability.learned' }
-    },
-    {
-      // Loadout binding hint. K is bound to openLoadoutUI in both Hub
-      // (HubSceneV2._handleLoadout) and GameScene (main.js); the
-      // tutorial accepts a loadout-open from either.
-      id: 'skill.loadout',
-      scene: null,
-      hintKey: 'tutorial.step.skill_loadout',
-      targetRef: null,
-      completion: { event: 'loadout.opened' }
-    },
-    {
-      // Final step — skill use binding hint. The .classic/.arpg/.mobile
-      // i18n variants render the correct keys for the active scheme.
-      // Advances on combat.ability.used (already emitted from
-      // abilitySystem.tryActivate). No softlock if the player never uses
-      // an ability — the tutorial just parks here.
-      id: 'skill.use',
-      scene: null,
-      hintKey: 'tutorial.step.skill_use',
-      targetRef: null,
-      completion: { event: 'combat.ability.used' }
     }
   ];
 
@@ -333,7 +336,13 @@
       // Used to enforce step.minDisplayMs — events that arrive before the
       // minimum has elapsed are dropped so a fast player can't blow past
       // the first banner without reading it.
-      currentStepShownAt: 0
+      currentStepShownAt: 0,
+      // True when ability.learned arrived before the player reached
+      // skill.wait. _advance checks this when entering skill.wait and
+      // immediately re-advances so the loadout hint appears without
+      // waiting for ANOTHER ability learn (auto-unlocks fire only once
+      // per ability, so a second learn could be a long time away).
+      pendingAbilityLearned: false
     };
   }
 
@@ -451,6 +460,15 @@
     _persist();
     _notify();
     if (next.autoDismissMs) _scheduleAutoDismiss(next);
+    // If ability.learned was buffered earlier in the flow, replay it now
+    // by advancing one more step. This drops the silent skill.wait gate
+    // and lands directly on skill.loadout so the player gets the hint
+    // immediately on reaching this slot.
+    if (next.id === 'skill.wait' && state.pendingAbilityLearned) {
+      state.pendingAbilityLearned = false;
+      _persist();
+      _advance();
+    }
   }
 
   // --- Public API ---------------------------------------------------------
@@ -540,38 +558,23 @@
       return;
     }
 
-    // ---- Global trigger: ability.learned -------------------------------
-    // The skill mini-tutorial (skill.loadout + skill.use) is event-driven
-    // — the player gets an ability via auto-unlock at unpredictable times
-    // (after N kills / wave milestones / quest rewards). The main flow
-    // can be parked anywhere (e.g. dungeon.enter, hub.return.wait,
-    // druckerei.visit) when this happens. Without an interrupt the skill
-    // event would be dropped as "step X expects Y" and the loadout hint
-    // would never appear. Jump straight to skill.loadout from any earlier
-    // step and mark the intervening main-flow steps as completed so the
-    // state stays consistent (no "I skipped druckerei but the system
-    // thinks I'm still on it").
+    // ---- Buffer: ability.learned before skill.wait ----------------------
+    // The skill mini-tutorial sits between journal.hint and hub.return.wait
+    // in the linear flow. Auto-unlocks (kill / wave / quest milestones)
+    // can fire ability.learned much earlier — during combat.basics, the
+    // loot loop, combat.potion, etc. We do NOT want to skip those steps
+    // (every other reorder request was specifically about preserving
+    // them). Instead, remember that an ability has been learned and let
+    // skill.wait advance immediately when the player reaches it.
     if (eventName === 'ability.learned') {
-      var loadoutIdx = _stepIndex('skill.loadout');
+      var skillWaitIdx = _stepIndex('skill.wait');
       var hereIdx = _stepIndex(state.currentStepId);
-      // Gate: only fire the global jump once the player has reached the
-      // dungeon (combat.basics or later). An ability learned during the
-      // hub-only intro steps (movement, talking to Aldric) would jump
-      // past the entire main flow, which makes no sense.
-      var gateIdx = _stepIndex('combat.basics');
-      if (loadoutIdx >= 0 && hereIdx >= 0 && hereIdx < loadoutIdx && hereIdx >= gateIdx) {
-        for (var _i = hereIdx; _i < loadoutIdx; _i++) {
-          state.completedSteps.push(STEPS[_i].id);
+      if (skillWaitIdx >= 0 && hereIdx >= 0 && hereIdx < skillWaitIdx) {
+        if (!state.pendingAbilityLearned) {
+          state.pendingAbilityLearned = true;
+          _persist();
         }
-        if (state.pendingTimerId !== null) {
-          try { primitives.scheduler.clearTimeout(state.pendingTimerId); } catch (_) {}
-          state.pendingTimerId = null;
-        }
-        state.currentStepId = 'skill.loadout';
-        state.currentStepShownAt = primitives.now();
-        _persist();
-        _notify();
-        _debugLog(eventName, payload, 'global jump from ' + STEPS[hereIdx].id + ' to skill.loadout');
+        _debugLog(eventName, payload, 'buffered for skill.wait (currently on ' + state.currentStepId + ')');
         return;
       }
     }
