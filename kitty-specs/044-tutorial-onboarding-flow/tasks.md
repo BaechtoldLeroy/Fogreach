@@ -86,9 +86,9 @@ File ownership is non-overlapping across all WPs. The state machine (WP01) is th
 **Independent test**: After WP01 ships, manually run the game; open DevTools console; call `TutorialSystem.replay()`; the banner appears and the Werkstatt entrance has a visible pulsing outline. Performance: 60 fps sustained on the same hardware that runs the game without the tutorial.
 
 **Subtasks**:
-- [ ] T004 — Banner + onChange subscription + mount API.
-- [ ] T005 — Target resolver + highlight outline + alpha pulse.
-- [ ] T006 — `index.html` script-include update.
+- [x] T004 — Banner + onChange subscription + mount API.
+- [x] T005 — Target resolver + highlight outline + alpha pulse.
+- [x] T006 — `index.html` script-include update.
 
 **Dependencies**: WP01.
 
