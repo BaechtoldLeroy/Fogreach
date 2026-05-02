@@ -449,14 +449,13 @@
     _advance();
   }
 
-  // Diagnostic — set window.__TUTORIAL_DEBUG__ = true in DevTools to trace
-  // every report() call (which event, which payload, whether it advanced or
-  // why it was dropped). Off by default to avoid noisy production logs.
+  // Diagnostic — logs every report() call until the tutorial flow is
+  // verified end-to-end. Set window.__TUTORIAL_DEBUG__ = false in DevTools
+  // to silence (default ON during the #29 stabilization sweep).
   function _debugLog(eventName, payload, verdict) {
     try {
-      if (typeof window !== 'undefined' && window.__TUTORIAL_DEBUG__) {
-        console.log('[TutorialSystem.report]', eventName, payload, '->', verdict);
-      }
+      if (typeof window !== 'undefined' && window.__TUTORIAL_DEBUG__ === false) return;
+      console.log('[TutorialSystem.report]', eventName, payload, '->', verdict);
     } catch (_) {}
   }
 
