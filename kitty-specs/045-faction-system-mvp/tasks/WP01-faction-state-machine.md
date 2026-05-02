@@ -27,6 +27,7 @@ base_commit: d7f0351b9ea09fd7c6514d26769e3e83091cd9f8
 created_at: '2026-05-02T14:49:39.227628+00:00'
 subtasks: [T001, T002, T003]
 shell_pid: "9932"
+agent: "claude"
 history:
 - timestamp: '2026-05-02T14:50:00Z'
   actor: tasks-command
@@ -234,3 +235,7 @@ Deliver `window.FactionSystem` per [contracts/faction-system-api.md](../contract
 ```bash
 spec-kitty implement WP01 --feature 045-faction-system-mvp
 ```
+
+## Activity Log
+
+- 2026-05-02T14:49:39Z – claude – shell_pid=9932 – lane=doing – Started implementation via workflow command
