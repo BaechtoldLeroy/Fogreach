@@ -2,8 +2,10 @@
   "created_at": "2026-05-02T11:10:38.927174+00:00",
   "feature_number": "044",
   "feature_slug": "044-tutorial-onboarding-flow",
-  "friendly_name": "tutorial onboarding flow",
+  "friendly_name": "Tutorial Onboarding Flow",
   "mission": "software-dev",
   "slug": "044-tutorial-onboarding-flow",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "source_description": "Issue #29 — Tutorial / Act-1-Onboarding-Flow. Phase 1 of Vertical Slice Epic #32. Guided 12-step onboarding for first-time players covering hub tour, combat intro, loot/equip flow, NPC dialog, save concept. Auto-skip via hasSave(); manual skip + replay via Settings. Druckerei step uses stub dialog (Issue #24 deferred). Wave 1 not dampened. Target highlight via glow/outline (no arrow asset)."
 }
