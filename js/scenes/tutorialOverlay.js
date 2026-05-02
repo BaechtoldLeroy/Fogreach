@@ -120,6 +120,13 @@
     return c === n || c.indexOf(n) !== -1 || n.indexOf(c) !== -1;
   }
 
+  // HUB_HITBOXES stores coordinates in source-art space (960 px wide). At
+  // runtime HubSceneV2 multiplies x/y/w/h by SCALE_FACTOR (= 1536 / 960) to
+  // place colliders, entrance hitboxes and NPC sprites in world coordinates.
+  // The tutorial highlight must apply the same scale or it draws off-camera
+  // to the upper-left.
+  var HUB_SCALE = 1536 / 960;
+
   function _resolveFromHubHitboxes(ref) {
     var hub = window.HUB_HITBOXES;
     if (!hub) return null;
@@ -128,8 +135,10 @@
         var e = hub.entrances[i];
         if (_matchesName(e.id, ref.name) || _matchesName(e.label, ref.name)) {
           return {
-            x: e.x, y: e.y,
-            w: e.w || 64, h: e.h || 64,
+            x: e.x * HUB_SCALE,
+            y: e.y * HUB_SCALE,
+            w: (e.w || 64) * HUB_SCALE,
+            h: (e.h || 64) * HUB_SCALE,
             kind: 'entrance'
           };
         }
@@ -139,12 +148,15 @@
       for (var j = 0; j < hub.npcs.length; j++) {
         var n = hub.npcs[j];
         if (_matchesName(n.id, ref.name) || _matchesName(n.name, ref.name)) {
-          // NPC sprites in HUB_HITBOXES carry no width/height — they render
-          // as scaled sprites at runtime. Pick a sensible default radius
-          // proxy; _drawOutline uses max(w,h)*0.6 which yields ~38px.
+          // NPC sprites carry no width/height in the hitbox table — they
+          // render as scaled sprites at runtime. Use the same SCALE_FACTOR
+          // so the circle outline lands on the actual on-screen position.
+          // _drawOutline uses max(w,h)*0.6 which yields ~62 px radius.
           return {
-            x: n.x, y: n.y,
-            w: 64, h: 64,
+            x: n.x * HUB_SCALE,
+            y: n.y * HUB_SCALE,
+            w: 64 * HUB_SCALE,
+            h: 64 * HUB_SCALE,
             kind: 'npc'
           };
         }
