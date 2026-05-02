@@ -1251,9 +1251,20 @@ class HubSceneV2 extends Phaser.Scene {
   _closeDialog(keyClosers) {
     if (!this._dialogOpen) return;
     this._dialogOpen = false;
+    // E-key race: pressing E to confirm the dialog's primary choice (Akzeptieren)
+    // ALSO fires the global keydown-E handler (_handleInteract) registered in
+    // create(). Order is per-dialog first → close → global handler runs with
+    // _dialogOpen=false and the still-cached _activeInteractable=Aldric, which
+    // would re-open the dialog. Clearing _activeInteractable here breaks that
+    // race; _refreshInteractionPrompt resets it next frame if the player is
+    // still in range.
+    this._activeInteractable = null;
+    if (this.prompt && typeof this.prompt.setVisible === 'function') {
+      this.prompt.setVisible(false);
+    }
     // Tutorial: emit dialog.closed with the npc identifier captured on open
-    // (steps 4 + 12 advance here). Single funnel — every close path goes
-    // through _closeDialog.
+    // (steps quest.close + druckerei.visit advance here). Single funnel —
+    // every close path goes through _closeDialog.
     if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
       window.TutorialSystem.report('dialog.closed', { npc: this._currentDialogNpc });
     }
