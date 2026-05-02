@@ -134,3 +134,4 @@ spec-kitty implement WP02 --feature 045-faction-system-mvp --base WP01
 - 2026-05-02T14:53:17Z – claude – shell_pid=30484 – lane=doing – Started implementation via workflow command
 - 2026-05-02T14:55:44Z – claude – shell_pid=30484 – lane=for_review – Aldric tier-aware + Resistance-gated quest at elara, all tests green.
 - 2026-05-02T14:55:46Z – claude – shell_pid=30484 – lane=approved – Self-review approved
+- 2026-05-02T14:55:47Z – claude – shell_pid=30484 – lane=done – Merged
