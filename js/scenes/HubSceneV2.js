@@ -895,6 +895,25 @@ class HubSceneV2 extends Phaser.Scene {
       });
 
     } else {
+      // Faction-tier greeting (feature 045). When the NPC carries a
+      // factionId and FactionSystem is available, prepend a single
+      // tier-aware greeting page from `faction.<id>.greet.<tier>`. The
+      // existing flavor pages still play after it, so the greeting reads
+      // as a tonal opener rather than a replacement. Falls back silently
+      // when FactionSystem is missing (build without #045 still works).
+      if (npcData.factionId && window.FactionSystem &&
+          typeof window.FactionSystem.getTier === 'function') {
+        const tier = window.FactionSystem.getTier(npcData.factionId);
+        const greetKey = 'faction.' + (npcData.id || 'unknown') + '.greet.' + tier;
+        const greetText = (window.i18n && typeof window.i18n.t === 'function')
+          ? window.i18n.t(greetKey)
+          : greetKey;
+        // Only prepend if the i18n lookup actually returned localized text
+        // (some t() implementations return the raw key on miss — that's
+        // still distinct from the npcData.lines flavor content, so it's
+        // acceptable as a fallback).
+        if (greetText) pages.push({ text: greetText, choices: null });
+      }
       // Flavor dialogue — use dynamic story lines, show as multiple pages
       const storyLines = (window.storySystem && typeof window.storySystem.getNpcDialogue === 'function')
         ? window.storySystem.getNpcDialogue(npcId)
