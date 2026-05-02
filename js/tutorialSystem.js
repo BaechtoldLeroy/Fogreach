@@ -32,12 +32,13 @@
     'tutorial.step.movement.classic':         'Pfeiltasten zum Bewegen',
     'tutorial.step.movement.arpg':            'WASD zum Bewegen',
     'tutorial.step.movement.mobile':          'Joystick links benutzen zum Bewegen',
-    'tutorial.step.forge_approach':           'Geh zur Werkstatt',
-    'tutorial.step.forge_dialog':             '[E] um zu sprechen',
-    'tutorial.step.forge_dialog.mobile':      'Tippe den Interaktions-Knopf zum Sprechen',
-    'tutorial.step.keller_approach':          'Geh zum Rathauskeller',
-    'tutorial.step.keller_enter':             '[E] um den Dungeon zu betreten',
-    'tutorial.step.keller_enter.mobile':      'Tippe den Interaktions-Knopf, um den Dungeon zu betreten',
+    'tutorial.step.quest_dialog':             'Sprich mit Ratsherr Aldric — [E] zum Reden',
+    'tutorial.step.quest_dialog.mobile':      'Geh zu Ratsherr Aldric und tippe den Interaktions-Knopf',
+    'tutorial.step.quest_close':              'Nimm den Auftrag an und schließe den Dialog (ESC)',
+    'tutorial.step.quest_close.mobile':       'Nimm den Auftrag an und schließe den Dialog',
+    'tutorial.step.dungeon_approach':         'Geh zum Rathauskeller',
+    'tutorial.step.dungeon_enter':            '[E] um den Dungeon zu betreten',
+    'tutorial.step.dungeon_enter.mobile':     'Tippe den Interaktions-Knopf, um den Dungeon zu betreten',
     'tutorial.step.combat_basics':            'WASD bewegen, LMB/Space angreifen',
     'tutorial.step.combat_basics.classic':    'Pfeiltasten bewegen, Space angreifen',
     'tutorial.step.combat_basics.arpg':       'WASD bewegen, Linksklick angreifen',
@@ -63,12 +64,13 @@
     'tutorial.step.movement.classic':         'Arrow keys to move',
     'tutorial.step.movement.arpg':            'WASD to move',
     'tutorial.step.movement.mobile':          'Use the left joystick to move',
-    'tutorial.step.forge_approach':           'Go to the workshop',
-    'tutorial.step.forge_dialog':             '[E] to talk',
-    'tutorial.step.forge_dialog.mobile':      'Tap the interact button to talk',
-    'tutorial.step.keller_approach':          'Go to the town hall cellar',
-    'tutorial.step.keller_enter':             '[E] to enter the dungeon',
-    'tutorial.step.keller_enter.mobile':      'Tap the interact button to enter the dungeon',
+    'tutorial.step.quest_dialog':             'Talk to Councillor Aldric — press [E]',
+    'tutorial.step.quest_dialog.mobile':      'Walk to Councillor Aldric and tap the interact button',
+    'tutorial.step.quest_close':              'Accept the task and close the dialog (ESC)',
+    'tutorial.step.quest_close.mobile':       'Accept the task and close the dialog',
+    'tutorial.step.dungeon_approach':         'Go to the town hall cellar',
+    'tutorial.step.dungeon_enter':            '[E] to enter the dungeon',
+    'tutorial.step.dungeon_enter.mobile':     'Tap the interact button to enter the dungeon',
     'tutorial.step.combat_basics':            'WASD to move, LMB/Space to attack',
     'tutorial.step.combat_basics.classic':    'Arrow keys to move, Space to attack',
     'tutorial.step.combat_basics.arpg':       'WASD to move, left-click to attack',
@@ -90,11 +92,35 @@
     'tutorial.settings.replay_confirm':       'Really restart the tutorial from the beginning?'
   };
 
+  // --- Helpers ------------------------------------------------------------
+  //
+  // Matching helper: HubSceneV2 emits payload.name as the entrance's stable
+  // hubLayout id (e.g. 'rathaus_entrance', 'schmiede_entrance') and dialog
+  // events emit payload.npc as the NPC's stable id (e.g. 'aldric', 'branka').
+  // Old matchers compared against display labels ('Rathauskeller', 'Branka')
+  // which never matched. Use case-insensitive substring matching against
+  // either side so a step's `ref` can be the player-facing slug.
+  function _nameMatches(actual, ref) {
+    if (!actual || !ref) return false;
+    var a = String(actual).toLowerCase();
+    var r = String(ref).toLowerCase();
+    return a === r || a.indexOf(r) !== -1 || r.indexOf(a) !== -1;
+  }
+
   // --- Step definitions ---------------------------------------------------
   // Order is canonical. Index 0 (`init`) is the silent step seeded on New
   // Game; maybeAutoSkip() advances past it immediately to FIRST_VISIBLE_STEP_ID.
-  // Step 11 (`save.notice`) auto-dismisses after 5000 ms via the scheduler;
+  // The save-notice step auto-dismisses after 5000 ms via the scheduler;
   // its completion has no event match.
+  //
+  // Flow rationale (revised after playtest #29 v2):
+  //   movement -> talk to Aldric (quest pickup) -> close dialog ->
+  //   approach Rathauskeller -> enter dungeon -> combat (hit, ability,
+  //   loot, equip) -> save notice -> visit Druckerei (outro stub).
+  // Originally the player was sent to the workshop first, then to Branka,
+  // then to the dungeon, which made narrative no sense and stalled when
+  // the workshop entrance switched scenes before the Branka dialog could
+  // be matched.
   var STEPS = [
     {
       id: INIT_STEP_ID,
@@ -111,32 +137,32 @@
       completion: { event: 'player.moved' }
     },
     {
-      id: 'forge.approach',
+      id: 'quest.dialog',
       scene: 'HubSceneV2',
-      hintKey: 'tutorial.step.forge_approach',
-      targetRef: { type: 'entrance', name: 'Werkstatt' },
-      completion: { event: 'hub.entrance.approached', matcher: function (p) { return p && p.name === 'Werkstatt'; } }
+      hintKey: 'tutorial.step.quest_dialog',
+      targetRef: { type: 'npc', name: 'Aldric' },
+      completion: { event: 'dialog.opened', matcher: function (p) { return _nameMatches(p && p.npc, 'aldric'); } }
     },
     {
-      id: 'forge.dialog',
+      id: 'quest.close',
       scene: 'HubSceneV2',
-      hintKey: 'tutorial.step.forge_dialog',
-      targetRef: { type: 'npc', name: 'Branka' },
-      completion: { event: 'dialog.closed', matcher: function (p) { return p && p.npc === 'Branka'; } }
+      hintKey: 'tutorial.step.quest_close',
+      targetRef: null,
+      completion: { event: 'dialog.closed', matcher: function (p) { return _nameMatches(p && p.npc, 'aldric'); } }
     },
     {
-      id: 'keller.approach',
+      id: 'dungeon.approach',
       scene: 'HubSceneV2',
-      hintKey: 'tutorial.step.keller_approach',
-      targetRef: { type: 'entrance', name: 'Rathauskeller' },
-      completion: { event: 'hub.entrance.approached', matcher: function (p) { return p && p.name === 'Rathauskeller'; } }
+      hintKey: 'tutorial.step.dungeon_approach',
+      targetRef: { type: 'entrance', name: 'Rathaus' },
+      completion: { event: 'hub.entrance.approached', matcher: function (p) { return _nameMatches(p && p.name, 'rathaus'); } }
     },
     {
-      id: 'keller.enter',
+      id: 'dungeon.enter',
       scene: 'HubSceneV2',
-      hintKey: 'tutorial.step.keller_enter',
-      targetRef: { type: 'entrance', name: 'Rathauskeller' },
-      completion: { event: 'hub.entrance.entered', matcher: function (p) { return p && p.name === 'Rathauskeller'; } }
+      hintKey: 'tutorial.step.dungeon_enter',
+      targetRef: { type: 'entrance', name: 'Rathaus' },
+      completion: { event: 'hub.entrance.entered', matcher: function (p) { return _nameMatches(p && p.name, 'rathaus'); } }
     },
     {
       id: 'combat.basics',
@@ -179,7 +205,7 @@
       scene: 'HubSceneV2',
       hintKey: 'tutorial.step.druckerei_visit',
       targetRef: { type: 'entrance', name: 'Druckerei' },
-      completion: { event: 'dialog.closed', matcher: function (p) { return p && p.npc === 'Setzer Thom'; } }
+      completion: { event: 'dialog.closed', matcher: function (p) { return _nameMatches(p && p.npc, 'Setzer Thom'); } }
     }
   ];
 

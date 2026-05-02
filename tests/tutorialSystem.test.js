@@ -177,9 +177,9 @@ test('report() advances when event matches and matcher passes', () => {
   TS.init();
   TS.maybeAutoSkip(); // step `movement`
   TS.report('player.moved', { dx: 1, dy: 0 });
-  assert.strictEqual(TS.getCurrentStep().id, 'forge.approach');
-  TS.report('hub.entrance.approached', { name: 'Werkstatt' });
-  assert.strictEqual(TS.getCurrentStep().id, 'forge.dialog');
+  assert.strictEqual(TS.getCurrentStep().id, 'quest.dialog');
+  TS.report('dialog.opened', { npc: 'aldric' });
+  assert.strictEqual(TS.getCurrentStep().id, 'quest.close');
 });
 
 // --- 7. report() does not advance when matcher returns false --------------
@@ -188,11 +188,11 @@ test('report() does not advance when matcher returns false', () => {
   const { TS } = fresh();
   TS.init();
   TS.maybeAutoSkip();
-  TS.report('player.moved', {}); // advance to forge.approach
-  assert.strictEqual(TS.getCurrentStep().id, 'forge.approach');
-  // forge.approach matcher requires name === 'Werkstatt'
-  TS.report('hub.entrance.approached', { name: 'Rathauskeller' });
-  assert.strictEqual(TS.getCurrentStep().id, 'forge.approach', 'wrong target name does not advance');
+  TS.report('player.moved', {}); // advance to quest.dialog
+  assert.strictEqual(TS.getCurrentStep().id, 'quest.dialog');
+  // quest.dialog matcher requires npc to substring-match 'aldric'
+  TS.report('dialog.opened', { npc: 'branka' });
+  assert.strictEqual(TS.getCurrentStep().id, 'quest.dialog', 'wrong npc id does not advance');
 });
 
 // --- 8. step 11 auto-dismiss via injected scheduler -----------------------
@@ -201,13 +201,15 @@ test('step 11 auto-dismisses after 5000 ms via the injected scheduler', () => {
   const { TS, p } = fresh();
   TS.init();
   TS.maybeAutoSkip();
-  // Force-walk to step 11 (`save.notice`) without going through every event.
-  // Use the public report() with the proper events for each step in order.
-  TS.report('player.moved', { dx: 1, dy: 0 });                                  // -> forge.approach
-  TS.report('hub.entrance.approached', { name: 'Werkstatt' });                  // -> forge.dialog
-  TS.report('dialog.closed', { npc: 'Branka' });                                // -> keller.approach
-  TS.report('hub.entrance.approached', { name: 'Rathauskeller' });              // -> keller.enter
-  TS.report('hub.entrance.entered', { name: 'Rathauskeller' });                 // -> combat.basics
+  // Walk through every step in order so step 11 (save.notice) becomes
+  // current. Names use the same payload shape the production HubSceneV2
+  // emits (entrance ids like 'rathaus_entrance', npc ids like 'aldric'),
+  // verifying that the case-insensitive substring matcher accepts them.
+  TS.report('player.moved', { dx: 1, dy: 0 });                                  // -> quest.dialog
+  TS.report('dialog.opened', { npc: 'aldric' });                                // -> quest.close
+  TS.report('dialog.closed', { npc: 'aldric' });                                // -> dungeon.approach
+  TS.report('hub.entrance.approached', { name: 'rathaus_entrance' });           // -> dungeon.enter
+  TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });              // -> combat.basics
   TS.report('combat.hit', { byPlayer: true });                                  // -> combat.ability
   TS.report('combat.ability.used', { slot: 1 });                                // -> loot.pickup
   TS.report('loot.picked', { itemId: 'x' });                                    // -> loot.equip
@@ -273,11 +275,11 @@ test('onChange fires on advance, skip, and replay; unsubscribe stops further cal
   TS.skip(true);
   // Replay.
   TS.replay();
-  assert.deepStrictEqual(events, ['forge.approach', null, 'movement']);
+  assert.deepStrictEqual(events, ['quest.dialog', null, 'movement']);
   // After unsub, further state changes do not fire the callback.
   unsub();
   TS.report('player.moved', { dx: 1, dy: 0 });
-  assert.deepStrictEqual(events, ['forge.approach', null, 'movement']);
+  assert.deepStrictEqual(events, ['quest.dialog', null, 'movement']);
 });
 
 // --- 12. onChange swallows subscriber exceptions --------------------------
@@ -309,11 +311,11 @@ test('out-of-order report() (e.g., loot.picked during step 7) is dropped', () =>
   TS.init();
   TS.maybeAutoSkip();
   // Walk to step 7 (`combat.basics`).
-  TS.report('player.moved', {});                                                // -> forge.approach
-  TS.report('hub.entrance.approached', { name: 'Werkstatt' });                  // -> forge.dialog
-  TS.report('dialog.closed', { npc: 'Branka' });                                // -> keller.approach
-  TS.report('hub.entrance.approached', { name: 'Rathauskeller' });              // -> keller.enter
-  TS.report('hub.entrance.entered', { name: 'Rathauskeller' });                 // -> combat.basics
+  TS.report('player.moved', {});                                                // -> quest.dialog
+  TS.report('dialog.opened', { npc: 'aldric' });                                // -> quest.close
+  TS.report('dialog.closed', { npc: 'aldric' });                                // -> dungeon.approach
+  TS.report('hub.entrance.approached', { name: 'rathaus_entrance' });           // -> dungeon.enter
+  TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });              // -> combat.basics
   assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
   // loot.picked is the trigger for step 9, not 7. Should be dropped.
   TS.report('loot.picked', { itemId: 'sword' });
@@ -350,10 +352,10 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   TS.maybeAutoSkip();
   // Walk all the way to step 12 (`druckerei.visit`).
   TS.report('player.moved', {});
-  TS.report('hub.entrance.approached', { name: 'Werkstatt' });
-  TS.report('dialog.closed', { npc: 'Branka' });
-  TS.report('hub.entrance.approached', { name: 'Rathauskeller' });
-  TS.report('hub.entrance.entered', { name: 'Rathauskeller' });
+  TS.report('dialog.opened', { npc: 'aldric' });
+  TS.report('dialog.closed', { npc: 'aldric' });
+  TS.report('hub.entrance.approached', { name: 'rathaus_entrance' });
+  TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });
   TS.report('combat.hit', { byPlayer: true });
   TS.report('combat.ability.used', { slot: 1 });
   TS.report('loot.picked', { itemId: 'x' });
