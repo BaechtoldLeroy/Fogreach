@@ -466,6 +466,14 @@
       console.log('[AbilitySystem] Neue F\u00E4higkeit erlernt:', ABILITY_DEFS[id].name);
       _showLearnToast(ABILITY_DEFS[id].name);
     }
+    // Tutorial: signal that the player learned a skill so the deferred
+    // skill-loadout / skill-use tutorial steps can activate. Fires AFTER
+    // persistence so a tutorial replay sees the same state.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      try {
+        window.TutorialSystem.report('ability.learned', { abilityId: id });
+      } catch (_) { /* never crash gameplay */ }
+    }
     return true;
   }
 

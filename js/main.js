@@ -917,6 +917,11 @@ function create() {
     if (typeof window.openLoadoutUI === 'function') {
       window.openLoadoutUI(this);
     }
+    // Tutorial: skill.loadout step advances on K-press regardless of
+    // whether the loadout UI actually opened (binding-only purpose).
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('loadout.opened', {});
+    }
   });
   // Settings overlay (O key)
   this.input.keyboard.on('keydown-O', () => {

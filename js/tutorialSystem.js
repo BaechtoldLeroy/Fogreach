@@ -47,6 +47,12 @@
     'tutorial.step.combat_potion.mobile':     'Tippe den Heiltrank-Knopf',
     'tutorial.step.journal_hint':             'Ratsherr Aldric hat dir einen Auftrag gegeben — drücke J, um dein Journal zu öffnen',
     'tutorial.step.journal_hint.mobile':      'Ratsherr Aldric hat dir einen Auftrag gegeben — tippe das Journal-Symbol oben rechts',
+    'tutorial.step.skill_loadout':            'Du hast eine neue Fähigkeit erlernt — drücke K, um sie ins Loadout zu legen',
+    'tutorial.step.skill_loadout.mobile':     'Du hast eine neue Fähigkeit erlernt — tippe das Loadout-Symbol oben',
+    'tutorial.step.skill_use':                'Im Dungeon kannst du die Fähigkeit mit Q/W/E/R einsetzen',
+    'tutorial.step.skill_use.classic':        'Im Dungeon kannst du die Fähigkeit mit Q/W/E/R einsetzen',
+    'tutorial.step.skill_use.arpg':           'Im Dungeon kannst du die Fähigkeit mit 1/2/3/4 einsetzen',
+    'tutorial.step.skill_use.mobile':         'Im Dungeon kannst du die Fähigkeit mit den Ability-Knöpfen unten einsetzen',
     // loot_wait has no banner (hintKey null in the step) — the banner stays
     // hidden between combat.basics and the first loot drop, so the player
     // isn't told to pick something up before there is anything to pick up.
@@ -82,6 +88,12 @@
     'tutorial.step.combat_potion.mobile':     'Tap the potion button',
     'tutorial.step.journal_hint':             "Councillor Aldric gave you a task — press J to open your journal",
     'tutorial.step.journal_hint.mobile':      "Councillor Aldric gave you a task — tap the journal icon (top-right)",
+    'tutorial.step.skill_loadout':            'You learned a new ability — press K to slot it into your loadout',
+    'tutorial.step.skill_loadout.mobile':     'You learned a new ability — tap the loadout icon at the top',
+    'tutorial.step.skill_use':                'In the dungeon you can trigger the ability with Q/W/E/R',
+    'tutorial.step.skill_use.classic':        'In the dungeon you can trigger the ability with Q/W/E/R',
+    'tutorial.step.skill_use.arpg':           'In the dungeon you can trigger the ability with 1/2/3/4',
+    'tutorial.step.skill_use.mobile':         'In the dungeon you can trigger the ability with the ability buttons at the bottom',
     'tutorial.step.loot_pickup':              'An item dropped — just walk over it to pick it up',
     'tutorial.step.loot_pickup.mobile':       'An item dropped — move over it with the joystick to pick it up',
     'tutorial.step.loot_equip':               'Open the inventory (I) and right-click the item to equip it',
@@ -259,6 +271,40 @@
       hintKey: 'tutorial.step.druckerei_visit',
       targetRef: { type: 'entrance', name: 'Druckerei' },
       completion: { event: 'dialog.closed', matcher: function (p) { return _nameMatches(p && p.npc, 'Setzer Thom'); } }
+    },
+    {
+      // Skill mini-tutorial — fires only after the player has actually
+      // learned an ability. The wait step has no banner, so the player
+      // sees no UI between druckerei.visit and the first ability learn.
+      // If they never learn an ability, the tutorial silently parks here
+      // forever (no softlock, just no further hints).
+      id: 'skill.wait',
+      scene: null,
+      hintKey: null,
+      targetRef: null,
+      completion: { event: 'ability.learned' }
+    },
+    {
+      // Loadout binding hint. K is bound to openLoadoutUI in both Hub
+      // (HubSceneV2._handleLoadout) and GameScene (main.js); the
+      // tutorial accepts a loadout-open from either.
+      id: 'skill.loadout',
+      scene: null,
+      hintKey: 'tutorial.step.skill_loadout',
+      targetRef: null,
+      completion: { event: 'loadout.opened' }
+    },
+    {
+      // Final step — skill use binding hint. The .classic/.arpg/.mobile
+      // i18n variants render the correct keys for the active scheme.
+      // Advances on combat.ability.used (already emitted from
+      // abilitySystem.tryActivate). No softlock if the player never uses
+      // an ability — the tutorial just parks here.
+      id: 'skill.use',
+      scene: null,
+      hintKey: 'tutorial.step.skill_use',
+      targetRef: null,
+      completion: { event: 'combat.ability.used' }
     }
   ];
 

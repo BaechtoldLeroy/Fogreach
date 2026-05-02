@@ -811,9 +811,37 @@
     var bx = bounds ? bounds.x + bounds.width / 2 : 400;
     var by = bounds ? bounds.y + bounds.height / 2 : 300;
     if (typeof player !== 'undefined' && player) {
-      var ang = Math.random() * Math.PI * 2;
-      bx = player.x + Math.cos(ang) * 200;
-      by = player.y + Math.sin(ang) * 200;
+      // Try up to 16 random offsets around the player (60 - 220 px) and
+      // pick the first one that isn't blocked by a wall / obstacle. The
+      // old code picked a single fixed-radius angle and would happily
+      // place the scroll inside a wall — making the lore unreachable.
+      var placed = false;
+      var halfSize = 18; // ~ scroll sprite half-width
+      for (var attempt = 0; attempt < 16 && !placed; attempt++) {
+        var ang = Math.random() * Math.PI * 2;
+        var radius = 60 + Math.random() * 160;
+        var tx = player.x + Math.cos(ang) * radius;
+        var ty = player.y + Math.sin(ang) * radius;
+        // Stay inside the world bounds (with margin) when known.
+        if (bounds) {
+          var margin = halfSize + 8;
+          if (tx < bounds.x + margin || tx > bounds.x + bounds.width - margin) continue;
+          if (ty < bounds.y + margin || ty > bounds.y + bounds.height - margin) continue;
+        }
+        var blocked = false;
+        if (typeof window !== 'undefined' && typeof window.isSpawnPositionBlocked === 'function') {
+          try { blocked = !!window.isSpawnPositionBlocked(tx, ty, halfSize); } catch (_) { blocked = false; }
+        }
+        if (!blocked) {
+          bx = tx; by = ty;
+          placed = true;
+        }
+      }
+      // If every attempt was blocked, fall back to the player's own tile —
+      // they are guaranteed to be on a walkable tile.
+      if (!placed) {
+        bx = player.x; by = player.y;
+      }
     }
 
     // Generate procedural scroll texture if missing

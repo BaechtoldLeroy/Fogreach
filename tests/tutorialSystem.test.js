@@ -366,13 +366,19 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   TS.report('potion.attempted', {});
   TS.report('journal.opened', {});
   TS.report('hub.returned', {});
-  // Auto-dismiss step 11.
+  // Auto-dismiss save.notice.
   p.advanceClock(5000);
   assert.strictEqual(TS.getCurrentStep().id, 'druckerei.visit');
-  // Final report — Setzer Thom dialog closes.
+  TS.report('dialog.closed', { npc: 'Setzer Thom' });                            // -> skill.wait
+  assert.strictEqual(TS.getCurrentStep().id, 'skill.wait');
+  TS.report('ability.learned', { abilityId: 'spinAttack' });                     // -> skill.loadout
+  assert.strictEqual(TS.getCurrentStep().id, 'skill.loadout');
+  TS.report('loadout.opened', {});                                               // -> skill.use
+  assert.strictEqual(TS.getCurrentStep().id, 'skill.use');
+  // Final report — using the ability completes the tutorial.
   let lastEvent = 'sentinel';
   TS.onChange((step) => { lastEvent = step; });
-  TS.report('dialog.closed', { npc: 'Setzer Thom' });
+  TS.report('combat.ability.used', { slot: 1 });
   assert.strictEqual(TS.isActive(), false);
   assert.strictEqual(TS.getCurrentStep(), null);
   assert.strictEqual(lastEvent, null, 'onChange fired with null on completion');

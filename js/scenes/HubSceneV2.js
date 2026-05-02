@@ -1347,6 +1347,11 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   _handleLoadout() {
+    // Tutorial: skill.loadout step advances on K-press whether or not the
+    // overlay itself can open (binding-only purpose).
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('loadout.opened', {});
+    }
     if (typeof window.openLoadoutUI === 'function') {
       window.openLoadoutUI(this);
     } else {
