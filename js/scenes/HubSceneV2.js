@@ -121,6 +121,36 @@ class HubSceneV2 extends Phaser.Scene {
     this._activeInteractable = null;
     this._dialogContainer = null;
 
+    // Tutorial wiring (feature 044). Reset per-scene flags; mount overlay if
+    // the tutorial is currently active. The onChange subscription handles
+    // late activation (e.g. user clicked Replay in Settings).
+    this._movementReported = false;
+    this._lastApproachedName = null;
+    this._currentDialogNpc = null;
+    if (window.TutorialOverlay && window.TutorialSystem && typeof window.TutorialSystem.isActive === 'function' && window.TutorialSystem.isActive()) {
+      this._tutorialOverlay = window.TutorialOverlay.create(this);
+      this._tutorialOverlay.mount();
+    }
+    if (window.TutorialSystem && typeof window.TutorialSystem.onChange === 'function') {
+      this._tutorialUnsub = window.TutorialSystem.onChange((step) => {
+        if (step && !this._tutorialOverlay && window.TutorialOverlay) {
+          this._tutorialOverlay = window.TutorialOverlay.create(this);
+          this._tutorialOverlay.mount();
+        } else if (!step && this._tutorialOverlay) {
+          this._tutorialOverlay.unmount();
+          this._tutorialOverlay = null;
+        }
+      });
+    }
+    // hub.returned event — fired only on re-entry from GameScene (which
+    // passes data.gameState via the transition config in main.js
+    // leaveDungeonForHub). On the initial hub mount, scene.settings.data is
+    // empty, so this branch is a no-op.
+    const sceneData = this.scene && this.scene.settings && this.scene.settings.data;
+    if (sceneData && sceneData.gameState && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('hub.returned', {});
+    }
+
     // Bind InputScheme BEFORE createPlayer — the player's first
     // updatePlayerSpriteAnimation call reads getAimDirection in ARPG mode,
     // which needs primitives set up.
@@ -252,6 +282,11 @@ class HubSceneV2 extends Phaser.Scene {
         window.questSystem.offQuestUpdate(this._questUpdateHandler);
         this._questUpdateHandler = null;
       }
+      // Tutorial cleanup (044). Overlay self-cleans on shutdown via its own
+      // hook, so this is defensive insurance — the unsub guards against double
+      // calls.
+      if (this._tutorialUnsub) { this._tutorialUnsub(); this._tutorialUnsub = null; }
+      if (this._tutorialOverlay) { this._tutorialOverlay.unmount(); this._tutorialOverlay = null; }
       if (window.soundManager) window.soundManager.stopMusic();
     });
   }
@@ -581,6 +616,14 @@ class HubSceneV2 extends Phaser.Scene {
         velY = (inputY / len) * speed * (inputX || inputY ? 1 : 0);
       }
       p.setVelocity(velX, velY);
+      // Tutorial: emit player.moved exactly once per scene-life on first
+      // non-zero motion. Single emission point at the movement funnel.
+      if (!this._movementReported && (velX !== 0 || velY !== 0)) {
+        this._movementReported = true;
+        if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+          window.TutorialSystem.report('player.moved', { dx: velX, dy: velY });
+        }
+      }
       if (typeof updatePlayerSpriteAnimation === 'function') {
         updatePlayerSpriteAnimation(p, velX, velY);
       }
@@ -683,6 +726,18 @@ class HubSceneV2 extends Phaser.Scene {
       this._activeInteractable = null;
       this.prompt.setVisible(false);
     }
+
+    // Tutorial: emit hub.entrance.approached when the active entrance
+    // changes (steps 3, 5, 12). Edge-triggered to avoid per-frame spam.
+    // The name is the stable hubLayout id (e.g. "Werkstatt", "Rathauskeller",
+    // "Druckerei") — not the localized label.
+    const approachedName = (active && active.type === 'entrance') ? (active.data && (active.data.id || active.data.name || activeLabel)) : null;
+    if (approachedName !== this._lastApproachedName) {
+      this._lastApproachedName = approachedName;
+      if (approachedName && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+        window.TutorialSystem.report('hub.entrance.approached', { name: approachedName });
+      }
+    }
   }
 
   _handleInteract() {
@@ -704,6 +759,14 @@ class HubSceneV2 extends Phaser.Scene {
   _showNpcDialogue(npcData) {
     console.log('[HubSceneV2] Opening NPC dialogue for:', npcData.name);
     this._dialogOpen = true;
+    // Tutorial: track which NPC owns this dialog so dialog.closed can carry
+    // the same identifier; emit dialog.opened (step 4 trigger via Branka,
+    // step 12 via Setzer Thom). Use a stable id where available so language
+    // switches don't break the matcher.
+    this._currentDialogNpc = (npcData && (npcData.id || npcData.name)) || null;
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('dialog.opened', { npc: this._currentDialogNpc });
+    }
 
     if (this._dialogContainer) {
       this._dialogContainer.destroy(true);
@@ -1169,6 +1232,13 @@ class HubSceneV2 extends Phaser.Scene {
   _closeDialog(keyClosers) {
     if (!this._dialogOpen) return;
     this._dialogOpen = false;
+    // Tutorial: emit dialog.closed with the npc identifier captured on open
+    // (steps 4 + 12 advance here). Single funnel — every close path goes
+    // through _closeDialog.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('dialog.closed', { npc: this._currentDialogNpc });
+    }
+    this._currentDialogNpc = null;
 
     if (this._dialogContainer) {
       this._dialogContainer.destroy(true);
@@ -1240,6 +1310,11 @@ class HubSceneV2 extends Phaser.Scene {
 
   _enterLocation(entranceData) {
     console.log('[HubSceneV2] Entering:', entranceData.id, '-> target:', entranceData.target);
+    // Tutorial: emit hub.entrance.entered before any scene transition or
+    // dialog-stub flow runs (covers steps 6 and 12). Stable id used.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('hub.entrance.entered', { name: entranceData && (entranceData.id || entranceData.name) });
+    }
     
     if (entranceData.target === 'GameScene') {
       this._openWaveSelectDialog((selectedWave, selectedDifficulty) => {
@@ -1293,9 +1368,14 @@ class HubSceneV2 extends Phaser.Scene {
         this.scene.start('CraftingScene');
       });
     } else if (entranceData.target === 'druckerei') {
+      // Tutorial step 12 (druckerei.visit) closes when the dialog with
+      // "Setzer Thom" closes — use a stable name for the matcher regardless
+      // of language. Body text uses the tutorial-owned i18n key for the
+      // under-construction stub (#24 future work replaces this with the real
+      // Printing House dialog).
       this._showNpcDialogue({
-        name: _HUB_T('hub.druckerei.name'),
-        lines: [_HUB_T('hub.druckerei.line1'), _HUB_T('hub.druckerei.line2')]
+        name: 'Setzer Thom',
+        lines: [_HUB_T('tutorial.druckerei.stub')]
       });
     }
   }

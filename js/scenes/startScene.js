@@ -532,6 +532,14 @@ StartScene.prototype.create = function () {
 
     // Don't overwrite RT.MANIFEST — it's set in roomTemplates.js
     window.game = this.game;
+    // Tutorial auto-skip (feature 044): runs once per session entry into the
+    // game proper. With an existing save, marks the tutorial skipped so no
+    // overlay frame ever renders. Without a save, seeds fresh tutorial state
+    // at the first visible step. Idempotent across all entry buttons
+    // (Continue, New Game, Endless).
+    if (window.TutorialSystem && typeof window.TutorialSystem.maybeAutoSkip === 'function') {
+      window.TutorialSystem.maybeAutoSkip();
+    }
     // Endless mode skips the hub and boots straight into the dungeon.
     const target = (window.__ENDLESS_MODE__ ? 'GameScene' : 'HubSceneV2');
     this.scene.start(target);
