@@ -72,10 +72,10 @@ if (window.i18n) {
     'loot.item.BT_LEDERSTIEFEL': 'Lederstiefel',
     'loot.item.BT_STAHLSOHLEN': 'Stahlsohlen',
     'loot.item.BT_WINDLAEUFER': 'Windläufer',
-    'loot.potion.t1': 'Heiltrank (Klein)',
-    'loot.potion.t2': 'Heiltrank',
-    'loot.potion.t3': 'Heiltrank (Gross)',
-    'loot.potion.t4': 'Heiltrank (Super)',
+    'loot.potion.t1': 'Heiltrank (S)',
+    'loot.potion.t2': 'Heiltrank (M)',
+    'loot.potion.t3': 'Heiltrank (L)',
+    'loot.potion.t4': 'Heiltrank (XL)',
     'loot.fallback.item': 'Gegenstand'
   });
   window.i18n.register('en', {
@@ -146,7 +146,7 @@ if (window.i18n) {
     'loot.item.BT_STAHLSOHLEN': 'Steel Soles',
     'loot.item.BT_WINDLAEUFER': 'Wind Walkers',
     'loot.potion.t1': 'Healing Potion (S)',
-    'loot.potion.t2': 'Healing Potion',
+    'loot.potion.t2': 'Healing Potion (M)',
     'loot.potion.t3': 'Healing Potion (L)',
     'loot.potion.t4': 'Healing Potion (XL)',
     'loot.fallback.item': 'Item'
@@ -308,19 +308,19 @@ if (window.i18n) {
   // WP04: 4 health potion tiers (Minor / Normal / Major / Super)
   const POTION_DEFS = Object.freeze([
     Object.freeze({
-      potionTier: 1, name: 'Heiltrank (Klein)', healPercent: 0.30, healDurationMs: 3000,
+      potionTier: 1, name: 'Heiltrank (S)', healPercent: 0.30, healDurationMs: 3000,
       goldCost: 25, stackSize: 5, iconKey: 'itPotionMinor', iLevelMin: 1
     }),
     Object.freeze({
-      potionTier: 2, name: 'Heiltrank', healPercent: 0.60, healDurationMs: 3000,
+      potionTier: 2, name: 'Heiltrank (M)', healPercent: 0.60, healDurationMs: 3000,
       goldCost: 75, stackSize: 5, iconKey: 'itPotionNormal', iLevelMin: 4
     }),
     Object.freeze({
-      potionTier: 3, name: 'Heiltrank (Gross)', healPercent: 1.00, healDurationMs: 3000,
+      potionTier: 3, name: 'Heiltrank (L)', healPercent: 1.00, healDurationMs: 3000,
       goldCost: 200, stackSize: 5, iconKey: 'itPotionMajor', iLevelMin: 8
     }),
     Object.freeze({
-      potionTier: 4, name: 'Heiltrank (Super)', healPercent: 1.00, healDurationMs: 3000,
+      potionTier: 4, name: 'Heiltrank (XL)', healPercent: 1.00, healDurationMs: 3000,
       goldCost: 500, stackSize: 5, iconKey: 'itPotionSuper', iLevelMin: 12,
       bonusEffect: Object.freeze({ tempMaxHp: 0.10, durationMs: 30000 })
     })

@@ -43,10 +43,8 @@
     'tutorial.step.combat_basics.classic':    'Pfeiltasten bewegen, Space angreifen',
     'tutorial.step.combat_basics.arpg':       'WASD bewegen, Linksklick angreifen',
     'tutorial.step.combat_basics.mobile':     'Joystick bewegt, Angriffs-Knopf greift an',
-    'tutorial.step.combat_ability':           'Ability-Slot 1 — Q drücken',
-    'tutorial.step.combat_ability.classic':   'Ability-Slot 1 — Q drücken',
-    'tutorial.step.combat_ability.arpg':      'Ability-Slot 1 — Taste 1 drücken',
-    'tutorial.step.combat_ability.mobile':    'Tippe einen der Ability-Knöpfe',
+    'tutorial.step.combat_potion':            'F drücken für Heiltrank',
+    'tutorial.step.combat_potion.mobile':     'Tippe den Heiltrank-Knopf',
     'tutorial.step.loot_pickup':              'Lauf darüber zum Aufheben',
     'tutorial.step.loot_pickup.mobile':       'Lauf mit dem Joystick darüber zum Aufheben',
     'tutorial.step.loot_equip':               'Rechtsklick zum Anlegen',
@@ -75,10 +73,8 @@
     'tutorial.step.combat_basics.classic':    'Arrow keys to move, Space to attack',
     'tutorial.step.combat_basics.arpg':       'WASD to move, left-click to attack',
     'tutorial.step.combat_basics.mobile':     'Joystick moves, attack button strikes',
-    'tutorial.step.combat_ability':           'Ability slot 1 — press Q',
-    'tutorial.step.combat_ability.classic':   'Ability slot 1 — press Q',
-    'tutorial.step.combat_ability.arpg':      'Ability slot 1 — press 1',
-    'tutorial.step.combat_ability.mobile':    'Tap any ability button',
+    'tutorial.step.combat_potion':            'Press F to drink a healing potion',
+    'tutorial.step.combat_potion.mobile':     'Tap the potion button',
     'tutorial.step.loot_pickup':              'Walk over it to pick up',
     'tutorial.step.loot_pickup.mobile':       'Walk over it with the joystick to pick up',
     'tutorial.step.loot_equip':               'Right-click to equip',
@@ -172,11 +168,16 @@
       completion: { event: 'combat.hit', matcher: function (p) { return p && p.byPlayer === true; } }
     },
     {
-      id: 'combat.ability',
+      // Ability slot tutorial deferred until the player actually has an
+      // ability equipped (Phase 2+; tracker TBD). For now teach the
+      // potion key — F drinks the best potion in inventory; the tutorial
+      // advances on key-press regardless of whether a potion was actually
+      // consumed (so empty-inventory players aren't softlocked).
+      id: 'combat.potion',
       scene: 'GameScene',
-      hintKey: 'tutorial.step.combat_ability',
+      hintKey: 'tutorial.step.combat_potion',
       targetRef: null,
-      completion: { event: 'combat.ability.used' }
+      completion: { event: 'potion.attempted' }
     },
     {
       id: 'loot.pickup',

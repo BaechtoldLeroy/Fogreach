@@ -749,7 +749,7 @@
           window.inventory[i] = {
             type: 'potion',
             potionTier: 1,
-            name: 'Heiltrank (Klein)',
+            name: 'Heiltrank (S)',
             iconKey: 'itPotionMinor',
             stack: 2
           };

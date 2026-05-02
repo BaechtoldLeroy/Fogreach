@@ -17,10 +17,10 @@ if (window.i18n) {
     'hud.potion.empty_label': 'Kein Trank',
     'hud.potion.ready': 'Bereit',
     'hud.potion.no_potion': 'Leer',
-    'hud.potion.name.t1': 'Heiltrank (Klein)',
-    'hud.potion.name.t2': 'Heiltrank',
-    'hud.potion.name.t3': 'Heiltrank (Gross)',
-    'hud.potion.name.t4': 'Heiltrank (Super)',
+    'hud.potion.name.t1': 'Heiltrank (S)',
+    'hud.potion.name.t2': 'Heiltrank (M)',
+    'hud.potion.name.t3': 'Heiltrank (L)',
+    'hud.potion.name.t4': 'Heiltrank (XL)',
     'hud.potion.name.default': 'Trank',
     'hud.ability.ready': 'Bereit'
   });
@@ -40,7 +40,7 @@ if (window.i18n) {
     'hud.potion.ready': 'Ready',
     'hud.potion.no_potion': 'Empty',
     'hud.potion.name.t1': 'Healing Potion (S)',
-    'hud.potion.name.t2': 'Healing Potion',
+    'hud.potion.name.t2': 'Healing Potion (M)',
     'hud.potion.name.t3': 'Healing Potion (L)',
     'hud.potion.name.t4': 'Healing Potion (XL)',
     'hud.potion.name.default': 'Potion',
@@ -941,6 +941,13 @@ function create() {
   this.input.keyboard.on('keydown-F', () => {
     if (window.LootSystem && typeof window.LootSystem.onPotionKey === 'function') {
       window.LootSystem.onPotionKey();
+    }
+    // Tutorial step `combat.potion` advances on every F-press, even when
+    // no potion is in inventory — the tutorial purpose is "learn the
+    // binding", not "successfully heal". Prevents a softlock for players
+    // who haven't found a potion yet.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('potion.attempted', {});
     }
   });
   // Initialise InputScheme with this scene so it can resolve mouse world coords.

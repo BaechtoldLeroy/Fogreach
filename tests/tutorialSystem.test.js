@@ -210,8 +210,8 @@ test('step 11 auto-dismisses after 5000 ms via the injected scheduler', () => {
   TS.report('dialog.closed', { npc: 'aldric' });                                // -> dungeon.approach
   TS.report('hub.entrance.approached', { name: 'rathaus_entrance' });           // -> dungeon.enter
   TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });              // -> combat.basics
-  TS.report('combat.hit', { byPlayer: true });                                  // -> combat.ability
-  TS.report('combat.ability.used', { slot: 1 });                                // -> loot.pickup
+  TS.report('combat.hit', { byPlayer: true });                                  // -> combat.potion
+  TS.report('potion.attempted', {});                                            // -> loot.pickup
   TS.report('loot.picked', { itemId: 'x' });                                    // -> loot.equip
   TS.report('inventory.equipped', { slot: 'mainhand' });                        // -> save.notice
   assert.strictEqual(TS.getCurrentStep().id, 'save.notice');
@@ -322,7 +322,7 @@ test('out-of-order report() (e.g., loot.picked during step 7) is dropped', () =>
   assert.strictEqual(TS.getCurrentStep().id, 'combat.basics', 'out-of-order event ignored');
   // Now legitimately advance.
   TS.report('combat.hit', { byPlayer: true });
-  assert.strictEqual(TS.getCurrentStep().id, 'combat.ability');
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.potion');
 });
 
 // --- 14. stored blob with version > 1 is discarded ------------------------
@@ -357,7 +357,7 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   TS.report('hub.entrance.approached', { name: 'rathaus_entrance' });
   TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });
   TS.report('combat.hit', { byPlayer: true });
-  TS.report('combat.ability.used', { slot: 1 });
+  TS.report('potion.attempted', {});
   TS.report('loot.picked', { itemId: 'x' });
   TS.report('inventory.equipped', { slot: 'mainhand' });
   // Auto-dismiss step 11.
