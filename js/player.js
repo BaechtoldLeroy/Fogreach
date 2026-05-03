@@ -711,6 +711,36 @@ function hasLineOfSightToEnemy(enemy) {
   return true;
 }
 
+// Test whether a destructible obstacle is visible to the player. We can't
+// reuse hasLineOfSightToEnemy here because Steering.hasLineOfSight intersects
+// every obstacle in the obstacles group — including the destructible target
+// itself, which would always block the line. Instead we test against the
+// cached fog-of-war vision polygon (built each frame by
+// roomManager.updateFogOfWar), which already accounts for walls and closed
+// doors via raycasting. Falls back to "allowed" if the polygon hasn't been
+// computed yet (early frames, headless tests) so combat never softlocks.
+function hasLineOfSightToTarget(target) {
+  if (!target || !player) return !!target;
+  var scene = player.scene || (obstacles && obstacles.scene);
+  var poly = scene && scene._lastVisionPolygon;
+  if (!poly || poly.length < 6
+      || typeof Phaser === 'undefined'
+      || !Phaser.Geom || !Phaser.Geom.Polygon) {
+    return true; // no LOS data yet — fail open to avoid breaking combat
+  }
+  // Reuse the cached Polygon object across frames (mirrors the pattern in
+  // eliteEnemies.js so we don't allocate a Polygon per attack).
+  try {
+    if (!scene._lastVisionPolyObj || scene._lastVisionPolyData !== poly) {
+      scene._lastVisionPolyObj = new Phaser.Geom.Polygon(poly);
+      scene._lastVisionPolyData = poly;
+    }
+    return Phaser.Geom.Polygon.Contains(scene._lastVisionPolyObj, target.x, target.y);
+  } catch (_) {
+    return true; // polygon malformed — fail open
+  }
+}
+
 function forEachEnemyInRange(range, callback, options = {}) {
   if (!enemies?.children || typeof callback !== 'function' || !player) return;
 
@@ -1372,7 +1402,12 @@ function attack() {
       const ndx = dx / dist;
       const ndy = dy / dist;
       const dotO = aim.x * ndx + aim.y * ndy;
-      if (dotO > 0.5) targets.push(obs);
+      if (dotO <= 0.5) return;
+      // LOS gate: don't break crates/barrels through closed doors or walls.
+      // Uses the cached fog-of-war vision polygon (raycast-derived). Fails
+      // open if the polygon isn't ready yet so combat never softlocks.
+      if (!hasLineOfSightToTarget(obs)) return;
+      targets.push(obs);
     });
     targets.forEach(t => window.breakDestructibleObstacle(this, t));
   }
