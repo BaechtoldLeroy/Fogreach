@@ -669,6 +669,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
 
   if (Math.random() < eliteChance) {
     makeElite.call(this, enemy);
+    enemy._eliteApplied = true;
   }
 
   // WP05 — Champion/Unique elite injection (non-breaking, no-op if module missing)
@@ -678,11 +679,42 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       const tier = window.EliteEnemies.shouldSpawnElite(depth);
       if (tier && typeof window.EliteEnemies.applyEliteToEnemy === 'function') {
         window.EliteEnemies.applyEliteToEnemy(enemy, tier);
+        enemy._eliteApplied = true;
       }
     } catch (err) {
       console.warn('[spawnEnemy] elite injection failed', err);
     }
   }
+
+  // Printing-House run buffs: enemy HP multiplier and additive tier bonus.
+  // Plus suspicion retaliation: high_alert / active_hunt force one extra elite
+  // injection per spawn (only when no elite was rolled above).
+  try {
+    const _phEn = window.printingBuffs;
+    if (_phEn) {
+      if (typeof _phEn.enemyHpMult === 'number' && _phEn.enemyHpMult > 0 && _phEn.enemyHpMult !== 1) {
+        enemy.hp = Math.max(1, Math.round(enemy.hp * _phEn.enemyHpMult));
+        if (typeof enemy.maxHp === 'number') enemy.maxHp = enemy.hp;
+        else enemy.maxHp = enemy.hp;
+      }
+      if (typeof _phEn.enemyTierBonus === 'number' && _phEn.enemyTierBonus > 0
+          && !enemy._eliteApplied
+          && window.EliteEnemies && typeof window.EliteEnemies.applyEliteToEnemy === 'function') {
+        try { window.EliteEnemies.applyEliteToEnemy(enemy, 'champion'); enemy._eliteApplied = true; }
+        catch (_) {}
+      }
+    }
+    if (window.PrintingHouse && typeof window.PrintingHouse.getRetaliationTier === 'function') {
+      const tier = window.PrintingHouse.getRetaliationTier();
+      if ((tier === 'high_alert' || tier === 'active_hunt')
+          && !enemy._eliteApplied
+          && Math.random() < 0.20  // 20% chance per spawn → roughly +1 elite per room of 5 enemies
+          && window.EliteEnemies && typeof window.EliteEnemies.applyEliteToEnemy === 'function') {
+        try { window.EliteEnemies.applyEliteToEnemy(enemy, 'champion'); enemy._eliteApplied = true; }
+        catch (_) {}
+      }
+    }
+  } catch (_) { /* swallow */ }
 
   return enemy;
 }

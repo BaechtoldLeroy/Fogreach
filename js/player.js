@@ -1218,6 +1218,20 @@ function handleEnemyHit(scene, enemy, options = {}) {
   }
 
   if (enemy.hp <= 0) {
+    // Issue #24: chance to drop a Druckblatt on kill. Elite enemies have
+    // a higher chance. Direct call to PrintingHouse.addDruckblaetter
+    // (clamped to the 50-cap inside). Drops nothing visible — counter
+    // ticks up in the Druckerei UI summary.
+    if (window.PrintingHouse && typeof window.PrintingHouse.addDruckblaetter === 'function') {
+      try {
+        var dropChance = enemy.isElite ? 0.18 : 0.06;
+        if (enemy.isMiniBoss) dropChance = 0.40;
+        if (enemy.isBoss) dropChance = 1.00; // bosses always drop
+        if (Math.random() < dropChance) {
+          window.PrintingHouse.addDruckblaetter(enemy.isBoss ? 3 : (enemy.isMiniBoss ? 2 : 1));
+        }
+      } catch (_) { /* never crash gameplay */ }
+    }
     if (window.soundManager) window.soundManager.playSFX('enemy_death');
     // Particle effects: death burst + screen shake
     if (window.particleFactory) {

@@ -467,11 +467,16 @@ if (window.i18n) {
     if (typeof rng !== 'function') rng = Math.random;
     // D2-like curves: flatter scaling, capped Rare/Legendary.
     const shift = Math.max(0, (iLevel - 5)) * 0.003;
+    // Printing-House loot rarity bias: scales the higher-tier weights
+    // (Magic/Rare/Legendary) and inversely shrinks Common.
+    const _ph = (typeof window !== 'undefined') ? window.printingBuffs : null;
+    const bias = (_ph && typeof _ph.lootRarityBias === 'number' && _ph.lootRarityBias > 0)
+      ? _ph.lootRarityBias : 1;
     const weights = [
-      Math.max(0, 0.78 - shift * 1.2),      // Common
-      Math.max(0, 0.20 - shift * 0.3),      // Magic
-      Math.min(0.05, 0.02 + shift * 0.4),   // Rare       (capped 5%)
-      Math.min(0.02, 0.003 + shift * 0.3)   // Legendary  (capped 2%)
+      Math.max(0, 0.78 - shift * 1.2),                    // Common
+      Math.max(0, (0.20 - shift * 0.3) * bias),           // Magic
+      Math.min(0.05 * bias, (0.02 + shift * 0.4) * bias), // Rare       (capped scales with bias)
+      Math.min(0.02 * bias, (0.003 + shift * 0.3) * bias) // Legendary  (capped scales with bias)
     ];
     let total = 0;
     for (let i = 0; i < weights.length; i++) total += weights[i];
@@ -716,6 +721,10 @@ if (window.i18n) {
 
   function consumePotion(slot) {
     if (isPotionOnCooldown()) return false;
+    // Issue #24: "Letzte Schlacht" Risky edict disables potions for the
+    // run. Buff registry is set by PrintingHouse.applyActivePublicationEffect
+    // and cleared by leaveDungeonForHub.
+    if (window.printingBuffs && window.printingBuffs.potionDisabled) return false;
     if (typeof slot !== 'number') return false;
     if (typeof window === 'undefined' || !Array.isArray(window.inventory)) return false;
     const item = window.inventory[slot];

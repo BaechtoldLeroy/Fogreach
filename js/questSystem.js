@@ -18,7 +18,7 @@
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 10 }
       ],
-      rewards: { xp: 30, materials: { MAT: 5 } },
+      rewards: { xp: 30, materials: { MAT: 5 }, druckblaetter: 2 },
       prerequisites: [],
       requiredAct: 0,
       dialogueOffer: 'Wilde Tiere in den Kellern. Raeum sie aus.\n\nWillst du diese Aufgabe uebernehmen?',
@@ -35,7 +35,7 @@
       objectives: [
         { type: 'explore', target: 'room', current: 0, required: 3 }
       ],
-      rewards: { xp: 40 },
+      rewards: { xp: 40, druckblaetter: 1 },
       prerequisites: [],
       requiredAct: 0,
       dialogueOffer: 'Stell sicher, dass alle Gaenge sicher sind. Patrouilliere drei Raeume.\n\nBist du bereit?',
@@ -56,7 +56,7 @@
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 20 }
       ],
-      rewards: { xp: 75, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', nameKey: 'quest.reward.ALDRIC_SCHWERT', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityKey: 'quest.rarity.rare', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
+      rewards: { xp: 75, druckblaetter: 3, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', nameKey: 'quest.reward.ALDRIC_SCHWERT', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityKey: 'quest.rarity.rare', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
       prerequisites: ['aldric_cleanup'],
       requiredAct: 1,
       dialogueOffer: 'Fremde stehlen unsere Dokumente. Stoppe sie. Besiege zwanzig dieser Eindringlinge.\n\nNimmst du den Auftrag an?',
@@ -851,6 +851,13 @@
           if (typeof refreshInventoryUI === 'function') refreshInventoryUI();
         }
       });
+    }
+    if (typeof rewards.druckblaetter === 'number' && rewards.druckblaetter > 0
+        && window.PrintingHouse && typeof window.PrintingHouse.addDruckblaetter === 'function') {
+      try {
+        window.PrintingHouse.addDruckblaetter(rewards.druckblaetter | 0);
+        console.log('[QuestSystem] Granted ' + (rewards.druckblaetter | 0) + ' Druckblätter');
+      } catch (_) {}
     }
     if (rewards.unlocks && Array.isArray(rewards.unlocks)) {
       rewards.unlocks.forEach(function (unlock) {

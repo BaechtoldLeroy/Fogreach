@@ -270,9 +270,15 @@
       const tierMul = [10, 50, 200, 800];
       const t = Math.max(0, Math.min(3, item.tier || 0));
       const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
-      const base = Math.max(1, Math.round(tierMul[t] * (1 + iLevel * 0.1)));
+      let base = Math.max(1, Math.round(tierMul[t] * (1 + iLevel * 0.1)));
       // Dungeon merchant offers 30% discount
-      return this.isDungeonMerchant ? Math.max(1, Math.round(base * 0.7)) : base;
+      if (this.isDungeonMerchant) base = Math.max(1, Math.round(base * 0.7));
+      // Printing-House edict: hub-side shop discount (run-scoped, only at Mara, not at dungeon merchant)
+      const ph = (typeof window !== 'undefined') ? window.printingBuffs : null;
+      if (ph && !this.isDungeonMerchant && typeof ph.shopPriceMult === 'number' && ph.shopPriceMult > 0) {
+        base = Math.max(1, Math.round(base * ph.shopPriceMult));
+      }
+      return base;
     }
 
     _tryBuyItem(stockIdx, price) {
@@ -373,7 +379,11 @@
         }).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(healText);
 
-        const potionPrice = this.isDungeonMerchant ? Math.max(1, Math.round(def.goldCost * 0.7)) : def.goldCost;
+        let potionPrice = this.isDungeonMerchant ? Math.max(1, Math.round(def.goldCost * 0.7)) : def.goldCost;
+        const _phPot = (typeof window !== 'undefined') ? window.printingBuffs : null;
+        if (_phPot && !this.isDungeonMerchant && typeof _phPot.shopPriceMult === 'number' && _phPot.shopPriceMult > 0) {
+          potionPrice = Math.max(1, Math.round(potionPrice * _phPot.shopPriceMult));
+        }
         const priceText = this.add.text(px + panelW / 2 - 180, ry + rowH / 2, potionPrice + ' G', {
           fontFamily: 'monospace', fontSize: '12px', color: '#ffd166'
         }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2003);

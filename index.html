@@ -65,6 +65,10 @@
     <!-- Faction subsystem (feature 045). Same load-order rules as tutorial:
          must load before any scene file. -->
     <script src="js/factionSystem.js"></script>
+    <!-- Printing House (feature 046 / Issue #24). Depends on FactionSystem
+         + questSystem at runtime (lazy via window globals; load order only
+         requires it to be before any scene that opens its dialog UI). -->
+    <script src="js/printingHouse.js"></script>
     <script src="js/scenes/startScene.js"></script>
     <script src="js/scenes/HubScene.js"></script>
     <script src="js/scenes/hub/hubLayout.js"></script>

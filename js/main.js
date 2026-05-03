@@ -1001,6 +1001,17 @@ function create() {
 
   // Expose this scene for LootSystem HoT timers
   window.gameScene = this;
+
+  // Issue #24: apply the Druckerei's active edict (if any) at run start.
+  // Sets window.printingBuffs which inventory.recalcDerived consumes for
+  // damage / max-HP, and which loot/shop/enemy hooks read for the other
+  // effect kinds. Cleared on hub return by leaveDungeonForHub.
+  if (window.PrintingHouse && typeof window.PrintingHouse.applyActivePublicationEffect === 'function') {
+    try {
+      window.PrintingHouse.applyActivePublicationEffect();
+      if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+    } catch (err) { console.warn('[GameScene] PrintingHouse apply failed', err); }
+  }
   this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     this.input.keyboard.off('keydown-F');
     this.input.keyboard.off('keydown-I');
@@ -1568,6 +1579,28 @@ function leaveDungeonForHub(scene, options = {}) {
     if (typeof recalcDerived === 'function') {
       try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived failed', err); }
     }
+  }
+
+  // Issue #24 — Printing House run-scoped buffs. Same pattern as Brunnen.
+  // Also: consume the active publication slot (the edict had its run, it's
+  // gone now) and let suspicion decay if the player did NOT publish (the
+  // decay-while-active-zero check is inside printingHouse).
+  if (window.printingBuffs) {
+    window.printingBuffs = null;
+    if (typeof recalcDerived === 'function') {
+      try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived (printing) failed', err); }
+    }
+  }
+  if (window.PrintingHouse) {
+    try {
+      // If an edict was active for this run, suspicion was already added at
+      // publish time. Decay only fires when no publication happened.
+      var hadActive = !!window.PrintingHouse.getActivePublication();
+      window.PrintingHouse.clearActivePublication();
+      if (!hadActive && typeof window.PrintingHouse.decaySuspicion === 'function') {
+        window.PrintingHouse.decaySuspicion();
+      }
+    } catch (err) { console.warn('[leaveDungeonForHub] PrintingHouse cleanup failed', err); }
   }
 
   if (!skipSave && typeof saveGame === 'function') {

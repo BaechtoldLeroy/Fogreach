@@ -876,13 +876,22 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   const _affixHpBonus = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
     ? (window.LootSystem.getBonus('hp') || 0)
     : 0;
-  // Brunnen run-scoped max-HP delta (Issue #16). Negative for the
-  // max-HP debuff. Cleared on hub return so it never leaks into the next
-  // run. Floor of 1 max HP enforced below in newMaxHealth's Math.max.
+  // Brunnen run-scoped max-HP delta (Issue #16).
   const _brunnenMaxHpAdd = (window.brunnenBuffs && typeof window.brunnenBuffs.maxHpAdd === 'number')
     ? window.brunnenBuffs.maxHpAdd
     : 0;
-  const newMaxHealth = Math.max(1, Math.round((baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd));
+  // Printing-House run-scoped max-HP delta (Issue #24). Cleared on hub
+  // return same as the brunnen registry. Includes both flat add and
+  // percent add (the percent applies to the pre-printing total so the
+  // edict order doesn't matter).
+  const _printingFlatHp = (window.printingBuffs && typeof window.printingBuffs.maxHpAdd === 'number')
+    ? window.printingBuffs.maxHpAdd
+    : 0;
+  const _printingPctHp = (window.printingBuffs && typeof window.printingBuffs.maxHpAddPct === 'number')
+    ? window.printingBuffs.maxHpAddPct
+    : 0;
+  const _hpBeforePrinting = (baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd;
+  const newMaxHealth = Math.max(1, Math.round(_hpBeforePrinting + _printingFlatHp + _hpBeforePrinting * _printingPctHp));
   if (typeof setPlayerMaxHealth === 'function') {
     setPlayerMaxHealth(newMaxHealth, { updateUi: false });
   } else {
@@ -980,6 +989,14 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
       0.85
     );
     playerSpeed = Math.max(60, Math.round(playerSpeed * (bb.speedMult || 1)));
+  }
+
+  // 3.8) Printing-House run-scoped buffs (Issue #24). Layered LAST so edict
+  // multipliers apply on top of brunnen / shrine buffs. Damage multiplier
+  // and armor delta apply here; max-HP is already in newMaxHealth.
+  const pb = window.printingBuffs;
+  if (pb) {
+    weaponDamage = Math.max(1, Math.round(weaponDamage * (pb.damageMult || 1)));
   }
 
   // 4) HUD aktualisieren

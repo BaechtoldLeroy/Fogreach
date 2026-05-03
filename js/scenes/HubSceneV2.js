@@ -801,7 +801,15 @@ class HubSceneV2 extends Phaser.Scene {
         questData = activeForNpc[0];
       } else {
         const available = qs.getAvailableQuests(npcId);
-        if (available.length > 0) {
+        // Printing-House: when Council suspicion is at active_hunt, Aldric
+        // refuses to hand out new quests (existing turn-ins / progress are
+        // still allowed so the player isn't soft-locked).
+        let aldricRefuses = false;
+        if (npcId === 'aldric' && window.PrintingHouse
+            && typeof window.PrintingHouse.getRetaliationTier === 'function') {
+          aldricRefuses = window.PrintingHouse.getRetaliationTier() === 'active_hunt';
+        }
+        if (available.length > 0 && !aldricRefuses) {
           questMode = 'offer';
           questData = available[0];
         }
@@ -1344,6 +1352,102 @@ class HubSceneV2 extends Phaser.Scene {
     });
   }
 
+  // Issue #24: Druckerei dialog. Renders a list of edicts (cost / tier /
+  // status) plus bribe + gold-trade + close options on the standard
+  // _showNpcDialogue choice page. Each successful action closes and
+  // re-opens the dialog so the summary line refreshes.
+  _showPrintingHouseDialog() {
+    var ph = window.PrintingHouse;
+    if (!ph) return;
+    var paper = ph.getDruckblaetter();
+    var suspicion = ph.getSuspicion();
+    var active = ph.getActivePublication();
+    var T = function (k, params) { return (window.i18n ? window.i18n.t(k, params) : k); };
+
+    var summaryLine = T('printingHouse.summary', { paper: paper, cap: 50, suspicion: suspicion });
+    if (active) {
+      summaryLine += '\n[Aktiv: ' + T('printingHouse.edict.' + active.id + '.label') + ']';
+    }
+
+    var choices = [];
+    var catalog = ph.getEdictCatalog();
+    catalog.forEach(function (e) {
+      var lbl = T('printingHouse.edict.' + e.id + '.label');
+      var tierLbl = T('printingHouse.tier.' + e.tier);
+      var costLbl = '(' + e.cost + 'p, +' + e.suspicionCost + 'V)';
+      var statusLbl = '';
+      if (active) statusLbl = ' — gesperrt';
+      else if (!e.isUnlocked) statusLbl = ' — Standing ' + e.requireStanding;
+      else if (paper < e.cost) statusLbl = ' — zu wenig';
+      var label = '[' + tierLbl + '] ' + lbl + ' ' + costLbl + statusLbl;
+      var self = this;
+      choices.push({
+        label: label,
+        action: 'ph_publish_' + e.id,
+        _phEdictId: e.id
+      });
+    }, this);
+
+    if (suspicion > 0) {
+      choices.push({ label: T('printingHouse.choice.bribe'), action: 'ph_bribe' });
+    }
+    if (paper < 50) {
+      choices.push({ label: T('printingHouse.choice.tradegold'), action: 'ph_tradegold' });
+    }
+    choices.push({ label: T('printingHouse.choice.close'), action: 'ph_close' });
+
+    // Synthesize an NPC payload that goes through the existing
+    // _showDialoguePages code path. The page-action handler is hooked via
+    // overriding _handleDialogueChoice for the duration of this dialog.
+    var npcData = { id: 'setzer_thom', name: T('printingHouse.npc.name'), lines: [] };
+    var pages = [
+      { text: T('printingHouse.dialog.intro') + '\n\n' + summaryLine, choices: choices }
+    ];
+    var origHandler = this._handleDialogueChoice;
+    var self = this;
+    this._handleDialogueChoice = function (action, npcData2, titleStr, pagesArg, questMode, questData, pageIndex, keyClosers) {
+      // Restore handler before any branch returns / re-opens.
+      self._handleDialogueChoice = origHandler;
+      var toast = function (msg) {
+        try { console.log('[Druckerei]', msg); } catch (_) {}
+      };
+      if (action === 'ph_close') {
+        self._closeDialog(keyClosers);
+        return;
+      }
+      if (action === 'ph_bribe') {
+        var ok = ph.bribe();
+        toast(ok ? 'Aldric beschwichtigt' : 'Bribe fehlgeschlagen');
+        self._closeDialog(keyClosers);
+        self.time && self.time.delayedCall ? self.time.delayedCall(150, function () { self._showPrintingHouseDialog(); }) : self._showPrintingHouseDialog();
+        return;
+      }
+      if (action === 'ph_tradegold') {
+        var ok2 = ph.tradeGoldForPaper();
+        toast(ok2 ? '+1 Druckblatt' : 'Trade fehlgeschlagen');
+        self._closeDialog(keyClosers);
+        self.time && self.time.delayedCall ? self.time.delayedCall(150, function () { self._showPrintingHouseDialog(); }) : self._showPrintingHouseDialog();
+        return;
+      }
+      if (typeof action === 'string' && action.indexOf('ph_publish_') === 0) {
+        var edictId = action.substring('ph_publish_'.length);
+        var result = ph.publishEdict(edictId);
+        toast(result.success ? 'Edikt veröffentlicht: ' + edictId : 'Publish fehlgeschlagen: ' + (result.reason || ''));
+        self._closeDialog(keyClosers);
+        if (result.success) {
+          // Don't re-open after a successful publish — let the player leave
+          // the Druckerei to enter the dungeon and see the effect.
+        } else {
+          self.time && self.time.delayedCall ? self.time.delayedCall(150, function () { self._showPrintingHouseDialog(); }) : self._showPrintingHouseDialog();
+        }
+        return;
+      }
+      // Fallback: defer to original handler (shouldn't happen).
+      origHandler.call(self, action, npcData2, titleStr, pagesArg, questMode, questData, pageIndex, keyClosers);
+    };
+    this._showDialoguePages(npcData, T('printingHouse.dialog.title'), pages, 'flavor', null, 0);
+  }
+
   _handleLoadout() {
     // Tutorial: skill.loadout step advances on K-press whether or not the
     // overlay itself can open (binding-only purpose).
@@ -1418,15 +1522,18 @@ class HubSceneV2 extends Phaser.Scene {
         this.scene.start('CraftingScene');
       });
     } else if (entranceData.target === 'druckerei') {
-      // Tutorial step 12 (druckerei.visit) closes when the dialog with
-      // "Setzer Thom" closes — use a stable name for the matcher regardless
-      // of language. Body text uses the tutorial-owned i18n key for the
-      // under-construction stub (#24 future work replaces this with the real
-      // Printing House dialog).
-      this._showNpcDialogue({
-        name: 'Setzer Thom',
-        lines: [_HUB_T('tutorial.druckerei.stub')]
-      });
+      // Issue #24: real Druckerei dialog. Locked until aldric_cleanup is
+      // completed (FR-30). Otherwise opens the edict-browser overlay
+      // built around the existing _showNpcDialogue choice flow.
+      var ph = window.PrintingHouse;
+      if (!ph || !ph.isUnlocked()) {
+        this._showNpcDialogue({
+          name: 'Setzer Thom',
+          lines: [_HUB_T('printingHouse.dialog.locked')]
+        });
+      } else {
+        this._showPrintingHouseDialog();
+      }
     }
   }
 

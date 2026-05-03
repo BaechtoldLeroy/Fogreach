@@ -186,8 +186,13 @@ function _dropEnemyGold(scene, enemy) {
   if (!scene || !enemy) return;
   const level = enemy.iLevel || enemy.mLevel || (typeof currentWave !== 'undefined' ? currentWave : 1) || 1;
   const isBoss = !!(enemy.isBoss || enemy.isMiniBoss);
-  const amount = _rollEnemyGoldDrop(level, isBoss);
+  let amount = _rollEnemyGoldDrop(level, isBoss);
   if (amount <= 0) return;
+  // Printing-House edict: gold drop multiplier (open_rebellion).
+  const _ph = (typeof window !== 'undefined') ? window.printingBuffs : null;
+  if (_ph && typeof _ph.goldMult === 'number' && _ph.goldMult > 0 && _ph.goldMult !== 1) {
+    amount = Math.max(1, Math.round(amount * _ph.goldMult));
+  }
   // Scatter gold around the enemy so it doesn't perfectly stack on the
   // XP/health pickup that lootGroup spawns at the same tile.
   const angle = Math.random() * Math.PI * 2;
