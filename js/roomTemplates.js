@@ -1187,7 +1187,11 @@ function buildTemplateRoom(scene, templateName) {
     w: built.w,
     h: built.h,
     doors: built.doors,
-    isLarge: !!built.isLarge
+    isLarge: !!built.isLarge,
+    // Bug fix (043): expose procedural flag so roomManager can apply stricter
+    // stair-spawn rules (distance + wall-collision) only on generated rooms,
+    // leaving authored templates' hand-placed entrances untouched.
+    isProcedural: !!tpl._procedural
   };
 }
 
