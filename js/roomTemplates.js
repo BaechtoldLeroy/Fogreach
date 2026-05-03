@@ -903,8 +903,12 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
 
   // Loot
   tpl.spawns?.loot?.forEach(l => {
-    const px0 = ox + gx(tpl, l.x) + T/2;
-    const py0 = oy + gy(tpl, l.y) + T/2;
+    // Snap the requested tile to a walkable, reachable tile so chests never
+    // spawn on top of walls or in inaccessible chambers. findAccessibleTileNear
+    // does a BFS-bounded search and falls back to the closest reachable tile.
+    const baseTile = findAccessibleTileNear(l.x, l.y, 0) || { x: l.x, y: l.y };
+    const px0 = ox + gx(tpl, baseTile.x) + T/2;
+    const py0 = oy + gy(tpl, baseTile.y) + T/2;
 
     const cam = scene.cameras.main;
     const cx = cam.midPoint.x, cy = cam.midPoint.y;
@@ -912,9 +916,9 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
 
     let px = px0, py = py0;
 
-    // wenn zu nah an der Kamera: random Position im Raum suchen
+    // wenn zu nah an der Kamera: random Position im Raum suchen — und nur
+    // walkable Tiles zulassen, sonst landet die Truhe auf einer Mauer.
     if (Phaser.Math.Distance.Between(px, py, cx, cy) < MIN) {
-      // Raumgrenzen, falls vorhanden, sonst Bildschirm
       const bounds = scene.currentRoom
         ? {
             x: scene.currentRoom.origin.x + 16,
@@ -925,16 +929,40 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         : { x: 16, y: 16, w: scene.scale.width - 32, h: scene.scale.height - 32 };
 
       let tries = 0;
+      let foundFree = false;
       do {
-        px = Phaser.Math.Between(bounds.x, bounds.x + bounds.w);
-        py = Phaser.Math.Between(bounds.y, bounds.y + bounds.h);
+        const candX = Phaser.Math.Between(bounds.x, bounds.x + bounds.w);
+        const candY = Phaser.Math.Between(bounds.y, bounds.y + bounds.h);
+        if (Phaser.Math.Distance.Between(candX, candY, cx, cy) < MIN) { tries++; continue; }
+        // Convert back to tile coords (relative to template origin) and
+        // verify walkability.
+        const tileX = Math.floor((candX - ox) / T);
+        const tileY = Math.floor((candY - oy) / T);
+        const safeTile = findAccessibleTileNear(tileX, tileY, 0);
+        if (safeTile) {
+          px = ox + gx(tpl, safeTile.x) + T/2;
+          py = oy + gy(tpl, safeTile.y) + T/2;
+          foundFree = true;
+          break;
+        }
         tries++;
-      } while (tries < 20 && Phaser.Math.Distance.Between(px, py, cx, cy) < MIN);
+      } while (tries < 20);
+      // If reroll failed entirely, keep the snapped px0/py0 — at least it's
+      // walkable, even if close to camera.
+      if (!foundFree) { px = px0; py = py0; }
     }
 
-    // WICHTIG: korrekte Signatur ohne zusaetzliches 'scene' Argument
+    // Final wall-collision guard via the global helper used by enemy/stair
+    // placement. If the tile is still blocked (e.g., obstacle was placed on
+    // top earlier this frame), skip the chest rather than spawn it inside a
+    // wall.
+    if (typeof window.isSpawnPositionBlocked === 'function'
+        && window.isSpawnPositionBlocked(px, py)) {
+      try { console.warn('[roomTemplates] skipped chest spawn at blocked tile', { x: px, y: py, type: l.type }); } catch (_) {}
+      return;
+    }
+
     if (window.spawnLoot) window.spawnLoot(px, py, { type: l.type, locked: !!l.locked });
-    // Falls du this.spawnLoot gebunden hast: this.spawnLoot(px, py, { ... });
   });
 
   // Türen
