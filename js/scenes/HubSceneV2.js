@@ -773,7 +773,6 @@ class HubSceneV2 extends Phaser.Scene {
     // step 12 via Setzer Thom). Use a stable id where available so language
     // switches don't break the matcher.
     this._currentDialogNpc = (npcData && (npcData.id || npcData.name)) || null;
-    try { console.log('[HubSceneV2] emit dialog.opened npc=', this._currentDialogNpc); } catch (_) {}
     if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
       window.TutorialSystem.report('dialog.opened', { npc: this._currentDialogNpc });
     }
@@ -1273,9 +1272,8 @@ class HubSceneV2 extends Phaser.Scene {
       this.prompt.setVisible(false);
     }
     // Tutorial: emit dialog.closed with the npc identifier captured on open
-    // (steps quest.close + druckerei.visit advance here). Single funnel —
-    // every close path goes through _closeDialog.
-    try { console.log('[HubSceneV2] emit dialog.closed npc=', this._currentDialogNpc); } catch (_) {}
+    // (steps quest.close advances here). Single funnel — every close
+    // path goes through _closeDialog.
     if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
       window.TutorialSystem.report('dialog.closed', { npc: this._currentDialogNpc });
     }

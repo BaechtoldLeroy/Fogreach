@@ -602,22 +602,19 @@
     _advance();
   }
 
-  // Diagnostic — logs every report() call until the tutorial flow is
-  // verified end-to-end. Set window.__TUTORIAL_DEBUG__ = false in DevTools
-  // to silence (default ON during the #29 stabilization sweep).
+  // Diagnostic — silent by default. Set window.__TUTORIAL_DEBUG__ = true
+  // in DevTools to trace every report() call (event, payload, verdict).
+  // Useful when a step appears to be stuck.
   //
   // Repeated identical (event + first-word-of-verdict) drops are coalesced
   // into a single line with a "(xN)" suffix on the next distinct line, so
-  // a player holding WASD during the movement step's minDisplayMs window
-  // doesn't flood the console with 300 identical "dropped: minDisplayMs..."
-  // entries.
+  // holding WASD during the movement step's minDisplayMs window doesn't
+  // flood the console.
   var _lastLogKey = null;
   var _lastLogCount = 0;
   function _debugLog(eventName, payload, verdict) {
     try {
-      if (typeof window !== 'undefined' && window.__TUTORIAL_DEBUG__ === false) return;
-      // Verdict starts with "advancing" or "dropped: ..." — coalesce on
-      // the prefix only so different drop reasons stay distinguishable.
+      if (typeof window === 'undefined' || !window.__TUTORIAL_DEBUG__) return;
       var verdictKey = String(verdict).split(':')[0];
       var key = eventName + '|' + verdictKey;
       if (key === _lastLogKey) {
