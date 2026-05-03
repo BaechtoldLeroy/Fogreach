@@ -49,6 +49,8 @@ The current Brunnen event triggers, applies a small predictable effect (current 
 | FR-08 | HP-cost outcomes MUST clamp player HP above 1 (Opfern never instakills).                                                        | Draft  |
 | FR-09 | All visible strings MUST be localized via `i18n` (DE primary, EN secondary).                                                    | Draft  |
 | FR-10 | Outcome resolution MUST be testable in isolation: outcome table + RNG primitive injected via the existing `_configureForTest` pattern. | Draft  |
+| FR-11 | All buff and debuff outcomes from the Brunnen MUST persist for the duration of the current dungeon run only — they MUST be cleared on hub return (next-run start sees no leftover). | Draft  |
+| FR-12 | The HP debuff outcome MUST reduce **maximum** HP (not current HP), capped at a minimum of 1 max HP. Effective current HP is clamped to the new max if it would otherwise exceed it. | Draft  |
 
 ## 5. Non-Functional Requirements
 
@@ -62,10 +64,11 @@ The current Brunnen event triggers, applies a small predictable effect (current 
 | ID    | Constraint                                                                                                              | Status |
 |-------|-------------------------------------------------------------------------------------------------------------------------|--------|
 | C-01  | Reuse existing event-system runtime and dialog system.                                                                  | Draft  |
-| C-02  | No new persistent state — exhausted flag is per-run only.                                                                | Draft  |
+| C-02  | No new persistent state — exhausted flag and all outcome buffs/debuffs are per-run only (cleared on hub return).        | Draft  |
 | C-03  | Outcome weights MUST live in a single configuration object (one place to tune).                                          | Draft  |
 | C-04  | Trigger / spawn rate MUST stay the same as today's Brunnen — frequency tuning is out of scope.                            | Draft  |
 | C-05  | HP-cost outcome MUST go through the existing damage pipeline so existing damage listeners (sound, particles) fire.        | Draft  |
+| C-06  | Max-HP debuff outcome MUST be applied via the existing `window.eventBuffs` / `recalcDerived` contributor pattern (no new global), so it cleanly reverses on hub return when the buff registry is wiped. | Draft  |
 
 ## 7. Success Criteria
 
@@ -81,9 +84,13 @@ The current Brunnen event triggers, applies a small predictable effect (current 
 
 - Player has 1 HP and picks Opfern (HP cost) → falls back to gold cost; if no gold, option is greyed out.
 - Player has 0 gold and picks Opfern (gold cost) → falls back to HP cost; if neither possible, option is hidden.
-- Debuff exceeds run length → persists until next hub return, then clears (existing `eventBuffs` semantics).
+- Player picks max-HP debuff while at full HP (current = max) → max drops; current is clamped to the new max so the player isn't healed by accident.
+- Player picks max-HP debuff while wounded (current < max) → max drops; current stays where it was unless it now exceeds the new max.
+- Max-HP debuff would reduce max to 0 or below → clamped to 1 (player never has 0 max HP from a Brunnen outcome).
 - Brunnen triggered during a buffer-frame between rooms → trigger suppressed; existing event-system already handles.
 - RNG returns the same outcome 5 times in a row → expected; weighted-random is allowed to streak.
+- Player accepts a buff/debuff, then dies → on hub return all per-run buffs/debuffs clear (FR-11). Next dungeon entry starts clean.
+- Player accepts a buff, then portals back to hub voluntarily → same: buffs clear on hub return.
 
 ## 9. Key Entities
 
