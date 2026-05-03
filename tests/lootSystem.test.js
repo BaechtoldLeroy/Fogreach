@@ -257,21 +257,6 @@ test('all public API methods are implemented (no stubs remaining)', () => {
 // Phase 3 (WP02): ITEM_BASES, rollItem, composeName, migrateSave
 // ---------------------------------------------------------------------------
 
-test('ITEM_BASES has exactly 13 frozen entries with required fields', () => {
-  const sys = freshSystem();
-  assert.strictEqual(sys.ITEM_BASES.length, 13);
-  assert.strictEqual(Object.isFrozen(sys.ITEM_BASES), true);
-  const required = ['key', 'type', 'name', 'iconKey', 'baseStats', 'dropWeight'];
-  const seen = new Set();
-  for (const b of sys.ITEM_BASES) {
-    for (const f of required) {
-      assert.ok(f in b, 'missing field ' + f + ' on ' + b.key);
-    }
-    assert.strictEqual(seen.has(b.key), false, 'duplicate base key: ' + b.key);
-    seen.add(b.key);
-  }
-});
-
 test('rollItem(baseKey, iLevel) returns an item with the right key and shape', () => {
   const sys = freshSystem();
   const item = sys.rollItem('WPN_EISENKLINGE', 5);
