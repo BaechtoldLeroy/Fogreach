@@ -876,7 +876,13 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   const _affixHpBonus = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
     ? (window.LootSystem.getBonus('hp') || 0)
     : 0;
-  const newMaxHealth = Math.max(1, Math.round((baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus));
+  // Brunnen run-scoped max-HP delta (Issue #16). Negative for the
+  // max-HP debuff. Cleared on hub return so it never leaks into the next
+  // run. Floor of 1 max HP enforced below in newMaxHealth's Math.max.
+  const _brunnenMaxHpAdd = (window.brunnenBuffs && typeof window.brunnenBuffs.maxHpAdd === 'number')
+    ? window.brunnenBuffs.maxHpAdd
+    : 0;
+  const newMaxHealth = Math.max(1, Math.round((baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd));
   if (typeof setPlayerMaxHealth === 'function') {
     setPlayerMaxHealth(newMaxHealth, { updateUi: false });
   } else {
@@ -959,6 +965,21 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
       0.85
     );
     playerSpeed = Math.max(60, Math.round(playerSpeed * (buffs.speedMult || 1)));
+  }
+
+  // 3.7) Brunnen run-scoped buffs (Issue #16). Same shape as eventBuffs but
+  // cleared on hub return so they never leak between runs. Max-HP delta is
+  // already factored into newMaxHealth above; this layer handles damage /
+  // speed / armor multipliers.
+  const bb = window.brunnenBuffs;
+  if (bb) {
+    weaponDamage = Math.max(1, Math.round(weaponDamage * (bb.damageMult || 1)));
+    playerArmor = Phaser.Math.Clamp(
+      playerArmor + (bb.armorAdd || 0),
+      0,
+      0.85
+    );
+    playerSpeed = Math.max(60, Math.round(playerSpeed * (bb.speedMult || 1)));
   }
 
   // 4) HUD aktualisieren

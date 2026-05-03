@@ -1559,6 +1559,17 @@ function leaveDungeonForHub(scene, options = {}) {
 
   const { reason = 'portal', skipSave = false, skipFade = false } = options;
 
+  // Issue #16 — Brunnen buffs/debuffs are run-scoped. Clear before save +
+  // before the heal-on-return so the next dungeon entry starts clean.
+  // Run recalcDerived() afterward so the player's max HP / damage / speed
+  // / armor immediately revert to their gear+skill baseline.
+  if (window.brunnenBuffs) {
+    window.brunnenBuffs = null;
+    if (typeof recalcDerived === 'function') {
+      try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived failed', err); }
+    }
+  }
+
   if (!skipSave && typeof saveGame === 'function') {
     try {
       saveGame(scene);

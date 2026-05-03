@@ -65,15 +65,27 @@
       // Elite ambush
       'event.elite.name': 'Elite-Hinterhalt',
       'event.elite.toast_spawn': 'Ein mächtiger Feind nähert sich!',
-      // Healing fountain
-      'event.fountain.name': 'Heilender Brunnen',
+      // Healing fountain (rework #16) — risk/reward choices with weighted
+      // outcomes. All Brunnen buffs/debuffs are run-scoped (cleared on hub
+      // return). HP debuff is on max HP, not current HP.
+      'event.fountain.name': 'Geheimnisvoller Brunnen',
       'event.fountain.toast_spawn': 'Ein leuchtender Brunnen erscheint...',
       'event.fountain.object_label': 'Brunnen',
-      'event.fountain.choice_drink': 'Trinken (volle Heilung)',
-      'event.fountain.choice_fill': 'Füllen (+1 Portalrolle)',
+      'event.fountain.choice_drink': 'Trinken',
+      'event.fountain.choice_offer': 'Opfern (-25% LP)',
+      'event.fountain.choice_offer_gold': 'Opfern (-50 Gold)',
       'event.fountain.choice_ignore': 'Ignorieren',
-      'event.fountain.toast_heal': 'Volle Heilung!',
-      'event.fountain.toast_scroll': '+1 Portalrolle!'
+      'event.fountain.outcome.heal':       'Reines Wasser! Volle Heilung.',
+      'event.fountain.outcome.damage_buff':'Stärke! +25% Schaden bis Run-Ende.',
+      'event.fountain.outcome.speed_buff': 'Eile! +20% Tempo bis Run-Ende.',
+      'event.fountain.outcome.armor_buff': 'Schutz! +5% Rüstung bis Run-Ende.',
+      'event.fountain.outcome.loot':       'Etwas glitzert im Wasser...',
+      'event.fountain.outcome.maxhp_debuff':'Bitter! -20% Max-LP bis Run-Ende.',
+      'event.fountain.outcome.speed_debuff':'Schwer! -10% Tempo bis Run-Ende.',
+      'event.fountain.outcome.damage_debuff':'Schwach! -10% Schaden bis Run-Ende.',
+      'event.fountain.outcome.nothing':    'Nichts geschieht.',
+      'event.fountain.outcome.strong_buff':'Mächtige Gabe! +50% Schaden bis Run-Ende.',
+      'event.fountain.outcome.rare_loot':  'Seltener Schatz!',
     });
     window.i18n.register('en', {
       'event.treasure.name': 'Hidden Treasure',
@@ -128,14 +140,24 @@
       'event.gambling.toast_lost': 'Lost! -{amount} gold',
       'event.elite.name': 'Elite Ambush',
       'event.elite.toast_spawn': 'A mighty foe approaches!',
-      'event.fountain.name': 'Healing Fountain',
+      'event.fountain.name': 'Mysterious Fountain',
       'event.fountain.toast_spawn': 'A glowing fountain appears...',
       'event.fountain.object_label': 'Fountain',
-      'event.fountain.choice_drink': 'Drink (full heal)',
-      'event.fountain.choice_fill': 'Fill (+1 portal scroll)',
+      'event.fountain.choice_drink': 'Drink',
+      'event.fountain.choice_offer': 'Sacrifice (-25% HP)',
+      'event.fountain.choice_offer_gold': 'Sacrifice (-50 gold)',
       'event.fountain.choice_ignore': 'Ignore',
-      'event.fountain.toast_heal': 'Full heal!',
-      'event.fountain.toast_scroll': '+1 portal scroll!'
+      'event.fountain.outcome.heal':       'Pure water! Fully healed.',
+      'event.fountain.outcome.damage_buff':'Strength! +25% damage for the rest of the run.',
+      'event.fountain.outcome.speed_buff': 'Haste! +20% speed for the rest of the run.',
+      'event.fountain.outcome.armor_buff': 'Protection! +5% armor for the rest of the run.',
+      'event.fountain.outcome.loot':       'Something glints in the water...',
+      'event.fountain.outcome.maxhp_debuff':"Bitter! -20% max HP for the rest of the run.",
+      'event.fountain.outcome.speed_debuff':'Heavy! -10% speed for the rest of the run.',
+      'event.fountain.outcome.damage_debuff':'Weak! -10% damage for the rest of the run.',
+      'event.fountain.outcome.nothing':    'Nothing happens.',
+      'event.fountain.outcome.strong_buff':'Mighty gift! +50% damage for the rest of the run.',
+      'event.fountain.outcome.rare_loot':  'A rare treasure!',
     });
   }
   var T = function (key, params) { return window.i18n ? window.i18n.t(key, params) : key; };
@@ -528,7 +550,143 @@
     }
   });
 
-  // Healing fountain — spawn object, interact to choose
+  // -------------------------------------------------------------------------
+  // Healing fountain — REWORKED (#16). Risk/reward choice with weighted
+  // random outcomes. All buff/debuff effects are run-scoped (cleared on
+  // hub return via leaveDungeonForHub). HP debuff hits MAX HP (not current).
+  //
+  // Outcome tables live in a single config object so weights / values can be
+  // tuned in one place (spec C-03). To re-balance: edit FOUNTAIN_OUTCOMES.
+  // -------------------------------------------------------------------------
+  var FOUNTAIN_OUTCOMES = {
+    drink: [
+      // 50% buff (weighted across the four buff types)
+      { weight: 18, kind: 'buff_damage',  toastKey: 'event.fountain.outcome.damage_buff' },
+      { weight: 12, kind: 'buff_speed',   toastKey: 'event.fountain.outcome.speed_buff'  },
+      { weight: 10, kind: 'buff_armor',   toastKey: 'event.fountain.outcome.armor_buff'  },
+      { weight: 10, kind: 'heal',         toastKey: 'event.fountain.outcome.heal'        },
+      // 30% loot
+      { weight: 30, kind: 'loot',         toastKey: 'event.fountain.outcome.loot'        },
+      // 20% debuff (weighted across the three debuff types)
+      { weight:  8, kind: 'debuff_maxhp',  toastKey: 'event.fountain.outcome.maxhp_debuff'  },
+      { weight:  6, kind: 'debuff_speed',  toastKey: 'event.fountain.outcome.speed_debuff'  },
+      { weight:  6, kind: 'debuff_damage', toastKey: 'event.fountain.outcome.damage_debuff' }
+    ],
+    offer: [
+      // 70% strong positive: heal + a buff stacked
+      { weight: 35, kind: 'buff_damage_strong', toastKey: 'event.fountain.outcome.strong_buff' },
+      { weight: 35, kind: 'heal_and_buff_armor', toastKey: 'event.fountain.outcome.armor_buff' },
+      // 20% rare loot
+      { weight: 20, kind: 'rare_loot',          toastKey: 'event.fountain.outcome.rare_loot'  },
+      // 10% nothing (the tease)
+      { weight: 10, kind: 'nothing',            toastKey: 'event.fountain.outcome.nothing'    }
+    ]
+  };
+
+  function _pickFountainOutcome(table) {
+    var total = 0;
+    for (var i = 0; i < table.length; i++) total += table[i].weight;
+    var roll = Math.random() * total;
+    for (var j = 0; j < table.length; j++) {
+      roll -= table[j].weight;
+      if (roll <= 0) return table[j];
+    }
+    return table[table.length - 1];
+  }
+
+  // Apply an outcome to game state. Buffs/debuffs go through
+  // window.brunnenBuffs (a new run-scoped registry, cleared by
+  // main.js leaveDungeonForHub). Heal goes through setPlayerHealth.
+  // Loot goes through spawnLoot.
+  function _applyFountainOutcome(scene, outcome) {
+    if (!outcome) return;
+    if (!window.brunnenBuffs) {
+      window.brunnenBuffs = {
+        damageMult: 1,
+        speedMult: 1,
+        armorAdd: 0,
+        maxHpAdd: 0
+      };
+    }
+    var bb = window.brunnenBuffs;
+    var px = (typeof player !== 'undefined' && player) ? player.x : 0;
+    var py = (typeof player !== 'undefined' && player) ? player.y : 0;
+    switch (outcome.kind) {
+      case 'heal':
+        if (typeof window.setPlayerHealth === 'function' && typeof window.playerMaxHealth === 'number') {
+          window.setPlayerHealth(window.playerMaxHealth);
+        }
+        break;
+      case 'buff_damage':
+        bb.damageMult *= 1.25;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'buff_damage_strong':
+        bb.damageMult *= 1.50;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'buff_speed':
+        bb.speedMult *= 1.20;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'buff_armor':
+        bb.armorAdd += 0.05;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'heal_and_buff_armor':
+        bb.armorAdd += 0.05;
+        if (typeof window.setPlayerHealth === 'function' && typeof window.playerMaxHealth === 'number') {
+          window.setPlayerHealth(window.playerMaxHealth);
+        }
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'debuff_speed':
+        bb.speedMult *= 0.90;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'debuff_damage':
+        bb.damageMult *= 0.90;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'debuff_maxhp':
+        // Max-HP debuff (FR-12): apply via brunnenBuffs.maxHpAdd, recalc,
+        // then clamp current HP to the new max. recalcDerived's default
+        // setPlayerMaxHealth path uses delta-based current HP adjustment
+        // which would over-shrink current HP for a wounded player; the
+        // explicit clamp afterward fixes that.
+        var origCurrent = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
+        var oldMax = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
+        var debuffAmount = Math.max(1, Math.round(oldMax * 0.20));
+        bb.maxHpAdd -= debuffAmount;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        // Clamp to ensure current HP never exceeds new max; preserve wound.
+        var newMax = Math.max(1, window.playerMaxHealth || 1);
+        if (typeof window.setPlayerHealth === 'function') {
+          window.setPlayerHealth(Math.min(origCurrent, newMax), true);
+        }
+        break;
+      case 'loot':
+        if (typeof spawnLoot === 'function') {
+          try { spawnLoot.call(scene, px + 30, py, null, null); } catch (e) {}
+        }
+        break;
+      case 'rare_loot':
+        if (window.LootSystem && typeof window.LootSystem.rollItem === 'function' && typeof spawnLoot === 'function') {
+          try {
+            var rare = window.LootSystem.rollItem(null, 8, 2); // forceTier 2
+            spawnLoot.call(scene, px + 30, py, rare, null);
+          } catch (e) {
+            // Fall back to a plain loot drop if the roll fails.
+            try { spawnLoot.call(scene, px + 30, py, null, null); } catch (e2) {}
+          }
+        }
+        break;
+      case 'nothing':
+      default:
+        break;
+    }
+  }
+
   EVENT_TYPES.push({
     id: 'healing_fountain',
     name: T('event.fountain.name'),
@@ -538,26 +696,55 @@
       showEventToast(scene, T('event.fountain.toast_spawn'), 'healing_fountain');
       spawnEventObject(scene, 'evt_fountain', 0x2266aa, 0x44aaff, T('event.fountain.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
-        showEventChoiceDialog(scene, T('event.fountain.name'), [
+
+        // Decide which "Opfern" cost the player can pay. Prefer HP cost
+        // (more impactful), fall back to gold, hide if neither possible.
+        var curHp = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
+        var maxHp = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
+        var canPayHp = curHp > Math.max(1, Math.floor(maxHp * 0.25)) + 1; // need to keep >=1 HP after
+        var gold = (window.LootSystem && typeof window.LootSystem.getGold === 'function') ? window.LootSystem.getGold() : 0;
+        var canPayGold = gold >= 50;
+
+        var choices = [
           {
             label: T('event.fountain.choice_drink'),
             callback: function () {
-              if (typeof window.setPlayerHealth === 'function' && typeof window.playerMaxHealth === 'number') {
-                window.setPlayerHealth(window.playerMaxHealth);
-              }
-              showEventToast(scene, T('event.fountain.toast_heal'), 'healing_fountain');
+              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.drink);
+              _applyFountainOutcome(scene, outcome);
+              showEventToast(scene, T(outcome.toastKey), 'healing_fountain');
             }
-          },
-          {
-            label: T('event.fountain.choice_fill'),
+          }
+        ];
+        if (canPayHp) {
+          choices.push({
+            label: T('event.fountain.choice_offer'),
             callback: function () {
-              if (!window.materialCounts) window.materialCounts = {};
-              window.materialCounts.PORTAL_SCROLL = (window.materialCounts.PORTAL_SCROLL || 0) + 1;
-              showEventToast(scene, T('event.fountain.toast_scroll'), 'healing_fountain');
+              // Pay HP cost via setPlayerHealth, clamped to >= 1.
+              var cost = Math.max(1, Math.round(window.playerHealth * 0.25));
+              if (typeof window.setPlayerHealth === 'function') {
+                window.setPlayerHealth(Math.max(1, window.playerHealth - cost), true);
+              }
+              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.offer);
+              _applyFountainOutcome(scene, outcome);
+              showEventToast(scene, T(outcome.toastKey), 'healing_fountain');
             }
-          },
-          { label: T('event.fountain.choice_ignore'), callback: function () {} }
-        ]);
+          });
+        } else if (canPayGold) {
+          choices.push({
+            label: T('event.fountain.choice_offer_gold'),
+            callback: function () {
+              if (window.LootSystem && typeof window.LootSystem.spendGold === 'function') {
+                window.LootSystem.spendGold(50);
+              }
+              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.offer);
+              _applyFountainOutcome(scene, outcome);
+              showEventToast(scene, T(outcome.toastKey), 'healing_fountain');
+            }
+          });
+        }
+        choices.push({ label: T('event.fountain.choice_ignore'), callback: function () {} });
+
+        showEventChoiceDialog(scene, T('event.fountain.name'), choices);
       });
     }
   });
