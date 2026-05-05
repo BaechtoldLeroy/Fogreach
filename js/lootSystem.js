@@ -1006,9 +1006,21 @@ if (window.i18n) {
           } catch (_) { /* fall through to the random drop */ }
         }
         var ret = origSpawn.call(this, x, y, item, sourceEnemy);
-        if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+        // Only fire loot.dropped when an actual pickup-able item exists.
+        // spawnLoot is also the entry-point for chest obstacles, gold piles
+        // and quest-fetch items; firing here for those would silently
+        // advance the tutorial past loot.wait while the world has no
+        // equippable on the ground for the player to walk over.
+        var isPickupItem = false;
+        if (item && typeof item.type === 'string') {
+          var t = item.type.toLowerCase();
+          if (t === 'weapon' || t === 'head' || t === 'body' || t === 'boots' || t === 'accessory' || t === 'potion') {
+            isPickupItem = true;
+          }
+        }
+        if (isPickupItem && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
           try {
-            window.TutorialSystem.report('loot.dropped', { itemId: (item && item.id) || null });
+            window.TutorialSystem.report('loot.dropped', { itemId: (item && item.id) || null, type: item && item.type });
           } catch (_) { /* never crash gameplay */ }
         }
         return ret;
@@ -1019,10 +1031,22 @@ if (window.i18n) {
       var origCollect = window.collectLoot;
       window.collectLoot = function (playerSprite, loot) {
         var item = (loot && loot.getData) ? loot.getData('item') : null;
+        // Skip the report when the loot is a non-equipment pickup
+        // (xp orb, health pot, quest item) — those don't satisfy the
+        // "lauf darüber zum Aufheben" hint the player just read.
+        var lootType = loot && loot.lootType;
+        var equippable = false;
+        if (item && typeof item.type === 'string') {
+          var ct = item.type.toLowerCase();
+          if (ct === 'weapon' || ct === 'head' || ct === 'body' || ct === 'boots' || ct === 'accessory' || ct === 'potion') {
+            equippable = true;
+          }
+        }
         var ret = origCollect.apply(this, arguments);
-        if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+        if (equippable && lootType !== 'health' && lootType !== 'xp'
+            && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
           try {
-            window.TutorialSystem.report('loot.picked', { itemId: (item && item.id) || null });
+            window.TutorialSystem.report('loot.picked', { itemId: (item && item.id) || null, type: item && item.type });
           } catch (_) { /* never crash gameplay */ }
         }
         return ret;
