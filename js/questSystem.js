@@ -766,6 +766,7 @@
     });
     if (changed) {
       _notifyUpdate();
+      _persistIfPossible();
     }
     return changed;
   }
@@ -788,6 +789,7 @@
     });
     if (changed) {
       _notifyUpdate();
+      _persistIfPossible();
     }
     return changed;
   }

@@ -26,8 +26,8 @@
       'printingHouse.ui.status.active': 'Aktiv',
       'printingHouse.ui.status.available': 'Verfügbar',
       'printingHouse.ui.status.blocked_by_active': 'Anderes Edikt aktiv',
-      'printingHouse.ui.btn.bribe': 'Aldric bestechen\n-100 Gold · -5 Verdacht',
-      'printingHouse.ui.btn.tradegold': 'Gold tauschen\n-50 Gold · +1 Druckblatt',
+      'printingHouse.ui.btn.bribe': 'Bestechen  -100G · -5V',
+      'printingHouse.ui.btn.tradegold': 'Tauschen  -50G · +1p',
       'printingHouse.ui.btn.close': 'Schließen [ESC]',
       'printingHouse.ui.legend.paper': 'Kosten',
       'printingHouse.ui.legend.suspicion': 'Verdacht',
@@ -52,8 +52,8 @@
       'printingHouse.ui.status.active': 'Active',
       'printingHouse.ui.status.available': 'Available',
       'printingHouse.ui.status.blocked_by_active': 'Another edict active',
-      'printingHouse.ui.btn.bribe': 'Bribe Aldric\n-100 gold · -5 suspicion',
-      'printingHouse.ui.btn.tradegold': 'Trade gold\n-50 gold · +1 paper',
+      'printingHouse.ui.btn.bribe': 'Bribe  -100G · -5 susp',
+      'printingHouse.ui.btn.tradegold': 'Trade  -50G · +1 paper',
       'printingHouse.ui.btn.close': 'Close [ESC]',
       'printingHouse.ui.legend.paper': 'Cost',
       'printingHouse.ui.legend.suspicion': 'Suspicion',
@@ -97,25 +97,24 @@
       const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
       panel.fillStyle(0x10131c, 0.97).fillRoundedRect(panelLeft, panelTop, panelW, panelH, 16);
       panel.lineStyle(3, 0xffd166, 0.92).strokeRoundedRect(panelLeft, panelTop, panelW, panelH, 16);
-      // Subtle vertical gradient overlay (top is lighter)
-      panel.fillStyle(0x1c2030, 0.35).fillRoundedRect(panelLeft, panelTop, panelW, 80, 16);
+      // Subtle gradient overlay (top is lighter)
+      panel.fillStyle(0x1c2030, 0.35).fillRoundedRect(panelLeft, panelTop, panelW, 56, 16);
 
-      // Title row
-      this.add.text(px, panelTop + 22, T('printingHouse.ui.title'), {
-        fontFamily: 'serif', fontSize: '28px', color: '#ffd166', fontStyle: 'bold'
+      // Compact header — title only, no subtitle. Saves vertical space for
+      // the card grid.
+      this.add.text(px, panelTop + 14, T('printingHouse.ui.title'), {
+        fontFamily: 'serif', fontSize: '22px', color: '#ffd166', fontStyle: 'bold'
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
-      this.add.text(px, panelTop + 56, T('printingHouse.ui.subtitle'), {
-        fontFamily: 'serif', fontSize: '13px', color: '#aaa6a0', fontStyle: 'italic'
+      this.add.text(px, panelTop + 40, T('printingHouse.npc.name'), {
+        fontFamily: 'serif', fontSize: '11px', color: '#888', fontStyle: 'italic'
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
 
-      // Status bar (paper / suspicion / active edict)
-      this._renderStatusBar(panelLeft, panelTop + 92, panelW);
+      // Status bar (paper / standing / suspicion / active edict) — 4 cells
+      this._renderStatusBar(panelLeft, panelTop + 64, panelW);
 
-      // Filter the catalog to edicts the player can actually consider right
-      // now (tier-unlocked) plus whatever is currently active. Tier-locked
-      // edicts are summarised in a footer instead of crowding the grid with
-      // grey ghost cards. This dramatically improves readability when the
-      // player has only Mild edicts unlocked (3 big cards instead of 10).
+      // Filter to edicts the player can consider right now (tier-unlocked)
+      // plus the currently active one. Tier-locked are summarised in a
+      // footer line so the grid stays uncluttered.
       const ph = window.PrintingHouse;
       const fullCatalog = ph.getEdictCatalog();
       const active = ph.getActivePublication();
@@ -125,14 +124,14 @@
         return false;
       });
 
-      // Card grid (2 columns, auto-rows). Sized so each card is at least
-      // ~110px tall — enough for the description without text overflow.
-      const gridTop    = panelTop + 178;
-      const gridHeight = panelH - 178 - 84; // leave 84px for action bar
-      this._renderEdictGrid(panelLeft + 22, gridTop, panelW - 44, gridHeight, visibleEdicts, fullCatalog.length);
+      // Card grid (2 columns, auto-rows). Smaller header + smaller action
+      // bar leaves more room for cards.
+      const gridTop    = panelTop + 144;
+      const gridHeight = panelH - 144 - 70; // 70px reserved for action bar
+      this._renderEdictGrid(panelLeft + 18, gridTop, panelW - 36, gridHeight, visibleEdicts, fullCatalog.length);
 
       // Action bar at the bottom
-      this._renderActionBar(panelLeft, panelTop + panelH - 70, panelW);
+      this._renderActionBar(panelLeft, panelTop + panelH - 56, panelW);
 
       // Keys: ESC closes; E (interaction key) also closes so the player
       // doesn't get stuck pressing it again at the entrance.
@@ -152,81 +151,113 @@
       }
     }
 
-    // ---- status bar ----
+    // ---- status bar (4 cells: Paper | Standing | Suspicion | Active) ----
     _renderStatusBar(left, top, w) {
       const ph = window.PrintingHouse;
       const paper = ph.getDruckblaetter();
       const suspicion = ph.getSuspicion();
       const active = ph.getActivePublication();
+      const standing = (window.FactionSystem && typeof window.FactionSystem.getStanding === 'function')
+        ? window.FactionSystem.getStanding('resistance') | 0
+        : 0;
 
-      const colW = w / 3;
+      // Background strip behind the status bar so it visually separates from
+      // the card grid below.
+      const stripG = this.add.graphics().setScrollFactor(0).setDepth(2001);
+      stripG.fillStyle(0x161a26, 0.7).fillRect(left + 8, top - 4, w - 16, 70);
 
-      // === Paper (left) ===
-      const paperX = left + 24;
-      this.add.text(paperX, top, T('printingHouse.ui.paper').toUpperCase(), {
-        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 0
-      }).setScrollFactor(0).setDepth(2003);
-      this.add.text(paperX, top + 18, paper + ' / 50', {
-        fontFamily: 'monospace', fontSize: '22px', color: '#ffd166', fontStyle: 'bold'
-      }).setScrollFactor(0).setDepth(2003);
-      // Mini progress bar
-      const pBarW = colW - 60;
-      const pBarH = 6;
-      const pBarY = top + 50;
-      const pBarG = this.add.graphics().setScrollFactor(0).setDepth(2003);
-      pBarG.fillStyle(0x2a2a2a, 1).fillRoundedRect(paperX, pBarY, pBarW, pBarH, 3);
-      pBarG.fillStyle(0xffd166, 1).fillRoundedRect(paperX, pBarY, Math.round(pBarW * (paper / 50)), pBarH, 3);
+      const sidePad = 18;
+      const cellW = (w - sidePad * 2) / 4;
+      const cellTop = top + 4;
+      const labelStyle = { fontFamily: 'monospace', fontSize: '10px', color: '#9994a0' };
 
-      // === Suspicion (center) — three-segment threshold meter ===
-      const susCenterX = left + w / 2;
-      const susLabel = T('printingHouse.ui.suspicion').toUpperCase();
-      this.add.text(susCenterX, top, susLabel, {
-        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 0
-      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
-      const susColor = suspicion >= 20 ? '#ff5555' : suspicion >= 10 ? '#ffaa44' : '#88ff88';
-      this.add.text(susCenterX, top + 18, String(suspicion), {
-        fontFamily: 'monospace', fontSize: '22px', color: susColor, fontStyle: 'bold'
-      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
-      // Three-segment threshold meter (0..10 safe, 10..20 alert, 20+ hunt)
-      const meterW = colW - 60;
-      const meterH = 8;
-      const meterX = susCenterX - meterW / 2;
-      const meterY = top + 50;
-      const segW = meterW / 3;
-      const meterG = this.add.graphics().setScrollFactor(0).setDepth(2003);
-      // Track
-      meterG.fillStyle(0x2a2a2a, 1).fillRoundedRect(meterX, meterY, meterW, meterH, 4);
-      // Fill segments
-      const safeFill  = Math.min(1, suspicion / 10);
-      const alertFill = Math.max(0, Math.min(1, (suspicion - 10) / 10));
-      const huntFill  = Math.max(0, Math.min(1, (suspicion - 20) / 10));
-      meterG.fillStyle(0x88ff88, 1).fillRect(meterX,             meterY, segW * safeFill,  meterH);
-      meterG.fillStyle(0xffaa44, 1).fillRect(meterX + segW,      meterY, segW * alertFill, meterH);
-      meterG.fillStyle(0xff5555, 1).fillRect(meterX + segW * 2,  meterY, segW * huntFill,  meterH);
-      // Segment dividers
-      meterG.lineStyle(1, 0x10131c, 1);
-      meterG.lineBetween(meterX + segW,     meterY, meterX + segW,     meterY + meterH);
-      meterG.lineBetween(meterX + segW * 2, meterY, meterX + segW * 2, meterY + meterH);
-      // Tier-threshold mini-labels under the meter
-      const tickStyle = { fontFamily: 'monospace', fontSize: '9px', color: '#666' };
-      this.add.text(meterX + segW,     meterY + meterH + 2, '10', tickStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
-      this.add.text(meterX + segW * 2, meterY + meterH + 2, '20', tickStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+      // === Cell 1: Paper ===
+      {
+        const cx = left + sidePad + cellW * 0;
+        this.add.text(cx + 12, cellTop, T('printingHouse.ui.paper').toUpperCase(), labelStyle)
+          .setScrollFactor(0).setDepth(2003);
+        this.add.text(cx + 12, cellTop + 14, paper + ' / 50', {
+          fontFamily: 'monospace', fontSize: '18px', color: '#ffd166', fontStyle: 'bold'
+        }).setScrollFactor(0).setDepth(2003);
+        const barW = cellW - 24;
+        const barG = this.add.graphics().setScrollFactor(0).setDepth(2003);
+        barG.fillStyle(0x2a2a2a, 1).fillRoundedRect(cx + 12, cellTop + 42, barW, 4, 2);
+        barG.fillStyle(0xffd166, 1).fillRoundedRect(cx + 12, cellTop + 42, Math.round(barW * (paper / 50)), 4, 2);
+      }
 
-      // === Active edict (right) ===
-      const actX = left + w - 24;
-      this.add.text(actX, top, T('printingHouse.ui.active_edict').toUpperCase(), {
-        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 0
-      }).setOrigin(1, 0).setScrollFactor(0).setDepth(2003);
-      const activeText = active
-        ? T('printingHouse.edict.' + active.id + '.label')
-        : T('printingHouse.ui.no_active');
-      this.add.text(actX, top + 18, activeText, {
-        fontFamily: 'serif', fontSize: '16px',
-        color: active ? '#88ff88' : '#666666',
-        fontStyle: active ? 'bold' : 'italic',
-        wordWrap: { width: colW - 30, useAdvancedWrap: true },
-        align: 'right'
-      }).setOrigin(1, 0).setScrollFactor(0).setDepth(2003);
+      // === Cell 2: Standing (Resistance) — new ===
+      {
+        const cx = left + sidePad + cellW * 1;
+        this.add.text(cx + 12, cellTop, 'STANDING', labelStyle)
+          .setScrollFactor(0).setDepth(2003);
+        // Color-coded by tier threshold (0 / 25 / 50)
+        const stColor = standing >= 50 ? '#ff8888' : standing >= 25 ? '#ffd166' : '#88ddaa';
+        this.add.text(cx + 12, cellTop + 14, String(standing), {
+          fontFamily: 'monospace', fontSize: '18px', color: stColor, fontStyle: 'bold'
+        }).setScrollFactor(0).setDepth(2003);
+        // Tier hint right of the number
+        const tierName = standing >= 50 ? T('printingHouse.tier.risky')
+                       : standing >= 25 ? T('printingHouse.tier.strong')
+                       : T('printingHouse.tier.mild');
+        this.add.text(cx + 50, cellTop + 18, '· ' + tierName, {
+          fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0'
+        }).setScrollFactor(0).setDepth(2003);
+        // Three-segment threshold meter (0..25 mild, 25..50 strong, 50+ risky)
+        const meterW = cellW - 24;
+        const meterH = 4;
+        const meterX = cx + 12;
+        const meterY = cellTop + 42;
+        const segW = meterW / 3;
+        const meterG = this.add.graphics().setScrollFactor(0).setDepth(2003);
+        meterG.fillStyle(0x2a2a2a, 1).fillRoundedRect(meterX, meterY, meterW, meterH, 2);
+        meterG.fillStyle(0x88ddaa, 1).fillRect(meterX,             meterY, segW * Math.min(1, standing / 25), meterH);
+        meterG.fillStyle(0xffd166, 1).fillRect(meterX + segW,      meterY, segW * Math.max(0, Math.min(1, (standing - 25) / 25)), meterH);
+        meterG.fillStyle(0xff8888, 1).fillRect(meterX + segW * 2,  meterY, segW * Math.max(0, Math.min(1, (standing - 50) / 25)), meterH);
+        meterG.lineStyle(1, 0x10131c, 1);
+        meterG.lineBetween(meterX + segW,     meterY, meterX + segW,     meterY + meterH);
+        meterG.lineBetween(meterX + segW * 2, meterY, meterX + segW * 2, meterY + meterH);
+      }
+
+      // === Cell 3: Suspicion ===
+      {
+        const cx = left + sidePad + cellW * 2;
+        this.add.text(cx + 12, cellTop, T('printingHouse.ui.suspicion').toUpperCase(), labelStyle)
+          .setScrollFactor(0).setDepth(2003);
+        const susColor = suspicion >= 20 ? '#ff5555' : suspicion >= 10 ? '#ffaa44' : '#88ff88';
+        this.add.text(cx + 12, cellTop + 14, String(suspicion), {
+          fontFamily: 'monospace', fontSize: '18px', color: susColor, fontStyle: 'bold'
+        }).setScrollFactor(0).setDepth(2003);
+        // Three-segment threshold meter (0..10 safe, 10..20 alert, 20+ hunt)
+        const meterW = cellW - 24;
+        const meterH = 4;
+        const meterX = cx + 12;
+        const meterY = cellTop + 42;
+        const segW = meterW / 3;
+        const meterG = this.add.graphics().setScrollFactor(0).setDepth(2003);
+        meterG.fillStyle(0x2a2a2a, 1).fillRoundedRect(meterX, meterY, meterW, meterH, 2);
+        meterG.fillStyle(0x88ff88, 1).fillRect(meterX,             meterY, segW * Math.min(1, suspicion / 10), meterH);
+        meterG.fillStyle(0xffaa44, 1).fillRect(meterX + segW,      meterY, segW * Math.max(0, Math.min(1, (suspicion - 10) / 10)), meterH);
+        meterG.fillStyle(0xff5555, 1).fillRect(meterX + segW * 2,  meterY, segW * Math.max(0, Math.min(1, (suspicion - 20) / 10)), meterH);
+        meterG.lineStyle(1, 0x10131c, 1);
+        meterG.lineBetween(meterX + segW,     meterY, meterX + segW,     meterY + meterH);
+        meterG.lineBetween(meterX + segW * 2, meterY, meterX + segW * 2, meterY + meterH);
+      }
+
+      // === Cell 4: Active edict ===
+      {
+        const cx = left + sidePad + cellW * 3;
+        this.add.text(cx + 12, cellTop, T('printingHouse.ui.active_edict').toUpperCase(), labelStyle)
+          .setScrollFactor(0).setDepth(2003);
+        const activeText = active
+          ? T('printingHouse.edict.' + active.id + '.label')
+          : T('printingHouse.ui.no_active');
+        this.add.text(cx + 12, cellTop + 14, activeText, {
+          fontFamily: 'serif', fontSize: active ? '13px' : '12px',
+          color: active ? '#88ff88' : '#666',
+          fontStyle: active ? 'bold' : 'italic',
+          wordWrap: { width: cellW - 24, useAdvancedWrap: true }
+        }).setScrollFactor(0).setDepth(2003);
+      }
     }
 
     // ---- card grid ----
@@ -393,7 +424,7 @@
       }
     }
 
-    // ---- action bar ----
+    // ---- action bar (compact, single-line button labels) ----
     _renderActionBar(left, top, w) {
       const ph = window.PrintingHouse;
       const suspicion = ph.getSuspicion();
@@ -401,10 +432,9 @@
       const gold = (window.LootSystem && typeof window.LootSystem.getGold === 'function')
         ? window.LootSystem.getGold() : 0;
 
-      // Three buttons evenly spaced.
-      const btnH = 50;
-      const sidePad = 24;
-      const btnGap = 14;
+      const btnH = 36;
+      const sidePad = 18;
+      const btnGap = 10;
       const usableW = w - sidePad * 2;
       const btnW = (usableW - btnGap * 2) / 3;
       const btnY = top + btnH / 2;
@@ -433,8 +463,8 @@
         .setStrokeStyle(2, borderColor)
         .setScrollFactor(0).setDepth(2002);
       this.add.text(cx, cy, label, {
-        fontFamily: 'monospace', fontSize: '12px', color: txtColor, align: 'center',
-        wordWrap: { width: w - 16, useAdvancedWrap: true }, lineSpacing: 2
+        fontFamily: 'monospace', fontSize: '11px', color: txtColor, align: 'center',
+        wordWrap: { width: w - 12, useAdvancedWrap: true }, lineSpacing: 1
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       if (enabled) {
         bg.setInteractive({ useHandCursor: true });
