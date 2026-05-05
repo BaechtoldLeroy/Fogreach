@@ -368,15 +368,42 @@
       g.destroy();
     }
 
-    // Find accessible spawn position
+    // Find accessible spawn position. pickAccessibleSpawnPoint returns the
+    // center of a walkable cell, but the event sprite is ~32px so the body
+    // can still clip into adjacent wall tiles. Validate via the global
+    // wall-grid + obstacle helper used by enemy/loot/stair spawns and retry
+    // until we find a clear half-32 box.
+    var EVENT_HALF = 20; // 32px sprite + small margin
     var cx = 400, cy = 250;
+    var foundSpot = false;
     if (scene.pickAccessibleSpawnPoint) {
-      var spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 30 });
-      if (spot) { cx = spot.x; cy = spot.y; }
-    } else if (typeof player !== 'undefined' && player && player.active) {
-      var angle = Math.random() * Math.PI * 2;
-      cx = player.x + Math.cos(angle) * 150;
-      cy = player.y + Math.sin(angle) * 150;
+      for (var sa = 0; sa < 12 && !foundSpot; sa++) {
+        var spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 24 });
+        if (!spot) break;
+        if (typeof window.isSpawnPositionBlocked === 'function'
+            && window.isSpawnPositionBlocked(spot.x, spot.y, EVENT_HALF)) {
+          continue;
+        }
+        cx = spot.x; cy = spot.y; foundSpot = true;
+      }
+    }
+    if (!foundSpot && typeof player !== 'undefined' && player && player.active) {
+      // Last-ditch ring around the player. Try several angles + radii so we
+      // don't end up inside a wall when pickAccessibleSpawnPoint is missing.
+      for (var ra = 0; ra < 16 && !foundSpot; ra++) {
+        var angle = Math.random() * Math.PI * 2;
+        var radius = 120 + Math.random() * 120;
+        var tx = player.x + Math.cos(angle) * radius;
+        var ty = player.y + Math.sin(angle) * radius;
+        if (typeof window.isSpawnPositionBlocked === 'function'
+            && window.isSpawnPositionBlocked(tx, ty, EVENT_HALF)) {
+          continue;
+        }
+        cx = tx; cy = ty; foundSpot = true;
+      }
+    }
+    if (!foundSpot) {
+      try { console.warn('[eventSystem] spawnEventObject: no clear spot found, using fallback', { cx: cx, cy: cy, label: label }); } catch (_) {}
     }
 
     var obj = scene.physics.add.sprite(cx, cy, texKey);
@@ -701,7 +728,7 @@
         // (more impactful), fall back to gold, hide if neither possible.
         var curHp = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
         var maxHp = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
-        var canPayHp = curHp > Math.max(1, Math.floor(maxHp * 0.25)) + 1; // need to keep >=1 HP after
+        var canPayHp = curHp > Math.max(1, Math.round(maxHp * 0.25)); // need to keep >=1 HP after paying 25% of max
         var gold = (window.LootSystem && typeof window.LootSystem.getGold === 'function') ? window.LootSystem.getGold() : 0;
         var canPayGold = gold >= 50;
 
@@ -719,8 +746,10 @@
           choices.push({
             label: T('event.fountain.choice_offer'),
             callback: function () {
-              // Pay HP cost via setPlayerHealth, clamped to >= 1.
-              var cost = Math.max(1, Math.round(window.playerHealth * 0.25));
+              // Pay HP cost = 25% of MAX HP (so wounded players don't get a
+              // discount). Subtract from current HP, clamped to >= 1.
+              var maxHpNow = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
+              var cost = Math.max(1, Math.round(maxHpNow * 0.25));
               if (typeof window.setPlayerHealth === 'function') {
                 window.setPlayerHealth(Math.max(1, window.playerHealth - cost), true);
               }
