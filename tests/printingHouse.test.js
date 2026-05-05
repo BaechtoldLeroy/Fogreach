@@ -150,6 +150,17 @@ test('isUnlocked() returns true once aldric_cleanup is completed', () => {
   assert.strictEqual(PH.isUnlocked(), true);
 });
 
+test('isUnlocked() handles real questSystem shape (objects, not ids)', () => {
+  // Real questSystem.getCompletedQuests returns quest-definition objects
+  // (id + title + ...). Earlier the predicate compared ids directly to the
+  // returned entries and stayed locked even after completion. Lock in the
+  // object-shape behaviour so that bug can't come back silently.
+  const { PH, p } = fresh();
+  PH.init();
+  p.questSystem._completed.push({ id: 'aldric_cleanup', title: 'Keller' });
+  assert.strictEqual(PH.isUnlocked(), true);
+});
+
 // --- 5. Edict catalog visibility -----------------------------------------
 
 test('getEdictCatalog returns at least 7 edicts across three tiers', () => {

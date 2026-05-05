@@ -319,7 +319,15 @@
   function isUnlocked() {
     var completed = [];
     try { completed = primitives.questSystem.getCompletedQuests() || []; } catch (_) {}
-    return completed.indexOf(DRUCKEREI_UNLOCK_QUEST) >= 0;
+    // questSystem.getCompletedQuests returns an array of quest-definition
+    // OBJECTS (not ids). Older test mocks pass plain id strings, so accept
+    // both shapes here.
+    for (var i = 0; i < completed.length; i++) {
+      var entry = completed[i];
+      if (entry === DRUCKEREI_UNLOCK_QUEST) return true;
+      if (entry && typeof entry === 'object' && entry.id === DRUCKEREI_UNLOCK_QUEST) return true;
+    }
+    return false;
   }
 
   // Returns a frozen-by-convention list of edict descriptors enriched with
