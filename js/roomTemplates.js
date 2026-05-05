@@ -1000,6 +1000,23 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         blockingObjectTiles.push({ x: tx, y: ty });
       }
     });
+    // Also include legend-derived obstacles from the layout grid (e.g. 'P' →
+    // pillar_small in CirclePillars). Without this, the wedge clearance check
+    // would treat those tiles as floor and the player could spawn flanked by
+    // pillars that are technically floor in wallsGrid.
+    const legend = (tpl.layout && tpl.layout.legend) || {};
+    if (tpl.layout && Array.isArray(tpl.layout.walls)) {
+      for (let ly = 0; ly < tpl.layout.walls.length; ly++) {
+        const lrow = tpl.layout.walls[ly];
+        if (!lrow) continue;
+        for (let lx = 0; lx < lrow.length; lx++) {
+          const lkey = legend[lrow[lx]];
+          if (lkey && BLOCKING_OBJECT_TYPES.has(lkey)) {
+            blockingObjectTiles.push({ x: lx, y: ly });
+          }
+        }
+      }
+    }
 
     // Ensure spawn has 3+ tiles clearance from walls AND is not within
     // 2 tiles of any blocking object (pillars, statues, etc.) — otherwise
@@ -1012,40 +1029,46 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         }
       return true;
     };
-    const OBJECT_CLEARANCE = 2;
-    const hasObjectClearance = (tx, ty) => {
+    const hasObjectClearance = (tx, ty, dist) => {
       for (const obj of blockingObjectTiles) {
         const dx = obj.x - tx;
         const dy = obj.y - ty;
-        if (Math.abs(dx) <= OBJECT_CLEARANCE && Math.abs(dy) <= OBJECT_CLEARANCE) return false;
+        if (Math.abs(dx) <= dist && Math.abs(dy) <= dist) return false;
       }
       return true;
     };
-    const hasSpawnClearance = (tx, ty, wallDist) =>
-      hasWallClearance(tx, ty, wallDist) && hasObjectClearance(tx, ty);
+    const hasSpawnClearance = (tx, ty, wallDist, objDist) =>
+      hasWallClearance(tx, ty, wallDist) && hasObjectClearance(tx, ty, objDist);
 
-    if (!hasSpawnClearance(tile.x, tile.y, 3)) {
-      // Find a better spawn with clearance
-      let bestTile = tile, bestDist = Infinity;
+    if (!hasSpawnClearance(tile.x, tile.y, 3, 2)) {
+      // Find a better spawn with progressively relaxed clearance.
+      // Each tier tries (wallClearance, objectClearance); we accept the
+      // closest accessible tile that satisfies the current tier and stop
+      // as soon as any tier yields a candidate.
+      const TIERS = [
+        [3, 2], // ideal
+        [2, 2], // tighter walls but still no wedge
+        [2, 1], // allow being adjacent to one obstacle
+        [1, 1], // last resort with clearance
+        [1, 0]  // accept anywhere on a walkable tile
+      ];
+      let bestTile = tile;
+      let foundTier = false;
       if (accessibleTiles) {
-        accessibleTiles.forEach((key) => {
-          const [tx, ty] = key.split('|').map(Number);
-          if (hasSpawnClearance(tx, ty, 3)) {
-            const d = Math.abs(tx - ps.x) + Math.abs(ty - ps.y);
-            if (d < bestDist) { bestDist = d; bestTile = { x: tx, y: ty }; }
-          }
-        });
-      }
-      // Fallback: relax wall clearance to 2, keep object clearance, in case
-      // a small room has no tile satisfying both at radius 3.
-      if (bestDist === Infinity && accessibleTiles) {
-        accessibleTiles.forEach((key) => {
-          const [tx, ty] = key.split('|').map(Number);
-          if (hasSpawnClearance(tx, ty, 2)) {
-            const d = Math.abs(tx - ps.x) + Math.abs(ty - ps.y);
-            if (d < bestDist) { bestDist = d; bestTile = { x: tx, y: ty }; }
-          }
-        });
+        for (const [wD, oD] of TIERS) {
+          let bestDist = Infinity;
+          accessibleTiles.forEach((key) => {
+            const [tx, ty] = key.split('|').map(Number);
+            if (hasSpawnClearance(tx, ty, wD, oD)) {
+              const d = Math.abs(tx - ps.x) + Math.abs(ty - ps.y);
+              if (d < bestDist) { bestDist = d; bestTile = { x: tx, y: ty }; }
+            }
+          });
+          if (bestDist !== Infinity) { foundTier = true; break; }
+        }
+        if (!foundTier) {
+          try { console.warn('[roomTemplates] spawn clearance: no tile passed any tier, keeping snapped tile', { x: tile.x, y: tile.y, room: tpl.name }); } catch (_) {}
+        }
       }
       tile = bestTile;
     }
