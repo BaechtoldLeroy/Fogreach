@@ -161,10 +161,12 @@
       // Dim backdrop
       this.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7).setScrollFactor(0).setDepth(2000);
 
-      const panelW = Math.min(560, cw - 40);
-      // Bumped from 460 → 540 to fit the Tutorial section (skip + replay)
-      // added by feature 044 without pushing the close button off-screen.
-      const panelH = Math.min(540, ch - 20);
+      // Two-column layout. Wider panel + ~600 height fits Audio/Controls/
+      // Display on the left and Input/Mobile + Tutorial + Debug on the right
+      // without the close button being covered. Both dims clamp to the
+      // viewport so small screens still render.
+      const panelW = Math.min(720, cw - 40);
+      const panelH = Math.min(600, ch - 20);
       const px = cw / 2;
       const py = ch / 2;
 
@@ -172,7 +174,7 @@
       panel.fillStyle(0x10131c, 0.96).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
       panel.lineStyle(3, 0xffd166, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
 
-      // Title
+      // Title (centered)
       this.add.text(px, py - panelH / 2 + 16, T('settings.title'), {
         fontFamily: 'serif',
         fontSize: '24px',
@@ -180,89 +182,79 @@
         fontStyle: 'bold'
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
 
-      // -- Audio section --
-      let rowY = py - panelH / 2 + 50;
-      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.audio'));
-      rowY += 18;
-      this._volumeRow(px, rowY, T('settings.audio.master'), 'master', panelW); rowY += 24;
-      this._volumeRow(px, rowY, T('settings.audio.music'), 'music', panelW);    rowY += 24;
-      this._volumeRow(px, rowY, T('settings.audio.sfx'), 'sfx', panelW);        rowY += 24;
-      this._toggleRow(px, rowY, T('settings.audio.muted'), 'muted', panelW);    rowY += 26;
+      // Column geometry. The row helpers (`_volumeRow`, `_toggleRow`, ...)
+      // place labels at `centerX - panelW/2 + 20` and value/buttons at
+      // `centerX + 80…+110`. By passing the column center + width as
+      // (centerX, panelW), positions land naturally inside the column.
+      const SIDE_PAD = 16;          // panel edge → column outer edge
+      const COL_GAP  = 24;          // gutter between the two columns
+      const COL_W    = (panelW - SIDE_PAD * 2 - COL_GAP) / 2;
+      const LEFT_C   = px - panelW / 2 + SIDE_PAD + COL_W / 2;
+      const RIGHT_C  = px + panelW / 2 - SIDE_PAD - COL_W / 2;
+      const LEFT_LBL  = LEFT_C  - COL_W / 2;
+      const RIGHT_LBL = RIGHT_C - COL_W / 2;
 
-      // -- Controls section --
-      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.controls'));
-      rowY += 18;
-      this._volumeRow(px, rowY, T('settings.controls.movement_weight'), 'movementWeight', panelW); rowY += 26;
+      const startY = py - panelH / 2 + 50;
+      let leftY  = startY;
+      let rightY = startY;
 
-      // -- Mobile section (only on touch devices) --
       const isTouch = !!(this.sys && this.sys.game && this.sys.game.device
         && this.sys.game.device.input && this.sys.game.device.input.touch);
+
+      // ====== LEFT COLUMN: Audio | Controls | Display ======
+      this._sectionLabel(LEFT_LBL, leftY, T('settings.section.audio')); leftY += 18;
+      this._volumeRow(LEFT_C, leftY, T('settings.audio.master'), 'master', COL_W); leftY += 22;
+      this._volumeRow(LEFT_C, leftY, T('settings.audio.music'),  'music',  COL_W); leftY += 22;
+      this._volumeRow(LEFT_C, leftY, T('settings.audio.sfx'),    'sfx',    COL_W); leftY += 22;
+      this._toggleRow(LEFT_C, leftY, T('settings.audio.muted'),  'muted',  COL_W); leftY += 28;
+
+      this._sectionLabel(LEFT_LBL, leftY, T('settings.section.controls')); leftY += 18;
+      this._volumeRow(LEFT_C, leftY, T('settings.controls.movement_weight'), 'movementWeight', COL_W); leftY += 28;
+
+      this._sectionLabel(LEFT_LBL, leftY, T('settings.section.display')); leftY += 18;
+      this._fullscreenRow(LEFT_C, leftY, COL_W); leftY += 22;
+      this._toggleRow(LEFT_C, leftY, T('settings.display.reduced_effects'), 'reducedEffects', COL_W); leftY += 22;
+      this._languageRow(LEFT_C, leftY, COL_W); leftY += 22;
+
+      // ====== RIGHT COLUMN: Input/Mobile | Tutorial | Debug ======
+      // Mobile-only section on touch devices; otherwise the desktop Input
+      // section. The Display column already exposes a Fullscreen toggle, so
+      // the duplicate fullscreen row that used to live under Mobile is gone.
       if (isTouch) {
-        this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.mobile'));
-        rowY += 18;
-        this._toggleRow(px, rowY, T('settings.mobile.haptics'), 'mobile.haptics', panelW); rowY += 22;
-        this._toggleRow(px, rowY, T('settings.mobile.auto_aim'), 'mobile.autoAim', panelW); rowY += 22;
-        this._toggleRow(px, rowY, T('settings.mobile.d2_controls'), 'mobile.d2Controls', panelW); rowY += 22;
-        // Mobile fullscreen toggle (mirrored from DISPLAY → Vollbild). Mobile
-        // browsers usually need an explicit user gesture to enter fullscreen,
-        // so the picker click itself is the gesture that actually triggers it.
-        this._fullscreenRow(px, rowY, panelW); rowY += 24;
+        this._sectionLabel(RIGHT_LBL, rightY, T('settings.section.mobile')); rightY += 18;
+        this._toggleRow(RIGHT_C, rightY, T('settings.mobile.haptics'),     'mobile.haptics',    COL_W); rightY += 22;
+        this._toggleRow(RIGHT_C, rightY, T('settings.mobile.auto_aim'),    'mobile.autoAim',    COL_W); rightY += 22;
+        this._toggleRow(RIGHT_C, rightY, T('settings.mobile.d2_controls'), 'mobile.d2Controls', COL_W); rightY += 28;
+      } else {
+        this._sectionLabel(RIGHT_LBL, rightY, T('settings.section.input')); rightY += 18;
+        this._schemeRow(RIGHT_C, rightY, COL_W); rightY += 28;
       }
 
-      // -- Display section --
-      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.display'));
-      rowY += 18;
-      this._fullscreenRow(px, rowY, panelW); rowY += 22;
-      this._toggleRow(px, rowY, T('settings.display.reduced_effects'), 'reducedEffects', panelW); rowY += 22;
-      this._languageRow(px, rowY, panelW); rowY += 24;
-
-      // -- Input section (desktop-only; mobile uses touch controls) --
-      // Reuse isTouch from the Mobile section gate above.
-      if (!isTouch) {
-        this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.input'));
-        rowY += 18;
-        this._schemeRow(px, rowY, panelW); rowY += 24;
-      }
-
-      // -- Tutorial section (feature 044) --
-      // Skip toggle is enabled only while the tutorial is active; replay
-      // button is always available. Both labels re-render on language change.
-      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.tutorial'));
-      rowY += 18;
-      const skipBtn = this._tutorialButton(px, rowY, T('tutorial.settings.skip_label'), () => {
+      this._sectionLabel(RIGHT_LBL, rightY, T('settings.section.tutorial')); rightY += 18;
+      const skipBtn = this._tutorialButton(RIGHT_C, rightY, T('tutorial.settings.skip_label'), () => {
         if (!(window.TutorialSystem && window.TutorialSystem.isActive && window.TutorialSystem.isActive())) return;
         const ok = window.confirm(T('tutorial.skip.confirm'));
         if (ok && window.TutorialSystem && typeof window.TutorialSystem.skip === 'function') {
           window.TutorialSystem.skip(true);
           this._refreshSkipButton();
         }
-      }, panelW);
+      }, COL_W);
       this._tutorialSkipBtn = skipBtn;
-      rowY += 30;
-      const replayBtn = this._tutorialButton(px, rowY, T('tutorial.settings.replay_label'), () => {
+      rightY += 30;
+      const replayBtn = this._tutorialButton(RIGHT_C, rightY, T('tutorial.settings.replay_label'), () => {
         const ok = window.confirm(T('tutorial.settings.replay_confirm'));
         if (ok && window.TutorialSystem && typeof window.TutorialSystem.replay === 'function') {
           window.TutorialSystem.replay();
           this._refreshSkipButton();
         }
-      }, panelW);
+      }, COL_W);
       this._tutorialReplayBtn = replayBtn;
-      rowY += 32;
+      rightY += 32;
 
-      // Initial visual state for skip (dimmed when tutorial inactive).
       this._refreshSkipButton();
-
-      // Re-render skip button when tutorial state changes (e.g. step advance,
-      // external replay/skip). Cleaned up in shutdown.
       if (window.TutorialSystem && typeof window.TutorialSystem.onChange === 'function') {
         this._skipUnsub = window.TutorialSystem.onChange(() => this._refreshSkipButton());
       }
-
-      // Live re-render of tutorial button labels when language toggles. The
-      // existing `_unsubscribeI18n` below restarts the whole scene, which
-      // also covers labels — but we keep this lighter subscription so the
-      // labels update even before the scene restart cycle completes (NFR-03,
-      // "within one frame"). Cleaned up in shutdown.
       if (window.i18n && typeof window.i18n.onChange === 'function') {
         this._i18nUnsub = window.i18n.onChange(() => {
           if (skipBtn && skipBtn.text && skipBtn.text.setText) {
@@ -274,18 +266,16 @@
         });
       }
 
-      // -- Debug section --
-      this._sectionLabel(px - panelW / 2 + 20, rowY, T('settings.section.debug'));
-      rowY += 18;
-      this._toggleRow(px, rowY, T('settings.debug.autostart'), 'debug.autostart', panelW); rowY += 22;
-      this._toggleRow(px, rowY, T('settings.debug.no_fow'), 'debug.noFow', panelW); rowY += 22;
-      this._actionRow(px, rowY, T('settings.debug.add_iron'), () => {
+      this._sectionLabel(RIGHT_LBL, rightY, T('settings.section.debug')); rightY += 18;
+      this._toggleRow(RIGHT_C, rightY, T('settings.debug.autostart'), 'debug.autostart', COL_W); rightY += 22;
+      this._toggleRow(RIGHT_C, rightY, T('settings.debug.no_fow'),    'debug.noFow',     COL_W); rightY += 22;
+      this._actionRow(RIGHT_C, rightY, T('settings.debug.add_iron'), () => {
         if (typeof window.changeMaterialCount === 'function') {
           window.changeMaterialCount('MAT', 100);
           this._toast(T('settings.debug.toast_added_iron'));
         }
-      }, panelW);
-      rowY += 32;
+      }, COL_W);
+      rightY += 32;
 
       // Close button
       const closeBtnY = py + panelH / 2 - 30;
