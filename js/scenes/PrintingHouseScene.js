@@ -30,7 +30,9 @@
       'printingHouse.ui.btn.tradegold': 'Gold tauschen\n-50 Gold · +1 Druckblatt',
       'printingHouse.ui.btn.close': 'Schließen [ESC]',
       'printingHouse.ui.legend.paper': 'Kosten',
-      'printingHouse.ui.legend.suspicion': 'Verdacht'
+      'printingHouse.ui.legend.suspicion': 'Verdacht',
+      'printingHouse.ui.locked_summary': 'Noch verschlossen:',
+      'printingHouse.ui.empty_state': 'Noch keine Edikte freigeschaltet — verbessere deinen Stand bei der Resistance, um stärkere Botschaften drucken zu lassen.'
     });
     window.i18n.register('en', {
       'printingHouse.ui.title': 'Printing House',
@@ -54,7 +56,9 @@
       'printingHouse.ui.btn.tradegold': 'Trade gold\n-50 gold · +1 paper',
       'printingHouse.ui.btn.close': 'Close [ESC]',
       'printingHouse.ui.legend.paper': 'Cost',
-      'printingHouse.ui.legend.suspicion': 'Suspicion'
+      'printingHouse.ui.legend.suspicion': 'Suspicion',
+      'printingHouse.ui.locked_summary': 'Still locked:',
+      'printingHouse.ui.empty_state': 'No edicts unlocked yet — raise your standing with the Resistance to print stronger messages.'
     });
   }
 
@@ -107,15 +111,25 @@
       // Status bar (paper / suspicion / active edict)
       this._renderStatusBar(panelLeft, panelTop + 92, panelW);
 
-      // Tier columns
-      const colTop    = panelTop + 178;
-      const colHeight = panelH - 178 - 84; // leave 84px for action bar
-      const sidePad   = 22;
-      const colGap    = 14;
-      const colW      = (panelW - sidePad * 2 - colGap * 2) / 3;
-      this._renderTierColumn('mild',   panelLeft + sidePad,                       colTop, colW, colHeight);
-      this._renderTierColumn('strong', panelLeft + sidePad + colW + colGap,       colTop, colW, colHeight);
-      this._renderTierColumn('risky',  panelLeft + sidePad + (colW + colGap) * 2, colTop, colW, colHeight);
+      // Filter the catalog to edicts the player can actually consider right
+      // now (tier-unlocked) plus whatever is currently active. Tier-locked
+      // edicts are summarised in a footer instead of crowding the grid with
+      // grey ghost cards. This dramatically improves readability when the
+      // player has only Mild edicts unlocked (3 big cards instead of 10).
+      const ph = window.PrintingHouse;
+      const fullCatalog = ph.getEdictCatalog();
+      const active = ph.getActivePublication();
+      const visibleEdicts = fullCatalog.filter((e) => {
+        if (e.isUnlocked) return true;
+        if (active && active.id === e.id) return true;
+        return false;
+      });
+
+      // Card grid (2 columns, auto-rows). Sized so each card is at least
+      // ~110px tall — enough for the description without text overflow.
+      const gridTop    = panelTop + 178;
+      const gridHeight = panelH - 178 - 84; // leave 84px for action bar
+      this._renderEdictGrid(panelLeft + 22, gridTop, panelW - 44, gridHeight, visibleEdicts, fullCatalog.length);
 
       // Action bar at the bottom
       this._renderActionBar(panelLeft, panelTop + panelH - 70, panelW);
@@ -150,7 +164,7 @@
       // === Paper (left) ===
       const paperX = left + 24;
       this.add.text(paperX, top, T('printingHouse.ui.paper').toUpperCase(), {
-        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 1
+        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 0
       }).setScrollFactor(0).setDepth(2003);
       this.add.text(paperX, top + 18, paper + ' / 50', {
         fontFamily: 'monospace', fontSize: '22px', color: '#ffd166', fontStyle: 'bold'
@@ -167,7 +181,7 @@
       const susCenterX = left + w / 2;
       const susLabel = T('printingHouse.ui.suspicion').toUpperCase();
       this.add.text(susCenterX, top, susLabel, {
-        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 1
+        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 0
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
       const susColor = suspicion >= 20 ? '#ff5555' : suspicion >= 10 ? '#ffaa44' : '#88ff88';
       this.add.text(susCenterX, top + 18, String(suspicion), {
@@ -201,7 +215,7 @@
       // === Active edict (right) ===
       const actX = left + w - 24;
       this.add.text(actX, top, T('printingHouse.ui.active_edict').toUpperCase(), {
-        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 1
+        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 0
       }).setOrigin(1, 0).setScrollFactor(0).setDepth(2003);
       const activeText = active
         ? T('printingHouse.edict.' + active.id + '.label')
@@ -215,117 +229,157 @@
       }).setOrigin(1, 0).setScrollFactor(0).setDepth(2003);
     }
 
-    // ---- tier column ----
-    _renderTierColumn(tier, x, y, w, h) {
-      const tc = TIER_THEME[tier];
-
-      // Column header bar
-      const headerH = 38;
-      const headerG = this.add.graphics().setScrollFactor(0).setDepth(2002);
-      headerG.fillStyle(tc.bg, 1).fillRoundedRect(x, y, w, headerH, 8);
-      headerG.lineStyle(1, tc.border, 0.85).strokeRoundedRect(x, y, w, headerH, 8);
-      this.add.text(x + w / 2, y + 8, T('printingHouse.tier.' + tier).toUpperCase(), {
-        fontFamily: 'serif', fontSize: '15px', color: tc.accent, fontStyle: 'bold', letterSpacing: 1
-      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
-      this.add.text(x + w / 2, y + 24, T('printingHouse.ui.tier.' + tier + '.sub'), {
-        fontFamily: 'monospace', fontSize: '10px', color: tc.dim, fontStyle: 'italic'
-      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
-
-      // Cards
+    // ---- card grid ----
+    // Two-column auto-row layout. With only-unlocked filter, count is small
+    // (3 / 7 / 10) and each card gets generous height. Locked tiers are
+    // summarised in a single footer line.
+    _renderEdictGrid(x, y, w, h, edicts, totalCount) {
       const ph = window.PrintingHouse;
-      const catalog = ph.getEdictCatalog();
-      const tierEdicts = catalog.filter((e) => e.tier === tier);
-      const cardGap = 8;
-      const availH = h - headerH - 12;
-      const cardH = (availH - cardGap * (tierEdicts.length - 1)) / tierEdicts.length;
-      let cy = y + headerH + 12;
       const active = ph.getActivePublication();
-      const paper = ph.getDruckblaetter();
-      tierEdicts.forEach((e) => {
-        this._renderEdictCard(e, x, cy, w, cardH, tc, active, paper);
-        cy += cardH + cardGap;
+      const paper  = ph.getDruckblaetter();
+
+      // Footer reserve (locked-tier summary line + spacing)
+      const footerReserveH = 22;
+      const gridH = h - footerReserveH;
+
+      const cols = 2;
+      const colGap = 14;
+      const rowGap = 10;
+      const cardW = (w - colGap * (cols - 1)) / cols;
+
+      const rows = Math.max(1, Math.ceil(edicts.length / cols));
+      // Cap card height to ~140 so text never feels lost; minimum 90 to keep
+      // description legible. Within that, scale to fill the grid vertically.
+      const cardH = Math.min(140, Math.max(90, (gridH - rowGap * (rows - 1)) / rows));
+
+      edicts.forEach((e, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const cx = x + col * (cardW + colGap);
+        const cy = y + row * (cardH + rowGap);
+        const tc = TIER_THEME[e.tier];
+        this._renderEdictCard(e, cx, cy, cardW, cardH, tc, active, paper);
       });
+
+      // Footer: locked-tier summary
+      const lockedByTier = { strong: 0, risky: 0 };
+      const lockedReq = { strong: 25, risky: 50 };
+      ph.getEdictCatalog().forEach((e) => {
+        if (!e.isUnlocked && e.tier in lockedByTier) lockedByTier[e.tier] += 1;
+      });
+      const parts = [];
+      if (lockedByTier.strong > 0) {
+        parts.push(lockedByTier.strong + 'x ' + T('printingHouse.tier.strong')
+          + ' (Standing ' + lockedReq.strong + ')');
+      }
+      if (lockedByTier.risky > 0) {
+        parts.push(lockedByTier.risky + 'x ' + T('printingHouse.tier.risky')
+          + ' (Standing ' + lockedReq.risky + ')');
+      }
+      if (parts.length > 0) {
+        const footerY = y + h - footerReserveH + 4;
+        this.add.text(x + w / 2, footerY,
+          T('printingHouse.ui.locked_summary') + '  ' + parts.join('   ·   '),
+          { fontFamily: 'monospace', fontSize: '11px', color: '#888', fontStyle: 'italic' }
+        ).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+      }
+
+      // Empty state
+      if (edicts.length === 0) {
+        this.add.text(x + w / 2, y + gridH / 2,
+          T('printingHouse.ui.empty_state'),
+          { fontFamily: 'serif', fontSize: '14px', color: '#888', fontStyle: 'italic',
+            wordWrap: { width: w - 40, useAdvancedWrap: true }, align: 'center' }
+        ).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
+      }
     }
 
     // ---- single edict card ----
     _renderEdictCard(edict, x, y, w, h, tc, active, paper) {
       const isActive       = !!(active && active.id === edict.id);
       const otherActive    = !!(active && active.id !== edict.id);
-      const isLocked       = !edict.isUnlocked;
-      const isUnaffordable = !isLocked && !otherActive && paper < edict.cost;
-      const isAvailable    = !isLocked && !otherActive && !isUnaffordable;
+      const isUnaffordable = !otherActive && paper < edict.cost;
+      // (Tier-locked edicts are filtered out before this renders — they only
+      // appear in the bottom footer. The only locked-state we still render
+      // here is "an edict is already active for this run".)
 
-      // Visual themeing per state
-      let bgColor       = tc.soft;
-      let bgAlpha       = 0.95;
-      let borderColor   = tc.border;
-      let borderAlpha   = 0.55;
-      let textColor     = '#f1e9d8';
-      let descColor     = '#aaa6a0';
-      let costColor     = tc.accent;
-      let interactive   = false;
+      // Visual theming per state.
+      let bgColor     = tc.soft;
+      let borderColor = tc.border;
+      let borderAlpha = 0.6;
+      let textColor   = '#f1e9d8';
+      let descColor   = '#c8c2b8';
+      let costColor   = tc.accent;
+      let interactive = false;
 
       if (isActive) {
-        bgColor = 0x223822; borderColor = 0x88ff88; borderAlpha = 1;
-        textColor = '#88ff88'; descColor = '#bce3bc'; costColor = '#88ff88';
-      } else if (isLocked) {
-        bgColor = 0x1a1a1a; borderColor = 0x444444; borderAlpha = 0.6;
-        textColor = '#666'; descColor = '#444'; costColor = '#555';
+        bgColor = 0x1f3a1f; borderColor = 0x88ff88; borderAlpha = 1;
+        textColor = '#aaffaa'; descColor = '#bce3bc'; costColor = '#88ff88';
       } else if (otherActive) {
-        bgColor = 0x161616; borderColor = 0x333333; borderAlpha = 0.6;
-        textColor = '#555'; descColor = '#333'; costColor = '#444';
+        bgColor = 0x161618; borderColor = 0x333333; borderAlpha = 0.5;
+        textColor = '#555'; descColor = '#3d3d3d'; costColor = '#444';
       } else if (isUnaffordable) {
-        bgColor = 0x1f1d18; borderColor = 0x554c3a; borderAlpha = 0.7;
-        textColor = '#a89c84'; descColor = '#766a55'; costColor = '#aa8866';
+        bgColor = 0x1f1d18; borderColor = 0x554c3a; borderAlpha = 0.65;
+        textColor = '#a89c84'; descColor = '#85795f'; costColor = '#aa8866';
       } else {
         interactive = true;
-        borderAlpha = 0.85;
+        borderAlpha = 0.9;
       }
 
-      // Card body (drawn into a graphics so we can repaint on hover)
+      // Card body (drawn into a graphics so we can repaint on hover).
       const cardG = this.add.graphics().setScrollFactor(0).setDepth(2002);
       const repaint = (hover) => {
         cardG.clear();
-        cardG.fillStyle(bgColor, bgAlpha).fillRoundedRect(x, y, w, h, 8);
+        cardG.fillStyle(bgColor, 0.95).fillRoundedRect(x, y, w, h, 10);
         cardG.lineStyle(hover ? 3 : 2, borderColor, hover ? 1 : borderAlpha)
-          .strokeRoundedRect(x, y, w, h, 8);
+          .strokeRoundedRect(x, y, w, h, 10);
+        // Tier accent stripe on the left edge — replaces the missing tier
+        // column from v1, so the player can still tell mild/strong/risky
+        // apart at a glance.
+        cardG.fillStyle(tc.border, otherActive ? 0.25 : 0.95)
+          .fillRoundedRect(x, y, 6, h, { tl: 10, bl: 10, tr: 0, br: 0 });
       };
       repaint(false);
 
-      // Edict name (top)
-      this.add.text(x + 12, y + 8, T('printingHouse.edict.' + edict.id + '.label'), {
-        fontFamily: 'serif', fontSize: '14px', color: textColor, fontStyle: 'bold',
-        wordWrap: { width: w - 24 }
+      // Tier mini-badge top-right (small uppercase pill)
+      const tierLabel = T('printingHouse.tier.' + edict.tier).toUpperCase();
+      this.add.text(x + w - 14, y + 12, tierLabel, {
+        fontFamily: 'monospace', fontSize: '10px', color: tc.accent, fontStyle: 'bold'
+      }).setOrigin(1, 0).setScrollFactor(0).setDepth(2003);
+
+      // Edict name (top, leaving 60px on the right for the tier label)
+      this.add.text(x + 18, y + 10, T('printingHouse.edict.' + edict.id + '.label'), {
+        fontFamily: 'serif', fontSize: '16px', color: textColor, fontStyle: 'bold',
+        wordWrap: { width: w - 90, useAdvancedWrap: true }
       }).setScrollFactor(0).setDepth(2003);
 
-      // Description (middle)
-      this.add.text(x + 12, y + 30, T('printingHouse.edict.' + edict.id + '.desc'), {
-        fontFamily: 'monospace', fontSize: '10.5px', color: descColor, lineSpacing: 1,
-        wordWrap: { width: w - 24, useAdvancedWrap: true }
+      // Description (middle, full card width)
+      this.add.text(x + 18, y + 36, T('printingHouse.edict.' + edict.id + '.desc'), {
+        fontFamily: 'monospace', fontSize: '12px', color: descColor, lineSpacing: 2,
+        wordWrap: { width: w - 28, useAdvancedWrap: true }
       }).setScrollFactor(0).setDepth(2003);
 
-      // Bottom row: cost pill + status badge
-      const bottomY = y + h - 22;
-      this.add.text(x + 12, bottomY, edict.cost + 'p  +' + edict.suspicionCost + 'V', {
-        fontFamily: 'monospace', fontSize: '11px', color: costColor, fontStyle: 'bold'
-      }).setScrollFactor(0).setDepth(2003);
+      // Bottom row: cost pill (left) + status badge (right)
+      const bottomY = y + h - 24;
+      this.add.text(x + 18, bottomY,
+        edict.cost + ' Druckblätter   +' + edict.suspicionCost + ' Verdacht', {
+          fontFamily: 'monospace', fontSize: '12px', color: costColor, fontStyle: 'bold'
+        }
+      ).setScrollFactor(0).setDepth(2003);
 
       let statusText = '';
       let statusColor = textColor;
       if (isActive) {
         statusText = T('printingHouse.ui.status.active'); statusColor = '#88ff88';
-      } else if (isLocked) {
-        statusText = T('printingHouse.ui.status.locked', { req: edict.requireStanding });
-        statusColor = '#888';
       } else if (otherActive) {
-        statusText = '—'; statusColor = '#444';
+        statusText = T('printingHouse.ui.status.blocked_by_active'); statusColor = '#666';
       } else if (isUnaffordable) {
         statusText = T('printingHouse.ui.status.unaffordable'); statusColor = '#aa8866';
       } else {
         statusText = T('printingHouse.ui.status.available'); statusColor = tc.accent;
       }
-      this.add.text(x + w - 12, bottomY, statusText, {
-        fontFamily: 'monospace', fontSize: '10.5px', color: statusColor
+      this.add.text(x + w - 14, bottomY, statusText, {
+        fontFamily: 'monospace', fontSize: '12px', color: statusColor, fontStyle: 'bold'
       }).setOrigin(1, 0).setScrollFactor(0).setDepth(2003);
 
       // Click hit area (only for available edicts)
