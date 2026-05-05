@@ -1522,15 +1522,18 @@ class HubSceneV2 extends Phaser.Scene {
         this.scene.start('CraftingScene');
       });
     } else if (entranceData.target === 'druckerei') {
-      // Issue #24: real Druckerei dialog. Locked until aldric_cleanup is
-      // completed (FR-30). Otherwise opens the edict-browser overlay
-      // built around the existing _showNpcDialogue choice flow.
+      // Issue #24: open the dedicated full-overlay PrintingHouseScene
+      // (tier columns + edict cards + status bar). Falls back to the
+      // legacy inline choice dialog if the scene script isn't loaded.
+      // Locked until aldric_cleanup is completed (FR-30).
       var ph = window.PrintingHouse;
       if (!ph || !ph.isUnlocked()) {
         this._showNpcDialogue({
           name: 'Setzer Thom',
           lines: [_HUB_T('printingHouse.dialog.locked')]
         });
+      } else if (typeof window.openPrintingHouseScene === 'function') {
+        window.openPrintingHouseScene(this);
       } else {
         this._showPrintingHouseDialog();
       }

@@ -1,0 +1,447 @@
+// PrintingHouseScene — full-overlay edict-browser for the Druckerei (#24).
+// Replaces the legacy choice-list dialog inside HubSceneV2 with a dedicated
+// scene that uses tier columns + edict cards + a status bar so all 10
+// edicts plus suspicion/paper status are visible at a glance.
+//
+// Launched via window.openPrintingHouseScene(parentScene). The parent stays
+// running underneath; ESC or the Close button stops this overlay.
+
+(function () {
+  if (window.i18n) {
+    window.i18n.register('de', {
+      'printingHouse.ui.title': 'Druckerei',
+      'printingHouse.ui.subtitle': 'Welche Botschaft soll Setzer Thom drucken?',
+      'printingHouse.ui.paper': 'Druckblätter',
+      'printingHouse.ui.suspicion': 'Council-Verdacht',
+      'printingHouse.ui.active_edict': 'Aktiv',
+      'printingHouse.ui.no_active': 'Kein Edikt aktiv',
+      'printingHouse.ui.tier.mild': 'Mild',
+      'printingHouse.ui.tier.strong': 'Stark',
+      'printingHouse.ui.tier.risky': 'Riskant',
+      'printingHouse.ui.tier.mild.sub': 'unter dem Radar',
+      'printingHouse.ui.tier.strong.sub': 'beobachtet',
+      'printingHouse.ui.tier.risky.sub': 'Council schlägt zurück',
+      'printingHouse.ui.status.locked': 'Standing {req}',
+      'printingHouse.ui.status.unaffordable': 'Zu wenig Papier',
+      'printingHouse.ui.status.active': 'Aktiv',
+      'printingHouse.ui.status.available': 'Verfügbar',
+      'printingHouse.ui.status.blocked_by_active': 'Anderes Edikt aktiv',
+      'printingHouse.ui.btn.bribe': 'Aldric bestechen\n-100 Gold · -5 Verdacht',
+      'printingHouse.ui.btn.tradegold': 'Gold tauschen\n-50 Gold · +1 Druckblatt',
+      'printingHouse.ui.btn.close': 'Schließen [ESC]',
+      'printingHouse.ui.legend.paper': 'Kosten',
+      'printingHouse.ui.legend.suspicion': 'Verdacht'
+    });
+    window.i18n.register('en', {
+      'printingHouse.ui.title': 'Printing House',
+      'printingHouse.ui.subtitle': 'What message shall Setzer Thom print?',
+      'printingHouse.ui.paper': 'Paper',
+      'printingHouse.ui.suspicion': 'Council Suspicion',
+      'printingHouse.ui.active_edict': 'Active',
+      'printingHouse.ui.no_active': 'No edict active',
+      'printingHouse.ui.tier.mild': 'Mild',
+      'printingHouse.ui.tier.strong': 'Strong',
+      'printingHouse.ui.tier.risky': 'Risky',
+      'printingHouse.ui.tier.mild.sub': 'under the radar',
+      'printingHouse.ui.tier.strong.sub': 'watched',
+      'printingHouse.ui.tier.risky.sub': 'Council retaliates',
+      'printingHouse.ui.status.locked': 'Standing {req}',
+      'printingHouse.ui.status.unaffordable': 'Not enough paper',
+      'printingHouse.ui.status.active': 'Active',
+      'printingHouse.ui.status.available': 'Available',
+      'printingHouse.ui.status.blocked_by_active': 'Another edict active',
+      'printingHouse.ui.btn.bribe': 'Bribe Aldric\n-100 gold · -5 suspicion',
+      'printingHouse.ui.btn.tradegold': 'Trade gold\n-50 gold · +1 paper',
+      'printingHouse.ui.btn.close': 'Close [ESC]',
+      'printingHouse.ui.legend.paper': 'Cost',
+      'printingHouse.ui.legend.suspicion': 'Suspicion'
+    });
+  }
+
+  const T = (k, p) => (window.i18n ? window.i18n.t(k, p) : k);
+
+  // Per-tier color theming. Border + bg are used on the column header AND
+  // each edict card belonging to that tier so the eye can group them at a
+  // glance (cool/safe → warm/risky).
+  const TIER_THEME = {
+    mild:   { border: 0x6fb98f, bg: 0x18301c, soft: 0x1d3a22, accent: '#88ffaa', dim: '#557a64' },
+    strong: { border: 0xddbb55, bg: 0x382b18, soft: 0x40331c, accent: '#ffd166', dim: '#806b3a' },
+    risky:  { border: 0xdd5555, bg: 0x381818, soft: 0x431a1a, accent: '#ff8888', dim: '#7a4444' }
+  };
+
+  class PrintingHouseScene extends Phaser.Scene {
+    constructor() { super({ key: 'PrintingHouseScene' }); }
+
+    create(data) {
+      this.parentSceneKey = (data && data.from) || null;
+      const cam = this.cameras.main;
+      const cw = cam.width;
+      const ch = cam.height;
+
+      // Dim backdrop. Slightly darker than Settings so the panel pops.
+      this.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.78)
+        .setScrollFactor(0).setDepth(2000);
+
+      const panelW = Math.min(900, cw - 40);
+      const panelH = Math.min(640, ch - 40);
+      const px = cw / 2;
+      const py = ch / 2;
+      const panelLeft = px - panelW / 2;
+      const panelTop  = py - panelH / 2;
+
+      // Panel background
+      const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
+      panel.fillStyle(0x10131c, 0.97).fillRoundedRect(panelLeft, panelTop, panelW, panelH, 16);
+      panel.lineStyle(3, 0xffd166, 0.92).strokeRoundedRect(panelLeft, panelTop, panelW, panelH, 16);
+      // Subtle vertical gradient overlay (top is lighter)
+      panel.fillStyle(0x1c2030, 0.35).fillRoundedRect(panelLeft, panelTop, panelW, 80, 16);
+
+      // Title row
+      this.add.text(px, panelTop + 22, T('printingHouse.ui.title'), {
+        fontFamily: 'serif', fontSize: '28px', color: '#ffd166', fontStyle: 'bold'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+      this.add.text(px, panelTop + 56, T('printingHouse.ui.subtitle'), {
+        fontFamily: 'serif', fontSize: '13px', color: '#aaa6a0', fontStyle: 'italic'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+
+      // Status bar (paper / suspicion / active edict)
+      this._renderStatusBar(panelLeft, panelTop + 92, panelW);
+
+      // Tier columns
+      const colTop    = panelTop + 178;
+      const colHeight = panelH - 178 - 84; // leave 84px for action bar
+      const sidePad   = 22;
+      const colGap    = 14;
+      const colW      = (panelW - sidePad * 2 - colGap * 2) / 3;
+      this._renderTierColumn('mild',   panelLeft + sidePad,                       colTop, colW, colHeight);
+      this._renderTierColumn('strong', panelLeft + sidePad + colW + colGap,       colTop, colW, colHeight);
+      this._renderTierColumn('risky',  panelLeft + sidePad + (colW + colGap) * 2, colTop, colW, colHeight);
+
+      // Action bar at the bottom
+      this._renderActionBar(panelLeft, panelTop + panelH - 70, panelW);
+
+      // Keys: ESC closes; E (interaction key) also closes so the player
+      // doesn't get stuck pressing it again at the entrance.
+      this.input.keyboard.on('keydown-ESC', () => this._close());
+      this.input.keyboard.on('keydown-E',   () => this._close());
+
+      // Live re-render on language change.
+      if (window.i18n && typeof window.i18n.onChange === 'function') {
+        this._unsubI18n = window.i18n.onChange(() => {
+          if (this.scene && this.scene.isActive && this.scene.isActive()) {
+            this.scene.restart({ from: this.parentSceneKey });
+          }
+        });
+        this.events.once('shutdown', () => {
+          if (this._unsubI18n) { this._unsubI18n(); this._unsubI18n = null; }
+        });
+      }
+    }
+
+    // ---- status bar ----
+    _renderStatusBar(left, top, w) {
+      const ph = window.PrintingHouse;
+      const paper = ph.getDruckblaetter();
+      const suspicion = ph.getSuspicion();
+      const active = ph.getActivePublication();
+
+      const colW = w / 3;
+
+      // === Paper (left) ===
+      const paperX = left + 24;
+      this.add.text(paperX, top, T('printingHouse.ui.paper').toUpperCase(), {
+        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 1
+      }).setScrollFactor(0).setDepth(2003);
+      this.add.text(paperX, top + 18, paper + ' / 50', {
+        fontFamily: 'monospace', fontSize: '22px', color: '#ffd166', fontStyle: 'bold'
+      }).setScrollFactor(0).setDepth(2003);
+      // Mini progress bar
+      const pBarW = colW - 60;
+      const pBarH = 6;
+      const pBarY = top + 50;
+      const pBarG = this.add.graphics().setScrollFactor(0).setDepth(2003);
+      pBarG.fillStyle(0x2a2a2a, 1).fillRoundedRect(paperX, pBarY, pBarW, pBarH, 3);
+      pBarG.fillStyle(0xffd166, 1).fillRoundedRect(paperX, pBarY, Math.round(pBarW * (paper / 50)), pBarH, 3);
+
+      // === Suspicion (center) — three-segment threshold meter ===
+      const susCenterX = left + w / 2;
+      const susLabel = T('printingHouse.ui.suspicion').toUpperCase();
+      this.add.text(susCenterX, top, susLabel, {
+        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 1
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+      const susColor = suspicion >= 20 ? '#ff5555' : suspicion >= 10 ? '#ffaa44' : '#88ff88';
+      this.add.text(susCenterX, top + 18, String(suspicion), {
+        fontFamily: 'monospace', fontSize: '22px', color: susColor, fontStyle: 'bold'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+      // Three-segment threshold meter (0..10 safe, 10..20 alert, 20+ hunt)
+      const meterW = colW - 60;
+      const meterH = 8;
+      const meterX = susCenterX - meterW / 2;
+      const meterY = top + 50;
+      const segW = meterW / 3;
+      const meterG = this.add.graphics().setScrollFactor(0).setDepth(2003);
+      // Track
+      meterG.fillStyle(0x2a2a2a, 1).fillRoundedRect(meterX, meterY, meterW, meterH, 4);
+      // Fill segments
+      const safeFill  = Math.min(1, suspicion / 10);
+      const alertFill = Math.max(0, Math.min(1, (suspicion - 10) / 10));
+      const huntFill  = Math.max(0, Math.min(1, (suspicion - 20) / 10));
+      meterG.fillStyle(0x88ff88, 1).fillRect(meterX,             meterY, segW * safeFill,  meterH);
+      meterG.fillStyle(0xffaa44, 1).fillRect(meterX + segW,      meterY, segW * alertFill, meterH);
+      meterG.fillStyle(0xff5555, 1).fillRect(meterX + segW * 2,  meterY, segW * huntFill,  meterH);
+      // Segment dividers
+      meterG.lineStyle(1, 0x10131c, 1);
+      meterG.lineBetween(meterX + segW,     meterY, meterX + segW,     meterY + meterH);
+      meterG.lineBetween(meterX + segW * 2, meterY, meterX + segW * 2, meterY + meterH);
+      // Tier-threshold mini-labels under the meter
+      const tickStyle = { fontFamily: 'monospace', fontSize: '9px', color: '#666' };
+      this.add.text(meterX + segW,     meterY + meterH + 2, '10', tickStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+      this.add.text(meterX + segW * 2, meterY + meterH + 2, '20', tickStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+
+      // === Active edict (right) ===
+      const actX = left + w - 24;
+      this.add.text(actX, top, T('printingHouse.ui.active_edict').toUpperCase(), {
+        fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0', letterSpacing: 1
+      }).setOrigin(1, 0).setScrollFactor(0).setDepth(2003);
+      const activeText = active
+        ? T('printingHouse.edict.' + active.id + '.label')
+        : T('printingHouse.ui.no_active');
+      this.add.text(actX, top + 18, activeText, {
+        fontFamily: 'serif', fontSize: '16px',
+        color: active ? '#88ff88' : '#666666',
+        fontStyle: active ? 'bold' : 'italic',
+        wordWrap: { width: colW - 30, useAdvancedWrap: true },
+        align: 'right'
+      }).setOrigin(1, 0).setScrollFactor(0).setDepth(2003);
+    }
+
+    // ---- tier column ----
+    _renderTierColumn(tier, x, y, w, h) {
+      const tc = TIER_THEME[tier];
+
+      // Column header bar
+      const headerH = 38;
+      const headerG = this.add.graphics().setScrollFactor(0).setDepth(2002);
+      headerG.fillStyle(tc.bg, 1).fillRoundedRect(x, y, w, headerH, 8);
+      headerG.lineStyle(1, tc.border, 0.85).strokeRoundedRect(x, y, w, headerH, 8);
+      this.add.text(x + w / 2, y + 8, T('printingHouse.tier.' + tier).toUpperCase(), {
+        fontFamily: 'serif', fontSize: '15px', color: tc.accent, fontStyle: 'bold', letterSpacing: 1
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+      this.add.text(x + w / 2, y + 24, T('printingHouse.ui.tier.' + tier + '.sub'), {
+        fontFamily: 'monospace', fontSize: '10px', color: tc.dim, fontStyle: 'italic'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+
+      // Cards
+      const ph = window.PrintingHouse;
+      const catalog = ph.getEdictCatalog();
+      const tierEdicts = catalog.filter((e) => e.tier === tier);
+      const cardGap = 8;
+      const availH = h - headerH - 12;
+      const cardH = (availH - cardGap * (tierEdicts.length - 1)) / tierEdicts.length;
+      let cy = y + headerH + 12;
+      const active = ph.getActivePublication();
+      const paper = ph.getDruckblaetter();
+      tierEdicts.forEach((e) => {
+        this._renderEdictCard(e, x, cy, w, cardH, tc, active, paper);
+        cy += cardH + cardGap;
+      });
+    }
+
+    // ---- single edict card ----
+    _renderEdictCard(edict, x, y, w, h, tc, active, paper) {
+      const isActive       = !!(active && active.id === edict.id);
+      const otherActive    = !!(active && active.id !== edict.id);
+      const isLocked       = !edict.isUnlocked;
+      const isUnaffordable = !isLocked && !otherActive && paper < edict.cost;
+      const isAvailable    = !isLocked && !otherActive && !isUnaffordable;
+
+      // Visual themeing per state
+      let bgColor       = tc.soft;
+      let bgAlpha       = 0.95;
+      let borderColor   = tc.border;
+      let borderAlpha   = 0.55;
+      let textColor     = '#f1e9d8';
+      let descColor     = '#aaa6a0';
+      let costColor     = tc.accent;
+      let interactive   = false;
+
+      if (isActive) {
+        bgColor = 0x223822; borderColor = 0x88ff88; borderAlpha = 1;
+        textColor = '#88ff88'; descColor = '#bce3bc'; costColor = '#88ff88';
+      } else if (isLocked) {
+        bgColor = 0x1a1a1a; borderColor = 0x444444; borderAlpha = 0.6;
+        textColor = '#666'; descColor = '#444'; costColor = '#555';
+      } else if (otherActive) {
+        bgColor = 0x161616; borderColor = 0x333333; borderAlpha = 0.6;
+        textColor = '#555'; descColor = '#333'; costColor = '#444';
+      } else if (isUnaffordable) {
+        bgColor = 0x1f1d18; borderColor = 0x554c3a; borderAlpha = 0.7;
+        textColor = '#a89c84'; descColor = '#766a55'; costColor = '#aa8866';
+      } else {
+        interactive = true;
+        borderAlpha = 0.85;
+      }
+
+      // Card body (drawn into a graphics so we can repaint on hover)
+      const cardG = this.add.graphics().setScrollFactor(0).setDepth(2002);
+      const repaint = (hover) => {
+        cardG.clear();
+        cardG.fillStyle(bgColor, bgAlpha).fillRoundedRect(x, y, w, h, 8);
+        cardG.lineStyle(hover ? 3 : 2, borderColor, hover ? 1 : borderAlpha)
+          .strokeRoundedRect(x, y, w, h, 8);
+      };
+      repaint(false);
+
+      // Edict name (top)
+      this.add.text(x + 12, y + 8, T('printingHouse.edict.' + edict.id + '.label'), {
+        fontFamily: 'serif', fontSize: '14px', color: textColor, fontStyle: 'bold',
+        wordWrap: { width: w - 24 }
+      }).setScrollFactor(0).setDepth(2003);
+
+      // Description (middle)
+      this.add.text(x + 12, y + 30, T('printingHouse.edict.' + edict.id + '.desc'), {
+        fontFamily: 'monospace', fontSize: '10.5px', color: descColor, lineSpacing: 1,
+        wordWrap: { width: w - 24, useAdvancedWrap: true }
+      }).setScrollFactor(0).setDepth(2003);
+
+      // Bottom row: cost pill + status badge
+      const bottomY = y + h - 22;
+      this.add.text(x + 12, bottomY, edict.cost + 'p  +' + edict.suspicionCost + 'V', {
+        fontFamily: 'monospace', fontSize: '11px', color: costColor, fontStyle: 'bold'
+      }).setScrollFactor(0).setDepth(2003);
+
+      let statusText = '';
+      let statusColor = textColor;
+      if (isActive) {
+        statusText = T('printingHouse.ui.status.active'); statusColor = '#88ff88';
+      } else if (isLocked) {
+        statusText = T('printingHouse.ui.status.locked', { req: edict.requireStanding });
+        statusColor = '#888';
+      } else if (otherActive) {
+        statusText = '—'; statusColor = '#444';
+      } else if (isUnaffordable) {
+        statusText = T('printingHouse.ui.status.unaffordable'); statusColor = '#aa8866';
+      } else {
+        statusText = T('printingHouse.ui.status.available'); statusColor = tc.accent;
+      }
+      this.add.text(x + w - 12, bottomY, statusText, {
+        fontFamily: 'monospace', fontSize: '10.5px', color: statusColor
+      }).setOrigin(1, 0).setScrollFactor(0).setDepth(2003);
+
+      // Click hit area (only for available edicts)
+      if (interactive) {
+        const hit = this.add.rectangle(x + w / 2, y + h / 2, w, h, 0xffffff, 0)
+          .setScrollFactor(0).setDepth(2004)
+          .setInteractive({ useHandCursor: true });
+        hit.on('pointerover', () => repaint(true));
+        hit.on('pointerout',  () => repaint(false));
+        hit.on('pointerdown', () => this._publish(edict.id));
+      }
+    }
+
+    // ---- action bar ----
+    _renderActionBar(left, top, w) {
+      const ph = window.PrintingHouse;
+      const suspicion = ph.getSuspicion();
+      const paper = ph.getDruckblaetter();
+      const gold = (window.LootSystem && typeof window.LootSystem.getGold === 'function')
+        ? window.LootSystem.getGold() : 0;
+
+      // Three buttons evenly spaced.
+      const btnH = 50;
+      const sidePad = 24;
+      const btnGap = 14;
+      const usableW = w - sidePad * 2;
+      const btnW = (usableW - btnGap * 2) / 3;
+      const btnY = top + btnH / 2;
+
+      const cx1 = left + sidePad + btnW / 2;
+      const cx2 = left + sidePad + btnW + btnGap + btnW / 2;
+      const cx3 = left + sidePad + (btnW + btnGap) * 2 + btnW / 2;
+
+      const canBribe = suspicion > 0 && gold >= 100;
+      const canTrade = paper < 50 && gold >= 50;
+
+      this._actionButton(cx1, btnY, btnW, btnH, T('printingHouse.ui.btn.bribe'),     canBribe, 0xc35a4e, () => {
+        if (ph.bribe()) this._refresh();
+      });
+      this._actionButton(cx2, btnY, btnW, btnH, T('printingHouse.ui.btn.tradegold'), canTrade, 0xd4a543, () => {
+        if (ph.tradeGoldForPaper()) this._refresh();
+      });
+      this._actionButton(cx3, btnY, btnW, btnH, T('printingHouse.ui.btn.close'),     true,     0x7a7a7a, () => this._close());
+    }
+
+    _actionButton(cx, cy, w, h, label, enabled, accentColor, onClick) {
+      const bgColor     = enabled ? 0x2a2e3a : 0x1a1a1a;
+      const borderColor = enabled ? accentColor : 0x444444;
+      const txtColor    = enabled ? '#f1e9d8' : '#666';
+      const bg = this.add.rectangle(cx, cy, w, h, bgColor)
+        .setStrokeStyle(2, borderColor)
+        .setScrollFactor(0).setDepth(2002);
+      this.add.text(cx, cy, label, {
+        fontFamily: 'monospace', fontSize: '12px', color: txtColor, align: 'center',
+        wordWrap: { width: w - 16, useAdvancedWrap: true }, lineSpacing: 2
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
+      if (enabled) {
+        bg.setInteractive({ useHandCursor: true });
+        bg.on('pointerover', () => bg.setFillStyle(0x3a3f50));
+        bg.on('pointerout',  () => bg.setFillStyle(bgColor));
+        bg.on('pointerdown', onClick);
+      }
+    }
+
+    // ---- actions ----
+    _publish(edictId) {
+      const ph = window.PrintingHouse;
+      const result = ph.publishEdict(edictId);
+      if (result.success) {
+        this._toast(T('printingHouse.toast.published', { name: T('printingHouse.edict.' + edictId + '.label') }));
+        this.time.delayedCall(900, () => this._close());
+      } else {
+        this._toast(result.reason || 'Publish fehlgeschlagen');
+        this._refresh();
+      }
+    }
+
+    _refresh() {
+      // Quickest way to reflect new state across status + cards.
+      this.scene.restart({ from: this.parentSceneKey });
+    }
+
+    _toast(msg) {
+      const cam = this.cameras.main;
+      const txt = this.add.text(cam.width / 2, cam.height - 100, msg, {
+        fontFamily: 'monospace', fontSize: '14px', color: '#88ff88',
+        backgroundColor: '#0c0c11dd', padding: { x: 10, y: 6 }
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2010);
+      this.tweens.add({
+        targets: txt, alpha: 0, delay: 1500, duration: 400,
+        onComplete: () => txt.destroy()
+      });
+    }
+
+    _close() {
+      this.input.keyboard.off('keydown-ESC');
+      this.input.keyboard.off('keydown-E');
+      if (this._unsubI18n) { this._unsubI18n(); this._unsubI18n = null; }
+      this.scene.stop();
+    }
+  }
+
+  window.PrintingHouseScene = PrintingHouseScene;
+
+  window.openPrintingHouseScene = function (fromScene) {
+    if (!fromScene || !fromScene.scene) return;
+    try {
+      if (fromScene.scene.isActive('PrintingHouseScene')) {
+        fromScene.scene.stop('PrintingHouseScene');
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      fromScene.scene.launch('PrintingHouseScene', { from: fromScene.scene.key });
+      fromScene.scene.bringToTop('PrintingHouseScene');
+    } catch (e) {
+      console.warn('[openPrintingHouseScene] launch failed', e);
+    }
+  };
+})();
