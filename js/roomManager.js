@@ -505,8 +505,9 @@ function enterRoom(scene, roomId) {
   const STAIR_SEPARATION_SQ = (STAIR_HALF * 3) * (STAIR_HALF * 3); // ~132px apart
 
   // True if (cx, cy) is inside the room bounds with a STAIR_HALF margin AND
-  // not blocked by walls or physics obstacles AND far enough from spawn AND
-  // far enough from previously-placed stairs in this loop.
+  // not blocked by walls or physics obstacles AND reachable from the player
+  // spawn AND far enough from spawn AND far enough from previously-placed
+  // stairs in this loop.
   const isProceduralCandidateValid = (cx, cy) => {
     if (cx < STAIR_HALF || cx > builtWidth - STAIR_HALF) return false;
     if (cy < STAIR_HALF || cy > builtHeight - STAIR_HALF) return false;
@@ -524,6 +525,12 @@ function enterRoom(scene, roomId) {
     }
     // Wall-grid + obstacle check — same helper used by enemy/loot spawns.
     if (isSpawnPositionBlocked(cx, cy, STAIR_HALF)) return false;
+    // Reachability check — proc rooms can have sealed-off chambers; the stair
+    // must lie in the BFS region the player can actually walk to from spawn.
+    // (scene.isPointAccessible may be missing on the very first frame after
+    // build; in that case skip the gate so we don't reject every candidate.)
+    if (typeof scene.isPointAccessible === 'function'
+        && !scene.isPointAccessible(cx, cy)) return false;
     return true;
   };
 
@@ -568,6 +575,29 @@ function enterRoom(scene, roomId) {
           }
           if (isProceduralCandidateValid(cx, cy)) {
             chosen = { x: cx, y: cy };
+          }
+        }
+      }
+      // Final fallback: pickAccessibleSpawnPoint draws from the BFS-computed
+      // pool of guaranteed-reachable tiles. We retry a few times with the
+      // same min-distance gate so we still avoid spawning right next to the
+      // player; if that fails too, we drop the gate and accept ANY reachable
+      // tile rather than land on a wall.
+      if (!chosen && typeof scene.pickAccessibleSpawnPoint === 'function') {
+        for (let pickAttempt = 0; pickAttempt < 8 && !chosen; pickAttempt++) {
+          const spot = scene.pickAccessibleSpawnPoint({
+            minDistance: MIN_STAIR_DISTANCE,
+            maxAttempts: 12
+          });
+          if (spot && isProceduralCandidateValid(spot.x, spot.y)) {
+            chosen = spot;
+          }
+        }
+        if (!chosen) {
+          const spot = scene.pickAccessibleSpawnPoint({ minDistance: 0, maxAttempts: 16 });
+          if (spot && !isSpawnPositionBlocked(spot.x, spot.y, STAIR_HALF)) {
+            chosen = spot;
+            try { console.warn('[stairs] proc-room fallback: relaxed min-distance to find reachable tile'); } catch (_) {}
           }
         }
       }
