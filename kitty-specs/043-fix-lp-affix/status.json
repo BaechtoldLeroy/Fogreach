@@ -1,25 +1,25 @@
 {
-  "event_count": 4,
+  "event_count": 5,
   "feature_slug": "043-fix-lp-affix",
-  "last_event_id": "01KQJ2SW1EK16VFAMD5AVN1JAP",
-  "materialized_at": "2026-05-01T15:34:03.577869+00:00",
+  "last_event_id": "01KQJ2WCYQTDRR0W6TTYTVTRYV",
+  "materialized_at": "2026-05-01T15:35:26.435704+00:00",
   "summary": {
-    "approved": 1,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 0,
+    "done": 1,
     "for_review": 0,
     "in_progress": 0,
     "planned": 0
   },
   "work_packages": {
     "WP01": {
-      "actor": "user",
+      "actor": "merge",
       "force_count": 0,
-      "lane": "approved",
-      "last_event_id": "01KQJ2SW1EK16VFAMD5AVN1JAP",
-      "last_transition_at": "2026-05-01T15:34:03.566114+00:00"
+      "lane": "done",
+      "last_event_id": "01KQJ2WCYQTDRR0W6TTYTVTRYV",
+      "last_transition_at": "2026-05-01T15:35:26.423764+00:00"
     }
   }
 }
