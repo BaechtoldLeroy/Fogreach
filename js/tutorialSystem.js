@@ -58,7 +58,7 @@
     // isn't told to pick something up before there is anything to pick up.
     'tutorial.step.loot_pickup':              'Ein Item ist gefallen — lauf einfach drüber, um es aufzuheben',
     'tutorial.step.loot_pickup.mobile':       'Ein Item ist gefallen — bewege dich mit dem Joystick darüber, um es aufzuheben',
-    'tutorial.step.loot_equip':               'Öffne das Inventar (I) und mache Rechtsklick auf das Item, um es anzulegen',
+    'tutorial.step.loot_equip':               'Öffne das Inventar (I), klick das Item an und dann auf »Ausrüsten«',
     'tutorial.step.loot_equip.mobile':        'Öffne das Inventar, tippe das Item an und dann den passenden Ausrüstungs-Slot',
     'tutorial.step.save_notice':              'Dein Fortschritt wird automatisch gespeichert',
     'tutorial.step.druckerei_visit':          'Geh zur Druckerei',
@@ -96,7 +96,7 @@
     'tutorial.step.skill_use.mobile':         'In the dungeon you can trigger the ability with the ability buttons at the bottom',
     'tutorial.step.loot_pickup':              'An item dropped — just walk over it to pick it up',
     'tutorial.step.loot_pickup.mobile':       'An item dropped — move over it with the joystick to pick it up',
-    'tutorial.step.loot_equip':               'Open the inventory (I) and right-click the item to equip it',
+    'tutorial.step.loot_equip':               'Open the inventory (I), click the item, then click "Equip"',
     'tutorial.step.loot_equip.mobile':        'Open the inventory, tap the item, then tap the matching equipment slot',
     'tutorial.step.save_notice':              'Your progress is saved automatically',
     'tutorial.step.druckerei_visit':          'Go to the printing house',
