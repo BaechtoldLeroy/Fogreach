@@ -1906,13 +1906,19 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Live updates via onChange subscription. Unsub handle is stored so
     // _ktCloseModal can detach it (no leaks across re-opens -- FR-12).
+    // Phaser GameObjects set .scene to undefined on destroy — that's the
+    // reliable destroyed check (.destroyed is not a Phaser convention).
     const self = this;
     try {
       this._ktUnsub = window.KnowledgeTree.onChange(function (state) {
-        if (self._ktFragText && !self._ktFragText.destroyed) {
-          self._ktFragText.setText(_HUB_T('knowledge.fragments', { count: state.fragments }));
+        if (self._ktFragText && self._ktFragText.scene) {
+          try {
+            self._ktFragText.setText(_HUB_T('knowledge.fragments', { count: state.fragments }));
+          } catch (_) { /* destroyed mid-flight — swallow */ }
         }
-        self._ktRenderCards();
+        if (self._ktCardLayer && self._ktCardLayer.scene) {
+          self._ktRenderCards();
+        }
       });
     } catch (e) {
       try { console.warn('[HubSceneV2] KnowledgeTree.onChange failed', e); } catch (_) {}
@@ -1922,6 +1928,13 @@ class HubSceneV2 extends Phaser.Scene {
     // ESC handler - stored on scene so _ktCloseModal can detach it.
     this._ktEscHandler = () => this._ktCloseModal();
     this.input.keyboard.on('keydown-ESC', this._ktEscHandler);
+
+    // Tear down subscriber + container if the scene shuts down or sleeps
+    // before the player explicitly closes the modal (e.g. walks straight
+    // from Mara to the dungeon entrance). Without this, the subscriber
+    // fires setText on a destroyed Text after scene.start('GameScene').
+    this.events.once('shutdown', () => { try { this._ktCloseModal(); } catch (_) {} });
+    this.events.once('sleep',    () => { try { this._ktCloseModal(); } catch (_) {} });
   }
 
   _ktRenderCards() {

@@ -582,6 +582,25 @@ function initInventoryUI() {
 
   const positionTooltipBox = (box, x, y) => {
     if (!box) return;
+    // Clamp to camera bounds so long tooltips (e.g. boots with several
+    // affixes hovered from the bottom equipment slot) don't clip off the
+    // screen edges. Width/height were set by the preceding layoutTooltipBox.
+    const cam = scene.cameras && scene.cameras.main;
+    const camW = cam ? cam.width  : (scene.scale && scene.scale.width)  || 1280;
+    const camH = cam ? cam.height : (scene.scale && scene.scale.height) || 720;
+    const w = box._width  || 0;
+    const h = box._height || 0;
+    // If the tooltip would clip off the bottom, flip it above the cursor
+    // (32 px gap = original 16 below + 16 above the previous anchor).
+    if (y + h > camH - 4) {
+      y = Math.max(4, y - h - 32);
+    }
+    // Clamp right edge.
+    if (x + w > camW - 4) {
+      x = Math.max(4, camW - w - 4);
+    }
+    if (y < 4) y = 4;
+    if (x < 4) x = 4;
     box.setPosition(x, y);
     box.setVisible(true);
   };
@@ -1029,22 +1048,26 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   }
 
   // 4) HUD aktualisieren
-  if (weaponStatsText) {
-    // Mirrors the same template HUD uses (main.js hud.stats key).
-    if (window.i18n) {
-      weaponStatsText.setText(window.i18n.t('hud.stats', {
-        dmg: weaponDamage,
-        spd: weaponAttackSpeed.toFixed(2),
-        rng: attackRange,
-        arm: (playerArmor * 100).toFixed(0),
-        crit: (playerCritChance * 100).toFixed(1)
-      }));
-    } else {
-      weaponStatsText.setText(
-        `Damage: ${weaponDamage}  Speed: ${weaponAttackSpeed.toFixed(2)}  Range: ${attackRange}` +
-        `\nArmor: ${(playerArmor * 100).toFixed(0)}%  Crit: ${(playerCritChance * 100).toFixed(1)}%`
-      );
-    }
+  // Guard against a destroyed Text: Phaser sets `.scene` to undefined on
+  // destroy(). After a scene.start('GameScene') the old HUD text is gone,
+  // but the script-scoped binding still points to the dead object.
+  if (weaponStatsText && weaponStatsText.scene) {
+    try {
+      if (window.i18n) {
+        weaponStatsText.setText(window.i18n.t('hud.stats', {
+          dmg: weaponDamage,
+          spd: weaponAttackSpeed.toFixed(2),
+          rng: attackRange,
+          arm: (playerArmor * 100).toFixed(0),
+          crit: (playerCritChance * 100).toFixed(1)
+        }));
+      } else {
+        weaponStatsText.setText(
+          `Damage: ${weaponDamage}  Speed: ${weaponAttackSpeed.toFixed(2)}  Range: ${attackRange}` +
+          `\nArmor: ${(playerArmor * 100).toFixed(0)}%  Crit: ${(playerCritChance * 100).toFixed(1)}%`
+        );
+      }
+    } catch (_) { /* destroyed mid-flight — swallow */ }
   }
   if (typeof updateHUD === 'function') {
     updateHUD();
