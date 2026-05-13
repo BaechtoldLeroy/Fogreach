@@ -69,6 +69,10 @@
          + questSystem at runtime (lazy via window globals; load order only
          requires it to be before any scene that opens its dialog UI). -->
     <script src="js/printingHouse.js"></script>
+    <!-- Knowledge Tree (feature 047 / Issue #26). Auto-inits on load. Must
+         load after i18n.js (uses i18n.register) and before HubSceneV2.js
+         (the modal UI calls window.KnowledgeTree.*). -->
+    <script src="js/knowledgeTree.js"></script>
     <script src="js/scenes/startScene.js"></script>
     <script src="js/scenes/HubScene.js"></script>
     <script src="js/scenes/hub/hubLayout.js"></script>
