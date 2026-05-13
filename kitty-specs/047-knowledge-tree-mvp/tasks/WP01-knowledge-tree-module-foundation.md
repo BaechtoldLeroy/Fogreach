@@ -15,7 +15,7 @@ requirement_refs:
 - NFR-02
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: Planning + implementation on main; merge directly to main per constitution §Spec Kitty Governance.
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
@@ -534,7 +534,7 @@ Before approving:
 
 ## Next WP
 
-After WP01 merges, WP02, WP03, WP04 can start in parallel. They all depend only on WP01.
+After this WP merges, WP02, WP03, WP04 can start in parallel — all three downstream WPs are siblings rooted in this foundation.
 
 ## Implementation command
 
