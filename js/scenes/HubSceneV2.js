@@ -1916,8 +1916,14 @@ class HubSceneV2 extends Phaser.Scene {
             self._ktFragText.setText(_HUB_T('knowledge.fragments', { count: state.fragments }));
           } catch (_) { /* destroyed mid-flight — swallow */ }
         }
+        // Defer the card re-render to the next tick: the subscriber may fire
+        // synchronously from an `invest()` triggered by the +-button's own
+        // pointerdown, and destroying the button mid-dispatch corrupts the
+        // Phaser input pipeline (modal stops responding / closes early).
         if (self._ktCardLayer && self._ktCardLayer.scene) {
-          self._ktRenderCards();
+          self._ktCardLayer.scene.time.delayedCall(0, function () {
+            if (self._ktCardLayer && self._ktCardLayer.scene) self._ktRenderCards();
+          });
         }
       });
     } catch (e) {
@@ -2047,6 +2053,22 @@ class HubSceneV2 extends Phaser.Scene {
     respecBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
       this._ktShowRespecConfirm();
+    });
+
+    // Test / debug button — grant a fragment without running a dungeon. Lets
+    // the player invest from the modal directly while the spec's only legit
+    // source (lore-fragment events in the dungeon) is still rare.
+    const giveBtn = this.add.text(
+      -panelW / 2 + 14 + respecBtn.width + 10, footerY,
+      _HUB_T('knowledge.btn.test_give'),
+      { fontFamily: 'serif', fontSize: 14, color: '#e6ffd2', backgroundColor: '#3a5a3a', padding: { x: 10, y: 6 }, resolution: 2 }
+    );
+    giveBtn.setInteractive({ useHandCursor: true });
+    this._ktFooterLayer.add(giveBtn);
+    giveBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      try { window.KnowledgeTree.addFragments(1); }
+      catch (e) { try { console.warn('[HubSceneV2] addFragments failed', e); } catch (_) {} }
     });
 
     // Close button (right, grey bg)
