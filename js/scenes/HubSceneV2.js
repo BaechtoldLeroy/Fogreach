@@ -1463,6 +1463,13 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   _handleLoadout() {
+    // K is also re-bound inside Mara's dialog (feature 047) to open the
+    // Knowledge Tree. Both handlers fire on the same key event; if this
+    // scene-wide handler runs while a dialog is open, the Loadout overlay
+    // ends up underneath the Knowledge Tree modal with setInteractive(),
+    // silently swallowing every click. Gate on _dialogOpen so the
+    // Mara-scoped handler wins when the player is at an NPC.
+    if (this._dialogOpen) return;
     // Tutorial: skill.loadout step advances on K-press whether or not the
     // overlay itself can open (binding-only purpose).
     if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
@@ -2039,7 +2046,6 @@ class HubSceneV2 extends Phaser.Scene {
       const enabled = canInvest;
       investBtn.on('pointerdown', (pointer, x, y, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
-        try { console.log('[KT] invest click', nodeId, 'enabled=', enabled, 'fragments=', window.KnowledgeTree.getFragments()); } catch (_) {}
         if (!enabled) return;
         try { window.KnowledgeTree.invest(nodeId); }
         catch (e) { try { console.warn('[HubSceneV2] invest failed', e); } catch (_) {} }
@@ -2082,10 +2088,8 @@ class HubSceneV2 extends Phaser.Scene {
     this._ktFooterLayer.add(giveBtn);
     giveBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
-      try { console.log('[KT] test +1 fragment click, before=', window.KnowledgeTree.getFragments()); } catch (_) {}
       try { window.KnowledgeTree.addFragments(1); }
       catch (e) { try { console.warn('[HubSceneV2] addFragments failed', e); } catch (_) {} }
-      try { console.log('[KT] test +1 fragment after=', window.KnowledgeTree.getFragments()); } catch (_) {}
     });
 
     // Close button (right, grey bg)
@@ -2099,7 +2103,6 @@ class HubSceneV2 extends Phaser.Scene {
 
     closeBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
-      try { console.log('[KT] close button click'); } catch (_) {}
       this._ktCloseModal();
     });
   }
