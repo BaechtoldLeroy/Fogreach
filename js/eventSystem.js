@@ -1130,6 +1130,11 @@
     scene.physics.add.overlap(player, scroll, function() {
       if (activeLore && !activeLore.picked) {
         activeLore.picked = true;
+        // Issue #26 — increment Knowledge Tree fragment counter on pickup.
+        // Existing flavor text + XP path is preserved (spec C-08).
+        if (window.KnowledgeTree && typeof window.KnowledgeTree.addFragments === 'function') {
+          try { window.KnowledgeTree.addFragments(1); } catch (_) { /* never block pickup */ }
+        }
         var xpBonus = 15 + (window.DUNGEON_DEPTH || 1) * 5;
         if (typeof addXP === 'function') {
           addXP.call(scene, xpBonus);

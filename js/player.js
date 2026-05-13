@@ -879,7 +879,12 @@ function getLootAbilityCooldownReduction(abilityKey) {
   const suffix = _lootAbilityStatKey(abilityKey);
   const perAbility = suffix ? _getLootBonus('cd_' + suffix) : 0;
   const allAbilities = _getLootBonus('cd_all_abilities');
-  return perAbility + allAbilities;
+  // Issue #26 — Knowledge-Tree cdrAll applies to every ability equally.
+  // Additive on top of per-ability + global affix reductions. The downstream
+  // consumer (applyCooldownModifier) already floors at Math.max(0, 1 - x)
+  // and 100ms, so no clamp needed here.
+  const ktAll = (window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.cdrAll) || 0;
+  return perAbility + allAbilities + ktAll;
 }
 
 function applyCooldownModifier(base, key) {
@@ -2056,6 +2061,12 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
 }
 
 function addXP(amount = 1) {
+  // Issue #26 — Knowledge-Tree xpMult wraps the incoming amount once at the
+  // function boundary so every call site (lore-fragment, enemy kill, quest
+  // reward) benefits without per-site changes.
+  if (window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.xpMult > 1) {
+    amount = Math.round(amount * window.knowledgeTreeBuffs.xpMult);
+  }
   playerXP += amount;
 
   if (playerXP >= neededXP) {
