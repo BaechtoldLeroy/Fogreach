@@ -2039,6 +2039,7 @@ class HubSceneV2 extends Phaser.Scene {
       const enabled = canInvest;
       investBtn.on('pointerdown', (pointer, x, y, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
+        try { console.log('[KT] invest click', nodeId, 'enabled=', enabled, 'fragments=', window.KnowledgeTree.getFragments()); } catch (_) {}
         if (!enabled) return;
         try { window.KnowledgeTree.invest(nodeId); }
         catch (e) { try { console.warn('[HubSceneV2] invest failed', e); } catch (_) {} }
@@ -2081,8 +2082,10 @@ class HubSceneV2 extends Phaser.Scene {
     this._ktFooterLayer.add(giveBtn);
     giveBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
+      try { console.log('[KT] test +1 fragment click, before=', window.KnowledgeTree.getFragments()); } catch (_) {}
       try { window.KnowledgeTree.addFragments(1); }
       catch (e) { try { console.warn('[HubSceneV2] addFragments failed', e); } catch (_) {} }
+      try { console.log('[KT] test +1 fragment after=', window.KnowledgeTree.getFragments()); } catch (_) {}
     });
 
     // Close button (right, grey bg)
@@ -2096,6 +2099,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     closeBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
+      try { console.log('[KT] close button click'); } catch (_) {}
       this._ktCloseModal();
     });
   }
