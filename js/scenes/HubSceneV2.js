@@ -1217,15 +1217,22 @@ class HubSceneV2 extends Phaser.Scene {
     // dialog. Phaser scene input listeners are not blocked by GameObject
     // event.stopPropagation().
     if (!hasChoices) {
-      this.input.once('pointerdown', () => {
+      // Store the handler so _closeDialog can detach it. Without that, a key-
+      // driven dialog close (e.g. K opens Knowledge Tree) leaves this once-
+      // listener registered; the first click inside the follow-up modal then
+      // re-enters closeDialog() and tears the modal down.
+      const advanceHandler = () => {
         if (!this._dialogOpen) return; // dialog was already closed by a button
+        this._dialogPointerOnce = null;
         if (hasNextPage) {
           this._cleanupKeyClosers(keyClosers);
           this._showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex + 1);
         } else {
           closeDialog();
         }
-      });
+      };
+      this._dialogPointerOnce = advanceHandler;
+      this.input.once('pointerdown', advanceHandler);
     }
   }
 
@@ -1268,6 +1275,13 @@ class HubSceneV2 extends Phaser.Scene {
   _closeDialog(keyClosers) {
     if (!this._dialogOpen) return;
     this._dialogOpen = false;
+    // Detach the page-advance/close once-pointerdown if it's still pending.
+    // Otherwise it survives into any modal opened right after this dialog
+    // (Knowledge Tree, Shop, etc.) and closes that modal on the first click.
+    if (this._dialogPointerOnce) {
+      try { this.input.off('pointerdown', this._dialogPointerOnce); } catch (_) {}
+      this._dialogPointerOnce = null;
+    }
     // E-key race: pressing E to confirm the dialog's primary choice (Akzeptieren)
     // ALSO fires the global keydown-E handler (_handleInteract) registered in
     // create(). Order is per-dialog first → close → global handler runs with
