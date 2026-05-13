@@ -34,7 +34,7 @@ if (window.i18n) {
     'hub.skills.requires': 'Benötigt:',
     'hub.skills.respec': '[ Zurücksetzen ({cost} Eisenbrocken) ]',
     'hub.skills.close': '[ Schließen ]',
-    'hub.skills.learn': '[ Skills lernen ] (K)',
+    'hub.knowledge.learn': '[ Wissen lernen ] (K)',
     'hub.skills.shop': '[ Schwarzmarkt ] (M)',
     'hub.dialog.hint.next': 'Leer / Enter: weiter',
     'hub.dialog.hint.choose': '1-{count}: wählen',
@@ -72,7 +72,7 @@ if (window.i18n) {
     'hub.skills.requires': 'Requires:',
     'hub.skills.respec': '[ Respec ({cost} Iron Chunks) ]',
     'hub.skills.close': '[ Close ]',
-    'hub.skills.learn': '[ Learn Skills ] (K)',
+    'hub.knowledge.learn': '[ Knowledge Tree ] (K)',
     'hub.skills.shop': '[ Black Market ] (M)',
     'hub.dialog.hint.next': 'Space / Enter: next',
     'hub.dialog.hint.choose': '1-{count}: choose',
@@ -1075,10 +1075,10 @@ class HubSceneV2 extends Phaser.Scene {
       });
     }
 
-    // Mara skill tree button (keep existing behavior)
+    // Mara knowledge tree button (replaces legacy skill tree per feature 047)
     if (isMaraFlavor) {
       const maraBtnY = bodyText.y + bodyHeight + 16;
-      const skillsBtn = this.add.text(0, maraBtnY, _HUB_T('hub.skills.learn'), {
+      const skillsBtn = this.add.text(0, maraBtnY, _HUB_T('hub.knowledge.learn'), {
         fontFamily: 'monospace',
         fontSize: 14,
         color: '#ffffff',
@@ -1090,8 +1090,8 @@ class HubSceneV2 extends Phaser.Scene {
         event.stopPropagation();
         this._closeDialog(keyClosers);
         this.time.delayedCall(100, () => {
-          if (typeof this._showSkillTreeUI === 'function') {
-            this._showSkillTreeUI();
+          if (typeof this._showKnowledgeTreeUI === 'function') {
+            this._showKnowledgeTreeUI();
           }
         });
       });
@@ -1184,16 +1184,16 @@ class HubSceneV2 extends Phaser.Scene {
       }
 
       if (npcData.id === 'mara' && questMode === 'flavor' && !hasChoices) {
-        const skillHandler = () => {
+        const knowledgeHandler = () => {
           this._closeDialog(keyClosers);
           this.time.delayedCall(100, () => {
-            if (typeof this._showSkillTreeUI === 'function') {
-              this._showSkillTreeUI();
+            if (typeof this._showKnowledgeTreeUI === 'function') {
+              this._showKnowledgeTreeUI();
             }
           });
         };
-        this.input.keyboard.on('keydown-K', skillHandler);
-        keyClosers.push({ eventName: 'keydown-K', handler: skillHandler });
+        this.input.keyboard.on('keydown-K', knowledgeHandler);
+        keyClosers.push({ eventName: 'keydown-K', handler: knowledgeHandler });
 
         // WP06: M opens the Schwarzmarkt overlay.
         const shopHandler = () => {
@@ -1826,8 +1826,15 @@ class HubSceneV2 extends Phaser.Scene {
     this._dialogContainer = container;
   }
 
-  _showSkillTreeUI() {
-    if (!window.SKILL_TREES || typeof window.getMaterialCount !== 'function') {
+  // Feature 047 - Knowledge Tree MVP. Replaces the legacy _showSkillTreeUI
+  // modal that previously lived here. Mara's dialog button + K-key both invoke
+  // this modal; the legacy SKILL_TREES iron-chunks tree is gone from V2.
+  // Note: js/scenes/HubScene.js (legacy non-V2) still has its own
+  // _showSkillTreeUI -- that file is loaded by index.html but is not the
+  // active hub, so leaving it untouched is safe.
+  _showKnowledgeTreeUI() {
+    if (!window.KnowledgeTree) {
+      try { console.warn('[HubSceneV2] KnowledgeTree module not available'); } catch (_) {}
       return;
     }
 
@@ -1841,15 +1848,19 @@ class HubSceneV2 extends Phaser.Scene {
     const cw = cam.width;
     const ch = cam.height;
 
-    const overlay = this.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7)
-      .setDepth(2000)
-      .setScrollFactor(0);
-
     const panelW = Math.min(920, cw - 10);
     const panelH = Math.min(460, ch - 10);
+    this._ktPanelW = panelW;
+    this._ktPanelH = panelH;
+
     const container = this.add.container(cw / 2, ch / 2).setDepth(2001).setScrollFactor(0);
     this._dialogContainer = container;
 
+    // Overlay - parented to the container so destroy(true) cleans it up.
+    const overlay = this.add.rectangle(0, 0, cw, ch, 0x000000, 0.7).setScrollFactor(0);
+    container.add(overlay);
+
+    // Panel bg
     const bg = this.add.graphics();
     bg.fillStyle(0x0c0c14, 0.97);
     bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
@@ -1864,307 +1875,259 @@ class HubSceneV2 extends Phaser.Scene {
     headerBg.fillRect(-panelW / 2 + 2, -panelH / 2 + 2, panelW - 4, headerH);
     container.add(headerBg);
 
-    const titleText = this.add.text(-panelW / 2 + 14, -panelH / 2 + 8, _HUB_T('hub.skills.title'), {
-      fontFamily: 'serif', fontSize: 18, color: '#ffd166', fontStyle: 'bold', resolution: 2
-    }).setOrigin(0, 0);
+    const titleText = this.add.text(
+      -panelW / 2 + 14, -panelH / 2 + 8,
+      _HUB_T('knowledge.title'),
+      { fontFamily: 'serif', fontSize: 18, color: '#ffd166', fontStyle: 'bold', resolution: 2 }
+    );
     container.add(titleText);
 
-    const currentMaterials = window.getMaterialCount('MAT');
-    const matsText = this.add.text(panelW / 2 - 14, -panelH / 2 + 10, _HUB_T('hub.skills.materials', { count: currentMaterials }), {
-      fontFamily: 'monospace', fontSize: 12, color: '#8cb8ff', resolution: 2
-    }).setOrigin(1, 0);
-    container.add(matsText);
+    // Fragment counter - right side of header.
+    const state0 = window.KnowledgeTree.getState();
+    const fragText = this.add.text(
+      panelW / 2 - 14, -panelH / 2 + 8,
+      _HUB_T('knowledge.fragments', { count: state0.fragments }),
+      { fontFamily: 'serif', fontSize: 16, color: '#dde0e6', resolution: 2 }
+    ).setOrigin(1, 0);
+    container.add(fragText);
+    this._ktFragText = fragText;
 
-    const treeStartY = -panelH / 2 + headerH + 8;
-    const treeBottomY = panelH / 2 - 40; // leave room for close/respec buttons
-    const treeHeight = treeBottomY - treeStartY;
-    const treePadding = 8;
-    const trees = Object.values(window.SKILL_TREES);
-    const treeWidth = (panelW - treePadding * (trees.length + 1)) / trees.length;
+    // Card grid layer
+    this._ktCardLayer = this.add.container(0, 0);
+    container.add(this._ktCardLayer);
 
-    let treeX = -panelW / 2 + treePadding;
-    const skillHitAreas = [];
-    const skillNodePositions = {};
+    // Footer layer
+    this._ktFooterLayer = this.add.container(0, 0);
+    container.add(this._ktFooterLayer);
 
-    // Defined early so hitArea handlers can reference it (const is not hoisted)
-    const closeSkillUI = () => {
-      if (this._skillTooltip) {
-        this._skillTooltip.destroy(true);
-        this._skillTooltip = null;
-      }
-      skillHitAreas.forEach(ha => ha.destroy());
-      this._dialogOpen = false;
-      overlay.destroy();
-      container.destroy(true);
-      this._dialogContainer = null;
-    };
+    // Initial paint
+    this._ktRenderCards();
+    this._ktRenderFooter();
 
-    trees.forEach((tree, treeIdx) => {
-      const treeColor = Phaser.Display.Color.HexStringToColor(tree.color).color;
-
-      // Tree column background
-      const treeBg = this.add.graphics();
-      treeBg.fillStyle(0x12121e, 0.7);
-      treeBg.fillRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 8);
-      treeBg.lineStyle(1, treeColor, 0.3);
-      treeBg.strokeRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 8);
-      container.add(treeBg);
-
-      // Tree title
-      const treeTitle = this.add.text(treeX + treeWidth / 2, treeStartY + 6, tree.name, {
-        fontFamily: 'serif', fontSize: 14, color: tree.color, fontStyle: 'bold', resolution: 2
-      }).setOrigin(0.5, 0);
-      container.add(treeTitle);
-
-      // Organize skills by tier
-      const skillsByTier = {};
-      tree.skills.forEach(skill => {
-        const tier = skill.tier || 1;
-        if (!skillsByTier[tier]) skillsByTier[tier] = [];
-        skillsByTier[tier].push(skill);
+    // Live updates via onChange subscription. Unsub handle is stored so
+    // _ktCloseModal can detach it (no leaks across re-opens -- FR-12).
+    const self = this;
+    try {
+      this._ktUnsub = window.KnowledgeTree.onChange(function (state) {
+        if (self._ktFragText && !self._ktFragText.destroyed) {
+          self._ktFragText.setText(_HUB_T('knowledge.fragments', { count: state.fragments }));
+        }
+        self._ktRenderCards();
       });
+    } catch (e) {
+      try { console.warn('[HubSceneV2] KnowledgeTree.onChange failed', e); } catch (_) {}
+      this._ktUnsub = null;
+    }
 
-      const maxTier = Math.max(...Object.keys(skillsByTier).map(Number));
-      // Calculate box height to fill available space evenly
-      const availableH = treeHeight - 30; // after title
-      const boxH = Math.min(50, Math.floor((availableH - (maxTier - 1) * 4) / maxTier));
-      const tierGap = 4;
+    // ESC handler - stored on scene so _ktCloseModal can detach it.
+    this._ktEscHandler = () => this._ktCloseModal();
+    this.input.keyboard.on('keydown-ESC', this._ktEscHandler);
+  }
 
-      let currentSkillY = treeStartY + 26;
+  _ktRenderCards() {
+    if (!this._ktCardLayer || !window.KnowledgeTree) return;
+    this._ktCardLayer.removeAll(true);
 
-      for (let tier = 1; tier <= maxTier; tier++) {
-        const tierSkills = skillsByTier[tier] || [];
-        if (tierSkills.length === 0) continue;
+    const catalog = window.KnowledgeTree.getCatalog();
+    const state = window.KnowledgeTree.getState();
+    const fragments = state.fragments;
 
-        const hGap = 4;
-        const availW = treeWidth - 12;
-        const boxW = Math.min(110, (availW - hGap * (tierSkills.length - 1)) / tierSkills.length);
-        const totalRowW = boxW * tierSkills.length + hGap * (tierSkills.length - 1);
-        const startX = treeX + (treeWidth - totalRowW) / 2;
+    const panelW = this._ktPanelW || 920;
+    const panelH = this._ktPanelH || 460;
+    const headerH = 32;
+    const footerH = 64;
+    const bodyW = panelW - 32;
+    const bodyH = panelH - headerH - footerH - 24;
+    const bodyTop = -panelH / 2 + headerH + 12;
 
-        tierSkills.forEach((skill, idx) => {
-          const sx = startX + boxW / 2 + idx * (boxW + hGap);
-          const sy = currentSkillY;
+    const cols = 2;
+    const rows = Math.ceil(catalog.length / cols);
+    const cardGap = 10;
+    const cardW = (bodyW - cardGap * (cols - 1)) / cols;
+    const cardH = (bodyH - cardGap * (rows - 1)) / rows;
 
-          skillNodePositions[skill.id] = { x: sx, y: sy + boxH / 2 };
+    for (let i = 0; i < catalog.length; i++) {
+      const node = catalog[i];
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cardX = -bodyW / 2 + col * (cardW + cardGap) + cardW / 2;
+      const cardY = bodyTop + row * (cardH + cardGap) + cardH / 2;
 
-          const owned = window.hasSkill(skill.id);
-          const canPurchase = window.canPurchaseSkill(skill.id);
-          const isActive = !!skill.isActive;
+      const cardContainer = this.add.container(cardX, cardY);
+      this._ktCardLayer.add(cardContainer);
 
-          // Colors based on state
-          let bgCol, borderCol, nameCol;
-          if (owned) {
-            bgCol = 0x1a3a1a; borderCol = 0x44cc44; nameCol = '#ffffff';
-          } else if (canPurchase.canPurchase) {
-            bgCol = 0x2a2a3a; borderCol = treeColor; nameCol = '#dddddd';
-          } else {
-            bgCol = 0x1a1a1a; borderCol = 0x333333; nameCol = '#555555';
-          }
+      // Card bg
+      const cardBg = this.add.graphics();
+      cardBg.fillStyle(0x1a1a28, 0.95);
+      cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      cardBg.lineStyle(1, 0x3a3a4a, 0.8);
+      cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      cardContainer.add(cardBg);
 
-          // Draw box
-          const box = this.add.graphics();
-          box.fillStyle(bgCol, 0.95);
-          box.fillRoundedRect(sx - boxW / 2, sy, boxW, boxH, 4);
-          box.lineStyle(owned ? 2 : 1, borderCol, 0.9);
-          box.strokeRoundedRect(sx - boxW / 2, sy, boxW, boxH, 4);
-          // Active skill indicator removed — shown in tooltip instead
-          container.add(box);
+      // Label
+      const label = this.add.text(
+        -cardW / 2 + 10, -cardH / 2 + 6,
+        _HUB_T(node.labelKey),
+        { fontFamily: 'serif', fontSize: 15, color: '#ffd166', fontStyle: 'bold', resolution: 2 }
+      );
+      cardContainer.add(label);
 
-          // Skill name — top half of box
-          const nameFS = boxW < 60 ? 8 : (boxW < 90 ? 9 : 10);
-          const nameText = this.add.text(sx, sy + 4, skill.name, {
-            fontFamily: 'monospace', fontSize: nameFS, color: nameCol,
-            wordWrap: { width: boxW - 8 }, align: 'center', lineSpacing: -1, resolution: 2
-          }).setOrigin(0.5, 0);
-          container.add(nameText);
+      // Description
+      const desc = this.add.text(
+        -cardW / 2 + 10, -cardH / 2 + 26,
+        _HUB_T(node.descKey),
+        { fontFamily: 'serif', fontSize: 12, color: '#dde0e6', resolution: 2, wordWrap: { width: cardW - 60 } }
+      );
+      cardContainer.add(desc);
 
-          // Cost — bottom of box, clearly separated
-          const costStr = owned ? '\u2713' : skill.cost + '';
-          const costCol = owned ? '#44ff44' : (canPurchase.canPurchase ? '#ffcc44' : '#555555');
-          const costFS = boxW < 60 ? 9 : 10;
-          const costText = this.add.text(sx, sy + boxH - 4, costStr, {
-            fontFamily: 'monospace', fontSize: costFS, color: costCol, fontStyle: 'bold', resolution: 2
-          }).setOrigin(0.5, 1);
-          container.add(costText);
+      // Rank text
+      const rank = state.ranks[node.id] | 0;
+      const rankText = this.add.text(
+        -cardW / 2 + 10, cardH / 2 - 22,
+        _HUB_T('knowledge.rank', { rank: rank, max: node.maxRank }),
+        { fontFamily: 'serif', fontSize: 12, color: '#a0a4ad', resolution: 2 }
+      );
+      cardContainer.add(rankText);
 
-          // Hit area — use zone for reliable hover/click detection
-          const worldX = sx + container.x;
-          const worldY = sy + boxH / 2 + container.y;
-          const hitArea = this.add.zone(worldX, worldY, boxW, boxH)
-            .setOrigin(0.5, 0.5).setDepth(2200).setScrollFactor(0)
-            .setInteractive({ useHandCursor: !owned && canPurchase.canPurchase });
+      // Invest button - green if enabled, grey if not (no fragments OR maxed).
+      const canInvest = (fragments >= 1) && (rank < node.maxRank);
+      const btnColor = canInvest ? '#9bff9b' : '#666';
+      const btnBg = canInvest ? '#1f3a1f' : '#2a2a2a';
+      const investBtn = this.add.text(
+        cardW / 2 - 10, cardH / 2 - 26,
+        '+',
+        { fontFamily: 'monospace', fontSize: 18, fontStyle: 'bold', color: btnColor, backgroundColor: btnBg, padding: { x: 10, y: 2 }, resolution: 2 }
+      ).setOrigin(1, 0);
+      investBtn.setInteractive({ useHandCursor: canInvest });
+      cardContainer.add(investBtn);
 
-          skillHitAreas.push(hitArea);
+      // Capture per-iteration so the re-render uses a fresh closure each time.
+      const nodeId = node.id;
+      const enabled = canInvest;
+      investBtn.on('pointerdown', (pointer, x, y, event) => {
+        if (event && event.stopPropagation) event.stopPropagation();
+        if (!enabled) return;
+        try { window.KnowledgeTree.invest(nodeId); }
+        catch (e) { try { console.warn('[HubSceneV2] invest failed', e); } catch (_) {} }
+        // Re-render is triggered by the onChange subscriber.
+      });
+    }
+  }
 
-          hitArea.on('pointerover', () => {
-            if (this._skillTooltip) {
-              this._skillTooltip.destroy(true);
-              this._skillTooltip = null;
-            }
+  _ktRenderFooter() {
+    if (!this._ktFooterLayer) return;
+    this._ktFooterLayer.removeAll(true);
 
-            const tooltipLines = [
-              skill.name,
-              skill.description,
-              '',
-              _HUB_T('hub.skills.cost', { cost: skill.cost })
-            ];
+    const panelW = this._ktPanelW || 920;
+    const panelH = this._ktPanelH || 460;
+    const footerY = panelH / 2 - 32;
 
-            if (isActive) {
-              tooltipLines.push(_HUB_T('hub.skills.type_active'));
-            }
+    // Respec button (left, red bg)
+    const respecBtn = this.add.text(
+      -panelW / 2 + 14, footerY,
+      _HUB_T('knowledge.btn.respec'),
+      { fontFamily: 'serif', fontSize: 14, color: '#ffdada', backgroundColor: '#7a3a3a', padding: { x: 10, y: 6 }, resolution: 2 }
+    );
+    respecBtn.setInteractive({ useHandCursor: true });
+    this._ktFooterLayer.add(respecBtn);
 
-            if (skill.requires && skill.requires.length > 0) {
-              tooltipLines.push('');
-              tooltipLines.push(_HUB_T('hub.skills.requires'));
-              skill.requires.forEach(reqId => {
-                const reqSkill = window.getSkillById(reqId);
-                const reqName = reqSkill ? reqSkill.name : reqId;
-                const reqHas = window.hasSkill(reqId);
-                tooltipLines.push(`  ${reqHas ? '\u2713' : '\u2717'} ${reqName}`);
-              });
-            }
-
-            if (!canPurchase.canPurchase && !owned) {
-              tooltipLines.push('');
-              tooltipLines.push(`\u274C ${canPurchase.reason}`);
-            }
-
-            const tooltip = this.add.container(0, 0).setDepth(2100);
-            const tooltipBg = this.add.graphics();
-            const tooltipTextObj = this.add.text(0, 0, tooltipLines.join('\n'), {
-              fontFamily: 'monospace',
-              fontSize: 12,
-              color: '#ffffff',
-              backgroundColor: '#0c0c18',
-              padding: { x: 8, y: 6 },
-              resolution: 2
-            }).setOrigin(0, 0);
-
-            const tooltipW = tooltipTextObj.width + 4;
-            const tooltipH = tooltipTextObj.height + 4;
-
-            tooltipBg.fillStyle(0x1a1a2a, 0.95);
-            tooltipBg.fillRoundedRect(-2, -2, tooltipW, tooltipH, 8);
-            tooltipBg.lineStyle(2, 0x4a6a9c, 0.9);
-            tooltipBg.strokeRoundedRect(-2, -2, tooltipW, tooltipH, 8);
-
-            tooltip.add(tooltipBg);
-            tooltip.add(tooltipTextObj);
-
-            let tooltipX = worldX - tooltipW / 2;
-            let tooltipY = worldY + boxH / 2 + 5;
-
-            if (tooltipX < 10) tooltipX = 10;
-            if (tooltipX + tooltipW > cw - 10) tooltipX = cw - tooltipW - 10;
-            if (tooltipY + tooltipH > ch - 10) {
-              tooltipY = worldY - boxH / 2 - tooltipH - 5;
-            }
-
-            tooltip.setPosition(tooltipX, tooltipY).setScrollFactor(0);
-            this._skillTooltip = tooltip;
-          });
-
-          hitArea.on('pointerout', () => {
-            if (this._skillTooltip) {
-              this._skillTooltip.destroy(true);
-              this._skillTooltip = null;
-            }
-          });
-
-          hitArea.on('pointerdown', () => {
-            // On mobile (touch): first tap shows tooltip, second tap buys
-            const isTouch = !!(this.sys?.game?.device?.input?.touch);
-            if (isTouch && !this._skillTooltip) {
-              // Simulate hover — show tooltip on first tap
-              hitArea.emit('pointerover');
-              return;
-            }
-
-            if (owned) return;
-            if (!canPurchase.canPurchase) return;
-
-            const result = window.purchaseSkill(skill.id);
-            if (result.success) {
-              closeSkillUI();
-              this._showSkillTreeUI();
-            }
-          });
-        });
-
-        currentSkillY += boxH + tierGap;
-      }
-
-      treeX += treeWidth + treePadding;
+    respecBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      this._ktShowRespecConfirm();
     });
 
-    // Draw connection lines between skill prerequisites
-    const connectionGraphics = this.add.graphics();
-    connectionGraphics.lineStyle(1.5, 0x6688aa, 0.5);
-    for (const tree of trees) {
-      for (const skill of tree.skills) {
-        if (!skill.requires || !skillNodePositions[skill.id]) continue;
-        const toPos = skillNodePositions[skill.id];
-        for (const reqId of skill.requires) {
-          const fromPos = skillNodePositions[reqId];
-          if (!fromPos) continue;
-          const owned = window.hasSkill(reqId);
-          connectionGraphics.lineStyle(1.5, owned ? 0x88aacc : 0x444466, owned ? 0.6 : 0.3);
-          connectionGraphics.beginPath();
-          connectionGraphics.moveTo(fromPos.x, fromPos.y + 30);
-          connectionGraphics.lineTo(toPos.x, toPos.y - 30);
-          connectionGraphics.strokePath();
-        }
-      }
+    // Close button (right, grey bg)
+    const closeBtn = this.add.text(
+      panelW / 2 - 14, footerY,
+      _HUB_T('knowledge.btn.close'),
+      { fontFamily: 'serif', fontSize: 14, color: '#ffffff', backgroundColor: '#3a3a4a', padding: { x: 10, y: 6 }, resolution: 2 }
+    ).setOrigin(1, 0);
+    closeBtn.setInteractive({ useHandCursor: true });
+    this._ktFooterLayer.add(closeBtn);
+
+    closeBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      this._ktCloseModal();
+    });
+  }
+
+  _ktShowRespecConfirm() {
+    if (this._ktConfirmDlg) return; // already open
+    const cam = this.cameras.main;
+    const dlg = this.add.container(cam.width / 2, cam.height / 2).setDepth(2010).setScrollFactor(0);
+    this._ktConfirmDlg = dlg;
+
+    // Dim under-layer - covers the camera, absorbs stray clicks.
+    const dim = this.add.rectangle(0, 0, cam.width, cam.height, 0x000000, 0.55).setScrollFactor(0);
+    dlg.add(dim);
+
+    const panel = this.add.graphics();
+    panel.fillStyle(0x1a1a28, 0.98);
+    panel.fillRoundedRect(-200, -80, 400, 160, 10);
+    panel.lineStyle(2, 0xd4a543, 0.7);
+    panel.strokeRoundedRect(-200, -80, 400, 160, 10);
+    dlg.add(panel);
+
+    const msg = this.add.text(0, -30, _HUB_T('knowledge.respec.confirm'), {
+      fontFamily: 'serif', fontSize: 15, color: '#fff', resolution: 2, align: 'center', wordWrap: { width: 380 }
+    }).setOrigin(0.5);
+    dlg.add(msg);
+
+    const yes = this.add.text(-60, 30, _HUB_T('knowledge.respec.yes'), {
+      fontFamily: 'serif', fontSize: 14, color: '#fff', backgroundColor: '#7a3a3a', padding: { x: 14, y: 6 }, resolution: 2
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    yes.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      try { window.KnowledgeTree.respec(); }
+      catch (e) { try { console.warn('[HubSceneV2] respec failed', e); } catch (_) {} }
+      this._ktCloseConfirm();
+    });
+    dlg.add(yes);
+
+    const no = this.add.text(60, 30, _HUB_T('knowledge.respec.no'), {
+      fontFamily: 'serif', fontSize: 14, color: '#fff', backgroundColor: '#3a3a4a', padding: { x: 14, y: 6 }, resolution: 2
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    no.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      this._ktCloseConfirm();
+    });
+    dlg.add(no);
+  }
+
+  _ktCloseConfirm() {
+    if (this._ktConfirmDlg) {
+      this._ktConfirmDlg.destroy(true);
+      this._ktConfirmDlg = null;
     }
-    container.addAt(connectionGraphics, 1); // behind skill boxes but above background
+  }
 
-    // Respec button
-    const totalSpent = window.getSkillPointsSpent();
-    if (totalSpent > 0) {
-      const respecCost = Math.ceil(totalSpent * 0.5);
-      const respecBtn = this.add.text(-panelW / 2 + 20, panelH / 2 - 30,
-        _HUB_T('hub.skills.respec', { cost: respecCost }), {
-          fontFamily: 'monospace',
-          fontSize: 14,
-          color: '#ff8888',
-          backgroundColor: '#2a1a1a',
-          padding: { x: 10, y: 6 }
-        }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-      container.add(respecBtn);
-
-      respecBtn.on('pointerdown', () => {
-        const result = window.respecSkills();
-        if (result.success) {
-          console.log('[Skills] Respec successful, refunded:', result.refunded);
-          closeSkillUI();
-          this.time.delayedCall(50, () => {
-            this._showSkillTreeUI();
-          });
-        } else {
-          console.warn('[Skills] Respec failed:', result.reason);
-          // Show temporary error message
-          const errText = this.add.text(0, panelH / 2 - 60, result.reason, {
-            fontFamily: 'monospace',
-            fontSize: 14,
-            color: '#ff4444'
-          }).setOrigin(0.5, 0.5).setDepth(2100).setScrollFactor(0);
-          this.time.delayedCall(2000, () => errText.destroy());
-        }
-      });
+  _ktCloseModal() {
+    // Detach onChange subscriber so a re-open registers a fresh listener.
+    if (this._ktUnsub) {
+      try { this._ktUnsub(); } catch (e) { /* swallow */ }
+      this._ktUnsub = null;
     }
-
-    // Close button
-    const closeBtn = this.add.text(0, panelH / 2 - 30, _HUB_T('hub.skills.close'), {
-      fontFamily: 'monospace',
-      fontSize: 18,
-      color: '#ffffff',
-      backgroundColor: '#3a4a7c',
-      padding: { x: 16, y: 8 }
-    }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
-    container.add(closeBtn);
-
-    closeBtn.on('pointerdown', () => closeSkillUI());
-    this.input.keyboard.once('keydown-ESC', closeSkillUI);
+    // Drop ESC handler so a single ESC press does not fire stale callbacks.
+    if (this._ktEscHandler) {
+      try { this.input.keyboard.off('keydown-ESC', this._ktEscHandler); } catch (_) {}
+      this._ktEscHandler = null;
+    }
+    // Tear down confirm sub-modal if still on screen.
+    if (this._ktConfirmDlg) {
+      this._ktConfirmDlg.destroy(true);
+      this._ktConfirmDlg = null;
+    }
+    // Tear down main container (and its overlay, which is parented to it).
+    if (this._dialogContainer) {
+      this._dialogContainer.destroy(true);
+      this._dialogContainer = null;
+    }
+    this._ktFragText = null;
+    this._ktCardLayer = null;
+    this._ktFooterLayer = null;
+    this._ktPanelW = null;
+    this._ktPanelH = null;
+    // FR-12: clear the input lock so the player can move + open other dialogs.
+    this._dialogOpen = false;
   }
 }
