@@ -1925,6 +1925,14 @@ class HubSceneV2 extends Phaser.Scene {
     this._ktRenderCards();
     this._ktRenderFooter();
 
+    // CRITICAL: Phaser Container.setScrollFactor() does NOT propagate to
+    // children unless you pass updateChildren=true. Without this, child
+    // buttons keep scrollFactor=1 and their hit-areas drift with the hub
+    // camera while the visible buttons stay screen-locked from the parent's
+    // scrollFactor 0 — click positions and hit-test positions diverge and
+    // pointerdown returns hits=0. Propagating here covers every descendant.
+    this._dialogContainer.setScrollFactor(0, 0, true);
+
     // Live updates via onChange subscription. Unsub handle is stored so
     // _ktCloseModal can detach it (no leaks across re-opens -- FR-12).
     // Phaser GameObjects set .scene to undefined on destroy — that's the
@@ -1943,7 +1951,15 @@ class HubSceneV2 extends Phaser.Scene {
         // Phaser input pipeline (modal stops responding / closes early).
         if (self._ktCardLayer && self._ktCardLayer.scene) {
           self._ktCardLayer.scene.time.delayedCall(0, function () {
-            if (self._ktCardLayer && self._ktCardLayer.scene) self._ktRenderCards();
+            if (self._ktCardLayer && self._ktCardLayer.scene) {
+              self._ktRenderCards();
+              // Newly created cards default to scrollFactor=1 — re-propagate
+              // scrollFactor=0 from the parent container so hit-test stays
+              // aligned with the visible positions after every re-render.
+              if (self._dialogContainer) {
+                self._dialogContainer.setScrollFactor(0, 0, true);
+              }
+            }
           });
         }
       });
