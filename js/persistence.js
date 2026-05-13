@@ -21,7 +21,9 @@
     /** Legacy audio-only key written by SoundManager pre-SettingsScene. */
     AUDIO_LEGACY: 'demonfall_audio',
     /** Last selected dungeon difficulty multiplier. */
-    LAST_DIFFICULTY: 'demonfall_lastDifficulty'
+    LAST_DIFFICULTY: 'demonfall_lastDifficulty',
+    /** Knowledge Tree fragments + per-node ranks (feature 047). */
+    KNOWLEDGE_TREE: 'demonfall.knowledgeTree.v1'
   });
 
   // Keys that should be wiped on "new game". SETTINGS is intentionally
@@ -30,7 +32,8 @@
   const NEW_GAME_WIPE_KEYS = [
     KEYS.SAVE,
     KEYS.ABILITIES,
-    KEYS.LAST_DIFFICULTY
+    KEYS.LAST_DIFFICULTY,
+    KEYS.KNOWLEDGE_TREE
   ];
 
   function clearAllSaves() {

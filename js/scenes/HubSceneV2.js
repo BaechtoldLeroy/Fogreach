@@ -1977,19 +1977,6 @@ class HubSceneV2 extends Phaser.Scene {
     // fires setText on a destroyed Text after scene.start('GameScene').
     this.events.once('shutdown', () => { try { this._ktCloseModal(); } catch (_) {} });
     this.events.once('sleep',    () => { try { this._ktCloseModal(); } catch (_) {} });
-
-    // DIAGNOSTIC: log every pointerdown the scene sees while the modal is
-    // open, plus which (if any) GameObjects Phaser hit-tested. Tells us
-    // whether clicks reach the scene at all, and which target they hit.
-    this._ktDiagPointer = (pointer) => {
-      try {
-        const targets = this.input.hitTestPointer(pointer);
-        console.log('[KT-DIAG] pointerdown @', Math.round(pointer.x), Math.round(pointer.y),
-          'hits=', targets.length,
-          'names=', targets.map(t => t.name || t.text || t.type).join(' | '));
-      } catch (e) { try { console.log('[KT-DIAG] err', e); } catch (_) {} }
-    };
-    this.input.on('pointerdown', this._ktDiagPointer);
   }
 
   _ktRenderCards() {
@@ -2072,9 +2059,7 @@ class HubSceneV2 extends Phaser.Scene {
       // Capture per-iteration so the re-render uses a fresh closure each time.
       const nodeId = node.id;
       const enabled = canInvest;
-      investBtn.setName('kt-invest-' + node.id);
       investBtn.on('pointerdown', (pointer, x, y, event) => {
-        try { console.log('[KT-DIAG] invest btn fired', nodeId, 'enabled=', enabled); } catch (_) {}
         if (event && event.stopPropagation) event.stopPropagation();
         if (!enabled) return;
         try { window.KnowledgeTree.invest(nodeId); }
@@ -2116,9 +2101,7 @@ class HubSceneV2 extends Phaser.Scene {
     );
     giveBtn.setInteractive({ useHandCursor: true });
     this._ktFooterLayer.add(giveBtn);
-    giveBtn.setName('kt-test-give');
     giveBtn.on('pointerdown', (pointer, x, y, event) => {
-      try { console.log('[KT-DIAG] giveBtn fired'); } catch (_) {}
       if (event && event.stopPropagation) event.stopPropagation();
       try { window.KnowledgeTree.addFragments(1); }
       catch (e) { try { console.warn('[HubSceneV2] addFragments failed', e); } catch (_) {} }
@@ -2133,15 +2116,9 @@ class HubSceneV2 extends Phaser.Scene {
     closeBtn.setInteractive({ useHandCursor: true });
     this._ktFooterLayer.add(closeBtn);
 
-    closeBtn.setName('kt-close');
     closeBtn.on('pointerdown', (pointer, x, y, event) => {
-      try { console.log('[KT-DIAG] closeBtn fired'); } catch (_) {}
       if (event && event.stopPropagation) event.stopPropagation();
       this._ktCloseModal();
-    });
-    respecBtn.setName('kt-respec');
-    respecBtn.on('pointerdown', (pointer, x, y, event) => {
-      try { console.log('[KT-DIAG] respecBtn fired (extra)'); } catch (_) {}
     });
   }
 
@@ -2200,11 +2177,6 @@ class HubSceneV2 extends Phaser.Scene {
     if (this._ktUnsub) {
       try { this._ktUnsub(); } catch (e) { /* swallow */ }
       this._ktUnsub = null;
-    }
-    // Detach scene-level diagnostic listener.
-    if (this._ktDiagPointer) {
-      try { this.input.off('pointerdown', this._ktDiagPointer); } catch (_) {}
-      this._ktDiagPointer = null;
     }
     // Drop ESC handler so a single ESC press does not fire stale callbacks.
     if (this._ktEscHandler) {

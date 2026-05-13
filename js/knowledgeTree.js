@@ -395,6 +395,18 @@
     }
   }
 
+  // Called by startScene when the player clicks "Neues Spiel". Wipes the
+  // persisted blob, resets in-memory state, neutralises buffs, and notifies
+  // subscribers so any open UI re-renders empty.
+  function resetForNewGame() {
+    _clearPersisted();
+    state = _freshState();
+    state.initialized = true;
+    state.i18nRegistered = true;
+    _applyRanksToBuffs();
+    _notify();
+  }
+
   function _configureForTest(p) {
     primitives = _defaultPrimitives();
     if (p && typeof p === 'object') {
@@ -424,6 +436,7 @@
     invest: invest,
     respec: respec,
     onChange: onChange,
+    resetForNewGame: resetForNewGame,
     _configureForTest: _configureForTest,
     _STORAGE_KEY: STORAGE_KEY,
     _SCHEMA_VERSION: SCHEMA_VERSION

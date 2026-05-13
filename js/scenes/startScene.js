@@ -285,6 +285,9 @@ StartScene.prototype.create = function () {
     if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
       window.AbilitySystem.resetForNewGame();
     }
+    if (window.KnowledgeTree && typeof window.KnowledgeTree.resetForNewGame === 'function') {
+      window.KnowledgeTree.resetForNewGame();
+    }
     window.__DEV_FORCE_CHEAT__ = true;
     if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
     const self = this;
@@ -392,6 +395,13 @@ StartScene.prototype.create = function () {
       if (window.clearSave) clearSave();
       if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
         window.AbilitySystem.resetForNewGame();
+      }
+      // Issue #26 — Knowledge Tree is a satellite localStorage key with its
+      // own in-memory state. clearAllSaves (called from AbilitySystem) wipes
+      // the persisted blob, but the IIFE module is still alive in this
+      // session — explicitly reset it so any open UI shows a clean slate.
+      if (window.KnowledgeTree && typeof window.KnowledgeTree.resetForNewGame === 'function') {
+        window.KnowledgeTree.resetForNewGame();
       }
       if (typeof window.pendingLoadedSave !== "undefined") {
         window.pendingLoadedSave = null;

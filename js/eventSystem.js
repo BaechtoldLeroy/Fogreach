@@ -1429,18 +1429,10 @@
       }
     }
 
-    if (!shouldTriggerEvent(depth)) {
-      try { console.log('[EventSystem] room', roomId, 'depth', depth, '→ no event (chance roll)'); } catch (_) {}
-      return;
-    }
+    if (!shouldTriggerEvent(depth)) return;
 
     var event = pickEvent(depth);
-    if (!event) {
-      try { console.log('[EventSystem] room', roomId, 'depth', depth, '→ no event (empty pool)'); } catch (_) {}
-      return;
-    }
-
-    try { console.log('[EventSystem] room', roomId, 'depth', depth, '→ fired:', event.id); } catch (_) {}
+    if (!event) return;
 
     lastEventId = event.id;
     recentEvents.push(event.id);
