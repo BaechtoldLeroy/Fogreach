@@ -470,8 +470,14 @@ if (window.i18n) {
     // Printing-House loot rarity bias: scales the higher-tier weights
     // (Magic/Rare/Legendary) and inversely shrinks Common.
     const _ph = (typeof window !== 'undefined') ? window.printingBuffs : null;
-    const bias = (_ph && typeof _ph.lootRarityBias === 'number' && _ph.lootRarityBias > 0)
+    const phBias = (_ph && typeof _ph.lootRarityBias === 'number' && _ph.lootRarityBias > 0)
       ? _ph.lootRarityBias : 1;
+    // Issue #26 — Knowledge-Tree magicFindMult stacks multiplicatively with
+    // the Printing-House bias. HIGHER magicFindMult → MORE rare/legendary.
+    const _kt = (typeof window !== 'undefined') ? window.knowledgeTreeBuffs : null;
+    const ktMf = (_kt && typeof _kt.magicFindMult === 'number' && _kt.magicFindMult > 0)
+      ? _kt.magicFindMult : 1;
+    const bias = phBias * ktMf;
     const weights = [
       Math.max(0, 0.78 - shift * 1.2),                    // Common
       Math.max(0, (0.20 - shift * 0.3) * bias),           // Magic
@@ -637,7 +643,15 @@ if (window.i18n) {
     if (!Number.isFinite(amount) || amount <= 0) return;
     const store = _ensureGoldStore();
     if (!store) return;
-    store.GOLD = Math.max(0, Math.floor(store.GOLD + amount));
+    // Issue #26 — Knowledge-Tree goldMult applies to every gold gain (drops,
+    // chests, event payouts). Centralised here so shop refunds also benefit
+    // — players investing in this node are rewarded uniformly.
+    const ktGold = (typeof window !== 'undefined' && window.knowledgeTreeBuffs
+      && typeof window.knowledgeTreeBuffs.goldMult === 'number'
+      && window.knowledgeTreeBuffs.goldMult > 1)
+      ? window.knowledgeTreeBuffs.goldMult : 1;
+    const scaled = (ktGold !== 1) ? Math.max(1, Math.round(amount * ktGold)) : amount;
+    store.GOLD = Math.max(0, Math.floor(store.GOLD + scaled));
     _refreshGoldHUD();
   }
 

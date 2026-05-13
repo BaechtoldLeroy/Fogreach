@@ -803,7 +803,9 @@ let isReturningToHub = false;
 // Spieler-Basiswerte + abgeleitete Werte aus Gear
 let baseStats = { damage: 1, speed: 1.0, range: 100, maxHP: 30, move: 160, armor: 0.0, crit: 0.05 };
 playerArmor = baseStats.armor;
-playerCritChance = baseStats.crit;
+// Knowledge-Tree critAdd (Issue #26) is folded into the script-scoped binding
+// here so all downstream consumers (HUD, attack roll) see the boosted value.
+playerCritChance = baseStats.crit + ((window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.critAdd) || 0);
 
 // Tooltip (optional, simpel)
 let tooltip;
@@ -1450,6 +1452,37 @@ function update(time, delta) {
     }
   } else {
     window._regenAccumMs = 0;
+  }
+
+  // Issue #26 — Knowledge-Tree pickupAddRange vacuum.
+  // Pulls nearby gold piles + loot sprites toward the player when within the
+  // boosted pickup radius. The Phaser physics overlap (player ↔ goldGroup /
+  // player ↔ lootGroup) still fires the actual pickup; this pass only nudges
+  // sprites close enough to overlap. Zero-cost when pickupAddRange is 0.
+  if (player && player.active && window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.pickupAddRange > 0) {
+    const _ktVacR = window.knowledgeTreeBuffs.pickupAddRange;
+    const _ktVacR2 = _ktVacR * _ktVacR;
+    const _ktVacSpeed = Math.max(120, _ktVacR * 4); // px/sec — faster for bigger radius
+    const _ktVacStep = _ktVacSpeed * ((delta || 16) / 1000);
+    const _ktPx = player.x; const _ktPy = player.y;
+    const _vacSprite = (sp) => {
+      if (!sp || !sp.active || sp.body == null) return;
+      const dx = _ktPx - sp.x; const dy = _ktPy - sp.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > _ktVacR2 || d2 < 1) return;
+      const d = Math.sqrt(d2);
+      const step = Math.min(_ktVacStep, d);
+      sp.x += (dx / d) * step;
+      sp.y += (dy / d) * step;
+    };
+    if (window.goldGroup && typeof window.goldGroup.getChildren === 'function') {
+      const arr = window.goldGroup.getChildren();
+      for (let i = 0; i < arr.length; i++) _vacSprite(arr[i]);
+    }
+    if (typeof lootGroup !== 'undefined' && lootGroup && typeof lootGroup.getChildren === 'function') {
+      const arr = lootGroup.getChildren();
+      for (let i = 0; i < arr.length; i++) _vacSprite(arr[i]);
+    }
   }
 
   // 5.2 Wave-Abschluss?

@@ -890,7 +890,15 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   const _printingPctHp = (window.printingBuffs && typeof window.printingBuffs.maxHpAddPct === 'number')
     ? window.printingBuffs.maxHpAddPct
     : 0;
-  const _hpBeforePrinting = (baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd;
+  // Knowledge-Tree max-HP contribution (Issue #26 — permanent across runs).
+  // Mirrors the brunnen/printing max-HP pattern: additive on top of all other
+  // sources, before commit. critAdd / xpMult / goldMult / pickupAddRange /
+  // magicFindMult / cdrAll are applied at their respective read sites
+  // (main.js, lootSystem.js, player.js — see WP03 T013-T015).
+  const _ktMaxHpAdd = (window.knowledgeTreeBuffs && typeof window.knowledgeTreeBuffs.maxHpAdd === 'number')
+    ? window.knowledgeTreeBuffs.maxHpAdd
+    : 0;
+  const _hpBeforePrinting = (baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd + _ktMaxHpAdd;
   const newMaxHealth = Math.max(1, Math.round(_hpBeforePrinting + _printingFlatHp + _hpBeforePrinting * _printingPctHp));
   if (typeof setPlayerMaxHealth === 'function') {
     setPlayerMaxHealth(newMaxHealth, { updateUi: false });
@@ -997,6 +1005,27 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   const pb = window.printingBuffs;
   if (pb) {
     weaponDamage = Math.max(1, Math.round(weaponDamage * (pb.damageMult || 1)));
+  }
+
+  // 3.9) Knowledge-Tree permanent buffs (Issue #26). Permanent across runs.
+  // Same shape as the run-scoped layers but persists. damageMult / armorAdd /
+  // speedMult are applied here; maxHpAdd is already folded into newMaxHealth.
+  // critAdd / xpMult / goldMult / pickupAddRange / magicFindMult / cdrAll are
+  // applied at their respective read sites (main.js, lootSystem.js, player.js
+  // — see WP03 T013-T015).
+  const kb = window.knowledgeTreeBuffs;
+  if (kb) {
+    weaponDamage = Math.max(1, Math.round(weaponDamage * (kb.damageMult || 1)));
+    playerArmor = Phaser.Math.Clamp(
+      playerArmor + (kb.armorAdd || 0),
+      0,
+      0.85
+    );
+    playerSpeed = Math.max(60, Math.round(playerSpeed * (kb.speedMult || 1)));
+    // critAdd is folded in here as well so invest()-triggered recalcDerived()
+    // refreshes the HUD crit % between runs. The line-806 init in main.js
+    // covers fresh-load before recalcDerived runs.
+    playerCritChance = Phaser.Math.Clamp(playerCritChance + (kb.critAdd || 0), 0, 0.95);
   }
 
   // 4) HUD aktualisieren
