@@ -1925,13 +1925,13 @@ class HubSceneV2 extends Phaser.Scene {
     this._ktRenderCards();
     this._ktRenderFooter();
 
-    // CRITICAL: Phaser Container.setScrollFactor() does NOT propagate to
-    // children unless you pass updateChildren=true. Without this, child
-    // buttons keep scrollFactor=1 and their hit-areas drift with the hub
-    // camera while the visible buttons stay screen-locked from the parent's
-    // scrollFactor 0 — click positions and hit-test positions diverge and
-    // pointerdown returns hits=0. Propagating here covers every descendant.
-    this._dialogContainer.setScrollFactor(0, 0, true);
+    // CRITICAL: Phaser Container.setScrollFactor(x, y, true) propagates only
+    // one level deep — it does NOT recurse into nested containers. The card
+    // grid lives 3 levels deep (_dialogContainer → _ktCardLayer →
+    // cardContainer → investBtn). Without recursive propagation every child
+    // keeps scrollFactor=1, hit-areas drift with the hub camera, and
+    // pointerdown returns hits=0. Walk the tree manually.
+    this._ktPropagateScrollFactor(this._dialogContainer, 0, 0);
 
     // Live updates via onChange subscription. Unsub handle is stored so
     // _ktCloseModal can detach it (no leaks across re-opens -- FR-12).
@@ -1953,11 +1953,10 @@ class HubSceneV2 extends Phaser.Scene {
           self._ktCardLayer.scene.time.delayedCall(0, function () {
             if (self._ktCardLayer && self._ktCardLayer.scene) {
               self._ktRenderCards();
-              // Newly created cards default to scrollFactor=1 — re-propagate
-              // scrollFactor=0 from the parent container so hit-test stays
-              // aligned with the visible positions after every re-render.
+              // Re-propagate scrollFactor=0 recursively so newly created
+              // cards' interactive buttons get aligned hit-areas.
               if (self._dialogContainer) {
-                self._dialogContainer.setScrollFactor(0, 0, true);
+                self._ktPropagateScrollFactor(self._dialogContainer, 0, 0);
               }
             }
           });
@@ -2229,5 +2228,25 @@ class HubSceneV2 extends Phaser.Scene {
     this._ktPanelH = null;
     // FR-12: clear the input lock so the player can move + open other dialogs.
     this._dialogOpen = false;
+  }
+
+  // Walk every descendant of `gameObject` (Containers + leaves) and force the
+  // given scrollFactor. Phaser's built-in Container.setScrollFactor(x, y, true)
+  // only descends one level; nested containers (cards inside the card layer
+  // inside the modal container) keep scrollFactor=1 and hit-tests miss.
+  _ktPropagateScrollFactor(gameObject, sx, sy) {
+    if (!gameObject) return;
+    if (typeof gameObject.setScrollFactor === 'function') {
+      gameObject.setScrollFactor(sx, sy);
+    }
+    // Containers expose getAll() / iterate; non-containers do not.
+    if (typeof gameObject.getAll === 'function') {
+      const kids = gameObject.getAll();
+      for (let i = 0; i < kids.length; i++) {
+        this._ktPropagateScrollFactor(kids[i], sx, sy);
+      }
+    } else if (typeof gameObject.iterate === 'function') {
+      gameObject.iterate((child) => this._ktPropagateScrollFactor(child, sx, sy));
+    }
   }
 }
