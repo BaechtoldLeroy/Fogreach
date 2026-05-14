@@ -1,4 +1,16 @@
 {
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-05-14T18:39:10.546588+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "8d0e875c7ee53d49e08a523b0024b6d0af9904a7"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-05-14T18:39:10.546588+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "8d0e875c7ee53d49e08a523b0024b6d0af9904a7",
   "created_at": "2026-05-14T18:23:22.818433+00:00",
   "feature_number": "051",
   "feature_slug": "051-tone-and-theme-polish",
