@@ -89,6 +89,68 @@
     return next;
   }
 
+  // Cellular-automata caves naturally produce 1-tile-wide passages that BFS
+  // treats as walkable but the player's 32-px physics body cannot squeeze
+  // through (it wedges on the wall corners). This pass widens every
+  // 1-tile-tube and 1-tile-diagonal-pinch so corridors are at least 2 wide
+  // everywhere. We run multiple passes because opening one pinch may reveal
+  // a new one downstream.
+  function widenNarrowPassages(g) {
+    var h = g.length, w = g[0].length;
+    var MAX_PASSES = 4;
+    for (var pass = 0; pass < MAX_PASSES; pass++) {
+      var toOpen = [];
+      for (var y = 1; y < h - 1; y++) {
+        for (var x = 1; x < w - 1; x++) {
+          if (g[y][x] !== '.') continue;
+          var wallN = g[y - 1][x] === '#';
+          var wallS = g[y + 1][x] === '#';
+          var wallW = g[y][x - 1] === '#';
+          var wallE = g[y][x + 1] === '#';
+          // Horizontal tube  ###       Vertical tube  #.#
+          //                  ...                      #.#
+          //                  ###                      #.#
+          if (wallN && wallS && !wallW && !wallE) {
+            // Open the side that has more open space behind it (avoids
+            // breaking into another wall-bound dead-end).
+            var nScore = 0, sScore = 0;
+            for (var dx = -1; dx <= 1; dx++) {
+              if (g[y - 2] && g[y - 2][x + dx] === '.') nScore++;
+              if (g[y + 2] && g[y + 2][x + dx] === '.') sScore++;
+            }
+            var openY = (nScore >= sScore) ? y - 1 : y + 1;
+            if (openY > 0 && openY < h - 1) toOpen.push({ x: x, y: openY });
+          }
+          if (wallW && wallE && !wallN && !wallS) {
+            var wScore = 0, eScore = 0;
+            for (var dy = -1; dy <= 1; dy++) {
+              if (g[y + dy] && g[y + dy][x - 2] === '.') wScore++;
+              if (g[y + dy] && g[y + dy][x + 2] === '.') eScore++;
+            }
+            var openX = (wScore >= eScore) ? x - 1 : x + 1;
+            if (openX > 0 && openX < w - 1) toOpen.push({ x: openX, y: y });
+          }
+          // Diagonal pinch — floor at (x,y) and (x+1,y+1), walls at the other
+          // two corners (or mirror). BFS treats this as connected via the
+          // floor tiles, but the player can't squeeze through the wall corner.
+          // Open one of the wall corners.
+          if (wallE && wallS && g[y + 1] && g[y + 1][x + 1] === '.') {
+            toOpen.push({ x: x + 1, y: y });
+          }
+          if (wallW && wallS && g[y + 1] && g[y + 1][x - 1] === '.') {
+            toOpen.push({ x: x - 1, y: y });
+          }
+        }
+      }
+      if (toOpen.length === 0) break;
+      toOpen.forEach(function (c) {
+        if (c.x > 0 && c.x < w - 1 && c.y > 0 && c.y < h - 1 && g[c.y][c.x] === '#') {
+          g[c.y][c.x] = '.';
+        }
+      });
+    }
+  }
+
   // BFS from (sx, sy) over floor tiles. Returns a 2D distance array (Infinity
   // for unreachable tiles) and the count of tiles reached.
   function bfsDistance(g, sx, sy) {
@@ -153,22 +215,28 @@
     return best;
   }
 
-  // Carve a 1-tile-wide tunnel from (sx, sy) toward (tx, ty) using a simple
+  // Carve a `width`-tile-wide tunnel from (sx, sy) to (tx, ty) using a simple
   // Manhattan walk. Existing floor tiles are left alone; walls along the path
-  // become floor. Used for drilling cardinal doorways.
+  // become floor. The path includes both the start and the target cell, so a
+  // 2-wide tunnel always lands at the target with full width — not a 1-tile
+  // pinch on the final step.
   function carveTunnel(g, sx, sy, tx, ty, width) {
     width = width || 1;
+    function carveAt(cx, cy) {
+      for (var dy = 0; dy < width; dy++) {
+        for (var dx = 0; dx < width; dx++) {
+          if (inBounds(g, cx + dx, cy + dy)) g[cy + dy][cx + dx] = '.';
+        }
+      }
+    }
     var x = sx, y = sy;
     var safety = 500;
     while ((x !== tx || y !== ty) && safety-- > 0) {
-      for (var dy = 0; dy < width; dy++) {
-        for (var dx = 0; dx < width; dx++) {
-          if (inBounds(g, x + dx, y + dy)) g[y + dy][x + dx] = '.';
-        }
-      }
+      carveAt(x, y);
       if (x !== tx) x += (tx > x) ? 1 : -1;
       else if (y !== ty) y += (ty > y) ? 1 : -1;
     }
+    carveAt(tx, ty);
   }
 
   // Find the innermost floor tile closest to the requested edge, used as the
@@ -316,6 +384,11 @@
     // 2) Smooth — 4 CA passes is the sweet spot for cave-shaped blobs.
     var ITERATIONS = 4;
     for (var i = 0; i < ITERATIONS; i++) g = stepCA(g);
+
+    // 2b) Widen narrow passages so the player's physics body fits everywhere
+    //     in the cave. Without this pass, CA tubes can be 1 tile wide which
+    //     looks navigable on the BFS but wedges the player against corners.
+    widenNarrowPassages(g);
 
     // 3) Largest-region keep — discard small islands.
     var region = findLargestRegion(g);

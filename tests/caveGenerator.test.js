@@ -39,6 +39,30 @@ function floodFill(walls, blocked, sx, sy) {
   return reach;
 }
 
+// Count 1-tile-wide passages that the player's physics body cannot fit through.
+// A "tube" is a floor tile flanked by walls on two opposite cardinal sides
+// (N+S or W+E) with floor on the other two. A "diagonal pinch" is two floor
+// tiles touching only at a corner — BFS treats them as connected but the
+// player cannot walk diagonally through the wall corners.
+function countNarrowPassages(walls) {
+  const h = walls.length, w = walls[0].length;
+  let tubes = 0, pinches = 0;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      if (walls[y][x] !== '.') continue;
+      const wN = walls[y - 1][x] === '#';
+      const wS = walls[y + 1][x] === '#';
+      const wW = walls[y][x - 1] === '#';
+      const wE = walls[y][x + 1] === '#';
+      if (wN && wS && !wW && !wE) tubes++;
+      if (wW && wE && !wN && !wS) tubes++;
+      if (wE && wS && walls[y + 1][x + 1] === '.') pinches++;
+      if (wW && wS && walls[y + 1][x - 1] === '.') pinches++;
+    }
+  }
+  return { tubes, pinches };
+}
+
 function assertCaveValid(tpl, label) {
   assert.ok(tpl, `${label}: generate() returned null`);
   assert.ok(tpl._procedural && tpl._cave, `${label}: _procedural + _cave flags must be set`);
@@ -67,6 +91,13 @@ function assertCaveValid(tpl, label) {
     assert.strictEqual(blocked[l.y][l.x], false, `${label}: loot (${l.x},${l.y}) must be walkable`);
     assert.strictEqual(reach[l.y][l.x], true, `${label}: loot (${l.x},${l.y}) must be reachable from spawn`);
   }
+
+  // Minimum corridor width — no 1-tile tubes or diagonal pinches. CA caves
+  // produce these naturally; the generator's widenNarrowPassages pass plus
+  // the carveTunnel target-cell fix should eliminate them.
+  const { tubes, pinches } = countNarrowPassages(walls);
+  assert.strictEqual(tubes, 0, `${label}: ${tubes} 1-tile tube passage(s) found — player would wedge`);
+  assert.strictEqual(pinches, 0, `${label}: ${pinches} diagonal pinch(es) found — player cannot pass corner`);
 }
 
 test('CaveGenerator: API surface', () => {
