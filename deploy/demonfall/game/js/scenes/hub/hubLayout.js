@@ -192,9 +192,10 @@ window.HUB_HITBOXES = {
       name: 'Wachtmeister der Garde',
       x: 580, y: 380,
       texture: 'garde',
-      // 90% of klerus (0.20) — guard sprite looked slightly oversized
-      // relative to the priest at matching scale.
-      scale: 0.18,
+      // garde.png is 612×408 (user-provided clean removebg cutout).
+      // Target display height = 90% of klerus's ~102px = ~92px.
+      // 92 / 408 ≈ 0.225.
+      scale: 0.23,
       visibleFromAct: 'auftrag',
       lines: [
         'Die Patrouillen wachsen jeden Monat. So muss es sein — die Stadt ist unruhig.',
