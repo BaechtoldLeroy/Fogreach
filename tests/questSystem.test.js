@@ -124,13 +124,13 @@ test('feature 050: legacy Akt-1 quests removed from catalog', () => {
   });
 });
 
-test('feature 050: 6 new Act-1 quests defined with correct shape', () => {
+test('feature 050: Q1 gated behind Aldric warmup quests, not offered immediately', () => {
   const qs = freshSystem();
-  // Q1 is offered by Harren immediately (no prerequisites)
-  const harrenAvail = qs.getAvailableQuests('harren');
-  assert.ok(harrenAvail.find(function (q) { return q.id === 'harren_daughter_investigation'; }),
-    'Q1 must be offered by Harren');
-  // Q2-Q5 NOT yet offered until Q1 is complete (prerequisite)
+  // Q1 NOT yet offered — Aldric cleanup + patrol must complete first
+  const harrenAvailEarly = qs.getAvailableQuests('harren') || [];
+  assert.ok(!harrenAvailEarly.find(function (q) { return q.id === 'harren_daughter_investigation'; }),
+    'Q1 must wait for Aldric warmup quests');
+  // Q2-Q5 NOT yet offered (they prereq Q1)
   ['aldric', 'klerus_priester', 'stadtwache', 'elara'].forEach(function (npc) {
     var avail = qs.getAvailableQuests(npc) || [];
     var blockedIds = ['magistrat_verification', 'klerus_purification', 'garde_patrol_expansion', 'widerstand_proof'];
@@ -139,10 +139,27 @@ test('feature 050: 6 new Act-1 quests defined with correct shape', () => {
         npc + ' must not offer ' + id + ' before Q1 done');
     });
   });
+  // Complete the two Aldric warmups → Q1 becomes available
+  qs.acceptQuest('aldric_cleanup');
+  qs.updateQuestProgress('kill', 'enemy', 10);
+  qs.completeQuest('aldric_cleanup');
+  qs.acceptQuest('aldric_patrol');
+  qs.updateQuestProgress('explore', 'room', 3);
+  qs.completeQuest('aldric_patrol');
+  const harrenAvailNow = qs.getAvailableQuests('harren') || [];
+  assert.ok(harrenAvailNow.find(function (q) { return q.id === 'harren_daughter_investigation'; }),
+    'Q1 must be offered after both Aldric warmups complete');
 });
 
 test('feature 050: Q1 completion unlocks Q2/Q3/Q4/Q5 simultaneously', () => {
   const qs = freshSystem();
+  // Aldric warmups first (Q1 prerequisite)
+  qs.acceptQuest('aldric_cleanup');
+  qs.updateQuestProgress('kill', 'enemy', 10);
+  qs.completeQuest('aldric_cleanup');
+  qs.acceptQuest('aldric_patrol');
+  qs.updateQuestProgress('explore', 'room', 3);
+  qs.completeQuest('aldric_patrol');
   qs.acceptQuest('harren_daughter_investigation');
   qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   assert.strictEqual(qs.isQuestReadyToComplete('harren_daughter_investigation'), true);
@@ -163,7 +180,13 @@ test('feature 050: Q1 completion unlocks Q2/Q3/Q4/Q5 simultaneously', () => {
 
 test('feature 050: Q6 unlocks only after all 4 parallel quests complete', () => {
   const qs = freshSystem();
-  // Q1 → ready
+  // Aldric warmup → Q1 unlock → Q1 done
+  qs.acceptQuest('aldric_cleanup');
+  qs.updateQuestProgress('kill', 'enemy', 10);
+  qs.completeQuest('aldric_cleanup');
+  qs.acceptQuest('aldric_patrol');
+  qs.updateQuestProgress('explore', 'room', 3);
+  qs.completeQuest('aldric_patrol');
   qs.acceptQuest('harren_daughter_investigation');
   qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   qs.completeQuest('harren_daughter_investigation');
@@ -196,6 +219,14 @@ test('feature 050: rewards.factionStanding applies via FactionSystem.adjustStand
   globalThis.window.FactionSystem = {
     adjustStanding: function (factionId, delta) { standingCalls.push([factionId, delta]); }
   };
+  // Clear pre-Q1 warmup standings via fresh tracker AFTER warmup completion.
+  qs.acceptQuest('aldric_cleanup');
+  qs.updateQuestProgress('kill', 'enemy', 10);
+  qs.completeQuest('aldric_cleanup');
+  qs.acceptQuest('aldric_patrol');
+  qs.updateQuestProgress('explore', 'room', 3);
+  qs.completeQuest('aldric_patrol');
+  standingCalls.length = 0; // ignore warmup-quest standing grants (if any)
   qs.acceptQuest('harren_daughter_investigation');
   qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   qs.completeQuest('harren_daughter_investigation');
@@ -209,6 +240,13 @@ test('feature 050: rewards.fragments applies via KnowledgeTree.addFragments', ()
   globalThis.window.KnowledgeTree = {
     addFragments: function (n) { fragmentsGranted += n; }
   };
+  qs.acceptQuest('aldric_cleanup');
+  qs.updateQuestProgress('kill', 'enemy', 10);
+  qs.completeQuest('aldric_cleanup');
+  qs.acceptQuest('aldric_patrol');
+  qs.updateQuestProgress('explore', 'room', 3);
+  qs.completeQuest('aldric_patrol');
+  fragmentsGranted = 0; // ignore any pre-Q1 grants
   qs.acceptQuest('harren_daughter_investigation');
   qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   qs.completeQuest('harren_daughter_investigation');
@@ -222,7 +260,13 @@ test('feature 050: Q6 completion advances storySystem to act index 2', () => {
     getCurrentActIndex: function () { return 99; },
     advanceToAct: function (idx) { advancedTo = idx; return true; }
   };
-  // Run the chain quickly
+  // Run the chain quickly — Aldric warmups first, then Q1-Q6
+  qs.acceptQuest('aldric_cleanup');
+  qs.updateQuestProgress('kill', 'enemy', 10);
+  qs.completeQuest('aldric_cleanup');
+  qs.acceptQuest('aldric_patrol');
+  qs.updateQuestProgress('explore', 'room', 3);
+  qs.completeQuest('aldric_patrol');
   qs.acceptQuest('harren_daughter_investigation');
   qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   qs.completeQuest('harren_daughter_investigation');

@@ -70,7 +70,11 @@
         { type: 'fetch', target: 'journal_fragment', current: 0, required: 1 }
       ],
       rewards: { xp: 50, factionStanding: { independent: 1 }, fragments: 1 },
-      prerequisites: [],
+      // Akt 0 onboarding gates Akt 1: the player must complete Aldric's two
+      // warmup quests (cleanup + patrol) before Harren approaches with the
+      // mayor's-daughter investigation. Keeps the tutorial-to-narrative
+      // ramp legible — generic kill/explore quests first, then story.
+      prerequisites: ['aldric_cleanup', 'aldric_patrol'],
       requiredAct: 0,
       dialogueOffer: 'Die Tochter des Buergermeisters ist verschwunden. Aldric sagt, Eindringlinge haetten sie entfuehrt. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversaeumnis.\n\nIch glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurueckgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.\n\nVertrau niemandem, bis du es selbst gesehen hast.',
       dialogueProgress: 'Such weiter — das Fragment ist da unten. Aldric, Klerus und Garde streiten sich oben, weil sie alle eine andere Version hoeren wollen. Du findest die echte.',
