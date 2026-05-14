@@ -7,7 +7,9 @@ if (window.i18n) {
     'loot.legacy.material': 'Eisenbrocken',
     'loot.material.portal_scroll': 'Portalrolle',
     'loot.quest_item.QUEST_DOC': 'Protokoll-Abschrift',
-    'loot.quest_item.QUEST_PLATE': 'Verbotene Druckplatte'
+    'loot.quest_item.QUEST_PLATE': 'Verbotene Druckplatte',
+    'loot.quest_item.JOURNAL_FRAGMENT': 'Tagebuchfragment der Tochter',
+    'loot.quest_item.COUNCIL_DOCUMENT': 'Versiegeltes Ratsdokument'
   });
   window.i18n.register('en', {
     'loot.legacy.weapon': 'Sword',
@@ -17,7 +19,9 @@ if (window.i18n) {
     'loot.legacy.material': 'Iron Chunk',
     'loot.material.portal_scroll': 'Portal Scroll',
     'loot.quest_item.QUEST_DOC': 'Protocol Transcript',
-    'loot.quest_item.QUEST_PLATE': 'Forbidden Print Plate'
+    'loot.quest_item.QUEST_PLATE': 'Forbidden Print Plate',
+    'loot.quest_item.JOURNAL_FRAGMENT': "Daughter's Journal Fragment",
+    'loot.quest_item.COUNCIL_DOCUMENT': 'Sealed Council Document'
   });
 }
 const _LOOT_T = (key) => (window.i18n ? window.i18n.t(key) : key);
@@ -225,10 +229,15 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
   if (!maybeItem && window.questSystem) {
     var activeQuests = window.questSystem.getActiveQuests();
 
-    // Check for active fetch quests and spawn matching quest items
+    // Check for active fetch quests and spawn matching quest items.
+    // Feature 050: journal_fragment (Q1 harren_daughter_investigation) and
+    // council_document (Q5 widerstand_proof) added — each drops on the
+    // standard 10% per-kill chance while its quest is active.
     var questItemDefs = [
-      { target: 'document', name: _LOOT_T('loot.quest_item.QUEST_DOC'), nameKey: 'loot.quest_item.QUEST_DOC', key: 'QUEST_DOC', tint: 0xffdd44 },
-      { target: 'print_plate', name: _LOOT_T('loot.quest_item.QUEST_PLATE'), nameKey: 'loot.quest_item.QUEST_PLATE', key: 'QUEST_PLATE', tint: 0x88aaff }
+      { target: 'document',         name: _LOOT_T('loot.quest_item.QUEST_DOC'),       nameKey: 'loot.quest_item.QUEST_DOC',       key: 'QUEST_DOC',       tint: 0xffdd44 },
+      { target: 'print_plate',      name: _LOOT_T('loot.quest_item.QUEST_PLATE'),     nameKey: 'loot.quest_item.QUEST_PLATE',     key: 'QUEST_PLATE',     tint: 0x88aaff },
+      { target: 'journal_fragment', name: _LOOT_T('loot.quest_item.JOURNAL_FRAGMENT'),nameKey: 'loot.quest_item.JOURNAL_FRAGMENT',key: 'JOURNAL_FRAGMENT',tint: 0xddccaa },
+      { target: 'council_document', name: _LOOT_T('loot.quest_item.COUNCIL_DOCUMENT'),nameKey: 'loot.quest_item.COUNCIL_DOCUMENT',key: 'COUNCIL_DOCUMENT',tint: 0xcc88dd }
     ];
 
     for (var qi = 0; qi < questItemDefs.length; qi++) {

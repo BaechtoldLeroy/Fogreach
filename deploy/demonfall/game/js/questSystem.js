@@ -58,20 +58,20 @@
     harren_daughter_investigation: {
       id: 'harren_daughter_investigation',
       title: 'Die verschwundene Tochter',
-      description: 'Durchsuche 5 Raeume im Rathauskeller nach Spuren der Buergermeistertochter.',
+      description: 'Finde das Tagebuchfragment der Buergermeistertochter im Rathauskeller.',
       npcId: 'harren',
-      type: 'explore',
+      type: 'fetch',
       chain: 1,
-      // Trigger fix: 'fetch journal_fragment' had no drop wiring — quest
-      // couldn't complete. Switched to 'explore room x 5' which uses the
-      // existing room-entry trigger. Narratively the player "finds traces"
-      // by searching the cellars, and the fragment is among them.
+      // 'journal_fragment' target wired in js/loot.js as a quest-item drop
+      // (10% chance per enemy kill while the quest is active). On pickup,
+      // loot.js:416 calls updateQuestProgress('fetch', target, 1). Player
+      // sees the item drop, picks it up, quest ticks — natural flow.
       objectives: [
-        { type: 'explore', target: 'room', current: 0, required: 5 }
+        { type: 'fetch', target: 'journal_fragment', current: 0, required: 1 }
       ],
       rewards: { xp: 50, factionStanding: { independent: 1 }, fragments: 1 },
       prerequisites: [],
-      requiredAct: 1,
+      requiredAct: 0,
       dialogueOffer: 'Die Tochter des Buergermeisters ist verschwunden. Aldric sagt, Eindringlinge haetten sie entfuehrt. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversaeumnis.\n\nIch glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurueckgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.\n\nVertrau niemandem, bis du es selbst gesehen hast.',
       dialogueProgress: 'Such weiter — das Fragment ist da unten. Aldric, Klerus und Garde streiten sich oben, weil sie alle eine andere Version hoeren wollen. Du findest die echte.',
       dialogueComplete: 'Du hast es. Sie ist nicht entfuehrt worden. Sie ist geflohen. Und sie hatte Grund dazu — alle drei Ratsfraktionen werden im Fragment namentlich erwaehnt. Du wirst gleich von allen vier Seiten gefragt werden. Hoer dir alles an. Mach alle vier Auftraege. Dann komm zurueck zu mir.'
@@ -92,7 +92,7 @@
       ],
       rewards: { xp: 75, factionStanding: { magistrat: 1 } },
       prerequisites: ['harren_daughter_investigation'],
-      requiredAct: 1,
+      requiredAct: 0,
       dialogueOffer: 'Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten muessen ordnungsgemaess gefuehrt werden.\n\nGeh zu Branka in die Archivschmiede und lass das ratsgesiegelte Verifikationsdokument anfertigen. Sie wird Fragen stellen — beantworte sie nicht. Der Magistrat traegt die Verantwortung, nicht der Buerger.\n\nNimmst du den Auftrag an?',
       dialogueProgress: 'Das Dokument muss in der Archivschmiede gefertigt werden. Branka kennt das Verfahren. Geh und lass sie ihre Arbeit tun.',
       dialogueComplete: 'Hervorragend. Das Dokument ist im Archiv. Die Tochter ist nun offiziell eine Person von Interesse. Was das in der Praxis bedeutet, geht dich nichts an. Der Magistrat dankt dir.'
@@ -109,7 +109,7 @@
       ],
       rewards: { xp: 90, factionStanding: { klerus: 1 } },
       prerequisites: ['harren_daughter_investigation'],
-      requiredAct: 1,
+      requiredAct: 0,
       dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand gefuehrt — die untere Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anfuehrer dieser ketzerischen Praesenz lauern noch dort unten. Faelle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
       dialogueProgress: 'Drei Anfuehrer trennen die Tochter noch vom Licht. Finde sie. Faelle sie. Jede Ketzerei, die du beendest, oeffnet einen weiteren Pfad zur Reinheit.',
       dialogueComplete: 'Du hast die Ketzerei geschlagen. Die untere Kammern atmen wieder. Die Ordnung bleibt — durch dich. Der Klerus segnet deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.'
@@ -130,7 +130,7 @@
       ],
       rewards: { xp: 75, factionStanding: { garde: 1 } },
       prerequisites: ['harren_daughter_investigation'],
-      requiredAct: 1,
+      requiredAct: 0,
       dialogueOffer: 'Wenn eine Tochter aus dem Rathaus verschwinden kann, ist das ein Versagen der Garde — und das wird sich aendern. Ich brauche eine Patrouillen-Erweiterung. Heute. Geh zu Thom in die Druckerei und lass das Edikt drucken.\n\nFrag nicht, ob die Patrouillen schoner Lebensweise zutraeglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalitaet ist die einzige Muenze, die zaehlt. Das Edikt ist die Muenze, die du in meine Hand legst.\n\nNimmst du den Auftrag an, Archivschmied?',
       dialogueProgress: 'Thom muss das Edikt drucken. Geh zu ihm. Sag ihm, die Garde verlangt es. Er wird tun, was er muss.',
       dialogueComplete: 'Das Edikt ist veroeffentlicht. Die Patrouillen verdoppeln sich ab morgen. Niemand wird mehr verschwinden — oder zumindest niemand, der zaehlt. Die Garde merkt sich, wer schnell antwortet.'
@@ -138,20 +138,18 @@
     widerstand_proof: {
       id: 'widerstand_proof',
       title: 'Beweise aus der Ritualkammer',
-      description: 'Durchsuche 5 Raeume im Rathauskeller und sammle Beweise fuer Elara.',
+      description: 'Finde ein verstecktes Ratsdokument in einer Ritualkammer im Rathauskeller.',
       npcId: 'elara',
-      type: 'explore',
+      type: 'fetch',
       chain: 2,
-      // Trigger fix: 'fetch council_document' had no drop wiring — quest
-      // couldn't complete. Switched to 'explore room x 5' which uses the
-      // existing room-entry trigger. Narratively the player "surveys the
-      // ritual chambers" and the document surfaces during exploration.
+      // 'council_document' target wired in js/loot.js as a quest-item drop
+      // (10% chance per enemy kill while the quest is active).
       objectives: [
-        { type: 'explore', target: 'room', current: 0, required: 5 }
+        { type: 'fetch', target: 'council_document', current: 0, required: 1 }
       ],
       rewards: { xp: 100, factionStanding: { widerstand: 1 }, fragments: 1 },
       prerequisites: ['harren_daughter_investigation'],
-      requiredAct: 1,
+      requiredAct: 0,
       dialogueOffer: 'Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzaehlung. Aldric will mich zurueckholen. Der Klerus will mich verbrennen. Die Garde will mich kassieren.\n\nUnd ich? Ich will dass DU siehst, was ich gesehen habe, bevor du weiter ihre Auftraege erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
       dialogueProgress: 'Such die Ritualkammer. Drei Raeume tiefer. Das Dokument ist klein, aber das Siegel darauf wird dir den Atem nehmen.',
       dialogueComplete: 'Drei Siegel. Eine Unterschrift. Magistrat, Klerus, Garde — sie behaupten in der Oeffentlichkeit, sie waeren Rivalen. Hinter verschlossenen Tueren stimmen sie ueberein. Geh zu Harren. Er wartet auf den Moment, in dem du das verstehst.'
@@ -168,7 +166,7 @@
       ],
       rewards: { xp: 150, fragments: 1, unlocks: ['act2_open'] },
       prerequisites: ['magistrat_verification', 'klerus_purification', 'garde_patrol_expansion', 'widerstand_proof'],
-      requiredAct: 1,
+      requiredAct: 0,
       dialogueOffer: 'Komm mit. Du musst etwas sehen. (Climax-Scene wird in WP03 final implementiert — diese 1-Page-Version laesst Q6 in WP02 schon spielbar werden, der vollwertige 4-Page-Reveal kommt mit dem naechsten WP.)',
       dialogueProgress: 'Folge mir. Es ist Zeit.',
       dialogueComplete: 'Du hast es jetzt gesehen. Der Nebel war nie das Wetter — er war eine Erzaehlung. Du hast bereits fuer jede der drei Masken gearbeitet, und sie ist nur ein einziges Gesicht. Akt 2 beginnt jenseits dieses Hubs.'
@@ -463,7 +461,7 @@
       'quest.aldric_patrol.description': 'Clear 3 rooms in the cellars to secure all corridors.',
       // Akt 1 — Vertical Slice chain (feature 050)
       'quest.harren_daughter_investigation.title': 'The Vanished Daughter',
-      'quest.harren_daughter_investigation.description': 'Search 5 rooms in the Rathauskeller for traces of the mayor\'s daughter.',
+      'quest.harren_daughter_investigation.description': 'Find the mayor daughter\'s journal fragment in the Rathauskeller.',
       'quest.magistrat_verification.title': 'Magistrate Verification',
       'quest.magistrat_verification.description': 'Secure the area — defeat 8 trespassers while the Magistrate handles the paperwork.',
       'quest.klerus_purification.title': 'Purification of the Lower Chambers',
@@ -471,7 +469,7 @@
       'quest.garde_patrol_expansion.title': 'Patrol Expansion',
       'quest.garde_patrol_expansion.description': 'Demonstrate force for the new patrols — defeat 10 trespassers.',
       'quest.widerstand_proof.title': 'Evidence from the Ritual Chamber',
-      'quest.widerstand_proof.description': 'Survey 5 rooms in the Rathauskeller and gather evidence for Elara.',
+      'quest.widerstand_proof.description': 'Find a hidden Council document in a ritual chamber in the Rathauskeller.',
       'quest.council_collusion_reveal.title': 'The Secret Meeting',
       'quest.council_collusion_reveal.description': 'Follow Harren to the secret meeting of the three Council factions.',
       'quest.mara_contact.title': 'The Scout',

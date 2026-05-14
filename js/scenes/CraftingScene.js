@@ -625,6 +625,13 @@ class CraftingScene extends Phaser.Scene {
     if (typeof saveGame === 'function') {
       try { saveGame(this); } catch (e) {}
     }
+    // Quest progress: tick any active craft objective (e.g. branka_weapons
+    // wants 3 crafted items). The questSystem.onItemCrafted hook exists but
+    // was never called — fixing here so craft-type quests are actually
+    // completable.
+    if (window.questSystem && typeof window.questSystem.onItemCrafted === 'function') {
+      try { window.questSystem.onItemCrafted(); } catch (e) { /* swallow */ }
+    }
     this._refreshAll();
     this._showEnhanceInfoForSelection();
     this._showFeedback(_CRAFT_T('crafting.feedback.enhanced_to', {

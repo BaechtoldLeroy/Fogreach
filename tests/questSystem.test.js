@@ -144,7 +144,7 @@ test('feature 050: 6 new Act-1 quests defined with correct shape', () => {
 test('feature 050: Q1 completion unlocks Q2/Q3/Q4/Q5 simultaneously', () => {
   const qs = freshSystem();
   qs.acceptQuest('harren_daughter_investigation');
-  qs.updateQuestProgress('explore', 'room', 5);
+  qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   assert.strictEqual(qs.isQuestReadyToComplete('harren_daughter_investigation'), true);
   qs.completeQuest('harren_daughter_investigation');
   // All four parallel quests should now be available from their respective NPCs.
@@ -165,7 +165,7 @@ test('feature 050: Q6 unlocks only after all 4 parallel quests complete', () => 
   const qs = freshSystem();
   // Q1 → ready
   qs.acceptQuest('harren_daughter_investigation');
-  qs.updateQuestProgress('explore', 'room', 5);
+  qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   qs.completeQuest('harren_daughter_investigation');
   // Q6 not yet — no prerequisites met
   var harrenAvail1 = qs.getAvailableQuests('harren') || [];
@@ -182,7 +182,7 @@ test('feature 050: Q6 unlocks only after all 4 parallel quests complete', () => 
   qs.updateQuestProgress('kill', 'enemy', 10);
   qs.completeQuest('garde_patrol_expansion');
   qs.acceptQuest('widerstand_proof');
-  qs.updateQuestProgress('explore', 'room', 5);
+  qs.updateQuestProgress('fetch', 'council_document', 1);
   qs.completeQuest('widerstand_proof');
   // Now Q6 should be available
   var harrenAvail2 = qs.getAvailableQuests('harren') || [];
@@ -197,7 +197,7 @@ test('feature 050: rewards.factionStanding applies via FactionSystem.adjustStand
     adjustStanding: function (factionId, delta) { standingCalls.push([factionId, delta]); }
   };
   qs.acceptQuest('harren_daughter_investigation');
-  qs.updateQuestProgress('explore', 'room', 5);
+  qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   qs.completeQuest('harren_daughter_investigation');
   // Q1 grants +1 independent
   assert.deepStrictEqual(standingCalls, [['independent', 1]]);
@@ -210,7 +210,7 @@ test('feature 050: rewards.fragments applies via KnowledgeTree.addFragments', ()
     addFragments: function (n) { fragmentsGranted += n; }
   };
   qs.acceptQuest('harren_daughter_investigation');
-  qs.updateQuestProgress('explore', 'room', 5);
+  qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   qs.completeQuest('harren_daughter_investigation');
   assert.strictEqual(fragmentsGranted, 1);
 });
@@ -224,7 +224,7 @@ test('feature 050: Q6 completion advances storySystem to act index 2', () => {
   };
   // Run the chain quickly
   qs.acceptQuest('harren_daughter_investigation');
-  qs.updateQuestProgress('explore', 'room', 5);
+  qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   qs.completeQuest('harren_daughter_investigation');
   qs.acceptQuest('magistrat_verification');
   qs.updateQuestProgress('kill', 'enemy', 8);
@@ -236,7 +236,7 @@ test('feature 050: Q6 completion advances storySystem to act index 2', () => {
   qs.updateQuestProgress('kill', 'enemy', 10);
   qs.completeQuest('garde_patrol_expansion');
   qs.acceptQuest('widerstand_proof');
-  qs.updateQuestProgress('explore', 'room', 5);
+  qs.updateQuestProgress('fetch', 'council_document', 1);
   qs.completeQuest('widerstand_proof');
   qs.acceptQuest('council_collusion_reveal');
   qs.updateQuestProgress('dialogue', 'collusion_reveal_seen', 1);
