@@ -204,20 +204,33 @@ function initDungeonRun() {
     templateOrder.push(finalRoom);
   }
 
-  // Inject 1-2 procedural rooms into the run for variety
-  if (window.ProceduralRooms && window.RoomTemplates) {
-    var procCount = 1 + Math.floor(Math.random() * 2); // 1-2 rooms
+  // Inject 2-4 procedural rooms into the run for variety. Each room flips a
+  // coin between the two generators so a single run can show both styles:
+  //   • ProceduralRooms  → BSP-style rectangular chambers (D2 catacombs feel)
+  //   • CaveGenerator    → cellular-automata caves (organic, eroded feel)
+  if (window.RoomTemplates && (window.ProceduralRooms || window.CaveGenerator)) {
+    var procCount = 2 + Math.floor(Math.random() * 3); // 2-4 rooms
     for (var pi = 0; pi < procCount; pi++) {
-      var procWidth = 80 + Math.floor(Math.random() * 40);  // 80-120
-      var procHeight = 80 + Math.floor(Math.random() * 40); // 80-120
-      var procName = 'Procedural_' + Date.now() + '_' + pi;
-      var procTpl = window.ProceduralRooms.generate({
-        width: procWidth,
-        height: procHeight,
-        name: procName
-      });
+      // 55 % cave when both are available so caves feel like a noticeable
+      // variant; fall back to whichever generator is loaded.
+      var useCave = window.CaveGenerator && (!window.ProceduralRooms || Math.random() < 0.55);
+      var procWidth, procHeight, procName, procTpl;
+      if (useCave) {
+        procWidth = 56 + Math.floor(Math.random() * 24);   // 56-80
+        procHeight = 48 + Math.floor(Math.random() * 20);  // 48-68
+        procName = 'Cave_' + Date.now() + '_' + pi;
+        procTpl = window.CaveGenerator.generate({
+          width: procWidth, height: procHeight, name: procName, depth: window.DUNGEON_DEPTH
+        });
+      } else {
+        procWidth = 80 + Math.floor(Math.random() * 40);   // 80-120
+        procHeight = 80 + Math.floor(Math.random() * 40);  // 80-120
+        procName = 'Procedural_' + Date.now() + '_' + pi;
+        procTpl = window.ProceduralRooms.generate({
+          width: procWidth, height: procHeight, name: procName
+        });
+      }
       window.RoomTemplates.TEMPLATES[procName] = procTpl;
-      // Insert at a random mid position (not first, not last)
       var insertPos = 1 + Math.floor(Math.random() * Math.max(1, templateOrder.length - 2));
       templateOrder.splice(insertPos, 0, procName);
     }
