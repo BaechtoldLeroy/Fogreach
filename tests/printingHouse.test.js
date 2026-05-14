@@ -31,7 +31,7 @@ function makePrimitives(overrides) {
       onChange: () => () => {}
     },
     factionSystem: {
-      _standing: { resistance: 0, council: 0, independent: 0 },
+      _standing: { magistrat: 0, klerus: 0, garde: 0, widerstand: 0, independent: 0 },
       getStanding(id) { return this._standing[id] || 0; }
     },
     questSystem: {
@@ -184,11 +184,11 @@ test('catalog entries report unlocked state based on resistance standing', () =>
   assert.strictEqual(mild0.isUnlocked, true);
   assert.strictEqual(strong0.isUnlocked, false);
   assert.strictEqual(risky0.isUnlocked, false);
-  p.factionSystem._standing.resistance = 30;
+  p.factionSystem._standing.widerstand = 30;
   const cat1 = PH.getEdictCatalog();
   assert.strictEqual(cat1.find(e => e.id === strong0.id).isUnlocked, true);
   assert.strictEqual(cat1.find(e => e.id === risky0.id).isUnlocked, false);
-  p.factionSystem._standing.resistance = 60;
+  p.factionSystem._standing.widerstand = 60;
   const cat2 = PH.getEdictCatalog();
   assert.strictEqual(cat2.find(e => e.id === risky0.id).isUnlocked, true);
 });

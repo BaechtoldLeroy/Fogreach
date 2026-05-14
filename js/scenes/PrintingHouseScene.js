@@ -158,7 +158,7 @@
       const suspicion = ph.getSuspicion();
       const active = ph.getActivePublication();
       const standing = (window.FactionSystem && typeof window.FactionSystem.getStanding === 'function')
-        ? window.FactionSystem.getStanding('resistance') | 0
+        ? window.FactionSystem.getStanding('widerstand') | 0
         : 0;
 
       // Background strip behind the status bar so it visually separates from
