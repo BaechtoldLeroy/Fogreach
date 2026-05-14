@@ -524,7 +524,12 @@
     if (state.skipped) return true;
     var hasSave = false;
     try { hasSave = !!(primitives.persistence && primitives.persistence.hasSave && primitives.persistence.hasSave()); } catch (_) {}
-    if (hasSave) {
+    // Feature 051 FR-06: respect the explicit "Tutorial überspringen" toggle
+    // from SettingsScene. Skips even when no save exists (returning donor
+    // who wiped local storage but still wants to skip mechanics).
+    var skipFlag = false;
+    try { skipFlag = !!(window.__SKIP_TUTORIAL__); } catch (_) {}
+    if (hasSave || skipFlag) {
       state.active = false;
       state.skipped = true;
       state.currentStepId = null;

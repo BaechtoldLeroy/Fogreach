@@ -355,6 +355,32 @@ class HubSceneV2 extends Phaser.Scene {
       if (window.soundManager) window.soundManager.stopMusic();
     });
 
+    // Feature 051: demo intro splash. Shown ONCE per save-stage, when the
+    // player first reaches the hub. Single-shot via localStorage flag.
+    // Triggers BEFORE the run-summary modal so the world setup lands before
+    // any combat-loop polish UI.
+    this.time.delayedCall(250, () => {
+      try {
+        if (!localStorage.getItem('demonfall_seen_intro_splash')) {
+          this._showIntroSplash();
+        }
+      } catch (_) {}
+    });
+
+    // Feature 051: demo outro splash. Fires after Q6 completion (the
+    // council_collusion_reveal quest is in the completed list) the first
+    // time the player returns to the hub afterwards. Single-shot via
+    // localStorage flag. Frames the demo end + donor hook + Akt-2 teaser.
+    this.time.delayedCall(600, () => {
+      try {
+        const completed = (window.questSystem && typeof window.questSystem.getCompletedQuests === 'function')
+          ? window.questSystem.getCompletedQuests() : [];
+        const q6Done = completed.some(q => q && q.id === 'council_collusion_reveal');
+        const alreadyShown = !!localStorage.getItem('demonfall_seen_outro_splash');
+        if (q6Done && !alreadyShown) this._showOutroSplash();
+      } catch (_) {}
+    });
+
     // Run-summary modal: if leaveDungeonForHub stashed a summary, show it
     // once the scene is settled. Cleared from window inside _showRunSummary
     // so a hub-side reload doesn't re-trigger it.
@@ -2575,5 +2601,96 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Start at page 0. The standard _showDialoguePages handles page advancement.
     this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData, 0);
+  }
+
+  // Feature 051 FR-01/FR-02: demo intro splash — frames the world before
+  // the tutorial overlay activates. ~3-4 sentence setup pulled from the
+  // constitution's §Setting + §Storyline.
+  _showIntroSplash() {
+    const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';
+    const isEN = (lang === 'en');
+    const title = isEN ? 'Fogreach' : 'Fogreach';
+    const body = isEN
+      ? "A dark city wrapped in permanent mist. The Chain Council governs as a sham democracy — three factions that compete in the open and conspire in the shadows.\n\nYou were an Archivesmith. An accident at the Forge tore holes in your memory. You begin to notice contradictions in the official history.\n\nThe fog is not weather. It eats memory. And someone wanted yours buried."
+      : "Eine dunkle Stadt, in ewigen Nebel gehüllt. Der Kettenrat regiert als Schein-Demokratie — drei Fraktionen, die offen streiten und im Schatten gemeinsame Sache machen.\n\nDu warst Archivschmied. Ein Unfall in der Schmiede hat Löcher in deine Erinnerung gerissen. Du beginnst Widersprüche in der offiziellen Geschichte zu bemerken.\n\nDer Nebel ist kein Wetter. Er frisst Erinnerung. Und jemand wollte deine begraben sehen.";
+    const close = isEN ? '[ Continue ]' : '[ Weiter ]';
+    this._showSplashModal(title, body, close, () => {
+      try { localStorage.setItem('demonfall_seen_intro_splash', '1'); } catch (_) {}
+    });
+  }
+
+  // Feature 051 FR-03/FR-04: demo outro splash — fires once after Q6
+  // completion on first hub return. Frames the demo end + donor hook +
+  // Akt-2 teaser.
+  _showOutroSplash() {
+    const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';
+    const isEN = (lang === 'en');
+    const title = isEN ? 'End of Act 1 — Demo' : 'Ende von Akt 1 — Demo';
+    const body = isEN
+      ? "You have completed Act 1.\n\nThree Council factions, one face. The fog thickens — and beneath it, the pact older than the city waits.\n\nAct 2 leads down into the catacombs, where the chains have names and the names have prices. If this resonated and you want to see Act 2 made, support the next chapter."
+      : "Du hast Akt 1 abgeschlossen.\n\nDrei Ratsfraktionen, ein Gesicht. Der Nebel wird dichter — und unter ihm wartet der Pakt, der älter ist als die Stadt.\n\nAkt 2 führt in die Katakomben, wo die Ketten Namen tragen und die Namen Preise haben. Wenn dich das hier erreicht hat und du Akt 2 sehen willst, unterstütze das nächste Kapitel.";
+    const close = isEN ? '[ Continue — for now ]' : '[ Weiter — vorerst ]';
+    this._showSplashModal(title, body, close, () => {
+      try { localStorage.setItem('demonfall_seen_outro_splash', '1'); } catch (_) {}
+    });
+  }
+
+  // Shared splash modal — 1 page, 1 button, ESC/Enter/Space dismiss. Used
+  // by intro + outro (and any future single-page narrative beats). Inherits
+  // the mobile-safe scrollFactor pattern via _ktPropagateScrollFactor.
+  _showSplashModal(title, body, closeLabel, onClose) {
+    const cam = this.cameras.main;
+    const cw = cam.width, ch = cam.height;
+    const container = this.add.container(cw / 2, ch / 2).setDepth(2300).setScrollFactor(0);
+
+    const backdrop = this.add.rectangle(0, 0, cw, ch, 0x000000, 0.78).setScrollFactor(0);
+    container.add(backdrop);
+
+    const panelW = Math.min(620, cw - 40);
+    const panelH = Math.min(360, ch - 60);
+    const g = this.add.graphics();
+    g.fillStyle(0x12121a, 0.96).fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 18);
+    g.lineStyle(2, 0xaa8844, 0.95).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 18);
+    container.add(g);
+
+    const titleText = this.add.text(0, -panelH / 2 + 28, title, {
+      fontFamily: 'serif', fontSize: 30, color: '#ffd166'
+    }).setOrigin(0.5, 0);
+    container.add(titleText);
+
+    const bodyText = this.add.text(0, -panelH / 2 + 88, body, {
+      fontFamily: 'serif', fontSize: 16, color: '#e0d8c0',
+      wordWrap: { width: panelW - 48 }, align: 'center', lineSpacing: 6
+    }).setOrigin(0.5, 0);
+    container.add(bodyText);
+
+    const closeBtn = this.add.text(0, panelH / 2 - 36, closeLabel, {
+      fontFamily: 'monospace', fontSize: 18, color: '#ffffff',
+      backgroundColor: '#3d4a6a', padding: { x: 22, y: 12 }
+    }).setOrigin(0.5, 0.5).setInteractive({ useHandCursor: true });
+    container.add(closeBtn);
+
+    const escHandler = () => closeAll();
+    const enterHandler = () => closeAll();
+    const spaceHandler = () => closeAll();
+    const closeAll = () => {
+      this.input.keyboard.off('keydown-ESC', escHandler);
+      this.input.keyboard.off('keydown-ENTER', enterHandler);
+      this.input.keyboard.off('keydown-SPACE', spaceHandler);
+      container.destroy(true);
+      if (typeof onClose === 'function') {
+        try { onClose(); } catch (_) {}
+      }
+    };
+    closeBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      closeAll();
+    });
+    this.input.keyboard.on('keydown-ESC', escHandler);
+    this.input.keyboard.on('keydown-ENTER', enterHandler);
+    this.input.keyboard.on('keydown-SPACE', spaceHandler);
+
+    // Mobile-safe (project memory: phaser_scrollfactor_dialogs).
+    this._ktPropagateScrollFactor(container, 0, 0);
   }
 }

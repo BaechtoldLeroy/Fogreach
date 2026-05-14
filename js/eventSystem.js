@@ -38,6 +38,10 @@
       'event.lore.text.4': '...die Tiere wussten zuerst, dass etwas in den Tiefen wachte...',
       'event.lore.text.5': '...verbrannte Seiten, doch ein Wort bleibt: "Dämmerstein"...',
       'event.lore.text.6': '...wir gruben tiefer als jede Karte erlaubte. Möge man uns vergeben...',
+      // Feature 051: Akt-1-themed fragments — political subtext anchors
+      'event.lore.text.fragment_lost_history': '...die Stadtchronik nennt 1411 als Gründungsjahr. Aber die Steine an den Mauern tragen Symbole, die niemand mehr lesen darf — und sie sind älter als die Stadt selbst behauptet zu sein...',
+      'event.lore.text.fragment_council_pact': '...drei Siegel, eine Unterschrift. Magistrat, Klerus, Garde — sie streiten in den Sälen, aber unter den Sälen treffen sie eine ältere Macht. Die Schriftrolle nennt sie nur "den, der die Erinnerung frisst"...',
+      'event.lore.text.fragment_personal_amnesia': '...mein Name steht in zwei Listen: einmal als Archivschmied, einmal als "zur Reinigung freigegeben". Der Unfall an der Forge war geplant. Was ich nicht mehr weiß, wollte jemand begraben sehen...',
       // Environmental hazard
       'event.hazard.name': 'Einsturzgefahr',
       'event.hazard.toast_spawn': '🪨 Vorsicht — Decke stürzt ein! AUSWEICHEN!',
@@ -117,6 +121,9 @@
       'event.lore.text.4': '...the animals knew first that something waited in the depths...',
       'event.lore.text.5': '...burned pages, but one word remains: "Twilightstone"...',
       'event.lore.text.6': '...we dug deeper than any map allowed. May we be forgiven...',
+      'event.lore.text.fragment_lost_history': '...the city chronicle names 1411 as the founding year. But the stones in the walls carry symbols no one is allowed to read anymore — and they are older than the city itself claims to be...',
+      'event.lore.text.fragment_council_pact': '...three seals, one signature. Magistrate, Clergy, Guard — they quarrel in the halls, but beneath the halls they meet an older power. The scroll names it only as "the one who eats memory"...',
+      'event.lore.text.fragment_personal_amnesia': '...my name appears in two lists: once as Archivesmith, once as "cleared for purification". The Forge accident was planned. What I no longer remember, someone wanted buried...',
       'event.hazard.name': 'Cave-in Risk',
       'event.hazard.toast_spawn': '🪨 Watch out — ceiling collapsing! DODGE!',
       'event.hazard.toast_hit': '🪨 Cave-in! -1 HP',
@@ -1127,14 +1134,23 @@
       });
     }
 
-    // Lore texts pool — keys resolved at display time
+    // Lore texts pool — keys resolved at display time.
+    // Feature 051: three Akt-1-themed fragments added at indices 7-9 carrying
+    // the central political subtext (history manipulated / Council pact /
+    // protagonist amnesia not random). They share the same pool + drop
+    // chance as the existing flavor fragments — over the 1.5-2h Akt-1
+    // playthrough the player will encounter ~3-5 fragment events, statistically
+    // hitting at least one of these three.
     var loreKeys = [
       'event.lore.text.1',
       'event.lore.text.2',
       'event.lore.text.3',
       'event.lore.text.4',
       'event.lore.text.5',
-      'event.lore.text.6'
+      'event.lore.text.6',
+      'event.lore.text.fragment_lost_history',
+      'event.lore.text.fragment_council_pact',
+      'event.lore.text.fragment_personal_amnesia'
     ];
     var chosen = T(loreKeys[Math.floor(Math.random() * loreKeys.length)]);
 

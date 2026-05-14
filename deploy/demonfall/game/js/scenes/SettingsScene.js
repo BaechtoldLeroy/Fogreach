@@ -30,6 +30,8 @@
       'settings.debug.no_fow': 'Kein Nebel',
       'settings.debug.add_iron': '+100 Eisenbrocken',
       'settings.debug.toast_added_iron': '+100 Eisenbrocken',
+      'settings.section.gameplay': 'GAMEPLAY',
+      'settings.gameplay.skip_tutorial': 'Tutorial überspringen',
       'settings.close': 'Schliessen [ESC]',
       'settings.toggle.on': 'AN',
       'settings.toggle.off': 'AUS'
@@ -60,6 +62,8 @@
       'settings.debug.no_fow': 'No Fog',
       'settings.debug.add_iron': '+100 Iron Chunks',
       'settings.debug.toast_added_iron': '+100 Iron Chunks',
+      'settings.section.gameplay': 'GAMEPLAY',
+      'settings.gameplay.skip_tutorial': 'Skip Tutorial',
       'settings.close': 'Close [ESC]',
       'settings.toggle.on': 'ON',
       'settings.toggle.off': 'OFF'
@@ -84,6 +88,10 @@
       autostart: false,
       noFow: false
     },
+    // Feature 051: gameplay-flow toggles
+    gameplay: {
+      skipTutorial: false // returning-donor toggle — bypasses 044 tutorial steps
+    },
     mobile: {
       deadZone: 0.15,
       haptics: true,
@@ -100,6 +108,7 @@
       const parsed = JSON.parse(raw);
       return Object.assign({}, DEFAULTS, parsed, {
         debug: Object.assign({}, DEFAULTS.debug, parsed.debug || {}),
+        gameplay: Object.assign({}, DEFAULTS.gameplay, parsed.gameplay || {}),
         mobile: Object.assign({}, DEFAULTS.mobile, parsed.mobile || {})
       });
     } catch (err) {
@@ -126,6 +135,8 @@
     }
     window.__DEBUG_NO_FOW__ = !!settings.debug.noFow;
     window.__REDUCED_EFFECTS__ = !!settings.reducedEffects;
+    // Feature 051: surface skip-tutorial flag for tutorialSystem.maybeAutoSkip.
+    window.__SKIP_TUTORIAL__ = !!(settings.gameplay && settings.gameplay.skipTutorial);
     window.__MOVEMENT_WEIGHT__ = typeof settings.movementWeight === 'number'
       ? Math.max(0, Math.min(1, settings.movementWeight))
       : 0;
@@ -231,6 +242,10 @@
       }
 
       this._sectionLabel(RIGHT_LBL, rightY, T('settings.section.tutorial')); rightY += 18;
+      // Feature 051 FR-05: persistent skip-tutorial toggle. Applies on the
+      // NEXT New Game (existing Skip button below closes the active flow
+      // mid-run; this toggle is the returning-donor "don't show again").
+      this._toggleRow(RIGHT_C, rightY, T('settings.gameplay.skip_tutorial'), 'gameplay.skipTutorial', COL_W); rightY += 24;
       const skipBtn = this._tutorialButton(RIGHT_C, rightY, T('tutorial.settings.skip_label'), () => {
         if (!(window.TutorialSystem && window.TutorialSystem.isActive && window.TutorialSystem.isActive())) return;
         const ok = window.confirm(T('tutorial.skip.confirm'));
