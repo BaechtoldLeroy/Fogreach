@@ -42,13 +42,13 @@ console.log(KnowledgeTree.getFragments());  // → 3
 Reload the page — fragments and ranks must persist.
 
 **Included subtasks**:
-- [ ] **T001** Create `js/knowledgeTree.js` IIFE skeleton + register all 54 i18n keys (DE/EN: 7 chrome keys × 2 + 10 nodes × 2 keys × 2 langs)
-- [ ] **T002** Define the static catalog (10 nodes with stable IDs, maxRank, perRank fields)
-- [ ] **T003** Implement state storage + `_applyRanksToBuffs()` that mutates `window.knowledgeTreeBuffs`
-- [ ] **T004** Implement localStorage persistence (`demonfall.knowledgeTree.v1` schema, version validation, clamp+refund on bad ranks)
-- [ ] **T005** Implement public API (`getFragments`/`getRank`/`getMaxRank`/`getCatalog`/`getState`/`addFragments`/`invest`/`respec`)
-- [ ] **T006** Implement subscribers (`onChange` + unsubscribe + throwing-subscriber isolation) + `_configureForTest` seam
-- [ ] **T007** Add `<script src="js/knowledgeTree.js"></script>` in `index.html` after `js/i18n.js` and before `js/scenes/HubSceneV2.js`
+- [x] **T001** Create `js/knowledgeTree.js` IIFE skeleton + register all 54 i18n keys (DE/EN: 7 chrome keys × 2 + 10 nodes × 2 keys × 2 langs)
+- [x] **T002** Define the static catalog (10 nodes with stable IDs, maxRank, perRank fields)
+- [x] **T003** Implement state storage + `_applyRanksToBuffs()` that mutates `window.knowledgeTreeBuffs`
+- [x] **T004** Implement localStorage persistence (`demonfall.knowledgeTree.v1` schema, version validation, clamp+refund on bad ranks)
+- [x] **T005** Implement public API (`getFragments`/`getRank`/`getMaxRank`/`getCatalog`/`getState`/`addFragments`/`invest`/`respec`)
+- [x] **T006** Implement subscribers (`onChange` + unsubscribe + throwing-subscriber isolation) + `_configureForTest` seam
+- [x] **T007** Add `<script src="js/knowledgeTree.js"></script>` in `index.html` after `js/i18n.js` and before `js/scenes/HubSceneV2.js`
 
 **Owned files**: `js/knowledgeTree.js`, `index.html`
 
@@ -73,10 +73,10 @@ Reload the page — fragments and ranks must persist.
 **Independent test**: Run `node tools/runTests.js` — baseline of 188 tests grows to include the new ones, all green.
 
 **Included subtasks**:
-- [ ] **T008** Set up `tests/knowledgeTree.test.js` with a fake `storage` implementation and `_configureForTest` wiring; verify clean default state at module init
-- [ ] **T009** Tests for the core API: `addFragments` (positive, zero, negative), `invest` (success, no fragments, cap reached, unknown node), `respec` (refund + reset)
-- [ ] **T010** Tests for persistence: round-trip save/load, version mismatch handling, clamp-rank-and-refund, drop-unknown-node-and-refund
-- [ ] **T011** Tests for subscribers: notify on state change, unsubscribe stops notifications, a throwing subscriber does NOT prevent others from firing (NFR-04)
+- [x] **T008** Set up `tests/knowledgeTree.test.js` with a fake `storage` implementation and `_configureForTest` wiring; verify clean default state at module init
+- [x] **T009** Tests for the core API: `addFragments` (positive, zero, negative), `invest` (success, no fragments, cap reached, unknown node), `respec` (refund + reset)
+- [x] **T010** Tests for persistence: round-trip save/load, version mismatch handling, clamp-rank-and-refund, drop-unknown-node-and-refund
+- [x] **T011** Tests for subscribers: notify on state change, unsubscribe stops notifications, a throwing subscriber does NOT prevent others from firing (NFR-04)
 
 **Owned files**: `tests/knowledgeTree.test.js`
 
@@ -101,11 +101,11 @@ Reload the page — fragments and ranks must persist.
 **Independent test**: With the module loaded, set `window.knowledgeTreeBuffs.damageMult = 1.5` in DevTools, call `recalcDerived(0, 0)`, and verify the HUD weapon-damage value increases. Then walk over a lore fragment and verify `KnowledgeTree.getFragments()` increments.
 
 **Included subtasks**:
-- [ ] **T012** `js/inventory.js`: add §3.9 buff layer in `recalcDerived()` that reads `damageMult`/`armorAdd`/`speedMult`/`maxHpAdd` from `window.knowledgeTreeBuffs` and applies them after §3.8 (printingBuffs). Add `maxHpAdd` into `newMaxHealth` before clamp.
-- [ ] **T013** `js/main.js`: apply `critAdd` to `playerCritChance` initialization (line ~806) and wrap `addXP` to multiply incoming amount by `xpMult`
-- [ ] **T014** `js/player.js`: extend `getLootAbilityCooldownReduction` to add `knowledgeTreeBuffs.cdrAll` to the total cooldown reduction fraction
-- [ ] **T015** `js/lootSystem.js`: multiply gold drop value by `goldMult`, scale rare/legendary tier weights by `magicFindMult`, add `pickupAddRange` to the pickup overlap radius
-- [ ] **T016** `js/eventSystem.js`: add `window.KnowledgeTree?.addFragments(1)` call in the lore-fragment overlap callback at line ~1132 (after `activeLore.picked = true;`, before `showLoreDialog`)
+- [x] **T012** `js/inventory.js`: add §3.9 buff layer in `recalcDerived()` that reads `damageMult`/`armorAdd`/`speedMult`/`maxHpAdd` from `window.knowledgeTreeBuffs` and applies them after §3.8 (printingBuffs). Add `maxHpAdd` into `newMaxHealth` before clamp.
+- [x] **T013** `js/main.js`: apply `critAdd` to `playerCritChance` initialization (line ~806) and wrap `addXP` to multiply incoming amount by `xpMult`
+- [x] **T014** `js/player.js`: extend `getLootAbilityCooldownReduction` to add `knowledgeTreeBuffs.cdrAll` to the total cooldown reduction fraction
+- [x] **T015** `js/lootSystem.js`: multiply gold drop value by `goldMult`, scale rare/legendary tier weights by `magicFindMult`, add `pickupAddRange` to the pickup overlap radius
+- [x] **T016** `js/eventSystem.js`: add `window.KnowledgeTree?.addFragments(1)` call in the lore-fragment overlap callback at line ~1132 (after `activeLore.picked = true;`, before `showLoreDialog`)
 
 **Owned files**: `js/inventory.js`, `js/main.js`, `js/player.js`, `js/lootSystem.js`, `js/eventSystem.js`
 
@@ -131,13 +131,13 @@ Reload the page — fragments and ranks must persist.
 **Independent test**: Walk to Mara, press the dialog button that was "Skills lernen" (now "Wissen"). Modal opens. Click a node's `+` button. Fragment count decreases, rank text updates. Close with ESC. Re-open. State persists.
 
 **Included subtasks**:
-- [ ] **T017** Replace the body of `_showSkillTreeUI` in `js/scenes/HubSceneV2.js` (line ~1829) with `_showKnowledgeTreeUI`: same modal shell (overlay rectangle + container + header + body + footer). Keep depth 2000/2001, same panel size (920×460).
-- [ ] **T018** Render a 2-column × 5-row grid of node cards. Each card shows: label (DE/EN), description (with per-rank effect interpolated), current `rank/maxRank`, an Invest `+` button (enabled when `fragments >= 1 && rank < maxRank`), and a disabled state with hint when conditions fail.
-- [ ] **T019** Wire each Invest button's `pointerdown` → `KnowledgeTree.invest(nodeId)`. Subscribe to `KnowledgeTree.onChange(cb)` on modal open; cb refreshes fragment-counter text and re-evaluates every card's button state.
-- [ ] **T020** Add a Respec button in the footer that opens a confirmation dialog (reuse the existing two-button confirmation pattern from `HubSceneV2`). On confirm, call `KnowledgeTree.respec()`. On cancel, close confirmation only.
-- [ ] **T021** Rename the i18n key from `hub.skills.learn` to `hub.knowledge.learn` (DE: "Wissen lernen", EN: "Knowledge Tree"). Re-route the K-key handler (line ~1195) and the Mara dialog button (line ~1081) to call `_showKnowledgeTreeUI` instead of `_showSkillTreeUI`.
-- [ ] **T022** Cleanup on close: ESC + Close button both unsubscribe the `onChange` listener, destroy the container, and clear `this._dialogOpen` so a second open works. No input lock leaks (FR-12).
-- [ ] **T023** Manual playtest end-to-end (per `quickstart.md` §3): earn 1 fragment in dungeon → return to hub → invest in damage → notice HUD change → respec → verify refund. Capture browser console — zero errors (SC-06).
+- [x] **T017** Replace the body of `_showSkillTreeUI` in `js/scenes/HubSceneV2.js` (line ~1829) with `_showKnowledgeTreeUI`: same modal shell (overlay rectangle + container + header + body + footer). Keep depth 2000/2001, same panel size (920×460).
+- [x] **T018** Render a 2-column × 5-row grid of node cards. Each card shows: label (DE/EN), description (with per-rank effect interpolated), current `rank/maxRank`, an Invest `+` button (enabled when `fragments >= 1 && rank < maxRank`), and a disabled state with hint when conditions fail.
+- [x] **T019** Wire each Invest button's `pointerdown` → `KnowledgeTree.invest(nodeId)`. Subscribe to `KnowledgeTree.onChange(cb)` on modal open; cb refreshes fragment-counter text and re-evaluates every card's button state.
+- [x] **T020** Add a Respec button in the footer that opens a confirmation dialog (reuse the existing two-button confirmation pattern from `HubSceneV2`). On confirm, call `KnowledgeTree.respec()`. On cancel, close confirmation only.
+- [x] **T021** Rename the i18n key from `hub.skills.learn` to `hub.knowledge.learn` (DE: "Wissen lernen", EN: "Knowledge Tree"). Re-route the K-key handler (line ~1195) and the Mara dialog button (line ~1081) to call `_showKnowledgeTreeUI` instead of `_showSkillTreeUI`.
+- [x] **T022** Cleanup on close: ESC + Close button both unsubscribe the `onChange` listener, destroy the container, and clear `this._dialogOpen` so a second open works. No input lock leaks (FR-12).
+- [x] **T023** Manual playtest end-to-end (per `quickstart.md` §3): earn 1 fragment in dungeon → return to hub → invest in damage → notice HUD change → respec → verify refund. Capture browser console — zero errors (SC-06).
 
 **Owned files**: `js/scenes/HubSceneV2.js`
 
@@ -188,11 +188,11 @@ WP02 / WP03 / WP04 can run concurrently after WP01 lands. They touch disjoint fi
 ## Definition of done (feature-level)
 
 All of:
-- [ ] WP01, WP02, WP03, WP04 merged into `main`
-- [ ] `node tools/runTests.js` green, baseline + new tests pass
-- [ ] Manual playtest: earn → invest → respec → re-invest cycle completes with zero console errors (SC-06)
-- [ ] All visible strings present in DE and EN (SC-04)
-- [ ] `recalcDerived` profile shows ≤ +0.5 ms cost (NFR-01)
+- [x] WP01, WP02, WP03, WP04 merged into `main`
+- [x] `node tools/runTests.js` green, baseline + new tests pass
+- [x] Manual playtest: earn → invest → respec → re-invest cycle completes with zero console errors (SC-06)
+- [x] All visible strings present in DE and EN (SC-04)
+- [x] `recalcDerived` profile shows ≤ +0.5 ms cost (NFR-01)
 
 ## Branch strategy
 
