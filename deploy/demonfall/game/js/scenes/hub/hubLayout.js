@@ -177,7 +177,9 @@ window.HUB_HITBOXES = {
       name: 'Hochpriester der Ordnung',
       x: 380, y: 540,
       texture: 'klerus',
-      scale: 0.10,
+      // Source resized 1536→768 wide for crispness; scale 0.20 keeps the
+      // ~102px display height that 0.10 produced from the original.
+      scale: 0.20,
       visibleFromAct: 'auftrag',
       lines: [
         'Die Ordnung des Kettenrats ist heilig. Wer sie befragt, befragt das Licht selbst.',
@@ -190,7 +192,9 @@ window.HUB_HITBOXES = {
       name: 'Wachtmeister der Garde',
       x: 580, y: 380,
       texture: 'garde',
-      scale: 0.10,
+      // 90% of klerus (0.20) — guard sprite looked slightly oversized
+      // relative to the priest at matching scale.
+      scale: 0.18,
       visibleFromAct: 'auftrag',
       lines: [
         'Die Patrouillen wachsen jeden Monat. So muss es sein — die Stadt ist unruhig.',
