@@ -624,19 +624,43 @@ function enterRoom(scene, roomId) {
     }
 
     // === Legacy / authored-template path (also fallback for procedural) ====
+    // Remember the door-derived (sx, sy) before any push so we can fall back
+    // to it if pushing dumps the stair into walls (Issue: Treasure_Small N
+    // entrance, where spawn + door coincide and the random push lands in a
+    // corner the room has no margin for).
+    const originalSx = sx, originalSy = sy;
     if (!isProceduralRoom) {
-      // If stair is too close to player, push it away — but clamp to room bounds
+      // If stair is too close to player, push it away. Use the door's `dir`
+      // vector (away from the entrance wall) so the stair stays on the axis
+      // the room was designed for — not a random direction that can land in
+      // small rooms' corners. Random direction was the Treasure_Small bug.
       if (playerSpawnX !== null) {
         const dpx = sx - playerSpawnX;
         const dpy = sy - playerSpawnY;
         if (dpx * dpx + dpy * dpy < MIN_STAIR_DIST_SQ) {
-          const dist = Math.sqrt(dpx * dpx + dpy * dpy);
-          // If stair is basically on player, pick a random direction
-          const nx = dist > 1 ? dpx / dist : (Math.random() < 0.5 ? 1 : -1);
-          const ny = dist > 1 ? dpy / dist : (Math.random() < 0.5 ? 1 : -1);
-          let newSx = playerSpawnX + nx * MIN_STAIR_DISTANCE;
-          let newSy = playerSpawnY + ny * MIN_STAIR_DISTANCE;
-          // Clamp to room bounds with a small margin
+          // Choose push vector based on the door's compass direction.
+          // The dir tells us which wall the entrance is on; we push INTO the
+          // room (opposite the wall). For doors with no dir, fall back to the
+          // player-to-stair vector or random if they coincide.
+          let nx, ny;
+          if (dir === 'N' || dir === 'n')      { nx = 0;  ny = 1;  }
+          else if (dir === 'S' || dir === 's') { nx = 0;  ny = -1; }
+          else if (dir === 'W' || dir === 'w') { nx = 1;  ny = 0;  }
+          else if (dir === 'E' || dir === 'e') { nx = -1; ny = 0;  }
+          else {
+            const dist = Math.sqrt(dpx * dpx + dpy * dpy);
+            nx = dist > 1 ? dpx / dist : (Math.random() < 0.5 ? 1 : -1);
+            ny = dist > 1 ? dpy / dist : (Math.random() < 0.5 ? 1 : -1);
+          }
+          // Use a push distance bounded by the room's smaller dimension so we
+          // don't shove the stair past the opposite wall in tight rooms like
+          // Treasure_Small (640x512 — full 280 px push from a centered spawn
+          // lands inside the perimeter).
+          const roomMin = Math.min(builtWidth, builtHeight);
+          const maxPush = Math.max(96, roomMin * 0.35);
+          const pushDist = Math.min(MIN_STAIR_DISTANCE, maxPush);
+          let newSx = playerSpawnX + nx * pushDist;
+          let newSy = playerSpawnY + ny * pushDist;
           newSx = Math.max(50, Math.min(builtWidth - 50, newSx));
           newSy = Math.max(50, Math.min(builtHeight - 50, newSy));
           sx = newSx; sy = newSy;
@@ -698,7 +722,24 @@ function enterRoom(scene, roomId) {
         }
       }
 
-      // 2) If every nearby position is blocked, fall back to (sx, sy) and
+      // 2a) Before destroying obstacles at the pushed position, try the
+      //     original door-derived (sx, sy) — the room designer placed the
+      //     entrance there for a reason and it usually sits on floor right
+      //     next to the wall opening. This salvages small authored rooms
+      //     (Treasure_Small) where the push lands in a corner with no clear
+      //     spot for the nudge to find.
+      if (!foundClear && (originalSx !== sx || originalSy !== sy)) {
+        for (const [dx, dy] of NUDGE_OFFSETS) {
+          const tx = originalSx + dx, ty = originalSy + dy;
+          if (!obstacleAt(tx, ty)) {
+            placedX = tx;
+            placedY = ty;
+            foundClear = true;
+            break;
+          }
+        }
+      }
+      // 2b) If every nearby position is blocked, fall back to (sx, sy) and
       //    forcibly remove any obstacles that overlap it. The stair MUST
       //    exist near the door so the player can reach the next room.
       if (!foundClear) {

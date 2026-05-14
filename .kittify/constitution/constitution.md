@@ -211,8 +211,12 @@ No review required. Merge when playtest passes and no console errors.
 ### Governance Config
 ```yaml
 mission: software-dev
-selected_paradigms: [clean-code, minimal-tooling, modular-scenes]
-selected_directives: [CLEAN_CODE, MINIMAL_TOOLING, MODULAR_SCENES]
+# Formal doctrine paradigms — must be names present in doctrine/paradigms/.
+# Project-specific principles (clean code, minimal tooling, modular scenes)
+# live as plain-text guidance in the "Code Style" section above; they are
+# values, not formal paradigms the spec-kitty resolver can load.
+selected_paradigms: [test-first]
+selected_directives: [TEST_FIRST]
 available_tools: [git, spec-kitty, node, npm, phaser]
 template_set: software-dev-default
 ```

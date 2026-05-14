@@ -2,8 +2,8 @@
 # Run 'spec-kitty constitution sync' to regenerate.
 
 schema_version: 1.0.0
-extracted_at: '2026-05-14T09:55:14.580978+00:00'
-constitution_hash: sha256:0fe25ca0ad69313b9a84686624de714f7f847c2ffcda4ebeed06953b06d252f5
+extracted_at: '2026-05-14T14:24:32.739811+00:00'
+constitution_hash: sha256:38d0728522a00c403d02e594770feceda19ed61a253cda305e9d081ca3388894
 source_path: .kittify/constitution/constitution.md
 extraction_mode: hybrid
 sections_parsed:

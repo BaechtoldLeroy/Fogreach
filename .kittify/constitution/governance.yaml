@@ -21,13 +21,9 @@ branch_strategy:
   rules: []
 doctrine:
   selected_paradigms:
-  - clean-code
-  - minimal-tooling
-  - modular-scenes
+  - test-first
   selected_directives:
-  - CLEAN_CODE
-  - MINIMAL_TOOLING
-  - MODULAR_SCENES
+  - TEST_FIRST
   available_tools:
   - git
   - spec-kitty
