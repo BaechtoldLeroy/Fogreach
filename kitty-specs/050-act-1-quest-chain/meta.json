@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-05-14T15:23:00.522326+00:00",
+  "feature_number": "050",
+  "feature_slug": "050-act-1-quest-chain",
+  "friendly_name": "act 1 quest chain",
+  "mission": "software-dev",
+  "slug": "050-act-1-quest-chain",
+  "target_branch": "main"
+}
