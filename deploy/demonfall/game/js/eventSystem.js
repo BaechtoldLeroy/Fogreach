@@ -76,7 +76,7 @@
       'event.fountain.toast_spawn': 'Ein leuchtender Brunnen erscheint...',
       'event.fountain.object_label': 'Brunnen',
       'event.fountain.choice_drink': 'Trinken',
-      'event.fountain.choice_offer': 'Opfern (-25% LP)',
+      'event.fountain.choice_offer': 'Opfern (-25% Max-LP für den Run)',
       'event.fountain.choice_offer_gold': 'Opfern (-50 Gold)',
       'event.fountain.choice_ignore': 'Ignorieren',
       'event.fountain.outcome.heal':       'Reines Wasser! Volle Heilung.',
@@ -151,7 +151,7 @@
       'event.fountain.toast_spawn': 'A glowing fountain appears...',
       'event.fountain.object_label': 'Fountain',
       'event.fountain.choice_drink': 'Drink',
-      'event.fountain.choice_offer': 'Sacrifice (-25% HP)',
+      'event.fountain.choice_offer': 'Sacrifice (-25% max HP for the run)',
       'event.fountain.choice_offer_gold': 'Sacrifice (-50 gold)',
       'event.fountain.choice_ignore': 'Ignore',
       'event.fountain.outcome.heal':       'Pure water! Fully healed.',
@@ -745,11 +745,13 @@
       spawnEventObject(scene, 'evt_fountain', 0x2266aa, 0x44aaff, T('event.fountain.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
 
-        // Decide which "Opfern" cost the player can pay. Prefer HP cost
-        // (more impactful), fall back to gold, hide if neither possible.
+        // Decide which "Opfern" cost the player can pay. Prefer Max-HP cost
+        // (run-scoped, more impactful), fall back to gold, hide if neither
+        // possible. The Max-HP path requires player Max-HP > 4 so the 25%
+        // cut doesn't reduce max to zero on a level-1 character.
         var curHp = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
         var maxHp = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
-        var canPayHp = curHp > Math.max(1, Math.round(maxHp * 0.25)); // need to keep >=1 HP after paying 25% of max
+        var canPayHp = maxHp > 4; // max 5+ → 25% cut leaves >= 4 max-HP for the run
         var gold = (window.LootSystem && typeof window.LootSystem.getGold === 'function') ? window.LootSystem.getGold() : 0;
         var canPayGold = gold >= 50;
 
@@ -767,12 +769,23 @@
           choices.push({
             label: T('event.fountain.choice_offer'),
             callback: function () {
-              // Pay HP cost = 25% of MAX HP (so wounded players don't get a
-              // discount). Subtract from current HP, clamped to >= 1.
+              // Pay cost = 25% of MAX HP, RUN-SCOPED via brunnenBuffs.maxHpAdd
+              // (cleared on hub return — same registry as the Brunnen rework
+              // debuff path + the cursed-chest fix). Mechanic mirrors the
+              // canonical run-scoped max-HP debuff pattern: subtract via
+              // adjustStanding equivalent, recalcDerived, then clamp current
+              // HP to the new max so an existing wound is preserved.
+              if (!window.brunnenBuffs) {
+                window.brunnenBuffs = { damageMult: 1, speedMult: 1, armorAdd: 0, maxHpAdd: 0 };
+              }
               var maxHpNow = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
               var cost = Math.max(1, Math.round(maxHpNow * 0.25));
+              var origCurrent = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
+              window.brunnenBuffs.maxHpAdd -= cost;
+              if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+              var newMax = Math.max(1, window.playerMaxHealth || 1);
               if (typeof window.setPlayerHealth === 'function') {
-                window.setPlayerHealth(Math.max(1, window.playerHealth - cost), true);
+                window.setPlayerHealth(Math.min(origCurrent, newMax), true);
               }
               var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.offer);
               _applyFountainOutcome(scene, outcome);

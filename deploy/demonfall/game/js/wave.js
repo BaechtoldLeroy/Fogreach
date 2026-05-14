@@ -38,8 +38,19 @@ function startNextWave(noIncrement) {
     saveGame(this);
   }
 
-  // Boss every 10th wave
-  if (currentWave % 10 === 0) {
+  // Story-aware boss gating: in Akt 1 (currentActIndex 0 = 'auftrag'),
+  // every 10th wave gets a MINI-BOSS instead of the full boss to keep
+  // the difficulty curve readable for the donor-demo pacing target.
+  // Full bosses unlock from Akt 2 (currentActIndex >= 1 = 'treuer_diener')
+  // onwards. The collusion-reveal in Q6 advances storySystem to act
+  // index 2, which is when the narrative says "the catacombs open" and
+  // bosses become thematically appropriate.
+  const _storyAct = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+    ? window.storySystem.getCurrentActIndex() : 0;
+  const bossesUnlocked = _storyAct >= 1;
+
+  // Boss every 10th wave — but only once Akt 2 has opened.
+  if (currentWave % 10 === 0 && bossesUnlocked) {
     bossActive = true;
     spawnedEnemiesInWave = 0;    // no regular spawns this wave
     waveInProgress = true;
@@ -50,7 +61,12 @@ function startNextWave(noIncrement) {
   }
 
   waveInProgress = true;
-  const isMiniBossWave = (currentWave % 5 === 0 && currentWave % 10 !== 0);
+  // Mini-boss waves: any 5th wave when no full boss fired. Includes the
+  // 10th-wave slot when bosses aren't unlocked yet — keeps the pacing
+  // beat the player expects ("something bigger every 5 waves") without
+  // pulling in the harder boss encounter too early.
+  const isMiniBossWave = (currentWave % 5 === 0)
+    && !(currentWave % 10 === 0 && bossesUnlocked);
   waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
   spawnedEnemiesInWave = 0;
   window.spawnedEnemiesInWave = 0;
@@ -70,8 +86,9 @@ function startNextWave(noIncrement) {
           spawnedEnemiesInWave = spawned;
         }
 
-        // Mini-boss every 5th wave (but not on 10th/20th/etc. boss waves)
-        if (currentWave % 5 === 0 && currentWave % 10 !== 0 && typeof spawnMiniBoss === 'function') {
+        // Mini-boss every 5th wave (also takes over the 10th-wave slot
+        // when bosses are gated by storyAct < 1 — see isMiniBossWave above).
+        if (isMiniBossWave && typeof spawnMiniBoss === 'function') {
           const miniBoss = spawnMiniBoss.call(scene, 0, 0, 0);
           if (miniBoss) {
             spawned += 1;
