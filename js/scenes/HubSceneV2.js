@@ -1137,6 +1137,15 @@ class HubSceneV2 extends Phaser.Scene {
 
     this._dialogContainer = container;
 
+    // CRITICAL (mobile + scrolled hub camera): force scrollFactor=0 all the
+    // way down the dialog tree. Phaser's Container.setScrollFactor only
+    // propagates one level; without recursive propagation the choice
+    // buttons keep scrollFactor=1, their hit-areas drift with the hub
+    // camera while the visible buttons stay screen-locked, and tap targets
+    // miss entirely on mobile (where a small camera offset is normal).
+    // Same root cause + helper as the KT modal fix (commit c69abfe).
+    this._ktPropagateScrollFactor(container, 0, 0);
+
     const closeDialog = () => this._closeDialog(keyClosers);
 
     this.time.delayedCall(0, () => {
@@ -1845,6 +1854,10 @@ class HubSceneV2 extends Phaser.Scene {
     };
 
     this._dialogContainer = container;
+
+    // Same scrollFactor-propagation fix as _showDialoguePages (commit c69abfe).
+    // Mobile + scrolled hub camera otherwise miss every button tap.
+    this._ktPropagateScrollFactor(container, 0, 0);
   }
 
   // Feature 047 - Knowledge Tree MVP. Replaces the legacy _showSkillTreeUI
