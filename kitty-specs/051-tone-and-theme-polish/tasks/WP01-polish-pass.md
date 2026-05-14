@@ -24,6 +24,7 @@ branch_strategy: Planning artifacts for this feature were generated on main. Dur
 base_branch: main
 base_commit: 5290942ccc83e1300983e19e915fa7d1925d2d04
 created_at: '2026-05-14T18:38:00Z'
+shell_pid: "0"
 subtasks:
 - T001
 - T002
