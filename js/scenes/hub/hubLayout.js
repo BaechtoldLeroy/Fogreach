@@ -148,10 +148,14 @@ window.HUB_HITBOXES = {
       x: 180, y: 480,
       texture: 'elara_right0',
       scale: 0.16,
-      // Feature 050 Vertical Slice: Elara is the Widerstand quest-giver
-      // for Q5 (widerstand_proof) — must be visible from game start.
-      // (Was gated to 'erste_risse' / Akt 3 from the pre-050 narrative.)
-      visibleFromAct: 'auftrag',
+      // Elara is the "missing daughter" of Harren's Q1
+      // (harren_daughter_investigation). She only appears in the hub AFTER
+      // the player has read her journal fragment and learned she fled
+      // voluntarily — that's when Q1's dialogueComplete promises the player
+      // "you will be approached from four sides now". She then offers Q5
+      // (widerstand_proof). Showing her before Q1 contradicts Harren's
+      // request to find her.
+      visibleAfterQuest: 'harren_daughter_investigation',
       lines: [
         'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
         'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.'

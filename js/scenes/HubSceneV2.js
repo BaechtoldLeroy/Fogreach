@@ -277,7 +277,10 @@ class HubSceneV2 extends Phaser.Scene {
     // Subscribe to quest state changes so the indicator above each NPC updates
     // exactly when accept/complete/abandon happens (instead of polling every frame).
     if (window.questSystem && typeof window.questSystem.onQuestUpdate === 'function') {
-      this._questUpdateHandler = () => this._refreshQuestIndicators();
+      this._questUpdateHandler = () => {
+        this._refreshQuestIndicators();
+        this._refreshNpcVisibility();
+      };
       window.questSystem.onQuestUpdate(this._questUpdateHandler);
     }
     // Initial render so quest indicators show the correct state at scene entry
@@ -507,6 +510,12 @@ class HubSceneV2 extends Phaser.Scene {
         if (requiredIndex >= 0 && currentActIndex < requiredIndex) {
           isVisible = false;
         }
+      }
+      // Quest-gated visibility (e.g. Elara only appears AFTER Q1 reveals she fled)
+      if (isVisible && npc.visibleAfterQuest && window.questSystem) {
+        const completed = window.questSystem.getCompletedQuests();
+        const isCompleted = Array.isArray(completed) && completed.some(q => q && q.id === npc.visibleAfterQuest);
+        if (!isCompleted) isVisible = false;
       }
 
       // Generate placeholder texture for NPCs without sprites (larger, more visible)
@@ -787,6 +796,38 @@ class HubSceneV2 extends Phaser.Scene {
 
       // Keep position above sprite
       questIndicator.x = sprite.x;
+    });
+  }
+
+  // Re-evaluate `visibleAfterQuest` gates for every NPC. Called on each
+  // quest-state change so that NPCs unlocked by a just-completed quest
+  // (e.g. Elara after Q1) appear without requiring a hub reload.
+  _refreshNpcVisibility() {
+    if (!this.npcs) return;
+    const qs = window.questSystem;
+    if (!qs || typeof qs.getCompletedQuests !== 'function') return;
+    const completed = qs.getCompletedQuests() || [];
+    const completedIds = new Set(completed.map(q => q && q.id).filter(Boolean));
+
+    this.npcs.forEach(({ sprite, zone, nameText, questIndicator, data }) => {
+      if (!data.visibleAfterQuest) return;
+      const shouldBeVisible = completedIds.has(data.visibleAfterQuest);
+      if (!sprite) return;
+      if (shouldBeVisible && !sprite.active) {
+        sprite.setActive(true).setVisible(true);
+        if (zone) {
+          zone.setActive(true);
+          if (zone.body) zone.body.enable = true;
+        }
+      } else if (!shouldBeVisible && sprite.active) {
+        sprite.setActive(false).setVisible(false);
+        if (zone) {
+          zone.setActive(false);
+          if (zone.body) zone.body.enable = false;
+        }
+        if (nameText) nameText.setVisible(false);
+        if (questIndicator) questIndicator.setVisible(false);
+      }
     });
   }
 
