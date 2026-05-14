@@ -820,6 +820,13 @@ function preload() {
   // Rathauskeller background image
   this.load.image('rathauskeller_bg', 'js/roomTemplates/rathauskeller.png');
 
+  // Feature 050: Elara sprite for the in-cellar Q5 encounter (interactive
+  // NPC spawned by roomManager._maybeFireElaraCellarEncounter). Single
+  // frame is enough for the static dungeon encounter.
+  if (!this.textures.exists('elara_right0')) {
+    this.load.image('elara_right0', 'assets/npc/elara/right0.png');
+  }
+
   // nur Loot-Placeholder (wir generieren Textures im Create)
   if (!this.textures.exists('lootTexture')) {
     this.textures.generate('lootTexture', {

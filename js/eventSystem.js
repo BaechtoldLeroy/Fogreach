@@ -1509,6 +1509,7 @@
     reset: reset,
     registerEventType: registerEventType,
     showEventChoiceDialog: showEventChoiceDialog,
+    spawnEventObject: spawnEventObject,
     EVENT_TYPES: EVENT_TYPES
   };
 })();

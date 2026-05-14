@@ -230,14 +230,15 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     var activeQuests = window.questSystem.getActiveQuests();
 
     // Check for active fetch quests and spawn matching quest items.
-    // Feature 050: journal_fragment (Q1 harren_daughter_investigation) and
-    // council_document (Q5 widerstand_proof) added — each drops on the
-    // standard 10% per-kill chance while its quest is active.
+    // Feature 050: journal_fragment (Q1 harren_daughter_investigation)
+    // drops via the standard 10% per-kill chance while its quest is active.
+    // council_document (Q5 widerstand_proof) is NOT in this list — it is
+    // spawned deterministically by roomManager._maybeFireElaraCellarEncounter
+    // in a designated room, not by enemy kills.
     var questItemDefs = [
       { target: 'document',         name: _LOOT_T('loot.quest_item.QUEST_DOC'),       nameKey: 'loot.quest_item.QUEST_DOC',       key: 'QUEST_DOC',       tint: 0xffdd44 },
       { target: 'print_plate',      name: _LOOT_T('loot.quest_item.QUEST_PLATE'),     nameKey: 'loot.quest_item.QUEST_PLATE',     key: 'QUEST_PLATE',     tint: 0x88aaff },
-      { target: 'journal_fragment', name: _LOOT_T('loot.quest_item.JOURNAL_FRAGMENT'),nameKey: 'loot.quest_item.JOURNAL_FRAGMENT',key: 'JOURNAL_FRAGMENT',tint: 0xddccaa },
-      { target: 'council_document', name: _LOOT_T('loot.quest_item.COUNCIL_DOCUMENT'),nameKey: 'loot.quest_item.COUNCIL_DOCUMENT',key: 'COUNCIL_DOCUMENT',tint: 0xcc88dd }
+      { target: 'journal_fragment', name: _LOOT_T('loot.quest_item.JOURNAL_FRAGMENT'),nameKey: 'loot.quest_item.JOURNAL_FRAGMENT',key: 'JOURNAL_FRAGMENT',tint: 0xddccaa }
     ];
 
     for (var qi = 0; qi < questItemDefs.length; qi++) {

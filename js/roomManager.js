@@ -140,6 +140,9 @@ function getStoryAct(depth) {
  */
 function initDungeonRun() {
   if (window.EventSystem && window.EventSystem.reset) window.EventSystem.reset();
+  // Reroll the Elara cellar-encounter spawn targets each run so a player
+  // who abandons mid-run gets fresh distances next time.
+  _resetElaraEncounterRunState();
   // Run-summary tracker. Resets on every fresh run; deltas are computed on
   // leaveDungeonForHub. Hooks: addXP (player.js), enemy kill (player.js),
   // enterRoom (this file). Cleared from window when the summary modal
@@ -1657,33 +1660,55 @@ function updateRoomCounter(roomIndex, totalRooms) {
   window.roomProgressText = _roomLabel;
 }
 
-// Two-stage Rathauskeller Elara encounter — she stays underground for the
-// entire Akt-1 chain, so both Q5 offer and Q5 turn-in happen here, never
-// in the hub.
+// Per-run state for the Elara Q5 cellar encounter. Reset by initDungeonRun.
+//   _elaraDocSpawnTarget    — roomId where the council document will spawn
+//                             (rolled to currentRoomId + 3..5 once the player
+//                             has accepted Q5; re-rolled if the player passes
+//                             the target without picking it up).
+//   _elaraStage2SpawnTarget — roomId where Elara reappears for turn-in
+//                             (same rolling rule once Q5 is ready-to-complete).
+let _elaraDocSpawnTarget = null;
+let _elaraStage2SpawnTarget = null;
+
+function _resetElaraEncounterRunState() {
+  _elaraDocSpawnTarget = null;
+  _elaraStage2SpawnTarget = null;
+}
+
+function _rollDistance() {
+  // 3..5 inclusive
+  return 3 + Math.floor(Math.random() * 3);
+}
+
+// Three-stage Rathauskeller Elara encounter — Elara stays underground for
+// the entire Akt-1 chain. Both Q5 offer and Q5 turn-in are physical NPC
+// interactions in the dungeon (sprite + [E] prompt), never hub dialog.
 //
-// Stage 1 — Offer (fires once, after Q1 is done):
-//   conditions: Q1 completed, Q5 not yet active/completed, elaraMet flag
-//               not set, roomId >= 2 (skip the entry room).
-//   action: shows the encounter modal; Continue → setFlag('elaraMet') +
-//           acceptQuest('widerstand_proof'). Quest starts immediately.
+// State machine (driven by quest state, not local flags):
 //
-// Stage 2 — Turn-in (fires once, after the player picks up the council
-//   document in the dungeon — which sets Q5 to ready-to-complete):
-//   conditions: Q5 active and ready-to-complete (objective satisfied).
-//   action: shows the turn-in modal; Continue → completeQuest, which
-//           grants rewards + triggers Q6 unlock at Harren.
+//   Stage 1 — Offer:
+//     Q1 done, Q5 not active/completed, elaraMet flag not set.
+//     Spawn Elara sprite in the current room (roomId >= 2).
+//     E → dialog → setFlag('elaraMet') + acceptQuest('widerstand_proof').
 //
-// Stage 2 takes priority if both conditions could match (defensive — in
-// practice the flag gating means they can't fire in the same room).
+//   Stage 1.5 — Document drop:
+//     Q5 active, document not yet picked up.
+//     Roll target room = currentRoomId + 3..5 the first time we see this
+//     state, then on each enterRoom check if currentRoomId == target →
+//     spawn the council document loot in that room. After spawn, latched
+//     for the rest of the run so we never double-drop.
+//
+//   Stage 2 — Turn-in:
+//     Q5 ready-to-complete (player picked up the document), not done.
+//     Roll target room = currentRoomId + 3..5 the first time we see this
+//     state, then on each enterRoom check if currentRoomId == target →
+//     spawn Elara sprite again. E → dialog → completeQuest, granting Q5
+//     rewards and unlocking Q6 at Harren.
 function _maybeFireElaraCellarEncounter(scene, roomId) {
   if (!scene || !window.questSystem || !window.EventSystem) return;
   if (typeof roomId !== 'number' || roomId < 2) return;
   const qs = window.questSystem;
   if (typeof qs.hasFlag !== 'function') return;
-  if (typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
-
-  const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
-  const btnContinueLabel = isEn ? 'Continue' : 'Weiter';
 
   const completed = (typeof qs.getCompletedQuests === 'function') ? qs.getCompletedQuests() : [];
   const completedIds = new Set((completed || []).map(function (q) { return q && q.id; }).filter(Boolean));
@@ -1691,46 +1716,127 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
   const q5Done = completedIds.has('widerstand_proof');
   if (!q1Done) return;
 
-  const fireDialog = function (text, onContinue) {
-    const fire = function () {
-      window.EventSystem.showEventChoiceDialog(scene, text, [{
-        label: btnContinueLabel,
-        callback: onContinue
-      }]);
-    };
-    if (scene.time && typeof scene.time.delayedCall === 'function') {
-      scene.time.delayedCall(1200, fire);
-    } else {
-      fire();
-    }
-  };
-
-  // Stage 2: Q5 ready-to-complete → turn-in encounter
-  if (!q5Done
-      && typeof qs.isQuestReadyToComplete === 'function'
+  // Stage 2: Q5 ready-to-complete → spawn Elara again for the turn-in.
+  // If the player passes the target room without interacting, we re-roll
+  // a fresh target (currentRoomId + 3..5) so she's always somewhere ahead
+  // — never permanently behind the player.
+  if (!q5Done && typeof qs.isQuestReadyToComplete === 'function'
       && qs.isQuestReadyToComplete('widerstand_proof')) {
-    const turnInText = isEn
-      ? '"You found it." Elara takes the document, traces the three seals with one finger. Magistrate. Clergy. Guard.\n\n"Three signatures that should never share a page. They claim to be rivals — behind closed doors they agree. Bring this to Father. He has been waiting for the moment you understand."'
-      : '"Du hast es gefunden." Elara nimmt das Dokument, faehrt mit einem Finger ueber die drei Siegel. Magistrat. Klerus. Garde.\n\n"Drei Unterschriften, die nie auf einer Seite stehen sollten. Sie behaupten Rivalen zu sein — hinter verschlossenen Tueren stimmen sie ueberein. Bring das zu Vater. Er wartet darauf, dass du verstehst."';
-    fireDialog(turnInText, function () {
-      if (typeof qs.completeQuest === 'function') qs.completeQuest('widerstand_proof');
-    });
+    if (_elaraStage2SpawnTarget === null || roomId > _elaraStage2SpawnTarget) {
+      _elaraStage2SpawnTarget = roomId + _rollDistance();
+    }
+    if (roomId === _elaraStage2SpawnTarget) {
+      _spawnElaraSprite(scene, /* stage */ 2);
+    }
     return;
   }
 
-  // Stage 1: Q5 offer (only if not yet met + Q5 not active + not completed)
-  if (qs.hasFlag('elaraMet')) return;
+  // Stage 1.5: Q5 active, waiting for document → spawn document in the
+  // target room. Same re-roll-on-overshoot pattern as Stage 2 — if the
+  // player wanders into the target room and leaves without picking the
+  // document up (lootGroup is cleared between rooms), they get another
+  // chance a few rooms later.
   const q5Active = (typeof qs.getActiveQuests === 'function')
     && qs.getActiveQuests().some(function (q) { return q && q.id === 'widerstand_proof'; });
-  if (q5Active || q5Done) return;
+  if (q5Active && !q5Done) {
+    if (_elaraDocSpawnTarget === null || roomId > _elaraDocSpawnTarget) {
+      _elaraDocSpawnTarget = roomId + _rollDistance();
+    }
+    if (roomId === _elaraDocSpawnTarget) {
+      _spawnCouncilDocument(scene);
+    }
+    return;
+  }
 
-  const offerText = isEn
-    ? '"You. The Archivesmith. So Father did send someone."\n\nElara — Harren\'s daughter, alive — leans against the chamber wall.\n\n"I am not coming back. Not yet. Down here lies a document, sealed by all three Council factions. They would never sign such a thing in the open — and yet. Bring it to me when you find it."'
-    : '"Du. Der Archivschmied. Vater hat also doch jemanden geschickt."\n\nElara — Harrens Tochter, lebendig — lehnt an der Kammerwand.\n\n"Ich komme nicht zurueck. Noch nicht. Unten liegt ein Dokument, versiegelt von allen drei Ratsfraktionen. Oeffentlich wuerden sie so etwas nie unterzeichnen — und doch. Bring es mir, sobald du es findest."';
-  fireDialog(offerText, function () {
-    qs.setFlag('elaraMet', true);
-    if (typeof qs.acceptQuest === 'function') qs.acceptQuest('widerstand_proof');
+  // Stage 1: Q1 done, Q5 not yet active, !elaraMet → spawn Elara for the offer
+  if (qs.hasFlag('elaraMet')) return;
+  if (q5Done) return;
+  _spawnElaraSprite(scene, /* stage */ 1);
+}
+
+// Spawn Elara as an interactive [E]-prompt sprite in the current room.
+// `stage` selects which dialog to show on interact: 1 = offer, 2 = turn-in.
+function _spawnElaraSprite(scene, stage) {
+  if (!scene || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
+  const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
+  const promptLabel = isEn ? 'Elara' : 'Elara';
+  // Subtle violet glow to match the Widerstand-faction colour key
+  window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, promptLabel, function () {
+    _showElaraDialog(scene, stage);
   });
+}
+
+function _showElaraDialog(scene, stage) {
+  if (!scene || !window.EventSystem || typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
+  const qs = window.questSystem;
+  const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
+  const btnContinueLabel = isEn ? 'Continue' : 'Weiter';
+
+  let text;
+  let onContinue;
+  if (stage === 2) {
+    text = isEn
+      ? '"You found it." Elara takes the document, traces the three seals with one finger. Magistrate. Clergy. Guard.\n\n"Three signatures that should never share a page. They claim to be rivals — behind closed doors they agree. Bring this to Father. He has been waiting for the moment you understand."'
+      : '"Du hast es gefunden." Elara nimmt das Dokument, faehrt mit einem Finger ueber die drei Siegel. Magistrat. Klerus. Garde.\n\n"Drei Unterschriften, die nie auf einer Seite stehen sollten. Sie behaupten Rivalen zu sein — hinter verschlossenen Tueren stimmen sie ueberein. Bring das zu Vater. Er wartet darauf, dass du verstehst."';
+    onContinue = function () {
+      if (qs && typeof qs.completeQuest === 'function') qs.completeQuest('widerstand_proof');
+    };
+  } else {
+    text = isEn
+      ? '"You. The Archivesmith. So Father did send someone."\n\nElara — Harren\'s daughter, alive — leans against the chamber wall.\n\n"I am not coming back. Not yet. Down here lies a document, sealed by all three Council factions. They would never sign such a thing in the open — and yet. Bring it to me when you find it."'
+      : '"Du. Der Archivschmied. Vater hat also doch jemanden geschickt."\n\nElara — Harrens Tochter, lebendig — lehnt an der Kammerwand.\n\n"Ich komme nicht zurueck. Noch nicht. Unten liegt ein Dokument, versiegelt von allen drei Ratsfraktionen. Oeffentlich wuerden sie so etwas nie unterzeichnen — und doch. Bring es mir, sobald du es findest."';
+    onContinue = function () {
+      if (!qs) return;
+      if (typeof qs.setFlag === 'function') qs.setFlag('elaraMet', true);
+      if (typeof qs.acceptQuest === 'function') qs.acceptQuest('widerstand_proof');
+    };
+  }
+  window.EventSystem.showEventChoiceDialog(scene, text, [{
+    label: btnContinueLabel,
+    callback: onContinue
+  }]);
+}
+
+// Spawn the council document as a quest-item loot drop in the current room.
+// Mirrors the questItem branch of LootSystem.spawnLoot but bypasses the
+// per-kill RNG — this is a deterministic, story-placed item.
+function _spawnCouncilDocument(scene) {
+  if (!scene || !scene.add) return;
+  const lg = window.lootGroup || (typeof lootGroup !== 'undefined' ? lootGroup : null);
+  if (!lg) return;
+  const _T = (key, fb) => (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key) : (fb || key);
+
+  // Pick a walkable spawn point near the player
+  let x = 0, y = 0;
+  if (typeof scene.pickAccessibleSpawnPoint === 'function') {
+    const spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 24 });
+    if (spot) { x = spot.x; y = spot.y; }
+  }
+  if (!x && !y && typeof player !== 'undefined' && player) {
+    x = player.x + 60;
+    y = player.y;
+  }
+
+  const questItem = {
+    type: 'quest_item',
+    key: 'COUNCIL_DOCUMENT',
+    name: _T('loot.quest_item.COUNCIL_DOCUMENT', 'Ratsdokument'),
+    nameKey: 'loot.quest_item.COUNCIL_DOCUMENT',
+    iconKey: 'itMat',
+    isQuestItem: true,
+    questTarget: 'council_document'
+  };
+  const sprite = lg.create(x, y, questItem.iconKey || 'itMat');
+  sprite.setDisplaySize(28, 22);
+  sprite.setData('item', questItem);
+  sprite.setData('questItem', true);
+  sprite.setDepth(80);
+  sprite.setTint(0xcc88dd);
+  if (typeof window.trackLootSprite === 'function') {
+    window.trackLootSprite(scene, sprite);
+  } else if (typeof scene._activeLootSprites !== 'undefined' && Array.isArray(scene._activeLootSprites)) {
+    scene._activeLootSprites.push(sprite);
+  }
 }
 
 // Export in globalen Namespace
