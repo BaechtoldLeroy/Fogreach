@@ -148,7 +148,10 @@ window.HUB_HITBOXES = {
       x: 180, y: 480,
       texture: 'elara_right0',
       scale: 0.16,
-      visibleFromAct: 'erste_risse',
+      // Feature 050 Vertical Slice: Elara is the Widerstand quest-giver
+      // for Q5 (widerstand_proof) — must be visible from game start.
+      // (Was gated to 'erste_risse' / Akt 3 from the pre-050 narrative.)
+      visibleFromAct: 'auftrag',
       lines: [
         'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
         'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.'
@@ -160,7 +163,10 @@ window.HUB_HITBOXES = {
       x: 720, y: 470,
       texture: 'harren_right0',
       scale: 0.16,
-      visibleFromAct: 'treuer_diener',
+      // Feature 050 Vertical Slice: Harren gives Q1 + Q6 — must be visible
+      // from game start. (Was gated to 'treuer_diener' / Akt 2 from the
+      // pre-050 narrative when Harren was a late-game NPC.)
+      visibleFromAct: 'auftrag',
       lines: [
         'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
         'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'
