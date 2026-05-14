@@ -98,6 +98,11 @@ class HubSceneV2 extends Phaser.Scene {
     if (!tex.exists('schmiedemeisterin')) this.load.image('schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
     if (!tex.exists('setzer_thom'))       this.load.image('setzer_thom', 'assets/sprites/setzer_thom.png');
     if (!tex.exists('spaeherin'))         this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
+    // Feature 050: Klerus (priest) + Garde (city watch) NPCs added in the
+    // Vertical-Slice quest chain. Single-static sprites (no walk frames yet)
+    // following the Branka/Thom/Mara loading pattern.
+    if (!tex.exists('klerus'))            this.load.image('klerus', 'assets/sprites/klerus.png');
+    if (!tex.exists('garde'))             this.load.image('garde', 'assets/sprites/garde.png');
     ['aldric', 'elara', 'harren'].forEach((npc) => {
       ['left0','left1','left2','right0','right1','right2'].forEach((frame) => {
         const key = npc + '_' + frame;

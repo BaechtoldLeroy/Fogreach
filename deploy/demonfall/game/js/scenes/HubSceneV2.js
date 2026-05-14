@@ -98,6 +98,11 @@ class HubSceneV2 extends Phaser.Scene {
     if (!tex.exists('schmiedemeisterin')) this.load.image('schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
     if (!tex.exists('setzer_thom'))       this.load.image('setzer_thom', 'assets/sprites/setzer_thom.png');
     if (!tex.exists('spaeherin'))         this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
+    // Feature 050: Klerus (priest) + Garde (city watch) NPCs added in the
+    // Vertical-Slice quest chain. Single-static sprites (no walk frames yet)
+    // following the Branka/Thom/Mara loading pattern.
+    if (!tex.exists('klerus'))            this.load.image('klerus', 'assets/sprites/klerus.png');
+    if (!tex.exists('garde'))             this.load.image('garde', 'assets/sprites/garde.png');
     ['aldric', 'elara', 'harren'].forEach((npc) => {
       ['left0','left1','left2','right0','right1','right2'].forEach((frame) => {
         const key = npc + '_' + frame;
@@ -268,6 +273,37 @@ class HubSceneV2 extends Phaser.Scene {
     if (typeof createInventoryGraphics === 'function') createInventoryGraphics.call(this);
     if (typeof initInventoryUI === 'function') initInventoryUI.call(this);
 
+    // Feature 050 FR-12b: arm Q2/Q4 side-dialogues on quest acceptance.
+    // questSystem.onQuestUpdate(fn) calls fn(activeQuestsList) — no event
+    // type. We detect "newly active" by diffing against the previous-known
+    // set. Cleared after firing (one-shot — see _showNpcDialogue branch).
+    this._pendingSideDialogue = null;
+    this._lastActiveQuestIds = new Set();
+    this._sideDialogueArmer = (activeQuests) => {
+      try {
+        const currentIds = new Set((activeQuests || []).map(q => q && q.id).filter(Boolean));
+        const newlyActive = [];
+        currentIds.forEach((id) => {
+          if (!this._lastActiveQuestIds.has(id)) newlyActive.push(id);
+        });
+        this._lastActiveQuestIds = currentIds;
+        if (newlyActive.indexOf('magistrat_verification') !== -1) {
+          this._pendingSideDialogue = { npcId: 'branka', dialogueKey: 'sidedialog.branka.q2_eyebrow' };
+        }
+        if (newlyActive.indexOf('garde_patrol_expansion') !== -1) {
+          // If both Q2 and Q4 are accepted in quick succession before any
+          // side-dialogue fires, the later one wins. Acceptable — the player
+          // gets at least one crack moment; #34 polish can chain them.
+          this._pendingSideDialogue = { npcId: 'thom', dialogueKey: 'sidedialog.thom.q4_eyebrow' };
+        }
+      } catch (err) {
+        console.warn('[HubSceneV2] side-dialogue armer failed', err);
+      }
+    };
+    if (window.questSystem && typeof window.questSystem.onQuestUpdate === 'function') {
+      window.questSystem.onQuestUpdate(this._sideDialogueArmer);
+    }
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (typeof destroyInventoryUI === 'function') destroyInventoryUI();
       this.input.keyboard.off('keydown-E', this._handleInteract, this);
@@ -281,6 +317,11 @@ class HubSceneV2 extends Phaser.Scene {
       if (this._questUpdateHandler && window.questSystem && window.questSystem.offQuestUpdate) {
         window.questSystem.offQuestUpdate(this._questUpdateHandler);
         this._questUpdateHandler = null;
+      }
+      // Feature 050: unhook the side-dialogue armer.
+      if (this._sideDialogueArmer && window.questSystem && typeof window.questSystem.offQuestUpdate === 'function') {
+        window.questSystem.offQuestUpdate(this._sideDialogueArmer);
+        this._sideDialogueArmer = null;
       }
       // Tutorial cleanup (044). Overlay self-cleans on shutdown via its own
       // hook, so this is defensive insurance — the unsub guards against double
@@ -786,6 +827,19 @@ class HubSceneV2 extends Phaser.Scene {
       window.TutorialSystem.report('dialog.opened', { npc: this._currentDialogNpc });
     }
 
+    // Feature 050 FR-12b: Q2/Q4 side-dialogue trigger. When the player
+    // approaches Branka (after accepting Q2 magistrat_verification) or
+    // Thom (after accepting Q4 garde_patrol_expansion), fire a one-shot
+    // single-page side-dialogue that seeds the political crack BEFORE
+    // the normal NPC interaction. Cleared after firing so subsequent
+    // approaches see the regular dialogue.
+    if (this._pendingSideDialogue && this._pendingSideDialogue.npcId === npcData.id) {
+      const sd = this._pendingSideDialogue;
+      this._pendingSideDialogue = null;
+      this._showSideDialogue(npcData, sd.dialogueKey);
+      return;
+    }
+
     if (this._dialogContainer) {
       this._dialogContainer.destroy(true);
       this._dialogContainer = null;
@@ -823,6 +877,17 @@ class HubSceneV2 extends Phaser.Scene {
           questData = available[0];
         }
       }
+    }
+
+    // Feature 050 FR-07: Q6 climax-scene routing. When the player has
+    // council_collusion_reveal available (offered) OR in-progress
+    // (turnin), bypass the standard _showDialoguePages flow and invoke
+    // the dedicated 4-page reveal in _showCollusionReveal(). Returns
+    // early — the reveal method handles completion + completeQuest call.
+    if (questData && questData.id === 'council_collusion_reveal'
+        && (questMode === 'offer' || questMode === 'turnin' || questMode === 'progress')) {
+      this._showCollusionReveal(npcData, questData);
+      return;
     }
 
     // Build dialogue pages based on quest mode
@@ -1256,6 +1321,30 @@ class HubSceneV2 extends Phaser.Scene {
 
   _handleDialogueChoice(action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers) {
     const qs = window.questSystem;
+
+    // Feature 050 FR-07: Q6 climax binary flavor choices. Both branches
+    // record the player's choice (if storySystem.recordChoice exists),
+    // complete the quest (fires KT-fragment grant + advanceToAct(2) via
+    // WP02's reward dispatcher), then advance the dialogue to page 4
+    // (the wrap-up). No content branching — both choices land on the
+    // same final page per spec FR-07.
+    if (action === 'q6_turn_away' || action === 'q6_remember') {
+      if (this._pendingQ6Choice) {
+        try { this._pendingQ6Choice(action === 'q6_remember' ? 'remember' : 'turn_away'); } catch (_) {}
+      }
+      if (this._pendingQ6Finalize) {
+        try { this._pendingQ6Finalize(); } catch (_) {}
+      }
+      this._pendingQ6Choice = null;
+      this._pendingQ6Finalize = null;
+      // Advance to the final wrap-up page. _showDialoguePages re-renders
+      // the dialog from scratch with the new page index — cleanup old
+      // key closers first to avoid leaks.
+      this._cleanupKeyClosers(keyClosers);
+      this._showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex + 1);
+      this._refreshQuestIndicators();
+      return;
+    }
 
     if (action === 'accept') {
       if (qs && questData) qs.acceptQuest(questData.id);
@@ -2373,5 +2462,94 @@ class HubSceneV2 extends Phaser.Scene {
     // same summary. The next dungeon run creates a fresh window.runStats and
     // a fresh window.lastRunSummary on leave.
     window.lastRunSummary = null;
+  }
+
+  // Feature 050 FR-07: side-dialogue helper. One-page, no-choices modal
+  // that fires when the player approaches Branka (during Q2) or Thom
+  // (during Q4). Uses the same _showDialoguePages plumbing for layout +
+  // input handling consistency, so the side-dialogue inherits the
+  // scrollFactor propagation + ESC/Enter close patterns automatically.
+  _showSideDialogue(npcData, dialogueKey) {
+    const T = (window.i18n && window.i18n.t) ? window.i18n.t.bind(window.i18n) : (k) => k;
+    const pages = [{ text: T(dialogueKey), choices: null }];
+    this._showDialoguePages(npcData, npcData.name, pages, 'flavor', null, 0);
+  }
+
+  // Feature 050 FR-07: Q6 climax-scene. Four-page reveal that delivers
+  // the Council-collusion political payoff. Pages 1-2 are narration,
+  // page 3 is a binary flavor choice (no content branching per FR-07),
+  // page 4 wraps up + advances the story. After page 4 closes, we
+  // explicitly call questSystem.completeQuest('council_collusion_reveal')
+  // so the reward dispatcher fires (fragments + storySystem.advanceToAct).
+  //
+  // No new mechanics (C-02 + C-06): we reuse the _showDialoguePages flow
+  // by constructing a custom page array. The Q6 placeholder offer from
+  // WP02 is bypassed via the dispatch in _showNpcDialogue.
+  _showCollusionReveal(npcData, questData) {
+    const T = (window.i18n && window.i18n.t) ? window.i18n.t.bind(window.i18n) : (k) => k;
+    const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';
+    const isEN = (lang === 'en');
+
+    const page1 = isEN
+      ? 'Come with me. I must show you something I have suspected for years — but never could prove. You have worked for all three. Now you see them together.'
+      : 'Komm mit. Ich muss dir etwas zeigen, das ich seit Jahren ahne — aber niemals beweisen konnte. Du hast fuer alle drei gearbeitet. Jetzt siehst du sie zusammen.';
+
+    const page2 = isEN
+      ? 'Behind the locked doors of the Rathauskeller hall they meet. Magistrate. Clergy. Guard. Three voices that never publicly agree in this city — and here, in the shadow of the wall candles, they speak as a single mouth. Pacts are confirmed. Names are struck. One of them: the mayor\'s daughter.'
+      : 'Hinter den verschlossenen Tueren der Rathauskeller-Halle treffen sie sich. Magistrat. Klerus. Garde. Drei Stimmen, die in der Stadt nie oeffentlich uebereinstimmen — und hier, im Schatten der Wandkerzen, sprechen sie wie ein einziger Mund. Pakte werden bestaetigt. Namen werden gestrichen. Eine davon: die Tochter des Buergermeisters.';
+
+    const page3Prompt = isEN
+      ? 'Will you turn away — or will you remember?'
+      : 'Wirst du dich umdrehen — oder dich erinnern?';
+    const choiceTurnAway = isEN ? '[ Turn away — forget what I saw ]' : '[ Umdrehen — vergessen, was ich gesehen habe ]';
+    const choiceRemember = isEN ? '[ Remember — whatever it costs ]' : '[ Erinnern — was auch immer das kostet ]';
+
+    const page4 = isEN
+      ? 'You walk back into the fog. What you heard cannot be unheard. The Chain Council is not three voices — it is one wearing three masks. And you? You have already worked for every mask.\n\nAct 2 begins beyond this hub.'
+      : 'Du gehst hinaus in den Nebel. Was du gehoert hast, laesst sich nicht ungehoert machen. Der Kettenrat ist nicht drei Stimmen — er ist eine, die drei Masken traegt. Und du? Du hast bereits fuer jede Maske gearbeitet.\n\nAkt 2 beginnt jenseits dieses Hubs.';
+
+    // Build the page array. Pages 1-2 + 4 are narration (no choices —
+    // Space/Enter advances). Page 3 has the binary flavor choice that
+    // records via storySystem.recordChoice if available (else no-op).
+    const finalize = () => {
+      // If the choice API exists, record. Otherwise silently skip.
+      // Either way, complete Q6 to fire the WP02 reward dispatcher.
+      if (window.questSystem && typeof window.questSystem.completeQuest === 'function') {
+        try {
+          window.questSystem.completeQuest('council_collusion_reveal');
+        } catch (err) {
+          console.warn('[HubSceneV2] Q6 completeQuest failed', err);
+        }
+      }
+    };
+
+    const onChoice = (value) => {
+      if (window.storySystem && typeof window.storySystem.recordChoice === 'function') {
+        try { window.storySystem.recordChoice('act1_finale', value); } catch (_) {}
+      }
+    };
+
+    const pages = [
+      { text: page1, choices: null },
+      { text: page2, choices: null },
+      {
+        text: page2 + '\n\n' + page3Prompt,
+        choices: [
+          { label: choiceTurnAway, action: 'q6_turn_away' },
+          { label: choiceRemember, action: 'q6_remember' }
+        ]
+      },
+      { text: page4, choices: null, _isFinal: true }
+    ];
+
+    // Stash the choice + finalize handlers so the q6_turn_away / q6_remember
+    // choice actions (handled in _handleDialogueChoice) can invoke them.
+    // Cleared when the dialogue closes via the existing dialog cleanup path.
+    this._pendingQ6Choice = onChoice;
+    this._pendingQ6Finalize = finalize;
+    this._pendingQ6Pages = pages;
+
+    // Start at page 0. The standard _showDialoguePages handles page advancement.
+    this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData, 0);
   }
 }

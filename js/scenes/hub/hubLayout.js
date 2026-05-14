@@ -167,21 +167,17 @@ window.HUB_HITBOXES = {
       ]
     },
     // Feature 050: Klerus + Garde quest-giver NPCs for the Act-1 chain.
-    // TODO(#34 polish): dedicated sprites — currently reuses harren_right0
-    // (Klerus) and aldric_right0 (Garde) as placeholders. The id + name
-    // + dialogue make them mechanically distinct; visual confusion is
-    // acceptable for the donor demo and gets resolved in #34's polish pass.
+    // Dedicated sprites in assets/sprites/{klerus,garde}.png (no walk
+    // frames yet — single-static like Branka/Thom/Mara). Preloaded in
+    // HubSceneV2.preload(). Scale 0.10 to match the visual scale of
+    // schmiedemeisterin / setzer_thom (single-sprite assets at 1536x1024
+    // native render at 0.10 to fit hub NPCs).
     {
       id: 'klerus_priester',
       name: 'Hochpriester der Ordnung',
-      // Moved from (480, 360) — blocked the Rathaus entrance + sat on the
-      // fountain. Then briefly at (240, 540), but that overlapped the
-      // bottom-left cottage (not in the collision data — visually placed by
-      // the bg image). (380, 540) parks the priest on the open dirt path
-      // between the left cottage and Aldric, clearly in plaza territory.
       x: 380, y: 540,
-      texture: 'harren_right0', // placeholder — see TODO above
-      scale: 0.16,
+      texture: 'klerus',
+      scale: 0.10,
       visibleFromAct: 'auftrag',
       lines: [
         'Die Ordnung des Kettenrats ist heilig. Wer sie befragt, befragt das Licht selbst.',
@@ -193,8 +189,8 @@ window.HUB_HITBOXES = {
       id: 'stadtwache',
       name: 'Wachtmeister der Garde',
       x: 580, y: 380,
-      texture: 'aldric_right0', // placeholder — see TODO above
-      scale: 0.16,
+      texture: 'garde',
+      scale: 0.10,
       visibleFromAct: 'auftrag',
       lines: [
         'Die Patrouillen wachsen jeden Monat. So muss es sein — die Stadt ist unruhig.',
