@@ -148,15 +148,19 @@ window.HUB_HITBOXES = {
       x: 180, y: 480,
       texture: 'elara_right0',
       scale: 0.16,
-      // Elara is the "missing daughter" of Harren's Q1. She only appears
-      // in the hub AFTER the player has actually MET her in the
-      // Rathauskeller dungeon (encounter modal armed by Q1 completion,
-      // fires when the player enters a cellar room on the next run).
-      // Until then Klerus/Garde/Harren keep treating her as missing —
-      // because to them she still is, she's hiding from the council.
-      // Flag is set by the dungeon encounter (see roomManager.js) and
-      // persisted via window.questSystem.flags.elaraMet.
-      visibleAfterFlag: 'elaraMet',
+      // Elara stays fully underground for Akt 1 — she offers Q5 in a
+      // cellar encounter modal and accepts the council document in a
+      // second cellar encounter (see _maybeFireElaraCellarEncounter in
+      // roomManager.js). She never enters the hub during Akt 1 because
+      // she's actively hiding from the Council. To Klerus, Garde and
+      // Harren she therefore remains "missing", which is exactly what
+      // their dialogue still says.
+      //
+      // The visibility gate below references a flag that is currently
+      // never set; flip it (e.g. on Akt-2 advancement) if a future arc
+      // wants to bring her into the hub. Until then this entry exists
+      // mostly to document her presence in the layout.
+      visibleAfterFlag: 'elaraReturnedToHub',
       lines: [
         'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
         'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.'

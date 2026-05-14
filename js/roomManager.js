@@ -1657,46 +1657,80 @@ function updateRoomCounter(roomIndex, totalRooms) {
   window.roomProgressText = _roomLabel;
 }
 
-// One-shot Rathauskeller encounter that introduces Elara as alive + hiding.
-// Trigger conditions:
-//  - Q1 (harren_daughter_investigation) is completed,
-//  - the elaraMet flag is not yet set,
-//  - the player has reached at least the second room of the run (so the
-//    encounter doesn't fire the instant they step into the dungeon).
-// Setting the flag (via the dialog Continue button) makes Elara visible
-// in the hub on the next HubScene render — see hubLayout.js Elara entry
-// (`visibleAfterFlag: 'elaraMet'`) and HubSceneV2._refreshNpcVisibility.
+// Two-stage Rathauskeller Elara encounter — she stays underground for the
+// entire Akt-1 chain, so both Q5 offer and Q5 turn-in happen here, never
+// in the hub.
+//
+// Stage 1 — Offer (fires once, after Q1 is done):
+//   conditions: Q1 completed, Q5 not yet active/completed, elaraMet flag
+//               not set, roomId >= 2 (skip the entry room).
+//   action: shows the encounter modal; Continue → setFlag('elaraMet') +
+//           acceptQuest('widerstand_proof'). Quest starts immediately.
+//
+// Stage 2 — Turn-in (fires once, after the player picks up the council
+//   document in the dungeon — which sets Q5 to ready-to-complete):
+//   conditions: Q5 active and ready-to-complete (objective satisfied).
+//   action: shows the turn-in modal; Continue → completeQuest, which
+//           grants rewards + triggers Q6 unlock at Harren.
+//
+// Stage 2 takes priority if both conditions could match (defensive — in
+// practice the flag gating means they can't fire in the same room).
 function _maybeFireElaraCellarEncounter(scene, roomId) {
   if (!scene || !window.questSystem || !window.EventSystem) return;
   if (typeof roomId !== 'number' || roomId < 2) return;
   const qs = window.questSystem;
-  if (typeof qs.hasFlag !== 'function' || qs.hasFlag('elaraMet')) return;
-  const completed = (typeof qs.getCompletedQuests === 'function') ? qs.getCompletedQuests() : [];
-  const q1Done = Array.isArray(completed) && completed.some(function (q) {
-    return q && q.id === 'harren_daughter_investigation';
-  });
-  if (!q1Done) return;
+  if (typeof qs.hasFlag !== 'function') return;
   if (typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
 
   const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
-  const text = isEn
-    ? '"You. The Archivesmith. So Father did send someone."\n\nA figure steps from the shadows — Elara, Harren\'s daughter, very much alive.\n\n"I am not coming back. Not yet. Find me at the Archive Forge when you reach the surface again. We have to talk."'
-    : '"Du. Der Archivschmied. Vater hat also doch jemanden geschickt."\n\nEine Gestalt tritt aus dem Schatten — Elara, Harrens Tochter, lebendig.\n\n"Ich komme nicht zurueck. Noch nicht. Such mich bei der Archivschmiede, wenn du wieder ans Licht kommst. Wir muessen reden."';
-  const btnLabel = isEn ? 'Continue' : 'Weiter';
+  const btnContinueLabel = isEn ? 'Continue' : 'Weiter';
 
-  const fire = function () {
-    window.EventSystem.showEventChoiceDialog(scene, text, [{
-      label: btnLabel,
-      callback: function () {
-        if (typeof qs.setFlag === 'function') qs.setFlag('elaraMet', true);
-      }
-    }]);
+  const completed = (typeof qs.getCompletedQuests === 'function') ? qs.getCompletedQuests() : [];
+  const completedIds = new Set((completed || []).map(function (q) { return q && q.id; }).filter(Boolean));
+  const q1Done = completedIds.has('harren_daughter_investigation');
+  const q5Done = completedIds.has('widerstand_proof');
+  if (!q1Done) return;
+
+  const fireDialog = function (text, onContinue) {
+    const fire = function () {
+      window.EventSystem.showEventChoiceDialog(scene, text, [{
+        label: btnContinueLabel,
+        callback: onContinue
+      }]);
+    };
+    if (scene.time && typeof scene.time.delayedCall === 'function') {
+      scene.time.delayedCall(1200, fire);
+    } else {
+      fire();
+    }
   };
-  if (scene.time && typeof scene.time.delayedCall === 'function') {
-    scene.time.delayedCall(1200, fire);
-  } else {
-    fire();
+
+  // Stage 2: Q5 ready-to-complete → turn-in encounter
+  if (!q5Done
+      && typeof qs.isQuestReadyToComplete === 'function'
+      && qs.isQuestReadyToComplete('widerstand_proof')) {
+    const turnInText = isEn
+      ? '"You found it." Elara takes the document, traces the three seals with one finger. Magistrate. Clergy. Guard.\n\n"Three signatures that should never share a page. They claim to be rivals — behind closed doors they agree. Bring this to Father. He has been waiting for the moment you understand."'
+      : '"Du hast es gefunden." Elara nimmt das Dokument, faehrt mit einem Finger ueber die drei Siegel. Magistrat. Klerus. Garde.\n\n"Drei Unterschriften, die nie auf einer Seite stehen sollten. Sie behaupten Rivalen zu sein — hinter verschlossenen Tueren stimmen sie ueberein. Bring das zu Vater. Er wartet darauf, dass du verstehst."';
+    fireDialog(turnInText, function () {
+      if (typeof qs.completeQuest === 'function') qs.completeQuest('widerstand_proof');
+    });
+    return;
   }
+
+  // Stage 1: Q5 offer (only if not yet met + Q5 not active + not completed)
+  if (qs.hasFlag('elaraMet')) return;
+  const q5Active = (typeof qs.getActiveQuests === 'function')
+    && qs.getActiveQuests().some(function (q) { return q && q.id === 'widerstand_proof'; });
+  if (q5Active || q5Done) return;
+
+  const offerText = isEn
+    ? '"You. The Archivesmith. So Father did send someone."\n\nElara — Harren\'s daughter, alive — leans against the chamber wall.\n\n"I am not coming back. Not yet. Down here lies a document, sealed by all three Council factions. They would never sign such a thing in the open — and yet. Bring it to me when you find it."'
+    : '"Du. Der Archivschmied. Vater hat also doch jemanden geschickt."\n\nElara — Harrens Tochter, lebendig — lehnt an der Kammerwand.\n\n"Ich komme nicht zurueck. Noch nicht. Unten liegt ein Dokument, versiegelt von allen drei Ratsfraktionen. Oeffentlich wuerden sie so etwas nie unterzeichnen — und doch. Bring es mir, sobald du es findest."';
+  fireDialog(offerText, function () {
+    qs.setFlag('elaraMet', true);
+    if (typeof qs.acceptQuest === 'function') qs.acceptQuest('widerstand_proof');
+  });
 }
 
 // Export in globalen Namespace
