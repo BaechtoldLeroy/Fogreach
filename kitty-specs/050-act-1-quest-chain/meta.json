@@ -5,5 +5,7 @@
   "friendly_name": "act 1 quest chain",
   "mission": "software-dev",
   "slug": "050-act-1-quest-chain",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "vcs_locked_at": "2026-05-14T17:09:25.019228+00:00"
 }
