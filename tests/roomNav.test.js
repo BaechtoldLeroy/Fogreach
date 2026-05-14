@@ -142,3 +142,64 @@ test('flood fill respects an internal blocker wall', () => {
   const reach2 = floodFill(walls, blocked, 5, 8);
   assert.strictEqual(reach2[3][5], false, 'top half must be unreachable when gap is sealed');
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Per-template validation (Feature 049 — More Room Layouts)
+//
+// Every authored template must satisfy:
+//   1. walls.length === size.h and every walls[i].length === size.w
+//   2. Player spawn tile is walkable
+//   3. Every entrance tile is walkable AND reachable from spawn via flood-fill
+//   4. Every loot tile is walkable AND reachable from spawn via flood-fill
+//
+// The walkable predicate treats `#` and any `pillar_*`-mapped char as blocked;
+// everything else (`.`, `+`, etc.) is walkable. Other tile chars used for
+// decoration must be added to the legend and re-checked here if they should
+// block movement.
+// ──────────────────────────────────────────────────────────────────────────────
+function isBlockingChar(c, legend) {
+  if (c === '#') return true;
+  const mapped = (legend && legend[c]) || '';
+  if (mapped === 'obstacleWall') return true;
+  if (mapped.startsWith('pillar_')) return true;
+  return false;
+}
+
+function assertTemplateValid(template) {
+  const { w, h } = template.size;
+  const walls = template.layout.walls;
+  const legend = template.layout.legend || {};
+  assert.strictEqual(walls.length, h, `walls.length must equal size.h (${h})`);
+  walls.forEach((row, i) => {
+    assert.strictEqual(row.length, w, `walls[${i}] length must equal size.w (${w}); got ${row.length}`);
+  });
+  const blocked = walls.map((row) => row.split('').map((c) => isBlockingChar(c, legend)));
+  const spawn = template.spawns && template.spawns.player;
+  assert.ok(spawn, 'template must define spawns.player');
+  assert.strictEqual(blocked[spawn.y][spawn.x], false, `spawn tile (${spawn.x},${spawn.y}) must be walkable`);
+  const reach = floodFill(walls, blocked, spawn.x, spawn.y);
+  for (const e of (template.entrances || [])) {
+    assert.strictEqual(blocked[e.y][e.x], false, `entrance ${e.dir} tile (${e.x},${e.y}) must be walkable`);
+    assert.strictEqual(reach[e.y][e.x], true, `entrance ${e.dir} tile (${e.x},${e.y}) must be reachable from spawn`);
+  }
+  for (const l of ((template.spawns && template.spawns.loot) || [])) {
+    assert.strictEqual(blocked[l.y][l.x], false, `loot tile (${l.x},${l.y}) must be walkable`);
+    assert.strictEqual(reach[l.y][l.x], true, `loot tile (${l.x},${l.y}) must be reachable from spawn`);
+  }
+}
+
+const NEW_TEMPLATES_049 = [
+  'CorridorLong',
+  'CorridorBranch',
+  'PillarHall',
+  'AsymmetricChamber',
+  'TerracedHall',
+  'DoubleAlcove'
+];
+
+for (const name of NEW_TEMPLATES_049) {
+  test(`roomNav: ${name} template is dimensionally consistent and fully reachable`, () => {
+    const template = require(`../js/roomTemplates/${name}.json`);
+    assertTemplateValid(template);
+  });
+}

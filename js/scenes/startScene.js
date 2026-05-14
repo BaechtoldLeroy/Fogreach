@@ -247,7 +247,9 @@ StartScene.prototype.preload = function () {
     "CirclePillars", "CollapsingHall", "Crosshall", "CrossroadChamber", "Crossroads",
     "Crypt_Small_Altar", "DungeonLibrary", "GrandBazaar", "MazeLite", "PrisonCells",
     "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault",
-    "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt"
+    "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt",
+    // Feature 049: new procedural layouts
+    "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove"
   ];
   for (const name of templateNames) {
     this.load.json(name, `js/roomTemplates/${name}.json`);
@@ -530,7 +532,9 @@ StartScene.prototype.create = function () {
       "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault",
       // Story rooms (gated by act / story system, but must be registered in
       // RT.TEMPLATES so the room picker can use them)
-      "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt"
+      "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt",
+      // Feature 049: new procedural layouts
+      "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove"
     ];
 
     for (const name of allTemplateNames) {
