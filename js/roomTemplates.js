@@ -17,7 +17,13 @@
       'RitualVault',
       'PrisonDepths',
       'CouncilChamber',
-      'ForgottenCrypt'
+      'ForgottenCrypt',
+      'CorridorLong',
+      'CorridorBranch',
+      'PillarHall',
+      'AsymmetricChamber',
+      'TerracedHall',
+      'DoubleAlcove'
     ];
   }
 })(window);
