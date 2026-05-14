@@ -28,14 +28,21 @@ Reuses `js/questSystem.js`, `js/storySystem.js`, `js/factionSystem.js` (with a s
 - **Klerus** — religious / occult-facing arm. NEW NPC, sprite reused from the existing RitualChamber priest model (or off-screen voice if no sprite fits — C-03). Frames Quest 3 as "spiritual purification".
 - **Garde** — enforcement / patrol arm. NEW NPC, sprite reused from existing guard model. Frames Quest 4 as "loyalty / no questions asked".
 
-### Outside-the-Council
+### Widerstand (Resistance — already a 3-NPC cast in the hub)
 
-- **Widerstand (Resistance)** — organized opposition. Elara is the face — rewritten from her current cameo in `harren_daughter` (where she's a missing-person target) into a living, active Resistance contact who gives Quest 5. The Widerstand is the moral spine of Act 1.
+The Resistance roster is **already present in the hub**; this spec only formalises their faction alignment and gives Elara an active Quest-5 role. No new sprites or NPC slots needed for the Widerstand.
+
+- **Elara** — Quest-5 giver. Currently exists in `harren_daughter` only as a missing-person target. Rewritten as the living, active Widerstand contact who connects the journal fragment from Quest 1 to the Council collusion pattern.
+- **Branka** (Schmiedemeisterin, in hub via `hubLayout.js:93`) — existing Hub NPC whose dialogue lines (*"Stahl allein schneidet die Luegen des Rates nicht"*, *"Die Aufseher des Kettenrats tragen inzwischen die Farben der Stadtgarde"*) are already Widerstand-aligned. In Act 1 she remains a passive atmosphere NPC — her existing Akt-2+ quests (`branka_doubt`, `branka_weapons`) gate behind `requiredAct: 2+` and don't fire during the chain. Her **side-dialogue during Quest 2** (player visits the Forge to craft for the Magistrat) seeds the first crack in the political naivety.
+- **Thom** (Setzer, in hub via `hubLayout.js:105`) — existing Hub NPC whose dialogue lines (*"Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Traeume. Wir antworten mit Pamphleten"*) are already Widerstand-aligned. Same pattern as Branka: passive in Act 1, his Akt-2+ quests gate behind `requiredAct: 2+`. **Side-dialogue during Quest 4** (player publishes a Garde edict at the Printing House) seeds the second crack.
+
+### Independent
+
 - **Independent** — neutral flag in `factionSystem`. Quest 1 gives +1 Independent (it's a personal favor for Harren). The player can stay Independent-leaning by avoiding faction-aligned dialogue choices in Quests 2–5, but the quests themselves are not faction-gated.
 
 ### Supporting cast
 
-- **Harren** (Mentor / ex-Archivsmith) — Quest 1 giver + lore-fragment gatekeeper. Not aligned with any faction; his role is to give the player a starting hook without picking a side.
+- **Harren** (Mentor / ex-Archivsmith) — Quest 1 giver + Quest 6 climax host. Not aligned with any faction; his role is to give the player a starting hook without picking a side.
 - **Mara** (Black Market vendor) — unchanged. Brief flavor-dialogue reactions to whichever faction has the highest standing.
 - **Bürgermeister + Tochter** — dialogue-only quest-NPCs (no sprites). Daughter's investigation is the spine of Quests 1–6: the player's evolving understanding of where she is and why parallels the political revelation.
 
@@ -93,7 +100,8 @@ Reuses `js/questSystem.js`, `js/storySystem.js`, `js/factionSystem.js` (with a s
 | FR-10 | All quest dialogues MUST be available in both DE and EN (mirror the existing i18n approach in `js/i18n.js`).                | Draft  |
 | FR-11 | The 6-quest chain MUST be completable in 1.5–2 h wall-clock for a competent ARPG player (1 dungeon run for Q1/Q3/Q5, hub-mechanic for Q2/Q4, dialogue for Q6 — averaging ~20 min per quest including travel + hub time per constitution §Pacing). | Draft  |
 | FR-12 | Each quest dialogue MUST reference at least one piece of city / political flavor (council factions, fog, archives, edicts, occult hints). The three Council-faction pitches MUST be visibly distinct in their political framing so the reveal in Quest 6 has clear "wait, these were the same goal?" texture. | Draft  |
-| FR-13 | Pre-existing generic Aldric quests (`aldric_cleanup`, `aldric_patrol`, `aldric_intruders`) and the placeholder `harren_daughter` quest MUST be either retired or rewired into the new chain — no orphan quests offered. | Draft  |
+| FR-12b | Quest 2 (Archive Forge / Magistrat) MUST trigger Branka side-dialogue when the player approaches the Forge during the quest — Branka raises eyebrows about the Council seal. Quest 4 (Printing House / Garde) MUST trigger Thom side-dialogue when the player publishes the edict. Side-dialogue is non-blocking and uses existing Hub NPC line patterns. | Draft  |
+| FR-13 | Legacy quest cleanup: DELETE `aldric_intruders` (Akt 1, generic kill-20, conflict with new Q2 — Ratsschwert reward dropped). DELETE `harren_daughter` (Akt 1, conflicts with new Q1 + active Elara). DELETE `branka_armor` (Akt 1, generic fetch, blocks no other content). KEEP `aldric_cleanup` + `aldric_patrol` (Akt 0, tutorial-warmup). KEEP `resistance_fetch_01` (Akt 0, faction-gated showcase — `'resistance'` standing-read auto-renamed to `'widerstand'` by FR-14 refactor). PATCH prerequisites: `branka_doubt.prerequisites: ['branka_armor'] → []`; `harren_rescue.prerequisites: ['harren_daughter'] → ['harren_daughter_investigation']`. No save migration required — `loadQuestSaveData` already silently drops unknown IDs. | Draft  |
 | FR-14 | `factionSystem.js` MUST be refactored from 3 standings (council / resistance / independent) to 5 (magistrat / klerus / garde / widerstand / independent). Save-migration MUST preserve existing `council` value as `magistrat`, `resistance` value as `widerstand`, on first load post-upgrade. | Draft  |
 | FR-15 | A read-only `factionSystem.getCouncilComposite()` helper MUST return the max of magistrat / klerus / garde so existing callers that just need "loyal to Council in general" (Printing-House suspicion gating, Aldric greeting thresholds) don't need three lookups. | Draft  |
 
@@ -112,7 +120,7 @@ Reuses `js/questSystem.js`, `js/storySystem.js`, `js/factionSystem.js` (with a s
 |-------|-------------------------------------------------------------------------------------------------------------------------|--------|
 | C-01  | MUST reuse the existing `questSystem.js` quest-definition shape (id / title / npcId / type / chain / objectives / rewards / prerequisites / requiredAct / dialogue*). | Draft  |
 | C-02  | MUST NOT introduce a new dialogue rendering pipeline — extend the existing `_showDialoguePages` flow only.                | Draft  |
-| C-03  | MUST NOT add new NPC sprites. New Klerus-NPC + Garde-NPC reuse existing sprite slots (e.g. the priest model in the RitualChamber template, the guard model from the Rathaus area). Mayor + daughter remain dialogue-only. | Draft  |
+| C-03  | MUST NOT add new NPC sprites. The Widerstand cast (Elara + Branka + Thom) is already in the hub — no new NPC slots. Only Klerus + Garde need NPC slots, and both reuse existing sprites (priest model from RitualChamber template, guard model from Rathaus area). Mayor + daughter remain dialogue-only. | Draft  |
 | C-04  | Faction-standing deltas MUST go through `factionSystem.adjustStanding(factionId, delta)` — no direct mutation.            | Draft  |
 | C-05  | Lore fragments granted MUST flow through `KnowledgeTree.addFragments()`.                                                 | Draft  |
 | C-06  | No new mechanics. If a quest objective can't be expressed via the existing `kill / explore / fetch / craft` objective types, redesign the objective. | Draft  |
@@ -157,10 +165,12 @@ Reuses `js/questSystem.js`, `js/storySystem.js`, `js/factionSystem.js` (with a s
 
 ## 10. Assumptions
 
-- `factionSystem.js` is refactored as part of this feature (FR-14). The refactor is small (~ 60 LOC + save migration) and bundles cleanly with the quest chain in a single WP.
+- `factionSystem.js` is refactored as part of this feature (FR-14). The refactor is small (~ 60 LOC) and bundles cleanly with the quest chain in a single WP.
 - `KnowledgeTree.addFragments(n)` is the canonical way to grant Knowledge-Tree currency (verified during 047).
 - The existing `_showDialoguePages` modal correctly handles multi-page dialogues with branching choices (verified by the existing Aldric / Mara flows + 4bf2c54 mobile fix).
-- The Klerus-NPC and Garde-NPC can be placed in the hub using the existing `_HUB_NPCS` configuration without new sprite art (C-03).
+- The Klerus-NPC and Garde-NPC can be placed in the hub using the existing `hubLayout.js` `npcs` array (same pattern as Branka + Thom) without new sprite art (C-03).
+- Branka + Thom already have hub presence + Widerstand-aligned dialogue lines — no rewrites needed to position them as Resistance-aligned. Their Akts-2+ quest skeletons (`branka_doubt`, `branka_weapons`, `thom_truth`, `thom_pamphlets`) gate behind `requiredAct: 2+` and remain locked during Act 1.
+- `loadQuestSaveData` silently drops unknown quest IDs (standard defensive-loading pattern). No save migration required for the deleted Akt-1 quests.
 
 ## 11. Out of Scope
 
