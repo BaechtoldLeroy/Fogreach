@@ -489,13 +489,13 @@ function purchaseSkill(skillId) {
   }
   
   window.playerSkills[skillId] = true;
-  
+
   applySkillEffects();
-  
+
   if (typeof saveGame === 'function') {
     saveGame();
   }
-  
+
   return { success: true, skill };
 }
 

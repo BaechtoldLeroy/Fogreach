@@ -40,6 +40,17 @@
     return val;
   }
 
+  // Existence check — returns true iff the key is registered in either the
+  // active language or the default fallback. Does NOT log a warning when the
+  // key is missing (unlike t()), so callers can probe optional variants
+  // (e.g. tutorial hints with `.classic`/`.arpg`/`.mobile` suffixes) without
+  // spamming the console.
+  function has(key) {
+    if (dicts[active] && Object.prototype.hasOwnProperty.call(dicts[active], key)) return true;
+    if (active !== DEFAULT_LANG && dicts[DEFAULT_LANG] && Object.prototype.hasOwnProperty.call(dicts[DEFAULT_LANG], key)) return true;
+    return false;
+  }
+
   function setLanguage(lang) {
     if (!isSupported(lang)) {
       console.warn('[i18n] setLanguage: invalid language, falling back to', DEFAULT_LANG, '(was:', lang, ')');
@@ -62,5 +73,5 @@
     return function () { subscribers.delete(callback); };
   }
 
-  window.i18n = { register, t, setLanguage, getLanguage, onChange };
+  window.i18n = { register, t, has, setLanguage, getLanguage, onChange };
 })();

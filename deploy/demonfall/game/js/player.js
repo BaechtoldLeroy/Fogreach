@@ -1,4 +1,7 @@
 let lastMoveDirection = new Phaser.Math.Vector2(0, 1); // Standard: Blick nach vorn (nach unten)
+// Expose on window so InputScheme.getAimDirection (classic mode) and
+// mobileAutoAim can read/update the same Vector2 instance.
+window.lastMoveDirection = lastMoveDirection;
 
 const PLAYER_FRAME_WIDTH = 125;
 const PLAYER_FRAME_HEIGHT = 500;
@@ -455,8 +458,29 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
   }
 
   const moving = vx !== 0 || vy !== 0;
-  const direction = moving
-    ? getDirectionFromVelocity(vx, vy, state.direction || PLAYER_DEFAULT_DD)
+  // In ARPG the sprite faces the cursor-based aim instead of the movement
+  // direction — enables strafe/kite play. The dead-zone fallback ('lastKnown')
+  // means hovering the cursor on the player keeps the current facing instead
+  // of snapping back to movement direction.
+  const scheme = (window.InputScheme && typeof window.InputScheme.getScheme === 'function')
+    ? window.InputScheme.getScheme() : 'classic';
+  let facingX = vx, facingY = vy;
+  if (scheme === 'arpg' && window.InputScheme && typeof window.InputScheme.getAimDirection === 'function') {
+    const aim = window.InputScheme.getAimDirection(sprite.scene || null, sprite);
+    if (aim && aim.source === 'cursor') {
+      facingX = aim.x;
+      facingY = aim.y;
+    }
+    // When source is 'lastKnown', keep facing from the cached lastAim so
+    // the sprite doesn't snap to movement direction mid-kite.
+    else if (aim && aim.source === 'lastKnown') {
+      facingX = aim.x;
+      facingY = aim.y;
+    }
+  }
+  const hasFacing = facingX !== 0 || facingY !== 0;
+  const direction = hasFacing
+    ? getDirectionFromVelocity(facingX, facingY, state.direction || PLAYER_DEFAULT_DD)
     : (state.direction || PLAYER_DEFAULT_DD);
 
   const animKey = `walk_${direction}`;
@@ -610,6 +634,12 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
   const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul);
   const damage = Math.max(1, Math.round(isCrit ? base * 1.5 : base));
 
+  // Snapshot maxHp on first hit so the lazy enemy hp bar (drawn by
+  // handleEnemyHit -> drawEnemyHpBar) has a correct denominator. Many
+  // regular enemies don't carry maxHp on spawn — only mini-bosses /
+  // bosses do — so without this capture the bar would treat the
+  // post-damage hp as 100% and look like the enemy is at full health.
+  if (typeof enemy.maxHp !== 'number') enemy.maxHp = enemy.hp;
   enemy.hp -= damage;
 
   if (isCrit && enemy.active && scene?.time) {
@@ -619,11 +649,18 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
     });
   }
 
-  // Lebensraub (Life Steal): 10% of damage dealt heals the player
-  if (typeof window.hasSkill === 'function' && window.hasSkill('survival_life_steal') && damage > 0) {
-    const healAmount = Math.max(1, Math.round(damage * 0.1));
-    if (typeof addPlayerHealth === 'function') {
-      addPlayerHealth(healAmount);
+  // Lebensraub (Life Steal): combine skill + loot affix "of the Leech" + endless buff.
+  if (damage > 0 && typeof addPlayerHealth === 'function') {
+    let lsPct = 0;
+    if (typeof window.hasSkill === 'function' && window.hasSkill('survival_life_steal')) {
+      lsPct += 0.10;
+    }
+    if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
+      lsPct += (window.LootSystem.getBonus('lifesteal') || 0) / 100;
+    }
+    lsPct += window.PLAYER_LIFESTEAL || 0;
+    if (lsPct > 0) {
+      addPlayerHealth(Math.max(1, Math.round(damage * lsPct)));
     }
   }
 
@@ -672,6 +709,36 @@ function hasLineOfSightToEnemy(enemy) {
     if (blocked) return false;
   }
   return true;
+}
+
+// Test whether a destructible obstacle is visible to the player. We can't
+// reuse hasLineOfSightToEnemy here because Steering.hasLineOfSight intersects
+// every obstacle in the obstacles group — including the destructible target
+// itself, which would always block the line. Instead we test against the
+// cached fog-of-war vision polygon (built each frame by
+// roomManager.updateFogOfWar), which already accounts for walls and closed
+// doors via raycasting. Falls back to "allowed" if the polygon hasn't been
+// computed yet (early frames, headless tests) so combat never softlocks.
+function hasLineOfSightToTarget(target) {
+  if (!target || !player) return !!target;
+  var scene = player.scene || (obstacles && obstacles.scene);
+  var poly = scene && scene._lastVisionPolygon;
+  if (!poly || poly.length < 6
+      || typeof Phaser === 'undefined'
+      || !Phaser.Geom || !Phaser.Geom.Polygon) {
+    return true; // no LOS data yet — fail open to avoid breaking combat
+  }
+  // Reuse the cached Polygon object across frames (mirrors the pattern in
+  // eliteEnemies.js so we don't allocate a Polygon per attack).
+  try {
+    if (!scene._lastVisionPolyObj || scene._lastVisionPolyData !== poly) {
+      scene._lastVisionPolyObj = new Phaser.Geom.Polygon(poly);
+      scene._lastVisionPolyData = poly;
+    }
+    return Phaser.Geom.Polygon.Contains(scene._lastVisionPolyObj, target.x, target.y);
+  } catch (_) {
+    return true; // polygon malformed — fail open
+  }
 }
 
 function forEachEnemyInRange(range, callback, options = {}) {
@@ -812,7 +879,12 @@ function getLootAbilityCooldownReduction(abilityKey) {
   const suffix = _lootAbilityStatKey(abilityKey);
   const perAbility = suffix ? _getLootBonus('cd_' + suffix) : 0;
   const allAbilities = _getLootBonus('cd_all_abilities');
-  return perAbility + allAbilities;
+  // Issue #26 — Knowledge-Tree cdrAll applies to every ability equally.
+  // Additive on top of per-ability + global affix reductions. The downstream
+  // consumer (applyCooldownModifier) already floors at Math.max(0, 1 - x)
+  // and 100ms, so no clamp needed here.
+  const ktAll = (window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.cdrAll) || 0;
+  return perAbility + allAbilities + ktAll;
 }
 
 function applyCooldownModifier(base, key) {
@@ -982,12 +1054,22 @@ function handlePlayerMovement() {
     return;
   }
 
-  // Eingaben sammeln
+  // Eingaben sammeln — scheme-aware via InputScheme (arrows in classic,
+  // WASD in arpg). `lastMoveDirection` is still updated below; it remains
+  // the Classic-scheme aim source AND the ARPG dead-zone fallback for
+  // InputScheme.getAimDirection. Do not stop updating it across schemes.
   let vx = 0, vy = 0;
-  if (cursors.left.isDown)  vx -= 1;
-  if (cursors.right.isDown) vx += 1;
-  if (cursors.up.isDown)    vy -= 1;
-  if (cursors.down.isDown)  vy += 1;
+  if (window.InputScheme && typeof window.InputScheme.getMovementInput === 'function') {
+    const mv = window.InputScheme.getMovementInput();
+    vx = mv.x;
+    vy = mv.y;
+  } else {
+    // Defensive fallback — InputScheme should always be present in this build.
+    if (cursors.left.isDown)  vx -= 1;
+    if (cursors.right.isDown) vx += 1;
+    if (cursors.up.isDown)    vy -= 1;
+    if (cursors.down.isDown)  vy += 1;
+  }
 
   // Slow check: reduce speed if slowed
   let effectiveSpeed = playerSpeed;
@@ -1089,9 +1171,38 @@ function handleMobileMovement() {
 }
 
 function handlePlayerAttack() {
-  if (Phaser.Input.Keyboard.JustDown(spaceKey)) {
+  // InputScheme.isBasicAttackTriggered fires once per Space press OR per
+  // left-mouse-button press (flag set by main.js pointerdown handler). It
+  // already gates on shouldSuppressCombatInput, so no local guard needed.
+  if (window.InputScheme && typeof window.InputScheme.isBasicAttackTriggered === 'function') {
+    if (window.InputScheme.isBasicAttackTriggered()) {
+      attack.call(this);
+    }
+  } else if (Phaser.Input.Keyboard.JustDown(spaceKey)) {
+    // Defensive fallback if InputScheme is not loaded.
     attack.call(this);
   }
+}
+
+// Resolve the current aim as a normalized Phaser.Math.Vector2.
+// In Classic mode this is lastMoveDirection; in ARPG it's the cursor-based
+// aim from InputScheme (with dead-zone fallback to last known). Degenerate
+// (0,0) input is coerced to (0,1) downward — same fallback the ability
+// functions used before this refactor.
+function _getAimVector2(scene) {
+  let ax = 0, ay = 0;
+  if (window.InputScheme && typeof window.InputScheme.getAimDirection === 'function') {
+    const aim = window.InputScheme.getAimDirection(scene || null, player);
+    ax = aim ? aim.x : 0;
+    ay = aim ? aim.y : 0;
+  } else {
+    ax = lastMoveDirection.x;
+    ay = lastMoveDirection.y;
+  }
+  const v = new Phaser.Math.Vector2(ax, ay);
+  if (v.lengthSq() === 0) v.set(0, 1);
+  v.normalize();
+  return v;
 }
 
 function showAttackEffect(scene, options = {}) {
@@ -1105,7 +1216,7 @@ function showAttackEffect(scene, options = {}) {
     duration = 100
   } = options;
 
-  const angle = lastMoveDirection.angle?.() ?? 0;
+  const angle = _getAimVector2(scene).angle();
   const g = scene.add.graphics();
   g.fillStyle(color, alpha);
   g.slice(
@@ -1124,7 +1235,38 @@ function showAttackEffect(scene, options = {}) {
 function handleEnemyHit(scene, enemy, options = {}) {
   if (!scene || !enemy) return;
 
+  // Lazy hp bar — every enemy gets a small healthbar above its head once it
+  // takes its first hit. Bosses + mini-bosses have their own bars (boss UI
+  // / drawMiniBossBar) so we skip them. Newly-spawned enemies that haven't
+  // been hit show no bar so the room doesn't read as cluttered.
+  if (enemy.active && enemy.hp > 0 && !enemy.isMiniBoss && !enemy.isBoss) {
+    if (!enemy.hpBar && scene.add && typeof scene.add.graphics === 'function') {
+      enemy.hpBar = scene.add.graphics().setDepth(1001);
+      if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
+        scene.enemyLayer.add(enemy.hpBar);
+      }
+      enemy.on('destroy', () => {
+        try { if (enemy.hpBar) enemy.hpBar.destroy(); } catch (_) {}
+      });
+    }
+    if (enemy.hpBar) drawEnemyHpBar(enemy);
+  }
+
   if (enemy.hp <= 0) {
+    // Issue #24: chance to drop a Druckblatt on kill. Elite enemies have
+    // a higher chance. Direct call to PrintingHouse.addDruckblaetter
+    // (clamped to the 50-cap inside). Drops nothing visible — counter
+    // ticks up in the Druckerei UI summary.
+    if (window.PrintingHouse && typeof window.PrintingHouse.addDruckblaetter === 'function') {
+      try {
+        var dropChance = enemy.isElite ? 0.18 : 0.06;
+        if (enemy.isMiniBoss) dropChance = 0.40;
+        if (enemy.isBoss) dropChance = 1.00; // bosses always drop
+        if (Math.random() < dropChance) {
+          window.PrintingHouse.addDruckblaetter(enemy.isBoss ? 3 : (enemy.isMiniBoss ? 2 : 1));
+        }
+      } catch (_) { /* never crash gameplay */ }
+    }
     if (window.soundManager) window.soundManager.playSFX('enemy_death');
     // Particle effects: death burst + screen shake
     if (window.particleFactory) {
@@ -1253,6 +1395,7 @@ function attack() {
   // Melee can also break destructible obstacles (chests, barrels, crates) in front of player
   if (obstacles && obstacles.children && typeof window.breakDestructibleObstacle === 'function') {
     const meleeRange = attackRange;
+    const aim = _getAimVector2(this);
     const targets = [];
     obstacles.children.iterate(obs => {
       if (!obs || !obs.active || !obs.getData || !obs.getData('destructible')) return;
@@ -1263,8 +1406,13 @@ function attack() {
       const dist = Math.sqrt(distSq);
       const ndx = dx / dist;
       const ndy = dy / dist;
-      const dotO = lastMoveDirection.x * ndx + lastMoveDirection.y * ndy;
-      if (dotO > 0.5) targets.push(obs);
+      const dotO = aim.x * ndx + aim.y * ndy;
+      if (dotO <= 0.5) return;
+      // LOS gate: don't break crates/barrels through closed doors or walls.
+      // Uses the cached fog-of-war vision polygon (raycast-derived). Fails
+      // open if the polygon isn't ready yet so combat never softlocks.
+      if (!hasLineOfSightToTarget(obs)) return;
+      targets.push(obs);
     });
     targets.forEach(t => window.breakDestructibleObstacle(this, t));
   }
@@ -1454,7 +1602,7 @@ function releaseChargedSlash(forceMaxCharge = false) {
     duration: 200
   });
 
-  const forward = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
+  const forward = _getAimVector2(scene);
   if (forward.lengthSq() === 0) {
     forward.set(0, 1);
   }
@@ -1530,9 +1678,7 @@ function dashSlash() {
   const scene = this;
   const baseCooldown = getDashSlashCooldown();
   const finalCooldown = applyCooldownModifier(baseCooldown, 'dash');
-  const dashDir = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
-  if (dashDir.lengthSq() === 0) dashDir.set(0, 1);
-  dashDir.normalize();
+  const dashDir = _getAimVector2(scene);
 
   if (isDashing) return;
   isDashing = true;
@@ -1553,6 +1699,52 @@ function dashSlash() {
   const threshold = Math.cos(DASH_SLASH_ARC / 2);
   const knockback = 180;
   const damageMultiplier = 1.1;
+
+  // Track previous position to detect wall crossings (Issue #21).
+  // High dash velocity (~1000 px/s) can tunnel through static obstacle bodies
+  // before the physics collider resolves; we manually raycast each tick.
+  let prevDashX = player.x;
+  let prevDashY = player.y;
+
+  // Returns true if the segment from (fromX,fromY)->(toX,toY) crosses a wall
+  // (obstacle group rectangle or closed door). Mirrors hasLineOfSightToEnemy
+  // but operates on arbitrary points instead of two sprites.
+  const dashCrossedWall = (fromX, fromY, toX, toY) => {
+    const line = new Phaser.Geom.Line(fromX, fromY, toX, toY);
+    if (obstacles && obstacles.children) {
+      let blocked = false;
+      obstacles.children.iterate((o) => {
+        if (blocked || !o) return;
+        if (o.getData && o.getData('walkthrough')) return;
+        if (Phaser.Geom.Intersects.LineToRectangle(line, o.getBounds())) blocked = true;
+      });
+      if (blocked) return true;
+    }
+    if (scene && scene._doorGroup) {
+      let blocked = false;
+      scene._doorGroup.children.iterate((door) => {
+        if (blocked || !door || !door.active) return;
+        if (door.getData && door.getData('walkthrough')) return;
+        if (Phaser.Geom.Intersects.LineToRectangle(line, door.getBounds())) blocked = true;
+      });
+      if (blocked) return true;
+    }
+    return false;
+  };
+
+  const stopDashAtWall = () => {
+    if (!isDashing) return;
+    if (player && player.active) {
+      // Snap back to the last known safe position to undo any tunneling that
+      // happened during this physics step.
+      player.x = prevDashX;
+      player.y = prevDashY;
+      if (player.setVelocity) player.setVelocity(0, 0);
+      if (player.body) player.body.setMaxVelocity(220, 220);
+      if (player.clearTint) player.clearTint();
+    }
+    isDashing = false;
+  };
 
   const applyDashDamage = () => {
     forEachEnemyInRange(dashRange, (enemy, { dx, dy }) => {
@@ -1587,8 +1779,16 @@ function dashSlash() {
   const repeat = Math.max(0, Math.floor(dashDuration / tick) - 1);
   for (let i = 1; i <= repeat; i++) {
     scene.time.delayedCall(i * tick, () => {
+      if (!isDashing || !player || !player.active) return;
+      // Issue #21: abort the dash if we crossed a wall since the last tick.
+      if (dashCrossedWall(prevDashX, prevDashY, player.x, player.y)) {
+        stopDashAtWall();
+        return;
+      }
+      prevDashX = player.x;
+      prevDashY = player.y;
       applyDashDamage();
-      if (window.particleFactory && player && player.active) {
+      if (window.particleFactory) {
         window.particleFactory.abilityTrail(player.x, player.y, 0x7fd6ff);
       }
     });
@@ -1658,9 +1858,7 @@ function _fireBowArrow(scene) {
   if (!scene || !player || !playerProjectiles) return;
   ensurePlayerArrowTexture(scene);
 
-  const dir = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
-  if (dir.lengthSq() === 0) dir.set(0, 1);
-  dir.normalize();
+  const dir = _getAimVector2(scene);
 
   const spawnOffset = 22;
   const projectile = scene.physics.add.sprite(
@@ -1704,9 +1902,7 @@ function throwDagger() {
   const scene = this;
   ensurePlayerDaggerTexture(scene);
 
-  const dir = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
-  if (dir.lengthSq() === 0) dir.set(0, 1);
-  dir.normalize();
+  const dir = _getAimVector2(scene);
 
   const spawnOffset = 24;
   const projectile = scene.physics.add.sprite(
@@ -1758,9 +1954,7 @@ function shieldBash() {
   const range = getShieldBashRange();
   const cooldown = getShieldBashCooldown();
   const finalCooldown = applyCooldownModifier(cooldown, 'shield');
-  const forward = lastMoveDirection.clone?.() ?? new Phaser.Math.Vector2(lastMoveDirection.x, lastMoveDirection.y);
-  if (forward.lengthSq() === 0) forward.set(0, 1);
-  forward.normalize();
+  const forward = _getAimVector2(scene);
 
   showAttackEffect(scene, {
     range,
@@ -1867,6 +2061,12 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
 }
 
 function addXP(amount = 1) {
+  // Issue #26 — Knowledge-Tree xpMult wraps the incoming amount once at the
+  // function boundary so every call site (lore-fragment, enemy kill, quest
+  // reward) benefits without per-site changes.
+  if (window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.xpMult > 1) {
+    amount = Math.round(amount * window.knowledgeTreeBuffs.xpMult);
+  }
   playerXP += amount;
 
   if (playerXP >= neededXP) {

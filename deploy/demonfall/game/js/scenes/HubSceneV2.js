@@ -34,7 +34,7 @@ if (window.i18n) {
     'hub.skills.requires': 'Benötigt:',
     'hub.skills.respec': '[ Zurücksetzen ({cost} Eisenbrocken) ]',
     'hub.skills.close': '[ Schließen ]',
-    'hub.skills.learn': '[ Skills lernen ] (K)',
+    'hub.knowledge.learn': '[ Wissen lernen ] (K)',
     'hub.skills.shop': '[ Schwarzmarkt ] (M)',
     'hub.dialog.hint.next': 'Leer / Enter: weiter',
     'hub.dialog.hint.choose': '1-{count}: wählen',
@@ -72,7 +72,7 @@ if (window.i18n) {
     'hub.skills.requires': 'Requires:',
     'hub.skills.respec': '[ Respec ({cost} Iron Chunks) ]',
     'hub.skills.close': '[ Close ]',
-    'hub.skills.learn': '[ Learn Skills ] (K)',
+    'hub.knowledge.learn': '[ Knowledge Tree ] (K)',
     'hub.skills.shop': '[ Black Market ] (M)',
     'hub.dialog.hint.next': 'Space / Enter: next',
     'hub.dialog.hint.choose': '1-{count}: choose',
@@ -120,6 +120,43 @@ class HubSceneV2 extends Phaser.Scene {
     this._dialogOpen = false;
     this._activeInteractable = null;
     this._dialogContainer = null;
+
+    // Tutorial wiring (feature 044). Reset per-scene flags; mount overlay if
+    // the tutorial is currently active. The onChange subscription handles
+    // late activation (e.g. user clicked Replay in Settings).
+    this._movementReported = false;
+    this._lastApproachedName = null;
+    this._currentDialogNpc = null;
+    if (window.TutorialOverlay && window.TutorialSystem && typeof window.TutorialSystem.isActive === 'function' && window.TutorialSystem.isActive()) {
+      this._tutorialOverlay = window.TutorialOverlay.create(this);
+      this._tutorialOverlay.mount();
+    }
+    if (window.TutorialSystem && typeof window.TutorialSystem.onChange === 'function') {
+      this._tutorialUnsub = window.TutorialSystem.onChange((step) => {
+        if (step && !this._tutorialOverlay && window.TutorialOverlay) {
+          this._tutorialOverlay = window.TutorialOverlay.create(this);
+          this._tutorialOverlay.mount();
+        } else if (!step && this._tutorialOverlay) {
+          this._tutorialOverlay.unmount();
+          this._tutorialOverlay = null;
+        }
+      });
+    }
+    // hub.returned event — fired only on re-entry from GameScene (which
+    // passes data.gameState via the transition config in main.js
+    // leaveDungeonForHub). On the initial hub mount, scene.settings.data is
+    // empty, so this branch is a no-op.
+    const sceneData = this.scene && this.scene.settings && this.scene.settings.data;
+    if (sceneData && sceneData.gameState && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('hub.returned', {});
+    }
+
+    // Bind InputScheme BEFORE createPlayer — the player's first
+    // updatePlayerSpriteAnimation call reads getAimDirection in ARPG mode,
+    // which needs primitives set up.
+    if (window.InputScheme && typeof window.InputScheme.init === 'function') {
+      window.InputScheme.init(this);
+    }
 
     this.createColliders();
     this.createEntrances();
@@ -245,6 +282,11 @@ class HubSceneV2 extends Phaser.Scene {
         window.questSystem.offQuestUpdate(this._questUpdateHandler);
         this._questUpdateHandler = null;
       }
+      // Tutorial cleanup (044). Overlay self-cleans on shutdown via its own
+      // hook, so this is defensive insurance — the unsub guards against double
+      // calls.
+      if (this._tutorialUnsub) { this._tutorialUnsub(); this._tutorialUnsub = null; }
+      if (this._tutorialOverlay) { this._tutorialOverlay.unmount(); this._tutorialOverlay = null; }
       if (window.soundManager) window.soundManager.stopMusic();
     });
   }
@@ -545,10 +587,18 @@ class HubSceneV2 extends Phaser.Scene {
     let inputX = 0, inputY = 0;
     
     if (!this._dialogOpen) {
-      if (this.cursors.left.isDown) inputX -= 1;
-      if (this.cursors.right.isDown) inputX += 1;
-      if (this.cursors.up.isDown) inputY -= 1;
-      if (this.cursors.down.isDown) inputY += 1;
+      // Scheme-aware movement (arrows in classic, WASD in arpg). Falls back
+      // to direct cursor reads if InputScheme is unavailable for any reason.
+      if (window.InputScheme && typeof window.InputScheme.getMovementInput === 'function') {
+        const mv = window.InputScheme.getMovementInput();
+        inputX = mv.x;
+        inputY = mv.y;
+      } else {
+        if (this.cursors.left.isDown) inputX -= 1;
+        if (this.cursors.right.isDown) inputX += 1;
+        if (this.cursors.up.isDown) inputY -= 1;
+        if (this.cursors.down.isDown) inputY += 1;
+      }
       const speed = (typeof playerSpeed !== 'undefined' ? playerSpeed : 220);
       let velX, velY;
       // Joystick takes precedence on mobile when deflected past dead zone.
@@ -566,6 +616,23 @@ class HubSceneV2 extends Phaser.Scene {
         velY = (inputY / len) * speed * (inputX || inputY ? 1 : 0);
       }
       p.setVelocity(velX, velY);
+      // Tutorial: only emit player.moved while the current step actually
+      // expects it. Without this gate we'd emit every frame the player
+      // moved (60+ events/s) for the entire game session — TutorialSystem
+      // would short-circuit them but the debug log + report() overhead
+      // floods the console. Re-checking the expected-event each frame is
+      // cheap (shallow object clone). On the movement step we still emit
+      // per-frame so a dropped event (minDisplayMs not yet elapsed) is
+      // followed by another attempt next frame.
+      if ((velX !== 0 || velY !== 0)
+          && window.TutorialSystem
+          && typeof window.TutorialSystem.getCurrentStep === 'function') {
+        var _ts_step = window.TutorialSystem.getCurrentStep();
+        if (_ts_step && _ts_step.completion
+            && _ts_step.completion.event === 'player.moved') {
+          window.TutorialSystem.report('player.moved', { dx: velX, dy: velY });
+        }
+      }
       if (typeof updatePlayerSpriteAnimation === 'function') {
         updatePlayerSpriteAnimation(p, velX, velY);
       }
@@ -668,6 +735,18 @@ class HubSceneV2 extends Phaser.Scene {
       this._activeInteractable = null;
       this.prompt.setVisible(false);
     }
+
+    // Tutorial: emit hub.entrance.approached when the active entrance
+    // changes (steps 3, 5, 12). Edge-triggered to avoid per-frame spam.
+    // The name is the stable hubLayout id (e.g. "Werkstatt", "Rathauskeller",
+    // "Druckerei") — not the localized label.
+    const approachedName = (active && active.type === 'entrance') ? (active.data && (active.data.id || active.data.name || activeLabel)) : null;
+    if (approachedName !== this._lastApproachedName) {
+      this._lastApproachedName = approachedName;
+      if (approachedName && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+        window.TutorialSystem.report('hub.entrance.approached', { name: approachedName });
+      }
+    }
   }
 
   _handleInteract() {
@@ -689,6 +768,14 @@ class HubSceneV2 extends Phaser.Scene {
   _showNpcDialogue(npcData) {
     console.log('[HubSceneV2] Opening NPC dialogue for:', npcData.name);
     this._dialogOpen = true;
+    // Tutorial: track which NPC owns this dialog so dialog.closed can carry
+    // the same identifier; emit dialog.opened (step 4 trigger via Branka,
+    // step 12 via Setzer Thom). Use a stable id where available so language
+    // switches don't break the matcher.
+    this._currentDialogNpc = (npcData && (npcData.id || npcData.name)) || null;
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('dialog.opened', { npc: this._currentDialogNpc });
+    }
 
     if (this._dialogContainer) {
       this._dialogContainer.destroy(true);
@@ -714,7 +801,15 @@ class HubSceneV2 extends Phaser.Scene {
         questData = activeForNpc[0];
       } else {
         const available = qs.getAvailableQuests(npcId);
-        if (available.length > 0) {
+        // Printing-House: when Council suspicion is at active_hunt, Aldric
+        // refuses to hand out new quests (existing turn-ins / progress are
+        // still allowed so the player isn't soft-locked).
+        let aldricRefuses = false;
+        if (npcId === 'aldric' && window.PrintingHouse
+            && typeof window.PrintingHouse.getRetaliationTier === 'function') {
+          aldricRefuses = window.PrintingHouse.getRetaliationTier() === 'active_hunt';
+        }
+        if (available.length > 0 && !aldricRefuses) {
           questMode = 'offer';
           questData = available[0];
         }
@@ -817,6 +912,25 @@ class HubSceneV2 extends Phaser.Scene {
       });
 
     } else {
+      // Faction-tier greeting (feature 045). When the NPC carries a
+      // factionId and FactionSystem is available, prepend a single
+      // tier-aware greeting page from `faction.<id>.greet.<tier>`. The
+      // existing flavor pages still play after it, so the greeting reads
+      // as a tonal opener rather than a replacement. Falls back silently
+      // when FactionSystem is missing (build without #045 still works).
+      if (npcData.factionId && window.FactionSystem &&
+          typeof window.FactionSystem.getTier === 'function') {
+        const tier = window.FactionSystem.getTier(npcData.factionId);
+        const greetKey = 'faction.' + (npcData.id || 'unknown') + '.greet.' + tier;
+        const greetText = (window.i18n && typeof window.i18n.t === 'function')
+          ? window.i18n.t(greetKey)
+          : greetKey;
+        // Only prepend if the i18n lookup actually returned localized text
+        // (some t() implementations return the raw key on miss — that's
+        // still distinct from the npcData.lines flavor content, so it's
+        // acceptable as a fallback).
+        if (greetText) pages.push({ text: greetText, choices: null });
+      }
       // Flavor dialogue — use dynamic story lines, show as multiple pages
       const storyLines = (window.storySystem && typeof window.storySystem.getNpcDialogue === 'function')
         ? window.storySystem.getNpcDialogue(npcId)
@@ -961,10 +1075,10 @@ class HubSceneV2 extends Phaser.Scene {
       });
     }
 
-    // Mara skill tree button (keep existing behavior)
+    // Mara knowledge tree button (replaces legacy skill tree per feature 047)
     if (isMaraFlavor) {
       const maraBtnY = bodyText.y + bodyHeight + 16;
-      const skillsBtn = this.add.text(0, maraBtnY, _HUB_T('hub.skills.learn'), {
+      const skillsBtn = this.add.text(0, maraBtnY, _HUB_T('hub.knowledge.learn'), {
         fontFamily: 'monospace',
         fontSize: 14,
         color: '#ffffff',
@@ -976,8 +1090,8 @@ class HubSceneV2 extends Phaser.Scene {
         event.stopPropagation();
         this._closeDialog(keyClosers);
         this.time.delayedCall(100, () => {
-          if (typeof this._showSkillTreeUI === 'function') {
-            this._showSkillTreeUI();
+          if (typeof this._showKnowledgeTreeUI === 'function') {
+            this._showKnowledgeTreeUI();
           }
         });
       });
@@ -1052,19 +1166,34 @@ class HubSceneV2 extends Phaser.Scene {
         keyClosers.push({ eventName: 'keydown-ENTER', handler: closeHandler });
         this.input.keyboard.on('keydown-E', closeHandler);
         keyClosers.push({ eventName: 'keydown-E', handler: closeHandler });
+      } else {
+        // hasChoices: bind E and Enter to the primary choice (#3).
+        // Prefer 'accept' or 'complete' actions; otherwise first listed choice.
+        const primaryChoice =
+          page.choices.find(c => c.action === 'accept' || c.action === 'complete')
+          || page.choices[0];
+        if (primaryChoice) {
+          const primaryHandler = () => {
+            this._handleDialogueChoice(primaryChoice.action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers);
+          };
+          this.input.keyboard.on('keydown-E', primaryHandler);
+          keyClosers.push({ eventName: 'keydown-E', handler: primaryHandler });
+          this.input.keyboard.on('keydown-ENTER', primaryHandler);
+          keyClosers.push({ eventName: 'keydown-ENTER', handler: primaryHandler });
+        }
       }
 
       if (npcData.id === 'mara' && questMode === 'flavor' && !hasChoices) {
-        const skillHandler = () => {
+        const knowledgeHandler = () => {
           this._closeDialog(keyClosers);
           this.time.delayedCall(100, () => {
-            if (typeof this._showSkillTreeUI === 'function') {
-              this._showSkillTreeUI();
+            if (typeof this._showKnowledgeTreeUI === 'function') {
+              this._showKnowledgeTreeUI();
             }
           });
         };
-        this.input.keyboard.on('keydown-K', skillHandler);
-        keyClosers.push({ eventName: 'keydown-K', handler: skillHandler });
+        this.input.keyboard.on('keydown-K', knowledgeHandler);
+        keyClosers.push({ eventName: 'keydown-K', handler: knowledgeHandler });
 
         // WP06: M opens the Schwarzmarkt overlay.
         const shopHandler = () => {
@@ -1088,15 +1217,22 @@ class HubSceneV2 extends Phaser.Scene {
     // dialog. Phaser scene input listeners are not blocked by GameObject
     // event.stopPropagation().
     if (!hasChoices) {
-      this.input.once('pointerdown', () => {
+      // Store the handler so _closeDialog can detach it. Without that, a key-
+      // driven dialog close (e.g. K opens Knowledge Tree) leaves this once-
+      // listener registered; the first click inside the follow-up modal then
+      // re-enters closeDialog() and tears the modal down.
+      const advanceHandler = () => {
         if (!this._dialogOpen) return; // dialog was already closed by a button
+        this._dialogPointerOnce = null;
         if (hasNextPage) {
           this._cleanupKeyClosers(keyClosers);
           this._showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex + 1);
         } else {
           closeDialog();
         }
-      });
+      };
+      this._dialogPointerOnce = advanceHandler;
+      this.input.once('pointerdown', advanceHandler);
     }
   }
 
@@ -1139,6 +1275,31 @@ class HubSceneV2 extends Phaser.Scene {
   _closeDialog(keyClosers) {
     if (!this._dialogOpen) return;
     this._dialogOpen = false;
+    // Detach the page-advance/close once-pointerdown if it's still pending.
+    // Otherwise it survives into any modal opened right after this dialog
+    // (Knowledge Tree, Shop, etc.) and closes that modal on the first click.
+    if (this._dialogPointerOnce) {
+      try { this.input.off('pointerdown', this._dialogPointerOnce); } catch (_) {}
+      this._dialogPointerOnce = null;
+    }
+    // E-key race: pressing E to confirm the dialog's primary choice (Akzeptieren)
+    // ALSO fires the global keydown-E handler (_handleInteract) registered in
+    // create(). Order is per-dialog first → close → global handler runs with
+    // _dialogOpen=false and the still-cached _activeInteractable=Aldric, which
+    // would re-open the dialog. Clearing _activeInteractable here breaks that
+    // race; _refreshInteractionPrompt resets it next frame if the player is
+    // still in range.
+    this._activeInteractable = null;
+    if (this.prompt && typeof this.prompt.setVisible === 'function') {
+      this.prompt.setVisible(false);
+    }
+    // Tutorial: emit dialog.closed with the npc identifier captured on open
+    // (steps quest.close advances here). Single funnel — every close
+    // path goes through _closeDialog.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('dialog.closed', { npc: this._currentDialogNpc });
+    }
+    this._currentDialogNpc = null;
 
     if (this._dialogContainer) {
       this._dialogContainer.destroy(true);
@@ -1190,6 +1351,12 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   _handleJournal() {
+    // Tutorial: journal.hint step advances on any J press (binding-only
+    // tutorial purpose — fires even when the journal overlay refuses to
+    // open because another dialog is active).
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('journal.opened', {});
+    }
     if (this._dialogOpen) return;
     if (!window.storySystem || typeof window.storySystem.showJournalOverlay !== 'function') return;
 
@@ -1199,7 +1366,115 @@ class HubSceneV2 extends Phaser.Scene {
     });
   }
 
+  // Issue #24: Druckerei dialog. Renders a list of edicts (cost / tier /
+  // status) plus bribe + gold-trade + close options on the standard
+  // _showNpcDialogue choice page. Each successful action closes and
+  // re-opens the dialog so the summary line refreshes.
+  _showPrintingHouseDialog() {
+    var ph = window.PrintingHouse;
+    if (!ph) return;
+    var paper = ph.getDruckblaetter();
+    var suspicion = ph.getSuspicion();
+    var active = ph.getActivePublication();
+    var T = function (k, params) { return (window.i18n ? window.i18n.t(k, params) : k); };
+
+    var summaryLine = T('printingHouse.summary', { paper: paper, cap: 50, suspicion: suspicion });
+    if (active) {
+      summaryLine += '\n[Aktiv: ' + T('printingHouse.edict.' + active.id + '.label') + ']';
+    }
+
+    var choices = [];
+    var catalog = ph.getEdictCatalog();
+    catalog.forEach(function (e) {
+      var lbl = T('printingHouse.edict.' + e.id + '.label');
+      var tierLbl = T('printingHouse.tier.' + e.tier);
+      var costLbl = '(' + e.cost + 'p, +' + e.suspicionCost + 'V)';
+      var statusLbl = '';
+      if (active) statusLbl = ' — gesperrt';
+      else if (!e.isUnlocked) statusLbl = ' — Standing ' + e.requireStanding;
+      else if (paper < e.cost) statusLbl = ' — zu wenig';
+      var label = '[' + tierLbl + '] ' + lbl + ' ' + costLbl + statusLbl;
+      var self = this;
+      choices.push({
+        label: label,
+        action: 'ph_publish_' + e.id,
+        _phEdictId: e.id
+      });
+    }, this);
+
+    if (suspicion > 0) {
+      choices.push({ label: T('printingHouse.choice.bribe'), action: 'ph_bribe' });
+    }
+    if (paper < 50) {
+      choices.push({ label: T('printingHouse.choice.tradegold'), action: 'ph_tradegold' });
+    }
+    choices.push({ label: T('printingHouse.choice.close'), action: 'ph_close' });
+
+    // Synthesize an NPC payload that goes through the existing
+    // _showDialoguePages code path. The page-action handler is hooked via
+    // overriding _handleDialogueChoice for the duration of this dialog.
+    var npcData = { id: 'setzer_thom', name: T('printingHouse.npc.name'), lines: [] };
+    var pages = [
+      { text: T('printingHouse.dialog.intro') + '\n\n' + summaryLine, choices: choices }
+    ];
+    var origHandler = this._handleDialogueChoice;
+    var self = this;
+    this._handleDialogueChoice = function (action, npcData2, titleStr, pagesArg, questMode, questData, pageIndex, keyClosers) {
+      // Restore handler before any branch returns / re-opens.
+      self._handleDialogueChoice = origHandler;
+      var toast = function (msg) {
+        try { console.log('[Druckerei]', msg); } catch (_) {}
+      };
+      if (action === 'ph_close') {
+        self._closeDialog(keyClosers);
+        return;
+      }
+      if (action === 'ph_bribe') {
+        var ok = ph.bribe();
+        toast(ok ? 'Aldric beschwichtigt' : 'Bribe fehlgeschlagen');
+        self._closeDialog(keyClosers);
+        self.time && self.time.delayedCall ? self.time.delayedCall(150, function () { self._showPrintingHouseDialog(); }) : self._showPrintingHouseDialog();
+        return;
+      }
+      if (action === 'ph_tradegold') {
+        var ok2 = ph.tradeGoldForPaper();
+        toast(ok2 ? '+1 Druckblatt' : 'Trade fehlgeschlagen');
+        self._closeDialog(keyClosers);
+        self.time && self.time.delayedCall ? self.time.delayedCall(150, function () { self._showPrintingHouseDialog(); }) : self._showPrintingHouseDialog();
+        return;
+      }
+      if (typeof action === 'string' && action.indexOf('ph_publish_') === 0) {
+        var edictId = action.substring('ph_publish_'.length);
+        var result = ph.publishEdict(edictId);
+        toast(result.success ? 'Edikt veröffentlicht: ' + edictId : 'Publish fehlgeschlagen: ' + (result.reason || ''));
+        self._closeDialog(keyClosers);
+        if (result.success) {
+          // Don't re-open after a successful publish — let the player leave
+          // the Druckerei to enter the dungeon and see the effect.
+        } else {
+          self.time && self.time.delayedCall ? self.time.delayedCall(150, function () { self._showPrintingHouseDialog(); }) : self._showPrintingHouseDialog();
+        }
+        return;
+      }
+      // Fallback: defer to original handler (shouldn't happen).
+      origHandler.call(self, action, npcData2, titleStr, pagesArg, questMode, questData, pageIndex, keyClosers);
+    };
+    this._showDialoguePages(npcData, T('printingHouse.dialog.title'), pages, 'flavor', null, 0);
+  }
+
   _handleLoadout() {
+    // K is also re-bound inside Mara's dialog (feature 047) to open the
+    // Knowledge Tree. Both handlers fire on the same key event; if this
+    // scene-wide handler runs while a dialog is open, the Loadout overlay
+    // ends up underneath the Knowledge Tree modal with setInteractive(),
+    // silently swallowing every click. Gate on _dialogOpen so the
+    // Mara-scoped handler wins when the player is at an NPC.
+    if (this._dialogOpen) return;
+    // Tutorial: skill.loadout step advances on K-press whether or not the
+    // overlay itself can open (binding-only purpose).
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('loadout.opened', {});
+    }
     if (typeof window.openLoadoutUI === 'function') {
       window.openLoadoutUI(this);
     } else {
@@ -1210,6 +1485,11 @@ class HubSceneV2 extends Phaser.Scene {
 
   _enterLocation(entranceData) {
     console.log('[HubSceneV2] Entering:', entranceData.id, '-> target:', entranceData.target);
+    // Tutorial: emit hub.entrance.entered before any scene transition or
+    // dialog-stub flow runs (covers steps 6 and 12). Stable id used.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('hub.entrance.entered', { name: entranceData && (entranceData.id || entranceData.name) });
+    }
     
     if (entranceData.target === 'GameScene') {
       this._openWaveSelectDialog((selectedWave, selectedDifficulty) => {
@@ -1263,10 +1543,21 @@ class HubSceneV2 extends Phaser.Scene {
         this.scene.start('CraftingScene');
       });
     } else if (entranceData.target === 'druckerei') {
-      this._showNpcDialogue({
-        name: _HUB_T('hub.druckerei.name'),
-        lines: [_HUB_T('hub.druckerei.line1'), _HUB_T('hub.druckerei.line2')]
-      });
+      // Issue #24: open the dedicated full-overlay PrintingHouseScene
+      // (tier columns + edict cards + status bar). Falls back to the
+      // legacy inline choice dialog if the scene script isn't loaded.
+      // Locked until aldric_cleanup is completed (FR-30).
+      var ph = window.PrintingHouse;
+      if (!ph || !ph.isUnlocked()) {
+        this._showNpcDialogue({
+          name: 'Setzer Thom',
+          lines: [_HUB_T('printingHouse.dialog.locked')]
+        });
+      } else if (typeof window.openPrintingHouseScene === 'function') {
+        window.openPrintingHouseScene(this);
+      } else {
+        this._showPrintingHouseDialog();
+      }
     }
   }
 
@@ -1556,8 +1847,15 @@ class HubSceneV2 extends Phaser.Scene {
     this._dialogContainer = container;
   }
 
-  _showSkillTreeUI() {
-    if (!window.SKILL_TREES || typeof window.getMaterialCount !== 'function') {
+  // Feature 047 - Knowledge Tree MVP. Replaces the legacy _showSkillTreeUI
+  // modal that previously lived here. Mara's dialog button + K-key both invoke
+  // this modal; the legacy SKILL_TREES iron-chunks tree is gone from V2.
+  // Note: js/scenes/HubScene.js (legacy non-V2) still has its own
+  // _showSkillTreeUI -- that file is loaded by index.html but is not the
+  // active hub, so leaving it untouched is safe.
+  _showKnowledgeTreeUI() {
+    if (!window.KnowledgeTree) {
+      try { console.warn('[HubSceneV2] KnowledgeTree module not available'); } catch (_) {}
       return;
     }
 
@@ -1571,15 +1869,19 @@ class HubSceneV2 extends Phaser.Scene {
     const cw = cam.width;
     const ch = cam.height;
 
-    const overlay = this.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7)
-      .setDepth(2000)
-      .setScrollFactor(0);
-
     const panelW = Math.min(920, cw - 10);
     const panelH = Math.min(460, ch - 10);
+    this._ktPanelW = panelW;
+    this._ktPanelH = panelH;
+
     const container = this.add.container(cw / 2, ch / 2).setDepth(2001).setScrollFactor(0);
     this._dialogContainer = container;
 
+    // Overlay - parented to the container so destroy(true) cleans it up.
+    const overlay = this.add.rectangle(0, 0, cw, ch, 0x000000, 0.7).setScrollFactor(0);
+    container.add(overlay);
+
+    // Panel bg
     const bg = this.add.graphics();
     bg.fillStyle(0x0c0c14, 0.97);
     bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
@@ -1594,307 +1896,329 @@ class HubSceneV2 extends Phaser.Scene {
     headerBg.fillRect(-panelW / 2 + 2, -panelH / 2 + 2, panelW - 4, headerH);
     container.add(headerBg);
 
-    const titleText = this.add.text(-panelW / 2 + 14, -panelH / 2 + 8, _HUB_T('hub.skills.title'), {
-      fontFamily: 'serif', fontSize: 18, color: '#ffd166', fontStyle: 'bold', resolution: 2
-    }).setOrigin(0, 0);
+    const titleText = this.add.text(
+      -panelW / 2 + 14, -panelH / 2 + 8,
+      _HUB_T('knowledge.title'),
+      { fontFamily: 'serif', fontSize: 18, color: '#ffd166', fontStyle: 'bold', resolution: 2 }
+    );
     container.add(titleText);
 
-    const currentMaterials = window.getMaterialCount('MAT');
-    const matsText = this.add.text(panelW / 2 - 14, -panelH / 2 + 10, _HUB_T('hub.skills.materials', { count: currentMaterials }), {
-      fontFamily: 'monospace', fontSize: 12, color: '#8cb8ff', resolution: 2
-    }).setOrigin(1, 0);
-    container.add(matsText);
+    // Fragment counter - right side of header.
+    const state0 = window.KnowledgeTree.getState();
+    const fragText = this.add.text(
+      panelW / 2 - 14, -panelH / 2 + 8,
+      _HUB_T('knowledge.fragments', { count: state0.fragments }),
+      { fontFamily: 'serif', fontSize: 16, color: '#dde0e6', resolution: 2 }
+    ).setOrigin(1, 0);
+    container.add(fragText);
+    this._ktFragText = fragText;
 
-    const treeStartY = -panelH / 2 + headerH + 8;
-    const treeBottomY = panelH / 2 - 40; // leave room for close/respec buttons
-    const treeHeight = treeBottomY - treeStartY;
-    const treePadding = 8;
-    const trees = Object.values(window.SKILL_TREES);
-    const treeWidth = (panelW - treePadding * (trees.length + 1)) / trees.length;
+    // Card grid layer
+    this._ktCardLayer = this.add.container(0, 0);
+    container.add(this._ktCardLayer);
 
-    let treeX = -panelW / 2 + treePadding;
-    const skillHitAreas = [];
-    const skillNodePositions = {};
+    // Footer layer
+    this._ktFooterLayer = this.add.container(0, 0);
+    container.add(this._ktFooterLayer);
 
-    // Defined early so hitArea handlers can reference it (const is not hoisted)
-    const closeSkillUI = () => {
-      if (this._skillTooltip) {
-        this._skillTooltip.destroy(true);
-        this._skillTooltip = null;
-      }
-      skillHitAreas.forEach(ha => ha.destroy());
-      this._dialogOpen = false;
-      overlay.destroy();
-      container.destroy(true);
-      this._dialogContainer = null;
-    };
+    // Initial paint
+    this._ktRenderCards();
+    this._ktRenderFooter();
 
-    trees.forEach((tree, treeIdx) => {
-      const treeColor = Phaser.Display.Color.HexStringToColor(tree.color).color;
+    // CRITICAL: Phaser Container.setScrollFactor(x, y, true) propagates only
+    // one level deep — it does NOT recurse into nested containers. The card
+    // grid lives 3 levels deep (_dialogContainer → _ktCardLayer →
+    // cardContainer → investBtn). Without recursive propagation every child
+    // keeps scrollFactor=1, hit-areas drift with the hub camera, and
+    // pointerdown returns hits=0. Walk the tree manually.
+    this._ktPropagateScrollFactor(this._dialogContainer, 0, 0);
 
-      // Tree column background
-      const treeBg = this.add.graphics();
-      treeBg.fillStyle(0x12121e, 0.7);
-      treeBg.fillRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 8);
-      treeBg.lineStyle(1, treeColor, 0.3);
-      treeBg.strokeRoundedRect(treeX, treeStartY, treeWidth, treeHeight, 8);
-      container.add(treeBg);
-
-      // Tree title
-      const treeTitle = this.add.text(treeX + treeWidth / 2, treeStartY + 6, tree.name, {
-        fontFamily: 'serif', fontSize: 14, color: tree.color, fontStyle: 'bold', resolution: 2
-      }).setOrigin(0.5, 0);
-      container.add(treeTitle);
-
-      // Organize skills by tier
-      const skillsByTier = {};
-      tree.skills.forEach(skill => {
-        const tier = skill.tier || 1;
-        if (!skillsByTier[tier]) skillsByTier[tier] = [];
-        skillsByTier[tier].push(skill);
+    // Live updates via onChange subscription. Unsub handle is stored so
+    // _ktCloseModal can detach it (no leaks across re-opens -- FR-12).
+    // Phaser GameObjects set .scene to undefined on destroy — that's the
+    // reliable destroyed check (.destroyed is not a Phaser convention).
+    const self = this;
+    try {
+      this._ktUnsub = window.KnowledgeTree.onChange(function (state) {
+        if (self._ktFragText && self._ktFragText.scene) {
+          try {
+            self._ktFragText.setText(_HUB_T('knowledge.fragments', { count: state.fragments }));
+          } catch (_) { /* destroyed mid-flight — swallow */ }
+        }
+        // Defer the card re-render to the next tick: the subscriber may fire
+        // synchronously from an `invest()` triggered by the +-button's own
+        // pointerdown, and destroying the button mid-dispatch corrupts the
+        // Phaser input pipeline (modal stops responding / closes early).
+        if (self._ktCardLayer && self._ktCardLayer.scene) {
+          self._ktCardLayer.scene.time.delayedCall(0, function () {
+            if (self._ktCardLayer && self._ktCardLayer.scene) {
+              self._ktRenderCards();
+              // Re-propagate scrollFactor=0 recursively so newly created
+              // cards' interactive buttons get aligned hit-areas.
+              if (self._dialogContainer) {
+                self._ktPropagateScrollFactor(self._dialogContainer, 0, 0);
+              }
+            }
+          });
+        }
       });
+    } catch (e) {
+      try { console.warn('[HubSceneV2] KnowledgeTree.onChange failed', e); } catch (_) {}
+      this._ktUnsub = null;
+    }
 
-      const maxTier = Math.max(...Object.keys(skillsByTier).map(Number));
-      // Calculate box height to fill available space evenly
-      const availableH = treeHeight - 30; // after title
-      const boxH = Math.min(50, Math.floor((availableH - (maxTier - 1) * 4) / maxTier));
-      const tierGap = 4;
+    // ESC handler - stored on scene so _ktCloseModal can detach it.
+    this._ktEscHandler = () => this._ktCloseModal();
+    this.input.keyboard.on('keydown-ESC', this._ktEscHandler);
 
-      let currentSkillY = treeStartY + 26;
+    // Tear down subscriber + container if the scene shuts down or sleeps
+    // before the player explicitly closes the modal (e.g. walks straight
+    // from Mara to the dungeon entrance). Without this, the subscriber
+    // fires setText on a destroyed Text after scene.start('GameScene').
+    this.events.once('shutdown', () => { try { this._ktCloseModal(); } catch (_) {} });
+    this.events.once('sleep',    () => { try { this._ktCloseModal(); } catch (_) {} });
+  }
 
-      for (let tier = 1; tier <= maxTier; tier++) {
-        const tierSkills = skillsByTier[tier] || [];
-        if (tierSkills.length === 0) continue;
+  _ktRenderCards() {
+    if (!this._ktCardLayer || !window.KnowledgeTree) return;
+    this._ktCardLayer.removeAll(true);
 
-        const hGap = 4;
-        const availW = treeWidth - 12;
-        const boxW = Math.min(110, (availW - hGap * (tierSkills.length - 1)) / tierSkills.length);
-        const totalRowW = boxW * tierSkills.length + hGap * (tierSkills.length - 1);
-        const startX = treeX + (treeWidth - totalRowW) / 2;
+    const catalog = window.KnowledgeTree.getCatalog();
+    const state = window.KnowledgeTree.getState();
+    const fragments = state.fragments;
 
-        tierSkills.forEach((skill, idx) => {
-          const sx = startX + boxW / 2 + idx * (boxW + hGap);
-          const sy = currentSkillY;
+    const panelW = this._ktPanelW || 920;
+    const panelH = this._ktPanelH || 460;
+    const headerH = 32;
+    const footerH = 64;
+    const bodyW = panelW - 32;
+    const bodyH = panelH - headerH - footerH - 24;
+    const bodyTop = -panelH / 2 + headerH + 12;
 
-          skillNodePositions[skill.id] = { x: sx, y: sy + boxH / 2 };
+    const cols = 2;
+    const rows = Math.ceil(catalog.length / cols);
+    const cardGap = 10;
+    const cardW = (bodyW - cardGap * (cols - 1)) / cols;
+    const cardH = (bodyH - cardGap * (rows - 1)) / rows;
 
-          const owned = window.hasSkill(skill.id);
-          const canPurchase = window.canPurchaseSkill(skill.id);
-          const isActive = !!skill.isActive;
+    for (let i = 0; i < catalog.length; i++) {
+      const node = catalog[i];
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cardX = -bodyW / 2 + col * (cardW + cardGap) + cardW / 2;
+      const cardY = bodyTop + row * (cardH + cardGap) + cardH / 2;
 
-          // Colors based on state
-          let bgCol, borderCol, nameCol;
-          if (owned) {
-            bgCol = 0x1a3a1a; borderCol = 0x44cc44; nameCol = '#ffffff';
-          } else if (canPurchase.canPurchase) {
-            bgCol = 0x2a2a3a; borderCol = treeColor; nameCol = '#dddddd';
-          } else {
-            bgCol = 0x1a1a1a; borderCol = 0x333333; nameCol = '#555555';
-          }
+      const cardContainer = this.add.container(cardX, cardY);
+      this._ktCardLayer.add(cardContainer);
 
-          // Draw box
-          const box = this.add.graphics();
-          box.fillStyle(bgCol, 0.95);
-          box.fillRoundedRect(sx - boxW / 2, sy, boxW, boxH, 4);
-          box.lineStyle(owned ? 2 : 1, borderCol, 0.9);
-          box.strokeRoundedRect(sx - boxW / 2, sy, boxW, boxH, 4);
-          // Active skill indicator removed — shown in tooltip instead
-          container.add(box);
+      // Card bg
+      const cardBg = this.add.graphics();
+      cardBg.fillStyle(0x1a1a28, 0.95);
+      cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      cardBg.lineStyle(1, 0x3a3a4a, 0.8);
+      cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      cardContainer.add(cardBg);
 
-          // Skill name — top half of box
-          const nameFS = boxW < 60 ? 8 : (boxW < 90 ? 9 : 10);
-          const nameText = this.add.text(sx, sy + 4, skill.name, {
-            fontFamily: 'monospace', fontSize: nameFS, color: nameCol,
-            wordWrap: { width: boxW - 8 }, align: 'center', lineSpacing: -1, resolution: 2
-          }).setOrigin(0.5, 0);
-          container.add(nameText);
+      // Label
+      const label = this.add.text(
+        -cardW / 2 + 10, -cardH / 2 + 6,
+        _HUB_T(node.labelKey),
+        { fontFamily: 'serif', fontSize: 15, color: '#ffd166', fontStyle: 'bold', resolution: 2 }
+      );
+      cardContainer.add(label);
 
-          // Cost — bottom of box, clearly separated
-          const costStr = owned ? '\u2713' : skill.cost + '';
-          const costCol = owned ? '#44ff44' : (canPurchase.canPurchase ? '#ffcc44' : '#555555');
-          const costFS = boxW < 60 ? 9 : 10;
-          const costText = this.add.text(sx, sy + boxH - 4, costStr, {
-            fontFamily: 'monospace', fontSize: costFS, color: costCol, fontStyle: 'bold', resolution: 2
-          }).setOrigin(0.5, 1);
-          container.add(costText);
+      // Description
+      const desc = this.add.text(
+        -cardW / 2 + 10, -cardH / 2 + 26,
+        _HUB_T(node.descKey),
+        { fontFamily: 'serif', fontSize: 12, color: '#dde0e6', resolution: 2, wordWrap: { width: cardW - 60 } }
+      );
+      cardContainer.add(desc);
 
-          // Hit area — use zone for reliable hover/click detection
-          const worldX = sx + container.x;
-          const worldY = sy + boxH / 2 + container.y;
-          const hitArea = this.add.zone(worldX, worldY, boxW, boxH)
-            .setOrigin(0.5, 0.5).setDepth(2200).setScrollFactor(0)
-            .setInteractive({ useHandCursor: !owned && canPurchase.canPurchase });
+      // Rank text
+      const rank = state.ranks[node.id] | 0;
+      const rankText = this.add.text(
+        -cardW / 2 + 10, cardH / 2 - 22,
+        _HUB_T('knowledge.rank', { rank: rank, max: node.maxRank }),
+        { fontFamily: 'serif', fontSize: 12, color: '#a0a4ad', resolution: 2 }
+      );
+      cardContainer.add(rankText);
 
-          skillHitAreas.push(hitArea);
+      // Invest button - green if enabled, grey if not (no fragments OR maxed).
+      const canInvest = (fragments >= 1) && (rank < node.maxRank);
+      const btnColor = canInvest ? '#9bff9b' : '#666';
+      const btnBg = canInvest ? '#1f3a1f' : '#2a2a2a';
+      const investBtn = this.add.text(
+        cardW / 2 - 10, cardH / 2 - 26,
+        '+',
+        { fontFamily: 'monospace', fontSize: 18, fontStyle: 'bold', color: btnColor, backgroundColor: btnBg, padding: { x: 10, y: 2 }, resolution: 2 }
+      ).setOrigin(1, 0);
+      investBtn.setInteractive({ useHandCursor: canInvest });
+      cardContainer.add(investBtn);
 
-          hitArea.on('pointerover', () => {
-            if (this._skillTooltip) {
-              this._skillTooltip.destroy(true);
-              this._skillTooltip = null;
-            }
+      // Capture per-iteration so the re-render uses a fresh closure each time.
+      const nodeId = node.id;
+      const enabled = canInvest;
+      investBtn.on('pointerdown', (pointer, x, y, event) => {
+        if (event && event.stopPropagation) event.stopPropagation();
+        if (!enabled) return;
+        try { window.KnowledgeTree.invest(nodeId); }
+        catch (e) { try { console.warn('[HubSceneV2] invest failed', e); } catch (_) {} }
+        // Re-render is triggered by the onChange subscriber.
+      });
+    }
+  }
 
-            const tooltipLines = [
-              skill.name,
-              skill.description,
-              '',
-              _HUB_T('hub.skills.cost', { cost: skill.cost })
-            ];
+  _ktRenderFooter() {
+    if (!this._ktFooterLayer) return;
+    this._ktFooterLayer.removeAll(true);
 
-            if (isActive) {
-              tooltipLines.push(_HUB_T('hub.skills.type_active'));
-            }
+    const panelW = this._ktPanelW || 920;
+    const panelH = this._ktPanelH || 460;
+    const footerY = panelH / 2 - 32;
 
-            if (skill.requires && skill.requires.length > 0) {
-              tooltipLines.push('');
-              tooltipLines.push(_HUB_T('hub.skills.requires'));
-              skill.requires.forEach(reqId => {
-                const reqSkill = window.getSkillById(reqId);
-                const reqName = reqSkill ? reqSkill.name : reqId;
-                const reqHas = window.hasSkill(reqId);
-                tooltipLines.push(`  ${reqHas ? '\u2713' : '\u2717'} ${reqName}`);
-              });
-            }
+    // Respec button (left, red bg)
+    const respecBtn = this.add.text(
+      -panelW / 2 + 14, footerY,
+      _HUB_T('knowledge.btn.respec'),
+      { fontFamily: 'serif', fontSize: 14, color: '#ffdada', backgroundColor: '#7a3a3a', padding: { x: 10, y: 6 }, resolution: 2 }
+    );
+    respecBtn.setInteractive({ useHandCursor: true });
+    this._ktFooterLayer.add(respecBtn);
 
-            if (!canPurchase.canPurchase && !owned) {
-              tooltipLines.push('');
-              tooltipLines.push(`\u274C ${canPurchase.reason}`);
-            }
-
-            const tooltip = this.add.container(0, 0).setDepth(2100);
-            const tooltipBg = this.add.graphics();
-            const tooltipTextObj = this.add.text(0, 0, tooltipLines.join('\n'), {
-              fontFamily: 'monospace',
-              fontSize: 12,
-              color: '#ffffff',
-              backgroundColor: '#0c0c18',
-              padding: { x: 8, y: 6 },
-              resolution: 2
-            }).setOrigin(0, 0);
-
-            const tooltipW = tooltipTextObj.width + 4;
-            const tooltipH = tooltipTextObj.height + 4;
-
-            tooltipBg.fillStyle(0x1a1a2a, 0.95);
-            tooltipBg.fillRoundedRect(-2, -2, tooltipW, tooltipH, 8);
-            tooltipBg.lineStyle(2, 0x4a6a9c, 0.9);
-            tooltipBg.strokeRoundedRect(-2, -2, tooltipW, tooltipH, 8);
-
-            tooltip.add(tooltipBg);
-            tooltip.add(tooltipTextObj);
-
-            let tooltipX = worldX - tooltipW / 2;
-            let tooltipY = worldY + boxH / 2 + 5;
-
-            if (tooltipX < 10) tooltipX = 10;
-            if (tooltipX + tooltipW > cw - 10) tooltipX = cw - tooltipW - 10;
-            if (tooltipY + tooltipH > ch - 10) {
-              tooltipY = worldY - boxH / 2 - tooltipH - 5;
-            }
-
-            tooltip.setPosition(tooltipX, tooltipY).setScrollFactor(0);
-            this._skillTooltip = tooltip;
-          });
-
-          hitArea.on('pointerout', () => {
-            if (this._skillTooltip) {
-              this._skillTooltip.destroy(true);
-              this._skillTooltip = null;
-            }
-          });
-
-          hitArea.on('pointerdown', () => {
-            // On mobile (touch): first tap shows tooltip, second tap buys
-            const isTouch = !!(this.sys?.game?.device?.input?.touch);
-            if (isTouch && !this._skillTooltip) {
-              // Simulate hover — show tooltip on first tap
-              hitArea.emit('pointerover');
-              return;
-            }
-
-            if (owned) return;
-            if (!canPurchase.canPurchase) return;
-
-            const result = window.purchaseSkill(skill.id);
-            if (result.success) {
-              closeSkillUI();
-              this._showSkillTreeUI();
-            }
-          });
-        });
-
-        currentSkillY += boxH + tierGap;
-      }
-
-      treeX += treeWidth + treePadding;
+    respecBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      this._ktShowRespecConfirm();
     });
 
-    // Draw connection lines between skill prerequisites
-    const connectionGraphics = this.add.graphics();
-    connectionGraphics.lineStyle(1.5, 0x6688aa, 0.5);
-    for (const tree of trees) {
-      for (const skill of tree.skills) {
-        if (!skill.requires || !skillNodePositions[skill.id]) continue;
-        const toPos = skillNodePositions[skill.id];
-        for (const reqId of skill.requires) {
-          const fromPos = skillNodePositions[reqId];
-          if (!fromPos) continue;
-          const owned = window.hasSkill(reqId);
-          connectionGraphics.lineStyle(1.5, owned ? 0x88aacc : 0x444466, owned ? 0.6 : 0.3);
-          connectionGraphics.beginPath();
-          connectionGraphics.moveTo(fromPos.x, fromPos.y + 30);
-          connectionGraphics.lineTo(toPos.x, toPos.y - 30);
-          connectionGraphics.strokePath();
-        }
+    // Test / debug button — grant a fragment without running a dungeon. Lets
+    // the player invest from the modal directly while the spec's only legit
+    // source (lore-fragment events in the dungeon) is still rare.
+    const giveBtn = this.add.text(
+      -panelW / 2 + 14 + respecBtn.width + 10, footerY,
+      _HUB_T('knowledge.btn.test_give'),
+      { fontFamily: 'serif', fontSize: 14, color: '#e6ffd2', backgroundColor: '#3a5a3a', padding: { x: 10, y: 6 }, resolution: 2 }
+    );
+    giveBtn.setInteractive({ useHandCursor: true });
+    this._ktFooterLayer.add(giveBtn);
+    giveBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      try { window.KnowledgeTree.addFragments(1); }
+      catch (e) { try { console.warn('[HubSceneV2] addFragments failed', e); } catch (_) {} }
+    });
+
+    // Close button (right, grey bg)
+    const closeBtn = this.add.text(
+      panelW / 2 - 14, footerY,
+      _HUB_T('knowledge.btn.close'),
+      { fontFamily: 'serif', fontSize: 14, color: '#ffffff', backgroundColor: '#3a3a4a', padding: { x: 10, y: 6 }, resolution: 2 }
+    ).setOrigin(1, 0);
+    closeBtn.setInteractive({ useHandCursor: true });
+    this._ktFooterLayer.add(closeBtn);
+
+    closeBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      this._ktCloseModal();
+    });
+  }
+
+  _ktShowRespecConfirm() {
+    if (this._ktConfirmDlg) return; // already open
+    const cam = this.cameras.main;
+    const dlg = this.add.container(cam.width / 2, cam.height / 2).setDepth(2010).setScrollFactor(0);
+    this._ktConfirmDlg = dlg;
+
+    // Dim under-layer - covers the camera, absorbs stray clicks.
+    const dim = this.add.rectangle(0, 0, cam.width, cam.height, 0x000000, 0.55).setScrollFactor(0);
+    dlg.add(dim);
+
+    const panel = this.add.graphics();
+    panel.fillStyle(0x1a1a28, 0.98);
+    panel.fillRoundedRect(-200, -80, 400, 160, 10);
+    panel.lineStyle(2, 0xd4a543, 0.7);
+    panel.strokeRoundedRect(-200, -80, 400, 160, 10);
+    dlg.add(panel);
+
+    const msg = this.add.text(0, -30, _HUB_T('knowledge.respec.confirm'), {
+      fontFamily: 'serif', fontSize: 15, color: '#fff', resolution: 2, align: 'center', wordWrap: { width: 380 }
+    }).setOrigin(0.5);
+    dlg.add(msg);
+
+    const yes = this.add.text(-60, 30, _HUB_T('knowledge.respec.yes'), {
+      fontFamily: 'serif', fontSize: 14, color: '#fff', backgroundColor: '#7a3a3a', padding: { x: 14, y: 6 }, resolution: 2
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    yes.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      try { window.KnowledgeTree.respec(); }
+      catch (e) { try { console.warn('[HubSceneV2] respec failed', e); } catch (_) {} }
+      this._ktCloseConfirm();
+    });
+    dlg.add(yes);
+
+    const no = this.add.text(60, 30, _HUB_T('knowledge.respec.no'), {
+      fontFamily: 'serif', fontSize: 14, color: '#fff', backgroundColor: '#3a3a4a', padding: { x: 14, y: 6 }, resolution: 2
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    no.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      this._ktCloseConfirm();
+    });
+    dlg.add(no);
+  }
+
+  _ktCloseConfirm() {
+    if (this._ktConfirmDlg) {
+      this._ktConfirmDlg.destroy(true);
+      this._ktConfirmDlg = null;
+    }
+  }
+
+  _ktCloseModal() {
+    // Detach onChange subscriber so a re-open registers a fresh listener.
+    if (this._ktUnsub) {
+      try { this._ktUnsub(); } catch (e) { /* swallow */ }
+      this._ktUnsub = null;
+    }
+    // Drop ESC handler so a single ESC press does not fire stale callbacks.
+    if (this._ktEscHandler) {
+      try { this.input.keyboard.off('keydown-ESC', this._ktEscHandler); } catch (_) {}
+      this._ktEscHandler = null;
+    }
+    // Tear down confirm sub-modal if still on screen.
+    if (this._ktConfirmDlg) {
+      this._ktConfirmDlg.destroy(true);
+      this._ktConfirmDlg = null;
+    }
+    // Tear down main container (and its overlay, which is parented to it).
+    if (this._dialogContainer) {
+      this._dialogContainer.destroy(true);
+      this._dialogContainer = null;
+    }
+    this._ktFragText = null;
+    this._ktCardLayer = null;
+    this._ktFooterLayer = null;
+    this._ktPanelW = null;
+    this._ktPanelH = null;
+    // FR-12: clear the input lock so the player can move + open other dialogs.
+    this._dialogOpen = false;
+  }
+
+  // Walk every descendant of `gameObject` (Containers + leaves) and force the
+  // given scrollFactor. Phaser's built-in Container.setScrollFactor(x, y, true)
+  // only descends one level; nested containers (cards inside the card layer
+  // inside the modal container) keep scrollFactor=1 and hit-tests miss.
+  _ktPropagateScrollFactor(gameObject, sx, sy) {
+    if (!gameObject) return;
+    if (typeof gameObject.setScrollFactor === 'function') {
+      gameObject.setScrollFactor(sx, sy);
+    }
+    // Containers expose getAll() / iterate; non-containers do not.
+    if (typeof gameObject.getAll === 'function') {
+      const kids = gameObject.getAll();
+      for (let i = 0; i < kids.length; i++) {
+        this._ktPropagateScrollFactor(kids[i], sx, sy);
       }
+    } else if (typeof gameObject.iterate === 'function') {
+      gameObject.iterate((child) => this._ktPropagateScrollFactor(child, sx, sy));
     }
-    container.addAt(connectionGraphics, 1); // behind skill boxes but above background
-
-    // Respec button
-    const totalSpent = window.getSkillPointsSpent();
-    if (totalSpent > 0) {
-      const respecCost = Math.ceil(totalSpent * 0.5);
-      const respecBtn = this.add.text(-panelW / 2 + 20, panelH / 2 - 30,
-        _HUB_T('hub.skills.respec', { cost: respecCost }), {
-          fontFamily: 'monospace',
-          fontSize: 14,
-          color: '#ff8888',
-          backgroundColor: '#2a1a1a',
-          padding: { x: 10, y: 6 }
-        }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-      container.add(respecBtn);
-
-      respecBtn.on('pointerdown', () => {
-        const result = window.respecSkills();
-        if (result.success) {
-          console.log('[Skills] Respec successful, refunded:', result.refunded);
-          closeSkillUI();
-          this.time.delayedCall(50, () => {
-            this._showSkillTreeUI();
-          });
-        } else {
-          console.warn('[Skills] Respec failed:', result.reason);
-          // Show temporary error message
-          const errText = this.add.text(0, panelH / 2 - 60, result.reason, {
-            fontFamily: 'monospace',
-            fontSize: 14,
-            color: '#ff4444'
-          }).setOrigin(0.5, 0.5).setDepth(2100).setScrollFactor(0);
-          this.time.delayedCall(2000, () => errText.destroy());
-        }
-      });
-    }
-
-    // Close button
-    const closeBtn = this.add.text(0, panelH / 2 - 30, _HUB_T('hub.skills.close'), {
-      fontFamily: 'monospace',
-      fontSize: 18,
-      color: '#ffffff',
-      backgroundColor: '#3a4a7c',
-      padding: { x: 16, y: 8 }
-    }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
-    container.add(closeBtn);
-
-    closeBtn.on('pointerdown', () => closeSkillUI());
-    this.input.keyboard.once('keydown-ESC', closeSkillUI);
   }
 }

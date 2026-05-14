@@ -17,10 +17,10 @@ if (window.i18n) {
     'hud.potion.empty_label': 'Kein Trank',
     'hud.potion.ready': 'Bereit',
     'hud.potion.no_potion': 'Leer',
-    'hud.potion.name.t1': 'Heiltrank (Klein)',
-    'hud.potion.name.t2': 'Heiltrank',
-    'hud.potion.name.t3': 'Heiltrank (Gross)',
-    'hud.potion.name.t4': 'Heiltrank (Super)',
+    'hud.potion.name.t1': 'Heiltrank (S)',
+    'hud.potion.name.t2': 'Heiltrank (M)',
+    'hud.potion.name.t3': 'Heiltrank (L)',
+    'hud.potion.name.t4': 'Heiltrank (XL)',
     'hud.potion.name.default': 'Trank',
     'hud.ability.ready': 'Bereit'
   });
@@ -40,7 +40,7 @@ if (window.i18n) {
     'hud.potion.ready': 'Ready',
     'hud.potion.no_potion': 'Empty',
     'hud.potion.name.t1': 'Healing Potion (S)',
-    'hud.potion.name.t2': 'Healing Potion',
+    'hud.potion.name.t2': 'Healing Potion (M)',
     'hud.potion.name.t3': 'Healing Potion (L)',
     'hud.potion.name.t4': 'Healing Potion (XL)',
     'hud.potion.name.default': 'Potion',
@@ -103,7 +103,7 @@ const config = {
     fps: 60,
     arcade: { gravity: { y: 0 }, debug: false, overlapBias: 8, tileBias: 32 }
   },
-  scene: [StartScene, HubSceneV2, CraftingScene, SettingsScene, TestTerrainScene, GameScene],
+  scene: [StartScene, HubSceneV2, CraftingScene, SettingsScene, PrintingHouseScene, TestTerrainScene, GameScene],
   plugins: {
     global: [{
       key: 'rexVirtualJoystick',
@@ -487,9 +487,8 @@ function updateAbilityStatus(key, info = {}) {
     info = { remainingMs: info };
   }
   const { remainingMs = 0, durationMs = null, customText = null } = info;
-  const cfg = ABILITY_STATUS_LOOKUP[key];
   const display = abilityStatusDisplay[key];
-  if (!cfg || !display) return;
+  if (!display) return;
 
   if (Number.isFinite(durationMs)) {
     display.durationMs = durationMs;
@@ -804,7 +803,9 @@ let isReturningToHub = false;
 // Spieler-Basiswerte + abgeleitete Werte aus Gear
 let baseStats = { damage: 1, speed: 1.0, range: 100, maxHP: 30, move: 160, armor: 0.0, crit: 0.05 };
 playerArmor = baseStats.armor;
-playerCritChance = baseStats.crit;
+// Knowledge-Tree critAdd (Issue #26) is folded into the script-scoped binding
+// here so all downstream consumers (HUD, attack roll) see the boosted value.
+playerCritChance = baseStats.crit + ((window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.critAdd) || 0);
 
 // Tooltip (optional, simpel)
 let tooltip;
@@ -918,6 +919,11 @@ function create() {
     if (typeof window.openLoadoutUI === 'function') {
       window.openLoadoutUI(this);
     }
+    // Tutorial: skill.loadout step advances on K-press regardless of
+    // whether the loadout UI actually opened (binding-only purpose).
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('loadout.opened', {});
+    }
   });
   // Settings overlay (O key)
   this.input.keyboard.on('keydown-O', () => {
@@ -937,15 +943,77 @@ function create() {
     if (window.storySystem && typeof window.storySystem.showJournalOverlay === 'function') {
       window.storySystem.showJournalOverlay(this);
     }
+    // Tutorial: journal.hint step advances on any J press (binding-only
+    // tutorial purpose — works even if the journal overlay itself can't
+    // open for some reason).
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('journal.opened', {});
+    }
   });
   // WP04: F key consumes the highest-tier health potion
   this.input.keyboard.on('keydown-F', () => {
     if (window.LootSystem && typeof window.LootSystem.onPotionKey === 'function') {
       window.LootSystem.onPotionKey();
     }
+    // Tutorial step `combat.potion` advances on every F-press, even when
+    // no potion is in inventory — the tutorial purpose is "learn the
+    // binding", not "successfully heal". Prevents a softlock for players
+    // who haven't found a potion yet.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('potion.attempted', {});
+    }
   });
+  // Initialise InputScheme with this scene so it can resolve mouse world coords.
+  if (window.InputScheme && typeof window.InputScheme.init === 'function') {
+    window.InputScheme.init(this);
+  }
+
+  // Left-click as attack fallback — keyboard ghosting on membrane boards often
+  // blocks Up+Left+Space, so mouse gives a conflict-free attack trigger.
+  // Desktop only; mobile has its own attack button. Skips clicks on interactive
+  // UI (inventory slots, dialogs, etc.) via the currentlyOver hit-test array.
+  // In both schemes, this handler just flags InputScheme; the actual attack is
+  // fired by handlePlayerAttack (which polls InputScheme.isBasicAttackTriggered).
+  let _mouseAttackHandler = null;
+  if (!isMobile) {
+    _mouseAttackHandler = (pointer, currentlyOver) => {
+      if (pointer.button !== 0) return;
+      if (window.InputScheme && window.InputScheme.shouldSuppressCombatInput()) return;
+      if (Array.isArray(currentlyOver) && currentlyOver.length > 0) return;
+      if (window.InputScheme && typeof window.InputScheme.markPrimaryButtonJustDown === 'function') {
+        window.InputScheme.markPrimaryButtonJustDown();
+      } else if (typeof attack === 'function') {
+        // Defensive fallback if InputScheme somehow failed to load.
+        attack.call(this);
+      }
+    };
+    this.input.on('pointerdown', _mouseAttackHandler);
+  }
+
+  // HUD slot-badge labels follow the active scheme. Subscribe once so the
+  // badges re-render on scheme changes (e.g., user toggles in SettingsScene).
+  let _unsubInputScheme = null;
+  if (window.InputScheme && typeof window.InputScheme.onChange === 'function') {
+    _unsubInputScheme = window.InputScheme.onChange(() => {
+      if (typeof window._refreshAbilityHUD === 'function') {
+        window._refreshAbilityHUD();
+      }
+    });
+  }
+
   // Expose this scene for LootSystem HoT timers
   window.gameScene = this;
+
+  // Issue #24: apply the Druckerei's active edict (if any) at run start.
+  // Sets window.printingBuffs which inventory.recalcDerived consumes for
+  // damage / max-HP, and which loot/shop/enemy hooks read for the other
+  // effect kinds. Cleared on hub return by leaveDungeonForHub.
+  if (window.PrintingHouse && typeof window.PrintingHouse.applyActivePublicationEffect === 'function') {
+    try {
+      window.PrintingHouse.applyActivePublicationEffect();
+      if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+    } catch (err) { console.warn('[GameScene] PrintingHouse apply failed', err); }
+  }
   this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     this.input.keyboard.off('keydown-F');
     this.input.keyboard.off('keydown-I');
@@ -954,7 +1022,27 @@ function create() {
     this.input.keyboard.off('keydown-K');
     this.input.keyboard.off('keydown-O');
     this.input.keyboard.off('keydown-P');
+    if (_mouseAttackHandler) this.input.off('pointerdown', _mouseAttackHandler);
+    if (typeof _unsubInputScheme === 'function') { try { _unsubInputScheme(); } catch (e) {} }
+    if (window.InputScheme && typeof window.InputScheme.teardown === 'function') {
+      window.InputScheme.teardown();
+    }
     if (window.gameScene === this) window.gameScene = null;
+  });
+
+  // Issue #20: clean up rare-item VFX (glow/ring/update listener) on scene
+  // shutdown. Each tracked loot sprite has a once('destroy') listener that
+  // calls _cleanupRarityFx (loot.js), so destroying the sprite is sufficient
+  // to tear down the GameObjects, tweens, and per-frame 'update' listener.
+  this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    if (Array.isArray(this._activeLootSprites)) {
+      this._activeLootSprites.slice().forEach((sprite) => {
+        if (sprite && typeof sprite.destroy === 'function') {
+          try { sprite.destroy(); } catch (e) { /* ignore */ }
+        }
+      });
+      this._activeLootSprites.length = 0;
+    }
   });
 
   // 4.3.1 Rathauskeller background (based on dialog selection)
@@ -1334,6 +1422,69 @@ function update(time, delta) {
     }
   }
 
+  // Non-classic ability cooldown tick — classic abilities drive their own HUD
+  // via startCooldownTimer; new abilities (heilwunde, frostnova, blutopfer,
+  // schattenschritt, …) only touch state.cooldowns, so poll per frame.
+  if (window.AbilitySystem && typeof window.AbilitySystem.getCooldownRemaining === 'function') {
+    const loadout = window.AbilitySystem.getActiveLoadout ? window.AbilitySystem.getActiveLoadout() : null;
+    if (loadout) {
+      const now = (this?.time?.now) || Date.now();
+      const defs = window.AbilitySystem.ABILITY_DEFS || {};
+      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slot) => {
+        const id = loadout[slot];
+        if (!id) return;
+        if (ABILITY_ID_TO_STATUS_KEY[id]) return; // classic ability — handled elsewhere
+        const def = defs[id];
+        if (!def || !def.cooldownMs) return;
+        const rem = window.AbilitySystem.getCooldownRemaining(id, now);
+        updateAbilityStatus(id, { remainingMs: rem, durationMs: def.cooldownMs });
+      });
+    }
+  }
+
+  // Health regen tick — applies PLAYER_HEALTH_REGEN (HP/sec) when below max.
+  if ((window.PLAYER_HEALTH_REGEN || 0) > 0 && playerHealth > 0 && playerHealth < playerMaxHealth) {
+    window._regenAccumMs = (window._regenAccumMs || 0) + (delta || 0);
+    if (window._regenAccumMs >= 1000) {
+      const seconds = Math.floor(window._regenAccumMs / 1000);
+      window._regenAccumMs -= seconds * 1000;
+      addPlayerHealth(window.PLAYER_HEALTH_REGEN * seconds);
+    }
+  } else {
+    window._regenAccumMs = 0;
+  }
+
+  // Issue #26 — Knowledge-Tree pickupAddRange vacuum.
+  // Pulls nearby gold piles + loot sprites toward the player when within the
+  // boosted pickup radius. The Phaser physics overlap (player ↔ goldGroup /
+  // player ↔ lootGroup) still fires the actual pickup; this pass only nudges
+  // sprites close enough to overlap. Zero-cost when pickupAddRange is 0.
+  if (player && player.active && window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.pickupAddRange > 0) {
+    const _ktVacR = window.knowledgeTreeBuffs.pickupAddRange;
+    const _ktVacR2 = _ktVacR * _ktVacR;
+    const _ktVacSpeed = Math.max(120, _ktVacR * 4); // px/sec — faster for bigger radius
+    const _ktVacStep = _ktVacSpeed * ((delta || 16) / 1000);
+    const _ktPx = player.x; const _ktPy = player.y;
+    const _vacSprite = (sp) => {
+      if (!sp || !sp.active || sp.body == null) return;
+      const dx = _ktPx - sp.x; const dy = _ktPy - sp.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > _ktVacR2 || d2 < 1) return;
+      const d = Math.sqrt(d2);
+      const step = Math.min(_ktVacStep, d);
+      sp.x += (dx / d) * step;
+      sp.y += (dy / d) * step;
+    };
+    if (window.goldGroup && typeof window.goldGroup.getChildren === 'function') {
+      const arr = window.goldGroup.getChildren();
+      for (let i = 0; i < arr.length; i++) _vacSprite(arr[i]);
+    }
+    if (typeof lootGroup !== 'undefined' && lootGroup && typeof lootGroup.getChildren === 'function') {
+      const arr = lootGroup.getChildren();
+      for (let i = 0; i < arr.length; i++) _vacSprite(arr[i]);
+    }
+  }
+
   // 5.2 Wave-Abschluss?
   checkWaveEnd.call(this, time);
 
@@ -1352,35 +1503,29 @@ function update(time, delta) {
   // 5.5 Active ability slots (Q/E/R/F) — block while stunned
   const playerStunned = window.statusEffectManager && window.statusEffectManager.isStunned(player);
 
-  if (!playerStunned && !isMobile && window.AbilitySystem) {
-    // Q -> slot1, W -> slot2, E -> slot3, R -> slot4
-    if (Phaser.Input.Keyboard.JustDown(qKey)) {
-      window.AbilitySystem.tryActivate('slot1', this);
+  if (!playerStunned && !isMobile && window.AbilitySystem && window.InputScheme) {
+    // Scheme-aware ability slot dispatch. classic → Q/W/E/R map to slot1-4;
+    // arpg → 1/2/3/4 map to slot1-4. The E key always opens doors regardless
+    // of scheme: in classic this is folded into the slot3 trigger (door first,
+    // then ability); in arpg the slot3 ability is on '3' and E is checked
+    // separately for door-only interaction.
+    const scheme = window.InputScheme.getScheme();
+    if (scheme === 'arpg' && eKey && Phaser.Input.Keyboard.JustDown(eKey)) {
+      if (window.DoorSystem) window.DoorSystem.tryInteractDoor(this, player);
     }
-    if (Phaser.Input.Keyboard.JustUp(qKey)) {
-      window.AbilitySystem.tryRelease('slot1', this);
-    }
-    if (wKey && Phaser.Input.Keyboard.JustDown(wKey)) {
-      window.AbilitySystem.tryActivate('slot2', this);
-    }
-    if (wKey && Phaser.Input.Keyboard.JustUp(wKey)) {
-      window.AbilitySystem.tryRelease('slot2', this);
-    }
-    if (Phaser.Input.Keyboard.JustDown(eKey)) {
-      // Try door interaction first; only fire ability if no door nearby
-      var doorHandled = window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
-      if (!doorHandled) {
-        window.AbilitySystem.tryActivate('slot3', this);
+    for (let slot = 1; slot <= 4; slot++) {
+      if (window.InputScheme.consumeAbilityTrigger(slot)) {
+        if (slot === 3 && scheme === 'classic') {
+          // Classic only: E triggers slot3 → check door first, fall through to ability.
+          const doorHandled = window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
+          if (!doorHandled) window.AbilitySystem.tryActivate('slot3', this);
+        } else {
+          window.AbilitySystem.tryActivate('slot' + slot, this);
+        }
       }
-    }
-    if (Phaser.Input.Keyboard.JustUp(eKey)) {
-      window.AbilitySystem.tryRelease('slot3', this);
-    }
-    if (Phaser.Input.Keyboard.JustDown(rKey)) {
-      window.AbilitySystem.tryActivate('slot4', this);
-    }
-    if (Phaser.Input.Keyboard.JustUp(rKey)) {
-      window.AbilitySystem.tryRelease('slot4', this);
+      if (window.InputScheme.consumeAbilityReleaseTrigger(slot)) {
+        window.AbilitySystem.tryRelease('slot' + slot, this);
+      }
     }
   }
 
@@ -1457,6 +1602,39 @@ function leaveDungeonForHub(scene, options = {}) {
   isReturningToHub = true;
 
   const { reason = 'portal', skipSave = false, skipFade = false } = options;
+
+  // Issue #16 — Brunnen buffs/debuffs are run-scoped. Clear before save +
+  // before the heal-on-return so the next dungeon entry starts clean.
+  // Run recalcDerived() afterward so the player's max HP / damage / speed
+  // / armor immediately revert to their gear+skill baseline.
+  if (window.brunnenBuffs) {
+    window.brunnenBuffs = null;
+    if (typeof recalcDerived === 'function') {
+      try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived failed', err); }
+    }
+  }
+
+  // Issue #24 — Printing House run-scoped buffs. Same pattern as Brunnen.
+  // Also: consume the active publication slot (the edict had its run, it's
+  // gone now) and let suspicion decay if the player did NOT publish (the
+  // decay-while-active-zero check is inside printingHouse).
+  if (window.printingBuffs) {
+    window.printingBuffs = null;
+    if (typeof recalcDerived === 'function') {
+      try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived (printing) failed', err); }
+    }
+  }
+  if (window.PrintingHouse) {
+    try {
+      // If an edict was active for this run, suspicion was already added at
+      // publish time. Decay only fires when no publication happened.
+      var hadActive = !!window.PrintingHouse.getActivePublication();
+      window.PrintingHouse.clearActivePublication();
+      if (!hadActive && typeof window.PrintingHouse.decaySuspicion === 'function') {
+        window.PrintingHouse.decaySuspicion();
+      }
+    } catch (err) { console.warn('[leaveDungeonForHub] PrintingHouse cleanup failed', err); }
+  }
 
   if (!skipSave && typeof saveGame === 'function') {
     try {
@@ -1853,6 +2031,13 @@ function initUI() {
     if (potionTile.iconText) potionTile.iconText.setText('\u269A'); // ⚚ caduceus
     if (potionTile.statusText) potionTile.statusText.setText(_HUD_T('hud.potion.no_potion'));
     potionTile.durationMs = 2000; // global potion cooldown
+    // Force the potion name onto a single line — the default tile config
+    // allows 2 lines for long ability names but on the potion tile a wrap
+    // pushes the (S/M/L/XL) tier suffix down onto the "bereit" / cooldown
+    // status row, covering it.
+    if (potionTile.nameText && typeof potionTile.nameText.setMaxLines === 'function') {
+      potionTile.nameText.setMaxLines(1);
+    }
     const POTION_NAME_KEYS = {
       1: 'hud.potion.name.t1',
       2: 'hud.potion.name.t2',
@@ -1878,7 +2063,11 @@ function initUI() {
         ? window.LootSystem._getPotionCooldownRemaining() : 0;
       if (bestTier > 0) {
         const potName = _HUD_T(POTION_NAME_KEYS[bestTier] || 'hud.potion.name.default');
-        potionTile.nameText.setText(potName + ' x' + bestStack);
+        // Only render the stack suffix when more than one — saves ~3 chars
+        // ("Heiltrank (S) x1" -> "Heiltrank (S)") so the (S) suffix stays
+        // on the same line as the name.
+        const stackSuffix = bestStack > 1 ? ' x' + bestStack : '';
+        potionTile.nameText.setText(potName + stackSuffix);
         if (potionTile.statusText) {
           potionTile.statusText.setText(onCd ? (remainMs / 1000).toFixed(1) + 's' : _HUD_T('hud.potion.ready'));
           potionTile.statusText.setColor(onCd ? '#ffd966' : '#78f3c7');
@@ -1928,21 +2117,33 @@ function initUI() {
     const ABILITY_DEFS = window.AbilitySystem?.ABILITY_DEFS || {};
 
     const refreshSlotMappings = () => {
-      // Tear down old ability→tile mappings (keep attack)
+      // Tear down old ability→tile mappings (keep attack).
+      // Classic status keys are removed; non-classic ability-id keys are wiped
+      // below when the slot iteration re-registers the current loadout.
       Object.keys(STATUS_KEY_TO_ABILITY_ID).forEach((statusKey) => {
         delete abilityStatusDisplay[statusKey];
       });
+      Object.keys(abilityStatusDisplay).forEach((k) => {
+        if (k !== 'attack') delete abilityStatusDisplay[k];
+      });
 
       const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
-      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
+      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey, idx) => {
         const tile = slotTiles[slotKey];
         const abilityId = loadout ? loadout[slotKey] : null;
+        // Scheme-aware key label (Q/W/E/R in classic, 1/2/3/4 in arpg).
+        if (tile.keyText && window.InputScheme && typeof window.InputScheme.getSlotLabel === 'function') {
+          tile.keyText.setText(window.InputScheme.getSlotLabel(idx + 1));
+        }
         if (abilityId) {
           const def = ABILITY_DEFS[abilityId] || window.AbilitySystem?.ABILITY_DEFS?.[abilityId];
           const displayName = def?.name || abilityId;
           const statusKey = ABILITY_ID_TO_STATUS_KEY[abilityId];
           tile.nameText.setText(displayName);
-          const color = statusKey ? (ABILITY_STATUS_STYLES[statusKey] ?? 0xffffff) : 0xffffff;
+          // Classic abilities use STATUS_STYLES; new abilities fall back to def.color.
+          const color = statusKey
+            ? (ABILITY_STATUS_STYLES[statusKey] ?? 0xffffff)
+            : (def && typeof def.color === 'number' ? def.color : 0xffffff);
           tile.color = color;
           tile.keyBadge.setFillStyle(color, 0.18);
           tile.keyBadge.setStrokeStyle(1, color, 0.6);
@@ -1953,6 +2154,11 @@ function initUI() {
           if (statusKey) {
             abilityStatusDisplay[statusKey] = tile;
             updateAbilityStatus(statusKey, { remainingMs: 0, durationMs: 0 });
+          } else if (def && def.cooldownMs) {
+            // Non-classic abilities (heilwunde, frostnova, blutopfer,
+            // schattenschritt, …): register under ability id and seed Ready.
+            abilityStatusDisplay[abilityId] = tile;
+            updateAbilityStatus(abilityId, { remainingMs: 0, durationMs: 0 });
           }
 
           // WP08 T046: refresh the per-ability bonus badge from LootSystem.

@@ -176,6 +176,23 @@ function hasSave() {
 
 function clearSave() {
   localStorage.removeItem(SAVE_KEY);
+  // Tutorial state lives in its own key (demonfall_tutorial_v1) per spec
+  // 044 C-07. Wiping the save means "I want a clean slate", so reset the
+  // tutorial to its first step too — otherwise a player who deleted their
+  // save and pressed New Game would still get auto-skipped because the
+  // persisted skipped:true flag would survive the wipe. Falls back to a
+  // direct removeItem if TutorialSystem isn't loaded yet (script load
+  // order race during cold boot).
+  try {
+    if (typeof window !== 'undefined' && window.TutorialSystem &&
+        typeof window.TutorialSystem.replay === 'function') {
+      window.TutorialSystem.replay();
+    } else {
+      localStorage.removeItem('demonfall_tutorial_v1');
+    }
+  } catch (err) {
+    try { console.warn('[storage] tutorial reset on clearSave failed', err); } catch (_) {}
+  }
 }
 
 

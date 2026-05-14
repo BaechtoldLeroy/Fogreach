@@ -47,10 +47,10 @@
       'event.shrine.name': 'Mystischer Schrein',
       'event.shrine.toast_spawn': 'Ein mystischer Schrein erscheint...',
       'event.shrine.object_label': 'Schrein',
-      'event.shrine.choice_power': 'Kraft (+25% Schaden, -15% Rüstung)',
+      'event.shrine.choice_power': 'Kraft (+25% Schaden, -{armor}% Rüstung)',
       'event.shrine.choice_protection': 'Schutz (+5% Rüstung, -10% Geschw.)',
       'event.shrine.choice_ignore': 'Ignorieren',
-      'event.shrine.toast_power': 'Kraft des Schreins: +25% Schaden!',
+      'event.shrine.toast_power': 'Kraft des Schreins: +25% Schaden, -{armor}% Rüstung!',
       'event.shrine.toast_protection': 'Schutz des Schreins: +5% Rüstung!',
       // Gambling
       'event.gambling.name': 'Glücksspiel',
@@ -65,15 +65,27 @@
       // Elite ambush
       'event.elite.name': 'Elite-Hinterhalt',
       'event.elite.toast_spawn': 'Ein mächtiger Feind nähert sich!',
-      // Healing fountain
-      'event.fountain.name': 'Heilender Brunnen',
+      // Healing fountain (rework #16) — risk/reward choices with weighted
+      // outcomes. All Brunnen buffs/debuffs are run-scoped (cleared on hub
+      // return). HP debuff is on max HP, not current HP.
+      'event.fountain.name': 'Geheimnisvoller Brunnen',
       'event.fountain.toast_spawn': 'Ein leuchtender Brunnen erscheint...',
       'event.fountain.object_label': 'Brunnen',
-      'event.fountain.choice_drink': 'Trinken (volle Heilung)',
-      'event.fountain.choice_fill': 'Füllen (+1 Portalrolle)',
+      'event.fountain.choice_drink': 'Trinken',
+      'event.fountain.choice_offer': 'Opfern (-25% LP)',
+      'event.fountain.choice_offer_gold': 'Opfern (-50 Gold)',
       'event.fountain.choice_ignore': 'Ignorieren',
-      'event.fountain.toast_heal': 'Volle Heilung!',
-      'event.fountain.toast_scroll': '+1 Portalrolle!'
+      'event.fountain.outcome.heal':       'Reines Wasser! Volle Heilung.',
+      'event.fountain.outcome.damage_buff':'Stärke! +25% Schaden bis Run-Ende.',
+      'event.fountain.outcome.speed_buff': 'Eile! +20% Tempo bis Run-Ende.',
+      'event.fountain.outcome.armor_buff': 'Schutz! +5% Rüstung bis Run-Ende.',
+      'event.fountain.outcome.loot':       'Etwas glitzert im Wasser...',
+      'event.fountain.outcome.maxhp_debuff':'Bitter! -20% Max-LP bis Run-Ende.',
+      'event.fountain.outcome.speed_debuff':'Schwer! -10% Tempo bis Run-Ende.',
+      'event.fountain.outcome.damage_debuff':'Schwach! -10% Schaden bis Run-Ende.',
+      'event.fountain.outcome.nothing':    'Nichts geschieht.',
+      'event.fountain.outcome.strong_buff':'Mächtige Gabe! +50% Schaden bis Run-Ende.',
+      'event.fountain.outcome.rare_loot':  'Seltener Schatz!',
     });
     window.i18n.register('en', {
       'event.treasure.name': 'Hidden Treasure',
@@ -112,10 +124,10 @@
       'event.shrine.name': 'Mystical Shrine',
       'event.shrine.toast_spawn': 'A mystical shrine appears...',
       'event.shrine.object_label': 'Shrine',
-      'event.shrine.choice_power': 'Power (+25% damage, -15% armor)',
+      'event.shrine.choice_power': 'Power (+25% damage, -{armor}% armor)',
       'event.shrine.choice_protection': 'Protection (+5% armor, -10% speed)',
       'event.shrine.choice_ignore': 'Ignore',
-      'event.shrine.toast_power': 'Shrine of Power: +25% damage!',
+      'event.shrine.toast_power': 'Shrine of Power: +25% damage, -{armor}% armor!',
       'event.shrine.toast_protection': 'Shrine of Protection: +5% armor!',
       'event.gambling.name': 'Gambling',
       'event.gambling.toast_spawn': 'A gambling table appears...',
@@ -128,14 +140,24 @@
       'event.gambling.toast_lost': 'Lost! -{amount} gold',
       'event.elite.name': 'Elite Ambush',
       'event.elite.toast_spawn': 'A mighty foe approaches!',
-      'event.fountain.name': 'Healing Fountain',
+      'event.fountain.name': 'Mysterious Fountain',
       'event.fountain.toast_spawn': 'A glowing fountain appears...',
       'event.fountain.object_label': 'Fountain',
-      'event.fountain.choice_drink': 'Drink (full heal)',
-      'event.fountain.choice_fill': 'Fill (+1 portal scroll)',
+      'event.fountain.choice_drink': 'Drink',
+      'event.fountain.choice_offer': 'Sacrifice (-25% HP)',
+      'event.fountain.choice_offer_gold': 'Sacrifice (-50 gold)',
       'event.fountain.choice_ignore': 'Ignore',
-      'event.fountain.toast_heal': 'Full heal!',
-      'event.fountain.toast_scroll': '+1 portal scroll!'
+      'event.fountain.outcome.heal':       'Pure water! Fully healed.',
+      'event.fountain.outcome.damage_buff':'Strength! +25% damage for the rest of the run.',
+      'event.fountain.outcome.speed_buff': 'Haste! +20% speed for the rest of the run.',
+      'event.fountain.outcome.armor_buff': 'Protection! +5% armor for the rest of the run.',
+      'event.fountain.outcome.loot':       'Something glints in the water...',
+      'event.fountain.outcome.maxhp_debuff':"Bitter! -20% max HP for the rest of the run.",
+      'event.fountain.outcome.speed_debuff':'Heavy! -10% speed for the rest of the run.',
+      'event.fountain.outcome.damage_debuff':'Weak! -10% damage for the rest of the run.',
+      'event.fountain.outcome.nothing':    'Nothing happens.',
+      'event.fountain.outcome.strong_buff':'Mighty gift! +50% damage for the rest of the run.',
+      'event.fountain.outcome.rare_loot':  'A rare treasure!',
     });
   }
   var T = function (key, params) { return window.i18n ? window.i18n.t(key, params) : key; };
@@ -346,15 +368,42 @@
       g.destroy();
     }
 
-    // Find accessible spawn position
+    // Find accessible spawn position. pickAccessibleSpawnPoint returns the
+    // center of a walkable cell, but the event sprite is ~32px so the body
+    // can still clip into adjacent wall tiles. Validate via the global
+    // wall-grid + obstacle helper used by enemy/loot/stair spawns and retry
+    // until we find a clear half-32 box.
+    var EVENT_HALF = 20; // 32px sprite + small margin
     var cx = 400, cy = 250;
+    var foundSpot = false;
     if (scene.pickAccessibleSpawnPoint) {
-      var spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 30 });
-      if (spot) { cx = spot.x; cy = spot.y; }
-    } else if (typeof player !== 'undefined' && player && player.active) {
-      var angle = Math.random() * Math.PI * 2;
-      cx = player.x + Math.cos(angle) * 150;
-      cy = player.y + Math.sin(angle) * 150;
+      for (var sa = 0; sa < 12 && !foundSpot; sa++) {
+        var spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 24 });
+        if (!spot) break;
+        if (typeof window.isSpawnPositionBlocked === 'function'
+            && window.isSpawnPositionBlocked(spot.x, spot.y, EVENT_HALF)) {
+          continue;
+        }
+        cx = spot.x; cy = spot.y; foundSpot = true;
+      }
+    }
+    if (!foundSpot && typeof player !== 'undefined' && player && player.active) {
+      // Last-ditch ring around the player. Try several angles + radii so we
+      // don't end up inside a wall when pickAccessibleSpawnPoint is missing.
+      for (var ra = 0; ra < 16 && !foundSpot; ra++) {
+        var angle = Math.random() * Math.PI * 2;
+        var radius = 120 + Math.random() * 120;
+        var tx = player.x + Math.cos(angle) * radius;
+        var ty = player.y + Math.sin(angle) * radius;
+        if (typeof window.isSpawnPositionBlocked === 'function'
+            && window.isSpawnPositionBlocked(tx, ty, EVENT_HALF)) {
+          continue;
+        }
+        cx = tx; cy = ty; foundSpot = true;
+      }
+    }
+    if (!foundSpot) {
+      try { console.warn('[eventSystem] spawnEventObject: no clear spot found, using fallback', { cx: cx, cy: cy, label: label }); } catch (_) {}
     }
 
     var obj = scene.physics.add.sprite(cx, cy, texKey);
@@ -438,17 +487,24 @@
     minDepth: 2,
     handler: function (scene) {
       showEventToast(scene, T('event.shrine.toast_spawn'), 'shrine_buff');
+      // Altar power debuff scales with player level so the choice stays meaningful in late game.
+      // Base: -30% armor (was -15%). Per-level: +0.5%. Cap: -50% armor.
+      // Armor is clamped 0..0.85 in inventory.recalcDerived, so this never permanently bricks the player.
+      var lvl = (typeof window.playerLevel === 'number') ? window.playerLevel : 1;
+      var debuffPct = Math.min(0.50, 0.30 + lvl * 0.005);
+      var armorMultStep = 1 - debuffPct;
+      var armorPctLabel = Math.round(debuffPct * 100);
       spawnEventObject(scene, 'evt_shrine', 0x6644aa, 0xaa88ff, T('event.shrine.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
         showEventChoiceDialog(scene, T('event.shrine.name'), [
           {
-            label: T('event.shrine.choice_power'),
+            label: T('event.shrine.choice_power', { armor: armorPctLabel }),
             callback: function () {
               window.eventBuffs = window.eventBuffs || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1 };
               window.eventBuffs.damageMult *= 1.25;
-              window.eventBuffs.armorMult *= 0.85;
+              window.eventBuffs.armorMult *= armorMultStep;
               if (typeof recalcDerived === 'function') recalcDerived(0, 0);
-              showEventToast(scene, T('event.shrine.toast_power'), 'shrine_buff');
+              showEventToast(scene, T('event.shrine.toast_power', { armor: armorPctLabel }), 'shrine_buff');
             }
           },
           {
@@ -521,7 +577,143 @@
     }
   });
 
-  // Healing fountain — spawn object, interact to choose
+  // -------------------------------------------------------------------------
+  // Healing fountain — REWORKED (#16). Risk/reward choice with weighted
+  // random outcomes. All buff/debuff effects are run-scoped (cleared on
+  // hub return via leaveDungeonForHub). HP debuff hits MAX HP (not current).
+  //
+  // Outcome tables live in a single config object so weights / values can be
+  // tuned in one place (spec C-03). To re-balance: edit FOUNTAIN_OUTCOMES.
+  // -------------------------------------------------------------------------
+  var FOUNTAIN_OUTCOMES = {
+    drink: [
+      // 50% buff (weighted across the four buff types)
+      { weight: 18, kind: 'buff_damage',  toastKey: 'event.fountain.outcome.damage_buff' },
+      { weight: 12, kind: 'buff_speed',   toastKey: 'event.fountain.outcome.speed_buff'  },
+      { weight: 10, kind: 'buff_armor',   toastKey: 'event.fountain.outcome.armor_buff'  },
+      { weight: 10, kind: 'heal',         toastKey: 'event.fountain.outcome.heal'        },
+      // 30% loot
+      { weight: 30, kind: 'loot',         toastKey: 'event.fountain.outcome.loot'        },
+      // 20% debuff (weighted across the three debuff types)
+      { weight:  8, kind: 'debuff_maxhp',  toastKey: 'event.fountain.outcome.maxhp_debuff'  },
+      { weight:  6, kind: 'debuff_speed',  toastKey: 'event.fountain.outcome.speed_debuff'  },
+      { weight:  6, kind: 'debuff_damage', toastKey: 'event.fountain.outcome.damage_debuff' }
+    ],
+    offer: [
+      // 70% strong positive: heal + a buff stacked
+      { weight: 35, kind: 'buff_damage_strong', toastKey: 'event.fountain.outcome.strong_buff' },
+      { weight: 35, kind: 'heal_and_buff_armor', toastKey: 'event.fountain.outcome.armor_buff' },
+      // 20% rare loot
+      { weight: 20, kind: 'rare_loot',          toastKey: 'event.fountain.outcome.rare_loot'  },
+      // 10% nothing (the tease)
+      { weight: 10, kind: 'nothing',            toastKey: 'event.fountain.outcome.nothing'    }
+    ]
+  };
+
+  function _pickFountainOutcome(table) {
+    var total = 0;
+    for (var i = 0; i < table.length; i++) total += table[i].weight;
+    var roll = Math.random() * total;
+    for (var j = 0; j < table.length; j++) {
+      roll -= table[j].weight;
+      if (roll <= 0) return table[j];
+    }
+    return table[table.length - 1];
+  }
+
+  // Apply an outcome to game state. Buffs/debuffs go through
+  // window.brunnenBuffs (a new run-scoped registry, cleared by
+  // main.js leaveDungeonForHub). Heal goes through setPlayerHealth.
+  // Loot goes through spawnLoot.
+  function _applyFountainOutcome(scene, outcome) {
+    if (!outcome) return;
+    if (!window.brunnenBuffs) {
+      window.brunnenBuffs = {
+        damageMult: 1,
+        speedMult: 1,
+        armorAdd: 0,
+        maxHpAdd: 0
+      };
+    }
+    var bb = window.brunnenBuffs;
+    var px = (typeof player !== 'undefined' && player) ? player.x : 0;
+    var py = (typeof player !== 'undefined' && player) ? player.y : 0;
+    switch (outcome.kind) {
+      case 'heal':
+        if (typeof window.setPlayerHealth === 'function' && typeof window.playerMaxHealth === 'number') {
+          window.setPlayerHealth(window.playerMaxHealth);
+        }
+        break;
+      case 'buff_damage':
+        bb.damageMult *= 1.25;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'buff_damage_strong':
+        bb.damageMult *= 1.50;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'buff_speed':
+        bb.speedMult *= 1.20;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'buff_armor':
+        bb.armorAdd += 0.05;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'heal_and_buff_armor':
+        bb.armorAdd += 0.05;
+        if (typeof window.setPlayerHealth === 'function' && typeof window.playerMaxHealth === 'number') {
+          window.setPlayerHealth(window.playerMaxHealth);
+        }
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'debuff_speed':
+        bb.speedMult *= 0.90;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'debuff_damage':
+        bb.damageMult *= 0.90;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'debuff_maxhp':
+        // Max-HP debuff (FR-12): apply via brunnenBuffs.maxHpAdd, recalc,
+        // then clamp current HP to the new max. recalcDerived's default
+        // setPlayerMaxHealth path uses delta-based current HP adjustment
+        // which would over-shrink current HP for a wounded player; the
+        // explicit clamp afterward fixes that.
+        var origCurrent = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
+        var oldMax = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
+        var debuffAmount = Math.max(1, Math.round(oldMax * 0.20));
+        bb.maxHpAdd -= debuffAmount;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        // Clamp to ensure current HP never exceeds new max; preserve wound.
+        var newMax = Math.max(1, window.playerMaxHealth || 1);
+        if (typeof window.setPlayerHealth === 'function') {
+          window.setPlayerHealth(Math.min(origCurrent, newMax), true);
+        }
+        break;
+      case 'loot':
+        if (typeof spawnLoot === 'function') {
+          try { spawnLoot.call(scene, px + 30, py, null, null); } catch (e) {}
+        }
+        break;
+      case 'rare_loot':
+        if (window.LootSystem && typeof window.LootSystem.rollItem === 'function' && typeof spawnLoot === 'function') {
+          try {
+            var rare = window.LootSystem.rollItem(null, 8, 2); // forceTier 2
+            spawnLoot.call(scene, px + 30, py, rare, null);
+          } catch (e) {
+            // Fall back to a plain loot drop if the roll fails.
+            try { spawnLoot.call(scene, px + 30, py, null, null); } catch (e2) {}
+          }
+        }
+        break;
+      case 'nothing':
+      default:
+        break;
+    }
+  }
+
   EVENT_TYPES.push({
     id: 'healing_fountain',
     name: T('event.fountain.name'),
@@ -531,26 +723,57 @@
       showEventToast(scene, T('event.fountain.toast_spawn'), 'healing_fountain');
       spawnEventObject(scene, 'evt_fountain', 0x2266aa, 0x44aaff, T('event.fountain.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
-        showEventChoiceDialog(scene, T('event.fountain.name'), [
+
+        // Decide which "Opfern" cost the player can pay. Prefer HP cost
+        // (more impactful), fall back to gold, hide if neither possible.
+        var curHp = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
+        var maxHp = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
+        var canPayHp = curHp > Math.max(1, Math.round(maxHp * 0.25)); // need to keep >=1 HP after paying 25% of max
+        var gold = (window.LootSystem && typeof window.LootSystem.getGold === 'function') ? window.LootSystem.getGold() : 0;
+        var canPayGold = gold >= 50;
+
+        var choices = [
           {
             label: T('event.fountain.choice_drink'),
             callback: function () {
-              if (typeof window.setPlayerHealth === 'function' && typeof window.playerMaxHealth === 'number') {
-                window.setPlayerHealth(window.playerMaxHealth);
-              }
-              showEventToast(scene, T('event.fountain.toast_heal'), 'healing_fountain');
+              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.drink);
+              _applyFountainOutcome(scene, outcome);
+              showEventToast(scene, T(outcome.toastKey), 'healing_fountain');
             }
-          },
-          {
-            label: T('event.fountain.choice_fill'),
+          }
+        ];
+        if (canPayHp) {
+          choices.push({
+            label: T('event.fountain.choice_offer'),
             callback: function () {
-              if (!window.materialCounts) window.materialCounts = {};
-              window.materialCounts.PORTAL_SCROLL = (window.materialCounts.PORTAL_SCROLL || 0) + 1;
-              showEventToast(scene, T('event.fountain.toast_scroll'), 'healing_fountain');
+              // Pay HP cost = 25% of MAX HP (so wounded players don't get a
+              // discount). Subtract from current HP, clamped to >= 1.
+              var maxHpNow = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
+              var cost = Math.max(1, Math.round(maxHpNow * 0.25));
+              if (typeof window.setPlayerHealth === 'function') {
+                window.setPlayerHealth(Math.max(1, window.playerHealth - cost), true);
+              }
+              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.offer);
+              _applyFountainOutcome(scene, outcome);
+              showEventToast(scene, T(outcome.toastKey), 'healing_fountain');
             }
-          },
-          { label: T('event.fountain.choice_ignore'), callback: function () {} }
-        ]);
+          });
+        } else if (canPayGold) {
+          choices.push({
+            label: T('event.fountain.choice_offer_gold'),
+            callback: function () {
+              if (window.LootSystem && typeof window.LootSystem.spendGold === 'function') {
+                window.LootSystem.spendGold(50);
+              }
+              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.offer);
+              _applyFountainOutcome(scene, outcome);
+              showEventToast(scene, T(outcome.toastKey), 'healing_fountain');
+            }
+          });
+        }
+        choices.push({ label: T('event.fountain.choice_ignore'), callback: function () {} });
+
+        showEventChoiceDialog(scene, T('event.fountain.name'), choices);
       });
     }
   });
@@ -772,19 +995,38 @@
   // --- Treasure & Trapped Chests ---
   function spawnEventChest(scene, chestType, isTrapped) {
     if (!scene || !scene.spawnObstacle) return;
-    // Spawn chest near player (offset 120-200px in random direction)
+    // Spawn chest near player. Try up to 16 random offsets (60-220 px) and
+    // pick the first one that isn't blocked by a wall / obstacle. The
+    // previous code used a single fixed-distance angle which would happily
+    // place the chest inside a wall — visible but unreachable. Mirrors
+    // the lore-scroll wall-spawn fix from earlier.
     var px = 400, py = 250;
     if (typeof player !== 'undefined' && player && player.active) {
-      var angle = Math.random() * Math.PI * 2;
-      var dist = 120 + Math.random() * 80;
-      px = player.x + Math.cos(angle) * dist;
-      py = player.y + Math.sin(angle) * dist;
-      // Clamp to world bounds
       var bounds = scene.physics.world && scene.physics.world.bounds;
-      if (bounds) {
-        px = Math.max(bounds.x + 40, Math.min(bounds.x + bounds.width - 40, px));
-        py = Math.max(bounds.y + 40, Math.min(bounds.y + bounds.height - 40, py));
+      var halfSize = 24; // chest sprite half-width-ish
+      var placed = false;
+      for (var attempt = 0; attempt < 16 && !placed; attempt++) {
+        var angle = Math.random() * Math.PI * 2;
+        var dist = 60 + Math.random() * 160;
+        var tx = player.x + Math.cos(angle) * dist;
+        var ty = player.y + Math.sin(angle) * dist;
+        if (bounds) {
+          var margin = halfSize + 16;
+          if (tx < bounds.x + margin || tx > bounds.x + bounds.width - margin) continue;
+          if (ty < bounds.y + margin || ty > bounds.y + bounds.height - margin) continue;
+        }
+        var blocked = false;
+        if (typeof window !== 'undefined' && typeof window.isSpawnPositionBlocked === 'function') {
+          try { blocked = !!window.isSpawnPositionBlocked(tx, ty, halfSize); } catch (_) { blocked = false; }
+        }
+        if (!blocked) {
+          px = tx; py = ty;
+          placed = true;
+        }
       }
+      // Fallback: drop the chest right next to the player (their tile is
+      // guaranteed walkable since they are standing on it).
+      if (!placed) { px = player.x; py = player.y; }
     }
     var chest = scene.spawnObstacle(px, py, chestType);
     if (chest) {
@@ -804,9 +1046,37 @@
     var bx = bounds ? bounds.x + bounds.width / 2 : 400;
     var by = bounds ? bounds.y + bounds.height / 2 : 300;
     if (typeof player !== 'undefined' && player) {
-      var ang = Math.random() * Math.PI * 2;
-      bx = player.x + Math.cos(ang) * 200;
-      by = player.y + Math.sin(ang) * 200;
+      // Try up to 16 random offsets around the player (60 - 220 px) and
+      // pick the first one that isn't blocked by a wall / obstacle. The
+      // old code picked a single fixed-radius angle and would happily
+      // place the scroll inside a wall — making the lore unreachable.
+      var placed = false;
+      var halfSize = 18; // ~ scroll sprite half-width
+      for (var attempt = 0; attempt < 16 && !placed; attempt++) {
+        var ang = Math.random() * Math.PI * 2;
+        var radius = 60 + Math.random() * 160;
+        var tx = player.x + Math.cos(ang) * radius;
+        var ty = player.y + Math.sin(ang) * radius;
+        // Stay inside the world bounds (with margin) when known.
+        if (bounds) {
+          var margin = halfSize + 8;
+          if (tx < bounds.x + margin || tx > bounds.x + bounds.width - margin) continue;
+          if (ty < bounds.y + margin || ty > bounds.y + bounds.height - margin) continue;
+        }
+        var blocked = false;
+        if (typeof window !== 'undefined' && typeof window.isSpawnPositionBlocked === 'function') {
+          try { blocked = !!window.isSpawnPositionBlocked(tx, ty, halfSize); } catch (_) { blocked = false; }
+        }
+        if (!blocked) {
+          bx = tx; by = ty;
+          placed = true;
+        }
+      }
+      // If every attempt was blocked, fall back to the player's own tile —
+      // they are guaranteed to be on a walkable tile.
+      if (!placed) {
+        bx = player.x; by = player.y;
+      }
     }
 
     // Generate procedural scroll texture if missing
@@ -860,6 +1130,11 @@
     scene.physics.add.overlap(player, scroll, function() {
       if (activeLore && !activeLore.picked) {
         activeLore.picked = true;
+        // Issue #26 — increment Knowledge Tree fragment counter on pickup.
+        // Existing flavor text + XP path is preserved (spec C-08).
+        if (window.KnowledgeTree && typeof window.KnowledgeTree.addFragments === 'function') {
+          try { window.KnowledgeTree.addFragments(1); } catch (_) { /* never block pickup */ }
+        }
         var xpBonus = 15 + (window.DUNGEON_DEPTH || 1) * 5;
         if (typeof addXP === 'function') {
           addXP.call(scene, xpBonus);
@@ -1083,26 +1358,36 @@
       }
     };
 
-    // Buttons
-    var btnY = cy;
+    // Buttons — dynamic height so long labels wrap cleanly inside the box.
+    var BTN_W = Math.min(520, camW - 40);
+    var BTN_PAD_X = 16;
+    var BTN_PAD_Y = 8;
+    var BTN_GAP = 10;
+    var cursorY = cy; // top edge of next button
     for (var i = 0; i < choices.length && i < 3; i++) {
-      (function (choice, by) {
-        var btnBg = scene.add.rectangle(cx, by, 340, 34, 0x2a2a2a)
-          .setStrokeStyle(2, 0xd4a543)
-          .setScrollFactor(0).setDepth(2502)
-          .setInteractive({ useHandCursor: true });
-        var btnText = scene.add.text(cx, by, choice.label, {
-          fontSize: '14px', fill: '#f1e9d8', fontFamily: 'monospace'
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(2503);
-        btnBg.on('pointerover', function () { btnBg.setFillStyle(0x555555); });
-        btnBg.on('pointerout', function () { btnBg.setFillStyle(0x2a2a2a); });
-        btnBg.on('pointerdown', function () {
+      var btnText = scene.add.text(0, 0, choices[i].label, {
+        fontSize: '14px', fill: '#f1e9d8', fontFamily: 'monospace',
+        align: 'center',
+        wordWrap: { width: BTN_W - BTN_PAD_X * 2 }
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2503);
+      var btnH = Math.max(34, btnText.height + BTN_PAD_Y * 2);
+      var by = cursorY + btnH / 2;
+      var btnBg = scene.add.rectangle(cx, by, BTN_W, btnH, 0x2a2a2a)
+        .setStrokeStyle(2, 0xd4a543)
+        .setScrollFactor(0).setDepth(2502)
+        .setInteractive({ useHandCursor: true });
+      btnText.setPosition(cx, by);
+      (function (bg, choice) {
+        bg.on('pointerover', function () { bg.setFillStyle(0x555555); });
+        bg.on('pointerout', function () { bg.setFillStyle(0x2a2a2a); });
+        bg.on('pointerdown', function () {
           cleanup();
           if (typeof choice.callback === 'function') choice.callback();
         });
-        elements.push(btnBg);
-        elements.push(btnText);
-      })(choices[i], btnY + i * 44);
+      })(btnBg, choices[i]);
+      elements.push(btnBg);
+      elements.push(btnText);
+      cursorY = by + btnH / 2 + BTN_GAP;
     }
   }
 

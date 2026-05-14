@@ -72,10 +72,10 @@ if (window.i18n) {
     'loot.item.BT_LEDERSTIEFEL': 'Lederstiefel',
     'loot.item.BT_STAHLSOHLEN': 'Stahlsohlen',
     'loot.item.BT_WINDLAEUFER': 'Windläufer',
-    'loot.potion.t1': 'Heiltrank (Klein)',
-    'loot.potion.t2': 'Heiltrank',
-    'loot.potion.t3': 'Heiltrank (Gross)',
-    'loot.potion.t4': 'Heiltrank (Super)',
+    'loot.potion.t1': 'Heiltrank (S)',
+    'loot.potion.t2': 'Heiltrank (M)',
+    'loot.potion.t3': 'Heiltrank (L)',
+    'loot.potion.t4': 'Heiltrank (XL)',
     'loot.fallback.item': 'Gegenstand'
   });
   window.i18n.register('en', {
@@ -146,7 +146,7 @@ if (window.i18n) {
     'loot.item.BT_STAHLSOHLEN': 'Steel Soles',
     'loot.item.BT_WINDLAEUFER': 'Wind Walkers',
     'loot.potion.t1': 'Healing Potion (S)',
-    'loot.potion.t2': 'Healing Potion',
+    'loot.potion.t2': 'Healing Potion (M)',
     'loot.potion.t3': 'Healing Potion (L)',
     'loot.potion.t4': 'Healing Potion (XL)',
     'loot.fallback.item': 'Item'
@@ -308,19 +308,19 @@ if (window.i18n) {
   // WP04: 4 health potion tiers (Minor / Normal / Major / Super)
   const POTION_DEFS = Object.freeze([
     Object.freeze({
-      potionTier: 1, name: 'Heiltrank (Klein)', healPercent: 0.30, healDurationMs: 3000,
+      potionTier: 1, name: 'Heiltrank (S)', healPercent: 0.30, healDurationMs: 3000,
       goldCost: 25, stackSize: 5, iconKey: 'itPotionMinor', iLevelMin: 1
     }),
     Object.freeze({
-      potionTier: 2, name: 'Heiltrank', healPercent: 0.60, healDurationMs: 3000,
+      potionTier: 2, name: 'Heiltrank (M)', healPercent: 0.60, healDurationMs: 3000,
       goldCost: 75, stackSize: 5, iconKey: 'itPotionNormal', iLevelMin: 4
     }),
     Object.freeze({
-      potionTier: 3, name: 'Heiltrank (Gross)', healPercent: 1.00, healDurationMs: 3000,
+      potionTier: 3, name: 'Heiltrank (L)', healPercent: 1.00, healDurationMs: 3000,
       goldCost: 200, stackSize: 5, iconKey: 'itPotionMajor', iLevelMin: 8
     }),
     Object.freeze({
-      potionTier: 4, name: 'Heiltrank (Super)', healPercent: 1.00, healDurationMs: 3000,
+      potionTier: 4, name: 'Heiltrank (XL)', healPercent: 1.00, healDurationMs: 3000,
       goldCost: 500, stackSize: 5, iconKey: 'itPotionSuper', iLevelMin: 12,
       bonusEffect: Object.freeze({ tempMaxHp: 0.10, durationMs: 30000 })
     })
@@ -467,11 +467,22 @@ if (window.i18n) {
     if (typeof rng !== 'function') rng = Math.random;
     // D2-like curves: flatter scaling, capped Rare/Legendary.
     const shift = Math.max(0, (iLevel - 5)) * 0.003;
+    // Printing-House loot rarity bias: scales the higher-tier weights
+    // (Magic/Rare/Legendary) and inversely shrinks Common.
+    const _ph = (typeof window !== 'undefined') ? window.printingBuffs : null;
+    const phBias = (_ph && typeof _ph.lootRarityBias === 'number' && _ph.lootRarityBias > 0)
+      ? _ph.lootRarityBias : 1;
+    // Issue #26 — Knowledge-Tree magicFindMult stacks multiplicatively with
+    // the Printing-House bias. HIGHER magicFindMult → MORE rare/legendary.
+    const _kt = (typeof window !== 'undefined') ? window.knowledgeTreeBuffs : null;
+    const ktMf = (_kt && typeof _kt.magicFindMult === 'number' && _kt.magicFindMult > 0)
+      ? _kt.magicFindMult : 1;
+    const bias = phBias * ktMf;
     const weights = [
-      Math.max(0, 0.78 - shift * 1.2),      // Common
-      Math.max(0, 0.20 - shift * 0.3),      // Magic
-      Math.min(0.05, 0.02 + shift * 0.4),   // Rare       (capped 5%)
-      Math.min(0.02, 0.003 + shift * 0.3)   // Legendary  (capped 2%)
+      Math.max(0, 0.78 - shift * 1.2),                    // Common
+      Math.max(0, (0.20 - shift * 0.3) * bias),           // Magic
+      Math.min(0.05 * bias, (0.02 + shift * 0.4) * bias), // Rare       (capped scales with bias)
+      Math.min(0.02 * bias, (0.003 + shift * 0.3) * bias) // Legendary  (capped scales with bias)
     ];
     let total = 0;
     for (let i = 0; i < weights.length; i++) total += weights[i];
@@ -632,7 +643,15 @@ if (window.i18n) {
     if (!Number.isFinite(amount) || amount <= 0) return;
     const store = _ensureGoldStore();
     if (!store) return;
-    store.GOLD = Math.max(0, Math.floor(store.GOLD + amount));
+    // Issue #26 — Knowledge-Tree goldMult applies to every gold gain (drops,
+    // chests, event payouts). Centralised here so shop refunds also benefit
+    // — players investing in this node are rewarded uniformly.
+    const ktGold = (typeof window !== 'undefined' && window.knowledgeTreeBuffs
+      && typeof window.knowledgeTreeBuffs.goldMult === 'number'
+      && window.knowledgeTreeBuffs.goldMult > 1)
+      ? window.knowledgeTreeBuffs.goldMult : 1;
+    const scaled = (ktGold !== 1) ? Math.max(1, Math.round(amount * ktGold)) : amount;
+    store.GOLD = Math.max(0, Math.floor(store.GOLD + scaled));
     _refreshGoldHUD();
   }
 
@@ -716,6 +735,10 @@ if (window.i18n) {
 
   function consumePotion(slot) {
     if (isPotionOnCooldown()) return false;
+    // Issue #24: "Letzte Schlacht" Risky edict disables potions for the
+    // run. Buff registry is set by PrintingHouse.applyActivePublicationEffect
+    // and cleared by leaveDungeonForHub.
+    if (window.printingBuffs && window.printingBuffs.potionDisabled) return false;
     if (typeof slot !== 'number') return false;
     if (typeof window === 'undefined' || !Array.isArray(window.inventory)) return false;
     const item = window.inventory[slot];
@@ -961,5 +984,147 @@ if (window.i18n) {
       // repaint here too in case other consumers cache).
       if (typeof window._refreshHUD === 'function') { try { window._refreshHUD(); } catch (e) {} }
     });
+  }
+
+  // -------------------------------------------------------------------------
+  // Tutorial wrappers (feature 044).
+  //
+  // spawnLoot / collectLoot live in loot.js (loads AFTER lootSystem.js).
+  // GameScene is defined inline in main.js (which WP04 must not modify per
+  // its brief). Both globals are wrapped on the next tick so the originals
+  // exist; the GameScene overlay hook polls the global scene manager for up
+  // to 10 s after boot, then attaches a 'create'/'start' listener that
+  // mounts the tutorial overlay whenever GameScene activates with the
+  // tutorial active.
+  // -------------------------------------------------------------------------
+  function _wrapLootGlobals() {
+    if (typeof window === 'undefined') return;
+    if (typeof window.spawnLoot === 'function' && !window.spawnLoot._tutorialWrapped) {
+      var origSpawn = window.spawnLoot;
+      window.spawnLoot = function (x, y, maybeItem, sourceEnemy) {
+        // Tutorial: when the system is on the `loot.wait` step (i.e. the
+        // player is about to be told to pick up an item and then equip
+        // it), force the next random drop to be a basic equippable
+        // weapon. Without this, the random loot table can produce a
+        // potion or material and the upcoming "equip" step has nothing
+        // to equip — soft-locking the tutorial. We only override when
+        // the caller didn't already pass an explicit item, so quest
+        // rewards / boss drops are untouched.
+        var item = maybeItem;
+        if (!item && window.TutorialSystem && typeof window.TutorialSystem.getCurrentStep === 'function') {
+          try {
+            var step = window.TutorialSystem.getCurrentStep();
+            if (step && step.id === 'loot.wait' && typeof rollItem === 'function') {
+              item = rollItem('WPN_EISENKLINGE', 1);
+            }
+          } catch (_) { /* fall through to the random drop */ }
+        }
+        var ret = origSpawn.call(this, x, y, item, sourceEnemy);
+        // Only fire loot.dropped when an actual pickup-able item exists.
+        // spawnLoot is also the entry-point for chest obstacles, gold piles
+        // and quest-fetch items; firing here for those would silently
+        // advance the tutorial past loot.wait while the world has no
+        // equippable on the ground for the player to walk over.
+        var isPickupItem = false;
+        if (item && typeof item.type === 'string') {
+          var t = item.type.toLowerCase();
+          if (t === 'weapon' || t === 'head' || t === 'body' || t === 'boots' || t === 'accessory' || t === 'potion') {
+            isPickupItem = true;
+          }
+        }
+        if (isPickupItem && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+          try {
+            window.TutorialSystem.report('loot.dropped', { itemId: (item && item.id) || null, type: item && item.type });
+          } catch (_) { /* never crash gameplay */ }
+        }
+        return ret;
+      };
+      window.spawnLoot._tutorialWrapped = true;
+    }
+    if (typeof window.collectLoot === 'function' && !window.collectLoot._tutorialWrapped) {
+      var origCollect = window.collectLoot;
+      window.collectLoot = function (playerSprite, loot) {
+        var item = (loot && loot.getData) ? loot.getData('item') : null;
+        // Skip the report when the loot is a non-equipment pickup
+        // (xp orb, health pot, quest item) — those don't satisfy the
+        // "lauf darüber zum Aufheben" hint the player just read.
+        var lootType = loot && loot.lootType;
+        var equippable = false;
+        if (item && typeof item.type === 'string') {
+          var ct = item.type.toLowerCase();
+          if (ct === 'weapon' || ct === 'head' || ct === 'body' || ct === 'boots' || ct === 'accessory' || ct === 'potion') {
+            equippable = true;
+          }
+        }
+        var ret = origCollect.apply(this, arguments);
+        if (equippable && lootType !== 'health' && lootType !== 'xp'
+            && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+          try {
+            window.TutorialSystem.report('loot.picked', { itemId: (item && item.id) || null, type: item && item.type });
+          } catch (_) { /* never crash gameplay */ }
+        }
+        return ret;
+      };
+      window.collectLoot._tutorialWrapped = true;
+    }
+  }
+
+  function _hookGameSceneOverlay() {
+    if (typeof window === 'undefined') return false;
+    if (!window.game || !window.game.scene || !window.TutorialOverlay) return false;
+    var scenes = (window.game.scene.scenes || []);
+    var hooked = false;
+    for (var i = 0; i < scenes.length; i++) {
+      var sc = scenes[i];
+      if (!sc || !sc.scene || !sc.events) continue;
+      if (sc.scene.key !== 'GameScene') continue;
+      if (sc._tutorialOverlayHookInstalled) { hooked = true; continue; }
+      sc._tutorialOverlayHookInstalled = true;
+      hooked = true;
+      var mountFor = function (scene) {
+        if (!window.TutorialOverlay || !window.TutorialSystem) return;
+        if (scene._tutorialOverlay) return;
+        if (!window.TutorialSystem.isActive || !window.TutorialSystem.isActive()) return;
+        try {
+          scene._tutorialOverlay = window.TutorialOverlay.create(scene);
+          scene._tutorialOverlay.mount();
+        } catch (e) { /* swallow */ }
+      };
+      sc.events.on('create', (function (s) { return function () { mountFor(s); }; })(sc));
+      sc.events.on('start',  (function (s) { return function () { mountFor(s); }; })(sc));
+      if (sc.scene.isActive && sc.scene.isActive()) mountFor(sc);
+      if (typeof window.TutorialSystem.onChange === 'function' && !sc._tutorialUnsubInstalled) {
+        sc._tutorialUnsubInstalled = true;
+        sc._tutorialUnsub = window.TutorialSystem.onChange((function (s) {
+          return function (step) {
+            if (step) {
+              mountFor(s);
+            } else if (s._tutorialOverlay) {
+              try { s._tutorialOverlay.unmount(); } catch (e) {}
+              s._tutorialOverlay = null;
+            }
+          };
+        })(sc));
+        sc.events.once('shutdown', (function (s) {
+          return function () {
+            if (s._tutorialUnsub) { try { s._tutorialUnsub(); } catch (e) {} s._tutorialUnsub = null; }
+            if (s._tutorialOverlay) { try { s._tutorialOverlay.unmount(); } catch (e) {} s._tutorialOverlay = null; }
+          };
+        })(sc));
+      }
+    }
+    return hooked;
+  }
+
+  if (typeof setTimeout === 'function') {
+    setTimeout(function () {
+      _wrapLootGlobals();
+      var attempts = 0;
+      var poll = function () {
+        if (_hookGameSceneOverlay()) return;
+        if (++attempts < 40) setTimeout(poll, 250); // up to 10 s
+      };
+      poll();
+    }, 0);
   }
 })();

@@ -131,6 +131,11 @@ window.HUB_HITBOXES = {
       x: 480, y: 560,
       texture: 'aldric_right0',
       scale: 0.18,
+      // Faction metadata (feature 045). The dialog code in
+      // HubSceneV2._showNpcDialogue reads `factionId` to prepend a
+      // tier-aware greeting page from `faction.<id>.greet.<tier>` before
+      // the regular flavor lines below.
+      factionId: 'council',
       lines: [
         'Willkommen zurueck, Archivschmied. Der Rat schaetzt deine Dienste.',
         'Nebenhall ist sicher, solange der Rat wacht. Vergiss das nicht.',

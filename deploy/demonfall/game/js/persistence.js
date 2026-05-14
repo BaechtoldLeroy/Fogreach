@@ -21,7 +21,9 @@
     /** Legacy audio-only key written by SoundManager pre-SettingsScene. */
     AUDIO_LEGACY: 'demonfall_audio',
     /** Last selected dungeon difficulty multiplier. */
-    LAST_DIFFICULTY: 'demonfall_lastDifficulty'
+    LAST_DIFFICULTY: 'demonfall_lastDifficulty',
+    /** Knowledge Tree fragments + per-node ranks (feature 047). */
+    KNOWLEDGE_TREE: 'demonfall.knowledgeTree.v1'
   });
 
   // Keys that should be wiped on "new game". SETTINGS is intentionally
@@ -30,7 +32,8 @@
   const NEW_GAME_WIPE_KEYS = [
     KEYS.SAVE,
     KEYS.ABILITIES,
-    KEYS.LAST_DIFFICULTY
+    KEYS.LAST_DIFFICULTY,
+    KEYS.KNOWLEDGE_TREE
   ];
 
   function clearAllSaves() {
@@ -101,12 +104,30 @@
     writeSettingsField('language', lang);
   }
 
+  const SUPPORTED_CONTROL_SCHEMES = ['classic', 'arpg'];
+  const DEFAULT_CONTROL_SCHEME = 'classic';
+
+  function getControlScheme() {
+    const value = readSettingsRaw().controlScheme;
+    return SUPPORTED_CONTROL_SCHEMES.indexOf(value) !== -1 ? value : DEFAULT_CONTROL_SCHEME;
+  }
+
+  function setControlScheme(value) {
+    if (SUPPORTED_CONTROL_SCHEMES.indexOf(value) === -1) {
+      console.warn('[Persistence] setControlScheme: invalid scheme', value);
+      return;
+    }
+    writeSettingsField('controlScheme', value);
+  }
+
   window.Persistence = {
     KEYS,
     clearAllSaves,
     clearEverything,
     listAllKeys,
     getLanguage,
-    setLanguage
+    setLanguage,
+    getControlScheme,
+    setControlScheme
   };
 })();

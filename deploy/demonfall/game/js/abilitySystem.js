@@ -466,6 +466,14 @@
       console.log('[AbilitySystem] Neue F\u00E4higkeit erlernt:', ABILITY_DEFS[id].name);
       _showLearnToast(ABILITY_DEFS[id].name);
     }
+    // Tutorial: signal that the player learned a skill so the deferred
+    // skill-loadout / skill-use tutorial steps can activate. Fires AFTER
+    // persistence so a tutorial replay sees the same state.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      try {
+        window.TutorialSystem.report('ability.learned', { abilityId: id });
+      } catch (_) { /* never crash gameplay */ }
+    }
     return true;
   }
 
@@ -624,6 +632,13 @@
       state.cooldowns[abilityId] = now + def.cooldownMs;
     }
 
+    // Tutorial step 8 trigger (feature 044). One emission per successful
+    // activation — placed AFTER cooldown checks so a no-op press doesn't
+    // count.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('combat.ability.used', { slot: slot });
+    }
+
     if (def.type === 'charge' && typeof def.onPress === 'function') {
       def.onPress(scene);
       return true;
@@ -645,6 +660,13 @@
       return true;
     }
     return false;
+  }
+
+  // Remaining cooldown in ms for a given ability id (0 when ready).
+  function getCooldownRemaining(abilityId, now) {
+    const ready = state.cooldowns[abilityId] || 0;
+    const n = Number.isFinite(now) ? now : Date.now();
+    return Math.max(0, ready - n);
   }
 
   // ---------- Unlock Hooks ----------
@@ -735,7 +757,7 @@
           window.inventory[i] = {
             type: 'potion',
             potionTier: 1,
-            name: 'Heiltrank (Klein)',
+            name: 'Heiltrank (S)',
             iconKey: 'itPotionMinor',
             stack: 2
           };
@@ -775,6 +797,7 @@
     learnAbility,
     tryActivate,
     tryRelease,
+    getCooldownRemaining,
     onEnemyKilled,
     onBossKilled,
     onQuestCompleted,
@@ -782,4 +805,5 @@
     getEnemyKills,
     getUnlockRule
   };
+
 })();

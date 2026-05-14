@@ -582,6 +582,25 @@ function initInventoryUI() {
 
   const positionTooltipBox = (box, x, y) => {
     if (!box) return;
+    // Clamp to camera bounds so long tooltips (e.g. boots with several
+    // affixes hovered from the bottom equipment slot) don't clip off the
+    // screen edges. Width/height were set by the preceding layoutTooltipBox.
+    const cam = scene.cameras && scene.cameras.main;
+    const camW = cam ? cam.width  : (scene.scale && scene.scale.width)  || 1280;
+    const camH = cam ? cam.height : (scene.scale && scene.scale.height) || 720;
+    const w = box._width  || 0;
+    const h = box._height || 0;
+    // If the tooltip would clip off the bottom, flip it above the cursor
+    // (32 px gap = original 16 below + 16 above the previous anchor).
+    if (y + h > camH - 4) {
+      y = Math.max(4, y - h - 32);
+    }
+    // Clamp right edge.
+    if (x + w > camW - 4) {
+      x = Math.max(4, camW - w - 4);
+    }
+    if (y < 4) y = 4;
+    if (x < 4) x = 4;
     box.setPosition(x, y);
     box.setVisible(true);
   };
@@ -831,6 +850,13 @@ function makeItem(opts) {
 }
 
 function recalcDerived(oldItemHp = 0, newItemHp = 0) {
+  // Refresh affix bonus cache before reading it: callers (equip swap, save
+  // load, endless buffs, events) may have mutated equipment without yet
+  // calling recomputeBonuses, so we ensure freshness here.
+  if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
+    try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
+  }
+
   // 1) Alle Boni aus aktueller Ausrüstung aufsummieren
   const sum = { damage: 0, speed: 0, range: 0, maxHP: 0, move: 0, armor: 0, crit: 0 };
   Object.values(equipment).forEach(it => {
@@ -866,7 +892,33 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
       _skillMaxHpBonus = _se.playerMaxHealth || 0;
     } catch (e) { /* swallow */ }
   }
-  const newMaxHealth = Math.max(1, Math.round((baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus));
+  const _affixHpBonus = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
+    ? (window.LootSystem.getBonus('hp') || 0)
+    : 0;
+  // Brunnen run-scoped max-HP delta (Issue #16).
+  const _brunnenMaxHpAdd = (window.brunnenBuffs && typeof window.brunnenBuffs.maxHpAdd === 'number')
+    ? window.brunnenBuffs.maxHpAdd
+    : 0;
+  // Printing-House run-scoped max-HP delta (Issue #24). Cleared on hub
+  // return same as the brunnen registry. Includes both flat add and
+  // percent add (the percent applies to the pre-printing total so the
+  // edict order doesn't matter).
+  const _printingFlatHp = (window.printingBuffs && typeof window.printingBuffs.maxHpAdd === 'number')
+    ? window.printingBuffs.maxHpAdd
+    : 0;
+  const _printingPctHp = (window.printingBuffs && typeof window.printingBuffs.maxHpAddPct === 'number')
+    ? window.printingBuffs.maxHpAddPct
+    : 0;
+  // Knowledge-Tree max-HP contribution (Issue #26 — permanent across runs).
+  // Mirrors the brunnen/printing max-HP pattern: additive on top of all other
+  // sources, before commit. critAdd / xpMult / goldMult / pickupAddRange /
+  // magicFindMult / cdrAll are applied at their respective read sites
+  // (main.js, lootSystem.js, player.js — see WP03 T013-T015).
+  const _ktMaxHpAdd = (window.knowledgeTreeBuffs && typeof window.knowledgeTreeBuffs.maxHpAdd === 'number')
+    ? window.knowledgeTreeBuffs.maxHpAdd
+    : 0;
+  const _hpBeforePrinting = (baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd + _ktMaxHpAdd;
+  const newMaxHealth = Math.max(1, Math.round(_hpBeforePrinting + _printingFlatHp + _hpBeforePrinting * _printingPctHp));
   if (typeof setPlayerMaxHealth === 'function') {
     setPlayerMaxHealth(newMaxHealth, { updateUi: false });
   } else {
@@ -906,6 +958,13 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     window.PLAYER_HEALTH_REGEN = skillEffects.healthRegen > 0 ? skillEffects.healthRegen : 0;
   }
 
+  // Reset additive globals that are only written inside the endless block
+  // below — otherwise they accumulate across recalcs instead of rebuilding fresh.
+  window.PLAYER_LIFESTEAL = 0;
+
+  // Lifesteal from weapon affixes lives in LootSystem.getBonus('lifesteal') and
+  // is queried at damage-time, so no explicit copy is needed here.
+
   // 3.55) Endless-mode upgrade buffs (additive, on top of skills, before
   // event multipliers). Rebuilt fresh per recalc so picked upgrades persist.
   const endlessBuffs = window.endlessBuffs;
@@ -944,23 +1003,71 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     playerSpeed = Math.max(60, Math.round(playerSpeed * (buffs.speedMult || 1)));
   }
 
+  // 3.7) Brunnen run-scoped buffs (Issue #16). Same shape as eventBuffs but
+  // cleared on hub return so they never leak between runs. Max-HP delta is
+  // already factored into newMaxHealth above; this layer handles damage /
+  // speed / armor multipliers.
+  const bb = window.brunnenBuffs;
+  if (bb) {
+    weaponDamage = Math.max(1, Math.round(weaponDamage * (bb.damageMult || 1)));
+    playerArmor = Phaser.Math.Clamp(
+      playerArmor + (bb.armorAdd || 0),
+      0,
+      0.85
+    );
+    playerSpeed = Math.max(60, Math.round(playerSpeed * (bb.speedMult || 1)));
+  }
+
+  // 3.8) Printing-House run-scoped buffs (Issue #24). Layered LAST so edict
+  // multipliers apply on top of brunnen / shrine buffs. Damage multiplier
+  // and armor delta apply here; max-HP is already in newMaxHealth.
+  const pb = window.printingBuffs;
+  if (pb) {
+    weaponDamage = Math.max(1, Math.round(weaponDamage * (pb.damageMult || 1)));
+  }
+
+  // 3.9) Knowledge-Tree permanent buffs (Issue #26). Permanent across runs.
+  // Same shape as the run-scoped layers but persists. damageMult / armorAdd /
+  // speedMult are applied here; maxHpAdd is already folded into newMaxHealth.
+  // critAdd / xpMult / goldMult / pickupAddRange / magicFindMult / cdrAll are
+  // applied at their respective read sites (main.js, lootSystem.js, player.js
+  // — see WP03 T013-T015).
+  const kb = window.knowledgeTreeBuffs;
+  if (kb) {
+    weaponDamage = Math.max(1, Math.round(weaponDamage * (kb.damageMult || 1)));
+    playerArmor = Phaser.Math.Clamp(
+      playerArmor + (kb.armorAdd || 0),
+      0,
+      0.85
+    );
+    playerSpeed = Math.max(60, Math.round(playerSpeed * (kb.speedMult || 1)));
+    // critAdd is folded in here as well so invest()-triggered recalcDerived()
+    // refreshes the HUD crit % between runs. The line-806 init in main.js
+    // covers fresh-load before recalcDerived runs.
+    playerCritChance = Phaser.Math.Clamp(playerCritChance + (kb.critAdd || 0), 0, 0.95);
+  }
+
   // 4) HUD aktualisieren
-  if (weaponStatsText) {
-    // Mirrors the same template HUD uses (main.js hud.stats key).
-    if (window.i18n) {
-      weaponStatsText.setText(window.i18n.t('hud.stats', {
-        dmg: weaponDamage,
-        spd: weaponAttackSpeed.toFixed(2),
-        rng: attackRange,
-        arm: (playerArmor * 100).toFixed(0),
-        crit: (playerCritChance * 100).toFixed(1)
-      }));
-    } else {
-      weaponStatsText.setText(
-        `Damage: ${weaponDamage}  Speed: ${weaponAttackSpeed.toFixed(2)}  Range: ${attackRange}` +
-        `\nArmor: ${(playerArmor * 100).toFixed(0)}%  Crit: ${(playerCritChance * 100).toFixed(1)}%`
-      );
-    }
+  // Guard against a destroyed Text: Phaser sets `.scene` to undefined on
+  // destroy(). After a scene.start('GameScene') the old HUD text is gone,
+  // but the script-scoped binding still points to the dead object.
+  if (weaponStatsText && weaponStatsText.scene) {
+    try {
+      if (window.i18n) {
+        weaponStatsText.setText(window.i18n.t('hud.stats', {
+          dmg: weaponDamage,
+          spd: weaponAttackSpeed.toFixed(2),
+          rng: attackRange,
+          arm: (playerArmor * 100).toFixed(0),
+          crit: (playerCritChance * 100).toFixed(1)
+        }));
+      } else {
+        weaponStatsText.setText(
+          `Damage: ${weaponDamage}  Speed: ${weaponAttackSpeed.toFixed(2)}  Range: ${attackRange}` +
+          `\nArmor: ${(playerArmor * 100).toFixed(0)}%  Crit: ${(playerCritChance * 100).toFixed(1)}%`
+        );
+      }
+    } catch (_) { /* destroyed mid-flight — swallow */ }
   }
   if (typeof updateHUD === 'function') {
     updateHUD();
@@ -969,6 +1076,10 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
 
 function openInventory() {
   invOpen = true;
+  // Tutorial step trigger (feature 044). Single emission per open.
+  if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+    window.TutorialSystem.report('inventory.opened', {});
+  }
   if (typeof player !== 'undefined' && player && player.body && player.setVelocity) {
     player.setVelocity(0, 0);
   }
@@ -1049,8 +1160,14 @@ function refreshInventoryUI() {
       if (icon && iconKey) icon.setTexture(iconKey);
       if (icon) icon.setVisible(true);
       if (label) {
-        label.setText('');
-        label.setVisible(false);
+        const stack = it.stack || 1;
+        if (stack > 1) {
+          label.setText('x' + stack);
+          label.setVisible(true);
+        } else {
+          label.setText('');
+          label.setVisible(false);
+        }
       }
       if (indicator) {
         indicator.setVisible(isItemUpgrade(it));
@@ -1104,6 +1221,10 @@ function equipSelectedItem() {
     equipment[slotKey] = it;
     inventory[invSelected] = oldItem || null;
     invSelected = -1;
+    // Tutorial step 10 trigger (feature 044). One emission per equip.
+    if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+      window.TutorialSystem.report('inventory.equipped', { slot: slotKey });
+    }
 
     // recalc: altes HP rausrechnen, neues rein (nur Delta!)
     const newItemHp = it.hp || 0;

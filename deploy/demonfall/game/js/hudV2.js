@@ -278,7 +278,7 @@
     if (hpPct < 0.20) hpColor = 0xff2020;
     else if (hpPct < 0.40) hpColor = 0xe06030;
     HUDv2.elements.hpFill.setFillStyle(hpColor);
-    HUDv2.elements.hpText.setText(cur + ' / ' + max);
+    HUDv2.elements.hpText.setText(Math.round(cur) + ' / ' + Math.round(max));
 
     // XP bar
     const xpPct = Math.max(0, Math.min(1, need > 0 ? xp / need : 0));
@@ -362,12 +362,17 @@
     const arm = (typeof window.playerArmor === 'number') ? window.playerArmor : (typeof playerArmor !== 'undefined' ? playerArmor : 0);
     const crt = (typeof window.playerCritChance === 'number') ? window.playerCritChance : (typeof playerCritChance !== 'undefined' ? playerCritChance : 0);
     const spd = (typeof window.playerSpeed === 'number') ? window.playerSpeed : (typeof playerSpeed !== 'undefined' ? playerSpeed : 0);
-    const xp = (typeof window.playerXP === 'number') ? window.playerXP : 0;
-    const need = (typeof window.neededXP === 'number') ? window.neededXP : 1;
-    const lvl = (typeof window.playerLevel === 'number') ? window.playerLevel : 1;
+    // playerXP / neededXP / playerLevel are script-scoped `let`s in main.js
+    // and only show up under `window` when explicit assignments mirror them
+    // (eventSystem + questSystem do so on grant; main.js itself does not).
+    // Mirror the Mini-HUD pattern at line 267 and fall back to the
+    // script-scoped binding so the menu shows the real values, not defaults.
+    const xp = (typeof window.playerXP === 'number') ? window.playerXP : (typeof playerXP !== 'undefined' ? playerXP : 0);
+    const need = (typeof window.neededXP === 'number') ? window.neededXP : (typeof neededXP !== 'undefined' ? neededXP : 1);
+    const lvl = (typeof window.playerLevel === 'number') ? window.playerLevel : (typeof playerLevel !== 'undefined' ? playerLevel : 1);
 
     const rows = [
-      [T('hud.stats.label.health'), cur + ' / ' + max],
+      [T('hud.stats.label.health'), Math.round(cur) + ' / ' + Math.round(max)],
       [T('hud.stats.label.level'), String(lvl)],
       [T('hud.stats.label.xp'), xp + ' / ' + need],
       [T('hud.stats.label.damage'), String(wpd)],

@@ -247,7 +247,9 @@ StartScene.prototype.preload = function () {
     "CirclePillars", "CollapsingHall", "Crosshall", "CrossroadChamber", "Crossroads",
     "Crypt_Small_Altar", "DungeonLibrary", "GrandBazaar", "MazeLite", "PrisonCells",
     "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault",
-    "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt"
+    "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt",
+    // Feature 049: new procedural layouts
+    "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove"
   ];
   for (const name of templateNames) {
     this.load.json(name, `js/roomTemplates/${name}.json`);
@@ -255,6 +257,14 @@ StartScene.prototype.preload = function () {
 };
 
 StartScene.prototype.create = function () {
+  // Track translatable text nodes so an i18n.onChange subscriber can re-render
+  // them when the user flips the language in SettingsScene.
+  const _i18nRefs = [];
+  const _trackI18n = (obj, key, params) => {
+    if (obj && key) _i18nRefs.push({ obj, key, params: params || null });
+    return obj;
+  };
+
   if (typeof normalizePlayerDirectionalFrames === 'function') {
     normalizePlayerDirectionalFrames(this);
   }
@@ -276,6 +286,9 @@ StartScene.prototype.create = function () {
     if (window.clearSave) clearSave();
     if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
       window.AbilitySystem.resetForNewGame();
+    }
+    if (window.KnowledgeTree && typeof window.KnowledgeTree.resetForNewGame === 'function') {
+      window.KnowledgeTree.resetForNewGame();
     }
     window.__DEV_FORCE_CHEAT__ = true;
     if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
@@ -302,11 +315,12 @@ StartScene.prototype.create = function () {
     .setOrigin(0.5);
 
   // Subtitle
-  this.add
+  const subtitleText = this.add
     .text(cx, ch * 0.18 + 50, _START_T('start.subtitle'), {
       fontFamily: 'serif', fontSize: "16px", fill: "#888888"
     })
     .setOrigin(0.5);
+  _trackI18n(subtitleText, 'start.subtitle');
 
   const hasExistingSave = window.hasSave && hasSave();
 
@@ -341,6 +355,7 @@ StartScene.prototype.create = function () {
 
     contBtn.on('pointerover', () => contBtn.setStyle({ fill: '#fff27c' }));
     contBtn.on('pointerout', () => contBtn.setStyle({ fill: '#ffea6a' }));
+    _trackI18n(contBtn, 'start.btn.continue');
 
     const delBtn = this.add
       .text(cx, ch * 0.48, _START_T('start.btn.delete_save'), {
@@ -351,6 +366,7 @@ StartScene.prototype.create = function () {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setDepth(1001);
+    _trackI18n(delBtn, 'start.btn.delete_save');
 
     delBtn.on("pointerdown", () => {
       if (window.clearSave) clearSave();
@@ -362,8 +378,9 @@ StartScene.prototype.create = function () {
   }
 
   // START GAME
+  const startKey = hasExistingSave ? 'start.btn.new_game' : 'start.btn.start_game';
   btn = this.add
-    .text(cx, startY, _START_T(hasExistingSave ? 'start.btn.new_game' : 'start.btn.start_game'), {
+    .text(cx, startY, _START_T(startKey), {
       fontFamily: 'serif', fontSize: hasExistingSave ? "24px" : "28px",
       fill: hasExistingSave ? "#88ff88" : "#88ff88",
       backgroundColor: "#1a1a1a",
@@ -373,12 +390,20 @@ StartScene.prototype.create = function () {
     .setOrigin(0.5)
     .setInteractive({ useHandCursor: true })
     .setDepth(1001);
+  _trackI18n(btn, startKey);
 
   btn
     .on("pointerdown", () => {
       if (window.clearSave) clearSave();
       if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
         window.AbilitySystem.resetForNewGame();
+      }
+      // Issue #26 — Knowledge Tree is a satellite localStorage key with its
+      // own in-memory state. clearAllSaves (called from AbilitySystem) wipes
+      // the persisted blob, but the IIFE module is still alive in this
+      // session — explicitly reset it so any open UI shows a clean slate.
+      if (window.KnowledgeTree && typeof window.KnowledgeTree.resetForNewGame === 'function') {
+        window.KnowledgeTree.resetForNewGame();
       }
       if (typeof window.pendingLoadedSave !== "undefined") {
         window.pendingLoadedSave = null;
@@ -402,6 +427,7 @@ StartScene.prototype.create = function () {
     .setOrigin(0.5)
     .setInteractive({ useHandCursor: true })
     .setDepth(1001);
+  _trackI18n(endlessBtn, 'endless.btn.start');
   endlessBtn
     .on('pointerdown', () => {
       if (window.clearSave) clearSave();
@@ -432,6 +458,7 @@ StartScene.prototype.create = function () {
     .setOrigin(0.5)
     .setInteractive({ useHandCursor: true })
     .setDepth(1001);
+  _trackI18n(settingsBtn, 'start.btn.settings');
   settingsBtn.on("pointerdown", () => {
     if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
   });
@@ -440,13 +467,14 @@ StartScene.prototype.create = function () {
 
   // Optional: Highscores
   if (window.loadScores) {
-    this.add
+    const highscoresHeader = this.add
       .text(400, 460, _START_T('start.highscores'), {
         fontSize: "22px",
         fill: "#ffff00",
       })
       .setOrigin(0.5)
       .setDepth(1001);
+    _trackI18n(highscoresHeader, 'start.highscores');
 
     window
       .loadScores()
@@ -464,15 +492,31 @@ StartScene.prototype.create = function () {
         });
       })
       .catch((err) => {
-        this.add
+        const errText = this.add
           .text(400, 490, _START_T('start.highscores.error'), {
             fontSize: "16px",
             fill: "#ff0000",
           })
           .setOrigin(0.5)
           .setDepth(1001);
+        _trackI18n(errText, 'start.highscores.error');
       });
   }
+
+  // Re-render tracked labels when the user flips language in SettingsScene.
+  let _unsubI18n = null;
+  if (window.i18n && typeof window.i18n.onChange === 'function') {
+    _unsubI18n = window.i18n.onChange(() => {
+      _i18nRefs.forEach((ref) => {
+        if (ref.obj && ref.obj.active && typeof ref.obj.setText === 'function') {
+          ref.obj.setText(_START_T(ref.key, ref.params));
+        }
+      });
+    });
+  }
+  this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    if (typeof _unsubI18n === 'function') { try { _unsubI18n(); } catch (e) {} }
+  });
 
   // -------------- Loader-Logik fuer RoomTemplates ----------------
 
@@ -488,7 +532,9 @@ StartScene.prototype.create = function () {
       "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault",
       // Story rooms (gated by act / story system, but must be registered in
       // RT.TEMPLATES so the room picker can use them)
-      "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt"
+      "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt",
+      // Feature 049: new procedural layouts
+      "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove"
     ];
 
     for (const name of allTemplateNames) {
@@ -500,6 +546,14 @@ StartScene.prototype.create = function () {
 
     // Don't overwrite RT.MANIFEST — it's set in roomTemplates.js
     window.game = this.game;
+    // Tutorial auto-skip (feature 044): runs once per session entry into the
+    // game proper. With an existing save, marks the tutorial skipped so no
+    // overlay frame ever renders. Without a save, seeds fresh tutorial state
+    // at the first visible step. Idempotent across all entry buttons
+    // (Continue, New Game, Endless).
+    if (window.TutorialSystem && typeof window.TutorialSystem.maybeAutoSkip === 'function') {
+      window.TutorialSystem.maybeAutoSkip();
+    }
     // Endless mode skips the hub and boots straight into the dungeon.
     const target = (window.__ENDLESS_MODE__ ? 'GameScene' : 'HubSceneV2');
     this.scene.start(target);

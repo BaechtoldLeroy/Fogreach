@@ -18,7 +18,7 @@
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 10 }
       ],
-      rewards: { xp: 30, materials: { MAT: 5 } },
+      rewards: { xp: 30, materials: { MAT: 5 }, druckblaetter: 2 },
       prerequisites: [],
       requiredAct: 0,
       dialogueOffer: 'Wilde Tiere in den Kellern. Raeum sie aus.\n\nWillst du diese Aufgabe uebernehmen?',
@@ -35,7 +35,7 @@
       objectives: [
         { type: 'explore', target: 'room', current: 0, required: 3 }
       ],
-      rewards: { xp: 40 },
+      rewards: { xp: 40, druckblaetter: 1 },
       prerequisites: [],
       requiredAct: 0,
       dialogueOffer: 'Stell sicher, dass alle Gaenge sicher sind. Patrouilliere drei Raeume.\n\nBist du bereit?',
@@ -56,7 +56,7 @@
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 20 }
       ],
-      rewards: { xp: 75, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', nameKey: 'quest.reward.ALDRIC_SCHWERT', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityKey: 'quest.rarity.rare', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
+      rewards: { xp: 75, druckblaetter: 3, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', nameKey: 'quest.reward.ALDRIC_SCHWERT', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityKey: 'quest.rarity.rare', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
       prerequisites: ['aldric_cleanup'],
       requiredAct: 1,
       dialogueOffer: 'Fremde stehlen unsere Dokumente. Stoppe sie. Besiege zwanzig dieser Eindringlinge.\n\nNimmst du den Auftrag an?',
@@ -157,6 +157,35 @@
     // =======================================================
     // === Act 4: Die Wahrheit sickert durch ===
     // =======================================================
+    // -------------------------------------------------------
+    // Faction-gated showcase quest (feature 045). Only offered
+    // when Resistance standing >= 25. Demonstrates the gate()
+    // predicate path; QA can adjust standing via DevTools to
+    // surface or hide the offer at will.
+    // -------------------------------------------------------
+    resistance_fetch_01: {
+      id: 'resistance_fetch_01',
+      title: 'Botengang fuer die Resistance',
+      description: 'Hol das versiegelte Buendel aus dem Keller. Niemand darf es sehen.',
+      npcId: 'elara',
+      type: 'kill',
+      chain: 0,
+      objectives: [
+        { type: 'kill', target: 'enemy', current: 0, required: 5 }
+      ],
+      rewards: { xp: 25, materials: { MAT: 3 } },
+      prerequisites: [],
+      requiredAct: 0,
+      gate: function () {
+        return !!(window.FactionSystem
+          && typeof window.FactionSystem.getStanding === 'function'
+          && window.FactionSystem.getStanding('resistance') >= 25);
+      },
+      dialogueOffer: 'Es gibt da etwas im Keller... ein Buendel, versiegelt. Bring es mir, ohne dass jemand sieht.\n\nNimmst du den Auftrag an?',
+      dialogueProgress: 'Schau dich im Keller um. Raeum ein paar Wachen aus dem Weg, falls noetig.',
+      dialogueComplete: 'Du hast es. Niemand hat dich gesehen — gut. Die Resistance vergisst das nicht.'
+    },
+
     elara_ritual: {
       id: 'elara_ritual',
       title: 'Die Ritualkammer',
@@ -596,6 +625,19 @@
           if (!preState || preState.status !== 'completed') return false;
         }
       }
+      // Optional gate predicate (feature 045). When set, the quest is only
+      // offered if the predicate returns true. Used for faction-standing
+      // gating; the predicate runs on every offer-list refresh, so it
+      // dynamically appears/disappears as standing changes.
+      if (typeof def.gate === 'function') {
+        try {
+          if (!def.gate()) return false;
+        } catch (_) {
+          // Defensive: a throwing gate shouldn't crash the dialog. Hide the
+          // quest until the gate is fixed.
+          return false;
+        }
+      }
       return true;
     }).map(function (id) { return QUEST_DEFINITIONS[id]; });
   }
@@ -653,6 +695,7 @@
 
     console.log('[QuestSystem] Accepted quest:', questId);
     _notifyUpdate();
+    _persistIfPossible();
     return true;
   }
 
@@ -678,8 +721,23 @@
     });
     if (changed) {
       _notifyUpdate();
+      _persistIfPossible();
     }
     return changed;
+  }
+
+  // Trigger a full game save if saveGame is reachable. We save on every
+  // material quest-state change (accept / complete / progress) so a
+  // browser crash mid-dungeon doesn't lose objective progress that
+  // would otherwise sit in memory until the next scene transition.
+  // saveGame writes the entire payload (inventory, equipment, quests,
+  // story, etc.) so it's idempotent — no risk of partial state.
+  function _persistIfPossible() {
+    if (typeof window === 'undefined' || typeof window.saveGame !== 'function') return;
+    try { window.saveGame(); } catch (err) {
+      // Don't let a save failure break gameplay — log once and continue.
+      try { console.warn('[QuestSystem] persist failed', err); } catch (_) {}
+    }
   }
 
   /**
@@ -708,6 +766,7 @@
     });
     if (changed) {
       _notifyUpdate();
+      _persistIfPossible();
     }
     return changed;
   }
@@ -730,6 +789,7 @@
     });
     if (changed) {
       _notifyUpdate();
+      _persistIfPossible();
     }
     return changed;
   }
@@ -794,6 +854,13 @@
         }
       });
     }
+    if (typeof rewards.druckblaetter === 'number' && rewards.druckblaetter > 0
+        && window.PrintingHouse && typeof window.PrintingHouse.addDruckblaetter === 'function') {
+      try {
+        window.PrintingHouse.addDruckblaetter(rewards.druckblaetter | 0);
+        console.log('[QuestSystem] Granted ' + (rewards.druckblaetter | 0) + ' Druckblätter');
+      } catch (_) {}
+    }
     if (rewards.unlocks && Array.isArray(rewards.unlocks)) {
       rewards.unlocks.forEach(function (unlock) {
         if (!window._questUnlocks) window._questUnlocks = {};
@@ -812,6 +879,7 @@
       window.AbilitySystem.onQuestCompleted(questId);
     }
     _notifyUpdate();
+    _persistIfPossible();
     return true;
   }
 

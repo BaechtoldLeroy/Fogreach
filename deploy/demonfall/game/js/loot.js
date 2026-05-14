@@ -186,8 +186,13 @@ function _dropEnemyGold(scene, enemy) {
   if (!scene || !enemy) return;
   const level = enemy.iLevel || enemy.mLevel || (typeof currentWave !== 'undefined' ? currentWave : 1) || 1;
   const isBoss = !!(enemy.isBoss || enemy.isMiniBoss);
-  const amount = _rollEnemyGoldDrop(level, isBoss);
+  let amount = _rollEnemyGoldDrop(level, isBoss);
   if (amount <= 0) return;
+  // Printing-House edict: gold drop multiplier (open_rebellion).
+  const _ph = (typeof window !== 'undefined') ? window.printingBuffs : null;
+  if (_ph && typeof _ph.goldMult === 'number' && _ph.goldMult > 0 && _ph.goldMult !== 1) {
+    amount = Math.max(1, Math.round(amount * _ph.goldMult));
+  }
   // Scatter gold around the enemy so it doesn't perfectly stack on the
   // XP/health pickup that lootGroup spawns at the same tile.
   const angle = Math.random() * Math.PI * 2;
@@ -243,6 +248,15 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
           isQuestItem: true,
           questTarget: qiDef.target
         };
+        // Refs #22: ensure quest items spawn on walkable tiles. If the
+        // enemy died inside/atop a non-walkable tile, nudge the spawn to
+        // an accessible point so the fetch quest stays completable.
+        if (scene && typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(x, y)) {
+          if (typeof scene.pickAccessibleSpawnPoint === 'function') {
+            var safeSpot = scene.pickAccessibleSpawnPoint({ maxAttempts: 5 });
+            if (safeSpot) { x = safeSpot.x; y = safeSpot.y; }
+          }
+        }
         var questLoot = lootGroup.create(x, y, questItem.iconKey || 'itMat');
         questLoot.setDisplaySize(28, 22);
         questLoot.setData('item', questItem);
@@ -307,7 +321,6 @@ function _attachRarityFx(scene, loot, item) {
   const glow = scene.add.circle(loot.x, loot.y, radius, tierHex, 0.35);
   glow.setDepth(79); // under the item sprite (80)
   glow.setBlendMode(Phaser.BlendModes.ADD);
-  loot.setData('rarityGlow', glow);
 
   // Pulse tween
   const pulseTween = scene.tweens.add({
@@ -319,39 +332,55 @@ function _attachRarityFx(scene, loot, item) {
     repeat: -1,
     ease: 'Sine.easeInOut'
   });
-  loot.setData('rarityTween', pulseTween);
 
   // Legendary: thin outer ring that rotates slowly
+  let ring = null;
+  let ringTween = null;
   if (tier >= 3) {
-    const ring = scene.add.circle(loot.x, loot.y, radius + 10, 0xffffff, 0);
+    ring = scene.add.circle(loot.x, loot.y, radius + 10, 0xffffff, 0);
     ring.setStrokeStyle(2, tierHex, 0.7);
     ring.setDepth(79);
     ring.setBlendMode(Phaser.BlendModes.ADD);
-    loot.setData('rarityRing', ring);
-    const ringTween = scene.tweens.add({
+    ringTween = scene.tweens.add({
       targets: ring,
       angle: 360,
       duration: 3000,
       repeat: -1
     });
-    loot.setData('rarityRingTween', ringTween);
   }
 
   // Keep beacon glued to the loot sprite each frame (bodies may drift on spawn).
   const updateBeacon = () => {
     if (!loot.active) return;
-    const g = loot.getData('rarityGlow');
-    const r = loot.getData('rarityRing');
-    if (g) g.setPosition(loot.x, loot.y);
-    if (r) r.setPosition(loot.x, loot.y);
+    if (glow.scene) glow.setPosition(loot.x, loot.y);
+    if (ring && ring.scene) ring.setPosition(loot.x, loot.y);
   };
   scene.events.on('update', updateBeacon);
-  loot.setData('rarityUpdateFn', updateBeacon);
-  loot.setData('rarityScene', scene);
 
-  // Defensive fallback: also fire on destroy, in case a path reaches destroy()
-  // without going through collectLoot (e.g. scene shutdown).
-  loot.once('destroy', () => _cleanupRarityFx(loot));
+  // Idempotent cleanup captured in a closure so we don't depend on the loot's
+  // DataManager state (which can become unreliable mid-destroy). This fixes
+  // a class of bug where the glow Circle outlived its loot sprite — visible
+  // after pickup or after room change.
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    try { scene.events.off('update', updateBeacon); } catch (_) {}
+    try { scene.events.off('shutdown', cleanup); } catch (_) {}
+    try { if (pulseTween && pulseTween.remove) pulseTween.remove(); } catch (_) {}
+    try { if (ringTween  && ringTween.remove)  ringTween.remove();  } catch (_) {}
+    try { if (glow && glow.scene) glow.destroy(); } catch (_) {}
+    try { if (ring && ring.scene) ring.destroy(); } catch (_) {}
+  };
+
+  // Three independent triggers — whichever fires first wins; the rest no-op
+  // thanks to the `cleaned` flag:
+  //   1) collectLoot calls _cleanupRarityFx(loot) at the top of pickup
+  //   2) loot's 'destroy' event (after collectLoot, or from lootGroup.clear)
+  //   3) scene 'shutdown' (full scene teardown, e.g. exiting the dungeon)
+  loot.setData('rarityCleanup', cleanup);
+  loot.once('destroy', cleanup);
+  scene.events.once('shutdown', cleanup);
 }
 
 function spawnPickup(x, y, type) {
@@ -367,24 +396,9 @@ function spawnPickup(x, y, type) {
 }
 
 function _cleanupRarityFx(loot) {
-  if (!loot || !loot.getData) return;
-  const g = loot.getData('rarityGlow');
-  const r = loot.getData('rarityRing');
-  const pt = loot.getData('rarityTween');
-  const rt = loot.getData('rarityRingTween');
-  const upd = loot.getData('rarityUpdateFn');
-  const fxScene = loot.getData('rarityScene');
-  if (fxScene && fxScene.events && upd) fxScene.events.off('update', upd);
-  if (pt && pt.remove) pt.remove();
-  if (rt && rt.remove) rt.remove();
-  if (g && g.destroy) g.destroy();
-  if (r && r.destroy) r.destroy();
-  loot.setData('rarityGlow', null);
-  loot.setData('rarityRing', null);
-  loot.setData('rarityTween', null);
-  loot.setData('rarityRingTween', null);
-  loot.setData('rarityUpdateFn', null);
-  loot.setData('rarityScene', null);
+  if (!loot || typeof loot.getData !== 'function') return;
+  const cleanup = loot.getData('rarityCleanup');
+  if (typeof cleanup === 'function') cleanup();
 }
 
 function collectLoot(playerSprite, loot) {
@@ -420,7 +434,19 @@ function collectLoot(playerSprite, loot) {
     const isMaterial = item?.type === 'material'
       && typeof addMaterialToStorage === 'function'
       && addMaterialToStorage(item, item?.amount || 1);
-    if (!isMaterial) {
+    // Stack potions of the same tier into an existing inventory slot
+    // before falling through to the fresh-slot/full-inventory path.
+    const isStackedPotion = item?.type === 'potion' && (() => {
+      const existing = inventory.findIndex((slot) =>
+        slot && slot.type === 'potion' && slot.potionTier === item.potionTier
+      );
+      if (existing >= 0) {
+        inventory[existing].stack = (inventory[existing].stack || 1) + (item.stack || 1);
+        return true;
+      }
+      return false;
+    })();
+    if (!isMaterial && !isStackedPotion) {
       const idx = inventory.findIndex((slot) => !slot);
       if (idx >= 0) {
         inventory[idx] = item;

@@ -17,7 +17,13 @@
       'RitualVault',
       'PrisonDepths',
       'CouncilChamber',
-      'ForgottenCrypt'
+      'ForgottenCrypt',
+      'CorridorLong',
+      'CorridorBranch',
+      'PillarHall',
+      'AsymmetricChamber',
+      'TerracedHall',
+      'DoubleAlcove'
     ];
   }
 })(window);
@@ -903,8 +909,12 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
 
   // Loot
   tpl.spawns?.loot?.forEach(l => {
-    const px0 = ox + gx(tpl, l.x) + T/2;
-    const py0 = oy + gy(tpl, l.y) + T/2;
+    // Snap the requested tile to a walkable, reachable tile so chests never
+    // spawn on top of walls or in inaccessible chambers. findAccessibleTileNear
+    // does a BFS-bounded search and falls back to the closest reachable tile.
+    const baseTile = findAccessibleTileNear(l.x, l.y, 0) || { x: l.x, y: l.y };
+    const px0 = ox + gx(tpl, baseTile.x) + T/2;
+    const py0 = oy + gy(tpl, baseTile.y) + T/2;
 
     const cam = scene.cameras.main;
     const cx = cam.midPoint.x, cy = cam.midPoint.y;
@@ -912,9 +922,9 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
 
     let px = px0, py = py0;
 
-    // wenn zu nah an der Kamera: random Position im Raum suchen
+    // wenn zu nah an der Kamera: random Position im Raum suchen — und nur
+    // walkable Tiles zulassen, sonst landet die Truhe auf einer Mauer.
     if (Phaser.Math.Distance.Between(px, py, cx, cy) < MIN) {
-      // Raumgrenzen, falls vorhanden, sonst Bildschirm
       const bounds = scene.currentRoom
         ? {
             x: scene.currentRoom.origin.x + 16,
@@ -925,16 +935,40 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         : { x: 16, y: 16, w: scene.scale.width - 32, h: scene.scale.height - 32 };
 
       let tries = 0;
+      let foundFree = false;
       do {
-        px = Phaser.Math.Between(bounds.x, bounds.x + bounds.w);
-        py = Phaser.Math.Between(bounds.y, bounds.y + bounds.h);
+        const candX = Phaser.Math.Between(bounds.x, bounds.x + bounds.w);
+        const candY = Phaser.Math.Between(bounds.y, bounds.y + bounds.h);
+        if (Phaser.Math.Distance.Between(candX, candY, cx, cy) < MIN) { tries++; continue; }
+        // Convert back to tile coords (relative to template origin) and
+        // verify walkability.
+        const tileX = Math.floor((candX - ox) / T);
+        const tileY = Math.floor((candY - oy) / T);
+        const safeTile = findAccessibleTileNear(tileX, tileY, 0);
+        if (safeTile) {
+          px = ox + gx(tpl, safeTile.x) + T/2;
+          py = oy + gy(tpl, safeTile.y) + T/2;
+          foundFree = true;
+          break;
+        }
         tries++;
-      } while (tries < 20 && Phaser.Math.Distance.Between(px, py, cx, cy) < MIN);
+      } while (tries < 20);
+      // If reroll failed entirely, keep the snapped px0/py0 — at least it's
+      // walkable, even if close to camera.
+      if (!foundFree) { px = px0; py = py0; }
     }
 
-    // WICHTIG: korrekte Signatur ohne zusaetzliches 'scene' Argument
+    // Final wall-collision guard via the global helper used by enemy/stair
+    // placement. If the tile is still blocked (e.g., obstacle was placed on
+    // top earlier this frame), skip the chest rather than spawn it inside a
+    // wall.
+    if (typeof window.isSpawnPositionBlocked === 'function'
+        && window.isSpawnPositionBlocked(px, py)) {
+      try { console.warn('[roomTemplates] skipped chest spawn at blocked tile', { x: px, y: py, type: l.type }); } catch (_) {}
+      return;
+    }
+
     if (window.spawnLoot) window.spawnLoot(px, py, { type: l.type, locked: !!l.locked });
-    // Falls du this.spawnLoot gebunden hast: this.spawnLoot(px, py, { ... });
   });
 
   // Türen
@@ -952,7 +986,47 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     const ps = tpl.spawns.player;
     let tile = findAccessibleTileNear(ps.x, ps.y, 0) || { x: ps.x, y: ps.y };
 
-    // Ensure spawn has 3+ tiles clearance from walls in all directions
+    // Object types that act as solid obstacles the player can get wedged
+    // against. Decorative/walk-through types (rubble, brazier glow, loot) are
+    // intentionally excluded — they do not create wedge geometry.
+    // See GitHub Issue #19 (CirclePillars wedge spawn).
+    const BLOCKING_OBJECT_TYPES = new Set([
+      'pillar', 'pillar_small', 'pillar_large',
+      'statue', 'statue_knight',
+      'altar',
+      'crate', 'barrel', 'chest_small', 'chest_medium', 'chest_large'
+    ]);
+    const blockingObjectTiles = [];
+    (tpl.objects || []).forEach((obj) => {
+      if (!obj) return;
+      if (!BLOCKING_OBJECT_TYPES.has(obj.type)) return;
+      const tx = Math.round(obj.x ?? 0);
+      const ty = Math.round(obj.y ?? 0);
+      if (Number.isFinite(tx) && Number.isFinite(ty)) {
+        blockingObjectTiles.push({ x: tx, y: ty });
+      }
+    });
+    // Also include legend-derived obstacles from the layout grid (e.g. 'P' →
+    // pillar_small in CirclePillars). Without this, the wedge clearance check
+    // would treat those tiles as floor and the player could spawn flanked by
+    // pillars that are technically floor in wallsGrid.
+    const legend = (tpl.layout && tpl.layout.legend) || {};
+    if (tpl.layout && Array.isArray(tpl.layout.walls)) {
+      for (let ly = 0; ly < tpl.layout.walls.length; ly++) {
+        const lrow = tpl.layout.walls[ly];
+        if (!lrow) continue;
+        for (let lx = 0; lx < lrow.length; lx++) {
+          const lkey = legend[lrow[lx]];
+          if (lkey && BLOCKING_OBJECT_TYPES.has(lkey)) {
+            blockingObjectTiles.push({ x: lx, y: ly });
+          }
+        }
+      }
+    }
+
+    // Ensure spawn has 3+ tiles clearance from walls AND is not within
+    // 2 tiles of any blocking object (pillars, statues, etc.) — otherwise
+    // the player can spawn wedged between two pillars or pillar+wall.
     const hasWallClearance = (tx, ty, dist) => {
       for (let dy = -dist; dy <= dist; dy++)
         for (let dx = -dist; dx <= dist; dx++) {
@@ -961,18 +1035,46 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         }
       return true;
     };
+    const hasObjectClearance = (tx, ty, dist) => {
+      for (const obj of blockingObjectTiles) {
+        const dx = obj.x - tx;
+        const dy = obj.y - ty;
+        if (Math.abs(dx) <= dist && Math.abs(dy) <= dist) return false;
+      }
+      return true;
+    };
+    const hasSpawnClearance = (tx, ty, wallDist, objDist) =>
+      hasWallClearance(tx, ty, wallDist) && hasObjectClearance(tx, ty, objDist);
 
-    if (!hasWallClearance(tile.x, tile.y, 3)) {
-      // Find a better spawn with clearance
-      let bestTile = tile, bestDist = Infinity;
+    if (!hasSpawnClearance(tile.x, tile.y, 3, 2)) {
+      // Find a better spawn with progressively relaxed clearance.
+      // Each tier tries (wallClearance, objectClearance); we accept the
+      // closest accessible tile that satisfies the current tier and stop
+      // as soon as any tier yields a candidate.
+      const TIERS = [
+        [3, 2], // ideal
+        [2, 2], // tighter walls but still no wedge
+        [2, 1], // allow being adjacent to one obstacle
+        [1, 1], // last resort with clearance
+        [1, 0]  // accept anywhere on a walkable tile
+      ];
+      let bestTile = tile;
+      let foundTier = false;
       if (accessibleTiles) {
-        accessibleTiles.forEach((key) => {
-          const [tx, ty] = key.split('|').map(Number);
-          if (hasWallClearance(tx, ty, 3)) {
-            const d = Math.abs(tx - ps.x) + Math.abs(ty - ps.y);
-            if (d < bestDist) { bestDist = d; bestTile = { x: tx, y: ty }; }
-          }
-        });
+        for (const [wD, oD] of TIERS) {
+          let bestDist = Infinity;
+          accessibleTiles.forEach((key) => {
+            const [tx, ty] = key.split('|').map(Number);
+            if (hasSpawnClearance(tx, ty, wD, oD)) {
+              const d = Math.abs(tx - ps.x) + Math.abs(ty - ps.y);
+              if (d < bestDist) { bestDist = d; bestTile = { x: tx, y: ty }; }
+            }
+          });
+          if (bestDist !== Infinity) { foundTier = true; break; }
+        }
+        if (!foundTier) {
+          try { console.warn('[roomTemplates] spawn clearance: no tile passed any tier, keeping snapped tile', { x: tile.x, y: tile.y, room: tpl.name }); } catch (_) {}
+        }
       }
       tile = bestTile;
     }
@@ -1142,7 +1244,11 @@ function buildTemplateRoom(scene, templateName) {
     w: built.w,
     h: built.h,
     doors: built.doors,
-    isLarge: !!built.isLarge
+    isLarge: !!built.isLarge,
+    // Bug fix (043): expose procedural flag so roomManager can apply stricter
+    // stair-spawn rules (distance + wall-collision) only on generated rooms,
+    // leaving authored templates' hand-placed entrances untouched.
+    isProcedural: !!tpl._procedural
   };
 }
 

@@ -29,11 +29,13 @@
     <script src="js/persistence.js"></script>
     <script src="js/i18n.js"></script>
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
+    <script src="js/inputScheme.js"></script>
     <script src="js/gameState.js"></script>
     <script src="js/soundManager.js"></script>
     <script src="js/performanceMonitor.js"></script>
     <script src="js/roomTemplates.js"></script>
     <script src="js/proceduralRooms.js"></script>
+    <script src="js/caveGenerator.js"></script>
     <script src="js/doorSystem.js"></script>
     <script src="js/inventory.js"></script>
     <script src="js/lootSystem.js"></script>
@@ -56,6 +58,22 @@
     <script src="js/scenes/Archivschmiede.js"></script>
     <script src="js/scenes/hubLayout.js"></script>
     <script src="js/loadoutOverlay.js"></script>
+    <!-- Tutorial subsystem (feature 044). Order: state machine first, then
+         overlay (reads window.TutorialSystem at mount). Both must load BEFORE
+         any scene file so scenes can reference the globals at construction. -->
+    <script src="js/tutorialSystem.js"></script>
+    <script src="js/scenes/tutorialOverlay.js"></script>
+    <!-- Faction subsystem (feature 045). Same load-order rules as tutorial:
+         must load before any scene file. -->
+    <script src="js/factionSystem.js"></script>
+    <!-- Printing House (feature 046 / Issue #24). Depends on FactionSystem
+         + questSystem at runtime (lazy via window globals; load order only
+         requires it to be before any scene that opens its dialog UI). -->
+    <script src="js/printingHouse.js"></script>
+    <!-- Knowledge Tree (feature 047 / Issue #26). Auto-inits on load. Must
+         load after i18n.js (uses i18n.register) and before HubSceneV2.js
+         (the modal UI calls window.KnowledgeTree.*). -->
+    <script src="js/knowledgeTree.js"></script>
     <script src="js/scenes/startScene.js"></script>
     <script src="js/scenes/HubScene.js"></script>
     <script src="js/scenes/hub/hubLayout.js"></script>
@@ -63,6 +81,7 @@
     <script src="js/scenes/CraftingScene.js"></script>
     <script src="js/scenes/ShopScene.js"></script>
     <script src="js/scenes/SettingsScene.js"></script>
+    <script src="js/scenes/PrintingHouseScene.js"></script>
     <script src="js/scenes/TestTerrainScene.js"></script>
     <script type="module" src="js/leaderboard.js"></script>
     <script src="js/minimap.js"></script>
