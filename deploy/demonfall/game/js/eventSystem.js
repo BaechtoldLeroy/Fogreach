@@ -22,10 +22,10 @@
       'event.cursed.name': 'Verfluchte Truhe',
       'event.cursed.toast_spawn': 'Eine dunkle Aura umgibt etwas...',
       'event.cursed.object_label': 'Verfl. Truhe',
-      'event.cursed.choice_open': 'Öffnen (Risiko: -3 HP, Belohnung: {amount} Gold + Item)',
+      'event.cursed.choice_open': 'Öffnen (Risiko: -3 Max-LP für den Run, Belohnung: {amount} Gold + Item)',
       'event.cursed.choice_safe': 'Vorsichtig öffnen (kein Risiko, weniger Beute)',
       'event.cursed.choice_leave': 'In Ruhe lassen',
-      'event.cursed.toast_curse': 'Fluch! -3 HP, aber gute Beute!',
+      'event.cursed.toast_curse': 'Fluch! -3 Max-LP bis Run-Ende, aber gute Beute!',
       'event.cursed.toast_safe': '+{amount} Gold (sicher)',
       // Lore fragment
       'event.lore.name': 'Altes Schriftstück',
@@ -102,10 +102,10 @@
       'event.cursed.name': 'Cursed Chest',
       'event.cursed.toast_spawn': 'A dark aura surrounds something...',
       'event.cursed.object_label': 'Cursed Chest',
-      'event.cursed.choice_open': 'Open (Risk: -3 HP, Reward: {amount} gold + Item)',
+      'event.cursed.choice_open': 'Open (Risk: -3 max HP for the run, Reward: {amount} gold + Item)',
       'event.cursed.choice_safe': 'Open carefully (no risk, less loot)',
       'event.cursed.choice_leave': 'Leave alone',
-      'event.cursed.toast_curse': 'Curse! -3 HP, but great loot!',
+      'event.cursed.toast_curse': 'Curse! -3 max HP for the rest of the run, but great loot!',
       'event.cursed.toast_safe': '+{amount} gold (safe)',
       'event.lore.name': 'Old Manuscript',
       'event.lore.toast_spawn': '📜 An old manuscript glows nearby...',
@@ -231,9 +231,23 @@
             {
               label: T('event.cursed.choice_open', { amount: goldReward }),
               callback: function () {
-                // Take damage
+                // Curse cost: -3 MAX HP for the run, not current HP. Reuses the
+                // brunnenBuffs.maxHpAdd registry (already wired into
+                // inventory.recalcDerived's §3.7 layer and cleared by
+                // main.js leaveDungeonForHub). The conceptual "Brunnen" naming
+                // is pragmatic — it's the canonical run-scoped max-HP delta
+                // slot; cursed-chest just borrows it.
+                if (!window.brunnenBuffs) {
+                  window.brunnenBuffs = { damageMult: 1, speedMult: 1, armorAdd: 0, maxHpAdd: 0 };
+                }
+                var origCurrent = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
+                window.brunnenBuffs.maxHpAdd -= 3;
+                if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+                // Preserve the player's existing wound: clamp current HP to
+                // the new max only if it now exceeds it.
+                var newMax = Math.max(1, window.playerMaxHealth || 1);
                 if (typeof window.setPlayerHealth === 'function') {
-                  window.setPlayerHealth(Math.max(1, (window.playerHealth || 10) - 3));
+                  window.setPlayerHealth(Math.min(origCurrent, newMax), true);
                 }
                 // Grant gold
                 if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldReward);
