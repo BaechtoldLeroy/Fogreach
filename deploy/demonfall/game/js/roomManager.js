@@ -140,6 +140,25 @@ function getStoryAct(depth) {
  */
 function initDungeonRun() {
   if (window.EventSystem && window.EventSystem.reset) window.EventSystem.reset();
+  // Run-summary tracker. Resets on every fresh run; deltas are computed on
+  // leaveDungeonForHub. Hooks: addXP (player.js), enemy kill (player.js),
+  // enterRoom (this file). Cleared from window when the summary modal
+  // dismisses (HubSceneV2._showRunSummary).
+  window.runStats = {
+    startedAt: Date.now(),
+    startDepth: Math.max(1, window.DUNGEON_DEPTH || 1),
+    startGold: (window.LootSystem && typeof window.LootSystem.getGold === 'function')
+      ? window.LootSystem.getGold() : 0,
+    startFragments: (window.KnowledgeTree && typeof window.KnowledgeTree.getFragments === 'function')
+      ? window.KnowledgeTree.getFragments() : 0,
+    xpGained: 0,
+    enemiesKilled: 0,
+    elitesKilled: 0,
+    bossesKilled: 0,
+    roomsEntered: 0,
+    itemsFound: 0,
+    deepestDepth: Math.max(1, window.DUNGEON_DEPTH || 1)
+  };
   const RT = window.RoomTemplates || {};
   const allNames = Object.keys(RT.TEMPLATES || {});
   if (!allNames.length) {
@@ -331,6 +350,16 @@ function ensureObstacleColliders(scene) {
  */
 function enterRoom(scene, roomId) {
   currentRoomId = roomId;
+
+  // Run-summary: each room entry counts as one cleared room (the player only
+  // reaches the next via the stair, which requires waves to be cleared).
+  // Track the deepest DUNGEON_DEPTH the run reached for the summary modal.
+  if (window.runStats) {
+    window.runStats.roomsEntered += 1;
+    if ((window.DUNGEON_DEPTH || 1) > window.runStats.deepestDepth) {
+      window.runStats.deepestDepth = window.DUNGEON_DEPTH;
+    }
+  }
 
   let room = rooms[roomId];
 

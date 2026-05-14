@@ -289,6 +289,15 @@ class HubSceneV2 extends Phaser.Scene {
       if (this._tutorialOverlay) { this._tutorialOverlay.unmount(); this._tutorialOverlay = null; }
       if (window.soundManager) window.soundManager.stopMusic();
     });
+
+    // Run-summary modal: if leaveDungeonForHub stashed a summary, show it
+    // once the scene is settled. Cleared from window inside _showRunSummary
+    // so a hub-side reload doesn't re-trigger it.
+    if (window.lastRunSummary) {
+      this.time.delayedCall(300, () => {
+        if (window.lastRunSummary) this._showRunSummary(window.lastRunSummary);
+      });
+    }
   }
 
   createPrompt() {
@@ -2233,5 +2242,136 @@ class HubSceneV2 extends Phaser.Scene {
     } else if (typeof gameObject.iterate === 'function') {
       gameObject.iterate((child) => this._ktPropagateScrollFactor(child, sx, sy));
     }
+  }
+
+  // Run-summary modal shown when the player returns to the hub. Reads the
+  // snapshot leaveDungeonForHub stashed on window.lastRunSummary, renders a
+  // stats card, then clears the global so a hub-scene re-create doesn't show
+  // the same summary twice.
+  _showRunSummary(summary) {
+    const T = (window.i18n && window.i18n.t) ? window.i18n.t.bind(window.i18n) : (k) => k;
+    const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';
+    const isDeath = summary.reason === 'death';
+
+    const labels = (lang === 'en') ? {
+      titleSuccess: 'Run Complete',
+      titleDeath: 'Fallen in the Dungeon',
+      depth: 'Depth reached',
+      rooms: 'Rooms entered',
+      enemies: 'Enemies slain',
+      elites: 'Elites',
+      bosses: 'Bosses',
+      xp: 'XP gained',
+      gold: 'Gold gained',
+      fragments: 'Lore fragments',
+      duration: 'Duration',
+      close: '[ Continue ]'
+    } : {
+      titleSuccess: 'Lauf abgeschlossen',
+      titleDeath: 'Im Dungeon gefallen',
+      depth: 'Tiefe erreicht',
+      rooms: 'Räume betreten',
+      enemies: 'Gegner besiegt',
+      elites: 'Elite',
+      bosses: 'Bosse',
+      xp: 'XP gewonnen',
+      gold: 'Gold gewonnen',
+      fragments: 'Lore-Fragmente',
+      duration: 'Dauer',
+      close: '[ Weiter ]'
+    };
+
+    const cam = this.cameras.main;
+    const cw = cam.width, ch = cam.height;
+    const container = this.add.container(cw / 2, ch / 2).setDepth(2100).setScrollFactor(0);
+
+    // Backdrop dims the hub so the modal reads as a focus event.
+    const backdrop = this.add.rectangle(0, 0, cw, ch, 0x000000, 0.65).setScrollFactor(0);
+    container.add(backdrop);
+
+    const panelW = Math.min(520, cw - 40);
+    const panelH = Math.min(460, ch - 60);
+    const g = this.add.graphics();
+    g.fillStyle(0x14141c, 0.95).fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
+    g.lineStyle(2, isDeath ? 0x8a3030 : 0x4a6a8a, 0.95).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
+    container.add(g);
+
+    const title = isDeath ? labels.titleDeath : labels.titleSuccess;
+    const titleColor = isDeath ? '#d88080' : '#f1e9d8';
+    const titleText = this.add.text(0, -panelH / 2 + 24, title, {
+      fontFamily: 'serif', fontSize: 28, color: titleColor
+    }).setOrigin(0.5, 0);
+    container.add(titleText);
+
+    // Depth pill: "1 → 6" if the player descended, "1" if they didn't.
+    const depthStr = (summary.deepestDepth > summary.startDepth)
+      ? (summary.startDepth + ' → ' + summary.deepestDepth)
+      : String(summary.startDepth);
+    const minutes = Math.floor(summary.durationMs / 60000);
+    const seconds = Math.floor((summary.durationMs % 60000) / 1000);
+    const durationStr = minutes + ':' + String(seconds).padStart(2, '0');
+
+    const rows = [
+      { label: labels.depth, value: depthStr, accent: '#d8c890' },
+      { label: labels.rooms, value: String(summary.roomsEntered), accent: '#d8d2c3' },
+      { label: labels.enemies, value: String(summary.enemiesKilled), accent: '#d8d2c3' }
+    ];
+    if (summary.elitesKilled > 0) rows.push({ label: labels.elites, value: String(summary.elitesKilled), accent: '#d8a060' });
+    if (summary.bossesKilled > 0) rows.push({ label: labels.bosses, value: String(summary.bossesKilled), accent: '#d86060' });
+    rows.push({ label: labels.xp, value: '+' + summary.xpGained, accent: '#90d890' });
+    rows.push({ label: labels.gold, value: '+' + summary.goldGained, accent: '#d8c060' });
+    if (summary.fragmentsGained > 0) rows.push({ label: labels.fragments, value: '+' + summary.fragmentsGained, accent: '#a890d8' });
+    rows.push({ label: labels.duration, value: durationStr, accent: '#9090a0' });
+
+    let rowY = -panelH / 2 + 78;
+    const rowGap = 30;
+    const innerPad = 36;
+    rows.forEach((r) => {
+      const lbl = this.add.text(-panelW / 2 + innerPad, rowY, r.label, {
+        fontFamily: 'monospace', fontSize: 16, color: '#a8a8b0'
+      }).setOrigin(0, 0);
+      const val = this.add.text(panelW / 2 - innerPad, rowY, r.value, {
+        fontFamily: 'monospace', fontSize: 17, color: r.accent
+      }).setOrigin(1, 0);
+      container.add(lbl);
+      container.add(val);
+      rowY += rowGap;
+    });
+
+    const closeBtn = this.add.text(0, panelH / 2 - 32, labels.close, {
+      fontFamily: 'monospace', fontSize: 18, color: '#ffffff',
+      backgroundColor: isDeath ? '#6a3d3d' : '#3d6a4d',
+      padding: { x: 18, y: 10 }
+    }).setOrigin(0.5, 0.5).setInteractive({ useHandCursor: true });
+    container.add(closeBtn);
+
+    const close = () => {
+      if (escHandler) this.input.keyboard.off('keydown-ESC', escHandler);
+      if (enterHandler) this.input.keyboard.off('keydown-ENTER', enterHandler);
+      if (spaceHandler) this.input.keyboard.off('keydown-SPACE', spaceHandler);
+      container.destroy(true);
+    };
+
+    closeBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      close();
+    });
+
+    const escHandler = () => close();
+    const enterHandler = () => close();
+    const spaceHandler = () => close();
+    this.input.keyboard.on('keydown-ESC', escHandler);
+    this.input.keyboard.on('keydown-ENTER', enterHandler);
+    this.input.keyboard.on('keydown-SPACE', spaceHandler);
+
+    // Mobile + scrolled-camera safety: propagate scrollFactor=0 to every
+    // descendant or the close-button tap-area drifts (project memory:
+    // phaser_scrollfactor_dialogs). Must run after children are added.
+    this._ktPropagateScrollFactor(container, 0, 0);
+
+    // Clear the global so a scene restart or hub re-enter doesn't replay this
+    // same summary. The next dungeon run creates a fresh window.runStats and
+    // a fresh window.lastRunSummary on leave.
+    window.lastRunSummary = null;
   }
 }

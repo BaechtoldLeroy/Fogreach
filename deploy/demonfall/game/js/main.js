@@ -1603,6 +1603,32 @@ function leaveDungeonForHub(scene, options = {}) {
 
   const { reason = 'portal', skipSave = false, skipFade = false } = options;
 
+  // Run-summary snapshot: compute deltas against window.runStats and stash on
+  // window.lastRunSummary. HubSceneV2.create() reads + clears it on next tick.
+  // Skip if runStats is missing (e.g. fresh boot with no dungeon run yet) or
+  // already snapshotted this transition.
+  if (window.runStats && !window.lastRunSummary) {
+    const rs = window.runStats;
+    const curGold = (window.LootSystem && typeof window.LootSystem.getGold === 'function')
+      ? window.LootSystem.getGold() : rs.startGold;
+    const curFragments = (window.KnowledgeTree && typeof window.KnowledgeTree.getFragments === 'function')
+      ? window.KnowledgeTree.getFragments() : rs.startFragments;
+    window.lastRunSummary = {
+      reason: reason, // 'portal' | 'death' | other
+      durationMs: Date.now() - rs.startedAt,
+      startDepth: rs.startDepth,
+      deepestDepth: rs.deepestDepth,
+      goldGained: Math.max(0, curGold - rs.startGold),
+      fragmentsGained: Math.max(0, curFragments - rs.startFragments),
+      xpGained: rs.xpGained,
+      enemiesKilled: rs.enemiesKilled,
+      elitesKilled: rs.elitesKilled,
+      bossesKilled: rs.bossesKilled,
+      roomsEntered: rs.roomsEntered
+    };
+    window.runStats = null;
+  }
+
   // Issue #16 — Brunnen buffs/debuffs are run-scoped. Clear before save +
   // before the heal-on-return so the next dungeon entry starts clean.
   // Run recalcDerived() afterward so the player's max HP / damage / speed

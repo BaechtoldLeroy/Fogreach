@@ -1276,6 +1276,12 @@ function handleEnemyHit(scene, enemy, options = {}) {
     spawnLoot.call(scene, enemy.x, enemy.y, null, enemy);
     enemy.destroy();
     defeatedEnemiesInWave += 1;
+    // Run-summary: count every kill, plus elite/boss subcounts for the modal.
+    if (window.runStats) {
+      window.runStats.enemiesKilled += 1;
+      if (enemy.isBoss) window.runStats.bossesKilled += 1;
+      else if (enemy.isElite) window.runStats.elitesKilled += 1;
+    }
     addXP.call(scene);
     // Story stats: enemy kill
     if (window.storySystem && typeof window.storySystem.onEnemyKilled === 'function') {
@@ -2067,6 +2073,8 @@ function addXP(amount = 1) {
   if (window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.xpMult > 1) {
     amount = Math.round(amount * window.knowledgeTreeBuffs.xpMult);
   }
+  // Run-summary: track the scaled amount (what the player actually got).
+  if (window.runStats) window.runStats.xpGained += amount;
   playerXP += amount;
 
   if (playerXP >= neededXP) {
