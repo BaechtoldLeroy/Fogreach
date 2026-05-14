@@ -567,8 +567,15 @@
   }
 
   /**
-   * Called after a wave is completed. Updates highest wave and checks for act transitions.
-   * Returns true if a new act was reached.
+   * Called after a wave is completed. Records the wave and possibly queues
+   * a wave-milestone splash. Does NOT advance the story act anymore — that
+   * is purely quest-driven via advanceToAct() since feature 050 (Q6
+   * council_collusion_reveal).
+   *
+   * Wave milestones are gated by the current story act: milestone N only
+   * fires when storyState.currentActIndex >= floor(N / 10). This prevents
+   * Akt-2+ story spoilers from firing in Akt 1 just because the player
+   * descended to wave 10 during a routine dungeon run.
    */
   function onWaveCompleted(waveNumber) {
     var wave = Math.max(1, waveNumber || 0);
@@ -577,26 +584,24 @@
     }
     storyState.totalWavesSurvived = (storyState.totalWavesSurvived || 0) + 1;
 
-    // Check for wave milestones
+    // Wave milestone — story-act-gated. wave 5 → act >= 0 (always),
+    // wave 10/15 → act >= 1, wave 20 → act >= 2, wave 30 → act >= 3,
+    // wave 40 → act >= 4. The milestone text references story beats
+    // that only make sense once the act is narratively reached.
     if (WAVE_MILESTONES[wave] && storyState.milestonesShown.indexOf(wave) === -1) {
-      storyState.pendingMilestone = wave;
-      console.log('[StorySystem] Wave milestone queued: ' + wave);
-    }
-
-    var completedQuests = _getCompletedQuestCount();
-    var newActIndex = _computeActIndex(storyState.highestWave, completedQuests);
-
-    if (newActIndex > storyState.currentActIndex) {
-      var newAct = STORY_ACTS[newActIndex];
-      storyState.currentActIndex = newActIndex;
-
-      // Only queue the event if not already seen
-      if (storyState.eventsSeen.indexOf(newAct.id) === -1) {
-        storyState.pendingEvent = newAct.id;
+      var requiredAct = Math.floor(wave / 10);
+      if (storyState.currentActIndex >= requiredAct) {
+        storyState.pendingMilestone = wave;
+        console.log('[StorySystem] Wave milestone queued: ' + wave);
+      } else {
+        console.log('[StorySystem] Wave milestone skipped (currentActIndex='
+          + storyState.currentActIndex + ' < required ' + requiredAct + '): ' + wave);
       }
-      console.log('[StorySystem] Act transition -> ' + newAct.name + ' (Act ' + (newActIndex + 1) + ')');
-      return true;
     }
+
+    // Depth-based act advancement REMOVED (feature 050 / Q6 owns this).
+    // The story arc is now entirely quest-driven — players can dive to any
+    // wave depth in Akt 1 without accidentally jumping the story forward.
     return false;
   }
 
