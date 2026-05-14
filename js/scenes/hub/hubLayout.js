@@ -190,7 +190,10 @@ window.HUB_HITBOXES = {
       // Source resized 1536→768 wide for crispness; scale 0.20 keeps the
       // ~102px display height that 0.10 produced from the original.
       scale: 0.20,
-      visibleFromAct: 'auftrag',
+      // Klerus is one of the "four sides" Harren warns about in Q1's
+      // dialogueComplete. Appears only after Q1 — his greeting line about
+      // the fled daughter already presumes the player has read the fragment.
+      visibleAfterQuest: 'harren_daughter_investigation',
       lines: [
         'Die Ordnung des Kettenrats ist heilig. Wer sie befragt, befragt das Licht selbst.',
         'Ketzerei beginnt mit der falschen Frage. Halte deine Lippen rein.',
@@ -206,7 +209,8 @@ window.HUB_HITBOXES = {
       // Target display height = 90% of klerus's ~102px = ~92px.
       // 92 / 408 ≈ 0.225.
       scale: 0.23,
-      visibleFromAct: 'auftrag',
+      // Garde is one of the "four sides" — same Q1 gate as Klerus + Elara.
+      visibleAfterQuest: 'harren_daughter_investigation',
       lines: [
         'Die Patrouillen wachsen jeden Monat. So muss es sein — die Stadt ist unruhig.',
         'Loyalitaet ist die einzige Muenze, die zwischen den Strassen Bestand hat. Frag nicht warum.',
