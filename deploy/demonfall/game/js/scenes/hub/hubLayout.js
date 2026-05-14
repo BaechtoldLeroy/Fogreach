@@ -174,11 +174,12 @@ window.HUB_HITBOXES = {
     {
       id: 'klerus_priester',
       name: 'Hochpriester der Ordnung',
-      // Moved from (480, 360) — that spot blocked the Rathaus entrance + sat
-      // on top of the fountain. (240, 540) parks the priest in the front-
-      // left plaza, his own quadrant, away from any building entrance and
-      // symmetric with Aldric's bottom-center stance.
-      x: 240, y: 540,
+      // Moved from (480, 360) — blocked the Rathaus entrance + sat on the
+      // fountain. Then briefly at (240, 540), but that overlapped the
+      // bottom-left cottage (not in the collision data — visually placed by
+      // the bg image). (380, 540) parks the priest on the open dirt path
+      // between the left cottage and Aldric, clearly in plaza territory.
+      x: 380, y: 540,
       texture: 'harren_right0', // placeholder — see TODO above
       scale: 0.16,
       visibleFromAct: 'auftrag',
