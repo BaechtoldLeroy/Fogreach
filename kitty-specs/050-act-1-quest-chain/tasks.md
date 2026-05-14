@@ -32,12 +32,12 @@ This document is the implementation roadmap. Each work package is independently 
 **Independent test**: `node tools/runTests.js` — baseline tests still green; new tests cover 5-standing init + composite + post-refactor callsites.
 
 **Included subtasks**:
-- [ ] **T001** Extend `FACTION_IDS` array in `js/factionSystem.js:15` to `['magistrat', 'klerus', 'garde', 'widerstand', 'independent']`. Update `_freshState()` `standings` shape accordingly.
-- [ ] **T002** Implement `getCouncilComposite()` returning `Math.max(getStanding('magistrat'), getStanding('klerus'), getStanding('garde'))`. Export via the `window.FactionSystem` API surface.
-- [ ] **T003** Update i18n: rename existing `faction.aldric.greet.*` keys to stay (Aldric IS the Magistrat face). Register new keys for Klerus / Garde / Elara greeting tiers (4 levels × 3 NPCs = 12 new keys × 2 langs = 24 strings). Add `faction.<id>.label` keys for the 5 factions (10 strings).
-- [ ] **T004** Codebase-wide rename `getStanding('resistance')` → `getStanding('widerstand')`. Touchpoints: `js/questSystem.js:181-182` (gate predicate); `js/printingHouse.js:338` + `:367` (edict effect reads).
-- [ ] **T005** Audit + migrate any `getStanding('council')` call to `getCouncilComposite()` (grep first, list call sites in the WP commit). Likely 0–2 callsites based on the existing 045 MVP shape.
-- [ ] **T006** Extend `tests/factionSystem.test.js`: 5-standing init at 0, independent adjust per faction, `getCouncilComposite()` returns max-of-3, legacy keys `'council'`/`'resistance'` return 0 + warn-once.
+- [x] **T001** Extend `FACTION_IDS` array in `js/factionSystem.js:15` to `['magistrat', 'klerus', 'garde', 'widerstand', 'independent']`. Update `_freshState()` `standings` shape accordingly.
+- [x] **T002** Implement `getCouncilComposite()` returning `Math.max(getStanding('magistrat'), getStanding('klerus'), getStanding('garde'))`. Export via the `window.FactionSystem` API surface.
+- [x] **T003** Update i18n: rename existing `faction.aldric.greet.*` keys to stay (Aldric IS the Magistrat face). Register new keys for Klerus / Garde / Elara greeting tiers (4 levels × 3 NPCs = 12 new keys × 2 langs = 24 strings). Add `faction.<id>.label` keys for the 5 factions (10 strings).
+- [x] **T004** Codebase-wide rename `getStanding('resistance')` → `getStanding('widerstand')`. Touchpoints: `js/questSystem.js:181-182` (gate predicate); `js/printingHouse.js:338` + `:367` (edict effect reads).
+- [x] **T005** Audit + migrate any `getStanding('council')` call to `getCouncilComposite()` (grep first, list call sites in the WP commit). Likely 0–2 callsites based on the existing 045 MVP shape.
+- [x] **T006** Extend `tests/factionSystem.test.js`: 5-standing init at 0, independent adjust per faction, `getCouncilComposite()` returns max-of-3, legacy keys `'council'`/`'resistance'` return 0 + warn-once.
 
 **Owned files**: `js/factionSystem.js`, `js/questSystem.js` (just the gate predicate rename), `js/printingHouse.js` (2 line changes), `tests/factionSystem.test.js`.
 
@@ -62,14 +62,14 @@ This document is the implementation roadmap. Each work package is independently 
 **Independent test**: Open the game, start fresh save, follow `quickstart.md` Steps 1–6 — confirm all quests reachable + completable + faction-standing deltas apply correctly. Q6 will show a placeholder "TBD reveal scene" until WP03.
 
 **Included subtasks**:
-- [ ] **T007** Add the 6 new quest definitions to `QUEST_DEFINITIONS` in `js/questSystem.js`: `harren_daughter_investigation`, `magistrat_verification`, `klerus_purification`, `garde_patrol_expansion`, `widerstand_proof`, `council_collusion_reveal`. Use the YAML schemas in `data-model.md` §"Domain 1" as source of truth. Q6 dialogue is a 1-page placeholder ("TBD — implemented in WP03").
-- [ ] **T008** Extend `completeQuest` (`js/questSystem.js:821`) to apply `rewards.factionStanding` via `window.FactionSystem.adjustStanding(factionId, delta)`. Backward-compatible (existing quests without this field still work).
-- [ ] **T009** Extend `completeQuest` to grant `rewards.fragments` via `window.KnowledgeTree.addFragments(n)` (Q1/Q5/Q6 use this). Existing fragment grant via lore-fragment event-spawn is unchanged; this is a parallel reward path.
-- [ ] **T010** Delete the 3 legacy Akt-1 quests from `QUEST_DEFINITIONS`: `aldric_intruders`, `harren_daughter`, `branka_armor`. Patch the 2 dangling prerequisites: `branka_doubt.prerequisites: ['branka_armor'] → []`, `harren_rescue.prerequisites: ['harren_daughter'] → ['harren_daughter_investigation']`.
-- [ ] **T011** Add `klerus_priester` and `stadtwache` entries to `hubLayout.js`'s `npcs[]` array. Use existing sprites if loadable (`priester`, `stadtwache`) — if missing, fall back to a placeholder sprite and log the audit finding. Hub coords: Klerus at (480, 360), Garde at (580, 380). 3 atmospheric dialogue lines each (from `data-model.md` §"Domain 3").
-- [ ] **T012** Register DE + EN i18n strings for the 6 new quests' dialogues. Most are auto-registered via the questSystem i18n bootstrap (`js/questSystem.js:357`) — verify after T007 that `i18n.t('quest.harren_daughter_investigation.dialogue_offer')` etc. resolve correctly in both languages.
-- [ ] **T013** Wire `storySystem.advanceToAct(2)` into Q6 completion (per FR-08). Audit `storySystem.js` for the existing API surface; reuse the existing act-advancement mechanism rather than reinventing.
-- [ ] **T014** Extend `tests/questSystem.test.js`: verify the 3 legacy quests are gone, the 6 new ones exist with correct shape, prerequisites graph is acyclic, `branka_doubt` and `harren_rescue` have patched prerequisites.
+- [x] **T007** Add the 6 new quest definitions to `QUEST_DEFINITIONS` in `js/questSystem.js`: `harren_daughter_investigation`, `magistrat_verification`, `klerus_purification`, `garde_patrol_expansion`, `widerstand_proof`, `council_collusion_reveal`. Use the YAML schemas in `data-model.md` §"Domain 1" as source of truth. Q6 dialogue is a 1-page placeholder ("TBD — implemented in WP03").
+- [x] **T008** Extend `completeQuest` (`js/questSystem.js:821`) to apply `rewards.factionStanding` via `window.FactionSystem.adjustStanding(factionId, delta)`. Backward-compatible (existing quests without this field still work).
+- [x] **T009** Extend `completeQuest` to grant `rewards.fragments` via `window.KnowledgeTree.addFragments(n)` (Q1/Q5/Q6 use this). Existing fragment grant via lore-fragment event-spawn is unchanged; this is a parallel reward path.
+- [x] **T010** Delete the 3 legacy Akt-1 quests from `QUEST_DEFINITIONS`: `aldric_intruders`, `harren_daughter`, `branka_armor`. Patch the 2 dangling prerequisites: `branka_doubt.prerequisites: ['branka_armor'] → []`, `harren_rescue.prerequisites: ['harren_daughter'] → ['harren_daughter_investigation']`.
+- [x] **T011** Add `klerus_priester` and `stadtwache` entries to `hubLayout.js`'s `npcs[]` array. Use existing sprites if loadable (`priester`, `stadtwache`) — if missing, fall back to a placeholder sprite and log the audit finding. Hub coords: Klerus at (480, 360), Garde at (580, 380). 3 atmospheric dialogue lines each (from `data-model.md` §"Domain 3").
+- [x] **T012** Register DE + EN i18n strings for the 6 new quests' dialogues. Most are auto-registered via the questSystem i18n bootstrap (`js/questSystem.js:357`) — verify after T007 that `i18n.t('quest.harren_daughter_investigation.dialogue_offer')` etc. resolve correctly in both languages.
+- [x] **T013** Wire `storySystem.advanceToAct(2)` into Q6 completion (per FR-08). Audit `storySystem.js` for the existing API surface; reuse the existing act-advancement mechanism rather than reinventing.
+- [x] **T014** Extend `tests/questSystem.test.js`: verify the 3 legacy quests are gone, the 6 new ones exist with correct shape, prerequisites graph is acyclic, `branka_doubt` and `harren_rescue` have patched prerequisites.
 
 **Owned files**: `js/questSystem.js`, `js/scenes/hub/hubLayout.js`, `js/storySystem.js` (minor — just verifying the advance-to-act API call), `js/i18n.js` (string registration), `tests/questSystem.test.js`.
 
@@ -98,11 +98,11 @@ This document is the implementation roadmap. Each work package is independently 
 **Independent test**: Complete `quickstart.md` Steps 7–8 end-to-end. Q6 modal shows 4 pages with the reveal scene + binary flavor choice; Q2 + Q4 trigger Branka/Thom side-dialogue at the right moment.
 
 **Included subtasks**:
-- [ ] **T015** Implement `_showCollusionReveal()` in `HubSceneV2.js` as a 4-page wrapper around `_showDialoguePages`: (1) Harren narration ("Komm mit..."), (2) reveal scene + silhouettes (text only, optional visual layering of priester+stadtwache+aldric sprites), (3) binary flavor choice ("Umdrehen" / "Erinnern"), (4) wrap-up + lore-fragment grant. Hook into Q6 completion handler.
-- [ ] **T016** Apply `_ktPropagateScrollFactor` to the Q6 modal container (mobile-safe per [[project_phaser_scrollfactor_dialogs]]). Verify on mobile-viewport sim in DevTools that the close button + choice buttons are tappable.
-- [ ] **T017** Subscribe to `questSystem.onQuestUpdate` in HubSceneV2.create(): when `magistrat_verification` activates, set `this._pendingSideDialogue = { npcId: 'branka', dialogueKey: 'sidedialog.branka.q2_eyebrow' }`. Mirror for `garde_patrol_expansion` → Thom. Clear flag after firing.
-- [ ] **T018** Trigger the side-dialogue in the NPC-interaction handler: when the player approaches Branka or Thom and the matching `_pendingSideDialogue` is set, show a one-page non-blocking dialogue using `_showDialoguePages` with no choices. Side-dialogue uses i18n keys registered in T012.
-- [ ] **T019** Manual playtest per `quickstart.md` end-to-end. Capture wall-clock time, console hygiene, and pacing — flag any quest that collapsed to "click-click-done" for post-merge tuning per plan §R-09.
+- [x] **T015** Implement `_showCollusionReveal()` in `HubSceneV2.js` as a 4-page wrapper around `_showDialoguePages`: (1) Harren narration ("Komm mit..."), (2) reveal scene + silhouettes (text only, optional visual layering of priester+stadtwache+aldric sprites), (3) binary flavor choice ("Umdrehen" / "Erinnern"), (4) wrap-up + lore-fragment grant. Hook into Q6 completion handler.
+- [x] **T016** Apply `_ktPropagateScrollFactor` to the Q6 modal container (mobile-safe per [[project_phaser_scrollfactor_dialogs]]). Verify on mobile-viewport sim in DevTools that the close button + choice buttons are tappable.
+- [x] **T017** Subscribe to `questSystem.onQuestUpdate` in HubSceneV2.create(): when `magistrat_verification` activates, set `this._pendingSideDialogue = { npcId: 'branka', dialogueKey: 'sidedialog.branka.q2_eyebrow' }`. Mirror for `garde_patrol_expansion` → Thom. Clear flag after firing.
+- [x] **T018** Trigger the side-dialogue in the NPC-interaction handler: when the player approaches Branka or Thom and the matching `_pendingSideDialogue` is set, show a one-page non-blocking dialogue using `_showDialoguePages` with no choices. Side-dialogue uses i18n keys registered in T012.
+- [x] **T019** Manual playtest per `quickstart.md` end-to-end. Capture wall-clock time, console hygiene, and pacing — flag any quest that collapsed to "click-click-done" for post-merge tuning per plan §R-09.
 
 **Owned files**: `js/scenes/HubSceneV2.js` (new helper + side-dialogue plumbing), `js/i18n.js` (2 side-dialogue keys × 2 langs = 4 strings).
 
@@ -153,13 +153,13 @@ None within 050. **Cross-feature parallel work** possible while WP02 is in fligh
 ## Definition of Done (feature-level)
 
 All of:
-- [ ] WP01, WP02, WP03 merged into `main`.
-- [ ] `node tools/runTests.js` green, baseline + new tests pass.
-- [ ] Fresh-save playthrough completes Q1–Q6 with all 5 faction standings at 1 and `storySystem.getCurrentAct() === 2` at the end.
-- [ ] All visible strings present in DE and EN (verified via runtime language toggle).
-- [ ] Branka + Thom side-dialogues fire for Q2 + Q4 respectively.
-- [ ] Console clean across the full playthrough — zero errors, zero warnings.
-- [ ] Wall-clock playtest: 1.5–2.5 h.
+- [x] WP01, WP02, WP03 merged into `main`.
+- [x] `node tools/runTests.js` green, baseline + new tests pass.
+- [x] Fresh-save playthrough completes Q1–Q6 with all 5 faction standings at 1 and `storySystem.getCurrentAct() === 2` at the end.
+- [x] All visible strings present in DE and EN (verified via runtime language toggle).
+- [x] Branka + Thom side-dialogues fire for Q2 + Q4 respectively.
+- [x] Console clean across the full playthrough — zero errors, zero warnings.
+- [x] Wall-clock playtest: 1.5–2.5 h.
 
 ## Branch strategy
 
