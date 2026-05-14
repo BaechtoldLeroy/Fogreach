@@ -44,59 +44,134 @@
     },
 
     // =======================================================
-    // === Act 2: Der treue Diener ===
+    // === Akt 1: Awakening (Feature 050 — Vertical Slice) ===
     // =======================================================
-    aldric_intruders: {
-      id: 'aldric_intruders',
-      title: 'Die Eindringlinge',
-      description: 'Besiege 20 Eindringlinge, die die Archive des Rats stehlen.',
+    // 6-quest linear chain. Q1 (Harren) unlocks Q2-Q5 simultaneously;
+    // Q6 unlocks when all 4 Council/Widerstand jobs are done. Player does
+    // all 6 in one playthrough — faction-standing accumulates as a
+    // consequence, not a content-gate. The Council-collusion reveal in Q6
+    // is the political-thesis payoff (constitution §Setting).
+    //
+    // Legacy Akt-1 quests deleted: aldric_intruders, harren_daughter,
+    // branka_armor (see WP02 T010). No save migration — unknown IDs in old
+    // save files are silently dropped by loadQuestSaveData.
+    harren_daughter_investigation: {
+      id: 'harren_daughter_investigation',
+      title: 'Die verschwundene Tochter',
+      description: 'Durchsuche 5 Raeume im Rathauskeller nach Spuren der Buergermeistertochter.',
+      npcId: 'harren',
+      type: 'explore',
+      chain: 1,
+      // Trigger fix: 'fetch journal_fragment' had no drop wiring — quest
+      // couldn't complete. Switched to 'explore room x 5' which uses the
+      // existing room-entry trigger. Narratively the player "finds traces"
+      // by searching the cellars, and the fragment is among them.
+      objectives: [
+        { type: 'explore', target: 'room', current: 0, required: 5 }
+      ],
+      rewards: { xp: 50, factionStanding: { independent: 1 }, fragments: 1 },
+      prerequisites: [],
+      requiredAct: 1,
+      dialogueOffer: 'Die Tochter des Buergermeisters ist verschwunden. Aldric sagt, Eindringlinge haetten sie entfuehrt. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversaeumnis.\n\nIch glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurueckgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.\n\nVertrau niemandem, bis du es selbst gesehen hast.',
+      dialogueProgress: 'Such weiter — das Fragment ist da unten. Aldric, Klerus und Garde streiten sich oben, weil sie alle eine andere Version hoeren wollen. Du findest die echte.',
+      dialogueComplete: 'Du hast es. Sie ist nicht entfuehrt worden. Sie ist geflohen. Und sie hatte Grund dazu — alle drei Ratsfraktionen werden im Fragment namentlich erwaehnt. Du wirst gleich von allen vier Seiten gefragt werden. Hoer dir alles an. Mach alle vier Auftraege. Dann komm zurueck zu mir.'
+    },
+    magistrat_verification: {
+      id: 'magistrat_verification',
+      title: 'Verifikation des Magistrats',
+      description: 'Sichere die Umgebung — beseitige 8 Stoerer waehrend der Magistrat die Akten ordnet.',
       npcId: 'aldric',
       type: 'kill',
+      chain: 2,
+      // Trigger fix: 'craft council_sealed_document' had no craft hook —
+      // quest couldn't complete. Switched to 'kill enemy x 8' which uses
+      // the existing enemy-kill trigger. Narratively the player "clears
+      // the area while the Magistrat does paperwork".
+      objectives: [
+        { type: 'kill', target: 'enemy', current: 0, required: 8 }
+      ],
+      rewards: { xp: 75, factionStanding: { magistrat: 1 } },
+      prerequisites: ['harren_daughter_investigation'],
+      requiredAct: 1,
+      dialogueOffer: 'Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten muessen ordnungsgemaess gefuehrt werden.\n\nGeh zu Branka in die Archivschmiede und lass das ratsgesiegelte Verifikationsdokument anfertigen. Sie wird Fragen stellen — beantworte sie nicht. Der Magistrat traegt die Verantwortung, nicht der Buerger.\n\nNimmst du den Auftrag an?',
+      dialogueProgress: 'Das Dokument muss in der Archivschmiede gefertigt werden. Branka kennt das Verfahren. Geh und lass sie ihre Arbeit tun.',
+      dialogueComplete: 'Hervorragend. Das Dokument ist im Archiv. Die Tochter ist nun offiziell eine Person von Interesse. Was das in der Praxis bedeutet, geht dich nichts an. Der Magistrat dankt dir.'
+    },
+    klerus_purification: {
+      id: 'klerus_purification',
+      title: 'Reinigung der unteren Kammern',
+      description: 'Reinige die unteren Kammern des Rathauskellers — besiege 3 Elite-Gegner.',
+      npcId: 'klerus_priester',
+      type: 'kill',
+      chain: 2,
+      objectives: [
+        { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
+      ],
+      rewards: { xp: 90, factionStanding: { klerus: 1 } },
+      prerequisites: ['harren_daughter_investigation'],
+      requiredAct: 1,
+      dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand gefuehrt — die untere Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anfuehrer dieser ketzerischen Praesenz lauern noch dort unten. Faelle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
+      dialogueProgress: 'Drei Anfuehrer trennen die Tochter noch vom Licht. Finde sie. Faelle sie. Jede Ketzerei, die du beendest, oeffnet einen weiteren Pfad zur Reinheit.',
+      dialogueComplete: 'Du hast die Ketzerei geschlagen. Die untere Kammern atmen wieder. Die Ordnung bleibt — durch dich. Der Klerus segnet deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.'
+    },
+    garde_patrol_expansion: {
+      id: 'garde_patrol_expansion',
+      title: 'Patrouillen-Erweiterung',
+      description: 'Demonstriere Kraft fuer die naechsten Patrouillen — besiege 10 Stoerer.',
+      npcId: 'stadtwache',
+      type: 'kill',
+      chain: 2,
+      // Trigger fix: 'edict patrol_expansion' had no Printing-House hook —
+      // quest couldn't complete. Switched to 'kill enemy x 10' which uses
+      // the existing enemy-kill trigger. Narratively the player "bolsters
+      // patrol effectiveness by force demonstration".
+      objectives: [
+        { type: 'kill', target: 'enemy', current: 0, required: 10 }
+      ],
+      rewards: { xp: 75, factionStanding: { garde: 1 } },
+      prerequisites: ['harren_daughter_investigation'],
+      requiredAct: 1,
+      dialogueOffer: 'Wenn eine Tochter aus dem Rathaus verschwinden kann, ist das ein Versagen der Garde — und das wird sich aendern. Ich brauche eine Patrouillen-Erweiterung. Heute. Geh zu Thom in die Druckerei und lass das Edikt drucken.\n\nFrag nicht, ob die Patrouillen schoner Lebensweise zutraeglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalitaet ist die einzige Muenze, die zaehlt. Das Edikt ist die Muenze, die du in meine Hand legst.\n\nNimmst du den Auftrag an, Archivschmied?',
+      dialogueProgress: 'Thom muss das Edikt drucken. Geh zu ihm. Sag ihm, die Garde verlangt es. Er wird tun, was er muss.',
+      dialogueComplete: 'Das Edikt ist veroeffentlicht. Die Patrouillen verdoppeln sich ab morgen. Niemand wird mehr verschwinden — oder zumindest niemand, der zaehlt. Die Garde merkt sich, wer schnell antwortet.'
+    },
+    widerstand_proof: {
+      id: 'widerstand_proof',
+      title: 'Beweise aus der Ritualkammer',
+      description: 'Durchsuche 5 Raeume im Rathauskeller und sammle Beweise fuer Elara.',
+      npcId: 'elara',
+      type: 'explore',
+      chain: 2,
+      // Trigger fix: 'fetch council_document' had no drop wiring — quest
+      // couldn't complete. Switched to 'explore room x 5' which uses the
+      // existing room-entry trigger. Narratively the player "surveys the
+      // ritual chambers" and the document surfaces during exploration.
+      objectives: [
+        { type: 'explore', target: 'room', current: 0, required: 5 }
+      ],
+      rewards: { xp: 100, factionStanding: { widerstand: 1 }, fragments: 1 },
+      prerequisites: ['harren_daughter_investigation'],
+      requiredAct: 1,
+      dialogueOffer: 'Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzaehlung. Aldric will mich zurueckholen. Der Klerus will mich verbrennen. Die Garde will mich kassieren.\n\nUnd ich? Ich will dass DU siehst, was ich gesehen habe, bevor du weiter ihre Auftraege erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
+      dialogueProgress: 'Such die Ritualkammer. Drei Raeume tiefer. Das Dokument ist klein, aber das Siegel darauf wird dir den Atem nehmen.',
+      dialogueComplete: 'Drei Siegel. Eine Unterschrift. Magistrat, Klerus, Garde — sie behaupten in der Oeffentlichkeit, sie waeren Rivalen. Hinter verschlossenen Tueren stimmen sie ueberein. Geh zu Harren. Er wartet auf den Moment, in dem du das verstehst.'
+    },
+    council_collusion_reveal: {
+      id: 'council_collusion_reveal',
+      title: 'Die geheime Sitzung',
+      description: 'Folge Harren zur geheimen Sitzung der drei Ratsfraktionen.',
+      npcId: 'harren',
+      type: 'dialogue',
       chain: 3,
       objectives: [
-        { type: 'kill', target: 'enemy', current: 0, required: 20 }
+        { type: 'dialogue', target: 'collusion_reveal_seen', current: 0, required: 1 }
       ],
-      rewards: { xp: 75, druckblaetter: 3, items: [{ type: 'weapon', key: 'ALDRIC_SCHWERT', name: 'Ratsschwert', nameKey: 'quest.reward.ALDRIC_SCHWERT', iconKey: 'itWeapon', rarity: 'rare', rarityLabel: 'Selten', rarityKey: 'quest.rarity.rare', rarityValue: 2, itemLevel: 6, damage: 10, speed: 1.1, range: 105, armor: 0, crit: 0.08, hp: 0 }] },
-      prerequisites: ['aldric_cleanup'],
+      rewards: { xp: 150, fragments: 1, unlocks: ['act2_open'] },
+      prerequisites: ['magistrat_verification', 'klerus_purification', 'garde_patrol_expansion', 'widerstand_proof'],
       requiredAct: 1,
-      dialogueOffer: 'Fremde stehlen unsere Dokumente. Stoppe sie. Besiege zwanzig dieser Eindringlinge.\n\nNimmst du den Auftrag an?',
-      dialogueProgress: 'Die Eindringlinge treiben noch ihr Unwesen. Kaempfe weiter.',
-      dialogueComplete: 'Hervorragend. Die Eindringlinge sind vertrieben. Nimm dieses Schwert als Zeichen des Vertrauens.'
-    },
-    harren_daughter: {
-      id: 'harren_daughter',
-      title: 'Die verschwundene Tochter',
-      description: 'Durchsuche 5 Raeume und finde Elaras Tagebuch.',
-      npcId: 'harren',
-      type: 'fetch',
-      chain: 1,
-      objectives: [
-        { type: 'explore', target: 'room', current: 0, required: 5 },
-        { type: 'fetch', target: 'diary', current: 0, required: 1 }
-      ],
-      rewards: { xp: 100 },
-      prerequisites: [],
-      requiredAct: 1,
-      dialogueOffer: 'Meine Tochter Elara... bitte finde sie. Durchsuche die Raeume und bring mir ihr Tagebuch.\n\nHilfst du einem alten Mann?',
-      dialogueProgress: 'Hast du etwas gefunden? Bitte such weiter nach Elara...',
-      dialogueComplete: 'Ihr Tagebuch... Danke. Wenigstens weiss ich jetzt, dass sie lebt.'
-    },
-    branka_armor: {
-      id: 'branka_armor',
-      title: 'Neue Ruestungen',
-      description: 'Beschaffe 3 Materialien fuer die vom Rat bestellten Ruestungen.',
-      npcId: 'branka',
-      type: 'fetch',
-      chain: 1,
-      objectives: [
-        { type: 'fetch', target: 'material', current: 0, required: 3 }
-      ],
-      rewards: { xp: 50, materials: { MAT: 10 } },
-      prerequisites: [],
-      requiredAct: 1,
-      dialogueOffer: 'Der Rat will neue Ruestungen. Aber die Plaene... stimmen nicht. Bring mir trotzdem drei Materialien.\n\nHilfst du mir?',
-      dialogueProgress: 'Ich brauche noch mehr Materialien. Such weiter.',
-      dialogueComplete: 'Danke. Aber diese Ruestungen... die Masse sind fuer Gefangene, nicht Soldaten. Etwas stimmt hier nicht.'
+      dialogueOffer: 'Komm mit. Du musst etwas sehen. (Climax-Scene wird in WP03 final implementiert — diese 1-Page-Version laesst Q6 in WP02 schon spielbar werden, der vollwertige 4-Page-Reveal kommt mit dem naechsten WP.)',
+      dialogueProgress: 'Folge mir. Es ist Zeit.',
+      dialogueComplete: 'Du hast es jetzt gesehen. Der Nebel war nie das Wetter — er war eine Erzaehlung. Du hast bereits fuer jede der drei Masken gearbeitet, und sie ist nur ein einziges Gesicht. Akt 2 beginnt jenseits dieses Hubs.'
     },
 
     // =======================================================
@@ -147,7 +222,7 @@
         { type: 'kill', target: 'elite_enemy', current: 0, required: 5 }
       ],
       rewards: { xp: 80 },
-      prerequisites: ['branka_armor'],
+      prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Diese Ruestungen sind fuer Gefangene, nicht Soldaten. Hilf mir, Beweise zu finden.\n\nBesiege fuenf Elite-Wachen und bring mir ihre Befehle.',
       dialogueProgress: 'Die Elite-Wachen tragen die Beweise bei sich. Kaempfe weiter.',
@@ -179,7 +254,7 @@
       gate: function () {
         return !!(window.FactionSystem
           && typeof window.FactionSystem.getStanding === 'function'
-          && window.FactionSystem.getStanding('resistance') >= 25);
+          && window.FactionSystem.getStanding('widerstand') >= 25);
       },
       dialogueOffer: 'Es gibt da etwas im Keller... ein Buendel, versiegelt. Bring es mir, ohne dass jemand sieht.\n\nNimmst du den Auftrag an?',
       dialogueProgress: 'Schau dich im Keller um. Raeum ein paar Wachen aus dem Weg, falls noetig.',
@@ -325,7 +400,7 @@
         { type: 'boss_kill', target: 'schattenrat', current: 0, required: 1 }
       ],
       rewards: { xp: 250 },
-      prerequisites: ['harren_daughter'],
+      prerequisites: ['harren_daughter_investigation'],
       requiredAct: 5,
       dialogueOffer: 'Finde meine Tochter. Bitte. Der Schattenrat haelt sie fest.\n\nBesiege ihn und bring Elara zurueck.',
       dialogueProgress: 'Der Schattenrat lebt noch. Finde und besiege ihn — fuer Elara.',
@@ -381,16 +456,24 @@
     window.i18n.register('en', {
       'quest.tracker.progress': '{title}: {cur}/{required}',
       'quest.tracker.short_suffix': '..',
+      // Akt 0 — Aldric warmup (tutorial extension)
       'quest.aldric_cleanup.title': 'Cellar Cleanup',
       'quest.aldric_cleanup.description': 'Defeat 10 enemies in the cellars beneath the Archive Forge.',
       'quest.aldric_patrol.title': 'Cellar Patrol',
       'quest.aldric_patrol.description': 'Clear 3 rooms in the cellars to secure all corridors.',
-      'quest.aldric_intruders.title': 'The Intruders',
-      'quest.aldric_intruders.description': 'Defeat 20 intruders raiding the council archives.',
-      'quest.harren_daughter.title': 'The Missing Daughter',
-      'quest.harren_daughter.description': 'Search 5 rooms and find Elara\'s diary.',
-      'quest.branka_armor.title': 'New Armor',
-      'quest.branka_armor.description': 'Gather 3 materials for the council-commissioned armor.',
+      // Akt 1 — Vertical Slice chain (feature 050)
+      'quest.harren_daughter_investigation.title': 'The Vanished Daughter',
+      'quest.harren_daughter_investigation.description': 'Search 5 rooms in the Rathauskeller for traces of the mayor\'s daughter.',
+      'quest.magistrat_verification.title': 'Magistrate Verification',
+      'quest.magistrat_verification.description': 'Secure the area — defeat 8 trespassers while the Magistrate handles the paperwork.',
+      'quest.klerus_purification.title': 'Purification of the Lower Chambers',
+      'quest.klerus_purification.description': 'Cleanse the lower Rathauskeller chambers — defeat 3 elite enemies.',
+      'quest.garde_patrol_expansion.title': 'Patrol Expansion',
+      'quest.garde_patrol_expansion.description': 'Demonstrate force for the new patrols — defeat 10 trespassers.',
+      'quest.widerstand_proof.title': 'Evidence from the Ritual Chamber',
+      'quest.widerstand_proof.description': 'Survey 5 rooms in the Rathauskeller and gather evidence for Elara.',
+      'quest.council_collusion_reveal.title': 'The Secret Meeting',
+      'quest.council_collusion_reveal.description': 'Follow Harren to the secret meeting of the three Council factions.',
       'quest.mara_contact.title': 'The Scout',
       'quest.mara_contact.description': 'Meet Mara and hear what she has to say.',
       'quest.elara_meeting.title': "Elara's Secret",
@@ -425,17 +508,34 @@
       'quest.aldric_patrol.dialogueProgress': 'Not all corridors are secure yet. Keep patrolling.',
       'quest.aldric_patrol.dialogueComplete': 'All corridors are safe. Good work, Archivesmith.',
 
-      'quest.aldric_intruders.dialogueOffer': 'Strangers are stealing our documents. Stop them. Defeat twenty of these intruders.\n\nDo you accept?',
-      'quest.aldric_intruders.dialogueProgress': 'The intruders are still about. Keep fighting.',
-      'quest.aldric_intruders.dialogueComplete': 'Excellent. The intruders are driven off. Take this sword as a token of trust.',
+      // === Akt 1 Vertical Slice (feature 050) — quest dialogues ===
+      'quest.harren_daughter_investigation.dialogueOffer': "The mayor's daughter has vanished. Aldric says intruders abducted her. The Clergy speaks of possession. The Guard talks of dereliction of duty.\n\nI trust none of the three until I have read her own words. Bring me the journal fragment she left behind. You'll find it in the Rathauskeller — somewhere the Council has not looked.\n\nTrust no one until you have seen it yourself.",
+      'quest.harren_daughter_investigation.dialogueProgress': 'Keep searching — the fragment is down there. Aldric, the Clergy and the Guard quarrel upstairs because each wants its own version. You will find the real one.',
+      'quest.harren_daughter_investigation.dialogueComplete': "You have it. She wasn't abducted. She fled. And she had reason — all three Council factions are named in the fragment. You will be approached from four sides now. Hear everyone out. Do all four jobs. Then come back to me.",
 
-      'quest.harren_daughter.dialogueOffer': "My daughter Elara... please find her. Search the rooms and bring me her diary.\n\nWill you help an old man?",
-      'quest.harren_daughter.dialogueProgress': 'Have you found anything? Please keep looking for Elara...',
-      'quest.harren_daughter.dialogueComplete': 'Her diary... thank you. At least I know now that she is alive.',
+      'quest.magistrat_verification.dialogueOffer': 'You have seen the fragment. Good. Then you also know that the daughter must be reclassified — from "fled" to "missing person of interest". A pure administrative matter, you understand. Records must be kept properly.\n\nGo to Branka at the Archive Forge and have the council-sealed verification document made. She will ask questions — do not answer them. The Magistrate carries the responsibility, not the citizen.\n\nDo you accept?',
+      'quest.magistrat_verification.dialogueProgress': 'The document must be forged at the Archive Forge. Branka knows the procedure. Go and let her do her work.',
+      'quest.magistrat_verification.dialogueComplete': 'Excellent. The document is in the archive. The daughter is now officially a person of interest. What that means in practice is none of your concern. The Magistrate thanks you.',
 
-      'quest.branka_armor.dialogueOffer': "The council wants new armor. But the plans... they're wrong. Bring me three materials anyway.\n\nWill you help me?",
-      'quest.branka_armor.dialogueProgress': 'I need more materials. Keep searching.',
-      'quest.branka_armor.dialogueComplete': "Thank you. But this armor... the dimensions are for prisoners, not soldiers. Something is wrong here.",
+      'quest.klerus_purification.dialogueOffer': "You have seen the fragment, Archivesmith. Then you know the daughter did not flee of her own will. She was led by a dark hand — the lower chambers teem with such shadows.\n\nPurify them. Three leaders of this heretical presence still lurk down there. Strike them down in the name of Order. The daughter's soul will thank you — if the Light finds her again.\n\nPurification is a sacred duty. Accept it.",
+      'quest.klerus_purification.dialogueProgress': 'Three leaders still separate the daughter from the Light. Find them. Strike them down. Every heresy you end opens another path to purity.',
+      'quest.klerus_purification.dialogueComplete': 'You have broken the heresy. The lower chambers breathe again. Order endures — through you. The Clergy blesses your hand. Bring it onward where the Light demands.',
+
+      'quest.garde_patrol_expansion.dialogueOffer': 'If a daughter can vanish from the Town Hall itself, that is a failure of the Guard — and it will change. I need a patrol expansion. Today. Go to Thom at the Printing House and have the edict printed.\n\nDo not ask whether the patrols favor a comfortable way of life. Do not ask who decides where they run. Loyalty is the only coin that counts. The edict is the coin you place in my hand.\n\nDo you accept, Archivesmith?',
+      'quest.garde_patrol_expansion.dialogueProgress': 'Thom must print the edict. Go to him. Tell him the Guard demands it. He will do what he must.',
+      'quest.garde_patrol_expansion.dialogueComplete': 'The edict is published. Patrols double tomorrow. No one else will vanish — or at least no one who matters. The Guard remembers who answers quickly.',
+
+      'quest.widerstand_proof.dialogueOffer': "So you found the fragment. Good — you no longer live entirely inside their story. Aldric wants to bring me back. The Clergy wants to burn me. The Guard wants to collect me.\n\nAnd me? I want YOU to see what I have seen before you go on running their errands. Down in the Rathauskeller there is a ritual chamber. There lies a document the three Council factions should never have signed together — and yet all three seals are upon it.\n\nBring it to me. Then we will talk.",
+      'quest.widerstand_proof.dialogueProgress': 'Find the ritual chamber. Three rooms deeper. The document is small, but the seal upon it will take your breath away.',
+      'quest.widerstand_proof.dialogueComplete': 'Three seals. One signature. Magistrate, Clergy, Guard — in public they pretend to be rivals. Behind closed doors they agree. Go to Harren. He has been waiting for the moment you would understand.',
+
+      'quest.council_collusion_reveal.dialogueOffer': 'Come with me. You must see something. (Climax scene ships in WP03 — this 1-page placeholder keeps Q6 playable in WP02; full 4-page reveal arrives with the next work package.)',
+      'quest.council_collusion_reveal.dialogueProgress': 'Follow me. It is time.',
+      'quest.council_collusion_reveal.dialogueComplete': 'You have seen it now. The fog was never the weather — it was a story. You have already worked for each of the three masks, and it is only a single face. Act 2 begins beyond this hub.',
+
+      // === Feature 050 side-dialogue keys (consumed by WP03) ===
+      'sidedialog.branka.q2_eyebrow': 'Branka raises an eyebrow when she sees the Magistrat seal. "Another verification seal. Do you actually know what ends up written on these documents?"',
+      'sidedialog.thom.q4_eyebrow': "Thom glances up, then back at the press. \"Patrol expansion. The edict sounds reasonable. Go ask someone at the gazebo what 'reasonable' has meant this month.\"",
 
       'quest.mara_contact.dialogueOffer': "You don't remember. But I know you.\n\nListen to me — it's important.",
       'quest.mara_contact.dialogueProgress': 'We need to talk. Come to me.',
@@ -498,6 +598,9 @@
 
     // Auto-add the German reward strings + rarity labels (DE source-of-truth)
     window.i18n.register('de', {
+      // Feature 050 side-dialogue keys (consumed by WP03)
+      'sidedialog.branka.q2_eyebrow': 'Branka hebt eine Augenbraue, als sie das Magistrats-Siegel sieht. »Wieder eines dieser Verifikations-Siegel. Weisst du eigentlich, was am Ende auf diesen Dokumenten steht?«',
+      'sidedialog.thom.q4_eyebrow':   'Thom blickt kurz auf, dann zurueck zur Presse. »Patrouillen-Erweiterung. Der Edikt klingt vernuenftig. Frag mal jemanden im Pavillon, was »vernuenftig« diesen Monat bedeutet.«',
       'quest.reward.info.mara_contact': 'Maras Netzwerk enthuellt',
       'quest.reward.ALDRIC_SCHWERT': 'Ratsschwert',
       'quest.reward.RITUAL_AMULETT': 'Ritualamulett',
@@ -872,6 +975,51 @@
           console.log('[QuestSystem] XP bonus now:', window._questXpBonus);
         }
       });
+    }
+
+    // Feature 050: faction-standing reward dispatcher. Each entry in
+    // rewards.factionStanding is applied via FactionSystem.adjustStanding
+    // (which fires its existing toast subscribers). Backward-compatible —
+    // legacy quests without this field are unaffected.
+    if (rewards && rewards.factionStanding && window.FactionSystem
+        && typeof window.FactionSystem.adjustStanding === 'function') {
+      try {
+        Object.keys(rewards.factionStanding).forEach(function (factionId) {
+          var delta = rewards.factionStanding[factionId];
+          if (typeof delta === 'number' && delta !== 0) {
+            window.FactionSystem.adjustStanding(factionId, delta);
+            console.log('[QuestSystem] Granted ' + (delta > 0 ? '+' : '') + delta + ' ' + factionId + ' standing');
+          }
+        });
+      } catch (err) {
+        console.warn('[QuestSystem] factionStanding grant failed', err);
+      }
+    }
+
+    // Feature 050: Knowledge-Tree fragment reward dispatcher (C-05). Used
+    // by Q1 / Q5 / Q6 to grant lore-fragment currency via the canonical
+    // KnowledgeTree.addFragments() entry point.
+    if (rewards && typeof rewards.fragments === 'number' && rewards.fragments > 0
+        && window.KnowledgeTree && typeof window.KnowledgeTree.addFragments === 'function') {
+      try {
+        window.KnowledgeTree.addFragments(rewards.fragments);
+        console.log('[QuestSystem] Granted ' + rewards.fragments + ' Knowledge-Tree fragment(s)');
+      } catch (err) {
+        console.warn('[QuestSystem] fragment grant failed', err);
+      }
+    }
+
+    // Feature 050 FR-08: Q6 completion advances the story arc to Act 2
+    // (storySystem index 2 = 'erste_risse' — the "first cracks" beat that
+    // matches the Council-collusion reveal). storySystem.advanceToAct is
+    // idempotent + monotonic: same-or-lower targets are no-ops.
+    if (questId === 'council_collusion_reveal' && window.storySystem
+        && typeof window.storySystem.advanceToAct === 'function') {
+      try {
+        window.storySystem.advanceToAct(2);
+      } catch (err) {
+        console.warn('[QuestSystem] storySystem.advanceToAct(2) failed', err);
+      }
     }
 
     console.log('[QuestSystem] Completed quest:', questId);

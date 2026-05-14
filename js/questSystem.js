@@ -58,12 +58,16 @@
     harren_daughter_investigation: {
       id: 'harren_daughter_investigation',
       title: 'Die verschwundene Tochter',
-      description: 'Finde das Tagebuchfragment der Buergermeistertochter im Rathauskeller.',
+      description: 'Durchsuche 5 Raeume im Rathauskeller nach Spuren der Buergermeistertochter.',
       npcId: 'harren',
-      type: 'fetch',
+      type: 'explore',
       chain: 1,
+      // Trigger fix: 'fetch journal_fragment' had no drop wiring — quest
+      // couldn't complete. Switched to 'explore room x 5' which uses the
+      // existing room-entry trigger. Narratively the player "finds traces"
+      // by searching the cellars, and the fragment is among them.
       objectives: [
-        { type: 'fetch', target: 'journal_fragment', current: 0, required: 1 }
+        { type: 'explore', target: 'room', current: 0, required: 5 }
       ],
       rewards: { xp: 50, factionStanding: { independent: 1 }, fragments: 1 },
       prerequisites: [],
@@ -75,12 +79,16 @@
     magistrat_verification: {
       id: 'magistrat_verification',
       title: 'Verifikation des Magistrats',
-      description: 'Schmiede ein ratsgesiegeltes Verifikationsdokument in der Archivschmiede.',
+      description: 'Sichere die Umgebung — beseitige 8 Stoerer waehrend der Magistrat die Akten ordnet.',
       npcId: 'aldric',
-      type: 'craft',
+      type: 'kill',
       chain: 2,
+      // Trigger fix: 'craft council_sealed_document' had no craft hook —
+      // quest couldn't complete. Switched to 'kill enemy x 8' which uses
+      // the existing enemy-kill trigger. Narratively the player "clears
+      // the area while the Magistrat does paperwork".
       objectives: [
-        { type: 'craft', target: 'council_sealed_document', current: 0, required: 1 }
+        { type: 'kill', target: 'enemy', current: 0, required: 8 }
       ],
       rewards: { xp: 75, factionStanding: { magistrat: 1 } },
       prerequisites: ['harren_daughter_investigation'],
@@ -109,12 +117,16 @@
     garde_patrol_expansion: {
       id: 'garde_patrol_expansion',
       title: 'Patrouillen-Erweiterung',
-      description: 'Veroeffentliche das Patrouillen-Erweiterungs-Edikt in der Druckerei.',
+      description: 'Demonstriere Kraft fuer die naechsten Patrouillen — besiege 10 Stoerer.',
       npcId: 'stadtwache',
-      type: 'edict',
+      type: 'kill',
       chain: 2,
+      // Trigger fix: 'edict patrol_expansion' had no Printing-House hook —
+      // quest couldn't complete. Switched to 'kill enemy x 10' which uses
+      // the existing enemy-kill trigger. Narratively the player "bolsters
+      // patrol effectiveness by force demonstration".
       objectives: [
-        { type: 'edict', target: 'patrol_expansion', current: 0, required: 1 }
+        { type: 'kill', target: 'enemy', current: 0, required: 10 }
       ],
       rewards: { xp: 75, factionStanding: { garde: 1 } },
       prerequisites: ['harren_daughter_investigation'],
@@ -126,13 +138,16 @@
     widerstand_proof: {
       id: 'widerstand_proof',
       title: 'Beweise aus der Ritualkammer',
-      description: 'Extrahiere ein verstecktes Ratsdokument aus einer Ritualkammer im Rathauskeller.',
+      description: 'Durchsuche 5 Raeume im Rathauskeller und sammle Beweise fuer Elara.',
       npcId: 'elara',
-      type: 'fetch',
+      type: 'explore',
       chain: 2,
+      // Trigger fix: 'fetch council_document' had no drop wiring — quest
+      // couldn't complete. Switched to 'explore room x 5' which uses the
+      // existing room-entry trigger. Narratively the player "surveys the
+      // ritual chambers" and the document surfaces during exploration.
       objectives: [
-        { type: 'explore', target: 'room', current: 0, required: 3 },
-        { type: 'fetch', target: 'council_document', current: 0, required: 1 }
+        { type: 'explore', target: 'room', current: 0, required: 5 }
       ],
       rewards: { xp: 100, factionStanding: { widerstand: 1 }, fragments: 1 },
       prerequisites: ['harren_daughter_investigation'],
@@ -448,15 +463,15 @@
       'quest.aldric_patrol.description': 'Clear 3 rooms in the cellars to secure all corridors.',
       // Akt 1 — Vertical Slice chain (feature 050)
       'quest.harren_daughter_investigation.title': 'The Vanished Daughter',
-      'quest.harren_daughter_investigation.description': 'Find the mayor daughter\'s journal fragment in the Rathauskeller.',
+      'quest.harren_daughter_investigation.description': 'Search 5 rooms in the Rathauskeller for traces of the mayor\'s daughter.',
       'quest.magistrat_verification.title': 'Magistrate Verification',
-      'quest.magistrat_verification.description': 'Forge a council-sealed verification document at the Archive Forge.',
+      'quest.magistrat_verification.description': 'Secure the area — defeat 8 trespassers while the Magistrate handles the paperwork.',
       'quest.klerus_purification.title': 'Purification of the Lower Chambers',
       'quest.klerus_purification.description': 'Cleanse the lower Rathauskeller chambers — defeat 3 elite enemies.',
       'quest.garde_patrol_expansion.title': 'Patrol Expansion',
-      'quest.garde_patrol_expansion.description': 'Publish the patrol-expansion edict at the Printing House.',
+      'quest.garde_patrol_expansion.description': 'Demonstrate force for the new patrols — defeat 10 trespassers.',
       'quest.widerstand_proof.title': 'Evidence from the Ritual Chamber',
-      'quest.widerstand_proof.description': 'Extract a hidden Council document from a ritual chamber in the Rathauskeller.',
+      'quest.widerstand_proof.description': 'Survey 5 rooms in the Rathauskeller and gather evidence for Elara.',
       'quest.council_collusion_reveal.title': 'The Secret Meeting',
       'quest.council_collusion_reveal.description': 'Follow Harren to the secret meeting of the three Council factions.',
       'quest.mara_contact.title': 'The Scout',
