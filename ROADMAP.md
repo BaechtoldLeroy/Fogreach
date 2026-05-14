@@ -2,11 +2,12 @@
 
 Strategische Roadmap. Konkrete Items leben als [GitHub Issues](https://github.com/BaechtoldLeroy/Fogreach/issues).
 
-## Status: Alpha (Mai 2026)
-- 40+ Features im Combat / Crafting / Dungeon / Itemization-Bereich (Mission 001–042)
-- 042 ARPG Control Scheme ✅ · 041 i18n DE/EN ✅ · 043 LP-Affix-Fix ✅
+## Status: Alpha (Mai 2026) — Phase 1 abgeschlossen ✅
+- 40+ Features im Combat / Crafting / Dungeon / Itemization-Bereich
+- **Phase 1 (Foundations) komplett** — alle 4 MVP-Systeme live (siehe Tabelle unten)
+- Zusätzlich shipped: Brunnen-Rework (#16, 048), More Room Layouts (#5, 049), Cave Generator (CA-Procgen), Run-Summary Modal, diverse Polish + Bugfixes
 - Public auf GitHub Pages: https://baechtoldleroy.github.io/Fogreach/
-- **Strategie:** Vertical Slice — polierter Act 1 statt breit gestreutem Content
+- **Aktueller Fokus:** Phase 2 — Act 1 Quest-Chain + Tone-Pass für Vertical-Slice-Donor-Demo
 
 ---
 
@@ -21,25 +22,25 @@ Ein vollständiger, dichter Act 1 (~2–3h Spielzeit) statt 50% eines 30h-Spiels
 
 ---
 
-## Phase 1 — Foundations (~6–8 Wochen)
+## Phase 1 — Foundations ✅ **abgeschlossen (Mai 2026)**
 
-System-MVPs damit Act 1 funktional läuft.
+Alle 4 MVP-Systeme live und im Spiel verwendet:
 
-| Issue | Scope |
-|---|---|
-| [#29 Tutorial / Mechanik-Intro](https://github.com/BaechtoldLeroy/Fogreach/issues/29) `p:now` | Hub-Tour, Combat-Intro, Inventar, NPC-Dialog. ~10–15 min |
-| [#25 Faction-System](https://github.com/BaechtoldLeroy/Fogreach/issues/25) `p:next` | 3 Fraktionen, Standing-API, 1–2 gateable NPCs |
-| [#26 Knowledge-Tree](https://github.com/BaechtoldLeroy/Fogreach/issues/26) `p:next` | 8–10 passive Nodes, Lore-Fragment-Currency, persistiert |
-| [#24 Printing House](https://github.com/BaechtoldLeroy/Fogreach/issues/24) `p:next` | Hub-Location-Stub + 2 Proof-Edicts, faction-gated |
+| Issue | Spec / Commit | Status |
+|---|---|---|
+| [#29 Tutorial / Mechanik-Intro](https://github.com/BaechtoldLeroy/Fogreach/issues/29) | 044-tutorial-onboarding-flow | ✅ |
+| [#25 Faction-System MVP](https://github.com/BaechtoldLeroy/Fogreach/issues/25) | 045-faction-system-mvp | ✅ |
+| [#26 Knowledge-Tree](https://github.com/BaechtoldLeroy/Fogreach/issues/26) | 047-knowledge-tree-mvp | ✅ |
+| [#24 Printing House](https://github.com/BaechtoldLeroy/Fogreach/issues/24) | 046-printing-house-stub | ✅ |
 
-## Phase 2 — Content + Polish (~4–6 Wochen)
+## Phase 2 — Content + Polish 🟡 **in Arbeit**
 
 Story-Inhalt + Donor-Demo-Build auf den Foundations aufbauen.
 
-| Issue | Scope |
-|---|---|
-| [#33 Act 1 Quest-Chain](https://github.com/BaechtoldLeroy/Fogreach/issues/33) `p:next` | 5–7 Quests, Bürgermeisters-Tochter, Faction-Decision-Point, Initial-NPCs |
-| [#34 Tone & Theme Pass](https://github.com/BaechtoldLeroy/Fogreach/issues/34) `p:next` | Politische Message spürbar, Demo-Intro/Outro, Skip-Toggle |
+| Issue | Scope | Status |
+|---|---|---|
+| [#33 Act 1 Quest-Chain](https://github.com/BaechtoldLeroy/Fogreach/issues/33) `p:next` | 5–7 Quests, Bürgermeisters-Tochter, Faction-Decision-Point, Initial-NPCs (~1.5–2h Spielzeit) | 🟡 in Arbeit |
+| [#34 Tone & Theme Pass](https://github.com/BaechtoldLeroy/Fogreach/issues/34) `p:next` | Politische Message spürbar, Demo-Intro/Outro, Skip-Toggle | ⏸ pending |
 
 **Tracker:** [#32 Vertical Slice Epic](https://github.com/BaechtoldLeroy/Fogreach/issues/32)
 
@@ -60,7 +61,7 @@ Erst nach validierter Vertical Slice. Reihenfolge wird durch Learnings aus Phase
 - [#6 Itemization Update](https://github.com/BaechtoldLeroy/Fogreach/issues/6) — Scope nach Playtest-Feedback
 - [#27 Seasonal Mechanics](https://github.com/BaechtoldLeroy/Fogreach/issues/27) — Endless-Loop-Wiederspielbarkeit
 - [#1 Shift / Roll / Parry](https://github.com/BaechtoldLeroy/Fogreach/issues/1) — Combat-Tiefe
-- [#5 Mehr Proc-Room Layouts](https://github.com/BaechtoldLeroy/Fogreach/issues/5) — Dungeon-Variation
+- ~~[#5 Mehr Proc-Room Layouts](https://github.com/BaechtoldLeroy/Fogreach/issues/5)~~ ✅ (049 + Cave-Generator gemerged Mai 2026)
 - [#12 Mehr Gegnertypen](https://github.com/BaechtoldLeroy/Fogreach/issues/12) — basierend auf enemy_ideas.md
 - Acts 2–3 Story (aus #31 abspalten)
 
@@ -86,10 +87,13 @@ Erst nach validierter Vertical Slice. Reihenfolge wird durch Learnings aus Phase
 
 ```
 Monat 1–3:  Vertical Slice (Phase 1+2) → Act 1 polished + 4 MVP-Systeme
+            ├── Phase 1 ✅ abgeschlossen (Mai 2026)
+            └── Phase 2 🟡 #33 Quest-Chain + #34 Tone-Pass
+
 Monat 4–6:  Donor-Demo + Community-Feedback + Polish-Pass
 Monat 6–9:  Acts 2–3 Story + Faction-Tiefe + Combat-Depth
 Monat 9–12: Acts 4–5 + Multiple Endings + Knowledge-Tree-Tiefe
 Monat 12+:  Endless-Loop-Polish, Seasonal-Cycles, Community-Content
 ```
 
-Realistisch nur mit Scope-Disziplin — die Phase-1-Liste ist der Kompass, nicht die Phase-3+-Liste.
+Realistisch nur mit Scope-Disziplin — die Phase-2-Liste ist der Kompass, nicht die Phase-3+-Liste.
