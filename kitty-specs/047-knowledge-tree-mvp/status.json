@@ -1,0 +1,46 @@
+{
+  "event_count": 8,
+  "feature_slug": "047-knowledge-tree-mvp",
+  "last_event_id": "01KRJYNC2PAXRNQPS11EC9CMYN",
+  "materialized_at": "2026-05-14T09:56:38.114165+00:00",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 4,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KRJYMZW8K6GFWAEZ3H9YYN4V",
+      "last_transition_at": "2026-05-14T09:56:25.608765+00:00"
+    },
+    "WP02": {
+      "actor": "claude",
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KRJYN3ZFBDXXMKV132VPJKK4",
+      "last_transition_at": "2026-05-14T09:56:29.807679+00:00"
+    },
+    "WP03": {
+      "actor": "claude",
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KRJYN81RQGJSAJYJCVHYYKN6",
+      "last_transition_at": "2026-05-14T09:56:33.976151+00:00"
+    },
+    "WP04": {
+      "actor": "claude",
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KRJYNC2PAXRNQPS11EC9CMYN",
+      "last_transition_at": "2026-05-14T09:56:38.102959+00:00"
+    }
+  }
+}
