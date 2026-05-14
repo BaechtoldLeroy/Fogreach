@@ -312,7 +312,7 @@
 
   var activeEventObjects = []; // track spawned event objects for cleanup
 
-  function spawnEventObject(scene, texKey, color, glowColor, label, onInteract) {
+  function spawnEventObject(scene, texKey, color, glowColor, label, onInteract, opts) {
     if (!scene || !scene.add || !scene.physics) return;
 
     // Generate detailed textures per event type
@@ -430,9 +430,25 @@
     var obj = scene.physics.add.sprite(cx, cy, texKey);
     obj.setDepth(45).setImmovable(true);
     obj.body.setAllowGravity(false);
+    // Optional scale override for full-resolution painterly sprites that
+    // would otherwise render gigantic at 1:1 (e.g. NPC portraits). The
+    // built-in 32×32 evt_* textures don't pass this and stay at scale 1.
+    if (opts && typeof opts.scale === 'number') {
+      obj.setScale(opts.scale);
+      // Resize physics body to roughly match the displayed sprite so the
+      // [E] proximity check still feels accurate.
+      if (obj.body && typeof obj.body.setSize === 'function') {
+        var bw = Math.max(8, (obj.width || 32) * opts.scale);
+        var bh = Math.max(8, (obj.height || 32) * opts.scale);
+        obj.body.setSize(bw, bh, true);
+      }
+    }
 
-    // Prompt text
-    var prompt = scene.add.text(cx, cy - 24, '[E] ' + label, {
+    // Prompt text — positioned just above the (possibly-scaled) sprite so
+    // it isn't hidden behind a tall NPC body. Default of -24 is preserved
+    // for the small built-in evt_* textures.
+    var promptOffset = Math.max(24, (obj.displayHeight || 32) / 2 + 12);
+    var prompt = scene.add.text(cx, cy - promptOffset, '[E] ' + label, {
       fontSize: '12px', fill: '#ffdd44', fontFamily: 'monospace',
       stroke: '#000', strokeThickness: 2
     }).setOrigin(0.5).setDepth(500).setVisible(false);

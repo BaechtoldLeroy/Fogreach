@@ -1760,10 +1760,12 @@ function _spawnElaraSprite(scene, stage) {
   if (!scene || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
   const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
   const promptLabel = isEn ? 'Elara' : 'Elara';
-  // Subtle violet glow to match the Widerstand-faction colour key
+  // Subtle violet glow to match the Widerstand-faction colour key.
+  // Scale 0.16 mirrors the hub-layout entry — the source PNG is full-res
+  // (1536x1024-ish) and renders gigantic at 1:1 without it.
   window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, promptLabel, function () {
     _showElaraDialog(scene, stage);
-  });
+  }, { scale: 0.16 });
 }
 
 function _showElaraDialog(scene, stage) {
