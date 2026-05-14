@@ -21,11 +21,18 @@ branch_strategy:
   rules: []
 doctrine:
   selected_paradigms:
-  - test-first
+  - clean-code
+  - minimal-tooling
+  - modular-scenes
   selected_directives:
-  - TEST_FIRST
+  - CLEAN_CODE
+  - MINIMAL_TOOLING
+  - MODULAR_SCENES
   available_tools:
   - git
   - spec-kitty
+  - node
+  - npm
+  - phaser
   template_set: software-dev-default
 enforcement: {}
