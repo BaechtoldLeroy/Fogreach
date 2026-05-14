@@ -511,11 +511,17 @@ class HubSceneV2 extends Phaser.Scene {
           isVisible = false;
         }
       }
-      // Quest-gated visibility (e.g. Elara only appears AFTER Q1 reveals she fled)
+      // Quest-gated visibility (NPC unlocks after a specific quest completes)
       if (isVisible && npc.visibleAfterQuest && window.questSystem) {
         const completed = window.questSystem.getCompletedQuests();
         const isCompleted = Array.isArray(completed) && completed.some(q => q && q.id === npc.visibleAfterQuest);
         if (!isCompleted) isVisible = false;
+      }
+      // Flag-gated visibility (e.g. Elara only appears after the dungeon
+      // encounter sets the elaraMet flag — see roomManager.js)
+      if (isVisible && npc.visibleAfterFlag && window.questSystem
+          && typeof window.questSystem.hasFlag === 'function') {
+        if (!window.questSystem.hasFlag(npc.visibleAfterFlag)) isVisible = false;
       }
 
       // Generate placeholder texture for NPCs without sprites (larger, more visible)
@@ -799,19 +805,23 @@ class HubSceneV2 extends Phaser.Scene {
     });
   }
 
-  // Re-evaluate `visibleAfterQuest` gates for every NPC. Called on each
-  // quest-state change so that NPCs unlocked by a just-completed quest
-  // (e.g. Elara after Q1) appear without requiring a hub reload.
+  // Re-evaluate `visibleAfterQuest` and `visibleAfterFlag` gates for every
+  // NPC. Called on each quest-state change so that NPCs unlocked by a
+  // just-completed quest or just-set flag (e.g. Elara after the cellar
+  // encounter sets `elaraMet`) appear without requiring a hub reload.
   _refreshNpcVisibility() {
     if (!this.npcs) return;
     const qs = window.questSystem;
-    if (!qs || typeof qs.getCompletedQuests !== 'function') return;
-    const completed = qs.getCompletedQuests() || [];
+    if (!qs) return;
+    const completed = (typeof qs.getCompletedQuests === 'function') ? (qs.getCompletedQuests() || []) : [];
     const completedIds = new Set(completed.map(q => q && q.id).filter(Boolean));
+    const hasFlag = (typeof qs.hasFlag === 'function') ? qs.hasFlag.bind(qs) : () => false;
 
     this.npcs.forEach(({ sprite, zone, nameText, questIndicator, data }) => {
-      if (!data.visibleAfterQuest) return;
-      const shouldBeVisible = completedIds.has(data.visibleAfterQuest);
+      if (!data.visibleAfterQuest && !data.visibleAfterFlag) return;
+      let shouldBeVisible = true;
+      if (data.visibleAfterQuest && !completedIds.has(data.visibleAfterQuest)) shouldBeVisible = false;
+      if (data.visibleAfterFlag && !hasFlag(data.visibleAfterFlag)) shouldBeVisible = false;
       if (!sprite) return;
       if (shouldBeVisible && !sprite.active) {
         sprite.setActive(true).setVisible(true);

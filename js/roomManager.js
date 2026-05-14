@@ -465,6 +465,9 @@ function enterRoom(scene, roomId) {
     window.EventSystem.onRoomEnter(scene, roomId);
   }
 
+  // Story-driven Elara cellar encounter — see _maybeFireElaraCellarEncounter.
+  _maybeFireElaraCellarEncounter(scene, roomId);
+
   const builtWidth = (builtMeta?.w ?? room?.width ?? ROOM_W) + rightPadding;
   const builtHeight = builtMeta?.h ?? room?.height ?? ROOM_H;
 
@@ -1652,6 +1655,48 @@ function updateRoomCounter(roomIndex, totalRooms) {
     window._roomCounterText.setText(_roomLabel);
   }
   window.roomProgressText = _roomLabel;
+}
+
+// One-shot Rathauskeller encounter that introduces Elara as alive + hiding.
+// Trigger conditions:
+//  - Q1 (harren_daughter_investigation) is completed,
+//  - the elaraMet flag is not yet set,
+//  - the player has reached at least the second room of the run (so the
+//    encounter doesn't fire the instant they step into the dungeon).
+// Setting the flag (via the dialog Continue button) makes Elara visible
+// in the hub on the next HubScene render — see hubLayout.js Elara entry
+// (`visibleAfterFlag: 'elaraMet'`) and HubSceneV2._refreshNpcVisibility.
+function _maybeFireElaraCellarEncounter(scene, roomId) {
+  if (!scene || !window.questSystem || !window.EventSystem) return;
+  if (typeof roomId !== 'number' || roomId < 2) return;
+  const qs = window.questSystem;
+  if (typeof qs.hasFlag !== 'function' || qs.hasFlag('elaraMet')) return;
+  const completed = (typeof qs.getCompletedQuests === 'function') ? qs.getCompletedQuests() : [];
+  const q1Done = Array.isArray(completed) && completed.some(function (q) {
+    return q && q.id === 'harren_daughter_investigation';
+  });
+  if (!q1Done) return;
+  if (typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
+
+  const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
+  const text = isEn
+    ? '"You. The Archivesmith. So Father did send someone."\n\nA figure steps from the shadows — Elara, Harren\'s daughter, very much alive.\n\n"I am not coming back. Not yet. Find me at the Archive Forge when you reach the surface again. We have to talk."'
+    : '"Du. Der Archivschmied. Vater hat also doch jemanden geschickt."\n\nEine Gestalt tritt aus dem Schatten — Elara, Harrens Tochter, lebendig.\n\n"Ich komme nicht zurueck. Noch nicht. Such mich bei der Archivschmiede, wenn du wieder ans Licht kommst. Wir muessen reden."';
+  const btnLabel = isEn ? 'Continue' : 'Weiter';
+
+  const fire = function () {
+    window.EventSystem.showEventChoiceDialog(scene, text, [{
+      label: btnLabel,
+      callback: function () {
+        if (typeof qs.setFlag === 'function') qs.setFlag('elaraMet', true);
+      }
+    }]);
+  };
+  if (scene.time && typeof scene.time.delayedCall === 'function') {
+    scene.time.delayedCall(1200, fire);
+  } else {
+    fire();
+  }
 }
 
 // Export in globalen Namespace

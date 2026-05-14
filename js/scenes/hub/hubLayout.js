@@ -148,14 +148,15 @@ window.HUB_HITBOXES = {
       x: 180, y: 480,
       texture: 'elara_right0',
       scale: 0.16,
-      // Elara is the "missing daughter" of Harren's Q1
-      // (harren_daughter_investigation). She only appears in the hub AFTER
-      // the player has read her journal fragment and learned she fled
-      // voluntarily — that's when Q1's dialogueComplete promises the player
-      // "you will be approached from four sides now". She then offers Q5
-      // (widerstand_proof). Showing her before Q1 contradicts Harren's
-      // request to find her.
-      visibleAfterQuest: 'harren_daughter_investigation',
+      // Elara is the "missing daughter" of Harren's Q1. She only appears
+      // in the hub AFTER the player has actually MET her in the
+      // Rathauskeller dungeon (encounter modal armed by Q1 completion,
+      // fires when the player enters a cellar room on the next run).
+      // Until then Klerus/Garde/Harren keep treating her as missing —
+      // because to them she still is, she's hiding from the council.
+      // Flag is set by the dungeon encounter (see roomManager.js) and
+      // persisted via window.questSystem.flags.elaraMet.
+      visibleAfterFlag: 'elaraMet',
       lines: [
         'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
         'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.'
@@ -190,10 +191,7 @@ window.HUB_HITBOXES = {
       // Source resized 1536→768 wide for crispness; scale 0.20 keeps the
       // ~102px display height that 0.10 produced from the original.
       scale: 0.20,
-      // Klerus is one of the "four sides" Harren warns about in Q1's
-      // dialogueComplete. Appears only after Q1 — his greeting line about
-      // the fled daughter already presumes the player has read the fragment.
-      visibleAfterQuest: 'harren_daughter_investigation',
+      visibleFromAct: 'auftrag',
       lines: [
         'Die Ordnung des Kettenrats ist heilig. Wer sie befragt, befragt das Licht selbst.',
         'Ketzerei beginnt mit der falschen Frage. Halte deine Lippen rein.',
@@ -209,8 +207,7 @@ window.HUB_HITBOXES = {
       // Target display height = 90% of klerus's ~102px = ~92px.
       // 92 / 408 ≈ 0.225.
       scale: 0.23,
-      // Garde is one of the "four sides" — same Q1 gate as Klerus + Elara.
-      visibleAfterQuest: 'harren_daughter_investigation',
+      visibleFromAct: 'auftrag',
       lines: [
         'Die Patrouillen wachsen jeden Monat. So muss es sein — die Stadt ist unruhig.',
         'Loyalitaet ist die einzige Muenze, die zwischen den Strassen Bestand hat. Frag nicht warum.',

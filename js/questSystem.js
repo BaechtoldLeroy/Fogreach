@@ -114,8 +114,8 @@
       rewards: { xp: 90, factionStanding: { klerus: 1 } },
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 0,
-      dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass dunkle Haende in den unteren Kammern wirken. Drei Anfuehrer dieser ketzerischen Praesenz lauern noch dort.\n\nFaelle sie im Namen der Ordnung. Jede gefallene Ketzerei ist ein Pfad, den das Licht zurueckgewinnt.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
-      dialogueProgress: 'Drei Anfuehrer trennen das Licht noch von den Kammern. Finde sie. Faelle sie. Jede Ketzerei, die du beendest, oeffnet einen weiteren Pfad zur Reinheit.',
+      dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand gefuehrt — die untere Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anfuehrer dieser ketzerischen Praesenz lauern noch dort unten. Faelle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
+      dialogueProgress: 'Drei Anfuehrer trennen die Tochter noch vom Licht. Finde sie. Faelle sie. Jede Ketzerei, die du beendest, oeffnet einen weiteren Pfad zur Reinheit.',
       dialogueComplete: 'Du hast die Ketzerei geschlagen. Die untere Kammern atmen wieder. Die Ordnung bleibt — durch dich. Der Klerus segnet deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.'
     },
     garde_patrol_expansion: {
@@ -135,9 +135,9 @@
       rewards: { xp: 75, factionStanding: { garde: 1 } },
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 0,
-      dialogueOffer: 'Die Stadt ist unruhig, Archivschmied. Stoerer in den Strassen, Schatten in den Kammern. Wir brauchen eine Patrouillen-Erweiterung. Heute. Geh in die unteren Kammern und demonstriere Kraft — zehn Stoerer fallen, das Edikt traegt sich von selbst durch die Strassen.\n\nFrag nicht, ob die Patrouillen schoner Lebensweise zutraeglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalitaet ist die einzige Muenze, die zaehlt. Das Edikt ist die Muenze, die du in meine Hand legst.\n\nNimmst du den Auftrag an, Archivschmied?',
+      dialogueOffer: 'Wenn eine Tochter aus dem Rathaus verschwinden kann, ist das ein Versagen der Garde — und das wird sich aendern. Ich brauche eine Patrouillen-Erweiterung. Heute. Geh in die unteren Kammern und demonstriere Kraft — zehn Stoerer fallen, das Edikt traegt sich von selbst durch die Strassen.\n\nFrag nicht, ob die Patrouillen schoner Lebensweise zutraeglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalitaet ist die einzige Muenze, die zaehlt. Das Edikt ist die Muenze, die du in meine Hand legst.\n\nNimmst du den Auftrag an, Archivschmied?',
       dialogueProgress: 'Zehn Stoerer noch. Jeder gefallene Koerper ist eine Zeile mehr im Bericht. Die Garde wartet auf das Ergebnis.',
-      dialogueComplete: 'Stark gemacht. Die Patrouillen verdoppeln sich ab morgen. Die Strassen werden ruhiger — oder zumindest die Stimmen darin. Die Garde merkt sich, wer schnell antwortet.'
+      dialogueComplete: 'Das Edikt ist veroeffentlicht. Die Patrouillen verdoppeln sich ab morgen. Niemand wird mehr verschwinden — oder zumindest niemand, der zaehlt. Die Garde merkt sich, wer schnell antwortet.'
     },
     widerstand_proof: {
       id: 'widerstand_proof',
@@ -519,13 +519,13 @@
       'quest.magistrat_verification.dialogueProgress': 'The document must be forged at the Archive Forge. Branka knows the procedure. Go and let her do her work.',
       'quest.magistrat_verification.dialogueComplete': 'Excellent. The document is in the archive. The daughter is now officially a person of interest. What that means in practice is none of your concern. The Magistrate thanks you.',
 
-      'quest.klerus_purification.dialogueOffer': "You have seen the fragment, Archivesmith. Then you know that dark hands are at work in the lower chambers. Three leaders of this heretical presence still lurk down there.\n\nStrike them down in the name of Order. Every heresy ended is a path the Light reclaims.\n\nPurification is a sacred duty. Accept it.",
-      'quest.klerus_purification.dialogueProgress': 'Three leaders still separate the Light from the chambers. Find them. Strike them down. Every heresy you end opens another path to purity.',
+      'quest.klerus_purification.dialogueOffer': "You have seen the fragment, Archivesmith. Then you know the daughter did not flee of her own will. She was led by a dark hand — the lower chambers teem with such shadows.\n\nPurify them. Three leaders of this heretical presence still lurk down there. Strike them down in the name of Order. The daughter's soul will thank you — if the Light finds her again.\n\nPurification is a sacred duty. Accept it.",
+      'quest.klerus_purification.dialogueProgress': 'Three leaders still separate the daughter from the Light. Find them. Strike them down. Every heresy you end opens another path to purity.',
       'quest.klerus_purification.dialogueComplete': 'You have broken the heresy. The lower chambers breathe again. Order endures — through you. The Clergy blesses your hand. Bring it onward where the Light demands.',
 
-      'quest.garde_patrol_expansion.dialogueOffer': 'The city is restless, Archivesmith. Troublemakers in the streets, shadows in the chambers. We need a patrol expansion. Today. Go into the lower chambers and demonstrate force — ten troublemakers fall, and the edict carries itself through the streets.\n\nDo not ask whether the patrols favor a comfortable way of life. Do not ask who decides where they run. Loyalty is the only coin that counts. The edict is the coin you place in my hand.\n\nDo you accept, Archivesmith?',
+      'quest.garde_patrol_expansion.dialogueOffer': 'If a daughter can vanish from the Town Hall itself, that is a failure of the Guard — and it will change. I need a patrol expansion. Today. Go into the lower chambers and demonstrate force — ten troublemakers fall, and the edict carries itself through the streets.\n\nDo not ask whether the patrols favor a comfortable way of life. Do not ask who decides where they run. Loyalty is the only coin that counts. The edict is the coin you place in my hand.\n\nDo you accept, Archivesmith?',
       'quest.garde_patrol_expansion.dialogueProgress': 'Ten troublemakers remain. Each fallen body is one more line in the report. The Guard waits on the outcome.',
-      'quest.garde_patrol_expansion.dialogueComplete': 'Strong work. Patrols double tomorrow. The streets grow quieter — or at least the voices within them. The Guard remembers who answers quickly.',
+      'quest.garde_patrol_expansion.dialogueComplete': 'The edict is published. Patrols double tomorrow. No one else will vanish — or at least no one who matters. The Guard remembers who answers quickly.',
 
       'quest.widerstand_proof.dialogueOffer': "So you found the fragment. Good — you no longer live entirely inside their story. Aldric wants to bring me back. The Clergy wants to burn me. The Guard wants to collect me.\n\nAnd me? I want YOU to see what I have seen before you go on running their errands. Down in the Rathauskeller there is a ritual chamber. There lies a document the three Council factions should never have signed together — and yet all three seals are upon it.\n\nBring it to me. Then we will talk.",
       'quest.widerstand_proof.dialogueProgress': 'Find the ritual chamber. Three rooms deeper. The document is small, but the seal upon it will take your breath away.',
@@ -697,6 +697,11 @@
   // status: 'available' | 'active' | 'completed'
   let questState = {};
 
+  // Boolean side-state independent of quest status — used for narrative
+  // milestones that aren't quests themselves (e.g. `elaraMet` set by the
+  // Rathauskeller encounter modal). Persisted alongside questState.
+  let questFlags = {};
+
   function _initQuestState() {
     questState = {};
     Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
@@ -704,6 +709,17 @@
     });
   }
   _initQuestState();
+
+  function setFlag(name, value) {
+    if (!name || typeof name !== 'string') return;
+    questFlags[name] = !!value;
+    _notifyUpdate();
+    _persistIfPossible();
+  }
+
+  function hasFlag(name) {
+    return !!questFlags[name];
+  }
 
   // ---- Core Functions ----
 
@@ -1036,19 +1052,35 @@
   // ---- Persistence ----
 
   function getQuestSaveData() {
-    return JSON.parse(JSON.stringify(questState));
+    return {
+      quests: JSON.parse(JSON.stringify(questState)),
+      flags: JSON.parse(JSON.stringify(questFlags))
+    };
   }
 
   function loadQuestSaveData(data) {
     if (!data || typeof data !== 'object') return;
     _initQuestState();
-    Object.keys(data).forEach(function (id) {
-      if (questState[id]) {
-        // Load known quests from save
-        questState[id] = data[id];
+    questFlags = {};
+    // Backward compat: legacy saves are flat questState (no .quests wrapper).
+    // Detect the wrapper by checking if .quests is itself an object whose
+    // values look like quest entries ({status,objectives}).
+    var srcQuests = data;
+    var srcFlags = {};
+    if (data.quests && typeof data.quests === 'object'
+        && (data.flags === undefined || typeof data.flags === 'object')) {
+      srcQuests = data.quests;
+      srcFlags = data.flags || {};
+    }
+    Object.keys(srcQuests).forEach(function (id) {
+      if (questState[id] && srcQuests[id] && typeof srcQuests[id] === 'object') {
+        questState[id] = srcQuests[id];
       }
       // Old quest IDs from previous saves are silently ignored,
       // preserving backward compatibility
+    });
+    Object.keys(srcFlags).forEach(function (k) {
+      questFlags[k] = !!srcFlags[k];
     });
     _notifyUpdate();
   }
@@ -1108,6 +1140,8 @@
     areAllQuestChainsComplete: areAllQuestChainsComplete,
     isQuestReadyToComplete: isQuestReadyToComplete,
     completeQuest: completeQuest,
+    setFlag: setFlag,
+    hasFlag: hasFlag,
     getQuestSaveData: getQuestSaveData,
     loadQuestSaveData: loadQuestSaveData,
     onQuestUpdate: onQuestUpdate,
