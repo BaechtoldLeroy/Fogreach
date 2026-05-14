@@ -546,6 +546,26 @@
     return 0;
   }
 
+  // Feature 050 FR-08: explicit quest-triggered act advancement.
+  // The legacy onWaveCompleted/onBossKilled paths advance acts derivatively
+  // (highestWave + completedQuestCount → _computeActIndex). Quest 6
+  // ("council_collusion_reveal") needs to jump the player to Act 2 = index 2
+  // (erste_risse) on completion, regardless of wave progress. This is the
+  // single explicit hook for that — guards against same-or-lower so it's
+  // idempotent and can't accidentally roll the story back.
+  function advanceToAct(targetActIndex) {
+    if (typeof targetActIndex !== 'number' || !isFinite(targetActIndex)) return false;
+    var clamped = Math.max(0, Math.min(STORY_ACTS.length - 1, Math.floor(targetActIndex)));
+    if (clamped <= storyState.currentActIndex) return false;
+    var newAct = STORY_ACTS[clamped];
+    storyState.currentActIndex = clamped;
+    if (storyState.eventsSeen.indexOf(newAct.id) === -1) {
+      storyState.pendingEvent = newAct.id;
+    }
+    try { console.log('[StorySystem] Act jump -> ' + newAct.name + ' (Act ' + (clamped + 1) + ') via advanceToAct'); } catch (_) {}
+    return true;
+  }
+
   /**
    * Called after a wave is completed. Updates highest wave and checks for act transitions.
    * Returns true if a new act was reached.
@@ -1064,6 +1084,7 @@
     onWaveCompleted: onWaveCompleted,
     onEnemyKilled: onEnemyKilled,
     onRoomCleared: onRoomCleared,
+    advanceToAct: advanceToAct,
     consumePendingEvent: consumePendingEvent,
     getNpcDialogue: getNpcDialogue,
     getJournalData: getJournalData,
