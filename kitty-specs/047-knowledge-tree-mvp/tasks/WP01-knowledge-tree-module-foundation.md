@@ -29,7 +29,7 @@ subtasks:
 - T007
 phase: Phase 1 — Foundation
 assignee: ''
-agent: ''
+agent: claude
 shell_pid: "28552"
 history:
 - timestamp: '2026-05-13T19:28:10Z'

@@ -26,7 +26,7 @@ subtasks:
 - T023
 phase: Phase 2 — Parallelizable Work
 assignee: ''
-agent: ''
+agent: claude
 shell_pid: "37544"
 history:
 - timestamp: '2026-05-13T19:28:10Z'
