@@ -95,11 +95,11 @@ test('getStanding returns persisted value after init from a seeded blob', () => 
   const { FS, p } = fresh();
   p.storage.setItem(STORAGE_KEY, JSON.stringify({
     version: 1,
-    standings: { council: 42, resistance: -17, independent: 5 }
+    standings: { magistrat:42, widerstand:-17, independent: 5 }
   }));
   FS.init();
-  assert.strictEqual(FS.getStanding('council'), 42);
-  assert.strictEqual(FS.getStanding('resistance'), -17);
+  assert.strictEqual(FS.getStanding('magistrat'), 42);
+  assert.strictEqual(FS.getStanding('widerstand'), -17);
   assert.strictEqual(FS.getStanding('independent'), 5);
 });
 
@@ -108,10 +108,10 @@ test('getStanding returns persisted value after init from a seeded blob', () => 
 test('adjustStanding clamps to +100 max', () => {
   const { FS } = fresh();
   FS.init();
-  FS.adjustStanding('council', 80);
-  const newVal = FS.adjustStanding('council', 50);
+  FS.adjustStanding('magistrat', 80);
+  const newVal = FS.adjustStanding('magistrat', 50);
   assert.strictEqual(newVal, 100);
-  assert.strictEqual(FS.getStanding('council'), 100);
+  assert.strictEqual(FS.getStanding('magistrat'), 100);
 });
 
 // --- 5. adjustStanding clamps to -100 ------------------------------------
@@ -119,10 +119,10 @@ test('adjustStanding clamps to +100 max', () => {
 test('adjustStanding clamps to -100 min', () => {
   const { FS } = fresh();
   FS.init();
-  FS.adjustStanding('resistance', -80);
-  const newVal = FS.adjustStanding('resistance', -50);
+  FS.adjustStanding('widerstand', -80);
+  const newVal = FS.adjustStanding('widerstand', -50);
   assert.strictEqual(newVal, -100);
-  assert.strictEqual(FS.getStanding('resistance'), -100);
+  assert.strictEqual(FS.getStanding('widerstand'), -100);
 });
 
 // --- 6. delta=0 is a no-op + does NOT notify -----------------------------
@@ -130,10 +130,10 @@ test('adjustStanding clamps to -100 min', () => {
 test('adjustStanding with delta=0 returns current value and does NOT fire subscribers', () => {
   const { FS } = fresh();
   FS.init();
-  FS.adjustStanding('council', 10);
+  FS.adjustStanding('magistrat', 10);
   let fires = 0;
   FS.onChange(() => { fires += 1; });
-  const ret = FS.adjustStanding('council', 0);
+  const ret = FS.adjustStanding('magistrat', 0);
   assert.strictEqual(ret, 10);
   assert.strictEqual(fires, 0);
 });
@@ -160,14 +160,14 @@ test('adjustStanding with unknown faction warns once and returns 0', () => {
 test('setStanding clamps and persists; same-value setStanding does not notify', () => {
   const { FS, p } = fresh();
   FS.init();
-  const v1 = FS.setStanding('council', 200); // clamp to 100
+  const v1 = FS.setStanding('magistrat', 200); // clamp to 100
   assert.strictEqual(v1, 100);
   const stored = JSON.parse(p.storage.getItem(STORAGE_KEY));
-  assert.strictEqual(stored.standings.council, 100);
+  assert.strictEqual(stored.standings.magistrat, 100);
   // setStanding to same value should not notify.
   let fires = 0;
   FS.onChange(() => { fires += 1; });
-  FS.setStanding('council', 100);
+  FS.setStanding('magistrat', 100);
   assert.strictEqual(fires, 0);
 });
 
@@ -177,21 +177,21 @@ test('getTier returns correct tier for boundary values', () => {
   const { FS } = fresh();
   FS.init();
   // Hostile: < -25
-  FS.setStanding('council', -26);
-  assert.strictEqual(FS.getTier('council'), 'hostile');
+  FS.setStanding('magistrat', -26);
+  assert.strictEqual(FS.getTier('magistrat'), 'hostile');
   // Neutral upper boundary
-  FS.setStanding('council', -25);
-  assert.strictEqual(FS.getTier('council'), 'neutral');
-  FS.setStanding('council', 25);
-  assert.strictEqual(FS.getTier('council'), 'neutral');
+  FS.setStanding('magistrat', -25);
+  assert.strictEqual(FS.getTier('magistrat'), 'neutral');
+  FS.setStanding('magistrat', 25);
+  assert.strictEqual(FS.getTier('magistrat'), 'neutral');
   // Friendly: > 25
-  FS.setStanding('council', 26);
-  assert.strictEqual(FS.getTier('council'), 'friendly');
-  FS.setStanding('council', 50);
-  assert.strictEqual(FS.getTier('council'), 'friendly');
+  FS.setStanding('magistrat', 26);
+  assert.strictEqual(FS.getTier('magistrat'), 'friendly');
+  FS.setStanding('magistrat', 50);
+  assert.strictEqual(FS.getTier('magistrat'), 'friendly');
   // Allied: > 50
-  FS.setStanding('council', 51);
-  assert.strictEqual(FS.getTier('council'), 'allied');
+  FS.setStanding('magistrat', 51);
+  assert.strictEqual(FS.getTier('magistrat'), 'allied');
 });
 
 // --- 10. onChange fires + unsubscribe ------------------------------------
@@ -201,12 +201,12 @@ test('onChange fires on advance with (factionId, newValue, oldValue); unsubscrib
   FS.init();
   const events = [];
   const unsub = FS.onChange((fid, nv, ov) => { events.push([fid, nv, ov]); });
-  FS.adjustStanding('council', 10);  // 0 -> 10
-  FS.adjustStanding('council', -5);  // 10 -> 5
-  assert.deepStrictEqual(events, [['council', 10, 0], ['council', 5, 10]]);
+  FS.adjustStanding('magistrat', 10);  // 0 -> 10
+  FS.adjustStanding('magistrat', -5);  // 10 -> 5
+  assert.deepStrictEqual(events, [['magistrat', 10, 0], ['magistrat', 5, 10]]);
   unsub();
-  FS.adjustStanding('council', 1);
-  assert.deepStrictEqual(events, [['council', 10, 0], ['council', 5, 10]]);
+  FS.adjustStanding('magistrat', 1);
+  assert.deepStrictEqual(events, [['magistrat', 10, 0], ['magistrat', 5, 10]]);
 });
 
 // --- 11. onChange swallows subscriber exceptions -------------------------
@@ -221,7 +221,7 @@ test('onChange swallows subscriber exceptions; remaining subscribers still fire'
   const origErr = console.error;
   console.error = () => {};
   try {
-    assert.doesNotThrow(() => FS.adjustStanding('council', 10));
+    assert.doesNotThrow(() => FS.adjustStanding('magistrat', 10));
   } finally {
     console.error = origErr;
   }
@@ -239,14 +239,14 @@ test('recursive subscriber call: a subscriber that calls adjustStanding does not
   FS.onChange((fid, nv, ov) => {
     events.push([fid, nv, ov]);
     // Recurse exactly once: when council changes for the first time, also bump resistance.
-    if (!recursed && fid === 'council') {
+    if (!recursed && fid === 'magistrat') {
       recursed = true;
-      FS.adjustStanding('resistance', 5);
+      FS.adjustStanding('widerstand', 5);
     }
   });
-  FS.adjustStanding('council', 10);
+  FS.adjustStanding('magistrat', 10);
   // Both mutations fired exactly once: outer council, then queued resistance.
-  assert.deepStrictEqual(events, [['council', 10, 0], ['resistance', 5, 0]]);
+  assert.deepStrictEqual(events, [['magistrat', 10, 0], ['widerstand', 5, 0]]);
 });
 
 // --- 13. version > 1 discarded on init -----------------------------------
@@ -255,7 +255,7 @@ test('stored blob with version > 1 is discarded on init', () => {
   const { FS, p } = fresh();
   p.storage.setItem(STORAGE_KEY, JSON.stringify({
     version: 2,
-    standings: { council: 99, resistance: 99, independent: 99 }
+    standings: { magistrat:99, widerstand:99, independent: 99 }
   }));
   // Suppress the warn this is allowed to emit.
   const origWarn = console.warn;
@@ -265,8 +265,8 @@ test('stored blob with version > 1 is discarded on init', () => {
   } finally {
     console.warn = origWarn;
   }
-  assert.strictEqual(FS.getStanding('council'), 0, 'v2 blob discarded');
-  assert.strictEqual(FS.getStanding('resistance'), 0);
+  assert.strictEqual(FS.getStanding('magistrat'), 0, 'v2 blob discarded');
+  assert.strictEqual(FS.getStanding('widerstand'), 0);
 });
 
 // --- 14. missing faction key defaults to 0 -------------------------------
@@ -275,11 +275,11 @@ test('missing faction key in persisted blob defaults to 0 without throwing', () 
   const { FS, p } = fresh();
   p.storage.setItem(STORAGE_KEY, JSON.stringify({
     version: 1,
-    standings: { council: 30 } // resistance + independent missing
+    standings: { magistrat:30 } // resistance + independent missing
   }));
   FS.init();
-  assert.strictEqual(FS.getStanding('council'), 30);
-  assert.strictEqual(FS.getStanding('resistance'), 0);
+  assert.strictEqual(FS.getStanding('magistrat'), 30);
+  assert.strictEqual(FS.getStanding('widerstand'), 0);
   assert.strictEqual(FS.getStanding('independent'), 0);
 });
 
@@ -288,8 +288,110 @@ test('missing faction key in persisted blob defaults to 0 without throwing', () 
 test('setStanding for save migration clamps out-of-range values without throwing', () => {
   const { FS } = fresh();
   FS.init();
-  assert.doesNotThrow(() => FS.setStanding('council', 9999));
-  assert.strictEqual(FS.getStanding('council'), 100);
-  assert.doesNotThrow(() => FS.setStanding('resistance', -9999));
-  assert.strictEqual(FS.getStanding('resistance'), -100);
+  assert.doesNotThrow(() => FS.setStanding('magistrat', 9999));
+  assert.strictEqual(FS.getStanding('magistrat'), 100);
+  assert.doesNotThrow(() => FS.setStanding('widerstand', -9999));
+  assert.strictEqual(FS.getStanding('widerstand'), -100);
+});
+
+// =========================================================================
+// Feature 050 — factionSystem 3→5 refactor + getCouncilComposite() helper
+// =========================================================================
+
+// --- 16. all 5 standings default to 0 on fresh init ----------------------
+
+test('feature 050: fresh init has all 5 standings at 0', () => {
+  const { FS } = fresh();
+  FS.init();
+  assert.strictEqual(FS.getStanding('magistrat'), 0);
+  assert.strictEqual(FS.getStanding('klerus'), 0);
+  assert.strictEqual(FS.getStanding('garde'), 0);
+  assert.strictEqual(FS.getStanding('widerstand'), 0);
+  assert.strictEqual(FS.getStanding('independent'), 0);
+});
+
+// --- 17. each new Council-internal faction adjusts independently ---------
+
+test('feature 050: klerus and garde standings adjust independently of magistrat', () => {
+  const { FS } = fresh();
+  FS.init();
+  FS.adjustStanding('magistrat', 5);
+  FS.adjustStanding('klerus', 7);
+  FS.adjustStanding('garde', 3);
+  assert.strictEqual(FS.getStanding('magistrat'), 5);
+  assert.strictEqual(FS.getStanding('klerus'), 7);
+  assert.strictEqual(FS.getStanding('garde'), 3);
+  // Cross-check: bumping one does NOT bleed into the others
+  FS.adjustStanding('klerus', 10);
+  assert.strictEqual(FS.getStanding('magistrat'), 5, 'magistrat unaffected by klerus bump');
+  assert.strictEqual(FS.getStanding('garde'), 3, 'garde unaffected by klerus bump');
+});
+
+// --- 18. getCouncilComposite returns 0 when no Council standing > 0 ------
+
+test('feature 050: getCouncilComposite() returns 0 on fresh init', () => {
+  const { FS } = fresh();
+  FS.init();
+  assert.strictEqual(FS.getCouncilComposite(), 0);
+});
+
+// --- 19. getCouncilComposite returns max of magistrat/klerus/garde -------
+
+test('feature 050: getCouncilComposite() returns max of the 3 Council-internal standings', () => {
+  const { FS } = fresh();
+  FS.init();
+  FS.adjustStanding('magistrat', 3);
+  assert.strictEqual(FS.getCouncilComposite(), 3, 'magistrat alone');
+  FS.adjustStanding('klerus', 7);
+  assert.strictEqual(FS.getCouncilComposite(), 7, 'klerus overtakes magistrat');
+  FS.adjustStanding('garde', 1);
+  assert.strictEqual(FS.getCouncilComposite(), 7, 'garde does not lower the max');
+  FS.adjustStanding('magistrat', 100); // clamps to 100
+  assert.strictEqual(FS.getCouncilComposite(), 100, 'magistrat now leads');
+});
+
+// --- 20. getCouncilComposite ignores widerstand + independent ------------
+
+test('feature 050: getCouncilComposite() ignores widerstand + independent standings', () => {
+  const { FS } = fresh();
+  FS.init();
+  FS.adjustStanding('widerstand', 50);
+  FS.adjustStanding('independent', 30);
+  assert.strictEqual(FS.getCouncilComposite(), 0, 'only Council-internal factions count');
+  FS.adjustStanding('magistrat', 5);
+  assert.strictEqual(FS.getCouncilComposite(), 5);
+});
+
+// --- 21. legacy 'council' ID returns 0 + warns once -----------------------
+
+test('feature 050: legacy getStanding("council") returns 0 silently', () => {
+  // getStanding for unknown faction is silent (NOT warn-once) — that's
+  // adjustStanding's behavior. This test pins the silent-zero contract for
+  // legacy callers that still try the old name.
+  const { FS } = fresh();
+  FS.init();
+  assert.strictEqual(FS.getStanding('council'), 0);
+  assert.strictEqual(FS.getStanding('resistance'), 0);
+});
+
+// --- 22. legacy 'council' ID via adjustStanding warns once ----------------
+
+test('feature 050: legacy adjustStanding("council") warns once and is a no-op', () => {
+  const { FS } = fresh();
+  FS.init();
+  const origWarn = console.warn;
+  let warnCount = 0;
+  console.warn = () => { warnCount += 1; };
+  try {
+    FS.adjustStanding('council', 50);    // legacy ID — warn once
+    FS.adjustStanding('resistance', 50); // legacy ID — warn once
+    FS.adjustStanding('council', 50);    // second legacy call, no extra warn
+  } finally {
+    console.warn = origWarn;
+  }
+  // 2 distinct legacy IDs each warn once = 2 warns total
+  assert.strictEqual(warnCount, 2);
+  // And of course the legacy IDs didn't accidentally write anything
+  assert.strictEqual(FS.getStanding('council'), 0);
+  assert.strictEqual(FS.getStanding('resistance'), 0);
 });

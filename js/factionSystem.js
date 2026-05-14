@@ -12,7 +12,13 @@
 (function () {
   var STORAGE_KEY = 'demonfall_factions_v1';
   var SCHEMA_VERSION = 1;
-  var FACTION_IDS = ['council', 'resistance', 'independent'];
+  // Expanded from 3 → 5 standings for feature 050 (Act 1 Quest Chain).
+  // The Council apparatus splits into three internal factions per
+  // constitution §Setting: "factions compete outwardly but serve a unified
+  // occult agenda". Magistrat / Klerus / Garde are the three Council-internal
+  // factions. Widerstand (renamed from 'resistance') is the outside-the-system
+  // opposition. Independent is the neutral flag.
+  var FACTION_IDS = ['magistrat', 'klerus', 'garde', 'widerstand', 'independent'];
 
   // Tier breakpoints. Single config object — one place to retune. Spec D-03.
   var TIER_HOSTILE_MAX  = -25; // value < -25 -> hostile
@@ -24,18 +30,58 @@
   // variants + Resistance-gated quest). Owned here so the keys ship with
   // this feature regardless of which scene reads them.
   var I18N_DE = {
+    // Faction labels (used in Faction modal display)
+    'faction.magistrat.label':   'Magistrat',
+    'faction.klerus.label':      'Klerus',
+    'faction.garde.label':       'Garde',
+    'faction.widerstand.label':  'Widerstand',
+    'faction.independent.label': 'Unabhängig',
+    // Aldric — face of the Magistrat (existing keys preserved)
     'faction.aldric.greet.hostile':  'Aldric: »Verschwinde. Du bist hier nicht willkommen.«',
     'faction.aldric.greet.neutral':  'Aldric: »Halte dich aus den Angelegenheiten des Rats heraus.«',
     'faction.aldric.greet.friendly': 'Aldric: »Du machst dich nützlich. Der Rat bemerkt das.«',
     'faction.aldric.greet.allied':   'Aldric: »Eine Ehre, dich zu sehen. Komm, sprechen wir.«',
-    'faction.quest.resistance_fetch.title': 'Botengang für die Resistance',
+    // Klerus — religious / occult-facing arm
+    'faction.klerus.greet.hostile':  'Klerus-Priester: »Deine Seele ist schon vergeben — an etwas, das du nicht überleben wirst.«',
+    'faction.klerus.greet.neutral':  'Klerus-Priester: »Die Ordnung des Kettenrats wartet auf jeden, der sie sucht.«',
+    'faction.klerus.greet.friendly': 'Klerus-Priester: »Du dienst dem Licht. Sehr gut.«',
+    'faction.klerus.greet.allied':   'Klerus-Priester: »Ein wahrer Anhänger. Tritt näher.«',
+    // Garde — enforcement / patrol arm
+    'faction.garde.greet.hostile':   'Wachtmeister: »Verschwinde. Du gehörst hier nicht hin.«',
+    'faction.garde.greet.neutral':   'Wachtmeister: »Halte dich an die Patrouillenrouten und es gibt keine Probleme.«',
+    'faction.garde.greet.friendly':  'Wachtmeister: »Du machst dich nützlich. Die Garde merkt sich das.«',
+    'faction.garde.greet.allied':    'Wachtmeister: »Eine Ehre. Komm, ich erkläre dir die nächste Patrouille.«',
+    // Elara — face of the Widerstand
+    'faction.elara.greet.hostile':   'Elara: »Geh. Du bist eine Gefahr für uns.«',
+    'faction.elara.greet.neutral':   'Elara: »Sei vorsichtig, wem du in dieser Stadt traust.«',
+    'faction.elara.greet.friendly':  'Elara: »Du hast Augen, die wirklich sehen. Bleib in der Nähe.«',
+    'faction.elara.greet.allied':    'Elara: »Du bist einer von uns. Komm — wir haben Pläne.«',
+    // Legacy quest strings (preserved — resistance_fetch_01 quest still exists)
+    'faction.quest.resistance_fetch.title': 'Botengang für den Widerstand',
     'faction.quest.resistance_fetch.desc':  'Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen.'
   };
   var I18N_EN = {
+    'faction.magistrat.label':   'Magistrate',
+    'faction.klerus.label':      'Clergy',
+    'faction.garde.label':       'Guard',
+    'faction.widerstand.label':  'Resistance',
+    'faction.independent.label': 'Independent',
     'faction.aldric.greet.hostile':  "Aldric: 'Begone. You are not welcome here.'",
     'faction.aldric.greet.neutral':  "Aldric: 'Stay out of council business.'",
     'faction.aldric.greet.friendly': "Aldric: 'You make yourself useful. The Council notices.'",
     'faction.aldric.greet.allied':   "Aldric: 'An honor to see you. Come, let us talk.'",
+    'faction.klerus.greet.hostile':  "Clergyman: 'Your soul is already pledged — to something you will not survive.'",
+    'faction.klerus.greet.neutral':  "Clergyman: 'The Order of the Chain Council awaits all who seek it.'",
+    'faction.klerus.greet.friendly': "Clergyman: 'You serve the Light. Very well.'",
+    'faction.klerus.greet.allied':   "Clergyman: 'A true devotee. Step closer.'",
+    'faction.garde.greet.hostile':   "Watch Captain: 'Move along. You do not belong here.'",
+    'faction.garde.greet.neutral':   "Watch Captain: 'Stay to the patrol routes and there will be no trouble.'",
+    'faction.garde.greet.friendly':  "Watch Captain: 'You make yourself useful. The Guard takes note.'",
+    'faction.garde.greet.allied':    "Watch Captain: 'An honor. Come, I'll brief you on the next patrol.'",
+    'faction.elara.greet.hostile':   "Elara: 'Leave. You are a danger to us.'",
+    'faction.elara.greet.neutral':   "Elara: 'Be careful whom you trust in this city.'",
+    'faction.elara.greet.friendly':  "Elara: 'You have eyes that actually see. Stay close.'",
+    'faction.elara.greet.allied':    "Elara: 'You are one of us. Come — we have plans.'",
     'faction.quest.resistance_fetch.title': 'Errand for the Resistance',
     'faction.quest.resistance_fetch.desc':  'Fetch the sealed bundle from the cellar. No one must see it.'
   };
@@ -51,7 +97,7 @@
     return {
       initialized: false,
       i18nRegistered: false,
-      standings: { council: 0, resistance: 0, independent: 0 },
+      standings: { magistrat: 0, klerus: 0, garde: 0, widerstand: 0, independent: 0 },
       // Recursion-safe notify queue (D-07). When a subscriber mutates inside
       // its callback, the inner notify is enqueued and drained after the
       // current loop completes — never stacks unboundedly.
@@ -99,8 +145,10 @@
     var blob = JSON.stringify({
       version: SCHEMA_VERSION,
       standings: {
-        council:     state.standings.council     | 0,
-        resistance:  state.standings.resistance  | 0,
+        magistrat:   state.standings.magistrat   | 0,
+        klerus:      state.standings.klerus      | 0,
+        garde:       state.standings.garde       | 0,
+        widerstand:  state.standings.widerstand  | 0,
         independent: state.standings.independent | 0
       }
     });
@@ -193,6 +241,19 @@
     return state.standings[factionId] | 0;
   }
 
+  // Feature 050 FR-15: composite "loyal to the Council apparatus in general"
+  // signal. Returns the MAX of the three Council-internal standings, so a
+  // caller that only needs to know "is the player aligned with any Council
+  // faction?" doesn't need three lookups. Used by Printing-House suspicion
+  // gates and any greeting tier that reflects general Council loyalty.
+  function getCouncilComposite() {
+    return Math.max(
+      getStanding('magistrat'),
+      getStanding('klerus'),
+      getStanding('garde')
+    );
+  }
+
   function adjustStanding(factionId, delta) {
     if (!_isKnownFaction(factionId)) {
       _warnUnknownOnce(factionId);
@@ -260,12 +321,19 @@
   window.FactionSystem = {
     init: init,
     getStanding: getStanding,
+    getCouncilComposite: getCouncilComposite,
     adjustStanding: adjustStanding,
     setStanding: setStanding,
     getTier: getTier,
     onChange: onChange,
     _configureForTest: _configureForTest,
-    FACTIONS: { COUNCIL: 'council', RESISTANCE: 'resistance', INDEPENDENT: 'independent' },
+    FACTIONS: {
+      MAGISTRAT:   'magistrat',
+      KLERUS:      'klerus',
+      GARDE:       'garde',
+      WIDERSTAND:  'widerstand',
+      INDEPENDENT: 'independent'
+    },
     _STORAGE_KEY: STORAGE_KEY,
     _SCHEMA_VERSION: SCHEMA_VERSION
   };

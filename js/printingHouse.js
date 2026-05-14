@@ -335,7 +335,7 @@
   // UI greys them out).
   function getEdictCatalog() {
     var standing = 0;
-    try { standing = primitives.factionSystem.getStanding('resistance') | 0; } catch (_) {}
+    try { standing = primitives.factionSystem.getStanding('widerstand') | 0; } catch (_) {}
     return EDICT_CATALOG.map(function (e) {
       return {
         id: e.id,
@@ -364,9 +364,9 @@
     if (!def) return { success: false, reason: 'unknown edict id' };
     if (state.active) return { success: false, reason: 'already active publication' };
     var standing = 0;
-    try { standing = primitives.factionSystem.getStanding('resistance') | 0; } catch (_) {}
+    try { standing = primitives.factionSystem.getStanding('widerstand') | 0; } catch (_) {}
     if (standing < def.requireStanding) {
-      return { success: false, reason: 'tier locked: requires resistance standing >= ' + def.requireStanding };
+      return { success: false, reason: 'tier locked: requires widerstand standing >= ' + def.requireStanding };
     }
     if (state.druckblaetter < def.cost) {
       return { success: false, reason: 'insufficient druckblaetter (cost ' + def.cost + ')' };
