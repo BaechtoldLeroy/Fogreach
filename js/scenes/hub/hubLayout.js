@@ -174,7 +174,11 @@ window.HUB_HITBOXES = {
     {
       id: 'klerus_priester',
       name: 'Hochpriester der Ordnung',
-      x: 480, y: 360,
+      // Moved from (480, 360) — that spot blocked the Rathaus entrance + sat
+      // on top of the fountain. (240, 540) parks the priest in the front-
+      // left plaza, his own quadrant, away from any building entrance and
+      // symmetric with Aldric's bottom-center stance.
+      x: 240, y: 540,
       texture: 'harren_right0', // placeholder — see TODO above
       scale: 0.16,
       visibleFromAct: 'auftrag',

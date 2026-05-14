@@ -165,6 +165,41 @@ window.HUB_HITBOXES = {
         'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
         'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'
       ]
+    },
+    // Feature 050: Klerus + Garde quest-giver NPCs for the Act-1 chain.
+    // TODO(#34 polish): dedicated sprites — currently reuses harren_right0
+    // (Klerus) and aldric_right0 (Garde) as placeholders. The id + name
+    // + dialogue make them mechanically distinct; visual confusion is
+    // acceptable for the donor demo and gets resolved in #34's polish pass.
+    {
+      id: 'klerus_priester',
+      name: 'Hochpriester der Ordnung',
+      // Moved from (480, 360) — that spot blocked the Rathaus entrance + sat
+      // on top of the fountain. (240, 540) parks the priest in the front-
+      // left plaza, his own quadrant, away from any building entrance and
+      // symmetric with Aldric's bottom-center stance.
+      x: 240, y: 540,
+      texture: 'harren_right0', // placeholder — see TODO above
+      scale: 0.16,
+      visibleFromAct: 'auftrag',
+      lines: [
+        'Die Ordnung des Kettenrats ist heilig. Wer sie befragt, befragt das Licht selbst.',
+        'Ketzerei beginnt mit der falschen Frage. Halte deine Lippen rein.',
+        'Wenn die Tochter geflohen ist, war es nicht aus eigenem Willen. Eine dunkle Hand fuehrt sie.'
+      ]
+    },
+    {
+      id: 'stadtwache',
+      name: 'Wachtmeister der Garde',
+      x: 580, y: 380,
+      texture: 'aldric_right0', // placeholder — see TODO above
+      scale: 0.16,
+      visibleFromAct: 'auftrag',
+      lines: [
+        'Die Patrouillen wachsen jeden Monat. So muss es sein — die Stadt ist unruhig.',
+        'Loyalitaet ist die einzige Muenze, die zwischen den Strassen Bestand hat. Frag nicht warum.',
+        'Wenn der Magistrat ruft, antwortet die Garde. Wenn der Klerus segnet, marschiert die Garde. So funktioniert es.'
+      ]
     }
   ]
 };
