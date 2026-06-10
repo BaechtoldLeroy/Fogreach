@@ -274,15 +274,11 @@ class HubSceneV2 extends Phaser.Scene {
       }
     });
     this.input.keyboard.on('keydown-P', () => {
-      console.log('[perf] P pressed in HubSceneV2');
       if (!this._perfMonitor && window.PerformanceMonitor) {
         this._perfMonitor = new window.PerformanceMonitor(this);
-        window._dbgPerf = this._perfMonitor;
-        console.log('[perf] monitor created', this._perfMonitor);
       }
       if (this._perfMonitor && typeof this._perfMonitor.toggleOverlay === 'function') {
         this._perfMonitor.toggleOverlay();
-        console.log('[perf] toggled — visible:', this._perfMonitor.overlayVisible);
       }
     });
 
@@ -353,6 +349,12 @@ class HubSceneV2 extends Phaser.Scene {
       this.input.keyboard.off('keydown-I');
       this.input.keyboard.off('keydown-J', this._handleJournal, this);
       this.input.keyboard.off('keydown-K', this._handleLoadout, this);
+      this.input.keyboard.off('keydown-P');
+      if (this._perfMonitor) {
+        try { this._perfMonitor.destroy(); } catch (_) {}
+        this._perfMonitor = null;
+        this._dbgPerfLogged = false;
+      }
       if (this._questUpdateHandler && window.questSystem && window.questSystem.offQuestUpdate) {
         window.questSystem.offQuestUpdate(this._questUpdateHandler);
         this._questUpdateHandler = null;
@@ -713,10 +715,6 @@ class HubSceneV2 extends Phaser.Scene {
       if (typeof this._perfMonitor.updateMemory === 'function') this._perfMonitor.updateMemory();
       if (this._perfMonitor.overlayVisible && typeof this._perfMonitor.updateOverlay === 'function') {
         this._perfMonitor.updateOverlay();
-      }
-      if (!this._dbgPerfLogged && this._perfMonitor.currentFps > 0) {
-        console.log('[perf] first FPS tick:', this._perfMonitor.currentFps);
-        this._dbgPerfLogged = true;
       }
     }
     if (!this.player) return;
