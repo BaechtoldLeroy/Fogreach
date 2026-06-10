@@ -56,21 +56,30 @@ Each lever has different blast-radius. The spec defines acceptance criteria + a 
 
 ## 4. Functional Requirements
 
+> **REVISION 2026-06-10**: FR-02 + FR-04 wurden nach WP01-Baseline-
+> Messung umgeschrieben. Mobile reisst NFR-01 vor jeder Änderung
+> (Procroom 20fps, Combat 40fps), und Phaser 3.70 hat keinen
+> `scale.resolution`-Key mehr. Quality-Levers shippen nur auf Desktop;
+> Mobile bleibt auf Status-Quo (= "Niedrig"). Siehe
+> [research/baseline-fps.md](research/baseline-fps.md) und
+> [research/phaser-resolution-config.md](research/phaser-resolution-config.md).
+
 | ID    | Requirement | Status |
 |-------|-------------|--------|
-| FR-01 | Document, with measurements, what each of the three levers (canvas bump, resolution config, pixelArt audit) does to perceived sharpness AND FPS on at least three devices: desktop-1080p, desktop-1440p, mobile-Pixel-class. | Draft |
-| FR-02 | Ship the LEAST-risky lever first — `resolution: window.devicePixelRatio` in the scale config — if it doesn't break the proc dungeon. Verify by running a full Q1-Q6 chain + at least 3 procedural-dungeon rooms. | Draft |
-| FR-03 | If FR-02 is safe: extend the 051 per-texture LINEAR filter pattern to cover EVERY non-procedurally-generated texture (hub bg, all NPC sprites, weapon icons, UI elements, fonts). Maintain the existing NEAREST default for proc textures. | Draft |
-| FR-04 | If FR-02 is safe + FR-03 is shipped: bump the internal canvas resolution from 960×480 to 1920×960 ONLY if mobile FPS stays ≥ 55 with the bump. Measure before merging. | Draft |
-| FR-05 | Provide a Settings toggle "Render-Qualität" (Niedrig / Mittel / Hoch) so a player on low-end hardware can opt out of the higher resolution. Niedrig = current 960×480 + pixelArt; Hoch = the maximum lever combination this feature can safely ship. Default: Mittel. | Draft |
-| FR-06 | All UI elements MUST gracefully handle the new internal resolution — buttons, modals, HUD positions, font sizes. If anything breaks layout, fix the affected scene OR cap the lever at a value the existing UI tolerates. | Draft |
-| FR-07 | NO regression on the existing pixelArt path — proc dungeon, generated textures, room tiles all render exactly as before for the same player perspective and FPS. | Draft |
+| FR-01 | Document, with measurements, what each of the three levers does to perceived sharpness AND FPS on Desktop + Mobile. Baseline = `research/baseline-fps.md`. | Done |
+| FR-02 | Ship DPR-aware-resolution **on Desktop only**. Phaser 3.70 hat keinen `scale.resolution`-Key; stattdessen `scale.width × DPR`, `scale.height × DPR`, `scale.zoom / DPR`, DPR-Cap auf 2. World-Coords bleiben 960×480. Mobile-Detect skipped FR-02 komplett. Konkreter Patch in `research/phaser-resolution-config.md` §9. | Revised |
+| FR-03 | Extend the 051 per-texture LINEAR filter pattern via `js/renderQuality.js` Helper (`applyLinearFilter(scene, keys)`). Cover ALL non-procedurally-generated textures: Hub-BG, NPC-Sprites, Player-Sprites (POST-Normalisierungs-Swap, siehe `research/linear-filter-inventory.md`), Weapon/Item-Icons, UI-Texts. Maintain NEAREST default for proc-textures (C-01). **Beide Plattformen** (zero Perf-Kosten). | Draft |
+| FR-04 | Bump internal canvas 960×480 → 1920×960 **on Desktop only**. Mobile-Detect skipped FR-04 komplett. Vor Implementation: 4 RED-Sites in `main.js` mit hardcoded `(400, 300)`-Koordinaten fixen (siehe `research/canvas-bump-layout-risks.md`), sonst UI-Bruch. | Revised |
+| FR-05 | Settings-Toggle "Render-Qualität": **Desktop** zeigt Niedrig/Mittel/Hoch (Default Mittel = FR-03+FR-02). **Mobile** zeigt nur readonly Info-Hinweis "FPS-optimiert für dein Gerät" (de-facto = Niedrig + FR-03). Persistierung via `demonfall_settings_v1.gameplay.renderQuality`. | Revised |
+| FR-06 | All UI elements MUST gracefully handle the new internal resolution — buttons, modals, HUD positions, font sizes. RED-Sites (`research/canvas-bump-layout-risks.md`) müssen vor FR-04-Merge gefixt sein. | Draft |
+| FR-07 | NO regression on the existing pixelArt path — proc dungeon, generated textures, room tiles all render exactly as before. | Draft |
+| FR-08 | **NEU**: Mobile-Detection-Logic darf NIEMALS dazu führen dass Mobile-FPS UNTER aktuellen Baseline (20fps Procroom, 40fps Combat) fällt. Wenn FR-03-LINEAR-Audit auch nur 1fps kostet → Revert für Mobile, behalten für Desktop. | Draft |
 
 ## 5. Non-Functional Requirements
 
 | ID     | Requirement | Threshold | Status |
 |--------|-------------|-----------|--------|
-| NFR-01 | Mobile FPS in combat MUST stay ≥ 55. | Measured on a mid-tier mobile device (Pixel 4 / iPhone XR class). | Draft |
+| NFR-01 | ~~Mobile FPS in combat MUST stay ≥ 55.~~ **REVISED**: Mobile-FPS darf durch 052-Changes NICHT unter die WP01-Baseline (Hub 60, Combat 40, Procroom 20) fallen. Die 55-Schwelle ist Ziel von Feature **053 Mobile Dungeon Performance**, nicht 052. | Measured on a mid-tier mobile device (Pixel 4 / iPhone XR class). | Revised |
 | NFR-02 | Desktop FPS in combat MUST stay ≥ 60 (the cap). | Standard 1080p desktop benchmark. | Draft |
 | NFR-03 | Memory footprint increase from higher-res rendering MUST stay under +50 MB. | Measured via DevTools Performance / Memory tab. | Draft |
 | NFR-04 | Initial load time MUST NOT increase by more than 10 %. | Cold-load timing comparison. | Draft |
@@ -80,8 +89,9 @@ Each lever has different blast-radius. The spec defines acceptance criteria + a 
 | ID    | Constraint | Status |
 |-------|------------|--------|
 | C-01  | NO disabling `pixelArt: true` globally without first proving the proc-dungeon generators still produce correct textures. Documented in `main.js:80-84` as a known landmine. | Draft |
-| C-02  | NO new dependencies. Use Phaser's built-in scale/resolution config only. | Draft |
-| C-03  | Mobile is the limiting factor for FPS targets. Desktop perf is secondary. | Draft |
+| C-02  | NO new dependencies. Use Phaser's built-in scale config only (NICHT `scale.resolution` — siehe Research). | Revised |
+| C-03  | ~~Mobile is the limiting factor for FPS targets. Desktop perf is secondary.~~ **REVISED**: Mobile-Render-Path bleibt unangetastet (auto-Niedrig). Desktop ist primärer Quality-Empfänger. | Revised |
+| C-07  | **NEU**: Mobile-Detection via `navigator.userAgent` ODER `(typeof window.orientation !== 'undefined')` ODER `matchMedia('(pointer: coarse)')`. Detection-Logic muss in `js/renderQuality.js` zentral leben, nicht über Scenes verstreut. | Draft |
 | C-04  | UI layouts in `HubSceneV2`, `GameScene`, `SettingsScene`, `CraftingScene`, `HUDv2`, `PrintingHouseScene` MUST continue to work at the new resolution. Each is a separate audit step. | Draft |
 | C-05  | Settings persist via the existing `demonfall_settings_v1` flow. Quality toggle uses the same nested-key pattern as `gameplay.skipTutorial`. | Draft |
 | C-06  | Render-quality toggle MUST take effect on next scene transition OR via explicit "Restart Game" — applying mid-scene risks breaking active textures. | Draft |
