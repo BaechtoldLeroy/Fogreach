@@ -452,18 +452,34 @@ class PerformanceMonitor {
     }
     
     text += `\nPress P to toggle this overlay`;
-    
-    this.overlayText.setText(text);
+
+    try {
+      if (this.overlayText && this.overlayText.scene) {
+        this.overlayText.setText(text);
+      }
+    } catch (err) {
+      console.warn('[perf] overlay setText failed, disabling monitor', err);
+      this.enabled = false;
+      this.overlayVisible = false;
+    }
   }
 
   toggleOverlay() {
-    if (!this.overlay) {
-      this.createOverlay();
-    }
-    this.overlayVisible = !this.overlayVisible;
-    this.overlay.setVisible(this.overlayVisible);
-    if (this.overlayVisible) {
-      this.updateOverlay();
+    try {
+      if (!this.overlay) {
+        this.createOverlay();
+      }
+      this.overlayVisible = !this.overlayVisible;
+      if (this.overlay && this.overlay.setVisible) {
+        this.overlay.setVisible(this.overlayVisible);
+      }
+      if (this.overlayVisible) {
+        this.updateOverlay();
+      }
+    } catch (err) {
+      console.warn('[perf] toggleOverlay failed, disabling monitor', err);
+      this.enabled = false;
+      this.overlayVisible = false;
     }
   }
 
