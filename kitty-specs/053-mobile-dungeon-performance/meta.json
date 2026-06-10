@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-06-10T16:52:03.321745+00:00",
+  "feature_number": "053",
+  "feature_slug": "053-mobile-dungeon-performance",
+  "friendly_name": "mobile dungeon performance",
+  "mission": "software-dev",
+  "slug": "053-mobile-dungeon-performance",
+  "target_branch": "main"
+}
