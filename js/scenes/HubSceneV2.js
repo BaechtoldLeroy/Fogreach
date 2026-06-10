@@ -704,8 +704,15 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   update(t, dt) {
+    if (this._perfMonitor && this._perfMonitor.enabled) {
+      this._perfMonitor.updateFPS();
+      if (typeof this._perfMonitor.updateMemory === 'function') this._perfMonitor.updateMemory();
+      if (this._perfMonitor.overlayVisible && typeof this._perfMonitor.updateOverlay === 'function') {
+        this._perfMonitor.updateOverlay();
+      }
+    }
     if (!this.player) return;
-    
+
     const p = this.player;
     let inputX = 0, inputY = 0;
     
