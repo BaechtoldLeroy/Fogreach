@@ -24,6 +24,10 @@
 .kittify/missions/__pycache__/
 .kittify/runtime/
 .kittify/workspaces/
+.kittify/derived/
+kitty-specs/**/status.json
+kitty-specs/**/status.events.jsonl
+kitty-specs/**/mission-events.jsonl
 test-output/
 
 # Dependencies
