@@ -77,25 +77,12 @@ const GameScene = {
   update
 };
 
-// 052 WP04 + WP05: Desktop-only render-scale boost.
-// Phaser 3.70 has no scale.resolution key — the working replacement is to
-// multiply scale.width/height by an effective-DPR factor and divide
-// scale.zoom by the same factor. World coords stay 960×480 (game logic
-// untouched); the backing canvas grows so the browser upscale ratio
-// collapses and LINEAR-filtered painterly assets (WP03) render from a
-// higher-resolution source.
-//   WP04: factor = getDPR() (capped at MAX_DPR=2). DPR=1 → factor=1 (no-op).
-//   WP05: factor = max(getDPR(), 2). DPR=1 desktop monitor still gets
-//         force-bump to 2× backing → 1920×960 internal, ~1:1 upscale on
-//         a 1080p screen.
-// Mobile is SKIPPED (baseline: Mobile already at 20fps in procrooms; 4×
-// pixel work would be unplayable). Mobile-Perf-Rescue ist Feature 053.
-const _RQ = (typeof window !== 'undefined' && window.RenderQuality) || null;
-const _isMobile = _RQ ? _RQ.isMobile() : false;
-const _rawDpr = _RQ ? _RQ.getDPR() : 1;
-const _dpr = _isMobile ? 1 : Math.max(_rawDpr, 2);  // WP05 force-bump
-const _worldW = 960;
-const _worldH = 480;
+// 052 WP04+WP05: REVERTED 2026-06-10. Das `width × DPR + zoom = 1/DPR`
+// Pattern aus research/phaser-resolution-config.md §5.2 hat World-Coords
+// mit-skaliert statt nur Backing-Buffer in Phaser 3.70 — Dungeon erschien
+// rausgezoomt auf DPR=1.5. Spec-FR-02/FR-04 brauchen ein neues
+// Render-Scale-Pattern oder Post-Boot Canvas-Resize-Approach. Bis dahin
+// Config wie vor 052-Start.
 
 const config = {
   // pixelArt: true keeps Phaser sampling textures with NEAREST filter
@@ -114,9 +101,9 @@ const config = {
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: _worldW * _dpr,   // Desktop ≥2× DPR → 1920×960 backing; Mobile → 960×480
-    height: _worldH * _dpr,
-    zoom: 1 / _dpr           // World-Coords bleiben 960×480 für Game-Logic
+    width: 960,     // Canvas-Breite (Player 72px = 15% von 480px)
+    height: 480,    // Canvas-Hoehe
+    zoom: 1
   },
   backgroundColor: '#2d2d2d',
   physics: {
