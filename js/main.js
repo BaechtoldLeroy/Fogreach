@@ -76,12 +76,27 @@ const GameScene = {
   create,
   update
 };
+
+// 052 WP04: Desktop-only DPR-Resolution. Phaser 3.70 has no scale.resolution
+// key — the working replacement is to multiply scale.width/height by DPR and
+// divide scale.zoom by DPR. World coords stay 960×480 (game logic untouched);
+// the backing canvas grows so the browser upscale ratio collapses to ~1:1.
+// Mobile is SKIPPED (FR-02 + baseline: Mobile already at 20fps in procrooms;
+// 4× pixel work would be unplayable).
+const _RQ = (typeof window !== 'undefined' && window.RenderQuality) || null;
+const _isMobile = _RQ ? _RQ.isMobile() : false;
+const _dpr = (_RQ && !_isMobile) ? _RQ.getDPR() : 1;  // capped at 2 inside RQ
+const _worldW = 960;
+const _worldH = 480;
+
 const config = {
   // pixelArt: true keeps Phaser sampling textures with NEAREST filter
   // (required for the procedurally-generated floor + obstacle textures to
   // render at all — pixelArt: false produced TileSprites with broken
   // texture frames). The smooth-look upscale to the viewport happens at
   // the BROWSER level via image-rendering: auto on the canvas (index.html).
+  // Per-texture LINEAR overrides for painterly assets are applied via
+  // RenderQuality.applyLinearFilter (052 WP03).
   pixelArt: true,
   roundPixels: true,
   input: { activePointers: 2 },
@@ -91,11 +106,9 @@ const config = {
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 960,     // Canvas-Breite (Player 72px = 15% von 480px)
-    height: 480,    // Canvas-Hoehe
-    // Render at 2x internal resolution so the upscale to the browser viewport
-    // produces ~4x more pixels per displayed area without changing world coords.
-    zoom: 1
+    width: _worldW * _dpr,   // Desktop ≥2× DPR → 1920×960 backing; Mobile → 960×480
+    height: _worldH * _dpr,
+    zoom: 1 / _dpr           // World-Coords bleiben 960×480 für Game-Logic
   },
   backgroundColor: '#2d2d2d',
   physics: {
