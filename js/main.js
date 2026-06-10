@@ -827,6 +827,17 @@ function preload() {
     this.load.image('elara_right0', 'assets/npc/elara/right0.png');
   }
 
+  // 052 WP03: apply LINEAR to painterly cellar assets after preload
+  // completes. These are not in the StartScene preload list so they need
+  // their own filter hook on the GameScene loader.
+  this.load.once('complete', () => {
+    if (window.RenderQuality) {
+      window.RenderQuality.applyLinearFilter(this, [
+        'rathauskeller_bg', 'elara_right0'
+      ]);
+    }
+  });
+
   // nur Loot-Placeholder (wir generieren Textures im Create)
   if (!this.textures.exists('lootTexture')) {
     this.textures.generate('lootTexture', {
@@ -1074,6 +1085,10 @@ function create() {
   // 4.6 Graphics-Texturen erzeugen und FogOfWar initialisieren
   if (typeof normalizePlayerDirectionalFrames === 'function') {
     normalizePlayerDirectionalFrames(this);
+    // 052 WP03: re-apply LINEAR post-normalization (canvas-swap wipes filter)
+    if (window.RenderQuality) {
+      window.RenderQuality.applyLinearFilterByPrefix(this, ['dir']);
+    }
   }
   createAllGraphics.call(this);
   // Initialize particle effects system

@@ -123,6 +123,23 @@ StartScene.prototype.preload = function () {
     loadingText.destroy();
     percentText.destroy();
     fileText.destroy();
+    // 052 WP03: apply LINEAR filter to all painterly assets that the
+    // preload just put into the TextureManager. Procedural textures from
+    // graphics.js / proceduralRooms.js stay NEAREST (they aren't loaded
+    // here — they're runtime-generated via createCanvas/generateTexture).
+    if (window.RenderQuality) {
+      window.RenderQuality.applyLinearFilterByPrefix(this, [
+        'brute_', 'imp_', 'shadow_', 'flameweaver_', 'chainguard_',
+        'archer_', 'mage_', 'rat_', 'bat_', 'wolf_',
+        'sprite_imp', 'sprite_archer', 'sprite_mage', 'sprite_shadow',
+        'sprite_chainguard', 'sprite_flameweaver',
+        'boss_chain_', 'boss_ceremony_', 'boss_shadow_',
+        'sprite_boss_',
+        'proj_',
+        'dir'
+      ]);
+      window.RenderQuality.applyLinearFilter(this, ['stairDown']);
+    }
   });
 
   // Only preload initial direction (dir00) at startup - other directions lazy-loaded
@@ -267,6 +284,12 @@ StartScene.prototype.create = function () {
 
   if (typeof normalizePlayerDirectionalFrames === 'function') {
     normalizePlayerDirectionalFrames(this);
+    // 052 WP03: normalization swaps textures via addCanvas, wiping any
+    // LINEAR filter the preload-complete handler applied. Re-apply now,
+    // POST-normalization, so player frames bilinear-interpolate.
+    if (window.RenderQuality) {
+      window.RenderQuality.applyLinearFilterByPrefix(this, ['dir']);
+    }
   }
 
   // Apply persisted settings on game boot (volume, debug flags, etc.)

@@ -123,24 +123,19 @@ class HubSceneV2 extends Phaser.Scene {
     // the procedural dungeon floor/wall textures, but it produces jagged
     // edges on the painterly NPC + hub-background sprites when downscaled
     // (1536x1024 source → ~100px display = ~15x downscale). Force LINEAR
-    // filter on the hub assets so they bilinear-interpolate smoothly.
-    const LINEAR = Phaser.Textures.FilterMode.LINEAR;
-    const smoothTextures = [
-      'hubscene_bg', 'schmiedemeisterin', 'setzer_thom', 'spaeherin',
-      'klerus', 'garde',
-      'aldric_left0', 'aldric_left1', 'aldric_left2',
-      'aldric_right0', 'aldric_right1', 'aldric_right2',
-      'elara_left0', 'elara_left1', 'elara_left2',
-      'elara_right0', 'elara_right1', 'elara_right2',
-      'harren_left0', 'harren_left1', 'harren_left2',
-      'harren_right0', 'harren_right1', 'harren_right2'
-    ];
-    smoothTextures.forEach((key) => {
-      const t = this.textures.get(key);
-      if (t && t.key !== '__MISSING' && typeof t.setFilter === 'function') {
-        t.setFilter(LINEAR);
-      }
-    });
+    // filter on the hub assets via the shared RenderQuality helper (052 WP03).
+    if (window.RenderQuality) {
+      window.RenderQuality.applyLinearFilter(this, [
+        'hubscene_bg', 'schmiedemeisterin', 'setzer_thom', 'spaeherin',
+        'klerus', 'garde',
+        'aldric_left0', 'aldric_left1', 'aldric_left2',
+        'aldric_right0', 'aldric_right1', 'aldric_right2',
+        'elara_left0', 'elara_left1', 'elara_left2',
+        'elara_right0', 'elara_right1', 'elara_right2',
+        'harren_left0', 'harren_left1', 'harren_left2',
+        'harren_right0', 'harren_right1', 'harren_right2'
+      ]);
+    }
 
     const bg = this.add.image(0, 0, 'hubscene_bg');
     bg.setOrigin(0, 0);

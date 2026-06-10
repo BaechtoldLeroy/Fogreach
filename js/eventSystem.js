@@ -946,9 +946,19 @@
     var texKey = 'spaeherin';
     if (!scene.textures.exists(texKey)) {
       scene.load.image(texKey, 'assets/sprites/spaeherin.png');
-      scene.load.once('complete', function() { _placeMerchant(scene, texKey); });
+      scene.load.once('complete', function() {
+        // 052 WP03: filter the painterly merchant sprite after lazy-load
+        if (window.RenderQuality) {
+          window.RenderQuality.applyLinearFilter(scene, [texKey]);
+        }
+        _placeMerchant(scene, texKey);
+      });
       scene.load.start();
     } else {
+      // Already loaded — re-apply in case filter was wiped by a scene boot
+      if (window.RenderQuality) {
+        window.RenderQuality.applyLinearFilter(scene, [texKey]);
+      }
       _placeMerchant(scene, texKey);
     }
   }

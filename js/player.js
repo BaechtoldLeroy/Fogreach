@@ -88,6 +88,11 @@ function ensureDirectionLoaded(scene, dd) {
       ensureDirectionAnimations(scene, dd);
       // Normalize frames for this direction
       normalizeDirectionFrames(scene, dd);
+      // 052 WP03: apply LINEAR post-normalization for THIS direction.
+      // (Normalization swaps texture via addCanvas → wipes prior filter.)
+      if (window.RenderQuality) {
+        window.RenderQuality.applyLinearFilterByPrefix(scene, [`dir${dd}_`]);
+      }
       resolve();
     });
     scene.load.start();
