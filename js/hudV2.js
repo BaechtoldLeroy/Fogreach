@@ -421,7 +421,7 @@
     const cw = scene.cameras.main.width;
     const ch = scene.cameras.main.height;
     const panelW = 280;
-    const panelH = 280;
+    const panelH = 340;
     const px = cw / 2;
     const py = ch / 2;
 
@@ -445,6 +445,14 @@
         } },
       { label: T('hud.menu.btn.settings'), action: () => {
           if (typeof window.openSettingsScene === 'function') window.openSettingsScene(scene);
+        } },
+      { label: 'FPS Overlay', action: () => {
+          if (!scene._perfMonitor && window.PerformanceMonitor) {
+            scene._perfMonitor = new window.PerformanceMonitor(scene);
+          }
+          if (scene._perfMonitor && typeof scene._perfMonitor.toggleOverlay === 'function') {
+            scene._perfMonitor.toggleOverlay();
+          }
         } }
     ];
     const btns = [];
