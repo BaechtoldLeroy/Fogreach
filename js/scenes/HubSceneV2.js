@@ -274,11 +274,15 @@ class HubSceneV2 extends Phaser.Scene {
       }
     });
     this.input.keyboard.on('keydown-P', () => {
+      console.log('[perf] P pressed in HubSceneV2');
       if (!this._perfMonitor && window.PerformanceMonitor) {
         this._perfMonitor = new window.PerformanceMonitor(this);
+        window._dbgPerf = this._perfMonitor;
+        console.log('[perf] monitor created', this._perfMonitor);
       }
       if (this._perfMonitor && typeof this._perfMonitor.toggleOverlay === 'function') {
         this._perfMonitor.toggleOverlay();
+        console.log('[perf] toggled — visible:', this._perfMonitor.overlayVisible);
       }
     });
 
@@ -709,6 +713,10 @@ class HubSceneV2 extends Phaser.Scene {
       if (typeof this._perfMonitor.updateMemory === 'function') this._perfMonitor.updateMemory();
       if (this._perfMonitor.overlayVisible && typeof this._perfMonitor.updateOverlay === 'function') {
         this._perfMonitor.updateOverlay();
+      }
+      if (!this._dbgPerfLogged && this._perfMonitor.currentFps > 0) {
+        console.log('[perf] first FPS tick:', this._perfMonitor.currentFps);
+        this._dbgPerfLogged = true;
       }
     }
     if (!this.player) return;
