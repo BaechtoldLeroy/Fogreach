@@ -59,21 +59,32 @@ Each lever has different blast-radius. The spec defines acceptance criteria + a 
 > **REVISION 2026-06-10**: FR-02 + FR-04 wurden nach WP01-Baseline-
 > Messung umgeschrieben. Mobile reisst NFR-01 vor jeder Änderung
 > (Procroom 20fps, Combat 40fps), und Phaser 3.70 hat keinen
-> `scale.resolution`-Key mehr. Quality-Levers shippen nur auf Desktop;
-> Mobile bleibt auf Status-Quo (= "Niedrig"). Siehe
-> [research/baseline-fps.md](research/baseline-fps.md) und
-> [research/phaser-resolution-config.md](research/phaser-resolution-config.md).
+> `scale.resolution`-Key mehr.
+>
+> **REVISION 2 2026-06-10 (Closure)**: FR-02 + FR-04 ZWEIMAL versucht
+> (commit `10b175d` width × DPR + zoom = 1/DPR, commit `8faf0ac` Force-
+> min-DPR=2). Beide Versionen haben World-Coords mit-skaliert (DPR=1.5-
+> Bug: Dungeon rausgezoomt). Phaser-3.70-ScaleManager-Source-Inspection
+> zeigt: `gameSize` wird mit `scale.width` mit-skaliert (nicht nur
+> Backing-Buffer wie behauptet). Working pattern erfordert ~70 LoC
+> Post-Boot Canvas-Hack — schlechtes ROI. **FR-02, FR-04, FR-05, FR-06
+> deferred auf zukünftiges Feature**. WP03 (LINEAR-Audit via Helper)
+> ist der praktische Schärfe-Gewinn und bleibt deployed.
+>
+> Siehe [research/baseline-fps.md](research/baseline-fps.md) und
+> [research/phaser-resolution-config.md](research/phaser-resolution-config.md)
+> §10 + §11.
 
 | ID    | Requirement | Status |
 |-------|-------------|--------|
 | FR-01 | Document, with measurements, what each of the three levers does to perceived sharpness AND FPS on Desktop + Mobile. Baseline = `research/baseline-fps.md`. | Done |
-| FR-02 | Ship DPR-aware-resolution **on Desktop only**. Phaser 3.70 hat keinen `scale.resolution`-Key; stattdessen `scale.width × DPR`, `scale.height × DPR`, `scale.zoom / DPR`, DPR-Cap auf 2. World-Coords bleiben 960×480. Mobile-Detect skipped FR-02 komplett. Konkreter Patch in `research/phaser-resolution-config.md` §9. | Revised |
-| FR-03 | Extend the 051 per-texture LINEAR filter pattern via `js/renderQuality.js` Helper (`applyLinearFilter(scene, keys)`). Cover ALL non-procedurally-generated textures: Hub-BG, NPC-Sprites, Player-Sprites (POST-Normalisierungs-Swap, siehe `research/linear-filter-inventory.md`), Weapon/Item-Icons, UI-Texts. Maintain NEAREST default for proc-textures (C-01). **Beide Plattformen** (zero Perf-Kosten). | Draft |
-| FR-04 | Bump internal canvas 960×480 → 1920×960 **on Desktop only**. Mobile-Detect skipped FR-04 komplett. Vor Implementation: 4 RED-Sites in `main.js` mit hardcoded `(400, 300)`-Koordinaten fixen (siehe `research/canvas-bump-layout-risks.md`), sonst UI-Bruch. | Revised |
-| FR-05 | Settings-Toggle "Render-Qualität": **Desktop** zeigt Niedrig/Mittel/Hoch (Default Mittel = FR-03+FR-02). **Mobile** zeigt nur readonly Info-Hinweis "FPS-optimiert für dein Gerät" (de-facto = Niedrig + FR-03). Persistierung via `demonfall_settings_v1.gameplay.renderQuality`. | Revised |
-| FR-06 | All UI elements MUST gracefully handle the new internal resolution — buttons, modals, HUD positions, font sizes. RED-Sites (`research/canvas-bump-layout-risks.md`) müssen vor FR-04-Merge gefixt sein. | Draft |
-| FR-07 | NO regression on the existing pixelArt path — proc dungeon, generated textures, room tiles all render exactly as before. | Draft |
-| FR-08 | **NEU**: Mobile-Detection-Logic darf NIEMALS dazu führen dass Mobile-FPS UNTER aktuellen Baseline (20fps Procroom, 40fps Combat) fällt. Wenn FR-03-LINEAR-Audit auch nur 1fps kostet → Revert für Mobile, behalten für Desktop. | Draft |
+| FR-02 | ~~Ship DPR-aware-resolution on Desktop only~~ — **DEFERRED**. Implementiert via `width × DPR + zoom = 1/DPR` Pattern, aber Phaser-3.70-ScaleManager-Source-Inspection nach dem Bug-Report (DPR=1.5: Dungeon rausgezoomt) zeigt: `gameSize` wird mit-skaliert, nicht nur Backing-Buffer. **Reverted in commit `f982140`**. Korrektes Pattern erfordert ~70 LoC Post-Boot Canvas-Hack + WebGL viewport-Patch + Resize-Hook (siehe research §10) — schlechtes ROI. Verschoben auf zukünftiges Feature. | Deferred |
+| FR-03 | Extend the 051 per-texture LINEAR filter pattern via `js/renderQuality.js` Helper. **DONE**. WP02 + WP03 implementiert in commit `05f9371`. Cover-Sites: HubSceneV2, StartScene (Enemies/Bosses/Projektile), Player POST-normalization (3 sites), Cellar-Assets, Q5-Merchant-Respawn. Proc-Texturen unangetastet (C-01). | Done |
+| FR-04 | ~~Bump internal canvas 960×480 → 1920×960 on Desktop only~~ — **DEFERRED**. Selbe Phaser-3.70 ScaleManager-Limitation wie FR-02. WP05 als "force-min-2× DPR" ausprobiert (commit `8faf0ac`), gleicher World-Coord-Bug. Reverted in `f982140`. Verschoben. | Deferred |
+| FR-05 | Settings-Toggle "Render-Qualität". **DEFERRED** weil FR-02/FR-04 nicht shippen — kein zu togglender Lever da. WP03 ist Default-on und braucht keinen Toggle. | Deferred |
+| FR-06 | UI-Layout-Audit für Canvas-Bump. **DEFERRED** weil FR-04 deferred. | Deferred |
+| FR-07 | NO regression on the existing pixelArt path. **DONE** — WP03 berührt nur file-loaded Texturen, generierte Proc-Texturen unangetastet. | Done |
+| FR-08 | Mobile-Detection-Logic darf NIEMALS Mobile-FPS unter Baseline drücken. **DONE** — WP03 ist Sampling-Mode-Switch, zero Perf-Kosten. Re-Mess nicht erforderlich. | Done |
 
 ## 5. Non-Functional Requirements
 

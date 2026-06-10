@@ -10,9 +10,13 @@ Sprites in Fogreach rendern weich, weil das Phaser-Canvas auf fixe **960×480** 
 
 > **REVISION 2026-06-10**: WP01-Baseline zeigt Mobile bei 20fps Procroom /
 > 40fps Combat. Plus Phaser 3.70 hat keinen `scale.resolution`-Key mehr.
-> Plan komplett reframed: Quality-Levers nur Desktop. Mobile-Render-Path
-> unangetastet. Siehe `research/baseline-fps.md` und
-> `research/phaser-resolution-config.md`.
+> Plan komplett reframed: Quality-Levers nur Desktop.
+>
+> **REVISION 2 2026-06-10 (Closure)**: WP04 + WP05 implementiert + revertiert
+> (DPR-Bug auf 1.5-Devices: Dungeon rausgezoomt). Phaser-3.70-Limit
+> bestätigt via Source-Code-Read. WP04 + WP05 + WP06 **deferred**.
+> Feature shipped mit WP01-WP03. Siehe `research/phaser-resolution-config.md`
+> §10 + §11 für Lessons.
 
 Das Feature shipped **drei voneinander unabhängige Quality-Levers
 Desktop-only** plus einen plattformübergreifenden LINEAR-Audit, gated

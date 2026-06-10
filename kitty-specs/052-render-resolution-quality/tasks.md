@@ -6,14 +6,25 @@
 
 ## Work Package Overview
 
-| WP   | Title                                  | Status     | Depends-on | Risk |
-|------|----------------------------------------|------------|------------|------|
-| WP01 | Baseline-FPS-Messung                   | ✅ Done    | —          | none |
-| WP02 | RenderQuality-Helper + Mobile-Detect   | 📋 Ready   | WP01       | low  |
-| WP03 | LINEAR-Filter-Audit beidseitig         | 📋 Ready   | WP02       | low  |
-| WP04 | Desktop DPR-Resolution                 | 📋 Ready   | WP02       | med  |
-| WP05 | Desktop Canvas-Bump 960→1920           | 📋 Ready   | WP02, WP04 | high |
-| WP06 | Settings-Toggle "Render-Qualität"      | 📋 Ready   | WP02       | low  |
+| WP   | Title                                  | Status       | Depends-on | Risk |
+|------|----------------------------------------|--------------|------------|------|
+| WP01 | Baseline-FPS-Messung                   | ✅ Done      | —          | none |
+| WP02 | RenderQuality-Helper + Mobile-Detect   | ✅ Done      | WP01       | low  |
+| WP03 | LINEAR-Filter-Audit beidseitig         | ✅ Done      | WP02       | low  |
+| WP04 | Desktop DPR-Resolution                 | ❌ Deferred  | WP02       | med  |
+| WP05 | Desktop Canvas-Bump 960→1920           | ❌ Deferred  | WP02, WP04 | high |
+| WP06 | Settings-Toggle "Render-Qualität"      | ❌ Deferred  | WP02       | low  |
+
+**WP04/WP05 Deferral-Reason**: Implementiert + revertiert. Phaser 3.70
+ScaleManager koppelt gameSize an scale.width (verifiziert via Source-
+Read), keine config-only Lösung. Working pattern erfordert ~70 LoC
+Post-Boot Canvas-Hack mit WebGL-State-Patches + per-Text setResolution.
+ROI zu schlecht für den marginalen Schärfe-Gewinn über WP03 hinaus.
+Verschoben auf zukünftiges Feature (054+) falls jemand das Pattern
+sauber löst.
+
+**WP06 Deferral-Reason**: Settings-Toggle braucht togglebare Levers.
+Ohne WP04/WP05 ist nichts zu togglen. WP03 ist Default-on.
 
 ---
 
