@@ -273,6 +273,14 @@ class HubSceneV2 extends Phaser.Scene {
         if (typeof invOpen !== 'undefined' && invOpen) closeInventory(); else openInventory();
       }
     });
+    this.input.keyboard.on('keydown-P', () => {
+      if (!this._perfMonitor && window.PerformanceMonitor) {
+        this._perfMonitor = new window.PerformanceMonitor(this);
+      }
+      if (this._perfMonitor && typeof this._perfMonitor.toggleOverlay === 'function') {
+        this._perfMonitor.toggleOverlay();
+      }
+    });
 
     // Subscribe to quest state changes so the indicator above each NPC updates
     // exactly when accept/complete/abandon happens (instead of polling every frame).
