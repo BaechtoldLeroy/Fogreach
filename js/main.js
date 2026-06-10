@@ -1029,6 +1029,10 @@ function create() {
     this.input.keyboard.off('keydown-K');
     this.input.keyboard.off('keydown-O');
     this.input.keyboard.off('keydown-P');
+    if (this._perfMonitor) {
+      try { this._perfMonitor.destroy(); } catch (_) {}
+      this._perfMonitor = null;
+    }
     if (_mouseAttackHandler) this.input.off('pointerdown', _mouseAttackHandler);
     if (typeof _unsubInputScheme === 'function') { try { _unsubInputScheme(); } catch (e) {} }
     if (window.InputScheme && typeof window.InputScheme.teardown === 'function') {
