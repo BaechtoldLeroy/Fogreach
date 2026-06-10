@@ -8,15 +8,25 @@
 
 Sprites in Fogreach rendern weich, weil das Phaser-Canvas auf fixe **960×480** internal resolution gesetzt ist und der Browser auf 1080p–4K hochskaliert (2-4× Stretch). Per-Texture LINEAR-Override (aus 051) hilft punktuell, kann den strukturellen Soft-Look aber nicht eliminieren.
 
-Das Feature shipped drei voneinander unabhängige Quality-Levers in **risk-aufsteigender Reihenfolge** mit FPS-Gate zwischen jedem Step:
+> **REVISION 2026-06-10**: WP01-Baseline zeigt Mobile bei 20fps Procroom /
+> 40fps Combat. Plus Phaser 3.70 hat keinen `scale.resolution`-Key mehr.
+> Plan komplett reframed: Quality-Levers nur Desktop. Mobile-Render-Path
+> unangetastet. Siehe `research/baseline-fps.md` und
+> `research/phaser-resolution-config.md`.
 
-1. **WP01 Baseline-FPS-Messung** — Desktop + Mobile, mit `performanceMonitor.js`. Ohne Baseline ist kein Lever entscheidbar.
-2. **WP02 Lever 1 (kleinster Risk)** — `resolution: window.devicePixelRatio` in Phaser scale config. FR-02.
-3. **WP03 LINEAR-Audit** — 051-Pattern auf alle Non-Proc-Texturen ausweiten (Hub-BG, NPCs, Icons, UI). FR-03.
-4. **WP04 Canvas-Bump** — 960×480 → 1920×960 NUR wenn Mobile FPS ≥55 hält. FR-04.
-5. **WP05 Settings-Toggle "Render-Qualität"** — Niedrig/Mittel/Hoch, persistiert über `demonfall_settings_v1`. FR-05.
+Das Feature shipped **drei voneinander unabhängige Quality-Levers
+Desktop-only** plus einen plattformübergreifenden LINEAR-Audit, gated
+durch zentralisierten Mobile-Detect:
 
-Jeder Lever wird einzeln gemessen und einzeln gemerged. Wenn ein Lever Mobile FPS unter 55 drückt → revert, Doku, weiter mit nächstem Lever auf reduzierter Stufe.
+1. **WP01 Baseline-FPS-Messung** — ✅ DONE 2026-06-10. Output: `research/baseline-fps.md`.
+2. **WP02 RenderQuality-Helper + Mobile-Detect** — `js/renderQuality.js` (neu) mit `isMobile()`, `applyLinearFilter()`. FR-06 + C-07. Zero User-Visible-Change.
+3. **WP03 LINEAR-Filter-Audit** — Helper aus WP02 anwenden auf alle Non-Proc-Texturen (Hub-BG, NPCs, Player-Sprites POST-Normalisierung, Icons, UI). FR-03. **Beide Plattformen** — zero Perf-Kosten.
+4. **WP04 Desktop DPR-Resolution** — `scale.width × DPR`, `scale.height × DPR`, `scale.zoom / DPR`, DPR-Cap=2. Mobile-skipped via WP02-Helper. FR-02.
+5. **WP05 Desktop Canvas-Bump 960→1920** — Plus 4 RED-Sites in `main.js` fixen (siehe `research/canvas-bump-layout-risks.md`). Mobile-skipped. FR-04.
+6. **WP06 Settings-Toggle "Render-Qualität"** — Desktop: Niedrig/Mittel/Hoch. Mobile: readonly Info. FR-05.
+
+Jeder WP wird einzeln gemessen und einzeln gemerged. NFR-Gate post-jedem:
+Desktop bleibt 60, Mobile fällt nicht unter Baseline (20/40/60).
 
 ## Technical Context
 

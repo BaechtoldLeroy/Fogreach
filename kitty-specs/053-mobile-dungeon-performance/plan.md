@@ -1,108 +1,141 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: 053 — Mobile Dungeon Performance
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` (planning + small-blast-radius shipping per project workflow)
+**Date**: 2026-06-10
+**Spec**: [spec.md](spec.md)
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+WP01-Baseline aus Feature 052 hat aufgedeckt: Mobile-FPS im Dungeon ist
+bereits heute unter Player-Experience-Schwelle (Procroom 20fps, Combat
+40fps). 052 hat das nicht gelöst — die Render-Quality-Levers (DPR, Canvas-
+Bump) hätten Mobile noch weiter runtergedrückt und wurden deshalb auf
+Desktop-only umgestellt.
+
+053 ist eine **Diagnose-First-Rescue-Operation**. Wir wissen NICHT was
+genau die 20fps verursacht. Vermutet: Texture-Memory-Bandwidth (104×88
+Tile-Grids mit runtime-generierten Texturen pro Procroom), oder Tile-
+Sprite-Count, oder GameObject-Pool-Overhead, oder FogOfWar-Update-Rate.
+
+Plan: Erst messen (WP01), dann zielgerichtete Mitigation. Statt Top-Down-
+"refactor everything" → Bottom-Up "Profile → Top-Sink → fix → re-profile".
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Vanilla JavaScript (ES2015+), Phaser 3.70 (CDN)
+**Primary Dependencies**: Phaser 3 Pipelines (Texture, Sprite, Tile)
+**Storage**: keine neuen Storage-Anforderungen
+**Testing**: `node tools/runTests.js` (251+052-WPs-Tests, müssen grün bleiben)
+**Target Platform**: Mobile Pixel-class 2-3× DPR primär. Desktop als Regression-Guard.
+**Project Type**: Single-page Phaser-Spiel
+**Performance Goals**:
+- Mobile Procroom: 20fps → ≥45fps (playable) bzw. ≥55fps (NFR-konform)
+- Mobile Combat: 40fps → ≥55fps
+- Desktop: 60fps unverändert (no regression)
+**Constraints**:
+- C-01 (Spec): keine Game-Logic-Änderung — render-only
+- C-04: keine visuelle Regression
+- C-05: Procroom-Layouts unverändert
+- 052-Dependency: `js/renderQuality.js` Mobile-Detect muss existieren
+**Scale/Scope**: ungewiss bis FR-01 (Diagnose). Geschätzt 3-5 WPs nach Diagnose.
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*GATE: Must pass before WP02 implementation starts.*
 
-[Gates determined based on constitution file]
+- ✅ **Diagnose-First** — keine Code-Änderung vor FR-01-Output. WP01 = pure Messung.
+- ✅ **No new deps (C-02)** — Vanilla-JS + Phaser-built-ins only.
+- ✅ **Desktop-Guard (C-03)** — jede Mitigation MUST Desktop-FPS ≥60 halten.
+- ✅ **Visual-Quality-Guard (C-04)** — kein sichtbarer Quality-Drop akzeptabel.
+- ✅ **052-Dependency** — `js/renderQuality.js` aus 052 WP02 muss gemerged sein.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
+kitty-specs/053-mobile-dungeon-performance/
+├── plan.md              # Dieses File
+├── spec.md              # ✅ vorhanden
+├── tasks.md             # WP01..WP0N — Output
+└── research/
+    ├── mobile-perf-profile.md    # WP01-Output (Chrome DevTools Performance Recording)
+    └── mitigation-results.md     # Pro implementierte Mitigation: Before/After FPS
 ```
 
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+### Source Code (Single project, kein neuer Strukturbedarf)
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+js/
+├── renderQuality.js         # AUS 052 — Mobile-Detect-Helper, wird reused
+├── roomTemplates.js         # WP-Target (FR-02/03): Texture-Atlas oder grössere Tiles
+├── proceduralRooms.js       # WP-Target (FR-03): Off-Screen-Culling, Tile-Reduktion
+├── eventSystem.js           # WP-Target (FR-04): Enemy-Pooling
+├── loot.js                  # WP-Target (FR-04): Loot-Object-Pooling
+└── fogOfWar.js              # WP-Target (FR-05): LOD-Update-Rate (falls existiert)
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: keine neuen Files erforderlich. Optimierungen in
+bestehenden Modulen, gated durch `RenderQuality.isMobile()`.
+
+## Phase Breakdown
+
+### Phase 0 — Diagnose (WP01)
+
+**Ziel**: Top-5 Performance-Sinks identifizieren mit Chrome DevTools
+Performance Recording auf echtem Mobile.
+
+**Outputs**:
+- `research/mobile-perf-profile.md` mit Top-5-Sinks + Quantifizierung
+- Entscheidungs-Matrix: Welche FR (02/03/04/05) zuerst angehen
+
+**Mess-Methodik**:
+- Chrome Android: USB-Connect → chrome://inspect auf Desktop
+- 30s Procroom-Spielzeit, Performance Recording
+- Identifiziere Top-Function-Calls (CPU-Side) + Top-GL-Operations (GPU-Side)
+- Memory-Snapshot vor + nach Procroom-Entry → Texture-Memory-Delta
+- Counter pro Frame: Tile-Sprites, GameObjects, Texture-Bind-Calls
+
+**Constraint**: Bevor irgendeine Mitigation impl., MUSS FR-01-Profile-Output existieren.
+
+### Phase 1 — Top-Sink-Mitigation (WP02 oder WP03 oder WP04 oder WP05)
+
+Welche FR zuerst hängt von FR-01-Output ab:
+- Wenn **Texture-Memory** dominiert → FR-02 (Texture-Atlas/Pool)
+- Wenn **Tile-Sprite-Count** dominiert → FR-03 (Tile-Reduktion/Culling)
+- Wenn **GameObject-Lifecycle** dominiert → FR-04 (Enemy/Loot-Pooling)
+- Wenn **FogOfWar-Update** dominiert → FR-05 (LOD)
+
+Eine Mitigation per Phase. Re-Mess nach jeder.
+
+### Phase 2..N — Weitere Sinks falls NFR nicht erreicht
+
+Iterativ. Nach jeder Mitigation Re-Mess. Wenn Procroom <45fps → nächste
+FR. Wenn ≥45fps → Combat checken. Wenn beide ≥ Ziel → DONE.
+
+### Phase Final — NFR-Validierung (WP06+)
+
+Endgültige Mess-Session vor Accept:
+- Mobile Procroom ≥45 (idealerweise ≥55)
+- Mobile Combat ≥55
+- Desktop 60 (no regression)
+- Visual A/B-Compare (Screenshots) → kein sichtbarer Unterschied
+- 1 Playtester subjektiv "spielbar"
 
 ## Complexity Tracking
 
-*Fill ONLY if Constitution Check has violations that must be justified*
+| Aspekt | Risk |
+|--------|------|
+| Diagnose-Phase | low — pure Messung |
+| Texture-Atlas (falls FR-02) | high — touches Texture-Cache-Lifecycle, viele Test-Räume nötig |
+| Tile-Reduktion (falls FR-03) | med — visuell sichtbar wenn zu aggressiv |
+| Object-Pooling (falls FR-04) | med — touches Enemy/Loot-Lifecycle, Regression-Risk |
+| FogOfWar-LOD (falls FR-05) | low — wenn existent, lokal change |
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+## Open Questions vor WP01
+
+1. **Existiert `js/fogOfWar.js`?** Grep nötig. Falls nicht — FR-05 entfällt.
+2. **Welches Mobile-Device wurde gemessen?** Pixel-Class war angenommen. Wenn anderes Device → Baseline könnte abweichen.
+3. **iOS-Safari getestet?** Andere Bottlenecks möglich. Idealerweise WP01-Diagnose auf Chrome UND Safari.
+
+Alle werden in WP01-Diagnose-Phase beantwortet.
