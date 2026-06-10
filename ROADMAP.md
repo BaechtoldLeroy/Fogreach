@@ -2,12 +2,13 @@
 
 Strategische Roadmap. Konkrete Items leben als [GitHub Issues](https://github.com/BaechtoldLeroy/Fogreach/issues).
 
-## Status: Alpha (Mai 2026) — Phase 1 abgeschlossen ✅
+## Status: Alpha (Mai 2026) — Vertical Slice ✅
 - 40+ Features im Combat / Crafting / Dungeon / Itemization-Bereich
-- **Phase 1 (Foundations) komplett** — alle 4 MVP-Systeme live (siehe Tabelle unten)
+- **Phase 1 (Foundations) komplett** — alle 4 MVP-Systeme live
+- **Phase 2 (Content + Polish) komplett** — Akt-1 Quest-Chain (050) + Tone-Polish (051) gemerged
 - Zusätzlich shipped: Brunnen-Rework (#16, 048), More Room Layouts (#5, 049), Cave Generator (CA-Procgen), Run-Summary Modal, diverse Polish + Bugfixes
 - Public auf GitHub Pages: https://baechtoldleroy.github.io/Fogreach/
-- **Aktueller Fokus:** Phase 2 — Act 1 Quest-Chain + Tone-Pass für Vertical-Slice-Donor-Demo
+- **Aktueller Fokus:** Donor-Demo-Validation + Phase-3-Auswahl (siehe unten)
 
 ---
 
@@ -33,14 +34,16 @@ Alle 4 MVP-Systeme live und im Spiel verwendet:
 | [#26 Knowledge-Tree](https://github.com/BaechtoldLeroy/Fogreach/issues/26) | 047-knowledge-tree-mvp | ✅ |
 | [#24 Printing House](https://github.com/BaechtoldLeroy/Fogreach/issues/24) | 046-printing-house-stub | ✅ |
 
-## Phase 2 — Content + Polish 🟡 **in Arbeit**
+## Phase 2 — Content + Polish ✅ **abgeschlossen (Mai 2026)**
 
 Story-Inhalt + Donor-Demo-Build auf den Foundations aufbauen.
 
-| Issue | Scope | Status |
+| Issue | Spec / Commit | Status |
 |---|---|---|
-| [#33 Act 1 Quest-Chain](https://github.com/BaechtoldLeroy/Fogreach/issues/33) `p:next` | 5–7 Quests, Bürgermeisters-Tochter, Faction-Decision-Point, Initial-NPCs (~1.5–2h Spielzeit) | 🟡 in Arbeit |
-| [#34 Tone & Theme Pass](https://github.com/BaechtoldLeroy/Fogreach/issues/34) `p:next` | Politische Message spürbar, Demo-Intro/Outro, Skip-Toggle | ⏸ pending |
+| [#33 Act 1 Quest-Chain](https://github.com/BaechtoldLeroy/Fogreach/issues/33) | 050-act-1-quest-chain — 6 Quests, Faction-Decision, Q6 Collusion-Reveal, in-Keller Elara-Encounter | ✅ |
+| [#34 Tone & Theme Pass](https://github.com/BaechtoldLeroy/Fogreach/issues/34) | 051-tone-and-theme-polish — Intro/Outro-Splash, Skip-Toggle, 3 Akt-1 Lore-Fragmente | ✅ |
+
+**Deferred aus 051 (nicht blocker für Donor-Demo):** Word-level Tone-Refinement auf Q2-Q5 Dialogen (FR-07/FR-08). Hub-Visual + Audio-Atmosphäre (braucht neue Assets, separates Issue).
 
 **Tracker:** [#32 Vertical Slice Epic](https://github.com/BaechtoldLeroy/Fogreach/issues/32)
 
