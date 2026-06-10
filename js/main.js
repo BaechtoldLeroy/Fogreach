@@ -77,15 +77,23 @@ const GameScene = {
   update
 };
 
-// 052 WP04: Desktop-only DPR-Resolution. Phaser 3.70 has no scale.resolution
-// key — the working replacement is to multiply scale.width/height by DPR and
-// divide scale.zoom by DPR. World coords stay 960×480 (game logic untouched);
-// the backing canvas grows so the browser upscale ratio collapses to ~1:1.
-// Mobile is SKIPPED (FR-02 + baseline: Mobile already at 20fps in procrooms;
-// 4× pixel work would be unplayable).
+// 052 WP04 + WP05: Desktop-only render-scale boost.
+// Phaser 3.70 has no scale.resolution key — the working replacement is to
+// multiply scale.width/height by an effective-DPR factor and divide
+// scale.zoom by the same factor. World coords stay 960×480 (game logic
+// untouched); the backing canvas grows so the browser upscale ratio
+// collapses and LINEAR-filtered painterly assets (WP03) render from a
+// higher-resolution source.
+//   WP04: factor = getDPR() (capped at MAX_DPR=2). DPR=1 → factor=1 (no-op).
+//   WP05: factor = max(getDPR(), 2). DPR=1 desktop monitor still gets
+//         force-bump to 2× backing → 1920×960 internal, ~1:1 upscale on
+//         a 1080p screen.
+// Mobile is SKIPPED (baseline: Mobile already at 20fps in procrooms; 4×
+// pixel work would be unplayable). Mobile-Perf-Rescue ist Feature 053.
 const _RQ = (typeof window !== 'undefined' && window.RenderQuality) || null;
 const _isMobile = _RQ ? _RQ.isMobile() : false;
-const _dpr = (_RQ && !_isMobile) ? _RQ.getDPR() : 1;  // capped at 2 inside RQ
+const _rawDpr = _RQ ? _RQ.getDPR() : 1;
+const _dpr = _isMobile ? 1 : Math.max(_rawDpr, 2);  // WP05 force-bump
 const _worldW = 960;
 const _worldH = 480;
 
