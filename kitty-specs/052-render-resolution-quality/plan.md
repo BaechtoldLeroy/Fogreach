@@ -1,108 +1,108 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: 052 — Render Resolution Quality
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` (planning + small-blast-radius shipping per project workflow)
+**Date**: 2026-06-10
+**Spec**: [spec.md](spec.md)
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Sprites in Fogreach rendern weich, weil das Phaser-Canvas auf fixe **960×480** internal resolution gesetzt ist und der Browser auf 1080p–4K hochskaliert (2-4× Stretch). Per-Texture LINEAR-Override (aus 051) hilft punktuell, kann den strukturellen Soft-Look aber nicht eliminieren.
+
+Das Feature shipped drei voneinander unabhängige Quality-Levers in **risk-aufsteigender Reihenfolge** mit FPS-Gate zwischen jedem Step:
+
+1. **WP01 Baseline-FPS-Messung** — Desktop + Mobile, mit `performanceMonitor.js`. Ohne Baseline ist kein Lever entscheidbar.
+2. **WP02 Lever 1 (kleinster Risk)** — `resolution: window.devicePixelRatio` in Phaser scale config. FR-02.
+3. **WP03 LINEAR-Audit** — 051-Pattern auf alle Non-Proc-Texturen ausweiten (Hub-BG, NPCs, Icons, UI). FR-03.
+4. **WP04 Canvas-Bump** — 960×480 → 1920×960 NUR wenn Mobile FPS ≥55 hält. FR-04.
+5. **WP05 Settings-Toggle "Render-Qualität"** — Niedrig/Mittel/Hoch, persistiert über `demonfall_settings_v1`. FR-05.
+
+Jeder Lever wird einzeln gemessen und einzeln gemerged. Wenn ein Lever Mobile FPS unter 55 drückt → revert, Doku, weiter mit nächstem Lever auf reduzierter Stufe.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Vanilla JavaScript (ES2015+), Phaser 3 (siehe `node_modules/phaser/package.json` für exakte Version vor WP02)
+**Primary Dependencies**: Phaser 3 (Scale Manager, Texture Filter API)
+**Storage**: `localStorage.demonfall_settings_v1` (nested-key Pattern aus 045/050/051)
+**Testing**: `node tools/runTests.js` (251 Tests, müssen alle grün bleiben — SC-04)
+**Target Platform**: Browser (Desktop 1080p/1440p/4K, Mobile Pixel-class 2-3× DPR)
+**Project Type**: Single-page Phaser-Spiel, kein Backend
+**Performance Goals**: Desktop ≥60fps (NFR-02), Mobile ≥55fps (NFR-01)
+**Constraints**: `pixelArt: true` ist load-bearing für Proc-Dungeon — DARF NICHT global deaktiviert werden (C-01)
+**Scale/Scope**: 1 Settings-Toggle, 1-3 Lever-Combos, ~5 UI-Scenes für C-04-Audit
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*GATE: Must pass before WP02 implementation starts.*
 
-[Gates determined based on constitution file]
+- ✅ **Test-First (paradigm-test-first.md)** — WP01 = Messung, deren Output (Baseline-FPS) ist der Test, gegen den jeder Lever in WP02/WP04 misst.
+- ✅ **No new deps (C-02)** — Phaser-built-in scale/resolution config only.
+- ✅ **Mobile-perf-floor (C-03 + NFR-01)** — Hard-Revert-Gate bei <55fps Mobile.
+- ✅ **051-Polish-Pattern (Quellref C-04)** — LINEAR-Override ist proven-shape, WP03 erweitert nur die Liste.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
+kitty-specs/052-render-resolution-quality/
+├── plan.md              # Dieses File
+├── spec.md              # ✅ vorhanden
+├── tasks.md             # WP01..WP05 — Output von /spec-kitty.tasks
+├── checklists/          # ✅ vorhanden
+└── research/            # ✅ vorhanden (FPS-Mess-Methodik kommt hier rein post-WP01)
 ```
 
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+### Source Code (Single project, kein neuer Strukturbedarf)
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+js/
+├── main.js                          # Phaser config (pixelArt, scale.width/height/resolution) — WP02/WP04
+├── performanceMonitor.js            # Baseline-Mess-Instrument — WP01
+├── scenes/
+│   ├── HubSceneV2.js               # Existing LINEAR-Override-Pattern — WP03 referenziert
+│   ├── SettingsScene.js            # Toggle "Render-Qualität" — WP05
+│   └── ...                          # Alle 5 UI-Scenes für C-04-Audit
+├── roomTemplates.js                 # Proc-Texture-Pipeline — NICHT angefasst (C-01)
+└── proceduralRooms.js              # dito
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Keine neuen Files, nur Edits in bestehenden. Settings persistieren via existierendem `demonfall_settings_v1` Pattern (C-05). `window.__RENDER_QUALITY__` als Surface-Flag.
+
+## Phase Breakdown
+
+### Phase 0 — Research (WP01)
+
+**Ziel**: Baseline + Lever-Effekt-Mess-Matrix erzeugen.
+
+**Outputs**:
+- `research/baseline-fps.md` — FPS auf Desktop-1080p, Desktop-1440p, Mobile Pixel-class. Hub + Combat + Procroom je 30s.
+- `research/lever-impact-matrix.md` — Nach WP02/WP03/WP04 jeweils gemessen und appendet.
+
+**Constraint**: Bevor irgendein Code geändert wird, muss die Baseline existieren.
+
+### Phase 1 — Lever 1 (WP02)
+
+`resolution: window.devicePixelRatio` in Phaser scale config. Vollen Q1-Q6 Chain durchlaufen + 3 Procrooms (FR-02). Wenn proc-textures brechen → revert, Doku in `research/lever-1-procbreak.md`, weiter zu Phase 2 ohne Lever 1.
+
+### Phase 2 — LINEAR-Audit (WP03)
+
+Pattern aus `HubSceneV2.create:124-141` extrahieren in shared Helper (`js/renderQuality.js`?) und auf alle Non-Proc-Texturen anwenden. Liste der Touchpoints aus C-04 + Spec §2.
+
+### Phase 3 — Canvas-Bump (WP04)
+
+960×480 → 1920×960. Gated auf Mobile FPS ≥55 nach WP02+WP03. Vorher: jede UI-Scene auf Layout-Brüche prüfen (C-04, FR-06).
+
+### Phase 4 — Settings-Toggle (WP05)
+
+Neue Settings-Key `gameplay.renderQuality: "low" | "medium" | "high"`, Default `"medium"`. UI-Row in `SettingsScene`, apply-on-next-scene-transition (C-06).
 
 ## Complexity Tracking
 
-*Fill ONLY if Constitution Check has violations that must be justified*
+Keine Constitution-Violations. Single-Project, keine neuen Pattern.
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+## Open Questions vor WP01
+
+1. **Phaser-Version** — `node_modules/phaser/package.json` prüfen, ob `scale.resolution` in dieser Version unterstützt wird (Assumption #1 in Spec).
+2. **`performanceMonitor.js` Lese-API** — gibt es eine `getCurrentFPS()` o.ä. oder muss Instrumentierung gebaut werden? (Assumption #4 in Spec)
+
+Beide werden in WP01 mit-beantwortet.
