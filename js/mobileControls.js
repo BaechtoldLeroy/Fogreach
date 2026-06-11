@@ -45,37 +45,63 @@ if (window.i18n) {
     { key: 'interact', col: 3, row: 1, color: 0xffdd44, abilityId: null },
   ];
 
-  // Ability-ID → laufzeit-Info für slot-Resolver. handler-fn werden lazy
-  // resolved damit der Player-Pool zur init-Zeit garantiert geladen ist.
-  function _abilityInfo(id) {
-    const map = {
-      spinAttack:  { color: 0x00ffff, decKey: 'spin',   btnRef: 'spinBtn',          cdRef: 'spinBtnCooldownText',     onDown: () => spinAttack,        onUp: null },
-      chargeSlash: { color: 0xffaa00, decKey: 'charge', btnRef: 'chargeSlashBtn',   cdRef: 'chargeSlashCooldownText', onDown: () => beginChargedSlash, onUp: () => releaseChargedSlash },
-      dashSlash:   { color: 0x66ccff, decKey: 'dash',   btnRef: 'dashSlashBtn',     cdRef: 'dashSlashCooldownText',   onDown: () => dashSlash,         onUp: null },
-      daggerThrow: { color: 0xff8800, decKey: 'dagger', btnRef: 'daggerThrowBtn',   cdRef: 'daggerThrowCooldownText', onDown: () => throwDagger,       onUp: null },
-      shieldBash:  { color: 0x66ffaa, decKey: 'shield', btnRef: 'shieldBashBtn',    cdRef: 'shieldBashCooldownText',  onDown: () => shieldBash,        onUp: null },
+  // Mapping classic-ability-id → desktop-Cooldown-Window-Refs.
+  // startCooldownTimer in player.js setzt diese refs für den Tween/Label —
+  // wir wired sie pro Rebuild damit der Cooldown-Visual am richtigen Mobile-
+  // Button sitzt. Neue Abilities (heilwunde etc.) haben keine refs, deren
+  // Cooldown wird via AbilitySystem.getCooldownRemaining gepollt.
+  const CLASSIC_REFS = {
+    spinAttack:  { btnRef: 'spinBtn',          cdRef: 'spinBtnCooldownText'     },
+    chargeSlash: { btnRef: 'chargeSlashBtn',   cdRef: 'chargeSlashCooldownText' },
+    dashSlash:   { btnRef: 'dashSlashBtn',     cdRef: 'dashSlashCooldownText'   },
+    daggerThrow: { btnRef: 'daggerThrowBtn',   cdRef: 'daggerThrowCooldownText' },
+    shieldBash:  { btnRef: 'shieldBashBtn',    cdRef: 'shieldBashCooldownText'  },
+  };
+
+  // Ability-Info aus AbilitySystem.ABILITY_DEFS — funktioniert für ALLE
+  // Abilities (Classic + neue: heilwunde/frostnova/blutopfer/schattenschritt).
+  // Handler gehen über AbilitySystem.tryActivate/tryRelease — selber Pfad
+  // wie Desktop-Slot-Keys (Q/W/E/R).
+  function _abilityInfo(id, slotKey) {
+    const defs = window.AbilitySystem && window.AbilitySystem.ABILITY_DEFS;
+    if (!defs || !defs[id]) return null;
+    const def = defs[id];
+    const isCharge = def.type === 'charge';
+    const refs = CLASSIC_REFS[id] || {};
+    return {
+      color: def.color || 0x888888,
+      glyph: def.icon || '?',
+      label: def.name || id,
+      decKey: id, // ability-id wird als spec.key benutzt; mobileAbilityButtons fällt auf spec._glyph/_label zurück
+      btnRef: refs.btnRef || null,
+      cdRef: refs.cdRef || null,
+      onDown: function () {
+        if (window.AbilitySystem && typeof window.AbilitySystem.tryActivate === 'function') {
+          window.AbilitySystem.tryActivate(slotKey, this);
+        }
+      },
+      onUp: isCharge ? function () {
+        if (window.AbilitySystem && typeof window.AbilitySystem.tryRelease === 'function') {
+          window.AbilitySystem.tryRelease(slotKey, this);
+        }
+      } : null,
     };
-    return map[id] || null;
   }
 
-  // Resolves a slot spec to its current loadout-Ability. Returns null wenn
-  // der Slot leer ist — _isAbilityVisible nutzt das zum Hide.
   function _resolveSlot(spec) {
     if (!spec.slotIndex) return null;
     const loadout = window.AbilitySystem && typeof window.AbilitySystem.getActiveLoadout === 'function'
       ? window.AbilitySystem.getActiveLoadout()
       : null;
     if (!loadout) return null;
-    const id = loadout['slot' + spec.slotIndex];
+    const slotKey = 'slot' + spec.slotIndex;
+    const id = loadout[slotKey];
     if (!id) return null;
-    const info = _abilityInfo(id);
+    const info = _abilityInfo(id, slotKey);
     if (!info) return null;
     return Object.assign({ id }, info);
   }
 
-  // Baut eine Runtime-Spec aus einer Layout-Spec. Für slot-Cells wird die
-  // ability-spezifische Decoration-Key (spec.key wird 'spin'/'charge'/…) +
-  // Color + window-refs reingemerged. Für statische Cells unverändert.
   function _runtimeSpec(origSpec) {
     if (!origSpec.slotIndex) return Object.assign({}, origSpec);
     const info = _resolveSlot(origSpec);
@@ -84,6 +110,8 @@ if (window.i18n) {
       key: info.decKey,
       color: info.color,
       _abilityId: info.id,
+      _glyph: info.glyph,
+      _label: info.label,
       _onDown: info.onDown,
       _onUp: info.onUp,
       _btnRef: info.btnRef,
@@ -285,8 +313,8 @@ if (window.i18n) {
       if (!spec) return; // slot leer
       let onDown, onUp;
       if (spec._onDown) {
-        onDown = spec._onDown();
-        onUp = spec._onUp ? spec._onUp() : null;
+        onDown = spec._onDown;
+        onUp = spec._onUp || null;
       } else {
         const h = staticHandlers[spec.key];
         if (!h) return;

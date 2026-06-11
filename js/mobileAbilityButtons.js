@@ -80,7 +80,13 @@
 
   function _decorateButton(scene, btnInfo) {
     const { spec, circle } = btnInfo;
-    const dec = DECORATION[spec.key];
+    // Slot-Cells carry glyph + label direkt auf der spec (aus ABILITY_DEFS).
+    // Statische Cells (attack/roll/potion/interact) nutzen DECORATION-Lookup.
+    const dec = DECORATION[spec.key] || (spec._glyph ? {
+      glyph: spec._glyph,
+      label: spec._label || '',
+      cd: spec._cdRef || null,
+    } : null);
     if (!dec) return null;
 
     const scale = _buttonScale();
