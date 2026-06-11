@@ -2125,7 +2125,7 @@ function initUI() {
 
     // 054 WP02: Roll-Tile (zwischen Attack und Loadout-Slots). Cooldown wird
     // per Frame in der update-loop getickt — siehe rollCooldownStartTime.
-    const rollTile = buildTile('Roll', 'SHIFT', 0x8844cc);
+    const rollTile = buildTile('Dash', 'SHIFT', 0x8844cc);
     if (rollTile.iconText) rollTile.iconText.setText('↻'); // ↻
     rollTile.durationMs = (window.RollConfig && window.RollConfig.cooldown) || 600;
     abilityStatusDisplay.roll = rollTile;
