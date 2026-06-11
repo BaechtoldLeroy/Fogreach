@@ -33,12 +33,12 @@ if (window.i18n) {
     { key: 'attack', col: 0, row: 0, color: 0xff0000, abilityId: null },
     { key: 'spin',   col: 1, row: 0, color: 0x00ffff, abilityId: 'spinAttack' },
     { key: 'dagger', col: 2, row: 0, color: 0xff8800, abilityId: 'daggerThrow' },
-    // 054 WP06 (revised): Charge nach links/oben verschoben (col 0 row 2),
-    // damit Roll direkt über Attack sitzt (col 0 row 1) — beste Daumen-
-    // Reichweite für die defensive Mechanik. Row 2 ist sonst leer.
-    { key: 'charge', col: 0, row: 2, color: 0xffaa00, abilityId: 'chargeSlash' },
-    { key: 'dash',   col: 1, row: 1, color: 0x66ccff, abilityId: 'dashSlash' },
-    { key: 'shield', col: 2, row: 1, color: 0x66ffaa, abilityId: 'shieldBash' },
+    // 054 (final 2×4): Row 1 nach links durchshifted, damit Roll auf col 0
+    // row 1 (direkt über Attack) sitzt. Charge → col 1, Dash → col 2.
+    // Shield wurde aus dem Layout entfernt (selten in Loadouts; falls
+    // equipped, taucht der Button nicht auf — User kann Loadout tauschen).
+    { key: 'charge', col: 1, row: 1, color: 0xffaa00, abilityId: 'chargeSlash' },
+    { key: 'dash',   col: 2, row: 1, color: 0x66ccff, abilityId: 'dashSlash' },
     { key: 'potion',   col: 3, row: 0, color: 0xd02040, abilityId: null },
     { key: 'interact', col: 3, row: 1, color: 0xffdd44, abilityId: null },
     { key: 'roll',     col: 0, row: 1, color: 0x8844cc, abilityId: null },
@@ -88,7 +88,7 @@ if (window.i18n) {
   function _anchorOrigin(screenW, screenH) {
     const sa = _safeArea();
     const cs = _cellSide();
-    const cols = 4, rows = 3;  // 054: rows 2→3 für Roll-Button über Attack (col 0 row 2)
+    const cols = 4, rows = 2;  // 054 final: 2×4-Grid (Roll ersetzt Shield in row 1)
     const right = screenW - (CORNER_PAD + sa.right);
     const bottom = screenH - (CORNER_PAD + sa.bottom);
     return { x: right - cs * cols, y: bottom - cs * rows, cellWidth: cs, cellHeight: cs };
