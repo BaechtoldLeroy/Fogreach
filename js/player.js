@@ -1718,7 +1718,14 @@ function performRoll() {
   const duration = cfg.duration;
   const cooldown = cfg.cooldown;
 
-  // Direction-Resolution: aktueller Movement-Input ODER letzter cached
+  // Direction-Resolution: 4-stufiger Fallback
+  //   1) Keyboard-Input (Desktop) via InputScheme.getMovementInput
+  //   2) Mobile-Joystick (wenn gerade gehalten)
+  //   3) lastMoveDirection (Phaser Vector2, von beiden Schemes upgedatet —
+  //      kanonische "Blickrichtung" der Player-Abilities)
+  //   4) lastMoveDir cache → default "nach unten"
+  // Auf Mobile war Stufe 1 immer 0 (nur Keys), Stufe 3 fehlte — daher rollte
+  // der Player immer in die Default-Richtung (0,1) = nach unten.
   let dx = 0, dy = 0;
   if (window.InputScheme && typeof window.InputScheme.getMovementInput === 'function') {
     const mv = window.InputScheme.getMovementInput();
@@ -1727,15 +1734,27 @@ function performRoll() {
       if (mag > 0.0001) {
         dx = mv.x / mag;
         dy = mv.y / mag;
-        // Cache für nächsten Stillstand-Roll
-        lastMoveDir = { x: dx, y: dy };
       }
+    }
+  }
+  if (dx === 0 && dy === 0 && typeof joystick !== 'undefined' && joystick && typeof joystick.force === 'number' && joystick.force > 0.15) {
+    const rad = Phaser.Math.DegToRad(joystick.angle);
+    dx = Math.cos(rad);
+    dy = Math.sin(rad);
+  }
+  if (dx === 0 && dy === 0 && lastMoveDirection && (lastMoveDirection.x !== 0 || lastMoveDirection.y !== 0)) {
+    const mag = Math.hypot(lastMoveDirection.x, lastMoveDirection.y);
+    if (mag > 0.0001) {
+      dx = lastMoveDirection.x / mag;
+      dy = lastMoveDirection.y / mag;
     }
   }
   if (dx === 0 && dy === 0) {
     dx = lastMoveDir.x || 0;
     dy = lastMoveDir.y || 1;
   }
+  // Cache für nächsten Stillstand-Roll
+  lastMoveDir = { x: dx, y: dy };
 
   isRolling = true;
   rollCooldown = true;

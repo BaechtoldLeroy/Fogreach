@@ -33,17 +33,15 @@ if (window.i18n) {
     { key: 'attack', col: 0, row: 0, color: 0xff0000, abilityId: null },
     { key: 'spin',   col: 1, row: 0, color: 0x00ffff, abilityId: 'spinAttack' },
     { key: 'dagger', col: 2, row: 0, color: 0xff8800, abilityId: 'daggerThrow' },
-    { key: 'charge', col: 0, row: 1, color: 0xffaa00, abilityId: 'chargeSlash' },
+    // 054 WP06 (revised): Charge nach links/oben verschoben (col 0 row 2),
+    // damit Roll direkt über Attack sitzt (col 0 row 1) — beste Daumen-
+    // Reichweite für die defensive Mechanik. Row 2 ist sonst leer.
+    { key: 'charge', col: 0, row: 2, color: 0xffaa00, abilityId: 'chargeSlash' },
     { key: 'dash',   col: 1, row: 1, color: 0x66ccff, abilityId: 'dashSlash' },
     { key: 'shield', col: 2, row: 1, color: 0x66ffaa, abilityId: 'shieldBash' },
     { key: 'potion',   col: 3, row: 0, color: 0xd02040, abilityId: null },
     { key: 'interact', col: 3, row: 1, color: 0xffdd44, abilityId: null },
-    // 054 WP06: Dodge-Roll button. Above Attack-Button (col 0 row 2) für
-    // natürliche Daumen-Reichweite + immer trefferbar. col 4 wäre zu breit
-    // für typische Mobile-Screens (rechte Ecke + 5 Spalten = off-screen
-    // links auf <414px). Always visible (abilityId: null), purple zur
-    // Trennung von roten/orangen Combat-Buttons.
-    { key: 'roll',     col: 0, row: 2, color: 0x8844cc, abilityId: null },
+    { key: 'roll',     col: 0, row: 1, color: 0x8844cc, abilityId: null },
   ];
 
   const BASE_RADIUS = 38;      // uniform button radius for all cells
