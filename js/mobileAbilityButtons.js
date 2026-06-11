@@ -50,7 +50,9 @@
     dagger: { glyph: '\uD83D\uDDE1\uFE0F', labelKey: 'mobile.btn.dagger',   cd: 'daggerThrowCooldownText' },
     shield: { glyph: '\uD83D\uDEE1\uFE0F', labelKey: 'mobile.btn.shield',   cd: 'shieldBashCooldownText'  },
     potion:   { glyph: '\uD83E\uDDEA', label: 'x0',                        cd: null, dynamicLabel: true },
-    interact: { glyph: '\u270B',       labelKey: 'mobile.btn.interact',    cd: null, tapFeedback: true  }
+    interact: { glyph: '\u270B',       labelKey: 'mobile.btn.interact',    cd: null, tapFeedback: true  },
+    // 054 WP06: Dodge-Roll. Cartwheel emoji (\uD83E\uDD38 U+1F938) liest sich als "tumble".
+    roll:     { glyph: '\uD83E\uDD38', label: 'Roll',                      cd: null }
   };
   const _initialLabel = (dec) => dec.labelKey ? T(dec.labelKey, dec.label || '') : (dec.label || '');
 

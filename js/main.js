@@ -2508,7 +2508,11 @@ function initializeGameObjects() {
 
   // Player-obstacle and enemy-obstacle colliders are created in roomManager.js
   // enterRoom() with walkthrough support — do NOT duplicate here.
-  this.physics.add.collider(player, enemies);
+  // 054: Phase-Through-Enemies während Roll. processCallback returns false →
+  // Collider skip → Player passt durch Enemy-Cluster. Wand-Collider sind
+  // separat in roomManager.js und bleiben aktiv (= clean stop am Wall).
+  // Damage-Block via _playerInvincible (WP03) bleibt unabhängig wirksam.
+  this.physics.add.collider(player, enemies, null, () => !isRolling);
   // Soft collision between enemies (Diablo 2 style — they push each other)
   this.physics.add.collider(enemies, enemies);
   // Projektile prallen an Hindernissen ab/werden zerstört (oder pool-released)

@@ -38,6 +38,9 @@ if (window.i18n) {
     { key: 'shield', col: 2, row: 1, color: 0x66ffaa, abilityId: 'shieldBash' },
     { key: 'potion',   col: 3, row: 0, color: 0xd02040, abilityId: null },
     { key: 'interact', col: 3, row: 1, color: 0xffdd44, abilityId: null },
+    // 054 WP06: Dodge-Roll button. Always visible (abilityId: null), purple
+    // hue to set apart from combat abilities (red/orange/blue).
+    { key: 'roll',     col: 4, row: 0, color: 0x8844cc, abilityId: null },
   ];
 
   const BASE_RADIUS = 38;      // uniform button radius for all cells
@@ -84,7 +87,7 @@ if (window.i18n) {
   function _anchorOrigin(screenW, screenH) {
     const sa = _safeArea();
     const cs = _cellSide();
-    const cols = 4, rows = 2;
+    const cols = 5, rows = 2;  // 054: bumped from 4 → 5 für Roll-Button
     const right = screenW - (CORNER_PAD + sa.right);
     const bottom = screenH - (CORNER_PAD + sa.bottom);
     return { x: right - cs * cols, y: bottom - cs * rows, cellWidth: cs, cellHeight: cs };
@@ -199,6 +202,7 @@ if (window.i18n) {
       shield: { onDown: shieldBash,          onUp: null },
       potion:   { onDown: _usePotion, onUp: null },
       interact: { onDown: _interact,  onUp: null },
+      roll:     { onDown: performRoll, onUp: null },
     };
     ABILITY_LAYOUT.forEach((spec) => {
       if (!_isAbilityVisible(spec)) return;
@@ -271,6 +275,7 @@ if (window.i18n) {
       shield: { onDown: shieldBash,          onUp: null },
       potion:   { onDown: _usePotion, onUp: null },
       interact: { onDown: _interact,  onUp: null },
+      roll:     { onDown: performRoll, onUp: null },
     };
 
     ABILITY_LAYOUT.forEach((spec) => {
