@@ -304,9 +304,13 @@
     });
   }
 
-  // No abilities learned by default — only basic attack (space) is always available.
-  // Player must learn skills through gameplay (kills, quests, bosses).
-  const DEFAULT_LEARNED = [];
+  // TEST-MODE: alle Abilities von Anfang an verfügbar (statt durch Gameplay
+  // freigeschaltet). Für Mobile-Layout-Test bei 054-Roll-Feature. Rollback
+  // zu `[]` wenn die normale Progression wieder gilt.
+  const DEFAULT_LEARNED = [
+    'spinAttack', 'chargeSlash', 'dashSlash', 'daggerThrow', 'shieldBash',
+    'heilwunde', 'frostnova', 'blutopfer', 'schattenschritt'
+  ];
 
   const DEFAULT_LOADOUT = {
     slot1: null,

@@ -21,15 +21,23 @@ beforeEach(() => {
   resetStore();
 });
 
-test('fresh init has no learned abilities', () => {
+// TEST-MODE: DEFAULT_LEARNED enthält jetzt alle 9 Abilities (statt leer)
+// für Mobile-Layout-Testing. Tests reflektieren den aktuellen Default.
+const TEST_MODE_DEFAULT_LEARNED = [
+  'spinAttack', 'chargeSlash', 'dashSlash', 'daggerThrow', 'shieldBash',
+  'heilwunde', 'frostnova', 'blutopfer', 'schattenschritt'
+];
+
+test('fresh init starts with all abilities learned (TEST-MODE default)', () => {
   const sys = freshSystem();
-  assert.deepStrictEqual(sys.getLearnedAbilities(), []);
+  assert.deepStrictEqual(sys.getLearnedAbilities(), TEST_MODE_DEFAULT_LEARNED);
 });
 
-test('learnAbility adds the id and returns true', () => {
+test('learnAbility returns false when ability is already in DEFAULT_LEARNED', () => {
   const sys = freshSystem();
   const result = sys.learnAbility('spinAttack');
-  assert.strictEqual(result, true);
+  // spinAttack ist im TEST-MODE bereits gelernt → learnAbility ist no-op
+  assert.strictEqual(result, false);
   assert.ok(sys.getLearnedAbilities().includes('spinAttack'));
 });
 
@@ -44,13 +52,13 @@ test('learnAbility returns false for unknown ids', () => {
   const sys = freshSystem();
   const result = sys.learnAbility('nonexistent_ability');
   assert.strictEqual(result, false);
-  assert.deepStrictEqual(sys.getLearnedAbilities(), []);
+  // Unknown ID nicht added — Liste bleibt auf DEFAULT_LEARNED
+  assert.deepStrictEqual(sys.getLearnedAbilities(), TEST_MODE_DEFAULT_LEARNED);
 });
 
-test('isLearned reflects learnAbility', () => {
+test('isLearned reflects DEFAULT_LEARNED in TEST-MODE', () => {
   const sys = freshSystem();
-  assert.strictEqual(sys.isLearned('chargeSlash'), false);
-  sys.learnAbility('chargeSlash');
+  // chargeSlash ist im TEST-MODE bereits gelernt
   assert.strictEqual(sys.isLearned('chargeSlash'), true);
 });
 
@@ -72,16 +80,15 @@ test('setSlot equips a learned ability and isEquipped returns true', () => {
   assert.strictEqual(sys.isEquipped('chargeSlash'), true);
 });
 
-test('resetForNewGame wipes learned abilities and storage', () => {
+test('resetForNewGame resets to DEFAULT_LEARNED + clears storage', () => {
   const sys = freshSystem();
-  sys.learnAbility('spinAttack');
-  sys.learnAbility('chargeSlash');
   sys.setSlot('slot1', 'spinAttack');
   sys.save();
   // sanity: storage now has the key
   assert.notStrictEqual(globalThis.localStorage.getItem('demonfall_abilities_v1'), null);
   sys.resetForNewGame();
-  assert.deepStrictEqual(sys.getLearnedAbilities(), []);
+  // TEST-MODE: reset stellt DEFAULT_LEARNED wieder her (alle 9), nicht leer
+  assert.deepStrictEqual(sys.getLearnedAbilities(), TEST_MODE_DEFAULT_LEARNED);
   assert.strictEqual(sys.getActiveLoadout().slot1, null);
   assert.strictEqual(globalThis.localStorage.getItem('demonfall_abilities_v1'), null);
 });
