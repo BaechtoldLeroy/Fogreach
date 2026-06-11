@@ -38,9 +38,12 @@ if (window.i18n) {
     { key: 'shield', col: 2, row: 1, color: 0x66ffaa, abilityId: 'shieldBash' },
     { key: 'potion',   col: 3, row: 0, color: 0xd02040, abilityId: null },
     { key: 'interact', col: 3, row: 1, color: 0xffdd44, abilityId: null },
-    // 054 WP06: Dodge-Roll button. Always visible (abilityId: null), purple
-    // hue to set apart from combat abilities (red/orange/blue).
-    { key: 'roll',     col: 4, row: 0, color: 0x8844cc, abilityId: null },
+    // 054 WP06: Dodge-Roll button. Above Attack-Button (col 0 row 2) für
+    // natürliche Daumen-Reichweite + immer trefferbar. col 4 wäre zu breit
+    // für typische Mobile-Screens (rechte Ecke + 5 Spalten = off-screen
+    // links auf <414px). Always visible (abilityId: null), purple zur
+    // Trennung von roten/orangen Combat-Buttons.
+    { key: 'roll',     col: 0, row: 2, color: 0x8844cc, abilityId: null },
   ];
 
   const BASE_RADIUS = 38;      // uniform button radius for all cells
@@ -87,7 +90,7 @@ if (window.i18n) {
   function _anchorOrigin(screenW, screenH) {
     const sa = _safeArea();
     const cs = _cellSide();
-    const cols = 5, rows = 2;  // 054: bumped from 4 → 5 für Roll-Button
+    const cols = 4, rows = 3;  // 054: rows 2→3 für Roll-Button über Attack (col 0 row 2)
     const right = screenW - (CORNER_PAD + sa.right);
     const bottom = screenH - (CORNER_PAD + sa.bottom);
     return { x: right - cs * cols, y: bottom - cs * rows, cellWidth: cs, cellHeight: cs };
