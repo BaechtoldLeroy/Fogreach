@@ -29,20 +29,67 @@ if (window.i18n) {
   // row 0 = bottom row, row 1 = upper row.
   // abilityId matches window.AbilitySystem.isEquipped() IDs; null means
   // the button is always visible (basic attack, potion).
+  // 054 (slot-index Layout): die 4 mittleren Cells sind generische Slot-
+  // Buttons (slot1-4) die zur Laufzeit von AbilitySystem.getActiveLoadout()
+  // mit der equipped-Ability gefüllt werden. Vorher hatte jede Ability eine
+  // fixe Cell — Shield-Equip führte zum Crash weil keine Cell existierte.
+  // Slot-Reihenfolge: slot1 (Q) am Daumen, slot4 (R) am weitesten.
   const ABILITY_LAYOUT = [
-    { key: 'attack', col: 0, row: 0, color: 0xff0000, abilityId: null },
-    { key: 'spin',   col: 1, row: 0, color: 0x00ffff, abilityId: 'spinAttack' },
-    { key: 'dagger', col: 2, row: 0, color: 0xff8800, abilityId: 'daggerThrow' },
-    // 054 (final 2×4): Row 1 nach links durchshifted, damit Roll auf col 0
-    // row 1 (direkt über Attack) sitzt. Charge → col 1, Dash → col 2.
-    // Shield wurde aus dem Layout entfernt (selten in Loadouts; falls
-    // equipped, taucht der Button nicht auf — User kann Loadout tauschen).
-    { key: 'charge', col: 1, row: 1, color: 0xffaa00, abilityId: 'chargeSlash' },
-    { key: 'dash',   col: 2, row: 1, color: 0x66ccff, abilityId: 'dashSlash' },
+    { key: 'attack',   col: 0, row: 0, color: 0xff0000, abilityId: null },
+    { key: 'slot1',    col: 1, row: 0, color: 0x888888, slotIndex: 1 },
+    { key: 'slot2',    col: 2, row: 0, color: 0x888888, slotIndex: 2 },
     { key: 'potion',   col: 3, row: 0, color: 0xd02040, abilityId: null },
-    { key: 'interact', col: 3, row: 1, color: 0xffdd44, abilityId: null },
     { key: 'roll',     col: 0, row: 1, color: 0x8844cc, abilityId: null },
+    { key: 'slot3',    col: 1, row: 1, color: 0x888888, slotIndex: 3 },
+    { key: 'slot4',    col: 2, row: 1, color: 0x888888, slotIndex: 4 },
+    { key: 'interact', col: 3, row: 1, color: 0xffdd44, abilityId: null },
   ];
+
+  // Ability-ID → laufzeit-Info für slot-Resolver. handler-fn werden lazy
+  // resolved damit der Player-Pool zur init-Zeit garantiert geladen ist.
+  function _abilityInfo(id) {
+    const map = {
+      spinAttack:  { color: 0x00ffff, decKey: 'spin',   btnRef: 'spinBtn',          cdRef: 'spinBtnCooldownText',     onDown: () => spinAttack,        onUp: null },
+      chargeSlash: { color: 0xffaa00, decKey: 'charge', btnRef: 'chargeSlashBtn',   cdRef: 'chargeSlashCooldownText', onDown: () => beginChargedSlash, onUp: () => releaseChargedSlash },
+      dashSlash:   { color: 0x66ccff, decKey: 'dash',   btnRef: 'dashSlashBtn',     cdRef: 'dashSlashCooldownText',   onDown: () => dashSlash,         onUp: null },
+      daggerThrow: { color: 0xff8800, decKey: 'dagger', btnRef: 'daggerThrowBtn',   cdRef: 'daggerThrowCooldownText', onDown: () => throwDagger,       onUp: null },
+      shieldBash:  { color: 0x66ffaa, decKey: 'shield', btnRef: 'shieldBashBtn',    cdRef: 'shieldBashCooldownText',  onDown: () => shieldBash,        onUp: null },
+    };
+    return map[id] || null;
+  }
+
+  // Resolves a slot spec to its current loadout-Ability. Returns null wenn
+  // der Slot leer ist — _isAbilityVisible nutzt das zum Hide.
+  function _resolveSlot(spec) {
+    if (!spec.slotIndex) return null;
+    const loadout = window.AbilitySystem && typeof window.AbilitySystem.getActiveLoadout === 'function'
+      ? window.AbilitySystem.getActiveLoadout()
+      : null;
+    if (!loadout) return null;
+    const id = loadout['slot' + spec.slotIndex];
+    if (!id) return null;
+    const info = _abilityInfo(id);
+    if (!info) return null;
+    return Object.assign({ id }, info);
+  }
+
+  // Baut eine Runtime-Spec aus einer Layout-Spec. Für slot-Cells wird die
+  // ability-spezifische Decoration-Key (spec.key wird 'spin'/'charge'/…) +
+  // Color + window-refs reingemerged. Für statische Cells unverändert.
+  function _runtimeSpec(origSpec) {
+    if (!origSpec.slotIndex) return Object.assign({}, origSpec);
+    const info = _resolveSlot(origSpec);
+    if (!info) return null;
+    return Object.assign({}, origSpec, {
+      key: info.decKey,
+      color: info.color,
+      _abilityId: info.id,
+      _onDown: info.onDown,
+      _onUp: info.onUp,
+      _btnRef: info.btnRef,
+      _cdRef: info.cdRef,
+    });
+  }
 
   const BASE_RADIUS = 38;      // uniform button radius for all cells
   const CORNER_PAD = 20;       // base padding from screen corner, added to safe-area
@@ -100,6 +147,7 @@ if (window.i18n) {
   }
 
   function _isAbilityVisible(spec) {
+    if (spec.slotIndex) return !!_resolveSlot(spec);
     if (!spec.abilityId) return true;
     if (window.AbilitySystem && typeof window.AbilitySystem.isEquipped === 'function') {
       return !!window.AbilitySystem.isEquipped(spec.abilityId);
@@ -153,9 +201,11 @@ if (window.i18n) {
       circle.setPosition(pos.x, pos.y);
     });
     Object.keys(state.cooldownTexts).forEach((key) => {
-      const spec = ABILITY_LAYOUT.find((s) => s.key === key);
-      if (!spec) return;
-      const pos = _cellCenter(screenW, screenH, spec.col, spec.row);
+      // Cooldown-Text-Position folgt der Button-Position desselben Keys.
+      // Bei slot-Cells ist key = decKey (z.B. 'spin') = aktueller spec.key.
+      const btn = state.buttons.find((b) => b.spec.key === key);
+      if (!btn) return;
+      const pos = _cellCenter(screenW, screenH, btn.spec.col, btn.spec.row);
       state.cooldownTexts[key].setPosition(pos.x, pos.y);
     });
 
@@ -194,29 +244,59 @@ if (window.i18n) {
     state.buttons = [];
     state.cooldownTexts = {};
 
-    const handlers = {
-      attack: { onDown: attack,              onUp: null },
-      spin:   { onDown: spinAttack,          onUp: null },
-      charge: { onDown: beginChargedSlash,   onUp: releaseChargedSlash },
-      dash:   { onDown: dashSlash,           onUp: null },
-      dagger: { onDown: throwDagger,         onUp: null },
-      shield: { onDown: shieldBash,          onUp: null },
+    _buildButtonsAndCooldowns(scene);
+    _positionAll(scene.scale.width, scene.scale.height);
+    _dispatch('demonfall:mobile-layout-ready', {
+      scene,
+      buttons: state.buttons.map(({ spec, circle, hitHalf }) => ({ spec, circle, hitHalf })),
+      joystick: state.joystick,
+      inventoryBtn: state.inventoryBtn,
+      cooldownTexts: Object.assign({}, state.cooldownTexts),
+    });
+  }
+
+  // Shared build logic für initMobileControls + _rebuildAbilityButtons.
+  // Iteriert ABILITY_LAYOUT, resolved slot-Cells zur aktuellen Loadout-
+  // Ability, baut Circle + Cooldown-Label + wired window.*Btn-refs.
+  function _buildButtonsAndCooldowns(scene) {
+    const staticHandlers = {
+      attack:   { onDown: attack,     onUp: null },
       potion:   { onDown: _usePotion, onUp: null },
       interact: { onDown: _interact,  onUp: null },
       roll:     { onDown: performRoll, onUp: null },
     };
-    ABILITY_LAYOUT.forEach((spec) => {
-      if (!_isAbilityVisible(spec)) return;
-      const h = handlers[spec.key];
-      if (!h) return;
-      const { circle, hitHalf } = _makeAbilityButton(scene, spec, h.onDown, h.onUp);
+
+    // Reset alle ability-id-basierten window-Refs — werden unten neu gesetzt
+    // wenn die Ability im aktuellen Loadout ist. Sonst bleiben sie null und
+    // startCooldownTimer behandelt das via null-guard.
+    window.spinBtn = null;
+    window.chargeSlashBtn = null;
+    window.dashSlashBtn = null;
+    window.daggerThrowBtn = null;
+    window.shieldBashBtn = null;
+    window.spinBtnCooldownText = null;
+    window.chargeSlashCooldownText = null;
+    window.dashSlashCooldownText = null;
+    window.daggerThrowCooldownText = null;
+    window.shieldBashCooldownText = null;
+
+    ABILITY_LAYOUT.forEach((origSpec) => {
+      const spec = _runtimeSpec(origSpec);
+      if (!spec) return; // slot leer
+      let onDown, onUp;
+      if (spec._onDown) {
+        onDown = spec._onDown();
+        onUp = spec._onUp ? spec._onUp() : null;
+      } else {
+        const h = staticHandlers[spec.key];
+        if (!h) return;
+        onDown = h.onDown;
+        onUp = h.onUp;
+      }
+      const { circle, hitHalf } = _makeAbilityButton(scene, spec, onDown, onUp);
       state.buttons.push({ spec, circle, hitHalf });
       if (spec.key === 'attack') window.attackBtn = circle;
-      if (spec.key === 'spin')   window.spinBtn = circle;
-      if (spec.key === 'charge') window.chargeSlashBtn = circle;
-      if (spec.key === 'dash')   window.dashSlashBtn = circle;
-      if (spec.key === 'dagger') window.daggerThrowBtn = circle;
-      if (spec.key === 'shield') window.shieldBashBtn = circle;
+      if (spec._btnRef) window[spec._btnRef] = circle;
     });
 
     const cdFor = (key) => {
@@ -225,20 +305,11 @@ if (window.i18n) {
       state.cooldownTexts[key] = t;
       return t;
     };
-    window.attackBtnCooldownText        = cdFor('attack');
-    window.spinBtnCooldownText          = cdFor('spin');
-    window.chargeSlashCooldownText      = cdFor('charge');
-    window.dashSlashCooldownText        = cdFor('dash');
-    window.daggerThrowCooldownText      = cdFor('dagger');
-    window.shieldBashCooldownText       = cdFor('shield');
-
-    _positionAll(scene.scale.width, scene.scale.height);
-    _dispatch('demonfall:mobile-layout-ready', {
-      scene,
-      buttons: state.buttons.map(({ spec, circle, hitHalf }) => ({ spec, circle, hitHalf })),
-      joystick: state.joystick,
-      inventoryBtn: state.inventoryBtn,
-      cooldownTexts: Object.assign({}, state.cooldownTexts),
+    window.attackBtnCooldownText = cdFor('attack');
+    state.buttons.forEach((b) => {
+      if (b.spec._cdRef) {
+        window[b.spec._cdRef] = cdFor(b.spec.key);
+      }
     });
   }
 
@@ -266,33 +337,6 @@ if (window.i18n) {
     state.joystick = joystick;
     window.joystick = joystick;
 
-    // ----- Ability + potion buttons -----
-    const handlers = {
-      attack: { onDown: attack,              onUp: null },
-      spin:   { onDown: spinAttack,          onUp: null },
-      charge: { onDown: beginChargedSlash,   onUp: releaseChargedSlash },
-      dash:   { onDown: dashSlash,           onUp: null },
-      dagger: { onDown: throwDagger,         onUp: null },
-      shield: { onDown: shieldBash,          onUp: null },
-      potion:   { onDown: _usePotion, onUp: null },
-      interact: { onDown: _interact,  onUp: null },
-      roll:     { onDown: performRoll, onUp: null },
-    };
-
-    ABILITY_LAYOUT.forEach((spec) => {
-      if (!_isAbilityVisible(spec)) return;
-      const h = handlers[spec.key];
-      if (!h) return;
-      const { circle, hitHalf } = _makeAbilityButton(scene, spec, h.onDown, h.onUp);
-      state.buttons.push({ spec, circle, hitHalf });
-      if (spec.key === 'attack') window.attackBtn = circle;
-      if (spec.key === 'spin')   window.spinBtn = circle;
-      if (spec.key === 'charge') window.chargeSlashBtn = circle;
-      if (spec.key === 'dash')   window.dashSlashBtn = circle;
-      if (spec.key === 'dagger') window.daggerThrowBtn = circle;
-      if (spec.key === 'shield') window.shieldBashBtn = circle;
-    });
-
     // Destroy previous cooldown texts if any, then create fresh per equipped button.
     [
       'attackBtnCooldownText', 'spinBtnCooldownText',
@@ -300,18 +344,8 @@ if (window.i18n) {
       'daggerThrowCooldownText', 'shieldBashCooldownText',
     ].forEach((g) => { if (window[g] && window[g].destroy) window[g].destroy(); });
 
-    const cdFor = (key) => {
-      if (!state.buttons.some((b) => b.spec.key === key)) return null;
-      const t = _makeCooldownLabel(scene);
-      state.cooldownTexts[key] = t;
-      return t;
-    };
-    window.attackBtnCooldownText        = cdFor('attack');
-    window.spinBtnCooldownText          = cdFor('spin');
-    window.chargeSlashCooldownText      = cdFor('charge');
-    window.dashSlashCooldownText        = cdFor('dash');
-    window.daggerThrowCooldownText      = cdFor('dagger');
-    window.shieldBashCooldownText       = cdFor('shield');
+    // ----- Ability + potion buttons -----
+    _buildButtonsAndCooldowns(scene);
 
     _positionAll(scene.scale.width, scene.scale.height);
 
