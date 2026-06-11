@@ -1735,6 +1735,7 @@ function performRoll() {
 
   isRolling = true;
   rollCooldown = true;
+  rollCooldownStartTime = (this?.time?.now) || performance.now();
   window._playerInvincible = true;
 
   const speedPxPerSec = distance / (duration / 1000);

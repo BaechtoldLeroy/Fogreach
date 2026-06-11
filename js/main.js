@@ -775,6 +775,7 @@ let isDashing = false;
 // cached die letzte Richtung für Stillstand-Roll (FR-02).
 let isRolling = false;
 let rollCooldown = false;
+let rollCooldownStartTime = 0;
 let lastMoveDir = { x: 0, y: 1 };
 // 054 FR-11: Zentrale Roll-Config für Knowledge-Tree-Hook (später via
 // Buff-Registry tweakbar). Magic numbers landen NICHT im performRoll-Code.
@@ -888,6 +889,7 @@ function create() {
   isDashing = false;
   isRolling = false;
   rollCooldown = false;
+  rollCooldownStartTime = 0;
   abilityStatusDisplay = {};
   const updateWorldBounds = (width, height) => {
     // Guard: scale resize events can fire after the GameScene has been
@@ -1489,6 +1491,18 @@ function update(time, delta) {
         updateAbilityStatus(id, { remainingMs: rem, durationMs: def.cooldownMs });
       });
     }
+  }
+
+  // 054 WP02: Roll-Cooldown HUD-Tick. rollCooldownStartTime wird in
+  // performRoll() gestempelt; hier counten wir gegen RollConfig.cooldown.
+  if (abilityStatusDisplay && abilityStatusDisplay.roll) {
+    const cfg = window.RollConfig || { cooldown: 600 };
+    let rem = 0;
+    if (rollCooldown) {
+      const elapsed = ((this?.time?.now) || performance.now()) - rollCooldownStartTime;
+      rem = Math.max(0, cfg.cooldown - elapsed);
+    }
+    updateAbilityStatus('roll', { remainingMs: rem, durationMs: cfg.cooldown });
   }
 
   // Health regen tick — applies PLAYER_HEALTH_REGEN (HP/sec) when below max.
@@ -2109,6 +2123,14 @@ function initUI() {
     if (attackTile.iconText) attackTile.iconText.setText('\u2694'); // ⚔
     abilityStatusDisplay.attack = attackTile;
 
+    // 054 WP02: Roll-Tile (zwischen Attack und Loadout-Slots). Cooldown wird
+    // per Frame in der update-loop getickt — siehe rollCooldownStartTime.
+    const rollTile = buildTile('Roll', 'SHIFT', 0x8844cc);
+    if (rollTile.iconText) rollTile.iconText.setText('↻'); // ↻
+    rollTile.durationMs = (window.RollConfig && window.RollConfig.cooldown) || 600;
+    abilityStatusDisplay.roll = rollTile;
+    updateAbilityStatus('roll', { remainingMs: 0, durationMs: rollTile.durationMs });
+
     // WP04+: Potion tile (always visible, F key). Shows best inventory potion
     // + stack count, with a 2s cooldown radial driven by LootSystem.
     const potionTile = buildTile(_HUD_T('hud.potion.empty_label'), 'F', 0x44ff66);
@@ -2208,7 +2230,7 @@ function initUI() {
         delete abilityStatusDisplay[statusKey];
       });
       Object.keys(abilityStatusDisplay).forEach((k) => {
-        if (k !== 'attack') delete abilityStatusDisplay[k];
+        if (k !== 'attack' && k !== 'roll') delete abilityStatusDisplay[k];
       });
 
       const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
@@ -2288,6 +2310,11 @@ function initUI() {
       attackTile.container.setVisible(true);
       attackTile.container.setPosition(baseX, baseY);
       let visibleIndex = 1;
+
+      // 054: Roll tile always second (between attack and loadout slots)
+      rollTile.container.setVisible(true);
+      rollTile.container.setPosition(baseX, baseY + visibleIndex * tileSpacing);
+      visibleIndex++;
 
       ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
         const tile = slotTiles[slotKey];
