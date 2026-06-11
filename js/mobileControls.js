@@ -282,7 +282,10 @@ if (window.i18n) {
     };
 
     ABILITY_LAYOUT.forEach((spec) => {
-      if (!_isAbilityVisible(spec)) return;
+      const visible = _isAbilityVisible(spec);
+      const hasHandler = !!handlers[spec.key];
+      console.log('[mobileControls DEBUG]', spec.key, 'col:', spec.col, 'row:', spec.row, 'visible:', visible, 'hasHandler:', hasHandler, 'onDown-type:', typeof (handlers[spec.key] && handlers[spec.key].onDown));
+      if (!visible) return;
       const h = handlers[spec.key];
       if (!h) return;
       const { circle, hitHalf } = _makeAbilityButton(scene, spec, h.onDown, h.onUp);
