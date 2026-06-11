@@ -1744,11 +1744,46 @@ function performRoll() {
   if (player.setVelocity) player.setVelocity(dx * speedPxPerSec, dy * speedPxPerSec);
 
   const scene = this;
+
+  // WP04: Visual Choreography — Walk-Anim-Boost (timeScale 3) + Squash (yoyo
+  // scaleY 1.0 → 0.7 → 1.0) + Purple Tint. Während des Rolls läuft kein
+  // handlePlayerMovement (siehe gate oben), daher kein applyPlayerDisplay-
+  // Settings-Overwrite — tween hat freie Bahn.
+  const preRollScaleY = player.scaleY || 1;
+  const preRollAnimTimeScale = (player.anims && player.anims.timeScale) || 1;
+  const rollDir = getDirectionFromVelocity(dx, dy);
+  const rollAnimKey = `walk_${rollDir}`;
+  if (scene.anims && scene.anims.exists(rollAnimKey)) {
+    player.anims.play(rollAnimKey, true);
+    if (player.anims) player.anims.timeScale = 3;
+    const animState = player.getData('animState') || {};
+    animState.playing = rollAnimKey;
+    animState.direction = rollDir;
+    player.setData('animState', animState);
+  }
+  if (player.setTint) player.setTint(0x8844cc);
+  const squashTween = scene.tweens.add({
+    targets: player,
+    scaleY: preRollScaleY * 0.7,
+    duration: duration / 2,
+    yoyo: true,
+    ease: 'Sine.easeInOut'
+  });
+
   scene.time.delayedCall(duration, () => {
     isRolling = false;
     window._playerInvincible = false;
     // MaxVelocity zurück auf normalen Player-Clamp (220 ist der base)
     if (player && player.body) player.body.setMaxVelocity(220, 220);
+    // WP04: Visuals restoren
+    if (squashTween && squashTween.isPlaying && squashTween.isPlaying()) {
+      squashTween.stop();
+    }
+    if (player) {
+      player.scaleY = preRollScaleY;
+      if (player.anims) player.anims.timeScale = preRollAnimTimeScale;
+      if (player.setTint) player.setTint(PLAYER_TINT_COLOR);
+    }
     // Velocity NICHT auf 0 setzen — handlePlayerMovement übernimmt sofort wieder
     // basierend auf aktuellem Input; ein erzwungenes Stop würde sich klobig
     // anfühlen wenn der Spieler bereits weiter rennt.
