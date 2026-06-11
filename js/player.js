@@ -1707,6 +1707,10 @@ function performRoll() {
   if (isRolling || rollCooldown || playerHealth <= 0) return false;
   if (isDashing || isAttacking || isChargingSlash) return false;
   if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) return false;
+  // 054 WP07: Block roll während offenem NPC-Dialog/Workshop/Loadout-Overlay
+  // (HubScene-Pattern). Inventory wird bereits in InputScheme.isRollTriggered
+  // über window.invOpen geblockt.
+  if (this._dialogOpen) return false;
 
   // Zentrale Config (FR-11 Knowledge-Tree-Hook): später via Buff-Registry tweakbar
   const cfg = window.RollConfig || { distance: 90, duration: 200, cooldown: 600 };
@@ -1738,10 +1742,19 @@ function performRoll() {
   rollCooldownStartTime = (this?.time?.now) || performance.now();
   window._playerInvincible = true;
 
+  // 054 WP07 R-04: Mobile Tap-to-Move darf nach Roll-End nicht mehr
+  // ziehen — sonst läuft der Player zurück zur Pre-Roll-Target-Position.
+  if (window.__MOBILE_MOVE_TARGET__) window.__MOBILE_MOVE_TARGET__ = null;
+
   const speedPxPerSec = distance / (duration / 1000);
   // setMaxVelocity raised damit roll-speed nicht von normalem clamp gestoppt wird
   if (player.body) player.body.setMaxVelocity(speedPxPerSec, speedPxPerSec);
   if (player.setVelocity) player.setVelocity(dx * speedPxPerSec, dy * speedPxPerSec);
+  // 054 WP07 R-05: _smoothVelX/Y muss schon HIER auf die Roll-Velocity
+  // gesetzt werden, damit der Reset im Roll-End-Callback nicht von einem
+  // veralteten Pre-Roll-Wert weglerpt.
+  _smoothVelX = dx * speedPxPerSec;
+  _smoothVelY = dy * speedPxPerSec;
 
   const scene = this;
 
@@ -1784,9 +1797,23 @@ function performRoll() {
       if (player.anims) player.anims.timeScale = preRollAnimTimeScale;
       if (player.setTint) player.setTint(PLAYER_TINT_COLOR);
     }
-    // Velocity NICHT auf 0 setzen — handlePlayerMovement übernimmt sofort wieder
-    // basierend auf aktuellem Input; ein erzwungenes Stop würde sich klobig
-    // anfühlen wenn der Spieler bereits weiter rennt.
+    // 054 WP07 R-05: _smoothVelX/Y zurück auf 0 — sonst lerpt
+    // handlePlayerMovement im nächsten Frame von der hohen Roll-Velocity
+    // weg und der Player gleitet ungewollt weiter ("ghost slide").
+    _smoothVelX = 0;
+    _smoothVelY = 0;
+    // 054 WP07 Edge-Case: wenn Roll in eine Wand gelaufen ist, körperliche
+    // Velocity sauber stoppen (Phaser collide setzt nur die kollidierende
+    // Achse zurück, die andere kann persistieren).
+    if (player && player.body) {
+      const blocked = player.body.blocked || {};
+      if (blocked.left || blocked.right || blocked.up || blocked.down) {
+        player.setVelocity(0, 0);
+      }
+    }
+    // Velocity NICHT generell auf 0 setzen — handlePlayerMovement übernimmt
+    // sofort wieder basierend auf aktuellem Input; ein erzwungenes Stop
+    // würde sich klobig anfühlen wenn der Spieler bereits weiter rennt.
   }, null, scene);
   scene.time.delayedCall(cooldown, () => {
     rollCooldown = false;
