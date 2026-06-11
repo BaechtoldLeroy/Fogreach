@@ -690,6 +690,7 @@ window.beginChargedSlash = beginChargedSlash;
 window.releaseChargedSlash = releaseChargedSlash;
 window.spinAttack = spinAttack;
 window.dashSlash = dashSlash;
+window.performRoll = performRoll;
 window.throwDagger = throwDagger;
 window.shieldBash = shieldBash;
 window.handlePlayerProjectileEnemyOverlap = handlePlayerProjectileEnemyOverlap;
@@ -1049,7 +1050,7 @@ function _applySmoothedVelocity(targetVx, targetVy, scene) {
 }
 
 function handlePlayerMovement() {
-  if (isDashing) return;
+  if (isDashing || isRolling) return;
 
   // Stun check: if stunned, stop all movement (hard-stop — bypass smoothing)
   if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) {
@@ -1107,7 +1108,7 @@ function handlePlayerMovement() {
 }
 
 function handleMobileMovement() {
-  if (isDashing) return;
+  if (isDashing || isRolling) return;
 
   // Stun check: hard-stop, bypass smoothing
   if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) {
@@ -1352,7 +1353,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
 }
 
 function attack() {
-  if (isAttacking || attackCooldown || isDashing || isChargingSlash) return;
+  if (isAttacking || attackCooldown || isDashing || isChargingSlash || isRolling) return;
   if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) return;
 
   isAttacking = true;
@@ -1457,7 +1458,7 @@ function spinAttack() {
   const now = this.time.now;
   const baseCooldown = getSpinCooldown();
   const abilityCooldown = applyCooldownModifier(baseCooldown, 'spin');
-  if (isSpinning || now - lastSpinTime < abilityCooldown || isChargingSlash || isDashing) return;
+  if (isSpinning || now - lastSpinTime < abilityCooldown || isChargingSlash || isDashing || isRolling) return;
 
   isSpinning = true;
   lastSpinTime = now;
@@ -1558,7 +1559,7 @@ function spinAttack() {
 function beginChargedSlash() {
   if (!this || !player) return;
   if (!_abilityGate('chargeSlash')) return;
-  if (chargeSlashCooldown || isChargingSlash || isSpinning || isDashing) return;
+  if (chargeSlashCooldown || isChargingSlash || isSpinning || isDashing || isRolling) return;
 
   isChargingSlash = true;
   chargeSlashStartTime = this.time.now;
@@ -1681,10 +1682,87 @@ function releaseChargedSlash(forceMaxCharge = false) {
   });
 }
 
+// 054 WP02 + WP03: Dodge-Roll execution.
+//
+// WP02: Movement via Phaser velocity for `RollConfig.duration` ms in current
+// movement direction (or cached lastMoveDir for stillstand-roll, FR-02).
+// Speed = distance / duration ≈ 450 px/s — fast enough that wall-collisions
+// stop the roll cleanly, slow enough that Phaser arcade-physics handles them
+// without manual tunneling-detection (unlike dashSlash at ~1000 px/s).
+//
+// WP03: i-Frames via window._playerInvincible flag set true for the duration.
+// applyPlayerDamage (enemy.js:1649) already respects the flag — zero
+// damage-system refactor needed. DoT-ticks (C-06) + Brute-Stun (C-07) bypass
+// the flag intentionally (research §4 documented exceptions).
+//
+// Mutation order:
+//   1. Read movement input, update lastMoveDir
+//   2. Set isRolling, rollCooldown, _playerInvincible
+//   3. setVelocity for full Roll-speed in direction
+//   4. delayedCall(duration) → reset isRolling + _playerInvincible
+//   5. delayedCall(cooldown) → reset rollCooldown
+function performRoll() {
+  // Gate: kein Roll während anderer Action, Cooldown, oder Tod
+  if (!this || !player || !player.active) return false;
+  if (isRolling || rollCooldown || playerHealth <= 0) return false;
+  if (isDashing || isAttacking || isChargingSlash) return false;
+  if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) return false;
+
+  // Zentrale Config (FR-11 Knowledge-Tree-Hook): später via Buff-Registry tweakbar
+  const cfg = window.RollConfig || { distance: 90, duration: 200, cooldown: 600 };
+  const distance = cfg.distance;
+  const duration = cfg.duration;
+  const cooldown = cfg.cooldown;
+
+  // Direction-Resolution: aktueller Movement-Input ODER letzter cached
+  let dx = 0, dy = 0;
+  if (window.InputScheme && typeof window.InputScheme.getMovementInput === 'function') {
+    const mv = window.InputScheme.getMovementInput();
+    if (mv && (mv.x !== 0 || mv.y !== 0)) {
+      const mag = Math.hypot(mv.x, mv.y);
+      if (mag > 0.0001) {
+        dx = mv.x / mag;
+        dy = mv.y / mag;
+        // Cache für nächsten Stillstand-Roll
+        lastMoveDir = { x: dx, y: dy };
+      }
+    }
+  }
+  if (dx === 0 && dy === 0) {
+    dx = lastMoveDir.x || 0;
+    dy = lastMoveDir.y || 1;
+  }
+
+  isRolling = true;
+  rollCooldown = true;
+  window._playerInvincible = true;
+
+  const speedPxPerSec = distance / (duration / 1000);
+  // setMaxVelocity raised damit roll-speed nicht von normalem clamp gestoppt wird
+  if (player.body) player.body.setMaxVelocity(speedPxPerSec, speedPxPerSec);
+  if (player.setVelocity) player.setVelocity(dx * speedPxPerSec, dy * speedPxPerSec);
+
+  const scene = this;
+  scene.time.delayedCall(duration, () => {
+    isRolling = false;
+    window._playerInvincible = false;
+    // MaxVelocity zurück auf normalen Player-Clamp (220 ist der base)
+    if (player && player.body) player.body.setMaxVelocity(220, 220);
+    // Velocity NICHT auf 0 setzen — handlePlayerMovement übernimmt sofort wieder
+    // basierend auf aktuellem Input; ein erzwungenes Stop würde sich klobig
+    // anfühlen wenn der Spieler bereits weiter rennt.
+  }, null, scene);
+  scene.time.delayedCall(cooldown, () => {
+    rollCooldown = false;
+  }, null, scene);
+
+  return true;
+}
+
 function dashSlash() {
   if (!_abilityGate('dashSlash')) return;
   if (!this || !player) return;
-  if (dashSlashCooldown || isDashing || isSpinning || isChargingSlash) return;
+  if (dashSlashCooldown || isDashing || isSpinning || isChargingSlash || isRolling) return;
 
   const scene = this;
   const baseCooldown = getDashSlashCooldown();
@@ -1907,7 +1985,7 @@ function _fireBowArrow(scene) {
 function throwDagger() {
   if (!_abilityGate('daggerThrow')) return;
   if (!this || !player || !playerProjectiles) return;
-  if (daggerThrowCooldown || isChargingSlash) return;
+  if (daggerThrowCooldown || isChargingSlash || isRolling) return;
 
   if (window.soundManager) window.soundManager.playSFX('ability_dagger');
   const scene = this;
@@ -1958,7 +2036,7 @@ function throwDagger() {
 function shieldBash() {
   if (!_abilityGate('shieldBash')) return;
   if (!this || !player) return;
-  if (shieldBashCooldown || isDashing) return;
+  if (shieldBashCooldown || isDashing || isRolling) return;
 
   if (window.soundManager) window.soundManager.playSFX('ability_shield');
   const scene = this;

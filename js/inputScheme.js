@@ -72,7 +72,9 @@
       one:   kb.addKey('ONE'),
       two:   kb.addKey('TWO'),
       three: kb.addKey('THREE'),
-      four:  kb.addKey('FOUR')
+      four:  kb.addKey('FOUR'),
+      // 054 WP01: Shift triggers Dodge-Roll (both schemes).
+      shift: kb.addKey('SHIFT')
     };
     return {
       getKeyDown(name) {
@@ -271,6 +273,16 @@
     return typeof p.isKeyJustDown === 'function' && p.isKeyJustDown(keyName);
   }
 
+  // 054 WP01: Dodge-Roll trigger. Edge-triggered (returns true once on press).
+  // Used by main.js update loop to fire Roll-Movement (WP02). Suppressed during
+  // combat-input-suppression (dialogs, modals) per shouldSuppressCombatInput().
+  function isRollTriggered() {
+    if (shouldSuppressCombatInput()) return false;
+    const p = _requirePrimitives();
+    if (!p) return false;
+    return typeof p.isKeyJustDown === 'function' && p.isKeyJustDown('shift');
+  }
+
   function consumeAbilityReleaseTrigger(slotIndex) {
     // Release paths are currently handled outside this module (main.js still
     // polls JustUp for charge abilities). This hook exists so future callers
@@ -342,6 +354,7 @@
     markPrimaryButtonJustDown,
     consumeAbilityTrigger,
     consumeAbilityReleaseTrigger,
+    isRollTriggered,
     getSlotLabel,
     getAimDirection,
     shouldSuppressCombatInput,

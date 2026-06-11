@@ -770,6 +770,19 @@ let dashSlashCooldown = false;
 let daggerThrowCooldown = false;
 let shieldBashCooldown = false;
 let isDashing = false;
+// 054 WP02 + WP03: Dodge-Roll state. isRolling triggert Ability-Gates +
+// handlePlayerMovement-Skip; rollCooldown blockt Re-Trigger; lastMoveDir
+// cached die letzte Richtung für Stillstand-Roll (FR-02).
+let isRolling = false;
+let rollCooldown = false;
+let lastMoveDir = { x: 0, y: 1 };
+// 054 FR-11: Zentrale Roll-Config für Knowledge-Tree-Hook (später via
+// Buff-Registry tweakbar). Magic numbers landen NICHT im performRoll-Code.
+window.RollConfig = window.RollConfig || {
+  distance: 90,    // px
+  duration: 200,   // ms — auch das i-Frame-Window
+  cooldown: 600    // ms ab Roll-Start
+};
 let playerDeathHandled = false;
 
 // ==== INVENTAR & AUSRÜSTUNG ====
@@ -873,6 +886,8 @@ function create() {
   daggerThrowCooldown = false;
   shieldBashCooldown = false;
   isDashing = false;
+  isRolling = false;
+  rollCooldown = false;
   abilityStatusDisplay = {};
   const updateWorldBounds = (width, height) => {
     // Guard: scale resize events can fire after the GameScene has been
@@ -1559,6 +1574,15 @@ function update(time, delta) {
       }
       if (window.InputScheme.consumeAbilityReleaseTrigger(slot)) {
         window.AbilitySystem.tryRelease('slot' + slot, this);
+      }
+    }
+    // 054 WP02 + WP03: Dodge-Roll trigger. performRoll() in player.js setzt
+    // isRolling/rollCooldown/_playerInvincible, applied Velocity in
+    // Bewegungs-Richtung, und resettet alle Flags nach RollConfig.duration /
+    // RollConfig.cooldown.
+    if (window.InputScheme.isRollTriggered && window.InputScheme.isRollTriggered()) {
+      if (typeof window.performRoll === 'function') {
+        window.performRoll.call(this);
       }
     }
   }
@@ -2405,9 +2429,10 @@ function initControls() {
     } else {
       console.warn('[initControls] mobileControls.js not loaded');
     }
-  } else {
-    spinKey = this.input.keyboard.addKey('SHIFT');
   }
+  // 054 WP01: Shift-Key wird jetzt zentral über InputScheme.isRollTriggered()
+  // gepollt (siehe update-loop weiter unten). Der alte spinKey hier war dead
+  // code (nie gepollt, spinKey-Variable nie deklariert).
 }
 
 // 6.3 createAllGraphics: erzeugt alle Texturen
