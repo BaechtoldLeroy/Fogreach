@@ -127,6 +127,38 @@
     } catch (e) { return { d: -1, s: -1 }; }
   }
 
+  // Typ-Histogramm: zählt GameObject-Typen rekursiv (TileSprite, Image,
+  // Sprite, Graphics, Text, Container...) — zeigt, was die Draw-Calls treibt.
+  function typeHistogram(scene) {
+    var h = {};
+    try {
+      var walk = function (arr) {
+        for (var i = 0; i < arr.length; i++) {
+          var c = arr[i];
+          var t = (c && c.type) || '?';
+          h[t] = (h[t] || 0) + 1;
+          if (c && c.list && c.list.length) walk(c.list);
+        }
+      };
+      walk(scene.children.list);
+    } catch (e) { /* partial ok */ }
+    return h;
+  }
+
+  // Kompakte Top-N-Darstellung des Histogramms, absteigend nach Count
+  function histTop(h, n) {
+    try {
+      var keys = Object.keys(h).sort(function (a, b) { return h[b] - h[a]; });
+      var parts = [];
+      for (var i = 0; i < keys.length && i < n; i++) {
+        parts.push(keys[i].replace('TileSprite', 'TS').replace('Graphics', 'GFX')
+          .replace('Image', 'IMG').replace('Sprite', 'SPR').replace('Container', 'CNT')
+          .replace('Text', 'TXT') + ':' + h[keys[i]]);
+      }
+      return parts.join(' ');
+    } catch (e) { return '—'; }
+  }
+
   function textureStats(game) {
     var count = 0, bytes = 0;
     try {
@@ -170,27 +202,30 @@
       var objs = scene ? countObjects(scene) : -1;
       var b = scene ? countBodies(scene) : { d: -1, s: -1 };
       var tex = textureStats(game);
+      var hist = scene ? typeHistogram(scene) : {};
       var heap = 0;
       try { if (performance && performance.memory) heap = performance.memory.usedJSHeapSize / (1024 * 1024); } catch (e) {}
       var ctx = scene ? contextKey(scene) : 'unknown';
 
       // Sample akkumulieren (FPS min/avg pro Kontext)
       if (fps > 0) {
-        var s = samples[ctx] || (samples[ctx] = { fpsMin: 999, fpsSum: 0, n: 0, objMax: 0, drawMax: 0, texMb: 0 });
+        var s = samples[ctx] || (samples[ctx] = { fpsMin: 999, fpsSum: 0, n: 0, objMax: 0, drawMax: 0, texMb: 0, hist: {} });
         s.fpsMin = Math.min(s.fpsMin, fps);
         s.fpsSum += fps; s.n++;
         s.objMax = Math.max(s.objMax, objs);
         s.drawMax = Math.max(s.drawMax, DRAW.last);
         s.texMb = tex.mb;
+        if (objs >= (s.objMax || 0)) s.hist = hist; // Histogramm vom dichtesten Frame
       }
 
       if (preEl) {
         preEl.textContent =
-          'PERF-PROBE  [053 WP01]\n' +
+          'PERF-PROBE  [053 WP02]\n' +
           'ctx   ' + ctx + '\n' +
           'fps   ' + fps.toFixed(0) + '   (' + ms.toFixed(1) + ' ms)\n' +
           'objs  ' + objs + '   bodies ' + b.d + '+' + b.s + 's\n' +
           'draws ' + DRAW.last + '/frame\n' +
+          'types ' + histTop(hist, 5) + '\n' +
           'tex   ' + tex.count + '  (~' + tex.mb.toFixed(1) + ' MB VRAM)\n' +
           'heap  ' + (heap ? heap.toFixed(1) + ' MB' : '—');
       }
@@ -209,7 +244,8 @@
         frames: s.n,
         objMax: s.objMax,
         drawMax: s.drawMax,
-        texMb: Math.round(s.texMb * 10) / 10
+        texMb: Math.round(s.texMb * 10) / 10,
+        types: s.hist || {}
       };
     }
     try {
