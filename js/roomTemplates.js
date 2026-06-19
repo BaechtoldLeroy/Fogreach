@@ -322,6 +322,16 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   const wallRects = [];
   const activeWallSpans = new Map();
 
+  // Perf (053 WP02): geteilte Graphics für Obstacle-Drop-Shadows (Depth 38)
+  // und Brazier-Glows (Depth -3) — sonst eins pro Obstacle/Brazier = je ein
+  // eigener Draw-Call. Render-Order kommt aus setDepth, daher ist die
+  // Insertion-Reihenfolge egal; visuell identisch (Alpha-Blending der
+  // einzelnen Fills bleibt gleich).
+  const obstacleShadowGfx = scene.add?.graphics ? scene.add.graphics().setDepth(38) : null;
+  const brazierGlowGfx = scene.add?.graphics ? scene.add.graphics().setDepth(-3) : null;
+  if (obstacleShadowGfx) templateWalls.push(obstacleShadowGfx);
+  if (brazierGlowGfx) templateWalls.push(brazierGlowGfx);
+
   for (let y = 0; y < H; y++) {
     const row = tpl.layout.walls[y];
     const spansInRow = new Set();
@@ -363,27 +373,21 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
           const obstacleY = oy + y * T + T / 2;
 
           // Drop shadow under auto-obstacle
-          if (scene.add?.graphics) {
-            const shadowGfx = scene.add.graphics();
-            shadowGfx.fillStyle(0x000000, 0.25);
-            shadowGfx.fillEllipse(obstacleX, obstacleY + T * 0.35, T * 0.7, T * 0.25);
-            shadowGfx.setDepth(38);
-            templateWalls.push(shadowGfx);
+          if (obstacleShadowGfx) {
+            obstacleShadowGfx.fillStyle(0x000000, 0.25);
+            obstacleShadowGfx.fillEllipse(obstacleX, obstacleY + T * 0.35, T * 0.7, T * 0.25);
           }
 
           // Ambient glow for braziers in grid
-          if ((key === 'brazier' || key === 'brazer') && scene.add?.graphics) {
-            const glowGfx = scene.add.graphics();
-            glowGfx.fillStyle(0xff8800, 0.06);
-            glowGfx.fillCircle(obstacleX, obstacleY, 80);
-            glowGfx.fillStyle(0xffaa00, 0.1);
-            glowGfx.fillCircle(obstacleX, obstacleY, 64);
-            glowGfx.fillStyle(0xffcc33, 0.2);
-            glowGfx.fillCircle(obstacleX, obstacleY, 40);
-            glowGfx.fillStyle(0xffdd44, 0.12);
-            glowGfx.fillCircle(obstacleX, obstacleY, 24);
-            glowGfx.setDepth(-3);
-            templateWalls.push(glowGfx);
+          if ((key === 'brazier' || key === 'brazer') && brazierGlowGfx) {
+            brazierGlowGfx.fillStyle(0xff8800, 0.06);
+            brazierGlowGfx.fillCircle(obstacleX, obstacleY, 80);
+            brazierGlowGfx.fillStyle(0xffaa00, 0.1);
+            brazierGlowGfx.fillCircle(obstacleX, obstacleY, 64);
+            brazierGlowGfx.fillStyle(0xffcc33, 0.2);
+            brazierGlowGfx.fillCircle(obstacleX, obstacleY, 40);
+            brazierGlowGfx.fillStyle(0xffdd44, 0.12);
+            brazierGlowGfx.fillCircle(obstacleX, obstacleY, 24);
           }
 
           // Check clearance: only spawn as physics obstacle if 2+ tiles from any wall
@@ -487,16 +491,18 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       scene._bakedFloorKeys.push(bakedKey);
     }
 
-    // Scatter 8-12 random "detail tiles" to break up tiling repetition
+    // Scatter 8-12 random "detail tiles" to break up tiling repetition.
+    // Perf (053 WP02): alle in EIN Graphics-Objekt zeichnen statt 8-12
+    // separate — jedes Graphics ist ein eigener Draw-Call. Visuell identisch.
     if (scene.add?.graphics) {
       const scatterCount = Phaser.Math.Between(8, 12);
+      const detGfx = scene.add.graphics().setDepth(-4);
       for (let si = 0; si < scatterCount; si++) {
         const stx = Phaser.Math.Between(2, W - 3);
         const sty = Phaser.Math.Between(2, H - 3);
         if (isWalkableTile(stx, sty)) {
           const spx = ox + stx * T + T / 2;
           const spy = oy + sty * T + T / 2;
-          const detGfx = scene.add.graphics();
           const kind = Math.random();
           if (kind < 0.35) {
             detGfx.fillStyle(0x000000, 0.1 + Math.random() * 0.15);
@@ -512,14 +518,20 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
             detGfx.lineTo(spx + 6, spy + 2);
             detGfx.strokePath();
           }
-          detGfx.setDepth(-4);
-          templateWalls.push(detGfx);
         }
       }
+      templateWalls.push(detGfx);
     }
   }
 
   const canRenderWalls = !!(wallTexture && scene.add?.tileSprite);
+  // Perf (053 WP02): EIN gemeinsames Graphics-Objekt für alle Wand-Schatten
+  // + Damage-Marks statt eins pro Wand-Rect. Jedes Graphics ist ein eigener
+  // Draw-Call (Batch-Break) — bei ~40 Rects summiert sich das. Konsolidierung
+  // senkt draws/Frame deutlich, visuell identisch. Depth 39.5 hält die
+  // Schatten/Marks (wie bisher per Insertion-Order) über den Wand-Sprites
+  // (39) und unter Obstacles (40).
+  const wallDecoGfx = scene.add?.graphics ? scene.add.graphics().setDepth(39.5) : null;
   wallRects.forEach(rect => {
     const widthPx = rect.width * T;
     const heightPx = rect.height * T;
@@ -535,41 +547,35 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     }
 
     // Inner shadow border — 2px dark edge where wall meets floor
-    if (scene.add?.graphics) {
-      const shadowGfx = scene.add.graphics();
-      shadowGfx.fillStyle(0x000000, 0.3);
+    if (wallDecoGfx) {
       const wx0 = ox + rect.x * T;
       const wy0 = oy + rect.y * T;
+      wallDecoGfx.fillStyle(0x000000, 0.3);
       // Bottom edge shadow (most visible — floor is below)
       if (rect.y + rect.height < H) {
-        shadowGfx.fillRect(wx0, wy0 + heightPx, widthPx, 2);
+        wallDecoGfx.fillRect(wx0, wy0 + heightPx, widthPx, 2);
       }
       // Right edge shadow
       if (rect.x + rect.width < W) {
-        shadowGfx.fillRect(wx0 + widthPx, wy0, 2, heightPx);
+        wallDecoGfx.fillRect(wx0 + widthPx, wy0, 2, heightPx);
       }
       // Top edge shadow (lighter)
       if (rect.y > 0) {
-        shadowGfx.fillStyle(0x000000, 0.15);
-        shadowGfx.fillRect(wx0, wy0 - 2, widthPx, 2);
+        wallDecoGfx.fillStyle(0x000000, 0.15);
+        wallDecoGfx.fillRect(wx0, wy0 - 2, widthPx, 2);
       }
       // Left edge shadow (lighter)
       if (rect.x > 0) {
-        shadowGfx.fillStyle(0x000000, 0.15);
-        shadowGfx.fillRect(wx0 - 2, wy0, 2, heightPx);
+        wallDecoGfx.fillStyle(0x000000, 0.15);
+        wallDecoGfx.fillRect(wx0 - 2, wy0, 2, heightPx);
       }
-      shadowGfx.setDepth(39);
-      templateWalls.push(shadowGfx);
 
       // Random damage marks on some wall spans
       if (widthPx > T * 2 && Math.random() < 0.4) {
-        const dmgGfx = scene.add.graphics();
-        dmgGfx.fillStyle(0x000000, 0.15);
+        wallDecoGfx.fillStyle(0x000000, 0.15);
         const dmgX = wx0 + Phaser.Math.Between(T, widthPx - T);
         const dmgY = wy0 + Phaser.Math.Between(2, heightPx - 6);
-        dmgGfx.fillRect(dmgX, dmgY, Phaser.Math.Between(4, 10), Phaser.Math.Between(2, 4));
-        dmgGfx.setDepth(39);
-        templateWalls.push(dmgGfx);
+        wallDecoGfx.fillRect(dmgX, dmgY, Phaser.Math.Between(4, 10), Phaser.Math.Between(2, 4));
       }
     }
 
@@ -577,6 +583,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       spawnWallRect(cx, cy, widthPx, heightPx, wallTexture || undefined);
     }
   });
+  if (wallDecoGfx) templateWalls.push(wallDecoGfx);
 
   // Atmospheric elements: drop shadows, brazier glow, floor details, cobwebs, vignette
   if (scene.add?.graphics) {
@@ -684,28 +691,22 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       o.type = fallback;
     }
 
-    // Drop shadow under obstacle
-    if (scene.add?.graphics) {
-      const shadowGfx = scene.add.graphics();
-      shadowGfx.fillStyle(0x000000, 0.25);
-      shadowGfx.fillEllipse(px, py + T * 0.35, T * 0.7, T * 0.25);
-      shadowGfx.setDepth(38);
-      templateWalls.push(shadowGfx);
+    // Drop shadow under obstacle — in dasselbe geteilte Graphics (053 WP02)
+    if (obstacleShadowGfx) {
+      obstacleShadowGfx.fillStyle(0x000000, 0.25);
+      obstacleShadowGfx.fillEllipse(px, py + T * 0.35, T * 0.7, T * 0.25);
     }
 
     // Ambient glow for braziers — large, warm, and visible
-    if ((o.type === 'brazier' || o.type === 'brazer') && scene.add?.graphics) {
-      const glowGfx = scene.add.graphics();
-      glowGfx.fillStyle(0xff8800, 0.06);
-      glowGfx.fillCircle(px, py, 80);
-      glowGfx.fillStyle(0xffaa00, 0.1);
-      glowGfx.fillCircle(px, py, 64);
-      glowGfx.fillStyle(0xffcc33, 0.2);
-      glowGfx.fillCircle(px, py, 40);
-      glowGfx.fillStyle(0xffdd44, 0.12);
-      glowGfx.fillCircle(px, py, 24);
-      glowGfx.setDepth(-3);
-      templateWalls.push(glowGfx);
+    if ((o.type === 'brazier' || o.type === 'brazer') && brazierGlowGfx) {
+      brazierGlowGfx.fillStyle(0xff8800, 0.06);
+      brazierGlowGfx.fillCircle(px, py, 80);
+      brazierGlowGfx.fillStyle(0xffaa00, 0.1);
+      brazierGlowGfx.fillCircle(px, py, 64);
+      brazierGlowGfx.fillStyle(0xffcc33, 0.2);
+      brazierGlowGfx.fillCircle(px, py, 40);
+      brazierGlowGfx.fillStyle(0xffdd44, 0.12);
+      brazierGlowGfx.fillCircle(px, py, 24);
     }
 
     // Check if object has enough clearance from walls (at least 2 tiles)
