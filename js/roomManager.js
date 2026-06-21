@@ -1175,6 +1175,14 @@ function updateFogOfWar() {
   const scene = this;
   if (!scene.spotlightRT || !scene.exploredRT || !player) return;
 
+  // 053-Diagnose: Live-Toggle (perfProbe). Fog komplett aus -> Overlays
+  // verstecken + teures Raycasting/RT/Mask überspringen. Nur aktiv wenn
+  // window.__PERF existiert (= ?perf=1); für normale Spieler Zero-Effekt.
+  const _perfNoFog = !!(window.__PERF && window.__PERF.nofog);
+  if (scene.fogUnseen && scene.fogUnseen.visible === _perfNoFog) scene.fogUnseen.setVisible(!_perfNoFog);
+  if (scene.spotlightRT && scene.spotlightRT.visible === _perfNoFog) scene.spotlightRT.setVisible(!_perfNoFog);
+  if (_perfNoFog) return;
+
   // Mobile optimization: skip fog updates on alternate frames
   const isMobileFog = !!(typeof isMobile !== 'undefined' && isMobile);
   const fogSkipInterval = isMobileFog ? 2 : 1;

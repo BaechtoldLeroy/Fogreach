@@ -43,6 +43,21 @@
     cull: function (scene, padding) {
       try {
         if (!scene || !scene.cameras || !scene.cameras.main) return;
+
+        // 053-Diagnose: Live-Toggle (perfProbe). Culling aus -> alle
+        // verwalteten Objekte wieder sichtbar machen und nichts cullen.
+        if (window.__PERF && window.__PERF.nocull) {
+          if (this._wasCulling) {
+            var showAll = function (o) { if (o && o.visible === false && o.scrollFactorX === 1) o.visible = true; };
+            var w = scene._templateWalls;
+            if (Array.isArray(w)) { for (var j = 0; j < w.length; j++) showAll(w[j]); }
+            if (window.obstacles && window.obstacles.children) window.obstacles.children.iterate(showAll);
+            this._wasCulling = false;
+          }
+          return;
+        }
+        this._wasCulling = true;
+
         var v = scene.cameras.main.worldView;
         if (!v) return;
         var pad = (typeof padding === 'number') ? padding : 96;
