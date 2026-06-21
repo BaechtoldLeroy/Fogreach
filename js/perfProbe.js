@@ -35,12 +35,21 @@
   // Live-Diagnose-Toggles: vom Spiel honoriert (updateFogOfWar, ViewportCull).
   // Zero-Effekt für normale Spieler, weil __PERF nur bei ?perf=1 existiert.
   // Initialzustand optional aus URL (&nofog=1 / &nocull=1).
+  function _numParam(name) {
+    var m = new RegExp('[?&]' + name + '=([0-9.]+)').exec(window.location.search);
+    return m ? parseFloat(m[1]) : undefined;
+  }
   window.__PERF = window.__PERF || {
     nofog: /[?&]nofog=1\b/.test(window.location.search),
     nocull: /[?&]nocull=1\b/.test(window.location.search),
     nomask: /[?&]nomask=1\b/.test(window.location.search),
     nospot: /[?&]nospot=1\b/.test(window.location.search),
-    noexpl: /[?&]noexpl=1\b/.test(window.location.search)
+    noexpl: /[?&]noexpl=1\b/.test(window.location.search),
+    // Numerische Live-Tuner (vom Spiel honoriert): explRes (RT-Auflösung
+    // 0..1), fogInterval (Update jeden N-ten Frame), rays (Vision-Rays).
+    explRes: _numParam('explRes'),
+    fogInterval: _numParam('fogInterval'),
+    rays: _numParam('rays')
   };
 
   // --- Overlay-DOM ----------------------------------------------------
