@@ -274,6 +274,9 @@
           'fps   ' + fps.toFixed(0) + '   (' + ms.toFixed(1) + ' ms)\n' +
           'objs  ' + objs + '   bodies ' + b.d + '+' + b.s + 's\n' +
           'draws ' + DRAW.last + '/frame\n' +
+          'cfg   res:' + (window.__PERF.explRes != null ? window.__PERF.explRes : 'def') +
+                ' int:' + (window.__PERF.fogInterval != null ? window.__PERF.fogInterval : 'def') +
+                ' ray:' + (window.__PERF.rays != null ? window.__PERF.rays : 'def') + '\n' +
           'types ' + histTop(hist, 5) + '\n' +
           'tex   ' + tex.count + '  (~' + tex.mb.toFixed(1) + ' MB VRAM)\n' +
           'heap  ' + (heap ? heap.toFixed(1) + ' MB' : '—');
