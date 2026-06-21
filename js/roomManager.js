@@ -1119,10 +1119,24 @@ function initFogOfWar() {
 
   // exploredRT in WORLD space — added to scene (invisible) so BitmapMask
   // aligns pixel-by-pixel with fogUnseen (also world-space below).
+  //
+  // Perf (053 WP06): exploredRT.draw() pro Fog-Tick war der dominante
+  // Rest-Sink (EXPL-Toggle: 38->60fps), weil ein Framebuffer-Bind/Draw auf
+  // einer welt-großen 37MB-RT den Tile-GPU stallt. Auf Mobile rendern wir
+  // die RT daher in HALBER Auflösung (1/4 Pixel -> ~4x billiger) und
+  // skalieren sie zur Anzeige wieder auf Weltgröße. Der Explored-Reveal ist
+  // ein weicher Mask-Rand -> halbe Auflösung visuell unsichtbar. Die ins RT
+  // gestempelten Polygone werden mit _exploredRes skaliert (s. updateFogOfWar).
+  const _explOvr = window.__PERF && window.__PERF.explRes;
+  const explRes = (typeof _explOvr === 'number' && _explOvr > 0)
+    ? _explOvr
+    : ((typeof isMobile !== 'undefined' && isMobile) ? 0.5 : 1);
+  scene._exploredRes = explRes;
   scene.exploredRT = scene.add
-    .renderTexture(0, 0, worldW, worldH)
+    .renderTexture(0, 0, Math.ceil(worldW * explRes), Math.ceil(worldH * explRes))
     .setOrigin(0, 0)
     .setVisible(false);
+  if (explRes !== 1) scene.exploredRT.setScale(1 / explRes); // Anzeige in Weltgröße
 
   // Spotlight: screen-space 40%-Dim mit Vision-Loch. Früher ein
   // RenderTexture mit fill()+erase() PRO Fog-Tick — auf Mobile ~50ms
@@ -1236,9 +1250,12 @@ function updateFogOfWar() {
   // 2) Explored stamp in WORLD coords — exploredRT is a world-sized RT,
   //    so previously-explored tiles remain painted as the camera scrolls.
   if (!_P.noexpl) {
+    // Koords mit _exploredRes skalieren: die RT ist auf Mobile halb-aufgelöst
+    // (WP06), wird aber zur Anzeige auf Weltgröße hochskaliert.
+    const _res = scene._exploredRes || 1;
     const ptsWorldExplored = ptsWorld.map((p) => ({
-      x: p.x + p.dx * VISION_PAD_EXPLORED,
-      y: p.y + p.dy * VISION_PAD_EXPLORED,
+      x: (p.x + p.dx * VISION_PAD_EXPLORED) * _res,
+      y: (p.y + p.dy * VISION_PAD_EXPLORED) * _res,
     }));
     const gfxWorld = scene._visionGfxWorld || scene._visionGfx;
     gfxWorld.clear().fillStyle(0xffffff, 1);
