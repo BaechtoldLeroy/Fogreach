@@ -1201,9 +1201,15 @@ function updateFogOfWar() {
   if (scene.spotlightDim && scene.spotlightDim.visible === _noSpot) scene.spotlightDim.setVisible(!_noSpot);
   if (_P.nofog) return;
 
-  // Mobile optimization: skip fog updates on alternate frames
+  // Mobile optimization: Fog-Update nur jeden N-ten Frame (053 WP05).
+  // exploredRT.draw (welt-große RT) + Raycasting kosten ~18ms/Update und
+  // lassen sich nicht throtteln OHNE die aktuelle Sicht (Stamp) zu
+  // verzögern — daher senken wir stattdessen die Update-Frequenz. 3 statt
+  // 2 bringt Procroom über die 45fps-Schwelle; Sichtkegel-Edge minimal
+  // weniger reaktiv (≈15Hz). __PERF.fogInterval erlaubt Live-Tuning (?perf).
   const isMobileFog = !!(typeof isMobile !== 'undefined' && isMobile);
-  const fogSkipInterval = isMobileFog ? 2 : 1;
+  const _ovr = window.__PERF && window.__PERF.fogInterval;
+  const fogSkipInterval = (typeof _ovr === 'number' && _ovr > 0) ? _ovr : (isMobileFog ? 3 : 1);
   _fogFrameCounter++;
   if (_fogFrameCounter % fogSkipInterval !== 0) return;
 
