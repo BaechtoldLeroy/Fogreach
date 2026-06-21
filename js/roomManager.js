@@ -1175,13 +1175,17 @@ function updateFogOfWar() {
   const scene = this;
   if (!scene.spotlightRT || !scene.exploredRT || !player) return;
 
-  // 053-Diagnose: Live-Toggle (perfProbe). Fog komplett aus -> Overlays
-  // verstecken + teures Raycasting/RT/Mask überspringen. Nur aktiv wenn
-  // window.__PERF existiert (= ?perf=1); für normale Spieler Zero-Effekt.
-  const _perfNoFog = !!(window.__PERF && window.__PERF.nofog);
-  if (scene.fogUnseen && scene.fogUnseen.visible === _perfNoFog) scene.fogUnseen.setVisible(!_perfNoFog);
-  if (scene.spotlightRT && scene.spotlightRT.visible === _perfNoFog) scene.spotlightRT.setVisible(!_perfNoFog);
-  if (_perfNoFog) return;
+  // 053-Diagnose: Live-Toggles (perfProbe). Granular, um den teuersten
+  // Fog-Teil zu isolieren. Nur aktiv wenn window.__PERF existiert (?perf=1).
+  //   nofog  = alles aus (Mask + Spotlight + Raycasting/RT-draw)
+  //   nomask = nur das welt-große BitmapMask-Layer (fogUnseen) aus
+  //   nospot = nur das screen-große spotlightRT aus
+  const _P = window.__PERF || {};
+  const _noMask = !!(_P.nofog || _P.nomask);
+  const _noSpot = !!(_P.nofog || _P.nospot);
+  if (scene.fogUnseen && scene.fogUnseen.visible === _noMask) scene.fogUnseen.setVisible(!_noMask);
+  if (scene.spotlightRT && scene.spotlightRT.visible === _noSpot) scene.spotlightRT.setVisible(!_noSpot);
+  if (_P.nofog) return;
 
   // Mobile optimization: skip fog updates on alternate frames
   const isMobileFog = !!(typeof isMobile !== 'undefined' && isMobile);
@@ -1221,15 +1225,17 @@ function updateFogOfWar() {
   scene.exploredRT.draw(gfxWorld);
 
   // 3) Spotlight-Loch in SCREEN coords (spotlightRT is screen-space)
-  const ptsScreenUI = ptsWorld.map((p) => ({
-    x: p.x + p.dx * VISION_PAD_UI - cam.scrollX,
-    y: p.y + p.dy * VISION_PAD_UI - cam.scrollY,
-  }));
-  scene.spotlightRT.clear();
-  scene.spotlightRT.fill(0x000000, 0.4);
-  scene._visionGfx.clear().fillStyle(0xffffff, 1);
-  drawFilledPolygon(scene._visionGfx, ptsScreenUI);
-  scene.spotlightRT.erase(scene._visionGfx);
+  if (!_noSpot) {
+    const ptsScreenUI = ptsWorld.map((p) => ({
+      x: p.x + p.dx * VISION_PAD_UI - cam.scrollX,
+      y: p.y + p.dy * VISION_PAD_UI - cam.scrollY,
+    }));
+    scene.spotlightRT.clear();
+    scene.spotlightRT.fill(0x000000, 0.4);
+    scene._visionGfx.clear().fillStyle(0xffffff, 1);
+    drawFilledPolygon(scene._visionGfx, ptsScreenUI);
+    scene.spotlightRT.erase(scene._visionGfx);
+  }
 
   // 4) Gegner-Maske mit kleinem Pad
   if (scene._enemyVisionMaskGfx) {

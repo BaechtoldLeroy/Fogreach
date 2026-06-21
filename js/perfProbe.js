@@ -37,7 +37,9 @@
   // Initialzustand optional aus URL (&nofog=1 / &nocull=1).
   window.__PERF = window.__PERF || {
     nofog: /[?&]nofog=1\b/.test(window.location.search),
-    nocull: /[?&]nocull=1\b/.test(window.location.search)
+    nocull: /[?&]nocull=1\b/.test(window.location.search),
+    nomask: /[?&]nomask=1\b/.test(window.location.search),
+    nospot: /[?&]nospot=1\b/.test(window.location.search)
   };
 
   // --- Overlay-DOM ----------------------------------------------------
@@ -80,11 +82,11 @@
 
     // Live-Toggle-Buttons (A/B ohne Reload): FOG + CULL an/aus.
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:6px;margin-top:6px;pointer-events:none';
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;pointer-events:none';
     function mkToggle(label, flag) {
       var t = document.createElement('button');
       t.style.cssText = [
-        'pointer-events:auto', 'flex:1', 'font:bold 12px monospace',
+        'pointer-events:auto', 'flex:1 0 40%', 'font:bold 12px monospace',
         'border:0', 'border-radius:4px', 'padding:8px 0', 'cursor:pointer'
       ].join(';');
       var paint = function () {
@@ -102,6 +104,8 @@
     }
     row.appendChild(mkToggle('FOG', 'nofog'));
     row.appendChild(mkToggle('CULL', 'nocull'));
+    row.appendChild(mkToggle('MASK', 'nomask'));
+    row.appendChild(mkToggle('SPOT', 'nospot'));
     box.appendChild(row);
 
     document.body.appendChild(box);
