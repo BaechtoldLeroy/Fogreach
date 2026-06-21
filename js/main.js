@@ -1398,6 +1398,11 @@ window.breakDestructibleObstacle = breakDestructibleObstacle;
 // 5) UPDATE
 // ==================================================
 function update(time, delta) {
+  // 053 WP03: off-screen Raumgeometrie ausblenden (Draw-Call-Reduktion).
+  // Läuft vor den Early-Returns, damit auch bei offenem Inventar/Pause der
+  // dahinter sichtbare Raum gecullt bleibt. Bricht nie (intern try/catch).
+  if (window.ViewportCull) window.ViewportCull.cull(this);
+
   if (invOpen) {
     pauseAllMotion.call(this);
     return;
