@@ -431,7 +431,7 @@ function enterRoom(scene, roomId) {
 
   // Fog reset
   scene.exploredRT?.clear();
-  scene.spotlightRT?.clear();
+  scene._spotlightMaskGfx?.clear();
 
   // 1) Raum bauen: use procedural template from dungeon run if available
   let builtMeta = null;
@@ -483,7 +483,8 @@ function enterRoom(scene, roomId) {
   // Reset fog of war for the new room — rebuild RTs sized to new world bounds
   if (typeof scene.initFogOfWar === 'function') {
     if (scene.exploredRT && scene.exploredRT.destroy) scene.exploredRT.destroy();
-    if (scene.spotlightRT && scene.spotlightRT.destroy) scene.spotlightRT.destroy();
+    if (scene.spotlightDim && scene.spotlightDim.destroy) scene.spotlightDim.destroy();
+    if (scene._spotlightMaskGfx && scene._spotlightMaskGfx.destroy) scene._spotlightMaskGfx.destroy();
     if (scene.fogUnseen && scene.fogUnseen.destroy) scene.fogUnseen.destroy();
     if (scene._visionGfx && scene._visionGfx.destroy) scene._visionGfx.destroy();
     if (scene._visionGfxWorld && scene._visionGfxWorld.destroy) scene._visionGfxWorld.destroy();
@@ -1123,12 +1124,25 @@ function initFogOfWar() {
     .setOrigin(0, 0)
     .setVisible(false);
 
-  // spotlightRT stays screen-space (the dim overlay with vision hole)
-  scene.spotlightRT = scene.make
-    .renderTexture({ x: 0, y: 0, width: W, height: H, add: true })
-    .setOrigin(0, 0)
+  // Spotlight: screen-space 40%-Dim mit Vision-Loch. Früher ein
+  // RenderTexture mit fill()+erase() PRO Fog-Tick — auf Mobile ~50ms
+  // (053-Diagnose: SPOT-Toggle 20->40fps), weil RT-Framebuffer-Ops den
+  // Tile-GPU stallen. Jetzt eine STATISCHE Graphics (einmal gefüllt) mit
+  // invertierter Geometry-Mask; pro Tick wird nur das Mask-Polygon neu
+  // gezeichnet (reine Geometrie, kein Framebuffer-Op). Optik identisch.
+  scene.spotlightDim = scene.add
+    .graphics()
     .setScrollFactor(0)
     .setDepth(900);
+  scene.spotlightDim.fillStyle(0x000000, 0.4);
+  scene.spotlightDim.fillRect(0, 0, W, H);
+  scene._spotlightMaskGfx = scene.add
+    .graphics()
+    .setScrollFactor(0)
+    .setVisible(false);
+  scene.spotlightMask = scene._spotlightMaskGfx.createGeometryMask();
+  scene.spotlightMask.setInvertAlpha(true);
+  scene.spotlightDim.setMask(scene.spotlightMask);
 
   scene._visionGfx = scene.add
     .graphics()
@@ -1173,18 +1187,18 @@ function initFogOfWar() {
 let _fogFrameCounter = 0;
 function updateFogOfWar() {
   const scene = this;
-  if (!scene.spotlightRT || !scene.exploredRT || !player) return;
+  if (!scene.spotlightDim || !scene.exploredRT || !player) return;
 
   // 053-Diagnose: Live-Toggles (perfProbe). Granular, um den teuersten
   // Fog-Teil zu isolieren. Nur aktiv wenn window.__PERF existiert (?perf=1).
   //   nofog  = alles aus (Mask + Spotlight + Raycasting/RT-draw)
   //   nomask = nur das welt-große BitmapMask-Layer (fogUnseen) aus
-  //   nospot = nur das screen-große spotlightRT aus
+  //   nospot = nur das screen-große Spotlight-Dim aus
   const _P = window.__PERF || {};
   const _noMask = !!(_P.nofog || _P.nomask);
   const _noSpot = !!(_P.nofog || _P.nospot);
   if (scene.fogUnseen && scene.fogUnseen.visible === _noMask) scene.fogUnseen.setVisible(!_noMask);
-  if (scene.spotlightRT && scene.spotlightRT.visible === _noSpot) scene.spotlightRT.setVisible(!_noSpot);
+  if (scene.spotlightDim && scene.spotlightDim.visible === _noSpot) scene.spotlightDim.setVisible(!_noSpot);
   if (_P.nofog) return;
 
   // Mobile optimization: skip fog updates on alternate frames
@@ -1224,17 +1238,15 @@ function updateFogOfWar() {
   drawFilledPolygon(gfxWorld, ptsWorldExplored);
   scene.exploredRT.draw(gfxWorld);
 
-  // 3) Spotlight-Loch in SCREEN coords (spotlightRT is screen-space)
+  // 3) Spotlight-Loch in SCREEN coords — nur das invertierte Mask-Polygon
+  //    der statischen Dim-Graphics neu zeichnen (kein RT-Framebuffer-Op).
   if (!_noSpot) {
     const ptsScreenUI = ptsWorld.map((p) => ({
       x: p.x + p.dx * VISION_PAD_UI - cam.scrollX,
       y: p.y + p.dy * VISION_PAD_UI - cam.scrollY,
     }));
-    scene.spotlightRT.clear();
-    scene.spotlightRT.fill(0x000000, 0.4);
-    scene._visionGfx.clear().fillStyle(0xffffff, 1);
-    drawFilledPolygon(scene._visionGfx, ptsScreenUI);
-    scene.spotlightRT.erase(scene._visionGfx);
+    scene._spotlightMaskGfx.clear().fillStyle(0xffffff, 1);
+    drawFilledPolygon(scene._spotlightMaskGfx, ptsScreenUI);
   }
 
   // 4) Gegner-Maske mit kleinem Pad
