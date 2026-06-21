@@ -1235,14 +1235,16 @@ function updateFogOfWar() {
 
   // 2) Explored stamp in WORLD coords — exploredRT is a world-sized RT,
   //    so previously-explored tiles remain painted as the camera scrolls.
-  const ptsWorldExplored = ptsWorld.map((p) => ({
-    x: p.x + p.dx * VISION_PAD_EXPLORED,
-    y: p.y + p.dy * VISION_PAD_EXPLORED,
-  }));
-  const gfxWorld = scene._visionGfxWorld || scene._visionGfx;
-  gfxWorld.clear().fillStyle(0xffffff, 1);
-  drawFilledPolygon(gfxWorld, ptsWorldExplored);
-  scene.exploredRT.draw(gfxWorld);
+  if (!_P.noexpl) {
+    const ptsWorldExplored = ptsWorld.map((p) => ({
+      x: p.x + p.dx * VISION_PAD_EXPLORED,
+      y: p.y + p.dy * VISION_PAD_EXPLORED,
+    }));
+    const gfxWorld = scene._visionGfxWorld || scene._visionGfx;
+    gfxWorld.clear().fillStyle(0xffffff, 1);
+    drawFilledPolygon(gfxWorld, ptsWorldExplored);
+    scene.exploredRT.draw(gfxWorld);
+  }
 
   // 3) Spotlight-Loch in SCREEN coords — nur das invertierte Mask-Polygon
   //    der statischen Dim-Graphics neu zeichnen (kein RT-Framebuffer-Op).
@@ -1299,7 +1301,16 @@ const VISION_RADIUS = 220;
 // Mobile gets fewer rays (90 vs 180) to reduce CPU cost
 const VISION_RAYS_DESKTOP = 180;
 const VISION_RAYS_MOBILE = 90;
-const VISION_RAYS = (typeof isMobile !== 'undefined' && isMobile) ? VISION_RAYS_MOBILE : VISION_RAYS_DESKTOP;
+// BUGFIX (053): früher ein load-time const — aber roomManager.js lädt VOR
+// main.js, wo `isMobile` erst gesetzt wird. Dadurch war isMobile beim Laden
+// immer undefined -> VISION_RAYS dauerhaft 180 (Desktop), auch auf Mobile.
+// Jetzt zur Laufzeit ermittelt, sodass Mobile wirklich nur 90 Rays castet
+// (halbe Raycast-Kosten). __PERF.rays erlaubt Live-Tuning bei ?perf=1.
+function _visionRays() {
+  const ovr = window.__PERF && window.__PERF.rays;
+  if (typeof ovr === 'number' && ovr > 0) return ovr;
+  return (typeof isMobile !== 'undefined' && isMobile) ? VISION_RAYS_MOBILE : VISION_RAYS_DESKTOP;
+}
 const VISION_STEP = 6; // coarser = faster, still fine enough for walls
 const VISION_WALL_BACKOFF = 0; // nicht vor der Wand zurueckspringen
 const VISION_PAD_EXPLORED = 20; // small overshoot so wall itself is revealed (~half tile)
@@ -1386,6 +1397,7 @@ const VISION_MIN_RADIUS = 0; // No artificial minimum — walls block immediatel
 
 function computeVisionPolygon(scene, ox, oy) {
   const pts = [];
+  const VISION_RAYS = _visionRays();
   for (let i = 0; i < VISION_RAYS; i++) {
     const t = (i / VISION_RAYS) * Math.PI * 2;
     const dx = Math.cos(t),

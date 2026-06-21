@@ -39,7 +39,8 @@
     nofog: /[?&]nofog=1\b/.test(window.location.search),
     nocull: /[?&]nocull=1\b/.test(window.location.search),
     nomask: /[?&]nomask=1\b/.test(window.location.search),
-    nospot: /[?&]nospot=1\b/.test(window.location.search)
+    nospot: /[?&]nospot=1\b/.test(window.location.search),
+    noexpl: /[?&]noexpl=1\b/.test(window.location.search)
   };
 
   // --- Overlay-DOM ----------------------------------------------------
@@ -106,6 +107,7 @@
     row.appendChild(mkToggle('CULL', 'nocull'));
     row.appendChild(mkToggle('MASK', 'nomask'));
     row.appendChild(mkToggle('SPOT', 'nospot'));
+    row.appendChild(mkToggle('EXPL', 'noexpl'));
     box.appendChild(row);
 
     document.body.appendChild(box);
