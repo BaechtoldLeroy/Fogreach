@@ -1,0 +1,186 @@
+# Specification: Act 2 — Obedience vs. Memory (+ Espionage Mission-Type)
+
+**Feature**: 055-act-2-obedience-espionage
+**Created**: 2026-06-23
+**Mission**: software-dev
+**Tracker**: Acts 2–3 Story (Roadmap Phase 3, aus #31 abgespalten) + #30 Espionage Mission-Type
+**Branch contract**: planning on `main`, merges into `main`
+
+## 1. Overview
+
+Der Vertical Slice (Akt 1) ist komplett: Spieler durchläuft Game-Start →
+Akt-1-Collusion-Reveal über ~6 authored Quests. Danach existiert das
+**Story-Gerüst** (storySystem.js: Milestones `wahrheit → bruch → rebellion
+→ offenbarung` mit fertigen Erzähltexten + NPC-Dialogen), aber **keine
+authored Quest-Inhalte** — die späten Beats erreicht man aktuell nur durch
+Wave-Grinding statt durch gespielte Missionen.
+
+Dieses Feature füllt **Akt 2 — „Gehorsam vs. Erinnerung"** mit echtem
+Content und führt den in der Constitution beschriebenen, bisher fehlenden
+**Mission-Typ Spionage** (#30) als neue Gameplay-Mechanik ein. Ziel: mehr
+**Story-Tiefe UND Spieldauer** (~+1–2 h), additiv auf bestehender
+Infrastruktur (questSystem, storySystem, factionSystem, NPCs).
+
+**Narrativer Bogen (Constitution Akt 2):** Council-Missions
+(Dokumenten-Beschaffung, Überwachung, Spionage) kontrastieren mit privaten
+Jobs und verbotenen Lore-Fragmenten. Erste Hinweise auf Chain-Council-
+Rituale verdichten sich. Der Spieler muss entscheiden, **wie weit er sich
+fügt** — eine Fraktions-Weiche mit Konsequenzen.
+
+## 2. Stakeholders & Actors
+
+- **Spieler** — durchläuft Akt 2 nach dem Akt-1-Reveal; nimmt Council-
+  Aufträge an, entdeckt Widersprüche, übernimmt verdeckte Spionage-Missionen,
+  trifft eine Gehorsam-vs-Zweifel-Entscheidung.
+- **Quest-System** (`js/questSystem.js`) — in-code Quest-Objekte (id/title/
+  npcId/objectives); wird um Akt-2-Quests + Espionage-Objective-Typen erweitert.
+- **Story-System** (`js/storySystem.js`) — Milestone-Progression
+  (`currentActIndex`, `wahrheit`/`bruch`); Akt-2-Quests hängen an diese Beats.
+- **Faction-System** (`js/factionSystem.js`) — Identity/Verkleidung &
+  Spionage-Zugang hängen vom Standing ab; Gehorsam-Entscheidung verschiebt Standing.
+- **NPCs** (aldric, harren, klerus_priester, stadtwache, widerstand, branka,
+  mara, elara) — Quest-Geber & Spionage-Ziele; bestehende Dialog-Register
+  pro Milestone werden genutzt/erweitert.
+
+## 3. User Scenarios
+
+### Primary A: Council-Mission (Gehorsam-Pfad)
+1. Nach Akt-1-Reveal nimmt der Spieler bei Aldric einen Council-Auftrag an
+   (z.B. „Beschlagnahme verbotener Schriften").
+2. Dungeon-Run mit Quest-Objective; Rückkehr zum Hub, Abgabe.
+3. Standing beim Kettenrat steigt; ein Lore-Fragment deutet an, was wirklich
+   konfisziert wurde → wachsender moralischer Zwiespalt.
+
+### Primary B: Espionage-Mission (verdeckt)
+1. Der Widerstand (Branka/Mara) bittet den Spieler, einen Council-Konvoi zu
+   beschatten.
+2. Spieler nimmt eine **fraktions-spezifische Verkleidung** an (Identity-
+   Switching, an Faction-Standing gebunden).
+3. Im Zielgebiet gilt eine **Stealth-Komponente**: Wachen haben eine
+   Detection-Range; der Spieler nutzt Deckung/Verstecke; Entdeckung →
+   Mission erschwert (Kampf/Fehlschlag-Konsequenz, kein Hard-Game-Over).
+4. **Information-Gathering**: bestimmte NPCs/Objekte beobachten/abhören
+   (z.B. an einer Tür lauschen) erfüllt das Objective.
+5. Abgabe enthüllt einen Akt-2-Story-Beat (Ritual-Hinweis).
+
+### Primary C: Gehorsam-vs-Zweifel-Weiche
+1. Nach den Akt-2-Quests stellt ein Story-Beat die Entscheidung: weiter dem
+   Rat dienen oder offen zweifeln/zum Widerstand neigen.
+2. Die Wahl verschiebt Faction-Standing und schaltet leicht abweichende
+   Folge-Dialoge/Beats frei (Branching-light, kein vollständiger Story-Split).
+
+### Edge: Spieler ignoriert Akt 2
+- Akt-2-Quests sind optional verfügbar, aber das **Story-Gating** (Milestone-
+  Fortschritt) soll bevorzugt durch Akt-2-Quest-Abschluss statt reinem
+  Wave-Grinding erfolgen (FR-09).
+
+## 4. Functional Requirements
+
+| ID | Requirement | Status |
+|----|-------------|--------|
+| FR-01 | **Akt-2-Quest-Chain**: 5–7 neue authored Quests in `questSystem.js`, die vom Akt-1-Collusion-Reveal in die `wahrheit`/`bruch`-Beats führen (Mix aus Council-Missions + privaten Jobs). | Draft |
+| FR-02 | **Council-Missions** (offiziell): Dokumenten-Beschaffung / Konfiszierung als Objective-Varianten der bestehenden Quest-Typen; erhöhen Council-Standing. | Draft |
+| FR-03 | **Espionage-Mission-Typ** als distinkte Quest-Kategorie mit eigenem UI-Indicator (Hub-Quest-Log + Marker). | Draft |
+| FR-04 | **Identity-Switching**: fraktions-spezifische Verkleidung, deren Verfügbarkeit vom Faction-Standing abhängt; Toggle/Annahme an Mission-Start. | Draft |
+| FR-05 | **Stealth-Komponente**: Wachen mit Detection-Range; Spieler-Verstecken/Deckung; Entdeckung verschärft die Mission (Konsequenz statt Game-Over). | Draft |
+| FR-06 | **Information-Gathering-Objective**: NPC/Objekt beobachten/abhören (Aufenthalt in Zone für X Sek, oder Interaktion) erfüllt Espionage-Ziele. | Draft |
+| FR-07 | **2–3 Showcase-Espionage-Quests** als Initial-Content, eingebettet in die Akt-2-Chain. | Draft |
+| FR-08 | **Gehorsam-vs-Zweifel-Weiche**: eine Story-Entscheidung in Akt 2, die Faction-Standing verschiebt und Branching-light-Folgedialoge freischaltet. | Draft |
+| FR-09 | **Story-Gating an Quests koppeln**: Akt-2-Milestones (`wahrheit`/`bruch`) bevorzugt durch Akt-2-Quest-Abschluss vorantreiben (nicht rein wave-getrieben). | Draft |
+| FR-10 | **Lore-Fragmente Akt 2**: 2–3 neue verbotene Lore-Fragmente, die Ritual-Hinweise streuen (Hook in Knowledge-Tree / storySystem). | Draft |
+| FR-11 | **i18n**: alle neuen Texte über das bestehende DE/EN-i18n-Register (Feature 041), keine hartkodierten Strings. | Draft |
+| FR-12 | **Persistenz**: Akt-2-Quest-Fortschritt, Verkleidungs-/Entscheidungs-State im bestehenden Save (loadQuestSaveData / storySystem load) — kein Wipe bestehender Saves. | Draft |
+
+## 5. Non-Functional Requirements
+
+| ID | Requirement | Threshold |
+|----|-------------|-----------|
+| NFR-01 | Performance unverändert: 60fps Desktop, Mobile-Procroom ≥45 (053 nicht regredieren). | gemessen |
+| NFR-02 | Stealth-Detection darf den Dungeon-Loop nicht ruckeln lassen (Detection-Check leichtgewichtig, kein per-Frame O(n²)). | 60fps |
+| NFR-03 | Spieldauer-Zuwachs Akt 2: ~+1–2 h gegenüber heute (geschätzt, Playtest-validiert). | subjektiv |
+| NFR-04 | Keine Regression in Akt 1 (bestehende Quests/Saves/Story-Beats unverändert). | Playtest |
+
+## 6. Constraints
+
+| ID | Constraint |
+|----|------------|
+| C-01 | Additiv auf bestehender Infrastruktur — questSystem/storySystem/factionSystem wiederverwenden, kein paralleles Quest-Runtime. |
+| C-02 | Keine neuen Dependencies; Vanilla-JS + Phaser-built-ins. |
+| C-03 | Bestehende Akt-1-Saves bleiben spielbar (additive Felder, defensive Loads). |
+| C-04 | Stealth bleibt zugänglich/low-threshold (Donor-Demo-tauglich) — kein punitives Hardcore-Stealth; Entdeckung = Erschwernis, kein Insta-Fail. |
+| C-05 | Quest-Trigger müssen vor Ship gegen `updateQuestProgress(type, target)` auditiert werden (sonst uncompletable). |
+
+## 7. Success Criteria
+
+| ID | Criterion |
+|----|-----------|
+| SC-01 | Spieler kann nach Akt-1-Reveal eine zusammenhängende Akt-2-Quest-Chain (5–7 Quests) end-to-end spielen. |
+| SC-02 | Mindestens 2 Espionage-Missionen mit Verkleidung + Stealth + Info-Gathering sind abschließbar. |
+| SC-03 | Die Gehorsam-vs-Zweifel-Entscheidung verschiebt sichtbar Faction-Standing + Folgedialoge. |
+| SC-04 | Akt-2-Story-Beats (`wahrheit`/`bruch`) werden durch Quest-Abschluss erreicht, nicht nur durch Wave-Grinding. |
+| SC-05 | DE/EN vollständig; keine hartkodierten Strings; alle Tests grün. |
+| SC-06 | Bestehende Akt-1-Saves laden ohne Fehler; keine Akt-1-Regression. |
+| SC-07 | 1 Playtester bestätigt: spürbar mehr Story + Spielzeit, Stealth fühlt sich fair an. |
+
+## 8. Edge Cases
+
+- **Verkleidung + Kampf**: Was passiert, wenn der Spieler in Verkleidung
+  angreift? (Verkleidung fällt / Detection steigt) — definieren in FR-04/05.
+- **Save aus Akt 1 mitten in altem Wave-Gating**: defensive Migration, Akt-2-
+  Quests werden nachträglich verfügbar.
+- **Detection in Procrooms vs. fixe Räume**: Stealth-Zonen vs. prozedurale
+  Layouts — Espionage-Missionen ggf. in kuratierten Räumen verankern.
+- **Mobile**: Verkleidungs-Toggle + Stealth müssen mit Touch-Controls bedienbar
+  sein (Mobile-Slot-Layout wiederverwenden).
+
+## 9. Key Entities
+
+| Entity | Description |
+|--------|-------------|
+| `js/questSystem.js` | Quest-Definitionen — Akt-2-Quests + Espionage-Objective-Typen. |
+| `js/storySystem.js` | Milestone-Progression — Akt-2-Beats an Quests koppeln (FR-09). |
+| `js/factionSystem.js` | Standing → Identity/Verkleidungs-Verfügbarkeit + Gehorsam-Weiche. |
+| Espionage-Runtime (neu) | Detection-Range, Verstecken, Info-Gathering-Zonen — leichtgewichtiges Modul. |
+| `js/knowledgeTree.js` | Hook für Akt-2-Lore-Fragmente. |
+| i18n-Register (041) | DE/EN für alle neuen Texte. |
+
+## 10. Assumptions
+
+- Das bestehende Quest-Objective-Framework (kill/explore/talk) lässt sich um
+  „beobachten/abhören/verstecken" erweitern, ohne Neubau. (In Research validieren.)
+- Stealth kann auf vorhandener Enemy-/Detection-Logik aufbauen (Aggro-Range
+  existiert bereits im Combat). (Validieren.)
+- Verkleidung ist primär ein State-Flag + Visual-Swap, keine vollständige
+  AI-Faction-Reaktions-Simulation.
+
+## 11. Out of Scope
+
+- **Akt 3–5** (eigene Folge-Features; dieses Feature endet am `bruch`-Beat).
+- **Vollständiger Story-Split** mit divergenten Enden (das ist #28, Phase 4).
+- **Neue Boss-Encounter** für Akt 2 (separat, falls nötig).
+- **Voice/Audio** für Dialoge.
+
+## 12. Dependencies
+
+- Akt 1 (050) gemerged ✓ — liefert Collusion-Reveal als Einstieg.
+- Faction-System (045) ✓ — für Identity/Standing.
+- i18n (041) ✓ — für DE/EN.
+- Knowledge-Tree (047) ✓ — für Lore-Fragment-Hook.
+
+## 13. Risks
+
+| ID | Risk | Mitigation |
+|----|------|------------|
+| R-01 | **Scope-Explosion** (voller Akt 2 + neue Mechanik). | WP-Schnitt erlaubt inkrementelles Shippen: Story-Quests zuerst, Espionage-Mechanik als eigenes WP, Integration zuletzt. Espionage notfalls auf 2 Showcase-Quests begrenzen. |
+| R-02 | **Stealth fühlt sich unfair/frustrierend an** (Donor-Demo-Risiko, C-04). | Entdeckung = Erschwernis statt Insta-Fail; großzügige Detection-Range; Playtest-Tuning. |
+| R-03 | **Quest-Trigger broken → uncompletable** (bekannte Falle). | C-05: `updateQuestProgress`-Audit vor Ship. |
+| R-04 | **Save-Migration bricht Akt-1-Saves**. | Additive Felder, defensive Loads, Test mit Alt-Save. |
+| R-05 | **Mobile-Bedienbarkeit** von Verkleidung/Stealth. | Früh auf Touch testen; Toggle in bestehendes Mobile-Slot-Layout. |
+
+## 14. References
+
+- `.kittify/constitution/constitution.md` §Storyline (Akt 2), §Quest Types (Espionage)
+- Issue #30 — Espionage Mission-Type (Identity-Switching, Stealth, Info-Gathering)
+- `js/questSystem.js` — Akt-1-Quest-Definitionen als Vorlage
+- `js/storySystem.js` — Milestone-Register (`wahrheit`/`bruch`)
+- Feature 050 (Akt-1-Quest-Chain), 045 (Faction), 041 (i18n), 047 (Knowledge-Tree)
