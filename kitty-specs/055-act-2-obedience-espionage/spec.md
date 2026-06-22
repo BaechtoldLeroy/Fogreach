@@ -89,13 +89,13 @@ geschieht — der Zwiespalt wird gezeigt, nicht abgefragt.
 
 | ID | Requirement | Status |
 |----|-------------|--------|
-| FR-01 | **Akt-2-Quest-Chain**: 5–7 neue authored Quests in `questSystem.js`, die vom Akt-1-Collusion-Reveal in die `wahrheit`/`bruch`-Beats führen (Mix aus Council-Missions + privaten Jobs). | Draft |
+| FR-01 | **Akt-2-Quest-Chain**: ~11 authored Quests in `questSystem.js`, die vom Akt-1-Collusion-Reveal in die `wahrheit`/`bruch`-Beats führen (Council-Missions + Surveillance + private Jobs + Espionage). Die **3 bestehenden `requiredAct:2`-Quests** (`mara_contact`, `branka_doubt`, `elara_meeting`) werden angereichert, NICHT dupliziert. | Draft |
 | FR-02 | **Council-Missions** (offiziell): Dokumenten-Beschaffung / Konfiszierung als Objective-Varianten der bestehenden Quest-Typen; erhöhen Council-Standing. | Draft |
 | FR-03 | **Espionage-Mission-Typ** als distinkte Quest-Kategorie mit eigenem UI-Indicator (Hub-Quest-Log + Marker). | Draft |
 | FR-04 | **Identity-Switching**: Verkleidung als Mission-Mechanik, **frei verfügbar** (NICHT standing-gated); Toggle/Annahme an Mission-Start. **Angreifen lässt die Verkleidung fallen** (Tarnung weg → Detection steigt). | Draft |
 | FR-05 | **Stealth-Komponente** (in **kuratierten Fix-Räumen**, nicht Procrooms — kontrollierbares Stealth): Wachen mit Detection-Range; Spieler-Verstecken/Deckung; Entdeckung verschärft die Mission (Konsequenz statt Game-Over). | Draft |
 | FR-06 | **Information-Gathering-Objective**: NPC/Objekt beobachten/abhören (Aufenthalt in Zone für X Sek, oder Interaktion) erfüllt Espionage-Ziele. | Draft |
-| FR-07 | **2–3 Showcase-Espionage-Quests** als Initial-Content, eingebettet in die Akt-2-Chain. | Draft |
+| FR-07 | **3 Espionage-Quests** (Konvoi, Archiv, Maulwurf) eingebettet in die Akt-2-Chain. | Draft |
 | FR-08 | **Scripted Wendepunkt** (statt Entscheidung): der Bruch mit dem Rat (`wahrheit`/`bruch`) wird erzählerisch durch Quest-Abschluss ausgelöst — **keine Spieler-Wahl, keine Verzweigung**. Faction-Standing darf sich narrativ mitbewegen. | Draft |
 | FR-09 | **Keine Quest-Gates**: alle Akt-2-Quests sind verfügbar (lose erzählerische Reihenfolge erlaubt, aber nichts hinter Entscheidungen/Standing gesperrt). Milestones (`wahrheit`/`bruch`) an Quest-Abschluss koppeln statt an Wave-Grinding. | Draft |
 | FR-10 | **Lore-Fragmente Akt 2**: 2–3 neue verbotene Lore-Fragmente, die Ritual-Hinweise streuen (Hook in Knowledge-Tree / storySystem). | Draft |
@@ -109,7 +109,7 @@ geschieht — der Zwiespalt wird gezeigt, nicht abgefragt.
 |----|-------------|-----------|
 | NFR-01 | Performance unverändert: 60fps Desktop, Mobile-Procroom ≥45 (053 nicht regredieren). | gemessen |
 | NFR-02 | Stealth-Detection darf den Dungeon-Loop nicht ruckeln lassen (Detection-Check leichtgewichtig, kein per-Frame O(n²)). | 60fps |
-| NFR-03 | Spieldauer-Zuwachs Akt 2: ~+1–2 h gegenüber heute (geschätzt, Playtest-validiert). | subjektiv |
+| NFR-03 | Spieldauer-Zuwachs Akt 2: **~+3–4 h** authored gegenüber heute, sodass Akt 1+2 ≈ 5–6 h authored + Loop **komfortabel über dem Constitution-Ziel „Acts 1–2 min. 6 h"** liegen (Playtest-validiert). | subjektiv |
 | NFR-04 | Keine Regression in Akt 1 (bestehende Quests/Saves/Story-Beats unverändert). | Playtest |
 
 ## 6. Constraints

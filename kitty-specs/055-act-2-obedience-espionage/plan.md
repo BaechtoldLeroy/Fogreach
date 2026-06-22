@@ -50,21 +50,40 @@ Detection-Check leichtgewichtig (NFR-02).
 
 ## Akt-2-Quest-Entwurf (Kern — zur Abnahme)
 
-**Entry**: `act2_open` (von Akt-1-Q6). **Thema**: Routine-Council-Aufträge
-entlarven sich Schritt für Schritt. **Ende**: `wahrheit`→`bruch`-Beats.
+**Bestand integrieren (nicht duplizieren):** `requiredAct: 2` hat heute schon
+**3 dünne Quests** — `mara_contact` (Widerstand-Kontakt), `elara_meeting`
+„Elaras Geheimnis" (fetch 2 Dokumente, `unlocks: ['elara_trust']`),
+`branka_doubt` (kill 5 Elite). 055 **reichert diese an** und ergänzt neue
+Quests drumherum — kein Parallel-Content. (Akte 3–5 haben analog dünne,
+wave-/boss-gegatete Skelette — separat, hier out of scope.)
+
+**Entry**: `act2_open` (von Akt-1-Q6) → `currentActIndex` auf Akt 2.
+**Thema**: Routine-Council-Aufträge entlarven sich Schritt für Schritt.
+**Ende**: `wahrheit`→`bruch`-Beats. **Umfang (User-Wunsch: größer)**: ~11
+authored Quests, **3 Espionage-Missionen**, + Surveillance-Typ.
 
 | # | Quest (id) | NPC | Typ | Inhalt / Story-Funktion |
 |---|-----------|-----|-----|------------------------|
-| Q1 | `council_seizure` „Beschlagnahme" | aldric | fetch/kill | Council-Auftrag: „subversive Schriften" aus einem Versteck holen. **Crack #1**: die Schriften sind Zeugenaussagen/Bürgerbriefe, keine Propaganda. Öffnet die Chain. |
-| Q2 | `branka_transcripts` „Verbotene Abschriften" | branka | fetch | Privat-Job: Dämonenverhör-Protokolle abschreiben (knüpft an Akt-1-Branka). Enthüllt: der Rat verhört Bürger. **Lore-Fragment** (FR-10). |
-| Q3 | `espionage_convoy` „Der Konvoi" 🕵️ | mara/widerstand | **espionage** | **Showcase-Espionage #1**: als Council-Träger verkleidet (Identity) einen Konvoi in einem kuratierten Lagerraum beschatten; **Stealth** + **abhören** (observe), um die Fracht zu erfahren = Ritual-Komponenten. |
-| Q4 | `espionage_archive` „Das versiegelte Archiv" 🕵️ | harren | **espionage** | **Showcase-Espionage #2**: verkleidet ins Council-Archiv infiltrieren; Schreiber abhören; versiegelten Akt bergen. **Elara-Foreshadow #1**: der Akt zu Elaras „Verschwinden" ist verdächtig sauber / widerspricht Harrens Version. |
-| Q5 | `elara_trail` „Elaras Spur" | harren | fetch/dialogue | **Elara-Foreshadow #2**: Harren fleht, Elara zu finden; eine Tagebuchseite, deren Worte die Sprache des Rats spiegeln („du verstehst das nicht"). Baut das Vertrauen, das der spätere Verrat bricht. |
-| Q6 | `ritual_chamber` „Die Ritualkammer" | aldric | kill/explore | Council-Auftrag „Reinigung" einer unteren Kammer — es IST die Beschwörungskammer. Triggert den **`wahrheit`-Milestone** (Text existiert). **Scripted Wendepunkt** (FR-08), keine Wahl. |
-| Q7 | `bruch_confrontation` „Der Bruch" *(optional)* | aldric | dialogue | Aldric konfrontiert den Spieler (`bruch`-Text: „Du stellst zu viele Fragen"). Scripted Akt-2-Abschluss; setzt Akt-3-Hook. |
+| Q1 | `council_seizure` „Beschlagnahme" | aldric | fetch/kill | Council-Auftrag: „subversive Schriften" holen. **Crack #1**: es sind Zeugenaussagen/Bürgerbriefe. Öffnet die Chain. |
+| Q2 | `council_surveillance` „Überwachung" | aldric | observe (lite) | **Surveillance-Typ**: einen „verdächtigen" Bezirk überwachen → der Spieler sieht, dass die Überwachten harmlose Bürger sind. **Crack #2**. |
+| Q3 | `mara_contact` „Maras Kontakt" *(Bestand, anreichern)* | mara | dialogue | Widerstand nimmt Kontakt auf; bietet die privaten Jobs an. |
+| Q4 | `branka_transcripts` „Verbotene Abschriften" | branka | fetch | Privat-Job: Dämonenverhör-Protokolle abschreiben → Rat verhört Bürger. **Lore-Fragment** (FR-10). |
+| Q5 | `branka_doubt` „Brankas Zweifel" *(Bestand, anreichern)* | branka | kill (elite) | Brankas Zweifel vertieft sich an dem, was der Spieler ihr bringt. |
+| Q6 | `espionage_convoy` „Der Konvoi" 🕵️ | mara | **espionage** | **Espionage #1**: verkleidet einen Konvoi im kuratierten Lager beschatten; Stealth + abhören → Fracht = Ritual-Komponenten. |
+| Q7 | `espionage_archive` „Das versiegelte Archiv" 🕵️ | harren | **espionage** | **Espionage #2** + **Elara-Foreshadow #1**: ins Council-Archiv infiltrieren, Schreiber abhören, versiegelten Akt bergen — Elaras „Verschwinden" verdächtig sauber dokumentiert. |
+| Q8 | `elara_meeting` „Elaras Geheimnis" *(Bestand, anreichern)* | elara | fetch | Elara teilt „geheime" Dokumente (`elara_trust`). **Elara-Foreshadow #2**: ihre Belege passen zu glatt zur Rats-Deutung. |
+| Q9 | `espionage_informant` „Der Maulwurf" 🕵️ | widerstand | **espionage** | **Espionage #3**: einen Council-Maulwurf im Widerstand enttarnen (Paranoia-Saat; deutet subtil Richtung Elara, ohne sie zu bestätigen). |
+| Q10 | `ritual_chamber` „Die Ritualkammer" | aldric | kill/explore | Council-„Reinigung" = Beschwörungskammer → triggert **`wahrheit`-Milestone** (Text existiert). **Scripted Wendepunkt** (FR-08). |
+| Q11 | `bruch_confrontation` „Der Bruch" | aldric | dialogue | Aldric konfrontiert den Spieler (`bruch`-Text). Scripted Akt-2-Abschluss + Akt-3-Hook. |
 
-Reihenfolge via `prerequisites` (Q1 → Q2–Q5 verfügbar → Q6 nach Q3+Q4+Q5 →
-Q7). **Alles in einem Playthrough spielbar, nichts hinter Entscheidungen.**
+Reihenfolge via `prerequisites` (Council-Strang Q1→Q2→…; Privat-Strang
+parallel offen; Espionage nach Mara-Kontakt; Q10 nach den drei Espionage +
+Privat-Jobs; Q11 zuletzt). **Alles in einem Playthrough spielbar, nichts
+hinter Entscheidungen.**
+
+**Playtime-Schätzung**: ~11 Quests à 15–25 min + 3 Espionage à 20–30 min ≈
+**~3–4 h authored Akt-2-Content**. Mit Akt 1 (~2 h) → Akt 1+2 ≈ **~5–6 h
+authored** + Loop = **komfortabel über dem 6-h-Constitution-Ziel**.
 
 ## Espionage-Mechanik (technischer Entwurf)
 
@@ -111,14 +130,20 @@ um Akt-1 + Wave-Pfad nicht zu brechen).
 ## WP-Schnitt (Vorschau — finalisiert in `tasks`)
 
 - **WP01** — Research + Gerüst: Enemy-Detection-Analyse, Milestone-Trigger-
-  Analyse, roomTemplate-Zonen-Schema; `espionageSystem.js`-Skelett + Tests-Setup.
-- **WP02** — Akt-2-Story-Quests (Q1, Q2, Q5, Q6, Q7) ohne Espionage: voll
+  Analyse, roomTemplate-Zonen-Schema; `espionageSystem.js`-Skelett + Tests-Setup;
+  Surveillance-`observe`-lite + Bestands-Quest-Integration (`mara_contact`,
+  `branka_doubt`, `elara_meeting` anreichern statt duplizieren).
+- **WP02** — Akt-2-Story-Quests **ohne** Espionage (Q1 council_seizure,
+  Q2 council_surveillance, Q3 mara_contact, Q4 branka_transcripts,
+  Q5 branka_doubt, Q8 elara_meeting, Q10 ritual_chamber, Q11 bruch): voll
   spielbare Story-Chain bis `wahrheit`/`bruch`. **Allein shippbar** (R-01).
 - **WP03** — Espionage-Mechanik: Disguise + Detection + Info-Gathering +
-  kuratierte Räume + neue Objective-Typen.
-- **WP04** — Espionage-Quests (Q3, Q4) auf WP03 aufgesetzt; Elara-Foreshadow.
+  kuratierte Räume + neue Objective-Typen (`observe`/`infiltrate`).
+- **WP04** — Espionage-Quests (Q6 convoy, Q7 archive, Q9 informant) auf WP03;
+  Elara-Foreshadow #1 + Paranoia-Saat.
 - **WP05** — i18n-Vollständigkeit, Save-Kompat-Test (Alt-Save), Trigger-Audit
-  (C-05), Playtest-Tuning Stealth (C-04), NFR-Mess-Check.
+  (C-05), Playtest-Tuning Stealth (C-04), NFR-Mess-Check, Playtime-Verifikation
+  (~3–4 h Akt 2).
 
 ## Risiken (s. Spec §13)
 
