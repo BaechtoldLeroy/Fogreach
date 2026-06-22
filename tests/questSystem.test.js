@@ -358,6 +358,32 @@ test('055: fetch-Quests nutzen nur Targets mit Loot-Item (C-05)', () => {
   });
 });
 
+test('055: Espionage-Quests existieren mit observe-Objective, requiredAct 2, ohne gate', () => {
+  const qs = freshSystem();
+  const defs = qs.QUEST_DEFINITIONS;
+  const EXPECTED = {
+    espionage_convoy: { target: 'convoy_intel', npcId: 'mara', prereq: 'mara_contact' },
+    espionage_archive: { target: 'archive_record', npcId: 'harren', prereq: 'espionage_convoy' },
+    espionage_informant: { target: 'informant_id', npcId: 'widerstand', prereq: 'espionage_archive' }
+  };
+  Object.keys(EXPECTED).forEach((id) => {
+    const q = defs[id];
+    const spec = EXPECTED[id];
+    assert.ok(q, `${id} definiert`);
+    assert.strictEqual(q.requiredAct, 2, `${id} requiredAct 2`);
+    assert.strictEqual(typeof q.gate, 'undefined', `${id} ohne gate (keine Gates)`);
+    assert.strictEqual(typeof q.advanceAct, 'undefined', `${id} ohne advanceAct`);
+    assert.strictEqual(q.npcId, spec.npcId, `${id} npcId ${spec.npcId}`);
+    const obs = (q.objectives || []).find((o) => o.type === 'observe');
+    assert.ok(obs, `${id} hat observe-Objective`);
+    assert.strictEqual(obs.target, spec.target, `${id} observe-Target ${spec.target}`);
+    assert.strictEqual(obs.required, 1, `${id} observe required 1`);
+    assert.ok((q.prerequisites || []).includes(spec.prereq),
+      `${id} prerequisite ${spec.prereq}`);
+    assert.ok(defs[spec.prereq], `${id} prerequisite ${spec.prereq} existiert (kein Dangling)`);
+  });
+});
+
 test('055: Akt-2-Council-Quests bei Aldric verfuegbar (Act>=2)', () => {
   const qs = freshSystem(); // storySystem-Stub: currentAct = 99
   const available = qs.getAvailableQuests('aldric').map((q) => q.id);

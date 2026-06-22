@@ -173,8 +173,11 @@ function initDungeonRun() {
   const depth = Math.max(1, window.DUNGEON_DEPTH || 1);
   const act = getStoryAct(depth);
 
-  // Separate regular rooms from story rooms
-  const allStoryNames = [].concat(STORY_ROOMS.act2, STORY_ROOMS.act3, STORY_ROOMS.act4);
+  // Separate regular rooms from story rooms. Feature 055: die kuratierten
+  // Espionage-Raeume sind aus dem regulaeren Pool ausgeschlossen — sie
+  // erscheinen NUR per quest-gesteuertem Force-Inject (s. unten), nie zufaellig.
+  const ESPIONAGE_ROOM_NAMES = ['CouncilWarehouse', 'SealedArchive', 'InformantDen'];
+  const allStoryNames = [].concat(STORY_ROOMS.act2, STORY_ROOMS.act3, STORY_ROOMS.act4, ESPIONAGE_ROOM_NAMES);
   const regularNames = allNames.filter(function(n) { return allStoryNames.indexOf(n) === -1; });
 
   // Determine which story rooms are available for this act
@@ -258,13 +261,34 @@ function initDungeonRun() {
     }
   }
 
+  // Feature 055: garantiere den kuratierten Espionage-Raum in diesem Run,
+  // wenn die zugehoerige Quest aktiv ist (quest-gesteuert, frueh eingefuegt
+  // damit er den Trim ueberlebt). _maybeStartEspionage feuert dann beim Betreten.
+  try {
+    var ESP_MISSIONS = [
+      { qid: 'espionage_convoy',    room: 'CouncilWarehouse' },
+      { qid: 'espionage_archive',   room: 'SealedArchive' },
+      { qid: 'espionage_informant', room: 'InformantDen' }
+    ];
+    var activeNow = (window.questSystem && typeof window.questSystem.getActiveQuests === 'function')
+      ? window.questSystem.getActiveQuests() : [];
+    ESP_MISSIONS.forEach(function (m) {
+      var on = activeNow.some(function (q) { return q.id === m.qid; });
+      var known = window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[m.room];
+      if (on && known && templateOrder.indexOf(m.room) === -1) {
+        var pos = Math.min(templateOrder.length, 1 + Math.floor(Math.random() * 2));
+        templateOrder.splice(pos, 0, m.room);
+      }
+    });
+  } catch (e) {}
+
   // Pad if needed
   while (templateOrder.length < totalRooms) {
     var padIdx = templateOrder.length % regularNames.length;
     templateOrder.push(regularNames[padIdx]);
   }
 
-  // Trim if over
+  // Trim if over (Espionage-Raeume sitzen frueh -> ueberleben den Trim)
   if (templateOrder.length > totalRooms) {
     templateOrder.length = totalRooms;
   }
@@ -433,6 +457,11 @@ function enterRoom(scene, roomId) {
   scene.exploredRT?.clear();
   scene._spotlightMaskGfx?.clear();
 
+  // Feature 055: eine laufende Espionage-Mission endet beim Raumwechsel.
+  if (window.EspionageSystem && window.EspionageSystem.isActive()) {
+    try { window.EspionageSystem.endMission(); } catch (e) {}
+  }
+
   // 1) Raum bauen: use procedural template from dungeon run if available
   let builtMeta = null;
   let pickedType = null;
@@ -470,6 +499,10 @@ function enterRoom(scene, roomId) {
 
   // Story-driven Elara cellar encounter — see _maybeFireElaraCellarEncounter.
   _maybeFireElaraCellarEncounter(scene, roomId);
+
+  // Feature 055: Espionage-Mission starten, wenn dieser Raum espionage-
+  // Metadaten traegt UND eine passende observe-Quest aktiv ist.
+  _maybeStartEspionage(scene, templateName, builtMeta);
 
   const builtWidth = (builtMeta?.w ?? room?.width ?? ROOM_W) + rightPadding;
   const builtHeight = builtMeta?.h ?? room?.height ?? ROOM_H;
@@ -1765,6 +1798,57 @@ function _rollDistance() {
 //     state, then on each enterRoom check if currentRoomId == target →
 //     spawn Elara sprite again. E → dialog → completeQuest, granting Q5
 //     rewards and unlocking Q6 at Harren.
+// Feature 055: startet eine Espionage-Mission, wenn der gerade gebaute Raum
+// espionage-Metadaten (guards/cover/observe in TILE-Koords) traegt UND eine
+// aktive Quest ein passendes (noch offenes) observe-Objective hat. Konvertiert
+// die Zonen-Koords aus Tiles in Welt-Pixel (origin + tile*T) und uebergibt sie
+// an EspionageSystem.startMission; aktiviert die Verkleidung automatisch.
+function _maybeStartEspionage(scene, templateName, builtMeta) {
+  try {
+    if (!templateName || !window.EspionageSystem || !window.RoomTemplates) return;
+    var tpl = window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[templateName];
+    var esp = tpl && tpl.espionage;
+    if (!esp) return;
+
+    // Aktive Quest mit offenem observe-Objective fuer eine Zone dieses Raums?
+    var targets = (esp.observe || []).map(function (z) { return z.questTarget; });
+    var active = (window.questSystem && typeof window.questSystem.getActiveQuests === 'function')
+      ? window.questSystem.getActiveQuests() : [];
+    var match = active.some(function (q) {
+      return (q.objectives || []).some(function (o) {
+        return o.type === 'observe' && targets.indexOf(o.target) !== -1
+          && (o.current || 0) < (o.required || 1);
+      });
+    });
+    if (!match) return;
+
+    var T = (tpl.size && tpl.size.tile) || 32;
+    var ox = (builtMeta && builtMeta.origin && builtMeta.origin.x) || 0;
+    var oy = (builtMeta && builtMeta.origin && builtMeta.origin.y) || 0;
+    var toWorld = function (z, hasWH) {
+      var out = { x: ox + (z.x || 0) * T, y: oy + (z.y || 0) * T };
+      if (z.range != null) out.range = z.range;       // bereits in Px
+      if (z.r != null) out.r = z.r;                   // bereits in Px
+      if (z.seconds != null) out.seconds = z.seconds;
+      if (z.id != null) out.id = z.id;
+      if (z.questTarget != null) out.questTarget = z.questTarget;
+      if (hasWH) { out.w = (z.w || 0) * T; out.h = (z.h || 0) * T; }
+      return out;
+    };
+
+    window.EspionageSystem.startMission(scene, {
+      missionId: templateName,
+      guards: (esp.guards || []).map(function (g) { return toWorld(g, false); }),
+      cover: (esp.cover || []).map(function (c) { return toWorld(c, true); }),
+      observeZones: (esp.observe || []).map(function (o) { return toWorld(o, false); })
+    });
+    window.EspionageSystem.setDisguise(true); // Auto-Verkleidung bei Mission-Start
+    try { console.log('[055] Espionage-Mission gestartet:', templateName); } catch (_) {}
+  } catch (e) {
+    try { console.warn('[055] _maybeStartEspionage failed', e); } catch (_) {}
+  }
+}
+
 function _maybeFireElaraCellarEncounter(scene, roomId) {
   if (!scene || !window.questSystem || !window.EventSystem) return;
   if (typeof roomId !== 'number' || roomId < 2) return;

@@ -325,6 +325,66 @@
       dialogueComplete: '"Du stellst zu viele Fragen", hat er gesagt. Jetzt stellst du gar keine mehr — du weisst es. Der Bruch ist da. Mara, Thom, ich — wir sind bereit. Akt 3 beginnt.'
     },
 
+    // -------------------------------------------------------
+    // Espionage-Missionen (WP04). Abschluss via 'observe'-
+    // Objective, das die Espionage-Mechanik in kuratierten
+    // Raeumen feuert. Targets sind FIXER VERTRAG mit der
+    // Mechanik: convoy_intel / archive_record / informant_id.
+    // Kein gate, kein advanceAct — prerequisites nur Erzaehl-
+    // Reihenfolge. Q7/Q9 saeen Elara-Foreshadow + Paranoia.
+    // -------------------------------------------------------
+    espionage_convoy: {
+      id: 'espionage_convoy',
+      title: 'Der Konvoi',
+      description: 'Beschatte verkleidet einen Council-Konvoi im Lagerhaus und hoere ihn ab.',
+      npcId: 'mara',
+      type: 'observe',
+      chain: 6,
+      objectives: [
+        { type: 'observe', target: 'convoy_intel', current: 0, required: 1 }
+      ],
+      rewards: { xp: 90, druckblaetter: 2 },
+      prerequisites: ['mara_contact'],
+      requiredAct: 2,
+      dialogueOffer: 'Heute Nacht entladen sie im alten Lagerhaus einen Konvoi des Rats. Zieh die Wachuniform an, bleib im Schatten und hoer zu — aber zieh keine Klinge, sonst fliegt die Verkleidung auf.\n\nUebernimmst du das?',
+      dialogueProgress: 'Du bist noch nicht nah genug. Misch dich unter die Wachen am Konvoi und hoer ab, was verladen wird — unentdeckt.',
+      dialogueComplete: 'Du hast es gehoert. Keine Vorraete, keine Waffen. Reagenzien, versiegelte Phiolen, Kreidesteine — Ritual-Komponenten. Der Rat schickt keine Patrouille los. Er ruestet eine Beschwoerung aus. Gut gemacht, dass du die Klinge stecken liessest.'
+    },
+    espionage_archive: {
+      id: 'espionage_archive',
+      title: 'Das versiegelte Archiv',
+      description: 'Infiltriere verkleidet das Council-Archiv, hoere die Schreiber ab und birg den versiegelten Akt.',
+      npcId: 'harren',
+      type: 'observe',
+      chain: 7,
+      objectives: [
+        { type: 'observe', target: 'archive_record', current: 0, required: 1 }
+      ],
+      rewards: { xp: 110, fragments: 1 },
+      prerequisites: ['espionage_convoy'],
+      requiredAct: 2,
+      dialogueOffer: 'Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Geh als Schreiber verkleidet hinein, hoer ab, was die anderen fluestern, und birg den Akt. Werde nicht gesehen.\n\nTust du das fuer mich?',
+      dialogueProgress: 'Die Schreiber haben noch nichts Verwertbares gesagt. Bleib im Archiv, unauffaellig, und hoer weiter ab, bis du an den versiegelten Akt kommst.',
+      dialogueComplete: 'Du hast den Akt. "Vermisst, Fall geschlossen" — Elaras Verschwinden, sauber abgelegt, Datum, Siegel, Unterschrift. Zu sauber. Wer in Panik flieht, hinterlaesst kein ordentlich abgeheftetes Protokoll. Und das Datum... es liegt vor dem Tag, von dem Harren mir erzaehlt hat. Ich sage noch nichts. Aber irgendwas an dieser Akte stimmt nicht.'
+    },
+    espionage_informant: {
+      id: 'espionage_informant',
+      title: 'Der Maulwurf',
+      description: 'Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands.',
+      npcId: 'widerstand',
+      type: 'observe',
+      chain: 8,
+      objectives: [
+        { type: 'observe', target: 'informant_id', current: 0, required: 1 }
+      ],
+      rewards: { xp: 120, fragments: 1 },
+      prerequisites: ['espionage_archive'],
+      requiredAct: 2,
+      dialogueOffer: 'Jemand verraet uns. Was wir hinter verschlossenen Tueren beschliessen, weiss der Rat am naechsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.\n\nFindest du den Verraeter?',
+      dialogueProgress: 'Noch hast du den Maulwurf nicht. Bleib unauffaellig am Treffpunkt und hoer ab, wer Nachrichten nach draussen schmuggelt.',
+      dialogueComplete: 'Du hast die Uebergabe gesehen. Ein gefalteter Zettel, eine Hand, ein Wort — und in der Handschrift derselbe sauber gezogene Bogen wie auf den Belegen, die uns jemand aus dem Inneren des Rats zugespielt hat. Die Spur zeigt nach innen, naeher als uns lieb ist. Ich nenne keinen Namen. Aber vertrau ab jetzt niemandem blind — nicht einmal denen, die uns "die Wahrheit" bringen.'
+    },
+
     // =======================================================
     // === Act 4: Die Wahrheit sickert durch ===
     // =======================================================
@@ -675,6 +735,24 @@
       'quest.bruch_confrontation.dialogueOffer': 'You saw the chamber — and Aldric knows it. His guards are already on you. Cut through and come to me at the forge.\n\nWill you survive it?',
       'quest.bruch_confrontation.dialogueProgress': "Aldric's elite guards still stand between you and the forge. Fight through.",
       'quest.bruch_confrontation.dialogueComplete': '"You ask too many questions," he said. Now you ask none — you know. The break has come. Mara, Thom, I — we are ready. Act 3 begins.',
+
+      'quest.espionage_convoy.title': 'The Convoy',
+      'quest.espionage_convoy.description': 'Shadow a council convoy in the warehouse in disguise and eavesdrop on it.',
+      'quest.espionage_convoy.dialogueOffer': 'Tonight they unload a council convoy at the old warehouse. Put on the guard uniform, stay in the shadows and listen — but draw no blade, or the disguise falls.\n\nWill you take this on?',
+      'quest.espionage_convoy.dialogueProgress': "You're not close enough yet. Blend in with the guards at the convoy and eavesdrop on what's being unloaded — undetected.",
+      'quest.espionage_convoy.dialogueComplete': "You heard it. No supplies, no weapons. Reagents, sealed vials, chalkstones — ritual components. The council isn't sending out a patrol. It's outfitting a summoning. Good that you kept the blade sheathed.",
+
+      'quest.espionage_archive.title': 'The Sealed Archive',
+      'quest.espionage_archive.description': 'Infiltrate the council archive in disguise, eavesdrop on the scribes and recover the sealed file.',
+      'quest.espionage_archive.dialogueOffer': "In the council's archive lies a sealed file — and I must know what it holds. Go in disguised as a scribe, listen to what the others whisper, and recover the file. Do not be seen.\n\nWill you do this for me?",
+      'quest.espionage_archive.dialogueProgress': 'The scribes have said nothing useful yet. Stay in the archive, inconspicuous, and keep eavesdropping until you reach the sealed file.',
+      'quest.espionage_archive.dialogueComplete': '"Missing, case closed" — Elara\'s disappearance, neatly filed, date, seal, signature. Too neat. Someone fleeing in panic leaves no tidily archived record. And the date... it falls before the day Harren told me about. I say nothing yet. But something about this file is wrong.',
+
+      'quest.espionage_informant.title': 'The Mole',
+      'quest.espionage_informant.description': "Unmask a council mole within the resistance's ranks, in disguise.",
+      'quest.espionage_informant.dialogueOffer': 'Someone is betraying us. Whatever we decide behind closed doors, the council knows it by next morning. Blend in disguised among our own people at the meeting point and find out who the mole is. Move quietly — they do not know your face in this getup.\n\nWill you find the traitor?',
+      'quest.espionage_informant.dialogueProgress': "You don't have the mole yet. Stay inconspicuous at the meeting point and listen for who smuggles messages outside.",
+      'quest.espionage_informant.dialogueComplete': "You saw the handoff. A folded note, a hand, a word — and in the handwriting the same cleanly drawn curve as on the records someone from inside the council slipped us. The trail points inward, closer than we'd like. I name no name. But from now on, trust no one blindly — not even those who bring us \"the truth.\"",
 
       'quest.elara_ritual.dialogueOffer': "Deep below there is a chamber... I'll show you where. Reach wave 20.\n\nAre you ready for the truth?",
       'quest.elara_ritual.dialogueProgress': 'You must press deeper. The ritual chamber lies at wave 20.',
