@@ -252,7 +252,7 @@
   };
 
   // ---- Special Ending Text ----
-  const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede haemmert fuer die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nElara steht vor dir. Traenen in den Augen.\n\'Es ist vorbei\', fluestert sie. \'Endlich vorbei.\'\n\nDu hast die Stadt befreit.';
+  const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede haemmert fuer die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nDoch wo Elara einst stand, ist nur Leere. Sie verschwand mit dem Schattenrat — und mit ihr eine Wahrheit, die du nie ganz begreifen wirst.\n\nDu hast die Stadt befreit. Doch der Nebel fluestert noch ihren Namen.';
 
   // ---- i18n bootstrap ----
   // Auto-register all German strings so consumers + EN translations can layer
@@ -308,7 +308,7 @@
       'story.milestone.30': 'The Shadow Council is defeated. But Elara has vanished with him. The fog begins to thin.',
       'story.milestone.40': 'Beneath Fogreach a dimension of chains and shadows opens. The true source of the pact awaits.',
 
-      'story.all_quests_ending': "The chains of Fogreach are broken.\n\nThe printing press spreads the truth.\nThe forge hammers for freedom.\nThe underground network keeps watch.\n\nElara stands before you. Tears in her eyes.\n'It's over,' she whispers. 'Finally over.'\n\nYou have freed the city.",
+      'story.all_quests_ending': "The chains of Fogreach are broken.\n\nThe printing press spreads the truth.\nThe forge hammers for freedom.\nThe underground network keeps watch.\n\nBut where Elara once stood, there is only emptiness. She vanished with the Shadow Council — and with her, a truth you may never fully grasp.\n\nYou have freed the city. Yet the fog still whispers her name.",
 
       'story.milestone.label': 'Wave {wave} cleared',
       'story.epilog.label': 'Epilogue',
