@@ -1040,6 +1040,21 @@
       }
     }
 
+    // Feature 055: data-driven story advancement. A quest may declare
+    // `advanceAct: <STORY_ACTS index>`; on completion it advances the arc to
+    // that index (advanceToAct is idempotent/monotonic — same-or-lower = no-op).
+    // Used by Akt-2-Climax-Quests: ritual_chamber -> 3 (wahrheit),
+    // bruch_confrontation -> 4 (bruch). Avoids growing the hardcoded list above.
+    var _advDef = QUEST_DEFINITIONS[questId];
+    if (_advDef && typeof _advDef.advanceAct === 'number' && window.storySystem
+        && typeof window.storySystem.advanceToAct === 'function') {
+      try {
+        window.storySystem.advanceToAct(_advDef.advanceAct);
+      } catch (err) {
+        console.warn('[QuestSystem] advanceToAct(' + _advDef.advanceAct + ') failed', err);
+      }
+    }
+
     console.log('[QuestSystem] Completed quest:', questId);
     if (window.AbilitySystem && typeof window.AbilitySystem.onQuestCompleted === 'function') {
       window.AbilitySystem.onQuestCompleted(questId);

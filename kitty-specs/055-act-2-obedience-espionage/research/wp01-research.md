@@ -47,6 +47,21 @@ nicht zurückrollen). Wave-Pfad advanced NICHT mehr (seit 050). →
   Schattenrat). **Idealer Foreshadow-Anker** (FR-13 #2: ihre Belege zu glatt).
 - `branka_doubt` „Zweifel der Schmiedin" (kill 5 `elite_enemy`).
 
+## C-05 Trigger-Audit (für WP02 — Quest-Trigger, keine uncompletable Quests)
+Live-getriggerte `updateQuestProgress(type,target)`-Paare (alle Callsites):
+| (type, target) | Quelle | nutzbar |
+|----------------|--------|---------|
+| `kill`/`enemy` | js/player.js:1302 | ✅ direkt |
+| `kill`/`elite_enemy` | js/player.js:1305 | ✅ direkt |
+| `explore`/`room` | js/roomManager.js:1092 | ✅ direkt |
+| `craft`/`craft_item` | js/questSystem.js:922 | ✅ direkt |
+| `fetch`/`<target>` | js/loot.js:426 (`item.questTarget`) | ✅ **nur wenn** ein Loot-Item mit `questTarget:'<target>'` existiert |
+
+→ **Regel WP02**: Quests nur mit `kill`/`explore`/`craft` ODER `fetch` MIT
+zugehörigem Loot-Item bauen. `dialogue`/`wave`/`boss_kill` completen über
+andere Pfade (Scene/Hub) — vor Nutzung gezielt prüfen. `observe`/`infiltrate`
+erst ab WP03 (espionageSystem ruft updateQuestProgress).
+
 ## T001 — Enemy-Detection-Basis
 `js/enemy.js` nutzt KEINE wiederverwendbare „sightRange/aggroRange"-
 Terminologie (grep negativ). → Stealth-Detection in WP03 als **eigenes**,
