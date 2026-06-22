@@ -1,8 +1,8 @@
-# WP01 — Mobile-Diagnose-Profile (Feature 053)
+# WP01 — Mobile-Diagnose-Profile & Ergebnisse (Feature 053)
 
-**Status**: 🟡 In Arbeit — Instrumentierung steht, Mess-Werte ausstehend.
-**Datum**: 2026-06-19
-**Spec**: [../spec.md](../spec.md) · **Tasks**: [../tasks.md](../tasks.md) (WP01)
+**Status**: ✅ Diagnose + Fix abgeschlossen. Procroom 20→60fps.
+**Datum**: 2026-06-19 bis 2026-06-22
+**Spec**: [../spec.md](../spec.md) · **Tasks**: [../tasks.md](../tasks.md)
 
 ---
 
@@ -10,97 +10,73 @@
 
 | Feld | Wert |
 |------|------|
-| Device-Modell | _(ausfüllen)_ |
-| OS / Browser | _(ausfüllen, z.B. Android 14 / Chrome 1xx)_ |
-| DPR | _(ausfüllen)_ |
-| Mess-Methodik | `index.html?perf=1` → `js/perfProbe.js`-Overlay (FPS, #Objects, #Bodies, Draw-Calls/Frame, #Texturen, ~VRAM, JS-Heap). Pro Kontext ~20–30s stehen, dann **⤓ DUMP** tippen. |
+| Methodik | `index.html?perf=1` → `js/perfProbe.js`-Overlay (FPS, #Objects, #Bodies, Draw-Calls/Frame, Typ-Histogramm, ~VRAM, JS-Heap) + Live-Toggle-Buttons (FOG/MASK/SPOT/EXPL) zur Subsystem-Isolation + URL-Tuner (`explRes/fogInterval/rays`). |
+| Test-Umgebung | GitHub Pages (`baechtoldleroy.github.io/Fogreach/?perf=1`), echtes Mobile-Gerät über Browser (kein USB/DevTools nötig). |
 
-**Instrumentierung**: `js/perfProbe.js` (No-Op außer bei `?perf=1`).
-Ergänzt das bestehende FPS-Overlay (P-Taste / Burger-Menu) um die in
-WP01 geforderten Frame-Counter.
+**Instrumentierung** `js/perfProbe.js` — No-Op außer bei `?perf=1`, bleibt
+als Dev-Tool im Repo.
 
 ---
 
-## 1. Architektur-Befunde (verifiziert, code-only, 2026-06-19)
+## 1. Baseline (gemessen)
 
-Diese Punkte sind **ohne Device** aus dem Code geklärt — sie schärfen
-den Scope der FR-Wahl:
-
-- **FR-05 (FogOfWar-LOD) — Scope geklärt:** `js/fogOfWar.js` **existiert
-  nicht**. Fog-Logik ist inline verteilt in `js/main.js`,
-  `js/roomManager.js`, `js/player.js`, `js/eliteEnemies.js`. → Kein
-  isoliertes Fog-Modul für ein sauberes LOD; falls Fog ein Top-Sink ist,
-  braucht FR-05 erst ein Extrahieren/Lokalisieren der Update-Schleife.
-- **Procroom-Grid:** 104×88 = 9152 Tile-Zellen (Spec §1). Floor/Wall/
-  Obstacle-Texturen werden runtime pro Room generiert
-  (`js/roomTemplates.js`, `js/proceduralRooms.js`).
-- **Render-Config:** `pixelArt: true` + `roundPixels: true`, Canvas
-  960×480, `Phaser.Scale.FIT`, `antialias: false` (`js/main.js:87-113`).
-  `pixelArt` ist Pflicht (NEAREST) für die Proc-Texturen — Landmine-
-  Kommentar `js/main.js:88-94`.
-- **Mobile-Detection-Helper:** `js/renderQuality.js` (aus 052) für FR-06
-  vorhanden — zentral wiederverwenden, kein verstreuter UA-Sniff.
+| Kontext | Draws | static bodies | Typen | ~VRAM | Heap | FPS |
+|---------|-------|---------------|-------|-------|------|-----|
+| Cavern  | 290   | 231 | — | 76 MB | 20.7 | 35 |
+| Procroom| 340   | 307 | SPR:269 IMG:186 TS:91 TXT:65 | 103 MB | 20.7 | **20** |
 
 ---
 
-## 2. FPS-Baseline (zu re-messen mit Probe)
+## 2. Diagnose-Verlauf (Toggle-Isolation)
 
-Vorläufig aus 052-Baseline (2026-06-10, nur FPS, kein Counter-Kontext):
+Jeder Schritt durch Live-Toggle bewiesen, nicht geraten:
 
-| Kontext            | Desktop | Mobile (alt) | Mobile (Probe) | Ziel |
-|--------------------|---------|--------------|----------------|------|
-| Hub (HubSceneV2)   | 60      | 60           | _(—)_          | ≥55  |
-| Combat-Room        | 60      | 40           | _(—)_          | ≥55 (NFR-02) |
-| Procedural-Room    | 60      | **20**       | _(—)_          | ≥45 (NFR-01) |
-
----
-
-## 3. Frame-Counter pro Kontext (Probe-Output)
-
-Aus `window.__perfDump()` / **⤓ DUMP** — pro Kontext fpsMin/fpsAvg,
-objMax (GameObjects rekursiv), drawMax (Draw-Calls/Frame), texMb (~VRAM):
-
-| Kontext        | fpsMin | fpsAvg | objMax | bodies | drawMax | ~VRAM |
-|----------------|--------|--------|--------|--------|---------|-------|
-| Hub            | _(—)_  | _(—)_  | _(—)_  | _(—)_  | _(—)_   | _(—)_ |
-| Combat-Room    | _(—)_  | _(—)_  | _(—)_  | _(—)_  | _(—)_   | _(—)_ |
-| Procroom       | _(—)_  | _(—)_  | _(—)_  | _(—)_  | _(—)_   | _(—)_ |
-
-**Memory-Delta beim Procroom-Entry** (JS-Heap vorher→nachher): _(—)_
+1. **Draw-Calls sind NICHT der Sink.** Off-Screen-Culling senkte Draws
+   380→115, FPS unverändert. → Culling wieder entfernt.
+2. **Kein GC/Allokations-Sink.** JS-Heap in allen Kontexten stabil
+   (20.7 MB) → FR-04 (Object-Pooling) gestrichen.
+3. **`js/fogOfWar.js` existiert nicht** — Fog ist inline in
+   `js/roomManager.js`. FR-05-Scope geklärt.
+4. **Fog-of-War ist der GESAMTE Procroom-Sink.** FOG-Toggle aus → 20→**60**fps.
+5. Fog-Teilkosten (alles per Live-Toggle):
+   - **`spotlightRT`** (RenderTexture fill+erase/Tick) ≈ **50 ms/Update** —
+     der teuerste Einzelteil (RT-Framebuffer-Ops stallen den Tile-GPU).
+   - **`exploredRT.draw`** (welt-große 37 MB-RT/Tick) + Raycasting ≈ 18 ms.
+   - **BitmapMask** (`fogUnseen`) ≈ 0 ms (MASK-Toggle).
 
 ---
 
-## 4. CPU-Profil (Chrome DevTools, optional via USB)
+## 3. Umgesetzte Fixes
 
-_Nur falls eine USB-DevTools-Session gemacht wird. Top-5-CPU-Funktionen
-pro Frame im Procroom:_
-
-| Rang | Funktion | % Frame | Datei |
-|------|----------|---------|-------|
-| 1 | _(—)_ | _(—)_ | _(—)_ |
-
----
-
-## 5. Top-Sink-Hypothesen → FR-Entscheidungs-Matrix
-
-Wird nach Mess-Werten ausgefüllt. Kandidaten (Spec §4):
-
-| Sink-Hypothese | Probe-Signal das ihn bestätigt | FR |
-|----------------|--------------------------------|-----|
-| Texture-Memory-Bandwidth dominant | hohe ~VRAM + viele Texturen, draws moderat | FR-02 (Atlas/Pool) |
-| Tile-Sprite-Count dominant | sehr hohe objMax + hohe draws im Procroom | FR-03 (Tile-Reduktion) |
-| GameObject-Lifecycle dominant | objMax/bodies spiken bei Enemy-Spawn, Heap wächst | FR-04 (Pooling) |
-| Fog-Update dominant | CPU-Profil zeigt Fog-Schleife (nur via DevTools) | FR-05 (Fog-LOD) |
+| WP/Fix | Maßnahme | Effekt |
+|--------|----------|--------|
+| WP02 | Deko-Graphics konsolidiert (~80→4 Objekte) | Draws ↓, kein FPS-Effekt; harmlos behalten |
+| WP03 | ~~Off-Screen-Culling~~ | 0 FPS-Nutzen → **entfernt** |
+| WP04 | **Spotlight: RenderTexture → statische Graphics + invertierte Geometry-Mask** | 20→36 fps |
+| WP05 | Mobile Fog-Update-Intervall 2→3 (final 4) | unterstützend |
+| Fix | **VISION_RAYS Load-Order-Bug** (war immer 180 Desktop statt 90 Mobile) | 35→38 fps |
+| WP06 | **exploredRT halb→viertel-aufgelöst** (37→~2 MB, Stamp ×_exploredRes, Anzeige hochskaliert) | 38→45→**60** fps |
+| WP07 | Finale Mobile-Defaults gebacken: `explRes 0.25`, `fogInterval 4`, `rays 64` | Procroom + Combat **60 fps** |
 
 ---
 
-## 6. Entscheidung & Empfehlung
+## 4. Ergebnis vs. NFR
 
-_(Nach Mess-Werten: welche FR (02/03/04/05) priorisieren, in welcher
-Reihenfolge, mit konkreten Code-Targets. Speist WP02+ in tasks.md.)_
+| Kriterium | Ziel | Ergebnis |
+|-----------|------|----------|
+| NFR-01 Procroom-FPS | ≥ 45 | **60** ✅ |
+| NFR-02 Combat-FPS | ≥ 55 | **60** ✅ (in sehr dichten Kämpfen evtl. ~47, dann gegner- nicht fog-bedingt) |
+| NFR-03 Desktop unverändert | 60 | ✅ (alle Mobile-Pfade `isMobile`-gated, Desktop-Werte unberührt) |
+| NFR-06 keine sichtbare Regression | subjektiv | ✅ User bestätigt Fog + Grafik sauber bei explRes 0.25 |
 
 ---
 
-## 7. Offene Fragen / Risiken
+## 5. Restposten / Folge-Arbeit
 
-- _(—)_
+- **Combat-Gegner-Ceiling**: FOG aus brachte Combat (in dichtem Kampf) nur
+  38→47 → ein **Gegner-Perf-Ceiling** (AI/Physik/Projektile), unabhängig
+  vom Fog. Aktuell durch die Fog-Fixes überdeckt (60 fps), kann bei vielen
+  Gegnern wieder greifen → optionaler separater Gegner-Perf-Pass für
+  garantierte 55+ im Worst-Case.
+- **Diagnose-Tool** (`js/perfProbe.js` + `__PERF`-Hooks in roomManager)
+  bleibt auf User-Wunsch als Dev-Werkzeug (no-op ohne `?perf=1`).
