@@ -24,20 +24,27 @@ Infrastruktur (questSystem, storySystem, factionSystem, NPCs).
 **Narrativer Bogen (Constitution Akt 2):** Council-Missions
 (Dokumenten-Beschaffung, Überwachung, Spionage) kontrastieren mit privaten
 Jobs und verbotenen Lore-Fragmenten. Erste Hinweise auf Chain-Council-
-Rituale verdichten sich. Der Spieler muss entscheiden, **wie weit er sich
-fügt** — eine Fraktions-Weiche mit Konsequenzen.
+Rituale verdichten sich.
+
+**Erzählprinzip (User-Vorgabe):** Die Story wird **durch die Quests selbst**
+erzählt, **nicht durch Spieler-Entscheidungen**. Es gibt **keine
+Verzweigungen und kein Gating** — **alle Akt-2-Quests stehen dem Spieler zur
+Verfügung**. Das Thema „Gehorsam vs. Erinnerung" entsteht *im Erleben*: der
+Spieler führt Council-Aufträge aus und entdeckt durch sie selbst, was wirklich
+geschieht — der Zwiespalt wird gezeigt, nicht abgefragt.
 
 ## 2. Stakeholders & Actors
 
-- **Spieler** — durchläuft Akt 2 nach dem Akt-1-Reveal; nimmt Council-
-  Aufträge an, entdeckt Widersprüche, übernimmt verdeckte Spionage-Missionen,
-  trifft eine Gehorsam-vs-Zweifel-Entscheidung.
+- **Spieler** — durchläuft Akt 2 nach dem Akt-1-Reveal; spielt alle
+  verfügbaren Council-Aufträge, private Jobs und verdeckte Spionage-Missionen
+  und erlebt die Story dabei linear-erzählend (keine Entscheidungen).
 - **Quest-System** (`js/questSystem.js`) — in-code Quest-Objekte (id/title/
   npcId/objectives); wird um Akt-2-Quests + Espionage-Objective-Typen erweitert.
 - **Story-System** (`js/storySystem.js`) — Milestone-Progression
   (`currentActIndex`, `wahrheit`/`bruch`); Akt-2-Quests hängen an diese Beats.
-- **Faction-System** (`js/factionSystem.js`) — Identity/Verkleidung &
-  Spionage-Zugang hängen vom Standing ab; Gehorsam-Entscheidung verschiebt Standing.
+- **Faction-System** (`js/factionSystem.js`) — Standing kann sich durch
+  Quest-Abschluss narrativ verschieben (Flavor), **gated aber KEINE Quests
+  und keine Verkleidung** (User-Vorgabe: alles verfügbar).
 - **NPCs** (aldric, harren, klerus_priester, stadtwache, widerstand, branka,
   mara, elara) — Quest-Geber & Spionage-Ziele; bestehende Dialog-Register
   pro Milestone werden genutzt/erweitert.
@@ -54,8 +61,8 @@ fügt** — eine Fraktions-Weiche mit Konsequenzen.
 ### Primary B: Espionage-Mission (verdeckt)
 1. Der Widerstand (Branka/Mara) bittet den Spieler, einen Council-Konvoi zu
    beschatten.
-2. Spieler nimmt eine **fraktions-spezifische Verkleidung** an (Identity-
-   Switching, an Faction-Standing gebunden).
+2. Spieler nimmt für die Mission eine **Verkleidung** an (Identity-Switching
+   als Mission-Mechanik — frei verfügbar, NICHT an Standing gebunden).
 3. Im Zielgebiet gilt eine **Stealth-Komponente**: Wachen haben eine
    Detection-Range; der Spieler nutzt Deckung/Verstecke; Entdeckung →
    Mission erschwert (Kampf/Fehlschlag-Konsequenz, kein Hard-Game-Over).
@@ -63,16 +70,20 @@ fügt** — eine Fraktions-Weiche mit Konsequenzen.
    (z.B. an einer Tür lauschen) erfüllt das Objective.
 5. Abgabe enthüllt einen Akt-2-Story-Beat (Ritual-Hinweis).
 
-### Primary C: Gehorsam-vs-Zweifel-Weiche
-1. Nach den Akt-2-Quests stellt ein Story-Beat die Entscheidung: weiter dem
-   Rat dienen oder offen zweifeln/zum Widerstand neigen.
-2. Die Wahl verschiebt Faction-Standing und schaltet leicht abweichende
-   Folge-Dialoge/Beats frei (Branching-light, kein vollständiger Story-Split).
+### Primary C: Story-Enthüllung durch Quests (statt Entscheidung)
+1. Der Spieler erlebt den Wendepunkt **durch das Spielen** der Quests: was als
+   Routine-Council-Auftrag beginnt, entlarvt sich Schritt für Schritt
+   (konfiszierte „Schriften" = Zeugenaussagen, „Eindringlinge" = Widerständige).
+2. Ein Story-Beat (`wahrheit`) zeigt die Ritualkammer — der Bruch mit dem Rat
+   geschieht **erzählerisch/scripted**, nicht als Spieler-Wahl. Faction-Standing
+   kann sich dabei narrativ verschieben, ohne dass der Spieler abbiegen muss.
 
-### Edge: Spieler ignoriert Akt 2
-- Akt-2-Quests sind optional verfügbar, aber das **Story-Gating** (Milestone-
-  Fortschritt) soll bevorzugt durch Akt-2-Quest-Abschluss statt reinem
-  Wave-Grinding erfolgen (FR-09).
+### Edge: Reihenfolge / Verfügbarkeit
+- **Alle Akt-2-Quests sind verfügbar** (kein Gating). Eine lose erzählerische
+  Reihenfolge ist erlaubt (Quest B referenziert A), aber nichts ist hinter
+  Entscheidungen oder Standing gesperrt.
+- Das **Story-Gating der Milestones** (`wahrheit`/`bruch`) wird an
+  Akt-2-Quest-Abschluss gekoppelt statt an reines Wave-Grinding (FR-09).
 
 ## 4. Functional Requirements
 
@@ -81,15 +92,15 @@ fügt** — eine Fraktions-Weiche mit Konsequenzen.
 | FR-01 | **Akt-2-Quest-Chain**: 5–7 neue authored Quests in `questSystem.js`, die vom Akt-1-Collusion-Reveal in die `wahrheit`/`bruch`-Beats führen (Mix aus Council-Missions + privaten Jobs). | Draft |
 | FR-02 | **Council-Missions** (offiziell): Dokumenten-Beschaffung / Konfiszierung als Objective-Varianten der bestehenden Quest-Typen; erhöhen Council-Standing. | Draft |
 | FR-03 | **Espionage-Mission-Typ** als distinkte Quest-Kategorie mit eigenem UI-Indicator (Hub-Quest-Log + Marker). | Draft |
-| FR-04 | **Identity-Switching**: fraktions-spezifische Verkleidung, deren Verfügbarkeit vom Faction-Standing abhängt; Toggle/Annahme an Mission-Start. | Draft |
+| FR-04 | **Identity-Switching**: Verkleidung als Mission-Mechanik, **frei verfügbar** (NICHT standing-gated); Toggle/Annahme an Mission-Start. | Draft |
 | FR-05 | **Stealth-Komponente**: Wachen mit Detection-Range; Spieler-Verstecken/Deckung; Entdeckung verschärft die Mission (Konsequenz statt Game-Over). | Draft |
 | FR-06 | **Information-Gathering-Objective**: NPC/Objekt beobachten/abhören (Aufenthalt in Zone für X Sek, oder Interaktion) erfüllt Espionage-Ziele. | Draft |
 | FR-07 | **2–3 Showcase-Espionage-Quests** als Initial-Content, eingebettet in die Akt-2-Chain. | Draft |
-| FR-08 | **Gehorsam-vs-Zweifel-Weiche**: eine Story-Entscheidung in Akt 2, die Faction-Standing verschiebt und Branching-light-Folgedialoge freischaltet. | Draft |
-| FR-09 | **Story-Gating an Quests koppeln**: Akt-2-Milestones (`wahrheit`/`bruch`) bevorzugt durch Akt-2-Quest-Abschluss vorantreiben (nicht rein wave-getrieben). | Draft |
+| FR-08 | **Scripted Wendepunkt** (statt Entscheidung): der Bruch mit dem Rat (`wahrheit`/`bruch`) wird erzählerisch durch Quest-Abschluss ausgelöst — **keine Spieler-Wahl, keine Verzweigung**. Faction-Standing darf sich narrativ mitbewegen. | Draft |
+| FR-09 | **Keine Quest-Gates**: alle Akt-2-Quests sind verfügbar (lose erzählerische Reihenfolge erlaubt, aber nichts hinter Entscheidungen/Standing gesperrt). Milestones (`wahrheit`/`bruch`) an Quest-Abschluss koppeln statt an Wave-Grinding. | Draft |
 | FR-10 | **Lore-Fragmente Akt 2**: 2–3 neue verbotene Lore-Fragmente, die Ritual-Hinweise streuen (Hook in Knowledge-Tree / storySystem). | Draft |
 | FR-11 | **i18n**: alle neuen Texte über das bestehende DE/EN-i18n-Register (Feature 041), keine hartkodierten Strings. | Draft |
-| FR-12 | **Persistenz**: Akt-2-Quest-Fortschritt, Verkleidungs-/Entscheidungs-State im bestehenden Save (loadQuestSaveData / storySystem load) — kein Wipe bestehender Saves. | Draft |
+| FR-12 | **Persistenz**: Akt-2-Quest-Fortschritt + Verkleidungs-State im bestehenden Save (loadQuestSaveData / storySystem load) — kein Wipe bestehender Saves. | Draft |
 
 ## 5. Non-Functional Requirements
 
@@ -116,7 +127,7 @@ fügt** — eine Fraktions-Weiche mit Konsequenzen.
 |----|-----------|
 | SC-01 | Spieler kann nach Akt-1-Reveal eine zusammenhängende Akt-2-Quest-Chain (5–7 Quests) end-to-end spielen. |
 | SC-02 | Mindestens 2 Espionage-Missionen mit Verkleidung + Stealth + Info-Gathering sind abschließbar. |
-| SC-03 | Die Gehorsam-vs-Zweifel-Entscheidung verschiebt sichtbar Faction-Standing + Folgedialoge. |
+| SC-03 | Der Akt-2-Wendepunkt (Ritualkammer/`wahrheit`) wird allein durch Quest-Abschluss erzählerisch ausgelöst — keine Entscheidung, keine gesperrten Quests. |
 | SC-04 | Akt-2-Story-Beats (`wahrheit`/`bruch`) werden durch Quest-Abschluss erreicht, nicht nur durch Wave-Grinding. |
 | SC-05 | DE/EN vollständig; keine hartkodierten Strings; alle Tests grün. |
 | SC-06 | Bestehende Akt-1-Saves laden ohne Fehler; keine Akt-1-Regression. |
@@ -139,7 +150,7 @@ fügt** — eine Fraktions-Weiche mit Konsequenzen.
 |--------|-------------|
 | `js/questSystem.js` | Quest-Definitionen — Akt-2-Quests + Espionage-Objective-Typen. |
 | `js/storySystem.js` | Milestone-Progression — Akt-2-Beats an Quests koppeln (FR-09). |
-| `js/factionSystem.js` | Standing → Identity/Verkleidungs-Verfügbarkeit + Gehorsam-Weiche. |
+| `js/factionSystem.js` | Standing bewegt sich narrativ durch Quests (Flavor) — kein Gating, keine Weiche. |
 | Espionage-Runtime (neu) | Detection-Range, Verstecken, Info-Gathering-Zonen — leichtgewichtiges Modul. |
 | `js/knowledgeTree.js` | Hook für Akt-2-Lore-Fragmente. |
 | i18n-Register (041) | DE/EN für alle neuen Texte. |
