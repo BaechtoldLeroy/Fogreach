@@ -63,7 +63,7 @@ Erst nach validierter Vertical Slice. Reihenfolge wird durch Learnings aus Phase
 - [#11 Difficulty Scaling](https://github.com/BaechtoldLeroy/Fogreach/issues/11) — wenn Act-1-Pacing zu flach
 - [#6 Itemization Update](https://github.com/BaechtoldLeroy/Fogreach/issues/6) — Scope nach Playtest-Feedback
 - [#27 Seasonal Mechanics](https://github.com/BaechtoldLeroy/Fogreach/issues/27) — Endless-Loop-Wiederspielbarkeit
-- [#1 Shift / Roll / Parry](https://github.com/BaechtoldLeroy/Fogreach/issues/1) — Combat-Tiefe
+- [#1 Shift / Roll / Parry](https://github.com/BaechtoldLeroy/Fogreach/issues/1) — Combat-Tiefe (🟡 Roll/Dash = 054 ✅, Parry/Shift offen)
 - ~~[#5 Mehr Proc-Room Layouts](https://github.com/BaechtoldLeroy/Fogreach/issues/5)~~ ✅ (049 + Cave-Generator gemerged Mai 2026)
 - [#12 Mehr Gegnertypen](https://github.com/BaechtoldLeroy/Fogreach/issues/12) — basierend auf enemy_ideas.md
 - Acts 2–3 Story (aus #31 abspalten)
@@ -91,9 +91,10 @@ Erst nach validierter Vertical Slice. Reihenfolge wird durch Learnings aus Phase
 ```
 Monat 1–3:  Vertical Slice (Phase 1+2) → Act 1 polished + 4 MVP-Systeme
             ├── Phase 1 ✅ abgeschlossen (Mai 2026)
-            └── Phase 2 🟡 #33 Quest-Chain + #34 Tone-Pass
+            └── Phase 2 ✅ abgeschlossen (Mai 2026) — #33 Quest-Chain + #34 Tone-Pass
 
-Monat 4–6:  Donor-Demo + Community-Feedback + Polish-Pass
+Monat 4–6:  Donor-Demo + Community-Feedback + Polish-Pass  ← AKTUELL
+            └── geshipped: 052 Render-Quality, 053 Mobile-Perf, 054 Dodge-Roll
 Monat 6–9:  Acts 2–3 Story + Faction-Tiefe + Combat-Depth
 Monat 9–12: Acts 4–5 + Multiple Endings + Knowledge-Tree-Tiefe
 Monat 12+:  Endless-Loop-Polish, Seasonal-Cycles, Community-Content
