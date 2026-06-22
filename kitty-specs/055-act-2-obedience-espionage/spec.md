@@ -92,8 +92,8 @@ geschieht — der Zwiespalt wird gezeigt, nicht abgefragt.
 | FR-01 | **Akt-2-Quest-Chain**: 5–7 neue authored Quests in `questSystem.js`, die vom Akt-1-Collusion-Reveal in die `wahrheit`/`bruch`-Beats führen (Mix aus Council-Missions + privaten Jobs). | Draft |
 | FR-02 | **Council-Missions** (offiziell): Dokumenten-Beschaffung / Konfiszierung als Objective-Varianten der bestehenden Quest-Typen; erhöhen Council-Standing. | Draft |
 | FR-03 | **Espionage-Mission-Typ** als distinkte Quest-Kategorie mit eigenem UI-Indicator (Hub-Quest-Log + Marker). | Draft |
-| FR-04 | **Identity-Switching**: Verkleidung als Mission-Mechanik, **frei verfügbar** (NICHT standing-gated); Toggle/Annahme an Mission-Start. | Draft |
-| FR-05 | **Stealth-Komponente**: Wachen mit Detection-Range; Spieler-Verstecken/Deckung; Entdeckung verschärft die Mission (Konsequenz statt Game-Over). | Draft |
+| FR-04 | **Identity-Switching**: Verkleidung als Mission-Mechanik, **frei verfügbar** (NICHT standing-gated); Toggle/Annahme an Mission-Start. **Angreifen lässt die Verkleidung fallen** (Tarnung weg → Detection steigt). | Draft |
+| FR-05 | **Stealth-Komponente** (in **kuratierten Fix-Räumen**, nicht Procrooms — kontrollierbares Stealth): Wachen mit Detection-Range; Spieler-Verstecken/Deckung; Entdeckung verschärft die Mission (Konsequenz statt Game-Over). | Draft |
 | FR-06 | **Information-Gathering-Objective**: NPC/Objekt beobachten/abhören (Aufenthalt in Zone für X Sek, oder Interaktion) erfüllt Espionage-Ziele. | Draft |
 | FR-07 | **2–3 Showcase-Espionage-Quests** als Initial-Content, eingebettet in die Akt-2-Chain. | Draft |
 | FR-08 | **Scripted Wendepunkt** (statt Entscheidung): der Bruch mit dem Rat (`wahrheit`/`bruch`) wird erzählerisch durch Quest-Abschluss ausgelöst — **keine Spieler-Wahl, keine Verzweigung**. Faction-Standing darf sich narrativ mitbewegen. | Draft |
@@ -101,6 +101,7 @@ geschieht — der Zwiespalt wird gezeigt, nicht abgefragt.
 | FR-10 | **Lore-Fragmente Akt 2**: 2–3 neue verbotene Lore-Fragmente, die Ritual-Hinweise streuen (Hook in Knowledge-Tree / storySystem). | Draft |
 | FR-11 | **i18n**: alle neuen Texte über das bestehende DE/EN-i18n-Register (Feature 041), keine hartkodierten Strings. | Draft |
 | FR-12 | **Persistenz**: Akt-2-Quest-Fortschritt + Verkleidungs-State im bestehenden Save (loadQuestSaveData / storySystem load) — kein Wipe bestehender Saves. | Draft |
+| FR-13 | **Elara-Foreshadowing**: Akt 2 sät subtile Hinweise auf Elaras späteren Verrat (kanonisches Ende: sie steht neben dem Schattenrat), OHNE den Twist zu spoilern — z.B. widersprüchliche Spuren, ein zu glatt gelöster Hinweis, ein Lore-Fragment, das nicht zu ihrer Geschichte passt. Zahlt auf den bestehenden `offenbarung`-Payoff ein. | Draft |
 
 ## 5. Non-Functional Requirements
 
@@ -132,6 +133,7 @@ geschieht — der Zwiespalt wird gezeigt, nicht abgefragt.
 | SC-05 | DE/EN vollständig; keine hartkodierten Strings; alle Tests grün. |
 | SC-06 | Bestehende Akt-1-Saves laden ohne Fehler; keine Akt-1-Regression. |
 | SC-07 | 1 Playtester bestätigt: spürbar mehr Story + Spielzeit, Stealth fühlt sich fair an. |
+| SC-08 | Akt 2 enthält ≥2 subtile Elara-Foreshadowing-Momente, die den späteren Verrat vorbereiten, ohne ihn zu spoilern. |
 
 ## 8. Edge Cases
 
@@ -139,8 +141,11 @@ geschieht — der Zwiespalt wird gezeigt, nicht abgefragt.
   angreift? (Verkleidung fällt / Detection steigt) — definieren in FR-04/05.
 - **Save aus Akt 1 mitten in altem Wave-Gating**: defensive Migration, Akt-2-
   Quests werden nachträglich verfügbar.
-- **Detection in Procrooms vs. fixe Räume**: Stealth-Zonen vs. prozedurale
-  Layouts — Espionage-Missionen ggf. in kuratierten Räumen verankern.
+- **Stealth-Räume kuratiert** (Entscheidung): Espionage-Missionen spielen in
+  kuratierten Fix-Räumen mit definierten Stealth-Zonen/Deckung — nicht in
+  prozeduralen Procrooms (kontrollierbares, faires Stealth).
+- **Verkleidung + Angriff** (Entscheidung): Zuschlagen lässt die Tarnung
+  fallen → Detection steigt; bewusster Trade-off Stealth vs. Kampf.
 - **Mobile**: Verkleidungs-Toggle + Stealth müssen mit Touch-Controls bedienbar
   sein (Mobile-Slot-Layout wiederverwenden).
 
@@ -167,6 +172,9 @@ geschieht — der Zwiespalt wird gezeigt, nicht abgefragt.
 ## 11. Out of Scope
 
 - **Akt 3–5** (eigene Folge-Features; dieses Feature endet am `bruch`-Beat).
+  Hinweis: Das **kanonische Ende = Elara-Verrat** (offenbarung); Akt 2 baut
+  nur Foreshadowing auf (FR-13), löst den Twist aber NICHT auf. Das
+  widersprüchliche Alt-Ende wurde bereits angeglichen (Commit `7e2a1ec`).
 - **Vollständiger Story-Split** mit divergenten Enden (das ist #28, Phase 4).
 - **Neue Boss-Encounter** für Akt 2 (separat, falls nötig).
 - **Voice/Audio** für Dialoge.
