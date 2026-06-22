@@ -1358,6 +1358,12 @@ function attack() {
 
   isAttacking = true;
 
+  // Espionage (Feature 055): Angreifen lässt die Verkleidung fallen und treibt
+  // den Verdacht hoch (FR-04). No-op außerhalb einer aktiven Espionage-Mission.
+  if (window.EspionageSystem && window.EspionageSystem.isActive()) {
+    try { window.EspionageSystem.onPlayerAttack(); } catch (e) {}
+  }
+
   // Bow path: spawn an arrow projectile instead of swinging melee. Cooldown
   // path below still runs so attack speed + AoE-on-cooldown UI works.
   if (_hasBowEquipped()) {

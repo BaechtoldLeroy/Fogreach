@@ -266,7 +266,9 @@ StartScene.prototype.preload = function () {
     "RitualChamber", "SewageTunnel", "Spiral", "ThroneRoom", "Treasure_Small", "TreasureVault",
     "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt",
     // Feature 049: new procedural layouts
-    "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove"
+    "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove",
+    // Feature 055: curated espionage stealth rooms
+    "CouncilWarehouse", "SealedArchive", "InformantDen"
   ];
   for (const name of templateNames) {
     this.load.json(name, `js/roomTemplates/${name}.json`);
@@ -557,7 +559,10 @@ StartScene.prototype.create = function () {
       // RT.TEMPLATES so the room picker can use them)
       "RathausArchive", "RitualVault", "PrisonDepths", "CouncilChamber", "ForgottenCrypt",
       // Feature 049: new procedural layouts
-      "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove"
+      "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove",
+      // Feature 055: curated espionage stealth rooms (registered in RT.TEMPLATES
+      // so EspionageSystem can build them by name; not part of the random pool)
+      "CouncilWarehouse", "SealedArchive", "InformantDen"
     ];
 
     for (const name of allTemplateNames) {

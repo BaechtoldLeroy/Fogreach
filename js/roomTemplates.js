@@ -23,7 +23,10 @@
       'PillarHall',
       'AsymmetricChamber',
       'TerracedHall',
-      'DoubleAlcove'
+      'DoubleAlcove',
+      'CouncilWarehouse',
+      'SealedArchive',
+      'InformantDen'
     ];
   }
 })(window);

@@ -1398,6 +1398,12 @@ window.breakDestructibleObstacle = breakDestructibleObstacle;
 // 5) UPDATE
 // ==================================================
 function update(time, delta) {
+  // Espionage-Stealth-Tick (Feature 055) — komplett no-op außerhalb einer
+  // aktiven Espionage-Mission; defensiv, darf den Loop nie brechen.
+  if (window.EspionageSystem && window.EspionageSystem.isActive()) {
+    try { window.EspionageSystem.update(this, time, delta); } catch (e) {}
+  }
+
   if (invOpen) {
     pauseAllMotion.call(this);
     return;
