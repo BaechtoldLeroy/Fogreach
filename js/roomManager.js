@@ -1130,7 +1130,7 @@ function initFogOfWar() {
   const _explOvr = window.__PERF && window.__PERF.explRes;
   const explRes = (typeof _explOvr === 'number' && _explOvr > 0)
     ? _explOvr
-    : ((typeof isMobile !== 'undefined' && isMobile) ? 0.5 : 1);
+    : ((typeof isMobile !== 'undefined' && isMobile) ? 0.25 : 1);
   scene._exploredRes = explRes;
   scene.exploredRT = scene.add
     .renderTexture(0, 0, Math.ceil(worldW * explRes), Math.ceil(worldH * explRes))
@@ -1223,7 +1223,7 @@ function updateFogOfWar() {
   // weniger reaktiv (≈15Hz). __PERF.fogInterval erlaubt Live-Tuning (?perf).
   const isMobileFog = !!(typeof isMobile !== 'undefined' && isMobile);
   const _ovr = window.__PERF && window.__PERF.fogInterval;
-  const fogSkipInterval = (typeof _ovr === 'number' && _ovr > 0) ? _ovr : (isMobileFog ? 3 : 1);
+  const fogSkipInterval = (typeof _ovr === 'number' && _ovr > 0) ? _ovr : (isMobileFog ? 4 : 1);
   _fogFrameCounter++;
   if (_fogFrameCounter % fogSkipInterval !== 0) return;
 
@@ -1317,7 +1317,7 @@ function buildRandomRoom(scene, room) {
 const VISION_RADIUS = 220;
 // Mobile gets fewer rays (90 vs 180) to reduce CPU cost
 const VISION_RAYS_DESKTOP = 180;
-const VISION_RAYS_MOBILE = 90;
+const VISION_RAYS_MOBILE = 64; // 053: 64 reicht für runde Sicht, halbiert Raycast vs 180-Desktop
 // BUGFIX (053): früher ein load-time const — aber roomManager.js lädt VOR
 // main.js, wo `isMobile` erst gesetzt wird. Dadurch war isMobile beim Laden
 // immer undefined -> VISION_RAYS dauerhaft 180 (Desktop), auch auf Mobile.
