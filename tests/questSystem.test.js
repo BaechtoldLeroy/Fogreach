@@ -310,3 +310,56 @@ test('feature 050: loadQuestSaveData silently drops unknown legacy quest IDs', (
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Feature 055 — Akt-2-Quest-Kette (Struktur + Korrektheit)
+// ---------------------------------------------------------------------------
+test('055: Akt-2-Quests existieren mit requiredAct 2 und ohne gate', () => {
+  const qs = freshSystem();
+  const defs = qs.QUEST_DEFINITIONS;
+  ['council_seizure', 'council_surveillance', 'branka_transcripts',
+   'ritual_chamber', 'bruch_confrontation'].forEach((id) => {
+    assert.ok(defs[id], `${id} definiert`);
+    assert.strictEqual(defs[id].requiredAct, 2, `${id} requiredAct 2`);
+    assert.strictEqual(typeof defs[id].gate, 'undefined', `${id} ohne gate (keine Gates)`);
+  });
+});
+
+test('055: advanceAct treibt Milestones (wahrheit=3, bruch=4)', () => {
+  const qs = freshSystem();
+  const defs = qs.QUEST_DEFINITIONS;
+  assert.strictEqual(defs.ritual_chamber.advanceAct, 3);
+  assert.strictEqual(defs.bruch_confrontation.advanceAct, 4);
+});
+
+test('055: alle prerequisites verweisen auf existierende Quests (kein Dangling)', () => {
+  const qs = freshSystem();
+  const defs = qs.QUEST_DEFINITIONS;
+  Object.keys(defs).forEach((id) => {
+    (defs[id].prerequisites || []).forEach((pre) => {
+      assert.ok(defs[pre], `prerequisite ${pre} von ${id} existiert`);
+    });
+  });
+});
+
+test('055: fetch-Quests nutzen nur Targets mit Loot-Item (C-05)', () => {
+  const qs = freshSystem();
+  const defs = qs.QUEST_DEFINITIONS;
+  // Targets, fuer die ein Loot-Item existiert (loot.js questItemDefs + deterministische)
+  const LOOTED = new Set(['document', 'print_plate', 'journal_fragment',
+    'council_document', 'seized_writings', 'interrogation_record']);
+  Object.keys(defs).forEach((id) => {
+    (defs[id].objectives || []).forEach((o) => {
+      if (o.type === 'fetch') {
+        assert.ok(LOOTED.has(o.target),
+          `${id}: fetch-Target '${o.target}' braucht ein Loot-Item (sonst uncompletable)`);
+      }
+    });
+  });
+});
+
+test('055: Akt-2-Council-Quests bei Aldric verfuegbar (Act>=2)', () => {
+  const qs = freshSystem(); // storySystem-Stub: currentAct = 99
+  const available = qs.getAvailableQuests('aldric').map((q) => q.id);
+  assert.ok(available.includes('council_seizure'), 'council_seizure bei Aldric verfuegbar');
+});

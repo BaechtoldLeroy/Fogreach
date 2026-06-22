@@ -9,7 +9,9 @@ if (window.i18n) {
     'loot.quest_item.QUEST_DOC': 'Protokoll-Abschrift',
     'loot.quest_item.QUEST_PLATE': 'Verbotene Druckplatte',
     'loot.quest_item.JOURNAL_FRAGMENT': 'Tagebuchfragment der Tochter',
-    'loot.quest_item.COUNCIL_DOCUMENT': 'Versiegeltes Ratsdokument'
+    'loot.quest_item.COUNCIL_DOCUMENT': 'Versiegeltes Ratsdokument',
+    'loot.quest_item.SEIZED_WRITINGS': 'Beschlagnahmte Schriften',
+    'loot.quest_item.INTERROGATION_RECORD': 'Verhoerprotokoll'
   });
   window.i18n.register('en', {
     'loot.legacy.weapon': 'Sword',
@@ -21,7 +23,9 @@ if (window.i18n) {
     'loot.quest_item.QUEST_DOC': 'Protocol Transcript',
     'loot.quest_item.QUEST_PLATE': 'Forbidden Print Plate',
     'loot.quest_item.JOURNAL_FRAGMENT': "Daughter's Journal Fragment",
-    'loot.quest_item.COUNCIL_DOCUMENT': 'Sealed Council Document'
+    'loot.quest_item.COUNCIL_DOCUMENT': 'Sealed Council Document',
+    'loot.quest_item.SEIZED_WRITINGS': 'Seized Writings',
+    'loot.quest_item.INTERROGATION_RECORD': 'Interrogation Record'
   });
 }
 const _LOOT_T = (key) => (window.i18n ? window.i18n.t(key) : key);
@@ -238,7 +242,10 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     var questItemDefs = [
       { target: 'document',         name: _LOOT_T('loot.quest_item.QUEST_DOC'),       nameKey: 'loot.quest_item.QUEST_DOC',       key: 'QUEST_DOC',       tint: 0xffdd44 },
       { target: 'print_plate',      name: _LOOT_T('loot.quest_item.QUEST_PLATE'),     nameKey: 'loot.quest_item.QUEST_PLATE',     key: 'QUEST_PLATE',     tint: 0x88aaff },
-      { target: 'journal_fragment', name: _LOOT_T('loot.quest_item.JOURNAL_FRAGMENT'),nameKey: 'loot.quest_item.JOURNAL_FRAGMENT',key: 'JOURNAL_FRAGMENT',tint: 0xddccaa }
+      { target: 'journal_fragment', name: _LOOT_T('loot.quest_item.JOURNAL_FRAGMENT'),nameKey: 'loot.quest_item.JOURNAL_FRAGMENT',key: 'JOURNAL_FRAGMENT',tint: 0xddccaa },
+      // Feature 055 Akt 2: fetch-Targets fuer Q1 (Beschlagnahme) + Q4 (Abschriften)
+      { target: 'seized_writings',  name: _LOOT_T('loot.quest_item.SEIZED_WRITINGS'),       nameKey: 'loot.quest_item.SEIZED_WRITINGS',       key: 'SEIZED_WRITINGS',       tint: 0xe8d8a0 },
+      { target: 'interrogation_record', name: _LOOT_T('loot.quest_item.INTERROGATION_RECORD'), nameKey: 'loot.quest_item.INTERROGATION_RECORD', key: 'INTERROGATION_RECORD', tint: 0xc09060 }
     ];
 
     for (var qi = 0; qi < questItemDefs.length; qi++) {

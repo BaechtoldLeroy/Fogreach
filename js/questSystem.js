@@ -211,7 +211,7 @@
       requiredAct: 2,
       dialogueOffer: 'Ich bin nicht entfuehrt worden. Ich bin geflohen. Hier — lies das.\n\nFinde zwei Dokumente, die ich im Keller versteckt habe.',
       dialogueProgress: 'Die Dokumente sind gut versteckt. Suche weiter.',
-      dialogueComplete: 'Jetzt siehst du die Wahrheit. Der Rat hat mich benutzt — fuer ihre Rituale.'
+      dialogueComplete: 'Jetzt siehst du die Wahrheit. Der Rat hat mich benutzt — fuer ihre Rituale.\n\n(Die Abschriften sind in einer ruhigen, geuebten Hand. Fuer etwas, das sie angeblich in Panik im Keller versteckt hat, wirken sie seltsam ordentlich. Du schiebst den Gedanken beiseite.)'
     },
     branka_doubt: {
       id: 'branka_doubt',
@@ -229,6 +229,100 @@
       dialogueOffer: 'Diese Ruestungen sind fuer Gefangene, nicht Soldaten. Hilf mir, Beweise zu finden.\n\nBesiege fuenf Elite-Wachen und bring mir ihre Befehle.',
       dialogueProgress: 'Die Elite-Wachen tragen die Beweise bei sich. Kaempfe weiter.',
       dialogueComplete: 'Ich hatte recht. Der Rat baut Gefaengnisse, keine Kasernen. Wir muessen handeln.'
+    },
+
+    // =======================================================
+    // === Feature 055 — Akt 2: Gehorsam vs. Erinnerung ===
+    // requiredAct 2; Story DURCH Quests (keine Entscheidungen/Gates).
+    // Council-Strang (Aldric) + privater Strang (Mara/Branka) laufen
+    // parallel und muenden in den scripted Wendepunkt (advanceAct).
+    // =======================================================
+    council_seizure: {
+      id: 'council_seizure',
+      title: 'Beschlagnahme',
+      description: 'Beschlagnahme die "subversiven Schriften" — sammle 3 Buendel aus den Kellern.',
+      npcId: 'aldric',
+      type: 'fetch',
+      chain: 1,
+      objectives: [
+        { type: 'fetch', target: 'seized_writings', current: 0, required: 3 }
+      ],
+      rewards: { xp: 60, druckblaetter: 2 },
+      prerequisites: [],
+      requiredAct: 2,
+      dialogueOffer: 'Im Keller hortet Gesindel subversive Schriften gegen den Rat. Beschlagnahme sie — drei Buendel. Lies sie nicht. Bring sie.\n\nNimmst du den Auftrag an?',
+      dialogueProgress: 'Noch nicht alle Schriften sichergestellt. Such weiter.',
+      dialogueComplete: 'Gib her.\n\n(Bevor du sie abgibst, faellt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Buerger, die nach verschwundenen Angehoerigen fragen. Du gibst sie trotzdem ab.)'
+    },
+    council_surveillance: {
+      id: 'council_surveillance',
+      title: 'Ueberwachung',
+      description: 'Ueberwache einen "unruhigen" Bezirk fuer den Rat — sichte 3 Bereiche.',
+      npcId: 'aldric',
+      type: 'explore',
+      chain: 2,
+      objectives: [
+        { type: 'explore', target: 'room', current: 0, required: 3 }
+      ],
+      rewards: { xp: 70, druckblaetter: 1 },
+      prerequisites: ['council_seizure'],
+      requiredAct: 2,
+      dialogueOffer: 'Ein Bezirk gilt als aufsaessig. Sichte drei Bereiche und melde, wer sich zusammenrottet.\n\nBereit?',
+      dialogueProgress: 'Noch nicht alle Bereiche gesichtet. Beobachte weiter.',
+      dialogueComplete: 'Bericht angenommen.\n\n(Du hast keine Verschwoerer gesehen — nur Familien, die Brot teilen und leise zaehlen, wer als Naechstes nicht mehr heimkam.)'
+    },
+    branka_transcripts: {
+      id: 'branka_transcripts',
+      title: 'Verbotene Abschriften',
+      description: 'Bring Branka 2 Verhoerprotokolle aus den Kellern.',
+      npcId: 'branka',
+      type: 'fetch',
+      chain: 3,
+      objectives: [
+        { type: 'fetch', target: 'interrogation_record', current: 0, required: 2 }
+      ],
+      rewards: { xp: 80, fragments: 1 },
+      prerequisites: ['mara_contact'],
+      requiredAct: 2,
+      dialogueOffer: 'Im Keller lagern Protokolle aus Verhoeren. Nicht von Daemonen — von Menschen. Bring mir zwei Abschriften. Vorsichtig.',
+      dialogueProgress: 'Die Protokolle sind tief im Keller. Such weiter.',
+      dialogueComplete: 'Lies das. "Befragt bis zum Gestaendnis." Der Rat verhoert Buerger wie Beschworene. Das ist kein Schutz — das ist Jagd.'
+    },
+    ritual_chamber: {
+      id: 'ritual_chamber',
+      title: 'Die Ritualkammer',
+      description: 'Aldric schickt dich, eine "verseuchte" Kammer zu reinigen. Dring bis zu ihr vor.',
+      npcId: 'aldric',
+      type: 'explore',
+      chain: 4,
+      objectives: [
+        { type: 'explore', target: 'room', current: 0, required: 2 }
+      ],
+      rewards: { xp: 120, fragments: 1 },
+      prerequisites: ['council_surveillance', 'branka_doubt'],
+      requiredAct: 2,
+      advanceAct: 3,
+      dialogueOffer: 'Eine untere Kammer ist verseucht — Ketzerei. Reinige sie. Frag nicht, was du findest.\n\nGeh.',
+      dialogueProgress: 'Die Kammer liegt tiefer. Dring weiter vor.',
+      dialogueComplete: 'Du stehst in der Kammer. Blut, Symbole, Ketten — und kein Ketzer weit und breit. Das ist keine Verseuchung. Das ist eine Beschwoerungskammer. Der Rat hat dich hergeschickt, um seine eigene Spur zu verwischen.'
+    },
+    bruch_confrontation: {
+      id: 'bruch_confrontation',
+      title: 'Der Bruch',
+      description: 'Aldric hat Wachen auf dich gehetzt. Schlag dich zu Branka durch — besiege 3 Elite-Wachen.',
+      npcId: 'branka',
+      type: 'kill',
+      chain: 5,
+      objectives: [
+        { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
+      ],
+      rewards: { xp: 200, unlocks: ['act3_open'] },
+      prerequisites: ['ritual_chamber'],
+      requiredAct: 2,
+      advanceAct: 4,
+      dialogueOffer: 'Du hast die Kammer gesehen — und Aldric weiss es. Seine Wachen sind schon hinter dir. Schlag dich durch und komm zu mir in die Schmiede.\n\nUeberlebst du das?',
+      dialogueProgress: 'Aldrics Elite-Wachen sind noch zwischen dir und der Schmiede. Kaempfe dich durch.',
+      dialogueComplete: '"Du stellst zu viele Fragen", hat er gesagt. Jetzt stellst du gar keine mehr — du weisst es. Der Bruch ist da. Mara, Thom, ich — wir sind bereit. Akt 3 beginnt.'
     },
 
     // =======================================================
