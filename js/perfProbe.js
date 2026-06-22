@@ -32,16 +32,15 @@
   var samples = {};                     // Kontext-Key -> { fpsMin, fpsSum, n, ... }
   var glHooked = false;
 
-  // Live-Diagnose-Toggles: vom Spiel honoriert (updateFogOfWar, ViewportCull).
+  // Live-Diagnose-Toggles: vom Spiel honoriert (updateFogOfWar).
   // Zero-Effekt für normale Spieler, weil __PERF nur bei ?perf=1 existiert.
-  // Initialzustand optional aus URL (&nofog=1 / &nocull=1).
+  // Initialzustand optional aus URL (z.B. &nofog=1 / &nospot=1).
   function _numParam(name) {
     var m = new RegExp('[?&]' + name + '=([0-9.]+)').exec(window.location.search);
     return m ? parseFloat(m[1]) : undefined;
   }
   window.__PERF = window.__PERF || {
     nofog: /[?&]nofog=1\b/.test(window.location.search),
-    nocull: /[?&]nocull=1\b/.test(window.location.search),
     nomask: /[?&]nomask=1\b/.test(window.location.search),
     nospot: /[?&]nospot=1\b/.test(window.location.search),
     noexpl: /[?&]noexpl=1\b/.test(window.location.search),
@@ -113,7 +112,6 @@
       return t;
     }
     row.appendChild(mkToggle('FOG', 'nofog'));
-    row.appendChild(mkToggle('CULL', 'nocull'));
     row.appendChild(mkToggle('MASK', 'nomask'));
     row.appendChild(mkToggle('SPOT', 'nospot'));
     row.appendChild(mkToggle('EXPL', 'noexpl'));
