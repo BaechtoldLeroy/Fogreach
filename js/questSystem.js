@@ -639,11 +639,42 @@
 
       'quest.elara_meeting.dialogueOffer': "I wasn't kidnapped. I escaped. Here — read this.\n\nFind two documents I hid in the cellar.",
       'quest.elara_meeting.dialogueProgress': 'The documents are well hidden. Keep searching.',
-      'quest.elara_meeting.dialogueComplete': 'Now you see the truth. The council used me — for their rituals.',
+      'quest.elara_meeting.dialogueComplete': 'Now you see the truth. The council used me — for their rituals.\n\n(The transcripts are in a calm, practiced hand. For something she supposedly hid in the cellar in a panic, they look strangely neat. You push the thought aside.)',
 
       'quest.branka_doubt.dialogueOffer': 'This armor is for prisoners, not soldiers. Help me find proof.\n\nDefeat five elite guards and bring me their orders.',
       'quest.branka_doubt.dialogueProgress': 'The elite guards carry the proof on them. Keep fighting.',
       'quest.branka_doubt.dialogueComplete': 'I was right. The council is building prisons, not barracks. We must act.',
+
+      // Feature 055 — Akt 2 (Obedience vs. Memory)
+      'quest.council_seizure.title': 'Confiscation',
+      'quest.council_seizure.description': 'Confiscate the "subversive writings" — collect 3 bundles from the cellars.',
+      'quest.council_seizure.dialogueOffer': 'Rabble in the cellars is hoarding subversive writings against the council. Confiscate them — three bundles. Do not read them. Bring them.\n\nWill you take the task?',
+      'quest.council_seizure.dialogueProgress': 'Not all writings secured yet. Keep looking.',
+      'quest.council_seizure.dialogueComplete': 'Hand them over.\n\n(Before you turn them in, your eye catches a line. These are not pamphlets. They are petitions — citizens asking after vanished kin. You hand them over anyway.)',
+
+      'quest.council_surveillance.title': 'Surveillance',
+      'quest.council_surveillance.description': 'Surveil a "restless" district for the council — sight 3 areas.',
+      'quest.council_surveillance.dialogueOffer': 'A district is said to be unruly. Sight three areas and report who gathers.\n\nReady?',
+      'quest.council_surveillance.dialogueProgress': 'Not all areas sighted yet. Keep watching.',
+      'quest.council_surveillance.dialogueComplete': 'Report accepted.\n\n(You saw no conspirators — only families sharing bread and quietly counting who failed to come home next.)',
+
+      'quest.branka_transcripts.title': 'Forbidden Transcripts',
+      'quest.branka_transcripts.description': 'Bring Branka 2 interrogation records from the cellars.',
+      'quest.branka_transcripts.dialogueOffer': 'The cellars hold records from interrogations. Not of demons — of people. Bring me two transcripts. Carefully.',
+      'quest.branka_transcripts.dialogueProgress': 'The records are deep in the cellar. Keep searching.',
+      'quest.branka_transcripts.dialogueComplete': 'Read this. "Questioned until confession." The council interrogates citizens like the summoned. That is not protection — it is a hunt.',
+
+      'quest.ritual_chamber.title': 'The Ritual Chamber',
+      'quest.ritual_chamber.description': 'Aldric sends you to cleanse a "tainted" chamber. Press through to it.',
+      'quest.ritual_chamber.dialogueOffer': 'A lower chamber is tainted — heresy. Cleanse it. Do not ask what you find.\n\nGo.',
+      'quest.ritual_chamber.dialogueProgress': 'The chamber lies deeper. Press on.',
+      'quest.ritual_chamber.dialogueComplete': 'You stand in the chamber. Blood, symbols, chains — and no heretic in sight. This is no taint. This is a summoning chamber. The council sent you here to erase its own trail.',
+
+      'quest.bruch_confrontation.title': 'The Break',
+      'quest.bruch_confrontation.description': "Aldric set guards on you. Cut your way to Branka — defeat 3 elite guards.",
+      'quest.bruch_confrontation.dialogueOffer': 'You saw the chamber — and Aldric knows it. His guards are already on you. Cut through and come to me at the forge.\n\nWill you survive it?',
+      'quest.bruch_confrontation.dialogueProgress': "Aldric's elite guards still stand between you and the forge. Fight through.",
+      'quest.bruch_confrontation.dialogueComplete': '"You ask too many questions," he said. Now you ask none — you know. The break has come. Mara, Thom, I — we are ready. Act 3 begins.',
 
       'quest.elara_ritual.dialogueOffer': "Deep below there is a chamber... I'll show you where. Reach wave 20.\n\nAre you ready for the truth?",
       'quest.elara_ritual.dialogueProgress': 'You must press deeper. The ritual chamber lies at wave 20.',
