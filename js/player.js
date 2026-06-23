@@ -787,7 +787,13 @@ function setButtonActive(button, active) {
 }
 
 function startCooldownTimer(scene, duration, options = {}) {
-  const { button = null, label = null, onComplete = null, statusKey = null } = options;
+  // Der Bottom-Right-Cooldown-Zahltext (`label`) wird nicht mehr angezeigt: er
+  // lag auf Depth 101 UNTER den Fog-Overlays (Depth 900/1000) und blitzte nur
+  // auf, wo rechts der Fog aufgeklaert war — sah wie ein Bug aus. Er ist zudem
+  // redundant zum gewollten Cooldown-Indikator (Skill-Button-Grauout +
+  // Skill-Tiles via updateAbilityStatus), die beide erhalten bleiben.
+  const { button = null, onComplete = null, statusKey = null } = options;
+  const label = null;
   const time = scene?.time;
   const updateStatus = (remainingMs, customText, durationOverride) => {
     if (!statusKey || typeof window.updateAbilityStatus !== 'function') return;
