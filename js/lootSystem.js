@@ -170,10 +170,10 @@ if (window.i18n) {
       valueType: 'percent', range: Object.freeze({ min: 8, max: 25 }), iLevelMin: 1, weight: 100,
       appliesTo: Object.freeze(['weapon']), tooltipText: '+{value}% Damage' }),
     Object.freeze({ id: 'sturdy_armor', displayName: 'Sturdy', position: 'prefix', statKey: 'armor',
-      valueType: 'flat', range: Object.freeze({ min: 2, max: 8 }), iLevelMin: 1, weight: 100,
+      valueType: 'flat', range: Object.freeze({ min: 2, max: 6 }), iLevelMin: 1, weight: 100,
       appliesTo: Object.freeze(['head', 'body', 'boots']), tooltipText: '+{value} Armor' }),
     Object.freeze({ id: 'of_health', displayName: 'of the Bear', position: 'suffix', statKey: 'hp',
-      valueType: 'flat', range: Object.freeze({ min: 5, max: 30 }), iLevelMin: 1, weight: 100,
+      valueType: 'flat', range: Object.freeze({ min: 4, max: 24 }), iLevelMin: 1, weight: 100,
       appliesTo: Object.freeze(['head', 'body', 'boots', 'weapon']), tooltipText: '+{value} HP' }),
     Object.freeze({ id: 'swift_speed', displayName: 'Swift', position: 'prefix', statKey: 'speed',
       valueType: 'percent', range: Object.freeze({ min: 5, max: 15 }), iLevelMin: 1, weight: 80,
@@ -186,9 +186,11 @@ if (window.i18n) {
       appliesTo: Object.freeze(['weapon']), tooltipText: '+{value} Range' }),
     // Lauftempo (movement speed) — wirkt auf playerSpeed via getBonus('move').
     // Bewusst getrennt von swift_speed (statKey 'speed' = ANGRIFFstempo).
+    // Bereich klein + nur Stiefel (1 Slot): Bewegung ist sensibel, und #37
+    // skaliert den flachen Wert mit der Tiefe — sonst balloniert es (Basis 160).
     Object.freeze({ id: 'of_swiftness', displayName: 'of Swiftness', position: 'suffix', statKey: 'move',
-      valueType: 'flat', range: Object.freeze({ min: 10, max: 40 }), iLevelMin: 1, weight: 80,
-      appliesTo: Object.freeze(['boots', 'body']), tooltipText: '+{value} Movement Speed' }),
+      valueType: 'flat', range: Object.freeze({ min: 6, max: 18 }), iLevelMin: 1, weight: 80,
+      appliesTo: Object.freeze(['boots']), tooltipText: '+{value} Movement Speed' }),
 
     // === Defensive (1) ===
     Object.freeze({ id: 'of_the_leech', displayName: 'of the Leech', position: 'suffix', statKey: 'lifesteal',
