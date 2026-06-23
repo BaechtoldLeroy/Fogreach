@@ -291,13 +291,14 @@ if (window.i18n) {
     Object.freeze({ key: 'BD_SCHATTENKUTTE', type: 'body', name: 'Schattenkutte', iconKey: 'itBody',
       baseStats: Object.freeze({ armor: 4, speed: 10, crit: 3 }), dropWeight: Object.freeze({ 6: 40, 12: 80, 18: 100 }) }),
 
-    // Boots (3)
+    // Boots (3) — geben Lauftempo (move), nicht Angriffstempo. 'move' ist flach
+    // (px/s auf playerSpeed), daher hier ganze Zahlen statt Prozent-Stil.
     Object.freeze({ key: 'BT_LEDERSTIEFEL', type: 'boots', name: 'Lederstiefel', iconKey: 'itBoots',
-      baseStats: Object.freeze({ speed: 15 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 40 }) }),
+      baseStats: Object.freeze({ move: 18 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 40 }) }),
     Object.freeze({ key: 'BT_STAHLSOHLEN', type: 'boots', name: 'Stahlsohlen', iconKey: 'itBoots',
-      baseStats: Object.freeze({ armor: 6, speed: 8 }), dropWeight: Object.freeze({ 4: 80, 10: 100 }) }),
+      baseStats: Object.freeze({ armor: 6, move: 10 }), dropWeight: Object.freeze({ 4: 80, 10: 100 }) }),
     Object.freeze({ key: 'BT_WINDLAEUFER', type: 'boots', name: 'Windläufer', iconKey: 'itBoots',
-      baseStats: Object.freeze({ speed: 25, crit: 2 }), dropWeight: Object.freeze({ 8: 50, 14: 100 }) })
+      baseStats: Object.freeze({ move: 30, crit: 2 }), dropWeight: Object.freeze({ 8: 50, 14: 100 }) })
   ]);
   // WP04: 4 health potion tiers (Minor / Normal / Major / Super)
   const POTION_DEFS = Object.freeze([

@@ -310,7 +310,7 @@
 
       'story.all_quests_ending': "The chains of Fogreach are broken.\n\nThe printing press spreads the truth.\nThe forge hammers for freedom.\nThe underground network keeps watch.\n\nBut where Elara once stood, there is only emptiness. She vanished with the Shadow Council — and with her, a truth you may never fully grasp.\n\nYou have freed the city. Yet the fog still whispers her name.",
 
-      'story.milestone.label': 'Wave {wave} cleared',
+      'story.milestone.label': 'Depth {wave} reached',
       'story.epilog.label': 'Epilogue',
       'story.unlock.enhanced_crafting': 'Advanced Crafting',
       'story.unlock.xp_bonus_10': '+10% XP',
@@ -454,7 +454,7 @@
 
     // German registrations for unlock labels (DE source-of-truth, supplement)
     window.i18n.register('de', {
-      'story.milestone.label': 'Welle {wave} bezwungen',
+      'story.milestone.label': 'Tiefe {wave} erreicht',
       'story.epilog.label': 'Epilog',
       'story.unlock.enhanced_crafting': 'Erweiterte Schmiede',
       'story.unlock.xp_bonus_10': '+10% XP',
@@ -647,7 +647,7 @@
 
       return {
         actId: 'milestone_' + wave,
-        actName: _i18nLookup('story.milestone.label', 'Welle {wave} bezwungen').replace('{wave}', wave),
+        actName: _i18nLookup('story.milestone.label', 'Tiefe {wave} erreicht').replace('{wave}', wave),
         actNumber: null,
         narrative: getWaveMilestoneText(wave)
       };
