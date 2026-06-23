@@ -31,12 +31,13 @@
   });
 
   // Keys that should be wiped on "new game". SETTINGS is intentionally
-  // preserved — players don't expect their volume to reset when they
-  // start a new run.
+  // preserved — players don't expect their volume to reset when they start a
+  // new run. LAST_DIFFICULTY is likewise preserved: difficulty is now a
+  // Settings-Regler (kein per-Run-Picker mehr), verhaelt sich also wie ein
+  // Setting und bleibt ueber Neues-Spiel erhalten.
   const NEW_GAME_WIPE_KEYS = [
     KEYS.SAVE,
     KEYS.ABILITIES,
-    KEYS.LAST_DIFFICULTY,
     KEYS.KNOWLEDGE_TREE,
     KEYS.MAX_DEPTH,
     KEYS.LAST_DEPTH
