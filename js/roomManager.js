@@ -1138,6 +1138,12 @@ function markRoomCleared() {
   const completed = Math.max(currentWave || 1, window.DUNGEON_DEPTH || 1);
   window.DUNGEON_DEPTH = completed;
   window.NEXT_DUNGEON_DEPTH = completed + 1;
+  // Feature Hinabstieg: tiefste je erreichte Tiefe (lastKnown) persistieren —
+  // verankert die 3 Abstiegs-Optionen im echten Fortschritt des Spielers.
+  try {
+    var _mx = parseInt(localStorage.getItem('demonfall_maxDepth') || '0', 10) || 0;
+    if (completed > _mx) localStorage.setItem('demonfall_maxDepth', String(completed));
+  } catch (e) {}
   saveGame(scene);
 }
 

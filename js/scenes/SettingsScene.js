@@ -24,6 +24,10 @@
       'settings.display.fullscreen': 'Vollbild',
       'settings.display.reduced_effects': 'Reduz. Effekte',
       'settings.display.language': 'Sprache',
+      'settings.difficulty.label': 'Schwierigkeit',
+      'settings.difficulty.easy': 'Leicht',
+      'settings.difficulty.normal': 'Normal',
+      'settings.difficulty.hard': 'Schwer',
       'settings.display.language.de': 'Deutsch',
       'settings.display.language.en': 'Englisch',
       'settings.debug.autostart': 'Auto-Start',
@@ -56,6 +60,10 @@
       'settings.display.fullscreen': 'Fullscreen',
       'settings.display.reduced_effects': 'Reduced FX',
       'settings.display.language': 'Language',
+      'settings.difficulty.label': 'Difficulty',
+      'settings.difficulty.easy': 'Easy',
+      'settings.difficulty.normal': 'Normal',
+      'settings.difficulty.hard': 'Hard',
       'settings.display.language.de': 'German',
       'settings.display.language.en': 'English',
       'settings.debug.autostart': 'Autostart',
@@ -221,6 +229,7 @@
 
       this._sectionLabel(LEFT_LBL, leftY, T('settings.section.controls')); leftY += 18;
       this._volumeRow(LEFT_C, leftY, T('settings.controls.movement_weight'), 'movementWeight', COL_W); leftY += 28;
+      this._difficultyRow(LEFT_C, leftY, COL_W); leftY += 22;
 
       this._sectionLabel(LEFT_LBL, leftY, T('settings.section.display')); leftY += 18;
       this._fullscreenRow(LEFT_C, leftY, COL_W); leftY += 22;
@@ -529,6 +538,48 @@
         const next = supportedLangs[(supportedLangs.indexOf(cur) + 1) % supportedLangs.length];
         if (window.Persistence) window.Persistence.setLanguage(next);
         if (window.i18n) window.i18n.setLanguage(next); // triggers onChange → scene.restart
+        refresh();
+      });
+    }
+
+    // Schwierigkeits-Regler (vom Wave-Dialog hierher verschoben). Zyklisch
+    // Leicht/Normal/Schwer -> DIFFICULTY_MULTIPLIER 0.6/1.0/1.5. Persistiert in
+    // demonfall_lastDifficulty (beim Boot in window.DIFFICULTY_MULTIPLIER geladen).
+    _difficultyRow(centerX, y, panelW) {
+      const TIERS = [
+        { key: 'easy',   mult: 0.6 },
+        { key: 'normal', mult: 1.0 },
+        { key: 'hard',   mult: 1.5 }
+      ];
+      const curMult = () => {
+        const v = window.DIFFICULTY_MULTIPLIER;
+        return (typeof v === 'number' && Number.isFinite(v) && v > 0) ? v : 1;
+      };
+      const nearestIdx = () => {
+        const v = curMult();
+        let bi = 1, bd = Infinity;
+        TIERS.forEach((t, i) => { const d = Math.abs(t.mult - v); if (d < bd) { bd = d; bi = i; } });
+        return bi;
+      };
+      this.add.text(centerX - panelW / 2 + 20, y, T('settings.difficulty.label') + ':', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
+      }).setScrollFactor(0).setDepth(2002);
+
+      const valueText = this.add.text(centerX + 80, y, '', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
+
+      const refresh = () => { valueText.setText(T('settings.difficulty.' + TIERS[nearestIdx()].key)); };
+      refresh();
+
+      const btnBg = this.add.rectangle(centerX + 80, y + 8, 80, 22, 0x2a2a2a)
+        .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2001)
+        .setInteractive({ useHandCursor: true });
+      btnBg.on('pointerdown', () => {
+        const next = (nearestIdx() + 1) % TIERS.length;
+        const val = TIERS[next].mult;
+        window.DIFFICULTY_MULTIPLIER = val;
+        try { localStorage.setItem('demonfall_lastDifficulty', JSON.stringify(val)); } catch (e) {}
         refresh();
       });
     }

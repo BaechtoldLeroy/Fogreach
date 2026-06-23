@@ -335,7 +335,14 @@ if (typeof Phaser !== 'undefined' && Phaser?.GameObjects?.DisplayList && !Phaser
 // ==================================================
 
 if (typeof window.DIFFICULTY_MULTIPLIER !== 'number' || !Number.isFinite(window.DIFFICULTY_MULTIPLIER) || window.DIFFICULTY_MULTIPLIER <= 0) {
-  window.DIFFICULTY_MULTIPLIER = 1;
+  // Difficulty ist jetzt ein Settings-Regler (demonfall_lastDifficulty).
+  // Beim Boot von dort laden, sonst Default 1.
+  window.DIFFICULTY_MULTIPLIER = (function () {
+    try {
+      var v = Number(JSON.parse(localStorage.getItem('demonfall_lastDifficulty')));
+      return (Number.isFinite(v) && v > 0) ? v : 1;
+    } catch (e) { return 1; }
+  })();
 }
 
 if (typeof window.getDifficultyMultiplier !== 'function') {

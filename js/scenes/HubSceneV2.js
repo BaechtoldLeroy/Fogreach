@@ -28,6 +28,9 @@ if (window.i18n) {
     'hub.descent.stratum.4': 'Die Ketten-Tiefe',
     'hub.descent.danger': 'Gefahr',
     'hub.descent.loot': 'Beute',
+    'hub.descent.option.limit': 'An die Grenze',
+    'hub.descent.option.usual': 'Gewohnter Abstieg',
+    'hub.descent.option.familiar': 'Vertraute Gänge',
     'hub.wave_select.difficulty_mult': 'Schwierigkeits-Multiplikator',
     'hub.wave_select.use_background': 'Hintergrundbild verwenden',
     'hub.wave_select.info': 'Links/Rechts Level ändern - Hoch/Runter Multiplikator\nEnter/Space starten - ESC zurück - B Hintergrund',
@@ -72,6 +75,9 @@ if (window.i18n) {
     'hub.descent.stratum.4': 'The Chain-Deep',
     'hub.descent.danger': 'Danger',
     'hub.descent.loot': 'Loot',
+    'hub.descent.option.limit': 'To the Limit',
+    'hub.descent.option.usual': 'Familiar Descent',
+    'hub.descent.option.familiar': 'Known Passages',
     'hub.wave_select.difficulty_mult': 'Difficulty Multiplier',
     'hub.wave_select.use_background': 'Use background image',
     'hub.wave_select.info': 'Left/Right change level - Up/Down multiplier\nEnter/Space start - ESC back - B background',
@@ -1728,7 +1734,7 @@ class HubSceneV2 extends Phaser.Scene {
     }
     
     if (entranceData.target === 'GameScene') {
-      this._openWaveSelectDialog((selectedWave, selectedDifficulty) => {
+      const startDungeon = (selectedWave, selectedDifficulty) => {
         window.SELECTED_WAVE_OVERRIDE = selectedWave;
         window.DUNGEON_DEPTH = selectedWave;
         window.NEXT_DUNGEON_DEPTH = selectedWave + 1;
@@ -1769,7 +1775,20 @@ class HubSceneV2 extends Phaser.Scene {
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
           this.scene.start('GameScene');
         });
-      });
+      };
+
+      // Hinabstieg: Im frühen Spiel (noch nie tiefer als 5 vorgedrungen) gibt es
+      // keine sinnvollen Alternativen — wir überspringen den Dialog und starten
+      // direkt auf der zuletzt erreichten Tiefe.
+      const lastKnown = Math.max(1, parseInt(localStorage.getItem('demonfall_maxDepth') || '1', 10) || 1);
+      if (lastKnown < 5) {
+        const directDifficulty = window.DIFFICULTY_MULTIPLIER
+          || (typeof window.getDifficultyMultiplier === 'function' ? window.getDifficultyMultiplier() : 1)
+          || 1;
+        startDungeon(lastKnown, directDifficulty);
+      } else {
+        this._openWaveSelectDialog(startDungeon);
+      }
     } else if (entranceData.target === 'CraftingScene') {
       if (typeof saveGame === 'function') {
         try { saveGame(this); } catch (err) { console.warn('[HubSceneV2] saveGame before crafting failed', err); }
@@ -1814,78 +1833,44 @@ class HubSceneV2 extends Phaser.Scene {
 
     const container = this.add.container(cx, cy).setDepth(1600).setScrollFactor(0);
 
-    const panelWidth = 440;
-    const panelHeight = 340;
     const pad = 22;
+
+    // Hinabstieg: tiefste je erreichte Tiefe (vom Spieler je betreten).
+    const lastKnown = Math.max(1, parseInt(localStorage.getItem('demonfall_maxDepth') || '1', 10) || 1);
+
+    // Tiefen-Stratum 1..4 + Gefahr/Beute-Farbe (grün -> rot mit der Tiefe).
+    const STRATUM_COLORS = ['#9fd98f', '#d9cf8f', '#d9a07a', '#d97a7a'];
+    const stratumOf = (depth) => (depth <= 5 ? 1 : depth <= 10 ? 2 : depth <= 15 ? 3 : 4);
+
+    // 3 feste Abstiegs-Optionen, abgeleitet aus der tiefsten erreichten Tiefe.
+    // "An die Grenze" immer; die vertrauteren Optionen erst ab Tiefe 5 / 10.
+    const rawOptions = [];
+    rawOptions.push({ key: 'hub.descent.option.limit', depth: lastKnown });
+    if (lastKnown >= 5) rawOptions.push({ key: 'hub.descent.option.usual', depth: lastKnown - 5 });
+    if (lastKnown >= 10) rawOptions.push({ key: 'hub.descent.option.familiar', depth: lastKnown - 10 });
+    // Tiefe auf min. 1 klemmen, dedupen, dann flach -> tief sortieren.
+    const seen = new Set();
+    const options = [];
+    for (const opt of rawOptions) {
+      const depth = Math.max(1, opt.depth);
+      if (seen.has(depth)) continue;
+      seen.add(depth);
+      options.push({ key: opt.key, depth });
+    }
+    options.sort((a, b) => a.depth - b.depth);
+
+    // Panelgröße aus der Optionsanzahl ableiten.
+    const headerH = 110;
+    const optionH = 72;
+    const optionGap = 14;
+    const footerH = 70;
+    const panelWidth = 460;
+    const panelHeight = headerH + options.length * (optionH + optionGap) + footerH;
+
     const g = this.add.graphics();
     g.fillStyle(0x101018, 0.95).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
     g.lineStyle(2, 0x4a4a6a, 0.9).strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
     container.add(g);
-
-    const savedInfo = (() => {
-      if (window.__LAST_SAVE_SNAPSHOT__) return window.__LAST_SAVE_SNAPSHOT__;
-      try {
-        const raw = localStorage.getItem('demonfall_save_v1');
-        return raw ? JSON.parse(raw) : {};
-      } catch (e) {
-        return {};
-      }
-    })();
-
-    const savedDepth = typeof savedInfo?.dungeonDepth === 'number' ? savedInfo.dungeonDepth : null;
-    const savedDifficulty = typeof savedInfo?.difficultyMultiplier === 'number' ? savedInfo.difficultyMultiplier : null;
-    const storedDifficulty = (() => {
-      try {
-        const raw = localStorage.getItem('demonfall_lastDifficulty');
-        if (!raw) return null;
-        const val = Number(JSON.parse(raw));
-        return Number.isFinite(val) && val > 0 ? val : null;
-      } catch (err) {
-        return null;
-      }
-    })();
-    const runtimeDepth = Math.max(1, Math.floor(window.DUNGEON_DEPTH || window.currentWave || 1));
-    // Hinabstieg: Default = zuletzt vom Spieler GEWÄHLTE Tiefe (nicht die
-    // automatisch hochgekletterte aktuelle Tiefe). So eskaliert der Dungeon
-    // nicht mehr von selbst — der Spieler steigt nur bewusst tiefer hinab
-    // und kann auf einer vertrauten Tiefe Kräfte sammeln.
-    const lastChosenDepth = (() => {
-      try {
-        const raw = localStorage.getItem('demonfall_lastDepth');
-        const v = raw != null ? Math.floor(Number(JSON.parse(raw))) : NaN;
-        return Number.isFinite(v) && v >= 1 ? v : null;
-      } catch (e) { return null; }
-    })();
-    const defaultDepth = lastChosenDepth
-      || (savedDepth ? Math.max(1, Math.round(savedDepth)) : runtimeDepth);
-    let selected = Phaser.Math.Clamp(defaultDepth, 1, 99);
-    const minWave = 1;
-    const maxWave = 99;
-    const difficultyRuntime = (typeof window.getDifficultyMultiplier === 'function')
-      ? window.getDifficultyMultiplier()
-      : (typeof window.DIFFICULTY_MULTIPLIER === 'number' ? window.DIFFICULTY_MULTIPLIER : 1);
-    const diffMin = 0.25;
-    const diffMax = 5;
-    const diffStep = 0.25;
-    const rememberedDifficulty = (typeof window.__LAST_SELECTED_DIFFICULTY__ === 'number' && Number.isFinite(window.__LAST_SELECTED_DIFFICULTY__) && window.__LAST_SELECTED_DIFFICULTY__ > 0)
-      ? window.__LAST_SELECTED_DIFFICULTY__
-      : null;
-    const initialDifficulty = rememberedDifficulty
-      ? rememberedDifficulty
-      : (storedDifficulty ?? (savedDifficulty && Number.isFinite(savedDifficulty) ? savedDifficulty : difficultyRuntime));
-    let difficulty = Phaser.Math.Clamp(Number(initialDifficulty) || 1, diffMin, diffMax);
-
-    const persistDifficultySelection = (value) => {
-      const val = Phaser.Math.Clamp(Number(value) || 1, diffMin, diffMax);
-      window.__LAST_SELECTED_DIFFICULTY__ = val;
-      window.DIFFICULTY_MULTIPLIER = val;
-      try {
-        localStorage.setItem('demonfall_lastDifficulty', JSON.stringify(val));
-      } catch (err) {
-        console.warn('[HubSceneV2] Unable to persist difficulty selection', err);
-      }
-    };
-    persistDifficultySelection(difficulty);
 
     const title = this.add.text(0, -panelHeight / 2 + pad, _HUB_T('hub.wave_select.title'), {
       fontFamily: 'serif',
@@ -1901,61 +1886,70 @@ class HubSceneV2 extends Phaser.Scene {
     }).setOrigin(0.5, 0);
     container.add(subtitle);
 
-    const waveLabel = this.add.text(0, subtitle.y + subtitle.height + 18, _HUB_T('hub.wave_select.dungeon_level'), {
-      fontFamily: 'monospace',
-      fontSize: 18,
-      color: '#cfd0ff'
-    }).setOrigin(0.5, 0.5);
-    container.add(waveLabel);
-
-    const waveText = this.add.text(0, waveLabel.y + 52, '', {
-      fontFamily: 'serif',
-      fontSize: 48,
-      color: '#ffe28a'
-    }).setOrigin(0.5, 0.5);
-    container.add(waveText);
-
-    // Hinabstieg: benanntes Stratum + Risk/Reward unter der Tiefenzahl.
-    const stratumText = this.add.text(0, waveText.y + 36, '', {
-      fontFamily: 'serif',
-      fontSize: 15
-    }).setOrigin(0.5, 0.5);
-    container.add(stratumText);
-
-    const difficultyLabel = this.add.text(0, waveText.y + 68, _HUB_T('hub.wave_select.difficulty_mult'), {
-      fontFamily: 'monospace',
-      fontSize: 18,
-      color: '#cfd0ff'
-    }).setOrigin(0.5, 0.5);
-    container.add(difficultyLabel);
-
-    const difficultyText = this.add.text(0, difficultyLabel.y + 40, '', {
-      fontFamily: 'serif',
-      fontSize: 42,
-      color: '#ffaaff'
-    }).setOrigin(0.5, 0.5);
-    container.add(difficultyText);
-
-    const formatDifficulty = (value) => {
-      const rounded = Math.round(value * 100) / 100;
-      return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(2)}x`;
+    const chooseDepth = (depth) => {
+      try { localStorage.setItem('demonfall_lastDepth', JSON.stringify(depth)); } catch (e) {}
+      cleanup();
+      const difficulty = window.DIFFICULTY_MULTIPLIER
+        || (window.getDifficultyMultiplier ? window.getDifficultyMultiplier() : 1)
+        || 1;
+      if (typeof onConfirm === 'function') onConfirm(depth, difficulty);
     };
 
-    // Tiefen-Stratum 1..4 + Gefahr/Beute-Farbe (grün -> rot mit der Tiefe).
-    const STRATUM_COLORS = ['#9fd98f', '#d9cf8f', '#d9a07a', '#d97a7a'];
-    const stratumOf = (depth) => (depth <= 5 ? 1 : depth <= 10 ? 2 : depth <= 15 ? 3 : 4);
-    const updateDisplay = () => {
-      waveText.setText(`${selected}`);
-      const idx = stratumOf(selected);
-      const name = _HUB_T('hub.descent.stratum.' + idx);
-      const arrows = '↑'.repeat(idx); // ↑ je Stratum-Stufe
-      stratumText.setText(
-        `${name}   ${_HUB_T('hub.descent.danger')} ${arrows}   ${_HUB_T('hub.descent.loot')} ${arrows}`
-      );
-      stratumText.setColor(STRATUM_COLORS[idx - 1] || '#cfd0ff');
-      difficultyText.setText(formatDifficulty(difficulty));
+    const cancel = () => {
+      cleanup();
     };
-    updateDisplay();
+
+    // Vertikale Abstiegs-Buttons, je nach Tiefen-Stratum gefärbt.
+    const optionTop = -panelHeight / 2 + headerH;
+    options.forEach((opt, i) => {
+      const oy = optionTop + i * (optionH + optionGap) + optionH / 2;
+      const idx = stratumOf(opt.depth);
+      const color = STRATUM_COLORS[idx - 1] || '#cfd0ff';
+      const arrows = '↑'.repeat(idx);
+      const stratumName = _HUB_T('hub.descent.stratum.' + idx);
+
+      const bw = panelWidth - pad * 2;
+      const box = this.add.graphics();
+      const drawBox = (hover) => {
+        box.clear();
+        box.fillStyle(hover ? 0x2a2a3d : 0x1a1a26, 0.95)
+          .fillRoundedRect(-bw / 2, oy - optionH / 2, bw, optionH, 10);
+        box.lineStyle(2, Phaser.Display.Color.HexStringToColor(color).color, 0.9)
+          .strokeRoundedRect(-bw / 2, oy - optionH / 2, bw, optionH, 10);
+      };
+      drawBox(false);
+      container.add(box);
+
+      const labelText = this.add.text(-bw / 2 + 16, oy - 16, _HUB_T(opt.key), {
+        fontFamily: 'serif',
+        fontSize: 20,
+        color: '#f2e9d8'
+      }).setOrigin(0, 0.5);
+      container.add(labelText);
+
+      const hint = this.add.text(-bw / 2 + 16, oy + 14,
+        `${stratumName}   ${_HUB_T('hub.descent.danger')} ${arrows}   ${_HUB_T('hub.descent.loot')} ${arrows}`, {
+        fontFamily: 'monospace',
+        fontSize: 13,
+        color
+      }).setOrigin(0, 0.5);
+      container.add(hint);
+
+      const depthText = this.add.text(bw / 2 - 16, oy,
+        `${_HUB_T('hub.wave_select.dungeon_level')} ${opt.depth}`, {
+        fontFamily: 'serif',
+        fontSize: 24,
+        color
+      }).setOrigin(1, 0.5);
+      container.add(depthText);
+
+      const hit = this.add.rectangle(0, oy, bw, optionH, 0x000000, 0)
+        .setInteractive({ useHandCursor: true });
+      hit.on('pointerover', () => drawBox(true));
+      hit.on('pointerout', () => drawBox(false));
+      hit.on('pointerdown', () => chooseDepth(opt.depth));
+      container.add(hit);
+    });
 
     const makeButton = (label, x, y, handler, style = {}) => {
       const txt = this.add.text(x, y, label, Object.assign({
@@ -1972,128 +1966,37 @@ class HubSceneV2 extends Phaser.Scene {
       return txt;
     };
 
-    const adjustWave = (delta) => {
-      selected += delta;
-      if (selected < minWave) selected = minWave;
-      if (selected > maxWave) selected = maxWave;
-      updateDisplay();
-    };
+    const cancelY = panelHeight / 2 - pad - 12;
+    makeButton(_HUB_T('hub.wave_select.cancel'), 0, cancelY, cancel, { backgroundColor: '#6a3d3d' });
 
-    makeButton('−', -120, waveText.y, () => adjustWave(-1), { fontSize: 28, padding: { x: 18, y: 8 } });
-    makeButton('+', 120, waveText.y, () => adjustWave(1), { fontSize: 28, padding: { x: 18, y: 8 } });
-
-    const adjustDifficulty = (steps) => {
-      const raw = difficulty + steps * diffStep;
-      const clamped = Phaser.Math.Clamp(raw, diffMin, diffMax);
-      const stepped = Math.round(clamped / diffStep) * diffStep;
-      difficulty = Number(stepped.toFixed(2));
-      persistDifficultySelection(difficulty);
-      updateDisplay();
-    };
-
-    makeButton('−', -120, difficultyText.y, () => adjustDifficulty(-1), { fontSize: 28, padding: { x: 18, y: 8 } });
-    makeButton('+', 120, difficultyText.y, () => adjustDifficulty(1), { fontSize: 28, padding: { x: 18, y: 8 } });
-
-    // Background toggle checkbox
-    let useBg = window.USE_RATHAUSKELLER_BG === true;
-    const bgCheckboxY = difficultyText.y + 50;
-    
-    const bgCheckbox = this.add.graphics();
-    const drawCheckbox = () => {
-      bgCheckbox.clear();
-      bgCheckbox.lineStyle(2, 0xaaaacc, 1);
-      bgCheckbox.strokeRect(-100, bgCheckboxY - 10, 20, 20);
-      if (useBg) {
-        bgCheckbox.fillStyle(0x88cc88, 1);
-        bgCheckbox.fillRect(-96, bgCheckboxY - 6, 12, 12);
-      }
-    };
-    drawCheckbox();
-    container.add(bgCheckbox);
-    
-    const bgLabel = this.add.text(-70, bgCheckboxY, _HUB_T('hub.wave_select.use_background'), {
-      fontFamily: 'monospace',
-      fontSize: 16,
-      color: '#c8c2b5'
-    }).setOrigin(0, 0.5);
-    container.add(bgLabel);
-    
-    const bgHitArea = this.add.rectangle(-20, bgCheckboxY, 200, 24, 0x000000, 0)
-      .setInteractive({ useHandCursor: true });
-    bgHitArea.on('pointerdown', () => {
-      useBg = !useBg;
-      window.USE_RATHAUSKELLER_BG = useBg;
-      drawCheckbox();
-    });
-    container.add(bgHitArea);
-
-    const info = this.add.text(0, bgCheckboxY + 40, _HUB_T('hub.wave_select.info'), {
-      fontFamily: 'monospace',
-      fontSize: 14,
-      color: '#9aa2c0'
-    }).setOrigin(0.5, 0);
-    info.setWordWrapWidth(panelWidth - pad * 2);
-    container.add(info);
-
-    const confirm = () => {
-      cleanup();
-      // Hinabstieg: zuletzt gewählte Tiefe merken -> Default beim nächsten Mal,
-      // kein automatisches Hochzwingen.
-      try { localStorage.setItem('demonfall_lastDepth', JSON.stringify(selected)); } catch (e) {}
-      if (typeof onConfirm === 'function') onConfirm(selected, difficulty);
-      persistDifficultySelection(difficulty);
-    };
-
-    const cancel = () => {
-      cleanup();
-    };
-
-    // Expose confirm so the mobile interact button can double as the dialog
-    // "Starten" (same as pressing Enter/Space on desktop).
-    this._waveDialogConfirm = confirm;
-
-    makeButton(_HUB_T('hub.wave_select.start'), -80, info.y + info.height + 32, confirm, { backgroundColor: '#3d6a3d' });
-    makeButton(_HUB_T('hub.wave_select.cancel'), 120, info.y + info.height + 32, cancel, { backgroundColor: '#6a3d3d' });
+    // Expose the deepest option as the default "confirm" so the mobile interact
+    // button can double as a quick-start (same as tapping the last option).
+    const deepestDepth = options.length ? options[options.length - 1].depth : lastKnown;
+    this._waveDialogConfirm = () => chooseDepth(deepestDepth);
 
     const onKeyDown = (event) => {
       switch (event.code) {
-        case 'ArrowLeft':
-        case 'Minus':
-        case 'NumpadSubtract':
-          event?.preventDefault?.();
-          adjustWave(-1);
+        case 'Digit1':
+        case 'Numpad1':
+          if (options[0]) { event?.preventDefault?.(); chooseDepth(options[0].depth); }
           break;
-        case 'ArrowRight':
-        case 'Equal':
-        case 'NumpadAdd':
-          event?.preventDefault?.();
-          adjustWave(1);
+        case 'Digit2':
+        case 'Numpad2':
+          if (options[1]) { event?.preventDefault?.(); chooseDepth(options[1].depth); }
           break;
-        case 'ArrowUp':
-        case 'KeyW':
-          event?.preventDefault?.();
-          adjustDifficulty(1);
-          break;
-        case 'ArrowDown':
-        case 'KeyS':
-          event?.preventDefault?.();
-          adjustDifficulty(-1);
+        case 'Digit3':
+        case 'Numpad3':
+          if (options[2]) { event?.preventDefault?.(); chooseDepth(options[2].depth); }
           break;
         case 'Enter':
         case 'NumpadEnter':
         case 'Space':
           event?.preventDefault?.();
-          confirm();
+          chooseDepth(deepestDepth);
           break;
         case 'Escape':
           event?.preventDefault?.();
           cancel();
-          break;
-        case 'KeyB':
-          event?.preventDefault?.();
-          useBg = !useBg;
-          window.USE_RATHAUSKELLER_BG = useBg;
-          drawCheckbox();
           break;
         default:
           break;
@@ -2109,7 +2012,7 @@ class HubSceneV2 extends Phaser.Scene {
       this._dialogOpen = false;
       this._dialogContainer = null;
       this.input.keyboard.off('keydown', onKeyDown);
-      if (this._waveDialogConfirm === confirm) this._waveDialogConfirm = null;
+      this._waveDialogConfirm = null;
     };
 
     this._dialogContainer = container;
