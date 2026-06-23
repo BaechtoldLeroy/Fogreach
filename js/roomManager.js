@@ -937,9 +937,12 @@ function enterRoom(scene, roomId) {
   const builtW = builtMeta?.w ?? room?.width ?? ROOM_W;
   const builtH = builtMeta?.h ?? room?.height ?? ROOM_H;
   const roomAreaPx = builtW * builtH;
+  // Variante A: Gegnerzahl nach BEGEHBARER Flaeche (Flood-Fill), Fallback Box.
+  const walkableAreaPx = (typeof window.computeWalkableAreaPx === "function"
+    ? window.computeWalkableAreaPx(scene) : 0) || roomAreaPx;
   const baseEnemies =
     typeof window.computeWaveEnemyTotal === "function"
-      ? window.computeWaveEnemyTotal(targetWave, roomAreaPx)
+      ? window.computeWaveEnemyTotal(targetWave, walkableAreaPx)
       : 4 + (targetWave - 1) * 2;
 
   // Difficulty scaling based on room position within the run.
@@ -1133,7 +1136,8 @@ function markRoomCleared() {
   // Aktualisiere gespeicherte Gegnerzahl anhand der festen Progression
   room.enemiesPerWave =
     typeof window.computeWaveEnemyTotal === "function"
-      ? window.computeWaveEnemyTotal(room.wave)
+      ? window.computeWaveEnemyTotal(room.wave,
+          typeof window.computeWalkableAreaPx === "function" ? window.computeWalkableAreaPx(scene) : 0)
       : 4 + Math.max(0, room.wave - 1) * 2;
   const completed = Math.max(currentWave || 1, window.DUNGEON_DEPTH || 1);
   window.DUNGEON_DEPTH = completed;
@@ -1540,6 +1544,38 @@ function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
   }
   return false;
 }
+
+// Begehbare (erreichbare) Flaeche eines Raums in px² — Basis fuer die
+// flaechen-basierte Gegnerzahl (Variante A). Bevorzugt den Flood-Fill der
+// erreichbaren Zellen (schliesst Waende, Hindernisse UND unerreichbare Taschen
+// aus); faellt sonst auf Floor-Tiles ('.') zurueck, sonst 0 (Caller nutzt dann
+// den Tiefen-Fallback). Cached in window.__WALKABLE_AREA_PX__.
+function computeWalkableAreaPx(scene) {
+  var areaPx = 0;
+  try {
+    var a = scene && scene._accessibleArea;
+    if (a && Array.isArray(a.reachableCells) && a.reachableCells.length && a.cellSize) {
+      areaPx = a.reachableCells.length * a.cellSize * a.cellSize;
+    }
+  } catch (e) {}
+  if (!areaPx) {
+    try {
+      var grid = scene && scene._minimapWallsGrid;
+      var T = (scene && scene._minimapTileSize) || 32;
+      if (grid && grid.length) {
+        var floor = 0;
+        for (var y = 0; y < grid.length; y++) {
+          var row = grid[y]; if (!row) continue;
+          for (var x = 0; x < row.length; x++) if (row[x] === '.') floor++;
+        }
+        if (floor > 0) areaPx = floor * T * T;
+      }
+    } catch (e2) {}
+  }
+  if (areaPx > 0) window.__WALKABLE_AREA_PX__ = areaPx;
+  return areaPx;
+}
+window.computeWalkableAreaPx = computeWalkableAreaPx;
 
 function recomputeAccessibleArea(scene, options = {}) {
   if (!scene || !scene.physics || !scene.physics.world) {

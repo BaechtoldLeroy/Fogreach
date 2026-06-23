@@ -36,7 +36,7 @@ function saveGame(scene) {
     const waveForCount = Math.max(1, currentWave || 1);
     const normalizedEnemies =
       typeof window.computeWaveEnemyTotal === 'function'
-        ? window.computeWaveEnemyTotal(waveForCount)
+        ? window.computeWaveEnemyTotal(waveForCount, window.__WALKABLE_AREA_PX__ || 0)
         : 4 + (waveForCount - 1) * 2;
 
     const cloneSkills = () => {
@@ -212,7 +212,7 @@ function applySaveToState(scene, s) {
   const waveForCount = Math.max(1, currentWave || 1);
   enemiesPerWave     =
     typeof window.computeWaveEnemyTotal === 'function'
-      ? window.computeWaveEnemyTotal(waveForCount)
+      ? window.computeWaveEnemyTotal(waveForCount, window.__WALKABLE_AREA_PX__ || 0)
       : 4 + (waveForCount - 1) * 2;
   playerHealth       = (s.playerHealth ?? playerHealth);
   playerMaxHealth    = (s.playerMaxHealth ?? playerMaxHealth ?? baseStats?.maxHP ?? 30);

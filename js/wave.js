@@ -3,25 +3,27 @@
 // --------------------------------------------------
 // Wave sizing helper
 // --------------------------------------------------
-function computeWaveEnemyTotal(waveNumber, roomAreaPx) {
-  const wave = Math.max(1, Math.floor(waveNumber || 1));
-  // Logarithmic wave scaling for the BASE count (room of reference size).
-  // Wave 1: 4, Wave 5: 6, Wave 10: 8, Wave 20: 10, Wave 40: 13
-  const base = 4;
-  const scaled = base + Math.floor(Math.log2(wave) * 1.7);
-  const baseCount = Math.min(14, scaled);
+// Variante A (2026-06): Gegnerzahl rein nach BEGEHBARER Flaeche (konstante
+// Dichte) — NICHT mehr nach Tiefe. Tiefe macht Gegner staerker (HP, enemy.js
+// statScale +10%/Tiefe), nicht zahlreicher. `walkableAreaPx` = erreichbare
+// Flaeche in px² (window.computeWalkableAreaPx / roomManager). Fehlt sie,
+// faellt die Formel auf den alten tiefen-basierten baseCount zurueck.
+const AREA_PER_ENEMY = 85000; // ~1 Gegner pro ~85k px² begehbar — tunebar
+const ENEMY_COUNT_MIN = 4;
+const ENEMY_COUNT_MAX = 28;
 
-  // Scale enemy count by room area — reference area is the median template
-  // (~1 million px²). Linear scaling for ratio<=1, super-linear (1.05) above
-  // so really big procedural BSP rooms (3-4x) feel properly packed. Caps
-  // raised so the formula can produce a meaningful spike.
-  if (roomAreaPx && roomAreaPx > 0) {
-    const REF_AREA = 1152 * 896; // ~1,032,192 px² (median template size)
-    const ratio = roomAreaPx / REF_AREA;
-    const areaFactor = ratio <= 1 ? ratio : Math.pow(ratio, 1.05);
-    return Math.max(3, Math.min(40, Math.round(baseCount * areaFactor)));
+function computeWaveEnemyTotal(waveNumber, walkableAreaPx) {
+  if (walkableAreaPx && walkableAreaPx > 0) {
+    const n = Math.round(walkableAreaPx / AREA_PER_ENEMY);
+    const count = Math.max(ENEMY_COUNT_MIN, Math.min(ENEMY_COUNT_MAX, n));
+    if (window.__ENEMY_COUNT_DEBUG__) {
+      try { console.log('[enemyCount] begehbar=' + Math.round(walkableAreaPx) + 'px² -> ' + count + ' Gegner'); } catch (e) {}
+    }
+    return count;
   }
-  return baseCount;
+  // Fallback: Flaeche unbekannt -> bisheriger tiefen-basierter Wert.
+  const wave = Math.max(1, Math.floor(waveNumber || 1));
+  return Math.min(14, 4 + Math.floor(Math.log2(wave) * 1.7));
 }
 window.computeWaveEnemyTotal = computeWaveEnemyTotal;
 
@@ -74,7 +76,7 @@ function startNextWave(noIncrement) {
   // Alle regulären Gegner direkt zu Beginn der Welle erzeugen.
   if (!bossActive && typeof spawnEnemy === 'function') {
     const scene = this;
-    const total = computeWaveEnemyTotal(currentWave);
+    const total = computeWaveEnemyTotal(currentWave, window.__WALKABLE_AREA_PX__ || 0);
     enemiesPerWave = window.enemiesPerWave = total;
     if (total > 0) {
       let spawned = 0;
@@ -113,8 +115,8 @@ function startNextWave(noIncrement) {
 // --------------------------------------------------
 // 6.5b Prüfen, ob die Welle vorbei ist
 // --------------------------------------------------
-function checkWaveEnd(time) {  
-  const total = computeWaveEnemyTotal(currentWave);
+function checkWaveEnd(time) {
+  const total = computeWaveEnemyTotal(currentWave, window.__WALKABLE_AREA_PX__ || 0);
   if (waveInProgress &&
     spawnedEnemiesInWave >= total &&
     enemies.countActive(true) === 0) {
