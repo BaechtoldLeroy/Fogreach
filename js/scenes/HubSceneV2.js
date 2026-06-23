@@ -1969,10 +1969,12 @@ class HubSceneV2 extends Phaser.Scene {
     const cancelY = panelHeight / 2 - pad - 12;
     makeButton(_HUB_T('hub.wave_select.cancel'), 0, cancelY, cancel, { backgroundColor: '#6a3d3d' });
 
-    // Expose the deepest option as the default "confirm" so the mobile interact
-    // button can double as a quick-start (same as tapping the last option).
-    const deepestDepth = options.length ? options[options.length - 1].depth : lastKnown;
-    this._waveDialogConfirm = () => chooseDepth(deepestDepth);
+    // Quick-Start (Mobile-Interact-Button + Enter/Space) = die "normale" Option
+    // (Gewohnter Abstieg), NICHT die tiefste — kein versehentliches Pushen an
+    // die Grenze. Fallback: flachste verfügbare Option.
+    const usualOpt = options.find((o) => o.key === 'hub.descent.option.usual');
+    const quickStartDepth = usualOpt ? usualOpt.depth : (options[0] ? options[0].depth : lastKnown);
+    this._waveDialogConfirm = () => chooseDepth(quickStartDepth);
 
     const onKeyDown = (event) => {
       switch (event.code) {
@@ -1992,7 +1994,7 @@ class HubSceneV2 extends Phaser.Scene {
         case 'NumpadEnter':
         case 'Space':
           event?.preventDefault?.();
-          chooseDepth(deepestDepth);
+          chooseDepth(quickStartDepth);
           break;
         case 'Escape':
           event?.preventDefault?.();
