@@ -419,6 +419,10 @@ const ABILITY_LABELS = {
   shield: 'Shield Bash'
 };
 
+// Issue #36 Phase 2: this bucket-system was fed exclusively by loot.js
+// ATTACK_EFFECTS, which has been removed. It is kept (always zero) so the
+// getAbilityBonus() call sites in player.js stay valid no-ops; per-ability
+// damage/cooldown now comes from the AFFIX_DEFS affix system instead.
 const abilityBonuses = {};
 function resetAbilityBonuses() {
   Object.keys(abilityBonuses).forEach((key) => delete abilityBonuses[key]);

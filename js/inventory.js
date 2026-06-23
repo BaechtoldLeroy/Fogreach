@@ -549,20 +549,8 @@ function initInventoryUI() {
         if (txt) bodyLines.push(txt);
       });
     }
-    if (Array.isArray(it.attackEffects) && it.attackEffects.length) {
-      const labels = (typeof ABILITY_LABELS !== 'undefined' ? ABILITY_LABELS : (window?.ABILITY_LABELS || {}));
-      it.attackEffects.forEach((effect) => {
-        if (!effect) return;
-        const name = labels[effect.ability] || effect.ability || 'Attack';
-        const pct = Math.round(Math.max(0, (effect.value || 0) * 100));
-        if (pct <= 0) return;
-        if (effect.stat === 'cooldown') {
-          bodyLines.push(_INV_T('inventory.attack.cooldown', { name: name, pct: pct }));
-        } else if (effect.stat === 'damage') {
-          bodyLines.push(_INV_T('inventory.attack.damage', { name: name, pct: pct }));
-        }
-      });
-    }
+    // Issue #36 Phase 2: legacy attackEffects tooltip lines removed — per-ability
+    // bonuses now render via the standard affix lines above.
     return {
       title: getItemDisplayName(it) || it.name || _INV_T('inventory.unknown_item'),
       body: bodyLines.join('\n')
@@ -948,17 +936,12 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     playerHealth = Phaser.Math.Clamp(playerHealth + delta, 0, playerMaxHealth);
   }
 
-  if (typeof resetAbilityBonuses === 'function') {
-    resetAbilityBonuses();
-    Object.values(equipment).forEach((it) => {
-      if (!it || !Array.isArray(it.attackEffects)) return;
-      it.attackEffects.forEach((effect) => {
-        if (typeof applyAbilityEffect === 'function') {
-          applyAbilityEffect(effect);
-        }
-      });
-    });
-  }
+  // Issue #36 Phase 2: per-ability damage/cooldown lives solely in the
+  // AFFIX_DEFS affix system now (player.js getLootAbilityDamageBonus /
+  // ...CooldownReduction). The legacy loot.js ATTACK_EFFECTS path is removed;
+  // we still zero the old abilityBonuses buckets so no stale values from older
+  // saves (whose items may still carry an attackEffects array) leak through.
+  if (typeof resetAbilityBonuses === 'function') resetAbilityBonuses();
 
   // 3.5) Skill-Effekte ON TOP of equipment (nicht applySkillEffects() rufen - Rekursion!).
   // NOTE: skillEffects.playerMaxHealth was already baked into newMaxHealth

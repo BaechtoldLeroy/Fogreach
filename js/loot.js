@@ -57,21 +57,9 @@ const ITEM_SLOT_MODS = {
   generic:{ hp: 1, damage: 1, speed: 1, range: 1, armor: 1, crit: 1 }
 };
 
-const ATTACK_EFFECT_BASE_CHANCE = 0.2;
-const ATTACK_EFFECT_OPTIONS = [
-  { id: 'attack_damage', ability: 'attack', stat: 'damage', min: 0.08, max: 0.18 },
-  { id: 'attack_cooldown', ability: 'attack', stat: 'cooldown', min: 0.07, max: 0.16 },
-  { id: 'spin_damage', ability: 'spin', stat: 'damage', min: 0.1, max: 0.22 },
-  { id: 'spin_cooldown', ability: 'spin', stat: 'cooldown', min: 0.08, max: 0.18 },
-  { id: 'charge_damage', ability: 'charge', stat: 'damage', min: 0.12, max: 0.25 },
-  { id: 'charge_cooldown', ability: 'charge', stat: 'cooldown', min: 0.08, max: 0.18 },
-  { id: 'dash_damage', ability: 'dash', stat: 'damage', min: 0.1, max: 0.2 },
-  { id: 'dash_cooldown', ability: 'dash', stat: 'cooldown', min: 0.08, max: 0.18 },
-  { id: 'dagger_damage', ability: 'dagger', stat: 'damage', min: 0.12, max: 0.26 },
-  { id: 'dagger_cooldown', ability: 'dagger', stat: 'cooldown', min: 0.1, max: 0.22 },
-  { id: 'shield_damage', ability: 'shield', stat: 'damage', min: 0.1, max: 0.22 },
-  { id: 'shield_cooldown', ability: 'shield', stat: 'cooldown', min: 0.08, max: 0.18 }
-];
+// Issue #36 Phase 2: the legacy per-ability ATTACK_EFFECTS system was removed.
+// Per-ability damage/cooldown now lives solely in AFFIX_DEFS (dmg_*/cd_*),
+// consumed via player.js getLootAbilityDamageBonus / ...CooldownReduction.
 
 function trackLootSprite(scene, sprite) {
   if (!scene || !sprite) return sprite;
@@ -104,34 +92,6 @@ function getDifficultyMultiplierValue() {
 function getTierFromLegacyRarityKey(key) {
   const map = { common: 0, rare: 1, epic: 2, legendary: 3 };
   return (typeof key === 'string' && key in map) ? map[key] : null;
-}
-
-function rollAttackEffect(depth, tier, existingIds = []) {
-  const pool = ATTACK_EFFECT_OPTIONS.filter((opt) => !existingIds.includes(opt.id));
-  if (!pool.length) return null;
-  const option = Phaser.Utils.Array.GetRandom(pool);
-  const depthScale = 1 + Math.min(0.8, Math.max(0, (depth || 1) - 1) * 0.01);
-  const tierScale = 1 + Math.min(0.6, Math.max(0, (tier || 0)) * 0.12);
-  const raw = Phaser.Math.FloatBetween(option.min, option.max);
-  const value = Number((Math.min(option.max * 1.6, raw * depthScale * tierScale)).toFixed(3));
-  return { id: option.id, ability: option.ability, stat: option.stat, value: Math.max(0, value) };
-}
-
-function maybeAttachAttackEffect(item, tier, depth) {
-  if (!item) return;
-  const chance = Math.min(0.65, ATTACK_EFFECT_BASE_CHANCE + ((tier || 0) + 1) * 0.12);
-  if (Math.random() > chance) return;
-  const statKeys = ITEM_STAT_KEYS.filter((key) => (item[key] || 0) > 0);
-  const existingIds = Array.isArray(item.attackEffects) ? item.attackEffects.map((e) => e.id) : [];
-  const effect = rollAttackEffect(depth, tier, existingIds);
-  if (!effect) return;
-  if (statKeys.length) {
-    const removeKey = Phaser.Utils.Array.GetRandom(statKeys);
-    item[removeKey] = 0;
-  }
-  item.attackEffects = Array.isArray(item.attackEffects) ? item.attackEffects : [];
-  item.attackEffects.push(effect);
-  item.itemLevel = computeItemLevelFromStats(item, depth);
 }
 
 // Cap an item's non-zero stat count by its tier+1 so that a newly-rolled item
@@ -588,14 +548,6 @@ function scaleItemForDifficulty(item, depth) {
     item.move = Number((Math.round(scaledMove * 100) / 100).toFixed(2));
   }
 
-  if (Array.isArray(item.attackEffects)) {
-    item.attackEffects = item.attackEffects.map((effect) => {
-      if (!effect) return effect;
-      const scaled = Number((effect.value * multiplier).toFixed(3));
-      return { ...effect, value: Math.max(0, scaled) };
-    });
-  }
-
   item.itemLevel = computeItemLevelFromStats(
     item,
     Math.max(1, Math.round((depth || currentWave || 1) * multiplier))
@@ -632,23 +584,11 @@ function addBoostsToItem(item, boosts, depth) {
   const potentials = rollItemStatPotentials(item?.type || 'weapon', depth);
   const available = ITEM_STAT_KEYS.filter(key => (potentials[key] ?? 0) > 0);
   const keysPool = available.length ? available : ITEM_STAT_KEYS;
-  const effectTier = (typeof item?.tier === 'number') ? item.tier : Math.max(0, boosts - 1);
   for (let i = 0; i < totalBoosts; i++) {
-    let applied = false;
-    if (Math.random() < 0.35) {
-      const prevCount = Array.isArray(item.attackEffects) ? item.attackEffects.length : 0;
-      maybeAttachAttackEffect(item, effectTier, depth);
-      const newCount = Array.isArray(item.attackEffects) ? item.attackEffects.length : 0;
-      if (newCount > prevCount) {
-        applied = true;
-      }
-    }
-    if (!applied) {
-      const statKey = Phaser.Utils.Array.GetRandom(keysPool);
-      const addition = potentials[statKey] ?? 0;
-      const current = Number(item[statKey] || 0);
-      item[statKey] = clampStat(statKey, current + addition);
-    }
+    const statKey = Phaser.Utils.Array.GetRandom(keysPool);
+    const addition = potentials[statKey] ?? 0;
+    const current = Number(item[statKey] || 0);
+    item[statKey] = clampStat(statKey, current + addition);
   }
   item.itemLevel = computeItemLevelFromStats(item, depth);
 
@@ -705,7 +645,6 @@ function randomLoot() {
     } else {
       item.displayName = item.displayName || item.name;
     }
-    maybeAttachAttackEffect(item, tier, depth);
     return applyDifficulty(item);
   };
 
