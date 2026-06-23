@@ -2402,45 +2402,7 @@ function initUI() {
     abilityStatusDisplay = {};
   }
 
-  // ---- Quest Tracker HUD ----
-  const questTrackerText = this.add.text(0, 0, '', {
-    fontSize: '14px',
-    fontFamily: 'monospace',
-    fill: '#ffe088',
-    backgroundColor: '#0c0c11cc',
-    padding: { x: 8, y: 6 },
-    wordWrap: { width: 200 }
-  }).setDepth(1001).setScrollFactor(0).setVisible(false);
-
-  const positionQuestTracker = (width) => {
-    questTrackerText.setPosition(width - 220, 16);
-  };
-  positionQuestTracker(this.scale.width);
-  this.scale.on('resize', (gameSize) => {
-    positionQuestTracker(gameSize.width);
-  });
-
-  const refreshQuestTracker = () => {
-    if (!window.questSystem) return;
-    const text = window.questSystem.getTrackerText();
-    if (text) {
-      questTrackerText.setText(text);
-      questTrackerText.setVisible(true);
-    } else {
-      questTrackerText.setVisible(false);
-    }
-  };
-
-  if (window.questSystem) {
-    window.questSystem.onQuestUpdate(refreshQuestTracker);
-    refreshQuestTracker();
-  }
-
-  this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-    if (window.questSystem) {
-      window.questSystem.offQuestUpdate(refreshQuestTracker);
-    }
-  });
+  // Quest-Tracker-HUD entfernt: aktive Quests stehen jetzt im Journal.
 }
 
 // 6.2 initControls: Joystick & Buttons
