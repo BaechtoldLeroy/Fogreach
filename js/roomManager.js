@@ -1493,6 +1493,11 @@ function drawFilledPolygon(gfx, pts) {
 }
 
 const ROOM_SPAWN_HALF_SIZE = 8;
+// Charakter-Clearance fuer die Begehbarkeits-/Spawn-Pruefung (Body ~34x56px).
+// >16 (halbe Tile) sorgt dafuer, dass 1-Tile-Korridore (32px) als unpassierbar
+// gelten und mind. 2-Tile-Breite/Hoehe verlangt wird (User-Wunsch).
+const CHAR_CLEAR_HALF_W = 17;
+const CHAR_CLEAR_HALF_H = 28;
 const ROOM_SPAWN_PAD = 0;
 const ACCESS_GRID_SIZE = 32;
 const MIN_PLAYER_SPAWN_DISTANCE = 160;
@@ -1501,18 +1506,30 @@ function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
   if (!obstacles || typeof obstacles.getChildren !== "function") return false;
   if (!Phaser || !Phaser.Geom || !Phaser.Geom.Rectangle) return false;
 
-  // Check against the procedural room wall grid (if available)
+  // Check against the procedural room wall grid (if available).
+  // Charakter-Clearance: nicht nur die Mitte-Tile pruefen, sondern den ganzen
+  // Charakter-Footprint (~34x56px, Halb-Extents unten). Sonst gelten 1-Tile-
+  // Engstellen (v.a. in Cavern-Generator-Raeumen) faelschlich als begehbar,
+  // obwohl der Charakter (breiter/hoeher als 1 Tile=32px) nicht durchpasst.
+  // 3x3 Sample-Punkte des Footprints: blockt 1-Tile-Korridore, laesst 2-Tile zu.
   const scene = obstacles.scene;
   const wallsGrid = scene?._minimapWallsGrid;
   if (wallsGrid && wallsGrid.length > 0) {
     const tileSize = scene._minimapTileSize || 32;
-    const tileX = Math.floor(px / tileSize);
-    const tileY = Math.floor(py / tileSize);
-    if (tileY < 0 || tileY >= wallsGrid.length || tileX < 0 || tileX >= (wallsGrid[0]?.length || 0)) {
-      return true; // out of grid = blocked
-    }
-    if (wallsGrid[tileY]?.[tileX] !== '.') {
-      return true; // wall tile = blocked
+    const cols = wallsGrid[0]?.length || 0;
+    const sx = [px - CHAR_CLEAR_HALF_W, px, px + CHAR_CLEAR_HALF_W];
+    const sy = [py - CHAR_CLEAR_HALF_H, py, py + CHAR_CLEAR_HALF_H];
+    for (let i = 0; i < sx.length; i++) {
+      for (let j = 0; j < sy.length; j++) {
+        const tx = Math.floor(sx[i] / tileSize);
+        const ty = Math.floor(sy[j] / tileSize);
+        if (ty < 0 || ty >= wallsGrid.length || tx < 0 || tx >= cols) {
+          return true; // Footprint ragt aus dem Grid -> blockiert
+        }
+        if (wallsGrid[ty]?.[tx] !== '.') {
+          return true; // Footprint beruehrt eine Wand -> blockiert
+        }
+      }
     }
   }
 
