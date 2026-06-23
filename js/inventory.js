@@ -11,7 +11,7 @@ if (window.i18n) {
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Seltenheit',
     'inventory.label.damage': 'Schaden',
-    'inventory.label.speed': 'Tempo',
+    'inventory.label.speed': 'Angriffstempo',
     'inventory.label.range': 'Reichweite',
     'inventory.label.armor': 'Rüstung',
     'inventory.label.crit': 'Krit',
@@ -35,7 +35,7 @@ if (window.i18n) {
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Rarity',
     'inventory.label.damage': 'Damage',
-    'inventory.label.speed': 'Speed',
+    'inventory.label.speed': 'Attack Speed',
     'inventory.label.range': 'Range',
     'inventory.label.armor': 'Armor',
     'inventory.label.crit': 'Crit',
@@ -529,7 +529,9 @@ function initInventoryUI() {
 
     pushStat(_INV_T('inventory.label.hp'), it.hp, 1);
     pushStat(_INV_T('inventory.label.damage'), it.damage, 1);
-    pushStat(_INV_T('inventory.label.speed'), it.speed, 2);
+    // Angriffstempo ist prozentual (Basis-Multiplikator) — als % anzeigen, nicht
+    // als roher Bruch, konsistent mit dem swift_speed-Affix ("+12% Angriffstempo").
+    pushStat(_INV_T('inventory.label.speed'), (it.speed || 0) * 100, 1, '%');
     pushStat(_INV_T('inventory.label.range'), it.range, 1);
     pushStat(_INV_T('inventory.label.armor'), (it.armor || 0) * 100, 1, '%');
     pushStat(_INV_T('inventory.label.crit'), (it.crit || 0) * 100, 1, '%');
@@ -873,8 +875,8 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   //   damage (Scharfe, %)        -> multiplikativ auf weaponDamage
   //   speed  (Flinke, %)         -> multiplikativ auf ANGRIFFstempo
   //   crit   (der Praezision, %) -> bereits Bruch (0.05 = +5%), additiv
+  //   armor  (Robuste, %)        -> bereits Bruch (0.05 = +5%), additiv
   //   range  (der Reichweite, flat px) -> additiv
-  //   armor  (Robuste, flat 2..8) -> /100 in den 0..0.85-Bruch umrechnen
   //   move   (des Windes, flat)   -> additiv auf playerSpeed (Lauftempo)
   if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
     const _gb = window.LootSystem.getBonus;
@@ -882,7 +884,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + Math.max(0, _gb('speed') || 0)));
     attackRange = Math.max(20, attackRange + (_gb('range') || 0));
     playerSpeed = Math.max(60, playerSpeed + (_gb('move') || 0));
-    playerArmor = Phaser.Math.Clamp(playerArmor + (_gb('armor') || 0) / 100, 0, 0.85);
+    playerArmor = Phaser.Math.Clamp(playerArmor + (_gb('armor') || 0), 0, 0.85);
     playerCritChance = Phaser.Math.Clamp(playerCritChance + (_gb('crit') || 0), 0, 0.9);
   }
 

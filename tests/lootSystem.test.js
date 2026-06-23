@@ -210,11 +210,22 @@ test('getBonus sums flat affixes across multiple items', () => {
   const sys = freshSystem();
   globalThis.window.equipment = {
     weapon: makeMockItem([{ defId: 'of_health', value: 15 }]),
-    head: makeMockItem([{ defId: 'of_health', value: 20 }, { defId: 'sturdy_armor', value: 5 }])
+    head: makeMockItem([{ defId: 'of_health', value: 20 }])
   };
   sys.recomputeBonuses();
   assert.strictEqual(sys.getBonus('hp'), 35);
-  assert.strictEqual(sys.getBonus('armor'), 5);
+});
+
+test('armor affix is percent (fraction), consistent with base armor display', () => {
+  const sys = freshSystem();
+  const def = sys.AFFIX_DEFS.find((d) => d.id === 'sturdy_armor');
+  assert.strictEqual(def.valueType, 'percent'); // not 'flat' — armor is a % stat
+  globalThis.window.equipment = {
+    head: makeMockItem([{ defId: 'sturdy_armor', value: 5 }])
+  };
+  sys.recomputeBonuses();
+  // percent affixes are stored as value/100, so +5% Armor -> 0.05
+  assert.ok(Math.abs(sys.getBonus('armor') - 0.05) < 1e-9);
 });
 
 test('recomputeBonuses bumps version counter', () => {

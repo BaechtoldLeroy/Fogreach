@@ -30,7 +30,7 @@ if (window.i18n) {
     // Affix tooltip texts (with {value} placeholder). Used by inventory.js
     // when rendering item tooltips.
     'loot.affix.sharp_dmg.tooltip': '+{value}% Schaden',
-    'loot.affix.sturdy_armor.tooltip': '+{value} Rüstung',
+    'loot.affix.sturdy_armor.tooltip': '+{value}% Rüstung',
     'loot.affix.of_health.tooltip': '+{value} LP',
     'loot.affix.swift_speed.tooltip': '+{value}% Angriffstempo',
     'loot.affix.of_precision.tooltip': '+{value}% Krit-Chance',
@@ -99,7 +99,7 @@ if (window.i18n) {
     'loot.affix.of_greed': 'of Greed',
 
     'loot.affix.sharp_dmg.tooltip': '+{value}% Damage',
-    'loot.affix.sturdy_armor.tooltip': '+{value} Armor',
+    'loot.affix.sturdy_armor.tooltip': '+{value}% Armor',
     'loot.affix.of_health.tooltip': '+{value} HP',
     'loot.affix.swift_speed.tooltip': '+{value}% Attack Speed',
     'loot.affix.of_precision.tooltip': '+{value}% Crit Chance',
@@ -170,8 +170,8 @@ if (window.i18n) {
       valueType: 'percent', range: Object.freeze({ min: 8, max: 25 }), iLevelMin: 1, weight: 100,
       appliesTo: Object.freeze(['weapon']), tooltipText: '+{value}% Damage' }),
     Object.freeze({ id: 'sturdy_armor', displayName: 'Sturdy', position: 'prefix', statKey: 'armor',
-      valueType: 'flat', range: Object.freeze({ min: 2, max: 6 }), iLevelMin: 1, weight: 100,
-      appliesTo: Object.freeze(['head', 'body', 'boots']), tooltipText: '+{value} Armor' }),
+      valueType: 'percent', range: Object.freeze({ min: 2, max: 6 }), iLevelMin: 1, weight: 100,
+      appliesTo: Object.freeze(['head', 'body', 'boots']), tooltipText: '+{value}% Armor' }),
     Object.freeze({ id: 'of_health', displayName: 'of the Bear', position: 'suffix', statKey: 'hp',
       valueType: 'flat', range: Object.freeze({ min: 4, max: 24 }), iLevelMin: 1, weight: 100,
       appliesTo: Object.freeze(['head', 'body', 'boots', 'weapon']), tooltipText: '+{value} HP' }),
