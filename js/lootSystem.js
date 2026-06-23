@@ -324,6 +324,22 @@ if (window.i18n) {
   let _shopState = null;
 
   // ---------------------------------------------------------------------------
+  // Issue #37 — D2-style affix value scaling with item level.
+  // An affix rolls its base `range` right when it unlocks (at its iLevelMin)
+  // and grows beyond it the deeper the item drops. This is what makes "go
+  // deeper" mean "stronger rolls of the same affix" (Diablo-2 tiered-affix feel
+  // via a smooth iLevel curve). Tunables — adjust after playtest:
+  //   GROWTH    = +x of the base range per item level above the affix's iLevelMin
+  //   MAX_SCALE = hard ceiling so percent stats can't balloon
+  const AFFIX_ILVL_VALUE_GROWTH = 0.03;
+  const AFFIX_ILVL_VALUE_MAX_SCALE = 2.5;
+
+  function _affixValueScale(iLevel, iLevelMin) {
+    const growth = Math.max(0, (iLevel || 1) - (iLevelMin || 1));
+    return Math.min(AFFIX_ILVL_VALUE_MAX_SCALE, 1 + growth * AFFIX_ILVL_VALUE_GROWTH);
+  }
+
+  // ---------------------------------------------------------------------------
   // rollAffixes — deterministic weighted pick without replacement
   // ---------------------------------------------------------------------------
   function rollAffixes(iLevel, count, rng, itemType) {
@@ -360,9 +376,15 @@ if (window.i18n) {
       }
       used[pickedDef.id] = true;
 
-      // Roll value inside range (inclusive)
+      // Roll value inside the iLevel-scaled range (inclusive). The base range
+      // is multiplied by an iLevel curve so deeper items roll bigger numbers of
+      // the same affix (#37). At iLevel == iLevelMin the scale is 1 (base range).
       const range = pickedDef.range;
-      const value = Math.round(range.min + rng() * (range.max - range.min));
+      const scale = _affixValueScale(iLevel, pickedDef.iLevelMin);
+      const effMin = range.min * scale;
+      const effMax = range.max * scale;
+      let value = Math.round(effMin + rng() * (effMax - effMin));
+      if (value < 1) value = 1;
       result.push({ defId: pickedDef.id, value: value });
     }
     return result;
@@ -916,6 +938,8 @@ if (window.i18n) {
     rollAffixes: rollAffixes,
     recomputeBonuses: recomputeBonuses,
     getBonus: getBonus,
+    // #37: exposed so callers/tests share the same iLevel value-scaling curve.
+    _affixValueScale: _affixValueScale,
 
     // stubs (later WPs)
     rollItem: rollItem,

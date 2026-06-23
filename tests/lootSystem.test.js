@@ -128,10 +128,39 @@ test('rollAffixes entries each have defId and numeric value', () => {
   for (const inst of out) {
     assert.ok(typeof inst.defId === 'string' && inst.defId.length > 0);
     assert.ok(typeof inst.value === 'number' && Number.isFinite(inst.value));
-    // value must lie within the declared range
+    // value must lie within the iLevel-scaled range (#37). Floor stays at
+    // range.min (scale >= 1); ceiling is range.max * scale at this iLevel.
     const def = sys.AFFIX_DEFS.find((d) => d.id === inst.defId);
-    assert.ok(inst.value >= def.range.min && inst.value <= def.range.max);
+    const scale = sys._affixValueScale(10, def.iLevelMin);
+    assert.ok(inst.value >= 1 && inst.value <= Math.round(def.range.max * scale) + 1);
   }
+});
+
+test('#37: _affixValueScale is 1 at iLevelMin and grows, capped at MAX_SCALE', () => {
+  const sys = freshSystem();
+  assert.strictEqual(sys._affixValueScale(1, 1), 1);      // base at unlock
+  assert.ok(sys._affixValueScale(20, 1) > 1);             // grows with depth
+  assert.ok(sys._affixValueScale(20, 1) < sys._affixValueScale(40, 1));
+  // hard ceiling (2.5x) reached far enough down
+  assert.ok(sys._affixValueScale(500, 1) <= 2.5 + 1e-9);
+  assert.ok(Math.abs(sys._affixValueScale(500, 1) - 2.5) < 1e-9);
+});
+
+test('#37: same affix rolls a higher value at deep iLevel than shallow', () => {
+  const sys = freshSystem();
+  // Average sharp_dmg's rolled value ONLY over rolls where it was picked (deep
+  // iLevel has more competing affixes, so a high count keeps it usually present
+  // without letting selection-dilution skew the magnitude comparison).
+  const avgSharpAt = (iLevel) => {
+    let sum = 0, n = 0;
+    for (let s = 0; s < 400; s++) {
+      const out = sys.rollAffixes(iLevel, 5, makeRng(s + 1), 'weapon');
+      const sharp = out.find((a) => a.defId === 'sharp_dmg');
+      if (sharp) { sum += sharp.value; n++; }
+    }
+    return n ? sum / n : 0;
+  };
+  assert.ok(avgSharpAt(40) > avgSharpAt(1) * 1.5, 'deep sharp_dmg should roll markedly higher');
 });
 
 test('rollAffixes returns [] when count is 0', () => {
