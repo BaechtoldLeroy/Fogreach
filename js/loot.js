@@ -239,13 +239,16 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
 
   // Elite enemies have higher loot chance and better tier
   // D2-like drop frequencies: trash rarely drops, elites modestly, minibosses often.
+  // Drop-Chancen leicht gesenkt (fuehlte sich nach zu vielen Items an):
+  //   Trash 2%->1%, Elite 12%->8%, Miniboss 25%->16%. Die drei Zahlen
+  //   (1 Basis + Bonus) sind die Tunables.
   const isEliteDrop = sourceEnemy && sourceEnemy.isElite;
   const isMiniBossDrop = sourceEnemy && sourceEnemy.isMiniBoss;
-  const lootChanceBonus = isEliteDrop ? 10 : (isMiniBossDrop ? 23 : 0);
+  const lootChanceBonus = isEliteDrop ? 7 : (isMiniBossDrop ? 15 : 0);
 
   const roll = Phaser.Math.Between(0, 100);
 
-  if (maybeItem || roll < (2 + lootChanceBonus)) {
+  if (maybeItem || roll < (1 + lootChanceBonus)) {
     const baseItem = maybeItem ? { ...maybeItem } : randomLoot();
     let tier = (typeof baseItem?.tier === 'number') ? baseItem.tier : 0;
     // Elite enemies: bump tier by 1; Mini-bosses: by 2 (cap at 3 = Legendary)
