@@ -19,9 +19,15 @@ if (window.i18n) {
     'hub.druckerei.name': 'Druckerei',
     'hub.druckerei.line1': 'Die Druckerpresse ruht.',
     'hub.druckerei.line2': 'Setzer Thom wird sie bald wieder anwerfen.',
-    'hub.wave_select.title': 'Rathauskeller betreten',
-    'hub.wave_select.subtitle': 'Wähle das Start-Level (Schwierigkeit)',
-    'hub.wave_select.dungeon_level': 'Dungeon Level',
+    'hub.wave_select.title': 'Der Hinabstieg',
+    'hub.wave_select.subtitle': 'Wie tief steigst du in den Nebel hinab?',
+    'hub.wave_select.dungeon_level': 'Tiefe',
+    'hub.descent.stratum.1': 'Obere Gänge',
+    'hub.descent.stratum.2': 'Vergessene Krypten',
+    'hub.descent.stratum.3': 'Ritualkammern',
+    'hub.descent.stratum.4': 'Die Ketten-Tiefe',
+    'hub.descent.danger': 'Gefahr',
+    'hub.descent.loot': 'Beute',
     'hub.wave_select.difficulty_mult': 'Schwierigkeits-Multiplikator',
     'hub.wave_select.use_background': 'Hintergrundbild verwenden',
     'hub.wave_select.info': 'Links/Rechts Level ändern - Hoch/Runter Multiplikator\nEnter/Space starten - ESC zurück - B Hintergrund',
@@ -57,9 +63,15 @@ if (window.i18n) {
     'hub.druckerei.name': 'Print Shop',
     'hub.druckerei.line1': 'The printing press is idle.',
     'hub.druckerei.line2': 'Setter Thom will fire it up again soon.',
-    'hub.wave_select.title': 'Enter the Town Hall Cellar',
-    'hub.wave_select.subtitle': 'Choose the starting level (difficulty)',
-    'hub.wave_select.dungeon_level': 'Dungeon Level',
+    'hub.wave_select.title': 'The Descent',
+    'hub.wave_select.subtitle': 'How deep into the fog do you descend?',
+    'hub.wave_select.dungeon_level': 'Depth',
+    'hub.descent.stratum.1': 'Upper Passages',
+    'hub.descent.stratum.2': 'Forgotten Crypts',
+    'hub.descent.stratum.3': 'Ritual Chambers',
+    'hub.descent.stratum.4': 'The Chain-Deep',
+    'hub.descent.danger': 'Danger',
+    'hub.descent.loot': 'Loot',
     'hub.wave_select.difficulty_mult': 'Difficulty Multiplier',
     'hub.wave_select.use_background': 'Use background image',
     'hub.wave_select.info': 'Left/Right change level - Up/Down multiplier\nEnter/Space start - ESC back - B background',
@@ -1833,7 +1845,19 @@ class HubSceneV2 extends Phaser.Scene {
       }
     })();
     const runtimeDepth = Math.max(1, Math.floor(window.DUNGEON_DEPTH || window.currentWave || 1));
-    const defaultDepth = savedDepth ? Math.max(1, Math.round(savedDepth)) : runtimeDepth;
+    // Hinabstieg: Default = zuletzt vom Spieler GEWÄHLTE Tiefe (nicht die
+    // automatisch hochgekletterte aktuelle Tiefe). So eskaliert der Dungeon
+    // nicht mehr von selbst — der Spieler steigt nur bewusst tiefer hinab
+    // und kann auf einer vertrauten Tiefe Kräfte sammeln.
+    const lastChosenDepth = (() => {
+      try {
+        const raw = localStorage.getItem('demonfall_lastDepth');
+        const v = raw != null ? Math.floor(Number(JSON.parse(raw))) : NaN;
+        return Number.isFinite(v) && v >= 1 ? v : null;
+      } catch (e) { return null; }
+    })();
+    const defaultDepth = lastChosenDepth
+      || (savedDepth ? Math.max(1, Math.round(savedDepth)) : runtimeDepth);
     let selected = Phaser.Math.Clamp(defaultDepth, 1, 99);
     const minWave = 1;
     const maxWave = 99;
@@ -1891,6 +1915,13 @@ class HubSceneV2 extends Phaser.Scene {
     }).setOrigin(0.5, 0.5);
     container.add(waveText);
 
+    // Hinabstieg: benanntes Stratum + Risk/Reward unter der Tiefenzahl.
+    const stratumText = this.add.text(0, waveText.y + 36, '', {
+      fontFamily: 'serif',
+      fontSize: 15
+    }).setOrigin(0.5, 0.5);
+    container.add(stratumText);
+
     const difficultyLabel = this.add.text(0, waveText.y + 68, _HUB_T('hub.wave_select.difficulty_mult'), {
       fontFamily: 'monospace',
       fontSize: 18,
@@ -1910,8 +1941,18 @@ class HubSceneV2 extends Phaser.Scene {
       return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(2)}x`;
     };
 
+    // Tiefen-Stratum 1..4 + Gefahr/Beute-Farbe (grün -> rot mit der Tiefe).
+    const STRATUM_COLORS = ['#9fd98f', '#d9cf8f', '#d9a07a', '#d97a7a'];
+    const stratumOf = (depth) => (depth <= 5 ? 1 : depth <= 10 ? 2 : depth <= 15 ? 3 : 4);
     const updateDisplay = () => {
       waveText.setText(`${selected}`);
+      const idx = stratumOf(selected);
+      const name = _HUB_T('hub.descent.stratum.' + idx);
+      const arrows = '↑'.repeat(idx); // ↑ je Stratum-Stufe
+      stratumText.setText(
+        `${name}   ${_HUB_T('hub.descent.danger')} ${arrows}   ${_HUB_T('hub.descent.loot')} ${arrows}`
+      );
+      stratumText.setColor(STRATUM_COLORS[idx - 1] || '#cfd0ff');
       difficultyText.setText(formatDifficulty(difficulty));
     };
     updateDisplay();
@@ -1996,6 +2037,9 @@ class HubSceneV2 extends Phaser.Scene {
 
     const confirm = () => {
       cleanup();
+      // Hinabstieg: zuletzt gewählte Tiefe merken -> Default beim nächsten Mal,
+      // kein automatisches Hochzwingen.
+      try { localStorage.setItem('demonfall_lastDepth', JSON.stringify(selected)); } catch (e) {}
       if (typeof onConfirm === 'function') onConfirm(selected, difficulty);
       persistDifficultySelection(difficulty);
     };
