@@ -32,15 +32,6 @@ const _LOOT_T = (key) => (window.i18n ? window.i18n.t(key) : key);
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-// Tier weights mirror the LootSystem tier model (0=Common .. 3=Legendary).
-// The `chance` percentages preserve the historical drop distribution used by
-// legacy randomLoot() while we finish migrating callers onto LootSystem.rollItem.
-const TIER_WEIGHTS = [
-  { tier: 0, chance: 55 },
-  { tier: 1, chance: 25 },
-  { tier: 2, chance: 13 },
-  { tier: 3, chance: 7 }
-];
 // Tier color map — indexed by item.tier (0=Common .. 3=Legendary). Declared
 // here and re-exported as window.TIER_COLORS so other production modules can
 // share a single source of truth without re-declaring it.
@@ -265,9 +256,29 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       tier = Math.min(3, tier + 2);
       baseItem.tier = tier;
     }
-    const item = maybeItem
-      ? normalizeItemStatsForTier(scaleItemForDifficulty(baseItem, Math.max(1, currentWave)), tier)
-      : normalizeItemStatsForTier(baseItem, tier);
+    let item;
+    if (maybeItem) {
+      // Explicit drop (quest reward / chest / boss table): keep legacy shaping
+      // incl. the tier stat-cap so hand-authored items stay within budget.
+      item = normalizeItemStatsForTier(scaleItemForDifficulty(baseItem, Math.max(1, currentWave)), tier);
+    } else {
+      // Unified rollItem drop (#36 Phase 2b): if an elite/miniboss tier bump
+      // raised the tier, re-roll affixes so the affix count matches the new
+      // tier. NO stat-cap — ITEM_BASES items carry intentional multi-stat
+      // budgets that normalizeItemStatsForTier would destroy.
+      item = baseItem;
+      const affixCount = Array.isArray(item.affixes) ? item.affixes.length : 0;
+      if (item.tier > affixCount && item.type
+          && window.LootSystem && typeof window.LootSystem.rollAffixes === 'function') {
+        try {
+          item.affixes = window.LootSystem.rollAffixes(
+            item.iLevel || Math.max(1, currentWave), item.tier, Math.random, item.type) || item.affixes;
+          if (typeof window.LootSystem.composeName === 'function') {
+            item.displayName = window.LootSystem.composeName(item);
+          }
+        } catch (e) { /* keep original affixes on failure */ }
+      }
+    }
     const loot = lootGroup.create(x, y, item.iconKey || 'itMat');
     loot.setDisplaySize(32, 24);
     loot.setData('item', item);
@@ -461,16 +472,6 @@ function collectLoot(playerSprite, loot) {
   loot.destroy();
 }
 
-function pickItemTier() {
-  const roll = Phaser.Math.Between(1, 100);
-  let acc = 0;
-  for (const entry of TIER_WEIGHTS) {
-    acc += entry.chance;
-    if (roll <= acc) return entry.tier;
-  }
-  return 0;
-}
-
 function clampStat(key, value) {
   switch (key) {
     case 'hp':
@@ -559,21 +560,6 @@ function scaleItemForDifficulty(item, depth) {
   return item;
 }
 
-function applyTierBoosts(potentials, tier, depth) {
-  const boosted = ITEM_STAT_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {});
-  const available = ITEM_STAT_KEYS.filter(key => (potentials[key] ?? 0) > 0);
-  const keysPool = available.length ? available : ITEM_STAT_KEYS;
-  const boosts = Math.max(1, (tier || 0) + 1);
-
-  for (let i = 0; i < boosts; i++) {
-    const statKey = Phaser.Utils.Array.GetRandom(keysPool);
-    const addition = potentials[statKey] ?? 0;
-    const current = boosted[statKey] ?? 0;
-    boosted[statKey] = clampStat(statKey, Number(current) + addition);
-  }
-  return boosted;
-}
-
 function addBoostsToItem(item, boosts, depth) {
   const totalBoosts = Math.max(0, boosts);
   if (!totalBoosts) {
@@ -598,111 +584,74 @@ function addBoostsToItem(item, boosts, depth) {
 
 function randomLoot() {
   const depth = Math.max(1, currentWave);
-  const tier = pickItemTier();
   const roll = Phaser.Math.Between(1, 100);
-  const applyDifficulty = (item) => normalizeItemStatsForTier(
-    scaleItemForDifficulty(item, depth),
-    (typeof item.tier === 'number') ? item.tier : tier
-  );
 
-  const buildItem = (opts, slotType) => {
-    const base = rollItemStatPotentials(slotType, depth);
-    const core = applyTierBoosts(base, tier, depth);
-    const itemLevel = computeItemLevelFromStats(core, depth);
-    // Roll affixes via LootSystem so dungeon drops carry the same affix
-    // shape as shop / migration items. Affix count = tier (0..3), matching
-    // rollItem in lootSystem.js. Without this, dropped items showed up in
-    // Mara's reroll tab with no affix lines.
-    let rolledAffixes = [];
-    if (window.LootSystem && typeof window.LootSystem.rollAffixes === 'function' && tier > 0) {
-      try {
-        rolledAffixes = window.LootSystem.rollAffixes(itemLevel, tier, Math.random, opts.type) || [];
-      } catch (e) { /* swallow */ }
-    }
-    const item = makeItem(Object.assign({}, opts, {
-      tier,
-      affixes: rolledAffixes,
-      iLevel: itemLevel,
-      itemLevel,
-      baseStats: {
-        damage: core.damage || 0,
-        armor: core.armor || 0,
-        hp: core.hp || 0,
-        speed: core.speed || 0,
-        crit: core.crit || 0,
-        range: core.range || 0
-      },
-      hp: core.hp,
-      damage: core.damage,
-      speed: core.speed,
-      range: core.range,
-      armor: core.armor,
-      crit: core.crit
-    }));
-    item._baseName = item._baseName || item.name;
-    if (window.LootSystem && typeof window.LootSystem.composeName === 'function') {
-      try { item.displayName = window.LootSystem.composeName(item); } catch (e) { item.displayName = item.displayName || item.name; }
-    } else {
-      item.displayName = item.displayName || item.name;
-    }
-    return applyDifficulty(item);
-  };
-
-  if (roll <= 32) {
-    // 25% of weapon drops are bows (LootSystem.ITEM_BASES has 3 tiered bow
-    // entries with subtype:'bow'; rollItem honors their dropWeight by depth).
-    if (Math.random() < 0.25 && window.LootSystem
-        && typeof window.LootSystem.rollItem === 'function'
-        && Array.isArray(window.LootSystem.ITEM_BASES)) {
-      const bowBases = window.LootSystem.ITEM_BASES
-        .filter((b) => b && b.subtype === 'bow');
-      if (bowBases.length > 0) {
-        const pick = bowBases[Math.floor(Math.random() * bowBases.length)];
-        try {
-          const bow = window.LootSystem.rollItem(pick.key, depth, tier);
-          if (bow) return applyDifficulty(bow);
-        } catch (e) { /* fall through to legacy weapon */ }
-      }
-    }
-    return buildItem({ type: 'weapon', key: 'WPN', name: _LOOT_T('loot.legacy.weapon'), nameKey: 'loot.legacy.weapon', iconKey: 'itWeapon' }, 'weapon');
-  }
-  if (roll <= 50) {
-    return buildItem({ type: 'head', key: 'HD', name: _LOOT_T('loot.legacy.head'), nameKey: 'loot.legacy.head', iconKey: 'itHead' }, 'head');
-  }
-  if (roll <= 68) {
-    return buildItem({ type: 'body', key: 'BD', name: _LOOT_T('loot.legacy.body'), nameKey: 'loot.legacy.body', iconKey: 'itBody' }, 'body');
-  }
+  // Equipment (77%) — Issue #36 Phase 2b: single unified pipeline via
+  // LootSystem.rollItem (ITEM_BASES base + affixes). ITEM_BASES dropWeight
+  // already encodes the type+depth distribution, so the old hand-rolled
+  // weapon/head/body/boots split (and the separate bow special-case) is gone.
+  // Base-stat + per-ability affixes ride along automatically.
   if (roll <= 77) {
-    return buildItem({ type: 'boots', key: 'BT', name: _LOOT_T('loot.legacy.boots'), nameKey: 'loot.legacy.boots', iconKey: 'itBoots' }, 'boots');
+    if (window.LootSystem && typeof window.LootSystem.rollItem === 'function') {
+      try {
+        const it = window.LootSystem.rollItem(null, depth);
+        if (it) return _applyDifficultyToRolledItem(it, depth);
+      } catch (e) { /* fall through to fallback */ }
+    }
+    return _legacyEquipmentFallback(depth);
   }
-  if (roll <= 89) {
-    // Potion drop — tier scales with dungeon depth.
-    return _makePotionDrop(depth);
-  }
-  if (roll <= 92) {
-    // Portal scroll — material item, increments materialCounts.PORTAL_SCROLL on pickup.
-    return _makePortalScrollDrop();
-  }
+  if (roll <= 89) return _makePotionDrop(depth);   // Potions, depth-scaled tier
+  if (roll <= 92) return _makePortalScrollDrop();  // Portal scroll material
 
-  return applyDifficulty(makeItem({
+  // Crafting material (Eisenbrocken).
+  return makeItem({
     type: 'material',
     key: 'MAT',
     materialKey: 'MAT',
     name: _LOOT_T('loot.legacy.material'),
     nameKey: 'loot.legacy.material',
     iconKey: 'itMat',
-    tier,
+    tier: 0,
     affixes: [],
     iLevel: depth,
     itemLevel: depth,
     baseStats: {},
-    hp: 0,
-    damage: 0,
-    speed: 0,
-    range: 0,
-    armor: 0,
-    crit: 0
-  }));
+    hp: 0, damage: 0, speed: 0, range: 0, armor: 0, crit: 0
+  });
+}
+
+// Apply the difficulty multiplier to a freshly-rolled ITEM_BASES item WITHOUT
+// the legacy tier stat-cap (normalizeItemStatsForTier) — ITEM_BASES items have
+// intentional multi-stat budgets that the cap would destroy. The multiplier is
+// positive (0.6/1.0/1.5) so it preserves the sign of penalty stats (e.g. a
+// heavy weapon's negative attack-speed). At Normal (1.0) this is a no-op.
+function _applyDifficultyToRolledItem(item, depth) {
+  if (!item) return item;
+  const mult = getDifficultyMultiplierValue();
+  if (mult === 1) return item;
+  const keys = ['hp', 'damage', 'speed', 'range', 'armor', 'crit', 'move'];
+  keys.forEach((k) => {
+    if (typeof item[k] === 'number' && item[k] !== 0) item[k] = item[k] * mult;
+    if (item.baseStats && typeof item.baseStats[k] === 'number' && item.baseStats[k] !== 0) {
+      item.baseStats[k] = item.baseStats[k] * mult;
+    }
+  });
+  if (typeof computeItemLevelFromStats === 'function') {
+    item.itemLevel = computeItemLevelFromStats(item, Math.max(1, Math.round(depth * mult)));
+  }
+  return item;
+}
+
+// Defensive fallback used only if LootSystem.rollItem is somehow unavailable
+// (load-order failure). lootSystem.js loads before loot.js in practice, so this
+// should never run; it just guarantees the drop pipeline never yields null.
+function _legacyEquipmentFallback(depth) {
+  return makeItem({
+    type: 'weapon', key: 'WPN', name: _LOOT_T('loot.legacy.weapon'),
+    nameKey: 'loot.legacy.weapon', iconKey: 'itWeapon',
+    tier: 0, affixes: [], iLevel: depth, itemLevel: depth,
+    baseStats: { damage: 6 }, damage: 6
+  });
 }
 
 // Build a portal scroll material item — incremented onto materialCounts.PORTAL_SCROLL on pickup.
