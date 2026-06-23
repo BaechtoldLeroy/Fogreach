@@ -23,7 +23,11 @@
     /** Last selected dungeon difficulty multiplier. */
     LAST_DIFFICULTY: 'demonfall_lastDifficulty',
     /** Knowledge Tree fragments + per-node ranks (feature 047). */
-    KNOWLEDGE_TREE: 'demonfall.knowledgeTree.v1'
+    KNOWLEDGE_TREE: 'demonfall.knowledgeTree.v1',
+    /** Tiefste je erreichte Dungeon-Tiefe (Hinabstieg-Optionen). */
+    MAX_DEPTH: 'demonfall_maxDepth',
+    /** Zuletzt im Hinabstieg gewaehlte Tiefe (Dialog-Default). */
+    LAST_DEPTH: 'demonfall_lastDepth'
   });
 
   // Keys that should be wiped on "new game". SETTINGS is intentionally
@@ -33,7 +37,9 @@
     KEYS.SAVE,
     KEYS.ABILITIES,
     KEYS.LAST_DIFFICULTY,
-    KEYS.KNOWLEDGE_TREE
+    KEYS.KNOWLEDGE_TREE,
+    KEYS.MAX_DEPTH,
+    KEYS.LAST_DEPTH
   ];
 
   function clearAllSaves() {
