@@ -252,22 +252,26 @@ if (window.i18n) {
   // ---------------------------------------------------------------------------
   const ITEM_BASES = Object.freeze([
     // Weapons (4)
+    // #38: Waffen-Basisschaden ist ein gerolltes {min,max}-Band (statt Fixwert)
+    // und ggü. früher ~halbiert, damit normale Gegner 1-3 Schläge brauchen statt
+    // sofort zu sterben — der Gear-Spielraum (Affixe/Krit) zieht dann auf 1-2.
+    // Boss/Elite/Miniboss-Multiplikatoren bewusst noch unverändert (Playtest).
     Object.freeze({ key: 'WPN_EISENKLINGE', type: 'weapon', name: 'Eisenklinge', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: 8 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 3, max: 5 }) }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
     Object.freeze({ key: 'WPN_SCHATTENDOLCH', type: 'weapon', name: 'Schattendolch', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: 5, speed: 15, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 2, max: 4 }), speed: 15, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
     Object.freeze({ key: 'WPN_KETTENMORGENSTERN', type: 'weapon', name: 'Kettenmorgenstern', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: 12, speed: -5 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 5, max: 8 }), speed: -5 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
     Object.freeze({ key: 'WPN_GLUTAXT', type: 'weapon', name: 'Glutaxt', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: 15, speed: -10 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 6, max: 10 }), speed: -10 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
 
     // Bows (ranged weapons — equipping one swaps default attack to a projectile)
     Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: 6, range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 2, max: 4 }), range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
     Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: 9, range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 6 }), range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
     Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: 13, range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 6, max: 9 }), range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
 
     // Helms (3)
     Object.freeze({ key: 'HD_KETTENHAUBE', type: 'head', name: 'Kettenhaube', iconKey: 'itHead',
@@ -527,6 +531,22 @@ if (window.i18n) {
           return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : base.name;
         })()
       : base.name);
+    // Resolve baseStats first: a stat may be a fixed number OR a {min,max} band
+    // (#38: weapons roll their base damage within a band, like affixes). Roll
+    // once here so item.baseStats and the mirrored flat fields share the value.
+    const _resolvedBase = {};
+    const _baseKeys = Object.keys(base.baseStats);
+    for (let _r = 0; _r < _baseKeys.length; _r++) {
+      const _bk = _baseKeys[_r];
+      const _bv = base.baseStats[_bk];
+      if (_bv && typeof _bv === 'object' && typeof _bv.min === 'number' && typeof _bv.max === 'number') {
+        let _rolled = _bv.min + Math.random() * (_bv.max - _bv.min);
+        if (_bk === 'damage' || _bk === 'range' || _bk === 'hp') _rolled = Math.round(_rolled);
+        _resolvedBase[_bk] = _rolled;
+      } else {
+        _resolvedBase[_bk] = _bv;
+      }
+    }
     const item = {
       key: base.key,
       type: base.type,
@@ -539,7 +559,7 @@ if (window.i18n) {
       iLevel: iLevel,
       itemLevel: iLevel,
       requiredLevel: Math.max(1, iLevel - 2),
-      baseStats: JSON.parse(JSON.stringify(base.baseStats)),
+      baseStats: _resolvedBase,
       affixes: affixes,
       displayName: ''
     };
@@ -554,8 +574,8 @@ if (window.i18n) {
     const _percentStats = { speed: true, armor: true, crit: true };
     for (let _i = 0; _i < _statKeys.length; _i++) {
       const _k = _statKeys[_i];
-      if (typeof base.baseStats[_k] === 'number') {
-        item[_k] = _percentStats[_k] ? base.baseStats[_k] / 100 : base.baseStats[_k];
+      if (typeof _resolvedBase[_k] === 'number') {
+        item[_k] = _percentStats[_k] ? _resolvedBase[_k] / 100 : _resolvedBase[_k];
       }
     }
     item.displayName = composeName(item);

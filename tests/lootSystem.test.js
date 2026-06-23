@@ -310,14 +310,30 @@ test('rollItem with forceTier overrides random tier and matches affix count', ()
   }
 });
 
-test('rollItem deep-copies baseStats so template is not shared/mutated', () => {
+test('rollItem resolves + deep-copies baseStats so template is not shared/mutated', () => {
   const sys = freshSystem();
   const tmpl = sys.ITEM_BASES.find(function (b) { return b.key === 'WPN_EISENKLINGE'; });
   const item = sys.rollItem('WPN_EISENKLINGE', 5, 0);
   assert.notStrictEqual(item.baseStats, tmpl.baseStats);
-  // Mutating the rolled item must not throw and must not affect the frozen template
+  // #38: the template stores damage as a {min,max} band; the rolled item must
+  // carry a concrete NUMBER, and mutating it must not affect the frozen template.
+  assert.strictEqual(typeof item.baseStats.damage, 'number');
+  const before = JSON.stringify(tmpl.baseStats.damage);
   item.baseStats.damage = 9999;
-  assert.strictEqual(tmpl.baseStats.damage, 8);
+  assert.strictEqual(JSON.stringify(tmpl.baseStats.damage), before);
+});
+
+test('#38: rolled weapon base damage stays within the template band', () => {
+  const sys = freshSystem();
+  const tmpl = sys.ITEM_BASES.find((b) => b.key === 'WPN_GLUTAXT');
+  const band = tmpl.baseStats.damage;
+  assert.ok(band && typeof band.min === 'number' && typeof band.max === 'number', 'damage must be a band');
+  for (let i = 0; i < 50; i++) {
+    const item = sys.rollItem('WPN_GLUTAXT', 10, 0);
+    assert.ok(item.damage >= band.min && item.damage <= band.max,
+      `rolled damage ${item.damage} outside [${band.min}, ${band.max}]`);
+    assert.strictEqual(item.damage, item.baseStats.damage); // flat mirror == baseStats
+  }
 });
 
 test('rollItem(null, iLevel) picks one of the 13 base keys via weighted drop', () => {
