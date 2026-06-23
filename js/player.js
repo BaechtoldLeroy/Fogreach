@@ -2250,6 +2250,13 @@ function addXP(amount = 1) {
   if (window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.xpMult > 1) {
     amount = Math.round(amount * window.knowledgeTreeBuffs.xpMult);
   }
+  // 'of Wisdom' (xp_gain) affix — percent bonus on every XP gain. Wrapped at
+  // the same boundary as the Knowledge-Tree xpMult so all call sites benefit.
+  // getBonus returns a fraction (e.g. 0.10 for +10%); 0 when unequipped.
+  if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
+    const _xpFind = Math.max(0, window.LootSystem.getBonus('xp_gain') || 0);
+    if (_xpFind > 0) amount = Math.round(amount * (1 + _xpFind));
+  }
   // Run-summary: track the scaled amount (what the player actually got).
   if (window.runStats) window.runStats.xpGained += amount;
   playerXP += amount;

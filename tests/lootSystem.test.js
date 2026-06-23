@@ -41,9 +41,9 @@ beforeEach(() => {
 // Phase 1: rollAffixes
 // ---------------------------------------------------------------------------
 
-test('AFFIX_DEFS has exactly 24 entries', () => {
+test('AFFIX_DEFS has exactly 22 entries', () => {
   const sys = freshSystem();
-  assert.strictEqual(sys.AFFIX_DEFS.length, 24);
+  assert.strictEqual(sys.AFFIX_DEFS.length, 22);
 });
 
 test('AFFIX_DEFS is frozen (top-level)', () => {
@@ -98,13 +98,13 @@ test('rollAffixes excludes affixes whose iLevelMin > iLevel', () => {
 
 test('rollAffixes may include high-tier affixes when iLevel is high enough', () => {
   const sys = freshSystem();
-  // Try several seeds; at iLevel=20 with count=24 ALL should be eligible.
-  const out = sys.rollAffixes(20, 24, makeRng(1));
-  // Every affix in the pool should be reachable; with count=24 and pool=24 we
+  // Try several seeds; at iLevel=20 with count=22 ALL should be eligible.
+  const out = sys.rollAffixes(20, 22, makeRng(1));
+  // Every affix in the pool should be reachable; with count=22 and pool=22 we
   // get exactly one of each (deterministic pick-without-replacement).
-  assert.strictEqual(out.length, 24);
+  assert.strictEqual(out.length, 22);
   const ids = new Set(out.map((a) => a.defId));
-  assert.strictEqual(ids.size, 24);
+  assert.strictEqual(ids.size, 22);
 });
 
 test('rollAffixes returns at most eligible.length when count exceeds pool', () => {
@@ -364,8 +364,8 @@ test('composeName: tier 3 with very long names falls back to [Legendary]', () =>
     tier: 3,
     _baseName: 'Kettenmorgenstern',
     affixes: [
-      { defId: 'fire_warding', value: 15 },     // 'Fireproof' prefix
-      { defId: 'lightning_warding', value: 15 }, // 'Stormproof' prefix
+      { defId: 'spinning_dmg', value: 15 },      // 'Spinning' prefix
+      { defId: 'charged_dmg', value: 15 },        // 'Charged' prefix
       { defId: 'of_swift_charge', value: 12 },   // 'of Swift Charge' suffix
       { defId: 'of_swift_dagger', value: 12 }    // 'of Swift Dagger' suffix
     ]
@@ -781,6 +781,49 @@ test('WP08 T048: stacking two items sums their per-ability damage bonuses', () =
   const bonus = sys.getBonus('dmg_spinAttack');
   // Floating-point friendly comparison
   assert.ok(Math.abs(bonus - 0.35) < 1e-9, 'expected +35% combined, got ' + bonus);
+});
+
+// ---------------------------------------------------------------------------
+// Issue #36: affix cleanup — move affix added, resists removed, base-stat
+// + luxury affixes wired through getBonus.
+// ---------------------------------------------------------------------------
+
+test('#36: resist affixes are removed from AFFIX_DEFS', () => {
+  const sys = freshSystem();
+  const ids = sys.AFFIX_DEFS.map((d) => d.id);
+  assert.strictEqual(ids.includes('fire_warding'), false);
+  assert.strictEqual(ids.includes('cold_warding'), false);
+  assert.strictEqual(ids.includes('lightning_warding'), false);
+});
+
+test('#36: of_swiftness move affix exists and aggregates as a flat move bonus', () => {
+  const sys = freshSystem();
+  const def = sys.AFFIX_DEFS.find((d) => d.id === 'of_swiftness');
+  assert.ok(def, 'of_swiftness affix must exist');
+  assert.strictEqual(def.statKey, 'move');
+  assert.strictEqual(def.valueType, 'flat');
+  globalThis.window.equipment = {
+    boots: { type: 'boots', tier: 1, affixes: [{ defId: 'of_swiftness', value: 30 }] }
+  };
+  sys.recomputeBonuses();
+  // flat affixes are stored verbatim (not /100)
+  assert.strictEqual(sys.getBonus('move'), 30);
+});
+
+test('#36: swift_speed remains an attack-speed (statKey speed) affix', () => {
+  const sys = freshSystem();
+  const def = sys.AFFIX_DEFS.find((d) => d.id === 'swift_speed');
+  assert.ok(def);
+  assert.strictEqual(def.statKey, 'speed');
+});
+
+test('#36: gold_find affix aggregates as a percent bonus via getBonus', () => {
+  const sys = freshSystem();
+  globalThis.window.equipment = {
+    head: { type: 'head', tier: 1, affixes: [{ defId: 'of_greed', value: 25 }] }
+  };
+  sys.recomputeBonuses();
+  assert.ok(Math.abs(sys.getBonus('gold_find') - 0.25) < 1e-9);
 });
 
 test('WP08 T048: unequipping drops the bonus back to 0 after recompute', () => {

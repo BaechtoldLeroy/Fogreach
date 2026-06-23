@@ -10,9 +10,7 @@ if (window.i18n) {
     'loot.affix.swift_speed': 'Flinke',
     'loot.affix.of_precision': 'der Präzision',
     'loot.affix.of_reach': 'der Reichweite',
-    'loot.affix.fire_warding': 'Feuerfeste',
-    'loot.affix.cold_warding': 'Frostfeste',
-    'loot.affix.lightning_warding': 'Sturmfeste',
+    'loot.affix.of_swiftness': 'des Windes',
     'loot.affix.of_the_leech': 'des Egels',
     'loot.affix.spinning_dmg': 'Wirbelnde',
     'loot.affix.charged_dmg': 'Geladene',
@@ -34,12 +32,10 @@ if (window.i18n) {
     'loot.affix.sharp_dmg.tooltip': '+{value}% Schaden',
     'loot.affix.sturdy_armor.tooltip': '+{value} Rüstung',
     'loot.affix.of_health.tooltip': '+{value} LP',
-    'loot.affix.swift_speed.tooltip': '+{value}% Tempo',
+    'loot.affix.swift_speed.tooltip': '+{value}% Angriffstempo',
     'loot.affix.of_precision.tooltip': '+{value}% Krit-Chance',
     'loot.affix.of_reach.tooltip': '+{value} Reichweite',
-    'loot.affix.fire_warding.tooltip': '+{value}% Feuerresistenz',
-    'loot.affix.cold_warding.tooltip': '+{value}% Frostresistenz',
-    'loot.affix.lightning_warding.tooltip': '+{value}% Blitzresistenz',
+    'loot.affix.of_swiftness.tooltip': '+{value} Lauftempo',
     'loot.affix.of_the_leech.tooltip': '+{value}% Lebensraub',
     'loot.affix.spinning_dmg.tooltip': '+{value}% Wirbelangriff-Schaden',
     'loot.affix.charged_dmg.tooltip': '+{value}% Aufgeladener Schlag-Schaden',
@@ -85,9 +81,7 @@ if (window.i18n) {
     'loot.affix.swift_speed': 'Swift',
     'loot.affix.of_precision': 'of Precision',
     'loot.affix.of_reach': 'of Reach',
-    'loot.affix.fire_warding': 'Fireproof',
-    'loot.affix.cold_warding': 'Frostproof',
-    'loot.affix.lightning_warding': 'Stormproof',
+    'loot.affix.of_swiftness': 'of Swiftness',
     'loot.affix.of_the_leech': 'of the Leech',
     'loot.affix.spinning_dmg': 'Spinning',
     'loot.affix.charged_dmg': 'Charged',
@@ -107,12 +101,10 @@ if (window.i18n) {
     'loot.affix.sharp_dmg.tooltip': '+{value}% Damage',
     'loot.affix.sturdy_armor.tooltip': '+{value} Armor',
     'loot.affix.of_health.tooltip': '+{value} HP',
-    'loot.affix.swift_speed.tooltip': '+{value}% Speed',
+    'loot.affix.swift_speed.tooltip': '+{value}% Attack Speed',
     'loot.affix.of_precision.tooltip': '+{value}% Crit Chance',
     'loot.affix.of_reach.tooltip': '+{value} Range',
-    'loot.affix.fire_warding.tooltip': '+{value}% Fire Resist',
-    'loot.affix.cold_warding.tooltip': '+{value}% Cold Resist',
-    'loot.affix.lightning_warding.tooltip': '+{value}% Lightning Resist',
+    'loot.affix.of_swiftness.tooltip': '+{value} Movement Speed',
     'loot.affix.of_the_leech.tooltip': '+{value}% Life Steal',
     'loot.affix.spinning_dmg.tooltip': '+{value}% Spin Attack Damage',
     'loot.affix.charged_dmg.tooltip': '+{value}% Charged Slash Damage',
@@ -170,10 +162,10 @@ if (window.i18n) {
   'use strict';
 
   // ---------------------------------------------------------------------------
-  // AFFIX_DEFS — 24 frozen entries from data-model.md
+  // AFFIX_DEFS — 22 frozen entries (orig. 24 minus 3 resists + 1 move affix).
   // ---------------------------------------------------------------------------
   const AFFIX_DEFS = Object.freeze([
-    // === Base stats (6) ===
+    // === Base stats (7) ===
     Object.freeze({ id: 'sharp_dmg', displayName: 'Sharp', position: 'prefix', statKey: 'damage',
       valueType: 'percent', range: Object.freeze({ min: 8, max: 25 }), iLevelMin: 1, weight: 100,
       appliesTo: Object.freeze(['weapon']), tooltipText: '+{value}% Damage' }),
@@ -192,17 +184,13 @@ if (window.i18n) {
     Object.freeze({ id: 'of_reach', displayName: 'of Reach', position: 'suffix', statKey: 'range',
       valueType: 'flat', range: Object.freeze({ min: 10, max: 30 }), iLevelMin: 2, weight: 70,
       appliesTo: Object.freeze(['weapon']), tooltipText: '+{value} Range' }),
+    // Lauftempo (movement speed) — wirkt auf playerSpeed via getBonus('move').
+    // Bewusst getrennt von swift_speed (statKey 'speed' = ANGRIFFstempo).
+    Object.freeze({ id: 'of_swiftness', displayName: 'of Swiftness', position: 'suffix', statKey: 'move',
+      valueType: 'flat', range: Object.freeze({ min: 10, max: 40 }), iLevelMin: 1, weight: 80,
+      appliesTo: Object.freeze(['boots', 'body']), tooltipText: '+{value} Movement Speed' }),
 
-    // === Defensive (4) ===
-    Object.freeze({ id: 'fire_warding', displayName: 'Fireproof', position: 'prefix', statKey: 'resist_fire',
-      valueType: 'percent', range: Object.freeze({ min: 5, max: 20 }), iLevelMin: 4, weight: 60,
-      appliesTo: Object.freeze(['head', 'body', 'boots']), tooltipText: '+{value}% Fire Resist' }),
-    Object.freeze({ id: 'cold_warding', displayName: 'Frostproof', position: 'prefix', statKey: 'resist_cold',
-      valueType: 'percent', range: Object.freeze({ min: 5, max: 20 }), iLevelMin: 4, weight: 60,
-      appliesTo: Object.freeze(['head', 'body', 'boots']), tooltipText: '+{value}% Cold Resist' }),
-    Object.freeze({ id: 'lightning_warding', displayName: 'Stormproof', position: 'prefix', statKey: 'resist_lightning',
-      valueType: 'percent', range: Object.freeze({ min: 5, max: 20 }), iLevelMin: 4, weight: 60,
-      appliesTo: Object.freeze(['head', 'body', 'boots']), tooltipText: '+{value}% Lightning Resist' }),
+    // === Defensive (1) ===
     Object.freeze({ id: 'of_the_leech', displayName: 'of the Leech', position: 'suffix', statKey: 'lifesteal',
       valueType: 'percent', range: Object.freeze({ min: 1, max: 5 }), iLevelMin: 6, weight: 40,
       appliesTo: Object.freeze(['weapon']), tooltipText: '+{value}% Life Steal' }),
@@ -650,7 +638,11 @@ if (window.i18n) {
       && typeof window.knowledgeTreeBuffs.goldMult === 'number'
       && window.knowledgeTreeBuffs.goldMult > 1)
       ? window.knowledgeTreeBuffs.goldMult : 1;
-    const scaled = (ktGold !== 1) ? Math.max(1, Math.round(amount * ktGold)) : amount;
+    // 'of Greed' (gold_find) affix — percent bonus on every gold gain.
+    // getBonus returns a fraction (e.g. 0.20 for +20%); 0 when unequipped.
+    const goldFind = Math.max(0, getBonus('gold_find') || 0);
+    const goldMult = ktGold * (1 + goldFind);
+    const scaled = (goldMult !== 1) ? Math.max(1, Math.round(amount * goldMult)) : amount;
     store.GOLD = Math.max(0, Math.floor(store.GOLD + scaled));
     _refreshGoldHUD();
   }

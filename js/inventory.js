@@ -878,6 +878,26 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   playerArmor = Phaser.Math.Clamp((baseStats.armor || 0) + sum.armor, 0, 0.85);
   playerCritChance = Phaser.Math.Clamp((baseStats.crit || 0) + sum.crit, 0, 0.9);
 
+  // 2.5) Loot-Affix-Boni (Issue #36) — die AFFIX_DEFS-Basis-Stat-Affixe in die
+  // bestehenden abgeleiteten Groessen einrechnen. getBonus() liefert bei
+  // percent-Affixen bereits den Bruch (z.B. 0.18), bei flat-Affixen den
+  // Rohwert. Reihenfolge der Einheiten beachten:
+  //   damage (Scharfe, %)        -> multiplikativ auf weaponDamage
+  //   speed  (Flinke, %)         -> multiplikativ auf ANGRIFFstempo
+  //   crit   (der Praezision, %) -> bereits Bruch (0.05 = +5%), additiv
+  //   range  (der Reichweite, flat px) -> additiv
+  //   armor  (Robuste, flat 2..8) -> /100 in den 0..0.85-Bruch umrechnen
+  //   move   (des Windes, flat)   -> additiv auf playerSpeed (Lauftempo)
+  if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
+    const _gb = window.LootSystem.getBonus;
+    weaponDamage = weaponDamage * (1 + Math.max(0, _gb('damage') || 0));
+    weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + Math.max(0, _gb('speed') || 0)));
+    attackRange = Math.max(20, attackRange + (_gb('range') || 0));
+    playerSpeed = Math.max(60, playerSpeed + (_gb('move') || 0));
+    playerArmor = Phaser.Math.Clamp(playerArmor + (_gb('armor') || 0) / 100, 0, 0.85);
+    playerCritChance = Phaser.Math.Clamp(playerCritChance + (_gb('crit') || 0), 0, 0.9);
+  }
+
   // 3) Max-Health neu bestimmen (Basis + Gear + Skills).
   // We must include skill HP here so setPlayerMaxHealth's delta-based
   // current-HP adjustment doesn't shrink playerHealth on every equip.
