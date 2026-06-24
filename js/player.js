@@ -1393,6 +1393,12 @@ function attack() {
   showAttackEffect(this);
 
   const toEnemy = new Phaser.Math.Vector2();
+  // Schadens-Kegel MUSS dieselbe Richtung wie der sichtbare Kegel
+  // (showAttackEffect → _getAimVector2) nutzen. In ARPG ist das die Cursor-Aim,
+  // nicht lastMoveDirection (Bewegung) — sonst treffen Gegner im sichtbaren
+  // Kegel den Schadens-Kegel nicht. In Classic liefert _getAimVector2 die
+  // Bewegungsrichtung, Verhalten also unverändert.
+  const attackDir = _getAimVector2(this);
 
   forEachEnemyInRange(attackRange, (enemy, { dx, dy }) => {
     toEnemy.set(dx, dy);
@@ -1400,7 +1406,7 @@ function attack() {
     if (distance === 0) return;
 
     toEnemy.normalize();
-    const dot = lastMoveDirection.dot(toEnemy); // Cosinus-Wert zwischen -1 und 1
+    const dot = attackDir.dot(toEnemy); // Cosinus-Wert zwischen -1 und 1
     if (dot <= 0.5) return; // ~60° nach vorn
 
     dealDamageToEnemy(this, enemy, 1, 'attack');
