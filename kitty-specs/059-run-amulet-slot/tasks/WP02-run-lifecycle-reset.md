@@ -64,3 +64,7 @@ fehlerfrei.
 - Nach Hub-Rückkehr/Tod: `equipment.amulet === null`, `window.runAmulet === null` (SC-02).
 - Gespeichertes/geladenes Save enthält kein Amulett im Equipment (SC-06).
 - Kein neuer localStorage-Key; keine Regression der Bestands-Persistenz (NFR-04).
+
+## Activity Log
+
+- 2026-06-24T14:55:33Z – unknown – shell_pid=22700 – lane=in_progress – Moved to in_progress
