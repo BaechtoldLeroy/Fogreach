@@ -1,108 +1,108 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: Run-basierte Tiefen-Progression
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` (planning + merge target) | **Date**: 2026-06-24 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/kitty-specs/058-run-based-depth-progression/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Die Dungeon-Tiefe (`window.DUNGEON_DEPTH`) klettert heute **pro Raum** und
+treibt damit Gegnerstärke, Loot-iLevel und Level-Tempo viel zu schnell hoch.
+Dieses Feature stellt die Tiefe auf **run-konstant** um: ein Run läuft auf
+einer festen Tiefe; nur ein **erfolgreich abgeschlossener** Run erhöht die
+Tiefen-Grenze (`MAX_DEPTH`) um **genau +1**.
+
+**Technischer Ansatz (chirurgisch, additiv):**
+1. Per-Raum-Increment im regulären Run-Übergang entfernen/neutralisieren
+   (`roomManager.js` `onStairOverlap` Z. 1040–1047, `markRoomCleared`
+   Z. 1142–1144) — jeder Raum eines Runs läuft auf der Run-Start-Tiefe.
+2. Run-Abschluss-Hook: `leaveDungeonForHub(reason: 'dungeon_complete')`
+   (`main.js` Z. 1689, Aufruf `roomManager.js` Z. 1035) erhöht `MAX_DEPTH`
+   einmalig +1 (idempotent über ein Abschluss-Flag).
+3. „Der Hinabstieg" (`HubSceneV2._openWaveSelectDialog`) leitet seine
+   Optionen bereits aus `maxDepth` ab — bleibt funktional, gewählte Tiefe
+   gilt jetzt run-konstant, ≤ `maxDepth`.
+4. Quest-Objektive abstimmen: `reach_wave` (Tiefe 20/30/40) und
+   `dungeon_run`/`dungeon_complete` auf run-konstante Tiefe / einen
+   Increment-pro-Run umstellen (sonst uncompletable).
+5. Endless-Mode behält seine eigene Tiefen-Eskalation (eigener Pfad).
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: ES6+ Vanilla-JS (klassische `<script>`-Tags, KEIN Build/Bundler)
+**Primary Dependencies**: Phaser 3 (built-ins), keine neuen Dependencies
+**Storage**: `localStorage` über `js/persistence.js` (`KEYS.MAX_DEPTH`/`LAST_DEPTH`) + `js/storage.js` (Save-Snapshot)
+**Testing**: `node tools/runTests.js` (Unit), Smoke `node tools/testGame.js` (Server :3456)
+**Target Platform**: Browser (Desktop + Mobile-Touch)
+**Project Type**: single (Phaser-Browserspiel, alle Sources in `js/`)
+**Performance Goals**: 60fps Desktop, Mobile-Procroom ≥45 (053 nicht regredieren)
+**Constraints**: kein per-Frame/-Raum-`localStorage`-Spam; Increment idempotent; bestehende Saves laden ohne Wipe; Endless-Pfad intakt
+**Scale/Scope**: ~4 Dateien berührt, chirurgischer Eingriff, kein neues Runtime-Modul
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*GATE: Must pass before research. Re-check after design.*
 
-[Gates determined based on constitution file]
+- **Additiv/Reuse (C-01)**: Kein paralleles Depth-Runtime — bestehende
+  `DUNGEON_DEPTH`/`MAX_DEPTH`/`LAST_DEPTH`-Infrastruktur wird umgehängt, nicht
+  dupliziert. PASS.
+- **Keine neuen Dependencies (C-02)**: Vanilla-JS + Phaser-built-ins. PASS.
+- **Save-Kompatibilität (C-03)**: additive/defensive Loads, kein
+  `MAX_DEPTH`-Wipe. PASS (Test-Subtask in WP05).
+- **Quest-Trigger-Audit (C-04)**: Pflicht-Subtask vor Ship (bekannte
+  Projekt-Falle — uncompletable Quests). PASS (audited in WP04/WP05).
+- **test-first (DIRECTIVE TEST_FIRST)**: „Tiefe run-konstant" + „+1 bei
+  Abschluss" + „kein +1 bei Tod" werden als Unit-Tests VOR der Umsetzung
+  geschrieben. PASS.
+
+Keine Verletzungen → Complexity Tracking leer.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
+kitty-specs/058-run-based-depth-progression/
+├── spec.md              # Spezifikation (vorhanden)
+├── plan.md              # Diese Datei
+├── tasks.md             # WP-Übersicht + Subtasks
+├── meta.json            # Feature-Metadaten
+└── tasks/
+    ├── README.md        # WP-Frontmatter-Format
+    ├── WP01-decision-lock-and-tests.md
+    ├── WP02-run-constant-depth.md
+    ├── WP03-run-completion-increment.md
+    ├── WP04-descent-and-quest-alignment.md
+    └── WP05-verification-and-save-compat.md
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+js/
+├── roomManager.js       # Per-Raum-Increment entfernen (Z. 1040-1047, 1142-1144);
+│                        #   Run-Start-Tiefe konstant (enterRoom Z. 919-934)
+├── main.js              # leaveDungeonForHub (Z. 1689): Run-Abschluss-+1-Hook (D1)
+├── persistence.js       # KEYS.MAX_DEPTH/LAST_DEPTH (Z. 27-30); ggf. Helper bumpMaxDepth()
+├── scenes/HubSceneV2.js # _openWaveSelectDialog (Z. 1819): run-konstante Start-Tiefe, <= maxDepth
+├── questSystem.js       # reach_wave (Z. 428/539/577) + dungeon_run/complete (Z. 500, 1085-1088)
+├── endlessMode.js       # Endless-Tiefen-Pfad (Z. 240-242) UNVERAENDERT lassen / abgrenzen
+└── storage.js           # Save-Snapshot dungeonDepth (Z. 72, 232) — Konsistenz pruefen
 
 tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+└── runBasedDepth.test.js   # NEU: run-konstant, +1-bei-Abschluss, kein-+1-bei-Tod, idempotenz
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Single-Project Phaser-Layout. Der Eingriff ist
+chirurgisch in `js/roomManager.js` (Tiefen-Owner) + `js/main.js` (Abschluss-
+Hook) konzentriert; `persistence.js`/`HubSceneV2.js`/`questSystem.js` werden
+abgestimmt. Kein neues Modul, kein neues Runtime — bewusst minimal, weil das
+Risiko in den Quest-Trigger-/Endless-Wechselwirkungen liegt, nicht in
+Architektur.
 
 ## Complexity Tracking
 
-*Fill ONLY if Constitution Check has violations that must be justified*
+*Keine Constitution-Verletzungen — Tabelle bleibt leer.*
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| — | — | — |

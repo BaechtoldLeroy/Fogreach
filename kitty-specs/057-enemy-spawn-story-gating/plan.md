@@ -1,108 +1,102 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: Enemy-Spawn Story-Gating
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` (planning) → merges into `main` | **Date**: 2026-06-24 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/kitty-specs/057-enemy-spawn-story-gating/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Das Gegner-Roster wird heute in `js/enemy.js` (`spawnEnemy`, Z. 328–347)
+**ausschließlich nach Dungeon-Tiefe** gefiltert. Da die Tiefe über „Der
+Hinabstieg" frei wählbar ist, erscheinen narrativ späte Gegnertypen zu früh.
+
+Dieses Feature ergänzt das Spawn-Gating um einen **zusätzlichen Akt-Filter**,
+gespeist aus `storySystem.getCurrentActIndex()`. Der technische Ansatz:
+
+1. Neues, Phaser-freies Modul `js/enemySpawnGating.js` (IIFE →
+   `window.EnemySpawnGating`) mit einer **reinen** Funktion
+   `getAvailableEnemyTypes(depth, actIndex)`. Sie kapselt das heutige
+   Tiefen-Roster (Mindest-Floor) **und** ein neues Typ→`minActIndex`-Mapping.
+2. `spawnEnemy` ruft im random-Pfad diese Funktion auf (statt der inline-`if`-
+   Kette), liest den Akt defensiv aus `storySystem`, und behält für explizit
+   angeforderte Typen das heutige Verhalten.
+3. Fallback-Garantie: das Ergebnis ist **nie leer** (Schnittmenge leer →
+   sicherer Frühphasen-Typ).
+
+Test-first: die reine Filter-Funktion ist ohne Phaser/DOM unit-testbar (wie
+`tests/eliteEnemies.test.js`), inkl. dediziertem „nie leer"-Test über alle
+depth×act-Kombinationen und einem Tiefen-Identitäts-Test bei voll-Akt.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: ES6+ Vanilla-JS (klassische `<script>`-Tags, KEIN Bundler)
+**Primary Dependencies**: Phaser 3 (nur in `enemy.js`; das Gating-Modul ist Phaser-frei)
+**Storage**: keine neue Persistenz — Akt kommt live aus `window.storySystem` (read-only)
+**Testing**: `node tools/runTests.js` (node:test), Smoke `node tools/testGame.js` (Server :3456)
+**Target Platform**: Browser (Desktop + Mobile), klassische Script-Einbindung via `index.html`
+**Project Type**: single (Browser-Game, Vanilla-JS in `js/`)
+**Performance Goals**: 60fps Desktop, Mobile-Floor (053) nicht regredieren; Filter O(≤10)
+**Constraints**: Roster nie leer (FR-04); Tiefen-Floor erhalten (C-01); kein neuer Dependency (NFR-02)
+**Scale/Scope**: 1 neues kleines Modul + 1 Edit in `enemy.js` + 1 Script-Tag in `index.html` + 1 Testdatei
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- **TEST_FIRST**: erfüllt — die reine `getAvailableEnemyTypes`-Logik (inkl.
+  „nie leer", Tiefen-Identität, defensive Defaults) wird als Unit-Test VOR der
+  Verdrahtung in `spawnEnemy` geschrieben.
+- **Additiv / keine Regression**: Tiefen-Gating bleibt unverändert als Floor
+  (C-01, FR-07); explizite Spawns unberührt (FR-05); `storySystem` read-only
+  (C-03). Keine neue Dependency (NFR-02). Keine Save-Migration (C-05).
+- **i18n**: nicht betroffen (keine neuen Spieler-Texte).
+
+Kein Constitution-Verstoß → Complexity Tracking leer.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
+kitty-specs/057-enemy-spawn-story-gating/
+├── plan.md              # Diese Datei
+├── spec.md              # Spezifikation
+├── tasks.md             # WP-Übersicht + Subtasks
+├── tasks/
+│   ├── README.md
+│   └── WP01-act-roster-gating.md
+├── research/            # (vorhanden, leer)
+└── checklists/          # (vorhanden)
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+js/
+├── enemySpawnGating.js   # NEU — IIFE → window.EnemySpawnGating:
+│                         #   ENEMY_MIN_ACT (Typ→minActIndex),
+│                         #   DEPTH_TIERS (heutige Tiefen-Floors),
+│                         #   getAvailableEnemyTypes(depth, actIndex)  [rein]
+├── enemy.js              # EDIT — spawnEnemy Z. 328–347:
+│                         #   inline-if-Kette → EnemySpawnGating-Aufruf
+│                         #   + defensiver Akt-Read aus window.storySystem
+│                         #   + Fallback wenn Modul fehlt
+└── storySystem.js        # UNVERÄNDERT — liefert getCurrentActIndex() (read-only)
+
+index.html                # EDIT — <script src="js/enemySpawnGating.js"> VOR enemy.js
 
 tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+└── enemySpawnGating.test.js  # NEU — Unit-Tests der reinen Filter-Funktion
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Single-Project Browser-Game. Die Gating-Logik wird in
+ein eigenes, Phaser-freies Modul extrahiert (analog `eliteEnemies.js`), damit
+sie ohne DOM/Phaser geladen und unit-getestet werden kann. `enemy.js` bleibt
+der einzige Spawn-Konsument; `storySystem.js` wird nur gelesen.
 
 ## Complexity Tracking
 
-*Fill ONLY if Constitution Check has violations that must be justified*
+*Keine Constitution-Verstöße — Tabelle leer.*
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| — | — | — |
