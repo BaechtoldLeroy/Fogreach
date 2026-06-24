@@ -1867,6 +1867,113 @@ function releaseChargedSlash(forceMaxCharge = false) {
 //   3. setVelocity for full Roll-speed in direction
 //   4. delayedCall(duration) → reset isRolling + _playerInvincible
 //   5. delayedCall(cooldown) → reset rollCooldown
+
+// ── Feature 059 (#42) WP03 Batch 3b: per-frame amulet effects ───────────────
+// orbit (Trabantenstein): rotierende Klingen, die Gegner bei Kontakt treffen.
+// aura  (Brandmal):       getakteter Flächen-DoT um den Spieler.
+// dashstrike (Schattenmantel): Roll fügt durchquerten Gegnern Schaden zu
+//   (Phasing + Unverwundbarkeit liefert performRoll bereits).
+// Gated auf den equippten Effekt; ohne passendes Amulett komplett no-op.
+// Aufgerufen aus dem GameScene-update()-Loop (main.js).
+var _orbitState = { sprites: [], angle: 0, hits: (typeof WeakMap !== 'undefined' ? new WeakMap() : null) };
+var _auraTimer = 0;
+var _dashstrikeHits = (typeof WeakMap !== 'undefined' ? new WeakMap() : null);
+
+function _destroyOrbitals() {
+  for (var i = 0; i < _orbitState.sprites.length; i++) {
+    try { if (_orbitState.sprites[i]) _orbitState.sprites[i].destroy(); } catch (_) {}
+  }
+  _orbitState.sprites = [];
+}
+
+// Tags Gegner-HP runter + Standard-Trefferbehandlung (Tint/Tod/Kaskaden).
+function _amuletTickDamage(scene, en, dmg, tint, now, store) {
+  if (!en || !en.active || en.hp == null) return;
+  if (store) {
+    var last = store.get(en) || 0;
+    if (now - last <= 300) return;     // pro Gegner gedrosselt
+    store.set(en, now);
+  }
+  if (typeof en.maxHp !== 'number') en.maxHp = en.hp;
+  en.hp -= dmg;
+  try { if (window.particleFactory && window.particleFactory.hitSpark) window.particleFactory.hitSpark(en.x, en.y); } catch (_) {}
+  try { handleEnemyHit(scene, en, { tint: tint, duration: 60 }); } catch (_) {}
+}
+
+function updateAmuletPerFrame(scene, delta) {
+  if (!scene || typeof player === 'undefined' || !player || !player.active) { _destroyOrbitals(); return; }
+  var eff = (window.AmuletEffects && window.AmuletEffects.activeEffect) ? window.AmuletEffects.activeEffect() : null;
+  var dt = (typeof delta === 'number' && delta > 0) ? delta : 16;
+  var now = (scene.time && typeof scene.time.now === 'number') ? scene.time.now : (typeof performance !== 'undefined' ? performance.now() : 0);
+  var enemyGroup = (typeof enemies !== 'undefined') ? enemies : null;
+  var dmgBase = (typeof weaponDamage === 'number' ? weaponDamage : 5);
+
+  // ORBIT ───────────────────────────────────────────────────────────────
+  if (eff === 'orbit') {
+    // tote/zerstörte Sprites (z.B. nach Raumwechsel) aussortieren + nachfüllen
+    _orbitState.sprites = _orbitState.sprites.filter(function (s) { return s && s.active && s.scene; });
+    while (_orbitState.sprites.length < 3 && scene.add && scene.add.circle) {
+      var blade = scene.add.circle(player.x, player.y, 9, 0x88ddff, 0.9).setDepth(72);
+      if (blade.setStrokeStyle) blade.setStrokeStyle(2, 0xffffff, 0.8);
+      _orbitState.sprites.push(blade);
+    }
+    _orbitState.angle += dt * 0.005;
+    var R = 72, n = _orbitState.sprites.length;
+    for (var i = 0; i < n; i++) {
+      var a = _orbitState.angle + (i * 2 * Math.PI / n);
+      var sp = _orbitState.sprites[i];
+      if (sp && sp.setPosition) sp.setPosition(player.x + Math.cos(a) * R, player.y + Math.sin(a) * R);
+    }
+    if (enemyGroup && enemyGroup.children) {
+      var odmg = Math.max(1, Math.round(dmgBase * 0.4));
+      enemyGroup.children.iterate(function (en) {
+        if (!en || !en.active) return;
+        for (var j = 0; j < _orbitState.sprites.length; j++) {
+          var s2 = _orbitState.sprites[j];
+          if (s2 && Math.hypot(en.x - s2.x, en.y - s2.y) < 26) {
+            _amuletTickDamage(scene, en, odmg, 0x88ddff, now, _orbitState.hits);
+            break;
+          }
+        }
+      });
+    }
+  } else if (_orbitState.sprites.length) {
+    _destroyOrbitals();
+  }
+
+  // AURA ──────────────────────────────────────────────────────────────────
+  if (eff === 'aura') {
+    _auraTimer += dt;
+    if (_auraTimer >= 500) {
+      _auraTimer = 0;
+      var R2 = 110, admg = Math.max(1, Math.round(dmgBase * 0.5));
+      if (scene.add && scene.add.circle) {
+        var pulse = scene.add.circle(player.x, player.y, R2, 0xff5522, 0.12).setDepth(40);
+        if (scene.tweens) scene.tweens.add({ targets: pulse, alpha: 0, scale: 1.1, duration: 400, onComplete: function () { try { pulse.destroy(); } catch (_) {} } });
+        else if (scene.time) scene.time.delayedCall(400, function () { try { pulse.destroy(); } catch (_) {} });
+      }
+      if (enemyGroup && enemyGroup.children) {
+        enemyGroup.children.iterate(function (en) {
+          if (!en || !en.active) return;
+          if (Math.hypot(en.x - player.x, en.y - player.y) <= R2) _amuletTickDamage(scene, en, admg, 0xff5522, now, null);
+        });
+      }
+    }
+  } else {
+    _auraTimer = 0;
+  }
+
+  // DASHSTRIKE ──────────────────────────────────────────────────────────────
+  if (eff === 'dashstrike' && typeof isRolling !== 'undefined' && isRolling && enemyGroup && enemyGroup.children) {
+    var ddmg = Math.max(1, Math.round(dmgBase * 0.8));
+    enemyGroup.children.iterate(function (en) {
+      if (!en || !en.active) return;
+      if (Math.hypot(en.x - player.x, en.y - player.y) <= 36) _amuletTickDamage(scene, en, ddmg, 0xaa66ff, now, _dashstrikeHits);
+    });
+  }
+}
+if (typeof window !== 'undefined') window.updateAmuletPerFrame = updateAmuletPerFrame;
+
 function performRoll() {
   // Gate: kein Roll während anderer Action, Cooldown, oder Tod
   if (!this || !player || !player.active) return false;

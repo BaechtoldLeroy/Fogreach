@@ -1466,6 +1466,12 @@ function update(time, delta) {
     }
   }
 
+  // Feature 059 (#42): per-frame amulet effects (orbit / aura / dashstrike).
+  // No-op ohne passendes Run-Amulett; defensiv, darf den Loop nie brechen.
+  if (typeof window.updateAmuletPerFrame === 'function') {
+    try { window.updateAmuletPerFrame(this, delta); } catch (e) { /* ignore */ }
+  }
+
   // WP04: Redraw potion cooldown HUD indicator
   // Drive the potion HUD tile (best-in-inventory + cooldown radial)
   if (typeof window._refreshPotionTile === 'function') {
