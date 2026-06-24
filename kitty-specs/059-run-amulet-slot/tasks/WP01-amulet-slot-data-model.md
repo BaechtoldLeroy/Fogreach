@@ -71,3 +71,4 @@ rollAmulet + Tausch ab.
 - 2026-06-24T13:00:56Z – unknown – shell_pid=38556 – lane=in_progress – Moved to in_progress
 - 2026-06-24T13:09:43Z – unknown – shell_pid=38556 – lane=for_review – Moved to for_review
 - 2026-06-24T13:11:48Z – unknown – shell_pid=38556 – lane=approved – Selbst-Review: 316 Tests gruen (6 neu), Smoke 0, Slot+Datenmodell+rollAmulet, manuell gemerged (Multi-WP-Feature).
+- 2026-06-24T13:11:49Z – unknown – shell_pid=38556 – lane=done – Done override: Manuell in main gemerged (CLI merge --feature verlangt alle 5 WPs); 316 Tests gruen, Worktree bereinigt.
