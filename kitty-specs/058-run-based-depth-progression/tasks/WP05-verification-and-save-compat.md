@@ -83,3 +83,4 @@ intakt; Smoke ohne neue Fehler.
 
 - 2026-06-24T18:14:47Z – unknown – shell_pid=28280 – lane=for_review – Moved to for_review
 - 2026-06-24T18:15:04Z – unknown – shell_pid=28280 – lane=approved – Moved to approved
+- 2026-06-24T18:15:15Z – unknown – shell_pid=28280 – lane=done – Done override: Manual merge; final feature, 352 pass, smoke 0, pushed; playtest/accept user-pending
