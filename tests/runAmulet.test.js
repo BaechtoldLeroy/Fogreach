@@ -93,3 +93,27 @@ test('rollAmulet defaults (no rng / no depth) do not throw and return an amulet'
   assert.strictEqual(a.type, 'amulet');
   assert.ok(typeof a.name === 'string' && a.name.length > 0);
 });
+
+// --- WP02: Run-Lifecycle (Reset + Save-Guard) ---
+
+test('#42 WP02: PERSISTENT_EQUIP_SLOTS excludes amulet (Save-Guard FR-12)', () => {
+  const sys = freshSystem();
+  assert.ok(Array.isArray(sys.PERSISTENT_EQUIP_SLOTS), 'whitelist exists');
+  assert.deepStrictEqual(sys.PERSISTENT_EQUIP_SLOTS, ['weapon', 'head', 'body', 'boots']);
+  assert.ok(!sys.PERSISTENT_EQUIP_SLOTS.includes('amulet'), 'amulet is never persisted');
+});
+
+test('#42 WP02: clearRunAmulet nulls the amulet slot, leaves gear untouched', () => {
+  const sys = freshSystem();
+  const eq = { weapon: { x: 1 }, head: null, body: null, boots: null, amulet: { effect: 'twin' } };
+  const out = sys.clearRunAmulet(eq);
+  assert.strictEqual(out.amulet, null, 'amulet cleared');
+  assert.deepStrictEqual(out.weapon, { x: 1 }, 'weapon untouched');
+});
+
+test('#42 WP02: clearRunAmulet is null-safe (no throw)', () => {
+  const sys = freshSystem();
+  assert.doesNotThrow(() => sys.clearRunAmulet(null));
+  assert.doesNotThrow(() => sys.clearRunAmulet(undefined));
+  assert.doesNotThrow(() => sys.clearRunAmulet({}));
+});

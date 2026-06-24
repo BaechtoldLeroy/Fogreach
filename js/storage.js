@@ -12,12 +12,14 @@ function saveGame(scene) {
       : [];
     const cloneEquipment = (obj) => {
       if (!obj || typeof obj !== 'object') return {};
-      return {
-        weapon: obj.weapon ? JSON.parse(JSON.stringify(obj.weapon)) : null,
-        head: obj.head ? JSON.parse(JSON.stringify(obj.head)) : null,
-        body: obj.body ? JSON.parse(JSON.stringify(obj.body)) : null,
-        boots: obj.boots ? JSON.parse(JSON.stringify(obj.boots)) : null,
-      };
+      // Feature 059 (#42): persist ONLY the gear slots. The whitelist
+      // (LootSystem.PERSISTENT_EQUIP_SLOTS) deliberately omits 'amulet' — run
+      // amulets must never be saved (FR-12 save-guard).
+      const SLOTS = (typeof window !== 'undefined' && window.LootSystem
+        && window.LootSystem.PERSISTENT_EQUIP_SLOTS) || ['weapon', 'head', 'body', 'boots'];
+      const out = {};
+      SLOTS.forEach((k) => { out[k] = obj[k] ? JSON.parse(JSON.stringify(obj[k])) : null; });
+      return out;
     };
     const cloneMaterials = (() => {
       if (typeof window === 'undefined') return {};
@@ -266,7 +268,13 @@ function applySaveToState(scene, s) {
     equipment.head   = s.equipment.head   || null;
     equipment.body   = s.equipment.body   || null;
     equipment.boots  = s.equipment.boots  || null;
-    if (typeof window !== 'undefined') window.equipment = equipment;
+    // Feature 059 (#42): amulet is run-specific — never restore it from a save
+    // (defensive against a hand-edited/old save that carries one, SC-06).
+    equipment.amulet = null;
+    if (typeof window !== 'undefined') {
+      window.equipment = equipment;
+      window.runAmulet = null;
+    }
   }
 
   if (s.skills && typeof s.skills === 'object') {

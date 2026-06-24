@@ -352,6 +352,19 @@ if (window.i18n) {
     };
   }
 
+  // Feature 059 WP02: amulets are RUN-SPECIFIC and must never persist.
+  // PERSISTENT_EQUIP_SLOTS is the save whitelist — it deliberately OMITS
+  // 'amulet' so storage.js never serialises it (FR-12 save-guard). Single
+  // source of truth shared with storage.js cloneEquipment.
+  const PERSISTENT_EQUIP_SLOTS = Object.freeze(['weapon', 'head', 'body', 'boots']);
+
+  // Null the amulet slot on a passed equipment object (used by the run-reset
+  // in leaveDungeonForHub). Null-safe; returns the object for chaining.
+  function clearRunAmulet(equipment) {
+    if (equipment && typeof equipment === 'object') equipment.amulet = null;
+    return equipment;
+  }
+
   // WP04: 4 health potion tiers (Minor / Normal / Major / Super)
   const POTION_DEFS = Object.freeze([
     Object.freeze({
@@ -1011,6 +1024,8 @@ if (window.i18n) {
     // Feature 059 (#42): run-specific amulets — separate pool + roll path.
     AMULET_DEFS: AMULET_DEFS,
     rollAmulet: rollAmulet,
+    PERSISTENT_EQUIP_SLOTS: PERSISTENT_EQUIP_SLOTS,
+    clearRunAmulet: clearRunAmulet,
 
     // implemented in WP01
     rollAffixes: rollAffixes,

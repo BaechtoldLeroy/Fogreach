@@ -1744,6 +1744,21 @@ function leaveDungeonForHub(scene, options = {}) {
       try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived (printing) failed', err); }
     }
   }
+
+  // Feature 059 (#42) — the run amulet is run-scoped. Clear slot + state on
+  // EVERY leaveDungeonForHub (portal AND death, D1c), BEFORE the save below, so
+  // it never carries into the next run or persists. recalcDerived reverts any
+  // amulet stat contribution to the gear+skill baseline (same pattern as above).
+  if (window.LootSystem && typeof window.LootSystem.clearRunAmulet === 'function') {
+    window.LootSystem.clearRunAmulet(window.equipment);
+  } else if (window.equipment) {
+    window.equipment.amulet = null;
+  }
+  window.runAmulet = null;
+  if (typeof recalcDerived === 'function') {
+    try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived (amulet) failed', err); }
+  }
+
   if (window.PrintingHouse) {
     try {
       // If an edict was active for this run, suspicion was already added at
