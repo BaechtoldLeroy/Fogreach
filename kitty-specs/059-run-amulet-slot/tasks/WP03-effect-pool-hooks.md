@@ -76,3 +76,4 @@ lesen `window.runAmulet.effect`. 60fps unverändert.
 
 - 2026-06-24T16:37:56Z – unknown – lane=in_progress – Moved to in_progress
 - 2026-06-24T17:15:18Z – unknown – lane=for_review – Moved to for_review
+- 2026-06-24T17:15:54Z – unknown – lane=approved – Moved to approved
