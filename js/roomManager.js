@@ -145,6 +145,8 @@ function initDungeonRun() {
   if (window.RunDepth && typeof window.RunDepth.markRunStarted === 'function') {
     window.RunDepth.markRunStarted();
   }
+  // Feature 058 (#41) Option B: re-arm the once-per-run boss/mini-boss climax.
+  window.__runClimaxSpawned = false;
   // Reroll the Elara cellar-encounter spawn targets each run so a player
   // who abandons mid-run gets fresh distances next time.
   _resetElaraEncounterRunState();
@@ -1009,6 +1011,10 @@ function enterRoom(scene, roomId) {
 
 
   // 6) Start der Welle
+  // Feature 058 (#41) Option B: tell startNextWave whether this is the run's
+  // FINAL room — the boss/mini-boss climax only spawns there (once per run).
+  var _totalRooms = (dungeonRun && dungeonRun.totalRooms) ? dungeonRun.totalRooms : rooms.length;
+  window.__isFinalDungeonRoom = (roomId === (_totalRooms - 1));
   if (typeof startNextWave === "function") {
     startNextWave.call(scene, false);
     window.currentWave = currentWave;

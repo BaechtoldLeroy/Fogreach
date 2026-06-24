@@ -51,8 +51,18 @@ function startNextWave(noIncrement) {
     ? window.storySystem.getCurrentActIndex() : 0;
   const bossesUnlocked = _storyAct >= 1;
 
-  // Boss every 10th wave — but only once Akt 2 has opened.
-  if (currentWave % 10 === 0 && bossesUnlocked) {
+  // Feature 058 (#41) Option B: the boss / mini-boss is the RUN CLIMAX — at most
+  // ONE per run, only in the FINAL room, scaled to the run-constant depth. The
+  // old rule ("every 10th wave") spawned a boss in EVERY room at depths
+  // 10/20/... once depth stopped climbing per room. Non-final rooms now get
+  // plain waves. getBossDefinition() bands the boss type by floor(depth/10),
+  // so depth 10-19 -> chainMaster (Kettenmeister), 30-39 -> shadowCouncillor.
+  const _isFinalRoom = !!window.__isFinalDungeonRoom;
+  const _climaxArmed = _isFinalRoom && !window.__runClimaxSpawned;
+
+  // Full boss: final room, depth >= 10, bosses narratively unlocked (Akt 2+).
+  if (_climaxArmed && bossesUnlocked && currentWave >= 10) {
+    window.__runClimaxSpawned = true;
     bossActive = true;
     spawnedEnemiesInWave = 0;    // no regular spawns this wave
     waveInProgress = true;
@@ -63,12 +73,12 @@ function startNextWave(noIncrement) {
   }
 
   waveInProgress = true;
-  // Mini-boss waves: any 5th wave when no full boss fired. Includes the
-  // 10th-wave slot when bosses aren't unlocked yet — keeps the pacing
-  // beat the player expects ("something bigger every 5 waves") without
-  // pulling in the harder boss encounter too early.
-  const isMiniBossWave = (currentWave % 5 === 0)
-    && !(currentWave % 10 === 0 && bossesUnlocked);
+  // Mini-boss climax: final room of a shallower run (depth 5-9), or a deep run
+  // before bosses unlock (Akt 1). One per run, rides on the regular wave.
+  const isMiniBossWave = _climaxArmed
+    && currentWave >= 5
+    && (currentWave < 10 || !bossesUnlocked);
+  if (isMiniBossWave) window.__runClimaxSpawned = true;
   waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
   spawnedEnemiesInWave = 0;
   window.spawnedEnemiesInWave = 0;
