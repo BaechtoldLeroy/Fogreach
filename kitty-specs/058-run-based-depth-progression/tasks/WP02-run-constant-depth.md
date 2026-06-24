@@ -1,29 +1,32 @@
 ---
-work_package_id: "WP02"
-title: "Per-Raum-Increment entfernen (Tiefe run-konstant)"
-lane: "planned"
+work_package_id: WP02
+title: Per-Raum-Increment entfernen (Tiefe run-konstant)
 dependencies:
-  - "WP01"
-planning_base_branch: "main"
-merge_target_branch: "main"
-branch_strategy: "Planning artifacts were generated on main; completed changes must merge back into main."
+- WP01
+planning_base_branch: main
+merge_target_branch: main
+branch_strategy: Planning artifacts were generated on main; completed changes must merge back into main.
+base_branch: main
+base_commit: eac07a8d9c3dff280ebd1bde02e5eeb47d7edbfb
+created_at: '2026-06-24T17:54:59.286826+00:00'
 subtasks:
-  - "T005"
-  - "T006"
-  - "T007"
-  - "T008"
-phase: "Phase 2 - Tiefe run-konstant"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-review_feedback: ""
+- T005
+- T006
+- T007
+- T008
+phase: Phase 2 - Tiefe run-konstant
+assignee: ''
+agent: ''
+shell_pid: "7672"
 history:
-  - timestamp: "2026-06-24T08:00:00Z"
-    lane: "planned"
-    agent: "system"
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-06-24T08:00:00Z'
+  lane: planned
+  agent: system
+  action: Prompt generated via /spec-kitty.tasks
+lane: planned
+review_feedback: ''
+review_status: ''
+reviewed_by: ''
 ---
 
 # Work Package Prompt: WP02 – Per-Raum-Increment entfernen
