@@ -1008,7 +1008,7 @@
 
     if (typeof player !== 'undefined' && player) {
       // Check distance each frame
-      var updateEvent = scene.events.on('update', function() {
+      var distanceHandler = function() {
         if (!merchant || !merchant.active || !player || !player.active) return;
         var dx = merchant.x - player.x;
         var dy = merchant.y - player.y;
@@ -1017,7 +1017,8 @@
         prompt.setVisible(inRange);
         // Update prompt position to follow merchant
         prompt.setPosition(merchant.x, merchant.y - 70);
-      });
+      };
+      scene.events.on('update', distanceHandler);
 
       // E key to interact
       interactHandler = function() {
@@ -1029,12 +1030,27 @@
         }
       };
       scene.input.keyboard.on('keydown-E', interactHandler);
+
+      // Mobile interact support: the [E]-key path doesn't exist on touch. Poll
+      // window.__MOBILE_INTERACT_ACTIVE__ (set by the mobile interact button)
+      // each frame. The merchant persists after use (the shop is re-openable),
+      // so debounce with a consume flag — like the door pattern in main.js —
+      // otherwise the ~180ms interact pulse re-opens the shop every frame.
+      var mobileHandler = function () {
+        if (!window.__MOBILE_INTERACT_ACTIVE__) { window.__merchantInteractConsumed = false; return; }
+        if (window.__merchantInteractConsumed) return;
+        window.__merchantInteractConsumed = true;
+        interactHandler();
+      };
+      scene.events.on('update', mobileHandler);
     }
 
     activeMerchant = {
       sprite: merchant,
       prompt: prompt,
       interactHandler: interactHandler,
+      distanceHandler: (typeof distanceHandler !== 'undefined') ? distanceHandler : null,
+      mobileHandler: (typeof mobileHandler !== 'undefined') ? mobileHandler : null,
       scene: scene
     };
 
@@ -1049,6 +1065,13 @@
         activeMerchant.scene.input && activeMerchant.scene.input.keyboard) {
       activeMerchant.scene.input.keyboard.off('keydown-E', activeMerchant.interactHandler);
     }
+    // Remove the per-frame update listeners (distance + mobile interact) so they
+    // don't accumulate across rooms/runs.
+    if (activeMerchant.scene && activeMerchant.scene.events) {
+      if (activeMerchant.distanceHandler) activeMerchant.scene.events.off('update', activeMerchant.distanceHandler);
+      if (activeMerchant.mobileHandler) activeMerchant.scene.events.off('update', activeMerchant.mobileHandler);
+    }
+    window.__merchantInteractConsumed = false;
     activeMerchant = null;
   }
 
@@ -1479,6 +1502,11 @@
     // Clean up any active merchant or lore from previous room
     cleanupMerchant();
     cleanupLore();
+    // Also tear down generic event-object sprites (e.g. the story Elara spawned
+    // by roomManager._maybeFireElaraCellarEncounter). Without this they linger
+    // into the next room — so the new room's Elara appeared *next to* the old
+    // one ("Elara zwei mal im gleichen Raum").
+    cleanupEventObjects();
 
     if (roomId === 0) return;
     var depth = window.DUNGEON_DEPTH || 1;
