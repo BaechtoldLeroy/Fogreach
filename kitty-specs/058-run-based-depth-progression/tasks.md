@@ -52,10 +52,10 @@ abweicht, hier zuerst anpassen.
 weil die Mechanik noch nicht umgestellt ist.
 
 **Subtasks**:
-- [ ] **T001** Decision-Lock: D1 (`reason === 'dungeon_complete'` = Abschluss) + D2 (strikt +1, flacher bleibt) in `spec.md` §8 als „entschieden" markieren bzw. mit User bestätigen. Kurz-Notiz `research/decisions.md` (Hook-Punkte: `roomManager.js` Z. 1035, `main.js` Z. 1689).
-- [ ] **T002** Research: bestätigen, dass `leaveDungeonForHub` der einzige saubere Abschluss-Punkt ist (reasons `dungeon_complete`/`death`/`portal`; Aufrufer `roomManager.js` Z. 1034-1035, `inventory.js` Z. 757-758, `main.js` Z. 1968-1970). Dokumentieren, welche reasons NICHT zählen.
-- [ ] **T003** `tests/runBasedDepth.test.js` anlegen: (a) Tiefe bleibt über mehrere `enterRoom`/`onStairOverlap`-Zyklen konstant; (b) `dungeon_complete` → `MAX_DEPTH` += 1; (c) `death`/`portal` → `MAX_DEPTH` unverändert; (d) Doppel-Aufruf → nur +1 (Idempotenz). Test in den Runner einhängen (Pattern bestehender Tests). Erwartung: rot.
-- [ ] **T004** Baseline-Lauf: bestehende Tests + Smoke (`node tools/testGame.js`) als Grün-Referenz protokollieren (kein bestehender Test darf durch das Test-Gerüst brechen).
+- [x] **T001** Decision-Lock: D1 (`reason === 'dungeon_complete'` = Abschluss) + D2 (strikt +1, flacher bleibt) in `spec.md` §8 als „entschieden" markieren bzw. mit User bestätigen. Kurz-Notiz `research/decisions.md` (Hook-Punkte: `roomManager.js` Z. 1035, `main.js` Z. 1689).
+- [x] **T002** Research: bestätigen, dass `leaveDungeonForHub` der einzige saubere Abschluss-Punkt ist (reasons `dungeon_complete`/`death`/`portal`; Aufrufer `roomManager.js` Z. 1034-1035, `inventory.js` Z. 757-758, `main.js` Z. 1968-1970). Dokumentieren, welche reasons NICHT zählen.
+- [x] **T003** `tests/runBasedDepth.test.js` anlegen: (a) Tiefe bleibt über mehrere `enterRoom`/`onStairOverlap`-Zyklen konstant; (b) `dungeon_complete` → `MAX_DEPTH` += 1; (c) `death`/`portal` → `MAX_DEPTH` unverändert; (d) Doppel-Aufruf → nur +1 (Idempotenz). Test in den Runner einhängen (Pattern bestehender Tests). Erwartung: rot.
+- [x] **T004** Baseline-Lauf: bestehende Tests + Smoke (`node tools/testGame.js`) als Grün-Referenz protokollieren (kein bestehender Test darf durch das Test-Gerüst brechen).
 
 ---
 
