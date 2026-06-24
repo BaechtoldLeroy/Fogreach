@@ -1155,8 +1155,27 @@ function markRoomCleared() {
   if (tpl && tpl._procedural && !room._rewardGranted) {
     room._rewardGranted = true;
     if (typeof spawnLoot === 'function') {
-      const tierRoll = Math.random();
-      const rewardTier = tierRoll < 0.6 ? 2 : 3;
+      // Weighted proc-room reward. Previously EVERY cleared proc room dropped a
+      // guaranteed tier-2/3 chest (rare/legendary) — far too generous. Now it
+      // mostly drops ordinary loot / consumables, with the special chest as the
+      // minority case. Buckets: 25% special chest, 30% normal-item chest,
+      // 25% potion, 20% town-portal scroll.
+      const _depthNow = Math.max(1, window.DUNGEON_DEPTH || 1);
+      const _rewardRoll = Math.random();
+      let _rewardItem;
+      let _isSpecial = false;
+      if (_rewardRoll < 0.25) {
+        _rewardItem = { type: 'chest_large', locked: false, tier: Math.random() < 0.6 ? 2 : 3 };
+        _isSpecial = true;
+      } else if (_rewardRoll < 0.55) {
+        _rewardItem = { type: 'chest_medium', locked: false, tier: Math.random() < 0.6 ? 0 : 1 };
+      } else if (_rewardRoll < 0.80) {
+        _rewardItem = (typeof window.makePotionDrop === 'function') ? window.makePotionDrop(_depthNow) : null;
+      } else {
+        _rewardItem = (typeof window.makePortalScrollDrop === 'function') ? window.makePortalScrollDrop() : null;
+      }
+      // Defensive fallback so the room always grants *something*.
+      if (!_rewardItem) _rewardItem = { type: 'chest_small', locked: false, tier: 0 };
 
       // Find a safe floor position near the player — prefer accessible, non-wall
       let rx = (player ? player.x : 0) + 60;
@@ -1184,9 +1203,13 @@ function markRoomCleared() {
         if (pick) { rx = pick.x; ry = pick.y; }
       }
 
-      const rewardChest = spawnLoot.call(scene, rx, ry, { type: 'chest_large', locked: false, tier: rewardTier }, null);
-      if (rewardChest && rewardChest.setData) rewardChest.setData('isRewardChest', true);
-      if (window.soundManager) try { window.soundManager.playSFX('level_up'); } catch (e) {}
+      const rewardDrop = spawnLoot.call(scene, rx, ry, _rewardItem, null);
+      if (rewardDrop && rewardDrop.setData) rewardDrop.setData('isRewardChest', true);
+      // Celebratory jingle only for the special chest; ordinary loot/consumables
+      // use the standard pickup feel (no fanfare).
+      if (window.soundManager) {
+        try { window.soundManager.playSFX(_isSpecial ? 'level_up' : 'loot_pickup'); } catch (e) {}
+      }
     }
   }
 
