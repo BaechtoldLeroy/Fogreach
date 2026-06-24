@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-06-24T07:51:45.116954+00:00",
+  "feature_number": "056",
+  "feature_slug": "056-proc-room-size-buckets",
+  "friendly_name": "proc room size buckets",
+  "mission": "software-dev",
+  "slug": "056-proc-room-size-buckets",
+  "target_branch": "main"
+}
