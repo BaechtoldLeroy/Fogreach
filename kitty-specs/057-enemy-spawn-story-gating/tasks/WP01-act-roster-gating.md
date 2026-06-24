@@ -139,3 +139,7 @@ muss zunächst rot sein. Pflicht-Test: „Roster nie leer" über alle
 - Änderung der Tiefen-Floors, der Story-Progression/`advanceToAct`, oder des
   Save-Formats. Keine neuen Gegnertypen/Balance. Kein Quest-feines Gating
   (nur akt-grob über `currentActIndex`).
+
+## Activity Log
+
+- 2026-06-24T12:47:43Z – unknown – shell_pid=45372 – lane=in_progress – Moved to in_progress
