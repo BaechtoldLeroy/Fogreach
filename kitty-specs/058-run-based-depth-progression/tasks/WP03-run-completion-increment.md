@@ -85,3 +85,4 @@ FR-02, FR-03, FR-04, NFR-02, SC-02, SC-03.
 
 - 2026-06-24T18:02:21Z – unknown – shell_pid=21752 – lane=for_review – Moved to for_review
 - 2026-06-24T18:02:37Z – unknown – shell_pid=21752 – lane=approved – Moved to approved
+- 2026-06-24T18:02:49Z – unknown – shell_pid=21752 – lane=done – Done override: Manual merge; all 6 invariants green, 346 pass, smoke 0, pushed
