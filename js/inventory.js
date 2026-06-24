@@ -101,6 +101,7 @@ const FALLBACK_ITEM_ICONS = {
   head: 'itHead',
   body: 'itBody',
   boots: 'itBoots',
+  amulet: 'itAmulet',
   consumable: 'itConsumable',
   material: 'itMat'
 };
@@ -616,7 +617,7 @@ function initInventoryUI() {
     }
   };
 
-const equipKeys = ['weapon', 'head', 'body', 'boots'];
+const equipKeys = ['weapon', 'head', 'body', 'boots', 'amulet'];
 const EQUIP_X = -PANEL_W / 2 + 160;  // Slots leicht nach rechts
 const EQUIP_Y0 = -PANEL_H / 2 + 160;
 const EQUIP_STEP = 90;
@@ -1212,8 +1213,8 @@ function equipSelectedItem() {
   const it = inventory[invSelected];
   if (!it) return;
 
-  // nur Gear ausrüstbar
-  if (['weapon', 'head', 'body', 'boots'].includes(it.type)) {
+  // nur Gear ausrüstbar (Feature 059: + amulet als 5. Slot)
+  if (['weapon', 'head', 'body', 'boots', 'amulet'].includes(it.type)) {
     const slotKey = it.type;
 
     // HP-Bonus des alten Items in diesem Slot merken

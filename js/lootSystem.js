@@ -300,6 +300,49 @@ if (window.i18n) {
     Object.freeze({ key: 'BT_WINDLAEUFER', type: 'boots', name: 'Windläufer', iconKey: 'itBoots',
       baseStats: Object.freeze({ move: 30, crit: 2 }), dropWeight: Object.freeze({ 8: 50, 14: 100 }) })
   ]);
+
+  // ---------------------------------------------------------------------------
+  // Feature 059 (#42): Run-specific AMULET slot. Amulets are a SEPARATE pool
+  // from ITEM_BASES and are NOT in the rollItem weighted droppool — they never
+  // displace regular gear. WP01 = data model + roll path only; the run-defining
+  // EFFECTS (effect key) are wired in WP03, spawn/merchant gating in WP04.
+  // ---------------------------------------------------------------------------
+  const AMULET_DEFS = Object.freeze([
+    Object.freeze({ key: 'AMU_ZWILLINGSKLINGE', type: 'amulet', name: 'Amulett der Zwillingsklinge', iconKey: 'itAmulet', effect: 'twin',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_KETTENHERZ',      type: 'amulet', name: 'Kettenherz',                  iconKey: 'itAmulet', effect: 'chain',     depthMin: 10 }),
+    Object.freeze({ key: 'AMU_SCHNITTERBAND',   type: 'amulet', name: 'Schnitterband',               iconKey: 'itAmulet', effect: 'cleave',    depthMin: 10 }),
+    Object.freeze({ key: 'AMU_ADERLASS',        type: 'amulet', name: 'Aderlass-Talisman',           iconKey: 'itAmulet', effect: 'lifesteal', depthMin: 10 }),
+    Object.freeze({ key: 'AMU_BRANDMAL',        type: 'amulet', name: 'Brandmal der Gier',           iconKey: 'itAmulet', effect: 'aura',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_STURMSCHRITT',    type: 'amulet', name: 'Sturmschritt-Amulett',        iconKey: 'itAmulet', effect: 'tempo',     depthMin: 10 })
+  ]);
+
+  // Roll a run amulet (separate path from rollItem). Depth-bias on stronger
+  // amulets is WP04 (D5); WP01 is a uniform pick among depth-eligible defs.
+  // Returns an inventory-compatible item object (type 'amulet').
+  function rollAmulet(depth, rng) {
+    if (typeof rng !== 'function') rng = Math.random;
+    if (typeof depth !== 'number' || !Number.isFinite(depth)) depth = 10;
+    var eligible = AMULET_DEFS.filter(function (a) { return (a.depthMin || 1) <= depth; });
+    var pool = eligible.length ? eligible : AMULET_DEFS;
+    var def = pool[Math.floor(rng() * pool.length)] || AMULET_DEFS[0];
+    return {
+      key: def.key,
+      type: 'amulet',
+      name: def.name,
+      displayName: def.name,
+      _baseName: def.name,
+      iconKey: def.iconKey,
+      effect: def.effect,
+      isAmulet: true,
+      iLevel: depth,
+      itemLevel: depth,
+      requiredLevel: 1,
+      tier: 0,
+      affixes: [],
+      baseStats: {}
+    };
+  }
+
   // WP04: 4 health potion tiers (Minor / Normal / Major / Super)
   const POTION_DEFS = Object.freeze([
     Object.freeze({
@@ -956,6 +999,9 @@ if (window.i18n) {
     AFFIX_DEFS: AFFIX_DEFS,
     ITEM_BASES: ITEM_BASES,
     POTION_DEFS: POTION_DEFS,
+    // Feature 059 (#42): run-specific amulets — separate pool + roll path.
+    AMULET_DEFS: AMULET_DEFS,
+    rollAmulet: rollAmulet,
 
     // implemented in WP01
     rollAffixes: rollAffixes,
