@@ -1,34 +1,37 @@
 ---
-work_package_id: "WP03"
-title: "Effekt-Pool (A1-A6) + Combat-/Stat-Hooks"
-lane: "planned"
+work_package_id: WP03
+title: Effekt-Pool (A1-A6) + Combat-/Stat-Hooks
 dependencies:
-  - "WP01"
-  - "WP02"
-planning_base_branch: "main"
-merge_target_branch: "main"
-branch_strategy: "Planning artifacts were generated on main; completed changes must merge back into main."
+- WP01
+- WP02
+planning_base_branch: main
+merge_target_branch: main
+branch_strategy: Planning artifacts were generated on main; completed changes must merge back into main.
+base_branch: main
+base_commit: a358696c8dacc53cec7c7e6628aaa2ffae2fa2be
+created_at: '2026-06-24T16:38:33.739185+00:00'
 subtasks:
-  - "T012"
-  - "T013"
-  - "T014"
-  - "T015"
-  - "T016"
-  - "T017"
-  - "T018"
-  - "T019"
-phase: "Phase 3 - Effekte"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-review_feedback: ""
+- T012
+- T013
+- T014
+- T015
+- T016
+- T017
+- T018
+- T019
+phase: Phase 3 - Effekte
+assignee: ''
+agent: ''
+shell_pid: ''
 history:
-  - timestamp: "2026-06-24T08:00:00Z"
-    lane: "planned"
-    agent: "system"
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-06-24T08:00:00Z'
+  lane: planned
+  agent: system
+  action: Prompt generated via /spec-kitty.tasks
+lane: planned
+review_feedback: ''
+review_status: ''
+reviewed_by: ''
 ---
 
 # Work Package Prompt: WP03 – Effekt-Pool (A1–A6) + Combat-/Stat-Hooks
@@ -72,3 +75,4 @@ lesen `window.runAmulet.effect`. 60fps unverändert.
 ## Activity Log
 
 - 2026-06-24T16:37:56Z – unknown – lane=in_progress – Moved to in_progress
+- 2026-06-24T17:15:18Z – unknown – lane=for_review – Moved to for_review

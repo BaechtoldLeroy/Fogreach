@@ -89,14 +89,14 @@ Chain trifft 2. Gegner, Cleave AoE, Lifesteal heilt, Stat-Amulett ändert Derive
 Combat-Hooks lesen `window.runAmulet.effect`. 60fps unverändert.
 
 **Subtasks**:
-- [ ] **T012** [test-first] Effekt-Tests in `tests/runAmulet.test.js`: getBonus/Stat-Anwendung (A6/A8-Stil) + Nicht-Stat-Hook-Dispatch (rot zuerst).
-- [ ] **T013** A6/A8 (reine/teilweise Stats): Amulett-Stat-Anteil in `recalcDerived` (`js/inventory.js:842`, `Object.values(equipment)`-Loop `:852`) verrechnen — move/speed/damage/maxHp. Sicherstellen, dass `equipment.amulet` automatisch mitgezählt wird.
-- [ ] **T014** A1 Extra-Projektil/Doppelschlag — Hook in Player-Attack (`js/player.js`, Bow `_fireBowArrow` `:2040` + Melee-Pfad); zweiter versetzter Treffer bei `runAmulet.effect==='twin'`.
-- [ ] **T015** A2 Chain — Hit-Resolve-Hook: Treffer springt auf bis zu 2 nahe Gegner (Enemy-Pool-Nachbarsuche, abnehmender Schaden).
-- [ ] **T016** A3 Cleave — Melee-Hit-Region auf Kegel/AoE erweitern bei `cleave`.
-- [ ] **T017** A4 Lebensraub — Damage-Dealt-Hook + `setPlayerHealth`; deutlich über Affix-Lifesteal.
-- [ ] **T018** A5 Aura — throttled Per-Tick-DoT um den Spieler im Update-Loop (NFR-01: kein per-Frame O(n²)).
-- [ ] **T019** Effekt-Dispatch zentral: Helfer `applyAmuletEffectHook(kind, ctx)` liest `window.runAmulet`; alle Hooks no-op wenn kein Amulett. Tests grün; Perf-Check (NFR-01).
+- [x] **T012** [test-first] Effekt-Tests in `tests/runAmulet.test.js`: getBonus/Stat-Anwendung (A6/A8-Stil) + Nicht-Stat-Hook-Dispatch (rot zuerst).
+- [x] **T013** A6/A8 (reine/teilweise Stats): Amulett-Stat-Anteil in `recalcDerived` (`js/inventory.js:842`, `Object.values(equipment)`-Loop `:852`) verrechnen — move/speed/damage/maxHp. Sicherstellen, dass `equipment.amulet` automatisch mitgezählt wird.
+- [x] **T014** A1 Extra-Projektil/Doppelschlag — Hook in Player-Attack (`js/player.js`, Bow `_fireBowArrow` `:2040` + Melee-Pfad); zweiter versetzter Treffer bei `runAmulet.effect==='twin'`.
+- [x] **T015** A2 Chain — Hit-Resolve-Hook: Treffer springt auf bis zu 2 nahe Gegner (Enemy-Pool-Nachbarsuche, abnehmender Schaden).
+- [x] **T016** A3 Cleave — Melee-Hit-Region auf Kegel/AoE erweitern bei `cleave`.
+- [x] **T017** A4 Lebensraub — Damage-Dealt-Hook + `setPlayerHealth`; deutlich über Affix-Lifesteal.
+- [x] **T018** A5 Aura — throttled Per-Tick-DoT um den Spieler im Update-Loop (NFR-01: kein per-Frame O(n²)).
+- [x] **T019** Effekt-Dispatch zentral: Helfer `applyAmuletEffectHook(kind, ctx)` liest `window.runAmulet`; alle Hooks no-op wenn kein Amulett. Tests grün; Perf-Check (NFR-01).
 
 ---
 
