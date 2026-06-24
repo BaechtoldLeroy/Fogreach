@@ -1,32 +1,35 @@
 ---
-work_package_id: "WP04"
-title: "Spawn-Gating ab Tiefe 10 + fliegender Haendler"
-lane: "planned"
+work_package_id: WP04
+title: Spawn-Gating ab Tiefe 10 + fliegender Haendler
 dependencies:
-  - "WP01"
-  - "WP02"
-planning_base_branch: "main"
-merge_target_branch: "main"
-branch_strategy: "Planning artifacts were generated on main; completed changes must merge back into main."
+- WP01
+- WP02
+planning_base_branch: main
+merge_target_branch: main
+branch_strategy: Planning artifacts were generated on main; completed changes must merge back into main.
+base_branch: main
+base_commit: 39746c323fce9f263b9c6b1e13401f1ad0b9d323
+created_at: '2026-06-24T17:19:03.541939+00:00'
 subtasks:
-  - "T020"
-  - "T021"
-  - "T022"
-  - "T023"
-  - "T024"
-  - "T025"
-phase: "Phase 4 - Spawn & Haendler"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-review_feedback: ""
+- T020
+- T021
+- T022
+- T023
+- T024
+- T025
+phase: Phase 4 - Spawn & Haendler
+assignee: ''
+agent: ''
+shell_pid: "1096"
 history:
-  - timestamp: "2026-06-24T08:00:00Z"
-    lane: "planned"
-    agent: "system"
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-06-24T08:00:00Z'
+  lane: planned
+  agent: system
+  action: Prompt generated via /spec-kitty.tasks
+lane: planned
+review_feedback: ''
+review_status: ''
+reviewed_by: ''
 ---
 
 # Work Package Prompt: WP04 – Spawn-Gating ab Tiefe 10 + fliegender Händler
