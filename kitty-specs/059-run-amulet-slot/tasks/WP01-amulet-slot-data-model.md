@@ -65,3 +65,7 @@ rollAmulet + Tausch ab.
 - `equipment.amulet` ist ein echter, an-/ablegbarer Slot (SC-01 Vorstufe).
 - `AMULET_DEFS` + `rollAmulet` existieren, getrennt vom regulären Loot.
 - Keine Regression der 4 Bestands-Slots (NFR-04).
+
+## Activity Log
+
+- 2026-06-24T13:00:56Z – unknown – shell_pid=38556 – lane=in_progress – Moved to in_progress
