@@ -24,7 +24,11 @@ if (window.i18n) {
     'inventory.help': 'Klicke ein Item zum Ausrüsten / Entfernen',
     'inventory.btn.equip': 'Ausrüsten',
     'inventory.btn.drop': 'Entfernen',
-    'inventory.btn.portal': 'Portal ({count})'
+    'inventory.btn.portal': 'Portal ({count})',
+    // Feature 059 (#42) WP05: run-amulet slot styling.
+    'inv.amulet.badge': 'Nur dieser Run',
+    'inv.amulet.locked': 'Ab Tiefe 10',
+    'inv.amulet.run_hint': 'Gilt nur für diesen Run'
   });
   window.i18n.register('en', {
     'inventory.tier.common': 'Common',
@@ -48,7 +52,11 @@ if (window.i18n) {
     'inventory.help': 'Click an item to equip / drop',
     'inventory.btn.equip': 'Equip',
     'inventory.btn.drop': 'Drop',
-    'inventory.btn.portal': 'Portal ({count})'
+    'inventory.btn.portal': 'Portal ({count})',
+    // Feature 059 (#42) WP05: run-amulet slot styling.
+    'inv.amulet.badge': 'This run only',
+    'inv.amulet.locked': 'From depth 10',
+    'inv.amulet.run_hint': 'Applies to this run only'
   });
 }
 const _INV_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
@@ -522,6 +530,15 @@ function initInventoryUI() {
     bodyLines.push(`Item Level: ${lvl}`);
     if (it.type) bodyLines.push(`Typ: ${(it.type || '').toUpperCase()}`);
 
+    // Feature 059 (#42) WP05: run-amulets show their effect blurb + run hint
+    // instead of stat lines (they carry no stats, only an `effect`).
+    if (it.isAmulet || it.type === 'amulet') {
+      const fxDesc = (window.LootSystem && typeof window.LootSystem.getAmuletEffectDesc === 'function')
+        ? window.LootSystem.getAmuletEffectDesc(it.effect) : '';
+      if (fxDesc) bodyLines.push(fxDesc);
+      bodyLines.push(_INV_T('inv.amulet.run_hint'));
+    }
+
     const pushStat = (label, value, decimals = 1, suffix = '') => {
       const num = Number(value) || 0;
       if (num <= 0) return;
@@ -661,7 +678,31 @@ const EQUIP_STEP = 72;
     const icon = scene.add.image(EQUIP_X, y, 'itMat').setOrigin(0.5).setVisible(false).setScrollFactor(0);
     panel.add(icon);
 
-    invUI.equip[equipKeys[i]] = { slot, icon, highlight };
+    // Feature 059 (#42) WP05: the run-amulet slot gets its own optic — a purple
+    // run-color frame, a "this run only" badge, and a locked hint (depth < 10).
+    // State is refreshed in refreshInventoryUI (depth/equip-aware).
+    let decor = null;
+    if (equipKeys[i] === 'amulet') {
+      const fw = (slot.displayWidth || 64) + 6;
+      const fh = (slot.displayHeight || 64) + 6;
+      const frame = scene.add.rectangle(EQUIP_X, y, fw, fh, 0x000000, 0)
+        .setStrokeStyle(2, 0xc792ea, 0.9).setScrollFactor(0);
+      panel.add(frame);
+      slot.setTint(0xb79edb); // subtle purple base so the slot reads as special
+      const badge = scene.add.text(EQUIP_X, y + fh / 2 + 7, _INV_T('inv.amulet.badge'), {
+        fontFamily: 'monospace', fontSize: '9px', color: '#e0c8ff',
+        backgroundColor: '#3a2f4a', padding: { x: 3, y: 1 }
+      }).setOrigin(0.5, 0.5).setScrollFactor(0);
+      panel.add(badge);
+      const lock = scene.add.text(EQUIP_X, y + fh / 2 + 7, _INV_T('inv.amulet.locked'), {
+        fontFamily: 'monospace', fontSize: '9px', color: '#999999',
+        backgroundColor: '#222222', padding: { x: 3, y: 1 }
+      }).setOrigin(0.5, 0.5).setScrollFactor(0).setVisible(false);
+      panel.add(lock);
+      decor = { frame, badge, lock };
+    }
+
+    invUI.equip[equipKeys[i]] = { slot, icon, highlight, decor };
   }
 
   // --- Grid rechts ---
@@ -1218,6 +1259,18 @@ function refreshInventoryUI() {
       if (icon) icon.setVisible(true);
     } else if (icon) {
       icon.setVisible(false);
+    }
+
+    // Feature 059 (#42) WP05: amulet slot — locked hint when no amulet is
+    // equipped AND the run is below depth 10 (amulets are unobtainable there);
+    // otherwise the run-badge shows. Locked state dims the slot + frame.
+    if (k === 'amulet' && ui.decor) {
+      const depth = (window.DUNGEON_DEPTH || 0);
+      const locked = !it && depth < 10;
+      if (ui.decor.lock) ui.decor.lock.setVisible(locked);
+      if (ui.decor.badge) ui.decor.badge.setVisible(!locked);
+      if (isValidGameObject(slot) && typeof slot.setAlpha === 'function') slot.setAlpha(locked ? 0.45 : 1);
+      if (isValidGameObject(ui.decor.frame)) ui.decor.frame.setStrokeStyle(2, locked ? 0x555555 : 0xc792ea, 0.9);
     }
   });
 }

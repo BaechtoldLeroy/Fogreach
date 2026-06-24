@@ -135,9 +135,9 @@ Tooltip, Mobile-tauglich, i18n vollständig. **Depends on**: WP01, WP03.
 keine hartkodierten Strings; alle Tests grün; 60fps/Mobile ≥45.
 
 **Subtasks**:
-- [ ] **T026** Equipment-Spalte auf 5 Slots umbauen (`invUI.equip`, `js/inventory.js:660`): Abstände/Größen/Layout, Amulett-Slot mit eigener Slot-Optik (run-Farbton/Rahmen).
-- [ ] **T027** Run-Badge „Nur dieser Run" am Amulett-Slot + Gesperrt-Zustand (Tiefe < 10, ausgegraut + Hinweis, FR-13).
-- [ ] **T028** `formatItemTooltip` (`js/inventory.js:515`) um Amulett-Effekt-Block + Run-Hinweis erweitern; Tooltip-Clipping (vgl. `:576`) für 5. Slot prüfen.
-- [ ] **T029** Mobile-Bedienbarkeit: Touch-Hit-Area des 5. Slots (scrollFactor-/Hit-Area-Falle, vgl. Memory `project_phaser_scrollfactor_dialogs`); auf Touch testen.
-- [ ] **T030** i18n-Vollständigkeit DE/EN: Amulett-Namen, Effekt-Texte (A1–A6), Slot-Label, Badge, Händler, Tiefe-10-Hinweis; grep auf hartkodierte Strings (FR-11).
-- [ ] **T031** Abschluss-Verifikation: alle SC erfüllt; `node tools/runTests.js` grün; Smoke `node tools/testGame.js`; NFR-01 (60fps/Mobile ≥45) + NFR-02 (Balance-Playtest) prüfen; Feature-Accept vorbereiten.
+- [x] **T026** Equipment-Spalte auf 5 Slots umbauen (`invUI.equip`, `js/inventory.js:660`): Abstände/Größen/Layout, Amulett-Slot mit eigener Slot-Optik (run-Farbton/Rahmen).
+- [x] **T027** Run-Badge „Nur dieser Run" am Amulett-Slot + Gesperrt-Zustand (Tiefe < 10, ausgegraut + Hinweis, FR-13).
+- [x] **T028** `formatItemTooltip` (`js/inventory.js:515`) um Amulett-Effekt-Block + Run-Hinweis erweitern; Tooltip-Clipping (vgl. `:576`) für 5. Slot prüfen.
+- [x] **T029** Mobile-Bedienbarkeit: Touch-Hit-Area des 5. Slots (scrollFactor-/Hit-Area-Falle, vgl. Memory `project_phaser_scrollfactor_dialogs`); auf Touch testen.
+- [x] **T030** i18n-Vollständigkeit DE/EN: Amulett-Namen, Effekt-Texte (A1–A6), Slot-Label, Badge, Händler, Tiefe-10-Hinweis; grep auf hartkodierte Strings (FR-11).
+- [x] **T031** Abschluss-Verifikation: alle SC erfüllt; `node tools/runTests.js` grün; Smoke `node tools/testGame.js`; NFR-01 (60fps/Mobile ≥45) + NFR-02 (Balance-Playtest) prüfen; Feature-Accept vorbereiten.

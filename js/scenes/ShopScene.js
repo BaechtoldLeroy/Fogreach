@@ -245,7 +245,10 @@
             .setStrokeStyle(1, 0x6b4f8a).setScrollFactor(0).setDepth(2002);
           this.tabBody.push(rowBg);
 
-          const nameText = this.add.text(px - panelW / 2 + 24, ry + 5, amulet.displayName || amulet.name || 'Amulett', {
+          const amuletName = (window.LootSystem && typeof window.LootSystem.getLocalizedDisplayName === 'function')
+            ? window.LootSystem.getLocalizedDisplayName(amulet)
+            : (amulet.displayName || amulet.name || 'Amulett');
+          const nameText = this.add.text(px - panelW / 2 + 24, ry + 5, amuletName, {
             fontFamily: 'monospace', fontSize: '12px', color: '#c792ea'
           }).setScrollFactor(0).setDepth(2003);
           this.tabBody.push(nameText);
@@ -396,7 +399,10 @@
       state.amuletStock.splice(stockIdx, 1);
       this._refreshGold();
       this._renderTab('items');
-      this._showToast(_SHOP_T('shop.toast.bought', { name: amulet.displayName || amulet.name || 'Amulett' }));
+      const boughtName = (window.LootSystem && typeof window.LootSystem.getLocalizedDisplayName === 'function')
+        ? window.LootSystem.getLocalizedDisplayName(amulet)
+        : (amulet.displayName || amulet.name || 'Amulett');
+      this._showToast(_SHOP_T('shop.toast.bought', { name: boughtName }));
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }
