@@ -313,7 +313,16 @@ if (window.i18n) {
     Object.freeze({ key: 'AMU_SCHNITTERBAND',   type: 'amulet', name: 'Schnitterband',               iconKey: 'itAmulet', effect: 'cleave',    depthMin: 10 }),
     Object.freeze({ key: 'AMU_ADERLASS',        type: 'amulet', name: 'Aderlass-Talisman',           iconKey: 'itAmulet', effect: 'lifesteal', depthMin: 10 }),
     Object.freeze({ key: 'AMU_BRANDMAL',        type: 'amulet', name: 'Brandmal der Gier',           iconKey: 'itAmulet', effect: 'aura',      depthMin: 10 }),
-    Object.freeze({ key: 'AMU_STURMSCHRITT',    type: 'amulet', name: 'Sturmschritt-Amulett',        iconKey: 'itAmulet', effect: 'tempo',     depthMin: 10 })
+    Object.freeze({ key: 'AMU_STURMSCHRITT',    type: 'amulet', name: 'Sturmschritt-Amulett',        iconKey: 'itAmulet', effect: 'tempo',      depthMin: 10 }),
+    // Run-defining "verb changers" (WP03 implements the behaviour per effect key):
+    Object.freeze({ key: 'AMU_TRABANTENSTEIN',  type: 'amulet', name: 'Trabantenstein',              iconKey: 'itAmulet', effect: 'orbit',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_ASCHEFUNKE',      type: 'amulet', name: 'Aschefunke',                  iconKey: 'itAmulet', effect: 'killburst',  depthMin: 10 }),
+    Object.freeze({ key: 'AMU_SCHATTENMANTEL',  type: 'amulet', name: 'Schattenmantel',              iconKey: 'itAmulet', effect: 'dashstrike', depthMin: 10 }),
+    Object.freeze({ key: 'AMU_SCHLAECHTERKRONE',type: 'amulet', name: 'Schlächterkrone',             iconKey: 'itAmulet', effect: 'momentum',   depthMin: 10 }),
+    Object.freeze({ key: 'AMU_FROSTSIEGEL',     type: 'amulet', name: 'Frostsiegel',                 iconKey: 'itAmulet', effect: 'frost',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_GLASHERZ',        type: 'amulet', name: 'Glasherz',                    iconKey: 'itAmulet', effect: 'glass',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_ZWEITER_ATEM',    type: 'amulet', name: 'Zweiter Atem',                iconKey: 'itAmulet', effect: 'revive',     depthMin: 10 }),
+    Object.freeze({ key: 'AMU_BLUTPAKT',        type: 'amulet', name: 'Blutpakt',                    iconKey: 'itAmulet', effect: 'bloodpact',  depthMin: 10 })
   ]);
 
   // Roll a run amulet (separate path from rollItem). Depth-bias on stronger

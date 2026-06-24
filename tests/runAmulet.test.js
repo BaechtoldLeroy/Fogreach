@@ -26,13 +26,16 @@ function freshSystem() {
   return globalThis.window.LootSystem;
 }
 
-const EFFECTS = new Set(['twin', 'chain', 'cleave', 'lifesteal', 'aura', 'tempo']);
+const EFFECTS = new Set([
+  'twin', 'chain', 'cleave', 'lifesteal', 'aura', 'tempo',
+  'orbit', 'killburst', 'dashstrike', 'momentum', 'frost', 'glass', 'revive', 'bloodpact'
+]);
 const GEAR_TYPES = ['weapon', 'head', 'body', 'boots', 'potion', 'material'];
 
-test('AMULET_DEFS: 6 well-formed, unique amulet defs (D3: 6 im ersten Ship)', () => {
+test('AMULET_DEFS: 14 well-formed, unique amulet defs (voller Pool)', () => {
   const sys = freshSystem();
   const defs = sys.AMULET_DEFS;
-  assert.ok(Array.isArray(defs) && defs.length === 6, 'exactly 6 amulets');
+  assert.ok(Array.isArray(defs) && defs.length === 14, 'exactly 14 amulets');
   const keys = new Set();
   for (const d of defs) {
     assert.strictEqual(d.type, 'amulet');
@@ -42,7 +45,14 @@ test('AMULET_DEFS: 6 well-formed, unique amulet defs (D3: 6 im ersten Ship)', ()
     assert.ok(EFFECTS.has(d.effect), 'known effect key: ' + d.effect);
     keys.add(d.key);
   }
-  assert.strictEqual(keys.size, 6, 'unique keys');
+  assert.strictEqual(keys.size, 14, 'unique keys');
+});
+
+test('AMULET_DEFS: alle effect-Keys einmalig (kein Effekt doppelt)', () => {
+  const sys = freshSystem();
+  const effects = sys.AMULET_DEFS.map((d) => d.effect);
+  assert.strictEqual(new Set(effects).size, effects.length, 'unique effect keys');
+  assert.strictEqual(effects.length, EFFECTS.size, 'pool covers exactly the known effects');
 });
 
 test('AMULET_DEFS is frozen (cannot be mutated)', () => {
