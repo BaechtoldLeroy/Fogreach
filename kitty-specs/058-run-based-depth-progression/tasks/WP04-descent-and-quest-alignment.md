@@ -86,3 +86,7 @@ FR-05, FR-06, FR-07, C-04, SC-04, SC-05.
 - C-04: Jede berührte Quest gegen `updateQuestProgress(type,target)` /
   `onWaveCompleted` / neue `onDungeonCompleted` auditieren (Vollaudit in
   WP05/T018).
+
+## Activity Log
+
+- 2026-06-24T18:11:18Z – unknown – shell_pid=32544 – lane=for_review – Moved to for_review
