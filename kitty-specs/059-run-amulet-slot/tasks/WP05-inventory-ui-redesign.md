@@ -71,3 +71,4 @@ alle Tests grün; 60fps/Mobile ≥45.
 ## Activity Log
 
 - 2026-06-24T17:40:23Z – unknown – shell_pid=45360 – lane=for_review – Moved to for_review
+- 2026-06-24T17:40:25Z – unknown – shell_pid=45360 – lane=approved – Moved to approved
