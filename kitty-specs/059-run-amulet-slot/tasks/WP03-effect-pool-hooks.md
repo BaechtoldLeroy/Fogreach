@@ -68,3 +68,7 @@ lesen `window.runAmulet.effect`. 60fps unverändert.
 - ≥5 (Ziel 6) Amulette mit unterscheidbaren, spürbaren Effekten (SC-05).
 - Stat-Anteil über `recalcDerived`; Nicht-Stat über Hooks; ohne Amulett kein Effekt.
 - Keine Perf-Regression (NFR-01); Loot nicht entwertet (NFR-02, Playtest in WP05).
+
+## Activity Log
+
+- 2026-06-24T16:37:56Z – unknown – lane=in_progress – Moved to in_progress

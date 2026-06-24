@@ -1,8 +1,8 @@
 {
-  "event_count": 10,
+  "event_count": 12,
   "feature_slug": "059-run-amulet-slot",
-  "last_event_id": "01KVX2DP2EGHW10XN6HPM2F9M0",
-  "materialized_at": "2026-06-24T15:01:50.305571+00:00",
+  "last_event_id": "01KVX7XN65761TVGBHN391SE6K",
+  "materialized_at": "2026-06-24T16:37:56.561326+00:00",
   "summary": {
     "approved": 0,
     "blocked": 0,
@@ -10,7 +10,7 @@
     "claimed": 0,
     "done": 2,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "planned": 0
   },
   "work_packages": {
@@ -27,6 +27,13 @@
       "lane": "done",
       "last_event_id": "01KVX2DP2EGHW10XN6HPM2F9M0",
       "last_transition_at": "2026-06-24T15:01:50.286153+00:00"
+    },
+    "WP03": {
+      "actor": "user",
+      "force_count": 0,
+      "lane": "in_progress",
+      "last_event_id": "01KVX7XN65761TVGBHN391SE6K",
+      "last_transition_at": "2026-06-24T16:37:56.549632+00:00"
     }
   }
 }
