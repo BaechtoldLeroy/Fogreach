@@ -1,30 +1,33 @@
 ---
-work_package_id: "WP02"
-title: "Run-Lifecycle: run-scoped State + Reset + Save-Guard"
-lane: "planned"
+work_package_id: WP02
+title: 'Run-Lifecycle: run-scoped State + Reset + Save-Guard'
 dependencies:
-  - "WP01"
-planning_base_branch: "main"
-merge_target_branch: "main"
-branch_strategy: "Planning artifacts were generated on main; completed changes must merge back into main."
+- WP01
+planning_base_branch: main
+merge_target_branch: main
+branch_strategy: Planning artifacts were generated on main; completed changes must merge back into main.
+base_branch: main
+base_commit: 552de5d9a0a9c8b2956ef9a35fb7637710c7a4e4
+created_at: '2026-06-24T14:55:31.448704+00:00'
 subtasks:
-  - "T007"
-  - "T008"
-  - "T009"
-  - "T010"
-  - "T011"
-phase: "Phase 2 - Run-Lifecycle"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-review_feedback: ""
+- T007
+- T008
+- T009
+- T010
+- T011
+phase: Phase 2 - Run-Lifecycle
+assignee: ''
+agent: ''
+shell_pid: "22700"
 history:
-  - timestamp: "2026-06-24T08:00:00Z"
-    lane: "planned"
-    agent: "system"
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-06-24T08:00:00Z'
+  lane: planned
+  agent: system
+  action: Prompt generated via /spec-kitty.tasks
+lane: planned
+review_feedback: ''
+review_status: ''
+reviewed_by: ''
 ---
 
 # Work Package Prompt: WP02 – Run-scoped State + Reset + Save-Guard
