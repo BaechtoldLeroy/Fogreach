@@ -13,6 +13,9 @@ function freshSystem() {
   delete globalThis.window.questSystem;
   // Stub storySystem so getAvailableQuests's act check returns 0 (highest tier)
   globalThis.window.storySystem = { getCurrentActIndex: () => 99 };
+  // Feature 058 (#41): default the run depth deep enough that minDepth-gated
+  // quests aren't blocked by default — gate tests override this explicitly.
+  globalThis.window.DUNGEON_DEPTH = 99;
   loadGameModule('js/questSystem.js');
   return globalThis.window.questSystem;
 }
@@ -416,4 +419,39 @@ test('#41 WP04: reach_wave completes when the run-constant depth >= target', () 
   assert.strictEqual(cur(), 12, 'tracks the deepest run depth seen');
   qs.onWaveCompleted(20); // running at depth 20 (>= 20) -> satisfied
   assert.strictEqual(cur(), 20, 'reaching the target depth completes the objective');
+});
+
+// --- Feature 058 (#41) follow-up: per-act minimum-depth quest gates ---
+
+test('#41 minDepth: depth-gated kill quest frozen below minDepth, advances at/above', () => {
+  const qs = freshSystem();
+  assert.strictEqual(qs.acceptQuest('klerus_purification'), true, 'accept klerus_purification (minDepth 3)');
+  const cur = () => qs.getActiveQuests('klerus_priester').find((q) => q.id === 'klerus_purification').objectives[0].current;
+  globalThis.window.DUNGEON_DEPTH = 2;
+  qs.updateQuestProgress('kill', 'elite_enemy', 1);
+  assert.strictEqual(cur(), 0, 'no progress below depth 3');
+  globalThis.window.DUNGEON_DEPTH = 3;
+  qs.updateQuestProgress('kill', 'elite_enemy', 1);
+  assert.strictEqual(cur(), 1, 'progresses once at/above depth 3');
+});
+
+test('#41 minDepth: thom_pamphlets only counts completed runs at/above depth 22', () => {
+  const qs = freshSystem();
+  assert.strictEqual(qs.acceptQuest('thom_pamphlets'), true, 'accept thom_pamphlets (minDepth 22)');
+  const cur = () => qs.getActiveQuests('thom').find((q) => q.id === 'thom_pamphlets').objectives[0].current;
+  globalThis.window.DUNGEON_DEPTH = 21;
+  qs.onDungeonCompleted();
+  assert.strictEqual(cur(), 0, 'a shallow run does not count');
+  globalThis.window.DUNGEON_DEPTH = 22;
+  qs.onDungeonCompleted();
+  assert.strictEqual(cur(), 1, 'a depth-22 run counts');
+});
+
+test('#41 minDepth: ungated quest still advances at any depth', () => {
+  const qs = freshSystem();
+  qs.acceptQuest('aldric_cleanup'); // no minDepth
+  const cur = () => qs.getActiveQuests('aldric').find((q) => q.id === 'aldric_cleanup').objectives[0].current;
+  globalThis.window.DUNGEON_DEPTH = 1;
+  qs.updateQuestProgress('kill', 'enemy', 1);
+  assert.strictEqual(cur(), 1, 'ungated quest progresses at depth 1');
 });

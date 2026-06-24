@@ -104,18 +104,19 @@
     klerus_purification: {
       id: 'klerus_purification',
       title: 'Reinigung der unteren Kammern',
-      description: 'Reinige die unteren Kammern des Rathauskellers — besiege 3 Elite-Gegner.',
+      description: 'Reinige die unteren Kammern des Rathauskellers — besiege 3 Elite-Gegner. Die Ketzer-Anfuehrer lauern erst ab Tiefe 3.',
       npcId: 'klerus_priester',
       type: 'kill',
       chain: 2,
+      minDepth: 3,
       objectives: [
         { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
       ],
       rewards: { xp: 90, factionStanding: { klerus: 1 } },
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 0,
-      dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand gefuehrt — die untere Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anfuehrer dieser ketzerischen Praesenz lauern noch dort unten. Faelle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
-      dialogueProgress: 'Drei Anfuehrer trennen die Tochter noch vom Licht. Finde sie. Faelle sie. Jede Ketzerei, die du beendest, oeffnet einen weiteren Pfad zur Reinheit.',
+      dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand gefuehrt — die untere Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anfuehrer dieser ketzerischen Praesenz lauern noch dort unten, tiefer als die ersten Gaenge — steige bis Tiefe 3 hinab. Faelle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
+      dialogueProgress: 'Die Anfuehrer lauern tief — erst ab Tiefe 3. Steige hinab, finde sie, faelle sie. Jede Ketzerei, die du beendest, oeffnet einen weiteren Pfad zur Reinheit.',
       dialogueComplete: 'Du hast die Ketzerei geschlagen. Die untere Kammern atmen wieder. Die Ordnung bleibt — durch dich. Der Klerus segnet deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.'
     },
     garde_patrol_expansion: {
@@ -309,10 +310,11 @@
     bruch_confrontation: {
       id: 'bruch_confrontation',
       title: 'Der Bruch',
-      description: 'Aldric hat Wachen auf dich gehetzt. Schlag dich zu Branka durch — besiege 3 Elite-Wachen.',
+      description: 'Aldric hat Wachen auf dich gehetzt. Schlag dich zu Branka durch — besiege 3 Elite-Wachen. Sie stellen dich erst in der Tiefe (ab Tiefe 8).',
       npcId: 'branka',
       type: 'kill',
       chain: 5,
+      minDepth: 8,
       objectives: [
         { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
       ],
@@ -320,8 +322,8 @@
       prerequisites: ['ritual_chamber'],
       requiredAct: 2,
       advanceAct: 4,
-      dialogueOffer: 'Du hast die Kammer gesehen — und Aldric weiss es. Seine Wachen sind schon hinter dir. Schlag dich durch und komm zu mir in die Schmiede.\n\nUeberlebst du das?',
-      dialogueProgress: 'Aldrics Elite-Wachen sind noch zwischen dir und der Schmiede. Kaempfe dich durch.',
+      dialogueOffer: 'Du hast die Kammer gesehen — und Aldric weiss es. Seine Elite-Wachen riegeln die tiefen Gaenge ab — du stellst sie erst ab Tiefe 8. Schlag dich durch und komm zu mir in die Schmiede.\n\nUeberlebst du das?',
+      dialogueProgress: 'Aldrics Elite-Wachen halten die Tiefe — erst ab Tiefe 8 stellst du sie. Steige hinab und kaempf dich durch.',
       dialogueComplete: '"Du stellst zu viele Fragen", hat er gesagt. Jetzt stellst du gar keine mehr — du weisst es. Der Bruch ist da. Mara, Thom, ich — wir sind bereit. Akt 3 beginnt.'
     },
 
@@ -492,18 +494,19 @@
     thom_pamphlets: {
       id: 'thom_pamphlets',
       title: 'Die Pamphlete',
-      description: 'Schliesse 3 Dungeon-Durchlaeufe ab, um Flugblaetter zu verteilen.',
+      description: 'Schliesse 3 tiefe Dungeon-Durchlaeufe ab (ab Tiefe 22), um Flugblaetter bis in die untersten Gaenge zu verteilen.',
       npcId: 'thom',
       type: 'dungeon_runs',
       chain: 2,
+      minDepth: 22,
       objectives: [
         { type: 'dungeon_run', target: 'dungeon_complete', current: 0, required: 3 }
       ],
       rewards: { xp: 200, unlocks: ['xp_bonus_10'] },
       prerequisites: ['thom_truth'],
       requiredAct: 4,
-      dialogueOffer: 'Jeder Durchlauf ist eine Chance, Flugblaetter zu verteilen.\n\nSchliesse drei Durchlaeufe ab, und ganz Fogreach wird die Wahrheit lesen.',
-      dialogueProgress: 'Kaempfe dich weiter durch den Rathauskeller. Jeder Durchlauf verbreitet unsere Botschaft.',
+      dialogueOffer: 'Die oberen Gaenge lesen unsere Wahrheit schon. Jetzt brauchen wir die Tiefe — dort, wo der Rat seine Geheimnisse haelt.\n\nSchliesse drei Durchlaeufe ab Tiefe 22 ab, und ganz Fogreach wird die Wahrheit lesen.',
+      dialogueProgress: 'Nur tiefe Durchlaeufe zaehlen — ab Tiefe 22. Schliess drei davon ab; jeder verbreitet unsere Botschaft in die untersten Gaenge.',
       dialogueComplete: 'Die ganze Stadt liest unsere Wahrheiten! Die Buerger sind aufgewacht. Deine Erfahrung waechst nun schneller. (+10% XP)'
     },
     elara_blade: {
@@ -623,7 +626,7 @@
       'quest.magistrat_verification.title': 'Magistrate Verification',
       'quest.magistrat_verification.description': 'Secure the area — defeat 8 trespassers while the Magistrate handles the paperwork.',
       'quest.klerus_purification.title': 'Purification of the Lower Chambers',
-      'quest.klerus_purification.description': 'Cleanse the lower Rathauskeller chambers — defeat 3 elite enemies.',
+      'quest.klerus_purification.description': 'Cleanse the lower Rathauskeller chambers — defeat 3 elite enemies. The heretic leaders only lurk from depth 3.',
       'quest.garde_patrol_expansion.title': 'Patrol Expansion',
       'quest.garde_patrol_expansion.description': 'Demonstrate force for the new patrols — defeat 10 trespassers.',
       'quest.widerstand_proof.title': 'Evidence from the Ritual Chamber',
@@ -645,7 +648,7 @@
       'quest.branka_weapons.title': 'Weapons for the Resistance',
       'quest.branka_weapons.description': 'Craft 3 items at the Archive Forge.',
       'quest.thom_pamphlets.title': 'The Pamphlets',
-      'quest.thom_pamphlets.description': 'Complete 3 dungeon runs to spread the leaflets.',
+      'quest.thom_pamphlets.description': 'Complete 3 deep dungeon runs (from depth 22) to spread the leaflets into the lowest passages.',
       'quest.elara_blade.title': "Elara's Gift",
       'quest.elara_blade.description': 'Elara has forged a special weapon for you.',
       'quest.mara_assault.title': 'Storming the Council',
@@ -674,7 +677,7 @@
       'quest.magistrat_verification.dialogueComplete': 'Excellent. The document is in the archive. The daughter is now officially a person of interest. What that means in practice is none of your concern. The Magistrate thanks you.',
 
       'quest.klerus_purification.dialogueOffer': "You have seen the fragment, Archivesmith. Then you know the daughter did not flee of her own will. She was led by a dark hand — the lower chambers teem with such shadows.\n\nPurify them. Three leaders of this heretical presence still lurk down there. Strike them down in the name of Order. The daughter's soul will thank you — if the Light finds her again.\n\nPurification is a sacred duty. Accept it.",
-      'quest.klerus_purification.dialogueProgress': 'Three leaders still separate the daughter from the Light. Find them. Strike them down. Every heresy you end opens another path to purity.',
+      'quest.klerus_purification.dialogueProgress': 'The leaders lurk deep — only from depth 3. Descend, find them, strike them down. Every heresy you end opens another path to purity.',
       'quest.klerus_purification.dialogueComplete': 'You have broken the heresy. The lower chambers breathe again. Order endures — through you. The Clergy blesses your hand. Bring it onward where the Light demands.',
 
       'quest.garde_patrol_expansion.dialogueOffer': 'If a daughter can vanish from the Town Hall itself, that is a failure of the Guard — and it will change. I need a patrol expansion. Today. Go into the lower chambers and demonstrate force — ten troublemakers fall, and the edict carries itself through the streets.\n\nDo not ask whether the patrols favor a comfortable way of life. Do not ask who decides where they run. Loyalty is the only coin that counts. The edict is the coin you place in my hand.\n\nDo you accept, Archivesmith?',
@@ -731,9 +734,9 @@
       'quest.ritual_chamber.dialogueComplete': 'You stand in the chamber. Blood, symbols, chains — and no heretic in sight. This is no taint. This is a summoning chamber. The council sent you here to erase its own trail.',
 
       'quest.bruch_confrontation.title': 'The Break',
-      'quest.bruch_confrontation.description': "Aldric set guards on you. Cut your way to Branka — defeat 3 elite guards.",
+      'quest.bruch_confrontation.description': "Aldric set guards on you. Cut your way to Branka — defeat 3 elite guards. They only confront you in the depths (from depth 8).",
       'quest.bruch_confrontation.dialogueOffer': 'You saw the chamber — and Aldric knows it. His guards are already on you. Cut through and come to me at the forge.\n\nWill you survive it?',
-      'quest.bruch_confrontation.dialogueProgress': "Aldric's elite guards still stand between you and the forge. Fight through.",
+      'quest.bruch_confrontation.dialogueProgress': "Aldric's elite guards hold the deep — you only meet them from depth 8. Descend and fight through.",
       'quest.bruch_confrontation.dialogueComplete': '"You ask too many questions," he said. Now you ask none — you know. The break has come. Mara, Thom, I — we are ready. Act 3 begins.',
 
       'quest.espionage_convoy.title': 'The Convoy',
@@ -771,7 +774,7 @@
       'quest.branka_weapons.dialogueComplete': 'Well forged. These weapons will make the difference.',
 
       'quest.thom_pamphlets.dialogueOffer': 'Every run is a chance to spread leaflets.\n\nComplete three runs and all of Fogreach will read the truth.',
-      'quest.thom_pamphlets.dialogueProgress': 'Keep fighting through the town hall cellar. Every run spreads our message.',
+      'quest.thom_pamphlets.dialogueProgress': 'Only deep runs count — from depth 22. Complete three; each spreads our message into the lowest passages.',
       'quest.thom_pamphlets.dialogueComplete': 'The whole city reads our truths! The citizens have awakened. Your experience now grows faster. (+10% XP)',
 
       'quest.elara_blade.dialogueOffer': "Take this. I forged it for you. In case...\n\nWill you accept Elara's Blade?",
@@ -1031,11 +1034,26 @@
    * @param {number} [amount=1] How much to increment (clamped at obj.required)
    * @returns {boolean} true if any objective changed (and listeners were notified)
    */
+  // Feature 058 (#41) follow-up: per-act depth gate. A quest may declare
+  // `minDepth: N` — its objectives only advance once the current run is at
+  // least that deep. Since depth grows +1 per completed run, this paces a key
+  // quest per act to the cumulative run count (Akt 1 → T3, Akt 2 → T8,
+  // Akt "Bruch" → T22; Akt 3/5/6 are already depth-gated via reach_wave
+  // 20/30/40). No gate (no minDepth) → always passes.
+  function _questDepthMet(id) {
+    var def = QUEST_DEFINITIONS[id];
+    if (!def || typeof def.minDepth !== 'number') return true;
+    var d = (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number')
+      ? window.DUNGEON_DEPTH : 1;
+    return d >= def.minDepth;
+  }
+
   function updateQuestProgress(type, target, amount) {
     var changed = false;
     Object.keys(questState).forEach(function (id) {
       var state = questState[id];
       if (!state || state.status !== 'active' || !state.objectives) return;
+      if (!_questDepthMet(id)) return; // depth-gated quest: frozen until deep enough
       state.objectives.forEach(function (obj) {
         if (obj.type === type && obj.target === target && obj.current < obj.required) {
           obj.current = Math.min(obj.required, obj.current + (amount || 1));
@@ -1110,6 +1128,7 @@
     Object.keys(questState).forEach(function (id) {
       var state = questState[id];
       if (!state || state.status !== 'active' || !state.objectives) return;
+      if (!_questDepthMet(id)) return; // depth-gated: only runs at/above minDepth count
       state.objectives.forEach(function (obj) {
         if (obj.type === 'dungeon_run' && obj.target === 'dungeon_complete' && obj.current < obj.required) {
           obj.current = Math.min(obj.required, obj.current + 1);
