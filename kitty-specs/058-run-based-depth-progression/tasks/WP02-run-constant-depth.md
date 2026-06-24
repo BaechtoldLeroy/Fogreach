@@ -84,3 +84,4 @@ Endless-Mode steigt weiterhin pro Extra-Raum.
 
 - 2026-06-24T17:58:34Z – unknown – shell_pid=7672 – lane=for_review – Moved to for_review
 - 2026-06-24T17:58:37Z – unknown – shell_pid=7672 – lane=approved – Moved to approved
+- 2026-06-24T17:58:48Z – unknown – shell_pid=7672 – lane=done – Done override: Manual merge; invariant (a) green, (b-d) red until WP03

@@ -1,14 +1,14 @@
 {
-  "event_count": 4,
+  "event_count": 5,
   "feature_slug": "058-run-based-depth-progression",
-  "last_event_id": "01KVXCHCF1FACBW9FSK7RMSV89",
-  "materialized_at": "2026-06-24T17:58:37.290136+00:00",
+  "last_event_id": "01KVXCHQRZB7D815CM1V7P0NBP",
+  "materialized_at": "2026-06-24T17:58:48.874618+00:00",
   "summary": {
-    "approved": 1,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 1,
+    "done": 2,
     "for_review": 0,
     "in_progress": 0,
     "planned": 0
@@ -24,9 +24,9 @@
     "WP02": {
       "actor": "user",
       "force_count": 2,
-      "lane": "approved",
-      "last_event_id": "01KVXCHCF1FACBW9FSK7RMSV89",
-      "last_transition_at": "2026-06-24T17:58:37.281656+00:00"
+      "lane": "done",
+      "last_event_id": "01KVXCHQRZB7D815CM1V7P0NBP",
+      "last_transition_at": "2026-06-24T17:58:48.863661+00:00"
     }
   }
 }
