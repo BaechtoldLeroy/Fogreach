@@ -180,6 +180,21 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     }
   }
 
+  // Feature 059 (#42) WP04: run-amulet pickup. Bypass the tier/normalize
+  // droproll path entirely — amulets carry no stats, only an `effect` key that
+  // normalizeItemStatsForTier/scaleItemForDifficulty would strip. Spawn the
+  // sprite directly and give it the legendary beacon so it reads as special.
+  if (maybeItem && maybeItem.isAmulet) {
+    const aScene = scene || (typeof lootGroup !== 'undefined' && lootGroup && lootGroup.scene) || window.currentScene;
+    const aloot = lootGroup.create(x, y, maybeItem.iconKey || 'itAmulet');
+    aloot.setDisplaySize(28, 28);
+    aloot.setData('item', maybeItem);
+    aloot.setDepth(80);
+    trackLootSprite(aScene || aloot.scene, aloot);
+    try { _attachRarityFx(aScene || aloot.scene, aloot, { tier: 3 }); } catch (e) { /* fx optional */ }
+    return aloot;
+  }
+
   // Quest item drops (10% chance each)
   if (!maybeItem && window.questSystem) {
     var activeQuests = window.questSystem.getActiveQuests();

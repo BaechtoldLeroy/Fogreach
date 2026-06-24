@@ -212,7 +212,18 @@
       const rowH = 40;
       const stock = (this.shopState && this.shopState.itemStock) || [];
 
-      if (stock.length === 0) {
+      // Feature 059 (#42) WP04: the flying (dungeon) merchant offers a curated
+      // run-amulet auslage from depth 10. Rendered ABOVE the regular gear so it
+      // reads as the special, run-defining purchase. y-position uses a running
+      // rowIndex; buy handlers keep their own stock index.
+      let amuletStock = [];
+      if (this.isDungeonMerchant && window.LootSystem
+          && typeof window.LootSystem.getOrCreateAmuletShopState === 'function') {
+        try { amuletStock = (window.LootSystem.getOrCreateAmuletShopState().amuletStock) || []; }
+        catch (e) { amuletStock = []; }
+      }
+
+      if (stock.length === 0 && amuletStock.length === 0) {
         const t = this.add.text(px, py, _SHOP_T('shop.empty.stock'), {
           fontFamily: 'monospace', fontSize: '13px', color: '#888888'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
@@ -220,8 +231,57 @@
         return;
       }
 
+      let rowIndex = 0;
+      if (amuletStock.length > 0) {
+        const hdr = this.add.text(px, startY - 6, _SHOP_T('shop.amulet.section'), {
+          fontFamily: 'monospace', fontSize: '11px', color: '#c792ea'
+        }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+        this.tabBody.push(hdr);
+        rowIndex = 0.6; // nudge first amulet row below the small header
+        amuletStock.forEach((amulet, ai) => {
+          const ry = startY + rowIndex * rowH;
+          rowIndex++;
+          const rowBg = this.add.rectangle(px, ry + rowH / 2, panelW - 30, rowH - 4, 0x2a2336)
+            .setStrokeStyle(1, 0x6b4f8a).setScrollFactor(0).setDepth(2002);
+          this.tabBody.push(rowBg);
+
+          const nameText = this.add.text(px - panelW / 2 + 24, ry + 5, amulet.displayName || amulet.name || 'Amulett', {
+            fontFamily: 'monospace', fontSize: '12px', color: '#c792ea'
+          }).setScrollFactor(0).setDepth(2003);
+          this.tabBody.push(nameText);
+
+          const desc = (window.LootSystem && typeof window.LootSystem.getAmuletEffectDesc === 'function')
+            ? window.LootSystem.getAmuletEffectDesc(amulet.effect) : '';
+          if (desc) {
+            const descText = this.add.text(px - panelW / 2 + 24, ry + 21, desc, {
+              fontFamily: 'monospace', fontSize: '10px', color: '#9a86b8',
+              wordWrap: { width: panelW - 220 }
+            }).setScrollFactor(0).setDepth(2003);
+            this.tabBody.push(descText);
+          }
+
+          const aprice = this._computeAmuletPrice(amulet);
+          const aPriceText = this.add.text(px + panelW / 2 - 150, ry + rowH / 2, aprice + ' G', {
+            fontFamily: 'monospace', fontSize: '12px', color: '#ffd166'
+          }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2003);
+          this.tabBody.push(aPriceText);
+
+          const aBuyBg = this.add.rectangle(px + panelW / 2 - 50, ry + rowH / 2, 60, 24, 0x3a2f4a)
+            .setStrokeStyle(1, 0xc792ea).setScrollFactor(0).setDepth(2003)
+            .setInteractive({ useHandCursor: true });
+          const aBuyText = this.add.text(px + panelW / 2 - 50, ry + rowH / 2, _SHOP_T('shop.btn.buy'), {
+            fontFamily: 'monospace', fontSize: '11px', color: '#f1e9d8'
+          }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
+          this.tabBody.push(aBuyBg);
+          this.tabBody.push(aBuyText);
+          aBuyBg.on('pointerdown', () => this._tryBuyAmulet(ai, aprice));
+        });
+        rowIndex += 0.4; // small gap before regular gear
+      }
+
       stock.forEach((item, i) => {
-        const ry = startY + i * rowH;
+        const ry = startY + rowIndex * rowH;
+        rowIndex++;
         const rowBg = this.add.rectangle(px, ry + rowH / 2, panelW - 30, rowH - 4, 0x2a2a2a)
           .setStrokeStyle(1, 0x444444).setScrollFactor(0).setDepth(2002);
         this.tabBody.push(rowBg);
@@ -301,6 +361,42 @@
       this._refreshGold();
       this._renderTab('items');
       this._showToast(_SHOP_T('shop.toast.bought', { name: item.displayName || item._baseName || 'Item' }));
+      if (typeof window._refreshInventoryHUD === 'function') {
+        try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
+      }
+    }
+
+    // Feature 059 (#42) WP04: run-amulets are pricier than gear (they redefine
+    // a run). Scales with depth; dungeon-merchant discount applies.
+    _computeAmuletPrice(amulet) {
+      const iLevel = (amulet && typeof amulet.iLevel === 'number' && amulet.iLevel > 0) ? amulet.iLevel : 10;
+      let base = Math.max(1, Math.round(180 * (1 + iLevel * 0.08)));
+      if (this.isDungeonMerchant) base = Math.max(1, Math.round(base * 0.7));
+      return base;
+    }
+
+    _tryBuyAmulet(stockIdx, price) {
+      const state = (window.LootSystem && typeof window.LootSystem.getOrCreateAmuletShopState === 'function')
+        ? window.LootSystem.getOrCreateAmuletShopState() : null;
+      const amulet = state && state.amuletStock ? state.amuletStock[stockIdx] : null;
+      if (!amulet) return;
+      if (!window.LootSystem || !window.LootSystem.spendGold(price)) {
+        this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
+        return;
+      }
+      if (Array.isArray(window.inventory)) {
+        const slot = window.inventory.findIndex(s => !s);
+        if (slot < 0) {
+          this._showToast(_SHOP_T('shop.toast.inventory_full'));
+          window.LootSystem.grantGold(price); // refund
+          return;
+        }
+        window.inventory[slot] = amulet;
+      }
+      state.amuletStock.splice(stockIdx, 1);
+      this._refreshGold();
+      this._renderTab('items');
+      this._showToast(_SHOP_T('shop.toast.bought', { name: amulet.displayName || amulet.name || 'Amulett' }));
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }

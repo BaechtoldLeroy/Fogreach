@@ -117,3 +117,86 @@ test('#42 WP02: clearRunAmulet is null-safe (no throw)', () => {
   assert.doesNotThrow(() => sys.clearRunAmulet(undefined));
   assert.doesNotThrow(() => sys.clearRunAmulet({}));
 });
+
+// --- WP04: Spawn-Gating + fliegender Händler (Auslage) ---
+
+test('#42 WP04: shouldSpawnRunAmulet — keiner unter Tiefe 10 (egal welcher Roll)', () => {
+  const sys = freshSystem();
+  const always = () => 0; // would always pass the chance roll
+  for (let d = 1; d < 10; d++) {
+    assert.strictEqual(sys.shouldSpawnRunAmulet(d, always), false, 'depth ' + d + ' blocked');
+  }
+});
+
+test('#42 WP04: shouldSpawnRunAmulet — ab Tiefe 10 CHANCE-basiert (Grenze inklusiv)', () => {
+  const sys = freshSystem();
+  // ~50% gate: roll < 0.5 passes, >= 0.5 fails.
+  assert.strictEqual(sys.shouldSpawnRunAmulet(10, () => 0.10), true, 'depth 10 + low roll -> spawn');
+  assert.strictEqual(sys.shouldSpawnRunAmulet(10, () => 0.49), true, 'just under threshold -> spawn');
+  assert.strictEqual(sys.shouldSpawnRunAmulet(10, () => 0.50), false, 'at threshold -> no spawn (chance, not guaranteed)');
+  assert.strictEqual(sys.shouldSpawnRunAmulet(10, () => 0.90), false, 'high roll -> no spawn');
+  assert.strictEqual(sys.shouldSpawnRunAmulet(25, () => 0.10), true, 'deeper still gated by chance');
+});
+
+test('#42 WP04: shouldSpawnRunAmulet — defensive gegen ungueltige Tiefe', () => {
+  const sys = freshSystem();
+  assert.strictEqual(sys.shouldSpawnRunAmulet(NaN, () => 0), false);
+  assert.strictEqual(sys.shouldSpawnRunAmulet(undefined, () => 0), false);
+});
+
+test('#42 WP04: getOrCreateAmuletShopState — keine Auslage unter Tiefe 10', () => {
+  const sys = freshSystem();
+  globalThis.window.dungeonRun = { runId: 'run-shallow' };
+  globalThis.window.DUNGEON_DEPTH = 5;
+  const state = sys.getOrCreateAmuletShopState();
+  assert.ok(state && Array.isArray(state.amuletStock), 'state shape');
+  assert.strictEqual(state.amuletStock.length, 0, 'no amulets below depth 10 (FR-13)');
+});
+
+test('#42 WP04: getOrCreateAmuletShopState — ab Tiefe 10 kuratierte Auslage (nur Amulette, unique)', () => {
+  const sys = freshSystem();
+  globalThis.window.dungeonRun = { runId: 'run-deep' };
+  globalThis.window.DUNGEON_DEPTH = 12;
+  const state = sys.getOrCreateAmuletShopState();
+  assert.ok(state.amuletStock.length >= 1 && state.amuletStock.length <= 3, '1-3 options');
+  const keys = new Set();
+  for (const a of state.amuletStock) {
+    assert.strictEqual(a.type, 'amulet', 'only amulets in the auslage');
+    assert.strictEqual(a.isAmulet, true);
+    keys.add(a.key);
+  }
+  assert.strictEqual(keys.size, state.amuletStock.length, 'no duplicate amulet in one auslage');
+});
+
+test('#42 WP04: getOrCreateAmuletShopState — run-fix pro runId (gleicher Run -> gleiche Auswahl)', () => {
+  const sys = freshSystem();
+  globalThis.window.dungeonRun = { runId: 'run-A' };
+  globalThis.window.DUNGEON_DEPTH = 14;
+  const first = sys.getOrCreateAmuletShopState();
+  const again = sys.getOrCreateAmuletShopState();
+  assert.strictEqual(again, first, 'same cached state object within a run');
+  assert.deepStrictEqual(again.amuletStock.map(a => a.key), first.amuletStock.map(a => a.key));
+  // New run -> fresh roll (state object replaced).
+  globalThis.window.dungeonRun = { runId: 'run-B' };
+  const other = sys.getOrCreateAmuletShopState();
+  assert.notStrictEqual(other, first, 'new runId rebuilds the auslage');
+});
+
+test('#42 WP04: refreshShop invalidiert auch die Amulett-Auslage', () => {
+  const sys = freshSystem();
+  globalThis.window.dungeonRun = { runId: 'run-R' };
+  globalThis.window.DUNGEON_DEPTH = 11;
+  const before = sys.getOrCreateAmuletShopState();
+  sys.refreshShop();
+  const after = sys.getOrCreateAmuletShopState();
+  assert.notStrictEqual(after, before, 'refreshShop drops the cached amulet auslage');
+});
+
+test('#42 WP04: getAmuletEffectDesc — liefert kurze Beschreibung pro Effekt', () => {
+  const sys = freshSystem();
+  for (const d of sys.AMULET_DEFS) {
+    const desc = sys.getAmuletEffectDesc(d.effect);
+    assert.ok(typeof desc === 'string' && desc.length > 0, 'desc for ' + d.effect);
+  }
+  assert.strictEqual(sys.getAmuletEffectDesc(''), '', 'empty effect -> empty desc');
+});

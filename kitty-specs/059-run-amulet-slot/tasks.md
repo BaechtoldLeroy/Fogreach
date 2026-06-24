@@ -113,12 +113,12 @@ Händler-Amulett; `>= 10` (inklusiv) → garantiert 1 Spawn-Inject in frühem Ra
 Händler-State run-fix (gleicher runId → gleiche Auswahl).
 
 **Subtasks**:
-- [ ] **T020** [test-first] Spawn-Gating-Test (`< 10` keiner, `>= 10` genau 1, Grenze 10 inklusiv) + Händler-run-fix-Test (rot zuerst).
-- [ ] **T021** Spawn-Inject in `initDungeonRun` (`js/roomManager.js:141`): bei `window.DUNGEON_DEPTH >= 10` `rollAmulet(depth)` in einen der **ersten** Räume als Pickup einspeisen (eigenes Drop-Visual). Bestehende Spawn-Order nicht brechen.
-- [ ] **T022** Fliegender-Händler-Encounter: run-spezifischer NPC/Auslage (eigener Spawn im Run, nicht Hub). Anbindung an EventSystem/Encounter-Muster (vgl. Dungeon-NPC-Encounter-Pattern aus Memory).
-- [ ] **T023** `getOrCreateAmuletShopState(runId)` in `js/lootSystem.js` nach Vorbild `getOrCreateShopState` (`:854`): 2–3 `rollAmulet`-Optionen run-fix per `runId`; Tiefen-Bias (D5).
-- [ ] **T024** Kauf-Flow: Gold abziehen (`spendGold`), Amulett ins Inventar; unter Tiefe 10 keine Amulett-Auslage (FR-13).
-- [ ] **T025** Spawn-/Händler-Tests grün; i18n DE/EN für Händler-Dialog + Tiefe-10-Hinweis.
+- [x] **T020** [test-first] Spawn-Gating-Test (`< 10` keiner, `>= 10` genau 1, Grenze 10 inklusiv) + Händler-run-fix-Test (rot zuerst).
+- [x] **T021** Spawn-Inject in `initDungeonRun` (`js/roomManager.js:141`): bei `window.DUNGEON_DEPTH >= 10` `rollAmulet(depth)` in einen der **ersten** Räume als Pickup einspeisen (eigenes Drop-Visual). Bestehende Spawn-Order nicht brechen.
+- [x] **T022** Fliegender-Händler-Encounter: run-spezifischer NPC/Auslage (eigener Spawn im Run, nicht Hub). Anbindung an EventSystem/Encounter-Muster (vgl. Dungeon-NPC-Encounter-Pattern aus Memory).
+- [x] **T023** `getOrCreateAmuletShopState(runId)` in `js/lootSystem.js` nach Vorbild `getOrCreateShopState` (`:854`): 2–3 `rollAmulet`-Optionen run-fix per `runId`; Tiefen-Bias (D5).
+- [x] **T024** Kauf-Flow: Gold abziehen (`spendGold`), Amulett ins Inventar; unter Tiefe 10 keine Amulett-Auslage (FR-13).
+- [x] **T025** Spawn-/Händler-Tests grün; i18n DE/EN für Händler-Dialog + Tiefe-10-Hinweis.
 
 ---
 

@@ -173,6 +173,19 @@ function initDungeonRun() {
   const depth = Math.max(1, window.DUNGEON_DEPTH || 1);
   const act = getStoryAct(depth);
 
+  // Feature 059 (#42) WP04: decide ONCE per run whether a run-amulet drops
+  // early. CHANCE-based and only from depth 10 (spec §0/D6 — NOT every run).
+  // The actual pickup is spawned in the first room by enterRoom ->
+  // _maybeSpawnRunAmulet. Defensive: never let this break run setup.
+  window._pendingRunAmulet = null;
+  try {
+    if (window.LootSystem && typeof window.LootSystem.shouldSpawnRunAmulet === 'function'
+        && window.LootSystem.shouldSpawnRunAmulet(depth, Math.random)
+        && typeof window.LootSystem.rollAmulet === 'function') {
+      window._pendingRunAmulet = window.LootSystem.rollAmulet(depth);
+    }
+  } catch (e) { window._pendingRunAmulet = null; }
+
   // Separate regular rooms from story rooms. Feature 055: die kuratierten
   // Espionage-Raeume sind aus dem regulaeren Pool ausgeschlossen — sie
   // erscheinen NUR per quest-gesteuertem Force-Inject (s. unten), nie zufaellig.
@@ -995,6 +1008,32 @@ function enterRoom(scene, roomId) {
     startNextWave.call(scene, false);
     window.currentWave = currentWave;
   }
+
+  // Feature 059 (#42) WP04: early run-amulet drop (first room only).
+  _maybeSpawnRunAmulet(scene);
+}
+
+// Feature 059 (#42) WP04: spawn the pending run-amulet as a floor pickup in
+// the FIRST room of a run (decided in initDungeonRun). Chance + depth gating
+// already happened; here we only place the drop near the player on a walkable
+// tile. Defensive: a failure must never break room entry.
+function _maybeSpawnRunAmulet(scene) {
+  try {
+    var amulet = window._pendingRunAmulet;
+    if (!amulet) return;
+    // First room only — roomsEntered was just incremented at enterRoom start.
+    if (!window.runStats || window.runStats.roomsEntered > 1) return;
+    window._pendingRunAmulet = null;
+    if (typeof window.spawnLoot !== 'function' || typeof player === 'undefined' || !player) return;
+    var px = player.x + 90, py = player.y;
+    if (scene && typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(px, py)) {
+      if (typeof scene.pickAccessibleSpawnPoint === 'function') {
+        var spot = scene.pickAccessibleSpawnPoint({ minDistance: 48, maxAttempts: 16 });
+        if (spot) { px = spot.x; py = spot.y; }
+      }
+    }
+    window.spawnLoot.call(scene, px, py, amulet);
+  } catch (e) { /* never break room entry */ }
 }
 
 function onStairOverlap(player, stair) {

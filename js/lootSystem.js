@@ -72,7 +72,23 @@ if (window.i18n) {
     'loot.potion.t2': 'Heiltrank (M)',
     'loot.potion.t3': 'Heiltrank (L)',
     'loot.potion.t4': 'Heiltrank (XL)',
-    'loot.fallback.item': 'Gegenstand'
+    'loot.fallback.item': 'Gegenstand',
+    // Feature 059 (#42): kurze Effektbeschreibung pro Amulett (Shop/UI).
+    'amulet.fx.twin': 'Greift zweimal an (2. Treffer 60%)',
+    'amulet.fx.chain': 'Treffer springt auf 2 nahe Gegner',
+    'amulet.fx.cleave': 'Nahkampf trifft rundum (360°)',
+    'amulet.fx.lifesteal': 'Heilt 18% des Schadens',
+    'amulet.fx.aura': 'Brennende Aura schadet Gegnern nahebei',
+    'amulet.fx.tempo': 'Mehr Lauf- und Angriffstempo',
+    'amulet.fx.orbit': 'Rotierende Klingen umkreisen dich',
+    'amulet.fx.killburst': 'Getötete Gegner explodieren',
+    'amulet.fx.dashstrike': 'Ausweichrolle phast durch und verletzt',
+    'amulet.fx.momentum': 'Mehr Schaden je Kill (stapelt sich)',
+    'amulet.fx.frost': 'Treffer frosten; Frost-Gegner zersplittern',
+    'amulet.fx.glass': '+50% Schaden, −25% Max-LP',
+    'amulet.fx.revive': 'Überlebt den Tod 1× pro Run',
+    'amulet.fx.bloodpact': 'Fähigkeiten ohne Cooldown, kosten LP',
+    'shop.amulet.section': '— Amulette (run-spezifisch) —'
   });
   window.i18n.register('en', {
     'loot.affix.sharp_dmg': 'Sharp',
@@ -141,7 +157,23 @@ if (window.i18n) {
     'loot.potion.t2': 'Healing Potion (M)',
     'loot.potion.t3': 'Healing Potion (L)',
     'loot.potion.t4': 'Healing Potion (XL)',
-    'loot.fallback.item': 'Item'
+    'loot.fallback.item': 'Item',
+    // Feature 059 (#42): short per-amulet effect blurbs (shop/UI).
+    'amulet.fx.twin': 'Strikes twice (2nd hit 60%)',
+    'amulet.fx.chain': 'Hits jump to 2 nearby foes',
+    'amulet.fx.cleave': 'Melee hits all around (360°)',
+    'amulet.fx.lifesteal': 'Heals 18% of damage dealt',
+    'amulet.fx.aura': 'Burning aura damages nearby foes',
+    'amulet.fx.tempo': 'More move & attack speed',
+    'amulet.fx.orbit': 'Rotating blades orbit you',
+    'amulet.fx.killburst': 'Slain foes explode',
+    'amulet.fx.dashstrike': 'Dodge roll phases through & hurts',
+    'amulet.fx.momentum': 'More damage per kill (stacks)',
+    'amulet.fx.frost': 'Hits chill; frozen foes shatter',
+    'amulet.fx.glass': '+50% damage, -25% max HP',
+    'amulet.fx.revive': 'Survive death once per run',
+    'amulet.fx.bloodpact': 'Abilities cost HP, no cooldown',
+    'shop.amulet.section': '— Amulets (run-specific) —'
   });
 }
 //
@@ -350,6 +382,47 @@ if (window.i18n) {
       affixes: [],
       baseStats: {}
     };
+  }
+
+  // Feature 059 (#42) WP04: early run-amulet spawn gate. Spec §0/D6: amulets
+  // appear only from depth 10 AND as a CHANCE (not every run) — keeps the slot
+  // a treat rather than a guaranteed staple. Pure -> unit-testable; roomManager
+  // calls this once per run in initDungeonRun.
+  const RUN_AMULET_MIN_DEPTH = 10;
+  const RUN_AMULET_SPAWN_CHANCE = 0.5;
+  function shouldSpawnRunAmulet(depth, rng) {
+    if (typeof rng !== 'function') rng = Math.random;
+    if (typeof depth !== 'number' || !Number.isFinite(depth)) return false;
+    if (depth < RUN_AMULET_MIN_DEPTH) return false;
+    return rng() < RUN_AMULET_SPAWN_CHANCE;
+  }
+
+  // Short blurb for an amulet effect key (shop rows / future UI). Prefers the
+  // localized i18n string; falls back to a built-in DE map so it still works
+  // headless (tests) or before i18n is wired.
+  const AMULET_FX_FALLBACK = Object.freeze({
+    twin: 'Greift zweimal an (2. Treffer 60%)',
+    chain: 'Treffer springt auf 2 nahe Gegner',
+    cleave: 'Nahkampf trifft rundum (360°)',
+    lifesteal: 'Heilt 18% des Schadens',
+    aura: 'Brennende Aura schadet Gegnern nahebei',
+    tempo: 'Mehr Lauf- und Angriffstempo',
+    orbit: 'Rotierende Klingen umkreisen dich',
+    killburst: 'Getötete Gegner explodieren',
+    dashstrike: 'Ausweichrolle phast durch und verletzt',
+    momentum: 'Mehr Schaden je Kill (stapelt sich)',
+    frost: 'Treffer frosten; Frost-Gegner zersplittern',
+    glass: '+50% Schaden, −25% Max-LP',
+    revive: 'Überlebt den Tod 1× pro Run',
+    bloodpact: 'Fähigkeiten ohne Cooldown, kosten LP'
+  });
+  function getAmuletEffectDesc(effect) {
+    if (!effect) return '';
+    if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function') {
+      var v = window.i18n.t('amulet.fx.' + effect);
+      if (typeof v === 'string' && v && v.indexOf('[MISSING:') !== 0) return v;
+    }
+    return AMULET_FX_FALLBACK[effect] || '';
   }
 
   // Feature 059 WP02: amulets are RUN-SPECIFIC and must never persist.
@@ -938,6 +1011,48 @@ if (window.i18n) {
   function refreshShop() {
     _shopState = null;
     _lastShopRunId = null;
+    // Feature 059 (#42) WP04: the dungeon-merchant amulet auslage is also
+    // run-scoped — drop it so the next run rolls a fresh curated selection.
+    _amuletShopState = null;
+    _lastAmuletShopRunId = null;
+  }
+
+  // Feature 059 (#42) WP04: the flying merchant (wandering_merchant event)
+  // offers a curated run-fixed amulet selection from depth 10. Separate state
+  // from Mara's itemStock; cached per runId so the same run shows the same
+  // options (FR-13: nothing below depth 10).
+  let _amuletShopState = null;
+  let _lastAmuletShopRunId = null;
+  const AMULET_SHOP_COUNT = 2;
+  const AMULET_SHOP_MIN_DEPTH = 10;
+
+  function _generateAmuletStock(depth) {
+    if (typeof depth !== 'number' || depth < AMULET_SHOP_MIN_DEPTH) return [];
+    const stock = [];
+    const seen = {};
+    let attempts = 0;
+    while (stock.length < AMULET_SHOP_COUNT && attempts < 40) {
+      attempts++;
+      const a = rollAmulet(depth, Math.random);
+      if (a && !seen[a.key]) { seen[a.key] = true; stock.push(a); }
+    }
+    return stock;
+  }
+
+  function getOrCreateAmuletShopState(runIdOverride) {
+    const runId = (typeof runIdOverride !== 'undefined' && runIdOverride !== null)
+      ? runIdOverride
+      : _currentRunId();
+    const depth = (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number')
+      ? window.DUNGEON_DEPTH : 1;
+    if (!_amuletShopState || _lastAmuletShopRunId !== runId) {
+      _lastAmuletShopRunId = runId;
+      _amuletShopState = {
+        currentRunId: runId,
+        amuletStock: _generateAmuletStock(depth)
+      };
+    }
+    return _amuletShopState;
   }
 
   function _computeRerollCost(item) {
@@ -1026,6 +1141,10 @@ if (window.i18n) {
     rollAmulet: rollAmulet,
     PERSISTENT_EQUIP_SLOTS: PERSISTENT_EQUIP_SLOTS,
     clearRunAmulet: clearRunAmulet,
+    // WP04: spawn gate + merchant auslage + effect blurb.
+    shouldSpawnRunAmulet: shouldSpawnRunAmulet,
+    getAmuletEffectDesc: getAmuletEffectDesc,
+    getOrCreateAmuletShopState: getOrCreateAmuletShopState,
 
     // implemented in WP01
     rollAffixes: rollAffixes,
