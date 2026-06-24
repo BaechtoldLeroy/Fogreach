@@ -93,3 +93,13 @@ test('Batch2 params: only the matching amulet returns non-null/non-zero', () => 
   assert.ok(fp && fp.slowMs > 0 && fp.radius > 0, 'frost params');
   assert.strictEqual(fresh(null).frostParams(), null, 'no amulet -> null');
 });
+
+test('revive: once per run, consumeRevive disables it, resetRunState restores', () => {
+  const AE = fresh('revive');
+  assert.strictEqual(AE.canRevive(), true, 'fresh revive amulet can revive');
+  AE.consumeRevive();
+  assert.strictEqual(AE.canRevive(), false, 'used up');
+  AE.resetRunState();
+  assert.strictEqual(AE.canRevive(), true, 'reset restores the charge');
+  assert.strictEqual(fresh('glass').canRevive(), false, 'only the revive amulet');
+});

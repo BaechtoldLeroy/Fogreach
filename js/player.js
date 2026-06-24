@@ -955,6 +955,21 @@ function applyCooldownModifier(base, key) {
   // cdReductionMul = 1 - cd_<ability> - cd_all_abilities; floor resulting CD at 100ms.
   const lootCdMul = Math.max(0, 1 - getLootAbilityCooldownReduction(key));
   const effective = base * mult * lootCdMul;
+  // Feature 059 WP03: Blutpakt (bloodpact) — abilities (NOT the basic attack)
+  // have almost no cooldown but cost HP per use. applyCooldownModifier runs once
+  // per activation, so the HP cost is deducted here; HP is floored at 1 (the
+  // pact never kills you outright).
+  if (key && key !== 'attack' && window.AmuletEffects
+      && typeof window.AmuletEffects.activeEffect === 'function'
+      && window.AmuletEffects.activeEffect() === 'bloodpact') {
+    const _mh = (typeof playerMaxHealth === 'number') ? playerMaxHealth : (window.playerMaxHealth || 30);
+    const _cost = Math.max(1, Math.round(_mh * 0.08));
+    if (typeof playerHealth === 'number') {
+      playerHealth = Math.max(1, playerHealth - _cost);
+      if (typeof updateHUD === 'function') { try { updateHUD(); } catch (e) { /* swallow */ } }
+    }
+    return Math.max(60, effective * 0.1);
+  }
   return Math.max(100, effective);
 }
 
@@ -1514,7 +1529,10 @@ function attack() {
 
     toEnemy.normalize();
     const dot = attackDir.dot(toEnemy); // Cosinus-Wert zwischen -1 und 1
-    if (dot <= 0.5) return; // ~60° nach vorn
+    // Feature 059 WP03: Schnitterband (cleave) — 360°-Rundumschlag statt Kegel.
+    const _cleave = window.AmuletEffects && typeof window.AmuletEffects.activeEffect === 'function'
+      && window.AmuletEffects.activeEffect() === 'cleave';
+    if (!_cleave && dot <= 0.5) return; // ~60° nach vorn (cleave hebt den Kegel auf)
 
     dealDamageToEnemy(this, enemy, 1, 'attack');
     if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);

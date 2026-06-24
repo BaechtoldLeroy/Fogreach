@@ -1688,6 +1688,25 @@ function applyPlayerDamage(rawDamage, scene) {
   const armor = Phaser.Math.Clamp(playerArmor || 0, 0, 0.9);
   const mitigated = Math.max(1, Math.round(rawDamage * (1 - armor)));
 
+  // Feature 059 WP03: Zweiter Atem (revive) — once per run, lethal damage is
+  // survived at 1 HP with ~1.5s invulnerability instead of killing the player.
+  if (window.AmuletEffects && typeof window.AmuletEffects.canRevive === 'function'
+      && window.AmuletEffects.canRevive()
+      && typeof playerHealth === 'number' && (playerHealth - mitigated) <= 0) {
+    window.AmuletEffects.consumeRevive();
+    playerHealth = 1;
+    if (typeof updateHUD === 'function') { try { updateHUD(); } catch (e) {} }
+    window._playerInvincible = true;
+    if (scene && scene.time && scene.time.delayedCall) {
+      scene.time.delayedCall(1500, () => { window._playerInvincible = false; });
+    } else { setTimeout(() => { window._playerInvincible = false; }, 1500); }
+    if (player && player.setTint) {
+      player.setTint(0xffe066);
+      if (scene && scene.time) scene.time.delayedCall(1500, () => { if (player && player.clearTint) player.clearTint(); });
+    }
+    return 0;
+  }
+
   if (typeof addPlayerHealth === 'function') {
     addPlayerHealth(-mitigated);
   } else {

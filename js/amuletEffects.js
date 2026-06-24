@@ -86,6 +86,11 @@
       ? { slowMs: TUNE.frostSlowMs, radius: TUNE.frostShatterRadius } : null;
   }
 
+  // Batch 3 — Zweiter Atem (revive): once-per-run death save. reviveUsed lives
+  // in run-state and is cleared by resetRunState() on hub return / death-via-other.
+  function canRevive() { return activeEffect() === 'revive' && !state.reviveUsed; }
+  function consumeRevive() { state.reviveUsed = true; }
+
   window.AmuletEffects = {
     activeEffect: activeEffect,
     getStatMods: getStatMods,
@@ -99,6 +104,8 @@
     chainParams: chainParams,
     killburstParams: killburstParams,
     frostParams: frostParams,
+    canRevive: canRevive,
+    consumeRevive: consumeRevive,
     _TUNE: TUNE
   };
 })();
