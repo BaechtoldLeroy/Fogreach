@@ -1755,6 +1755,11 @@ function leaveDungeonForHub(scene, options = {}) {
     window.equipment.amulet = null;
   }
   window.runAmulet = null;
+  // Feature 059 WP03: clear transient effect state (momentum stacks, revive-used)
+  // so nothing leaks into the next run.
+  if (window.AmuletEffects && typeof window.AmuletEffects.resetRunState === 'function') {
+    try { window.AmuletEffects.resetRunState(); } catch (e) {}
+  }
   if (typeof recalcDerived === 'function') {
     try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived (amulet) failed', err); }
   }

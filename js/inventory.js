@@ -932,7 +932,12 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     ? window.knowledgeTreeBuffs.maxHpAdd
     : 0;
   const _hpBeforePrinting = (baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd + _ktMaxHpAdd;
-  const newMaxHealth = Math.max(1, Math.round(_hpBeforePrinting + _printingFlatHp + _hpBeforePrinting * _printingPctHp));
+  // Feature 059 WP03: run-amulet stat mods (Glasherz −25% MaxHP / +50% Schaden,
+  // Sturmschritt +Lauf-/Angriffstempo). maxHpMul wird hier in den Commit gefaltet;
+  // damageMul/speedMul/moveAdd weiter unten NACH allen Buff-Layern angewandt.
+  const _amuletStatMods = (window.AmuletEffects && typeof window.AmuletEffects.getStatMods === 'function')
+    ? window.AmuletEffects.getStatMods() : { moveAdd: 0, speedMul: 1, damageMul: 1, maxHpMul: 1 };
+  const newMaxHealth = Math.max(1, Math.round((_hpBeforePrinting + _printingFlatHp + _hpBeforePrinting * _printingPctHp) * _amuletStatMods.maxHpMul));
   if (typeof setPlayerMaxHealth === 'function') {
     setPlayerMaxHealth(newMaxHealth, { updateUi: false });
   } else {
@@ -1055,6 +1060,12 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     // covers fresh-load before recalcDerived runs.
     playerCritChance = Phaser.Math.Clamp(playerCritChance + (kb.critAdd || 0), 0, 0.95);
   }
+
+  // 3.95) Run-amulet stat mods applied LAST, on top of all buff layers
+  // (Glasherz Schaden, Sturmschritt Tempo). maxHpMul ist bereits in newMaxHealth.
+  if (_amuletStatMods.damageMul !== 1) weaponDamage = Math.max(1, Math.round(weaponDamage * _amuletStatMods.damageMul));
+  if (_amuletStatMods.speedMul !== 1) weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * _amuletStatMods.speedMul);
+  if (_amuletStatMods.moveAdd) playerSpeed = Math.max(60, playerSpeed + _amuletStatMods.moveAdd);
 
   // 4) HUD aktualisieren
   // Guard against a destroyed Text: Phaser sets `.scene` to undefined on

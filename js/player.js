@@ -636,7 +636,12 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
   // Per-ability key maps to the loot stat key (e.g. 'spin' -> 'dmg_spinAttack').
   // Plain 'attack' only picks up 'dmg_all_abilities' (no per-ability affix).
   const lootDmgMul = 1 + getLootAbilityDamageBonus(abilityKey);
-  const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul);
+  // Feature 059 WP03: run-amulet per-hit damage multiplier (Schlächterkrone
+  // momentum kill-stacks). 1 if no amulet / decayed. (Glass-Amulett geht ueber
+  // recalcDerived, nicht hier.)
+  const amuletDmgMul = (window.AmuletEffects && typeof window.AmuletEffects.damageMul === 'function')
+    ? window.AmuletEffects.damageMul() : 1;
+  const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul * amuletDmgMul);
   const damage = Math.max(1, Math.round(isCrit ? base * 1.5 : base));
 
   // Snapshot maxHp on first hit so the lazy enemy hp bar (drawn by
@@ -664,6 +669,10 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
       lsPct += (window.LootSystem.getBonus('lifesteal') || 0) / 100;
     }
     lsPct += window.PLAYER_LIFESTEAL || 0;
+    // Feature 059 WP03: Aderlass-Talisman — starker Lebensraub (ueber Affixe).
+    if (window.AmuletEffects && typeof window.AmuletEffects.lifestealPct === 'function') {
+      lsPct += window.AmuletEffects.lifestealPct();
+    }
     if (lsPct > 0) {
       addPlayerHealth(Math.max(1, Math.round(damage * lsPct)));
     }
@@ -1265,6 +1274,12 @@ function handleEnemyHit(scene, enemy, options = {}) {
   }
 
   if (enemy.hp <= 0) {
+    // Feature 059 WP03: run-amulet on-kill hook (Schlächterkrone momentum-stack;
+    // spaetere Batches: killburst/frost-shatter/tempo-burst). enemy lebt hier
+    // noch -> x/y gueltig fuer AoE-Effekte.
+    if (window.AmuletEffects && typeof window.AmuletEffects.onEnemyKilled === 'function') {
+      try { window.AmuletEffects.onEnemyKilled(enemy, scene); } catch (e) { /* never crash */ }
+    }
     // Issue #24: chance to drop a Druckblatt on kill. Elite enemies have
     // a higher chance. Direct call to PrintingHouse.addDruckblaetter
     // (clamped to the 50-cap inside). Drops nothing visible — counter
