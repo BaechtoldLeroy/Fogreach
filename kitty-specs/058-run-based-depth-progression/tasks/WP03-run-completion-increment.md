@@ -1,30 +1,33 @@
 ---
-work_package_id: "WP03"
-title: "Run-Abschluss-+1 (idempotent) + Persistence"
-lane: "planned"
+work_package_id: WP03
+title: Run-Abschluss-+1 (idempotent) + Persistence
 dependencies:
-  - "WP01"
-  - "WP02"
-planning_base_branch: "main"
-merge_target_branch: "main"
-branch_strategy: "Planning artifacts were generated on main; completed changes must merge back into main."
+- WP01
+- WP02
+planning_base_branch: main
+merge_target_branch: main
+branch_strategy: Planning artifacts were generated on main; completed changes must merge back into main.
+base_branch: main
+base_commit: a5f17e5d57747295e12d8a2549b0c3b7ae6156a6
+created_at: '2026-06-24T17:58:59.796184+00:00'
 subtasks:
-  - "T009"
-  - "T010"
-  - "T011"
-  - "T012"
-phase: "Phase 3 - Run-Abschluss-Increment"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-review_feedback: ""
+- T009
+- T010
+- T011
+- T012
+phase: Phase 3 - Run-Abschluss-Increment
+assignee: ''
+agent: ''
+shell_pid: "21752"
 history:
-  - timestamp: "2026-06-24T08:00:00Z"
-    lane: "planned"
-    agent: "system"
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-06-24T08:00:00Z'
+  lane: planned
+  agent: system
+  action: Prompt generated via /spec-kitty.tasks
+lane: planned
+review_feedback: ''
+review_status: ''
+reviewed_by: ''
 ---
 
 # Work Package Prompt: WP03 – Run-Abschluss-+1 (idempotent)
