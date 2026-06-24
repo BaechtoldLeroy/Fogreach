@@ -80,3 +80,7 @@ schlägt erwartbar fehl (rot). Alle vorbestehenden Tests bleiben grün.
 - KEIN Spiel-Code in diesem WP ändern — nur Tests + Doku.
 - Test-Setup muss `window.DUNGEON_DEPTH`/`localStorage`-Stubs sauber
   zurücksetzen (siehe bestehende Tests für das jsdom/Stub-Pattern).
+
+## Activity Log
+
+- 2026-06-24T17:54:34Z – unknown – shell_pid=35876 – lane=approved – Moved to approved
