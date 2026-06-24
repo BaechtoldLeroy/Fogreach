@@ -72,10 +72,10 @@ grün; Smoke: Run durchlaufen, `DUNGEON_DEPTH` ändert sich von Raum 1 bis
 letztem Raum nicht.
 
 **Subtasks**:
-- [ ] **T005** `roomManager.js` `onStairOverlap` (Z. 1040–1047): den `depthBase`-Block (setzt `SELECTED_WAVE_OVERRIDE = NEXT_DUNGEON_DEPTH`, also +1) so ändern, dass beim **regulären** Raumwechsel die Run-Start-Tiefe beibehalten wird (kein +1). Endless-Zweig (Z. 1008–1032) bleibt unberührt.
-- [ ] **T006** `roomManager.js` `markRoomCleared` (Z. 1142–1144): das per-Raum-`window.DUNGEON_DEPTH = completed` / `NEXT_DUNGEON_DEPTH = completed+1` + `maxDepth`-`localStorage.setItem` (Z. 1148–1149) entfernen — der `maxDepth`-Bump wandert nach WP03 (Run-Abschluss). Tiefe bleibt run-konstant.
-- [ ] **T007** `roomManager.js` `enterRoom` (Z. 919–934): sicherstellen, dass `depth` aus der Run-Start-Tiefe (`DUNGEON_DEPTH`/`savedDepth`) abgeleitet wird und `NEXT_DUNGEON_DEPTH` nicht mehr als Per-Raum-Treiber wirkt; `currentWave = depth-1` bleibt run-konstant (Z. 962).
-- [ ] **T008** Endless-Abgrenzung: verifizieren, dass der Endless-Pfad (`roomManager.js` Z. 1011–1014, `endlessMode.js` Z. 240–242) seine eigene Tiefen-Erhöhung behält (FR-08). Test/Smoke: Endless steigt weiter, regulär nicht.
+- [x] **T005** `roomManager.js` `onStairOverlap` (Z. 1040–1047): den `depthBase`-Block (setzt `SELECTED_WAVE_OVERRIDE = NEXT_DUNGEON_DEPTH`, also +1) so ändern, dass beim **regulären** Raumwechsel die Run-Start-Tiefe beibehalten wird (kein +1). Endless-Zweig (Z. 1008–1032) bleibt unberührt.
+- [x] **T006** `roomManager.js` `markRoomCleared` (Z. 1142–1144): das per-Raum-`window.DUNGEON_DEPTH = completed` / `NEXT_DUNGEON_DEPTH = completed+1` + `maxDepth`-`localStorage.setItem` (Z. 1148–1149) entfernen — der `maxDepth`-Bump wandert nach WP03 (Run-Abschluss). Tiefe bleibt run-konstant.
+- [x] **T007** `roomManager.js` `enterRoom` (Z. 919–934): sicherstellen, dass `depth` aus der Run-Start-Tiefe (`DUNGEON_DEPTH`/`savedDepth`) abgeleitet wird und `NEXT_DUNGEON_DEPTH` nicht mehr als Per-Raum-Treiber wirkt; `currentWave = depth-1` bleibt run-konstant (Z. 962).
+- [x] **T008** Endless-Abgrenzung: verifizieren, dass der Endless-Pfad (`roomManager.js` Z. 1011–1014, `endlessMode.js` Z. 240–242) seine eigene Tiefen-Erhöhung behält (FR-08). Test/Smoke: Endless steigt weiter, regulär nicht.
 
 ---
 
