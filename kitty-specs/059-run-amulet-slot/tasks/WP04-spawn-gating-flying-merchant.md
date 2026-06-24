@@ -70,3 +70,4 @@ Händler-Auswahl. Grenze 10 inklusiv.
 
 - 2026-06-24T17:30:08Z – unknown – shell_pid=1096 – lane=for_review – Moved to for_review
 - 2026-06-24T17:30:10Z – unknown – shell_pid=1096 – lane=approved – Moved to approved
+- 2026-06-24T17:30:12Z – unknown – shell_pid=1096 – lane=done – Done override: Manual no-ff merge to main (multi-WP, deps WP01/02 merged); worktree removed, branch deleted, 338 tests green, smoke 0 errors
