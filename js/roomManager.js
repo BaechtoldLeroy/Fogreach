@@ -236,20 +236,28 @@ function initDungeonRun() {
   if (window.RoomTemplates && (window.ProceduralRooms || window.CaveGenerator)) {
     var procCount = 2 + Math.floor(Math.random() * 3); // 2-4 rooms
     for (var pi = 0; pi < procCount; pi++) {
-      // 55 % cave when both are available so caves feel like a noticeable
-      // variant; fall back to whichever generator is loaded.
-      var useCave = window.CaveGenerator && (!window.ProceduralRooms || Math.random() < 0.55);
+      // #43 (Feature 056): SIZE first via a weighted bucket (20% small / 60%
+      // medium / 20% large), generator STYLE as a SEPARATE roll — so both Cave
+      // and BSP can appear in any size bucket. Size logic lives in
+      // ProceduralRooms (pure + unit-tested); here we only wire + fall back.
       var procWidth, procHeight, procName, procTpl;
+      var _bucket = (window.ProceduralRooms && window.ProceduralRooms.rollBucket)
+        ? window.ProceduralRooms.rollBucket(Math.random)
+        : { key: 'medium', width: 80, height: 80 };
+      procWidth = _bucket.width;
+      procHeight = _bucket.height;
+      var _style = (window.ProceduralRooms && window.ProceduralRooms.pickProcStyle)
+        ? window.ProceduralRooms.pickProcStyle(Math.random, _bucket.key)
+        : 'cave';
+      // Availability fallback: use whichever generator is actually loaded
+      // (preserves the old single-generator behaviour).
+      var useCave = window.CaveGenerator && (!window.ProceduralRooms || _style === 'cave');
       if (useCave) {
-        procWidth = 56 + Math.floor(Math.random() * 24);   // 56-80
-        procHeight = 48 + Math.floor(Math.random() * 20);  // 48-68
         procName = 'Cave_' + Date.now() + '_' + pi;
         procTpl = window.CaveGenerator.generate({
           width: procWidth, height: procHeight, name: procName, depth: window.DUNGEON_DEPTH
         });
       } else {
-        procWidth = 80 + Math.floor(Math.random() * 40);   // 80-120
-        procHeight = 80 + Math.floor(Math.random() * 40);  // 80-120
         procName = 'Procedural_' + Date.now() + '_' + pi;
         procTpl = window.ProceduralRooms.generate({
           width: procWidth, height: procHeight, name: procName

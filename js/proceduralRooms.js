@@ -827,5 +827,52 @@
     return result;
   }
 
-  window.ProceduralRooms = { generate: generate, mulberry32: mulberry32 };
+  // ---------------------------------------------------------------------------
+  // Feature 056 (#43): proc-room SIZE buckets.
+  // Roll a room's dimensions from a WEIGHTED size bucket (20% small / 60% medium
+  // / 20% large) instead of deriving size implicitly from the generator style.
+  // This pure, seedable logic lives here (a load-able module) so roomManager.js
+  // and the unit tests share the exact same function. roomManager only wires it.
+  // Tile ranges are tunable — single source of truth in SIZE_BUCKETS.
+  // ---------------------------------------------------------------------------
+  var SIZE_BUCKETS = [
+    { key: 'small',  weight: 20, w: [50, 70],  h: [44, 60]  },
+    { key: 'medium', weight: 60, w: [70, 95],  h: [60, 85]  },
+    { key: 'large',  weight: 20, w: [95, 130], h: [85, 120] }
+  ];
+
+  function _rollIntInclusive(rng, lo, hi) {
+    return lo + Math.floor(rng() * (hi - lo + 1));
+  }
+
+  // Pick a size bucket by weight, then roll width/height within its range.
+  // Returns { key, width, height }. Defaults to Math.random when no rng given.
+  function rollBucket(rng) {
+    if (typeof rng !== 'function') rng = Math.random;
+    var weights = SIZE_BUCKETS.map(function (b) { return b.weight; });
+    var b = SIZE_BUCKETS[weightedPick(rng, weights)];
+    return {
+      key: b.key,
+      width: _rollIntInclusive(rng, b.w[0], b.w[1]),
+      height: _rollIntInclusive(rng, b.h[0], b.h[1])
+    };
+  }
+
+  // Choose the generator style for a bucket as a SEPARATE roll from size.
+  // Mild bias (small leans Cave, large leans BSP) but BOTH styles always keep
+  // probability > 0, so any size can appear in either style (FR-02).
+  function pickProcStyle(rng, bucketKey) {
+    if (typeof rng !== 'function') rng = Math.random;
+    var caveChance = bucketKey === 'small' ? 0.65 : (bucketKey === 'large' ? 0.40 : 0.55);
+    return rng() < caveChance ? 'cave' : 'bsp';
+  }
+
+  window.ProceduralRooms = {
+    generate: generate,
+    mulberry32: mulberry32,
+    weightedPick: weightedPick,
+    rollBucket: rollBucket,
+    pickProcStyle: pickProcStyle,
+    SIZE_BUCKETS: SIZE_BUCKETS
+  };
 })();
