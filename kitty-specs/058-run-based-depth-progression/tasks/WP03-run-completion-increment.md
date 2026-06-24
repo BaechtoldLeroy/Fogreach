@@ -80,3 +80,7 @@ FR-02, FR-03, FR-04, NFR-02, SC-02, SC-03.
   (letzter Raum erreicht).
 - `bumpMaxDepth` darf den Wert nur nach **oben** bewegen (max(alt, alt+1)) —
   bei Save mit altem hohem `maxDepth` keine Regression.
+
+## Activity Log
+
+- 2026-06-24T18:02:21Z – unknown – shell_pid=21752 – lane=for_review – Moved to for_review
