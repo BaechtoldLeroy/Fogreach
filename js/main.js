@@ -826,10 +826,15 @@ let equipment = {
   weapon: null,
   head: null,
   body: null,
-  boots: null
+  boots: null,
+  amulet: null // Feature 059 (#42): run-specific amulet slot
 };
 
 window.equipment = equipment;
+// Feature 059 (#42): run-scoped amulet state anchor. Effects + spawn + reset
+// land in later WPs; here it just exists alongside equipment.amulet and is
+// cleared on leaveDungeonForHub (WP02).
+window.runAmulet = null;
 
 let isReturningToHub = false;
 

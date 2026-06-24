@@ -1816,6 +1816,20 @@ function createItemGraphics() {
         g.fillStyle(0xFFCCCC, 0.5); g.fillCircle(20, 16, 5); // shine
         g.fillStyle(0xFFD700, 0.8); g.fillCircle(28, 14, 3); // sparkle
       }
+    },
+    {
+      // Feature 059 (#42): amulet item icon — purple gem pendant on a gold chain.
+      key: 'itAmulet',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0xd4a030, 1); // gold chain hint
+        g.fillRect(cx - 8, 8, 3, 3); g.fillRect(cx + 5, 8, 3, 3);
+        g.fillRect(cx - 6, 12, 3, 3); g.fillRect(cx + 3, 12, 3, 3);
+        g.fillStyle(0xd4a030, 1); g.fillCircle(cx, 30, 11); // gold bezel
+        g.fillStyle(0x6a3fb0, 1); g.fillCircle(cx, 30, 8);  // purple gem
+        g.fillStyle(0xb085e8, 0.85); g.fillCircle(cx, 30, 4);
+        g.fillStyle(0xeadcff, 0.8); g.fillCircle(cx - 3, 27, 2); // highlight
+      }
     }
   ];
 
