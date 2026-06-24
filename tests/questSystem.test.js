@@ -389,3 +389,31 @@ test('055: Akt-2-Council-Quests bei Aldric verfuegbar (Act>=2)', () => {
   const available = qs.getAvailableQuests('aldric').map((q) => q.id);
   assert.ok(available.includes('council_seizure'), 'council_seizure bei Aldric verfuegbar');
 });
+
+// --- Feature 058 (#41) WP04: run-based depth quest alignment ---
+
+test('#41 WP04: dungeon_run advances +1 per COMPLETED run (onDungeonCompleted), not per wave', () => {
+  const qs = freshSystem();
+  assert.strictEqual(qs.acceptQuest('thom_pamphlets'), true, 'accept thom_pamphlets (dungeon_run x3)');
+  const cur = () => qs.getActiveQuests('thom').find((q) => q.id === 'thom_pamphlets').objectives[0].current;
+  // Per-wave completions must NOT advance dungeon_run anymore (the old bug).
+  qs.onWaveCompleted(5);
+  qs.onWaveCompleted(6);
+  assert.strictEqual(cur(), 0, 'waves do not count as runs under run-constant depth');
+  // Each completed run = exactly +1.
+  qs.onDungeonCompleted();
+  assert.strictEqual(cur(), 1, 'one completed run -> +1');
+  qs.onDungeonCompleted();
+  qs.onDungeonCompleted();
+  assert.strictEqual(cur(), 3, 'three completed runs reach the required count');
+});
+
+test('#41 WP04: reach_wave completes when the run-constant depth >= target', () => {
+  const qs = freshSystem();
+  assert.strictEqual(qs.acceptQuest('elara_ritual'), true, 'accept elara_ritual (reach_wave 20)');
+  const cur = () => qs.getActiveQuests('elara').find((q) => q.id === 'elara_ritual').objectives[0].current;
+  qs.onWaveCompleted(12); // running at depth 12 (< 20)
+  assert.strictEqual(cur(), 12, 'tracks the deepest run depth seen');
+  qs.onWaveCompleted(20); // running at depth 20 (>= 20) -> satisfied
+  assert.strictEqual(cur(), 20, 'reaching the target depth completes the objective');
+});

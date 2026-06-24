@@ -131,11 +131,15 @@
   // ever completed (anchors the "Hinabstieg" options); LAST_DEPTH = last chosen
   // start depth (dialog default). Centralised here so the +1 is written in
   // exactly one place (NFR-02: once per completed run, never per room/frame).
+  // Floors at 1: depth 1 is always attemptable, so a fresh save (no key yet)
+  // reports a ceiling of 1. This keeps the off-by-one correct — completing the
+  // depth-1 run bumps the ceiling to 2 (clear depth N -> unlock N+1). Matches
+  // the descent dialog, which already defaults the option anchor to 1.
   function getMaxDepth() {
     try {
-      const v = parseInt(localStorage.getItem(KEYS.MAX_DEPTH) || '0', 10);
-      return Number.isFinite(v) && v > 0 ? v : 0;
-    } catch (err) { return 0; }
+      const v = parseInt(localStorage.getItem(KEYS.MAX_DEPTH) || '1', 10);
+      return Number.isFinite(v) && v > 0 ? v : 1;
+    } catch (err) { return 1; }
   }
 
   // Increment MAX_DEPTH by exactly 1 and persist it. Returns the new value

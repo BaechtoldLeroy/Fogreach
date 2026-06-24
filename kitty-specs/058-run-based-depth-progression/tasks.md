@@ -112,11 +112,11 @@ FR-07, C-04, SC-04, SC-05.
 Tiefe abschließen; `thom_pamphlets` zählt +1 pro Run (nicht pro Welle).
 
 **Subtasks**:
-- [ ] **T013** `HubSceneV2.js` `_openWaveSelectDialog` (Z. 1819–1896) + `startDungeon` (Z. 1737–1740): gewählte Tiefe `chooseDepth` setzt run-konstante Start-Tiefe; clampen auf ≤ `maxDepth` (D2: „An die Grenze" = exakt `maxDepth`, flacher bleibt). `LAST_DEPTH`-Persist bleibt (Z. 1890).
-- [ ] **T014** `questSystem.js` `reach_wave` (Z. 428/539/577 + Logik `onWaveCompleted` Z. 1078–1083): Objektiv so umstellen, dass es die **run-konstante** Tiefe zählt (Run auf/über Zieltiefe erfüllt das Ziel), nicht ein Per-Raum-Klettern. Sicherstellen completable bei run-konstanter Tiefe.
-- [ ] **T015** `questSystem.js` `dungeon_run`/`dungeon_complete` (Z. 500, Logik Z. 1085–1088): von „jede Welle zählt" auf „genau +1 pro abgeschlossenem Run" umstellen — an denselben Run-Abschluss-Hook koppeln wie WP03 (z.B. `questSystem.onDungeonCompleted()` aus `leaveDungeonForHub` `dungeon_complete`), nicht aus `onWaveCompleted`.
-- [ ] **T016** Wave-Fan-out prüfen (`wave.js` Z. 126–132): `storySystem.onWaveCompleted`/`AbilitySystem.onWaveCompleted` dürfen unter run-konstanter Tiefe nicht regredieren (Story-Akt-Sprünge sind bereits depth-entkoppelt, `storySystem.js` Z. 602). Dokumentieren.
-- [ ] **T017** i18n/Texte: falls Hinabstieg-Subtitle/Optionstexte (`hub.wave_select.*`, `hub.descent.*`) sich semantisch ändern (run-konstant statt klettern), DE/EN-Strings über das i18n-Register anpassen — keine hartkodierten Strings.
+- [x] **T013** `HubSceneV2.js` `_openWaveSelectDialog` (Z. 1819–1896) + `startDungeon` (Z. 1737–1740): gewählte Tiefe `chooseDepth` setzt run-konstante Start-Tiefe; clampen auf ≤ `maxDepth` (D2: „An die Grenze" = exakt `maxDepth`, flacher bleibt). `LAST_DEPTH`-Persist bleibt (Z. 1890).
+- [x] **T014** `questSystem.js` `reach_wave` (Z. 428/539/577 + Logik `onWaveCompleted` Z. 1078–1083): Objektiv so umstellen, dass es die **run-konstante** Tiefe zählt (Run auf/über Zieltiefe erfüllt das Ziel), nicht ein Per-Raum-Klettern. Sicherstellen completable bei run-konstanter Tiefe.
+- [x] **T015** `questSystem.js` `dungeon_run`/`dungeon_complete` (Z. 500, Logik Z. 1085–1088): von „jede Welle zählt" auf „genau +1 pro abgeschlossenem Run" umstellen — an denselben Run-Abschluss-Hook koppeln wie WP03 (z.B. `questSystem.onDungeonCompleted()` aus `leaveDungeonForHub` `dungeon_complete`), nicht aus `onWaveCompleted`.
+- [x] **T016** Wave-Fan-out prüfen (`wave.js` Z. 126–132): `storySystem.onWaveCompleted`/`AbilitySystem.onWaveCompleted` dürfen unter run-konstanter Tiefe nicht regredieren (Story-Akt-Sprünge sind bereits depth-entkoppelt, `storySystem.js` Z. 602). Dokumentieren.
+- [x] **T017** i18n/Texte: falls Hinabstieg-Subtitle/Optionstexte (`hub.wave_select.*`, `hub.descent.*`) sich semantisch ändern (run-konstant statt klettern), DE/EN-Strings über das i18n-Register anpassen — keine hartkodierten Strings.
 
 ---
 

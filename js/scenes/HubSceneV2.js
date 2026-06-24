@@ -1735,6 +1735,13 @@ class HubSceneV2 extends Phaser.Scene {
     
     if (entranceData.target === 'GameScene') {
       const startDungeon = (selectedWave, selectedDifficulty) => {
+        // Feature 058 (#41) WP04: depth is run-constant + chosen here. Clamp to
+        // [1, MAX_DEPTH] so "An die Grenze" = exactly the ceiling and flatter
+        // options stay valid (D2). The ceiling only grows via run completion.
+        const _maxDepth = (window.Persistence && typeof window.Persistence.getMaxDepth === 'function')
+          ? window.Persistence.getMaxDepth()
+          : Math.max(1, parseInt(localStorage.getItem('demonfall_maxDepth') || '1', 10) || 1);
+        selectedWave = Math.max(1, Math.min(Math.round(Number(selectedWave) || 1), _maxDepth));
         window.SELECTED_WAVE_OVERRIDE = selectedWave;
         window.DUNGEON_DEPTH = selectedWave;
         window.NEXT_DUNGEON_DEPTH = selectedWave + 1;

@@ -99,3 +99,19 @@ test('#41 isCompletionReason only true for dungeon_complete (D1)', () => {
     assert.strictEqual(RD.isCompletionReason(r), false, 'not a completion: ' + r);
   }
 });
+
+// --- WP04: ceiling floor + off-by-one (fresh save) ---
+
+test('#41 WP04: getMaxDepth floors at 1 for a fresh save (depth 1 always attemptable)', () => {
+  const { P } = fresh();
+  assert.strictEqual(P.getMaxDepth(), 1, 'no MAX_DEPTH key yet -> ceiling 1');
+});
+
+test('#41 WP04: completing the first (depth-1) run lifts the ceiling to 2 (clear N -> unlock N+1)', () => {
+  const { P, RD } = fresh();
+  // Fresh save: nothing persisted. Ceiling is 1, the player runs depth 1.
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete');
+  assert.strictEqual(after, 2, 'first completion unlocks depth 2');
+  assert.strictEqual(P.getMaxDepth(), 2);
+});

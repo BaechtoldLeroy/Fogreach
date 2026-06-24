@@ -1074,14 +1074,43 @@
       var state = questState[id];
       if (!state || state.status !== 'active' || !state.objectives) return;
       state.objectives.forEach(function (obj) {
-        // Wave reach objectives: set current to highest wave reached
+        // Wave reach objectives: set current to the highest depth reached.
+        // Feature 058 (#41): depth is run-constant, so `waveNumber` (= the run's
+        // DUNGEON_DEPTH/currentWave) no longer climbs per room — running AT or
+        // above the target depth satisfies the objective. Still completable;
+        // it just requires reaching that depth (which now grows per completed
+        // run, not per room).
         if (obj.type === 'wave' && obj.target === 'reach_wave') {
           if (waveNumber > obj.current) {
             obj.current = Math.min(obj.required, waveNumber);
             changed = true;
           }
         }
-        // Dungeon run completion: each wave completion past wave 1 counts as a run
+        // Feature 058 (#41): dungeon_run objectives moved OUT of the per-wave
+        // path — under run-constant depth a single run fires onWaveCompleted
+        // once per room, which would massively over-count. They now advance
+        // exactly +1 per completed run via onDungeonCompleted() (T015).
+      });
+    });
+    if (changed) {
+      _notifyUpdate();
+      _persistIfPossible();
+    }
+    return changed;
+  }
+
+  /**
+   * Feature 058 (#41): called exactly once per successfully COMPLETED dungeon
+   * run (from main.js leaveDungeonForHub on reason 'dungeon_complete', same
+   * hook as RunDepth.tryCompleteRun). Advances dungeon_run objectives by +1 per
+   * run — NOT per wave/room. Idempotency is owned by the caller's run latch.
+   */
+  function onDungeonCompleted() {
+    var changed = false;
+    Object.keys(questState).forEach(function (id) {
+      var state = questState[id];
+      if (!state || state.status !== 'active' || !state.objectives) return;
+      state.objectives.forEach(function (obj) {
         if (obj.type === 'dungeon_run' && obj.target === 'dungeon_complete' && obj.current < obj.required) {
           obj.current = Math.min(obj.required, obj.current + 1);
           changed = true;
@@ -1353,6 +1382,7 @@
     acceptQuest: acceptQuest,
     updateQuestProgress: updateQuestProgress,
     onWaveCompleted: onWaveCompleted,
+    onDungeonCompleted: onDungeonCompleted,
     onBossKilled: onBossKilled,
     onItemCrafted: onItemCrafted,
     areAllQuestChainsComplete: areAllQuestChainsComplete,

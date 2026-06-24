@@ -1712,6 +1712,12 @@ function leaveDungeonForHub(scene, options = {}) {
   if (window.RunDepth && typeof window.RunDepth.tryCompleteRun === 'function') {
     try { window.RunDepth.tryCompleteRun(reason); } catch (e) { /* never block hub return */ }
   }
+  // Feature 058 (#41) WP04: dungeon_run quest objectives advance +1 per
+  // COMPLETED run (not per wave) — same completion gate as the depth bump.
+  if (reason === 'dungeon_complete' && window.questSystem
+      && typeof window.questSystem.onDungeonCompleted === 'function') {
+    try { window.questSystem.onDungeonCompleted(); } catch (e) { /* never block hub return */ }
+  }
 
   // Run-summary snapshot: compute deltas against window.runStats and stash on
   // window.lastRunSummary. HubSceneV2.create() reads + clears it on next tick.
