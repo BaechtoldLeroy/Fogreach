@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-06-24T07:52:35.203158+00:00",
+  "feature_number": "058",
+  "feature_slug": "058-run-based-depth-progression",
+  "friendly_name": "run based depth progression",
+  "mission": "software-dev",
+  "slug": "058-run-based-depth-progression",
+  "target_branch": "main"
+}
