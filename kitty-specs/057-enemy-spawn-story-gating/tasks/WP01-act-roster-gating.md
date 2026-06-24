@@ -93,23 +93,23 @@ muss zunächst rot sein. Pflicht-Test: „Roster nie leer" über alle
 
 ## Subtasks
 
-- [ ] **T001** (test-first) `tests/enemySpawnGating.test.js` anlegen (lädt
+- [x] **T001** (test-first) `tests/enemySpawnGating.test.js` anlegen (lädt
   `js/enemySpawnGating.js` via `loadGameModule`, Stil wie `eliteEnemies.test.js`):
   - `ENEMY_MIN_ACT`-Shape: Keys 1–10, Werte exakt `{1:0,2:1,3:1,4:2,5:3,6:4,7:4,8:0,9:0,10:0}` (§4.1).
   - Filter-Korrektheit: `getAvailableEnemyTypes(9, 0)` enthält **nicht** 5/6/7; `getAvailableEnemyTypes(9, 3)` enthält 5 aber nicht 6/7; `getAvailableEnemyTypes(9, 4)` enthält 6 und 7.
   - **„Nie leer"** (FR-04): für jedes `depth ∈ {1..12}` × `actIndex ∈ {0..6}` ist das Ergebnis ein nicht-leeres Array von Zahlen ∈ {1..10}.
   - **Tiefen-Identität** (FR-07): für `actIndex = 6` ist das Ergebnis je Tiefe gleich dem reinen Tiefen-Roster (Tiers oben).
   - Defensive Defaults (FR-06): `depth` undefiniert → wie `depth=1`; `actIndex` NaN/undefiniert/außerhalb 0–6 → geclamped (undefiniert/NaN → „voll" = 6), kein Throw.
-- [ ] **T002** `js/enemySpawnGating.js` als IIFE → `window.EnemySpawnGating` anlegen:
+- [x] **T002** `js/enemySpawnGating.js` als IIFE → `window.EnemySpawnGating` anlegen:
   - reine Helferfunktion `depthRoster(depth)` mit den 5 Tiers (1:1 aus `enemy.js` Z. 335–345; `depth` Default 1).
   - `ENEMY_MIN_ACT = {1:0,2:1,3:1,4:2,5:3,6:4,7:4,8:0,9:0,10:0}`.
-- [ ] **T003** `getAvailableEnemyTypes(depth, actIndex)` implementieren (rein,
+- [x] **T003** `getAvailableEnemyTypes(depth, actIndex)` implementieren (rein,
   seiteneffektfrei): `roster = depthRoster(depth)`; `actIndex` clampen auf 0–6
   (NaN/undefiniert → 6 = „voll", FR-06); `filtered = roster.filter(t => ENEMY_MIN_ACT[t] <= actIndex)`;
   **Fallback (FR-04)**: ist `filtered` leer → niedrigsten akt-freien Typ aus
   `roster` nehmen, sonst `[8]` (Rat). Immer nicht-leeres Array zurückgeben.
   T001-Tests grün machen.
-- [ ] **T004** `js/enemy.js` `spawnEnemy` (Z. 328–347) verdrahten: im
+- [x] **T004** `js/enemy.js` `spawnEnemy` (Z. 328–347) verdrahten: im
   random-Pfad (kein gültiger expliziter `enemyType`) den Akt defensiv lesen
   (`window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function' ? ... : 6`)
   und die inline-`if`-Kette ersetzen durch
@@ -117,9 +117,9 @@ muss zunächst rot sein. Pflicht-Test: „Roster nie leer" über alle
   defensivem Fallback auf die bisherige inline-Kette, falls
   `window.EnemySpawnGating` fehlt. **Explizit-Typ-Pfad (FR-05) und das
   `Phaser.Math.Between`-Picken unverändert lassen.**
-- [ ] **T005** `index.html`: `<script src="js/enemySpawnGating.js"></script>`
+- [x] **T005** `index.html`: `<script src="js/enemySpawnGating.js"></script>`
   **vor** `js/enemy.js` einhängen (FR-08).
-- [ ] **T006** Verifikation: `node tools/runTests.js` (Baseline + neue Tests
+- [x] **T006** Verifikation: `node tools/runTests.js` (Baseline + neue Tests
   grün, keine Regression); Smoke `node tools/testGame.js` (Server :3456) ohne
   Konsolen-Fehler. Stichprobe: Akt 0/1 + Tiefe 9 → keine 5/6/7; voll-Akt +
   Tiefe 9 → volles Roster. SC-01..06 abhaken.
@@ -143,3 +143,4 @@ muss zunächst rot sein. Pflicht-Test: „Roster nie leer" über alle
 ## Activity Log
 
 - 2026-06-24T12:47:43Z – unknown – shell_pid=45372 – lane=in_progress – Moved to in_progress
+- 2026-06-24T12:51:46Z – unknown – shell_pid=45372 – lane=for_review – Moved to for_review
