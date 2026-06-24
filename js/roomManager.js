@@ -264,6 +264,21 @@ function initDungeonRun() {
         });
       }
       window.RoomTemplates.TEMPLATES[procName] = procTpl;
+      // Debug (#43): ?roomsize=1 loggt jede gerollte Groesse + laufende
+      // Bucket-Verteilung, um ~20/60/20 im Playtest zu verifizieren. Zero-Effekt
+      // ohne den URL-Parameter (analog ?perf=1 / __ENEMY_COUNT_DEBUG__).
+      if (/[?&]roomsize=1\b/.test((window.location && window.location.search) || '')) {
+        window.__ROOM_SIZE_TALLY__ = window.__ROOM_SIZE_TALLY__ || { small: 0, medium: 0, large: 0 };
+        window.__ROOM_SIZE_TALLY__[_bucket.key] = (window.__ROOM_SIZE_TALLY__[_bucket.key] || 0) + 1;
+        var _rs = window.__ROOM_SIZE_TALLY__;
+        var _rsTot = _rs.small + _rs.medium + _rs.large;
+        var _pct = function (n) { return _rsTot ? Math.round((n / _rsTot) * 100) : 0; };
+        console.log('[roomsize] ' + _bucket.key + ' ' + procWidth + 'x' + procHeight +
+          ' (' + (useCave ? 'cave' : 'bsp') + ') — n=' + _rsTot +
+          '  S ' + _rs.small + ' (' + _pct(_rs.small) + '%) /' +
+          ' M ' + _rs.medium + ' (' + _pct(_rs.medium) + '%) /' +
+          ' L ' + _rs.large + ' (' + _pct(_rs.large) + '%)');
+      }
       var insertPos = 1 + Math.floor(Math.random() * Math.max(1, templateOrder.length - 2));
       templateOrder.splice(insertPos, 0, procName);
     }
