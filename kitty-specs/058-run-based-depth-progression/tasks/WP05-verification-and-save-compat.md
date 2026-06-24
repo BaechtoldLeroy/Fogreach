@@ -78,3 +78,7 @@ intakt; Smoke ohne neue Fehler.
   Audit/Save/Endless-Tests Lücken aufdecken.
 - Sekundäre Pacing-Hebel (Level-Kurve, Loot-iLevel, Gegner-Roster) sind
   **Out-of-scope** (spec.md §12) — hier NICHT mitumsetzen.
+
+## Activity Log
+
+- 2026-06-24T18:14:47Z – unknown – shell_pid=28280 – lane=for_review – Moved to for_review
