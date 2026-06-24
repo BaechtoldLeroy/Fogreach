@@ -6,6 +6,37 @@
 **Tracker**: #42
 **Branch contract**: planning on `main`, merges into `main`
 
+## 0. Designänderungen 2026-06-24 (gelockt, ÜBERSCHREIBT §6/D4/D5/D6)
+
+User-Entscheide nach WP01 — diese gelten verbindlich vor den älteren Tabellen:
+
+- **Effekt-Pool = 14 Amulette** (Quelle der Wahrheit: `AMULET_DEFS` in
+  `js/lootSystem.js`), Fokus „Verb verändern, nicht Zahl". Alle `depthMin: 10`.
+  - A1 `twin` Zwillingsklinge · A2 `chain` Kettenherz · A3 `cleave` Schnitterband
+    (**WP03: als 360°-Rundumschlag**, da Default-Nahkampf bereits einen ~60°-
+    Kegel trifft) · A4 `lifesteal` Aderlass · A5 `aura` Brandmal · A6 `tempo`
+    Sturmschritt
+  - `orbit` Trabantenstein (rotierende Klingen) · `killburst` Aschefunke (Gegner
+    explodieren beim Tod, Ketten) · `dashstrike` Schattenmantel (Dodge phast
+    durch + Schaden + kurz unverwundbar) · `momentum` Schlächterkrone (**+Schaden
+    je Kill, stapelnd, klingt ohne Kill ab** — belohnt Aggression, NICHT
+    No-Hit) · `frost` Frostsiegel (Treffer frosten, sterbende Frost-Gegner
+    zersplittern auf Nachbarn) · `glass` Glasherz (+50 % Schaden, −25 % MaxLP) ·
+    `revive` Zweiter Atem (1× Tod überleben) · `bloodpact` Blutpakt (Fähigkeiten
+    ohne Cooldown, kosten LP)
+- **D5 → FLACH:** keine Tiefen-/Seltenheits-Gewichtung; `rollAmulet` zieht
+  gleichverteilt (so heute in WP01 implementiert).
+- **D6 → CHANCE, NICHT garantiert:** **nicht jeder Run** soll ein Amulett finden
+  lassen. Früh-Spawn ab Tiefe 10 ist eine **Chance** (tunebar, z. B. ~50 %),
+  KEIN garantierter Spawn. (FR-04/SC-03 entsprechend lesen.)
+- **D4 → bestehendes Event:** der „fliegende Händler" ist das vorhandene
+  **`wandering_merchant`**-Event (`js/eventSystem.js`, [E] → `openShopScene`,
+  `_dungeonMerchant`). **Kein neuer NPC** — WP04 hängt Amulette in dessen
+  ShopScene-Stock (Vorbild `getOrCreateShopState`), gegated auf Tiefe ≥ 10.
+- Verworfen: „Sturmlanze/Pierce" (Nahkampf trifft schon Kegel; Bogen-Nische);
+  „Bullet-Time/Sanduhr" (bricht Pacing); „Wutkern/No-Hit-Ramp" (Angst-Spielweise)
+  → ersetzt durch `momentum` (Kill-Ramp).
+
 ## 1. Overview
 
 Das Equipment-System (`js/main.js` `equipment = { weapon, head, body, boots }`,
