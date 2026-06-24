@@ -95,7 +95,7 @@ Ziehungen (deterministischer Seed via `mulberry32`, Toleranz ±3–4 %-Punkte) +
 
 ## Subtasks
 
-- [ ] **T001** (test-first) `tests/procRoomBuckets.test.js` anlegen (lädt die
+- [x] **T001** (test-first) `tests/procRoomBuckets.test.js` anlegen (lädt die
   reine Logik via `loadGameModule`, Stil wie bestehende `tests/*` mit
   `node:test`):
   - **Verteilung** (FR-01/SC-01): über N ≥ 2000 Ziehungen liefert
@@ -109,11 +109,11 @@ Ziehungen (deterministischer Seed via `mulberry32`, Toleranz ±3–4 %-Punkte) +
     Bucket **beide** Stile (Cave & BSP) vor (kein Stil-Ausschluss durch eine
     optionale Bias).
   - Tests rot, solange Export/`SIZE_BUCKETS`/`rollBucket` fehlen.
-- [ ] **T002** `js/proceduralRooms.js`: `weightedPick` (Z. 198–207) auf
+- [x] **T002** `js/proceduralRooms.js`: `weightedPick` (Z. 198–207) auf
   `window.ProceduralRooms` exportieren — Export-Objekt **Z. 830** um
   `weightedPick: weightedPick` erweitern. **Keine** Änderung an
   `generate`/Layout-Logik (C-01).
-- [ ] **T003** `js/roomManager.js`: benannte `SIZE_BUCKETS`-Datenstruktur an
+- [x] **T003** `js/roomManager.js`: benannte `SIZE_BUCKETS`-Datenstruktur an
   **einer** Stelle anlegen (FR-03/C-03), z.B.:
   ```js
   var SIZE_BUCKETS = [
@@ -127,7 +127,7 @@ Ziehungen (deterministischer Seed via `mulberry32`, Toleranz ±3–4 %-Punkte) +
   Bucket wählt und `width`/`height` per `lo + Math.floor(rng()*(hi-lo+1))` aus
   der Bucket-Range zieht. `rng` defaults auf `Math.random`, damit es im Spiel
   ohne Seed läuft, im Test aber seedbar ist.
-- [ ] **T004** `js/roomManager.js` Proc-Block (**Z. 232–262**) verdrahten:
+- [x] **T004** `js/roomManager.js` Proc-Block (**Z. 232–262**) verdrahten:
   pro Proc-Raum zuerst `rollBucket(...)` → `procWidth`/`procHeight`; **dann
   separat** den Stil würfeln (Cave vs. BSP). Optionale, **tunebare** Bucket→Stil-
   Bias erlaubt (Small→eher Cave, Large→eher BSP), aber beide Stile je Bucket
@@ -137,10 +137,10 @@ Ziehungen (deterministischer Seed via `mulberry32`, Toleranz ±3–4 %-Punkte) +
   Template-Registrierung (`RoomTemplates.TEMPLATES[procName]`), Insert-Position
   (`templateOrder.splice`), `procCount` (2–4), Single-Generator-Fallback
   (nur Cave XOR BSP geladen).
-- [ ] **T005** Review/Diff-Kontrolle: **Endless-Pfad** (Z. 1018–1025),
+- [x] **T005** Review/Diff-Kontrolle: **Endless-Pfad** (Z. 1018–1025),
   **Walkable-Area/Wave** (Z. 941–945) und authored Templates bleiben **ohne
   Code-Änderung** (FR-06/FR-07/FR-08).
-- [ ] **T006** Verifikation & Tuning: `node tools/runTests.js` (Baseline + neue
+- [x] **T006** Verifikation & Tuning: `node tools/runTests.js` (Baseline + neue
   Tests grün, keine Regression); Smoke `node tools/testGame.js` (Server :3456)
   ohne Konsolen-Fehler. Manuell prüfen: Medium dominiert sichtbar, mittelgroße
   Encounters existieren, Endless unverändert. Tile-Ranges bei Bedarf im Playtest
@@ -168,3 +168,4 @@ Ziehungen (deterministischer Seed via `mulberry32`, Toleranz ±3–4 %-Punkte) +
 ## Activity Log
 
 - 2026-06-24T08:33:18Z – unknown – shell_pid=6812 – lane=in_progress – Moved to in_progress
+- 2026-06-24T08:42:27Z – unknown – shell_pid=6812 – lane=for_review – Moved to for_review
