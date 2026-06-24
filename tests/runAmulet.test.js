@@ -200,3 +200,20 @@ test('#42 WP04: getAmuletEffectDesc — liefert kurze Beschreibung pro Effekt', 
   }
   assert.strictEqual(sys.getAmuletEffectDesc(''), '', 'empty effect -> empty desc');
 });
+
+// --- WP05: i18n name keys ---
+
+test('#42 WP05: rollAmulet setzt einen i18n-Namenskey (effect-basiert)', () => {
+  const sys = freshSystem();
+  for (let s = 0; s < 60; s++) {
+    const a = sys.rollAmulet(12, makeRng(s + 7));
+    assert.strictEqual(a.nameKey, 'amulet.name.' + a.effect, 'nameKey matches effect');
+  }
+});
+
+test('#42 WP05: composeName faellt ohne i18n auf den DE-Basisnamen zurueck', () => {
+  const sys = freshSystem();
+  const a = sys.rollAmulet(12, makeRng(3));
+  // No i18n registered in the headless harness -> composeName returns _baseName.
+  assert.strictEqual(sys.composeName(a), a._baseName, 'falls back to DE base name');
+});

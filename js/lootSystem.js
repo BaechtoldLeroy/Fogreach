@@ -88,7 +88,22 @@ if (window.i18n) {
     'amulet.fx.glass': '+50% Schaden, −25% Max-LP',
     'amulet.fx.revive': 'Überlebt den Tod 1× pro Run',
     'amulet.fx.bloodpact': 'Fähigkeiten ohne Cooldown, kosten LP',
-    'shop.amulet.section': '— Amulette (run-spezifisch) —'
+    'shop.amulet.section': '— Amulette (run-spezifisch) —',
+    // Feature 059 (#42) WP05: localized amulet names (keyed by effect).
+    'amulet.name.twin': 'Amulett der Zwillingsklinge',
+    'amulet.name.chain': 'Kettenherz',
+    'amulet.name.cleave': 'Schnitterband',
+    'amulet.name.lifesteal': 'Aderlass-Talisman',
+    'amulet.name.aura': 'Brandmal der Gier',
+    'amulet.name.tempo': 'Sturmschritt-Amulett',
+    'amulet.name.orbit': 'Trabantenstein',
+    'amulet.name.killburst': 'Aschefunke',
+    'amulet.name.dashstrike': 'Schattenmantel',
+    'amulet.name.momentum': 'Schlächterkrone',
+    'amulet.name.frost': 'Frostsiegel',
+    'amulet.name.glass': 'Glasherz',
+    'amulet.name.revive': 'Zweiter Atem',
+    'amulet.name.bloodpact': 'Blutpakt'
   });
   window.i18n.register('en', {
     'loot.affix.sharp_dmg': 'Sharp',
@@ -173,7 +188,22 @@ if (window.i18n) {
     'amulet.fx.glass': '+50% damage, -25% max HP',
     'amulet.fx.revive': 'Survive death once per run',
     'amulet.fx.bloodpact': 'Abilities cost HP, no cooldown',
-    'shop.amulet.section': '— Amulets (run-specific) —'
+    'shop.amulet.section': '— Amulets (run-specific) —',
+    // Feature 059 (#42) WP05: localized amulet names (keyed by effect).
+    'amulet.name.twin': 'Twinblade Amulet',
+    'amulet.name.chain': 'Chainheart',
+    'amulet.name.cleave': "Reaper's Band",
+    'amulet.name.lifesteal': 'Bloodletting Talisman',
+    'amulet.name.aura': 'Brand of Greed',
+    'amulet.name.tempo': 'Storm-Step Amulet',
+    'amulet.name.orbit': 'Satellite Stone',
+    'amulet.name.killburst': 'Ashspark',
+    'amulet.name.dashstrike': 'Shadowmantle',
+    'amulet.name.momentum': "Slayer's Crown",
+    'amulet.name.frost': 'Frost Seal',
+    'amulet.name.glass': 'Glass Heart',
+    'amulet.name.revive': 'Second Wind',
+    'amulet.name.bloodpact': 'Blood Pact'
   });
 }
 //
@@ -372,6 +402,10 @@ if (window.i18n) {
       name: def.name,
       displayName: def.name,
       _baseName: def.name,
+      // WP05 (#42): i18n name key (effect is unique per amulet) so composeName/
+      // getLocalizedDisplayName resolve the localized name; def.name is the
+      // DE fallback when i18n is absent.
+      nameKey: 'amulet.name.' + def.effect,
       iconKey: def.iconKey,
       effect: def.effect,
       isAmulet: true,
