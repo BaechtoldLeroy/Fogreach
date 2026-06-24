@@ -362,8 +362,13 @@
   // ── Main generator ────────────────────────────────────────────────────────
   function generate(opts) {
     opts = opts || {};
-    var width = Math.max(40, Math.min(120, opts.width || 64));
-    var height = Math.max(40, Math.min(120, opts.height || 56));
+    // Untergrenze 56x48 = der historisch IMMER genutzte kleinste Cave (alter
+    // Code: width 56-80, height 48-68). Cellular-Automata-Caves unter dieser
+    // Groesse erzeugen eine zu kleine groesste Region -> abgeriegelte Bereiche +
+    // Treppe ausserhalb des begehbaren Bereichs. Kleinere "small"-Buckets werden
+    // hier auf den verlaesslichen Cave-Boden gehoben (BSP-Raeume bleiben klein).
+    var width = Math.max(56, Math.min(120, opts.width || 64));
+    var height = Math.max(48, Math.min(120, opts.height || 56));
     var seed = (opts.seed !== undefined) ? (opts.seed >>> 0) : (Math.floor(Math.random() * 1e9) >>> 0);
     var rng = mulberry32(seed);
     var depth = Math.max(1, opts.depth || (window.DUNGEON_DEPTH || 1));
