@@ -91,3 +91,4 @@ FR-05, FR-06, FR-07, C-04, SC-04, SC-05.
 
 - 2026-06-24T18:11:18Z – unknown – shell_pid=32544 – lane=for_review – Moved to for_review
 - 2026-06-24T18:11:34Z – unknown – shell_pid=32544 – lane=approved – Moved to approved
+- 2026-06-24T18:11:45Z – unknown – shell_pid=32544 – lane=done – Done override: Manual merge; quest+clamp+off-by-one, 350 pass, smoke 0, pushed
