@@ -125,8 +125,9 @@ markiert (überlappen mit #40).
 
 ## 8. Offene Design-Entscheidungen
 
-Diese Punkte müssen vor der Implementierung (WP01, Decision-Lock)
-entschieden werden. Empfohlener Default in **fett**.
+> **GELOCKT 2026-06-24 (User):** D1 = (a) „Letzten Raum erreicht"
+> (`reason === 'dungeon_complete'`). D2 = (a) Strikt +1, flacher-wählen bleibt.
+> Beide = empfohlener Default. Implementierung folgt diesen Entscheidungen.
 
 ### D1 — Was zählt als „erfolgreicher Run"?
 **Optionen:**
