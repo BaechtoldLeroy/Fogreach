@@ -67,3 +67,7 @@ alle Tests grün; 60fps/Mobile ≥45.
 - Amulett-Slot visuell als „Nur dieser Run" erkennbar; Tooltip zeigt Effekt; Layout lesbar; Mobile bedienbar (SC-07).
 - DE/EN vollständig, keine hartkodierten Strings; alle Tests grün; Perf unverändert (SC-08).
 - Keine Regression der 4 Bestands-Slots (NFR-04).
+
+## Activity Log
+
+- 2026-06-24T17:40:23Z – unknown – shell_pid=45360 – lane=for_review – Moved to for_review
