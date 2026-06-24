@@ -1466,6 +1466,12 @@ function update(time, delta) {
     }
   }
 
+  // Feature 059 (#42): per-frame amulet effects (orbit / aura / dashstrike).
+  // No-op ohne passendes Run-Amulett; defensiv, darf den Loop nie brechen.
+  if (typeof window.updateAmuletPerFrame === 'function') {
+    try { window.updateAmuletPerFrame(this, delta); } catch (e) { /* ignore */ }
+  }
+
   // WP04: Redraw potion cooldown HUD indicator
   // Drive the potion HUD tile (best-in-inventory + cooldown radial)
   if (typeof window._refreshPotionTile === 'function') {
@@ -1755,6 +1761,11 @@ function leaveDungeonForHub(scene, options = {}) {
     window.equipment.amulet = null;
   }
   window.runAmulet = null;
+  // Feature 059 WP03: clear transient effect state (momentum stacks, revive-used)
+  // so nothing leaks into the next run.
+  if (window.AmuletEffects && typeof window.AmuletEffects.resetRunState === 'function') {
+    try { window.AmuletEffects.resetRunState(); } catch (e) {}
+  }
   if (typeof recalcDerived === 'function') {
     try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived (amulet) failed', err); }
   }

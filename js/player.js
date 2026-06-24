@@ -636,7 +636,12 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
   // Per-ability key maps to the loot stat key (e.g. 'spin' -> 'dmg_spinAttack').
   // Plain 'attack' only picks up 'dmg_all_abilities' (no per-ability affix).
   const lootDmgMul = 1 + getLootAbilityDamageBonus(abilityKey);
-  const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul);
+  // Feature 059 WP03: run-amulet per-hit damage multiplier (Schlächterkrone
+  // momentum kill-stacks). 1 if no amulet / decayed. (Glass-Amulett geht ueber
+  // recalcDerived, nicht hier.)
+  const amuletDmgMul = (window.AmuletEffects && typeof window.AmuletEffects.damageMul === 'function')
+    ? window.AmuletEffects.damageMul() : 1;
+  const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul * amuletDmgMul);
   const damage = Math.max(1, Math.round(isCrit ? base * 1.5 : base));
 
   // Snapshot maxHp on first hit so the lazy enemy hp bar (drawn by
@@ -664,9 +669,53 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
       lsPct += (window.LootSystem.getBonus('lifesteal') || 0) / 100;
     }
     lsPct += window.PLAYER_LIFESTEAL || 0;
+    // Feature 059 WP03: Aderlass-Talisman — starker Lebensraub (ueber Affixe).
+    if (window.AmuletEffects && typeof window.AmuletEffects.lifestealPct === 'function') {
+      lsPct += window.AmuletEffects.lifestealPct();
+    }
     if (lsPct > 0) {
       addPlayerHealth(Math.max(1, Math.round(damage * lsPct)));
     }
+  }
+
+  // Feature 059 WP03: Kettenherz (chain) — the hit jumps to up to N nearby
+  // enemies for a reduced fraction. Applied DIRECTLY (not via dealDamageToEnemy)
+  // and guarded so chained hits never re-chain (no cascade).
+  const _chain = (window.AmuletEffects && typeof window.AmuletEffects.chainParams === 'function')
+    ? window.AmuletEffects.chainParams() : null;
+  if (_chain && damage > 0 && !window.__amuletChaining && typeof enemies !== 'undefined'
+      && enemies && enemies.children) {
+    window.__amuletChaining = true;
+    try {
+      const _near = [];
+      enemies.children.iterate((cand) => {
+        if (!cand || !cand.active || cand === enemy) return;
+        const cd = Math.hypot((cand.x || 0) - enemy.x, (cand.y || 0) - enemy.y);
+        if (cd <= _chain.range) _near.push({ cand, cd });
+      });
+      _near.sort((a, b) => a.cd - b.cd);
+      const _chainDmg = Math.max(1, Math.round(damage * _chain.frac));
+      for (let _i = 0; _i < Math.min(_chain.count, _near.length); _i++) {
+        const _ce = _near[_i].cand;
+        if (typeof _ce.maxHp !== 'number') _ce.maxHp = _ce.hp;
+        _ce.hp -= _chainDmg;
+        if (window.particleFactory) window.particleFactory.hitSpark(_ce.x, _ce.y);
+        handleEnemyHit(scene, _ce, { tint: 0x66ccff, duration: 80 });
+      }
+    } catch (e) { /* never crash gameplay */ }
+    window.__amuletChaining = false;
+  }
+
+  // Feature 059 WP03: Frostsiegel (frost) — hits chill the enemy (SLOW) and mark
+  // it, so a chilled enemy shatters into a frost burst when it dies.
+  const _frostHit = (window.AmuletEffects && typeof window.AmuletEffects.frostParams === 'function')
+    ? window.AmuletEffects.frostParams() : null;
+  if (_frostHit && damage > 0 && enemy && enemy.active
+      && window.statusEffectManager && window.StatusEffectType) {
+    try {
+      window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'amuletFrost');
+      enemy.__amuletChilled = true;
+    } catch (e) { /* never crash gameplay */ }
   }
 
   return { damage, isCrit };
@@ -906,6 +955,21 @@ function applyCooldownModifier(base, key) {
   // cdReductionMul = 1 - cd_<ability> - cd_all_abilities; floor resulting CD at 100ms.
   const lootCdMul = Math.max(0, 1 - getLootAbilityCooldownReduction(key));
   const effective = base * mult * lootCdMul;
+  // Feature 059 WP03: Blutpakt (bloodpact) — abilities (NOT the basic attack)
+  // have almost no cooldown but cost HP per use. applyCooldownModifier runs once
+  // per activation, so the HP cost is deducted here; HP is floored at 1 (the
+  // pact never kills you outright).
+  if (key && key !== 'attack' && window.AmuletEffects
+      && typeof window.AmuletEffects.activeEffect === 'function'
+      && window.AmuletEffects.activeEffect() === 'bloodpact') {
+    const _mh = (typeof playerMaxHealth === 'number') ? playerMaxHealth : (window.playerMaxHealth || 30);
+    const _cost = Math.max(1, Math.round(_mh * 0.08));
+    if (typeof playerHealth === 'number') {
+      playerHealth = Math.max(1, playerHealth - _cost);
+      if (typeof updateHUD === 'function') { try { updateHUD(); } catch (e) { /* swallow */ } }
+    }
+    return Math.max(60, effective * 0.1);
+  }
   return Math.max(100, effective);
 }
 
@@ -1265,6 +1329,58 @@ function handleEnemyHit(scene, enemy, options = {}) {
   }
 
   if (enemy.hp <= 0) {
+    // Feature 059 WP03: run-amulet on-kill hook (Schlächterkrone momentum-stack;
+    // spaetere Batches: killburst/frost-shatter/tempo-burst). enemy lebt hier
+    // noch -> x/y gueltig fuer AoE-Effekte.
+    if (window.AmuletEffects && typeof window.AmuletEffects.onEnemyKilled === 'function') {
+      try { window.AmuletEffects.onEnemyKilled(enemy, scene); } catch (e) { /* never crash */ }
+    }
+    // Feature 059 WP03: Aschefunke (killburst) — dying enemy explodes for AoE.
+    // Cascades are allowed but bounded by maxDepth (window.__killburstDepth).
+    const _kb = (window.AmuletEffects && typeof window.AmuletEffects.killburstParams === 'function')
+      ? window.AmuletEffects.killburstParams() : null;
+    if (_kb && (window.__killburstDepth || 0) < _kb.maxDepth
+        && typeof enemies !== 'undefined' && enemies && enemies.children) {
+      window.__killburstDepth = (window.__killburstDepth || 0) + 1;
+      try {
+        const _ex = enemy.x, _ey = enemy.y;
+        const _boom = Math.max(1, Math.round((enemy.maxHp || enemy.hp || 10) * _kb.frac));
+        if (scene && scene.add && typeof scene.add.circle === 'function') {
+          const _g = scene.add.circle(_ex, _ey, _kb.radius, 0xff7733, 0.35).setDepth(78);
+          if (scene.tweens) scene.tweens.add({ targets: _g, alpha: 0, scale: 1.35, duration: 220, onComplete: () => { try { _g.destroy(); } catch (_) {} } });
+          else if (scene.time) scene.time.delayedCall(220, () => { try { _g.destroy(); } catch (_) {} });
+        }
+        const _victims = [];
+        enemies.children.iterate((cand) => {
+          if (!cand || !cand.active || cand === enemy) return;
+          if (Math.hypot((cand.x || 0) - _ex, (cand.y || 0) - _ey) <= _kb.radius) _victims.push(cand);
+        });
+        _victims.forEach((cand) => {
+          if (!cand.active) return;
+          if (typeof cand.maxHp !== 'number') cand.maxHp = cand.hp;
+          cand.hp -= _boom;
+          if (window.particleFactory) window.particleFactory.hitSpark(cand.x, cand.y);
+          handleEnemyHit(scene, cand, { tint: 0xff7733, duration: 90 });
+        });
+      } catch (e) { /* never crash */ }
+      window.__killburstDepth = Math.max(0, (window.__killburstDepth || 1) - 1);
+    }
+    // Feature 059 WP03: Frostsiegel (frost) — a chilled enemy SHATTERS on death,
+    // chilling nearby enemies (SLOW).
+    const _fp = (window.AmuletEffects && typeof window.AmuletEffects.frostParams === 'function')
+      ? window.AmuletEffects.frostParams() : null;
+    if (_fp && enemy.__amuletChilled && typeof enemies !== 'undefined' && enemies && enemies.children
+        && window.statusEffectManager && window.StatusEffectType) {
+      try {
+        const _fx = enemy.x, _fy = enemy.y;
+        enemies.children.iterate((cand) => {
+          if (!cand || !cand.active || cand === enemy) return;
+          if (Math.hypot((cand.x || 0) - _fx, (cand.y || 0) - _fy) > _fp.radius) return;
+          window.statusEffectManager.applyEffect(cand, window.StatusEffectType.SLOW, 'amuletFrostShatter');
+          cand.__amuletChilled = true;
+        });
+      } catch (e) { /* never crash */ }
+    }
     // Issue #24: chance to drop a Druckblatt on kill. Elite enemies have
     // a higher chance. Direct call to PrintingHouse.addDruckblaetter
     // (clamped to the 50-cap inside). Drops nothing visible — counter
@@ -1374,6 +1490,12 @@ function attack() {
   // path below still runs so attack speed + AoE-on-cooldown UI works.
   if (_hasBowEquipped()) {
     _fireBowArrow(this);
+    // Feature 059 WP03: Zwillingsklinge — a second, weaker arrow at a slight angle.
+    const _twinFracBow = (window.AmuletEffects && typeof window.AmuletEffects.twinDamageFrac === 'function')
+      ? window.AmuletEffects.twinDamageFrac() : 0;
+    if (_twinFracBow > 0 && this.time && this.time.delayedCall) {
+      this.time.delayedCall(70, () => _fireBowArrow(this, { damageMult: _twinFracBow, angleOffset: 0.18 }));
+    }
 
     this.time.delayedCall(120, () => { isAttacking = false; }, null, this);
     attackCooldown = true;
@@ -1407,7 +1529,10 @@ function attack() {
 
     toEnemy.normalize();
     const dot = attackDir.dot(toEnemy); // Cosinus-Wert zwischen -1 und 1
-    if (dot <= 0.5) return; // ~60° nach vorn
+    // Feature 059 WP03: Schnitterband (cleave) — 360°-Rundumschlag statt Kegel.
+    const _cleave = window.AmuletEffects && typeof window.AmuletEffects.activeEffect === 'function'
+      && window.AmuletEffects.activeEffect() === 'cleave';
+    if (!_cleave && dot <= 0.5) return; // ~60° nach vorn (cleave hebt den Kegel auf)
 
     dealDamageToEnemy(this, enemy, 1, 'attack');
     if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
@@ -1421,6 +1546,29 @@ function attack() {
       }
     }
   }, { requireLineOfSight: true });
+
+  // Feature 059 WP03: Zwillingsklinge (twin) — a second, weaker strike (~60%)
+  // ~90ms later for a "double swing" feel. Same cone/aim; reuses the normal
+  // damage path. No-op without the twin amulet.
+  const _twinFrac = (window.AmuletEffects && typeof window.AmuletEffects.twinDamageFrac === 'function')
+    ? window.AmuletEffects.twinDamageFrac() : 0;
+  if (_twinFrac > 0) {
+    const _twinScene = this;
+    const _twinDir = _getAimVector2(_twinScene);
+    const _twinSecond = () => {
+      forEachEnemyInRange(attackRange, (enemy, { dx, dy }) => {
+        const v = new Phaser.Math.Vector2(dx, dy);
+        if (v.length() === 0) return;
+        v.normalize();
+        if (_twinDir.dot(v) <= 0.5) return;
+        dealDamageToEnemy(_twinScene, enemy, _twinFrac, 'attack');
+        if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
+        handleEnemyHit(_twinScene, enemy, { useTween: true, duration: 80 });
+      }, { requireLineOfSight: true });
+    };
+    if (_twinScene.time && _twinScene.time.delayedCall) _twinScene.time.delayedCall(90, _twinSecond);
+    else _twinSecond();
+  }
 
   // Melee can also break destructible obstacles (chests, barrels, crates) in front of player
   if (obstacles && obstacles.children && typeof window.breakDestructibleObstacle === 'function') {
@@ -1719,6 +1867,113 @@ function releaseChargedSlash(forceMaxCharge = false) {
 //   3. setVelocity for full Roll-speed in direction
 //   4. delayedCall(duration) → reset isRolling + _playerInvincible
 //   5. delayedCall(cooldown) → reset rollCooldown
+
+// ── Feature 059 (#42) WP03 Batch 3b: per-frame amulet effects ───────────────
+// orbit (Trabantenstein): rotierende Klingen, die Gegner bei Kontakt treffen.
+// aura  (Brandmal):       getakteter Flächen-DoT um den Spieler.
+// dashstrike (Schattenmantel): Roll fügt durchquerten Gegnern Schaden zu
+//   (Phasing + Unverwundbarkeit liefert performRoll bereits).
+// Gated auf den equippten Effekt; ohne passendes Amulett komplett no-op.
+// Aufgerufen aus dem GameScene-update()-Loop (main.js).
+var _orbitState = { sprites: [], angle: 0, hits: (typeof WeakMap !== 'undefined' ? new WeakMap() : null) };
+var _auraTimer = 0;
+var _dashstrikeHits = (typeof WeakMap !== 'undefined' ? new WeakMap() : null);
+
+function _destroyOrbitals() {
+  for (var i = 0; i < _orbitState.sprites.length; i++) {
+    try { if (_orbitState.sprites[i]) _orbitState.sprites[i].destroy(); } catch (_) {}
+  }
+  _orbitState.sprites = [];
+}
+
+// Tags Gegner-HP runter + Standard-Trefferbehandlung (Tint/Tod/Kaskaden).
+function _amuletTickDamage(scene, en, dmg, tint, now, store) {
+  if (!en || !en.active || en.hp == null) return;
+  if (store) {
+    var last = store.get(en) || 0;
+    if (now - last <= 300) return;     // pro Gegner gedrosselt
+    store.set(en, now);
+  }
+  if (typeof en.maxHp !== 'number') en.maxHp = en.hp;
+  en.hp -= dmg;
+  try { if (window.particleFactory && window.particleFactory.hitSpark) window.particleFactory.hitSpark(en.x, en.y); } catch (_) {}
+  try { handleEnemyHit(scene, en, { tint: tint, duration: 60 }); } catch (_) {}
+}
+
+function updateAmuletPerFrame(scene, delta) {
+  if (!scene || typeof player === 'undefined' || !player || !player.active) { _destroyOrbitals(); return; }
+  var eff = (window.AmuletEffects && window.AmuletEffects.activeEffect) ? window.AmuletEffects.activeEffect() : null;
+  var dt = (typeof delta === 'number' && delta > 0) ? delta : 16;
+  var now = (scene.time && typeof scene.time.now === 'number') ? scene.time.now : (typeof performance !== 'undefined' ? performance.now() : 0);
+  var enemyGroup = (typeof enemies !== 'undefined') ? enemies : null;
+  var dmgBase = (typeof weaponDamage === 'number' ? weaponDamage : 5);
+
+  // ORBIT ───────────────────────────────────────────────────────────────
+  if (eff === 'orbit') {
+    // tote/zerstörte Sprites (z.B. nach Raumwechsel) aussortieren + nachfüllen
+    _orbitState.sprites = _orbitState.sprites.filter(function (s) { return s && s.active && s.scene; });
+    while (_orbitState.sprites.length < 3 && scene.add && scene.add.circle) {
+      var blade = scene.add.circle(player.x, player.y, 9, 0x88ddff, 0.9).setDepth(72);
+      if (blade.setStrokeStyle) blade.setStrokeStyle(2, 0xffffff, 0.8);
+      _orbitState.sprites.push(blade);
+    }
+    _orbitState.angle += dt * 0.005;
+    var R = 72, n = _orbitState.sprites.length;
+    for (var i = 0; i < n; i++) {
+      var a = _orbitState.angle + (i * 2 * Math.PI / n);
+      var sp = _orbitState.sprites[i];
+      if (sp && sp.setPosition) sp.setPosition(player.x + Math.cos(a) * R, player.y + Math.sin(a) * R);
+    }
+    if (enemyGroup && enemyGroup.children) {
+      var odmg = Math.max(1, Math.round(dmgBase * 0.4));
+      enemyGroup.children.iterate(function (en) {
+        if (!en || !en.active) return;
+        for (var j = 0; j < _orbitState.sprites.length; j++) {
+          var s2 = _orbitState.sprites[j];
+          if (s2 && Math.hypot(en.x - s2.x, en.y - s2.y) < 26) {
+            _amuletTickDamage(scene, en, odmg, 0x88ddff, now, _orbitState.hits);
+            break;
+          }
+        }
+      });
+    }
+  } else if (_orbitState.sprites.length) {
+    _destroyOrbitals();
+  }
+
+  // AURA ──────────────────────────────────────────────────────────────────
+  if (eff === 'aura') {
+    _auraTimer += dt;
+    if (_auraTimer >= 500) {
+      _auraTimer = 0;
+      var R2 = 110, admg = Math.max(1, Math.round(dmgBase * 0.5));
+      if (scene.add && scene.add.circle) {
+        var pulse = scene.add.circle(player.x, player.y, R2, 0xff5522, 0.12).setDepth(40);
+        if (scene.tweens) scene.tweens.add({ targets: pulse, alpha: 0, scale: 1.1, duration: 400, onComplete: function () { try { pulse.destroy(); } catch (_) {} } });
+        else if (scene.time) scene.time.delayedCall(400, function () { try { pulse.destroy(); } catch (_) {} });
+      }
+      if (enemyGroup && enemyGroup.children) {
+        enemyGroup.children.iterate(function (en) {
+          if (!en || !en.active) return;
+          if (Math.hypot(en.x - player.x, en.y - player.y) <= R2) _amuletTickDamage(scene, en, admg, 0xff5522, now, null);
+        });
+      }
+    }
+  } else {
+    _auraTimer = 0;
+  }
+
+  // DASHSTRIKE ──────────────────────────────────────────────────────────────
+  if (eff === 'dashstrike' && typeof isRolling !== 'undefined' && isRolling && enemyGroup && enemyGroup.children) {
+    var ddmg = Math.max(1, Math.round(dmgBase * 0.8));
+    enemyGroup.children.iterate(function (en) {
+      if (!en || !en.active) return;
+      if (Math.hypot(en.x - player.x, en.y - player.y) <= 36) _amuletTickDamage(scene, en, ddmg, 0xaa66ff, now, _dashstrikeHits);
+    });
+  }
+}
+if (typeof window !== 'undefined') window.updateAmuletPerFrame = updateAmuletPerFrame;
+
 function performRoll() {
   // Gate: kein Roll während anderer Action, Cooldown, oder Tod
   if (!this || !player || !player.active) return false;
@@ -2043,11 +2298,17 @@ function _hasBowEquipped() {
   return !!(eq && eq.weapon && eq.weapon.subtype === 'bow');
 }
 
-function _fireBowArrow(scene) {
+function _fireBowArrow(scene, opts) {
   if (!scene || !player || !playerProjectiles) return;
+  opts = opts || {};
   ensurePlayerArrowTexture(scene);
 
   const dir = _getAimVector2(scene);
+  // Feature 059 WP03: optional angle offset for the Zwillingsklinge 2nd arrow.
+  if (opts.angleOffset) {
+    const _a = dir.angle() + opts.angleOffset;
+    dir.set(Math.cos(_a), Math.sin(_a));
+  }
 
   const spawnOffset = 22;
   const projectile = scene.physics.add.sprite(
@@ -2061,7 +2322,7 @@ function _fireBowArrow(scene) {
   projectile.body?.setAllowGravity?.(false);
   projectile.body?.setSize?.(20, 6);
   projectile.body?.setOffset?.(4, 5);
-  projectile.setData('damageMult', 1.0);
+  projectile.setData('damageMult', (typeof opts.damageMult === 'number') ? opts.damageMult : 1.0);
   projectile.setData('isBowArrow', true);
   projectile.setData('knockback', 60);
 
