@@ -325,14 +325,23 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     g.generateTexture('proc_wolf', 32, 24); g.destroy();
   }
 
-  // Determine available types based on dungeon depth (story progression)
+  // Determine available types based on dungeon depth + story act (#40).
   const depth = window.DUNGEON_DEPTH || 1;
   let type;
   if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 10) {
-    type = enemyType;
+    type = enemyType; // explicit request — never gated (FR-05)
   } else {
     let availableTypes;
-    if (depth <= 2) {
+    // #40: gate the roster by the current story act on top of the depth floor.
+    // Defensive: a missing/uninitialised story system reads as "full" (act 6)
+    // so spawns are never over-restricted; a missing gating module falls back
+    // to the inline depth tiers (behaviour unchanged from before the feature).
+    const actIdx = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+      ? window.storySystem.getCurrentActIndex()
+      : 6;
+    if (window.EnemySpawnGating && typeof window.EnemySpawnGating.getAvailableEnemyTypes === 'function') {
+      availableTypes = window.EnemySpawnGating.getAvailableEnemyTypes(depth, actIdx);
+    } else if (depth <= 2) {
       availableTypes = [8, 9, 10]; // Animals only
     } else if (depth <= 4) {
       availableTypes = [8, 9, 10, 1, 2]; // Animals + Imp, Archer
