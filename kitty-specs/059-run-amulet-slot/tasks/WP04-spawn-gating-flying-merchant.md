@@ -65,3 +65,7 @@ Händler-Auswahl. Grenze 10 inklusiv.
 - Tiefe <10: kein Amulett-Spawn, kein Händler-Amulett (SC-03).
 - Tiefe ≥10: garantiert 1 Amulett früh im Run + run-fixe Händler-Auswahl (SC-03, SC-04).
 - Bestehende Spawn-Order/Shop-Logik ohne Regression (NFR-04).
+
+## Activity Log
+
+- 2026-06-24T17:30:08Z – unknown – shell_pid=1096 – lane=for_review – Moved to for_review
