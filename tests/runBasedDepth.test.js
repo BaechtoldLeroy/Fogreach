@@ -26,7 +26,8 @@ function fresh() {
 }
 
 function setMaxDepth(n) {
-  globalThis.window.localStorage.setItem(MAX_DEPTH_KEY, String(n));
+  // persistence.js reads the bare `localStorage` global (setup.js stub).
+  globalThis.localStorage.setItem(MAX_DEPTH_KEY, String(n));
 }
 
 // --- (a) Tiefe bleibt run-konstant über Räume (FR-01, SC-01) ---

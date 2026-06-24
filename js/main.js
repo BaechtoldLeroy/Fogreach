@@ -1703,6 +1703,16 @@ function leaveDungeonForHub(scene, options = {}) {
 
   const { reason = 'portal', skipSave = false, skipFade = false } = options;
 
+  // Feature 058 (#41): a successfully COMPLETED run (reason 'dungeon_complete',
+  // decision D1) grows the depth ceiling (MAX_DEPTH) by exactly +1. RunDepth
+  // owns the once-per-run idempotency latch (re-armed in initDungeonRun), so a
+  // teardown that fires leaveDungeonForHub more than once still counts once.
+  // death / portal never advance the depth. Runs BEFORE the save below (NFR-02:
+  // the new ceiling is persisted with this run's save).
+  if (window.RunDepth && typeof window.RunDepth.tryCompleteRun === 'function') {
+    try { window.RunDepth.tryCompleteRun(reason); } catch (e) { /* never block hub return */ }
+  }
+
   // Run-summary snapshot: compute deltas against window.runStats and stash on
   // window.lastRunSummary. HubSceneV2.create() reads + clears it on next tick.
   // Skip if runStats is missing (e.g. fresh boot with no dungeon run yet) or

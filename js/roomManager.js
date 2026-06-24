@@ -140,6 +140,11 @@ function getStoryAct(depth) {
  */
 function initDungeonRun() {
   if (window.EventSystem && window.EventSystem.reset) window.EventSystem.reset();
+  // Feature 058 (#41): re-arm the run-completion latch so this run can count
+  // its +1 once on a clean finish (RunDepth.tryCompleteRun in leaveDungeonForHub).
+  if (window.RunDepth && typeof window.RunDepth.markRunStarted === 'function') {
+    window.RunDepth.markRunStarted();
+  }
   // Reroll the Elara cellar-encounter spawn targets each run so a player
   // who abandons mid-run gets fresh distances next time.
   _resetElaraEncounterRunState();
