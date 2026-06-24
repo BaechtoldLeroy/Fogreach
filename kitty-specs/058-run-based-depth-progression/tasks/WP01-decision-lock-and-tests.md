@@ -84,3 +84,4 @@ schlägt erwartbar fehl (rot). Alle vorbestehenden Tests bleiben grün.
 ## Activity Log
 
 - 2026-06-24T17:54:34Z – unknown – shell_pid=35876 – lane=approved – Moved to approved
+- 2026-06-24T17:54:50Z – unknown – shell_pid=35876 – lane=done – Done override: Manual merge; test-first red scaffold, baseline 340 green
