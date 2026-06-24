@@ -69,3 +69,4 @@ fehlerfrei.
 
 - 2026-06-24T14:55:33Z – unknown – shell_pid=22700 – lane=in_progress – Moved to in_progress
 - 2026-06-24T15:01:16Z – unknown – shell_pid=22700 – lane=for_review – Moved to for_review
+- 2026-06-24T15:01:48Z – unknown – shell_pid=22700 – lane=approved – Selbst-Review: 320 Tests, Reset+Save-Guard, manuell gemerged.
