@@ -619,8 +619,11 @@ function initInventoryUI() {
 
 const equipKeys = ['weapon', 'head', 'body', 'boots', 'amulet'];
 const EQUIP_X = -PANEL_W / 2 + 160;  // Slots leicht nach rechts
-const EQUIP_Y0 = -PANEL_H / 2 + 160;
-const EQUIP_STEP = 90;
+// Interim (#42 WP01): Abstaende so eng, dass alle 5 Slots ins 480px-Panel
+// passen (der 5. Amulett-Slot lag vorher bei y=280 unter dem Panel-Rand).
+// Das richtige 5-Slot-Layout + Amulett-Slot-Optik/Badge folgt in WP05.
+const EQUIP_Y0 = -PANEL_H / 2 + 128;
+const EQUIP_STEP = 72;
 
   for (let i = 0; i < equipKeys.length; i++) {
     const y = EQUIP_Y0 + i * EQUIP_STEP;
