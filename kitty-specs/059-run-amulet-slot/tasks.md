@@ -68,11 +68,11 @@ Persist ins Save. **Depends on**: WP01. **Requirements**: FR-03, FR-12, NFR-03.
 Save-Roundtrip enthält kein Amulett (test-first).
 
 **Subtasks**:
-- [ ] **T007** [test-first] `tests/runAmulet.test.js`: Reset-Tests (portal + death) + Save-Guard-Test schreiben (rot), VOR Implementierung.
-- [ ] **T008** Reset-Hook in `leaveDungeonForHub` (`js/main.js:1689`) — analog `brunnenBuffs`/`printingBuffs` (`:1725`/`:1736`): `equipment.amulet = null; window.runAmulet = null;` gefolgt von `recalcDerived(0,0)`. Greift für **alle** Reasons (D1c).
-- [ ] **T009** Save-Guard (FR-12): im Save-Pfad (`js/storage.js` / `gameState.js:48`, das `window.equipment` serialisiert) sicherstellen, dass `amulet` NICHT persistiert wird — beim Speichern auslassen ODER beim Laden defensiv `equipment.amulet = null`. `js/persistence.js` KEYS unverändert (kein neuer Key).
-- [ ] **T010** Defensiver Load: Alt-Save ohne `amulet`-Feld lädt fehlerfrei; falls ein Alt-Save versehentlich ein Amulett trägt → genullt (SC-06).
-- [ ] **T011** Reset-/Save-Guard-Tests grün; `node tools/runTests.js` grün.
+- [x] **T007** [test-first] `tests/runAmulet.test.js`: Reset-Tests (portal + death) + Save-Guard-Test schreiben (rot), VOR Implementierung.
+- [x] **T008** Reset-Hook in `leaveDungeonForHub` (`js/main.js:1689`) — analog `brunnenBuffs`/`printingBuffs` (`:1725`/`:1736`): `equipment.amulet = null; window.runAmulet = null;` gefolgt von `recalcDerived(0,0)`. Greift für **alle** Reasons (D1c).
+- [x] **T009** Save-Guard (FR-12): im Save-Pfad (`js/storage.js` / `gameState.js:48`, das `window.equipment` serialisiert) sicherstellen, dass `amulet` NICHT persistiert wird — beim Speichern auslassen ODER beim Laden defensiv `equipment.amulet = null`. `js/persistence.js` KEYS unverändert (kein neuer Key).
+- [x] **T010** Defensiver Load: Alt-Save ohne `amulet`-Feld lädt fehlerfrei; falls ein Alt-Save versehentlich ein Amulett trägt → genullt (SC-06).
+- [x] **T011** Reset-/Save-Guard-Tests grün; `node tools/runTests.js` grün.
 
 ---
 
