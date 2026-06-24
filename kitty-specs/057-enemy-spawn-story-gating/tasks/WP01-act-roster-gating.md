@@ -145,3 +145,4 @@ muss zunächst rot sein. Pflicht-Test: „Roster nie leer" über alle
 - 2026-06-24T12:47:43Z – unknown – shell_pid=45372 – lane=in_progress – Moved to in_progress
 - 2026-06-24T12:51:46Z – unknown – shell_pid=45372 – lane=for_review – Moved to for_review
 - 2026-06-24T12:53:14Z – unknown – shell_pid=45372 – lane=approved – Selbst-Review ok, 310 Tests gruen auf main.
+- 2026-06-24T12:53:26Z – unknown – shell_pid=45372 – lane=done – Done override: Gemerged in main (310 Tests gruen); Worktree manuell bereinigt.

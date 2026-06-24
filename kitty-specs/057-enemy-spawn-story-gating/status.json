@@ -1,14 +1,14 @@
 {
-  "event_count": 4,
+  "event_count": 5,
   "feature_slug": "057-enemy-spawn-story-gating",
-  "last_event_id": "01KVWV26K7KHV2RAFXRBAEKS3K",
-  "materialized_at": "2026-06-24T12:53:13.971541+00:00",
+  "last_event_id": "01KVWV2J7XHZMXMKAV8977GDDJ",
+  "materialized_at": "2026-06-24T12:53:25.901727+00:00",
   "summary": {
-    "approved": 1,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 0,
+    "done": 1,
     "for_review": 0,
     "in_progress": 0,
     "planned": 0
@@ -17,9 +17,9 @@
     "WP01": {
       "actor": "user",
       "force_count": 1,
-      "lane": "approved",
-      "last_event_id": "01KVWV26K7KHV2RAFXRBAEKS3K",
-      "last_transition_at": "2026-06-24T12:53:13.959803+00:00"
+      "lane": "done",
+      "last_event_id": "01KVWV2J7XHZMXMKAV8977GDDJ",
+      "last_transition_at": "2026-06-24T12:53:25.885874+00:00"
     }
   }
 }
