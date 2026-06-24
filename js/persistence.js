@@ -127,6 +127,47 @@
     writeSettingsField('controlScheme', value);
   }
 
+  // Feature 058 (#41): depth-progression persistence. MAX_DEPTH = deepest run
+  // ever completed (anchors the "Hinabstieg" options); LAST_DEPTH = last chosen
+  // start depth (dialog default). Centralised here so the +1 is written in
+  // exactly one place (NFR-02: once per completed run, never per room/frame).
+  function getMaxDepth() {
+    try {
+      const v = parseInt(localStorage.getItem(KEYS.MAX_DEPTH) || '0', 10);
+      return Number.isFinite(v) && v > 0 ? v : 0;
+    } catch (err) { return 0; }
+  }
+
+  // Increment MAX_DEPTH by exactly 1 and persist it. Returns the new value
+  // (or the unchanged value if persistence fails). Caller (RunDepth) owns the
+  // once-per-run idempotency guard.
+  function bumpMaxDepth() {
+    const next = getMaxDepth() + 1;
+    try {
+      localStorage.setItem(KEYS.MAX_DEPTH, String(next));
+    } catch (err) {
+      console.warn('[Persistence] bumpMaxDepth failed', err);
+    }
+    return next;
+  }
+
+  function getLastDepth() {
+    try {
+      const v = parseInt(localStorage.getItem(KEYS.LAST_DEPTH) || '0', 10);
+      return Number.isFinite(v) && v > 0 ? v : 0;
+    } catch (err) { return 0; }
+  }
+
+  function setLastDepth(depth) {
+    const d = Math.max(1, Math.round(Number(depth) || 1));
+    try {
+      localStorage.setItem(KEYS.LAST_DEPTH, String(d));
+    } catch (err) {
+      console.warn('[Persistence] setLastDepth failed', err);
+    }
+    return d;
+  }
+
   window.Persistence = {
     KEYS,
     clearAllSaves,
@@ -135,6 +176,11 @@
     getLanguage,
     setLanguage,
     getControlScheme,
-    setControlScheme
+    setControlScheme,
+    // Feature 058 (#41): run-based depth progression.
+    getMaxDepth,
+    bumpMaxDepth,
+    getLastDepth,
+    setLastDepth
   };
 })();
