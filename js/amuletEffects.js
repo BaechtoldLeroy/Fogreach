@@ -20,7 +20,12 @@
     glassDamageMul: 1.5,   glassMaxHpMul: 0.75,   // Glasherz: +50% dmg, -25% maxHP
     tempoMoveAdd: 35,      tempoSpeedMul: 1.20,   // Sturmschritt: +Lauf-/Angriffstempo
     lifestealPct: 0.18,                           // Aderlass: 18% des Schadens als Heilung
-    momentumPerStack: 0.06, momentumMaxStacks: 10, momentumDecayMs: 4000 // Schlächterkrone
+    momentumPerStack: 0.06, momentumMaxStacks: 10, momentumDecayMs: 4000, // Schlächterkrone
+    // Batch 2:
+    twinDamageFrac: 0.6,                          // Zwillingsklinge: 2. Treffer @ 60%
+    chainCount: 2, chainFrac: 0.45, chainRange: 150, // Kettenherz: 2 Spruenge @ 45%, 150px
+    killburstFrac: 0.5, killburstRadius: 95, killburstMaxDepth: 3, // Aschefunke: 50% AoE, Kaskade-Limit
+    frostSlowMs: 1600, frostShatterRadius: 90     // Frostsiegel: Slow 1.6s, Splitter 90px
   };
 
   function _now() {
@@ -65,6 +70,22 @@
   function momentumStacks() { return state.momentumStacks; }
   function resetRunState() { state.momentumStacks = 0; state.momentumExpiry = 0; state.reviveUsed = false; }
 
+  // Batch 2 — effect params (null/0 unless the matching amulet is equipped).
+  // The combat integration (enemy iteration / dealing damage) lives in player.js.
+  function twinDamageFrac() { return activeEffect() === 'twin' ? TUNE.twinDamageFrac : 0; }
+  function chainParams() {
+    return activeEffect() === 'chain'
+      ? { count: TUNE.chainCount, frac: TUNE.chainFrac, range: TUNE.chainRange } : null;
+  }
+  function killburstParams() {
+    return activeEffect() === 'killburst'
+      ? { frac: TUNE.killburstFrac, radius: TUNE.killburstRadius, maxDepth: TUNE.killburstMaxDepth } : null;
+  }
+  function frostParams() {
+    return activeEffect() === 'frost'
+      ? { slowMs: TUNE.frostSlowMs, radius: TUNE.frostShatterRadius } : null;
+  }
+
   window.AmuletEffects = {
     activeEffect: activeEffect,
     getStatMods: getStatMods,
@@ -74,6 +95,10 @@
     lifestealPct: lifestealPct,
     onEnemyKilled: onEnemyKilled,
     resetRunState: resetRunState,
+    twinDamageFrac: twinDamageFrac,
+    chainParams: chainParams,
+    killburstParams: killburstParams,
+    frostParams: frostParams,
     _TUNE: TUNE
   };
 })();

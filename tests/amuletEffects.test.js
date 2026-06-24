@@ -76,3 +76,20 @@ test('resetRunState clears momentum stacks', () => {
   AE.resetRunState();
   assert.strictEqual(AE.momentumStacks(), 0);
 });
+
+test('Batch2 params: only the matching amulet returns non-null/non-zero', () => {
+  assert.ok(fresh('twin').twinDamageFrac() > 0, 'twin frac > 0');
+  assert.strictEqual(fresh('chain').twinDamageFrac(), 0, 'non-twin -> 0');
+
+  const cp = fresh('chain').chainParams();
+  assert.ok(cp && cp.count > 0 && cp.frac > 0 && cp.range > 0, 'chain params');
+  assert.strictEqual(fresh('twin').chainParams(), null, 'non-chain -> null');
+
+  const kb = fresh('killburst').killburstParams();
+  assert.ok(kb && kb.frac > 0 && kb.radius > 0 && kb.maxDepth >= 1, 'killburst params');
+  assert.strictEqual(fresh('twin').killburstParams(), null, 'non-killburst -> null');
+
+  const fp = fresh('frost').frostParams();
+  assert.ok(fp && fp.slowMs > 0 && fp.radius > 0, 'frost params');
+  assert.strictEqual(fresh(null).frostParams(), null, 'no amulet -> null');
+});

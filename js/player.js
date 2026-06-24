@@ -678,6 +678,34 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
     }
   }
 
+  // Feature 059 WP03: Kettenherz (chain) — the hit jumps to up to N nearby
+  // enemies for a reduced fraction. Applied DIRECTLY (not via dealDamageToEnemy)
+  // and guarded so chained hits never re-chain (no cascade).
+  const _chain = (window.AmuletEffects && typeof window.AmuletEffects.chainParams === 'function')
+    ? window.AmuletEffects.chainParams() : null;
+  if (_chain && damage > 0 && !window.__amuletChaining && typeof enemies !== 'undefined'
+      && enemies && enemies.children) {
+    window.__amuletChaining = true;
+    try {
+      const _near = [];
+      enemies.children.iterate((cand) => {
+        if (!cand || !cand.active || cand === enemy) return;
+        const cd = Math.hypot((cand.x || 0) - enemy.x, (cand.y || 0) - enemy.y);
+        if (cd <= _chain.range) _near.push({ cand, cd });
+      });
+      _near.sort((a, b) => a.cd - b.cd);
+      const _chainDmg = Math.max(1, Math.round(damage * _chain.frac));
+      for (let _i = 0; _i < Math.min(_chain.count, _near.length); _i++) {
+        const _ce = _near[_i].cand;
+        if (typeof _ce.maxHp !== 'number') _ce.maxHp = _ce.hp;
+        _ce.hp -= _chainDmg;
+        if (window.particleFactory) window.particleFactory.hitSpark(_ce.x, _ce.y);
+        handleEnemyHit(scene, _ce, { tint: 0x66ccff, duration: 80 });
+      }
+    } catch (e) { /* never crash gameplay */ }
+    window.__amuletChaining = false;
+  }
+
   return { damage, isCrit };
 }
 
@@ -1389,6 +1417,12 @@ function attack() {
   // path below still runs so attack speed + AoE-on-cooldown UI works.
   if (_hasBowEquipped()) {
     _fireBowArrow(this);
+    // Feature 059 WP03: Zwillingsklinge — a second, weaker arrow at a slight angle.
+    const _twinFracBow = (window.AmuletEffects && typeof window.AmuletEffects.twinDamageFrac === 'function')
+      ? window.AmuletEffects.twinDamageFrac() : 0;
+    if (_twinFracBow > 0 && this.time && this.time.delayedCall) {
+      this.time.delayedCall(70, () => _fireBowArrow(this, { damageMult: _twinFracBow, angleOffset: 0.18 }));
+    }
 
     this.time.delayedCall(120, () => { isAttacking = false; }, null, this);
     attackCooldown = true;
@@ -1436,6 +1470,29 @@ function attack() {
       }
     }
   }, { requireLineOfSight: true });
+
+  // Feature 059 WP03: Zwillingsklinge (twin) — a second, weaker strike (~60%)
+  // ~90ms later for a "double swing" feel. Same cone/aim; reuses the normal
+  // damage path. No-op without the twin amulet.
+  const _twinFrac = (window.AmuletEffects && typeof window.AmuletEffects.twinDamageFrac === 'function')
+    ? window.AmuletEffects.twinDamageFrac() : 0;
+  if (_twinFrac > 0) {
+    const _twinScene = this;
+    const _twinDir = _getAimVector2(_twinScene);
+    const _twinSecond = () => {
+      forEachEnemyInRange(attackRange, (enemy, { dx, dy }) => {
+        const v = new Phaser.Math.Vector2(dx, dy);
+        if (v.length() === 0) return;
+        v.normalize();
+        if (_twinDir.dot(v) <= 0.5) return;
+        dealDamageToEnemy(_twinScene, enemy, _twinFrac, 'attack');
+        if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
+        handleEnemyHit(_twinScene, enemy, { useTween: true, duration: 80 });
+      }, { requireLineOfSight: true });
+    };
+    if (_twinScene.time && _twinScene.time.delayedCall) _twinScene.time.delayedCall(90, _twinSecond);
+    else _twinSecond();
+  }
 
   // Melee can also break destructible obstacles (chests, barrels, crates) in front of player
   if (obstacles && obstacles.children && typeof window.breakDestructibleObstacle === 'function') {
@@ -2058,11 +2115,17 @@ function _hasBowEquipped() {
   return !!(eq && eq.weapon && eq.weapon.subtype === 'bow');
 }
 
-function _fireBowArrow(scene) {
+function _fireBowArrow(scene, opts) {
   if (!scene || !player || !playerProjectiles) return;
+  opts = opts || {};
   ensurePlayerArrowTexture(scene);
 
   const dir = _getAimVector2(scene);
+  // Feature 059 WP03: optional angle offset for the Zwillingsklinge 2nd arrow.
+  if (opts.angleOffset) {
+    const _a = dir.angle() + opts.angleOffset;
+    dir.set(Math.cos(_a), Math.sin(_a));
+  }
 
   const spawnOffset = 22;
   const projectile = scene.physics.add.sprite(
@@ -2076,7 +2139,7 @@ function _fireBowArrow(scene) {
   projectile.body?.setAllowGravity?.(false);
   projectile.body?.setSize?.(20, 6);
   projectile.body?.setOffset?.(4, 5);
-  projectile.setData('damageMult', 1.0);
+  projectile.setData('damageMult', (typeof opts.damageMult === 'number') ? opts.damageMult : 1.0);
   projectile.setData('isBowArrow', true);
   projectile.setData('knockback', 60);
 
