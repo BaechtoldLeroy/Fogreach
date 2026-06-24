@@ -131,8 +131,8 @@ Tiefe abschließen; `thom_pamphlets` zählt +1 pro Run (nicht pro Welle).
 Alt-Save lädt; Endless intakt; Smoke ohne neue Fehler.
 
 **Subtasks**:
-- [ ] **T018** **Quest-Trigger-Audit (C-04)**: jede berührte Quest (`reach_wave` ×3, `thom_pamphlets`) gegen `updateQuestProgress(type,target)` / `onWaveCompleted` / `onDungeonCompleted` prüfen — keine uncompletable Quest (SC-05).
-- [ ] **T019** Save-Kompat (FR-09, C-03): Alt-Save mit hohem `maxDepth` laden → respektiert, kein Reset/Wipe; `DUNGEON_DEPTH`-Init (`main.js` Z. 1144–1148) + `storage.js` (Z. 72, 232) konsistent. Test mit Alt-Save (SC-06).
-- [ ] **T020** Endless-Regression (FR-08, C-05): Endless-Mode steigt weiter pro Extra-Raum; regulärer Run bleibt run-konstant (SC-07).
-- [ ] **T021** NFR-Mess-Check: Desktop 60fps, Mobile-Procroom ≥45 (053 nicht regrediert); kein per-Raum-`setItem`-Spam (NFR-01/02).
-- [ ] **T022** Playtest-Verifikation (NFR-03): nach ~2 Quests NICHT mehr Tiefe ~15; flachere Kurve plausibel. SC-Abnahme + Feature-Accept vorbereiten (`node tools/runTests.js` + Smoke grün, SC-08).
+- [x] **T018** **Quest-Trigger-Audit (C-04)**: jede berührte Quest (`reach_wave` ×3, `thom_pamphlets`) gegen `updateQuestProgress(type,target)` / `onWaveCompleted` / `onDungeonCompleted` prüfen — keine uncompletable Quest (SC-05).
+- [x] **T019** Save-Kompat (FR-09, C-03): Alt-Save mit hohem `maxDepth` laden → respektiert, kein Reset/Wipe; `DUNGEON_DEPTH`-Init (`main.js` Z. 1144–1148) + `storage.js` (Z. 72, 232) konsistent. Test mit Alt-Save (SC-06).
+- [x] **T020** Endless-Regression (FR-08, C-05): Endless-Mode steigt weiter pro Extra-Raum; regulärer Run bleibt run-konstant (SC-07).
+- [x] **T021** NFR-Mess-Check: Desktop 60fps, Mobile-Procroom ≥45 (053 nicht regrediert); kein per-Raum-`setItem`-Spam (NFR-01/02).
+- [x] **T022** Playtest-Verifikation (NFR-03): nach ~2 Quests NICHT mehr Tiefe ~15; flachere Kurve plausibel. SC-Abnahme + Feature-Accept vorbereiten (`node tools/runTests.js` + Smoke grün, SC-08).

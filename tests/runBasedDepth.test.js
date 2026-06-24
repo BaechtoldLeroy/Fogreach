@@ -115,3 +115,25 @@ test('#41 WP04: completing the first (depth-1) run lifts the ceiling to 2 (clear
   assert.strictEqual(after, 2, 'first completion unlocks depth 2');
   assert.strictEqual(P.getMaxDepth(), 2);
 });
+
+// --- WP05: save-compat (FR-09 / C-03) ---
+
+test('#41 WP05: an old save with a high MAX_DEPTH is respected, never reset', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(25); // legacy save reached depth 25 under the old per-room system
+  assert.strictEqual(P.getMaxDepth(), 25, 'high ceiling preserved on load');
+  // The feature only changes GROWTH, not the existing ceiling: it can still
+  // grow, but never regresses.
+  RD.markRunStarted();
+  assert.strictEqual(RD.tryCompleteRun('dungeon_complete'), 26, 'grows from the existing ceiling');
+  assert.strictEqual(P.getMaxDepth(), 26);
+});
+
+test('#41 WP05: death/portal on a high-ceiling save never lower MAX_DEPTH', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(25);
+  RD.markRunStarted();
+  RD.tryCompleteRun('death');
+  RD.tryCompleteRun('portal');
+  assert.strictEqual(P.getMaxDepth(), 25, 'a failed/abandoned run leaves the ceiling intact');
+});
