@@ -79,3 +79,7 @@ Endless-Mode steigt weiterhin pro Extra-Raum.
   gewollt. Intra-Run-Varianz bleibt über `roomDifficultyMult` (Z. 952–958,
   Raum-Position, NICHT Tiefe).
 - `DUNGEON_DEPTH`-Init in `main.js` (Z. 1144–1148) NICHT brechen.
+
+## Activity Log
+
+- 2026-06-24T17:58:34Z – unknown – shell_pid=7672 – lane=for_review – Moved to for_review
