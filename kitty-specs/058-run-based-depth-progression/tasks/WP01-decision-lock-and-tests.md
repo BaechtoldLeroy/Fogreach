@@ -1,28 +1,31 @@
 ---
-work_package_id: "WP01"
-title: "Decision-Lock + Test-Gerüst (test-first)"
-lane: "planned"
+work_package_id: WP01
+title: Decision-Lock + Test-Gerüst (test-first)
 dependencies: []
-planning_base_branch: "main"
-merge_target_branch: "main"
-branch_strategy: "Planning artifacts were generated on main; completed changes must merge back into main."
+planning_base_branch: main
+merge_target_branch: main
+branch_strategy: Planning artifacts were generated on main; completed changes must merge back into main.
+base_branch: main
+base_commit: 31631e0ecea82e38060769d8eaac62930e4c9dc3
+created_at: '2026-06-24T17:52:19.225783+00:00'
 subtasks:
-  - "T001"
-  - "T002"
-  - "T003"
-  - "T004"
-phase: "Phase 1 - Decision-Lock & Tests"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-review_feedback: ""
+- T001
+- T002
+- T003
+- T004
+phase: Phase 1 - Decision-Lock & Tests
+assignee: ''
+agent: ''
+shell_pid: "35876"
 history:
-  - timestamp: "2026-06-24T08:00:00Z"
-    lane: "planned"
-    agent: "system"
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-06-24T08:00:00Z'
+  lane: planned
+  agent: system
+  action: Prompt generated via /spec-kitty.tasks
+lane: planned
+review_feedback: ''
+review_status: ''
+reviewed_by: ''
 ---
 
 # Work Package Prompt: WP01 – Decision-Lock + Test-Gerüst (test-first)
