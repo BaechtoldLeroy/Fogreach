@@ -1099,14 +1099,14 @@ function onStairOverlap(player, stair) {
     return;
   }
 
-  const depthBase = Math.max(
-    1,
-    typeof window.NEXT_DUNGEON_DEPTH === 'number' && isFinite(window.NEXT_DUNGEON_DEPTH)
-      ? window.NEXT_DUNGEON_DEPTH
-      : (window.DUNGEON_DEPTH || 1) + 1,
-    (currentWave || 0) + 1
-  );
-  window.SELECTED_WAVE_OVERRIDE = depthBase;
+  // Feature 058 (#41): depth is RUN-CONSTANT — entering the next room keeps the
+  // run-start depth instead of climbing +1 per room (the old NEXT_DUNGEON_DEPTH
+  // driver). The +1 now happens only on run COMPLETION (WP03). Endless mode
+  // keeps its own per-depth advance (handled in the endless branch above).
+  const runDepth = Math.max(1, window.DUNGEON_DEPTH || 1);
+  window.SELECTED_WAVE_OVERRIDE = (window.RunDepth && typeof window.RunDepth.nextRoomDepth === 'function')
+    ? window.RunDepth.nextRoomDepth(runDepth)
+    : runDepth;
 
   // Betritt naechsten Raum
   enterRoom(obstacles.scene, nextIndex);
@@ -1201,15 +1201,10 @@ function markRoomCleared() {
       ? window.computeWaveEnemyTotal(room.wave,
           typeof window.computeWalkableAreaPx === "function" ? window.computeWalkableAreaPx(scene) : 0)
       : 4 + Math.max(0, room.wave - 1) * 2;
-  const completed = Math.max(currentWave || 1, window.DUNGEON_DEPTH || 1);
-  window.DUNGEON_DEPTH = completed;
-  window.NEXT_DUNGEON_DEPTH = completed + 1;
-  // Feature Hinabstieg: tiefste je erreichte Tiefe (lastKnown) persistieren —
-  // verankert die 3 Abstiegs-Optionen im echten Fortschritt des Spielers.
-  try {
-    var _mx = parseInt(localStorage.getItem('demonfall_maxDepth') || '0', 10) || 0;
-    if (completed > _mx) localStorage.setItem('demonfall_maxDepth', String(completed));
-  } catch (e) {}
+  // Feature 058 (#41): depth is run-constant — clearing a room's wave no longer
+  // re-derives DUNGEON_DEPTH/NEXT (enterRoom is authoritative) and no longer
+  // persists maxDepth per room. The maxDepth +1 moved to run COMPLETION (WP03,
+  // RunDepth.tryCompleteRun via leaveDungeonForHub 'dungeon_complete').
   saveGame(scene);
 }
 
