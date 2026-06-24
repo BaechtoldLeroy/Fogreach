@@ -706,6 +706,18 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
     window.__amuletChaining = false;
   }
 
+  // Feature 059 WP03: Frostsiegel (frost) — hits chill the enemy (SLOW) and mark
+  // it, so a chilled enemy shatters into a frost burst when it dies.
+  const _frostHit = (window.AmuletEffects && typeof window.AmuletEffects.frostParams === 'function')
+    ? window.AmuletEffects.frostParams() : null;
+  if (_frostHit && damage > 0 && enemy && enemy.active
+      && window.statusEffectManager && window.StatusEffectType) {
+    try {
+      window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'amuletFrost');
+      enemy.__amuletChilled = true;
+    } catch (e) { /* never crash gameplay */ }
+  }
+
   return { damage, isCrit };
 }
 
@@ -1307,6 +1319,52 @@ function handleEnemyHit(scene, enemy, options = {}) {
     // noch -> x/y gueltig fuer AoE-Effekte.
     if (window.AmuletEffects && typeof window.AmuletEffects.onEnemyKilled === 'function') {
       try { window.AmuletEffects.onEnemyKilled(enemy, scene); } catch (e) { /* never crash */ }
+    }
+    // Feature 059 WP03: Aschefunke (killburst) — dying enemy explodes for AoE.
+    // Cascades are allowed but bounded by maxDepth (window.__killburstDepth).
+    const _kb = (window.AmuletEffects && typeof window.AmuletEffects.killburstParams === 'function')
+      ? window.AmuletEffects.killburstParams() : null;
+    if (_kb && (window.__killburstDepth || 0) < _kb.maxDepth
+        && typeof enemies !== 'undefined' && enemies && enemies.children) {
+      window.__killburstDepth = (window.__killburstDepth || 0) + 1;
+      try {
+        const _ex = enemy.x, _ey = enemy.y;
+        const _boom = Math.max(1, Math.round((enemy.maxHp || enemy.hp || 10) * _kb.frac));
+        if (scene && scene.add && typeof scene.add.circle === 'function') {
+          const _g = scene.add.circle(_ex, _ey, _kb.radius, 0xff7733, 0.35).setDepth(78);
+          if (scene.tweens) scene.tweens.add({ targets: _g, alpha: 0, scale: 1.35, duration: 220, onComplete: () => { try { _g.destroy(); } catch (_) {} } });
+          else if (scene.time) scene.time.delayedCall(220, () => { try { _g.destroy(); } catch (_) {} });
+        }
+        const _victims = [];
+        enemies.children.iterate((cand) => {
+          if (!cand || !cand.active || cand === enemy) return;
+          if (Math.hypot((cand.x || 0) - _ex, (cand.y || 0) - _ey) <= _kb.radius) _victims.push(cand);
+        });
+        _victims.forEach((cand) => {
+          if (!cand.active) return;
+          if (typeof cand.maxHp !== 'number') cand.maxHp = cand.hp;
+          cand.hp -= _boom;
+          if (window.particleFactory) window.particleFactory.hitSpark(cand.x, cand.y);
+          handleEnemyHit(scene, cand, { tint: 0xff7733, duration: 90 });
+        });
+      } catch (e) { /* never crash */ }
+      window.__killburstDepth = Math.max(0, (window.__killburstDepth || 1) - 1);
+    }
+    // Feature 059 WP03: Frostsiegel (frost) — a chilled enemy SHATTERS on death,
+    // chilling nearby enemies (SLOW).
+    const _fp = (window.AmuletEffects && typeof window.AmuletEffects.frostParams === 'function')
+      ? window.AmuletEffects.frostParams() : null;
+    if (_fp && enemy.__amuletChilled && typeof enemies !== 'undefined' && enemies && enemies.children
+        && window.statusEffectManager && window.StatusEffectType) {
+      try {
+        const _fx = enemy.x, _fy = enemy.y;
+        enemies.children.iterate((cand) => {
+          if (!cand || !cand.active || cand === enemy) return;
+          if (Math.hypot((cand.x || 0) - _fx, (cand.y || 0) - _fy) > _fp.radius) return;
+          window.statusEffectManager.applyEffect(cand, window.StatusEffectType.SLOW, 'amuletFrostShatter');
+          cand.__amuletChilled = true;
+        });
+      } catch (e) { /* never crash */ }
     }
     // Issue #24: chance to drop a Druckblatt on kill. Elite enemies have
     // a higher chance. Direct call to PrintingHouse.addDruckblaetter
