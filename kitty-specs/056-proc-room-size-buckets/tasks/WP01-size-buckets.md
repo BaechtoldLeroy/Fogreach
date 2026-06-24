@@ -169,3 +169,4 @@ Ziehungen (deterministischer Seed via `mulberry32`, Toleranz ±3–4 %-Punkte) +
 
 - 2026-06-24T08:33:18Z – unknown – shell_pid=6812 – lane=in_progress – Moved to in_progress
 - 2026-06-24T08:42:27Z – unknown – shell_pid=6812 – lane=for_review – Moved to for_review
+- 2026-06-24T08:43:46Z – unknown – shell_pid=6812 – lane=approved – Selbst-Review: 304 Tests gruen (4 neue), Smoke 0 Fehler, FR-01-08/SC-01-07 erfuellt, Endless/Walkable/authored unberuehrt.
