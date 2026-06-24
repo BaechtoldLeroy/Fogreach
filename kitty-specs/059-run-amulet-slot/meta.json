@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-06-24T07:52:37.090486+00:00",
+  "feature_number": "059",
+  "feature_slug": "059-run-amulet-slot",
+  "friendly_name": "run amulet slot",
+  "mission": "software-dev",
+  "slug": "059-run-amulet-slot",
+  "target_branch": "main"
+}
