@@ -5,5 +5,7 @@
   "friendly_name": "proc room size buckets",
   "mission": "software-dev",
   "slug": "056-proc-room-size-buckets",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "vcs_locked_at": "2026-06-24T08:32:50.434259+00:00"
 }

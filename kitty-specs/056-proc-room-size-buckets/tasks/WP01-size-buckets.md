@@ -1,7 +1,6 @@
 ---
 work_package_id: WP01
 title: Größen-Buckets (Bucket-Logik + Tests + Verdrahtung + Tuning)
-lane: planned
 dependencies: []
 requirement_refs:
 - FR-01
@@ -19,6 +18,8 @@ planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 base_branch: main
+base_commit: 4930f12d2e3c3eb09ecf03d72fd86ee3b91b218b
+created_at: '2026-06-24T08:32:52.339045+00:00'
 subtasks:
 - T001
 - T002
@@ -29,21 +30,22 @@ subtasks:
 phase: Phase 1 — Größen-Buckets
 assignee: ''
 agent: ''
-shell_pid: ''
-authoritative_surface: js/roomManager.js
-execution_mode: code_change
-owned_files:
-- js/roomManager.js
-- js/proceduralRooms.js
-- tests/procRoomBuckets.test.js
-review_status: ''
-reviewed_by: ''
-review_feedback: ''
+shell_pid: "6812"
 history:
 - timestamp: '2026-06-24T08:00:00Z'
   lane: planned
   agent: system
   action: Prompt generated via /spec-kitty.tasks
+authoritative_surface: js/roomManager.js
+execution_mode: code_change
+lane: planned
+owned_files:
+- js/roomManager.js
+- js/proceduralRooms.js
+- tests/procRoomBuckets.test.js
+review_feedback: ''
+review_status: ''
+reviewed_by: ''
 ---
 
 # Work Package Prompt: WP01 — Größen-Buckets (Bucket-Logik + Tests + Verdrahtung + Tuning)
