@@ -47,12 +47,12 @@ Effekte/Spawn — Slot ist anlegbar/ablegbar, Amulett-Items existieren als Typ.
 (Slot existiert, Amulett anlegen/tauschen, AMULET_DEFS gültig).
 
 **Subtasks**:
-- [ ] **T001** `equipment` (`js/main.js:825`) um `amulet: null` erweitern; `window.runAmulet = null` neben `window.equipment` anlegen.
-- [ ] **T002** `equipKeys` (`js/inventory.js:619`) um `'amulet'` erweitern; Equip-Swap-Pfad (`js/inventory.js:1220`) für 5. Slot prüfen/anpassen (Slot-Kapazität 1, Tausch FR-08).
-- [ ] **T003** Item-`type: 'amulet'` + `AMULET_DEFS` (Object.freeze-Array) in `js/lootSystem.js` neben `ITEM_BASES` (`:255`) anlegen — id/name/iconKey/effect-Stub/tier-Bias. **Nicht** in `ITEM_BASES`, **nicht** im `rollItem`-Weighted-Pool.
-- [ ] **T004** `rollAmulet(depth, rng)` in `js/lootSystem.js` (eigener Pfad, getrennt von `rollItem` `:514`); exportieren über `LootSystem`-API (`:956` Umfeld).
-- [ ] **T005** Amulett-Item-Visual/Icon-Key in `js/loot.js` (TIER_COLORS-Umfeld) + Fallback-Icon registrieren.
-- [ ] **T006** `tests/runAmulet.test.js` aufsetzen: Slot existiert, `equipment.amulet` an-/ablegbar, Tausch hält genau 1 aktiv, `AMULET_DEFS` wohlgeformt. Baseline-Tests weiterhin grün.
+- [x] **T001** `equipment` (`js/main.js:825`) um `amulet: null` erweitern; `window.runAmulet = null` neben `window.equipment` anlegen.
+- [x] **T002** `equipKeys` (`js/inventory.js:619`) um `'amulet'` erweitern; Equip-Swap-Pfad (`js/inventory.js:1220`) für 5. Slot prüfen/anpassen (Slot-Kapazität 1, Tausch FR-08).
+- [x] **T003** Item-`type: 'amulet'` + `AMULET_DEFS` (Object.freeze-Array) in `js/lootSystem.js` neben `ITEM_BASES` (`:255`) anlegen — id/name/iconKey/effect-Stub/tier-Bias. **Nicht** in `ITEM_BASES`, **nicht** im `rollItem`-Weighted-Pool.
+- [x] **T004** `rollAmulet(depth, rng)` in `js/lootSystem.js` (eigener Pfad, getrennt von `rollItem` `:514`); exportieren über `LootSystem`-API (`:956` Umfeld).
+- [x] **T005** Amulett-Item-Visual/Icon-Key in `js/loot.js` (TIER_COLORS-Umfeld) + Fallback-Icon registrieren.
+- [x] **T006** `tests/runAmulet.test.js` aufsetzen: Slot existiert, `equipment.amulet` an-/ablegbar, Tausch hält genau 1 aktiv, `AMULET_DEFS` wohlgeformt. Baseline-Tests weiterhin grün.
 
 ---
 
