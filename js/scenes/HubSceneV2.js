@@ -200,6 +200,16 @@ class HubSceneV2 extends Phaser.Scene {
       window.InputScheme.init(this);
     }
 
+    // Hydrate the loaded save into game state BEFORE anything reads player
+    // stats / inventory / equipment. The "Fortsetzen" button (startScene.js)
+    // only stashes the save in window.pendingLoadedSave and boots us here —
+    // applySaveToState() runs in GameScene.create(), which is too late: the
+    // hub would render empty gear AND _enterLocation()'s pre-dungeon saveGame()
+    // would clobber the real save with default/empty state before GameScene
+    // ever consumes it. Applying here (mirrors the legacy HubScene flow) is
+    // what makes "load game" actually restore the player in the hub.
+    this._ensureSaveHydrated();
+
     this.createColliders();
     this.createEntrances();
     this.createNPCs();
@@ -1724,6 +1734,54 @@ class HubSceneV2 extends Phaser.Scene {
     }
   }
 
+
+  // Apply the pending loaded save into the live game globals — inventory,
+  // equipment, stats, quests, story — when arriving from the StartScene
+  // "Fortsetzen" button (which only stashes the save in window.pendingLoadedSave
+  // and boots us here). Defensive: a throw must not abort hub creation.
+  //
+  // Only the explicit pendingLoadedSave is honoured. We deliberately do NOT
+  // fall back to __LAST_SAVE_SNAPSHOT__: on dungeon->hub re-entry the globals
+  // are already live (nothing to hydrate), and a "Neues Spiel" started in the
+  // same browser session could otherwise re-apply a stale snapshot.
+  _ensureSaveHydrated() {
+    const applyState = (state) => {
+      if (!state || typeof applySaveToState !== 'function') return false;
+      try {
+        applySaveToState(this, state);
+        return true;
+      } catch (err) {
+        console.warn('[HubSceneV2] applySaveToState failed', err);
+        return false;
+      }
+    };
+
+    let applied = false;
+    if (window.pendingLoadedSave) {
+      applied = applyState(window.pendingLoadedSave) || applied;
+      // Intentionally NOT cleared: _enterLocation()'s pre-dungeon saveGame()
+      // overwrites pendingLoadedSave from the fresh __LAST_SAVE_SNAPSHOT__
+      // before GameScene starts, so GameScene always sees current state. Leaving
+      // the original set keeps a fallback alive if applyState threw here.
+    }
+
+    // Keep the local `inventory`/`equipment` bindings in sync with the window
+    // copies applySaveToState writes (classic-script scope: separate refs).
+    if (!Array.isArray(window.inventory)) {
+      window.inventory = new Array(typeof INV_SLOTS === 'number' ? INV_SLOTS : 20).fill(null);
+    }
+    if (typeof inventory !== 'undefined' && inventory !== window.inventory) {
+      inventory = window.inventory;
+    }
+    if (typeof equipment !== 'undefined') {
+      if (window.equipment && equipment !== window.equipment) {
+        equipment = window.equipment;
+      } else if (!window.equipment) {
+        window.equipment = equipment;
+      }
+    }
+    return applied;
+  }
 
   _enterLocation(entranceData) {
     console.log('[HubSceneV2] Entering:', entranceData.id, '-> target:', entranceData.target);
