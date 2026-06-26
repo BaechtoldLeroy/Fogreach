@@ -455,3 +455,40 @@ test('#41 minDepth: ungated quest still advances at any depth', () => {
   qs.updateQuestProgress('kill', 'enemy', 1);
   assert.strictEqual(cur(), 1, 'ungated quest progresses at depth 1');
 });
+
+// Regression: Q6 (council_collusion_reveal, Harren "Komm mit") is a dialogue
+// quest whose climax reveal (HubSceneV2._showCollusionReveal) bypasses the
+// normal "Annehmen" step. It must accept-then-complete: completeQuest() guards
+// on status==='active', so calling it while the quest is merely 'available'
+// silently fails — the reveal plays, the player picks a choice, and nothing
+// happens (no XP, no act2_open, no Act-2 transition). This mirrors the exact
+// call sequence in finalize().
+test('Q6 reveal: completeQuest alone fails while quest is only available', () => {
+  const qs = freshSystem();
+  assert.strictEqual(qs.completeQuest('council_collusion_reveal'), false,
+    'completeQuest must no-op when the quest was never accepted');
+  assert.ok(!qs.getCompletedQuests().some((q) => q.id === 'council_collusion_reveal'));
+});
+
+test('Q6 reveal: acceptQuest + completeQuest completes it and advances to Act 2', () => {
+  resetStore();
+  delete globalThis.window.questSystem;
+  const advanced = [];
+  globalThis.window.storySystem = {
+    getCurrentActIndex: () => 99,
+    advanceToAct: (n) => advanced.push(n)
+  };
+  globalThis.window.DUNGEON_DEPTH = 99;
+  loadGameModule('js/questSystem.js');
+  const qs = globalThis.window.questSystem;
+
+  // finalize() sequence: accept (activates + auto-completes the dialogue
+  // objective for a type:'dialogue' quest), then complete.
+  assert.strictEqual(qs.acceptQuest('council_collusion_reveal'), true);
+  assert.strictEqual(qs.completeQuest('council_collusion_reveal'), true);
+  assert.ok(qs.getCompletedQuests().some((q) => q.id === 'council_collusion_reveal'),
+    'Q6 should be completed');
+  assert.ok(advanced.includes(2), 'storySystem.advanceToAct(2) must fire on Q6 completion');
+  assert.strictEqual(globalThis.window._questUnlocks
+    && globalThis.window._questUnlocks.act2_open, true, 'act2_open must be unlocked');
+});

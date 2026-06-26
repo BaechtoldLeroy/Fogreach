@@ -2643,11 +2643,25 @@ class HubSceneV2 extends Phaser.Scene {
     // Space/Enter advances). Page 3 has the binary flavor choice that
     // records via storySystem.recordChoice if available (else no-op).
     const finalize = () => {
-      // If the choice API exists, record. Otherwise silently skip.
-      // Either way, complete Q6 to fire the WP02 reward dispatcher.
-      if (window.questSystem && typeof window.questSystem.completeQuest === 'function') {
+      const qs = window.questSystem;
+      if (!qs) return;
+      // The reveal bypasses the normal "Annehmen" step, so Q6 is still in the
+      // 'available' state here — it was never moved to 'active'. completeQuest()
+      // guards on isQuestReadyToComplete() (status must be 'active' with all
+      // objectives met), so calling it directly silently returns false: no XP,
+      // no act2_open unlock, no advanceToAct(2). The reveal plays, the player
+      // picks a choice, and "nothing happens" — Harren keeps re-offering
+      // "Komm mit". acceptQuest() fixes this: it activates the quest AND, because
+      // Q6 is type:'dialogue', auto-completes its objective, so the subsequent
+      // completeQuest() fires the full WP02 reward dispatcher + Akt-2-Übergang.
+      try {
+        qs.acceptQuest('council_collusion_reveal');
+      } catch (err) {
+        console.warn('[HubSceneV2] Q6 acceptQuest failed', err);
+      }
+      if (typeof qs.completeQuest === 'function') {
         try {
-          window.questSystem.completeQuest('council_collusion_reveal');
+          qs.completeQuest('council_collusion_reveal');
         } catch (err) {
           console.warn('[HubSceneV2] Q6 completeQuest failed', err);
         }
