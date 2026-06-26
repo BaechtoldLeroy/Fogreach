@@ -639,7 +639,7 @@ const EQUIP_X = -PANEL_W / 2 + 160;  // Slots leicht nach rechts
 // Interim (#42 WP01): Abstaende so eng, dass alle 5 Slots ins 480px-Panel
 // passen (der 5. Amulett-Slot lag vorher bei y=280 unter dem Panel-Rand).
 // Das richtige 5-Slot-Layout + Amulett-Slot-Optik/Badge folgt in WP05.
-const EQUIP_Y0 = -PANEL_H / 2 + 128;
+const EQUIP_Y0 = -PANEL_H / 2 + 118;
 const EQUIP_STEP = 72;
 
   for (let i = 0; i < equipKeys.length; i++) {
@@ -689,14 +689,14 @@ const EQUIP_STEP = 72;
         .setStrokeStyle(2, 0xc792ea, 0.9).setScrollFactor(0);
       panel.add(frame);
       slot.setTint(0xb79edb); // subtle purple base so the slot reads as special
-      const badge = scene.add.text(EQUIP_X, y + fh / 2 + 7, _INV_T('inv.amulet.badge'), {
-        fontFamily: 'monospace', fontSize: '9px', color: '#e0c8ff',
-        backgroundColor: '#3a2f4a', padding: { x: 3, y: 1 }
+      const badge = scene.add.text(EQUIP_X, y + fh / 2 + 9, _INV_T('inv.amulet.badge'), {
+        fontFamily: 'monospace', fontSize: '12px', fontStyle: 'bold', color: '#f1e2ff',
+        backgroundColor: '#4a3a63', padding: { x: 5, y: 2 }
       }).setOrigin(0.5, 0.5).setScrollFactor(0);
       panel.add(badge);
-      const lock = scene.add.text(EQUIP_X, y + fh / 2 + 7, _INV_T('inv.amulet.locked'), {
-        fontFamily: 'monospace', fontSize: '9px', color: '#999999',
-        backgroundColor: '#222222', padding: { x: 3, y: 1 }
+      const lock = scene.add.text(EQUIP_X, y + fh / 2 + 9, _INV_T('inv.amulet.locked'), {
+        fontFamily: 'monospace', fontSize: '12px', fontStyle: 'bold', color: '#d8d8d8',
+        backgroundColor: '#333333', padding: { x: 5, y: 2 }
       }).setOrigin(0.5, 0.5).setScrollFactor(0).setVisible(false);
       panel.add(lock);
       decor = { frame, badge, lock };
