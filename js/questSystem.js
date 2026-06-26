@@ -174,7 +174,7 @@
       requiredAct: 0,
       dialogueOffer: 'Komm mit. Du musst etwas sehen. (Climax-Scene wird in WP03 final implementiert — diese 1-Page-Version laesst Q6 in WP02 schon spielbar werden, der vollwertige 4-Page-Reveal kommt mit dem naechsten WP.)',
       dialogueProgress: 'Folge mir. Es ist Zeit.',
-      dialogueComplete: 'Du hast es jetzt gesehen. Der Nebel war nie das Wetter — er war eine Erzaehlung. Du hast bereits fuer jede der drei Masken gearbeitet, und sie ist nur ein einziges Gesicht. Akt 2 beginnt jenseits dieses Hubs.'
+      dialogueComplete: 'Du hast es jetzt gesehen. Der Nebel war nie das Wetter — er war eine Erzaehlung. Du hast bereits fuer jede der drei Masken gearbeitet, und sie ist nur ein einziges Gesicht. Akt 2 beginnt hier — in derselben Stadt, unter denselben Masken.'
     },
 
     // =======================================================
@@ -690,7 +690,7 @@
 
       'quest.council_collusion_reveal.dialogueOffer': 'Come with me. You must see something. (Climax scene ships in WP03 — this 1-page placeholder keeps Q6 playable in WP02; full 4-page reveal arrives with the next work package.)',
       'quest.council_collusion_reveal.dialogueProgress': 'Follow me. It is time.',
-      'quest.council_collusion_reveal.dialogueComplete': 'You have seen it now. The fog was never the weather — it was a story. You have already worked for each of the three masks, and it is only a single face. Act 2 begins beyond this hub.',
+      'quest.council_collusion_reveal.dialogueComplete': 'You have seen it now. The fog was never the weather — it was a story. You have already worked for each of the three masks, and it is only a single face. Act 2 begins here — in the same city, beneath the same masks.',
 
       // === Feature 050 side-dialogue keys (consumed by WP03) ===
       'sidedialog.branka.q2_eyebrow': 'Branka raises an eyebrow when she sees the Magistrat seal. "Another verification seal. Do you actually know what ends up written on these documents?"',
