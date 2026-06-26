@@ -227,6 +227,34 @@ test('observe does not progress while exposed', () => {
   assert.strictEqual(calls.filter(c => c[0] === 'observe').length, 0, 'no observe while exposed');
 });
 
+test('exposed is recoverable: breaking sight re-blends the disguise', () => {
+  const E = globalThis.window.EspionageSystem;
+  const p = stubPlayer(100, 100);
+  E.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 150 }] });
+  // Force exposure by lingering in sight.
+  tick(E, 5000);
+  assert.strictEqual(E.isDetected(), true, 'exposed after lingering in guard sight');
+  assert.strictEqual(E.isDisguised(), false, 'disguise dropped on exposure');
+  // Break line of sight — walk far out of every guard range.
+  p.x = 5000; p.y = 5000;
+  for (let i = 0; i < 4; i++) tick(E, 1000); // suspicion decays to 0 -> re-blend
+  assert.strictEqual(E.isDetected(), false, 'no longer exposed after escaping sight');
+  assert.strictEqual(E.isDisguised(), true, 're-blended into disguise');
+  assert.strictEqual(E.getDetection(), 0, 'suspicion fully decayed');
+});
+
+test('exposed stays exposed while still in guard sight (no premature re-blend)', () => {
+  const E = globalThis.window.EspionageSystem;
+  stubPlayer(100, 100);
+  E.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 150 }] });
+  tick(E, 5000);
+  assert.strictEqual(E.isDetected(), true);
+  // Stay put inside the guard range — must remain exposed.
+  for (let i = 0; i < 5; i++) tick(E, 1000);
+  assert.strictEqual(E.isDetected(), true, 'still exposed while in sight');
+  assert.strictEqual(E.isDisguised(), false, 'no re-blend while seen');
+});
+
 test('update is throttled: a sub-100ms tick does not advance detection', () => {
   const E = globalThis.window.EspionageSystem;
   stubPlayer(100, 100);

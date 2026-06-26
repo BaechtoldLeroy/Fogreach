@@ -207,6 +207,24 @@
           } else {
             state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
           }
+        } else {
+          // Recovery (C-04: Erschwernis statt Insta-Fail). Enttarnt heisst:
+          // Tarnung weg, Wachen aufmerksam. Bricht der Spieler die Sicht
+          // (raus aus allen Wachen-Reichweiten / in Deckung), faellt der
+          // Verdacht — und sobald er bei 0 ist, mischt sich der Spieler wieder
+          // unter und ist erneut verdeckt. Ohne das wuerde ein einziger
+          // versehentlicher Angriff das Abhoeren dauerhaft soft-locken.
+          var stillSeen = !_inCover(px, py) && _seenByGuard(px, py);
+          if (stillSeen) {
+            state.detection = 1; // bleibt enttarnt, solange gesehen
+          } else {
+            state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
+            if (state.detection <= 0) {
+              state.exposed = false;
+              state.disguised = true;
+              _applyTint();
+            }
+          }
         }
 
         // --- Info-Gathering (Observe-Zonen) ------------------------------
