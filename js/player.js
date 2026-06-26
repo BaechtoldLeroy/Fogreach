@@ -1556,6 +1556,12 @@ function attack() {
     const _twinScene = this;
     const _twinDir = _getAimVector2(_twinScene);
     const _twinSecond = () => {
+      // Visible "second blade": replay the swing arc in cyan so the double
+      // strike reads on screen (the damage tick alone looked like a normal hit
+      // -> players reported "no visible effect"). Fires even on a whiff.
+      if (typeof showAttackEffect === 'function') {
+        showAttackEffect(_twinScene, { color: 0x66ddff, alpha: 0.32, duration: 130 });
+      }
       forEachEnemyInRange(attackRange, (enemy, { dx, dy }) => {
         const v = new Phaser.Math.Vector2(dx, dy);
         if (v.length() === 0) return;
