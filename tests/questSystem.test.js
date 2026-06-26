@@ -463,6 +463,34 @@ test('#41 minDepth: ungated quest still advances at any depth', () => {
 // silently fails — the reveal plays, the player picks a choice, and nothing
 // happens (no XP, no act2_open, no Act-2 transition). This mirrors the exact
 // call sequence in finalize().
+// Regression: mara_contact (Akt 2, "Die Spaeherin") was a hollow type:'dialogue'
+// stub — accept auto-completed it, so the player re-talked to Mara with nothing
+// in between and no real info. It now carries a real recon task (scout 3 rooms),
+// driven by the existing roomManager trigger updateQuestProgress('explore','room').
+// This guards both the task wiring (memory: quest-trigger audit) and that it is
+// NOT auto-completed on accept.
+test('Akt2 mara_contact: explore-Quest, completes after 3 cleared rooms (trigger audit)', () => {
+  const qs = freshSystem();
+  const def = qs.QUEST_DEFINITIONS.mara_contact;
+  assert.strictEqual(def.type, 'explore', 'mara_contact must be an explore quest');
+  assert.deepStrictEqual(def.objectives[0],
+    { type: 'explore', target: 'room', current: 0, required: 3 });
+
+  assert.strictEqual(qs.acceptQuest('mara_contact'), true);
+  assert.strictEqual(qs.isQuestReadyToComplete('mara_contact'), false,
+    'must NOT auto-complete on accept (it has a real task now)');
+
+  // Exact tuple roomManager.markRoomCleared emits on each cleared room.
+  qs.updateQuestProgress('explore', 'room', 1);
+  qs.updateQuestProgress('explore', 'room', 1);
+  assert.strictEqual(qs.isQuestReadyToComplete('mara_contact'), false, '2/3 not ready');
+  qs.updateQuestProgress('explore', 'room', 1);
+  assert.strictEqual(qs.isQuestReadyToComplete('mara_contact'), true, '3/3 ready');
+
+  assert.strictEqual(qs.completeQuest('mara_contact'), true);
+  assert.ok(qs.getCompletedQuests().some((q) => q.id === 'mara_contact'));
+});
+
 test('Q6 reveal: completeQuest alone fails while quest is only available', () => {
   const qs = freshSystem();
   assert.strictEqual(qs.completeQuest('council_collusion_reveal'), false,

@@ -183,19 +183,19 @@
     mara_contact: {
       id: 'mara_contact',
       title: 'Die Spaeherin',
-      description: 'Triff Mara und hoere, was sie zu sagen hat.',
+      description: 'Kundschafte fuer Mara drei Kellerraeume des Rats aus.',
       npcId: 'mara',
-      type: 'dialogue',
+      type: 'explore',
       chain: 1,
       objectives: [
-        { type: 'dialogue', target: 'mara_meet', current: 0, required: 1 }
+        { type: 'explore', target: 'room', current: 0, required: 3 }
       ],
-      rewards: { info: 'Maras Netzwerk enthuellt', infoKey: 'quest.reward.info.mara_contact' },
+      rewards: { xp: 60, info: 'Maras Netzwerk enthuellt', infoKey: 'quest.reward.info.mara_contact' },
       prerequisites: [],
       requiredAct: 2,
-      dialogueOffer: 'Du erinnerst dich nicht. Aber ich kenne dich.\n\nHoer mir zu — es ist wichtig.',
-      dialogueProgress: 'Wir muessen reden. Komm zu mir.',
-      dialogueComplete: 'Jetzt weisst du Bescheid. Mein Netzwerk steht dir offen.'
+      dialogueOffer: 'Du erinnerst dich nicht an mich. Aber ich an dich — du warst Archivschmied, bevor der Nebel dir die Erinnerung nahm, und du hast Fragen gestellt, die der Rat begraben wollte.\n\nIch bin die Spaeherin des Widerstands. Bevor ich dir mein Netzwerk oeffne, will ich sehen, ob du noch sehen kannst: Geh hinab und kundschafte drei Kellerraeume aus. Praeg dir ein, was der Rat dort versteckt.',
+      dialogueProgress: 'Noch nicht genug gesehen. Drei Raeume — und praeg dir jeden ein.',
+      dialogueComplete: 'Drei Raeume, in jedem dasselbe: leere Zellen, frische Ketten, Listen mit Namen. Die Vermissten verschwinden nicht zufaellig — der Rat laesst sie verschwinden, und jede Fraktion deckt die andere.\n\nJetzt weiss ich, dass du noch der Alte bist. Mein Netzwerk steht dir offen — es gibt Arbeit, die nur jemand erledigen kann, an den sich niemand erinnert. Wie dich.'
     },
     elara_meeting: {
       id: 'elara_meeting',
@@ -634,7 +634,7 @@
       'quest.council_collusion_reveal.title': 'The Secret Meeting',
       'quest.council_collusion_reveal.description': 'Follow Harren to the secret meeting of the three Council factions.',
       'quest.mara_contact.title': 'The Scout',
-      'quest.mara_contact.description': 'Meet Mara and hear what she has to say.',
+      'quest.mara_contact.description': 'Scout three Council cellar rooms for Mara.',
       'quest.elara_meeting.title': "Elara's Secret",
       'quest.elara_meeting.description': 'Find 2 secret documents Elara has hidden.',
       'quest.branka_doubt.title': "The Smith's Doubt",
@@ -696,9 +696,9 @@
       'sidedialog.branka.q2_eyebrow': 'Branka raises an eyebrow when she sees the Magistrat seal. "Another verification seal. Do you actually know what ends up written on these documents?"',
       'sidedialog.thom.q4_eyebrow': "Thom glances up, then back at the press. \"Patrol expansion. The edict sounds reasonable. Go ask someone at the gazebo what 'reasonable' has meant this month.\"",
 
-      'quest.mara_contact.dialogueOffer': "You don't remember. But I know you.\n\nListen to me — it's important.",
-      'quest.mara_contact.dialogueProgress': 'We need to talk. Come to me.',
-      'quest.mara_contact.dialogueComplete': 'Now you know. My network is open to you.',
+      'quest.mara_contact.dialogueOffer': "You don't remember me. But I remember you — you were an Archivesmith before the fog took your memory, and you asked questions the Council wanted buried.\n\nI am the resistance's scout. Before I open my network to you, I want to see whether you can still see: go down and scout three cellar rooms. Mark what the Council hides there.",
+      'quest.mara_contact.dialogueProgress': 'Not enough seen yet. Three rooms — and burn each one into your memory.',
+      'quest.mara_contact.dialogueComplete': "Three rooms, the same in each: empty cells, fresh chains, lists of names. The missing don't vanish by chance — the Council makes them vanish, and every faction covers for the others.\n\nNow I know you're still the one you were. My network is open to you — there's work only someone no one remembers can do. Like you.",
 
       'quest.elara_meeting.dialogueOffer': "I wasn't kidnapped. I escaped. Here — read this.\n\nFind two documents I hid in the cellar.",
       'quest.elara_meeting.dialogueProgress': 'The documents are well hidden. Keep searching.',
