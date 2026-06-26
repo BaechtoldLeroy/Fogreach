@@ -1015,7 +1015,18 @@ function enterRoom(scene, roomId) {
   // FINAL room — the boss/mini-boss climax only spawns there (once per run).
   var _totalRooms = (dungeonRun && dungeonRun.totalRooms) ? dungeonRun.totalRooms : rooms.length;
   window.__isFinalDungeonRoom = (roomId === (_totalRooms - 1));
-  if (typeof startNextWave === "function") {
+  // Feature 055: a curated espionage room runs a STEALTH mission, not combat.
+  // _maybeStartEspionage (above) already activated the mission + disguise if
+  // this room matches an active observe-quest. Spawning a normal wave here
+  // would force the player to fight — and attacking blows the disguise
+  // (FR-04), making the eavesdrop impossible. Skip the wave entirely; the
+  // stairs are already open (lockStairs(false) above), so the player sneaks to
+  // the observe zone, listens, and leaves. Detection by the (invisible) guards
+  // stays the only threat.
+  var _espionageRoom = !!(window.EspionageSystem
+    && typeof window.EspionageSystem.isActive === 'function'
+    && window.EspionageSystem.isActive());
+  if (!_espionageRoom && typeof startNextWave === "function") {
     startNextWave.call(scene, false);
     window.currentWave = currentWave;
   }

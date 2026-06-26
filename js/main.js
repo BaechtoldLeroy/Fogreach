@@ -1419,6 +1419,11 @@ function update(time, delta) {
   if (window.EspionageSystem && window.EspionageSystem.isActive()) {
     try { window.EspionageSystem.update(this, time, delta); } catch (e) {}
   }
+  // 055 follow-up: stealth visibility layer (banner + zone/guard markers).
+  // Self-managing — mounts/redraws/unmounts itself based on mission state.
+  if (window.EspionageVisuals && typeof window.EspionageVisuals.sync === 'function') {
+    try { window.EspionageVisuals.sync(this); } catch (e) {}
+  }
 
   if (invOpen) {
     pauseAllMotion.call(this);
@@ -2512,6 +2517,13 @@ function initializeGameObjects() {
     this.scale.height / 2,
     textureKey
   ).setCollideWorldBounds(true).setDepth(100);
+
+  // Expose the player sprite globally. Several subsystems read window.player
+  // (eventSystem, mobileAutoAim, EspionageSystem). Most have a fallback, but
+  // EspionageSystem did not — so the espionage detection/observe/disguise tick
+  // never saw the player and the convoy-style stealth missions could never
+  // progress. Set it here (re-runs on every GameScene create, incl. respawn).
+  window.player = player;
 
   if (typeof applyPlayerDisplaySettings === 'function') {
     applyPlayerDisplaySettings(player);
