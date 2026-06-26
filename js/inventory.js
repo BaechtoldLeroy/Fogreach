@@ -1293,6 +1293,15 @@ function equipSelectedItem() {
     // item would be lost on equip.
     equipment[slotKey] = it;
     inventory[invSelected] = oldItem || null;
+    // Feature 059 (#42): the amulet EFFECT system reads window.runAmulet
+    // (AmuletEffects.activeEffect -> player.js updateAmuletPerFrame), NOT
+    // equipment.amulet. Without syncing it here, equipping an amulet from the
+    // inventory set equipment.amulet but left window.runAmulet null — so NO
+    // amulet effect (orbit/aura/dashstrike/...) ever activated. Keep the two
+    // in lockstep on every amulet equip/swap.
+    if (slotKey === 'amulet') {
+      window.runAmulet = it || null;
+    }
     invSelected = -1;
     // Tutorial step 10 trigger (feature 044). One emission per equip.
     if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
