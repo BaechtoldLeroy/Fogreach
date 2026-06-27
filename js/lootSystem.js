@@ -753,6 +753,19 @@ if (window.i18n) {
         item[_k] = _percentStats[_k] ? _resolvedBase[_k] / 100 : _resolvedBase[_k];
       }
     }
+
+    // Unified item-level system (one formula for Normal + Schwierig). The
+    // displayed `itemLevel` is STAT-WEIGHTED (computeItemLevelFromStats, loot.js:
+    // depth + weighted base-stat sum), computed here at the single source so
+    // every spawn path (drops, reward chests, shop) is consistent. The Hard
+    // path (_applyDifficultyToRolledItem) re-applies the SAME formula after
+    // scaling stats by the difficulty multiplier, so both difficulties share
+    // one system instead of "Normal = raw depth, Hard = stat-based". `iLevel`
+    // stays the raw generation depth (affix iLevelMin gating + reroll cost).
+    if (typeof window !== 'undefined' && typeof window.computeItemLevelFromStats === 'function') {
+      item.itemLevel = window.computeItemLevelFromStats(item, iLevel);
+    }
+
     item.displayName = composeName(item);
     return item;
   }
