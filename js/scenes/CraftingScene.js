@@ -814,6 +814,15 @@ class CraftingScene extends Phaser.Scene {
       try { saveGame(this); } catch (e) { console.warn('[CraftingScene] save failed', e); }
     }
 
+    // Quest progress: forging a recipe item IS the "herstellen" action for
+    // craft-type quests (branka_weapons "Stelle 3 Gegenstaende her"). This hook
+    // was previously only called from _enhanceItem (Verbessern), so crafting via
+    // the recipes never advanced the quest — it stuck at whatever a stray
+    // enhance had given. Tick it here too so Schmieden counts.
+    if (window.questSystem && typeof window.questSystem.onItemCrafted === 'function') {
+      try { window.questSystem.onItemCrafted(); } catch (e) { /* swallow */ }
+    }
+
     // Refresh
     this._refreshAll();
     this._showFeedback(`${recipe.name} geschmiedet!`, '#44ff44');
