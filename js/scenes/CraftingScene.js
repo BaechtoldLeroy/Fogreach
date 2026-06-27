@@ -22,7 +22,7 @@ if (window.i18n) {
     'crafting.recipe.cost': 'Kosten: {cost} Eisenbrocken',
     'crafting.info.idle': 'Klicke einen Slot oder ein Inventar-Item zum Verbessern oder Zerlegen.\nReroll bei Mara im Schwarzmarkt.',
     'crafting.info.tier_affix': 'Tier: {tier}  |  Affixe: {count}',
-    'crafting.info.enhance_to': 'Verbessern: -> {tier} ({cost} Eisenbrocken)',
+    'crafting.info.enhance_to': 'Verbessern: -> {tier}, +1 Affix (behaelt bestehende) — {cost} Eisenbrocken',
     'crafting.info.already_legendary': 'Bereits Legendär — keine Verbesserung möglich.',
     'crafting.info.reroll_hint': 'Reroll verfügbar bei Mara (Schwarzmarkt).',
     'crafting.feedback.enhanced_to': 'Verbessert auf {tier}!',
@@ -58,7 +58,7 @@ if (window.i18n) {
     'crafting.recipe.cost': 'Cost: {cost} Iron Chunks',
     'crafting.info.idle': 'Click a slot or inventory item to enhance or salvage.\nReroll available at Mara in the Black Market.',
     'crafting.info.tier_affix': 'Tier: {tier}  |  Affixes: {count}',
-    'crafting.info.enhance_to': 'Enhance: -> {tier} ({cost} Iron Chunks)',
+    'crafting.info.enhance_to': 'Enhance: -> {tier}, +1 affix (keeps existing) — {cost} Iron Chunks',
     'crafting.info.already_legendary': 'Already Legendary — no further enhancement.',
     'crafting.info.reroll_hint': 'Reroll available at Mara (Black Market).',
     'crafting.feedback.enhanced_to': 'Enhanced to {tier}!',
@@ -629,15 +629,32 @@ class CraftingScene extends Phaser.Scene {
       changeMaterialCount('MAT', -cost);
     }
 
-    // Bump tier + re-roll affixes for the new tier.
+    // Bump tier and ADD one fresh affix while KEEPING the existing ones
+    // (additive enhance — never makes the item worse). The old behaviour
+    // re-rolled the WHOLE affix set, so a good roll could be lost on upgrade.
+    // Affix-only rerolls (replace, same tier) still live at Mara's Schwarzmarkt.
     const newTier = tier + 1;
-    item.tier = newTier;
-    if (window.LootSystem && typeof window.LootSystem.rollAffixes === 'function') {
+    const kept = Array.isArray(item.affixes) ? item.affixes.slice() : [];
+    const usedIds = {};
+    kept.forEach(function (a) { if (a && a.defId) usedIds[a.defId] = true; });
+    if (kept.length < newTier && window.LootSystem && typeof window.LootSystem.rollAffixes === 'function') {
       const iLevel = (typeof item.iLevel === 'number') ? item.iLevel : 1;
+      let fresh = [];
       try {
-        item.affixes = window.LootSystem.rollAffixes(iLevel, newTier, Math.random, item.type);
-      } catch (e) { /* swallow */ }
+        // Oversample so we can skip any affix the item already carries, then
+        // append fresh UNIQUE affixes until we reach the new tier's count.
+        fresh = window.LootSystem.rollAffixes(iLevel, newTier + kept.length + 3, Math.random, item.type) || [];
+      } catch (e) { fresh = []; }
+      for (let i = 0; i < fresh.length && kept.length < newTier; i++) {
+        const f = fresh[i];
+        if (f && f.defId && !usedIds[f.defId]) {
+          usedIds[f.defId] = true;
+          kept.push(f);
+        }
+      }
     }
+    item.tier = newTier;
+    item.affixes = kept;
     if (window.LootSystem && typeof window.LootSystem.composeName === 'function') {
       try { item.displayName = window.LootSystem.composeName(item); } catch (e) {}
     }
