@@ -10,7 +10,7 @@ if (window.i18n) {
     'crafting.btn.enhance': 'Verbessern',
     'crafting.btn.salvage': 'Zerlegen',
     'crafting.btn.mass_salvage': 'Massenzerlegung',
-    'crafting.mass_salvage.hint': 'Zerlegt alle gewöhnl. + magischen Items ({count})',
+    'crafting.mass_salvage.hint': 'Zerlegt Inventar bis Selten/gelb — Legendär bleibt ({count})',
     'crafting.feedback.mass_salvaged': '{count} Items zerlegt: +{amount} Eisenbrocken',
     'crafting.feedback.mass_salvaged_none': 'Nichts zu zerlegen (gewöhnl./magisch)',
     'crafting.btn.craft': 'Schmieden',
@@ -46,7 +46,7 @@ if (window.i18n) {
     'crafting.btn.enhance': 'Enhance',
     'crafting.btn.salvage': 'Salvage',
     'crafting.btn.mass_salvage': 'Mass Salvage',
-    'crafting.mass_salvage.hint': 'Salvages all common + magic items ({count})',
+    'crafting.mass_salvage.hint': 'Salvages inventory up to Rare/yellow — keeps Legendary ({count})',
     'crafting.feedback.mass_salvaged': '{count} items salvaged: +{amount} Iron Chunks',
     'crafting.feedback.mass_salvaged_none': 'Nothing to salvage (common/magic)',
     'crafting.btn.craft': 'Forge',
@@ -706,15 +706,16 @@ class CraftingScene extends Phaser.Scene {
 
   // =================== Mass Salvage ===================
   // Items eligible for bulk salvage: unequipped gear (weapon/head/body/boots)
-  // of tier <= 1 (Common + Magic). Excludes the dev-cheat weapon, amulets
-  // (run-specific, no salvage value), potions/materials/quest items, and
-  // anything Rare/Legendary (kept safe). Equipped items live in `equipment`,
-  // not `inventory`, so they're never touched.
+  // of tier <= 2 — Common, Magic AND Rare ("gelbe" Items, tier-color #ffdd44).
+  // Only LEGENDARY (tier 3, orange) is kept safe. Excludes the dev-cheat weapon,
+  // amulets (run-specific, no salvage value), and potions/materials/quest items.
+  // Equipped gear lives in `equipment`, NOT `inventory`, so it's never touched
+  // here — only inventory items are salvaged (per request).
   _isMassSalvageable(it) {
     if (!it || it.devCheat) return false;
     if (['weapon', 'head', 'body', 'boots'].indexOf(it.type) === -1) return false;
     const tier = (typeof it.tier === 'number') ? it.tier : 0;
-    return tier <= 1;
+    return tier <= 2;
   }
 
   _countMassSalvageable() {
