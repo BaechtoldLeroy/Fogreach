@@ -466,14 +466,26 @@ class CraftingScene extends Phaser.Scene {
 
   _getStatsLine(item) {
     if (!item) return '';
-    const parts = [];
-    const stats = ['hp', 'damage', 'speed', 'range', 'armor', 'crit'];
+    // speed/armor/crit sind prozentuale Brueche (0.15 = +15%) -> als % anzeigen,
+    // konsistent mit dem Inventar-Tooltip. damage bekommt 1 Dezimale (Band-Roll),
+    // hp/range sind flache Werte. Vorzeichen wird gesetzt (auch negativ, z.B.
+    // Glutaxt Tempo -10%).
+    const PERCENT = { speed: true, armor: true, crit: true };
     const labels = { hp: 'LP', damage: 'Schaden', speed: 'Tempo', range: 'Reichw.', armor: 'Ruestung', crit: 'Krit' };
-    stats.forEach(s => {
+    const parts = [];
+    ['hp', 'damage', 'speed', 'range', 'armor', 'crit'].forEach(s => {
       const val = item[s];
-      if (val && val !== 0) {
-        parts.push(`${labels[s]}:${typeof val === 'number' && val < 1 && val > 0 ? val.toFixed(2) : val}`);
+      if (!val || val === 0) return;
+      const sign = val >= 0 ? '+' : '';
+      let str;
+      if (PERCENT[s]) {
+        str = `${sign}${(val * 100).toFixed(1)}%`;
+      } else if (s === 'damage') {
+        str = `${sign}${val.toFixed(1)}`;
+      } else {
+        str = `${sign}${val}`;
       }
+      parts.push(`${labels[s]}:${str}`);
     });
     // Append a compact affix count, e.g. "[2 affix]" for magic/rare/legendary.
     if (Array.isArray(item.affixes) && item.affixes.length) {
