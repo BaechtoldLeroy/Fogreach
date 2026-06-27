@@ -693,13 +693,20 @@ class CraftingScene extends Phaser.Scene {
   }
 
   // =================== Salvage ===================
+  // Eisenbrocken pro zerlegtem Item nach Tier: Gewöhnlich 1, Magisch 2,
+  // Selten 4, Legendär 6. (Vorher 3/6/9/12 — zu grosszuegig: Upgrades wurden
+  // praktisch kostenlos finanziert, siehe #55.)
+  _salvageValue(tier) {
+    const VALUES = [1, 2, 4, 6];
+    const t = Math.max(0, Math.min(3, (typeof tier === 'number') ? tier : 0));
+    return VALUES[t];
+  }
+
   _salvageItem() {
     const item = this._getSelectedItem();
     if (!item) return;
 
-    // Salvage value: (tier + 1) * 3 — Common=3, Magic=6, Rare=9, Legendary=12.
-    const tier = (typeof item.tier === 'number') ? item.tier : 0;
-    const matValue = (Math.max(0, Math.min(3, tier)) + 1) * 3;
+    const matValue = this._salvageValue(item.tier);
 
     // Remove item from its source (equipment slot or inventory slot)
     this._setSelectedItem(null);
@@ -774,8 +781,7 @@ class CraftingScene extends Phaser.Scene {
     for (let i = 0; i < inventory.length; i++) {
       const it = inventory[i];
       if (!this._isMassSalvageable(it)) continue;
-      const tier = (typeof it.tier === 'number') ? it.tier : 0;
-      total += (Math.max(0, Math.min(3, tier)) + 1) * 3; // same value as single salvage
+      total += this._salvageValue(it.tier); // same value as single salvage
       inventory[i] = null;
       count++;
     }
