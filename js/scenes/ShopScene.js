@@ -518,15 +518,12 @@
       for (let i = 0; i < window.inventory.length; i++) {
         const it = window.inventory[i];
         if (it && it.type === 'potion' && it.potionTier === def.potionTier) {
-          const cap = def.stackSize || 5;
-          if ((it.stack || 1) < cap) {
-            it.stack = (it.stack || 1) + 1;
-            stacked = true;
-          } else {
-            // already at cap; keep looking for another slot or refund
-            stacked = false;
-            continue;
-          }
+          // Unlimited potion stacking: pile into the first matching slot with no
+          // per-slot cap (matches the loot-pickup path in loot.js). Previously
+          // capped at def.stackSize (5), which scattered bought potions across
+          // multiple slots.
+          it.stack = (it.stack || 1) + 1;
+          stacked = true;
           break;
         }
       }
