@@ -626,8 +626,29 @@ function initInventoryUI() {
     if (compare && compare !== it) {
       const compareBox = ensureCompareTooltip();
       if (applyTooltipContent(compareBox, compare, 'Ausgerüstet')) {
-        const compareX = tooltip.x + tooltip._width + 12;
-        positionTooltipBox(compareBox, compareX, tooltip.y);
+        // Place the compare box beside the main tooltip on whichever side has
+        // room. Inventory slots sit on the RIGHT of the screen, so the right
+        // side usually doesn't fit — without this, positionTooltipBox's
+        // right-edge clamp pulled the compare box straight back on top of the
+        // main tooltip. Prefer right, fall back to left, then stack below.
+        const cam = scene.cameras && scene.cameras.main;
+        const camW = cam ? cam.width  : (scene.scale && scene.scale.width)  || 1280;
+        const camH = cam ? cam.height : (scene.scale && scene.scale.height) || 720;
+        const gap = 12;
+        const cw = compareBox._width  || 0;
+        const ch = compareBox._height || 0;
+        const rightX = tooltip.x + (tooltip._width || 0) + gap;
+        const leftX  = tooltip.x - cw - gap;
+        if (rightX + cw <= camW - 4) {
+          positionTooltipBox(compareBox, rightX, tooltip.y);
+        } else if (leftX >= 4) {
+          positionTooltipBox(compareBox, leftX, tooltip.y);
+        } else {
+          // Neither side fits (very narrow view): stack below, flip above if needed.
+          let belowY = tooltip.y + (tooltip._height || 0) + gap;
+          if (belowY + ch > camH - 4) belowY = Math.max(4, tooltip.y - ch - gap);
+          positionTooltipBox(compareBox, tooltip.x, belowY);
+        }
       }
     } else if (tooltip.compareBox) {
       tooltip.compareBox.setVisible(false);
