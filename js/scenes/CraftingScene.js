@@ -9,6 +9,10 @@ if (window.i18n) {
     'crafting.section.recipes': 'Schmiedepläne',
     'crafting.btn.enhance': 'Verbessern',
     'crafting.btn.salvage': 'Zerlegen',
+    'crafting.btn.mass_salvage': 'Massenzerlegung',
+    'crafting.mass_salvage.hint': 'Zerlegt alle gewöhnl. + magischen Items ({count})',
+    'crafting.feedback.mass_salvaged': '{count} Items zerlegt: +{amount} Eisenbrocken',
+    'crafting.feedback.mass_salvaged_none': 'Nichts zu zerlegen (gewöhnl./magisch)',
     'crafting.btn.craft': 'Schmieden',
     'crafting.empty_slot': '(leer)',
     'crafting.slot.weapon': 'Waffe',
@@ -41,6 +45,10 @@ if (window.i18n) {
     'crafting.section.recipes': 'Smithing Plans',
     'crafting.btn.enhance': 'Enhance',
     'crafting.btn.salvage': 'Salvage',
+    'crafting.btn.mass_salvage': 'Mass Salvage',
+    'crafting.mass_salvage.hint': 'Salvages all common + magic items ({count})',
+    'crafting.feedback.mass_salvaged': '{count} items salvaged: +{amount} Iron Chunks',
+    'crafting.feedback.mass_salvaged_none': 'Nothing to salvage (common/magic)',
     'crafting.btn.craft': 'Forge',
     'crafting.empty_slot': '(empty)',
     'crafting.slot.weapon': 'Weapon',
@@ -346,6 +354,21 @@ class CraftingScene extends Phaser.Scene {
 
       this.recipeElements.push({ bg, title, desc, costText, craftBtn });
     });
+
+    // ----- Massenzerlegung (persistent) — right panel, below the recipes -----
+    // Bulk-salvage all unequipped Common+Magic gear in one click. Always
+    // visible (unlike the selection-only Zerlegen button) and kept off the
+    // crowded left/bottom area. Rare + Legendary are never touched, so a stray
+    // click can't destroy good gear.
+    const _massY = recipeStartY + this.RECIPES.length * (recipeH + 10) + 22;
+    this.massSalvageHint = this.add.text(rightX + rightW / 2, _massY - 17, '', {
+      fontFamily: 'monospace', fontSize: '9px', color: COL_PARCHMENT
+    }).setOrigin(0.5, 0.5).setDepth(10);
+    this.massSalvageBtn = this._createButton(
+      rightX + rightW / 2, _massY, 240, 26,
+      _CRAFT_T('crafting.btn.mass_salvage'), () => this._massSalvage()
+    );
+    this._updateMassSalvageHint();
 
     // --- Feedback text ---
     this.feedbackText = this.add.text(W / 2, H - 60, '', {
@@ -681,6 +704,84 @@ class CraftingScene extends Phaser.Scene {
     this._flashEffect();
   }
 
+  // =================== Mass Salvage ===================
+  // Items eligible for bulk salvage: unequipped gear (weapon/head/body/boots)
+  // of tier <= 1 (Common + Magic). Excludes the dev-cheat weapon, amulets
+  // (run-specific, no salvage value), potions/materials/quest items, and
+  // anything Rare/Legendary (kept safe). Equipped items live in `equipment`,
+  // not `inventory`, so they're never touched.
+  _isMassSalvageable(it) {
+    if (!it || it.devCheat) return false;
+    if (['weapon', 'head', 'body', 'boots'].indexOf(it.type) === -1) return false;
+    const tier = (typeof it.tier === 'number') ? it.tier : 0;
+    return tier <= 1;
+  }
+
+  _countMassSalvageable() {
+    if (typeof inventory === 'undefined' || !Array.isArray(inventory)) return 0;
+    let n = 0;
+    for (let i = 0; i < inventory.length; i++) {
+      if (this._isMassSalvageable(inventory[i])) n++;
+    }
+    return n;
+  }
+
+  _updateMassSalvageHint() {
+    if (!this.massSalvageHint) return;
+    const n = this._countMassSalvageable();
+    this.massSalvageHint.setText(_CRAFT_T('crafting.mass_salvage.hint', { count: n }));
+    if (this.massSalvageBtn) {
+      const enabled = n > 0;
+      this.massSalvageBtn.bg.setFillStyle(enabled ? 0x3a3a3a : 0x222222);
+      this.massSalvageBtn.text.setColor(enabled ? '#f1e9d8' : '#666666');
+    }
+  }
+
+  _massSalvage() {
+    if (typeof inventory === 'undefined' || !Array.isArray(inventory)) return;
+    let count = 0;
+    let total = 0;
+    for (let i = 0; i < inventory.length; i++) {
+      const it = inventory[i];
+      if (!this._isMassSalvageable(it)) continue;
+      const tier = (typeof it.tier === 'number') ? it.tier : 0;
+      total += (Math.max(0, Math.min(3, tier)) + 1) * 3; // same value as single salvage
+      inventory[i] = null;
+      count++;
+    }
+    if (count === 0) {
+      this._showFeedback(_CRAFT_T('crafting.feedback.mass_salvaged_none'), '#ff8844');
+      return;
+    }
+    if (typeof window !== 'undefined') window.inventory = inventory;
+
+    if (typeof changeMaterialCount === 'function') {
+      changeMaterialCount('MAT', total);
+    } else if (typeof materialCounts !== 'undefined') {
+      materialCounts.MAT = (materialCounts.MAT || 0) + total;
+    }
+
+    // A salvaged item may have been the active selection — clear it.
+    this._selection = null;
+    this._selectedSlot = null;
+    this._clearVisualSelection();
+    if (this.salvageBtn) this.salvageBtn.container.setVisible(false);
+    if (this.enhanceBtn) this.enhanceBtn.container.setVisible(false);
+    this.enhanceInfo.setText(_CRAFT_T('crafting.info.idle'));
+
+    if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
+      try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
+    }
+    if (typeof saveGame === 'function') {
+      try { saveGame(this); } catch (e) {}
+    }
+
+    this._refreshAll();
+    this._updateMassSalvageHint();
+    this._showFeedback(_CRAFT_T('crafting.feedback.mass_salvaged', { count: count, amount: total }), '#ccaa33');
+    this._flashEffect();
+  }
+
   // =================== Crafting ===================
   _craftRecipe(recipe, index) {
     const cost = recipe.cost;
@@ -755,6 +856,9 @@ class CraftingScene extends Phaser.Scene {
 
     // Refresh inventory list
     this._refreshInventoryList();
+
+    // Keep the mass-salvage count/button state in sync with the inventory.
+    this._updateMassSalvageHint();
   }
 
   _refreshInventoryList() {
