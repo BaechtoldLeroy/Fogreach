@@ -1759,10 +1759,14 @@ class HubSceneV2 extends Phaser.Scene {
     let applied = false;
     if (window.pendingLoadedSave) {
       applied = applyState(window.pendingLoadedSave) || applied;
-      // Intentionally NOT cleared: _enterLocation()'s pre-dungeon saveGame()
-      // overwrites pendingLoadedSave from the fresh __LAST_SAVE_SNAPSHOT__
-      // before GameScene starts, so GameScene always sees current state. Leaving
-      // the original set keeps a fallback alive if applyState threw here.
+      // Consume it: this is a one-shot hydration on the FIRST hub entry after
+      // "Fortsetzen". If left set, every later HubSceneV2.create() (e.g.
+      // returning from the Archivschmiede or a dungeon run) would re-apply this
+      // now-stale snapshot and revert in-between changes — salvaged/crafted/
+      // equipped items would reappear. The live globals are authoritative from
+      // here on; the dungeon path re-seeds pendingLoadedSave from a fresh
+      // saveGame snapshot in _enterLocation just before starting GameScene.
+      window.pendingLoadedSave = null;
     }
 
     // Keep the local `inventory`/`equipment` bindings in sync with the window
