@@ -716,7 +716,11 @@ if (window.i18n) {
       const _bv = base.baseStats[_bk];
       if (_bv && typeof _bv === 'object' && typeof _bv.min === 'number' && typeof _bv.max === 'number') {
         let _rolled = _bv.min + Math.random() * (_bv.max - _bv.min);
-        if (_bk === 'damage' || _bk === 'range' || _bk === 'hp') _rolled = Math.round(_rolled);
+        // Damage keeps ONE decimal place so the band roll reads as a fine,
+        // visible spread (e.g. 3.0..5.0) instead of just 3/4/5. range/hp stay
+        // whole numbers.
+        if (_bk === 'damage') _rolled = Math.round(_rolled * 10) / 10;
+        else if (_bk === 'range' || _bk === 'hp') _rolled = Math.round(_rolled);
         _resolvedBase[_bk] = _rolled;
       } else {
         _resolvedBase[_bk] = _bv;

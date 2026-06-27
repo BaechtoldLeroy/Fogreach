@@ -539,17 +539,22 @@ function initInventoryUI() {
       bodyLines.push(_INV_T('inv.amulet.run_hint'));
     }
 
-    const pushStat = (label, value, decimals = 1, suffix = '') => {
+    const pushStat = (label, value, decimals = 1, suffix = '', allowNegative = false) => {
       const num = Number(value) || 0;
-      if (num <= 0) return;
-      bodyLines.push(`${label}: +${num.toFixed(decimals)}${suffix}`);
+      if (allowNegative ? num === 0 : num <= 0) return;
+      // Negative numbers already carry their own '-'; prefix '+' only for >= 0.
+      const sign = num >= 0 ? '+' : '';
+      bodyLines.push(`${label}: ${sign}${num.toFixed(decimals)}${suffix}`);
     };
 
     pushStat(_INV_T('inventory.label.hp'), it.hp, 1);
     pushStat(_INV_T('inventory.label.damage'), it.damage, 1);
     // Angriffstempo ist prozentual (Basis-Multiplikator) — als % anzeigen, nicht
     // als roher Bruch, konsistent mit dem swift_speed-Affix ("+12% Angriffstempo").
-    pushStat(_INV_T('inventory.label.speed'), (it.speed || 0) * 100, 1, '%');
+    // allowNegative: schwere Waffen (z.B. Glutaxt -10%) sollen ihr LANGSAMERES
+    // Tempo zeigen, nicht verstecken. Nur exakt 0 (kein Modifikator) wird
+    // ausgelassen.
+    pushStat(_INV_T('inventory.label.speed'), (it.speed || 0) * 100, 1, '%', true);
     pushStat(_INV_T('inventory.label.range'), it.range, 1);
     pushStat(_INV_T('inventory.label.armor'), (it.armor || 0) * 100, 1, '%');
     pushStat(_INV_T('inventory.label.crit'), (it.crit || 0) * 100, 1, '%');
@@ -953,6 +958,10 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     playerArmor = Phaser.Math.Clamp(playerArmor + (_gb('armor') || 0), 0, 0.85);
     playerCritChance = Phaser.Math.Clamp(playerCritChance + (_gb('crit') || 0), 0, 0.9);
   }
+
+  // Round the final weapon damage to ONE decimal so band-rolled bases (e.g.
+  // 4.3) and percent affixes read cleanly in HUD/tooltip without float drift.
+  weaponDamage = Math.round(weaponDamage * 10) / 10;
 
   // 3) Max-Health neu bestimmen (Basis + Gear + Skills).
   // We must include skill HP here so setPlayerMaxHealth's delta-based
