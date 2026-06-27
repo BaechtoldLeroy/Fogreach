@@ -85,7 +85,42 @@ function pickAccessibleSpawnPosition(scene, boundsRect, margin, maxAttempts = 6,
   const baseAttempts = Math.max(1, maxAttempts);
   const attempts = minDistFromPlayer > 0 ? baseAttempts * 4 : baseAttempts;
 
-  for (let attempt = 0; attempt < attempts; attempt++) {
+  // Wave-aware spreading (C): snapshot the already-spawned enemies of the
+  // current wave (each is added to the `enemies` group before the next
+  // spawnEnemy runs) so a new spawn can prefer a spot away from the REST of the
+  // wave, not just the player. Without this, enemies bunched into one region.
+  const existing = [];
+  try {
+    if (typeof enemies !== 'undefined' && enemies && typeof enemies.getChildren === 'function') {
+      const arr = enemies.getChildren();
+      for (let i = 0; i < arr.length; i++) {
+        const e = arr[i];
+        if (e && e.active) existing.push({ x: e.x, y: e.y });
+      }
+    }
+  } catch (_) { /* group not ready — fall back to player-only spacing */ }
+
+  // Spread score = squared distance to the NEAREST of {player, existing enemies}.
+  // Higher = better separated. We keep the best-scoring candidate and early-exit
+  // as soon as one is "good enough" so open rooms stay cheap.
+  const spreadScoreSq = (cx, cy) => {
+    let m = Infinity;
+    if (player && player.active) {
+      const dx = cx - player.x, dy = cy - player.y;
+      m = Math.min(m, dx * dx + dy * dy);
+    }
+    for (let i = 0; i < existing.length; i++) {
+      const dx = cx - existing[i].x, dy = cy - existing[i].y;
+      m = Math.min(m, dx * dx + dy * dy);
+    }
+    return m === Infinity ? 0 : m;
+  };
+  const GOOD_SEPARATION_SQ = 200 * 200; // ~3 tiles clear of player + other enemies
+
+  let best = null;
+  let bestScore = -1;
+  let collected = 0;
+  for (let attempt = 0; attempt < attempts && collected < 8; attempt++) {
     const base = scene.pickAccessibleSpawnPoint({
       maxAttempts: Math.max(24, attempts * 4),
     });
@@ -97,30 +132,35 @@ function pickAccessibleSpawnPosition(scene, boundsRect, margin, maxAttempts = 6,
       y += Phaser.Math.Between(-jitter, jitter);
     }
     const candidate = clampCandidate(x, y, true);
-    if (candidate) return candidate;
+    if (candidate) {
+      collected++;
+      const sc = spreadScoreSq(candidate.x, candidate.y);
+      if (sc > bestScore) { bestScore = sc; best = candidate; }
+      // Well-separated from everyone already placed -> take it immediately.
+      if (sc >= GOOD_SEPARATION_SQ) return candidate;
+    }
   }
+  if (best) return best;
 
-  // Last-resort: in rooms too cramped to satisfy minDistFromPlayer, sample
-  // many accessible tiles and return the one FARTHEST from the player. This
-  // avoids the previous bug where the fallback ignored distance entirely and
-  // dumped every enemy onto the player's tile in dense rooms.
+  // Last-resort (A): in rooms too cramped to satisfy minDistFromPlayer, sample
+  // many accessible tiles and pick a RANDOM one from the farther HALF (ranked by
+  // spread from player + existing enemies). Previously this returned the single
+  // farthest tile, which is identical for every enemy -> the whole wave piled
+  // onto one spot. Randomising the farther half spreads them out.
   if (player && player.active && minDistFromPlayer > 0) {
-    let bestCandidate = null;
-    let bestDistSq = -1;
+    const samples = [];
     for (let i = 0; i < 40; i++) {
       const sample = scene.pickAccessibleSpawnPoint({ maxAttempts: 1 });
       if (!sample) continue;
       const c = clampCandidate(sample.x, sample.y, false);
       if (!c) continue;
-      const dx = c.x - player.x;
-      const dy = c.y - player.y;
-      const d = dx * dx + dy * dy;
-      if (d > bestDistSq) {
-        bestDistSq = d;
-        bestCandidate = c;
-      }
+      samples.push({ c, score: spreadScoreSq(c.x, c.y) });
     }
-    if (bestCandidate) return bestCandidate;
+    if (samples.length) {
+      samples.sort((a, b) => b.score - a.score); // farthest-from-everyone first
+      const topN = Math.max(1, Math.ceil(samples.length / 2));
+      return samples[Math.floor(Math.random() * topN)].c;
+    }
   }
 
   // Final fallback: any accessible tile (used in tests / when no player exists).
