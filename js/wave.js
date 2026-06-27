@@ -51,17 +51,24 @@ function startNextWave(noIncrement) {
     ? window.storySystem.getCurrentActIndex() : 0;
   const bossesUnlocked = _storyAct >= 1;
 
-  // Feature 058 (#41) Option B: the boss / mini-boss is the RUN CLIMAX — at most
-  // ONE per run, only in the FINAL room, scaled to the run-constant depth. The
-  // old rule ("every 10th wave") spawned a boss in EVERY room at depths
-  // 10/20/... once depth stopped climbing per room. Non-final rooms now get
-  // plain waves. getBossDefinition() bands the boss type by floor(depth/10),
-  // so depth 10-19 -> chainMaster (Kettenmeister), 30-39 -> shadowCouncillor.
+  // Feature 058 (#41) Option B + Tier-Gate-Follow-up: the boss / mini-boss is the
+  // RUN CLIMAX — at most ONE per run, only in the FINAL room, scaled to the
+  // run-constant depth.
+  //
+  // Full bosses now spawn ONLY at TIER GATES (depth a multiple of 10: 10/20/30…).
+  // Reason: depth is run-constant and grows only +1 per completed run (058), so a
+  // plain "depth >= 10" rule put the SAME banded boss in every run across a whole
+  // 10-band — the player fought the Kettenmeister ~10 runs in a row (depth 10–19).
+  // Tier-gating makes each named boss a once-per-tier milestone:
+  //   depth 10 -> chainMaster (Kettenmeister), 20 -> ceremonyMaster,
+  //   30 -> shadowCouncillor; the in-between depths (11–19, 21–29, …) get a
+  // mini-boss climax instead. getBossDefinition(depth) still bands the type.
   const _isFinalRoom = !!window.__isFinalDungeonRoom;
   const _climaxArmed = _isFinalRoom && !window.__runClimaxSpawned;
+  const _isTierGate = (currentWave >= 10) && (currentWave % 10 === 0);
 
-  // Full boss: final room, depth >= 10, bosses narratively unlocked (Akt 2+).
-  if (_climaxArmed && bossesUnlocked && currentWave >= 10) {
+  // Full boss: final room, on a tier gate, bosses narratively unlocked (Akt 2+).
+  if (_climaxArmed && bossesUnlocked && _isTierGate) {
     window.__runClimaxSpawned = true;
     bossActive = true;
     spawnedEnemiesInWave = 0;    // no regular spawns this wave
@@ -73,11 +80,11 @@ function startNextWave(noIncrement) {
   }
 
   waveInProgress = true;
-  // Mini-boss climax: final room of a shallower run (depth 5-9), or a deep run
-  // before bosses unlock (Akt 1). One per run, rides on the regular wave.
-  const isMiniBossWave = _climaxArmed
-    && currentWave >= 5
-    && (currentWave < 10 || !bossesUnlocked);
+  // Mini-boss climax: every armed final room (depth >= 5) that is NOT a full-boss
+  // tier gate — i.e. the shallow runs (5–9), the in-between deep runs (11–19, …),
+  // and any deep run while bosses are still story-locked (Akt 1). The full-boss
+  // branch above already returned, so reaching here means "no full boss".
+  const isMiniBossWave = _climaxArmed && currentWave >= 5;
   if (isMiniBossWave) window.__runClimaxSpawned = true;
   waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
   spawnedEnemiesInWave = 0;
