@@ -926,13 +926,19 @@ function getAbilityBonus(key) {
 // to the LootSystem statKey suffixes ('spinAttack','chargeSlash',...). Returns null for 'attack'
 // since the plain melee does NOT get a per-ability affix, only 'dmg_all_abilities' / 'cd_all_abilities'.
 function _lootAbilityStatKey(abilityKey) {
+  // 060: Die 5 Affix-Buckets (spinAttack/chargeSlash/dashSlash/daggerThrow/
+  // shieldBash) sind auf die neuen Skills umgemappt. Die internen statKey-
+  // Strings bleiben STABIL (keine Save-Migration/Test-Bruch) — nur Label +
+  // Ziel-Skill wechseln:
+  //   spinAttack→Wirbelwind, chargeSlash→Hammer, dashSlash→Wirbelsog(cyclone),
+  //   daggerThrow→Frostnova, shieldBash→Todesstoss(deathBlow).
   switch (abilityKey) {
-    case 'spin': return 'spinAttack';
-    case 'charge': return 'chargeSlash';
-    case 'dash': return 'dashSlash';
-    case 'dagger': return 'daggerThrow';
-    case 'shield': return 'shieldBash';
-    default: return null; // 'attack' and anything else → no per-ability affix
+    case 'spin': return 'spinAttack';          // Wirbelwind (recycelt spinAttack)
+    case 'charge': return 'chargeSlash';       // Hammer (recycelt chargeSlash)
+    case 'cycloneStrike': return 'dashSlash';  // Wirbelsog
+    case 'frostNova': return 'daggerThrow';    // Frostnova
+    case 'deathBlow': return 'shieldBash';     // Todesstoss
+    default: return null; // 'attack' und alles andere → nur all_abilities
   }
 }
 
@@ -1546,7 +1552,7 @@ function attack() {
     const _twinFracBow = (window.AmuletEffects && typeof window.AmuletEffects.twinDamageFrac === 'function')
       ? window.AmuletEffects.twinDamageFrac() : 0;
     if (_twinFracBow > 0 && this.time && this.time.delayedCall) {
-      this.time.delayedCall(70, () => _fireBowArrow(this, { damageMult: _twinFracBow, angleOffset: 0.18 }));
+      this.time.delayedCall(210, () => _fireBowArrow(this, { damageMult: _twinFracBow, angleOffset: 0.18 }));
     }
 
     this.time.delayedCall(120, () => { isAttacking = false; }, null, this);
@@ -1600,8 +1606,9 @@ function attack() {
   }, { requireLineOfSight: true });
 
   // Feature 059 WP03: Zwillingsklinge (twin) — a second, weaker strike (~60%)
-  // ~90ms later for a "double swing" feel. Same cone/aim; reuses the normal
-  // damage path. No-op without the twin amulet.
+  // deliberately ~230ms later (not 90ms) so the follow-up reads as a SEPARATE
+  // hit from the amulet, not part of the same swing. Same cone/aim; reuses the
+  // normal damage path. No-op without the twin amulet.
   const _twinFrac = (window.AmuletEffects && typeof window.AmuletEffects.twinDamageFrac === 'function')
     ? window.AmuletEffects.twinDamageFrac() : 0;
   if (_twinFrac > 0) {
@@ -1624,7 +1631,7 @@ function attack() {
         handleEnemyHit(_twinScene, enemy, { useTween: true, duration: 80 });
       }, { requireLineOfSight: true });
     };
-    if (_twinScene.time && _twinScene.time.delayedCall) _twinScene.time.delayedCall(90, _twinSecond);
+    if (_twinScene.time && _twinScene.time.delayedCall) _twinScene.time.delayedCall(230, _twinSecond);
     else _twinSecond();
   }
 

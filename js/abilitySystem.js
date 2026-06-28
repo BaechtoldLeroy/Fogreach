@@ -729,7 +729,18 @@
           if (typeof m === 'number' && isFinite(m) && m > 0) cdMult = m;
         }
       } catch (e) { /* never break activation */ }
-      state.cooldowns[abilityId] = now + def.cooldownMs * cdMult;
+      // 060: Loot-Affixe (cd_<ability> + cd_all_abilities + Wissensbaum-CDR)
+      // senken auch die Cooldowns der neuen Self-Abilities (cycloneStrike/
+      // frostNova/deathBlow etc.). getLootAbilityCooldownReduction lebt global
+      // in player.js; defensiv aufgerufen, nie die Aktivierung brechen.
+      let lootCdMult = 1;
+      try {
+        if (typeof getLootAbilityCooldownReduction === 'function') {
+          const red = getLootAbilityCooldownReduction(abilityId);
+          if (typeof red === 'number' && isFinite(red)) lootCdMult = Math.max(0.2, 1 - red);
+        }
+      } catch (e) { /* never break activation */ }
+      state.cooldowns[abilityId] = now + def.cooldownMs * cdMult * lootCdMult;
     }
 
     // Tutorial step 8 trigger (feature 044). One emission per successful
