@@ -506,13 +506,14 @@ let playerCritChance = 0;
 //
 //   neededXP(level) = round(XP_CURVE_BASE + XP_CURVE_SCALE * level^XP_CURVE_EXP)
 //
-// Beispiel-Schwellen (Default-Tuning):
-//   L1 = 5, L5 = 17, L10 = 44, L20 = 125, L40 = 370
-// Monoton steigend, progressiv deutlich steiler als die alte 2*level-Kurve
-// (L20: 125 vs. 40, L40: 370 vs. 80).
-const XP_CURVE_BASE = 4;     // konstanter Sockel (frueher Game-Start)
-const XP_CURVE_SCALE = 1;    // Multiplikator auf den Potenz-Term
-const XP_CURVE_EXP = 1.6;    // >1 ⇒ progressiv steiler pro Level
+// XP pro Kill = 1 (player.js addXP.call ohne Argument). Levelaufstiege sollen
+// sich deutlich langsamer anfühlen -> Kurve nochmals klar steiler (~3-5x).
+// Beispiel-Schwellen (Kills bis zum nächsten Level):
+//   L1 = 9, L5 = 45, L10 = 164, L20 = 555, L40 = 1911
+// Monoton steigend, progressiv deutlich steiler (war L10=44, L20=125, L40=370).
+const XP_CURVE_BASE = 6;     // konstanter Sockel
+const XP_CURVE_SCALE = 2.5;  // Multiplikator auf den Potenz-Term (war 1)
+const XP_CURVE_EXP = 1.8;    // >1 ⇒ progressiv steiler pro Level (war 1.6)
 
 function getNeededXP(level) {
   const lvl = Math.max(1, Math.floor(Number(level) || 1));
@@ -1018,6 +1019,10 @@ function create() {
       window.TutorialSystem.report('loadout.opened', {});
     }
   });
+  // Skill-Baum / Talente (T key) — 060: auch im Dungeon öffnen, nicht nur im Hub.
+  this.input.keyboard.on('keydown-T', () => {
+    if (typeof window.openSkillTreeScene === 'function') window.openSkillTreeScene(this);
+  });
   // Settings overlay (O key)
   this.input.keyboard.on('keydown-O', () => {
     if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
@@ -1113,6 +1118,7 @@ function create() {
     this.input.keyboard.off('keydown-J');
     this.input.keyboard.off('keydown-M');
     this.input.keyboard.off('keydown-K');
+    this.input.keyboard.off('keydown-T');
     this.input.keyboard.off('keydown-O');
     this.input.keyboard.off('keydown-P');
     if (this._perfMonitor) {

@@ -850,6 +850,16 @@
     } catch (err) {
       console.warn('[AbilitySystem] resetForNewGame storage clear failed', err);
     }
+    // Feature 060: Skill-Baum beim Neues-Spiel ZURÜCKSETZEN. clearAllSaves wischt
+    // nur localStorage-Keys, nicht den in-memory SkillTree-State (eigenes Modul/
+    // eigener Storage-Key) -> sonst behält ein neues Spiel die alten Talente.
+    try {
+      if (window.SkillTree && typeof window.SkillTree.resetForNewGame === 'function') {
+        window.SkillTree.resetForNewGame();
+      }
+    } catch (err) {
+      console.warn('[AbilitySystem] SkillTree reset failed', err);
+    }
     // Test default: every new run starts with 20 Eisenbrocken so the forge
     // is immediately usable. Done here (instead of in inventory.js) so that
     // it ALSO applies to existing saves that get a "neues Spiel" click.
