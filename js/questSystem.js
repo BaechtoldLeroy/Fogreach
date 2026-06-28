@@ -608,7 +608,7 @@
     _autoDe['quest.tracker.progress'] = '{title}: {cur}/{required}';
     _autoDe['quest.tracker.short_suffix'] = '..';
     // #53: Quest-Abschluss-Toast (DE ist Quelle).
-    _autoDe['quest.toast.completed'] = 'Quest abgeschlossen: {title}';
+    _autoDe['quest.toast.completed'] = 'Quest-Ziel erfüllt: {title}';
     window.i18n.register('de', _autoDe);
 
     // English overrides — partial; missing keys gracefully fall back to DE.
@@ -617,7 +617,7 @@
     window.i18n.register('en', {
       'quest.tracker.progress': '{title}: {cur}/{required}',
       'quest.tracker.short_suffix': '..',
-      'quest.toast.completed': 'Quest complete: {title}',
+      'quest.toast.completed': 'Objective complete: {title}',
       // Akt 0 — Aldric warmup (tutorial extension)
       'quest.aldric_cleanup.title': 'Cellar Cleanup',
       'quest.aldric_cleanup.description': 'Defeat 10 enemies in the cellars beneath the Archive Forge.',
@@ -911,8 +911,15 @@
   // Rathauskeller encounter modal). Persisted alongside questState.
   let questFlags = {};
 
+  // #53 follow-up: once-guard for the "Quest-Ziel erfüllt" toast. The toast
+  // fires when the objectives are MET (criteria fulfilled), NOT at turn-in.
+  // In-memory only (per session) — on save reload no progress event fires, so
+  // an already-ready quest won't re-toast.
+  let _criteriaToasted = {};
+
   function _initQuestState() {
     questState = {};
+    _criteriaToasted = {};
     Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
       questState[id] = { status: 'available', objectives: null };
     });
@@ -1067,6 +1074,7 @@
     if (changed) {
       _notifyUpdate();
       _persistIfPossible();
+      _fireReadyToasts();
     }
     return changed;
   }
@@ -1116,6 +1124,7 @@
     if (changed) {
       _notifyUpdate();
       _persistIfPossible();
+      _fireReadyToasts();
     }
     return changed;
   }
@@ -1142,6 +1151,7 @@
     if (changed) {
       _notifyUpdate();
       _persistIfPossible();
+      _fireReadyToasts();
     }
     return changed;
   }
@@ -1165,6 +1175,7 @@
     if (changed) {
       _notifyUpdate();
       _persistIfPossible();
+      _fireReadyToasts();
     }
     return changed;
   }
@@ -1315,29 +1326,49 @@
     }
     _notifyUpdate();
     _persistIfPossible();
-    // #53: visible completion toast (Quest abgeschlossen: <Titel>). Defensive —
-    // never let a toast failure abort the (already-applied) completion.
-    _showQuestCompletedToast(def);
+    // #53 follow-up: the visible toast now fires when the CRITERIA are met
+    // (see _fireReadyToasts), not here at turn-in. Clear the once-guard so a
+    // re-accepted/repeatable quest can toast again next time.
+    delete _criteriaToasted[questId];
     return true;
   }
 
-  // #53: Splash/Toast bei Quest-Abschluss. Reuses EventSystem.showToast (panel
-  // style + scrollFactor(0) so it stays fixed on the camera). Resolves the
-  // currently-active scene (GameScene in the dungeon, HubSceneV2 in town).
-  // Wrapped in try/catch — a quest must complete even if the HUD can't render.
-  function _showQuestCompletedToast(def) {
+  // #53 (+ follow-up): show a toast the moment a quest's objectives are
+  // FULFILLED — i.e. on the transition to ready-to-complete during gameplay
+  // (10th kill, 3rd crafted item, target depth reached …), NOT when the player
+  // turns it in at the NPC. Once per quest per session via _criteriaToasted.
+  // Called from every objective-advancing function below.
+  function _fireReadyToasts() {
+    try {
+      Object.keys(questState).forEach(function (id) {
+        var state = questState[id];
+        if (!state || state.status !== 'active') return;
+        if (_criteriaToasted[id]) return;
+        if (!isQuestReadyToComplete(id)) return;
+        _criteriaToasted[id] = true;
+        _showQuestCriteriaToast(QUEST_DEFINITIONS[id]);
+      });
+    } catch (e) {
+      try { console.warn('[QuestSystem] ready-toast scan failed', e); } catch (_) {}
+    }
+  }
+
+  // Reuses EventSystem.showToast (panel style + scrollFactor(0) so it stays
+  // fixed on the camera). Resolves the currently-active scene (GameScene in the
+  // dungeon, HubSceneV2 in town). Wrapped in try/catch — never break gameplay.
+  function _showQuestCriteriaToast(def) {
     try {
       if (!def) return;
       var title = getQuestField(def, 'title') || def.title || '';
       var msg = (window.i18n && typeof window.i18n.t === 'function')
         ? window.i18n.t('quest.toast.completed', { title: title })
-        : ('Quest abgeschlossen: ' + title);
+        : ('Quest-Ziel erfüllt: ' + title);
       var scene = _resolveActiveScene();
       if (scene && window.EventSystem && typeof window.EventSystem.showToast === 'function') {
-        window.EventSystem.showToast(scene, msg, 'quest_completed');
+        window.EventSystem.showToast(scene, msg, 'quest_objective_done');
       }
     } catch (e) {
-      try { console.warn('[QuestSystem] completion toast failed', e); } catch (_) {}
+      try { console.warn('[QuestSystem] objective toast failed', e); } catch (_) {}
     }
   }
 
