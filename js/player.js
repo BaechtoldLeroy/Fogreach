@@ -933,13 +933,22 @@ function _lootAbilityStatKey(abilityKey) {
   //   spinAttack→Wirbelwind, chargeSlash→Hammer, dashSlash→Wirbelsog(cyclone),
   //   daggerThrow→Frostnova, shieldBash→Todesstoss(deathBlow).
   switch (abilityKey) {
-    case 'spin': return 'spinAttack';          // (Legacy-Key)
-    case 'whirlwind': return 'spinAttack';     // Wirbelwind (castWhirlwind nutzt 'whirlwind')
-    case 'charge': return 'chargeSlash';       // Hammer (recycelt chargeSlash)
-    case 'cycloneStrike': return 'dashSlash';  // Wirbelsog
-    case 'frostNova': return 'daggerThrow';    // Frostnova
-    case 'deathBlow': return 'shieldBash';     // Todesstoss
-    default: return null; // 'attack' und alles andere → nur all_abilities
+    // 5 Bestands-Buckets (statKeys stabil) auf die neuen Skills gemappt:
+    case 'spin':           return 'spinAttack';     // (Legacy)
+    case 'whirlwind':      return 'spinAttack';     // Wirbelwind
+    case 'hammer':         return 'chargeSlash';    // Hammer (recycelt chargeSlash)
+    case 'cycloneStrike':  return 'dashSlash';      // Wirbelsog
+    case 'frostNova':      return 'daggerThrow';    // Frostnova
+    case 'deathBlow':      return 'shieldBash';     // Todesstoss
+    // 7 neue Buckets (statKey == abilityId) — Affixe für alle Skills:
+    case 'twistingBlades': return 'twistingBlades';
+    case 'steelGrasp':     return 'steelGrasp';
+    case 'charge':         return 'charge';         // Ansturm (Hammer nutzt jetzt 'hammer')
+    case 'teleportDash':   return 'teleportDash';
+    case 'heilwunde':      return 'heilwunde';
+    case 'frenzy':         return 'frenzy';
+    case 'berserk':        return 'berserk';
+    default: return null; // 'attack' → nur all_abilities
   }
 }
 
@@ -1874,7 +1883,7 @@ function releaseChargedSlash(forceMaxCharge = false) {
     if (forward.dot(tempVec) <= threshold) return;
 
     hits.add(enemy);
-    const { isCrit } = dealDamageToEnemy(scene, enemy, damageMultiplier, 'charge');
+    const { isCrit } = dealDamageToEnemy(scene, enemy, damageMultiplier, 'hammer');
     handleEnemyHit(scene, enemy, {
       tint: isCrit ? 0xfff2a6 : 0xffd27f,
       duration: isCrit ? 200 : 140
@@ -1904,7 +1913,7 @@ function releaseChargedSlash(forceMaxCharge = false) {
 
   chargeSlashCooldown = true;
   const baseCooldown = getChargedSlashCooldown();
-  const finalCooldown = applyCooldownModifier(baseCooldown, 'charge');
+  const finalCooldown = applyCooldownModifier(baseCooldown, 'hammer');
   startCooldownTimer(scene, finalCooldown, {
     button: chargeSlashBtn,
     label: chargeSlashCooldownText,

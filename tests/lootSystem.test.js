@@ -41,9 +41,10 @@ beforeEach(() => {
 // Phase 1: rollAffixes
 // ---------------------------------------------------------------------------
 
-test('AFFIX_DEFS has exactly 22 entries', () => {
+test('AFFIX_DEFS has exactly 31 entries', () => {
   const sys = freshSystem();
-  assert.strictEqual(sys.AFFIX_DEFS.length, 22);
+  // 060: per-Skill-Affixe für alle 12 Skills ergänzt (8 dmg + 11 cd) -> 31.
+  assert.strictEqual(sys.AFFIX_DEFS.length, 31);
 });
 
 test('AFFIX_DEFS is frozen (top-level)', () => {
@@ -98,13 +99,13 @@ test('rollAffixes excludes affixes whose iLevelMin > iLevel', () => {
 
 test('rollAffixes may include high-tier affixes when iLevel is high enough', () => {
   const sys = freshSystem();
-  // Try several seeds; at iLevel=20 with count=22 ALL should be eligible.
-  const out = sys.rollAffixes(20, 22, makeRng(1));
-  // Every affix in the pool should be reachable; with count=22 and pool=22 we
+  // Try several seeds; at iLevel=20 with count=31 ALL should be eligible.
+  const out = sys.rollAffixes(20, 31, makeRng(1));
+  // Every affix in the pool should be reachable; with count=31 and pool=31 we
   // get exactly one of each (deterministic pick-without-replacement).
-  assert.strictEqual(out.length, 22);
+  assert.strictEqual(out.length, 31);
   const ids = new Set(out.map((a) => a.defId));
-  assert.strictEqual(ids.size, 22);
+  assert.strictEqual(ids.size, 31);
 });
 
 test('rollAffixes returns at most eligible.length when count exceeds pool', () => {
