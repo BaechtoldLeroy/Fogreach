@@ -93,14 +93,14 @@
       poolGfxList.forEach((g) => g.destroy());
       poolGfxList.length = 0;
 
+      // 060 WP03: Erwerb läuft ausschließlich über den Skill-Baum. Das Loadout
+      // zeigt daher NUR gelernte (= via Skill-Baum freigeschaltete) Abilities;
+      // ungelernte/gesperrte Defs erscheinen nicht mehr im Pool.
       const learned = window.AbilitySystem.getLearnedAbilities();
       const learnedSet = new Set(learned);
-      const ordered = allDefs.slice().sort((a, b) => {
-        const la = learnedSet.has(a.id) ? 0 : 1;
-        const lb = learnedSet.has(b.id) ? 0 : 1;
-        if (la !== lb) return la - lb;
-        return a.name.localeCompare(b.name);
-      });
+      const ordered = allDefs
+        .filter((d) => learnedSet.has(d.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
 
       ordered.forEach((def, idx) => {
         const col = idx % cols;
@@ -108,13 +108,12 @@
         const cx = -((cols * (cellW + gap)) - gap) / 2 + col * (cellW + gap) + cellW / 2;
         const cy = gridStartY + row * (cellH + gap) + cellH / 2;
 
-        const isLearnedDef = learnedSet.has(def.id);
+        // 060 WP03: Pool enthält nur noch gelernte Abilities -> immer "learned".
         const equipped = window.AbilitySystem.isEquipped(def.id);
 
         const cell = scene.add.graphics();
-        const fill = isLearnedDef ? 0x1a2238 : 0x0e0e16;
-        const stroke = equipped ? 0xffd166 : (isLearnedDef ? def.color : 0x333344);
-        cell.fillStyle(fill, 0.95).fillRoundedRect(cx - cellW / 2, cy - cellH / 2, cellW, cellH, 10);
+        const stroke = equipped ? 0xffd166 : def.color;
+        cell.fillStyle(0x1a2238, 0.95).fillRoundedRect(cx - cellW / 2, cy - cellH / 2, cellW, cellH, 10);
         cell.lineStyle(equipped ? 3 : 2, stroke, 0.95).strokeRoundedRect(cx - cellW / 2, cy - cellH / 2, cellW, cellH, 10);
         container.add(cell);
         poolGfxList.push(cell);
@@ -124,12 +123,12 @@
         // physically cannot overlap.
         const iconCx = cx - cellW / 2 + 22;
         const textCx = cx - cellW / 2 + 42;
-        const textW = cellW - 50; // leave room for lock badge in top-right
+        const textW = cellW - 50;
 
         const icon = scene.add.text(iconCx, cy, def.icon || '?', {
           fontFamily: 'serif',
           fontSize: 18,
-          color: isLearnedDef ? '#ffffff' : '#555566'
+          color: '#ffffff'
         }).setOrigin(0.5);
         container.add(icon);
         poolGfxList.push(icon);
@@ -137,40 +136,23 @@
         const nameTxt = scene.add.text(textCx, cy, def.name, {
           fontFamily: 'monospace',
           fontSize: 11,
-          color: isLearnedDef ? '#e0e8ff' : '#888899',
+          color: '#e0e8ff',
           wordWrap: { width: textW },
           lineSpacing: 2
         }).setOrigin(0, 0.5).setMaxLines(2);
         container.add(nameTxt);
         poolGfxList.push(nameTxt);
 
-        // Lock badge top-right corner
-        if (!isLearnedDef) {
-          const rule = window.AbilitySystem.getUnlockRule(def.id);
-          if (rule) {
-            const lockTxt = scene.add.text(cx + cellW / 2 - 6, cy - cellH / 2 + 4, '\u{1F512}', {
-              fontFamily: 'serif',
-              fontSize: 11,
-              color: '#aa8855'
-            }).setOrigin(1, 0);
-            container.add(lockTxt);
-            poolGfxList.push(lockTxt);
-          }
-        }
-
         const hit = scene.add.zone(container.x + cx, container.y + cy, cellW, cellH)
           .setOrigin(0.5)
           .setScrollFactor(0)
           .setDepth(2002)
-          .setInteractive({ useHandCursor: isLearnedDef });
+          .setInteractive({ useHandCursor: true });
         poolGfxList.push(hit);
 
         hit.on('pointerover', () => {
           let tip = def.name + '\n' + def.description;
-          if (!isLearnedDef) {
-            const rule = window.AbilitySystem.getUnlockRule(def.id);
-            if (rule) tip += '\n' + T('loadout.locked', { hint: rule.hint });
-          } else if (equipped) {
+          if (equipped) {
             const slot = window.AbilitySystem.getSlotForAbility(def.id);
             tip += '\n' + T('loadout.equipped', { slot: window.AbilitySystem.SLOT_KEY_LABELS[slot] || slot });
           }
@@ -179,7 +161,6 @@
         });
         hit.on('pointerout', () => tooltip.setVisible(false));
         hit.on('pointerdown', () => {
-          if (!isLearnedDef) return;
           if (!selectedSlot) {
             let target = window.AbilitySystem.SLOT_KEYS.find((s) => !window.AbilitySystem.getActiveLoadout()[s]);
             if (!target) target = 'slot1';
