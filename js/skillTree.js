@@ -23,23 +23,39 @@
   // minLevel  = ab welchem Player-Level investierbar
   // node/rank = Vorgänger-Knoten muss mind. diesen Rang haben
   // synergies = jeder Rang von `from` gibt diesem Knoten +perRank auf `stat`
+  // 12-Knoten-Roster (genehmigt #58): 3 Stränge x 4, Diablo-inspiriert.
+  // `strand` gruppiert für die UI (WP04). node-id == abilityId (1:1).
+  // Tier-Gating: T1 minLevel 1, T2 minLevel 4 (+ Vorgänger@2), Capstone minLevel 7 (+ Vorgänger@1).
+  // Caps: T1/T2 maxRank 5, Capstone maxRank 3.
+  // HINWEIS: 6 Abilities sind NEU (whirlwind/hammer ← spin/charge umbenannt;
+  // frenzy/steelGrasp/cycloneStrike/twistingBlades/deathBlow/charge neu) — die
+  // `activate`-Funktionen folgen in WP02. WP01 definiert nur die Baum-Daten.
   var SKILL_TREE = Object.freeze({
     nodes: Object.freeze({
-      // Tier 0 — Grundfähigkeiten (sofort verfügbar)
-      spinAttack:      { abilityId: 'spinAttack',      name: 'Wirbelangriff',       maxRank: 5, requires: { minLevel: 1 } },
-      daggerThrow:     { abilityId: 'daggerThrow',     name: 'Dolchwurf',           maxRank: 5, requires: { minLevel: 1 } },
-      dashSlash:       { abilityId: 'dashSlash',       name: 'Sturmhieb',           maxRank: 5, requires: { minLevel: 1 } },
-      // Tier 1 — bauen auf Tier 0 auf
-      chargeSlash:     { abilityId: 'chargeSlash',     name: 'Aufgeladener Schlag', maxRank: 5, requires: { minLevel: 3, node: 'spinAttack', rank: 2 },
-                         synergies: [{ from: 'spinAttack', perRank: 0.08, stat: 'damage' }] },
-      shieldBash:      { abilityId: 'shieldBash',      name: 'Schildstoss',         maxRank: 5, requires: { minLevel: 3, node: 'daggerThrow', rank: 2 } },
-      heilwunde:       { abilityId: 'heilwunde',       name: 'Heilwunde',           maxRank: 5, requires: { minLevel: 4 } },
-      // Tier 2 — tiefe Knoten
-      frostnova:       { abilityId: 'frostnova',       name: 'Frostnova',           maxRank: 5, requires: { minLevel: 6, node: 'chargeSlash', rank: 1 },
-                         synergies: [{ from: 'daggerThrow', perRank: 0.05, stat: 'damage' }] },
-      schattenschritt: { abilityId: 'schattenschritt', name: 'Schattenschritt',     maxRank: 5, requires: { minLevel: 6, node: 'dashSlash', rank: 2 },
-                         synergies: [{ from: 'dashSlash', perRank: 0.06, stat: 'damage' }] },
-      blutopfer:       { abilityId: 'blutopfer',       name: 'Blutopfer',           maxRank: 5, requires: { minLevel: 8 } }
+      // === Strang I — WUT & WUCHT (Melee/Burst, Barb-Kern) ===
+      whirlwind:     { abilityId: 'whirlwind', name: 'Wirbelwind',        strand: 'wut',    maxRank: 5, requires: { minLevel: 1 },
+                       synergies: [{ from: 'frenzy', perRank: 0.04, stat: 'damage' }] },
+      hammer:        { abilityId: 'hammer',    name: 'Hammer der Ahnen',  strand: 'wut',    maxRank: 5, requires: { minLevel: 4, node: 'whirlwind', rank: 2 },
+                       synergies: [{ from: 'whirlwind', perRank: 0.06, stat: 'damage' }] },
+      frenzy:        { abilityId: 'frenzy',    name: 'Raserei',           strand: 'wut',    maxRank: 5, requires: { minLevel: 4, node: 'whirlwind', rank: 2 } },
+      berserk:       { abilityId: 'berserk',   name: 'Berserker',         strand: 'wut',    maxRank: 3, requires: { minLevel: 7, node: 'hammer', rank: 1 },
+                       synergies: [{ from: 'hammer', perRank: 0.05, stat: 'buff' }] },
+
+      // === Strang II — KETTEN & KONTROLLE (Pull/Ranged/CC — Lore) ===
+      twistingBlades:{ abilityId: 'twistingBlades', name: 'Wirbelklingen', strand: 'ketten', maxRank: 5, requires: { minLevel: 1 } },
+      steelGrasp:    { abilityId: 'steelGrasp',     name: 'Stahlgriff',    strand: 'ketten', maxRank: 5, requires: { minLevel: 4, node: 'twistingBlades', rank: 2 },
+                       synergies: [{ from: 'cycloneStrike', perRank: 0.08, stat: 'damage' }] },
+      cycloneStrike: { abilityId: 'cycloneStrike',  name: 'Wirbelsog',     strand: 'ketten', maxRank: 5, requires: { minLevel: 4, node: 'twistingBlades', rank: 2 } },
+      frostNova:     { abilityId: 'frostNova',      name: 'Frostnova',     strand: 'ketten', maxRank: 3, requires: { minLevel: 7, node: 'steelGrasp', rank: 1 },
+                       synergies: [{ from: 'cycloneStrike', perRank: 0.05, stat: 'damage' }] },
+
+      // === Strang III — SCHATTEN & JAGD (Mobility/Execute/Sustain) ===
+      charge:        { abilityId: 'charge',       name: 'Ansturm',         strand: 'schatten', maxRank: 5, requires: { minLevel: 1 } },
+      teleportDash:  { abilityId: 'teleportDash', name: 'Schattenschritt', strand: 'schatten', maxRank: 5, requires: { minLevel: 4, node: 'charge', rank: 2 } },
+      heilwunde:     { abilityId: 'heilwunde',    name: 'Heilwunde',       strand: 'schatten', maxRank: 5, requires: { minLevel: 4, node: 'charge', rank: 2 } },
+      deathBlow:     { abilityId: 'deathBlow',    name: 'Todesstoss',      strand: 'schatten', maxRank: 3, requires: { minLevel: 7, node: 'teleportDash', rank: 1 },
+                       synergies: [{ from: 'charge', perRank: 0.03, stat: 'threshold' },
+                                   { from: 'frenzy', perRank: 0.02, stat: 'threshold' }] }
     })
   });
 
