@@ -200,12 +200,13 @@
 
     // Learn ability (skill tag, but also doubles as a unique pull). Filtered
     // out once already learned.
-    { id: 'learn_spin',    tag: 'skill',   abilityId: 'spinAttack' },
-    { id: 'learn_charge',  tag: 'skill',   abilityId: 'chargeSlash' },
-    { id: 'learn_dash',    tag: 'speed',   abilityId: 'dashSlash' },
-    { id: 'learn_dagger',  tag: 'skill',   abilityId: 'daggerThrow' },
-    { id: 'learn_shield',  tag: 'defense', abilityId: 'shieldBash' },
-    { id: 'learn_heal',    tag: 'defense', abilityId: 'heilwunde' }
+    // 060: Skills sind die 12 Baum-Abilities (alte IDs entfernt).
+    { id: 'learn_whirlwind', tag: 'skill',   abilityId: 'whirlwind' },
+    { id: 'learn_hammer',    tag: 'skill',   abilityId: 'hammer' },
+    { id: 'learn_charge',    tag: 'speed',   abilityId: 'charge' },
+    { id: 'learn_twisting',  tag: 'skill',   abilityId: 'twistingBlades' },
+    { id: 'learn_cyclone',   tag: 'skill',   abilityId: 'cycloneStrike' },
+    { id: 'learn_heal',      tag: 'defense', abilityId: 'heilwunde' }
   ];
 
   // ---- Module state ----
