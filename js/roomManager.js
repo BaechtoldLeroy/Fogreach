@@ -870,6 +870,23 @@ function enterRoom(scene, roomId) {
       }
     }
 
+    // #15: wenn diese Treppe zu nah an einer bereits platzierten lande, lieber
+    // ganz WEGLASSEN als zwei Treppen aneinander zu klumpen. Die erste Treppe
+    // bleibt immer (PLACED_STAIRS leer -> kein Skip), damit der Raum stets
+    // durchquerbar ist. Greift fuer ALLE Pfade (proc + authored + Fallback).
+    if (PLACED_STAIRS.length > 0) {
+      let tooClose = false;
+      for (let i = 0; i < PLACED_STAIRS.length; i++) {
+        const dxs = placedX - PLACED_STAIRS[i].x;
+        const dys = placedY - PLACED_STAIRS[i].y;
+        if (dxs * dxs + dys * dys < STAIR_SEPARATION_SQ) { tooClose = true; break; }
+      }
+      if (tooClose) {
+        try { console.warn('[stairs] dropped a stair too close to an existing one (#15)'); } catch (_) {}
+        return; // skip this door's stair
+      }
+    }
+
     PLACED_STAIRS.push({ x: placedX, y: placedY });
     const stair = scene.stairsGroup.create(placedX, placedY, "stairDown");
     stair.setData("locked", true);
