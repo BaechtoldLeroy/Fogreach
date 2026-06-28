@@ -3039,6 +3039,55 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
   }
 }
 
+// #50/#48: Aufgewerteter Level-Up-Effekt — Gold-Burst am Spieler: Kamera-Flash,
+// expandierender Goldring, Lichtstrahlen, aufsteigende Sparkles, "STUFE X"-Text
+// + "+1 Talentpunkt". Rein visuell, defensiv.
+function _levelUpFx(scene, level) {
+  try {
+    if (!scene || !scene.add || typeof player === 'undefined' || !player) return;
+    const GOLD = 0xffd166, BRIGHT = 0xfff3c0;
+    const T = scene.tweens, cx = player.x, cy = player.y;
+    if (scene.cameras && scene.cameras.main) { try { scene.cameras.main.flash(220, 255, 226, 150, false); } catch (e) {} }
+    // expandierende Goldring-Schockwelle
+    const ring = scene.add.graphics().setDepth(74);
+    ring.lineStyle(5, GOLD, 0.95); ring.strokeCircle(0, 0, 60); ring.setPosition(cx, cy).setScale(0.2);
+    if (T) T.add({ targets: ring, scale: 1.8, alpha: 0, duration: 520, ease: 'Cubic.easeOut', onComplete: () => { try { ring.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(520, () => { try { ring.destroy(); } catch (e) {} });
+    // zentraler Flash
+    const flash = scene.add.circle(cx, cy, 30, BRIGHT, 0.9).setDepth(74);
+    if (T) T.add({ targets: flash, scale: 2.6, alpha: 0, duration: 320, onComplete: () => { try { flash.destroy(); } catch (e) {} } });
+    // radiale Lichtstrahlen (drehen + wachsen + verblassen)
+    const rays = scene.add.graphics().setDepth(73).setPosition(cx, cy);
+    rays.fillStyle(GOLD, 0.5);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + 0.2, w = 0.16;
+      rays.beginPath(); rays.moveTo(0, 0);
+      rays.lineTo(Math.cos(a - w) * 90, Math.sin(a - w) * 90);
+      rays.lineTo(Math.cos(a + w) * 90, Math.sin(a + w) * 90);
+      rays.closePath(); rays.fillPath();
+    }
+    if (T) T.add({ targets: rays, scale: 1.5, alpha: 0, angle: 24, duration: 520, ease: 'Cubic.easeOut', onComplete: () => { try { rays.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(520, () => { try { rays.destroy(); } catch (e) {} });
+    // aufsteigende Sparkles
+    for (let i = 0; i < 10; i++) {
+      const ox = (Math.random() - 0.5) * 70;
+      const s = scene.add.circle(cx + ox, cy + 10, 2 + Math.random() * 3, BRIGHT, 0.95).setDepth(74);
+      if (T) T.add({ targets: s, y: cy - 40 - Math.random() * 50, alpha: 0, duration: 600 + Math.random() * 300, ease: 'Sine.easeOut', onComplete: () => { try { s.destroy(); } catch (e) {} } });
+      else scene.time.delayedCall(900, () => { try { s.destroy(); } catch (e) {} });
+    }
+    // "STUFE X" + Talentpunkt-Untertitel steigen auf
+    const txt = scene.add.text(cx, cy - 30, 'STUFE ' + level, { fontFamily: 'serif', fontSize: '30px', color: '#ffd166', fontStyle: 'bold', stroke: '#5a3d00', strokeThickness: 4 }).setOrigin(0.5).setDepth(75);
+    const sub = scene.add.text(cx, cy - 4, '+1 Talentpunkt', { fontFamily: 'monospace', fontSize: '13px', color: '#fff3c0', fontStyle: 'bold' }).setOrigin(0.5).setDepth(75);
+    if (T) {
+      txt.setScale(0.4); T.add({ targets: txt, scale: 1, duration: 240, ease: 'Back.easeOut' });
+      T.add({ targets: [txt, sub], y: '-=46', alpha: 0, duration: 1100, delay: 250, ease: 'Sine.easeOut', onComplete: () => { try { txt.destroy(); sub.destroy(); } catch (e) {} } });
+    } else {
+      scene.time.delayedCall(1300, () => { try { txt.destroy(); sub.destroy(); } catch (e) {} });
+    }
+    if (window.particleFactory) { try { window.particleFactory.abilityTrail(cx, cy, GOLD); } catch (e) {} }
+  } catch (e) { /* visual only */ }
+}
+
 function addXP(amount = 1) {
   // Issue #26 — Knowledge-Tree xpMult wraps the incoming amount once at the
   // function boundary so every call site (lore-fragment, enemy kill, quest
@@ -3067,6 +3116,9 @@ function addXP(amount = 1) {
       playerMaxHealth += 2;
       playerHealth = Math.min(playerMaxHealth, playerHealth + 2);
     }
+    // #48: Level-Up heilt VOLL — spürbarer Belohnungs-/Power-Moment.
+    if (typeof setPlayerHealth === 'function') setPlayerHealth(playerMaxHealth);
+    else playerHealth = playerMaxHealth;
     neededXP = (typeof getNeededXP === 'function') ? getNeededXP(playerLevel) : (2 * playerLevel);
 
     // Feature 060: jeder Level-Up vergibt 1 Skill-Punkt fuer den Skill-Baum
@@ -3078,17 +3130,14 @@ function addXP(amount = 1) {
 
     if (window.soundManager) window.soundManager.playSFX('level_up');
 
-    if (levelUpText) {
-      levelUpText.setVisible(true);
-
-      const scene = (this && this.time && typeof this.time.delayedCall === 'function')
-        ? this
-        : (typeof window !== 'undefined' ? window.currentScene : null);
-
-      if (scene?.time?.delayedCall) {
-        scene.time.delayedCall(1000, () => levelUpText.setVisible(false), null, scene);
-      } else {
-        setTimeout(() => levelUpText.setVisible(false), 1000);
+    // #50/#48: aufgewertetes Level-Up — Gold-VFX am Spieler + Talentpunkt-Toast
+    // (ersetzt den statischen grünen "LEVEL UP!"-Text).
+    const scene = (player && player.scene) ? player.scene
+      : ((this && this.add) ? this : (typeof window !== 'undefined' ? window.currentScene : null));
+    if (scene) {
+      try { _levelUpFx(scene, playerLevel); } catch (e) {}
+      if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+        try { window.EventSystem.showToast(scene, 'Stufe ' + playerLevel + ' erreicht!  +1 Talentpunkt — Taste [T]', 'level_up'); } catch (e) {}
       }
     }
   }
