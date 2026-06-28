@@ -28,15 +28,15 @@ test('fresh init has no learned abilities', () => {
 
 test('learnAbility adds the id and returns true', () => {
   const sys = freshSystem();
-  const result = sys.learnAbility('spinAttack');
+  const result = sys.learnAbility('whirlwind');
   assert.strictEqual(result, true);
-  assert.ok(sys.getLearnedAbilities().includes('spinAttack'));
+  assert.ok(sys.getLearnedAbilities().includes('whirlwind'));
 });
 
 test('learnAbility returns false on the second call for the same id', () => {
   const sys = freshSystem();
-  sys.learnAbility('spinAttack');
-  const result = sys.learnAbility('spinAttack');
+  sys.learnAbility('whirlwind');
+  const result = sys.learnAbility('whirlwind');
   assert.strictEqual(result, false);
 });
 
@@ -49,34 +49,34 @@ test('learnAbility returns false for unknown ids', () => {
 
 test('isLearned reflects learnAbility', () => {
   const sys = freshSystem();
-  assert.strictEqual(sys.isLearned('chargeSlash'), false);
-  sys.learnAbility('chargeSlash');
-  assert.strictEqual(sys.isLearned('chargeSlash'), true);
+  assert.strictEqual(sys.isLearned('hammer'), false);
+  sys.learnAbility('hammer');
+  assert.strictEqual(sys.isLearned('hammer'), true);
 });
 
 test('getActiveLoadout returns a copy that does not mutate state', () => {
   const sys = freshSystem();
-  sys.learnAbility('spinAttack');
-  sys.setSlot('slot1', 'spinAttack');
+  sys.learnAbility('whirlwind');
+  sys.setSlot('slot1', 'whirlwind');
   const loadout1 = sys.getActiveLoadout();
   loadout1.slot1 = 'tampered';
   const loadout2 = sys.getActiveLoadout();
-  assert.strictEqual(loadout2.slot1, 'spinAttack', 'mutating returned object must not affect internal state');
+  assert.strictEqual(loadout2.slot1, 'whirlwind', 'mutating returned object must not affect internal state');
 });
 
 test('setSlot equips a learned ability and isEquipped returns true', () => {
   const sys = freshSystem();
-  sys.learnAbility('chargeSlash');
-  sys.setSlot('slot2', 'chargeSlash');
-  assert.strictEqual(sys.getActiveLoadout().slot2, 'chargeSlash');
-  assert.strictEqual(sys.isEquipped('chargeSlash'), true);
+  sys.learnAbility('hammer');
+  sys.setSlot('slot2', 'hammer');
+  assert.strictEqual(sys.getActiveLoadout().slot2, 'hammer');
+  assert.strictEqual(sys.isEquipped('hammer'), true);
 });
 
 test('resetForNewGame wipes learned abilities and storage', () => {
   const sys = freshSystem();
-  sys.learnAbility('spinAttack');
-  sys.learnAbility('chargeSlash');
-  sys.setSlot('slot1', 'spinAttack');
+  sys.learnAbility('whirlwind');
+  sys.learnAbility('hammer');
+  sys.setSlot('slot1', 'whirlwind');
   sys.save();
   // sanity: storage now has the key
   assert.notStrictEqual(globalThis.localStorage.getItem('demonfall_abilities_v1'), null);
@@ -88,24 +88,24 @@ test('resetForNewGame wipes learned abilities and storage', () => {
 
 test('save → mutate → load round-trips state', () => {
   const sys = freshSystem();
-  sys.learnAbility('spinAttack');
-  sys.learnAbility('dashSlash');
-  sys.setSlot('slot1', 'spinAttack');
-  sys.setSlot('slot3', 'dashSlash');
+  sys.learnAbility('whirlwind');
+  sys.learnAbility('twistingBlades');
+  sys.setSlot('slot1', 'whirlwind');
+  sys.setSlot('slot3', 'twistingBlades');
   sys.save();
   // Mutate in-memory then reload from storage
   sys.resetForNewGame();
   // resetForNewGame also clears storage — re-save what we want before
   // reloading. Different test: just verify load() restores after save().
-  sys.learnAbility('spinAttack');
-  sys.setSlot('slot1', 'spinAttack');
+  sys.learnAbility('whirlwind');
+  sys.setSlot('slot1', 'whirlwind');
   sys.save();
   // wipe in-memory state without touching storage
   delete globalThis.window.AbilitySystem;
   loadGameModule('js/abilitySystem.js');
   const reloaded = globalThis.window.AbilitySystem;
-  assert.ok(reloaded.isLearned('spinAttack'), 'learned set should restore from storage');
-  assert.strictEqual(reloaded.getActiveLoadout().slot1, 'spinAttack');
+  assert.ok(reloaded.isLearned('whirlwind'), 'learned set should restore from storage');
+  assert.strictEqual(reloaded.getActiveLoadout().slot1, 'whirlwind');
 });
 
 test('resetForNewGame seeds 20 Eisenbrocken default', () => {

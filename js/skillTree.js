@@ -224,6 +224,19 @@
     return 1 - reduction;
   }
 
+  // --- Respec-Kosten (WP03-Contract für die UI) ------------------------------
+  // Skalierende Gold-Kosten für einen Respec. Reine Formel — den Gold-Abzug und
+  // den Bestätigungs-Flow übernimmt die UI (P2). Zentral tunebar über die zwei
+  // Konstanten. Ganzzahlig.
+  var RESPEC_COST_BASE    = 100; // Grundkosten
+  var RESPEC_COST_PER_PT  = 50;  // Aufschlag je investiertem Skill-Punkt
+
+  // Gold-Kosten eines Respecs: BASE + investierte Punkte * PER_PT. 0 investierte
+  // Punkte -> nur Grundkosten. Immer ganzzahlig.
+  function getRespecCost() {
+    return RESPEC_COST_BASE + getSpentPoints() * RESPEC_COST_PER_PT;
+  }
+
   // Alle Ränge zurücksetzen, investierte Punkte erstatten. OHNE Gold (WP05).
   function respec() {
     var refunded = getSpentPoints();
@@ -257,6 +270,36 @@
     return function () { _listeners = _listeners.filter(function (f) { return f !== fn; }); };
   }
 
+  // --- AbilitySystem-Sync (WP03-Contract für die UI) -------------------------
+  // Erwerb läuft ausschließlich über den Skill-Baum: nach jedem investPoint /
+  // respec / loadSaveData wird window.AbilitySystem so abgeglichen, dass jeder
+  // Knoten mit Rang>=1 als "gelernt" gilt und Knoten mit Rang 0 verlernt sind
+  // (forgetAbility räumt zugleich die aktiven Slots). Defensiv: beide Module
+  // optional, nie crashen. skillTree.js lädt NACH abilitySystem.js, daher ist
+  // window.AbilitySystem zur Sync-Zeit i.d.R. verfügbar.
+  function _syncAbilitySystem() {
+    try {
+      var AS = (typeof window !== 'undefined') ? window.AbilitySystem : null;
+      if (!AS) return;
+      var nodes = SKILL_TREE.nodes;
+      Object.keys(nodes).forEach(function (nodeId) {
+        var abilityId = nodes[nodeId].abilityId || nodeId;
+        var rank = getRank(nodeId);
+        if (rank >= 1) {
+          if (typeof AS.isLearned === 'function' && AS.isLearned(abilityId)) return;
+          if (typeof AS.learnAbility === 'function') {
+            try { AS.learnAbility(abilityId, { silent: true }); } catch (e) { /* skip */ }
+          }
+        } else {
+          if (typeof AS.isLearned === 'function' && !AS.isLearned(abilityId)) return;
+          if (typeof AS.forgetAbility === 'function') {
+            try { AS.forgetAbility(abilityId); } catch (e) { /* skip */ }
+          }
+        }
+      });
+    } catch (e) { /* never break gameplay */ }
+  }
+
   // Test-Hook: State direkt setzen (umgeht Persistenz-Roundtrip).
   function _configureForTest(data) {
     state = _defaultState();
@@ -264,6 +307,11 @@
   }
 
   init();
+
+  // Sync bei jeder Baum-Änderung + einmalig nach dem Laden (damit ein
+  // persistierter Baum-Stand die gelernten Abilities sofort rekonstruiert).
+  onChange(_syncAbilitySystem);
+  _syncAbilitySystem();
 
   var SkillTree = {
     SKILL_TREE: SKILL_TREE,
@@ -280,6 +328,7 @@
     getSynergyValue: getSynergyValue,
     getAbilityDamageMult: getAbilityDamageMult,
     getAbilityCooldownMult: getAbilityCooldownMult,
+    getRespecCost: getRespecCost,
     respec: respec,
     getSaveData: getSaveData,
     loadSaveData: loadSaveData,
