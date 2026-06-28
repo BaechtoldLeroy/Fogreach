@@ -2094,14 +2094,30 @@ function updateAmuletPerFrame(scene, delta) {
   // Spieler — laufendes Feedback zusätzlich zum Aktivierungs-Burst (_frenzyFx).
   var fsr = window.frenzyState;
   var frenzyActive = !!(fsr && fsr.active && (typeof fsr.expiry !== 'number' || now < fsr.expiry));
-  if (frenzyActive && window.particleFactory) {
-    window._frenzyMoteT = (window._frenzyMoteT || 0) + dt;
-    if (window._frenzyMoteT >= 110) {
-      window._frenzyMoteT = 0;
-      try { window.particleFactory.abilityTrail(player.x + (Math.random() - 0.5) * 22, player.y + (Math.random() - 0.5) * 22, 0xff7a1a); } catch (e) {}
+  if (frenzyActive) {
+    // Pulsierender Aura-Ring um den Spieler für die GANZE Buff-Dauer (damit der
+    // Effekt sichtbar bleibt, nicht nur der kurze Aktivierungs-Burst).
+    if (!window._frenzyAura || !window._frenzyAura.scene) {
+      try { window._frenzyAura = scene.add.graphics().setDepth(38); } catch (e) { window._frenzyAura = null; }
+    }
+    if (window._frenzyAura) {
+      var pulse = 1 + 0.12 * Math.sin(now / 90);
+      window._frenzyAura.clear();
+      window._frenzyAura.lineStyle(3, 0xff5a1a, 0.6);
+      window._frenzyAura.strokeCircle(player.x, player.y, 34 * pulse);
+      window._frenzyAura.lineStyle(2, 0xffb14a, 0.4);
+      window._frenzyAura.strokeCircle(player.x, player.y, 26 * pulse);
+    }
+    if (window.particleFactory) {
+      window._frenzyMoteT = (window._frenzyMoteT || 0) + dt;
+      if (window._frenzyMoteT >= 75) {
+        window._frenzyMoteT = 0;
+        try { window.particleFactory.abilityTrail(player.x + (Math.random() - 0.5) * 26, player.y + (Math.random() - 0.5) * 26, 0xff7a1a); } catch (e) {}
+      }
     }
   } else {
     window._frenzyMoteT = 0;
+    if (window._frenzyAura) { try { window._frenzyAura.destroy(); } catch (e) {} window._frenzyAura = null; }
   }
 }
 if (typeof window !== 'undefined') window.updateAmuletPerFrame = updateAmuletPerFrame;
@@ -2743,13 +2759,13 @@ function _frenzyFx(scene) {
     const T = scene.tweens, cx = player.x, cy = player.y;
     const ring = scene.add.graphics().setDepth(72);
     ring.lineStyle(4, ORANGE, 0.9); ring.strokeCircle(0, 0, 40); ring.setPosition(cx, cy).setScale(0.3);
-    if (T) T.add({ targets: ring, scale: 1.3, alpha: 0, duration: 320, ease: 'Cubic.easeOut', onComplete: () => { try { ring.destroy(); } catch (e) {} } });
-    else scene.time.delayedCall(320, () => { try { ring.destroy(); } catch (e) {} });
+    if (T) T.add({ targets: ring, scale: 1.5, alpha: 0, duration: 560, ease: 'Cubic.easeOut', onComplete: () => { try { ring.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(560, () => { try { ring.destroy(); } catch (e) {} });
     const g = scene.add.graphics().setDepth(72).setPosition(cx, cy);
     g.lineStyle(3, RED, 0.85);
-    for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; g.lineBetween(Math.cos(a) * 20, Math.sin(a) * 20, Math.cos(a) * 46, Math.sin(a) * 46); }
-    if (T) T.add({ targets: g, alpha: 0, scaleX: 1.4, scaleY: 1.4, duration: 280, onComplete: () => { try { g.destroy(); } catch (e) {} } });
-    else scene.time.delayedCall(280, () => { try { g.destroy(); } catch (e) {} });
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; g.lineBetween(Math.cos(a) * 20, Math.sin(a) * 20, Math.cos(a) * 50, Math.sin(a) * 50); }
+    if (T) T.add({ targets: g, alpha: 0, scaleX: 1.6, scaleY: 1.6, duration: 480, onComplete: () => { try { g.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(480, () => { try { g.destroy(); } catch (e) {} });
     if (window.particleFactory) { try { window.particleFactory.abilityTrail(cx, cy, ORANGE); } catch (e) {} }
     if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
   } catch (e) { /* visual only */ }
@@ -3293,7 +3309,7 @@ function castCycloneStrike() {
 
   const dmgMult = _kettenDmgMult('cycloneStrike');
   const rank = Math.max(1, _kettenRank('cycloneStrike'));
-  const radius = 200 + (rank - 1) * 20;           // 200..280
+  const radius = 290 + (rank - 1) * 25;           // größerer Sog-Radius (290..390)
   const aoeMult = 0.5 * dmgMult * (1 + (rank - 1) * 0.1);
   const CYAN = 0x66ddff, LIGHT = 0xbff2ff;
 

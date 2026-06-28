@@ -1553,9 +1553,15 @@ function update(time, delta) {
         if (!id) return;
         if (ABILITY_ID_TO_STATUS_KEY[id]) return; // classic ability — handled elsewhere
         const def = defs[id];
-        if (!def || !def.cooldownMs) return;
+        // Dauer aus def.cooldownMs ODER (für selbst-verwaltete Abilities wie
+        // Hammer, die kein statisches def.cooldownMs haben) aus der zuletzt
+        // registrierten Cooldown-Dauer (AbilitySystem.setCooldown).
+        const dur = (def && def.cooldownMs)
+          ? def.cooldownMs
+          : (window.AbilitySystem.getCooldownDuration ? window.AbilitySystem.getCooldownDuration(id) : 0);
+        if (!dur) return;
         const rem = window.AbilitySystem.getCooldownRemaining(id, now);
-        updateAbilityStatus(id, { remainingMs: rem, durationMs: def.cooldownMs });
+        updateAbilityStatus(id, { remainingMs: rem, durationMs: dur });
       });
     }
   }

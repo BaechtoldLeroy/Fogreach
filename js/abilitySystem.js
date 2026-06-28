@@ -103,7 +103,7 @@
           var now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
           var maxStacks = 5 + Math.max(0, rank - 1) * 2;       // Rang -> mehr Max-Stacks
           var perStack  = 0.04 + Math.max(0, rank - 1) * 0.01; // Rang -> mehr Tempo/Stack
-          var decayMs   = 4000;
+          var decayMs   = 6000;                                // länger aktiv (war 4000)
           window.frenzyState = {
             active: true,
             stacks: 1,            // sofort 1 Stack beim Aktivieren
@@ -736,6 +736,8 @@
         }
       } catch (e) { /* never break activation */ }
       state.cooldowns[abilityId] = now + def.cooldownMs * cdMult * lootCdMult;
+      state.cooldownDurations = state.cooldownDurations || {};
+      state.cooldownDurations[abilityId] = def.cooldownMs * cdMult * lootCdMult;
     }
 
     // Tutorial step 8 trigger (feature 044). One emission per successful
@@ -791,9 +793,17 @@
   function setCooldown(abilityId, ms, now) {
     if (!abilityId || !(ms > 0)) return;
     state.cooldowns[abilityId] = (now || 0) + ms;
+    state.cooldownDurations = state.cooldownDurations || {};
+    state.cooldownDurations[abilityId] = ms;   // für die HUD-Füllrate
     if (typeof window._refreshAbilityHUD === 'function') {
       try { window._refreshAbilityHUD(); } catch (e) { /* HUD may not exist yet */ }
     }
+  }
+
+  // Volle Cooldown-Dauer (ms) der letzten Aktivierung — die HUD braucht sie für
+  // die Füll-/Ring-Anzeige bei Abilities OHNE statisches def.cooldownMs (Hammer).
+  function getCooldownDuration(abilityId) {
+    return (state.cooldownDurations && state.cooldownDurations[abilityId]) || 0;
   }
 
   // ---------- Unlock Hooks ----------
@@ -899,6 +909,7 @@
     getCooldownRemaining,
     resetCooldown,
     setCooldown,
+    getCooldownDuration,
     onEnemyKilled,
     onBossKilled,
     onQuestCompleted,
