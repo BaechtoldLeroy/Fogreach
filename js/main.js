@@ -2378,9 +2378,11 @@ function initUI() {
           if (statusKey) {
             abilityStatusDisplay[statusKey] = tile;
             updateAbilityStatus(statusKey, { remainingMs: 0, durationMs: 0 });
-          } else if (def && def.cooldownMs) {
-            // Non-classic abilities (heilwunde, frostnova, blutopfer,
-            // schattenschritt, …): register under ability id and seed Ready.
+          } else if (def && (def.cooldownMs || def.type === 'charge')) {
+            // Non-classic Abilities mit Cooldown (heilwunde, frostnova, …) UND
+            // charge-Typ-Abilities (Hammer) — Hammer verwaltet seinen Cooldown
+            // selbst (kein def.cooldownMs), muss aber trotzdem registriert sein,
+            // sonst zeigt die HUD seinen Cooldown nie an.
             abilityStatusDisplay[abilityId] = tile;
             updateAbilityStatus(abilityId, { remainingMs: 0, durationMs: 0 });
           }
