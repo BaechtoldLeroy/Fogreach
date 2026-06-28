@@ -2874,7 +2874,7 @@ function addXP(amount = 1) {
       playerMaxHealth += 2;
       playerHealth = Math.min(playerMaxHealth, playerHealth + 2);
     }
-    neededXP = 2 * playerLevel;
+    neededXP = (typeof getNeededXP === 'function') ? getNeededXP(playerLevel) : (2 * playerLevel);
 
     // Feature 060: jeder Level-Up vergibt 1 Skill-Punkt fuer den Skill-Baum
     // (#48/#58). Defensiv — bricht nie den Level-Up-Pfad.

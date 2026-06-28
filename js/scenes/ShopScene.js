@@ -39,7 +39,9 @@
       'shop.reroll.btn': 'Reroll',
       'shop.reroll.cancel': 'Anderes Item',
       'shop.toast.reroll_unavailable': 'Reroll nicht verfügbar',
-      'shop.toast.reroll_success': 'Reroll erfolgreich!'
+      'shop.toast.reroll_success': 'Reroll erfolgreich!',
+      'shop.stock.reroll': 'Lager auffrischen ({cost} G)',
+      'shop.toast.stock_rerolled': 'Mara breitet frische Ware aus.'
     });
     window.i18n.register('en', {
       'shop.title': 'Black Market — Mara',
@@ -64,7 +66,9 @@
       'shop.reroll.btn': 'Reroll',
       'shop.reroll.cancel': 'Other item',
       'shop.toast.reroll_unavailable': 'Reroll unavailable',
-      'shop.toast.reroll_success': 'Reroll successful!'
+      'shop.toast.reroll_success': 'Reroll successful!',
+      'shop.stock.reroll': 'Refresh stock ({cost} G)',
+      'shop.toast.stock_rerolled': 'Mara lays out fresh wares.'
     });
   }
   const _SHOP_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
@@ -327,6 +331,44 @@
         this.tabBody.push(buyText);
         buyBg.on('pointerdown', () => this._tryBuyItem(i, price));
       });
+
+      // Feature 060 (WP05 / #51): Gold-Sink — "Lager auffrischen". Würfelt Maras
+      // Auslage gegen (eskalierendes) Gold komplett neu. Nur bei Mara, nicht am
+      // (run-scoped) Dungeon-Händler.
+      if (!this.isDungeonMerchant && window.LootSystem
+          && typeof window.LootSystem.rerollShopStock === 'function') {
+        const rerollCost = (typeof window.LootSystem.getShopRerollCost === 'function')
+          ? window.LootSystem.getShopRerollCost() : 120;
+        const ry = py + panelH / 2 - 52;
+        const rerollBg = this.add.rectangle(px, ry, 260, 26, 0x2f2438)
+          .setStrokeStyle(2, 0xffd166).setScrollFactor(0).setDepth(2003)
+          .setInteractive({ useHandCursor: true });
+        const rerollTxt = this.add.text(px, ry, _SHOP_T('shop.stock.reroll', { cost: rerollCost }), {
+          fontFamily: 'monospace', fontSize: '12px', color: '#ffd166'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
+        this.tabBody.push(rerollBg);
+        this.tabBody.push(rerollTxt);
+        rerollBg.on('pointerdown', () => this._tryRerollStock(rerollCost));
+      }
+    }
+
+    _tryRerollStock(cost) {
+      if (!window.LootSystem || typeof window.LootSystem.rerollShopStock !== 'function') {
+        this._showToast(_SHOP_T('shop.toast.reroll_unavailable'));
+        return;
+      }
+      const ok = window.LootSystem.rerollShopStock(cost);
+      if (!ok) {
+        this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
+        return;
+      }
+      // Refresh local handle + UI from the now-rerolled shop state.
+      this.shopState = (typeof window.LootSystem.getOrCreateShopState === 'function')
+        ? window.LootSystem.getOrCreateShopState() : this.shopState;
+      this.selectedRerollItem = null;
+      this._refreshGold();
+      this._renderTab('items');
+      this._showToast(_SHOP_T('shop.toast.stock_rerolled'));
     }
 
     _computeItemPrice(item) {

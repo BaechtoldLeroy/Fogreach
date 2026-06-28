@@ -487,7 +487,30 @@ let attackRange = 100;
 let playerSpeed = 160;
 let playerArmor = 0;
 let playerCritChance = 0;
-let neededXP = 2 * playerLevel;
+
+// ── Feature 060 / #41: gestreckte Level-Kurve ─────────────────────────────────
+// Frueher war die Schwelle ~linear (neededXP = 2 * level), wodurch Skill-Punkte
+// viel zu schnell anfielen. Jetzt eine progressive, tunebare Kurve, damit die
+// (1 Skill-Punkt / Level) ueber deutlich mehr Content gestreckt werden.
+//
+//   neededXP(level) = round(XP_CURVE_BASE + XP_CURVE_SCALE * level^XP_CURVE_EXP)
+//
+// Beispiel-Schwellen (Default-Tuning):
+//   L1 = 5, L5 = 17, L10 = 44, L20 = 125, L40 = 370
+// Monoton steigend, progressiv deutlich steiler als die alte 2*level-Kurve
+// (L20: 125 vs. 40, L40: 370 vs. 80).
+const XP_CURVE_BASE = 4;     // konstanter Sockel (frueher Game-Start)
+const XP_CURVE_SCALE = 1;    // Multiplikator auf den Potenz-Term
+const XP_CURVE_EXP = 1.6;    // >1 ⇒ progressiv steiler pro Level
+
+function getNeededXP(level) {
+  const lvl = Math.max(1, Math.floor(Number(level) || 1));
+  return Math.round(XP_CURVE_BASE + XP_CURVE_SCALE * Math.pow(lvl, XP_CURVE_EXP));
+}
+// Auf window spiegeln, damit HUD/andere Klassik-Scripts die Kurve nutzen koennen.
+if (typeof window !== 'undefined') window.getNeededXP = getNeededXP;
+
+let neededXP = getNeededXP(playerLevel);
 
 let enemiesPerWave = 4;
 let currentWave = 0;
@@ -1186,7 +1209,7 @@ function create() {
   if (typeof updateHUD === 'function') updateHUD();
   else if (playerHealthText) playerHealthText.setText(_HUD_T('hud.health', { cur: playerHealth, max: playerMaxHealth }));
   if (playerXPText) {
-    const need = (typeof getNeededXP === 'function') ? getNeededXP(playerLevel) : (2 * playerLevel);
+    const need = (typeof getNeededXP === 'function') ? getNeededXP(playerLevel) : neededXP;
     playerXPText.setText(_HUD_T('hud.xp', { level: playerLevel, cur: playerXP, need: need }));
   }
   if (weaponStatsText) {
@@ -1997,7 +2020,7 @@ function handlePlayerDeath(scene) {
   }
 
   playerXP = 0;
-  neededXP = 2 * playerLevel;
+  neededXP = getNeededXP(playerLevel);
   setPlayerMaxHealth(getRespawnHealth(), { refill: true });
 
   if (typeof updateHUD === 'function') {
