@@ -1528,14 +1528,23 @@ function update(time, delta) {
 
   // 054 WP02: Roll-Cooldown HUD-Tick. rollCooldownStartTime wird in
   // performRoll() gestempelt; hier counten wir gegen RollConfig.cooldown.
-  if (abilityStatusDisplay && abilityStatusDisplay.roll) {
-    const cfg = window.RollConfig || { cooldown: 600 };
-    let rem = 0;
+  // #47: rollCooldown/rollCooldownStartTime sind script-scoped `let` (keine
+  // window-Props), daher publishen wir das Restwert hier nach window, damit der
+  // Mobile-Dash(Roll)-Button (mobileAbilityButtons.js) den Cooldown anzeigen
+  // kann — der lief vorher leer, weil performRoll() weder startCooldownTimer
+  // noch einen Mobile-Button-Ref anfasst (anders als die klassischen Abilities).
+  {
+    const _rollCfg = window.RollConfig || { cooldown: 600 };
+    let _rollRem = 0;
     if (rollCooldown) {
       const elapsed = ((this?.time?.now) || performance.now()) - rollCooldownStartTime;
-      rem = Math.max(0, cfg.cooldown - elapsed);
+      _rollRem = Math.max(0, _rollCfg.cooldown - elapsed);
     }
-    updateAbilityStatus('roll', { remainingMs: rem, durationMs: cfg.cooldown });
+    window.__rollCooldownRemainingMs__ = _rollRem;
+    window.__rollCooldownDurationMs__ = _rollCfg.cooldown;
+    if (abilityStatusDisplay && abilityStatusDisplay.roll) {
+      updateAbilityStatus('roll', { remainingMs: _rollRem, durationMs: _rollCfg.cooldown });
+    }
   }
 
   // Health regen tick — applies PLAYER_HEALTH_REGEN (HP/sec) when below max.

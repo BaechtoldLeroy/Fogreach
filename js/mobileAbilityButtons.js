@@ -111,9 +111,12 @@
     }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1201);
 
     // Optional CD overlay text for buttons with no per-ability cooldown text
-    // node (e.g. potion). Only shown when the cooldown is active.
+    // node (e.g. potion, roll/dash). Only shown when the cooldown is active.
+    // #47: the roll ("Dash") button has cd:null and performRoll never touches a
+    // mobile cooldown text node, so it gets the same overlay treatment as potion
+    // — its remaining time is published to window by the GameScene update tick.
     let cdOverlay = null;
-    if (spec.key === 'potion') {
+    if (spec.key === 'potion' || spec.key === 'roll') {
       cdOverlay = scene.add.text(0, 0, '', {
         fontSize: Math.round(radius * 0.6) + 'px',
         fontStyle: 'bold',
@@ -195,6 +198,27 @@
         _applyEnabledVisual(dec, usable);
         if (dec.cdOverlay) {
           if (onCd && remainMs > 0) {
+            dec.cdOverlay.setText((remainMs / 1000).toFixed(1));
+            dec.cdOverlay.setVisible(true);
+            if (dec.icon) dec.icon.setAlpha(0.35);
+          } else {
+            dec.cdOverlay.setVisible(false);
+          }
+        }
+      }
+
+      // Roll/Dash-specific (#47): the roll button has no per-ability cooldown
+      // text node and performRoll() never dims a mobile button. Drive its
+      // cooldown visual directly from the remaining-ms the GameScene update tick
+      // publishes to window.__rollCooldownRemainingMs__ — mirroring the potion
+      // pattern (radial-less seconds overlay + dim).
+      if (dec.key === 'roll') {
+        const remainMs = (typeof window.__rollCooldownRemainingMs__ === 'number')
+          ? window.__rollCooldownRemainingMs__ : 0;
+        const onCd = remainMs > 0;
+        _applyEnabledVisual(dec, !onCd);
+        if (dec.cdOverlay) {
+          if (onCd) {
             dec.cdOverlay.setText((remainMs / 1000).toFixed(1));
             dec.cdOverlay.setVisible(true);
             if (dec.icon) dec.icon.setAlpha(0.35);
