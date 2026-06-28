@@ -126,6 +126,46 @@ test('(g) isNodeAvailable respektiert minLevel + Vorgänger-Rang', () => {
   assert.strictEqual(ST.isNodeAvailable('charge', 1), true);
 });
 
+test('(h) getAbilityDamageMult: Rang 1 -> 1.0; Rang 3 -> 1.30; Synergie addiert', () => {
+  ST.grantSkillPoint(20);
+  // ungelernt -> Multiplikator 1
+  assert.strictEqual(ST.getAbilityDamageMult('whirlwind'), 1);
+  // whirlwind Rang 1 -> 1.0 (kein Rang-Bonus unter Rang 2)
+  ST.investPoint('whirlwind', 1);
+  assert.ok(Math.abs(ST.getAbilityDamageMult('whirlwind') - 1.0) < 1e-9, 'Rang 1 -> 1.0');
+  // whirlwind Rang 3 -> 1 + 2*0.15 = 1.30 (whirlwind hat keine 'damage'-Synergie aktiv: frenzy@0)
+  ST.investPoint('whirlwind', 1);
+  ST.investPoint('whirlwind', 1);
+  assert.ok(Math.abs(ST.getAbilityDamageMult('whirlwind') - 1.30) < 1e-9, 'Rang 3 -> 1.30, got ' + ST.getAbilityDamageMult('whirlwind'));
+  // hammer hat Synergie { from:'whirlwind', perRank:0.06, stat:'damage' }; whirlwind@3 -> +0.18
+  // hammer selbst Rang 1 -> Rang-Teil 0 -> 1 + 0 + 0.18 = 1.18
+  ST.investPoint('hammer', 10); // whirlwind@3 + minLevel 4 erfuellt
+  assert.ok(Math.abs(ST.getAbilityDamageMult('hammer') - 1.18) < 1e-9, 'Synergie addiert: 1.18, got ' + ST.getAbilityDamageMult('hammer'));
+});
+
+test('(i) getAbilityCooldownMult: sinkt mit Rang und ist bei 40% gedeckelt', () => {
+  ST.grantSkillPoint(20);
+  // ungelernt -> 1
+  assert.strictEqual(ST.getAbilityCooldownMult('whirlwind'), 1);
+  // Rang 1 -> 1 (keine Reduktion)
+  ST.investPoint('whirlwind', 1);
+  assert.ok(Math.abs(ST.getAbilityCooldownMult('whirlwind') - 1.0) < 1e-9, 'Rang 1 -> 1.0');
+  // Rang 3 -> 1 - 2*0.08 = 0.84
+  ST.investPoint('whirlwind', 1);
+  ST.investPoint('whirlwind', 1);
+  assert.ok(Math.abs(ST.getAbilityCooldownMult('whirlwind') - 0.84) < 1e-9, 'Rang 3 -> 0.84, got ' + ST.getAbilityCooldownMult('whirlwind'));
+  // Rang 5 -> 1 - 4*0.08 = 0.68 (Cap 0.40 noch nicht erreicht: 4*0.08=0.32 < 0.40)
+  ST.investPoint('whirlwind', 1);
+  ST.investPoint('whirlwind', 1);
+  assert.ok(Math.abs(ST.getAbilityCooldownMult('whirlwind') - 0.68) < 1e-9, 'Rang 5 -> 0.68, got ' + ST.getAbilityCooldownMult('whirlwind'));
+  // Cap-Pruefung: synthetischer Knoten via loadSaveData ueber Rang 6 nicht moeglich (maxRank 5),
+  // daher Cap direkt rechnerisch: 6 Raenge -> 5*0.08=0.40 == Cap. twistingBlades maxRank 5,
+  // wir pruefen den Cap-Grenzfall mit der Formel: max. Reduktion = 0.40, nie mehr.
+  // (Bei maxRank 5 ist die hoechste reale Reduktion 0.32; der Cap greift defensiv fuer
+  //  hoehere Werte, falls maxRank spaeter steigt.)
+  assert.ok(ST.getAbilityCooldownMult('whirlwind') >= 1 - 0.40 - 1e-9, 'nie unter Cap');
+});
+
 test('getSaveData/loadSaveData round-trip (Save-Einbettung WP05)', () => {
   ST.grantSkillPoint(4);
   ST.investPoint('whirlwind', 1);

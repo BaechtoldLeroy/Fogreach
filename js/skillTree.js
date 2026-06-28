@@ -199,6 +199,31 @@
     return total;
   }
 
+  // --- Combat-Skalierung (WP02-Contract) -------------------------------------
+  // Gemeinsamer Vertrag fuer alle Ability-Straenge: Rang erhoeht Schaden linear
+  // und senkt Cooldown (gedeckelt). Synergien koennen den Schaden zusaetzlich
+  // pushen. PURE Funktionen — von den activate()-Pfaden in player.js/abilitySystem
+  // defensiv gelesen.
+  var RANK_DMG_PER = 0.15; // +15% Schaden pro Rang ueber Rang 1
+  var RANK_CD_PER  = 0.08; // -8% Cooldown pro Rang ueber Rang 1
+  var RANK_CD_CAP  = 0.40; // max. 40% Cooldown-Reduktion durch Raenge
+
+  // Schadens-Multiplikator: 1 bei Rang<=1; +RANK_DMG_PER je weiterem Rang;
+  // + Synergie-Beitrag (stat 'damage'). Unbekannte/ungelernte Knoten -> 1.
+  function getAbilityDamageMult(id) {
+    var rank = getRank(id);
+    var rankPart = Math.max(0, rank - 1) * RANK_DMG_PER;
+    return 1 + rankPart + getSynergyValue(id, 'damage');
+  }
+
+  // Cooldown-Multiplikator: 1 bei Rang<=1; sinkt mit Rang, gedeckelt bei
+  // RANK_CD_CAP. Unbekannte/ungelernte Knoten -> 1.
+  function getAbilityCooldownMult(id) {
+    var rank = getRank(id);
+    var reduction = Math.min(RANK_CD_CAP, Math.max(0, rank - 1) * RANK_CD_PER);
+    return 1 - reduction;
+  }
+
   // Alle Ränge zurücksetzen, investierte Punkte erstatten. OHNE Gold (WP05).
   function respec() {
     var refunded = getSpentPoints();
@@ -253,6 +278,8 @@
     grantSkillPoint: grantSkillPoint,
     investPoint: investPoint,
     getSynergyValue: getSynergyValue,
+    getAbilityDamageMult: getAbilityDamageMult,
+    getAbilityCooldownMult: getAbilityCooldownMult,
     respec: respec,
     getSaveData: getSaveData,
     loadSaveData: loadSaveData,

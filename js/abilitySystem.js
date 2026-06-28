@@ -200,6 +200,145 @@
           console.warn('[Abilities] Schattenschritt failed', err);
         }
       }
+    },
+
+    // === 060 Strang WUT ===
+    // Vier aktive Faehigkeiten des "WUT & WUCHT"-Strangs (Skill-Baum-Knoten:
+    // whirlwind/hammer/frenzy/berserk). Schaden wird mit dmgMult (Rang+Synergie),
+    // Cooldowns mit cdMult skaliert; beide defensiv aus window.SkillTree gelesen
+    // (SkillTree kann theoretisch fehlen -> Fallback 1).
+    //
+    // whirlwind/hammer recyceln die bestehenden Basis-Funktionen (spinAttack /
+    // beginChargedSlash+releaseChargedSlash) und setzen window._skillCastDmgMult
+    // fuer die Dauer des Casts, damit dealDamageToEnemy (player.js) den
+    // Rang-Multiplikator beruecksichtigt. frenzy/berserk setzen globale Buff-
+    // States (window.frenzyState / window.berserkState), die player.js liest
+    // (getAttackSpeedMultiplier bzw. dealDamageToEnemy).
+    whirlwind: {
+      id: 'whirlwind',
+      name: 'Wirbelwind',
+      description: 'AoE-Wirbel um den Spieler. Schaden skaliert mit Skill-Rang.',
+      type: 'tap',
+      icon: '\u{1F300}',
+      color: 0x00ffff,
+      activate(scene) {
+        // Voll-mobiler Channel ist spaetere Politur — vorerst skaliertes Spin.
+        var dmgMult = (window.SkillTree && window.SkillTree.getAbilityDamageMult)
+          ? window.SkillTree.getAbilityDamageMult('whirlwind') : 1;
+        try {
+          if (typeof window.spinAttack === 'function') {
+            window._skillCastDmgMult = dmgMult;
+            try { window.spinAttack.call(scene); }
+            finally { window._skillCastDmgMult = 1; }
+          }
+        } catch (err) {
+          window._skillCastDmgMult = 1;
+          console.warn('[Abilities] Wirbelwind failed', err);
+        }
+      }
+    },
+    hammer: {
+      id: 'hammer',
+      name: 'Hammer der Ahnen',
+      description: 'Geladener Hieb. Halten zum Aufladen, loslassen für mächtigen Schlag.',
+      type: 'charge',
+      icon: '\u{1F528}',
+      color: 0xffaa00,
+      onPress(scene) {
+        try {
+          if (typeof window.beginChargedSlash === 'function') window.beginChargedSlash.call(scene);
+        } catch (err) {
+          console.warn('[Abilities] Hammer (press) failed', err);
+        }
+      },
+      onRelease(scene) {
+        var dmgMult = (window.SkillTree && window.SkillTree.getAbilityDamageMult)
+          ? window.SkillTree.getAbilityDamageMult('hammer') : 1;
+        try {
+          if (typeof window.releaseChargedSlash === 'function') {
+            window._skillCastDmgMult = dmgMult;
+            try { window.releaseChargedSlash.call(scene); }
+            finally { window._skillCastDmgMult = 1; }
+          }
+        } catch (err) {
+          window._skillCastDmgMult = 1;
+          console.warn('[Abilities] Hammer (release) failed', err);
+        }
+      }
+    },
+    frenzy: {
+      id: 'frenzy',
+      name: 'Raserei',
+      description: 'Angriffstempo-Buff, der bei Treffern/Kills stapelt und abklingt.',
+      type: 'self',
+      icon: '\u{1F525}',
+      color: 0xff5522,
+      cooldownMs: 8000,
+      activate(scene) {
+        // Vorbild: Amulett-Effekt 'momentum' (amuletEffects.js) — stapelt auf
+        // Kills, decay ueber Zeit. Rang erhoeht Max-Stacks und Tempo pro Stack.
+        try {
+          var rank = (window.SkillTree && window.SkillTree.getRank)
+            ? (window.SkillTree.getRank('frenzy') | 0) : 0;
+          var cdMult = (window.SkillTree && window.SkillTree.getAbilityCooldownMult)
+            ? window.SkillTree.getAbilityCooldownMult('frenzy') : 1;
+          var now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
+          var maxStacks = 5 + Math.max(0, rank - 1) * 2;       // Rang -> mehr Max-Stacks
+          var perStack  = 0.04 + Math.max(0, rank - 1) * 0.01; // Rang -> mehr Tempo/Stack
+          var decayMs   = 4000;
+          window.frenzyState = {
+            active: true,
+            stacks: 1,            // sofort 1 Stack beim Aktivieren
+            maxStacks: maxStacks,
+            perStack: perStack,
+            decayMs: decayMs,
+            // Gesamtfenster: solange Stacks frisch gehalten werden, bleibt der
+            // Buff aktiv; _frenzyBump (player.js) schiebt expiry nach hinten.
+            expiry: now + decayMs
+          };
+          // Per-Ability Cooldown skaliert bereits zentral in tryActivate via cdMult.
+          console.log('[Abilities] Raserei aktiviert (Stacks bis ' + maxStacks + ', +' + (perStack * 100).toFixed(0) + '%/Stack), cdMult=' + cdMult.toFixed(2));
+        } catch (err) {
+          console.warn('[Abilities] Raserei failed', err);
+        }
+      }
+    },
+    berserk: {
+      id: 'berserk',
+      name: 'Berserker',
+      description: 'Opfert LP für einen Schadens-Buff. Stärke steigt mit Rang.',
+      type: 'self',
+      icon: '\u{1FA78}',
+      color: 0xff3366,
+      cooldownMs: 20000,
+      activate(scene) {
+        // Basis: bestehende Blutopfer-Logik (LP-Opfer -> Schadensbonus).
+        // Buff-Staerke = Basis * (1 + getSynergyValue('berserk','buff')) und
+        // steigt mit Rang.
+        try {
+          var rank = (window.SkillTree && window.SkillTree.getRank)
+            ? (window.SkillTree.getRank('berserk') | 0) : 0;
+          var synBuff = (window.SkillTree && window.SkillTree.getSynergyValue)
+            ? window.SkillTree.getSynergyValue('berserk', 'buff') : 0;
+          var baseBonus = 0.5 + Math.max(0, rank - 1) * 0.15; // Rang -> mehr Bonus
+          var mult = 1 + baseBonus * (1 + synBuff);
+          var now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
+          var durationMs = 10000;
+          // LP opfern (wie Blutopfer), nie unter 1.
+          if (typeof setPlayerHealth === 'function' && typeof playerHealth !== 'undefined') {
+            setPlayerHealth(Math.max(1, playerHealth - 5));
+          }
+          window.berserkState = { active: true, mult: mult, expiry: now + durationMs };
+          if (scene && scene.time && scene.time.delayedCall) {
+            scene.time.delayedCall(durationMs, function () {
+              if (window.berserkState) window.berserkState.active = false;
+            });
+          }
+          console.log('[Abilities] Berserker aktiviert: Schaden x' + mult.toFixed(2) + ' (Rang ' + rank + ', Synergie ' + synBuff.toFixed(2) + ')');
+        } catch (err) {
+          console.warn('[Abilities] Berserker failed', err);
+        }
+      }
     }
   };
 
@@ -263,7 +402,16 @@
       'ability.blutopfer.unlock_hint': 'Reach wave 15',
       'ability.schattenschritt.name': 'Shadow Step',
       'ability.schattenschritt.description': 'Brief invulnerability + speed bonus (3s).',
-      'ability.schattenschritt.unlock_hint': 'Defeat the Shadow Council'
+      'ability.schattenschritt.unlock_hint': 'Defeat the Shadow Council',
+      // 060 Strang WUT
+      'ability.whirlwind.name': 'Whirlwind',
+      'ability.whirlwind.description': 'AoE whirl around the player. Damage scales with skill rank.',
+      'ability.hammer.name': 'Hammer of the Ancestors',
+      'ability.hammer.description': 'Charged strike. Hold to charge, release for a mighty blow.',
+      'ability.frenzy.name': 'Frenzy',
+      'ability.frenzy.description': 'Attack-speed buff that stacks on hits/kills and decays over time.',
+      'ability.berserk.name': 'Berserk',
+      'ability.berserk.description': 'Sacrifice HP for a damage buff. Strength grows with rank.'
     });
 
     // Convert existing value-properties into getters so reads always honor the
@@ -629,7 +777,16 @@
       const now = (scene?.time?.now) || Date.now();
       const ready = state.cooldowns[abilityId] || 0;
       if (now < ready) return false;
-      state.cooldowns[abilityId] = now + def.cooldownMs;
+      // 060 Strang WUT: Skill-Rang senkt den Cooldown (cdMult, gedeckelt).
+      // Defensiv aus window.SkillTree gelesen (kann fehlen -> Faktor 1).
+      let cdMult = 1;
+      try {
+        if (window.SkillTree && window.SkillTree.getAbilityCooldownMult) {
+          const m = window.SkillTree.getAbilityCooldownMult(abilityId);
+          if (typeof m === 'number' && isFinite(m) && m > 0) cdMult = m;
+        }
+      } catch (e) { /* never break activation */ }
+      state.cooldowns[abilityId] = now + def.cooldownMs * cdMult;
     }
 
     // Tutorial step 8 trigger (feature 044). One emission per successful
