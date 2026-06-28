@@ -20,209 +20,291 @@
   // type: 'tap'    -> single keydown trigger
   //       'charge' -> begin on keydown, release on keyup
   //       'self'   -> tap, but no scene-target (utility/buff)
+  // 060 WP03: Erwerb l\u00E4uft ausschlie\u00DFlich \u00FCber den Skill-Baum. ABILITY_DEFS
+  // enth\u00E4lt daher nur noch die 12 Skill-Baum-Knoten (3 Str\u00E4nge x 4). Die alten
+  // Kill/Wellen/Quest-freischaltbaren Defs (spinAttack/chargeSlash/dashSlash/
+  // daggerThrow/shieldBash + Platzhalter heilwunde/frostnova/blutopfer/
+  // schattenschritt) wurden entfernt.
   const ABILITY_DEFS = {
-    spinAttack: {
-      id: 'spinAttack',
-      name: 'Wirbelangriff',
-      description: 'AoE-Wirbelschlag um den Spieler.',
+    // === 060 Strang WUT ===
+    // Vier aktive Faehigkeiten des "WUT & WUCHT"-Strangs (Skill-Baum-Knoten:
+    // whirlwind/hammer/frenzy/berserk). Schaden wird mit dmgMult (Rang+Synergie),
+    // Cooldowns mit cdMult skaliert; beide defensiv aus window.SkillTree gelesen
+    // (SkillTree kann theoretisch fehlen -> Fallback 1).
+    //
+    // whirlwind/hammer recyceln die bestehenden Basis-Funktionen (spinAttack /
+    // beginChargedSlash+releaseChargedSlash) und setzen window._skillCastDmgMult
+    // fuer die Dauer des Casts, damit dealDamageToEnemy (player.js) den
+    // Rang-Multiplikator beruecksichtigt. frenzy/berserk setzen globale Buff-
+    // States (window.frenzyState / window.berserkState), die player.js liest
+    // (getAttackSpeedMultiplier bzw. dealDamageToEnemy).
+    whirlwind: {
+      id: 'whirlwind',
+      name: 'Wirbelwind',
+      description: 'AoE-Wirbel um den Spieler. Schaden skaliert mit Skill-Rang.',
       type: 'tap',
       icon: '\u{1F300}',
       color: 0x00ffff,
       activate(scene) {
-        if (typeof window.spinAttack === 'function') {
-          window.spinAttack.call(scene);
+        // Voll-mobiler Channel ist spaetere Politur — vorerst skaliertes Spin.
+        var dmgMult = (window.SkillTree && window.SkillTree.getAbilityDamageMult)
+          ? window.SkillTree.getAbilityDamageMult('whirlwind') : 1;
+        try {
+          if (typeof window.spinAttack === 'function') {
+            window._skillCastDmgMult = dmgMult;
+            try { window.spinAttack.call(scene); }
+            finally { window._skillCastDmgMult = 1; }
+          }
+        } catch (err) {
+          window._skillCastDmgMult = 1;
+          console.warn('[Abilities] Wirbelwind failed', err);
         }
       }
     },
-    chargeSlash: {
-      id: 'chargeSlash',
-      name: 'Aufgeladener Schlag',
-      description: 'Halten zum Aufladen, loslassen f\u00FCr m\u00E4chtigen Hieb.',
+    hammer: {
+      id: 'hammer',
+      name: 'Hammer der Ahnen',
+      description: 'Geladener Hieb. Halten zum Aufladen, loslassen für mächtigen Schlag.',
       type: 'charge',
-      icon: '\u26A1',
+      icon: '\u{1F528}',
       color: 0xffaa00,
       onPress(scene) {
-        if (typeof window.beginChargedSlash === 'function') {
-          window.beginChargedSlash.call(scene);
+        try {
+          if (typeof window.beginChargedSlash === 'function') window.beginChargedSlash.call(scene);
+        } catch (err) {
+          console.warn('[Abilities] Hammer (press) failed', err);
         }
       },
       onRelease(scene) {
-        if (typeof window.releaseChargedSlash === 'function') {
-          window.releaseChargedSlash.call(scene);
-        }
-      }
-    },
-    dashSlash: {
-      id: 'dashSlash',
-      name: 'Sturmhieb',
-      description: 'Schneller Vorw\u00E4rts-Dash mit Schaden.',
-      type: 'tap',
-      icon: '\u27A1',
-      color: 0x66ccff,
-      activate(scene) {
-        if (typeof window.dashSlash === 'function') {
-          window.dashSlash.call(scene);
-        }
-      }
-    },
-    daggerThrow: {
-      id: 'daggerThrow',
-      name: 'Dolchwurf',
-      description: 'Wirft einen Dolch in Blickrichtung.',
-      type: 'tap',
-      icon: '\u{1F5E1}',
-      color: 0xff8800,
-      activate(scene) {
-        if (typeof window.throwDagger === 'function') {
-          window.throwDagger.call(scene);
-        }
-      }
-    },
-    shieldBash: {
-      id: 'shieldBash',
-      name: 'Schildsto\u00DF',
-      description: 'Bet\u00E4ubt nahe Gegner.',
-      type: 'tap',
-      icon: '\u{1F6E1}',
-      color: 0x66ffaa,
-      activate(scene) {
-        if (typeof window.shieldBash === 'function') {
-          window.shieldBash.call(scene);
-        }
-      }
-    },
-
-    // ---- New abilities (placeholder implementations) ----
-    heilwunde: {
-      id: 'heilwunde',
-      name: 'Heilwunde',
-      description: 'Heilt 5 LP. Abklingzeit: 30s.',
-      type: 'self',
-      icon: '\u271A',
-      color: 0x66ff66,
-      cooldownMs: 30000,
-      activate(scene) {
-        console.log('[Abilities] Heilwunde aktiviert');
+        var dmgMult = (window.SkillTree && window.SkillTree.getAbilityDamageMult)
+          ? window.SkillTree.getAbilityDamageMult('hammer') : 1;
         try {
-          const max = (typeof playerMaxHealth !== 'undefined') ? playerMaxHealth : 30;
-          const cur = (typeof playerHealth !== 'undefined') ? playerHealth : max;
-          const next = Math.min(max, cur + 5);
-          if (typeof setPlayerHealth === 'function') {
-            setPlayerHealth(next);
-          } else if (typeof playerHealth !== 'undefined') {
-            playerHealth = next;
-          }
-          if (typeof updateHUD === 'function') updateHUD();
-        } catch (err) {
-          console.warn('[Abilities] Heilwunde failed', err);
-        }
-      }
-    },
-    frostnova: {
-      id: 'frostnova',
-      name: 'Frostnova',
-      description: 'AoE um den Spieler, verlangsamt alle Gegner in der N\u00E4he.',
-      type: 'self',
-      icon: '\u2744',
-      color: 0x88ddff,
-      cooldownMs: 12000,
-      activate(scene) {
-        console.log('[Abilities] Frostnova aktiviert (Platzhalter)');
-        try {
-          if (window.statusEffectManager && window.StatusEffectType
-              && typeof enemies !== 'undefined' && enemies?.children && typeof player !== 'undefined') {
-            const range = 160;
-            enemies.children.iterate((enemy) => {
-              if (!enemy || !enemy.active) return;
-              const dx = enemy.x - player.x;
-              const dy = enemy.y - player.y;
-              if (Math.hypot(dx, dy) <= range) {
-                window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'frostnova');
-              }
-            });
+          if (typeof window.releaseChargedSlash === 'function') {
+            window._skillCastDmgMult = dmgMult;
+            try { window.releaseChargedSlash.call(scene); }
+            finally { window._skillCastDmgMult = 1; }
           }
         } catch (err) {
-          console.warn('[Abilities] Frostnova failed', err);
+          window._skillCastDmgMult = 1;
+          console.warn('[Abilities] Hammer (release) failed', err);
         }
       }
     },
-    blutopfer: {
-      id: 'blutopfer',
-      name: 'Blutopfer',
-      description: 'Opfert 5 LP f\u00FCr 50% Schadensbonus (10s).',
+    frenzy: {
+      id: 'frenzy',
+      name: 'Raserei',
+      description: 'Angriffstempo-Buff, der bei Treffern/Kills stapelt und abklingt.',
+      type: 'self',
+      icon: '\u{1F525}',
+      color: 0xff5522,
+      cooldownMs: 8000,
+      activate(scene) {
+        // Vorbild: Amulett-Effekt 'momentum' (amuletEffects.js) — stapelt auf
+        // Kills, decay ueber Zeit. Rang erhoeht Max-Stacks und Tempo pro Stack.
+        try {
+          var rank = (window.SkillTree && window.SkillTree.getRank)
+            ? (window.SkillTree.getRank('frenzy') | 0) : 0;
+          var cdMult = (window.SkillTree && window.SkillTree.getAbilityCooldownMult)
+            ? window.SkillTree.getAbilityCooldownMult('frenzy') : 1;
+          var now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
+          var maxStacks = 5 + Math.max(0, rank - 1) * 2;       // Rang -> mehr Max-Stacks
+          var perStack  = 0.04 + Math.max(0, rank - 1) * 0.01; // Rang -> mehr Tempo/Stack
+          var decayMs   = 4000;
+          window.frenzyState = {
+            active: true,
+            stacks: 1,            // sofort 1 Stack beim Aktivieren
+            maxStacks: maxStacks,
+            perStack: perStack,
+            decayMs: decayMs,
+            // Gesamtfenster: solange Stacks frisch gehalten werden, bleibt der
+            // Buff aktiv; _frenzyBump (player.js) schiebt expiry nach hinten.
+            expiry: now + decayMs
+          };
+          // Per-Ability Cooldown skaliert bereits zentral in tryActivate via cdMult.
+          console.log('[Abilities] Raserei aktiviert (Stacks bis ' + maxStacks + ', +' + (perStack * 100).toFixed(0) + '%/Stack), cdMult=' + cdMult.toFixed(2));
+        } catch (err) {
+          console.warn('[Abilities] Raserei failed', err);
+        }
+      }
+    },
+    berserk: {
+      id: 'berserk',
+      name: 'Berserker',
+      description: 'Opfert LP für einen Schadens-Buff. Stärke steigt mit Rang.',
       type: 'self',
       icon: '\u{1FA78}',
       color: 0xff3366,
-      cooldownMs: 25000,
+      cooldownMs: 20000,
       activate(scene) {
-        console.log('[Abilities] Blutopfer aktiviert (Platzhalter)');
+        // Basis: bestehende Blutopfer-Logik (LP-Opfer -> Schadensbonus).
+        // Buff-Staerke = Basis * (1 + getSynergyValue('berserk','buff')) und
+        // steigt mit Rang.
         try {
+          var rank = (window.SkillTree && window.SkillTree.getRank)
+            ? (window.SkillTree.getRank('berserk') | 0) : 0;
+          var synBuff = (window.SkillTree && window.SkillTree.getSynergyValue)
+            ? window.SkillTree.getSynergyValue('berserk', 'buff') : 0;
+          var baseBonus = 0.5 + Math.max(0, rank - 1) * 0.15; // Rang -> mehr Bonus
+          var mult = 1 + baseBonus * (1 + synBuff);
+          var now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
+          var durationMs = 10000;
+          // LP opfern (wie Blutopfer), nie unter 1.
           if (typeof setPlayerHealth === 'function' && typeof playerHealth !== 'undefined') {
             setPlayerHealth(Math.max(1, playerHealth - 5));
           }
-          window._blutopferActive = true;
-          window._blutopferUntil = (scene?.time?.now || Date.now()) + 10000;
-          if (scene?.time?.delayedCall) {
-            scene.time.delayedCall(10000, () => {
-              window._blutopferActive = false;
+          window.berserkState = { active: true, mult: mult, expiry: now + durationMs };
+          if (scene && scene.time && scene.time.delayedCall) {
+            scene.time.delayedCall(durationMs, function () {
+              if (window.berserkState) window.berserkState.active = false;
             });
           }
+          console.log('[Abilities] Berserker aktiviert: Schaden x' + mult.toFixed(2) + ' (Rang ' + rank + ', Synergie ' + synBuff.toFixed(2) + ')');
         } catch (err) {
-          console.warn('[Abilities] Blutopfer failed', err);
+          console.warn('[Abilities] Berserker failed', err);
         }
       }
     },
-    schattenschritt: {
-      id: 'schattenschritt',
+
+    // === 060 Strang KETTEN ===
+    // Skill-Tree-Strang "Ketten & Kontrolle". Vier aktive Fähigkeiten, die ihre
+    // Cast-Logik aus js/player.js beziehen (window.cast*). Schaden/Cooldown
+    // skalieren defensiv über den SkillTree-Contract (fehlt → Multiplier 1).
+    twistingBlades: {
+      id: 'twistingBlades',
+      name: 'Wirbelklingen',
+      description: 'Wurfklinge, die zurückkehrt und auf Hin- und Rückweg trifft.',
+      type: 'tap',
+      icon: '\u{1FA83}',
+      color: 0xff8800,
+      activate(scene) {
+        if (typeof window.castTwistingBlades === 'function') {
+          window.castTwistingBlades.call(scene);
+        }
+      }
+    },
+    steelGrasp: {
+      id: 'steelGrasp',
+      name: 'Stahlgriff',
+      description: 'Kettengriff: zieht den ersten getroffenen Gegner heran + Schaden.',
+      type: 'tap',
+      icon: '⛓',
+      color: 0xbfc7d6,
+      cooldownMs: 7000,
+      activate(scene) {
+        if (typeof window.castSteelGrasp === 'function') {
+          window.castSteelGrasp.call(scene);
+        }
+      }
+    },
+    cycloneStrike: {
+      id: 'cycloneStrike',
+      name: 'Wirbelsog',
+      description: 'Zieht alle Gegner im Umkreis heran und fügt AoE-Schaden zu.',
+      type: 'self',
+      icon: '\u{1F32A}',
+      color: 0x66ddff,
+      cooldownMs: 9000,
+      activate(scene) {
+        if (typeof window.castCycloneStrike === 'function') {
+          window.castCycloneStrike.call(scene);
+        }
+      }
+    },
+    frostNova: {
+      id: 'frostNova',
+      name: 'Frostnova',
+      description: 'AoE-Frostnova: verlangsamt alle Gegner in der Nähe + Schaden.',
+      type: 'self',
+      icon: '❄',
+      color: 0x88ddff,
+      cooldownMs: 12000,
+      activate(scene) {
+        if (typeof window.castFrostNova === 'function') {
+          window.castFrostNova.call(scene);
+        }
+      }
+    },
+    // === /060 Strang KETTEN ===
+
+    // === 060 Strang SCHATTEN ===
+    // Vier neue aktive Fähigkeiten des SkillTree-Strangs SCHATTEN & JAGD.
+    // Schaden/Cooldown skalieren defensiv via window.SkillTree.* (Contract:
+    // fehlt die Funktion → mult 1). Logik liegt in js/player.js (shadow*).
+    charge: {
+      id: 'charge',
+      name: 'Ansturm',
+      description: 'Linien-Sturm: dasht durch alle Gegner im Pfad und stoßt sie weg.',
+      type: 'tap',
+      icon: '➡',
+      color: 0x66ccff,
+      cooldownMs: 6000,
+      activate(scene) {
+        try {
+          if (typeof window.shadowCharge === 'function') window.shadowCharge.call(scene);
+        } catch (err) { console.warn('[Abilities] charge failed', err); }
+      }
+    },
+    teleportDash: {
+      id: 'teleportDash',
       name: 'Schattenschritt',
-      description: 'Kurze Unverwundbarkeit + Tempobonus (3s).',
+      description: 'Kurzer Blink mit Unverwundbarkeit; Strecke/Dauer skalieren mit Rang.',
       type: 'self',
       icon: '\u{1F47B}',
       color: 0x9966ff,
-      cooldownMs: 18000,
+      cooldownMs: 9000,
       activate(scene) {
-        console.log('[Abilities] Schattenschritt aktiviert (Platzhalter)');
         try {
-          window._shadowStepActive = true;
-          window._shadowStepUntil = (scene?.time?.now || Date.now()) + 3000;
-          if (typeof player !== 'undefined' && player?.setAlpha) {
-            player.setAlpha(0.5);
-          }
-          if (scene?.time?.delayedCall) {
-            scene.time.delayedCall(3000, () => {
-              window._shadowStepActive = false;
-              if (typeof player !== 'undefined' && player?.setAlpha) {
-                player.setAlpha(1);
-              }
-            });
-          }
-        } catch (err) {
-          console.warn('[Abilities] Schattenschritt failed', err);
-        }
+          if (typeof window.shadowTeleportDash === 'function') window.shadowTeleportDash.call(scene);
+        } catch (err) { console.warn('[Abilities] teleportDash failed', err); }
+      }
+    },
+    heilwunde: {
+      id: 'heilwunde',
+      name: 'Heilwunde',
+      description: 'Heilt LP; Heilmenge skaliert mit Rang.',
+      type: 'self',
+      icon: '✚',
+      color: 0x66ff66,
+      cooldownMs: 30000,
+      activate(scene) {
+        try {
+          if (typeof window.shadowHeilwunde === 'function') window.shadowHeilwunde.call(scene);
+        } catch (err) { console.warn('[Abilities] heilwunde failed', err); }
+      }
+    },
+    deathBlow: {
+      id: 'deathBlow',
+      name: 'Todesstoss',
+      description: 'Schlag nach vorn; angeschlagene Gegner werden sofort exekutiert. Hinrichtung setzt den Cooldown zurück.',
+      type: 'self',
+      icon: '\u{1F480}',
+      color: 0xff3344,
+      cooldownMs: 8000,
+      activate(scene) {
+        try {
+          var executed = (typeof window.shadowDeathBlow === 'function')
+            ? window.shadowDeathBlow.call(scene) : false;
+          // Ketten-Hinrichtung: starb mindestens ein Gegner durch Exekution,
+          // wird der Cooldown SOFORT zurückgesetzt, damit erneut zugeschlagen
+          // werden kann.
+          if (executed) resetCooldown('deathBlow');
+        } catch (err) { console.warn('[Abilities] deathBlow failed', err); }
       }
     }
+    // === /060 Strang SCHATTEN ===
   };
 
   // ---------- Unlock Conditions ----------
-  // Each ability has an unlock entry. abilities not listed here are
-  // unlocked by default at game start.
-  const UNLOCK_RULES = {
-    spinAttack:      { type: 'kills',         value: 5,                  hint: 'Besiege 5 Gegner' },
-    chargeSlash:     { type: 'kills',         value: 15,                 hint: 'Besiege 15 Gegner' },
-    dashSlash:       { type: 'kills',         value: 25,                 hint: 'Besiege 25 Gegner' },
-    daggerThrow:     { type: 'wave',          value: 3,                  hint: 'Erreiche Welle 3' },
-    shieldBash:      { type: 'kills',         value: 50,                 hint: 'Besiege 50 Gegner' },
-    heilwunde:       { type: 'quest',         value: 'branka_documents', hint: 'Schlie\u00DFe Brankas Dokumenten-Quest ab' },
-    frostnova:       { type: 'boss',          value: 'chainMaster',      hint: 'Besiege den Kettenmeister' },
-    blutopfer:       { type: 'wave',          value: 15,                 hint: 'Erreiche Welle 15' },
-    schattenschritt: { type: 'boss',          value: 'shadowCouncillor', hint: 'Besiege den Schattenrat' }
-  };
+  // 060 WP03: Auto-Unlock (Kills/Wellen/Quests/Bosse) wurde entfernt \u2014 Erwerb
+  // l\u00E4uft ausschlie\u00DFlich \u00FCber den Skill-Baum (window.SkillTree). UNLOCK_RULES
+  // bleibt als leeres Objekt erhalten, damit Altkonsumenten (getUnlockRule)
+  // nicht crashen; es gibt keine automatischen Freischaltungen mehr.
+  const UNLOCK_RULES = {};
 
   // ---------- i18n bootstrap ----------
-  // Auto-register German strings for all abilities + unlock hints, then convert
-  // each def.name / def.description / unlockRule.hint into a getter so existing
-  // consumers (loadoutOverlay tooltip, HUD slot tiles) automatically see the
-  // active language without code changes.
+  // Auto-register German strings for all abilities, then convert each def.name /
+  // def.description into a getter so existing consumers (loadoutOverlay tooltip,
+  // HUD slot tiles) automatically see the active language without code changes.
   if (window.i18n) {
     var _autoDe = {};
     Object.keys(ABILITY_DEFS).forEach(function (id) {
@@ -230,40 +312,36 @@
       if (typeof d.name === 'string') _autoDe['ability.' + id + '.name'] = d.name;
       if (typeof d.description === 'string') _autoDe['ability.' + id + '.description'] = d.description;
     });
-    Object.keys(UNLOCK_RULES).forEach(function (id) {
-      var r = UNLOCK_RULES[id];
-      if (r && typeof r.hint === 'string') _autoDe['ability.' + id + '.unlock_hint'] = r.hint;
-    });
     window.i18n.register('de', _autoDe);
 
     window.i18n.register('en', {
-      'ability.spinAttack.name': 'Spin Attack',
-      'ability.spinAttack.description': 'AoE spin strike around the player.',
-      'ability.spinAttack.unlock_hint': 'Defeat 5 enemies',
-      'ability.chargeSlash.name': 'Charged Slash',
-      'ability.chargeSlash.description': 'Hold to charge, release for a mighty strike.',
-      'ability.chargeSlash.unlock_hint': 'Defeat 15 enemies',
-      'ability.dashSlash.name': 'Dash Slash',
-      'ability.dashSlash.description': 'Quick forward dash dealing damage.',
-      'ability.dashSlash.unlock_hint': 'Defeat 25 enemies',
-      'ability.daggerThrow.name': 'Dagger Throw',
-      'ability.daggerThrow.description': 'Throws a dagger in the facing direction.',
-      'ability.daggerThrow.unlock_hint': 'Reach wave 3',
-      'ability.shieldBash.name': 'Shield Bash',
-      'ability.shieldBash.description': 'Stuns nearby enemies.',
-      'ability.shieldBash.unlock_hint': 'Defeat 50 enemies',
+      // 060 Strang WUT
+      'ability.whirlwind.name': 'Whirlwind',
+      'ability.whirlwind.description': 'AoE whirl around the player. Damage scales with skill rank.',
+      'ability.hammer.name': 'Hammer of the Ancestors',
+      'ability.hammer.description': 'Charged strike. Hold to charge, release for a mighty blow.',
+      'ability.frenzy.name': 'Frenzy',
+      'ability.frenzy.description': 'Attack-speed buff that stacks on hits/kills and decays over time.',
+      'ability.berserk.name': 'Berserk',
+      'ability.berserk.description': 'Sacrifice HP for a damage buff. Strength grows with rank.',
+      // 060 Strang KETTEN
+      'ability.twistingBlades.name': 'Twisting Blades',
+      'ability.twistingBlades.description': 'A thrown blade that returns, hitting on both the outward and return path.',
+      'ability.steelGrasp.name': 'Steel Grasp',
+      'ability.steelGrasp.description': 'Chain grab: pulls the first enemy hit toward you and deals damage.',
+      'ability.cycloneStrike.name': 'Cyclone Strike',
+      'ability.cycloneStrike.description': 'Pulls all nearby enemies toward you and deals AoE damage.',
+      'ability.frostNova.name': 'Frost Nova',
+      'ability.frostNova.description': 'AoE frost nova: slows all nearby enemies and deals damage.',
+      // === 060 Strang SCHATTEN ===
+      'ability.charge.name': 'Charge',
+      'ability.charge.description': 'Line dash through all enemies in the path, knocking them away.',
+      'ability.teleportDash.name': 'Shadow Step',
+      'ability.teleportDash.description': 'Quick blink with i-frames; range/duration scale with rank.',
       'ability.heilwunde.name': 'Heal Wound',
-      'ability.heilwunde.description': 'Heals 5 HP. Cooldown: 30s.',
-      'ability.heilwunde.unlock_hint': "Complete Branka's documents quest",
-      'ability.frostnova.name': 'Frost Nova',
-      'ability.frostnova.description': 'AoE around the player, slows all nearby enemies.',
-      'ability.frostnova.unlock_hint': 'Defeat the Chainmaster',
-      'ability.blutopfer.name': 'Blood Sacrifice',
-      'ability.blutopfer.description': 'Sacrifice 5 HP for +50% damage (10s).',
-      'ability.blutopfer.unlock_hint': 'Reach wave 15',
-      'ability.schattenschritt.name': 'Shadow Step',
-      'ability.schattenschritt.description': 'Brief invulnerability + speed bonus (3s).',
-      'ability.schattenschritt.unlock_hint': 'Defeat the Shadow Council'
+      'ability.heilwunde.description': 'Heals HP; heal amount scales with rank.',
+      'ability.deathBlow.name': 'Death Blow',
+      'ability.deathBlow.description': 'Strike ahead; low-HP enemies are executed instantly. An execution resets the cooldown.'
     });
 
     // Convert existing value-properties into getters so reads always honor the
@@ -289,23 +367,11 @@
         });
       } catch (e) { /* swallow */ }
     });
-    Object.keys(UNLOCK_RULES).forEach(function (id) {
-      var r = UNLOCK_RULES[id];
-      var hintKey = 'ability.' + id + '.unlock_hint';
-      try {
-        Object.defineProperty(r, 'hint', {
-          get: function () {
-            var v = window.i18n.t(hintKey);
-            return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : '';
-          },
-          configurable: true, enumerable: true
-        });
-      } catch (e) { /* swallow */ }
-    });
   }
 
-  // No abilities learned by default — only basic attack (space) is always available.
-  // Player must learn skills through gameplay (kills, quests, bosses).
+  // 060 WP03: Keine Abilities standardmäßig gelernt. Erwerb läuft ausschließlich
+  // über den Skill-Baum (window.SkillTree.investPoint -> SkillTree.onChange-Sync,
+  // siehe skillTree.js). Neue Spiele starten mit 0 gelernten Fähigkeiten.
   const DEFAULT_LEARNED = [];
 
   const DEFAULT_LOADOUT = {
@@ -477,6 +543,29 @@
     return true;
   }
 
+  /**
+   * Verlernt eine Ability: entfernt sie aus learnedAbilities UND räumt sie aus
+   * allen aktiven Slots (Loadout). Gegenstück zu learnAbility — wird vom
+   * SkillTree-Sync (skillTree.js onChange) für Knoten mit Rang 0 sowie nach
+   * respec() aufgerufen. Idempotent + defensiv (unbekannte/ungelernte id -> false).
+   * @param {string} id
+   * @returns {boolean} true wenn die Ability gelernt war und entfernt wurde
+   */
+  function forgetAbility(id) {
+    const idx = state.learnedAbilities.indexOf(id);
+    if (idx === -1) return false;
+    state.learnedAbilities.splice(idx, 1);
+    // Aus allen Slots entfernen, die diese Ability tragen.
+    SLOT_KEYS.forEach((slot) => {
+      if (state.activeLoadout[slot] === id) state.activeLoadout[slot] = null;
+    });
+    save();
+    if (typeof window._refreshAbilityHUD === 'function') {
+      try { window._refreshAbilityHUD(); } catch (e) { /* HUD may not exist yet */ }
+    }
+    return true;
+  }
+
   function _showLearnToast(name) {
     try {
       const scene = window.gameScene || (window.game && window.game.scene && window.game.scene.scenes && window.game.scene.scenes.find((s) => s && s.sys && s.sys.isActive()));
@@ -624,12 +713,23 @@
     if (!def) return false;
     if (!isLearned(abilityId)) return false;
 
-    // Per-ability cooldowns (only enforced for "self" type abilities).
+    // Per-ability cooldowns (only enforced for "self"/tap type abilities).
+    // Cooldown wird defensiv mit dem SkillTree-CooldownMult skaliert
+    // (Contract: fehlt die Funktion → mult 1).
     if (def.cooldownMs) {
       const now = (scene?.time?.now) || Date.now();
       const ready = state.cooldowns[abilityId] || 0;
       if (now < ready) return false;
-      state.cooldowns[abilityId] = now + def.cooldownMs;
+      // 060: Skill-Rang senkt den Cooldown (cdMult, gedeckelt).
+      // Defensiv aus window.SkillTree gelesen (kann fehlen -> Faktor 1).
+      let cdMult = 1;
+      try {
+        if (window.SkillTree && window.SkillTree.getAbilityCooldownMult) {
+          const m = window.SkillTree.getAbilityCooldownMult(abilityId);
+          if (typeof m === 'number' && isFinite(m) && m > 0) cdMult = m;
+        }
+      } catch (e) { /* never break activation */ }
+      state.cooldowns[abilityId] = now + def.cooldownMs * cdMult;
     }
 
     // Tutorial step 8 trigger (feature 044). One emission per successful
@@ -669,52 +769,33 @@
     return Math.max(0, ready - n);
   }
 
-  // ---------- Unlock Hooks ----------
-  function _checkUnlocks(triggerType, value) {
-    // Endless mode: only Endless.apply() may grant abilities (via direct
-    // learnAbility call). Auto-unlocks from kill/wave/boss/quest triggers
-    // are disabled so the upgrade-card pick is the sole acquisition path.
-    if (window.__ENDLESS_MODE__) return;
-    Object.keys(UNLOCK_RULES).forEach((id) => {
-      if (state.learnedAbilities.includes(id)) return;
-      const rule = UNLOCK_RULES[id];
-      if (!rule) return;
-      let matches = false;
-      switch (rule.type) {
-        case 'kills':
-          if (triggerType === 'kills' && state.enemyKills >= rule.value) matches = true;
-          break;
-        case 'quest':
-          if (triggerType === 'quest' && value === rule.value) matches = true;
-          break;
-        case 'boss':
-          if (triggerType === 'boss' && value === rule.value) matches = true;
-          break;
-        case 'wave':
-          if (triggerType === 'wave' && (value | 0) >= rule.value) matches = true;
-          break;
-      }
-      if (matches) learnAbility(id);
-    });
+  // 060 Strang SCHATTEN: setzt den Cooldown einer Ability sofort zurück
+  // (deathBlow Ketten-Hinrichtung). Defensiv — unbekannte ids no-op.
+  function resetCooldown(abilityId) {
+    if (!abilityId) return;
+    state.cooldowns[abilityId] = 0;
+    if (typeof window._refreshAbilityHUD === 'function') {
+      try { window._refreshAbilityHUD(); } catch (e) { /* HUD may not exist yet */ }
+    }
   }
 
+  // ---------- Unlock Hooks ----------
+  // 060 WP03: Auto-Unlock entfernt. Abilities werden NICHT mehr automatisch über
+  // Kills/Wellen/Bosse/Quests gelernt — der einzige Erwerbspfad ist der
+  // Skill-Baum (window.SkillTree, synchronisiert via SkillTree.onChange in
+  // skillTree.js). Die on*-Hooks bleiben als inerte Stubs erhalten, damit
+  // bestehende Aufrufer (main.js/questSystem etc.) nicht crashen. Kills werden
+  // weiterhin als Statistik gezählt, lösen aber keine Freischaltung mehr aus.
   function onEnemyKilled() {
     state.enemyKills += 1;
     save();
-    _checkUnlocks('kills');
   }
 
-  function onBossKilled(bossType) {
-    _checkUnlocks('boss', bossType);
-  }
+  function onBossKilled(_bossType) { /* Auto-Unlock entfernt (060 WP03) */ }
 
-  function onQuestCompleted(questId) {
-    _checkUnlocks('quest', questId);
-  }
+  function onQuestCompleted(_questId) { /* Auto-Unlock entfernt (060 WP03) */ }
 
-  function onWaveCompleted(wave) {
-    _checkUnlocks('wave', wave);
-  }
+  function onWaveCompleted(_wave) { /* Auto-Unlock entfernt (060 WP03) */ }
 
   function getEnemyKills() {
     return state.enemyKills | 0;
@@ -795,9 +876,11 @@
     getSlotForAbility,
     setSlot,
     learnAbility,
+    forgetAbility,
     tryActivate,
     tryRelease,
     getCooldownRemaining,
+    resetCooldown,
     onEnemyKilled,
     onBossKilled,
     onQuestCompleted,

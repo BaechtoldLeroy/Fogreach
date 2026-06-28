@@ -60,6 +60,18 @@ function saveGame(scene) {
       return null;
     };
 
+    // Feature 060 (WP05): den Skill-Baum-State (Punkte + Ränge) in den
+    // Haupt-Save einbetten, damit er zusammen mit allem anderen round-trippt.
+    // Eigener Payload-Key `skillTree` — NICHT `skills` (das ist der Legacy-
+    // skillSystem/playerSkills-State). Defensiv: SkillTree ist optional.
+    const cloneSkillTree = () => {
+      if (typeof window !== 'undefined' && window.SkillTree
+          && typeof window.SkillTree.getSaveData === 'function') {
+        try { return window.SkillTree.getSaveData(); } catch (e) { return null; }
+      }
+      return null;
+    };
+
     const payload = {
       ts: Date.now(),
       // Core Progress
@@ -86,6 +98,7 @@ function saveGame(scene) {
       equipment: cloneEquipment(equipment),
       materials: cloneMaterials,
       skills: cloneSkills(),
+      skillTree: cloneSkillTree(),
       quests: cloneQuests(),
       story: cloneStory()
     };
@@ -220,6 +233,12 @@ function applySaveToState(scene, s) {
   playerMaxHealth    = (s.playerMaxHealth ?? playerMaxHealth ?? baseStats?.maxHP ?? 30);
   playerXP           = (s.playerXP ?? playerXP);
   playerLevel        = (s.playerLevel ?? playerLevel);
+  // Feature 060 (#41): Level-Schwelle aus der zentralen, gestreckten Kurve
+  // neu berechnen, damit der HUD den korrekten need-Wert für den
+  // wiederhergestellten Level zeigt (statt eines veralteten neededXP).
+  if (typeof getNeededXP === 'function') {
+    neededXP = getNeededXP(playerLevel);
+  }
   playerSpeed        = (s.playerSpeed ?? playerSpeed);
   playerArmor        = (s.playerArmor ?? playerArmor);
   playerCritChance   = (s.playerCritChance ?? playerCritChance);
@@ -280,6 +299,33 @@ function applySaveToState(scene, s) {
   if (s.skills && typeof s.skills === 'object') {
     if (typeof window !== 'undefined') {
       window.playerSkills = s.skills;
+    }
+  }
+
+  // Feature 060 (WP05): Skill-Baum-State aus dem Haupt-Save anwenden.
+  // - Save MIT `skillTree` → direkt via loadSaveData übernehmen.
+  // - Pre-060-Save OHNE `skillTree` (Migration) → resetForNewGame() +
+  //   grantSkillPoint(playerLevel): der Spieler bekommt Skill-Punkte = sein
+  //   aktueller Level frei zum Verteilen. Kein Crash, kein Item-/Gold-Verlust.
+  // Defensiv: SkillTree ist optional (Script-Load-Order / Tests ohne Modul).
+  if (typeof window !== 'undefined' && window.SkillTree) {
+    try {
+      if (s.skillTree && typeof s.skillTree === 'object') {
+        if (typeof window.SkillTree.loadSaveData === 'function') {
+          window.SkillTree.loadSaveData(s.skillTree);
+        }
+      } else {
+        // Migration alter Saves (Pre-060): definierte Regel.
+        if (typeof window.SkillTree.resetForNewGame === 'function') {
+          window.SkillTree.resetForNewGame();
+        }
+        if (typeof window.SkillTree.grantSkillPoint === 'function') {
+          const lvl = Math.max(0, Math.floor(Number(playerLevel) || 0));
+          if (lvl > 0) window.SkillTree.grantSkillPoint(lvl);
+        }
+      }
+    } catch (err) {
+      try { console.warn('[storage] SkillTree restore/migrate failed', err); } catch (_) {}
     }
   }
 
