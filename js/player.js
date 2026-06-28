@@ -1678,7 +1678,9 @@ function _abilityGate(id) {
 }
 
 function spinAttack() {
-  if (!_abilityGate('spinAttack')) return;
+  // Gating passiert in AbilitySystem.tryActivate (prüft die GELERNTE Ability,
+  // z.B. 'whirlwind'). Kein interner _abilityGate('spinAttack') mehr — die alte
+  // ID wird nie gelernt, das würde whirlwind tot-gaten (060).
   const now = this.time.now;
   const baseCooldown = getSpinCooldown();
   const abilityCooldown = applyCooldownModifier(baseCooldown, 'spin');
@@ -1782,7 +1784,6 @@ function spinAttack() {
 
 function beginChargedSlash() {
   if (!this || !player) return;
-  if (!_abilityGate('chargeSlash')) return;
   if (chargeSlashCooldown || isChargingSlash || isSpinning || isDashing || isRolling) return;
 
   isChargingSlash = true;
@@ -2173,7 +2174,6 @@ function performRoll() {
 }
 
 function dashSlash() {
-  if (!_abilityGate('dashSlash')) return;
   if (!this || !player) return;
   if (dashSlashCooldown || isDashing || isSpinning || isChargingSlash || isRolling) return;
 
@@ -2655,7 +2655,6 @@ function _fireBowArrow(scene, opts) {
 }
 
 function throwDagger() {
-  if (!_abilityGate('daggerThrow')) return;
   if (!this || !player || !playerProjectiles) return;
   if (daggerThrowCooldown || isChargingSlash || isRolling) return;
 
@@ -2706,7 +2705,6 @@ function throwDagger() {
 }
 
 function shieldBash() {
-  if (!_abilityGate('shieldBash')) return;
   if (!this || !player) return;
   if (shieldBashCooldown || isDashing || isRolling) return;
 
@@ -3025,23 +3023,31 @@ function castTwistingBlades() {
   const baseLifespan = (typeof getDaggerThrowLifespan === 'function') ? getDaggerThrowLifespan() : 600;
   const outMs = Math.max(120, Math.round(baseLifespan * 0.55));
 
-  scene.time.delayedCall(outMs, () => {
+  let _twReturning = false;
+  const homeStep = () => {
     if (!projectile || !projectile.active) return;
+    if (!player || !player.active) { projectile.destroy(); return; }
+    const ddx = player.x - projectile.x;
+    const ddy = player.y - projectile.y;
+    const dlen = Math.hypot(ddx, ddy);
+    if (dlen < 22) { projectile.destroy(); return; }
+    projectile.body?.setVelocity((ddx / dlen) * speed, (ddy / dlen) * speed);
+    projectile.setRotation(Math.atan2(ddy, ddx));
+    scene.time.delayedCall(60, homeStep);
+  };
+  const startReturn = () => {
+    if (_twReturning || !projectile || !projectile.active) return;
+    _twReturning = true;
     projectile.setData('twPhase', 'back');
     projectile.setData('twHitForward', {}); // Rückweg darf erneut treffen
-    const homeStep = () => {
-      if (!projectile || !projectile.active) return;
-      if (!player || !player.active) { projectile.destroy(); return; }
-      const ddx = player.x - projectile.x;
-      const ddy = player.y - projectile.y;
-      const dlen = Math.hypot(ddx, ddy);
-      if (dlen < 22) { projectile.destroy(); return; }
-      projectile.body?.setVelocity((ddx / dlen) * speed, (ddy / dlen) * speed);
-      projectile.setRotation(Math.atan2(ddy, ddx));
-      scene.time.delayedCall(60, homeStep);
-    };
     homeStep();
-  });
+  };
+  // Prallt die Klinge an einer Wand ab, kehrt sie SOFORT zurück: der
+  // playerProjectiles↔obstacles-Collider (main.js) ruft twStartReturn statt
+  // das Projektil zu zerstören. Sonst stirbt der Boomerang an der ersten Wand.
+  projectile.setData('twStartReturn', startReturn);
+  // Nach Reichweite automatisch zurückkehren.
+  scene.time.delayedCall(outMs, startReturn);
 
   // Hard-Fallback: nie länger als 2× Lebensdauer leben.
   scene.time.delayedCall(baseLifespan * 2 + 400, () => {

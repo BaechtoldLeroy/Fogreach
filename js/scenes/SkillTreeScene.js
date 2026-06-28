@@ -185,15 +185,17 @@
           fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
         }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2002);
 
-      this.respecCostText = this.add.text(px - panelW / 2 + 140, footY,
+      this.respecCostText = this.add.text(px, footY - 19,
         _ST_T('skilltree.respec.cost', { cost: 0 }), {
-          fontFamily: 'monospace', fontSize: '13px', color: '#cccccc'
-        }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2002);
+          fontFamily: 'monospace', fontSize: '12px', color: '#cccccc'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2002);
 
-      this.respecBg = this.add.rectangle(px + panelW / 2 - 70, footY, 120, 30, 0x3a2a2a)
+      // Respec-Button MITTIG im Footer (vorher unten rechts → wurde versehentlich
+      // geklickt). Klar getrennt von Close (oben rechts) und den Knoten.
+      this.respecBg = this.add.rectangle(px, footY, 120, 30, 0x3a2a2a)
         .setStrokeStyle(2, 0xd46a43).setScrollFactor(0).setDepth(2002)
         .setInteractive({ useHandCursor: true });
-      this.add.text(px + panelW / 2 - 70, footY, _ST_T('skilltree.respec.btn'), {
+      this.add.text(px, footY, _ST_T('skilltree.respec.btn'), {
         fontFamily: 'monospace', fontSize: '14px', color: '#f1e9d8'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       this.respecBg.on('pointerdown', () => this._doRespec());

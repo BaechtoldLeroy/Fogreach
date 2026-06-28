@@ -481,6 +481,17 @@ let playerHealth = 30;
 let playerMaxHealth = 30;
 let playerXP = 0;
 let playerLevel = 1;
+// 060: playerLevel ist ein klassisches top-level `let` -> KEINE window-Property.
+// Die SkillTreeScene (und andere Scripts) lesen window.playerLevel, das sonst
+// undefined wäre -> Tier-2-Knoten (minLevel 4) würden nie freischalten. Live-
+// Alias als Getter/Setter, damit window.playerLevel immer den echten Wert hält.
+try {
+  Object.defineProperty(window, 'playerLevel', {
+    get() { return playerLevel; },
+    set(v) { playerLevel = v; },
+    configurable: true
+  });
+} catch (e) { /* defensiv: nie den Boot blockieren */ }
 let weaponDamage = 1;
 let weaponAttackSpeed = 1.0;
 let attackRange = 100;
@@ -2625,6 +2636,12 @@ function initializeGameObjects() {
   this.physics.add.collider(playerProjectiles, obstacles, (proj, obs) => {
     if (obs && obs.getData && obs.getData('destructible')) {
       breakDestructibleObstacle(this, obs);
+    }
+    // 060: Wirbelklingen (Boomerang) sterben nicht an der Wand — sie prallen ab
+    // und kehren zum Spieler zurück.
+    if (proj && proj.active && proj.getData && proj.getData('twistingBlades')) {
+      const sr = proj.getData('twStartReturn');
+      if (typeof sr === 'function') { sr(); return; }
     }
     if (proj && proj.active) proj.destroy();
   });
