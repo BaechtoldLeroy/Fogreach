@@ -2529,6 +2529,31 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
     return;
   }
 
+  // 060 Strang KETTEN — twistingBlades (Boomerang): pierct ALLE Gegner und
+  // trifft jeden Gegner pro Phase (Hin-/Rückweg) genau EINMAL. Eigener Zweig,
+  // damit die Standard-Dolch-Logik (Poison + destroy-on-hit) nicht greift.
+  if (projectile.getData('twistingBlades')) {
+    const seen = projectile.getData('twHitForward') || {};
+    const eid = enemy.name || enemy._twId || (enemy._twId = 'e' + Math.random().toString(36).slice(2));
+    if (seen[eid]) return; // in dieser Phase bereits getroffen
+    seen[eid] = true;
+    projectile.setData('twHitForward', seen);
+    const twMult = projectile.getData('damageMult') ?? 1;
+    const { isCrit } = dealDamageToEnemy(scene, enemy, twMult, 'twistingBlades');
+    handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0xffaa88, duration: isCrit ? 200 : 140 });
+    const tkb = projectile.getData('knockback') ?? 120;
+    if (enemy.active && enemy.body) {
+      const kdx = enemy.x - projectile.x;
+      const kdy = enemy.y - projectile.y;
+      const klen = Math.hypot(kdx, kdy) || 1;
+      enemy.body.setVelocity((kdx / klen) * tkb, (kdy / klen) * tkb);
+      scene.time.delayedCall(120, () => {
+        if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
+      });
+    }
+    return; // niemals destroyen — Rückkehr/Lifespan-Timer räumt auf
+  }
+
   const damageMult = projectile.getData('damageMult') ?? 1;
   const isBowArrow = !!projectile.getData('isBowArrow');
   const abilityKey = isBowArrow ? 'attack' : 'dagger';
@@ -2650,3 +2675,246 @@ function updateHUD() {
     try { window.HUDv2.update(); } catch (err) { /* ignore */ }
   }
 }
+
+// =========================================================================
+// === 060 Strang KETTEN & KONTROLLE — Skill-Tree-Fähigkeiten ==============
+// =========================================================================
+// Cast-Helfer für die vier Skill-Tree-Knoten des Strangs "Ketten & Kontrolle".
+// Werden DEFENSIV von ABILITY_DEFS (js/abilitySystem.js) aufgerufen. Alle
+// SkillTree-Werte werden defensiv gelesen (Knoten/Funktion fehlt → Multiplier 1).
+// Die Pull-/Sog-Mechanik berührt nur lebende Gegner mit Physik-Body und fängt
+// jeden Fehler ab, damit der enemies-Loop nie crasht.
+
+function _kettenDmgMult(nodeId) {
+  try {
+    return (window.SkillTree && typeof window.SkillTree.getAbilityDamageMult === 'function')
+      ? (window.SkillTree.getAbilityDamageMult(nodeId) || 1) : 1;
+  } catch (e) { return 1; }
+}
+function _kettenCdMult(nodeId) {
+  try {
+    return (window.SkillTree && typeof window.SkillTree.getAbilityCooldownMult === 'function')
+      ? (window.SkillTree.getAbilityCooldownMult(nodeId) || 1) : 1;
+  } catch (e) { return 1; }
+}
+function _kettenRank(nodeId) {
+  try {
+    return (window.SkillTree && typeof window.SkillTree.getRank === 'function')
+      ? (window.SkillTree.getRank(nodeId) | 0) : 1;
+  } catch (e) { return 1; }
+}
+function _kettenSynergy(nodeId, stat) {
+  try {
+    return (window.SkillTree && typeof window.SkillTree.getSynergyValue === 'function')
+      ? (window.SkillTree.getSynergyValue(nodeId, stat) || 0) : 0;
+  } catch (e) { return 0; }
+}
+
+// Zieht einen einzelnen Gegner für `durationMs` Richtung Spieler. Defensiv:
+// nur lebende Gegner mit Body. Velocity wird nach Ablauf wieder auf 0 gesetzt.
+function _pullEnemyToPlayer(scene, enemy, speed, durationMs) {
+  try {
+    if (!scene || !player || !enemy || !enemy.active || !enemy.body) return;
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const vx = (dx / len) * speed;
+    const vy = (dy / len) * speed;
+    enemy.body.setVelocity(vx, vy);
+    if (scene.time && scene.time.delayedCall) {
+      scene.time.delayedCall(durationMs, () => {
+        try {
+          if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
+        } catch (e) { /* swallow */ }
+      });
+    }
+  } catch (e) { /* never crash the loop */ }
+}
+
+// --- twistingBlades (Wirbelklingen) -------------------------------------
+// Basiert auf daggerThrow: Projektil fliegt in Blickrichtung bis zur Reichweite
+// und KEHRT dann zum Spieler ZURÜCK; Schaden auf Hin- und Rückweg (über die
+// bestehende playerProjectiles↔enemies-Overlap, mit Hit-Set gegen Doppelhits).
+function castTwistingBlades() {
+  const scene = this;
+  if (!scene || !player || !playerProjectiles) return;
+  if (window.soundManager) window.soundManager.playSFX('ability_dagger');
+  if (typeof ensurePlayerDaggerTexture === 'function') ensurePlayerDaggerTexture(scene);
+
+  const dmgMult = _kettenDmgMult('twistingBlades');
+  const dir = _getAimVector2(scene);
+  const spawnOffset = 24;
+  const projectile = scene.physics.add.sprite(
+    player.x + dir.x * spawnOffset,
+    player.y + dir.y * spawnOffset,
+    'playerDagger'
+  );
+  projectile.setDepth(70);
+  projectile.setRotation(dir.angle());
+  projectile.setOrigin(0.3, 0.5);
+  projectile.setScale(0.85);
+  projectile.body?.setAllowGravity?.(false);
+  projectile.body?.setSize?.(14, 6);
+  projectile.body?.setOffset?.(6, 9);
+  projectile.setData('damageMult', dmgMult);
+  projectile.setData('knockback', (typeof DAGGER_THROW_KNOCKBACK !== 'undefined') ? DAGGER_THROW_KNOCKBACK : 120);
+  // Boomerang-Marker: separates Hit-Set, damit ein Gegner auf Hin- und Rückweg
+  // je EINMAL getroffen wird (verhindert Multi-Hit pro Frame durch Overlap).
+  projectile.setData('twistingBlades', true);
+  projectile.setData('twHitForward', {});
+  projectile.setData('twPhase', 'out');
+  playerProjectiles.add(projectile);
+
+  const speed = (typeof getDaggerThrowSpeed === 'function') ? getDaggerThrowSpeed() : 420;
+  projectile.body.setVelocity(dir.x * speed, dir.y * speed);
+
+  // Reichweite: halbe Dolch-Lebensdauer auf dem Hinweg, dann Rückkehr.
+  const baseLifespan = (typeof getDaggerThrowLifespan === 'function') ? getDaggerThrowLifespan() : 600;
+  const outMs = Math.max(120, Math.round(baseLifespan * 0.55));
+
+  scene.time.delayedCall(outMs, () => {
+    if (!projectile || !projectile.active) return;
+    projectile.setData('twPhase', 'back');
+    projectile.setData('twHitForward', {}); // Rückweg darf erneut treffen
+    const homeStep = () => {
+      if (!projectile || !projectile.active) return;
+      if (!player || !player.active) { projectile.destroy(); return; }
+      const ddx = player.x - projectile.x;
+      const ddy = player.y - projectile.y;
+      const dlen = Math.hypot(ddx, ddy);
+      if (dlen < 22) { projectile.destroy(); return; }
+      projectile.body?.setVelocity((ddx / dlen) * speed, (ddy / dlen) * speed);
+      projectile.setRotation(Math.atan2(ddy, ddx));
+      scene.time.delayedCall(60, homeStep);
+    };
+    homeStep();
+  });
+
+  // Hard-Fallback: nie länger als 2× Lebensdauer leben.
+  scene.time.delayedCall(baseLifespan * 2 + 400, () => {
+    if (projectile && projectile.active) projectile.destroy();
+  });
+}
+
+// --- steelGrasp (Stahlgriff) --------------------------------------------
+// Ketten-/Greifer-Projektil in Blickrichtung; der ERSTE getroffene Gegner wird
+// zum Spieler GEZOGEN + Schaden. Wir scannen einen Strahl/Kegel nach vorn und
+// nehmen den nächstgelegenen Gegner innerhalb der Reichweite.
+function castSteelGrasp() {
+  const scene = this;
+  if (!scene || !player) return;
+  if (window.soundManager) window.soundManager.playSFX('ability_dagger');
+
+  const dmgMult = _kettenDmgMult('steelGrasp');
+  const dir = _getAimVector2(scene);
+  const range = 360;
+  const halfArcCos = Math.cos(Math.PI / 5); // ~36° Halbkegel
+
+  // Visuelle Kette: kurze Linie in Blickrichtung.
+  try {
+    const fx = scene.add.graphics();
+    fx.lineStyle(3, 0xbfc7d6, 0.85);
+    fx.beginPath();
+    fx.moveTo(player.x, player.y);
+    fx.lineTo(player.x + dir.x * range, player.y + dir.y * range);
+    fx.strokePath();
+    scene.time.delayedCall(160, () => { try { fx.destroy(); } catch (e) {} });
+  } catch (e) { /* visual only */ }
+
+  // Ersten Gegner im Kegel finden (nächstgelegener gewinnt).
+  let target = null;
+  let bestDist = Infinity;
+  const tmp = new Phaser.Math.Vector2();
+  forEachEnemyInRange(range, (enemy, { distance, dx, dy }) => {
+    const len = Math.hypot(dx, dy) || 1;
+    tmp.set(dx / len, dy / len);
+    if (dir.dot(tmp) < halfArcCos) return; // außerhalb des Vorwärts-Kegels
+    if (distance < bestDist) { bestDist = distance; target = enemy; }
+  });
+
+  if (!target || !target.active) return;
+
+  // Schaden + Pull zum Spieler.
+  const { isCrit } = dealDamageToEnemy(scene, target, dmgMult, 'steelGrasp');
+  handleEnemyHit(scene, target, { tint: isCrit ? 0xfff2a6 : 0xbfc7d6, duration: isCrit ? 200 : 140 });
+  const pullDist = Math.max(1, bestDist);
+  const pullDur = Phaser.Math.Clamp((pullDist / 360) * 250, 150, 250);
+  const pullSpeed = pullDist / (pullDur / 1000);
+  _pullEnemyToPlayer(scene, target, pullSpeed, pullDur);
+
+  // Stahlgriff bindet kurz (SLOW), passend zur Ketten-Lore.
+  if (window.statusEffectManager && window.StatusEffectType && target.active) {
+    try { window.statusEffectManager.applyEffect(target, window.StatusEffectType.SLOW, 'steelGrasp'); } catch (e) {}
+  }
+}
+
+// --- cycloneStrike (Wirbelsog) ------------------------------------------
+// Wirbelsog: zieht ALLE Gegner im Radius zum Spieler + kleiner AoE-Schaden.
+// Rang skaliert Radius und Schaden. cooldownMs liegt in ABILITY_DEFS.
+function castCycloneStrike() {
+  const scene = this;
+  if (!scene || !player) return;
+  if (window.soundManager) window.soundManager.playSFX('ability_spin');
+
+  const dmgMult = _kettenDmgMult('cycloneStrike');
+  const rank = Math.max(1, _kettenRank('cycloneStrike'));
+  const radius = 200 + (rank - 1) * 20;           // 200..280
+  const aoeMult = 0.5 * dmgMult * (1 + (rank - 1) * 0.1);
+
+  // Visueller Sog-Ring.
+  try {
+    const fx = scene.add.graphics();
+    fx.lineStyle(3, 0x66ddff, 0.8);
+    fx.strokeCircle(Math.round(player.x), Math.round(player.y), radius);
+    scene.time.delayedCall(220, () => { try { fx.destroy(); } catch (e) {} });
+    if (window.particleFactory) window.particleFactory.abilityTrail(player.x, player.y, 0x66ddff);
+  } catch (e) { /* visual only */ }
+
+  forEachEnemyInRange(radius, (enemy, { distance }) => {
+    if (!enemy || !enemy.active) return;
+    const { isCrit } = dealDamageToEnemy(scene, enemy, aoeMult, 'cycloneStrike');
+    handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0x66ddff, duration: isCrit ? 160 : 110 });
+    // Sog nach innen: Geschwindigkeit so, dass der Gegner in ~200ms ankommt.
+    const d = Math.max(1, distance);
+    const dur = 220;
+    const speed = d / (dur / 1000);
+    _pullEnemyToPlayer(scene, enemy, speed, dur);
+  });
+}
+
+// --- frostNova (Frostnova) ----------------------------------------------
+// AoE-Frost-Nova um den Spieler: verlangsamt Gegner + Schaden. Schaden/Slow
+// skalieren mit dmgMult + Synergie-Bonus (getSynergyValue('frostNova','damage')).
+function castFrostNova() {
+  const scene = this;
+  if (!scene || !player) return;
+  if (window.soundManager) window.soundManager.playSFX('ability_spin');
+
+  const dmgMult = _kettenDmgMult('frostNova');
+  const synergy = _kettenSynergy('frostNova', 'damage');
+  const totalMult = dmgMult * (1 + synergy);
+  const range = 180;
+
+  try {
+    const fx = scene.add.graphics();
+    fx.lineStyle(3, 0x88ddff, 0.85);
+    fx.strokeCircle(Math.round(player.x), Math.round(player.y), range);
+    fx.fillStyle(0x88ddff, 0.12);
+    fx.fillCircle(Math.round(player.x), Math.round(player.y), range);
+    scene.time.delayedCall(240, () => { try { fx.destroy(); } catch (e) {} });
+  } catch (e) { /* visual only */ }
+
+  forEachEnemyInRange(range, (enemy) => {
+    if (!enemy || !enemy.active) return;
+    const { isCrit } = dealDamageToEnemy(scene, enemy, 0.6 * totalMult, 'frostNova');
+    handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0x88ddff, duration: isCrit ? 180 : 120 });
+    if (window.statusEffectManager && window.StatusEffectType && enemy.active) {
+      try { window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'frostNova'); } catch (e) {}
+    }
+  });
+}
+
+window.castTwistingBlades = castTwistingBlades;
+window.castSteelGrasp = castSteelGrasp;
+window.castCycloneStrike = castCycloneStrike;
+window.castFrostNova = castFrostNova;
