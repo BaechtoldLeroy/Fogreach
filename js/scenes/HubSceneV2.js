@@ -45,6 +45,7 @@ if (window.i18n) {
     'hub.skills.close': '[ Schließen ]',
     'hub.knowledge.learn': '[ Wissen lernen ] (K)',
     'hub.skills.shop': '[ Schwarzmarkt ] (M)',
+    'hub.skills.talents': '[ Talente ] (T)',
     'hub.dialog.hint.next': 'Leer / Enter: weiter',
     'hub.dialog.hint.choose': '1-{count}: wählen',
     'hub.dialog.hint.close': 'ESC: schliessen'
@@ -92,6 +93,7 @@ if (window.i18n) {
     'hub.skills.close': '[ Close ]',
     'hub.knowledge.learn': '[ Knowledge Tree ] (K)',
     'hub.skills.shop': '[ Black Market ] (M)',
+    'hub.skills.talents': '[ Talents ] (T)',
     'hub.dialog.hint.next': 'Space / Enter: next',
     'hub.dialog.hint.choose': '1-{count}: choose',
     'hub.dialog.hint.close': 'ESC: close'
@@ -287,6 +289,12 @@ class HubSceneV2 extends Phaser.Scene {
     });
     this.input.keyboard.on('keydown-J', this._handleJournal, this);
     this.input.keyboard.on('keydown-K', this._handleLoadout, this);
+    // Feature 060 WP04: 'T' = Talente (Skill-Baum). Opens the SkillTreeScene
+    // overlay above the running hub (registered dynamically — see
+    // window.openSkillTreeScene). Mirrors the Schwarzmarkt ('M') open-hook.
+    this.input.keyboard.on('keydown-T', () => {
+      if (typeof window.openSkillTreeScene === 'function') window.openSkillTreeScene(this);
+    });
     this.input.keyboard.on('keydown-O', () => {
       if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
     });
@@ -372,6 +380,7 @@ class HubSceneV2 extends Phaser.Scene {
       this.input.keyboard.off('keydown-I');
       this.input.keyboard.off('keydown-J', this._handleJournal, this);
       this.input.keyboard.off('keydown-K', this._handleLoadout, this);
+      this.input.keyboard.off('keydown-T');
       this.input.keyboard.off('keydown-P');
       if (this._perfMonitor) {
         try { this._perfMonitor.destroy(); } catch (_) {}
@@ -1335,6 +1344,27 @@ class HubSceneV2 extends Phaser.Scene {
         });
       });
       container.add(shopBtn);
+
+      // Feature 060 WP04: Talente (Skill-Baum) button — opens the
+      // SkillTreeScene overlay. Mirrors the Schwarzmarkt button above.
+      const talentsBtn = this.add.text(0, maraBtnY + 76, _HUB_T('hub.skills.talents'), {
+        fontFamily: 'monospace',
+        fontSize: 14,
+        color: '#ffffff',
+        backgroundColor: '#5a2a6a',
+        padding: { x: 12, y: 6 }
+      }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
+
+      talentsBtn.on('pointerdown', (pointer, x, y, event) => {
+        event.stopPropagation();
+        this._closeDialog(keyClosers);
+        this.time.delayedCall(100, () => {
+          if (typeof window.openSkillTreeScene === 'function') {
+            window.openSkillTreeScene(this);
+          }
+        });
+      });
+      container.add(talentsBtn);
     }
 
     // Hint text
@@ -1434,6 +1464,18 @@ class HubSceneV2 extends Phaser.Scene {
         };
         this.input.keyboard.on('keydown-M', shopHandler);
         keyClosers.push({ eventName: 'keydown-M', handler: shopHandler });
+
+        // Feature 060 WP04: T opens the Talente (Skill-Baum) overlay.
+        const talentsHandler = () => {
+          this._closeDialog(keyClosers);
+          this.time.delayedCall(100, () => {
+            if (typeof window.openSkillTreeScene === 'function') {
+              window.openSkillTreeScene(this);
+            }
+          });
+        };
+        this.input.keyboard.on('keydown-T', talentsHandler);
+        keyClosers.push({ eventName: 'keydown-T', handler: talentsHandler });
       }
     });
 
