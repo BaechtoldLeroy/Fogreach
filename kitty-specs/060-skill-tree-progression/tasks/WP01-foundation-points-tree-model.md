@@ -79,3 +79,4 @@ FR-01 (Punkte 1/Level), FR-02 (Datenmodell, 1 Baum), FR-03 (investPoint mit Vali
 
 ## Activity Log
 - 2026-06-28T11:09:26Z – claude – shell_pid=48556 – lane=in_progress – Moved to in_progress
+- 2026-06-28T11:09:28Z – claude – shell_pid=48556 – lane=for_review – Moved to for_review
