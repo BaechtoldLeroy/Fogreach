@@ -1016,7 +1016,11 @@ if (window.i18n) {
   // WP06: Shop state (Mara Schwarzmarkt)
   // ---------------------------------------------------------------------------
   let _lastShopRunId = null;
-  const SHOP_STOCK_COUNT = 7;
+  // Feature 060 (WP05 / #51): Maras Schwarzmarkt aufgewertet → größerer Bestand,
+  // damit pro Besuch mehr (und höherwertige) Items zum Gold-Ausgeben da sind.
+  const SHOP_STOCK_COUNT = 10;
+  // Gold-Sink: kompletter Lager-Reroll (frische Auslage gegen Gold). Tunebar.
+  const SHOP_REROLL_BASE_COST = 120;
 
   function _currentRunId() {
     if (typeof window === 'undefined') return 'default';
@@ -1053,6 +1057,8 @@ if (window.i18n) {
         generatedAt: Date.now(),
         itemStock: _generateShopStock(runId)
       };
+      // Feature 060 (#51): frischer Lager-State ⇒ Reroll-Preis-Eskalation reset.
+      _shopRerollCount = 0;
     }
     return _shopState;
   }
@@ -1068,6 +1074,30 @@ if (window.i18n) {
     // run-scoped — drop it so the next run rolls a fresh curated selection.
     _amuletShopState = null;
     _lastAmuletShopRunId = null;
+  }
+
+  // Feature 060 (WP05 / #51): Gold-Sink — Maras Auslage gegen Gold komplett neu
+  // würfeln. Der Preis steigt mit jedem Reroll innerhalb desselben Lager-States
+  // (verhindert spottbilliges Dauer-Rerollen). Reset, sobald ein neuer
+  // Lager-State (neuer Run) erzeugt wird.
+  let _shopRerollCount = 0;
+
+  function getShopRerollCost() {
+    const n = Math.max(0, _shopRerollCount | 0);
+    return Math.max(1, Math.round(SHOP_REROLL_BASE_COST * (1 + n * 0.5)));
+  }
+
+  // Bezahlt den aktuellen Reroll-Preis und ersetzt itemStock durch eine frische
+  // Auslage. Gibt true bei Erfolg zurück, false wenn nicht genug Gold. Defensiv
+  // gegen fehlenden Shop-State.
+  function rerollShopStock(costGold) {
+    const state = getOrCreateShopState();
+    if (!state) return false;
+    const cost = (typeof costGold === 'number') ? costGold : getShopRerollCost();
+    if (!spendGold(cost)) return false;
+    state.itemStock = _generateShopStock(state.currentRunId);
+    _shopRerollCount += 1;
+    return true;
   }
 
   // Feature 059 (#42) WP04: the flying merchant (wandering_merchant event)
@@ -1235,6 +1265,8 @@ if (window.i18n) {
     POTION_GLOBAL_CD_MS: POTION_GLOBAL_CD_MS,
     getOrCreateShopState: getOrCreateShopState,
     refreshShop: refreshShop,
+    getShopRerollCost: getShopRerollCost,
+    rerollShopStock: rerollShopStock,
     rerollItem: rerollItem,
     _computeRerollCost: _computeRerollCost,
     migrateSave: migrateSave,
