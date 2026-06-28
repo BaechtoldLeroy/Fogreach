@@ -115,3 +115,29 @@ test('resetForNewGame seeds 20 Eisenbrocken default', () => {
   sys.resetForNewGame();
   assert.strictEqual(globalThis.window.materialCounts.MAT, 20);
 });
+
+// === 060 Strang KETTEN — neue Skill-Tree-Fähigkeiten ===
+test('060 ketten abilities are registered in ABILITY_DEFS', () => {
+  const sys = freshSystem();
+  ['twistingBlades', 'steelGrasp', 'cycloneStrike', 'frostNova'].forEach((id) => {
+    const def = sys.getAbilityDef(id);
+    assert.ok(def, `${id} should exist in ABILITY_DEFS`);
+    assert.strictEqual(def.id, id);
+    assert.strictEqual(typeof def.activate, 'function');
+    assert.ok(['tap', 'self'].includes(def.type), `${id} type valid`);
+  });
+});
+
+test('060 ketten abilities are learnable + equippable', () => {
+  const sys = freshSystem();
+  assert.strictEqual(sys.learnAbility('cycloneStrike'), true);
+  assert.ok(sys.isLearned('cycloneStrike'));
+  assert.strictEqual(sys.setSlot('slot2', 'cycloneStrike'), true);
+  assert.strictEqual(sys.getActiveLoadout().slot2, 'cycloneStrike');
+});
+
+test('060 cycloneStrike + frostNova carry a cooldown', () => {
+  const sys = freshSystem();
+  assert.ok(sys.getAbilityDef('cycloneStrike').cooldownMs > 0);
+  assert.ok(sys.getAbilityDef('frostNova').cooldownMs > 0);
+});

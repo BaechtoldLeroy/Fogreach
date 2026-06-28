@@ -200,7 +200,68 @@
           console.warn('[Abilities] Schattenschritt failed', err);
         }
       }
+    },
+
+    // === 060 Strang KETTEN ===
+    // Skill-Tree-Strang "Ketten & Kontrolle". Vier aktive Fähigkeiten, die ihre
+    // Cast-Logik aus js/player.js beziehen (window.cast*). Schaden/Cooldown
+    // skalieren defensiv über den SkillTree-Contract (fehlt → Multiplier 1).
+    twistingBlades: {
+      id: 'twistingBlades',
+      name: 'Wirbelklingen',
+      description: 'Wurfklinge, die zurückkehrt und auf Hin- und Rückweg trifft.',
+      type: 'tap',
+      icon: '\u{1FA83}',
+      color: 0xff8800,
+      activate(scene) {
+        if (typeof window.castTwistingBlades === 'function') {
+          window.castTwistingBlades.call(scene);
+        }
+      }
+    },
+    steelGrasp: {
+      id: 'steelGrasp',
+      name: 'Stahlgriff',
+      description: 'Kettengriff: zieht den ersten getroffenen Gegner heran + Schaden.',
+      type: 'tap',
+      icon: '⛓',
+      color: 0xbfc7d6,
+      cooldownMs: 7000,
+      activate(scene) {
+        if (typeof window.castSteelGrasp === 'function') {
+          window.castSteelGrasp.call(scene);
+        }
+      }
+    },
+    cycloneStrike: {
+      id: 'cycloneStrike',
+      name: 'Wirbelsog',
+      description: 'Zieht alle Gegner im Umkreis heran und fügt AoE-Schaden zu.',
+      type: 'self',
+      icon: '\u{1F32A}',
+      color: 0x66ddff,
+      cooldownMs: 9000,
+      activate(scene) {
+        if (typeof window.castCycloneStrike === 'function') {
+          window.castCycloneStrike.call(scene);
+        }
+      }
+    },
+    frostNova: {
+      id: 'frostNova',
+      name: 'Frostnova',
+      description: 'AoE-Frostnova: verlangsamt alle Gegner in der Nähe + Schaden.',
+      type: 'self',
+      icon: '❄',
+      color: 0x88ddff,
+      cooldownMs: 12000,
+      activate(scene) {
+        if (typeof window.castFrostNova === 'function') {
+          window.castFrostNova.call(scene);
+        }
+      }
     }
+    // === /060 Strang KETTEN ===
   };
 
   // ---------- Unlock Conditions ----------
@@ -263,7 +324,16 @@
       'ability.blutopfer.unlock_hint': 'Reach wave 15',
       'ability.schattenschritt.name': 'Shadow Step',
       'ability.schattenschritt.description': 'Brief invulnerability + speed bonus (3s).',
-      'ability.schattenschritt.unlock_hint': 'Defeat the Shadow Council'
+      'ability.schattenschritt.unlock_hint': 'Defeat the Shadow Council',
+      // 060 Strang KETTEN
+      'ability.twistingBlades.name': 'Twisting Blades',
+      'ability.twistingBlades.description': 'A thrown blade that returns, hitting on both the outward and return path.',
+      'ability.steelGrasp.name': 'Steel Grasp',
+      'ability.steelGrasp.description': 'Chain grab: pulls the first enemy hit toward you and deals damage.',
+      'ability.cycloneStrike.name': 'Cyclone Strike',
+      'ability.cycloneStrike.description': 'Pulls all nearby enemies toward you and deals AoE damage.',
+      'ability.frostNova.name': 'Frost Nova',
+      'ability.frostNova.description': 'AoE frost nova: slows all nearby enemies and deals damage.'
     });
 
     // Convert existing value-properties into getters so reads always honor the
