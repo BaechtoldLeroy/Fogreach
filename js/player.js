@@ -641,7 +641,27 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
   // recalcDerived, nicht hier.)
   const amuletDmgMul = (window.AmuletEffects && typeof window.AmuletEffects.damageMul === 'function')
     ? window.AmuletEffects.damageMul() : 1;
-  const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul * amuletDmgMul);
+  // === 060 Strang WUT — Berserker (berserk) ===
+  // Globaler Schadens-Buff (LP-Opfer). window.berserkState wird von der berserk-
+  // Ability gesetzt und laeuft zeitlich ab. Defensiv: Default 1.
+  let berserkDmgMul = 1;
+  try {
+    const bs = window.berserkState;
+    if (bs && bs.active) {
+      const bnow = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
+      if (bnow <= (bs.expiry || 0)) berserkDmgMul = bs.mult || 1;
+    }
+  } catch (e) { /* never break combat */ }
+  // === 060 Strang WUT — per-cast Skill-Rang-Multiplikator ===
+  // whirlwind/hammer-Casts setzen window._skillCastDmgMult (aus SkillTree-Rang/
+  // Synergie) vor dem Aufruf der Basis-Funktion und raeumen danach auf.
+  // Defensiv: Default 1.
+  let skillCastDmgMul = 1;
+  try {
+    const sc = window._skillCastDmgMult;
+    if (typeof sc === 'number' && isFinite(sc) && sc > 0) skillCastDmgMul = sc;
+  } catch (e) { /* never break combat */ }
+  const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul * amuletDmgMul * berserkDmgMul * skillCastDmgMul);
   const damage = Math.max(1, Math.round(isCrit ? base * 1.5 : base));
 
   // Snapshot maxHp on first hit so the lazy enemy hp bar (drawn by
@@ -1005,7 +1025,22 @@ const SHIELD_BASH_RANGE_BASE = 90;
 const SHIELD_BASH_ARC = Phaser.Math.DegToRad(110);
 
 function getAttackSpeedMultiplier() {
-  return Math.max(0.2, weaponAttackSpeed || 1);
+  var base = Math.max(0.2, weaponAttackSpeed || 1);
+  // === 060 Strang WUT — Raserei (frenzy) ===
+  // Stapelbarer Angriffstempo-Buff: window.frenzyState wird von der frenzy-
+  // Ability gesetzt und bei Treffern/Kills hochgestapelt (siehe abilitySystem
+  // frenzy + _frenzyBump). Defensiv: nie den Loop brechen, Default 1.
+  try {
+    var fs = (typeof window !== 'undefined') ? window.frenzyState : null;
+    if (fs && fs.active) {
+      var now = (typeof player !== 'undefined' && player && player.scene && player.scene.time)
+        ? player.scene.time.now : Date.now();
+      if (now <= (fs.expiry || 0)) {
+        base *= (1 + (fs.stacks || 0) * (fs.perStack || 0));
+      }
+    }
+  } catch (e) { /* never break the loop */ }
+  return base;
 }
 
 function getRangeFromBase(base) {
@@ -1308,8 +1343,25 @@ function showAttackEffect(scene, options = {}) {
   scene.time.delayedCall(duration, () => g.destroy());
 }
 
+// === 060 Strang WUT — Raserei (frenzy) Stack-Pump ===
+// Stapelt den Angriffstempo-Buff, solange er aktiv ist, und frischt das
+// Decay-Fenster auf. amount: Stacks pro Ereignis (Treffer=1, Kill=2).
+// Defensiv: no-op wenn frenzy nicht aktiv / abgelaufen.
+function _frenzyBump(scene, amount) {
+  try {
+    const fs = (typeof window !== 'undefined') ? window.frenzyState : null;
+    if (!fs || !fs.active) return;
+    const now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
+    if (now > (fs.expiry || 0)) { fs.stacks = 0; return; } // bereits abgeklungen
+    fs.stacks = Math.min(fs.maxStacks || 0, (fs.stacks || 0) + (amount || 1));
+    fs.expiry = now + (fs.decayMs || 0);
+  } catch (e) { /* never break combat */ }
+}
+
 function handleEnemyHit(scene, enemy, options = {}) {
   if (!scene || !enemy) return;
+  // Raserei: jeder Treffer stapelt etwas, ein Kill stapelt mehr.
+  _frenzyBump(scene, (enemy && enemy.hp <= 0) ? 2 : 1);
 
   // Lazy hp bar — every enemy gets a small healthbar above its head once it
   // takes its first hit. Bosses + mini-bosses have their own bars (boss UI
