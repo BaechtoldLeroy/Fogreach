@@ -452,6 +452,20 @@ function getPlayerTextureKey(scene) {
   return `dir${PLAYER_DEFAULT_DD}_f00`;
 }
 
+// Zustandsabhängiger Spieler-Tint: wird jeden Frame in updatePlayerSpriteAnimation
+// gesetzt (sonst überschreibt das Richtungs-Sprite jeden Overlay-Tint sofort).
+// Berserker -> rot, Heilung -> kurzer grüner Flash, sonst neutral.
+function _playerOverlayTint() {
+  try {
+    var sc = (typeof player !== 'undefined' && player && player.scene) ? player.scene : null;
+    var now = (sc && sc.time && typeof sc.time.now === 'number') ? sc.time.now : 0;
+    if (window._healFlashUntil && now < window._healFlashUntil) return 0x66ff8a;
+    var bs = window.berserkState;
+    if (bs && bs.active && (typeof bs.expiry !== 'number' || now < bs.expiry)) return 0xff4040;
+  } catch (e) { /* fall through to neutral */ }
+  return PLAYER_TINT_COLOR;
+}
+
 function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
   if (!sprite) return;
 
@@ -561,7 +575,7 @@ function applyPlayerDisplaySettings(sprite) {
   sprite.setOrigin(appliedOriginX, appliedOriginY);
   sprite.setDisplaySize(visualWidth, visualHeight);
   if (isDirectionalImage) {
-    sprite.setTint(PLAYER_TINT_COLOR);
+    sprite.setTint(_playerOverlayTint());
   }
 
   if (sprite.body) {
@@ -1933,6 +1947,11 @@ function releaseChargedSlash(forceMaxCharge = false) {
   chargeSlashCooldown = true;
   const baseCooldown = getChargedSlashCooldown();
   const finalCooldown = applyCooldownModifier(baseCooldown, 'hammer');
+  // 060: Cooldown auch der Loadout-HUD melden (Hammer hat kein def.cooldownMs,
+  // verwaltet seinen CD intern -> sonst zeigt die HUD keinen Cooldown an).
+  if (window.AbilitySystem && window.AbilitySystem.setCooldown) {
+    try { window.AbilitySystem.setCooldown('hammer', finalCooldown, scene.time.now); } catch (e) {}
+  }
   startCooldownTimer(scene, finalCooldown, {
     button: chargeSlashBtn,
     label: chargeSlashCooldownText,
@@ -2067,19 +2086,8 @@ function updateAmuletPerFrame(scene, delta) {
     });
   }
 
-  // BERSERKER-TINT ──────────────────────────────────────────────────────────
-  // Solange der Berserk-Buff (Skill 'berserk') läuft, den Charakter rötlich
-  // färben. Jeden Frame neu gesetzt (überschreibt kurzlebige Tints); beim
-  // Ablauf genau einmal zurückgesetzt (nur wenn WIR getönt haben).
-  var bs = window.berserkState;
-  var berserkActive = !!(bs && bs.active && (typeof bs.expiry !== 'number' || now < bs.expiry));
-  if (berserkActive) {
-    if (player.setTint) player.setTint(0xff4040);
-    window._berserkTinted = true;
-  } else if (window._berserkTinted) {
-    if (player.clearTint) player.clearTint();
-    window._berserkTinted = false;
-  }
+  // (Berserker-Tint wird in updatePlayerSpriteAnimation via _playerOverlayTint
+  // gesetzt — sonst überschreibt das Richtungs-Sprite den Tint jeden Frame.)
 
   // FRENZY-Aura ───────────────────────────────────────────────────────────
   // Solange der Raserei-Buff läuft, regelmäßig orange Speed-Motes um den
@@ -2583,6 +2591,8 @@ function _healFx(scene, amount) {
     if (!scene || !player) return;
     const GREEN = 0x66ff8a, SOFT = 0xbfffd0;
     const T = scene.tweens, cx = player.x, cy = player.y;
+    // kurzer grüner Charakter-Flash (von _playerOverlayTint gelesen)
+    window._healFlashUntil = ((scene.time && typeof scene.time.now === 'number') ? scene.time.now : 0) + 320;
     if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
     const ring = scene.add.graphics().setDepth(72);
     ring.lineStyle(3, GREEN, 0.9); ring.strokeCircle(0, 0, 30); ring.setPosition(cx, cy);
@@ -3130,24 +3140,20 @@ function _kettenSynergy(nodeId, stat) {
   } catch (e) { return 0; }
 }
 
-// Zieht einen einzelnen Gegner für `durationMs` Richtung Spieler. Defensiv:
-// nur lebende Gegner mit Body. Velocity wird nach Ablauf wieder auf 0 gesetzt.
+// Zieht einen Gegner für `durationMs` Richtung Spieler. Setzt _pullUntil/
+// _pullSpeed; die Gegner-KI (handleEnemies) überspringt während dieser Zeit ihr
+// Steering und zieht den Gegner aktiv heran (sonst überschreibt die KI die
+// Velocity sofort → Pull unsichtbar). Defensiv: nur lebende Gegner mit Body.
 function _pullEnemyToPlayer(scene, enemy, speed, durationMs) {
   try {
     if (!scene || !player || !enemy || !enemy.active || !enemy.body) return;
-    const dx = player.x - enemy.x;
-    const dy = player.y - enemy.y;
+    var now = (scene.time && typeof scene.time.now === 'number') ? scene.time.now : 0;
+    enemy._pullUntil = now + durationMs;
+    enemy._pullSpeed = speed;
+    // Sofort-Impuls (falls die KI diesen Frame schon lief).
+    const dx = player.x - enemy.x, dy = player.y - enemy.y;
     const len = Math.hypot(dx, dy) || 1;
-    const vx = (dx / len) * speed;
-    const vy = (dy / len) * speed;
-    enemy.body.setVelocity(vx, vy);
-    if (scene.time && scene.time.delayedCall) {
-      scene.time.delayedCall(durationMs, () => {
-        try {
-          if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
-        } catch (e) { /* swallow */ }
-      });
-    }
+    enemy.body.setVelocity((dx / len) * speed, (dy / len) * speed);
   } catch (e) { /* never crash the loop */ }
 }
 
@@ -3263,8 +3269,8 @@ function castSteelGrasp() {
   if (!target || !target.active) return;
 
   // Schaden + Pull zum Spieler. Stahlgriff ist primär ein PULL (Utility),
-  // daher nur geringer Schaden (war dmgMult -> 0.25x).
-  const { isCrit } = dealDamageToEnemy(scene, target, 0.25 * dmgMult, 'steelGrasp');
+  // daher nur minimaler Schaden (0.12x).
+  const { isCrit } = dealDamageToEnemy(scene, target, 0.12 * dmgMult, 'steelGrasp');
   handleEnemyHit(scene, target, { tint: isCrit ? 0xfff2a6 : 0xbfc7d6, duration: isCrit ? 200 : 140 });
   const pullDist = Math.max(1, bestDist);
   const pullDur = Phaser.Math.Clamp((pullDist / 360) * 250, 150, 250);
@@ -3354,32 +3360,54 @@ function castFrostNova() {
   };
 
   try {
-    // 1) zentraler Flash
-    const flash = scene.add.circle(cx, cy, 22, WHITE, 0.85).setDepth(71);
-    fade(flash, { scale: 2.2, alpha: 0, duration: 220 }, 220);
-    // 2) expandierende Schockwelle (Ring von klein auf Reichweite)
-    const ring = scene.add.graphics().setDepth(70);
-    ring.lineStyle(4, ICE, 0.9); ring.strokeCircle(0, 0, range);
-    ring.setPosition(cx, cy).setScale(0.12);
-    fade(ring, { scale: 1, alpha: 0, duration: 320, ease: 'Cubic.Out' }, 320);
-    // 3) radiale Eiskristall-Splitter (mit kleiner Quer-Facette)
-    const shards = scene.add.graphics().setDepth(70);
-    shards.lineStyle(3, ICE, 0.85);
-    const n = 12;
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + (i % 2) * 0.13;
-      const r1 = range * 0.42, r2 = range * (0.85 + (i % 3) * 0.05);
-      const ox = Math.cos(a), oy = Math.sin(a), px = -oy, py = ox;
-      shards.lineBetween(cx + ox * r1, cy + oy * r1, cx + ox * r2, cy + oy * r2);
-      shards.lineBetween(cx + ox * r2 * 0.82 + px * 6, cy + oy * r2 * 0.82 + py * 6,
-                         cx + ox * r2 * 0.82 - px * 6, cy + oy * r2 * 0.82 - py * 6);
+    // 1) Doppel-Schockwelle (weiß außen + cyan innen, leicht gestaffelt)
+    const ring1 = scene.add.graphics().setDepth(70);
+    ring1.lineStyle(4, WHITE, 0.9); ring1.strokeCircle(0, 0, range); ring1.setPosition(cx, cy).setScale(0.1);
+    fade(ring1, { scale: 1, alpha: 0, duration: 300, ease: 'Cubic.easeOut' }, 300);
+    const ring2 = scene.add.graphics().setDepth(70);
+    ring2.lineStyle(3, ICE, 0.85); ring2.strokeCircle(0, 0, range * 0.92); ring2.setPosition(cx, cy).setScale(0.1);
+    fade(ring2, { scale: 1, alpha: 0, duration: 380, ease: 'Cubic.easeOut' }, 380);
+    // 2) zentraler Flash
+    const flash = scene.add.circle(cx, cy, 24, WHITE, 0.9).setDepth(72);
+    fade(flash, { scale: 2.4, alpha: 0, duration: 220 }, 220);
+    // 3) Frostfeld am Boden (gefüllt + gezackter Crackle-Rand), bleibt kurz liegen
+    const field = scene.add.graphics().setDepth(39);
+    field.fillStyle(DEEP, 0.18); field.fillCircle(cx, cy, range);
+    field.lineStyle(2, ICE, 0.35); field.beginPath();
+    for (let i = 0; i <= 40; i++) {
+      const a = (i / 40) * Math.PI * 2;
+      const rr = range * (0.95 + ((i % 2) ? 0.05 : -0.03));
+      const px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr;
+      if (i === 0) field.moveTo(px, py); else field.lineTo(px, py);
     }
-    fade(shards, { alpha: 0, duration: 360 }, 360);
-    // 4) Frost-Nebel, der kurz liegen bleibt
-    const mist = scene.add.graphics().setDepth(39);
-    mist.fillStyle(DEEP, 0.16); mist.fillCircle(cx, cy, range);
-    mist.lineStyle(2, ICE, 0.3); mist.strokeCircle(cx, cy, range);
-    fade(mist, { alpha: 0, duration: 600 }, 600);
+    field.strokePath();
+    fade(field, { alpha: 0, duration: 650 }, 650);
+    // 4) detaillierte Eiskristalle (Stamm + 2 Facetten), wachsen nach außen
+    const crystals = scene.add.graphics().setDepth(71).setPosition(cx, cy).setScale(0.2);
+    const n = 14;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + (i % 2) * 0.1;
+      const ox = Math.cos(a), oy = Math.sin(a), px = -oy, py = ox;
+      const r1 = range * 0.30, r2 = range * (0.78 + (i % 3) * 0.06), f = range * 0.06;
+      crystals.lineStyle(i % 2 ? 2 : 3, i % 2 ? LIGHT : ICE, 0.9);
+      crystals.beginPath(); crystals.moveTo(ox * r1, oy * r1); crystals.lineTo(ox * r2, oy * r2); crystals.strokePath();
+      const tx = ox * r2 * 0.78, ty = oy * r2 * 0.78;
+      crystals.beginPath(); crystals.moveTo(tx, ty); crystals.lineTo(tx + (ox * 0.5 + px) * f, ty + (oy * 0.5 + py) * f); crystals.strokePath();
+      crystals.beginPath(); crystals.moveTo(tx, ty); crystals.lineTo(tx + (ox * 0.5 - px) * f, ty + (oy * 0.5 - py) * f); crystals.strokePath();
+    }
+    if (T) T.add({ targets: crystals, scale: 1, duration: 240, ease: 'Back.easeOut' });
+    fade(crystals, { alpha: 0, duration: 440 }, 440);
+    // 5) treibende Schneeflocken (kleine *-Zeichen, driften nach außen + fade)
+    for (let i = 0; i < 8; i++) {
+      const a = Math.random() * Math.PI * 2, dist = range * (0.4 + Math.random() * 0.4);
+      const sx = cx + Math.cos(a) * dist * 0.5, sy = cy + Math.sin(a) * dist * 0.5;
+      const g = scene.add.graphics().setDepth(72);
+      g.lineStyle(2, WHITE, 0.9);
+      g.lineBetween(sx - 4, sy, sx + 4, sy); g.lineBetween(sx, sy - 4, sx, sy + 4);
+      g.lineBetween(sx - 3, sy - 3, sx + 3, sy + 3); g.lineBetween(sx - 3, sy + 3, sx + 3, sy - 3);
+      if (T) T.add({ targets: g, x: Math.cos(a) * dist * 0.5, y: Math.sin(a) * dist * 0.5, alpha: 0, duration: 500 + Math.random() * 200, onComplete: () => { try { g.destroy(); } catch (e) {} } });
+      else scene.time.delayedCall(720, () => { try { g.destroy(); } catch (e) {} });
+    }
     if (window.particleFactory) { try { window.particleFactory.abilityTrail(cx, cy, ICE); } catch (e) {} }
   } catch (e) { /* visual only */ }
 
@@ -3413,7 +3441,9 @@ function castWhirlwind() {
     ? window.SkillTree.getAbilityDamageMult('whirlwind') : 1;
   const rank = (window.SkillTree && window.SkillTree.getRank)
     ? Math.max(1, window.SkillTree.getRank('whirlwind') | 0) : 1;
-  const range = (typeof getSpinRange === 'function') ? getSpinRange() : 110;
+  // Kompakter als der alte Spin (war zu groß): ~60% der Spin-Reichweite, für
+  // Visual UND Schaden konsistent.
+  const range = ((typeof getSpinRange === 'function') ? getSpinRange() : 110) * 0.6;
   const durationMs = 850 + (rank - 1) * 110;   // 0.85s .. 1.3s
   const tickMs = 120;
   const tickCount = Math.max(1, Math.floor(durationMs / tickMs));

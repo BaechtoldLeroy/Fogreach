@@ -844,6 +844,26 @@ function handleEnemies(time, delta = 16) {
       return;
     }
 
+    // 060: Sog (Wirbelsog/Stahlgriff) — solange _pullUntil läuft, die normale
+    // KI-Steuerung ÜBERSPRINGEN und den Gegner aktiv zum Spieler ziehen. Sonst
+    // überschreibt die Steering jeden Frame die Pull-Velocity (Pull unsichtbar).
+    if (enemy._pullUntil && time < enemy._pullUntil && enemy.body && typeof player !== 'undefined' && player) {
+      const pdx = player.x - enemy.x, pdy = player.y - enemy.y;
+      const pl = Math.hypot(pdx, pdy);
+      enemy.body.setVelocity(0, 0);
+      if (pl >= 20) {
+        // Position DIREKT ziehen (umgeht das maxVelocity-Cap der Gegner). Schritt
+        // = max(pullSpeed*dt, 25% der Reststrecke) → frame-rate-unabhängig
+        // spürbarer "Yank", nie überschießen.
+        const ps = enemy._pullSpeed || 600;
+        const step = Math.min(pl - 16, Math.max(ps * (delta / 1000), pl * 0.25));
+        const nx = enemy.x + (pdx / pl) * step, ny = enemy.y + (pdy / pl) * step;
+        if (enemy.body.reset) enemy.body.reset(nx, ny);
+        else { enemy.x = nx; enemy.y = ny; }
+      }
+      return;
+    }
+
     // Grace period: freeze enemies completely. Skip movement + attack logic
     // until the grace window expires.
     if (inGrace) {

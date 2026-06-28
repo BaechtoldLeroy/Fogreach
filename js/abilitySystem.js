@@ -785,6 +785,17 @@
     }
   }
 
+  // 060: Externes Registrieren einer Cooldown-Anzeige für Abilities, die ihren
+  // Cooldown SELBST verwalten (z.B. Hammer/charge ohne def.cooldownMs) — damit
+  // die Loadout-HUD sie trotzdem als Cooldown darstellt. `now` = scene.time.now.
+  function setCooldown(abilityId, ms, now) {
+    if (!abilityId || !(ms > 0)) return;
+    state.cooldowns[abilityId] = (now || 0) + ms;
+    if (typeof window._refreshAbilityHUD === 'function') {
+      try { window._refreshAbilityHUD(); } catch (e) { /* HUD may not exist yet */ }
+    }
+  }
+
   // ---------- Unlock Hooks ----------
   // 060 WP03: Auto-Unlock entfernt. Abilities werden NICHT mehr automatisch über
   // Kills/Wellen/Bosse/Quests gelernt — der einzige Erwerbspfad ist der
@@ -887,6 +898,7 @@
     tryRelease,
     getCooldownRemaining,
     resetCooldown,
+    setCooldown,
     onEnemyKilled,
     onBossKilled,
     onQuestCompleted,
