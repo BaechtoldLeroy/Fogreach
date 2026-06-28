@@ -1682,10 +1682,17 @@ function computeWalkableAreaPx(scene) {
       var grid = scene && scene._minimapWallsGrid;
       var T = (scene && scene._minimapTileSize) || 32;
       if (grid && grid.length) {
+        // Count any non-wall, non-empty tile as floor — some authored rooms
+        // (e.g. TerracedHall) paint the interior with an ornate-floor char
+        // like '+' instead of '.'. Only '#' (wall) and ' ' (void) are excluded
+        // so the fallback area estimate isn't wildly undercounted for them.
         var floor = 0;
         for (var y = 0; y < grid.length; y++) {
           var row = grid[y]; if (!row) continue;
-          for (var x = 0; x < row.length; x++) if (row[x] === '.') floor++;
+          for (var x = 0; x < row.length; x++) {
+            var c = row[x];
+            if (c && c !== '#' && c !== ' ') floor++;
+          }
         }
         if (floor > 0) areaPx = floor * T * T;
       }

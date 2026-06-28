@@ -176,13 +176,36 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   (tpl.entrances || []).forEach((e) => protect(e.x, e.y, 1));
   // Loot must remain reachable too — protect with 0 radius (just the tile itself)
   (tpl.spawns?.loot || []).forEach((l) => protect(l.x, l.y, 0));
+  // A grid char is "floor" (walkable) when its legend key is neither a wall
+  // nor an auto-spawned obstacle (pillar/altar/brazier/statue). Most authored
+  // templates use '.' for floor, but some (e.g. TerracedHall) paint the
+  // interior with an ornate-floor char like '+'. Hard-coding '.' here made the
+  // whole flood-fill / enemy-placement pipeline treat those rooms as having
+  // almost no walkable space, so enemies either failed to spawn or were shoved
+  // into the few '.' corridor tiles. Resolve walkability through the legend so
+  // any floor char counts. Unknown chars (not in the legend) are treated as
+  // non-walkable to stay safe. Cache results per char — the grid is large.
+  const _legend = (tpl.layout && tpl.layout.legend) || {};
+  const _walkableCharCache = new Map();
+  const isFloorChar = (ch) => {
+    if (ch === '.') return true;
+    if (_walkableCharCache.has(ch)) return _walkableCharCache.get(ch);
+    const key = _legend[ch];
+    // No legend entry → unknown/empty tile → not walkable.
+    // Wall keys and auto-obstacle keys (pillars etc.) → not walkable.
+    const isWall = key === 'wall' || key === 'obstacleWall'
+      || (typeof key === 'string' && key.startsWith('wall_'));
+    const walkable = !!key && !isWall && !AUTO_OBSTACLE_TILE_KEYS.has(key);
+    _walkableCharCache.set(ch, walkable);
+    return walkable;
+  };
   const isWalkableTile = (tx, ty) =>
     tx >= 0 &&
     tx < W &&
     ty >= 0 &&
     ty < H &&
     wallsGrid[ty] &&
-    wallsGrid[ty][tx] === '.' &&
+    isFloorChar(wallsGrid[ty][tx]) &&
     !blockedTilesByObjects.has(keyFor(tx, ty));
 
   const pickWalkableTileNear = (baseX, baseY, radius = 0) => {
