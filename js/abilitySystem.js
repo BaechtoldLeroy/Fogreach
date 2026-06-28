@@ -41,22 +41,16 @@
     whirlwind: {
       id: 'whirlwind',
       name: 'Wirbelwind',
-      description: 'AoE-Wirbel um den Spieler. Schaden skaliert mit Skill-Rang.',
+      description: 'Wirble ~1s durch die Gegner — bewege dich dabei frei, triff alle in Reichweite mehrfach.',
       type: 'tap',
       icon: '\u{1F300}',
       color: 0x00ffff,
+      cooldownMs: 2500,
       activate(scene) {
-        // Voll-mobiler Channel ist spaetere Politur — vorerst skaliertes Spin.
-        var dmgMult = (window.SkillTree && window.SkillTree.getAbilityDamageMult)
-          ? window.SkillTree.getAbilityDamageMult('whirlwind') : 1;
+        // 060: beweglicher Channel (castWhirlwind in player.js) statt Einzel-Spin.
         try {
-          if (typeof window.spinAttack === 'function') {
-            window._skillCastDmgMult = dmgMult;
-            try { window.spinAttack.call(scene); }
-            finally { window._skillCastDmgMult = 1; }
-          }
+          if (typeof window.castWhirlwind === 'function') window.castWhirlwind.call(scene);
         } catch (err) {
-          window._skillCastDmgMult = 1;
           console.warn('[Abilities] Wirbelwind failed', err);
         }
       }
@@ -317,7 +311,7 @@
     window.i18n.register('en', {
       // 060 Strang WUT
       'ability.whirlwind.name': 'Whirlwind',
-      'ability.whirlwind.description': 'AoE whirl around the player. Damage scales with skill rank.',
+      'ability.whirlwind.description': 'Whirl through enemies for ~1s — move freely while spinning, hitting everything in range repeatedly.',
       'ability.hammer.name': 'Hammer of the Ancestors',
       'ability.hammer.description': 'Charged strike. Hold to charge, release for a mighty blow.',
       'ability.frenzy.name': 'Frenzy',

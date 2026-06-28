@@ -933,7 +933,8 @@ function _lootAbilityStatKey(abilityKey) {
   //   spinAttack→Wirbelwind, chargeSlash→Hammer, dashSlash→Wirbelsog(cyclone),
   //   daggerThrow→Frostnova, shieldBash→Todesstoss(deathBlow).
   switch (abilityKey) {
-    case 'spin': return 'spinAttack';          // Wirbelwind (recycelt spinAttack)
+    case 'spin': return 'spinAttack';          // (Legacy-Key)
+    case 'whirlwind': return 'spinAttack';     // Wirbelwind (castWhirlwind nutzt 'whirlwind')
     case 'charge': return 'chargeSlash';       // Hammer (recycelt chargeSlash)
     case 'cycloneStrike': return 'dashSlash';  // Wirbelsog
     case 'frostNova': return 'daggerThrow';    // Frostnova
@@ -3184,3 +3185,61 @@ window.castTwistingBlades = castTwistingBlades;
 window.castSteelGrasp = castSteelGrasp;
 window.castCycloneStrike = castCycloneStrike;
 window.castFrostNova = castFrostNova;
+
+// --- whirlwind (Wirbelwind) ---------------------------------------------
+// 060: Statt eines einzelnen Spin-Ticks ein CHANNEL: der Spieler wirbelt ~1s,
+// kann sich dabei FREI BEWEGEN (der Wirbel folgt), trifft alle Gegner in
+// Reichweite mehrfach (Ticks) und verlangsamt sie — rotierende Klingen-Optik.
+// Schaden skaliert mit Rang (getAbilityDamageMult('whirlwind')); Cooldown via
+// AbilitySystem.tryActivate (def.cooldownMs). Damage-Key 'whirlwind' -> Affix-
+// Bucket dmg_spinAttack/cd_spinAttack (siehe _lootAbilityStatKey).
+function castWhirlwind() {
+  const scene = this;
+  if (!scene || !player || !player.active) return;
+  const dmgMult = (window.SkillTree && window.SkillTree.getAbilityDamageMult)
+    ? window.SkillTree.getAbilityDamageMult('whirlwind') : 1;
+  const rank = (window.SkillTree && window.SkillTree.getRank)
+    ? Math.max(1, window.SkillTree.getRank('whirlwind') | 0) : 1;
+  const range = (typeof getSpinRange === 'function') ? getSpinRange() : 110;
+  const durationMs = 850 + (rank - 1) * 110;   // 0.85s .. 1.3s
+  const tickMs = 130;
+  const tickCount = Math.max(1, Math.floor(durationMs / tickMs));
+  const perTick = 0.34 * dmgMult;              // mehrere Ticks -> ~2-3x über den Wirbel
+  if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
+
+  // Rotierende Klingen + Ring, folgen dem Spieler jeden Frame.
+  const blades = scene.add.graphics().setDepth(69);
+  let angle = 0;
+  const spinTimer = scene.time.addEvent({ delay: 16, loop: true, callback: () => {
+    if (!player || !player.active) { try { blades.destroy(); } catch (e) {} spinTimer.remove(); return; }
+    angle += 0.55;
+    blades.clear();
+    blades.lineStyle(3, 0x33e0ff, 0.85);
+    for (let b = 0; b < 3; b++) {
+      const a = angle + b * (Math.PI * 2 / 3);
+      blades.lineBetween(
+        player.x + Math.cos(a) * range * 0.35, player.y + Math.sin(a) * range * 0.35,
+        player.x + Math.cos(a) * range,        player.y + Math.sin(a) * range);
+    }
+    blades.lineStyle(2, 0x66f0ff, 0.4);
+    blades.strokeCircle(player.x, player.y, range);
+  }});
+  if (window.particleFactory) { try { window.particleFactory.abilityTrail(player.x, player.y, 0x33e0ff); } catch (e) {} }
+
+  // Schadens-Ticks: treffen alle in Reichweite, folgen dem (beweglichen) Spieler.
+  scene.time.addEvent({ delay: tickMs, repeat: tickCount - 1, callback: () => {
+    if (!player || !player.active) return;
+    forEachEnemyInRange(range, (enemy) => {
+      if (!enemy || !enemy.active) return;
+      const { isCrit } = dealDamageToEnemy(scene, enemy, perTick, 'whirlwind');
+      if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
+      handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0x33e0ff, duration: 70, useTween: true });
+      if (window.statusEffectManager && window.StatusEffectType) {
+        try { window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'whirlwind'); } catch (e) {}
+      }
+    });
+  }});
+
+  scene.time.delayedCall(durationMs, () => { try { blades.destroy(); } catch (e) {} try { spinTimer.remove(); } catch (e) {} });
+}
+window.castWhirlwind = castWhirlwind;

@@ -32,7 +32,7 @@
       'skilltree.node.rank': 'Rang {cur}/{max}',
       'skilltree.node.req_level': 'Ab Stufe {level}',
       'skilltree.node.req_node': 'Benötigt {name} Rang {rank}',
-      'skilltree.node.synergy': 'Synergie',
+      'skilltree.node.synergy': 'Synergie: stärker mit {source}',
       'skilltree.respec.btn': 'Respec',
       'skilltree.respec.cost': 'Respec: {cost} Gold',
       'skilltree.respec.gold': 'Gold: {amount}',
@@ -54,7 +54,7 @@
       'skilltree.node.rank': 'Rank {cur}/{max}',
       'skilltree.node.req_level': 'From level {level}',
       'skilltree.node.req_node': 'Requires {name} rank {rank}',
-      'skilltree.node.synergy': 'Synergy',
+      'skilltree.node.synergy': 'Synergy: stronger with {source}',
       'skilltree.respec.btn': 'Respec',
       'skilltree.respec.cost': 'Respec: {cost} gold',
       'skilltree.respec.gold': 'Gold: {amount}',
@@ -178,35 +178,34 @@
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       closeBg.on('pointerdown', () => this._close());
 
-      // --- Footer: Respec + gold ---
-      const footY = py + panelH / 2 - 22;
-      this.goldText = this.add.text(px - panelW / 2 + 16, footY,
-        _ST_T('skilltree.respec.gold', { amount: 0 }), {
-          fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
-        }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2002);
-
-      this.respecCostText = this.add.text(px, footY - 19,
-        _ST_T('skilltree.respec.cost', { cost: 0 }), {
-          fontFamily: 'monospace', fontSize: '12px', color: '#cccccc'
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(2002);
-
-      // Respec-Button MITTIG im Footer (vorher unten rechts → wurde versehentlich
-      // geklickt). Klar getrennt von Close (oben rechts) und den Knoten.
-      this.respecBg = this.add.rectangle(px, footY, 120, 30, 0x3a2a2a)
+      // --- Respec-Cluster: direkt NEBEN/UNTER den Punkten (nicht in einer Ecke,
+      // um Fehlklicks zu vermeiden). Button auf der Punkte-Zeile, Kosten + Gold
+      // als kleine Info-Zeile darunter. ---
+      this.respecBg = this.add.rectangle(px - panelW / 2 + 156, py - panelH / 2 + 24, 96, 24, 0x3a2a2a)
         .setStrokeStyle(2, 0xd46a43).setScrollFactor(0).setDepth(2002)
         .setInteractive({ useHandCursor: true });
-      this.add.text(px, footY, _ST_T('skilltree.respec.btn'), {
-        fontFamily: 'monospace', fontSize: '14px', color: '#f1e9d8'
+      this.add.text(px - panelW / 2 + 156, py - panelH / 2 + 24, _ST_T('skilltree.respec.btn'), {
+        fontFamily: 'monospace', fontSize: '12px', color: '#f1e9d8'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       this.respecBg.on('pointerdown', () => this._doRespec());
       this.respecBg.on('pointerover', () => this.respecBg.setFillStyle(0x553333));
       this.respecBg.on('pointerout', () => this.respecBg.setFillStyle(0x3a2a2a));
 
-      // Layout geometry for the columns. Reserve header (~46) + footer (~46).
+      this.respecCostText = this.add.text(px - panelW / 2 + 16, py - panelH / 2 + 38,
+        _ST_T('skilltree.respec.cost', { cost: 0 }), {
+          fontFamily: 'monospace', fontSize: '11px', color: '#cccccc'
+        }).setOrigin(0, 0).setScrollFactor(0).setDepth(2002);
+      this.goldText = this.add.text(px - panelW / 2 + 152, py - panelH / 2 + 38,
+        _ST_T('skilltree.respec.gold', { amount: 0 }), {
+          fontFamily: 'monospace', fontSize: '11px', color: '#ffd166'
+        }).setOrigin(0, 0).setScrollFactor(0).setDepth(2002);
+
+      // Layout geometry for the columns. Header (Punkte+Respec+Info ~58); der
+      // Footer entfällt, daher reichen die Knoten fast bis zum Panel-Rand.
       this._panel = { px, py, panelW, panelH };
       this._grid = {
-        top: py - panelH / 2 + 46,
-        bottom: py + panelH / 2 - 46,
+        top: py - panelH / 2 + 58,
+        bottom: py + panelH / 2 - 18,
         left: px - panelW / 2 + 14,
         width: panelW - 28
       };
@@ -337,7 +336,15 @@
       } else {
         sub = _ST_T('skilltree.node.rank', { cur: rank, max: maxRank });
         if (Array.isArray(node.synergies) && node.synergies.length > 0) {
-          sub += '  ' + _ST_T('skilltree.node.synergy');
+          // Nenne die Quell-Knoten: dieser Skill wird staerker, je hoeher die
+          // genannten geskillt sind (z.B. Hammer staerker mit Wirbelwind).
+          const srcNames = [];
+          node.synergies.forEach((s) => {
+            const sn = ST.getNode(s.from);
+            const nm = (sn && sn.name) || s.from;
+            if (srcNames.indexOf(nm) === -1) srcNames.push(nm);
+          });
+          sub += '\n' + _ST_T('skilltree.node.synergy', { source: srcNames.join(', ') });
         }
       }
       const subText = this.add.text(cx, topY + 34, sub, {
