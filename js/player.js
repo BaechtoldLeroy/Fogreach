@@ -1822,6 +1822,40 @@ function beginChargedSlash() {
   });
 }
 
+// Hammer der Ahnen — Einschlag-FX: Impact-Flash, expandierender Shockwave-Ring,
+// radiale Bodenrisse, Staub-Puffs, Screenshake (skaliert mit Ladung).
+function _hammerSlamFx(scene, x, y, radius, charge) {
+  try {
+    const GOLD = 0xffcf6a, BRONZE = 0xb8862f, WHITE = 0xffffff;
+    const T = scene.tweens;
+    const kill = (o, dur) => { if (scene.time) scene.time.delayedCall(dur, () => { try { o.destroy(); } catch (e) {} }); };
+    const flash = scene.add.circle(x, y, 26 + charge * 22, WHITE, 0.9).setDepth(71);
+    if (T) T.add({ targets: flash, scale: 2.4, alpha: 0, duration: 200, onComplete: () => { try { flash.destroy(); } catch (e) {} } }); else kill(flash, 200);
+    const ring = scene.add.graphics().setDepth(70);
+    ring.lineStyle(5, GOLD, 0.95); ring.strokeCircle(0, 0, radius); ring.setPosition(x, y).setScale(0.15);
+    if (T) T.add({ targets: ring, scale: 1, alpha: 0, duration: 300, ease: 'Cubic.Out', onComplete: () => { try { ring.destroy(); } catch (e) {} } }); else kill(ring, 300);
+    const cracks = scene.add.graphics().setDepth(40);
+    cracks.lineStyle(3, BRONZE, 0.8);
+    const n = 8;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + (i % 2) * 0.22;
+      const r2 = radius * (0.7 + (i % 3) * 0.1);
+      const jx = x + Math.cos(a + 0.35) * r2 * 0.55, jy = y + Math.sin(a + 0.35) * r2 * 0.55;
+      cracks.lineBetween(x, y, jx, jy);
+      cracks.lineBetween(jx, jy, x + Math.cos(a) * r2, y + Math.sin(a) * r2);
+    }
+    if (T) T.add({ targets: cracks, alpha: 0, duration: 550, onComplete: () => { try { cracks.destroy(); } catch (e) {} } }); else kill(cracks, 550);
+    for (let i = 0; i < 5; i++) {
+      const a = Math.random() * Math.PI * 2, dist = radius * (0.3 + Math.random() * 0.5);
+      const dust = scene.add.circle(x + Math.cos(a) * dist, y + Math.sin(a) * dist, 8 + Math.random() * 8, BRONZE, 0.3).setDepth(41);
+      if (T) T.add({ targets: dust, scale: 2, alpha: 0, duration: 400 + Math.random() * 200, onComplete: () => { try { dust.destroy(); } catch (e) {} } }); else kill(dust, 700);
+    }
+    if (window.particleFactory) { try { window.particleFactory.hitSpark(x, y); } catch (e) {} }
+    if (scene.cameras && scene.cameras.main) { try { scene.cameras.main.shake(130, 0.004 + charge * 0.004); } catch (e) {} }
+    if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
+  } catch (e) { /* visual only */ }
+}
+
 function releaseChargedSlash(forceMaxCharge = false) {
   if (!this || !isChargingSlash) return;
 
@@ -1844,17 +1878,8 @@ function releaseChargedSlash(forceMaxCharge = false) {
   if (player?.clearTint) player.clearTint();
 
   const range = attackRange * (1.1 + chargeRatio * 0.9);
-  const arcWidth = Phaser.Math.DegToRad(70 + chargeRatio * 70);
   const damageMultiplier = 1.4 + chargeRatio * 1.8;
-  const knockback = 160 + chargeRatio * 200;
-
-  showAttackEffect(scene, {
-    range,
-    arcWidth,
-    color: 0xffd27f,
-    alpha: 0.32,
-    duration: 200
-  });
+  const knockback = 180 + chargeRatio * 220;
 
   const forward = _getAimVector2(scene);
   if (forward.lengthSq() === 0) {
@@ -1862,46 +1887,40 @@ function releaseChargedSlash(forceMaxCharge = false) {
   }
   forward.normalize();
 
-  // Tödlicher Stoß (Lethal Thrust): +25% crit chance for charged slash
+  // Hammer der Ahnen: AOE-EINSCHLAG leicht vor dem Spieler (statt Schwerthieb-
+  // Kegel). Flächen-Druckwelle, radialer Knockback vom Einschlagpunkt.
+  const impactDist = range * 0.35;
+  const ix = player.x + forward.x * impactDist;
+  const iy = player.y + forward.y * impactDist;
+  const slamRadius = range * 0.78;
+  _hammerSlamFx(scene, ix, iy, slamRadius, chargeRatio);
+
+  // Tödlicher Stoß (Lethal Thrust): +25% crit chance
   let _savedCritChance;
   if (typeof window.hasSkill === 'function' && window.hasSkill('combat_lethal_thrust')) {
     _savedCritChance = playerCritChance;
     playerCritChance = Math.min(1, (playerCritChance || 0) + 0.25);
   }
 
-  const tempVec = new Phaser.Math.Vector2();
-  const threshold = Math.cos(arcWidth / 2);
-
   const hits = new Set();
-
-  forEachEnemyInRange(range, (enemy, { dx, dy }) => {
-    if (hits.has(enemy)) return;
-    tempVec.set(dx, dy);
-    const len = tempVec.length();
-    if (len === 0) return;
-    tempVec.scale(1 / len);
-    if (forward.dot(tempVec) <= threshold) return;
-
+  forEachEnemyInRange(impactDist + slamRadius, (enemy) => {
+    if (!enemy || !enemy.active || hits.has(enemy)) return;
+    const ddx = enemy.x - ix, ddy = enemy.y - iy;
+    const d = Math.hypot(ddx, ddy);
+    if (d > slamRadius) return;                       // nur im Einschlagradius
     hits.add(enemy);
     const { isCrit } = dealDamageToEnemy(scene, enemy, damageMultiplier, 'hammer');
-    handleEnemyHit(scene, enemy, {
-      tint: isCrit ? 0xfff2a6 : 0xffd27f,
-      duration: isCrit ? 200 : 140
-    });
-
-    // Charge slash applies BLEED
-    if (window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
-      window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.BLEED, 'chargeSlash');
+    handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0xffcf6a, duration: isCrit ? 200 : 150 });
+    if (window.statusEffectManager && window.StatusEffectType && enemy.active) {
+      window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.BLEED, 'hammer');
     }
+    if (enemy.body) {
+      const nl = Math.max(1, d);
+      enemy.body.setVelocity((ddx / nl) * knockback, (ddy / nl) * knockback);
+      scene.time.delayedCall(150, () => { if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0); });
+    }
+  }, { requireLineOfSight: false });
 
-    if (!enemy || !enemy.active || !enemy.body) return;
-    enemy.body.setVelocity(tempVec.x * knockback, tempVec.y * knockback);
-    scene.time.delayedCall(140, () => {
-      if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
-    });
-  }, { requireLineOfSight: true });
-
-  // Restore crit chance after Tödlicher Stoß
   if (_savedCritChance !== undefined) {
     playerCritChance = _savedCritChance;
   }
@@ -2046,6 +2065,35 @@ function updateAmuletPerFrame(scene, delta) {
       if (!en || !en.active) return;
       if (Math.hypot(en.x - player.x, en.y - player.y) <= 36) _amuletTickDamage(scene, en, ddmg, 0xaa66ff, now, _dashstrikeHits);
     });
+  }
+
+  // BERSERKER-TINT ──────────────────────────────────────────────────────────
+  // Solange der Berserk-Buff (Skill 'berserk') läuft, den Charakter rötlich
+  // färben. Jeden Frame neu gesetzt (überschreibt kurzlebige Tints); beim
+  // Ablauf genau einmal zurückgesetzt (nur wenn WIR getönt haben).
+  var bs = window.berserkState;
+  var berserkActive = !!(bs && bs.active && (typeof bs.expiry !== 'number' || now < bs.expiry));
+  if (berserkActive) {
+    if (player.setTint) player.setTint(0xff4040);
+    window._berserkTinted = true;
+  } else if (window._berserkTinted) {
+    if (player.clearTint) player.clearTint();
+    window._berserkTinted = false;
+  }
+
+  // FRENZY-Aura ───────────────────────────────────────────────────────────
+  // Solange der Raserei-Buff läuft, regelmäßig orange Speed-Motes um den
+  // Spieler — laufendes Feedback zusätzlich zum Aktivierungs-Burst (_frenzyFx).
+  var fsr = window.frenzyState;
+  var frenzyActive = !!(fsr && fsr.active && (typeof fsr.expiry !== 'number' || now < fsr.expiry));
+  if (frenzyActive && window.particleFactory) {
+    window._frenzyMoteT = (window._frenzyMoteT || 0) + dt;
+    if (window._frenzyMoteT >= 110) {
+      window._frenzyMoteT = 0;
+      try { window.particleFactory.abilityTrail(player.x + (Math.random() - 0.5) * 22, player.y + (Math.random() - 0.5) * 22, 0xff7a1a); } catch (e) {}
+    }
+  } else {
+    window._frenzyMoteT = 0;
   }
 }
 if (typeof window !== 'undefined') window.updateAmuletPerFrame = updateAmuletPerFrame;
@@ -2462,8 +2510,36 @@ function shadowCharge() {
   });
 }
 
-// teleportDash — kurzer Blink/Sprint mit I-Frames + Tempoboost; Strecke/Dauer
-// skalieren mit Rang. Spiegelt das Roll-Pattern (window._playerInvincible).
+// Blink-Poof für Schattenschritt: 'out' implodiert (Vanish), 'in' explodiert
+// (Appear). Macht den Teleport optisch klar verschieden vom Ansturm-Dash.
+function _blinkPoof(scene, x, y, mode) {
+  try {
+    if (!scene || !scene.add) return;
+    const PURPLE = 0x9b6bff, LIGHT = 0xd6bcff;
+    const T = scene.tweens;
+    const ring = scene.add.graphics().setDepth(73);
+    ring.lineStyle(3, PURPLE, 0.9); ring.strokeCircle(0, 0, 30); ring.setPosition(x, y);
+    const from = mode === 'out' ? 1.4 : 0.2, to = mode === 'out' ? 0.1 : 1.3;
+    ring.setScale(from);
+    if (T) T.add({ targets: ring, scale: to, alpha: 0, duration: 220, ease: 'Cubic.easeOut', onComplete: () => { try { ring.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(220, () => { try { ring.destroy(); } catch (e) {} });
+    const g = scene.add.graphics().setDepth(73).setPosition(x, y);
+    g.lineStyle(2, LIGHT, 0.9);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const r1 = mode === 'out' ? 22 : 6, r2 = mode === 'out' ? 6 : 26;
+      g.lineBetween(Math.cos(a) * r1, Math.sin(a) * r1, Math.cos(a) * r2, Math.sin(a) * r2);
+    }
+    if (T) T.add({ targets: g, alpha: 0, duration: 240, onComplete: () => { try { g.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(240, () => { try { g.destroy(); } catch (e) {} });
+    if (window.particleFactory) { try { window.particleFactory.abilityTrail(x, y, PURPLE); } catch (e) {} }
+  } catch (e) { /* visual only */ }
+}
+
+// teleportDash — echter BLINK: implodierender Vanish-Poof, Spieler wird fast
+// unsichtbar und schnellt (sehr kurz) zum Ziel, dort Appear-Burst. I-Frames via
+// window._playerInvincible. Strecke skaliert mit Rang. Klar verschieden vom
+// sichtbaren Ansturm-Dash (charge).
 function shadowTeleportDash() {
   var scene = this;
   if (!scene || !player || !player.active) return;
@@ -2471,22 +2547,21 @@ function shadowTeleportDash() {
 
   var rank = _shadowRank('teleportDash');
   var dir = _getAimVector2(scene);
-  // Strecke & Dauer skalieren mit Rang.
-  var distance = 140 + (rank - 1) * 35;   // R1 140 … R5 280
-  var duration = 180 + (rank - 1) * 25;   // R1 180ms … R5 280ms
+  if (dir.lengthSq() === 0) dir.set(0, 1);
+  dir.normalize();
+  var distance = 150 + (rank - 1) * 35;   // R1 150 … R5 290
+  var duration = 110;                     // sehr kurz -> "Blink" statt Dash
   var speedPxPerSec = distance / (duration / 1000);
 
   isDashing = true;
   window._playerInvincible = true;
   if (window.soundManager) try { window.soundManager.playSFX('ability_dash'); } catch (e) {}
 
-  if (player.setAlpha) player.setAlpha(0.5);
+  _blinkPoof(scene, player.x, player.y, 'out');     // Vanish am Start
+  if (player.setAlpha) player.setAlpha(0.12);         // fast unsichtbar im Blink
   if (player.setTint) player.setTint(0x9966ff);
   if (player.body) player.body.setMaxVelocity(speedPxPerSec, speedPxPerSec);
   if (player.setVelocity) player.setVelocity(dir.x * speedPxPerSec, dir.y * speedPxPerSec);
-  if (window.particleFactory && player) {
-    try { window.particleFactory.abilityTrail(player.x, player.y, 0x9966ff); } catch (e) {}
-  }
 
   scene.time.delayedCall(duration, function () {
     isDashing = false;
@@ -2496,8 +2571,40 @@ function shadowTeleportDash() {
       if (player.body) player.body.setMaxVelocity(220, 220);
       if (player.clearTint) player.clearTint();
       if (player.setAlpha) player.setAlpha(1);
+      _blinkPoof(scene, player.x, player.y, 'in');  // Appear am Ziel
     }
   });
+}
+
+// Heilwunde — Heil-FX: aufsteigender Heil-Ring + weicher Glow + aufsteigende
+// "+"-Zeichen + schwebende Heilzahl.
+function _healFx(scene, amount) {
+  try {
+    if (!scene || !player) return;
+    const GREEN = 0x66ff8a, SOFT = 0xbfffd0;
+    const T = scene.tweens, cx = player.x, cy = player.y;
+    if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
+    const ring = scene.add.graphics().setDepth(72);
+    ring.lineStyle(3, GREEN, 0.9); ring.strokeCircle(0, 0, 30); ring.setPosition(cx, cy);
+    if (T) T.add({ targets: ring, scaleX: 1.6, scaleY: 1.6, alpha: 0, y: cy - 18, duration: 520, ease: 'Sine.easeOut', onComplete: () => { try { ring.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(520, () => { try { ring.destroy(); } catch (e) {} });
+    const glow = scene.add.circle(cx, cy, 34, SOFT, 0.32).setDepth(41);
+    if (T) T.add({ targets: glow, scale: 1.5, alpha: 0, duration: 500, onComplete: () => { try { glow.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(500, () => { try { glow.destroy(); } catch (e) {} });
+    for (let i = 0; i < 6; i++) {
+      const px = cx + (Math.random() - 0.5) * 44, py = cy + (Math.random() - 0.5) * 20;
+      const g = scene.add.graphics().setDepth(73);
+      g.lineStyle(3, GREEN, 0.95);
+      g.lineBetween(px - 5, py, px + 5, py); g.lineBetween(px, py - 5, px, py + 5); // Pluszeichen
+      if (T) T.add({ targets: g, y: -(36 + Math.random() * 16), alpha: 0, duration: 600 + Math.random() * 200, ease: 'Sine.easeOut', onComplete: () => { try { g.destroy(); } catch (e) {} } });
+      else scene.time.delayedCall(820, () => { try { g.destroy(); } catch (e) {} });
+    }
+    if (scene.add.text) {
+      const txt = scene.add.text(cx, cy - 24, '+' + amount, { fontFamily: 'monospace', fontSize: '16px', color: '#7dffa0', fontStyle: 'bold' }).setOrigin(0.5).setDepth(74);
+      if (T) T.add({ targets: txt, y: cy - 56, alpha: 0, duration: 720, ease: 'Sine.easeOut', onComplete: () => { try { txt.destroy(); } catch (e) {} } });
+      else scene.time.delayedCall(720, () => { try { txt.destroy(); } catch (e) {} });
+    }
+  } catch (e) { /* visual only */ }
 }
 
 // heilwunde — Heilung; Heilmenge skaliert mit Rang. Cooldown wird vom
@@ -2512,45 +2619,79 @@ function shadowHeilwunde() {
     } else if (typeof setPlayerHealth === 'function' && typeof playerHealth === 'number') {
       setPlayerHealth(playerHealth + amount);
     }
-    if (window.particleFactory && player) {
-      try { window.particleFactory.abilityTrail(player.x, player.y, 0x66ff66); } catch (e) {}
-    }
+    _healFx(this, amount);
   } catch (err) {
     console.warn('[Abilities] heilwunde failed', err);
   }
   return amount;
 }
 
-// deathBlow — Schlag vor dem Spieler. Gegner unter X% Max-HP werden SOFORT
-// exekutiert (Instakill). Tötet er mindestens einen → Cooldown-Reset (Kette).
-// Rückgabe: true, wenn mindestens ein Gegner durch Exekution starb.
+// Reaping-Crescent-Visual für Todesstoss (schmaler, fokussierter Frontschlag).
+function _deathBlowFx(scene, forward, range, arc) {
+  try {
+    const CRIMSON = 0xff2233;
+    const ang = Math.atan2(forward.y, forward.x);
+    const g = scene.add.graphics().setDepth(70);
+    g.fillStyle(CRIMSON, 0.26);
+    g.slice(player.x, player.y, range, ang - arc / 2, ang + arc / 2, false);
+    g.fillPath();
+    g.lineStyle(3, 0xff6677, 0.9);
+    g.beginPath(); g.arc(player.x, player.y, range * 0.92, ang - arc / 2, ang + arc / 2, false); g.strokePath();
+    if (scene.tweens) scene.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => { try { g.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(220, () => { try { g.destroy(); } catch (e) {} });
+  } catch (e) { /* visual only */ }
+}
+
+// Dramatischer Exekutions-Burst (Instakill): Flash + Crimson-Ring + dunkle Splitter.
+function _deathBlowExecuteBurst(scene, x, y) {
+  try {
+    const CRIMSON = 0xff2233, DARK = 0x550008, WHITE = 0xffffff;
+    const T = scene.tweens;
+    const flash = scene.add.circle(x, y, 18, WHITE, 0.9).setDepth(72);
+    if (T) T.add({ targets: flash, scale: 2.6, alpha: 0, duration: 180, onComplete: () => { try { flash.destroy(); } catch (e) {} } });
+    const ring = scene.add.graphics().setDepth(71);
+    ring.lineStyle(4, CRIMSON, 0.95); ring.strokeCircle(0, 0, 40); ring.setPosition(x, y).setScale(0.2);
+    if (T) T.add({ targets: ring, scale: 1.4, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => { try { ring.destroy(); } catch (e) {} } });
+    const shards = scene.add.graphics().setDepth(71).setPosition(x, y);
+    shards.lineStyle(3, DARK, 0.9);
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; shards.lineBetween(0, 0, Math.cos(a) * 46, Math.sin(a) * 46); }
+    if (T) T.add({ targets: shards, alpha: 0, duration: 300, onComplete: () => { try { shards.destroy(); } catch (e) {} } });
+    if (window.particleFactory) { try { window.particleFactory.hitSpark(x, y); } catch (e) {} }
+  } catch (e) { /* visual only */ }
+}
+
+// deathBlow — fokussierter HINRICHTUNGS-Schlag (schmaler Kegel, weite Reichweite,
+// HOHER Schaden), klar verschieden vom Normalangriff. Gegner unter X% Max-HP
+// werden SOFORT exekutiert. Tötet er mindestens einen Gegner (Exekution ODER
+// normaler Kill) → Cooldown-Reset (Ketten-Hinrichtung).
 function shadowDeathBlow() {
   var scene = this;
   if (!scene || !player || !player.active) return false;
 
   var dmgMult = _shadowDmgMult('deathBlow');
   var rank = _shadowRank('deathBlow');
-  // Schwelle: Basis 0.15 + Synergie (charge/frenzy) + Rang-Skalierung.
   var threshold = 0.15 + _shadowSynergy('deathBlow', 'threshold') + (rank - 1) * 0.05;
   if (threshold > 0.95) threshold = 0.95;
 
   var forward = _getAimVector2(scene);
-  var range = 120;
-  var arc = (typeof DASH_SLASH_ARC === 'number') ? DASH_SLASH_ARC : Math.PI; // weiter Frontkegel
+  if (forward.lengthSq() === 0) forward.set(0, 1);
+  forward.normalize();
+  var range = 165;                 // weiter als der Normalangriff
+  var arc = Math.PI / 2.4;          // SCHMALER, fokussierter Kegel (~75°)
   var threshCos = Math.cos(arc / 2);
   var tmp = new Phaser.Math.Vector2();
-  var executed = 0;
+  var killed = 0;
 
   if (window.soundManager) try { window.soundManager.playSFX('attack'); } catch (e) {}
+  _deathBlowFx(scene, forward, range, arc);
 
-  // Snapshot der Treffer zuerst (handleEnemyHit zerstört Gegner → Iteration sicher).
   var targets = [];
   forEachEnemyInRange(range, function (enemy, info) {
     if (!enemy || !enemy.active) return;
     var len = Math.hypot(info.dx, info.dy);
     if (len > 0) {
       tmp.set(info.dx / len, info.dy / len);
-      if (forward.dot(tmp) < threshCos) return; // außerhalb des Frontkegels
+      if (forward.dot(tmp) < threshCos) return;
     }
     targets.push(enemy);
   }, { requireLineOfSight: false });
@@ -2558,34 +2699,23 @@ function shadowDeathBlow() {
   targets.forEach(function (enemy) {
     if (!enemy || !enemy.active) return;
     var info = _shadowEnemyHp(enemy);
-    if (info.hp <= 0) return; // nur lebende Gegner
+    if (info.hp <= 0) return;
     if (info.hp <= info.max * threshold) {
-      // INSTAKILL: HP auf 0 setzen, Standard-Kill-Flow via handleEnemyHit.
       if (typeof enemy.maxHp !== 'number') enemy.maxHp = info.max;
       enemy.hp = 0;
-      if (window.particleFactory) {
-        try { window.particleFactory.hitSpark(enemy.x, enemy.y); } catch (e) {}
-      }
-      handleEnemyHit(scene, enemy, { tint: 0xff3344, duration: 160 });
-      executed++;
+      _deathBlowExecuteBurst(scene, enemy.x, enemy.y);
+      handleEnemyHit(scene, enemy, { tint: 0xff2233, duration: 180 });
+      killed++;
     } else {
-      // Über der Schwelle: normaler Schaden × dmgMult.
-      var res = dealDamageToEnemy(scene, enemy, 1.0 * dmgMult, 'deathBlow');
-      handleEnemyHit(scene, enemy, {
-        tint: res && res.isCrit ? 0xfff2a6 : 0xff8888,
-        duration: res && res.isCrit ? 180 : 120
-      });
+      var res = dealDamageToEnemy(scene, enemy, 2.2 * dmgMult, 'deathBlow');   // schwerer Finisher
+      var hpNow = _shadowEnemyHp(enemy).hp;
+      handleEnemyHit(scene, enemy, { tint: res && res.isCrit ? 0xfff2a6 : 0xff5566, duration: res && res.isCrit ? 200 : 140 });
+      if (hpNow <= 0) killed++;          // auch ein normaler Kill setzt den CD zurück
     }
   });
 
-  // Frontkegel-Visual.
-  try {
-    if (typeof showAttackEffect === 'function') {
-      showAttackEffect(scene, { range: range, arcWidth: arc, color: 0xff3344, alpha: 0.25, duration: 180 });
-    }
-  } catch (e) {}
-
-  return executed > 0;
+  if (killed > 0 && scene.cameras && scene.cameras.main) { try { scene.cameras.main.shake(90, 0.004); } catch (e) {} }
+  return killed > 0;
 }
 
 window.shadowCharge = shadowCharge;
@@ -2593,6 +2723,28 @@ window.shadowTeleportDash = shadowTeleportDash;
 window.shadowHeilwunde = shadowHeilwunde;
 window.shadowDeathBlow = shadowDeathBlow;
 // === /060 Strang SCHATTEN — Helper-Funktionen ===
+
+// Raserei (frenzy) — Aktivierungs-Burst: orange/roter Ring + radiale Speed-Lines
+// + Funken. Der laufende Buff zeigt zusätzlich Motes (updateAmuletPerFrame).
+function _frenzyFx(scene) {
+  try {
+    if (!scene || !player) return;
+    const ORANGE = 0xff7a1a, RED = 0xff3a2a;
+    const T = scene.tweens, cx = player.x, cy = player.y;
+    const ring = scene.add.graphics().setDepth(72);
+    ring.lineStyle(4, ORANGE, 0.9); ring.strokeCircle(0, 0, 40); ring.setPosition(cx, cy).setScale(0.3);
+    if (T) T.add({ targets: ring, scale: 1.3, alpha: 0, duration: 320, ease: 'Cubic.easeOut', onComplete: () => { try { ring.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(320, () => { try { ring.destroy(); } catch (e) {} });
+    const g = scene.add.graphics().setDepth(72).setPosition(cx, cy);
+    g.lineStyle(3, RED, 0.85);
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; g.lineBetween(Math.cos(a) * 20, Math.sin(a) * 20, Math.cos(a) * 46, Math.sin(a) * 46); }
+    if (T) T.add({ targets: g, alpha: 0, scaleX: 1.4, scaleY: 1.4, duration: 280, onComplete: () => { try { g.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(280, () => { try { g.destroy(); } catch (e) {} });
+    if (window.particleFactory) { try { window.particleFactory.abilityTrail(cx, cy, ORANGE); } catch (e) {} }
+    if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
+  } catch (e) { /* visual only */ }
+}
+window._frenzyFx = _frenzyFx;
 
 function ensurePlayerDaggerTexture(scene) {
   if (!scene || scene.textures.exists('playerDagger')) return;
@@ -3110,8 +3262,9 @@ function castSteelGrasp() {
 
   if (!target || !target.active) return;
 
-  // Schaden + Pull zum Spieler.
-  const { isCrit } = dealDamageToEnemy(scene, target, dmgMult, 'steelGrasp');
+  // Schaden + Pull zum Spieler. Stahlgriff ist primär ein PULL (Utility),
+  // daher nur geringer Schaden (war dmgMult -> 0.25x).
+  const { isCrit } = dealDamageToEnemy(scene, target, 0.25 * dmgMult, 'steelGrasp');
   handleEnemyHit(scene, target, { tint: isCrit ? 0xfff2a6 : 0xbfc7d6, duration: isCrit ? 200 : 140 });
   const pullDist = Math.max(1, bestDist);
   const pullDur = Phaser.Math.Clamp((pullDist / 360) * 250, 150, 250);
@@ -3136,25 +3289,48 @@ function castCycloneStrike() {
   const rank = Math.max(1, _kettenRank('cycloneStrike'));
   const radius = 200 + (rank - 1) * 20;           // 200..280
   const aoeMult = 0.5 * dmgMult * (1 + (rank - 1) * 0.1);
+  const CYAN = 0x66ddff, LIGHT = 0xbff2ff;
 
-  // Visueller Sog-Ring.
+  // --- Vortex-Visual: spiralige, nach innen rotierende Sog-Arme + Ring ---
   try {
-    const fx = scene.add.graphics();
-    fx.lineStyle(3, 0x66ddff, 0.8);
-    fx.strokeCircle(Math.round(player.x), Math.round(player.y), radius);
-    scene.time.delayedCall(220, () => { try { fx.destroy(); } catch (e) {} });
-    if (window.particleFactory) window.particleFactory.abilityTrail(player.x, player.y, 0x66ddff);
+    const swirl = scene.add.graphics().setDepth(70);
+    let a0 = 0, life = 0;
+    const arms = 4, turns = 2.2;
+    const swirlTimer = scene.time.addEvent({ delay: 16, loop: true, callback: () => {
+      life += 16; a0 += 0.34;
+      const k = Math.min(1, life / 360);                 // Sog zieht sich zusammen
+      swirl.clear();
+      swirl.lineStyle(3, CYAN, 0.85 * (1 - k * 0.6));
+      swirl.strokeCircle(player.x, player.y, radius * (1 - k * 0.85));
+      for (let s = 0; s < arms; s++) {
+        swirl.lineStyle(2.5, s % 2 ? LIGHT : CYAN, 0.8 * (1 - k));
+        swirl.beginPath();
+        const base = a0 + s * (Math.PI * 2 / arms);
+        for (let t = 0; t <= 1.0001; t += 0.1) {
+          const ang = base + t * turns * Math.PI * 2;
+          const rr = radius * (1 - k) * (1 - t * 0.92);
+          const px = player.x + Math.cos(ang) * rr, py = player.y + Math.sin(ang) * rr;
+          if (t === 0) swirl.moveTo(px, py); else swirl.lineTo(px, py);
+        }
+        swirl.strokePath();
+      }
+      if (life >= 380) { try { swirl.destroy(); } catch (e) {} swirlTimer.remove(); }
+    }});
+    const core = scene.add.circle(player.x, player.y, 16, LIGHT, 0.8).setDepth(71);
+    if (scene.tweens) scene.tweens.add({ targets: core, scale: 2.2, alpha: 0, duration: 300, onComplete: () => { try { core.destroy(); } catch (e) {} } });
+    else scene.time.delayedCall(300, () => { try { core.destroy(); } catch (e) {} });
+    if (window.particleFactory) window.particleFactory.abilityTrail(player.x, player.y, CYAN);
   } catch (e) { /* visual only */ }
 
   forEachEnemyInRange(radius, (enemy, { distance }) => {
     if (!enemy || !enemy.active) return;
     const { isCrit } = dealDamageToEnemy(scene, enemy, aoeMult, 'cycloneStrike');
-    handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0x66ddff, duration: isCrit ? 160 : 110 });
-    // Sog nach innen: Geschwindigkeit so, dass der Gegner in ~200ms ankommt.
+    handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : CYAN, duration: isCrit ? 160 : 110 });
+    if (window.particleFactory) { try { window.particleFactory.hitSpark(enemy.x, enemy.y); } catch (e) {} }
+    // Stärkerer Sog (in ~260ms ganz heran).
     const d = Math.max(1, distance);
-    const dur = 220;
-    const speed = d / (dur / 1000);
-    _pullEnemyToPlayer(scene, enemy, speed, dur);
+    const dur = 260;
+    _pullEnemyToPlayer(scene, enemy, (d / (dur / 1000)) * 1.15, dur);
   });
 }
 
@@ -3170,20 +3346,49 @@ function castFrostNova() {
   const synergy = _kettenSynergy('frostNova', 'damage');
   const totalMult = dmgMult * (1 + synergy);
   const range = 180;
+  const ICE = 0x9fe8ff, DEEP = 0x4aa6e0, WHITE = 0xffffff;
+  const cx = Math.round(player.x), cy = Math.round(player.y);
+  const T = scene.tweens, fade = (obj, cfg, dur) => {
+    if (T) T.add(Object.assign({ targets: obj, onComplete: () => { try { obj.destroy(); } catch (e) {} } }, cfg));
+    else if (scene.time) scene.time.delayedCall(dur, () => { try { obj.destroy(); } catch (e) {} });
+  };
 
   try {
-    const fx = scene.add.graphics();
-    fx.lineStyle(3, 0x88ddff, 0.85);
-    fx.strokeCircle(Math.round(player.x), Math.round(player.y), range);
-    fx.fillStyle(0x88ddff, 0.12);
-    fx.fillCircle(Math.round(player.x), Math.round(player.y), range);
-    scene.time.delayedCall(240, () => { try { fx.destroy(); } catch (e) {} });
+    // 1) zentraler Flash
+    const flash = scene.add.circle(cx, cy, 22, WHITE, 0.85).setDepth(71);
+    fade(flash, { scale: 2.2, alpha: 0, duration: 220 }, 220);
+    // 2) expandierende Schockwelle (Ring von klein auf Reichweite)
+    const ring = scene.add.graphics().setDepth(70);
+    ring.lineStyle(4, ICE, 0.9); ring.strokeCircle(0, 0, range);
+    ring.setPosition(cx, cy).setScale(0.12);
+    fade(ring, { scale: 1, alpha: 0, duration: 320, ease: 'Cubic.Out' }, 320);
+    // 3) radiale Eiskristall-Splitter (mit kleiner Quer-Facette)
+    const shards = scene.add.graphics().setDepth(70);
+    shards.lineStyle(3, ICE, 0.85);
+    const n = 12;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + (i % 2) * 0.13;
+      const r1 = range * 0.42, r2 = range * (0.85 + (i % 3) * 0.05);
+      const ox = Math.cos(a), oy = Math.sin(a), px = -oy, py = ox;
+      shards.lineBetween(cx + ox * r1, cy + oy * r1, cx + ox * r2, cy + oy * r2);
+      shards.lineBetween(cx + ox * r2 * 0.82 + px * 6, cy + oy * r2 * 0.82 + py * 6,
+                         cx + ox * r2 * 0.82 - px * 6, cy + oy * r2 * 0.82 - py * 6);
+    }
+    fade(shards, { alpha: 0, duration: 360 }, 360);
+    // 4) Frost-Nebel, der kurz liegen bleibt
+    const mist = scene.add.graphics().setDepth(39);
+    mist.fillStyle(DEEP, 0.16); mist.fillCircle(cx, cy, range);
+    mist.lineStyle(2, ICE, 0.3); mist.strokeCircle(cx, cy, range);
+    fade(mist, { alpha: 0, duration: 600 }, 600);
+    if (window.particleFactory) { try { window.particleFactory.abilityTrail(cx, cy, ICE); } catch (e) {} }
   } catch (e) { /* visual only */ }
 
   forEachEnemyInRange(range, (enemy) => {
     if (!enemy || !enemy.active) return;
-    const { isCrit } = dealDamageToEnemy(scene, enemy, 0.6 * totalMult, 'frostNova');
-    handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0x88ddff, duration: isCrit ? 180 : 120 });
+    // Schaden gesenkt (war 0.6 -> 0.32): Frostnova ist primär Kontrolle/Slow.
+    const { isCrit } = dealDamageToEnemy(scene, enemy, 0.32 * totalMult, 'frostNova');
+    handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : ICE, duration: isCrit ? 180 : 130 });
+    if (window.particleFactory) { try { window.particleFactory.hitSpark(enemy.x, enemy.y); } catch (e) {} }
     if (window.statusEffectManager && window.StatusEffectType && enemy.active) {
       try { window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'frostNova'); } catch (e) {}
     }
@@ -3195,13 +3400,12 @@ window.castSteelGrasp = castSteelGrasp;
 window.castCycloneStrike = castCycloneStrike;
 window.castFrostNova = castFrostNova;
 
-// --- whirlwind (Wirbelwind) ---------------------------------------------
-// 060: Statt eines einzelnen Spin-Ticks ein CHANNEL: der Spieler wirbelt ~1s,
-// kann sich dabei FREI BEWEGEN (der Wirbel folgt), trifft alle Gegner in
-// Reichweite mehrfach (Ticks) und verlangsamt sie — rotierende Klingen-Optik.
-// Schaden skaliert mit Rang (getAbilityDamageMult('whirlwind')); Cooldown via
-// AbilitySystem.tryActivate (def.cooldownMs). Damage-Key 'whirlwind' -> Affix-
-// Bucket dmg_spinAttack/cd_spinAttack (siehe _lootAbilityStatKey).
+// --- whirlwind (Wirbelwind) — "Buzzsaw" ---------------------------------
+// 060: CHANNEL (~1s), der Spieler wirbelt + bewegt sich frei (der Wirbel folgt)
+// und trifft alle in Reichweite mehrfach + Slow. OPTIK: zwei gegenläufige
+// Klingenscheiben (innen CW, außen CCW) mit Motion-Blur-Trails, Spin-up mit
+// Overshoot, Kantenglanz, Funken + Mini-Screenshake bei Treffern.
+// Schaden skaliert mit Rang; Cooldown via tryActivate. Damage-Key 'whirlwind'.
 function castWhirlwind() {
   const scene = this;
   if (!scene || !player || !player.active) return;
@@ -3211,44 +3415,89 @@ function castWhirlwind() {
     ? Math.max(1, window.SkillTree.getRank('whirlwind') | 0) : 1;
   const range = (typeof getSpinRange === 'function') ? getSpinRange() : 110;
   const durationMs = 850 + (rank - 1) * 110;   // 0.85s .. 1.3s
-  const tickMs = 130;
+  const tickMs = 120;
   const tickCount = Math.max(1, Math.floor(durationMs / tickMs));
-  const perTick = 0.34 * dmgMult;              // mehrere Ticks -> ~2-3x über den Wirbel
+  const perTick = 0.32 * dmgMult;
+  // Rang -> mehr Klingen pro Scheibe (dichteres Sägeblatt).
+  const outerBlades = 7 + Math.min(4, rank - 1);   // 7..11
+  const innerBlades = 4 + Math.min(3, rank - 1);    // 4..7
+  const STEEL = 0x33e0ff, GLINT = 0xffffff;
   if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
 
-  // Rotierende Klingen + Ring, folgen dem Spieler jeden Frame.
-  const blades = scene.add.graphics().setDepth(69);
+  // easeOutBack für den "Deploy"-Overshoot beim Hochdrehen.
+  const easeBack = (t) => { const c1 = 1.9, c3 = c1 + 1; const u = t - 1; return 1 + c3 * u * u * u + c1 * u * u; };
+
+  const gfx = scene.add.graphics().setDepth(69);
   let angle = 0;
-  const spinTimer = scene.time.addEvent({ delay: 16, loop: true, callback: () => {
-    if (!player || !player.active) { try { blades.destroy(); } catch (e) {} spinTimer.remove(); return; }
-    angle += 0.55;
-    blades.clear();
-    blades.lineStyle(3, 0x33e0ff, 0.85);
-    for (let b = 0; b < 3; b++) {
-      const a = angle + b * (Math.PI * 2 / 3);
-      blades.lineBetween(
-        player.x + Math.cos(a) * range * 0.35, player.y + Math.sin(a) * range * 0.35,
-        player.x + Math.cos(a) * range,        player.y + Math.sin(a) * range);
+  let elapsed = 0;
+  // Eine rotierende Klingenscheibe mit Motion-Blur-Trail zeichnen.
+  const drawDisc = (baseA, dir, count, rInner, rOuter, width, alpha, glint) => {
+    const GHOSTS = 4;
+    for (let b = 0; b < count; b++) {
+      const a0 = baseA * dir + b * (Math.PI * 2 / count);
+      for (let g = GHOSTS; g >= 0; g--) {
+        const a = a0 - dir * g * 0.10;                 // Trail läuft der Klinge hinterher
+        const ga = alpha * (g === 0 ? 1 : 0.32 * (1 - g / (GHOSTS + 1)));
+        if (ga <= 0.02) continue;
+        gfx.lineStyle(g === 0 ? width : Math.max(1, width - 1), STEEL, ga);
+        gfx.lineBetween(
+          player.x + Math.cos(a) * rInner, player.y + Math.sin(a) * rInner,
+          player.x + Math.cos(a) * rOuter, player.y + Math.sin(a) * rOuter);
+      }
+      if (glint) {                                      // weißer Kantenglanz an der Spitze
+        const ax = player.x + Math.cos(a0) * rOuter, ay = player.y + Math.sin(a0) * rOuter;
+        gfx.fillStyle(GLINT, alpha * 0.9);
+        gfx.fillCircle(ax, ay, Math.max(1.5, width * 0.6));
+      }
     }
-    blades.lineStyle(2, 0x66f0ff, 0.4);
-    blades.strokeCircle(player.x, player.y, range);
+  };
+
+  const spinTimer = scene.time.addEvent({ delay: 16, loop: true, callback: () => {
+    if (!player || !player.active) { try { gfx.destroy(); } catch (e) {} spinTimer.remove(); return; }
+    elapsed += 16;
+    const up = Math.min(1, elapsed / 240);                         // Hochdrehen 0..240ms
+    const down = elapsed > durationMs - 160 ? Math.max(0, (durationMs - elapsed) / 160) : 1;
+    const factor = Math.max(0, easeBack(up) * down);               // Radius/Alpha (mit Overshoot)
+    const aFac = Math.min(1, up) * down;                           // Alpha ohne Overshoot
+    angle += 0.22 + 0.42 * Math.min(1, up);                       // Drehung rampt hoch
+    const r = range * factor;
+    gfx.clear();
+    // schwacher Disc-Glow + zwei Ringe für die Scheibenkontur
+    gfx.fillStyle(STEEL, 0.06 * aFac); gfx.fillCircle(player.x, player.y, r);
+    gfx.lineStyle(2, 0x66f0ff, 0.30 * aFac); gfx.strokeCircle(player.x, player.y, r);
+    gfx.lineStyle(1, 0x66f0ff, 0.22 * aFac); gfx.strokeCircle(player.x, player.y, r * 0.42);
+    // äußere Scheibe (CCW) + innere Scheibe (CW, gegenläufig)
+    drawDisc(angle,  1, outerBlades, r * 0.66, r,        3.5, 0.9 * aFac, true);
+    drawDisc(angle, -1, innerBlades, r * 0.12, r * 0.45, 3,   0.85 * aFac, false);
   }});
-  if (window.particleFactory) { try { window.particleFactory.abilityTrail(player.x, player.y, 0x33e0ff); } catch (e) {} }
+  if (window.particleFactory) { try { window.particleFactory.abilityTrail(player.x, player.y, STEEL); } catch (e) {} }
 
   // Schadens-Ticks: treffen alle in Reichweite, folgen dem (beweglichen) Spieler.
   scene.time.addEvent({ delay: tickMs, repeat: tickCount - 1, callback: () => {
     if (!player || !player.active) return;
+    let hitThisTick = 0;
     forEachEnemyInRange(range, (enemy) => {
       if (!enemy || !enemy.active) return;
+      hitThisTick++;
       const { isCrit } = dealDamageToEnemy(scene, enemy, perTick, 'whirlwind');
-      if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
-      handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0x33e0ff, duration: 70, useTween: true });
+      // Funken in Klingen-Tangenten-Richtung (2 kleine Bursts).
+      if (window.particleFactory) {
+        try {
+          window.particleFactory.hitSpark(enemy.x, enemy.y);
+          window.particleFactory.hitSpark(enemy.x + (Math.random() - 0.5) * 14, enemy.y + (Math.random() - 0.5) * 14);
+        } catch (e) {}
+      }
+      handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : GLINT, duration: 60, useTween: true });
       if (window.statusEffectManager && window.StatusEffectType) {
         try { window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'whirlwind'); } catch (e) {}
       }
     });
+    // Mini-Screenshake, wenn das Sägeblatt mehrere Gegner gleichzeitig erwischt.
+    if (hitThisTick >= 2 && scene.cameras && scene.cameras.main) {
+      try { scene.cameras.main.shake(70, 0.0028); } catch (e) {}
+    }
   }});
 
-  scene.time.delayedCall(durationMs, () => { try { blades.destroy(); } catch (e) {} try { spinTimer.remove(); } catch (e) {} });
+  scene.time.delayedCall(durationMs, () => { try { gfx.destroy(); } catch (e) {} try { spinTimer.remove(); } catch (e) {} });
 }
 window.castWhirlwind = castWhirlwind;

@@ -115,6 +115,7 @@
             expiry: now + decayMs
           };
           // Per-Ability Cooldown skaliert bereits zentral in tryActivate via cdMult.
+          if (typeof window._frenzyFx === 'function') window._frenzyFx(scene);
           console.log('[Abilities] Raserei aktiviert (Stacks bis ' + maxStacks + ', +' + (perStack * 100).toFixed(0) + '%/Stack), cdMult=' + cdMult.toFixed(2));
         } catch (err) {
           console.warn('[Abilities] Raserei failed', err);
