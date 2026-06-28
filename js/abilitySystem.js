@@ -399,8 +399,75 @@
           window.castFrostNova.call(scene);
         }
       }
-    }
+    },
     // === /060 Strang KETTEN ===
+
+    // === 060 Strang SCHATTEN ===
+    // Vier neue aktive Fähigkeiten des SkillTree-Strangs SCHATTEN & JAGD.
+    // Schaden/Cooldown skalieren defensiv via window.SkillTree.* (Contract:
+    // fehlt die Funktion → mult 1). Logik liegt in js/player.js (shadow*).
+    charge: {
+      id: 'charge',
+      name: 'Ansturm',
+      description: 'Linien-Sturm: dasht durch alle Gegner im Pfad und stoßt sie weg.',
+      type: 'tap',
+      icon: '➡',
+      color: 0x66ccff,
+      cooldownMs: 6000,
+      activate(scene) {
+        try {
+          if (typeof window.shadowCharge === 'function') window.shadowCharge.call(scene);
+        } catch (err) { console.warn('[Abilities] charge failed', err); }
+      }
+    },
+    teleportDash: {
+      id: 'teleportDash',
+      name: 'Schattenschritt',
+      description: 'Kurzer Blink mit Unverwundbarkeit; Strecke/Dauer skalieren mit Rang.',
+      type: 'self',
+      icon: '\u{1F47B}',
+      color: 0x9966ff,
+      cooldownMs: 9000,
+      activate(scene) {
+        try {
+          if (typeof window.shadowTeleportDash === 'function') window.shadowTeleportDash.call(scene);
+        } catch (err) { console.warn('[Abilities] teleportDash failed', err); }
+      }
+    },
+    heilwunde: {
+      id: 'heilwunde',
+      name: 'Heilwunde',
+      description: 'Heilt LP; Heilmenge skaliert mit Rang.',
+      type: 'self',
+      icon: '✚',
+      color: 0x66ff66,
+      cooldownMs: 30000,
+      activate(scene) {
+        try {
+          if (typeof window.shadowHeilwunde === 'function') window.shadowHeilwunde.call(scene);
+        } catch (err) { console.warn('[Abilities] heilwunde failed', err); }
+      }
+    },
+    deathBlow: {
+      id: 'deathBlow',
+      name: 'Todesstoss',
+      description: 'Schlag nach vorn; angeschlagene Gegner werden sofort exekutiert. Hinrichtung setzt den Cooldown zurück.',
+      type: 'self',
+      icon: '\u{1F480}',
+      color: 0xff3344,
+      cooldownMs: 8000,
+      activate(scene) {
+        try {
+          var executed = (typeof window.shadowDeathBlow === 'function')
+            ? window.shadowDeathBlow.call(scene) : false;
+          // Ketten-Hinrichtung: starb mindestens ein Gegner durch Exekution,
+          // wird der Cooldown SOFORT zurückgesetzt, damit erneut zugeschlagen
+          // werden kann.
+          if (executed) resetCooldown('deathBlow');
+        } catch (err) { console.warn('[Abilities] deathBlow failed', err); }
+      }
+    }
+    // === /060 Strang SCHATTEN ===
   };
 
   // ---------- Unlock Conditions ----------
@@ -481,7 +548,16 @@
       'ability.cycloneStrike.name': 'Cyclone Strike',
       'ability.cycloneStrike.description': 'Pulls all nearby enemies toward you and deals AoE damage.',
       'ability.frostNova.name': 'Frost Nova',
-      'ability.frostNova.description': 'AoE frost nova: slows all nearby enemies and deals damage.'
+      'ability.frostNova.description': 'AoE frost nova: slows all nearby enemies and deals damage.',
+      // === 060 Strang SCHATTEN ===
+      'ability.charge.name': 'Charge',
+      'ability.charge.description': 'Line dash through all enemies in the path, knocking them away.',
+      'ability.teleportDash.name': 'Shadow Step',
+      'ability.teleportDash.description': 'Quick blink with i-frames; range/duration scale with rank.',
+      'ability.heilwunde.name': 'Heal Wound',
+      'ability.heilwunde.description': 'Heals HP; heal amount scales with rank.',
+      'ability.deathBlow.name': 'Death Blow',
+      'ability.deathBlow.description': 'Strike ahead; low-HP enemies are executed instantly. An execution resets the cooldown.'
     });
 
     // Convert existing value-properties into getters so reads always honor the
@@ -842,12 +918,14 @@
     if (!def) return false;
     if (!isLearned(abilityId)) return false;
 
-    // Per-ability cooldowns (only enforced for "self" type abilities).
+    // Per-ability cooldowns (only enforced for "self"/tap type abilities).
+    // Cooldown wird defensiv mit dem SkillTree-CooldownMult skaliert
+    // (Contract: fehlt die Funktion → mult 1).
     if (def.cooldownMs) {
       const now = (scene?.time?.now) || Date.now();
       const ready = state.cooldowns[abilityId] || 0;
       if (now < ready) return false;
-      // 060 Strang WUT: Skill-Rang senkt den Cooldown (cdMult, gedeckelt).
+      // 060: Skill-Rang senkt den Cooldown (cdMult, gedeckelt).
       // Defensiv aus window.SkillTree gelesen (kann fehlen -> Faktor 1).
       let cdMult = 1;
       try {
@@ -894,6 +972,16 @@
     const ready = state.cooldowns[abilityId] || 0;
     const n = Number.isFinite(now) ? now : Date.now();
     return Math.max(0, ready - n);
+  }
+
+  // 060 Strang SCHATTEN: setzt den Cooldown einer Ability sofort zurück
+  // (deathBlow Ketten-Hinrichtung). Defensiv — unbekannte ids no-op.
+  function resetCooldown(abilityId) {
+    if (!abilityId) return;
+    state.cooldowns[abilityId] = 0;
+    if (typeof window._refreshAbilityHUD === 'function') {
+      try { window._refreshAbilityHUD(); } catch (e) { /* HUD may not exist yet */ }
+    }
   }
 
   // ---------- Unlock Hooks ----------
@@ -1025,6 +1113,7 @@
     tryActivate,
     tryRelease,
     getCooldownRemaining,
+    resetCooldown,
     onEnemyKilled,
     onBossKilled,
     onQuestCompleted,
