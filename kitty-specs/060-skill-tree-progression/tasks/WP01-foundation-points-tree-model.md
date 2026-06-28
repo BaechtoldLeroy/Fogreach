@@ -24,7 +24,7 @@ subtasks:
 - T007
 phase: Phase 1 - Foundation
 assignee: ''
-agent: ''
+agent: "claude"
 shell_pid: "48556"
 history:
 - timestamp: '2026-06-28T00:00:00Z'
@@ -78,3 +78,4 @@ FR-01 (Punkte 1/Level), FR-02 (Datenmodell, 1 Baum), FR-03 (investPoint mit Vali
 - Keine UI/Combat/Gold-Kopplung (folgt in WP02/04/05). Keine Regression.
 
 ## Activity Log
+- 2026-06-28T11:09:26Z – claude – shell_pid=48556 – lane=in_progress – Moved to in_progress
