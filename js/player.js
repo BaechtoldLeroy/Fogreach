@@ -2546,6 +2546,13 @@ function addXP(amount = 1) {
     }
     neededXP = 2 * playerLevel;
 
+    // Feature 060: jeder Level-Up vergibt 1 Skill-Punkt fuer den Skill-Baum
+    // (#48/#58). Defensiv — bricht nie den Level-Up-Pfad.
+    if (typeof window !== 'undefined' && window.SkillTree
+        && typeof window.SkillTree.grantSkillPoint === 'function') {
+      try { window.SkillTree.grantSkillPoint(1); } catch (e) { /* swallow */ }
+    }
+
     if (window.soundManager) window.soundManager.playSFX('level_up');
 
     if (levelUpText) {
