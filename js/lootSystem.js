@@ -830,7 +830,9 @@ if (window.i18n) {
       const s2 = _affixName(suffixes[1]);
       name = (p1 + ' ' + p2 + ' ' + baseName + ' ' + s1 + ' ' + s2).trim().replace(/\s+/g, ' ');
       if (name.length > 50) {
-        name = (p1 + ' ' + baseName + ' ' + s1 + ' [Legendary]').trim().replace(/\s+/g, ' ');
+        // Zu lang -> auf 1 Prefix + 1 Suffix kuerzen (ohne sichtbaren Tag;
+        // die Raritaet zeigt sich ueber Farbe/Tooltip, nicht im Namen).
+        name = (p1 + ' ' + baseName + ' ' + s1).trim().replace(/\s+/g, ' ');
       }
     }
     return name;
