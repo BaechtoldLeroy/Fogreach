@@ -33,7 +33,7 @@ history:
   action: Prompt generated
 authoritative_surface: js/skillTree.js
 execution_mode: code_change
-lane: planned
+lane: for_review
 owned_files:
 - js/skillTree.js
 - tests/skillTree.test.js

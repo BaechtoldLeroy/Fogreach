@@ -2,7 +2,7 @@
   "event_count": 3,
   "feature_slug": "060-skill-tree-progression",
   "last_event_id": "01KW6YQ33BAXR5QHEZ54ZRN58N",
-  "materialized_at": "2026-06-28T11:09:28.564482+00:00",
+  "materialized_at": "2026-06-28T11:11:55.039799+00:00",
   "summary": {
     "approved": 0,
     "blocked": 0,
