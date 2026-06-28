@@ -1,7 +1,10 @@
 ---
 work_package_id: WP04
 title: Hub-Skill-Baum-UI (SkillTreeScene) + Respec-Button
-dependencies: []
+dependencies:
+- WP01
+- WP02
+- WP03
 requirement_refs:
 - FR-06
 - FR-08

@@ -1,7 +1,8 @@
 ---
 work_package_id: WP03
 title: 4-Slot-Equip (nur ≥1 Rang) + Auto-Unlock ablösen
-dependencies: []
+dependencies:
+- WP01
 requirement_refs:
 - FR-05
 - FR-07

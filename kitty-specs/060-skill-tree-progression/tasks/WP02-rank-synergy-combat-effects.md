@@ -1,7 +1,8 @@
 ---
 work_package_id: WP02
 title: Rang-/Synergie-Effekte im Combat
-dependencies: []
+dependencies:
+- WP01
 requirement_refs:
 - FR-04
 planning_base_branch: main

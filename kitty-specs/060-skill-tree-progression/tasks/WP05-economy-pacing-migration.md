@@ -1,7 +1,9 @@
 ---
 work_package_id: WP05
 title: Economy (Respec-Gold + Schwarzmarkt) + Pacing + Persistenz/Migration
-dependencies: []
+dependencies:
+- WP01
+- WP04
 requirement_refs:
 - FR-06
 - FR-09
