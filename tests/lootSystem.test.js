@@ -413,7 +413,7 @@ test('composeName: tier 3 legendary with 4 affixes composes a long name', () => 
   assert.ok(name.length > 'Sword'.length);
 });
 
-test('composeName: tier 3 with very long names falls back to [Legendary]', () => {
+test('composeName: tier 3 with very long names shortens to 1 prefix + 1 suffix (no tag)', () => {
   const sys = freshSystem();
   // Force a long name by using long affix display names
   const item = {
@@ -427,7 +427,12 @@ test('composeName: tier 3 with very long names falls back to [Legendary]', () =>
     ]
   };
   const name = sys.composeName(item);
-  assert.ok(name.indexOf('[Legendary]') !== -1, 'expected legendary fallback, got: ' + name);
+  // No visible rarity tag in the name (rarity reads via color/tooltip).
+  assert.strictEqual(name.indexOf('[Legendary]'), -1, 'name must not carry a [Legendary] tag, got: ' + name);
+  assert.ok(name.indexOf('Kettenmorgenstern') !== -1, 'name keeps the base name, got: ' + name);
+  // Shortened form drops the SECOND prefix + suffix (Charged / Dagger).
+  assert.strictEqual(name.indexOf('Charged'), -1, 'long name should drop the 2nd prefix, got: ' + name);
+  assert.strictEqual(name.indexOf('Dagger'), -1, 'long name should drop the 2nd suffix, got: ' + name);
 });
 
 test('migrateSave: strips old fields and adds new ones on inventory items', () => {
