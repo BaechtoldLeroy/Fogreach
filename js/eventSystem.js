@@ -1564,6 +1564,10 @@
     registerEventType: registerEventType,
     showEventChoiceDialog: showEventChoiceDialog,
     spawnEventObject: spawnEventObject,
+    // #53: exported so other systems (e.g. questSystem completeQuest toast)
+    // can reuse the same panel-styled, scroll-fixed toast instead of rolling
+    // a new one.
+    showToast: showEventToast,
     EVENT_TYPES: EVENT_TYPES
   };
 })();

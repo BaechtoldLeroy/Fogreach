@@ -607,6 +607,8 @@
     // Generic tracker strings
     _autoDe['quest.tracker.progress'] = '{title}: {cur}/{required}';
     _autoDe['quest.tracker.short_suffix'] = '..';
+    // #53: Quest-Abschluss-Toast (DE ist Quelle).
+    _autoDe['quest.toast.completed'] = 'Quest abgeschlossen: {title}';
     window.i18n.register('de', _autoDe);
 
     // English overrides — partial; missing keys gracefully fall back to DE.
@@ -615,6 +617,7 @@
     window.i18n.register('en', {
       'quest.tracker.progress': '{title}: {cur}/{required}',
       'quest.tracker.short_suffix': '..',
+      'quest.toast.completed': 'Quest complete: {title}',
       // Akt 0 — Aldric warmup (tutorial extension)
       'quest.aldric_cleanup.title': 'Cellar Cleanup',
       'quest.aldric_cleanup.description': 'Defeat 10 enemies in the cellars beneath the Archive Forge.',
@@ -1312,7 +1315,48 @@
     }
     _notifyUpdate();
     _persistIfPossible();
+    // #53: visible completion toast (Quest abgeschlossen: <Titel>). Defensive —
+    // never let a toast failure abort the (already-applied) completion.
+    _showQuestCompletedToast(def);
     return true;
+  }
+
+  // #53: Splash/Toast bei Quest-Abschluss. Reuses EventSystem.showToast (panel
+  // style + scrollFactor(0) so it stays fixed on the camera). Resolves the
+  // currently-active scene (GameScene in the dungeon, HubSceneV2 in town).
+  // Wrapped in try/catch — a quest must complete even if the HUD can't render.
+  function _showQuestCompletedToast(def) {
+    try {
+      if (!def) return;
+      var title = getQuestField(def, 'title') || def.title || '';
+      var msg = (window.i18n && typeof window.i18n.t === 'function')
+        ? window.i18n.t('quest.toast.completed', { title: title })
+        : ('Quest abgeschlossen: ' + title);
+      var scene = _resolveActiveScene();
+      if (scene && window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+        window.EventSystem.showToast(scene, msg, 'quest_completed');
+      }
+    } catch (e) {
+      try { console.warn('[QuestSystem] completion toast failed', e); } catch (_) {}
+    }
+  }
+
+  function _resolveActiveScene() {
+    // Prefer the live GameScene reference set in main.js; fall back to scanning
+    // for any active scene that can render (has add + cameras).
+    var s = window.gameScene;
+    if (s && s.sys && s.sys.isActive && s.sys.isActive() && s.add) return s;
+    var game = window.game;
+    if (game && game.scene && Array.isArray(game.scene.scenes)) {
+      for (var i = 0; i < game.scene.scenes.length; i++) {
+        var sc = game.scene.scenes[i];
+        if (sc && sc.sys && sc.sys.isActive && sc.sys.isActive()
+            && sc.add && sc.cameras && sc.cameras.main) {
+          return sc;
+        }
+      }
+    }
+    return null;
   }
 
   // ---- Persistence ----
