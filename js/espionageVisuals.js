@@ -2,18 +2,21 @@
  * espionageVisuals.js — Sichtbarkeitsschicht fuer Espionage-Missionen
  * ---------------------------------------------------------------------
  * Feature 055 lieferte die Stealth-MECHANIK (espionageSystem.js), aber kein
- * Feedback: der Spieler betrat einen scheinbar normalen Raum, war unsichtbar
- * verkleidet und hatte keine Ahnung, dass/wo er abhoeren muss. Dieses Modul
- * rendert den Missions-State, OHNE die testbare Logik zu beruehren:
+ * klares Feedback. Dieses Modul rendert den Missions-State, OHNE die testbare
+ * Logik zu beruehren. #54-Redesign:
  *
- *   - HUD-Banner mit Anweisung + Live-Status (verdeckt / Verdacht / enttarnt /
- *     abgehoert).
- *   - Abhoer-Zone(n) als pulsierender Marker (gruen + Haken, wenn fertig).
- *   - Wachen-Sichtradien (rot) zum Ausweichen; Deckungszonen (gruen).
+ *   - Detection-RING am Spieler (gruen->gelb->rot) — der zentrale, bisher
+ *     unsichtbare detection-Zustand wird sichtbar (auch die Recovery-Phase).
+ *   - Status-CHIP (VERKLEIDET / VERDAECHTIG / ENTTARNT / ABGEHOERT) + kurze
+ *     Aktionszeile statt langem Negativ-Banner.
+ *   - Wachen-Sichtradien IMMER (dezent gedimmt, intensivieren mit detection /
+ *     bei Enttarnung) — die Welt wird lesbar.
+ *   - Deckungs-Zonen (blau-gruen) — der _inCover-Vorteil wird sichtbar.
+ *   - Off-screen-Pfeil zur naechsten Abhoer-Zone.
+ *   - Enttarn-Moment: Kamera-Flash + Shake + Sound (Flankenerkennung).
  *
- * Selbstverwaltend: `sync(scene)` wird jeden Frame aus dem GameScene-Update
- * aufgerufen und montiert / aktualisiert / demontiert sich je nach
- * EspionageSystem.isActive(). Komplett no-op ausserhalb einer Mission.
+ * Selbstverwaltend: sync(scene) wird jeden Frame aus dem GameScene-Update
+ * aufgerufen, no-op ausserhalb einer Mission.
  * ===================================================================== */
 (function () {
   'use strict';
@@ -22,16 +25,20 @@
   var DEPTH_HUD = 1640;    // ueber dem normalen HUD-Layer
 
   var mounted = false;
-  var g = null;            // world-space Graphics (Zonen/Wachen/Deckung)
-  var banner = null;       // HUD-Text (Anweisung + Status)
+  var g = null;            // world-space Graphics (Zonen/Wachen/Deckung/Ring)
+  var gHud = null;         // HUD-space Graphics (Off-screen-Pfeil)
+  var banner = null;       // HUD-Text (kurze Aktionszeile)
   var bannerBg = null;
+  var chipBg = null;       // Status-Chip Hintergrund
+  var chipText = null;     // Status-Chip Text
   var zoneLabels = [];     // Text-Labels an den Abhoer-Zonen
   var _t = 0;              // Pulse-Akkumulator
+  var _prevExposed = false;
+  var _cw = 1536, _ch = 800;
 
   function _scene() {
     return (typeof window !== 'undefined' && window.currentScene) ? window.currentScene : null;
   }
-
   function _isEN() {
     return !!(window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en');
   }
@@ -40,15 +47,26 @@
     if (mounted || !scene || !scene.add) return;
     mounted = true;
     _t = 0;
+    _prevExposed = false;
     g = scene.add.graphics().setDepth(DEPTH_WORLD).setScrollFactor(1);
+    gHud = scene.add.graphics().setDepth(DEPTH_HUD).setScrollFactor(0);
 
     var cam = scene.cameras && scene.cameras.main;
-    var cw = cam ? cam.width : 1536;
-    bannerBg = scene.add.rectangle(cw / 2, 54, Math.min(900, cw - 40), 38, 0x10131c, 0.82)
-      .setScrollFactor(0).setDepth(DEPTH_HUD - 1).setStrokeStyle(2, 0x8899cc, 0.9);
-    banner = scene.add.text(cw / 2, 54, '', {
-      fontFamily: 'monospace', fontSize: '16px', color: '#cdd9ff',
-      align: 'center'
+    _cw = cam ? cam.width : 1536;
+    _ch = cam ? cam.height : 800;
+
+    // Aktionszeile (kurz) unter dem Status-Chip
+    bannerBg = scene.add.rectangle(_cw / 2, 66, Math.min(760, _cw - 40), 28, 0x10131c, 0.8)
+      .setScrollFactor(0).setDepth(DEPTH_HUD - 1).setStrokeStyle(1, 0x5a6580, 0.7);
+    banner = scene.add.text(_cw / 2, 66, '', {
+      fontFamily: 'monospace', fontSize: '14px', color: '#cdd9ff', align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH_HUD);
+
+    // Status-Chip (Pille) darueber
+    chipBg = scene.add.rectangle(_cw / 2, 40, 150, 26, 0x4a8fd0, 0.95)
+      .setScrollFactor(0).setDepth(DEPTH_HUD - 1).setStrokeStyle(2, 0xffffff, 0.5);
+    chipText = scene.add.text(_cw / 2, 40, '', {
+      fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH_HUD);
 
     zoneLabels = [];
@@ -56,21 +74,17 @@
 
   function unmount() {
     mounted = false;
-    if (g) { try { g.destroy(); } catch (e) {} g = null; }
-    if (banner) { try { banner.destroy(); } catch (e) {} banner = null; }
-    if (bannerBg) { try { bannerBg.destroy(); } catch (e) {} bannerBg = null; }
-    for (var i = 0; i < zoneLabels.length; i++) {
-      try { zoneLabels[i].destroy(); } catch (e) {}
-    }
+    [g, gHud, banner, bannerBg, chipBg, chipText].forEach(function (o) {
+      if (o) { try { o.destroy(); } catch (e) {} }
+    });
+    g = gHud = banner = bannerBg = chipBg = chipText = null;
+    for (var i = 0; i < zoneLabels.length; i++) { try { zoneLabels[i].destroy(); } catch (e) {} }
     zoneLabels = [];
   }
 
   function _ensureZoneLabels(scene, zones) {
-    // Lazily create one label per observe zone (created once per mission).
     if (zoneLabels.length === zones.length) return;
-    for (var i = 0; i < zoneLabels.length; i++) {
-      try { zoneLabels[i].destroy(); } catch (e) {}
-    }
+    for (var i = 0; i < zoneLabels.length; i++) { try { zoneLabels[i].destroy(); } catch (e) {} }
     zoneLabels = [];
     var txt = _isEN() ? '▼ EAVESDROP' : '▼ ABHOEREN';
     for (var j = 0; j < zones.length; j++) {
@@ -83,35 +97,30 @@
     }
   }
 
-  function _bannerText(st) {
+  // Status-Chip-Inhalt nach State.
+  function _statusInfo(st, allDone) {
     var en = _isEN();
-    var allDone = (st.observeZones || []).length > 0
-      && st.observeZones.every(function (z) { return z._done; });
-    if (st.exposed) {
-      // Recoverable: leave the red guard zones so suspicion fades + you re-blend.
-      var dpct = Math.round((st.detection || 0) * 100);
-      return en
-        ? '! EXPOSED (' + dpct + '%) — get away from the red guard zones to blend back in.'
-        : '! ENTTARNT (' + dpct + '%) — raus aus den roten Wachen-Zonen, dann bist du wieder verdeckt.';
-    }
-    if (allDone) {
-      return en ? '✓ Overheard everything — leave via the stairs.'
-                : '✓ Alles abgehoert — verlass den Raum ueber die Treppe.';
-    }
-    return en
-      ? 'Disguised. Reach the GOLD circle and wait to listen — do NOT draw your blade.'
-      : 'Verdeckt. Geh in den GOLDENEN Kreis und warte zum Abhoeren — zieh KEINE Klinge.';
+    if (st.exposed) return { txt: en ? '! EXPOSED' : '! ENTTARNT', col: 0xff4444, tcol: '#ffffff', hot: true };
+    if (allDone) return { txt: en ? '✓ ALL HEARD' : '✓ ABGEHOERT', col: 0x33cc77, tcol: '#06210f', hot: false };
+    if ((st.detection || 0) > 0.05) return { txt: en ? 'SUSPICIOUS' : 'VERDAECHTIG', col: 0xe0a020, tcol: '#1a1200', hot: true };
+    return { txt: en ? 'DISGUISED' : 'VERKLEIDET', col: 0x4a8fd0, tcol: '#04121f', hot: false };
+  }
+
+  function _actionText(st, allDone) {
+    var en = _isEN();
+    if (st.exposed) return en ? 'Get out of the red zones to blend back in.'
+                              : 'Raus aus den roten Zonen, dann tauchst du wieder unter.';
+    if (allDone) return en ? 'Leave via the stairs.' : 'Verlass den Raum ueber die Treppe.';
+    return en ? 'Reach the gold circle and wait to listen.'
+              : 'Geh in den goldenen Kreis und warte zum Abhoeren.';
   }
 
   function sync(scene) {
     scene = scene || _scene();
     var active = !!(window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
       && window.EspionageSystem.isActive());
-    // Stale-mount guard: if the GameScene was torn down (return to hub /
-    // scene switch), our game objects are destroyed but `mounted` is still
-    // true with dead references. Detect via the graphics' severed .scene link
-    // and reset so the next mission re-mounts cleanly.
-    if (mounted && (!g || !g.scene)) { mounted = false; g = null; banner = null; bannerBg = null; zoneLabels = []; }
+    // Stale-mount guard (Hub-Rueckkehr / Scene-Switch zerstoert unsere Objekte).
+    if (mounted && (!g || !g.scene)) { mounted = false; g = gHud = banner = bannerBg = chipBg = chipText = null; zoneLabels = []; }
 
     if (!active) { if (mounted) unmount(); return; }
     if (!mounted) mount(scene);
@@ -121,64 +130,128 @@
     if (!st) return;
     _t += 0.06;
     var pulse = 0.5 + 0.5 * Math.sin(_t * 2.2);
+    var en = _isEN();
+    var det = (typeof st.detection === 'number') ? st.detection : 0;
+    var zones = st.observeZones || [];
+    var allDone = zones.length > 0 && zones.every(function (z) { return z._done; });
+    var cam = scene.cameras && scene.cameras.main;
+    var pl = window.player;
+    var px = (pl && pl.active) ? pl.x : 0, py = (pl && pl.active) ? pl.y : 0;
+
+    // --- Enttarn-Moment (Flanke verdeckt -> enttarnt) ------------------------
+    if (st.exposed && !_prevExposed && cam) {
+      try { cam.flash(180, 200, 30, 30, false); } catch (e) {}
+      try { cam.shake(170, 0.006); } catch (e) {}
+      if (window.soundManager) { try { window.soundManager.playSFX('hit'); } catch (e) {} }
+    }
+    _prevExposed = st.exposed;
 
     g.clear();
-    var en = _isEN();
 
-    // --- Wachen-Sichtradien (rot) — NUR sichtbar, wenn enttarnt --------
-    // Solange du verdeckt bist, sehen dich die Wachen per Naehe NIE (nur ein
-    // Angriff enttarnt). Die roten Zonen sind also erst relevant, wenn du
-    // enttarnt bist und wieder untertauchen willst — vorher waeren sie nur
-    // verwirrender Clutter. Darum hier bewusst an `st.exposed` gekoppelt.
-    if (st.exposed) {
-      (st.guards || []).forEach(function (gd) {
-        var range = gd.range || 0;
-        if (range <= 0) return;
-        g.fillStyle(0xff4444, 0.14);
-        g.fillCircle(gd.x, gd.y, range);
-        g.lineStyle(2, 0xff5555, 0.85);
-        g.strokeCircle(gd.x, gd.y, range);
-        g.fillStyle(0xff8888, 0.95);
-        g.fillCircle(gd.x, gd.y, 6);
-      });
-    }
+    // --- Deckungs-Zonen (blau-gruen; heller, wenn der Spieler drinsteht) -----
+    (st.cover || []).forEach(function (c) {
+      if (!c || !(c.w > 0)) return;
+      var inside = (pl && px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + (c.h || 0));
+      g.fillStyle(0x2aa6a0, inside ? 0.22 : 0.10);
+      g.fillRect(c.x, c.y, c.w, c.h || 0);
+      g.lineStyle(2, 0x55ddcc, inside ? 0.95 : 0.45);
+      g.strokeRect(c.x, c.y, c.w, c.h || 0);
+    });
 
-    // --- Abhoer-Zone (das EINE Ziel) — golden, pulsierend; gruen wenn fertig
-    var zones = st.observeZones || [];
+    // --- Wachen-Sichtradien IMMER; Intensitaet nach detection/Enttarnung -----
+    var heat = st.exposed ? 1 : Math.min(1, det * 2);
+    (st.guards || []).forEach(function (gd) {
+      var range = gd.range || 0;
+      if (range <= 0) return;
+      g.fillStyle(0xff5555, 0.04 + 0.10 * heat);
+      g.fillCircle(gd.x, gd.y, range);
+      g.lineStyle(st.exposed ? 2 : 1.5, 0xff6666, (0.30 + 0.55 * heat) * (st.exposed ? (0.7 + 0.3 * pulse) : 1));
+      g.strokeCircle(gd.x, gd.y, range);
+      g.fillStyle(0xff8888, 0.5 + 0.45 * heat);
+      g.fillCircle(gd.x, gd.y, st.exposed ? 6 : 4);
+    });
+
+    // --- Abhoer-Zonen (golden, pulsierend; gruen wenn fertig) ----------------
     _ensureZoneLabels(scene, zones);
     zones.forEach(function (z, i) {
       var r = z.r || 64;
+      // Fertigstellungs-Pop (einmalig je Zone)
+      if (z._done && !z._fxDone) {
+        z._fxDone = true;
+        try {
+          var fx = scene.add.circle(z.x, z.y, r, 0x66ffaa, 0.5).setDepth(DEPTH_WORLD).setScrollFactor(1);
+          if (scene.tweens) scene.tweens.add({ targets: fx, scale: 1.5, alpha: 0, duration: 420, onComplete: function () { try { fx.destroy(); } catch (e) {} } });
+          else scene.time.delayedCall(420, function () { try { fx.destroy(); } catch (e) {} });
+          if (window.soundManager) window.soundManager.playSFX('level_up');
+        } catch (e) {}
+      }
       if (z._done) {
-        g.fillStyle(0x33dd88, 0.20);
-        g.fillCircle(z.x, z.y, r);
-        g.lineStyle(4, 0x44ee99, 0.95);
-        g.strokeCircle(z.x, z.y, r);
-        if (zoneLabels[i]) {
-          zoneLabels[i].setText(en ? '✓ HEARD' : '✓ ABGEHOERT');
-          zoneLabels[i].setColor('#7dffb0');
-        }
+        g.fillStyle(0x33dd88, 0.20); g.fillCircle(z.x, z.y, r);
+        g.lineStyle(4, 0x44ee99, 0.95); g.strokeCircle(z.x, z.y, r);
+        if (zoneLabels[i]) { zoneLabels[i].setText(en ? '✓ HEARD' : '✓ ABGEHOERT'); zoneLabels[i].setColor('#7dffb0'); }
       } else {
-        // Kraeftiges Gold + Marker-Kreuz in der Mitte, damit das Ziel
-        // unverwechselbar ist (Feedback: "blauer Kreis, was macht der?").
-        g.fillStyle(0xffc23a, 0.12 + 0.16 * pulse);
-        g.fillCircle(z.x, z.y, r);
-        g.lineStyle(4, 0xffd966, 0.6 + 0.4 * pulse);
-        g.strokeCircle(z.x, z.y, r);
+        g.fillStyle(0xffc23a, 0.12 + 0.16 * pulse); g.fillCircle(z.x, z.y, r);
+        g.lineStyle(4, 0xffd966, 0.6 + 0.4 * pulse); g.strokeCircle(z.x, z.y, r);
         g.lineStyle(2, 0xffe27a, 0.8);
         g.beginPath(); g.moveTo(z.x - 10, z.y); g.lineTo(z.x + 10, z.y); g.strokePath();
         g.beginPath(); g.moveTo(z.x, z.y - 10); g.lineTo(z.x, z.y + 10); g.strokePath();
-        // Fortschrittsring beim Lauschen
         var prog = (z.seconds > 0) ? Math.min(1, (z._elapsed || 0) / z.seconds) : 0;
         if (prog > 0.001) {
           g.lineStyle(6, 0xffffff, 0.95);
-          g.beginPath();
-          g.arc(z.x, z.y, r + 7, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2, false);
-          g.strokePath();
+          g.beginPath(); g.arc(z.x, z.y, r + 7, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2, false); g.strokePath();
         }
       }
     });
 
-    banner.setText(_bannerText(st));
+    // --- Detection-RING am Spieler (Kernstueck) ------------------------------
+    if (pl && pl.active) {
+      var ringR = 30;
+      g.lineStyle(3, 0x000000, 0.22); g.strokeCircle(px, py, ringR); // dezenter Track
+      if (det > 0.02 || st.exposed) {
+        var fill = st.exposed ? 1 : det;
+        var col = st.exposed ? 0xff3b30 : (det < 0.5 ? 0xffd24a : (det < 0.85 ? 0xff8a2a : 0xff3b30));
+        g.lineStyle(4, col, st.exposed ? (0.7 + 0.3 * pulse) : 0.95);
+        g.beginPath();
+        g.arc(px, py, ringR, -Math.PI / 2, -Math.PI / 2 + fill * Math.PI * 2, false);
+        g.strokePath();
+      }
+    }
+
+    // --- Off-screen-Pfeil zur naechsten offenen Zone -------------------------
+    gHud.clear();
+    if (cam && !st.exposed && !allDone) {
+      var open = zones.filter(function (z) { return !z._done; });
+      if (open.length && pl) {
+        var tgt = open[0], best = Infinity;
+        open.forEach(function (z) {
+          var d = (z.x - px) * (z.x - px) + (z.y - py) * (z.y - py);
+          if (d < best) { best = d; tgt = z; }
+        });
+        var onScreen = (tgt.x >= cam.scrollX && tgt.x <= cam.scrollX + cam.width
+          && tgt.y >= cam.scrollY && tgt.y <= cam.scrollY + cam.height);
+        if (!onScreen) {
+          var sx = cam.width / 2, sy = cam.height / 2;
+          var ang = Math.atan2((tgt.y - cam.scrollY) - sy, (tgt.x - cam.scrollX) - sx);
+          var ex = sx + Math.cos(ang) * (cam.width / 2 - 60);
+          var ey = sy + Math.sin(ang) * (cam.height / 2 - 60);
+          var s = 15;
+          gHud.fillStyle(0xffd24a, 0.92);
+          gHud.beginPath();
+          gHud.moveTo(ex + Math.cos(ang) * s, ey + Math.sin(ang) * s);
+          gHud.lineTo(ex + Math.cos(ang + 2.5) * s, ey + Math.sin(ang + 2.5) * s);
+          gHud.lineTo(ex + Math.cos(ang - 2.5) * s, ey + Math.sin(ang - 2.5) * s);
+          gHud.closePath(); gHud.fillPath();
+        }
+      }
+    }
+
+    // --- HUD: Status-Chip + Aktionszeile ------------------------------------
+    var si = _statusInfo(st, allDone);
+    chipText.setText(si.txt);
+    chipText.setColor(si.tcol);
+    chipBg.setSize(Math.max(120, chipText.width + 26), 26);
+    chipBg.setFillStyle(si.col, si.hot ? (0.75 + 0.25 * pulse) : 0.95);
+    banner.setText(_actionText(st, allDone));
     banner.setColor(st.exposed ? '#ff9a9a' : '#ffe6a8');
   }
 
