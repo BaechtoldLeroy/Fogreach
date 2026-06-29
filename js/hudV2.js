@@ -14,6 +14,7 @@
     window.i18n.register('de', {
       'hud.menu.title': 'Menü',
       'hud.menu.btn.loadout': 'Fähigkeiten-Loadout',
+      'hud.menu.btn.talents': 'Talente',
       'hud.menu.btn.journal': 'Journal',
       'hud.menu.btn.settings': 'Einstellungen',
       'hud.menu.btn.close': 'Schließen [ESC]',
@@ -34,6 +35,7 @@
     window.i18n.register('en', {
       'hud.menu.title': 'Menu',
       'hud.menu.btn.loadout': 'Ability Loadout',
+      'hud.menu.btn.talents': 'Talents',
       'hud.menu.btn.journal': 'Journal',
       'hud.menu.btn.settings': 'Settings',
       'hud.menu.btn.close': 'Close [ESC]',
@@ -421,7 +423,7 @@
     const cw = scene.cameras.main.width;
     const ch = scene.cameras.main.height;
     const panelW = 280;
-    const panelH = 340;
+    const panelH = 400;
     const px = cw / 2;
     const py = ch / 2;
 
@@ -437,6 +439,9 @@
     const items = [
       { label: T('hud.menu.btn.loadout'), action: () => {
           if (typeof window.openLoadoutUI === 'function') window.openLoadoutUI(scene);
+        } },
+      { label: T('hud.menu.btn.talents'), action: () => {
+          if (typeof window.openSkillTreeScene === 'function') window.openSkillTreeScene(scene);
         } },
       { label: T('hud.menu.btn.journal'), action: () => {
           if (window.storySystem && typeof window.storySystem.showJournalOverlay === 'function') {
@@ -502,5 +507,10 @@
 
   HUDv2.build = build;
   HUDv2.update = update;
+  // Öffentlicher Menü-Opener, damit auch Nicht-Dungeon-Scenes (z.B. der Hub)
+  // dasselbe Menü-Overlay öffnen können (Talente/Loadout/Journal/Einstellungen).
+  HUDv2.openMenu = function (scene) {
+    if (scene && scene.cameras && scene.cameras.main) _openMenuOverlay(scene);
+  };
   window.HUDv2 = HUDv2;
 })();

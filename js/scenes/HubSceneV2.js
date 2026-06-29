@@ -281,6 +281,35 @@ class HubSceneV2 extends Phaser.Scene {
       };
       this.scale.on('resize', reflowBtn);
     }
+
+    // Burger-Menü oben rechts (Hub) — öffnet dasselbe HUD-Menü wie im Dungeon
+    // (Talente/Loadout/Journal/Einstellungen). Vorher gab es im Hub KEINEN
+    // Menü-Zugang, v.a. auf Mobile ohne Tastatur. Immer sichtbar (Desktop+Mobile).
+    {
+      const _saM = window.__SAFE_AREA__ || { top: 0, right: 0 };
+      const _mR = 22;
+      const _mx = this.scale.width - 14 - (_saM.right || 0) - _mR;
+      const _my = 14 + (_saM.top || 0) + _mR;
+      const menuBg = this.add.circle(_mx, _my, _mR, 0x10131c, 0.95)
+        .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(1300)
+        .setInteractive({ useHandCursor: true });
+      const menuIcon = this.add.text(_mx, _my, '☰', {
+        fontFamily: 'serif', fontSize: '22px', color: '#ffd166'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(1301);
+      menuBg.on('pointerdown', (pointer, lx, ly, event) => {
+        if (event && event.stopPropagation) event.stopPropagation();
+        if (window.HUDv2 && typeof window.HUDv2.openMenu === 'function') window.HUDv2.openMenu(this);
+      });
+      this._hubMenuBtn = menuBg;
+      this._hubMenuIcon = menuIcon;
+      this.scale.on('resize', () => {
+        const s = window.__SAFE_AREA__ || { top: 0, right: 0 };
+        const nx = this.scale.width - 14 - (s.right || 0) - _mR;
+        const ny = 14 + (s.top || 0) + _mR;
+        menuBg.setPosition(nx, ny); menuIcon.setPosition(nx, ny);
+      });
+    }
+
     this.input.keyboard.on('keydown-E', this._handleInteract, this);
     this._mobileInteractHandler = () => this._handleInteract();
     window.addEventListener('demonfall:mobile-interact', this._mobileInteractHandler);
