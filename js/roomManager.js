@@ -1937,6 +1937,11 @@ function updateRoomCounter(roomIndex, totalRooms) {
     window._roomCounterText.setText(_roomLabel);
   }
   window.roomProgressText = _roomLabel;
+  // #49: Daten für den segmentierten Fortschrittsbalken publizieren + neu zeichnen.
+  window._roomProgress = { cur: (roomIndex + 1), total: totalRooms };
+  if (typeof window._drawRoomProgress === 'function') {
+    try { window._drawRoomProgress(); } catch (e) { /* visual only */ }
+  }
 }
 
 // Per-run state for the Elara Q5 cellar encounter. Reset by initDungeonRun.

@@ -48,13 +48,55 @@ function initMinimap(scene) {
     scene._minimapBorder.setVisible(scene._minimapVisible);
   });
 
-  // Move the room counter text below the minimap for visual consistency
+  // #49: Raum-Progress als segmentierter Balken (ein Segment pro Raum) +
+  // kompaktes, zentriertes Label unter der Minikarte (ersetzt den schlichten
+  // blauen Text). Geometrie für drawRoomProgress() ablegen.
+  const _rpX = SCREEN_W - MAP_W - RIGHT_MARGIN;
+  const _rpY = 10 + MAP_H + 7;
+  window._roomProgressGeom = { x: _rpX, y: _rpY, w: MAP_W };
+  if (!window._roomProgressGfx || !window._roomProgressGfx.scene) {
+    window._roomProgressGfx = scene.add.graphics().setScrollFactor(0).setDepth(1501);
+  }
   if (window._roomCounterText) {
-    window._roomCounterText.setPosition(SCREEN_W - MAP_W - RIGHT_MARGIN, 10 + MAP_H + 4);
-    window._roomCounterText.setOrigin(0, 0);
+    window._roomCounterText.setPosition(_rpX + MAP_W / 2, _rpY + 11);
+    window._roomCounterText.setOrigin(0.5, 0);
     window._roomCounterText.setDepth(1501);
   }
+  if (typeof window._drawRoomProgress === 'function') window._drawRoomProgress();
 }
+
+// #49: Zeichnet den segmentierten Raum-Fortschrittsbalken (grün = geschafft,
+// gold = aktueller Raum, grau = kommend). Daten aus window._roomProgress,
+// Geometrie aus window._roomProgressGeom (in initMinimap gesetzt).
+function drawRoomProgress() {
+  const g = window._roomProgressGfx;
+  const geom = window._roomProgressGeom;
+  const p = window._roomProgress;
+  if (!g || !g.scene) return;
+  if (!geom || !p || !(p.total > 0)) { try { g.clear(); } catch (e) {} return; }
+  const total = Math.max(1, p.total | 0);
+  const cur = Math.max(1, Math.min(total, p.cur | 0));
+  const x0 = geom.x, y = geom.y, w = geom.w, h = 7;
+  const gap = total > 1 ? Math.max(2, Math.min(4, Math.floor((w / total) * 0.18))) : 0;
+  const segW = (w - gap * (total - 1)) / total;
+  const r = Math.max(1, Math.min(3, segW / 2));
+  g.clear();
+  for (let i = 0; i < total; i++) {
+    const sx = x0 + i * (segW + gap);
+    const n = i + 1;
+    let col, alpha;
+    if (n < cur) { col = 0x66dd88; alpha = 0.95; }        // geschafft = grün
+    else if (n === cur) { col = 0xffd166; alpha = 1; }     // aktuell = gold
+    else { col = 0x3a3f52; alpha = 0.85; }                 // kommend = grau
+    g.fillStyle(col, alpha);
+    g.fillRoundedRect(sx, y, segW, h, r);
+    if (n === cur) {
+      g.lineStyle(1.5, 0xfff3c0, 0.95);
+      g.strokeRoundedRect(sx - 0.5, y - 0.5, segW + 1, h + 1, r);
+    }
+  }
+}
+if (typeof window !== 'undefined') window._drawRoomProgress = drawRoomProgress;
 
 /**
  * Update the minimap. Call from GameScene update() — internally throttles to every 5 frames.

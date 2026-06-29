@@ -2098,7 +2098,7 @@ function initUI() {
     .setDepth(1001).setScrollFactor(0);
   waveText = this.add.text(16, 100, '', Object.assign({}, hudStyle, { fill: '#ffdd44' }))
     .setDepth(1001).setScrollFactor(0);
-  window._roomCounterText = this.add.text(16, 122, '', Object.assign({}, hudStyle, { fill: '#aabbff' }))
+  window._roomCounterText = this.add.text(16, 122, '', Object.assign({}, hudStyle, { fill: '#ffd166', fontSize: '13px' }))
     .setDepth(1001).setScrollFactor(0);
   window._goldText = this.add.text(16, 144, _HUD_T('hud.gold', { amount: 0 }), Object.assign({}, hudStyle, { fill: '#ffd166' }))
     .setDepth(1001).setScrollFactor(0);
