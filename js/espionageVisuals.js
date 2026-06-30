@@ -158,17 +158,36 @@
       g.strokeRect(c.x, c.y, c.w, c.h || 0);
     });
 
-    // --- Wachen-Sichtradien IMMER; Intensitaet nach detection/Enttarnung -----
-    var heat = st.exposed ? 1 : Math.min(1, det * 2);
+    // --- Wachen: bewegliche Figur + SICHTKEGEL (Farbe nach Alarm) ------------
+    var alert = st.exposed ? 1 : Math.min(1, det * 1.5);
+    var coneCol = st.exposed ? 0xff4040 : (alert > 0.5 ? 0xff8a2a : 0xffd24a);
     (st.guards || []).forEach(function (gd) {
+      if (gd.knocked) {
+        // niedergeschlagen: graue, liegende Markierung (kein Kegel)
+        g.fillStyle(0x888888, 0.5); g.fillCircle(gd.x, gd.y, 9);
+        g.lineStyle(2, 0xbbbbbb, 0.7);
+        g.beginPath(); g.moveTo(gd.x - 7, gd.y - 7); g.lineTo(gd.x + 7, gd.y + 7); g.strokePath();
+        g.beginPath(); g.moveTo(gd.x - 7, gd.y + 7); g.lineTo(gd.x + 7, gd.y - 7); g.strokePath();
+        return;
+      }
       var range = gd.range || 0;
-      if (range <= 0) return;
-      g.fillStyle(0xff5555, 0.04 + 0.10 * heat);
-      g.fillCircle(gd.x, gd.y, range);
-      g.lineStyle(st.exposed ? 2 : 1.5, 0xff6666, (0.30 + 0.55 * heat) * (st.exposed ? (0.7 + 0.3 * pulse) : 1));
-      g.strokeCircle(gd.x, gd.y, range);
-      g.fillStyle(0xff8888, 0.5 + 0.45 * heat);
-      g.fillCircle(gd.x, gd.y, st.exposed ? 6 : 4);
+      var f = gd._facing || 0, half = gd.halfAngle || 0.6;
+      if (range > 0) {
+        // gefuellter Sichtkegel + Rand + Schenkel + Blickstrahl
+        g.fillStyle(coneCol, 0.09 + 0.12 * alert);
+        g.slice(gd.x, gd.y, range, f - half, f + half, false); g.fillPath();
+        g.lineStyle(1.5, coneCol, 0.45 + 0.4 * alert);
+        g.beginPath(); g.arc(gd.x, gd.y, range, f - half, f + half, false); g.strokePath();
+        g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f - half) * range, gd.y + Math.sin(f - half) * range); g.strokePath();
+        g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f + half) * range, gd.y + Math.sin(f + half) * range); g.strokePath();
+        g.lineStyle(2, coneCol, 0.5);
+        g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f) * range * 0.5, gd.y + Math.sin(f) * range * 0.5); g.strokePath();
+      }
+      // Wachen-Figur: dunkler Koerper + Rand + "Auge" in Blickrichtung
+      g.fillStyle(0x262b36, 0.96); g.fillCircle(gd.x, gd.y, 11);
+      g.lineStyle(2.5, st.exposed ? 0xff5555 : 0xccd2e0, 0.95); g.strokeCircle(gd.x, gd.y, 11);
+      g.fillStyle(0xffe27a, 0.95);
+      g.fillCircle(gd.x + Math.cos(f) * 6, gd.y + Math.sin(f) * 6, 3);
     });
 
     // --- Abhoer-Zonen (golden, pulsierend; gruen wenn fertig) ----------------

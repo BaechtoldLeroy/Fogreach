@@ -148,13 +148,18 @@ test('detection decays when no guard sees the player', () => {
   assert.ok(E.getDetection() < raised, 'detection decayed out of sight');
 });
 
-test('disguise suppresses detection even inside guard range', () => {
+test('disguise = tolerance: safe at distance/edge, but caught up close (#54)', () => {
   const E = globalThis.window.EspionageSystem;
-  stubPlayer(100, 100);
-  E.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 150 }] });
+  // Guard faces +x (facing 0, scanArc 0 = no oscillation for a deterministic cone).
+  stubPlayer(220, 100); // 120px down-cone of the guard -> low intensity
+  E.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 150, facing: 0, scanArc: 0 }] });
   E.setDisguise(true);
   tick(E, 1000);
-  assert.strictEqual(E.getDetection(), 0, 'disguised player not detected');
+  assert.strictEqual(E.getDetection(), 0, 'disguised + at distance stays unseen (below tolerance)');
+  // Move right into the guard's face -> max intensity -> disguise no longer saves you.
+  globalThis.window.player.x = 100; globalThis.window.player.y = 100;
+  tick(E, 600);
+  assert.ok(E.getDetection() > 0, 'disguised but point-blank in the cone raises suspicion');
 });
 
 test('cover zone suppresses detection inside guard range', () => {

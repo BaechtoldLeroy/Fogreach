@@ -2047,6 +2047,15 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       if (z.id != null) out.id = z.id;
       if (z.questTarget != null) out.questTarget = z.questTarget;
       if (hasWH) { out.w = (z.w || 0) * T; out.h = (z.h || 0) * T; }
+      // #54: Wachen-Parameter (Sichtkegel + Patrouille) durchreichen.
+      if (z.facing != null) out.facing = z.facing;            // rad
+      if (z.halfAngle != null) out.halfAngle = z.halfAngle;   // rad
+      if (z.speed != null) out.speed = z.speed;               // px/s
+      if (z.scanArc != null) out.scanArc = z.scanArc;         // rad
+      if (z.pause != null) out.pause = z.pause;               // s
+      if (z.patrol && z.patrol.length) {
+        out.patrol = z.patrol.map(function (w) { return { x: ox + (w.x || 0) * T, y: oy + (w.y || 0) * T }; });
+      }
       return out;
     };
 
