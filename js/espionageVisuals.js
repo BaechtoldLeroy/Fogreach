@@ -238,6 +238,11 @@
       g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f) * range * 0.5, gd.y + Math.sin(f) * range * 0.5); g.strokePath();
     });
     // 2) Wachen-Sprites synchronisieren (erstellen/positionieren/stylen)
+    // Self-Heal: ChainGuard-Textur erst jetzt verfuegbar -> Fallback ersetzen.
+    if (_guardTex !== 'chainguard_right0' && scene.textures && scene.textures.exists('chainguard_right0')) {
+      _guardTex = 'chainguard_right0';
+      for (var sh = 0; sh < guardSprites.length; sh++) { try { guardSprites[sh].setTexture(_guardTex); } catch (e) {} }
+    }
     while (guardSprites.length < guards.length) {
       var sp = scene.add.sprite(0, 0, _guardTex || 'esp_guard_fallback').setDepth(DEPTH_WORLD + 2).setScrollFactor(1);
       sp.setDisplaySize(36, 42);   // einheitliche Wachen-Groesse
@@ -266,6 +271,13 @@
     // durch. Richtungs- + Lauf-Animation folgen der Spielerbewegung.
     if (disguiseSpr && pl && pl.active) {
       if (st.disguised && !st.exposed) {
+        // Self-Heal: war die ChainGuard-Textur beim Mount noch nicht geladen
+        // (Overlay fiel auf den gezeichneten esp_disguise-Umhang zurueck),
+        // jetzt aufs echte Sprite umschalten, sobald es existiert.
+        if (!_disguiseDir && scene.textures && scene.textures.exists('chainguard_right0')) {
+          _disguiseDir = true;
+          try { disguiseSpr.setTexture('chainguard_right0'); } catch (e) {}
+        }
         disguiseSpr.setVisible(true);
         var vx = (pl.body && pl.body.velocity) ? pl.body.velocity.x : 0;
         var vy = (pl.body && pl.body.velocity) ? pl.body.velocity.y : 0;
