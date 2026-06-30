@@ -351,19 +351,28 @@ if (window.i18n) {
     // + burger menu's Loadout entry), shared between desktop and mobile.)
 
     // ----- Joystick (fixed bottom-left) -----
-    const joystickBase = scene.add.circle(0, 0, 60, 0x888888, 0.3);
-    const joystickThumb = scene.add.circle(0, 0, 30, 0xcccccc, 0.5);
-    const joystick = scene.plugins.get('rexVirtualJoystick').add(scene, {
-      x: 100,
-      y: scene.scale.height - 100,
-      radius: 60,
-      base: joystickBase,
-      thumb: joystickThumb,
-    });
-    joystick.base.setScrollFactor(0).setDepth(1200);
-    joystick.thumb.setScrollFactor(0).setDepth(1200);
-    state.joystick = joystick;
-    window.joystick = joystick;
+    // Plugin defensiv: fehlt es (CDN-Fehler/Tracking-Prevention), laeuft der Rest
+    // der Mobile-Steuerung (Ability-Buttons etc.) weiter — nur ohne Joystick.
+    // Downstream-Code prueft state.joystick bereits auf null.
+    const joystickPlugin = scene.plugins.get('rexVirtualJoystick');
+    if (joystickPlugin) {
+      const joystickBase = scene.add.circle(0, 0, 60, 0x888888, 0.3);
+      const joystickThumb = scene.add.circle(0, 0, 30, 0xcccccc, 0.5);
+      const joystick = joystickPlugin.add(scene, {
+        x: 100,
+        y: scene.scale.height - 100,
+        radius: 60,
+        base: joystickBase,
+        thumb: joystickThumb,
+      });
+      joystick.base.setScrollFactor(0).setDepth(1200);
+      joystick.thumb.setScrollFactor(0).setDepth(1200);
+      state.joystick = joystick;
+      window.joystick = joystick;
+    } else {
+      console.warn('[mobileControls] rexVirtualJoystick plugin missing — joystick disabled');
+      state.joystick = null;
+    }
 
     // Destroy previous cooldown texts if any, then create fresh per equipped button.
     [

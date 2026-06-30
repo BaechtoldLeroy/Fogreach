@@ -112,13 +112,15 @@ const config = {
     arcade: { gravity: { y: 0 }, debug: false, overlapBias: 8, tileBias: 32 }
   },
   scene: [StartScene, HubSceneV2, CraftingScene, SettingsScene, PrintingHouseScene, TestTerrainScene, GameScene],
-  plugins: {
+  // Joystick-Plugin defensiv: fehlt das Global (CDN-Fehler/Tracking-Prevention),
+  // bootet das Spiel trotzdem — nur der Mobile-Joystick faellt dann aus.
+  plugins: (typeof rexvirtualjoystickplugin !== 'undefined') ? {
     global: [{
       key: 'rexVirtualJoystick',
       plugin: rexvirtualjoystickplugin,
       start: true
     }]
-  }
+  } : { global: [] }
 };
 
 let game = new Phaser.Game(config);
