@@ -32,9 +32,47 @@
   var chipBg = null;       // Status-Chip Hintergrund
   var chipText = null;     // Status-Chip Text
   var zoneLabels = [];     // Text-Labels an den Abhoer-Zonen
+  var guardSprites = [];   // echte Wachen-Sprites (statt Kreise)
+  var _guardTex = null;    // aufgeloeste Wachen-Textur (ChainGuard o.ae.)
+  var disguiseSpr = null;  // Verkleidungs-Overlay (Umhang/Kapuze) am Spieler
   var _t = 0;              // Pulse-Akkumulator
   var _prevExposed = false;
   var _cw = 1536, _ch = 800;
+
+  // Echte Wachen-Textur aufloesen (ChainGuard passt zum Kettenrat-Warenhaus);
+  // Fallback: einmalig eine simple Wachen-Figur generieren.
+  function _resolveGuardTex(scene) {
+    var cands = ['chainguard_right0', 'sprite_chainguard', 'enemyChainGuard', 'imp_right0', 'sprite_imp', 'enemyImp'];
+    for (var i = 0; i < cands.length; i++) {
+      if (scene.textures && scene.textures.exists(cands[i])) return cands[i];
+    }
+    if (scene.textures && !scene.textures.exists('esp_guard_fallback')) {
+      try {
+        var gg = scene.make.graphics({ add: false });
+        gg.fillStyle(0x3a3f52, 1); gg.fillRoundedRect(5, 9, 18, 20, 5);   // Koerper
+        gg.fillStyle(0x6a7088, 1); gg.fillCircle(14, 8, 7);                // Kopf
+        gg.lineStyle(2, 0x9aa2bd, 1); gg.strokeRoundedRect(5, 9, 18, 20, 5);
+        gg.generateTexture('esp_guard_fallback', 28, 32); gg.destroy();
+      } catch (e) {}
+    }
+    return 'esp_guard_fallback';
+  }
+
+  // Verkleidungs-Overlay-Textur (Kapuzen-Umhang) einmalig generieren.
+  function _ensureDisguiseTex(scene) {
+    if (!scene.textures || scene.textures.exists('esp_disguise')) return;
+    try {
+      var gg = scene.make.graphics({ add: false });
+      // Umhang (Trapez) + Kapuze (Bogen) — dunkel mit hellem Saum.
+      gg.fillStyle(0x20243a, 1);
+      gg.beginPath(); gg.moveTo(10, 14); gg.lineTo(30, 14); gg.lineTo(36, 44); gg.lineTo(4, 44); gg.closePath(); gg.fillPath();
+      gg.fillStyle(0x14172a, 1); gg.fillCircle(20, 14, 13);              // Kapuze
+      gg.fillStyle(0x05060c, 1); gg.fillCircle(20, 16, 8);              // Schatten im Kapuzen-Inneren
+      gg.lineStyle(2, 0x99a6e0, 0.9);
+      gg.beginPath(); gg.arc(20, 14, 13, Math.PI * 0.85, Math.PI * 2.15, false); gg.strokePath(); // Saum-Kante Kapuze
+      gg.generateTexture('esp_disguise', 40, 48); gg.destroy();
+    } catch (e) {}
+  }
 
   function _scene() {
     return (typeof window !== 'undefined' && window.currentScene) ? window.currentScene : null;
@@ -50,6 +88,12 @@
     _prevExposed = false;
     g = scene.add.graphics().setDepth(DEPTH_WORLD).setScrollFactor(1);
     gHud = scene.add.graphics().setDepth(DEPTH_HUD).setScrollFactor(0);
+
+    // Echte Wachen-Sprites + Verkleidungs-Overlay vorbereiten.
+    _guardTex = _resolveGuardTex(scene);
+    _ensureDisguiseTex(scene);
+    guardSprites = [];
+    disguiseSpr = scene.add.sprite(0, 0, 'esp_disguise').setDepth(DEPTH_WORLD + 3).setScrollFactor(1).setVisible(false);
 
     var cam = scene.cameras && scene.cameras.main;
     _cw = cam ? cam.width : 1536;
@@ -74,12 +118,14 @@
 
   function unmount() {
     mounted = false;
-    [g, gHud, banner, bannerBg, chipBg, chipText].forEach(function (o) {
+    [g, gHud, banner, bannerBg, chipBg, chipText, disguiseSpr].forEach(function (o) {
       if (o) { try { o.destroy(); } catch (e) {} }
     });
-    g = gHud = banner = bannerBg = chipBg = chipText = null;
+    g = gHud = banner = bannerBg = chipBg = chipText = disguiseSpr = null;
     for (var i = 0; i < zoneLabels.length; i++) { try { zoneLabels[i].destroy(); } catch (e) {} }
+    for (var k = 0; k < guardSprites.length; k++) { try { guardSprites[k].destroy(); } catch (e) {} }
     zoneLabels = [];
+    guardSprites = [];
   }
 
   function _ensureZoneLabels(scene, zones) {
@@ -120,7 +166,7 @@
     var active = !!(window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
       && window.EspionageSystem.isActive());
     // Stale-mount guard (Hub-Rueckkehr / Scene-Switch zerstoert unsere Objekte).
-    if (mounted && (!g || !g.scene)) { mounted = false; g = gHud = banner = bannerBg = chipBg = chipText = null; zoneLabels = []; }
+    if (mounted && (!g || !g.scene)) { mounted = false; g = gHud = banner = bannerBg = chipBg = chipText = disguiseSpr = null; zoneLabels = []; guardSprites = []; }
 
     if (!active) { if (mounted) unmount(); return; }
     if (!mounted) mount(scene);
@@ -158,37 +204,59 @@
       g.strokeRect(c.x, c.y, c.w, c.h || 0);
     });
 
-    // --- Wachen: bewegliche Figur + SICHTKEGEL (Farbe nach Alarm) ------------
+    // --- Sichtkegel (Graphics) + echte Wachen-SPRITES ------------------------
     var alert = st.exposed ? 1 : Math.min(1, det * 1.5);
     var coneCol = st.exposed ? 0xff4040 : (alert > 0.5 ? 0xff8a2a : 0xffd24a);
-    (st.guards || []).forEach(function (gd) {
-      if (gd.knocked) {
-        // niedergeschlagen: graue, liegende Markierung (kein Kegel)
-        g.fillStyle(0x888888, 0.5); g.fillCircle(gd.x, gd.y, 9);
-        g.lineStyle(2, 0xbbbbbb, 0.7);
-        g.beginPath(); g.moveTo(gd.x - 7, gd.y - 7); g.lineTo(gd.x + 7, gd.y + 7); g.strokePath();
-        g.beginPath(); g.moveTo(gd.x - 7, gd.y + 7); g.lineTo(gd.x + 7, gd.y - 7); g.strokePath();
-        return;
-      }
+    var guards = st.guards || [];
+    // 1) Sichtkegel zeichnen (nur fuer wache, nicht-niedergeschlagene Wachen)
+    guards.forEach(function (gd) {
+      if (gd.knocked) return;
       var range = gd.range || 0;
+      if (range <= 0) return;
       var f = gd._facing || 0, half = gd.halfAngle || 0.6;
-      if (range > 0) {
-        // gefuellter Sichtkegel + Rand + Schenkel + Blickstrahl
-        g.fillStyle(coneCol, 0.09 + 0.12 * alert);
-        g.slice(gd.x, gd.y, range, f - half, f + half, false); g.fillPath();
-        g.lineStyle(1.5, coneCol, 0.45 + 0.4 * alert);
-        g.beginPath(); g.arc(gd.x, gd.y, range, f - half, f + half, false); g.strokePath();
-        g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f - half) * range, gd.y + Math.sin(f - half) * range); g.strokePath();
-        g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f + half) * range, gd.y + Math.sin(f + half) * range); g.strokePath();
-        g.lineStyle(2, coneCol, 0.5);
-        g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f) * range * 0.5, gd.y + Math.sin(f) * range * 0.5); g.strokePath();
-      }
-      // Wachen-Figur: dunkler Koerper + Rand + "Auge" in Blickrichtung
-      g.fillStyle(0x262b36, 0.96); g.fillCircle(gd.x, gd.y, 11);
-      g.lineStyle(2.5, st.exposed ? 0xff5555 : 0xccd2e0, 0.95); g.strokeCircle(gd.x, gd.y, 11);
-      g.fillStyle(0xffe27a, 0.95);
-      g.fillCircle(gd.x + Math.cos(f) * 6, gd.y + Math.sin(f) * 6, 3);
+      g.fillStyle(coneCol, 0.09 + 0.12 * alert);
+      g.slice(gd.x, gd.y, range, f - half, f + half, false); g.fillPath();
+      g.lineStyle(1.5, coneCol, 0.45 + 0.4 * alert);
+      g.beginPath(); g.arc(gd.x, gd.y, range, f - half, f + half, false); g.strokePath();
+      g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f - half) * range, gd.y + Math.sin(f - half) * range); g.strokePath();
+      g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f + half) * range, gd.y + Math.sin(f + half) * range); g.strokePath();
+      g.lineStyle(2, coneCol, 0.5);
+      g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f) * range * 0.5, gd.y + Math.sin(f) * range * 0.5); g.strokePath();
     });
+    // 2) Wachen-Sprites synchronisieren (erstellen/positionieren/stylen)
+    while (guardSprites.length < guards.length) {
+      var sp = scene.add.sprite(0, 0, _guardTex || 'esp_guard_fallback').setDepth(DEPTH_WORLD + 2).setScrollFactor(1);
+      sp.setDisplaySize(36, 42);   // einheitliche Wachen-Groesse
+      guardSprites.push(sp);
+    }
+    while (guardSprites.length > guards.length) { try { guardSprites.pop().destroy(); } catch (e) {} }
+    for (var gi = 0; gi < guards.length; gi++) {
+      var gd2 = guards[gi], spr = guardSprites[gi];
+      if (!spr) continue;
+      spr.setVisible(true);
+      spr.setPosition(gd2.x, gd2.y);
+      var ff = gd2._facing || 0;
+      spr.setFlipX(Math.cos(ff) < 0);                 // nach links schauen -> spiegeln
+      if (gd2.knocked) {
+        spr.setTint(0x777777); spr.setAlpha(0.7); spr.setAngle(90);  // liegt
+      } else {
+        spr.setAngle(0); spr.setAlpha(1);
+        if (st.exposed) spr.setTint(0xff6a6a);        // alarmiert -> rot
+        else if (alert > 0.4) spr.setTint(0xffc080);  // misstrauisch -> orange
+        else spr.clearTint();
+      }
+    }
+
+    // --- Verkleidungs-Overlay am Spieler (sichtbarer Umhang/Kapuze) ----------
+    if (disguiseSpr && pl && pl.active) {
+      if (st.disguised && !st.exposed) {
+        disguiseSpr.setVisible(true);
+        disguiseSpr.setPosition(px, py - 2);
+        disguiseSpr.setAlpha(0.9);
+      } else {
+        disguiseSpr.setVisible(false);
+      }
+    }
 
     // --- Abhoer-Zonen (golden, pulsierend; gruen wenn fertig) ----------------
     _ensureZoneLabels(scene, zones);
