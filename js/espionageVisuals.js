@@ -58,7 +58,21 @@
     return 'esp_guard_fallback';
   }
 
-  // Verkleidungs-Overlay-Textur (Kapuzen-Umhang) einmalig generieren.
+  var _disguiseDir = false;  // true = directionale ChainGuard-Frames verfuegbar
+
+  // Verkleidungs-Textur aufloesen: die Verkleidung ist eine Kettenrat-Waechter-
+  // Montur (echtes Sprite), damit man optisch als Wache durchgeht. Fallback:
+  // gezeichneter Kapuzen-Umhang.
+  function _resolveDisguiseTex(scene) {
+    var tx = scene.textures;
+    if (tx && tx.exists('chainguard_right0')) { _disguiseDir = true; return 'chainguard_right0'; }
+    if (tx && tx.exists('sprite_chainguard')) { _disguiseDir = false; return 'sprite_chainguard'; }
+    if (tx && tx.exists('enemyChainGuard')) { _disguiseDir = false; return 'enemyChainGuard'; }
+    _ensureDisguiseTex(scene); _disguiseDir = false; return 'esp_disguise';
+  }
+
+  // Verkleidungs-Overlay-Textur (Kapuzen-Umhang) einmalig generieren — Fallback,
+  // falls keine ChainGuard-Sprites geladen sind.
   function _ensureDisguiseTex(scene) {
     if (!scene.textures || scene.textures.exists('esp_disguise')) return;
     try {
@@ -89,11 +103,11 @@
     g = scene.add.graphics().setDepth(DEPTH_WORLD).setScrollFactor(1);
     gHud = scene.add.graphics().setDepth(DEPTH_HUD).setScrollFactor(0);
 
-    // Echte Wachen-Sprites + Verkleidungs-Overlay vorbereiten.
+    // Echte Wachen-Sprites + Verkleidungs-Overlay (Kettenrat-Montur) vorbereiten.
     _guardTex = _resolveGuardTex(scene);
-    _ensureDisguiseTex(scene);
+    var _disguiseTex = _resolveDisguiseTex(scene);
     guardSprites = [];
-    disguiseSpr = scene.add.sprite(0, 0, 'esp_disguise').setDepth(DEPTH_WORLD + 3).setScrollFactor(1).setVisible(false);
+    disguiseSpr = scene.add.sprite(0, 0, _disguiseTex).setDepth(DEPTH_WORLD + 3).setScrollFactor(1).setVisible(false);
 
     var cam = scene.cameras && scene.cameras.main;
     _cw = cam ? cam.width : 1536;
@@ -247,12 +261,28 @@
       }
     }
 
-    // --- Verkleidungs-Overlay am Spieler (sichtbarer Umhang/Kapuze) ----------
+    // --- Verkleidungs-Overlay am Spieler: Kettenrat-Waechter-Montur ----------
+    // Echtes ChainGuard-Sprite ueber dem Spieler -> man geht optisch als Wache
+    // durch. Richtungs- + Lauf-Animation folgen der Spielerbewegung.
     if (disguiseSpr && pl && pl.active) {
       if (st.disguised && !st.exposed) {
         disguiseSpr.setVisible(true);
-        disguiseSpr.setPosition(px, py - 2);
-        disguiseSpr.setAlpha(0.9);
+        var vx = (pl.body && pl.body.velocity) ? pl.body.velocity.x : 0;
+        var vy = (pl.body && pl.body.velocity) ? pl.body.velocity.y : 0;
+        var moving = (vx * vx + vy * vy) > 100;
+        if (_disguiseDir) {
+          var dir = (vx < -4) ? 'left' : 'right';
+          var frame = 0;
+          if (moving) { var c = Math.floor(_t * 7) % 4; frame = (c === 1) ? 1 : (c === 3) ? 2 : 0; }
+          var key = 'chainguard_' + dir + frame;
+          if (scene.textures.exists(key)) disguiseSpr.setTexture(key);
+          else disguiseSpr.setFlipX(dir === 'left'); // falls nur eine Richtung existiert
+        }
+        // Groesse an den Spieler anpassen (Montur deckt die Spielerfigur ab).
+        var ph = pl.displayHeight || 60;
+        disguiseSpr.setDisplaySize(ph * 0.96, ph * 1.04);
+        disguiseSpr.setPosition(px, py);
+        disguiseSpr.setAlpha(1);
       } else {
         disguiseSpr.setVisible(false);
       }
