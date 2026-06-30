@@ -336,6 +336,19 @@ function initDungeonRun() {
     templateOrder.length = totalRooms;
   }
 
+  // #54-Test (?spy=1): ersten Raum auf einen Spionage-Raum zwingen.
+  if (_forceEspionageDebug()) {
+    var _espForce = 'CouncilWarehouse';
+    var _known = window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[_espForce];
+    if (_known) {
+      var _ei = templateOrder.indexOf(_espForce);
+      if (_ei !== -1) templateOrder.splice(_ei, 1);
+      templateOrder.unshift(_espForce);
+      if (templateOrder.length > totalRooms) templateOrder.length = totalRooms;
+      try { console.log('[054-test] Spionage-Raum erzwungen als Raum 1 (?spy=1)'); } catch (e) {}
+    }
+  }
+
   dungeonRun = {
     templateOrder: templateOrder,
     totalRooms: totalRooms,
@@ -1993,6 +2006,17 @@ function _rollDistance() {
 // aktive Quest ein passendes (noch offenes) observe-Objective hat. Konvertiert
 // die Zonen-Koords aus Tiles in Welt-Pixel (origin + tile*T) und uebergibt sie
 // an EspionageSystem.startMission; aktiviert die Verkleidung automatisch.
+// #54-Test: Debug-Schalter via URL ?spy=1 — erzwingt einen Spionage-Raum als
+// ersten Dungeon-Raum und startet die Mission OHNE aktive Quest (nur zum Testen
+// der Spionage-UI). Im Normalbetrieb (kein ?spy=1) komplett inaktiv.
+function _forceEspionageDebug() {
+  try {
+    if (typeof window === 'undefined') return false;
+    if (window.__FORCE_ESPIONAGE__) return true;
+    return !!(window.location && /[?&]spy=1(\b|&|$)/.test(window.location.search));
+  } catch (e) { return false; }
+}
+
 function _maybeStartEspionage(scene, templateName, builtMeta) {
   try {
     if (!templateName || !window.EspionageSystem || !window.RoomTemplates) return;
@@ -2010,7 +2034,7 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
           && (o.current || 0) < (o.required || 1);
       });
     });
-    if (!match) return;
+    if (!match && !_forceEspionageDebug()) return;  // #54-Test: ?spy=1 umgeht das Quest-Gating
 
     var T = (tpl.size && tpl.size.tile) || 32;
     var ox = (builtMeta && builtMeta.origin && builtMeta.origin.x) || 0;
