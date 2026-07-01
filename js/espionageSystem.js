@@ -274,19 +274,14 @@
 
         if (!state.exposed) {
           if (state.disguised) {
+            // Verkleidet: NUR Alarm-Wachen (rote Kegel) durchschauen die
+            // Verkleidung. Normale (blaue) Wachen sind komplett getaeuscht —
+            // an ihnen kann man gefahrlos vorbei.
             if (intenAlert > 0.02) {
-              // Alarm-Wache erkennt dich TROTZ Verkleidung -> schnell hoch.
               state.detection = Math.min(1, state.detection + RISE_PER_SEC * (0.4 + 0.6 * intenAlert) * dt);
               if (state.detection >= 1) _expose();
             } else {
-              // Nur normale Wachen: erst nah+zentral (ueber Toleranz) zaehlt.
-              var eff = intenNormal - DISGUISE_TOLERANCE;
-              if (eff > 0) {
-                state.detection = Math.min(1, state.detection + DISGUISE_RISE_PER_SEC * (eff / (1 - DISGUISE_TOLERANCE)) * dt);
-                if (state.detection >= 1) _expose();
-              } else {
-                state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
-              }
+              state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
             }
           } else {
             // Unverkleidet: jede Sicht (egal welcher Typ) treibt schnell hoch.

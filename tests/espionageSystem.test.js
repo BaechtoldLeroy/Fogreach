@@ -148,18 +148,15 @@ test('detection decays when no guard sees the player', () => {
   assert.ok(E.getDetection() < raised, 'detection decayed out of sight');
 });
 
-test('disguise = tolerance: safe at distance/edge, but caught up close (#54)', () => {
+test('normal (blue) guards never expose a disguised player — even point-blank (#54)', () => {
   const E = globalThis.window.EspionageSystem;
-  // Guard faces +x (facing 0, scanArc 0 = no oscillation for a deterministic cone).
-  stubPlayer(220, 100); // 120px down-cone of the guard -> low intensity
-  E.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 150, facing: 0, scanArc: 0 }] });
+  // A NORMAL guard (alert:false). Even standing right on top of it, the
+  // disguise holds: only alert (red) guards see through it.
+  stubPlayer(100, 100); // point-blank -> max cone intensity
+  E.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 150, facing: 0, scanArc: 0, alert: false }] });
   E.setDisguise(true);
-  tick(E, 1000);
-  assert.strictEqual(E.getDetection(), 0, 'disguised + at distance stays unseen (below tolerance)');
-  // Move right into the guard's face -> max intensity -> disguise no longer saves you.
-  globalThis.window.player.x = 100; globalThis.window.player.y = 100;
-  tick(E, 600);
-  assert.ok(E.getDetection() > 0, 'disguised but point-blank in the cone raises suspicion');
+  tick(E, 1500);
+  assert.strictEqual(E.getDetection(), 0, 'blue guard never raises suspicion against the disguise');
 });
 
 test('alert guard sees through the disguise; a normal guard at the same spot does not (#54)', () => {

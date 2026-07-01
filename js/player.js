@@ -524,7 +524,25 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
       if (state.playing) { sprite.anims.stop(); state.playing = null; }
       sprite.setTexture(dkey);
     }
-    if (sprite.frame) applyPlayerDisplaySettings(sprite);
+    // Groesse an die normale Spielerhoehe angleichen (etwas groesser, sonst
+    // wirkt die Montur zu klein). Aspect aus dem Frame erhalten.
+    const baseH = window.PLAYER_BASE_DISPLAY_HEIGHT || PLAYER_BASE_DISPLAY_HEIGHT;
+    const vScale = (window.PLAYER_VISUAL_SCALE != null ? window.PLAYER_VISUAL_SCALE : PLAYER_VISUAL_SCALE) || 1;
+    const dH = Math.max(1, Math.round(baseH * vScale * 1.2));
+    const fw = (sprite.frame && (sprite.frame.cutWidth || sprite.frame.width)) || dH;
+    const fh = (sprite.frame && (sprite.frame.cutHeight || sprite.frame.height)) || dH;
+    const dW = Math.max(1, Math.round(dH * (fw / fh)));
+    const doy = (window.PLAYER_ORIGIN_Y != null ? window.PLAYER_ORIGIN_Y : PLAYER_ORIGIN_Y);
+    sprite.setOrigin(0.5, doy);
+    sprite.setDisplaySize(dW, dH);
+    if (sprite.body) {
+      const sx = Math.abs(sprite.scaleX) || 1, sy = Math.abs(sprite.scaleY) || 1;
+      const cw = Math.max(8, window.PLAYER_COLLIDER_WIDTH != null ? window.PLAYER_COLLIDER_WIDTH : PLAYER_COLLIDER_WIDTH);
+      const ch = Math.max(8, window.PLAYER_COLLIDER_HEIGHT != null ? window.PLAYER_COLLIDER_HEIGHT : PLAYER_COLLIDER_HEIGHT);
+      sprite.body.setSize(cw / sx, ch / sy);
+      const ax = sprite.displayWidth, ay = sprite.displayHeight;
+      sprite.body.setOffset(Math.max(0, (ax - cw) / 2) / sx, Math.max(0, ay * doy - ch) / sy);
+    }
     sprite.clearTint();                 // Montur ungetintet zeigen (kein Disguise-Blau)
     state.direction = direction;
     sprite.setData('animState', state);
