@@ -89,6 +89,10 @@
       pause: (typeof g.pause === 'number') ? g.pause : DEF_PAUSE,
       patrol: (g.patrol && g.patrol.length) ? g.patrol.map(function (w) { return { x: w.x || 0, y: w.y || 0 }; }) : null,
       scanArc: (typeof g.scanArc === 'number') ? g.scanArc : DEF_SCANARC,
+      // Wachen-TYP: alert=true durchschaut die Verkleidung (roter Kegel) und
+      // treibt den Verdacht wie bei einem unverkleideten Spieler; alert=false
+      // (Standard) laesst dich verkleidet in Ruhe, solange du nicht auffliegst.
+      alert: !!(g.alert || g.seesThroughDisguise),
       knocked: false,                 // (Phase 4: Niederschlag)
       _facing: hasFacing ? g.facing : 0,
       _baseFacing: hasFacing ? g.facing : 0,
@@ -123,13 +127,16 @@
     }
   }
 
-  // Hoechste Sicht-INTENSITAET (0..1) ueber alle Wachen, die den Punkt im
-  // Kegel haben. 0 = von keiner Wache gesehen.
-  function _guardExposure(px, py) {
+  // Hoechste Sicht-INTENSITAET (0..1) ueber Wachen, die den Punkt im Kegel
+  // haben. 0 = von keiner Wache gesehen. filter: true = nur Alarm-Wachen,
+  // false = nur normale Wachen, undefined = alle.
+  function _guardExposure(px, py, filter) {
     var gs = state.guards, maxI = 0;
     for (var i = 0; i < gs.length; i++) {
       var g = gs[i];
       if (!g || g.knocked) continue;
+      if (filter === true && !g.alert) continue;
+      if (filter === false && g.alert) continue;
       var range = (g.range || DEF_VISION) * RANGE_GRACE;
       if (range <= 0) continue;
       var dx = px - g.x, dy = py - g.y;
@@ -260,22 +267,31 @@
         if (!p) return;
         var px = p.x, py = p.y;
         var inCover = _inCover(px, py);
-        var inten = inCover ? 0 : _guardExposure(px, py);
+        // Getrennt: Alarm-Wachen (durchschauen die Verkleidung) vs. normale.
+        var intenAlert = inCover ? 0 : _guardExposure(px, py, true);
+        var intenNormal = inCover ? 0 : _guardExposure(px, py, false);
+        var intenAny = Math.max(intenAlert, intenNormal);
 
         if (!state.exposed) {
           if (state.disguised) {
-            // Verkleidet: nur Sicht ÜBER der Toleranz (nah + zentral) zaehlt.
-            var eff = inten - DISGUISE_TOLERANCE;
-            if (eff > 0) {
-              state.detection = Math.min(1, state.detection + DISGUISE_RISE_PER_SEC * (eff / (1 - DISGUISE_TOLERANCE)) * dt);
+            if (intenAlert > 0.02) {
+              // Alarm-Wache erkennt dich TROTZ Verkleidung -> schnell hoch.
+              state.detection = Math.min(1, state.detection + RISE_PER_SEC * (0.4 + 0.6 * intenAlert) * dt);
               if (state.detection >= 1) _expose();
             } else {
-              state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
+              // Nur normale Wachen: erst nah+zentral (ueber Toleranz) zaehlt.
+              var eff = intenNormal - DISGUISE_TOLERANCE;
+              if (eff > 0) {
+                state.detection = Math.min(1, state.detection + DISGUISE_RISE_PER_SEC * (eff / (1 - DISGUISE_TOLERANCE)) * dt);
+                if (state.detection >= 1) _expose();
+              } else {
+                state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
+              }
             }
           } else {
-            // Unverkleidet: jede Sicht treibt schnell hoch.
-            if (inten > 0.02) {
-              state.detection = Math.min(1, state.detection + RISE_PER_SEC * (0.4 + 0.6 * inten) * dt);
+            // Unverkleidet: jede Sicht (egal welcher Typ) treibt schnell hoch.
+            if (intenAny > 0.02) {
+              state.detection = Math.min(1, state.detection + RISE_PER_SEC * (0.4 + 0.6 * intenAny) * dt);
               if (state.detection >= 1) _expose();
             } else {
               state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
@@ -283,7 +299,7 @@
           }
         } else {
           // Recovery: raus aus den Sichtkegeln / in Deckung -> Verdacht faellt.
-          if (!inCover && inten > 0.05) {
+          if (!inCover && intenAny > 0.05) {
             state.detection = 1;
           } else {
             state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);

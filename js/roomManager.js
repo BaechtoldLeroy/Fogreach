@@ -2053,6 +2053,8 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       if (z.speed != null) out.speed = z.speed;               // px/s
       if (z.scanArc != null) out.scanArc = z.scanArc;         // rad
       if (z.pause != null) out.pause = z.pause;               // s
+      if (z.alert != null) out.alert = z.alert;               // Wachen-Typ (durchschaut Verkleidung)
+      if (z.seesThroughDisguise != null) out.alert = z.seesThroughDisguise;
       if (z.patrol && z.patrol.length) {
         out.patrol = z.patrol.map(function (w) { return { x: ox + (w.x || 0) * T, y: oy + (w.y || 0) * T }; });
       }

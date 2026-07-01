@@ -162,6 +162,26 @@ test('disguise = tolerance: safe at distance/edge, but caught up close (#54)', (
   assert.ok(E.getDetection() > 0, 'disguised but point-blank in the cone raises suspicion');
 });
 
+test('alert guard sees through the disguise; a normal guard at the same spot does not (#54)', () => {
+  // Normal guard: disguised player in a LOW-intensity cone (below tolerance)
+  // stays unseen.
+  const E = globalThis.window.EspionageSystem;
+  stubPlayer(220, 100); // dist 120 in a range-150 cone -> intensity ~0.2 (< 0.5)
+  E.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 150, facing: 0, scanArc: 0, alert: false }] });
+  E.setDisguise(true);
+  tick(E, 1000);
+  assert.strictEqual(E.getDetection(), 0, 'normal guard ignores the disguised player at low intensity');
+
+  // Alert guard at the EXACT same geometry: detection rises despite disguise.
+  fresh();
+  const E2 = globalThis.window.EspionageSystem;
+  stubPlayer(220, 100);
+  E2.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 150, facing: 0, scanArc: 0, alert: true }] });
+  E2.setDisguise(true);
+  tick(E2, 1000);
+  assert.ok(E2.getDetection() > 0, 'alert guard raises suspicion even against the disguise');
+});
+
 test('cover zone suppresses detection inside guard range', () => {
   const E = globalThis.window.EspionageSystem;
   stubPlayer(100, 100);

@@ -502,6 +502,35 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
     ? getDirectionFromVelocity(facingX, facingY, state.direction || PLAYER_DEFAULT_DD)
     : (state.direction || PLAYER_DEFAULT_DD);
 
+  // --- Espionage-Verkleidung: ERSETZT das Spieler-Sprite durch die Kettenrat-
+  // Waechter-Montur (kein Overlay mehr). Richtung (links/rechts) + Lauf-Frames
+  // folgen der Bewegung; bei Enttarnung faellt die Verkleidung -> unten laeuft
+  // wieder die normale Spieler-Animation.
+  if (window.EspionageSystem && typeof window.EspionageSystem.isDisguised === 'function'
+      && window.EspionageSystem.isDisguised()
+      && sprite.scene?.textures?.exists('chainguard_right0')) {
+    let ddir = state._disguiseDir || 'right';
+    if (facingX < -0.01) ddir = 'left';
+    else if (facingX > 0.01) ddir = 'right';
+    state._disguiseDir = ddir;
+    let dframe = 0;
+    if (moving) {
+      const now = sprite.scene.time?.now || 0;
+      const c = Math.floor(now / 140) % 4;
+      dframe = (c === 1) ? 1 : (c === 3) ? 2 : 0;
+    }
+    const dkey = `chainguard_${ddir}${dframe}`;
+    if (sprite.scene.textures.exists(dkey) && sprite.texture.key !== dkey) {
+      if (state.playing) { sprite.anims.stop(); state.playing = null; }
+      sprite.setTexture(dkey);
+    }
+    if (sprite.frame) applyPlayerDisplaySettings(sprite);
+    sprite.clearTint();                 // Montur ungetintet zeigen (kein Disguise-Blau)
+    state.direction = direction;
+    sprite.setData('animState', state);
+    return;
+  }
+
   const animKey = `walk_${direction}`;
   const idleKey = PLAYER_DIRECTION_LOOKUP[direction]?.idleKey || `dir${PLAYER_DEFAULT_DD}_f00`;
 

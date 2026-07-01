@@ -34,7 +34,8 @@
   var zoneLabels = [];     // Text-Labels an den Abhoer-Zonen
   var guardSprites = [];   // echte Wachen-Sprites (statt Kreise)
   var _guardTex = null;    // aufgeloeste Wachen-Textur (ChainGuard o.ae.)
-  var disguiseSpr = null;  // Verkleidungs-Overlay (Umhang/Kapuze) am Spieler
+  // Verkleidung ist KEIN Overlay mehr: das Spieler-Sprite selbst wird in
+  // player.js durch die Kettenrat-Montur ersetzt.
   var _t = 0;              // Pulse-Akkumulator
   var _prevExposed = false;
   var _cw = 1536, _ch = 800;
@@ -58,36 +59,6 @@
     return 'esp_guard_fallback';
   }
 
-  var _disguiseDir = false;  // true = directionale ChainGuard-Frames verfuegbar
-
-  // Verkleidungs-Textur aufloesen: die Verkleidung ist eine Kettenrat-Waechter-
-  // Montur (echtes Sprite), damit man optisch als Wache durchgeht. Fallback:
-  // gezeichneter Kapuzen-Umhang.
-  function _resolveDisguiseTex(scene) {
-    var tx = scene.textures;
-    if (tx && tx.exists('chainguard_right0')) { _disguiseDir = true; return 'chainguard_right0'; }
-    if (tx && tx.exists('sprite_chainguard')) { _disguiseDir = false; return 'sprite_chainguard'; }
-    if (tx && tx.exists('enemyChainGuard')) { _disguiseDir = false; return 'enemyChainGuard'; }
-    _ensureDisguiseTex(scene); _disguiseDir = false; return 'esp_disguise';
-  }
-
-  // Verkleidungs-Overlay-Textur (Kapuzen-Umhang) einmalig generieren — Fallback,
-  // falls keine ChainGuard-Sprites geladen sind.
-  function _ensureDisguiseTex(scene) {
-    if (!scene.textures || scene.textures.exists('esp_disguise')) return;
-    try {
-      var gg = scene.make.graphics({ add: false });
-      // Umhang (Trapez) + Kapuze (Bogen) — dunkel mit hellem Saum.
-      gg.fillStyle(0x20243a, 1);
-      gg.beginPath(); gg.moveTo(10, 14); gg.lineTo(30, 14); gg.lineTo(36, 44); gg.lineTo(4, 44); gg.closePath(); gg.fillPath();
-      gg.fillStyle(0x14172a, 1); gg.fillCircle(20, 14, 13);              // Kapuze
-      gg.fillStyle(0x05060c, 1); gg.fillCircle(20, 16, 8);              // Schatten im Kapuzen-Inneren
-      gg.lineStyle(2, 0x99a6e0, 0.9);
-      gg.beginPath(); gg.arc(20, 14, 13, Math.PI * 0.85, Math.PI * 2.15, false); gg.strokePath(); // Saum-Kante Kapuze
-      gg.generateTexture('esp_disguise', 40, 48); gg.destroy();
-    } catch (e) {}
-  }
-
   function _scene() {
     return (typeof window !== 'undefined' && window.currentScene) ? window.currentScene : null;
   }
@@ -103,11 +74,9 @@
     g = scene.add.graphics().setDepth(DEPTH_WORLD).setScrollFactor(1);
     gHud = scene.add.graphics().setDepth(DEPTH_HUD).setScrollFactor(0);
 
-    // Echte Wachen-Sprites + Verkleidungs-Overlay (Kettenrat-Montur) vorbereiten.
+    // Echte Wachen-Sprites vorbereiten (Verkleidung = ersetztes Spieler-Sprite).
     _guardTex = _resolveGuardTex(scene);
-    var _disguiseTex = _resolveDisguiseTex(scene);
     guardSprites = [];
-    disguiseSpr = scene.add.sprite(0, 0, _disguiseTex).setDepth(DEPTH_WORLD + 3).setScrollFactor(1).setVisible(false);
 
     var cam = scene.cameras && scene.cameras.main;
     _cw = cam ? cam.width : 1536;
@@ -132,10 +101,10 @@
 
   function unmount() {
     mounted = false;
-    [g, gHud, banner, bannerBg, chipBg, chipText, disguiseSpr].forEach(function (o) {
+    [g, gHud, banner, bannerBg, chipBg, chipText].forEach(function (o) {
       if (o) { try { o.destroy(); } catch (e) {} }
     });
-    g = gHud = banner = bannerBg = chipBg = chipText = disguiseSpr = null;
+    g = gHud = banner = bannerBg = chipBg = chipText = null;
     for (var i = 0; i < zoneLabels.length; i++) { try { zoneLabels[i].destroy(); } catch (e) {} }
     for (var k = 0; k < guardSprites.length; k++) { try { guardSprites[k].destroy(); } catch (e) {} }
     zoneLabels = [];
@@ -171,8 +140,8 @@
     if (st.exposed) return en ? 'Get out of the red zones to blend back in.'
                               : 'Raus aus den roten Zonen, dann tauchst du wieder unter.';
     if (allDone) return en ? 'Leave via the stairs.' : 'Verlass den Raum ueber die Treppe.';
-    return en ? 'Reach the gold circle and wait to listen.'
-              : 'Geh in den goldenen Kreis und warte zum Abhoeren.';
+    return en ? 'Reach the gold circle to listen — avoid the RED cones (they see through your disguise).'
+              : 'Geh in den goldenen Kreis zum Abhoeren — meide die ROTEN Kegel (die durchschauen die Verkleidung).';
   }
 
   function sync(scene) {
@@ -180,7 +149,7 @@
     var active = !!(window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
       && window.EspionageSystem.isActive());
     // Stale-mount guard (Hub-Rueckkehr / Scene-Switch zerstoert unsere Objekte).
-    if (mounted && (!g || !g.scene)) { mounted = false; g = gHud = banner = bannerBg = chipBg = chipText = disguiseSpr = null; zoneLabels = []; guardSprites = []; }
+    if (mounted && (!g || !g.scene)) { mounted = false; g = gHud = banner = bannerBg = chipBg = chipText = null; zoneLabels = []; guardSprites = []; }
 
     if (!active) { if (mounted) unmount(); return; }
     if (!mounted) mount(scene);
@@ -208,29 +177,26 @@
 
     g.clear();
 
-    // --- Deckungs-Zonen (blau-gruen; heller, wenn der Spieler drinsteht) -----
-    (st.cover || []).forEach(function (c) {
-      if (!c || !(c.w > 0)) return;
-      var inside = (pl && px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + (c.h || 0));
-      g.fillStyle(0x2aa6a0, inside ? 0.22 : 0.10);
-      g.fillRect(c.x, c.y, c.w, c.h || 0);
-      g.lineStyle(2, 0x55ddcc, inside ? 0.95 : 0.45);
-      g.strokeRect(c.x, c.y, c.w, c.h || 0);
-    });
-
     // --- Sichtkegel (Graphics) + echte Wachen-SPRITES ------------------------
+    // Zwei Wachen-Typen (klar unterscheidbar):
+    //   alert=true  -> ROTER Kegel: erkennt dich AUCH verkleidet (meiden!)
+    //   alert=false -> BLAUER Kegel: laesst dich verkleidet in Ruhe
     var alert = st.exposed ? 1 : Math.min(1, det * 1.5);
-    var coneCol = st.exposed ? 0xff4040 : (alert > 0.5 ? 0xff8a2a : 0xffd24a);
     var guards = st.guards || [];
     // 1) Sichtkegel zeichnen (nur fuer wache, nicht-niedergeschlagene Wachen)
     guards.forEach(function (gd) {
       if (gd.knocked) return;
       var range = gd.range || 0;
       if (range <= 0) return;
+      var isAlert = !!gd.alert;
+      var coneCol = st.exposed ? 0xff2020
+        : isAlert ? 0xff4040                              // rot: durchschaut Verkleidung
+        : (alert > 0.5 ? 0xff8a2a : 0x53b6ff);            // blau (safe) -> orange bei Verdacht
       var f = gd._facing || 0, half = gd.halfAngle || 0.6;
-      g.fillStyle(coneCol, 0.09 + 0.12 * alert);
+      var baseA = isAlert ? 0.14 : 0.08;
+      g.fillStyle(coneCol, baseA + 0.12 * alert);
       g.slice(gd.x, gd.y, range, f - half, f + half, false); g.fillPath();
-      g.lineStyle(1.5, coneCol, 0.45 + 0.4 * alert);
+      g.lineStyle(1.5, coneCol, (isAlert ? 0.6 : 0.4) + 0.4 * alert);
       g.beginPath(); g.arc(gd.x, gd.y, range, f - half, f + half, false); g.strokePath();
       g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f - half) * range, gd.y + Math.sin(f - half) * range); g.strokePath();
       g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f + half) * range, gd.y + Math.sin(f + half) * range); g.strokePath();
@@ -260,45 +226,13 @@
         spr.setTint(0x777777); spr.setAlpha(0.7); spr.setAngle(90);  // liegt
       } else {
         spr.setAngle(0); spr.setAlpha(1);
-        if (st.exposed) spr.setTint(0xff6a6a);        // alarmiert -> rot
-        else if (alert > 0.4) spr.setTint(0xffc080);  // misstrauisch -> orange
-        else spr.clearTint();
+        if (st.exposed) spr.setTint(0xff5a5a);              // alarmiert -> rot
+        else if (alert > 0.4) spr.setTint(0xffc080);        // misstrauisch -> orange
+        else if (gd2.alert) spr.setTint(0xff9a9a);          // Alarm-Typ: rot-Tint als Warnung
+        else spr.clearTint();                               // normaler Typ: neutral
       }
     }
-
-    // --- Verkleidungs-Overlay am Spieler: Kettenrat-Waechter-Montur ----------
-    // Echtes ChainGuard-Sprite ueber dem Spieler -> man geht optisch als Wache
-    // durch. Richtungs- + Lauf-Animation folgen der Spielerbewegung.
-    if (disguiseSpr && pl && pl.active) {
-      if (st.disguised && !st.exposed) {
-        // Self-Heal: war die ChainGuard-Textur beim Mount noch nicht geladen
-        // (Overlay fiel auf den gezeichneten esp_disguise-Umhang zurueck),
-        // jetzt aufs echte Sprite umschalten, sobald es existiert.
-        if (!_disguiseDir && scene.textures && scene.textures.exists('chainguard_right0')) {
-          _disguiseDir = true;
-          try { disguiseSpr.setTexture('chainguard_right0'); } catch (e) {}
-        }
-        disguiseSpr.setVisible(true);
-        var vx = (pl.body && pl.body.velocity) ? pl.body.velocity.x : 0;
-        var vy = (pl.body && pl.body.velocity) ? pl.body.velocity.y : 0;
-        var moving = (vx * vx + vy * vy) > 100;
-        if (_disguiseDir) {
-          var dir = (vx < -4) ? 'left' : 'right';
-          var frame = 0;
-          if (moving) { var c = Math.floor(_t * 7) % 4; frame = (c === 1) ? 1 : (c === 3) ? 2 : 0; }
-          var key = 'chainguard_' + dir + frame;
-          if (scene.textures.exists(key)) disguiseSpr.setTexture(key);
-          else disguiseSpr.setFlipX(dir === 'left'); // falls nur eine Richtung existiert
-        }
-        // Groesse an den Spieler anpassen (Montur deckt die Spielerfigur ab).
-        var ph = pl.displayHeight || 60;
-        disguiseSpr.setDisplaySize(ph * 0.96, ph * 1.04);
-        disguiseSpr.setPosition(px, py);
-        disguiseSpr.setAlpha(1);
-      } else {
-        disguiseSpr.setVisible(false);
-      }
-    }
+    // Verkleidung = ersetztes Spieler-Sprite (siehe player.js), kein Overlay hier.
 
     // --- Abhoer-Zonen (golden, pulsierend; gruen wenn fertig) ----------------
     _ensureZoneLabels(scene, zones);
