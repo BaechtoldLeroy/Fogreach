@@ -140,8 +140,8 @@
     if (st.exposed) return en ? 'Get out of the red zones to blend back in.'
                               : 'Raus aus den roten Zonen, dann tauchst du wieder unter.';
     if (allDone) return en ? 'Leave via the stairs.' : 'Verlass den Raum ueber die Treppe.';
-    return en ? 'Reach the gold circle to listen — avoid the RED cones (they see through your disguise).'
-              : 'Geh in den goldenen Kreis zum Abhoeren — meide die ROTEN Kegel (die durchschauen die Verkleidung).';
+    return en ? 'Reach the gold circle to listen. Avoid the RED cones — or fight through the red guards.'
+              : 'Geh in den goldenen Kreis zum Abhoeren. Meide die ROTEN Kegel — oder kaempf dich durch die roten Wachen.';
   }
 
   function sync(scene) {

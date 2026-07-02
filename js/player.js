@@ -1676,6 +1676,17 @@ function attack() {
     }
   }, { requireLineOfSight: true });
 
+  // Espionage: derselbe Schwung trifft auch Wachen (offener Nahkampf) — im
+  // vorderen Kegel, -1 hp pro Treffer, hp<=0 -> Wache faellt (Kegel weg).
+  if (window.EspionageSystem && window.EspionageSystem.isActive()
+      && typeof window.EspionageSystem.attackGuards === 'function') {
+    try {
+      const _gp = (typeof player !== 'undefined' && player) ? player : this;
+      const hitGuards = window.EspionageSystem.attackGuards(_gp.x, _gp.y, attackDir.x, attackDir.y, attackRange + 24);
+      if (hitGuards > 0 && window.particleFactory) window.particleFactory.hitSpark(_gp.x + attackDir.x * 40, _gp.y + attackDir.y * 40);
+    } catch (e) {}
+  }
+
   // Feature 059 WP03: Zwillingsklinge (twin) — a second, weaker strike (~60%)
   // deliberately ~230ms later (not 90ms) so the follow-up reads as a SEPARATE
   // hit from the amulet, not part of the same swing. Same cone/aim; reuses the

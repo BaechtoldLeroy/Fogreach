@@ -179,6 +179,23 @@ test('alert guard sees through the disguise; a normal guard at the same spot doe
   assert.ok(E2.getDetection() > 0, 'alert guard raises suspicion even against the disguise');
 });
 
+test('attackGuards downs a guard after enough hits and removes it as a threat (#54)', () => {
+  const E = globalThis.window.EspionageSystem;
+  stubPlayer(100, 100);
+  E.startMission(null, { missionId: 'm', guards: [{ x: 130, y: 100, range: 150, facing: 0, alert: true, hp: 2 }] });
+  // Swing toward +x (the guard is 30px to the right).
+  assert.strictEqual(E.attackGuards(100, 100, 1, 0, 120), 1, 'first swing hits the guard');
+  assert.strictEqual(E.attackGuards(100, 100, 1, 0, 120), 1, 'second swing hits the guard');
+  assert.strictEqual(E.getState().guards[0].knocked, true, 'guard down after 2 hits');
+  assert.strictEqual(E.attackGuards(100, 100, 1, 0, 120), 0, 'a downed guard is no longer hit');
+  // A guard behind the swing direction is not hit.
+  fresh();
+  const E2 = globalThis.window.EspionageSystem;
+  stubPlayer(100, 100);
+  E2.startMission(null, { missionId: 'm', guards: [{ x: 60, y: 100, range: 150, facing: 0, alert: true, hp: 3 }] });
+  assert.strictEqual(E2.attackGuards(100, 100, 1, 0, 120), 0, 'guard behind the swing is missed');
+});
+
 test('cover zone suppresses detection inside guard range', () => {
   const E = globalThis.window.EspionageSystem;
   stubPlayer(100, 100);

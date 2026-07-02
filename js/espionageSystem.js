@@ -77,10 +77,17 @@
     return false;
   }
 
+  var GUARD_HIT_RANGE = 92;         // Reichweite des Spieler-Schwungs auf Wachen
+  var GUARD_ATK_CD = 0.85;          // s zwischen Wachen-Schlaegen
+  var GUARD_CONTACT = 34;           // Nahkampf-Distanz Wache->Spieler
+  var GUARD_CHASE_MULT = 1.15;      // feindselige Wachen sind etwas schneller
+
   // Normalisiert eine Wache aus dem Raum-Template in eine Laufzeit-Entitaet.
   function _makeGuard(g) {
     g = g || {};
     var hasFacing = (typeof g.facing === 'number');
+    var isAlert = !!(g.alert || g.seesThroughDisguise);
+    var hp = (typeof g.hp === 'number') ? g.hp : (isAlert ? 3 : 2);
     return {
       x: g.x || 0, y: g.y || 0,
       range: (typeof g.range === 'number' && g.range > 0) ? g.range : DEF_VISION,
@@ -92,20 +99,45 @@
       // Wachen-TYP: alert=true durchschaut die Verkleidung (roter Kegel) und
       // treibt den Verdacht wie bei einem unverkleideten Spieler; alert=false
       // (Standard) laesst dich verkleidet in Ruhe, solange du nicht auffliegst.
-      alert: !!(g.alert || g.seesThroughDisguise),
-      knocked: false,                 // (Phase 4: Niederschlag)
+      alert: isAlert,
+      // Offener Nahkampf: Wachen sind besiegbar (hp) und wehren sich (damage),
+      // sobald sie feindselig werden (gesehen/getroffen).
+      hp: hp, maxHp: hp,
+      damage: (typeof g.damage === 'number') ? g.damage : 8,
+      hostile: false,
+      knocked: false,                 // niedergestreckt (hp<=0) ODER Takedown
+      _atkCd: 0,
       _facing: hasFacing ? g.facing : 0,
       _baseFacing: hasFacing ? g.facing : 0,
       _wpIndex: 0, _pauseT: 0, _scanT: 0
     };
   }
 
-  // Wachen bewegen sich jeden Tick (patrouillieren oder scannen).
+  // Wachen bewegen sich jeden Tick (feindselig jagen ODER patrouillieren/scannen).
   function _updateGuards(dt) {
     var gs = state.guards;
+    var p = _player();
+    var scene = (p && p.scene) ? p.scene : null;
     for (var i = 0; i < gs.length; i++) {
       var g = gs[i];
       if (!g || g.knocked) continue;
+      // Feindselig: auf den Spieler zu bewegen und im Nahkampf zuschlagen.
+      if (g.hostile && p) {
+        var hdx = p.x - g.x, hdy = p.y - g.y;
+        var hdist = Math.sqrt(hdx * hdx + hdy * hdy);
+        if (hdist > 0.001) g._facing = Math.atan2(hdy, hdx);
+        if (hdist > GUARD_CONTACT) {
+          var hstep = Math.min((g.speed || DEF_SPEED) * GUARD_CHASE_MULT * dt, hdist);
+          g.x += (hdx / hdist) * hstep;
+          g.y += (hdy / hdist) * hstep;
+        }
+        g._atkCd = Math.max(0, (g._atkCd || 0) - dt);
+        if (hdist <= GUARD_CONTACT && g._atkCd <= 0) {
+          g._atkCd = GUARD_ATK_CD;
+          try { if (typeof window !== 'undefined' && typeof window.applyPlayerDamage === 'function') window.applyPlayerDamage(g.damage || 8, scene); } catch (_) {}
+        }
+        continue;
+      }
       if (g.patrol && g.patrol.length > 1) {
         var t = g.patrol[g._wpIndex % g.patrol.length];
         var dx = t.x - g.x, dy = t.y - g.y;
@@ -127,9 +159,25 @@
     }
   }
 
+  // Sicht-INTENSITAET (0..1) EINER Wache auf einen Punkt (0 = ausserhalb Kegel).
+  function _coneIntensity(g, px, py) {
+    if (!g || g.knocked) return 0;
+    var range = (g.range || DEF_VISION) * RANGE_GRACE;
+    if (range <= 0) return 0;
+    var dx = px - g.x, dy = py - g.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > range) return 0;
+    if (dist < 1) return 1;
+    var half = g.halfAngle || DEF_HALFANGLE;
+    var da = Math.abs(_angDiff(Math.atan2(dy, dx), g._facing || 0));
+    if (da > half) return 0;                   // ausserhalb des Sichtkegels
+    var distI = 1 - dist / range;              // nah = hoch
+    var angI = 1 - da / half;                  // zentral = hoch
+    return distI * (0.45 + 0.55 * angI);
+  }
+
   // Hoechste Sicht-INTENSITAET (0..1) ueber Wachen, die den Punkt im Kegel
-  // haben. 0 = von keiner Wache gesehen. filter: true = nur Alarm-Wachen,
-  // false = nur normale Wachen, undefined = alle.
+  // haben. filter: true = nur Alarm-Wachen, false = nur normale, undefined = alle.
   function _guardExposure(px, py, filter) {
     var gs = state.guards, maxI = 0;
     for (var i = 0; i < gs.length; i++) {
@@ -137,18 +185,7 @@
       if (!g || g.knocked) continue;
       if (filter === true && !g.alert) continue;
       if (filter === false && g.alert) continue;
-      var range = (g.range || DEF_VISION) * RANGE_GRACE;
-      if (range <= 0) continue;
-      var dx = px - g.x, dy = py - g.y;
-      var dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist > range) continue;
-      if (dist < 1) { maxI = 1; continue; }
-      var half = g.halfAngle || DEF_HALFANGLE;
-      var da = Math.abs(_angDiff(Math.atan2(dy, dx), g._facing || 0));
-      if (da > half) continue;                 // ausserhalb des Sichtkegels
-      var distI = 1 - dist / range;            // nah = hoch
-      var angI = 1 - da / half;                // zentral = hoch
-      var inten = distI * (0.45 + 0.55 * angI);
+      var inten = _coneIntensity(g, px, py);
       if (inten > maxI) maxI = inten;
     }
     return maxI;
@@ -238,6 +275,32 @@
       return false;
     },
 
+    // Offener Nahkampf: der Spieler-Schwung trifft Wachen im vorderen Kegel.
+    // Jeder Treffer -1 hp + macht die Wache feindselig; hp<=0 -> niedergestreckt
+    // (Sichtkegel verschwindet). Gibt Anzahl getroffener Wachen zurueck.
+    attackGuards: function (px, py, dirX, dirY, range) {
+      if (!state.active) return 0;
+      var gs = state.guards, hits = 0;
+      var rng = (typeof range === 'number' && range > 0) ? range : GUARD_HIT_RANGE;
+      var hasDir = (typeof dirX === 'number' && typeof dirY === 'number' && (dirX || dirY));
+      for (var i = 0; i < gs.length; i++) {
+        var g = gs[i];
+        if (!g || g.knocked) continue;
+        var dx = g.x - px, dy = g.y - py;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > rng) continue;
+        if (hasDir && dist > 1) {
+          var dot = (dx / dist) * dirX + (dy / dist) * dirY;
+          if (dot < 0.35) continue;            // nur ~70° nach vorn
+        }
+        g.hostile = true;
+        g.hp = (typeof g.hp === 'number' ? g.hp : 3) - 1;
+        hits++;
+        if (g.hp <= 0) { g.knocked = true; g.hostile = false; }
+      }
+      return hits;
+    },
+
     isDetected: function () { return !!(state.active && state.exposed); },
     getDetection: function () { return state.active ? state.detection : 0; },
 
@@ -271,6 +334,13 @@
         var intenAlert = inCover ? 0 : _guardExposure(px, py, true);
         var intenNormal = inCover ? 0 : _guardExposure(px, py, false);
         var intenAny = Math.max(intenAlert, intenNormal);
+
+        // Alarm-Wachen, die den Spieler sehen, werden feindselig (jagen + Nahkampf).
+        for (var hi = 0; hi < state.guards.length; hi++) {
+          var hg = state.guards[hi];
+          if (!hg || hg.knocked || hg.hostile || !hg.alert) continue;
+          if (_coneIntensity(hg, px, py) > 0.02) hg.hostile = true;
+        }
 
         if (!state.exposed) {
           if (state.disguised) {
