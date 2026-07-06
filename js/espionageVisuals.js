@@ -235,6 +235,17 @@
         else if (alert > 0.4) spr.setTint(0xffc080);        // misstrauisch -> orange
         else if (gd2.alert) spr.setTint(0xff9a9a);          // Alarm-Typ: rot-Tint als Warnung
         else spr.clearTint();                               // normaler Typ: neutral
+        // Lebensbalken — erscheint, sobald die Wache Schaden genommen hat.
+        if (typeof gd2.hp === 'number' && typeof gd2.maxHp === 'number' && gd2.maxHp > 0 && gd2.hp < gd2.maxHp) {
+          var frac = Math.max(0, Math.min(1, gd2.hp / gd2.maxHp));
+          var bw = 36, bh = 5;
+          var bx = gd2.x - bw / 2, by = gd2.y - _gH / 2 - 12;
+          g.fillStyle(0x000000, 0.65); g.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+          g.fillStyle(0x3a0d0d, 1); g.fillRect(bx, by, bw, bh);       // leerer Teil
+          var hcol = frac > 0.5 ? 0x53e07a : (frac > 0.25 ? 0xffd24a : 0xff5a5a);
+          g.fillStyle(hcol, 1); g.fillRect(bx, by, bw * frac, bh);    // gefuellter Teil
+          g.lineStyle(1, 0x000000, 0.8); g.strokeRect(bx, by, bw, bh);
+        }
       }
     }
     // Verkleidung = ersetztes Spieler-Sprite (siehe player.js), kein Overlay hier.
