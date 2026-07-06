@@ -65,6 +65,12 @@
     return d;
   }
 
+  function _anyHostileAlive() {
+    var gs = state.guards;
+    for (var i = 0; i < gs.length; i++) { if (gs[i] && gs[i].hostile && !gs[i].knocked) return true; }
+    return false;
+  }
+
   function _inCover(px, py) {
     var zones = state.cover;
     if (!zones || !zones.length) return false;
@@ -106,7 +112,7 @@
       damage: (typeof g.damage === 'number') ? g.damage : 8,
       hostile: false,
       knocked: false,                 // niedergestreckt (hp<=0) ODER Takedown
-      _atkCd: 0,
+      _atkCd: 0, _calmT: 0,
       _facing: hasFacing ? g.facing : 0,
       _baseFacing: hasFacing ? g.facing : 0,
       _wpIndex: 0, _pauseT: 0, _scanT: 0
@@ -341,6 +347,17 @@
           if (!hg || hg.knocked || hg.hostile || !hg.alert) continue;
           if (_coneIntensity(hg, px, py) > 0.02) hg.hostile = true;
         }
+        // Feindselige Wachen beruhigen sich, wenn sie den Spieler laenger nicht
+        // sehen UND er weit weg ist -> kehren zur Patrouille zurueck.
+        for (var ci = 0; ci < state.guards.length; ci++) {
+          var cg = state.guards[ci];
+          if (!cg || cg.knocked || !cg.hostile) continue;
+          if (_coneIntensity(cg, px, py) > 0.02) { cg._calmT = 0; continue; }
+          cg._calmT = (cg._calmT || 0) + dt;
+          var rr = (cg.range || DEF_VISION);
+          var cdx = px - cg.x, cdy = py - cg.y;
+          if (cg._calmT > 4 && (cdx * cdx + cdy * cdy) > rr * rr * 2.25) { cg.hostile = false; cg._calmT = 0; }
+        }
 
         if (!state.exposed) {
           if (state.disguised) {
@@ -361,6 +378,12 @@
             } else {
               state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
             }
+          }
+          // Wieder untertauchen: unverkleidet (z.B. nach einem Angriff) + kein
+          // Verdacht + keine Alarm-Wache sieht dich + keine feindselige Wache mehr
+          // aktiv -> die Verkleidung kehrt automatisch zurueck.
+          if (!state.disguised && state.detection <= 0 && intenAlert <= 0.02 && !_anyHostileAlive()) {
+            state.disguised = true; _applyTint();
           }
         } else {
           // Recovery: raus aus den Sichtkegeln / in Deckung -> Verdacht faellt.

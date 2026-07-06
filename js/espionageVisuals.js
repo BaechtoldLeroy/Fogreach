@@ -209,9 +209,13 @@
       _guardTex = 'chainguard_right0';
       for (var sh = 0; sh < guardSprites.length; sh++) { try { guardSprites[sh].setTexture(_guardTex); } catch (e) {} }
     }
+    // Wachen genau so gross wie die verkleidete Spielerfigur (gleiches Sprite).
+    var _gH = (window.__ESP_GUARD_H && window.__ESP_GUARD_H > 0) ? window.__ESP_GUARD_H : 78;
+    var _gAspect = 0.82;
+    try { var _gsrc = scene.textures.get(_guardTex).getSourceImage(); if (_gsrc && _gsrc.height) _gAspect = _gsrc.width / _gsrc.height; } catch (e) {}
+    var _gW = Math.max(1, Math.round(_gH * _gAspect));
     while (guardSprites.length < guards.length) {
       var sp = scene.add.sprite(0, 0, _guardTex || 'esp_guard_fallback').setDepth(DEPTH_WORLD + 2).setScrollFactor(1);
-      sp.setDisplaySize(36, 42);   // einheitliche Wachen-Groesse
       guardSprites.push(sp);
     }
     while (guardSprites.length > guards.length) { try { guardSprites.pop().destroy(); } catch (e) {} }
@@ -219,6 +223,7 @@
       var gd2 = guards[gi], spr = guardSprites[gi];
       if (!spr) continue;
       spr.setVisible(true);
+      spr.setDisplaySize(_gW, _gH);   // gleiche Groesse wie der verkleidete Spieler
       spr.setPosition(gd2.x, gd2.y);
       var ff = gd2._facing || 0;
       spr.setFlipX(Math.cos(ff) < 0);                 // nach links schauen -> spiegeln

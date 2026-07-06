@@ -529,6 +529,8 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
     const baseH = window.PLAYER_BASE_DISPLAY_HEIGHT || PLAYER_BASE_DISPLAY_HEIGHT;
     const vScale = (window.PLAYER_VISUAL_SCALE != null ? window.PLAYER_VISUAL_SCALE : PLAYER_VISUAL_SCALE) || 1;
     const dH = Math.max(1, Math.round(baseH * vScale * 1.2));
+    // Wachen sollen exakt so gross wie die verkleidete Spielerfigur sein.
+    if (typeof window !== 'undefined') window.__ESP_GUARD_H = dH;
     const fw = (sprite.frame && (sprite.frame.cutWidth || sprite.frame.width)) || dH;
     const fh = (sprite.frame && (sprite.frame.cutHeight || sprite.frame.height)) || dH;
     const dW = Math.max(1, Math.round(dH * (fw / fh)));

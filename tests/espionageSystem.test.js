@@ -196,6 +196,19 @@ test('attackGuards downs a guard after enough hits and removes it as a threat (#
   assert.strictEqual(E2.attackGuards(100, 100, 1, 0, 120), 0, 'guard behind the swing is missed');
 });
 
+test('disguise returns automatically after combat once things calm down (#54)', () => {
+  const E = globalThis.window.EspionageSystem;
+  stubPlayer(100, 100);
+  // A lone alert guard parked far away -> nothing sees the player, none hostile.
+  E.startMission(null, { missionId: 'm', guards: [{ x: 2000, y: 2000, range: 80, alert: true }] });
+  E.setDisguise(true);
+  assert.strictEqual(E.isDisguised(), true);
+  E.onPlayerAttack();                 // going loud drops the disguise
+  assert.strictEqual(E.isDisguised(), false, 'disguise dropped on attack');
+  for (let i = 0; i < 6; i++) tick(E, 500); // suspicion decays -> re-blend
+  assert.strictEqual(E.isDisguised(), true, 're-blended into disguise once calm');
+});
+
 test('cover zone suppresses detection inside guard range', () => {
   const E = globalThis.window.EspionageSystem;
   stubPlayer(100, 100);
