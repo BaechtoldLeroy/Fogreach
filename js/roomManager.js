@@ -2061,11 +2061,33 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       return out;
     };
 
+    // Wand-/Hindernis-Gitter fuer die Wachen-Kollision (damit sie beim Jagen
+    // nicht durch Waende laufen). '#'-Tiles + Auto-Hindernis-Objekte blockieren.
+    var wallRows = (tpl.layout && tpl.layout.walls) || [];
+    var blockedTiles = {};
+    (tpl.objects || []).forEach(function (o) {
+      if (!o) return;
+      var ty = o.type;
+      if (ty === 'altar' || ty === 'brazier' || ty === 'brazer' || ty === 'statue'
+          || ty === 'pillar' || ty === 'pillar_small' || ty === 'pillar_large') {
+        blockedTiles[(o.x || 0) + ',' + (o.y || 0)] = true;
+      }
+    });
+    var blockedAt = function (wx, wy) {
+      var tx = Math.floor((wx - ox) / T), ty = Math.floor((wy - oy) / T);
+      if (ty < 0 || ty >= wallRows.length) return true;
+      var row = wallRows[ty];
+      if (!row || tx < 0 || tx >= row.length) return true;
+      if (row.charAt(tx) === '#') return true;
+      return !!blockedTiles[tx + ',' + ty];
+    };
+
     window.EspionageSystem.startMission(scene, {
       missionId: templateName,
       guards: (esp.guards || []).map(function (g) { return toWorld(g, false); }),
       cover: (esp.cover || []).map(function (c) { return toWorld(c, true); }),
-      observeZones: (esp.observe || []).map(function (o) { return toWorld(o, false); })
+      observeZones: (esp.observe || []).map(function (o) { return toWorld(o, false); }),
+      blockedAt: blockedAt
     });
     window.EspionageSystem.setDisguise(true); // Auto-Verkleidung bei Mission-Start
     try { console.log('[055] Espionage-Mission gestartet:', templateName); } catch (_) {}

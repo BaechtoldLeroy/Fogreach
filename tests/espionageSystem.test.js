@@ -209,6 +209,31 @@ test('disguise returns automatically after combat once things calm down (#54)', 
   assert.strictEqual(E.isDisguised(), true, 're-blended into disguise once calm');
 });
 
+test('hostile guard slides along walls instead of walking through them (#54)', () => {
+  const E = globalThis.window.EspionageSystem;
+  stubPlayer(300, 100);
+  const blockedAt = (wx) => (wx >= 200 && wx < 232); // vertical wall band
+  E.startMission(null, { missionId: 'm', guards: [{ x: 150, y: 100, range: 300, facing: 0, alert: true }], blockedAt });
+  for (let i = 0; i < 30; i++) tick(E, 100); // sees player -> chases into the wall
+  const g = E.getState().guards[0];
+  assert.ok(g.hostile, 'guard turned hostile on sight');
+  assert.ok(g.x < 200, `guard stopped before the wall (x=${g.x.toFixed(1)})`);
+});
+
+test('exposure only aggros nearby guards; distant ones keep patrolling (#54)', () => {
+  const E = globalThis.window.EspionageSystem;
+  stubPlayer(100, 100);
+  E.startMission(null, { missionId: 'm', guards: [
+    { x: 130, y: 100, range: 150, alert: true },    // near the player
+    { x: 3000, y: 3000, range: 150, alert: true }   // far away
+  ] });
+  E.onPlayerAttack(); E.onPlayerAttack();            // force exposure
+  assert.strictEqual(E.isDetected(), true);
+  const gs = E.getState().guards;
+  assert.strictEqual(gs[0].hostile, true, 'near guard aggroed on exposure');
+  assert.strictEqual(gs[1].hostile, false, 'distant guard keeps patrolling');
+});
+
 test('cover zone suppresses detection inside guard range', () => {
   const E = globalThis.window.EspionageSystem;
   stubPlayer(100, 100);

@@ -40,6 +40,7 @@
       active: false, missionId: null,
       disguised: false, detection: 0, exposed: false,
       observeZones: [], guards: [], cover: [],
+      blockedAt: null,                // (wx,wy)=>bool: Wand/Hindernis-Test fuer Wachen
       _acc: 0
     };
   };
@@ -87,6 +88,7 @@
   var GUARD_ATK_CD = 0.85;          // s zwischen Wachen-Schlaegen
   var GUARD_CONTACT = 34;           // Nahkampf-Distanz Wache->Spieler
   var GUARD_CHASE_MULT = 1.15;      // feindselige Wachen sind etwas schneller
+  var EXPOSE_AGGRO_R = 300;         // bei Enttarnung: nur Wachen im Umkreis werden feindselig
 
   // Normalisiert eine Wache aus dem Raum-Template in eine Laufzeit-Entitaet.
   function _makeGuard(g) {
@@ -119,6 +121,17 @@
     };
   }
 
+  // Bewegt eine Wache Richtung (nx,ny), respektiert Waende (gleitet an ihnen
+  // entlang). Ohne blockedAt-Callback frei beweglich.
+  function _moveGuard(g, nx, ny) {
+    var b = state.blockedAt;
+    if (!b) { g.x = nx; g.y = ny; return; }
+    if (!b(nx, ny)) { g.x = nx; g.y = ny; return; }
+    if (!b(nx, g.y)) { g.x = nx; return; }   // an Wand entlang (X)
+    if (!b(g.x, ny)) { g.y = ny; return; }   // an Wand entlang (Y)
+    /* eingeklemmt: keine Bewegung */
+  }
+
   // Wachen bewegen sich jeden Tick (feindselig jagen ODER patrouillieren/scannen).
   function _updateGuards(dt) {
     var gs = state.guards;
@@ -134,8 +147,7 @@
         if (hdist > 0.001) g._facing = Math.atan2(hdy, hdx);
         if (hdist > GUARD_CONTACT) {
           var hstep = Math.min((g.speed || DEF_SPEED) * GUARD_CHASE_MULT * dt, hdist);
-          g.x += (hdx / hdist) * hstep;
-          g.y += (hdy / hdist) * hstep;
+          _moveGuard(g, g.x + (hdx / hdist) * hstep, g.y + (hdy / hdist) * hstep);
         }
         g._atkCd = Math.max(0, (g._atkCd || 0) - dt);
         if (hdist <= GUARD_CONTACT && g._atkCd <= 0) {
@@ -153,8 +165,7 @@
           if (g._pauseT >= g.pause) { g._pauseT = 0; g._wpIndex = (g._wpIndex + 1) % g.patrol.length; }
         } else {
           var step = Math.min(g.speed * dt, dist);
-          g.x += (dx / dist) * step;
-          g.y += (dy / dist) * step;
+          _moveGuard(g, g.x + (dx / dist) * step, g.y + (dy / dist) * step);
           g._facing = Math.atan2(dy, dx);
         }
       } else {
@@ -204,6 +215,16 @@
     state.exposed = true;
     state.detection = 1;
     if (state.disguised) { state.disguised = false; _clearTint(); }
+    // Nur NAHE Wachen reagieren (werden feindselig); der Rest patrouilliert weiter.
+    var pp = _player();
+    if (pp) {
+      for (var i = 0; i < state.guards.length; i++) {
+        var g = state.guards[i];
+        if (!g || g.knocked) continue;
+        var dx = pp.x - g.x, dy = pp.y - g.y;
+        if (dx * dx + dy * dy <= EXPOSE_AGGRO_R * EXPOSE_AGGRO_R) g.hostile = true;
+      }
+    }
     try {
       if (typeof window !== 'undefined' && window.EspionageSystem
           && typeof window.EspionageSystem.onExposed === 'function') {
@@ -225,6 +246,7 @@
         state.guards = config.guards.map(_makeGuard);
       }
       if (config.cover && config.cover.length) state.cover = config.cover.slice();
+      if (typeof config.blockedAt === 'function') state.blockedAt = config.blockedAt;
       if (config.observeZones && config.observeZones.length) {
         for (var i = 0; i < config.observeZones.length; i++) this.registerObserveZone(config.observeZones[i]);
       }
