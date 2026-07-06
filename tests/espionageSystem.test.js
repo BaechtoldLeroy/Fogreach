@@ -213,10 +213,10 @@ test('hostile guard slides along walls instead of walking through them (#54)', (
   const E = globalThis.window.EspionageSystem;
   stubPlayer(300, 100);
   const blockedAt = (wx) => (wx >= 200 && wx < 232); // vertical wall band
-  E.startMission(null, { missionId: 'm', guards: [{ x: 150, y: 100, range: 300, facing: 0, alert: true }], blockedAt });
-  for (let i = 0; i < 30; i++) tick(E, 100); // sees player -> chases into the wall
+  E.startMission(null, { missionId: 'm', guards: [{ x: 150, y: 100, range: 300, facing: 0, scanArc: 0, alert: true }], blockedAt });
+  E.getState().guards[0].hostile = true; // provoked (independent of line of sight)
+  for (let i = 0; i < 30; i++) tick(E, 100); // chases toward player, hits the wall
   const g = E.getState().guards[0];
-  assert.ok(g.hostile, 'guard turned hostile on sight');
   assert.ok(g.x < 200, `guard stopped before the wall (x=${g.x.toFixed(1)})`);
 });
 
@@ -232,6 +232,23 @@ test('exposure only aggros nearby guards; distant ones keep patrolling (#54)', (
   const gs = E.getState().guards;
   assert.strictEqual(gs[0].hostile, true, 'near guard aggroed on exposure');
   assert.strictEqual(gs[1].hostile, false, 'distant guard keeps patrolling');
+});
+
+test('a wall between guard and player blocks the vision cone (line of sight) (#54)', () => {
+  const E = globalThis.window.EspionageSystem;
+  stubPlayer(300, 100); // straight ahead of a guard facing +x, well in range
+  const blockedAt = (wx) => (wx >= 190 && wx < 210); // wall band between them
+  E.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 400, facing: 0, scanArc: 0, alert: true }], blockedAt });
+  tick(E, 1500);
+  assert.strictEqual(E.getDetection(), 0, 'wall blocks line of sight -> no detection');
+
+  // Control: same geometry, no wall -> the guard sees the player.
+  fresh();
+  const E2 = globalThis.window.EspionageSystem;
+  stubPlayer(300, 100);
+  E2.startMission(null, { missionId: 'm', guards: [{ x: 100, y: 100, range: 400, facing: 0, scanArc: 0, alert: true }] });
+  tick(E2, 1500);
+  assert.ok(E2.getDetection() > 0, 'no wall -> guard detects the player');
 });
 
 test('cover zone suppresses detection inside guard range', () => {

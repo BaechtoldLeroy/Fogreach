@@ -176,7 +176,23 @@
     }
   }
 
-  // Sicht-INTENSITAET (0..1) EINER Wache auf einen Punkt (0 = ausserhalb Kegel).
+  // Sichtlinie frei? Rastert die Strecke ab und prueft gegen Waende (blockedAt).
+  function _losBlocked(x0, y0, x1, y1) {
+    var b = state.blockedAt;
+    if (!b) return false;
+    var dx = x1 - x0, dy = y1 - y0;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 1) return false;
+    var steps = Math.ceil(dist / 12);
+    for (var i = 1; i < steps; i++) {          // Endpunkte (Wache/Spieler) auslassen
+      var t = i / steps;
+      if (b(x0 + dx * t, y0 + dy * t)) return true;
+    }
+    return false;
+  }
+
+  // Sicht-INTENSITAET (0..1) EINER Wache auf einen Punkt (0 = ausserhalb Kegel
+  // ODER durch eine Wand verdeckt).
   function _coneIntensity(g, px, py) {
     if (!g || g.knocked) return 0;
     var range = (g.range || DEF_VISION) * RANGE_GRACE;
@@ -188,6 +204,7 @@
     var half = g.halfAngle || DEF_HALFANGLE;
     var da = Math.abs(_angDiff(Math.atan2(dy, dx), g._facing || 0));
     if (da > half) return 0;                   // ausserhalb des Sichtkegels
+    if (_losBlocked(g.x, g.y, px, py)) return 0; // Wand dazwischen -> keine Sicht
     var distI = 1 - dist / range;              // nah = hoch
     var angI = 1 - da / half;                  // zentral = hoch
     return distI * (0.45 + 0.55 * angI);

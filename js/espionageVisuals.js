@@ -183,7 +183,18 @@
     //   alert=false -> BLAUER Kegel: laesst dich verkleidet in Ruhe
     var alert = st.exposed ? 1 : Math.min(1, det * 1.5);
     var guards = st.guards || [];
-    // 1) Sichtkegel zeichnen (nur fuer wache, nicht-niedergeschlagene Wachen)
+    var blockedAt = st.blockedAt;   // (wx,wy)=>bool: Wand-Test fuer Sichtlinien
+    // Raycast: wie weit reicht ein Strahl aus (gx,gy) unter Winkel ang, bis er
+    // auf eine Wand trifft (oder die volle Reichweite)?
+    var _rayHit = function (gx, gy, ang, range) {
+      if (!blockedAt) return range;
+      var cx = Math.cos(ang), sy = Math.sin(ang), step = 9;
+      for (var d = step; d <= range; d += step) {
+        if (blockedAt(gx + cx * d, gy + sy * d)) return Math.max(0, d - step * 0.5);
+      }
+      return range;
+    };
+    // 1) Sichtkegel zeichnen — an Waenden abgeschnitten (Line-of-Sight).
     guards.forEach(function (gd) {
       if (gd.knocked) return;
       var range = gd.range || 0;
@@ -194,14 +205,27 @@
         : (alert > 0.5 ? 0xff8a2a : 0x53b6ff);            // blau (safe) -> orange bei Verdacht
       var f = gd._facing || 0, half = gd.halfAngle || 0.6;
       var baseA = isAlert ? 0.14 : 0.08;
+      // Strahlenfaecher: jeder Strahl wird an der ersten Wand gestoppt.
+      var RAYS = 18, pts = [];
+      for (var ri = 0; ri <= RAYS; ri++) {
+        var a = f - half + (2 * half) * (ri / RAYS);
+        var hit = _rayHit(gd.x, gd.y, a, range);
+        pts.push(gd.x + Math.cos(a) * hit, gd.y + Math.sin(a) * hit);
+      }
+      // Fuellung (Polygon Wache -> Faecherpunkte)
       g.fillStyle(coneCol, baseA + 0.12 * alert);
-      g.slice(gd.x, gd.y, range, f - half, f + half, false); g.fillPath();
+      g.beginPath(); g.moveTo(gd.x, gd.y);
+      for (var pi = 0; pi < pts.length; pi += 2) g.lineTo(pts[pi], pts[pi + 1]);
+      g.closePath(); g.fillPath();
+      // Kontur
       g.lineStyle(1.5, coneCol, (isAlert ? 0.6 : 0.4) + 0.4 * alert);
-      g.beginPath(); g.arc(gd.x, gd.y, range, f - half, f + half, false); g.strokePath();
-      g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f - half) * range, gd.y + Math.sin(f - half) * range); g.strokePath();
-      g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f + half) * range, gd.y + Math.sin(f + half) * range); g.strokePath();
+      g.beginPath(); g.moveTo(gd.x, gd.y);
+      for (var pk = 0; pk < pts.length; pk += 2) g.lineTo(pts[pk], pts[pk + 1]);
+      g.closePath(); g.strokePath();
+      // Blickstrahl (Mitte), ebenfalls an Wand gestoppt
+      var cHit = _rayHit(gd.x, gd.y, f, range * 0.55);
       g.lineStyle(2, coneCol, 0.5);
-      g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f) * range * 0.5, gd.y + Math.sin(f) * range * 0.5); g.strokePath();
+      g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f) * cHit, gd.y + Math.sin(f) * cHit); g.strokePath();
     });
     // 2) Wachen-Sprites synchronisieren (erstellen/positionieren/stylen)
     // Self-Heal: ChainGuard-Textur erst jetzt verfuegbar -> Fallback ersetzen.
