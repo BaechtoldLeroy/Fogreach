@@ -1733,6 +1733,26 @@ function computeWalkableAreaPx(scene) {
 }
 window.computeWalkableAreaPx = computeWalkableAreaPx;
 
+// Ist der Weltpunkt (x,y) im begehbaren Grid? (#57) Der Access-Grid (an den
+// Physik-Bounds ausgerichtet) und das Raum-Tile-Raster (am Raum-Origin) muessen
+// nicht deckungsgleich sein — ein legitimer Spieler-Spawn-Mittelpunkt kann so
+// auf eine knapp danebenliegende, wegen Wand-Clearance geblockte Zelle mappen
+// und faelschlich `false` liefern. Fix: die direkte Zelle UND — bei Sub-Zellen-
+// Offset — die Nachbarn in Richtung des naechsten Zellrands pruefen (max. ~1
+// Zelle Toleranz, gerichtet, um Falsch-Positive gering zu halten).
+function pointAccessibleInGrid(grid, x, y) {
+  if (!grid) return true;
+  const cs = grid.cellSize;
+  const lx = x - grid.bounds.x, ly = y - grid.bounds.y;
+  const cx = Math.floor(lx / cs), cy = Math.floor(ly / cs);
+  const vis = (ax, ay) => ax >= 0 && ay >= 0 && ax < grid.cols && ay < grid.rows
+    && grid.visited.has(`${ax}|${ay}`);
+  if (vis(cx, cy)) return true;
+  const sx = (lx / cs - cx) < 0.5 ? -1 : 1;   // Richtung zum naechsten Rand
+  const sy = (ly / cs - cy) < 0.5 ? -1 : 1;
+  return vis(cx + sx, cy) || vis(cx, cy + sy) || vis(cx + sx, cy + sy);
+}
+
 function recomputeAccessibleArea(scene, options = {}) {
   if (!scene || !scene.physics || !scene.physics.world) {
     if (scene) {
@@ -1895,12 +1915,7 @@ function recomputeAccessibleArea(scene, options = {}) {
   scene._accessibleArea = accessibleArea;
 
   scene.isPointAccessible = function isPointAccessible(x, y) {
-    const grid = scene._accessibleArea;
-    if (!grid) return true;
-    const cx = Math.floor((x - grid.bounds.x) / grid.cellSize);
-    const cy = Math.floor((y - grid.bounds.y) / grid.cellSize);
-    if (cx < 0 || cy < 0 || cx >= grid.cols || cy >= grid.rows) return false;
-    return grid.visited.has(`${cx}|${cy}`);
+    return pointAccessibleInGrid(scene._accessibleArea, x, y);
   };
 
   scene.pickAccessibleSpawnPoint = function pickAccessibleSpawnPoint(opts = {}) {
@@ -1939,6 +1954,8 @@ function recomputeAccessibleArea(scene, options = {}) {
 
 window.isSpawnPositionBlocked = isSpawnPositionBlocked;
 window.recomputeAccessibleArea = recomputeAccessibleArea;
+window.pointAccessibleInGrid = pointAccessibleInGrid;   // #57 (rein/testbar)
+if (typeof module !== 'undefined' && module.exports) module.exports.pointAccessibleInGrid = pointAccessibleInGrid;
 
 /**
  * Update room counter HUD text.
