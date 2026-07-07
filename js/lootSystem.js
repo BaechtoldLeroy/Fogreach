@@ -1197,6 +1197,55 @@ if (window.i18n) {
     return true;
   }
 
+  // === G2 (#51): Blindkauf / Gambling — der zentrale Gold-Sink ================
+  // Mara verkauft eine UNIDENTIFIZIERTE Ware zu Fixpreis (skaliert mit Tiefe).
+  // Der Inhalt wird beim Kauf via rollItem gerollt — bewusst mit SCHLECHTEREN
+  // Raritaets-Chancen als ein normaler Drop, damit Gold Wuerfe kauft, keine
+  // Garantien (Fixpreis >= Erwartungswert). Wiederholbar (Dauer-Sink).
+  const BLIND_BUY_BASE = 80;        // Grundpreis
+  const BLIND_BUY_PER_DEPTH = 30;   // Aufschlag je Tiefe
+
+  function _shopDepth() {
+    if (typeof window !== 'undefined') {
+      if (typeof window.currentWave === 'number' && window.currentWave > 0) return Math.max(1, window.currentWave);
+      if (typeof window.DUNGEON_DEPTH === 'number' && window.DUNGEON_DEPTH > 0) return window.DUNGEON_DEPTH;
+    }
+    return 3;
+  }
+
+  function getBlindBuyPrice(depthOverride) {
+    const d = (typeof depthOverride === 'number' && depthOverride > 0) ? depthOverride : _shopDepth();
+    return Math.max(1, Math.round(BLIND_BUY_BASE + d * BLIND_BUY_PER_DEPTH));
+  }
+
+  // Raritaets-Wurf fuer den Blindkauf — schlechter als der normale Drop
+  // (normal ~78/20/2/0.3). Meist Muell, gelegentlich ein Highlight.
+  function _blindBuyTier(rng) {
+    const r = rng();
+    if (r < 0.88) return 0;     // Common
+    if (r < 0.985) return 1;    // Magic
+    if (r < 0.998) return 2;    // Rare
+    return 3;                   // Legendary
+  }
+
+  // Kauft eine Blind-Ware: zieht Gold ab, wuerfelt ein Item auf aktueller Tiefe
+  // mit den Blind-Odds. Rueckgabe: {ok, item?, price, tier?} bzw. {ok:false,reason}.
+  function blindBuy(depthOverride) {
+    const depth = (typeof depthOverride === 'number' && depthOverride > 0) ? depthOverride : _shopDepth();
+    const price = getBlindBuyPrice(depth);
+    if (!spendGold(price)) return { ok: false, reason: 'gold', price: price };
+    const tier = _blindBuyTier(Math.random);
+    let item = null;
+    try { item = rollItem(null, depth, tier); } catch (e) { item = null; }
+    if (!item) {
+      // Roll fehlgeschlagen -> Gold exakt zurueck (ohne gold_find-Multiplikator).
+      const s = _ensureGoldStore();
+      if (s) { s.GOLD = (s.GOLD || 0) + price; _refreshGoldHUD(); }
+      return { ok: false, reason: 'roll', price: price };
+    }
+    return { ok: true, item: item, price: price, tier: tier };
+  }
+
   // Feature 059 (#42) WP04: the flying merchant (wandering_merchant event)
   // offers a curated run-fixed amulet selection from depth 10. Separate state
   // from Mara's itemStock; cached per runId so the same run shows the same
@@ -1364,6 +1413,8 @@ if (window.i18n) {
     refreshShop: refreshShop,
     getShopRerollCost: getShopRerollCost,
     rerollShopStock: rerollShopStock,
+    getBlindBuyPrice: getBlindBuyPrice,
+    blindBuy: blindBuy,
     rerollItem: rerollItem,
     _computeRerollCost: _computeRerollCost,
     migrateSave: migrateSave,

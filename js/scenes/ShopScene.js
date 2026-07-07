@@ -41,6 +41,11 @@
       'shop.toast.reroll_unavailable': 'Reroll nicht verfügbar',
       'shop.toast.reroll_success': 'Reroll erfolgreich!',
       'shop.stock.reroll': 'Lager auffrischen ({cost} G)',
+      'shop.blind_buy.name': '❓ Geheimnisvolle Ware',
+      'shop.blind_buy.desc': 'Unbekannter Inhalt — schlechtere Chancen als ein Fund',
+      'shop.blind_buy.button': 'Blindkauf',
+      'shop.blind_buy.full': 'Inventar voll',
+      'shop.blind_buy.result': 'Erhalten: {name}',
       'shop.toast.stock_rerolled': 'Mara breitet frische Ware aus.'
     });
     window.i18n.register('en', {
@@ -68,6 +73,11 @@
       'shop.toast.reroll_unavailable': 'Reroll unavailable',
       'shop.toast.reroll_success': 'Reroll successful!',
       'shop.stock.reroll': 'Refresh stock ({cost} G)',
+      'shop.blind_buy.name': '❓ Mystery Wares',
+      'shop.blind_buy.desc': 'Unknown contents — worse odds than a find',
+      'shop.blind_buy.button': 'Gamble',
+      'shop.blind_buy.full': 'Inventory full',
+      'shop.blind_buy.result': 'Received: {name}',
       'shop.toast.stock_rerolled': 'Mara lays out fresh wares.'
     });
   }
@@ -227,21 +237,53 @@
         catch (e) { amuletStock = []; }
       }
 
+      let rowIndex = 0;
+      // G2 (#51): Blindkauf — Gambling-Gold-Sink, IMMER verfuegbar (auch bei
+      // leerem Lager). Eine unidentifizierte Ware zu Fixpreis; Inhalt wird beim
+      // Kauf gewuerfelt (bewusst schlechtere Raritaets-Chancen als ein Fund).
+      if (window.LootSystem && typeof window.LootSystem.blindBuy === 'function') {
+        const bprice = (typeof window.LootSystem.getBlindBuyPrice === 'function')
+          ? window.LootSystem.getBlindBuyPrice() : 100;
+        const by = startY + rowIndex * rowH; rowIndex++;
+        const bbg = this.add.rectangle(px, by + rowH / 2, panelW - 30, rowH - 4, 0x332a1a)
+          .setStrokeStyle(1, 0xffb347).setScrollFactor(0).setDepth(2002);
+        this.tabBody.push(bbg);
+        const bnm = this.add.text(px - panelW / 2 + 24, by + 5, _SHOP_T('shop.blind_buy.name'), {
+          fontFamily: 'monospace', fontSize: '12px', color: '#ffb347'
+        }).setScrollFactor(0).setDepth(2003);
+        this.tabBody.push(bnm);
+        const bdesc = this.add.text(px - panelW / 2 + 24, by + 21, _SHOP_T('shop.blind_buy.desc'), {
+          fontFamily: 'monospace', fontSize: '10px', color: '#b89a6a', wordWrap: { width: panelW - 220 }
+        }).setScrollFactor(0).setDepth(2003);
+        this.tabBody.push(bdesc);
+        const bpt = this.add.text(px + panelW / 2 - 150, by + rowH / 2, bprice + ' G', {
+          fontFamily: 'monospace', fontSize: '12px', color: '#ffd166'
+        }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2003);
+        this.tabBody.push(bpt);
+        const bbuyBg = this.add.rectangle(px + panelW / 2 - 50, by + rowH / 2, 60, 24, 0x4a3a1a)
+          .setStrokeStyle(1, 0xffb347).setScrollFactor(0).setDepth(2003).setInteractive({ useHandCursor: true });
+        const bbuyTx = this.add.text(px + panelW / 2 - 50, by + rowH / 2, _SHOP_T('shop.blind_buy.button'), {
+          fontFamily: 'monospace', fontSize: '10px', color: '#f1e9d8'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
+        this.tabBody.push(bbuyBg); this.tabBody.push(bbuyTx);
+        bbuyBg.on('pointerdown', () => this._tryBlindBuy());
+        rowIndex += 0.4; // Abstand zur restlichen Auslage
+      }
+
       if (stock.length === 0 && amuletStock.length === 0) {
-        const t = this.add.text(px, py, _SHOP_T('shop.empty.stock'), {
+        const t = this.add.text(px, py + 40, _SHOP_T('shop.empty.stock'), {
           fontFamily: 'monospace', fontSize: '13px', color: '#888888'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(t);
         return;
       }
 
-      let rowIndex = 0;
       if (amuletStock.length > 0) {
-        const hdr = this.add.text(px, startY - 6, _SHOP_T('shop.amulet.section'), {
+        const hdr = this.add.text(px, startY + rowIndex * rowH - 6, _SHOP_T('shop.amulet.section'), {
           fontFamily: 'monospace', fontSize: '11px', color: '#c792ea'
         }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(hdr);
-        rowIndex = 0.6; // nudge first amulet row below the small header
+        rowIndex += 0.6; // nudge first amulet row below the small header
         amuletStock.forEach((amulet, ai) => {
           const ry = startY + rowIndex * rowH;
           rowIndex++;
@@ -369,6 +411,32 @@
       this._refreshGold();
       this._renderTab('items');
       this._showToast(_SHOP_T('shop.toast.stock_rerolled'));
+    }
+
+    // G2 (#51): Blindkauf. Freien Slot ZUERST pruefen (kein Gold verbrennen, wenn
+    // voll), dann blindBuy (zieht Gold ab + wuerfelt), Item in den Slot legen.
+    _tryBlindBuy() {
+      if (!window.LootSystem || typeof window.LootSystem.blindBuy !== 'function') {
+        this._showToast(_SHOP_T('shop.toast.reroll_unavailable'));
+        return;
+      }
+      const inv = window.inventory;
+      const slot = Array.isArray(inv) ? inv.findIndex((s) => !s) : -1;
+      if (slot < 0) { this._showToast(_SHOP_T('shop.blind_buy.full')); return; }
+      const res = window.LootSystem.blindBuy();
+      if (!res || !res.ok) {
+        this._showToast(_SHOP_T(res && res.reason === 'gold'
+          ? 'shop.toast.not_enough_gold' : 'shop.toast.reroll_unavailable'));
+        return;
+      }
+      window.inventory[slot] = res.item;
+      if (typeof window._refreshInventoryHUD === 'function') { try { window._refreshInventoryHUD(); } catch (e) {} }
+      this._refreshGold();
+      this._renderTab('items'); // Preis kann tiefenabhaengig sein -> neu zeichnen
+      const nm = (window.LootSystem && typeof window.LootSystem.getLocalizedDisplayName === 'function')
+        ? window.LootSystem.getLocalizedDisplayName(res.item)
+        : (res.item.displayName || res.item.name || 'Item');
+      this._showToast(_SHOP_T('shop.blind_buy.result', { name: nm }));
     }
 
     _computeItemPrice(item) {

@@ -829,6 +829,53 @@ test('getOrCreateShopState: regenerates when runId changes', () => {
 });
 
 // ---------------------------------------------------------------------------
+// G2 (#51): Blindkauf / Gambling gold sink
+// ---------------------------------------------------------------------------
+test('getBlindBuyPrice scales with depth', () => {
+  const sys = freshShopSystem();
+  const p3 = sys.getBlindBuyPrice(3);
+  const p10 = sys.getBlindBuyPrice(10);
+  assert.ok(p10 > p3, 'deeper -> pricier');
+  assert.strictEqual(p3, 80 + 3 * 30);   // BASE + depth*PER_DEPTH
+});
+
+test('blindBuy fails and refunds nothing when gold is insufficient (#51)', () => {
+  const sys = freshShopSystem();
+  globalThis.window.materialCounts = { GOLD: 10 };
+  const price = sys.getBlindBuyPrice(3);
+  const res = sys.blindBuy(3);
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.reason, 'gold');
+  assert.strictEqual(sys.getGold(), 10, 'gold unchanged on failed buy');
+  assert.ok(price > 10);
+});
+
+test('blindBuy deducts the price and returns a valid item (#51)', () => {
+  const sys = freshShopSystem();
+  globalThis.window.materialCounts = { GOLD: 5000 };
+  const price = sys.getBlindBuyPrice(3);
+  const res = sys.blindBuy(3);
+  assert.strictEqual(res.ok, true);
+  assert.strictEqual(res.price, price);
+  assert.strictEqual(sys.getGold(), 5000 - price, 'exactly the price is spent');
+  assert.ok(res.item && typeof res.item.tier === 'number');
+  assert.ok(Array.isArray(res.item.affixes));
+  assert.strictEqual(res.item.affixes.length, res.item.tier, 'affix count matches tier');
+});
+
+test('blindBuy odds skew common (worse than a normal drop) (#51)', () => {
+  const sys = freshShopSystem();
+  globalThis.window.materialCounts = { GOLD: 100000000 };
+  let common = 0;
+  const N = 400;
+  for (let i = 0; i < N; i++) {
+    const r = sys.blindBuy(3);
+    if (r.ok && r.item.tier === 0) common++;
+  }
+  assert.ok(common / N > 0.75, 'most blind buys are common (got ' + (common / N).toFixed(2) + ')');
+});
+
+// ---------------------------------------------------------------------------
 // WP08 T048: equip-change hooks into recomputeBonuses
 // ---------------------------------------------------------------------------
 
