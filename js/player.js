@@ -1044,7 +1044,11 @@ function getLootAbilityCooldownReduction(abilityKey) {
   // consumer (applyCooldownModifier) already floors at Math.max(0, 1 - x)
   // and 100ms, so no clamp needed here.
   const ktAll = (window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.cdrAll) || 0;
-  return perAbility + allAbilities + ktAll;
+  // #60: Fokus-Attribut (nur von Items) -> globale Cooldown-Reduktion. Cap ist
+  // bereits in recalcDerived bei −40 % gedeckelt; applyCooldownModifier floort
+  // zusaetzlich bei 100 ms, daher hier kein weiterer Clamp noetig.
+  const focusCdr = (typeof window.playerFocusCdr === 'number') ? window.playerFocusCdr : 0;
+  return perAbility + allAbilities + ktAll + focusCdr;
 }
 
 function applyCooldownModifier(base, key) {

@@ -959,6 +959,34 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     playerCritChance = Phaser.Math.Clamp(playerCritChance + (_gb('crit') || 0), 0, 0.9);
   }
 
+  // === D2-artige Kern-Attribute (#60) — kommen NUR von Item-Affixen ===
+  //   Staerke     -> +1 % Nahkampf-/Waffenschaden je Punkt
+  //   Geschick    -> +0.2 % Krit + 0.3 % Angriffstempo je Punkt
+  //   Vitalitaet  -> +3 Max-LP je Punkt (unten in den HP-Pool gefaltet)
+  //   Fokus       -> globale Cooldown-Reduktion −0.4 %/Punkt (Cap −40 %,
+  //                  angewandt in player.js via window.playerFocusCdr)
+  let _attrStr = 0, _attrDex = 0, _attrVit = 0, _attrFoc = 0;
+  if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
+    const _gb2 = window.LootSystem.getBonus;
+    _attrStr = Math.max(0, _gb2('strength') || 0);
+    _attrDex = Math.max(0, _gb2('dexterity') || 0);
+    _attrVit = Math.max(0, _gb2('vitality') || 0);
+    _attrFoc = Math.max(0, _gb2('focus') || 0);
+    weaponDamage = weaponDamage * (1 + _attrStr * 0.01);
+    weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + _attrDex * 0.003));
+    playerCritChance = Phaser.Math.Clamp(playerCritChance + _attrDex * 0.002, 0, 0.9);
+  }
+  const _attrVitHp = _attrVit * 3;
+  const _attrFocusCdr = Math.min(0.40, _attrFoc * 0.004);
+  // Nach aussen sichtbar: Charakter-Menue (Anzeige) + Cooldown-Anwendung (player.js).
+  if (typeof window !== 'undefined') {
+    window.playerStrength = _attrStr;
+    window.playerDexterity = _attrDex;
+    window.playerVitality = _attrVit;
+    window.playerFocus = _attrFoc;
+    window.playerFocusCdr = _attrFocusCdr;
+  }
+
   // Round the final weapon damage to ONE decimal so band-rolled bases (e.g.
   // 4.3) and percent affixes read cleanly in HUD/tooltip without float drift.
   weaponDamage = Math.round(weaponDamage * 10) / 10;
@@ -1002,7 +1030,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   const _ktMaxHpAdd = (window.knowledgeTreeBuffs && typeof window.knowledgeTreeBuffs.maxHpAdd === 'number')
     ? window.knowledgeTreeBuffs.maxHpAdd
     : 0;
-  const _hpBeforePrinting = (baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd + _ktMaxHpAdd;
+  const _hpBeforePrinting = (baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd + _ktMaxHpAdd + _attrVitHp;
   // Feature 059 WP03: run-amulet stat mods (Glasherz −25% MaxHP / +50% Schaden,
   // Sturmschritt +Lauf-/Angriffstempo). maxHpMul wird hier in den Commit gefaltet;
   // damageMul/speedMul/moveAdd weiter unten NACH allen Buff-Layern angewandt.
@@ -1164,6 +1192,9 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     updateHUD();
   }
 }
+// Export: knowledgeTree.js (u.a.) erwartet window.recalcDerived, um nach
+// Buff-Aenderungen die abgeleiteten Werte neu zu berechnen (#60/#26).
+if (typeof window !== 'undefined') window.recalcDerived = recalcDerived;
 
 function openInventory() {
   invOpen = true;

@@ -41,10 +41,11 @@ beforeEach(() => {
 // Phase 1: rollAffixes
 // ---------------------------------------------------------------------------
 
-test('AFFIX_DEFS has exactly 31 entries', () => {
+test('AFFIX_DEFS has exactly 35 entries', () => {
   const sys = freshSystem();
   // 060: per-Skill-Affixe für alle 12 Skills ergänzt (8 dmg + 11 cd) -> 31.
-  assert.strictEqual(sys.AFFIX_DEFS.length, 31);
+  // #60: 4 D2-Kern-Attribut-Affixe (Stärke/Geschick/Vita/Fokus) -> 35.
+  assert.strictEqual(sys.AFFIX_DEFS.length, 35);
 });
 
 test('AFFIX_DEFS is frozen (top-level)', () => {
@@ -215,6 +216,28 @@ test('getBonus sums flat affixes across multiple items', () => {
   };
   sys.recomputeBonuses();
   assert.strictEqual(sys.getBonus('hp'), 35);
+});
+
+test('D2 core-attribute affixes exist as flat stats and aggregate via getBonus (#60)', () => {
+  const sys = freshSystem();
+  const ids = ['attr_strength', 'attr_dexterity', 'attr_vitality', 'attr_focus'];
+  const keys = ['strength', 'dexterity', 'vitality', 'focus'];
+  ids.forEach((id, i) => {
+    const def = sys.AFFIX_DEFS.find((d) => d.id === id);
+    assert.ok(def, id + ' exists');
+    assert.strictEqual(def.valueType, 'flat', id + ' is flat');
+    assert.strictEqual(def.statKey, keys[i], id + ' -> statKey ' + keys[i]);
+  });
+  // Two items each rolling +Strength stack as a flat sum.
+  globalThis.window.equipment = {
+    weapon: makeMockItem([{ defId: 'attr_strength', value: 5 }, { defId: 'attr_focus', value: 4 }]),
+    body: makeMockItem([{ defId: 'attr_strength', value: 3 }, { defId: 'attr_vitality', value: 6 }])
+  };
+  sys.recomputeBonuses();
+  assert.strictEqual(sys.getBonus('strength'), 8, '+5 and +3 Strength -> 8');
+  assert.strictEqual(sys.getBonus('vitality'), 6);
+  assert.strictEqual(sys.getBonus('focus'), 4);
+  assert.strictEqual(sys.getBonus('dexterity'), 0);
 });
 
 test('armor affix is percent (fraction), consistent with base armor display', () => {

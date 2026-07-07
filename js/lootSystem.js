@@ -35,6 +35,10 @@ if (window.i18n) {
     'loot.affix.of_haste': 'der Eile',
     'loot.affix.of_wisdom': 'der Weisheit',
     'loot.affix.of_greed': 'der Gier',
+    'loot.affix.attr_strength': 'der Stärke',
+    'loot.affix.attr_dexterity': 'der Geschicklichkeit',
+    'loot.affix.attr_vitality': 'der Vitalität',
+    'loot.affix.attr_focus': 'des Fokus',
 
     // Affix tooltip texts (with {value} placeholder). Used by inventory.js
     // when rendering item tooltips.
@@ -69,6 +73,10 @@ if (window.i18n) {
     'loot.affix.of_haste.tooltip': '-{value}% Cooldown aller Fähigkeiten',
     'loot.affix.of_wisdom.tooltip': '+{value}% XP-Gewinn',
     'loot.affix.of_greed.tooltip': '+{value}% Gold-Find',
+    'loot.affix.attr_strength.tooltip': '+{value} Stärke',
+    'loot.affix.attr_dexterity.tooltip': '+{value} Geschicklichkeit',
+    'loot.affix.attr_vitality.tooltip': '+{value} Vitalität',
+    'loot.affix.attr_focus.tooltip': '+{value} Fokus',
 
     'loot.item.WPN_EISENKLINGE': 'Eisenklinge',
     'loot.item.WPN_SCHATTENDOLCH': 'Schattendolch',
@@ -155,6 +163,10 @@ if (window.i18n) {
     'loot.affix.of_haste': 'of Haste',
     'loot.affix.of_wisdom': 'of Wisdom',
     'loot.affix.of_greed': 'of Greed',
+    'loot.affix.attr_strength': 'of Strength',
+    'loot.affix.attr_dexterity': 'of Dexterity',
+    'loot.affix.attr_vitality': 'of Vitality',
+    'loot.affix.attr_focus': 'of Focus',
 
     'loot.affix.sharp_dmg.tooltip': '+{value}% Damage',
     'loot.affix.sturdy_armor.tooltip': '+{value}% Armor',
@@ -187,6 +199,10 @@ if (window.i18n) {
     'loot.affix.of_haste.tooltip': '-{value}% All Ability Cooldowns',
     'loot.affix.of_wisdom.tooltip': '+{value}% XP Gain',
     'loot.affix.of_greed.tooltip': '+{value}% Gold Find',
+    'loot.affix.attr_strength.tooltip': '+{value} Strength',
+    'loot.affix.attr_dexterity.tooltip': '+{value} Dexterity',
+    'loot.affix.attr_vitality.tooltip': '+{value} Vitality',
+    'loot.affix.attr_focus.tooltip': '+{value} Focus',
 
     'loot.item.WPN_EISENKLINGE': 'Iron Blade',
     'loot.item.WPN_SCHATTENDOLCH': 'Shadow Dagger',
@@ -372,7 +388,23 @@ if (window.i18n) {
       appliesTo: Object.freeze(['head']), tooltipText: '+{value}% XP Gain' }),
     Object.freeze({ id: 'of_greed', displayName: 'of Greed', position: 'suffix', statKey: 'gold_find',
       valueType: 'percent', range: Object.freeze({ min: 10, max: 30 }), iLevelMin: 5, weight: 30,
-      appliesTo: Object.freeze(['head', 'boots']), tooltipText: '+{value}% Gold Find' })
+      appliesTo: Object.freeze(['head', 'boots']), tooltipText: '+{value}% Gold Find' }),
+
+    // === D2-artige Kern-Attribute (4, #60) — flach, nur ueber Items. Fliessen
+    // in recalcDerived: Staerke->Schaden%, Geschick->Krit+Tempo, Vitalitaet->LP,
+    // Fokus->globale Cooldown-Reduktion. Je 2 Slot-Typen (Build-Differenzierung).
+    Object.freeze({ id: 'attr_strength', displayName: 'of Strength', position: 'suffix', statKey: 'strength',
+      valueType: 'flat', range: Object.freeze({ min: 2, max: 6 }), iLevelMin: 4, weight: 35,
+      appliesTo: Object.freeze(['weapon', 'body']), tooltipText: '+{value} Strength' }),
+    Object.freeze({ id: 'attr_dexterity', displayName: 'of Dexterity', position: 'suffix', statKey: 'dexterity',
+      valueType: 'flat', range: Object.freeze({ min: 2, max: 6 }), iLevelMin: 4, weight: 35,
+      appliesTo: Object.freeze(['weapon', 'boots']), tooltipText: '+{value} Dexterity' }),
+    Object.freeze({ id: 'attr_vitality', displayName: 'of Vitality', position: 'suffix', statKey: 'vitality',
+      valueType: 'flat', range: Object.freeze({ min: 2, max: 6 }), iLevelMin: 4, weight: 35,
+      appliesTo: Object.freeze(['body', 'head']), tooltipText: '+{value} Vitality' }),
+    Object.freeze({ id: 'attr_focus', displayName: 'of Focus', position: 'suffix', statKey: 'focus',
+      valueType: 'flat', range: Object.freeze({ min: 2, max: 6 }), iLevelMin: 4, weight: 30,
+      appliesTo: Object.freeze(['head', 'boots']), tooltipText: '+{value} Focus' })
   ]);
 
   // ---------------------------------------------------------------------------

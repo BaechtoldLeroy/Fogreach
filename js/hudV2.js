@@ -28,6 +28,11 @@
       'hud.stats.label.armor': 'Rüstung',
       'hud.stats.label.crit': 'Krit. Chance',
       'hud.stats.label.move_speed': 'Bewegungstempo',
+      'hud.stats.attributes': '— Attribute (von Items) —',
+      'hud.stats.label.strength': 'Stärke',
+      'hud.stats.label.dexterity': 'Geschicklichkeit',
+      'hud.stats.label.vitality': 'Vitalität',
+      'hud.stats.label.focus': 'Fokus',
       'hud.tooltip.portrait': 'Charakter (klicken für Stats)',
       'hud.tooltip.menu': 'Menü',
       'hud.tooltip.inventory': 'Inventar (I)'
@@ -49,6 +54,11 @@
       'hud.stats.label.armor': 'Armor',
       'hud.stats.label.crit': 'Crit Chance',
       'hud.stats.label.move_speed': 'Move Speed',
+      'hud.stats.attributes': '— Attributes (from items) —',
+      'hud.stats.label.strength': 'Strength',
+      'hud.stats.label.dexterity': 'Dexterity',
+      'hud.stats.label.vitality': 'Vitality',
+      'hud.stats.label.focus': 'Focus',
       'hud.tooltip.portrait': 'Character (click for stats)',
       'hud.tooltip.menu': 'Menu',
       'hud.tooltip.inventory': 'Inventory (I)'
@@ -342,7 +352,7 @@
     const cw = scene.cameras.main.width;
     const ch = scene.cameras.main.height;
     const panelW = Math.min(420, cw - 40);
-    const panelH = 360;
+    const panelH = 500;   // #60: Platz fuer die 4 Attribut-Zeilen
     const px = cw / 2;
     const py = ch / 2;
 
@@ -372,6 +382,11 @@
     const xp = (typeof window.playerXP === 'number') ? window.playerXP : (typeof playerXP !== 'undefined' ? playerXP : 0);
     const need = (typeof window.neededXP === 'number') ? window.neededXP : (typeof neededXP !== 'undefined' ? neededXP : 1);
     const lvl = (typeof window.playerLevel === 'number') ? window.playerLevel : (typeof playerLevel !== 'undefined' ? playerLevel : 1);
+    // #60: D2-Kern-Attribute (nur von Items; in recalcDerived nach window gespiegelt).
+    const _s = (typeof window.playerStrength === 'number') ? window.playerStrength : 0;
+    const _d = (typeof window.playerDexterity === 'number') ? window.playerDexterity : 0;
+    const _v = (typeof window.playerVitality === 'number') ? window.playerVitality : 0;
+    const _f = (typeof window.playerFocus === 'number') ? window.playerFocus : 0;
 
     const rows = [
       [T('hud.stats.label.health'), Math.round(cur) + ' / ' + Math.round(max)],
@@ -382,7 +397,12 @@
       [T('hud.stats.label.range'), String(rng)],
       [T('hud.stats.label.armor'), Math.round(arm * 100) + '%'],
       [T('hud.stats.label.crit'), (crt * 100).toFixed(1) + '%'],
-      [T('hud.stats.label.move_speed'), String(spd)]
+      [T('hud.stats.label.move_speed'), String(spd)],
+      [T('hud.stats.attributes'), ''],
+      [T('hud.stats.label.strength'), _s > 0 ? _s + '  (+' + _s + '% Dmg)' : '0'],
+      [T('hud.stats.label.dexterity'), _d > 0 ? _d + '  (+' + (_d * 0.2).toFixed(1) + '% Crit, +' + (_d * 0.3).toFixed(1) + '% AS)' : '0'],
+      [T('hud.stats.label.vitality'), _v > 0 ? _v + '  (+' + (_v * 3) + ' HP)' : '0'],
+      [T('hud.stats.label.focus'), _f > 0 ? _f + '  (−' + Math.min(40, _f * 0.4).toFixed(0) + '% CD)' : '0']
     ];
     const rowGfx = [];
     rows.forEach((r, i) => {
