@@ -38,6 +38,8 @@
       'shop.reroll.cost': 'Reroll-Kosten: {cost} Gold',
       'shop.reroll.btn': 'Reroll',
       'shop.reroll.cancel': 'Anderes Item',
+      'shop.reroll.lock_hint': 'Klick auf einen Affix, um ihn zu behalten (Aufpreis)',
+      'shop.reroll.locked_hint': '🔒 gesperrt — wird beim Reroll behalten',
       'shop.toast.reroll_unavailable': 'Reroll nicht verfügbar',
       'shop.toast.reroll_success': 'Reroll erfolgreich!',
       'shop.stock.reroll': 'Lager auffrischen ({cost} G)',
@@ -70,6 +72,8 @@
       'shop.reroll.cost': 'Reroll cost: {cost} gold',
       'shop.reroll.btn': 'Reroll',
       'shop.reroll.cancel': 'Other item',
+      'shop.reroll.lock_hint': 'Click an affix to keep it (surcharge)',
+      'shop.reroll.locked_hint': '🔒 locked — kept on reroll',
       'shop.toast.reroll_unavailable': 'Reroll unavailable',
       'shop.toast.reroll_success': 'Reroll successful!',
       'shop.stock.reroll': 'Refresh stock ({cost} G)',
@@ -95,6 +99,7 @@
       this.activeTab = 'items';
       this.tabBody = [];
       this.selectedRerollItem = null;
+      this.rerollLockIndex = null; // #51 G3: gesperrter Affix-Index (oder null)
       // Dungeon merchant: cheaper prices, better items, no reroll tab
       this.isDungeonMerchant = !!window._dungeonMerchant;
       window._dungeonMerchant = false;
@@ -709,6 +714,11 @@
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(nameText);
 
+        // #51 G3: Affixe sind ab tier 2 anklickbar -> genau EINEN sperren
+        // (bleibt beim Reroll erhalten, gegen Aufpreis). Der gesperrte wird 🔒
+        // markiert. Ungueltiger Lock-Index (Item gewechselt) wird zurueckgesetzt.
+        const canLock = (item.tier | 0) >= 2;
+        if (!canLock || this.rerollLockIndex >= (item.affixes || []).length) this.rerollLockIndex = null;
         (item.affixes || []).forEach((a, i) => {
           const def = window.LootSystem && window.LootSystem.AFFIX_DEFS
             ? window.LootSystem.AFFIX_DEFS.find(d => d.id === a.defId)
@@ -717,14 +727,32 @@
           const tipTxt = (typeof window.LootSystem.getAffixTooltipText === 'function')
             ? window.LootSystem.getAffixTooltipText(def, a.value)
             : (def.tooltipText || '').replace('{value}', a.value);
-          const lineText = this.add.text(px, py - panelH / 2 + 144 + i * 18, tipTxt, {
-            fontFamily: 'monospace', fontSize: '11px', color: '#88ff88'
+          const isLocked = canLock && this.rerollLockIndex === i;
+          const lineText = this.add.text(px, py - panelH / 2 + 144 + i * 18, (isLocked ? '🔒 ' : '') + tipTxt, {
+            fontFamily: 'monospace', fontSize: '11px', color: isLocked ? '#ffd166' : '#88ff88'
           }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
+          if (canLock) {
+            lineText.setInteractive({ useHandCursor: true });
+            lineText.on('pointerdown', () => {
+              this.rerollLockIndex = (this.rerollLockIndex === i) ? null : i;
+              this._renderTab('reroll');
+            });
+          }
           this.tabBody.push(lineText);
         });
 
+        // Sperr-Hinweis unter den Affixen (nur wenn Sperren moeglich ist).
+        if (canLock) {
+          const hintKey = (this.rerollLockIndex != null) ? 'shop.reroll.locked_hint' : 'shop.reroll.lock_hint';
+          const hint = this.add.text(px, py - panelH / 2 + 150 + (item.affixes || []).length * 18, _SHOP_T(hintKey), {
+            fontFamily: 'monospace', fontSize: '10px', color: '#b89a6a'
+          }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
+          this.tabBody.push(hint);
+        }
+
+        const isLockedNow = canLock && (this.rerollLockIndex != null);
         const cost = (window.LootSystem && typeof window.LootSystem._computeRerollCost === 'function')
-          ? window.LootSystem._computeRerollCost(item)
+          ? window.LootSystem._computeRerollCost(item, isLockedNow)
           : 50;
         const costText = this.add.text(px, py + panelH / 2 - 88, _SHOP_T('shop.reroll.cost', { cost: cost }), {
           fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
@@ -739,7 +767,7 @@
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
         this.tabBody.push(rerollBg);
         this.tabBody.push(rerollTxt);
-        rerollBg.on('pointerdown', () => this._doReroll(cost));
+        rerollBg.on('pointerdown', () => this._doReroll(cost, isLockedNow ? this.rerollLockIndex : undefined));
 
         const cancelBg = this.add.rectangle(px + 70, py + panelH / 2 - 58, 130, 30, 0x2a2a2a)
           .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2003)
@@ -751,6 +779,7 @@
         this.tabBody.push(cancelTxt);
         cancelBg.on('pointerdown', () => {
           this.selectedRerollItem = null;
+          this.rerollLockIndex = null;
           this._renderTab('reroll');
         });
       } else {
@@ -769,23 +798,25 @@
           this.tabBody.push(nameText);
           rowBg.on('pointerdown', () => {
             this.selectedRerollItem = item;
+            this.rerollLockIndex = null;
             this._renderTab('reroll');
           });
         });
       }
     }
 
-    _doReroll(cost) {
+    _doReroll(cost, lockIndex) {
       if (!this.selectedRerollItem) return;
       if (!window.LootSystem || typeof window.LootSystem.rerollItem !== 'function') {
         this._showToast(_SHOP_T('shop.toast.reroll_unavailable'));
         return;
       }
-      const ok = window.LootSystem.rerollItem(this.selectedRerollItem, cost);
+      const ok = window.LootSystem.rerollItem(this.selectedRerollItem, cost, lockIndex);
       if (!ok) {
         this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
         return;
       }
+      this.rerollLockIndex = null; // Sperre nach erfolgreichem Reroll aufheben
       this._refreshGold();
       this._renderTab('reroll');
       this._showToast(_SHOP_T('shop.toast.reroll_success'));

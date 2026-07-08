@@ -782,6 +782,31 @@ test('rerollItem: succeeds when gold is sufficient and mutates affixes in place'
   assert.ok(typeof prevIds === 'string');
 });
 
+test('rerollItem with lock keeps the locked affix, re-rolls the rest, at a surcharge (#51 G3)', () => {
+  const sys = freshShopSystem();
+  sys.grantGold(100000);
+  const item = sys.rollItem('WPN_EISENKLINGE', 10, 3); // tier 3 -> 3 affixes
+  assert.strictEqual(item.affixes.length, 3);
+  const lockIdx = 1;
+  const lockedDefId = item.affixes[lockIdx].defId;
+  const lockedValue = item.affixes[lockIdx].value;
+  // Locked cost is the base cost times the surcharge (1.75).
+  const baseCost = sys._computeRerollCost(item, false);
+  const lockCost = sys._computeRerollCost(item, true);
+  assert.ok(lockCost > baseCost, 'locking costs more');
+  assert.strictEqual(lockCost, Math.max(1, Math.round(baseCost * 1.75)));
+  const goldBefore = sys.getGold();
+  const ok = sys.rerollItem(item, lockCost, lockIdx);
+  assert.strictEqual(ok, true);
+  assert.strictEqual(sys.getGold(), goldBefore - lockCost);
+  assert.strictEqual(item.affixes.length, 3, 'affix count preserved');
+  // The locked affix is still present with the same value...
+  const kept = item.affixes.find(a => a.defId === lockedDefId && a.value === lockedValue);
+  assert.ok(kept, 'locked affix survived the reroll');
+  // ...and appears exactly once (no duplication of the locked defId).
+  assert.strictEqual(item.affixes.filter(a => a.defId === lockedDefId).length, 1);
+});
+
 test('rerollItem: fails and returns false when gold is insufficient', () => {
   const sys = freshShopSystem();
   sys.grantGold(5);

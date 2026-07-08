@@ -1284,21 +1284,42 @@ if (window.i18n) {
     return _amuletShopState;
   }
 
-  function _computeRerollCost(item) {
+  // #51 G3: Aufpreis-Faktor, wenn beim Reroll ein Affix gesperrt (behalten) wird.
+  const REROLL_LOCK_SURCHARGE = 1.75;
+
+  function _computeRerollCost(item, locked) {
     if (!item || typeof item.tier !== 'number') return 0;
     const tierMult = [1, 2, 4, 8];
     const t = Math.max(0, Math.min(3, item.tier));
     const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
-    return Math.max(1, Math.round(50 * tierMult[t] * (1 + iLevel * 0.05)));
+    const base = 50 * tierMult[t] * (1 + iLevel * 0.05);
+    return Math.max(1, Math.round(base * (locked ? REROLL_LOCK_SURCHARGE : 1)));
   }
 
-  function rerollItem(item, costGold) {
+  // Wuerfelt die Affixe eines Items neu. #51 G3: mit optionalem lockIndex bleibt
+  // GENAU ein Affix erhalten; die uebrigen (count-1) werden neu gerollt (ohne den
+  // gesperrten Affix zu duplizieren). Sperren lohnt erst ab tier 2 (>=2 Affixe).
+  function rerollItem(item, costGold, lockIndex) {
     if (!item || typeof item.tier !== 'number') return false;
-    const expected = (typeof costGold === 'number') ? costGold : _computeRerollCost(item);
+    const count = Math.max(0, item.tier | 0);
+    const hasLock = (typeof lockIndex === 'number' && Array.isArray(item.affixes)
+      && lockIndex >= 0 && lockIndex < item.affixes.length && count >= 2);
+    const expected = (typeof costGold === 'number') ? costGold : _computeRerollCost(item, hasLock);
     if (!spendGold(expected)) return false;
     const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
-    const count = Math.max(0, item.tier | 0);
-    item.affixes = rollAffixes(iLevel, count, Math.random, item.type);
+    if (hasLock) {
+      const locked = item.affixes[lockIndex];
+      const out = [locked];
+      let guard = 0;
+      while (out.length < count && guard < 40) {
+        const extra = rollAffixes(iLevel, 1, Math.random, item.type)[0];
+        if (extra && extra.defId !== locked.defId && !out.some((a) => a.defId === extra.defId)) out.push(extra);
+        guard++;
+      }
+      item.affixes = out;
+    } else {
+      item.affixes = rollAffixes(iLevel, count, Math.random, item.type);
+    }
     try { item.displayName = composeName(item); } catch (e) { /* swallow */ }
     return true;
   }
