@@ -83,3 +83,4 @@ RoomMode.selectForRoom({ roomIndex, isBoss, isEspionage, depth, rng }) -> modeId
 ## Activity Log
 
 - 2026-07-08T13:29:02Z – unknown – shell_pid=71716 – lane=for_review – Moved to for_review
+- 2026-07-08T13:46:51Z – unknown – shell_pid=71716 – lane=approved – Review passed: verlustfrei, 416 Tests grün, Smoke 0 Errors, in main gemerged
