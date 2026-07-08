@@ -57,3 +57,4 @@ Eigenständige Datei `js/roomModeHunt.js` (self-registrierend als `hunt`). Unter
 ## Activity Log
 
 - 2026-07-08T14:02:50Z – unknown – shell_pid=50612 – lane=for_review – Moved to for_review
+- 2026-07-08T14:02:54Z – unknown – shell_pid=50612 – lane=approved – reviewed
