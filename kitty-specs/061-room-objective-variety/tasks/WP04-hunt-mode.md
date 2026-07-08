@@ -53,3 +53,7 @@ Eigenständige Datei `js/roomModeHunt.js` (self-registrierend als `hunt`). Unter
 
 ## Akzeptanz
 - Ziel markiert; Kill öffnet die Treppe unabhängig vom Rest; `objectiveFailed` immer false. Tests grün; 0 Errors.
+
+## Activity Log
+
+- 2026-07-08T14:02:50Z – unknown – shell_pid=50612 – lane=for_review – Moved to for_review
