@@ -1,14 +1,14 @@
 {
-  "event_count": 9,
+  "event_count": 10,
   "feature_slug": "061-room-objective-variety",
-  "last_event_id": "01KX1030BR9BQ4M2M1175A0K68",
-  "materialized_at": "2026-07-08T13:53:42.792337+00:00",
+  "last_event_id": "01KX103296FFAGPYEX76TNSF5T",
+  "materialized_at": "2026-07-08T13:53:44.753369+00:00",
   "summary": {
-    "approved": 1,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 1,
+    "done": 2,
     "for_review": 0,
     "in_progress": 0,
     "planned": 0
@@ -24,9 +24,9 @@
     "WP02": {
       "actor": "user",
       "force_count": 0,
-      "lane": "approved",
-      "last_event_id": "01KX1030BR9BQ4M2M1175A0K68",
-      "last_transition_at": "2026-07-08T13:53:42.776553+00:00"
+      "lane": "done",
+      "last_event_id": "01KX103296FFAGPYEX76TNSF5T",
+      "last_transition_at": "2026-07-08T13:53:44.742713+00:00"
     }
   }
 }
