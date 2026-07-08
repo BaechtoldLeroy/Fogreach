@@ -54,3 +54,7 @@ KI-Ziel-Wahl in `js/enemy.js` (+ `ai/steering.js`) analysieren: Kann ein Overrid
 
 ## Akzeptanz
 - Gegner greifen das Objekt an, HP sinkt; Zerstörung → Raum trotzdem passierbar (`objectiveFailed=true`). Tests grün; 0 Errors.
+
+## Activity Log
+
+- 2026-07-08T13:58:15Z – unknown – shell_pid=26824 – lane=for_review – Moved to for_review
