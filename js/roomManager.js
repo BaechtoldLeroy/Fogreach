@@ -1061,6 +1061,20 @@ function enterRoom(scene, roomId) {
     window.currentWave = currentWave;
   }
 
+  // Feature 061: Raum-Modus starten. Solange nur `clear` registriert ist,
+  // wählt beginRoom immer `clear` -> keine Verhaltensänderung (NFR-01).
+  // Boss = Klimax-Raum (Finalraum), erster Raum + Espionage bleiben `clear`.
+  if (window.RoomMode && typeof window.RoomMode.beginRoom === 'function') {
+    try {
+      window.RoomMode.beginRoom(scene, {
+        roomIndex: roomId,
+        isBoss: !!window.__isFinalDungeonRoom,
+        isEspionage: _espionageRoom,
+        depth: Math.max(1, window.DUNGEON_DEPTH || currentWave || 1)
+      });
+    } catch (e) { /* nie den Raumaufbau brechen */ }
+  }
+
   // Feature 059 (#42) WP04: early run-amulet drop (first room only).
   _maybeSpawnRunAmulet(scene);
 }
@@ -1259,6 +1273,25 @@ function markRoomCleared() {
       }
     }
   }
+
+  // Feature 061 (FR-08): Bonus-Chest bei erfolgreich abgeschlossenem SPEZIAL-Raum
+  // (Modus != clear UND Ziel nicht verfehlt). Verfehlen = Malus (kein Chest), aber
+  // der Raum bleibt passierbar. In WP01 dormant (nur `clear` registriert).
+  try {
+    if (window.RoomMode && window.RoomMode.isSpecialRoom && window.RoomMode.isSpecialRoom()
+        && !window.RoomMode.objectiveFailed() && !room._bonusGranted && typeof spawnLoot === 'function') {
+      room._bonusGranted = true;
+      var _bx = (player ? player.x : 0) + 60, _by = (player ? player.y : 0) - 60;
+      if (player && scene.isPointAccessible && !scene.isPointAccessible(_bx, _by) && scene.pickAccessibleSpawnPoint) {
+        var _bp = scene.pickAccessibleSpawnPoint({ minDistance: 60, maxAttempts: 10 });
+        if (_bp) { _bx = _bp.x; _by = _bp.y; }
+      }
+      var _bonusChest = { type: 'chest_large', locked: false, tier: Math.random() < 0.5 ? 2 : 3 };
+      var _bd = spawnLoot.call(scene, _bx, _by, _bonusChest, null);
+      if (_bd && _bd.setData) _bd.setData('isBonusChest', true);
+      if (window.soundManager) { try { window.soundManager.playSFX('level_up'); } catch (e) {} }
+    }
+  } catch (e) { /* Bonus-Chest darf den Raum-Abschluss nie brechen */ }
 
   // Quest progress: room cleared
   if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {

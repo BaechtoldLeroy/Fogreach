@@ -151,15 +151,27 @@ function checkWaveEnd(time) {
       window.AbilitySystem.onWaveCompleted(currentWave);
     }
 
+    // Feature 061: dem aktiven Raum-Modus die geräumte Welle melden. Nur der
+    // `clear`-Modus schaltet die Treppe über DIESE Kette frei — andere Modi
+    // haben ihre eigene Abschluss-Bedingung (und tun es aus updateActive).
+    if (window.RoomMode && typeof window.RoomMode.onWaveCleared === 'function') {
+      try { window.RoomMode.onWaveCleared(); } catch (e) {}
+    }
+    const _modeAllowsUnlock = !window.RoomMode
+      || typeof window.RoomMode.allowWaveClearUnlock !== 'function'
+      || window.RoomMode.allowWaveClearUnlock();
+
     // Brief breathing room after clearing a wave before unlocking stairs
     if (waveText) waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Wave Cleared!');
     const scene = this;
-    if (scene?.time?.delayedCall) {
-      scene.time.delayedCall(2000, () => {
+    if (_modeAllowsUnlock) {
+      if (scene?.time?.delayedCall) {
+        scene.time.delayedCall(2000, () => {
+          if (typeof markRoomCleared === 'function') markRoomCleared();
+        });
+      } else {
         if (typeof markRoomCleared === 'function') markRoomCleared();
-      });
-    } else {
-      if (typeof markRoomCleared === 'function') markRoomCleared();
+      }
     }
   }
 

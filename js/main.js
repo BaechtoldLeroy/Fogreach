@@ -1466,6 +1466,10 @@ function update(time, delta) {
   if (window.EspionageVisuals && typeof window.EspionageVisuals.sync === 'function') {
     try { window.EspionageVisuals.sync(this); } catch (e) {}
   }
+  // Feature 061: aktiven Raum-Modus ticken (no-op für `clear`; defensiv).
+  if (window.RoomMode && typeof window.RoomMode.updateActive === 'function') {
+    try { window.RoomMode.updateActive(delta); } catch (e) {}
+  }
 
   if (invOpen) {
     pauseAllMotion.call(this);
