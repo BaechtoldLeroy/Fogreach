@@ -1470,6 +1470,11 @@ function update(time, delta) {
   if (window.RoomMode && typeof window.RoomMode.updateActive === 'function') {
     try { window.RoomMode.updateActive(delta); } catch (e) {}
   }
+  // Feature 061 WP05: Modus-Feedback (Banner/HUD/Marker) rendern — no-op in
+  // `clear`-Räumen; self-managing (mount/unmount).
+  if (window.RoomModeVisuals && typeof window.RoomModeVisuals.sync === 'function') {
+    try { window.RoomModeVisuals.sync(this); } catch (e) {}
+  }
 
   if (invOpen) {
     pauseAllMotion.call(this);
