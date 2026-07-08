@@ -10,6 +10,7 @@ if (window.i18n) {
     'inventory.material.MAT': 'Eisenbrocken',
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Seltenheit',
+    'inventory.label.power': 'Item-Stärke',
     'inventory.label.damage': 'Schaden',
     'inventory.label.speed': 'Angriffstempo',
     'inventory.label.range': 'Reichweite',
@@ -38,6 +39,7 @@ if (window.i18n) {
     'inventory.material.MAT': 'Iron Chunk',
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Rarity',
+    'inventory.label.power': 'Item Power',
     'inventory.label.damage': 'Damage',
     'inventory.label.speed': 'Attack Speed',
     'inventory.label.range': 'Range',
@@ -96,6 +98,34 @@ const getItemLevel = (it) => {
   }
   return 1;
 };
+
+// #56 D1: EINE lesbare "Item-Stärke"-Zahl statt des verwirrenden "Item Level"
+// (Basis-Stats vs. Rarität konkurrierten). Reine ANZEIGE-Heuristik — greift NICHT
+// in Kampf/Generierung ein. Zählt Basis-Stats UND Affixe (=Rarität), damit ein
+// legendäres Item korrekt höher steht als ein graues mit hohem Basis-Wert.
+const computeItemPower = (it) => {
+  if (!it) return 0;
+  let p = 0;
+  // Basis-Stats (speed/armor/crit sind Brüche 0..1 -> *100 fuer %-Groessenordnung).
+  p += (Number(it.damage) || 0) * 3;
+  p += (Number(it.hp) || 0) * 0.5;
+  p += (Number(it.speed) || 0) * 100 * 1.2;
+  p += (Number(it.range) || 0) * 0.1;
+  p += (Number(it.armor) || 0) * 100 * 2;
+  p += (Number(it.crit) || 0) * 100 * 2.5;
+  p += (Number(it.move) || 0) * 0.3;
+  // Affixe = Rarität: je Affix ein Rarity-Bonus + die Affix-Stärke.
+  if (Array.isArray(it.affixes)) {
+    for (let i = 0; i < it.affixes.length; i++) {
+      const a = it.affixes[i];
+      if (!a) continue;
+      p += 10;
+      p += (Number(a.value) || 0) * 1.2;
+    }
+  }
+  return Math.max(1, Math.round(p));
+};
+if (typeof window !== 'undefined') window.computeItemPower = computeItemPower; // #56 (Anzeige/Test)
 
 // --------------------------------------------------
 //  Material Management (Eisenbrocken counter)
@@ -501,6 +531,11 @@ function initInventoryUI() {
     box.bg.clear();
     box.bg.fillStyle(box.bgColor, 0.92);
     box.bg.fillRoundedRect(0, 0, totalWidth, totalHeight, 8);
+    // #56 D2: Tooltip-Rahmen in der Tier-Farbe -> Rarität auf einen Blick.
+    if (typeof box._tierColor === 'number') {
+      box.bg.lineStyle(2, box._tierColor, 0.95);
+      box.bg.strokeRoundedRect(0, 0, totalWidth, totalHeight, 8);
+    }
     box._width = totalWidth;
     box._height = totalHeight;
   };
@@ -526,8 +561,11 @@ function initInventoryUI() {
     const bodyLines = [];
     if (heading) bodyLines.push(heading);
     bodyLines.push(`${_INV_T('inventory.label.rarity')}: ${getItemTierLabel(it)}`);
-    const lvl = getItemLevel(it);
-    bodyLines.push(`Item Level: ${lvl}`);
+    // #56 D1/D3: EINE ehrliche Item-Stärke statt der verwirrenden Roh-"Item Level"
+    // (Generierungs-Tiefe). Rarität + Item-Stärke sind jetzt die einzigen Achsen.
+    if (!it.isAmulet && it.type !== 'amulet') {
+      bodyLines.push(`${_INV_T('inventory.label.power')}: ${computeItemPower(it)}`);
+    }
     if (it.type) bodyLines.push(`Typ: ${(it.type || '').toUpperCase()}`);
 
     // Feature 059 (#42) WP05: run-amulets show their effect blurb + run hint
@@ -587,6 +625,7 @@ function initInventoryUI() {
     const info = formatItemTooltip(item, heading);
     box.title.setText(info.title || '');
     box.title.setStyle({ color: getItemTierColor(item) });
+    box._tierColor = parseTintColor(getItemTierColor(item), 0xffffff); // #56 D2: Rahmenfarbe
     box.body.setText(info.body || '');
     box.body.setStyle({ color: '#ffffff' });
     layoutTooltipBox(box);
