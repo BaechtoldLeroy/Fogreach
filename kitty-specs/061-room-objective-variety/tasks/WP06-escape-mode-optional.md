@@ -1,7 +1,8 @@
 ---
 work_package_id: WP06
 title: (optional) EscapeMode (eigene Datei)
-dependencies: []
+dependencies:
+- WP01
 requirement_refs:
 - FR-11
 planning_base_branch: main

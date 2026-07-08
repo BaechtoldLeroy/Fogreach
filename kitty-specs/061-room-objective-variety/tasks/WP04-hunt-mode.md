@@ -1,7 +1,8 @@
 ---
 work_package_id: WP04
 title: HuntMode (eigene Datei) + markiertes Ziel
-dependencies: []
+dependencies:
+- WP01
 requirement_refs:
 - FR-06
 planning_base_branch: main

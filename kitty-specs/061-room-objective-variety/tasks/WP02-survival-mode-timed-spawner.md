@@ -1,7 +1,8 @@
 ---
 work_package_id: WP02
 title: SurvivalMode (eigene Datei, self-registrierend) + Timed-Spawner
-dependencies: []
+dependencies:
+- WP01
 requirement_refs:
 - FR-04
 - NFR-04

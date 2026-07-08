@@ -1,7 +1,8 @@
 ---
 work_package_id: WP05
 title: Room-Mode-Visuals (Intro-Banner, einheitliches HUD, Ziel-Marker, i18n)
-dependencies: []
+dependencies:
+- WP01
 requirement_refs:
 - FR-09
 planning_base_branch: main

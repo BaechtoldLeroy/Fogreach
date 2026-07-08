@@ -1,7 +1,8 @@
 ---
 work_package_id: WP03
 title: DefendMode (eigene Datei) + Gegner-Targeting eines Objekts
-dependencies: []
+dependencies:
+- WP01
 requirement_refs:
 - FR-05
 planning_base_branch: main
