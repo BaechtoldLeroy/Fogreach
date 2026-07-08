@@ -28,7 +28,7 @@
 
   // Kandidaten-Spezialmodi + Gewichte (tunebar). Nur REGISTRIERTE Modi zählen —
   // in WP01 ist noch keiner davon registriert, also fällt alles auf `clear`.
-  var SPECIAL_WEIGHTS = { survival: 1, defend: 1, hunt: 1 };
+  var SPECIAL_WEIGHTS = { survival: 1, defend: 1, hunt: 1, escape: 0.8 };
 
   function register(id, factory) {
     if (id && typeof factory === 'function') _registry[id] = factory;
