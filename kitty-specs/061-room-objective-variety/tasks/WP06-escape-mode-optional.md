@@ -50,3 +50,4 @@ Optionale, eigenständige Datei `js/roomModeEscape.js` (self-registrierend als `
 
 - 2026-07-08T14:13:19Z – unknown – shell_pid=34528 – lane=for_review – Moved to for_review
 - 2026-07-08T14:13:23Z – unknown – shell_pid=34528 – lane=approved – reviewed
+- 2026-07-08T14:42:32Z – unknown – shell_pid=34528 – lane=done – Done override: Manuell nach main gemerged (inkrementell); Code live + getestet
