@@ -45,3 +45,7 @@ Optionale, eigenständige Datei `js/roomModeEscape.js` (self-registrierend als `
 
 ## Akzeptanz
 - Ausgang erreichen schließt den Raum ab; kontinuierlicher Druck; Tests grün; 0 Errors.
+
+## Activity Log
+
+- 2026-07-08T14:13:19Z – unknown – shell_pid=34528 – lane=for_review – Moved to for_review
