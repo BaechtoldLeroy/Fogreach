@@ -749,7 +749,7 @@ if (window.i18n) {
     return weighted[weighted.length - 1].base;
   }
 
-  function _rollTier(iLevel, rng) {
+  function _rollTier(iLevel, rng, qualityBias) {
     if (typeof rng !== 'function') rng = Math.random;
     // D2-like curves: flatter scaling, capped Rare/Legendary.
     const shift = Math.max(0, (iLevel - 5)) * 0.003;
@@ -763,7 +763,10 @@ if (window.i18n) {
     const _kt = (typeof window !== 'undefined') ? window.knowledgeTreeBuffs : null;
     const ktMf = (_kt && typeof _kt.magicFindMult === 'number' && _kt.magicFindMult > 0)
       ? _kt.magicFindMult : 1;
-    const bias = phBias * ktMf;
+    // Optionaler Extra-Qualitaets-Bias (z. B. Blindkauf): multipliziert auf die
+    // bestehenden Boni, sodass die Quelle IMMER >= Basis-Odds rollt.
+    const _extra = (typeof qualityBias === 'number' && qualityBias > 0) ? qualityBias : 1;
+    const bias = phBias * ktMf * _extra;
     const weights = [
       Math.max(0, 0.78 - shift * 1.2),                    // Common
       Math.max(0, (0.20 - shift * 0.3) * bias),           // Magic
@@ -780,7 +783,7 @@ if (window.i18n) {
     return 0;
   }
 
-  function rollItem(baseKey, iLevel, forceTier) {
+  function rollItem(baseKey, iLevel, forceTier, qualityBias) {
     if (typeof iLevel !== 'number' || !Number.isFinite(iLevel)) iLevel = 1;
     let base;
     if (baseKey) {
@@ -792,7 +795,7 @@ if (window.i18n) {
       base = _pickWeightedBase(iLevel, Math.random);
     }
 
-    const tier = (forceTier !== undefined && forceTier !== null) ? forceTier : _rollTier(iLevel, Math.random);
+    const tier = (forceTier !== undefined && forceTier !== null) ? forceTier : _rollTier(iLevel, Math.random, qualityBias);
     const affixCount = tier;
     const affixes = rollAffixes(iLevel, affixCount, Math.random, base.type);
 
@@ -1130,9 +1133,10 @@ if (window.i18n) {
   }
 
   function _generateShopStock(runId) {
-    const depth = (typeof window !== 'undefined' && typeof window.currentWave === 'number')
-      ? Math.max(1, window.currentWave)
-      : (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number' ? window.DUNGEON_DEPTH : 3);
+    // Gating (#51): unter der Mindesttiefe ist die sichtbare Auslage gesperrt
+    // (nur der Blindkauf bleibt). Sonst rollt sie auf (maxDepth - OFFSET).
+    if (!isBlackMarketUnlocked()) return [];
+    const depth = Math.max(1, _maxDepth() - BLACK_MARKET_DEPTH_OFFSET);
     const stock = [];
     for (let i = 0; i < SHOP_STOCK_COUNT; i++) {
       try {
@@ -1199,51 +1203,66 @@ if (window.i18n) {
 
   // === G2 (#51): Blindkauf / Gambling — der zentrale Gold-Sink ================
   // Mara verkauft eine UNIDENTIFIZIERTE Ware zu Fixpreis (skaliert mit Tiefe).
-  // Der Inhalt wird beim Kauf via rollItem gerollt — bewusst mit SCHLECHTEREN
-  // Raritaets-Chancen als ein normaler Drop, damit Gold Wuerfe kauft, keine
-  // Garantien (Fixpreis >= Erwartungswert). Wiederholbar (Dauer-Sink).
+  // Der Inhalt wird beim Kauf via rollItem gerollt — mit einem QUALITAETS-BONUS
+  // (BLIND_BUY_BIAS) gegenueber dem sichtbaren Schwarzmarkt: man kauft die Katze
+  // im Sack, also sind die Raritaets-Chancen als Risikoausgleich BESSER als ein
+  // normaler Fund. Wiederholbar (Dauer-Sink).
   const BLIND_BUY_BASE = 80;        // Grundpreis
   const BLIND_BUY_PER_DEPTH = 30;   // Aufschlag je Tiefe
+  // Multiplikator auf die Magic/Rare/Legendary-Gewichte ggue. Basis-Odds (>1).
+  const BLIND_BUY_BIAS = 1.8;
 
-  function _shopDepth() {
-    if (typeof window !== 'undefined') {
-      if (typeof window.currentWave === 'number' && window.currentWave > 0) return Math.max(1, window.currentWave);
-      if (typeof window.DUNGEON_DEPTH === 'number' && window.DUNGEON_DEPTH > 0) return window.DUNGEON_DEPTH;
+  // Schwarzmarkt-Gating (#51): Maras SICHTBARE Auslage ist erst ab dieser je
+  // erreichten Tiefe verfuegbar und rollt dann auf (maxDepth - OFFSET) — also
+  // ein paar Stufen unter der Front. Der Blindkauf dagegen rollt auf die volle
+  // maxDepth (bessere, aber ungewisse Ware).
+  const BLACK_MARKET_MIN_DEPTH = 4;
+  const BLACK_MARKET_DEPTH_OFFSET = 3;
+
+  // Tiefste je erreichte Tiefe (persistiert). Bevorzugt Persistence.getMaxDepth,
+  // faellt auf den localStorage-Key bzw. 1 zurueck. Defensiv gegen fehlende Module.
+  function _maxDepth() {
+    if (typeof window !== 'undefined' && window.Persistence
+        && typeof window.Persistence.getMaxDepth === 'function') {
+      const v = window.Persistence.getMaxDepth();
+      if (typeof v === 'number' && v > 0) return Math.round(v);
     }
-    return 3;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const v = parseInt(localStorage.getItem('demonfall_maxDepth') || '', 10);
+        if (Number.isFinite(v) && v > 0) return v;
+      }
+    } catch (e) { /* ignore */ }
+    return 1;
+  }
+
+  // Ist die Schwarzmarkt-Auslage freigeschaltet? (maxDepth >= Mindesttiefe)
+  function isBlackMarketUnlocked() {
+    return _maxDepth() >= BLACK_MARKET_MIN_DEPTH;
   }
 
   function getBlindBuyPrice(depthOverride) {
-    const d = (typeof depthOverride === 'number' && depthOverride > 0) ? depthOverride : _shopDepth();
+    const d = (typeof depthOverride === 'number' && depthOverride > 0) ? depthOverride : _maxDepth();
     return Math.max(1, Math.round(BLIND_BUY_BASE + d * BLIND_BUY_PER_DEPTH));
   }
 
-  // Raritaets-Wurf fuer den Blindkauf — schlechter als der normale Drop
-  // (normal ~78/20/2/0.3). Meist Muell, gelegentlich ein Highlight.
-  function _blindBuyTier(rng) {
-    const r = rng();
-    if (r < 0.88) return 0;     // Common
-    if (r < 0.985) return 1;    // Magic
-    if (r < 0.998) return 2;    // Rare
-    return 3;                   // Legendary
-  }
-
-  // Kauft eine Blind-Ware: zieht Gold ab, wuerfelt ein Item auf aktueller Tiefe
-  // mit den Blind-Odds. Rueckgabe: {ok, item?, price, tier?} bzw. {ok:false,reason}.
+  // Kauft eine Blind-Ware: zieht Gold ab, wuerfelt ein Item auf maxDepth mit einem
+  // Qualitaets-Bonus (BLIND_BUY_BIAS) auf die normalen Drop-Odds — also BESSER als
+  // der sichtbare Schwarzmarkt. Rueckgabe: {ok, item?, price, tier?}
+  // bzw. {ok:false, reason}.
   function blindBuy(depthOverride) {
-    const depth = (typeof depthOverride === 'number' && depthOverride > 0) ? depthOverride : _shopDepth();
+    const depth = (typeof depthOverride === 'number' && depthOverride > 0) ? depthOverride : _maxDepth();
     const price = getBlindBuyPrice(depth);
     if (!spendGold(price)) return { ok: false, reason: 'gold', price: price };
-    const tier = _blindBuyTier(Math.random);
     let item = null;
-    try { item = rollItem(null, depth, tier); } catch (e) { item = null; }
+    try { item = rollItem(null, depth, null, BLIND_BUY_BIAS); } catch (e) { item = null; }
     if (!item) {
       // Roll fehlgeschlagen -> Gold exakt zurueck (ohne gold_find-Multiplikator).
       const s = _ensureGoldStore();
       if (s) { s.GOLD = (s.GOLD || 0) + price; _refreshGoldHUD(); }
       return { ok: false, reason: 'roll', price: price };
     }
-    return { ok: true, item: item, price: price, tier: tier };
+    return { ok: true, item: item, price: price, tier: item.tier };
   }
 
   // Feature 059 (#42) WP04: the flying merchant (wandering_merchant event)
@@ -1436,6 +1455,7 @@ if (window.i18n) {
     rerollShopStock: rerollShopStock,
     getBlindBuyPrice: getBlindBuyPrice,
     blindBuy: blindBuy,
+    isBlackMarketUnlocked: isBlackMarketUnlocked,
     rerollItem: rerollItem,
     _computeRerollCost: _computeRerollCost,
     migrateSave: migrateSave,

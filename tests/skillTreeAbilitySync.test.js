@@ -96,7 +96,7 @@ test('respec -> alle Baum-Abilities verlernt + Slots leer', () => {
 
 test('Mehrfach-Invest hält denselben Skill gelernt (idempotenter Sync)', () => {
   const { AS, ST } = freshModules();
-  ST._configureForTest({ skillPoints: 5 });
+  ST._configureForTest({ skillPoints: 9 }); // Rang 1+2+3 kostet 1+3+5 = 9
   ST.investPoint('whirlwind', 1);
   ST.investPoint('whirlwind', 1);
   ST.investPoint('whirlwind', 1);
@@ -111,13 +111,13 @@ test('getRespecCost skaliert mit getSpentPoints (100 + spent*50)', () => {
   assert.strictEqual(ST.getSpentPoints(), 0);
   assert.strictEqual(ST.getRespecCost(), 100, '0 Punkte -> Grundkosten 100');
   ST._configureForTest({ skillPoints: 10 });
-  ST.investPoint('whirlwind', 1); // spent 1
+  ST.investPoint('whirlwind', 1); // whirlwind Rang 1 -> spent 1²=1
   assert.strictEqual(ST.getSpentPoints(), 1);
   assert.strictEqual(ST.getRespecCost(), 150, '1 Punkt -> 150');
-  ST.investPoint('whirlwind', 1); // spent 2
-  ST.investPoint('charge', 1);    // spent 3
-  assert.strictEqual(ST.getSpentPoints(), 3);
-  assert.strictEqual(ST.getRespecCost(), 250, '3 Punkte -> 250');
+  ST.investPoint('whirlwind', 1); // whirlwind Rang 2 -> 2²=4
+  ST.investPoint('charge', 1);    // charge Rang 1 -> 1²=1  => Summe 5
+  assert.strictEqual(ST.getSpentPoints(), 5);
+  assert.strictEqual(ST.getRespecCost(), 350, 'spent 5 -> 100 + 5*50 = 350');
   // Ganzzahlig
   assert.strictEqual(Number.isInteger(ST.getRespecCost()), true);
 });

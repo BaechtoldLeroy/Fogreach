@@ -735,6 +735,11 @@ function freshShopSystem() {
   delete globalThis.window.dungeonRun;
   delete globalThis.window.currentRunSeed;
   globalThis.window.currentWave = 3;
+  // Schwarzmarkt-Gating (#51): Auslage + Preise skalieren jetzt mit maxDepth.
+  // Standardmaessig freigeschaltet (>= 4) mit Tiefe 10, damit die bestehenden
+  // Stock-Tests eine gefuellte Auslage sehen. Gesperrt-Faelle setzen maxDepth
+  // pro Test niedriger.
+  try { globalThis.localStorage.setItem('demonfall_maxDepth', '10'); } catch (e) {}
   loadGameModule('js/lootSystem.js');
   return globalThis.window.LootSystem;
 }
@@ -853,6 +858,39 @@ test('getOrCreateShopState: regenerates when runId changes', () => {
   assert.strictEqual(s2.currentRunId, 'run-2');
 });
 
+test('black market: locked below maxDepth 4 -> empty stock (#51)', () => {
+  const sys = freshShopSystem();
+  globalThis.localStorage.setItem('demonfall_maxDepth', '3');
+  assert.strictEqual(sys.isBlackMarketUnlocked(), false);
+  const state = sys.getOrCreateShopState('run-locked');
+  assert.strictEqual(state.itemStock.length, 0, 'no visible stock while locked');
+});
+
+test('black market: unlocks at maxDepth 4 and rolls at maxDepth-3 (#51)', () => {
+  const sys = freshShopSystem();
+  globalThis.localStorage.setItem('demonfall_maxDepth', '4');
+  assert.strictEqual(sys.isBlackMarketUnlocked(), true);
+  const state = sys.getOrCreateShopState('run-d4');
+  assert.ok(state.itemStock.length > 0, 'stock present once unlocked');
+  // maxDepth 4 -> Auslage rollt auf Tiefe 1
+  assert.ok(state.itemStock.every((it) => it.iLevel === 1), 'stock rolls at maxDepth-3');
+
+  const sys2 = freshShopSystem();
+  globalThis.localStorage.setItem('demonfall_maxDepth', '12');
+  const state2 = sys2.getOrCreateShopState('run-d12');
+  assert.ok(state2.itemStock.every((it) => it.iLevel === 9), 'maxDepth 12 -> Tiefe 9');
+});
+
+test('blindBuy without override rolls/prices at maxDepth (#51)', () => {
+  const sys = freshShopSystem();
+  globalThis.localStorage.setItem('demonfall_maxDepth', '12');
+  assert.strictEqual(sys.getBlindBuyPrice(), 80 + 12 * 30, 'Blindkauf-Preis auf maxDepth');
+  globalThis.window.materialCounts = { GOLD: 1000000 };
+  const res = sys.blindBuy();
+  assert.strictEqual(res.ok, true);
+  assert.strictEqual(res.item.iLevel, 12, 'Blindkauf-Item rollt auf maxDepth');
+});
+
 // ---------------------------------------------------------------------------
 // G2 (#51): Blindkauf / Gambling gold sink
 // ---------------------------------------------------------------------------
@@ -888,16 +926,19 @@ test('blindBuy deducts the price and returns a valid item (#51)', () => {
   assert.strictEqual(res.item.affixes.length, res.item.tier, 'affix count matches tier');
 });
 
-test('blindBuy odds skew common (worse than a normal drop) (#51)', () => {
+test('blindBuy rolls BETTER than the base drop odds (#51)', () => {
   const sys = freshShopSystem();
   globalThis.window.materialCounts = { GOLD: 100000000 };
-  let common = 0;
-  const N = 400;
+  let nonCommon = 0;
+  const N = 600;
   for (let i = 0; i < N; i++) {
     const r = sys.blindBuy(3);
-    if (r.ok && r.item.tier === 0) common++;
+    if (r.ok && r.item.tier > 0) nonCommon++;
   }
-  assert.ok(common / N > 0.75, 'most blind buys are common (got ' + (common / N).toFixed(2) + ')');
+  // Basis-Drop bei Tiefe 3 ~22% Nicht-Common; der Blindkauf-Qualitaets-Bias
+  // (BLIND_BUY_BIAS) hebt das klar an -> "Katze im Sack" lohnt sich.
+  assert.ok(nonCommon / N > 0.26,
+    'blind buy yields more non-common than a normal drop (got ' + (nonCommon / N).toFixed(2) + ')');
 });
 
 // ---------------------------------------------------------------------------

@@ -31,22 +31,35 @@ test('survival: duration scales with depth', () => {
   const R = globalThis.window.RoomMode;
   globalThis.window.DUNGEON_DEPTH = 10;
   let m = R.create('survival'); m.start(null);
-  assert.strictEqual(m.getState().duration, 35); // 30 + min(20, 10*0.5)
+  assert.strictEqual(m.getState().duration, 78); // 60 + (10-1)*2
   globalThis.window.DUNGEON_DEPTH = 40;
   m = R.create('survival'); m.start(null);
-  assert.strictEqual(m.getState().duration, 50); // capped at +20
+  assert.strictEqual(m.getState().duration, 120); // capped at 120
+});
+
+test('survival: enemies are tougher (2x HP multiplier)', () => {
+  const R = globalThis.window.RoomMode;
+  const m = R.create('survival'); m.start(null);
+  assert.strictEqual(m.enemyHpMultiplier(), 2);
+});
+
+test('RoomMode.enemyHpMultiplier is ×1 for clear, delegates for special modes', () => {
+  const R = globalThis.window.RoomMode;
+  // clear (or no mode active) → no scaling
+  R.beginRoom(null, { roomIndex: 0, depth: 1 }); // roomIndex 0 → always clear
+  assert.strictEqual(R.enemyHpMultiplier(), 1);
 });
 
 test('survival: timer counts down, completes at 0, never fails', () => {
   const R = globalThis.window.RoomMode;
-  globalThis.window.DUNGEON_DEPTH = 10; // 35s
+  globalThis.window.DUNGEON_DEPTH = 10; // 78s
   const m = R.create('survival'); m.start(null);
   assert.strictEqual(m.isComplete(), false);
-  m.update(20000); // 20s elapsed
+  m.update(40000); // 40s elapsed
   const st = m.getState();
-  assert.ok(st.remaining > 0 && st.remaining < 35, `remaining mid-run (got ${st.remaining})`);
+  assert.ok(st.remaining > 0 && st.remaining < 78, `remaining mid-run (got ${st.remaining})`);
   assert.strictEqual(m.isComplete(), false);
-  m.update(20000); // total 40s > 35 -> complete
+  m.update(40000); // total 80s > 78 -> complete
   assert.strictEqual(m.isComplete(), true);
   assert.strictEqual(m.objectiveFailed(), false);
   assert.strictEqual(m.getState().remaining, 0);
@@ -57,7 +70,7 @@ test('survival: getState exposes rounded seconds for the HUD', () => {
   globalThis.window.DUNGEON_DEPTH = 10;
   const m = R.create('survival'); m.start(null);
   m.update(500); // 0.5s
-  assert.strictEqual(m.getState().seconds, 35); // ceil(34.5)
+  assert.strictEqual(m.getState().seconds, 78); // ceil(77.5), depth 10 → 78s
   assert.strictEqual(m.getState().mode, 'survival');
 });
 

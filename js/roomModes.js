@@ -118,6 +118,17 @@
     try { return (_current && _current.getState) ? _current.getState() : null; }
     catch (e) { return null; }
   }
+  // Optionaler Enemy-HP-Multiplikator des aktiven Modus (z. B. survival ×2), von
+  // spawnEnemy pro Gegner abgefragt. Modi ohne den Hook / `clear` liefern ×1.
+  function enemyHpMultiplier() {
+    try {
+      if (_current && typeof _current.enemyHpMultiplier === 'function') {
+        var m = _current.enemyHpMultiplier();
+        if (typeof m === 'number' && m > 0) return m;
+      }
+    } catch (e) {}
+    return 1;
+  }
   function reset() { _current = null; _ctx = null; _completedFired = false; }
 
   // --- ClearMode: kapselt das heutige "Welle clearen" (verlustfrei) --------
@@ -140,6 +151,7 @@
     allowWaveClearUnlock: allowWaveClearUnlock, onWaveCleared: onWaveCleared,
     activeModeId: activeModeId, isSpecialRoom: isSpecialRoom,
     objectiveFailed: objectiveFailed, activeState: activeState, reset: reset,
+    enemyHpMultiplier: enemyHpMultiplier,
     _SPECIAL_WEIGHTS: SPECIAL_WEIGHTS
   };
   if (typeof window !== 'undefined') window.RoomMode = RoomMode;

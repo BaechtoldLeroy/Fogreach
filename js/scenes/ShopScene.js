@@ -44,10 +44,11 @@
       'shop.toast.reroll_success': 'Reroll erfolgreich!',
       'shop.stock.reroll': 'Lager auffrischen ({cost} G)',
       'shop.blind_buy.name': '❓ Geheimnisvolle Ware',
-      'shop.blind_buy.desc': 'Unbekannter Inhalt — schlechtere Chancen als ein Fund',
+      'shop.blind_buy.desc': 'Unbekannter Inhalt — bessere Chancen als der Schwarzmarkt',
       'shop.blind_buy.button': 'Blindkauf',
       'shop.blind_buy.full': 'Inventar voll',
       'shop.blind_buy.result': 'Erhalten: {name}',
+      'shop.locked.hint': 'Der Schwarzmarkt öffnet ab erreichter Tiefe {depth}.\nBis dahin bleibt nur der Blindkauf.',
       'shop.toast.stock_rerolled': 'Mara breitet frische Ware aus.'
     });
     window.i18n.register('en', {
@@ -78,10 +79,11 @@
       'shop.toast.reroll_success': 'Reroll successful!',
       'shop.stock.reroll': 'Refresh stock ({cost} G)',
       'shop.blind_buy.name': '❓ Mystery Wares',
-      'shop.blind_buy.desc': 'Unknown contents — worse odds than a find',
+      'shop.blind_buy.desc': 'Unknown contents — better odds than the black market',
       'shop.blind_buy.button': 'Gamble',
       'shop.blind_buy.full': 'Inventory full',
       'shop.blind_buy.result': 'Received: {name}',
+      'shop.locked.hint': 'The black market opens once you reach depth {depth}.\nUntil then, only the gamble is available.',
       'shop.toast.stock_rerolled': 'Mara lays out fresh wares.'
     });
   }
@@ -181,6 +183,7 @@
         if (this._escHandler && this.input && this.input.keyboard) {
           this.input.keyboard.off('keydown-ESC', this._escHandler);
         }
+        this._teardownScroll();
         if (this.tabBody) {
           this.tabBody.forEach(g => g && g.destroy && g.destroy());
           this.tabBody = [];
@@ -205,7 +208,8 @@
     // -----------------------------------------------------------------------
     _renderTab(tabName) {
       this.activeTab = tabName;
-      // Tear down old tab body
+      // Tear down old tab body (+ any scroll mask/handlers from the items tab).
+      this._teardownScroll();
       if (this.tabBody && this.tabBody.length) {
         this.tabBody.forEach(g => g && g.destroy && g.destroy());
       }
@@ -273,6 +277,21 @@
         this.tabBody.push(bbuyBg); this.tabBody.push(bbuyTx);
         bbuyBg.on('pointerdown', () => this._tryBlindBuy());
         rowIndex += 0.4; // Abstand zur restlichen Auslage
+      }
+
+      // Schwarzmarkt-Gating (#51): unter Tiefe 4 ist Maras sichtbare Auslage
+      // gesperrt — nur der Blindkauf oben bleibt. Hinweis statt Auslage/Reroll.
+      const marketLocked = !this.isDungeonMerchant
+        && window.LootSystem && typeof window.LootSystem.isBlackMarketUnlocked === 'function'
+        && !window.LootSystem.isBlackMarketUnlocked();
+      if (marketLocked) {
+        const ly = startY + rowIndex * rowH + 12;
+        const hint = this.add.text(px, ly, _SHOP_T('shop.locked.hint', { depth: 4 }), {
+          fontFamily: 'monospace', fontSize: '12px', color: '#b89a6a',
+          align: 'center', wordWrap: { width: panelW - 80 }
+        }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+        this.tabBody.push(hint);
+        return;
       }
 
       if (stock.length === 0 && amuletStock.length === 0) {
@@ -379,6 +398,12 @@
         buyBg.on('pointerdown', () => this._tryBuyItem(i, price));
       });
 
+      // Alles bis hier ist scrollbarer Inhalt (Blindkauf + Amulette + Auslage);
+      // der "Lager auffrischen"-Footer danach bleibt fix. Grenze + Inhaltshöhe
+      // merken, damit _applyItemsScroll bei Überlauf eine Scrollbar einzieht.
+      const _contentLen = this.tabBody.length;
+      const _contentBottom = startY + rowIndex * rowH;
+
       // Feature 060 (WP05 / #51): Gold-Sink — "Lager auffrischen". Würfelt Maras
       // Auslage gegen (eskalierendes) Gold komplett neu. Nur bei Mara, nicht am
       // (run-scoped) Dungeon-Händler.
@@ -397,6 +422,87 @@
         this.tabBody.push(rerollTxt);
         rerollBg.on('pointerdown', () => this._tryRerollStock(rerollCost));
       }
+
+      this._applyItemsScroll(_contentLen, { startY, contentBottom: _contentBottom });
+    }
+
+    // Wenn der Inhalt höher ist als der sichtbare Bereich, packe die Inhalts-
+    // Objekte in einen maskierten Container und ziehe eine Scrollbar (+ Mausrad)
+    // ein. Der Footer (Lager auffrischen) bleibt außerhalb → immer lesbar.
+    _applyItemsScroll(contentLen, geom) {
+      const { px, py, panelW, panelH } = this._panel;
+      const viewportTop = geom.startY - 6;
+      const footerReserve = this.isDungeonMerchant ? 26 : 66; // Platz für den Footer
+      const viewportBottom = py + panelH / 2 - footerReserve;
+      const viewH = viewportBottom - viewportTop;
+      const contentH = Math.max(0, geom.contentBottom - geom.startY);
+      if (viewH <= 40 || contentH <= viewH + 2) return; // passt → kein Scroll
+
+      const contentObjs = this.tabBody.slice(0, contentLen);
+      const footerObjs = this.tabBody.slice(contentLen);
+      // Container UNTER den Tab-Buttons/Footer (Depth 2001), damit topOnly-Input
+      // aus dem Bereich gescrollte Buttons nicht vor Tab/Footer greifen lässt.
+      const container = this.add.container(0, 0).setScrollFactor(0).setDepth(2001);
+      contentObjs.forEach((o) => { try { container.add(o); } catch (e) {} });
+      this.tabBody = [container].concat(footerObjs);
+
+      const maskG = this.make.graphics();
+      maskG.fillStyle(0xffffff).fillRect(px - panelW / 2 + 4, viewportTop, panelW - 8, viewH);
+      container.setMask(maskG.createGeometryMask());
+      this._scrollMaskG = maskG;
+
+      const scrollMax = contentH - viewH;
+      this._scrollY = 0;
+
+      const trackX = px + panelW / 2 - 12;
+      const track = this.add.rectangle(trackX, viewportTop + viewH / 2, 6, viewH, 0x000000, 0.35)
+        .setScrollFactor(0).setDepth(2005);
+      this.tabBody.push(track);
+      const thumbH = Math.max(24, Math.round(viewH * (viewH / contentH)));
+      const minThumbY = viewportTop + thumbH / 2;
+      const maxThumbY = viewportBottom - thumbH / 2;
+      const thumb = this.add.rectangle(trackX, minThumbY, 8, thumbH, 0xffd166, 0.9)
+        .setScrollFactor(0).setDepth(2006).setInteractive({ useHandCursor: true });
+      this.tabBody.push(thumb);
+
+      const applyScroll = () => {
+        this._scrollY = Phaser.Math.Clamp(this._scrollY, 0, scrollMax);
+        container.y = -this._scrollY;
+        const frac = scrollMax > 0 ? this._scrollY / scrollMax : 0;
+        thumb.y = minThumbY + frac * (maxThumbY - minThumbY);
+      };
+
+      // Mausrad (Desktop).
+      this._wheelHandler = (pointer, over, dx, dy) => {
+        if (!this.sys || !this.sys.isActive()) return;
+        this._scrollY += dy * 0.5;
+        applyScroll();
+      };
+      this.input.on('wheel', this._wheelHandler);
+
+      // Scrollbar-Griff ziehen (Desktop + Mobile).
+      this.input.setDraggable(thumb);
+      thumb.on('drag', (pointer, dragX, dragY) => {
+        const span = Math.max(1, maxThumbY - minThumbY);
+        const t = Phaser.Math.Clamp((dragY - minThumbY) / span, 0, 1);
+        this._scrollY = t * scrollMax;
+        applyScroll();
+      });
+
+      applyScroll();
+    }
+
+    // Scroll-Ressourcen (Maske + Mausrad-Handler) freigeben.
+    _teardownScroll() {
+      if (this._wheelHandler && this.input) {
+        try { this.input.off('wheel', this._wheelHandler); } catch (e) { /* swallow */ }
+        this._wheelHandler = null;
+      }
+      if (this._scrollMaskG) {
+        try { this._scrollMaskG.destroy(); } catch (e) { /* swallow */ }
+        this._scrollMaskG = null;
+      }
+      this._scrollY = 0;
     }
 
     _tryRerollStock(cost) {

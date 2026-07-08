@@ -30,6 +30,7 @@
       'skilltree.strand.ketten': 'Ketten & Kontrolle',
       'skilltree.strand.schatten': 'Schatten & Jagd',
       'skilltree.node.rank': 'Rang {cur}/{max}',
+      'skilltree.node.cost': 'Nächster Rang: {cost} Pkt',
       'skilltree.node.req_level': 'Ab Stufe {level}',
       'skilltree.node.req_node': 'Benötigt {name} Rang {rank}',
       'skilltree.node.synergy': 'Synergie: stärker mit {source}',
@@ -52,6 +53,7 @@
       'skilltree.strand.ketten': 'Chains & Control',
       'skilltree.strand.schatten': 'Shadow & Hunt',
       'skilltree.node.rank': 'Rank {cur}/{max}',
+      'skilltree.node.cost': 'Next rank: {cost} pts',
       'skilltree.node.req_level': 'From level {level}',
       'skilltree.node.req_node': 'Requires {name} rank {rank}',
       'skilltree.node.synergy': 'Synergy: stronger with {source}',
@@ -274,8 +276,10 @@
       const maxRank = node.maxRank || 1;
       const isMax = rank >= maxRank;
       const prereqOk = ST.isNodeAvailable(node.id, playerLevel);
-      const hasPoints = ST.getSkillPoints() > 0;
-      const investable = prereqOk && !isMax && hasPoints;
+      // Höhere Ränge kosten mehr — leistbar heißt: genug Punkte für den nächsten Rang.
+      const nextCost = (typeof ST.getNextRankCost === 'function') ? ST.getNextRankCost(node.id) : 1;
+      const canAfford = ST.getSkillPoints() >= nextCost;
+      const investable = prereqOk && !isMax && canAfford;
 
       // State: locked (prereq not met), maxed, invested (>0), available.
       let fill, stroke, nameColor, descColor;
@@ -325,16 +329,29 @@
       let sub = '';
       if (!prereqOk && rank === 0) {
         const req = node.requires || {};
+        // Alle Knoten-Vorbedingungen sammeln (Einzel-`node` + `nodes`-Array).
+        const reqParts = [];
         if (req.node) {
           const reqNode = ST.getNode(req.node);
-          sub = _ST_T('skilltree.node.req_node', {
+          reqParts.push(_ST_T('skilltree.node.req_node', {
             name: (reqNode && reqNode.name) || req.node, rank: req.rank || 1
-          });
-        } else if (req.minLevel) {
-          sub = _ST_T('skilltree.node.req_level', { level: req.minLevel });
+          }));
         }
+        if (Array.isArray(req.nodes)) {
+          req.nodes.forEach((nr) => {
+            if (!nr || !nr.node) return;
+            const rn = ST.getNode(nr.node);
+            reqParts.push(_ST_T('skilltree.node.req_node', {
+              name: (rn && rn.name) || nr.node, rank: nr.rank || 1
+            }));
+          });
+        }
+        if (reqParts.length) sub = reqParts.join('\n');
+        else if (req.minLevel) sub = _ST_T('skilltree.node.req_level', { level: req.minLevel });
       } else {
         sub = _ST_T('skilltree.node.rank', { cur: rank, max: maxRank });
+        // Kosten des nächsten Rangs anzeigen, solange nicht gemaxt.
+        if (!isMax) sub += '  ·  ' + _ST_T('skilltree.node.cost', { cost: nextCost });
         if (Array.isArray(node.synergies) && node.synergies.length > 0) {
           // Nenne die Quell-Knoten: dieser Skill wird staerker, je hoeher die
           // genannten geskillt sind (z.B. Hammer staerker mit Wirbelwind).
@@ -382,7 +399,8 @@
 
       if (rank >= maxRank) { this._shake(); this._toast(_ST_T('skilltree.toast.maxed'), '#ffaa66'); return; }
       if (!ST.isNodeAvailable(node.id, lvl)) { this._shake(); this._toast(_ST_T('skilltree.toast.locked'), '#cc6666'); return; }
-      if (ST.getSkillPoints() <= 0) { this._shake(); this._toast(_ST_T('skilltree.toast.no_points'), '#cc6666'); return; }
+      const nextCost = (typeof ST.getNextRankCost === 'function') ? ST.getNextRankCost(node.id) : 1;
+      if (ST.getSkillPoints() < nextCost) { this._shake(); this._toast(_ST_T('skilltree.toast.no_points'), '#cc6666'); return; }
 
       const ok = ST.investPoint(node.id, lvl);
       if (!ok) { this._shake(); this._toast(_ST_T('skilltree.toast.no_points'), '#cc6666'); return; }

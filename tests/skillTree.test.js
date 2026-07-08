@@ -71,31 +71,57 @@ test('(c) investPoint mit erfüllten Prereqs -> Rang+1, Punkt-1', () => {
 });
 
 test('(d) Cap bei maxRank (Capstone deathBlow = 3)', () => {
-  ST.grantSkillPoint(30);
-  // whirlwind maxRank 5
+  ST.grantSkillPoint(100);
+  // whirlwind maxRank 5 (Kosten 1+3+5+7+9 = 25)
   for (let i = 0; i < 5; i++) assert.strictEqual(ST.investPoint('whirlwind', 1), true);
   assert.strictEqual(ST.getRank('whirlwind'), 5);
   assert.strictEqual(ST.investPoint('whirlwind', 1), false, 'über maxRank 5 nicht mehr');
-  // deathBlow Capstone maxRank 3 (Voraussetzungen erfüllen: charge@2 -> teleportDash@1)
-  ST.investPoint('charge', 7); ST.investPoint('charge', 7);
-  ST.investPoint('teleportDash', 7);
-  for (let i = 0; i < 3; i++) assert.strictEqual(ST.investPoint('deathBlow', 7), true);
+  // deathBlow Capstone maxRank 3. Voraussetzungen (neu): BEIDE T2-Knoten des
+  // Strangs@2 (teleportDash@2 UND heilwunde@2) + minLevel 8. teleportDash/
+  // heilwunde brauchen charge@2.
+  ST.investPoint('charge', 8); ST.investPoint('charge', 8);            // charge -> 2
+  ST.investPoint('teleportDash', 8); ST.investPoint('teleportDash', 8); // -> 2
+  ST.investPoint('heilwunde', 8); ST.investPoint('heilwunde', 8);       // -> 2
+  assert.strictEqual(ST.isNodeAvailable('deathBlow', 8), true, 'beide T2@2 + Level 8');
+  for (let i = 0; i < 3; i++) assert.strictEqual(ST.investPoint('deathBlow', 8), true);
   assert.strictEqual(ST.getRank('deathBlow'), 3);
-  assert.strictEqual(ST.investPoint('deathBlow', 7), false, 'Capstone-Cap 3');
+  assert.strictEqual(ST.investPoint('deathBlow', 8), false, 'Capstone-Cap 3');
 });
 
 test('(e) respec setzt Ränge=0 und erstattet alle Punkte', () => {
   ST.grantSkillPoint(5);
-  ST.investPoint('whirlwind', 1);
-  ST.investPoint('whirlwind', 1);
-  ST.investPoint('twistingBlades', 1);
-  assert.strictEqual(ST.getSpentPoints(), 3);
-  assert.strictEqual(ST.getSkillPoints(), 2);
+  ST.investPoint('whirlwind', 1);      // Rang 1, Kosten 1
+  ST.investPoint('whirlwind', 1);      // Rang 2, Kosten 3
+  ST.investPoint('twistingBlades', 1); // Rang 1, Kosten 1  -> 5 Punkte weg
+  // getSpentPoints = Summe Rang²: whirlwind 2²=4, twistingBlades 1²=1 -> 5
+  assert.strictEqual(ST.getSpentPoints(), 5);
+  assert.strictEqual(ST.getSkillPoints(), 0);
   const refunded = ST.respec();
-  assert.strictEqual(refunded, 3);
+  assert.strictEqual(refunded, 5);
   assert.strictEqual(ST.getRank('whirlwind'), 0);
   assert.strictEqual(ST.getRank('twistingBlades'), 0);
   assert.strictEqual(ST.getSkillPoints(), 5, 'alle Punkte zurück');
+});
+
+test('(e2) Rang-Kosten steigen (1/3/5/7/9); getRankCost/getNextRankCost', () => {
+  assert.deepStrictEqual([1, 2, 3, 4, 5].map((r) => ST.getRankCost(r)), [1, 3, 5, 7, 9]);
+  assert.strictEqual(ST.getRankCost(0), 0);
+  // frischer Knoten: nächster Rang kostet 1
+  assert.strictEqual(ST.getNextRankCost('whirlwind'), 1);
+  ST.grantSkillPoint(100);
+  ST.investPoint('whirlwind', 1); // -> Rang 1
+  assert.strictEqual(ST.getNextRankCost('whirlwind'), 3, 'Rang 2 kostet 3');
+  ST.investPoint('whirlwind', 1); // -> Rang 2
+  assert.strictEqual(ST.getNextRankCost('whirlwind'), 5, 'Rang 3 kostet 5');
+  // zu wenig Punkte für den nächsten Rang -> investPoint schlägt fehl
+  ST._configureForTest({ skillPoints: 2 });
+  assert.strictEqual(ST.investPoint('whirlwind', 1), true, 'Rang 1 (Kosten 1) ok');
+  assert.strictEqual(ST.investPoint('whirlwind', 1), false, 'Rang 2 (Kosten 3) > 1 Restpunkt');
+  assert.strictEqual(ST.getRank('whirlwind'), 1);
+  // gemaxter Knoten -> nächster Rang kostet 0
+  ST._configureForTest({ skillPoints: 100 });
+  for (let i = 0; i < 5; i++) ST.investPoint('whirlwind', 1);
+  assert.strictEqual(ST.getNextRankCost('whirlwind'), 0, 'gemaxt -> 0');
 });
 
 test('(f) getSynergyValue = Rang(from) * perRank', () => {
@@ -114,13 +140,16 @@ test('(f) getSynergyValue = Rang(from) * perRank', () => {
 });
 
 test('(g) isNodeAvailable respektiert minLevel + Vorgänger-Rang', () => {
-  // frostNova: minLevel 7, node steelGrasp@1 (steelGrasp braucht twistingBlades@2)
-  assert.strictEqual(ST.isNodeAvailable('frostNova', 7), false, 'Vorgänger steelGrasp fehlt');
-  ST.grantSkillPoint(10);
-  ST.investPoint('twistingBlades', 1); ST.investPoint('twistingBlades', 1);
-  ST.investPoint('steelGrasp', 4); // steelGrasp Rang 1
-  assert.strictEqual(ST.isNodeAvailable('frostNova', 6), false, 'minLevel 7 nicht erreicht');
-  assert.strictEqual(ST.isNodeAvailable('frostNova', 7), true, 'Level 7 + steelGrasp@1 -> verfügbar');
+  // frostNova (neu): minLevel 8, BEIDE T2-Knoten des Strangs@2
+  // (steelGrasp@2 UND cycloneStrike@2). Beide brauchen twistingBlades@2.
+  assert.strictEqual(ST.isNodeAvailable('frostNova', 8), false, 'Vorgänger fehlen');
+  ST.grantSkillPoint(100);
+  ST.investPoint('twistingBlades', 8); ST.investPoint('twistingBlades', 8);
+  ST.investPoint('steelGrasp', 8); ST.investPoint('steelGrasp', 8);       // -> 2
+  assert.strictEqual(ST.isNodeAvailable('frostNova', 8), false, 'cycloneStrike@2 fehlt noch');
+  ST.investPoint('cycloneStrike', 8); ST.investPoint('cycloneStrike', 8); // -> 2
+  assert.strictEqual(ST.isNodeAvailable('frostNova', 7), false, 'minLevel 8 nicht erreicht');
+  assert.strictEqual(ST.isNodeAvailable('frostNova', 8), true, 'Level 8 + beide T2@2 -> verfügbar');
   // Strang-Starter ab Level 1 verfügbar
   assert.strictEqual(ST.isNodeAvailable('whirlwind', 1), true);
   assert.strictEqual(ST.isNodeAvailable('charge', 1), true);
@@ -144,7 +173,7 @@ test('(h) getAbilityDamageMult: Rang 1 -> 1.0; Rang 3 -> 1.30; Synergie addiert'
 });
 
 test('(i) getAbilityCooldownMult: sinkt mit Rang und ist bei 40% gedeckelt', () => {
-  ST.grantSkillPoint(20);
+  ST.grantSkillPoint(30); // whirlwind maxen kostet 1+3+5+7+9 = 25
   // ungelernt -> 1
   assert.strictEqual(ST.getAbilityCooldownMult('whirlwind'), 1);
   // Rang 1 -> 1 (keine Reduktion)

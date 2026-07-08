@@ -765,6 +765,19 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     }
   } catch (_) { /* swallow */ }
 
+  // Room-mode HP scaling (Feature 061): a special room (e.g. survival) can make
+  // its enemies tankier so the timed objective applies real pressure. Mirrors the
+  // printingBuffs.enemyHpMult pattern above; no-op (×1) for `clear`/no mode.
+  try {
+    if (window.RoomMode && typeof window.RoomMode.enemyHpMultiplier === 'function') {
+      const _modeMul = window.RoomMode.enemyHpMultiplier();
+      if (typeof _modeMul === 'number' && _modeMul > 0 && _modeMul !== 1) {
+        enemy.hp = Math.max(1, Math.round(enemy.hp * _modeMul));
+        enemy.maxHp = enemy.hp;
+      }
+    }
+  } catch (_) { /* swallow */ }
+
   return enemy;
 }
 
