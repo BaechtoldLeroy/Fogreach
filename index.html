@@ -52,7 +52,12 @@
     <script src="js/ai/steering.js"></script>
     <script src="js/storage.js?v=060"></script>
     <script src="js/eventSystem.js"></script>
-    <script src="js/roomManager.js?v=071"></script>
+    <!-- 061: Raum-Ziel-Modi. roomModes.js (Framework + ClearMode) MUSS vor
+         roomManager/wave/main laden. Die Modus-Dateien (survival/defend/hunt/
+         visuals/escape) registrieren sich selbst und kommen in späteren WPs;
+         fehlt eine Datei, faellt die Auswahl defensiv auf `clear` zurueck. -->
+    <script src="js/roomModes.js?v=077"></script>
+    <script src="js/roomManager.js?v=077"></script>
     <script src="js/statusEffects.js"></script>
     <script src="js/particleEffects.js"></script>
     <script src="js/player.js?v=072"></script>
@@ -62,7 +67,7 @@
     <script src="js/loot.js"></script>
     <script src="js/questSystem.js"></script>
     <script src="js/storySystem.js"></script>
-    <script src="js/wave.js"></script>
+    <script src="js/wave.js?v=077"></script>
     <script src="js/graphics.js"></script>
     <script src="js/scenes/Archivschmiede.js"></script>
     <script src="js/scenes/hubLayout.js"></script>
@@ -103,7 +108,7 @@
     <script src="js/minimap.js?v=060"></script>
     <script src="js/hudV2.js?v=072"></script>
     <script src="js/endlessMode.js?v=060"></script>
-    <script src="js/main.js?v=061"></script>
+    <script src="js/main.js?v=077"></script>
     <script src="js/mobileAutoAim.js"></script>
     <!-- 053 WP01: Mobile-Perf-Diagnose-Probe. No-Op außer bei ?perf=1.
          ?v bump erzwingt frischen Fetch (Pages cached Assets ~10min). -->
