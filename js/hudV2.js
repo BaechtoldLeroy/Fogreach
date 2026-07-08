@@ -352,7 +352,7 @@
     const cw = scene.cameras.main.width;
     const ch = scene.cameras.main.height;
     const panelW = Math.min(420, cw - 40);
-    const panelH = 500;   // #60: Platz fuer die 4 Attribut-Zeilen
+    const panelH = 580;   // #60: Platz fuer die 4 Attribut-Bloecke (Wert + Erklaerung)
     const px = cw / 2;
     const py = ch / 2;
 
@@ -397,12 +397,7 @@
       [T('hud.stats.label.range'), String(rng)],
       [T('hud.stats.label.armor'), Math.round(arm * 100) + '%'],
       [T('hud.stats.label.crit'), (crt * 100).toFixed(1) + '%'],
-      [T('hud.stats.label.move_speed'), String(spd)],
-      [T('hud.stats.attributes'), ''],
-      [T('hud.stats.label.strength'), _s > 0 ? _s + '  (+' + _s + '% Dmg)' : '0'],
-      [T('hud.stats.label.dexterity'), _d > 0 ? _d + '  (+' + (_d * 0.2).toFixed(1) + '% Crit, +' + (_d * 0.3).toFixed(1) + '% AS)' : '0'],
-      [T('hud.stats.label.vitality'), _v > 0 ? _v + '  (+' + (_v * 3) + ' HP)' : '0'],
-      [T('hud.stats.label.focus'), _f > 0 ? _f + '  (−' + Math.min(40, _f * 0.4).toFixed(0) + '% CD)' : '0']
+      [T('hud.stats.label.move_speed'), String(spd)]
     ];
     const rowGfx = [];
     rows.forEach((r, i) => {
@@ -414,6 +409,39 @@
         fontFamily: 'monospace', fontSize: '14px', color: '#ffe28a'
       }).setOrigin(1, 0).setScrollFactor(0).setDepth(2502);
       rowGfx.push(lbl, val);
+    });
+
+    // #60: Attribut-Block — Wert rechts, darunter eine dimme Zeile, die erklaert,
+    // WAS das Attribut skaliert (Primaer- + Zweiteffekt, mit Live-Werten).
+    let attrY = py - panelH / 2 + 56 + rows.length * 28 + 8;
+    const attrHdr = scene.add.text(px - panelW / 2 + 22, attrY, T('hud.stats.attributes') + ':', {
+      fontFamily: 'monospace', fontSize: '14px', color: '#ffd166', fontStyle: 'bold'
+    }).setScrollFactor(0).setDepth(2502);
+    rowGfx.push(attrHdr);
+    attrY += 28;
+    const attrDefs = [
+      { label: T('hud.stats.label.strength'), val: _s,
+        desc: '+' + _s + '% Waffenschaden · +' + (_s * 1.5).toFixed(1) + '% Krit-Schaden' },
+      { label: T('hud.stats.label.dexterity'), val: _d,
+        desc: '+' + (_d * 0.2).toFixed(1) + '% Krit · +' + (_d * 0.3).toFixed(1) + '% Tempo · +' + (_d * 0.25).toFixed(1) + '% Ausweichen' },
+      { label: T('hud.stats.label.vitality'), val: _v,
+        desc: '+' + (_v * 3) + ' Max-LP · +' + (_v * 0.1).toFixed(1) + ' LP/s Regen' },
+      { label: T('hud.stats.label.focus'), val: _f,
+        desc: '−' + Math.min(40, _f * 0.4).toFixed(0) + '% Cooldown · +' + (_f * 0.5).toFixed(1) + '% Fähigkeitsschaden' }
+    ];
+    attrDefs.forEach((a) => {
+      const lbl = scene.add.text(px - panelW / 2 + 22, attrY, a.label + ':', {
+        fontFamily: 'monospace', fontSize: '14px', color: '#cfd0ff'
+      }).setScrollFactor(0).setDepth(2502);
+      const val = scene.add.text(px + panelW / 2 - 22, attrY, String(a.val), {
+        fontFamily: 'monospace', fontSize: '14px', color: '#ffe28a'
+      }).setOrigin(1, 0).setScrollFactor(0).setDepth(2502);
+      const desc = scene.add.text(px - panelW / 2 + 34, attrY + 16, a.desc, {
+        fontFamily: 'monospace', fontSize: '10px', color: '#8a8fb0',
+        wordWrap: { width: panelW - 60 }
+      }).setScrollFactor(0).setDepth(2502);
+      rowGfx.push(lbl, val, desc);
+      attrY += 40;
     });
 
     const closeBtn = scene.add.text(px, py + panelH / 2 - 26, T('hud.menu.btn.close'), {

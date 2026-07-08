@@ -999,11 +999,15 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   }
 
   // === D2-artige Kern-Attribute (#60) — kommen NUR von Item-Affixen ===
-  //   Staerke     -> +1 % Nahkampf-/Waffenschaden je Punkt
-  //   Geschick    -> +0.2 % Krit + 0.3 % Angriffstempo je Punkt
-  //   Vitalitaet  -> +3 Max-LP je Punkt (unten in den HP-Pool gefaltet)
-  //   Fokus       -> globale Cooldown-Reduktion −0.4 %/Punkt (Cap −40 %,
-  //                  angewandt in player.js via window.playerFocusCdr)
+  // Jedes Attribut hat einen PRIMAER- und einen einzigartigen ZWEIT-Effekt, damit
+  // es kein reiner Klon eines Einzel-Affixes ist:
+  //   Staerke    -> +1 % Waffenschaden  + 1.5 % Krit-SCHADEN je Punkt
+  //   Geschick   -> +0.2 % Krit + 0.3 % Angriffstempo + 0.25 % AUSWEICHEN je Punkt
+  //   Vitalitaet -> +3 Max-LP           + 0.1 LP/s REGENERATION je Punkt
+  //   Fokus      -> −0.4 % globale CD   + 0.5 % FAEHIGKEITSschaden je Punkt
+  // Ausweichen/Regen werden UNTEN (nach Skills/Endless) additiv draufgelegt,
+  // damit sie nicht ueberschrieben werden; Krit-Schaden/Skill-Schaden liegen auf
+  // eigenen Globals (player.js liest sie im Combat).
   let _attrStr = 0, _attrDex = 0, _attrVit = 0, _attrFoc = 0;
   if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
     const _gb2 = window.LootSystem.getBonus;
@@ -1017,13 +1021,16 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   }
   const _attrVitHp = _attrVit * 3;
   const _attrFocusCdr = Math.min(0.40, _attrFoc * 0.004);
-  // Nach aussen sichtbar: Charakter-Menue (Anzeige) + Cooldown-Anwendung (player.js).
+  // Nach aussen sichtbar: Charakter-Menue (Anzeige) + Combat-Anwendung (player.js).
   if (typeof window !== 'undefined') {
     window.playerStrength = _attrStr;
     window.playerDexterity = _attrDex;
     window.playerVitality = _attrVit;
     window.playerFocus = _attrFoc;
     window.playerFocusCdr = _attrFocusCdr;
+    // Zweit-Effekte auf eigenen Globals (immer frisch, 0 wenn kein Attribut):
+    window.playerCritDamageBonus = _attrStr * 0.015; // Staerke -> Krit-Schaden
+    window.playerFocusAbilityDmg = _attrFoc * 0.005;  // Fokus  -> Fähigkeitsschaden
   }
 
   // Round the final weapon damage to ONE decimal so band-rolled bases (e.g.
@@ -1141,6 +1148,18 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
       const bonus = endlessBuffs.playerMaxHealth;
       setPlayerMaxHealth(playerMaxHealth + bonus, { updateUi: false });
     }
+  }
+
+  // 3.57) #60 Attribut-Zweiteffekte, die auf gemeinsam genutzte Globals gehen:
+  // NACH Skills/Endless additiv drauflegen, sonst wuerden die Zuweisungen oben
+  // (PLAYER_DODGE_CHANCE/PLAYER_HEALTH_REGEN) sie ueberschreiben.
+  //   Geschick   -> +0.25 % Ausweichen je Punkt
+  //   Vitalitaet -> +0.1 LP/s Regeneration je Punkt
+  if (_attrDex > 0) {
+    window.PLAYER_DODGE_CHANCE = Math.min(0.5, (window.PLAYER_DODGE_CHANCE || 0) + _attrDex * 0.0025);
+  }
+  if (_attrVit > 0) {
+    window.PLAYER_HEALTH_REGEN = (window.PLAYER_HEALTH_REGEN || 0) + _attrVit * 0.1;
   }
 
   // 3.6) Event-Buffs (Shrine etc.) als letzte Schicht — überleben Equipment-Recalcs.

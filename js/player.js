@@ -725,7 +725,9 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
     if (typeof sc === 'number' && isFinite(sc) && sc > 0) skillCastDmgMul = sc;
   } catch (e) { /* never break combat */ }
   const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul * amuletDmgMul * berserkDmgMul * skillCastDmgMul);
-  const damage = Math.max(1, Math.round(isCrit ? base * 1.5 : base));
+  // #60: Krit-Multiplikator 1.5x + Staerke-Zweiteffekt (playerCritDamageBonus).
+  const critMult = 1.5 + (typeof window.playerCritDamageBonus === 'number' ? window.playerCritDamageBonus : 0);
+  const damage = Math.max(1, Math.round(isCrit ? base * critMult : base));
 
   // Snapshot maxHp on first hit so the lazy enemy hp bar (drawn by
   // handleEnemyHit -> drawEnemyHpBar) has a correct denominator. Many
@@ -1030,7 +1032,12 @@ function getLootAbilityDamageBonus(abilityKey) {
   const suffix = _lootAbilityStatKey(abilityKey);
   const perAbility = suffix ? _getLootBonus('dmg_' + suffix) : 0;
   const allAbilities = _getLootBonus('dmg_all_abilities');
-  return perAbility + allAbilities;
+  // #60: Fokus-Zweiteffekt -> globaler Fähigkeitsschaden. Bewusst NICHT auf den
+  // Basis-Angriff ('attack'), damit Fokus rein Fähigkeiten skaliert (Staerke
+  // deckt den Waffen-/Auto-Schaden ab) und die beiden sich nicht ueberlappen.
+  const focusDmg = (abilityKey && abilityKey !== 'attack'
+    && typeof window.playerFocusAbilityDmg === 'number') ? window.playerFocusAbilityDmg : 0;
+  return perAbility + allAbilities + focusDmg;
 }
 
 // WP07 T045: Total cooldown reduction fraction from equipped affixes for a given ability.
