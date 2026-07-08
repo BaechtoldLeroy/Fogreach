@@ -16,8 +16,8 @@ planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 base_branch: main
-base_commit: 6f739e9e87450307906106cd98b61cadba0907e2
-created_at: '2026-07-08T00:00:00Z'
+base_commit: c3a104fc8f3900ecaafcd94e4571611143f11026
+created_at: '2026-07-08T13:17:10.840134+00:00'
 subtasks:
 - T001
 - T002
@@ -28,6 +28,7 @@ subtasks:
 phase: Phase 1 - Foundation
 assignee: ''
 agent: ''
+shell_pid: "71716"
 history:
 - timestamp: '2026-07-08T00:00:00Z'
   lane: planned
