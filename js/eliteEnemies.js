@@ -473,6 +473,23 @@
     return drops;
   }
 
+  // Feature 061 (WP04 / HuntMode): das beste "Jagd-Ziel" aus einer Gegner-Gruppe
+  // wählen — bevorzugt einen Elite, sonst den mit der höchsten Max-HP. Gibt das
+  // Gegner-Objekt zurück (oder null). Rein (nutzt nur die übergebene Gruppe).
+  function pickHuntTarget(enemyGroup) {
+    if (!enemyGroup || typeof enemyGroup.getChildren !== 'function') return null;
+    var list = enemyGroup.getChildren();
+    var best = null, bestScore = -1;
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i];
+      if (!e || !e.active) continue;
+      var hp = (typeof e.maxHealth === 'number') ? e.maxHealth : ((typeof e.health === 'number') ? e.health : 1);
+      var score = hp + (isElite(e) ? 100000 : 0); // Elites klar bevorzugen
+      if (score > bestScore) { bestScore = score; best = e; }
+    }
+    return best;
+  }
+
   // -------------------------------------------------------------------------
   // Export
   // -------------------------------------------------------------------------
@@ -484,6 +501,7 @@
     applyEliteToEnemy: applyEliteToEnemy,
     removeEliteFromEnemy: removeEliteFromEnemy,
     isElite: isElite,
+    pickHuntTarget: pickHuntTarget,
     modifyDropTable: modifyDropTable
   };
 })();
