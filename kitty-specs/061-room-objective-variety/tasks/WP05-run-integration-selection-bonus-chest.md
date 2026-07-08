@@ -56,3 +56,4 @@ Eine **eigenständige Rendering-/HUD-Schicht** `js/roomModeVisuals.js` (Muster `
 ## Activity Log
 
 - 2026-07-08T14:08:28Z – unknown – shell_pid=43340 – lane=for_review – Moved to for_review
+- 2026-07-08T14:08:31Z – unknown – shell_pid=43340 – lane=approved – reviewed
