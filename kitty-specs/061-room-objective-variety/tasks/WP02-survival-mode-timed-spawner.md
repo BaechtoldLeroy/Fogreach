@@ -53,3 +53,7 @@ Neue, **eigenständige** Datei `js/roomModeSurvival.js`, die sich per `window.Ro
 
 ## Akzeptanz
 - `?mode=survival`: Timer läuft, Gegner spawnen nach, Treppe bei 0; Clear-Räume unverändert; Tests grün.
+
+## Activity Log
+
+- 2026-07-08T13:53:40Z – unknown – shell_pid=21536 – lane=for_review – Moved to for_review
