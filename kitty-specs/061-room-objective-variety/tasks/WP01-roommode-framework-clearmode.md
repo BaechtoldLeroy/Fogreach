@@ -79,3 +79,7 @@ RoomMode.selectForRoom({ roomIndex, isBoss, isEspionage, depth, rng }) -> modeId
 - Nur-`clear`-Runs verhaltensidentisch zu heute; alle Bestandstests grün (`node tools/runTests.js`).
 - Kernlogik Phaser-frei testbar (NFR-02); Hooks defensiv (NFR-03).
 - Browser-Smoke: normaler Run bootet, Räume clearen wie gehabt, 0 Errors.
+
+## Activity Log
+
+- 2026-07-08T13:29:02Z – unknown – shell_pid=71716 – lane=for_review – Moved to for_review
