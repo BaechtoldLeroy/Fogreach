@@ -52,3 +52,7 @@ Eine **eigenständige Rendering-/HUD-Schicht** `js/roomModeVisuals.js` (Muster `
 
 ## Akzeptanz
 - Jeder Spezialraum kommuniziert Ziel + Fortschritt + Ausgang (Erfolg/Malus) klar; HUD einheitlich; DE/EN vollständig; 0 Errors.
+
+## Activity Log
+
+- 2026-07-08T14:08:28Z – unknown – shell_pid=43340 – lane=for_review – Moved to for_review
