@@ -37,7 +37,7 @@
     if (modeId === 'survival') return _t('roommode.survival.hud', { seconds: state.seconds != null ? state.seconds : Math.ceil(state.remaining || 0) });
     if (modeId === 'defend') return _t('roommode.defend.hud', { hp: state.hp != null ? state.hp : 0 });
     if (modeId === 'hunt') return _t('roommode.hunt.hud');
-    if (modeId === 'escape') return _t('roommode.escape.hud');
+    if (modeId === 'escape') return _t('roommode.escape.hud', { seconds: state.seconds != null ? state.seconds : Math.ceil(state.remaining || 0) });
     return '';
   }
 
