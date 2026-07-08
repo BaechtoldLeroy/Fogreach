@@ -59,3 +59,4 @@ KI-Ziel-Wahl in `js/enemy.js` (+ `ai/steering.js`) analysieren: Kann ein Overrid
 
 - 2026-07-08T13:58:15Z – unknown – shell_pid=26824 – lane=for_review – Moved to for_review
 - 2026-07-08T13:58:21Z – unknown – shell_pid=26824 – lane=approved – reviewed
+- 2026-07-08T14:42:24Z – unknown – shell_pid=26824 – lane=done – Done override: Manuell nach main gemerged (inkrementell); Code live + getestet
