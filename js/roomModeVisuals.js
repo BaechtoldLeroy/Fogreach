@@ -15,7 +15,7 @@
 
   var mounted = false;
   var g = null;            // Welt-Graphics (Altar-HP-Balken, Hunt-Marker)
-  var banner = null, bannerBg = null, hudText = null;
+  var banner = null, bannerInfo = null, bannerBg = null, hudText = null;
   var _prevMode = 'clear';
   var _bannerUntil = 0;
 
@@ -32,12 +32,21 @@
     if (modeId === 'escape') return 'roommode.escape.banner';
     return null;
   }
+  // Zweite, erklärende Banner-Zeile (was tun / warum). null = kein Info-Text.
+  function bannerInfoKeyFor(modeId) {
+    if (modeId === 'survival') return 'roommode.survival.info';
+    if (modeId === 'defend') return 'roommode.defend.info';
+    if (modeId === 'hunt') return 'roommode.hunt.info';
+    if (modeId === 'escape') return 'roommode.escape.info';
+    return null;
+  }
   function hudTextFor(modeId, state) {
     state = state || {};
-    if (modeId === 'survival') return _t('roommode.survival.hud', { seconds: state.seconds != null ? state.seconds : Math.ceil(state.remaining || 0) });
-    if (modeId === 'defend') return _t('roommode.defend.hud', { hp: state.hp != null ? state.hp : 0 });
+    var secs = state.seconds != null ? state.seconds : Math.ceil(state.remaining || 0);
+    if (modeId === 'survival') return _t('roommode.survival.hud', { seconds: secs });
+    if (modeId === 'defend') return _t('roommode.defend.hud', { hp: state.hp != null ? state.hp : 0, seconds: secs });
     if (modeId === 'hunt') return _t('roommode.hunt.hud');
-    if (modeId === 'escape') return _t('roommode.escape.hud', { seconds: state.seconds != null ? state.seconds : Math.ceil(state.remaining || 0) });
+    if (modeId === 'escape') return _t('roommode.escape.hud', { seconds: secs });
     return '';
   }
 
@@ -46,19 +55,25 @@
     mounted = true;
     var cam = scene.cameras && scene.cameras.main;
     var cw = cam ? cam.width : 1536;
+    var bw = Math.min(640, cw - 40);
     g = scene.add.graphics().setDepth(DEPTH_WORLD).setScrollFactor(1);
-    bannerBg = scene.add.rectangle(cw / 2, 52, Math.min(560, cw - 40), 34, 0x10131c, 0.85)
+    // Höheres Banner: Titel-Zeile + erklärende Info-Zeile darunter.
+    bannerBg = scene.add.rectangle(cw / 2, 58, bw, 62, 0x10131c, 0.88)
       .setScrollFactor(0).setDepth(DEPTH_HUD - 1).setStrokeStyle(2, 0xffb347, 0.8).setVisible(false);
-    banner = scene.add.text(cw / 2, 52, '', { fontFamily: 'serif', fontSize: '20px', color: '#ffd166', fontStyle: 'bold' })
+    banner = scene.add.text(cw / 2, 40, '', { fontFamily: 'serif', fontSize: '20px', color: '#ffd166', fontStyle: 'bold' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH_HUD).setVisible(false);
-    hudText = scene.add.text(cw / 2, 92, '', { fontFamily: 'monospace', fontSize: '15px', color: '#ffe28a', fontStyle: 'bold' })
+    bannerInfo = scene.add.text(cw / 2, 66, '', {
+      fontFamily: 'monospace', fontSize: '12px', color: '#d8d2f0',
+      align: 'center', wordWrap: { width: bw - 28 }
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(DEPTH_HUD).setVisible(false);
+    hudText = scene.add.text(cw / 2, 104, '', { fontFamily: 'monospace', fontSize: '15px', color: '#ffe28a', fontStyle: 'bold' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH_HUD);
   }
 
   function _unmount() {
     mounted = false;
-    [g, banner, bannerBg, hudText].forEach(function (o) { if (o) { try { o.destroy(); } catch (e) {} } });
-    g = banner = bannerBg = hudText = null;
+    [g, banner, bannerInfo, bannerBg, hudText].forEach(function (o) { if (o) { try { o.destroy(); } catch (e) {} } });
+    g = banner = bannerInfo = bannerBg = hudText = null;
   }
 
   function sync(scene) {
@@ -76,17 +91,19 @@
     var state = (typeof R.activeState === 'function') ? (R.activeState() || {}) : {};
     var now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : 0;
 
-    // Intro-Banner beim Betreten eines neuen Spezialraums (~2.5 s).
+    // Intro-Banner beim Betreten eines neuen Spezialraums (Titel + Erklärung, ~4.5s).
     if (_prevMode !== modeId) {
+      var _secs = state.seconds != null ? state.seconds : Math.ceil(state.remaining || 0);
       var bk = bannerKeyFor(modeId);
-      if (bk && banner) {
-        banner.setText(_t(bk, { seconds: state.seconds != null ? state.seconds : Math.ceil(state.remaining || 0) }));
-        _bannerUntil = now + 2500;
-      }
+      if (bk && banner) banner.setText(_t(bk, { seconds: _secs }));
+      var ik = bannerInfoKeyFor(modeId);
+      if (bannerInfo) bannerInfo.setText(ik ? _t(ik, { seconds: _secs }) : '');
+      if (bk) _bannerUntil = now + 4500;
       _prevMode = modeId;
     }
     var showBanner = now < _bannerUntil;
     if (banner) banner.setVisible(showBanner);
+    if (bannerInfo) bannerInfo.setVisible(showBanner);
     if (bannerBg) bannerBg.setVisible(showBanner);
 
     // HUD-Zeile.
@@ -112,9 +129,9 @@
   }
 
   if (typeof window !== 'undefined') {
-    window.RoomModeVisuals = { sync: sync, bannerKeyFor: bannerKeyFor, hudTextFor: hudTextFor };
+    window.RoomModeVisuals = { sync: sync, bannerKeyFor: bannerKeyFor, bannerInfoKeyFor: bannerInfoKeyFor, hudTextFor: hudTextFor };
   }
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { bannerKeyFor: bannerKeyFor, hudTextFor: hudTextFor };
+    module.exports = { bannerKeyFor: bannerKeyFor, bannerInfoKeyFor: bannerInfoKeyFor, hudTextFor: hudTextFor };
   }
 })();

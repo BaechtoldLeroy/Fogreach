@@ -11,13 +11,34 @@
 
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
-      'roommode.hunt.banner': 'Töte das markierte Ziel!',
-      'roommode.hunt.hud': 'Ziel'
+      'roommode.hunt.banner': 'Erlege den Rudelführer!',
+      'roommode.hunt.info': 'Ein besonders starker Anführer treibt den Pulk an. Töte IHN, um den Raum zu brechen — der restliche Trash ist egal.',
+      'roommode.hunt.hud': '⚔ Rudelführer'
     });
     window.i18n.register('en', {
-      'roommode.hunt.banner': 'Kill the marked target!',
-      'roommode.hunt.hud': 'Target'
+      'roommode.hunt.banner': 'Slay the pack leader!',
+      'roommode.hunt.info': 'A far stronger leader drives the pack. Kill HIM to break the room — the rest of the trash does not matter.',
+      'roommode.hunt.hud': '⚔ Pack Leader'
     });
+  }
+
+  // Der Rudelführer ist ein Mini-Boss: Champion-Elite (Optik/Verhalten) + ein
+  // klarer HP-Boost obendrauf, damit er sich zäher als der Trash anfühlt.
+  var HUNT_HP_MULT = 2.5;
+
+  function _empowerTarget(t) {
+    if (!t) return;
+    try {
+      if (window.EliteEnemies && typeof window.EliteEnemies.applyEliteToEnemy === 'function' && !t._eliteApplied) {
+        window.EliteEnemies.applyEliteToEnemy(t, 'champion');
+        t._eliteApplied = true;
+      }
+    } catch (e) {}
+    try {
+      if (typeof t.hp === 'number') { t.hp = Math.ceil(t.hp * HUNT_HP_MULT); t.maxHp = t.hp; }
+      if (typeof t.setScale === 'function' && typeof t.scaleX === 'number' && t.scaleX > 0) t.setScale(t.scaleX * 1.35);
+      if (typeof t.setTint === 'function') t.setTint(0xff5a5a);
+    } catch (e) {}
   }
 
   function _pickTarget() {
@@ -44,7 +65,11 @@
         // Ziel erst wählen, wenn die (async gespawnte) Welle da ist.
         if (!picked) {
           var t = _pickTarget();
-          if (t) { target = t; picked = true; try { t.__huntTarget = true; } catch (e) {} }
+          if (t) {
+            target = t; picked = true;
+            try { t.__huntTarget = true; } catch (e) {}
+            _empowerTarget(t); // Rudelführer = zäher Mini-Boss
+          }
         }
       },
       onWaveCleared: function () { cleared = true; },

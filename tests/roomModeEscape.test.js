@@ -20,21 +20,21 @@ test('escape registers itself into RoomMode', () => {
   assert.strictEqual(globalThis.window.RoomMode.has('escape'), true);
 });
 
-test('escape: shorter duration than survival, scales with depth', () => {
+test('escape: duration starts at 30s and scales with depth', () => {
   const R = globalThis.window.RoomMode;
   globalThis.window.DUNGEON_DEPTH = 10;
   const m = R.create('escape'); m.start(null);
-  assert.strictEqual(m.getState().duration, 21); // 18 + min(12, 10*0.3=3)
+  assert.strictEqual(m.getState().duration, 39); // 30 + min(20, (10-1)*1=9)
 });
 
 test('escape: timer counts down, completes at 0, never fails', () => {
   const R = globalThis.window.RoomMode;
-  globalThis.window.DUNGEON_DEPTH = 10; // 21s
+  globalThis.window.DUNGEON_DEPTH = 10; // 39s
   const m = R.create('escape'); m.start(null);
   assert.strictEqual(m.isComplete(), false);
-  m.update(10000);
+  m.update(20000);
   assert.strictEqual(m.isComplete(), false);
-  m.update(12000); // total 22 > 21
+  m.update(20000); // total 40 > 39
   assert.strictEqual(m.isComplete(), true);
   assert.strictEqual(m.objectiveFailed(), false);
 });

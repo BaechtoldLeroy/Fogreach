@@ -12,16 +12,19 @@
 
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
-      'roommode.escape.banner': 'Halte durch — der Fluchtweg öffnet sich!',
-      'roommode.escape.hud': 'Fluchtweg: {seconds}s'
+      'roommode.escape.banner': 'Flucht!',
+      'roommode.escape.info': 'Der Ausgang ist verriegelt — halte {seconds}s dem Ansturm stand, dann öffnet sich die Treppe.',
+      'roommode.escape.hud': 'Treppe öffnet in {seconds}s'
     });
     window.i18n.register('en', {
-      'roommode.escape.banner': 'Hold on — the escape route is opening!',
-      'roommode.escape.hud': 'Escape: {seconds}s'
+      'roommode.escape.banner': 'Escape!',
+      'roommode.escape.info': 'The exit is sealed — hold out against the onslaught for {seconds}s, then the stairs open.',
+      'roommode.escape.hud': 'Stairs open in {seconds}s'
     });
   }
 
-  var BASE_SECONDS = 18;      // kürzer als survival
+  var BASE_SECONDS = 30;      // Startdauer (war 18) — bewusster Fluchtdruck
+  var MAX_BONUS = 30;         // bis +30s in der Tiefe (Deckel 60s)
   var SPAWN_INTERVAL = 2.0;   // dichter Nachschub
   var SPAWN_BATCH = 3;        // groessere Schuebe
   var MAX_CONCURRENT = 16;
@@ -29,7 +32,7 @@
   function _depthSeconds() {
     var d = 1;
     if (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number' && window.DUNGEON_DEPTH > 0) d = window.DUNGEON_DEPTH;
-    return Math.round(BASE_SECONDS + Math.min(12, d * 0.3));
+    return Math.round(BASE_SECONDS + Math.min(MAX_BONUS, (d - 1) * 1));
   }
 
   function EscapeMode() {
