@@ -499,11 +499,38 @@ test('migrateSave: migrates equipment slots and strips old fields', () => {
   assert.strictEqual(save.equipment.head, null);
 });
 
-test('migrateSave: sets saveVersion to 2', () => {
+test('migrateSave: sets saveVersion to 3', () => {
   const sys = freshSystem();
   const save = { inventory: [] };
   const out = sys.migrateSave(save);
-  assert.strictEqual(out.saveVersion, 2);
+  assert.strictEqual(out.saveVersion, 3);
+});
+
+test('migrateSave v3: repairs raw-percent base stats (speed/armor/crit) (#bugfix)', () => {
+  const sys = freshSystem();
+  // Korruptes Item (vor dem /100-Fix gerollt): Top-Level == ROH-baseStats > 1.
+  const save = {
+    saveVersion: 2,
+    inventory: [
+      { name: 'X', tier: 1, affixes: [], iLevel: 5,
+        baseStats: { speed: 15, armor: 5, damage: 6 }, speed: 15, armor: 5, damage: 6 }
+    ],
+    equipment: {}
+  };
+  const out = sys.migrateSave(save);
+  const it = out.inventory[0];
+  assert.strictEqual(it.speed, 0.15, 'speed 15 -> 0.15');
+  assert.strictEqual(it.armor, 0.05, 'armor 5 -> 0.05');
+  assert.strictEqual(it.damage, 6, 'damage (flat) unangetastet');
+  assert.strictEqual(it.baseStats.speed, 15, 'ROH-baseStats bleibt (Anzeige nutzt Top-Level)');
+  assert.strictEqual(out.saveVersion, 3);
+
+  // Bereits korrekte Bruch-Werte werden NICHT angefasst (Top-Level != baseStats).
+  const ok = { saveVersion: 2, inventory: [
+    { name: 'Y', tier: 1, affixes: [], iLevel: 5, baseStats: { speed: 15 }, speed: 0.15 }
+  ]};
+  const out2 = sys.migrateSave(ok);
+  assert.strictEqual(out2.inventory[0].speed, 0.15, 'korrekter Bruch bleibt');
 });
 
 test('migrateSave: idempotent — running twice produces identical result', () => {
@@ -858,12 +885,18 @@ test('getOrCreateShopState: regenerates when runId changes', () => {
   assert.strictEqual(s2.currentRunId, 'run-2');
 });
 
-test('black market: locked below maxDepth 4 -> empty stock (#51)', () => {
+test('black market: locked below maxDepth 4 -> empty stock + blindBuy locked (#51)', () => {
   const sys = freshShopSystem();
   globalThis.localStorage.setItem('demonfall_maxDepth', '3');
   assert.strictEqual(sys.isBlackMarketUnlocked(), false);
   const state = sys.getOrCreateShopState('run-locked');
   assert.strictEqual(state.itemStock.length, 0, 'no visible stock while locked');
+  // Blindkauf teilt das Gating — auch mit Gold + explizitem depth-override gesperrt.
+  globalThis.window.materialCounts = { GOLD: 1000000 };
+  const res = sys.blindBuy(3);
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.reason, 'locked');
+  assert.strictEqual(sys.getGold(), 1000000, 'kein Gold abgezogen wenn gesperrt');
 });
 
 test('black market: unlocks at maxDepth 4 and rolls at maxDepth-3 (#51)', () => {

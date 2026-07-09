@@ -3177,8 +3177,12 @@ function addXP(amount = 1) {
   if (window.runStats) window.runStats.xpGained += amount;
   playerXP += amount;
 
-  if (playerXP >= neededXP) {
-    playerXP = 0;
+  // WHILE statt IF: grosse XP-Belohnungen (z.B. Quests) koennen mehrere Level
+  // auf einmal geben; der Rest wird UEBERTRAGEN (frueher playerXP=0 -> Ueberschuss
+  // ging verloren). Zusammen mit der window-Spiegelung unten behebt das die
+  // "290/136"-Fehlanzeige (Quest-XP umging Level-Up + Anzeige komplett).
+  while (playerXP >= neededXP) {
+    playerXP -= neededXP;
     playerLevel += 1;
     baseStats.maxHP += 2;
     if (typeof setPlayerMaxHealth === 'function') {
@@ -3211,6 +3215,14 @@ function addXP(amount = 1) {
         try { window.EventSystem.showToast(scene, 'Stufe ' + playerLevel + ' erreicht!  +1 Talentpunkt — Taste [T]', 'level_up'); } catch (e) {}
       }
     }
+  }
+
+  // HUD + andere Klassik-Scripts bevorzugen window.playerXP/neededXP/playerLevel.
+  // Hier IMMER spiegeln, damit die Anzeige nie vom echten Wert divergiert.
+  if (typeof window !== 'undefined') {
+    window.playerXP = playerXP;
+    window.neededXP = neededXP;
+    window.playerLevel = playerLevel;
   }
 
   updateHUD();

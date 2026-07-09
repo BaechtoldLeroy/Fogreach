@@ -48,7 +48,7 @@
       'shop.blind_buy.button': 'Blindkauf',
       'shop.blind_buy.full': 'Inventar voll',
       'shop.blind_buy.result': 'Erhalten: {name}',
-      'shop.locked.hint': 'Der Schwarzmarkt öffnet ab erreichter Tiefe {depth}.\nBis dahin bleibt nur der Blindkauf.',
+      'shop.locked.hint': 'Der Schwarzmarkt öffnet ab erreichter Tiefe {depth}.',
       'shop.toast.stock_rerolled': 'Mara breitet frische Ware aus.'
     });
     window.i18n.register('en', {
@@ -83,7 +83,7 @@
       'shop.blind_buy.button': 'Gamble',
       'shop.blind_buy.full': 'Inventory full',
       'shop.blind_buy.result': 'Received: {name}',
-      'shop.locked.hint': 'The black market opens once you reach depth {depth}.\nUntil then, only the gamble is available.',
+      'shop.locked.hint': 'The black market opens once you reach depth {depth}.',
       'shop.toast.stock_rerolled': 'Mara lays out fresh wares.'
     });
   }
@@ -246,10 +246,25 @@
         catch (e) { amuletStock = []; }
       }
 
+      // Schwarzmarkt-Gating (#51): unter Tiefe 4 ist Maras GESAMTES Menü gesperrt
+      // (inkl. Blindkauf). openShopScene öffnet den Mara-Shop dann gar nicht erst;
+      // dieser Zweig ist nur ein defensiver Fallback + zeigt einen Hinweis.
+      const marketLocked = !this.isDungeonMerchant
+        && window.LootSystem && typeof window.LootSystem.isBlackMarketUnlocked === 'function'
+        && !window.LootSystem.isBlackMarketUnlocked();
+      if (marketLocked) {
+        const hint = this.add.text(px, py - 8, _SHOP_T('shop.locked.hint', { depth: 4 }), {
+          fontFamily: 'monospace', fontSize: '13px', color: '#b89a6a',
+          align: 'center', wordWrap: { width: panelW - 80 }
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
+        this.tabBody.push(hint);
+        return;
+      }
+
       let rowIndex = 0;
-      // G2 (#51): Blindkauf — Gambling-Gold-Sink, IMMER verfuegbar (auch bei
-      // leerem Lager). Eine unidentifizierte Ware zu Fixpreis; Inhalt wird beim
-      // Kauf gewuerfelt (bewusst schlechtere Raritaets-Chancen als ein Fund).
+      // G2 (#51): Blindkauf — Gambling-Gold-Sink (ab Tiefe 4 freigeschaltet, s.o.).
+      // Eine unidentifizierte Ware zu Fixpreis; Inhalt wird beim Kauf gewuerfelt
+      // (Qualitäts-Bonus ggue. der sichtbaren Auslage).
       if (window.LootSystem && typeof window.LootSystem.blindBuy === 'function') {
         const bprice = (typeof window.LootSystem.getBlindBuyPrice === 'function')
           ? window.LootSystem.getBlindBuyPrice() : 100;
@@ -277,21 +292,6 @@
         this.tabBody.push(bbuyBg); this.tabBody.push(bbuyTx);
         bbuyBg.on('pointerdown', () => this._tryBlindBuy());
         rowIndex += 0.4; // Abstand zur restlichen Auslage
-      }
-
-      // Schwarzmarkt-Gating (#51): unter Tiefe 4 ist Maras sichtbare Auslage
-      // gesperrt — nur der Blindkauf oben bleibt. Hinweis statt Auslage/Reroll.
-      const marketLocked = !this.isDungeonMerchant
-        && window.LootSystem && typeof window.LootSystem.isBlackMarketUnlocked === 'function'
-        && !window.LootSystem.isBlackMarketUnlocked();
-      if (marketLocked) {
-        const ly = startY + rowIndex * rowH + 12;
-        const hint = this.add.text(px, ly, _SHOP_T('shop.locked.hint', { depth: 4 }), {
-          fontFamily: 'monospace', fontSize: '12px', color: '#b89a6a',
-          align: 'center', wordWrap: { width: panelW - 80 }
-        }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
-        this.tabBody.push(hint);
-        return;
       }
 
       if (stock.length === 0 && amuletStock.length === 0) {
@@ -970,6 +970,14 @@
   window.openShopScene = function (parentScene) {
     const game = window.game;
     if (!game || !game.scene) return;
+    // #51: Maras Schwarzmarkt ist erst ab erreichter Tiefe freigeschaltet —
+    // bis dahin oeffnet das Menue gar nicht. Der fliegende Dungeon-Haendler
+    // (_dungeonMerchant) ist ausgenommen.
+    if (!window._dungeonMerchant && window.LootSystem
+        && typeof window.LootSystem.isBlackMarketUnlocked === 'function'
+        && !window.LootSystem.isBlackMarketUnlocked()) {
+      return;
+    }
     _ensureShopSceneRegistered(game);
     if (game.scene.isActive && game.scene.isActive('ShopScene')) return;
     // Phaser SceneManager has start/stop but NOT launch. The launch method

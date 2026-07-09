@@ -394,16 +394,16 @@ if (window.i18n) {
     // in recalcDerived: Staerke->Schaden%, Geschick->Krit+Tempo, Vitalitaet->LP,
     // Fokus->globale Cooldown-Reduktion. Je 2 Slot-Typen (Build-Differenzierung).
     Object.freeze({ id: 'attr_strength', displayName: 'of Strength', position: 'suffix', statKey: 'strength',
-      valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 4, weight: 35,
+      valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 2, weight: 70,
       appliesTo: Object.freeze(['weapon', 'body']), tooltipText: '+{value} Strength' }),
     Object.freeze({ id: 'attr_dexterity', displayName: 'of Dexterity', position: 'suffix', statKey: 'dexterity',
-      valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 4, weight: 35,
+      valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 2, weight: 70,
       appliesTo: Object.freeze(['weapon', 'boots']), tooltipText: '+{value} Dexterity' }),
     Object.freeze({ id: 'attr_vitality', displayName: 'of Vitality', position: 'suffix', statKey: 'vitality',
-      valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 4, weight: 35,
+      valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 2, weight: 70,
       appliesTo: Object.freeze(['body', 'head']), tooltipText: '+{value} Vitality' }),
     Object.freeze({ id: 'attr_focus', displayName: 'of Focus', position: 'suffix', statKey: 'focus',
-      valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 4, weight: 30,
+      valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 2, weight: 70,
       appliesTo: Object.freeze(['head', 'boots']), tooltipText: '+{value} Focus' })
   ]);
 
@@ -1251,6 +1251,9 @@ if (window.i18n) {
   // der sichtbare Schwarzmarkt. Rueckgabe: {ok, item?, price, tier?}
   // bzw. {ok:false, reason}.
   function blindBuy(depthOverride) {
+    // #51: Blindkauf teilt das Schwarzmarkt-Gating — unter der Mindesttiefe
+    // gesperrt (kein override umgeht das; die UI blendet ihn ohnehin aus).
+    if (!isBlackMarketUnlocked()) return { ok: false, reason: 'locked' };
     const depth = (typeof depthOverride === 'number' && depthOverride > 0) ? depthOverride : _maxDepth();
     const price = getBlindBuyPrice(depth);
     if (!spendGold(price)) return { ok: false, reason: 'gold', price: price };
@@ -1344,9 +1347,8 @@ if (window.i18n) {
   }
   function migrateSave(saveData) {
     if (!saveData) return saveData;
-    if (typeof saveData.saveVersion === 'number' && saveData.saveVersion >= 2) {
-      return saveData;
-    }
+    const ver = (typeof saveData.saveVersion === 'number') ? saveData.saveVersion : 1;
+    if (ver >= 3) return saveData;
 
     const migrateItem = function (item) {
       if (!item || typeof item !== 'object') return item;
@@ -1381,19 +1383,43 @@ if (window.i18n) {
       return item;
     };
 
-    if (Array.isArray(saveData.inventory)) {
-      for (let i = 0; i < saveData.inventory.length; i++) {
-        saveData.inventory[i] = migrateItem(saveData.inventory[i]);
+    // Save v3 (#Bugfix): repariert Prozent-Basiswerte, die vor dem /100-Fix als
+    // ROHwert persistiert wurden (z.B. it.speed=15 statt 0.15) -> Tooltip zeigte
+    // "+1500% Angriffstempo". Tell-tale: das Top-Level-Feld ist identisch mit dem
+    // ROH-baseStats-Wert UND betragsmaessig > 1 (legitime Brueche sind < 1; der
+    // /100-Pfad macht Top-Level != baseStats). Nur speed/armor/crit sind percent.
+    const _PCT_STATS = ['speed', 'armor', 'crit'];
+    const repairItem = function (item) {
+      if (!item || typeof item !== 'object' || !item.baseStats) return item;
+      for (let i = 0; i < _PCT_STATS.length; i++) {
+        const k = _PCT_STATS[i];
+        const bv = item.baseStats[k];
+        if (typeof item[k] === 'number' && typeof bv === 'number'
+            && item[k] === bv && Math.abs(item[k]) > 1) {
+          item[k] = bv / 100;
+        }
       }
-    }
-    if (saveData.equipment && typeof saveData.equipment === 'object') {
-      const slots = Object.keys(saveData.equipment);
-      for (let i = 0; i < slots.length; i++) {
-        saveData.equipment[slots[i]] = migrateItem(saveData.equipment[slots[i]]);
-      }
-    }
+      return item;
+    };
 
-    saveData.saveVersion = 2;
+    const _eachItem = function (fn) {
+      if (Array.isArray(saveData.inventory)) {
+        for (let i = 0; i < saveData.inventory.length; i++) {
+          saveData.inventory[i] = fn(saveData.inventory[i]);
+        }
+      }
+      if (saveData.equipment && typeof saveData.equipment === 'object') {
+        const slots = Object.keys(saveData.equipment);
+        for (let i = 0; i < slots.length; i++) {
+          saveData.equipment[slots[i]] = fn(saveData.equipment[slots[i]]);
+        }
+      }
+    };
+
+    if (ver < 2) _eachItem(migrateItem); // v1 -> v2 Item-Shape
+    _eachItem(repairItem);               // v<3 -> Prozent-Reparatur
+
+    saveData.saveVersion = 3;
     return saveData;
   }
 

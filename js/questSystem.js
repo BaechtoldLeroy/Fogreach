@@ -1214,10 +1214,13 @@
     // Grant rewards
     var rewards = def.rewards;
     if (rewards.xp) {
-      window.playerXP = (window.playerXP || 0) + rewards.xp;
-      if (typeof playerXP !== 'undefined') playerXP = window.playerXP;
+      // Ueber addXP vergeben, damit Level-Up + window-Spiegelung + HUD korrekt
+      // laufen. Frueher wurde nur window.playerXP hochgezaehlt -> nie ein
+      // Level-Up ausgeloest und die Anzeige lief ueber (z.B. 290/136).
+      if (typeof addXP === 'function') addXP(rewards.xp);
+      else if (typeof window !== 'undefined' && typeof window.addXP === 'function') window.addXP(rewards.xp);
+      else if (typeof window !== 'undefined') { window.playerXP = (window.playerXP || 0) + rewards.xp; }
       console.log('[QuestSystem] Granted ' + rewards.xp + ' XP');
-      if (typeof updateHUD === 'function') updateHUD();
     }
     if (rewards.materials) {
       Object.keys(rewards.materials).forEach(function (key) {

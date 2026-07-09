@@ -1355,28 +1355,35 @@ class HubSceneV2 extends Phaser.Scene {
       container.add(skillsBtn);
 
       // WP06: Schwarzmarkt (shop) button — opens the Mara ShopScene overlay.
-      const shopBtn = this.add.text(0, maraBtnY + 38, _HUB_T('hub.skills.shop'), {
-        fontFamily: 'monospace',
-        fontSize: 14,
-        color: '#ffffff',
-        backgroundColor: '#6a4a1a',
-        padding: { x: 12, y: 6 }
-      }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
+      // #51: Der Schwarzmarkt ist erst ab erreichter Tiefe 4 freigeschaltet —
+      // bis dahin wird der Button GAR NICHT gezeigt (openShopScene backstoppt).
+      const _bmUnlocked = !(window.LootSystem
+        && typeof window.LootSystem.isBlackMarketUnlocked === 'function')
+        || window.LootSystem.isBlackMarketUnlocked();
+      if (_bmUnlocked) {
+        const shopBtn = this.add.text(0, maraBtnY + 38, _HUB_T('hub.skills.shop'), {
+          fontFamily: 'monospace',
+          fontSize: 14,
+          color: '#ffffff',
+          backgroundColor: '#6a4a1a',
+          padding: { x: 12, y: 6 }
+        }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
 
-      shopBtn.on('pointerdown', (pointer, x, y, event) => {
-        event.stopPropagation();
-        this._closeDialog(keyClosers);
-        this.time.delayedCall(100, () => {
-          if (typeof window.openShopScene === 'function') {
-            window.openShopScene(this);
-          }
+        shopBtn.on('pointerdown', (pointer, x, y, event) => {
+          event.stopPropagation();
+          this._closeDialog(keyClosers);
+          this.time.delayedCall(100, () => {
+            if (typeof window.openShopScene === 'function') {
+              window.openShopScene(this);
+            }
+          });
         });
-      });
-      container.add(shopBtn);
+        container.add(shopBtn);
+      }
 
       // Feature 060 WP04: Talente (Skill-Baum) button — opens the
-      // SkillTreeScene overlay. Mirrors the Schwarzmarkt button above.
-      const talentsBtn = this.add.text(0, maraBtnY + 76, _HUB_T('hub.skills.talents'), {
+      // SkillTreeScene overlay. Rueckt hoch, wenn der Schwarzmarkt-Button fehlt.
+      const talentsBtn = this.add.text(0, maraBtnY + (_bmUnlocked ? 76 : 38), _HUB_T('hub.skills.talents'), {
         fontFamily: 'monospace',
         fontSize: 14,
         color: '#ffffff',
