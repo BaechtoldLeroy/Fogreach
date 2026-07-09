@@ -13,13 +13,13 @@
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
       'roommode.escape.banner': 'Ausbruch!',
-      'roommode.escape.info': 'Der Fluchtweg ist versiegelt — überlebe {seconds}s, dann öffnet sich die Treppe.',
-      'roommode.escape.hud': 'Fluchtweg öffnet in {seconds}s'
+      'roommode.escape.info': 'Der Ausgang ist versiegelt — überlebe {seconds}s, dann brichst du aus.',
+      'roommode.escape.hud': 'Ausbruch in {seconds}s'
     });
     window.i18n.register('en', {
       'roommode.escape.banner': 'Breakout!',
-      'roommode.escape.info': 'The escape route is sealed — survive {seconds}s, then the stairs open.',
-      'roommode.escape.hud': 'Escape opens in {seconds}s'
+      'roommode.escape.info': 'The exit is sealed — survive {seconds}s, then you break out.',
+      'roommode.escape.hud': 'Breakout in {seconds}s'
     });
   }
 
