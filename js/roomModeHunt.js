@@ -13,12 +13,12 @@
     window.i18n.register('de', {
       'roommode.hunt.banner': 'Erlege den Rudelführer!',
       'roommode.hunt.info': 'Töte den starken Anführer, um den Raum zu brechen — der Rest ist egal.',
-      'roommode.hunt.hud': '⚔ Rudelführer'
+      'roommode.hunt.hud': 'Rudelführer'
     });
     window.i18n.register('en', {
       'roommode.hunt.banner': 'Slay the pack leader!',
       'roommode.hunt.info': 'Kill the strong leader to break the room — the rest does not matter.',
-      'roommode.hunt.hud': '⚔ Pack Leader'
+      'roommode.hunt.hud': 'Pack Leader'
     });
   }
 

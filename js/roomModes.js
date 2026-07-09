@@ -94,7 +94,8 @@
       try { done = !!(_current.isComplete && _current.isComplete()); } catch (e) {}
       if (done) {
         _completedFired = true;
-        try { if (typeof window.markRoomCleared === 'function') window.markRoomCleared(); } catch (e) {}
+        // objective:true -> Ziel-erfüllt-Clue statt "Raum gecleart"-Toast.
+        try { if (typeof window.markRoomCleared === 'function') window.markRoomCleared({ objective: true }); } catch (e) {}
       }
     }
   }
@@ -110,6 +111,7 @@
 
   function activeModeId() { return _ctx ? _ctx.modeId : 'clear'; }
   function isSpecialRoom() { return !!(_ctx && _ctx.modeId && _ctx.modeId !== 'clear'); }
+  function isObjectiveComplete() { return _completedFired; }
   function objectiveFailed() {
     try { return !!(_current && _current.objectiveFailed && _current.objectiveFailed()); }
     catch (e) { return false; }
@@ -150,6 +152,7 @@
     beginRoom: beginRoom, updateActive: updateActive,
     allowWaveClearUnlock: allowWaveClearUnlock, onWaveCleared: onWaveCleared,
     activeModeId: activeModeId, isSpecialRoom: isSpecialRoom,
+    isObjectiveComplete: isObjectiveComplete,
     objectiveFailed: objectiveFailed, activeState: activeState, reset: reset,
     enemyHpMultiplier: enemyHpMultiplier,
     _SPECIAL_WEIGHTS: SPECIAL_WEIGHTS

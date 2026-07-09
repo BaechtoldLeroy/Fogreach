@@ -12,14 +12,14 @@
 
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
-      'roommode.escape.banner': 'Flucht!',
-      'roommode.escape.info': 'Der Ausgang ist verriegelt. Halte {seconds}s stand — dann öffnet die Treppe.',
-      'roommode.escape.hud': 'Treppe öffnet in {seconds}s'
+      'roommode.escape.banner': 'Ausbruch!',
+      'roommode.escape.info': 'Der Fluchtweg ist versiegelt — überlebe {seconds}s, dann öffnet sich die Treppe.',
+      'roommode.escape.hud': 'Fluchtweg öffnet in {seconds}s'
     });
     window.i18n.register('en', {
-      'roommode.escape.banner': 'Escape!',
-      'roommode.escape.info': 'The exit is sealed. Hold out for {seconds}s — then the stairs open.',
-      'roommode.escape.hud': 'Stairs open in {seconds}s'
+      'roommode.escape.banner': 'Breakout!',
+      'roommode.escape.info': 'The escape route is sealed — survive {seconds}s, then the stairs open.',
+      'roommode.escape.hud': 'Escape opens in {seconds}s'
     });
   }
 

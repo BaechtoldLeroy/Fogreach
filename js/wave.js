@@ -172,6 +172,12 @@ function checkWaveEnd(time) {
       } else {
         if (typeof markRoomCleared === 'function') markRoomCleared();
       }
+    } else if (window.RoomMode && typeof window.RoomMode.isObjectiveComplete === 'function'
+               && window.RoomMode.isObjectiveComplete()
+               && typeof window.showRoomClearedToast === 'function') {
+      // Spezialraum: Ziel war schon erfüllt (Treppe längst offen). Jetzt ist der
+      // Raum WIRKLICH leergeräumt -> erst hier den "Raum gecleart"-Flavor-Toast.
+      try { window.showRoomClearedToast(); } catch (e) {}
     }
   }
 

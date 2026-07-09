@@ -10,11 +10,13 @@ if (window.i18n) {
     'room.cleared.4': 'Die Schatten weichen — vorerst.',
     'room.cleared.5': 'Ihre Asche staubt im Kerzenlicht.',
     'room.cleared.6': 'Ein Raum mehr im Rücken der Stadt.',
-    'room.cleared.7': 'Die Ketten werden leichter.'
+    'room.cleared.7': 'Die Ketten werden leichter.',
+    'room.objective_done': '✓ Ziel erfüllt!'
   });
   window.i18n.register('en', {
     'room.counter': 'Room {cur}/{total}',
     'room.stair_prompt': '[E] Next room',
+    'room.objective_done': '✓ Objective complete!',
     'room.cleared.1': 'Silence returns.',
     'room.cleared.2': 'The room breathes again.',
     'room.cleared.3': 'Ground gained.',
@@ -64,6 +66,34 @@ function _showRoomClearedToast(scene) {
       });
     }
   });
+}
+
+// Feature 061: eigener Clue für ERFÜLLTES SPEZIAL-ZIEL (nicht "Raum gecleart").
+// Level-Up-artig: grüner Kamera-Flash + Sound + kurzer grüner "✓ Ziel erfüllt!"-
+// Text. Der persistente grüne ✓-HUD-Text macht RoomModeVisuals.
+function _objectiveCompleteFx(scene) {
+  if (!scene) return;
+  try { if (scene.cameras && scene.cameras.main) scene.cameras.main.flash(300, 40, 190, 90); } catch (e) {}
+  try { if (window.soundManager) window.soundManager.playSFX('level_up'); } catch (e) {}
+  if (!scene.add || !scene.tweens) return;
+  try {
+    const cw = scene.cameras && scene.cameras.main ? scene.cameras.main.width : scene.scale.width;
+    const txt = scene.add.text(cw / 2, 128, _ROOM_T('room.objective_done'), {
+      fontFamily: 'serif', fontSize: '26px', color: '#66ff9c', fontStyle: 'bold',
+      stroke: '#0a2a14', strokeThickness: 4, align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2200).setAlpha(0).setScale(0.8);
+    scene.tweens.add({
+      targets: txt, alpha: { from: 0, to: 1 }, scale: { from: 0.8, to: 1.05 },
+      y: { from: 140, to: 126 }, duration: 320, ease: 'Back.Out',
+      onComplete: function () {
+        scene.tweens.add({
+          targets: txt, alpha: { from: 1, to: 0 }, y: { from: 126, to: 118 },
+          duration: 320, delay: 1900, ease: 'Sine.In',
+          onComplete: function () { try { txt.destroy(); } catch (e) {} }
+        });
+      }
+    });
+  } catch (e) { /* Clue darf den Abschluss nie brechen */ }
 }
 
 // Globale Raumdaten
@@ -1189,7 +1219,7 @@ function lockStairs(scene, lock) {
  * Raum „cleared“ markieren und Türen freischalten.
  * Aufrufst du, wenn Raum‑Wave erledigt ist.
  */
-function markRoomCleared() {
+function markRoomCleared(opts) {
   const scene = obstacles.scene;
   const room = rooms[currentRoomId];
   if (!scene || !room) return;
@@ -1197,9 +1227,16 @@ function markRoomCleared() {
   room.cleared = true;
   lockStairs(scene, false);
 
-  // Flavor toast — random 1-of-7 short cleared-room line, fade in + out
-  // top-center over ~3s. No-op if scene tween system unavailable.
-  try { _showRoomClearedToast(scene); } catch (e) { /* ignore */ }
+  // Feature 061: Bei ERFÜLLTEM SPEZIAL-ZIEL (opts.objective) NICHT den
+  // "Raum gecleart"-Flavor-Toast zeigen (der Raum ist evtl. noch voller Gegner),
+  // sondern einen Level-Up-artigen Ziel-erfüllt-Clue. Der "gecleart"-Toast kommt
+  // erst, wenn der Raum wirklich leer ist (wave.js -> window.showRoomClearedToast).
+  if (opts && opts.objective) {
+    try { _objectiveCompleteFx(scene); } catch (e) { /* ignore */ }
+  } else {
+    room._clearedToastShown = true;
+    try { _showRoomClearedToast(scene); } catch (e) { /* ignore */ }
+  }
 
   // Endless mode: re-lock stairs and offer 1-of-3 upgrade cards before
   // letting the player descend.
@@ -2287,6 +2324,17 @@ function _spawnCouncilDocument(scene) {
 window.createRooms = createRooms;
 window.enterRoom = enterRoom;
 window.markRoomCleared = markRoomCleared;
+// Feature 061: nur den "Raum gecleart"-Flavor-Toast zeigen (ohne erneut zu
+// unlocken/beloohnen) — für Spezialräume, deren Ziel schon erfüllt war und die
+// jetzt WIRKLICH leergeräumt sind. Einmal pro Raum.
+window.showRoomClearedToast = function () {
+  try {
+    const room = rooms[currentRoomId];
+    if (room && room._clearedToastShown) return;
+    if (room) room._clearedToastShown = true;
+    _showRoomClearedToast(obstacles.scene);
+  } catch (e) { /* ignore */ }
+};
 window.lockStairs = lockStairs;
 window.rooms = () => rooms;
 window.currentRoomId = () => currentRoomId;

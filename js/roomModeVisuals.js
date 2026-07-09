@@ -131,9 +131,16 @@
     // HUD-Zeile unter den Banner rücken, solange er sichtbar ist (kein Überlappen).
     if (hudText) hudText.y = showBanner ? (_bannerBottom + 16) : 104;
 
-    // HUD-Zeile.
-    hudText.setText(hudTextFor(modeId, state));
-    hudText.setColor(state.failed ? '#ff7a7a' : '#ffe28a');
+    // HUD-Zeile. Bei ERFÜLLTEM Ziel (nicht verfehlt) grün + ✓ (der goldige Text
+    // wird zur Erfolgsbestätigung); Fehlschlag (defend) bleibt rot.
+    var _done = (typeof R.isObjectiveComplete === 'function') && R.isObjectiveComplete();
+    if (_done && !state.failed) {
+      hudText.setText('✓ ' + hudTextFor(modeId, state));
+      hudText.setColor('#66ff9c');
+    } else {
+      hudText.setText(hudTextFor(modeId, state));
+      hudText.setColor(state.failed ? '#ff7a7a' : '#ffe28a');
+    }
 
     // Welt-Marker.
     g.clear();
