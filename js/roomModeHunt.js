@@ -12,12 +12,12 @@
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
       'roommode.hunt.banner': 'Erlege den Rudelführer!',
-      'roommode.hunt.info': 'Ein besonders starker Anführer treibt den Pulk an. Töte IHN, um den Raum zu brechen — der restliche Trash ist egal.',
+      'roommode.hunt.info': 'Töte den starken Anführer, um den Raum zu brechen — der Rest ist egal.',
       'roommode.hunt.hud': '⚔ Rudelführer'
     });
     window.i18n.register('en', {
       'roommode.hunt.banner': 'Slay the pack leader!',
-      'roommode.hunt.info': 'A far stronger leader drives the pack. Kill HIM to break the room — the rest of the trash does not matter.',
+      'roommode.hunt.info': 'Kill the strong leader to break the room — the rest does not matter.',
       'roommode.hunt.hud': '⚔ Pack Leader'
     });
   }

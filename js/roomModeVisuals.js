@@ -18,6 +18,7 @@
   var banner = null, bannerInfo = null, bannerBg = null, hudText = null;
   var _prevMode = 'clear';
   var _bannerUntil = 0;
+  var _bannerBottom = 90;  // Unterkante des Banner-Kastens (dynamisch, für HUD-Y)
 
   function _t(key, params) {
     return (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function')
@@ -57,17 +58,38 @@
     var cw = cam ? cam.width : 1536;
     var bw = Math.min(640, cw - 40);
     g = scene.add.graphics().setDepth(DEPTH_WORLD).setScrollFactor(1);
-    // Höheres Banner: Titel-Zeile + erklärende Info-Zeile darunter.
-    bannerBg = scene.add.rectangle(cw / 2, 58, bw, 62, 0x10131c, 0.88)
+    // Titel-Zeile + erklärende Info-Zeile darunter. Kasten-Höhe wird in
+    // _layoutBanner dynamisch an die (evtl. umbrechende) Texthöhe angepasst.
+    bannerBg = scene.add.rectangle(cw / 2, 58, bw, 62, 0x10131c, 0.9)
       .setScrollFactor(0).setDepth(DEPTH_HUD - 1).setStrokeStyle(2, 0xffb347, 0.8).setVisible(false);
-    banner = scene.add.text(cw / 2, 40, '', { fontFamily: 'serif', fontSize: '20px', color: '#ffd166', fontStyle: 'bold' })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH_HUD).setVisible(false);
-    bannerInfo = scene.add.text(cw / 2, 66, '', {
+    banner = scene.add.text(cw / 2, 26, '', { fontFamily: 'serif', fontSize: '20px', color: '#ffd166', fontStyle: 'bold' })
+      .setOrigin(0.5, 0).setScrollFactor(0).setDepth(DEPTH_HUD).setVisible(false);
+    bannerInfo = scene.add.text(cw / 2, 52, '', {
       fontFamily: 'monospace', fontSize: '12px', color: '#d8d2f0',
       align: 'center', wordWrap: { width: bw - 28 }
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(DEPTH_HUD).setVisible(false);
     hudText = scene.add.text(cw / 2, 104, '', { fontFamily: 'monospace', fontSize: '15px', color: '#ffe28a', fontStyle: 'bold' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH_HUD);
+  }
+
+  // Banner-Kasten dynamisch an Titel + (umbrechende) Info-Zeile anpassen, damit
+  // der Text NIE über den Rahmen hinausläuft. Setzt _bannerBottom für die HUD-Y.
+  function _layoutBanner(scene) {
+    if (!banner || !bannerBg) return;
+    var cam = scene && scene.cameras && scene.cameras.main;
+    var cw = cam ? cam.width : 1536;
+    var bw = Math.min(640, cw - 40);
+    var pad = 10, topY = 26, gap = 4;
+    banner.setPosition(cw / 2, topY);
+    var hasInfo = !!(bannerInfo && bannerInfo.text);
+    var infoY = topY + banner.height + gap;
+    if (bannerInfo) bannerInfo.setPosition(cw / 2, infoY);
+    var contentBottom = hasInfo ? (infoY + bannerInfo.height) : (topY + banner.height);
+    var bgTop = topY - pad;
+    var bgH = (contentBottom + pad) - bgTop;
+    try { bannerBg.setSize(bw, bgH); } catch (e) {}
+    bannerBg.setPosition(cw / 2, bgTop + bgH / 2);
+    _bannerBottom = bgTop + bgH;
   }
 
   function _unmount() {
@@ -98,6 +120,7 @@
       if (bk && banner) banner.setText(_t(bk, { seconds: _secs }));
       var ik = bannerInfoKeyFor(modeId);
       if (bannerInfo) bannerInfo.setText(ik ? _t(ik, { seconds: _secs }) : '');
+      _layoutBanner(scene); // Kasten an die tatsächliche Texthöhe anpassen
       if (bk) _bannerUntil = now + 4500;
       _prevMode = modeId;
     }
@@ -105,6 +128,8 @@
     if (banner) banner.setVisible(showBanner);
     if (bannerInfo) bannerInfo.setVisible(showBanner);
     if (bannerBg) bannerBg.setVisible(showBanner);
+    // HUD-Zeile unter den Banner rücken, solange er sichtbar ist (kein Überlappen).
+    if (hudText) hudText.y = showBanner ? (_bannerBottom + 16) : 104;
 
     // HUD-Zeile.
     hudText.setText(hudTextFor(modeId, state));

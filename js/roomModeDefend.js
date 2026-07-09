@@ -15,12 +15,12 @@
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
       'roommode.defend.banner': 'Verteidige den Altar!',
-      'roommode.defend.info': 'Der Altar zerfällt, solange Gegner leben. Räume den Nachschub um ihn herum ab, bis der Ansturm ({seconds}s) vorbei ist.',
+      'roommode.defend.info': 'Der Altar zerfällt, solange Gegner leben. Halte sie {seconds}s vom Altar fern.',
       'roommode.defend.hud': 'Altar: {hp}   ·   {seconds}s'
     });
     window.i18n.register('en', {
       'roommode.defend.banner': 'Defend the altar!',
-      'roommode.defend.info': 'The altar decays while enemies live. Clear the reinforcements around it until the onslaught ({seconds}s) ends.',
+      'roommode.defend.info': 'The altar decays while enemies live. Keep them off it for {seconds}s.',
       'roommode.defend.hud': 'Altar: {hp}   ·   {seconds}s'
     });
   }

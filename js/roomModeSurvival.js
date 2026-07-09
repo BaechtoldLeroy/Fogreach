@@ -12,12 +12,12 @@
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
       'roommode.survival.banner': 'Überlebe {seconds} Sekunden!',
-      'roommode.survival.info': 'Immer neue Gegner rücken nach. Bleib am Leben, bis der Timer abläuft — dann öffnet sich die Treppe.',
+      'roommode.survival.info': 'Es rückt ständig Nachschub nach — überlebe, bis der Timer abläuft.',
       'roommode.survival.hud': 'Überleben: {seconds}s'
     });
     window.i18n.register('en', {
       'roommode.survival.banner': 'Survive {seconds} seconds!',
-      'roommode.survival.info': 'Reinforcements keep coming. Stay alive until the timer runs out — then the stairs open.',
+      'roommode.survival.info': 'Reinforcements keep coming — stay alive until the timer runs out.',
       'roommode.survival.hud': 'Survive: {seconds}s'
     });
   }
