@@ -109,6 +109,12 @@
     if (!mounted) _mount(scene);
     if (!hudText) return;
 
+    // Welt-Marker (Hunt-Kreis, Defend-Zone) an die Sicht-Maske binden, sobald sie
+    // existiert — sonst wären sie DURCH den Fog of War sichtbar. Einmalig setzen.
+    if (g && !g.__vmaskApplied && scene && scene._enemyVisionMask && typeof g.setMask === 'function') {
+      try { g.setMask(scene._enemyVisionMask); g.__vmaskApplied = true; } catch (e) {}
+    }
+
     var modeId = R.activeModeId();
     var state = (typeof R.activeState === 'function') ? (R.activeState() || {}) : {};
     var now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : 0;

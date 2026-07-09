@@ -1536,6 +1536,11 @@
     if (recentEvents.length > 3) recentEvents.shift();
 
     var dispatchEvent = function () {
+      // Feature 061: In Spezialräumen (survival/defend/hunt/escape) KEIN Event —
+      // der Raum hat bereits ein Ziel. Der 800ms-Delay stellt sicher, dass
+      // beginRoom den Modus schon gesetzt hat (isSpecialRoom ist hier korrekt).
+      if (window.RoomMode && typeof window.RoomMode.isSpecialRoom === 'function'
+          && window.RoomMode.isSpecialRoom()) return;
       var result = event.handler(scene);
       // If handler returns a choice descriptor, show the dialog
       if (result && result.title && Array.isArray(result.choices)) {

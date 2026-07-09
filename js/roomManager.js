@@ -11,12 +11,14 @@ if (window.i18n) {
     'room.cleared.5': 'Ihre Asche staubt im Kerzenlicht.',
     'room.cleared.6': 'Ein Raum mehr im Rücken der Stadt.',
     'room.cleared.7': 'Die Ketten werden leichter.',
-    'room.objective_done': '✓ Ziel erfüllt!'
+    'room.objective_done': '✓ Ziel erfüllt!',
+    'room.objective_failed': '✗ Ziel verfehlt'
   });
   window.i18n.register('en', {
     'room.counter': 'Room {cur}/{total}',
     'room.stair_prompt': '[E] Next room',
     'room.objective_done': '✓ Objective complete!',
+    'room.objective_failed': '✗ Objective failed',
     'room.cleared.1': 'Silence returns.',
     'room.cleared.2': 'The room breathes again.',
     'room.cleared.3': 'Ground gained.',
@@ -85,6 +87,32 @@ function _objectiveCompleteFx(scene) {
     scene.tweens.add({
       targets: txt, alpha: { from: 0, to: 1 }, scale: { from: 0.8, to: 1.05 },
       y: { from: 140, to: 126 }, duration: 320, ease: 'Back.Out',
+      onComplete: function () {
+        scene.tweens.add({
+          targets: txt, alpha: { from: 1, to: 0 }, y: { from: 126, to: 118 },
+          duration: 320, delay: 1900, ease: 'Sine.In',
+          onComplete: function () { try { txt.destroy(); } catch (e) {} }
+        });
+      }
+    });
+  } catch (e) { /* Clue darf den Abschluss nie brechen */ }
+}
+
+// Ziel VERFEHLT (z. B. Altar zerstört): roter Flash + "✗ Ziel verfehlt". Der Raum
+// öffnet trotzdem (Malus, kein Bonus) — aber KEIN grünes "erfüllt".
+function _objectiveFailedFx(scene) {
+  if (!scene) return;
+  try { if (scene.cameras && scene.cameras.main) scene.cameras.main.flash(300, 190, 50, 50); } catch (e) {}
+  if (!scene.add || !scene.tweens) return;
+  try {
+    const cw = scene.cameras && scene.cameras.main ? scene.cameras.main.width : scene.scale.width;
+    const txt = scene.add.text(cw / 2, 128, _ROOM_T('room.objective_failed'), {
+      fontFamily: 'serif', fontSize: '26px', color: '#ff7a7a', fontStyle: 'bold',
+      stroke: '#2a0a0a', strokeThickness: 4, align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2200).setAlpha(0);
+    scene.tweens.add({
+      targets: txt, alpha: { from: 0, to: 1 }, y: { from: 140, to: 126 },
+      duration: 300, ease: 'Sine.Out',
       onComplete: function () {
         scene.tweens.add({
           targets: txt, alpha: { from: 1, to: 0 }, y: { from: 126, to: 118 },
@@ -1244,7 +1272,7 @@ function markRoomCleared(opts) {
   // sondern einen Level-Up-artigen Ziel-erfüllt-Clue. Der "gecleart"-Toast kommt
   // erst, wenn der Raum wirklich leer ist (wave.js -> window.showRoomClearedToast).
   if (opts && opts.objective) {
-    try { _objectiveCompleteFx(scene); } catch (e) { /* ignore */ }
+    try { (opts.failed ? _objectiveFailedFx : _objectiveCompleteFx)(scene); } catch (e) { /* ignore */ }
   } else {
     room._clearedToastShown = true;
     try { _showRoomClearedToast(scene); } catch (e) { /* ignore */ }

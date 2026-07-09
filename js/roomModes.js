@@ -94,8 +94,11 @@
       try { done = !!(_current.isComplete && _current.isComplete()); } catch (e) {}
       if (done) {
         _completedFired = true;
-        // objective:true -> Ziel-erfüllt-Clue statt "Raum gecleart"-Toast.
-        try { if (typeof window.markRoomCleared === 'function') window.markRoomCleared({ objective: true }); } catch (e) {}
+        // objective:true -> Ziel-Clue statt "Raum gecleart"-Toast. failed
+        // unterscheidet Erfolg (✓ grün) von Fehlschlag (z. B. Altar zerstört).
+        var _failed = false;
+        try { _failed = !!(_current.objectiveFailed && _current.objectiveFailed()); } catch (e) {}
+        try { if (typeof window.markRoomCleared === 'function') window.markRoomCleared({ objective: true, failed: _failed }); } catch (e) {}
       }
     }
   }
