@@ -43,6 +43,19 @@ test('defend: altar drains by living-enemy presence over time', () => {
   assert.strictEqual(m.getState().hp, 144, 'no drain with zero enemies');
 });
 
+test('defend: only enemies inside the drain zone damage the altar', () => {
+  const R = globalThis.window.RoomMode;
+  const m = R.create('defend'); m.start(null); // Altar im Test bei (0,0)
+  // 2 Gegner IN der Zone (<=300px), 3 weit draussen -> nur 2 drainen.
+  globalThis.window.enemies = { getChildren: () => ([
+    { active: true, x: 100, y: 0 }, { active: true, x: 0, y: 200 },
+    { active: true, x: 900, y: 0 }, { active: true, x: 0, y: 900 }, { active: true, x: 800, y: 800 }
+  ]) };
+  m.update(1000); // 2 * 1.5/s = -3
+  assert.strictEqual(m.getState().hp, 147);
+  assert.strictEqual(m.getState().drainRadius, 300);
+});
+
 test('defend: altar reaching 0 -> objectiveFailed AND completes (room opens)', () => {
   const R = globalThis.window.RoomMode;
   const m = R.create('defend'); m.start(null);

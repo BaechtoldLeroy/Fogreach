@@ -145,6 +145,14 @@
     // Welt-Marker.
     g.clear();
     if (modeId === 'defend' && typeof state.x === 'number') {
+      // Markierte Drain-Zone: nur Gegner HIER DRIN beschädigen den Altar.
+      if (typeof state.drainRadius === 'number' && state.drainRadius > 0) {
+        var _dz = 0.10 + 0.05 * (0.5 + 0.5 * Math.sin(now / 400));
+        g.fillStyle(0xff4a4a, state.failed ? 0.16 : _dz);
+        g.fillCircle(state.x, state.y, state.drainRadius);
+        g.lineStyle(2, 0xff6a6a, 0.55);
+        g.strokeCircle(state.x, state.y, state.drainRadius);
+      }
       var frac = (state.maxHp > 0) ? Math.max(0, Math.min(1, state.hp / state.maxHp)) : 0;
       var bw = 46, bh = 6, bx = state.x - bw / 2, by = state.y - 34;
       g.fillStyle(0x000000, 0.6); g.fillRect(bx - 1, by - 1, bw + 2, bh + 2);

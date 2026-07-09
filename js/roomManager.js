@@ -1105,6 +1105,18 @@ function enterRoom(scene, roomId) {
     } catch (e) { /* nie den Raumaufbau brechen */ }
   }
 
+  // Feature 061: Spezialräume (survival/defend/hunt/escape) SPERREN die Treppe
+  // bis das Ziel erfüllt ist — sonst könnte man den Raum sofort verlassen und
+  // das Objektiv umgehen. lockStairs(false) oben öffnet sie für Normal-/Boss-/
+  // Espionage-Räume wie gehabt; hier für Spezialräume wieder zu. markRoomCleared
+  // (via isComplete) öffnet sie dann beim Zielabschluss.
+  try {
+    if (window.RoomMode && typeof window.RoomMode.isSpecialRoom === 'function'
+        && window.RoomMode.isSpecialRoom()) {
+      lockStairs(scene, true);
+    }
+  } catch (e) { /* nie den Raumaufbau brechen */ }
+
   // Feature 059 (#42) WP04: early run-amulet drop (first room only).
   _maybeSpawnRunAmulet(scene);
 }

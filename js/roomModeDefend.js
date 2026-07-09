@@ -32,7 +32,8 @@
   var SPAWN_INTERVAL = 4.0;           // s zwischen Nachschub-Schüben am Altar
   var SPAWN_BATCH = 2;                // Gegner pro Schub
   var MAX_CONCURRENT = 8;             // Deckel gleichzeitiger Gegner
-  var RING_MIN = 200, RING_MAX = 340; // Spawn-Ring um den Altar
+  var RING_MIN = 180, RING_MAX = 300; // Spawn-Ring um den Altar
+  var DRAIN_RADIUS = 300;             // NUR Gegner in diesem Radius drainen den Altar
   var DEPTH_TEX = 'roommode_defend_altar';
 
   function _depthSeconds() {
@@ -73,6 +74,26 @@
       }
     } catch (e) {}
     return 0;
+  }
+
+  // Nur Gegner INNERHALB der Drain-Zone um den Altar zählen (kleinere, markierte
+  // Fläche statt raumweit). Ohne Positionsdaten -> Fallback auf raumweite Zahl.
+  function _enemiesNearAltar(cx, cy) {
+    try {
+      if (typeof window !== 'undefined' && window.enemies && typeof window.enemies.getChildren === 'function') {
+        var arr = window.enemies.getChildren();
+        var r2 = DRAIN_RADIUS * DRAIN_RADIUS, n = 0;
+        for (var i = 0; i < arr.length; i++) {
+          var e = arr[i];
+          if (e && e.active && typeof e.x === 'number' && typeof e.y === 'number') {
+            var dx = e.x - cx, dy = e.y - cy;
+            if (dx * dx + dy * dy <= r2) n++;
+          }
+        }
+        return n;
+      }
+    } catch (e) {}
+    return _aliveEnemies();
   }
 
   // Ring-Position um den Altar; bevorzugt begehbar, sonst am Altar (spawnEnemy
@@ -135,9 +156,9 @@
           }
         }
         if (remaining > 0) remaining = Math.max(0, remaining - dt);
-        // Drain durch lebende Gegner.
+        // Drain nur durch Gegner IN DER ZONE um den Altar.
         if (hp > 0) {
-          var drain = _aliveEnemies() * DRAIN_PER_ENEMY_PER_SEC * dt;
+          var drain = _enemiesNearAltar(objX, objY) * DRAIN_PER_ENEMY_PER_SEC * dt;
           if (drain > 0) hp = Math.max(0, hp - drain);
         }
         if (sprite) {
@@ -155,6 +176,7 @@
       getState: function () {
         return {
           mode: 'defend', hp: Math.ceil(hp), maxHp: maxHp, x: objX, y: objY,
+          drainRadius: DRAIN_RADIUS,
           seconds: Math.ceil(remaining), remaining: remaining, failed: hp <= 0
         };
       }
