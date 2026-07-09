@@ -389,6 +389,14 @@ class CraftingScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-DOWN', () => this._scrollInventory(1));
     this.input.keyboard.on('keydown-UP', () => this._scrollInventory(-1));
 
+    // Mobile: on-screen ▲/▼ buttons (Mausrad + Pfeiltasten gibt es auf Touch
+    // nicht). Sichtbarkeit/Dimmen steuert _refreshInventoryList bei Überlauf.
+    const _scrBtnX = leftX + slotW - 20;
+    this.invUpBtn = this._createButton(_scrBtnX, this.invListY + 14, 30, 24, '▲', () => this._scrollInventory(-1));
+    this.invDownBtn = this._createButton(_scrBtnX, this.invListY + this.invRowH * this.invMaxRows - 14, 30, 24, '▼', () => this._scrollInventory(1));
+    [this.invUpBtn, this.invDownBtn].forEach((b) => { if (b && b.container) b.container.setDepth(12); });
+    this._setInvScrollButtons(false, 0, 0);
+
     // ESC key to return
     this.input.keyboard.on('keydown-ESC', this._returnToHub, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -402,6 +410,18 @@ class CraftingScene extends Phaser.Scene {
   _scrollInventory(delta) {
     this.invScrollOffset = Math.max(0, this.invScrollOffset + delta);
     this._refreshInventoryList();
+  }
+
+  // ▲/▼-Buttons ein-/ausblenden + an den Enden dimmen.
+  _setInvScrollButtons(hasOverflow, offset, maxOffset) {
+    if (this.invUpBtn && this.invUpBtn.container) {
+      this.invUpBtn.container.setVisible(hasOverflow);
+      if (this.invUpBtn.bg) this.invUpBtn.bg.setAlpha(offset > 0 ? 1 : 0.35);
+    }
+    if (this.invDownBtn && this.invDownBtn.container) {
+      this.invDownBtn.container.setVisible(hasOverflow);
+      if (this.invDownBtn.bg) this.invDownBtn.bg.setAlpha(offset < maxOffset ? 1 : 0.35);
+    }
   }
 
   // =================== Forge Background ===================
@@ -918,6 +938,7 @@ class CraftingScene extends Phaser.Scene {
     if (typeof inventory === 'undefined' || !Array.isArray(inventory)) {
       this.invEmptyText.setVisible(true);
       this.invOverflowText.setText('');
+      this._setInvScrollButtons(false, 0, 0);
       return;
     }
 
@@ -934,6 +955,7 @@ class CraftingScene extends Phaser.Scene {
     if (equipItems.length === 0) {
       this.invEmptyText.setVisible(true);
       this.invOverflowText.setText('');
+      this._setInvScrollButtons(false, 0, 0);
       return;
     }
     this.invEmptyText.setVisible(false);
@@ -945,17 +967,19 @@ class CraftingScene extends Phaser.Scene {
 
     const visible = equipItems.slice(this.invScrollOffset, this.invScrollOffset + this.invMaxRows);
 
-    // Overflow indicator with scroll position info
-    if (equipItems.length > this.invMaxRows) {
+    // Overflow indicator with scroll position info + \u25B2/\u25BC-Buttons (Touch).
+    const _hasOverflow = equipItems.length > this.invMaxRows;
+    if (_hasOverflow) {
       const above = this.invScrollOffset;
       const below = equipItems.length - (this.invScrollOffset + visible.length);
       const parts = [];
       if (above > 0) parts.push('\u25B2' + above);
       if (below > 0) parts.push('\u25BC' + below);
-      this.invOverflowText.setText(parts.join('  ') + '  (Scroll/Pfeiltasten)');
+      this.invOverflowText.setText(parts.join('  '));
     } else {
       this.invOverflowText.setText('');
     }
+    this._setInvScrollButtons(_hasOverflow, this.invScrollOffset, maxOffset);
 
     const leftX = 30;
     const slotW = (this.scale.width / 2) - 50;
