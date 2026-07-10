@@ -57,10 +57,42 @@
     return null;
   }
 
+  // Beim Betreten den Raum etwas voller machen (mehr Trash, aus dem der
+  // Rudelführer heraussticht).
+  var EXTRA_ENEMIES = 4;
+
+  // Rudelführer tot -> der Rest des Pulks löst sich auf (kurzer Fade, dann weg).
+  // Kein Kill-Reward (die verschwinden, sie werden nicht "erlegt").
+  function _clearOtherEnemies() {
+    try {
+      if (typeof window === 'undefined' || !window.enemies || typeof window.enemies.getChildren !== 'function') return;
+      window.enemies.getChildren().slice().forEach(function (e) {
+        if (!e || !e.active) return;
+        try { if (e.body && e.body.setVelocity) e.body.setVelocity(0, 0); } catch (_) {}
+        try { if (typeof e.setActive === 'function') e.setActive(false); } catch (_) {}
+        var sc = e.scene;
+        if (sc && sc.tweens && typeof sc.tweens.add === 'function') {
+          sc.tweens.add({ targets: e, alpha: 0, scale: (e.scale || 1) * 0.7, duration: 200,
+            onComplete: function () { try { e.destroy(); } catch (_) {} } });
+        } else {
+          try { e.destroy(); } catch (_) {}
+        }
+      });
+    } catch (e) {}
+  }
+
   function HuntMode() {
-    var target = null, picked = false, cleared = false;
+    var scene = null, target = null, picked = false, cleared = false, clearedOthers = false;
     return {
-      start: function () { target = null; picked = false; cleared = false; },
+      start: function (sc) {
+        scene = sc || null; target = null; picked = false; cleared = false; clearedOthers = false;
+        // Ein paar zusätzliche Gegner spawnen -> vollerer Raum.
+        try {
+          if (scene && typeof window !== 'undefined' && typeof window.spawnEnemy === 'function') {
+            for (var i = 0; i < EXTRA_ENEMIES; i++) { try { window.spawnEnemy.call(scene, 0, 0, 'enemy'); } catch (e) {} }
+          }
+        } catch (e) {}
+      },
       update: function () {
         // Ziel erst wählen, wenn die (async gespawnte) Welle da ist.
         if (!picked) {
@@ -70,6 +102,10 @@
             try { t.__huntTarget = true; } catch (e) {}
             _empowerTarget(t); // Rudelführer = zäher Mini-Boss
           }
+        } else if (!clearedOthers && (!target || !target.active)) {
+          // Rudelführer erlegt -> restlicher Pulk verschwindet.
+          clearedOthers = true;
+          _clearOtherEnemies();
         }
       },
       onWaveCleared: function () { cleared = true; },
