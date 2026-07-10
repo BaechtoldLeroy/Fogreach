@@ -26,7 +26,9 @@
   }
 
   var BASE_HP = 150;                  // Altar-HP
-  var DRAIN_PER_ENEMY_PER_SEC = 1.5;  // je lebendem Gegner
+  var DRAIN_PER_ENEMY_PER_SEC = 1.5;  // je Gegner in der Zone (Basis)
+  var DRAIN_ESCALATION = 0.2;         // +20% Gesamt-Drain je ZUSÄTZLICHEM Gegner
+                                      // im Kreis -> Swarm senkt die HP überproportional
   var BASE_SECONDS = 30;              // Ansturm-Dauer (Basis)
   var MAX_BONUS = 20;                 // +bis 20s in der Tiefe (30..50s)
   var SPAWN_INTERVAL = 4.0;           // s zwischen Nachschub-Schüben am Altar
@@ -156,10 +158,14 @@
           }
         }
         if (remaining > 0) remaining = Math.max(0, remaining - dt);
-        // Drain nur durch Gegner IN DER ZONE um den Altar.
+        // Drain nur durch Gegner IN DER ZONE — ÜBERPROPORTIONAL: je mehr Gegner
+        // gleichzeitig im Kreis, desto schneller fällt der Altar (Swarm-Druck).
         if (hp > 0) {
-          var drain = _enemiesNearAltar(objX, objY) * DRAIN_PER_ENEMY_PER_SEC * dt;
-          if (drain > 0) hp = Math.max(0, hp - drain);
+          var _n = _enemiesNearAltar(objX, objY);
+          if (_n > 0) {
+            var drain = _n * DRAIN_PER_ENEMY_PER_SEC * (1 + (_n - 1) * DRAIN_ESCALATION) * dt;
+            hp = Math.max(0, hp - drain);
+          }
         }
         if (sprite) {
           try {

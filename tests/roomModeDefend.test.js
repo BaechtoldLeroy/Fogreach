@@ -36,11 +36,11 @@ test('defend: altar drains by living-enemy presence over time', () => {
   assert.strictEqual(m.getState().hp, 150);
   assert.strictEqual(m.objectiveFailed(), false);
   setAlive(4);
-  m.update(1000); // 1s: 4 Gegner * 1.5/s = -6
-  assert.strictEqual(m.getState().hp, 144);
+  m.update(1000); // 1s: 4 * 1.5 * (1 + 3*0.2) = 9.6 -> ceil(140.4) = 141
+  assert.strictEqual(m.getState().hp, 141);
   setAlive(0);    // keine Gegner -> kein Drain
   m.update(3000);
-  assert.strictEqual(m.getState().hp, 144, 'no drain with zero enemies');
+  assert.strictEqual(m.getState().hp, 141, 'no drain with zero enemies');
 });
 
 test('defend: only enemies inside the drain zone damage the altar', () => {
@@ -54,6 +54,15 @@ test('defend: only enemies inside the drain zone damage the altar', () => {
   m.update(1000); // 2 in Zone (<=190) * 1.5/s = -3
   assert.strictEqual(m.getState().hp, 147);
   assert.strictEqual(m.getState().drainRadius, 190);
+});
+
+test('defend: more enemies in the zone drain the altar super-linearly', () => {
+  const R = globalThis.window.RoomMode;
+  const m = R.create('defend'); m.start(null);
+  globalThis.window.enemies = { countActive: () => 6 }; // 6 Gegner
+  m.update(1000);
+  // linear wäre 6*1.5 = 9; mit Eskalation 6*1.5*(1+5*0.2) = 18 -> deutlich mehr.
+  assert.strictEqual(m.getState().hp, 132); // ceil(150 - 18)
 });
 
 test('defend: altar reaching 0 -> objectiveFailed AND completes (room opens)', () => {
