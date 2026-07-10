@@ -351,8 +351,9 @@
     if (HUDv2._statsContainer) return;
     const cw = scene.cameras.main.width;
     const ch = scene.cameras.main.height;
-    const panelW = Math.min(420, cw - 40);
-    const panelH = 580;   // #60: Platz fuer die 4 Attribut-Bloecke (Wert + Erklaerung)
+    const panelW = Math.min(400, cw - 28);
+    // Responsiv: nie größer als der Bildschirm. Inhalt wird bei Überlauf gescrollt.
+    const panelH = Math.min(500, ch - 24);
     const px = cw / 2;
     const py = ch / 2;
 
@@ -362,8 +363,8 @@
     panel.fillStyle(0x10131c, 0.97).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
     panel.lineStyle(3, 0xd4a543, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
 
-    const title = scene.add.text(px, py - panelH / 2 + 14, T('hud.stats.title'), {
-      fontFamily: 'serif', fontSize: '22px', color: '#ffd166', fontStyle: 'bold'
+    const title = scene.add.text(px, py - panelH / 2 + 10, T('hud.stats.title'), {
+      fontFamily: 'serif', fontSize: '20px', color: '#ffd166', fontStyle: 'bold'
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2502);
 
     const cur = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
@@ -399,26 +400,6 @@
       [T('hud.stats.label.crit'), (crt * 100).toFixed(1) + '%'],
       [T('hud.stats.label.move_speed'), String(spd)]
     ];
-    const rowGfx = [];
-    rows.forEach((r, i) => {
-      const ry = py - panelH / 2 + 56 + i * 28;
-      const lbl = scene.add.text(px - panelW / 2 + 22, ry, r[0] + ':', {
-        fontFamily: 'monospace', fontSize: '14px', color: '#cfd0ff'
-      }).setScrollFactor(0).setDepth(2502);
-      const val = scene.add.text(px + panelW / 2 - 22, ry, r[1], {
-        fontFamily: 'monospace', fontSize: '14px', color: '#ffe28a'
-      }).setOrigin(1, 0).setScrollFactor(0).setDepth(2502);
-      rowGfx.push(lbl, val);
-    });
-
-    // #60: Attribut-Block — Wert rechts, darunter eine dimme Zeile, die erklaert,
-    // WAS das Attribut skaliert (Primaer- + Zweiteffekt, mit Live-Werten).
-    let attrY = py - panelH / 2 + 56 + rows.length * 28 + 8;
-    const attrHdr = scene.add.text(px - panelW / 2 + 22, attrY, T('hud.stats.attributes') + ':', {
-      fontFamily: 'monospace', fontSize: '14px', color: '#ffd166', fontStyle: 'bold'
-    }).setScrollFactor(0).setDepth(2502);
-    rowGfx.push(attrHdr);
-    attrY += 28;
     const attrDefs = [
       { label: T('hud.stats.label.strength'), val: _s,
         desc: '+' + _s + '% Waffenschaden · +' + (_s * 1.5).toFixed(1) + '% Krit-Schaden' },
@@ -429,32 +410,88 @@
       { label: T('hud.stats.label.focus'), val: _f,
         desc: '−' + Math.min(40, _f * 0.4).toFixed(0) + '% Cooldown · +' + (_f * 0.5).toFixed(1) + '% Fähigkeitsschaden' }
     ];
-    attrDefs.forEach((a) => {
-      const lbl = scene.add.text(px - panelW / 2 + 22, attrY, a.label + ':', {
-        fontFamily: 'monospace', fontSize: '14px', color: '#cfd0ff'
-      }).setScrollFactor(0).setDepth(2502);
-      const val = scene.add.text(px + panelW / 2 - 22, attrY, String(a.val), {
-        fontFamily: 'monospace', fontSize: '14px', color: '#ffe28a'
-      }).setOrigin(1, 0).setScrollFactor(0).setDepth(2502);
-      const desc = scene.add.text(px - panelW / 2 + 34, attrY + 16, a.desc, {
-        fontFamily: 'monospace', fontSize: '10px', color: '#8a8fb0',
-        wordWrap: { width: panelW - 60 }
-      }).setScrollFactor(0).setDepth(2502);
-      rowGfx.push(lbl, val, desc);
-      attrY += 40;
-    });
 
-    const closeBtn = scene.add.text(px, py + panelH / 2 - 26, T('hud.menu.btn.close'), {
-      fontFamily: 'monospace', fontSize: '14px', color: '#f1e9d8',
-      backgroundColor: '#3a3a3a', padding: { x: 14, y: 6 }
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(2502).setInteractive({ useHandCursor: true });
+    // Scrollbereich zwischen Titel und Close-Button.
+    const viewTop = py - panelH / 2 + 40;
+    const viewBottom = py + panelH / 2 - 40;
+    const viewH = viewBottom - viewTop;
+
+    // Inhalt kommt in einen Container -> bei Überlauf scrollbar (Maske + Leiste).
+    const content = scene.add.container(0, 0).setScrollFactor(0).setDepth(2502);
+    const ROW_H = 22;
+    let cy = viewTop + 2;
+    rows.forEach((r) => {
+      content.add(scene.add.text(px - panelW / 2 + 20, cy, r[0] + ':', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#cfd0ff'
+      }).setScrollFactor(0));
+      content.add(scene.add.text(px + panelW / 2 - 20, cy, r[1], {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffe28a'
+      }).setOrigin(1, 0).setScrollFactor(0));
+      cy += ROW_H;
+    });
+    cy += 6;
+    content.add(scene.add.text(px - panelW / 2 + 20, cy, T('hud.stats.attributes') + ':', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#ffd166', fontStyle: 'bold'
+    }).setScrollFactor(0));
+    cy += 22;
+    attrDefs.forEach((a) => {
+      content.add(scene.add.text(px - panelW / 2 + 20, cy, a.label + ':', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#cfd0ff'
+      }).setScrollFactor(0));
+      content.add(scene.add.text(px + panelW / 2 - 20, cy, String(a.val), {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffe28a'
+      }).setOrigin(1, 0).setScrollFactor(0));
+      content.add(scene.add.text(px - panelW / 2 + 32, cy + 15, a.desc, {
+        fontFamily: 'monospace', fontSize: '10px', color: '#8a8fb0',
+        wordWrap: { width: panelW - 54 }
+      }).setScrollFactor(0));
+      cy += 34;
+    });
+    const contentH = cy - (viewTop + 2);
+    const scrollMax = Math.max(0, contentH - viewH);
+
+    // Scroll nur einrichten, wenn der Inhalt wirklich überläuft.
+    let maskG = null, track = null, thumb = null, wheelHandler = null;
+    if (scrollMax > 0) {
+      maskG = scene.make.graphics();
+      if (typeof maskG.setScrollFactor === 'function') maskG.setScrollFactor(0);
+      maskG.fillStyle(0xffffff).fillRect(px - panelW / 2 + 4, viewTop, panelW - 8, viewH);
+      content.setMask(maskG.createGeometryMask());
+
+      const trackX = px + panelW / 2 - 10;
+      track = scene.add.rectangle(trackX, viewTop + viewH / 2, 6, viewH, 0x000000, 0.35)
+        .setScrollFactor(0).setDepth(2503);
+      const thumbH = Math.max(24, Math.round(viewH * (viewH / contentH)));
+      const minThumbY = viewTop + thumbH / 2, maxThumbY = viewBottom - thumbH / 2;
+      thumb = scene.add.rectangle(trackX, minThumbY, 9, thumbH, 0xd4a543, 0.9)
+        .setScrollFactor(0).setDepth(2504).setInteractive({ useHandCursor: true });
+      let scrollY = 0;
+      const applyScroll = () => {
+        scrollY = Phaser.Math.Clamp(scrollY, 0, scrollMax);
+        content.y = -scrollY;
+        const frac = scrollMax > 0 ? scrollY / scrollMax : 0;
+        thumb.y = minThumbY + frac * (maxThumbY - minThumbY);
+      };
+      scene.input.setDraggable(thumb);
+      thumb.on('drag', (p, dx, dy) => {
+        const span = Math.max(1, maxThumbY - minThumbY);
+        scrollY = Phaser.Math.Clamp((dy - minThumbY) / span, 0, 1) * scrollMax;
+        applyScroll();
+      });
+      wheelHandler = (p, over, dx, dy) => { scrollY += dy * 0.5; applyScroll(); };
+      scene.input.on('wheel', wheelHandler);
+    }
+
+    const closeBtn = scene.add.text(px, py + panelH / 2 - 22, T('hud.menu.btn.close'), {
+      fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8',
+      backgroundColor: '#3a3a3a', padding: { x: 12, y: 5 }
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2505).setInteractive({ useHandCursor: true });
 
     const close = () => {
-      try { overlay.destroy(); } catch (e) {}
-      try { panel.destroy(); } catch (e) {}
-      try { title.destroy(); } catch (e) {}
-      try { closeBtn.destroy(); } catch (e) {}
-      rowGfx.forEach(g => { try { g.destroy(); } catch (e) {} });
+      if (wheelHandler) { try { scene.input.off('wheel', wheelHandler); } catch (e) {} }
+      [overlay, panel, title, closeBtn, content, maskG, track, thumb].forEach((o) => {
+        if (o) { try { o.destroy(); } catch (e) {} }
+      });
       scene.input.keyboard.off('keydown-ESC', close);
       HUDv2._statsContainer = null;
     };
