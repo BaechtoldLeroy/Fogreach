@@ -1133,14 +1133,15 @@ function enterRoom(scene, roomId) {
     } catch (e) { /* nie den Raumaufbau brechen */ }
   }
 
-  // Feature 061: Spezialräume (survival/defend/hunt/escape) SPERREN die Treppe
-  // bis das Ziel erfüllt ist — sonst könnte man den Raum sofort verlassen und
-  // das Objektiv umgehen. lockStairs(false) oben öffnet sie für Normal-/Boss-/
-  // Espionage-Räume wie gehabt; hier für Spezialräume wieder zu. markRoomCleared
-  // (via isComplete) öffnet sie dann beim Zielabschluss.
+  // Feature 061: Spezialräume SPERREN die Treppe bis das Ziel erfüllt ist — sonst
+  // könnte man den Raum sofort verlassen und das Objektiv umgehen. AUSNAHME:
+  // Escape ist eine FLUCHT — dort ist der Ausgang bewusst von Anfang an offen
+  // (durchhalten für die Bonus-Truhe ist optional). markRoomCleared öffnet die
+  // Treppe der übrigen Modi beim Zielabschluss.
   try {
     if (window.RoomMode && typeof window.RoomMode.isSpecialRoom === 'function'
-        && window.RoomMode.isSpecialRoom()) {
+        && window.RoomMode.isSpecialRoom()
+        && window.RoomMode.activeModeId && window.RoomMode.activeModeId() !== 'escape') {
       lockStairs(scene, true);
     }
   } catch (e) { /* nie den Raumaufbau brechen */ }

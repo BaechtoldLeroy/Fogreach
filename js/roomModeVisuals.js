@@ -14,7 +14,8 @@
   var DEPTH_HUD = 1650;    // ueber dem normalen HUD
 
   var mounted = false;
-  var g = null;            // Welt-Graphics (Altar-HP-Balken, Hunt-Marker)
+  var g = null;            // UNmaskiert: Defend-Zone + Altar-HP-Balken (immer sichtbar)
+  var gMask = null;        // maskiert an die Sicht -> Hunt-Marker hinter Fog verborgen
   var banner = null, bannerInfo = null, bannerBg = null, hudText = null;
   var _prevMode = 'clear';
   var _bannerUntil = 0;
@@ -58,6 +59,7 @@
     var cw = cam ? cam.width : 1536;
     var bw = Math.min(640, cw - 40);
     g = scene.add.graphics().setDepth(DEPTH_WORLD).setScrollFactor(1);
+    gMask = scene.add.graphics().setDepth(DEPTH_WORLD).setScrollFactor(1);
     // Titel-Zeile + erklärende Info-Zeile darunter. Kasten-Höhe wird in
     // _layoutBanner dynamisch an die (evtl. umbrechende) Texthöhe angepasst.
     bannerBg = scene.add.rectangle(cw / 2, 58, bw, 62, 0x10131c, 0.9)
@@ -94,25 +96,26 @@
 
   function _unmount() {
     mounted = false;
-    [g, banner, bannerInfo, bannerBg, hudText].forEach(function (o) { if (o) { try { o.destroy(); } catch (e) {} } });
-    g = banner = bannerInfo = bannerBg = hudText = null;
+    [g, gMask, banner, bannerInfo, bannerBg, hudText].forEach(function (o) { if (o) { try { o.destroy(); } catch (e) {} } });
+    g = gMask = banner = bannerInfo = bannerBg = hudText = null;
   }
 
   function sync(scene) {
     var R = (typeof window !== 'undefined') ? window.RoomMode : null;
     if (!R || typeof R.isSpecialRoom !== 'function') { if (mounted) _unmount(); return; }
     // Stale-mount guard (Scene-Wechsel zerstoert unsere Objekte).
-    if (mounted && (!g || !g.scene)) { mounted = false; g = banner = bannerBg = hudText = null; }
+    if (mounted && (!g || !g.scene)) { mounted = false; g = gMask = banner = bannerInfo = bannerBg = hudText = null; }
 
     var special = R.isSpecialRoom();
     if (!special) { if (mounted) _unmount(); _prevMode = 'clear'; return; }
     if (!mounted) _mount(scene);
     if (!hudText) return;
 
-    // Welt-Marker (Hunt-Kreis, Defend-Zone) an die Sicht-Maske binden, sobald sie
-    // existiert — sonst wären sie DURCH den Fog of War sichtbar. Einmalig setzen.
-    if (g && !g.__vmaskApplied && scene && scene._enemyVisionMask && typeof g.setMask === 'function') {
-      try { g.setMask(scene._enemyVisionMask); g.__vmaskApplied = true; } catch (e) {}
+    // NUR den Hunt-Marker (gMask) an die Sicht-Maske binden — der Rudelführer-Kreis
+    // soll hinter dem Fog verborgen sein. Die Defend-Zone (g) bleibt UNmaskiert
+    // (gameplay-kritischer Marker, muss immer sichtbar sein). Einmalig setzen.
+    if (gMask && !gMask.__vmaskApplied && scene && scene._enemyVisionMask && typeof gMask.setMask === 'function') {
+      try { gMask.setMask(scene._enemyVisionMask); gMask.__vmaskApplied = true; } catch (e) {}
     }
 
     var modeId = R.activeModeId();
@@ -148,16 +151,19 @@
       hudText.setColor(state.failed ? '#ff7a7a' : '#ffe28a');
     }
 
-    // Welt-Marker.
+    // Welt-Marker. g = UNmaskiert (Defend), gMask = maskiert (Hunt hinter Fog).
     g.clear();
+    gMask.clear();
     if (modeId === 'defend' && typeof state.x === 'number') {
-      // Markierte Drain-Zone: nur Gegner HIER DRIN beschädigen den Altar.
+      // Deutlich markierte Drain-Zone: nur Gegner HIER DRIN beschädigen den Altar.
       if (typeof state.drainRadius === 'number' && state.drainRadius > 0) {
-        var _dz = 0.10 + 0.05 * (0.5 + 0.5 * Math.sin(now / 400));
-        g.fillStyle(0xff4a4a, state.failed ? 0.16 : _dz);
+        var _pz = 0.5 + 0.5 * Math.sin(now / 350);
+        g.fillStyle(0xff3030, state.failed ? 0.20 : (0.16 + 0.06 * _pz));
         g.fillCircle(state.x, state.y, state.drainRadius);
-        g.lineStyle(2, 0xff6a6a, 0.55);
+        g.lineStyle(3, 0xff5555, 0.9);            // kräftiger Rand
         g.strokeCircle(state.x, state.y, state.drainRadius);
+        g.lineStyle(2, 0xffb0b0, 0.35 + 0.35 * _pz); // pulsierender Innenring
+        g.strokeCircle(state.x, state.y, state.drainRadius - 6);
       }
       var frac = (state.maxHp > 0) ? Math.max(0, Math.min(1, state.hp / state.maxHp)) : 0;
       var bw = 46, bh = 6, bx = state.x - bw / 2, by = state.y - 34;
@@ -167,10 +173,10 @@
       g.fillStyle(col, 1); g.fillRect(bx, by, bw * frac, bh);
     } else if (modeId === 'hunt' && state.targetAlive && typeof state.x === 'number') {
       var pulse = 0.5 + 0.5 * Math.sin(now / 180);
-      g.lineStyle(3, 0xff5a5a, 0.6 + 0.4 * pulse);
-      g.strokeCircle(state.x, state.y, 26 + pulse * 4);
-      g.fillStyle(0xff5a5a, 0.9);
-      g.beginPath(); g.moveTo(state.x, state.y - 40); g.lineTo(state.x - 7, state.y - 52); g.lineTo(state.x + 7, state.y - 52); g.closePath(); g.fillPath();
+      gMask.lineStyle(3, 0xff5a5a, 0.6 + 0.4 * pulse);
+      gMask.strokeCircle(state.x, state.y, 26 + pulse * 4);
+      gMask.fillStyle(0xff5a5a, 0.9);
+      gMask.beginPath(); gMask.moveTo(state.x, state.y - 40); gMask.lineTo(state.x - 7, state.y - 52); gMask.lineTo(state.x + 7, state.y - 52); gMask.closePath(); gMask.fillPath();
     }
   }
 

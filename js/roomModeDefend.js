@@ -32,8 +32,8 @@
   var SPAWN_INTERVAL = 4.0;           // s zwischen Nachschub-Schüben am Altar
   var SPAWN_BATCH = 2;                // Gegner pro Schub
   var MAX_CONCURRENT = 8;             // Deckel gleichzeitiger Gegner
-  var RING_MIN = 180, RING_MAX = 300; // Spawn-Ring um den Altar
-  var DRAIN_RADIUS = 300;             // NUR Gegner in diesem Radius drainen den Altar
+  var RING_MIN = 150, RING_MAX = 240; // Spawn-Ring um den Altar (in die Drain-Zone)
+  var DRAIN_RADIUS = 190;             // NUR Gegner in diesem Radius drainen den Altar (kleiner)
   var DEPTH_TEX = 'roommode_defend_altar';
 
   function _depthSeconds() {

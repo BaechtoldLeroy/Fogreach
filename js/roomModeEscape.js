@@ -12,14 +12,14 @@
 
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
-      'roommode.escape.banner': 'Ausbruch!',
-      'roommode.escape.info': 'Der Ausgang ist versiegelt — überlebe {seconds}s, dann brichst du aus.',
-      'roommode.escape.hud': 'Ausbruch in {seconds}s'
+      'roommode.escape.banner': 'Flucht!',
+      'roommode.escape.info': 'Der Ausgang ist offen — flieh jederzeit! Wer {seconds}s im Ansturm durchhält, erhält eine Bonus-Truhe.',
+      'roommode.escape.hud': 'Bonus in {seconds}s'
     });
     window.i18n.register('en', {
-      'roommode.escape.banner': 'Breakout!',
-      'roommode.escape.info': 'The exit is sealed — survive {seconds}s, then you break out.',
-      'roommode.escape.hud': 'Breakout in {seconds}s'
+      'roommode.escape.banner': 'Flee!',
+      'roommode.escape.info': 'The exit is open — flee anytime! Hold out {seconds}s in the onslaught for a bonus chest.',
+      'roommode.escape.hud': 'Bonus in {seconds}s'
     });
   }
 

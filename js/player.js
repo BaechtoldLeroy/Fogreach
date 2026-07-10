@@ -2534,10 +2534,10 @@ function shadowCharge() {
 
   var dashDistance = (typeof getDashSlashDistance === 'function') ? getDashSlashDistance() : 220;
   var dashDuration = (typeof getDashSlashDuration === 'function') ? getDashSlashDuration() : 220;
-  // Linien-Sturm: weitere Reichweite seitlich der Linie als normaler dashSlash,
-  // damit "alle entlang des Pfades" getroffen werden (kein enger Kegel).
-  var lineRadius = 70;
-  var knockback = 220;
+  // Linien-Sturm: trifft Gegner seitlich der Dash-Linie. Bewusst schmaler als
+  // früher (70), damit der Ansturm keine übergroße AoE-Schneise mehr schlägt.
+  var lineRadius = 45;
+  var knockback = 190;
   var dashSpeed = dashDistance / (dashDuration / 1000);
 
   if (player.setTint) player.setTint(0x66ccff);
@@ -2563,7 +2563,7 @@ function shadowCharge() {
       if (proj > dashDistance + lineRadius) return;
 
       chargeHits.add(enemy);
-      var res = dealDamageToEnemy(scene, enemy, 1.1 * dmgMult, 'charge');
+      var res = dealDamageToEnemy(scene, enemy, 0.8 * dmgMult, 'charge');
       handleEnemyHit(scene, enemy, {
         tint: res && res.isCrit ? 0xfff2a6 : 0x66ccff,
         duration: res && res.isCrit ? 180 : 120
