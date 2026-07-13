@@ -860,13 +860,13 @@
     } catch (err) {
       console.warn('[AbilitySystem] SkillTree reset failed', err);
     }
-    // Test default: every new run starts with 20 Eisenbrocken so the forge
-    // is immediately usable. Done here (instead of in inventory.js) so that
-    // it ALSO applies to existing saves that get a "neues Spiel" click.
+    // Neues Spiel startet OHNE Eisenbrocken (werden im Dungeon gefunden/zerlegt).
+    // Hier gesetzt (statt in inventory.js), damit es auch beim "neues Spiel"-Klick
+    // auf bestehende Saves greift.
     if (window.materialCounts) {
-      window.materialCounts.MAT = 20;
+      window.materialCounts.MAT = 0;
     } else {
-      window.materialCounts = { MAT: 20 };
+      window.materialCounts = { MAT: 0 };
     }
     // FR-028 (WP04): seed 2 Minor health potions in the first empty inventory slot
     if (Array.isArray(window.inventory)) {

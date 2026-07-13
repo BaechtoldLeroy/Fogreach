@@ -108,12 +108,12 @@ test('save → mutate → load round-trips state', () => {
   assert.strictEqual(reloaded.getActiveLoadout().slot1, 'whirlwind');
 });
 
-test('resetForNewGame seeds 20 Eisenbrocken default', () => {
+test('resetForNewGame startet ohne Eisenbrocken (MAT = 0)', () => {
   const sys = freshSystem();
-  // Pre-seed an artificially low MAT count
-  globalThis.window.materialCounts = { MAT: 0 };
+  // Pre-seed a nonzero MAT count to prove reset zeroes it.
+  globalThis.window.materialCounts = { MAT: 99 };
   sys.resetForNewGame();
-  assert.strictEqual(globalThis.window.materialCounts.MAT, 20);
+  assert.strictEqual(globalThis.window.materialCounts.MAT, 0);
 });
 
 // === 060 Strang KETTEN — neue Skill-Tree-Fähigkeiten ===

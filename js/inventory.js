@@ -151,9 +151,9 @@ if (!materialCounts || typeof materialCounts !== 'object') {
   materialCounts = {};
 }
 if (typeof materialCounts.MAT !== 'number') {
-  // Test default: start every new run with 20 Eisenbrocken so the forge is
-  // immediately usable for QA. Saved games override this via storage.js.
-  materialCounts.MAT = 20;
+  // Start ohne Eisenbrocken — sie werden im Dungeon gefunden/zerlegt.
+  // Gespeicherte Spielstände überschreiben das via storage.js.
+  materialCounts.MAT = 0;
 }
 if (typeof materialCounts.PORTAL_SCROLL !== 'number') {
   materialCounts.PORTAL_SCROLL = 2; // start with 2 free scrolls
