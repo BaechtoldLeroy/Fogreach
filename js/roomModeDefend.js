@@ -176,6 +176,8 @@
           } catch (e) {}
         }
       },
+      // Räumt den Altar-Sprite auf (Raum-/Modus-Wechsel) — sonst bleibt er hängen.
+      stop: function () { if (sprite) { try { sprite.destroy(); } catch (e) {} sprite = null; } },
       // Zeit-basiert: Ansturm überstanden ODER Altar gefallen -> Raum öffnet.
       isComplete: function () { return remaining <= 0 || hp <= 0; },
       objectiveFailed: function () { return hp <= 0; },

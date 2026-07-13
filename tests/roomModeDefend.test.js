@@ -56,6 +56,26 @@ test('defend: only enemies inside the drain zone damage the altar', () => {
   assert.strictEqual(m.getState().drainRadius, 190);
 });
 
+test('defend: stop() destroys the altar sprite (no leak into next room)', () => {
+  const R = globalThis.window.RoomMode;
+  let destroyed = false;
+  const mockSprite = {
+    setDepth() { return this; }, setScrollFactor() { return this; },
+    setTint() { return this; }, clearTint() { return this; }, setAlpha() { return this; },
+    destroy() { destroyed = true; }
+  };
+  const scene = {
+    textures: { exists: () => true },
+    add: { sprite: () => mockSprite },
+    physics: { world: { bounds: { centerX: 0, centerY: 0 } } },
+    isPointAccessible: () => true
+  };
+  const m = R.create('defend'); m.start(scene);
+  assert.strictEqual(typeof m.stop, 'function');
+  m.stop();
+  assert.strictEqual(destroyed, true, 'Altar-Sprite beim stop() zerstört');
+});
+
 test('defend: more enemies in the zone drain the altar super-linearly', () => {
   const R = globalThis.window.RoomMode;
   const m = R.create('defend'); m.start(null);

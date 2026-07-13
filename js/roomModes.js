@@ -74,6 +74,9 @@
 
   // --- Lifecycle -----------------------------------------------------------
   function beginRoom(scene, info) {
+    // Alten Modus aufräumen (z. B. Defend-Altar-Sprite), sonst bleibt er in den
+    // nächsten Raum hängen.
+    try { if (_current && _current.stop) _current.stop(); } catch (e) {}
     _ctx = info || {};
     _completedFired = false;
     var id = _forcedMode(_ctx) || selectForRoom(_ctx, Math.random);
@@ -134,7 +137,10 @@
     } catch (e) {}
     return 1;
   }
-  function reset() { _current = null; _ctx = null; _completedFired = false; }
+  function reset() {
+    try { if (_current && _current.stop) _current.stop(); } catch (e) {}
+    _current = null; _ctx = null; _completedFired = false;
+  }
 
   // --- ClearMode: kapselt das heutige "Welle clearen" (verlustfrei) --------
   function ClearMode() {
