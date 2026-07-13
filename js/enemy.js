@@ -1,5 +1,32 @@
 // enemy.js
 
+// Resilienz: js/ai/steering.js lädt normal VOR enemy.js und setzt window.Steering.
+// Wenn dieser Load fehlschlägt (transientes 503 von Pages, Tracking-Prevention,
+// Adblock …), war der Steering-Global weg -> handleEnemies warf jeden Frame
+// "Steering is not defined" und der Dungeon war unspielbar. Fallback-Shim: echte
+// seek/arrive-Zusteuerung (Gegner jagen weiter den Spieler), Flocking/Avoidance
+// degradieren zu No-Ops. Nur aktiv, wenn das echte Steering fehlt.
+if (typeof window !== 'undefined' && !window.Steering && typeof Phaser !== 'undefined') {
+  const _sv = (x = 0, y = 0) => new Phaser.Math.Vector2(x, y);
+  window.Steering = {
+    v: _sv,
+    limit: (vec, max) => { if (vec.lengthSq() > max * max) vec.setLength(max); return vec; },
+    seek: (from, to, maxSpeed) => _sv(to.x - from.x, to.y - from.y).normalize().scale(maxSpeed),
+    arrive: (from, to, maxSpeed, arriveRadius = 120) => {
+      const d = _sv(to.x - from.x, to.y - from.y);
+      const dist = d.length();
+      if (dist === 0) return _sv();
+      const t = Phaser.Math.Clamp(dist / arriveRadius, 0, 1);
+      return d.scale((t * maxSpeed) / dist);
+    },
+    separation: () => _sv(),
+    cohesion: () => _sv(),
+    obstacleAvoidance: () => _sv(),
+    hasLineOfSight: () => true
+  };
+  try { console.warn('[enemy] Steering-Fallback aktiv — js/ai/steering.js nicht geladen'); } catch (e) {}
+}
+
 const ENEMY_SPAWN_MARGIN = 32;
 const ENEMY_SPAWN_HALF_SIZE = 24;
 const DEFAULT_RANGED_ATTACK_RANGE = 520;
