@@ -24,7 +24,7 @@
 
   var BASE_SECONDS = 60;      // Grunddauer
   var MAX_SECONDS = 120;      // Deckel bei großer Tiefe
-  var SPAWN_INTERVAL = 5.0;   // s zwischen Nachschub-Schüben (entschärft von 3s)
+  var SPAWN_INTERVAL = 2.5;   // s zwischen Nachschub-Schüben (halbiert -> schwerer)
   var SPAWN_BATCH = 2;        // Gegner pro Schub
   var MAX_CONCURRENT = 14;    // Deckel gleichzeitiger Gegner (Anti-Überfüllung)
   var HP_MULT = 2;            // Gegner-HP im Überlebensmodus (× Basis) — mehr Druck
