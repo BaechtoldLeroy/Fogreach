@@ -13,6 +13,8 @@ if (window.i18n) {
     'hub.npc.aldric.name': 'Ratsherr Aldric',
     'hub.npc.elara.name': 'Elara',
     'hub.npc.harren.name': 'Bürgermeister Harren',
+    'hub.npc.klerus_priester.name': 'Priester des Klerus',
+    'hub.npc.stadtwache.name': 'Hauptmann der Stadtwache',
     // Default greeting lines (shown when no quest is active). Quest-aware
     // lines come from storySystem NPC_DIALOGUE.
     'hub.npc.aldric.line.0': 'Willkommen zurueck, Archivschmied. Der Rat schaetzt deine Dienste.',
@@ -33,6 +35,8 @@ if (window.i18n) {
     'hub.npc.aldric.name': 'Councillor Aldric',
     'hub.npc.elara.name': 'Elara',
     'hub.npc.harren.name': 'Mayor Harren',
+    'hub.npc.klerus_priester.name': 'Priest of the Clergy',
+    'hub.npc.stadtwache.name': 'City Watch Captain',
     'hub.npc.aldric.line.0': 'Welcome back, Archivesmith. The council values your service.',
     'hub.npc.aldric.line.1': 'The side hall is safe as long as the council watches. Do not forget that.',
     'hub.npc.aldric.line.2': 'You have talent. The council could use someone like you — in the long run.',
