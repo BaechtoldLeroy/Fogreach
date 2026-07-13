@@ -178,7 +178,13 @@
     if (window.playerProjectiles && !scene._doorPlayerProjCollider) {
       scene._doorPlayerProjCollider = scene.physics.add.collider(
         window.playerProjectiles, scene._doorGroup, function (proj) {
-          if (proj && proj.active) proj.destroy();
+          if (!proj || !proj.active) return;
+          // Wirbelklingen (twistingBlades) prallt an geschlossenen Türen AB und
+          // kehrt zurück — wie an Wänden (twStartReturn), damit sie nicht mehr
+          // durch Türen fliegt. Andere Projektile werden an der Tür zerstört.
+          var sr = (typeof proj.getData === 'function') ? proj.getData('twStartReturn') : null;
+          if (typeof sr === 'function') sr();
+          else proj.destroy();
         }, doorProcessCb
       );
     }

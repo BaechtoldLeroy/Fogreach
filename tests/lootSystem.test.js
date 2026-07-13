@@ -774,18 +774,18 @@ function freshShopSystem() {
 test('_computeRerollCost: tier 0 scales at base * (1 + iLevel*0.05)', () => {
   const sys = freshShopSystem();
   const item = { tier: 0, iLevel: 1 };
-  // 50 * 1 * (1 + 0.05) = 52.5 -> 53
-  assert.strictEqual(sys._computeRerollCost(item), 53);
+  // 100 * 1 * (1 + 0.05) = 105 (Basis 100, Mara-Verdopplung)
+  assert.strictEqual(sys._computeRerollCost(item), 105);
 });
 
 test('_computeRerollCost: higher tiers use the tier multiplier [1,2,4,8]', () => {
   const sys = freshShopSystem();
   const base = { iLevel: 10 };
-  // 1 + 10*0.05 = 1.5
-  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 0 }), Math.round(50 * 1 * 1.5));
-  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 1 }), Math.round(50 * 2 * 1.5));
-  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 2 }), Math.round(50 * 4 * 1.5));
-  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 3 }), Math.round(50 * 8 * 1.5));
+  // 1 + 10*0.05 = 1.5 ; Basis 100
+  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 0 }), Math.round(100 * 1 * 1.5));
+  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 1 }), Math.round(100 * 2 * 1.5));
+  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 2 }), Math.round(100 * 4 * 1.5));
+  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 3 }), Math.round(100 * 8 * 1.5));
 });
 
 test('_computeRerollCost: never returns less than 1', () => {

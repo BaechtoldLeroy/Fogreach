@@ -1185,7 +1185,8 @@ if (window.i18n) {
 
   function getShopRerollCost() {
     const n = Math.max(0, _shopRerollCount | 0);
-    return Math.max(1, Math.round(SHOP_REROLL_BASE_COST * (1 + n * 0.5)));
+    // ×2 — "Lager auffrischen" bei Mara doppelt so teuer.
+    return Math.max(1, Math.round(SHOP_REROLL_BASE_COST * 2 * (1 + n * 0.5)));
   }
 
   // Bezahlt den aktuellen Reroll-Preis und ersetzt itemStock durch eine frische
@@ -1315,7 +1316,8 @@ if (window.i18n) {
     const tierMult = [1, 2, 4, 8];
     const t = Math.max(0, Math.min(3, item.tier));
     const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
-    const base = 50 * tierMult[t] * (1 + iLevel * 0.05);
+    // Basis 100 (vorher 50) — Reroll bei Mara doppelt so teuer.
+    const base = 100 * tierMult[t] * (1 + iLevel * 0.05);
     return Math.max(1, Math.round(base * (locked ? REROLL_LOCK_SURCHARGE : 1)));
   }
 
