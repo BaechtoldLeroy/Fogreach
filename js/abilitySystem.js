@@ -171,6 +171,7 @@
       type: 'tap',
       icon: '\u{1FA83}',
       color: 0xff8800,
+      cooldownMs: 7000,
       activate(scene) {
         if (typeof window.castTwistingBlades === 'function') {
           window.castTwistingBlades.call(scene);
