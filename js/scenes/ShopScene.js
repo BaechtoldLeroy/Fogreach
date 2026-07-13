@@ -30,12 +30,13 @@
       'shop.toast.scroll_bought': 'Portalrolle gekauft',
       'shop.potion.heal_pct': '+{pct}% MaxHP über 3s',
       'shop.toast.not_enough_gold': 'Nicht genug Gold',
+      'shop.toast.not_enough_mat': 'Nicht genug Eisenbrocken',
       'shop.toast.inventory_full': 'Inventar voll',
       'shop.toast.bought': 'Gekauft: {name}',
       'shop.reroll.empty': 'Keine reroll-baren Items im Inventar.',
       'shop.reroll.header_select': 'Wähle ein Item:',
       'shop.reroll.header_selected': 'Ausgewähltes Item:',
-      'shop.reroll.cost': 'Reroll-Kosten: {cost} Gold',
+      'shop.reroll.cost': 'Reroll: {cost} Gold + {mat} Eisenbrocken',
       'shop.reroll.btn': 'Reroll',
       'shop.reroll.cancel': 'Anderes Item',
       'shop.reroll.lock_hint': 'Klick auf einen Affix, um ihn zu behalten (Aufpreis)',
@@ -65,12 +66,13 @@
       'shop.toast.scroll_bought': 'Portal scroll bought',
       'shop.potion.heal_pct': '+{pct}% MaxHP over 3s',
       'shop.toast.not_enough_gold': 'Not enough gold',
+      'shop.toast.not_enough_mat': 'Not enough iron chunks',
       'shop.toast.inventory_full': 'Inventory full',
       'shop.toast.bought': 'Bought: {name}',
       'shop.reroll.empty': 'No re-rollable items in inventory.',
       'shop.reroll.header_select': 'Choose an item:',
       'shop.reroll.header_selected': 'Selected item:',
-      'shop.reroll.cost': 'Reroll cost: {cost} gold',
+      'shop.reroll.cost': 'Reroll: {cost} gold + {mat} iron chunks',
       'shop.reroll.btn': 'Reroll',
       'shop.reroll.cancel': 'Other item',
       'shop.reroll.lock_hint': 'Click an affix to keep it (surcharge)',
@@ -863,7 +865,9 @@
         const cost = (window.LootSystem && typeof window.LootSystem._computeRerollCost === 'function')
           ? window.LootSystem._computeRerollCost(item, isLockedNow)
           : 50;
-        const costText = this.add.text(px, py + panelH / 2 - 88, _SHOP_T('shop.reroll.cost', { cost: cost }), {
+        const matCost = (window.LootSystem && typeof window.LootSystem._computeRerollMatCost === 'function')
+          ? window.LootSystem._computeRerollMatCost(item) : 0;
+        const costText = this.add.text(px, py + panelH / 2 - 88, _SHOP_T('shop.reroll.cost', { cost: cost, mat: matCost }), {
           fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(costText);
@@ -918,6 +922,17 @@
       if (!this.selectedRerollItem) return;
       if (!window.LootSystem || typeof window.LootSystem.rerollItem !== 'function') {
         this._showToast(_SHOP_T('shop.toast.reroll_unavailable'));
+        return;
+      }
+      // Eisenbrocken zuerst prüfen, damit die richtige Fehlermeldung erscheint
+      // (rerollItem prüft es intern nochmal, aber ohne Meldung).
+      const matCost = (typeof window.LootSystem._computeRerollMatCost === 'function')
+        ? window.LootSystem._computeRerollMatCost(this.selectedRerollItem) : 0;
+      const haveMat = (typeof window.getMaterialCount === 'function')
+        ? window.getMaterialCount('MAT')
+        : ((window.materialCounts && typeof window.materialCounts.MAT === 'number') ? window.materialCounts.MAT : 0);
+      if (haveMat < matCost) {
+        this._showToast(_SHOP_T('shop.toast.not_enough_mat'));
         return;
       }
       const ok = window.LootSystem.rerollItem(this.selectedRerollItem, cost, lockIndex);

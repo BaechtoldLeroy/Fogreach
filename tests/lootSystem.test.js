@@ -758,7 +758,7 @@ function freshShopSystem() {
   delete globalThis.window.LootSystem;
   globalThis.window.equipment = {};
   globalThis.window.inventory = new Array(10).fill(null);
-  globalThis.window.materialCounts = { GOLD: 0 };
+  globalThis.window.materialCounts = { GOLD: 0, MAT: 999 };
   delete globalThis.window.dungeonRun;
   delete globalThis.window.currentRunSeed;
   globalThis.window.currentWave = 3;
@@ -852,6 +852,23 @@ test('rerollItem: fails and returns false when gold is insufficient', () => {
   assert.deepStrictEqual(item.affixes, originalAffixes, 'affixes unchanged on failure');
 });
 
+test('rerollItem: costs iron chunks — fails without, deducts with', () => {
+  const sys = freshShopSystem();
+  const item = sys.rollItem('WPN_EISENKLINGE', 10, 3); // tier 3 -> matCost 1+3 = 4
+  assert.strictEqual(sys._computeRerollMatCost(item), 4);
+  const cost = sys._computeRerollCost(item);
+  // Genug Gold, KEINE Eisenbrocken -> Fehlschlag, nichts abgezogen.
+  globalThis.window.materialCounts = { GOLD: 1000000, MAT: 0 };
+  const before = item.affixes.slice();
+  assert.strictEqual(sys.rerollItem(item, cost), false);
+  assert.strictEqual(sys.getGold(), 1000000, 'kein Gold ohne Eisenbrocken');
+  assert.deepStrictEqual(item.affixes, before, 'Affixe unverändert');
+  // Genug von beidem -> Reroll klappt, 4 Eisenbrocken abgezogen.
+  globalThis.window.materialCounts = { GOLD: 1000000, MAT: 10 };
+  assert.strictEqual(sys.rerollItem(item, cost), true);
+  assert.strictEqual(globalThis.window.materialCounts.MAT, 6, '4 Eisenbrocken abgezogen');
+});
+
 test('rerollItem: returns false for null / invalid item', () => {
   const sys = freshShopSystem();
   sys.grantGold(10000);
@@ -892,7 +909,7 @@ test('black market: locked below maxDepth 4 -> empty stock + blindBuy locked (#5
   const state = sys.getOrCreateShopState('run-locked');
   assert.strictEqual(state.itemStock.length, 0, 'no visible stock while locked');
   // Blindkauf teilt das Gating — auch mit Gold + explizitem depth-override gesperrt.
-  globalThis.window.materialCounts = { GOLD: 1000000 };
+  globalThis.window.materialCounts = { GOLD: 1000000, MAT: 999 };
   const res = sys.blindBuy(3);
   assert.strictEqual(res.ok, false);
   assert.strictEqual(res.reason, 'locked');
@@ -918,7 +935,7 @@ test('blindBuy without override rolls/prices at maxDepth (#51)', () => {
   const sys = freshShopSystem();
   globalThis.localStorage.setItem('demonfall_maxDepth', '12');
   assert.strictEqual(sys.getBlindBuyPrice(), (80 + 12 * 30) * 2, 'Blindkauf-Preis auf maxDepth (×2 Mara)');
-  globalThis.window.materialCounts = { GOLD: 1000000 };
+  globalThis.window.materialCounts = { GOLD: 1000000, MAT: 999 };
   const res = sys.blindBuy();
   assert.strictEqual(res.ok, true);
   assert.strictEqual(res.item.iLevel, 12, 'Blindkauf-Item rollt auf maxDepth');

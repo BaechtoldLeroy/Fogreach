@@ -1321,6 +1321,24 @@ if (window.i18n) {
     return Math.max(1, Math.round(base * (locked ? REROLL_LOCK_SURCHARGE : 1)));
   }
 
+  // Eisenbrocken-Kosten eines Rerolls (zusätzlich zum Gold): tier-skaliert 1..4.
+  function _computeRerollMatCost(item) {
+    if (!item || typeof item.tier !== 'number') return 0;
+    return 1 + Math.max(0, Math.min(3, item.tier | 0));
+  }
+
+  // Aktuell verfügbare Eisenbrocken (bevorzugt die Inventar-Helfer, sonst direkt).
+  function _matCount() {
+    if (typeof window === 'undefined') return 0;
+    if (typeof window.getMaterialCount === 'function') return window.getMaterialCount('MAT') || 0;
+    return (window.materialCounts && typeof window.materialCounts.MAT === 'number') ? window.materialCounts.MAT : 0;
+  }
+  function _spendMat(amount) {
+    if (typeof window === 'undefined' || amount <= 0) return;
+    if (typeof window.changeMaterialCount === 'function') { window.changeMaterialCount('MAT', -amount); return; }
+    if (window.materialCounts) window.materialCounts.MAT = Math.max(0, (window.materialCounts.MAT || 0) - amount);
+  }
+
   // Wuerfelt die Affixe eines Items neu. #51 G3: mit optionalem lockIndex bleibt
   // GENAU ein Affix erhalten; die uebrigen (count-1) werden neu gerollt (ohne den
   // gesperrten Affix zu duplizieren). Sperren lohnt erst ab tier 2 (>=2 Affixe).
@@ -1330,7 +1348,12 @@ if (window.i18n) {
     const hasLock = (typeof lockIndex === 'number' && Array.isArray(item.affixes)
       && lockIndex >= 0 && lockIndex < item.affixes.length && count >= 2);
     const expected = (typeof costGold === 'number') ? costGold : _computeRerollCost(item, hasLock);
+    // Reroll kostet Gold UND Eisenbrocken. Erst Material prüfen (nichts abziehen),
+    // dann Gold; nur wenn beides reicht, beides abbuchen (atomar).
+    const matCost = _computeRerollMatCost(item);
+    if (_matCount() < matCost) return false;
     if (!spendGold(expected)) return false;
+    _spendMat(matCost);
     const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
     if (hasLock) {
       const locked = item.affixes[lockIndex];
@@ -1487,6 +1510,7 @@ if (window.i18n) {
     isBlackMarketUnlocked: isBlackMarketUnlocked,
     rerollItem: rerollItem,
     _computeRerollCost: _computeRerollCost,
+    _computeRerollMatCost: _computeRerollMatCost,
     migrateSave: migrateSave,
 
     // internal cache handle exposed for tests (read-only by convention)
