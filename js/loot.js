@@ -263,26 +263,24 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
   const roll = Phaser.Math.Between(0, 100);
 
   if (maybeItem || roll < (1 + lootChanceBonus)) {
-    const baseItem = maybeItem ? { ...maybeItem } : randomLoot();
+    // KEIN Tier-Bump mehr. Elites droppen normale Qualität (nur höhere Drop-Rate).
+    // Minibosse rollen mit einem Qualitäts-BIAS -> erhöhte CHANCE auf Magic/Rare/
+    // Legendär (kein garantierter +Tier-Sprung).
+    const MINIBOSS_QUALITY_BIAS = 3;
+    const baseItem = maybeItem
+      ? { ...maybeItem }
+      : randomLoot(isMiniBossDrop ? MINIBOSS_QUALITY_BIAS : 1);
     let tier = (typeof baseItem?.tier === 'number') ? baseItem.tier : 0;
-    // Elite enemies: bump tier by 1; Mini-bosses: by 2 (cap at 3 = Legendary)
-    if (isEliteDrop && tier < 3) {
-      tier = Math.min(3, tier + 1);
-      baseItem.tier = tier;
-    } else if (isMiniBossDrop && tier < 3) {
-      tier = Math.min(3, tier + 2);
-      baseItem.tier = tier;
-    }
     let item;
     if (maybeItem) {
       // Explicit drop (quest reward / chest / boss table): keep legacy shaping
       // incl. the tier stat-cap so hand-authored items stay within budget.
       item = normalizeItemStatsForTier(scaleItemForDifficulty(baseItem, Math.max(1, currentWave)), tier);
     } else {
-      // Unified rollItem drop (#36 Phase 2b): if an elite/miniboss tier bump
-      // raised the tier, re-roll affixes so the affix count matches the new
-      // tier. NO stat-cap — ITEM_BASES items carry intentional multi-stat
-      // budgets that normalizeItemStatsForTier would destroy.
+      // Unified rollItem drop (#36 Phase 2b): rollItem rollt Affixe passend zum
+      // Tier, daher greift die Re-Roll-Absicherung normalerweise nicht mehr (kein
+      // Tier-Bump). NO stat-cap — ITEM_BASES-Items haben absichtliche Multi-Stat-
+      // Budgets, die normalizeItemStatsForTier zerstören würde.
       item = baseItem;
       const affixCount = Array.isArray(item.affixes) ? item.affixes.length : 0;
       if (item.tier > affixCount && item.type
@@ -599,7 +597,7 @@ function addBoostsToItem(item, boosts, depth) {
   normalizeItemStatsForTier(item, tier);
 }
 
-function randomLoot() {
+function randomLoot(qualityBias) {
   const depth = Math.max(1, currentWave);
   const roll = Phaser.Math.Between(1, 100);
 
@@ -611,7 +609,9 @@ function randomLoot() {
   if (roll <= 77) {
     if (window.LootSystem && typeof window.LootSystem.rollItem === 'function') {
       try {
-        const it = window.LootSystem.rollItem(null, depth);
+        // qualityBias (>1) hebt die Magic/Rare/Legendär-Chancen an — genutzt für
+        // Miniboss-Drops (erhöhte Qualitäts-CHANCE statt festem Tier-Bump).
+        const it = window.LootSystem.rollItem(null, depth, undefined, qualityBias);
         if (it) return _applyDifficultyToRolledItem(it, depth);
       } catch (e) { /* fall through to fallback */ }
     }
