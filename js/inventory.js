@@ -355,9 +355,14 @@ function getEquippedLevelForType(type) {
 
 function isItemUpgrade(item) {
   if (!item || !UPGRADEABLE_TYPES.has(item.type)) return false;
-  const itemLevel = getItemLevel(item);
-  const equippedLevel = getEquippedLevelForType(item.type);
-  return itemLevel > equippedLevel;
+  // #56: Der grüne "Upgrade"-Indikator basiert auf der ITEM-STÄRKE
+  // (computeItemPower: Basis + Affixe + Raritaet), nicht mehr auf dem rohen
+  // Item-Level. So markiert er ein Item nur, wenn es wirklich stärker ist als
+  // das aktuell in diesem Slot ausgeruestete.
+  const equipped = (typeof equipment === 'object' && equipment) ? equipment[item.type] : null;
+  const itemPower = computeItemPower(item);
+  const equippedPower = equipped ? computeItemPower(equipped) : 0;
+  return itemPower > equippedPower;
 }
 
 function applySlotHoverTint(target, item) {
