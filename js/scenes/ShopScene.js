@@ -555,6 +555,8 @@
       const t = Math.max(0, Math.min(3, item.tier || 0));
       const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
       let base = Math.max(1, Math.round(tierMul[t] * (1 + iLevel * 0.1)));
+      // Mara: alle Käufe doppelt so teuer (gilt NICHT für den Dungeon-Händler).
+      if (!this.isDungeonMerchant) base = base * 2;
       // Dungeon merchant offers 30% discount
       if (this.isDungeonMerchant) base = Math.max(1, Math.round(base * 0.7));
       // Printing-House edict: hub-side shop discount (run-scoped, only at Mara, not at dungeon merchant)
@@ -638,8 +640,8 @@
       const rowH = 48;
       const defs = (window.LootSystem && window.LootSystem.POTION_DEFS) || [];
 
-      // Portal scroll row at the top
-      const scrollPrice = 75;
+      // Portal scroll row at the top. Mara: doppelter Preis (Dungeon-Händler nicht).
+      const scrollPrice = this.isDungeonMerchant ? 75 : 150;
       const scrollY = startY;
       const scrollRowBg = this.add.rectangle(px, scrollY + rowH / 2, panelW - 30, rowH - 4, 0x2a2a2a)
         .setStrokeStyle(1, 0x444444).setScrollFactor(0).setDepth(2002);
@@ -702,7 +704,8 @@
         }).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(healText);
 
-        let potionPrice = this.isDungeonMerchant ? Math.max(1, Math.round(def.goldCost * 0.7)) : def.goldCost;
+        // Mara: doppelter Preis; Dungeon-Händler 30% Rabatt.
+        let potionPrice = this.isDungeonMerchant ? Math.max(1, Math.round(def.goldCost * 0.7)) : (def.goldCost * 2);
         const _phPot = (typeof window !== 'undefined') ? window.printingBuffs : null;
         if (_phPot && !this.isDungeonMerchant && typeof _phPot.shopPriceMult === 'number' && _phPot.shopPriceMult > 0) {
           potionPrice = Math.max(1, Math.round(potionPrice * _phPot.shopPriceMult));

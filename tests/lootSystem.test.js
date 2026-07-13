@@ -917,7 +917,7 @@ test('black market: unlocks at maxDepth 4 and rolls at maxDepth-3 (#51)', () => 
 test('blindBuy without override rolls/prices at maxDepth (#51)', () => {
   const sys = freshShopSystem();
   globalThis.localStorage.setItem('demonfall_maxDepth', '12');
-  assert.strictEqual(sys.getBlindBuyPrice(), 80 + 12 * 30, 'Blindkauf-Preis auf maxDepth');
+  assert.strictEqual(sys.getBlindBuyPrice(), (80 + 12 * 30) * 2, 'Blindkauf-Preis auf maxDepth (×2 Mara)');
   globalThis.window.materialCounts = { GOLD: 1000000 };
   const res = sys.blindBuy();
   assert.strictEqual(res.ok, true);
@@ -932,7 +932,7 @@ test('getBlindBuyPrice scales with depth', () => {
   const p3 = sys.getBlindBuyPrice(3);
   const p10 = sys.getBlindBuyPrice(10);
   assert.ok(p10 > p3, 'deeper -> pricier');
-  assert.strictEqual(p3, 80 + 3 * 30);   // BASE + depth*PER_DEPTH
+  assert.strictEqual(p3, (80 + 3 * 30) * 2);   // (BASE + depth*PER_DEPTH) * 2 (Mara-Verdopplung)
 });
 
 test('blindBuy fails and refunds nothing when gold is insufficient (#51)', () => {

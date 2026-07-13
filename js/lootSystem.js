@@ -1243,7 +1243,8 @@ if (window.i18n) {
 
   function getBlindBuyPrice(depthOverride) {
     const d = (typeof depthOverride === 'number' && depthOverride > 0) ? depthOverride : _maxDepth();
-    return Math.max(1, Math.round(BLIND_BUY_BASE + d * BLIND_BUY_PER_DEPTH));
+    // ×2: alle Käufe bei Mara sind doppelt so teuer (Blindkauf ist Mara-exklusiv).
+    return Math.max(1, Math.round((BLIND_BUY_BASE + d * BLIND_BUY_PER_DEPTH) * 2));
   }
 
   // Kauft eine Blind-Ware: zieht Gold ab, wuerfelt ein Item auf maxDepth mit einem
