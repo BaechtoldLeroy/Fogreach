@@ -768,6 +768,19 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     this.player.setDepth(100);
+
+    // Keinen Status-Tint (z. B. Gift = grün, 0x44ff44) aus dem Dungeon in den
+    // Hub schleppen: der Hub tickt keine Status-Effekte, daher bliebe ein beim
+    // Verlassen aktiver Effekt-Tint hängen. Einmalig Tint + Effekte zurücksetzen.
+    try {
+      var _sm = (typeof window !== 'undefined') ? window.statusEffectManager : null;
+      var _sprites = [this.player];
+      if (typeof player !== 'undefined' && player && player !== this.player) _sprites.push(player);
+      _sprites.forEach(function (spr) {
+        if (spr && spr.clearTint) { try { spr.clearTint(); } catch (e) {} }
+        if (spr && _sm && typeof _sm.removeAllEffects === 'function') { try { _sm.removeAllEffects(spr); } catch (e) {} }
+      });
+    } catch (e) { /* nie den Hub-Aufbau brechen */ }
   }
 
   update(t, dt) {
