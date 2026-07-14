@@ -114,6 +114,12 @@ function startNextWave(noIncrement) {
             spawnedEnemiesInWave = spawned;
             // Update total to include mini-boss for wave-end check
             enemiesPerWave = window.enemiesPerWave = spawned;
+            // Treppe SPERREN, bis der Mini-Boss besiegt ist — kein Vorbeilaufen.
+            // Entsperrt wird in checkWaveEnd, sobald der getrackte Mini-Boss tot ist.
+            window.__climaxEnemy = miniBoss;
+            if (typeof window.lockStairs === 'function' && scene.stairsGroup) {
+              try { window.lockStairs(scene, true); } catch (e) {}
+            }
           }
         }
 
@@ -133,6 +139,18 @@ function startNextWave(noIncrement) {
 // 6.5b Prüfen, ob die Welle vorbei ist
 // --------------------------------------------------
 function checkWaveEnd(time) {
+  // Mini-Boss-Klimax: die Treppe bleibt gesperrt, bis der getrackte Mini-Boss
+  // besiegt (nicht mehr aktiv) ist — dann sofort freigeben, auch wenn noch Trash
+  // lebt (der Mini-Boss ist die Bedingung, nicht der ganze Raum).
+  if (window.__climaxEnemy) {
+    if (!window.__climaxEnemy.active) {
+      window.__climaxEnemy = null;
+      if (typeof window.lockStairs === 'function' && this && this.stairsGroup) {
+        try { window.lockStairs(this, false); } catch (e) {}
+      }
+    }
+  }
+
   const total = computeWaveEnemyTotal(currentWave, window.__WALKABLE_AREA_PX__ || 0);
   if (waveInProgress &&
     spawnedEnemiesInWave >= total &&

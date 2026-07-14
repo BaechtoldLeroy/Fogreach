@@ -508,6 +508,9 @@ function ensureObstacleColliders(scene) {
 function enterRoom(scene, roomId) {
   currentRoomId = roomId;
   if (typeof window !== 'undefined') window.currentRoomId = roomId;
+  // Mini-Boss-Treppensperre pro Raum zuruecksetzen (kein Stale-Ref aus dem
+  // Vorraum, der die Treppe eines neuen Raums faelschlich entsperren wuerde).
+  if (typeof window !== 'undefined') window.__climaxEnemy = null;
 
   // Run-summary: each room entry counts as one cleared room (the player only
   // reaches the next via the stair, which requires waves to be cleared).
