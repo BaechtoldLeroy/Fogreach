@@ -709,16 +709,17 @@ function enterRoom(scene, roomId) {
   const isProceduralRoom = !!builtMeta.isProcedural;
   const TILE_PX = 32;
   const roomDiagPx = Math.sqrt(builtWidth * builtWidth + builtHeight * builtHeight);
-  // Treppen sollen im ganzen Level VERTEILT sein — nicht am Spawn kleben und
-  // nicht aneinander klumpen. Mindestabstände jetzt RAUMRELATIV (skalieren mit
-  // der Raumgröße) und deutlich größer, für authored UND prozedurale Räume gleich.
-  const MIN_STAIR_DISTANCE = Math.max(TILE_PX * 8, roomDiagPx * 0.32);
+  // Treppen sollen im Level VERTEILT sein (nicht am Spawn kleben / nicht klumpen),
+  // ABER die Abstände MÜSSEN durch die Raumgröße gedeckelt sein: in kleinen/Mini-
+  // Räumen gäbe es sonst weder einen spawn-fernen Punkt noch Platz für getrennte
+  // Treppen -> alle Treppen droppen -> Raum ohne Treppe (Bug). Deckel = halbe
+  // kleinere Raumkante; Untergrenzen ~ Originalwerte.
+  const _roomMin = Math.max(1, Math.min(builtWidth, builtHeight));
+  const MIN_STAIR_DISTANCE = Math.min(Math.max(TILE_PX * 6, roomDiagPx * 0.30), _roomMin * 0.5);
   const MIN_STAIR_DIST_SQ = MIN_STAIR_DISTANCE * MIN_STAIR_DISTANCE;
   const STAIR_HALF = 44; // 80px display + 8px margin
   const PLACED_STAIRS = []; // pixel coords of stairs placed in this loop
-  // Separation ~35% der Raumdiagonale (min 264px) -> Treppen spannen den Raum
-  // auf statt zu clustern; zu nahe Extras werden via #15 weggelassen.
-  const STAIR_SEPARATION = Math.max(STAIR_HALF * 6, roomDiagPx * 0.35);
+  const STAIR_SEPARATION = Math.min(Math.max(STAIR_HALF * 3, roomDiagPx * 0.30), _roomMin * 0.5);
   const STAIR_SEPARATION_SQ = STAIR_SEPARATION * STAIR_SEPARATION;
 
   // True if (cx, cy) is inside the room bounds with a STAIR_HALF margin AND
@@ -990,6 +991,25 @@ function enterRoom(scene, roomId) {
     // always render on top of the stair tile.
     stair.setAlpha(0.95).setDepth(40).refreshBody();
   });
+
+  // INVARIANTE: jeder Raum MUSS mindestens eine (erreichbare) Treppe haben —
+  // sonst ist der Run softgelockt. Falls die obige Platzierung (z.B. in einem
+  // Mini-Raum, in dem alle Kandidaten die Abstands-/Separation-Checks reissen)
+  // KEINE Treppe erzeugt hat, hier eine Notfall-Treppe an einem garantiert
+  // begehbaren Punkt erzwingen (alle Constraints fallen gelassen).
+  if (!scene.stairsGroup.children || scene.stairsGroup.children.size === 0) {
+    var _emx = builtWidth / 2, _emy = builtHeight / 2;
+    if (typeof scene.pickAccessibleSpawnPoint === 'function') {
+      var _emsp = scene.pickAccessibleSpawnPoint({ minDistance: 0, maxAttempts: 40 });
+      if (_emsp) { _emx = _emsp.x; _emy = _emsp.y; }
+    }
+    var _emStair = scene.stairsGroup.create(_emx, _emy, "stairDown");
+    _emStair.setData("locked", true);
+    _emStair.setData("dir", null);
+    _emStair.setDisplaySize(80, 80);
+    _emStair.setAlpha(0.95).setDepth(40).refreshBody();
+    try { console.warn('[stairs] Notfall-Treppe erzwungen — Raum hatte keine'); } catch (_) {}
+  }
 
   // Overlap Spieler ↔ Stairs
   // Tear down any previous overlap registration so we don't accumulate
