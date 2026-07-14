@@ -508,14 +508,14 @@ let playerCritChance = 0;
 //
 //   neededXP(level) = round(XP_CURVE_BASE + XP_CURVE_SCALE * level^XP_CURVE_EXP)
 //
-// XP pro Kill = 1 (player.js addXP.call ohne Argument). Levelaufstiege sollen
-// sich deutlich langsamer anfühlen -> Kurve nochmals klar steiler (~3-5x).
-// Beispiel-Schwellen (Kills bis zum nächsten Level):
-//   L1 = 9, L5 = 45, L10 = 164, L20 = 555, L40 = 1911
-// Monoton steigend, progressiv deutlich steiler (war L10=44, L20=125, L40=370).
-const XP_CURVE_BASE = 6;     // konstanter Sockel
-const XP_CURVE_SCALE = 2.5;  // Multiplikator auf den Potenz-Term (war 1)
-const XP_CURVE_EXP = 1.8;    // >1 ⇒ progressiv steiler pro Level (war 1.6)
+// XP pro Kill = 1 (player.js addXP.call ohne Argument); zusätzlich geben Raum-
+// Clear + gelöste Spezialräume XP (roomManager). Der ANFANG soll sich langsamer
+// anfühlen -> höherer Sockel (BASE 6 -> 15). Der flache Sockel hebt v. a. die
+// frühen Level (später dominiert ohnehin der Potenz-Term).
+// Beispiel-Schwellen: L1 = 18, L2 = 24, L3 = 32, L5 = 60, L10 = 173, L20 = 564.
+const XP_CURVE_BASE = 15;    // konstanter Sockel (war 6) -> langsamerer Start
+const XP_CURVE_SCALE = 2.5;  // Multiplikator auf den Potenz-Term
+const XP_CURVE_EXP = 1.8;    // >1 ⇒ progressiv steiler pro Level
 
 function getNeededXP(level) {
   const lvl = Math.max(1, Math.floor(Number(level) || 1));

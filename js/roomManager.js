@@ -1422,6 +1422,23 @@ function markRoomCleared(opts) {
     }
   } catch (e) { /* Bonus-Chest darf den Raum-Abschluss nie brechen */ }
 
+  // XP fürs Raum-Clearen / Lösen eines Spezialraums (zusätzlich zu Kill-XP).
+  // Ein GELÖSTER Spezialraum (opts.objective && !failed) gibt mehr; ein normaler
+  // Clear die Basis; ein VERFEHLTER Spezialraum nichts. Einmal pro Raum.
+  if (!room._xpGranted && typeof window.addXP === 'function') {
+    room._xpGranted = true;
+    try {
+      var _xpDepth = Math.max(1, window.DUNGEON_DEPTH || 1);
+      var _xpGain = 0;
+      if (opts && opts.objective) {
+        if (!opts.failed) _xpGain = Math.max(6, Math.round(_xpDepth * 3)); // Spezialraum gelöst
+      } else {
+        _xpGain = Math.max(3, Math.round(_xpDepth * 1.5));                 // normaler Raum gecleart
+      }
+      if (_xpGain > 0) window.addXP(_xpGain);
+    } catch (e) { /* XP-Vergabe darf den Raum-Abschluss nie brechen */ }
+  }
+
   // Quest progress: room cleared
   if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
     window.questSystem.updateQuestProgress('explore', 'room', 1);
