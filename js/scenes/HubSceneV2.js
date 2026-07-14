@@ -2062,15 +2062,23 @@ class HubSceneV2 extends Phaser.Scene {
       options.sort((a, b) => a.depth - b.depth);
     }
 
-    // Panelgröße aus der Optionsanzahl ableiten. Bei vielen Optionen (bis zu 3
-    // Abstiegs- + 3 Boss-Optionen) die Zeilenhöhe verkleinern, damit das Panel
-    // nicht über den Bildschirm hinauswächst.
+    // Panel- und Viewport-Maße. Zeilenhöhe konstant; passen nicht alle Optionen
+    // (bis zu 3 Abstiegs- + 3 Boss-Optionen) auf den Screen, wird die Options-
+    // liste scrollbar (Mausrad / Ziehen) statt das Panel über den Bildschirm
+    // hinauswachsen zu lassen.
     const headerH = 110;
-    const optionH = options.length > 4 ? 58 : 72;
-    const optionGap = options.length > 4 ? 10 : 14;
+    const optionH = 72;
+    const optionGap = 14;
     const footerH = 70;
     const panelWidth = 460;
-    const panelHeight = headerH + options.length * (optionH + optionGap) + footerH;
+    const rowH = optionH + optionGap;
+    const contentH = options.length * rowH;
+    const screenMargin = 40;
+    const maxViewportH = Math.max(rowH, cam.height - screenMargin * 2 - headerH - footerH);
+    const viewportH = Math.min(contentH, maxViewportH);
+    const panelHeight = headerH + viewportH + footerH;
+    const maxScroll = Math.max(0, contentH - viewportH);
+    const scrollable = maxScroll > 1;
 
     const g = this.add.graphics();
     g.fillStyle(0x101018, 0.95).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
@@ -2104,16 +2112,35 @@ class HubSceneV2 extends Phaser.Scene {
       cleanup();
     };
 
-    // Vertikale Abstiegs-Buttons, je nach Tiefen-Stratum gefärbt.
-    const optionTop = -panelHeight / 2 + headerH;
+    // Vertikale Abstiegs-Buttons in einem MASKIERTEN Sub-Container -> scrollbar,
+    // wenn nicht alle Optionen in den Viewport passen. optsC-lokale y beginnen
+    // bei 0; optsC.y = optionsTop - scroll verschiebt die Liste.
+    const bw = panelWidth - pad * 2;
+    const optionsTop = -panelHeight / 2 + headerH;
+    const optsC = this.add.container(0, optionsTop).setScrollFactor(0);
+    container.add(optsC);
+
+    // Geometrie-Maske auf den Viewport (Screen-Space, scrollFactor 0 -> folgt
+    // nicht der Hub-Kamera, bleibt am bildschirmfesten Dialog ausgerichtet).
+    const maskG = this.make.graphics({ add: false });
+    maskG.setScrollFactor(0);
+    maskG.fillStyle(0xffffff, 1);
+    maskG.fillRect(cx - bw / 2 - 8, cy + optionsTop, bw + 16, viewportH);
+    const optsMask = maskG.createGeometryMask();
+    optsC.setMask(optsMask);
+
+    let _scroll = 0;
+    let _dragMoved = 0;
+    let thumb = null;
+    const hitRows = [];
+
     options.forEach((opt, i) => {
-      const oy = optionTop + i * (optionH + optionGap) + optionH / 2;
+      const oy = i * rowH + optionH / 2; // lokal in optsC (Top = 0)
       const idx = stratumOf(opt.depth);
       const color = STRATUM_COLORS[idx - 1] || '#cfd0ff';
       const arrows = '↑'.repeat(idx);
       const stratumName = _HUB_T('hub.descent.stratum.' + idx);
 
-      const bw = panelWidth - pad * 2;
       const box = this.add.graphics();
       const drawBox = (hover) => {
         box.clear();
@@ -2123,7 +2150,7 @@ class HubSceneV2 extends Phaser.Scene {
           .strokeRoundedRect(-bw / 2, oy - optionH / 2, bw, optionH, 10);
       };
       drawBox(false);
-      container.add(box);
+      optsC.add(box);
 
       let _lbl = opt.label || _HUB_T(opt.key);
       if (opt.bossMark) _lbl += '   ⚔ ' + opt.bossMark;
@@ -2132,7 +2159,7 @@ class HubSceneV2 extends Phaser.Scene {
         fontSize: 20,
         color: opt.boss ? '#ffd27a' : '#f2e9d8'
       }).setOrigin(0, 0.5);
-      container.add(labelText);
+      optsC.add(labelText);
 
       const hintStr = opt.boss
         ? _HUB_T('hub.descent.bossrun')
@@ -2142,7 +2169,7 @@ class HubSceneV2 extends Phaser.Scene {
         fontSize: 13,
         color: opt.boss ? '#ffce8a' : color
       }).setOrigin(0, 0.5);
-      container.add(hint);
+      optsC.add(hint);
 
       const depthText = this.add.text(bw / 2 - 16, oy,
         `${_HUB_T('hub.wave_select.dungeon_level')} ${opt.depth}`, {
@@ -2150,15 +2177,74 @@ class HubSceneV2 extends Phaser.Scene {
         fontSize: 24,
         color
       }).setOrigin(1, 0.5);
-      container.add(depthText);
+      optsC.add(depthText);
 
+      // Auswahl erst bei pointerUP und nur, wenn NICHT gescrollt/gezogen wurde
+      // (sonst löst ein Wisch-Scroll versehentlich den Start aus).
       const hit = this.add.rectangle(0, oy, bw, optionH, 0x000000, 0)
         .setInteractive({ useHandCursor: true });
       hit.on('pointerover', () => drawBox(true));
       hit.on('pointerout', () => drawBox(false));
-      hit.on('pointerdown', () => chooseDepth(opt.depth));
-      container.add(hit);
+      hit.on('pointerup', () => { if (_dragMoved < 8) chooseDepth(opt.depth); });
+      optsC.add(hit);
+      hitRows.push({ hit, oy });
     });
+
+    // Scroll anwenden: Liste verschieben, Hit-Areas außerhalb des Viewports
+    // deaktivieren (Maske versteckt sie nur optisch, klickbar blieben sie sonst),
+    // Scrollbar-Thumb nachführen.
+    const applyScroll = () => {
+      _scroll = Phaser.Math.Clamp(_scroll, 0, maxScroll);
+      optsC.y = optionsTop - _scroll;
+      for (const r of hitRows) {
+        const ly = r.oy - _scroll; // relativ zum Viewport-Top
+        const vis = ly >= -4 && ly <= viewportH + 4;
+        if (r.hit.input) r.hit.input.enabled = vis;
+      }
+      if (thumb) {
+        const trackH = viewportH - 8;
+        const thumbH = Math.max(24, trackH * (viewportH / contentH));
+        const tt = maxScroll > 0 ? _scroll / maxScroll : 0;
+        thumb.setPosition(panelWidth / 2 - pad + 2, optionsTop + 4 + tt * (trackH - thumbH) + thumbH / 2);
+        thumb.setSize(6, thumbH);
+      }
+    };
+
+    if (scrollable) {
+      const trackX = panelWidth / 2 - pad + 2;
+      const trackH = viewportH - 8;
+      const trackG = this.add.graphics();
+      trackG.fillStyle(0x000000, 0.35).fillRoundedRect(trackX - 3, optionsTop + 4, 6, trackH, 3);
+      container.add(trackG);
+      thumb = this.add.rectangle(trackX, optionsTop, 6, 40, 0x8a8ad0, 0.9).setOrigin(0.5);
+      container.add(thumb);
+
+      // Mausrad (Desktop)
+      this._waveWheel = (pointer, over, dx, dy) => { _scroll += dy * 0.4; applyScroll(); };
+      this.input.on('wheel', this._waveWheel);
+
+      // Ziehen (Mobile + Desktop) innerhalb des Viewports
+      let _dragging = false, _dragStartY = 0, _dragStartScroll = 0;
+      const inViewport = (p) => p.x >= cx - panelWidth / 2 && p.x <= cx + panelWidth / 2
+        && p.y >= cy + optionsTop && p.y <= cy + optionsTop + viewportH;
+      this._wavePointerDown = (p) => {
+        if (!inViewport(p)) return;
+        _dragging = true; _dragStartY = p.y; _dragStartScroll = _scroll; _dragMoved = 0;
+      };
+      this._wavePointerMove = (p) => {
+        if (!_dragging) return;
+        const d = _dragStartY - p.y;
+        _dragMoved = Math.max(_dragMoved, Math.abs(d));
+        _scroll = _dragStartScroll + d;
+        applyScroll();
+      };
+      this._wavePointerUp = () => { _dragging = false; };
+      this.input.on('pointerdown', this._wavePointerDown);
+      this.input.on('pointermove', this._wavePointerMove);
+      this.input.on('pointerup', this._wavePointerUp);
+    }
+
+    applyScroll();
 
     const makeButton = (label, x, y, handler, style = {}) => {
       const txt = this.add.text(x, y, label, Object.assign({
@@ -2218,6 +2304,12 @@ class HubSceneV2 extends Phaser.Scene {
 
     const cleanup = () => {
       if (!container.active) return;
+      // Scroll-Handler + Maske abräumen (maskG hängt nicht am Container).
+      if (this._waveWheel) { this.input.off('wheel', this._waveWheel); this._waveWheel = null; }
+      if (this._wavePointerDown) { this.input.off('pointerdown', this._wavePointerDown); this._wavePointerDown = null; }
+      if (this._wavePointerMove) { this.input.off('pointermove', this._wavePointerMove); this._wavePointerMove = null; }
+      if (this._wavePointerUp) { this.input.off('pointerup', this._wavePointerUp); this._wavePointerUp = null; }
+      try { maskG.destroy(); } catch (e) {}
       container.destroy(true);
       overlay?.destroy();
       this._dialogOpen = false;
