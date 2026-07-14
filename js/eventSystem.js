@@ -887,6 +887,18 @@
     var cx = camW / 2;
     var cy = 80;
 
+    // Nur EIN Event-Toast gleichzeitig — alle liegen an derselben Position (cx,80).
+    // Sonst überblenden sich z. B. der Decke-Einsturz-Warntoast (t=0, ~3,7s
+    // sichtbar) und der Treffer/Ausweich-Toast (t≈1,5s). Vorherigen sofort weg.
+    if (scene._activeEventToast) {
+      try {
+        var _old = scene._activeEventToast;
+        if (_old.panel && _old.panel.destroy) _old.panel.destroy();
+        if (_old.label && _old.label.destroy) _old.label.destroy();
+      } catch (e) {}
+      scene._activeEventToast = null;
+    }
+
     var accentHex = EVENT_ACCENT_COLORS[eventId] || 0xffdd44;
 
     // Create label first to measure its width, then size the panel around it.
@@ -910,6 +922,8 @@
     panel.strokeRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 12);
     panel.setDepth(1999).setScrollFactor(0).setAlpha(0);
 
+    scene._activeEventToast = { panel: panel, label: label };
+
     var targets = [panel, label];
 
     if (scene.tweens && scene.tweens.add) {
@@ -931,6 +945,7 @@
             onComplete: function() {
               panel.destroy();
               label.destroy();
+              if (scene._activeEventToast && scene._activeEventToast.label === label) scene._activeEventToast = null;
             }
           });
         }
@@ -939,6 +954,7 @@
       setTimeout(function() {
         if (panel && panel.destroy) panel.destroy();
         if (label && label.destroy) label.destroy();
+        if (scene._activeEventToast && scene._activeEventToast.label === label) scene._activeEventToast = null;
       }, 4000);
     }
   }
@@ -1527,6 +1543,11 @@
     cleanupEventObjects();
 
     if (roomId === 0) return;
+    // Spionage-Räume: KEINE Events (Stealth-Mission). Ein Kampf-/Interaktions-
+    // Event würde die Verkleidung auffliegen lassen oder das Beobachtungs-Ziel
+    // umgehen. _maybeStartEspionage läuft vor onRoomEnter -> isActive ist gesetzt.
+    if (window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
+        && window.EspionageSystem.isActive()) return;
     var depth = window.DUNGEON_DEPTH || 1;
 
     // Debug: force a specific event in a specific room
@@ -1559,6 +1580,10 @@
       // beginRoom den Modus schon gesetzt hat (isSpecialRoom ist hier korrekt).
       if (window.RoomMode && typeof window.RoomMode.isSpecialRoom === 'function'
           && window.RoomMode.isSpecialRoom()) return;
+      // Doppelte Absicherung: falls die Spionage-Mission erst nach dem Roll aktiv
+      // wurde, hier ebenfalls abbrechen.
+      if (window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
+          && window.EspionageSystem.isActive()) return;
       var result = event.handler(scene);
       // If handler returns a choice descriptor, show the dialog
       if (result && result.title && Array.isArray(result.choices)) {
