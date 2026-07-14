@@ -413,11 +413,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     } else if (depth <= 4) {
       availableTypes = [8, 9, 10, 1, 2]; // Animals + Imp, Archer
     } else if (depth <= 6) {
-      availableTypes = [1, 2, 3, 4]; // Standard enemies
+      availableTypes = [8, 9, 10, 1, 2, 3, 4]; // + Standard enemies (Bestien bleiben)
     } else if (depth <= 8) {
-      availableTypes = [1, 2, 3, 4, 5]; // + Shadow
+      availableTypes = [8, 9, 10, 1, 2, 3, 4, 5]; // + Shadow
     } else {
-      availableTypes = [1, 2, 3, 4, 5, 6, 7]; // Full roster
+      availableTypes = [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]; // Full roster (kumulativ)
     }
     type = availableTypes[Phaser.Math.Between(0, availableTypes.length - 1)];
   }

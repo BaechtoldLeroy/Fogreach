@@ -23,11 +23,12 @@ function freshModule() {
 // Pure depth roster (mirror of enemy.js Z.335-345) for the identity check.
 function depthRosterRef(depth) {
   const d = (typeof depth === 'number' && depth >= 1) ? depth : 1;
+  // Kumulativ: Bestien (8/9/10) bleiben auch tiefer im Pool (Abwechslung).
   if (d <= 2) return [8, 9, 10];
   if (d <= 4) return [8, 9, 10, 1, 2];
-  if (d <= 6) return [1, 2, 3, 4];
-  if (d <= 8) return [1, 2, 3, 4, 5];
-  return [1, 2, 3, 4, 5, 6, 7];
+  if (d <= 6) return [8, 9, 10, 1, 2, 3, 4];
+  if (d <= 8) return [8, 9, 10, 1, 2, 3, 4, 5];
+  return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7];
 }
 
 test('ENEMY_MIN_ACT has the exact §4.1 mapping', () => {

@@ -17,11 +17,15 @@
   // the story hasn't unlocked yet. Default depth 1 for missing/invalid input.
   function depthRoster(depth) {
     var d = (typeof depth === 'number' && isFinite(depth) && depth >= 1) ? depth : 1;
+    // KUMULATIV: früh eingeführte Typen (v. a. die Bestien 8/9/10) bleiben auch
+    // tiefer im Pool -> mehr Abwechslung. Tiefe skaliert die Gegner-Stats
+    // (enemy.js statScale), Bestien bleiben also unten relevant statt trivial.
+    // Neue, gefährlichere Typen kommen mit der Tiefe oben drauf.
     if (d <= 2) return [8, 9, 10];
     if (d <= 4) return [8, 9, 10, 1, 2];
-    if (d <= 6) return [1, 2, 3, 4];
-    if (d <= 8) return [1, 2, 3, 4, 5];
-    return [1, 2, 3, 4, 5, 6, 7];
+    if (d <= 6) return [8, 9, 10, 1, 2, 3, 4];
+    if (d <= 8) return [8, 9, 10, 1, 2, 3, 4, 5];
+    return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7];
   }
 
   // Available enemy types for (depth, actIndex). GUARANTEE: never empty.
