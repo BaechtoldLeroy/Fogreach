@@ -27,7 +27,7 @@
     });
   }
 
-  var BASE_HP = 150;                  // Altar-HP
+  var BASE_HP = 100;                  // Altar-HP (reduziert von 150)
   var DRAIN_PER_ENEMY_PER_SEC = 1.5;  // je Gegner in der Zone (Basis)
   var DRAIN_ESCALATION = 0.2;         // +20% Gesamt-Drain je ZUSÄTZLICHEM Gegner
                                       // im Kreis -> Swarm senkt die HP überproportional

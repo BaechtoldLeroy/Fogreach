@@ -33,14 +33,14 @@ test('defend registers itself into RoomMode', () => {
 test('defend: altar drains by living-enemy presence over time', () => {
   const R = globalThis.window.RoomMode;
   const m = R.create('defend'); m.start(null);
-  assert.strictEqual(m.getState().hp, 150);
+  assert.strictEqual(m.getState().hp, 100);
   assert.strictEqual(m.objectiveFailed(), false);
   setAlive(4);
-  m.update(1000); // 1s: 4 * 1.5 * (1 + 3*0.2) = 9.6 -> ceil(140.4) = 141
-  assert.strictEqual(m.getState().hp, 141);
+  m.update(1000); // 1s: 4 * 1.5 * (1 + 3*0.2) = 9.6 -> ceil(90.4) = 91
+  assert.strictEqual(m.getState().hp, 91);
   setAlive(0);    // keine Gegner -> kein Drain
   m.update(3000);
-  assert.strictEqual(m.getState().hp, 141, 'no drain with zero enemies');
+  assert.strictEqual(m.getState().hp, 91, 'no drain with zero enemies');
 });
 
 test('defend: only enemies inside the drain zone damage the altar', () => {
@@ -52,7 +52,7 @@ test('defend: only enemies inside the drain zone damage the altar', () => {
     { active: true, x: 900, y: 0 }, { active: true, x: 0, y: 900 }, { active: true, x: 800, y: 800 }
   ]) };
   m.update(1000); // 2 in Zone (<=190) * 1.5/s = -3
-  assert.strictEqual(m.getState().hp, 147);
+  assert.strictEqual(m.getState().hp, 97);
   assert.strictEqual(m.getState().drainRadius, 190);
 });
 
@@ -82,14 +82,14 @@ test('defend: more enemies in the zone drain the altar super-linearly', () => {
   globalThis.window.enemies = { countActive: () => 6 }; // 6 Gegner
   m.update(1000);
   // linear wäre 6*1.5 = 9; mit Eskalation 6*1.5*(1+5*0.2) = 18 -> deutlich mehr.
-  assert.strictEqual(m.getState().hp, 132); // ceil(150 - 18)
+  assert.strictEqual(m.getState().hp, 82); // ceil(100 - 18)
 });
 
 test('defend: altar reaching 0 -> objectiveFailed AND completes (room opens)', () => {
   const R = globalThis.window.RoomMode;
   const m = R.create('defend'); m.start(null);
   setAlive(10);
-  m.update(20000); // 10*1.5*20 = 300 > 150 -> clamp 0
+  m.update(20000); // 10*1.5*20 = 300 > 100 -> clamp 0
   assert.strictEqual(m.getState().hp, 0);
   assert.strictEqual(m.objectiveFailed(), true);
   assert.strictEqual(m.isComplete(), true, 'gefallener Altar öffnet den Raum (Fehlschlag)');
@@ -99,7 +99,7 @@ test('defend: surviving the onslaught with the altar alive is a clean success', 
   const R = globalThis.window.RoomMode;
   globalThis.window.DUNGEON_DEPTH = 1; // 30s Ansturm
   const m = R.create('defend'); m.start(null);
-  setAlive(1); // leichter Druck: 1*1.5*30 = 45 Drain -> Altar überlebt (150->105)
+  setAlive(1); // leichter Druck: 1*1.5*30 = 45 Drain -> Altar überlebt (100->55)
   assert.strictEqual(m.isComplete(), false);
   m.update(30000); // Timer abgelaufen
   assert.strictEqual(m.isComplete(), true);
