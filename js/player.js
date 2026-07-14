@@ -1140,7 +1140,9 @@ function getRangeFromBase(base) {
 }
 
 function getMeleeCooldown() {
-  return Math.max(250, 500 / getAttackSpeedMultiplier());
+  // Etwas schwererer Grundangriff: höhere Grund-Abklingzeit + höherer Floor,
+  // damit auch bei viel Angriffstempo ein spürbarer Rhythmus bleibt.
+  return Math.max(320, 650 / getAttackSpeedMultiplier());
 }
 
 function getSpinRange() {
@@ -1666,7 +1668,8 @@ function attack() {
 
   if (window.soundManager) window.soundManager.playSFX('attack');
 
-  showAttackEffect(this);
+  // Längerer, schwererer Swing-Kegel (Default ist 100ms).
+  showAttackEffect(this, { duration: 170 });
 
   const toEnemy = new Phaser.Math.Vector2();
   // Schadens-Kegel MUSS dieselbe Richtung wie der sichtbare Kegel
@@ -1767,8 +1770,9 @@ function attack() {
     targets.forEach(t => window.breakDestructibleObstacle(this, t));
   }
 
-  // Effekt + Angriff abschliessen
-  this.time.delayedCall(200, () => {
+  // Effekt + Angriff abschliessen. Längeres Swing-Fenster = schwererer Angriff
+  // (der Charakter ist länger im Schlag gebunden, bevor der nächste startet).
+  this.time.delayedCall(300, () => {
     isAttacking = false;
   }, null, this);
 
