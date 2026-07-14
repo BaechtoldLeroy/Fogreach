@@ -28,6 +28,9 @@
       'shop.scroll.name': 'Portalrolle ({count})',
       'shop.scroll.desc': 'Teleport zurück zur Stadt',
       'shop.toast.scroll_bought': 'Portalrolle gekauft',
+      'shop.stairscroll.name': 'Treppenrolle ({count})',
+      'shop.stairscroll.desc': 'Teleport zur nächsten Treppe',
+      'shop.toast.stairscroll_bought': 'Treppenrolle gekauft',
       'shop.potion.heal_pct': '+{pct}% MaxHP über 3s',
       'shop.toast.not_enough_gold': 'Nicht genug Gold',
       'shop.toast.not_enough_mat': 'Nicht genug Eisenbrocken',
@@ -64,6 +67,9 @@
       'shop.scroll.name': 'Portal Scroll ({count})',
       'shop.scroll.desc': 'Teleport back to the city',
       'shop.toast.scroll_bought': 'Portal scroll bought',
+      'shop.stairscroll.name': 'Stair Scroll ({count})',
+      'shop.stairscroll.desc': 'Teleport to the nearest stairs',
+      'shop.toast.stairscroll_bought': 'Stair scroll bought',
       'shop.potion.heal_pct': '+{pct}% MaxHP over 3s',
       'shop.toast.not_enough_gold': 'Not enough gold',
       'shop.toast.not_enough_mat': 'Not enough iron chunks',
@@ -687,9 +693,50 @@
         this._showToast(_SHOP_T('shop.toast.scroll_bought'));
       });
 
-      // Offset potion rows by 1 to make room for scroll row
+      // Treppenrolle-Zeile direkt unter der Portalrolle. Mara: doppelter Preis.
+      const stairPrice = this.isDungeonMerchant ? 60 : 120;
+      const stairY = startY + rowH;
+      const stairRowBg = this.add.rectangle(px, stairY + rowH / 2, panelW - 30, rowH - 4, 0x2a2a2a)
+        .setStrokeStyle(1, 0x444444).setScrollFactor(0).setDepth(2002);
+      this.tabBody.push(stairRowBg);
+      const stairCount = (window.materialCounts && typeof window.materialCounts.STAIR_SCROLL === 'number')
+        ? window.materialCounts.STAIR_SCROLL : 0;
+      const stairNameText = this.add.text(px - panelW / 2 + 24, stairY + 10, _SHOP_T('shop.stairscroll.name', { count: stairCount }), {
+        fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
+      }).setScrollFactor(0).setDepth(2003);
+      this.tabBody.push(stairNameText);
+      const stairDesc = this.add.text(px - panelW / 2 + 24, stairY + 28, _SHOP_T('shop.stairscroll.desc'), {
+        fontFamily: 'monospace', fontSize: '10px', color: '#aaddff'
+      }).setScrollFactor(0).setDepth(2003);
+      this.tabBody.push(stairDesc);
+      const stairPriceText = this.add.text(px + panelW / 2 - 180, stairY + rowH / 2, stairPrice + ' G', {
+        fontFamily: 'monospace', fontSize: '12px', color: '#ffd166'
+      }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2003);
+      this.tabBody.push(stairPriceText);
+      const stairBuyBg = this.add.rectangle(px + panelW / 2 - 60, stairY + rowH / 2, 70, 26, 0x3a3a3a)
+        .setStrokeStyle(1, 0xd4a543).setScrollFactor(0).setDepth(2003)
+        .setInteractive({ useHandCursor: true });
+      const stairBuyText = this.add.text(px + panelW / 2 - 60, stairY + rowH / 2, _SHOP_T('shop.btn.buy'), {
+        fontFamily: 'monospace', fontSize: '11px', color: '#f1e9d8'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2004);
+      this.tabBody.push(stairBuyBg);
+      this.tabBody.push(stairBuyText);
+      stairBuyBg.on('pointerdown', () => {
+        if (!window.LootSystem || !window.LootSystem.spendGold(stairPrice)) {
+          this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
+          return;
+        }
+        if (!window.materialCounts || typeof window.materialCounts !== 'object') window.materialCounts = {};
+        if (typeof window.materialCounts.STAIR_SCROLL !== 'number') window.materialCounts.STAIR_SCROLL = 0;
+        window.materialCounts.STAIR_SCROLL += 1;
+        stairNameText.setText(_SHOP_T('shop.stairscroll.name', { count: window.materialCounts.STAIR_SCROLL }));
+        this._refreshGold();
+        this._showToast(_SHOP_T('shop.toast.stairscroll_bought'));
+      });
+
+      // Offset potion rows by 2 to make room for the two scroll rows.
       defs.forEach((def, i) => {
-        const ry = startY + (i + 1) * rowH;
+        const ry = startY + (i + 2) * rowH;
         const rowBg = this.add.rectangle(px, ry + rowH / 2, panelW - 30, rowH - 4, 0x2a2a2a)
           .setStrokeStyle(1, 0x444444).setScrollFactor(0).setDepth(2002);
         this.tabBody.push(rowBg);

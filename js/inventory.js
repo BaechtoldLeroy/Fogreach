@@ -26,6 +26,7 @@ if (window.i18n) {
     'inventory.btn.equip': 'Ausrüsten',
     'inventory.btn.drop': 'Entfernen',
     'inventory.btn.portal': 'Portal ({count})',
+    'inventory.btn.stair': 'Treppe ({count})',
     // Feature 059 (#42) WP05: run-amulet slot styling.
     'inv.amulet.badge': 'Nur dieser Run',
     'inv.amulet.locked': 'Ab Tiefe 10',
@@ -55,6 +56,7 @@ if (window.i18n) {
     'inventory.btn.equip': 'Equip',
     'inventory.btn.drop': 'Drop',
     'inventory.btn.portal': 'Portal ({count})',
+    'inventory.btn.stair': 'Stairs ({count})',
     // Feature 059 (#42) WP05: run-amulet slot styling.
     'inv.amulet.badge': 'This run only',
     'inv.amulet.locked': 'From depth 10',
@@ -157,6 +159,9 @@ if (typeof materialCounts.MAT !== 'number') {
 }
 if (typeof materialCounts.PORTAL_SCROLL !== 'number') {
   materialCounts.PORTAL_SCROLL = 2; // start with 2 free scrolls
+}
+if (typeof materialCounts.STAIR_SCROLL !== 'number') {
+  materialCounts.STAIR_SCROLL = 0; // Treppenrolle: nur bei Mara kaufbar (kein Gratis-Start)
 }
 window.materialCounts = materialCounts;
 
@@ -886,6 +891,41 @@ const EQUIP_STEP = 72;
     });
   };
   window._refreshPortalButton();
+
+  // Treppenrolle-Button: teleportiert den Spieler zur nächsten Treppe im Raum
+  // (verbraucht die Rolle nur, wenn eine Treppe gefunden wurde).
+  const btnStair = scene.add.text(PANEL_W / 2 - 30, -PANEL_H / 2 + 88, '', {
+    fontSize: '13px',
+    fill: '#fff',
+    fontFamily: 'monospace',
+    backgroundColor: '#1d4a6c',
+    padding: { x: 10, y: 5 }
+  })
+    .setOrigin(1, 0)
+    .setScrollFactor(0)
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => {
+      const n = (window.materialCounts && window.materialCounts.STAIR_SCROLL) || 0;
+      if (n <= 0) return;
+      const ok = (typeof window.useStairScroll === 'function') ? window.useStairScroll(scene) : false;
+      if (!ok) return; // keine Treppe -> Rolle nicht verbrauchen
+      window.materialCounts.STAIR_SCROLL = n - 1;
+      _refreshStairButton();
+      closeInventory();
+    });
+  panel.add(btnStair);
+  invUI.stairBtn = btnStair;
+
+  window._refreshStairButton = function () {
+    const count = (window.materialCounts && typeof window.materialCounts.STAIR_SCROLL === 'number')
+      ? window.materialCounts.STAIR_SCROLL : 0;
+    btnStair.setText(_INV_T('inventory.btn.stair', { count: count }));
+    btnStair.setStyle({
+      backgroundColor: count > 0 ? '#1d4a6c' : '#333333',
+      fill: count > 0 ? '#fff' : '#888'
+    });
+  };
+  window._refreshStairButton();
 
   const btnY = PANEL_H / 2 - 24;
   const btnEquip = scene.add.text(-70, btnY, _INV_T('inventory.btn.equip'), { fontSize: '14px', fill: '#fff', backgroundColor: '#47a', padding: { x: 10, y: 5 } })

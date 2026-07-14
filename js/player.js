@@ -2209,6 +2209,47 @@ function updateAmuletPerFrame(scene, delta) {
 }
 if (typeof window !== 'undefined') window.updateAmuletPerFrame = updateAmuletPerFrame;
 
+// Treppenrolle (bei Mara gekauft): teleportiert den Spieler zur NÄCHSTEN Treppe
+// im aktuellen Raum. Reines Repositionieren — die Treppe bleibt bis Raum-Clear
+// gesperrt (kein Descend-Skip). Gibt true zurück, wenn teleportiert wurde; bei
+// false (keine Treppe / kein Raum) verbraucht der Aufrufer die Rolle NICHT.
+function useStairScroll(scene) {
+  try {
+    if (!scene || !player || !player.active) return false;
+    const grp = scene.stairsGroup;
+    if (!grp || typeof grp.getChildren !== 'function') return false;
+    const stairs = grp.getChildren().filter(function (s) { return s && s.active; });
+    if (!stairs.length) return false;
+    let best = null, bestD = Infinity;
+    for (let i = 0; i < stairs.length; i++) {
+      const s = stairs[i];
+      const d = Math.hypot(s.x - player.x, s.y - player.y);
+      if (d < bestD) { bestD = d; best = s; }
+    }
+    if (!best) return false;
+    const tx = best.x, ty = best.y + 10;
+    _stairScrollPoof(scene, player.x, player.y);
+    player.setPosition(tx, ty);
+    if (player.body && typeof player.body.reset === 'function') player.body.reset(tx, ty);
+    _stairScrollPoof(scene, tx, ty);
+    if (scene.cameras && scene.cameras.main) scene.cameras.main.flash(120, 120, 200, 255);
+    if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
+    return true;
+  } catch (e) { return false; }
+}
+function _stairScrollPoof(scene, x, y) {
+  try {
+    if (!scene || !scene.add) return;
+    const g = scene.add.graphics().setDepth(120);
+    g.fillStyle(0x66ccff, 0.5); g.fillCircle(0, 0, 26);
+    g.lineStyle(2, 0xaaddff, 0.9); g.strokeCircle(0, 0, 26);
+    g.setPosition(x, y);
+    if (scene.tweens) scene.tweens.add({ targets: g, alpha: 0, scaleX: 1.6, scaleY: 1.6, duration: 260, onComplete: function () { try { g.destroy(); } catch (_) {} } });
+    else if (scene.time) scene.time.delayedCall(260, function () { try { g.destroy(); } catch (_) {} });
+  } catch (e) {}
+}
+if (typeof window !== 'undefined') window.useStairScroll = useStairScroll;
+
 function performRoll() {
   // Gate: kein Roll während anderer Action, Cooldown, oder Tod
   if (!this || !player || !player.active) return false;
