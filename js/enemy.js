@@ -1022,29 +1022,35 @@ function handleEnemies(time, delta = 16) {
         );
       }
     } else {
-      // --- Melee: weit weg -> seek, nah -> arrive (weiches Abbremsen)
-      const stopDist = (enemy.body.width + player.body.width) / 1.5;
-      const dToPlayer = Phaser.Math.Distance.Between(
+      // --- Melee: weit weg -> seek, nah -> arrive (weiches Abbremsen).
+      // #061 Defend-Modus: ein Ziel-Override (Altar) ZIEHT die Melee-Gegner AN,
+      // statt dass sie den Spieler jagen — sonst lockt man sie in großen Räumen
+      // einfach vom Altar weg und der Drain passiert nie. Ohne Override = Spieler.
+      const chaseTarget = (typeof window !== 'undefined' && window.__ENEMY_CHASE_OVERRIDE__)
+        ? window.__ENEMY_CHASE_OVERRIDE__ : player;
+      const _tgtBodyW = (chaseTarget.body && chaseTarget.body.width) || 24;
+      const stopDist = (enemy.body.width + _tgtBodyW) / 1.5;
+      const dToTarget = Phaser.Math.Distance.Between(
         enemy.x,
         enemy.y,
-        player.x,
-        player.y,
+        chaseTarget.x,
+        chaseTarget.y,
       );
 
-      if (dToPlayer > stopDist + 40) {
-        desired = Steering.seek(enemy, player, maxSpeed);
+      if (dToTarget > stopDist + 40) {
+        desired = Steering.seek(enemy, chaseTarget, maxSpeed);
       } else {
         // weich abbremsen, aber nicht komplett „einschlafen"
         desired = Steering.arrive(
           enemy,
-          player,
+          chaseTarget,
           maxSpeed,
           Math.max(stopDist, 60),
         );
 
         // kleiner Vorwärts-Nudge, falls die Arrive-Geschwindigkeit zu klein wird
-        if (dToPlayer > stopDist * 0.85) {
-          const nudge = Steering.seek(enemy, player, Math.min(maxSpeed, 60));
+        if (dToTarget > stopDist * 0.85) {
+          const nudge = Steering.seek(enemy, chaseTarget, Math.min(maxSpeed, 60));
           desired.add(nudge.scale(0.4));
         }
       }

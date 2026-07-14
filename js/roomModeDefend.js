@@ -6,7 +6,9 @@
  * Nachschub in einem RING UM DEN ALTAR (nicht im ganzen Raum verteilt), sodass
  * der Kampf sich um den Altar abspielt. Überstehe die Dauer mit lebendem Altar
  * = Erfolg (Bonus-Truhe); Altar zerstört = objectiveFailed (Raum bleibt offen,
- * kein Bonus, #1). Kein KI-Umbau — die Anzahl der Gegner zählt, nicht ihr Ziel.
+ * kein Bonus, #1). Die Gegner werden über einen Ziel-Override (window.
+ * __ENEMY_CHASE_OVERRIDE__) zum Altar GEZOGEN, damit sich der Kampf dort
+ * konzentriert — sonst lockt man sie in großen Räumen einfach weg.
  * HP-Balken/Banner rendert das Visuals-Modul (WP05) aus getState().
  * ===================================================================== */
 (function () {
@@ -141,6 +143,9 @@
           try { sprite = scene.add.sprite(objX, objY, DEPTH_TEX).setDepth(400).setScrollFactor(1); }
           catch (e) { sprite = null; }
         }
+        // Gegner zum Altar ZIEHEN (Melee-Ziel-Override in enemy.js). So spielt
+        // sich der Kampf am Altar ab, unabhängig von der Raumgröße.
+        if (typeof window !== 'undefined') window.__ENEMY_CHASE_OVERRIDE__ = { x: objX, y: objY };
       },
       update: function (dtMs) {
         var dt = (typeof dtMs === 'number' && dtMs > 0 ? dtMs : 16) / 1000;
@@ -175,9 +180,19 @@
             else sprite.clearTint();
           } catch (e) {}
         }
+        // Ist der Ansturm vorbei (Altar tot / Zeit um), den Ziel-Override
+        // freigeben -> Gegner jagen wieder den Spieler.
+        if ((remaining <= 0 || hp <= 0) && typeof window !== 'undefined') {
+          window.__ENEMY_CHASE_OVERRIDE__ = null;
+        }
       },
-      // Räumt den Altar-Sprite auf (Raum-/Modus-Wechsel) — sonst bleibt er hängen.
-      stop: function () { if (sprite) { try { sprite.destroy(); } catch (e) {} sprite = null; } },
+      // Räumt den Altar-Sprite auf + gibt den Ziel-Override frei (Raum-/Modus-
+      // Wechsel) — sonst bleibt der Sprite hängen bzw. Gegner laufen weiter zum
+      // alten Altar-Punkt.
+      stop: function () {
+        if (sprite) { try { sprite.destroy(); } catch (e) {} sprite = null; }
+        if (typeof window !== 'undefined') window.__ENEMY_CHASE_OVERRIDE__ = null;
+      },
       // Zeit-basiert: Ansturm überstanden ODER Altar gefallen -> Raum öffnet.
       isComplete: function () { return remaining <= 0 || hp <= 0; },
       objectiveFailed: function () { return hp <= 0; },
