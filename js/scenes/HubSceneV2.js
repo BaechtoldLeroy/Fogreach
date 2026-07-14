@@ -2019,7 +2019,8 @@ class HubSceneV2 extends Phaser.Scene {
       seen.add(depth);
       options.push({ key: opt.key, depth });
     }
-    options.sort((a, b) => a.depth - b.depth);
+    // Absteigend: tiefste Option ("An die Grenze") oben, flachste unten.
+    options.sort((a, b) => b.depth - a.depth);
 
     // A) Boss-Runs direkt anwählbar. Voll-Bosse spawnen NUR an Tier-Gates (Tiefe
     // = Vielfaches von 10, ab Akt 2). Für jeden freigeschalteten Boss-TYP eine
@@ -2059,7 +2060,7 @@ class HubSceneV2 extends Phaser.Scene {
         if (bossOptions.length >= 3) break;
       }
       for (const bo of bossOptions) options.push(bo);
-      options.sort((a, b) => a.depth - b.depth);
+      options.sort((a, b) => b.depth - a.depth); // absteigend (tief -> flach)
     }
 
     // Panel- und Viewport-Maße. Zeilenhöhe konstant; passen nicht alle Optionen
