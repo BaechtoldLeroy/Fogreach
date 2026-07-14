@@ -819,7 +819,12 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   // Gegner-Spawns — enforce a minimum distance from the player spawn so
   // the player isn't ambushed on entry. If a template tries to spawn an
   // enemy too close, we relocate it to a distant accessible tile.
-  const SAFE_RADIUS = 6; // tiles
+  // Mindestabstand template-definierter Gegner vom Spieler-Spawn. Früher 6 Kacheln
+  // (192px) — zu klein: in Räumen wie RitualChamber saßen Gegner ~6 Kacheln über
+  // dem Spawn und wirkten "beim Spieler". Jetzt 9 Kacheln (~288px), nah am
+  // dynamischen Wellen-Spawn (MIN_SPAWN_DISTANCE 300px). Zu nahe Gegner werden auf
+  // die nächste weiter entfernte begehbare Kachel verschoben (Fallback: Originalpos).
+  const SAFE_RADIUS = 9; // tiles
   const safeRadiusSq = SAFE_RADIUS * SAFE_RADIUS;
   const spawnTileX = playerStartTile ? playerStartTile.x : null;
   const spawnTileY = playerStartTile ? playerStartTile.y : null;
