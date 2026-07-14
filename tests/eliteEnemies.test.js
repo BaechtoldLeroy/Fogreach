@@ -97,7 +97,7 @@ test('shouldSpawnElite(depth < 6) always returns null', () => {
   }
 });
 
-test('shouldSpawnElite(depth=10) yields ~30% elite across 1000 trials', () => {
+test('shouldSpawnElite(depth=10) yields ~11% elite across 1000 trials', () => {
   const sys = freshSystem();
   const rng = makeRng(12345);
   let elites = 0;
@@ -105,11 +105,11 @@ test('shouldSpawnElite(depth=10) yields ~30% elite across 1000 trials', () => {
     if (sys.shouldSpawnElite(10, rng)) elites++;
   }
   const rate = elites / 1000;
-  // Expected 25% + 5% = 30%; tolerance ±6%.
-  assert.ok(rate >= 0.24 && rate <= 0.36, 'expected ~30% elite at depth=10, got ' + rate);
+  // Bedingte Rate 9% + 2% = 11% (Gesamt-Elite ~30%-gedeckelt via Legacy-Gate); Toleranz ±5%.
+  assert.ok(rate >= 0.06 && rate <= 0.16, 'expected ~11% elite at depth=10, got ' + rate);
 });
 
-test('shouldSpawnElite(depth=20) yields >50% elite across 1000 trials', () => {
+test('shouldSpawnElite(depth=20) yields ~23% elite across 1000 trials', () => {
   const sys = freshSystem();
   const rng = makeRng(98765);
   let elites = 0;
@@ -117,7 +117,8 @@ test('shouldSpawnElite(depth=20) yields >50% elite across 1000 trials', () => {
     if (sys.shouldSpawnElite(20, rng)) elites++;
   }
   const rate = elites / 1000;
-  assert.ok(rate > 0.50, 'expected >50% elite at depth=20, got ' + rate);
+  // Bedingte Rate 18% + 5% = 23%; Toleranz ±5%.
+  assert.ok(rate >= 0.18 && rate <= 0.28, 'expected ~23% elite at depth=20, got ' + rate);
 });
 
 test('shouldSpawnElite returns only champion/unique/null', () => {

@@ -735,12 +735,14 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy.damage = Math.max(1, Math.round(enemy.baseDamage * difficulty));
   }
 
-  // Elite chance: 15% starting from depth 5, ramping up from depth 3
+  // Legacy-Elite (goldener Buff). Bewusst KLEIN gehalten, damit die Gesamt-Elite-
+  // Chance (Legacy + Champion/Unique, sich GEGENSEITIG AUSSCHLIESSEND) bei ~30 %
+  // deckelt. Champion/Unique (das Affix-System) trägt den Löwenanteil.
   let eliteChance = 0;
   if (depth >= 5) {
-    eliteChance = 0.15;
+    eliteChance = 0.08;
   } else if (depth >= 3) {
-    eliteChance = 0.05;
+    eliteChance = 0.03;
   }
 
   if (Math.random() < eliteChance) {
@@ -748,8 +750,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     enemy._eliteApplied = true;
   }
 
-  // WP05 — Champion/Unique elite injection (non-breaking, no-op if module missing)
-  if (window.EliteEnemies && typeof window.EliteEnemies.shouldSpawnElite === 'function') {
+  // WP05 — Champion/Unique. NUR wenn der Gegner nicht schon Legacy-Elite ist
+  // (kein Doppel-Elite -> saubere Gesamt-Chance).
+  if (!enemy._eliteApplied && window.EliteEnemies && typeof window.EliteEnemies.shouldSpawnElite === 'function') {
     try {
       const depth = typeof currentWave === 'number' ? currentWave : (window.currentWave || 1);
       const tier = window.EliteEnemies.shouldSpawnElite(depth);

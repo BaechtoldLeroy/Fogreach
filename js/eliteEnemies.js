@@ -172,10 +172,14 @@
   function shouldSpawnElite(depth, rng) {
     if (typeof rng !== 'function') rng = Math.random;
     if (typeof depth !== 'number' || depth < 6) return null;
+    // Bedingte Chance (wird NUR gewürfelt, wenn der Gegner kein Legacy-Elite ist,
+    // ~8% ab Tiefe 5). Zusammen deckelt die GESAMT-Elite-Chance bei ~30%:
+    //   Gesamt = legacy + (1-legacy)*(champion+unique)
+    //   T6-10 ~18%, T11-15 ~24%, T16+ ~29%.
     let championRate, uniqueRate;
-    if (depth <= 10) { championRate = 0.25; uniqueRate = 0.05; }
-    else if (depth <= 15) { championRate = 0.35; uniqueRate = 0.10; }
-    else { championRate = 0.40; uniqueRate = 0.15; }
+    if (depth <= 10) { championRate = 0.09; uniqueRate = 0.02; }
+    else if (depth <= 15) { championRate = 0.13; uniqueRate = 0.04; }
+    else { championRate = 0.18; uniqueRate = 0.05; }
     const r = rng();
     if (r < uniqueRate) return 'unique';
     if (r < uniqueRate + championRate) return 'champion';
