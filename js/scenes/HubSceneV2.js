@@ -28,6 +28,7 @@ if (window.i18n) {
     'hub.descent.stratum.4': 'Die Ketten-Tiefe',
     'hub.descent.danger': 'Gefahr',
     'hub.descent.loot': 'Beute',
+    'hub.descent.bossrun': 'Boss-Kampf – direkter Abstieg zum Boss',
     'hub.descent.option.limit': 'An die Grenze',
     'hub.descent.option.usual': 'Gewohnter Abstieg',
     'hub.descent.option.familiar': 'Vertraute Gänge',
@@ -76,6 +77,7 @@ if (window.i18n) {
     'hub.descent.stratum.4': 'The Chain-Deep',
     'hub.descent.danger': 'Danger',
     'hub.descent.loot': 'Loot',
+    'hub.descent.bossrun': 'Boss fight – descend straight to the boss',
     'hub.descent.option.limit': 'To the Limit',
     'hub.descent.option.usual': 'Familiar Descent',
     'hub.descent.option.familiar': 'Known Passages',
@@ -2019,10 +2021,53 @@ class HubSceneV2 extends Phaser.Scene {
     }
     options.sort((a, b) => a.depth - b.depth);
 
-    // Panelgröße aus der Optionsanzahl ableiten.
+    // A) Boss-Runs direkt anwählbar. Voll-Bosse spawnen NUR an Tier-Gates (Tiefe
+    // = Vielfaches von 10, ab Akt 2). Für jeden freigeschalteten Boss-TYP eine
+    // Direkt-Option auf seinem TIEFSTEN erreichbaren Gate (härteste + beste Beute,
+    // max. 3 Optionen = alle 3 Typen). Deckt eine normale Option bereits ein Gate
+    // ab, wird sie nur MARKIERT statt dupliziert. Dank #41-Frontier-Gate progressed
+    // ein Wiederholungs-Run unterhalb der Grenze die maxDepth nicht -> sauberes
+    // Boss-Farming über das bestehende Auswahlsystem.
+    const _storyActHub = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+      ? window.storySystem.getCurrentActIndex() : 0;
+    const _bossNameAt = (depth) => {
+      try {
+        if (typeof getBossDefinition === 'function') {
+          const r = getBossDefinition(depth);
+          return (r && r.def && r.def.name) ? r.def.name : null;
+        }
+      } catch (e) {}
+      return null;
+    };
+    if (_storyActHub >= 1 && lastKnown >= 10) {
+      // Normale Optionen, die auf einem Tier-Gate liegen, nur markieren.
+      for (const o of options) {
+        if (o.depth >= 10 && o.depth % 10 === 0) {
+          const nm = _bossNameAt(o.depth);
+          if (nm) o.bossMark = nm;
+        }
+      }
+      // Tiefstes Gate je Boss-TYP -> max. 3 Direkt-Optionen.
+      const seenBoss = new Set();
+      const bossOptions = [];
+      for (let d = Math.floor(lastKnown / 10) * 10; d >= 10; d -= 10) {
+        const nm = _bossNameAt(d);
+        if (!nm || seenBoss.has(nm)) continue;
+        seenBoss.add(nm);
+        if (options.some((o) => o.depth === d)) continue; // schon (markiert) vorhanden
+        bossOptions.push({ depth: d, label: '⚔ ' + nm, boss: true });
+        if (bossOptions.length >= 3) break;
+      }
+      for (const bo of bossOptions) options.push(bo);
+      options.sort((a, b) => a.depth - b.depth);
+    }
+
+    // Panelgröße aus der Optionsanzahl ableiten. Bei vielen Optionen (bis zu 3
+    // Abstiegs- + 3 Boss-Optionen) die Zeilenhöhe verkleinern, damit das Panel
+    // nicht über den Bildschirm hinauswächst.
     const headerH = 110;
-    const optionH = 72;
-    const optionGap = 14;
+    const optionH = options.length > 4 ? 58 : 72;
+    const optionGap = options.length > 4 ? 10 : 14;
     const footerH = 70;
     const panelWidth = 460;
     const panelHeight = headerH + options.length * (optionH + optionGap) + footerH;
@@ -2080,18 +2125,22 @@ class HubSceneV2 extends Phaser.Scene {
       drawBox(false);
       container.add(box);
 
-      const labelText = this.add.text(-bw / 2 + 16, oy - 16, _HUB_T(opt.key), {
+      let _lbl = opt.label || _HUB_T(opt.key);
+      if (opt.bossMark) _lbl += '   ⚔ ' + opt.bossMark;
+      const labelText = this.add.text(-bw / 2 + 16, oy - 16, _lbl, {
         fontFamily: 'serif',
         fontSize: 20,
-        color: '#f2e9d8'
+        color: opt.boss ? '#ffd27a' : '#f2e9d8'
       }).setOrigin(0, 0.5);
       container.add(labelText);
 
-      const hint = this.add.text(-bw / 2 + 16, oy + 14,
-        `${stratumName}   ${_HUB_T('hub.descent.danger')} ${arrows}   ${_HUB_T('hub.descent.loot')} ${arrows}`, {
+      const hintStr = opt.boss
+        ? _HUB_T('hub.descent.bossrun')
+        : `${stratumName}   ${_HUB_T('hub.descent.danger')} ${arrows}   ${_HUB_T('hub.descent.loot')} ${arrows}`;
+      const hint = this.add.text(-bw / 2 + 16, oy + 14, hintStr, {
         fontFamily: 'monospace',
         fontSize: 13,
-        color
+        color: opt.boss ? '#ffce8a' : color
       }).setOrigin(0, 0.5);
       container.add(hint);
 
