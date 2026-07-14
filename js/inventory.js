@@ -1301,6 +1301,10 @@ if (typeof window !== 'undefined') window.recalcDerived = recalcDerived;
 
 function openInventory() {
   invOpen = true;
+  // Cooldowns/Timer pausieren, solange das Inventar offen ist.
+  if (typeof window.pauseGameClock === 'function') {
+    try { window.pauseGameClock(invUI && invUI._scene); } catch (e) {}
+  }
   // Tutorial step trigger (feature 044). Single emission per open.
   if (window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
     window.TutorialSystem.report('inventory.opened', {});
@@ -1320,6 +1324,10 @@ function openInventory() {
 
 function closeInventory() {
   invOpen = false;
+  // Cooldowns/Timer wieder laufen lassen.
+  if (typeof window.resumeGameClock === 'function') {
+    try { window.resumeGameClock(invUI && invUI._scene); } catch (e) {}
+  }
   if (invUI.panel?.setVisible) invUI.panel.setVisible(false);
   if (invUI.overlay?.setVisible) invUI.overlay.setVisible(false);
   invUI.hideTooltip?.();

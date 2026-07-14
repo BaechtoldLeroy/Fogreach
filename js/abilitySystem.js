@@ -713,7 +713,11 @@
     // Cooldown wird defensiv mit dem SkillTree-CooldownMult skaliert
     // (Contract: fehlt die Funktion → mult 1).
     if (def.cooldownMs) {
-      const now = (scene?.time?.now) || Date.now();
+      // gameNow: pausierte Spannen (Inventar offen o.ä.) rausgerechnet, damit
+      // Cooldowns nicht "durchlaufen", während das Spiel pausiert ist.
+      const now = (typeof window.gameNow === 'function')
+        ? window.gameNow(scene)
+        : ((scene?.time?.now) || Date.now());
       const ready = state.cooldowns[abilityId] || 0;
       if (now < ready) return false;
       // 060: Skill-Rang senkt den Cooldown (cdMult, gedeckelt).

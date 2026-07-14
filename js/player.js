@@ -1095,7 +1095,7 @@ function applyCooldownModifier(base, key) {
 const CHARGED_SLASH_MIN_CHARGE = 300;
 const CHARGED_SLASH_MAX_CHARGE = 1500;
 const DEFAULT_ATTACK_RANGE_BASE = 100;
-const SPIN_RANGE_BASE = 120;
+const SPIN_RANGE_BASE = 140;
 const SPIN_COOLDOWN_BASE = 5000;
 const SPIN_COOLDOWN_MIN = 800;
 const CHARGED_SLASH_COOLDOWN_BASE = 4500;
@@ -1799,7 +1799,7 @@ function spinAttack() {
   // Gating passiert in AbilitySystem.tryActivate (prüft die GELERNTE Ability,
   // z.B. 'whirlwind'). Kein interner _abilityGate('spinAttack') mehr — die alte
   // ID wird nie gelernt, das würde whirlwind tot-gaten (060).
-  const now = this.time.now;
+  const now = (typeof window.gameNow === 'function') ? window.gameNow(this) : this.time.now;
   const baseCooldown = getSpinCooldown();
   const abilityCooldown = applyCooldownModifier(baseCooldown, 'spin');
   if (isSpinning || now - lastSpinTime < abilityCooldown || isChargingSlash || isDashing || isRolling) return;
@@ -2037,7 +2037,8 @@ function releaseChargedSlash(forceMaxCharge = false) {
   // 060: Cooldown auch der Loadout-HUD melden (Hammer hat kein def.cooldownMs,
   // verwaltet seinen CD intern -> sonst zeigt die HUD keinen Cooldown an).
   if (window.AbilitySystem && window.AbilitySystem.setCooldown) {
-    try { window.AbilitySystem.setCooldown('hammer', finalCooldown, scene.time.now); } catch (e) {}
+    const _hnow = (typeof window.gameNow === 'function') ? window.gameNow(scene) : scene.time.now;
+    try { window.AbilitySystem.setCooldown('hammer', finalCooldown, _hnow); } catch (e) {}
   }
   startCooldownTimer(scene, finalCooldown, {
     button: chargeSlashBtn,
@@ -2591,9 +2592,9 @@ function shadowCharge() {
 
   var dashDistance = (typeof getDashSlashDistance === 'function') ? getDashSlashDistance() : 220;
   var dashDuration = (typeof getDashSlashDuration === 'function') ? getDashSlashDuration() : 220;
-  // Linien-Sturm: trifft Gegner seitlich der Dash-Linie. Bewusst schmaler als
-  // früher (70), damit der Ansturm keine übergroße AoE-Schneise mehr schlägt.
-  var lineRadius = 45;
+  // Linien-Sturm: trifft Gegner seitlich der Dash-Linie. Bewusst schmal (früher
+  // 70 -> 45 -> 34), damit der Ansturm keine übergroße AoE-Schneise mehr schlägt.
+  var lineRadius = 34;
   var knockback = 190;
   var dashSpeed = dashDistance / (dashDuration / 1000);
 

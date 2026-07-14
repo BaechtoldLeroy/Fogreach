@@ -840,6 +840,44 @@ const INV_SLOTS = INV_COLS * INV_ROWS;
 
 let inventory = new Array(INV_SLOTS).fill(null); // Grid
 let invOpen = false;
+
+// Game-Pause-Uhr: friert Cooldowns/Timer ein, solange das Spiel "pausiert" ist
+// (Inventar offen o. ä.). scene.time.now (Game-Loop-Wall-Clock) läuft weiter,
+// aber gameNow() rechnet die pausierten Spannen heraus -> Timestamp-Cooldowns
+// (AbilitySystem, Spin, Hammer) stehen während der Pause still. Zusätzlich wird
+// scene.time pausiert (friert delayedCall/addEvent-Timer: Button-Cooldowns, FX,
+// Boss-Pattern) + die Physik. Idempotent (mehrfaches pause/resume ist ok).
+window.__GAME_PAUSE = window.__GAME_PAUSE || { offset: 0, since: null, _scene: null };
+function gameNow(scene) {
+  const raw = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
+  const p = window.__GAME_PAUSE;
+  const span = (p.since != null) ? (raw - p.since) : 0; // laufende Pause-Spanne
+  return raw - p.offset - span;
+}
+function pauseGameClock(scene) {
+  const p = window.__GAME_PAUSE;
+  if (p.since != null) return; // bereits pausiert
+  p._scene = scene || null;
+  p.since = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
+  try { if (scene && scene.time) scene.time.paused = true; } catch (e) {}
+  try { if (scene && scene.physics && scene.physics.world) scene.physics.world.pause(); } catch (e) {}
+}
+function resumeGameClock(scene) {
+  const p = window.__GAME_PAUSE;
+  if (p.since == null) return; // nicht pausiert
+  const sc = scene || p._scene || null;
+  const raw = (sc && sc.time && typeof sc.time.now === 'number') ? sc.time.now : Date.now();
+  p.offset += (raw - p.since);
+  p.since = null;
+  p._scene = null;
+  try { if (sc && sc.time) sc.time.paused = false; } catch (e) {}
+  try { if (sc && sc.physics && sc.physics.world) sc.physics.world.resume(); } catch (e) {}
+}
+if (typeof window !== 'undefined') {
+  window.gameNow = gameNow;
+  window.pauseGameClock = pauseGameClock;
+  window.resumeGameClock = resumeGameClock;
+}
 let invUI = {
   panel: null,
   slots: [],
@@ -1563,7 +1601,7 @@ function update(time, delta) {
   if (window.AbilitySystem && typeof window.AbilitySystem.getCooldownRemaining === 'function') {
     const loadout = window.AbilitySystem.getActiveLoadout ? window.AbilitySystem.getActiveLoadout() : null;
     if (loadout) {
-      const now = (this?.time?.now) || Date.now();
+      const now = gameNow(this); // pausierte Spannen rausgerechnet (s. Pause-Uhr)
       const defs = window.AbilitySystem.ABILITY_DEFS || {};
       ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slot) => {
         const id = loadout[slot];
