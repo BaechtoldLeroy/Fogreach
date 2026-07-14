@@ -2008,9 +2008,9 @@ const BOSS_DEFINITIONS = {
     name: 'Zeremonienmeister',
     texture: 'boss_ceremony_right0',
     fallbackTexture: 'sprite_boss_ceremony',
-    baseHP: 50,
+    baseHP: 78,
     baseSpeed: 45,
-    baseDamage: 6,
+    baseDamage: 9,
     scale: 1.7,
     loreIntro: 'Der Zeremonienmeister fuehrt die verbotenen Rituale durch...',
     attacks: ['ritualCircle', 'summonMinions', 'darkBlast'],
@@ -2500,7 +2500,8 @@ function bossRitualCircle(boss) {
   });
 }
 
-// Summon Minions: spawn 2 imp enemies
+// Summon Minions: beschwört 2 SCHATTEN (Typ 5) — passt thematisch zum
+// Zeremonienmeister (Schatten-Rituale) statt Imps.
 function bossSummonMinions(boss) {
   const scene = this;
 
@@ -2514,10 +2515,10 @@ function bossSummonMinions(boss) {
     for (let i = 0; i < 2; i++) {
       const mx = boss.x + Phaser.Math.Between(-80, 80);
       const my = boss.y + Phaser.Math.Between(-80, 80);
-      const minion = spawnEnemy.call(scene, mx, my, 1);
+      const minion = spawnEnemy.call(scene, mx, my, 5); // 5 = Schattenschleicher
       if (minion) {
         minion.hp = 1;
-        minion.setTint(0xaa00aa);
+        minion.setTint(0x9933ff); // Schatten-Beschwörungs-Marker
       }
     }
   });
