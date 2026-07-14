@@ -308,7 +308,8 @@ if (window.i18n) {
 
     // === Defensive (1) ===
     Object.freeze({ id: 'of_the_leech', displayName: 'of the Leech', position: 'suffix', statKey: 'lifesteal',
-      valueType: 'percent', range: Object.freeze({ min: 1, max: 8 }), iLevelMin: 6, weight: 40,
+      valueType: 'percent', range: Object.freeze({ min: 0.1, max: 3 }), iLevelMin: 6, weight: 40,
+      decimals: 1, noIlvlScale: true,
       appliesTo: Object.freeze(['weapon']), tooltipText: '+{value}% Life Steal' }),
 
     // === Per-ability damage (5) ===
@@ -656,11 +657,23 @@ if (window.i18n) {
       // is multiplied by an iLevel curve so deeper items roll bigger numbers of
       // the same affix (#37). At iLevel == iLevelMin the scale is 1 (base range).
       const range = pickedDef.range;
-      const scale = _affixValueScale(iLevel, pickedDef.iLevelMin);
+      // noIlvlScale: manche Affixe (z. B. Lebensraub) sollen NICHT mit der Tiefe
+      // hochskalieren, sondern in ihrem Basisband bleiben.
+      const scale = pickedDef.noIlvlScale ? 1 : _affixValueScale(iLevel, pickedDef.iLevelMin);
       const effMin = range.min * scale;
       const effMax = range.max * scale;
-      let value = Math.round(effMin + rng() * (effMax - effMin));
-      if (value < 1) value = 1;
+      const dec = pickedDef.decimals || 0;
+      let value;
+      if (dec > 0) {
+        // Dezimal-Affix (z. B. 0.1–3 % Lebensraub): auf `dec` Nachkommastellen
+        // runden statt auf Ganzzahl; Floor = Band-Minimum (nicht 1).
+        const f = Math.pow(10, dec);
+        value = Math.round((effMin + rng() * (effMax - effMin)) * f) / f;
+        if (value < range.min) value = range.min;
+      } else {
+        value = Math.round(effMin + rng() * (effMax - effMin));
+        if (value < 1) value = 1;
+      }
       result.push({ defId: pickedDef.id, value: value });
     }
     return result;

@@ -7,8 +7,11 @@ function saveGame(scene) {
       siphonMaterialsFromInventory();
     }
 
+    // Feature 059 (#42)-Erweiterung: Amulette sind run-spezifisch und werden NIE
+    // gespeichert — auch nicht, wenn sie nur im Inventar liegen (nicht angelegt).
+    // Amulett-Plätze als leer speichern; die Positionen der übrigen Items bleiben.
     const cloneInventory = Array.isArray(inventory)
-      ? inventory.map((item) => (item ? JSON.parse(JSON.stringify(item)) : null))
+      ? inventory.map((item) => (item && !item.isAmulet) ? JSON.parse(JSON.stringify(item)) : null)
       : [];
     const cloneEquipment = (obj) => {
       if (!obj || typeof obj !== 'object') return {};

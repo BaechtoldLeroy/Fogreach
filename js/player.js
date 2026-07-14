@@ -1257,6 +1257,16 @@ function handlePlayerMovement() {
     return;
   }
 
+  // Boss-Ranzieh-Fenster (Kettenmeister chainPull/chainReel): solange aktiv, die
+  // vom Boss gesetzte Velocity NICHT mit der Spieler-Eingabe überschreiben — sonst
+  // wird der Pull-Impuls im selben/nächsten Frame sofort annulliert und der Spieler
+  // bewegt sich nicht. Für die kurze Pull-Dauer gleitet er Richtung Boss.
+  if (window._pullUntil && Date.now() < window._pullUntil) {
+    var _pb = player.body;
+    updatePlayerSpriteAnimation(player, _pb ? _pb.velocity.x : 0, _pb ? _pb.velocity.y : 0);
+    return;
+  }
+
   // Eingaben sammeln — scheme-aware via InputScheme (arrows in classic,
   // WASD in arpg). `lastMoveDirection` is still updated below; it remains
   // the Classic-scheme aim source AND the ARPG dead-zone fallback for

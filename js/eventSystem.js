@@ -45,7 +45,7 @@
       // Environmental hazard
       'event.hazard.name': 'Einsturzgefahr',
       'event.hazard.toast_spawn': '🪨 Vorsicht — Decke stürzt ein! AUSWEICHEN!',
-      'event.hazard.toast_hit': '🪨 Einsturz! -1 HP',
+      'event.hazard.toast_hit': '🪨 Einsturz! Schwerer Treffer!',
       'event.hazard.toast_dodge': '🪨 Ausgewichen! +{amount} Gold',
       // Shrine
       'event.shrine.name': 'Mystischer Schrein',
@@ -126,7 +126,7 @@
       'event.lore.text.fragment_personal_amnesia': '...my name appears in two lists: once as Archivesmith, once as "cleared for purification". The Forge accident was planned. What I no longer remember, someone wanted buried...',
       'event.hazard.name': 'Cave-in Risk',
       'event.hazard.toast_spawn': '🪨 Watch out — ceiling collapsing! DODGE!',
-      'event.hazard.toast_hit': '🪨 Cave-in! -1 HP',
+      'event.hazard.toast_hit': '🪨 Cave-in! Heavy hit!',
       'event.hazard.toast_dodge': '🪨 Dodged! +{amount} gold',
       'event.shrine.name': 'Mystical Shrine',
       'event.shrine.toast_spawn': 'A mystical shrine appears...',
@@ -1387,12 +1387,18 @@
         var dy = player.y - py;
         var dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 60) {
-          // Hit
-          if (typeof playerHealth !== 'undefined') {
-            playerHealth = Math.max(1, playerHealth - 1);
+          // Hit — schwerer Einsturz statt -1 HP: ~30% der Max-HP. Der Treffer ist
+          // ~1.5s vorher telegrafiert (Schatten-Puls), Ausweichen lohnt sich also
+          // deutlich. Läuft durch applyPlayerDamage (Rüstung/Dodge/Tod korrekt).
+          if (typeof window.applyPlayerDamage === 'function') {
+            var _maxHp = window.playerMaxHealth || 100;
+            var _dmg = Math.max(6, Math.round(_maxHp * 0.3));
+            window.applyPlayerDamage(_dmg, scene);
+          } else if (typeof playerHealth !== 'undefined') {
+            playerHealth = Math.max(1, playerHealth - 5);
             window.playerHealth = playerHealth;
           }
-          if (cam && cam.shake) cam.shake(300, 0.008);
+          if (cam && cam.shake) cam.shake(400, 0.012);
           showEventToast(scene, T('event.hazard.toast_hit'), 'environmental_hazard');
         } else {
           // Dodged

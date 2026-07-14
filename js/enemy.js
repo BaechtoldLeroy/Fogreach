@@ -2017,6 +2017,18 @@ function getBossDefinition(wave) {
 }
 
 function spawnBoss() {
+  // #62: Boss-Arena — vorhandene Trash-Gegner entfernen, damit der Bosskampf
+  // ohne sonstige Gegner stattfindet. Boss-Adds (summonMinions) sind Teil des
+  // Kampfes und kommen erst danach. Neue reguläre Spawns sind in der Boss-Welle
+  // bereits unterbunden (wave.js: spawnedEnemiesInWave = 0).
+  try {
+    if (typeof enemies !== 'undefined' && enemies && typeof enemies.getChildren === 'function') {
+      enemies.getChildren().slice().forEach(function (e) {
+        if (e && e.active && !e.isBoss) { try { e.destroy(); } catch (_) {} }
+      });
+    }
+  } catch (_) {}
+
   const bounds = this.physics?.world?.bounds;
   const margin = 120;
   const px = player?.x ?? (bounds ? bounds.centerX : this.scale.width * 0.5);
@@ -2361,6 +2373,8 @@ function bossChainPull(boss) {
         Math.cos(pullAngle) * pullStrength,
         Math.sin(pullAngle) * pullStrength
       );
+      // Pull-Fenster: handlePlayerMovement überschreibt die Velocity sonst sofort.
+      window._pullUntil = Date.now() + 350;
     }
 
     const chainG = scene.add.graphics().setDepth(1001);
@@ -2784,6 +2798,8 @@ function bossChainReel(boss) {
     const strength = 560; // deutlich stärker als chainPull (300)
     if (player.body) {
       player.body.setVelocity(Math.cos(ang) * strength, Math.sin(ang) * strength);
+      // Pull-Fenster: handlePlayerMovement überschreibt die Velocity sonst sofort.
+      window._pullUntil = Date.now() + 420;
     }
     const chainG = scene.add.graphics().setDepth(1001);
     chainG.lineStyle(4, 0xcc8844, 0.9);
