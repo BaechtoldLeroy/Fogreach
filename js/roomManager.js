@@ -271,9 +271,25 @@ function initDungeonRun() {
   // Build template order: mix regular and story rooms
   var templateOrder = [];
 
-  // Determine final room based on milestone depth
+  // Determine final room based on milestone depth.
   var finalRoom = null;
-  if (MILESTONE_FINAL_ROOMS[depth] && allNames.indexOf(MILESTONE_FINAL_ROOMS[depth]) !== -1) {
+  // #62: An Boss-Tier-Gates (Tiefe = Vielfaches von 10) den Endraum als passende,
+  // große Arena je Boss-TYP wählen (nutzt vorhandene Templates). Deckt auch tiefe
+  // Gates (40/50/…) ab, nicht nur die statische 10/20/30-Map, und matcht das Thema
+  // an den Boss: Kettenmeister->Kerker, Zeremonienmeister->Ritual, Schattenrat->Rat.
+  var BOSS_ARENAS = {
+    chainMaster: 'PrisonDepths',
+    ceremonyMaster: 'RitualVault',
+    shadowCouncillor: 'CouncilChamber'
+  };
+  if (depth >= 10 && depth % 10 === 0 && typeof getBossDefinition === 'function') {
+    try {
+      var _bd = getBossDefinition(depth);
+      var _arena = _bd && _bd.def && BOSS_ARENAS[_bd.def.id];
+      if (_arena && allNames.indexOf(_arena) !== -1) finalRoom = _arena;
+    } catch (e) { /* fällt unten auf die statische Map zurück */ }
+  }
+  if (!finalRoom && MILESTONE_FINAL_ROOMS[depth] && allNames.indexOf(MILESTONE_FINAL_ROOMS[depth]) !== -1) {
     finalRoom = MILESTONE_FINAL_ROOMS[depth];
   }
 
