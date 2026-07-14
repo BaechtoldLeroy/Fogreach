@@ -457,9 +457,11 @@ function getPlayerTextureKey(scene) {
 // Berserker -> rot, Heilung -> kurzer grüner Flash, sonst neutral.
 function _playerOverlayTint() {
   try {
+    // Heil-Flash gegen die Wall-Clock (Date.now) — scene.time.now ist pro Szene
+    // verschieden, sonst bleibt der Flash über einen Szenenwechsel hängen.
+    if (window._healFlashUntil && Date.now() < window._healFlashUntil) return 0x66ff8a;
     var sc = (typeof player !== 'undefined' && player && player.scene) ? player.scene : null;
     var now = (sc && sc.time && typeof sc.time.now === 'number') ? sc.time.now : 0;
-    if (window._healFlashUntil && now < window._healFlashUntil) return 0x66ff8a;
     var bs = window.berserkState;
     if (bs && bs.active && (typeof bs.expiry !== 'number' || now < bs.expiry)) return 0xff4040;
   } catch (e) { /* fall through to neutral */ }
@@ -2678,8 +2680,11 @@ function _healFx(scene, amount) {
     if (!scene || !player) return;
     const GREEN = 0x66ff8a, SOFT = 0xbfffd0;
     const T = scene.tweens, cx = player.x, cy = player.y;
-    // kurzer grüner Charakter-Flash (von _playerOverlayTint gelesen)
-    window._healFlashUntil = ((scene.time && typeof scene.time.now === 'number') ? scene.time.now : 0) + 320;
+    // kurzer grüner Charakter-Flash (von _playerOverlayTint gelesen). Wall-Clock
+    // (Date.now) statt scene.time.now: die Szenen-Uhren sind pro Szene verschieden,
+    // ein im Dungeon gesetzter Ablauf lag im Hub dauerhaft in der Zukunft -> der
+    // Charakter blieb dort grün. Date.now ist szenenübergreifend konsistent.
+    window._healFlashUntil = Date.now() + 320;
     if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
     const ring = scene.add.graphics().setDepth(72);
     ring.lineStyle(3, GREEN, 0.9); ring.strokeCircle(0, 0, 30); ring.setPosition(cx, cy);
