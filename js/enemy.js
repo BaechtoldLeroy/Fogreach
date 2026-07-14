@@ -2172,10 +2172,21 @@ function makeBoss(boss, def, cycle) {
   boss.patternIndex = 0;
   boss.bossAttacks = def.attacks;
   boss.attackCooldown = def.attackCooldown;
+
+  // #62: HP-Phasen / Enrage. Kadenz + Tempo steigen mit sinkender HP; ein
+  // schwerer, deutlich telegrafierter Schlag (heavySlam) kommt ab Phase 2 in
+  // den Attacken-Pool -> Ausweichen/Mobility wird belohnt statt Facetank.
+  boss.phase = 1;
+  boss.baseCooldown = def.attackCooldown;
+  boss._baseMoveSpeed = boss.speed;
+  boss._lastAttack = null;
 }
 
 function handleBossAI(time, boss, scene) {
   if (!boss.active) return;
+
+  // #62: Phasenwechsel bei 66% / 33% HP (Kadenz + Tempo hoch, sichtbarer Wechsel).
+  updateBossPhase(boss, scene, time);
 
   // Follow player
   const dx = player.x - boss.x;
@@ -2203,9 +2214,9 @@ function handleBossAI(time, boss, scene) {
 
   // Pattern timing
   if (time >= boss.nextPatternAt) {
-    const attacks = boss.bossAttacks || ['chainWhip', 'chainPull', 'groundChains'];
-    const p = boss.patternIndex % attacks.length;
-    const attackName = attacks[p];
+    // #62: nicht-deterministische Wahl (gewichtet, keine Sofort-Wiederholung)
+    // statt fester Reihenfolge; heavySlam kommt ab Phase 2 dazu.
+    const attackName = pickBossAttack(boss);
 
     if (BOSS_ATTACK_MAP[attackName]) {
       // Boss attack animation
@@ -2638,6 +2649,112 @@ function bossShadowClones(boss) {
 }
 
 // Attack name -> function map
+// ---------------------------------------------------------------------------
+// #62: Boss-Phasen + dynamische Attackenwahl.
+// ---------------------------------------------------------------------------
+// Kadenz-Faktor (× baseCooldown) und Tempo-Faktor (× baseMoveSpeed) je Phase.
+const BOSS_PHASE_CADENCE = { 1: 1.0, 2: 0.72, 3: 0.5 };
+const BOSS_PHASE_SPEED = { 1: 1.0, 2: 1.12, 3: 1.28 };
+
+// Prüft die HP-Schwellen (66% / 33%) und schaltet EINMAL pro Phase hoch:
+// schnellere Kadenz + höheres Tempo + sofort spürbarer Druck + sichtbarer FX.
+function updateBossPhase(boss, scene, time) {
+  const ratio = boss.maxHp ? boss.hp / boss.maxHp : 1;
+  let phase = 1;
+  if (ratio <= 0.33) phase = 3;
+  else if (ratio <= 0.66) phase = 2;
+  if (phase <= (boss.phase || 1)) return; // nur hoch, nie zurück
+
+  boss.phase = phase;
+  boss.attackCooldown = Math.round((boss.baseCooldown || 3500) * (BOSS_PHASE_CADENCE[phase] || 1));
+  boss.speed = Math.round((boss._baseMoveSpeed || boss.speed || 60) * (BOSS_PHASE_SPEED[phase] || 1));
+  boss.nextPatternAt = (time || 0) + 500; // nächste Attacke fast sofort
+  bossPhaseTransitionFx(boss, scene, phase);
+}
+
+// Roter Puls am Boss + Screen-Flash/Shake + Banner ("Phase 2" / "RASEREI!").
+function bossPhaseTransitionFx(boss, scene, phase) {
+  if (!scene) return;
+  try {
+    if (scene.cameras?.main) {
+      scene.cameras.main.flash(200, 120, 0, 0);
+      scene.cameras.main.shake(300, 0.008);
+    }
+    if (typeof boss.setTint === 'function') {
+      boss.setTint(0xff3333);
+      scene.time.delayedCall(400, () => { if (boss?.active && typeof boss.clearTint === 'function') boss.clearTint(); });
+    }
+    const label = phase >= 3 ? 'RASEREI!' : 'Phase ' + phase;
+    const cx = scene.scale.width / 2;
+    const cy = scene.scale.height * 0.2;
+    const t = scene.add.text(cx, cy, label, {
+      fontSize: '26px', fontFamily: 'monospace',
+      color: phase >= 3 ? '#ff2222' : '#ffaa33',
+      stroke: '#000000', strokeThickness: 4, align: 'center',
+    }).setOrigin(0.5).setDepth(1100).setScrollFactor(0).setAlpha(0);
+    scene.tweens.add({
+      targets: t, alpha: 1, duration: 300, yoyo: true, hold: 800,
+      onComplete: () => t.destroy(),
+    });
+  } catch (_) { /* FX dürfen nie das Gameplay crashen */ }
+}
+
+// Gewichtet-zufällige Attackenwahl ohne Sofort-Wiederholung. Ab Phase 2 wandert
+// der schwere Telegraph-Schlag heavySlam in den Pool (Phase 3 doppelt gewichtet).
+function pickBossAttack(boss) {
+  let pool = (boss.bossAttacks || []).slice();
+  if (!pool.length) pool = ['chainWhip'];
+  const phase = boss.phase || 1;
+  if (phase >= 2) pool.push('heavySlam');
+  if (phase >= 3) pool.push('heavySlam');
+  let choices = pool.filter(a => a !== boss._lastAttack);
+  if (!choices.length) choices = pool;
+  const pick = choices[Math.floor(Math.random() * choices.length)];
+  boss._lastAttack = pick;
+  return pick;
+}
+
+// #62: Schwerer, stark telegrafierter Flächenschlag auf die Spielerposition.
+// Langes Wind-up (~850ms) mit wachsendem Warnkreis = klares Ausweich-/Roll-
+// Fenster; trifft hart (~2.2x), wenn man drin stehen bleibt. Kern-Anreiz, die
+// Mobility-Skills (Ansturm / Schattenschritt) auch wirklich einzusetzen.
+function bossHeavySlam(boss) {
+  const scene = this;
+  const tx = player.x;
+  const ty = player.y;
+  const radius = 135;
+  const windup = 850;
+
+  const warn = scene.add.graphics().setDepth(1000);
+  const drawWarn = (progress) => {
+    if (!warn.active) return;
+    warn.clear();
+    warn.lineStyle(3, 0xff5533, 0.9);
+    warn.strokeCircle(tx, ty, radius);
+    warn.fillStyle(0xff3311, 0.12 + progress * 0.22);
+    warn.fillCircle(tx, ty, radius * (0.4 + progress * 0.6));
+  };
+  drawWarn(0);
+  scene.tweens.addCounter({
+    from: 0, to: 1, duration: windup,
+    onUpdate: (tw) => drawWarn(tw.getValue()),
+  });
+
+  scene.time.delayedCall(windup, () => {
+    warn.destroy();
+    if (!boss.active) return;
+    const hit = scene.add.graphics().setDepth(1001);
+    hit.fillStyle(0xff4422, 0.5);
+    hit.fillCircle(tx, ty, radius);
+    scene.time.delayedCall(160, () => hit.destroy());
+    if (scene.cameras?.main) scene.cameras.main.shake(220, 0.012);
+    const d = Phaser.Math.Distance.Between(tx, ty, player.x, player.y);
+    if (d <= radius) {
+      applyPlayerDamage(Math.ceil(boss.damage * 2.2), scene);
+    }
+  });
+}
+
 const BOSS_ATTACK_MAP = {
   chainWhip: bossChainWhip,
   chainPull: bossChainPull,
@@ -2648,6 +2765,7 @@ const BOSS_ATTACK_MAP = {
   shadowDash: bossShadowDash,
   darknessWave: bossDarknessWave,
   shadowClones: bossShadowClones,
+  heavySlam: bossHeavySlam,
 };
 
 // ---------------------------------------------------------------------------
