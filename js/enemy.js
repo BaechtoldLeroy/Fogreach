@@ -1092,6 +1092,22 @@ function handleEnemies(time, delta = 16) {
     Steering.limit(desired, maxSpeed);
     enemy.body.setVelocity(desired.x, desired.y);
 
+    // Anti-Durchlauf-Netz: der Spieler-Gegner-Collider (main.js, aus beim Rollen)
+    // trennt normal sauber, aber bei hoher Relativgeschwindigkeit ODER groesseren
+    // Gegnern (Brute) konnte man durchs ZENTRUM tunneln. Steckt der (nicht rollende)
+    // Spieler tief im Gegner (< Kern-Radius), wird er sanft herausgeschoben. Greift
+    // nur bei echtem Zentrums-Ueberlapp -> kein Ruckeln im Normalfall.
+    if (player && player.active && enemy.body && player.body
+        && !(typeof isRolling !== 'undefined' && isRolling)) {
+      var _pdx = player.x - enemy.x, _pdy = player.y - enemy.y;
+      var _pdd = Math.sqrt(_pdx * _pdx + _pdy * _pdy);
+      var _coreR = 22;
+      if (_pdd > 0.001 && _pdd < _coreR) {
+        player.x = enemy.x + (_pdx / _pdd) * _coreR;
+        player.y = enemy.y + (_pdy / _pdd) * _coreR;
+      }
+    }
+
     // Sprite direction switching for animated enemies
     // - Only switch on significant horizontal movement (threshold to avoid flicker)
     // - Never switch during attack animation
