@@ -2699,14 +2699,23 @@ function bossPhaseTransitionFx(boss, scene, phase) {
   } catch (_) { /* FX dürfen nie das Gameplay crashen */ }
 }
 
+// #62: Signature-Mechanik pro Boss. Ab Phase 2 wandert der boss-eigene schwere
+// Move in den Pool (Phase 3 doppelt gewichtet). Unbekannter Boss -> heavySlam.
+const BOSS_SIGNATURE = {
+  chainMaster: 'chainReel',       // harter Ranzieh-Zug -> Kiting-Puzzle
+  ceremonyMaster: 'ritualHazard', // dauerhafte Gefahrenzonen
+  shadowCouncillor: 'cloneSlam',  // Fake-out-Slams (nur einer echt)
+};
+
 // Gewichtet-zufällige Attackenwahl ohne Sofort-Wiederholung. Ab Phase 2 wandert
-// der schwere Telegraph-Schlag heavySlam in den Pool (Phase 3 doppelt gewichtet).
+// der boss-spezifische Signature-Move in den Pool (Phase 3 doppelt gewichtet).
 function pickBossAttack(boss) {
   let pool = (boss.bossAttacks || []).slice();
   if (!pool.length) pool = ['chainWhip'];
   const phase = boss.phase || 1;
-  if (phase >= 2) pool.push('heavySlam');
-  if (phase >= 3) pool.push('heavySlam');
+  const sig = BOSS_SIGNATURE[boss.bossType] || 'heavySlam';
+  if (phase >= 2) pool.push(sig);
+  if (phase >= 3) pool.push(sig);
   let choices = pool.filter(a => a !== boss._lastAttack);
   if (!choices.length) choices = pool;
   const pick = choices[Math.floor(Math.random() * choices.length)];
@@ -2755,6 +2764,138 @@ function bossHeavySlam(boss) {
   });
 }
 
+// --- Kettenmeister-Signature: chainReel ------------------------------------
+// Harter, stärker telegrafierter Ranzieh-Zug (Kette leuchtet ~500ms auf, dann
+// kräftiger Pull + Schaden). In Raserei häufig -> der Spieler wird immer wieder
+// herangerissen und muss sich per Dash/Roll neu absetzen = Kiting-Puzzle.
+function bossChainReel(boss) {
+  const scene = this;
+  const warn = scene.add.graphics().setDepth(1001);
+  warn.lineStyle(4, 0xffaa33, 0.75);
+  warn.beginPath();
+  warn.moveTo(boss.x, boss.y);
+  warn.lineTo(player.x, player.y);
+  warn.strokePath();
+
+  scene.time.delayedCall(500, () => {
+    warn.destroy();
+    if (!boss.active || !player.active) return;
+    const ang = Math.atan2(boss.y - player.y, boss.x - player.x);
+    const strength = 560; // deutlich stärker als chainPull (300)
+    if (player.body) {
+      player.body.setVelocity(Math.cos(ang) * strength, Math.sin(ang) * strength);
+    }
+    const chainG = scene.add.graphics().setDepth(1001);
+    chainG.lineStyle(4, 0xcc8844, 0.9);
+    chainG.beginPath();
+    chainG.moveTo(boss.x, boss.y);
+    chainG.lineTo(player.x, player.y);
+    chainG.strokePath();
+    scene.time.delayedCall(300, () => chainG.destroy());
+    applyPlayerDamage(Math.ceil((boss.damage || 4) * 0.6), scene);
+  });
+}
+
+// --- Zeremonienmeister-Signature: ritualHazard -----------------------------
+// Legt 2 DAUERHAFTE Ritual-Gefahrenzonen nahe dem Spieler, die ~6s stehen
+// bleiben und beim Drinstehen ticken -> zwingt zu ständiger Positionierung,
+// verkleinert die nutzbare Arena. (Add-Wellen laufen über summonMinions weiter.)
+function bossRitualHazard(boss) {
+  const scene = this;
+  for (let i = 0; i < 2; i++) {
+    const zx = player.x + Phaser.Math.Between(-120, 120);
+    const zy = player.y + Phaser.Math.Between(-120, 120);
+    spawnPersistentHazard(scene, boss, zx, zy, 70, 6000);
+  }
+}
+
+// Persistente Gefahrenzone: kurzer Telegraph (600ms), dann aktiv für `duration`
+// ms; tickt alle 500ms Schaden, solange der Spieler drinsteht. Räumt sich selbst
+// (und bei Boss-Tod) auf.
+function spawnPersistentHazard(scene, boss, zx, zy, radius, duration) {
+  const zone = scene.add.graphics().setDepth(1000);
+  zone.lineStyle(2, 0xaa66ff, 0.5);
+  zone.strokeCircle(zx, zy, radius);
+
+  scene.time.delayedCall(600, () => {
+    if (!boss.active) { zone.destroy(); return; }
+    let elapsed = 0;
+    const tick = scene.time.addEvent({
+      delay: 500, loop: true,
+      callback: () => {
+        elapsed += 500;
+        if (!zone.active) return;
+        zone.clear();
+        zone.lineStyle(2, 0xcc88ff, 0.8);
+        zone.strokeCircle(zx, zy, radius);
+        zone.fillStyle(0x8844cc, 0.22);
+        zone.fillCircle(zx, zy, radius);
+        if (player.active) {
+          const d = Phaser.Math.Distance.Between(zx, zy, player.x, player.y);
+          if (d <= radius) applyPlayerDamage(Math.ceil((boss.damage || 4) * 0.25), scene);
+        }
+        if (elapsed >= duration || !boss.active) { tick.remove(); zone.destroy(); }
+      },
+    });
+    boss.once('destroy', () => { try { tick.remove(); } catch (_) {} zone.destroy(); });
+  });
+}
+
+// --- Schattenrat-Signature: cloneSlam --------------------------------------
+// Mehrere identisch aussehende Telegraph-Slams gleichzeitig — aber nur EINER
+// trifft wirklich (auf der aktuellen Spielerposition). Die Fakes verpuffen
+// harmlos. Der Spieler muss seine Ausgangsposition räumen (Dash/Roll), statt
+// blind auszuweichen -> echtes Fake-out-Lesen.
+function bossCloneSlam(boss) {
+  const scene = this;
+  const count = 3;
+  const radius = 120;
+  const windup = 800;
+  const realIdx = Math.floor(Math.random() * count);
+  const spots = [];
+  for (let i = 0; i < count; i++) {
+    if (i === realIdx) spots.push({ x: player.x, y: player.y, real: true });
+    else spots.push({
+      x: player.x + Phaser.Math.Between(-190, 190),
+      y: player.y + Phaser.Math.Between(-190, 190),
+      real: false,
+    });
+  }
+  spots.forEach((s) => {
+    const warn = scene.add.graphics().setDepth(1000);
+    const draw = (p) => {
+      if (!warn.active) return;
+      warn.clear();
+      warn.lineStyle(3, 0x9933ff, 0.9);
+      warn.strokeCircle(s.x, s.y, radius);
+      warn.fillStyle(0x7722dd, 0.10 + p * 0.20);
+      warn.fillCircle(s.x, s.y, radius * (0.4 + p * 0.6));
+    };
+    draw(0);
+    scene.tweens.addCounter({ from: 0, to: 1, duration: windup, onUpdate: (tw) => draw(tw.getValue()) });
+    scene.time.delayedCall(windup, () => {
+      warn.destroy();
+      if (!boss.active) return;
+      if (s.real) {
+        const hit = scene.add.graphics().setDepth(1001);
+        hit.fillStyle(0x9933ff, 0.5);
+        hit.fillCircle(s.x, s.y, radius);
+        scene.time.delayedCall(160, () => hit.destroy());
+        if (scene.cameras?.main) scene.cameras.main.shake(220, 0.012);
+        if (player.active) {
+          const d = Phaser.Math.Distance.Between(s.x, s.y, player.x, player.y);
+          if (d <= radius) applyPlayerDamage(Math.ceil((boss.damage || 8) * 2.0), scene);
+        }
+      } else {
+        const fizz = scene.add.graphics().setDepth(1001);
+        fizz.lineStyle(2, 0x552288, 0.5);
+        fizz.strokeCircle(s.x, s.y, radius * 0.5);
+        scene.time.delayedCall(120, () => fizz.destroy());
+      }
+    });
+  });
+}
+
 const BOSS_ATTACK_MAP = {
   chainWhip: bossChainWhip,
   chainPull: bossChainPull,
@@ -2766,6 +2907,9 @@ const BOSS_ATTACK_MAP = {
   darknessWave: bossDarknessWave,
   shadowClones: bossShadowClones,
   heavySlam: bossHeavySlam,
+  chainReel: bossChainReel,
+  ritualHazard: bossRitualHazard,
+  cloneSlam: bossCloneSlam,
 };
 
 // ---------------------------------------------------------------------------
