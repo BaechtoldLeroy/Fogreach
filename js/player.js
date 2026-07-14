@@ -1060,6 +1060,34 @@ function getLootAbilityCooldownReduction(abilityKey) {
   return perAbility + allAbilities + ktAll + focusCdr;
 }
 
+// Feature 059: Blutpakt-Amulett — Abilities fast ohne Cooldown, kosten dafür LP.
+// Zentrale, ENTPRELLTE Kosten-Funktion, damit klassische Abilities
+// (applyCooldownModifier) UND AbilitySystem-Abilities (tryActivate) dieselbe
+// Logik nutzen und derselbe Aktivierungs-Frame die LP nicht DOPPELT abzieht
+// (whirlwind/hammer laufen durch beide Pfade).
+var _bloodpactLastCost = 0;
+function isBloodpactActive() {
+  return !!(window.AmuletEffects && typeof window.AmuletEffects.activeEffect === 'function'
+    && window.AmuletEffects.activeEffect() === 'bloodpact');
+}
+function applyBloodpactCost() {
+  if (!isBloodpactActive()) return;
+  var now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  if (now - _bloodpactLastCost < 90) return; // 1x pro Aktivierung (Entprellung)
+  _bloodpactLastCost = now;
+  var mh = (typeof playerMaxHealth === 'number') ? playerMaxHealth : (window.playerMaxHealth || 30);
+  var cost = Math.max(1, Math.round(mh * 0.08));
+  if (typeof playerHealth === 'number') {
+    playerHealth = Math.max(1, playerHealth - cost); // tötet nie direkt (Floor 1)
+    window.playerHealth = playerHealth;
+    if (typeof updateHUD === 'function') { try { updateHUD(); } catch (e) {} }
+  }
+}
+if (typeof window !== 'undefined') {
+  window.isBloodpactActive = isBloodpactActive;
+  window.applyBloodpactCost = applyBloodpactCost;
+}
+
 function applyCooldownModifier(base, key) {
   const bonus = getAbilityBonus(key);
   const mult = Math.max(0.2, 1 - (bonus.cooldown || 0));
@@ -1071,15 +1099,8 @@ function applyCooldownModifier(base, key) {
   // have almost no cooldown but cost HP per use. applyCooldownModifier runs once
   // per activation, so the HP cost is deducted here; HP is floored at 1 (the
   // pact never kills you outright).
-  if (key && key !== 'attack' && window.AmuletEffects
-      && typeof window.AmuletEffects.activeEffect === 'function'
-      && window.AmuletEffects.activeEffect() === 'bloodpact') {
-    const _mh = (typeof playerMaxHealth === 'number') ? playerMaxHealth : (window.playerMaxHealth || 30);
-    const _cost = Math.max(1, Math.round(_mh * 0.08));
-    if (typeof playerHealth === 'number') {
-      playerHealth = Math.max(1, playerHealth - _cost);
-      if (typeof updateHUD === 'function') { try { updateHUD(); } catch (e) { /* swallow */ } }
-    }
+  if (key && key !== 'attack' && isBloodpactActive()) {
+    applyBloodpactCost();
     return Math.max(60, effective * 0.1);
   }
   return Math.max(100, effective);

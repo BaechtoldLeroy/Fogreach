@@ -740,9 +740,19 @@
           if (typeof red === 'number' && isFinite(red)) lootCdMult = Math.max(0.2, 1 - red);
         }
       } catch (e) { /* never break activation */ }
-      state.cooldowns[abilityId] = now + def.cooldownMs * cdMult * lootCdMult;
+      let _cdBudget = def.cooldownMs * cdMult * lootCdMult;
+      // Feature 059: Blutpakt-Amulett — fast kein Cooldown, kostet dafür LP.
+      // Nach dem Ready-Check -> LP nur bei ERFOLGREICHER Aktivierung.
+      if (typeof window !== 'undefined' && typeof window.isBloodpactActive === 'function'
+          && window.isBloodpactActive()) {
+        _cdBudget = Math.max(120, _cdBudget * 0.1);
+        if (typeof window.applyBloodpactCost === 'function') {
+          try { window.applyBloodpactCost(); } catch (e) { /* never break activation */ }
+        }
+      }
+      state.cooldowns[abilityId] = now + _cdBudget;
       state.cooldownDurations = state.cooldownDurations || {};
-      state.cooldownDurations[abilityId] = def.cooldownMs * cdMult * lootCdMult;
+      state.cooldownDurations[abilityId] = _cdBudget;
     }
 
     // Tutorial step 8 trigger (feature 044). One emission per successful
