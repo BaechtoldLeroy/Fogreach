@@ -165,12 +165,16 @@ function checkWaveEnd(time) {
     if (waveText) waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Wave Cleared!');
     const scene = this;
     if (_modeAllowsUnlock) {
+      // Raum-ID beim Auslösen festhalten: der 2s-Delay + die schon offene Treppe
+      // erlauben, dass der Spieler den Raum vorher verlässt -> markRoomCleared
+      // darf dann NICHT im neuen Raum den Reward spawnen (an forRoomId gebunden).
+      const _clearedRoomId = (typeof window.currentRoomId === 'number') ? window.currentRoomId : undefined;
       if (scene?.time?.delayedCall) {
         scene.time.delayedCall(2000, () => {
-          if (typeof markRoomCleared === 'function') markRoomCleared();
+          if (typeof markRoomCleared === 'function') markRoomCleared({ forRoomId: _clearedRoomId });
         });
       } else {
-        if (typeof markRoomCleared === 'function') markRoomCleared();
+        if (typeof markRoomCleared === 'function') markRoomCleared({ forRoomId: _clearedRoomId });
       }
     } else if (window.RoomMode && typeof window.RoomMode.isObjectiveComplete === 'function'
                && window.RoomMode.isObjectiveComplete()

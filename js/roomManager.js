@@ -507,6 +507,7 @@ function ensureObstacleColliders(scene) {
  */
 function enterRoom(scene, roomId) {
   currentRoomId = roomId;
+  if (typeof window !== 'undefined') window.currentRoomId = roomId;
 
   // Run-summary: each room entry counts as one cleared room (the player only
   // reaches the next via the stair, which requires waves to be cleared).
@@ -1280,6 +1281,13 @@ function markRoomCleared(opts) {
   const scene = obstacles.scene;
   const room = rooms[currentRoomId];
   if (!scene || !room) return;
+
+  // Der Wellen-Clear ruft markRoomCleared VERZÖGERT (2s, wave.js). Die Treppe ist
+  // in Normal-Räumen aber schon offen — läuft der Spieler in dieser Zeit weiter,
+  // wäre currentRoomId inzwischen der NEUE Raum und Reward/State würden dort
+  // (falsch) landen. Ist der Clear für einen anderen als den aktuellen Raum
+  // gedacht, überspringen — der neue Raum triggert seinen eigenen Clear.
+  if (opts && typeof opts.forRoomId === 'number' && opts.forRoomId !== currentRoomId) return;
 
   room.cleared = true;
   lockStairs(scene, false);

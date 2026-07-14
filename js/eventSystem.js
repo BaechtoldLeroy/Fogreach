@@ -22,10 +22,10 @@
       'event.cursed.name': 'Verfluchte Truhe',
       'event.cursed.toast_spawn': 'Eine dunkle Aura umgibt etwas...',
       'event.cursed.object_label': 'Verfl. Truhe',
-      'event.cursed.choice_open': 'Öffnen (Risiko: -3 Max-LP für den Run, Belohnung: {amount} Gold + Item)',
+      'event.cursed.choice_open': 'Öffnen (Risiko: -25% Max-LP für den Run, Belohnung: {amount} Gold + Item)',
       'event.cursed.choice_safe': 'Vorsichtig öffnen (kein Risiko, weniger Beute)',
       'event.cursed.choice_leave': 'In Ruhe lassen',
-      'event.cursed.toast_curse': 'Fluch! -3 Max-LP bis Run-Ende, aber gute Beute!',
+      'event.cursed.toast_curse': 'Fluch! -25% Max-LP bis Run-Ende, aber gute Beute!',
       'event.cursed.toast_safe': '+{amount} Gold (sicher)',
       // Lore fragment
       'event.lore.name': 'Altes Schriftstück',
@@ -106,10 +106,10 @@
       'event.cursed.name': 'Cursed Chest',
       'event.cursed.toast_spawn': 'A dark aura surrounds something...',
       'event.cursed.object_label': 'Cursed Chest',
-      'event.cursed.choice_open': 'Open (Risk: -3 max HP for the run, Reward: {amount} gold + Item)',
+      'event.cursed.choice_open': 'Open (Risk: -25% max HP for the run, Reward: {amount} gold + Item)',
       'event.cursed.choice_safe': 'Open carefully (no risk, less loot)',
       'event.cursed.choice_leave': 'Leave alone',
-      'event.cursed.toast_curse': 'Curse! -3 max HP for the rest of the run, but great loot!',
+      'event.cursed.toast_curse': 'Curse! -25% max HP for the rest of the run, but great loot!',
       'event.cursed.toast_safe': '+{amount} gold (safe)',
       'event.lore.name': 'Old Manuscript',
       'event.lore.toast_spawn': '📜 An old manuscript glows nearby...',
@@ -248,7 +248,12 @@
                   window.brunnenBuffs = { damageMult: 1, speedMult: 1, armorAdd: 0, maxHpAdd: 0 };
                 }
                 var origCurrent = (typeof window.playerHealth === 'number') ? window.playerHealth : 0;
-                window.brunnenBuffs.maxHpAdd -= 3;
+                // Fluch-Kosten: -25% der AKTUELLEN Max-LP (prozentual statt flat
+                // -3, das in der Tiefe belanglos wurde). Als flacher Abzug im
+                // maxHpAdd-Slot verbucht -> skaliert mit dem Gear-Stand.
+                var _curMax = Math.max(1, window.playerMaxHealth || 1);
+                var _penalty = Math.max(1, Math.round(_curMax * 0.25));
+                window.brunnenBuffs.maxHpAdd -= _penalty;
                 if (typeof recalcDerived === 'function') recalcDerived(0, 0);
                 // Preserve the player's existing wound: clamp current HP to
                 // the new max only if it now exceeds it.
