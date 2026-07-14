@@ -87,6 +87,7 @@
   var GUARD_HIT_RANGE = 92;         // Reichweite des Spieler-Schwungs auf Wachen
   var GUARD_ATK_CD = 0.85;          // s zwischen Wachen-Schlaegen
   var GUARD_CONTACT = 34;           // Nahkampf-Distanz Wache->Spieler
+  var GUARD_SOLID_R = 26;           // Kollisionsradius: Spieler wird herausgeschoben
   var GUARD_CHASE_MULT = 1.15;      // feindselige Wachen sind etwas schneller
   var EXPOSE_AGGRO_R = 300;         // bei Enttarnung: nur Wachen im Umkreis werden feindselig
 
@@ -140,6 +141,23 @@
     for (var i = 0; i < gs.length; i++) {
       var g = gs[i];
       if (!g || g.knocked) continue;
+      // Soft-Kollision: der Spieler kann nicht DURCH eine (stehende ODER jagende)
+      // Wache laufen. Bei Überlappung wird er aus dem Wachen-Radius geschoben —
+      // nur wenn das Ziel begehbar ist (respektiert Wände via blockedAt).
+      if (p) {
+        var sdx = p.x - g.x, sdy = p.y - g.y;
+        var sdd = Math.sqrt(sdx * sdx + sdy * sdy);
+        if (sdd < GUARD_SOLID_R && sdd > 0.001) {
+          var ux = sdx / sdd, uy = sdy / sdd;
+          var tx = p.x + ux * (GUARD_SOLID_R - sdd);
+          var ty = p.y + uy * (GUARD_SOLID_R - sdd);
+          var blk = state.blockedAt;
+          if (!blk || !blk(tx, ty)) {
+            if (typeof p.setPosition === 'function') p.setPosition(tx, ty);
+            else { p.x = tx; p.y = ty; }
+          }
+        }
+      }
       // Feindselig: auf den Spieler zu bewegen und im Nahkampf zuschlagen.
       if (g.hostile && p) {
         var hdx = p.x - g.x, hdy = p.y - g.y;
