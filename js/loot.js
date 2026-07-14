@@ -260,9 +260,15 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
   const isMiniBossDrop = sourceEnemy && sourceEnemy.isMiniBoss;
   const lootChanceBonus = isMiniBossDrop ? 4 : (isEliteDrop ? 2 : 0);
 
-  const roll = Phaser.Math.Between(0, 100);
+  // Diminishing Returns: sind in diesem Run schon >10 ECHTE Items gedroppt
+  // (Tränke/Rollen NICHT mitgezählt), wird die zufällige Item-Chance HALBIERT.
+  let dropThreshold = 1 + lootChanceBonus;
+  if ((window.__runItemsDropped || 0) > 10) dropThreshold = dropThreshold / 2;
 
-  if (maybeItem || roll < (1 + lootChanceBonus)) {
+  // Float-Roll (0..100), damit halbierte Bruch-Schwellen (z.B. 0.5) exakt greifen.
+  const roll = Math.random() * 100;
+
+  if (maybeItem || roll < dropThreshold) {
     // KEIN Tier-Bump mehr. Elites droppen normale Qualität (nur höhere Drop-Rate).
     // Minibosse rollen mit einem Qualitäts-BIAS -> erhöhte CHANCE auf Magic/Rare/
     // Legendär (kein garantierter +Tier-Sprung).
@@ -300,6 +306,12 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     loot.setDepth(80);
     trackLootSprite(scene || loot.scene, loot);
     _attachRarityFx(scene || loot.scene, loot, item);
+    // Run-Zähler: nur ECHTE Ausrüstung zählen (Tränke/Rollen/Truhen ausgenommen)
+    // -> steuert die Halbierung oben ab dem 11. Item.
+    const _gearTypes = { weapon: 1, head: 1, body: 1, boots: 1, amulet: 1 };
+    if (item && _gearTypes[item.type]) {
+      window.__runItemsDropped = (window.__runItemsDropped || 0) + 1;
+    }
   } else if (roll < 50) {
     spawnPickup.call(this, x, y, 'health');
   } else if (roll < 80) {
