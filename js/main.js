@@ -878,6 +878,25 @@ if (typeof window !== 'undefined') {
   window.pauseGameClock = pauseGameClock;
   window.resumeGameClock = resumeGameClock;
 }
+
+// True, wenn der Spieler auf/an einer ENTSPERRTEN Treppe steht. Wird beim
+// E-Druck (Classic slot3) geprüft, damit der Raumwechsel das E konsumiert und
+// die Ability nicht zusätzlich feuert.
+function _playerOnUnlockedStair(scene) {
+  try {
+    const grp = scene && scene.stairsGroup;
+    if (!grp || typeof grp.getChildren !== 'function' || !player) return false;
+    const stairs = grp.getChildren();
+    for (let i = 0; i < stairs.length; i++) {
+      const s = stairs[i];
+      if (!s || !s.active) continue;
+      if (s.getData && s.getData('locked')) continue;
+      const dx = s.x - player.x, dy = s.y - player.y;
+      if (dx * dx + dy * dy <= 70 * 70) return true; // ~Stair-Body-Radius
+    }
+  } catch (e) {}
+  return false;
+}
 let invUI = {
   panel: null,
   slots: [],
@@ -1716,9 +1735,12 @@ function update(time, delta) {
     for (let slot = 1; slot <= 4; slot++) {
       if (window.InputScheme.consumeAbilityTrigger(slot)) {
         if (slot === 3 && scheme === 'classic') {
-          // Classic only: E triggers slot3 → check door first, fall through to ability.
-          const doorHandled = window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
-          if (!doorHandled) window.AbilitySystem.tryActivate('slot3', this);
+          // Classic only: E triggers slot3 → erst Treppe, dann Tür, dann Ability.
+          // Steht der Spieler auf einer ENTSPERRTEN Treppe, konsumiert der
+          // Raumwechsel (onStairOverlap) das E -> die Ability darf NICHT feuern.
+          const onStair = _playerOnUnlockedStair(this);
+          const doorHandled = !onStair && window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
+          if (!onStair && !doorHandled) window.AbilitySystem.tryActivate('slot3', this);
         } else {
           window.AbilitySystem.tryActivate('slot' + slot, this);
         }

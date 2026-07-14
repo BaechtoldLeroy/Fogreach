@@ -709,13 +709,17 @@ function enterRoom(scene, roomId) {
   const isProceduralRoom = !!builtMeta.isProcedural;
   const TILE_PX = 32;
   const roomDiagPx = Math.sqrt(builtWidth * builtWidth + builtHeight * builtHeight);
-  const MIN_STAIR_DISTANCE = isProceduralRoom
-    ? Math.max(TILE_PX * 8, roomDiagPx * 0.30)
-    : 280; // legacy authored-template threshold
+  // Treppen sollen im ganzen Level VERTEILT sein — nicht am Spawn kleben und
+  // nicht aneinander klumpen. Mindestabstände jetzt RAUMRELATIV (skalieren mit
+  // der Raumgröße) und deutlich größer, für authored UND prozedurale Räume gleich.
+  const MIN_STAIR_DISTANCE = Math.max(TILE_PX * 8, roomDiagPx * 0.32);
   const MIN_STAIR_DIST_SQ = MIN_STAIR_DISTANCE * MIN_STAIR_DISTANCE;
   const STAIR_HALF = 44; // 80px display + 8px margin
   const PLACED_STAIRS = []; // pixel coords of stairs placed in this loop
-  const STAIR_SEPARATION_SQ = (STAIR_HALF * 3) * (STAIR_HALF * 3); // ~132px apart
+  // Separation ~35% der Raumdiagonale (min 264px) -> Treppen spannen den Raum
+  // auf statt zu clustern; zu nahe Extras werden via #15 weggelassen.
+  const STAIR_SEPARATION = Math.max(STAIR_HALF * 6, roomDiagPx * 0.35);
+  const STAIR_SEPARATION_SQ = STAIR_SEPARATION * STAIR_SEPARATION;
 
   // True if (cx, cy) is inside the room bounds with a STAIR_HALF margin AND
   // not blocked by walls or physics obstacles AND reachable from the player
@@ -1273,6 +1277,28 @@ function lockStairs(scene, lock) {
   );
 }
 
+// Ist (x,y) zu nah an einer Treppe? Verhindert, dass E-Interaktionsobjekte
+// (Truhen/Schreine/Händler + Raum-Reward) AUF/unter Treppen spawnen, wo Treppe
+// und Objekt dieselbe E-Taste beanspruchen würden. margin = Puffer über den
+// halben Treppen-Sprite (STAIR_HALF 44) hinaus.
+function isNearStair(scene, x, y, margin) {
+  try {
+    const grp = scene && scene.stairsGroup;
+    if (!grp || typeof grp.getChildren !== 'function') return false;
+    const r = 44 + (typeof margin === 'number' ? margin : 44);
+    const r2 = r * r;
+    const stairs = grp.getChildren();
+    for (let i = 0; i < stairs.length; i++) {
+      const s = stairs[i];
+      if (!s || !s.active) continue;
+      const dx = s.x - x, dy = s.y - y;
+      if (dx * dx + dy * dy < r2) return true;
+    }
+  } catch (e) {}
+  return false;
+}
+if (typeof window !== 'undefined') window.isNearStair = isNearStair;
+
 /**
  * Raum „cleared“ markieren und Türen freischalten.
  * Aufrufst du, wenn Raum‑Wave erledigt ist.
@@ -1356,6 +1382,7 @@ function markRoomCleared(opts) {
           const ty = player.y + dy;
           if (scene.isPointAccessible && !scene.isPointAccessible(tx, ty)) continue;
           if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(tx, ty)) continue;
+          if (isNearStair(scene, tx, ty, 40)) continue; // nicht auf einer Treppe
           rx = tx; ry = ty; placed = true;
           break;
         }

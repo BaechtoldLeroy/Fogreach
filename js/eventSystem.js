@@ -410,6 +410,8 @@
             && window.isSpawnPositionBlocked(spot.x, spot.y, EVENT_HALF)) {
           continue;
         }
+        // Nicht auf/unter einer Treppe spawnen (E-Konflikt Treppe vs. Objekt).
+        if (typeof window.isNearStair === 'function' && window.isNearStair(scene, spot.x, spot.y, 40)) continue;
         cx = spot.x; cy = spot.y; foundSpot = true;
       }
     }
@@ -425,6 +427,7 @@
             && window.isSpawnPositionBlocked(tx, ty, EVENT_HALF)) {
           continue;
         }
+        if (typeof window.isNearStair === 'function' && window.isNearStair(scene, tx, ty, 40)) continue;
         cx = tx; cy = ty; foundSpot = true;
       }
     }
@@ -971,11 +974,15 @@
   function _placeMerchant(scene, texKey) {
     if (!scene || !scene.add || !scene.physics) return;
 
-    // Find an accessible position using the spawn system
+    // Find an accessible position using the spawn system (nicht auf einer Treppe).
     var cx = 400, cy = 250;
     if (scene.pickAccessibleSpawnPoint) {
-      var spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 30 });
-      if (spot) { cx = spot.x; cy = spot.y; }
+      for (var _ma = 0; _ma < 12; _ma++) {
+        var spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 30 });
+        if (!spot) break;
+        if (typeof window.isNearStair === 'function' && window.isNearStair(scene, spot.x, spot.y, 40)) continue;
+        cx = spot.x; cy = spot.y; break;
+      }
     } else {
       // Fallback: near player
       if (typeof player !== 'undefined' && player && player.active) {
