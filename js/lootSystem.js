@@ -418,21 +418,21 @@ if (window.i18n) {
     // sofort zu sterben — der Gear-Spielraum (Affixe/Krit) zieht dann auf 1-2.
     // Boss/Elite/Miniboss-Multiplikatoren bewusst noch unverändert (Playtest).
     Object.freeze({ key: 'WPN_EISENKLINGE', type: 'weapon', name: 'Eisenklinge', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 2, max: 6 }) }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 2, max: 5 }) }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
     Object.freeze({ key: 'WPN_SCHATTENDOLCH', type: 'weapon', name: 'Schattendolch', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 1, max: 5 }), speed: 15, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 1, max: 4 }), speed: 15, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
     Object.freeze({ key: 'WPN_KETTENMORGENSTERN', type: 'weapon', name: 'Kettenmorgenstern', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 10 }), speed: -5 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 7 }), speed: -5 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
     Object.freeze({ key: 'WPN_GLUTAXT', type: 'weapon', name: 'Glutaxt', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 13 }), speed: -10 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 6 }), speed: -10 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
 
     // Bows (ranged weapons — equipping one swaps default attack to a projectile)
     Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 1, max: 5 }), range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 1, max: 4 }), range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
     Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 3, max: 8 }), range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 3, max: 6 }), range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
     Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 11 }), range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 7 }), range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
 
     // Helms (3)
     Object.freeze({ key: 'HD_KETTENHAUBE', type: 'head', name: 'Kettenhaube', iconKey: 'itHead',
