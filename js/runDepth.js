@@ -34,12 +34,24 @@
   // FR-02: bump MAX_DEPTH by exactly 1 on the first completion of a run.
   // Idempotent via the run latch. Returns the new max depth, or null when the
   // run does not complete (wrong reason / already counted / persistence absent).
-  function tryCompleteRun(reason) {
+  //
+  // Frontier-Gate: `startDepth` ist die Tiefe, auf der der Run STARTETE. Nur ein
+  // Run, der AN der aktuellen Tiefengrenze beginnt (startDepth >= maxDepth), hebt
+  // die Grenze. Ein Wiederholungs-Run auf bereits freigeschalteter, geringerer
+  // Tiefe (z. B. maxDepth-5, etwa um einen Boss zu farmen) zählt NICHT -> maxDepth
+  // bleibt gleich. `startDepth` weggelassen -> Alt-Verhalten (bump), damit
+  // bestehende Aufrufer/Tests ohne Tiefe unverändert +1 bekommen.
+  function tryCompleteRun(reason, startDepth) {
     if (!isCompletionReason(reason)) return null;
     if (_completedThisRun) return null;
     _completedThisRun = true;
     if (typeof window !== 'undefined' && window.Persistence
         && typeof window.Persistence.bumpMaxDepth === 'function') {
+      if (typeof startDepth === 'number'
+          && typeof window.Persistence.getMaxDepth === 'function'
+          && startDepth < window.Persistence.getMaxDepth()) {
+        return null; // Wiederholung unterhalb der Grenze -> keine Progression
+      }
       return window.Persistence.bumpMaxDepth();
     }
     return null; // persistence wiring lands in WP03

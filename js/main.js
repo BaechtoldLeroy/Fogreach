@@ -1781,7 +1781,12 @@ function leaveDungeonForHub(scene, options = {}) {
   // death / portal never advance the depth. Runs BEFORE the save below (NFR-02:
   // the new ceiling is persisted with this run's save).
   if (window.RunDepth && typeof window.RunDepth.tryCompleteRun === 'function') {
-    try { window.RunDepth.tryCompleteRun(reason); } catch (e) { /* never block hub return */ }
+    // #41-Follow-up: nur ein Run, der an der aktuellen Tiefengrenze STARTETE,
+    // hebt maxDepth. Wiederholungen tieferer/geringerer Tiefe (Boss-Farming)
+    // progressen die Grenze nicht mehr.
+    const _startDepth = (window.runStats && typeof window.runStats.startDepth === 'number')
+      ? window.runStats.startDepth : undefined;
+    try { window.RunDepth.tryCompleteRun(reason, _startDepth); } catch (e) { /* never block hub return */ }
   }
   // Feature 058 (#41) WP04: dungeon_run quest objectives advance +1 per
   // COMPLETED run (not per wave) — same completion gate as the depth bump.

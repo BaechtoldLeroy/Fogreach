@@ -137,3 +137,32 @@ test('#41 WP05: death/portal on a high-ceiling save never lower MAX_DEPTH', () =
   RD.tryCompleteRun('portal');
   assert.strictEqual(P.getMaxDepth(), 25, 'a failed/abandoned run leaves the ceiling intact');
 });
+
+// --- Frontier-Gate: Wiederholung geringerer Tiefe progressed maxDepth NICHT ---
+
+test('#41 frontier: completing a run BELOW the ceiling does NOT bump maxDepth', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(10);
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 5); // replay depth 5 < ceiling 10
+  assert.strictEqual(after, null, 'shallow replay returns null');
+  assert.strictEqual(P.getMaxDepth(), 10, 'ceiling unchanged on a shallow replay');
+});
+
+test('#41 frontier: completing a run AT the ceiling bumps maxDepth by 1', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(10);
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 10); // frontier run (startDepth == ceiling)
+  assert.strictEqual(after, 11, 'frontier run advances the ceiling');
+  assert.strictEqual(P.getMaxDepth(), 11);
+});
+
+test('#41 frontier: omitting startDepth keeps legacy behavior (bumps)', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(10);
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete'); // no depth arg -> legacy bump
+  assert.strictEqual(after, 11, 'legacy call without depth still bumps');
+  assert.strictEqual(P.getMaxDepth(), 11);
+});
