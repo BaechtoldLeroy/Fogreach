@@ -610,12 +610,15 @@ if (window.i18n) {
   const _bonusCache = { flat: {}, percent: {}, version: 0 };
   let _potionCooldownUntil = 0;
   const POTION_GLOBAL_CD_MS = 8000;
-  // Trank-Limit: nach POTION_BURST_LIMIT Tränken in Folge greift eine deutlich
-  // längere Pause (statt endlos alle 8s nachzuschütten). Danach ist das Kontingent
-  // wieder voll. _potionCooldownDuration hält die AKTUELLE Dauer für die HUD-Radiale.
-  const POTION_BURST_LIMIT = 5;
+  // Trank-Aufladungen: POTION_BURST_LIMIT Tränke laufen auf dem normalen Cooldown;
+  // ist das Kontingent leer, greift eine deutlich längere Pause. Danach (oder nach
+  // POTION_BURST_RESET_MS OHNE Trank) ist das Kontingent wieder voll.
+  // _potionCooldownDuration hält die AKTUELLE Dauer für die HUD-Radiale.
+  const POTION_BURST_LIMIT = 3;
   const POTION_LONG_CD_MS = 30000;
-  let _potionUsesInBurst = 0;
+  const POTION_BURST_RESET_MS = 30000; // 30s ohne Trank -> Kontingent voll
+  let _potionCharges = POTION_BURST_LIMIT;
+  let _lastPotionUseAt = 0;
   let _potionCooldownDuration = POTION_GLOBAL_CD_MS;
   // eslint-disable-next-line no-unused-vars
   let _shopState = null;
@@ -1116,12 +1119,13 @@ if (window.i18n) {
     } else {
       window.inventory[slot] = null;
     }
-    // Kontingent: die ersten POTION_BURST_LIMIT Tränke laufen auf dem normalen
-    // Cooldown; der letzte davon löst die LANGE Pause aus und füllt das Kontingent
-    // danach wieder auf.
-    _potionUsesInBurst += 1;
-    if (_potionUsesInBurst >= POTION_BURST_LIMIT) {
-      _potionUsesInBurst = 0;
+    // Aufladung verbrauchen. getPotionCharges() wendet vorher das Auffüllen an
+    // (30s ohne Trank ODER lange Pause abgelaufen). Ist danach das Kontingent
+    // leer, greift die LANGE Pause statt des normalen Cooldowns.
+    _potionCharges = getPotionCharges() - 1;
+    _lastPotionUseAt = Date.now();
+    if (_potionCharges <= 0) {
+      _potionCharges = 0;
       _potionCooldownDuration = POTION_LONG_CD_MS;
     } else {
       _potionCooldownDuration = POTION_GLOBAL_CD_MS;
@@ -1152,14 +1156,24 @@ if (window.i18n) {
   function _getPotionCooldownRemaining() {
     return Math.max(0, _potionCooldownUntil - Date.now());
   }
-  // Aktuelle Cooldown-Dauer (8s normal / 30s nach dem 5. Trank) — die HUD-Radiale
-  // muss gegen DIESE Dauer füllen, sonst stimmt der Ring in der langen Pause nicht.
+  // Aktuelle Cooldown-Dauer (8s normal / 30s bei leerem Kontingent) — die
+  // HUD-Radiale muss gegen DIESE Dauer füllen, sonst stimmt der Ring nicht.
   function getPotionCooldownDuration() {
     return _potionCooldownDuration;
   }
+  // Verfügbare Aufladungen. Füllt sich (a) nach POTION_BURST_RESET_MS OHNE Trank
+  // oder (b) sobald die lange Pause bei leerem Kontingent abgelaufen ist.
+  function getPotionCharges() {
+    const now = Date.now();
+    if (_lastPotionUseAt && now - _lastPotionUseAt >= POTION_BURST_RESET_MS) return POTION_BURST_LIMIT;
+    if (_potionCharges <= 0 && now >= _potionCooldownUntil) return POTION_BURST_LIMIT;
+    return Math.max(0, Math.min(POTION_BURST_LIMIT, _potionCharges));
+  }
+  function getPotionChargesMax() { return POTION_BURST_LIMIT; }
   function _resetPotionCooldown() {
     _potionCooldownUntil = 0;
-    _potionUsesInBurst = 0;
+    _potionCharges = POTION_BURST_LIMIT;
+    _lastPotionUseAt = 0;
     _potionCooldownDuration = POTION_GLOBAL_CD_MS;
   }
   // ---------------------------------------------------------------------------
@@ -1547,6 +1561,8 @@ if (window.i18n) {
     spendGold: spendGold,
     consumePotion: consumePotion,
     getPotionCooldownDuration: getPotionCooldownDuration,
+    getPotionCharges: getPotionCharges,
+    getPotionChargesMax: getPotionChargesMax,
     onPotionKey: onPotionKey,
     isPotionOnCooldown: isPotionOnCooldown,
     _getPotionCooldownRemaining: _getPotionCooldownRemaining,

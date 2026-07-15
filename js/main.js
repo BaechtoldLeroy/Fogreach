@@ -2368,10 +2368,21 @@ function initUI() {
         && window.LootSystem.isPotionOnCooldown();
       const remainMs = (typeof window.LootSystem._getPotionCooldownRemaining === 'function')
         ? window.LootSystem._getPotionCooldownRemaining() : 0;
-      // Cooldown-Dauer dynamisch: 8s normal, 30s in der langen Pause nach dem
-      // 5. Trank — sonst füllt die Radiale gegen die falsche Dauer.
+      // Cooldown-Dauer dynamisch: 8s normal, 30s in der langen Pause bei leerem
+      // Kontingent — sonst füllt die Radiale gegen die falsche Dauer.
       if (typeof window.LootSystem.getPotionCooldownDuration === 'function') {
         potionTile.durationMs = window.LootSystem.getPotionCooldownDuration();
+      }
+      // Aufladungs-Indikator: ●=frei, ○=verbraucht (z.B. "●●○").
+      let chargeStr = '';
+      if (typeof window.LootSystem.getPotionCharges === 'function'
+          && typeof window.LootSystem.getPotionChargesMax === 'function') {
+        const _ch = window.LootSystem.getPotionCharges();
+        const _chMax = window.LootSystem.getPotionChargesMax();
+        if (_chMax > 0) {
+          chargeStr = '  ' + '●'.repeat(Math.max(0, _ch))
+            + '○'.repeat(Math.max(0, _chMax - _ch));
+        }
       }
       if (bestTier > 0) {
         const potName = _HUD_T(POTION_NAME_KEYS[bestTier] || 'hud.potion.name.default');
@@ -2381,7 +2392,8 @@ function initUI() {
         const stackSuffix = bestStack > 1 ? ' x' + bestStack : '';
         potionTile.nameText.setText(potName + stackSuffix);
         if (potionTile.statusText) {
-          potionTile.statusText.setText(onCd ? (remainMs / 1000).toFixed(1) + 's' : _HUD_T('hud.potion.ready'));
+          potionTile.statusText.setText(
+            (onCd ? (remainMs / 1000).toFixed(1) + 's' : _HUD_T('hud.potion.ready')) + chargeStr);
           potionTile.statusText.setColor(onCd ? '#ffd966' : '#78f3c7');
         }
         if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, onCd ? 0xffd966 : 0x44ff66, 0.85);
