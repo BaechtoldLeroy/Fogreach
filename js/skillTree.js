@@ -245,8 +245,10 @@
   // pushen. PURE Funktionen — von den activate()-Pfaden in player.js/abilitySystem
   // defensiv gelesen.
   var RANK_DMG_PER = 0.15; // +15% Schaden pro Rang ueber Rang 1
-  var RANK_CD_PER  = 0.08; // -8% Cooldown pro Rang ueber Rang 1
-  var RANK_CD_CAP  = 0.40; // max. 40% Cooldown-Reduktion durch Raenge
+  // Talentpunkte sollen den Cooldown spuerbar druecken: 8% -> 12% pro Rang,
+  // Cap 40% -> 50%. Rang 5 = -48% CD (vorher -32%), Capstone Rang 3 = -24%.
+  var RANK_CD_PER  = 0.12; // -12% Cooldown pro Rang ueber Rang 1
+  var RANK_CD_CAP  = 0.50; // max. 50% Cooldown-Reduktion durch Raenge
 
   // Schadens-Multiplikator: 1 bei Rang<=1; +RANK_DMG_PER je weiterem Rang;
   // + Synergie-Beitrag (stat 'damage'). Unbekannte/ungelernte Knoten -> 1.

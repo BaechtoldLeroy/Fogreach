@@ -172,27 +172,27 @@ test('(h) getAbilityDamageMult: Rang 1 -> 1.0; Rang 3 -> 1.30; Synergie addiert'
   assert.ok(Math.abs(ST.getAbilityDamageMult('hammer') - 1.18) < 1e-9, 'Synergie addiert: 1.18, got ' + ST.getAbilityDamageMult('hammer'));
 });
 
-test('(i) getAbilityCooldownMult: sinkt mit Rang und ist bei 40% gedeckelt', () => {
+test('(i) getAbilityCooldownMult: sinkt mit Rang und ist bei 50% gedeckelt', () => {
   ST.grantSkillPoint(30); // whirlwind maxen kostet 1+3+5+7+9 = 25
   // ungelernt -> 1
   assert.strictEqual(ST.getAbilityCooldownMult('whirlwind'), 1);
   // Rang 1 -> 1 (keine Reduktion)
   ST.investPoint('whirlwind', 1);
   assert.ok(Math.abs(ST.getAbilityCooldownMult('whirlwind') - 1.0) < 1e-9, 'Rang 1 -> 1.0');
-  // Rang 3 -> 1 - 2*0.08 = 0.84
+  // Rang 3 -> 1 - 2*0.12 = 0.76
   ST.investPoint('whirlwind', 1);
   ST.investPoint('whirlwind', 1);
-  assert.ok(Math.abs(ST.getAbilityCooldownMult('whirlwind') - 0.84) < 1e-9, 'Rang 3 -> 0.84, got ' + ST.getAbilityCooldownMult('whirlwind'));
+  assert.ok(Math.abs(ST.getAbilityCooldownMult('whirlwind') - 0.76) < 1e-9, 'Rang 3 -> 0.76, got ' + ST.getAbilityCooldownMult('whirlwind'));
   // Rang 5 -> 1 - 4*0.08 = 0.68 (Cap 0.40 noch nicht erreicht: 4*0.08=0.32 < 0.40)
   ST.investPoint('whirlwind', 1);
   ST.investPoint('whirlwind', 1);
-  assert.ok(Math.abs(ST.getAbilityCooldownMult('whirlwind') - 0.68) < 1e-9, 'Rang 5 -> 0.68, got ' + ST.getAbilityCooldownMult('whirlwind'));
+  assert.ok(Math.abs(ST.getAbilityCooldownMult('whirlwind') - 0.52) < 1e-9, 'Rang 5 -> 0.52, got ' + ST.getAbilityCooldownMult('whirlwind'));
   // Cap-Pruefung: synthetischer Knoten via loadSaveData ueber Rang 6 nicht moeglich (maxRank 5),
   // daher Cap direkt rechnerisch: 6 Raenge -> 5*0.08=0.40 == Cap. twistingBlades maxRank 5,
   // wir pruefen den Cap-Grenzfall mit der Formel: max. Reduktion = 0.40, nie mehr.
   // (Bei maxRank 5 ist die hoechste reale Reduktion 0.32; der Cap greift defensiv fuer
   //  hoehere Werte, falls maxRank spaeter steigt.)
-  assert.ok(ST.getAbilityCooldownMult('whirlwind') >= 1 - 0.40 - 1e-9, 'nie unter Cap');
+  assert.ok(ST.getAbilityCooldownMult('whirlwind') >= 1 - 0.50 - 1e-9, 'nie unter Cap');
 });
 
 test('getSaveData/loadSaveData round-trip (Save-Einbettung WP05)', () => {
