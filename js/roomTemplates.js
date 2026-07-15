@@ -416,27 +416,13 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
             brazierGlowGfx.fillCircle(obstacleX, obstacleY, 24);
           }
 
-          // Check clearance: only spawn as physics obstacle if 2+ tiles from any wall
-          let autoTooClose = false;
-          const isBraz = key === 'brazier' || key === 'brazer';
-          if (!isBraz) {
-            for (let cdy = -2; cdy <= 2 && !autoTooClose; cdy++) {
-              for (let cdx = -2; cdx <= 2 && !autoTooClose; cdx++) {
-                if (cdx === 0 && cdy === 0) continue;
-                const cx = x + cdx, cy = y + cdy;
-                if (cy >= 0 && cy < H && cx >= 0 && cx < W && wallsGrid[cy]?.[cx] === '#') autoTooClose = true;
-              }
-            }
-          }
-          if (!autoTooClose) {
-            scene.spawnObstacle(obstacleX, obstacleY, key);
-          } else {
-            // Visual only, no physics
-            if (scene.textures?.exists(key)) {
-              const vis = scene.add.image(obstacleX, obstacleY, key).setDepth(40).setAlpha(0.7);
-              templateWalls.push(vis);
-            }
-          }
+          // Props naeher als 2 Kacheln an einer Wand wurden frueher zu reinen
+          // Bildern (alpha 0.7, keine Physik) degradiert — sie sahen ausgegraut
+          // aus und man lief hindurch. Das ist weg: jedes Prop ist ein echtes
+          // Hindernis, egal wo es steht. Truhen/Kisten an Waenden waren sonst
+          // Attrappen, und seit Statuen/Saeulen zerstoerbar sind gibt es auch
+          // keinen Grund mehr, wandnahe Props auszunehmen.
+          scene.spawnObstacle(obstacleX, obstacleY, key);
         }
       }
       x++;
@@ -735,48 +721,15 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       brazierGlowGfx.fillCircle(px, py, 24);
     }
 
-    // Check if object has enough clearance from walls (at least 2 tiles)
-    // Player body is 34x56px, objects are 32x32. Need 2+ tiles gap.
-    const isBrazier = o.type === 'brazier' || o.type === 'brazer';
-    const isRubble = o.type === 'rubble';
-    const tileX = Math.floor(o.x), tileY = Math.floor(o.y);
-    let tooClose = false;
-    if (!isBrazier && !isRubble && wallsGrid) {
-      // Check 2-tile radius for walls
-      for (let dy = -2; dy <= 2 && !tooClose; dy++) {
-        for (let dx = -2; dx <= 2 && !tooClose; dx++) {
-          if (dx === 0 && dy === 0) continue;
-          const cx = tileX + dx, cy = tileY + dy;
-          if (cy >= 0 && cy < wallsGrid.length && cx >= 0 && cx < (wallsGrid[cy]?.length || 0)) {
-            if (wallsGrid[cy][cx] === '#') tooClose = true;
-          }
-        }
-      }
-    }
-
-    if (!tooClose || isBrazier) {
-      scene.spawnObstacle(px, py, o.type);
-    } else {
-      // Place visually only (no collision blocking) — but still destructible
-      // if it's a chest/barrel/crate type.
-      const visualKey = o.type;
-      const lowerKey = String(visualKey).toLowerCase();
-      const destructibleTypes = ['barrel', 'crate', 'chest_small', 'chest_medium', 'chest_large', 'rubble'];
-      const isDestructible = destructibleTypes.some(t => lowerKey.startsWith(t));
-
-      if (isDestructible) {
-        // Spawn as obstacle (so destructible logic works) but flag as
-        // walkable so the player can pass through.
-        const o2 = scene.spawnObstacle(px, py, o.type);
-        if (o2) {
-          o2.setAlpha(0.7);
-          o2.setData('walkthrough', true);
-        }
-      } else if (scene.textures?.exists(visualKey)) {
-        const vis = scene.add.image(px, py, visualKey).setDepth(40).setAlpha(0.7);
-        templateWalls.push(vis);
-      }
-    }
+    // Frueher: Objekte naeher als 2 Kacheln an einer Wand wurden auf alpha 0.7
+    // gesetzt und durchlaufbar gemacht ('walkthrough'), damit der Spieler
+    // (34x56px) nicht in Wandnischen haengenbleibt. Kosten waren hoeher als der
+    // Nutzen: Truhen an Waenden waren halbtransparente Attrappen, und die
+    // Wegfindung hielt die Kachel ohnehin fuer blockiert (siehe die Walkable-
+    // Pruefung ueber AUTO_OBSTACLE_TILE_KEYS) — Physik und Navigation waren sich
+    // also uneinig. Jetzt ist jedes Objekt ein echtes Hindernis; die
+    // zerstoerbaren kann man wegschlagen, wenn sie im Weg stehen.
+    scene.spawnObstacle(px, py, o.type);
     objectCount++;
   });
 
