@@ -427,6 +427,16 @@ if (window.i18n) {
     Object.freeze({ key: 'WPN_GLUTAXT', type: 'weapon', name: 'Glutaxt', iconKey: 'itWeapon',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 6 }), speed: -10 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
 
+    // --- Spät-Tier-Waffen (ab ~Tiefe 15) --------------------------------------
+    // Deutlich stärkere Basisbänder als die Start-Waffen (die bei ~7 kappen), damit
+    // sich der Abstieg in die Tiefe auch beim Basisschaden lohnt. Gate: der erste
+    // dropWeight-Key hat Gewicht 0 (unter diesem iLevel gilt genau dieses Gewicht
+    // -> Basis wird nicht in den Pool aufgenommen). Bänder bewusst eng (~1.4-1.6x).
+    Object.freeze({ key: 'WPN_RICHTSCHWERT', type: 'weapon', name: 'Richtschwert', iconKey: 'itWeapon',
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 7, max: 11 }) }), dropWeight: Object.freeze({ 14: 0, 17: 60, 24: 100 }) }),
+    Object.freeze({ key: 'WPN_KRIEGSHAMMER', type: 'weapon', name: 'Kettenrat-Kriegshammer', iconKey: 'itWeapon',
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 9, max: 13 }), speed: -10 }), dropWeight: Object.freeze({ 14: 0, 18: 40, 26: 80 }) }),
+
     // Bows (ranged weapons — equipping one swaps default attack to a projectile)
     Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itBow',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 1, max: 4 }), range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
@@ -434,6 +444,9 @@ if (window.i18n) {
       baseStats: Object.freeze({ damage: Object.freeze({ min: 3, max: 6 }), range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
     Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itBow',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 7 }), range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
+    // Spät-Tier-Bogen (ab ~Tiefe 15), s. Kommentar bei den Spät-Tier-Nahkampfwaffen.
+    Object.freeze({ key: 'WPN_NEBELBOGEN', type: 'weapon', subtype: 'bow', name: 'Nebelbogen', iconKey: 'itBow',
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 7, max: 11 }), range: 130, crit: 3 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
 
     // Helms (3)
     Object.freeze({ key: 'HD_KETTENHAUBE', type: 'head', name: 'Kettenhaube', iconKey: 'itHead',
@@ -597,6 +610,13 @@ if (window.i18n) {
   const _bonusCache = { flat: {}, percent: {}, version: 0 };
   let _potionCooldownUntil = 0;
   const POTION_GLOBAL_CD_MS = 8000;
+  // Trank-Limit: nach POTION_BURST_LIMIT Tränken in Folge greift eine deutlich
+  // längere Pause (statt endlos alle 8s nachzuschütten). Danach ist das Kontingent
+  // wieder voll. _potionCooldownDuration hält die AKTUELLE Dauer für die HUD-Radiale.
+  const POTION_BURST_LIMIT = 5;
+  const POTION_LONG_CD_MS = 30000;
+  let _potionUsesInBurst = 0;
+  let _potionCooldownDuration = POTION_GLOBAL_CD_MS;
   // eslint-disable-next-line no-unused-vars
   let _shopState = null;
 
@@ -1096,7 +1116,17 @@ if (window.i18n) {
     } else {
       window.inventory[slot] = null;
     }
-    _potionCooldownUntil = Date.now() + POTION_GLOBAL_CD_MS;
+    // Kontingent: die ersten POTION_BURST_LIMIT Tränke laufen auf dem normalen
+    // Cooldown; der letzte davon löst die LANGE Pause aus und füllt das Kontingent
+    // danach wieder auf.
+    _potionUsesInBurst += 1;
+    if (_potionUsesInBurst >= POTION_BURST_LIMIT) {
+      _potionUsesInBurst = 0;
+      _potionCooldownDuration = POTION_LONG_CD_MS;
+    } else {
+      _potionCooldownDuration = POTION_GLOBAL_CD_MS;
+    }
+    _potionCooldownUntil = Date.now() + _potionCooldownDuration;
     if (typeof window._refreshInventoryHUD === 'function') {
       try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
     }
@@ -1122,8 +1152,15 @@ if (window.i18n) {
   function _getPotionCooldownRemaining() {
     return Math.max(0, _potionCooldownUntil - Date.now());
   }
+  // Aktuelle Cooldown-Dauer (8s normal / 30s nach dem 5. Trank) — die HUD-Radiale
+  // muss gegen DIESE Dauer füllen, sonst stimmt der Ring in der langen Pause nicht.
+  function getPotionCooldownDuration() {
+    return _potionCooldownDuration;
+  }
   function _resetPotionCooldown() {
     _potionCooldownUntil = 0;
+    _potionUsesInBurst = 0;
+    _potionCooldownDuration = POTION_GLOBAL_CD_MS;
   }
   // ---------------------------------------------------------------------------
   // WP06: Shop state (Mara Schwarzmarkt)
@@ -1509,6 +1546,7 @@ if (window.i18n) {
     getGold: getGold,
     spendGold: spendGold,
     consumePotion: consumePotion,
+    getPotionCooldownDuration: getPotionCooldownDuration,
     onPotionKey: onPotionKey,
     isPotionOnCooldown: isPotionOnCooldown,
     _getPotionCooldownRemaining: _getPotionCooldownRemaining,

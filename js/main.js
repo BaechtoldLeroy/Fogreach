@@ -2332,7 +2332,8 @@ function initUI() {
     updateAbilityStatus('roll', { remainingMs: 0, durationMs: rollTile.durationMs });
 
     // WP04+: Potion tile (always visible, F key). Shows best inventory potion
-    // + stack count, with a 2s cooldown radial driven by LootSystem.
+    // + stack count, with a cooldown radial driven by LootSystem (Dauer wird im
+    // Refresh dynamisch gesetzt: 8s normal / 30s lange Pause nach dem 5. Trank).
     const potionTile = buildTile(_HUD_T('hud.potion.empty_label'), 'F', 0x44ff66);
     if (potionTile.iconText) potionTile.iconText.setText('\u269A'); // ⚚ caduceus
     if (potionTile.statusText) potionTile.statusText.setText(_HUD_T('hud.potion.no_potion'));
@@ -2367,6 +2368,11 @@ function initUI() {
         && window.LootSystem.isPotionOnCooldown();
       const remainMs = (typeof window.LootSystem._getPotionCooldownRemaining === 'function')
         ? window.LootSystem._getPotionCooldownRemaining() : 0;
+      // Cooldown-Dauer dynamisch: 8s normal, 30s in der langen Pause nach dem
+      // 5. Trank — sonst füllt die Radiale gegen die falsche Dauer.
+      if (typeof window.LootSystem.getPotionCooldownDuration === 'function') {
+        potionTile.durationMs = window.LootSystem.getPotionCooldownDuration();
+      }
       if (bestTier > 0) {
         const potName = _HUD_T(POTION_NAME_KEYS[bestTier] || 'hud.potion.name.default');
         // Only render the stack suffix when more than one — saves ~3 chars
