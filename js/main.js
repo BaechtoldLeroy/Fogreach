@@ -1469,20 +1469,23 @@ function breakDestructibleObstacle(scene, obs) {
     }
   }
 
-  // Drop loot based on tier
-  const goldDrop = { minor: 5, small: 15, medium: 35, large: 75 }[tier] || 5;
+  // Drop loot based on tier. 'stone' (Statuen/Saeulen) ist Kulisse, kein
+  // Behaelter: nur etwas Gold, keine Ausruestung/Traenke/Rollen. Die Tabellen
+  // hier greifen ueber `|| <default>` — ein unbekannter Tier faellt sonst still
+  // auf Fass-Beute zurueck, darum steht 'stone' ueberall explizit drin.
+  const goldDrop = { stone: 3, minor: 5, small: 15, medium: 35, large: 75 }[tier] || 5;
   if (window.LootSystem && window.LootSystem.grantGold) {
     window.LootSystem.grantGold(goldDrop + Math.floor(Math.random() * goldDrop));
   }
 
   // Drop items with tier-based probability
   // Reward chests always drop with min-Magic and higher Rare/Legendary chance.
-  const iLevelMap = { minor: 0, small: 1, medium: 4, large: 8 };
+  const iLevelMap = { stone: 0, minor: 0, small: 1, medium: 4, large: 8 };
   const iLevel = (window.DUNGEON_DEPTH || 1) + (iLevelMap[tier] || 0);
   const isRewardChest = obs.getData && obs.getData('isRewardChest');
   const dropChance = isRewardChest
     ? 1.0
-    : { minor: 0.005, small: 0.05, medium: 0.10, large: 0.15 }[tier] || 0;
+    : { stone: 0, minor: 0.005, small: 0.05, medium: 0.10, large: 0.15 }[tier] || 0;
 
   if (Math.random() < dropChance) {
     if (window.LootSystem && window.LootSystem.rollItem) {
@@ -1504,8 +1507,8 @@ function breakDestructibleObstacle(scene, obs) {
   // Independent potion + portal-scroll roll on top of the equipment drop.
   // Lets Schutt / Fässer (low equipment dropChance) still meaningfully
   // contribute to consumable supply.
-  const potionChance  = { minor: 0.05, small: 0.08, medium: 0.10, large: 0.12 }[tier] || 0.05;
-  const scrollChance  = { minor: 0.01, small: 0.02, medium: 0.03, large: 0.04 }[tier] || 0.01;
+  const potionChance  = { stone: 0, minor: 0.05, small: 0.08, medium: 0.10, large: 0.12 }[tier] ?? 0.05;
+  const scrollChance  = { stone: 0, minor: 0.01, small: 0.02, medium: 0.03, large: 0.04 }[tier] ?? 0.01;
   const potionOffsetX = 14 + Math.random() * 8;
   const potionOffsetY = -10 + Math.random() * 12;
   if (Math.random() < potionChance && typeof window.makePotionDrop === 'function' && typeof spawnLoot === 'function') {

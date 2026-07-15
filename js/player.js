@@ -906,6 +906,47 @@ function forEachEnemyInRange(range, callback, options = {}) {
   });
 }
 
+// Gegenstueck zu forEachEnemyInRange fuer zerstoerbare Props (Truhen, Kisten,
+// Faesser, Statuen, Saeulen). Skills trafen bisher NUR Gegner — ein Wirbelwind
+// mitten in einer Saeulenhalle liess alles stehen, waehrend ein simpler
+// Nahkampfschlag (player.js) und Projektile (main.js-Collider) laengst Props
+// zerschlugen. Radius-basiert: die Skills haben zwar unterschiedliche Formen
+// (Kegel/Linie/Kreis), aber "was im Wirkbereich lag, zerbricht" ist die
+// erwartbare Regel — und Props sind statisch, also gibt es kein Zielproblem.
+// scene wird durchgereicht, weil breakDestructibleObstacle die Szene fuer
+// Partikel/Loot braucht.
+// `cx`/`cy` verschieben das Zentrum weg vom Spieler — noetig fuer Skills, deren
+// Wirkung NICHT beim Spieler liegt (Hammer-Einschlag vor dem Spieler). Deren
+// forEachEnemyInRange-Reichweite ist nur ein grober Vorfilter, die echte Form
+// rechnet der Callback; wer die Vorfilter-Reichweite hier durchreicht, zerlegt
+// Props quer durch den Raum.
+function breakDestructiblesInRange(scene, range, options = {}) {
+  if (!obstacles?.children || !player) return 0;
+  if (typeof window.breakDestructibleObstacle !== 'function') return 0;
+
+  const { requireLineOfSight = false, cx = null, cy = null } = options;
+  const px = (cx != null) ? cx : (player.x ?? player.body?.x ?? 0);
+  const py = (cy != null) ? cy : (player.y ?? player.body?.y ?? 0);
+
+  // Erst sammeln, dann brechen: breakDestructibleObstacle ruft obs.destroy(),
+  // und waehrend children.iterate() aus der Gruppe zu entfernen ueberspringt
+  // Eintraege.
+  const targets = [];
+  obstacles.children.iterate((obs) => {
+    if (!obs || !obs.active || !obs.getData || !obs.getData('destructible')) return;
+    const dx = (obs.x ?? 0) - px;
+    const dy = (obs.y ?? 0) - py;
+    if (Math.hypot(dx, dy) > range) return;
+    if (requireLineOfSight && !hasLineOfSightToTarget(obs)) return;
+    targets.push(obs);
+  });
+  targets.forEach((t) => {
+    try { window.breakDestructibleObstacle(scene, t); } catch (e) {}
+  });
+  return targets.length;
+}
+if (typeof window !== 'undefined') window.breakDestructiblesInRange = breakDestructiblesInRange;
+
 function setButtonActive(button, active) {
   if (!button) return;
 
@@ -1856,6 +1897,7 @@ function spinAttack() {
   const spinBonus = getAbilityBonus('spin');
   const spinScene = this;
   const spinHitEnemies = [];
+  breakDestructiblesInRange(spinScene, range);
   forEachEnemyInRange(range, (enemy) => {
     const { isCrit } = dealDamageToEnemy(spinScene, enemy, 1, 'spin');
     if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
@@ -2047,6 +2089,9 @@ function releaseChargedSlash(forceMaxCharge = false) {
       scene.time.delayedCall(150, () => { if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0); });
     }
   }, { requireLineOfSight: false });
+
+  // Props im Einschlagradius zerschlagen (Zentrum = Einschlag, NICHT Spieler).
+  breakDestructiblesInRange(scene, slamRadius, { cx: ix, cy: iy });
 
   if (_savedCritChance !== undefined) {
     playerCritChance = _savedCritChance;
@@ -2493,6 +2538,7 @@ function dashSlash() {
   };
 
   const applyDashDamage = () => {
+    breakDestructiblesInRange(scene, dashRange);
     forEachEnemyInRange(dashRange, (enemy, { dx, dy }) => {
       if (dashHits.has(enemy)) return;
       tempVec.set(dx, dy);
@@ -2634,6 +2680,10 @@ function shadowCharge() {
   // Trifft jeden Gegner, dessen Position nahe an der Bewegungslinie (Strahl in
   // dashDir ab Spielerposition) liegt. forEachEnemyInRange liefert dx/dy.
   var applyLineDamage = function () {
+    // Zentrum = Spieler, aber nur der Nahbereich: die Vorfilter-Reichweite
+    // (dashDistance + lineRadius) deckt die ganze Bahn ab — Props laengs der
+    // Bahn zerbrechen ohnehin, waehrend der Spieler sie entlangfaehrt.
+    breakDestructiblesInRange(scene, lineRadius);
     forEachEnemyInRange(dashDistance + lineRadius, function (enemy, info) {
       if (chargeHits.has(enemy)) return;
       // Projektion auf die Dash-Richtung; nur Gegner VOR dem Spieler (proj>=0)
@@ -2870,6 +2920,7 @@ function shadowDeathBlow() {
   _deathBlowFx(scene, forward, range, arc);
 
   var targets = [];
+  breakDestructiblesInRange(scene, range);
   forEachEnemyInRange(range, function (enemy, info) {
     if (!enemy || !enemy.active) return;
     var len = Math.hypot(info.dx, info.dy);
@@ -3088,6 +3139,7 @@ function shieldBash() {
     });
   }
 
+  breakDestructiblesInRange(scene, range);
   forEachEnemyInRange(range, (enemy, { dx, dy }) => {
     tempVec.set(dx, dy);
     const len = tempVec.length();
@@ -3563,6 +3615,7 @@ function castCycloneStrike() {
     if (window.particleFactory) window.particleFactory.abilityTrail(player.x, player.y, CYAN);
   } catch (e) { /* visual only */ }
 
+  breakDestructiblesInRange(scene, radius);
   forEachEnemyInRange(radius, (enemy, { distance }) => {
     if (!enemy || !enemy.active) return;
     const { isCrit } = dealDamageToEnemy(scene, enemy, aoeMult, 'cycloneStrike');
@@ -3646,6 +3699,7 @@ function castFrostNova() {
     if (window.particleFactory) { try { window.particleFactory.abilityTrail(cx, cy, ICE); } catch (e) {} }
   } catch (e) { /* visual only */ }
 
+  breakDestructiblesInRange(scene, range);
   forEachEnemyInRange(range, (enemy) => {
     if (!enemy || !enemy.active) return;
     // Schaden gesenkt (war 0.6 -> 0.32): Frostnova ist primär Kontrolle/Slow.
@@ -3741,6 +3795,8 @@ function castWhirlwind() {
   scene.time.addEvent({ delay: tickMs, repeat: tickCount - 1, callback: () => {
     if (!player || !player.active) return;
     let hitThisTick = 0;
+    // Pro Tick — Props sind nach dem ersten weg, der Rest laeuft ins Leere.
+    breakDestructiblesInRange(scene, range);
     forEachEnemyInRange(range, (enemy) => {
       if (!enemy || !enemy.active) return;
       hitThisTick++;

@@ -1357,8 +1357,13 @@ function spawnObstacle(x, y, key) {
     o.setData('textureKey', textureKey);
   }
 
-  // Destructible/openable types — chests, barrels, crates can be broken for loot
-  const destructibleTypes = ['barrel', 'crate', 'chest_small', 'chest_medium', 'chest_large', 'rubble'];
+  // Destructible/openable types — chests, barrels, crates can be broken for loot.
+  // Statuen/Saeulen sind ebenfalls zerschlagbar (Sichtlinien/Wege oeffnen), aber
+  // KULISSE statt Behaelter: sie tragen den 'stone'-Tier, der nur etwas Gold gibt.
+  // Waeren sie 'minor', wuerden ~3-4 Props pro Raum Traenke und Ausruestung
+  // ausspucken — das ist ein Oekonomie-Eingriff, kein Zerstoerungs-Feature.
+  const destructibleTypes = ['barrel', 'crate', 'chest_small', 'chest_medium', 'chest_large',
+    'rubble', 'statue', 'pillar'];
   const lowerKey = String(key).toLowerCase();
   const isDestructible = destructibleTypes.some(t => lowerKey.startsWith(t));
   if (isDestructible) {
@@ -1371,6 +1376,8 @@ function spawnObstacle(x, y, key) {
       o.setData('lootTier', 'medium');
     } else if (lowerKey.startsWith('chest')) {
       o.setData('lootTier', 'small');
+    } else if (lowerKey.startsWith('statue') || lowerKey.startsWith('pillar')) {
+      o.setData('lootTier', 'stone');
     } else {
       o.setData('lootTier', 'minor'); // barrel, crate, rubble
     }
@@ -1383,6 +1390,9 @@ function spawnObstacle(x, y, key) {
 window.RoomTemplates.transformTemplate = transformTemplate;
 window.RoomTemplates.applyRoomTemplate = applyRoomTemplate;
 window.RoomTemplates.buildRoomFromTemplate = buildRoomFromTemplate;
+// Exportiert fuer Tests: die destructible/lootTier-Zuordnung ist reine Daten-
+// logik, aber ein falscher Tier flutet den Run still mit Beute.
+window.RoomTemplates.spawnObstacle = spawnObstacle;
 
 // Optionaler Zufallspicker
 window.RoomTemplates.pick = function(scene, { tags = [], difficulty = null } = {}) {
