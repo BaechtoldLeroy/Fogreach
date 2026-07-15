@@ -114,3 +114,43 @@ test('beginRoom: a special room suppresses wave-clear unlock and reads as specia
   assert.strictEqual(R.allowWaveClearUnlock(), false, 'special rooms unlock via their own logic');
   assert.strictEqual(R.objectiveFailed(), true);
 });
+
+// ---------------------------------------------------------------------------
+// Pause-Uhr: Modus-Timer duerfen bei offenem Inventar nicht weiterlaufen.
+// main.js reicht Phasers rohes delta auch waehrend der Pause durch.
+// ---------------------------------------------------------------------------
+
+test('updateActive tickt nicht, solange die Pause-Uhr laeuft', () => {
+  const R = fresh();
+  let ticks = 0;
+  R.register('paustest', function () {
+    return {
+      start: function () {},
+      update: function () { ticks++; },
+      isComplete: function () { return false; }
+    };
+  });
+  // beginRoom waehlt den Modus selbst; ?mode= erzwingt ihn im ersten Raum.
+  const _loc = globalThis.window.location;
+  globalThis.window.location = { search: '?mode=paustest' };
+  R.beginRoom(null, { roomIndex: 0 });
+  globalThis.window.location = _loc;
+  assert.strictEqual(R.activeModeId(), 'paustest', 'Test-Modus ist aktiv');
+
+  delete globalThis.window.__GAME_PAUSE;
+  R.updateActive(16);
+  const baseline = ticks;
+  assert.ok(baseline > 0, 'ohne Pause-Objekt wird normal getickt');
+
+  // Inventar auf -> pauseGameClock() setzt `since`
+  globalThis.window.__GAME_PAUSE = { offset: 0, since: 1000, _scene: null };
+  R.updateActive(16);
+  R.updateActive(16);
+  R.updateActive(16);
+  assert.strictEqual(ticks, baseline, 'waehrend der Pause kein einziger Tick');
+
+  // Inventar zu -> resumeGameClock() raeumt `since` weg
+  globalThis.window.__GAME_PAUSE = { offset: 500, since: null, _scene: null };
+  R.updateActive(16);
+  assert.strictEqual(ticks, baseline + 1, 'nach dem Schliessen laeuft es weiter');
+});

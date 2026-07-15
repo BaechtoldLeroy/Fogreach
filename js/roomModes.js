@@ -87,8 +87,21 @@
     return id;
   }
 
+  // Pause-Uhr (main.js window.__GAME_PAUSE). Beim Pausieren werden scene.time und
+  // die Physik eingefroren, die Scene selbst laeuft aber weiter — main.js update()
+  // reicht also weiter Phasers rohes `delta` durch. Die Modus-Timer sind rein
+  // delta-getrieben (Survival zaehlt runter, Escape ebenso) und liefen deshalb
+  // waehrend offenem Inventar munter weiter; sichtbar wurde es erst beim
+  // Schliessen, weil das HUD verdeckt war -> der Timer "sprang". Gate hier statt
+  // pro Modus: sonst faellt jeder neue Modus in dieselbe Falle.
+  function _clockPaused() {
+    return !!(typeof window !== 'undefined' && window.__GAME_PAUSE
+      && window.__GAME_PAUSE.since != null);
+  }
+
   function updateActive(dt) {
     if (!_current) return;
+    if (_clockPaused()) return;
     try { if (_current.update) _current.update(dt); } catch (e) {}
     // Nicht-`clear`-Modi schalten die Treppe SELBST frei, sobald ihr Ziel
     // erfüllt ist (`clear` nutzt weiter die checkWaveEnd→markRoomCleared-Kette).
