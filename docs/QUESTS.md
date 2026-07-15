@@ -1,0 +1,794 @@
+# Quest-Übersicht — Fogreach
+
+_Automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 29 Quests._
+
+## Wie eine Quest angeboten wird
+
+Ein NPC bietet eine Quest an, wenn **alle** Bedingungen gelten:
+
+1. Status ist `available` (noch nicht angenommen/abgeschlossen)
+2. Die Quest gehört diesem NPC (`npcId`)
+3. `currentAct >= requiredAct`
+4. **Alle** `prerequisites` sind abgeschlossen
+5. Optionales `gate()` liefert `true` _(aktuell nutzt keine Quest ein Gate)_
+
+**`minDepth` gated nicht das Angebot, sondern den Fortschritt:** Ziele zählen erst, wenn der laufende Run auf mindestens dieser Tiefe ist.
+
+**Akt-Index → Name:** `0` Auftrag · `1` Treuer Diener · `2` Erste Risse · `3` Wahrheit · `4` Bruch · `5` Rebellion · `6` Offenbarung
+
+## Ziel-Typen und ihre Trigger
+
+| Typ | Trigger im Code |
+|---|---|
+| `kill` (`enemy` / `elite_enemy`) | Gegner-Tod (`js/player.js`) |
+| `explore` (`room`) | Raum gecleart (`js/roomManager.js` → `markRoomCleared`) |
+| `fetch` | Quest-Item aufgesammelt (`js/loot.js`) |
+| `observe` | Spionage-Zone abgehört (`js/espionageSystem.js`) |
+| `boss_kill` | Boss-Tod → `onBossKilled` (`js/player.js` Mapping) |
+| `wave` (`reach_wave`) | Run auf Tiefe ≥ Ziel (`onWaveCompleted`) |
+| `dungeon_run` | Abgeschlossener Run (`onDungeonCompleted`) |
+| `craft` | Item gecraftet (`onCraft`) |
+| `dialogue` | **Auto-Complete bei Annahme** |
+
+## Boss-Leiter ↔ Quest-Leiter
+
+Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
+
+| Boss | Tiefe | Quest |
+|---|---|---|
+| Kettenmeister | 10 | Maras Warnung |
+| Zeremonienmeister | 20 | Die Ritualkammer (Elara) |
+| Schattenrat | 30 | Rettung oder Beweis |
+
+---
+
+# Akt-Index 0 — Auftrag
+
+## Botengang fuer die Resistance
+
+`resistance_fetch_01` · **NPC:** Elara · **Kette:** 0
+
+> Hol das versiegelte Buendel aus dem Keller. Niemand darf es sehen.
+
+- **Ziel:** `kill` → `enemy` ×5
+- **Vorbedingung:** keine
+- **Belohnung:** 25 XP · 3 MAT
+
+**Angebot**
+
+> Es gibt da etwas im Keller... ein Buendel, versiegelt. Bring es mir, ohne dass jemand sieht.
+> 
+> Nimmst du den Auftrag an?
+
+**Unterwegs**
+
+> Schau dich im Keller um. Raeum ein paar Wachen aus dem Weg, falls noetig.
+
+**Abschluss**
+
+> Du hast es. Niemand hat dich gesehen — gut. Die Resistance vergisst das nicht.
+
+
+## Saeuberung der Keller
+
+`aldric_cleanup` · **NPC:** Ratsherr Aldric · **Kette:** 1
+
+> Besiege 10 Gegner in den Kellern unter der Archivschmiede.
+
+- **Ziel:** `kill` → `enemy` ×10
+- **Vorbedingung:** keine
+- **Belohnung:** 30 XP · 5 MAT · 2 Druckblätter
+
+**Angebot**
+
+> Wilde Tiere in den Kellern. Raeum sie aus.
+> 
+> Willst du diese Aufgabe uebernehmen?
+
+**Unterwegs**
+
+> Die Keller sind noch nicht sicher. Kaempfe weiter.
+
+**Abschluss**
+
+> Gut. Die Keller sind gesaeubert. Hier ist dein Lohn.
+
+
+## Die verschwundene Tochter
+
+`harren_daughter_investigation` · **NPC:** Bürgermeister Harren · **Kette:** 1
+
+> Finde das Tagebuchfragment der Buergermeistertochter im Rathauskeller.
+
+- **Ziel:** `fetch` → `journal_fragment` ×1
+- **Vorbedingung:** Saeuberung der Keller **+** Keller-Patrouille
+- **Belohnung:** 50 XP · 1 Wissens-Fragment(e) · +1 Ansehen (independent)
+
+**Angebot**
+
+> Die Tochter des Buergermeisters ist verschwunden. Aldric sagt, Eindringlinge haetten sie entfuehrt. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversaeumnis.
+> 
+> Ich glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurueckgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.
+> 
+> Vertrau niemandem, bis du es selbst gesehen hast.
+
+**Unterwegs**
+
+> Such weiter — das Fragment ist da unten. Aldric, Klerus und Garde streiten sich oben, weil sie alle eine andere Version hoeren wollen. Du findest die echte.
+
+**Abschluss**
+
+> Du hast es. Sie ist nicht entfuehrt worden. Sie ist geflohen. Und sie hatte Grund dazu — alle drei Ratsfraktionen werden im Fragment namentlich erwaehnt. Du wirst gleich von allen vier Seiten gefragt werden. Hoer dir alles an. Mach alle vier Auftraege. Dann komm zurueck zu mir.
+
+
+## Keller-Patrouille
+
+`aldric_patrol` · **NPC:** Ratsherr Aldric · **Kette:** 2
+
+> Raeume 3 Raeume in den Kellern, um alle Gaenge zu sichern.
+
+- **Ziel:** `explore` → `room` ×3
+- **Vorbedingung:** keine
+- **Belohnung:** 40 XP · 1 Druckblätter
+
+**Angebot**
+
+> Stell sicher, dass alle Gaenge sicher sind. Patrouilliere drei Raeume.
+> 
+> Bist du bereit?
+
+**Unterwegs**
+
+> Noch nicht alle Gaenge gesichert. Weiter patrouillieren.
+
+**Abschluss**
+
+> Alle Gaenge sind sicher. Gute Arbeit, Archivschmied.
+
+
+## Verifikation des Magistrats
+
+`magistrat_verification` · **NPC:** Ratsherr Aldric · **Kette:** 2
+
+> Sichere die Umgebung — beseitige 8 Stoerer waehrend der Magistrat die Akten ordnet.
+
+- **Ziel:** `kill` → `enemy` ×8
+- **Vorbedingung:** Die verschwundene Tochter
+- **Belohnung:** 75 XP · +1 Ansehen (magistrat)
+
+**Angebot**
+
+> Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten muessen ordnungsgemaess gefuehrt werden.
+> 
+> Geh zu Branka in die Archivschmiede und lass das ratsgesiegelte Verifikationsdokument anfertigen. Sie wird Fragen stellen — beantworte sie nicht. Der Magistrat traegt die Verantwortung, nicht der Buerger.
+> 
+> Nimmst du den Auftrag an?
+
+**Unterwegs**
+
+> Das Dokument muss in der Archivschmiede gefertigt werden. Branka kennt das Verfahren. Geh und lass sie ihre Arbeit tun.
+
+**Abschluss**
+
+> Hervorragend. Das Dokument ist im Archiv. Die Tochter ist nun offiziell eine Person von Interesse. Was das in der Praxis bedeutet, geht dich nichts an. Der Magistrat dankt dir.
+
+
+## Reinigung der unteren Kammern
+
+`klerus_purification` · **NPC:** Klerus-Priester · **Kette:** 2 · **Fortschritt erst ab Tiefe 3**
+
+> Reinige die unteren Kammern des Rathauskellers — besiege 3 Elite-Gegner. Die Ketzer-Anfuehrer lauern erst ab Tiefe 3.
+
+- **Ziel:** `kill` → `elite_enemy` ×3
+- **Vorbedingung:** Die verschwundene Tochter
+- **Belohnung:** 90 XP · +1 Ansehen (klerus)
+
+**Angebot**
+
+> Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand gefuehrt — die untere Kammern bersten vor solchen Schatten.
+> 
+> Reinige sie. Drei der Anfuehrer dieser ketzerischen Praesenz lauern noch dort unten, tiefer als die ersten Gaenge — steige bis Tiefe 3 hinab. Faelle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.
+> 
+> Die Reinigung ist eine geistliche Pflicht. Nimm sie an.
+
+**Unterwegs**
+
+> Die Anfuehrer lauern tief — erst ab Tiefe 3. Steige hinab, finde sie, faelle sie. Jede Ketzerei, die du beendest, oeffnet einen weiteren Pfad zur Reinheit.
+
+**Abschluss**
+
+> Du hast die Ketzerei geschlagen. Die untere Kammern atmen wieder. Die Ordnung bleibt — durch dich. Der Klerus segnet deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.
+
+
+## Patrouillen-Erweiterung
+
+`garde_patrol_expansion` · **NPC:** Stadtwache · **Kette:** 2
+
+> Demonstriere Kraft fuer die naechsten Patrouillen — besiege 10 Stoerer.
+
+- **Ziel:** `kill` → `enemy` ×10
+- **Vorbedingung:** Die verschwundene Tochter
+- **Belohnung:** 75 XP · +1 Ansehen (garde)
+
+**Angebot**
+
+> Wenn eine Tochter aus dem Rathaus verschwinden kann, ist das ein Versagen der Garde — und das wird sich aendern. Ich brauche eine Patrouillen-Erweiterung. Heute. Geh in die unteren Kammern und demonstriere Kraft — zehn Stoerer fallen, das Edikt traegt sich von selbst durch die Strassen.
+> 
+> Frag nicht, ob die Patrouillen schoner Lebensweise zutraeglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalitaet ist die einzige Muenze, die zaehlt. Das Edikt ist die Muenze, die du in meine Hand legst.
+> 
+> Nimmst du den Auftrag an, Archivschmied?
+
+**Unterwegs**
+
+> Zehn Stoerer noch. Jeder gefallene Koerper ist eine Zeile mehr im Bericht. Die Garde wartet auf das Ergebnis.
+
+**Abschluss**
+
+> Das Edikt ist veroeffentlicht. Die Patrouillen verdoppeln sich ab morgen. Niemand wird mehr verschwinden — oder zumindest niemand, der zaehlt. Die Garde merkt sich, wer schnell antwortet.
+
+
+## Beweise aus der Ritualkammer
+
+`widerstand_proof` · **NPC:** Elara · **Kette:** 2
+
+> Finde ein verstecktes Ratsdokument in einer Ritualkammer im Rathauskeller.
+
+- **Ziel:** `fetch` → `council_document` ×1
+- **Vorbedingung:** Die verschwundene Tochter
+- **Belohnung:** 100 XP · 1 Wissens-Fragment(e) · +1 Ansehen (widerstand)
+
+**Angebot**
+
+> Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzaehlung. Aldric will mich zurueckholen. Der Klerus will mich verbrennen. Die Garde will mich kassieren.
+> 
+> Und ich? Ich will dass DU siehst, was ich gesehen habe, bevor du weiter ihre Auftraege erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.
+> 
+> Bring es mir. Dann reden wir.
+
+**Unterwegs**
+
+> Such die Ritualkammer. Drei Raeume tiefer. Das Dokument ist klein, aber das Siegel darauf wird dir den Atem nehmen.
+
+**Abschluss**
+
+> Drei Siegel. Eine Unterschrift. Magistrat, Klerus, Garde — sie behaupten in der Oeffentlichkeit, sie waeren Rivalen. Hinter verschlossenen Tueren stimmen sie ueberein. Geh zu Harren. Er wartet auf den Moment, in dem du das verstehst.
+
+
+## Die geheime Sitzung
+
+`council_collusion_reveal` · **NPC:** Bürgermeister Harren · **Kette:** 3
+
+> Folge Harren zur geheimen Sitzung der drei Ratsfraktionen.
+
+- **Ziel:** `dialogue` → `collusion_reveal_seen` ×1
+- **Vorbedingung:** Verifikation des Magistrats **+** Reinigung der unteren Kammern **+** Patrouillen-Erweiterung **+** Beweise aus der Ritualkammer
+- **Belohnung:** 150 XP · 1 Wissens-Fragment(e) · schaltet frei: act2_open
+
+**Angebot**
+
+> Komm mit. Du musst etwas sehen. (Climax-Scene wird in WP03 final implementiert — diese 1-Page-Version laesst Q6 in WP02 schon spielbar werden, der vollwertige 4-Page-Reveal kommt mit dem naechsten WP.)
+
+**Unterwegs**
+
+> Folge mir. Es ist Zeit.
+
+**Abschluss**
+
+> Du hast es jetzt gesehen. Der Nebel war nie das Wetter — er war eine Erzaehlung. Du hast bereits fuer jede der drei Masken gearbeitet, und sie ist nur ein einziges Gesicht. Akt 2 beginnt hier — in derselben Stadt, unter denselben Masken.
+
+
+# Akt-Index 2 — Erste Risse
+
+## Die Spaeherin
+
+`mara_contact` · **NPC:** Mara vom Untergrund · **Kette:** 1
+
+> Kundschafte fuer Mara drei Kellerraeume des Rats aus.
+
+- **Ziel:** `explore` → `room` ×3
+- **Vorbedingung:** keine
+- **Belohnung:** 60 XP · Info: Maras Netzwerk enthuellt
+
+**Angebot**
+
+> Du erinnerst dich nicht an mich. Aber ich an dich — du warst Archivschmied, bevor der Nebel dir die Erinnerung nahm, und du hast Fragen gestellt, die der Rat begraben wollte.
+> 
+> Ich bin die Spaeherin des Widerstands. Bevor ich dir mein Netzwerk oeffne, will ich sehen, ob du noch sehen kannst: Geh hinab und kundschafte drei Kellerraeume aus. Praeg dir ein, was der Rat dort versteckt.
+
+**Unterwegs**
+
+> Noch nicht genug gesehen. Drei Raeume — und praeg dir jeden ein.
+
+**Abschluss**
+
+> Drei Raeume, in jedem dasselbe: leere Zellen, frische Ketten, Listen mit Namen. Die Vermissten verschwinden nicht zufaellig — der Rat laesst sie verschwinden, und jede Fraktion deckt die andere.
+> 
+> Jetzt weiss ich, dass du noch der Alte bist. Mein Netzwerk steht dir offen — es gibt Arbeit, die nur jemand erledigen kann, an den sich niemand erinnert. Wie dich.
+
+
+## Elaras Geheimnis
+
+`elara_meeting` · **NPC:** Elara · **Kette:** 1
+
+> Finde 2 geheime Dokumente, die Elara versteckt hat.
+
+- **Ziel:** `fetch` → `document` ×2
+- **Vorbedingung:** keine
+- **Belohnung:** 100 XP · schaltet frei: elara_trust
+
+**Angebot**
+
+> Ich bin nicht entfuehrt worden. Ich bin geflohen. Hier — lies das.
+> 
+> Finde zwei Dokumente, die ich im Keller versteckt habe.
+
+**Unterwegs**
+
+> Die Dokumente sind gut versteckt. Suche weiter.
+
+**Abschluss**
+
+> Jetzt siehst du die Wahrheit. Der Rat hat mich benutzt — fuer ihre Rituale.
+> 
+> (Die Abschriften sind in einer ruhigen, geuebten Hand. Fuer etwas, das sie angeblich in Panik im Keller versteckt hat, wirken sie seltsam ordentlich. Du schiebst den Gedanken beiseite.)
+
+
+## Beschlagnahme
+
+`council_seizure` · **NPC:** Ratsherr Aldric · **Kette:** 1
+
+> Beschlagnahme die "subversiven Schriften" — sammle 3 Buendel aus den Kellern.
+
+- **Ziel:** `fetch` → `seized_writings` ×3
+- **Vorbedingung:** keine
+- **Belohnung:** 60 XP · 2 Druckblätter
+
+**Angebot**
+
+> Im Keller hortet Gesindel subversive Schriften gegen den Rat. Beschlagnahme sie — drei Buendel. Lies sie nicht. Bring sie.
+> 
+> Nimmst du den Auftrag an?
+
+**Unterwegs**
+
+> Noch nicht alle Schriften sichergestellt. Such weiter.
+
+**Abschluss**
+
+> Gib her.
+> 
+> (Bevor du sie abgibst, faellt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Buerger, die nach verschwundenen Angehoerigen fragen. Du gibst sie trotzdem ab.)
+
+
+## Zweifel der Schmiedin
+
+`branka_doubt` · **NPC:** Schmiedemeisterin Branka · **Kette:** 2
+
+> Besiege 5 Elite-Gegner, um Beweise fuer Brankas Verdacht zu finden.
+
+- **Ziel:** `kill` → `elite_enemy` ×5
+- **Vorbedingung:** keine
+- **Belohnung:** 80 XP
+
+**Angebot**
+
+> Diese Ruestungen sind fuer Gefangene, nicht Soldaten. Hilf mir, Beweise zu finden.
+> 
+> Besiege fuenf Elite-Wachen und bring mir ihre Befehle.
+
+**Unterwegs**
+
+> Die Elite-Wachen tragen die Beweise bei sich. Kaempfe weiter.
+
+**Abschluss**
+
+> Ich hatte recht. Der Rat baut Gefaengnisse, keine Kasernen. Wir muessen handeln.
+
+
+## Ueberwachung
+
+`council_surveillance` · **NPC:** Ratsherr Aldric · **Kette:** 2
+
+> Ueberwache einen "unruhigen" Bezirk fuer den Rat — sichte 3 Bereiche.
+
+- **Ziel:** `explore` → `room` ×3
+- **Vorbedingung:** Beschlagnahme
+- **Belohnung:** 70 XP · 1 Druckblätter
+
+**Angebot**
+
+> Ein Bezirk gilt als aufsaessig. Sichte drei Bereiche und melde, wer sich zusammenrottet.
+> 
+> Bereit?
+
+**Unterwegs**
+
+> Noch nicht alle Bereiche gesichtet. Beobachte weiter.
+
+**Abschluss**
+
+> Bericht angenommen.
+> 
+> (Du hast keine Verschwoerer gesehen — nur Familien, die Brot teilen und leise zaehlen, wer als Naechstes nicht mehr heimkam.)
+
+
+## Maras Warnung
+
+`mara_warning` · **NPC:** Mara vom Untergrund · **Kette:** 2
+
+> Besiege den Kettenmeister-Boss, der die ersten echten Beweise bewacht.
+
+- **Ziel:** `boss_kill` → `kettenmeister` ×1
+- **Vorbedingung:** Die Spaeherin
+- **Belohnung:** 200 XP
+
+**Angebot**
+
+> Der Kettenmeister bewacht die ersten echten Beweise — er haelt die Siegel auf Tiefe 10. Besiege ihn.
+> 
+> Ohne diese Beweise koennen wir nichts beweisen.
+
+**Unterwegs**
+
+> Der Kettenmeister lebt noch. Er bewacht die Siegel auf Tiefe 10 — steig hinab und faelle ihn.
+
+**Abschluss**
+
+> Der Kettenmeister ist gefallen! Die Beweise sind gesichert. Jetzt kann niemand mehr leugnen, was der Rat getan hat.
+
+
+## Verbotene Abschriften
+
+`branka_transcripts` · **NPC:** Schmiedemeisterin Branka · **Kette:** 3
+
+> Bring Branka 2 Verhoerprotokolle aus den Kellern.
+
+- **Ziel:** `fetch` → `interrogation_record` ×2
+- **Vorbedingung:** Die Spaeherin
+- **Belohnung:** 80 XP · 1 Wissens-Fragment(e)
+
+**Angebot**
+
+> Im Keller lagern Protokolle aus Verhoeren. Nicht von Daemonen — von Menschen. Bring mir zwei Abschriften. Vorsichtig.
+
+**Unterwegs**
+
+> Die Protokolle sind tief im Keller. Such weiter.
+
+**Abschluss**
+
+> Lies das. "Befragt bis zum Gestaendnis." Der Rat verhoert Buerger wie Beschworene. Das ist kein Schutz — das ist Jagd.
+
+
+## Die Ritualkammer
+
+`ritual_chamber` · **NPC:** Ratsherr Aldric · **Kette:** 4
+
+> Aldric schickt dich, eine "verseuchte" Kammer zu reinigen. Dring bis zu ihr vor.
+
+- **Ziel:** `explore` → `room` ×2
+- **Vorbedingung:** Ueberwachung **+** Zweifel der Schmiedin
+- **Belohnung:** 120 XP · 1 Wissens-Fragment(e)
+
+**Angebot**
+
+> Eine untere Kammer ist verseucht — Ketzerei. Reinige sie. Frag nicht, was du findest.
+> 
+> Geh.
+
+**Unterwegs**
+
+> Die Kammer liegt tiefer. Dring weiter vor.
+
+**Abschluss**
+
+> Du stehst in der Kammer. Blut, Symbole, Ketten — und kein Ketzer weit und breit. Das ist keine Verseuchung. Das ist eine Beschwoerungskammer. Der Rat hat dich hergeschickt, um seine eigene Spur zu verwischen.
+
+
+## Der Bruch
+
+`bruch_confrontation` · **NPC:** Schmiedemeisterin Branka · **Kette:** 5 · **Fortschritt erst ab Tiefe 8**
+
+> Aldric hat Wachen auf dich gehetzt. Schlag dich zu Branka durch — besiege 3 Elite-Wachen. Sie stellen dich erst in der Tiefe (ab Tiefe 8).
+
+- **Ziel:** `kill` → `elite_enemy` ×3
+- **Vorbedingung:** Die Ritualkammer
+- **Belohnung:** 200 XP · schaltet frei: act3_open
+
+**Angebot**
+
+> Du hast die Kammer gesehen — und Aldric weiss es. Seine Elite-Wachen riegeln die tiefen Gaenge ab — du stellst sie erst ab Tiefe 8. Schlag dich durch und komm zu mir in die Schmiede.
+> 
+> Ueberlebst du das?
+
+**Unterwegs**
+
+> Aldrics Elite-Wachen halten die Tiefe — erst ab Tiefe 8 stellst du sie. Steige hinab und kaempf dich durch.
+
+**Abschluss**
+
+> "Du stellst zu viele Fragen", hat er gesagt. Jetzt stellst du gar keine mehr — du weisst es. Der Bruch ist da. Mara, Thom, ich — wir sind bereit. Akt 3 beginnt.
+
+
+## Der Konvoi
+
+`espionage_convoy` · **NPC:** Mara vom Untergrund · **Kette:** 6
+
+> Beschatte verkleidet einen Council-Konvoi im Lagerhaus und hoere ihn ab.
+
+- **Ziel:** `observe` → `convoy_intel` ×1
+- **Vorbedingung:** Die Spaeherin
+- **Belohnung:** 90 XP · 2 Druckblätter
+
+**Angebot**
+
+> Heute Nacht entladen sie im alten Lagerhaus einen Konvoi des Rats. Zieh die Wachuniform an, bleib im Schatten und hoer zu — aber zieh keine Klinge, sonst fliegt die Verkleidung auf.
+> 
+> Uebernimmst du das?
+
+**Unterwegs**
+
+> Du bist noch nicht nah genug. Misch dich unter die Wachen am Konvoi und hoer ab, was verladen wird — unentdeckt.
+
+**Abschluss**
+
+> Du hast es gehoert. Keine Vorraete, keine Waffen. Reagenzien, versiegelte Phiolen, Kreidesteine — Ritual-Komponenten. Der Rat schickt keine Patrouille los. Er ruestet eine Beschwoerung aus. Gut gemacht, dass du die Klinge stecken liessest.
+
+
+## Das versiegelte Archiv
+
+`espionage_archive` · **NPC:** Bürgermeister Harren · **Kette:** 7
+
+> Infiltriere verkleidet das Council-Archiv, hoere die Schreiber ab und birg den versiegelten Akt.
+
+- **Ziel:** `observe` → `archive_record` ×1
+- **Vorbedingung:** Der Konvoi
+- **Belohnung:** 110 XP · 1 Wissens-Fragment(e)
+
+**Angebot**
+
+> Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Geh als Schreiber verkleidet hinein, hoer ab, was die anderen fluestern, und birg den Akt. Werde nicht gesehen.
+> 
+> Tust du das fuer mich?
+
+**Unterwegs**
+
+> Die Schreiber haben noch nichts Verwertbares gesagt. Bleib im Archiv, unauffaellig, und hoer weiter ab, bis du an den versiegelten Akt kommst.
+
+**Abschluss**
+
+> Du hast den Akt. "Vermisst, Fall geschlossen" — Elaras Verschwinden, sauber abgelegt, Datum, Siegel, Unterschrift. Zu sauber. Wer in Panik flieht, hinterlaesst kein ordentlich abgeheftetes Protokoll. Und das Datum... es liegt vor dem Tag, von dem Harren mir erzaehlt hat. Ich sage noch nichts. Aber irgendwas an dieser Akte stimmt nicht.
+
+
+## Der Maulwurf
+
+`espionage_informant` · **NPC:** Widerstand · **Kette:** 8
+
+> Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands.
+
+- **Ziel:** `observe` → `informant_id` ×1
+- **Vorbedingung:** Das versiegelte Archiv
+- **Belohnung:** 120 XP · 1 Wissens-Fragment(e)
+
+**Angebot**
+
+> Jemand verraet uns. Was wir hinter verschlossenen Tueren beschliessen, weiss der Rat am naechsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.
+> 
+> Findest du den Verraeter?
+
+**Unterwegs**
+
+> Noch hast du den Maulwurf nicht. Bleib unauffaellig am Treffpunkt und hoer ab, wer Nachrichten nach draussen schmuggelt.
+
+**Abschluss**
+
+> Du hast die Uebergabe gesehen. Ein gefalteter Zettel, eine Hand, ein Wort — und in der Handschrift derselbe sauber gezogene Bogen wie auf den Belegen, die uns jemand aus dem Inneren des Rats zugespielt hat. Die Spur zeigt nach innen, naeher als uns lieb ist. Ich nenne keinen Namen. Aber vertrau ab jetzt niemandem blind — nicht einmal denen, die uns "die Wahrheit" bringen.
+
+
+# Akt-Index 3 — Wahrheit
+
+## Verbotene Wahrheiten
+
+`thom_truth` · **NPC:** Setzer Thom · **Kette:** 1
+
+> Finde 5 Druckplatten mit den verbotenen Wahrheiten ueber den Rat.
+
+- **Ziel:** `fetch` → `print_plate` ×5
+- **Vorbedingung:** keine
+- **Belohnung:** 100 XP · 20 MAT
+
+**Angebot**
+
+> Ich habe genug gedruckt, was der Rat will. Zeit fuer die Wahrheit.
+> 
+> Finde fuenf Druckplatten im Keller — sie enthalten die echte Geschichte.
+
+**Unterwegs**
+
+> Die Druckplatten sind irgendwo im Rathauskeller verborgen. Suche weiter.
+
+**Abschluss**
+
+> Fantastisch! Diese Platten enthalten Beweise, die der Rat vernichten wollte. Die Wahrheit geht in Druck.
+
+
+## Die Ritualkammer
+
+`elara_ritual` · **NPC:** Elara · **Kette:** 2
+
+> Steige auf Tiefe 20 hinab und besiege den Zeremonienmeister, der die Ritualkammer des Rats haelt.
+
+- **Ziel:** `boss_kill` → `zeremonienmeister` ×1
+- **Vorbedingung:** Elaras Geheimnis
+- **Belohnung:** 150 XP · **Ritualamulett** (Episch, iLvl 12)
+
+**Angebot**
+
+> Tief unten ist eine Kammer — die Beschwoerungskammer des Rats. Sie wird vom Zeremonienmeister gehalten, dem Meister der verbotenen Rituale. Steig auf Tiefe 20 hinab und faelle ihn.
+> 
+> Bist du bereit fuer die Wahrheit?
+
+**Unterwegs**
+
+> Der Zeremonienmeister haelt die Kammer noch. Du findest ihn auf Tiefe 20 — solange er lebt, kommst du nicht an die Wahrheit.
+
+**Abschluss**
+
+> Der Zeremonienmeister ist gefallen. Du hast sie gefunden — die Beschwoerungskammer des Rats. Nimm dieses Amulett; es schuetzt vor ihrer dunklen Magie.
+
+
+# Akt-Index 4 — Bruch
+
+## Die Pamphlete
+
+`thom_pamphlets` · **NPC:** Setzer Thom · **Kette:** 2 · **Fortschritt erst ab Tiefe 22**
+
+> Schliesse 3 tiefe Dungeon-Durchlaeufe ab (ab Tiefe 22), um Flugblaetter bis in die untersten Gaenge zu verteilen.
+
+- **Ziel:** `dungeon_run` → `dungeon_complete` ×3
+- **Vorbedingung:** Verbotene Wahrheiten
+- **Belohnung:** 200 XP · schaltet frei: xp_bonus_10
+
+**Angebot**
+
+> Die oberen Gaenge lesen unsere Wahrheit schon. Jetzt brauchen wir die Tiefe — dort, wo der Rat seine Geheimnisse haelt.
+> 
+> Schliesse drei Durchlaeufe ab Tiefe 22 ab, und ganz Fogreach wird die Wahrheit lesen.
+
+**Unterwegs**
+
+> Nur tiefe Durchlaeufe zaehlen — ab Tiefe 22. Schliess drei davon ab; jeder verbreitet unsere Botschaft in die untersten Gaenge.
+
+**Abschluss**
+
+> Die ganze Stadt liest unsere Wahrheiten! Die Buerger sind aufgewacht. Deine Erfahrung waechst nun schneller. (+10% XP)
+
+
+## Waffen fuer den Widerstand
+
+`branka_weapons` · **NPC:** Schmiedemeisterin Branka · **Kette:** 3
+
+> Stelle 3 Gegenstaende in der Archivschmiede her.
+
+- **Ziel:** `craft` → `craft_item` ×3
+- **Vorbedingung:** Zweifel der Schmiedin
+- **Belohnung:** 150 XP
+
+**Angebot**
+
+> Wir brauchen Waffen. Nicht fuer den Rat — fuer UNS.
+> 
+> Stelle drei Gegenstaende in der Schmiede her.
+
+**Unterwegs**
+
+> Die Schmiede wartet. Stelle weitere Gegenstaende her.
+
+**Abschluss**
+
+> Gut geschmiedet. Diese Waffen werden den Unterschied machen.
+
+
+## Elaras Geschenk
+
+`elara_blade` · **NPC:** Elara · **Kette:** 3
+
+> Elara hat eine besondere Waffe fuer dich geschmiedet.
+
+- **Ziel:** `dialogue` → `elara_gift` ×1
+- **Vorbedingung:** Die Ritualkammer
+- **Belohnung:** **Elaras Klinge** (Legendaer, iLvl 15)
+
+**Angebot**
+
+> Nimm das. Ich habe es fuer dich geschmiedet. Fuer den Fall, dass...
+> 
+> Nimm Elaras Klinge an?
+
+**Unterwegs**
+
+> Die Klinge wartet auf dich.
+
+**Abschluss**
+
+> Moege sie dich beschuetzen. Egal was kommt.
+
+
+# Akt-Index 5 — Rebellion
+
+## Rettung oder Beweis
+
+`harren_rescue` · **NPC:** Bürgermeister Harren · **Kette:** 2
+
+> Besiege den Schattenrat-Boss, um Elara zu finden.
+
+- **Ziel:** `boss_kill` → `schattenrat` ×1
+- **Vorbedingung:** Die verschwundene Tochter
+- **Belohnung:** 250 XP
+
+**Angebot**
+
+> Finde meine Tochter. Bitte. Der Schattenrat haelt sie fest.
+> 
+> Besiege ihn und bring Elara zurueck.
+
+**Unterwegs**
+
+> Der Schattenrat lebt noch. Finde und besiege ihn — fuer Elara.
+
+**Abschluss**
+
+> Du hast den Schattenrat besiegt. Aber Elara... sie ist mit ihm verschwunden. Was hat das zu bedeuten?
+
+
+## Der Sturm auf den Rat
+
+`mara_assault` · **NPC:** Mara vom Untergrund · **Kette:** 3
+
+> Dringe bis Welle 30 vor, um den Rat zu stuerzen.
+
+- **Ziel:** `wave` → `reach_wave` ×30
+- **Vorbedingung:** Maras Warnung
+- **Belohnung:** 300 XP
+
+**Angebot**
+
+> Es ist soweit. Der Rat faellt heute. Dringe bis Welle 30 vor.
+> 
+> Bist du bereit fuer den Sturm?
+
+**Unterwegs**
+
+> Der Rat wartet in der Tiefe. Dringe weiter vor — Welle 30.
+
+**Abschluss**
+
+> Der Rat ist gestuerzt! Fogreach atmet auf. Aber die Schatten sind noch nicht besiegt...
+
+
+# Akt-Index 6 — Offenbarung
+
+## Die letzte Wahrheit
+
+`final_truth` · **NPC:** Mara vom Untergrund · **Kette:** 4
+
+> Dringe bis Welle 40 vor, um die wahre Quelle des Pakts zu finden.
+
+- **Ziel:** `wave` → `reach_wave` ×40
+- **Vorbedingung:** Der Sturm auf den Rat
+- **Belohnung:** 500 XP · schaltet frei: story_ending
+
+**Angebot**
+
+> Unter Fogreach wartet die Wahrheit. Bist du bereit?
+> 
+> Dringe bis Welle 40 vor — in die Dimension aus Ketten und Schatten.
+
+**Unterwegs**
+
+> Die letzte Wahrheit liegt bei Welle 40. Du musst tiefer gehen.
+
+**Abschluss**
+
+> Die Ketten sind gebrochen. Die Wahrheit ist frei. Fogreach gehoert wieder den Menschen.
+
