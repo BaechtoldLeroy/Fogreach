@@ -1,6 +1,65 @@
 # Quest-Übersicht — Fogreach
 
-_Automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 29 Quests._
+_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 29 Quests._  
+_Neu erzeugen:_ `node tools/genQuestDoc.js`
+
+---
+
+# Kontext
+
+## Prämisse
+
+Du spielst den **Archivschmied** — Handwerker im Dienst des Stadtrats, der Akten, Waffen und Siegel instand hält. Unter der Stadt liegt der Nebel: ein Kellerlabyrinth, in das der Rat dich zum Aufräumen schickt.
+
+Der Rat gibt sich als drei rivalisierende Fraktionen, die sich öffentlich bekämpfen. Tatsächlich **dienen sie alle derselben okkulten Agenda** — und der Spieler ist genau die Art von nützlichem Handwerker, der ihre Spuren beseitigt, ohne Fragen zu stellen.
+
+Auslöser ist die verschwundene Tochter des Bürgermeisters. Jede Fraktion hat eine eigene Version: entführt, besessen, pflichtvergessen. Ihr Tagebuchfragment sagt etwas anderes — **sie ist geflohen**, und alle drei Ratsfraktionen stehen namentlich darin. Von da an ist die Frage nicht mehr *was ist passiert*, sondern *wem gehorchst du noch*.
+
+## Charaktere
+
+| Figur | Rolle | Steht für | Funktion im Bogen |
+|---|---|---|---|
+| **Ratsherr Aldric** | Ratsherr, dein Auftraggeber | Magistrat | Gibt die harmlosen Anfangsjobs. Schickt dich später in die Ritualkammer, um die **eigene Spur des Rats zu verwischen** — der Moment, in dem der Auftraggeber zum Gegner wird. |
+| **Bürgermeister Harren** | Vater der Verschwundenen | (unabhängig) | Traut keiner der drei Versionen. Startet die Untersuchung und hält den Reveal in der Hand. |
+| **Elara** | Kontakt im Untergrund | Widerstand | Gesicht der Opposition. Führt dich zur Beschwörungskammer, schenkt am Ende ihre Klinge. |
+| **Mara vom Untergrund** | Späherin, Schwarzmarkt | Widerstand-nah | Netzwerk & Spionage-Aufträge; treibt die Boss-Konfrontationen. Betreibt auch den Schwarzmarkt. |
+| **Schmiedemeisterin Branka** | Archivschmiede | (unabhängig) | Stellt Fragen, die man nicht stellen soll. Ihre Zweifel eskalieren zum **Bruch**. |
+| **Setzer Thom** | Hinterhaus-Druckerei | Widerstand-nah | Macht Wahrheit zu Pamphleten — die Presse als Waffe. |
+| **Klerus-Priester** | Geistlicher | Klerus | Nennt Flucht „Besessenheit" und Aufräumen „Reinigung". |
+| **Stadtwache** | Garde-Offizier | Garde | Antwortet auf alles mit mehr Patrouillen. |
+
+## Fraktionen
+
+Ansehen wird pro Fraktion getrackt (`js/factionSystem.js`): feindlich < −25 · neutral · freundlich > 25 · verbündet > 50.
+
+- **Magistrat**, **Klerus**, **Garde** — die drei *ratsinternen* Fraktionen. Konkurrieren nach außen, dienen innen derselben Agenda.
+- **Widerstand** — die Opposition außerhalb des Systems.
+- **Unabhängig** — neutrale Flagge.
+
+In Akt 1 arbeitest du **für alle vier** — das Ansehen ist Konsequenz deines Handelns, kein Content-Gate.
+
+## Akt-Struktur
+
+Der Bogen ist **rein quest-getrieben**: ein Akt steigt nur, wenn eine Quest ihn per `advanceAct` hochsetzt. Tiefen-basierter Aufstieg wurde in Feature 050 entfernt.
+
+| Index | Akt | Wird erreicht durch |
+|---|---|---|
+| `0` | Auftrag | _Startzustand_ |
+| `1` | Treuer Diener | ⚠️ **kein Trigger** — nicht erreichbar |
+| `2` | Erste Risse | Abschluss von **Die geheime Sitzung** |
+| `3` | Wahrheit | Abschluss von **Die Ritualkammer** |
+| `4` | Bruch | Abschluss von **Der Bruch** |
+| `5` | Rebellion | ⚠️ **kein Trigger** — nicht erreichbar |
+| `6` | Offenbarung | ⚠️ **kein Trigger** — nicht erreichbar |
+
+**Bekannte Lücken:**
+
+- **Akt-Index 1 (Der treue Diener) wird übersprungen** — „Die geheime Sitzung" springt von 0 direkt auf 2. Entsprechend hat keine Quest `requiredAct: 1`.
+- **Akt-Index 5 & 6 (Rebellion / Offenbarung) sind nicht erreichbar** — keine Quest setzt `advanceAct: 5` oder `6`. Damit hängen `mara_assault`, `harren_rescue` und `final_truth` (das Story-Ende) fest. → Issue **#44**.
+
+---
+
+# Referenz
 
 ## Wie eine Quest angeboten wird
 
