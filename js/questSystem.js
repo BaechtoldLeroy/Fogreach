@@ -422,19 +422,23 @@
     elara_ritual: {
       id: 'elara_ritual',
       title: 'Die Ritualkammer',
-      description: 'Dringe bis Welle 20 vor, um die Ritualkammer des Rats zu finden.',
+      description: 'Steige auf Tiefe 20 hinab und besiege den Zeremonienmeister, der die Ritualkammer des Rats haelt.',
       npcId: 'elara',
-      type: 'wave',
+      type: 'boss',
       chain: 2,
+      // Vorher: abstraktes `wave:reach_wave 20`. Jetzt der Boss, der auf genau
+      // dieser Tiefe (Tier-Gate 20) sitzt — gleiche Tiefen-Anforderung, aber ein
+      // echtes Ziel, und der Zeremonienmeister bekommt endlich Story-Zweck
+      // (Elaras Ritualkammer <-> der Meister der verbotenen Rituale).
       objectives: [
-        { type: 'wave', target: 'reach_wave', current: 0, required: 20 }
+        { type: 'boss_kill', target: 'zeremonienmeister', current: 0, required: 1 }
       ],
       rewards: { xp: 150, items: [{ type: 'accessory', key: 'RITUAL_AMULETT', name: 'Ritualamulett', nameKey: 'quest.reward.RITUAL_AMULETT', iconKey: 'itAccessory', rarity: 'epic', rarityLabel: 'Episch', rarityKey: 'quest.rarity.epic', rarityValue: 3, itemLevel: 12, damage: 0, speed: 0, range: 0, armor: 5, crit: 0.05, hp: 20 }] },
       prerequisites: ['elara_meeting'],
       requiredAct: 3,
-      dialogueOffer: 'Tief unten ist eine Kammer... ich zeige dir wo. Dringe bis Welle 20 vor.\n\nBist du bereit fuer die Wahrheit?',
-      dialogueProgress: 'Du musst tiefer vordringen. Die Ritualkammer liegt bei Welle 20.',
-      dialogueComplete: 'Du hast sie gefunden. Die Beschwoerungskammer des Rats. Nimm dieses Amulett — es schuetzt vor ihrer dunklen Magie.'
+      dialogueOffer: 'Tief unten ist eine Kammer — die Beschwoerungskammer des Rats. Sie wird vom Zeremonienmeister gehalten, dem Meister der verbotenen Rituale. Steig auf Tiefe 20 hinab und faelle ihn.\n\nBist du bereit fuer die Wahrheit?',
+      dialogueProgress: 'Der Zeremonienmeister haelt die Kammer noch. Du findest ihn auf Tiefe 20 — solange er lebt, kommst du nicht an die Wahrheit.',
+      dialogueComplete: 'Der Zeremonienmeister ist gefallen. Du hast sie gefunden — die Beschwoerungskammer des Rats. Nimm dieses Amulett; es schuetzt vor ihrer dunklen Magie.'
     },
     thom_truth: {
       id: 'thom_truth',
@@ -465,9 +469,12 @@
       ],
       rewards: { xp: 200 },
       prerequisites: ['mara_contact'],
-      requiredAct: 3,
-      dialogueOffer: 'Der Kettenmeister bewacht die ersten echten Beweise. Besiege ihn.\n\nOhne diese Beweise koennen wir nichts beweisen.',
-      dialogueProgress: 'Der Kettenmeister lebt noch. Finde und besiege ihn.',
+      // Akt 2 (nicht 3): der Kettenmeister sitzt auf Tiefe 10 — in Akt 3 kam die
+      // Quest erst, wenn man typischerweise schon tiefer war ("besiege einen Boss,
+      // an dem du laengst vorbei bist"). Jetzt passt Quest-Zeitpunkt zur Boss-Tiefe.
+      requiredAct: 2,
+      dialogueOffer: 'Der Kettenmeister bewacht die ersten echten Beweise — er haelt die Siegel auf Tiefe 10. Besiege ihn.\n\nOhne diese Beweise koennen wir nichts beweisen.',
+      dialogueProgress: 'Der Kettenmeister lebt noch. Er bewacht die Siegel auf Tiefe 10 — steig hinab und faelle ihn.',
       dialogueComplete: 'Der Kettenmeister ist gefallen! Die Beweise sind gesichert. Jetzt kann niemand mehr leugnen, was der Rat getan hat.'
     },
 

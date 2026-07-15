@@ -413,12 +413,38 @@ test('#41 WP04: dungeon_run advances +1 per COMPLETED run (onDungeonCompleted), 
 
 test('#41 WP04: reach_wave completes when the run-constant depth >= target', () => {
   const qs = freshSystem();
-  assert.strictEqual(qs.acceptQuest('elara_ritual'), true, 'accept elara_ritual (reach_wave 20)');
-  const cur = () => qs.getActiveQuests('elara').find((q) => q.id === 'elara_ritual').objectives[0].current;
-  qs.onWaveCompleted(12); // running at depth 12 (< 20)
+  assert.strictEqual(qs.acceptQuest('mara_assault'), true, 'accept mara_assault (reach_wave 30)');
+  const cur = () => qs.getActiveQuests('mara').find((q) => q.id === 'mara_assault').objectives[0].current;
+  qs.onWaveCompleted(12); // running at depth 12 (< 30)
   assert.strictEqual(cur(), 12, 'tracks the deepest run depth seen');
-  qs.onWaveCompleted(20); // running at depth 20 (>= 20) -> satisfied
-  assert.strictEqual(cur(), 20, 'reaching the target depth completes the objective');
+  qs.onWaveCompleted(30); // running at depth 30 (>= 30) -> satisfied
+  assert.strictEqual(cur(), 30, 'reaching the target depth completes the objective');
+});
+
+// --- Boss-Leiter <-> Quest-Leiter (Tiefe 10/20/30) ---------------------------
+// Regression-Guard: der Zeremonienmeister zeigte per Copy-Paste-Bug auf
+// 'kettenmeister' und hatte keine eigene Quest-Identitaet.
+
+test('Boss-Leiter: Die Ritualkammer wird vom Zeremonienmeister erfuellt (Tiefe 20)', () => {
+  const qs = freshSystem();
+  assert.strictEqual(qs.acceptQuest('elara_ritual'), true, 'accept elara_ritual (boss_kill zeremonienmeister)');
+  const cur = () => qs.getActiveQuests('elara').find((q) => q.id === 'elara_ritual').objectives[0].current;
+  qs.onBossKilled('kettenmeister');
+  assert.strictEqual(cur(), 0, 'der Kettenmeister erfuellt die Ritualkammer NICHT');
+  qs.onBossKilled('zeremonienmeister');
+  assert.strictEqual(cur(), 1, 'der Zeremonienmeister erfuellt sie');
+});
+
+test('Boss-Leiter: Maras Warnung braucht den Kettenmeister und liegt in Akt 2', () => {
+  const qs = freshSystem();
+  assert.strictEqual(qs.QUEST_DEFINITIONS.mara_warning.requiredAct, 2,
+    'Maras Warnung kommt in Akt 2 (Kettenmeister sitzt auf Tiefe 10)');
+  assert.strictEqual(qs.acceptQuest('mara_warning'), true);
+  const cur = () => qs.getActiveQuests('mara').find((q) => q.id === 'mara_warning').objectives[0].current;
+  qs.onBossKilled('zeremonienmeister');
+  assert.strictEqual(cur(), 0, 'der Zeremonienmeister erfuellt Maras Warnung NICHT mehr');
+  qs.onBossKilled('kettenmeister');
+  assert.strictEqual(cur(), 1, 'der Kettenmeister erfuellt sie');
 });
 
 // --- Feature 058 (#41) follow-up: per-act minimum-depth quest gates ---

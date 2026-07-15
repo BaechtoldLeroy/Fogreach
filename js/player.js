@@ -1605,9 +1605,14 @@ function handleEnemyHit(scene, enemy, options = {}) {
       }
       // Track boss kills for quest objectives
       if (enemy.isBoss && enemy.bossType) {
+        // Quest-Ziel-IDs je Boss. Die Boss-Leiter (Tiefe 10/20/30) spiegelt die
+        // Quest-Leiter: Kettenmeister->Maras Warnung, Zeremonienmeister->Die
+        // Ritualkammer, Schattenrat->Rettung oder Beweis.
+        // (Fix: 'ceremonyMaster' zeigte per Copy-Paste auf 'kettenmeister' —
+        //  der Zeremonienmeister hatte dadurch keine eigene Quest-Identitaet.)
         var bossMapping = {
           'chainMaster': 'kettenmeister',
-          'ceremonyMaster': 'kettenmeister',
+          'ceremonyMaster': 'zeremonienmeister',
           'shadowCouncillor': 'schattenrat'
         };
         var questBossId = bossMapping[enemy.bossType] || enemy.bossType;
