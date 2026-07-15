@@ -83,9 +83,23 @@ ACTS.forEach((n, i) => {
   else how = '⚠️ **kein Trigger** — nicht erreichbar';
   out += '| `' + i + '` | ' + n + ' | ' + how + ' |\n';
 });
-out += '\n**Bekannte Lücken:**\n\n';
-out += '- **Akt-Index 1 (Der treue Diener) wird übersprungen** — „Die geheime Sitzung" springt von 0 direkt auf 2. Entsprechend hat keine Quest `requiredAct: 1`.\n';
-out += '- **Akt-Index 5 & 6 (Rebellion / Offenbarung) sind nicht erreichbar** — keine Quest setzt `advanceAct: 5` oder `6`. Damit hängen `mara_assault`, `harren_rescue` und `final_truth` (das Story-Ende) fest. → Issue **#44**.\n\n';
+// Lücken aus den Daten ableiten: ein Akt ohne Advancer blockiert sich selbst und
+// alles dahinter. Gestrandet ist jede Quest, deren requiredAct >= erster Lücke.
+const gaps = ACTS.map((n, i) => i).filter((i) => i > 0 && !(ADVANCERS[i] || []).length);
+if (gaps.length) {
+  const firstGap = gaps[0];
+  const stranded = all.filter((q) => (q.requiredAct || 0) >= firstGap);
+  out += '\n**Bekannte Lücken:**\n\n';
+  out += '- Kein Trigger für ' + gaps.map((i) => '`' + i + '` ' + ACTS[i]).join(', ')
+    + ' — keine Quest setzt ' + gaps.map((i) => TICK + 'advanceAct: ' + i + TICK).join(' bzw. ') + '.\n';
+  if (stranded.length) {
+    out += '- Dadurch nicht erreichbar: ' + stranded.map((q) => '**' + q.title + '** (' + TICK + q.id + TICK + ')').join(', ')
+      + ' — der Fortschritt endet nach Akt ' + (firstGap - 1) + ' (' + ACTS[firstGap - 1] + '). → Issue **#44**.\n';
+  }
+  out += '\n';
+} else {
+  out += '\nJeder Akt hat einen Trigger — die Leiter ist lückenlos.\n\n';
+}
 out += '---\n\n';
 out += '# Referenz\n\n';
 out += '## Wie eine Quest angeboten wird\n\n';

@@ -45,7 +45,7 @@ Der Bogen ist **rein quest-getrieben**: ein Akt steigt nur, wenn eine Quest ihn 
 | Index | Akt | Wird erreicht durch |
 |---|---|---|
 | `0` | Auftrag | _Startzustand_ |
-| `1` | Treuer Diener | ⚠️ **kein Trigger** — nicht erreichbar |
+| `1` | Treuer Diener | Abschluss von **Die verschwundene Tochter** |
 | `2` | Erste Risse | Abschluss von **Die geheime Sitzung** |
 | `3` | Wahrheit | Abschluss von **Die Ritualkammer** |
 | `4` | Bruch | Abschluss von **Der Bruch** |
@@ -54,8 +54,8 @@ Der Bogen ist **rein quest-getrieben**: ein Akt steigt nur, wenn eine Quest ihn 
 
 **Bekannte Lücken:**
 
-- **Akt-Index 1 (Der treue Diener) wird übersprungen** — „Die geheime Sitzung" springt von 0 direkt auf 2. Entsprechend hat keine Quest `requiredAct: 1`.
-- **Akt-Index 5 & 6 (Rebellion / Offenbarung) sind nicht erreichbar** — keine Quest setzt `advanceAct: 5` oder `6`. Damit hängen `mara_assault`, `harren_rescue` und `final_truth` (das Story-Ende) fest. → Issue **#44**.
+- Kein Trigger für `5` Rebellion, `6` Offenbarung — keine Quest setzt `advanceAct: 5` bzw. `advanceAct: 6`.
+- Dadurch nicht erreichbar: **Der Sturm auf den Rat** (`mara_assault`), **Rettung oder Beweis** (`harren_rescue`), **Die letzte Wahrheit** (`final_truth`) — der Fortschritt endet nach Akt 4 (Bruch). → Issue **#44**.
 
 ---
 
@@ -204,6 +204,8 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 > Alle Gaenge sind sicher. Gute Arbeit, Archivschmied.
 
+
+# Akt-Index 1 — Treuer Diener
 
 ## Verifikation des Magistrats
 

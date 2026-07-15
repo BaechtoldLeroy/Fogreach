@@ -447,6 +447,32 @@ test('Boss-Leiter: Maras Warnung braucht den Kettenmeister und liegt in Akt 2', 
   assert.strictEqual(cur(), 1, 'der Kettenmeister erfuellt sie');
 });
 
+// Akt-Leiter: jeder Akt, den eine Quest per requiredAct verlangt, braucht auch
+// eine Quest, die dorthin advanciert — sonst haengt der Strang unerreichbar in
+// den Daten (genau das war mit Akt 1 passiert: benannt, aber ohne Trigger).
+test('Akt-Leiter: jeder bewohnte Akt hat einen advanceAct-Trigger', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  const defs = Object.values(D);
+  const advanced = new Set([2]); // council_collusion_reveal ist hart verdrahtet
+  defs.forEach((q) => { if (typeof q.advanceAct === 'number') advanced.add(q.advanceAct); });
+  // Akt 5/6 sind bekannt luecken haft (Issue #44) — hier nur bis Akt 4 pruefen.
+  const inhabited = [...new Set(defs.map((q) => q.requiredAct || 0))].filter((a) => a > 0 && a <= 4);
+  inhabited.forEach((a) => {
+    assert.ok(advanced.has(a), 'Akt ' + a + ' hat Quests, aber keinen advanceAct-Trigger');
+  });
+});
+
+test('Akt 1 (Der treue Diener) ist bewohnt und wird von der Untersuchung geoeffnet', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  assert.strictEqual(D.harren_daughter_investigation.advanceAct, 1,
+    'Die verschwundene Tochter oeffnet Akt 1');
+  const act1 = Object.values(D).filter((q) => q.requiredAct === 1).map((q) => q.id);
+  assert.deepStrictEqual(act1.sort(), [
+    'council_collusion_reveal', 'garde_patrol_expansion', 'klerus_purification',
+    'magistrat_verification', 'widerstand_proof'
+  ], 'die vier Fraktionsauftraege + der Reveal bilden Akt 1');
+});
+
 // --- Feature 058 (#41) follow-up: per-act minimum-depth quest gates ---
 
 test('#41 minDepth: depth-gated kill quest frozen below minDepth, advances at/above', () => {

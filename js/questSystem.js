@@ -76,6 +76,10 @@
       // ramp legible — generic kill/explore quests first, then story.
       prerequisites: ['aldric_cleanup', 'aldric_patrol'],
       requiredAct: 0,
+      // Oeffnet Akt 1 ("Der treue Diener"): ab hier arbeitet der Spieler die
+      // vier Fraktionsauftraege ab. Der Akt existierte vorher nur dem Namen
+      // nach — die Quests hingen alle in Akt 0, niemand sprang je auf 1.
+      advanceAct: 1,
       dialogueOffer: 'Die Tochter des Buergermeisters ist verschwunden. Aldric sagt, Eindringlinge haetten sie entfuehrt. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversaeumnis.\n\nIch glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurueckgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.\n\nVertrau niemandem, bis du es selbst gesehen hast.',
       dialogueProgress: 'Such weiter — das Fragment ist da unten. Aldric, Klerus und Garde streiten sich oben, weil sie alle eine andere Version hoeren wollen. Du findest die echte.',
       dialogueComplete: 'Du hast es. Sie ist nicht entfuehrt worden. Sie ist geflohen. Und sie hatte Grund dazu — alle drei Ratsfraktionen werden im Fragment namentlich erwaehnt. Du wirst gleich von allen vier Seiten gefragt werden. Hoer dir alles an. Mach alle vier Auftraege. Dann komm zurueck zu mir.'
@@ -96,7 +100,7 @@
       ],
       rewards: { xp: 75, factionStanding: { magistrat: 1 } },
       prerequisites: ['harren_daughter_investigation'],
-      requiredAct: 0,
+      requiredAct: 1,
       dialogueOffer: 'Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten muessen ordnungsgemaess gefuehrt werden.\n\nGeh zu Branka in die Archivschmiede und lass das ratsgesiegelte Verifikationsdokument anfertigen. Sie wird Fragen stellen — beantworte sie nicht. Der Magistrat traegt die Verantwortung, nicht der Buerger.\n\nNimmst du den Auftrag an?',
       dialogueProgress: 'Das Dokument muss in der Archivschmiede gefertigt werden. Branka kennt das Verfahren. Geh und lass sie ihre Arbeit tun.',
       dialogueComplete: 'Hervorragend. Das Dokument ist im Archiv. Die Tochter ist nun offiziell eine Person von Interesse. Was das in der Praxis bedeutet, geht dich nichts an. Der Magistrat dankt dir.'
@@ -114,7 +118,7 @@
       ],
       rewards: { xp: 90, factionStanding: { klerus: 1 } },
       prerequisites: ['harren_daughter_investigation'],
-      requiredAct: 0,
+      requiredAct: 1,
       dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand gefuehrt — die untere Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anfuehrer dieser ketzerischen Praesenz lauern noch dort unten, tiefer als die ersten Gaenge — steige bis Tiefe 3 hinab. Faelle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
       dialogueProgress: 'Die Anfuehrer lauern tief — erst ab Tiefe 3. Steige hinab, finde sie, faelle sie. Jede Ketzerei, die du beendest, oeffnet einen weiteren Pfad zur Reinheit.',
       dialogueComplete: 'Du hast die Ketzerei geschlagen. Die untere Kammern atmen wieder. Die Ordnung bleibt — durch dich. Der Klerus segnet deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.'
@@ -135,7 +139,7 @@
       ],
       rewards: { xp: 75, factionStanding: { garde: 1 } },
       prerequisites: ['harren_daughter_investigation'],
-      requiredAct: 0,
+      requiredAct: 1,
       dialogueOffer: 'Wenn eine Tochter aus dem Rathaus verschwinden kann, ist das ein Versagen der Garde — und das wird sich aendern. Ich brauche eine Patrouillen-Erweiterung. Heute. Geh in die unteren Kammern und demonstriere Kraft — zehn Stoerer fallen, das Edikt traegt sich von selbst durch die Strassen.\n\nFrag nicht, ob die Patrouillen schoner Lebensweise zutraeglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalitaet ist die einzige Muenze, die zaehlt. Das Edikt ist die Muenze, die du in meine Hand legst.\n\nNimmst du den Auftrag an, Archivschmied?',
       dialogueProgress: 'Zehn Stoerer noch. Jeder gefallene Koerper ist eine Zeile mehr im Bericht. Die Garde wartet auf das Ergebnis.',
       dialogueComplete: 'Das Edikt ist veroeffentlicht. Die Patrouillen verdoppeln sich ab morgen. Niemand wird mehr verschwinden — oder zumindest niemand, der zaehlt. Die Garde merkt sich, wer schnell antwortet.'
@@ -154,7 +158,7 @@
       ],
       rewards: { xp: 100, factionStanding: { widerstand: 1 }, fragments: 1 },
       prerequisites: ['harren_daughter_investigation'],
-      requiredAct: 0,
+      requiredAct: 1,
       dialogueOffer: 'Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzaehlung. Aldric will mich zurueckholen. Der Klerus will mich verbrennen. Die Garde will mich kassieren.\n\nUnd ich? Ich will dass DU siehst, was ich gesehen habe, bevor du weiter ihre Auftraege erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
       dialogueProgress: 'Such die Ritualkammer. Drei Raeume tiefer. Das Dokument ist klein, aber das Siegel darauf wird dir den Atem nehmen.',
       dialogueComplete: 'Drei Siegel. Eine Unterschrift. Magistrat, Klerus, Garde — sie behaupten in der Oeffentlichkeit, sie waeren Rivalen. Hinter verschlossenen Tueren stimmen sie ueberein. Geh zu Harren. Er wartet auf den Moment, in dem du das verstehst.'
@@ -171,7 +175,7 @@
       ],
       rewards: { xp: 150, fragments: 1, unlocks: ['act2_open'] },
       prerequisites: ['magistrat_verification', 'klerus_purification', 'garde_patrol_expansion', 'widerstand_proof'],
-      requiredAct: 0,
+      requiredAct: 1,
       dialogueOffer: 'Komm mit. Du musst etwas sehen. (Climax-Scene wird in WP03 final implementiert — diese 1-Page-Version laesst Q6 in WP02 schon spielbar werden, der vollwertige 4-Page-Reveal kommt mit dem naechsten WP.)',
       dialogueProgress: 'Folge mir. Es ist Zeit.',
       dialogueComplete: 'Du hast es jetzt gesehen. Der Nebel war nie das Wetter — er war eine Erzaehlung. Du hast bereits fuer jede der drei Masken gearbeitet, und sie ist nur ein einziges Gesicht. Akt 2 beginnt hier — in derselben Stadt, unter denselben Masken.'
@@ -1433,7 +1437,32 @@
     Object.keys(srcFlags).forEach(function (k) {
       questFlags[k] = !!srcFlags[k];
     });
+    _backfillAdvanceActs();
     _notifyUpdate();
+  }
+
+  // Migration: `advanceAct` feuert nur im Moment des Quest-Abschlusses. Saves,
+  // die eine Advancer-Quest bereits abgeschlossen haben BEVOR sie ihr Feld
+  // bekam, haengen sonst unter dem Akt fest, den die Folge-Quests verlangen —
+  // die Kette bricht lautlos. Beim Laden den hoechsten faelligen Akt nachziehen.
+  // advanceToAct ist monoton (gleich/niedriger = no-op), also ist das gefahrlos.
+  function _backfillAdvanceActs() {
+    if (!window.storySystem || typeof window.storySystem.advanceToAct !== 'function') return;
+    var due = -1;
+    Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
+      var def = QUEST_DEFINITIONS[id];
+      var st = questState[id];
+      if (!st || st.status !== 'completed') return;
+      // council_collusion_reveal advanciert hart auf 2 (siehe completeQuest).
+      var target = (id === 'council_collusion_reveal') ? 2 : def.advanceAct;
+      if (typeof target === 'number' && target > due) due = target;
+    });
+    if (due < 0) return;
+    try {
+      window.storySystem.advanceToAct(due);
+    } catch (err) {
+      console.warn('[QuestSystem] advanceAct backfill failed', err);
+    }
   }
 
   // ---- HUD Update Notification ----
