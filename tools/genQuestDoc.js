@@ -1,7 +1,13 @@
 // Generiert docs/QUESTS.md aus den echten QUEST_DEFINITIONS (single source of truth).
+//
+// Aufruf:  node tools/genQuestDoc.js            (Repo-Root wird aus dem Skript-Ort
+//          node tools/genQuestDoc.js <root>      abgeleitet; optionales Override)
+//
+// Hinweis: der Pfad MUSS absolut sein — require('js/questSystem.js') wuerde sonst
+// als Modulname statt als Datei aufgeloest.
 const path = require('path');
 const fs = require('fs');
-const ROOT = process.argv[2];
+const ROOT = path.resolve(process.argv[2] || path.join(__dirname, '..'));
 global.window = {};
 require(path.join(ROOT, 'js', 'questSystem.js'));
 const D = window.questSystem.QUEST_DEFINITIONS;
