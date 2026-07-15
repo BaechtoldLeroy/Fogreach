@@ -1244,6 +1244,14 @@ function onStairOverlap(player, stair) {
     }
   }
 
+  // Ab hier verbraucht die Treppe das E. Der Physics-Step laeuft VOR
+  // scene.update(), d.h. main.js prueft die Treppen-Naehe erst, wenn der
+  // Spieler schon im naechsten Raum am Spawn steht — eine Geometrie-Pruefung
+  // dort greift zwangslaeufig ins Leere. Darum hier eine Zeitmarke setzen, die
+  // main.js beim E-Druck konsumiert. Date.now() statt scene.time.now: die Marke
+  // wird ggf. scene-uebergreifend gelesen (Raumwechsel/Hub-Rueckkehr).
+  window.__stairConsumedEAt = Date.now();
+
   const nextIndex = currentRoomId + 1;
   const totalRooms = dungeonRun ? dungeonRun.totalRooms : rooms.length;
   const endlessActive = !!(window.Endless && window.Endless.isActive && window.Endless.isActive());

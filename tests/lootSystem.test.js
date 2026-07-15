@@ -1088,3 +1088,31 @@ test('WP08 T048: unequipping drops the bonus back to 0 after recompute', () => {
   assert.strictEqual(sys.getBonus('dmg_spinAttack'), 0);
 });
 
+
+// ---------------------------------------------------------------------------
+// Herz-Drops: leichte Tiefenskalierung (flache +2 waren spaet wertlos)
+// ---------------------------------------------------------------------------
+
+test('getHeartHeal: skaliert leicht mit der Tiefe und ist gedeckelt', () => {
+  const sys = freshSystem();
+  assert.strictEqual(sys.getHeartHeal(1), 2, 'Tiefe 1 heilt den Basiswert');
+  assert.strictEqual(sys.getHeartHeal(4), 2, 'unter der ersten Stufe bleibt es 2');
+  assert.strictEqual(sys.getHeartHeal(5), 3, '+1 je 5 Tiefen');
+  assert.strictEqual(sys.getHeartHeal(10), 4);
+  assert.strictEqual(sys.getHeartHeal(20), 6, 'Deckel erreicht');
+  assert.strictEqual(sys.getHeartHeal(50), 6, 'Deckel haelt auch tief');
+  assert.strictEqual(sys.getHeartHeal(999), 6);
+});
+
+test('getHeartHeal: monoton und robust gegen Muell-Eingaben', () => {
+  const sys = freshSystem();
+  for (let d = 1; d < 40; d++) {
+    assert.ok(sys.getHeartHeal(d + 1) >= sys.getHeartHeal(d), 'nie ruecklaeufig bei Tiefe ' + d);
+  }
+  // Tiefe fehlt/kaputt -> Basiswert statt NaN (loot.js reicht currentWave durch)
+  assert.strictEqual(sys.getHeartHeal(0), 2);
+  assert.strictEqual(sys.getHeartHeal(-5), 2);
+  assert.strictEqual(sys.getHeartHeal(undefined), 2);
+  assert.strictEqual(sys.getHeartHeal(NaN), 2);
+  assert.strictEqual(sys.getHeartHeal(7.9), 3, 'Bruchtiefen werden abgerundet');
+});

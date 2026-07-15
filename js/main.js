@@ -879,6 +879,18 @@ if (typeof window !== 'undefined') {
   window.resumeGameClock = resumeGameClock;
 }
 
+// True, wenn die Treppe das E gerade verbraucht hat (roomManager.onStairOverlap
+// setzt die Marke). Der Physics-Step laeuft VOR scene.update(), der Raumwechsel
+// ist beim E-Druck hier also schon passiert — _playerOnUnlockedStair() sieht
+// dann nur noch den NEUEN Raum und meldet faelschlich "keine Treppe". Das kurze
+// Fenster laeuft von selbst ab, damit eine Marke aus einem abgebrochenen
+// Wechsel nicht den naechsten E-Druck schluckt.
+const STAIR_E_CONSUME_WINDOW_MS = 300;
+function _stairJustConsumedE() {
+  const at = window.__stairConsumedEAt || 0;
+  return at > 0 && (Date.now() - at) < STAIR_E_CONSUME_WINDOW_MS;
+}
+
 // True, wenn der Spieler auf/an einer ENTSPERRTEN Treppe steht. Wird beim
 // E-Druck (Classic slot3) geprüft, damit der Raumwechsel das E konsumiert und
 // die Ability nicht zusätzlich feuert.
@@ -1738,7 +1750,10 @@ function update(time, delta) {
           // Classic only: E triggers slot3 → erst Treppe, dann Tür, dann Ability.
           // Steht der Spieler auf einer ENTSPERRTEN Treppe, konsumiert der
           // Raumwechsel (onStairOverlap) das E -> die Ability darf NICHT feuern.
-          const onStair = _playerOnUnlockedStair(this);
+          // Zwei Faelle: (a) die Treppe hat den Wechsel schon ausgeloest —
+          // Marke, (b) der Spieler steht auf einer Treppe, der Wechsel kam aber
+          // (noch) nicht zustande — Geometrie.
+          const onStair = _stairJustConsumedE() || _playerOnUnlockedStair(this);
           const doorHandled = !onStair && window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
           if (!onStair && !doorHandled) window.AbilitySystem.tryActivate('slot3', this);
         } else {

@@ -1170,6 +1170,18 @@ if (window.i18n) {
     return Math.max(0, Math.min(POTION_BURST_LIMIT, _potionCharges));
   }
   function getPotionChargesMax() { return POTION_BURST_LIMIT; }
+
+  // Herz-Drops (Health-Pickups) skalieren leicht mit der Tiefe: flache +2 waren
+  // auf Tiefe 25 praktisch wertlos, weil MaxHP ueber den Run mitwaechst. +1 je
+  // HEART_HEAL_PER_DEPTH Tiefen, gedeckelt — bewusst flach, damit Herzen ein
+  // Zwischendurch-Heal bleiben und keinen Trank ersetzen.
+  const HEART_HEAL_BASE = 2;
+  const HEART_HEAL_PER_DEPTH = 5;
+  const HEART_HEAL_MAX = 6;
+  function getHeartHeal(depth) {
+    const d = Math.max(1, Math.floor(Number(depth) || 1));
+    return Math.min(HEART_HEAL_MAX, HEART_HEAL_BASE + Math.floor(d / HEART_HEAL_PER_DEPTH));
+  }
   function _resetPotionCooldown() {
     _potionCooldownUntil = 0;
     _potionCharges = POTION_BURST_LIMIT;
@@ -1563,6 +1575,7 @@ if (window.i18n) {
     getPotionCooldownDuration: getPotionCooldownDuration,
     getPotionCharges: getPotionCharges,
     getPotionChargesMax: getPotionChargesMax,
+    getHeartHeal: getHeartHeal,
     onPotionKey: onPotionKey,
     isPotionOnCooldown: isPotionOnCooldown,
     _getPotionCooldownRemaining: _getPotionCooldownRemaining,

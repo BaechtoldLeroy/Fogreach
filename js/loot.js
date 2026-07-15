@@ -436,10 +436,15 @@ function collectLoot(playerSprite, loot) {
   }
 
   if (loot.lootType === 'health') {
+    // Heilwert wird beim EINSAMMELN aus der Tiefe berechnet (nicht beim Spawn) —
+    // die Tiefe ist innerhalb eines Runs konstant, beides waere also gleich.
+    const heal = (window.LootSystem && typeof window.LootSystem.getHeartHeal === 'function')
+      ? window.LootSystem.getHeartHeal(currentWave)
+      : 2;
     if (typeof addPlayerHealth === 'function') {
-      addPlayerHealth(2);
+      addPlayerHealth(heal);
     } else {
-      playerHealth = Math.min(playerHealth + 2, playerMaxHealth);
+      playerHealth = Math.min(playerHealth + heal, playerMaxHealth);
       if (typeof updateHUD === 'function') updateHUD();
     }
   } else if (loot.lootType === 'xp') {
