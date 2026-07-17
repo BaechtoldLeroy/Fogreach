@@ -86,3 +86,4 @@ Den Quest-Doku-Generator an die v4-Aktnamen anpassen, `docs/QUESTS.md` neu erzeu
 ## Activity Log
 
 - 2026-07-17T19:35:11Z – claude – shell_pid=32008 – lane=doing – Started implementation via workflow command
+- 2026-07-17T19:39:30Z – claude – shell_pid=32008 – lane=for_review – Generator v4-Aktnamen, QUESTS.md lueckenlos (Akt 1-4), Cache-Buster gebumpt, Boot-Check fehlerfrei.
