@@ -3,6 +3,13 @@
 (function () {
   'use strict';
 
+  // Story-Schema-Version (Feature 062, v4). Steht im Quest-Save-Blob. Beim Laden
+  // eines Stands mit fehlender oder aelterer Version wird der Story-/Quest-/Flag-
+  // Teil verworfen und auf Akt 0 zurueckgesetzt (Charakter-State liegt ausserhalb
+  // und bleibt). Die v3-Struktur (andere Quest-IDs, entfernte final_truth) ist
+  // nicht kompatibel -> sauberer Reset statt fragiler Teilmigration.
+  const STORY_VERSION = 4;
+
   // ---- Quest Definitions ----
   const QUEST_DEFINITIONS = {
     // =======================================================
@@ -89,16 +96,17 @@
       title: 'Verifikation des Magistrats',
       description: 'Sichere die Umgebung — beseitige 8 Stoerer waehrend der Magistrat die Akten ordnet.',
       npcId: 'aldric',
-      type: 'kill',
+      type: 'fetch',
       chain: 2,
-      // Trigger fix: 'craft council_sealed_document' had no craft hook —
-      // quest couldn't complete. Switched to 'kill enemy x 8' which uses
-      // the existing enemy-kill trigger. Narratively the player "clears
-      // the area while the Magistrat does paperwork".
+      // Feature 062: 'fetch verification_seal' — als Quest-Item-Drop von WP05
+      // (js/loot.js) verdrahtet (Muster journal_fragment). Das Ratssiegel wird
+      // in der Archivschmiede gesetzt. completionFlags setzt den Backbone-Default
+      // 'verification_sealed' (die Szenen-Wahl sealed/refused folgt spaeter).
       objectives: [
-        { type: 'kill', target: 'enemy', current: 0, required: 8 }
+        { type: 'fetch', target: 'verification_seal', current: 0, required: 1 }
       ],
       rewards: { xp: 75, factionStanding: { magistrat: 1 } },
+      completionFlags: ['verification_sealed'],
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten muessen ordnungsgemaess gefuehrt werden.\n\nGeh zu Branka in die Archivschmiede und lass das ratsgesiegelte Verifikationsdokument anfertigen. Sie wird Fragen stellen — beantworte sie nicht. Der Magistrat traegt die Verantwortung, nicht der Buerger.\n\nNimmst du den Auftrag an?',
@@ -173,12 +181,19 @@
       objectives: [
         { type: 'dialogue', target: 'collusion_reveal_seen', current: 0, required: 1 }
       ],
-      rewards: { xp: 150, fragments: 1, unlocks: ['act2_open'] },
+      rewards: { xp: 150, fragments: 1 },
       prerequisites: ['magistrat_verification', 'klerus_purification', 'garde_patrol_expansion', 'widerstand_proof'],
       requiredAct: 1,
-      dialogueOffer: 'Komm mit. Du musst etwas sehen. (Climax-Scene wird in WP03 final implementiert — diese 1-Page-Version laesst Q6 in WP02 schon spielbar werden, der vollwertige 4-Page-Reveal kommt mit dem naechsten WP.)',
+      // Trigger -> Akt 2 (Das Doppelspiel). advanceAct + der hartverdrahtete
+      // advanceToAct(2) in completeQuest (idempotent) — beides fuehrt auf 2.
+      // Objective bleibt 'dialogue' (Auto-Complete): der observe-Trigger der
+      // inszenierten Sitzung kommt mit dem Inszenierungs-Feature (Feature 062
+      // Scope: Rueckgrat, keine Szenen). Ein Wechsel auf 'observe' ohne diese
+      // Szene machte Akt 2 unerreichbar.
+      advanceAct: 2,
+      dialogueOffer: 'Komm mit. Kein Wort, keine Klinge. Was du gleich siehst, kannst du nicht mehr vergessen, auch nicht, wenn der Nebel es versucht.',
       dialogueProgress: 'Folge mir. Es ist Zeit.',
-      dialogueComplete: 'Du hast es jetzt gesehen. Der Nebel war nie das Wetter — er war eine Erzaehlung. Du hast bereits fuer jede der drei Masken gearbeitet, und sie ist nur ein einziges Gesicht. Akt 2 beginnt hier — in derselben Stadt, unter denselben Masken.'
+      dialogueComplete: 'Jetzt hast du es gesehen. Ein Gesicht, drei Masken. Du hast fuer jede gearbeitet. Du koenntest fliehen — aber ein Handwerker, der weiter im Rathaus aus und ein geht, sieht Dinge, die ein Fluechtiger nie sieht. Bleib, wo du bist. Raeum weiter fuer sie, und raeum heimlich fuer uns. Es ist gefaehrlicher. Es ist auch das Einzige, was nuetzt.'
     },
 
     // =======================================================
@@ -212,6 +227,8 @@
         { type: 'fetch', target: 'document', current: 0, required: 2 }
       ],
       rewards: { xp: 100, unlocks: ['elara_trust'] },
+      // Feature 062: elara_trust auch als Story-Flag setzen (Regler 3 im Finale).
+      completionFlags: ['elara_trust'],
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Ich bin nicht entfuehrt worden. Ich bin geflohen. Hier — lies das.\n\nFinde zwei Dokumente, die ich im Keller versteckt habe.',
@@ -253,11 +270,14 @@
         { type: 'fetch', target: 'seized_writings', current: 0, required: 3 }
       ],
       rewards: { xp: 60, druckblaetter: 2 },
+      // Feature 062: Backbone-Default der Gesuche-Wahl. Die Szenen-Wahl
+      // (kept/surrendered) folgt mit dem Inszenierungs-Feature.
+      completionFlags: ['petitions_surrendered'],
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Im Keller hortet Gesindel subversive Schriften gegen den Rat. Beschlagnahme sie — drei Buendel. Lies sie nicht. Bring sie.\n\nNimmst du den Auftrag an?',
       dialogueProgress: 'Noch nicht alle Schriften sichergestellt. Such weiter.',
-      dialogueComplete: 'Gib her.\n\n(Bevor du sie abgibst, faellt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Buerger, die nach verschwundenen Angehoerigen fragen. Du gibst sie trotzdem ab.)'
+      dialogueComplete: 'Gib her.\n\n(Bevor du sie abgibst, faellt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Buerger, die nach verschwundenen Angehoerigen fragen. Du gibst sie trotzdem ab. Mara wird wissen wollen, wer da fragt.)'
     },
     council_surveillance: {
       id: 'council_surveillance',
@@ -293,9 +313,11 @@
       dialogueProgress: 'Die Protokolle sind tief im Keller. Such weiter.',
       dialogueComplete: 'Lies das. "Befragt bis zum Gestaendnis." Der Rat verhoert Buerger wie Beschworene. Das ist kein Schutz — das ist Jagd.'
     },
-    ritual_chamber: {
-      id: 'ritual_chamber',
-      title: 'Die Ritualkammer',
+    // Feature 062: umbenannt von 'ritual_chamber'. Kein advanceAct mehr — der
+    // Aktwechsel liegt jetzt am Bruch (bruch_confrontation). Akt 3, Doppel-Tonspur.
+    verseuchte_kammer: {
+      id: 'verseuchte_kammer',
+      title: 'Die verseuchte Kammer',
       description: 'Aldric schickt dich, eine "verseuchte" Kammer zu reinigen. Dring bis zu ihr vor.',
       npcId: 'aldric',
       type: 'explore',
@@ -304,12 +326,11 @@
         { type: 'explore', target: 'room', current: 0, required: 2 }
       ],
       rewards: { xp: 120, fragments: 1 },
-      prerequisites: ['council_surveillance', 'branka_doubt'],
-      requiredAct: 2,
-      advanceAct: 3,
+      prerequisites: ['council_surveillance'],
+      requiredAct: 3,
       dialogueOffer: 'Eine untere Kammer ist verseucht — Ketzerei. Reinige sie. Frag nicht, was du findest.\n\nGeh.',
       dialogueProgress: 'Die Kammer liegt tiefer. Dring weiter vor.',
-      dialogueComplete: 'Du stehst in der Kammer. Blut, Symbole, Ketten — und kein Ketzer weit und breit. Das ist keine Verseuchung. Das ist eine Beschwoerungskammer. Der Rat hat dich hergeschickt, um seine eigene Spur zu verwischen.'
+      dialogueComplete: 'Du stehst in der Kammer. Blut, Symbole, Ketten — und kein Ketzer weit und breit. Das ist keine Verseuchung. Das ist eine Beschwoerungskammer. Aldric hat dich hergeschickt, um seine eigene Spur zu verwischen. (Du praegst dir jedes Symbol ein. Mara soll das sehen. Und Aldric soll glauben, du haettest nur geputzt.)'
     },
     bruch_confrontation: {
       id: 'bruch_confrontation',
@@ -322,13 +343,15 @@
       objectives: [
         { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
       ],
-      rewards: { xp: 200, unlocks: ['act3_open'] },
-      prerequisites: ['ritual_chamber'],
-      requiredAct: 2,
+      rewards: { xp: 200 },
+      // Feature 062: der Bruch (Enttarnung) triggert jetzt Akt 4. Vorbedingungen:
+      // die verseuchte Kammer gesehen UND Elaras zweite Wahrheit erfahren.
+      prerequisites: ['verseuchte_kammer', 'elara_second_truth'],
+      requiredAct: 3,
       advanceAct: 4,
-      dialogueOffer: 'Du hast die Kammer gesehen — und Aldric weiss es. Seine Elite-Wachen riegeln die tiefen Gaenge ab — du stellst sie erst ab Tiefe 8. Schlag dich durch und komm zu mir in die Schmiede.\n\nUeberlebst du das?',
-      dialogueProgress: 'Aldrics Elite-Wachen halten die Tiefe — erst ab Tiefe 8 stellst du sie. Steige hinab und kaempf dich durch.',
-      dialogueComplete: '"Du stellst zu viele Fragen", hat er gesagt. Jetzt stellst du gar keine mehr — du weisst es. Der Bruch ist da. Mara, Thom, ich — wir sind bereit. Akt 3 beginnt.'
+      dialogueOffer: 'Aldric weiss es. Dein Doppelspiel ist aufgeflogen, seine Elite-Wachen riegeln die tiefen Gaenge ab, ab Tiefe 8 stellst du sie. Schlag dich durch und komm zu mir.',
+      dialogueProgress: 'Aldrics Elite-Wachen halten die Tiefe. Ab Tiefe 8 stellst du sie.',
+      dialogueComplete: 'Du stellst zu viele Fragen, hat er gesagt. Jetzt stellst du gar keine mehr, du weisst es. Die Tarnung ist verbrannt, der Bruch ist da. Mara, Thom, ich, wir sind bereit.'
     },
 
     // -------------------------------------------------------
@@ -368,7 +391,7 @@
       ],
       rewards: { xp: 110, fragments: 1 },
       prerequisites: ['espionage_convoy'],
-      requiredAct: 2,
+      requiredAct: 3,
       dialogueOffer: 'Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Geh als Schreiber verkleidet hinein, hoer ab, was die anderen fluestern, und birg den Akt. Werde nicht gesehen.\n\nTust du das fuer mich?',
       dialogueProgress: 'Die Schreiber haben noch nichts Verwertbares gesagt. Bleib im Archiv, unauffaellig, und hoer weiter ab, bis du an den versiegelten Akt kommst.',
       dialogueComplete: 'Du hast den Akt. "Vermisst, Fall geschlossen" — Elaras Verschwinden, sauber abgelegt, Datum, Siegel, Unterschrift. Zu sauber. Wer in Panik flieht, hinterlaesst kein ordentlich abgeheftetes Protokoll. Und das Datum... es liegt vor dem Tag, von dem Harren mir erzaehlt hat. Ich sage noch nichts. Aber irgendwas an dieser Akte stimmt nicht.'
@@ -377,15 +400,18 @@
       id: 'espionage_informant',
       title: 'Der Maulwurf',
       description: 'Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands.',
-      npcId: 'widerstand',
+      npcId: 'mara',
       type: 'observe',
       chain: 8,
       objectives: [
         { type: 'observe', target: 'informant_id', current: 0, required: 1 }
       ],
       rewards: { xp: 120, fragments: 1 },
+      // Feature 062: setzt mole_evidence (Regler 3 im Finale). observe informant_id
+      // von WP05 (espionageSystem) verdrahtet.
+      completionFlags: ['mole_evidence'],
       prerequisites: ['espionage_archive'],
-      requiredAct: 2,
+      requiredAct: 3,
       dialogueOffer: 'Jemand verraet uns. Was wir hinter verschlossenen Tueren beschliessen, weiss der Rat am naechsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.\n\nFindest du den Verraeter?',
       dialogueProgress: 'Noch hast du den Maulwurf nicht. Bleib unauffaellig am Treffpunkt und hoer ab, wer Nachrichten nach draussen schmuggelt.',
       dialogueComplete: 'Du hast die Uebergabe gesehen. Ein gefalteter Zettel, eine Hand, ein Wort — und in der Handschrift derselbe sauber gezogene Bogen wie auf den Belegen, die uns jemand aus dem Inneren des Rats zugespielt hat. Die Spur zeigt nach innen, naeher als uns lieb ist. Ich nenne keinen Namen. Aber vertrau ab jetzt niemandem blind — nicht einmal denen, die uns "die Wahrheit" bringen.'
@@ -472,14 +498,15 @@
         { type: 'boss_kill', target: 'kettenmeister', current: 0, required: 1 }
       ],
       rewards: { xp: 200 },
-      prerequisites: ['mara_contact'],
-      // Akt 2 (nicht 3): der Kettenmeister sitzt auf Tiefe 10 — in Akt 3 kam die
-      // Quest erst, wenn man typischerweise schon tiefer war ("besiege einen Boss,
-      // an dem du laengst vorbei bist"). Jetzt passt Quest-Zeitpunkt zur Boss-Tiefe.
+      // Feature 062: Spionage zuerst, damit die Doppelphase atmet. Der Fall des
+      // Kettenmeisters (Tiefe 10) sichert die ersten harten Beweise.
+      prerequisites: ['mara_contact', 'espionage_convoy'],
       requiredAct: 2,
-      dialogueOffer: 'Der Kettenmeister bewacht die ersten echten Beweise — er haelt die Siegel auf Tiefe 10. Besiege ihn.\n\nOhne diese Beweise koennen wir nichts beweisen.',
-      dialogueProgress: 'Der Kettenmeister lebt noch. Er bewacht die Siegel auf Tiefe 10 — steig hinab und faelle ihn.',
-      dialogueComplete: 'Der Kettenmeister ist gefallen! Die Beweise sind gesichert. Jetzt kann niemand mehr leugnen, was der Rat getan hat.'
+      // Trigger -> Akt 3 (Die Enttarnung).
+      advanceAct: 3,
+      dialogueOffer: 'Der Kettenmeister haelt die Siegel auf Tiefe 10. Er fesselt, was er fangen will. Faell ihn, dann haben wir den ersten harten Beweis.',
+      dialogueProgress: 'Der Kettenmeister lebt noch, auf Tiefe 10. Wenn er dich kettet, schlag die Kette, sonst haelt er dich.',
+      dialogueComplete: 'Der Kettenmeister ist gefallen, die Beweise gesichert. Jetzt kann niemand mehr leugnen, dass der Rat Menschen verarbeitet.'
     },
 
     // =======================================================
@@ -533,7 +560,7 @@
       ],
       rewards: { xp: 0, items: [{ type: 'weapon', key: 'ELARAS_KLINGE', name: 'Elaras Klinge', nameKey: 'quest.reward.ELARAS_KLINGE', iconKey: 'itWeapon', rarity: 'legendary', rarityLabel: 'Legendaer', rarityKey: 'quest.rarity.legendary', rarityValue: 4, itemLevel: 15, damage: 22, speed: 1.3, range: 120, armor: 0, crit: 0.15, hp: 0, elaraGift: true }] },
       prerequisites: ['elara_ritual'],
-      requiredAct: 4,
+      requiredAct: 3,
       dialogueOffer: 'Nimm das. Ich habe es fuer dich geschmiedet. Fuer den Fall, dass...\n\nNimm Elaras Klinge an?',
       dialogueProgress: 'Die Klinge wartet auf dich.',
       dialogueComplete: 'Moege sie dich beschuetzen. Egal was kommt.'
@@ -553,16 +580,17 @@
         { type: 'wave', target: 'reach_wave', current: 0, required: 30 }
       ],
       rewards: { xp: 300 },
-      prerequisites: ['mara_warning'],
-      requiredAct: 5,
+      prerequisites: ['schattenrat_finale'],
+      requiredAct: 4,
       dialogueOffer: 'Es ist soweit. Der Rat faellt heute. Dringe bis Welle 30 vor.\n\nBist du bereit fuer den Sturm?',
       dialogueProgress: 'Der Rat wartet in der Tiefe. Dringe weiter vor — Welle 30.',
       dialogueComplete: 'Der Rat ist gestuerzt! Fogreach atmet auf. Aber die Schatten sind noch nicht besiegt...'
     },
-    harren_rescue: {
-      id: 'harren_rescue',
-      title: 'Rettung oder Beweis',
-      description: 'Besiege den Schattenrat-Boss, um Elara zu finden.',
+    // Feature 062: umbenannt von 'harren_rescue'. Akt 4, die Quelle selbst.
+    schattenrat_finale: {
+      id: 'schattenrat_finale',
+      title: 'Die Quelle',
+      description: 'Steige auf Tiefe 30 hinab und besiege den Schattenrat, der die Quelle des Nebels haelt.',
       npcId: 'harren',
       type: 'boss',
       chain: 2,
@@ -570,32 +598,130 @@
         { type: 'boss_kill', target: 'schattenrat', current: 0, required: 1 }
       ],
       rewards: { xp: 250 },
-      prerequisites: ['harren_daughter_investigation'],
-      requiredAct: 5,
-      dialogueOffer: 'Finde meine Tochter. Bitte. Der Schattenrat haelt sie fest.\n\nBesiege ihn und bring Elara zurueck.',
-      dialogueProgress: 'Der Schattenrat lebt noch. Finde und besiege ihn — fuer Elara.',
-      dialogueComplete: 'Du hast den Schattenrat besiegt. Aber Elara... sie ist mit ihm verschwunden. Was hat das zu bedeuten?'
+      prerequisites: [],
+      requiredAct: 4,
+      dialogueOffer: 'Unter der Stadt sitzt das, dem der Nebel dient, ueber Rat und Widerstand hinaus. Der Schattenrat haelt die Quelle auf Tiefe 30. Steig hinab. Danach entscheidest du, was die Stadt erfaehrt.',
+      dialogueProgress: 'Der Schattenrat lebt noch, Tiefe 30.',
+      dialogueComplete: 'Der Schattenrat ist gefallen, die Quelle liegt offen. Jetzt gehoert die Presse dir. Komm hoch, es ist Zeit.'
     },
 
     // =======================================================
-    // === Act 7: Offenbarung ===
+    // === Feature 062 — neue v4-Quests ===
     // =======================================================
-    final_truth: {
-      id: 'final_truth',
-      title: 'Die letzte Wahrheit',
-      description: 'Dringe bis Welle 40 vor, um die wahre Quelle des Pakts zu finden.',
-      npcId: 'mara',
-      type: 'wave',
-      chain: 4,
+    faction_campaign: {
+      id: 'faction_campaign',
+      title: 'Das Edikt der Woche',
+      description: 'Plakatiere die drei Fraktions-Edikte an den Anschlagtafeln — sammle 3 Proklamationen.',
+      npcId: 'aldric',
+      type: 'fetch',
+      chain: 3,
+      // 'proclamation' als Quest-Item-Drop von WP05 (loot.js) verdrahtet.
       objectives: [
-        { type: 'wave', target: 'reach_wave', current: 0, required: 40 }
+        { type: 'fetch', target: 'proclamation', current: 0, required: 3 }
+      ],
+      rewards: { xp: 60, factionStanding: { magistrat: 1 } },
+      prerequisites: ['harren_daughter_investigation'],
+      requiredAct: 1,
+      dialogueOffer: 'Die Stadt muss wissen, wer die Ordnung haelt, waehrend die anderen schwatzen. Haeng die drei Edikte an den Anschlagtafeln aus. Wer oben klebt, hat recht.',
+      dialogueProgress: 'Noch nicht alle Edikte ausgehaengt. Weiter.',
+      dialogueComplete: 'Drei Edikte, drei Farben, drei Versionen derselben Tochter. Erst beim letzten faellt dir das Papier auf. Dieselbe Koernung, alle drei. Du hast es in Thoms Druckerei gesehen. Du schiebst den Gedanken beiseite.'
+    },
+    klerus_district_purge: {
+      id: 'klerus_district_purge',
+      title: 'Reinigung eines Bezirks',
+      description: 'Reinige einen "befallenen" Bezirk — besiege 8 Gegner und bring die Namen.',
+      npcId: 'klerus_priester',
+      type: 'kill',
+      chain: 3,
+      objectives: [
+        { type: 'kill', target: 'enemy', current: 0, required: 8 }
+      ],
+      rewards: { xp: 70, factionStanding: { klerus: 1 } },
+      prerequisites: [],
+      requiredAct: 2,
+      dialogueOffer: 'Ein Bezirk ist befallen. Reinige ihn. Wer das Licht scheut, hat etwas zu verbergen. Bring mir die Namen der Befallenen.',
+      dialogueProgress: 'Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe.',
+      dialogueComplete: 'Du bringst die Namen. (Eine Abschrift steckt schon bei Mara, bevor der Rat die Liste sieht. Wer draufsteht, verschwindet. Aber vielleicht nicht mehr alle. Vielleicht warnt jemand rechtzeitig.)'
+    },
+    garde_night_escort: {
+      id: 'garde_night_escort',
+      title: 'Nachteskorte',
+      description: 'Sichere verdeckt einen naechtlichen Transport — beobachte die Eskorten-Route.',
+      npcId: 'stadtwache',
+      type: 'observe',
+      chain: 3,
+      // 'escort_route' als Spionage-Zone von WP05 (espionageSystem.js) verdrahtet.
+      objectives: [
+        { type: 'observe', target: 'escort_route', current: 0, required: 1 }
+      ],
+      rewards: { xp: 90, factionStanding: { garde: 1 } },
+      prerequisites: [],
+      requiredAct: 3,
+      dialogueOffer: 'Heute Nacht geht ein Transport. Sicher die Route, frag nicht, was drin ist. Loyalitaet zahlt sich aus.',
+      dialogueProgress: 'Der Transport rollt noch nicht. Halt die Route im Auge, bleib unauffaellig.',
+      dialogueComplete: 'Die Route ist sicher. (Und in deinem Kopf, Weg, Zeit und Fracht, bereit fuer Mara. Es waren keine Waffen. Es waren dieselben Phiolen wie im Konvoi.)'
+    },
+    who_you_were: {
+      id: 'who_you_were',
+      title: 'Wer du warst',
+      description: 'Bring Branka drei Splitter deiner alten Akte aus der Tiefe (ab Tiefe 5).',
+      npcId: 'branka',
+      type: 'fetch',
+      chain: 4,
+      minDepth: 5,
+      // 'memory_shard' als Quest-Item-Drop von WP05 (loot.js) verdrahtet.
+      objectives: [
+        { type: 'fetch', target: 'memory_shard', current: 0, required: 3 }
+      ],
+      rewards: { xp: 150, fragments: 1 },
+      // Regler 4 im Finale (self_remembered).
+      completionFlags: ['self_remembered'],
+      prerequisites: ['branka_doubt'],
+      requiredAct: 3,
+      dialogueOffer: 'Ich habe etwas gefunden, das dich betrifft. Eine Akte mit deinem Zeichen, halb vom Nebel gefressen. Bring mir drei Splitter davon aus der Tiefe, dann setzen wir zusammen, wer du warst.',
+      dialogueProgress: 'Die Splitter liegen tief — ab Tiefe 5. Such weiter.',
+      dialogueComplete: 'Da bist du. Vor dem Unfall, vor dem Nebel. Du hast nicht immer nur aufgeraeumt. Du hast einmal dieselben Fragen gestellt, die du jetzt wieder stellst. Der Nebel hat dich nicht zufaellig getroffen. Man hat ihn nach dir geschickt.'
+    },
+    elara_second_truth: {
+      id: 'elara_second_truth',
+      title: 'Elaras zweite Wahrheit',
+      description: 'Elara zeigt dir, fuer wen du das Letzte tust.',
+      npcId: 'elara',
+      type: 'dialogue',
+      chain: 4,
+      // Teil-Reveal, KEIN advanceAct (der Bruch triggert den Aktwechsel). Objective
+      // 'dialogue' (Auto-Complete): die inszenierte Szene folgt spaeter.
+      objectives: [
+        { type: 'dialogue', target: 'three_hands_seen', current: 0, required: 1 }
+      ],
+      rewards: { xp: 200, fragments: 2 },
+      prerequisites: ['thom_truth', 'elara_ritual'],
+      requiredAct: 3,
+      dialogueOffer: 'Bevor du das Letzte tust, sollst du wissen, fuer wen. Komm, nur wir zwei.',
+      dialogueProgress: 'Elara wartet mit den drei Blaettern.',
+      dialogueComplete: 'Drei Blaetter, eine Hand. Elara ist Harrens Tochter, und der Widerstand hat kuratiert, nicht der Rat allein. Nicht Branka, nicht Mara. Sie. Aber sie erfindet nichts, sie waehlt aus. Merk dir den Unterschied.'
+    },
+
+    // Feature 062: 'final_truth' entfernt (ging ins Finale auf). the_reckoning
+    // schaltet story_ending frei und macht damit das Story-Ende erreichbar (#44).
+    // Objective 'dialogue' (Auto-Complete bei Annahme): die Vier-Regler-
+    // Auswertung + Vatermord-Inszenierung kommen mit dem Finale-Folge-Feature.
+    the_reckoning: {
+      id: 'the_reckoning',
+      title: 'Die Abrechnung',
+      description: 'Nach dem Sturz des Schattenrats gehoert dir die Presse. Entscheide, was die Stadt erfaehrt.',
+      npcId: 'thom',
+      type: 'dialogue',
+      chain: 6,
+      objectives: [
+        { type: 'dialogue', target: 'press_decision', current: 0, required: 1 }
       ],
       rewards: { xp: 500, unlocks: ['story_ending'] },
-      prerequisites: ['mara_assault'],
-      requiredAct: 6,
-      dialogueOffer: 'Unter Fogreach wartet die Wahrheit. Bist du bereit?\n\nDringe bis Welle 40 vor — in die Dimension aus Ketten und Schatten.',
-      dialogueProgress: 'Die letzte Wahrheit liegt bei Welle 40. Du musst tiefer gehen.',
-      dialogueComplete: 'Die Ketten sind gebrochen. Die Wahrheit ist frei. Fogreach gehoert wieder den Menschen.'
+      prerequisites: ['schattenrat_finale'],
+      requiredAct: 4,
+      dialogueOffer: 'Die Platten liegen, das Archiv ist entschluesselt. Was ich setze, liest morgen die ganze Stadt. Es ist Zeit.',
+      dialogueProgress: 'Die Presse wartet.',
+      dialogueComplete: 'Der Nebel duennt aus — nicht weil jemand ihn vertreibt, sondern weil zu viele Menschen sich zu vieles gleichzeitig merken. Hart erkaempft, unvollstaendig, und frei.'
     }
   };
 
@@ -667,10 +793,11 @@
       'quest.elara_blade.description': 'Elara has forged a special weapon for you.',
       'quest.mara_assault.title': 'Storming the Council',
       'quest.mara_assault.description': 'Reach wave 30 to topple the council.',
-      'quest.harren_rescue.title': 'Rescue or Evidence',
-      'quest.harren_rescue.description': 'Defeat the Shadow Council boss to find Elara.',
-      'quest.final_truth.title': 'The Final Truth',
-      'quest.final_truth.description': 'Reach wave 40 to find the true source of the pact.',
+      // Feature 062: umbenannt harren_rescue -> schattenrat_finale; final_truth
+      // entfernt (-> the_reckoning). Neue/umbenannte Quests ohne EN fallen ueber
+      // die i18n-Kaskade auf Deutsch zurueck (Deutsch = Source-of-Truth).
+      'quest.schattenrat_finale.title': 'The Source',
+      'quest.schattenrat_finale.description': 'Descend to depth 30 and defeat the Shadow Council that holds the source of the fog.',
 
       // === Quest dialogues — English ===
       'quest.aldric_cleanup.dialogueOffer': 'Wild beasts in the cellars. Clear them out.\n\nWill you take this task?',
@@ -741,11 +868,12 @@
       'quest.branka_transcripts.dialogueProgress': 'The records are deep in the cellar. Keep searching.',
       'quest.branka_transcripts.dialogueComplete': 'Read this. "Questioned until confession." The council interrogates citizens like the summoned. That is not protection — it is a hunt.',
 
-      'quest.ritual_chamber.title': 'The Ritual Chamber',
-      'quest.ritual_chamber.description': 'Aldric sends you to cleanse a "tainted" chamber. Press through to it.',
-      'quest.ritual_chamber.dialogueOffer': 'A lower chamber is tainted — heresy. Cleanse it. Do not ask what you find.\n\nGo.',
-      'quest.ritual_chamber.dialogueProgress': 'The chamber lies deeper. Press on.',
-      'quest.ritual_chamber.dialogueComplete': 'You stand in the chamber. Blood, symbols, chains — and no heretic in sight. This is no taint. This is a summoning chamber. The council sent you here to erase its own trail.',
+      // Feature 062: umbenannt ritual_chamber -> verseuchte_kammer.
+      'quest.verseuchte_kammer.title': 'The Tainted Chamber',
+      'quest.verseuchte_kammer.description': 'Aldric sends you to cleanse a "tainted" chamber. Press through to it.',
+      'quest.verseuchte_kammer.dialogueOffer': 'A lower chamber is tainted — heresy. Cleanse it. Do not ask what you find.\n\nGo.',
+      'quest.verseuchte_kammer.dialogueProgress': 'The chamber lies deeper. Press on.',
+      'quest.verseuchte_kammer.dialogueComplete': 'You stand in the chamber. Blood, symbols, chains — and no heretic in sight. This is no taint. This is a summoning chamber. Aldric sent you here to erase his own trail. (You memorize every symbol. Mara should see this. And Aldric should believe you only cleaned.)',
 
       'quest.bruch_confrontation.title': 'The Break',
       'quest.bruch_confrontation.description': "Aldric set guards on you. Cut your way to Branka — defeat 3 elite guards. They only confront you in the depths (from depth 8).",
@@ -799,13 +927,9 @@
       'quest.mara_assault.dialogueProgress': 'The council waits in the depths. Press on — wave 30.',
       'quest.mara_assault.dialogueComplete': 'The council has fallen! Fogreach breathes again. But the shadows are not yet defeated...',
 
-      'quest.harren_rescue.dialogueOffer': 'Find my daughter. Please. The Shadow Council holds her.\n\nDefeat him and bring Elara back.',
-      'quest.harren_rescue.dialogueProgress': 'The Shadow Council still lives. Find and defeat him — for Elara.',
-      'quest.harren_rescue.dialogueComplete': 'You defeated the Shadow Council. But Elara... she vanished with him. What does this mean?',
-
-      'quest.final_truth.dialogueOffer': 'Beneath Fogreach the truth waits. Are you ready?\n\nReach wave 40 — into the dimension of chains and shadows.',
-      'quest.final_truth.dialogueProgress': 'The final truth lies at wave 40. You must go deeper.',
-      'quest.final_truth.dialogueComplete': 'The chains are broken. The truth is free. Fogreach belongs to its people again.',
+      'quest.schattenrat_finale.dialogueOffer': 'Beneath the city sits that which the fog serves, beyond council and resistance. The Shadow Council holds the source at depth 30. Descend. Then you decide what the city learns.',
+      'quest.schattenrat_finale.dialogueProgress': 'The Shadow Council still lives, depth 30.',
+      'quest.schattenrat_finale.dialogueComplete': 'The Shadow Council has fallen, the source lies open. The press is yours now. Come up, it is time.',
 
       // === Quest reward strings ===
       'quest.reward.info.mara_contact': "Mara's network revealed",
@@ -946,6 +1070,13 @@
 
   function hasFlag(name) {
     return !!questFlags[name];
+  }
+
+  // Feature 062: flache Kopie aller gesetzten Story-Flags. Lesehilfe fuer das
+  // spaetere Finale-Feature (computeFinaleState), das mehrere Flags gleichzeitig
+  // auswertet.
+  function getFlags() {
+    return Object.assign({}, questFlags);
   }
 
   // ---- Core Functions ----
@@ -1202,7 +1333,7 @@
    * Check if all quest chains for all NPCs are completed.
    */
   function areAllQuestChainsComplete() {
-    var chainEnders = ['final_truth'];
+    var chainEnders = ['the_reckoning'];
     return chainEnders.every(function (id) {
       var state = questState[id];
       return state && state.status === 'completed';
@@ -1334,6 +1465,16 @@
       }
     }
 
+    // Feature 062: Story-Flags bei Abschluss setzen (bestehender questFlags-
+    // Speicher, kein neues Modul). `completionFlags` ist die Backbone-Form der
+    // Entscheidungs-Flags — die Szenen-Wahl (sealed/refused etc.) folgt mit dem
+    // Inszenierungs-Feature; hier wird der Default-Zweig gesetzt.
+    if (_advDef && Array.isArray(_advDef.completionFlags)) {
+      _advDef.completionFlags.forEach(function (fn) {
+        if (fn && typeof fn === 'string') questFlags[fn] = true;
+      });
+    }
+
     console.log('[QuestSystem] Completed quest:', questId);
     if (window.AbilitySystem && typeof window.AbilitySystem.onQuestCompleted === 'function') {
       window.AbilitySystem.onQuestCompleted(questId);
@@ -1408,6 +1549,7 @@
 
   function getQuestSaveData() {
     return {
+      storyVersion: STORY_VERSION,
       quests: JSON.parse(JSON.stringify(questState)),
       flags: JSON.parse(JSON.stringify(questFlags))
     };
@@ -1417,6 +1559,25 @@
     if (!data || typeof data !== 'object') return;
     _initQuestState();
     questFlags = {};
+    // Feature 062: Altstand-Reset. Ein Stand mit fehlender oder aelterer
+    // storyVersion traegt die inkompatible v3-Struktur (andere Quest-IDs,
+    // entfernte final_truth). Statt fragiler Teilmigration: Story-/Quest-/Flag-
+    // Teil verwerfen und frisch auf Akt 0 initialisieren. Charakter-State
+    // (Level/Inventar/Gold/Skillbaum) liegt ausserhalb dieses Blobs -> bleibt.
+    var _sv = (typeof data.storyVersion === 'number') ? data.storyVersion : 0;
+    if (_sv < STORY_VERSION) {
+      // questState + Flags bleiben auf dem frischen _initQuestState()-Stand.
+      try {
+        if (window.storySystem && typeof window.storySystem.resetToAct0 === 'function') {
+          window.storySystem.resetToAct0();
+        } else if (window.storySystem && typeof window.storySystem.advanceToAct === 'function') {
+          window.storySystem.advanceToAct(0);
+        }
+      } catch (err) { console.warn('[QuestSystem] story reset on old save failed', err); }
+      console.log('[QuestSystem] Alter Story-Stand (v' + _sv + ') -> Reset auf Akt 0 (v' + STORY_VERSION + ').');
+      _notifyUpdate();
+      return;
+    }
     // Backward compat: legacy saves are flat questState (no .quests wrapper).
     // Detect the wrapper by checking if .quests is itself an object whose
     // values look like quest entries ({status,objectives}).
@@ -1523,6 +1684,8 @@
     completeQuest: completeQuest,
     setFlag: setFlag,
     hasFlag: hasFlag,
+    getFlags: getFlags,
+    STORY_VERSION: STORY_VERSION,
     getQuestSaveData: getQuestSaveData,
     loadQuestSaveData: loadQuestSaveData,
     onQuestUpdate: onQuestUpdate,
