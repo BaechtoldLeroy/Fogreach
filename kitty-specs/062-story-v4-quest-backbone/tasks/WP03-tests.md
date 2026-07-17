@@ -1,13 +1,13 @@
 ---
 work_package_id: WP03
 title: Tests
-dependencies: [WP01, WP02]
+dependencies: []
 requirement_refs:
 - FR-018
 - FR-020
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: Zweig von der WP01/WP02-Basis; nach Abschluss zurück nach main.
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T011, T012, T013, T014, T015]
 history:
 - 2026-07-17T17:13:33Z: Erstellt (spec-kitty.tasks).
