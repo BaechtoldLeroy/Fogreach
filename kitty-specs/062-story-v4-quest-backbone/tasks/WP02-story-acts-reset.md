@@ -89,3 +89,4 @@ owned_files: [js/storySystem.js]
 ## Activity Log
 
 - 2026-07-17T18:35:43Z – claude – shell_pid=29564 – lane=doing – Started implementation via workflow command
+- 2026-07-17T18:38:40Z – claude – shell_pid=29564 – lane=for_review – STORY_ACTS v4 (5 Akte), resetToAct0 exportiert, tote Helfer weg. Probe gruen.
