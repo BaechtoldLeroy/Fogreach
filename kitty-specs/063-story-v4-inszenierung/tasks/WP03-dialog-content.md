@@ -99,3 +99,4 @@ window.storyDialog = {
 ## Activity Log
 - (leer bis implement)
 - 2026-07-17T22:26:54Z – claude – shell_pid=8608 – lane=doing – Started implementation via workflow command
+- 2026-07-17T22:30:00Z – claude – shell_pid=8608 – lane=for_review – 38 Auswahlen ueber alle Akte, finale-Flags verdrahtet (branka_ally/thom_ally an who_you_were/thom_truth).
