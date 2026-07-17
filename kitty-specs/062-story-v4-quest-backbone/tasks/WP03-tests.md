@@ -1,7 +1,9 @@
 ---
 work_package_id: WP03
 title: Tests
-dependencies: []
+dependencies:
+- WP01
+- WP02
 requirement_refs:
 - FR-018
 - FR-020

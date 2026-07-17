@@ -49,7 +49,8 @@ WP01 und WP02 sind parallelisierbar (verschiedene Dateien, stabile `advanceToAct
 - [ ] T010 Alte Index-5/6-Referenzen bereinigen (`_computeActIndex`, triggerWave/triggerQuests-Altdaten), damit nichts auf entfernte Akte zeigt.
 
 ## WP03 — Tests
-**Prompt:** [tasks/WP03-tests.md](tasks/WP03-tests.md) · **Priorität:** P1 · **Größe:** ~5 Subtasks · **Abhängig:** WP01, WP02
+**Prompt:** [tasks/WP03-tests.md](tasks/WP03-tests.md) · **Priorität:** P1 · **Größe:** ~5 Subtasks
+**Dependencies:** WP01, WP02
 **Ziel:** `tests/questSystem.test.js` deckt die Akt-Leiter, die „genau vier Trigger"-Invariante, den Ende-Trigger, den Altstand-Reset und die Boss-Ziele ab; bestehende Tests angepasst.
 **Unabhängiger Test:** `node tools/runTests.js` grün, inkl. der neuen Fälle.
 
@@ -60,7 +61,8 @@ WP01 und WP02 sind parallelisierbar (verschiedene Dateien, stabile `advanceToAct
 - [ ] T015 Struktur-Invarianten: 34 Quests, keine doppelten `id`/`title`; Stichproben `requiredAct`/`prerequisites` gemäß Kontrakt.
 
 ## WP04 — Doku, Boss-Mapping-Verifikation & Deploy
-**Prompt:** [tasks/WP04-docs-deploy.md](tasks/WP04-docs-deploy.md) · **Priorität:** P2 · **Größe:** ~3 Subtasks · **Abhängig:** WP01, WP02
+**Prompt:** [tasks/WP04-docs-deploy.md](tasks/WP04-docs-deploy.md) · **Priorität:** P2 · **Größe:** ~3 Subtasks
+**Dependencies:** WP01, WP02
 **Ziel:** `tools/genQuestDoc.js` an die v4-Aktnamen anpassen, `docs/QUESTS.md` regenerieren, Cache-Buster in `index.html` bumpen.
 **Unabhängiger Test:** `docs/QUESTS.md` zeigt für Akt 1–4 je einen Trigger (kein „kein Trigger" mehr); `index.html` referenziert die neuen `?v=`-Versionen.
 

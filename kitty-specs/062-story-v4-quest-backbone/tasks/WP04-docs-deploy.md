@@ -1,7 +1,9 @@
 ---
 work_package_id: WP04
 title: Doku, Doku-Generator & Deploy
-dependencies: []
+dependencies:
+- WP01
+- WP02
 requirement_refs:
 - FR-019
 planning_base_branch: main
