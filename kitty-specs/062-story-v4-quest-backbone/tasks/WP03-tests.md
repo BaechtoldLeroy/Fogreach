@@ -4,13 +4,15 @@ title: Tests
 dependencies:
 - WP01
 - WP02
+- WP05
 requirement_refs:
 - FR-018
 - FR-020
+- FR-021
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
-subtasks: [T011, T012, T013, T014, T015]
+subtasks: [T011, T012, T013, T014, T015, T019]
 history:
 - 2026-07-17T17:13:33Z: Erstellt (spec-kitty.tasks).
 authoritative_surface: tests/questSystem.test.js
@@ -73,8 +75,16 @@ owned_files: [tests/questSystem.test.js]
 ### T015 — Struktur-Invarianten
 **Schritte:**
 1. Test: 34 Quest-Definitionen; keine doppelten `id`; keine doppelten `title`.
-2. Stichproben: `council_collusion_reveal.prerequisites` = die vier Fraktions-Quests; `espionage_informant.npcId === 'mara'`; `bruch_confrontation.prerequisites` enthält `elara_second_truth`.
+2. Stichproben: `council_collusion_reveal.prerequisites` = die vier Fraktions-Quests; `espionage_informant.npcId === 'mara'`; `bruch_confrontation.prerequisites` enthält `elara_second_truth`; npcId von `klerus_district_purge` === `klerus_priester`, von `garde_night_escort` === `stadtwache` (FR-022).
 **Validierung:** grün gegen den Kontrakt.
+
+### T019 — Objective-Trigger-Audit
+**Zweck:** Sicherstellen, dass JEDES Objective-Ziel auslösbar ist — das hätte #44 (und den Analyse-Befund) gefangen.
+**Schritte:**
+1. Eine bekannte Menge auslösbarer Ziele definieren: bereits verdrahtete Typen (`kill`/`elite_enemy`, `boss_kill`, `explore`/`room`, `craft`, `dungeon_run`, `wave`), die bestehenden fetch/observe-Ziele, die **WP05**-verdrahteten Ziele (`verification_seal`, `proclamation`, `memory_shard`, `escort_route`, `informant_id`) und `dialogue` (Auto-Complete).
+2. Test iteriert über alle `QUEST_DEFINITIONS`-Objectives und bestätigt, dass jedes `type`/`target` in dieser Menge liegt — kein Ziel bleibt ohne Trigger.
+3. Insbesondere: `council_collusion_reveal` und `elara_second_truth` sind `dialogue` (nicht `observe`).
+**Validierung:** Test fällt, sobald ein Objective ein unverdrahtetes Ziel bekommt (Mutationsprobe: ein Ziel auf einen Fantasienamen setzen → rot).
 
 ---
 
