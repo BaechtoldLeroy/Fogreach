@@ -1,15 +1,15 @@
 {
-  "event_count": 10,
+  "event_count": 11,
   "feature_slug": "062-story-v4-quest-backbone",
-  "last_event_id": "01KXRR25WQC6X56CF97Z838WQ7",
-  "materialized_at": "2026-07-17T19:15:13.464911+00:00",
+  "last_event_id": "01KXRR2BNQJE9YX59G8JBT7BDC",
+  "materialized_at": "2026-07-17T19:15:19.386688+00:00",
   "summary": {
-    "approved": 1,
+    "approved": 2,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 2,
+    "for_review": 1,
     "in_progress": 0,
     "planned": 0
   },
@@ -24,9 +24,9 @@
     "WP02": {
       "actor": "user",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01KXRNZ86T3TJ4X06Q563FEABA",
-      "last_transition_at": "2026-07-17T18:38:40.347003+00:00"
+      "lane": "approved",
+      "last_event_id": "01KXRR2BNQJE9YX59G8JBT7BDC",
+      "last_transition_at": "2026-07-17T19:15:19.351359+00:00"
     },
     "WP05": {
       "actor": "user",
