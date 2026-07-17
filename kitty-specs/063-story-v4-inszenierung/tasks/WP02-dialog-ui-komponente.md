@@ -100,3 +100,4 @@ Die wiederverwendbare Spieler-Auswahl-Komponente `js/dialogChoice.js` gemäß [d
 - 2026-07-17T22:24:38Z – claude – shell_pid=27384 – lane=doing – Started implementation via workflow command
 - 2026-07-17T22:26:23Z – claude – shell_pid=27384 – lane=for_review – resolve/applyChoice headless getestet (10), rekursives scrollFactor, Suite 532/0.
 - 2026-07-17T22:26:28Z – claude – shell_pid=27384 – lane=approved – Selbst-Review.
+- 2026-07-17T22:26:31Z – claude – shell_pid=27384 – lane=done – Moved to done
