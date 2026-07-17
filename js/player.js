@@ -1614,10 +1614,21 @@ function handleEnemyHit(scene, enemy, options = {}) {
       } catch (_) { /* never crash gameplay */ }
     }
     if (window.soundManager) window.soundManager.playSFX('enemy_death');
-    // Particle effects: death burst + screen shake
+    // Particle effects: death burst + screen shake. Bosse bekommen den
+    // wuchtigeren bossDeath-Effekt (Wellen + Schockringe + Blitz) statt des
+    // normalen Gegner-Bursts, damit ein Boss-Kill sich als Ereignis anfuehlt.
     if (window.particleFactory) {
-      window.particleFactory.deathBurst(enemy.x, enemy.y);
-      window.particleFactory.screenShake(80, 0.003);
+      if (enemy.isBoss) {
+        // Boss-Einfaerbung wie die HP-Leiste (drawBossBar).
+        const bossColor = enemy.bossType === 'chainMaster' ? 0xcccccc
+          : enemy.bossType === 'ceremonyMaster' ? 0xaa33ff
+          : enemy.bossType === 'shadowCouncillor' ? 0xff3322
+          : 0xff8844;
+        window.particleFactory.bossDeath(enemy.x, enemy.y, bossColor);
+      } else {
+        window.particleFactory.deathBurst(enemy.x, enemy.y);
+        window.particleFactory.screenShake(80, 0.003);
+      }
     }
     spawnLoot.call(scene, enemy.x, enemy.y, null, enemy);
     enemy.destroy();

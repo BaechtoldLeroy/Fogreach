@@ -2152,6 +2152,60 @@ function showBossIntro(def) {
   });
 }
 
+// Ermittelt die enge Bounding-Box der sichtbaren (nicht-transparenten) Pixel
+// einer Textur — gecacht pro Textur-Key. Die Boss-Kunst hat teils riesige
+// transparente Raender (boss_shadow: Figur in der oberen Haelfte eines
+// 307x1024-Frames), und Arcades Standard-Body ist das VOLLE Frame. Dadurch
+// reichte die Hitbox weit unter das sichtbare Sprite. Werte sind UNSKALIERTE
+// Textur-Pixel — Phaser skaliert den Body mit dem Sprite.
+var _spriteAlphaBoundsCache = {};
+function _computeSpriteAlphaBounds(sprite) {
+  try {
+    if (typeof document === 'undefined') return null;
+    var frame = sprite.frame;
+    var src = sprite.texture && sprite.texture.getSourceImage && sprite.texture.getSourceImage();
+    if (!src) return null;
+    var fw = frame ? frame.width : src.width;
+    var fh = frame ? frame.height : src.height;
+    var fx = frame ? frame.cutX : 0;
+    var fy = frame ? frame.cutY : 0;
+    if (!fw || !fh) return null;
+    var canvas = document.createElement('canvas');
+    canvas.width = fw; canvas.height = fh;
+    var ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(src, fx, fy, fw, fh, 0, 0, fw, fh);
+    var data = ctx.getImageData(0, 0, fw, fh).data;
+    var minX = fw, minY = fh, maxX = -1, maxY = -1;
+    var ALPHA = 16; // Rauschschwelle gegen halbtransparente Kantenpixel
+    for (var y = 0; y < fh; y++) {
+      for (var x = 0; x < fw; x++) {
+        if (data[(y * fw + x) * 4 + 3] > ALPHA) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) return null; // komplett transparent
+    return { x: minX, y: minY, w: (maxX - minX + 1), h: (maxY - minY + 1) };
+  } catch (e) { return null; }
+}
+function fitBodyToSprite(sprite) {
+  if (!sprite || !sprite.body || !sprite.body.setSize) return;
+  var key = sprite.texture && sprite.texture.key;
+  if (!key) return;
+  var box = _spriteAlphaBoundsCache[key];
+  if (box === undefined) {
+    box = _computeSpriteAlphaBounds(sprite);
+    _spriteAlphaBoundsCache[key] = box; // null wird gecacht -> nicht erneut scannen
+  }
+  if (!box) return;
+  sprite.body.setSize(box.w, box.h);
+  if (sprite.body.setOffset) sprite.body.setOffset(box.x, box.y);
+}
+if (typeof window !== 'undefined') window.fitBodyToSprite = fitBodyToSprite;
+
 function makeBoss(boss, def, cycle) {
   boss.isBoss = true;
   boss.bossType = def.id;
@@ -2186,6 +2240,9 @@ function makeBoss(boss, def, cycle) {
     boss.setScale(def.scale);
   }
   boss.setCollideWorldBounds(true);
+  // Hitbox an die sichtbaren Pixel anpassen (Boss-Frames tragen grosse
+  // transparente Raender — sonst reicht der Body weit unter das Sprite).
+  fitBodyToSprite(boss);
 
   // Shimmer
   this.tweens.add({
@@ -2688,6 +2745,8 @@ function bossShadowClones(boss) {
       clone.setScale(boss.scaleX * 0.8);
       clone.setAlpha(0.6);
       clone.setCollideWorldBounds(true);
+      // Gleiche Textur wie der Boss -> gleiche transparente Raender -> Body fitten.
+      if (typeof fitBodyToSprite === 'function') fitBodyToSprite(clone);
       if (clone.body?.setPushable) clone.body.setPushable(false);
 
       if (scene._enemyVisionMask && clone.setMask) {

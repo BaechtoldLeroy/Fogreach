@@ -109,6 +109,69 @@ class ParticleFactory {
       cam.shake(duration, intensity);
     }
   }
+
+  /**
+   * Grosser Boss-Tod-Effekt: mehrere Partikel-Wellen, zwei expandierende
+   * Schockwellen-Ringe, weisser Kamera-Blitz und laengeres Beben. Deutlich
+   * wuchtiger als deathBurst (den normale Gegner bekommen), damit ein
+   * Boss-Kill sich als Ereignis anfuehlt. `color` faerbt Partikel + Ringe
+   * je Boss ein (Kettenmeister grau, Zeremonienmeister violett, Schattenrat rot).
+   */
+  bossDeath(x, y, color) {
+    const scene = this.scene;
+    if (!scene || !scene.add) return;
+    const tint = (typeof color === 'number') ? color : 0xff3322;
+
+    // 1) Kamera: Blitz + kraeftiges, langes Beben.
+    const cam = scene.cameras && scene.cameras.main;
+    if (cam) {
+      if (cam.flash) cam.flash(400, 255, 240, 220, true);
+      if (cam.shake) cam.shake(650, 0.014);
+    }
+
+    // 2) Partikel: eine grosse, weit streuende Welle + ein spaeterer Nachschlag.
+    this.burst(x, y, 'particle', {
+      speed: { min: 120, max: 320 },
+      scale: { start: 1.6, end: 0 },
+      lifespan: 750,
+      quantity: 44,
+      tint: [tint, 0xffcc44, 0xffffff]
+    });
+    scene.time.delayedCall(140, () => {
+      if (scene.add) this.burst(x, y, 'particle', {
+        speed: { min: 40, max: 160 },
+        scale: { start: 1.1, end: 0 },
+        lifespan: 900,
+        quantity: 26,
+        tint: [tint, 0x662222]
+      });
+    });
+
+    // 3) Zwei expandierende Schockwellen-Ringe (Graphics, getweent + aufgeraeumt).
+    const ring = (delay, maxR, width) => {
+      scene.time.delayedCall(delay, () => {
+        if (!scene.add) return;
+        const g = scene.add.graphics().setDepth(1600);
+        const state = { r: 8, a: 0.9 };
+        scene.tweens.add({
+          targets: state,
+          r: maxR,
+          a: 0,
+          duration: 520,
+          ease: 'Cubic.Out',
+          onUpdate: () => {
+            if (!g.active) return;
+            g.clear();
+            g.lineStyle(width, tint, state.a);
+            g.strokeCircle(x, y, state.r);
+          },
+          onComplete: () => { try { g.destroy(); } catch (e) {} }
+        });
+      });
+    };
+    ring(0, 180, 6);
+    ring(120, 130, 4);
+  }
 }
 
 // Expose globally
