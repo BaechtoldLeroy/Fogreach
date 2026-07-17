@@ -1,14 +1,14 @@
 {
-  "event_count": 4,
+  "event_count": 5,
   "feature_slug": "063-story-v4-inszenierung",
-  "last_event_id": "01KXS2VW1PK78AJBAN4YEQVDJD",
-  "materialized_at": "2026-07-17T22:24:01.110067+00:00",
+  "last_event_id": "01KXS2WE4GMS8D69C1PCJA5J5Z",
+  "materialized_at": "2026-07-17T22:24:19.639613+00:00",
   "summary": {
-    "approved": 1,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 0,
+    "done": 1,
     "for_review": 0,
     "in_progress": 0,
     "planned": 0
@@ -16,10 +16,10 @@
   "work_packages": {
     "WP01": {
       "actor": "user",
-      "force_count": 0,
-      "lane": "approved",
-      "last_event_id": "01KXS2VW1PK78AJBAN4YEQVDJD",
-      "last_transition_at": "2026-07-17T22:24:01.078385+00:00"
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KXS2WE4GMS8D69C1PCJA5J5Z",
+      "last_transition_at": "2026-07-17T22:24:19.600790+00:00"
     }
   }
 }
