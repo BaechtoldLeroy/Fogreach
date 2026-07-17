@@ -55,9 +55,9 @@ WP01 und WP02 sind parallelisierbar (verschiedene Dateien, stabile `advanceToAct
 **Ziel:** Die neuen gameplay-basierten Objective-Ziele auslösbar machen — `fetch`-Ziele als Quest-Item-Drops (`loot.js`), `observe`-Ziele als Spionage-Zonen (`espionageSystem.js`). Verhindert uncompletable Quests (Analyse-Befund).
 **Unabhängiger Test:** Mit aktiver Quest löst das jeweilige Ereignis (Item-Pickup / Spionage-Zone) `updateQuestProgress` mit dem richtigen Ziel aus.
 
-- [ ] T020 `fetch`-Ziele als Quest-Item-Drops in `loot.js` verdrahten: `verification_seal`, `proclamation`, `memory_shard` (Muster `journal_fragment`/`council_document`).
-- [ ] T021 `observe`-Ziele in `espionageSystem.js` verdrahten: `escort_route`, `informant_id` (Muster `convoy_intel`/`archive_record`); ggf. an bestehende kuratierte Räume hängen.
-- [ ] T022 Sicherstellen, dass die Verdrahtung nur bei aktiver Quest feuert und keine Regression bei bestehenden fetch/observe-Zielen entsteht.
+- [x] T020 `fetch`-Ziele als Quest-Item-Drops in `loot.js` verdrahten: `verification_seal`, `proclamation`, `memory_shard` (Muster `journal_fragment`/`council_document`).
+- [x] T021 `observe`-Ziele in `espionageSystem.js` verdrahten: `escort_route`, `informant_id` (Muster `convoy_intel`/`archive_record`); ggf. an bestehende kuratierte Räume hängen.
+- [x] T022 Sicherstellen, dass die Verdrahtung nur bei aktiver Quest feuert und keine Regression bei bestehenden fetch/observe-Zielen entsteht.
 
 ## WP03 — Tests
 **Prompt:** [tasks/WP03-tests.md](tasks/WP03-tests.md) · **Priorität:** P1 · **Größe:** ~6 Subtasks
