@@ -39,6 +39,13 @@ if (window.i18n) {
 }
 const _START_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
 
+// #63: Uebergabe ueber den Reload hinweg — "Neues Spiel" leert den Slot, laedt
+// neu (damit jedes Modul frisch initialisiert) und startet dann automatisch.
+// sessionStorage, nicht localStorage: der Marker gilt nur fuer diesen Tab und
+// diesen einen Reload. Auf Modulebene, damit Setzer und Leser in create()
+// dieselbe Konstante benutzen (sie liegen weit auseinander).
+const _NEW_GAME_FLAG = 'demonfall.pendingNewGame';
+
 // 1) Scene-Konstruktor
 function StartScene() {
   Phaser.Scene.call(this, { key: "StartScene" });
@@ -313,6 +320,25 @@ StartScene.prototype.create = function () {
     try { window.applyGameSettings(window.loadGameSettings()); } catch (e) { /* ignore */ }
   }
 
+  // #63: "Neues Spiel" hat den Slot geleert und die Seite neu geladen, damit
+  // jedes Modul frisch aus dem leeren Slot initialisiert. Hier die Gegenseite:
+  // das Flag konsumieren und direkt starten, statt das Menue nochmal zu zeigen.
+  // Der Wipe ist bereits passiert — hier wird nur noch gestartet.
+  const _pendingNewGame = (() => {
+    try {
+      const v = window.sessionStorage.getItem(_NEW_GAME_FLAG);
+      if (v !== null) window.sessionStorage.removeItem(_NEW_GAME_FLAG);
+      return v;
+    } catch (e) { return null; }
+  })();
+  if (_pendingNewGame !== null) {
+    if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
+    window.__DEV_FORCE_CHEAT__ = true;
+    const selfNG = this;
+    setTimeout(() => loadRoomTemplatesAndStart.call(selfNG), 100);
+    return;
+  }
+
   // Auto-start support: ?autostart=1 in URL OR debug.autostart in settings.
   // Treated as a fresh new game — wipe persistent state so test runs are deterministic.
   const settingsAutostart = (() => {
@@ -369,6 +395,25 @@ StartScene.prototype.create = function () {
   const _slots = window.SaveSlots || null;
   let activeSlot = _slots ? _slots.getActiveSlot() : 1;
 
+  // Slot-Wechsel MUSS die Seite neu laden — scene.restart() reicht nicht.
+  //
+  // Die Satelliten-Module (KnowledgeTree, FactionSystem, SkillTree, Druckerei,
+  // Tutorial) laden ihren Zustand EINMAL beim Modul-Init und halten ihn dann im
+  // Speicher; init() hat eine Latch ("if (state.initialized) return"). Ein
+  // scene.restart() baut nur die Szene neu — die Module behalten den Zustand des
+  // ALTEN Slots und schreiben ihn beim naechsten _persist() in den NEUEN.
+  // Ein Reload initialisiert jedes Modul frisch aus dem aktiven Slot.
+  //
+  // Bewusst ein Reload statt "jedes Modul bekommt reloadFromStorage() und wird
+  // hier aufgerufen": FactionSystem und PrintingHouse haben gar keine Reset-API,
+  // und die Liste muesste bei jedem neuen Modul gepflegt werden — genau die
+  // Drift, vor der #63 warnt. Der Reload weiss nichts ueber Module und kann
+  // darum nichts vergessen.
+  function _reloadForSlotChange() {
+    try { window.location.reload(); }
+    catch (e) { try { this.scene.restart(); } catch (_) {} }
+  }
+
   if (_slots) {
     // Vertikal ist es eng: bei der kleinsten Kamerahoehe (480) sitzt der
     // Untertitel absolut bei 136px und EINSTELLUNGEN ganz unten bei ~452.
@@ -410,10 +455,7 @@ StartScene.prototype.create = function () {
       row.on('pointerdown', () => {
         if (isActive) return;
         _slots.setActiveSlot(meta.slot);
-        // Neustart der Szene statt Teil-Neuzeichnen: create() liest ohnehin
-        // alles aus dem aktiven Slot, und der i18n-Listener wird beim SHUTDOWN
-        // sauber abgemeldet (siehe unten) — kein Leak.
-        this.scene.restart();
+        _reloadForSlotChange();
       });
 
       // Loeschen nur fuer belegte Slots.
@@ -460,7 +502,9 @@ StartScene.prototype.create = function () {
       // Hauptsave — der Rest waere sonst Altlast im naechsten Spiel dort.
       if (window.SaveSlots) window.SaveSlots.deleteSlot(slot);
       close();
-      scene.scene.restart();
+      // Reload aus demselben Grund wie beim Slot-Wechsel: die Module halten den
+      // geloeschten Stand sonst weiter im Speicher und schreiben ihn zurueck.
+      _reloadForSlotChange();
     });
   }
 
@@ -528,21 +572,32 @@ StartScene.prototype.create = function () {
 
   btn
     .on("pointerdown", () => {
-      // #63: den gewaehlten Slot komplett leeren, bevor neu gestartet wird.
-      // clearSave() allein raeumte nur den Hauptsave + Tutorial — Skillbaum,
-      // Fraktionen und Druckerei ueberlebten ein "Neues Spiel" und wanderten in
-      // den neuen Durchgang. deleteSlot() wischt alle Keys des Slots; die
-      // resetForNewGame-Aufrufe darunter setzen zusaetzlich den noch lebenden
-      // In-Memory-State der Module zurueck.
+      // #63: den gewaehlten Slot komplett leeren. clearSave() allein raeumte nur
+      // den Hauptsave + Tutorial — Skillbaum, Fraktionen und Druckerei
+      // ueberlebten ein "Neues Spiel" und wanderten in den neuen Durchgang.
       if (window.SaveSlots) window.SaveSlots.deleteSlot(activeSlot);
       if (window.clearSave) clearSave();
+
+      // Danach neu laden, statt direkt zu starten: die Module haelten den
+      // geloeschten Stand sonst weiter im Speicher (init() ist gelatcht) und
+      // schrieben ihn beim naechsten _persist() zurueck — der Wipe waere
+      // wirkungslos. Der Kommentar an den beiden resetForNewGame-Aufrufen unten
+      // kannte das Problem schon, loeste es aber nur fuer AbilitySystem und
+      // KnowledgeTree; FactionSystem/PrintingHouse/SkillTree/Tutorial blieben
+      // stehen. Der Reload deckt alle ab, auch kuenftige.
+      // Das Flag ueberlebt den Reload und startet danach automatisch.
+      try { window.sessionStorage.setItem(_NEW_GAME_FLAG, String(activeSlot)); } catch (e) {}
+
+      // Falls sessionStorage fehlt (Privatmodus o. ae.): ohne Flag kaeme man
+      // nach dem Reload nur ins Menue zurueck — dann lieber wie bisher direkt
+      // starten und die In-Memory-Resets machen, was sie koennen.
+      let flagOk = false;
+      try { flagOk = window.sessionStorage.getItem(_NEW_GAME_FLAG) !== null; } catch (e) {}
+      if (flagOk) { _reloadForSlotChange(); return; }
+
       if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
         window.AbilitySystem.resetForNewGame();
       }
-      // Issue #26 — Knowledge Tree is a satellite localStorage key with its
-      // own in-memory state. clearAllSaves (called from AbilitySystem) wipes
-      // the persisted blob, but the IIFE module is still alive in this
-      // session — explicitly reset it so any open UI shows a clean slate.
       if (window.KnowledgeTree && typeof window.KnowledgeTree.resetForNewGame === 'function') {
         window.KnowledgeTree.resetForNewGame();
       }
