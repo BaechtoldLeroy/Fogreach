@@ -12,11 +12,15 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: main
+base_commit: b36d581dd7c33ea7221ce2b28c3047f3b17c9d56
+created_at: '2026-07-17T22:22:00.110582+00:00'
 subtasks: [T001, T002, T003, T004, T005]
 authoritative_surface: js/questFinale.js
 execution_mode: code_change
 lane: planned
 owned_files: [js/questFinale.js, tests/questFinale.test.js]
+shell_pid: "1436"
 ---
 
 # WP01 — Finale-Logik (`computeFinaleState`)
