@@ -18,7 +18,7 @@ history:
 authoritative_surface: js/loot.js
 execution_mode: code_change
 lane: planned
-owned_files: [js/loot.js, js/espionageSystem.js]
+owned_files: [js/loot.js, js/roomManager.js, js/roomTemplates/CouncilWarehouse.json]
 ---
 
 # WP05 — Objective-Trigger-Verdrahtung
