@@ -45,9 +45,9 @@ WP01 und WP02 sind parallelisierbar (verschiedene Dateien, stabile `advanceToAct
 **Ziel:** `js/storySystem.js` auf die v4-Akt-Namen (Index 0–4) setzen und den Reset-auf-Akt-0-Pfad bereitstellen, den WP01 beim `storyVersion`-Reset nutzt.
 **Unabhängiger Test:** `STORY_ACTS[0..4]` tragen die v4-Namen; `advanceToAct(0)` setzt den Akt-Index auf 0; keine Referenz auf Index 5/6.
 
-- [ ] T008 `STORY_ACTS` v4-Namen (0 Der Dienst, 1 Treuer Diener, 2 Das Doppelspiel, 3 Die Enttarnung, 4 Der Verrat und die Presse).
-- [ ] T009 Reset-Pfad: sicherstellen, dass `advanceToAct(0)` (bzw. ein Reset-Helfer) den Akt vollständig auf 0 bringt und von WP01 aufrufbar ist.
-- [ ] T010 Alte Index-5/6-Referenzen bereinigen (`_computeActIndex`, triggerWave/triggerQuests-Altdaten), damit nichts auf entfernte Akte zeigt.
+- [x] T008 `STORY_ACTS` v4-Namen (0 Der Dienst, 1 Treuer Diener, 2 Das Doppelspiel, 3 Die Enttarnung, 4 Der Verrat und die Presse).
+- [x] T009 Reset-Pfad: sicherstellen, dass `advanceToAct(0)` (bzw. ein Reset-Helfer) den Akt vollständig auf 0 bringt und von WP01 aufrufbar ist.
+- [x] T010 Alte Index-5/6-Referenzen bereinigen (`_computeActIndex`, triggerWave/triggerQuests-Altdaten), damit nichts auf entfernte Akte zeigt.
 
 ## WP05 — Objective-Trigger-Verdrahtung
 **Prompt:** [tasks/WP05-objective-trigger-wiring.md](tasks/WP05-objective-trigger-wiring.md) · **Priorität:** P1 · **Größe:** ~4 Subtasks
