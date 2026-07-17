@@ -12,7 +12,8 @@ global.window = {};
 require(path.join(ROOT, 'js', 'questSystem.js'));
 const D = window.questSystem.QUEST_DEFINITIONS;
 
-const ACTS = ['Auftrag', 'Treuer Diener', 'Erste Risse', 'Wahrheit', 'Bruch', 'Rebellion', 'Offenbarung'];
+// Story v4 (Feature 062): fünf Akte, Index 0 = Startzustand. Kein Akt 5/6 mehr.
+const ACTS = ['Der Dienst', 'Treuer Diener', 'Das Doppelspiel', 'Die Enttarnung', 'Der Verrat und die Presse'];
 const NPC = {
   aldric: 'Ratsherr Aldric', harren: 'Bürgermeister Harren', elara: 'Elara',
   mara: 'Mara vom Untergrund', branka: 'Schmiedemeisterin Branka', thom: 'Setzer Thom',
@@ -39,12 +40,12 @@ const quote = (s) => '> ' + String(s).replace(/\n/g, '\n> ');
 const all = Object.values(D);
 
 // Akt-Aufstieg: rein quest-getrieben. `advanceAct: N` auf einer Quest springt bei
-// Abschluss auf STORY_ACTS[N]; council_collusion_reveal ist zusaetzlich hart auf
-// advanceToAct(2) verdrahtet (questSystem.js). Depth-basierter Aufstieg wurde in
-// Feature 050 ENTFERNT (storySystem.js: "_computeActIndex" ist toter Code).
+// Abschluss auf STORY_ACTS[N]. Story v4: genau vier Quests tragen advanceAct
+// (harren_daughter_investigation→1, council_collusion_reveal→2, mara_warning→3,
+// bruch_confrontation→4) — der Reveal nutzt jetzt das advanceAct-Feld statt einer
+// Hart-Verdrahtung. Depth-basierter Aufstieg wurde in Feature 050 entfernt.
 const ADVANCERS = {};
 all.forEach((q) => { if (typeof q.advanceAct === 'number') (ADVANCERS[q.advanceAct] = ADVANCERS[q.advanceAct] || []).push(q); });
-ADVANCERS[2] = (ADVANCERS[2] || []).concat(D.council_collusion_reveal ? [D.council_collusion_reveal] : []);
 
 let out = '';
 out += '# Quest-Übersicht — Fogreach\n\n';
@@ -127,7 +128,7 @@ out += 'Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):\n
 out += '| Boss | Tiefe | Quest |\n|---|---|---|\n';
 out += '| Kettenmeister | 10 | Maras Warnung |\n';
 out += '| Zeremonienmeister | 20 | Die Ritualkammer (Elara) |\n';
-out += '| Schattenrat | 30 | Rettung oder Beweis |\n\n';
+out += '| Schattenrat | 30 | Die Quelle (Harren) |\n\n';
 out += '---\n';
 
 const byAct = {};
