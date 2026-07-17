@@ -2,8 +2,10 @@
   "created_at": "2026-07-17T16:51:10.007797+00:00",
   "feature_number": "062",
   "feature_slug": "062-story-v4-quest-backbone",
-  "friendly_name": "story v4 quest backbone",
+  "friendly_name": "Story v4 Quest Backbone",
   "mission": "software-dev",
   "slug": "062-story-v4-quest-backbone",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "source_description": "Story-Ueberarbeitung v4 (Doppelagenten-Struktur), Quest-Rueckgrat. Quellen: Fogreach_Story_v4.md, Fogreach_Quest_Migration_v4.md, Fogreach_Dialog_Skript_v1.md. Scope: Quest-System-Migration (Akt-Register, verschobene Trigger, requiredAct/prerequisites, Umbenennungen, neue Quests inkl. Texte, Doppel-Tonspur, questFlags.js, Story-Reset alter Staende). Schliesst #44. NICHT enthalten: Vier-Regler-Finale-Modul, aufwaendige Szenen-Inszenierung, drei neue Boss-Mechaniken (je Folge-Feature)."
 }
