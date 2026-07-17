@@ -109,3 +109,4 @@ owned_files: [tests/questSystem.test.js]
 - 2026-07-17T19:20:36Z – claude – shell_pid=33952 – lane=doing – Started implementation via workflow command
 - 2026-07-17T19:33:33Z – claude – shell_pid=33952 – lane=for_review – 12 neue Tests + 7 auf v4 umgestellt. Suite 503/0. Mutationsproben scharf.
 - 2026-07-17T19:33:53Z – claude – shell_pid=33952 – lane=approved – Selbst-Review: 12 neue + 7 v4-Tests, volle Suite 503/0, Mutationsproben fallen je 1/1. Nur tests/questSystem.test.js beruehrt.
+- 2026-07-17T19:34:48Z – claude – shell_pid=33952 – lane=done – Moved to done
