@@ -9,7 +9,14 @@ if (window.i18n) {
     'start.btn.start_game': 'SPIEL STARTEN',
     'start.btn.settings': 'EINSTELLUNGEN',
     'start.highscores': '🏆 Highscores',
-    'start.highscores.error': 'Fehler beim Laden der Highscores'
+    'start.highscores.error': 'Fehler beim Laden der Highscores',
+    'start.slot.label': 'SLOT {n}',
+    'start.slot.empty': 'leer',
+    'start.slot.info': 'Lv {level} · Tiefe {depth} · {gold} G',
+    'start.slot.broken': 'beschädigt',
+    'start.slot.confirm_delete': 'Slot {n} wirklich löschen?',
+    'start.slot.confirm_yes': 'Ja, löschen',
+    'start.slot.confirm_no': 'Abbrechen'
   });
   window.i18n.register('en', {
 
@@ -20,7 +27,14 @@ if (window.i18n) {
     'start.btn.start_game': 'START GAME',
     'start.btn.settings': 'SETTINGS',
     'start.highscores': '🏆 Highscores',
-    'start.highscores.error': 'Failed to load highscores'
+    'start.highscores.error': 'Failed to load highscores',
+    'start.slot.label': 'SLOT {n}',
+    'start.slot.empty': 'empty',
+    'start.slot.info': 'Lv {level} · Depth {depth} · {gold} G',
+    'start.slot.broken': 'corrupted',
+    'start.slot.confirm_delete': 'Really delete slot {n}?',
+    'start.slot.confirm_yes': 'Yes, delete',
+    'start.slot.confirm_no': 'Cancel'
   });
 }
 const _START_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
@@ -347,16 +361,121 @@ StartScene.prototype.create = function () {
     .setOrigin(0.5);
   _trackI18n(subtitleText, 'start.subtitle');
 
+  // ---- #63 Speicherslots -------------------------------------------------
+  // Die Slot-Zeilen WAEHLEN nur aus; FORTSETZEN/NEUES SPIEL darunter behalten
+  // ihre Bedeutung und wirken auf den gewaehlten Slot. Das ist bewusst der
+  // kleinere Eingriff gegenueber "Klick auf Slot startet direkt" — der Boot-
+  // Pfad (pendingLoadedSave, Reset-Aufrufe, Endlos) bleibt unveraendert.
+  const _slots = window.SaveSlots || null;
+  let activeSlot = _slots ? _slots.getActiveSlot() : 1;
+
+  if (_slots) {
+    // Vertikal ist es eng: bei der kleinsten Kamerahoehe (480) sitzt der
+    // Untertitel absolut bei 136px und EINSTELLUNGEN ganz unten bei ~452.
+    // Dazwischen muessen 3 Slot-Zeilen + bis zu 4 Buttons passen. Die Werte
+    // sind an camH=480 ausgemessen (Ueberlappung mit dem Untertitel darueber
+    // und FORTSETZEN darunter) — beim Aendern nachmessen.
+    const rowY = [ch * 0.335, ch * 0.395, ch * 0.455];
+    _slots.listSlots().forEach((meta, i) => {
+      const isActive = meta.slot === activeSlot;
+      let info;
+      if (!meta.exists) info = _START_T('start.slot.empty');
+      else if (meta.level === 0 && meta.depth === 1 && meta.gold === 0) {
+        // getSlotMeta meldet exists=true auch bei unlesbarem Save — dann sind
+        // alle Felder auf Default. Als "beschaedigt" zeigen statt "Lv 0", damit
+        // klar ist, dass da etwas ist, das nicht gelesen werden konnte.
+        info = _START_T('start.slot.broken');
+      } else {
+        info = _START_T('start.slot.info', {
+          level: meta.level, depth: meta.depth, gold: meta.gold
+        });
+      }
+      const label = (isActive ? '▸ ' : '  ') + _START_T('start.slot.label', { n: meta.slot })
+        + '   ' + info;
+
+      const row = this.add
+        .text(cx, rowY[i], label, {
+          fontFamily: 'monospace', fontSize: '15px',
+          fill: isActive ? '#ffd166' : '#8a8a8a',
+          backgroundColor: isActive ? '#241d10' : '#141414',
+          padding: { x: 12, y: 5 },
+          fixedWidth: 0
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(1001);
+
+      row.on('pointerover', () => { if (!isActive) row.setStyle({ fill: '#cccccc' }); });
+      row.on('pointerout', () => { if (!isActive) row.setStyle({ fill: '#8a8a8a' }); });
+      row.on('pointerdown', () => {
+        if (isActive) return;
+        _slots.setActiveSlot(meta.slot);
+        // Neustart der Szene statt Teil-Neuzeichnen: create() liest ohnehin
+        // alles aus dem aktiven Slot, und der i18n-Listener wird beim SHUTDOWN
+        // sauber abgemeldet (siehe unten) — kein Leak.
+        this.scene.restart();
+      });
+
+      // Loeschen nur fuer belegte Slots.
+      if (meta.exists) {
+        const del = this.add
+          .text(cx + row.width / 2 + 18, rowY[i], '✕', {
+            fontFamily: 'monospace', fontSize: '15px',
+            fill: '#ff6666', backgroundColor: '#141414',
+            padding: { x: 7, y: 5 }
+          })
+          .setOrigin(0.5)
+          .setInteractive({ useHandCursor: true })
+          .setDepth(1001);
+        del.on('pointerover', () => del.setStyle({ fill: '#ff9999' }));
+        del.on('pointerout', () => del.setStyle({ fill: '#ff6666' }));
+        del.on('pointerdown', () => _confirmDeleteSlot.call(this, meta.slot));
+      }
+    });
+  }
+
+  // Loeschen ist unumkehrbar -> Rueckfrage. Ohne sie kostet ein Fehlklick neben
+  // der Slot-Zeile einen ganzen Spielstand.
+  function _confirmDeleteSlot(slot) {
+    const scene = this;
+    const veil = scene.add.rectangle(cx, ch / 2, cw, ch, 0x000000, 0.75)
+      .setDepth(2000).setInteractive();
+    const q = scene.add.text(cx, ch * 0.45, _START_T('start.slot.confirm_delete', { n: slot }), {
+      fontFamily: 'serif', fontSize: '22px', fill: '#ffdddd'
+    }).setOrigin(0.5).setDepth(2001);
+    const yes = scene.add.text(cx - 90, ch * 0.55, _START_T('start.slot.confirm_yes'), {
+      fontFamily: 'monospace', fontSize: '16px', fill: '#ff8888',
+      backgroundColor: '#2a1414', padding: { x: 12, y: 6 }
+    }).setOrigin(0.5).setDepth(2001).setInteractive({ useHandCursor: true });
+    const no = scene.add.text(cx + 90, ch * 0.55, _START_T('start.slot.confirm_no'), {
+      fontFamily: 'monospace', fontSize: '16px', fill: '#cccccc',
+      backgroundColor: '#1a1a1a', padding: { x: 12, y: 6 }
+    }).setOrigin(0.5).setDepth(2001).setInteractive({ useHandCursor: true });
+
+    const close = () => { veil.destroy(); q.destroy(); yes.destroy(); no.destroy(); };
+    no.on('pointerdown', close);
+    yes.on('pointerdown', () => {
+      // deleteSlot statt clearSave: es muessen ALLE Keys des Slots weg
+      // (Skillbaum, Fraktionen, Druckerei, ...). clearSave raeumt nur den
+      // Hauptsave — der Rest waere sonst Altlast im naechsten Spiel dort.
+      if (window.SaveSlots) window.SaveSlots.deleteSlot(slot);
+      close();
+      scene.scene.restart();
+    });
+  }
+
   const hasExistingSave = window.hasSave && hasSave();
 
-  let startY = hasExistingSave ? ch * 0.58 : ch * 0.52;
+  // Startpunkt der Buttons liegt unter den Slot-Zeilen (bis ch*0.44).
+  let startY = hasExistingSave ? ch * 0.65 : ch * 0.55;
 
   let btn;
 
-  // Fortsetzen zuerst, wenn Save vorhanden ist
+  // Fortsetzen zuerst, wenn Save vorhanden ist. Bezieht sich auf den oben
+  // gewaehlten Slot — hasSave() liest ueber SlotStorage bereits den aktiven.
   if (hasExistingSave) {
     const contBtn = this.add
-      .text(cx, ch * 0.38, _START_T('start.btn.continue'), {
+      .text(cx, ch * 0.55, _START_T('start.btn.continue'), {
         fontFamily: 'serif', fontSize: "32px",
         fill: "#ffea6a",
         backgroundColor: "#111",
@@ -382,24 +501,14 @@ StartScene.prototype.create = function () {
     contBtn.on('pointerout', () => contBtn.setStyle({ fill: '#ffea6a' }));
     _trackI18n(contBtn, 'start.btn.continue');
 
-    const delBtn = this.add
-      .text(cx, ch * 0.48, _START_T('start.btn.delete_save'), {
-        fontFamily: 'monospace', fontSize: "14px",
-        fill: "#ff6666",
-        padding: { x: 8, y: 3 }
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .setDepth(1001);
-    _trackI18n(delBtn, 'start.btn.delete_save');
-
-    delBtn.on("pointerdown", () => {
-      if (window.clearSave) clearSave();
-      contBtn.destroy();
-      delBtn.destroy();
-    });
-
-    startY = ch * 0.62;
+    // Der fruehere "Spielstand löschen"-Button ist entfallen: jede Slot-Zeile
+    // hat jetzt ihr eigenes ✕. Zwei Loesch-Wege nebeneinander waeren
+    // mehrdeutig ("welcher Stand?") — und der alte raeumte ohnehin nur den
+    // Hauptsave, nicht Skillbaum/Fraktionen.
+    //
+    // startY wird NICHT mehr hier gesetzt: der Ternaer bei der Deklaration ist
+    // die einzige Quelle. Vorher stand hier eine zweite Zuweisung, die den
+    // Ternaer ueberschrieb — der war dadurch toter Code (im Original ebenso).
   }
 
   // START GAME
@@ -419,6 +528,13 @@ StartScene.prototype.create = function () {
 
   btn
     .on("pointerdown", () => {
+      // #63: den gewaehlten Slot komplett leeren, bevor neu gestartet wird.
+      // clearSave() allein raeumte nur den Hauptsave + Tutorial — Skillbaum,
+      // Fraktionen und Druckerei ueberlebten ein "Neues Spiel" und wanderten in
+      // den neuen Durchgang. deleteSlot() wischt alle Keys des Slots; die
+      // resetForNewGame-Aufrufe darunter setzen zusaetzlich den noch lebenden
+      // In-Memory-State der Module zurueck.
+      if (window.SaveSlots) window.SaveSlots.deleteSlot(activeSlot);
       if (window.clearSave) clearSave();
       if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
         window.AbilitySystem.resetForNewGame();
