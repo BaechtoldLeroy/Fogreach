@@ -1543,6 +1543,12 @@
     cleanupEventObjects();
 
     if (roomId === 0) return;
+    // Boss-/Klimax-Raum (Finalraum): KEINE Events. Der Boss soll eine saubere,
+    // bei jedem Run gleiche Arena haben. Ein Event brachte Haendler/Hazards oder
+    // (Elite-Hinterhalt) einen zusaetzlichen Mini-Boss in den Raum -> die Arena
+    // sah jedes Mal anders aus UND es standen nach dem Boss noch Gegner darin.
+    // roomManager setzt __isFinalDungeonRoom VOR diesem Aufruf.
+    if (window.__isFinalDungeonRoom) return;
     // Spionage-Räume: KEINE Events (Stealth-Mission). Ein Kampf-/Interaktions-
     // Event würde die Verkleidung auffliegen lassen oder das Beobachtungs-Ziel
     // umgehen. _maybeStartEspionage läuft vor onRoomEnter -> isActive ist gesetzt.

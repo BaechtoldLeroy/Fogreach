@@ -2219,7 +2219,16 @@ function fitBodyToSprite(sprite) {
 
   // Fuer die HP-Leiste: skalierte halbe Figur-Hoehe (drawBossBar setzt die
   // Leiste sonst ueber die volle displayHeight -> weit ueber der Figur).
-  sprite._fitHalfH = (box.h * (sprite.scaleY || 1)) / 2;
+  var sy = Math.abs(sprite.scaleY || 1);
+  var sx = Math.abs(sprite.scaleX || 1);
+  sprite._fitHalfH = (box.h * sy) / 2;
+  // Trefferradius fuer Nahkampf/Faehigkeiten (player.js forEachEnemyInRange).
+  // Der Body ist ein solider Block von ~box*scale Weltpixeln; die Reichweite
+  // wird aber Zentrum-zu-Zentrum gemessen. Bei einem grossen Boss (Figur ~87px)
+  // haelt der Body den Spieler so weit vom Zentrum weg, dass ein vertikaler
+  // Angriff (Spieler ist hoeher als breit) aus der Reichweite faellt. Mit dem
+  // halben Figur-Radius als "reach" reicht der Schlag bis an die Body-Kante.
+  sprite._hitReach = (Math.max(box.w * sx, box.h * sy)) / 2;
 }
 if (typeof window !== 'undefined') window.fitBodyToSprite = fitBodyToSprite;
 

@@ -899,7 +899,13 @@ function forEachEnemyInRange(range, callback, options = {}) {
     const dy = ey - py;
     const distance = Math.hypot(dx, dy);
 
-    if (distance > range) return;
+    // _hitReach (grosse Gegner mit gefittetem Body, enemy.js fitBodyToSprite)
+    // erweitert die Reichweite um den Trefferradius: der Schlag muss die
+    // Body-KANTE erreichen, nicht das Zentrum. Ohne das haelt der solide
+    // Boss-Body den Spieler vom Zentrum weg -> vertikale Angriffe verfehlen.
+    // Normale Gegner haben kein _hitReach -> Verhalten unveraendert.
+    const reach = enemy._hitReach || 0;
+    if (distance - reach > range) return;
     if (requireLineOfSight && !hasLineOfSightToEnemy(enemy)) return;
 
     callback(enemy, { distance, dx, dy });
@@ -1629,6 +1635,17 @@ function handleEnemyHit(scene, enemy, options = {}) {
         window.particleFactory.deathBurst(enemy.x, enemy.y);
         window.particleFactory.screenShake(80, 0.003);
       }
+    }
+    // Boss besiegt: alle noch lebenden Ads (Beschwoerungen, Klone) mitraeumen —
+    // nach dem Boss soll kein Gegner mehr im Raum stehen. Der Boss-Raum ist der
+    // Klimax-Finalraum (trash-cleared, event-frei), die einzigen uebrigen Gegner
+    // sind also Boss-Beschwoerungen.
+    if (enemy.isBoss && typeof enemies !== 'undefined' && enemies && enemies.children) {
+      const _boss = enemy;
+      enemies.children.iterate((other) => {
+        if (!other || other === _boss || !other.active || other.isBoss) return;
+        try { other.destroy(); } catch (e) {}
+      });
     }
     spawnLoot.call(scene, enemy.x, enemy.y, null, enemy);
     enemy.destroy();

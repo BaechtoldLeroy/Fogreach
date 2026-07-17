@@ -629,6 +629,15 @@ function enterRoom(scene, roomId) {
     updateRoomCounter(roomId, dungeonRun ? dungeonRun.totalRooms : rooms.length);
   }
 
+  // Finalraum-Flag SCHON HIER setzen (nicht erst bei der Wellen-Vorbereitung
+  // weiter unten): der Event-Trigger direkt darunter liest es, um im Boss-/
+  // Klimax-Raum KEIN Event zu feuern. Ohne diese fruehe Zuweisung stuende hier
+  // noch der Wert des VORRAUMS -> ein Event koennte doch im Boss-Raum spawnen.
+  {
+    var _tR = (dungeonRun && dungeonRun.totalRooms) ? dungeonRun.totalRooms : rooms.length;
+    window.__isFinalDungeonRoom = (roomId === (_tR - 1));
+  }
+
   // Trigger random event system
   if (window.EventSystem && typeof window.EventSystem.onRoomEnter === 'function') {
     window.EventSystem.onRoomEnter(scene, roomId);
