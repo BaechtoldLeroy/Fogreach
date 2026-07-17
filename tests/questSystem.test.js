@@ -199,7 +199,7 @@ test('feature 050: Q6 unlocks only after all 4 parallel quests complete', () => 
     'Q6 must not be offered before Q2/Q3/Q4/Q5 done');
   // Knock off Q2-Q5 in any order
   qs.acceptQuest('magistrat_verification');
-  qs.updateQuestProgress('kill', 'enemy', 8);
+  qs.updateQuestProgress('fetch', 'verification_seal', 1);
   qs.completeQuest('magistrat_verification');
   qs.acceptQuest('klerus_purification');
   qs.updateQuestProgress('kill', 'elite_enemy', 3);
@@ -274,7 +274,7 @@ test('feature 050: Q6 completion advances storySystem to act index 2', () => {
   qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   qs.completeQuest('harren_daughter_investigation');
   qs.acceptQuest('magistrat_verification');
-  qs.updateQuestProgress('kill', 'enemy', 8);
+  qs.updateQuestProgress('fetch', 'verification_seal', 1);
   qs.completeQuest('magistrat_verification');
   qs.acceptQuest('klerus_purification');
   qs.updateQuestProgress('kill', 'elite_enemy', 3);
@@ -320,8 +320,11 @@ test('feature 050: loadQuestSaveData silently drops unknown legacy quest IDs', (
 test('055: Akt-2-Quests existieren mit requiredAct 2 und ohne gate', () => {
   const qs = freshSystem();
   const defs = qs.QUEST_DEFINITIONS;
+  // v4: die Rats-/Branka-Ermittlungsquests bleiben in Akt 2; die Ritualkammer
+  // heisst jetzt verseuchte_kammer und liegt in Akt 3, bruch_confrontation
+  // ebenfalls (Trigger auf Akt 4).
   ['council_seizure', 'council_surveillance', 'branka_transcripts',
-   'ritual_chamber', 'bruch_confrontation'].forEach((id) => {
+   'mara_contact'].forEach((id) => {
     assert.ok(defs[id], `${id} definiert`);
     assert.strictEqual(defs[id].requiredAct, 2, `${id} requiredAct 2`);
     assert.strictEqual(typeof defs[id].gate, 'undefined', `${id} ohne gate (keine Gates)`);
@@ -331,7 +334,9 @@ test('055: Akt-2-Quests existieren mit requiredAct 2 und ohne gate', () => {
 test('055: advanceAct treibt Milestones (wahrheit=3, bruch=4)', () => {
   const qs = freshSystem();
   const defs = qs.QUEST_DEFINITIONS;
-  assert.strictEqual(defs.ritual_chamber.advanceAct, 3);
+  // v4: mara_warning traegt den Akt-3-Trigger (Kettenmeister-Warnung),
+  // bruch_confrontation den Akt-4-Trigger.
+  assert.strictEqual(defs.mara_warning.advanceAct, 3);
   assert.strictEqual(defs.bruch_confrontation.advanceAct, 4);
 });
 
@@ -350,7 +355,9 @@ test('055: fetch-Quests nutzen nur Targets mit Loot-Item (C-05)', () => {
   const defs = qs.QUEST_DEFINITIONS;
   // Targets, fuer die ein Loot-Item existiert (loot.js questItemDefs + deterministische)
   const LOOTED = new Set(['document', 'print_plate', 'journal_fragment',
-    'council_document', 'seized_writings', 'interrogation_record']);
+    'council_document', 'seized_writings', 'interrogation_record',
+    // v4/WP05: neue fetch-Quest-Items, in loot.js questItemDefs verdrahtet.
+    'verification_seal', 'proclamation', 'memory_shard']);
   Object.keys(defs).forEach((id) => {
     (defs[id].objectives || []).forEach((o) => {
       if (o.type === 'fetch') {
@@ -361,19 +368,21 @@ test('055: fetch-Quests nutzen nur Targets mit Loot-Item (C-05)', () => {
   });
 });
 
-test('055: Espionage-Quests existieren mit observe-Objective, requiredAct 2, ohne gate', () => {
+test('055: Espionage-Quests existieren mit observe-Objective, ohne gate', () => {
   const qs = freshSystem();
   const defs = qs.QUEST_DEFINITIONS;
+  // v4: die Spionagekette startet in Akt 2 (Konvoi) und laeuft in Akt 3 weiter
+  // (Archiv, Informant). Der Informant liegt jetzt bei Mara statt "widerstand".
   const EXPECTED = {
-    espionage_convoy: { target: 'convoy_intel', npcId: 'mara', prereq: 'mara_contact' },
-    espionage_archive: { target: 'archive_record', npcId: 'harren', prereq: 'espionage_convoy' },
-    espionage_informant: { target: 'informant_id', npcId: 'widerstand', prereq: 'espionage_archive' }
+    espionage_convoy: { target: 'convoy_intel', npcId: 'mara', prereq: 'mara_contact', act: 2 },
+    espionage_archive: { target: 'archive_record', npcId: 'harren', prereq: 'espionage_convoy', act: 3 },
+    espionage_informant: { target: 'informant_id', npcId: 'mara', prereq: 'espionage_archive', act: 3 }
   };
   Object.keys(EXPECTED).forEach((id) => {
     const q = defs[id];
     const spec = EXPECTED[id];
     assert.ok(q, `${id} definiert`);
-    assert.strictEqual(q.requiredAct, 2, `${id} requiredAct 2`);
+    assert.strictEqual(q.requiredAct, spec.act, `${id} requiredAct ${spec.act}`);
     assert.strictEqual(typeof q.gate, 'undefined', `${id} ohne gate (keine Gates)`);
     assert.strictEqual(typeof q.advanceAct, 'undefined', `${id} ohne advanceAct`);
     assert.strictEqual(q.npcId, spec.npcId, `${id} npcId ${spec.npcId}`);
@@ -468,9 +477,9 @@ test('Akt 1 (Der treue Diener) ist bewohnt und wird von der Untersuchung geoeffn
     'Die verschwundene Tochter oeffnet Akt 1');
   const act1 = Object.values(D).filter((q) => q.requiredAct === 1).map((q) => q.id);
   assert.deepStrictEqual(act1.sort(), [
-    'council_collusion_reveal', 'garde_patrol_expansion', 'klerus_purification',
-    'magistrat_verification', 'widerstand_proof'
-  ], 'die vier Fraktionsauftraege + der Reveal bilden Akt 1');
+    'council_collusion_reveal', 'faction_campaign', 'garde_patrol_expansion',
+    'klerus_purification', 'magistrat_verification', 'widerstand_proof'
+  ], 'die vier Fraktionsauftraege + die Edikt-Kampagne + der Reveal bilden Akt 1');
 });
 
 // --- Feature 058 (#41) follow-up: per-act minimum-depth quest gates ---
@@ -588,7 +597,208 @@ test('Q6 reveal: acceptQuest + completeQuest completes it and advances to Act 2'
   assert.strictEqual(qs.completeQuest('council_collusion_reveal'), true);
   assert.ok(qs.getCompletedQuests().some((q) => q.id === 'council_collusion_reveal'),
     'Q6 should be completed');
+  // v4: der Akt-Fortschritt laeuft ueber das advanceAct:2-Feld (nicht mehr ueber
+  // den frueheren act2_open-Unlock, der entfernt wurde).
   assert.ok(advanced.includes(2), 'storySystem.advanceToAct(2) must fire on Q6 completion');
-  assert.strictEqual(globalThis.window._questUnlocks
-    && globalThis.window._questUnlocks.act2_open, true, 'act2_open must be unlocked');
+});
+
+// =========================================================================
+// Feature 062 (WP03) — v4-Story-Rueckgrat: Akt-Trigger, Invarianten,
+// Ende-Freischaltung, Altstand-Reset, Boss-Ziele, Objective-Trigger-Audit.
+// Die "genau vier Trigger"-Invariante (T011) und der Reset (T013) haetten den
+// #44-Fehler (Ende unerreichbar) gefangen.
+// =========================================================================
+
+// Frisches System mit advanceToAct-Spy (die Trigger-Quests umgehen das
+// Prereq-Gate, weil acceptQuest den Auftrag direkt aktiviert).
+function systemWithAdvanceSpy() {
+  resetStore();
+  delete globalThis.window.questSystem;
+  const advanced = [];
+  globalThis.window.storySystem = {
+    getCurrentActIndex: () => 99,
+    advanceToAct: (n) => { advanced.push(n); return true; },
+    resetToAct0: () => true
+  };
+  globalThis.window.DUNGEON_DEPTH = 99;
+  loadGameModule('js/questSystem.js');
+  return { qs: globalThis.window.questSystem, advanced };
+}
+
+// --- T011 — Akt-Trigger + Invariante ---------------------------------------
+
+test('062 T011: die vier Akt-Trigger feuern advanceToAct(1..4) beim Abschluss', () => {
+  const cases = [
+    { id: 'harren_daughter_investigation', fulfil: (qs) => qs.updateQuestProgress('fetch', 'journal_fragment', 1), act: 1 },
+    { id: 'council_collusion_reveal', fulfil: () => {}, act: 2 }, // dialogue: Auto-Complete
+    { id: 'mara_warning', fulfil: (qs) => qs.onBossKilled('kettenmeister'), act: 3 },
+    { id: 'bruch_confrontation', fulfil: (qs) => qs.updateQuestProgress('kill', 'elite_enemy', 99), act: 4 }
+  ];
+  cases.forEach((c) => {
+    const { qs, advanced } = systemWithAdvanceSpy();
+    assert.strictEqual(qs.acceptQuest(c.id), true, c.id + ' annehmbar');
+    c.fulfil(qs);
+    assert.strictEqual(qs.completeQuest(c.id), true, c.id + ' abschliessbar');
+    assert.ok(advanced.includes(c.act),
+      c.id + ' muss advanceToAct(' + c.act + ') feuern');
+  });
+});
+
+test('062 T011: genau vier advanceAct-Trigger — je bewohnter Akt 1-4 genau einer', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  const triggers = Object.values(D).filter((q) => typeof q.advanceAct === 'number');
+  assert.strictEqual(triggers.length, 4,
+    'genau vier Quests duerfen advanceAct tragen (Fehlerklasse #44: benannter Akt ohne Trigger)');
+  assert.deepStrictEqual(triggers.map((q) => q.advanceAct).sort(), [1, 2, 3, 4],
+    'die Trigger zielen auf Akt 1, 2, 3 und 4 — je genau einer, kein Akt 5/6');
+});
+
+// --- T012 — Ende + Nicht-Trigger -------------------------------------------
+
+test('062 T012: the_reckoning schaltet story_ending frei', () => {
+  const { qs } = systemWithAdvanceSpy();
+  globalThis.window._questUnlocks = {};
+  assert.strictEqual(qs.acceptQuest('the_reckoning'), true);
+  assert.strictEqual(qs.completeQuest('the_reckoning'), true); // dialogue: Auto-Complete
+  assert.strictEqual(globalThis.window._questUnlocks.story_ending, true,
+    'the_reckoning muss story_ending freischalten (rewards.unlocks) — das Story-Ende');
+});
+
+test('062 T012: elara_second_truth traegt keinen Akt-Trigger', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  assert.strictEqual(typeof D.elara_second_truth.advanceAct, 'undefined',
+    'der szenengebundene Reveal darf keinen Akt vorruecken');
+});
+
+// --- T013 — Altstand-Reset --------------------------------------------------
+
+test('062 T013: Altstand ohne storyVersion wird auf Akt 0 resettet', () => {
+  const qs = freshSystem();
+  globalThis.window.storySystem = {
+    getCurrentActIndex: () => 99, advanceToAct: () => true, resetToAct0: () => true
+  };
+  qs.acceptQuest('aldric_cleanup');
+  assert.doesNotThrow(() => {
+    qs.loadQuestSaveData({
+      // Alt-Blob (v0): fehlendes storyVersion + entfernte/umbenannte IDs.
+      quests: {
+        aldric_cleanup: { status: 'active', objectives: [{ current: 3 }] },
+        ritual_chamber: { status: 'completed', objectives: null },
+        final_truth: { status: 'completed', objectives: null }
+      },
+      flags: { some_old_flag: true }
+    });
+  });
+  assert.deepStrictEqual(qs.getActiveQuests('aldric'), [],
+    'nach Reset keine aktiven Alt-Quests');
+  assert.deepStrictEqual(qs.getFlags(), {},
+    'Story-Flags nach Reset leer');
+});
+
+test('062 T013: v4-Stand (mit storyVersion) laedt normal — kein Reset', () => {
+  const qs = freshSystem();
+  qs.acceptQuest('aldric_cleanup');
+  qs.updateQuestProgress('kill', 'enemy', 4);
+  const save = qs.getQuestSaveData();
+  assert.strictEqual(save.storyVersion, 4, 'Save traegt storyVersion 4');
+  // frisch laden und den v4-Blob einspielen
+  resetStore();
+  delete globalThis.window.questSystem;
+  globalThis.window.storySystem = { getCurrentActIndex: () => 99, resetToAct0: () => true };
+  globalThis.window.DUNGEON_DEPTH = 99;
+  loadGameModule('js/questSystem.js');
+  const qs2 = globalThis.window.questSystem;
+  qs2.loadQuestSaveData(save);
+  const a = qs2.getActiveQuests('aldric').find((q) => q.id === 'aldric_cleanup');
+  assert.ok(a, 'aldric_cleanup bleibt nach v4-Load aktiv');
+  assert.strictEqual(a.objectives[0].current, 4, 'Fortschritt bleibt erhalten');
+});
+
+// --- T014 — Boss-Leiter-Ziele nach den Umbenennungen ------------------------
+
+test('062 T014: Boss-Ziele zeigen auf die richtigen Bosse', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  const bossTarget = (id) => (D[id].objectives || []).find((o) => o.type === 'boss_kill');
+  assert.strictEqual(bossTarget('mara_warning').target, 'kettenmeister');
+  assert.strictEqual(bossTarget('elara_ritual').target, 'zeremonienmeister');
+  assert.strictEqual(bossTarget('schattenrat_finale').target, 'schattenrat');
+});
+
+test('062 T014: entfernte/umbenannte IDs weg, v4-Nachfolger da', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  ['ritual_chamber', 'harren_rescue', 'final_truth'].forEach((id) => {
+    assert.strictEqual(D[id], undefined, id + ' wurde umbenannt/entfernt');
+  });
+  ['verseuchte_kammer', 'schattenrat_finale', 'the_reckoning'].forEach((id) => {
+    assert.ok(D[id], id + ' ist die v4-Nachfolge-ID');
+  });
+});
+
+// --- T015 — Struktur-Invarianten -------------------------------------------
+
+test('062 T015: 34 Quests, keine doppelten ids/titles', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  const ids = Object.keys(D);
+  assert.strictEqual(ids.length, 34, 'die v4-Struktur hat 34 Quests');
+  const titles = ids.map((id) => D[id].title);
+  assert.strictEqual(new Set(titles).size, titles.length, 'keine doppelten Titel');
+  const idField = ids.map((id) => D[id].id).filter(Boolean);
+  assert.strictEqual(new Set(idField).size, idField.length, 'keine doppelten id-Felder');
+});
+
+test('062 T015: Stichproben gegen den Kontrakt (prereqs, npcIds/FR-022)', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  assert.deepStrictEqual(
+    (D.council_collusion_reveal.prerequisites || []).slice().sort(),
+    ['garde_patrol_expansion', 'klerus_purification', 'magistrat_verification', 'widerstand_proof'],
+    'der Reveal setzt die vier Fraktionsquests voraus');
+  assert.strictEqual(D.espionage_informant.npcId, 'mara',
+    'der Informant liegt in v4 bei Mara');
+  assert.ok((D.bruch_confrontation.prerequisites || []).includes('elara_second_truth'),
+    'der Bruch verlangt Elaras zweite Wahrheit');
+  assert.strictEqual(D.klerus_district_purge.npcId, 'klerus_priester', 'FR-022');
+  assert.strictEqual(D.garde_night_escort.npcId, 'stadtwache', 'FR-022');
+});
+
+// --- T019 — Objective-Trigger-Audit ----------------------------------------
+// Sichert, dass JEDES Objective-Ziel ausloesbar ist — genau die Klasse, die
+// #44 (und den Analyse-Befund) verursacht hat. '*' = der Trigger reicht den
+// target frei durch; Set = nur diese targets sind verdrahtet.
+
+test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  const WIRED = {
+    kill: '*',           // updateQuestProgress('kill', target)
+    boss_kill: '*',      // onBossKilled(name)
+    explore: new Set(['room']),
+    craft: '*',          // onItemCrafted
+    dungeon_run: '*',    // onDungeonCompleted
+    wave: '*',           // onWaveCompleted / reach_wave
+    dialogue: '*',       // Auto-Complete beim Annehmen
+    fetch: new Set(['journal_fragment', 'council_document', 'document',
+      'seized_writings', 'interrogation_record', 'print_plate',
+      'verification_seal', 'proclamation', 'memory_shard']),   // WP05
+    observe: new Set(['convoy_intel', 'archive_record', 'informant_id',
+      'escort_route'])                                          // WP05
+  };
+  Object.keys(D).forEach((id) => {
+    (D[id].objectives || []).forEach((o) => {
+      const allowed = WIRED[o.type];
+      assert.notStrictEqual(allowed, undefined,
+        id + ': Objective-Typ "' + o.type + '" hat keinen Trigger');
+      if (allowed !== '*') {
+        assert.ok(allowed.has(o.target),
+          id + ': Objective-Ziel "' + o.type + ':' + o.target + '" ist nicht verdrahtet (uncompletable)');
+      }
+    });
+  });
+});
+
+test('062 T019: szenengebundene Reveals bleiben dialogue (nicht observe)', () => {
+  const D = freshSystem().QUEST_DEFINITIONS;
+  ['council_collusion_reveal', 'elara_second_truth'].forEach((id) => {
+    const types = (D[id].objectives || []).map((o) => o.type);
+    assert.ok(types.includes('dialogue'), id + ' muss dialogue bleiben (Szene out-of-scope)');
+    assert.ok(!types.includes('observe'), id + ' darf kein observe-Ziel haben (nicht verdrahtet)');
+  });
 });
