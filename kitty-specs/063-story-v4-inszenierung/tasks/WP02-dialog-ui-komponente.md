@@ -10,11 +10,15 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: main
+base_commit: 6eaccc183d288e702e92b3a11f11436c5033942a
+created_at: '2026-07-17T22:24:37.342740+00:00'
 subtasks: [T006, T007, T008, T009, T010]
 authoritative_surface: js/dialogChoice.js
 execution_mode: code_change
 lane: planned
 owned_files: [js/dialogChoice.js, tests/dialogChoice.test.js]
+shell_pid: "27384"
 ---
 
 # WP02 — Dialog-Auswahl-Komponente (`DialogChoice`)
