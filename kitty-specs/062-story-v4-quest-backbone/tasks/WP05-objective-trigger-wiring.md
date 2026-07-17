@@ -6,7 +6,7 @@ requirement_refs:
 - FR-021
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: Zweig von der WP01-Basis; nach Abschluss zurück nach main.
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T020, T021, T022]
 history:
 - 2026-07-17T17:41:57Z: Erstellt (spec-kitty.analyze-Remediation, Option B).

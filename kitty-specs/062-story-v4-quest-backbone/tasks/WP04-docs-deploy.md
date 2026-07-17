@@ -57,11 +57,12 @@ Den Quest-Doku-Generator an die v4-Aktnamen anpassen, `docs/QUESTS.md` neu erzeu
 2. Sichtprüfung: die Akt-Register-Tabelle zeigt für Akt 1–4 je eine Trigger-Quest; „Bekannte Lücken" nennt Akt 1–4 NICHT mehr (idealerweise gar keine Lücke mehr, da 5/6 entfallen).
 **Validierung:** Register lückenlos für 1–4; 34 Quests im Dokument.
 
-### T018 — Cache-Buster bumpen
+### T018 — Cache-Buster bumpen + Boot-Check
 **Schritte:**
-1. In `index.html` die `?v=`-Version für jede in WP01/WP02 geänderte JS-Datei hochzählen: `js/questSystem.js`, `js/storySystem.js`.
-2. Prüfen, dass keine andere geänderte JS-Datei den Bump vergisst.
-**Validierung:** `index.html` referenziert die neuen Versionen; Diff zeigt nur die betroffenen Zeilen.
+1. In `index.html` die `?v=`-Version für jede geänderte JS-Datei hochzählen: `js/questSystem.js`, `js/storySystem.js` (WP01/WP02) sowie `js/loot.js`, `js/espionageSystem.js` (WP05).
+2. Prüfen, dass keine geänderte JS-Datei den Bump vergisst.
+3. **Boot-Check (NFR-004):** Spiel lokal starten, Konsole prüfen — fehlerfreier Boot, kein Fehler beim Laden alter Stände oder beim Durchlaufen der Akt-Leiter.
+**Validierung:** `index.html` referenziert die neuen Versionen; Boot-Konsole fehlerfrei.
 
 ---
 
