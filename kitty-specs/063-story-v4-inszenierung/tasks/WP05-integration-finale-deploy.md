@@ -95,3 +95,4 @@ Alles zusammenführen: die `DialogChoice`-Auswahlen (WP02) mit den `storyDialog`
 ## Activity Log
 - (leer bis implement)
 - 2026-07-17T22:33:38Z – claude – shell_pid=34316 – lane=doing – Started implementation via workflow command
+- 2026-07-17T22:38:58Z – claude – shell_pid=34316 – lane=for_review – computeFinaleState verdrahtet, the_reckoning inszeniert (Vatermord/Druck/Ausgang), observe-Trigger fuer Collusion+Riss, Script-Tags+Cache-Buster. Boot fehlerfrei, endings_differ verifiziert.
