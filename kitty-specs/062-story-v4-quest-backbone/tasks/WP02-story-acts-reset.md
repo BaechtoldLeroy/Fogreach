@@ -12,6 +12,7 @@ base_commit: f2bf276064d1e3a9b717bfac5bcb4f9e26fffb9f
 created_at: '2026-07-17T18:35:42.220389+00:00'
 subtasks: [T008, T009, T010]
 shell_pid: "29564"
+agent: "claude"
 history:
 - 2026-07-17T17:13:33Z: Erstellt (spec-kitty.tasks).
 authoritative_surface: js/storySystem.js
@@ -84,3 +85,7 @@ owned_files: [js/storySystem.js]
 
 - **Monotonie vs. Reset:** `advanceToAct` ist monoton (gleich/niedriger = no-op). Der Reset auf 0 MUSS trotzdem wirken — Reviewer prüft, dass der Reset-Pfad tatsächlich auf 0 setzt und nicht vom Monotonie-Guard verschluckt wird.
 - Integrationsgrenze zu WP01 ist die exportierte Reset-Funktion — Signatur stabil halten.
+
+## Activity Log
+
+- 2026-07-17T18:35:43Z – claude – shell_pid=29564 – lane=doing – Started implementation via workflow command
