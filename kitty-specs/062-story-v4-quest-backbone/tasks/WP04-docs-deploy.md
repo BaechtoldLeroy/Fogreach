@@ -14,6 +14,7 @@ base_commit: 1b81e3f6351abf0f124c10f60206789d9193ada5
 created_at: '2026-07-17T19:35:10.584916+00:00'
 subtasks: [T016, T017, T018]
 shell_pid: "32008"
+agent: "claude"
 history:
 - 2026-07-17T17:13:33Z: Erstellt (spec-kitty.tasks).
 authoritative_surface: tools/genQuestDoc.js
@@ -81,3 +82,7 @@ Den Quest-Doku-Generator an die v4-Aktnamen anpassen, `docs/QUESTS.md` neu erzeu
 - **Generator-Absturz** bei geänderter Struktur: der Generator `require`t `questSystem.js` in einer Node-Umgebung — wenn WP01 versehentlich Browser-only-Globals im Modul-Top-Level nutzt, bricht der Generator. Reviewer prüft, dass `genQuestDoc` durchläuft.
 - Cache-Buster ist leicht zu vergessen — Reviewer gleicht die in WP01/WP02 geänderten Dateien mit den Bumps ab.
 - Dieses WP ändert KEINE Spiel-Logik; es macht die WP01/WP02-Ergebnisse sichtbar/deploybar.
+
+## Activity Log
+
+- 2026-07-17T19:35:11Z – claude – shell_pid=32008 – lane=doing – Started implementation via workflow command
