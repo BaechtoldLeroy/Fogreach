@@ -78,9 +78,9 @@ WP01 und WP02 sind parallelisierbar (verschiedene Dateien, stabile `advanceToAct
 **Ziel:** `tools/genQuestDoc.js` an die v4-Aktnamen anpassen, `docs/QUESTS.md` regenerieren, Cache-Buster in `index.html` bumpen.
 **Unabhängiger Test:** `docs/QUESTS.md` zeigt für Akt 1–4 je einen Trigger (kein „kein Trigger" mehr); `index.html` referenziert die neuen `?v=`-Versionen.
 
-- [ ] T016 `genQuestDoc.js`: `ACTS`-Array auf die v4-Namen; Generator läuft fehlerfrei durch.
-- [ ] T017 `docs/QUESTS.md` regenerieren; Akt-Register lückenlos für 1–4.
-- [ ] T018 Cache-Buster in `index.html` für alle geänderten JS-Dateien bumpen (`questSystem.js`, `storySystem.js`, `loot.js`, `espionageSystem.js`) + manueller Boot-Check (Konsole fehlerfrei, NFR-004).
+- [x] T016 `genQuestDoc.js`: `ACTS`-Array auf die v4-Namen; Generator läuft fehlerfrei durch.
+- [x] T017 `docs/QUESTS.md` regenerieren; Akt-Register lückenlos für 1–4.
+- [x] T018 Cache-Buster in `index.html` für alle geänderten JS-Dateien bumpen (`questSystem.js`, `storySystem.js`, `loot.js`, `espionageSystem.js`) + manueller Boot-Check (Konsole fehlerfrei, NFR-004).
 
 ---
 
