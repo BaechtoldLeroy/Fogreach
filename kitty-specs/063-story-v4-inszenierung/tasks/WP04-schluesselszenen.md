@@ -9,11 +9,15 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: main
+base_commit: 51754a1e82760bfd4a421df5f2d1ff21aad7ad9f
+created_at: '2026-07-17T22:30:28.907321+00:00'
 subtasks: [T016, T017, T018, T019, T020]
 authoritative_surface: js/storyScenes.js
 execution_mode: code_change
 lane: planned
 owned_files: [js/storyScenes.js, js/questSystem.js, tests/questSystem.test.js]
+shell_pid: "27732"
 ---
 
 # WP04 — Schlüsselszenen + observe-Trigger
