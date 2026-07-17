@@ -160,3 +160,4 @@ Die komplette v4-Doppelagenten-Quest-Struktur in `js/questSystem.js` umsetzen: U
 ## Activity Log
 
 - 2026-07-17T18:18:05Z – claude – shell_pid=7204 – lane=doing – Started implementation via workflow command
+- 2026-07-17T18:29:30Z – claude – shell_pid=7204 – lane=for_review – Umgesetzt: 34 Quests, 4 Trigger, Renames, Flags, storyVersion-Reset. Probe gruen (34 Quests/4 Trigger/Reset). gameplay-Ziele haengen an WP05.
