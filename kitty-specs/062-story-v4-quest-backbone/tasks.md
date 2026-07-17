@@ -32,13 +32,13 @@ WP01 und WP02 sind parallelisierbar (verschiedene Dateien, stabile `advanceToAct
 **Ziel:** Die komplette v4-Quest-Struktur in `js/questSystem.js` — Umbenennungen, Akt-Register/Trigger, `requiredAct`/`prerequisites`, sechs neue Quests inkl. Texte, Doppel-Tonspur, Flag-Wiring, `storyVersion`+Reset.
 **Unabhängiger Test:** Ein Skript, das `QUEST_DEFINITIONS` lädt, bestätigt: 34 Quests, genau vier `advanceAct`-Trigger, die vier Trigger-Zuordnungen, keine doppelten IDs/Titel.
 
-- [ ] T001 Umbenennungen/Entfernung: `ritual_chamber`→`verseuchte_kammer`, `harren_rescue`→`schattenrat_finale`, `final_truth` entfernen (Boss-Objective `schattenrat` erhalten).
-- [ ] T002 Akt-Register/Trigger: `advanceAct` auf genau vier Quests; `mara_warning`→3, `bruch_confrontation`→4, `elara_second_truth` OHNE; alte `actN_open`/Trigger raus.
-- [ ] T003 `requiredAct` + `prerequisites` aller bestehenden Quests gemäß Kontrakt (Doppelspiel-Verteilung Akt 2/3).
-- [ ] T004 Sechs neue Quests inkl. Angebots-/Unterwegs-/Abschlusstext: `faction_campaign`, `klerus_district_purge`, `garde_night_escort`, `who_you_were`, `elara_second_truth`, `the_reckoning`. **Objective-Typen gemäß Kontrakt** (szenengebundene Reveals `collusion_reveal_seen`/`three_hands_seen` = `dialogue`; gameplay-Ziele werden von WP05 verdrahtet). **npcId aus dem Code** (`klerus_priester`/`stadtwache`).
-- [ ] T005 Doppel-Tonspur im Abschlusstext von `council_seizure`, `council_surveillance`, `verseuchte_kammer`.
-- [ ] T006 Flag-Wiring (`setFlag` in den zuständigen Quests) + `getFlags()`-Ergänzung + Reward-Feld-Abgleich (`reputation`/`knowledgeFragments` → `factionStanding`/`fragments`).
-- [ ] T007 `STORY_VERSION` + version-gated Reset in `getQuestSaveData`/`loadQuestSaveData`.
+- [x] T001 Umbenennungen/Entfernung: `ritual_chamber`→`verseuchte_kammer`, `harren_rescue`→`schattenrat_finale`, `final_truth` entfernen (Boss-Objective `schattenrat` erhalten).
+- [x] T002 Akt-Register/Trigger: `advanceAct` auf genau vier Quests; `mara_warning`→3, `bruch_confrontation`→4, `elara_second_truth` OHNE; alte `actN_open`/Trigger raus.
+- [x] T003 `requiredAct` + `prerequisites` aller bestehenden Quests gemäß Kontrakt (Doppelspiel-Verteilung Akt 2/3).
+- [x] T004 Sechs neue Quests inkl. Angebots-/Unterwegs-/Abschlusstext: `faction_campaign`, `klerus_district_purge`, `garde_night_escort`, `who_you_were`, `elara_second_truth`, `the_reckoning`. **Objective-Typen gemäß Kontrakt** (szenengebundene Reveals `collusion_reveal_seen`/`three_hands_seen` = `dialogue`; gameplay-Ziele werden von WP05 verdrahtet). **npcId aus dem Code** (`klerus_priester`/`stadtwache`).
+- [x] T005 Doppel-Tonspur im Abschlusstext von `council_seizure`, `council_surveillance`, `verseuchte_kammer`.
+- [x] T006 Flag-Wiring (`setFlag` in den zuständigen Quests) + `getFlags()`-Ergänzung + Reward-Feld-Abgleich (`reputation`/`knowledgeFragments` → `factionStanding`/`fragments`).
+- [x] T007 `STORY_VERSION` + version-gated Reset in `getQuestSaveData`/`loadQuestSaveData`.
 
 ## WP02 — Story-Akte & Reset-Kopplung
 **Prompt:** [tasks/WP02-story-acts-reset.md](tasks/WP02-story-acts-reset.md) · **Priorität:** P1 · **Größe:** ~3 Subtasks
