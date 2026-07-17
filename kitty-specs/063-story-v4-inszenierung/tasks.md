@@ -20,11 +20,11 @@ WP03 Dialog-Content    [P]   │                            ├── WP05 Integ
 ## WP01 — Finale-Logik (`computeFinaleState`)
 **Ziel:** Reines Modul `js/questFinale.js` gemäß [finale-contract](contracts/finale-contract.md). **Priorität:** hoch (MVP-Kern). **Dependencies:** none.
 **Independent test:** `node --test tests/questFinale.test.js` grün; alle vier Regler + Default abgedeckt.
-- [ ] T001 `js/questFinale.js` Skeleton (`window.QuestFinale` IIFE, Classic Script)
-- [ ] T002 `computeFinaleState`: Regler 1 (betrayalForeseen) + Regler 4 (remembered) + Default-Robustheit
-- [ ] T003 `computeFinaleState`: Regler 2 (allies branka/mara/thom)
-- [ ] T004 `computeFinaleState`: Regler 3 (elara lives/dies) + abgeleitete Felder (aloneAtEnd, namelessEnding)
-- [ ] T005 `tests/questFinale.test.js`: pro Regler true/false, Elara-Kombinatorik, Default, Reinheit
+- [x] T001 `js/questFinale.js` Skeleton (`window.QuestFinale` IIFE, Classic Script)
+- [x] T002 `computeFinaleState`: Regler 1 (betrayalForeseen) + Regler 4 (remembered) + Default-Robustheit
+- [x] T003 `computeFinaleState`: Regler 2 (allies branka/mara/thom)
+- [x] T004 `computeFinaleState`: Regler 3 (elara lives/dies) + abgeleitete Felder (aloneAtEnd, namelessEnding)
+- [x] T005 `tests/questFinale.test.js`: pro Regler true/false, Elara-Kombinatorik, Default, Reinheit
 **Prompt:** [tasks/WP01-finale-logik.md](tasks/WP01-finale-logik.md) (~300 lines)
 
 ## WP02 — Dialog-Auswahl-Komponente (`DialogChoice`)
