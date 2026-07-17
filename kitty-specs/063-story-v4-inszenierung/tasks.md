@@ -40,11 +40,11 @@ WP03 Dialog-Content    [P]   │                            ├── WP05 Integ
 ## WP03 — Dialog-Content-Pass (`storyDialog`)
 **Ziel:** Datenbank aller `[Spieler: …]`-Auswahlen aus dem Skript über Akt 0–4 in `js/storyDialog.js`, gemäß Kontrakt-Datenformen. **Priorität:** mittel. **Dependencies:** none (Kontrakt-getrieben, reine Daten).
 **Independent test:** `node --check js/storyDialog.js`; ein DOM-freier Struktur-Check (jede Choice hat `label`; alle finale-relevanten Flags haben einen Setzer).
-- [ ] T011 `js/storyDialog.js` Struktur + Akt 0/1 (inkl. `verification_sealed`/`verification_refused`, faction_campaign)
-- [ ] T012 Akt 2 (inkl. `petitions_surrendered`/`petitions_kept`, `branka_ally`, klerus/mara/espionage)
-- [ ] T013 Akt 3 (inkl. `thom_ally`, elara/verseuchte_kammer/garde/who_you_were)
-- [ ] T014 Akt 4 (branka_weapons, thom_pamphlets, the_reckoning press_decision, mara_assault)
-- [ ] T015 Abgleich gegen [finale-contract](contracts/finale-contract.md): jeder gelesene Flag hat genau einen Setzer im Content
+- [x] T011 `js/storyDialog.js` Struktur + Akt 0/1 (inkl. `verification_sealed`/`verification_refused`, faction_campaign)
+- [x] T012 Akt 2 (inkl. `petitions_surrendered`/`petitions_kept`, `branka_ally`, klerus/mara/espionage)
+- [x] T013 Akt 3 (inkl. `thom_ally`, elara/verseuchte_kammer/garde/who_you_were)
+- [x] T014 Akt 4 (branka_weapons, thom_pamphlets, the_reckoning press_decision, mara_assault)
+- [x] T015 Abgleich gegen [finale-contract](contracts/finale-contract.md): jeder gelesene Flag hat genau einen Setzer im Content
 **Prompt:** [tasks/WP03-dialog-content.md](tasks/WP03-dialog-content.md) (~340 lines)
 
 ## WP04 — Schlüsselszenen + observe-Trigger
