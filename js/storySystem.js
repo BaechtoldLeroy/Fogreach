@@ -3,15 +3,19 @@
 (function () {
   'use strict';
 
-  // ---- Act Definitions ----
+  // ---- Act Definitions (Feature 062, v4-Doppelagenten-Struktur) ----
+  // Fuenf Akte (Index 0-4). Die internen ids bleiben aus Kompatibilitaet
+  // erhalten (ACT_NARRATIVES, NPC_DIALOGUE und die i18n-Keys haengen daran) —
+  // nur die ANZEIGENAMEN sind v4. Die alten Akte 5/6 (rebellion/offenbarung)
+  // entfallen; das Ende ist jetzt Teil von Akt 4. triggerWave/triggerQuests
+  // sind weg (nur das entfernte _computeActIndex nutzte sie — Aufstieg ist rein
+  // quest-getrieben).
   const STORY_ACTS = [
-    { id: 'auftrag',       name: 'Der Auftrag',                triggerWave: 1,  triggerQuests: 0 },
-    { id: 'treuer_diener', name: 'Der treue Diener',           triggerWave: 6,  triggerQuests: 1 },
-    { id: 'erste_risse',   name: 'Erste Risse',                triggerWave: 11, triggerQuests: 2 },
-    { id: 'wahrheit',      name: 'Die Wahrheit sickert durch', triggerWave: 16, triggerQuests: 3 },
-    { id: 'bruch',         name: 'Der Bruch',                  triggerWave: 21, triggerQuests: 5 },
-    { id: 'rebellion',     name: 'Rebellion',                  triggerWave: 31, triggerQuests: 7 },
-    { id: 'offenbarung',   name: 'Offenbarung',                triggerWave: 41, triggerQuests: 9 }
+    { id: 'auftrag',       name: 'Der Dienst' },
+    { id: 'treuer_diener', name: 'Treuer Diener' },
+    { id: 'erste_risse',   name: 'Das Doppelspiel' },
+    { id: 'wahrheit',      name: 'Die Enttarnung' },
+    { id: 'bruch',         name: 'Der Verrat und die Presse' }
   ];
 
   // ---- Narrative texts shown at act transitions ----
@@ -285,13 +289,12 @@
     // i18n cascade until iterative translation work fills them in (~150
     // lines of lore-heavy text).
     window.i18n.register('en', {
-      'story.act.auftrag.name': 'The Assignment',
+      // Feature 062: v4-Aktnamen (Index 0-4). rebellion/offenbarung entfallen.
+      'story.act.auftrag.name': 'The Service',
       'story.act.treuer_diener.name': 'The Loyal Servant',
-      'story.act.erste_risse.name': 'First Cracks',
-      'story.act.wahrheit.name': 'Truth Seeps Through',
-      'story.act.bruch.name': 'The Break',
-      'story.act.rebellion.name': 'Rebellion',
-      'story.act.offenbarung.name': 'Revelation',
+      'story.act.erste_risse.name': 'The Double Game',
+      'story.act.wahrheit.name': 'The Unmasking',
+      'story.act.bruch.name': 'The Betrayal and the Press',
 
       'story.act.auftrag.narrative': "You wake in the Archive Forge. Your head throbs. A man in council chains stands over you: 'The cellar must be cleansed, Archivesmith. Wild beasts are loose down there.'",
       'story.act.treuer_diener.narrative': "Councillor Aldric pats your shoulder. 'Well done. But greater threats remain — intruders are stealing our archives. We need you.'",
@@ -523,28 +526,10 @@
     return STORY_ACTS.find(function (a) { return a.id === actId; });
   }
 
-  /**
-   * Compute which act the player should be in based on wave + quests.
-   * Returns the index into STORY_ACTS.
-   */
-  function _computeActIndex(highestWave, completedQuestCount) {
-    var idx = 0;
-    for (var i = STORY_ACTS.length - 1; i >= 0; i--) {
-      var act = STORY_ACTS[i];
-      if (highestWave >= act.triggerWave && completedQuestCount >= act.triggerQuests) {
-        idx = i;
-        break;
-      }
-    }
-    return idx;
-  }
-
-  function _getCompletedQuestCount() {
-    if (window.questSystem && typeof window.questSystem.getCompletedQuests === 'function') {
-      return window.questSystem.getCompletedQuests().length;
-    }
-    return 0;
-  }
+  // Feature 062: _computeActIndex + _getCompletedQuestCount (tiefen-/quest-zahl-
+  // basierter Aufstieg) entfernt. Sie waren seit Feature 050 tot — der Aufstieg
+  // ist rein quest-getrieben ueber advanceToAct(). Damit fielen auch die
+  // triggerWave/triggerQuests-Felder in STORY_ACTS weg.
 
   // Feature 050 FR-08: explicit quest-triggered act advancement.
   // The legacy onWaveCompleted/onBossKilled paths advance acts derivatively
@@ -563,6 +548,22 @@
       storyState.pendingEvent = newAct.id;
     }
     try { console.log('[StorySystem] Act jump -> ' + newAct.name + ' (Act ' + (clamped + 1) + ') via advanceToAct'); } catch (_) {}
+    return true;
+  }
+
+  // Feature 062: expliziter Reset auf Akt 0. advanceToAct ist monoton (nur
+  // aufwaerts) — beim Laden eines Alt-Spielstands (questSystem.loadQuestSaveData
+  // mit storyVersion < 4) muss der Akt hart auf 0 zurueck. Setzt die narrative
+  // Fortschritts-Sicht zurueck (Akt, gesehene Ereignisse, Pending-Splashes),
+  // damit die neue Story von vorn beginnt.
+  function resetToAct0() {
+    storyState.currentActIndex = 0;
+    storyState.eventsSeen = [];
+    storyState.pendingEvent = null;
+    storyState.pendingMilestone = null;
+    storyState.milestonesShown = [];
+    storyState.endingShown = false;
+    try { console.log('[StorySystem] Reset auf Akt 0 (Story v4).'); } catch (_) {}
     return true;
   }
 
@@ -1090,6 +1091,7 @@
     onEnemyKilled: onEnemyKilled,
     onRoomCleared: onRoomCleared,
     advanceToAct: advanceToAct,
+    resetToAct0: resetToAct0,
     consumePendingEvent: consumePendingEvent,
     getNpcDialogue: getNpcDialogue,
     getJournalData: getJournalData,
