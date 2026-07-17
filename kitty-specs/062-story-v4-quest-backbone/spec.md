@@ -27,12 +27,13 @@ Damit werden **Akt 1 bis 4 und das Story-Ende erreichbar** — das schließt das
 - Neue Quests inkl. ihrer Texte: `faction_campaign`, `klerus_district_purge`, `garde_night_escort`, `who_you_were`, `elara_second_truth`, `the_reckoning`.
 - Doppel-Tonspur (zweite Tonspur im Abschlusstext) an `council_seizure`, `council_surveillance`, `verseuchte_kammer`.
 - Story-Flag-Speicher `questFlags.js` (Setzen/Lesen/Persistieren der Flags aus Migration-Abschnitt F), integriert in den bestehenden Save-Fluss.
+- **Objective-Trigger-Verdrahtung** (nach Analyse, Option B): die neuen gameplay-basierten Objective-Ziele werden auslösbar gemacht — `fetch`-Ziele (`verification_seal`, `proclamation`, `memory_shard`) als Quest-Item-Drops (`loot.js`), `observe`-Ziele (`escort_route`, `informant_id`) als Spionage-Zonen (`espionageSystem.js`). Szenengebundene Reveals (`collusion_reveal_seen`, `three_hands_seen`) nutzen bis zum Inszenierungs-Feature einen `dialogue`-Auto-Complete-Platzhalter.
 - Reset des Story-/Quest-Fortschritts beim Laden von Spielständen, die noch die alte Struktur tragen (Level/Items/Gold bleiben).
 - `docs/QUESTS.md` neu generieren (Generator liest die neuen `QUEST_DEFINITIONS`).
 
 ### Out of Scope (jeweils eigenes Folge-Feature)
 - Das **Vier-Regler-Finale-Modul** (`questFinale.js`, `computeFinaleState`) und die Entscheidungs-UI in `the_reckoning`. In diesem Feature ist `the_reckoning` eine Dialog-Quest, die `story_ending` freischaltet — die Regler-Auswertung und die Elara-Wahl folgen später.
-- **Aufwändige Szenen-Inszenierung**: die „Zuhören"-Fortschrittsleiste der geheimen Sitzung, die Vatermord-Sequenz mit Kamera, das Elara-Lager als gespielte Szene. In diesem Feature liegen die zugehörigen Beats als Quest-Texte vor, nicht als inszenierte Szenen.
+- **Aufwändige Szenen-Inszenierung**: die „Zuhören"-Fortschrittsleiste der geheimen Sitzung, die Vatermord-Sequenz mit Kamera, das Elara-Lager als gespielte Szene. In diesem Feature liegen die zugehörigen Beats als Quest-Texte vor, nicht als inszenierte Szenen. Die zwei szenengebundenen Objective-Ziele (`collusion_reveal_seen`, `three_hands_seen`) nutzen bis dahin einen `dialogue`-Auto-Complete-Platzhalter, damit die Akt-Leiter durchgängig bleibt — der `observe`-Trigger kommt mit der jeweiligen Szene.
 - **Verzweigte Spieler-Antwortauswahl** (`[Spieler: …]`) als neues Dialog-UI. Vorhandene flag-abhängige Textvarianten (z. B. Abschlusstext je nach `verification_sealed`) werden als Daten unterstützt, soweit das bestehende Dialogsystem das trägt; ein neues Auswahl-UI ist nicht Teil dieses Features.
 - Die drei neuen **Boss-Mechaniken** (Kettenmeister Fesselung, Zeremonienmeister Auslöschung, Schattenrat Quelle). Die Boss-**Quests** (`boss_kill`-Objectives) sind in Scope und funktionieren mit den bestehenden Bossen; die neuen Mechaniken sind es nicht.
 - **Hub-Evolution** über die Akte (Layout-/Bedeutungswechsel, feindliches Rathaus nach dem Bruch).
@@ -98,6 +99,8 @@ Status-Werte: **Proposed** (noch nicht umgesetzt).
 | FR-018 | Boss-Quest-Objectives sind auf die korrekten Boss-Ziel-IDs verdrahtet: `mara_warning`→`kettenmeister`, `elara_ritual`→`zeremonienmeister`, `schattenrat_finale`→`schattenrat`. | Proposed |
 | FR-019 | `docs/QUESTS.md` wird aus den neuen `QUEST_DEFINITIONS` neu generiert und bildet die v4-Struktur inkl. Akt-Register korrekt ab. | Proposed |
 | FR-020 | Die Gesamtzahl der Quest-Definitionen entspricht der v4-Vorgabe (34), ohne doppelte IDs oder doppelte Titel. | Proposed |
+| FR-021 | Jedes Objective-Ziel jeder Quest ist auslösbar: bereits verdrahtete Typen unverändert; neue gameplay-Ziele (`fetch verification_seal`/`proclamation`/`memory_shard`, `observe escort_route`/`informant_id`) werden in `loot.js`/`espionageSystem.js` verdrahtet; szenengebundene Reveals (`collusion_reveal_seen`, `three_hands_seen`) nutzen einen `dialogue`-Auto-Complete-Platzhalter. Keine Quest ist wegen eines fehlenden Triggers uncompletable. | Proposed |
+| FR-022 | Quest-`npcId` entspricht den bestehenden Code-Werten (`klerus_priester`, `stadtwache`), nicht den abweichenden Migration-Werten (`klerus`, `garde`). | Proposed |
 
 ### 4.2 Non-Functional Requirements
 
@@ -129,8 +132,9 @@ Status-Werte: **Proposed** (noch nicht umgesetzt).
 - **SC-003:** Das Laden eines alten Spielstands führt zu einem sauberen Story-Reset (Akt 0) ohne Verlust von Level/Inventar/Gold und ohne Konsolen-Fehler.
 - **SC-004:** Story-Flags übersteht Speichern/Laden im selben Slot und sind zwischen Slots getrennt.
 - **SC-005:** `docs/QUESTS.md` bildet die v4-Struktur inkl. lückenlosem Akt-Register (kein „kein Trigger"-Vermerk mehr für Akt 1–4) ab.
-- **SC-006:** Test-Suite grün (0 Fehler); mindestens die vier Akt-Trigger, die Ende-Freischaltung, die „genau vier Trigger"-Invariante und der Alt-Stand-Reset sind getestet.
+- **SC-006:** Test-Suite grün (0 Fehler); mindestens die vier Akt-Trigger, die Ende-Freischaltung, die „genau vier Trigger"-Invariante, der Alt-Stand-Reset und ein **Objective-Trigger-Audit** (jedes Ziel auslösbar) sind getestet.
 - **SC-007:** #44 ist geschlossen (Story-Ende erreichbar).
+- **SC-008:** Keine Quest ist wegen eines fehlenden Objective-Triggers uncompletable; die neuen gameplay-Ziele sind verdrahtet, die szenengebundenen nutzen den Auto-Complete-Platzhalter.
 
 ---
 
@@ -157,7 +161,7 @@ Status-Werte: **Proposed** (noch nicht umgesetzt).
 
 ## 8. Dependencies
 
-- Bestehende Systeme: `js/questSystem.js`, `js/storySystem.js`, `js/storage.js`, `js/saveSlots.js` (Slot-Namespacing), `js/player.js` (Boss-Mapping, Quest-Fortschritt-Trigger), `tools/genQuestDoc.js` (Doku-Generator), `tests/questSystem.test.js`.
+- Bestehende Systeme: `js/questSystem.js`, `js/storySystem.js`, `js/storage.js`, `js/saveSlots.js` (Slot-Namespacing), `js/player.js` (Boss-Mapping, Quest-Fortschritt-Trigger), `js/loot.js` (Quest-Item-Drops → `fetch`-Trigger), `js/espionageSystem.js` (`observe`-Trigger in Spionage-Zonen), `tools/genQuestDoc.js` (Doku-Generator), `tests/questSystem.test.js`.
 - Referenzdokumente unter `research/`: `Fogreach_Story_v4.md`, `Fogreach_Quest_Migration_v4.md`, `Fogreach_Dialog_Skript_v1.md`.
 - Schließt **Issue #44**.
 - Voraussetzung für die Folge-Features: Finale-Vier-Regler (`questFinale.js` + `the_reckoning`-Entscheidung), Szenen-Inszenierung, drei Boss-Mechaniken, Hub-Evolution.

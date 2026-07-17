@@ -46,6 +46,17 @@ Auflösung der offenen Unbekannten aus dem Plan. Format je Punkt: Entscheidung �
 
 **Verworfen:** Nur manuelle Prüfung.
 
+## R7 — Objective-Trigger-Verdrahtung (aus der Analyse, Option B)
+
+**Entscheidung:** Jedes neue/geänderte Objective-Ziel muss auslösbar sein. Drei Fälle:
+1. Bereits verdrahtet (kill/boss_kill/explore/craft/dungeon_run/wave; bestehende fetch/observe-Ziele) → keine Aktion.
+2. Neu, gameplay-basiert → **WP05** verdrahtet: `fetch verification_seal|proclamation|memory_shard` als Quest-Item-Drops in `loot.js` (Muster `journal_fragment`), `observe escort_route|informant_id` als Spionage-Zonen in `espionageSystem.js` (Muster `convoy_intel`/`archive_record`).
+3. Neu, szenengebunden (`collusion_reveal_seen` = geheime Sitzung, `three_hands_seen` = Elaras zweite Wahrheit) → Szene ist Out-of-Scope; Objective bleibt **`dialogue`** (Auto-Complete bei Annahme). Der `observe`-Trigger kommt mit der jeweiligen Szene im Inszenierungs-Feature.
+
+**Begründung (verifiziert am Code):** `council_collusion_reveal` ist heute `dialogue` und advanciert zuverlässig auf Akt 2; ein Wechsel auf `observe collusion_reveal_seen` ohne Trigger machte Akt 2 unerreichbar. `magistrat_verification` ist heute `kill enemy ×8` (ein früherer Trigger-Fix); `verification_seal` ist nirgends verdrahtet. Ohne R7 hätte die wörtliche Migration mehrere Quests auf dem Akt-Pfad uncompletable gemacht — dieselbe Fehlerklasse wie #44. Ein Trigger-Audit-Test (WP03) verankert die Regel dauerhaft.
+
+**Verworfen:** Option A (überall wirkende Alt-Typen behalten) — verwarf der Nutzer zugunsten der vollständigen Verdrahtung (Option B). Verworfen: `observe`-Trigger für die zwei szenengebundenen Ziele „irgendwie" faken — das hieße die Out-of-Scope-Szene bauen.
+
 ## R6 — Boss-Ziel-IDs
 
 **Entscheidung:** Die Boss-Quest-Objectives (`mara_warning`→`kettenmeister`, `elara_ritual`→`zeremonienmeister`, `schattenrat_finale`→`schattenrat`) gegen das Boss-Mapping in `js/player.js` (`bossMapping`) gegenprüfen. Umbenennung `harren_rescue`→`schattenrat_finale` darf das `boss_kill`-Ziel `schattenrat` nicht verlieren.

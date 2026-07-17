@@ -56,6 +56,8 @@ js/
 ├── storySystem.js        # STORY_ACTS-Namen (Der Dienst / Treuer Diener / Das Doppelspiel / Die Enttarnung / Der Verrat und die Presse)
 ├── storage.js            # applySaveToState → versionierter Story-Reset beim Laden
 ├── player.js             # Boss-Mapping (kettenmeister/zeremonienmeister/schattenrat) — Ziel-IDs gegenpruefen
+├── loot.js               # WP05: neue fetch-Ziele als Quest-Item-Drops (verification_seal/proclamation/memory_shard)
+├── espionageSystem.js    # WP05: neue observe-Ziele als Spionage-Zonen (escort_route/informant_id)
 └── saveSlots.js          # SLOT_KEYS unveraendert (Story-Flags reisen im Haupt-Save mit)
 
 tools/
@@ -81,6 +83,7 @@ Siehe [research.md](research.md). Aufgelöste Unbekannte:
 - Reward-Feldnamen: Migration `reputation`/`knowledgeFragments` auf bestehende `factionStanding`/`fragments` abbilden.
 - Dialog-Varianten: welche flag-abhängigen Textformen das bestehende Dialogsystem trägt (Funktion vs. String).
 - „Genau vier Trigger"-Invariante: als Test verankern (fängt künftige Drift, wie sie zu #44 führte).
+- **Objective-Trigger-Verdrahtung (Option B, aus der Analyse):** die neuen `fetch`/`observe`-Ziele werden verdrahtet (loot.js/espionageSystem.js, WP05); die zwei szenengebundenen Reveals bleiben `dialogue`-Auto-Complete, weil ihre Szene Out-of-Scope ist. Verhindert uncompletable Quests (Fehlerklasse #44) — der zentrale Analyse-Befund.
 
 ## Phase 1 — Design & Contracts
 
@@ -104,3 +107,5 @@ Siehe [research.md](research.md). Aufgelöste Unbekannte:
 | Altstand-Reset trifft zu viel/zu wenig | `storyVersion`-Gate isoliert den Story-Blob; Charakter-State liegt außerhalb; Test mit Alt-Save-Fixture. |
 | Rich-Dialog-Erwartung aus dem Dialog-Skript sprengt den Backbone-Scope | Scope-Grenze in Spec (Out of Scope) + Assumption: nur Texte, keine Auswahl-UI/Inszenierung. |
 | `docs/QUESTS.md` driftet | Generator neu laufen lassen; im Akzeptanztest den lückenlosen Akt-Trigger prüfen. |
+| **Uncompletable Quest durch fehlenden Objective-Trigger** (Analyse-Befund, Fehlerklasse #44) | WP05 verdrahtet neue fetch/observe-Ziele; szenengebundene Reveals = dialogue-Auto-Complete; ein Trigger-Audit-Test (WP03) prüft, dass jedes Ziel auslösbar ist. |
+| npcId-Drift (Migration `klerus`/`garde` vs. Code `klerus_priester`/`stadtwache`) | FR-022 + Kontrakt fixieren die Code-Werte. |

@@ -21,6 +21,21 @@ Eintrag in `QUEST_DEFINITIONS` (`js/questSystem.js`). Felder (ASCII-Code-Strings
 
 **Objective-Typen (bestehend):** `kill` (enemy/elite_enemy), `explore` (room), `fetch`, `observe`, `boss_kill`, `wave` (reach_wave), `dungeon_run`, `craft`, `dialogue` (auto-complete bei Annahme).
 
+### 1a. Objective-Trigger-Verdrahtung (Option B)
+
+Jedes Ziel muss auslösbar sein (Trigger-Audit, sonst Fehlerklasse #44).
+
+| Objective-Ziel | Quest | Trigger-Quelle | Wer |
+|---|---|---|---|
+| `fetch verification_seal` | magistrat_verification | Quest-Item-Drop (loot.js, Muster `journal_fragment`) | **WP05** |
+| `fetch proclamation` | faction_campaign | Quest-Item-Drop | **WP05** |
+| `fetch memory_shard` | who_you_were | Quest-Item-Drop | **WP05** |
+| `observe escort_route` | garde_night_escort | Spionage-Zone (espionageSystem.js) | **WP05** |
+| `observe informant_id` | espionage_informant | Spionage-Zone | **WP05** |
+| `dialogue collusion_reveal_seen` | council_collusion_reveal | Auto-Complete bei Annahme (Szene folgt) | ⏳ Platzhalter |
+| `dialogue three_hands_seen` | elara_second_truth | Auto-Complete bei Annahme (Szene folgt) | ⏳ Platzhalter |
+| alle übrigen | — | bereits verdrahtet (kill/boss_kill/explore/craft/dungeon_run/wave/bestehende fetch·observe) | — |
+
 ## 2. Akt-Register (kanonisch)
 
 Genau vier `advanceAct`-Trigger; `council_collusion_reveal` läuft zusätzlich über den hartverdrahteten `advanceToAct(2)`-Sprung (bestehend). Kein weiterer Trigger.
