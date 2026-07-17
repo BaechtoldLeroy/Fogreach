@@ -65,12 +65,12 @@ WP01 und WP02 sind parallelisierbar (verschiedene Dateien, stabile `advanceToAct
 **Ziel:** `tests/questSystem.test.js` deckt die Akt-Leiter, die „genau vier Trigger"-Invariante, den Ende-Trigger, den Altstand-Reset, die Boss-Ziele und den **Objective-Trigger-Audit** ab; bestehende Tests angepasst.
 **Unabhängiger Test:** `node tools/runTests.js` grün, inkl. der neuen Fälle.
 
-- [ ] T011 Akt-Trigger-Tests: vier einzeln (Abschluss X → Akt N) + „genau vier `advanceAct`-Trigger"-Invariante (bis Akt 4).
-- [ ] T012 `the_reckoning` → `story_ending` gesetzt; `elara_second_truth` setzt keinen `advanceAct`.
-- [ ] T013 Altstand-Reset: Fixture ohne `storyVersion` (mit alten IDs) → Akt 0, Story-Flags leer; Charakter-State-Feld (außerhalb `quests`) bleibt unberührt.
-- [ ] T014 Boss-Leiter-Ziele nach Umbenennung (`mara_warning`→kettenmeister, `elara_ritual`→zeremonienmeister, `schattenrat_finale`→schattenrat); bestehende umbenennungs-/entfernungs-abhängige Tests anpassen.
-- [ ] T015 Struktur-Invarianten: 34 Quests, keine doppelten `id`/`title`; Stichproben `requiredAct`/`prerequisites` gemäß Kontrakt.
-- [ ] T019 **Objective-Trigger-Audit:** ein Test bestätigt, dass JEDES Objective-Ziel auslösbar ist — Ziel ist entweder ein bereits verdrahteter Typ, ein WP05-verdrahtetes `fetch`/`observe`-Ziel, oder `dialogue` (Auto-Complete). Kein Ziel bleibt ohne Trigger. (Fängt die Fehlerklasse #44.)
+- [x] T011 Akt-Trigger-Tests: vier einzeln (Abschluss X → Akt N) + „genau vier `advanceAct`-Trigger"-Invariante (bis Akt 4).
+- [x] T012 `the_reckoning` → `story_ending` gesetzt; `elara_second_truth` setzt keinen `advanceAct`.
+- [x] T013 Altstand-Reset: Fixture ohne `storyVersion` (mit alten IDs) → Akt 0, Story-Flags leer; Charakter-State-Feld (außerhalb `quests`) bleibt unberührt.
+- [x] T014 Boss-Leiter-Ziele nach Umbenennung (`mara_warning`→kettenmeister, `elara_ritual`→zeremonienmeister, `schattenrat_finale`→schattenrat); bestehende umbenennungs-/entfernungs-abhängige Tests anpassen.
+- [x] T015 Struktur-Invarianten: 34 Quests, keine doppelten `id`/`title`; Stichproben `requiredAct`/`prerequisites` gemäß Kontrakt.
+- [x] T019 **Objective-Trigger-Audit:** ein Test bestätigt, dass JEDES Objective-Ziel auslösbar ist — Ziel ist entweder ein bereits verdrahteter Typ, ein WP05-verdrahtetes `fetch`/`observe`-Ziel, oder `dialogue` (Auto-Complete). Kein Ziel bleibt ohne Trigger. (Fängt die Fehlerklasse #44.)
 
 ## WP04 — Doku, Boss-Mapping-Verifikation & Deploy
 **Prompt:** [tasks/WP04-docs-deploy.md](tasks/WP04-docs-deploy.md) · **Priorität:** P2 · **Größe:** ~3 Subtasks
