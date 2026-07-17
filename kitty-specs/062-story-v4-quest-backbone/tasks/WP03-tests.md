@@ -17,6 +17,7 @@ base_commit: 05cb2fe362b93481ac8531b2526f1713f0967cc4
 created_at: '2026-07-17T19:20:34.792384+00:00'
 subtasks: [T011, T012, T013, T014, T015, T019]
 shell_pid: "33952"
+agent: "claude"
 history:
 - 2026-07-17T17:13:33Z: Erstellt (spec-kitty.tasks).
 authoritative_surface: tests/questSystem.test.js
@@ -102,3 +103,7 @@ owned_files: [tests/questSystem.test.js]
 
 - Reviewer prüft, dass die Invarianten-Tests tatsächlich scharf sind (nicht nur „grün", sondern fallen bei Mutation) — genau das hätte #44 verhindert.
 - Fixture-Realismus: der Alt-Save muss dem echten alten Blob-Format entsprechen (flach `quests`/`flags`).
+
+## Activity Log
+
+- 2026-07-17T19:20:36Z – claude – shell_pid=33952 – lane=doing – Started implementation via workflow command
