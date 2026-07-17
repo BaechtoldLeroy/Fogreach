@@ -94,3 +94,4 @@ Die neuen **gameplay-basierten** Objective-Ziele der v4-Quests auslösbar machen
 - 2026-07-17T18:45:35Z – claude – shell_pid=32284 – lane=doing – Started implementation via workflow command
 - 2026-07-17T18:50:53Z – claude – shell_pid=32284 – lane=for_review – fetch-Ziele in loot.js, escort_route via CouncilWarehouse+ESP_MISSIONS, informant_id war schon verdrahtet. Ziele gegen WP01 gegengeprueft.
 - 2026-07-17T19:15:24Z – claude – shell_pid=32284 – lane=approved – Per Daten-Probe verifiziert (Selbst-Review).
+- 2026-07-17T19:16:24Z – claude – shell_pid=32284 – lane=done – Nach main gemergt.
