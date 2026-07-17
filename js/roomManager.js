@@ -388,7 +388,11 @@ function initDungeonRun() {
     var ESP_MISSIONS = [
       { qid: 'espionage_convoy',    room: 'CouncilWarehouse' },
       { qid: 'espionage_archive',   room: 'SealedArchive' },
-      { qid: 'espionage_informant', room: 'InformantDen' }
+      { qid: 'espionage_informant', room: 'InformantDen' },
+      // Feature 062: garde_night_escort teilt sich das Konvoi-Lager (thematisch
+      // ein naechtlicher Transport). CouncilWarehouse traegt jetzt zusaetzlich
+      // die observe-Zone escort_route.
+      { qid: 'garde_night_escort',  room: 'CouncilWarehouse' }
     ];
     var activeNow = (window.questSystem && typeof window.questSystem.getActiveQuests === 'function')
       ? window.questSystem.getActiveQuests() : [];

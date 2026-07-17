@@ -90,7 +90,8 @@
         "patrol": [ { "x": 17, "y": 9 }, { "x": 22, "y": 9 } ] }
     ],
     "observe": [
-      { "id": "convoy_talk", "x": 19, "y": 5, "r": 62, "seconds": 4, "questTarget": "convoy_intel" }
+      { "id": "convoy_talk", "x": 19, "y": 5, "r": 62, "seconds": 4, "questTarget": "convoy_intel" },
+      { "id": "escort_route_watch", "x": 26, "y": 9, "r": 62, "seconds": 4, "questTarget": "escort_route" }
     ]
   }
 }
