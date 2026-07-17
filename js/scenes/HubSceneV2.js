@@ -1088,6 +1088,15 @@ class HubSceneV2 extends Phaser.Scene {
       return;
     }
 
+    // Feature 063 WP05: the_reckoning ist das Finale. Statt des Standard-Dialogs
+    // die inszenierte Abrechnung (Vatermord + Druck + der aus computeFinaleState
+    // berechnete Ausgang) spielen; danach completeQuest (schaltet story_ending).
+    if (questData && questData.id === 'the_reckoning'
+        && (questMode === 'offer' || questMode === 'turnin' || questMode === 'progress')) {
+      this._showReckoningFinale(npcData, questData);
+      return;
+    }
+
     // Build dialogue pages based on quest mode
     const pages = [];
     let titleStr = npcData.name || _HUB_T('hub.dialog.greeting');
@@ -1584,8 +1593,33 @@ class HubSceneV2 extends Phaser.Scene {
       return;
     }
 
+    // Feature 063 WP05: Abschluss der Abrechnung (the_reckoning).
+    if (action === 'reckoning_done') {
+      if (this._pendingReckoningFinalize) {
+        try { this._pendingReckoningFinalize(); } catch (_) {}
+      }
+      this._pendingReckoningFinalize = null;
+      this._closeDialog(keyClosers);
+      return;
+    }
+
     if (action === 'accept') {
       if (qs && questData) qs.acceptQuest(questData.id);
+      // Feature 063 WP05: elara_second_truth ist jetzt observe (three_hands_seen).
+      // Statt still auto-zu-completen spielt die Riss-Szene (feuert den observe-
+      // Trigger) und schliesst danach ab.
+      if (questData && questData.id === 'elara_second_truth'
+          && window.storyScenes && typeof window.storyScenes.playElaraFirstCrack === 'function') {
+        this._closeDialog(keyClosers);
+        const self = this;
+        window.storyScenes.playElaraFirstCrack(this, function () {
+          if (qs && typeof qs.completeQuest === 'function') {
+            try { qs.completeQuest('elara_second_truth'); } catch (_) {}
+          }
+          self._refreshQuestIndicators();
+        });
+        return;
+      }
       this._refreshQuestIndicators();
       this._closeDialog(keyClosers);
     } else if (action === 'complete') {
@@ -2896,6 +2930,13 @@ class HubSceneV2 extends Phaser.Scene {
       } catch (err) {
         console.warn('[HubSceneV2] Q6 acceptQuest failed', err);
       }
+      // Feature 063 WP04/05: das Reveal-Objective ist jetzt observe
+      // (collusion_reveal_seen). acceptQuest completet es nicht mehr automatisch
+      // (nur dialogue-Ziele tun das). Die Sitzung IST das Zuhören -> hier den
+      // observe-Trigger feuern, sonst haengt die Quest und Akt 2 bleibt gesperrt.
+      if (typeof qs.updateQuestProgress === 'function') {
+        try { qs.updateQuestProgress('observe', 'collusion_reveal_seen', 1); } catch (_) {}
+      }
       if (typeof qs.completeQuest === 'function') {
         try {
           qs.completeQuest('council_collusion_reveal');
@@ -2933,6 +2974,64 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Start at page 0. The standard _showDialoguePages handles page advancement.
     this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData, 0);
+  }
+
+  // Feature 063 WP05: Die Abrechnung (the_reckoning). Berechnet den Ausgang aus
+  // computeFinaleState(flags), spielt Vatermord + Druck und praesentiert die vier
+  // Regler. Schliesst danach the_reckoning ab (schaltet story_ending frei).
+  _showReckoningFinale(npcData, questData) {
+    const qs = window.questSystem;
+    const flags = (qs && typeof qs.getFlags === 'function') ? qs.getFlags() : {};
+    const st = (window.QuestFinale && typeof window.QuestFinale.computeFinaleState === 'function')
+      ? window.QuestFinale.computeFinaleState(flags)
+      : { betrayalForeseen: false, allies: { branka: false, mara: false, thom: false }, elara: 'dies', remembered: false, aloneAtEnd: true, namelessEnding: true };
+
+    // Ausgangs-Bausteine aus den vier Reglern.
+    const alliesNames = [];
+    if (st.allies.branka) alliesNames.push('Branka');
+    if (st.allies.mara) alliesNames.push('Mara');
+    if (st.allies.thom) alliesNames.push('Thom');
+
+    const pForesee = st.betrayalForeseen
+      ? 'Du hast die Spur verfolgt. Du bist schneller an der Schleuse — der Nebel steigt nicht.'
+      : 'Du hast es nicht kommen sehen. Der Nebel steigt um Deine Knie, Deine aeltesten Erinnerungen duennen, waehrend Du kaempfst, Dich zu erinnern, warum Du hier bist.';
+    const pAllies = st.aloneAtEnd
+      ? 'Niemand tritt neben Dich. Du stehst allein.'
+      : (alliesNames.join(', ') + ' treten dazu, entsetzt, dass Elara eine von ihnen war.');
+    const pElara = (st.elara === 'lives')
+      ? 'Mit Vertrauen und Beweisen haeltst Du sie mit Worten auf. Sie lebt, gebrochen an dem, was sie tat.'
+      : 'Es bleibt nur ihre eigene Klinge, das Geschenk. Du beendest es.';
+    const pRemember = st.remembered
+      ? 'In dem Moment, in dem die Presse anlaeuft, kehrt zurueck, wer Du warst. Der letzte Satz gehoert Dir.'
+      : 'Du druckst, namenlos. Wer Du warst, bleibt im Nebel.';
+
+    const finalize = () => {
+      if (!qs) return;
+      try { qs.acceptQuest('the_reckoning'); } catch (_) {}
+      if (typeof qs.completeQuest === 'function') {
+        try { qs.completeQuest('the_reckoning'); } catch (_) {}
+      }
+      this._refreshQuestIndicators();
+    };
+
+    const pages = [
+      { text: 'ELARA: Ich drucke eine Wahrheit, mit der die Stadt leben kann. Und dann bleibt nur noch einer, der das ganze Bild traegt. Du. Der Nebel wird sanft sein.', choices: null },
+      { text: '(Harren tritt aus dem Schatten. Er hat alles gehoert.)\nHARREN: Nein. Nicht das. Nicht Du.\n(Es geht schnell und ist nicht geplant. Danach steht sie ueber ihm.)\nELARA, tonlos: Ich wollte das nie.', choices: null, _patricide: true },
+      { text: pForesee + '\n\n' + pAllies, choices: null },
+      { text: pElara, choices: null },
+      { text: 'Du druckst. Elara verbrennt zuvor das eine belastende Blatt, und Du laesst sie. Die Wahrheit geht raus, unvollstaendig, und Du weisst es.\n\n' + pRemember, choices: [ { label: '[ Die Presse laeuft an ]', action: 'reckoning_done' } ], _isFinal: true }
+    ];
+
+    this._pendingReckoningFinalize = finalize;
+    this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData, 0);
+
+    // Kamera-Beat fuer den Vatermord: kurzer Shake, wenn die Seite erreicht wird.
+    // (Vereinfachte Inszenierung ueber ein verzoegertes Shake beim Start.)
+    if (this.cameras && this.cameras.main && this.time && this.time.delayedCall) {
+      this.time.delayedCall(400, () => {
+        try { this.cameras.main.shake(220, 0.006); } catch (_) {}
+      });
+    }
   }
 
   // Feature 051 FR-01/FR-02: demo intro splash — frames the world before
