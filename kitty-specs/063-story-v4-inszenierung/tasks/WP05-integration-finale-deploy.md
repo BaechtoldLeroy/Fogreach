@@ -9,11 +9,15 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: main
+base_commit: cc6209d051e34a26c6a1cd3753ee1f04cf6532ae
+created_at: '2026-07-17T22:33:37.312639+00:00'
 subtasks: [T021, T022, T023, T024, T025]
 authoritative_surface: js/scenes/HubSceneV2.js
 execution_mode: code_change
 lane: planned
 owned_files: [js/scenes/HubSceneV2.js, index.html]
+shell_pid: "34316"
 ---
 
 # WP05 — Integration, Finale-Inszenierung & Deploy
