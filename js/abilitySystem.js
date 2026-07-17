@@ -1,4 +1,4 @@
-// js/abilitySystem.js — Ability Loadout & Learning System
+﻿// js/abilitySystem.js — Ability Loadout & Learning System
 // ---------------------------------------------------------
 // Manages which abilities the player has LEARNED and which 4 are
 // currently EQUIPPED (active loadout). Active slots map to keys
@@ -396,7 +396,7 @@
         activeLoadout: Object.assign({}, state.activeLoadout),
         enemyKills: state.enemyKills | 0
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      (window.SlotStorage || localStorage).setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (err) {
       console.warn('[AbilitySystem] save failed', err);
     }
@@ -404,7 +404,7 @@
 
   function load() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = (window.SlotStorage || localStorage).getItem(STORAGE_KEY);
       if (!raw) {
         state.learnedAbilities = DEFAULT_LEARNED.slice();
         state.activeLoadout = Object.assign({}, DEFAULT_LOADOUT);
@@ -860,7 +860,7 @@
       if (window.Persistence && typeof window.Persistence.clearAllSaves === 'function') {
         window.Persistence.clearAllSaves();
       } else {
-        localStorage.removeItem(STORAGE_KEY);
+        (window.SlotStorage || localStorage).removeItem(STORAGE_KEY);
       }
     } catch (err) {
       console.warn('[AbilitySystem] resetForNewGame storage clear failed', err);

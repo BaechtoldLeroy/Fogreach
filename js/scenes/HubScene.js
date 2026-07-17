@@ -1,4 +1,4 @@
-// HubScene.js
+﻿// HubScene.js
 class HubScene extends Phaser.Scene {
   constructor() {
     super('HubScene');
@@ -1441,7 +1441,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
         window.DIFFICULTY_MULTIPLIER = difficulty;
         window.__LAST_SELECTED_DIFFICULTY__ = difficulty;
         try {
-          localStorage.setItem('demonfall_lastDifficulty', JSON.stringify(difficulty));
+          (window.SlotStorage || localStorage).setItem('demonfall_lastDifficulty', JSON.stringify(difficulty));
         } catch (err) {
           console.warn('[HubScene] Unable to persist last difficulty', err);
         }
@@ -1512,7 +1512,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
     const savedInfo = (() => {
       if (window.__LAST_SAVE_SNAPSHOT__) return window.__LAST_SAVE_SNAPSHOT__;
       try {
-        const raw = localStorage.getItem('demonfall_save_v1');
+        const raw = (window.SlotStorage || localStorage).getItem('demonfall_save_v1');
         return raw ? JSON.parse(raw) : {};
       } catch (e) {
         return {};
@@ -1523,7 +1523,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
     const savedDifficulty = typeof savedInfo?.difficultyMultiplier === 'number' ? savedInfo.difficultyMultiplier : null;
     const storedDifficulty = (() => {
       try {
-        const raw = localStorage.getItem('demonfall_lastDifficulty');
+        const raw = (window.SlotStorage || localStorage).getItem('demonfall_lastDifficulty');
         if (!raw) return null;
         const val = Number(JSON.parse(raw));
         return Number.isFinite(val) && val > 0 ? val : null;
@@ -1555,7 +1555,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
       window.__LAST_SELECTED_DIFFICULTY__ = val;
       window.DIFFICULTY_MULTIPLIER = val;
       try {
-        localStorage.setItem('demonfall_lastDifficulty', JSON.stringify(val));
+        (window.SlotStorage || localStorage).setItem('demonfall_lastDifficulty', JSON.stringify(val));
       } catch (err) {
         console.warn('[HubScene] Unable to persist difficulty selection', err);
       }

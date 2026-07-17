@@ -1,4 +1,4 @@
-// skillTree.js — Skill-Baum-Progression (Feature 060, #58).
+﻿// skillTree.js — Skill-Baum-Progression (Feature 060, #58).
 //
 // PURE, unit-testbares Kernmodul (Vorbild knowledgeTree.js). EIN Skill-Baum:
 // Knoten = aktive Fähigkeiten (ABILITY_DEFS) mit Rängen, Voraussetzungen
@@ -79,7 +79,7 @@
   function _persist() {
     try {
       if (typeof localStorage === 'undefined') return;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      (window.SlotStorage || localStorage).setItem(STORAGE_KEY, JSON.stringify({
         version: SCHEMA_VERSION,
         skillPoints: state.skillPoints | 0,
         ranks: _copyRanks(state.ranks)
@@ -90,7 +90,7 @@
   function _load() {
     try {
       if (typeof localStorage === 'undefined') return;
-      var raw = localStorage.getItem(STORAGE_KEY);
+      var raw = (window.SlotStorage || localStorage).getItem(STORAGE_KEY);
       if (!raw) return;
       var parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') return;
@@ -303,7 +303,7 @@
 
   function resetForNewGame() {
     state = _defaultState();
-    try { if (typeof localStorage !== 'undefined') localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    try { if (typeof localStorage !== 'undefined') (window.SlotStorage || localStorage).removeItem(STORAGE_KEY); } catch (e) {}
     _notify();
   }
 

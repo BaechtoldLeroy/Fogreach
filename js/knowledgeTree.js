@@ -114,7 +114,9 @@
   function _defaultPrimitives() {
     var hasWindow = typeof window !== 'undefined';
     return {
-      storage: (hasWindow && window.localStorage) || {
+      // #63: SlotStorage praefixiert den Key mit dem aktiven Speicherslot.
+      // Fallback auf localStorage, wenn saveSlots.js nicht geladen ist.
+      storage: (hasWindow && (window.SlotStorage || window.localStorage)) || {
         getItem: function () { return null; },
         setItem: function () {},
         removeItem: function () {}

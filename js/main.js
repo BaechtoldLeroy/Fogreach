@@ -1,4 +1,4 @@
-// ==================================================
+﻿// ==================================================
 // 0) i18n REGISTRATIONS (HUD / Death / Potion / Gold)
 // ==================================================
 if (window.i18n) {
@@ -341,7 +341,7 @@ if (typeof window.DIFFICULTY_MULTIPLIER !== 'number' || !Number.isFinite(window.
   // Beim Boot von dort laden, sonst Default 1.
   window.DIFFICULTY_MULTIPLIER = (function () {
     try {
-      var v = Number(JSON.parse(localStorage.getItem('demonfall_lastDifficulty')));
+      var v = Number(JSON.parse((window.SlotStorage || localStorage).getItem('demonfall_lastDifficulty')));
       return (Number.isFinite(v) && v > 0) ? v : 1;
     } catch (e) { return 1; }
   })();
@@ -1054,7 +1054,7 @@ function create() {
       const s = window.loadGameSettings();
       if (s && s.fullscreen) {
         s.fullscreen = false;
-        localStorage.setItem('demonfall_settings_v1', JSON.stringify(s));
+        (window.SlotStorage || localStorage).setItem('demonfall_settings_v1', JSON.stringify(s));
       }
     } catch (e) { /* ignore */ }
   }

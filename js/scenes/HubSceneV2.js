@@ -1,4 +1,4 @@
-// HUB_HITBOXES is now defined in js/scenes/hub/hubLayout.js (loaded before this file).
+﻿// HUB_HITBOXES is now defined in js/scenes/hub/hubLayout.js (loaded before this file).
 const HUB_HITBOXES = window.HUB_HITBOXES;
 
 if (window.i18n) {
@@ -441,7 +441,7 @@ class HubSceneV2 extends Phaser.Scene {
     // any combat-loop polish UI.
     this.time.delayedCall(250, () => {
       try {
-        if (!localStorage.getItem('demonfall_seen_intro_splash')) {
+        if (!(window.SlotStorage || localStorage).getItem('demonfall_seen_intro_splash')) {
           this._showIntroSplash();
         }
       } catch (_) {}
@@ -456,7 +456,7 @@ class HubSceneV2 extends Phaser.Scene {
         const completed = (window.questSystem && typeof window.questSystem.getCompletedQuests === 'function')
           ? window.questSystem.getCompletedQuests() : [];
         const q6Done = completed.some(q => q && q.id === 'council_collusion_reveal');
-        const alreadyShown = !!localStorage.getItem('demonfall_seen_outro_splash');
+        const alreadyShown = !!(window.SlotStorage || localStorage).getItem('demonfall_seen_outro_splash');
         if (q6Done && !alreadyShown) this._showOutroSplash();
       } catch (_) {}
     });
@@ -1895,7 +1895,7 @@ class HubSceneV2 extends Phaser.Scene {
         // options stay valid (D2). The ceiling only grows via run completion.
         const _maxDepth = (window.Persistence && typeof window.Persistence.getMaxDepth === 'function')
           ? window.Persistence.getMaxDepth()
-          : Math.max(1, parseInt(localStorage.getItem('demonfall_maxDepth') || '1', 10) || 1);
+          : Math.max(1, parseInt((window.SlotStorage || localStorage).getItem('demonfall_maxDepth') || '1', 10) || 1);
         selectedWave = Math.max(1, Math.min(Math.round(Number(selectedWave) || 1), _maxDepth));
         window.SELECTED_WAVE_OVERRIDE = selectedWave;
         window.DUNGEON_DEPTH = selectedWave;
@@ -1906,7 +1906,7 @@ class HubSceneV2 extends Phaser.Scene {
         window.DIFFICULTY_MULTIPLIER = difficulty;
         window.__LAST_SELECTED_DIFFICULTY__ = difficulty;
         try {
-          localStorage.setItem('demonfall_lastDifficulty', JSON.stringify(difficulty));
+          (window.SlotStorage || localStorage).setItem('demonfall_lastDifficulty', JSON.stringify(difficulty));
         } catch (err) {
           console.warn('[HubSceneV2] Unable to persist last difficulty', err);
         }
@@ -1942,7 +1942,7 @@ class HubSceneV2 extends Phaser.Scene {
       // Hinabstieg: Im frühen Spiel (noch nie tiefer als 5 vorgedrungen) gibt es
       // keine sinnvollen Alternativen — wir überspringen den Dialog und starten
       // direkt auf der zuletzt erreichten Tiefe.
-      const lastKnown = Math.max(1, parseInt(localStorage.getItem('demonfall_maxDepth') || '1', 10) || 1);
+      const lastKnown = Math.max(1, parseInt((window.SlotStorage || localStorage).getItem('demonfall_maxDepth') || '1', 10) || 1);
       if (lastKnown < 5) {
         const directDifficulty = window.DIFFICULTY_MULTIPLIER
           || (typeof window.getDifficultyMultiplier === 'function' ? window.getDifficultyMultiplier() : 1)
@@ -1998,7 +1998,7 @@ class HubSceneV2 extends Phaser.Scene {
     const pad = 22;
 
     // Hinabstieg: tiefste je erreichte Tiefe (vom Spieler je betreten).
-    const lastKnown = Math.max(1, parseInt(localStorage.getItem('demonfall_maxDepth') || '1', 10) || 1);
+    const lastKnown = Math.max(1, parseInt((window.SlotStorage || localStorage).getItem('demonfall_maxDepth') || '1', 10) || 1);
 
     // Tiefen-Stratum 1..4 + Gefahr/Beute-Farbe (grün -> rot mit der Tiefe).
     const STRATUM_COLORS = ['#9fd98f', '#d9cf8f', '#d9a07a', '#d97a7a'];
@@ -2101,7 +2101,7 @@ class HubSceneV2 extends Phaser.Scene {
     container.add(subtitle);
 
     const chooseDepth = (depth) => {
-      try { localStorage.setItem('demonfall_lastDepth', JSON.stringify(depth)); } catch (e) {}
+      try { (window.SlotStorage || localStorage).setItem('demonfall_lastDepth', JSON.stringify(depth)); } catch (e) {}
       cleanup();
       const difficulty = window.DIFFICULTY_MULTIPLIER
         || (window.getDifficultyMultiplier ? window.getDifficultyMultiplier() : 1)
@@ -2947,7 +2947,7 @@ class HubSceneV2 extends Phaser.Scene {
       : "Eine dunkle Stadt, in ewigen Nebel gehüllt. Der Kettenrat regiert als Schein-Demokratie — drei Fraktionen, die offen streiten und im Schatten gemeinsame Sache machen.\n\nDu warst Archivschmied. Ein Unfall in der Schmiede hat Löcher in deine Erinnerung gerissen. Du beginnst Widersprüche in der offiziellen Geschichte zu bemerken.\n\nDer Nebel ist kein Wetter. Er frisst Erinnerung. Und jemand wollte deine begraben sehen.";
     const close = isEN ? '[ Continue ]' : '[ Weiter ]';
     this._showSplashModal(title, body, close, () => {
-      try { localStorage.setItem('demonfall_seen_intro_splash', '1'); } catch (_) {}
+      try { (window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1'); } catch (_) {}
     });
   }
 
@@ -2963,7 +2963,7 @@ class HubSceneV2 extends Phaser.Scene {
       : "Du hast Akt 1 abgeschlossen.\n\nDrei Ratsfraktionen, ein Gesicht. Der Nebel wird dichter — und unter ihm wartet der Pakt, der älter ist als die Stadt.\n\nAkt 2 führt in die Katakomben, wo die Ketten Namen tragen und die Namen Preise haben. Wenn dich das hier erreicht hat und du Akt 2 sehen willst, unterstütze das nächste Kapitel.";
     const close = isEN ? '[ Continue — for now ]' : '[ Weiter — vorerst ]';
     this._showSplashModal(title, body, close, () => {
-      try { localStorage.setItem('demonfall_seen_outro_splash', '1'); } catch (_) {}
+      try { (window.SlotStorage || localStorage).setItem('demonfall_seen_outro_splash', '1'); } catch (_) {}
     });
   }
 

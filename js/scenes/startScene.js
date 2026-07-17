@@ -1,4 +1,4 @@
-// startScene.js
+﻿// startScene.js
 
 if (window.i18n) {
   window.i18n.register('de', {

@@ -1,4 +1,4 @@
-// js/storage.js
+﻿// js/storage.js
 const SAVE_KEY = 'demonfall_save_v1';
 
 function saveGame(scene) {
@@ -105,7 +105,7 @@ function saveGame(scene) {
       quests: cloneQuests(),
       story: cloneStory()
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    (window.SlotStorage || localStorage).setItem(SAVE_KEY, JSON.stringify(payload));
     try {
       window.__LAST_SAVE_SNAPSHOT__ = JSON.parse(JSON.stringify(payload));
     } catch (err) {
@@ -179,7 +179,7 @@ function showSavePopup(scene, payload) {
 
 function loadGame() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = (window.SlotStorage || localStorage).getItem(SAVE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch (e) {
@@ -189,11 +189,11 @@ function loadGame() {
 }
 
 function hasSave() {
-  return !!localStorage.getItem(SAVE_KEY);
+  return !!(window.SlotStorage || localStorage).getItem(SAVE_KEY);
 }
 
 function clearSave() {
-  localStorage.removeItem(SAVE_KEY);
+  (window.SlotStorage || localStorage).removeItem(SAVE_KEY);
   // Tutorial state lives in its own key (demonfall_tutorial_v1) per spec
   // 044 C-07. Wiping the save means "I want a clean slate", so reset the
   // tutorial to its first step too — otherwise a player who deleted their
@@ -206,7 +206,7 @@ function clearSave() {
         typeof window.TutorialSystem.replay === 'function') {
       window.TutorialSystem.replay();
     } else {
-      localStorage.removeItem('demonfall_tutorial_v1');
+      (window.SlotStorage || localStorage).removeItem('demonfall_tutorial_v1');
     }
   } catch (err) {
     try { console.warn('[storage] tutorial reset on clearSave failed', err); } catch (_) {}
@@ -260,7 +260,7 @@ function applySaveToState(scene, s) {
     window.DIFFICULTY_MULTIPLIER = s.difficultyMultiplier;
     window.__LAST_SELECTED_DIFFICULTY__ = s.difficultyMultiplier;
     try {
-      localStorage.setItem('demonfall_lastDifficulty', JSON.stringify(s.difficultyMultiplier));
+      (window.SlotStorage || localStorage).setItem('demonfall_lastDifficulty', JSON.stringify(s.difficultyMultiplier));
     } catch (err) {
       console.warn('[storage] unable to persist difficulty', err);
     }

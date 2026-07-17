@@ -1,4 +1,4 @@
-// js/lootSystem.js
+﻿// js/lootSystem.js
 // Loot & Economy Overhaul — Foundation & Affix Engine (WP01).
 
 if (window.i18n) {
@@ -1306,7 +1306,7 @@ if (window.i18n) {
     }
     try {
       if (typeof localStorage !== 'undefined') {
-        const v = parseInt(localStorage.getItem('demonfall_maxDepth') || '', 10);
+        const v = parseInt((window.SlotStorage || localStorage).getItem('demonfall_maxDepth') || '', 10);
         if (Number.isFinite(v) && v > 0) return v;
       }
     } catch (e) { /* ignore */ }

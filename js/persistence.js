@@ -1,4 +1,4 @@
-// Centralised persistence registry. Documents every localStorage key the game
+﻿// Centralised persistence registry. Documents every localStorage key the game
 // uses + exposes a single clearAllSaves() helper so "new game" wipes EVERY
 // piece of state in one place (instead of forcing each subsystem to remember).
 //
@@ -27,7 +27,25 @@
     /** Tiefste je erreichte Dungeon-Tiefe (Hinabstieg-Optionen). */
     MAX_DEPTH: 'demonfall_maxDepth',
     /** Zuletzt im Hinabstieg gewaehlte Tiefe (Dialog-Default). */
-    LAST_DEPTH: 'demonfall_lastDepth'
+    LAST_DEPTH: 'demonfall_lastDepth',
+    // --- #63: Diese Keys existierten laengst, standen aber nicht in der
+    // Registry — obwohl der Dateikopf behauptet, sie dokumentiere JEDEN Key.
+    // Dadurch log clearEverything() ("wipe ABSOLUTELY everything") und
+    // listAllKeys() beide. Nachgetragen; die Slot-Zuordnung fuer diese Keys
+    // haelt js/saveSlots.js (SLOT_KEYS/GLOBAL_KEYS).
+    /** Fraktions-Ansehen (feature 045). */
+    FACTIONS: 'demonfall_factions_v1',
+    /** Druckerei-Zustand (feature 046). */
+    PRINTING_HOUSE: 'demonfall_printinghouse_v1',
+    /** Tutorial-Fortschritt (feature 044). */
+    TUTORIAL: 'demonfall_tutorial_v1',
+    /** Skill-Baum: Punkte + Raenge (feature 060). */
+    SKILL_TREE: 'demonfall.skillTree.v1',
+    /** Endlos-Modus-Bestwert (geraeteweit, kein Spielstand-Fortschritt). */
+    ENDLESS_BEST: 'demonfall_endless_best',
+    /** Einmal-Flags fuer die Intro-/Outro-Splashes im Hub. */
+    SEEN_INTRO_SPLASH: 'demonfall_seen_intro_splash',
+    SEEN_OUTRO_SPLASH: 'demonfall_seen_outro_splash'
   });
 
   // Keys that should be wiped on "new game". SETTINGS is intentionally
@@ -43,10 +61,17 @@
     KEYS.LAST_DEPTH
   ];
 
+  // #63: alle Zugriffe laufen ueber SlotStorage, damit sie den AKTIVEN Slot
+  // treffen. Fallback auf localStorage, wenn saveSlots.js nicht geladen ist
+  // (isolierte Tests) — dann gilt das bisherige Ein-Slot-Verhalten.
+  function _store() {
+    return (typeof window !== 'undefined' && window.SlotStorage) || localStorage;
+  }
+
   function clearAllSaves() {
     NEW_GAME_WIPE_KEYS.forEach((key) => {
       try {
-        localStorage.removeItem(key);
+        _store().removeItem(key);
       } catch (err) {
         console.warn('[Persistence] failed to remove', key, err);
       }
@@ -54,11 +79,13 @@
   }
 
   // Wipe ABSOLUTELY everything (including settings + audio). Used by debug
-  // tooling, never by the new-game flow.
+  // tooling, never by the new-game flow. Betrifft nur den AKTIVEN Slot plus die
+  // globalen Keys — andere Slots bleiben stehen (dafuer gibt es
+  // SaveSlots.deleteSlot).
   function clearEverything() {
     Object.values(KEYS).forEach((key) => {
       try {
-        localStorage.removeItem(key);
+        _store().removeItem(key);
       } catch (err) {
         console.warn('[Persistence] failed to remove', key, err);
       }
@@ -79,7 +106,7 @@
 
   function readSettingsRaw() {
     try {
-      const raw = localStorage.getItem(KEYS.SETTINGS);
+      const raw = _store().getItem(KEYS.SETTINGS);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return (parsed && typeof parsed === 'object') ? parsed : {};
@@ -92,7 +119,7 @@
     const current = readSettingsRaw();
     current[field] = value;
     try {
-      localStorage.setItem(KEYS.SETTINGS, JSON.stringify(current));
+      _store().setItem(KEYS.SETTINGS, JSON.stringify(current));
     } catch (err) {
       console.warn('[Persistence] writeSettingsField failed', field, err);
     }
@@ -137,7 +164,7 @@
   // the descent dialog, which already defaults the option anchor to 1.
   function getMaxDepth() {
     try {
-      const v = parseInt(localStorage.getItem(KEYS.MAX_DEPTH) || '1', 10);
+      const v = parseInt(_store().getItem(KEYS.MAX_DEPTH) || '1', 10);
       return Number.isFinite(v) && v > 0 ? v : 1;
     } catch (err) { return 1; }
   }
@@ -148,7 +175,7 @@
   function bumpMaxDepth() {
     const next = getMaxDepth() + 1;
     try {
-      localStorage.setItem(KEYS.MAX_DEPTH, String(next));
+      _store().setItem(KEYS.MAX_DEPTH, String(next));
     } catch (err) {
       console.warn('[Persistence] bumpMaxDepth failed', err);
     }
@@ -157,7 +184,7 @@
 
   function getLastDepth() {
     try {
-      const v = parseInt(localStorage.getItem(KEYS.LAST_DEPTH) || '0', 10);
+      const v = parseInt(_store().getItem(KEYS.LAST_DEPTH) || '0', 10);
       return Number.isFinite(v) && v > 0 ? v : 0;
     } catch (err) { return 0; }
   }
@@ -165,7 +192,7 @@
   function setLastDepth(depth) {
     const d = Math.max(1, Math.round(Number(depth) || 1));
     try {
-      localStorage.setItem(KEYS.LAST_DEPTH, String(d));
+      _store().setItem(KEYS.LAST_DEPTH, String(d));
     } catch (err) {
       console.warn('[Persistence] setLastDepth failed', err);
     }

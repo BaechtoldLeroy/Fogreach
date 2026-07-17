@@ -1,4 +1,4 @@
-// SettingsScene — overlay scene for audio + debug toggles.
+﻿// SettingsScene — overlay scene for audio + debug toggles.
 // Launched via window.openSettingsScene(parentScene) or by pressing O.
 // Persists everything to localStorage 'demonfall_settings_v1'.
 
@@ -111,7 +111,7 @@
 
   function loadSettings() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = (window.SlotStorage || localStorage).getItem(STORAGE_KEY);
       if (!raw) return JSON.parse(JSON.stringify(DEFAULTS));
       const parsed = JSON.parse(raw);
       return Object.assign({}, DEFAULTS, parsed, {
@@ -126,7 +126,7 @@
 
   function saveSettings(settings) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      (window.SlotStorage || localStorage).setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (err) {
       console.warn('[Settings] save failed', err);
     }
@@ -579,7 +579,7 @@
         const next = (nearestIdx() + 1) % TIERS.length;
         const val = TIERS[next].mult;
         window.DIFFICULTY_MULTIPLIER = val;
-        try { localStorage.setItem('demonfall_lastDifficulty', JSON.stringify(val)); } catch (e) {}
+        try { (window.SlotStorage || localStorage).setItem('demonfall_lastDifficulty', JSON.stringify(val)); } catch (e) {}
         refresh();
       });
     }

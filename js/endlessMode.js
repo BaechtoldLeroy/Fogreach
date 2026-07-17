@@ -1,4 +1,4 @@
-// endlessMode.js — Roguelike "Endlos-Modus".
+﻿// endlessMode.js — Roguelike "Endlos-Modus".
 // Skips the hub, descends procedural room after procedural room, and shows a
 // 3-card upgrade pick after each cleared room. Death persists the deepest
 // floor reached and fades back to the StartScene.
@@ -222,13 +222,13 @@
 
   function _readBest() {
     try {
-      const v = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+      const v = parseInt((window.SlotStorage || localStorage).getItem(STORAGE_KEY) || '0', 10);
       return Number.isFinite(v) ? v : 0;
     } catch (e) { return 0; }
   }
 
   function _writeBest(v) {
-    try { localStorage.setItem(STORAGE_KEY, String(v | 0)); } catch (e) {}
+    try { (window.SlotStorage || localStorage).setItem(STORAGE_KEY, String(v | 0)); } catch (e) {}
   }
 
   // Begin a fresh run: reset buff registry, ability state, depth.

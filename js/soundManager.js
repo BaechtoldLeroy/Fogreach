@@ -1,4 +1,4 @@
-// soundManager.js — Procedural audio for Demonfall using Web Audio API
+﻿// soundManager.js — Procedural audio for Demonfall using Web Audio API
 // No audio files needed; all sounds are generated with oscillators, noise, and filters.
 
 class SoundManager {
@@ -56,7 +56,7 @@ class SoundManager {
   // ---- Settings persistence ----
   _loadSettings() {
     try {
-      const saved = localStorage.getItem('demonfall_audio');
+      const saved = (window.SlotStorage || localStorage).getItem('demonfall_audio');
       if (saved) {
         const s = JSON.parse(saved);
         if (typeof s.master === 'number') this.masterVolume = s.master;
@@ -69,7 +69,7 @@ class SoundManager {
 
   _saveSettings() {
     try {
-      localStorage.setItem('demonfall_audio', JSON.stringify({
+      (window.SlotStorage || localStorage).setItem('demonfall_audio', JSON.stringify({
         master: this.masterVolume,
         sfx: this.sfxVolume,
         music: this.musicVolume,
