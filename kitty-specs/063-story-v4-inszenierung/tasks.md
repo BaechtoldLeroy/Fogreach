@@ -60,11 +60,11 @@ WP03 Dialog-Content    [P]   │                            ├── WP05 Integ
 ## WP05 — Integration, Finale-Inszenierung & Deploy
 **Ziel:** `js/scenes/HubSceneV2.js` + `index.html`: DialogChoice/Content einhängen, Szenen aufrufen, `the_reckoning` inszenieren (Vatermord + Druck + Ausgang aus `computeFinaleState`), Script-Tags + Cache-Buster. **Priorität:** hoch (schließt ab). **Dependencies:** WP01, WP02, WP03, WP04.
 **Independent test:** Zwei Finale-Durchläufe mit unterschiedlichen Flags zeigen unterschiedliche Ausgänge; Boot fehlerfrei; volle Suite grün.
-- [ ] T021 DialogChoice in `_showDialoguePages` einhängen; `storyDialog`-Auswahlen an Quest-/Hub-Dialoge binden
-- [ ] T022 Die drei Szenen aus `storyScenes` an den passenden Hub-Triggern aufrufen
-- [ ] T023 `the_reckoning`-Inszenierung: `QuestFinale.computeFinaleState(questSystem.getFlags())`, Vatermord- + Druck-Beat, Ausgangs-Präsentation; `story_ending` bleibt freigeschaltet
-- [ ] T024 `index.html`: `<script>`-Tags (questFinale/dialogChoice/storyDialog/storyScenes VOR HubSceneV2) + Cache-Buster für `HubSceneV2.js` bumpen
-- [ ] T025 Browser-Boot-Check + zwei Finale-Durchläufe (unterschiedliche Flags → unterschiedliche Ausgänge); volle Suite grün
+- [x] T021 DialogChoice in `_showDialoguePages` einhängen; `storyDialog`-Auswahlen an Quest-/Hub-Dialoge binden
+- [x] T022 Die drei Szenen aus `storyScenes` an den passenden Hub-Triggern aufrufen
+- [x] T023 `the_reckoning`-Inszenierung: `QuestFinale.computeFinaleState(questSystem.getFlags())`, Vatermord- + Druck-Beat, Ausgangs-Präsentation; `story_ending` bleibt freigeschaltet
+- [x] T024 `index.html`: `<script>`-Tags (questFinale/dialogChoice/storyDialog/storyScenes VOR HubSceneV2) + Cache-Buster für `HubSceneV2.js` bumpen
+- [x] T025 Browser-Boot-Check + zwei Finale-Durchläufe (unterschiedliche Flags → unterschiedliche Ausgänge); volle Suite grün
 **Prompt:** [tasks/WP05-integration-finale-deploy.md](tasks/WP05-integration-finale-deploy.md) (~380 lines)
 
 ---
