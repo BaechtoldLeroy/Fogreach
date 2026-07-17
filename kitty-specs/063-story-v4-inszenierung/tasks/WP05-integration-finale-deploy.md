@@ -18,6 +18,7 @@ execution_mode: code_change
 lane: planned
 owned_files: [js/scenes/HubSceneV2.js, index.html]
 shell_pid: "34316"
+agent: "claude"
 ---
 
 # WP05 — Integration, Finale-Inszenierung & Deploy
@@ -93,3 +94,4 @@ Alles zusammenführen: die `DialogChoice`-Auswahlen (WP02) mit den `storyDialog`
 
 ## Activity Log
 - (leer bis implement)
+- 2026-07-17T22:33:38Z – claude – shell_pid=34316 – lane=doing – Started implementation via workflow command
