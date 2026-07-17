@@ -179,7 +179,7 @@
       type: 'dialogue',
       chain: 3,
       objectives: [
-        { type: 'dialogue', target: 'collusion_reveal_seen', current: 0, required: 1 }
+        { type: 'observe', target: 'collusion_reveal_seen', current: 0, required: 1 }
       ],
       rewards: { xp: 150, fragments: 1 },
       prerequisites: ['magistrat_verification', 'klerus_purification', 'garde_patrol_expansion', 'widerstand_proof'],
@@ -692,7 +692,7 @@
       // Teil-Reveal, KEIN advanceAct (der Bruch triggert den Aktwechsel). Objective
       // 'dialogue' (Auto-Complete): die inszenierte Szene folgt spaeter.
       objectives: [
-        { type: 'dialogue', target: 'three_hands_seen', current: 0, required: 1 }
+        { type: 'observe', target: 'three_hands_seen', current: 0, required: 1 }
       ],
       rewards: { xp: 200, fragments: 2 },
       prerequisites: ['thom_truth', 'elara_ritual'],
@@ -1063,6 +1063,8 @@
 
   function setFlag(name, value) {
     if (!name || typeof name !== 'string') return;
+    // Feature 063: setFlag(name) ohne value setzt true (DialogChoice ruft so).
+    if (arguments.length < 2) value = true;
     questFlags[name] = !!value;
     _notifyUpdate();
     _persistIfPossible();
