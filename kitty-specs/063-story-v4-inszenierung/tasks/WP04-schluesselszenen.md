@@ -85,3 +85,4 @@ Die drei Schlüsselszenen als gespielte Beats in `js/storyScenes.js` (über die 
 - (leer bis implement)
 - 2026-07-17T22:30:30Z – claude – shell_pid=27732 – lane=doing – Started implementation via workflow command
 - 2026-07-17T22:33:00Z – claude – shell_pid=27732 – lane=for_review – 3 Szenen (Zuhoeren-Leiste feuert observe), Flip dialogue->observe, setFlag-Default true, Audit angepasst, Suite 533/0.
+- 2026-07-17T22:33:05Z – claude – shell_pid=27732 – lane=approved – Selbst-Review.
