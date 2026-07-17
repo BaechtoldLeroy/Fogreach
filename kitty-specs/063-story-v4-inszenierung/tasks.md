@@ -50,11 +50,11 @@ WP03 Dialog-Content    [P]   │                            ├── WP05 Integ
 ## WP04 — Schlüsselszenen + observe-Trigger
 **Ziel:** `js/storyScenes.js` (drei Szenen) + observe-Flip in `js/questSystem.js`; 062-Trigger-Audit-Test nachziehen. **Priorität:** mittel. **Dependencies:** WP02.
 **Independent test:** Boot-Check: geheime Sitzung schließt `council_collusion_reveal` nur über die Zuhören-Leiste; `node tools/runTests.js` grün (Audit-Test angepasst).
-- [ ] T016 `js/storyScenes.js` Skeleton + Geheime Sitzung mit „Zuhören"-Fortschrittsleiste → `observe collusion_reveal_seen`
-- [ ] T017 observe-Flip in `js/questSystem.js`: `collusion_reveal_seen`/`three_hands_seen` von `dialogue` → `observe`; `tests/questSystem.test.js` (T019-Audit) nachziehen + `questSystem.setFlag(name)` Public-Setter ergänzen
-- [ ] T018 Szene „Elaras erster Riss" → `observe three_hands_seen`
-- [ ] T019 Szene „Elara-Lager" (§13.2), atmosphärisch, kein Trigger
-- [ ] T020 Verdrahtung der Szenen-Auslöser als aufrufbare Einstiegspunkte (von WP05 im Hub gerufen)
+- [x] T016 `js/storyScenes.js` Skeleton + Geheime Sitzung mit „Zuhören"-Fortschrittsleiste → `observe collusion_reveal_seen`
+- [x] T017 observe-Flip in `js/questSystem.js`: `collusion_reveal_seen`/`three_hands_seen` von `dialogue` → `observe`; `tests/questSystem.test.js` (T019-Audit) nachziehen + `questSystem.setFlag(name)` Public-Setter ergänzen
+- [x] T018 Szene „Elaras erster Riss" → `observe three_hands_seen`
+- [x] T019 Szene „Elara-Lager" (§13.2), atmosphärisch, kein Trigger
+- [x] T020 Verdrahtung der Szenen-Auslöser als aufrufbare Einstiegspunkte (von WP05 im Hub gerufen)
 **Prompt:** [tasks/WP04-schluesselszenen.md](tasks/WP04-schluesselszenen.md) (~360 lines)
 
 ## WP05 — Integration, Finale-Inszenierung & Deploy
