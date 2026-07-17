@@ -779,7 +779,8 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
       'seized_writings', 'interrogation_record', 'print_plate',
       'verification_seal', 'proclamation', 'memory_shard']),   // WP05
     observe: new Set(['convoy_intel', 'archive_record', 'informant_id',
-      'escort_route'])                                          // WP05
+      'escort_route',                                           // WP05 (062)
+      'collusion_reveal_seen', 'three_hands_seen'])             // 063 WP04: Szenen-Trigger
   };
   Object.keys(D).forEach((id) => {
     (D[id].objectives || []).forEach((o) => {
@@ -794,11 +795,28 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
   });
 });
 
-test('062 T019: szenengebundene Reveals bleiben dialogue (nicht observe)', () => {
+// 063 WP04: die szenengebundenen Reveals sind jetzt observe-verdrahtet (die
+// jeweilige Szene in storyScenes.js feuert updateQuestProgress('observe', ...)).
+test('063 WP04: szenengebundene Reveals sind observe-verdrahtet (kein Platzhalter mehr)', () => {
   const D = freshSystem().QUEST_DEFINITIONS;
-  ['council_collusion_reveal', 'elara_second_truth'].forEach((id) => {
+  const expect = {
+    council_collusion_reveal: 'collusion_reveal_seen',
+    elara_second_truth: 'three_hands_seen'
+  };
+  Object.keys(expect).forEach((id) => {
+    const obs = (D[id].objectives || []).find((o) => o.type === 'observe');
+    assert.ok(obs, id + ' muss ein observe-Objective haben');
+    assert.strictEqual(obs.target, expect[id], id + ' observe-Ziel ' + expect[id]);
     const types = (D[id].objectives || []).map((o) => o.type);
-    assert.ok(types.includes('dialogue'), id + ' muss dialogue bleiben (Szene out-of-scope)');
-    assert.ok(!types.includes('observe'), id + ' darf kein observe-Ziel haben (nicht verdrahtet)');
+    assert.ok(!types.includes('dialogue'), id + ' darf kein dialogue-Platzhalter mehr sein');
   });
+});
+
+test('063 WP04: setFlag(name) ohne value setzt true; getFlags spiegelt es', () => {
+  const qs = freshSystem();
+  qs.setFlag('some_story_flag');
+  assert.strictEqual(qs.getFlags().some_story_flag, true, 'setFlag(name) muss true setzen');
+  assert.strictEqual(qs.hasFlag('some_story_flag'), true);
+  qs.setFlag('explicit_false', false);
+  assert.strictEqual(qs.getFlags().explicit_false, false, 'explizites false bleibt false');
 });
