@@ -30,11 +30,11 @@ WP03 Dialog-Content    [P]   │                            ├── WP05 Integ
 ## WP02 — Dialog-Auswahl-Komponente (`DialogChoice`)
 **Ziel:** Wiederverwendbare Komponente `js/dialogChoice.js` gemäß [dialog-ui-contract](contracts/dialog-ui-contract.md). **Priorität:** hoch (Fundament). **Dependencies:** none.
 **Independent test:** `node --test tests/dialogChoice.test.js` grün (reine `resolve`-Logik); Boot-Check zeigt `window.DialogChoice`.
-- [ ] T006 `js/dialogChoice.js` Skeleton + reine `resolve(config, flags)` (showIf-Filter, Flag-Sammlung, Ergebnis)
-- [ ] T007 `present(scene, config)`: Phaser-Rendering im Panel-/Button-Stil, rekursives `scrollFactor(0)`
-- [ ] T008 Flag-Anbindung: lazy `_setFlag` (nutzt `window.questSystem.setFlag` zur Laufzeit) + `getFlags`-Lesen
-- [ ] T009 `toPage(config)`-Adapter für die spätere `_showDialoguePages`-Einbindung
-- [ ] T010 `tests/dialogChoice.test.js`: showIf-Filter, setFlags-Sammlung, flag-abhängige Varianten (headless, Setter injiziert)
+- [x] T006 `js/dialogChoice.js` Skeleton + reine `resolve(config, flags)` (showIf-Filter, Flag-Sammlung, Ergebnis)
+- [x] T007 `present(scene, config)`: Phaser-Rendering im Panel-/Button-Stil, rekursives `scrollFactor(0)`
+- [x] T008 Flag-Anbindung: lazy `_setFlag` (nutzt `window.questSystem.setFlag` zur Laufzeit) + `getFlags`-Lesen
+- [x] T009 `toPage(config)`-Adapter für die spätere `_showDialoguePages`-Einbindung
+- [x] T010 `tests/dialogChoice.test.js`: showIf-Filter, setFlags-Sammlung, flag-abhängige Varianten (headless, Setter injiziert)
 **Prompt:** [tasks/WP02-dialog-ui-komponente.md](tasks/WP02-dialog-ui-komponente.md) (~330 lines)
 
 ## WP03 — Dialog-Content-Pass (`storyDialog`)
