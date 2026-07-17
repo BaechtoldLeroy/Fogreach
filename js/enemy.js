@@ -2201,8 +2201,25 @@ function fitBodyToSprite(sprite) {
     _spriteAlphaBoundsCache[key] = box; // null wird gecacht -> nicht erneut scannen
   }
   if (!box) return;
+
+  var frame = sprite.frame;
+  var fw = frame ? frame.width : (sprite.width || box.w);
+  var fh = frame ? frame.height : (sprite.height || box.h);
+
+  // Origin auf das FIGUR-Zentrum setzen (statt Frame-Mitte). Sonst liegt
+  // sprite.x/sprite.y in der leeren transparenten Haelfte unter der Figur —
+  // und Nahkampf/Faehigkeiten messen die Distanz genau dorthin (player.js
+  // forEachEnemyInRange nutzt enemy.x/enemy.y). Beim Schattenrat sass der
+  // Bezugspunkt ~113px UNTER der Figur: von oben anzugreifen reichte nicht
+  // heran, von unten schon. Mit dem Figur-Zentrum als Origin trifft man von
+  // allen Seiten gleich, und der Body (Offset frame-relativ) bleibt korrekt.
+  sprite.setOrigin((box.x + box.w / 2) / fw, (box.y + box.h / 2) / fh);
   sprite.body.setSize(box.w, box.h);
   if (sprite.body.setOffset) sprite.body.setOffset(box.x, box.y);
+
+  // Fuer die HP-Leiste: skalierte halbe Figur-Hoehe (drawBossBar setzt die
+  // Leiste sonst ueber die volle displayHeight -> weit ueber der Figur).
+  sprite._fitHalfH = (box.h * (sprite.scaleY || 1)) / 2;
 }
 if (typeof window !== 'undefined') window.fitBodyToSprite = fitBodyToSprite;
 
@@ -2352,7 +2369,11 @@ function drawBossBar(boss) {
   const barW = 140;
   const barH = 10;
   const x = boss.x - barW / 2;
-  const y = boss.y - boss.displayHeight / 2 - 22;
+  // Ueber der sichtbaren Figur, nicht ueber dem vollen (grossteils leeren)
+  // Frame: _fitHalfH ist die skalierte halbe Figur-Hoehe (fitBodyToSprite).
+  // Fallback auf displayHeight fuer Bosse ohne Fit.
+  const halfH = (typeof boss._fitHalfH === 'number') ? boss._fitHalfH : boss.displayHeight / 2;
+  const y = boss.y - halfH - 14;
 
   // Frame
   g.fillStyle(0x000000, 0.7);
