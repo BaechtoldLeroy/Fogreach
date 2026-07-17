@@ -22,6 +22,7 @@ requirement_refs:
 - FR-017
 - FR-018
 - FR-020
+- FR-022
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
@@ -59,6 +60,8 @@ Die komplette v4-Doppelagenten-Quest-Struktur in `js/questSystem.js` umsetzen: U
 - **Objective-Feld heißt `required`/`current`** (bestehende Konvention), NICHT `count` (Migration-Notation). Beim Übertragen der Code-Blöcke aus Abschnitt C umsetzen: `{ type, target, current: 0, required: N }`.
 - **Code-Strings ASCII** (ae/oe/ue), Fließtext in den Dialog-Strings mit Umlauten. Bestehende Datei als Vorbild.
 - **Reward-Felder:** `factionStanding` und `fragments` (NICHT `reputation`/`knowledgeFragments` aus der Migration — die auf diese bestehenden Felder abbilden).
+- **npcId aus dem Code:** `klerus_priester` und `stadtwache` (NICHT `klerus`/`garde` aus den Migration-C-Blöcken) — sonst wird die Quest vom falschen NPC angeboten (FR-022).
+- **Objective-Trigger (Analyse-Befund, Option B):** szenengebundene Reveals bleiben `dialogue` (Auto-Complete), damit die Akt-Leiter erreichbar ist — konkret `council_collusion_reveal` (`dialogue collusion_reveal_seen`) und `elara_second_truth` (`dialogue three_hands_seen`). Die Migration will hier `observe`; das NICHT übernehmen, solange die Szene fehlt (würde Akt 2 unerreichbar machen). Die gameplay-`fetch`/`observe`-Ziele (verification_seal/proclamation/memory_shard/escort_route/informant_id) verdrahtet **WP05** — WP01 setzt nur die Objective-Daten gemäß Kontrakt.
 
 ---
 
@@ -101,7 +104,7 @@ Die komplette v4-Doppelagenten-Quest-Struktur in `js/questSystem.js` umsetzen: U
 2. `klerus_district_purge` (A2, `klerus_priester`; `kill enemy ×8`; Doppel-Tonspur im Abschluss).
 3. `garde_night_escort` (A3, `stadtwache`; `observe escort_route ×1`; Doppel-Tonspur).
 4. `who_you_were` (A3, Branka, optional; `fetch memory_shard ×3`, `minDepth: 5`; setzt `self_remembered`).
-5. `elara_second_truth` (A3, Elara; `observe three_hands_seen ×1`; KEIN `advanceAct`; `prerequisites: ['thom_truth','elara_ritual']`).
+5. `elara_second_truth` (A3, Elara; **`dialogue three_hands_seen ×1`** — Auto-Complete-Platzhalter, Szene folgt; KEIN `advanceAct`; `prerequisites: ['thom_truth','elara_ritual']`).
 6. `the_reckoning` (A4, Thom; `dialogue press_decision ×1`; `prerequisites: ['schattenrat_finale']`; `unlocks: ['story_ending']`).
 **Texte:** Angebots-/Unterwegs-/Abschlusstext je Quest aus dem Dialog-Skript übernehmen (Umlaute im Fließtext ok). ASCII nur für IDs/Targets/Flags.
 **Validierung:** Sechs neue Einträge existieren mit vollständigen Feldern; `the_reckoning` trägt `unlocks: ['story_ending']`.
@@ -145,4 +148,6 @@ Die komplette v4-Doppelagenten-Quest-Struktur in `js/questSystem.js` umsetzen: U
 - **Boss-Ziel bei Umbenennung:** `schattenrat_finale` muss `boss_kill schattenrat` behalten.
 - **Keine Doppel-Speicher:** ausschließlich der bestehende `questFlags`-Store; kein neues Modul.
 - **Reward-Felder:** `factionStanding`/`fragments`, nicht `reputation`/`knowledgeFragments`.
+- **npcId:** `klerus_priester`/`stadtwache` (nicht `klerus`/`garde`).
+- **Objective-Typen:** `council_collusion_reveal` und `elara_second_truth` bleiben `dialogue` (nicht `observe`), sonst wird Akt 2 unerreichbar bzw. der Reveal uncompletable. Die gameplay-Ziele verdrahtet WP05.
 - Reviewer gleicht die geänderten Definitionen stichprobenartig gegen `contracts/quest-data-contract.md` ab.
