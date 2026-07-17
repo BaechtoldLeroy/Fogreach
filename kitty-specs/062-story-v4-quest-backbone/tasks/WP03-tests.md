@@ -107,3 +107,4 @@ owned_files: [tests/questSystem.test.js]
 ## Activity Log
 
 - 2026-07-17T19:20:36Z – claude – shell_pid=33952 – lane=doing – Started implementation via workflow command
+- 2026-07-17T19:33:33Z – claude – shell_pid=33952 – lane=for_review – 12 neue Tests + 7 auf v4 umgestellt. Suite 503/0. Mutationsproben scharf.
