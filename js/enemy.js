@@ -2024,10 +2024,13 @@ const BOSS_DEFINITIONS = {
     name: 'Schattenrat',
     texture: 'boss_shadow_right0',
     fallbackTexture: 'sprite_boss_shadow',
-    baseHP: 80,
+    // Finaler Boss der Leiter (Tiefe 30) — deutlich haerter als die beiden
+    // davor: 3x HP (80->240) und 2x Schaden (8->16). scale 1.8->3.6 = doppelte
+    // Darstellungsgroesse (bossTargetPx = 96 * scale, siehe makeBoss).
+    baseHP: 240,
     baseSpeed: 70,
-    baseDamage: 8,
-    scale: 1.8,
+    baseDamage: 16,
+    scale: 3.6,
     loreIntro: 'Ein Mitglied des Kettenrats selbst tritt aus dem Schatten...',
     attacks: ['shadowDash', 'darknessWave', 'shadowClones'],
     attackCooldown: 3000,
@@ -2665,7 +2668,15 @@ function bossShadowClones(boss) {
         cy = Phaser.Math.Clamp(cy, bounds.y + 30, bounds.y + bounds.height - 30);
       }
 
-      const textureKey = scene.textures?.exists('bossShadowCouncillor') ? 'bossShadowCouncillor' : 'enemyMage';
+      // Klone tragen die ECHTE Boss-Textur. Vorher stand hier fest
+      // 'bossShadowCouncillor' — die prozedurale 80x80-Form aus graphics.js,
+      // waehrend der Boss laengst das gemalte Sprite (boss_shadow_*) traegt.
+      // Nebeneffekt: clone.setScale(boss.scaleX * 0.8) rechnet mit dem
+      // Boss-Scale, der auf dessen ~300px-Sprite normiert ist — auf die 80px-
+      // Textur angewandt ergab das winzige Klone (~37px statt ~138px).
+      // Mit derselben Textur stimmen Aussehen UND Groesse wieder.
+      const textureKey = boss.texture?.key
+        || (scene.textures?.exists('bossShadowCouncillor') ? 'bossShadowCouncillor' : 'enemyMage');
       const clone = enemies.create(cx, cy, textureKey);
       clone.hp = 1;
       clone.maxHp = 1;
