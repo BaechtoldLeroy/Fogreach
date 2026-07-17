@@ -7,7 +7,7 @@ requirement_refs:
 - FR-005
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: Planungs-/Basis-Branch main; Merge-Ziel main. Waehrend implement kann der base_branch bei gestackten WPs abweichen, aber der fertige Stand muss nach main mergen.
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T011, T012, T013, T014, T015]
 authoritative_surface: js/storyDialog.js
 execution_mode: code_change
