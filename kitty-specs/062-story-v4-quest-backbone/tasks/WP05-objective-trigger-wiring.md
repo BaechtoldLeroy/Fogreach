@@ -12,6 +12,7 @@ base_commit: 2615b1a68e51e9d445caaffc1dce988682a022ef
 created_at: '2026-07-17T18:45:34.350598+00:00'
 subtasks: [T020, T021, T022]
 shell_pid: "32284"
+agent: "claude"
 history:
 - 2026-07-17T17:41:57Z: Erstellt (spec-kitty.analyze-Remediation, Option B).
 authoritative_surface: js/loot.js
@@ -87,3 +88,7 @@ Die neuen **gameplay-basierten** Objective-Ziele der v4-Quests auslösbar machen
 - **Progress-Leak** (Ziel feuert für inaktive Quest) — Reviewer prüft die Aktiv-Bedingung.
 - **Doppel-Verdrahtung** von `informant_id`, falls es schon existierte — nicht duplizieren.
 - Reviewer gleicht die verdrahteten Ziele mit den **⚙WP05**-Markierungen im Kontrakt ab (genau diese fünf, nicht die ⏳auto-Ziele).
+
+## Activity Log
+
+- 2026-07-17T18:45:35Z – claude – shell_pid=32284 – lane=doing – Started implementation via workflow command
