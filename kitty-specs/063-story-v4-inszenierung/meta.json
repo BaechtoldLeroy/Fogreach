@@ -2,8 +2,10 @@
   "created_at": "2026-07-17T21:27:20.486761+00:00",
   "feature_number": "063",
   "feature_slug": "063-story-v4-inszenierung",
-  "friendly_name": "story v4 inszenierung",
+  "friendly_name": "Story v4 — Inszenierung",
   "mission": "software-dev",
   "slug": "063-story-v4-inszenierung",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "source_description": "Finale (Vier-Regler + the_reckoning-Inszenierung), Schluesselszenen mit echten observe-Triggern, verzweigtes Dialog-Auswahl-UI mit vollem Dialog-Pass ueber alle Akte. Additiv auf 062."
 }
