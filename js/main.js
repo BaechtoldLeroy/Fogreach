@@ -478,7 +478,6 @@ const ABILITY_STATUS_LOOKUP = ABILITY_STATUS_CONFIG.reduce((acc, entry) => {
 }, {});
 
 let pendingLoadedSave = null;
-window.__DEV_FORCE_CHEAT__ = window.__DEV_FORCE_CHEAT__ || false;
 let playerHealth = 30;
 let playerMaxHealth = 30;
 let playerXP = 0;
@@ -1281,13 +1280,6 @@ function create() {
     appliedSave = s;
   }
 
-  if (window.__DEV_FORCE_CHEAT__) {
-    grantCheatTestWeapon();
-    window.__DEV_FORCE_CHEAT__ = false;
-  } else if (!appliedSave) {
-    grantCheatTestWeapon();
-  }
-
   enterRoom(this, 0);
 
   // Initialize minimap after first room is loaded
@@ -1309,58 +1301,6 @@ function create() {
       crit: (playerCritChance * 100).toFixed(1)
     }));
   }
-}
-
-function grantCheatTestWeapon() {
-  if (!Array.isArray(inventory)) return;
-  const existingCheat = inventory.find((item) => item && item.devCheat === true);
-  if (existingCheat) return;
-
-  const slotIndex = inventory.findIndex((item) => !item);
-  const targetIndex = slotIndex >= 0 ? slotIndex : 0;
-
-  const weapon = {
-    type: 'weapon',
-    key: 'dev_cheat_blade',
-    name: 'Cheat Relic',
-    _baseName: 'Cheat Relic',
-    displayName: 'Cheat Relic',
-    iconKey: 'itWeapon',
-    tier: 3,
-    affixes: [],
-    iLevel: 999,
-    itemLevel: 999,
-    baseStats: { damage: 999, range: 500, speed: 3.0, crit: 0.65, hp: 50, armor: 0.25 },
-    damage: 999,
-    range: 500,
-    speed: 3.0,
-    crit: 0.65,
-    hp: 50,
-    move: 40,
-    armor: 0.25,
-    devCheat: true,
-    attackEffects: []
-  };
-
-  inventory[targetIndex] = weapon;
-  if (typeof window !== 'undefined') window.inventory = inventory;
-
-  if (typeof normalizeItemStatsForTier === 'function') {
-    normalizeItemStatsForTier(weapon, weapon.tier);
-  }
-
-  if (typeof refreshInventoryUI === 'function') {
-    try {
-      refreshInventoryUI();
-    } catch (err) {
-      console.warn('[CheatWeapon] refreshInventoryUI failed', err);
-    }
-  }
-
-  console.log('[CheatWeapon] granted legendary test weapon', {
-    slot: targetIndex,
-    weapon
-  });
 }
 
 // ==================================================

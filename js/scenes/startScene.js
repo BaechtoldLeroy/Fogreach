@@ -333,7 +333,6 @@ StartScene.prototype.create = function () {
   })();
   if (_pendingNewGame !== null) {
     if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
-    window.__DEV_FORCE_CHEAT__ = true;
     const selfNG = this;
     setTimeout(() => loadRoomTemplatesAndStart.call(selfNG), 100);
     return;
@@ -355,7 +354,6 @@ StartScene.prototype.create = function () {
     if (window.KnowledgeTree && typeof window.KnowledgeTree.resetForNewGame === 'function') {
       window.KnowledgeTree.resetForNewGame();
     }
-    window.__DEV_FORCE_CHEAT__ = true;
     if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
     const self = this;
     setTimeout(() => loadRoomTemplatesAndStart.call(self), 100);
@@ -534,7 +532,6 @@ StartScene.prototype.create = function () {
       try {
         const save = window.loadGame.length ? await loadGame() : loadGame();
         window.pendingLoadedSave = save || null;
-        window.__DEV_FORCE_CHEAT__ = false;
         loadRoomTemplatesAndStart.call(this);
       } catch (e) {
         console.error("[StartScene] loadGame failed:", e);
@@ -604,7 +601,6 @@ StartScene.prototype.create = function () {
       if (typeof window.pendingLoadedSave !== "undefined") {
         window.pendingLoadedSave = null;
       }
-      window.__DEV_FORCE_CHEAT__ = true;
       loadRoomTemplatesAndStart.call(this);
     })
     .on("pointerover", () => btn.setStyle({ fill: '#b0ffb0' }))
@@ -633,7 +629,6 @@ StartScene.prototype.create = function () {
       if (typeof window.pendingLoadedSave !== 'undefined') {
         window.pendingLoadedSave = null;
       }
-      window.__DEV_FORCE_CHEAT__ = false;
       // Activate endless run BEFORE GameScene boots so initUI sees the flag
       if (window.Endless && typeof window.Endless.start === 'function') {
         window.Endless.start();
