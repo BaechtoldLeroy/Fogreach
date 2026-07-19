@@ -1084,7 +1084,38 @@ class HubSceneV2 extends Phaser.Scene {
     // early — the reveal method handles completion + completeQuest call.
     if (questData && questData.id === 'council_collusion_reveal'
         && (questMode === 'offer' || questMode === 'turnin' || questMode === 'progress')) {
+      // Feature 063: Die Sitzung wird jetzt GESPIELT statt nur erzaehlt — erst
+      // die "Zuhoeren"-Fortschrittsleiste (feuert observe collusion_reveal_seen),
+      // danach die bestehende Reveal-Prosa ab Seite 2. Harrens "Komm mit"
+      // (Seite 1) entfaellt dann, weil die Szene Dich schon dort hat.
+      // Bricht der Spieler die Szene ab, greift beim naechsten Gespraech der
+      // unveraenderte Reveal-Pfad (dessen finalize den Trigger ebenfalls feuert).
+      if (!this._collusionScenePlayed
+          && window.storyScenes && typeof window.storyScenes.playCollusionSession === 'function') {
+        this._collusionScenePlayed = true;
+        const selfCS = this;
+        window.storyScenes.playCollusionSession(this, function () {
+          // Index 2 = die Entscheidungsseite. Sie traegt die Sitzungs-Prosa
+          // ohnehin im Text, deshalb entfallen "Komm mit" (0) und die separate
+          // Beschreibungsseite (1) — sonst laese man die Sitzung dreimal.
+          selfCS._showCollusionReveal(npcData, questData, 2);
+        });
+        return;
+      }
       this._showCollusionReveal(npcData, questData);
+      return;
+    }
+
+    // Feature 063: Elara-Lager (Story v4 §13.2) — ruhiger Akt-3-Moment ohne
+    // Auftrag. Einmalig und nur im Flavor-Gespraech, damit es nie ein Quest-
+    // Angebot verdraengt.
+    if (questMode === 'flavor' && npcId === 'elara' && !this._shownElaraCamp
+        && window.storyScenes && typeof window.storyScenes.playElaraCamp === 'function'
+        && window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function'
+        && window.storySystem.getCurrentActIndex() >= 3) {
+      this._shownElaraCamp = true;
+      const selfEC = this;
+      window.storyScenes.playElaraCamp(this, function () { selfEC._closeDialog(null); });
       return;
     }
 
@@ -2965,7 +2996,11 @@ class HubSceneV2 extends Phaser.Scene {
   // No new mechanics (C-02 + C-06): we reuse the _showDialoguePages flow
   // by constructing a custom page array. The Q6 placeholder offer from
   // WP02 is bypassed via the dispatch in _showNpcDialogue.
-  _showCollusionReveal(npcData, questData) {
+  // startIndex: ab welcher Seite gerendert wird. Nach der gespielten Sitzung
+  // (storyScenes.playCollusionSession) wird mit 2 eingestiegen — Seite 0
+  // ("Komm mit") und Seite 1 (Sitzungs-Beschreibung) entfallen dann, weil die
+  // Szene beides schon geliefert hat. Ohne Argument: normal ab 0.
+  _showCollusionReveal(npcData, questData, startIndex) {
     const T = (window.i18n && window.i18n.t) ? window.i18n.t.bind(window.i18n) : (k) => k;
     const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';
     const isEN = (lang === 'en');
@@ -3050,8 +3085,9 @@ class HubSceneV2 extends Phaser.Scene {
     this._pendingQ6Finalize = finalize;
     this._pendingQ6Pages = pages;
 
-    // Start at page 0. The standard _showDialoguePages handles page advancement.
-    this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData, 0);
+    // Standard: Seite 0. Nach der gespielten Sitzung startet der Reveal bei 1.
+    this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData,
+      (typeof startIndex === 'number' ? startIndex : 0));
   }
 
   // Feature 063 WP05: Die Abrechnung (the_reckoning). Berechnet den Ausgang aus
