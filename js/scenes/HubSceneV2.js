@@ -1123,6 +1123,13 @@ class HubSceneV2 extends Phaser.Scene {
         choices: null
       });
 
+      // Feature 063: gespraechsfarbige storyDialog-Auswahl (ohne setFlags)
+      // direkt nach dem Angebotstext, vor Annehmen/Ablehnen.
+      const _sdOffer = this._storyDialogEntry(questData.id);
+      if (_sdOffer && !this._storyDialogIsDecision(_sdOffer)) {
+        pages.push(this._storyChoicePage(_sdOffer));
+      }
+
       // Choice page
       const chainNum = questData.chain || 1;
       const rewardParts = [];
@@ -1178,6 +1185,15 @@ class HubSceneV2 extends Phaser.Scene {
         text: questData.dialogueComplete,
         choices: null
       });
+
+      // Feature 063: die Entscheidung (storyDialog-Auswahl MIT setFlags) faellt
+      // beim Abgeben — nach dem Abschlusstext, VOR der Belohnung. So setzt die
+      // Wahl ihre Flags, bevor completeQuest ueber die Belohnungsseite laeuft.
+      const _sdTurnin = this._storyDialogEntry(questData.id);
+      if (_sdTurnin && this._storyDialogIsDecision(_sdTurnin)) {
+        pages.push(this._storyChoicePage(_sdTurnin));
+      }
+
       // Reward page
       const rewardParts = [];
       const _matName = (window.i18n ? window.i18n.t('inventory.material.MAT') : 'Eisenbrocken');
@@ -1220,6 +1236,18 @@ class HubSceneV2 extends Phaser.Scene {
       bodyLines.forEach(line => {
         pages.push({ text: line, choices: null });
       });
+
+      // Feature 063: Brankas Hub-Auftakt ("Du siegelst Akten, an die Du Dich
+      // nicht erinnerst") als EINMALIGE Auswahl — kein Quest-Dialog, deshalb
+      // hier an der Flavor-Stelle. Guard, damit sie nicht bei jedem Gespraech
+      // wieder auftaucht.
+      if (npcId === 'branka' && !this._shownHubIntroA0) {
+        const _sdHub = this._storyDialogEntry('hub_intro_a0');
+        if (_sdHub) {
+          this._shownHubIntroA0 = true;
+          pages.push(this._storyChoicePage(_sdHub));
+        }
+      }
     }
 
     // Ensure at least one page
@@ -1228,6 +1256,29 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     this._showDialoguePages(npcData, titleStr, pages, questMode, questData, 0);
+  }
+
+  // Feature 063: storyDialog-Anbindung.
+  // Regel: Auswahlen MIT setFlags sind Entscheidungen mit Konsequenz -> sie
+  // erscheinen beim Abgeben (turnin). Auswahlen OHNE setFlags sind Gespraechs-
+  // farbe -> sie erscheinen beim Angebot (offer). So braucht keine Quest eine
+  // eigene Platzierungs-Metadatei.
+  _storyDialogEntry(questId) {
+    if (!questId) return null;
+    if (!window.storyDialog || !window.storyDialog.byQuest) return null;
+    if (!window.DialogChoice || typeof window.DialogChoice.present !== 'function') return null;
+    const entry = window.storyDialog.byQuest[questId];
+    if (!entry || !entry.choices || !entry.choices.length) return null;
+    return entry;
+  }
+
+  _storyDialogIsDecision(entry) {
+    return !!(entry && entry.choices.some((c) => c.setFlags && c.setFlags.length));
+  }
+
+  // Baut eine Auswahl-Seite; _showDialoguePages rendert sie ueber DialogChoice.
+  _storyChoicePage(entry) {
+    return { text: entry.prompt || '', choices: null, _choiceConfig: entry };
   }
 
   _showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex) {
@@ -1255,6 +1306,33 @@ class HubSceneV2 extends Phaser.Scene {
     if (page._isInfoPage && !page._showExplicitly) {
       // This page is only shown via "Mehr erfahren" choice
       this._dialogOpen = false;
+      return;
+    }
+
+    // Feature 063: storyDialog-Auswahlseite. Wird ueber die DialogChoice-
+    // Komponente gerendert (setzt Flags, respektiert showIf, scrollFactor).
+    // Nach der Wahl wird die Antwortzeile als Seite eingeschoben und der
+    // normale Seitenfluss fortgesetzt (z. B. weiter zur Belohnungsseite).
+    if (page._choiceConfig && window.DialogChoice
+        && typeof window.DialogChoice.present === 'function') {
+      const selfDC = this;
+      const cfg = page._choiceConfig;
+      window.DialogChoice.present(this, {
+        prompt: cfg.prompt,
+        choices: cfg.choices,
+        onResolved: function (result) {
+          const nextPages = pages.slice();
+          if (result && result.choice && result.choice.response) {
+            nextPages.splice(pageIndex + 1, 0, { text: result.choice.response, choices: null });
+          }
+          if (pageIndex + 1 < nextPages.length) {
+            selfDC._showDialoguePages(npcData, titleStr, nextPages, questMode, questData, pageIndex + 1);
+          } else {
+            selfDC._closeDialog(null);
+          }
+          selfDC._refreshQuestIndicators();
+        }
+      });
       return;
     }
 
@@ -3017,10 +3095,23 @@ class HubSceneV2 extends Phaser.Scene {
     const pages = [
       { text: 'ELARA: Ich drucke eine Wahrheit, mit der die Stadt leben kann. Und dann bleibt nur noch einer, der das ganze Bild traegt. Du. Der Nebel wird sanft sein.', choices: null },
       { text: '(Harren tritt aus dem Schatten. Er hat alles gehoert.)\nHARREN: Nein. Nicht das. Nicht Du.\n(Es geht schnell und ist nicht geplant. Danach steht sie ueber ihm.)\nELARA, tonlos: Ich wollte das nie.', choices: null, _patricide: true },
-      { text: pForesee + '\n\n' + pAllies, choices: null },
-      { text: pElara, choices: null },
-      { text: 'Du druckst. Elara verbrennt zuvor das eine belastende Blatt, und Du laesst sie. Die Wahrheit geht raus, unvollstaendig, und Du weisst es.\n\n' + pRemember, choices: [ { label: '[ Die Presse laeuft an ]', action: 'reckoning_done' } ], _isFinal: true }
+      { text: pForesee + '\n\n' + pAllies, choices: null }
     ];
+
+    // Feature 063: Elaras Schicksal ist eine echte Spieler-Entscheidung.
+    // storyDialog.byScene.reckoning_elara_fate zeigt "Mit Worten aufhalten" nur,
+    // wenn verschonbar (elara_trust UND Beweis) — sonst bleibt nur ihre Klinge.
+    // Die Antwortzeile der Wahl IST der Ausgangstext. Fallback: statischer Text
+    // aus computeFinaleState, falls Daten/Komponente fehlen.
+    const fateCfg = (window.storyDialog && window.storyDialog.byScene
+      && window.storyDialog.byScene.reckoning_elara_fate) || null;
+    if (fateCfg && window.DialogChoice && typeof window.DialogChoice.present === 'function') {
+      pages.push({ text: fateCfg.prompt || '', choices: null, _choiceConfig: fateCfg });
+    } else {
+      pages.push({ text: pElara, choices: null });
+    }
+
+    pages.push({ text: 'Du druckst. Elara verbrennt zuvor das eine belastende Blatt, und Du laesst sie. Die Wahrheit geht raus, unvollstaendig, und Du weisst es.\n\n' + pRemember, choices: [ { label: '[ Die Presse laeuft an ]', action: 'reckoning_done' } ], _isFinal: true });
 
     this._pendingReckoningFinalize = finalize;
     this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData, 0);
