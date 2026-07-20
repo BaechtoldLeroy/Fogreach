@@ -1342,44 +1342,57 @@ function updateStatusEffectHUD(scene) {
   const iconSize = 20;
   const spacing = 4;
 
-  effects.forEach((entry, i) => {
+  // Laufender X-Cursor statt fixer Spaltenbreite: jede Box wird nach ihrem
+  // Inhalt (Label + Stacks + Timer) bemessen. Vorher war die Box fix ~48px —
+  // mit Stacks ("BRN x2") lief das Label in den rechtsstehenden Timer ("4s")
+  // hinein und beides ueberlappte.
+  let cursorX = startX;
+  const y = startY;
+  const padX = 6;
+  const gap = 8;
+
+  effects.forEach((entry) => {
     const { type, effect } = entry;
     const color = STATUS_EFFECT_COLORS[type] || 0xffffff;
     const label = STATUS_EFFECT_LABELS[type] || '?';
     const remaining = effect.remaining;
-    const ratio = remaining / effect.duration;
+    const ratio = Math.max(0, Math.min(1, remaining / effect.duration));
 
-    const x = startX + i * (iconSize + spacing + 30);
-    const y = startY;
-
-    // Background box
-    const bg = scene.add.rectangle(x, y, iconSize + 28, iconSize, 0x000000, 0.5)
-      .setOrigin(0, 0).setDepth(1002).setScrollFactor(0);
-    statusEffectHudIcons.push(bg);
-
-    // Colored fill showing remaining duration
-    const fillWidth = Math.max(1, (iconSize + 28) * ratio);
-    const fill = scene.add.rectangle(x, y, fillWidth, iconSize, color, 0.4)
-      .setOrigin(0, 0).setDepth(1003).setScrollFactor(0);
-    statusEffectHudIcons.push(fill);
-
-    // Label text
     let stackText = '';
     if (effect.stacks > 1) stackText = ' x' + effect.stacks;
-    const txt = scene.add.text(x + 2, y + 2, label + stackText, {
+    const secLeft = Math.ceil(remaining / 1000);
+
+    // Erst Texte erzeugen (zum Messen), dann Box drum herum bemessen.
+    const txt = scene.add.text(0, y + 2, label + stackText, {
       fontSize: '12px',
       fill: '#ffffff',
       fontStyle: 'bold'
     }).setDepth(1004).setScrollFactor(0);
-    statusEffectHudIcons.push(txt);
-
-    // Timer text
-    const secLeft = Math.ceil(remaining / 1000);
-    const timer = scene.add.text(x + iconSize + 12, y + 2, secLeft + 's', {
+    const timer = scene.add.text(0, y + 2, secLeft + 's', {
       fontSize: '12px',
       fill: '#cccccc'
     }).setDepth(1004).setScrollFactor(0);
+
+    const boxW = padX + Math.ceil(txt.width) + gap + Math.ceil(timer.width) + padX;
+
+    // Background box
+    const bg = scene.add.rectangle(cursorX, y, boxW, iconSize, 0x000000, 0.5)
+      .setOrigin(0, 0).setDepth(1002).setScrollFactor(0);
+    statusEffectHudIcons.push(bg);
+
+    // Colored fill showing remaining duration
+    const fillWidth = Math.max(1, boxW * ratio);
+    const fill = scene.add.rectangle(cursorX, y, fillWidth, iconSize, color, 0.4)
+      .setOrigin(0, 0).setDepth(1003).setScrollFactor(0);
+    statusEffectHudIcons.push(fill);
+
+    // Label links, Timer rechtsbuendig in der Box — nie ueberlappend.
+    txt.setPosition(cursorX + padX, y + 2);
+    timer.setPosition(cursorX + boxW - padX - Math.ceil(timer.width), y + 2);
+    statusEffectHudIcons.push(txt);
     statusEffectHudIcons.push(timer);
+
+    cursorX += boxW + spacing + 6;
   });
 }
 

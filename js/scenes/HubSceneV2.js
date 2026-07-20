@@ -1063,10 +1063,10 @@ class HubSceneV2 extends Phaser.Scene {
       return;
     }
 
-    if (this._dialogContainer) {
-      this._dialogContainer.destroy(true);
-      this._dialogContainer = null;
-    }
+    // Sweep the tracked window AND any orphaned choice panel (1600) before
+    // (re)building — the story/scene intercepts below return early, so a stale
+    // surface must not survive underneath the next one.
+    this._sweepDialogSurfaces();
 
     const qs = window.questSystem;
     const npcId = npcData.id;
@@ -1377,10 +1377,10 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   _showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex) {
-    if (this._dialogContainer) {
-      this._dialogContainer.destroy(true);
-      this._dialogContainer = null;
-    }
+    // Full sweep (not just this._dialogContainer): a prior choice panel (1600)
+    // or an orphaned window (1500) must be gone before this page renders, else
+    // the new surface stacks in front of a leftover one.
+    this._sweepDialogSurfaces();
     // Clean up any existing key closers
     if (this._currentKeyClosers) {
       while (this._currentKeyClosers.length) {
@@ -1824,6 +1824,33 @@ class HubSceneV2 extends Phaser.Scene {
     }
   }
 
+  // Destroy the tracked dialog window (npcDialogContainer @1500) PLUS any
+  // orphaned dialog surface still on the display list — crucially a
+  // dialogChoiceContainer (@1600), which DialogChoice.present creates but which
+  // this._dialogContainer never tracks. Without sweeping the 1600, presenting a
+  // choice panel over a page render (or re-opening a dialog via the story/scene
+  // intercepts, which return early without touching prior surfaces) leaves the
+  // previous window visible BEHIND the choice — "ein Fenster hinter dem Fenster"
+  // (confirmed via a live display-list dump: Container@1500 + Container@1600 both
+  // visible at y=300). Single funnel used by open + every page render + close.
+  _sweepDialogSurfaces() {
+    if (this._dialogContainer) {
+      try { this._dialogContainer.destroy(true); } catch (e) {}
+      this._dialogContainer = null;
+    }
+    if (this.children && Array.isArray(this.children.list)) {
+      const orphans = this.children.list.filter((c) => {
+        if (!c) return false;
+        if (typeof c.name === 'string' &&
+            (c.name === 'npcDialogContainer' || c.name === 'dialogChoiceContainer' ||
+             c.name === 'npcDialogChild')) return true;
+        const d = (typeof c.depth === 'number') ? c.depth : -1;
+        return d >= 1500 && d < 1700;
+      });
+      orphans.forEach((c) => { try { c.destroy(); } catch (e) {} });
+    }
+  }
+
   _closeDialog(keyClosers) {
     if (!this._dialogOpen) return;
     this._dialogOpen = false;
@@ -1853,27 +1880,10 @@ class HubSceneV2 extends Phaser.Scene {
     }
     this._currentDialogNpc = null;
 
-    if (this._dialogContainer) {
-      this._dialogContainer.destroy(true);
-      this._dialogContainer = null;
-    }
-
-    // Defensive sweep: nuke ANY game object in the dialog depth range
-    // (1500..1699) that's still on the scene's display list. The dialog
-    // container is at depth 1500. Without this, a "shadow" of the previous
-    // dialog (text background, button, panel graphics) can linger if a
-    // child somehow wasn't part of the destroyed container, or if a
-    // pointer event handler added something outside the container.
-    if (this.children && Array.isArray(this.children.list)) {
-      const orphans = this.children.list.filter((c) => {
-        if (!c) return false;
-        if (typeof c.name === 'string' &&
-            (c.name === 'npcDialogContainer' || c.name === 'npcDialogChild')) return true;
-        const d = (typeof c.depth === 'number') ? c.depth : -1;
-        return d >= 1500 && d < 1700;
-      });
-      orphans.forEach((c) => { try { c.destroy(); } catch (e) {} });
-    }
+    // Defensive sweep (single funnel): destroys the tracked window plus any
+    // lingering dialog surface in depth 1500..1699 — npcDialogContainer,
+    // dialogChoiceContainer, or a stray child left by a pointer handler.
+    this._sweepDialogSurfaces();
 
     const closers = keyClosers || this._currentKeyClosers || [];
     while (closers.length) {
