@@ -5,7 +5,8 @@ const StatusEffectType = {
   POISON: 'poison',
   STUN: 'stun',
   SLOW: 'slow',
-  BLEED: 'bleed'
+  BLEED: 'bleed',
+  BURNED: 'burned'
 };
 
 const STATUS_EFFECT_CONFIG = {
@@ -41,6 +42,14 @@ const STATUS_EFFECT_CONFIG = {
     tint: 0xff4444,       // red
     stackable: true,
     maxStacks: 2          // max 2 stacks (was 5)
+  },
+  [StatusEffectType.BURNED]: {
+    duration: 3000,       // 3 seconds nachbrennen, wenn man das Feuer verlaesst
+    tickInterval: 600,    // Feuer tickt schneller als Gift/Blutung
+    damage: 2,            // 2 dmg pro Tick
+    tint: 0xff6a1a,       // orange
+    stackable: true,
+    maxStacks: 3          // im Feuer stehen laesst den Effekt aufstacken
   }
 };
 

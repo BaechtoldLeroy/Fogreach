@@ -1381,10 +1381,59 @@ function updateStatusEffectHUD(scene) {
   });
 }
 
+// Boden-Feuer: ein zerstoertes Brazier setzt den Boden fuer ein paar Sekunden
+// in Brand. Wer drinsteht (Spieler ODER Gegner), bekommt wiederholt den
+// 'burned'-Statuseffekt (der die eigentliche Feuer-DoT + orange Tint traegt).
+// Raeumt sich nach `duration` selbst auf.
+function spawnFloorFire(scene, x, y, opts) {
+  opts = opts || {};
+  const radius = opts.radius || 46;
+  const duration = opts.duration || 3500;
+  const tickMs = 500;
+  if (!scene || !scene.add || !scene.time) return;
+
+  const fire = scene.add.graphics().setDepth(36);
+  function draw() {
+    if (!fire.active) return;
+    fire.clear();
+    const flick = 0.8 + Math.random() * 0.2;   // Flackern
+    fire.fillStyle(0xff6a1a, 0.30 * flick).fillCircle(x, y, radius);
+    fire.fillStyle(0xffd23a, 0.22 * flick).fillCircle(x, y, radius * 0.6);
+  }
+  draw();
+
+  let elapsed = 0;
+  const ev = scene.time.addEvent({
+    delay: tickMs, loop: true,
+    callback: function () {
+      elapsed += tickMs;
+      draw();
+      const mgr = window.statusEffectManager;
+      const BURN = window.StatusEffectType && window.StatusEffectType.BURNED;
+      const inRange = function (o) {
+        return o && o.active && Phaser.Math.Distance.Between(x, y, o.x, o.y) <= radius;
+      };
+      if (mgr && BURN) {
+        if (typeof player !== 'undefined' && inRange(player)) {
+          mgr.applyEffect(player, BURN, 'brazier');
+        }
+        if (typeof enemies !== 'undefined' && enemies && enemies.getChildren) {
+          enemies.getChildren().forEach(function (en) {
+            if (inRange(en)) mgr.applyEffect(en, BURN, 'brazier');
+          });
+        }
+      }
+      if (elapsed >= duration) { try { ev.remove(); } catch (_) {} if (fire && fire.destroy) fire.destroy(); }
+    }
+  });
+}
+window.spawnFloorFire = spawnFloorFire;
+
 // Break a destructible obstacle (chest, barrel, crate) and drop loot
 function breakDestructibleObstacle(scene, obs) {
   if (!obs || !obs.active) return;
   const tier = obs.getData('lootTier') || 'minor';
+  const type = String((obs.getData && obs.getData('type')) || '').toLowerCase();
   const isTrapped = obs.getData && obs.getData('isTrapped');
   const x = obs.x;
   const y = obs.y;
@@ -1393,6 +1442,12 @@ function breakDestructibleObstacle(scene, obs) {
   if (window.particleFactory) {
     window.particleFactory.deathBurst(x, y);
     window.particleFactory.screenShake(50, 0.002);
+  }
+
+  // Ein zerstoertes Brazier laesst den Boden brennen (burned-Effekt fuer alle,
+  // die drinstehen). Altare/Statuen/Saeulen zerbrechen nur (stone-Tier, Gold).
+  if (type.indexOf('brazier') === 0 || type.indexOf('brazer') === 0) {
+    spawnFloorFire(scene, x, y);
   }
 
   // Trapped chest: damage player + bonus gold

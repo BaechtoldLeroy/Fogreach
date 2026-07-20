@@ -1316,7 +1316,7 @@ function spawnObstacle(x, y, key) {
   // Waeren sie 'minor', wuerden ~3-4 Props pro Raum Traenke und Ausruestung
   // ausspucken — das ist ein Oekonomie-Eingriff, kein Zerstoerungs-Feature.
   const destructibleTypes = ['barrel', 'crate', 'chest_small', 'chest_medium', 'chest_large',
-    'rubble', 'statue', 'pillar'];
+    'rubble', 'statue', 'pillar', 'brazier', 'brazer', 'altar'];
   const lowerKey = String(key).toLowerCase();
   const isDestructible = destructibleTypes.some(t => lowerKey.startsWith(t));
   if (isDestructible) {
@@ -1329,7 +1329,9 @@ function spawnObstacle(x, y, key) {
       o.setData('lootTier', 'medium');
     } else if (lowerKey.startsWith('chest')) {
       o.setData('lootTier', 'small');
-    } else if (lowerKey.startsWith('statue') || lowerKey.startsWith('pillar')) {
+    } else if (lowerKey.startsWith('statue') || lowerKey.startsWith('pillar')
+        || lowerKey.startsWith('brazier') || lowerKey.startsWith('brazer')
+        || lowerKey.startsWith('altar')) {
       o.setData('lootTier', 'stone');
     } else {
       o.setData('lootTier', 'minor'); // barrel, crate, rubble

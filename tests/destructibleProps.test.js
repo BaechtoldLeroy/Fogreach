@@ -53,6 +53,14 @@ test('Statuen und Saeulen sind zerstoerbar und tragen den stone-Tier', () => {
   });
 });
 
+test('Braziers und Altare sind zerstoerbar und tragen den stone-Tier (Kulisse)', () => {
+  ['brazier', 'altar'].forEach((key) => {
+    const o = make(key);
+    assert.strictEqual(o.getData('destructible'), true, key + ' ist zerstoerbar');
+    assert.strictEqual(o.getData('lootTier'), 'stone', key + ' ist Kulisse, kein Behaelter');
+  });
+});
+
 test('Behaelter behalten ihre bisherigen Loot-Tiers', () => {
   const cases = {
     chest_large: 'large',
