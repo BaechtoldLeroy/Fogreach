@@ -37,22 +37,33 @@ Fogreach — a dark medieval city shrouded in permanent mist. The Chain Council 
 ### Protagonist
 A former Archivsmith — craftsman-scholar who maintained the city's mechanical archive. After an accident at the Archive Forge, he loses parts of his memory. Noticing contradictions in official history, he begins uncovering the council's deception. His goal: decentralize knowledge and restore collective memory.
 
-### Narrative Arc
+### Narrative Arc (Story v4 — implemented)
 
-**Act 1 — Awakening**
-Tutorial and mechanics introduction. The fog feels unnatural. First council mission: the mayor's missing daughter. Underground hideouts, first faction contacts. Player learns the hub world.
+The arc runs across **five acts (index 0–4)**, quest-driven: an act only advances when a specific quest sets `advanceAct`. Implemented in features 062 (quest backbone) and 063 (staging: dialog choices, key scenes, finale). 34 quests total.
 
-**Act 2 — Obedience vs. Memory**
-Council missions (document retrieval, surveillance, espionage) contrast with private jobs and forbidden lore fragments. First hints of Chain Council rituals surface. Player must decide how much to comply.
+**Act 0 — Der Dienst (The Service)**
+Everyday, cramped, no suspicion. The fog is weather; you are a craftsman with a job. Council cleanup jobs, a first covert errand for the resistance (Elara). The mayor's missing daughter opens the investigation → triggers Act 1.
 
-**Act 3 — Descent**
-The catacombs open. Demonic pacts are revealed as the foundation of the council's power. Faction decision point: cooperate with the council or oppose it? Deeper dungeons, stronger enemies.
+**Act 1 — Treuer Diener (Loyal Servant)**
+Faction missions for Magistrate, Clergy, and Guard; the "edict of the week" campaign that changes nothing. Amnesia motif. Climax: the **secret council session** — three masks, one face, one signed page. Harren's turn: don't flee — stay embedded, clean for them and secretly for us → triggers Act 2.
 
-**Act 4 — Rebellion**
-Archive Forge and Printing House reclaimed as resistance tools. Edicts published that alter city-wide mechanics. Allies won or lost based on prior decisions.
+**Act 2 — Das Doppelspiel (The Double Game)**
+You stay embedded as a **double agent**: council cover missions (seizure, surveillance, district purge) while secretly feeding the resistance. Espionage becomes the spine; faction standing gains meaning. Kettenmeister (depth 10) → triggers Act 3.
 
-**Act 5 — Revelation**
-The council's final illusion collapses. Final confrontation. Multiple endings depending on faction standing and accumulated choices.
+**Act 3 — Die Enttarnung (The Unmasking)**
+The descent. You realize Aldric is using you to erase the council's own trail (verseuchte Kammer). Elara's ritual (Zeremonienmeister, depth 20); Elara's first crack and second truth — she *selects* what the movement learns, her precise sin is information control, not mind control. Optional self-remembrance (`who_you_were`). Climax: the **Bruch** — your cover is blown, the town hall turns hostile → triggers Act 4.
+
+**Act 4 — Der Verrat und die Presse (The Betrayal and the Press)**
+The printing house becomes the finale stage; the Source is reachable below depth 30 (Schattenrat). Finale **"Die Abrechnung"**: Elara reaches for the fog-gate to spare only herself; Harren steps between; she kills her father — her point of no return. Then you print.
+
+### Ending — one fixed act, four sliders
+There is **one ending, not a menu of faction-standing endings**: you always print the raw truth, the fog breaks, the city remembers — never cleanly (Elara first burns the one page that most incriminates the movement). What it *means* is the sum of four sliders (`computeFinaleState`):
+1. **Did you foresee the betrayal** — followed the handwriting/mole trail (`mole_evidence`/`three_hands_seen`).
+2. **Who stands beside you** — Branka, Mara, Thom, present or absent by how you treated them.
+3. **Does Elara live** — with trust and evidence you stop her with words (she lives, broken); otherwise only her own blade.
+4. **Do you remember yourself** — only `who_you_were` gives you the last word; else you stay nameless.
+
+No triumphant march. Hard-won, incomplete, and free.
 
 ### Quest Types
 - **Official missions** — council orders, document retrieval, patrol assignments

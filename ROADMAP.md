@@ -2,13 +2,14 @@
 
 Strategische Roadmap. Konkrete Items leben als [GitHub Issues](https://github.com/BaechtoldLeroy/Fogreach/issues).
 
-## Status: Alpha (Mai 2026) — Vertical Slice ✅
+## Status: Alpha (Jul 2026) — Vertical Slice ✅ + volle v4-Story ✅
 - 40+ Features im Combat / Crafting / Dungeon / Itemization-Bereich
 - **Phase 1 (Foundations) komplett** — alle 4 MVP-Systeme live
 - **Phase 2 (Content + Polish) komplett** — Akt-1 Quest-Chain (050) + Tone-Polish (051) gemerged
-- Zusätzlich shipped: Brunnen-Rework (#16, 048), More Room Layouts (#5, 049), Cave Generator (CA-Procgen), Run-Summary Modal, diverse Polish + Bugfixes
+- **Story v4 komplett (Jul 2026)** — 062 Quest-Rückgrat (34 Quests, 5 Akte, lückenlose Akt-Leiter) + 063 Inszenierung (verzweigtes Dialog-UI, Schlüsselszenen, Vier-Regler-Finale `the_reckoning`). Damit sind die alten Epics **#31 (Story Acts 2–5)** und **#28 (Multiple Endings)** abgelöst — v4 liefert bewusst **ein** Ende mit vier Reglern statt Faction-Standing-Endings.
+- Zusätzlich shipped: Brunnen-Rework (#16, 048), More Room Layouts (#5, 049), Cave Generator (CA-Procgen), Save-Slots (#63), Dodge-Roll (054), Boss-Phasen/Signature-Moves (062-Balancing), Run-Summary Modal, diverse Polish + Bugfixes
 - Public auf GitHub Pages: https://baechtoldleroy.github.io/Fogreach/
-- **Aktueller Fokus:** Donor-Demo-Validation + Phase-3-Auswahl (siehe unten)
+- **Aktueller Fokus:** Playtest der v4-Story + offene Inszenierungs-Stränge (Hub-Evolution #67, v4-Boss-Mechaniken)
 
 ---
 
@@ -60,18 +61,19 @@ Story-Inhalt + Donor-Demo-Build auf den Foundations aufbauen.
 
 Erst nach validierter Vertical Slice. Reihenfolge wird durch Learnings aus Phase 2 bestimmt.
 
-- [#11 Difficulty Scaling](https://github.com/BaechtoldLeroy/Fogreach/issues/11) — wenn Act-1-Pacing zu flach
+- ~~[#11 Difficulty Scaling](https://github.com/BaechtoldLeroy/Fogreach/issues/11)~~ ✅ geschlossen (Jul 2026) — durch die Balancing-Pässe abgedeckt (#41 Frontier-Gate, Elite-Deckelung ~30%, XP-Kurve, Boss-Phasen). Bei neuem Pacing-Bedarf frisches, gezieltes Issue.
 - [#6 Itemization Update](https://github.com/BaechtoldLeroy/Fogreach/issues/6) — Scope nach Playtest-Feedback
 - [#27 Seasonal Mechanics](https://github.com/BaechtoldLeroy/Fogreach/issues/27) — Endless-Loop-Wiederspielbarkeit
-- [#1 Shift / Roll / Parry](https://github.com/BaechtoldLeroy/Fogreach/issues/1) — Combat-Tiefe (🟡 Roll/Dash = 054 ✅, Parry/Shift offen)
+- ~~[#1 Shift / Roll / Parry](https://github.com/BaechtoldLeroy/Fogreach/issues/1)~~ ✅ geschlossen (Jul 2026) — Dodge-Roll ist der Defensiv-Move (054). Ein separates Parry-Feature ggf. als neues Issue, wenn gewünscht.
 - ~~[#5 Mehr Proc-Room Layouts](https://github.com/BaechtoldLeroy/Fogreach/issues/5)~~ ✅ (049 + Cave-Generator gemerged Mai 2026)
 - [#12 Mehr Gegnertypen](https://github.com/BaechtoldLeroy/Fogreach/issues/12) — basierend auf enemy_ideas.md
-- Acts 2–3 Story (aus #31 abspalten)
+- ~~Acts 2–3 Story~~ ✅ ausgeliefert als Story v4 (062 + 063)
 
 ## Phase 4+ — Long Tail
 
-- [#31 Story Acts 2–5](https://github.com/BaechtoldLeroy/Fogreach/issues/31) (Epic)
-- [#28 Multiple Endings](https://github.com/BaechtoldLeroy/Fogreach/issues/28)
+- ~~[#31 Story Acts 2–5](https://github.com/BaechtoldLeroy/Fogreach/issues/31) (Epic)~~ ✅ geschlossen (Jul 2026) — ausgeliefert als Story v4: 062 Quest-Rückgrat + 063 Inszenierung, Akte 0–4.
+- ~~[#28 Multiple Endings](https://github.com/BaechtoldLeroy/Fogreach/issues/28)~~ ✅ geschlossen (Jul 2026) — abgelöst durch das v4-Design: **ein** Ende, vier Regler (`computeFinaleState`), statt Faction-Standing-Endings.
+- **Offene v4-Inszenierungs-Stränge:** [#67 Hub-Evolution über die Akte](https://github.com/BaechtoldLeroy/Fogreach/issues/67); v4-Boss-Mechaniken (Kettenmeister-Fesselung, Zeremonienmeister-Auslöschung, Schattenrat-Quelle) — noch ohne Issue.
 - [#30 Espionage Missions](https://github.com/BaechtoldLeroy/Fogreach/issues/30)
 - [#2 Casino-Events](https://github.com/BaechtoldLeroy/Fogreach/issues/2)
 - [#7 Player-Sprites via Fiverr](https://github.com/BaechtoldLeroy/Fogreach/issues/7)
@@ -93,10 +95,13 @@ Monat 1–3:  Vertical Slice (Phase 1+2) → Act 1 polished + 4 MVP-Systeme
             ├── Phase 1 ✅ abgeschlossen (Mai 2026)
             └── Phase 2 ✅ abgeschlossen (Mai 2026) — #33 Quest-Chain + #34 Tone-Pass
 
-Monat 4–6:  Donor-Demo + Community-Feedback + Polish-Pass  ← AKTUELL
-            └── geshipped: 052 Render-Quality, 053 Mobile-Perf, 054 Dodge-Roll
-Monat 6–9:  Acts 2–3 Story + Faction-Tiefe + Combat-Depth
-Monat 9–12: Acts 4–5 + Multiple Endings + Knowledge-Tree-Tiefe
+Monat 4–6:  Donor-Demo + Community-Feedback + Polish-Pass
+            ├── geshipped: 052 Render-Quality, 053 Mobile-Perf, 054 Dodge-Roll
+            └── geshipped: Save-Slots (#63), Boss-Phasen/Signature-Moves
+Monat 6–9:  Story v4 ✅ ausgeliefert — 062 Quest-Rückgrat (Akte 0–4, 34 Quests)
+            + 063 Inszenierung (Dialog-UI, Schlüsselszenen, Vier-Regler-Finale)  ← AKTUELL
+Monat 9–12: v4-Inszenierungs-Ausbau (Hub-Evolution #67, Boss-Mechaniken),
+            Faction-Tiefe, Playtest-getriebenes Balancing
 Monat 12+:  Endless-Loop-Polish, Seasonal-Cycles, Community-Content
 ```
 
