@@ -8,11 +8,15 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: main
+base_commit: 5262d8845505bfaaa39ca53a8ae932f299fa8916
+created_at: '2026-07-20T16:24:38.939795+00:00'
 subtasks: [T001, T002, T003, T004]
 authoritative_surface: js/hubPhase.js
 execution_mode: code_change
 lane: planned
 owned_files: [js/hubPhase.js, tests/hubPhase.test.js]
+shell_pid: "33028"
 ---
 
 # WP01 — Fundament: Phasen-Logik (`hubPhase.js`)
