@@ -83,3 +83,4 @@ Ein Rendering-Modul `js/hubPhaseView.js`, das eine Phase auf die bestehende Hub-
 ## Activity Log
 - (leer bis implement)
 - 2026-07-20T16:26:28Z – claude – shell_pid=37908 – lane=doing – Started implementation via workflow command
+- 2026-07-20T16:28:06Z – claude – shell_pid=37908 – lane=for_review – apply idempotent + defensiv, Tint/Nebel/Tafeln/rathausHostile, Asset-Austauschpunkt mit Fallback, rekursives scrollFactor.
