@@ -17,6 +17,7 @@ execution_mode: code_change
 lane: planned
 owned_files: [js/hubPhase.js, tests/hubPhase.test.js]
 shell_pid: "33028"
+agent: "claude"
 ---
 
 # WP01 — Fundament: Phasen-Logik (`hubPhase.js`)
@@ -81,3 +82,4 @@ Ein reines Classic-Script-Modul `js/hubPhase.js`, das aus Akt-Index + Story-Flag
 
 ## Activity Log
 - (leer bis implement)
+- 2026-07-20T16:24:39Z – claude – shell_pid=33028 – lane=doing – Started implementation via workflow command
