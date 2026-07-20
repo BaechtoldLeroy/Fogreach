@@ -17,10 +17,10 @@ WP02 View (hubPhaseView.js)  [P] ──┴── WP03 Integration (HubSceneV2 + 
 ## WP01 — Fundament: Phasen-Logik (`hubPhase.js`)
 **Ziel:** Reines Modul gemäß [hub-phase-contract](contracts/hub-phase-contract.md). **Priorität:** hoch (MVP-Kern). **Dependencies:** none.
 **Independent test:** `node --test tests/hubPhase.test.js` grün; alle Phasen + Priorität + Default.
-- [ ] T001 `js/hubPhase.js` Skeleton + `derivePhase(actIndex, flags)` (Priorität epilogue>broken>doubleAgent>council, Default council, kein Mutieren)
-- [ ] T002 `PHASE_STYLE` (4 Phasen, Felder tint/desaturate/fog/posters/assetKey/rathausHostile)
-- [ ] T003 `npcFlavorByPhase` + `aldricBlocksQuests(phase)` + `current()`-Wrapper (liest Globals)
-- [ ] T004 `tests/hubPhase.test.js`: alle Phasen, Priorität, Default/Robustheit, `aldricBlocksQuests`, PHASE_STYLE-Vollständigkeit
+- [x] T001 `js/hubPhase.js` Skeleton + `derivePhase(actIndex, flags)` (Priorität epilogue>broken>doubleAgent>council, Default council, kein Mutieren)
+- [x] T002 `PHASE_STYLE` (4 Phasen, Felder tint/desaturate/fog/posters/assetKey/rathausHostile)
+- [x] T003 `npcFlavorByPhase` + `aldricBlocksQuests(phase)` + `current()`-Wrapper (liest Globals)
+- [x] T004 `tests/hubPhase.test.js`: alle Phasen, Priorität, Default/Robustheit, `aldricBlocksQuests`, PHASE_STYLE-Vollständigkeit
 **Prompt:** [tasks/WP01-fundament-phasen-logik.md](tasks/WP01-fundament-phasen-logik.md) (~260 lines)
 
 ## WP02 — View: Phasen-Darstellung (`hubPhaseView.js`)
