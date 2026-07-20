@@ -167,6 +167,23 @@ class HubSceneV2 extends Phaser.Scene {
     bg.setOrigin(0, 0);
     bg.setScale(1.0);
 
+    // Feature 064: Hub-Phase (aus Akt-Index/Flags) ableiten und die
+    // Darstellungs-Schicht anwenden (Tint/Nebel/Anschlagtafeln/feindliches
+    // Rathaus). Phase in this._hubPhase merken — die Aldric-Quest-Sperre, die
+    // Quest-Indikatoren und die phasenabhaengige NPC-Flavor lesen sie unten.
+    this._hubPhase = (window.HubPhase && typeof window.HubPhase.current === 'function')
+      ? window.HubPhase.current() : 'council';
+    if (window.HubPhaseView && typeof window.HubPhaseView.apply === 'function') {
+      this._hubPhaseHandle = window.HubPhaseView.apply(this, this._hubPhase, {
+        bg: bg,
+        overlayDepth: 90,
+        rathausRect: {
+          x: 368 * SCALE_FACTOR, y: 110 * SCALE_FACTOR,
+          w: 224 * SCALE_FACTOR, h: 168 * SCALE_FACTOR
+        }
+      });
+    }
+
     this._dialogOpen = false;
     this._activeInteractable = null;
     this._dialogContainer = null;
@@ -882,6 +899,10 @@ class HubSceneV2 extends Phaser.Scene {
       const npcId = data.id;
       // Check for available quests for this NPC
       const available = qs.getAvailableQuests ? qs.getAvailableQuests(npcId) : [];
+      // Feature 064: nach dem Bruch bietet Aldric keine Quests mehr an — auch
+      // kein "!"-Indikator.
+      const aldricBlocked = (npcId === 'aldric' && window.HubPhase
+        && window.HubPhase.aldricBlocksQuests(this._hubPhase));
       // Check for active quests for this NPC
       const active = qs.getActiveQuests ? qs.getActiveQuests().filter(q => q.npcId === npcId) : [];
       const readyToComplete = active.filter(q => qs.isQuestReadyToComplete && qs.isQuestReadyToComplete(q.id));
@@ -894,7 +915,7 @@ class HubSceneV2 extends Phaser.Scene {
         // Quest angenommen, in Arbeit → graues "…"
         // (Hat Vorrang vor "!" — sonst bleibt "!" wenn NPC noch weitere Quests anbietet)
         questIndicator.setText('…').setColor('#aaaaaa').setVisible(true);
-      } else if (available.length > 0) {
+      } else if (available.length > 0 && !aldricBlocked) {
         // Nichts angenommen, aber Quest verfügbar → goldenes "!"
         questIndicator.setText('!').setColor('#ffdd44').setVisible(true);
       } else {
@@ -1073,6 +1094,12 @@ class HubSceneV2 extends Phaser.Scene {
         if (npcId === 'aldric' && window.PrintingHouse
             && typeof window.PrintingHouse.getRetaliationTier === 'function') {
           aldricRefuses = window.PrintingHouse.getRetaliationTier() === 'active_hunt';
+        }
+        // Feature 064: nach dem Bruch (Phase 'broken') ist Aldric enttarnt und
+        // kein Questgeber mehr.
+        if (npcId === 'aldric' && window.HubPhase
+            && window.HubPhase.aldricBlocksQuests(this._hubPhase)) {
+          aldricRefuses = true;
         }
         if (available.length > 0 && !aldricRefuses) {
           questMode = 'offer';
@@ -1267,7 +1294,13 @@ class HubSceneV2 extends Phaser.Scene {
       const storyLines = (window.storySystem && typeof window.storySystem.getNpcDialogue === 'function')
         ? window.storySystem.getNpcDialogue(npcId)
         : null;
-      const bodyLines = storyLines || npcData.lines || [];
+      // Feature 064: phasenabhaengige Flavor-Zeilen haben Vorrang (hohler
+      // Wahlkampf in doubleAgent, feindlicher Aldric in broken, vorlesender
+      // Buerger im epilogue). Fehlt ein Override, bleiben die Standard-Zeilen.
+      const _phaseFlavor = (window.HubPhase && window.HubPhase.npcFlavorByPhase
+        && window.HubPhase.npcFlavorByPhase[this._hubPhase]
+        && window.HubPhase.npcFlavorByPhase[this._hubPhase][npcId]) || null;
+      const bodyLines = _phaseFlavor || storyLines || npcData.lines || [];
       bodyLines.forEach(line => {
         pages.push({ text: line, choices: null });
       });
