@@ -35,12 +35,12 @@ WP02 View (hubPhaseView.js)  [P] ──┴── WP03 Integration (HubSceneV2 + 
 ## WP03 — Integration & Deploy (HubSceneV2 + hubLayout + index.html)
 **Ziel:** Phase beim Hub-Aufbau anwenden, Verhalten (Aldric-Sperre/Flavor/Epilog-Bürger) verdrahten, ausliefern. **Priorität:** hoch (schließt ab). **Dependencies:** WP01, WP02.
 **Independent test:** Boot-Check je Phase (Akt forcieren) ohne Fehler; Aldric bietet in `broken` keine Quest; volle Suite grün.
-- [ ] T009 `HubPhaseView.apply` beim Hub-Aufbau aufrufen (Phase via `HubPhase.current()`; refs: `bg`, `overlayDepth`, `rathaus_body`-Rect); Handle bei Szenen-Verlassen/Neu-Betreten abräumen
-- [ ] T010 Aldric-Quest-Sperre in `broken`: bestehende `aldricRefuses`-Bedingung (~Z.1072) um `HubPhase.aldricBlocksQuests(phase)` erweitern; Quest-Indikator ebenfalls unterdrücken
-- [ ] T011 Phasenabhängige NPC-Flavor: `HubPhase.npcFlavorByPhase[phase][npcId]` im Flavor-Pfad überschreiben (sonst unverändert)
-- [ ] T012 Epilog-Bürger als Vorleser: im `epilogue` den bestehenden `buerger`-NPC (hubLayout) via Flavor-Override/Prominenz einsetzen (bei `truth_told`)
-- [ ] T013 `index.html`: `<script>`-Tags `hubPhase.js`/`hubPhaseView.js` VOR `HubSceneV2.js`; Cache-Buster für `HubSceneV2.js` (+ `hubLayout.js` falls geändert) bumpen
-- [ ] T014 Browser-Boot-Check je Phase (council/doubleAgent/broken/epilogue) + `node tools/runTests.js` grün; keine Regression bestehender Hub-Interaktionen
+- [x] T009 `HubPhaseView.apply` beim Hub-Aufbau aufrufen (Phase via `HubPhase.current()`; refs: `bg`, `overlayDepth`, `rathaus_body`-Rect); Handle bei Szenen-Verlassen/Neu-Betreten abräumen
+- [x] T010 Aldric-Quest-Sperre in `broken`: bestehende `aldricRefuses`-Bedingung (~Z.1072) um `HubPhase.aldricBlocksQuests(phase)` erweitern; Quest-Indikator ebenfalls unterdrücken
+- [x] T011 Phasenabhängige NPC-Flavor: `HubPhase.npcFlavorByPhase[phase][npcId]` im Flavor-Pfad überschreiben (sonst unverändert)
+- [x] T012 Epilog-Bürger als Vorleser: im `epilogue` den bestehenden `buerger`-NPC (hubLayout) via Flavor-Override/Prominenz einsetzen (bei `truth_told`)
+- [x] T013 `index.html`: `<script>`-Tags `hubPhase.js`/`hubPhaseView.js` VOR `HubSceneV2.js`; Cache-Buster für `HubSceneV2.js` (+ `hubLayout.js` falls geändert) bumpen
+- [x] T014 Browser-Boot-Check je Phase (council/doubleAgent/broken/epilogue) + `node tools/runTests.js` grün; keine Regression bestehender Hub-Interaktionen
 **Prompt:** [tasks/WP03-integration-deploy.md](tasks/WP03-integration-deploy.md) (~340 lines)
 
 ---
