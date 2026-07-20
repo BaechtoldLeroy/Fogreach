@@ -1310,13 +1310,15 @@ const STATUS_EFFECT_COLORS = {
   poison: 0x44ff44,
   stun: 0xffff00,
   slow: 0x4488ff,
-  bleed: 0xff4444
+  bleed: 0xff4444,
+  burned: 0xff5a1e
 };
 const STATUS_EFFECT_LABELS = {
   poison: 'PSN',
   stun: 'STN',
   slow: 'SLW',
-  bleed: 'BLD'
+  bleed: 'BLD',
+  burned: 'BRN'
 };
 
 function updateStatusEffectHUD(scene) {
