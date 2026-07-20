@@ -35,10 +35,21 @@
 
     var allies = { branka: brankaPresent, mara: maraPresent, thom: thomPresent };
 
-    // Regler 3 — Lebt Elara: mit Vertrauen UND Beweisen mit Worten aufgehalten
-    // (lebt, gebrochen); sonst ihre eigene Klinge (stirbt).
+    // Regler 3 — Lebt Elara.
+    // Die explizite Spieler-Wahl im Finale hat Vorrang (elara_spared/elara_killed).
+    // Fehlt sie (Finale noch nicht gespielt), wird abgeleitet: verschonbar nur
+    // mit Vertrauen UND Beweisen -> lebt, gebrochen; sonst ihre eigene Klinge.
+    // Damit stimmt der Zustand mit dem ueberein, was der Spieler tatsaechlich
+    // gewaehlt hat, statt es nur zu prognostizieren.
     var hasProof = flag(flags, 'mole_evidence') || flag(flags, 'three_hands_seen');
-    var elara = (flag(flags, 'elara_trust') && hasProof) ? 'lives' : 'dies';
+    var elara;
+    if (flag(flags, 'elara_spared')) {
+      elara = 'lives';
+    } else if (flag(flags, 'elara_killed')) {
+      elara = 'dies';
+    } else {
+      elara = (flag(flags, 'elara_trust') && hasProof) ? 'lives' : 'dies';
+    }
 
     // Abgeleitete Praesentations-Hinweise.
     var aloneAtEnd = !(allies.branka || allies.mara || allies.thom);

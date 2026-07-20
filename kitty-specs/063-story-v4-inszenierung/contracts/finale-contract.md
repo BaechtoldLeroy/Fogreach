@@ -55,7 +55,7 @@ window.QuestFinale = {
    - `branka` = `branka_ally === true`.
    - `thom`   = `thom_ally === true`.
    - Ratsfreundliche Kompromittierung leert den Raum: ist `petitions_surrendered === true` und `mara` nicht anderweitig verdient, bleibt Mara abwesend (die `petitions_kept`-Bedingung greift dann nicht).
-3. **Regler 3 — `elara`** = `'lives'` genau dann, wenn `elara_trust === true` **und** (`mole_evidence === true || three_hands_seen === true`) — mit Vertrauen UND Beweisen haeltst Du sie mit Worten auf. Sonst `'dies'` (ihre eigene Klinge).
+3. **Regler 3 — `elara`**: Die explizite Finale-Wahl hat Vorrang — `elara_spared === true` → `'lives'`, sonst `elara_killed === true` → `'dies'`. Fehlt beides (Finale noch nicht gespielt), wird abgeleitet: `'lives'` genau dann, wenn `elara_trust === true` **und** (`mole_evidence === true || three_hands_seen === true`) — mit Vertrauen UND Beweisen haeltst Du sie mit Worten auf; sonst `'dies'` (ihre eigene Klinge). Die „aufhalten"-Option wird im Spiel nur angeboten, wenn die Ableitung `'lives'` ergaebe, daher bleibt der Zustand konsistent.
 4. **Regler 4 — `remembered`** = `self_remembered === true`.
 5. **Abgeleitet:** `aloneAtEnd = !(allies.branka || allies.mara || allies.thom)`; `namelessEnding = !remembered`.
 

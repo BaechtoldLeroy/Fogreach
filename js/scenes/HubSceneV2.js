@@ -1279,6 +1279,23 @@ class HubSceneV2 extends Phaser.Scene {
           pages.push(this._storyChoicePage(_sdHub));
         }
       }
+
+      // Feature 063 (#66): Aldrics Nachfrage "War alles da?" — der zweite Anlass
+      // NACH der Beschlagnahme-Entscheidung. Gate auf das Entscheidungs-Flag
+      // (petitions_kept/surrendered wird beim Abgeben von council_seizure gesetzt),
+      // damit die Nachfrage erst danach kommt und nicht im selben Dialog steht.
+      // Einmalig (_shownSeizureFollowup). Die flag-abhaengige showIf-Variante
+      // (Luege bei petitions_kept) macht die Komponente selbst.
+      if (npcId === 'aldric' && !this._shownSeizureFollowup) {
+        const _flags = (qs && typeof qs.getFlags === 'function') ? qs.getFlags() : {};
+        if (_flags.petitions_kept || _flags.petitions_surrendered) {
+          const _sdFollow = this._storyDialogEntry('council_seizure_followup');
+          if (_sdFollow) {
+            this._shownSeizureFollowup = true;
+            pages.push(this._storyChoicePage(_sdFollow));
+          }
+        }
+      }
     }
 
     // Ensure at least one page

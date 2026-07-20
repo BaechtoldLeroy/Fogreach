@@ -75,6 +75,13 @@ test('R3: Beweis ohne Vertrauen => dies', () => {
 test('R3: nichts => dies', () => {
   assert.strictEqual(compute({}).elara, 'dies');
 });
+test('R3: explizite Wahl elara_spared hat Vorrang (lebt trotz fehlendem Beweis)', () => {
+  assert.strictEqual(compute({ elara_spared: true }).elara, 'lives');
+  assert.strictEqual(compute({ elara_spared: true, elara_trust: false }).elara, 'lives');
+});
+test('R3: explizite Wahl elara_killed hat Vorrang (stirbt trotz Vertrauen+Beweis)', () => {
+  assert.strictEqual(compute({ elara_killed: true, elara_trust: true, mole_evidence: true }).elara, 'dies');
+});
 
 // --- Default / Robustheit ---------------------------------------------------
 test('Default: leeres Objekt liefert konservativen Zustand', () => {
