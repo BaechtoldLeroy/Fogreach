@@ -99,3 +99,4 @@ Die Phasen-Schicht in den Hub einhängen: `HubPhaseView.apply` beim Aufbau aufru
 ## Activity Log
 - (leer bis implement)
 - 2026-07-20T16:28:33Z – claude – shell_pid=33368 – lane=doing – Started implementation via workflow command
+- 2026-07-20T16:33:16Z – claude – shell_pid=33368 – lane=for_review – apply beim Hub-Aufbau, Aldric-Sperre (Angebot+Indikator) in broken, phasen-NPC-Flavor (inkl. Epilog-Buerger), Script-Tags+Cache-Buster. Boot fehlerfrei, Phasen/Verhalten verifiziert.
