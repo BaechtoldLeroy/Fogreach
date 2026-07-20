@@ -128,7 +128,7 @@ class HubSceneV2 extends Phaser.Scene {
     // Feature 063 (#66): der ratlose Buerger (ab Akt 2). Fehlt die Datei noch,
     // faengt das Spawn-System es mit dem Platzhalter ab (der 404 im Loader ist
     // dann erwartbar, bis assets/sprites/buerger.png vorliegt).
-    if (!tex.exists('buerger'))           this.load.image('buerger', 'assets/sprites/buerger.png');
+    if (!tex.exists('buerger'))           this.load.image('buerger', 'assets/sprites/buerger.png?v=2');
     ['aldric', 'elara', 'harren'].forEach((npc) => {
       ['left0','left1','left2','right0','right1','right2'].forEach((frame) => {
         const key = npc + '_' + frame;
