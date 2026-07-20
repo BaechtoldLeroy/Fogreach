@@ -1389,25 +1389,57 @@ function spawnFloorFire(scene, x, y, opts) {
   opts = opts || {};
   const radius = opts.radius || 46;
   const duration = opts.duration || 3500;
-  const tickMs = 500;
+  const applyMs = 500;   // wie oft BURNED aufgelegt wird
+  const drawMs = 80;     // Flacker-Animation (unabhaengig, damit es lebt)
   if (!scene || !scene.add || !scene.time) return;
 
-  const fire = scene.add.graphics().setDepth(36);
+  // Glut auf dem Boden (Depth 36 = ueber Boden, hinter Figuren) + Flammen leicht
+  // darueber.
+  const glow = scene.add.graphics().setDepth(35);
+  const fire = scene.add.graphics().setDepth(37);
+  let fade = 1;   // blendet in den letzten ~600ms aus
+
   function draw() {
     if (!fire.active) return;
+    glow.clear();
     fire.clear();
-    const flick = 0.8 + Math.random() * 0.2;   // Flackern
-    fire.fillStyle(0xff6a1a, 0.30 * flick).fillCircle(x, y, radius);
-    fire.fillStyle(0xffd23a, 0.22 * flick).fillCircle(x, y, radius * 0.6);
+    // weiche Basis-Glut
+    glow.fillStyle(0x5a1200, 0.30 * fade).fillCircle(x, y, radius);
+    glow.fillStyle(0xff4500, 0.16 * fade).fillCircle(x, y, radius * 0.8);
+
+    // flackernde Flammenzungen (Dreiecke): aussen orange, innen gelb
+    const tongues = 7;
+    for (let i = 0; i < tongues; i++) {
+      const a = (i / tongues) * Math.PI * 2 + Math.random() * 0.6;
+      const rr = Math.random() * radius * 0.6;
+      const fx = x + Math.cos(a) * rr;
+      const by = y + Math.sin(a) * rr * 0.5;             // gestauchte Ellipsen-Verteilung
+      const h = radius * (0.55 + Math.random() * 0.75);  // Hoehe flackert
+      const w = radius * (0.13 + Math.random() * 0.10);
+      fire.fillStyle(0xff6a1a, 0.55 * fade);
+      fire.fillTriangle(fx - w, by, fx + w, by, fx, by - h);
+      fire.fillStyle(0xffd23a, 0.72 * fade);
+      fire.fillTriangle(fx - w * 0.5, by, fx + w * 0.5, by, fx, by - h * 0.6);
+    }
+    // ein paar helle Glut-Funken
+    for (let e = 0; e < 4; e++) {
+      const ex = x + (Math.random() * 2 - 1) * radius * 0.8;
+      const ey = y + (Math.random() * 2 - 1) * radius * 0.45;
+      fire.fillStyle(0xffcc55, 0.85 * fade).fillCircle(ex, ey, 1 + Math.random() * 1.6);
+    }
   }
   draw();
 
+  // Flacker-Animation
+  const drawEv = scene.time.addEvent({ delay: drawMs, loop: true, callback: draw });
+
+  // BURNED-Anwendung + Ausblenden + Aufraeumen
   let elapsed = 0;
-  const ev = scene.time.addEvent({
-    delay: tickMs, loop: true,
+  const applyEv = scene.time.addEvent({
+    delay: applyMs, loop: true,
     callback: function () {
-      elapsed += tickMs;
-      draw();
+      elapsed += applyMs;
+      if (elapsed >= duration - 600) fade = Math.max(0, (duration - elapsed) / 600);
       const mgr = window.statusEffectManager;
       const BURN = window.StatusEffectType && window.StatusEffectType.BURNED;
       const inRange = function (o) {
@@ -1423,7 +1455,12 @@ function spawnFloorFire(scene, x, y, opts) {
           });
         }
       }
-      if (elapsed >= duration) { try { ev.remove(); } catch (_) {} if (fire && fire.destroy) fire.destroy(); }
+      if (elapsed >= duration) {
+        try { applyEv.remove(); } catch (_) {}
+        try { drawEv.remove(); } catch (_) {}
+        if (glow && glow.destroy) glow.destroy();
+        if (fire && fire.destroy) fire.destroy();
+      }
     }
   });
 }

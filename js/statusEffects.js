@@ -44,12 +44,14 @@ const STATUS_EFFECT_CONFIG = {
     maxStacks: 2          // max 2 stacks (was 5)
   },
   [StatusEffectType.BURNED]: {
-    duration: 3000,       // 3 seconds nachbrennen, wenn man das Feuer verlaesst
-    tickInterval: 600,    // Feuer tickt schneller als Gift/Blutung
-    damage: 2,            // 2 dmg pro Tick
-    tint: 0xff6a1a,       // orange
+    // Visuell analog zu BLEED (gleiche Tick-Kadenz + Stack-Verhalten, damit der
+    // Tint-Flash ruhig statt hektisch wirkt) — nur waermer getoent (Feuer).
+    duration: 4000,       // wie bleed
+    tickInterval: 1000,   // wie bleed (1s) statt hektischem Schnellticken
+    damage: 2,            // Feuer trifft etwas haerter als Blutung (1)
+    tint: 0xff5a1e,       // orange-rot (Feuer), flasht wie bleeds Rot
     stackable: true,
-    maxStacks: 3          // im Feuer stehen laesst den Effekt aufstacken
+    maxStacks: 2          // wie bleed
   }
 };
 
