@@ -83,3 +83,4 @@ Ein reines Classic-Script-Modul `js/hubPhase.js`, das aus Akt-Index + Story-Flag
 ## Activity Log
 - (leer bis implement)
 - 2026-07-20T16:24:39Z – claude – shell_pid=33028 – lane=doing – Started implementation via workflow command
+- 2026-07-20T16:26:03Z – claude – shell_pid=33028 – lane=for_review – derivePhase rein (8 Tests, Mutationsprobe scharf), PHASE_STYLE/npcFlavor/aldricBlocksQuests, Suite 543/0.
