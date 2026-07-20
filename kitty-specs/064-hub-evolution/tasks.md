@@ -26,10 +26,10 @@ WP02 View (hubPhaseView.js)  [P] ──┴── WP03 Integration (HubSceneV2 + 
 ## WP02 — View: Phasen-Darstellung (`hubPhaseView.js`)
 **Ziel:** `window.HubPhaseView.apply(scene, phase, refs)` gemäß [hub-phase-view-contract](contracts/hub-phase-view-contract.md). **Priorität:** hoch. **Dependencies:** WP01.
 **Independent test:** `node --check js/hubPhaseView.js`; Boot-Check (WP03) zeigt Overlay/Tint je Phase; idempotent.
-- [ ] T005 `js/hubPhaseView.js` Skeleton + `apply`-Struktur (Style aus HubPhase.PHASE_STYLE), Handle mit `destroy()`, Idempotenz (Teardown vor Neu-Anwendung)
-- [ ] T006 Tint/Entsättigung auf `bg` + Nebel-Overlay (fog-Alpha), rekursives `scrollFactor(0)`
-- [ ] T007 Anschlagtafeln-Zustand (`posters` faded/torn/gone) + `rathausHostile`-Markierung (`refs.rathausRect`)
-- [ ] T008 Asset-Austauschpunkt: `assetKey` → `scene.textures.exists` → Textur nutzen, sonst code-gezeichneter Fallback; defensive Guards (fehlt HubPhase/bg → no-op)
+- [x] T005 `js/hubPhaseView.js` Skeleton + `apply`-Struktur (Style aus HubPhase.PHASE_STYLE), Handle mit `destroy()`, Idempotenz (Teardown vor Neu-Anwendung)
+- [x] T006 Tint/Entsättigung auf `bg` + Nebel-Overlay (fog-Alpha), rekursives `scrollFactor(0)`
+- [x] T007 Anschlagtafeln-Zustand (`posters` faded/torn/gone) + `rathausHostile`-Markierung (`refs.rathausRect`)
+- [x] T008 Asset-Austauschpunkt: `assetKey` → `scene.textures.exists` → Textur nutzen, sonst code-gezeichneter Fallback; defensive Guards (fehlt HubPhase/bg → no-op)
 **Prompt:** [tasks/WP02-view-phasen-darstellung.md](tasks/WP02-view-phasen-darstellung.md) (~300 lines)
 
 ## WP03 — Integration & Deploy (HubSceneV2 + hubLayout + index.html)
