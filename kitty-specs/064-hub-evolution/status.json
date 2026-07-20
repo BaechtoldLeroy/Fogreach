@@ -1,14 +1,14 @@
 {
-  "event_count": 14,
+  "event_count": 15,
   "feature_slug": "064-hub-evolution",
-  "last_event_id": "01KY05ZWRHFQEJR1SJY0SRPZB9",
-  "materialized_at": "2026-07-20T16:33:19.648023+00:00",
+  "last_event_id": "01KY05ZZC6V7SF2YK4D5S3KGYG",
+  "materialized_at": "2026-07-20T16:33:22.327642+00:00",
   "summary": {
-    "approved": 1,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 2,
+    "done": 3,
     "for_review": 0,
     "in_progress": 0,
     "planned": 0
@@ -30,10 +30,10 @@
     },
     "WP03": {
       "actor": "user",
-      "force_count": 0,
-      "lane": "approved",
-      "last_event_id": "01KY05ZWRHFQEJR1SJY0SRPZB9",
-      "last_transition_at": "2026-07-20T16:33:19.633208+00:00"
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KY05ZZC6V7SF2YK4D5S3KGYG",
+      "last_transition_at": "2026-07-20T16:33:22.310516+00:00"
     }
   }
 }
