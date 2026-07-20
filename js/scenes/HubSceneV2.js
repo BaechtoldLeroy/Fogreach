@@ -125,6 +125,10 @@ class HubSceneV2 extends Phaser.Scene {
     // following the Branka/Thom/Mara loading pattern.
     if (!tex.exists('klerus'))            this.load.image('klerus', 'assets/sprites/klerus.png');
     if (!tex.exists('garde'))             this.load.image('garde', 'assets/sprites/garde.png');
+    // Feature 063 (#66): der ratlose Buerger (ab Akt 2). Fehlt die Datei noch,
+    // faengt das Spawn-System es mit dem Platzhalter ab (der 404 im Loader ist
+    // dann erwartbar, bis assets/sprites/buerger.png vorliegt).
+    if (!tex.exists('buerger'))           this.load.image('buerger', 'assets/sprites/buerger.png');
     ['aldric', 'elara', 'harren'].forEach((npc) => {
       ['left0','left1','left2','right0','right1','right2'].forEach((frame) => {
         const key = npc + '_' + frame;
@@ -1295,6 +1299,16 @@ class HubSceneV2 extends Phaser.Scene {
             pages.push(this._storyChoicePage(_sdFollow));
           }
         }
+      }
+
+      // Feature 063 (#66): der ratlose Buerger. Seine Frage IST sein ganzer
+      // Dialog (hub_buerger_a2, setzt truth_told). Wird gezeigt, solange die
+      // Frage offen ist — "(schweigen)" setzt nichts, also darf sie wiederkehren,
+      // bis der Spieler mit "Keinem von beiden." antwortet (truth_told).
+      if (npcId === 'buerger'
+          && !(qs && typeof qs.hasFlag === 'function' && qs.hasFlag('truth_told'))) {
+        const _sdBuerger = this._storyDialogEntry('hub_buerger_a2');
+        if (_sdBuerger) pages.push(this._storyChoicePage(_sdBuerger));
       }
     }
 

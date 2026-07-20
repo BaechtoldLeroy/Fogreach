@@ -221,6 +221,24 @@ window.HUB_HITBOXES = {
         'Loyalitaet ist die einzige Muenze, die zwischen den Strassen Bestand hat. Frag nicht warum.',
         'Wenn der Magistrat ruft, antwortet die Garde. Wenn der Klerus segnet, marschiert die Garde. So funktioniert es.'
       ]
+    },
+    // Feature 063 (#66): der ratlose Buerger. Erscheint ab Akt 2 ("erste_risse"),
+    // wenn der Wahlkampf hohl wird. Reine Flavor-Figur ohne Quest — sein Dialog
+    // (hub_buerger_a2, setzt truth_told) haengt HubSceneV2 an der Flavor-Stelle an.
+    // Sprite: assets/sprites/buerger.png (Einzel-Sprite wie Thom/Garde). Fehlt es,
+    // zeigt das Spawn-System den Platzhalter (placeholderColor/-Accent unten).
+    {
+      id: 'buerger',
+      name: 'Ratloser Buerger',
+      x: 600, y: 500,
+      texture: 'buerger',
+      scale: 0.30,
+      visibleFromAct: 'erste_risse',
+      placeholderColor: 0x6b5a44,
+      placeholderAccent: 0x4a3d2c,
+      lines: [
+        'Verzeih. Du gehst im Rathaus aus und ein — Du musst es doch wissen.'
+      ]
     }
   ]
 };
