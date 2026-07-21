@@ -487,19 +487,11 @@ class HubSceneV2 extends Phaser.Scene {
       } catch (_) {}
     });
 
-    // Feature 051: demo outro splash. Fires after Q6 completion (the
-    // council_collusion_reveal quest is in the completed list) the first
-    // time the player returns to the hub afterwards. Single-shot via
-    // localStorage flag. Frames the demo end + donor hook + Akt-2 teaser.
-    this.time.delayedCall(600, () => {
-      try {
-        const completed = (window.questSystem && typeof window.questSystem.getCompletedQuests === 'function')
-          ? window.questSystem.getCompletedQuests() : [];
-        const q6Done = completed.some(q => q && q.id === 'council_collusion_reveal');
-        const alreadyShown = !!(window.SlotStorage || localStorage).getItem('demonfall_seen_outro_splash');
-        if (q6Done && !alreadyShown) this._showOutroSplash();
-      } catch (_) {}
-    });
+    // Demo-Outro-Splash ENTFERNT: er stammte aus der 2-Akt-Demo-Zeit und
+    // doppelte den Akt-Uebergang, der nach Q6 ohnehin als Titelkarte feuert —
+    // widersprach ihm sogar in der Nummer ("Ende von Akt 1 / Akt 2" vs. der
+    // Karte "Akt 3"). Die Story hat jetzt fuenf Akte; ein "Ende von Akt 1"-
+    // Fenster passt nicht mehr.
 
     // Run-summary modal: if leaveDungeonForHub stashed a summary, show it
     // once the scene is settled. Cleared from window inside _showRunSummary
@@ -2000,7 +1992,8 @@ class HubSceneV2 extends Phaser.Scene {
 
     this._dialogOpen = true;
     window.storySystem.showStoryOverlay(this, eventData, () => {
-      // Check for more pending events (e.g. milestone after act transition)
+      // Ein zweites faelliges Event nachziehen (z. B. der Epilog direkt nach
+      // einem Akt-Uebergang, wenn damit die letzte Quest-Kette faellt).
       const nextEvent = window.storySystem.consumePendingEvent();
       if (nextEvent) {
         window.storySystem.showStoryOverlay(this, nextEvent, () => {
@@ -3351,21 +3344,9 @@ class HubSceneV2 extends Phaser.Scene {
     });
   }
 
-  // Feature 051 FR-03/FR-04: demo outro splash — fires once after Q6
-  // completion on first hub return. Frames the demo end + donor hook +
-  // Akt-2 teaser.
-  _showOutroSplash() {
-    const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';
-    const isEN = (lang === 'en');
-    const title = isEN ? 'End of Act 1 — Demo' : 'Ende von Akt 1 — Demo';
-    const body = isEN
-      ? "You have completed Act 1.\n\nThree Council factions, one face. The fog thickens — and beneath it, the pact older than the city waits.\n\nAct 2 leads down into the catacombs, where the chains have names and the names have prices. If this resonated and you want to see Act 2 made, support the next chapter."
-      : "Du hast Akt 1 abgeschlossen.\n\nDrei Ratsfraktionen, ein Gesicht. Der Nebel wird dichter — und unter ihm wartet der Pakt, der älter ist als die Stadt.\n\nAkt 2 führt in die Katakomben, wo die Ketten Namen tragen und die Namen Preise haben. Wenn dich das hier erreicht hat und du Akt 2 sehen willst, unterstütze das nächste Kapitel.";
-    const close = isEN ? '[ Continue — for now ]' : '[ Weiter — vorerst ]';
-    this._showSplashModal(title, body, close, () => {
-      try { (window.SlotStorage || localStorage).setItem('demonfall_seen_outro_splash', '1'); } catch (_) {}
-    });
-  }
+  // (Demo-Outro-Splash entfernt — siehe Kommentar an der frueheren Aufrufstelle
+  // in create(). Der Akt-Uebergang nach Q6 wird ueber die normale Titelkarte
+  // gezeigt.)
 
   // Shared splash modal — 1 page, 1 button, ESC/Enter/Space dismiss. Used
   // by intro + outro (and any future single-page narrative beats). Inherits

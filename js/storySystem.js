@@ -245,15 +245,12 @@
     }
   };
 
-  // ---- Wave Milestone Events ----
-  const WAVE_MILESTONES = {
-    5:  'Die Keller sind gesaeubert. Aber seltsame Symbole an den Waenden lassen dich nicht los...',
-    10: 'Der Anfuehrer der \'Eindringlinge\' ist besiegt. Seine letzten Worte: \'Wir wollten euch nur warnen...\'',
-    15: 'Gefaengniszellen. Nicht fuer Tiere — fuer Menschen. Wer sind die wahren Gefangenen hier?',
-    20: 'Die Ritualkammer. Daemonische Energie. Der Zeremonienmeister faellt — aber was er beschworen hat, lebt weiter.',
-    30: 'Der Schattenrat ist besiegt. Aber Elara ist mit ihm verschwunden. Der Nebel beginnt sich zu lichten.',
-    40: 'Unter Fogreach oeffnet sich eine Dimension aus Ketten und Schatten. Die wahre Quelle des Pakts wartet.'
-  };
+  // ---- Wave Milestone Events (ENTFERNT) ----
+  // Die "Tiefe N erreicht"-Splashes (Wave 5/10/15/20/30/40) wurden entfernt: sie
+  // trugen keine Story mehr (die Akte laufen seit v4 rein quest-getrieben) und
+  // haeuften sich beim Hub-Ruecksprung mit den Akt-Titelkarten. Die "Tiefe
+  // erreicht"-Info liefert ohnehin die Run-Summary. Kein pendingMilestone,
+  // kein Priority-2-Zweig in consumePendingEvent mehr.
 
   // ---- Special Ending Text ----
   const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede haemmert fuer die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nDoch wo Elara einst stand, ist nur Leere. Sie verschwand mit dem Schattenrat — und mit ihr eine Wahrheit, die du nie ganz begreifen wirst.\n\nDu hast die Stadt befreit. Doch der Nebel fluestert noch ihren Namen.';
@@ -267,9 +264,6 @@
     STORY_ACTS.forEach(function (a) {
       _autoStoryDe['story.act.' + a.id + '.name'] = a.name;
       _autoStoryDe['story.act.' + a.id + '.narrative'] = ACT_NARRATIVES[a.id] || '';
-    });
-    Object.keys(WAVE_MILESTONES).forEach(function (wave) {
-      _autoStoryDe['story.milestone.' + wave] = WAVE_MILESTONES[wave];
     });
     _autoStoryDe['story.all_quests_ending'] = ALL_QUESTS_ENDING;
     // NPC dialogues: register every line under story.npc.<npcId>.<actId>.<index>
@@ -304,16 +298,8 @@
       'story.act.rebellion.narrative': "The pamphlets worked. Citizens gather in the square. Branka forges weapons for the resistance. 'It is time,' Mara says. 'The council falls today.'",
       'story.act.offenbarung.narrative': "The council chamber. The door slams shut. And there stands Elara — beside the Shadow Council. 'I'm sorry,' she whispers. 'But you don't understand.'",
 
-      'story.milestone.5':  'The cellars are cleared. But strange symbols on the walls won\'t leave your mind...',
-      'story.milestone.10': "The leader of the 'intruders' is defeated. His last words: 'We only meant to warn you...'",
-      'story.milestone.15': 'Prison cells. Not for animals — for people. Who are the real prisoners here?',
-      'story.milestone.20': 'The ritual chamber. Demonic energy. The Ceremoniarch falls — but what he summoned lives on.',
-      'story.milestone.30': 'The Shadow Council is defeated. But Elara has vanished with him. The fog begins to thin.',
-      'story.milestone.40': 'Beneath Fogreach a dimension of chains and shadows opens. The true source of the pact awaits.',
-
       'story.all_quests_ending': "The chains of Fogreach are broken.\n\nThe printing press spreads the truth.\nThe forge hammers for freedom.\nThe underground network keeps watch.\n\nBut where Elara once stood, there is only emptiness. She vanished with the Shadow Council — and with her, a truth you may never fully grasp.\n\nYou have freed the city. Yet the fog still whispers her name.",
 
-      'story.milestone.label': 'Depth {wave} reached',
       'story.epilog.label': 'Epilogue',
       'story.unlock.enhanced_crafting': 'Advanced Crafting',
       'story.unlock.xp_bonus_10': '+10% XP',
@@ -457,7 +443,6 @@
 
     // German registrations for unlock labels (DE source-of-truth, supplement)
     window.i18n.register('de', {
-      'story.milestone.label': 'Tiefe {wave} erreicht',
       'story.epilog.label': 'Epilog',
       'story.unlock.enhanced_crafting': 'Erweiterte Schmiede',
       'story.unlock.xp_bonus_10': '+10% XP',
@@ -491,9 +476,6 @@
   function getActNarrative(actId) {
     return _i18nLookup('story.act.' + actId + '.narrative', ACT_NARRATIVES[actId] || '');
   }
-  function getWaveMilestoneText(wave) {
-    return _i18nLookup('story.milestone.' + wave, WAVE_MILESTONES[wave] || '');
-  }
   function getAllQuestsEnding() {
     return _i18nLookup('story.all_quests_ending', ALL_QUESTS_ENDING);
   }
@@ -504,8 +486,6 @@
     highestWave: 0,
     eventsSeen: [],       // act IDs whose narrative overlay has been shown
     pendingEvent: null,   // act ID to show on next hub visit
-    pendingMilestone: null, // wave milestone to show on next hub visit
-    milestonesShown: [],  // wave numbers whose milestones have been shown
     endingShown: false,   // whether the all-quests-complete ending has been shown
     totalKills: 0,
     totalRoomsCleared: 0,
@@ -560,23 +540,16 @@
     storyState.currentActIndex = 0;
     storyState.eventsSeen = [];
     storyState.pendingEvent = null;
-    storyState.pendingMilestone = null;
-    storyState.milestonesShown = [];
     storyState.endingShown = false;
     try { console.log('[StorySystem] Reset auf Akt 0 (Story v4).'); } catch (_) {}
     return true;
   }
 
   /**
-   * Called after a wave is completed. Records the wave and possibly queues
-   * a wave-milestone splash. Does NOT advance the story act anymore — that
-   * is purely quest-driven via advanceToAct() since feature 050 (Q6
-   * council_collusion_reveal).
-   *
-   * Wave milestones are gated by the current story act: milestone N only
-   * fires when storyState.currentActIndex >= floor(N / 10). This prevents
-   * Akt-2+ story spoilers from firing in Akt 1 just because the player
-   * descended to wave 10 during a routine dungeon run.
+   * Called after a wave is completed. Records the wave for stats. Does NOT
+   * advance the story act (quest-driven via advanceToAct() since feature 050)
+   * and no longer queues a "Tiefe N erreicht"-Splash (die Meilensteine wurden
+   * entfernt — siehe Kommentar oben bei WAVE_MILESTONES).
    */
   function onWaveCompleted(waveNumber) {
     var wave = Math.max(1, waveNumber || 0);
@@ -584,21 +557,6 @@
       storyState.highestWave = wave;
     }
     storyState.totalWavesSurvived = (storyState.totalWavesSurvived || 0) + 1;
-
-    // Wave milestone — story-act-gated. wave 5 → act >= 0 (always),
-    // wave 10/15 → act >= 1, wave 20 → act >= 2, wave 30 → act >= 3,
-    // wave 40 → act >= 4. The milestone text references story beats
-    // that only make sense once the act is narratively reached.
-    if (WAVE_MILESTONES[wave] && storyState.milestonesShown.indexOf(wave) === -1) {
-      var requiredAct = Math.floor(wave / 10);
-      if (storyState.currentActIndex >= requiredAct) {
-        storyState.pendingMilestone = wave;
-        console.log('[StorySystem] Wave milestone queued: ' + wave);
-      } else {
-        console.log('[StorySystem] Wave milestone skipped (currentActIndex='
-          + storyState.currentActIndex + ' < required ' + requiredAct + '): ' + wave);
-      }
-    }
 
     // Depth-based act advancement REMOVED (feature 050 / Q6 owns this).
     // The story arc is now entirely quest-driven — players can dive to any
@@ -640,21 +598,7 @@
       };
     }
 
-    // Priority 2: Wave milestones
-    if (storyState.pendingMilestone) {
-      var wave = storyState.pendingMilestone;
-      storyState.pendingMilestone = null;
-      storyState.milestonesShown.push(wave);
-
-      return {
-        actId: 'milestone_' + wave,
-        actName: _i18nLookup('story.milestone.label', 'Tiefe {wave} erreicht').replace('{wave}', wave),
-        actNumber: null,
-        narrative: getWaveMilestoneText(wave)
-      };
-    }
-
-    // Priority 3: All quest chains complete ending
+    // Priority 2: All quest chains complete ending
     if (!storyState.endingShown && window.questSystem && typeof window.questSystem.areAllQuestChainsComplete === 'function') {
       if (window.questSystem.areAllQuestChainsComplete()) {
         storyState.endingShown = true;
@@ -760,8 +704,6 @@
       highestWave: storyState.highestWave,
       eventsSeen: storyState.eventsSeen.slice(),
       pendingEvent: storyState.pendingEvent,
-      pendingMilestone: storyState.pendingMilestone || null,
-      milestonesShown: (storyState.milestonesShown || []).slice(),
       endingShown: storyState.endingShown || false,
       totalKills: storyState.totalKills || 0,
       totalRoomsCleared: storyState.totalRoomsCleared || 0,
@@ -775,8 +717,6 @@
     storyState.highestWave = typeof data.highestWave === 'number' ? data.highestWave : 0;
     storyState.eventsSeen = Array.isArray(data.eventsSeen) ? data.eventsSeen.slice() : [];
     storyState.pendingEvent = data.pendingEvent || null;
-    storyState.pendingMilestone = data.pendingMilestone || null;
-    storyState.milestonesShown = Array.isArray(data.milestonesShown) ? data.milestonesShown.slice() : [];
     storyState.endingShown = !!data.endingShown;
     storyState.totalKills = typeof data.totalKills === 'number' ? data.totalKills : 0;
     storyState.totalRoomsCleared = typeof data.totalRoomsCleared === 'number' ? data.totalRoomsCleared : 0;
@@ -805,13 +745,17 @@
     var container = scene.add.container(w / 2, h / 2).setDepth(6001).setScrollFactor(0);
 
     // Act number label (only for act transitions, not milestones)
-    var actLabelStr = eventData.actNumber ? ('Akt ' + eventData.actNumber) : 'Meilenstein';
-    var actLabel = scene.add.text(0, -80, actLabelStr, {
-      fontFamily: 'serif',
-      fontSize: 22,
-      color: '#a89878'
-    }).setOrigin(0.5);
-    container.add(actLabel);
+    // Nur Akt-Uebergaenge tragen eine Nummer ("Akt N"). Der Epilog
+    // (actNumber null) laeuft ohne Label — frueher stand hier "Meilenstein",
+    // was seit dem Wegfall der Wave-Meilensteine irrefuehrend war.
+    if (eventData.actNumber) {
+      var actLabel = scene.add.text(0, -80, 'Akt ' + eventData.actNumber, {
+        fontFamily: 'serif',
+        fontSize: 22,
+        color: '#a89878'
+      }).setOrigin(0.5);
+      container.add(actLabel);
+    }
 
     // Act title in gold
     var titleText = scene.add.text(0, -40, eventData.actName, {
