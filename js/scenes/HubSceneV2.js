@@ -1888,8 +1888,40 @@ class HubSceneV2 extends Phaser.Scene {
     }
     this._hubPhase = phase;
     this._hubPhaseHandle = window.HubPhaseView.apply(this, phase, this._hubPhaseRefs);
+
+    // Die NPC-Sichtbarkeit haengt NICHT an der Phase, sondern am echten
+    // Akt-Index (Buerger ab 'erste_risse') und an Story-Flags (Aldric weg ab
+    // 'story_ending'). Die Vorschau fasst beides bewusst nicht an — sonst waere
+    // sie ein Eingriff in den Spielstand. Damit sie trotzdem zeigt, was in der
+    // Phase zu sehen waere, werden Akt-Index und Flag hier NUR fuer die Dauer
+    // einer Neuberechnung vorgetaeuscht und sofort wieder zurueckgesetzt.
+    // Es wird nichts geschrieben (kein setFlag, kein advanceToAct).
+    var st = {
+      council:     { act: 0, ending: false },
+      doubleAgent: { act: 2, ending: false },
+      broken:      { act: 4, ending: false },
+      epilogue:    { act: 4, ending: true }
+    }[phase];
+    var ss = window.storySystem, qs = window.questSystem;
+    if (st && ss && qs && typeof ss.getCurrentActIndex === 'function'
+        && typeof qs.hasFlag === 'function') {
+      var realIdx = ss.getCurrentActIndex;
+      var realFlag = qs.hasFlag;
+      try {
+        ss.getCurrentActIndex = function () { return st.act; };
+        qs.hasFlag = function (f) {
+          if (f === 'story_ending') return st.ending;
+          return realFlag.call(qs, f);
+        };
+        this._refreshNpcVisibility();
+      } finally {
+        ss.getCurrentActIndex = realIdx;
+        qs.hasFlag = realFlag;
+      }
+    }
+
     this._refreshQuestIndicators();
-    return 'Phase jetzt: ' + phase;
+    return 'Phase jetzt: ' + phase + ' (Vorschau — Spielstand unveraendert)';
   }
 
   // Destroy the tracked dialog window (npcDialogContainer @1500) PLUS any
