@@ -4,45 +4,6 @@
   if (!w.RoomTemplates) w.RoomTemplates = {};
   var RT = w.RoomTemplates;
 
-  // --- Brazier-Glow -----------------------------------------------------
-  // Alle Brazier-Lichter landen aus Perf-Gruenden in EINEM geteilten Graphics
-  // (ein Draw-Call, Depth -3). Deshalb laesst sich ein einzelnes Licht nicht
-  // "wegloeschen" — wird ein Brazier zerstoert, muessen die verbliebenen
-  // Lichter neu gezeichnet werden. Dafuer fuehren wir die Positionen mit.
-  function _paintBrazierGlow(gfx, cx, cy) {
-    if (!gfx) return;
-    gfx.fillStyle(0xff8800, 0.06);
-    gfx.fillCircle(cx, cy, 80);
-    gfx.fillStyle(0xffaa00, 0.1);
-    gfx.fillCircle(cx, cy, 64);
-    gfx.fillStyle(0xffcc33, 0.2);
-    gfx.fillCircle(cx, cy, 40);
-    gfx.fillStyle(0xffdd44, 0.12);
-    gfx.fillCircle(cx, cy, 24);
-  }
-
-  // Entfernt das Licht des Braziers, der (x,y) am naechsten liegt, und zeichnet
-  // die restlichen Glows neu. Gibt true zurueck, wenn eines entfernt wurde.
-  function removeBrazierGlow(scene, x, y, tolerance) {
-    if (!scene) return false;
-    var gfx = scene._brazierGlowGfx;
-    var pts = scene._brazierGlowPoints;
-    if (!gfx || !Array.isArray(pts) || !pts.length) return false;
-    var tol = (typeof tolerance === 'number') ? tolerance : 48;
-    var bestIdx = -1, bestDist = Infinity;
-    for (var i = 0; i < pts.length; i++) {
-      var dx = pts[i].x - x, dy = pts[i].y - y;
-      var d = Math.sqrt(dx * dx + dy * dy);
-      if (d < bestDist) { bestDist = d; bestIdx = i; }
-    }
-    if (bestIdx < 0 || bestDist > tol) return false;
-    pts.splice(bestIdx, 1);
-    if (typeof gfx.clear === 'function') gfx.clear();
-    for (var j = 0; j < pts.length; j++) _paintBrazierGlow(gfx, pts[j].x, pts[j].y);
-    return true;
-  }
-  RT.removeBrazierGlow = removeBrazierGlow;
-
   // 2) Manifest definieren – Namen müssen exakt den JSON-Dateien unter /roomTemplates/ entsprechen
   if (!Array.isArray(RT.MANIFEST)) {
     RT.MANIFEST = [
@@ -69,6 +30,61 @@
     ];
   }
 })(window);
+
+// ========== Brazier-Glow ==========
+// Alle Brazier-Lichter landen aus Perf-Gruenden in EINEM geteilten Graphics
+// (ein Draw-Call, Depth -3). Deshalb laesst sich ein einzelnes Licht nicht
+// "wegloeschen" — wird ein Brazier zerstoert, muessen die verbliebenen Lichter
+// neu gezeichnet werden. Dafuer fuehren wir die Positionen mit.
+//
+// WICHTIG: Diese Funktionen stehen bewusst auf TOP-LEVEL, nicht in der IIFE
+// oben. applyRoomTemplate (der einzige Zeichen-Aufrufer) ist selbst top-level
+// und kann IIFE-lokale Bindings nicht sehen — genau daran ist es schon einmal
+// zur Laufzeit gescheitert ("_paintBrazierGlow is not defined").
+function _paintBrazierGlow(gfx, cx, cy) {
+  if (!gfx) return;
+  gfx.fillStyle(0xff8800, 0.06);
+  gfx.fillCircle(cx, cy, 80);
+  gfx.fillStyle(0xffaa00, 0.1);
+  gfx.fillCircle(cx, cy, 64);
+  gfx.fillStyle(0xffcc33, 0.2);
+  gfx.fillCircle(cx, cy, 40);
+  gfx.fillStyle(0xffdd44, 0.12);
+  gfx.fillCircle(cx, cy, 24);
+}
+
+// Zeichnet einen Glow UND merkt sich seine Position. `points` ist die Liste,
+// die spaeter removeBrazierGlow braucht.
+function registerBrazierGlow(gfx, points, cx, cy) {
+  if (!gfx || !Array.isArray(points)) return false;
+  points.push({ x: cx, y: cy });
+  _paintBrazierGlow(gfx, cx, cy);
+  return true;
+}
+
+// Entfernt das Licht des Braziers, der (x,y) am naechsten liegt, und zeichnet
+// die restlichen Glows neu. Gibt true zurueck, wenn eines entfernt wurde.
+function removeBrazierGlow(scene, x, y, tolerance) {
+  if (!scene) return false;
+  var gfx = scene._brazierGlowGfx;
+  var pts = scene._brazierGlowPoints;
+  if (!gfx || !Array.isArray(pts) || !pts.length) return false;
+  var tol = (typeof tolerance === 'number') ? tolerance : 48;
+  var bestIdx = -1, bestDist = Infinity;
+  for (var i = 0; i < pts.length; i++) {
+    var dx = pts[i].x - x, dy = pts[i].y - y;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    if (d < bestDist) { bestDist = d; bestIdx = i; }
+  }
+  if (bestIdx < 0 || bestDist > tol) return false;
+  pts.splice(bestIdx, 1);
+  if (typeof gfx.clear === 'function') gfx.clear();
+  for (var j = 0; j < pts.length; j++) _paintBrazierGlow(gfx, pts[j].x, pts[j].y);
+  return true;
+}
+
+window.RoomTemplates.registerBrazierGlow = registerBrazierGlow;
+window.RoomTemplates.removeBrazierGlow = removeBrazierGlow;
 
 // ========== Room Theme System ==========
 const ROOM_THEMES = {
@@ -402,11 +418,8 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   const brazierGlowPoints = [];
   scene._brazierGlowGfx = brazierGlowGfx;
   scene._brazierGlowPoints = brazierGlowPoints;
-  const addBrazierGlow = (cx, cy) => {
-    if (!brazierGlowGfx) return;
-    brazierGlowPoints.push({ x: cx, y: cy });
-    _paintBrazierGlow(brazierGlowGfx, cx, cy);
-  };
+  const addBrazierGlow = (cx, cy) =>
+    registerBrazierGlow(brazierGlowGfx, brazierGlowPoints, cx, cy);
 
   for (let y = 0; y < H; y++) {
     const row = tpl.layout.walls[y];

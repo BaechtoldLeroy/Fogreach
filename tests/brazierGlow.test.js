@@ -51,6 +51,39 @@ function sceneWith(points) {
   };
 }
 
+// Regression: _paintBrazierGlow lag zuerst in der IIFE am Dateikopf, der
+// zeichnende Aufrufer (applyRoomTemplate) steht aber auf Top-Level und sah das
+// Binding nicht -> "ReferenceError: _paintBrazierGlow is not defined" beim
+// Betreten des ersten Raums mit Brazier. Die alten Tests riefen nur
+// removeBrazierGlow auf (gleicher Scope) und waren deshalb blind dafuer.
+// Diese Tests gehen ueber den ECHTEN Zeichen-Pfad.
+test('registerBrazierGlow ist erreichbar und zeichnet (Scope-Regression)', () => {
+  assert.strictEqual(typeof RT.registerBrazierGlow, 'function');
+  const gfx = makeGfx();
+  const pts = [];
+  assert.doesNotThrow(function () { RT.registerBrazierGlow(gfx, pts, 120, 240); });
+  assert.deepStrictEqual(pts, [{ x: 120, y: 240 }]);
+  assert.deepStrictEqual(centers(gfx), [{ x: 120, y: 240 }]);
+});
+
+test('hinzufuegen und wieder entfernen greift ineinander', () => {
+  const gfx = makeGfx();
+  const pts = [];
+  RT.registerBrazierGlow(gfx, pts, 100, 100);
+  RT.registerBrazierGlow(gfx, pts, 300, 100);
+  assert.deepStrictEqual(centers(gfx), [{ x: 100, y: 100 }, { x: 300, y: 100 }]);
+
+  const scene = { _brazierGlowGfx: gfx, _brazierGlowPoints: pts };
+  assert.strictEqual(RT.removeBrazierGlow(scene, 100, 100), true);
+  assert.deepStrictEqual(centers(gfx), [{ x: 300, y: 100 }]);
+  assert.strictEqual(pts.length, 1);
+});
+
+test('registerBrazierGlow ist robust ohne Graphics/Liste', () => {
+  assert.strictEqual(RT.registerBrazierGlow(null, [], 1, 1), false);
+  assert.strictEqual(RT.registerBrazierGlow(makeGfx(), null, 1, 1), false);
+});
+
 test('removeBrazierGlow entfernt genau den getroffenen Glow', () => {
   const scene = sceneWith([{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 500, y: 100 }]);
   const removed = RT.removeBrazierGlow(scene, 300, 100);
