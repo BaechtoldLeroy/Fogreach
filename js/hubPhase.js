@@ -48,7 +48,11 @@
     council:     { tint: 0xffffff, desaturate: 0.00, fog: 0.00, posters: 'fresh', assetKey: null,               rathausHostile: false },
     doubleAgent: { tint: 0x9fb0c8, desaturate: 0.35, fog: 0.12, posters: 'faded', assetKey: 'hub_doubleAgent', rathausHostile: false },
     broken:      { tint: 0x8a6b6b, desaturate: 0.45, fog: 0.22, posters: 'torn',  assetKey: 'hub_broken',      rathausHostile: true  },
-    epilogue:    { tint: 0xeef0f2, desaturate: 0.15, fog: 0.30, posters: 'gone',  assetKey: 'hub_epilogue',    rathausHostile: false }
+    // Epilog: der Nebel ist WEG. Die Wahrheit ist gedruckt, die Stadt sieht zum
+    // ersten Mal klar — deshalb weder Nebel noch Entsaettigung, nur ein heller,
+    // sauberer Tint. (Vorher trug ausgerechnet der Epilog mit fog 0.30 den
+    // dichtesten Nebel von allen Phasen; das lief der Geschichte zuwider.)
+    epilogue:    { tint: 0xeef0f2, desaturate: 0.00, fog: 0.00, posters: 'gone',  assetKey: 'hub_epilogue',    rathausHostile: false }
   };
 
   // Phasenabhaengige NPC-Flavor-Overrides. Fehlt ein Eintrag, bleibt die

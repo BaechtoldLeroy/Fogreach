@@ -130,7 +130,7 @@ test('gone zeichnet weniger als fresh (Plakate sind ab)', () => {
 test('Nebel und Schleier liegen UEBER den Figuren', () => {
   // Figuren sind y-sortiert bis ~1000 (Sprites/Prompts). Alles darunter waere
   // hinter ihnen — genau der Bug aus dem Playtest.
-  ['doubleAgent', 'broken', 'epilogue'].forEach((p) => {
+  ['doubleAgent', 'broken'].forEach((p) => {
     const scene = makeScene(), refs = makeRefs();
     V.apply(scene, p, refs);
     const full = scene.objects.filter((o) => o._kind === 'rect' && o.w === 800 && o.h === 480);
@@ -142,11 +142,24 @@ test('Nebel und Schleier liegen UEBER den Figuren', () => {
   });
 });
 
-test('council hat keine Atmosphaere-Overlays', () => {
-  const scene = makeScene(), refs = makeRefs();
-  V.apply(scene, 'council', refs);
-  const full = scene.objects.filter((o) => o._kind === 'rect' && o.w === 800 && o.h === 480);
-  assert.strictEqual(full.length, 0);
+// council = Ausgangszustand, epilogue = der Nebel hat sich gehoben. Beide
+// zeigen die Stadt klar; nur der Grund ist ein anderer.
+test('council und epilogue haben keine Atmosphaere-Overlays', () => {
+  ['council', 'epilogue'].forEach((p) => {
+    const scene = makeScene(), refs = makeRefs();
+    V.apply(scene, p, refs);
+    const full = scene.objects.filter((o) => o._kind === 'rect' && o.w === 800 && o.h === 480);
+    assert.strictEqual(full.length, 0, p + ': keine Vollbild-Overlays erwartet');
+  });
+});
+
+test('der Nebel wird zum Epilog hin nicht dichter, sondern verschwindet', () => {
+  const S = globalThis.window.HubPhase.PHASE_STYLE;
+  assert.strictEqual(S.epilogue.fog, 0, 'Epilog: kein Nebel mehr');
+  assert.strictEqual(S.epilogue.desaturate, 0, 'Epilog: keine Entsaettigung mehr');
+  // Dichtester Nebel gehoert zum Bruch, nicht ans Ende.
+  assert.ok(S.broken.fog > S.doubleAgent.fog, 'broken dichter als doubleAgent');
+  assert.ok(S.broken.fog > S.epilogue.fog, 'broken dichter als epilogue');
 });
 
 // --- Rathaus ----------------------------------------------------------------
