@@ -173,22 +173,28 @@ class HubSceneV2 extends Phaser.Scene {
     // Quest-Indikatoren und die phasenabhaengige NPC-Flavor lesen sie unten.
     this._hubPhase = (window.HubPhase && typeof window.HubPhase.current === 'function')
       ? window.HubPhase.current() : 'council';
+    // Refs EINMAL bauen und an der Szene merken. Sie sind die vollstaendige
+    // Beschreibung dessen, was die View braucht — wer die Phase spaeter neu
+    // anwendet (Playtest-Vorschau, Phasenwechsel zur Laufzeit), muss sie nicht
+    // nachbauen und kann dabei auch nichts vergessen. Genau daran ist eine
+    // Vorschau schon gescheitert: ohne posterSpots verschwanden die Tafeln.
+    this._hubPhaseRefs = {
+      bg: bg,
+      overlayDepth: 90,
+      rathausRect: {
+        x: 368 * SCALE_FACTOR, y: 110 * SCALE_FACTOR,
+        w: 224 * SCALE_FACTOR, h: 168 * SCALE_FACTOR
+      },
+      // Anschlagtafeln flankierend zur Rathaustreppe (Layout-Raum: Treppe
+      // x430-530, Pflanzkuebel x356-394 und x566-604 — dazwischen ist die
+      // Luecke). y = Standlinie auf dem Platz. Weltkoordinaten wie oben.
+      posterSpots: [
+        { x: 412 * SCALE_FACTOR, y: 300 * SCALE_FACTOR },
+        { x: 548 * SCALE_FACTOR, y: 300 * SCALE_FACTOR }
+      ]
+    };
     if (window.HubPhaseView && typeof window.HubPhaseView.apply === 'function') {
-      this._hubPhaseHandle = window.HubPhaseView.apply(this, this._hubPhase, {
-        bg: bg,
-        overlayDepth: 90,
-        rathausRect: {
-          x: 368 * SCALE_FACTOR, y: 110 * SCALE_FACTOR,
-          w: 224 * SCALE_FACTOR, h: 168 * SCALE_FACTOR
-        },
-        // Anschlagtafeln flankierend zur Rathaustreppe (Layout-Raum: Treppe
-        // x430-530, Pflanzkuebel x356-394 und x566-604 — dazwischen ist die
-        // Luecke). y = Standlinie auf dem Platz. Weltkoordinaten wie oben.
-        posterSpots: [
-          { x: 412 * SCALE_FACTOR, y: 300 * SCALE_FACTOR },
-          { x: 548 * SCALE_FACTOR, y: 300 * SCALE_FACTOR }
-        ]
-      });
+      this._hubPhaseHandle = window.HubPhaseView.apply(this, this._hubPhase, this._hubPhaseRefs);
     }
 
     this._dialogOpen = false;
@@ -1829,6 +1835,25 @@ class HubSceneV2 extends Phaser.Scene {
       const { eventName, handler } = keyClosers.pop();
       this.input.keyboard.off(eventName, handler);
     }
+  }
+
+  // Playtest-Helfer: eine Hub-Phase zur Laufzeit anwenden, OHNE den Spielstand
+  // anzufassen (Akt-Index und Flags bleiben unberuehrt — beim naechsten
+  // Hub-Betreten gilt wieder die echte Phase). Nutzt die gemerkten Refs, damit
+  // die Vorschau garantiert dasselbe zeigt wie der echte Aufbau.
+  // Konsole:  game.scene.getScene('HubSceneV2').previewPhase('doubleAgent')
+  previewPhase(phase) {
+    if (!window.HubPhaseView || typeof window.HubPhaseView.apply !== 'function') {
+      return 'HubPhaseView fehlt';
+    }
+    if (!this._hubPhaseRefs) return 'Refs fehlen — Szene noch nicht aufgebaut?';
+    if (this._hubPhaseHandle && typeof this._hubPhaseHandle.destroy === 'function') {
+      this._hubPhaseHandle.destroy();
+    }
+    this._hubPhase = phase;
+    this._hubPhaseHandle = window.HubPhaseView.apply(this, phase, this._hubPhaseRefs);
+    this._refreshQuestIndicators();
+    return 'Phase jetzt: ' + phase;
   }
 
   // Destroy the tracked dialog window (npcDialogContainer @1500) PLUS any
