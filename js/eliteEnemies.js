@@ -220,6 +220,34 @@
     return 'Gegner';
   }
 
+  // Sichtlinien-Test gegen das zwischengespeicherte Vision-Polygon (wird jeden
+  // Frame von roomManager.updateFogOfWar gefuellt). Liegt (x,y) ausserhalb —
+  // also hinter einer Wand oder geschlossenen Tuer — ist das Objekt zu
+  // verstecken.
+  //
+  // Noetig fuer Namens-Tag UND Aura: beide haengen zwar im enemyLayer, aber die
+  // GeometryMask dort greift bei ihnen nicht (Text ohnehin nicht, die Aura-
+  // Graphics zeichnet in Weltkoordinaten). Ohne diesen Test leuchten die Auren
+  // verzauberter Gegner durch geschlossene Tueren. (Refs #14)
+  function _isInVision(scene, x, y, fallback) {
+    var poly = scene && scene._lastVisionPolygon;
+    if (!poly || poly.length < 6 || typeof window === 'undefined'
+        || !window.Phaser || !window.Phaser.Geom || !window.Phaser.Geom.Polygon) {
+      return fallback;
+    }
+    try {
+      // Polygon-Objekt einmal bauen und wiederverwenden, solange sich die
+      // Punktliste nicht geaendert hat (laeuft im 16ms-Timer).
+      if (!scene._lastVisionPolyObj || scene._lastVisionPolyData !== poly) {
+        scene._lastVisionPolyObj = new window.Phaser.Geom.Polygon(poly);
+        scene._lastVisionPolyData = poly;
+      }
+      return window.Phaser.Geom.Polygon.Contains(scene._lastVisionPolyObj, x, y);
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   function applyEliteToEnemy(enemy, eliteTier, rng) {
     if (!enemy) return;
     if (eliteTier !== 'champion' && eliteTier !== 'unique') return;
@@ -284,6 +312,13 @@
                 aura.clear();
                 aura.fillStyle(picked[0].auraColor, 0.35);
                 aura.fillCircle(enemy.x, enemy.y, 36);
+                // Wie beim Namens-Tag: die Maske des enemyLayer haelt die Aura
+                // nicht zurueck, deshalb explizit gegen die Sichtlinie pruefen.
+                if (typeof aura.setVisible === 'function') {
+                  aura.setVisible(
+                    enemy.visible && _isInVision(aura.scene, enemy.x, enemy.y, true)
+                  );
+                }
               }
             });
             enemy._eliteAuraTimer = auraTimer;
@@ -330,23 +365,9 @@
                 // each frame). When the enemy is outside the LOS polygon —
                 // including "behind a closed door" — the label hides. (Refs #14)
                 if (typeof tag.setVisible === 'function') {
-                  let visible = enemy.active && enemy.visible;
-                  const sc = tag.scene;
-                  const poly = sc && sc._lastVisionPolygon;
-                  if (visible && poly && poly.length >= 6
-                      && typeof window !== 'undefined'
-                      && window.Phaser && window.Phaser.Geom
-                      && window.Phaser.Geom.Polygon) {
-                    try {
-                      // Build a Polygon once, reuse if shape hasn't changed.
-                      if (!sc._lastVisionPolyObj || sc._lastVisionPolyData !== poly) {
-                        sc._lastVisionPolyObj = new window.Phaser.Geom.Polygon(poly);
-                        sc._lastVisionPolyData = poly;
-                      }
-                      visible = window.Phaser.Geom.Polygon.Contains(
-                        sc._lastVisionPolyObj, enemy.x, enemy.y
-                      );
-                    } catch (_) { /* leave visible as the active+visible default */ }
+                  var visible = enemy.active && enemy.visible;
+                  if (visible) {
+                    visible = _isInVision(tag.scene, enemy.x, enemy.y, true);
                   }
                   tag.setVisible(visible);
                 }

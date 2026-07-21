@@ -116,7 +116,8 @@
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
       "Bash(gh issue *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\LeroyBächtold\\\\Documents\\\\Demonfall\" -Recurse -Filter \"*.json\")",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(cat > *)"
     ]
   }
 }

@@ -940,9 +940,10 @@ function breakDestructiblesInRange(scene, range, options = {}) {
   const targets = [];
   obstacles.children.iterate((obs) => {
     if (!obs || !obs.active || !obs.getData || !obs.getData('destructible')) return;
-    const dx = (obs.x ?? 0) - px;
-    const dy = (obs.y ?? 0) - py;
-    if (Math.hypot(dx, dy) > range) return;
+    // Reichweite bis zur Prop-OBERFLAECHE (js/propRange.js) — sonst ueberlebt
+    // eine gerammte Kiste den Ansturm, weil ihr Mittelpunkt knapp ausserhalb
+    // des schmalen Radius liegt.
+    if (!window._propInRange(obs, px, py, range)) return;
     if (requireLineOfSight && !hasLineOfSightToTarget(obs)) return;
     targets.push(obs);
   });
