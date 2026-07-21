@@ -4,6 +4,45 @@
   if (!w.RoomTemplates) w.RoomTemplates = {};
   var RT = w.RoomTemplates;
 
+  // --- Brazier-Glow -----------------------------------------------------
+  // Alle Brazier-Lichter landen aus Perf-Gruenden in EINEM geteilten Graphics
+  // (ein Draw-Call, Depth -3). Deshalb laesst sich ein einzelnes Licht nicht
+  // "wegloeschen" — wird ein Brazier zerstoert, muessen die verbliebenen
+  // Lichter neu gezeichnet werden. Dafuer fuehren wir die Positionen mit.
+  function _paintBrazierGlow(gfx, cx, cy) {
+    if (!gfx) return;
+    gfx.fillStyle(0xff8800, 0.06);
+    gfx.fillCircle(cx, cy, 80);
+    gfx.fillStyle(0xffaa00, 0.1);
+    gfx.fillCircle(cx, cy, 64);
+    gfx.fillStyle(0xffcc33, 0.2);
+    gfx.fillCircle(cx, cy, 40);
+    gfx.fillStyle(0xffdd44, 0.12);
+    gfx.fillCircle(cx, cy, 24);
+  }
+
+  // Entfernt das Licht des Braziers, der (x,y) am naechsten liegt, und zeichnet
+  // die restlichen Glows neu. Gibt true zurueck, wenn eines entfernt wurde.
+  function removeBrazierGlow(scene, x, y, tolerance) {
+    if (!scene) return false;
+    var gfx = scene._brazierGlowGfx;
+    var pts = scene._brazierGlowPoints;
+    if (!gfx || !Array.isArray(pts) || !pts.length) return false;
+    var tol = (typeof tolerance === 'number') ? tolerance : 48;
+    var bestIdx = -1, bestDist = Infinity;
+    for (var i = 0; i < pts.length; i++) {
+      var dx = pts[i].x - x, dy = pts[i].y - y;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    if (bestIdx < 0 || bestDist > tol) return false;
+    pts.splice(bestIdx, 1);
+    if (typeof gfx.clear === 'function') gfx.clear();
+    for (var j = 0; j < pts.length; j++) _paintBrazierGlow(gfx, pts[j].x, pts[j].y);
+    return true;
+  }
+  RT.removeBrazierGlow = removeBrazierGlow;
+
   // 2) Manifest definieren – Namen müssen exakt den JSON-Dateien unter /roomTemplates/ entsprechen
   if (!Array.isArray(RT.MANIFEST)) {
     RT.MANIFEST = [
@@ -358,6 +397,17 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   if (obstacleShadowGfx) templateWalls.push(obstacleShadowGfx);
   if (brazierGlowGfx) templateWalls.push(brazierGlowGfx);
 
+  // Glow-Positionen mitfuehren, damit ein zerstoertes Brazier sein Licht
+  // verlieren kann (siehe removeBrazierGlow oben). Pro Raum-Aufbau frisch.
+  const brazierGlowPoints = [];
+  scene._brazierGlowGfx = brazierGlowGfx;
+  scene._brazierGlowPoints = brazierGlowPoints;
+  const addBrazierGlow = (cx, cy) => {
+    if (!brazierGlowGfx) return;
+    brazierGlowPoints.push({ x: cx, y: cy });
+    _paintBrazierGlow(brazierGlowGfx, cx, cy);
+  };
+
   for (let y = 0; y < H; y++) {
     const row = tpl.layout.walls[y];
     const spansInRow = new Set();
@@ -405,15 +455,8 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
           }
 
           // Ambient glow for braziers in grid
-          if ((key === 'brazier' || key === 'brazer') && brazierGlowGfx) {
-            brazierGlowGfx.fillStyle(0xff8800, 0.06);
-            brazierGlowGfx.fillCircle(obstacleX, obstacleY, 80);
-            brazierGlowGfx.fillStyle(0xffaa00, 0.1);
-            brazierGlowGfx.fillCircle(obstacleX, obstacleY, 64);
-            brazierGlowGfx.fillStyle(0xffcc33, 0.2);
-            brazierGlowGfx.fillCircle(obstacleX, obstacleY, 40);
-            brazierGlowGfx.fillStyle(0xffdd44, 0.12);
-            brazierGlowGfx.fillCircle(obstacleX, obstacleY, 24);
+          if (key === 'brazier' || key === 'brazer') {
+            addBrazierGlow(obstacleX, obstacleY);
           }
 
           // Props naeher als 2 Kacheln an einer Wand wurden frueher zu reinen
@@ -710,15 +753,8 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     }
 
     // Ambient glow for braziers — large, warm, and visible
-    if ((o.type === 'brazier' || o.type === 'brazer') && brazierGlowGfx) {
-      brazierGlowGfx.fillStyle(0xff8800, 0.06);
-      brazierGlowGfx.fillCircle(px, py, 80);
-      brazierGlowGfx.fillStyle(0xffaa00, 0.1);
-      brazierGlowGfx.fillCircle(px, py, 64);
-      brazierGlowGfx.fillStyle(0xffcc33, 0.2);
-      brazierGlowGfx.fillCircle(px, py, 40);
-      brazierGlowGfx.fillStyle(0xffdd44, 0.12);
-      brazierGlowGfx.fillCircle(px, py, 24);
+    if (o.type === 'brazier' || o.type === 'brazer') {
+      addBrazierGlow(px, py);
     }
 
     // Frueher: Objekte naeher als 2 Kacheln an einer Wand wurden auf alpha 0.7

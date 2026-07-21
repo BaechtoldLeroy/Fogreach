@@ -117,7 +117,12 @@
         return {
           invOpen:            !!window.invOpen,
           playerDeathHandled: !!window.playerDeathHandled,
-          isReturningToHub:   !!window.isReturningToHub
+          isReturningToHub:   !!window.isReturningToHub,
+          // Modaler Event-/Story-Dialog (EventSystem.showEventChoiceDialog).
+          // Ohne dieses Flag schlaegt der Spieler durch den offenen Dialog
+          // hindurch zu — und die Leertaste, die den Dialog wegdrueckt, loeste
+          // im selben Frame zusaetzlich einen Angriff aus.
+          eventChoiceOpen:    !!window.eventChoiceOpen
         };
       },
       persistence: {
@@ -216,7 +221,8 @@
   function shouldSuppressCombatInput() {
     if (!primitives || typeof primitives.getSuppressFlags !== 'function') return false;
     const flags = primitives.getSuppressFlags() || {};
-    return !!(flags.invOpen || flags.playerDeathHandled || flags.isReturningToHub);
+    return !!(flags.invOpen || flags.playerDeathHandled || flags.isReturningToHub
+      || flags.eventChoiceOpen);
   }
 
   function getMovementInput() {

@@ -1499,6 +1499,11 @@ function breakDestructibleObstacle(scene, obs) {
   // Ein zerstoertes Brazier laesst den Boden brennen (burned-Effekt fuer alle,
   // die drinstehen). Altare/Statuen/Saeulen zerbrechen nur (stone-Tier, Gold).
   if (type.indexOf('brazier') === 0 || type.indexOf('brazer') === 0) {
+    // Das warme Standlicht gehoert zum intakten Brazier — mit dem Becken muss
+    // es verschwinden, sonst leuchtet eine zerstoerte Schale weiter.
+    if (window.RoomTemplates && typeof window.RoomTemplates.removeBrazierGlow === 'function') {
+      try { window.RoomTemplates.removeBrazierGlow(scene, x, y); } catch (e) {}
+    }
     spawnFloorFire(scene, x, y);
   }
 

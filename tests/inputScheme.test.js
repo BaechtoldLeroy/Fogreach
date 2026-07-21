@@ -325,7 +325,7 @@ test('getAimDirection arpg: missing pointer yields lastKnown', () => {
 
 // --- Suppression ---
 
-test('shouldSuppressCombatInput reads all three flags', () => {
+test('shouldSuppressCombatInput reads all four flags', () => {
   const { IS, stub } = fresh();
   assert.strictEqual(IS.shouldSuppressCombatInput(), false);
   stub.setSuppress({ invOpen: true });
@@ -334,6 +334,42 @@ test('shouldSuppressCombatInput reads all three flags', () => {
   assert.strictEqual(IS.shouldSuppressCombatInput(), true);
   stub.setSuppress({ playerDeathHandled: false, isReturningToHub: true });
   assert.strictEqual(IS.shouldSuppressCombatInput(), true);
+  stub.setSuppress({ isReturningToHub: false, eventChoiceOpen: true });
+  assert.strictEqual(IS.shouldSuppressCombatInput(), true);
+});
+
+// An open modal event dialog (Elara cellar encounter, shrine choice) must not
+// let attacks/abilities/rolls through — otherwise the SPACE press that
+// dismisses the dialog also swings the weapon in the same frame.
+test('isBasicAttackTriggered suppressed while an event dialog is open', () => {
+  const { IS, stub } = fresh();
+  stub.setSuppress({ eventChoiceOpen: true });
+  stub.pressKey('space');
+  assert.strictEqual(IS.isBasicAttackTriggered(), false);
+});
+
+test('consumeAbilityTrigger suppressed while an event dialog is open', () => {
+  const { IS, stub } = fresh();
+  stub.setSuppress({ eventChoiceOpen: true });
+  stub.pressKey('q');
+  assert.strictEqual(IS.consumeAbilityTrigger(1), false);
+});
+
+test('isRollTriggered suppressed while an event dialog is open', () => {
+  const { IS, stub } = fresh();
+  stub.setSuppress({ eventChoiceOpen: true });
+  stub.pressKey('shift');
+  assert.strictEqual(IS.isRollTriggered(), false);
+});
+
+test('attack works again once the event dialog closes', () => {
+  const { IS, stub } = fresh();
+  stub.setSuppress({ eventChoiceOpen: true });
+  stub.pressKey('space');
+  assert.strictEqual(IS.isBasicAttackTriggered(), false);
+  stub.setSuppress({ eventChoiceOpen: false });
+  stub.pressKey('space');
+  assert.strictEqual(IS.isBasicAttackTriggered(), true);
 });
 
 test('setScheme clears pending primary-button edge', () => {

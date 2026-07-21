@@ -1455,6 +1455,9 @@
     var elements = [];
 
     scene._eventChoiceActive = true;
+    // Global gespiegelt, damit InputScheme.shouldSuppressCombatInput den offenen
+    // Dialog kennt (sonst schlaegt man durch ihn hindurch zu).
+    window.eventChoiceOpen = true;
     // Pause physics — freeze all bodies
     if (scene.physics && scene.physics.world) {
       scene.physics.world.pause();
@@ -1473,8 +1476,16 @@
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2501);
     elements.push(titleText);
 
+    var dismissKeyHandler = null;
     var cleanup = function () {
       scene._eventChoiceActive = false;
+      window.eventChoiceOpen = false;
+      if (dismissKeyHandler && scene.input && scene.input.keyboard) {
+        scene.input.keyboard.off('keydown-ESC', dismissKeyHandler);
+        scene.input.keyboard.off('keydown-SPACE', dismissKeyHandler);
+        scene.input.keyboard.off('keydown-ENTER', dismissKeyHandler);
+        dismissKeyHandler = null;
+      }
       // Resume physics
       if (scene.physics && scene.physics.world) {
         scene.physics.world.resume();
@@ -1514,6 +1525,22 @@
       elements.push(btnBg);
       elements.push(btnText);
       cursorY = by + btnH / 2 + BTN_GAP;
+    }
+
+    // Ein-Knopf-Dialoge ("Weiter") sind reine Bestaetigungen — z. B. Elaras
+    // Kellerbegegnung. Die darf man mit ESC/Leertaste/Enter wegdruecken statt
+    // den Knopf treffen zu muessen. Mehrfach-Auswahlen bleiben BEWUSST
+    // klickpflichtig: dort waere eine Taste eine willkuerlich getroffene
+    // Story-/Belohnungsentscheidung.
+    if (choices.length === 1 && scene.input && scene.input.keyboard) {
+      var onlyChoice = choices[0];
+      dismissKeyHandler = function () {
+        cleanup(); // haengt die Tasten selbst wieder ab
+        if (typeof onlyChoice.callback === 'function') onlyChoice.callback();
+      };
+      scene.input.keyboard.on('keydown-ESC', dismissKeyHandler);
+      scene.input.keyboard.on('keydown-SPACE', dismissKeyHandler);
+      scene.input.keyboard.on('keydown-ENTER', dismissKeyHandler);
     }
   }
 
