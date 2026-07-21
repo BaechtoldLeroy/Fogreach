@@ -88,13 +88,53 @@
       g.fillRect(left + 10, top + i * plankH + plankH * 0.68, panelW - 24, 1);
     }
 
-    // Kleines Vordach — gibt der Tafel eine erkennbare Silhouette.
+    // Vordach: kleines Satteldach mit Schindeln, Traufbrett, Firstbalken und
+    // Kopfbaendern. Vorher war das ein flaches dunkles Zickzack-Polygon ohne
+    // Tiefe — hier tragen Zweitonung (links belichtet, rechts im Schatten),
+    // Schattenwurf aufs Brett und versetzte Stossfugen die Plastizitaet.
+    var eaveY = top - 6, peakY = top - 22;
+    var ovr = 11, lx = left - ovr, rx = right + ovr;
+    var halfSpan = (rx - lx) / 2, rise = eaveY - peakY;
+
+    // Schattenwurf des Dachs auf die oberste Planke
+    g.fillStyle(0x1d150e, 0.4);
+    g.fillRect(left - 4, top - 4, panelW + 8, 5);
+
+    // Dachflaechen — linke Seite zum Licht, rechte im Schatten
+    g.fillStyle(0x634a33, 1);
+    g.fillPoints([{ x: lx, y: eaveY }, { x: cx, y: peakY }, { x: cx, y: eaveY }], true);
+    g.fillStyle(0x3f2e1e, 1);
+    g.fillPoints([{ x: cx, y: peakY }, { x: rx, y: eaveY }, { x: cx, y: eaveY }], true);
+
+    // Schindelreihen, nach oben schmaler werdend, mit versetzten Stossfugen
+    for (var c = 1; c <= 3; c++) {
+      var ct = c / 4;
+      var cyy = eaveY - rise * ct;
+      var chw = halfSpan * (1 - ct);
+      g.fillStyle(0x2f2317, 0.5);
+      g.fillRect(cx - chw, cyy, chw * 2, 1);
+      g.fillStyle(0x2f2317, 0.3);
+      var off = (c % 2) ? 4 : 0;
+      for (var sx = cx - chw + off; sx < cx + chw - 1; sx += 8) {
+        g.fillRect(sx, cyy, 1, rise / 4);
+      }
+    }
+
+    // Traufbrett mit heller Oberkante
+    g.fillStyle(0x33261b, 1);
+    g.fillRect(lx, eaveY, rx - lx, 3);
+    g.fillStyle(0x7a5c3e, 0.5);
+    g.fillRect(lx, eaveY, rx - lx, 1);
+
+    // Firstbalken + kleiner Knauf
+    g.fillStyle(0x2a1e14, 1);
+    g.fillRect(cx - 5, peakY - 1, 10, 3);
+    g.fillCircle(cx, peakY - 3, 2);
+
+    // Kopfbaender: kleine Streben vom Rahmen zur Traufe
     g.fillStyle(0x3b2c20, 1);
-    g.fillPoints([
-      { x: left - 9, y: top - 4 }, { x: cx, y: top - 17 },
-      { x: right + 9, y: top - 4 }, { x: right + 9, y: top - 1 },
-      { x: cx, y: top - 13 }, { x: left - 9, y: top - 1 }
-    ], true);
+    g.fillTriangle(left - 4, top + 10, left - 4, top - 2, lx + 1, top - 2);
+    g.fillTriangle(right + 4, top + 10, right + 4, top - 2, rx - 1, top - 2);
 
     // Drei Plakatplaetze (zwei oben nebeneinander, eines breit darunter).
     var slots = [
