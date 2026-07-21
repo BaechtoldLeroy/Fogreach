@@ -13,46 +13,161 @@
 
   var NOOP = { destroy: function () {} };
 
-  // Anschlagtafel als Vektor-Platzhalter (bis es echte Plakat-Assets gibt).
-  // `state` kommt aus PHASE_STYLE.posters:
-  //   fresh -> frische Wahlkampfplakate, faded -> vergilbt, torn -> Fetzen,
-  //   gone  -> abgeraeumtes, leeres Brett.
+  // --- Anschlagtafel (Vektor) -------------------------------------------------
+  // Die drei Ratsfraktionen haengen je ein Plakat aus — "Drei Farben, ein
+  // Ergebnis". Genau dieses Motiv traegt die Kippung: frisch und dreifarbig im
+  // Rats-Hub, vergilbt und angeglichen im Doppelspiel, zerfetzt nach dem Bruch,
+  // abgeraeumt im Epilog. Keine Fraktionsfarben im Code definiert -> plausibel
+  // gesetzt: Magistrat Gold, Klerus Knochenweiss, Garde Rot.
+  var FACTION_INK = [
+    { fresh: 0xe0b854, faded: 0xa08c55 },  // Magistrat
+    { fresh: 0xd3dce4, faded: 0x9aa2a8 },  // Klerus
+    { fresh: 0xb4483a, faded: 0x8a5a50 }   // Garde
+  ];
+
+  // Dreht lokale Punkte um (pcx,pcy) und liefert Phaser-Punktobjekte.
+  function _rot(pts, pcx, pcy, tilt) {
+    var c = Math.cos(tilt), s = Math.sin(tilt);
+    var out = [];
+    for (var i = 0; i < pts.length; i++) {
+      var dx = pts[i][0] - pcx, dy = pts[i][1] - pcy;
+      out.push({ x: pcx + dx * c - dy * s, y: pcy + dx * s + dy * c });
+    }
+    return out;
+  }
+
+  function _quad(x, y, w, h, tilt) {
+    return _rot([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], x + w / 2, y + h / 2, tilt);
+  }
+
+  // Rest eines abgerissenen Plakats: obere Kante ganz, unten ausgefranst.
+  function _shred(x, y, w, h, tilt) {
+    return _rot([
+      [x, y], [x + w, y],
+      [x + w, y + h * 0.44], [x + w * 0.78, y + h * 0.63],
+      [x + w * 0.60, y + h * 0.37], [x + w * 0.42, y + h * 0.68],
+      [x + w * 0.24, y + h * 0.42], [x, y + h * 0.71]
+    ], x + w / 2, y + h / 2, tilt);
+  }
+
   // cx = Mitte, baseY = Standlinie (Fuesse), damit die Tafel auf dem Boden
   // steht und ueber die Depth ihrer Standlinie in die y-Sortierung passt.
   function _drawNoticeBoard(scene, cx, baseY, state) {
     var g = scene.add.graphics();
-    var panelW = 40, panelH = 46, legH = 18, legW = 5;
-    var top = baseY - legH - panelH;
+    var panelW = 56, panelH = 62, legH = 24, legW = 6;
+    var bot = baseY - legH;
+    var top = bot - panelH;
     var left = cx - panelW / 2;
+    var right = cx + panelW / 2;
 
-    // Beine
+    // Bodenschatten — verankert die Tafel optisch auf dem Pflaster.
+    g.fillStyle(0x000000, 0.28);
+    g.fillEllipse(cx, baseY + 2, panelW * 0.85, 9);
+
+    // Pfosten: dunkler Kern mit hellerer Vorderkante (Rundung angedeutet).
+    [cx - 19, cx + 13].forEach(function (px) {
+      g.fillStyle(0x2e2218, 1);
+      g.fillRect(px, bot - 2, legW, legH + 2);
+      g.fillStyle(0x4a3728, 1);
+      g.fillRect(px, bot - 2, legW - 2, legH + 2);
+    });
+    // Querstrebe
     g.fillStyle(0x3b2c20, 1);
-    g.fillRect(cx - 13, baseY - legH, legW, legH);
-    g.fillRect(cx + 13 - legW, baseY - legH, legW, legH);
+    g.fillRect(cx - 19, baseY - legH * 0.45, 38, 3);
 
-    // Rahmen + Brett
-    g.fillStyle(0x4a3728, 1);
-    g.fillRect(left - 3, top - 3, panelW + 6, panelH + 6);
-    g.fillStyle(0x6b5238, 1);
-    g.fillRect(left, top, panelW, panelH);
-
-    if (state !== 'gone') {
-      var paper, alpha;
-      if (state === 'faded') { paper = 0xcfc3a0; alpha = 0.75; }
-      else if (state === 'torn') { paper = 0x9a8f76; alpha = 0.60; }
-      else { paper = 0xf2e6c8; alpha = 0.95; }
-
-      g.fillStyle(paper, alpha);
-      if (state === 'torn') {
-        // Fetzen statt ganzer Blaetter — Reste, die noch am Brett haengen.
-        g.fillTriangle(left + 5, top + 6, left + 19, top + 5, left + 8, top + 24);
-        g.fillTriangle(left + 24, top + 20, left + 35, top + 16, left + 31, top + 38);
-      } else {
-        g.fillRect(left + 5, top + 5, 13, 18);
-        g.fillRect(left + 22, top + 7, 13, 16);
-        g.fillRect(left + 9, top + 27, 22, 14);
-      }
+    // Brett: dunkler Rahmen, darin drei waagrechte Planken mit Fugen.
+    g.fillStyle(0x33261b, 1);
+    g.fillRect(left - 4, top - 4, panelW + 8, panelH + 8);
+    var plankH = panelH / 3;
+    for (var i = 0; i < 3; i++) {
+      g.fillStyle(i % 2 === 0 ? 0x6b5238 : 0x634c33, 1);
+      g.fillRect(left, top + i * plankH, panelW, plankH - 1);
+      // Maserung
+      g.fillStyle(0x55402a, 0.45);
+      g.fillRect(left + 4, top + i * plankH + plankH * 0.35, panelW - 12, 1);
+      g.fillRect(left + 10, top + i * plankH + plankH * 0.68, panelW - 24, 1);
     }
+
+    // Kleines Vordach — gibt der Tafel eine erkennbare Silhouette.
+    g.fillStyle(0x3b2c20, 1);
+    g.fillPoints([
+      { x: left - 9, y: top - 4 }, { x: cx, y: top - 17 },
+      { x: right + 9, y: top - 4 }, { x: right + 9, y: top - 1 },
+      { x: cx, y: top - 13 }, { x: left - 9, y: top - 1 }
+    ], true);
+
+    // Drei Plakatplaetze (zwei oben nebeneinander, eines breit darunter).
+    var slots = [
+      { x: left + 4,  y: top + 5,  w: 21, h: 27, tilt: -0.05 },
+      { x: left + 30, y: top + 4,  w: 21, h: 25, tilt:  0.06 },
+      { x: left + 9,  y: top + 36, w: 38, h: 21, tilt:  0.02 }
+    ];
+
+    slots.forEach(function (sl, idx) {
+      var ink = FACTION_INK[idx];
+
+      // Ausgeblichener Fleck: wo lange ein Plakat hing, ist das Holz heller.
+      if (state === 'torn' || state === 'gone') {
+        g.fillStyle(0x7d6547, 0.5);
+        g.fillPoints(_quad(sl.x - 1, sl.y - 1, sl.w + 2, sl.h + 2, sl.tilt), true);
+      }
+
+      if (state === 'gone') {
+        // Nur noch die Nagelloecher.
+        g.fillStyle(0x2b2018, 0.8);
+        g.fillCircle(sl.x + sl.w * 0.5, sl.y + 2, 1.4);
+        return;
+      }
+
+      var faded = (state === 'faded');
+      var torn = (state === 'torn');
+      var paperCol = torn ? 0xb0a488 : (faded ? 0xd8cba6 : 0xf2e6c8);
+      var paperAlpha = torn ? 0.85 : (faded ? 0.9 : 1);
+      var inkCol = (faded || torn) ? ink.faded : ink.fresh;
+      var pts = torn ? _shred(sl.x, sl.y, sl.w, sl.h, sl.tilt)
+                     : _quad(sl.x, sl.y, sl.w, sl.h, sl.tilt);
+
+      // Blatt + feine Kante
+      g.fillStyle(paperCol, paperAlpha);
+      g.fillPoints(pts, true);
+      g.lineStyle(1, 0x6a5c42, faded || torn ? 0.5 : 0.7);
+      g.strokePoints(pts, true);
+
+      // Kopfbalken in der Fraktionsfarbe (die "drei Farben").
+      var head = _quad(sl.x + 2, sl.y + 2, sl.w - 4, 5, sl.tilt);
+      g.fillStyle(inkCol, torn ? 0.7 : (faded ? 0.8 : 1));
+      g.fillPoints(head, true);
+
+      // Textzeilen — bei Fetzen nur die obersten, der Rest fehlt ja.
+      var lines = torn ? 1 : 3;
+      g.fillStyle(0x5b5140, faded || torn ? 0.4 : 0.6);
+      for (var li = 0; li < lines; li++) {
+        var ly = sl.y + 11 + li * 4.5;
+        var lw = (li === lines - 1) ? (sl.w - 10) : (sl.w - 6);
+        g.fillPoints(_quad(sl.x + 3, ly, lw, 1.6, sl.tilt), true);
+      }
+
+      // Siegel unten rechts (nur solange das Plakat ganz ist).
+      if (!torn) {
+        g.fillStyle(inkCol, faded ? 0.55 : 0.85);
+        g.fillCircle(sl.x + sl.w - 6, sl.y + sl.h - 6, 2.6);
+      }
+
+      // Eselsohr: im Doppelspiel loest sich eine Ecke und klappt nach vorn.
+      if (faded && idx === 1) {
+        g.fillStyle(0xbfb49a, 0.95);
+        g.fillTriangle(
+          sl.x + sl.w - 7, sl.y + sl.h,
+          sl.x + sl.w,     sl.y + sl.h,
+          sl.x + sl.w,     sl.y + sl.h - 7
+        );
+      }
+
+      // Nagel oben
+      g.fillStyle(0x2b2018, 0.9);
+      g.fillCircle(sl.x + sl.w * 0.5, sl.y + 2, 1.4);
+    });
+
     return g;
   }
 
