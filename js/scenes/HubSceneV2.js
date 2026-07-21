@@ -185,6 +185,12 @@ class HubSceneV2 extends Phaser.Scene {
         x: 368 * SCALE_FACTOR, y: 110 * SCALE_FACTOR,
         w: 224 * SCALE_FACTOR, h: 168 * SCALE_FACTOR
       },
+      // Tuerbereich (aus HUB_HITBOXES.entrances.rathaus_entrance) — dort haengen
+      // nach dem Bruch Bretter, Kette und Siegel.
+      rathausEntrance: {
+        x: 452 * SCALE_FACTOR, y: 296 * SCALE_FACTOR,
+        w: 56 * SCALE_FACTOR, h: 26 * SCALE_FACTOR
+      },
       // Anschlagtafeln flankierend zur Rathaustreppe (Layout-Raum: Treppe
       // x430-530, Pflanzkuebel x356-394 und x566-604 — dazwischen ist die
       // Luecke). y = Standlinie auf dem Platz. Weltkoordinaten wie oben.
@@ -604,11 +610,11 @@ class HubSceneV2 extends Phaser.Scene {
     this.npcs = [];
     this.npcGroup = this.physics.add.staticGroup();
 
-    // Determine current story act for NPC visibility
-    const currentAct = window.storySystem ? window.storySystem.getCurrentAct() : null;
-    const currentActId = currentAct ? currentAct.id : 'awakening';
-    const actOrder = ['auftrag', 'treuer_diener', 'erste_risse', 'wahrheit', 'bruch', 'rebellion', 'offenbarung'];
-    const currentActIndex = actOrder.indexOf(currentActId);
+    // Determine current story act for NPC visibility. Reihenfolge + Index aus
+    // storySystem (nicht aus einer lokalen Kopie — siehe _actOrder).
+    const actOrder = this._actOrder();
+    const currentActIndex = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+      ? window.storySystem.getCurrentActIndex() : 0;
 
     HUB_HITBOXES.npcs.forEach(npc => {
       const sx = npc.x * SCALE_FACTOR;
@@ -633,6 +639,13 @@ class HubSceneV2 extends Phaser.Scene {
       if (isVisible && npc.visibleAfterFlag && window.questSystem
           && typeof window.questSystem.hasFlag === 'function') {
         if (!window.questSystem.hasFlag(npc.visibleAfterFlag)) isVisible = false;
+      }
+      // Gegenstueck: NPC VERSCHWINDET, sobald ein Flag gesetzt ist. Bisher gab
+      // es nur "ab jetzt sichtbar" — Aldric stand deshalb auch im Epilog noch
+      // im Hub, obwohl der Rat da enttarnt und die Wahrheit gedruckt ist.
+      if (isVisible && npc.hiddenAfterFlag && window.questSystem
+          && typeof window.questSystem.hasFlag === 'function') {
+        if (window.questSystem.hasFlag(npc.hiddenAfterFlag)) isVisible = false;
       }
 
       // Generate placeholder texture for NPCs without sprites (larger, more visible)
@@ -944,6 +957,16 @@ class HubSceneV2 extends Phaser.Scene {
   // NPC. Called on each quest-state change so that NPCs unlocked by a
   // just-completed quest or just-set flag (e.g. Elara after the cellar
   // encounter sets `elaraMet`) appear without requiring a hub reload.
+  // Akt-Reihenfolge aus der einzigen Quelle (storySystem.STORY_ACTS). Frueher
+  // stand in createNPCs eine handgepflegte Kopie, die noch v3-Akte
+  // ('rebellion', 'offenbarung') enthielt — eine Dublette, die bei jeder
+  // Story-Aenderung still falsch werden kann.
+  _actOrder() {
+    const acts = window.storySystem && window.storySystem.STORY_ACTS;
+    if (Array.isArray(acts) && acts.length) return acts.map(a => a && a.id);
+    return ['auftrag', 'treuer_diener', 'erste_risse', 'wahrheit', 'bruch'];
+  }
+
   _refreshNpcVisibility() {
     if (!this.npcs) return;
     const qs = window.questSystem;
@@ -951,12 +974,25 @@ class HubSceneV2 extends Phaser.Scene {
     const completed = (typeof qs.getCompletedQuests === 'function') ? (qs.getCompletedQuests() || []) : [];
     const completedIds = new Set(completed.map(q => q && q.id).filter(Boolean));
     const hasFlag = (typeof qs.hasFlag === 'function') ? qs.hasFlag.bind(qs) : () => false;
+    // Akt-Index live lesen: `visibleFromAct` wurde frueher NUR beim Aufbau in
+    // createNPCs ausgewertet und hier uebersprungen. Wechselte der Akt zur
+    // Laufzeit (Story-Fortschritt oder Skript im Playtest), erschien ein NPC
+    // wie der Buerger erst nach einem Hub-Neuaufbau.
+    const actOrder = this._actOrder();
+    const currentActIndex = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+      ? window.storySystem.getCurrentActIndex() : 0;
 
     this.npcs.forEach(({ sprite, zone, nameText, questIndicator, data }) => {
-      if (!data.visibleAfterQuest && !data.visibleAfterFlag) return;
+      if (!data.visibleAfterQuest && !data.visibleAfterFlag
+          && !data.hiddenAfterFlag && !data.visibleFromAct) return;
       let shouldBeVisible = true;
+      if (data.visibleFromAct) {
+        const requiredIndex = actOrder.indexOf(data.visibleFromAct);
+        if (requiredIndex >= 0 && currentActIndex < requiredIndex) shouldBeVisible = false;
+      }
       if (data.visibleAfterQuest && !completedIds.has(data.visibleAfterQuest)) shouldBeVisible = false;
       if (data.visibleAfterFlag && !hasFlag(data.visibleAfterFlag)) shouldBeVisible = false;
+      if (data.hiddenAfterFlag && hasFlag(data.hiddenAfterFlag)) shouldBeVisible = false;
       if (!sprite) return;
       if (shouldBeVisible && !sprite.active) {
         sprite.setActive(true).setVisible(true);

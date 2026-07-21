@@ -137,6 +137,10 @@ window.HUB_HITBOXES = {
       x: 480, y: 560,
       texture: 'aldric_right0',
       scale: 0.18,
+      // Im Epilog ist der Rat enttarnt und die Wahrheit gedruckt — Aldric steht
+      // dann nicht mehr auf dem Platz. In 'broken' (Akt 4) bleibt er sichtbar:
+      // dort ist er Gegner und hat eigene feindliche Zeilen (HubPhase).
+      hiddenAfterFlag: 'story_ending',
       // Faction metadata (feature 045). The dialog code in
       // HubSceneV2._showNpcDialogue reads `factionId` to prepend a
       // tier-aware greeting page from `faction.<id>.greet.<tier>` before

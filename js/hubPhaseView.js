@@ -50,6 +50,43 @@
     ], x + w / 2, y + h / 2, tilt);
   }
 
+  // --- Feindliches Rathaus ----------------------------------------------------
+  // Ein Balken quer, gedreht ueber die Verbindungslinie zweier Punkte.
+  function _plank(g, x1, y1, x2, y2, w) {
+    var ang = Math.atan2(y2 - y1, x2 - x1);
+    var dx = Math.sin(ang) * w / 2, dy = -Math.cos(ang) * w / 2;
+    var pts = [
+      { x: x1 + dx, y: y1 + dy }, { x: x2 + dx, y: y2 + dy },
+      { x: x2 - dx, y: y2 - dy }, { x: x1 - dx, y: y1 - dy }
+    ];
+    g.fillStyle(0x4a3728, 1);
+    g.fillPoints(pts, true);
+    // Maserung entlang der Achse + hellere Oberkante
+    g.fillStyle(0x63492f, 0.8);
+    g.fillPoints([
+      { x: x1 + dx, y: y1 + dy }, { x: x2 + dx, y: y2 + dy },
+      { x: x2 + dx * 0.3, y: y2 + dy * 0.3 }, { x: x1 + dx * 0.3, y: y1 + dy * 0.3 }
+    ], true);
+    // Naegel an den Enden
+    g.fillStyle(0x1e1710, 0.9);
+    g.fillCircle(x1 + (x2 - x1) * 0.06, y1 + (y2 - y1) * 0.06, 2);
+    g.fillCircle(x1 + (x2 - x1) * 0.94, y1 + (y2 - y1) * 0.94, 2);
+  }
+
+  // Durchhaengende Kette aus einzelnen Gliedern — das Motiv des Kettenrats.
+  function _chain(g, x1, y1, x2, y2, sag, linkR) {
+    var n = Math.max(8, Math.round(Math.abs(x2 - x1) / (linkR * 1.5)));
+    for (var i = 0; i <= n; i++) {
+      var t = i / n;
+      var x = x1 + (x2 - x1) * t;
+      var y = y1 + (y2 - y1) * t + Math.sin(Math.PI * t) * sag;
+      g.fillStyle(0x23232a, 1);
+      g.fillCircle(x, y, linkR);
+      g.fillStyle(0x74747f, 0.85);
+      g.fillCircle(x - linkR * 0.22, y - linkR * 0.3, linkR * 0.42);
+    }
+  }
+
   // cx = Mitte, baseY = Standlinie (Fuesse), damit die Tafel auf dem Boden
   // steht und ueber die Depth ihrer Standlinie in die y-Sortierung passt.
   function _drawNoticeBoard(scene, cx, baseY, state) {
@@ -302,10 +339,44 @@
     // --- Feindliches Rathaus (weltfest — markiert ein Gebaeude) -----------------
     if (s.rathausHostile && refs.rathausRect) {
       var r = refs.rathausRect;
+      // 1) Das Gebaeude wirkt erloschen: dunkler, leicht rotstichiger Schleier
+      //    statt des frueheren knallroten Kastens mit rotem Rahmen.
       track(scene.add.rectangle(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h,
-        0x8b1a1a, 0.28).setDepth(depth + 3), 1);
-      var g = scene.add.graphics().setDepth(depth + 3);
-      g.lineStyle(3, 0xb02020, 0.9).strokeRect(r.x, r.y, r.w, r.h);
+        0x2a0d0d, 0.18).setDepth(depth + 3), 1);
+
+      var g = scene.add.graphics().setDepth(depth + 4);
+      // Eingang: aus den Refs, sonst grob aus dem Gebaeuderechteck geschaetzt.
+      var ent = refs.rathausEntrance || {
+        x: r.x + r.w * 0.38, y: r.y + r.h * 0.86, w: r.w * 0.24, h: r.h * 0.16
+      };
+      var dcx = ent.x + ent.w / 2;
+      var dTop = ent.y - 30;
+      var dBot = ent.y + ent.h;
+      var half = ent.w / 2;
+
+      // 2) Zwei gekreuzte Bretter ueber der Tuer — vernagelt.
+      _plank(g, dcx - half - 7, dTop + 8, dcx + half + 7, dBot - 6, 9);
+      _plank(g, dcx + half + 7, dTop + 8, dcx - half - 7, dBot - 6, 9);
+
+      // 3) Schwere Kette quer davor. Der Rat heisst Kettenrat — nach dem Bruch
+      //    haengt seine eigene Kette vor der Tuer.
+      var cy0 = dTop + 12;
+      g.fillStyle(0x1a1a1f, 1);
+      g.fillCircle(dcx - half - 16, cy0, 4);   // Ankerring links
+      g.fillCircle(dcx + half + 16, cy0, 4);   // Ankerring rechts
+      _chain(g, dcx - half - 16, cy0, dcx + half + 16, cy0, 13, 3.4);
+
+      // 4) Amtssiegel, das am tiefsten Punkt der Kette haengt.
+      var sy = cy0 + 13;
+      g.fillStyle(0x2b2b30, 1);
+      g.fillRect(dcx - 1, sy, 2, 7);
+      g.fillStyle(0x7a1414, 1);
+      g.fillCircle(dcx, sy + 12, 7);
+      g.fillStyle(0x3d0a0a, 0.85);
+      g.fillCircle(dcx, sy + 12, 4);
+      g.fillStyle(0xa33030, 0.7);
+      g.fillCircle(dcx - 2, sy + 10, 2);
+
       track(g, 1);
     }
 
