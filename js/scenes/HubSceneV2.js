@@ -180,7 +180,14 @@ class HubSceneV2 extends Phaser.Scene {
         rathausRect: {
           x: 368 * SCALE_FACTOR, y: 110 * SCALE_FACTOR,
           w: 224 * SCALE_FACTOR, h: 168 * SCALE_FACTOR
-        }
+        },
+        // Anschlagtafeln flankierend zur Rathaustreppe (Layout-Raum: Treppe
+        // x430-530, Pflanzkuebel x356-394 und x566-604 — dazwischen ist die
+        // Luecke). y = Standlinie auf dem Platz. Weltkoordinaten wie oben.
+        posterSpots: [
+          { x: 412 * SCALE_FACTOR, y: 300 * SCALE_FACTOR },
+          { x: 548 * SCALE_FACTOR, y: 300 * SCALE_FACTOR }
+        ]
       });
     }
 

@@ -13,6 +13,49 @@
 
   var NOOP = { destroy: function () {} };
 
+  // Anschlagtafel als Vektor-Platzhalter (bis es echte Plakat-Assets gibt).
+  // `state` kommt aus PHASE_STYLE.posters:
+  //   fresh -> frische Wahlkampfplakate, faded -> vergilbt, torn -> Fetzen,
+  //   gone  -> abgeraeumtes, leeres Brett.
+  // cx = Mitte, baseY = Standlinie (Fuesse), damit die Tafel auf dem Boden
+  // steht und ueber die Depth ihrer Standlinie in die y-Sortierung passt.
+  function _drawNoticeBoard(scene, cx, baseY, state) {
+    var g = scene.add.graphics();
+    var panelW = 40, panelH = 46, legH = 18, legW = 5;
+    var top = baseY - legH - panelH;
+    var left = cx - panelW / 2;
+
+    // Beine
+    g.fillStyle(0x3b2c20, 1);
+    g.fillRect(cx - 13, baseY - legH, legW, legH);
+    g.fillRect(cx + 13 - legW, baseY - legH, legW, legH);
+
+    // Rahmen + Brett
+    g.fillStyle(0x4a3728, 1);
+    g.fillRect(left - 3, top - 3, panelW + 6, panelH + 6);
+    g.fillStyle(0x6b5238, 1);
+    g.fillRect(left, top, panelW, panelH);
+
+    if (state !== 'gone') {
+      var paper, alpha;
+      if (state === 'faded') { paper = 0xcfc3a0; alpha = 0.75; }
+      else if (state === 'torn') { paper = 0x9a8f76; alpha = 0.60; }
+      else { paper = 0xf2e6c8; alpha = 0.95; }
+
+      g.fillStyle(paper, alpha);
+      if (state === 'torn') {
+        // Fetzen statt ganzer Blaetter — Reste, die noch am Brett haengen.
+        g.fillTriangle(left + 5, top + 6, left + 19, top + 5, left + 8, top + 24);
+        g.fillTriangle(left + 24, top + 20, left + 35, top + 16, left + 31, top + 38);
+      } else {
+        g.fillRect(left + 5, top + 5, 13, 18);
+        g.fillRect(left + 22, top + 7, 13, 16);
+        g.fillRect(left + 9, top + 27, 22, 14);
+      }
+    }
+    return g;
+  }
+
   function apply(scene, phase, refs) {
     if (!scene || typeof window === 'undefined' || !window.HubPhase
         || !refs || !refs.bg) {
@@ -71,13 +114,22 @@
       try { refs.bg.setTint(s.tint); } catch (_) {}
     }
 
-    // Anschlagtafeln: BEWUSST nicht gezeichnet. Die Hub-Grafik (assets/
-    // hubscene.png) enthaelt gar keine Anschlagtafeln — es gibt nichts, was
-    // verblassen oder zerreissen koennte. Frueher wurden hier zwei dunkle
-    // Rechtecke an geratenen Bildschirm-Prozentpositionen gemalt; die klebten
-    // am Bildschirm und wanderten mit dem Spieler mit. Das Style-Feld
-    // `posters` bleibt Teil des Kontrakts, damit echte Plakat-Assets es
-    // spaeter auswerten koennen.
+    // --- Anschlagtafeln (weltfest, y-sortiert wie Figuren) ---------------------
+    // Die Hub-Grafik enthaelt keine Anschlagtafeln, also werden sie hier als
+    // Vektor-Platzhalter gezeichnet. Positionen kommen als WELTkoordinaten in
+    // refs.posterSpots (flankierend zur Rathaustreppe) — so haengen die
+    // zerrissenen Reste in 'broken' an Aldrics eigenem Gebaeude.
+    // Frueher: zwei dunkle Rechtecke an geratenen Bildschirm-Prozenten mit
+    // scrollFactor(0) — die klebten am Bildschirm und wanderten mit.
+    if (!hasAsset && s.posters && Array.isArray(refs.posterSpots)) {
+      refs.posterSpots.forEach(function (p) {
+        if (!p) return;
+        var board = _drawNoticeBoard(scene, p.x, p.y, s.posters);
+        // Depth = Standlinie: Figuren, die davor stehen, verdecken sie korrekt.
+        board.setDepth(p.y);
+        track(board, 1);
+      });
+    }
 
     // --- Vollbild-Atmosphaere (ueber den Figuren, bildschirmfest) ---------------
     // Farbstich/Entsaettigung: kuehle, halbtransparente Flaeche ueber der
