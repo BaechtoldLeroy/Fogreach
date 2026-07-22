@@ -2472,6 +2472,21 @@ class HubSceneV2 extends Phaser.Scene {
     }).setOrigin(0.5, 0);
     container.add(subtitle);
 
+    // Variante C: An der Kettenmeister-Tiefensperre (Grenze 9, Quest noch nicht
+    // angenommen) einen Hinweis zeigen — sonst wirkt der Tiefen-Deckel wie ein
+    // Bug ("warum komme ich nicht tiefer?").
+    const _gateDepth = (window.RunDepth && window.RunDepth.KETTENMEISTER_GATE_DEPTH) || 9;
+    if (lastKnown === _gateDepth && window.RunDepth
+        && typeof window.RunDepth.isKettenmeisterGateOpen === 'function'
+        && !window.RunDepth.isKettenmeisterGateOpen()) {
+      const gateHint = this.add.text(0, subtitle.y + subtitle.height + 6,
+        'Tiefer führt kein Weg — bis Mara Dich zum Kettenmeister schickt.', {
+        fontFamily: 'monospace', fontSize: 13, color: '#d0a070',
+        wordWrap: { width: panelWidth - pad * 2 }, align: 'center'
+      }).setOrigin(0.5, 0);
+      container.add(gateHint);
+    }
+
     const chooseDepth = (depth) => {
       try { (window.SlotStorage || localStorage).setItem('demonfall_lastDepth', JSON.stringify(depth)); } catch (e) {}
       cleanup();

@@ -166,3 +166,95 @@ test('#41 frontier: omitting startDepth keeps legacy behavior (bumps)', () => {
   assert.strictEqual(after, 11, 'legacy call without depth still bumps');
   assert.strictEqual(P.getMaxDepth(), 11);
 });
+
+// --- Variante C: Kettenmeister-Tiefensperre (Bump 9 -> 10 quest-gated) ---
+
+test('Kettenmeister-Gate ZU: Tiefe 9 bumpt NICHT auf 10', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(9);
+  RD._setGateForTest(() => false); // Quest nicht angenommen
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 9); // Frontier-Run auf 9
+  assert.strictEqual(after, null, 'ohne Quest kein Bump ueber 9');
+  assert.strictEqual(P.getMaxDepth(), 9, 'Tiefe bleibt bei 9 gedeckelt');
+});
+
+test('Kettenmeister-Gate OFFEN: Tiefe 9 bumpt auf 10', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(9);
+  RD._setGateForTest(() => true); // Quest aktiv/abgeschlossen
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 9);
+  assert.strictEqual(after, 10, 'mit Quest oeffnet sich Tiefe 10');
+  assert.strictEqual(P.getMaxDepth(), 10);
+});
+
+test('Kettenmeister-Gate greift NUR bei 9: Tiefe 8 bumpt immer auf 9', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(8);
+  RD._setGateForTest(() => false);
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 8);
+  assert.strictEqual(after, 9, 'unterhalb 9 ist der Bump ungated');
+  assert.strictEqual(P.getMaxDepth(), 9);
+});
+
+test('Kettenmeister-Gate haelt hoehere Staende NICHT zurueck (Alt-Save Tiefe 10)', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(10); // bereits ueber der Grenze (z. B. Alt-Save oder Gate war offen)
+  RD._setGateForTest(() => false);
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 10);
+  assert.strictEqual(after, 11, 'ab 10 laeuft die Progression ungated weiter');
+  assert.strictEqual(P.getMaxDepth(), 11);
+});
+
+test('Default-Gate liest questSystem: aktive mara_warning oeffnet', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(9);
+  globalThis.window.questSystem = {
+    getActiveQuests: () => [{ id: 'mara_warning' }],
+    getCompletedQuests: () => []
+  };
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 9);
+  assert.strictEqual(after, 10, 'aktive Quest oeffnet das Gate');
+  delete globalThis.window.questSystem;
+});
+
+test('Default-Gate liest questSystem: abgeschlossene mara_warning oeffnet', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(9);
+  globalThis.window.questSystem = {
+    getActiveQuests: () => [],
+    getCompletedQuests: () => [{ id: 'mara_warning' }]
+  };
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 9);
+  assert.strictEqual(after, 10, 'abgeschlossene Quest oeffnet das Gate');
+  delete globalThis.window.questSystem;
+});
+
+test('Default-Gate liest questSystem: ohne Quest bleibt es ZU', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(9);
+  globalThis.window.questSystem = {
+    getActiveQuests: () => [{ id: 'branka_weapons' }],
+    getCompletedQuests: () => []
+  };
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 9);
+  assert.strictEqual(after, null, 'fremde Quests oeffnen das Gate nicht');
+  assert.strictEqual(P.getMaxDepth(), 9);
+  delete globalThis.window.questSystem;
+});
+
+test('Default-Gate: fehlt questSystem ganz, bleibt das Gate ZU', () => {
+  const { P, RD } = fresh();
+  setMaxDepth(9);
+  delete globalThis.window.questSystem;
+  RD.markRunStarted();
+  const after = RD.tryCompleteRun('dungeon_complete', 9);
+  assert.strictEqual(after, null, 'ohne questSystem kein Bump ueber 9');
+  assert.strictEqual(P.getMaxDepth(), 9);
+});

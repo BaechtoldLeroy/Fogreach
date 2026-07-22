@@ -2002,7 +2002,7 @@ const BOSS_DEFINITIONS = {
     baseSpeed: 70,
     baseDamage: 6,
     scale: 1.6,
-    loreIntro: 'Der Kettenmeister bewacht die ersten Siegel...',
+    loreIntro: 'Der Kettenmeister fesselt, was der Rat verschwinden lässt. Hinter ihm liegen die ersten Siegel — der erste harte Beweis.',
     attacks: ['chainWhip', 'chainPull', 'groundChains'],
     attackCooldown: 2900,
   },
@@ -2015,7 +2015,7 @@ const BOSS_DEFINITIONS = {
     baseSpeed: 45,
     baseDamage: 9,
     scale: 1.7,
-    loreIntro: 'Der Zeremonienmeister führt die verbotenen Rituale durch...',
+    loreIntro: 'Der Zeremonienmeister vollzieht die verbotenen Rituale des Rats — jedes Siegel, das er zieht, kettet die Stadt fester.',
     attacks: ['ritualCircle', 'summonMinions', 'darkBlast'],
     attackCooldown: 4000,
   },
@@ -2031,7 +2031,7 @@ const BOSS_DEFINITIONS = {
     baseSpeed: 70,
     baseDamage: 16,
     scale: 3.6,
-    loreIntro: 'Ein Mitglied des Kettenrats selbst tritt aus dem Schatten...',
+    loreIntro: 'Ein Mitglied des Kettenrats selbst tritt aus dem Schatten — und mit ihm die Quelle des Nebels, die er hütet.',
     attacks: ['shadowDash', 'darknessWave', 'shadowClones'],
     attackCooldown: 3000,
   },
@@ -2109,6 +2109,26 @@ function spawnBoss() {
   showBossIntro.call(this, def);
 }
 
+// Wenn die fuehrende Quest aktiv ist, liest die Kettenmeister-Intro nicht die
+// generische Lore, sondern knuepft an Maras Warnung an — so ist die (durch die
+// Tiefensperre garantiert quest-getriebene) ERSTE Begegnung eine echte
+// Inszenierung statt eines anonymen Boss-Banners.
+function _bossIntroLore(def) {
+  if (def && def.id === 'chainMaster'
+      && typeof window !== 'undefined' && window.questSystem
+      && typeof window.questSystem.getActiveQuests === 'function') {
+    try {
+      var active = window.questSystem.getActiveQuests() || [];
+      if (active.some(function (q) { return q && q.id === 'mara_warning'; })) {
+        return 'Die Siegel, vor denen Mara warnte. Der Kettenmeister fesselt, '
+          + 'was der Rat verschwinden lässt — schlag die Ketten, sonst wirst Du '
+          + 'selbst zu einem Namen auf seinen Listen.';
+      }
+    } catch (e) { /* Lore ist optional — fällt auf die Standardzeile zurück */ }
+  }
+  return def.loreIntro;
+}
+
 function showBossIntro(def) {
   const scene = this;
   const cx = scene.scale.width / 2;
@@ -2123,13 +2143,14 @@ function showBossIntro(def) {
     align: 'center',
   }).setOrigin(0.5).setDepth(1100).setScrollFactor(0);
 
-  const loreText = scene.add.text(cx, cy + 16, def.loreIntro, {
+  const loreText = scene.add.text(cx, cy + 16, _bossIntroLore(def), {
     fontSize: '16px',
     fontFamily: 'monospace',
     color: '#dddddd',
     stroke: '#000000',
     strokeThickness: 3,
     align: 'center',
+    wordWrap: { width: Math.min(680, scene.scale.width - 60) },
   }).setOrigin(0.5).setDepth(1100).setScrollFactor(0);
 
   nameText.setAlpha(0);
@@ -2140,7 +2161,7 @@ function showBossIntro(def) {
     alpha: 1,
     duration: 500,
     onComplete: () => {
-      scene.time.delayedCall(2500, () => {
+      scene.time.delayedCall(3200, () => {
         scene.tweens.add({
           targets: [nameText, loreText],
           alpha: 0,

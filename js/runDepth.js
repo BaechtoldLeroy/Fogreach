@@ -12,6 +12,36 @@
   // Started() re-arms it at run start so each completed run counts exactly once.
   var _completedThisRun = false;
 
+  // Variante C: Kettenmeister-Tiefensperre. Die Tiefengrenze (MAX_DEPTH) darf 9
+  // NICHT ueberschreiten, solange die Quest, die zum Kettenmeister (Boss auf
+  // Tiefe 10) fuehrt, nicht angenommen (aktiv) ODER bereits abgeschlossen ist.
+  // Der Boss spawnt nur in einem Run auf Tiefe 10 (currentWave % 10, wave.js),
+  // und die Run-Tiefe ist <= MAX_DEPTH — also ist der 9->10-Bump der exakte
+  // Sperrpunkt. So ist die ERSTE Begegnung mit dem Boss immer die inszenierte,
+  // quest-getriebene, statt eines zufaelligen Grind-Runs vor der Story.
+  var KETTENMEISTER_GATE_DEPTH = 9;
+  var KETTENMEISTER_QUEST_ID = 'mara_warning';
+
+  // Gate offen, wenn die fuehrende Quest aktiv ODER abgeschlossen ist. DOM-frei
+  // ueber window.questSystem; fehlt es, ist das Gate ZU (kein Bump ueber 9).
+  function _defaultGateOpen() {
+    if (typeof window === 'undefined' || !window.questSystem) return false;
+    var qs = window.questSystem;
+    try {
+      var hasQuest = function (getter) {
+        if (typeof getter !== 'function') return false;
+        var list = getter.call(qs);
+        return Array.isArray(list) && list.some(function (q) {
+          return q && q.id === KETTENMEISTER_QUEST_ID;
+        });
+      };
+      return hasQuest(qs.getActiveQuests) || hasQuest(qs.getCompletedQuests);
+    } catch (e) { return false; }
+  }
+
+  // Injizierbar fuer Tests (sonst muesste jeder Test window.questSystem stellen).
+  var _gateOpen = _defaultGateOpen;
+
   // D1: only a fully cleared run ('dungeon_complete') advances the depth. Death
   // and voluntary portal-leave do NOT count.
   function isCompletionReason(reason) {
@@ -52,18 +82,33 @@
           && startDepth < window.Persistence.getMaxDepth()) {
         return null; // Wiederholung unterhalb der Grenze -> keine Progression
       }
+      // Kettenmeister-Gate: der Bump von 9 -> 10 (Tiefe des Bosses) bleibt
+      // gesperrt, solange die fuehrende Quest nicht aktiv/abgeschlossen ist.
+      // Nur exakt auf 9 pruefen: bereits tiefere Staende (Alt-Saves, oder nachdem
+      // das Gate einmal offen war) werden NICHT rueckwirkend zurueckgehalten.
+      if (typeof window.Persistence.getMaxDepth === 'function'
+          && window.Persistence.getMaxDepth() === KETTENMEISTER_GATE_DEPTH
+          && !_gateOpen()) {
+        return null; // Tiefe 10 erst mit angenommener Kettenmeister-Quest
+      }
       return window.Persistence.bumpMaxDepth();
     }
     return null; // persistence wiring lands in WP03
   }
 
-  function _resetForTest() { _completedThisRun = false; }
+  function _resetForTest() { _completedThisRun = false; _gateOpen = _defaultGateOpen; }
+  // Test-Hook: Gate-Funktion injizieren (undefined -> Default = questSystem lesen).
+  function _setGateForTest(fn) { _gateOpen = (typeof fn === 'function') ? fn : _defaultGateOpen; }
 
   window.RunDepth = {
     isCompletionReason: isCompletionReason,
     nextRoomDepth: nextRoomDepth,
     markRunStarted: markRunStarted,
     tryCompleteRun: tryCompleteRun,
-    _resetForTest: _resetForTest
+    // Fuer UI/Hinweise (z. B. Hinabstiegs-Dialog): ist die Tiefe-10-Sperre offen?
+    isKettenmeisterGateOpen: function () { return _gateOpen(); },
+    KETTENMEISTER_GATE_DEPTH: KETTENMEISTER_GATE_DEPTH,
+    _resetForTest: _resetForTest,
+    _setGateForTest: _setGateForTest
   };
 })();
