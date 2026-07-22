@@ -81,13 +81,25 @@ window.HUB_HITBOXES = {
     { id: 'city_silhouette_wall', x: 0,   y: 200, w: 960, h: 92 },
     { id: 'rathaus_body',         x: 368, y: 110, w: 224, h: 168 },
     { id: 'rathaus_steps',        x: 430, y: 280, w: 100, h: 16 },
-    { id: 'fountain',             x: 444, y: 344, w: 72,  h: 26 },
-    { id: 'planter_left',         x: 356, y: 306, w: 38,  h: 22 },
-    { id: 'planter_right',        x: 566, y: 306, w: 38,  h: 22 },
+    // Brunnen: deckt jetzt das ganze Steinbecken (vorher nur obere Haelfte).
+    { id: 'fountain',             x: 420, y: 352, w: 100, h: 48 },
+    // Planter: auf die Sockelbuesche links/rechts der Rathaustuer geschoben.
+    { id: 'planter_left',         x: 388, y: 294, w: 38,  h: 22 },
+    { id: 'planter_right',        x: 534, y: 294, w: 38,  h: 22 },
     { id: 'bench_left',           x: 390, y: 484, w: 48,  h: 16 },
     { id: 'bench_right',          x: 522, y: 484, w: 48,  h: 16 },
-    { id: 'archivschmiede_body',  x: 220, y: 244, w: 148, h: 62 },
-    { id: 'druckerei_body',       x: 652, y: 244, w: 148, h: 62 }
+    // archivschmiede_body war ~100px zu weit rechts (unsymmetrisch zur
+    // druckerei) — auf das Gebaeude zurueckgeschoben (x 220 -> 160).
+    { id: 'archivschmiede_body',  x: 160, y: 244, w: 148, h: 62 },
+    { id: 'druckerei_body',       x: 652, y: 244, w: 148, h: 62 },
+    // Die zwei unteren Cottages hatten gar keinen Collider (man lief hindurch).
+    // Hitbox nur am Haus-Sockel, damit NPCs oberhalb (Harren/Elara) ansprechbar
+    // bleiben und der Spieler von unten davor stoppt.
+    { id: 'cottage_left',         x: 110, y: 500, w: 160, h: 45 },
+    { id: 'cottage_right',        x: 690, y: 500, w: 160, h: 45 },
+    // Fuss-Collider der zwei Strassenlaternen (vorher durchlaufbar).
+    { id: 'lamp_left',            x: 340, y: 438, w: 16,  h: 12 },
+    { id: 'lamp_right',           x: 602, y: 438, w: 16,  h: 12 }
   ],
   entrances: [
     { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]', target: 'GameScene' },
