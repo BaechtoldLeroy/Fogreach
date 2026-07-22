@@ -122,7 +122,9 @@ window.HUB_HITBOXES = {
     {
       id: 'mara',
       name: 'Mara vom Untergrund',
-      x: 512, y: 372,
+      // Rechts neben Branka (300/416) statt mittig am Brunnen — holt Mara
+      // zugleich aus dem fountain-Collider (444-516 / 344-370) heraus.
+      x: 372, y: 416,
       texture: 'spaeherin',
       scale: 0.30,
       lines: [
