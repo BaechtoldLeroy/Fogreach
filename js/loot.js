@@ -210,9 +210,12 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     // Check for active fetch quests and spawn matching quest items.
     // Feature 050: journal_fragment (Q1 harren_daughter_investigation)
     // drops via the standard 10% per-kill chance while its quest is active.
-    // council_document (Q5 widerstand_proof) is NOT in this list — it is
-    // spawned deterministically by roomManager._maybeFireElaraCellarEncounter
-    // in a designated room, not by enemy kills.
+    // council_document (Q5 widerstand_proof, der Ritualkammer-Beweis) droppt
+    // JETZT ZUSAETZLICH aus Kills (erhoehte 20%-Chance) — vorher nur eine
+    // einzelne deterministische Platzierung (roomManager._maybeFireElara-
+    // CellarEncounter), die Spieler oft lange suchen liess. Die Platzierung
+    // bleibt als Garantie bestehen; sobald das Item da ist, faellt die Quest
+    // auf den Turn-in und weitere Drops stoppen (needsItem = false).
     var questItemDefs = [
       { target: 'document',         name: _LOOT_T('loot.quest_item.QUEST_DOC'),       nameKey: 'loot.quest_item.QUEST_DOC',       key: 'QUEST_DOC',       tint: 0xffdd44 },
       { target: 'print_plate',      name: _LOOT_T('loot.quest_item.QUEST_PLATE'),     nameKey: 'loot.quest_item.QUEST_PLATE',     key: 'QUEST_PLATE',     tint: 0x88aaff },
@@ -226,7 +229,10 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       // kein Drop ohne passende Quest (regressionssicher).
       { target: 'verification_seal', name: _LOOT_T('loot.quest_item.VERIFICATION_SEAL'), nameKey: 'loot.quest_item.VERIFICATION_SEAL', key: 'VERIFICATION_SEAL', tint: 0xb0b0c0 },
       { target: 'proclamation',      name: _LOOT_T('loot.quest_item.PROCLAMATION'),      nameKey: 'loot.quest_item.PROCLAMATION',      key: 'PROCLAMATION',      tint: 0xd8c070 },
-      { target: 'memory_shard',      name: _LOOT_T('loot.quest_item.MEMORY_SHARD'),      nameKey: 'loot.quest_item.MEMORY_SHARD',      key: 'MEMORY_SHARD',      tint: 0x88ccff }
+      { target: 'memory_shard',      name: _LOOT_T('loot.quest_item.MEMORY_SHARD'),      nameKey: 'loot.quest_item.MEMORY_SHARD',      key: 'MEMORY_SHARD',      tint: 0x88ccff },
+      // Ritualkammer-Beweis (Q5 widerstand_proof). Erhoehte Chance, damit der
+      // Spieler ihn nicht ewig sucht; deterministische Platzierung bleibt zusaetzlich.
+      { target: 'council_document',  name: _LOOT_T('loot.quest_item.COUNCIL_DOCUMENT'),  nameKey: 'loot.quest_item.COUNCIL_DOCUMENT',  key: 'COUNCIL_DOCUMENT',  tint: 0xcc88dd, chance: 0.20 }
     ];
 
     for (var qi = 0; qi < questItemDefs.length; qi++) {
@@ -236,7 +242,7 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
           return o.type === 'fetch' && o.target === qiDef.target && o.current < o.required;
         });
       });
-      if (needsItem && Math.random() < 0.10) {
+      if (needsItem && Math.random() < (qiDef.chance || 0.10)) {
         var questItem = {
           type: 'quest_item',
           key: qiDef.key,
