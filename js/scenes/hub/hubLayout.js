@@ -101,16 +101,15 @@ window.HUB_HITBOXES = {
     { id: 'lamp_left',            x: 340, y: 438, w: 16,  h: 12 },
     { id: 'lamp_right',           x: 602, y: 438, w: 16,  h: 12 },
     // Wald-/Laub-Raender links/rechts unterhalb der Stadtmauer (vorher lief man
-    // ins Laub). Breiten aus einer Pixel-Analyse des Hintergrunds (block-gemittelte
-    // Gruen-/Dunkel-Erkennung): die Laubkante liegt in der Mittelzone bei ~x448
-    // (links) bzw. ~x1088 (rechts) im Bild = Layout x280/680. 3-stufig, mittig am
-    // breitesten. Oberhalb (y<292) blockt bereits city_silhouette_wall.
-    // Debug-Overlay: Spiel mit ?hubdebug=1 oeffnen, um die Boxen zu sehen.
-    { id: 'forest_left_top',      x: 0,   y: 292, w: 200, h: 68 },
-    { id: 'forest_left_mid',      x: 0,   y: 360, w: 280, h: 130 },
+    // ins Laub). 3-stufig, unten am breitesten. Oberhalb (y<292) blockt bereits
+    // city_silhouette_wall. top/mid um ~1/3 an der inneren Kante zurueckgenommen
+    // (Playtest ?hubdebug=1: standen 1/3 zu weit im begehbaren Bereich), links und
+    // rechts symmetrisch. Debug-Overlay: Spiel mit ?hubdebug=1 oeffnen.
+    { id: 'forest_left_top',      x: 0,   y: 292, w: 133, h: 68 },
+    { id: 'forest_left_mid',      x: 0,   y: 360, w: 187, h: 130 },
     { id: 'forest_left_bot',      x: 0,   y: 490, w: 200, h: 150 },
-    { id: 'forest_right_top',     x: 760, y: 292, w: 200, h: 68 },
-    { id: 'forest_right_mid',     x: 680, y: 360, w: 280, h: 130 },
+    { id: 'forest_right_top',     x: 827, y: 292, w: 133, h: 68 },
+    { id: 'forest_right_mid',     x: 773, y: 360, w: 187, h: 130 },
     { id: 'forest_right_bot',     x: 760, y: 490, w: 200, h: 150 }
   ],
   entrances: [
