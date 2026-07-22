@@ -207,18 +207,6 @@
         "count": 2,
         "radius": 2
       }
-    ],
-    "loot": [
-      {
-        "x": 33,
-        "y": 7,
-        "type": "chest_small"
-      },
-      {
-        "x": 18,
-        "y": 6,
-        "type": "chest_small"
-      }
     ]
   },
   "rules": {

@@ -1,6 +1,12 @@
 {
   "name": "CouncilWarehouse",
-  "tags": ["story", "act2", "espionage", "warehouse", "kettenrat"],
+  "tags": [
+    "story",
+    "act2",
+    "espionage",
+    "warehouse",
+    "kettenrat"
+  ],
   "size": {
     "tile": 32,
     "w": 40,
@@ -46,52 +52,210 @@
     ]
   },
   "entrances": [
-    { "x": 19, "y": 27, "dir": "S" }
+    {
+      "x": 19,
+      "y": 27,
+      "dir": "S"
+    }
   ],
   "objects": [
-    { "type": "altar", "x": 19, "y": 3 },
-    { "type": "brazier", "x": 17, "y": 3 },
-    { "type": "brazier", "x": 21, "y": 3 },
-    { "type": "brazier", "x": 8, "y": 22 },
-    { "type": "brazier", "x": 31, "y": 22 },
-    { "type": "crate", "x": 3, "y": 20 },
-    { "type": "crate", "x": 36, "y": 20 },
-    { "type": "barrel", "x": 3, "y": 26 },
-    { "type": "barrel", "x": 36, "y": 26 }
+    {
+      "type": "altar",
+      "x": 19,
+      "y": 3
+    },
+    {
+      "type": "brazier",
+      "x": 17,
+      "y": 3
+    },
+    {
+      "type": "brazier",
+      "x": 21,
+      "y": 3
+    },
+    {
+      "type": "brazier",
+      "x": 8,
+      "y": 22
+    },
+    {
+      "type": "brazier",
+      "x": 31,
+      "y": 22
+    },
+    {
+      "type": "crate",
+      "x": 3,
+      "y": 20
+    },
+    {
+      "type": "crate",
+      "x": 36,
+      "y": 20
+    },
+    {
+      "type": "barrel",
+      "x": 3,
+      "y": 26
+    },
+    {
+      "type": "barrel",
+      "x": 36,
+      "y": 26
+    }
   ],
   "spawns": {
-    "player": { "x": 19, "y": 23 },
-    "enemies": [],
-    "loot": [
-      { "x": 4, "y": 3, "type": "chest_small" },
-      { "x": 35, "y": 3, "type": "chest_medium", "locked": true }
-    ]
+    "player": {
+      "x": 19,
+      "y": 23
+    },
+    "enemies": []
   },
   "rules": {
     "difficulty": 2,
     "lights": [
-      { "x": 17, "y": 3, "radius": 3, "intensity": 0.35 },
-      { "x": 21, "y": 3, "radius": 3, "intensity": 0.35 },
-      { "x": 8, "y": 22, "radius": 3, "intensity": 0.3 },
-      { "x": 31, "y": 22, "radius": 3, "intensity": 0.3 }
+      {
+        "x": 17,
+        "y": 3,
+        "radius": 3,
+        "intensity": 0.35
+      },
+      {
+        "x": 21,
+        "y": 3,
+        "radius": 3,
+        "intensity": 0.35
+      },
+      {
+        "x": 8,
+        "y": 22,
+        "radius": 3,
+        "intensity": 0.3
+      },
+      {
+        "x": 31,
+        "y": 22,
+        "radius": 3,
+        "intensity": 0.3
+      }
     ]
   },
   "espionage": {
     "guards": [
-      { "x": 4, "y": 15, "range": 165, "halfAngle": 0.55, "speed": 48, "facing": 0, "alert": false,
-        "patrol": [ { "x": 4, "y": 15 }, { "x": 13, "y": 15 } ] },
-      { "x": 36, "y": 15, "range": 165, "halfAngle": 0.55, "speed": 48, "facing": 3.14159, "alert": false,
-        "patrol": [ { "x": 36, "y": 15 }, { "x": 26, "y": 15 } ] },
-      { "x": 4, "y": 6, "range": 185, "halfAngle": 0.58, "speed": 54, "facing": 0, "alert": true,
-        "patrol": [ { "x": 4, "y": 6 }, { "x": 13, "y": 6 } ] },
-      { "x": 35, "y": 6, "range": 185, "halfAngle": 0.58, "speed": 54, "facing": 3.14159, "alert": true,
-        "patrol": [ { "x": 35, "y": 6 }, { "x": 26, "y": 6 } ] },
-      { "x": 17, "y": 9, "range": 175, "halfAngle": 0.58, "speed": 50, "facing": 0, "alert": true,
-        "patrol": [ { "x": 17, "y": 9 }, { "x": 22, "y": 9 } ] }
+      {
+        "x": 4,
+        "y": 15,
+        "range": 165,
+        "halfAngle": 0.55,
+        "speed": 48,
+        "facing": 0,
+        "alert": false,
+        "patrol": [
+          {
+            "x": 4,
+            "y": 15
+          },
+          {
+            "x": 13,
+            "y": 15
+          }
+        ]
+      },
+      {
+        "x": 36,
+        "y": 15,
+        "range": 165,
+        "halfAngle": 0.55,
+        "speed": 48,
+        "facing": 3.14159,
+        "alert": false,
+        "patrol": [
+          {
+            "x": 36,
+            "y": 15
+          },
+          {
+            "x": 26,
+            "y": 15
+          }
+        ]
+      },
+      {
+        "x": 4,
+        "y": 6,
+        "range": 185,
+        "halfAngle": 0.58,
+        "speed": 54,
+        "facing": 0,
+        "alert": true,
+        "patrol": [
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 13,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "x": 35,
+        "y": 6,
+        "range": 185,
+        "halfAngle": 0.58,
+        "speed": 54,
+        "facing": 3.14159,
+        "alert": true,
+        "patrol": [
+          {
+            "x": 35,
+            "y": 6
+          },
+          {
+            "x": 26,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "x": 17,
+        "y": 9,
+        "range": 175,
+        "halfAngle": 0.58,
+        "speed": 50,
+        "facing": 0,
+        "alert": true,
+        "patrol": [
+          {
+            "x": 17,
+            "y": 9
+          },
+          {
+            "x": 22,
+            "y": 9
+          }
+        ]
+      }
     ],
     "observe": [
-      { "id": "convoy_talk", "x": 19, "y": 5, "r": 62, "seconds": 4, "questTarget": "convoy_intel" },
-      { "id": "escort_route_watch", "x": 26, "y": 9, "r": 62, "seconds": 4, "questTarget": "escort_route" }
+      {
+        "id": "convoy_talk",
+        "x": 19,
+        "y": 5,
+        "r": 62,
+        "seconds": 4,
+        "questTarget": "convoy_intel"
+      },
+      {
+        "id": "escort_route_watch",
+        "x": 26,
+        "y": 9,
+        "r": 62,
+        "seconds": 4,
+        "questTarget": "escort_route"
+      }
     ]
   }
 }

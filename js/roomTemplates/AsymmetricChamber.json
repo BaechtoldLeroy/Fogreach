@@ -45,15 +45,43 @@
     ]
   },
   "entrances": [
-    { "x": 6, "y": 1, "dir": "N" },
-    { "x": 27, "y": 17, "dir": "E" }
+    {
+      "x": 6,
+      "y": 1,
+      "dir": "N"
+    },
+    {
+      "x": 27,
+      "y": 17,
+      "dir": "E"
+    }
   ],
   "objects": [
-    { "type": "brazier", "x": 4, "y": 8 },
-    { "type": "brazier", "x": 4, "y": 21 },
-    { "type": "rubble", "x": 22, "y": 7 },
-    { "type": "barrel", "x": 24, "y": 16 },
-    { "type": "crate", "x": 24, "y": 18 }
+    {
+      "type": "brazier",
+      "x": 4,
+      "y": 8
+    },
+    {
+      "type": "brazier",
+      "x": 4,
+      "y": 21
+    },
+    {
+      "type": "rubble",
+      "x": 22,
+      "y": 7
+    },
+    {
+      "type": "barrel",
+      "x": 24,
+      "y": 16
+    },
+    {
+      "type": "crate",
+      "x": 24,
+      "y": 18
+    }
   ],
   "spawns": {
     "player": {
@@ -61,12 +89,27 @@
       "y": 18
     },
     "enemies": [
-      { "type": 1, "x": 8, "y": 11, "count": 2, "radius": 2 },
-      { "type": 2, "x": 20, "y": 14, "count": 1, "radius": 2 },
-      { "type": 3, "x": 20, "y": 20, "count": 1, "radius": 2 }
-    ],
-    "loot": [
-      { "x": 4, "y": 4, "type": "chest_small" }
+      {
+        "type": 1,
+        "x": 8,
+        "y": 11,
+        "count": 2,
+        "radius": 2
+      },
+      {
+        "type": 2,
+        "x": 20,
+        "y": 14,
+        "count": 1,
+        "radius": 2
+      },
+      {
+        "type": 3,
+        "x": 20,
+        "y": 20,
+        "count": 1,
+        "radius": 2
+      }
     ]
   }
 }

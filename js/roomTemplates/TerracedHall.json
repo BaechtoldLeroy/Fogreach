@@ -51,18 +51,58 @@
     ]
   },
   "entrances": [
-    { "x": 17, "y": 1, "dir": "N" },
-    { "x": 17, "y": 27, "dir": "S" }
+    {
+      "x": 17,
+      "y": 1,
+      "dir": "N"
+    },
+    {
+      "x": 17,
+      "y": 27,
+      "dir": "S"
+    }
   ],
   "objects": [
-    { "type": "brazier", "x": 4, "y": 4 },
-    { "type": "brazier", "x": 31, "y": 4 },
-    { "type": "brazier", "x": 4, "y": 25 },
-    { "type": "brazier", "x": 31, "y": 25 },
-    { "type": "statue_knight", "x": 17, "y": 8 },
-    { "type": "pillar_large", "x": 8, "y": 17 },
-    { "type": "pillar_large", "x": 27, "y": 17 },
-    { "type": "rubble", "x": 17, "y": 13 }
+    {
+      "type": "brazier",
+      "x": 4,
+      "y": 4
+    },
+    {
+      "type": "brazier",
+      "x": 31,
+      "y": 4
+    },
+    {
+      "type": "brazier",
+      "x": 4,
+      "y": 25
+    },
+    {
+      "type": "brazier",
+      "x": 31,
+      "y": 25
+    },
+    {
+      "type": "statue_knight",
+      "x": 17,
+      "y": 8
+    },
+    {
+      "type": "pillar_large",
+      "x": 8,
+      "y": 17
+    },
+    {
+      "type": "pillar_large",
+      "x": 27,
+      "y": 17
+    },
+    {
+      "type": "rubble",
+      "x": 17,
+      "y": 13
+    }
   ],
   "spawns": {
     "player": {
@@ -70,13 +110,34 @@
       "y": 3
     },
     "enemies": [
-      { "type": 1, "x": 9, "y": 9, "count": 2, "radius": 2 },
-      { "type": 1, "x": 26, "y": 9, "count": 2, "radius": 2 },
-      { "type": 2, "x": 17, "y": 20, "count": 2, "radius": 2 },
-      { "type": 4, "x": 9, "y": 22, "count": 1, "radius": 1 }
-    ],
-    "loot": [
-      { "x": 17, "y": 25, "type": "chest_medium" }
+      {
+        "type": 1,
+        "x": 9,
+        "y": 9,
+        "count": 2,
+        "radius": 2
+      },
+      {
+        "type": 1,
+        "x": 26,
+        "y": 9,
+        "count": 2,
+        "radius": 2
+      },
+      {
+        "type": 2,
+        "x": 17,
+        "y": 20,
+        "count": 2,
+        "radius": 2
+      },
+      {
+        "type": 4,
+        "x": 9,
+        "y": 22,
+        "count": 1,
+        "radius": 1
+      }
     ]
   }
 }

@@ -208,18 +208,6 @@
         "count": 2,
         "radius": 3
       }
-    ],
-    "loot": [
-      {
-        "x": 17,
-        "y": 10,
-        "type": "chest_small"
-      },
-      {
-        "x": 5,
-        "y": 11,
-        "type": "chest_small"
-      }
     ]
   }
 }

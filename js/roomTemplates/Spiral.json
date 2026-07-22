@@ -167,19 +167,6 @@
         "count": 2,
         "radius": 4
       }
-    ],
-    "loot": [
-      {
-        "x": 14,
-        "y": 11,
-        "type": "chest_large",
-        "locked": true
-      },
-      {
-        "x": 5,
-        "y": 25,
-        "type": "chest_small"
-      }
     ]
   }
 }

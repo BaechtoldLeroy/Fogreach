@@ -1,6 +1,12 @@
 {
   "name": "SealedArchive",
-  "tags": ["story", "act2", "espionage", "archive", "kettenrat"],
+  "tags": [
+    "story",
+    "act2",
+    "espionage",
+    "archive",
+    "kettenrat"
+  ],
   "size": {
     "tile": 32,
     "w": 32,
@@ -54,19 +60,71 @@
     }
   ],
   "objects": [
-    { "type": "altar", "x": 16, "y": 12 },
-    { "type": "brazier", "x": 8, "y": 6 },
-    { "type": "brazier", "x": 23, "y": 6 },
-    { "type": "brazier", "x": 8, "y": 16 },
-    { "type": "brazier", "x": 23, "y": 16 },
-    { "type": "statue_knight", "x": 2, "y": 2 },
-    { "type": "statue_knight", "x": 29, "y": 2 },
-    { "type": "crate", "x": 2, "y": 21 },
-    { "type": "crate", "x": 3, "y": 21 },
-    { "type": "crate", "x": 28, "y": 21 },
-    { "type": "crate", "x": 29, "y": 21 },
-    { "type": "barrel", "x": 16, "y": 21 },
-    { "type": "barrel", "x": 17, "y": 21 }
+    {
+      "type": "altar",
+      "x": 16,
+      "y": 12
+    },
+    {
+      "type": "brazier",
+      "x": 8,
+      "y": 6
+    },
+    {
+      "type": "brazier",
+      "x": 23,
+      "y": 6
+    },
+    {
+      "type": "brazier",
+      "x": 8,
+      "y": 16
+    },
+    {
+      "type": "brazier",
+      "x": 23,
+      "y": 16
+    },
+    {
+      "type": "statue_knight",
+      "x": 2,
+      "y": 2
+    },
+    {
+      "type": "statue_knight",
+      "x": 29,
+      "y": 2
+    },
+    {
+      "type": "crate",
+      "x": 2,
+      "y": 21
+    },
+    {
+      "type": "crate",
+      "x": 3,
+      "y": 21
+    },
+    {
+      "type": "crate",
+      "x": 28,
+      "y": 21
+    },
+    {
+      "type": "crate",
+      "x": 29,
+      "y": 21
+    },
+    {
+      "type": "barrel",
+      "x": 16,
+      "y": 21
+    },
+    {
+      "type": "barrel",
+      "x": 17,
+      "y": 21
+    }
   ],
   "spawns": {
     "player": {
@@ -74,37 +132,105 @@
       "y": 21
     },
     "enemies": [
-      { "type": 1, "x": 16, "y": 7, "count": 2, "radius": 2 },
-      { "type": 3, "x": 8, "y": 12, "count": 1, "radius": 2 },
-      { "type": 1, "x": 24, "y": 12, "count": 2, "radius": 2 }
-    ],
-    "loot": [
-      { "x": 16, "y": 16, "type": "chest_medium", "locked": true },
-      { "x": 16, "y": 2, "type": "chest_small" }
+      {
+        "type": 1,
+        "x": 16,
+        "y": 7,
+        "count": 2,
+        "radius": 2
+      },
+      {
+        "type": 3,
+        "x": 8,
+        "y": 12,
+        "count": 1,
+        "radius": 2
+      },
+      {
+        "type": 1,
+        "x": 24,
+        "y": 12,
+        "count": 2,
+        "radius": 2
+      }
     ]
   },
   "rules": {
     "difficulty": 3,
     "lights": [
-      { "x": 8, "y": 6, "radius": 3, "intensity": 0.3 },
-      { "x": 23, "y": 6, "radius": 3, "intensity": 0.3 },
-      { "x": 8, "y": 16, "radius": 3, "intensity": 0.3 },
-      { "x": 23, "y": 16, "radius": 3, "intensity": 0.3 },
-      { "x": 16, "y": 12, "radius": 4, "intensity": 0.4 }
+      {
+        "x": 8,
+        "y": 6,
+        "radius": 3,
+        "intensity": 0.3
+      },
+      {
+        "x": 23,
+        "y": 6,
+        "radius": 3,
+        "intensity": 0.3
+      },
+      {
+        "x": 8,
+        "y": 16,
+        "radius": 3,
+        "intensity": 0.3
+      },
+      {
+        "x": 23,
+        "y": 16,
+        "radius": 3,
+        "intensity": 0.3
+      },
+      {
+        "x": 16,
+        "y": 12,
+        "radius": 4,
+        "intensity": 0.4
+      }
     ]
   },
   "espionage": {
     "guards": [
-      { "x": 16, "y": 7, "range": 120 },
-      { "x": 8, "y": 12, "range": 120 },
-      { "x": 24, "y": 12, "range": 120 }
+      {
+        "x": 16,
+        "y": 7,
+        "range": 120
+      },
+      {
+        "x": 8,
+        "y": 12,
+        "range": 120
+      },
+      {
+        "x": 24,
+        "y": 12,
+        "range": 120
+      }
     ],
     "cover": [
-      { "x": 8, "y": 13, "w": 6, "h": 2 },
-      { "x": 18, "y": 13, "w": 6, "h": 2 }
+      {
+        "x": 8,
+        "y": 13,
+        "w": 6,
+        "h": 2
+      },
+      {
+        "x": 18,
+        "y": 13,
+        "w": 6,
+        "h": 2
+      }
     ],
     "observe": [
-      { "id": "archive_desk", "x": 16, "y": 12, "r": 64, "seconds": 4, "questTarget": "archive_record" }
+      {
+        "id": "archive_desk",
+        "x": 16,
+        "y": 12,
+        "r": 64,
+        "seconds": 4,
+        "questTarget": "archive_record"
+      }
     ]
   }
 }

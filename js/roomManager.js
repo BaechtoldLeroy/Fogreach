@@ -508,6 +508,65 @@ function ensureObstacleColliders(scene) {
   }
 }
 
+// Zufaellige Truhen-Platzierung pro Raum (ersetzt die fixen Template-Truhen).
+// Ziel: ~1 Truhe pro 2 durchschnittlich grosse Raeume (Audit-Mittel ~861 Tiles).
+// Platziert NACH den Treppen, validiert gegen Treppen/Spieler-Spawn/Kamera/
+// Hindernisse, damit keine Truhe eine Treppe oder ein anderes Objekt blockiert.
+function _spawnRandomRoomChests(scene, roomW, roomH, spawnX, spawnY) {
+  if (!scene || typeof window.spawnLoot !== 'function') return;
+  const T = 32;
+  const REF_TILES = 861; // durchschnittliche Raumflaeche aus dem Template-Audit
+  const tiles = Math.max(1, (roomW / T) * (roomH / T));
+  // Basis 0.5 (= 1 pro 2 Raeume beim Durchschnitt), mit der Flaeche skaliert und
+  // gedeckelt, damit Mini-Raeume selten und Riesen-Raeume nicht garantiert sind.
+  let chance = 0.5 * (tiles / REF_TILES);
+  chance = Math.max(0.15, Math.min(0.85, chance));
+  let count = (Math.random() < chance) ? 1 : 0;
+  // Nur sehr grosse Raeume duerfen selten eine zweite Truhe bekommen.
+  if (count === 1 && tiles > REF_TILES * 1.6 && Math.random() < 0.30) count = 2;
+  if (count === 0) return;
+
+  // Treppen-Positionen (Abstand halten).
+  const stairs = [];
+  if (scene.stairsGroup && typeof scene.stairsGroup.getChildren === 'function') {
+    scene.stairsGroup.getChildren().forEach((s) => { if (s) stairs.push({ x: s.x, y: s.y }); });
+  }
+  const cam = scene.cameras && scene.cameras.main;
+  const camX = cam ? cam.midPoint.x : roomW / 2;
+  const camY = cam ? cam.midPoint.y : roomH / 2;
+  const D = Phaser.Math.Distance.Between;
+  const MIN_STAIR = 120; // Abstand Truhe <-> Treppe (Treppe ~80px + Truhe)
+  const MIN_SPAWN = 140;  // nicht auf/neben dem Spieler
+  const MIN_CAM = 200;    // nicht direkt vor der Startkamera
+  const MIN_CHEST = 96;   // Truhen nicht stapeln
+  const placed = [];
+
+  for (let n = 0; n < count; n++) {
+    let pos = null;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      let cand = null;
+      if (typeof scene.pickAccessibleSpawnPoint === 'function') {
+        cand = scene.pickAccessibleSpawnPoint({ minDistance: MIN_SPAWN, maxAttempts: 12 });
+      }
+      if (!cand) cand = { x: Phaser.Math.Between(48, roomW - 48), y: Phaser.Math.Between(48, roomH - 48) };
+      const x = cand.x, y = cand.y;
+      if (typeof window.isSpawnPositionBlocked === 'function' && window.isSpawnPositionBlocked(x, y)) continue;
+      if (spawnX != null && spawnY != null && D(x, y, spawnX, spawnY) < MIN_SPAWN) continue;
+      if (D(x, y, camX, camY) < MIN_CAM) continue;
+      if (stairs.some((s) => D(x, y, s.x, s.y) < MIN_STAIR)) continue;
+      if (placed.some((p) => D(x, y, p.x, p.y) < MIN_CHEST)) continue;
+      pos = { x, y };
+      break;
+    }
+    if (!pos) continue; // kein gueltiger Platz -> lieber keine Truhe als eine falsche
+    const r = Math.random();
+    const type = r < 0.10 ? 'chest_large' : (r < 0.45 ? 'chest_medium' : 'chest_small');
+    const locked = Math.random() < 0.20;
+    try { window.spawnLoot(pos.x, pos.y, { type, locked }); } catch (e) { /* nie den Raum brechen */ }
+    placed.push(pos);
+  }
+}
+
 /**
  * Betritt einen Raum: setzt WorldBounds, platziert Hindernisse,
  * baut Treppen, sperrt sie bis Raumwelle clear ist.
@@ -1029,6 +1088,12 @@ function enterRoom(scene, roomId) {
     _emStair.setAlpha(0.95).setDepth(40).refreshBody();
     try { console.warn('[stairs] Notfall-Treppe erzwungen — Raum hatte keine'); } catch (_) {}
   }
+
+  // Truhen werden NICHT mehr aus den Templates gespawnt (spawns.loot-Truhen
+  // entfernt), sondern hier ZUFAELLIG platziert — nach den Treppen, damit die
+  // Validierung sie meiden kann (frueher standen Template-Truhen fix vor einer
+  // Treppe). Ziel: ~1 Truhe pro 2 durchschnittlich grosse Raeume.
+  _spawnRandomRoomChests(scene, builtWidth, builtHeight, playerSpawnX, playerSpawnY);
 
   // Overlap Spieler ↔ Stairs
   // Tear down any previous overlap registration so we don't accumulate
