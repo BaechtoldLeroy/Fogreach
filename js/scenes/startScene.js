@@ -292,7 +292,7 @@ StartScene.prototype.preload = function () {
     "CouncilWarehouse", "SealedArchive", "InformantDen"
   ];
   for (const name of templateNames) {
-    this.load.json(name, `js/roomTemplates/${name}.json?v=071`);
+    this.load.json(name, `js/roomTemplates/${name}.json?v=072`);
   }
 };
 
