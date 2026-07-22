@@ -24,7 +24,8 @@
 
   // Der Rudelführer ist ein Mini-Boss: Champion-Elite (Optik/Verhalten) + ein
   // klarer HP-Boost obendrauf, damit er sich zäher als der Trash anfühlt.
-  var HUNT_HP_MULT = 2.5;
+  // Kommt ZUSAETZLICH zum Champion-Elite-HP (×1.5) — effektiv also base ×6.0.
+  var HUNT_HP_MULT = 4.0;
 
   function _empowerTarget(t) {
     if (!t) return;

@@ -728,6 +728,13 @@
   function showJournalOverlay(scene, onClose) {
     if (!scene) return;
 
+    // Spiel pausieren, solange das Tagebuch offen ist (im Hub ein No-Op, im
+    // Dungeon friert es Gegner/Timer ein — sonst laeuft der Kampf weiter, waehrend
+    // man liest).
+    if (typeof window.pauseGameClock === 'function') {
+      try { window.pauseGameClock(scene); } catch (e) {}
+    }
+
     var data = getJournalData();
     var cam = scene.cameras.main;
     var w = cam.width;
@@ -968,6 +975,9 @@
       container.destroy(true);
       scene.input.keyboard.off('keydown-J', close);
       scene.input.keyboard.off('keydown-ESC', close);
+      if (typeof window.resumeGameClock === 'function') {
+        try { window.resumeGameClock(scene); } catch (e) {}
+      }
       if (typeof onClose === 'function') onClose();
     };
 

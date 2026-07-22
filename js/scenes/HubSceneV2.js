@@ -1171,11 +1171,15 @@ class HubSceneV2 extends Phaser.Scene {
     // Feature 063: Elara-Lager (Story v4 §13.2) — ruhiger Akt-3-Moment ohne
     // Auftrag. Einmalig und nur im Flavor-Gespräch, damit es nie ein Quest-
     // Angebot verdrängt.
-    if (questMode === 'flavor' && npcId === 'elara' && !this._shownElaraCamp
+    // Persistenter Guard (nicht instanzweit): sonst spielt das Lager nach jeder
+    // Dungeon-Rueckkehr erneut ab, weil die Hub-Szene neu aufgebaut wird.
+    const _elaraCampSeen = !!(window.questSystem && typeof window.questSystem.hasFlag === 'function'
+      && window.questSystem.hasFlag('elara_camp_seen'));
+    if (questMode === 'flavor' && npcId === 'elara' && !_elaraCampSeen
         && window.storyScenes && typeof window.storyScenes.playElaraCamp === 'function'
         && window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function'
         && window.storySystem.getCurrentActIndex() >= 3) {
-      this._shownElaraCamp = true;
+      if (window.questSystem && typeof window.questSystem.setFlag === 'function') window.questSystem.setFlag('elara_camp_seen');
       const selfEC = this;
       window.storyScenes.playElaraCamp(this, function () { selfEC._closeDialog(null); });
       return;
@@ -1361,12 +1365,18 @@ class HubSceneV2 extends Phaser.Scene {
       // damit die Nachfrage erst danach kommt und nicht im selben Dialog steht.
       // Einmalig (_shownSeizureFollowup). Die flag-abhängige showIf-Variante
       // (Lüge bei petitions_kept) macht die Komponente selbst.
-      if (npcId === 'aldric' && !this._shownSeizureFollowup) {
+      // Guard MUSS persistent sein (questSystem-Flag), NICHT instanzweit: die
+      // Hub-Szene wird bei jeder Rueckkehr aus dem Dungeon neu aufgebaut, ein
+      // Instanzfeld (frueher this._shownSeizureFollowup) startet dann wieder
+      // undefined — die Nachfrage tauchte so nach dem ersten Dungeon-Besuch
+      // erneut auf. Analog zu hub_intro_a0_seen.
+      const _seizureSeen = !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag('council_seizure_followup_seen'));
+      if (npcId === 'aldric' && !_seizureSeen) {
         const _flags = (qs && typeof qs.getFlags === 'function') ? qs.getFlags() : {};
         if (_flags.petitions_kept || _flags.petitions_surrendered) {
           const _sdFollow = this._storyDialogEntry('council_seizure_followup');
           if (_sdFollow) {
-            this._shownSeizureFollowup = true;
+            if (qs && typeof qs.setFlag === 'function') qs.setFlag('council_seizure_followup_seen');
             pages.push(this._storyChoicePage(_sdFollow));
           }
         }
