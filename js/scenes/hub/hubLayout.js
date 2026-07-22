@@ -101,10 +101,15 @@ window.HUB_HITBOXES = {
     { id: 'lamp_left',            x: 340, y: 438, w: 16,  h: 12 },
     { id: 'lamp_right',           x: 602, y: 438, w: 16,  h: 12 },
     // Wald-Raender links/rechts unterhalb der Stadtmauer (vorher lief man in
-    // die Baeume). Reichen bis zur Kante der jeweiligen Cottage; oberhalb blockt
-    // bereits city_silhouette_wall.
-    { id: 'forest_left',          x: 0,   y: 292, w: 110, h: 348 },
-    { id: 'forest_right',         x: 850, y: 292, w: 110, h: 348 }
+    // die Baeume). Die Baumkante laeuft schraeg nach innen — unten deutlich
+    // breiter — daher als 3-stufige Treppe je Seite statt gerader Streifen.
+    // Oberhalb (y<292) blockt bereits city_silhouette_wall.
+    { id: 'forest_left_top',      x: 0,   y: 292, w: 95,  h: 150 },
+    { id: 'forest_left_mid',      x: 0,   y: 442, w: 112, h: 110 },
+    { id: 'forest_left_bot',      x: 0,   y: 552, w: 150, h: 88 },
+    { id: 'forest_right_top',     x: 865, y: 292, w: 95,  h: 150 },
+    { id: 'forest_right_mid',     x: 848, y: 442, w: 112, h: 110 },
+    { id: 'forest_right_bot',     x: 810, y: 552, w: 150, h: 88 }
   ],
   entrances: [
     { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]', target: 'GameScene' },
