@@ -1526,8 +1526,26 @@ function breakDestructibleObstacle(scene, obs) {
   // hier greifen ueber `|| <default>` — ein unbekannter Tier faellt sonst still
   // auf Fass-Beute zurueck, darum steht 'stone' ueberall explizit drin.
   const goldDrop = { stone: 3, minor: 5, small: 15, medium: 35, large: 75 }[tier] || 5;
-  if (window.LootSystem && window.LootSystem.grantGold) {
-    window.LootSystem.grantGold(goldDrop + Math.floor(Math.random() * goldDrop));
+  const goldAmount = goldDrop + Math.floor(Math.random() * goldDrop);
+  // Truhen: Gold als SICHTBAREN Drop am Boden verstreuen (auto-eingesammelt bei
+  // Beruehrung) statt still gutzuschreiben. Andere Behaelter/Kulisse behalten die
+  // stille Gutschrift. Faellt spawnGoldPile aus (Textur/Physik fehlt), sichere
+  // Gutschrift als Fallback, damit nie Gold verloren geht.
+  let goldShown = false;
+  if (type.indexOf('chest') === 0 && typeof window.spawnGoldPile === 'function') {
+    const piles = Math.max(2, Math.min(5, Math.round(goldAmount / 15)));
+    let remaining = goldAmount;
+    for (let i = 0; i < piles; i++) {
+      const amt = (i === piles - 1) ? remaining : Math.max(1, Math.floor(goldAmount / piles));
+      remaining -= amt;
+      const a = Math.random() * Math.PI * 2;
+      const d = 10 + Math.random() * 26; // 10..36 px um die Truhe streuen
+      const p = window.spawnGoldPile(scene, x + Math.cos(a) * d, y + Math.sin(a) * d, amt);
+      if (p) goldShown = true;
+    }
+  }
+  if (!goldShown && window.LootSystem && window.LootSystem.grantGold) {
+    window.LootSystem.grantGold(goldAmount);
   }
 
   // Drop items with tier-based probability
