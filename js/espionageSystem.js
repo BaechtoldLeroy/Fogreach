@@ -2,14 +2,14 @@
  * espionageSystem.js — Espionage-Mission-Mechanik (Feature 055, #30, #54)
  * ---------------------------------------------------------------------
  * Verkleidung + STEALTH (patrouillierende Wachen mit Sichtkegel) + Info-
- * Gathering. Laeuft NUR waehrend aktiver Espionage-Missionen (kuratierte
- * Raeume) — ausserhalb komplett no-op.
+ * Gathering. Läuft NUR während aktiver Espionage-Missionen (kuratierte
+ * Räume) — ausserhalb komplett no-op.
  *
  * #54-Umbau (echtes Schleichen):
- *  - Wachen sind bewegliche Entitaeten: patrouillieren Wegpunkte ODER scannen
- *    stationaer; sie haben eine BLICKRICHTUNG (_facing) + einen SICHTKEGEL
+ *  - Wachen sind bewegliche Entitäten: patrouillieren Wegpunkte ODER scannen
+ *    stationär; sie haben eine BLICKRICHTUNG (_facing) + einen SICHTKEGEL
  *    (range + halfAngle), kein abstrakter Rundum-Radius mehr.
- *  - Detection nach Kegel-INTENSITAET (Naehe x Zentralitaet). Verkleidung =
+ *  - Detection nach Kegel-INTENSITAET (Nähe x Zentralität). Verkleidung =
  *    TOLERANZ, keine Unsichtbarkeit: weit/am Kegelrand bleibt folgenlos, aber
  *    nah + zentral im Blick treibt den Verdacht — auch verkleidet.
  *  - Unverkleidet (nach Angriff): jede Sicht treibt schnell hoch.
@@ -20,19 +20,19 @@
 
   // --- Tuning -----------------------------------------------------------
   var DISGUISE_TINT = 0x8899cc;
-  var DETECT_HZ_MS = 60;            // ~16×/s — fluessige Kegel-Bewegung
+  var DETECT_HZ_MS = 60;            // ~16×/s — flüssige Kegel-Bewegung
   var RISE_PER_SEC = 0.95;          // unverkleidet: schnell enttarnt
   var DECAY_PER_SEC = 0.7;
   var ATTACK_SPIKE = 0.6;
   var RANGE_GRACE = 1.0;
-  var DISGUISE_TOLERANCE = 0.5;     // verkleidet: Sicht-Intensitaet bis hier folgenlos
+  var DISGUISE_TOLERANCE = 0.5;     // verkleidet: Sicht-Intensität bis hier folgenlos
   var DISGUISE_RISE_PER_SEC = 0.75; // verkleidet: Anstieg oberhalb der Toleranz
   // Wachen-Defaults (falls im Raum-Template nicht gesetzt)
   var DEF_VISION = 190;             // Sichtreichweite px
   var DEF_HALFANGLE = 0.62;         // ~35° Halbkegel
   var DEF_SPEED = 58;               // px/s Patrouille
   var DEF_PAUSE = 0.7;              // s Pause am Wegpunkt
-  var DEF_SCANARC = 0.9;            // rad — stationaeres Hin-und-Her-Scannen
+  var DEF_SCANARC = 0.9;            // rad — stationäres Hin-und-Her-Scannen
   var DEF_SCANSPEED = 0.85;         // Scan-Geschwindigkeit
 
   var DEFAULT_STATE = function () {
@@ -40,7 +40,7 @@
       active: false, missionId: null,
       disguised: false, detection: 0, exposed: false,
       observeZones: [], guards: [], cover: [],
-      blockedAt: null,                // (wx,wy)=>bool: Wand/Hindernis-Test fuer Wachen
+      blockedAt: null,                // (wx,wy)=>bool: Wand/Hindernis-Test für Wachen
       _acc: 0
     };
   };
@@ -85,13 +85,13 @@
   }
 
   var GUARD_HIT_RANGE = 92;         // Reichweite des Spieler-Schwungs auf Wachen
-  var GUARD_ATK_CD = 0.85;          // s zwischen Wachen-Schlaegen
+  var GUARD_ATK_CD = 0.85;          // s zwischen Wachen-Schlägen
   var GUARD_CONTACT = 34;           // Nahkampf-Distanz Wache->Spieler
   var GUARD_SOLID_R = 26;           // Kollisionsradius: Spieler wird herausgeschoben
   var GUARD_CHASE_MULT = 1.15;      // feindselige Wachen sind etwas schneller
   var EXPOSE_AGGRO_R = 300;         // bei Enttarnung: nur Wachen im Umkreis werden feindselig
 
-  // Normalisiert eine Wache aus dem Raum-Template in eine Laufzeit-Entitaet.
+  // Normalisiert eine Wache aus dem Raum-Template in eine Laufzeit-Entität.
   function _makeGuard(g) {
     g = g || {};
     var hasFacing = (typeof g.facing === 'number');
@@ -107,7 +107,7 @@
       scanArc: (typeof g.scanArc === 'number') ? g.scanArc : DEF_SCANARC,
       // Wachen-TYP: alert=true durchschaut die Verkleidung (roter Kegel) und
       // treibt den Verdacht wie bei einem unverkleideten Spieler; alert=false
-      // (Standard) laesst dich verkleidet in Ruhe, solange du nicht auffliegst.
+      // (Standard) lässt dich verkleidet in Ruhe, solange du nicht auffliegst.
       alert: isAlert,
       // Offener Nahkampf: Wachen sind besiegbar (hp) und wehren sich (damage),
       // sobald sie feindselig werden (gesehen/getroffen).
@@ -122,7 +122,7 @@
     };
   }
 
-  // Bewegt eine Wache Richtung (nx,ny), respektiert Waende (gleitet an ihnen
+  // Bewegt eine Wache Richtung (nx,ny), respektiert Wände (gleitet an ihnen
   // entlang). Ohne blockedAt-Callback frei beweglich.
   function _moveGuard(g, nx, ny) {
     var b = state.blockedAt;
@@ -187,14 +187,14 @@
           g._facing = Math.atan2(dy, dx);
         }
       } else {
-        // stationaer: Blick schwenkt hin und her (Sichtkegel sweept)
+        // stationär: Blick schwenkt hin und her (Sichtkegel sweept)
         g._scanT += dt;
         g._facing = g._baseFacing + Math.sin(g._scanT * DEF_SCANSPEED) * g.scanArc;
       }
     }
   }
 
-  // Sichtlinie frei? Rastert die Strecke ab und prueft gegen Waende (blockedAt).
+  // Sichtlinie frei? Rastert die Strecke ab und prüft gegen Wände (blockedAt).
   function _losBlocked(x0, y0, x1, y1) {
     var b = state.blockedAt;
     if (!b) return false;
@@ -228,7 +228,7 @@
     return distI * (0.45 + 0.55 * angI);
   }
 
-  // Hoechste Sicht-INTENSITAET (0..1) ueber Wachen, die den Punkt im Kegel
+  // Höchste Sicht-INTENSITAET (0..1) über Wachen, die den Punkt im Kegel
   // haben. filter: true = nur Alarm-Wachen, false = nur normale, undefined = alle.
   function _guardExposure(px, py, filter) {
     var gs = state.guards, maxI = 0;
@@ -340,7 +340,7 @@
 
     // Offener Nahkampf: der Spieler-Schwung trifft Wachen im vorderen Kegel.
     // Jeder Treffer -1 hp + macht die Wache feindselig; hp<=0 -> niedergestreckt
-    // (Sichtkegel verschwindet). Gibt Anzahl getroffener Wachen zurueck.
+    // (Sichtkegel verschwindet). Gibt Anzahl getroffener Wachen zurück.
     attackGuards: function (px, py, dirX, dirY, range) {
       if (!state.active) return 0;
       var gs = state.guards, hits = 0;
@@ -404,8 +404,8 @@
           if (!hg || hg.knocked || hg.hostile || !hg.alert) continue;
           if (_coneIntensity(hg, px, py) > 0.02) hg.hostile = true;
         }
-        // Feindselige Wachen beruhigen sich, wenn sie den Spieler laenger nicht
-        // sehen UND er weit weg ist -> kehren zur Patrouille zurueck.
+        // Feindselige Wachen beruhigen sich, wenn sie den Spieler länger nicht
+        // sehen UND er weit weg ist -> kehren zur Patrouille zurück.
         for (var ci = 0; ci < state.guards.length; ci++) {
           var cg = state.guards[ci];
           if (!cg || cg.knocked || !cg.hostile) continue;
@@ -419,7 +419,7 @@
         if (!state.exposed) {
           if (state.disguised) {
             // Verkleidet: NUR Alarm-Wachen (rote Kegel) durchschauen die
-            // Verkleidung. Normale (blaue) Wachen sind komplett getaeuscht —
+            // Verkleidung. Normale (blaue) Wachen sind komplett getäuscht —
             // an ihnen kann man gefahrlos vorbei.
             if (intenAlert > 0.02) {
               state.detection = Math.min(1, state.detection + RISE_PER_SEC * (0.4 + 0.6 * intenAlert) * dt);
@@ -438,12 +438,12 @@
           }
           // Wieder untertauchen: unverkleidet (z.B. nach einem Angriff) + kein
           // Verdacht + keine Alarm-Wache sieht dich + keine feindselige Wache mehr
-          // aktiv -> die Verkleidung kehrt automatisch zurueck.
+          // aktiv -> die Verkleidung kehrt automatisch zurück.
           if (!state.disguised && state.detection <= 0 && intenAlert <= 0.02 && !_anyHostileAlive()) {
             state.disguised = true; _applyTint();
           }
         } else {
-          // Recovery: raus aus den Sichtkegeln / in Deckung -> Verdacht faellt.
+          // Recovery: raus aus den Sichtkegeln / in Deckung -> Verdacht fällt.
           if (!inCover && intenAny > 0.05) {
             state.detection = 1;
           } else {

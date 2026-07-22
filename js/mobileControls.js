@@ -351,9 +351,9 @@ if (window.i18n) {
     // + burger menu's Loadout entry), shared between desktop and mobile.)
 
     // ----- Joystick (fixed bottom-left) -----
-    // Plugin defensiv: fehlt es (CDN-Fehler/Tracking-Prevention), laeuft der Rest
+    // Plugin defensiv: fehlt es (CDN-Fehler/Tracking-Prevention), läuft der Rest
     // der Mobile-Steuerung (Ability-Buttons etc.) weiter — nur ohne Joystick.
-    // Downstream-Code prueft state.joystick bereits auf null.
+    // Downstream-Code prüft state.joystick bereits auf null.
     const joystickPlugin = scene.plugins.get('rexVirtualJoystick');
     if (joystickPlugin) {
       const joystickBase = scene.add.circle(0, 0, 60, 0x888888, 0.3);
@@ -580,7 +580,7 @@ if (window.i18n) {
       .setScrollFactor(0).setDepth(4600).setInteractive();
     elements.push(overlay2);
 
-    var title = scene.add.text(cx, 40, 'Waehle Skill fuer ' + slot.toUpperCase(), {
+    var title = scene.add.text(cx, 40, 'Wähle Skill für ' + slot.toUpperCase(), {
       fontSize: '16px', fill: '#ffd166', fontFamily: 'serif'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(4601);
     elements.push(title);

@@ -119,9 +119,9 @@
           playerDeathHandled: !!window.playerDeathHandled,
           isReturningToHub:   !!window.isReturningToHub,
           // Modaler Event-/Story-Dialog (EventSystem.showEventChoiceDialog).
-          // Ohne dieses Flag schlaegt der Spieler durch den offenen Dialog
-          // hindurch zu — und die Leertaste, die den Dialog wegdrueckt, loeste
-          // im selben Frame zusaetzlich einen Angriff aus.
+          // Ohne dieses Flag schlägt der Spieler durch den offenen Dialog
+          // hindurch zu — und die Leertaste, die den Dialog wegdrückt, löste
+          // im selben Frame zusätzlich einen Angriff aus.
           eventChoiceOpen:    !!window.eventChoiceOpen
         };
       },

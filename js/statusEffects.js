@@ -45,10 +45,10 @@ const STATUS_EFFECT_CONFIG = {
   },
   [StatusEffectType.BURNED]: {
     // Visuell analog zu BLEED (gleiche Tick-Kadenz + Stack-Verhalten, damit der
-    // Tint-Flash ruhig statt hektisch wirkt) — nur waermer getoent (Feuer).
+    // Tint-Flash ruhig statt hektisch wirkt) — nur wärmer getönt (Feuer).
     duration: 4000,       // wie bleed
     tickInterval: 1000,   // wie bleed (1s) statt hektischem Schnellticken
-    damage: 2,            // Feuer trifft etwas haerter als Blutung (1)
+    damage: 2,            // Feuer trifft etwas härter als Blutung (1)
     tint: 0xff5a1e,       // orange-rot (Feuer), flasht wie bleeds Rot
     stackable: true,
     maxStacks: 2          // wie bleed

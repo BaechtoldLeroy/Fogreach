@@ -5,7 +5,7 @@
 // Math.random. Der Kontrakt steht in
 // kitty-specs/063-story-v4-inszenierung/contracts/finale-contract.md.
 //
-// Classic Script: haengt window.QuestFinale an. In Node muss `global.window`
+// Classic Script: hängt window.QuestFinale an. In Node muss `global.window`
 // gesetzt sein (die Tests tun das via tests/loadGameModule.js bzw. global.window={}).
 (function () {
   'use strict';
@@ -24,7 +24,7 @@
     // Regler 4 — Selbst erinnert: allein aus who_you_were (self_remembered).
     var remembered = flag(flags, 'self_remembered');
 
-    // Regler 2 — Wer steht neben dir (jeweils unabhaengig).
+    // Regler 2 — Wer steht neben dir (jeweils unabhängig).
     // Mara: resistance-freundliches Handeln (Gesuche behalten ODER Maulwurf-
     // Beweise) UND nicht im Konvoi aufgeflogen. `petitions_surrendered` allein
     // macht Mara NICHT anwesend (die petitions_kept-Bedingung greift dann nicht).
@@ -39,8 +39,8 @@
     // Die explizite Spieler-Wahl im Finale hat Vorrang (elara_spared/elara_killed).
     // Fehlt sie (Finale noch nicht gespielt), wird abgeleitet: verschonbar nur
     // mit Vertrauen UND Beweisen -> lebt, gebrochen; sonst ihre eigene Klinge.
-    // Damit stimmt der Zustand mit dem ueberein, was der Spieler tatsaechlich
-    // gewaehlt hat, statt es nur zu prognostizieren.
+    // Damit stimmt der Zustand mit dem überein, was der Spieler tatsächlich
+    // gewählt hat, statt es nur zu prognostizieren.
     var hasProof = flag(flags, 'mole_evidence') || flag(flags, 'three_hands_seen');
     var elara;
     if (flag(flags, 'elara_spared')) {
@@ -51,7 +51,7 @@
       elara = (flag(flags, 'elara_trust') && hasProof) ? 'lives' : 'dies';
     }
 
-    // Abgeleitete Praesentations-Hinweise.
+    // Abgeleitete Präsentations-Hinweise.
     var aloneAtEnd = !(allies.branka || allies.mara || allies.thom);
     var namelessEnding = !remembered;
 

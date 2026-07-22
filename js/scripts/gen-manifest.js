@@ -1,7 +1,7 @@
 // scripts/gen-manifest.js
 // Liest alle *.json im Zielordner und schreibt eine manifest.json mit Basenamen.
 // Aufruf: node scripts/gen-manifest.js roomTemplates
-// Optionaler 2. Parameter: Zielpfad fuer manifest.json
+// Optionaler 2. Parameter: Zielpfad für manifest.json
 
 const fs = require('fs');
 const path = require('path');

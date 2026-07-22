@@ -201,7 +201,7 @@
                   showEventToast(scene, T('event.treasure.toast_item'), 'treasure_cache');
                 } else {
                   // Kein Item gerollt -> wenigstens Gold, damit die Schatzkiste
-                  // nie voellig leer ausgeht (frueher: Toast log "Gegenstand
+                  // nie völlig leer ausgeht (früher: Toast log "Gegenstand
                   // gefunden", der Spieler bekam aber nichts).
                   if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldAmount);
                   showEventToast(scene, T('event.treasure.toast_gold', { amount: goldAmount }), 'treasure_cache');
@@ -1285,8 +1285,8 @@
     var cw = cam ? cam.width : 800;
     var ch = cam ? cam.height : 600;
 
-    // Dialog im Dungeon pausiert das Spiel voll (frueher lief alles weiter,
-    // waehrend man las).
+    // Dialog im Dungeon pausiert das Spiel voll (früher lief alles weiter,
+    // während man las).
     if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
 
     var overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.5)
@@ -1329,8 +1329,8 @@
     overlay.on('pointerdown', close);
     scene.input.keyboard.on('keydown-SPACE', close);
     scene.input.keyboard.on('keydown-ESC', close);
-    // Auto-Close ueber Echtzeit-Timer (setTimeout): scene.time ist jetzt pausiert
-    // und wuerde den delayedCall einfrieren -> der Dialog schloesse nie von selbst.
+    // Auto-Close über Echtzeit-Timer (setTimeout): scene.time ist jetzt pausiert
+    // und würde den delayedCall einfrieren -> der Dialog schlösse nie von selbst.
     autoT = setTimeout(close, 8000);
   }
 
@@ -1473,7 +1473,7 @@
 
     scene._eventChoiceActive = true;
     // Global gespiegelt, damit InputScheme.shouldSuppressCombatInput den offenen
-    // Dialog kennt (sonst schlaegt man durch ihn hindurch zu).
+    // Dialog kennt (sonst schlägt man durch ihn hindurch zu).
     window.eventChoiceOpen = true;
     // Volle Spiel-Pause statt nur Physik: friert Gegner/Projektile, Cooldowns
     // (gameNow + scene.time.now), Raum-Modus-Countdowns und den Combat-Tick ein.
@@ -1503,7 +1503,7 @@
         scene.input.keyboard.off('keydown-ENTER', dismissKeyHandler);
         dismissKeyHandler = null;
       }
-      // Spiel-Pause aufheben (Gegenstueck zu pauseGameClock oben).
+      // Spiel-Pause aufheben (Gegenstück zu pauseGameClock oben).
       if (typeof window.resumeGameClock === 'function') window.resumeGameClock(scene);
       else if (scene.physics && scene.physics.world) scene.physics.world.resume();
       for (var i = 0; i < elements.length; i++) {
@@ -1543,15 +1543,15 @@
       cursorY = by + btnH / 2 + BTN_GAP;
     }
 
-    // Ein-Knopf-Dialoge ("Weiter") sind reine Bestaetigungen — z. B. Elaras
-    // Kellerbegegnung. Die darf man mit ESC/Leertaste/Enter wegdruecken statt
-    // den Knopf treffen zu muessen. Mehrfach-Auswahlen bleiben BEWUSST
-    // klickpflichtig: dort waere eine Taste eine willkuerlich getroffene
+    // Ein-Knopf-Dialoge ("Weiter") sind reine Bestätigungen — z. B. Elaras
+    // Kellerbegegnung. Die darf man mit ESC/Leertaste/Enter wegdrücken statt
+    // den Knopf treffen zu müssen. Mehrfach-Auswahlen bleiben BEWUSST
+    // klickpflichtig: dort wäre eine Taste eine willkürlich getroffene
     // Story-/Belohnungsentscheidung.
     if (choices.length === 1 && scene.input && scene.input.keyboard) {
       var onlyChoice = choices[0];
       dismissKeyHandler = function () {
-        cleanup(); // haengt die Tasten selbst wieder ab
+        cleanup(); // hängt die Tasten selbst wieder ab
         if (typeof onlyChoice.callback === 'function') onlyChoice.callback();
       };
       scene.input.keyboard.on('keydown-ESC', dismissKeyHandler);
@@ -1587,8 +1587,8 @@
 
     if (roomId === 0) return;
     // Boss-/Klimax-Raum (Finalraum): KEINE Events. Der Boss soll eine saubere,
-    // bei jedem Run gleiche Arena haben. Ein Event brachte Haendler/Hazards oder
-    // (Elite-Hinterhalt) einen zusaetzlichen Mini-Boss in den Raum -> die Arena
+    // bei jedem Run gleiche Arena haben. Ein Event brachte Händler/Hazards oder
+    // (Elite-Hinterhalt) einen zusätzlichen Mini-Boss in den Raum -> die Arena
     // sah jedes Mal anders aus UND es standen nach dem Boss noch Gegner darin.
     // roomManager setzt __isFinalDungeonRoom VOR diesem Aufruf.
     if (window.__isFinalDungeonRoom) return;

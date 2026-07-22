@@ -836,7 +836,7 @@
   // Tile ranges are tunable — single source of truth in SIZE_BUCKETS.
   // ---------------------------------------------------------------------------
   var SIZE_BUCKETS = [
-    // Flaeche ~x0.8 ggue. Ursprung (Dimensionen x sqrt(0.8) ~= 0.894).
+    // Fläche ~x0.8 ggue. Ursprung (Dimensionen x sqrt(0.8) ~= 0.894).
     { key: 'small',  weight: 20, w: [45, 63],  h: [39, 54]  },
     { key: 'medium', weight: 60, w: [63, 85],  h: [54, 76]  },
     { key: 'large',  weight: 20, w: [85, 116], h: [76, 107] }

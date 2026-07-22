@@ -1,11 +1,11 @@
 // js/hubPhase.js — Hub-Phasen-Logik (Feature 064).
 //
 // Reine Ableitung des Hub-Zustands aus Akt-Index + Story-Flags, plus die pro
-// Phase definierten Darstellungs-/Verhaltens-Daten. Fundament fuer die View
+// Phase definierten Darstellungs-/Verhaltens-Daten. Fundament für die View
 // (hubPhaseView.js) und die Integration (HubSceneV2). Kontrakt:
 // kitty-specs/064-hub-evolution/contracts/hub-phase-contract.md.
 //
-// Classic Script: haengt window.HubPhase an. `derivePhase` ist rein (kein
+// Classic Script: hängt window.HubPhase an. `derivePhase` ist rein (kein
 // Date/Math.random, keine Seiteneffekte, mutiert die Eingabe nicht). `current()`
 // liest die Globals und ist NICHT im Unit-Test genutzt.
 (function () {
@@ -49,30 +49,30 @@
     doubleAgent: { tint: 0x9fb0c8, desaturate: 0.35, fog: 0.12, posters: 'faded', assetKey: 'hub_doubleAgent', rathausHostile: false },
     broken:      { tint: 0x8a6b6b, desaturate: 0.45, fog: 0.22, posters: 'torn',  assetKey: 'hub_broken',      rathausHostile: true  },
     // Epilog: der Nebel ist WEG. Die Wahrheit ist gedruckt, die Stadt sieht zum
-    // ersten Mal klar — deshalb weder Nebel noch Entsaettigung, nur ein heller,
+    // ersten Mal klar — deshalb weder Nebel noch Entsättigung, nur ein heller,
     // sauberer Tint. (Vorher trug ausgerechnet der Epilog mit fog 0.30 den
     // dichtesten Nebel von allen Phasen; das lief der Geschichte zuwider.)
     epilogue:    { tint: 0xeef0f2, desaturate: 0.00, fog: 0.00, posters: 'gone',  assetKey: 'hub_epilogue',    rathausHostile: false }
   };
 
-  // Phasenabhaengige NPC-Flavor-Overrides. Fehlt ein Eintrag, bleibt die
-  // bestehende Flavor-Zeile unveraendert. ASCII-NPC-IDs; Umlaute im Text ok.
+  // Phasenabhängige NPC-Flavor-Overrides. Fehlt ein Eintrag, bleibt die
+  // bestehende Flavor-Zeile unverändert. ASCII-NPC-IDs; Umlaute im Text ok.
   var npcFlavorByPhase = {
     doubleAgent: {
       aldric: [
-        'Der Wahlkampf laeuft praechtig, Archivschmied. Drei Farben, ein Ergebnis. Frag nicht, welches.',
-        'Du raeumst zuverlaessig. Der Rat merkt sich, wer zuverlaessig ist.'
+        'Der Wahlkampf läuft prächtig, Archivschmied. Drei Farben, ein Ergebnis. Frag nicht, welches.',
+        'Du räumst zuverlässig. Der Rat merkt sich, wer zuverlässig ist.'
       ]
     },
     broken: {
       aldric: [
         'Du. Ich weiss, was Du bist. Ein Handwerker, der zu viel gesehen hat.',
-        'Das Rathaus ist nicht mehr Deine Tuer. Verschwinde, bevor die Garde Deinen Namen lernt.'
+        'Das Rathaus ist nicht mehr Deine Tür. Verschwinde, bevor die Garde Deinen Namen lernt.'
       ]
     },
     epilogue: {
       buerger: [
-        '(Der Buerger steht auf dem Platz und liest laut aus einem frischen Blatt.)',
+        '(Der Bürger steht auf dem Platz und liest laut aus einem frischen Blatt.)',
         'BUERGER: "...und hier stehen die Namen. Alle. Lies mit, wenn Du kannst."'
       ]
     }

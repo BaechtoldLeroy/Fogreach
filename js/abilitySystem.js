@@ -27,15 +27,15 @@
   // schattenschritt) wurden entfernt.
   const ABILITY_DEFS = {
     // === 060 Strang WUT ===
-    // Vier aktive Faehigkeiten des "WUT & WUCHT"-Strangs (Skill-Baum-Knoten:
+    // Vier aktive Fähigkeiten des "WUT & WUCHT"-Strangs (Skill-Baum-Knoten:
     // whirlwind/hammer/frenzy/berserk). Schaden wird mit dmgMult (Rang+Synergie),
     // Cooldowns mit cdMult skaliert; beide defensiv aus window.SkillTree gelesen
     // (SkillTree kann theoretisch fehlen -> Fallback 1).
     //
     // whirlwind/hammer recyceln die bestehenden Basis-Funktionen (spinAttack /
     // beginChargedSlash+releaseChargedSlash) und setzen window._skillCastDmgMult
-    // fuer die Dauer des Casts, damit dealDamageToEnemy (player.js) den
-    // Rang-Multiplikator beruecksichtigt. frenzy/berserk setzen globale Buff-
+    // für die Dauer des Casts, damit dealDamageToEnemy (player.js) den
+    // Rang-Multiplikator berücksichtigt. frenzy/berserk setzen globale Buff-
     // States (window.frenzyState / window.berserkState), die player.js liest
     // (getAttackSpeedMultiplier bzw. dealDamageToEnemy).
     whirlwind: {
@@ -94,7 +94,7 @@
       cooldownMs: 8000,
       activate(scene) {
         // Vorbild: Amulett-Effekt 'momentum' (amuletEffects.js) — stapelt auf
-        // Kills, decay ueber Zeit. Rang erhoeht Max-Stacks und Tempo pro Stack.
+        // Kills, decay über Zeit. Rang erhöht Max-Stacks und Tempo pro Stack.
         try {
           var rank = (window.SkillTree && window.SkillTree.getRank)
             ? (window.SkillTree.getRank('frenzy') | 0) : 0;
@@ -132,7 +132,7 @@
       cooldownMs: 20000,
       activate(scene) {
         // Basis: bestehende Blutopfer-Logik (LP-Opfer -> Schadensbonus).
-        // Buff-Staerke = Basis * (1 + getSynergyValue('berserk','buff')) und
+        // Buff-Stärke = Basis * (1 + getSynergyValue('berserk','buff')) und
         // steigt mit Rang.
         try {
           var rank = (window.SkillTree && window.SkillTree.getRank)
@@ -570,7 +570,7 @@
       // Pause gameplay so the player can read the unlock notification.
       // Volle Spiel-Pause (Gegner/Projektile, Cooldowns, Countdowns) statt nur
       // Physik. Tweens laufen weiter (TweenManager ist von scene.time.paused
-      // unabhaengig), also animiert der Toast sauber rein/raus.
+      // unabhängig), also animiert der Toast sauber rein/raus.
       if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
       else if (scene.physics && scene.physics.pause) scene.physics.pause();
       if (window.player && window.player.body && window.player.body.setVelocity) {
@@ -685,7 +685,7 @@
 
       // Defer the input bindings so the keypress/click that triggered the unlock
       // doesn't immediately close the toast. ECHTZEIT-Timer (setTimeout): scene.time
-      // ist durch pauseGameClock eingefroren -> ein delayedCall wuerde nie feuern
+      // ist durch pauseGameClock eingefroren -> ein delayedCall würde nie feuern
       // und der Toast bliebe un-schliessbar.
       bindT = setTimeout(() => {
         bindT = null;

@@ -2,8 +2,8 @@
 //
 // Das Spiel hatte EINEN impliziten Spielstand: jedes Subsystem schrieb seinen
 // eigenen localStorage-Key (demonfall_save_v1, demonfall.skillTree.v1, ...).
-// Damit mehrere Spielstaende nebeneinander existieren koennen, bekommt jeder
-// fortschrittsbezogene Key einen Slot-Praefix: `demonfall.slot2.demonfall_save_v1`.
+// Damit mehrere Spielstände nebeneinander existieren können, bekommt jeder
+// fortschrittsbezogene Key einen Slot-Präfix: `demonfall.slot2.demonfall_save_v1`.
 //
 // WICHTIG — die eine Regel: JEDER localStorage-Zugriff im Spiel geht durch
 // SlotStorage, nie direkt an localStorage. Sonst schreibt ein Subsystem an der
@@ -11,30 +11,30 @@
 // davor warnt #63 ("sonst driftet ein Slot").
 //
 // GLOBAL vs. pro Slot:
-//   GLOBAL  = Geraete-/Spieler-Praeferenzen, die ueber alle Spielstaende gelten
-//             (Lautstaerke, Sprache, Steuerung, Schwierigkeit, Endlos-Bestwert).
+//   GLOBAL  = Geräte-/Spieler-Präferenzen, die über alle Spielstände gelten
+//             (Lautstärke, Sprache, Steuerung, Schwierigkeit, Endlos-Bestwert).
 //   PRO SLOT = alles, was Spielfortschritt ist.
 // Unbekannte Keys gelten als PRO SLOT (+ einmalige Warnung). Das ist die sichere
-// Richtung: ein vergessenes Setting wird nur laestig (setzt sich pro Slot neu),
-// ein vergessener Fortschritts-Key waere Datenverlust (Slots wuerden sich
-// gegenseitig ueberschreiben).
+// Richtung: ein vergessenes Setting wird nur lästig (setzt sich pro Slot neu),
+// ein vergessener Fortschritts-Key wäre Datenverlust (Slots würden sich
+// gegenseitig überschreiben).
 (function () {
   'use strict';
 
   var SLOT_COUNT = 3;
 
-  // Diese beiden Keys beschreiben das Slot-System SELBST und duerfen nie
-  // slot-praefixiert werden — sonst braeuchte man den aktiven Slot, um den
+  // Diese beiden Keys beschreiben das Slot-System SELBST und dürfen nie
+  // slot-präfixiert werden — sonst bräuchte man den aktiven Slot, um den
   // aktiven Slot zu lesen.
   var ACTIVE_SLOT_KEY = 'demonfall.activeSlot';
   var MIGRATED_KEY = 'demonfall.slotsMigrated.v1';
 
-  // Geraete-weite Praeferenzen. Bewusst KEIN Fortschritt.
-  // - settings/audio: Lautstaerke, Sprache, Steuerung, Debug-Flags.
-  // - lastDifficulty: laut persistence.js ausdruecklich ein Setting
-  //   ("difficulty ist ein Settings-Regler"), ueberlebt schon heute Neues-Spiel.
-  // - endless_best: Bestwert-Anzeige, ueberlebt heute ebenfalls Neues-Spiel
-  //   (steht nicht in NEW_GAME_WIPE_KEYS). Global lassen = Semantik unveraendert.
+  // Geräte-weite Präferenzen. Bewusst KEIN Fortschritt.
+  // - settings/audio: Lautstärke, Sprache, Steuerung, Debug-Flags.
+  // - lastDifficulty: laut persistence.js ausdrücklich ein Setting
+  //   ("difficulty ist ein Settings-Regler"), überlebt schon heute Neues-Spiel.
+  // - endless_best: Bestwert-Anzeige, überlebt heute ebenfalls Neues-Spiel
+  //   (steht nicht in NEW_GAME_WIPE_KEYS). Global lassen = Semantik unverändert.
   var GLOBAL_KEYS = [
     'demonfall_settings_v1',
     'demonfall_audio',
@@ -44,10 +44,10 @@
     MIGRATED_KEY
   ];
 
-  // Fortschritts-Keys. Vollstaendigkeit zaehlt: was hier fehlt, wird zwar
+  // Fortschritts-Keys. Vollständigkeit zählt: was hier fehlt, wird zwar
   // trotzdem pro Slot behandelt (sicherer Default), aber die Migration des
-  // Alt-Spielstands nach Slot 1 kennt es dann nicht und der Key ginge fuer den
-  // Spieler verloren. Darum ist diese Liste die Single Source of Truth fuer
+  // Alt-Spielstands nach Slot 1 kennt es dann nicht und der Key ginge für den
+  // Spieler verloren. Darum ist diese Liste die Single Source of Truth für
   // "was macht einen Spielstand aus".
   var SLOT_KEYS = [
     'demonfall_save_v1',            // storage.js — Hauptsave
@@ -102,7 +102,7 @@
   function setActiveSlot(n) {
     var s = parseInt(n, 10);
     if (!isFinite(s) || s < 1 || s > SLOT_COUNT) {
-      try { console.warn('[SaveSlots] setActiveSlot: ungueltiger Slot', n); } catch (_) {}
+      try { console.warn('[SaveSlots] setActiveSlot: ungültiger Slot', n); } catch (_) {}
       return getActiveSlot();
     }
     _activeSlot = s;
@@ -110,7 +110,7 @@
     return s;
   }
 
-  // Uebersetzt einen Roh-Key in den tatsaechlichen localStorage-Key.
+  // Übersetzt einen Roh-Key in den tatsächlichen localStorage-Key.
   function key(rawKey, slot) {
     if (!rawKey) return rawKey;
     if (isGlobalKey(rawKey)) return rawKey;
@@ -119,7 +119,7 @@
     return SLOT_PREFIX + s + '.' + rawKey;
   }
 
-  // Drop-in-Ersatz fuer localStorage. Gleiche Signatur, damit Aufrufstellen
+  // Drop-in-Ersatz für localStorage. Gleiche Signatur, damit Aufrufstellen
   // sich auf `localStorage.` -> `SlotStorage.` reduzieren.
   var SlotStorage = {
     getItem: function (k) { return _raw('get', key(k)); },
@@ -133,7 +133,7 @@
     return !!_raw('get', key('demonfall_save_v1', slot));
   }
 
-  // Vorschau fuer die Slot-Auswahl. Liest NUR den Hauptsave — die Felder
+  // Vorschau für die Slot-Auswahl. Liest NUR den Hauptsave — die Felder
   // stammen aus dem Payload, den storage.js schreibt.
   function getSlotMeta(slot) {
     var meta = { slot: slot, exists: false, level: 0, depth: 0, gold: 0, maxDepth: 1, ts: 0 };
@@ -150,7 +150,7 @@
       }
     } catch (err) {
       // Kaputter Save: exists bleibt true, damit der Slot nicht als "leer"
-      // erscheint und stillschweigend ueberschrieben wird.
+      // erscheint und stillschweigend überschrieben wird.
       try { console.warn('[SaveSlots] Save in Slot ' + slot + ' ist unlesbar', err); } catch (_) {}
     }
     var md = parseInt(_raw('get', key('demonfall_maxDepth', slot)) || '1', 10);
@@ -164,7 +164,7 @@
     return out;
   }
 
-  // Loescht ALLE Fortschritts-Keys eines Slots. Globale Keys bleiben.
+  // Löscht ALLE Fortschritts-Keys eines Slots. Globale Keys bleiben.
   function deleteSlot(slot) {
     var s = parseInt(slot, 10);
     if (!isFinite(s) || s < 1 || s > SLOT_COUNT) return false;
@@ -174,12 +174,12 @@
 
   // --- Migration -----------------------------------------------------------
 
-  // Alt-Spielstand (un-praefixierte Keys) nach Slot 1 heben. Laeuft genau
-  // einmal, gelatcht ueber MIGRATED_KEY.
+  // Alt-Spielstand (un-präfixierte Keys) nach Slot 1 heben. Läuft genau
+  // einmal, gelatcht über MIGRATED_KEY.
   //
   // KOPIEREN statt verschieben: die Alt-Keys bleiben liegen. Das kostet etwas
-  // localStorage, kauft aber Rollback-Sicherheit — waere dieser Deploy kaputt,
-  // faende die Vorversion ihren Spielstand unveraendert vor. Bei einem Spiel,
+  // localStorage, kauft aber Rollback-Sicherheit — wäre dieser Deploy kaputt,
+  // fände die Vorversion ihren Spielstand unverändert vor. Bei einem Spiel,
   // das direkt auf Pages ausgeliefert wird und wo ein Fehler den Spielstand
   // sonst unrettbar macht, ist das den Platz wert.
   function migrateLegacySave() {
@@ -190,7 +190,7 @@
       var legacy = _raw('get', k);
       if (legacy === null || legacy === undefined) return;
       var target = SLOT_PREFIX + '1.' + k;
-      // Nie ueberschreiben: liegt in Slot 1 schon etwas, gewinnt das.
+      // Nie überschreiben: liegt in Slot 1 schon etwas, gewinnt das.
       if (_raw('get', target) !== null) return;
       _raw('set', target, legacy);
       moved.push(k);
@@ -210,7 +210,7 @@
     _warned = {};
   }
 
-  // Migration laeuft beim Laden — VOR jedem Subsystem, das seinen Key liest.
+  // Migration läuft beim Laden — VOR jedem Subsystem, das seinen Key liest.
   // Darum muss saveSlots.js in index.html ganz oben stehen.
   migrateLegacySave();
 

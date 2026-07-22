@@ -129,7 +129,7 @@
   // --- Lese-API --------------------------------------------------------------
   function getSkillPoints() { return state.skillPoints | 0; }
 
-  // Tatsaechlich ausgegebene Skill-Punkte: pro Knoten die Summe der Rang-Kosten
+  // Tatsächlich ausgegebene Skill-Punkte: pro Knoten die Summe der Rang-Kosten
   // = Rang² (Summe der ersten R ungeraden Zahlen). Von respec (Erstattung) und
   // der Respec-Kosten-Formel genutzt.
   function getSpentPoints() {
@@ -138,7 +138,7 @@
     return n;
   }
 
-  // Anzahl investierter Raenge (Knoten-Fuellstand, unabhaengig von den Kosten).
+  // Anzahl investierter Ränge (Knoten-Füllstand, unabhängig von den Kosten).
   function getAllocatedRanks() {
     var n = 0;
     Object.keys(state.ranks).forEach(function (id) { n += state.ranks[id] | 0; });
@@ -240,15 +240,15 @@
   }
 
   // --- Combat-Skalierung (WP02-Contract) -------------------------------------
-  // Gemeinsamer Vertrag fuer alle Ability-Straenge: Rang erhoeht Schaden linear
-  // und senkt Cooldown (gedeckelt). Synergien koennen den Schaden zusaetzlich
+  // Gemeinsamer Vertrag für alle Ability-Stränge: Rang erhöht Schaden linear
+  // und senkt Cooldown (gedeckelt). Synergien können den Schaden zusätzlich
   // pushen. PURE Funktionen — von den activate()-Pfaden in player.js/abilitySystem
   // defensiv gelesen.
-  var RANK_DMG_PER = 0.15; // +15% Schaden pro Rang ueber Rang 1
-  // Talentpunkte sollen den Cooldown spuerbar druecken: 8% -> 12% pro Rang,
+  var RANK_DMG_PER = 0.15; // +15% Schaden pro Rang über Rang 1
+  // Talentpunkte sollen den Cooldown spürbar drücken: 8% -> 12% pro Rang,
   // Cap 40% -> 50%. Rang 5 = -48% CD (vorher -32%), Capstone Rang 3 = -24%.
-  var RANK_CD_PER  = 0.12; // -12% Cooldown pro Rang ueber Rang 1
-  var RANK_CD_CAP  = 0.50; // max. 50% Cooldown-Reduktion durch Raenge
+  var RANK_CD_PER  = 0.12; // -12% Cooldown pro Rang über Rang 1
+  var RANK_CD_CAP  = 0.50; // max. 50% Cooldown-Reduktion durch Ränge
 
   // Schadens-Multiplikator: 1 bei Rang<=1; +RANK_DMG_PER je weiterem Rang;
   // + Synergie-Beitrag (stat 'damage'). Unbekannte/ungelernte Knoten -> 1.

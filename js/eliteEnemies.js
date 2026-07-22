@@ -221,14 +221,14 @@
   }
 
   // Sichtlinien-Test gegen das zwischengespeicherte Vision-Polygon (wird jeden
-  // Frame von roomManager.updateFogOfWar gefuellt). Liegt (x,y) ausserhalb —
-  // also hinter einer Wand oder geschlossenen Tuer — ist das Objekt zu
+  // Frame von roomManager.updateFogOfWar gefüllt). Liegt (x,y) ausserhalb —
+  // also hinter einer Wand oder geschlossenen Tür — ist das Objekt zu
   // verstecken.
   //
-  // Noetig fuer Namens-Tag UND Aura: beide haengen zwar im enemyLayer, aber die
+  // Nötig für Namens-Tag UND Aura: beide hängen zwar im enemyLayer, aber die
   // GeometryMask dort greift bei ihnen nicht (Text ohnehin nicht, die Aura-
   // Graphics zeichnet in Weltkoordinaten). Ohne diesen Test leuchten die Auren
-  // verzauberter Gegner durch geschlossene Tueren. (Refs #14)
+  // verzauberter Gegner durch geschlossene Türen. (Refs #14)
   function _isInVision(scene, x, y, fallback) {
     var poly = scene && scene._lastVisionPolygon;
     if (!poly || poly.length < 6 || typeof window === 'undefined'
@@ -237,7 +237,7 @@
     }
     try {
       // Polygon-Objekt einmal bauen und wiederverwenden, solange sich die
-      // Punktliste nicht geaendert hat (laeuft im 16ms-Timer).
+      // Punktliste nicht geändert hat (läuft im 16ms-Timer).
       if (!scene._lastVisionPolyObj || scene._lastVisionPolyData !== poly) {
         scene._lastVisionPolyObj = new window.Phaser.Geom.Polygon(poly);
         scene._lastVisionPolyData = poly;
@@ -312,8 +312,8 @@
                 aura.clear();
                 aura.fillStyle(picked[0].auraColor, 0.35);
                 aura.fillCircle(enemy.x, enemy.y, 36);
-                // Wie beim Namens-Tag: die Maske des enemyLayer haelt die Aura
-                // nicht zurueck, deshalb explizit gegen die Sichtlinie pruefen.
+                // Wie beim Namens-Tag: die Maske des enemyLayer hält die Aura
+                // nicht zurück, deshalb explizit gegen die Sichtlinie prüfen.
                 if (typeof aura.setVisible === 'function') {
                   aura.setVisible(
                     enemy.visible && _isInVision(aura.scene, enemy.x, enemy.y, true)

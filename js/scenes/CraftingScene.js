@@ -22,7 +22,7 @@ if (window.i18n) {
     'crafting.recipe.cost': 'Kosten: {cost} Eisenbrocken',
     'crafting.info.idle': 'Klicke einen Slot oder ein Inventar-Item zum Verbessern oder Zerlegen.\nReroll bei Mara im Schwarzmarkt.',
     'crafting.info.tier_affix': 'Tier: {tier}  |  Affixe: {count}',
-    'crafting.info.enhance_to': 'Verbessern: -> {tier}, +1 Affix (behaelt bestehende) — {cost} Eisenbrocken',
+    'crafting.info.enhance_to': 'Verbessern: -> {tier}, +1 Affix (behält bestehende) — {cost} Eisenbrocken',
     'crafting.info.already_legendary': 'Bereits Legendär — keine Verbesserung möglich.',
     'crafting.info.reroll_hint': 'Reroll verfügbar bei Mara (Schwarzmarkt).',
     'crafting.feedback.enhanced_to': 'Verbessert auf {tier}!',
@@ -376,7 +376,7 @@ class CraftingScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setDepth(10);
 
     // --- Back button ---
-    const backBtn = this._createButton(W / 2, H - 25, 220, 32, 'Zurueck zum Hub [ESC]', () => this._returnToHub());
+    const backBtn = this._createButton(W / 2, H - 25, 220, 32, 'Zurück zum Hub [ESC]', () => this._returnToHub());
 
     // Initial render of inventory list
     this._refreshInventoryList();
@@ -486,12 +486,12 @@ class CraftingScene extends Phaser.Scene {
 
   _getStatsLine(item) {
     if (!item) return '';
-    // speed/armor/crit sind prozentuale Brueche (0.15 = +15%) -> als % anzeigen,
+    // speed/armor/crit sind prozentuale Brüche (0.15 = +15%) -> als % anzeigen,
     // konsistent mit dem Inventar-Tooltip. damage bekommt 1 Dezimale (Band-Roll),
     // hp/range sind flache Werte. Vorzeichen wird gesetzt (auch negativ, z.B.
     // Glutaxt Tempo -10%).
     const PERCENT = { speed: true, armor: true, crit: true };
-    const labels = { hp: 'LP', damage: 'Schaden', speed: 'Tempo', range: 'Reichw.', armor: 'Ruestung', crit: 'Krit' };
+    const labels = { hp: 'LP', damage: 'Schaden', speed: 'Tempo', range: 'Reichw.', armor: 'Rüstung', crit: 'Krit' };
     const parts = [];
     ['hp', 'damage', 'speed', 'range', 'armor', 'crit'].forEach(s => {
       const val = item[s];
@@ -518,7 +518,7 @@ class CraftingScene extends Phaser.Scene {
     const item = recipe.item;
     const parts = [];
     if (item.damage) parts.push(`Schaden: ${item.damage}`);
-    if (item.armor) parts.push(`Ruestung: ${item.armor}`);
+    if (item.armor) parts.push(`Rüstung: ${item.armor}`);
     if (item.speed) parts.push(`Tempo: ${item.speed}`);
     if (item.hp) parts.push(`LP: ${item.hp}`);
     return parts.join(' | ');
@@ -714,7 +714,7 @@ class CraftingScene extends Phaser.Scene {
 
   // =================== Salvage ===================
   // Eisenbrocken pro zerlegtem Item nach Tier: Gewöhnlich 1, Magisch 2,
-  // Selten 4, Legendär 6. (Vorher 3/6/9/12 — zu grosszuegig: Upgrades wurden
+  // Selten 4, Legendär 6. (Vorher 3/6/9/12 — zu grosszügig: Upgrades wurden
   // praktisch kostenlos finanziert, siehe #55.)
   _salvageValue(tier) {
     const VALUES = [1, 2, 4, 6];
@@ -870,7 +870,7 @@ class CraftingScene extends Phaser.Scene {
     }
 
     // Quest progress: forging a recipe item IS the "herstellen" action for
-    // craft-type quests (branka_weapons "Stelle 3 Gegenstaende her"). This hook
+    // craft-type quests (branka_weapons "Stelle 3 Gegenstände her"). This hook
     // was previously only called from _enhanceItem (Verbessern), so crafting via
     // the recipes never advanced the quest — it stuck at whatever a stray
     // enhance had given. Tick it here too so Schmieden counts.

@@ -1096,10 +1096,10 @@ function handleEnemies(time, delta = 16) {
     enemy.body.setVelocity(desired.x, desired.y);
 
     // Anti-Durchlauf-Netz: der Spieler-Gegner-Collider (main.js, aus beim Rollen)
-    // trennt normal sauber, aber bei hoher Relativgeschwindigkeit ODER groesseren
+    // trennt normal sauber, aber bei hoher Relativgeschwindigkeit ODER grösseren
     // Gegnern (Brute) konnte man durchs ZENTRUM tunneln. Steckt der (nicht rollende)
     // Spieler tief im Gegner (< Kern-Radius), wird er sanft herausgeschoben. Greift
-    // nur bei echtem Zentrums-Ueberlapp -> kein Ruckeln im Normalfall.
+    // nur bei echtem Zentrums-Überlapp -> kein Ruckeln im Normalfall.
     if (player && player.active && enemy.body && player.body
         && !(typeof isRolling !== 'undefined' && isRolling)) {
       var _pdx = player.x - enemy.x, _pdy = player.y - enemy.y;
@@ -2015,7 +2015,7 @@ const BOSS_DEFINITIONS = {
     baseSpeed: 45,
     baseDamage: 9,
     scale: 1.7,
-    loreIntro: 'Der Zeremonienmeister fuehrt die verbotenen Rituale durch...',
+    loreIntro: 'Der Zeremonienmeister führt die verbotenen Rituale durch...',
     attacks: ['ritualCircle', 'summonMinions', 'darkBlast'],
     attackCooldown: 4000,
   },
@@ -2024,9 +2024,9 @@ const BOSS_DEFINITIONS = {
     name: 'Schattenrat',
     texture: 'boss_shadow_right0',
     fallbackTexture: 'sprite_boss_shadow',
-    // Finaler Boss der Leiter (Tiefe 30) — deutlich haerter als die beiden
+    // Finaler Boss der Leiter (Tiefe 30) — deutlich härter als die beiden
     // davor: 3x HP (80->240) und 2x Schaden (8->16). scale 1.8->3.6 = doppelte
-    // Darstellungsgroesse (bossTargetPx = 96 * scale, siehe makeBoss).
+    // Darstellungsgrösse (bossTargetPx = 96 * scale, siehe makeBoss).
     baseHP: 240,
     baseSpeed: 70,
     baseDamage: 16,
@@ -2154,7 +2154,7 @@ function showBossIntro(def) {
 
 // Ermittelt die enge Bounding-Box der sichtbaren (nicht-transparenten) Pixel
 // einer Textur — gecacht pro Textur-Key. Die Boss-Kunst hat teils riesige
-// transparente Raender (boss_shadow: Figur in der oberen Haelfte eines
+// transparente Ränder (boss_shadow: Figur in der oberen Hälfte eines
 // 307x1024-Frames), und Arcades Standard-Body ist das VOLLE Frame. Dadurch
 // reichte die Hitbox weit unter das sichtbare Sprite. Werte sind UNSKALIERTE
 // Textur-Pixel — Phaser skaliert den Body mit dem Sprite.
@@ -2207,8 +2207,8 @@ function fitBodyToSprite(sprite) {
   var fh = frame ? frame.height : (sprite.height || box.h);
 
   // Origin auf das FIGUR-Zentrum setzen (statt Frame-Mitte). Sonst liegt
-  // sprite.x/sprite.y in der leeren transparenten Haelfte unter der Figur —
-  // und Nahkampf/Faehigkeiten messen die Distanz genau dorthin (player.js
+  // sprite.x/sprite.y in der leeren transparenten Hälfte unter der Figur —
+  // und Nahkampf/Fähigkeiten messen die Distanz genau dorthin (player.js
   // forEachEnemyInRange nutzt enemy.x/enemy.y). Beim Schattenrat sass der
   // Bezugspunkt ~113px UNTER der Figur: von oben anzugreifen reichte nicht
   // heran, von unten schon. Mit dem Figur-Zentrum als Origin trifft man von
@@ -2217,16 +2217,16 @@ function fitBodyToSprite(sprite) {
   sprite.body.setSize(box.w, box.h);
   if (sprite.body.setOffset) sprite.body.setOffset(box.x, box.y);
 
-  // Fuer die HP-Leiste: skalierte halbe Figur-Hoehe (drawBossBar setzt die
-  // Leiste sonst ueber die volle displayHeight -> weit ueber der Figur).
+  // Für die HP-Leiste: skalierte halbe Figur-Höhe (drawBossBar setzt die
+  // Leiste sonst über die volle displayHeight -> weit über der Figur).
   var sy = Math.abs(sprite.scaleY || 1);
   var sx = Math.abs(sprite.scaleX || 1);
   sprite._fitHalfH = (box.h * sy) / 2;
-  // Trefferradius fuer Nahkampf/Faehigkeiten (player.js forEachEnemyInRange).
+  // Trefferradius für Nahkampf/Fähigkeiten (player.js forEachEnemyInRange).
   // Der Body ist ein solider Block von ~box*scale Weltpixeln; die Reichweite
   // wird aber Zentrum-zu-Zentrum gemessen. Bei einem grossen Boss (Figur ~87px)
-  // haelt der Body den Spieler so weit vom Zentrum weg, dass ein vertikaler
-  // Angriff (Spieler ist hoeher als breit) aus der Reichweite faellt. Mit dem
+  // hält der Body den Spieler so weit vom Zentrum weg, dass ein vertikaler
+  // Angriff (Spieler ist höher als breit) aus der Reichweite fällt. Mit dem
   // halben Figur-Radius als "reach" reicht der Schlag bis an die Body-Kante.
   sprite._hitReach = (Math.max(box.w * sx, box.h * sy)) / 2;
 }
@@ -2267,7 +2267,7 @@ function makeBoss(boss, def, cycle) {
   }
   boss.setCollideWorldBounds(true);
   // Hitbox an die sichtbaren Pixel anpassen (Boss-Frames tragen grosse
-  // transparente Raender — sonst reicht der Body weit unter das Sprite).
+  // transparente Ränder — sonst reicht der Body weit unter das Sprite).
   fitBodyToSprite(boss);
 
   // Shimmer
@@ -2378,9 +2378,9 @@ function drawBossBar(boss) {
   const barW = 140;
   const barH = 10;
   const x = boss.x - barW / 2;
-  // Ueber der sichtbaren Figur, nicht ueber dem vollen (grossteils leeren)
-  // Frame: _fitHalfH ist die skalierte halbe Figur-Hoehe (fitBodyToSprite).
-  // Fallback auf displayHeight fuer Bosse ohne Fit.
+  // Über der sichtbaren Figur, nicht über dem vollen (grossteils leeren)
+  // Frame: _fitHalfH ist die skalierte halbe Figur-Höhe (fitBodyToSprite).
+  // Fallback auf displayHeight für Bosse ohne Fit.
   const halfH = (typeof boss._fitHalfH === 'number') ? boss._fitHalfH : boss.displayHeight / 2;
   const y = boss.y - halfH - 14;
 
@@ -2757,11 +2757,11 @@ function bossShadowClones(boss) {
 
       // Klone tragen die ECHTE Boss-Textur. Vorher stand hier fest
       // 'bossShadowCouncillor' — die prozedurale 80x80-Form aus graphics.js,
-      // waehrend der Boss laengst das gemalte Sprite (boss_shadow_*) traegt.
+      // während der Boss längst das gemalte Sprite (boss_shadow_*) trägt.
       // Nebeneffekt: clone.setScale(boss.scaleX * 0.8) rechnet mit dem
       // Boss-Scale, der auf dessen ~300px-Sprite normiert ist — auf die 80px-
       // Textur angewandt ergab das winzige Klone (~37px statt ~138px).
-      // Mit derselben Textur stimmen Aussehen UND Groesse wieder.
+      // Mit derselben Textur stimmen Aussehen UND Grösse wieder.
       const textureKey = boss.texture?.key
         || (scene.textures?.exists('bossShadowCouncillor') ? 'bossShadowCouncillor' : 'enemyMage');
       const clone = enemies.create(cx, cy, textureKey);
@@ -2775,7 +2775,7 @@ function bossShadowClones(boss) {
       clone.setScale(boss.scaleX * 0.8);
       clone.setAlpha(0.6);
       clone.setCollideWorldBounds(true);
-      // Gleiche Textur wie der Boss -> gleiche transparente Raender -> Body fitten.
+      // Gleiche Textur wie der Boss -> gleiche transparente Ränder -> Body fitten.
       if (typeof fitBodyToSprite === 'function') fitBodyToSprite(clone);
       if (clone.body?.setPushable) clone.body.setPushable(false);
 

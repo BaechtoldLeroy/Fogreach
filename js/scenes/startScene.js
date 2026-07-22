@@ -39,9 +39,9 @@ if (window.i18n) {
 }
 const _START_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
 
-// #63: Uebergabe ueber den Reload hinweg — "Neues Spiel" leert den Slot, laedt
+// #63: Übergabe über den Reload hinweg — "Neues Spiel" leert den Slot, lädt
 // neu (damit jedes Modul frisch initialisiert) und startet dann automatisch.
-// sessionStorage, nicht localStorage: der Marker gilt nur fuer diesen Tab und
+// sessionStorage, nicht localStorage: der Marker gilt nur für diesen Tab und
 // diesen einen Reload. Auf Modulebene, damit Setzer und Leser in create()
 // dieselbe Konstante benutzen (sie liegen weit auseinander).
 const _NEW_GAME_FLAG = 'demonfall.pendingNewGame';
@@ -322,7 +322,7 @@ StartScene.prototype.create = function () {
 
   // #63: "Neues Spiel" hat den Slot geleert und die Seite neu geladen, damit
   // jedes Modul frisch aus dem leeren Slot initialisiert. Hier die Gegenseite:
-  // das Flag konsumieren und direkt starten, statt das Menue nochmal zu zeigen.
+  // das Flag konsumieren und direkt starten, statt das Menü nochmal zu zeigen.
   // Der Wipe ist bereits passiert — hier wird nur noch gestartet.
   const _pendingNewGame = (() => {
     try {
@@ -387,9 +387,9 @@ StartScene.prototype.create = function () {
 
   // ---- #63 Speicherslots -------------------------------------------------
   // Die Slot-Zeilen WAEHLEN nur aus; FORTSETZEN/NEUES SPIEL darunter behalten
-  // ihre Bedeutung und wirken auf den gewaehlten Slot. Das ist bewusst der
-  // kleinere Eingriff gegenueber "Klick auf Slot startet direkt" — der Boot-
-  // Pfad (pendingLoadedSave, Reset-Aufrufe, Endlos) bleibt unveraendert.
+  // ihre Bedeutung und wirken auf den gewählten Slot. Das ist bewusst der
+  // kleinere Eingriff gegenüber "Klick auf Slot startet direkt" — der Boot-
+  // Pfad (pendingLoadedSave, Reset-Aufrufe, Endlos) bleibt unverändert.
   const _slots = window.SaveSlots || null;
   let activeSlot = _slots ? _slots.getActiveSlot() : 1;
 
@@ -399,13 +399,13 @@ StartScene.prototype.create = function () {
   // Tutorial) laden ihren Zustand EINMAL beim Modul-Init und halten ihn dann im
   // Speicher; init() hat eine Latch ("if (state.initialized) return"). Ein
   // scene.restart() baut nur die Szene neu — die Module behalten den Zustand des
-  // ALTEN Slots und schreiben ihn beim naechsten _persist() in den NEUEN.
+  // ALTEN Slots und schreiben ihn beim nächsten _persist() in den NEUEN.
   // Ein Reload initialisiert jedes Modul frisch aus dem aktiven Slot.
   //
   // Bewusst ein Reload statt "jedes Modul bekommt reloadFromStorage() und wird
   // hier aufgerufen": FactionSystem und PrintingHouse haben gar keine Reset-API,
-  // und die Liste muesste bei jedem neuen Modul gepflegt werden — genau die
-  // Drift, vor der #63 warnt. Der Reload weiss nichts ueber Module und kann
+  // und die Liste müsste bei jedem neuen Modul gepflegt werden — genau die
+  // Drift, vor der #63 warnt. Der Reload weiss nichts über Module und kann
   // darum nichts vergessen.
   function _reloadForSlotChange() {
     try { window.location.reload(); }
@@ -413,11 +413,11 @@ StartScene.prototype.create = function () {
   }
 
   if (_slots) {
-    // Vertikal ist es eng: bei der kleinsten Kamerahoehe (480) sitzt der
+    // Vertikal ist es eng: bei der kleinsten Kamerahöhe (480) sitzt der
     // Untertitel absolut bei 136px und EINSTELLUNGEN ganz unten bei ~452.
-    // Dazwischen muessen 3 Slot-Zeilen + bis zu 4 Buttons passen. Die Werte
-    // sind an camH=480 ausgemessen (Ueberlappung mit dem Untertitel darueber
-    // und FORTSETZEN darunter) — beim Aendern nachmessen.
+    // Dazwischen müssen 3 Slot-Zeilen + bis zu 4 Buttons passen. Die Werte
+    // sind an camH=480 ausgemessen (Überlappung mit dem Untertitel darüber
+    // und FORTSETZEN darunter) — beim Ändern nachmessen.
     const rowY = [ch * 0.335, ch * 0.395, ch * 0.455];
     _slots.listSlots().forEach((meta, i) => {
       const isActive = meta.slot === activeSlot;
@@ -425,7 +425,7 @@ StartScene.prototype.create = function () {
       if (!meta.exists) info = _START_T('start.slot.empty');
       else if (meta.level === 0 && meta.depth === 1 && meta.gold === 0) {
         // getSlotMeta meldet exists=true auch bei unlesbarem Save — dann sind
-        // alle Felder auf Default. Als "beschaedigt" zeigen statt "Lv 0", damit
+        // alle Felder auf Default. Als "beschädigt" zeigen statt "Lv 0", damit
         // klar ist, dass da etwas ist, das nicht gelesen werden konnte.
         info = _START_T('start.slot.broken');
       } else {
@@ -456,7 +456,7 @@ StartScene.prototype.create = function () {
         _reloadForSlotChange();
       });
 
-      // Loeschen nur fuer belegte Slots.
+      // Löschen nur für belegte Slots.
       if (meta.exists) {
         const del = this.add
           .text(cx + row.width / 2 + 18, rowY[i], '✕', {
@@ -474,7 +474,7 @@ StartScene.prototype.create = function () {
     });
   }
 
-  // Loeschen ist unumkehrbar -> Rueckfrage. Ohne sie kostet ein Fehlklick neben
+  // Löschen ist unumkehrbar -> Rückfrage. Ohne sie kostet ein Fehlklick neben
   // der Slot-Zeile einen ganzen Spielstand.
   function _confirmDeleteSlot(slot) {
     const scene = this;
@@ -495,13 +495,13 @@ StartScene.prototype.create = function () {
     const close = () => { veil.destroy(); q.destroy(); yes.destroy(); no.destroy(); };
     no.on('pointerdown', close);
     yes.on('pointerdown', () => {
-      // deleteSlot statt clearSave: es muessen ALLE Keys des Slots weg
-      // (Skillbaum, Fraktionen, Druckerei, ...). clearSave raeumt nur den
-      // Hauptsave — der Rest waere sonst Altlast im naechsten Spiel dort.
+      // deleteSlot statt clearSave: es müssen ALLE Keys des Slots weg
+      // (Skillbaum, Fraktionen, Druckerei, ...). clearSave räumt nur den
+      // Hauptsave — der Rest wäre sonst Altlast im nächsten Spiel dort.
       if (window.SaveSlots) window.SaveSlots.deleteSlot(slot);
       close();
       // Reload aus demselben Grund wie beim Slot-Wechsel: die Module halten den
-      // geloeschten Stand sonst weiter im Speicher und schreiben ihn zurueck.
+      // gelöschten Stand sonst weiter im Speicher und schreiben ihn zurück.
       _reloadForSlotChange();
     });
   }
@@ -514,7 +514,7 @@ StartScene.prototype.create = function () {
   let btn;
 
   // Fortsetzen zuerst, wenn Save vorhanden ist. Bezieht sich auf den oben
-  // gewaehlten Slot — hasSave() liest ueber SlotStorage bereits den aktiven.
+  // gewählten Slot — hasSave() liest über SlotStorage bereits den aktiven.
   if (hasExistingSave) {
     const contBtn = this.add
       .text(cx, ch * 0.55, _START_T('start.btn.continue'), {
@@ -542,14 +542,14 @@ StartScene.prototype.create = function () {
     contBtn.on('pointerout', () => contBtn.setStyle({ fill: '#ffea6a' }));
     _trackI18n(contBtn, 'start.btn.continue');
 
-    // Der fruehere "Spielstand löschen"-Button ist entfallen: jede Slot-Zeile
-    // hat jetzt ihr eigenes ✕. Zwei Loesch-Wege nebeneinander waeren
-    // mehrdeutig ("welcher Stand?") — und der alte raeumte ohnehin nur den
+    // Der frühere "Spielstand löschen"-Button ist entfallen: jede Slot-Zeile
+    // hat jetzt ihr eigenes ✕. Zwei Lösch-Wege nebeneinander wären
+    // mehrdeutig ("welcher Stand?") — und der alte räumte ohnehin nur den
     // Hauptsave, nicht Skillbaum/Fraktionen.
     //
-    // startY wird NICHT mehr hier gesetzt: der Ternaer bei der Deklaration ist
+    // startY wird NICHT mehr hier gesetzt: der Ternär bei der Deklaration ist
     // die einzige Quelle. Vorher stand hier eine zweite Zuweisung, die den
-    // Ternaer ueberschrieb — der war dadurch toter Code (im Original ebenso).
+    // Ternär überschrieb — der war dadurch toter Code (im Original ebenso).
   }
 
   // START GAME
@@ -569,25 +569,25 @@ StartScene.prototype.create = function () {
 
   btn
     .on("pointerdown", () => {
-      // #63: den gewaehlten Slot komplett leeren. clearSave() allein raeumte nur
+      // #63: den gewählten Slot komplett leeren. clearSave() allein räumte nur
       // den Hauptsave + Tutorial — Skillbaum, Fraktionen und Druckerei
-      // ueberlebten ein "Neues Spiel" und wanderten in den neuen Durchgang.
+      // überlebten ein "Neues Spiel" und wanderten in den neuen Durchgang.
       if (window.SaveSlots) window.SaveSlots.deleteSlot(activeSlot);
       if (window.clearSave) clearSave();
 
-      // Danach neu laden, statt direkt zu starten: die Module haelten den
-      // geloeschten Stand sonst weiter im Speicher (init() ist gelatcht) und
-      // schrieben ihn beim naechsten _persist() zurueck — der Wipe waere
+      // Danach neu laden, statt direkt zu starten: die Module hälten den
+      // gelöschten Stand sonst weiter im Speicher (init() ist gelatcht) und
+      // schrieben ihn beim nächsten _persist() zurück — der Wipe wäre
       // wirkungslos. Der Kommentar an den beiden resetForNewGame-Aufrufen unten
-      // kannte das Problem schon, loeste es aber nur fuer AbilitySystem und
+      // kannte das Problem schon, löste es aber nur für AbilitySystem und
       // KnowledgeTree; FactionSystem/PrintingHouse/SkillTree/Tutorial blieben
-      // stehen. Der Reload deckt alle ab, auch kuenftige.
-      // Das Flag ueberlebt den Reload und startet danach automatisch.
+      // stehen. Der Reload deckt alle ab, auch künftige.
+      // Das Flag überlebt den Reload und startet danach automatisch.
       try { window.sessionStorage.setItem(_NEW_GAME_FLAG, String(activeSlot)); } catch (e) {}
 
-      // Falls sessionStorage fehlt (Privatmodus o. ae.): ohne Flag kaeme man
-      // nach dem Reload nur ins Menue zurueck — dann lieber wie bisher direkt
-      // starten und die In-Memory-Resets machen, was sie koennen.
+      // Falls sessionStorage fehlt (Privatmodus o. ae.): ohne Flag käme man
+      // nach dem Reload nur ins Menü zurück — dann lieber wie bisher direkt
+      // starten und die In-Memory-Resets machen, was sie können.
       let flagOk = false;
       try { flagOk = window.sessionStorage.getItem(_NEW_GAME_FLAG) !== null; } catch (e) {}
       if (flagOk) { _reloadForSlotChange(); return; }
@@ -709,7 +709,7 @@ StartScene.prototype.create = function () {
     if (typeof _unsubI18n === 'function') { try { _unsubI18n(); } catch (e) {} }
   });
 
-  // -------------- Loader-Logik fuer RoomTemplates ----------------
+  // -------------- Loader-Logik für RoomTemplates ----------------
 
   function loadRoomTemplatesAndStart() {
     window.RoomTemplates = window.RoomTemplates || {};

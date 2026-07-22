@@ -505,8 +505,8 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
     : (state.direction || PLAYER_DEFAULT_DD);
 
   // --- Espionage-Verkleidung: ERSETZT das Spieler-Sprite durch die Kettenrat-
-  // Waechter-Montur (kein Overlay mehr). Richtung (links/rechts) + Lauf-Frames
-  // folgen der Bewegung; bei Enttarnung faellt die Verkleidung -> unten laeuft
+  // Wächter-Montur (kein Overlay mehr). Richtung (links/rechts) + Lauf-Frames
+  // folgen der Bewegung; bei Enttarnung fällt die Verkleidung -> unten läuft
   // wieder die normale Spieler-Animation.
   if (window.EspionageSystem && typeof window.EspionageSystem.isDisguised === 'function'
       && window.EspionageSystem.isDisguised()
@@ -526,7 +526,7 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
       if (state.playing) { sprite.anims.stop(); state.playing = null; }
       sprite.setTexture(dkey);
     }
-    // Groesse an die normale Spielerhoehe angleichen (etwas groesser, sonst
+    // Grösse an die normale Spielerhöhe angleichen (etwas grösser, sonst
     // wirkt die Montur zu klein). Aspect aus dem Frame erhalten.
     const baseH = window.PLAYER_BASE_DISPLAY_HEIGHT || PLAYER_BASE_DISPLAY_HEIGHT;
     const vScale = (window.PLAYER_VISUAL_SCALE != null ? window.PLAYER_VISUAL_SCALE : PLAYER_VISUAL_SCALE) || 1;
@@ -702,13 +702,13 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
   // Plain 'attack' only picks up 'dmg_all_abilities' (no per-ability affix).
   const lootDmgMul = 1 + getLootAbilityDamageBonus(abilityKey);
   // Feature 059 WP03: run-amulet per-hit damage multiplier (Schlächterkrone
-  // momentum kill-stacks). 1 if no amulet / decayed. (Glass-Amulett geht ueber
+  // momentum kill-stacks). 1 if no amulet / decayed. (Glass-Amulett geht über
   // recalcDerived, nicht hier.)
   const amuletDmgMul = (window.AmuletEffects && typeof window.AmuletEffects.damageMul === 'function')
     ? window.AmuletEffects.damageMul() : 1;
   // === 060 Strang WUT — Berserker (berserk) ===
   // Globaler Schadens-Buff (LP-Opfer). window.berserkState wird von der berserk-
-  // Ability gesetzt und laeuft zeitlich ab. Defensiv: Default 1.
+  // Ability gesetzt und läuft zeitlich ab. Defensiv: Default 1.
   let berserkDmgMul = 1;
   try {
     const bs = window.berserkState;
@@ -719,7 +719,7 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
   } catch (e) { /* never break combat */ }
   // === 060 Strang WUT — per-cast Skill-Rang-Multiplikator ===
   // whirlwind/hammer-Casts setzen window._skillCastDmgMult (aus SkillTree-Rang/
-  // Synergie) vor dem Aufruf der Basis-Funktion und raeumen danach auf.
+  // Synergie) vor dem Aufruf der Basis-Funktion und räumen danach auf.
   // Defensiv: Default 1.
   let skillCastDmgMul = 1;
   try {
@@ -727,7 +727,7 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
     if (typeof sc === 'number' && isFinite(sc) && sc > 0) skillCastDmgMul = sc;
   } catch (e) { /* never break combat */ }
   const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul * amuletDmgMul * berserkDmgMul * skillCastDmgMul);
-  // #60: Krit-Multiplikator 1.5x + Staerke-Zweiteffekt (playerCritDamageBonus).
+  // #60: Krit-Multiplikator 1.5x + Stärke-Zweiteffekt (playerCritDamageBonus).
   const critMult = 1.5 + (typeof window.playerCritDamageBonus === 'number' ? window.playerCritDamageBonus : 0);
   const damage = Math.max(1, Math.round(isCrit ? base * critMult : base));
 
@@ -756,7 +756,7 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
       lsPct += (window.LootSystem.getBonus('lifesteal') || 0) / 100;
     }
     lsPct += window.PLAYER_LIFESTEAL || 0;
-    // Feature 059 WP03: Aderlass-Talisman — starker Lebensraub (ueber Affixe).
+    // Feature 059 WP03: Aderlass-Talisman — starker Lebensraub (über Affixe).
     if (window.AmuletEffects && typeof window.AmuletEffects.lifestealPct === 'function') {
       lsPct += window.AmuletEffects.lifestealPct();
     }
@@ -901,9 +901,9 @@ function forEachEnemyInRange(range, callback, options = {}) {
 
     // _hitReach (grosse Gegner mit gefittetem Body, enemy.js fitBodyToSprite)
     // erweitert die Reichweite um den Trefferradius: der Schlag muss die
-    // Body-KANTE erreichen, nicht das Zentrum. Ohne das haelt der solide
+    // Body-KANTE erreichen, nicht das Zentrum. Ohne das hält der solide
     // Boss-Body den Spieler vom Zentrum weg -> vertikale Angriffe verfehlen.
-    // Normale Gegner haben kein _hitReach -> Verhalten unveraendert.
+    // Normale Gegner haben kein _hitReach -> Verhalten unverändert.
     const reach = enemy._hitReach || 0;
     if (distance - reach > range) return;
     if (requireLineOfSight && !hasLineOfSightToEnemy(enemy)) return;
@@ -912,16 +912,16 @@ function forEachEnemyInRange(range, callback, options = {}) {
   });
 }
 
-// Gegenstueck zu forEachEnemyInRange fuer zerstoerbare Props (Truhen, Kisten,
-// Faesser, Statuen, Saeulen). Skills trafen bisher NUR Gegner — ein Wirbelwind
-// mitten in einer Saeulenhalle liess alles stehen, waehrend ein simpler
-// Nahkampfschlag (player.js) und Projektile (main.js-Collider) laengst Props
+// Gegenstück zu forEachEnemyInRange für zerstörbare Props (Truhen, Kisten,
+// Fässer, Statuen, Säulen). Skills trafen bisher NUR Gegner — ein Wirbelwind
+// mitten in einer Säulenhalle liess alles stehen, während ein simpler
+// Nahkampfschlag (player.js) und Projektile (main.js-Collider) längst Props
 // zerschlugen. Radius-basiert: die Skills haben zwar unterschiedliche Formen
 // (Kegel/Linie/Kreis), aber "was im Wirkbereich lag, zerbricht" ist die
 // erwartbare Regel — und Props sind statisch, also gibt es kein Zielproblem.
-// scene wird durchgereicht, weil breakDestructibleObstacle die Szene fuer
+// scene wird durchgereicht, weil breakDestructibleObstacle die Szene für
 // Partikel/Loot braucht.
-// `cx`/`cy` verschieben das Zentrum weg vom Spieler — noetig fuer Skills, deren
+// `cx`/`cy` verschieben das Zentrum weg vom Spieler — nötig für Skills, deren
 // Wirkung NICHT beim Spieler liegt (Hammer-Einschlag vor dem Spieler). Deren
 // forEachEnemyInRange-Reichweite ist nur ein grober Vorfilter, die echte Form
 // rechnet der Callback; wer die Vorfilter-Reichweite hier durchreicht, zerlegt
@@ -935,12 +935,12 @@ function breakDestructiblesInRange(scene, range, options = {}) {
   const py = (cy != null) ? cy : (player.y ?? player.body?.y ?? 0);
 
   // Erst sammeln, dann brechen: breakDestructibleObstacle ruft obs.destroy(),
-  // und waehrend children.iterate() aus der Gruppe zu entfernen ueberspringt
-  // Eintraege.
+  // und während children.iterate() aus der Gruppe zu entfernen überspringt
+  // Einträge.
   const targets = [];
   obstacles.children.iterate((obs) => {
     if (!obs || !obs.active || !obs.getData || !obs.getData('destructible')) return;
-    // Reichweite bis zur Prop-OBERFLAECHE (js/propRange.js) — sonst ueberlebt
+    // Reichweite bis zur Prop-OBERFLAECHE (js/propRange.js) — sonst überlebt
     // eine gerammte Kiste den Ansturm, weil ihr Mittelpunkt knapp ausserhalb
     // des schmalen Radius liegt.
     if (!window._propInRange(obs, px, py, range)) return;
@@ -973,7 +973,7 @@ function setButtonActive(button, active) {
 function startCooldownTimer(scene, duration, options = {}) {
   // Der Bottom-Right-Cooldown-Zahltext (`label`) wird nicht mehr angezeigt: er
   // lag auf Depth 101 UNTER den Fog-Overlays (Depth 900/1000) und blitzte nur
-  // auf, wo rechts der Fog aufgeklaert war — sah wie ein Bug aus. Er ist zudem
+  // auf, wo rechts der Fog aufgeklärt war — sah wie ein Bug aus. Er ist zudem
   // redundant zum gewollten Cooldown-Indikator (Skill-Button-Grauout +
   // Skill-Tiles via updateAbilityStatus), die beide erhalten bleiben.
   const { button = null, onComplete = null, statusKey = null } = options;
@@ -1083,8 +1083,8 @@ function getLootAbilityDamageBonus(abilityKey) {
   const perAbility = suffix ? _getLootBonus('dmg_' + suffix) : 0;
   const allAbilities = _getLootBonus('dmg_all_abilities');
   // #60: Fokus-Zweiteffekt -> globaler Fähigkeitsschaden. Bewusst NICHT auf den
-  // Basis-Angriff ('attack'), damit Fokus rein Fähigkeiten skaliert (Staerke
-  // deckt den Waffen-/Auto-Schaden ab) und die beiden sich nicht ueberlappen.
+  // Basis-Angriff ('attack'), damit Fokus rein Fähigkeiten skaliert (Stärke
+  // deckt den Waffen-/Auto-Schaden ab) und die beiden sich nicht überlappen.
   const focusDmg = (abilityKey && abilityKey !== 'attack'
     && typeof window.playerFocusAbilityDmg === 'number') ? window.playerFocusAbilityDmg : 0;
   return perAbility + allAbilities + focusDmg;
@@ -1103,7 +1103,7 @@ function getLootAbilityCooldownReduction(abilityKey) {
   const ktAll = (window.knowledgeTreeBuffs && window.knowledgeTreeBuffs.cdrAll) || 0;
   // #60: Fokus-Attribut (nur von Items) -> globale Cooldown-Reduktion. Cap ist
   // bereits in recalcDerived bei −40 % gedeckelt; applyCooldownModifier floort
-  // zusaetzlich bei 100 ms, daher hier kein weiterer Clamp noetig.
+  // zusätzlich bei 100 ms, daher hier kein weiterer Clamp nötig.
   const focusCdr = (typeof window.playerFocusCdr === 'number') ? window.playerFocusCdr : 0;
   return perAbility + allAbilities + ktAll + focusCdr;
 }
@@ -1555,8 +1555,8 @@ function handleEnemyHit(scene, enemy, options = {}) {
 
   if (enemy.hp <= 0) {
     // Feature 059 WP03: run-amulet on-kill hook (Schlächterkrone momentum-stack;
-    // spaetere Batches: killburst/frost-shatter/tempo-burst). enemy lebt hier
-    // noch -> x/y gueltig fuer AoE-Effekte.
+    // spätere Batches: killburst/frost-shatter/tempo-burst). enemy lebt hier
+    // noch -> x/y gültig für AoE-Effekte.
     if (window.AmuletEffects && typeof window.AmuletEffects.onEnemyKilled === 'function') {
       try { window.AmuletEffects.onEnemyKilled(enemy, scene); } catch (e) { /* never crash */ }
     }
@@ -1623,10 +1623,10 @@ function handleEnemyHit(scene, enemy, options = {}) {
     if (window.soundManager) window.soundManager.playSFX('enemy_death');
     // Particle effects: death burst + screen shake. Bosse bekommen den
     // wuchtigeren bossDeath-Effekt (Wellen + Schockringe + Blitz) statt des
-    // normalen Gegner-Bursts, damit ein Boss-Kill sich als Ereignis anfuehlt.
+    // normalen Gegner-Bursts, damit ein Boss-Kill sich als Ereignis anfühlt.
     if (window.particleFactory) {
       if (enemy.isBoss) {
-        // Boss-Einfaerbung wie die HP-Leiste (drawBossBar).
+        // Boss-Einfärbung wie die HP-Leiste (drawBossBar).
         const bossColor = enemy.bossType === 'chainMaster' ? 0xcccccc
           : enemy.bossType === 'ceremonyMaster' ? 0xaa33ff
           : enemy.bossType === 'shadowCouncillor' ? 0xff3322
@@ -1637,10 +1637,10 @@ function handleEnemyHit(scene, enemy, options = {}) {
         window.particleFactory.screenShake(80, 0.003);
       }
     }
-    // Boss besiegt: alle noch lebenden Ads (Beschwoerungen, Klone) mitraeumen —
+    // Boss besiegt: alle noch lebenden Ads (Beschwörungen, Klone) miträumen —
     // nach dem Boss soll kein Gegner mehr im Raum stehen. Der Boss-Raum ist der
-    // Klimax-Finalraum (trash-cleared, event-frei), die einzigen uebrigen Gegner
-    // sind also Boss-Beschwoerungen.
+    // Klimax-Finalraum (trash-cleared, event-frei), die einzigen übrigen Gegner
+    // sind also Boss-Beschwörungen.
     if (enemy.isBoss && typeof enemies !== 'undefined' && enemies && enemies.children) {
       const _boss = enemy;
       enemies.children.iterate((other) => {
@@ -1679,7 +1679,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
         // Quest-Leiter: Kettenmeister->Maras Warnung, Zeremonienmeister->Die
         // Ritualkammer, Schattenrat->Rettung oder Beweis.
         // (Fix: 'ceremonyMaster' zeigte per Copy-Paste auf 'kettenmeister' —
-        //  der Zeremonienmeister hatte dadurch keine eigene Quest-Identitaet.)
+        //  der Zeremonienmeister hatte dadurch keine eigene Quest-Identität.)
         var bossMapping = {
           'chainMaster': 'kettenmeister',
           'ceremonyMaster': 'zeremonienmeister',
@@ -1801,7 +1801,7 @@ function attack() {
   }, { requireLineOfSight: true });
 
   // Espionage: derselbe Schwung trifft auch Wachen (offener Nahkampf) — im
-  // vorderen Kegel, -1 hp pro Treffer, hp<=0 -> Wache faellt (Kegel weg).
+  // vorderen Kegel, -1 hp pro Treffer, hp<=0 -> Wache fällt (Kegel weg).
   if (window.EspionageSystem && window.EspionageSystem.isActive()
       && typeof window.EspionageSystem.attackGuards === 'function') {
     try {
@@ -2710,8 +2710,8 @@ function shadowCharge() {
   // dashDir ab Spielerposition) liegt. forEachEnemyInRange liefert dx/dy.
   var applyLineDamage = function () {
     // Zentrum = Spieler, aber nur der Nahbereich: die Vorfilter-Reichweite
-    // (dashDistance + lineRadius) deckt die ganze Bahn ab — Props laengs der
-    // Bahn zerbrechen ohnehin, waehrend der Spieler sie entlangfaehrt.
+    // (dashDistance + lineRadius) deckt die ganze Bahn ab — Props längs der
+    // Bahn zerbrechen ohnehin, während der Spieler sie entlangfährt.
     breakDestructiblesInRange(scene, lineRadius);
     forEachEnemyInRange(dashDistance + lineRadius, function (enemy, info) {
       if (chargeHits.has(enemy)) return;
@@ -3345,8 +3345,8 @@ function addXP(amount = 1) {
   if (window.runStats) window.runStats.xpGained += amount;
   playerXP += amount;
 
-  // WHILE statt IF: grosse XP-Belohnungen (z.B. Quests) koennen mehrere Level
-  // auf einmal geben; der Rest wird UEBERTRAGEN (frueher playerXP=0 -> Ueberschuss
+  // WHILE statt IF: grosse XP-Belohnungen (z.B. Quests) können mehrere Level
+  // auf einmal geben; der Rest wird UEBERTRAGEN (früher playerXP=0 -> Überschuss
   // ging verloren). Zusammen mit der window-Spiegelung unten behebt das die
   // "290/136"-Fehlanzeige (Quest-XP umging Level-Up + Anzeige komplett).
   while (playerXP >= neededXP) {
@@ -3364,7 +3364,7 @@ function addXP(amount = 1) {
     else playerHealth = playerMaxHealth;
     neededXP = (typeof getNeededXP === 'function') ? getNeededXP(playerLevel) : (2 * playerLevel);
 
-    // Feature 060: jeder Level-Up vergibt 1 Skill-Punkt fuer den Skill-Baum
+    // Feature 060: jeder Level-Up vergibt 1 Skill-Punkt für den Skill-Baum
     // (#48/#58). Defensiv — bricht nie den Level-Up-Pfad.
     if (typeof window !== 'undefined' && window.SkillTree
         && typeof window.SkillTree.grantSkillPoint === 'function') {
@@ -3824,7 +3824,7 @@ function castWhirlwind() {
   scene.time.addEvent({ delay: tickMs, repeat: tickCount - 1, callback: () => {
     if (!player || !player.active) return;
     let hitThisTick = 0;
-    // Pro Tick — Props sind nach dem ersten weg, der Rest laeuft ins Leere.
+    // Pro Tick — Props sind nach dem ersten weg, der Rest läuft ins Leere.
     breakDestructiblesInRange(scene, range);
     forEachEnemyInRange(range, (enemy) => {
       if (!enemy || !enemy.active) return;

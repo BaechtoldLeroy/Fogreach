@@ -10,8 +10,8 @@
 (function () {
   'use strict';
 
-  var DEPTH_WORLD = 460;   // ueber Boden/Objekten
-  var DEPTH_HUD = 1650;    // ueber dem normalen HUD
+  var DEPTH_WORLD = 460;   // über Boden/Objekten
+  var DEPTH_HUD = 1650;    // über dem normalen HUD
 
   var mounted = false;
   var g = null;            // UNmaskiert: Defend-Zone + Altar-HP-Balken (immer sichtbar)
@@ -103,7 +103,7 @@
   function sync(scene) {
     var R = (typeof window !== 'undefined') ? window.RoomMode : null;
     if (!R || typeof R.isSpecialRoom !== 'function') { if (mounted) _unmount(); return; }
-    // Stale-mount guard (Scene-Wechsel zerstoert unsere Objekte).
+    // Stale-mount guard (Scene-Wechsel zerstört unsere Objekte).
     if (mounted && (!g || !g.scene)) { mounted = false; g = gMask = banner = bannerInfo = bannerBg = hudText = null; }
 
     var special = R.isSpecialRoom();

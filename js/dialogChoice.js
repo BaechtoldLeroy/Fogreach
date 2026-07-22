@@ -2,13 +2,13 @@
 //
 // Erweitert additiv das bestehende _showDialoguePages-Modell in HubSceneV2
 // (page.choices = [{label, action}]). Eine Auswahl-Option kann eine Antwortzeile
-// zeigen, Story-Flags setzen ({flag}) und flag-abhaengig sichtbar sein (showIf).
+// zeigen, Story-Flags setzen ({flag}) und flag-abhängig sichtbar sein (showIf).
 // Kontrakt: kitty-specs/063-story-v4-inszenierung/contracts/dialog-ui-contract.md.
 //
-// WP05 haengt die Komponente in _showDialoguePages ein: eine `page` mit
-// `_choiceConfig` (via toPage) wird ueber present() gerendert.
+// WP05 hängt die Komponente in _showDialoguePages ein: eine `page` mit
+// `_choiceConfig` (via toPage) wird über present() gerendert.
 //
-// Classic Script: haengt window.DialogChoice an. `resolve`/`pickResult`/
+// Classic Script: hängt window.DialogChoice an. `resolve`/`pickResult`/
 // `applyChoice` sind DOM-frei und testbar; `present` nutzt Phaser.
 (function () {
   'use strict';
@@ -25,7 +25,7 @@
     return { visibleChoices: visible };
   }
 
-  // Baut das ChoiceResult fuer eine gewaehlte Option.
+  // Baut das ChoiceResult für eine gewählte Option.
   function pickResult(choice, index) {
     return {
       index: index,
@@ -34,7 +34,7 @@
     };
   }
 
-  // --- Flag-Anbindung (lazy, ueber questSystem) -----------------------------
+  // --- Flag-Anbindung (lazy, über questSystem) -----------------------------
 
   function _setFlag(name) {
     if (name && typeof name === 'string'
@@ -75,22 +75,26 @@
     }
   }
 
-  // Rendert einen Auswahlblock in `scene`. Gibt ein Handle mit destroy() zurueck.
+  // Rendert einen Auswahlblock in `scene`. Gibt ein Handle mit destroy() zurück.
   function present(scene, config) {
     var cam = scene.cameras.main;
     var visible = resolve(config, _getFlags()).visibleChoices;
     if (!visible.length) {
       // Kontrakt: nach Filter muss mind. eine Option bleiben. Defensiv: nichts
-      // rendern, direkt aufloesen mit null.
+      // rendern, direkt auflösen mit null.
       if (config && typeof config.onResolved === 'function') config.onResolved(null);
       return { destroy: function () {} };
     }
 
+    // Abbrechen-Zeile (ausser der Aufrufer unterdrückt sie ausdrücklich).
+    // Erlaubt dem Spieler, die Antwort-Auswahl zu verlassen, ohne zu wählen.
+    var allowCancel = !(config && config.noCancel);
     var panelWidth = 540;
     var pad = 20;
     var rowH = 40;
     var promptH = config && config.prompt ? 60 : 0;
-    var panelHeight = pad * 2 + promptH + visible.length * rowH;
+    var cancelRows = allowCancel ? 1 : 0;
+    var panelHeight = pad * 2 + promptH + (visible.length + cancelRows) * rowH;
     var cx = cam.width / 2;
     var cy = cam.height - 180;
 
@@ -113,6 +117,7 @@
     }
 
     var handleClosed = false;
+    var escHandler = null;
     function closeAndResolve(choice, index) {
       if (handleClosed) return;
       handleClosed = true;
@@ -123,6 +128,15 @@
       }
       destroy();
       if (config && typeof config.onResolved === 'function') config.onResolved(result);
+    }
+    // Abbrechen: schliesst die Auswahl OHNE eine Option anzuwenden. Der Aufrufer
+    // entscheidet über onCancel, was danach passiert (im Hub: Dialog schliessen).
+    function cancel() {
+      if (handleClosed) return;
+      handleClosed = true;
+      destroy();
+      if (config && typeof config.onCancel === 'function') config.onCancel();
+      else if (config && typeof config.onResolved === 'function') config.onResolved(null);
     }
 
     visible.forEach(function (choice, i) {
@@ -142,17 +156,44 @@
       container.add(zone);
     });
 
+    // Abbrechen-Zeile unter den Optionen (dezent, rötlicher Ton).
+    if (allowCancel) {
+      var cby = topY + visible.length * rowH;
+      var cbg = scene.add.graphics();
+      cbg.fillStyle(0x241618, 0.95).fillRoundedRect(-panelWidth / 2 + pad, cby, panelWidth - pad * 2, rowH - 8, 8);
+      var clabel = scene.add.text(-panelWidth / 2 + pad + 12, cby + 6, '[ Abbrechen ]  (ESC)', {
+        fontFamily: 'monospace', fontSize: 15, color: '#c99'
+      });
+      var czone = scene.add.zone(0, cby + (rowH - 8) / 2, panelWidth - pad * 2, rowH - 8)
+        .setOrigin(0.5, 0.5).setPosition(0, cby + (rowH - 8) / 2);
+      czone.setInteractive({ useHandCursor: true });
+      czone.on('pointerup', function () { cancel(); });
+      container.add(cbg);
+      container.add(clabel);
+      container.add(czone);
+
+      // ESC bricht ebenfalls ab (Desktop). Handler beim Schliessen entfernen.
+      if (scene.input && scene.input.keyboard) {
+        escHandler = function () { cancel(); };
+        scene.input.keyboard.on('keydown-ESC', escHandler);
+      }
+    }
+
     // Rekursiv scrollFactor(0) — inkl. aller Kinder.
     _applyScrollFactorRecursive(container);
 
     function destroy() {
+      if (escHandler && scene.input && scene.input.keyboard) {
+        try { scene.input.keyboard.off('keydown-ESC', escHandler); } catch (e) {}
+        escHandler = null;
+      }
       if (container) { container.destroy(true); container = null; }
     }
 
     return { destroy: destroy };
   }
 
-  // --- Adapter fuer _showDialoguePages --------------------------------------
+  // --- Adapter für _showDialoguePages --------------------------------------
 
   // Liefert ein page-kompatibles Objekt. WP05 erkennt `_choiceConfig` und ruft
   // present() statt der Standard-Button-Logik.

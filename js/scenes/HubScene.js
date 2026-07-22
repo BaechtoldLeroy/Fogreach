@@ -72,7 +72,7 @@ preload() {
       this._perfMonitor.startTimer('create_world_setup');
     }
     
-    // Weltgroesse
+    // Weltgrösse
     const W = 2048, H = 1536;
     this.cameras.main.setBounds(0, 0, W, H);
     this.physics.world.setBounds(0, 0, W, H);
@@ -119,7 +119,7 @@ preload() {
     
     if (this._perfMonitor) this._perfMonitor.endTimer('create_player');
 
-    // Gebaeude und Kollision
+    // Gebäude und Kollision
     this.buildingGroup = this.physics.add.staticGroup();
     this.entranceZones = this.physics.add.staticGroup();
     this.npcGroup = this.physics.add.group({ allowGravity: false, immovable: true });
@@ -199,7 +199,7 @@ preload() {
 
     ensureInventoryLoadedFromSave();
 
-    // Kollision Spieler <-> Gebaeude
+    // Kollision Spieler <-> Gebäude
     this.physics.add.collider(this.player, this.buildingGroup);
     this.physics.add.collider(this.player, this.npcGroup);
 
@@ -593,9 +593,9 @@ preload() {
     // Beine
     g.fillStyle(0x3a2a1a, 1).fillRect(x - 34, y + 10, 8, 12);
     g.fillRect(x + 26, y + 10, 8, 12);
-    // Sitzflaeche
+    // Sitzfläche
     g.fillStyle(0x6a4a2a, 1).fillRoundedRect(x - 40, y, 80, 12, 3);
-    // Rueckenlehne
+    // Rückenlehne
     g.fillStyle(0x5a3a1a, 1).fillRoundedRect(x - 40, y - 14, 80, 10, 3);
     // Schatten
     g.fillStyle(0x000000, 0.15).fillEllipse(x, y + 22, 84, 12);
@@ -732,7 +732,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
           b.entrances[0].y = result.img.y - doorMeta.y - doorMeta.h;
         }
 
-        // Eingangszonen fuer Archivschmiede direkt hier anlegen (Sonderzweig wuerde sonst ueberspringen)
+        // Eingangszonen für Archivschmiede direkt hier anlegen (Sonderzweig würde sonst überspringen)
         if (b.entrances && b.entrances[0] && doorMeta) {
           const e = b.entrances[0];
           const zw = e.w || Math.max(40, Math.round(doorMeta.w * 0.8));
@@ -768,7 +768,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
         spr = this.add.image(b.x + b.w / 2, b.y + b.h / 2, texKey).setDepth(b.depth || 1);
       }
 
-      // Kollision: statische Huelle
+      // Kollision: statische Hülle
       const collider = this.buildingGroup.create(b.x + b.w / 2, b.y + b.h / 2, null);
       collider.setSize(b.w, b.h).setVisible(false);
       collider.refreshBody();
@@ -781,13 +781,13 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
           let zx = b.x + e.x;
           let zy = b.y + e.y;
 
-          // Wenn Door vorhanden: Zone VOR die Tuer auf den Boden schieben (nicht mehr im Gebaeude-Koerper)
+          // Wenn Door vorhanden: Zone VOR die Tür auf den Boden schieben (nicht mehr im Gebäude-Körper)
           if (b.door) {
             if (!zw) zw = Math.max(40, Math.round(b.door.w * 0.8));
             if (!zh) zh = Math.max(28, Math.round(b.door.h * 0.5));
             zx = b.x + b.door.x + Math.round((b.door.w - zw) / 2);
             // Setze die Zone so, dass ihr UNTERER Rand knapp unterhalb der Fassadenkante liegt
-            // -> komplett ausserhalb des Gebaeude-Colliders, gut erreichbar
+            // -> komplett ausserhalb des Gebäude-Colliders, gut erreichbar
             zy = b.y + b.h + 2 - zh;
           }
 
@@ -804,7 +804,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
         }
       }
 
-      // Externe Ueberschrift nur fuer Gebaeude ohne eigene Plakette
+      // Externe Überschrift nur für Gebäude ohne eigene Plakette
       if (b.title && b.id !== 'rathaus' && b.id !== 'druckerei') {
         this.add.text(b.x + b.w / 2, b.y - 12, b.title, {
           fontFamily: 'serif',
@@ -826,8 +826,8 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
         y: 1110,
         depth: 120,
         lines: [
-          'Stahl allein schneidet die Luegen des Rates nicht. Erst wenn jede Klinge Wissen traegt, faellt ihre Maske.',
-          'Im Keller unter dem Rathaus lagern Protokolle aus Daemonenverhoeren. Bring mir Abschriften, und ich veredele deine Artefakte.',
+          'Stahl allein schneidet die Lügen des Rates nicht. Erst wenn jede Klinge Wissen trägt, fällt ihre Maske.',
+          'Im Keller unter dem Rathaus lagern Protokolle aus Dämonenverhören. Bring mir Abschriften, und ich veredele deine Artefakte.',
           'Sprich draussen leise. Die Aufseher des Kettenrats tragen inzwischen die Farben der Stadtgarde.'
         ]
       },
@@ -840,9 +840,9 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
         y: 1112,
         depth: 120,
         lines: [
-          'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Traeume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
+          'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Träume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
           'Bring mir Beweise aus dem Rathauskeller. Jede Spalte, die wir drucken, nimmt der Angst einen Zoll.',
-          'Verteile nichts Ungeprueftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
+          'Verteile nichts Ungeprüftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
         ]
       },
       {
@@ -854,8 +854,8 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
         y: 980,
         depth: 115,
         lines: [
-          'Die Schreiber des Rates markieren Haeuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
-          'Der Zeremonienmeister besitzt neue Siegel. Sie holen Daemonen als stilles Archiv.',
+          'Die Schreiber des Rates markieren Häuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
+          'Der Zeremonienmeister besitzt neue Siegel. Sie holen Dämonen als stilles Archiv.',
           'Sichere Augen im Rathauskeller. Jedes Siegel, das du brichst, lockert ihre Ketten an der Stadt.'
         ]
       }
@@ -992,7 +992,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
     const pad = 24;
     const innerWidth = panelWidth - pad * 2;
 
-    const title = `${meta.name || 'Gespraech'}`;
+    const title = `${meta.name || 'Gespräch'}`;
     const header = this.add.text(0, 0, title, {
       fontFamily: 'serif',
       fontSize: 22,
@@ -2410,7 +2410,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
 
   _applyHubPhase(phase) {
     // Phase 0: alles ruhig
-    // Phase 1+: Plakate reissen, okkulte Risse, neue Haendler usw.
+    // Phase 1+: Plakate reissen, okkulte Risse, neue Händler usw.
     if (phase >= 1) {
       this._spawnBannerTears();
     }
@@ -2430,7 +2430,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
     const g = this.add.graphics().setDepth(11);
     g.lineStyle(2, 0xff3300, 1);
     g.strokeRect(960 - 100, 620, 200, 40);
-    this.add.text(960, 640, 'Fluestern im Stein', { fontSize: 12, color: '#ff8844' }).setOrigin(0.5);
+    this.add.text(960, 640, 'Flüstern im Stein', { fontSize: 12, color: '#ff8844' }).setOrigin(0.5);
   }
 
   _ensureBuildingTexture(b) {
@@ -2507,7 +2507,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
       return key;
     }
 
-    // andere Gebaeude: wie gehabt Graphics -> Texture
+    // andere Gebäude: wie gehabt Graphics -> Texture
     this._drawGenericBuildingFront(g, b);
     g.generateTexture(key, b.w, b.h);
     g.destroy();
@@ -2522,7 +2522,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
     const padBottom = 20;
 
     const bodyX = padX;
-    const bodyY = roofH + 6;           // genug Platz fuer das Dach
+    const bodyY = roofH + 6;           // genug Platz für das Dach
     const bodyW = b.w - padX * 2;
     const bodyH = b.h - bodyY - padBottom;
 
@@ -2619,8 +2619,8 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
   _drawRathausFront(g, b) {
     // Stil wie Schmiede, aber breiter: Ziegel, innerer Rahmen, Giebeldach, Plaquette, Fenster, Ornamente
     const padX = 14;
-    const over = 12;          // Dach-ueberstand
-    const roofH = 48;         // Dachhoehe
+    const over = 12;          // Dach-überstand
+    const roofH = 48;         // Dachhöhe
     const padBottom = 24;     // Unterer Rand
 
     const bodyX = padX;
@@ -2658,7 +2658,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
     g.fillRect(bodyX, bodyY, 2, bodyH);
     g.fillRect(bodyX + bodyW - 2, bodyY, 2, bodyH);
 
-    // Giebeldach mit Ueberstand (nicht abgeschnitten)
+    // Giebeldach mit Überstand (nicht abgeschnitten)
     const apexX = Math.round(bodyX + bodyW / 2);
     const apexY = Math.round(bodyY - roofH);
     const lx = Math.round(bodyX - over);
@@ -2672,7 +2672,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
     g.lineStyle(2, 0x24170e, 1);
     g.strokeTriangle(apexX, apexY, lx, by, rx, by);
 
-    // Pilaster links/rechts (schmale Saeulen)
+    // Pilaster links/rechts (schmale Säulen)
     g.fillStyle(0x4a3b2b, 1);
     g.fillRect(bodyX + 6, bodyY + 6, 10, bodyH - 12);
     g.fillRect(bodyX + bodyW - 16, bodyY + 6, 10, bodyH - 12);
@@ -2682,7 +2682,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
     g.fillRect(bodyX + 4, bodyY + 46, bodyW - 8, 2);
     g.fillRect(bodyX + 4, bodyY + 48, bodyW - 8, 2);
 
-    // Plaquette unter dem Giebel (Text kommt spaeter via RenderTexture in _ensureBuildingTexture)
+    // Plaquette unter dem Giebel (Text kommt später via RenderTexture in _ensureBuildingTexture)
     const signW = Math.min(300, Math.round(bodyW * 0.72));
     const signH = 34;
     const signX = Math.round(bodyX + bodyW / 2 - signW / 2);
@@ -2729,12 +2729,12 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
       g.lineBetween(dx + dw / 2, dy + 28, dx + dw / 2, dy + dh - 4);
       g.fillStyle(0x24170e, 1).fillCircle(dx + dw * 0.36, dy + dh * 0.56, 3);
       g.fillCircle(dx + dw * 0.64, dy + dh * 0.56, 3);
-      // Kranz ueber dem Portal
+      // Kranz über dem Portal
       g.lineStyle(3, 0x2a1d14, 1);
       g.strokeCircle(dx + dw / 2, dy + 8, 12);
     }
 
-    // Merke Koordinaten fuer Text in _ensureBuildingTexture (wird dort rekonstruiert, daher hier keine Speicherung noetig)
+    // Merke Koordinaten für Text in _ensureBuildingTexture (wird dort rekonstruiert, daher hier keine Speicherung nötig)
   }
 
 

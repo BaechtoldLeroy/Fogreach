@@ -18,9 +18,9 @@ if (window.i18n) {
     'hub.npc.buerger.name': 'Ratloser Bürger',
     // Default greeting lines (shown when no quest is active). Quest-aware
     // lines come from storySystem NPC_DIALOGUE.
-    'hub.npc.aldric.line.0': 'Willkommen zurueck, Archivschmied. Der Rat schaetzt deine Dienste.',
+    'hub.npc.aldric.line.0': 'Willkommen zurück, Archivschmied. Der Rat schätzt deine Dienste.',
     'hub.npc.aldric.line.1': 'Nebenhall ist sicher, solange der Rat wacht. Vergiss das nicht.',
-    'hub.npc.aldric.line.2': 'Du hast Talent. Der Rat koennte jemanden wie dich gut gebrauchen — langfristig.',
+    'hub.npc.aldric.line.2': 'Du hast Talent. Der Rat könnte jemanden wie dich gut gebrauchen — langfristig.',
     'hub.npc.elara.line.0': 'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
     'hub.npc.elara.line.1': 'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.',
     'hub.npc.harren.line.0': 'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
@@ -102,8 +102,8 @@ window.HUB_HITBOXES = {
       texture: 'schmiedemeisterin',
       scale: 0.36,
       lines: [
-        'Stahl allein schneidet die Luegen des Rates nicht. Erst wenn jede Klinge Wissen traegt, faellt ihre Maske.',
-        'Im Keller unter dem Rathaus lagern Protokolle aus Daemonenverhoeren. Bring mir Abschriften, und ich veredele deine Artefakte.',
+        'Stahl allein schneidet die Lügen des Rates nicht. Erst wenn jede Klinge Wissen trägt, fällt ihre Maske.',
+        'Im Keller unter dem Rathaus lagern Protokolle aus Dämonenverhören. Bring mir Abschriften, und ich veredele deine Artefakte.',
         'Sprich draussen leise. Die Aufseher des Kettenrats tragen inzwischen die Farben der Stadtgarde.'
       ]
     },
@@ -114,9 +114,9 @@ window.HUB_HITBOXES = {
       texture: 'setzer_thom',
       scale: 0.30,
       lines: [
-        'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Traeume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
+        'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Träume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
         'Bring mir Beweise aus dem Rathauskeller. Jede Spalte, die wir drucken, nimmt der Angst einen Zoll.',
-        'Verteile nichts Ungeprueftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
+        'Verteile nichts Ungeprüftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
       ]
     },
     {
@@ -128,8 +128,8 @@ window.HUB_HITBOXES = {
       texture: 'spaeherin',
       scale: 0.30,
       lines: [
-        'Die Schreiber des Rates markieren Haeuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
-        'Der Zeremonienmeister besitzt neue Siegel. Sie holen Daemonen als stilles Archiv.',
+        'Die Schreiber des Rates markieren Häuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
+        'Der Zeremonienmeister besitzt neue Siegel. Sie holen Dämonen als stilles Archiv.',
         'Sichere Augen im Rathauskeller. Jedes Siegel, das du brichst, lockert ihre Ketten an der Stadt.'
       ]
     },
@@ -149,9 +149,9 @@ window.HUB_HITBOXES = {
       // the regular flavor lines below.
       factionId: 'council',
       lines: [
-        'Willkommen zurueck, Archivschmied. Der Rat schaetzt deine Dienste.',
+        'Willkommen zurück, Archivschmied. Der Rat schätzt deine Dienste.',
         'Nebenhall ist sicher, solange der Rat wacht. Vergiss das nicht.',
-        'Du hast Talent. Der Rat koennte jemanden wie dich gut gebrauchen — langfristig.'
+        'Du hast Talent. Der Rat könnte jemanden wie dich gut gebrauchen — langfristig.'
       ]
     },
     {
@@ -180,7 +180,7 @@ window.HUB_HITBOXES = {
     },
     {
       id: 'harren',
-      name: 'Buergermeister Harren',
+      name: 'Bürgermeister Harren',
       x: 720, y: 470,
       texture: 'harren_right0',
       scale: 0.16,
@@ -211,7 +211,7 @@ window.HUB_HITBOXES = {
       lines: [
         'Die Ordnung des Kettenrats ist heilig. Wer sie befragt, befragt das Licht selbst.',
         'Ketzerei beginnt mit der falschen Frage. Halte deine Lippen rein.',
-        'Wenn die Tochter geflohen ist, war es nicht aus eigenem Willen. Eine dunkle Hand fuehrt sie.'
+        'Wenn die Tochter geflohen ist, war es nicht aus eigenem Willen. Eine dunkle Hand führt sie.'
       ]
     },
     {
@@ -226,18 +226,18 @@ window.HUB_HITBOXES = {
       visibleFromAct: 'auftrag',
       lines: [
         'Die Patrouillen wachsen jeden Monat. So muss es sein — die Stadt ist unruhig.',
-        'Loyalitaet ist die einzige Muenze, die zwischen den Strassen Bestand hat. Frag nicht warum.',
+        'Loyalität ist die einzige Münze, die zwischen den Strassen Bestand hat. Frag nicht warum.',
         'Wenn der Magistrat ruft, antwortet die Garde. Wenn der Klerus segnet, marschiert die Garde. So funktioniert es.'
       ]
     },
-    // Feature 063 (#66): der ratlose Buerger. Erscheint ab Akt 2 ("erste_risse"),
+    // Feature 063 (#66): der ratlose Bürger. Erscheint ab Akt 2 ("erste_risse"),
     // wenn der Wahlkampf hohl wird. Reine Flavor-Figur ohne Quest — sein Dialog
-    // (hub_buerger_a2, setzt truth_told) haengt HubSceneV2 an der Flavor-Stelle an.
+    // (hub_buerger_a2, setzt truth_told) hängt HubSceneV2 an der Flavor-Stelle an.
     // Sprite: assets/sprites/buerger.png (Einzel-Sprite wie Thom/Garde). Fehlt es,
     // zeigt das Spawn-System den Platzhalter (placeholderColor/-Accent unten).
     {
       id: 'buerger',
-      name: 'Ratloser Buerger',
+      name: 'Ratloser Bürger',
       x: 600, y: 500,
       texture: 'buerger',
       scale: 0.30,

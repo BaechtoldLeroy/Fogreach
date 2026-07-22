@@ -23,7 +23,7 @@
     momentumPerStack: 0.06, momentumMaxStacks: 10, momentumDecayMs: 4000, // Schlächterkrone
     // Batch 2:
     twinDamageFrac: 0.6,                          // Zwillingsklinge: 2. Treffer @ 60%
-    chainCount: 2, chainFrac: 0.45, chainRange: 150, // Kettenherz: 2 Spruenge @ 45%, 150px
+    chainCount: 2, chainFrac: 0.45, chainRange: 150, // Kettenherz: 2 Sprünge @ 45%, 150px
     killburstFrac: 0.5, killburstRadius: 95, killburstMaxDepth: 3, // Aschefunke: 50% AoE, Kaskade-Limit
     frostSlowMs: 1600, frostShatterRadius: 90     // Frostsiegel: Slow 1.6s, Splitter 90px
   };

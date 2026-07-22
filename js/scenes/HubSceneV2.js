@@ -125,8 +125,8 @@ class HubSceneV2 extends Phaser.Scene {
     // following the Branka/Thom/Mara loading pattern.
     if (!tex.exists('klerus'))            this.load.image('klerus', 'assets/sprites/klerus.png');
     if (!tex.exists('garde'))             this.load.image('garde', 'assets/sprites/garde.png');
-    // Feature 063 (#66): der ratlose Buerger (ab Akt 2). Fehlt die Datei noch,
-    // faengt das Spawn-System es mit dem Platzhalter ab (der 404 im Loader ist
+    // Feature 063 (#66): der ratlose Bürger (ab Akt 2). Fehlt die Datei noch,
+    // fängt das Spawn-System es mit dem Platzhalter ab (der 404 im Loader ist
     // dann erwartbar, bis assets/sprites/buerger.png vorliegt).
     if (!tex.exists('buerger'))           this.load.image('buerger', 'assets/sprites/buerger.png?v=2');
     ['aldric', 'elara', 'harren'].forEach((npc) => {
@@ -170,11 +170,11 @@ class HubSceneV2 extends Phaser.Scene {
     // Feature 064: Hub-Phase (aus Akt-Index/Flags) ableiten und die
     // Darstellungs-Schicht anwenden (Tint/Nebel/Anschlagtafeln/feindliches
     // Rathaus). Phase in this._hubPhase merken — die Aldric-Quest-Sperre, die
-    // Quest-Indikatoren und die phasenabhaengige NPC-Flavor lesen sie unten.
+    // Quest-Indikatoren und die phasenabhängige NPC-Flavor lesen sie unten.
     this._hubPhase = (window.HubPhase && typeof window.HubPhase.current === 'function')
       ? window.HubPhase.current() : 'council';
-    // Refs EINMAL bauen und an der Szene merken. Sie sind die vollstaendige
-    // Beschreibung dessen, was die View braucht — wer die Phase spaeter neu
+    // Refs EINMAL bauen und an der Szene merken. Sie sind die vollständige
+    // Beschreibung dessen, was die View braucht — wer die Phase später neu
     // anwendet (Playtest-Vorschau, Phasenwechsel zur Laufzeit), muss sie nicht
     // nachbauen und kann dabei auch nichts vergessen. Genau daran ist eine
     // Vorschau schon gescheitert: ohne posterSpots verschwanden die Tafeln.
@@ -185,15 +185,15 @@ class HubSceneV2 extends Phaser.Scene {
         x: 368 * SCALE_FACTOR, y: 110 * SCALE_FACTOR,
         w: 224 * SCALE_FACTOR, h: 168 * SCALE_FACTOR
       },
-      // Tuerbereich (aus HUB_HITBOXES.entrances.rathaus_entrance) — dort haengen
+      // Türbereich (aus HUB_HITBOXES.entrances.rathaus_entrance) — dort hängen
       // nach dem Bruch Bretter, Kette und Siegel.
       rathausEntrance: {
         x: 452 * SCALE_FACTOR, y: 296 * SCALE_FACTOR,
         w: 56 * SCALE_FACTOR, h: 26 * SCALE_FACTOR
       },
       // Anschlagtafeln flankierend zur Rathaustreppe (Layout-Raum: Treppe
-      // x430-530, Pflanzkuebel x356-394 und x566-604 — dazwischen ist die
-      // Luecke). y = Standlinie auf dem Platz. Weltkoordinaten wie oben.
+      // x430-530, Pflanzkübel x356-394 und x566-604 — dazwischen ist die
+      // Lücke). y = Standlinie auf dem Platz. Weltkoordinaten wie oben.
       posterSpots: [
         { x: 412 * SCALE_FACTOR, y: 300 * SCALE_FACTOR },
         { x: 548 * SCALE_FACTOR, y: 300 * SCALE_FACTOR }
@@ -490,9 +490,9 @@ class HubSceneV2 extends Phaser.Scene {
     });
 
     // Demo-Outro-Splash ENTFERNT: er stammte aus der 2-Akt-Demo-Zeit und
-    // doppelte den Akt-Uebergang, der nach Q6 ohnehin als Titelkarte feuert —
+    // doppelte den Akt-Übergang, der nach Q6 ohnehin als Titelkarte feuert —
     // widersprach ihm sogar in der Nummer ("Ende von Akt 1 / Akt 2" vs. der
-    // Karte "Akt 3"). Die Story hat jetzt fuenf Akte; ein "Ende von Akt 1"-
+    // Karte "Akt 3"). Die Story hat jetzt fünf Akte; ein "Ende von Akt 1"-
     // Fenster passt nicht mehr.
 
     // Run-summary modal: if leaveDungeonForHub stashed a summary, show it
@@ -634,7 +634,7 @@ class HubSceneV2 extends Phaser.Scene {
           && typeof window.questSystem.hasFlag === 'function') {
         if (!window.questSystem.hasFlag(npc.visibleAfterFlag)) isVisible = false;
       }
-      // Gegenstueck: NPC VERSCHWINDET, sobald ein Flag gesetzt ist. Bisher gab
+      // Gegenstück: NPC VERSCHWINDET, sobald ein Flag gesetzt ist. Bisher gab
       // es nur "ab jetzt sichtbar" — Aldric stand deshalb auch im Epilog noch
       // im Hub, obwohl der Rat da enttarnt und die Wahrheit gedruckt ist.
       if (isVisible && npc.hiddenAfterFlag && window.questSystem
@@ -720,10 +720,10 @@ class HubSceneV2 extends Phaser.Scene {
         if (npcZone.body) npcZone.body.enable = false;
       }
 
-      // (Frueher: eine Elara-Notiz im v3-Akt 'offenbarung'. Der Akt existiert
+      // (Früher: eine Elara-Notiz im v3-Akt 'offenbarung'. Der Akt existiert
       // in Story v4 nicht mehr — der Block war toter Code und referenzierte
       // zudem ein nicht mehr definiertes `currentActId`, was beim Aufbau
-      // geworfen haette, sobald Elara sichtbar ist.)
+      // geworfen hätte, sobald Elara sichtbar ist.)
 
       // Quest indicator above NPC ("!" for available, "?" for turn-in)
       const questIndicator = this.add.text(sx, sy - sprite.displayHeight - 10, '', {
@@ -937,10 +937,10 @@ class HubSceneV2 extends Phaser.Scene {
   // NPC. Called on each quest-state change so that NPCs unlocked by a
   // just-completed quest or just-set flag (e.g. Elara after the cellar
   // encounter sets `elaraMet`) appear without requiring a hub reload.
-  // Akt-Reihenfolge aus der einzigen Quelle (storySystem.STORY_ACTS). Frueher
+  // Akt-Reihenfolge aus der einzigen Quelle (storySystem.STORY_ACTS). Früher
   // stand in createNPCs eine handgepflegte Kopie, die noch v3-Akte
   // ('rebellion', 'offenbarung') enthielt — eine Dublette, die bei jeder
-  // Story-Aenderung still falsch werden kann.
+  // Story-Änderung still falsch werden kann.
   _actOrder() {
     const acts = window.storySystem && window.storySystem.STORY_ACTS;
     if (Array.isArray(acts) && acts.length) return acts.map(a => a && a.id);
@@ -954,10 +954,10 @@ class HubSceneV2 extends Phaser.Scene {
     const completed = (typeof qs.getCompletedQuests === 'function') ? (qs.getCompletedQuests() || []) : [];
     const completedIds = new Set(completed.map(q => q && q.id).filter(Boolean));
     const hasFlag = (typeof qs.hasFlag === 'function') ? qs.hasFlag.bind(qs) : () => false;
-    // Akt-Index live lesen: `visibleFromAct` wurde frueher NUR beim Aufbau in
-    // createNPCs ausgewertet und hier uebersprungen. Wechselte der Akt zur
+    // Akt-Index live lesen: `visibleFromAct` wurde früher NUR beim Aufbau in
+    // createNPCs ausgewertet und hier übersprungen. Wechselte der Akt zur
     // Laufzeit (Story-Fortschritt oder Skript im Playtest), erschien ein NPC
-    // wie der Buerger erst nach einem Hub-Neuaufbau.
+    // wie der Bürger erst nach einem Hub-Neuaufbau.
     const actOrder = this._actOrder();
     const currentActIndex = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
       ? window.storySystem.getCurrentActIndex() : 0;
@@ -1144,20 +1144,20 @@ class HubSceneV2 extends Phaser.Scene {
     // early — the reveal method handles completion + completeQuest call.
     if (questData && questData.id === 'council_collusion_reveal'
         && (questMode === 'offer' || questMode === 'turnin' || questMode === 'progress')) {
-      // Feature 063: Die Sitzung wird jetzt GESPIELT statt nur erzaehlt — erst
-      // die "Zuhoeren"-Fortschrittsleiste (feuert observe collusion_reveal_seen),
+      // Feature 063: Die Sitzung wird jetzt GESPIELT statt nur erzählt — erst
+      // die "Zuhören"-Fortschrittsleiste (feuert observe collusion_reveal_seen),
       // danach die bestehende Reveal-Prosa ab Seite 2. Harrens "Komm mit"
-      // (Seite 1) entfaellt dann, weil die Szene Dich schon dort hat.
-      // Bricht der Spieler die Szene ab, greift beim naechsten Gespraech der
-      // unveraenderte Reveal-Pfad (dessen finalize den Trigger ebenfalls feuert).
+      // (Seite 1) entfällt dann, weil die Szene Dich schon dort hat.
+      // Bricht der Spieler die Szene ab, greift beim nächsten Gespräch der
+      // unveränderte Reveal-Pfad (dessen finalize den Trigger ebenfalls feuert).
       if (!this._collusionScenePlayed
           && window.storyScenes && typeof window.storyScenes.playCollusionSession === 'function') {
         this._collusionScenePlayed = true;
         const selfCS = this;
         window.storyScenes.playCollusionSession(this, function () {
-          // Index 2 = die Entscheidungsseite. Sie traegt die Sitzungs-Prosa
+          // Index 2 = die Entscheidungsseite. Sie trägt die Sitzungs-Prosa
           // ohnehin im Text, deshalb entfallen "Komm mit" (0) und die separate
-          // Beschreibungsseite (1) — sonst laese man die Sitzung dreimal.
+          // Beschreibungsseite (1) — sonst läse man die Sitzung dreimal.
           selfCS._showCollusionReveal(npcData, questData, 2);
         });
         return;
@@ -1167,8 +1167,8 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     // Feature 063: Elara-Lager (Story v4 §13.2) — ruhiger Akt-3-Moment ohne
-    // Auftrag. Einmalig und nur im Flavor-Gespraech, damit es nie ein Quest-
-    // Angebot verdraengt.
+    // Auftrag. Einmalig und nur im Flavor-Gespräch, damit es nie ein Quest-
+    // Angebot verdrängt.
     if (questMode === 'flavor' && npcId === 'elara' && !this._shownElaraCamp
         && window.storyScenes && typeof window.storyScenes.playElaraCamp === 'function'
         && window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function'
@@ -1214,7 +1214,7 @@ class HubSceneV2 extends Phaser.Scene {
         choices: null
       });
 
-      // Feature 063: gespraechsfarbige storyDialog-Auswahl (ohne setFlags)
+      // Feature 063: gesprächsfarbige storyDialog-Auswahl (ohne setFlags)
       // direkt nach dem Angebotstext, vor Annehmen/Ablehnen.
       const _sdOffer = this._storyDialogEntry(questData.id);
       if (_sdOffer && !this._storyDialogIsDecision(_sdOffer)) {
@@ -1277,9 +1277,9 @@ class HubSceneV2 extends Phaser.Scene {
         choices: null
       });
 
-      // Feature 063: die Entscheidung (storyDialog-Auswahl MIT setFlags) faellt
+      // Feature 063: die Entscheidung (storyDialog-Auswahl MIT setFlags) fällt
       // beim Abgeben — nach dem Abschlusstext, VOR der Belohnung. So setzt die
-      // Wahl ihre Flags, bevor completeQuest ueber die Belohnungsseite laeuft.
+      // Wahl ihre Flags, bevor completeQuest über die Belohnungsseite läuft.
       const _sdTurnin = this._storyDialogEntry(questData.id);
       if (_sdTurnin && this._storyDialogIsDecision(_sdTurnin)) {
         pages.push(this._storyChoicePage(_sdTurnin));
@@ -1323,9 +1323,9 @@ class HubSceneV2 extends Phaser.Scene {
       const storyLines = (window.storySystem && typeof window.storySystem.getNpcDialogue === 'function')
         ? window.storySystem.getNpcDialogue(npcId)
         : null;
-      // Feature 064: phasenabhaengige Flavor-Zeilen haben Vorrang (hohler
+      // Feature 064: phasenabhängige Flavor-Zeilen haben Vorrang (hohler
       // Wahlkampf in doubleAgent, feindlicher Aldric in broken, vorlesender
-      // Buerger im epilogue). Fehlt ein Override, bleiben die Standard-Zeilen.
+      // Bürger im epilogue). Fehlt ein Override, bleiben die Standard-Zeilen.
       const _phaseFlavor = (window.HubPhase && window.HubPhase.npcFlavorByPhase
         && window.HubPhase.npcFlavorByPhase[this._hubPhase]
         && window.HubPhase.npcFlavorByPhase[this._hubPhase][npcId]) || null;
@@ -1339,10 +1339,10 @@ class HubSceneV2 extends Phaser.Scene {
       // hier an der Flavor-Stelle.
       //
       // Guard MUSS persistent sein (questSystem-Flag), nicht instanzweit: die
-      // Hub-Szene wird bei jeder Rueckkehr aus Dungeon/Schmiede neu aufgebaut,
-      // ein Instanzfeld (frueher this._shownHubIntroA0) startet dann wieder
+      // Hub-Szene wird bei jeder Rückkehr aus Dungeon/Schmiede neu aufgebaut,
+      // ein Instanzfeld (früher this._shownHubIntroA0) startet dann wieder
       // undefined — die Auswahl tauchte so bei JEDEM Hub-Besuch erneut auf, und
-      // erneutes Anwaehlen konnte den Dialogfluss abbrechen. Mit dem Flag zeigt
+      // erneutes Anwählen konnte den Dialogfluss abbrechen. Mit dem Flag zeigt
       // sich der Auftakt genau einmal pro Spielstand.
       const _introSeen = !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag('hub_intro_a0_seen'));
       if (npcId === 'branka' && !_introSeen) {
@@ -1357,8 +1357,8 @@ class HubSceneV2 extends Phaser.Scene {
       // NACH der Beschlagnahme-Entscheidung. Gate auf das Entscheidungs-Flag
       // (petitions_kept/surrendered wird beim Abgeben von council_seizure gesetzt),
       // damit die Nachfrage erst danach kommt und nicht im selben Dialog steht.
-      // Einmalig (_shownSeizureFollowup). Die flag-abhaengige showIf-Variante
-      // (Luege bei petitions_kept) macht die Komponente selbst.
+      // Einmalig (_shownSeizureFollowup). Die flag-abhängige showIf-Variante
+      // (Lüge bei petitions_kept) macht die Komponente selbst.
       if (npcId === 'aldric' && !this._shownSeizureFollowup) {
         const _flags = (qs && typeof qs.getFlags === 'function') ? qs.getFlags() : {};
         if (_flags.petitions_kept || _flags.petitions_surrendered) {
@@ -1370,7 +1370,7 @@ class HubSceneV2 extends Phaser.Scene {
         }
       }
 
-      // Feature 063 (#66): der ratlose Buerger. Seine Frage IST sein ganzer
+      // Feature 063 (#66): der ratlose Bürger. Seine Frage IST sein ganzer
       // Dialog (hub_buerger_a2, setzt truth_told). Wird gezeigt, solange die
       // Frage offen ist — "(schweigen)" setzt nichts, also darf sie wiederkehren,
       // bis der Spieler mit "Keinem von beiden." antwortet (truth_told).
@@ -1391,7 +1391,7 @@ class HubSceneV2 extends Phaser.Scene {
 
   // Feature 063: storyDialog-Anbindung.
   // Regel: Auswahlen MIT setFlags sind Entscheidungen mit Konsequenz -> sie
-  // erscheinen beim Abgeben (turnin). Auswahlen OHNE setFlags sind Gespraechs-
+  // erscheinen beim Abgeben (turnin). Auswahlen OHNE setFlags sind Gesprächs-
   // farbe -> sie erscheinen beim Angebot (offer). So braucht keine Quest eine
   // eigene Platzierungs-Metadatei.
   _storyDialogEntry(questId) {
@@ -1407,7 +1407,7 @@ class HubSceneV2 extends Phaser.Scene {
     return !!(entry && entry.choices.some((c) => c.setFlags && c.setFlags.length));
   }
 
-  // Baut eine Auswahl-Seite; _showDialoguePages rendert sie ueber DialogChoice.
+  // Baut eine Auswahl-Seite; _showDialoguePages rendert sie über DialogChoice.
   _storyChoicePage(entry) {
     return { text: entry.prompt || '', choices: null, _choiceConfig: entry };
   }
@@ -1440,7 +1440,7 @@ class HubSceneV2 extends Phaser.Scene {
       return;
     }
 
-    // Feature 063: storyDialog-Auswahlseite. Wird ueber die DialogChoice-
+    // Feature 063: storyDialog-Auswahlseite. Wird über die DialogChoice-
     // Komponente gerendert (setzt Flags, respektiert showIf, scrollFactor).
     // Nach der Wahl wird die Antwortzeile als Seite eingeschoben und der
     // normale Seitenfluss fortgesetzt (z. B. weiter zur Belohnungsseite).
@@ -1461,6 +1461,12 @@ class HubSceneV2 extends Phaser.Scene {
           } else {
             selfDC._closeDialog(null);
           }
+          selfDC._refreshQuestIndicators();
+        },
+        // Abbrechen (ESC / Button): den ganzen NPC-Dialog schliessen, ohne eine
+        // Antwort anzuwenden. Der Spieler kann den NPC erneut ansprechen.
+        onCancel: function () {
+          selfDC._closeDialog(null);
           selfDC._refreshQuestIndicators();
         }
       });
@@ -1615,7 +1621,7 @@ class HubSceneV2 extends Phaser.Scene {
       }
 
       // Feature 060 WP04: Talente (Skill-Baum) button — opens the
-      // SkillTreeScene overlay. Rueckt hoch, wenn der Schwarzmarkt-Button fehlt.
+      // SkillTreeScene overlay. Rückt hoch, wenn der Schwarzmarkt-Button fehlt.
       const talentsBtn = this.add.text(0, maraBtnY + (_bmUnlocked ? 76 : 38), _HUB_T('hub.skills.talents'), {
         fontFamily: 'monospace',
         fontSize: 14,
@@ -1861,7 +1867,7 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   // Playtest-Helfer: eine Hub-Phase zur Laufzeit anwenden, OHNE den Spielstand
-  // anzufassen (Akt-Index und Flags bleiben unberuehrt — beim naechsten
+  // anzufassen (Akt-Index und Flags bleiben unberührt — beim nächsten
   // Hub-Betreten gilt wieder die echte Phase). Nutzt die gemerkten Refs, damit
   // die Vorschau garantiert dasselbe zeigt wie der echte Aufbau.
   // Konsole:  game.scene.getScene('HubSceneV2').previewPhase('doubleAgent')
@@ -1876,12 +1882,12 @@ class HubSceneV2 extends Phaser.Scene {
     this._hubPhase = phase;
     this._hubPhaseHandle = window.HubPhaseView.apply(this, phase, this._hubPhaseRefs);
 
-    // Die NPC-Sichtbarkeit haengt NICHT an der Phase, sondern am echten
-    // Akt-Index (Buerger ab 'erste_risse') und an Story-Flags (Aldric weg ab
-    // 'story_ending'). Die Vorschau fasst beides bewusst nicht an — sonst waere
+    // Die NPC-Sichtbarkeit hängt NICHT an der Phase, sondern am echten
+    // Akt-Index (Bürger ab 'erste_risse') und an Story-Flags (Aldric weg ab
+    // 'story_ending'). Die Vorschau fasst beides bewusst nicht an — sonst wäre
     // sie ein Eingriff in den Spielstand. Damit sie trotzdem zeigt, was in der
-    // Phase zu sehen waere, werden Akt-Index und Flag hier NUR fuer die Dauer
-    // einer Neuberechnung vorgetaeuscht und sofort wieder zurueckgesetzt.
+    // Phase zu sehen wäre, werden Akt-Index und Flag hier NUR für die Dauer
+    // einer Neuberechnung vorgetäuscht und sofort wieder zurückgesetzt.
     // Es wird nichts geschrieben (kein setFlag, kein advanceToAct).
     var st = {
       council:     { act: 0, ending: false },
@@ -1908,7 +1914,7 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     this._refreshQuestIndicators();
-    return 'Phase jetzt: ' + phase + ' (Vorschau — Spielstand unveraendert)';
+    return 'Phase jetzt: ' + phase + ' (Vorschau — Spielstand unverändert)';
   }
 
   // Destroy the tracked dialog window (npcDialogContainer @1500) PLUS any
@@ -1987,8 +1993,8 @@ class HubSceneV2 extends Phaser.Scene {
 
     this._dialogOpen = true;
     window.storySystem.showStoryOverlay(this, eventData, () => {
-      // Ein zweites faelliges Event nachziehen (z. B. der Epilog direkt nach
-      // einem Akt-Uebergang, wenn damit die letzte Quest-Kette faellt).
+      // Ein zweites fälliges Event nachziehen (z. B. der Epilog direkt nach
+      // einem Akt-Übergang, wenn damit die letzte Quest-Kette fällt).
       const nextEvent = window.storySystem.consumePendingEvent();
       if (nextEvent) {
         window.storySystem.showStoryOverlay(this, nextEvent, () => {
@@ -2185,10 +2191,10 @@ class HubSceneV2 extends Phaser.Scene {
     return applied;
   }
 
-  // Starter-Kit bei einem NEUEN Spiel: 3 Heiltränke des schwaechsten Tiers (S,
+  // Starter-Kit bei einem NEUEN Spiel: 3 Heiltränke des schwächsten Tiers (S,
   // potionTier 1) ins Inventar. `applied === false` = kein Save geladen = neues
   // Spiel. Der persistente Flag 'starter_kit_granted' verhindert Doppel-Vergabe
-  // (Rueckkehr aus dem Dungeon, erneuter Hub-Aufbau). Bei einem "Neues Spiel"
+  // (Rückkehr aus dem Dungeon, erneuter Hub-Aufbau). Bei einem "Neues Spiel"
   // wird der Slot geleert -> Flag ist weg -> genau einmal vergeben.
   _grantStarterKit(applied) {
     if (applied) return; // Save geladen -> kein neues Spiel
@@ -2204,7 +2210,7 @@ class HubSceneV2 extends Phaser.Scene {
     const COUNT = 3;
 
     let placed = false;
-    // Vorhandenen S-Stack erhoehen (falls schon einer da ist), sonst frei belegen.
+    // Vorhandenen S-Stack erhöhen (falls schon einer da ist), sonst frei belegen.
     for (let i = 0; i < inv.length; i++) {
       const it = inv[i];
       if (it && it.type === 'potion' && it.potionTier === 1) {
@@ -2223,7 +2229,7 @@ class HubSceneV2 extends Phaser.Scene {
         placed = true;
       }
     }
-    if (!placed) return; // Inventar voll (bei neuem Spiel praktisch unmoeglich)
+    if (!placed) return; // Inventar voll (bei neuem Spiel praktisch unmöglich)
 
     if (qs && typeof qs.setFlag === 'function') qs.setFlag('starter_kit_granted');
     if (typeof window._refreshInventoryHUD === 'function') {
@@ -3215,11 +3221,11 @@ class HubSceneV2 extends Phaser.Scene {
 
     const page1 = isEN
       ? 'Come with me. I must show you something I have suspected for years — but never could prove. You have worked for all three. Now you see them together.'
-      : 'Komm mit. Ich muss dir etwas zeigen, das ich seit Jahren ahne — aber niemals beweisen konnte. Du hast fuer alle drei gearbeitet. Jetzt siehst du sie zusammen.';
+      : 'Komm mit. Ich muss dir etwas zeigen, das ich seit Jahren ahne — aber niemals beweisen konnte. Du hast für alle drei gearbeitet. Jetzt siehst du sie zusammen.';
 
     const page2 = isEN
       ? 'Behind the locked doors of the Rathauskeller hall they meet. Magistrate. Clergy. Guard. Three voices that never publicly agree in this city — and here, in the shadow of the wall candles, they speak as a single mouth. Pacts are confirmed. Names are struck. One of them: the mayor\'s daughter.'
-      : 'Hinter den verschlossenen Tueren der Rathauskeller-Halle treffen sie sich. Magistrat. Klerus. Garde. Drei Stimmen, die in der Stadt nie oeffentlich uebereinstimmen — und hier, im Schatten der Wandkerzen, sprechen sie wie ein einziger Mund. Pakte werden bestaetigt. Namen werden gestrichen. Eine davon: die Tochter des Buergermeisters.';
+      : 'Hinter den verschlossenen Türen der Rathauskeller-Halle treffen sie sich. Magistrat. Klerus. Garde. Drei Stimmen, die in der Stadt nie öffentlich übereinstimmen — und hier, im Schatten der Wandkerzen, sprechen sie wie ein einziger Mund. Pakte werden bestätigt. Namen werden gestrichen. Eine davon: die Tochter des Bürgermeisters.';
 
     const page3Prompt = isEN
       ? 'Will you turn away — or will you remember?'
@@ -3229,7 +3235,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     const page4 = isEN
       ? 'You walk back into the fog. What you heard cannot be unheard. The Chain Council is not three voices — it is one wearing three masks. And you? You have already worked for every mask.\n\nAct 2 begins here — in the same city, beneath the same masks.'
-      : 'Du gehst hinaus in den Nebel. Was du gehoert hast, laesst sich nicht ungehoert machen. Der Kettenrat ist nicht drei Stimmen — er ist eine, die drei Masken traegt. Und du? Du hast bereits fuer jede Maske gearbeitet.\n\nAkt 2 beginnt hier — in derselben Stadt, unter denselben Masken.';
+      : 'Du gehst hinaus in den Nebel. Was du gehört hast, lässt sich nicht ungehört machen. Der Kettenrat ist nicht drei Stimmen — er ist eine, die drei Masken trägt. Und du? Du hast bereits für jede Maske gearbeitet.\n\nAkt 2 beginnt hier — in derselben Stadt, unter denselben Masken.';
 
     // Build the page array. Pages 1-2 + 4 are narration (no choices —
     // Space/Enter advances). Page 3 has the binary flavor choice that
@@ -3254,7 +3260,7 @@ class HubSceneV2 extends Phaser.Scene {
       // Feature 063 WP04/05: das Reveal-Objective ist jetzt observe
       // (collusion_reveal_seen). acceptQuest completet es nicht mehr automatisch
       // (nur dialogue-Ziele tun das). Die Sitzung IST das Zuhören -> hier den
-      // observe-Trigger feuern, sonst haengt die Quest und Akt 2 bleibt gesperrt.
+      // observe-Trigger feuern, sonst hängt die Quest und Akt 2 bleibt gesperrt.
       if (typeof qs.updateQuestProgress === 'function') {
         try { qs.updateQuestProgress('observe', 'collusion_reveal_seen', 1); } catch (_) {}
       }
@@ -3299,7 +3305,7 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   // Feature 063 WP05: Die Abrechnung (the_reckoning). Berechnet den Ausgang aus
-  // computeFinaleState(flags), spielt Vatermord + Druck und praesentiert die vier
+  // computeFinaleState(flags), spielt Vatermord + Druck und präsentiert die vier
   // Regler. Schliesst danach the_reckoning ab (schaltet story_ending frei).
   _showReckoningFinale(npcData, questData) {
     const qs = window.questSystem;
@@ -3316,15 +3322,15 @@ class HubSceneV2 extends Phaser.Scene {
 
     const pForesee = st.betrayalForeseen
       ? 'Du hast die Spur verfolgt. Du bist schneller an der Schleuse — der Nebel steigt nicht.'
-      : 'Du hast es nicht kommen sehen. Der Nebel steigt um Deine Knie, Deine aeltesten Erinnerungen duennen, waehrend Du kaempfst, Dich zu erinnern, warum Du hier bist.';
+      : 'Du hast es nicht kommen sehen. Der Nebel steigt um Deine Knie, Deine ältesten Erinnerungen dünnen, während Du kämpfst, Dich zu erinnern, warum Du hier bist.';
     const pAllies = st.aloneAtEnd
       ? 'Niemand tritt neben Dich. Du stehst allein.'
       : (alliesNames.join(', ') + ' treten dazu, entsetzt, dass Elara eine von ihnen war.');
     const pElara = (st.elara === 'lives')
-      ? 'Mit Vertrauen und Beweisen haeltst Du sie mit Worten auf. Sie lebt, gebrochen an dem, was sie tat.'
+      ? 'Mit Vertrauen und Beweisen hältst Du sie mit Worten auf. Sie lebt, gebrochen an dem, was sie tat.'
       : 'Es bleibt nur ihre eigene Klinge, das Geschenk. Du beendest es.';
     const pRemember = st.remembered
-      ? 'In dem Moment, in dem die Presse anlaeuft, kehrt zurueck, wer Du warst. Der letzte Satz gehoert Dir.'
+      ? 'In dem Moment, in dem die Presse anläuft, kehrt zurück, wer Du warst. Der letzte Satz gehört Dir.'
       : 'Du druckst, namenlos. Wer Du warst, bleibt im Nebel.';
 
     const finalize = () => {
@@ -3337,8 +3343,8 @@ class HubSceneV2 extends Phaser.Scene {
     };
 
     const pages = [
-      { text: 'ELARA: Ich drucke eine Wahrheit, mit der die Stadt leben kann. Und dann bleibt nur noch einer, der das ganze Bild traegt. Du. Der Nebel wird sanft sein.', choices: null },
-      { text: '(Harren tritt aus dem Schatten. Er hat alles gehoert.)\nHARREN: Nein. Nicht das. Nicht Du.\n(Es geht schnell und ist nicht geplant. Danach steht sie ueber ihm.)\nELARA, tonlos: Ich wollte das nie.', choices: null, _patricide: true },
+      { text: 'ELARA: Ich drucke eine Wahrheit, mit der die Stadt leben kann. Und dann bleibt nur noch einer, der das ganze Bild trägt. Du. Der Nebel wird sanft sein.', choices: null },
+      { text: '(Harren tritt aus dem Schatten. Er hat alles gehört.)\nHARREN: Nein. Nicht das. Nicht Du.\n(Es geht schnell und ist nicht geplant. Danach steht sie über ihm.)\nELARA, tonlos: Ich wollte das nie.', choices: null, _patricide: true },
       { text: pForesee + '\n\n' + pAllies, choices: null }
     ];
 
@@ -3355,13 +3361,13 @@ class HubSceneV2 extends Phaser.Scene {
       pages.push({ text: pElara, choices: null });
     }
 
-    pages.push({ text: 'Du druckst. Elara verbrennt zuvor das eine belastende Blatt, und Du laesst sie. Die Wahrheit geht raus, unvollstaendig, und Du weisst es.\n\n' + pRemember, choices: [ { label: '[ Die Presse laeuft an ]', action: 'reckoning_done' } ], _isFinal: true });
+    pages.push({ text: 'Du druckst. Elara verbrennt zuvor das eine belastende Blatt, und Du lässt sie. Die Wahrheit geht raus, unvollständig, und Du weisst es.\n\n' + pRemember, choices: [ { label: '[ Die Presse läuft an ]', action: 'reckoning_done' } ], _isFinal: true });
 
     this._pendingReckoningFinalize = finalize;
     this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData, 0);
 
-    // Kamera-Beat fuer den Vatermord: kurzer Shake, wenn die Seite erreicht wird.
-    // (Vereinfachte Inszenierung ueber ein verzoegertes Shake beim Start.)
+    // Kamera-Beat für den Vatermord: kurzer Shake, wenn die Seite erreicht wird.
+    // (Vereinfachte Inszenierung über ein verzögertes Shake beim Start.)
     if (this.cameras && this.cameras.main && this.time && this.time.delayedCall) {
       this.time.delayedCall(400, () => {
         try { this.cameras.main.shake(220, 0.006); } catch (_) {}
@@ -3385,8 +3391,8 @@ class HubSceneV2 extends Phaser.Scene {
     });
   }
 
-  // (Demo-Outro-Splash entfernt — siehe Kommentar an der frueheren Aufrufstelle
-  // in create(). Der Akt-Uebergang nach Q6 wird ueber die normale Titelkarte
+  // (Demo-Outro-Splash entfernt — siehe Kommentar an der früheren Aufrufstelle
+  // in create(). Der Akt-Übergang nach Q6 wird über die normale Titelkarte
   // gezeigt.)
 
   // Shared splash modal — 1 page, 1 button, ESC/Enter/Space dismiss. Used

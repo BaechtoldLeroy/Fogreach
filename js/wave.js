@@ -3,11 +3,11 @@
 // --------------------------------------------------
 // Wave sizing helper
 // --------------------------------------------------
-// Variante A (2026-06): Gegnerzahl rein nach BEGEHBARER Flaeche (konstante
-// Dichte) — NICHT mehr nach Tiefe. Tiefe macht Gegner staerker (HP, enemy.js
+// Variante A (2026-06): Gegnerzahl rein nach BEGEHBARER Fläche (konstante
+// Dichte) — NICHT mehr nach Tiefe. Tiefe macht Gegner stärker (HP, enemy.js
 // statScale +10%/Tiefe), nicht zahlreicher. `walkableAreaPx` = erreichbare
-// Flaeche in px² (window.computeWalkableAreaPx / roomManager). Fehlt sie,
-// faellt die Formel auf den alten tiefen-basierten baseCount zurueck.
+// Fläche in px² (window.computeWalkableAreaPx / roomManager). Fehlt sie,
+// fällt die Formel auf den alten tiefen-basierten baseCount zurück.
 const AREA_PER_ENEMY = 85000; // ~1 Gegner pro ~85k px² begehbar — tunebar
 const ENEMY_COUNT_MIN = 4;
 const ENEMY_COUNT_MAX = 28;
@@ -21,7 +21,7 @@ function computeWaveEnemyTotal(waveNumber, walkableAreaPx) {
     }
     return count;
   }
-  // Fallback: Flaeche unbekannt -> bisheriger tiefen-basierter Wert.
+  // Fallback: Fläche unbekannt -> bisheriger tiefen-basierter Wert.
   const wave = Math.max(1, Math.floor(waveNumber || 1));
   return Math.min(14, 4 + Math.floor(Math.log2(wave) * 1.7));
 }

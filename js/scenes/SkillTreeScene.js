@@ -353,8 +353,8 @@
         // Kosten des nächsten Rangs anzeigen, solange nicht gemaxt.
         if (!isMax) sub += '  ·  ' + _ST_T('skilltree.node.cost', { cost: nextCost });
         if (Array.isArray(node.synergies) && node.synergies.length > 0) {
-          // Nenne die Quell-Knoten: dieser Skill wird staerker, je hoeher die
-          // genannten geskillt sind (z.B. Hammer staerker mit Wirbelwind).
+          // Nenne die Quell-Knoten: dieser Skill wird stärker, je höher die
+          // genannten geskillt sind (z.B. Hammer stärker mit Wirbelwind).
           const srcNames = [];
           node.synergies.forEach((s) => {
             const sn = ST.getNode(s.from);

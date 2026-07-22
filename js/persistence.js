@@ -26,24 +26,24 @@
     KNOWLEDGE_TREE: 'demonfall.knowledgeTree.v1',
     /** Tiefste je erreichte Dungeon-Tiefe (Hinabstieg-Optionen). */
     MAX_DEPTH: 'demonfall_maxDepth',
-    /** Zuletzt im Hinabstieg gewaehlte Tiefe (Dialog-Default). */
+    /** Zuletzt im Hinabstieg gewählte Tiefe (Dialog-Default). */
     LAST_DEPTH: 'demonfall_lastDepth',
-    // --- #63: Diese Keys existierten laengst, standen aber nicht in der
+    // --- #63: Diese Keys existierten längst, standen aber nicht in der
     // Registry — obwohl der Dateikopf behauptet, sie dokumentiere JEDEN Key.
     // Dadurch log clearEverything() ("wipe ABSOLUTELY everything") und
-    // listAllKeys() beide. Nachgetragen; die Slot-Zuordnung fuer diese Keys
-    // haelt js/saveSlots.js (SLOT_KEYS/GLOBAL_KEYS).
+    // listAllKeys() beide. Nachgetragen; die Slot-Zuordnung für diese Keys
+    // hält js/saveSlots.js (SLOT_KEYS/GLOBAL_KEYS).
     /** Fraktions-Ansehen (feature 045). */
     FACTIONS: 'demonfall_factions_v1',
     /** Druckerei-Zustand (feature 046). */
     PRINTING_HOUSE: 'demonfall_printinghouse_v1',
     /** Tutorial-Fortschritt (feature 044). */
     TUTORIAL: 'demonfall_tutorial_v1',
-    /** Skill-Baum: Punkte + Raenge (feature 060). */
+    /** Skill-Baum: Punkte + Ränge (feature 060). */
     SKILL_TREE: 'demonfall.skillTree.v1',
-    /** Endlos-Modus-Bestwert (geraeteweit, kein Spielstand-Fortschritt). */
+    /** Endlos-Modus-Bestwert (geräteweit, kein Spielstand-Fortschritt). */
     ENDLESS_BEST: 'demonfall_endless_best',
-    /** Einmal-Flags fuer die Intro-/Outro-Splashes im Hub. */
+    /** Einmal-Flags für die Intro-/Outro-Splashes im Hub. */
     SEEN_INTRO_SPLASH: 'demonfall_seen_intro_splash',
     SEEN_OUTRO_SPLASH: 'demonfall_seen_outro_splash'
   });
@@ -51,8 +51,8 @@
   // Keys that should be wiped on "new game". SETTINGS is intentionally
   // preserved — players don't expect their volume to reset when they start a
   // new run. LAST_DIFFICULTY is likewise preserved: difficulty is now a
-  // Settings-Regler (kein per-Run-Picker mehr), verhaelt sich also wie ein
-  // Setting und bleibt ueber Neues-Spiel erhalten.
+  // Settings-Regler (kein per-Run-Picker mehr), verhält sich also wie ein
+  // Setting und bleibt über Neues-Spiel erhalten.
   const NEW_GAME_WIPE_KEYS = [
     KEYS.SAVE,
     KEYS.ABILITIES,
@@ -61,7 +61,7 @@
     KEYS.LAST_DEPTH
   ];
 
-  // #63: alle Zugriffe laufen ueber SlotStorage, damit sie den AKTIVEN Slot
+  // #63: alle Zugriffe laufen über SlotStorage, damit sie den AKTIVEN Slot
   // treffen. Fallback auf localStorage, wenn saveSlots.js nicht geladen ist
   // (isolierte Tests) — dann gilt das bisherige Ein-Slot-Verhalten.
   function _store() {
@@ -80,7 +80,7 @@
 
   // Wipe ABSOLUTELY everything (including settings + audio). Used by debug
   // tooling, never by the new-game flow. Betrifft nur den AKTIVEN Slot plus die
-  // globalen Keys — andere Slots bleiben stehen (dafuer gibt es
+  // globalen Keys — andere Slots bleiben stehen (dafür gibt es
   // SaveSlots.deleteSlot).
   function clearEverything() {
     Object.values(KEYS).forEach((key) => {

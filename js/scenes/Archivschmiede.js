@@ -4,7 +4,7 @@
   // ================= Helpers =================
 
   function drawBricks(g, x, y, w, h, bw = 24, bh = 14, gap = 2, col = 0xb8a48e) {
-    // Strenges Clipping, keine Ueberhaenge links
+    // Strenges Clipping, keine Überhänge links
     g.fillStyle(col, 1);
     const stepX = bw + gap, stepY = bh + gap;
     const rows = Math.ceil(h / stepY) + 1;
@@ -35,7 +35,7 @@
 
 function drawGableRoof(g, x, y, w, {
   h = 44,
-  over = 12,                 // Ueberstand links/rechts
+  over = 12,                 // Überstand links/rechts
   base = 0x3b2b1b,
   ridge = 0x24170e,
   shadow = 0x2d1e12
@@ -46,7 +46,7 @@ function drawGableRoof(g, x, y, w, {
   const rx = Math.round(x + w + over);
   const by = Math.round(y);
 
-  // Dachflaeche
+  // Dachfläche
   g.fillStyle(base, 1);
   g.fillTriangle(apexX, apexY, lx, by, rx, by);
 
@@ -54,7 +54,7 @@ function drawGableRoof(g, x, y, w, {
   g.fillStyle(shadow, 0.35);
   g.fillTriangle(apexX, Math.round(by - h * 0.55), lx + 3, by - 3, rx - 3, by - 3);
 
-  // Traufe ueber voller Breite inkl. Ueberstand
+  // Traufe über voller Breite inkl. Überstand
   g.fillStyle(0x2a1d14, 1);
   g.fillRect(lx + 1, by - 2, (rx - lx) - 2, 2);
 
@@ -224,7 +224,7 @@ function drawGableRoof(g, x, y, w, {
     g.lineStyle(2, 0x2a2a2a, 1).strokeRoundedRect(lx - 10, ly - 4, 20, 28, 4);
     g.fillStyle(0xffe2a8, 0.18).fillCircle(lx, ly + 6, 26);
 
-    // Tuer
+    // Tür
     const doorW = 68, doorH = 92, doorX = Math.round(W * 0.5 - doorW * 0.5), doorY = bodyY + bodyH - doorH - 10;
     drawArchedDoor(g, doorX, doorY, doorW, doorH);
 
@@ -240,7 +240,7 @@ function drawGableRoof(g, x, y, w, {
     const rt = scene.make.renderTexture({ x: 0, y: 0, width: W + PAD * 2, height: H + PAD * 2, add: false });
     rt.draw(g, PAD, PAD);
 
-    // Label schaerfer
+    // Label schärfer
     const txt = scene.add.text(W / 2 + PAD, signY + signH * 0.5 + PAD, 'ARCHIVSCHMIEDE', {
       fontFamily: 'serif',
       fontSize: 40,
@@ -304,20 +304,20 @@ function drawGableRoof(g, x, y, w, {
     g.arc(shedX + shedW / 2, archBaseY + 35, (openW / 2)+8, Math.PI, 0);
     g.fillPath();
 
-    // Oeffnung hochgezogen mit elliptischem Bogen
-    const joinY = archBaseY;                  // Federhoehe des Bogens
-    const baseY = shedY + shedH - 12;         // wie weit die Oeffnung nach unten reicht
+    // Öffnung hochgezogen mit elliptischem Bogen
+    const joinY = archBaseY;                  // Federhöhe des Bogens
+    const baseY = shedY + shedH - 12;         // wie weit die Öffnung nach unten reicht
     const cx = shedX + shedW / 2;
     const rx = (openW / 2) + 8;               // Breite der Kappe
-    const ry = 62;                            // Hoehe der Kappe  → macht es hochgezogen
+    const ry = 62;                            // Höhe der Kappe  → macht es hochgezogen
 
-    // Ellipse fuer die obere Haelfte des Bogens
+    // Ellipse für die obere Hälfte des Bogens
     const curve = new Phaser.Curves.Ellipse(cx, joinY, rx, ry);
     curve.setStartAngle(180);                  // von links
-    curve.setEndAngle(360);                    // nach rechts, obere Haelfte
+    curve.setEndAngle(360);                    // nach rechts, obere Hälfte
     curve.setClockwise(true);
 
-    const pts = curve.getPoints(48);           // Stuetzpunkte fuer den Bogen
+    const pts = curve.getPoints(48);           // Stützpunkte für den Bogen
 
     g.fillStyle(0x1a1a1a, 1);
     g.beginPath();
@@ -337,11 +337,11 @@ function drawGableRoof(g, x, y, w, {
     g.closePath();
     g.fillPath();
 
-    // optionale Kontur fuer eine saubere obere Kante
+    // optionale Kontur für eine saubere obere Kante
     g.lineStyle(6, 0x1a1a1a, 1);
     curve.draw(g, 48);
 
-    // Feuer zuerst, damit es hinter der Oeffnung liegt
+    // Feuer zuerst, damit es hinter der Öffnung liegt
     g.fillStyle(0x2a1d15, 1).fillRoundedRect(forgeX - 2, forgeY - 2, forgeW + 4, forgeH + 4, 4);
     g.fillStyle(0x4b2f1f, 1).fillRoundedRect(forgeX, forgeY, forgeW, forgeH, 3);
     g.fillStyle(0xff5a1a, 0.95); flamePath(g, forgeX + 10, forgeY + 10, forgeW - 20, forgeH - 18); g.fillPath();

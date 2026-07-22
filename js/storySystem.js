@@ -4,8 +4,8 @@
   'use strict';
 
   // ---- Act Definitions (Feature 062, v4-Doppelagenten-Struktur) ----
-  // Fuenf Akte (Index 0-4). Die internen ids bleiben aus Kompatibilitaet
-  // erhalten (ACT_NARRATIVES, NPC_DIALOGUE und die i18n-Keys haengen daran) —
+  // Fünf Akte (Index 0-4). Die internen ids bleiben aus Kompatibilität
+  // erhalten (ACT_NARRATIVES, NPC_DIALOGUE und die i18n-Keys hängen daran) —
   // nur die ANZEIGENAMEN sind v4. Die alten Akte 5/6 (rebellion/offenbarung)
   // entfallen; das Ende ist jetzt Teil von Akt 4. triggerWave/triggerQuests
   // sind weg (nur das entfernte _computeActIndex nutzte sie — Aufstieg ist rein
@@ -20,10 +20,10 @@
 
   // ---- Narrative texts shown at act transitions ----
   const ACT_NARRATIVES = {
-    auftrag:       'Du erwachst in der Archivschmiede. Dein Kopf droehnt. Ein Mann in Ratsketten steht ueber dir: \'Der Keller muss gesaeubert werden, Archivschmied. Wilde Tiere treiben sich dort herum.\'',
-    treuer_diener: 'Ratsherr Aldric klopft dir auf die Schulter. \'Gut gemacht. Aber es gibt groessere Bedrohungen — Eindringlinge stehlen unsere Archive. Wir brauchen dich.\'',
-    erste_risse:   'Die Dokumente des besiegten Anfuehrers tragen das Siegel des Kettenrats. Aldric lacht nervoes: \'Faelschungen. Natuerlich Faelschungen.\' Aber Branka blickt dir schweigend in die Augen.',
-    wahrheit:      'In der Ritualkammer: Blut, Symbole, Ketten. Das ist kein Lager der Eindringlinge. Das ist eine Beschwoerungskammer. Der Rat luegt.',
+    auftrag:       'Du erwachst in der Archivschmiede. Dein Kopf dröhnt. Ein Mann in Ratsketten steht über dir: \'Der Keller muss gesäubert werden, Archivschmied. Wilde Tiere treiben sich dort herum.\'',
+    treuer_diener: 'Ratsherr Aldric klopft dir auf die Schulter. \'Gut gemacht. Aber es gibt grössere Bedrohungen — Eindringlinge stehlen unsere Archive. Wir brauchen dich.\'',
+    erste_risse:   'Die Dokumente des besiegten Anführers tragen das Siegel des Kettenrats. Aldric lacht nervös: \'Fälschungen. Natürlich Fälschungen.\' Aber Branka blickt dir schweigend in die Augen.',
+    wahrheit:      'In der Ritualkammer: Blut, Symbole, Ketten. Das ist kein Lager der Eindringlinge. Das ist eine Beschwörungskammer. Der Rat lügt.',
     bruch:         '\'Du stellst zu viele Fragen, Archivschmied.\' Aldrics Stimme ist kalt. Hinter ihm stehen bewaffnete Wachen. \'Erledige deinen Auftrag — oder wir erledigen dich.\''
   };
 
@@ -31,24 +31,24 @@
   const NPC_DIALOGUE = {
     aldric: {
       auftrag: [
-        'Der Keller ist voller Ungeziefer. Raeum das auf, Archivschmied.',
-        'Der Rat hat dich aus gutem Grund hierher gestellt. Zeig, dass du nuetzlich bist.',
+        'Der Keller ist voller Ungeziefer. Räum das auf, Archivschmied.',
+        'Der Rat hat dich aus gutem Grund hierher gestellt. Zeig, dass du nützlich bist.',
         'Frag nicht so viel. Tu einfach, was man dir sagt.'
       ],
       treuer_diener: [
-        'Du hast dich bewaehrt. Jetzt kommen die wahren Aufgaben.',
+        'Du hast dich bewährt. Jetzt kommen die wahren Aufgaben.',
         'Eindringlinge bedrohen unsere Archive. Stoppe sie, bevor sie Schaden anrichten.',
-        'Der Rat vertraut dir. Enttaeusche uns nicht.'
+        'Der Rat vertraut dir. Enttäusche uns nicht.'
       ],
       erste_risse: [
-        'Faelschungen, sage ich dir! Glaub nicht alles, was du findest.',
+        'Fälschungen, sage ich dir! Glaub nicht alles, was du findest.',
         'Manche Dokumente sind... vertraulich. Lass die Finger davon.',
-        'Du arbeitest fuer den Rat. Vergiss das nicht.'
+        'Du arbeitest für den Rat. Vergiss das nicht.'
       ],
       wahrheit: [
         'Was du gesehen hast, bleibt unter uns. Verstanden?',
-        'Der Rat hat seine Gruende. Hinterfrage sie nicht.',
-        'Noch kannst du zurueck. Waehle weise, Archivschmied.'
+        'Der Rat hat seine Gründe. Hinterfrage sie nicht.',
+        'Noch kannst du zurück. Wähle weise, Archivschmied.'
       ],
       bruch: [
         'Du stellst zu viele Fragen. Das endet nie gut.',
@@ -58,83 +58,83 @@
     },
     branka: {
       auftrag: [
-        'Stahl allein schneidet die Luegen des Rates nicht. Erst wenn jede Klinge Wissen traegt, faellt ihre Maske.',
-        'Im Keller unter dem Rathaus lagern Protokolle aus Daemonenverhoeren. Bring mir Abschriften, und ich veredele deine Artefakte.',
+        'Stahl allein schneidet die Lügen des Rates nicht. Erst wenn jede Klinge Wissen trägt, fällt ihre Maske.',
+        'Im Keller unter dem Rathaus lagern Protokolle aus Dämonenverhören. Bring mir Abschriften, und ich veredele deine Artefakte.',
         'Sprich draussen leise. Die Aufseher des Kettenrats tragen inzwischen die Farben der Stadtgarde.'
       ],
       treuer_diener: [
         'Deine Fortschritte sind bemerkenswert. Die alten Protokolle enthalten mehr, als der Rat zugeben will.',
-        'Ich habe verbotene Schmiedetechniken gefunden. Die Daemonen selbst haben sie einst gelehrt.',
+        'Ich habe verbotene Schmiedetechniken gefunden. Die Dämonen selbst haben sie einst gelehrt.',
         'Der Rat verbietet bestimmte Legierungen. Frag dich, warum.'
       ],
       erste_risse: [
-        'Diese Ruestungen... die Masse stimmen nicht. Sie sind fuer Gefangene, nicht fuer Soldaten.',
+        'Diese Rüstungen... die Masse stimmen nicht. Sie sind für Gefangene, nicht für Soldaten.',
         'Ich schmiede, was der Rat verlangt. Aber ich beginne zu zweifeln.',
         'Jemand muss die Wahrheit herausfinden. Bist du bereit?'
       ],
       wahrheit: [
-        'Die Siegel unter dem Rathaus pulsieren staerker. Jemand fuettert sie mit Angst.',
+        'Die Siegel unter dem Rathaus pulsieren stärker. Jemand füttert sie mit Angst.',
         'Ich schmiede jetzt im Verborgenen. Der Rat darf nichts von den neuen Klingen erfahren.',
-        'Jede Waffe, die ich fertige, traegt ein Zeichen des Widerstands.'
+        'Jede Waffe, die ich fertige, trägt ein Zeichen des Widerstands.'
       ],
       bruch: [
         'Der Rat hat meine Werkstatt durchsucht. Sie wissen, dass ich zweifle.',
-        'Wir brauchen Waffen. Nicht fuer den Rat — fuer UNS.',
-        'Die Zeit der Geheimnisse ist vorbei. Wir muessen handeln.'
+        'Wir brauchen Waffen. Nicht für den Rat — für UNS.',
+        'Die Zeit der Geheimnisse ist vorbei. Wir müssen handeln.'
       ]
     },
     thom: {
       auftrag: [
-        'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Traeume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
+        'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Träume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
         'Bring mir Beweise aus dem Rathauskeller. Jede Spalte, die wir drucken, nimmt der Angst einen Zoll.',
-        'Verteile nichts Ungeprueftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
+        'Verteile nichts Ungeprüftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
       ],
       treuer_diener: [
-        'Die ersten Beweise sind erschuetternd. Der Rat hat Daemonen nicht verbannt — er hat sie eingeladen.',
-        'Meine Druckerpresse laeuft heiss. Die Wahrheit will ans Licht.',
-        'Jedes Dokument, das du findest, ist eine Kugel gegen die Luegen des Rates.'
+        'Die ersten Beweise sind erschütternd. Der Rat hat Dämonen nicht verbannt — er hat sie eingeladen.',
+        'Meine Druckerpresse läuft heiss. Die Wahrheit will ans Licht.',
+        'Jedes Dokument, das du findest, ist eine Kugel gegen die Lügen des Rates.'
       ],
       erste_risse: [
         'Die Dokumente, die du gefunden hast... sie tragen das Siegel des Rats. Offiziell.',
-        'Ich drucke seit Jahren. Aber das hier — das ist groesser als alles zuvor.',
-        'Wir muessen vorsichtig sein. Der Rat hat Augen ueberall.'
+        'Ich drucke seit Jahren. Aber das hier — das ist grösser als alles zuvor.',
+        'Wir müssen vorsichtig sein. Der Rat hat Augen überall.'
       ],
       wahrheit: [
-        'Ich habe genug gedruckt, was der Rat will. Zeit fuer die Wahrheit.',
+        'Ich habe genug gedruckt, was der Rat will. Zeit für die Wahrheit.',
         'Die Druckerpresse braucht mehr Tinte. Die Wahrheit ist umfangreicher als gedacht.',
-        'Ich drucke jetzt auch Karten der unterirdischen Gaenge. Mara liefert die Skizzen.'
+        'Ich drucke jetzt auch Karten der unterirdischen Gänge. Mara liefert die Skizzen.'
       ],
       bruch: [
-        'Der Rat hat meine alte Presse zerstoert. Aber ich habe laengst drei neue versteckt.',
-        'Jeder Durchlauf ist eine Chance, Flugblaetter zu verteilen.',
-        'Die Buerger muessen wissen, was unter ihren Fuessen geschieht.'
+        'Der Rat hat meine alte Presse zerstört. Aber ich habe längst drei neue versteckt.',
+        'Jeder Durchlauf ist eine Chance, Flugblätter zu verteilen.',
+        'Die Bürger müssen wissen, was unter ihren Füssen geschieht.'
       ]
     },
     mara: {
       auftrag: [
-        'Die Schreiber des Rates markieren Haeuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
-        'Der Zeremonienmeister besitzt neue Siegel. Sie holen Daemonen als stilles Archiv.',
+        'Die Schreiber des Rates markieren Häuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
+        'Der Zeremonienmeister besitzt neue Siegel. Sie holen Dämonen als stilles Archiv.',
         'Sichere Augen im Rathauskeller. Jedes Siegel, das du brichst, lockert ihre Ketten an der Stadt.'
       ],
       treuer_diener: [
-        'Meine Spaeher haben neue Gaenge unter dem Rathaus entdeckt. Die Siegel werden staerker.',
+        'Meine Späher haben neue Gänge unter dem Rathaus entdeckt. Die Siegel werden stärker.',
         'Der Zeremonienmeister wechselt seine Routen. Er ahnt, dass wir ihm folgen.',
-        'Jedes gebrochene Siegel schwaecht seinen Griff. Mach weiter.'
+        'Jedes gebrochene Siegel schwächt seinen Griff. Mach weiter.'
       ],
       erste_risse: [
         'Du erinnerst dich nicht. Aber ich kenne dich.',
-        'Die Risse in der Fassade des Rats werden groesser. Nutze sie.',
-        'Vertraue nicht blind. Auch nicht mir. Aber hoer zu.'
+        'Die Risse in der Fassade des Rats werden grösser. Nutze sie.',
+        'Vertraue nicht blind. Auch nicht mir. Aber hör zu.'
       ],
       wahrheit: [
         'Der Kettenmeister bewacht die ersten echten Beweise. Besiege ihn.',
-        'Die unterirdischen Gaenge fuehren tiefer als gedacht. Dort unten lebt etwas.',
-        'Ich habe Karten gezeichnet. Die Siegel bilden ein Muster — ein Beschwoerungskreis unter der ganzen Stadt.'
+        'Die unterirdischen Gänge führen tiefer als gedacht. Dort unten lebt etwas.',
+        'Ich habe Karten gezeichnet. Die Siegel bilden ein Muster — ein Beschwörungskreis unter der ganzen Stadt.'
       ],
       bruch: [
         'Aldric hat seine Maske fallen lassen. Gut. Jetzt wissen alle, woran sie sind.',
         'Mein Netzwerk ist bereit. Wir brauchen nur noch den Funken.',
-        'Wir muessen vorsichtig sein. Der Zeremonienmeister weiss, dass wir kommen.'
+        'Wir müssen vorsichtig sein. Der Zeremonienmeister weiss, dass wir kommen.'
       ]
     },
     harren: {
@@ -145,28 +145,28 @@
       ],
       treuer_diener: [
         'Bitte, finde meine Tochter. Ich flehe dich an.',
-        'Mara hat mir erzaehlt, du seist vertrauenswuerdig. Hilf mir.',
-        'Elara hat ein Tagebuch gefuehrt. Wenn du es findest...'
+        'Mara hat mir erzählt, du seist vertrauenswürdig. Hilf mir.',
+        'Elara hat ein Tagebuch geführt. Wenn du es findest...'
       ],
       erste_risse: [
-        'Du hast Hinweise gefunden? Erzaehl mir alles!',
-        'Elara lebt... das ist alles, was zaehlt.',
+        'Du hast Hinweise gefunden? Erzähl mir alles!',
+        'Elara lebt... das ist alles, was zählt.',
         'Was hat der Rat mit meiner Tochter zu tun?'
       ],
       wahrheit: [
-        'Der Rat hat meine Tochter benutzt? Fuer ihre Rituale?',
+        'Der Rat hat meine Tochter benutzt? Für ihre Rituale?',
         'Ich werde ihnen nie vergeben. Nie.',
-        'Finde Elara. Bring sie zurueck. Bitte.'
+        'Finde Elara. Bring sie zurück. Bitte.'
       ],
       bruch: [
-        'Aldric hat uns alle belogen. Auch ueber Elara.',
-        'Meine Tochter ist staerker, als sie denken. Sie wird ueberleben.',
-        'Ich bin zu alt zum Kaempfen. Aber ich kann helfen.'
+        'Aldric hat uns alle belogen. Auch über Elara.',
+        'Meine Tochter ist stärker, als sie denken. Sie wird überleben.',
+        'Ich bin zu alt zum Kämpfen. Aber ich kann helfen.'
       ]
     },
     elara: {
       erste_risse: [
-        'Ich bin nicht entfuehrt worden. Ich bin geflohen.',
+        'Ich bin nicht entführt worden. Ich bin geflohen.',
         'Hier — lies das. Dann verstehst du.',
         'Der Rat hat mich benutzt. Aber ich habe gelernt.'
       ],
@@ -176,7 +176,7 @@
         'Ich kenne ihre Geheimnisse. Alle.'
       ],
       bruch: [
-        'Nimm das. Ich habe es fuer dich geschmiedet. Fuer den Fall, dass...',
+        'Nimm das. Ich habe es für dich geschmiedet. Für den Fall, dass...',
         'Aldric wird dich jagen. Sei vorsichtig.',
         'Ich muss allein weiter. Vertrau mir.'
       ]
@@ -186,12 +186,12 @@
   // ---- Wave Milestone Events (ENTFERNT) ----
   // Die "Tiefe N erreicht"-Splashes (Wave 5/10/15/20/30/40) wurden entfernt: sie
   // trugen keine Story mehr (die Akte laufen seit v4 rein quest-getrieben) und
-  // haeuften sich beim Hub-Ruecksprung mit den Akt-Titelkarten. Die "Tiefe
+  // häuften sich beim Hub-Rücksprung mit den Akt-Titelkarten. Die "Tiefe
   // erreicht"-Info liefert ohnehin die Run-Summary. Kein pendingMilestone,
   // kein Priority-2-Zweig in consumePendingEvent mehr.
 
   // ---- Special Ending Text ----
-  const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede haemmert fuer die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nDoch wo Elara einst stand, ist nur Leere. Sie verschwand mit dem Schattenrat — und mit ihr eine Wahrheit, die du nie ganz begreifen wirst.\n\nDu hast die Stadt befreit. Doch der Nebel fluestert noch ihren Namen.';
+  const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede hämmert für die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nDoch wo Elara einst stand, ist nur Leere. Sie verschwand mit dem Schattenrat — und mit ihr eine Wahrheit, die du nie ganz begreifen wirst.\n\nDu hast die Stadt befreit. Doch der Nebel flüstert noch ihren Namen.';
 
   // ---- i18n bootstrap ----
   // Auto-register all German strings so consumers + EN translations can layer
@@ -408,7 +408,7 @@
 
   // Feature 062: _computeActIndex + _getCompletedQuestCount (tiefen-/quest-zahl-
   // basierter Aufstieg) entfernt. Sie waren seit Feature 050 tot — der Aufstieg
-  // ist rein quest-getrieben ueber advanceToAct(). Damit fielen auch die
+  // ist rein quest-getrieben über advanceToAct(). Damit fielen auch die
   // triggerWave/triggerQuests-Felder in STORY_ACTS weg.
 
   // Feature 050 FR-08: explicit quest-triggered act advancement.
@@ -432,9 +432,9 @@
   }
 
   // Feature 062: expliziter Reset auf Akt 0. advanceToAct ist monoton (nur
-  // aufwaerts) — beim Laden eines Alt-Spielstands (questSystem.loadQuestSaveData
-  // mit storyVersion < 4) muss der Akt hart auf 0 zurueck. Setzt die narrative
-  // Fortschritts-Sicht zurueck (Akt, gesehene Ereignisse, Pending-Splashes),
+  // aufwärts) — beim Laden eines Alt-Spielstands (questSystem.loadQuestSaveData
+  // mit storyVersion < 4) muss der Akt hart auf 0 zurück. Setzt die narrative
+  // Fortschritts-Sicht zurück (Akt, gesehene Ereignisse, Pending-Splashes),
   // damit die neue Story von vorn beginnt.
   function resetToAct0() {
     storyState.currentActIndex = 0;
@@ -645,9 +645,9 @@
     var container = scene.add.container(w / 2, h / 2).setDepth(6001).setScrollFactor(0);
 
     // Act number label (only for act transitions, not milestones)
-    // Nur Akt-Uebergaenge tragen eine Nummer ("Akt N"). Der Epilog
-    // (actNumber null) laeuft ohne Label — frueher stand hier "Meilenstein",
-    // was seit dem Wegfall der Wave-Meilensteine irrefuehrend war.
+    // Nur Akt-Übergänge tragen eine Nummer ("Akt N"). Der Epilog
+    // (actNumber null) läuft ohne Label — früher stand hier "Meilenstein",
+    // was seit dem Wegfall der Wave-Meilensteine irreführend war.
     if (eventData.actNumber) {
       var actLabel = scene.add.text(0, -80, 'Akt ' + eventData.actNumber, {
         fontFamily: 'serif',
@@ -749,18 +749,23 @@
     bg.lineStyle(2, 0x484850, 0.9).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
     container.add(bg);
 
-    var y = -panelH / 2 + pad;
     var innerW = panelW - pad * 2;
     var leftX = -panelW / 2 + pad;
 
-    // Title
-    var title = scene.add.text(0, y, 'Tagebuch', {
+    // Titel bleibt fest oben stehen (scrollt nicht mit).
+    var title = scene.add.text(0, -panelH / 2 + pad, 'Tagebuch', {
       fontFamily: 'serif',
       fontSize: 26,
       color: '#ffd700'
     }).setOrigin(0.5, 0);
     container.add(title);
-    y += title.height + 14;
+
+    // Alles Weitere kommt in einen scrollbaren Inhalts-Container zwischen
+    // Titel und Schliess-Hinweis. y ist ab hier lokal (0 = Oberkante Inhalt).
+    var contentTopRel = -panelH / 2 + pad + title.height + 14;
+    var content = scene.add.container(0, contentTopRel).setScrollFactor(0);
+    container.add(content);
+    var y = 0;
 
     // Current act
     var actInfo = scene.add.text(leftX, y,
@@ -769,7 +774,7 @@
       fontSize: 18,
       color: '#f1e9d8'
     }).setOrigin(0, 0);
-    container.add(actInfo);
+    content.add(actInfo);
     y += actInfo.height + 6;
 
     // Act narrative
@@ -781,27 +786,27 @@
       fontStyle: 'italic',
       lineSpacing: 3
     }).setOrigin(0, 0);
-    container.add(narrative);
+    content.add(narrative);
     y += narrative.height + 14;
 
     // Stats bar
-    var statsStr = 'Hoechste Welle: ' + data.highestWave
+    var statsStr = 'H\u00f6chste Welle: ' + data.highestWave
       + '  |  Gegner besiegt: ' + data.totalKills
-      + '  |  Raeume: ' + data.totalRoomsCleared
+      + '  |  R\u00e4ume: ' + data.totalRoomsCleared
       + '  |  Wellen: ' + data.totalWavesSurvived;
     var statsText = scene.add.text(leftX, y, statsStr, {
       fontFamily: 'monospace',
       fontSize: 12,
       color: '#8a8a9a'
     }).setOrigin(0, 0);
-    container.add(statsText);
+    content.add(statsText);
     y += statsText.height + 14;
 
     // Divider
     var divGfx = scene.add.graphics();
     divGfx.lineStyle(1, 0x484850, 0.6);
     divGfx.lineBetween(leftX, y, leftX + innerW, y);
-    container.add(divGfx);
+    content.add(divGfx);
     y += 10;
 
     // Active quests with progress bars
@@ -810,7 +815,7 @@
       fontSize: 16,
       color: '#88bbff'
     }).setOrigin(0, 0);
-    container.add(activeHeader);
+    content.add(activeHeader);
     y += activeHeader.height + 6;
 
     if (data.activeQuests.length === 0) {
@@ -819,7 +824,7 @@
         fontSize: 13,
         color: '#666666'
       }).setOrigin(0, 0);
-      container.add(noActive);
+      content.add(noActive);
       y += noActive.height + 8;
     } else {
       data.activeQuests.forEach(function (q) {
@@ -830,7 +835,7 @@
           color: '#d8d2c3',
           wordWrap: { width: innerW - 16 }
         }).setOrigin(0, 0);
-        container.add(line);
+        content.add(line);
         y += line.height + 3;
 
         // Progress bar
@@ -838,12 +843,12 @@
         var barH = 8;
         var barBg = scene.add.graphics();
         barBg.fillStyle(0x222230, 0.8).fillRoundedRect(leftX + 12, y, barW, barH, 3);
-        container.add(barBg);
+        content.add(barBg);
 
         var fillW = Math.max(2, Math.floor(barW * (q.progressPct / 100)));
         var barFill = scene.add.graphics();
         barFill.fillStyle(0x4488ff, 0.9).fillRoundedRect(leftX + 12, y, fillW, barH, 3);
-        container.add(barFill);
+        content.add(barFill);
         y += barH + 6;
 
         // Description
@@ -853,7 +858,7 @@
           color: '#8a8a9a',
           wordWrap: { width: innerW - 24 }
         }).setOrigin(0, 0);
-        container.add(desc);
+        content.add(desc);
         y += desc.height + 8;
       });
     }
@@ -865,7 +870,7 @@
       fontSize: 16,
       color: '#88ff88'
     }).setOrigin(0, 0);
-    container.add(completedHeader);
+    content.add(completedHeader);
     y += completedHeader.height + 6;
 
     if (data.completedQuests.length === 0) {
@@ -874,7 +879,7 @@
         fontSize: 13,
         color: '#666666'
       }).setOrigin(0, 0);
-      container.add(noCompleted);
+      content.add(noCompleted);
     } else {
       data.completedQuests.forEach(function (q) {
         var line = scene.add.text(leftX + 12, y,
@@ -884,7 +889,7 @@
           color: '#88aa88',
           wordWrap: { width: innerW - 16 }
         }).setOrigin(0, 0);
-        container.add(line);
+        content.add(line);
         y += line.height + 2;
 
         if (q.rewards) {
@@ -895,13 +900,15 @@
             color: '#6a8a6a',
             wordWrap: { width: innerW - 28 }
           }).setOrigin(0, 0);
-          container.add(rewardLine);
+          content.add(rewardLine);
           y += rewardLine.height + 4;
         }
       });
     }
 
-    // Close hint
+    var contentH = y;
+
+    // Schliess-Hinweis bleibt fest unten stehen (scrollt nicht mit).
     var hint = scene.add.text(0, panelH / 2 - pad, 'J / ESC: schliessen', {
       fontFamily: 'monospace',
       fontSize: 14,
@@ -909,12 +916,58 @@
     }).setOrigin(0.5, 1);
     container.add(hint);
 
+    // Sichtbarer Ausschnitt zwischen Titel-Unterkante und Hinweis-Oberkante.
+    var viewTopScreen = h / 2 + contentTopRel;
+    var viewBottomRel = panelH / 2 - pad - hint.height - 8;
+    var viewH = (h / 2 + viewBottomRel) - viewTopScreen;
+
+    // Scroll nur einrichten, wenn der Inhalt wirklich überläuft — sonst
+    // überlappen abgeschlossene Aufgaben die untere Menükante.
+    var maskG = null, track = null, thumb = null, wheelHandler = null;
+    var scrollMax = Math.max(0, contentH - viewH);
+    if (scrollMax > 0) {
+      maskG = scene.make.graphics();
+      if (typeof maskG.setScrollFactor === 'function') maskG.setScrollFactor(0);
+      maskG.fillStyle(0xffffff).fillRect(w / 2 - panelW / 2 + 4, viewTopScreen, panelW - 8, viewH);
+      content.setMask(maskG.createGeometryMask());
+
+      var trackX = w / 2 + panelW / 2 - 12;
+      track = scene.add.rectangle(trackX, viewTopScreen + viewH / 2, 6, viewH, 0x000000, 0.35)
+        .setScrollFactor(0).setDepth(6002);
+      var thumbH = Math.max(24, Math.round(viewH * (viewH / contentH)));
+      var minThumbY = viewTopScreen + thumbH / 2;
+      var maxThumbY = viewTopScreen + viewH - thumbH / 2;
+      thumb = scene.add.rectangle(trackX, minThumbY, 9, thumbH, 0xd4a543, 0.9)
+        .setScrollFactor(0).setDepth(6003).setInteractive({ useHandCursor: true });
+      var scrollY = 0;
+      var applyScroll = function () {
+        scrollY = Phaser.Math.Clamp(scrollY, 0, scrollMax);
+        content.y = contentTopRel - scrollY;
+        var frac = scrollMax > 0 ? scrollY / scrollMax : 0;
+        thumb.y = minThumbY + frac * (maxThumbY - minThumbY);
+      };
+      scene.input.setDraggable(thumb);
+      thumb.on('drag', function (p, dx, dy) {
+        var span = Math.max(1, maxThumbY - minThumbY);
+        scrollY = Phaser.Math.Clamp((dy - minThumbY) / span, 0, 1) * scrollMax;
+        applyScroll();
+      });
+      wheelHandler = function (p, over, dx, dy) { scrollY += dy * 0.5; applyScroll(); };
+      scene.input.on('wheel', wheelHandler);
+    }
+
     var closed = false;
     var close = function () {
       if (closed) return;
       closed = true;
+      if (wheelHandler) { try { scene.input.off('wheel', wheelHandler); } catch (e) {} }
+      if (track) { try { track.destroy(); } catch (e) {} }
+      if (thumb) { try { thumb.destroy(); } catch (e) {} }
+      if (maskG) { try { maskG.destroy(); } catch (e) {} }
       overlay.destroy();
       container.destroy(true);
+      scene.input.keyboard.off('keydown-J', close);
+      scene.input.keyboard.off('keydown-ESC', close);
       if (typeof onClose === 'function') onClose();
     };
 

@@ -330,7 +330,7 @@
       return;
     }
 
-    // Karten-Auswahl pausiert das Spiel voll (frueher lief im Dungeon alles
+    // Karten-Auswahl pausiert das Spiel voll (früher lief im Dungeon alles
     // weiter: Gegner, Projektile, Cooldowns, Countdowns).
     if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
 
@@ -389,7 +389,7 @@
       try { overlay.destroy(); } catch (e) {}
       try { title.destroy(); } catch (e) {}
       cardObjects.forEach((g) => { try { g.destroy(); } catch (e) {} });
-      // Spiel-Pause aufheben (jeder Schliess-Pfad laeuft hierdurch).
+      // Spiel-Pause aufheben (jeder Schliess-Pfad läuft hierdurch).
       if (typeof window.resumeGameClock === 'function') window.resumeGameClock(scene);
     };
 

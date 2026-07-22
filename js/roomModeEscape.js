@@ -4,8 +4,8 @@
  * "Halte durch, bis der Fluchtweg frei ist": ein KURZER, dichter Gauntlet
  * mit hohem Nachschub-Druck (frenetischer als survival). Die Treppe öffnet,
  * wenn der Timer abläuft. Self-registrierend. HUD/Banner rendert WP05.
- * (Eine echte "erreiche-diesen-Ausgang"-Variante braeuchte Tür-System-
- * Integration — bewusst als spaeteres Upgrade offen gelassen.)
+ * (Eine echte "erreiche-diesen-Ausgang"-Variante bräuchte Tür-System-
+ * Integration — bewusst als späteres Upgrade offen gelassen.)
  * ===================================================================== */
 (function () {
   'use strict';
@@ -26,7 +26,7 @@
   var BASE_SECONDS = 30;      // Startdauer (war 18) — bewusster Fluchtdruck
   var MAX_BONUS = 30;         // bis +30s in der Tiefe (Deckel 60s)
   var SPAWN_INTERVAL = 2.0;   // dichter Nachschub
-  var SPAWN_BATCH = 3;        // groessere Schuebe
+  var SPAWN_BATCH = 3;        // grössere Schübe
   var MAX_CONCURRENT = 16;
 
   function _depthSeconds() {

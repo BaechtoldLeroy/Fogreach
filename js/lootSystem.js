@@ -391,8 +391,8 @@ if (window.i18n) {
       valueType: 'percent', range: Object.freeze({ min: 8, max: 41 }), iLevelMin: 5, weight: 30,
       appliesTo: Object.freeze(['head', 'boots']), tooltipText: '+{value}% Gold Find' }),
 
-    // === D2-artige Kern-Attribute (4, #60) — flach, nur ueber Items. Fliessen
-    // in recalcDerived: Staerke->Schaden%, Geschick->Krit+Tempo, Vitalitaet->LP,
+    // === D2-artige Kern-Attribute (4, #60) — flach, nur über Items. Fliessen
+    // in recalcDerived: Stärke->Schaden%, Geschick->Krit+Tempo, Vitalität->LP,
     // Fokus->globale Cooldown-Reduktion. Je 2 Slot-Typen (Build-Differenzierung).
     Object.freeze({ id: 'attr_strength', displayName: 'of Strength', position: 'suffix', statKey: 'strength',
       valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 2, weight: 70,
@@ -799,7 +799,7 @@ if (window.i18n) {
     const _kt = (typeof window !== 'undefined') ? window.knowledgeTreeBuffs : null;
     const ktMf = (_kt && typeof _kt.magicFindMult === 'number' && _kt.magicFindMult > 0)
       ? _kt.magicFindMult : 1;
-    // Optionaler Extra-Qualitaets-Bias (z. B. Blindkauf): multipliziert auf die
+    // Optionaler Extra-Qualitäts-Bias (z. B. Blindkauf): multipliziert auf die
     // bestehenden Boni, sodass die Quelle IMMER >= Basis-Odds rollt.
     const _extra = (typeof qualityBias === 'number' && qualityBias > 0) ? qualityBias : 1;
     const bias = phBias * ktMf * _extra;
@@ -966,8 +966,8 @@ if (window.i18n) {
       const s2 = _affixName(suffixes[1]);
       name = (p1 + ' ' + p2 + ' ' + baseName + ' ' + s1 + ' ' + s2).trim().replace(/\s+/g, ' ');
       if (name.length > 50) {
-        // Zu lang -> auf 1 Prefix + 1 Suffix kuerzen (ohne sichtbaren Tag;
-        // die Raritaet zeigt sich ueber Farbe/Tooltip, nicht im Namen).
+        // Zu lang -> auf 1 Prefix + 1 Suffix kürzen (ohne sichtbaren Tag;
+        // die Rarität zeigt sich über Farbe/Tooltip, nicht im Namen).
         name = (p1 + ' ' + baseName + ' ' + s1).trim().replace(/\s+/g, ' ');
       }
     }
@@ -1172,7 +1172,7 @@ if (window.i18n) {
   function getPotionChargesMax() { return POTION_BURST_LIMIT; }
 
   // Herz-Drops (Health-Pickups) skalieren leicht mit der Tiefe: flache +2 waren
-  // auf Tiefe 25 praktisch wertlos, weil MaxHP ueber den Run mitwaechst. +1 je
+  // auf Tiefe 25 praktisch wertlos, weil MaxHP über den Run mitwächst. +1 je
   // HEART_HEAL_PER_DEPTH Tiefen, gedeckelt — bewusst flach, damit Herzen ein
   // Zwischendurch-Heal bleiben und keinen Trank ersetzen.
   const HEART_HEAL_BASE = 2;
@@ -1281,8 +1281,8 @@ if (window.i18n) {
   // === G2 (#51): Blindkauf / Gambling — der zentrale Gold-Sink ================
   // Mara verkauft eine UNIDENTIFIZIERTE Ware zu Fixpreis (skaliert mit Tiefe).
   // Der Inhalt wird beim Kauf via rollItem gerollt — mit einem QUALITAETS-BONUS
-  // (BLIND_BUY_BIAS) gegenueber dem sichtbaren Schwarzmarkt: man kauft die Katze
-  // im Sack, also sind die Raritaets-Chancen als Risikoausgleich BESSER als ein
+  // (BLIND_BUY_BIAS) gegenüber dem sichtbaren Schwarzmarkt: man kauft die Katze
+  // im Sack, also sind die Raritäts-Chancen als Risikoausgleich BESSER als ein
   // normaler Fund. Wiederholbar (Dauer-Sink).
   const BLIND_BUY_BASE = 80;        // Grundpreis
   const BLIND_BUY_PER_DEPTH = 30;   // Aufschlag je Tiefe
@@ -1290,14 +1290,14 @@ if (window.i18n) {
   const BLIND_BUY_BIAS = 1.8;
 
   // Schwarzmarkt-Gating (#51): Maras SICHTBARE Auslage ist erst ab dieser je
-  // erreichten Tiefe verfuegbar und rollt dann auf (maxDepth - OFFSET) — also
+  // erreichten Tiefe verfügbar und rollt dann auf (maxDepth - OFFSET) — also
   // ein paar Stufen unter der Front. Der Blindkauf dagegen rollt auf die volle
   // maxDepth (bessere, aber ungewisse Ware).
   const BLACK_MARKET_MIN_DEPTH = 4;
   const BLACK_MARKET_DEPTH_OFFSET = 3;
 
   // Tiefste je erreichte Tiefe (persistiert). Bevorzugt Persistence.getMaxDepth,
-  // faellt auf den localStorage-Key bzw. 1 zurueck. Defensiv gegen fehlende Module.
+  // fällt auf den localStorage-Key bzw. 1 zurück. Defensiv gegen fehlende Module.
   function _maxDepth() {
     if (typeof window !== 'undefined' && window.Persistence
         && typeof window.Persistence.getMaxDepth === 'function') {
@@ -1324,9 +1324,9 @@ if (window.i18n) {
     return Math.max(1, Math.round((BLIND_BUY_BASE + d * BLIND_BUY_PER_DEPTH) * 2));
   }
 
-  // Kauft eine Blind-Ware: zieht Gold ab, wuerfelt ein Item auf maxDepth mit einem
-  // Qualitaets-Bonus (BLIND_BUY_BIAS) auf die normalen Drop-Odds — also BESSER als
-  // der sichtbare Schwarzmarkt. Rueckgabe: {ok, item?, price, tier?}
+  // Kauft eine Blind-Ware: zieht Gold ab, würfelt ein Item auf maxDepth mit einem
+  // Qualitäts-Bonus (BLIND_BUY_BIAS) auf die normalen Drop-Odds — also BESSER als
+  // der sichtbare Schwarzmarkt. Rückgabe: {ok, item?, price, tier?}
   // bzw. {ok:false, reason}.
   function blindBuy(depthOverride) {
     // #51: Blindkauf teilt das Schwarzmarkt-Gating — unter der Mindesttiefe
@@ -1338,7 +1338,7 @@ if (window.i18n) {
     let item = null;
     try { item = rollItem(null, depth, null, BLIND_BUY_BIAS); } catch (e) { item = null; }
     if (!item) {
-      // Roll fehlgeschlagen -> Gold exakt zurueck (ohne gold_find-Multiplikator).
+      // Roll fehlgeschlagen -> Gold exakt zurück (ohne gold_find-Multiplikator).
       const s = _ensureGoldStore();
       if (s) { s.GOLD = (s.GOLD || 0) + price; _refreshGoldHUD(); }
       return { ok: false, reason: 'roll', price: price };
@@ -1415,8 +1415,8 @@ if (window.i18n) {
     if (window.materialCounts) window.materialCounts.MAT = Math.max(0, (window.materialCounts.MAT || 0) - amount);
   }
 
-  // Wuerfelt die Affixe eines Items neu. #51 G3: mit optionalem lockIndex bleibt
-  // GENAU ein Affix erhalten; die uebrigen (count-1) werden neu gerollt (ohne den
+  // Würfelt die Affixe eines Items neu. #51 G3: mit optionalem lockIndex bleibt
+  // GENAU ein Affix erhalten; die übrigen (count-1) werden neu gerollt (ohne den
   // gesperrten Affix zu duplizieren). Sperren lohnt erst ab tier 2 (>=2 Affixe).
   function rerollItem(item, costGold, lockIndex) {
     if (!item || typeof item.tier !== 'number') return false;
@@ -1488,7 +1488,7 @@ if (window.i18n) {
     // Save v3 (#Bugfix): repariert Prozent-Basiswerte, die vor dem /100-Fix als
     // ROHwert persistiert wurden (z.B. it.speed=15 statt 0.15) -> Tooltip zeigte
     // "+1500% Angriffstempo". Tell-tale: das Top-Level-Feld ist identisch mit dem
-    // ROH-baseStats-Wert UND betragsmaessig > 1 (legitime Brueche sind < 1; der
+    // ROH-baseStats-Wert UND betragsmässig > 1 (legitime Brüche sind < 1; der
     // /100-Pfad macht Top-Level != baseStats). Nur speed/armor/crit sind percent.
     const _PCT_STATS = ['speed', 'armor', 'crit'];
     const repairItem = function (item) {

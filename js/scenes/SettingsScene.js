@@ -174,9 +174,9 @@
       this.settings = loadSettings();
 
       // Backstop: die Spiel-Pause IMMER aufheben, wenn diese Szene endet — egal
-      // ueber welchen Weg (regulaeres _close, Zombie-Stop in openSettingsScene,
-      // Szenenwechsel). Sonst bliebe __GAME_PAUSE (global!) haengen und der
-      // Dungeon waere eingefroren. Idempotent ueber das Flag + resumeGameClock.
+      // über welchen Weg (reguläres _close, Zombie-Stop in openSettingsScene,
+      // Szenenwechsel). Sonst bliebe __GAME_PAUSE (global!) hängen und der
+      // Dungeon wäre eingefroren. Idempotent über das Flag + resumeGameClock.
       this.events.once('shutdown', () => {
         if (window.__settingsPausedClock && typeof window.resumeGameClock === 'function') {
           try { window.resumeGameClock(); } catch (e) {}
@@ -759,12 +759,12 @@
       }
     } catch (e) { /* ignore */ }
     // Volle Spiel-Pause der URSPRUNGS-Szene, aber NUR im Dungeon (GameScene):
-    // das Menue laeuft als parallele Overlay-Szene, die GameScene tickt sonst
+    // das Menü läuft als parallele Overlay-Szene, die GameScene tickt sonst
     // weiter -> Gegner/Projektile/Cooldowns liefen im Hintergrund. Im Hub gibt
-    // es keine Gegner, und da __GAME_PAUSE global ist, wuerde eine offene
+    // es keine Gegner, und da __GAME_PAUSE global ist, würde eine offene
     // Hub-Pause beim Hub->Dungeon-Wechsel den Dungeon einfrieren -> deshalb hier
     // gar nicht pausieren. Nur pausieren, wenn nichts anderes bereits pausiert
-    // (Inventar), sonst wuerde das Schliessen jenes Modal fortsetzen.
+    // (Inventar), sonst würde das Schliessen jenes Modal fortsetzen.
     window.__settingsPausedClock = false;
     if (fromScene.scene.key === 'GameScene'
         && window.__GAME_PAUSE && window.__GAME_PAUSE.since == null

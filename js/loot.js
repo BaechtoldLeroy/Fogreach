@@ -11,7 +11,7 @@ if (window.i18n) {
     'loot.quest_item.JOURNAL_FRAGMENT': 'Tagebuchfragment der Tochter',
     'loot.quest_item.COUNCIL_DOCUMENT': 'Versiegeltes Ratsdokument',
     'loot.quest_item.SEIZED_WRITINGS': 'Beschlagnahmte Schriften',
-    'loot.quest_item.INTERROGATION_RECORD': 'Verhoerprotokoll',
+    'loot.quest_item.INTERROGATION_RECORD': 'Verhörprotokoll',
     // Feature 062: neue fetch-Ziele.
     'loot.quest_item.VERIFICATION_SEAL': 'Ratssiegel',
     'loot.quest_item.PROCLAMATION': 'Edikt-Plakat',
@@ -217,12 +217,12 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       { target: 'document',         name: _LOOT_T('loot.quest_item.QUEST_DOC'),       nameKey: 'loot.quest_item.QUEST_DOC',       key: 'QUEST_DOC',       tint: 0xffdd44 },
       { target: 'print_plate',      name: _LOOT_T('loot.quest_item.QUEST_PLATE'),     nameKey: 'loot.quest_item.QUEST_PLATE',     key: 'QUEST_PLATE',     tint: 0x88aaff },
       { target: 'journal_fragment', name: _LOOT_T('loot.quest_item.JOURNAL_FRAGMENT'),nameKey: 'loot.quest_item.JOURNAL_FRAGMENT',key: 'JOURNAL_FRAGMENT',tint: 0xddccaa },
-      // Feature 055 Akt 2: fetch-Targets fuer Q1 (Beschlagnahme) + Q4 (Abschriften)
+      // Feature 055 Akt 2: fetch-Targets für Q1 (Beschlagnahme) + Q4 (Abschriften)
       { target: 'seized_writings',  name: _LOOT_T('loot.quest_item.SEIZED_WRITINGS'),       nameKey: 'loot.quest_item.SEIZED_WRITINGS',       key: 'SEIZED_WRITINGS',       tint: 0xe8d8a0 },
       { target: 'interrogation_record', name: _LOOT_T('loot.quest_item.INTERROGATION_RECORD'), nameKey: 'loot.quest_item.INTERROGATION_RECORD', key: 'INTERROGATION_RECORD', tint: 0xc09060 },
       // Feature 062: neue fetch-Ziele. verification_seal (magistrat_verification),
       // proclamation (faction_campaign x3), memory_shard (who_you_were x3, minDepth 5).
-      // Der needsItem-Check unten gated bereits auf aktive, unerfuellte Quest —
+      // Der needsItem-Check unten gated bereits auf aktive, unerfüllte Quest —
       // kein Drop ohne passende Quest (regressionssicher).
       { target: 'verification_seal', name: _LOOT_T('loot.quest_item.VERIFICATION_SEAL'), nameKey: 'loot.quest_item.VERIFICATION_SEAL', key: 'VERIFICATION_SEAL', tint: 0xb0b0c0 },
       { target: 'proclamation',      name: _LOOT_T('loot.quest_item.PROCLAMATION'),      nameKey: 'loot.quest_item.PROCLAMATION',      key: 'PROCLAMATION',      tint: 0xd8c070 },
@@ -452,7 +452,7 @@ function collectLoot(playerSprite, loot) {
 
   if (loot.lootType === 'health') {
     // Heilwert wird beim EINSAMMELN aus der Tiefe berechnet (nicht beim Spawn) —
-    // die Tiefe ist innerhalb eines Runs konstant, beides waere also gleich.
+    // die Tiefe ist innerhalb eines Runs konstant, beides wäre also gleich.
     const heal = (window.LootSystem && typeof window.LootSystem.getHeartHeal === 'function')
       ? window.LootSystem.getHeartHeal(currentWave)
       : 2;

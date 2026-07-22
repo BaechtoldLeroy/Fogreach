@@ -459,10 +459,10 @@ function createObstacleGraphics() {
 
   // barrel 24x32
   g.clear();
-  // Koerper
+  // Körper
   const cx = 12, cy = 16; // Mittelpunkt
 
-  // Holzkoerper
+  // Holzkörper
   g.fillStyle(0x7a4a22, 1);
   g.fillEllipse(cx, cy, 20, 26);
 
@@ -482,12 +482,12 @@ function createObstacleGraphics() {
     g.strokeEllipse(cx + i, cy, 2, 24);
   }
 
-  // Metallbaender (gefüllt fuer 3D-Feeling)
+  // Metallbänder (gefüllt für 3D-Feeling)
   g.fillStyle(0x3d2c1a, 1);
   g.fillEllipse(cx, cy - 5, 18, 6);
   g.fillEllipse(cx, cy + 5, 18, 6);
 
-  // Kanten der Baender leicht betonen
+  // Kanten der Bänder leicht betonen
   g.lineStyle(1, 0xa38a6a, 0.5);
   g.strokeEllipse(cx, cy - 5, 18, 6);
   g.strokeEllipse(cx, cy + 5, 18, 6);

@@ -1,15 +1,15 @@
-// js/storyScenes.js — inszenierte Schluesselszenen (Feature 063 WP04).
+// js/storyScenes.js — inszenierte Schlüsselszenen (Feature 063 WP04).
 //
 // Drei Beats als Overlay-Inszenierungen im bestehenden Szenen-Kontext, gerendert
-// ueber window.DialogChoice (WP02) + einfache Tweens/Kamera. Story v4 §13.1-13.3.
+// über window.DialogChoice (WP02) + einfache Tweens/Kamera. Story v4 §13.1-13.3.
 //   playCollusionSession  -> geheime Sitzung mit "Zuhören"-Leiste, feuert
 //                            observe collusion_reveal_seen bei Abschluss.
 //   playElaraFirstCrack   -> Elaras erster Riss, feuert observe three_hands_seen.
-//   playElaraCamp         -> Elara-Lager, atmosphaerisch, KEIN Trigger.
+//   playElaraCamp         -> Elara-Lager, atmosphärisch, KEIN Trigger.
 //
 // Einheitliche Signatur (scene, onDone). Defensiv: fehlt DialogChoice/questSystem,
-// laeuft die Szene minimal ab statt zu crashen. Alle GameObjects scrollFactor(0).
-// Szenenuebergreifende Zeit ueber Date.now().
+// läuft die Szene minimal ab statt zu crashen. Alle GameObjects scrollFactor(0).
+// Szenenübergreifende Zeit über Date.now().
 (function () {
   'use strict';
 
@@ -50,7 +50,7 @@
     var intro = _lines(scene, [
       '(Die drei legen die Farben ab. Ein Blatt. Drei Siegel.)',
       'ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.',
-      '(Du bleibst im Schatten und hoerst zu.)'
+      '(Du bleibst im Schatten und hörst zu.)'
     ], cx, cy);
 
     // Zuhören-Leiste
@@ -59,7 +59,7 @@
     var frame = scene.add.graphics().setDepth(1551).setScrollFactor(0);
     frame.lineStyle(2, 0x8a8270, 0.9).strokeRect(barX, barY, barW, barH);
     var fill = scene.add.graphics().setDepth(1552).setScrollFactor(0);
-    var label = scene.add.text(cx, barY - 18, 'Zuhoeren...', {
+    var label = scene.add.text(cx, barY - 18, 'Zuhören...', {
       fontFamily: 'monospace', fontSize: 13, color: '#b9b090'
     }).setOrigin(0.5, 0.5).setDepth(1552).setScrollFactor(0);
 
@@ -109,7 +109,7 @@
     }
   }
 
-  // --- 13.2 Elara-Lager (atmosphaerisch, KEIN Trigger) -----------------------
+  // --- 13.2 Elara-Lager (atmosphärisch, KEIN Trigger) -----------------------
   function playElaraCamp(scene, onDone) {
     var cam = scene.cameras.main;
     var cx = cam.width / 2, cy = cam.height / 2 - 20;

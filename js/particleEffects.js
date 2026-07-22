@@ -112,9 +112,9 @@ class ParticleFactory {
 
   /**
    * Grosser Boss-Tod-Effekt: mehrere Partikel-Wellen, zwei expandierende
-   * Schockwellen-Ringe, weisser Kamera-Blitz und laengeres Beben. Deutlich
+   * Schockwellen-Ringe, weisser Kamera-Blitz und längeres Beben. Deutlich
    * wuchtiger als deathBurst (den normale Gegner bekommen), damit ein
-   * Boss-Kill sich als Ereignis anfuehlt. `color` faerbt Partikel + Ringe
+   * Boss-Kill sich als Ereignis anfühlt. `color` färbt Partikel + Ringe
    * je Boss ein (Kettenmeister grau, Zeremonienmeister violett, Schattenrat rot).
    */
   bossDeath(x, y, color) {
@@ -122,14 +122,14 @@ class ParticleFactory {
     if (!scene || !scene.add) return;
     const tint = (typeof color === 'number') ? color : 0xff3322;
 
-    // 1) Kamera: Blitz + kraeftiges, langes Beben.
+    // 1) Kamera: Blitz + kräftiges, langes Beben.
     const cam = scene.cameras && scene.cameras.main;
     if (cam) {
       if (cam.flash) cam.flash(400, 255, 240, 220, true);
       if (cam.shake) cam.shake(650, 0.014);
     }
 
-    // 2) Partikel: eine grosse, weit streuende Welle + ein spaeterer Nachschlag.
+    // 2) Partikel: eine grosse, weit streuende Welle + ein späterer Nachschlag.
     this.burst(x, y, 'particle', {
       speed: { min: 120, max: 320 },
       scale: { start: 1.6, end: 0 },
@@ -147,7 +147,7 @@ class ParticleFactory {
       });
     });
 
-    // 3) Zwei expandierende Schockwellen-Ringe (Graphics, getweent + aufgeraeumt).
+    // 3) Zwei expandierende Schockwellen-Ringe (Graphics, getweent + aufgeräumt).
     const ring = (delay, maxR, width) => {
       scene.time.delayedCall(delay, () => {
         if (!scene.add) return;

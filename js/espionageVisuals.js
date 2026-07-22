@@ -1,18 +1,18 @@
 /* =====================================================================
- * espionageVisuals.js — Sichtbarkeitsschicht fuer Espionage-Missionen
+ * espionageVisuals.js — Sichtbarkeitsschicht für Espionage-Missionen
  * ---------------------------------------------------------------------
  * Feature 055 lieferte die Stealth-MECHANIK (espionageSystem.js), aber kein
  * klares Feedback. Dieses Modul rendert den Missions-State, OHNE die testbare
- * Logik zu beruehren. #54-Redesign:
+ * Logik zu berühren. #54-Redesign:
  *
- *   - Detection-RING am Spieler (gruen->gelb->rot) — der zentrale, bisher
+ *   - Detection-RING am Spieler (grün->gelb->rot) — der zentrale, bisher
  *     unsichtbare detection-Zustand wird sichtbar (auch die Recovery-Phase).
  *   - Status-CHIP (VERKLEIDET / VERDAECHTIG / ENTTARNT / ABGEHOERT) + kurze
  *     Aktionszeile statt langem Negativ-Banner.
  *   - Wachen-Sichtradien IMMER (dezent gedimmt, intensivieren mit detection /
  *     bei Enttarnung) — die Welt wird lesbar.
- *   - Deckungs-Zonen (blau-gruen) — der _inCover-Vorteil wird sichtbar.
- *   - Off-screen-Pfeil zur naechsten Abhoer-Zone.
+ *   - Deckungs-Zonen (blau-grün) — der _inCover-Vorteil wird sichtbar.
+ *   - Off-screen-Pfeil zur nächsten Abhör-Zone.
  *   - Enttarn-Moment: Kamera-Flash + Shake + Sound (Flankenerkennung).
  *
  * Selbstverwaltend: sync(scene) wird jeden Frame aus dem GameScene-Update
@@ -21,8 +21,8 @@
 (function () {
   'use strict';
 
-  var DEPTH_WORLD = 520;   // ueber Boden/Gegnern, unter HUD
-  var DEPTH_HUD = 1640;    // ueber dem normalen HUD-Layer
+  var DEPTH_WORLD = 520;   // über Boden/Gegnern, unter HUD
+  var DEPTH_HUD = 1640;    // über dem normalen HUD-Layer
 
   var mounted = false;
   var g = null;            // world-space Graphics (Zonen/Wachen/Deckung/Ring)
@@ -31,16 +31,16 @@
   var bannerBg = null;
   var chipBg = null;       // Status-Chip Hintergrund
   var chipText = null;     // Status-Chip Text
-  var zoneLabels = [];     // Text-Labels an den Abhoer-Zonen
+  var zoneLabels = [];     // Text-Labels an den Abhör-Zonen
   var guardSprites = [];   // echte Wachen-Sprites (statt Kreise)
-  var _guardTex = null;    // aufgeloeste Wachen-Textur (ChainGuard o.ae.)
+  var _guardTex = null;    // aufgelöste Wachen-Textur (ChainGuard o.ae.)
   // Verkleidung ist KEIN Overlay mehr: das Spieler-Sprite selbst wird in
   // player.js durch die Kettenrat-Montur ersetzt.
   var _t = 0;              // Pulse-Akkumulator
   var _prevExposed = false;
   var _cw = 1536, _ch = 800;
 
-  // Echte Wachen-Textur aufloesen (ChainGuard passt zum Kettenrat-Warenhaus);
+  // Echte Wachen-Textur auflösen (ChainGuard passt zum Kettenrat-Warenhaus);
   // Fallback: einmalig eine simple Wachen-Figur generieren.
   function _resolveGuardTex(scene) {
     var cands = ['chainguard_right0', 'sprite_chainguard', 'enemyChainGuard', 'imp_right0', 'sprite_imp', 'enemyImp'];
@@ -50,7 +50,7 @@
     if (scene.textures && !scene.textures.exists('esp_guard_fallback')) {
       try {
         var gg = scene.make.graphics({ add: false });
-        gg.fillStyle(0x3a3f52, 1); gg.fillRoundedRect(5, 9, 18, 20, 5);   // Koerper
+        gg.fillStyle(0x3a3f52, 1); gg.fillRoundedRect(5, 9, 18, 20, 5);   // Körper
         gg.fillStyle(0x6a7088, 1); gg.fillCircle(14, 8, 7);                // Kopf
         gg.lineStyle(2, 0x9aa2bd, 1); gg.strokeRoundedRect(5, 9, 18, 20, 5);
         gg.generateTexture('esp_guard_fallback', 28, 32); gg.destroy();
@@ -89,7 +89,7 @@
       fontFamily: 'monospace', fontSize: '14px', color: '#cdd9ff', align: 'center'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH_HUD);
 
-    // Status-Chip (Pille) darueber
+    // Status-Chip (Pille) darüber
     chipBg = scene.add.rectangle(_cw / 2, 40, 150, 26, 0x4a8fd0, 0.95)
       .setScrollFactor(0).setDepth(DEPTH_HUD - 1).setStrokeStyle(2, 0xffffff, 0.5);
     chipText = scene.add.text(_cw / 2, 40, '', {
@@ -139,16 +139,16 @@
     var en = _isEN();
     if (st.exposed) return en ? 'Get out of the red zones to blend back in.'
                               : 'Raus aus den roten Zonen, dann tauchst du wieder unter.';
-    if (allDone) return en ? 'Leave via the stairs.' : 'Verlass den Raum ueber die Treppe.';
+    if (allDone) return en ? 'Leave via the stairs.' : 'Verlass den Raum über die Treppe.';
     return en ? 'Reach the gold circle to listen. Avoid the RED cones — or fight through the red guards.'
-              : 'Geh in den goldenen Kreis zum Abhoeren. Meide die ROTEN Kegel — oder kaempf dich durch die roten Wachen.';
+              : 'Geh in den goldenen Kreis zum Abhören. Meide die ROTEN Kegel — oder kämpf dich durch die roten Wachen.';
   }
 
   function sync(scene) {
     scene = scene || _scene();
     var active = !!(window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
       && window.EspionageSystem.isActive());
-    // Stale-mount guard (Hub-Rueckkehr / Scene-Switch zerstoert unsere Objekte).
+    // Stale-mount guard (Hub-Rückkehr / Scene-Switch zerstört unsere Objekte).
     if (mounted && (!g || !g.scene)) { mounted = false; g = gHud = banner = bannerBg = chipBg = chipText = null; zoneLabels = []; guardSprites = []; }
 
     if (!active) { if (mounted) unmount(); return; }
@@ -180,10 +180,10 @@
     // --- Sichtkegel (Graphics) + echte Wachen-SPRITES ------------------------
     // Zwei Wachen-Typen (klar unterscheidbar):
     //   alert=true  -> ROTER Kegel: erkennt dich AUCH verkleidet (meiden!)
-    //   alert=false -> BLAUER Kegel: laesst dich verkleidet in Ruhe
+    //   alert=false -> BLAUER Kegel: lässt dich verkleidet in Ruhe
     var alert = st.exposed ? 1 : Math.min(1, det * 1.5);
     var guards = st.guards || [];
-    var blockedAt = st.blockedAt;   // (wx,wy)=>bool: Wand-Test fuer Sichtlinien
+    var blockedAt = st.blockedAt;   // (wx,wy)=>bool: Wand-Test für Sichtlinien
     // Raycast: wie weit reicht ein Strahl aus (gx,gy) unter Winkel ang, bis er
     // auf eine Wand trifft (oder die volle Reichweite)?
     var _rayHit = function (gx, gy, ang, range) {
@@ -194,7 +194,7 @@
       }
       return range;
     };
-    // 1) Sichtkegel zeichnen — an Waenden abgeschnitten (Line-of-Sight).
+    // 1) Sichtkegel zeichnen — an Wänden abgeschnitten (Line-of-Sight).
     guards.forEach(function (gd) {
       if (gd.knocked) return;
       var range = gd.range || 0;
@@ -205,14 +205,14 @@
         : (alert > 0.5 ? 0xff8a2a : 0x53b6ff);            // blau (safe) -> orange bei Verdacht
       var f = gd._facing || 0, half = gd.halfAngle || 0.6;
       var baseA = isAlert ? 0.14 : 0.08;
-      // Strahlenfaecher: jeder Strahl wird an der ersten Wand gestoppt.
+      // Strahlenfächer: jeder Strahl wird an der ersten Wand gestoppt.
       var RAYS = 18, pts = [];
       for (var ri = 0; ri <= RAYS; ri++) {
         var a = f - half + (2 * half) * (ri / RAYS);
         var hit = _rayHit(gd.x, gd.y, a, range);
         pts.push(gd.x + Math.cos(a) * hit, gd.y + Math.sin(a) * hit);
       }
-      // Fuellung (Polygon Wache -> Faecherpunkte)
+      // Füllung (Polygon Wache -> Fächerpunkte)
       g.fillStyle(coneCol, baseA + 0.12 * alert);
       g.beginPath(); g.moveTo(gd.x, gd.y);
       for (var pi = 0; pi < pts.length; pi += 2) g.lineTo(pts[pi], pts[pi + 1]);
@@ -228,7 +228,7 @@
       g.beginPath(); g.moveTo(gd.x, gd.y); g.lineTo(gd.x + Math.cos(f) * cHit, gd.y + Math.sin(f) * cHit); g.strokePath();
     });
     // 2) Wachen-Sprites synchronisieren (erstellen/positionieren/stylen)
-    // Self-Heal: ChainGuard-Textur erst jetzt verfuegbar -> Fallback ersetzen.
+    // Self-Heal: ChainGuard-Textur erst jetzt verfügbar -> Fallback ersetzen.
     if (_guardTex !== 'chainguard_right0' && scene.textures && scene.textures.exists('chainguard_right0')) {
       _guardTex = 'chainguard_right0';
       for (var sh = 0; sh < guardSprites.length; sh++) { try { guardSprites[sh].setTexture(_guardTex); } catch (e) {} }
@@ -247,7 +247,7 @@
       var gd2 = guards[gi], spr = guardSprites[gi];
       if (!spr) continue;
       spr.setVisible(true);
-      spr.setDisplaySize(_gW, _gH);   // gleiche Groesse wie der verkleidete Spieler
+      spr.setDisplaySize(_gW, _gH);   // gleiche Grösse wie der verkleidete Spieler
       spr.setPosition(gd2.x, gd2.y);
       var ff = gd2._facing || 0;
       spr.setFlipX(Math.cos(ff) < 0);                 // nach links schauen -> spiegeln
@@ -267,14 +267,14 @@
           g.fillStyle(0x000000, 0.65); g.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
           g.fillStyle(0x3a0d0d, 1); g.fillRect(bx, by, bw, bh);       // leerer Teil
           var hcol = frac > 0.5 ? 0x53e07a : (frac > 0.25 ? 0xffd24a : 0xff5a5a);
-          g.fillStyle(hcol, 1); g.fillRect(bx, by, bw * frac, bh);    // gefuellter Teil
+          g.fillStyle(hcol, 1); g.fillRect(bx, by, bw * frac, bh);    // gefüllter Teil
           g.lineStyle(1, 0x000000, 0.8); g.strokeRect(bx, by, bw, bh);
         }
       }
     }
     // Verkleidung = ersetztes Spieler-Sprite (siehe player.js), kein Overlay hier.
 
-    // --- Abhoer-Zonen (golden, pulsierend; gruen wenn fertig) ----------------
+    // --- Abhör-Zonen (golden, pulsierend; grün wenn fertig) ----------------
     _ensureZoneLabels(scene, zones);
     zones.forEach(function (z, i) {
       var r = z.r || 64;
@@ -306,7 +306,7 @@
       }
     });
 
-    // --- Detection-RING am Spieler (Kernstueck) ------------------------------
+    // --- Detection-RING am Spieler (Kernstück) ------------------------------
     if (pl && pl.active) {
       var ringR = 30;
       g.lineStyle(3, 0x000000, 0.22); g.strokeCircle(px, py, ringR); // dezenter Track
@@ -320,7 +320,7 @@
       }
     }
 
-    // --- Off-screen-Pfeil zur naechsten offenen Zone -------------------------
+    // --- Off-screen-Pfeil zur nächsten offenen Zone -------------------------
     gHud.clear();
     if (cam && !st.exposed && !allDone) {
       var open = zones.filter(function (z) { return !z._done; });

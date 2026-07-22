@@ -102,7 +102,7 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: 960,     // Canvas-Breite (Player 72px = 15% von 480px)
-    height: 480,    // Canvas-Hoehe
+    height: 480,    // Canvas-Höhe
     zoom: 1
   },
   backgroundColor: '#2d2d2d',
@@ -113,7 +113,7 @@ const config = {
   },
   scene: [StartScene, HubSceneV2, CraftingScene, SettingsScene, PrintingHouseScene, TestTerrainScene, GameScene],
   // Joystick-Plugin defensiv: fehlt das Global (CDN-Fehler/Tracking-Prevention),
-  // bootet das Spiel trotzdem — nur der Mobile-Joystick faellt dann aus.
+  // bootet das Spiel trotzdem — nur der Mobile-Joystick fällt dann aus.
   plugins: (typeof rexvirtualjoystickplugin !== 'undefined') ? {
     global: [{
       key: 'rexVirtualJoystick',
@@ -501,9 +501,9 @@ let playerArmor = 0;
 let playerCritChance = 0;
 
 // ── Feature 060 / #41: gestreckte Level-Kurve ─────────────────────────────────
-// Frueher war die Schwelle ~linear (neededXP = 2 * level), wodurch Skill-Punkte
+// Früher war die Schwelle ~linear (neededXP = 2 * level), wodurch Skill-Punkte
 // viel zu schnell anfielen. Jetzt eine progressive, tunebare Kurve, damit die
-// (1 Skill-Punkt / Level) ueber deutlich mehr Content gestreckt werden.
+// (1 Skill-Punkt / Level) über deutlich mehr Content gestreckt werden.
 //
 //   neededXP(level) = round(XP_CURVE_BASE + XP_CURVE_SCALE * level^XP_CURVE_EXP)
 //
@@ -520,7 +520,7 @@ function getNeededXP(level) {
   const lvl = Math.max(1, Math.floor(Number(level) || 1));
   return Math.round(XP_CURVE_BASE + XP_CURVE_SCALE * Math.pow(lvl, XP_CURVE_EXP));
 }
-// Auf window spiegeln, damit HUD/andere Klassik-Scripts die Kurve nutzen koennen.
+// Auf window spiegeln, damit HUD/andere Klassik-Scripts die Kurve nutzen können.
 if (typeof window !== 'undefined') window.getNeededXP = getNeededXP;
 
 let neededXP = getNeededXP(playerLevel);
@@ -879,11 +879,11 @@ if (typeof window !== 'undefined') {
 }
 
 // True, wenn die Treppe das E gerade verbraucht hat (roomManager.onStairOverlap
-// setzt die Marke). Der Physics-Step laeuft VOR scene.update(), der Raumwechsel
+// setzt die Marke). Der Physics-Step läuft VOR scene.update(), der Raumwechsel
 // ist beim E-Druck hier also schon passiert — _playerOnUnlockedStair() sieht
-// dann nur noch den NEUEN Raum und meldet faelschlich "keine Treppe". Das kurze
-// Fenster laeuft von selbst ab, damit eine Marke aus einem abgebrochenen
-// Wechsel nicht den naechsten E-Druck schluckt.
+// dann nur noch den NEUEN Raum und meldet fälschlich "keine Treppe". Das kurze
+// Fenster läuft von selbst ab, damit eine Marke aus einem abgebrochenen
+// Wechsel nicht den nächsten E-Druck schluckt.
 const STAIR_E_CONSUME_WINDOW_MS = 300;
 function _stairJustConsumedE() {
   const at = window.__stairConsumedEAt || 0;
@@ -1345,7 +1345,7 @@ function updateStatusEffectHUD(scene) {
   // Laufender X-Cursor statt fixer Spaltenbreite: jede Box wird nach ihrem
   // Inhalt (Label + Stacks + Timer) bemessen. Vorher war die Box fix ~48px —
   // mit Stacks ("BRN x2") lief das Label in den rechtsstehenden Timer ("4s")
-  // hinein und beides ueberlappte.
+  // hinein und beides überlappte.
   let cursorX = startX;
   const y = startY;
   const padX = 6;
@@ -1386,7 +1386,7 @@ function updateStatusEffectHUD(scene) {
       .setOrigin(0, 0).setDepth(1003).setScrollFactor(0);
     statusEffectHudIcons.push(fill);
 
-    // Label links, Timer rechtsbuendig in der Box — nie ueberlappend.
+    // Label links, Timer rechtsbündig in der Box — nie überlappend.
     txt.setPosition(cursorX + padX, y + 2);
     timer.setPosition(cursorX + boxW - padX - Math.ceil(timer.width), y + 2);
     statusEffectHudIcons.push(txt);
@@ -1396,20 +1396,20 @@ function updateStatusEffectHUD(scene) {
   });
 }
 
-// Boden-Feuer: ein zerstoertes Brazier setzt den Boden fuer ein paar Sekunden
+// Boden-Feuer: ein zerstörtes Brazier setzt den Boden für ein paar Sekunden
 // in Brand. Wer drinsteht (Spieler ODER Gegner), bekommt wiederholt den
-// 'burned'-Statuseffekt (der die eigentliche Feuer-DoT + orange Tint traegt).
-// Raeumt sich nach `duration` selbst auf.
+// 'burned'-Statuseffekt (der die eigentliche Feuer-DoT + orange Tint trägt).
+// Räumt sich nach `duration` selbst auf.
 function spawnFloorFire(scene, x, y, opts) {
   opts = opts || {};
   const radius = opts.radius || 46;
   const duration = opts.duration || 3500;
   const applyMs = 500;   // wie oft BURNED aufgelegt wird
-  const drawMs = 80;     // Flacker-Animation (unabhaengig, damit es lebt)
+  const drawMs = 80;     // Flacker-Animation (unabhängig, damit es lebt)
   if (!scene || !scene.add || !scene.time) return;
 
-  // Glut auf dem Boden (Depth 36 = ueber Boden, hinter Figuren) + Flammen leicht
-  // darueber.
+  // Glut auf dem Boden (Depth 36 = über Boden, hinter Figuren) + Flammen leicht
+  // darüber.
   const glow = scene.add.graphics().setDepth(35);
   const fire = scene.add.graphics().setDepth(37);
   let fade = 1;   // blendet in den letzten ~600ms aus
@@ -1429,7 +1429,7 @@ function spawnFloorFire(scene, x, y, opts) {
       const rr = Math.random() * radius * 0.6;
       const fx = x + Math.cos(a) * rr;
       const by = y + Math.sin(a) * rr * 0.5;             // gestauchte Ellipsen-Verteilung
-      const h = radius * (0.55 + Math.random() * 0.75);  // Hoehe flackert
+      const h = radius * (0.55 + Math.random() * 0.75);  // Höhe flackert
       const w = radius * (0.13 + Math.random() * 0.10);
       fire.fillStyle(0xff6a1a, 0.55 * fade);
       fire.fillTriangle(fx - w, by, fx + w, by, fx, by - h);
@@ -1448,7 +1448,7 @@ function spawnFloorFire(scene, x, y, opts) {
   // Flacker-Animation
   const drawEv = scene.time.addEvent({ delay: drawMs, loop: true, callback: draw });
 
-  // BURNED-Anwendung + Ausblenden + Aufraeumen
+  // BURNED-Anwendung + Ausblenden + Aufräumen
   let elapsed = 0;
   const applyEv = scene.time.addEvent({
     delay: applyMs, loop: true,
@@ -1496,11 +1496,11 @@ function breakDestructibleObstacle(scene, obs) {
     window.particleFactory.screenShake(50, 0.002);
   }
 
-  // Ein zerstoertes Brazier laesst den Boden brennen (burned-Effekt fuer alle,
-  // die drinstehen). Altare/Statuen/Saeulen zerbrechen nur (stone-Tier, Gold).
+  // Ein zerstörtes Brazier lässt den Boden brennen (burned-Effekt für alle,
+  // die drinstehen). Altare/Statuen/Säulen zerbrechen nur (stone-Tier, Gold).
   if (type.indexOf('brazier') === 0 || type.indexOf('brazer') === 0) {
-    // Das warme Standlicht gehoert zum intakten Brazier — mit dem Becken muss
-    // es verschwinden, sonst leuchtet eine zerstoerte Schale weiter.
+    // Das warme Standlicht gehört zum intakten Brazier — mit dem Becken muss
+    // es verschwinden, sonst leuchtet eine zerstörte Schale weiter.
     if (window.RoomTemplates && typeof window.RoomTemplates.removeBrazierGlow === 'function') {
       try { window.RoomTemplates.removeBrazierGlow(scene, x, y); } catch (e) {}
     }
@@ -1521,14 +1521,14 @@ function breakDestructibleObstacle(scene, obs) {
     }
   }
 
-  // Drop loot based on tier. 'stone' (Statuen/Saeulen) ist Kulisse, kein
-  // Behaelter: nur etwas Gold, keine Ausruestung/Traenke/Rollen. Die Tabellen
-  // hier greifen ueber `|| <default>` — ein unbekannter Tier faellt sonst still
-  // auf Fass-Beute zurueck, darum steht 'stone' ueberall explizit drin.
+  // Drop loot based on tier. 'stone' (Statuen/Säulen) ist Kulisse, kein
+  // Behälter: nur etwas Gold, keine Ausrüstung/Tränke/Rollen. Die Tabellen
+  // hier greifen über `|| <default>` — ein unbekannter Tier fällt sonst still
+  // auf Fass-Beute zurück, darum steht 'stone' überall explizit drin.
   const goldDrop = { stone: 3, minor: 5, small: 15, medium: 35, large: 75 }[tier] || 5;
   const goldAmount = goldDrop + Math.floor(Math.random() * goldDrop);
-  // Truhe? Robust ueber den lootTier erkennen (small/medium/large gehoert NUR
-  // Truhen — Faesser/Kisten sind 'minor', Kulisse 'stone'), plus type-String und
+  // Truhe? Robust über den lootTier erkennen (small/medium/large gehört NUR
+  // Truhen — Fässer/Kisten sind 'minor', Kulisse 'stone'), plus type-String und
   // die Chest-Marker als Backup. Deckt alle Truhen-Typen/-Versionen ab, auch
   // wenn der type-String mal abweicht.
   const _gd = (k) => (obs.getData ? obs.getData(k) : null);
@@ -1537,8 +1537,8 @@ function breakDestructibleObstacle(scene, obs) {
     || !!(_gd('isRewardChest') || _gd('isBonusChest') || _gd('eventChest'));
 
   // Truhen: Gold als SICHTBAREN Drop am Boden verstreuen (auto-eingesammelt bei
-  // Beruehrung) statt still gutzuschreiben. Andere Behaelter/Kulisse behalten die
-  // stille Gutschrift. Faellt spawnGoldPile aus (Textur/Physik fehlt), sichere
+  // Berührung) statt still gutzuschreiben. Andere Behälter/Kulisse behalten die
+  // stille Gutschrift. Fällt spawnGoldPile aus (Textur/Physik fehlt), sichere
   // Gutschrift als Fallback, damit nie Gold verloren geht.
   let goldShown = false;
   if (isChest && typeof window.spawnGoldPile === 'function') {
@@ -1608,8 +1608,8 @@ function breakDestructibleObstacle(scene, obs) {
     if (scroll) spawnLoot.call(scene, x - potionOffsetX, y + potionOffsetY, scroll, null);
   }
 
-  // Ueberraschung: sehr selten (1 von 500) kracht statt Beute ein Monster aus
-  // dem Behaelter — Fledermaus (Typ 9) oder Imp (Typ 1), je 50/50. Nur im
+  // Überraschung: sehr selten (1 von 500) kracht statt Beute ein Monster aus
+  // dem Behälter — Fledermaus (Typ 9) oder Imp (Typ 1), je 50/50. Nur im
   // Dungeon (enemies-Gruppe vorhanden); spawnEnemy platziert selbst sicher
   // (Mindestabstand zum Spieler, begehbare Kachel).
   if (typeof spawnEnemy === 'function' && window.enemies && Math.random() < (1 / 500)) {
@@ -1651,7 +1651,7 @@ function update(time, delta) {
 
   // Modaler Dialog/Toast im Dungeon pausiert das Spiel: jeder solche Dialog ruft
   // pauseGameClock() (setzt __GAME_PAUSE.since + scene.time.paused + physics.pause).
-  // Hier den kompletten Combat-Tick ueberspringen — wie beim offenen Inventar —
+  // Hier den kompletten Combat-Tick überspringen — wie beim offenen Inventar —
   // damit Gegner-KI/-Angriffe, Status-Ticks, Spielerbewegung/-Angriff und das
   // Cooldown-HUD wirklich stillstehen. (physics.pause friert Bewegung/Projektile,
   // scene.time.paused friert delayedCall/addEvent + scene.time.now-Cooldowns,
@@ -1836,7 +1836,7 @@ function update(time, delta) {
   // 5.3b Minimap
   if (typeof updateMinimap === 'function') updateMinimap(this);
 
-  // Gegnern die Maske einmalig nachtraeglich geben, falls sie vor Fog init gespawnt wurden
+  // Gegnern die Maske einmalig nachträglich geben, falls sie vor Fog init gespawnt wurden
   if (this._enemyVisionMask && this._needsMask && this._needsMask.length) {
     this._needsMask.forEach(e => e?.setMask?.(this._enemyVisionMask));
     this._needsMask.length = 0;
@@ -1861,7 +1861,7 @@ function update(time, delta) {
           // Classic only: E triggers slot3 → erst Treppe, dann Tür, dann Ability.
           // Steht der Spieler auf einer ENTSPERRTEN Treppe, konsumiert der
           // Raumwechsel (onStairOverlap) das E -> die Ability darf NICHT feuern.
-          // Zwei Faelle: (a) die Treppe hat den Wechsel schon ausgeloest —
+          // Zwei Fälle: (a) die Treppe hat den Wechsel schon ausgelöst —
           // Marke, (b) der Spieler steht auf einer Treppe, der Wechsel kam aber
           // (noch) nicht zustande — Geometrie.
           const onStair = _stairJustConsumedE() || _playerOnUnlockedStair(this);

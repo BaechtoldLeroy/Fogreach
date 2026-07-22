@@ -161,8 +161,8 @@ function computeRunRoomCount() {
 // ---- Story Room Descriptions (German) ----
 const ROOM_DESCRIPTIONS = {
   'RathausArchive': 'Rathaus-Archiv \u2014 Verbotene Protokolle lagern hier...',
-  'RitualVault':    'Ritualkammer \u2014 Daemonische Energie pulsiert in der Luft...',
-  'PrisonDepths':   'Kerkertiefen \u2014 Schreie hallen durch die Gaenge...',
+  'RitualVault':    'Ritualkammer \u2014 Dämonische Energie pulsiert in der Luft...',
+  'PrisonDepths':   'Kerkertiefen \u2014 Schreie hallen durch die Gänge...',
   'CouncilChamber': 'Ratskammer \u2014 Der Thron des Kettenrats steht verlassen...',
   'ForgottenCrypt': 'Vergessene Krypta \u2014 Uralte Siegel leuchten schwach...'
 };
@@ -255,8 +255,8 @@ function initDungeonRun() {
   } catch (e) { window._pendingRunAmulet = null; }
 
   // Separate regular rooms from story rooms. Feature 055: die kuratierten
-  // Espionage-Raeume sind aus dem regulaeren Pool ausgeschlossen — sie
-  // erscheinen NUR per quest-gesteuertem Force-Inject (s. unten), nie zufaellig.
+  // Espionage-Räume sind aus dem regulären Pool ausgeschlossen — sie
+  // erscheinen NUR per quest-gesteuertem Force-Inject (s. unten), nie zufällig.
   const ESPIONAGE_ROOM_NAMES = ['CouncilWarehouse', 'SealedArchive', 'InformantDen'];
   const allStoryNames = [].concat(STORY_ROOMS.act2, STORY_ROOMS.act3, STORY_ROOMS.act4, ESPIONAGE_ROOM_NAMES);
   const regularNames = allNames.filter(function(n) { return allStoryNames.indexOf(n) === -1; });
@@ -361,7 +361,7 @@ function initDungeonRun() {
         });
       }
       window.RoomTemplates.TEMPLATES[procName] = procTpl;
-      // Debug (#43): ?roomsize=1 loggt jede gerollte Groesse + laufende
+      // Debug (#43): ?roomsize=1 loggt jede gerollte Grösse + laufende
       // Bucket-Verteilung, um ~20/60/20 im Playtest zu verifizieren. Zero-Effekt
       // ohne den URL-Parameter (analog ?perf=1 / __ENEMY_COUNT_DEBUG__).
       if (/[?&]roomsize=1\b/.test((window.location && window.location.search) || '')) {
@@ -382,15 +382,15 @@ function initDungeonRun() {
   }
 
   // Feature 055: garantiere den kuratierten Espionage-Raum in diesem Run,
-  // wenn die zugehoerige Quest aktiv ist (quest-gesteuert, frueh eingefuegt
-  // damit er den Trim ueberlebt). _maybeStartEspionage feuert dann beim Betreten.
+  // wenn die zugehörige Quest aktiv ist (quest-gesteuert, früh eingefügt
+  // damit er den Trim überlebt). _maybeStartEspionage feuert dann beim Betreten.
   try {
     var ESP_MISSIONS = [
       { qid: 'espionage_convoy',    room: 'CouncilWarehouse' },
       { qid: 'espionage_archive',   room: 'SealedArchive' },
       { qid: 'espionage_informant', room: 'InformantDen' },
       // Feature 062: garde_night_escort teilt sich das Konvoi-Lager (thematisch
-      // ein naechtlicher Transport). CouncilWarehouse traegt jetzt zusaetzlich
+      // ein nächtlicher Transport). CouncilWarehouse trägt jetzt zusätzlich
       // die observe-Zone escort_route.
       { qid: 'garde_night_escort',  room: 'CouncilWarehouse' }
     ];
@@ -412,7 +412,7 @@ function initDungeonRun() {
     templateOrder.push(regularNames[padIdx]);
   }
 
-  // Trim if over (Espionage-Raeume sitzen frueh -> ueberleben den Trim)
+  // Trim if over (Espionage-Räume sitzen früh -> überleben den Trim)
   if (templateOrder.length > totalRooms) {
     templateOrder.length = totalRooms;
   }
@@ -508,21 +508,21 @@ function ensureObstacleColliders(scene) {
   }
 }
 
-// Zufaellige Truhen-Platzierung pro Raum (ersetzt die fixen Template-Truhen).
-// Ziel: ~1 Truhe pro 2 durchschnittlich grosse Raeume (Audit-Mittel ~861 Tiles).
+// Zufällige Truhen-Platzierung pro Raum (ersetzt die fixen Template-Truhen).
+// Ziel: ~1 Truhe pro 2 durchschnittlich grosse Räume (Audit-Mittel ~861 Tiles).
 // Platziert NACH den Treppen, validiert gegen Treppen/Spieler-Spawn/Kamera/
 // Hindernisse, damit keine Truhe eine Treppe oder ein anderes Objekt blockiert.
 function _spawnRandomRoomChests(scene, roomW, roomH, spawnX, spawnY) {
   if (!scene || typeof window.spawnLoot !== 'function') return;
   const T = 32;
-  const REF_TILES = 861; // durchschnittliche Raumflaeche aus dem Template-Audit
+  const REF_TILES = 861; // durchschnittliche Raumfläche aus dem Template-Audit
   const tiles = Math.max(1, (roomW / T) * (roomH / T));
-  // Basis 0.5 (= 1 pro 2 Raeume beim Durchschnitt), mit der Flaeche skaliert und
-  // gedeckelt, damit Mini-Raeume selten und Riesen-Raeume nicht garantiert sind.
+  // Basis 0.5 (= 1 pro 2 Räume beim Durchschnitt), mit der Fläche skaliert und
+  // gedeckelt, damit Mini-Räume selten und Riesen-Räume nicht garantiert sind.
   let chance = 0.5 * (tiles / REF_TILES);
   chance = Math.max(0.15, Math.min(0.85, chance));
   let count = (Math.random() < chance) ? 1 : 0;
-  // Nur sehr grosse Raeume duerfen selten eine zweite Truhe bekommen.
+  // Nur sehr grosse Räume dürfen selten eine zweite Truhe bekommen.
   if (count === 1 && tiles > REF_TILES * 1.6 && Math.random() < 0.30) count = 2;
   if (count === 0) return;
 
@@ -558,7 +558,7 @@ function _spawnRandomRoomChests(scene, roomW, roomH, spawnX, spawnY) {
       pos = { x, y };
       break;
     }
-    if (!pos) continue; // kein gueltiger Platz -> lieber keine Truhe als eine falsche
+    if (!pos) continue; // kein gültiger Platz -> lieber keine Truhe als eine falsche
     const r = Math.random();
     const type = r < 0.10 ? 'chest_large' : (r < 0.45 ? 'chest_medium' : 'chest_small');
     const locked = Math.random() < 0.20;
@@ -574,8 +574,8 @@ function _spawnRandomRoomChests(scene, roomW, roomH, spawnX, spawnY) {
 function enterRoom(scene, roomId) {
   currentRoomId = roomId;
   if (typeof window !== 'undefined') window.currentRoomId = roomId;
-  // Mini-Boss-Treppensperre pro Raum zuruecksetzen (kein Stale-Ref aus dem
-  // Vorraum, der die Treppe eines neuen Raums faelschlich entsperren wuerde).
+  // Mini-Boss-Treppensperre pro Raum zurücksetzen (kein Stale-Ref aus dem
+  // Vorraum, der die Treppe eines neuen Raums fälschlich entsperren würde).
   if (typeof window !== 'undefined') window.__climaxEnemy = null;
 
   // Run-summary: each room entry counts as one cleared room (the player only
@@ -597,7 +597,7 @@ function enterRoom(scene, roomId) {
 
   // 1) Alles Alte bereinigen
   const rightPadding = typeof WORLD_RIGHT_PADDING === 'number' ? WORLD_RIGHT_PADDING : 0;
-  scene.physics.world.setBounds(0, 0, ROOM_W + rightPadding, ROOM_H); // wird gleich auf echte Raumgroesse aktualisiert
+  scene.physics.world.setBounds(0, 0, ROOM_W + rightPadding, ROOM_H); // wird gleich auf echte Raumgrösse aktualisiert
   scene.cameras.main.setBounds(0, 0, ROOM_W + rightPadding, ROOM_H);
 
   enemies?.clear(true, true);
@@ -694,8 +694,8 @@ function enterRoom(scene, roomId) {
 
   // Finalraum-Flag SCHON HIER setzen (nicht erst bei der Wellen-Vorbereitung
   // weiter unten): der Event-Trigger direkt darunter liest es, um im Boss-/
-  // Klimax-Raum KEIN Event zu feuern. Ohne diese fruehe Zuweisung stuende hier
-  // noch der Wert des VORRAUMS -> ein Event koennte doch im Boss-Raum spawnen.
+  // Klimax-Raum KEIN Event zu feuern. Ohne diese frühe Zuweisung stünde hier
+  // noch der Wert des VORRAUMS -> ein Event könnte doch im Boss-Raum spawnen.
   {
     var _tR = (dungeonRun && dungeonRun.totalRooms) ? dungeonRun.totalRooms : rooms.length;
     window.__isFinalDungeonRoom = (roomId === (_tR - 1));
@@ -710,7 +710,7 @@ function enterRoom(scene, roomId) {
   _maybeFireElaraCellarEncounter(scene, roomId);
 
   // Feature 055: Espionage-Mission starten, wenn dieser Raum espionage-
-  // Metadaten traegt UND eine passende observe-Quest aktiv ist.
+  // Metadaten trägt UND eine passende observe-Quest aktiv ist.
   _maybeStartEspionage(scene, templateName, builtMeta);
 
   const builtWidth = (builtMeta?.w ?? room?.width ?? ROOM_W) + rightPadding;
@@ -1044,7 +1044,7 @@ function enterRoom(scene, roomId) {
     // #15: wenn diese Treppe zu nah an einer bereits platzierten lande, lieber
     // ganz WEGLASSEN als zwei Treppen aneinander zu klumpen. Die erste Treppe
     // bleibt immer (PLACED_STAIRS leer -> kein Skip), damit der Raum stets
-    // durchquerbar ist. Greift fuer ALLE Pfade (proc + authored + Fallback).
+    // durchquerbar ist. Greift für ALLE Pfade (proc + authored + Fallback).
     if (PLACED_STAIRS.length > 0) {
       let tooClose = false;
       for (let i = 0; i < PLACED_STAIRS.length; i++) {
@@ -1091,8 +1091,8 @@ function enterRoom(scene, roomId) {
 
   // Truhen werden NICHT mehr aus den Templates gespawnt (spawns.loot-Truhen
   // entfernt), sondern hier ZUFAELLIG platziert — nach den Treppen, damit die
-  // Validierung sie meiden kann (frueher standen Template-Truhen fix vor einer
-  // Treppe). Ziel: ~1 Truhe pro 2 durchschnittlich grosse Raeume.
+  // Validierung sie meiden kann (früher standen Template-Truhen fix vor einer
+  // Treppe). Ziel: ~1 Truhe pro 2 durchschnittlich grosse Räume.
   _spawnRandomRoomChests(scene, builtWidth, builtHeight, playerSpawnX, playerSpawnY);
 
   // Overlap Spieler ↔ Stairs
@@ -1168,7 +1168,7 @@ function enterRoom(scene, roomId) {
     hideEnemyDirectionIndicators(scene);
   }
 
-  // 4) Waves fuer den Raum setzen
+  // 4) Waves für den Raum setzen
   window.waveInProgress = false;
   window.spawnedEnemiesInWave = 0;
 
@@ -1193,7 +1193,7 @@ function enterRoom(scene, roomId) {
   const builtW = builtMeta?.w ?? room?.width ?? ROOM_W;
   const builtH = builtMeta?.h ?? room?.height ?? ROOM_H;
   const roomAreaPx = builtW * builtH;
-  // Variante A: Gegnerzahl nach BEGEHBARER Flaeche (Flood-Fill), Fallback Box.
+  // Variante A: Gegnerzahl nach BEGEHBARER Fläche (Flood-Fill), Fallback Box.
   const walkableAreaPx = (typeof window.computeWalkableAreaPx === "function"
     ? window.computeWalkableAreaPx(scene) : 0) || roomAreaPx;
   const baseEnemies =
@@ -1322,12 +1322,12 @@ function onStairOverlap(player, stair) {
     }
   }
 
-  // Ab hier verbraucht die Treppe das E. Der Physics-Step laeuft VOR
-  // scene.update(), d.h. main.js prueft die Treppen-Naehe erst, wenn der
-  // Spieler schon im naechsten Raum am Spawn steht — eine Geometrie-Pruefung
-  // dort greift zwangslaeufig ins Leere. Darum hier eine Zeitmarke setzen, die
+  // Ab hier verbraucht die Treppe das E. Der Physics-Step läuft VOR
+  // scene.update(), d.h. main.js prüft die Treppen-Nähe erst, wenn der
+  // Spieler schon im nächsten Raum am Spawn steht — eine Geometrie-Prüfung
+  // dort greift zwangsläufig ins Leere. Darum hier eine Zeitmarke setzen, die
   // main.js beim E-Druck konsumiert. Date.now() statt scene.time.now: die Marke
-  // wird ggf. scene-uebergreifend gelesen (Raumwechsel/Hub-Rueckkehr).
+  // wird ggf. scene-übergreifend gelesen (Raumwechsel/Hub-Rückkehr).
   window.__stairConsumedEAt = Date.now();
 
   const nextIndex = currentRoomId + 1;
@@ -1378,7 +1378,7 @@ function onStairOverlap(player, stair) {
     ? window.RunDepth.nextRoomDepth(runDepth)
     : runDepth;
 
-  // Betritt naechsten Raum
+  // Betritt nächsten Raum
   enterRoom(obstacles.scene, nextIndex);
 }
 
@@ -1659,7 +1659,7 @@ function initFogOfWar() {
   scene._enemyVisionMask.setInvertAlpha(false);
   if (scene.enemyLayer) scene.enemyLayer.setMask(scene._enemyVisionMask);
 
-  // optionale Felder fuer Throttling
+  // optionale Felder für Throttling
   scene._lastVisX = scene._lastVisY = undefined;
   scene._visTick = 0;
 }
@@ -1795,7 +1795,7 @@ function _visionRays() {
   return (typeof isMobile !== 'undefined' && isMobile) ? VISION_RAYS_MOBILE : VISION_RAYS_DESKTOP;
 }
 const VISION_STEP = 6; // coarser = faster, still fine enough for walls
-const VISION_WALL_BACKOFF = 0; // nicht vor der Wand zurueckspringen
+const VISION_WALL_BACKOFF = 0; // nicht vor der Wand zurückspringen
 const VISION_PAD_EXPLORED = 20; // small overshoot so wall itself is revealed (~half tile)
 const VISION_PAD_UI = 20; // spotlight overshoot (smaller = no see-through walls)
 const VISION_PAD_ENEMY = 8; // enemy mask — tight to walls so enemies stay hidden behind cover
@@ -1893,7 +1893,7 @@ function computeVisionPolygon(scene, ox, oy) {
       const px = ox + dx * r;
       const py = oy + dy * r;
       if (isBlockedByObstacle(px, py)) {
-        // Mindest-Sichtradius erzwingen, damit Vision an Waenden nicht klippt
+        // Mindest-Sichtradius erzwingen, damit Vision an Wänden nicht klippt
         const clampedR = Math.max(r, VISION_MIN_RADIUS);
         hitX = ox + dx * clampedR;
         hitY = oy + dy * clampedR;
@@ -1916,9 +1916,9 @@ function drawFilledPolygon(gfx, pts) {
 }
 
 const ROOM_SPAWN_HALF_SIZE = 8;
-// Charakter-Clearance fuer die Begehbarkeits-/Spawn-Pruefung (Body ~34x56px).
-// >16 (halbe Tile) sorgt dafuer, dass 1-Tile-Korridore (32px) als unpassierbar
-// gelten und mind. 2-Tile-Breite/Hoehe verlangt wird (User-Wunsch).
+// Charakter-Clearance für die Begehbarkeits-/Spawn-Prüfung (Body ~34x56px).
+// >16 (halbe Tile) sorgt dafür, dass 1-Tile-Korridore (32px) als unpassierbar
+// gelten und mind. 2-Tile-Breite/Höhe verlangt wird (User-Wunsch).
 const CHAR_CLEAR_HALF_W = 17;
 const CHAR_CLEAR_HALF_H = 28;
 const ROOM_SPAWN_PAD = 0;
@@ -1930,11 +1930,11 @@ function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
   if (!Phaser || !Phaser.Geom || !Phaser.Geom.Rectangle) return false;
 
   // Check against the procedural room wall grid (if available).
-  // Charakter-Clearance: nicht nur die Mitte-Tile pruefen, sondern den ganzen
+  // Charakter-Clearance: nicht nur die Mitte-Tile prüfen, sondern den ganzen
   // Charakter-Footprint (~34x56px, Halb-Extents unten). Sonst gelten 1-Tile-
-  // Engstellen (v.a. in Cavern-Generator-Raeumen) faelschlich als begehbar,
-  // obwohl der Charakter (breiter/hoeher als 1 Tile=32px) nicht durchpasst.
-  // 3x3 Sample-Punkte des Footprints: blockt 1-Tile-Korridore, laesst 2-Tile zu.
+  // Engstellen (v.a. in Cavern-Generator-Räumen) fälschlich als begehbar,
+  // obwohl der Charakter (breiter/höher als 1 Tile=32px) nicht durchpasst.
+  // 3x3 Sample-Punkte des Footprints: blockt 1-Tile-Korridore, lässt 2-Tile zu.
   const scene = obstacles.scene;
   const wallsGrid = scene?._minimapWallsGrid;
   if (wallsGrid && wallsGrid.length > 0) {
@@ -1950,7 +1950,7 @@ function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
           return true; // Footprint ragt aus dem Grid -> blockiert
         }
         if (wallsGrid[ty]?.[tx] !== '.') {
-          return true; // Footprint beruehrt eine Wand -> blockiert
+          return true; // Footprint berührt eine Wand -> blockiert
         }
       }
     }
@@ -1985,10 +1985,10 @@ function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
   return false;
 }
 
-// Begehbare (erreichbare) Flaeche eines Raums in px² — Basis fuer die
-// flaechen-basierte Gegnerzahl (Variante A). Bevorzugt den Flood-Fill der
-// erreichbaren Zellen (schliesst Waende, Hindernisse UND unerreichbare Taschen
-// aus); faellt sonst auf Floor-Tiles ('.') zurueck, sonst 0 (Caller nutzt dann
+// Begehbare (erreichbare) Fläche eines Raums in px² — Basis für die
+// flächen-basierte Gegnerzahl (Variante A). Bevorzugt den Flood-Fill der
+// erreichbaren Zellen (schliesst Wände, Hindernisse UND unerreichbare Taschen
+// aus); fällt sonst auf Floor-Tiles ('.') zurück, sonst 0 (Caller nutzt dann
 // den Tiefen-Fallback). Cached in window.__WALKABLE_AREA_PX__.
 function computeWalkableAreaPx(scene) {
   var areaPx = 0;
@@ -2025,11 +2025,11 @@ function computeWalkableAreaPx(scene) {
 window.computeWalkableAreaPx = computeWalkableAreaPx;
 
 // Ist der Weltpunkt (x,y) im begehbaren Grid? (#57) Der Access-Grid (an den
-// Physik-Bounds ausgerichtet) und das Raum-Tile-Raster (am Raum-Origin) muessen
+// Physik-Bounds ausgerichtet) und das Raum-Tile-Raster (am Raum-Origin) müssen
 // nicht deckungsgleich sein — ein legitimer Spieler-Spawn-Mittelpunkt kann so
 // auf eine knapp danebenliegende, wegen Wand-Clearance geblockte Zelle mappen
-// und faelschlich `false` liefern. Fix: die direkte Zelle UND — bei Sub-Zellen-
-// Offset — die Nachbarn in Richtung des naechsten Zellrands pruefen (max. ~1
+// und fälschlich `false` liefern. Fix: die direkte Zelle UND — bei Sub-Zellen-
+// Offset — die Nachbarn in Richtung des nächsten Zellrands prüfen (max. ~1
 // Zelle Toleranz, gerichtet, um Falsch-Positive gering zu halten).
 function pointAccessibleInGrid(grid, x, y) {
   if (!grid) return true;
@@ -2039,7 +2039,7 @@ function pointAccessibleInGrid(grid, x, y) {
   const vis = (ax, ay) => ax >= 0 && ay >= 0 && ax < grid.cols && ay < grid.rows
     && grid.visited.has(`${ax}|${ay}`);
   if (vis(cx, cy)) return true;
-  const sx = (lx / cs - cx) < 0.5 ? -1 : 1;   // Richtung zum naechsten Rand
+  const sx = (lx / cs - cx) < 0.5 ? -1 : 1;   // Richtung zum nächsten Rand
   const sy = (ly / cs - cy) < 0.5 ? -1 : 1;
   return vis(cx + sx, cy) || vis(cx, cy + sy) || vis(cx + sx, cy + sy);
 }
@@ -2310,9 +2310,9 @@ function _rollDistance() {
 //     spawn Elara sprite again. E → dialog → completeQuest, granting Q5
 //     rewards and unlocking Q6 at Harren.
 // Feature 055: startet eine Espionage-Mission, wenn der gerade gebaute Raum
-// espionage-Metadaten (guards/cover/observe in TILE-Koords) traegt UND eine
+// espionage-Metadaten (guards/cover/observe in TILE-Koords) trägt UND eine
 // aktive Quest ein passendes (noch offenes) observe-Objective hat. Konvertiert
-// die Zonen-Koords aus Tiles in Welt-Pixel (origin + tile*T) und uebergibt sie
+// die Zonen-Koords aus Tiles in Welt-Pixel (origin + tile*T) und übergibt sie
 // an EspionageSystem.startMission; aktiviert die Verkleidung automatisch.
 // #54-Test: Debug-Schalter via URL ?spy=1 — erzwingt einen Spionage-Raum als
 // ersten Dungeon-Raum und startet die Mission OHNE aktive Quest (nur zum Testen
@@ -2332,7 +2332,7 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
     var esp = tpl && tpl.espionage;
     if (!esp) return;
 
-    // Aktive Quest mit offenem observe-Objective fuer eine Zone dieses Raums?
+    // Aktive Quest mit offenem observe-Objective für eine Zone dieses Raums?
     var targets = (esp.observe || []).map(function (z) { return z.questTarget; });
     var active = (window.questSystem && typeof window.questSystem.getActiveQuests === 'function')
       ? window.questSystem.getActiveQuests() : [];
@@ -2369,8 +2369,8 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       return out;
     };
 
-    // Wand-/Hindernis-Gitter fuer die Wachen-Kollision (damit sie beim Jagen
-    // nicht durch Waende laufen). '#'-Tiles + Auto-Hindernis-Objekte blockieren.
+    // Wand-/Hindernis-Gitter für die Wachen-Kollision (damit sie beim Jagen
+    // nicht durch Wände laufen). '#'-Tiles + Auto-Hindernis-Objekte blockieren.
     var wallRows = (tpl.layout && tpl.layout.walls) || [];
     var blockedTiles = {};
     (tpl.objects || []).forEach(function (o) {
@@ -2479,14 +2479,14 @@ function _showElaraDialog(scene, stage) {
   if (stage === 2) {
     text = isEn
       ? '"You found it." Elara takes the document, traces the three seals with one finger. Magistrate. Clergy. Guard.\n\n"Three signatures that should never share a page. They claim to be rivals — behind closed doors they agree. Bring this to Father. He has been waiting for the moment you understand."'
-      : '"Du hast es gefunden." Elara nimmt das Dokument, faehrt mit einem Finger ueber die drei Siegel. Magistrat. Klerus. Garde.\n\n"Drei Unterschriften, die nie auf einer Seite stehen sollten. Sie behaupten Rivalen zu sein — hinter verschlossenen Tueren stimmen sie ueberein. Bring das zu Vater. Er wartet darauf, dass du verstehst."';
+      : '"Du hast es gefunden." Elara nimmt das Dokument, fährt mit einem Finger über die drei Siegel. Magistrat. Klerus. Garde.\n\n"Drei Unterschriften, die nie auf einer Seite stehen sollten. Sie behaupten Rivalen zu sein — hinter verschlossenen Türen stimmen sie überein. Bring das zu Vater. Er wartet darauf, dass du verstehst."';
     onContinue = function () {
       if (qs && typeof qs.completeQuest === 'function') qs.completeQuest('widerstand_proof');
     };
   } else {
     text = isEn
       ? '"You. The Archivesmith. So Father did send someone."\n\nElara — Harren\'s daughter, alive — leans against the chamber wall.\n\n"I am not coming back. Not yet. Down here lies a document, sealed by all three Council factions. They would never sign such a thing in the open — and yet. Bring it to me when you find it."'
-      : '"Du. Der Archivschmied. Vater hat also doch jemanden geschickt."\n\nElara — Harrens Tochter, lebendig — lehnt an der Kammerwand.\n\n"Ich komme nicht zurueck. Noch nicht. Unten liegt ein Dokument, versiegelt von allen drei Ratsfraktionen. Oeffentlich wuerden sie so etwas nie unterzeichnen — und doch. Bring es mir, sobald du es findest."';
+      : '"Du. Der Archivschmied. Vater hat also doch jemanden geschickt."\n\nElara — Harrens Tochter, lebendig — lehnt an der Kammerwand.\n\n"Ich komme nicht zurück. Noch nicht. Unten liegt ein Dokument, versiegelt von allen drei Ratsfraktionen. Öffentlich würden sie so etwas nie unterzeichnen — und doch. Bring es mir, sobald du es findest."';
     onContinue = function () {
       if (!qs) return;
       if (typeof qs.setFlag === 'function') qs.setFlag('elaraMet', true);

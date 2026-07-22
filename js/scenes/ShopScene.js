@@ -271,7 +271,7 @@
 
       let rowIndex = 0;
       // G2 (#51): Blindkauf — Gambling-Gold-Sink (ab Tiefe 4 freigeschaltet, s.o.).
-      // Eine unidentifizierte Ware zu Fixpreis; Inhalt wird beim Kauf gewuerfelt
+      // Eine unidentifizierte Ware zu Fixpreis; Inhalt wird beim Kauf gewürfelt
       // (Qualitäts-Bonus ggue. der sichtbaren Auslage).
       if (window.LootSystem && typeof window.LootSystem.blindBuy === 'function') {
         const bprice = (typeof window.LootSystem.getBlindBuyPrice === 'function')
@@ -532,8 +532,8 @@
       this._showToast(_SHOP_T('shop.toast.stock_rerolled'));
     }
 
-    // G2 (#51): Blindkauf. Freien Slot ZUERST pruefen (kein Gold verbrennen, wenn
-    // voll), dann blindBuy (zieht Gold ab + wuerfelt), Item in den Slot legen.
+    // G2 (#51): Blindkauf. Freien Slot ZUERST prüfen (kein Gold verbrennen, wenn
+    // voll), dann blindBuy (zieht Gold ab + würfelt), Item in den Slot legen.
     _tryBlindBuy() {
       if (!window.LootSystem || typeof window.LootSystem.blindBuy !== 'function') {
         this._showToast(_SHOP_T('shop.toast.reroll_unavailable'));
@@ -551,7 +551,7 @@
       window.inventory[slot] = res.item;
       if (typeof window._refreshInventoryHUD === 'function') { try { window._refreshInventoryHUD(); } catch (e) {} }
       this._refreshGold();
-      this._renderTab('items'); // Preis kann tiefenabhaengig sein -> neu zeichnen
+      this._renderTab('items'); // Preis kann tiefenabhängig sein -> neu zeichnen
       const nm = (window.LootSystem && typeof window.LootSystem.getLocalizedDisplayName === 'function')
         ? window.LootSystem.getLocalizedDisplayName(res.item)
         : (res.item.displayName || res.item.name || 'Item');
@@ -874,7 +874,7 @@
 
         // #51 G3: Affixe sind ab tier 2 anklickbar -> genau EINEN sperren
         // (bleibt beim Reroll erhalten, gegen Aufpreis). Der gesperrte wird 🔒
-        // markiert. Ungueltiger Lock-Index (Item gewechselt) wird zurueckgesetzt.
+        // markiert. Ungültiger Lock-Index (Item gewechselt) wird zurückgesetzt.
         const canLock = (item.tier | 0) >= 2;
         if (!canLock || this.rerollLockIndex >= (item.affixes || []).length) this.rerollLockIndex = null;
         (item.affixes || []).forEach((a, i) => {
@@ -899,7 +899,7 @@
           this.tabBody.push(lineText);
         });
 
-        // Sperr-Hinweis unter den Affixen (nur wenn Sperren moeglich ist).
+        // Sperr-Hinweis unter den Affixen (nur wenn Sperren möglich ist).
         if (canLock) {
           const hintKey = (this.rerollLockIndex != null) ? 'shop.reroll.locked_hint' : 'shop.reroll.lock_hint';
           const hint = this.add.text(px, py - panelH / 2 + 150 + (item.affixes || []).length * 18, _SHOP_T(hintKey), {
@@ -1036,7 +1036,7 @@
     const game = window.game;
     if (!game || !game.scene) return;
     // #51: Maras Schwarzmarkt ist erst ab erreichter Tiefe freigeschaltet —
-    // bis dahin oeffnet das Menue gar nicht. Der fliegende Dungeon-Haendler
+    // bis dahin öffnet das Menü gar nicht. Der fliegende Dungeon-Händler
     // (_dungeonMerchant) ist ausgenommen.
     if (!window._dungeonMerchant && window.LootSystem
         && typeof window.LootSystem.isBlackMarketUnlocked === 'function'

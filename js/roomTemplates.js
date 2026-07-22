@@ -32,10 +32,10 @@
 })(window);
 
 // ========== Brazier-Glow ==========
-// Alle Brazier-Lichter landen aus Perf-Gruenden in EINEM geteilten Graphics
-// (ein Draw-Call, Depth -3). Deshalb laesst sich ein einzelnes Licht nicht
-// "wegloeschen" — wird ein Brazier zerstoert, muessen die verbliebenen Lichter
-// neu gezeichnet werden. Dafuer fuehren wir die Positionen mit.
+// Alle Brazier-Lichter landen aus Perf-Gründen in EINEM geteilten Graphics
+// (ein Draw-Call, Depth -3). Deshalb lässt sich ein einzelnes Licht nicht
+// "weglöschen" — wird ein Brazier zerstört, müssen die verbliebenen Lichter
+// neu gezeichnet werden. Dafür führen wir die Positionen mit.
 //
 // WICHTIG: Diese Funktionen stehen bewusst auf TOP-LEVEL, nicht in der IIFE
 // oben. applyRoomTemplate (der einzige Zeichen-Aufrufer) ist selbst top-level
@@ -54,7 +54,7 @@ function _paintBrazierGlow(gfx, cx, cy) {
 }
 
 // Zeichnet einen Glow UND merkt sich seine Position. `points` ist die Liste,
-// die spaeter removeBrazierGlow braucht.
+// die später removeBrazierGlow braucht.
 function registerBrazierGlow(gfx, points, cx, cy) {
   if (!gfx || !Array.isArray(points)) return false;
   points.push({ x: cx, y: cy });
@@ -62,8 +62,8 @@ function registerBrazierGlow(gfx, points, cx, cy) {
   return true;
 }
 
-// Entfernt das Licht des Braziers, der (x,y) am naechsten liegt, und zeichnet
-// die restlichen Glows neu. Gibt true zurueck, wenn eines entfernt wurde.
+// Entfernt das Licht des Braziers, der (x,y) am nächsten liegt, und zeichnet
+// die restlichen Glows neu. Gibt true zurück, wenn eines entfernt wurde.
 function removeBrazierGlow(scene, x, y, tolerance) {
   if (!scene) return false;
   var gfx = scene._brazierGlowGfx;
@@ -413,7 +413,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   if (obstacleShadowGfx) templateWalls.push(obstacleShadowGfx);
   if (brazierGlowGfx) templateWalls.push(brazierGlowGfx);
 
-  // Glow-Positionen mitfuehren, damit ein zerstoertes Brazier sein Licht
+  // Glow-Positionen mitführen, damit ein zerstörtes Brazier sein Licht
   // verlieren kann (siehe removeBrazierGlow oben). Pro Raum-Aufbau frisch.
   const brazierGlowPoints = [];
   scene._brazierGlowGfx = brazierGlowGfx;
@@ -472,11 +472,11 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
             addBrazierGlow(obstacleX, obstacleY);
           }
 
-          // Props naeher als 2 Kacheln an einer Wand wurden frueher zu reinen
+          // Props näher als 2 Kacheln an einer Wand wurden früher zu reinen
           // Bildern (alpha 0.7, keine Physik) degradiert — sie sahen ausgegraut
           // aus und man lief hindurch. Das ist weg: jedes Prop ist ein echtes
-          // Hindernis, egal wo es steht. Truhen/Kisten an Waenden waren sonst
-          // Attrappen, und seit Statuen/Saeulen zerstoerbar sind gibt es auch
+          // Hindernis, egal wo es steht. Truhen/Kisten an Wänden waren sonst
+          // Attrappen, und seit Statuen/Säulen zerstörbar sind gibt es auch
           // keinen Grund mehr, wandnahe Props auszunehmen.
           scene.spawnObstacle(obstacleX, obstacleY, key);
         }
@@ -770,14 +770,14 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       addBrazierGlow(px, py);
     }
 
-    // Frueher: Objekte naeher als 2 Kacheln an einer Wand wurden auf alpha 0.7
+    // Früher: Objekte näher als 2 Kacheln an einer Wand wurden auf alpha 0.7
     // gesetzt und durchlaufbar gemacht ('walkthrough'), damit der Spieler
-    // (34x56px) nicht in Wandnischen haengenbleibt. Kosten waren hoeher als der
-    // Nutzen: Truhen an Waenden waren halbtransparente Attrappen, und die
-    // Wegfindung hielt die Kachel ohnehin fuer blockiert (siehe die Walkable-
-    // Pruefung ueber AUTO_OBSTACLE_TILE_KEYS) — Physik und Navigation waren sich
+    // (34x56px) nicht in Wandnischen hängenbleibt. Kosten waren höher als der
+    // Nutzen: Truhen an Wänden waren halbtransparente Attrappen, und die
+    // Wegfindung hielt die Kachel ohnehin für blockiert (siehe die Walkable-
+    // Prüfung über AUTO_OBSTACLE_TILE_KEYS) — Physik und Navigation waren sich
     // also uneinig. Jetzt ist jedes Objekt ein echtes Hindernis; die
-    // zerstoerbaren kann man wegschlagen, wenn sie im Weg stehen.
+    // zerstörbaren kann man wegschlagen, wenn sie im Weg stehen.
     scene.spawnObstacle(px, py, o.type);
     objectCount++;
   });
@@ -1211,7 +1211,7 @@ function normalizeTemplateToFixedGrid(tpl) {
   const offX = 0;
   const offY = 0;
 
-  // 4) Inhalt rueberkopieren (alles ausserhalb wird ignoriert)
+  // 4) Inhalt rüberkopieren (alles ausserhalb wird ignoriert)
   for (let y = 0; y < srcRows; y++) {
     const row = tpl.layout.walls[y];
     for (let x = 0; x < srcCols; x++) {
@@ -1248,7 +1248,7 @@ function normalizeTemplateToFixedGrid(tpl) {
     player:  tpl.spawns?.player ? shiftPt(tpl.spawns.player) : undefined
   };
 
-  // 8) Rueckgabe: Tile immer 32, Grid = native template size
+  // 8) Rückgabe: Tile immer 32, Grid = native template size
   return {
     ...tpl,
     size: { tile: TILE_PX, w: targetCols, h: targetRows },
@@ -1360,10 +1360,10 @@ function spawnObstacle(x, y, key) {
   }
 
   // Destructible/openable types — chests, barrels, crates can be broken for loot.
-  // Statuen/Saeulen sind ebenfalls zerschlagbar (Sichtlinien/Wege oeffnen), aber
-  // KULISSE statt Behaelter: sie tragen den 'stone'-Tier, der nur etwas Gold gibt.
-  // Waeren sie 'minor', wuerden ~3-4 Props pro Raum Traenke und Ausruestung
-  // ausspucken — das ist ein Oekonomie-Eingriff, kein Zerstoerungs-Feature.
+  // Statuen/Säulen sind ebenfalls zerschlagbar (Sichtlinien/Wege öffnen), aber
+  // KULISSE statt Behälter: sie tragen den 'stone'-Tier, der nur etwas Gold gibt.
+  // Wären sie 'minor', würden ~3-4 Props pro Raum Tränke und Ausrüstung
+  // ausspucken — das ist ein Ökonomie-Eingriff, kein Zerstörungs-Feature.
   const destructibleTypes = ['barrel', 'crate', 'chest_small', 'chest_medium', 'chest_large',
     'rubble', 'statue', 'pillar', 'brazier', 'brazer', 'altar'];
   const lowerKey = String(key).toLowerCase();
@@ -1394,7 +1394,7 @@ function spawnObstacle(x, y, key) {
 window.RoomTemplates.transformTemplate = transformTemplate;
 window.RoomTemplates.applyRoomTemplate = applyRoomTemplate;
 window.RoomTemplates.buildRoomFromTemplate = buildRoomFromTemplate;
-// Exportiert fuer Tests: die destructible/lootTier-Zuordnung ist reine Daten-
+// Exportiert für Tests: die destructible/lootTier-Zuordnung ist reine Daten-
 // logik, aber ein falscher Tier flutet den Run still mit Beute.
 window.RoomTemplates.spawnObstacle = spawnObstacle;
 

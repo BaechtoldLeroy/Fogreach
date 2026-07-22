@@ -108,7 +108,7 @@ const getItemLevel = (it) => {
 const computeItemPower = (it) => {
   if (!it) return 0;
   let p = 0;
-  // Basis-Stats (speed/armor/crit sind Brüche 0..1 -> *100 fuer %-Groessenordnung).
+  // Basis-Stats (speed/armor/crit sind Brüche 0..1 -> *100 für %-Grössenordnung).
   p += (Number(it.damage) || 0) * 3;
   p += (Number(it.hp) || 0) * 0.5;
   p += (Number(it.speed) || 0) * 100 * 1.2;
@@ -361,9 +361,9 @@ function getEquippedLevelForType(type) {
 function isItemUpgrade(item) {
   if (!item || !UPGRADEABLE_TYPES.has(item.type)) return false;
   // #56: Der grüne "Upgrade"-Indikator basiert auf der ITEM-STÄRKE
-  // (computeItemPower: Basis + Affixe + Raritaet), nicht mehr auf dem rohen
+  // (computeItemPower: Basis + Affixe + Rarität), nicht mehr auf dem rohen
   // Item-Level. So markiert er ein Item nur, wenn es wirklich stärker ist als
-  // das aktuell in diesem Slot ausgeruestete.
+  // das aktuell in diesem Slot ausgerüstete.
   const equipped = (typeof equipment === 'object' && equipment) ? equipment[item.type] : null;
   const itemPower = computeItemPower(item);
   const equippedPower = equipped ? computeItemPower(equipped) : 0;
@@ -711,7 +711,7 @@ function initInventoryUI() {
 
 const equipKeys = ['weapon', 'head', 'body', 'boots', 'amulet'];
 const EQUIP_X = -PANEL_W / 2 + 160;  // Slots leicht nach rechts
-// Interim (#42 WP01): Abstaende so eng, dass alle 5 Slots ins 480px-Panel
+// Interim (#42 WP01): Abstände so eng, dass alle 5 Slots ins 480px-Panel
 // passen (der 5. Amulett-Slot lag vorher bei y=280 unter dem Panel-Rand).
 // Das richtige 5-Slot-Layout + Amulett-Slot-Optik/Badge folgt in WP05.
 const EQUIP_Y0 = -PANEL_H / 2 + 118;
@@ -1024,12 +1024,12 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   playerCritChance = Phaser.Math.Clamp((baseStats.crit || 0) + sum.crit, 0, 0.9);
 
   // 2.5) Loot-Affix-Boni (Issue #36) — die AFFIX_DEFS-Basis-Stat-Affixe in die
-  // bestehenden abgeleiteten Groessen einrechnen. getBonus() liefert bei
+  // bestehenden abgeleiteten Grössen einrechnen. getBonus() liefert bei
   // percent-Affixen bereits den Bruch (z.B. 0.18), bei flat-Affixen den
   // Rohwert. Reihenfolge der Einheiten beachten:
   //   damage (Scharfe, %)        -> multiplikativ auf weaponDamage
   //   speed  (Flinke, %)         -> multiplikativ auf ANGRIFFstempo
-  //   crit   (der Praezision, %) -> bereits Bruch (0.05 = +5%), additiv
+  //   crit   (der Präzision, %) -> bereits Bruch (0.05 = +5%), additiv
   //   armor  (Robuste, %)        -> bereits Bruch (0.05 = +5%), additiv
   //   range  (der Reichweite, flat px) -> additiv
   //   move   (des Windes, flat)   -> additiv auf playerSpeed (Lauftempo)
@@ -1046,12 +1046,12 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // === D2-artige Kern-Attribute (#60) — kommen NUR von Item-Affixen ===
   // Jedes Attribut hat einen PRIMAER- und einen einzigartigen ZWEIT-Effekt, damit
   // es kein reiner Klon eines Einzel-Affixes ist:
-  //   Staerke    -> +1 % Waffenschaden  + 1.5 % Krit-SCHADEN je Punkt
+  //   Stärke    -> +1 % Waffenschaden  + 1.5 % Krit-SCHADEN je Punkt
   //   Geschick   -> +0.2 % Krit + 0.3 % Angriffstempo + 0.25 % AUSWEICHEN je Punkt
-  //   Vitalitaet -> +3 Max-LP           + 0.1 LP/s REGENERATION je Punkt
+  //   Vitalität -> +3 Max-LP           + 0.1 LP/s REGENERATION je Punkt
   //   Fokus      -> −0.4 % globale CD   + 0.5 % FAEHIGKEITSschaden je Punkt
   // Ausweichen/Regen werden UNTEN (nach Skills/Endless) additiv draufgelegt,
-  // damit sie nicht ueberschrieben werden; Krit-Schaden/Skill-Schaden liegen auf
+  // damit sie nicht überschrieben werden; Krit-Schaden/Skill-Schaden liegen auf
   // eigenen Globals (player.js liest sie im Combat).
   let _attrStr = 0, _attrDex = 0, _attrVit = 0, _attrFoc = 0;
   if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
@@ -1066,7 +1066,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   }
   const _attrVitHp = _attrVit * 3;
   const _attrFocusCdr = Math.min(0.40, _attrFoc * 0.004);
-  // Nach aussen sichtbar: Charakter-Menue (Anzeige) + Combat-Anwendung (player.js).
+  // Nach aussen sichtbar: Charakter-Menü (Anzeige) + Combat-Anwendung (player.js).
   if (typeof window !== 'undefined') {
     window.playerStrength = _attrStr;
     window.playerDexterity = _attrDex;
@@ -1074,7 +1074,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     window.playerFocus = _attrFoc;
     window.playerFocusCdr = _attrFocusCdr;
     // Zweit-Effekte auf eigenen Globals (immer frisch, 0 wenn kein Attribut):
-    window.playerCritDamageBonus = _attrStr * 0.015; // Staerke -> Krit-Schaden
+    window.playerCritDamageBonus = _attrStr * 0.015; // Stärke -> Krit-Schaden
     window.playerFocusAbilityDmg = _attrFoc * 0.005;  // Fokus  -> Fähigkeitsschaden
   }
 
@@ -1196,10 +1196,10 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   }
 
   // 3.57) #60 Attribut-Zweiteffekte, die auf gemeinsam genutzte Globals gehen:
-  // NACH Skills/Endless additiv drauflegen, sonst wuerden die Zuweisungen oben
-  // (PLAYER_DODGE_CHANCE/PLAYER_HEALTH_REGEN) sie ueberschreiben.
+  // NACH Skills/Endless additiv drauflegen, sonst würden die Zuweisungen oben
+  // (PLAYER_DODGE_CHANCE/PLAYER_HEALTH_REGEN) sie überschreiben.
   //   Geschick   -> +0.25 % Ausweichen je Punkt
-  //   Vitalitaet -> +0.1 LP/s Regeneration je Punkt
+  //   Vitalität -> +0.1 LP/s Regeneration je Punkt
   if (_attrDex > 0) {
     window.PLAYER_DODGE_CHANCE = Math.min(0.5, (window.PLAYER_DODGE_CHANCE || 0) + _attrDex * 0.0025);
   }
@@ -1296,7 +1296,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   }
 }
 // Export: knowledgeTree.js (u.a.) erwartet window.recalcDerived, um nach
-// Buff-Aenderungen die abgeleiteten Werte neu zu berechnen (#60/#26).
+// Buff-Änderungen die abgeleiteten Werte neu zu berechnen (#60/#26).
 if (typeof window !== 'undefined') window.recalcDerived = recalcDerived;
 
 function openInventory() {
