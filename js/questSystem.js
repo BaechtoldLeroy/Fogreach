@@ -87,7 +87,7 @@
       // vier Fraktionsaufträge ab. Der Akt existierte vorher nur dem Namen
       // nach — die Quests hingen alle in Akt 0, niemand sprang je auf 1.
       advanceAct: 1,
-      dialogueOffer: 'Die Tochter des Bürgermeisters ist verschwunden. Aldric sagt, Eindringlinge hätten sie entführt. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversäumnis.\n\nIch glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurückgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.\n\nVertrau niemandem, bis du es selbst gesehen hast.',
+      dialogueOffer: 'Meine Tochter ist verschwunden. Aldric sagt, Eindringlinge hätten sie entführt. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversäumnis.\n\nIch glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurückgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.\n\nVertrau niemandem, bis du es selbst gesehen hast.',
       dialogueProgress: 'Such weiter — das Fragment ist da unten. Aldric, Klerus und Garde streiten sich oben, weil sie alle eine andere Version hören wollen. Du findest die echte.',
       dialogueComplete: 'Du hast es. Sie ist nicht entführt worden. Sie ist geflohen. Und sie hatte Grund dazu — alle drei Ratsfraktionen werden im Fragment namentlich erwähnt. Du wirst gleich von allen vier Seiten gefragt werden. Hör dir alles an. Mach alle vier Aufträge. Dann komm zurück zu mir.'
     },
@@ -809,7 +809,7 @@
       'quest.aldric_patrol.dialogueComplete': 'All corridors are safe. Good work, Archivesmith.',
 
       // === Akt 1 Vertical Slice (feature 050) — quest dialogues ===
-      'quest.harren_daughter_investigation.dialogueOffer': "The mayor's daughter has vanished. Aldric says intruders abducted her. The Clergy speaks of possession. The Guard talks of dereliction of duty.\n\nI trust none of the three until I have read her own words. Bring me the journal fragment she left behind. You'll find it in the Rathauskeller — somewhere the Council has not looked.\n\nTrust no one until you have seen it yourself.",
+      'quest.harren_daughter_investigation.dialogueOffer': "My daughter has vanished. Aldric says intruders abducted her. The Clergy speaks of possession. The Guard talks of dereliction of duty.\n\nI trust none of the three until I have read her own words. Bring me the journal fragment she left behind. You'll find it in the Rathauskeller — somewhere the Council has not looked.\n\nTrust no one until you have seen it yourself.",
       'quest.harren_daughter_investigation.dialogueProgress': 'Keep searching — the fragment is down there. Aldric, the Clergy and the Guard quarrel upstairs because each wants its own version. You will find the real one.',
       'quest.harren_daughter_investigation.dialogueComplete': "You have it. She wasn't abducted. She fled. And she had reason — all three Council factions are named in the fragment. You will be approached from four sides now. Hear everyone out. Do all four jobs. Then come back to me.",
 
