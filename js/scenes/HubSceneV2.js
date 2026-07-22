@@ -3045,6 +3045,13 @@ class HubSceneV2 extends Phaser.Scene {
       this._ktCloseConfirm();
     });
     dlg.add(no);
+
+    // CRITICAL (gleiche Falle wie der Haupt-Modal, Z. ~2816): der Container hat
+    // scrollFactor(0), aber Phaser propagiert das NICHT auf die interaktiven
+    // Kinder. Ohne das behalten Ja/Nein scrollFactor=1, ihre Hit-Areas driften
+    // mit der Hub-Kamera und die Klicks verfehlen -> "Zuruecksetzen-Buttons
+    // funktionieren nicht". Rekursiv auf 0 ziehen.
+    this._ktPropagateScrollFactor(dlg, 0, 0);
   }
 
   _ktCloseConfirm() {
