@@ -107,10 +107,10 @@ window.HUB_HITBOXES = {
     // rechts symmetrisch. Debug-Overlay: Spiel mit ?hubdebug=1 oeffnen.
     { id: 'forest_left_top',      x: 0,   y: 292, w: 133, h: 68 },
     { id: 'forest_left_mid',      x: 0,   y: 360, w: 187, h: 130 },
-    { id: 'forest_left_bot',      x: 0,   y: 490, w: 200, h: 150 },
+    { id: 'forest_left_bot',      x: 0,   y: 490, w: 133, h: 150 },
     { id: 'forest_right_top',     x: 827, y: 292, w: 133, h: 68 },
     { id: 'forest_right_mid',     x: 773, y: 360, w: 187, h: 130 },
-    { id: 'forest_right_bot',     x: 760, y: 490, w: 200, h: 150 }
+    { id: 'forest_right_bot',     x: 827, y: 490, w: 133, h: 150 }
   ],
   entrances: [
     { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]', target: 'GameScene' },

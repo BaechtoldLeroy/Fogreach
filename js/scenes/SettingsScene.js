@@ -325,6 +325,13 @@
       closeBg.on('pointerover', () => closeBg.setFillStyle(0x555555));
       closeBg.on('pointerout', () => closeBg.setFillStyle(0x3a3a3a));
 
+      // Versionsnummer in der unteren rechten Panel-Ecke — zum Pruefen, ob ein
+      // Release live ist.
+      this.add.text(px + panelW / 2 - 10, py + panelH / 2 - 8,
+        'v ' + (window.GAME_VERSION || '?'), {
+          fontFamily: 'monospace', fontSize: '10px', color: '#777777'
+        }).setOrigin(1, 1).setScrollFactor(0).setDepth(2003);
+
       this.input.keyboard.on('keydown-ESC', () => this._close());
       this.input.keyboard.on('keydown-O', () => this._close());
 

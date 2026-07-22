@@ -385,6 +385,12 @@ StartScene.prototype.create = function () {
     .setOrigin(0.5);
   _trackI18n(subtitleText, 'start.subtitle');
 
+  // Versionsnummer unten rechts — zum Pruefen, ob ein Release live ist.
+  this.add.text(this.cameras.main.width - 8, this.cameras.main.height - 6,
+    'v ' + (window.GAME_VERSION || '?'), {
+      fontFamily: 'monospace', fontSize: '11px', fill: '#666666'
+    }).setOrigin(1, 1).setScrollFactor(0).setDepth(9999);
+
   // ---- #63 Speicherslots -------------------------------------------------
   // Die Slot-Zeilen WAEHLEN nur aus; FORTSETZEN/NEUES SPIEL darunter behalten
   // ihre Bedeutung und wirken auf den gewählten Slot. Das ist bewusst der
