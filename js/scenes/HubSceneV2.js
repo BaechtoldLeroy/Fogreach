@@ -718,24 +718,10 @@ class HubSceneV2 extends Phaser.Scene {
         if (npcZone.body) npcZone.body.enable = false;
       }
 
-      // Elara special states: environmental items when she is absent
-      let envObject = null;
-      if (npc.id === 'elara' && isVisible) {
-        // In revelation act, Elara leaves a note ("preparing the plan")
-        if (currentActId === 'offenbarung') {
-          sprite.setVisible(false);
-          sprite.setActive(false);
-          // Show a note object instead
-          envObject = this.add.text(sx, sy - 20, '[ Notiz ]\n"Bin im Rathaus.\nWarte auf mich. -E"', {
-            fontSize: '11px',
-            fontFamily: 'monospace',
-            color: '#e8d8a8',
-            backgroundColor: '#2a2018cc',
-            padding: { x: 6, y: 4 },
-            align: 'center'
-          }).setOrigin(0.5, 1).setDepth(sy);
-        }
-      }
+      // (Frueher: eine Elara-Notiz im v3-Akt 'offenbarung'. Der Akt existiert
+      // in Story v4 nicht mehr — der Block war toter Code und referenzierte
+      // zudem ein nicht mehr definiertes `currentActId`, was beim Aufbau
+      // geworfen haette, sobald Elara sichtbar ist.)
 
       // Quest indicator above NPC ("!" for available, "?" for turn-in)
       const questIndicator = this.add.text(sx, sy - sprite.displayHeight - 10, '', {
@@ -757,7 +743,7 @@ class HubSceneV2 extends Phaser.Scene {
         repeat: -1,
       });
 
-      this.npcs.push({ sprite, nameText, data: npc, zone: npcZone, envObject, questIndicator });
+      this.npcs.push({ sprite, nameText, data: npc, zone: npcZone, questIndicator });
 
       if (HUB_DEBUG) {
         const marker = this.add.circle(sx, sy, 10, 0x00ffff, 0.8);

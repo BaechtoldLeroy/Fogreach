@@ -24,9 +24,7 @@
     treuer_diener: 'Ratsherr Aldric klopft dir auf die Schulter. \'Gut gemacht. Aber es gibt groessere Bedrohungen — Eindringlinge stehlen unsere Archive. Wir brauchen dich.\'',
     erste_risse:   'Die Dokumente des besiegten Anfuehrers tragen das Siegel des Kettenrats. Aldric lacht nervoes: \'Faelschungen. Natuerlich Faelschungen.\' Aber Branka blickt dir schweigend in die Augen.',
     wahrheit:      'In der Ritualkammer: Blut, Symbole, Ketten. Das ist kein Lager der Eindringlinge. Das ist eine Beschwoerungskammer. Der Rat luegt.',
-    bruch:         '\'Du stellst zu viele Fragen, Archivschmied.\' Aldrics Stimme ist kalt. Hinter ihm stehen bewaffnete Wachen. \'Erledige deinen Auftrag — oder wir erledigen dich.\'',
-    rebellion:     'Die Pamphlete haben gewirkt. Buerger versammeln sich auf dem Platz. Branka schmiedet Waffen fuer den Widerstand. \'Es ist Zeit\', sagt Mara. \'Der Rat faellt heute.\'',
-    offenbarung:   'Die Ratskammer. Die Tuer faellt zu. Und dort steht Elara — neben dem Schattenrat. \'Es tut mir leid\', fluestert sie. \'Aber du verstehst das nicht.\''
+    bruch:         '\'Du stellst zu viele Fragen, Archivschmied.\' Aldrics Stimme ist kalt. Hinter ihm stehen bewaffnete Wachen. \'Erledige deinen Auftrag — oder wir erledigen dich.\''
   };
 
   // ---- Dynamic NPC dialogue per act ----
@@ -56,16 +54,6 @@
         'Du stellst zu viele Fragen. Das endet nie gut.',
         'Ich habe dich gewarnt. Der Rat ist nicht geduldig.',
         'Letzte Chance, Archivschmied. Gehorche — oder verschwinde.'
-      ],
-      rebellion: [
-        'Du hast deine Wahl getroffen. Dafuer wirst du bezahlen.',
-        'Die Rebellen werden scheitern. Wie alle vor ihnen.',
-        'Der Rat vergibt nicht. Und er vergisst nicht.'
-      ],
-      offenbarung: [
-        'Es ist zu spaet. Fuer uns alle.',
-        'Du haettest gehorchen sollen...',
-        'Fogreach gehoert den Ketten. Das war immer so.'
       ]
     },
     branka: {
@@ -93,16 +81,6 @@
         'Der Rat hat meine Werkstatt durchsucht. Sie wissen, dass ich zweifle.',
         'Wir brauchen Waffen. Nicht fuer den Rat — fuer UNS.',
         'Die Zeit der Geheimnisse ist vorbei. Wir muessen handeln.'
-      ],
-      rebellion: [
-        'Die Rebellion braucht Waffen. Ich schmiede Tag und Nacht.',
-        'Thoms Pamphlete haben die Buerger wachgeruettelt. Jetzt brauchen sie Stahl, nicht nur Worte.',
-        'Der Kettenrat schickt Haescher. Aber unsere Klingen sind schaerfer als ihre Ketten.'
-      ],
-      offenbarung: [
-        'Die letzte Schmiede ist vollendet. Diese Klinge wird den Nebel zerschneiden.',
-        'Fogreach erwacht. Nach all den Jahren sehen die Menschen endlich klar.',
-        'Was auch geschieht — die Archivschmiede wird nie wieder schweigen.'
       ]
     },
     thom: {
@@ -130,16 +108,6 @@
         'Der Rat hat meine alte Presse zerstoert. Aber ich habe laengst drei neue versteckt.',
         'Jeder Durchlauf ist eine Chance, Flugblaetter zu verteilen.',
         'Die Buerger muessen wissen, was unter ihren Fuessen geschieht.'
-      ],
-      rebellion: [
-        'Die Pamphlete verbreiten sich wie Feuer! Ganz Fogreach liest unsere Wahrheiten.',
-        'Die Buerger kommen nachts zur Druckerei. Sie wollen helfen. Die Rebellion waechst.',
-        'Jetzt oder nie. Die Wahrheit kann nicht mehr aufgehalten werden.'
-      ],
-      offenbarung: [
-        'Die letzte Ausgabe geht in Druck. Sie enthaelt alles — jeden Namen, jedes Siegel, jede Luege.',
-        'Fogreach wird nie wieder vergessen. Die Wahrheit ist jetzt unausloeschlich.',
-        'Wenn das hier vorbei ist, drucke ich Geschichtsbuecher. Keine Pamphlete mehr noetig.'
       ]
     },
     mara: {
@@ -167,16 +135,6 @@
         'Aldric hat seine Maske fallen lassen. Gut. Jetzt wissen alle, woran sie sind.',
         'Mein Netzwerk ist bereit. Wir brauchen nur noch den Funken.',
         'Wir muessen vorsichtig sein. Der Zeremonienmeister weiss, dass wir kommen.'
-      ],
-      rebellion: [
-        'Es ist soweit. Der Rat faellt heute.',
-        'Mein Netzwerk ist aktiv. Spaeher in jedem Viertel, Augen an jeder Ecke.',
-        'Die unterirdischen Routen sind jetzt unsere Versorgungswege. Der Rat kontrolliert die Strassen, wir den Untergrund.'
-      ],
-      offenbarung: [
-        'Unter Fogreach wartet die Wahrheit. Bist du bereit?',
-        'Alle Siegel sind kartiert. Der Beschwoerungskreis kann gebrochen werden.',
-        'Fogreach gehoert wieder den Menschen. Nicht den Ketten. Nicht den Daemonen.'
       ]
     },
     harren: {
@@ -204,16 +162,6 @@
         'Aldric hat uns alle belogen. Auch ueber Elara.',
         'Meine Tochter ist staerker, als sie denken. Sie wird ueberleben.',
         'Ich bin zu alt zum Kaempfen. Aber ich kann helfen.'
-      ],
-      rebellion: [
-        'Finde meine Tochter. Bitte. Bevor es zu spaet ist.',
-        'Die Rebellion gibt mir Hoffnung. Vielleicht sehe ich Elara wieder.',
-        'Ich schmiede keine Waffen. Aber ich versorge die Verwundeten.'
-      ],
-      offenbarung: [
-        'Elara... was haben sie mit dir gemacht?',
-        'Mein Kind. Was auch passiert — ich liebe dich.',
-        'Die Wahrheit tut weh. Aber Luegen toeten.'
       ]
     },
     elara: {
@@ -231,16 +179,6 @@
         'Nimm das. Ich habe es fuer dich geschmiedet. Fuer den Fall, dass...',
         'Aldric wird dich jagen. Sei vorsichtig.',
         'Ich muss allein weiter. Vertrau mir.'
-      ],
-      rebellion: [
-        'Ich kaempfe auf meine Art. Von innen.',
-        'Der Rat glaubt, ich gehorche wieder. Das ist mein Vorteil.',
-        'Bald ist es soweit. Halte durch.'
-      ],
-      offenbarung: [
-        'Es tut mir leid. Aber du verstehst das nicht.',
-        'Ich musste mich entscheiden. Fuer Fogreach.',
-        'Die Wahrheit ist komplizierter, als du denkst.'
       ]
     }
   };
@@ -295,8 +233,6 @@
       'story.act.erste_risse.narrative': "The defeated leader's documents bear the Chain Council's seal. Aldric laughs nervously: 'Forgeries. Forgeries, of course.' But Branka stares at you in silence.",
       'story.act.wahrheit.narrative': 'In the ritual chamber: blood, symbols, chains. This is no intruder camp. This is a summoning chamber. The council lies.',
       'story.act.bruch.narrative': "'You ask too many questions, Archivesmith.' Aldric's voice is cold. Armed guards stand behind him. 'Finish your assignment — or we will finish you.'",
-      'story.act.rebellion.narrative': "The pamphlets worked. Citizens gather in the square. Branka forges weapons for the resistance. 'It is time,' Mara says. 'The council falls today.'",
-      'story.act.offenbarung.narrative': "The council chamber. The door slams shut. And there stands Elara — beside the Shadow Council. 'I'm sorry,' she whispers. 'But you don't understand.'",
 
       'story.all_quests_ending': "The chains of Fogreach are broken.\n\nThe printing press spreads the truth.\nThe forge hammers for freedom.\nThe underground network keeps watch.\n\nBut where Elara once stood, there is only emptiness. She vanished with the Shadow Council — and with her, a truth you may never fully grasp.\n\nYou have freed the city. Yet the fog still whispers her name.",
 
@@ -324,12 +260,6 @@
       'story.npc.aldric.bruch.0': "You ask too many questions. That never ends well.",
       'story.npc.aldric.bruch.1': "I warned you. The council is not patient.",
       'story.npc.aldric.bruch.2': "Last chance, Archivesmith. Obey — or disappear.",
-      'story.npc.aldric.rebellion.0': "You've made your choice. You'll pay for it.",
-      'story.npc.aldric.rebellion.1': "The rebels will fail. Like all those before them.",
-      'story.npc.aldric.rebellion.2': "The council does not forgive. And it does not forget.",
-      'story.npc.aldric.offenbarung.0': "It's too late. For all of us.",
-      'story.npc.aldric.offenbarung.1': "You should have obeyed...",
-      'story.npc.aldric.offenbarung.2': "Fogreach belongs to the chains. It always has.",
 
       // branka — smith / ally
       'story.npc.branka.auftrag.0': "Steel alone does not cut the council's lies. Only when every blade carries knowledge does their mask fall.",
@@ -347,12 +277,6 @@
       'story.npc.branka.bruch.0': "The council searched my workshop. They know I doubt.",
       'story.npc.branka.bruch.1': "We need weapons. Not for the council — for US.",
       'story.npc.branka.bruch.2': "The time of secrets is over. We must act.",
-      'story.npc.branka.rebellion.0': "The rebellion needs weapons. I forge day and night.",
-      'story.npc.branka.rebellion.1': "Thom's pamphlets shook the citizens awake. Now they need steel, not just words.",
-      'story.npc.branka.rebellion.2': "The Chain Council sends hunters. But our blades are sharper than their chains.",
-      'story.npc.branka.offenbarung.0': "The final forging is complete. This blade will cut the fog.",
-      'story.npc.branka.offenbarung.1': "Fogreach awakens. After all these years the people finally see clearly.",
-      'story.npc.branka.offenbarung.2': "Whatever happens — the Archive Forge will never be silent again.",
 
       // thom — printer / propagandist-turned-rebel
       'story.npc.thom.auftrag.0': "The Chain Council orders prayers, meals, even dreams. We answer with pamphlets full of names and numbers.",
@@ -370,12 +294,6 @@
       'story.npc.thom.bruch.0': "The council destroyed my old press. But I hid three new ones long ago.",
       'story.npc.thom.bruch.1': "Every run is a chance to spread leaflets.",
       'story.npc.thom.bruch.2': "The citizens must know what happens beneath their feet.",
-      'story.npc.thom.rebellion.0': "The pamphlets spread like fire! All of Fogreach reads our truths.",
-      'story.npc.thom.rebellion.1': "Citizens come to the press at night. They want to help. The rebellion grows.",
-      'story.npc.thom.rebellion.2': "Now or never. The truth can no longer be stopped.",
-      'story.npc.thom.offenbarung.0': "The final edition goes to print. It contains everything — every name, every seal, every lie.",
-      'story.npc.thom.offenbarung.1': "Fogreach will never forget again. The truth is now indelible.",
-      'story.npc.thom.offenbarung.2': "When this is over I'll print history books. No more pamphlets needed.",
 
       // mara — scout / network leader
       'story.npc.mara.auftrag.0': "The council's scribes mark houses with chalk-chains. Whoever objects vanishes into ritual shafts.",
@@ -393,12 +311,6 @@
       'story.npc.mara.bruch.0': "Aldric has dropped his mask. Good. Now everyone knows where they stand.",
       'story.npc.mara.bruch.1': "My network is ready. We just need the spark.",
       'story.npc.mara.bruch.2': "We must be careful. The Ceremoniarch knows we are coming.",
-      'story.npc.mara.rebellion.0': "It is time. The council falls today.",
-      'story.npc.mara.rebellion.1': "My network is active. Scouts in every quarter, eyes on every corner.",
-      'story.npc.mara.rebellion.2': "The underground routes are now our supply lines. The council controls the streets, we control the depths.",
-      'story.npc.mara.offenbarung.0': "Beneath Fogreach the truth waits. Are you ready?",
-      'story.npc.mara.offenbarung.1': "All seals are mapped. The summoning circle can be broken.",
-      'story.npc.mara.offenbarung.2': "Fogreach belongs to its people again. Not to chains. Not to demons.",
 
       // harren — the missing daughter's father
       'story.npc.harren.auftrag.0': "I'm only an old craftsman. But my daughter... she's all I have.",
@@ -416,12 +328,6 @@
       'story.npc.harren.bruch.0': "Aldric lied to us all. Even about Elara.",
       'story.npc.harren.bruch.1': "My daughter is stronger than they think. She will survive.",
       'story.npc.harren.bruch.2': "I'm too old to fight. But I can help.",
-      'story.npc.harren.rebellion.0': "Find my daughter. Please. Before it's too late.",
-      'story.npc.harren.rebellion.1': "The rebellion gives me hope. Maybe I'll see Elara again.",
-      'story.npc.harren.rebellion.2': "I forge no weapons. But I tend the wounded.",
-      'story.npc.harren.offenbarung.0': "Elara... what have they done to you?",
-      'story.npc.harren.offenbarung.1': "My child. Whatever happens — I love you.",
-      'story.npc.harren.offenbarung.2': "The truth hurts. But lies kill.",
 
       // elara — the daughter / morally complex
       'story.npc.elara.erste_risse.0': "I wasn't kidnapped. I escaped.",
@@ -432,13 +338,7 @@
       'story.npc.elara.wahrheit.2': "I know all their secrets.",
       'story.npc.elara.bruch.0': "Take this. I forged it for you. In case...",
       'story.npc.elara.bruch.1': "Aldric will hunt you. Be careful.",
-      'story.npc.elara.bruch.2': "I have to go on alone. Trust me.",
-      'story.npc.elara.rebellion.0': "I fight in my own way. From within.",
-      'story.npc.elara.rebellion.1': "The council thinks I obey again. That is my advantage.",
-      'story.npc.elara.rebellion.2': "Soon it will be time. Hold on.",
-      'story.npc.elara.offenbarung.0': "I'm sorry. But you don't understand.",
-      'story.npc.elara.offenbarung.1': "I had to choose. For Fogreach.",
-      'story.npc.elara.offenbarung.2': "The truth is more complicated than you think."
+      'story.npc.elara.bruch.2': "I have to go on alone. Trust me."
     });
 
     // German registrations for unlock labels (DE source-of-truth, supplement)
