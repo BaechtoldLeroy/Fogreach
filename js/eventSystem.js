@@ -191,12 +191,21 @@
             {
               label: T('event.treasure.choice_search'),
               callback: function () {
+                var gotItem = null;
                 if (window.LootSystem && window.LootSystem.rollItem && typeof spawnLoot === 'function') {
                   var iLevel = (window.DUNGEON_DEPTH || 1) + 2;
-                  var item = window.LootSystem.rollItem(null, iLevel);
-                  if (item) spawnLoot.call(scene, player.x, player.y - 30, item, null);
+                  gotItem = window.LootSystem.rollItem(null, iLevel);
+                  if (gotItem) spawnLoot.call(scene, player.x, player.y - 30, gotItem, null);
                 }
-                showEventToast(scene, T('event.treasure.toast_item'), 'treasure_cache');
+                if (gotItem) {
+                  showEventToast(scene, T('event.treasure.toast_item'), 'treasure_cache');
+                } else {
+                  // Kein Item gerollt -> wenigstens Gold, damit die Schatzkiste
+                  // nie voellig leer ausgeht (frueher: Toast log "Gegenstand
+                  // gefunden", der Spieler bekam aber nichts).
+                  if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldAmount);
+                  showEventToast(scene, T('event.treasure.toast_gold', { amount: goldAmount }), 'treasure_cache');
+                }
               }
             },
             { label: T('event.treasure.choice_ignore'), callback: function () {} }
@@ -1276,6 +1285,10 @@
     var cw = cam ? cam.width : 800;
     var ch = cam ? cam.height : 600;
 
+    // Dialog im Dungeon pausiert das Spiel voll (frueher lief alles weiter,
+    // waehrend man las).
+    if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
+
     var overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.5)
       .setScrollFactor(0).setDepth(2500).setInteractive();
 
@@ -1302,19 +1315,23 @@
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
 
     var closed = false;
+    var autoT = null;
     var close = function() {
       if (closed) return;
       closed = true;
+      if (autoT) { try { clearTimeout(autoT); } catch (e) {} autoT = null; }
       scene.input.keyboard.off('keydown-SPACE', close);
       scene.input.keyboard.off('keydown-ESC', close);
       overlay.destroy(); panel.destroy(); title.destroy(); body.destroy(); bonus.destroy(); hint.destroy();
+      // Spiel-Pause aufheben.
+      if (typeof window.resumeGameClock === 'function') window.resumeGameClock(scene);
     };
     overlay.on('pointerdown', close);
     scene.input.keyboard.on('keydown-SPACE', close);
     scene.input.keyboard.on('keydown-ESC', close);
-    if (scene.time && scene.time.delayedCall) {
-      scene.time.delayedCall(8000, close);
-    }
+    // Auto-Close ueber Echtzeit-Timer (setTimeout): scene.time ist jetzt pausiert
+    // und wuerde den delayedCall einfrieren -> der Dialog schloesse nie von selbst.
+    autoT = setTimeout(close, 8000);
   }
 
   function cleanupLore() {
@@ -1458,10 +1475,10 @@
     // Global gespiegelt, damit InputScheme.shouldSuppressCombatInput den offenen
     // Dialog kennt (sonst schlaegt man durch ihn hindurch zu).
     window.eventChoiceOpen = true;
-    // Pause physics — freeze all bodies
-    if (scene.physics && scene.physics.world) {
-      scene.physics.world.pause();
-    }
+    // Volle Spiel-Pause statt nur Physik: friert Gegner/Projektile, Cooldowns
+    // (gameNow + scene.time.now), Raum-Modus-Countdowns und den Combat-Tick ein.
+    if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
+    else if (scene.physics && scene.physics.world) scene.physics.world.pause();
 
     // Dark overlay
     var overlay = scene.add.rectangle(cx, cy, camW, camH, 0x000000, 0.6)
@@ -1486,10 +1503,9 @@
         scene.input.keyboard.off('keydown-ENTER', dismissKeyHandler);
         dismissKeyHandler = null;
       }
-      // Resume physics
-      if (scene.physics && scene.physics.world) {
-        scene.physics.world.resume();
-      }
+      // Spiel-Pause aufheben (Gegenstueck zu pauseGameClock oben).
+      if (typeof window.resumeGameClock === 'function') window.resumeGameClock(scene);
+      else if (scene.physics && scene.physics.world) scene.physics.world.resume();
       for (var i = 0; i < elements.length; i++) {
         if (elements[i] && elements[i].destroy) elements[i].destroy();
       }

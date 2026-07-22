@@ -568,12 +568,11 @@
       if (!scene || !scene.add) return;
 
       // Pause gameplay so the player can read the unlock notification.
-      // We pause physics + freeze player velocity. Tweens stay active so the
-      // toast can animate in and out cleanly.
-      const wasPhysicsRunning = !!(scene.physics && scene.physics.world && !scene.physics.world.isPaused);
-      if (scene.physics && scene.physics.pause) {
-        scene.physics.pause();
-      }
+      // Volle Spiel-Pause (Gegner/Projektile, Cooldowns, Countdowns) statt nur
+      // Physik. Tweens laufen weiter (TweenManager ist von scene.time.paused
+      // unabhaengig), also animiert der Toast sauber rein/raus.
+      if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
+      else if (scene.physics && scene.physics.pause) scene.physics.pause();
       if (window.player && window.player.body && window.player.body.setVelocity) {
         window.player.body.setVelocity(0, 0);
       }
@@ -662,17 +661,19 @@
       // ---- Dismiss handler ----
       // The toast pauses the game until the player presses Space/Enter or clicks.
       let dismissed = false;
+      let bindT = null, fallbackT = null; // Echtzeit-Timer (setTimeout-Handles)
       const dismiss = () => {
         if (dismissed) return;
         dismissed = true;
         // Detach listeners
+        if (bindT) { try { clearTimeout(bindT); } catch (e) {} bindT = null; }
+        if (fallbackT) { try { clearTimeout(fallbackT); } catch (e) {} fallbackT = null; }
         scene.input.keyboard.off('keydown-SPACE', dismiss);
         scene.input.keyboard.off('keydown-ENTER', dismiss);
         scene.input.off('pointerdown', dismiss);
-        // Resume physics
-        if (wasPhysicsRunning && scene.physics && scene.physics.resume) {
-          scene.physics.resume();
-        }
+        // Spiel-Pause aufheben.
+        if (typeof window.resumeGameClock === 'function') window.resumeGameClock(scene);
+        else if (scene.physics && scene.physics.resume) scene.physics.resume();
         // Animate out
         scene.tweens.add({
           targets: container,
@@ -682,18 +683,20 @@
         });
       };
 
-      // Defer the input bindings by 1 frame so the keypress that opened the
-      // skill (or the click that triggered the unlock) doesn't immediately
-      // close the toast.
-      scene.time.delayedCall(150, () => {
+      // Defer the input bindings so the keypress/click that triggered the unlock
+      // doesn't immediately close the toast. ECHTZEIT-Timer (setTimeout): scene.time
+      // ist durch pauseGameClock eingefroren -> ein delayedCall wuerde nie feuern
+      // und der Toast bliebe un-schliessbar.
+      bindT = setTimeout(() => {
+        bindT = null;
         if (dismissed) return;
         scene.input.keyboard.on('keydown-SPACE', dismiss);
         scene.input.keyboard.on('keydown-ENTER', dismiss);
         scene.input.on('pointerdown', dismiss);
-      });
+      }, 150);
 
-      // Hard fallback: auto-dismiss after 15 seconds in case input is somehow lost
-      scene.time.delayedCall(15000, dismiss);
+      // Hard fallback: auto-dismiss after 15 real seconds in case input is lost.
+      fallbackT = setTimeout(dismiss, 15000);
     } catch (err) {
       // non-fatal
       console.warn('[AbilitySystem] toast failed', err);

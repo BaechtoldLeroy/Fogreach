@@ -1572,6 +1572,14 @@ function breakDestructibleObstacle(scene, obs) {
     if (scroll) spawnLoot.call(scene, x - potionOffsetX, y + potionOffsetY, scroll, null);
   }
 
+  // Ueberraschung: sehr selten (1 von 500) kracht statt Beute ein Monster aus
+  // dem Behaelter — Fledermaus (Typ 9) oder Imp (Typ 1), je 50/50. Nur im
+  // Dungeon (enemies-Gruppe vorhanden); spawnEnemy platziert selbst sicher
+  // (Mindestabstand zum Spieler, begehbare Kachel).
+  if (typeof spawnEnemy === 'function' && window.enemies && Math.random() < (1 / 500)) {
+    try { spawnEnemy.call(scene, x, y, Math.random() < 0.5 ? 9 : 1); } catch (e) {}
+  }
+
   obs.destroy();
 }
 window.breakDestructibleObstacle = breakDestructibleObstacle;
@@ -1601,6 +1609,18 @@ function update(time, delta) {
   }
 
   if (invOpen) {
+    pauseAllMotion.call(this);
+    return;
+  }
+
+  // Modaler Dialog/Toast im Dungeon pausiert das Spiel: jeder solche Dialog ruft
+  // pauseGameClock() (setzt __GAME_PAUSE.since + scene.time.paused + physics.pause).
+  // Hier den kompletten Combat-Tick ueberspringen — wie beim offenen Inventar —
+  // damit Gegner-KI/-Angriffe, Status-Ticks, Spielerbewegung/-Angriff und das
+  // Cooldown-HUD wirklich stillstehen. (physics.pause friert Bewegung/Projektile,
+  // scene.time.paused friert delayedCall/addEvent + scene.time.now-Cooldowns,
+  // __GAME_PAUSE friert gameNow-Cooldowns + Raum-Modus-Countdowns.)
+  if (window.__GAME_PAUSE && window.__GAME_PAUSE.since != null) {
     pauseAllMotion.call(this);
     return;
   }

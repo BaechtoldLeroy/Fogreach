@@ -252,7 +252,9 @@ class HubSceneV2 extends Phaser.Scene {
     // would clobber the real save with default/empty state before GameScene
     // ever consumes it. Applying here (mirrors the legacy HubScene flow) is
     // what makes "load game" actually restore the player in the hub.
-    this._ensureSaveHydrated();
+    const _saveApplied = this._ensureSaveHydrated();
+    // Neues Spiel (kein Save geladen): Starter-Kit ins Inventar legen.
+    this._grantStarterKit(_saveApplied);
 
     this.createColliders();
     this.createEntrances();
@@ -2181,6 +2183,52 @@ class HubSceneV2 extends Phaser.Scene {
       }
     }
     return applied;
+  }
+
+  // Starter-Kit bei einem NEUEN Spiel: 3 Heiltränke des staerksten Tiers (XL,
+  // potionTier 4) ins Inventar. `applied === false` = kein Save geladen = neues
+  // Spiel. Der persistente Flag 'starter_kit_granted' verhindert Doppel-Vergabe
+  // (Rueckkehr aus dem Dungeon, erneuter Hub-Aufbau). Bei einem "Neues Spiel"
+  // wird der Slot geleert -> Flag ist weg -> genau einmal vergeben.
+  _grantStarterKit(applied) {
+    if (applied) return; // Save geladen -> kein neues Spiel
+    const qs = window.questSystem;
+    if (qs && typeof qs.hasFlag === 'function' && qs.hasFlag('starter_kit_granted')) return;
+    const inv = window.inventory;
+    if (!Array.isArray(inv)) return;
+    const defs = window.LootSystem && window.LootSystem.POTION_DEFS;
+    const def = Array.isArray(defs) ? defs.find((d) => d && d.potionTier === 4) : null;
+    if (!def) return;
+    const nameKey = 'loot.potion.t4';
+    const name = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(nameKey) : def.name;
+    const COUNT = 3;
+
+    let placed = false;
+    // Vorhandenen XL-Stack erhoehen (falls schon einer da ist), sonst frei belegen.
+    for (let i = 0; i < inv.length; i++) {
+      const it = inv[i];
+      if (it && it.type === 'potion' && it.potionTier === 4) {
+        it.stack = (it.stack || 1) + COUNT;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      const slot = inv.findIndex((s) => !s);
+      if (slot >= 0) {
+        inv[slot] = {
+          type: 'potion', potionTier: 4, name: name, nameKey: nameKey,
+          iconKey: def.iconKey, stack: COUNT
+        };
+        placed = true;
+      }
+    }
+    if (!placed) return; // Inventar voll (bei neuem Spiel praktisch unmoeglich)
+
+    if (qs && typeof qs.setFlag === 'function') qs.setFlag('starter_kit_granted');
+    if (typeof window._refreshInventoryHUD === 'function') {
+      try { window._refreshInventoryHUD(); } catch (e) {}
+    }
   }
 
   _enterLocation(entranceData) {

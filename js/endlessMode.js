@@ -330,6 +330,10 @@
       return;
     }
 
+    // Karten-Auswahl pausiert das Spiel voll (frueher lief im Dungeon alles
+    // weiter: Gegner, Projektile, Cooldowns, Countdowns).
+    if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
+
     const cw = scene.cameras.main.width;
     const ch = scene.cameras.main.height;
     const overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.78)
@@ -385,6 +389,8 @@
       try { overlay.destroy(); } catch (e) {}
       try { title.destroy(); } catch (e) {}
       cardObjects.forEach((g) => { try { g.destroy(); } catch (e) {} });
+      // Spiel-Pause aufheben (jeder Schliess-Pfad laeuft hierdurch).
+      if (typeof window.resumeGameClock === 'function') window.resumeGameClock(scene);
     };
 
     Endless._ui = { cleanup };
