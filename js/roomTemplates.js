@@ -409,7 +409,10 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   // Insertion-Reihenfolge egal; visuell identisch (Alpha-Blending der
   // einzelnen Fills bleibt gleich).
   const obstacleShadowGfx = scene.add?.graphics ? scene.add.graphics().setDepth(38) : null;
-  const brazierGlowGfx = scene.add?.graphics ? scene.add.graphics().setDepth(-3) : null;
+  // Brazier-Glow ueber Treppen (depth 40) und Obstacles legen (41), damit das
+  // warme Licht auch VOR einer Treppe sichtbar ist. Bleibt unter Gegnern (50)
+  // und Spieler (100). Vorher -3 -> lag hinter allem, die Treppe verdeckte es.
+  const brazierGlowGfx = scene.add?.graphics ? scene.add.graphics().setDepth(41) : null;
   if (obstacleShadowGfx) templateWalls.push(obstacleShadowGfx);
   if (brazierGlowGfx) templateWalls.push(brazierGlowGfx);
 

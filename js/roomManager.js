@@ -1102,6 +1102,35 @@ function enterRoom(scene, roomId) {
     try { console.warn('[stairs] Notfall-Treppe erzwungen — keine ERREICHBARE Treppe (Raum hatte ' + _stairCount + ')'); } catch (_) {}
   }
 
+  // Absolute Garantie: KEIN blockierendes Objekt (Saeule/Statue/Fass/Kiste)
+  // hinter/unter einer Treppe. Deckt auch den PROZEDURALEN Pfad (der den
+  // Nudge/Destroy oben ueberspringt) und die Notfall-Treppe ab — dort schaute
+  // sonst z.B. eine Saeule hinter der Treppe hervor. Nur die Physik-Obstacles
+  // (scene.obstacles), NICHT die Wand-/Deko-Sprites in _templateWalls. Braziers
+  // bleiben ABSICHTLICH stehen (ihr Licht liegt jetzt vor der Treppe).
+  if (scene.stairsGroup && scene.stairsGroup.getChildren
+      && scene.obstacles && scene.obstacles.getChildren) {
+    var _stairsList = scene.stairsGroup.getChildren();
+    scene.obstacles.getChildren().slice().forEach(function (o) {
+      if (!o || o.active === false) return;
+      if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) return;
+      if (o.getData && o.getData('isFloor')) return;
+      var _ty = (o.getData && o.getData('type')) || '';
+      if (_ty === 'brazier' || _ty === 'brazer') return; // Fackeln behalten
+      var _STAIR_HALF = 44; // 80px Treppe/2 + 4px Marge
+      var ohw = (o.displayWidth || 32) / 2 + _STAIR_HALF;
+      var ohh = (o.displayHeight || 32) / 2 + _STAIR_HALF;
+      for (var _si = 0; _si < _stairsList.length; _si++) {
+        var st = _stairsList[_si];
+        if (st && Math.abs(o.x - st.x) < ohw && Math.abs(o.y - st.y) < ohh) {
+          try { if (o.body) o.body.enable = false; o.destroy(); } catch (e) {}
+          try { console.warn('[stairs] Objekt hinter Treppe entfernt: ' + (_ty || '?')); } catch (_) {}
+          return;
+        }
+      }
+    });
+  }
+
   // Truhen werden NICHT mehr aus den Templates gespawnt (spawns.loot-Truhen
   // entfernt), sondern hier ZUFAELLIG platziert — nach den Treppen, damit die
   // Validierung sie meiden kann (früher standen Template-Truhen fix vor einer
