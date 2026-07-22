@@ -118,6 +118,19 @@
 
     var handleClosed = false;
     var escHandler = null;
+    // ESC-Handler abhaengen — idempotent. Wird sowohl von destroy() (normaler
+    // Abbruch/Auswahl) als auch vom 'destroy'-Event des Containers gerufen, damit
+    // der Handler AUCH verschwindet, wenn das Panel EXTERN zerstoert wird (z. B.
+    // HubSceneV2._sweepDialogSurfaces beim erneuten Ansprechen). Ohne das leakt
+    // der Handler und haeuft sich ueber wiederholtes Oeffnen/Abbrechen an —
+    // irgendwann schliesst ein Alt-Handler den frischen Dialog vorzeitig und der
+    // NPC wird unansprechbar.
+    function removeEscHandler() {
+      if (escHandler && scene.input && scene.input.keyboard) {
+        try { scene.input.keyboard.off('keydown-ESC', escHandler); } catch (e) {}
+      }
+      escHandler = null;
+    }
     function closeAndResolve(choice, index) {
       if (handleClosed) return;
       handleClosed = true;
@@ -176,6 +189,11 @@
       if (scene.input && scene.input.keyboard) {
         escHandler = function () { cancel(); };
         scene.input.keyboard.on('keydown-ESC', escHandler);
+        // Sicherheitsnetz: Wird der Container extern zerstoert (Sweep beim
+        // erneuten Ansprechen), haengt das 'destroy'-Event den ESC-Handler ab.
+        // Nur aufraeumen (kein cancel/onCancel) — die externe Schliessung
+        // verwaltet _dialogOpen bereits selbst.
+        container.once('destroy', removeEscHandler);
       }
     }
 
@@ -183,11 +201,14 @@
     _applyScrollFactorRecursive(container);
 
     function destroy() {
-      if (escHandler && scene.input && scene.input.keyboard) {
-        try { scene.input.keyboard.off('keydown-ESC', escHandler); } catch (e) {}
-        escHandler = null;
+      removeEscHandler();
+      if (container) {
+        // 'destroy'-Listener abhaengen, bevor wir selbst zerstoeren — sonst
+        // liefe removeEscHandler ein zweites Mal (harmlos, aber unnoetig).
+        try { container.off('destroy', removeEscHandler); } catch (e) {}
+        container.destroy(true);
+        container = null;
       }
-      if (container) { container.destroy(true); container = null; }
     }
 
     return { destroy: destroy };

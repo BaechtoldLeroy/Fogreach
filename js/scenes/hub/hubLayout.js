@@ -99,7 +99,12 @@ window.HUB_HITBOXES = {
     { id: 'cottage_right',        x: 690, y: 500, w: 160, h: 45 },
     // Fuss-Collider der zwei Strassenlaternen (vorher durchlaufbar).
     { id: 'lamp_left',            x: 340, y: 438, w: 16,  h: 12 },
-    { id: 'lamp_right',           x: 602, y: 438, w: 16,  h: 12 }
+    { id: 'lamp_right',           x: 602, y: 438, w: 16,  h: 12 },
+    // Wald-Raender links/rechts unterhalb der Stadtmauer (vorher lief man in
+    // die Baeume). Reichen bis zur Kante der jeweiligen Cottage; oberhalb blockt
+    // bereits city_silhouette_wall.
+    { id: 'forest_left',          x: 0,   y: 292, w: 110, h: 348 },
+    { id: 'forest_right',         x: 850, y: 292, w: 110, h: 348 }
   ],
   entrances: [
     { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]', target: 'GameScene' },

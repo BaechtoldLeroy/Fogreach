@@ -783,7 +783,9 @@ class HubSceneV2 extends Phaser.Scene {
       normalizePlayerDirectionalFrames(this);
     }
 
-    this.player = this.physics.add.sprite(W / 2, H * 0.65, textureKey)
+    // Etwas tiefer als 0.65 spawnen: der (vergroesserte) Brunnen-Collider reicht
+    // bis ~y 640, bei 0.65 (y 666) stand der Spieler visuell im Becken.
+    this.player = this.physics.add.sprite(W / 2, H * 0.72, textureKey)
       .setCollideWorldBounds(true);
 
     if (typeof applyPlayerDisplaySettings === 'function') {
@@ -1448,10 +1450,14 @@ class HubSceneV2 extends Phaser.Scene {
         && typeof window.DialogChoice.present === 'function') {
       const selfDC = this;
       const cfg = page._choiceConfig;
-      window.DialogChoice.present(this, {
+      // Handle merken, damit _sweepDialogSurfaces das Panel (inkl. ESC-Handler)
+      // beim erneuten Ansprechen sicher abraeumen kann — sonst kann ein
+      // Alt-Panel den frischen Dialog stoeren und der NPC haengt.
+      this._activeChoiceHandle = window.DialogChoice.present(this, {
         prompt: cfg.prompt,
         choices: cfg.choices,
         onResolved: function (result) {
+          selfDC._activeChoiceHandle = null;
           const nextPages = pages.slice();
           if (result && result.choice && result.choice.response) {
             nextPages.splice(pageIndex + 1, 0, { text: result.choice.response, choices: null });
@@ -1466,6 +1472,7 @@ class HubSceneV2 extends Phaser.Scene {
         // Abbrechen (ESC / Button): den ganzen NPC-Dialog schliessen, ohne eine
         // Antwort anzuwenden. Der Spieler kann den NPC erneut ansprechen.
         onCancel: function () {
+          selfDC._activeChoiceHandle = null;
           selfDC._closeDialog(null);
           selfDC._refreshQuestIndicators();
         }
@@ -1927,6 +1934,14 @@ class HubSceneV2 extends Phaser.Scene {
   // (confirmed via a live display-list dump: Container@1500 + Container@1600 both
   // visible at y=300). Single funnel used by open + every page render + close.
   _sweepDialogSurfaces() {
+    // Ein offenes DialogChoice-Panel ueber sein Handle schliessen — das haengt
+    // den ESC-Handler der Komponente ab. Sonst leakt er beim erneuten Ansprechen
+    // (das Panel wird unten per Container-Destroy zwar entfernt, der Handler
+    // aber nur ueber destroy()/das 'destroy'-Event).
+    if (this._activeChoiceHandle) {
+      try { this._activeChoiceHandle.destroy(); } catch (e) {}
+      this._activeChoiceHandle = null;
+    }
     if (this._dialogContainer) {
       try { this._dialogContainer.destroy(true); } catch (e) {}
       this._dialogContainer = null;
