@@ -1334,12 +1334,19 @@ class HubSceneV2 extends Phaser.Scene {
 
       // Feature 063: Brankas Hub-Auftakt ("Du siegelst Akten, an die Du Dich
       // nicht erinnerst") als EINMALIGE Auswahl — kein Quest-Dialog, deshalb
-      // hier an der Flavor-Stelle. Guard, damit sie nicht bei jedem Gespraech
-      // wieder auftaucht.
-      if (npcId === 'branka' && !this._shownHubIntroA0) {
+      // hier an der Flavor-Stelle.
+      //
+      // Guard MUSS persistent sein (questSystem-Flag), nicht instanzweit: die
+      // Hub-Szene wird bei jeder Rueckkehr aus Dungeon/Schmiede neu aufgebaut,
+      // ein Instanzfeld (frueher this._shownHubIntroA0) startet dann wieder
+      // undefined — die Auswahl tauchte so bei JEDEM Hub-Besuch erneut auf, und
+      // erneutes Anwaehlen konnte den Dialogfluss abbrechen. Mit dem Flag zeigt
+      // sich der Auftakt genau einmal pro Spielstand.
+      const _introSeen = !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag('hub_intro_a0_seen'));
+      if (npcId === 'branka' && !_introSeen) {
         const _sdHub = this._storyDialogEntry('hub_intro_a0');
         if (_sdHub) {
-          this._shownHubIntroA0 = true;
+          if (qs && typeof qs.setFlag === 'function') qs.setFlag('hub_intro_a0_seen');
           pages.push(this._storyChoicePage(_sdHub));
         }
       }
