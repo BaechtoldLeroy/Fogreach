@@ -21,7 +21,7 @@
       'shop.gold_counter': 'Gold: {amount}',
       'shop.close': 'Schliessen [ESC]',
       'shop.tab.items': 'Items',
-      'shop.tab.potions': 'Tränke',
+      'shop.tab.potions': 'Tränke und Portale',
       'shop.tab.reroll': 'Reroll',
       'shop.btn.buy': 'Kaufen',
       'shop.empty.stock': 'Lager ist leer.',
@@ -60,7 +60,7 @@
       'shop.gold_counter': 'Gold: {amount}',
       'shop.close': 'Close [ESC]',
       'shop.tab.items': 'Items',
-      'shop.tab.potions': 'Potions',
+      'shop.tab.potions': 'Potions & Portals',
       'shop.tab.reroll': 'Reroll',
       'shop.btn.buy': 'Buy',
       'shop.empty.stock': 'Out of stock.',
@@ -172,13 +172,13 @@
         reroll: _SHOP_T('shop.tab.reroll')
       };
       tabs.forEach((t, i) => {
-        const tx = px - panelW / 2 + 70 + i * 120;
+        const tx = px - panelW / 2 + 80 + i * 160;
         const ty = py - panelH / 2 + 58;
-        const bg = this.add.rectangle(tx, ty, 110, 28, 0x2a2a2a)
+        const bg = this.add.rectangle(tx, ty, 150, 28, 0x2a2a2a)
           .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2002)
           .setInteractive({ useHandCursor: true });
         this.add.text(tx, ty, tabLabels[t], {
-          fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
+          fontFamily: 'monospace', fontSize: '12px', color: '#f1e9d8'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
         bg.on('pointerdown', () => this._renderTab(t));
         this._tabButtons[t] = bg;

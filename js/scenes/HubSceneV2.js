@@ -103,7 +103,13 @@ if (window.i18n) {
 }
 const _HUB_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
 
-const HUB_DEBUG = false;
+// Collider-Overlay: Spiel mit ?hubdebug=1 in der URL oeffnen, um alle
+// HUB_HITBOXES-Boxen (inkl. forest_*) beschriftet zu sehen — Werkzeug zum
+// Feinjustieren der Collider ohne Raten.
+const HUB_DEBUG = (function () {
+  try { return typeof location !== 'undefined' && /[?&]hubdebug=1\b/.test(location.search || ''); }
+  catch (e) { return false; }
+})();
 const SCALE_FACTOR = 1536 / 960;
 
 class HubSceneV2 extends Phaser.Scene {
@@ -2490,7 +2496,7 @@ class HubSceneV2 extends Phaser.Scene {
         && typeof window.RunDepth.isKettenmeisterGateOpen === 'function'
         && !window.RunDepth.isKettenmeisterGateOpen()) {
       const gateHint = this.add.text(0, subtitle.y + subtitle.height + 6,
-        'Tiefer führt kein Weg — bis Mara Dich zum Kettenmeister schickt.', {
+        'Tiefer zu steigen ist noch nicht sicher — warte, bis Mara Dir mehr verrät.', {
         fontFamily: 'monospace', fontSize: 13, color: '#d0a070',
         wordWrap: { width: panelWidth - pad * 2 }, align: 'center'
       }).setOrigin(0.5, 0);

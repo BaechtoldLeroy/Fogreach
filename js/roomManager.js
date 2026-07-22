@@ -1070,12 +1070,25 @@ function enterRoom(scene, roomId) {
     stair.setAlpha(0.95).setDepth(40).refreshBody();
   });
 
-  // INVARIANTE: jeder Raum MUSS mindestens eine (erreichbare) Treppe haben —
-  // sonst ist der Run softgelockt. Falls die obige Platzierung (z.B. in einem
-  // Mini-Raum, in dem alle Kandidaten die Abstands-/Separation-Checks reissen)
-  // KEINE Treppe erzeugt hat, hier eine Notfall-Treppe an einem garantiert
-  // begehbaren Punkt erzwingen (alle Constraints fallen gelassen).
-  if (!scene.stairsGroup.children || scene.stairsGroup.children.size === 0) {
+  // INVARIANTE: jeder Raum MUSS mindestens eine ERREICHBARE Treppe haben —
+  // sonst ist der Run softgelockt. Es genuegt NICHT, dass eine Treppe existiert:
+  // sie kann in einer Wand oder einer vom Spawn abgeschnittenen Tasche gelandet
+  // sein (size>=1, aber unerreichbar) — genau das war der "Raum ohne Treppe".
+  // Deshalb pro Treppe die tatsaechliche Erreichbarkeit pruefen (isPointAccessible,
+  // aus dem BFS-Flood-Fill). Ist KEINE erreichbar, eine Notfall-Treppe an einem
+  // garantiert begehbaren Punkt erzwingen (alle Constraints fallen gelassen).
+  var _hasReachableStair = false;
+  var _stairCount = (scene.stairsGroup.children && scene.stairsGroup.children.size) || 0;
+  if (_stairCount > 0) {
+    if (typeof scene.isPointAccessible === 'function') {
+      scene.stairsGroup.getChildren().forEach(function (s) {
+        if (s && scene.isPointAccessible(s.x, s.y)) _hasReachableStair = true;
+      });
+    } else {
+      _hasReachableStair = true; // ohne Erreichbarkeits-Check defensiv akzeptieren
+    }
+  }
+  if (!_hasReachableStair) {
     var _emx = builtWidth / 2, _emy = builtHeight / 2;
     if (typeof scene.pickAccessibleSpawnPoint === 'function') {
       var _emsp = scene.pickAccessibleSpawnPoint({ minDistance: 0, maxAttempts: 40 });
@@ -1086,7 +1099,7 @@ function enterRoom(scene, roomId) {
     _emStair.setData("dir", null);
     _emStair.setDisplaySize(80, 80);
     _emStair.setAlpha(0.95).setDepth(40).refreshBody();
-    try { console.warn('[stairs] Notfall-Treppe erzwungen — Raum hatte keine'); } catch (_) {}
+    try { console.warn('[stairs] Notfall-Treppe erzwungen — keine ERREICHBARE Treppe (Raum hatte ' + _stairCount + ')'); } catch (_) {}
   }
 
   // Truhen werden NICHT mehr aus den Templates gespawnt (spawns.loot-Truhen
