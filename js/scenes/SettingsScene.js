@@ -173,6 +173,17 @@
       this.parentSceneKey = data && data.from || null;
       this.settings = loadSettings();
 
+      // Backstop: die Spiel-Pause IMMER aufheben, wenn diese Szene endet — egal
+      // ueber welchen Weg (regulaeres _close, Zombie-Stop in openSettingsScene,
+      // Szenenwechsel). Sonst bliebe __GAME_PAUSE (global!) haengen und der
+      // Dungeon waere eingefroren. Idempotent ueber das Flag + resumeGameClock.
+      this.events.once('shutdown', () => {
+        if (window.__settingsPausedClock && typeof window.resumeGameClock === 'function') {
+          try { window.resumeGameClock(); } catch (e) {}
+          window.__settingsPausedClock = false;
+        }
+      });
+
       const cam = this.cameras.main;
       const cw = cam.width;
       const ch = cam.height;
@@ -728,8 +739,8 @@
         this._i18nUnsub();
         this._i18nUnsub = null;
       }
-      // Resume the parent scene if it was paused (we don't pause currently
-      // because we use scene.launch — but stop ourselves)
+      // Spiel-Pause wird im 'shutdown'-Handler aufgehoben (deckt auch Stop-Pfade
+      // ohne _close ab). scene.stop() feuert 'shutdown'.
       this.scene.stop();
     }
   }
@@ -747,6 +758,19 @@
         fromScene.scene.stop('SettingsScene');
       }
     } catch (e) { /* ignore */ }
+    // Volle Spiel-Pause der URSPRUNGS-Szene, aber NUR im Dungeon (GameScene):
+    // das Menue laeuft als parallele Overlay-Szene, die GameScene tickt sonst
+    // weiter -> Gegner/Projektile/Cooldowns liefen im Hintergrund. Im Hub gibt
+    // es keine Gegner, und da __GAME_PAUSE global ist, wuerde eine offene
+    // Hub-Pause beim Hub->Dungeon-Wechsel den Dungeon einfrieren -> deshalb hier
+    // gar nicht pausieren. Nur pausieren, wenn nichts anderes bereits pausiert
+    // (Inventar), sonst wuerde das Schliessen jenes Modal fortsetzen.
+    window.__settingsPausedClock = false;
+    if (fromScene.scene.key === 'GameScene'
+        && window.__GAME_PAUSE && window.__GAME_PAUSE.since == null
+        && typeof window.pauseGameClock === 'function') {
+      try { window.pauseGameClock(fromScene); window.__settingsPausedClock = true; } catch (e) {}
+    }
     try {
       fromScene.scene.launch('SettingsScene', { from: fromScene.scene.key });
       // Phaser renders scenes in registration-array order. GameScene sits
