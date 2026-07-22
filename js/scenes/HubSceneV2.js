@@ -2185,8 +2185,8 @@ class HubSceneV2 extends Phaser.Scene {
     return applied;
   }
 
-  // Starter-Kit bei einem NEUEN Spiel: 3 Heiltränke des staerksten Tiers (XL,
-  // potionTier 4) ins Inventar. `applied === false` = kein Save geladen = neues
+  // Starter-Kit bei einem NEUEN Spiel: 3 Heiltränke des schwaechsten Tiers (S,
+  // potionTier 1) ins Inventar. `applied === false` = kein Save geladen = neues
   // Spiel. Der persistente Flag 'starter_kit_granted' verhindert Doppel-Vergabe
   // (Rueckkehr aus dem Dungeon, erneuter Hub-Aufbau). Bei einem "Neues Spiel"
   // wird der Slot geleert -> Flag ist weg -> genau einmal vergeben.
@@ -2197,17 +2197,17 @@ class HubSceneV2 extends Phaser.Scene {
     const inv = window.inventory;
     if (!Array.isArray(inv)) return;
     const defs = window.LootSystem && window.LootSystem.POTION_DEFS;
-    const def = Array.isArray(defs) ? defs.find((d) => d && d.potionTier === 4) : null;
+    const def = Array.isArray(defs) ? defs.find((d) => d && d.potionTier === 1) : null;
     if (!def) return;
-    const nameKey = 'loot.potion.t4';
+    const nameKey = 'loot.potion.t1';
     const name = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(nameKey) : def.name;
     const COUNT = 3;
 
     let placed = false;
-    // Vorhandenen XL-Stack erhoehen (falls schon einer da ist), sonst frei belegen.
+    // Vorhandenen S-Stack erhoehen (falls schon einer da ist), sonst frei belegen.
     for (let i = 0; i < inv.length; i++) {
       const it = inv[i];
-      if (it && it.type === 'potion' && it.potionTier === 4) {
+      if (it && it.type === 'potion' && it.potionTier === 1) {
         it.stack = (it.stack || 1) + COUNT;
         placed = true;
         break;
@@ -2217,7 +2217,7 @@ class HubSceneV2 extends Phaser.Scene {
       const slot = inv.findIndex((s) => !s);
       if (slot >= 0) {
         inv[slot] = {
-          type: 'potion', potionTier: 4, name: name, nameKey: nameKey,
+          type: 'potion', potionTier: 1, name: name, nameKey: nameKey,
           iconKey: def.iconKey, stack: COUNT
         };
         placed = true;
