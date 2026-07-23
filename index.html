@@ -8,20 +8,21 @@
     />
     <title>Demonfall Prototype</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23121218'/%3E%3Cpath d='M32 8 L48 24 L40 56 L24 56 L16 24 Z' fill='%23c0392b'/%3E%3Ccircle cx='26' cy='28' r='3' fill='%23f1c40f'/%3E%3Ccircle cx='38' cy='28' r='3' fill='%23f1c40f'/%3E%3C/svg%3E" />
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.js"></script>
+    <!-- KEIN Netzwerk zur Laufzeit: Phaser ist lokal vendored (war vorher vom
+         jsdelivr-CDN). Damit laeuft das Spiel vollstaendig offline — gleiches
+         Muster wie beim Joystick-Plugin unten. -->
+    <script src="js/vendor/phaser.min.js?v=001"></script>
     <!-- Joystick-Plugin lokal vendored (war via CDN flaky -> 503 / Tracking-Prevention
          blockierte den Load -> rexvirtualjoystickplugin undefined -> Boot brach ab). -->
     <script src="js/vendor/rexvirtualjoystickplugin.min.js?v=061"></script>
-    <!-- Firebase App (core SDK) -->
-    <script
-      type="module"
-      src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"
-    ></script>
-    <!-- Firestore SDK -->
-    <script
-      type="module"
-      src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"
-    ></script>
+    <!-- Firebase/Firestore (Online-Highscores) DEAKTIVIERT: das Leaderboard wird
+         aktuell nicht gebraucht und der Firestore-Client oeffnete bei JEDEM Start
+         einen Backend-Kanal, der bei Blockade (Tracking-Schutz/Adblocker) dauerhaft
+         Netzwerk-Fehler ins Log wiederholte. js/leaderboard.js bleibt im Repo, wird
+         aber nicht mehr geladen -> window.saveScore/loadScores sind undefined, und
+         die Aufrufer in startScene.js/main.js ueberspringen ihren Highscore-Block
+         (beide pruefen bereits per typeof). Zum Reaktivieren: diese Zeilen und den
+         leaderboard.js-Script-Tag weiter unten wieder einkommentieren. -->
     <script src="js/mobileSafeArea.js"></script>
     <script src="js/mobileControls.js?v=062"></script>
     <script src="js/mobileAbilityButtons.js"></script>
@@ -38,7 +39,7 @@
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=004"></script>
+    <script src="js/version.js?v=005"></script>
     <script src="js/soundManager.js?v=001"></script>
     <script src="js/performanceMonitor.js"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -126,7 +127,7 @@
     <script src="js/scenes/SettingsScene.js?v=004"></script>
     <script src="js/scenes/PrintingHouseScene.js"></script>
     <script src="js/scenes/TestTerrainScene.js"></script>
-    <script type="module" src="js/leaderboard.js"></script>
+    <!-- DEAKTIVIERT (kein Netzwerk): <script type="module" src="js/leaderboard.js"></script> -->
     <script src="js/minimap.js?v=060"></script>
     <script src="js/hudV2.js?v=075"></script>
     <script src="js/endlessMode.js?v=063"></script>

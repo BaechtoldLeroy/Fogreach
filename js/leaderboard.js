@@ -1,4 +1,21 @@
 // js/leaderboard.js
+//
+// !! AKTUELL DEAKTIVIERT — wird von index.html NICHT geladen. !!
+// Das Online-Leaderboard wird momentan nicht gebraucht, und die Firestore-
+// Initialisierung lief bei JEDEM Seitenstart auf Modul-Ebene: sie oeffnete einen
+// Backend-Kanal zu firestore.googleapis.com, der bei Blockade (Tracking-Schutz/
+// Adblocker) oder offline dauerhaft Verbindungsversuche wiederholte und das
+// Log mit Netzwerk-Fehlern flutete (SDK-interne Meldungen, per .catch NICHT
+// unterdrueckbar). Das Spiel selbst braucht kein Netzwerk.
+//
+// Ohne den Script-Tag bleiben window.saveScore/loadScores undefined; die
+// Aufrufer (js/scenes/startScene.js, js/main.js) pruefen per typeof und
+// ueberspringen ihren Highscore-Block rueckstandslos.
+//
+// Zum Reaktivieren: in index.html die Firebase-Module + den leaderboard.js-
+// Script-Tag wieder einkommentieren. Besser waere dabei, initializeApp/
+// getFirestore LAZY in loadScores()/saveScore() zu verschieben, damit ohne
+// geoeffnete Highscore-Liste gar keine Verbindung entsteht.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
 import {
   getFirestore,
