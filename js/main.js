@@ -1075,6 +1075,11 @@ function create() {
   qKey = this.input.keyboard.addKey('Q');
   wKey = this.input.keyboard.addKey('W');
   this.input.keyboard.on('keydown-I', () => { invOpen ? closeInventory() : openInventory(); });
+  // ESC schliesst das Inventar (zusaetzlich zu I). No-Op, wenn es zu ist — dann
+  // greifen die ESC-Handler der jeweils offenen Overlays (Dialoge/Menues) selbst.
+  this.input.keyboard.on('keydown-ESC', () => {
+    if (invOpen && typeof closeInventory === 'function') closeInventory();
+  });
   this.input.keyboard.on('keydown-M', () => {
     if (window.soundManager) window.soundManager.toggleMute();
   });
@@ -1185,6 +1190,7 @@ function create() {
   this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     this.input.keyboard.off('keydown-F');
     this.input.keyboard.off('keydown-I');
+    this.input.keyboard.off('keydown-ESC');
     this.input.keyboard.off('keydown-J');
     this.input.keyboard.off('keydown-M');
     this.input.keyboard.off('keydown-K');

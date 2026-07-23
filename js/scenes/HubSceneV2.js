@@ -1466,6 +1466,13 @@ class HubSceneV2 extends Phaser.Scene {
         && typeof window.DialogChoice.present === 'function') {
       const selfDC = this;
       const cfg = page._choiceConfig;
+      // Nie zwei Auswahl-Panels stapeln: ein evtl. noch offenes zuerst wegraeumen.
+      // Sonst konnte man nach der ersten Antwort erneut waehlen und der Abbrechen-
+      // Handler des Alt-Panels ging verloren ("Dialog nicht mehr abbrechbar").
+      if (this._activeChoiceHandle) {
+        try { this._activeChoiceHandle.destroy(); } catch (e) {}
+        this._activeChoiceHandle = null;
+      }
       // Handle merken, damit _sweepDialogSurfaces das Panel (inkl. ESC-Handler)
       // beim erneuten Ansprechen sicher abraeumen kann — sonst kann ein
       // Alt-Panel den frischen Dialog stoeren und der NPC haengt.
@@ -1474,6 +1481,12 @@ class HubSceneV2 extends Phaser.Scene {
         choices: cfg.choices,
         onResolved: function (result) {
           selfDC._activeChoiceHandle = null;
+          // Diese Auswahl ist verbraucht: _choiceConfig entfernen, damit DIESELBE
+          // Seite NIE erneut als Auswahl-Panel praesentiert wird (Schutz gegen die
+          // gemeldete Wieder-Anzeige "kommt wieder auf die Antwort-Auswahl").
+          // nextPages ist eine flache Kopie -> dieselbe Referenz, also wirkt es
+          // auch dort.
+          page._choiceConfig = null;
           const nextPages = pages.slice();
           if (result && result.choice && result.choice.response) {
             nextPages.splice(pageIndex + 1, 0, { text: result.choice.response, choices: null });

@@ -1354,7 +1354,12 @@ function spawnObstacle(x, y, key) {
   // Standard-Setup
   o.setOrigin(0.5, 0.5);
   o.refreshBody();              // wichtig bei staticGroup
-  o.setDepth(40);               // hinter Gegnern, aber vor Boden
+  // Depth: hinter Gegnern (50), vor Boden. Hohe Architektur (Statue/Saeule/Altar)
+  // liegt bei 42 -> VOR der Treppe (depth 40), sonst wird eine Treppe ueber der
+  // Statue gezeichnet und das sieht falsch aus. Sonstige Props bleiben bei 40.
+  var _lk = String(key).toLowerCase();
+  var _tall = _lk.indexOf('statue') === 0 || _lk.indexOf('pillar') === 0 || _lk.indexOf('altar') === 0;
+  o.setDepth(_tall ? 42 : 40);  // hinter Gegnern, aber vor Boden (Statue/Saeule vor Treppe)
 
   // Optionale Metadaten
   o.setData('type', key);

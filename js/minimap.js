@@ -222,18 +222,32 @@ function updateMinimap(scene) {
     }
   }
 
-  // Draw stairs/exit as yellow dot
+  // Draw stairs/exit as yellow dot. Entdeckte Treppen sind gelb. Hat der Spieler
+  // nach einer Weile (30 s im Raum) noch keine Treppe gefunden, PINGT die Minimap
+  // die unentdeckten Treppen (blinkend orange, auch im noch unerkundeten Bereich),
+  // damit man den Ausgang nicht ewig sucht.
   if (scene.stairsGroup && scene.stairsGroup.children) {
     const origin = scene.currentRoom ? scene.currentRoom.origin : { x: 0, y: 0 };
+    const nowMs = (scene.time && typeof scene.time.now === 'number')
+      ? scene.time.now
+      : (typeof performance !== 'undefined' && performance.now ? performance.now() : 0);
+    const enteredAt = (scene.currentRoom && typeof scene.currentRoom.enteredAt === 'number')
+      ? scene.currentRoom.enteredAt : nowMs;
+    const pingActive = (nowMs - enteredAt) > 30000;         // erst nach 30 s
+    const pingOn = (Math.floor(nowMs / 400) % 2) === 0;      // ~2.5 Hz Blinken
     scene.stairsGroup.children.iterate((stair) => {
       if (!stair || !stair.active) return;
       const stx = Math.floor((stair.x - origin.x) / tileSize);
       const sty = Math.floor((stair.y - origin.y) / tileSize);
-      // Only show if explored
-      if (stx >= 0 && stx < gridW && sty >= 0 && sty < gridH &&
-          scene._minimapExplored[sty * gridW + stx]) {
+      if (stx < 0 || stx >= gridW || sty < 0 || sty >= gridH) return;
+      const dotSize = Math.max(2, tpx);
+      if (scene._minimapExplored[sty * gridW + stx]) {
+        // Entdeckt -> gelb, dauerhaft.
         gfx.fillStyle(0xffff00, 1);
-        const dotSize = Math.max(2, tpx);
+        gfx.fillRect(offX + stx * tpx - 1, offY + sty * tpx - 1, dotSize + 1, dotSize + 1);
+      } else if (pingActive && pingOn) {
+        // Unentdeckt -> nach der Wartezeit blinkend orange (Ping).
+        gfx.fillStyle(0xffaa00, 0.95);
         gfx.fillRect(offX + stx * tpx - 1, offY + sty * tpx - 1, dotSize + 1, dotSize + 1);
       }
     });
