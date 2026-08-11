@@ -46,6 +46,13 @@ const _START_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : ke
 // dieselbe Konstante benutzen (sie liegen weit auseinander).
 const _NEW_GAME_FLAG = 'demonfall.pendingNewGame';
 
+// Einmaliges Flag: der Spieler war beim gewollten Reload (Neues Spiel /
+// Slot-Wechsel) im Vollbild. Nach dem Reload wird es konsumiert und Vollbild
+// bei der ersten Touch-Geste wiederhergestellt. Bewusst sessionStorage und NICHT
+// in den Settings — kein Auto-Restore beim normalen Start, kein Focus-Regain-
+// Hijack (genau der Bug, der die alte settings.fullscreen-Persistenz killte).
+const _RESUME_FS_FLAG = 'demonfall.resumeFullscreen';
+
 // 1) Scene-Konstruktor
 function StartScene() {
   Phaser.Scene.call(this, { key: "StartScene" });
@@ -320,6 +327,34 @@ StartScene.prototype.create = function () {
     try { window.applyGameSettings(window.loadGameSettings()); } catch (e) { /* ignore */ }
   }
 
+  // Vollbild nach einem gewollten Reload (Neues Spiel / Slot-Wechsel) wieder
+  // herstellen. Die Fullscreen-API ueberlebt keinen Reload und laesst sich nur
+  // aus einer echten User-Geste heraus neu anfordern — also EINE einmalige
+  // pointerdown-Geste abwarten und dann startFullscreen(). Der Listener haengt am
+  // window (nicht an this.input), weil die Szene nach "Neues Spiel" sofort in den
+  // Hub wechselt und ein szenen-lokaler Listener beim Shutdown wegfiele; der
+  // erste Touch im Hub soll es ausloesen. Flag wird SOFORT konsumiert -> feuert
+  // hoechstens einmal, kein Nachwirken bei spaeteren Starts. MUSS vor den
+  // Autostart-/New-Game-Early-Returns unten stehen, damit es in allen Pfaden armt.
+  (function _armFullscreenResume(scene) {
+    let want = null;
+    try { want = window.sessionStorage.getItem(_RESUME_FS_FLAG); } catch (e) { return; }
+    if (want == null) return;
+    try { window.sessionStorage.removeItem(_RESUME_FS_FLAG); } catch (e) {}
+    const restore = () => {
+      try { window.removeEventListener('pointerdown', restore, true); } catch (e) {}
+      try {
+        const sc = scene.game && scene.game.scale;
+        if (sc && !sc.isFullscreen) sc.startFullscreen();
+      } catch (e) { /* iOS ohne Element-Fullscreen o. ae. -> still ignorieren */ }
+    };
+    try {
+      window.addEventListener('pointerdown', restore, { once: true, capture: true });
+    } catch (e) { /* addEventListener-Optionsobjekt evtl. nicht unterstuetzt */
+      try { window.addEventListener('pointerdown', restore, true); } catch (_) {}
+    }
+  })(this);
+
   // #63: "Neues Spiel" hat den Slot geleert und die Seite neu geladen, damit
   // jedes Modul frisch aus dem leeren Slot initialisiert. Hier die Gegenseite:
   // das Flag konsumieren und direkt starten, statt das Menü nochmal zu zeigen.
@@ -414,6 +449,16 @@ StartScene.prototype.create = function () {
   // Drift, vor der #63 warnt. Der Reload weiss nichts über Module und kann
   // darum nichts vergessen.
   function _reloadForSlotChange() {
+    // Vollbild ueberlebt keinen Page-Reload (Fullscreen-API ist ans Dokument
+    // gebunden). War der Spieler im Vollbild, ein einmaliges Flag setzen, das
+    // die create() nach dem Reload konsumiert und Vollbild bei der ersten
+    // Touch-Geste wiederherstellt. document.fullscreenElement statt scale, weil
+    // diese Funktion ohne Szenen-`this` aufgerufen wird.
+    try {
+      if (document.fullscreenElement) {
+        window.sessionStorage.setItem(_RESUME_FS_FLAG, '1');
+      }
+    } catch (e) { /* sessionStorage evtl. blockiert */ }
     try { window.location.reload(); }
     catch (e) { try { this.scene.restart(); } catch (_) {} }
   }
