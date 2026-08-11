@@ -917,6 +917,20 @@ function handleEnemies(time, delta = 16) {
     // Draw mini-boss health bar each frame
     if (enemy.isMiniBoss && enemy.miniBossBar) {
       drawMiniBossBar(enemy);
+      // #65 Phase 2: Verzauberungs-Label folgt dem Kopf (ueber der Leiste).
+      if (enemy.miniBossLabel) {
+        const _dh = (enemy.displayHeight || 48) / 2;
+        enemy.miniBossLabel.setPosition(enemy.x, enemy.y - _dh - 14);
+        if (typeof enemy.alpha === 'number') enemy.miniBossLabel.setAlpha(enemy.visible ? 1 : 0);
+      }
+      // #65 Phase 2: 'Zaeh' — Heal-over-time (~healFrac der maxHP pro Sekunde).
+      if (enemy._enchant && enemy._enchant.healFrac && enemy.hp > 0 && enemy.hp < enemy.maxHp) {
+        if (!enemy._lastHealMs) enemy._lastHealMs = time;
+        if (time - enemy._lastHealMs >= 1000) {
+          enemy._lastHealMs = time;
+          enemy.hp = Math.min(enemy.maxHp, enemy.hp + Math.max(1, Math.round(enemy.maxHp * enemy._enchant.healFrac)));
+        }
+      }
     }
 
     // Draw the regular enemy hp bar (created lazily on first hit by
@@ -1576,6 +1590,27 @@ function miniBossSlam(enemy) {
  * Spawnt einen Mini-Boss: verstärkter Gegner mit HP-Balken und Spezialangriff.
  * Erscheint alle 5 Wellen (nicht die 10er-Boss-Wellen).
  */
+// #65 Phase 2: Mini-Boss-Verzauberungen — je EINE mit grossem Impact, klar per
+// Name + Aura-Farbe (Tint) erkennbar. `resist` wirkt im Schadens-Funnel
+// (player.js dealDamageToEnemy) ueber die Quelle (ranged/melee/skill);
+// reflect (Dornen) ebenfalls dort; healFrac + speedMul hier/in der Update-Loop.
+const MINIBOSS_ENCHANTS = [
+  { id: 'warded',      de: 'Bannschild',      en: 'Warded',      aura: 0x66aaff, resist: 'skill',  resistMul: 0.30 },
+  { id: 'bulwark',     de: 'Fernkampfpanzer', en: 'Ranged Ward', aura: 0x88cc66, resist: 'ranged', resistMul: 0.30 },
+  { id: 'bruiser',     de: 'Nahkampfhaut',    en: 'Melee Ward',  aura: 0xcc8844, resist: 'melee',  resistMul: 0.30 },
+  { id: 'thorns',      de: 'Dornen',          en: 'Thorns',      aura: 0xff5555, reflect: 0.35 },
+  { id: 'regenerator', de: 'Zaeh',            en: 'Regenerating',aura: 0x66cc99, healFrac: 0.04 },
+  { id: 'swift',       de: 'Rasend',          en: 'Swift',       aura: 0xffdd55, speedMul: 1.6 },
+];
+function _pickMiniBossEnchant() {
+  return MINIBOSS_ENCHANTS[Math.floor(Math.random() * MINIBOSS_ENCHANTS.length)];
+}
+function _enchantLabel(e) {
+  const isEn = (typeof window !== 'undefined' && window.i18n
+    && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
+  return isEn ? e.en : e.de;
+}
+
 function spawnMiniBoss(xCoord, yCoord, baseType) {
   const scene = this && this.sys ? this : window.currentScene || obstacles?.scene;
   if (!scene) return null;
@@ -1634,6 +1669,24 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
     scene.enemyLayer.add(enemy.miniBossBar);
   }
   enemy.on('destroy', () => enemy.miniBossBar?.destroy());
+
+  // #65 Phase 2: ab Tiefe 3 eine Verzauberung. Aura-Farbe (Tint) ueberschreibt
+  // das generische Orange -> klar erkennbar; speed wirkt sofort ueber enemy.speed,
+  // resist/reflect/heal an ihren Stellen. Ein Namens-Label ueber der HP-Leiste.
+  if (_depth >= 3) {
+    const ench = _pickMiniBossEnchant();
+    enemy._enchant = ench;
+    enemy.setTint(ench.aura);
+    if (ench.speedMul) enemy.speed = Math.round((enemy.speed || 70) * ench.speedMul);
+    enemy._lastHealMs = 0;
+    const lbl = scene.add.text(enemy.x, enemy.y, _enchantLabel(ench), {
+      fontFamily: 'monospace', fontSize: '11px', fontStyle: 'bold',
+      color: '#ffffff', stroke: '#000000', strokeThickness: 3
+    }).setOrigin(0.5, 1).setDepth(1003);
+    if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') scene.enemyLayer.add(lbl);
+    enemy.miniBossLabel = lbl;
+    enemy.on('destroy', () => enemy.miniBossLabel?.destroy());
+  }
 
   return enemy;
 }

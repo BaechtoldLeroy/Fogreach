@@ -674,8 +674,18 @@ function updatePlayerColliderDebug(sprite) {
   g.setVisible(true);
 }
 
-function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') {
+function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', opts = {}) {
   if (!enemy) return { damage: 0, isCrit: false };
+
+  // #65 Phase 2: Mini-Boss-Verzauberung 'resist'. Quelle klassifizieren:
+  //   ranged  = Projektil (Flag vom Treffer-Ort, opts.ranged)
+  //   melee   = Basis-Angriff ('attack' ohne Projektil)
+  //   skill   = jede Faehigkeit (whirlwind/hammer/spin/dash/...)
+  // Passt sie zur Resistenz des Gegners, wird der Schaden stark reduziert.
+  if (enemy._enchant && enemy._enchant.resist) {
+    const _src = (opts && opts.ranged) ? 'ranged' : (abilityKey === 'attack' ? 'melee' : 'skill');
+    if (_src === enemy._enchant.resist) multiplier *= (enemy._enchant.resistMul || 0.3);
+  }
 
   // Kettenwächter (Chain Guard): shield blocks the first hit then breaks
   if (enemy.isChainGuard && enemy.shieldActive) {
@@ -803,6 +813,14 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack') 
       window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'amuletFrost');
       enemy.__amuletChilled = true;
     } catch (e) { /* never crash gameplay */ }
+  }
+
+  // #65 Phase 2: Mini-Boss-Verzauberung 'Dornen' — ein Teil des zugefuegten
+  // Schadens faellt an den Spieler zurueck. applyPlayerDamage (enemy.js, global)
+  // respektiert Unverwundbarkeit/Ausweichen/Ruestung.
+  if (enemy._enchant && enemy._enchant.reflect && damage > 0
+      && typeof applyPlayerDamage === 'function') {
+    try { applyPlayerDamage(Math.max(1, Math.round(damage * enemy._enchant.reflect)), scene); } catch (e) {}
   }
 
   return { damage, isCrit };
@@ -3245,7 +3263,8 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
   const knockback = projectile.getData('knockback')
     ?? (isBowArrow ? 60 : DAGGER_THROW_KNOCKBACK);
 
-  const { isCrit } = dealDamageToEnemy(scene, enemy, damageMult, abilityKey);
+  // #65 Phase 2: Projektil -> ranged-Quelle (fuer Mini-Boss-Fernkampf-Resistenz).
+  const { isCrit } = dealDamageToEnemy(scene, enemy, damageMult, abilityKey, { ranged: true });
   handleEnemyHit(scene, enemy, {
     tint: isCrit ? 0xfff2a6 : 0xffaa88,
     duration: isCrit ? 200 : 140
