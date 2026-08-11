@@ -3484,11 +3484,83 @@ class HubSceneV2 extends Phaser.Scene {
     }).setOrigin(0.5, 0);
     container.add(titleText);
 
-    const bodyText = this.add.text(0, -panelH / 2 + 88, body, {
+    // --- Scrollbarer Fliesstext ---------------------------------------
+    // Auf Mobile ist der Intro-Text laenger als die Box und lief vorher unter
+    // den [Weiter]-Button. Der Textbereich bekommt jetzt eine Maske + eine
+    // Scrollbar; gescrollt wird per Mausrad (Desktop) und Wischen (Mobile).
+    // Faellt zurueck auf statisch, wenn der Text ohnehin passt.
+    const bodyTop = -panelH / 2 + 88;
+    const bodyBottom = panelH / 2 - 64;      // knapp ueber dem Button
+    const viewportH = bodyBottom - bodyTop;
+
+    const bodyText = this.add.text(0, bodyTop, body, {
       fontFamily: 'serif', fontSize: 16, color: '#e0d8c0',
-      wordWrap: { width: panelW - 48 }, align: 'center', lineSpacing: 6
+      wordWrap: { width: panelW - 60 }, align: 'center', lineSpacing: 6
     }).setOrigin(0.5, 0);
     container.add(bodyText);
+
+    let detachScroll = null;
+    const overflow = bodyText.height - viewportH;
+    if (overflow > 6) {
+      // Maske auf den Sichtbereich in Bildschirmkoordinaten. scrollFactor 0
+      // wie der Container, damit der Hub-Kamera-Scroll die Box nicht verzieht.
+      const maskG = this.make.graphics();
+      maskG.setScrollFactor(0);
+      maskG.fillStyle(0xffffff, 1);
+      maskG.fillRect(cw / 2 - panelW / 2, ch / 2 + bodyTop, panelW, viewportH);
+      bodyText.setMask(maskG.createGeometryMask());
+
+      const maxY = bodyTop;                 // ganz oben
+      const minY = bodyTop - overflow - 6;  // ganz unten (kleiner Puffer)
+      let scrollY = maxY;
+      const clampY = (v) => Phaser.Math.Clamp(v, minY, maxY);
+
+      // Scrollbar-Spur + Griff am rechten Panel-Rand.
+      const barX = panelW / 2 - 16;
+      const track = this.add.rectangle(barX, bodyTop + viewportH / 2, 4, viewportH, 0xffffff, 0.10).setOrigin(0.5);
+      container.add(track);
+      const thumbH = Math.max(28, viewportH * (viewportH / bodyText.height));
+      const thumb = this.add.rectangle(barX, bodyTop + thumbH / 2, 6, thumbH, 0xaa8844, 0.9).setOrigin(0.5);
+      container.add(thumb);
+
+      const applyScroll = () => {
+        bodyText.y = scrollY;
+        const t = (maxY - scrollY) / (maxY - minY);  // 0..1
+        thumb.y = bodyTop + thumbH / 2 + t * (viewportH - thumbH);
+      };
+      applyScroll();
+
+      const wheelHandler = (pointer, over, dx, dy) => {
+        scrollY = clampY(scrollY - dy * 0.5);
+        applyScroll();
+      };
+      this.input.on('wheel', wheelHandler);
+
+      // Wisch-/Drag-Scroll ueber dem Textbereich (Mobile).
+      const dragZone = this.add.zone(0, bodyTop + viewportH / 2, panelW, viewportH)
+        .setOrigin(0.5).setInteractive();
+      container.add(dragZone);
+      let dragging = false, dragStartPY = 0, dragStartScroll = 0;
+      const onDown = (p) => { dragging = true; dragStartPY = p.y; dragStartScroll = scrollY; };
+      const onMove = (p) => {
+        if (!dragging) return;
+        scrollY = clampY(dragStartScroll + (p.y - dragStartPY));
+        applyScroll();
+      };
+      const onUp = () => { dragging = false; };
+      dragZone.on('pointerdown', onDown);
+      this.input.on('pointermove', onMove);
+      this.input.on('pointerup', onUp);
+      this.input.on('pointerupoutside', onUp);
+
+      detachScroll = () => {
+        this.input.off('wheel', wheelHandler);
+        this.input.off('pointermove', onMove);
+        this.input.off('pointerup', onUp);
+        this.input.off('pointerupoutside', onUp);
+        try { maskG.destroy(); } catch (_) {}
+      };
+    }
 
     const closeBtn = this.add.text(0, panelH / 2 - 36, closeLabel, {
       fontFamily: 'monospace', fontSize: 18, color: '#ffffff',
@@ -3503,6 +3575,7 @@ class HubSceneV2 extends Phaser.Scene {
       this.input.keyboard.off('keydown-ESC', escHandler);
       this.input.keyboard.off('keydown-ENTER', enterHandler);
       this.input.keyboard.off('keydown-SPACE', spaceHandler);
+      if (detachScroll) { try { detachScroll(); } catch (_) {} }
       container.destroy(true);
       if (typeof onClose === 'function') {
         try { onClose(); } catch (_) {}
