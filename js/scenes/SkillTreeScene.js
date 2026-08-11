@@ -110,6 +110,7 @@
       this.parentSceneKey = (data && data.from) || null;
       this.nodeViews = [];   // re-rendered on each refresh
       this._buildLayout();
+      this._buildTooltip();  // #78: Hover-Tooltip mit Talent-Erklaerung
       this._render();
 
       // Re-render when the tree state changes elsewhere (e.g. level-up grants).
@@ -127,7 +128,51 @@
         }
         if (typeof this._unsub === 'function') { try { this._unsub(); } catch (e) {} this._unsub = null; }
         this._destroyNodeViews();
+        if (this._tt) {
+          try { this._tt.bg.destroy(); this._tt.txt.destroy(); } catch (e) {}
+          this._tt = null;
+        }
       });
+    }
+
+    // #78: geteilter Hover-Tooltip (einmal gebaut, ueberlebt Re-Renders, da NICHT
+    // in nodeViews). Zeigt beim Ueberfahren eines Talents die volle Erklaerung.
+    _buildTooltip() {
+      const bg = this.add.graphics().setScrollFactor(0).setDepth(2050).setVisible(false);
+      const txt = this.add.text(0, 0, '', {
+        fontFamily: 'monospace', fontSize: '12px', color: '#e8e8f0',
+        wordWrap: { width: 300 }, lineSpacing: 3, align: 'left'
+      }).setScrollFactor(0).setDepth(2051).setVisible(false);
+      this._tt = { bg: bg, txt: txt, pad: 10, maxW: 320 };
+    }
+
+    _showTooltip(text, cx, cy, cardH) {
+      if (!this._tt || !text) return;
+      const cam = this.cameras.main;
+      const cw = cam.width, ch = cam.height;
+      const pad = this._tt.pad, maxW = this._tt.maxW;
+      const txt = this._tt.txt;
+      txt.setWordWrapWidth(maxW - pad * 2);
+      txt.setText(text);
+      const boxW = Math.min(maxW, txt.width + pad * 2);
+      const boxH = txt.height + pad * 2;
+      // Bevorzugt ueber der Karte, sonst darunter; horizontal an der Karte
+      // zentriert und auf den Bildschirm geklemmt.
+      let x = Math.max(8, Math.min(cw - boxW - 8, cx - boxW / 2));
+      let y = cy - cardH / 2 - 8 - boxH;
+      if (y < 8) y = cy + cardH / 2 + 8;
+      y = Math.max(8, Math.min(ch - boxH - 8, y));
+      const bg = this._tt.bg;
+      bg.clear();
+      bg.fillStyle(0x0c0c14, 0.97).fillRoundedRect(x, y, boxW, boxH, 8);
+      bg.lineStyle(2, 0xd4a543, 0.9).strokeRoundedRect(x, y, boxW, boxH, 8);
+      bg.setVisible(true);
+      txt.setPosition(x + pad, y + pad).setVisible(true);
+    }
+
+    _hideTooltip() {
+      if (!this._tt) return;
+      try { this._tt.bg.clear().setVisible(false); this._tt.txt.setVisible(false); } catch (e) {}
     }
 
     // -----------------------------------------------------------------------
@@ -216,6 +261,8 @@
     _destroyNodeViews() {
       if (this.nodeViews) this.nodeViews.forEach(g => g && g.destroy && g.destroy());
       this.nodeViews = [];
+      // Tooltip verstecken: die Karte, ueber der er hing, wird gerade zerstoert.
+      this._hideTooltip();
     }
 
     // -----------------------------------------------------------------------
@@ -369,6 +416,26 @@
         align: 'center', wordWrap: { width: w - 8 }
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
       this.nodeViews.push(subText);
+
+      // #78: Mouse-over-Tooltip mit voller Talent-Erklaerung. Der Effekt-Text
+      // kommt aus dem AbilitySystem (getAbilityDef) — die Karte selbst zeigt ihn
+      // aus Platzgruenden nicht. EN ueber i18n-Key, sonst Inline-Beschreibung.
+      const strandName = _ST_T('skilltree.strand.' + node.strand);
+      let effect = '';
+      const AS = window.AbilitySystem;
+      if (AS && typeof AS.getAbilityDef === 'function' && node.abilityId) {
+        const adef = AS.getAbilityDef(node.abilityId);
+        if (adef) {
+          const dkey = 'ability.' + node.abilityId + '.description';
+          const dloc = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(dkey) : null;
+          effect = (dloc && dloc.indexOf('[MISSING') !== 0 && dloc !== dkey) ? dloc : (adef.description || '');
+        }
+      }
+      const ttText = (node.name || node.id) + '   [' + strandName + ']'
+        + (effect ? '\n\n' + effect : '')
+        + (sub ? '\n\n' + sub : '');
+      card.on('pointerover', () => this._showTooltip(ttText, cx, cy, h));
+      card.on('pointerout', () => this._hideTooltip());
     }
 
     _refreshHeader() {
