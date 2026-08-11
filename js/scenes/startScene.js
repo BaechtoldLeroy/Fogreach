@@ -329,41 +329,53 @@ StartScene.prototype.create = function () {
 
   // Vollbild nach einem gewollten Reload (Neues Spiel / Slot-Wechsel) wieder
   // herstellen. Die Fullscreen-API ueberlebt keinen Reload und laesst sich nur
-  // aus einer echten User-Geste heraus neu anfordern — also EINE einmalige
-  // pointerdown-Geste abwarten und dann startFullscreen(). Der Listener haengt am
+  // aus einer echten User-Geste heraus neu anfordern — also auf die erste
+  // Touch-Geste warten und startFullscreen() aufrufen. Der Listener haengt am
   // window (nicht an this.input), weil die Szene nach "Neues Spiel" sofort in den
   // Hub wechselt und ein szenen-lokaler Listener beim Shutdown wegfiele; der
-  // erste Touch im Hub soll es ausloesen. Flag wird SOFORT konsumiert -> feuert
-  // hoechstens einmal, kein Nachwirken bei spaeteren Starts. MUSS vor den
-  // Autostart-/New-Game-Early-Returns unten stehen, damit es in allen Pfaden armt.
+  // erste Touch im Hub (typ. [Weiter] am Intro-Splash) soll es ausloesen. Das
+  // Flag wird SOFORT konsumiert (kein Nachwirken bei spaeteren Starts); der
+  // Listener selbst bleibt bis zum bestaetigten Erfolg scharf (siehe unten).
+  // MUSS vor den Autostart-/New-Game-Early-Returns stehen, damit es ueberall armt.
   (function _armFullscreenResume(scene) {
     let want = null;
     try { want = window.sessionStorage.getItem(_RESUME_FS_FLAG); } catch (e) { return; }
     if (want == null) return;
     try { window.sessionStorage.removeItem(_RESUME_FS_FLAG); } catch (e) {}
-    // Auf beide gaengigen Touch-Gesten lauschen: pointerdown deckt Desktop +
-    // moderne Mobile ab, touchend faengt Browser, die den ersten pointerdown
-    // anders behandeln. Beide sind gueltige User-Gesten fuer requestFullscreen.
-    const EVENTS = ['pointerdown', 'touchend'];
-    let done = false;
-    const restore = () => {
-      if (done) return;
-      done = true;
-      EVENTS.forEach((ev) => { try { window.removeEventListener(ev, restore, true); } catch (e) {} });
-      try {
-        // window.game ist nach dem Boot gesetzt; scene.game als Fallback, falls
-        // die Geste noch waehrend der Start-Szene kommt.
-        const g = window.game || (scene && scene.game);
-        const sc = g && g.scale;
-        if (sc && !sc.isFullscreen) sc.startFullscreen();
-      } catch (e) { /* iOS ohne Element-Fullscreen o. ae. -> still ignorieren */ }
+
+    // RETRY-BIS-BESTAETIGT statt one-shot. Grund: nach "Neues Spiel" laeuft der
+    // Reload SYNCHRON im Start-Tap-Handler — der Finger kann beim Reload noch
+    // unten sein. Dann feuert auf der neuen Seite ein touchend/pointerup OHNE
+    // User-Aktivierung, startFullscreen() schlaegt fehl. Wuerden wir den Listener
+    // dabei entfernen, waere die Chance verbrannt. Also: auf JEDE Geste
+    // startFullscreen() versuchen und NUR aufraeumen, wenn Vollbild wirklich
+    // aktiv wurde (kurz danach isFullscreen pruefen). Sicherheitsnetz nach N
+    // Versuchen, damit auf Geraeten ohne Element-Vollbild (iOS) nicht ewig
+    // gelauscht wird.
+    const EVENTS = ['pointerdown', 'pointerup', 'touchend'];
+    let settled = false, attempts = 0;
+    const cleanup = () => {
+      settled = true;
+      EVENTS.forEach((ev) => { try { window.removeEventListener(ev, onGesture, true); } catch (e) {} });
+    };
+    const onGesture = () => {
+      if (settled) return;
+      const g = window.game || (scene && scene.game);
+      const sc = g && g.scale;
+      if (!sc) return;                       // Spiel noch nicht bereit -> naechste Geste
+      if (sc.isFullscreen) { cleanup(); return; }
+      attempts++;
+      try { sc.startFullscreen(); } catch (e) { /* still ignorieren */ }
+      // Erfolg nicht annehmen: erst nach kurzem Moment pruefen und dann erst
+      // aufraeumen. So bleibt der Listener nach einem Fehlversuch scharf.
+      setTimeout(() => {
+        try { if (!settled && g && g.scale && g.scale.isFullscreen) cleanup(); } catch (e) {}
+      }, 60);
+      if (attempts >= 10) cleanup();
     };
     EVENTS.forEach((ev) => {
-      try {
-        window.addEventListener(ev, restore, { capture: true });
-      } catch (e) { /* Optionsobjekt evtl. nicht unterstuetzt */
-        try { window.addEventListener(ev, restore, true); } catch (_) {}
-      }
+      try { window.addEventListener(ev, onGesture, { capture: true }); }
+      catch (e) { try { window.addEventListener(ev, onGesture, true); } catch (_) {} }
     });
   })(this);
 
