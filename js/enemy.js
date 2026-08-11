@@ -907,6 +907,33 @@ function handleEnemies(time, delta = 16) {
       return;
     }
 
+    // #65 Signature-Angriffe: waehrend des Telegraphs (casting) steht der Mini-
+    // Boss, waehrend des Dashs (Charge/Leap) zieht er zum EINGEFRORENEN Ziel.
+    // Body bleibt AN -> weiter treffbar; umgeht nur die Steering (wie _pullUntil).
+    if (enemy._castingUntil && time < enemy._castingUntil) {
+      if (enemy.body) enemy.body.setVelocity(0, 0);
+      return;
+    }
+    if (enemy._dashUntil && enemy.body && enemy._dashTarget) {
+      const dxt = enemy._dashTarget.x - enemy.x, dyt = enemy._dashTarget.y - enemy.y;
+      const dl = Math.hypot(dxt, dyt);
+      enemy.body.setVelocity(0, 0);
+      if (time >= enemy._dashUntil || dl <= 10) {
+        enemy._dashUntil = 0;
+        const cb = enemy._dashOnArrive; enemy._dashOnArrive = null; enemy._dashTarget = null;
+        if (typeof cb === 'function') { try { cb(); } catch (e) {} }
+      } else {
+        const ds = enemy._dashSpeed || 800;
+        const step = Math.min(dl, Math.max(ds * (delta / 1000), dl * 0.25));
+        const nx = enemy.x + (dxt / dl) * step, ny = enemy.y + (dyt / dl) * step;
+        if (enemy.body.reset) enemy.body.reset(nx, ny); else { enemy.x = nx; enemy.y = ny; }
+      }
+      // HP-Leiste + Label wandern mit, waehrend der Boss dasht (sonst detachen sie).
+      if (enemy.miniBossBar) drawMiniBossBar(enemy);
+      if (enemy.miniBossLabel) enemy.miniBossLabel.setPosition(enemy.x, enemy.y - ((enemy.displayHeight || 48) / 2) - 14);
+      return;
+    }
+
     // Grace period: freeze enemies completely. Skip movement + attack logic
     // until the grace window expires.
     if (inGrace) {
@@ -941,14 +968,23 @@ function handleEnemies(time, delta = 16) {
       drawEnemyHpBar(enemy);
     }
 
-    // Mini-boss ground slam AoE
-    if (enemy.isMiniBoss && !enemy.isRanged) {
-      if (!enemy.lastSlamTime || time - enemy.lastSlamTime > 4000) {
-        const slamDist = Phaser.Math.Distance.Between(enemy.x, enemy.y, player.x, player.y);
-        if (slamDist <= 120) {
-          enemy.lastSlamTime = time;
-          miniBossSlam.call(this, enemy);
-        }
+    // #65 Signature-Angriffe je Archetyp (Charge/Leap/Salve) mit Telegraph +
+    // Cooldown; Nahkampf-Slam als Point-Blank-Zusatz. Kein neuer Trigger, solange
+    // ein Special laeuft (casting/dash).
+    if (enemy.isMiniBoss && player && player.active
+        && !(enemy._castingUntil && time < enemy._castingUntil)
+        && !(enemy._dashUntil && time < enemy._dashUntil)) {
+      const cd = enemy._specialCd || 5000;
+      if (!enemy.lastSpecialTime || time - enemy.lastSpecialTime > cd) {
+        const dist = Phaser.Math.Distance.Between(enemy.x, enemy.y, player.x, player.y);
+        const sig = enemy._signature;
+        let fired = true;
+        if (sig === 'salve' && dist <= 420) miniBossSalve.call(this, enemy);
+        else if (sig === 'charge' && dist <= 280 && dist >= 60) miniBossCharge.call(this, enemy);
+        else if (sig === 'leap' && dist <= 340 && dist >= 70) miniBossLeap.call(this, enemy);
+        else if (!enemy.isRanged && dist <= 120) miniBossSlam.call(this, enemy);
+        else fired = false;
+        if (fired) enemy.lastSpecialTime = time;
       }
     }
 
@@ -1599,6 +1635,159 @@ function miniBossSlam(enemy) {
   });
 }
 
+// Distanz Punkt <-> Liniensegment (fuer den Charge-Schaden entlang der Bahn).
+function _distPointToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+  if (l2 === 0) return Math.hypot(px - ax, py - ay);
+  let t = ((px - ax) * dx + (py - ay) * dy) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+// Feuert `count` Projektile in einem Faecher um den FIXEN Winkel `baseAng`
+// (nicht auf die aktuelle Spielerposition neu berechnet) -> ehrlicher Kegel-
+// Telegraph: raus aus dem Kegel = ausweichen. Mirror von shootSpreadProjectiles.
+function _fireLockedSpread(enemy, count, totalSpread, baseAng) {
+  const scene = this;
+  const baseDamage = enemy.baseDamage || enemy.damage || 1;
+  const diff = getDifficultyMultiplierValue();
+  const scaled = diff !== 1 ? Math.max(1, Math.round(baseDamage * diff)) : Math.max(1, Math.round(baseDamage));
+  const texKey = getProjectileTextureFor(enemy);
+  for (let i = 0; i < count; i++) {
+    const t = count > 1 ? (i / (count - 1) - 0.5) : 0;
+    const ang = baseAng + t * totalSpread;
+    const proj = acquireEnemyProjectile(scene, enemy.x, enemy.y, texKey);
+    _configureProjectileShape(proj, texKey, ang);
+    proj.setVelocity(Math.cos(ang) * 210, Math.sin(ang) * 210);
+    proj.setData('baseDamage', baseDamage); proj.setData('damage', scaled);
+    proj.baseDamage = baseDamage; proj.damage = scaled;
+    if (!scene._enemyVisionMask) { scene._needsMaskProj = scene._needsMaskProj || []; scene._needsMaskProj.push(proj); }
+  }
+}
+
+// #65 Signature-Angriff: ANSTURM (Tank). Telegraph = rote Gefahren-Linie in
+// Spielerrichtung (Aim gelockt); dann prescht der Boss die Bahn entlang, Schaden
+// wer nahe an der Linie steht. Seitlich ausweichen = kein Treffer.
+function miniBossCharge(enemy) {
+  const scene = this;
+  if (!player || !player.active || !scene.time) return;
+  const ang = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+  const TELE = 700, DASH = 430, dist = 210, w = 46;
+  const sx = enemy.x, sy = enemy.y;
+  const ex = sx + Math.cos(ang) * dist, ey = sy + Math.sin(ang) * dist;
+  enemy._castingUntil = scene.time.now + TELE;
+  const g = scene.add.graphics().setDepth(1001);
+  const st = { t: 0 };
+  scene.tweens.add({
+    targets: st, t: 1, duration: TELE, ease: 'Linear',
+    onUpdate: () => {
+      if (!g.scene) return;
+      g.clear();
+      const blink = 0.5 + 0.5 * Math.sin(st.t * st.t * 30);
+      g.lineStyle(w, 0xff3311, 0.10 + 0.16 * st.t); g.lineBetween(sx, sy, ex, ey);
+      g.lineStyle(3, 0xff6644, 0.5 + 0.4 * blink); g.lineBetween(sx, sy, ex, ey);
+    },
+    onComplete: () => {
+      if (!g.scene) return;
+      if (!enemy.active) { g.destroy(); return; }
+      enemy._dashTarget = { x: ex, y: ey };
+      enemy._dashSpeed = 950;
+      enemy._dashUntil = scene.time.now + DASH;
+      enemy._dashOnArrive = () => {
+        if (player && player.active) {
+          const d = _distPointToSegment(player.x, player.y, sx, sy, ex, ey);
+          if (d <= w * 0.6 + (player.body?.width || 0) * 0.5) applyPlayerDamage(enemy.damage, scene);
+        }
+        try { scene.cameras.main.shake(140, 0.004); } catch (e) {}
+      };
+      g.clear();
+      scene.time.delayedCall(160, () => { if (g.scene) g.destroy(); });
+    }
+  });
+}
+
+// #65 Signature-Angriff: SPRUNG-SLAM (schneller Nahkampf). Telegraph = Zielkreis
+// an der aktuellen Spielerposition (gelockt); der Boss springt dorthin, Landung =
+// AoE. Wegbewegen, sobald der Kreis erscheint.
+function miniBossLeap(enemy) {
+  const scene = this;
+  if (!player || !player.active || !scene.time) return;
+  const tx = player.x, ty = player.y;
+  const TELE = 620, DASH = 380, r = 105;
+  const baseScale = enemy.scaleX || 1;
+  enemy._castingUntil = scene.time.now + TELE;
+  const g = scene.add.graphics().setDepth(1001);
+  const st = { t: 0 };
+  scene.tweens.add({
+    targets: st, t: 1, duration: TELE, ease: 'Linear',
+    onUpdate: () => {
+      if (!g.scene) return;
+      g.clear();
+      const blink = 0.5 + 0.5 * Math.sin(st.t * st.t * 30);
+      g.lineStyle(3, 0xffaa33, 0.5 + 0.4 * blink).strokeCircle(tx, ty, r);
+      g.fillStyle(0xffaa00, 0.10 + 0.15 * st.t).fillCircle(tx, ty, r * (0.2 + 0.8 * st.t));
+    },
+    onComplete: () => {
+      if (!g.scene) return;
+      if (!enemy.active) { g.destroy(); return; }
+      enemy._dashTarget = { x: tx, y: ty };
+      enemy._dashSpeed = 1150;
+      enemy._dashUntil = scene.time.now + DASH;
+      enemy._dashOnArrive = () => {
+        if (enemy.active && enemy.setScale) enemy.setScale(baseScale);
+        if (!g.scene) return;
+        g.clear();
+        g.fillStyle(0xffbb44, 0.5).fillCircle(tx, ty, r);
+        g.lineStyle(4, 0xffe0a0, 1).strokeCircle(tx, ty, r);
+        if (player && player.active) {
+          const d = Phaser.Math.Distance.Between(tx, ty, player.x, player.y);
+          if (d <= r + (player.body?.width || 0) * 0.5) applyPlayerDamage(enemy.damage, scene);
+        }
+        try { scene.cameras.main.shake(130, 0.004); } catch (e) {}
+        scene.time.delayedCall(150, () => { if (g.scene) g.destroy(); });
+      };
+      if (enemy.active) scene.tweens.add({ targets: enemy, scaleX: baseScale * 1.3, scaleY: baseScale * 1.3, duration: DASH / 2, yoyo: true });
+    }
+  });
+}
+
+// #65 Signature-Angriff: SALVE (Fernkampf). Telegraph = aufleuchtender Kegel in
+// Blickrichtung; dann eine Projektil-Salve in genau diesen Bogen. Aus dem Kegel
+// raus = ausweichen. Boss steht waehrend des Telegraphs.
+function miniBossSalve(enemy) {
+  const scene = this;
+  if (!player || !player.active || !scene.time) return;
+  const ang = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+  const TELE = 700, cone = 0.9, len = 320, N = 7;
+  enemy._castingUntil = scene.time.now + TELE + 100;
+  const g = scene.add.graphics().setDepth(1001);
+  const st = { t: 0 };
+  scene.tweens.add({
+    targets: st, t: 1, duration: TELE, ease: 'Linear',
+    onUpdate: () => {
+      if (!g.scene) return;
+      g.clear();
+      const blink = 0.5 + 0.5 * Math.sin(st.t * st.t * 30);
+      const a1 = ang - cone / 2, a2 = ang + cone / 2;
+      g.fillStyle(0xffcc33, 0.08 + 0.14 * st.t);
+      g.beginPath();
+      g.moveTo(enemy.x, enemy.y);
+      g.lineTo(enemy.x + Math.cos(a1) * len, enemy.y + Math.sin(a1) * len);
+      g.lineTo(enemy.x + Math.cos(a2) * len, enemy.y + Math.sin(a2) * len);
+      g.closePath(); g.fillPath();
+      g.lineStyle(2, 0xffdd66, 0.5 + 0.4 * blink); g.strokePath();
+    },
+    onComplete: () => {
+      if (!g.scene) return;
+      if (enemy.active && typeof _fireLockedSpread === 'function') {
+        try { _fireLockedSpread.call(scene, enemy, N, cone, ang); } catch (e) {}
+      }
+      g.clear();
+      scene.time.delayedCall(120, () => { if (g.scene) g.destroy(); });
+    }
+  });
+}
+
 /**
  * Spawnt einen Mini-Boss: verstärkter Gegner mit HP-Balken und Spezialangriff.
  * Erscheint alle 5 Wellen (nicht die 10er-Boss-Wellen).
@@ -1672,6 +1861,14 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
   enemy.baseDamage = Math.ceil((enemy.baseDamage || enemy.damage || 1) * 1.5);
   enemy.damage = enemy.baseDamage;
   enemy.lastSlamTime = 0;
+
+  // #65: Signature-Angriff je Archetyp (nach BASIS-Tempo, vor evtl. Swift-Enchant).
+  //   Fernkampf   -> Salve (Kegel-Projektile)
+  //   langsamer Nahkampf (Tank) -> Ansturm (Charge-Linie)
+  //   schneller Nahkampf        -> Sprung-Slam (Leap-AoE)
+  if (enemy.isRanged) { enemy._signature = 'salve'; enemy._specialCd = 4200; }
+  else if ((enemy.speed || 70) <= 70) { enemy._signature = 'charge'; enemy._specialCd = 5200; }
+  else { enemy._signature = 'leap'; enemy._specialCd = 4600; }
 
   const difficulty = getDifficultyMultiplierValue();
   if (difficulty !== 1) {
