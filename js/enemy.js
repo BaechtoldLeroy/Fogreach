@@ -1580,14 +1580,25 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
   const scene = this && this.sys ? this : window.currentScene || obstacles?.scene;
   if (!scene) return null;
 
-  // Pick a valid base type for mini-boss (default to a melee type)
-  const type = (typeof baseType === 'number' && baseType >= 1 && baseType <= 7) ? baseType : 3;
-  const enemy = spawnEnemy.call(scene, xCoord || 0, yCoord || 0, type);
+  // #65 Phase 1: Basistyp-VARIANZ. Ein expliziter, gueltiger baseType wird
+  // respektiert; sonst zieht spawnEnemy (ohne Typ) einen zufaelligen Typ aus dem
+  // tiefen-/akt-gegateten Gegnerpool -> der Mini-Boss ist nicht mehr immer der
+  // Brute, sondern ein tiefen-passender Gegner (Nahkampf/Fernkampf/Tank ...).
+  let enemy;
+  if (typeof baseType === 'number' && baseType >= 1 && baseType <= 7) {
+    enemy = spawnEnemy.call(scene, xCoord || 0, yCoord || 0, baseType);
+  } else {
+    enemy = spawnEnemy.call(scene, xCoord || 0, yCoord || 0);
+  }
   if (!enemy) return null;
 
-  // Mini-boss stats: 5x HP, 1.5x damage
+  // Mini-boss stats. #65: HP-Multiplikator frueh SANFTER, damit der neue Tiefe-1..4-
+  // Climax auf der Onboarding-Rampe lesbar/schlagbar bleibt (skaliert ja ohnehin
+  // mit der run-konstanten Tiefe des Basisgegners). Ab Tiefe 5 wie bisher 5x.
+  const _depth = Math.max(1, (typeof window !== 'undefined' && window.DUNGEON_DEPTH) || window.currentWave || 1);
+  const _hpMult = _depth <= 2 ? 3 : (_depth <= 4 ? 4 : 5);
   enemy.isMiniBoss = true;
-  enemy.hp = Math.ceil(enemy.hp * 5);
+  enemy.hp = Math.ceil(enemy.hp * _hpMult);
   enemy.maxHp = enemy.hp;
   enemy.baseDamage = Math.ceil((enemy.baseDamage || enemy.damage || 1) * 1.5);
   enemy.damage = enemy.baseDamage;

@@ -80,11 +80,13 @@ function startNextWave(noIncrement) {
   }
 
   waveInProgress = true;
-  // Mini-boss climax: every armed final room (depth >= 5) that is NOT a full-boss
-  // tier gate — i.e. the shallow runs (5–9), the in-between deep runs (11–19, …),
-  // and any deep run while bosses are still story-locked (Akt 1). The full-boss
-  // branch above already returned, so reaching here means "no full boss".
-  const isMiniBossWave = _climaxArmed && currentWave >= 5;
+  // Mini-boss climax: JEDER bewaffnete finale Raum (Tiefe >= 1), der KEIN Voll-
+  // Boss-Tier-Gate ist — also alle flachen Runs (1–9), die Zwischen-Runs (11–19, …)
+  // und jeder tiefe Run, solange Bosse noch story-gesperrt sind (Akt 1). Der Voll-
+  // Boss-Zweig oben ist schon zurueckgekehrt, hier gilt also "kein Voll-Boss".
+  // #65: Gate von >=5 auf >=1 gesenkt -> jeder Run endet mit einem Mini-Boss (aus
+  // dem tiefen-gegateten Gegnerpool, siehe spawnMiniBoss). Frueh sanft skaliert.
+  const isMiniBossWave = _climaxArmed && currentWave >= 1;
   if (isMiniBossWave) window.__runClimaxSpawned = true;
   waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + (isMiniBossWave ? '  (MINI-BOSS)' : ''));
   spawnedEnemiesInWave = 0;
@@ -105,8 +107,8 @@ function startNextWave(noIncrement) {
           spawnedEnemiesInWave = spawned;
         }
 
-        // Mini-boss every 5th wave (also takes over the 10th-wave slot
-        // when bosses are gated by storyAct < 1 — see isMiniBossWave above).
+        // Mini-boss = Run-Climax im finalen Raum (isMiniBossWave, #65: ab Tiefe 1).
+        // baseType 0 -> spawnMiniBoss zieht einen zufaelligen Typ aus dem Pool.
         if (isMiniBossWave && typeof spawnMiniBoss === 'function') {
           const miniBoss = spawnMiniBoss.call(scene, 0, 0, 0);
           if (miniBoss) {
