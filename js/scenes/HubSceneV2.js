@@ -1813,7 +1813,20 @@ class HubSceneV2 extends Phaser.Scene {
         }
       };
       this._dialogPointerOnce = advanceHandler;
-      this.input.once('pointerdown', advanceHandler);
+      // Registrierung um einen Tick verzoegern: Auf Mobile oeffnet der [E]-Button
+      // den Dialog IM pointerdown-Emit (_handleInteract -> _showNpcDialogue). Wuerde
+      // man den Advance-Handler hier synchron anhaengen, feuert Phaser im selben
+      // Durchlauf noch den Scene-pointerdown und blaettert die erste Seite (z. B.
+      // Aldrics Angebotstext) sofort weg -> man landet direkt beim Akzeptieren.
+      // Desktop nutzt Tastatur (kein pointerdown) und war nie betroffen; die
+      // Tasten-Advance-Handler oben liegen aus demselben Grund in delayedCall(0).
+      // Guard: nur anhaengen, wenn dieser Dialog/diese Seite noch aktuell ist
+      // (nicht zwischenzeitlich geschlossen oder weitergeblaettert).
+      this.time.delayedCall(0, () => {
+        if (this._dialogOpen && this._dialogPointerOnce === advanceHandler) {
+          this.input.once('pointerdown', advanceHandler);
+        }
+      });
     }
   }
 
