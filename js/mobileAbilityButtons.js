@@ -15,7 +15,14 @@
 // color which is enough visual differentiation at a glance.
 
 (function () {
-  if (window.i18n) {
+  // WICHTIG: Diese Datei laedt in index.html VOR i18n.js — beim ersten Aufruf ist
+  // window.i18n also noch undefined und die Registrierung wuerde uebersprungen
+  // (das war der Bug: leeres Attack-/Aktion-Label, weil mobile.btn.* nie
+  // registriert wurde). Darum idempotent gekapselt und ZUSAETZLICH bei
+  // onLayoutReady aufgerufen, wo i18n garantiert existiert.
+  let _i18nRegistered = false;
+  function _registerI18n() {
+    if (_i18nRegistered || !window.i18n) return;
     window.i18n.register('de', {
       'mobile.btn.attack': 'Angr',
       'mobile.btn.spin': 'Wirbel',
@@ -34,7 +41,9 @@
       'mobile.btn.shield': 'Shield',
       'mobile.btn.interact': 'Action'
     });
+    _i18nRegistered = true;
   }
+  _registerI18n();
   const T = (key, fallback) => {
     if (!window.i18n) return fallback;
     const v = window.i18n.t(key);
@@ -130,7 +139,10 @@
     // werden im Poll direkt aus AbilitySystem.getCooldownRemaining getrieben.
     const _isSlotAbility = !!spec._abilityId;
     let cdOverlay = null;
-    if (spec.key === 'potion' || spec.key === 'roll' || _isSlotAbility) {
+    // 'attack' bekommt AUCH ein Overlay: sein attackBtnCooldownText-Node wird nie
+    // mit Sekunden befuellt (startCooldownTimer hat label=null), darum treibt der
+    // Poll ihn aus window.__abilityCooldownMs__['attack'].
+    if (spec.key === 'potion' || spec.key === 'roll' || spec.key === 'attack' || _isSlotAbility) {
       cdOverlay = scene.add.text(0, 0, '', {
         fontSize: Math.round(radius * 0.6) + 'px',
         fontStyle: 'bold',
@@ -265,6 +277,25 @@
         }
       }
 
+      // Attack-specific: der attackBtnCooldownText-Node bleibt leer (startCooldown-
+      // Timer hat label=null), darum Restzeit aus window.__abilityCooldownMs__['attack']
+      // treiben — Sekunden-Overlay + Dimmen wie roll/potion.
+      if (dec.key === 'attack') {
+        const remainMs = (window.__abilityCooldownMs__ && typeof window.__abilityCooldownMs__.attack === 'number')
+          ? window.__abilityCooldownMs__.attack : 0;
+        const onCd = remainMs > 0;
+        _applyEnabledVisual(dec, !onCd);
+        if (dec.cdOverlay) {
+          if (onCd) {
+            dec.cdOverlay.setText((remainMs / 1000).toFixed(1));
+            dec.cdOverlay.setVisible(true);
+            if (dec.icon) dec.icon.setAlpha(0.35);
+          } else {
+            dec.cdOverlay.setVisible(false);
+          }
+        }
+      }
+
       // Interact-specific: visual tap-feedback when __MOBILE_INTERACT_ACTIVE__
       // pulses true (set by mobileControls._interact). One-shot tween.
       if (dec.key === 'interact') {
@@ -311,6 +342,10 @@
     const detail = event && event.detail;
     if (!detail || !detail.scene || !Array.isArray(detail.buttons)) return;
     const scene = detail.scene;
+
+    // i18n ist beim Datei-Load evtl. noch nicht da (Load-Order) — hier definitiv.
+    // Idempotent: registriert die mobile.btn.*-Labels genau einmal.
+    _registerI18n();
 
     // Clean up any previous decorations on this scene
     const prev = sceneState.get(scene);

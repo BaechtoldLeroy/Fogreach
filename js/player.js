@@ -998,6 +998,14 @@ function startCooldownTimer(scene, duration, options = {}) {
   const label = null;
   const time = scene?.time;
   const updateStatus = (remainingMs, customText, durationOverride) => {
+    // Rest-Cooldown pro statusKey veroeffentlichen, damit die Mobile-Buttons ihn
+    // als Sekunden-Overlay anzeigen koennen (der Bottom-Right-`label` ist tot,
+    // s. o.). v.a. fuer den Basis-Angriff ('attack'), der keine Slot-Ability ist
+    // und darum nicht ueber AbilitySystem.getCooldownRemaining laeuft.
+    if (statusKey) {
+      window.__abilityCooldownMs__ = window.__abilityCooldownMs__ || {};
+      window.__abilityCooldownMs__[statusKey] = Math.max(0, remainingMs || 0);
+    }
     if (!statusKey || typeof window.updateAbilityStatus !== 'function') return;
     const payload = { remainingMs, customText };
     if (Number.isFinite(durationOverride)) {
