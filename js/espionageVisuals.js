@@ -82,11 +82,17 @@
     _cw = cam ? cam.width : 1536;
     _ch = cam ? cam.height : 800;
 
-    // Aktionszeile (kurz) unter dem Status-Chip
-    bannerBg = scene.add.rectangle(_cw / 2, 66, Math.min(760, _cw - 40), 28, 0x10131c, 0.8)
+    // Aktionszeile unter dem Status-Chip. Der Text kann lang sein (die deutsche
+    // "Geh in den goldenen Kreis..."-Zeile lief vorher ueber die Box hinaus),
+    // daher Zeilenumbruch auf die Box-Breite + dynamische Box-Hoehe (in sync()).
+    // Etwas tiefer (y=80) als der Chip (y=40), damit die 2. Zeile ihn nicht
+    // ueberlappt.
+    var _bannerW = Math.min(760, _cw - 40);
+    bannerBg = scene.add.rectangle(_cw / 2, 80, _bannerW, 28, 0x10131c, 0.85)
       .setScrollFactor(0).setDepth(DEPTH_HUD - 1).setStrokeStyle(1, 0x5a6580, 0.7);
-    banner = scene.add.text(_cw / 2, 66, '', {
-      fontFamily: 'monospace', fontSize: '14px', color: '#cdd9ff', align: 'center'
+    banner = scene.add.text(_cw / 2, 80, '', {
+      fontFamily: 'monospace', fontSize: '14px', color: '#cdd9ff', align: 'center',
+      wordWrap: { width: _bannerW - 24 }
     }).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH_HUD);
 
     // Status-Chip (Pille) darüber
@@ -356,6 +362,11 @@
     chipBg.setFillStyle(si.col, si.hot ? (0.75 + 0.25 * pulse) : 0.95);
     banner.setText(_actionText(st, allDone));
     banner.setColor(st.exposed ? '#ff9a9a' : '#ffe6a8');
+    // Box an den (evtl. umgebrochenen) Text anpassen, damit er nie ueberlaeuft.
+    if (bannerBg && typeof bannerBg.setSize === 'function') {
+      var _camW = (cam && cam.width) ? cam.width : 800;
+      bannerBg.setSize(Math.min(760, _camW - 40, banner.width + 24), banner.height + 12);
+    }
   }
 
   window.EspionageVisuals = { sync: sync, mount: mount, unmount: unmount };
