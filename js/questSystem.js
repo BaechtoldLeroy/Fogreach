@@ -282,7 +282,7 @@
     council_surveillance: {
       id: 'council_surveillance',
       title: 'Überwachung',
-      description: 'Überwache einen "unruhigen" Bezirk für den Rat — sichte 3 Bereiche.',
+      description: 'Überwache die Kellergänge unter dem Rathaus für den Rat — durchsuche 3 Kammern.',
       npcId: 'aldric',
       type: 'explore',
       chain: 2,
@@ -292,9 +292,9 @@
       rewards: { xp: 70, druckblaetter: 1 },
       prerequisites: ['council_seizure'],
       requiredAct: 2,
-      dialogueOffer: 'Ein Bezirk gilt als aufsässig. Sichte drei Bereiche und melde, wer sich zusammenrottet.\n\nBereit?',
-      dialogueProgress: 'Noch nicht alle Bereiche gesichtet. Beobachte weiter.',
-      dialogueComplete: 'Bericht angenommen.\n\n(Du hast keine Verschwörer gesehen — nur Familien, die Brot teilen und leise zählen, wer als Nächstes nicht mehr heimkam.)'
+      dialogueOffer: 'Unten in den alten Gängen soll sich Gesindel zusammenrotten, heisst es. Durchkämm drei Kammern und melde, wer sich dort versammelt.\n\nBereit?',
+      dialogueProgress: 'Noch nicht alle Kammern durchsucht. Sieh weiter nach.',
+      dialogueComplete: 'Bericht angenommen.\n\n(Keine Verschwörer. Nur Menschen, die sich im Dunkeln verstecken — vor dem Rat, nicht gegen ihn.)'
     },
     branka_transcripts: {
       id: 'branka_transcripts',
@@ -857,10 +857,10 @@
       'quest.council_seizure.dialogueComplete': 'Hand them over.\n\n(Before you turn them in, your eye catches a line. These are not pamphlets. They are petitions — citizens asking after vanished kin. You hand them over anyway.)',
 
       'quest.council_surveillance.title': 'Surveillance',
-      'quest.council_surveillance.description': 'Surveil a "restless" district for the council — sight 3 areas.',
-      'quest.council_surveillance.dialogueOffer': 'A district is said to be unruly. Sight three areas and report who gathers.\n\nReady?',
-      'quest.council_surveillance.dialogueProgress': 'Not all areas sighted yet. Keep watching.',
-      'quest.council_surveillance.dialogueComplete': 'Report accepted.\n\n(You saw no conspirators — only families sharing bread and quietly counting who failed to come home next.)',
+      'quest.council_surveillance.description': 'Watch the cellar passages beneath the town hall for the council — search 3 chambers.',
+      'quest.council_surveillance.dialogueOffer': 'Down in the old passages, they say, rabble is gathering. Sweep three chambers and report who assembles there.\n\nReady?',
+      'quest.council_surveillance.dialogueProgress': 'Not all chambers searched yet. Keep looking.',
+      'quest.council_surveillance.dialogueComplete': 'Report accepted.\n\n(No conspirators. Only people hiding in the dark — from the council, not against it.)',
 
       'quest.branka_transcripts.title': 'Forbidden Transcripts',
       'quest.branka_transcripts.description': 'Bring Branka 2 interrogation records from the cellars.',
