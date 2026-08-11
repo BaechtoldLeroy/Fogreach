@@ -1557,33 +1557,46 @@ function shootSpreadProjectiles(enemy, count, totalSpread) {
   enemy.damage = scaledDamage;
 }
 
-// Mini-Boss: ground slam AoE - damages player if within 120px
+// Mini-Boss: ground slam AoE. #65 Phase 3: klarer TELEGRAPH vor dem Impact —
+// ~650 ms wachsende Gefahrenzone (roter Ring + fuellender Countdown-Kreis), erst
+// DANN Schaden + Blitz + Shake. Der Zielort wird beim Start eingefroren, und der
+// Schaden prueft die AKTUELLE Spielerposition beim Impact: rechtzeitig rauslaufen
+// vermeidet ihn. Damage nur, wenn der Spieler beim Einschlag noch im Kreis ist.
 function miniBossSlam(enemy) {
   const scene = this;
   const r = 120;
+  const TELEGRAPH_MS = 650;
+  const cx = enemy.x, cy = enemy.y; // Ziel einfrieren
   const g = scene.add.graphics().setDepth(1001);
-  g.lineStyle(3, 0xff6600, 0.9);
-  g.strokeCircle(enemy.x, enemy.y, r);
-  g.fillStyle(0xff3300, 0.15);
-  g.fillCircle(enemy.x, enemy.y, r);
-  g.alpha = 0.0;
+  const st = { t: 0 };
 
   scene.tweens.add({
-    targets: g,
-    alpha: { from: 0.0, to: 1.0 },
-    duration: 300,
-    yoyo: true,
-    onYoyo: () => {
-      const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, player.x, player.y);
-      if (d <= r + (player.body?.width || 0) * 0.5) {
-        applyPlayerDamage(enemy.damage, scene);
-      }
+    targets: st, t: 1, duration: TELEGRAPH_MS, ease: 'Linear',
+    onUpdate: () => {
+      if (!g.scene) return;
+      g.clear();
+      // Aussenring blinkt schneller, je naeher der Einschlag.
+      const blink = 0.5 + 0.5 * Math.sin(st.t * st.t * 30);
+      g.lineStyle(3, 0xff5533, 0.55 + 0.35 * blink).strokeCircle(cx, cy, r);
+      // Fuellkreis waechst als Countdown zum Impact.
+      g.fillStyle(0xff2200, 0.10 + 0.18 * st.t).fillCircle(cx, cy, r * (0.18 + 0.82 * st.t));
     },
-    onComplete: () => g.destroy(),
+    onComplete: () => {
+      if (!g.scene) return;
+      // Impact: heller Blitz + Schaden (nur wenn Spieler noch im Kreis) + Shake.
+      g.clear();
+      g.fillStyle(0xffaa33, 0.5).fillCircle(cx, cy, r);
+      g.lineStyle(4, 0xffe0a0, 1).strokeCircle(cx, cy, r);
+      if (player && player.active) {
+        const d = Phaser.Math.Distance.Between(cx, cy, player.x, player.y);
+        if (d <= r + (player.body?.width || 0) * 0.5) {
+          applyPlayerDamage(enemy.damage, scene);
+        }
+      }
+      try { scene.cameras.main.shake(120, 0.004); } catch (e) {}
+      scene.time.delayedCall(140, () => { if (g.scene) g.destroy(); });
+    }
   });
-
-  // Camera shake for impact
-  scene.cameras.main.shake(100, 0.003);
 }
 
 /**
@@ -1594,16 +1607,37 @@ function miniBossSlam(enemy) {
 // Name + Aura-Farbe (Tint) erkennbar. `resist` wirkt im Schadens-Funnel
 // (player.js dealDamageToEnemy) ueber die Quelle (ranged/melee/skill);
 // reflect (Dornen) ebenfalls dort; healFrac + speedMul hier/in der Update-Loop.
+// #65 Phase 3: `weight` (Auswahl-Gewicht) + `minDepth` (ab wann verfuegbar) je
+// Verzauberung -> tiefen-gewichteter Pool. Die drei Resistenzen kommen frueh (ab
+// Tiefe 3), die staerkeren Effekte (Dornen/Rasend/Zaeh) gestaffelt tiefer.
 const MINIBOSS_ENCHANTS = [
-  { id: 'warded',      de: 'Bannschild',      en: 'Warded',      aura: 0x66aaff, resist: 'skill',  resistMul: 0.30 },
-  { id: 'bulwark',     de: 'Fernkampfpanzer', en: 'Ranged Ward', aura: 0x88cc66, resist: 'ranged', resistMul: 0.30 },
-  { id: 'bruiser',     de: 'Nahkampfhaut',    en: 'Melee Ward',  aura: 0xcc8844, resist: 'melee',  resistMul: 0.30 },
-  { id: 'thorns',      de: 'Dornen',          en: 'Thorns',      aura: 0xff5555, reflect: 0.35 },
-  { id: 'regenerator', de: 'Zaeh',            en: 'Regenerating',aura: 0x66cc99, healFrac: 0.04 },
-  { id: 'swift',       de: 'Rasend',          en: 'Swift',       aura: 0xffdd55, speedMul: 1.6 },
+  { id: 'warded',      de: 'Bannschild',      en: 'Warded',      aura: 0x66aaff, resist: 'skill',  resistMul: 0.30, weight: 3, minDepth: 3 },
+  { id: 'bulwark',     de: 'Fernkampfpanzer', en: 'Ranged Ward', aura: 0x88cc66, resist: 'ranged', resistMul: 0.30, weight: 3, minDepth: 3 },
+  { id: 'bruiser',     de: 'Nahkampfhaut',    en: 'Melee Ward',  aura: 0xcc8844, resist: 'melee',  resistMul: 0.30, weight: 3, minDepth: 3 },
+  { id: 'swift',       de: 'Rasend',          en: 'Swift',       aura: 0xffdd55, speedMul: 1.6,     weight: 2, minDepth: 4 },
+  { id: 'thorns',      de: 'Dornen',          en: 'Thorns',      aura: 0xff5555, reflect: 0.35,     weight: 2, minDepth: 5 },
+  { id: 'regenerator', de: 'Zaeh',            en: 'Regenerating',aura: 0x66cc99, healFrac: 0.04,    weight: 2, minDepth: 6 },
 ];
-function _pickMiniBossEnchant() {
-  return MINIBOSS_ENCHANTS[Math.floor(Math.random() * MINIBOSS_ENCHANTS.length)];
+// Tiefen-Skalierung: ab Tiefe 8 haerter. Gibt eine KOPIE zurueck, damit die
+// Registry-Basiswerte unveraendert bleiben.
+function _scaleEnchant(e, depth) {
+  if (!e || depth < 8) return e;
+  const s = Object.assign({}, e);
+  if (s.resistMul) s.resistMul = Math.max(0.15, s.resistMul - 0.10); // 0.30 -> 0.20 (staerker)
+  if (s.reflect)   s.reflect   = Math.min(0.60, s.reflect + 0.15);   // 0.35 -> 0.50
+  if (s.healFrac)  s.healFrac  = Math.min(0.08, s.healFrac + 0.02);  // 0.04 -> 0.06
+  if (s.speedMul)  s.speedMul  = Math.min(2.0,  s.speedMul + 0.2);   // 1.6 -> 1.8
+  return s;
+}
+function _pickMiniBossEnchant(depth) {
+  const d = Math.max(1, depth || 1);
+  const pool = MINIBOSS_ENCHANTS.filter((e) => (e.minDepth || 1) <= d);
+  if (!pool.length) return null;
+  let total = pool.reduce((s, e) => s + (e.weight || 1), 0);
+  let roll = Math.random() * total;
+  let chosen = pool[pool.length - 1];
+  for (const e of pool) { roll -= (e.weight || 1); if (roll <= 0) { chosen = e; break; } }
+  return _scaleEnchant(chosen, d);
 }
 function _enchantLabel(e) {
   const isEn = (typeof window !== 'undefined' && window.i18n
@@ -1674,7 +1708,8 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
   // das generische Orange -> klar erkennbar; speed wirkt sofort ueber enemy.speed,
   // resist/reflect/heal an ihren Stellen. Ein Namens-Label ueber der HP-Leiste.
   if (_depth >= 3) {
-    const ench = _pickMiniBossEnchant();
+    const ench = _pickMiniBossEnchant(_depth);
+    if (ench) {
     enemy._enchant = ench;
     enemy.setTint(ench.aura);
     if (ench.speedMul) enemy.speed = Math.round((enemy.speed || 70) * ench.speedMul);
@@ -1686,6 +1721,7 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
     if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') scene.enemyLayer.add(lbl);
     enemy.miniBossLabel = lbl;
     enemy.on('destroy', () => enemy.miniBossLabel?.destroy());
+    }
   }
 
   return enemy;
