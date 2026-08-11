@@ -446,6 +446,18 @@ class HubSceneV2 extends Phaser.Scene {
     if (typeof createInventoryGraphics === 'function') createInventoryGraphics.call(this);
     if (typeof initInventoryUI === 'function') initInventoryUI.call(this);
 
+    // Gegner-Sprites IM HINTERGRUND laden, waehrend der Spieler im Hub ist — so
+    // sind sie beim Abstieg bereit, ohne Boot oder Dungeon-Eintritt zu blockieren.
+    // Der Loader laeuft asynchron (XHR) und stoert den laufenden Hub nicht.
+    // GameScene.preload holt evtl. noch Fehlende als Sicherheitsnetz nach.
+    // Siehe js/enemyAssets.js.
+    if (typeof window.queueEnemySprites === 'function') {
+      try {
+        window.queueEnemySprites(this);
+        if (this.load && !this.load.isLoading) this.load.start();
+      } catch (e) { /* Hintergrund-Load ist optional — Sicherheitsnetz greift */ }
+    }
+
     // Debug-Direkteinstieg (?dungeon=N in startScene): sobald der Hub steht,
     // automatisch in den Dungeon absteigen — ueber denselben _enterLocation-Pfad
     // wie der echte Klick, damit Dungeon-Bugs treu reproduziert werden. Flag wird

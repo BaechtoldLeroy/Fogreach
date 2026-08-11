@@ -960,6 +960,14 @@ function preload() {
   // Player sprites are preloaded in StartScene (dir00 only);
   // other directions lazy-load via ensureDirectionLoaded().
 
+  // Gegner-Sprites: SICHERHEITSNETZ. Normalerweise hat HubSceneV2 sie schon im
+  // Hintergrund geladen; hier abgedeckt werden der Endlos-Modus (kein Hub) und
+  // der Fall, dass der Hintergrund-Load beim Abstieg noch nicht fertig war.
+  // load.image ist idempotent -> bereits gecachte Keys kosten nichts.
+  if (typeof window.queueEnemySprites === 'function') {
+    try { window.queueEnemySprites(this); } catch (e) { /* nicht fatal */ }
+  }
+
   // Rathauskeller background image
   this.load.image('rathauskeller_bg', 'js/roomTemplates/rathauskeller.png');
 

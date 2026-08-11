@@ -178,103 +178,11 @@ StartScene.prototype.preload = function () {
   // NPC sprites for the hub are now lazy-loaded inside HubSceneV2.preload()
   // — keeps the StartScene menu reachable in fewer HTTP round-trips.
 
-  // Brute enemy sprites
-  this.load.image('brute_left0', 'assets/enemy/brute/left0.png');
-  this.load.image('brute_left1', 'assets/enemy/brute/left1.png');
-  this.load.image('brute_left2', 'assets/enemy/brute/left2.png');
-  this.load.image('brute_right0', 'assets/enemy/brute/right0.png');
-  this.load.image('brute_right1', 'assets/enemy/brute/right1.png');
-  this.load.image('brute_right2', 'assets/enemy/brute/right2.png');
-
-  // Imp enemy sprites
-  this.load.image('imp_left0', 'assets/enemy/imp/left0.png');
-  this.load.image('imp_left1', 'assets/enemy/imp/left1.png');
-  this.load.image('imp_left2', 'assets/enemy/imp/left2.png');
-  this.load.image('imp_right0', 'assets/enemy/imp/right0.png');
-  this.load.image('imp_right1', 'assets/enemy/imp/right1.png');
-  this.load.image('imp_right2', 'assets/enemy/imp/right2.png');
-
-  // Shadow Creeper enemy sprites
-  this.load.image('shadow_left0', 'assets/enemy/shadow/left0.png');
-  this.load.image('shadow_left1', 'assets/enemy/shadow/left1.png');
-  this.load.image('shadow_left2', 'assets/enemy/shadow/left2.png');
-  this.load.image('shadow_right0', 'assets/enemy/shadow/right0.png');
-  this.load.image('shadow_right1', 'assets/enemy/shadow/right1.png');
-  this.load.image('shadow_right2', 'assets/enemy/shadow/right2.png');
-
-  // Flame Weaver enemy sprites
-  this.load.image('flameweaver_left0', 'assets/enemy/flameweaver/left0.png');
-  this.load.image('flameweaver_left1', 'assets/enemy/flameweaver/left1.png');
-  this.load.image('flameweaver_left2', 'assets/enemy/flameweaver/left2.png');
-  this.load.image('flameweaver_right0', 'assets/enemy/flameweaver/right0.png');
-  this.load.image('flameweaver_right1', 'assets/enemy/flameweaver/right1.png');
-  this.load.image('flameweaver_right2', 'assets/enemy/flameweaver/right2.png');
-
-  // Chain Guard enemy sprites
-  this.load.image('chainguard_left0', 'assets/enemy/chainguard/left0.png');
-  this.load.image('chainguard_left1', 'assets/enemy/chainguard/left1.png');
-  this.load.image('chainguard_left2', 'assets/enemy/chainguard/left2.png');
-  this.load.image('chainguard_right0', 'assets/enemy/chainguard/right0.png');
-  this.load.image('chainguard_right1', 'assets/enemy/chainguard/right1.png');
-  this.load.image('chainguard_right2', 'assets/enemy/chainguard/right2.png');
-
-  // Archer enemy sprites
-  this.load.image('archer_left0', 'assets/enemy/archer/left0.png');
-  this.load.image('archer_left1', 'assets/enemy/archer/left1.png');
-  this.load.image('archer_left2', 'assets/enemy/archer/left2.png');
-  this.load.image('archer_right0', 'assets/enemy/archer/right0.png');
-  this.load.image('archer_right1', 'assets/enemy/archer/right1.png');
-  this.load.image('archer_right2', 'assets/enemy/archer/right2.png');
-
-  // Mage enemy sprites
-  this.load.image('mage_left0', 'assets/enemy/mage/left0.png');
-  this.load.image('mage_left1', 'assets/enemy/mage/left1.png');
-  this.load.image('mage_left2', 'assets/enemy/mage/left2.png');
-  this.load.image('mage_right0', 'assets/enemy/mage/right0.png');
-  this.load.image('mage_right1', 'assets/enemy/mage/right1.png');
-  this.load.image('mage_right2', 'assets/enemy/mage/right2.png');
-
-  // Rat directional frames
-  this.load.image('rat_left0', 'assets/enemy/rat/left0.png');
-  this.load.image('rat_left1', 'assets/enemy/rat/left1.png');
-  this.load.image('rat_left2', 'assets/enemy/rat/left2.png');
-  this.load.image('rat_right0', 'assets/enemy/rat/right0.png');
-  this.load.image('rat_right1', 'assets/enemy/rat/right1.png');
-  this.load.image('rat_right2', 'assets/enemy/rat/right2.png');
-
-  // Bat directional frames
-  this.load.image('bat_left0', 'assets/enemy/bat/left0.png');
-  this.load.image('bat_left1', 'assets/enemy/bat/left1.png');
-  this.load.image('bat_left2', 'assets/enemy/bat/left2.png');
-  this.load.image('bat_right0', 'assets/enemy/bat/right0.png');
-  this.load.image('bat_right1', 'assets/enemy/bat/right1.png');
-  this.load.image('bat_right2', 'assets/enemy/bat/right2.png');
-
-  // Wolf directional frames
-  this.load.image('wolf_left0', 'assets/enemy/wolf/left0.png');
-  this.load.image('wolf_left1', 'assets/enemy/wolf/left1.png');
-  this.load.image('wolf_left2', 'assets/enemy/wolf/left2.png');
-  this.load.image('wolf_right0', 'assets/enemy/wolf/right0.png');
-  this.load.image('wolf_right1', 'assets/enemy/wolf/right1.png');
-  this.load.image('wolf_right2', 'assets/enemy/wolf/right2.png');
-
-  // Enemy sprites (pixel art)
-  this.load.image('sprite_imp', 'assets/enemy/imp/imp.png');
-  this.load.image('sprite_archer', 'assets/enemy/archer/archer.png');
-  this.load.image('sprite_mage', 'assets/enemy/mage/mage.png');
-  this.load.image('sprite_shadow', 'assets/enemy/shadow/shadow.png');
-  this.load.image('sprite_chainguard', 'assets/enemy/chainguard/chainguard.png');
-  this.load.image('sprite_flameweaver', 'assets/enemy/flameweaver/flameweaver.png');
-  // Boss sprites (animated)
-  ['boss_chain', 'boss_ceremony', 'boss_shadow'].forEach(boss => {
-    ['left0','left1','left2','right0','right1','right2'].forEach(frame => {
-      this.load.image(boss + '_' + frame, 'assets/enemy/' + boss + '/' + frame + '.png');
-    });
-  });
-  // Fallbacks
-  this.load.image('sprite_boss_chain', 'assets/enemy/boss_chain/idle.png');
-  this.load.image('sprite_boss_ceremony', 'assets/enemy/boss_ceremony/idle.png');
-  this.load.image('sprite_boss_shadow', 'assets/enemy/boss_shadow/idle.png');
+  // Gegner-Sprites (~70 Bilder) werden NICHT mehr hier beim Boot geladen: sie
+  // kommen nur im Dungeon vor. Stattdessen laedt HubSceneV2 sie im Hintergrund
+  // (queueEnemySprites -> load.start), und GameScene.preload holt Fehlende als
+  // Sicherheitsnetz nach (Endlos-Modus/verpasster Hintergrund-Load). Siehe
+  // js/enemyAssets.js. Das verkuerzt den Startvorgang spuerbar (v.a. Mobile).
 
   // UI/environment sprites
   this.load.image('stairDown', 'assets/tiles/stairDown.png');
