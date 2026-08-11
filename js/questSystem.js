@@ -28,7 +28,15 @@
       rewards: { xp: 30, materials: { MAT: 5 }, druckblaetter: 2 },
       prerequisites: [],
       requiredAct: 0,
-      dialogueOffer: 'Wilde Tiere in den Kellern. Räum sie aus.\n\nWillst du diese Aufgabe übernehmen?',
+      // Auftakt-Seiten VOR dem eigentlichen Auftrag (nur beim ERSTEN Aldric-
+      // Gespraech, siehe _showNpcDialogue: completedCount === 0). Etablieren
+      // Aldric als kuehlen Rat-Aufseher, der den alten Dich kannte, und
+      // schatten das Erinnerungs-Thema vor, ohne die Verschwoerung zu spoilern.
+      dialogueIntro: [
+        'Der Archivschmied. Man sagte mir, du seist wieder auf den Beinen.\n\nErinnerst du dich an mich? … Nein. Natürlich nicht.',
+        'Wir kannten uns, du und ich. Du hast Akten gesiegelt, an die niemand mehr rühren sollte — ordentliche, verlässliche Arbeit.\n\nVon dieser Verlässlichkeit hätte ich gern wieder etwas.'
+      ],
+      dialogueOffer: 'Unten in den Kellern hat sich Ungeziefer eingenistet. Wilde Tiere, sagen die Wachen. Räum sie aus — zehn Stück, dann reden wir weiter.\n\nWillst du diese Aufgabe übernehmen?',
       dialogueProgress: 'Die Keller sind noch nicht sicher. Kämpfe weiter.',
       dialogueComplete: 'Gut. Die Keller sind gesäubert. Hier ist dein Lohn.'
     },

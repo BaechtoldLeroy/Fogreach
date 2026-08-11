@@ -341,18 +341,30 @@ StartScene.prototype.create = function () {
     try { want = window.sessionStorage.getItem(_RESUME_FS_FLAG); } catch (e) { return; }
     if (want == null) return;
     try { window.sessionStorage.removeItem(_RESUME_FS_FLAG); } catch (e) {}
+    // Auf beide gaengigen Touch-Gesten lauschen: pointerdown deckt Desktop +
+    // moderne Mobile ab, touchend faengt Browser, die den ersten pointerdown
+    // anders behandeln. Beide sind gueltige User-Gesten fuer requestFullscreen.
+    const EVENTS = ['pointerdown', 'touchend'];
+    let done = false;
     const restore = () => {
-      try { window.removeEventListener('pointerdown', restore, true); } catch (e) {}
+      if (done) return;
+      done = true;
+      EVENTS.forEach((ev) => { try { window.removeEventListener(ev, restore, true); } catch (e) {} });
       try {
-        const sc = scene.game && scene.game.scale;
+        // window.game ist nach dem Boot gesetzt; scene.game als Fallback, falls
+        // die Geste noch waehrend der Start-Szene kommt.
+        const g = window.game || (scene && scene.game);
+        const sc = g && g.scale;
         if (sc && !sc.isFullscreen) sc.startFullscreen();
       } catch (e) { /* iOS ohne Element-Fullscreen o. ae. -> still ignorieren */ }
     };
-    try {
-      window.addEventListener('pointerdown', restore, { once: true, capture: true });
-    } catch (e) { /* addEventListener-Optionsobjekt evtl. nicht unterstuetzt */
-      try { window.addEventListener('pointerdown', restore, true); } catch (_) {}
-    }
+    EVENTS.forEach((ev) => {
+      try {
+        window.addEventListener(ev, restore, { capture: true });
+      } catch (e) { /* Optionsobjekt evtl. nicht unterstuetzt */
+        try { window.addEventListener(ev, restore, true); } catch (_) {}
+      }
+    });
   })(this);
 
   // #63: "Neues Spiel" hat den Slot geleert und die Seite neu geladen, damit
@@ -448,16 +460,26 @@ StartScene.prototype.create = function () {
   // und die Liste müsste bei jedem neuen Modul gepflegt werden — genau die
   // Drift, vor der #63 warnt. Der Reload weiss nichts über Module und kann
   // darum nichts vergessen.
+  // Szene fuer _reloadForSlotChange festhalten (wird bare aufgerufen, hat also
+  // kein eigenes `this`). Braucht's fuer die prefix-agnostische Vollbild-Abfrage.
+  const _fsSceneRef = this;
   function _reloadForSlotChange() {
     // Vollbild ueberlebt keinen Page-Reload (Fullscreen-API ist ans Dokument
     // gebunden). War der Spieler im Vollbild, ein einmaliges Flag setzen, das
     // die create() nach dem Reload konsumiert und Vollbild bei der ersten
-    // Touch-Geste wiederherstellt. document.fullscreenElement statt scale, weil
-    // diese Funktion ohne Szenen-`this` aufgerufen wird.
+    // Touch-Geste wiederherstellt.
+    // WICHTIG: primaer Phasers scale.isFullscreen pruefen — document.fullscreen-
+    // Element ist auf mobilen Browsern mit prefixed API (webkit) oft null, das
+    // war der Grund, warum der Fix zuerst nicht griff. document.*-Varianten nur
+    // als Fallback.
     try {
-      if (document.fullscreenElement) {
-        window.sessionStorage.setItem(_RESUME_FS_FLAG, '1');
-      }
+      const _sc = _fsSceneRef && _fsSceneRef.scale;
+      const _inFs = !!(
+        (_sc && _sc.isFullscreen) ||
+        document.fullscreenElement || document.webkitFullscreenElement ||
+        document.mozFullScreenElement || document.msFullscreenElement
+      );
+      if (_inFs) window.sessionStorage.setItem(_RESUME_FS_FLAG, '1');
     } catch (e) { /* sessionStorage evtl. blockiert */ }
     try { window.location.reload(); }
     catch (e) { try { this.scene.restart(); } catch (_) {} }

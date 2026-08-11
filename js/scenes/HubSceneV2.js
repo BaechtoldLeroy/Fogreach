@@ -1220,6 +1220,17 @@ class HubSceneV2 extends Phaser.Scene {
         });
       }
 
+      // Optionale Auftakt-Seiten (dialogueIntro) VOR dem Angebotstext — nur bei
+      // der ERSTEN Begegnung mit diesem NPC (noch keine Quest abgeschlossen), damit
+      // die Charakter-Prosa einmal Raum bekommt und spaetere Angebote knapp bleiben.
+      // Jede Zeile ist eine eigene, weiterblaetterbare Seite (nutzt den normalen
+      // Mehrseiten-Fluss inkl. Mobile-pointerdown-Advance).
+      if (completedCount === 0 && Array.isArray(questData.dialogueIntro)) {
+        questData.dialogueIntro.forEach((line) => {
+          pages.push({ text: line, choices: null });
+        });
+      }
+
       // Quest offer text
       pages.push({
         text: questData.dialogueOffer,
@@ -3461,9 +3472,15 @@ class HubSceneV2 extends Phaser.Scene {
     const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';
     const isEN = (lang === 'en');
     const title = isEN ? 'Fogreach' : 'Fogreach';
+    // Bewusst SPOILERFREI: die frueheren Zeilen "im Schatten gemeinsame Sache"
+    // (Kollusion = Q6-Reveal) und "jemand wollte deine Erinnerung begraben"
+    // (Verschwoerung) nahmen die zwei grossen Enthuellungen vorweg. Der Text
+    // beschreibt jetzt nur, was die Figur zu Beginn weiss: Nebelstadt, Rat aus
+    // drei offen konkurrierenden Fraktionen, amnesischer Archivschmied, der
+    // niedere Auftraege annimmt und in die Keller hinabsteigt (Auftakt-Quest).
     const body = isEN
-      ? "A dark city wrapped in permanent mist. The Chain Council governs as a sham democracy — three factions that compete in the open and conspire in the shadows.\n\nYou were an Archivesmith. An accident at the Forge tore holes in your memory. You begin to notice contradictions in the official history.\n\nThe fog is not weather. It eats memory. And someone wanted yours buried."
-      : "Eine dunkle Stadt, in ewigen Nebel gehüllt. Der Kettenrat regiert als Schein-Demokratie — drei Fraktionen, die offen streiten und im Schatten gemeinsame Sache machen.\n\nDu warst Archivschmied. Ein Unfall in der Schmiede hat Löcher in deine Erinnerung gerissen. Du beginnst Widersprüche in der offiziellen Geschichte zu bemerken.\n\nDer Nebel ist kein Wetter. Er frisst Erinnerung. Und jemand wollte deine begraben sehen.";
+      ? "Fogreach — a city beneath an endless mist. The Chain Council keeps order: Clergy, Guard, and Administration — three factions openly vying for influence.\n\nYou were an Archivesmith, until an accident at the Forge tore your memory apart. What's left is your rank, a few tools — and the jobs no one else will take.\n\nToday you take what you're given, and descend into the cellars beneath the Archive-Forge."
+      : "Fogreach — eine Stadt unter ewigem Nebel. Der Kettenrat wacht über die Ordnung: Klerus, Garde und Verwaltung, drei Fraktionen, die offen um Einfluss ringen.\n\nDu warst Archivschmied, bis ein Unfall in der Schmiede deine Erinnerung zerriss. Geblieben sind dein Rang, ein paar Werkzeuge — und Aufträge, die sonst keiner will.\n\nHeute nimmst du, was man dir gibt, und steigst hinab in die Keller unter der Archivschmiede.";
     const close = isEN ? '[ Continue ]' : '[ Weiter ]';
     this._showSplashModal(title, body, close, () => {
       try { (window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1'); } catch (_) {}
