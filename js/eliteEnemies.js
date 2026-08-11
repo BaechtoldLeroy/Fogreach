@@ -283,46 +283,21 @@
     // Visuals: aura + name tag — only if we have a live scene
     const scene = enemy.scene;
     if (scene && scene.add && picked.length > 0) {
-      // Aura (Phaser.Graphics circle at depth 38)
+      // Aura (Phaser.Graphics circle at depth 38). Perf (#70): der Kreis wird
+      // EINMAL bei (0,0) gezeichnet und danach nur noch verschoben — kein
+      // clear()+fillCircle()-Geometrie-Rebuild pro Frame mehr.
       if (typeof scene.add.graphics === 'function') {
         try {
           const aura = scene.add.graphics();
           aura.fillStyle(picked[0].auraColor, 0.35);
-          aura.fillCircle(enemy.x, enemy.y, 36);
+          aura.fillCircle(0, 0, 36);
+          aura.setPosition(enemy.x, enemy.y);
           if (typeof aura.setDepth === 'function') aura.setDepth(38);
           // Put aura in enemyLayer so it respects the enemy vision mask
           if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
             scene.enemyLayer.add(aura);
           }
           enemy._eliteAura = aura;
-          if (scene.time && typeof scene.time.addEvent === 'function') {
-            const auraTimer = scene.time.addEvent({
-              delay: 16,
-              loop: true,
-              callback: function () {
-                // Bail if enemy/aura/scene are gone (e.g., scene shutdown
-                // mid-transition to hub). Without this guard the callback
-                // can hit "Cannot read properties of undefined (reading 'sys')"
-                // when Phaser tears down the scene.
-                if (!enemy || !enemy.active || !aura || !aura.active ||
-                    !aura.scene || !aura.scene.sys) {
-                  if (auraTimer && typeof auraTimer.remove === 'function') auraTimer.remove();
-                  return;
-                }
-                aura.clear();
-                aura.fillStyle(picked[0].auraColor, 0.35);
-                aura.fillCircle(enemy.x, enemy.y, 36);
-                // Wie beim Namens-Tag: die Maske des enemyLayer hält die Aura
-                // nicht zurück, deshalb explizit gegen die Sichtlinie prüfen.
-                if (typeof aura.setVisible === 'function') {
-                  aura.setVisible(
-                    enemy.visible && _isInVision(aura.scene, enemy.x, enemy.y, true)
-                  );
-                }
-              }
-            });
-            enemy._eliteAuraTimer = auraTimer;
-          }
         } catch (e) { /* swallow */ }
       }
 
@@ -346,36 +321,47 @@
           }
           enemy._eliteNameTag = tag;
           enemy.eliteNameTag = tagText;
-          if (scene.time && typeof scene.time.addEvent === 'function') {
-            const tagTimer = scene.time.addEvent({
-              delay: 16,
-              loop: true,
-              callback: function () {
-                if (!enemy || !enemy.active || !tag || !tag.active ||
-                    !tag.scene || !tag.scene.sys) {
-                  if (tagTimer && typeof tagTimer.remove === 'function') tagTimer.remove();
-                  return;
-                }
-                tag.x = enemy.x;
-                tag.y = enemy.y - 30;
-                // Text objects bypass the GeometryMask on enemyLayer, so we
-                // can't rely on the mask alone to hide labels through closed
-                // doors / walls. Test the enemy's world position against the
-                // cached vision polygon (filled by roomManager.updateFogOfWar
-                // each frame). When the enemy is outside the LOS polygon —
-                // including "behind a closed door" — the label hides. (Refs #14)
-                if (typeof tag.setVisible === 'function') {
-                  var visible = enemy.active && enemy.visible;
-                  if (visible) {
-                    visible = _isInVision(tag.scene, enemy.x, enemy.y, true);
-                  }
-                  tag.setVisible(visible);
-                }
-              }
-            });
-            enemy._eliteNameTagTimer = tagTimer;
-          }
         } catch (e) { /* swallow */ }
+      }
+
+      // EIN gemeinsamer Visual-Timer fuer Aura + Tag (Perf #70). Frueher zwei
+      // 16ms-Loop-Timer PRO Elite, die JE _isInVision (Punkt-in-Polygon, O(rays))
+      // mit 60Hz aufriefen -> skalierte schlecht mit der Elite-Anzahl. Jetzt:
+      //   - Position jeden Tick (folgt dem Gegner fluessig),
+      //   - Sichtbarkeits-Check (das teure _isInVision) nur alle 3 Ticks — das
+      //     Vision-Polygon aktualisiert die Fog-Schleife auf Mobile ohnehin nur
+      //     ~15Hz, 60Hz-Checks waren 4x redundant.
+      // Text-Objekte umgehen die GeometryMask des enemyLayer, darum der explizite
+      // LOS-Test gegen das gecachte Sichtpolygon (Refs #14).
+      if (scene.time && typeof scene.time.addEvent === 'function'
+          && (enemy._eliteAura || enemy._eliteNameTag)) {
+        let _visTick = 0;
+        let _lastVis = true;
+        const visualTimer = scene.time.addEvent({
+          delay: 16,
+          loop: true,
+          callback: function () {
+            const aura = enemy._eliteAura;
+            const tag = enemy._eliteNameTag;
+            // Bail wenn Enemy/Szene weg (Shutdown mid-transition) — sonst
+            // "Cannot read properties of undefined (reading 'sys')".
+            const sceneAlive = (aura && aura.scene && aura.scene.sys)
+              || (tag && tag.scene && tag.scene.sys);
+            if (!enemy || !enemy.active || !sceneAlive) {
+              if (visualTimer && typeof visualTimer.remove === 'function') visualTimer.remove();
+              return;
+            }
+            if (aura && aura.active) aura.setPosition(enemy.x, enemy.y);
+            if (tag && tag.active) { tag.x = enemy.x; tag.y = enemy.y - 30; }
+            if ((_visTick++ % 3) === 0) {
+              const vscene = (aura && aura.scene) || (tag && tag.scene);
+              _lastVis = enemy.visible && _isInVision(vscene, enemy.x, enemy.y, true);
+            }
+            if (aura && typeof aura.setVisible === 'function') aura.setVisible(_lastVis);
+            if (tag && typeof tag.setVisible === 'function') tag.setVisible(enemy.active && _lastVis);
+          }
+        });
+        enemy._eliteVisualTimer = visualTimer;
       }
     }
 
@@ -405,23 +391,29 @@
         }
       }
     }
+    // Gemeinsamer Visual-Timer (Perf #70) zuerst stoppen, bevor Aura/Tag weg sind.
+    if (enemy._eliteVisualTimer) {
+      try { if (typeof enemy._eliteVisualTimer.remove === 'function') enemy._eliteVisualTimer.remove(); } catch (e) {}
+      enemy._eliteVisualTimer = null;
+    }
+    // Alt-Timer defensiv mit abraeumen, falls je noch ein Enemy welche traegt.
+    if (enemy._eliteAuraTimer) {
+      try { if (typeof enemy._eliteAuraTimer.remove === 'function') enemy._eliteAuraTimer.remove(); } catch (e) {}
+      enemy._eliteAuraTimer = null;
+    }
+    if (enemy._eliteNameTagTimer) {
+      try { if (typeof enemy._eliteNameTagTimer.remove === 'function') enemy._eliteNameTagTimer.remove(); } catch (e) {}
+      enemy._eliteNameTagTimer = null;
+    }
     // Destroy aura
     if (enemy._eliteAura) {
       try { if (typeof enemy._eliteAura.destroy === 'function') enemy._eliteAura.destroy(); } catch (e) {}
       enemy._eliteAura = null;
     }
-    if (enemy._eliteAuraTimer) {
-      try { if (typeof enemy._eliteAuraTimer.remove === 'function') enemy._eliteAuraTimer.remove(); } catch (e) {}
-      enemy._eliteAuraTimer = null;
-    }
     // Destroy name tag
     if (enemy._eliteNameTag) {
       try { if (typeof enemy._eliteNameTag.destroy === 'function') enemy._eliteNameTag.destroy(); } catch (e) {}
       enemy._eliteNameTag = null;
-    }
-    if (enemy._eliteNameTagTimer) {
-      try { if (typeof enemy._eliteNameTagTimer.remove === 'function') enemy._eliteNameTagTimer.remove(); } catch (e) {}
-      enemy._eliteNameTagTimer = null;
     }
     enemy._isElite = false;
   }
