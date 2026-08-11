@@ -358,6 +358,34 @@ class HubSceneV2 extends Phaser.Scene {
         const ny = 14 + (s.top || 0) + _mR;
         menuBg.setPosition(nx, ny); menuIcon.setPosition(nx, ny);
       });
+
+      // Inventar-Icon UNTER dem Burger — spiegelt das In-Game-HUD (dort gibt es
+      // Burger + Beutel-Icon). Vorher liess sich das Inventar im Hub NUR per
+      // I-Taste oeffnen; auf Mobile ohne Tastatur war es damit gar nicht
+      // erreichbar. Toggle-Logik identisch zum I-Key-Handler weiter unten.
+      const _invGap = _mR * 2 + 8;
+      const invBg = this.add.circle(_mx, _my + _invGap, _mR, 0x10131c, 0.95)
+        .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(1300)
+        .setInteractive({ useHandCursor: true });
+      const invIcon = this.add.text(_mx, _my + _invGap, '\u{1F392}', {
+        fontFamily: 'serif', fontSize: '20px'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(1301);
+      invBg.on('pointerdown', (pointer, lx, ly, event) => {
+        if (event && event.stopPropagation) event.stopPropagation();
+        // invUI wird erst weiter unten in create() initialisiert; zur Tap-Zeit
+        // ist es laengst da. Gleiche Guards wie der I-Key-Handler.
+        if (typeof openInventory === 'function' && typeof invUI !== 'undefined' && invUI && invUI.overlay) {
+          if (typeof invOpen !== 'undefined' && invOpen) closeInventory(); else openInventory();
+        }
+      });
+      this._hubInvBtn = invBg;
+      this._hubInvIcon = invIcon;
+      this.scale.on('resize', () => {
+        const s = window.__SAFE_AREA__ || { top: 0, right: 0 };
+        const nx = this.scale.width - 14 - (s.right || 0) - _mR;
+        const ny = 14 + (s.top || 0) + _mR + _invGap;
+        invBg.setPosition(nx, ny); invIcon.setPosition(nx, ny);
+      });
     }
 
     this.input.keyboard.on('keydown-E', this._handleInteract, this);

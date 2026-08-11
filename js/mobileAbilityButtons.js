@@ -82,11 +82,20 @@
     const { spec, circle } = btnInfo;
     // Slot-Cells carry glyph + label direkt auf der spec (aus ABILITY_DEFS).
     // Statische Cells (attack/roll/potion/interact) nutzen DECORATION-Lookup.
-    const dec = DECORATION[spec.key] || (spec._glyph ? {
+    // WICHTIG: Slot-Skills (spec._abilityId gesetzt) IMMER aus der spec bauen,
+    // NIE aus DECORATION — sonst kapert eine zufaellige Namensgleichheit der
+    // Ability-id mit einem statischen Key (z.B. 'charge'/Ansturm) Glyph, Label
+    // UND den (falschen) Cooldown-Ref. Vorher zog 'charge' die Alt-Dekoration
+    // 'Ladung' + chargeSlashCooldownText statt des echten Ability-Namens und
+    // des AbilitySystem-Cooldowns.
+    const _slotDec = spec._glyph ? {
       glyph: spec._glyph,
       label: spec._label || '',
       cd: spec._cdRef || null,
-    } : null);
+    } : null;
+    const dec = spec._abilityId
+      ? _slotDec
+      : (DECORATION[spec.key] || _slotDec);
     if (!dec) return null;
 
     const scale = _buttonScale();
@@ -115,8 +124,13 @@
     // #47: the roll ("Dash") button has cd:null and performRoll never touches a
     // mobile cooldown text node, so it gets the same overlay treatment as potion
     // — its remaining time is published to window by the GameScene update tick.
+    // Slot-Skills (aus dem Skill-Baum, via AbilitySystem) haben KEINEN
+    // klassischen Cooldown-Text-Node (nur die Alt-Abilities in CLASSIC_REFS
+    // hatten die). Sie bekommen darum denselben Overlay wie potion/roll und
+    // werden im Poll direkt aus AbilitySystem.getCooldownRemaining getrieben.
+    const _isSlotAbility = !!spec._abilityId;
     let cdOverlay = null;
-    if (spec.key === 'potion' || spec.key === 'roll') {
+    if (spec.key === 'potion' || spec.key === 'roll' || _isSlotAbility) {
       cdOverlay = scene.add.text(0, 0, '', {
         fontSize: Math.round(radius * 0.6) + 'px',
         fontStyle: 'bold',
@@ -139,6 +153,7 @@
 
     return {
       key: spec.key,
+      abilityId: spec._abilityId || null,  // Slot-Skill-Identitaet fuer AbilitySystem-Cooldown
       circle,
       icon,
       label,
@@ -179,6 +194,28 @@
       // Standard cooldown-text-driven enable/disable
       const cdVisible = !!(dec.cdText && dec.cdText.visible);
       _applyEnabledVisual(dec, !cdVisible);
+
+      // Slot-Skill-Cooldown (Skill-Baum-Abilities via AbilitySystem). Diese haben
+      // keinen klassischen cdText-Node — die Restzeit kommt direkt aus
+      // AbilitySystem.getCooldownRemaining(abilityId, scene.time.now). Sekunden-
+      // Overlay + Dimmen, gleiches Muster wie roll/potion. Ohne AbilitySystem
+      // (Alt-Build) bleibt es beim cdText-Verhalten oben.
+      if (dec.abilityId && window.AbilitySystem
+          && typeof window.AbilitySystem.getCooldownRemaining === 'function') {
+        const now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : undefined;
+        const remainMs = window.AbilitySystem.getCooldownRemaining(dec.abilityId, now) || 0;
+        const onCd = remainMs > 0;
+        _applyEnabledVisual(dec, !onCd);
+        if (dec.cdOverlay) {
+          if (onCd) {
+            dec.cdOverlay.setText((remainMs / 1000).toFixed(1));
+            dec.cdOverlay.setVisible(true);
+            if (dec.icon) dec.icon.setAlpha(0.35);
+          } else {
+            dec.cdOverlay.setVisible(false);
+          }
+        }
+      }
 
       // Potion-specific: live count + cooldown overlay
       if (dec.key === 'potion') {
