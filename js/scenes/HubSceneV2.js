@@ -446,6 +446,35 @@ class HubSceneV2 extends Phaser.Scene {
     if (typeof createInventoryGraphics === 'function') createInventoryGraphics.call(this);
     if (typeof initInventoryUI === 'function') initInventoryUI.call(this);
 
+    // Debug-Direkteinstieg (?dungeon=N in startScene): sobald der Hub steht,
+    // automatisch in den Dungeon absteigen — ueber denselben _enterLocation-Pfad
+    // wie der echte Klick, damit Dungeon-Bugs treu reproduziert werden. Flag wird
+    // sofort konsumiert (feuert genau einmal). Fehler werden ins Mobile-Overlay
+    // (window.__showError) gespiegelt, falls der Abstieg selbst wirft.
+    if (window.__DEBUG_AUTO_DESCEND__) {
+      const _dbgDepth = Math.max(1, parseInt(window.__DEBUG_AUTO_DESCEND__, 10) || 1);
+      window.__DEBUG_AUTO_DESCEND__ = null;
+      this.time.delayedCall(250, () => {
+        try {
+          // Direkt in den Dungeon — Tiefe-Globals wie startDungeon setzen, aber
+          // Wave-Wahl-Dialog + fadeOut umgehen (der Debug-Pfad soll zuverlaessig
+          // durchlaufen, auch wenn maxDepth schon hoch ist). GameScene baut Welt
+          // + Gegner + Mini-Boss selbst auf.
+          window.SELECTED_WAVE_OVERRIDE = _dbgDepth;
+          window.DUNGEON_DEPTH = _dbgDepth;
+          window.NEXT_DUNGEON_DEPTH = _dbgDepth + 1;
+          if (!window.DIFFICULTY_MULTIPLIER) {
+            window.DIFFICULTY_MULTIPLIER = (typeof window.getDifficultyMultiplier === 'function')
+              ? (window.getDifficultyMultiplier() || 1) : 1;
+          }
+          if (typeof saveGame === 'function') { try { saveGame(this); } catch (e) {} }
+          this.scene.start('GameScene');
+        } catch (e) {
+          if (typeof window.__showError === 'function') window.__showError('debug-descend: ' + ((e && e.stack) || e));
+        }
+      });
+    }
+
     // Feature 050 FR-12b: arm Q2/Q4 side-dialogues on quest acceptance.
     // questSystem.onQuestUpdate(fn) calls fn(activeQuestsList) — no event
     // type. We detect "newly active" by diffing against the previous-known

@@ -397,6 +397,24 @@ StartScene.prototype.create = function () {
     return;
   }
 
+  // Debug-Direkteinstieg ins Dungeon: ?dungeon=1 (oder ?dungeon=N). Wie autostart
+  // ein frisches Spiel, aber HubSceneV2 descendet danach automatisch weiter in den
+  // Dungeon — ueber DENSELBEN _enterLocation-Pfad wie der echte Klick, damit
+  // Dungeon-Bugs treu reproduziert werden (man sieht die Konsole auf Mobile nicht).
+  // MUSS vor dem Autostart-Block stehen (der sonst greifen wuerde, wenn beide
+  // Parameter zusammenkommen — hier nicht der Fall, aber Reihenfolge ist eindeutig).
+  const _dungeonParam = ((window.location && window.location.search) || '').match(/[?&]dungeon=(\d+)/);
+  if (_dungeonParam) {
+    window.__DEBUG_AUTO_DESCEND__ = Math.max(1, parseInt(_dungeonParam[1], 10) || 1);
+    if (window.clearSave) clearSave();
+    if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') window.AbilitySystem.resetForNewGame();
+    if (window.KnowledgeTree && typeof window.KnowledgeTree.resetForNewGame === 'function') window.KnowledgeTree.resetForNewGame();
+    if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
+    const selfD = this;
+    setTimeout(() => loadRoomTemplatesAndStart.call(selfD), 100);
+    return;
+  }
+
   // Auto-start support: ?autostart=1 in URL OR debug.autostart in settings.
   // Treated as a fresh new game — wipe persistent state so test runs are deterministic.
   const settingsAutostart = (() => {
