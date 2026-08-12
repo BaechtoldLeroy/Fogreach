@@ -473,9 +473,10 @@
 
     var objects = [];
     var decorations = [];
-    var solidCount = Math.floor(floorTiles.length * 0.025); // ~2.5 % of floor
-    var breakableCount = Math.floor(floorTiles.length * 0.015); // ~1.5 %
-    var decorCount = Math.floor(floorTiles.length * 0.04);   // ~4 %
+    // #70: Prop-Dichte gesenkt (grosse Hoehlen hatten zig Prop-Sprites = Draws).
+    var solidCount = Math.floor(floorTiles.length * 0.015);  // ~1.5 % (war 2.5)
+    var breakableCount = Math.floor(floorTiles.length * 0.01); // ~1 % (war 1.5)
+    var decorCount = Math.floor(floorTiles.length * 0.025);  // ~2.5 % (war 4)
 
     shuffleInPlace(floorTiles, rng);
     var used = new Set();

@@ -666,8 +666,11 @@
     openHallRects.forEach(function (hall) {
       var hallTiles = (hall.w - 2) * (hall.h - 2);
 
-      // Lots of decoration — 1 per 15 tiles
-      var decorCount = Math.max(4, Math.floor(hallTiles / 15));
+      // Decoration — frueher 1 pro 15 Kacheln, das war deutlich zu dicht (grosse
+      // Hallen -> 40+ Prop-Sprites, Draw-Call-Treiber, #70). Jetzt 1 pro 30 und
+      // hart gedeckelt, damit auch riesige Hallen nicht ausufern. Immer noch
+      // "grand", aber nicht mehr zugestellt.
+      var decorCount = Math.min(16, Math.max(3, Math.floor(hallTiles / 30)));
       for (var d = 0; d < decorCount; d++) {
         for (var at = 0; at < 6; at++) {
           var ox = hall.x + 2 + Math.floor(rng() * Math.max(1, hall.w - 4));
@@ -734,7 +737,9 @@
       }
 
       // WP03: Add breakable barrels/crates (collidable, destructible)
-      var breakableCount = Math.max(0, Math.floor(area / 80)); // ~1 per 80 tiles
+      // #70: von 1/80 auf 1/120 gesenkt — weniger Prop-Sprites, immer noch genug
+      // Zerstoerbares fuer Loot.
+      var breakableCount = Math.max(0, Math.floor(area / 120));
       for (var b = 0; b < breakableCount; b++) {
         for (var bat = 0; bat < 4; bat++) {
           var bx = c.x + 1 + Math.floor(rng() * Math.max(1, c.w - 2));
