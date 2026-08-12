@@ -603,6 +603,28 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   // Schatten/Marks (wie bisher per Insertion-Order) über den Wand-Sprites
   // (39) und unter Obstacles (40).
   const wallDecoGfx = scene.add?.graphics ? scene.add.graphics().setDepth(39.5) : null;
+
+  // Perf (#70): Waende in EIN gebackenes Bild backen statt pro Wand-Rect ein
+  // TileSprite. In grossen Raeumen waren das ~480 TileSprites = der dominante
+  // Draw-Treiber (perfProbe: visTypes TileSprite 483 bei fpsMin 28). Gleiches
+  // Muster wie der Boden oben. Kollision (spawnWallRect) + Wandgitter sind
+  // ENTKOPPELT und bleiben unberuehrt. Faellt auf die alten TileSprites zurueck,
+  // wenn kein Wand-Source-Image da ist.
+  let _wallBakeCtx = null, _wallSrcImg = null, _wallCanvas = null, _wallTW = T, _wallTH = T;
+  if (canRenderWalls && typeof document !== 'undefined') {
+    const _wt = scene.textures.get(wallTexture);
+    _wallSrcImg = (_wt && _wt.source && _wt.source[0]) ? _wt.source[0].image : null;
+    if (_wallSrcImg) {
+      _wallTW = _wallSrcImg.width || T;
+      _wallTH = _wallSrcImg.height || T;
+      _wallCanvas = document.createElement('canvas');
+      _wallCanvas.width = W * T; _wallCanvas.height = H * T;
+      _wallBakeCtx = _wallCanvas.getContext('2d');
+      if (_wallBakeCtx) _wallBakeCtx.imageSmoothingEnabled = false;
+    }
+  }
+  const _canBakeWalls = !!_wallBakeCtx;
+
   wallRects.forEach(rect => {
     const widthPx = rect.width * T;
     const heightPx = rect.height * T;
@@ -610,11 +632,28 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     const cy = oy + rect.y * T + heightPx / 2;
 
     if (canRenderWalls) {
-      const sprite = scene.add.tileSprite(cx, cy, widthPx, heightPx, wallTexture);
-      sprite.setOrigin(0.5);
-      sprite.setDepth(39);
-      if (wallTint) sprite.setTint(wallTint);
-      templateWalls.push(sprite);
+      if (_canBakeWalls) {
+        // Wand-Textur in die gemeinsame Canvas kacheln (Canvas-Origin =
+        // Raum-Origin). Clip auf das Rect + natuerliche Texturgroesse -> exakt
+        // wie ein TileSprite, kein Ueberzeichnen in Nachbarflaechen.
+        const rx = rect.x * T, ry = rect.y * T;
+        _wallBakeCtx.save();
+        _wallBakeCtx.beginPath();
+        _wallBakeCtx.rect(rx, ry, widthPx, heightPx);
+        _wallBakeCtx.clip();
+        for (let dy = 0; dy < heightPx; dy += _wallTH) {
+          for (let dx = 0; dx < widthPx; dx += _wallTW) {
+            _wallBakeCtx.drawImage(_wallSrcImg, rx + dx, ry + dy);
+          }
+        }
+        _wallBakeCtx.restore();
+      } else {
+        const sprite = scene.add.tileSprite(cx, cy, widthPx, heightPx, wallTexture);
+        sprite.setOrigin(0.5);
+        sprite.setDepth(39);
+        if (wallTint) sprite.setTint(wallTint);
+        templateWalls.push(sprite);
+      }
     }
 
     // Inner shadow border — 2px dark edge where wall meets floor
@@ -654,6 +693,25 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       spawnWallRect(cx, cy, widthPx, heightPx, wallTexture || undefined);
     }
   });
+
+  // Gebackene Wand-Ebene als EIN Bild (Perf #70). Depth 39 wie die alten
+  // TileSprites; wallTint uniform wie zuvor pro Sprite. Als isFloor markiert,
+  // damit die Treppen-Fallback-Logik das grosse Bild nicht als Hindernis sieht
+  // (Placement/Kollision laufen ueber Physik-Waende + Wandgitter, nicht ueber
+  // dieses Bild). Wird ueber _bakedFloorKeys beim Raumwechsel aufgeraeumt.
+  if (_canBakeWalls) {
+    const bakedWallKey = '__wall_baked_' + (++FLOOR_BAKE_COUNTER);
+    try { scene.textures.removeKey(bakedWallKey); } catch (e) { /* fresh key */ }
+    scene.textures.addCanvas(bakedWallKey, _wallCanvas);
+    const wallImg = scene.add.image(ox, oy, bakedWallKey).setOrigin(0, 0).setDepth(39);
+    if (wallTint) wallImg.setTint(wallTint);
+    wallImg.setData('isFloor', true);
+    wallImg.setData('isBakedWall', true);
+    templateWalls.push(wallImg);
+    scene._bakedFloorKeys = scene._bakedFloorKeys || [];
+    scene._bakedFloorKeys.push(bakedWallKey);
+  }
+
   if (wallDecoGfx) templateWalls.push(wallDecoGfx);
 
   // Atmospheric elements: drop shadows, brazier glow, floor details, cobwebs, vignette
