@@ -57,10 +57,10 @@
     box.id = 'perf-probe-overlay';
     box.style.cssText = [
       'position:fixed', 'top:0', 'left:0', 'z-index:99999',
-      'font:11px/1.35 monospace', 'color:#0f0',
-      'background:rgba(0,0,0,0.78)', 'padding:6px 8px',
+      'font:10px/1.3 monospace', 'color:#0f0',
+      'background:rgba(0,0,0,0.7)', 'padding:3px 5px',
       'white-space:pre', 'pointer-events:none',
-      'border-bottom-right-radius:6px', 'max-width:60vw',
+      'border-bottom-right-radius:6px', 'max-width:44vw',
       'text-shadow:0 0 2px #000'
     ].join(';');
 
@@ -72,9 +72,9 @@
     btn.id = 'perf-probe-dump';
     btn.textContent = '⤓ DUMP';
     btn.style.cssText = [
-      'pointer-events:auto', 'margin-top:6px', 'width:100%',
-      'font:bold 13px monospace', 'color:#000', 'background:#0f0',
-      'border:0', 'border-radius:4px', 'padding:8px 0', 'cursor:pointer'
+      'pointer-events:auto', 'margin-top:4px', 'width:100%',
+      'font:bold 12px monospace', 'color:#000', 'background:#0f0',
+      'border:0', 'border-radius:4px', 'padding:5px 0', 'cursor:pointer'
     ].join(';');
     btn.addEventListener('click', function () {
       var report = window.__perfDump();
@@ -95,8 +95,8 @@
     function mkToggle(label, flag) {
       var t = document.createElement('button');
       t.style.cssText = [
-        'pointer-events:auto', 'flex:1 0 40%', 'font:bold 12px monospace',
-        'border:0', 'border-radius:4px', 'padding:8px 0', 'cursor:pointer'
+        'pointer-events:auto', 'flex:1 0 40%', 'font:bold 11px monospace',
+        'border:0', 'border-radius:4px', 'padding:4px 0', 'cursor:pointer'
       ].join(';');
       var paint = function () {
         var on = !window.__PERF[flag]; // flag=true bedeutet Subsystem AUS
@@ -329,20 +329,10 @@
       }
 
       if (preEl) {
+        // Kompakt: 2 Zeilen fuers schnelle A/B (der volle Report steckt im DUMP).
         preEl.textContent =
-          'PERF-PROBE  [053 WP02]\n' +
-          'ctx   ' + ctx + '\n' +
-          'fps   ' + fps.toFixed(0) + '   (' + ms.toFixed(1) + ' ms)\n' +
-          'objs  ' + objs + '   bodies ' + b.d + '+' + b.s + 's\n' +
-          'enem  ' + ec.active + ' aktiv / ' + ec.total + ' total\n' +
-          'draws ' + DRAW.last + '/frame\n' +
-          'cfg   res:' + (window.__PERF.explRes != null ? window.__PERF.explRes : 'def') +
-                ' int:' + (window.__PERF.fogInterval != null ? window.__PERF.fogInterval : 'def') +
-                ' ray:' + (window.__PERF.rays != null ? window.__PERF.rays : 'def') + '\n' +
-          'all   ' + histTop(hist, 5) + '\n' +
-          'vis   ' + histTop(scene ? visibleTypeHistogram(scene) : {}, 5) + '\n' +
-          'tex   ' + tex.count + '  (~' + tex.mb.toFixed(1) + ' MB VRAM)\n' +
-          'heap  ' + (heap ? heap.toFixed(1) + ' MB' : '—');
+          fps.toFixed(0) + 'fps ' + ms.toFixed(0) + 'ms · en' + ec.active + ' · dr' + DRAW.last + '\n' +
+          histTop(scene ? visibleTypeHistogram(scene) : {}, 4);
       }
     } catch (e) { /* keep ticking */ }
   }
