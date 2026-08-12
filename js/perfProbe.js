@@ -192,6 +192,60 @@
     return h;
   }
 
+  // Wie typeHistogram, aber NUR sichtbare Blatt-Objekte (visible & alpha>0,
+  // inkl. sichtbarer Eltern) — deutlich naeher an den echten Draw-Calls, weil
+  // der normale Histogramm auch inaktive Pool-Objekte (Projektil-/Loot-Pools)
+  // mitzaehlt. Container/Layer werden nicht selbst gezaehlt, nur ihre Blaetter.
+  function visibleTypeHistogram(scene) {
+    var h = {};
+    try {
+      var walk = function (arr, parentVis) {
+        for (var i = 0; i < arr.length; i++) {
+          var c = arr[i];
+          if (!c) continue;
+          var vis = parentVis && (c.visible !== false) && (c.alpha === undefined || c.alpha > 0.01);
+          if (c.list && c.list.length) { walk(c.list, vis); }
+          else if (vis) { var t = c.type || '?'; h[t] = (h[t] || 0) + 1; }
+        }
+      };
+      walk(scene.children.list, true);
+    } catch (e) { /* partial ok */ }
+    return h;
+  }
+
+  // Sammelt bis zu `max` Text-Inhalte (Diagnose: woher der hohe Text-Grundwert?).
+  function collectTextSamples(scene, max) {
+    var out = [];
+    try {
+      var walk = function (arr) {
+        for (var i = 0; i < arr.length && out.length < max; i++) {
+          var c = arr[i];
+          if (!c) continue;
+          if (c.type === 'Text' && typeof c.text === 'string') {
+            out.push((c.visible === false ? '(hid) ' : '') + c.text.slice(0, 22));
+          }
+          if (c.list && c.list.length) walk(c.list);
+        }
+      };
+      walk(scene.children.list);
+    } catch (e) { /* partial ok */ }
+    return out;
+  }
+
+  // Aktive/gesamte Gegnerzahl (Hypothese: FPS-Drop skaliert mit Gegnern).
+  function enemyCounts() {
+    try {
+      var g = (typeof window !== 'undefined') && window.enemies;
+      if (g && typeof g.getChildren === 'function') {
+        var arr = g.getChildren();
+        var active = 0;
+        for (var i = 0; i < arr.length; i++) if (arr[i] && arr[i].active) active++;
+        return { active: active, total: arr.length };
+      }
+    } catch (e) {}
+    return { active: -1, total: -1 };
+  }
+
   // Kompakte Top-N-Darstellung des Histogramms, absteigend nach Count
   function histTop(h, n) {
     try {
@@ -250,19 +304,28 @@
       var b = scene ? countBodies(scene) : { d: -1, s: -1 };
       var tex = textureStats(game);
       var hist = scene ? typeHistogram(scene) : {};
+      var ec = enemyCounts();
       var heap = 0;
       try { if (performance && performance.memory) heap = performance.memory.usedJSHeapSize / (1024 * 1024); } catch (e) {}
       var ctx = scene ? contextKey(scene) : 'unknown';
 
       // Sample akkumulieren (FPS min/avg pro Kontext)
       if (fps > 0) {
-        var s = samples[ctx] || (samples[ctx] = { fpsMin: 999, fpsSum: 0, n: 0, objMax: 0, drawMax: 0, texMb: 0, hist: {} });
+        var s = samples[ctx] || (samples[ctx] = { fpsMin: 999, fpsSum: 0, n: 0, objMax: 0, drawMax: 0, texMb: 0, hist: {}, visHist: {}, textSample: [], enemiesMax: 0, fpsAtEnemiesMax: 0, drawAtObjMax: 0 });
         s.fpsMin = Math.min(s.fpsMin, fps);
         s.fpsSum += fps; s.n++;
         s.objMax = Math.max(s.objMax, objs);
         s.drawMax = Math.max(s.drawMax, DRAW.last);
         s.texMb = tex.mb;
-        if (objs >= (s.objMax || 0)) s.hist = hist; // Histogramm vom dichtesten Frame
+        // Korrelation Gegner<->FPS: FPS beim Maximum aktiver Gegner festhalten.
+        if (ec.active > (s.enemiesMax || 0)) { s.enemiesMax = ec.active; s.fpsAtEnemiesMax = Math.round(fps); }
+        if (objs >= (s.objMax || 0)) {
+          s.hist = hist;                 // Voll-Histogramm vom dichtesten Frame
+          s.drawAtObjMax = DRAW.last;
+          // Sichtbaren Draw-Anteil + Text-Stichprobe nur am dichtesten Frame
+          // berechnen (Baum-Walk ist teuer, laeuft so selten).
+          if (scene) { s.visHist = visibleTypeHistogram(scene); s.textSample = collectTextSamples(scene, 16); }
+        }
       }
 
       if (preEl) {
@@ -271,11 +334,13 @@
           'ctx   ' + ctx + '\n' +
           'fps   ' + fps.toFixed(0) + '   (' + ms.toFixed(1) + ' ms)\n' +
           'objs  ' + objs + '   bodies ' + b.d + '+' + b.s + 's\n' +
+          'enem  ' + ec.active + ' aktiv / ' + ec.total + ' total\n' +
           'draws ' + DRAW.last + '/frame\n' +
           'cfg   res:' + (window.__PERF.explRes != null ? window.__PERF.explRes : 'def') +
                 ' int:' + (window.__PERF.fogInterval != null ? window.__PERF.fogInterval : 'def') +
                 ' ray:' + (window.__PERF.rays != null ? window.__PERF.rays : 'def') + '\n' +
-          'types ' + histTop(hist, 5) + '\n' +
+          'all   ' + histTop(hist, 5) + '\n' +
+          'vis   ' + histTop(scene ? visibleTypeHistogram(scene) : {}, 5) + '\n' +
           'tex   ' + tex.count + '  (~' + tex.mb.toFixed(1) + ' MB VRAM)\n' +
           'heap  ' + (heap ? heap.toFixed(1) + ' MB' : '—');
       }
@@ -294,8 +359,13 @@
         frames: s.n,
         objMax: s.objMax,
         drawMax: s.drawMax,
+        drawAtObjMax: s.drawAtObjMax || 0,
+        enemiesMax: s.enemiesMax || 0,
+        fpsAtEnemiesMax: s.fpsAtEnemiesMax || 0,
         texMb: Math.round(s.texMb * 10) / 10,
-        types: s.hist || {}
+        types: s.hist || {},          // alle Objekte (inkl. inaktiver Pools)
+        visTypes: s.visHist || {},    // nur SICHTBARE -> naeher an den Draws
+        textSample: s.textSample || []
       };
     }
     try {
