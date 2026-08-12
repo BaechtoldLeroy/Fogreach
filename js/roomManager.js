@@ -1721,6 +1721,21 @@ function updateFogOfWar() {
   const _noSpot = !!(_P.nofog || _P.nospot);
   if (scene.fogUnseen && scene.fogUnseen.visible === _noMask) scene.fogUnseen.setVisible(!_noMask);
   if (scene.spotlightDim && scene.spotlightDim.visible === _noSpot) scene.spotlightDim.setVisible(!_noSpot);
+  // nofog: die Gegner-Sichtmaske abschalten, sonst bleiben ALLE Gegner
+  // unsichtbar — die Maske wird sonst nur weiter unten aktualisiert, und der
+  // nofog-return darunter wuerde sie leer (= alles ausmaskiert) lassen. Ohne
+  // das ist auch das A/B-Messen unfair (keine Gegner-Sprites -> kuenstlich
+  // weniger Draw-Calls). Live-Toggle-fest: bei nofog=aus Maske reaktivieren.
+  if (scene.enemyLayer) {
+    if (_P.nofog) {
+      if (scene.enemyLayer.mask && typeof scene.enemyLayer.clearMask === 'function') {
+        scene.enemyLayer.clearMask(false);
+      }
+    } else if (scene._enemyVisionMask && scene.enemyLayer.mask !== scene._enemyVisionMask
+        && typeof scene.enemyLayer.setMask === 'function') {
+      scene.enemyLayer.setMask(scene._enemyVisionMask);
+    }
+  }
   if (_P.nofog) return;
 
   // Mobile optimization: Fog-Update nur jeden N-ten Frame (053 WP05).
