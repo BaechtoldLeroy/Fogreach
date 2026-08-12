@@ -246,6 +246,26 @@
     return { active: -1, total: -1 };
   }
 
+  // Sprite-Poster aufschluesseln: aktive/sichtbare Mitglieder der grossen
+  // sprite-produzierenden Gruppen. Zeigt, ob der Sprite-Draw-Posten von Gegnern,
+  // Gold, Loot oder Projektilen getrieben wird.
+  function groupCounts() {
+    var out = {};
+    var W = (typeof window !== 'undefined') ? window : {};
+    var groups = { enem: W.enemies, gold: W.goldGroup, loot: W.lootGroup, proj: W.enemyProjectiles };
+    Object.keys(groups).forEach(function (k) {
+      try {
+        var grp = groups[k];
+        if (grp && typeof grp.getChildren === 'function') {
+          var arr = grp.getChildren(), vis = 0;
+          for (var i = 0; i < arr.length; i++) { if (arr[i] && arr[i].active && arr[i].visible !== false) vis++; }
+          out[k] = vis;
+        }
+      } catch (e) {}
+    });
+    return out;
+  }
+
   // Kompakte Top-N-Darstellung des Histogramms, absteigend nach Count
   function histTop(h, n) {
     try {
@@ -322,6 +342,7 @@
         if (objs >= (s.objMax || 0)) {
           s.hist = hist;                 // Voll-Histogramm vom dichtesten Frame
           s.drawAtObjMax = DRAW.last;
+          s.groups = groupCounts();      // Sprite-Poster-Aufschluesselung
           // Sichtbaren Draw-Anteil + Text-Stichprobe nur am dichtesten Frame
           // berechnen (Baum-Walk ist teuer, laeuft so selten).
           if (scene) { s.visHist = visibleTypeHistogram(scene); s.textSample = collectTextSamples(scene, 16); }
@@ -355,6 +376,7 @@
         texMb: Math.round(s.texMb * 10) / 10,
         types: s.hist || {},          // alle Objekte (inkl. inaktiver Pools)
         visTypes: s.visHist || {},    // nur SICHTBARE -> naeher an den Draws
+        spriteGroups: s.groups || {}, // sichtbare Gegner/Gold/Loot/Projektile
         textSample: s.textSample || []
       };
     }

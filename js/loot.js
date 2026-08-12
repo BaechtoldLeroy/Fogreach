@@ -120,6 +120,23 @@ function _spawnGoldPile(scene, x, y, amount) {
   if (!scene || !scene.physics || !scene.add) return null;
   if (typeof scene.textures?.exists === 'function' && !scene.textures.exists('goldPile')) return null;
   const safeAmount = Math.max(1, Math.floor(Number(amount) || 1));
+  // Perf (#70): nahe Gold-Piles ZUSAMMENFUEHREN statt fuer jeden Drop ein neues
+  // Sprite zu spawnen. In grossen Raeumen mit vielen Kills waren das sonst
+  // Dutzende Gold-Sprites — jedes ein eigener Draw-Call und ein Physik-Body.
+  // Wert wird aufaddiert; das Auto-Sammeln (Overlap) nimmt die groessere Pile.
+  if (window.goldGroup && typeof window.goldGroup.getChildren === 'function') {
+    const _mergeR2 = 44 * 44;
+    const _piles = window.goldGroup.getChildren();
+    for (let i = 0; i < _piles.length; i++) {
+      const gp = _piles[i];
+      if (!gp || !gp.active) continue;
+      const dx = gp.x - x, dy = gp.y - y;
+      if (dx * dx + dy * dy <= _mergeR2) {
+        gp.setData('goldAmount', (gp.getData('goldAmount') || 0) + safeAmount);
+        return gp;
+      }
+    }
+  }
   const sprite = scene.physics.add.sprite(x, y, 'goldPile');
   if (!sprite) return null;
   sprite.setData('goldAmount', safeAmount);
