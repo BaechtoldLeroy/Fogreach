@@ -30,6 +30,46 @@
   };
   var BOSSES = ['boss_chain', 'boss_ceremony', 'boss_shadow'];
 
+  // Alle Gegner-Sprite-URLs (fuer den Hintergrund-Prefetch).
+  function _allEnemyUrls() {
+    var urls = [];
+    ENEMY_TYPES.forEach(function (t) {
+      FRAMES.forEach(function (f) { urls.push('assets/enemy/' + t + '/' + f + '.png'); });
+    });
+    Object.keys(SINGLE_FALLBACKS).forEach(function (key) {
+      urls.push('assets/enemy/' + SINGLE_FALLBACKS[key]);
+    });
+    BOSSES.forEach(function (b) {
+      FRAMES.forEach(function (f) { urls.push('assets/enemy/' + b + '/' + f + '.png'); });
+      urls.push('assets/enemy/' + b + '/idle.png');
+    });
+    return urls;
+  }
+
+  // Nicht-blockierender Hintergrund-Prefetch waehrend der Hub-Szene: laedt die
+  // Gegner-Bilder per rohem Image() in den BROWSER-HTTP-Cache — voellig ohne
+  // Phasers Loader (dessen Timing im Hintergrund fragil war). Beim Abstieg holt
+  // GameScene.preload sie dann per Phaser aus dem Cache -> schnell, kein Netz.
+  // Gestaffelt (wenige parallel) statt 87 Requests auf einmal, damit der Hub
+  // nicht ruckelt. Idempotent-freundlich: laeuft hoechstens einmal pro Session.
+  var _prefetchStarted = false;
+  window.prefetchEnemySprites = function () {
+    if (_prefetchStarted || typeof Image === 'undefined') return;
+    _prefetchStarted = true;
+    var urls = _allEnemyUrls();
+    var i = 0;
+    var CONCURRENCY = 4;
+    var loadNext = function () {
+      if (i >= urls.length) return;
+      var img = new Image();
+      var done = function () { img.onload = img.onerror = null; loadNext(); };
+      img.onload = done;
+      img.onerror = done;
+      img.src = urls[i++];
+    };
+    for (var s = 0; s < CONCURRENCY; s++) loadNext();
+  };
+
   window.queueEnemySprites = function (scene) {
     if (!scene || !scene.load) return;
     var L = scene.load;

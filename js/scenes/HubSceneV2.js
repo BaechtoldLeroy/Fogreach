@@ -141,17 +141,9 @@ class HubSceneV2 extends Phaser.Scene {
         if (!tex.exists(key)) this.load.image(key, 'assets/npc/' + npc + '/' + frame + '.png');
       });
     });
-    // Gegner-Sprites HIER im preload laden (nicht mehr per Hintergrund-Poll in
-    // create). Grund: der Hintergrund-Start war timing-abhaengig (load.start() ist
-    // ein No-Op, solange der Loader noch die NPC-Charge verarbeitet) und lief oft
-    // gar nicht -> das GameScene-Sicherheitsnetz lud beim Rathaus-Eintritt alle 87
-    // Sprites nach (lange Ladezeit). preload laeuft GARANTIERT vor create und vor
-    // jedem Abstieg. exists-Guard (in queueEnemySprites) macht Re-Entry aus dem
-    // Dungeon + warme Browser-Caches praktisch gratis; nur der erste (kalte)
-    // Hub-Eintritt kostet einmalig etwas. Dungeon-Eintritt ist danach IMMER sofort.
-    if (typeof window.queueEnemySprites === 'function') {
-      try { window.queueEnemySprites(this); } catch (e) { /* Sicherheitsnetz in GameScene.preload */ }
-    }
+    // Hier NUR die hub-wichtigen Grafiken (bg + NPCs). Die Gegner-Sprites werden
+    // NICHT hier geladen (das wuerde den Hub-Eintritt blockieren), sondern im
+    // Hintergrund waehrend der Hub-Szene per Image()-Prefetch — siehe create().
   }
 
   create() {
@@ -457,8 +449,14 @@ class HubSceneV2 extends Phaser.Scene {
     if (typeof createInventoryGraphics === 'function') createInventoryGraphics.call(this);
     if (typeof initInventoryUI === 'function') initInventoryUI.call(this);
 
-    // (Gegner-Sprites werden jetzt zuverlaessig im Hub-preload geladen, nicht
-    //  mehr per fragilem Hintergrund-Poll hier — siehe preload().)
+    // Gegner-Sprites im HINTERGRUND vorladen, waehrend der Spieler im Hub ist —
+    // per rohem Image()-Prefetch in den Browser-Cache (nicht-blockierend, kein
+    // Phaser-Loader-Timing). Der Hub-Eintritt selbst laedt nur die Hub-Grafiken
+    // (preload). Beim Abstieg holt GameScene.preload die Gegner-Sprites aus dem
+    // Cache -> schnell. Siehe js/enemyAssets.js.
+    if (typeof window.prefetchEnemySprites === 'function') {
+      try { window.prefetchEnemySprites(); } catch (e) { /* optional — Netz greift */ }
+    }
 
     // Debug-Direkteinstieg (?dungeon=N in startScene): sobald der Hub steht,
     // automatisch in den Dungeon absteigen — ueber denselben _enterLocation-Pfad
