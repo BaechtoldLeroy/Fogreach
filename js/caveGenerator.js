@@ -97,7 +97,12 @@
   // a new one downstream.
   function widenNarrowPassages(g) {
     var h = g.length, w = g[0].length;
-    var MAX_PASSES = 4;
+    // Bis zur Konvergenz: das Oeffnen einer Engstelle kann eine neue freilegen.
+    // Monoton (es werden NUR Waende geoeffnet, nie gesetzt) -> terminiert immer;
+    // die Schleife bricht ohnehin ab, sobald nichts mehr zu oeffnen ist. Frueher
+    // 4 -> reichte nicht zuverlaessig, v.a. nach den spaeter gegrabenen
+    // Eingangs-Tunneln (siehe zweiter Aufruf unten).
+    var MAX_PASSES = 12;
     for (var pass = 0; pass < MAX_PASSES; pass++) {
       var toOpen = [];
       for (var y = 1; y < h - 1; y++) {
@@ -437,6 +442,13 @@
         dir: edge
       });
     });
+
+    // 4b) Engstellen-Glaettung ERNEUT — die 2-breiten Eingangs-Tunnel oben
+    //     koennen an ihren Raendern frische 1-Tile-Tubes/Diagonal-Pinches
+    //     erzeugt haben, die der erste widen-Pass (vor dem Graben) nicht sah.
+    //     Das war die Ursache der Test-Flakiness und im Spiel echter Eck-Haenger.
+    //     Oeffnet nur Waende -> trennt nie Regionen, bewegt keine Eingaenge.
+    widenNarrowPassages(g);
 
     // 5) Pick player spawn — the floor tile with the highest "openness" score
     //    (count of floor tiles in a 5×5 neighborhood). Falls back to the
