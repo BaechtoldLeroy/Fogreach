@@ -141,6 +141,17 @@ class HubSceneV2 extends Phaser.Scene {
         if (!tex.exists(key)) this.load.image(key, 'assets/npc/' + npc + '/' + frame + '.png');
       });
     });
+    // Gegner-Sprites HIER im preload laden (nicht mehr per Hintergrund-Poll in
+    // create). Grund: der Hintergrund-Start war timing-abhaengig (load.start() ist
+    // ein No-Op, solange der Loader noch die NPC-Charge verarbeitet) und lief oft
+    // gar nicht -> das GameScene-Sicherheitsnetz lud beim Rathaus-Eintritt alle 87
+    // Sprites nach (lange Ladezeit). preload laeuft GARANTIERT vor create und vor
+    // jedem Abstieg. exists-Guard (in queueEnemySprites) macht Re-Entry aus dem
+    // Dungeon + warme Browser-Caches praktisch gratis; nur der erste (kalte)
+    // Hub-Eintritt kostet einmalig etwas. Dungeon-Eintritt ist danach IMMER sofort.
+    if (typeof window.queueEnemySprites === 'function') {
+      try { window.queueEnemySprites(this); } catch (e) { /* Sicherheitsnetz in GameScene.preload */ }
+    }
   }
 
   create() {
@@ -446,31 +457,8 @@ class HubSceneV2 extends Phaser.Scene {
     if (typeof createInventoryGraphics === 'function') createInventoryGraphics.call(this);
     if (typeof initInventoryUI === 'function') initInventoryUI.call(this);
 
-    // Gegner-Sprites IM HINTERGRUND laden, waehrend der Spieler im Hub ist — so
-    // sind sie beim Abstieg bereit, ohne Boot oder Dungeon-Eintritt zu blockieren.
-    // Der Loader laeuft asynchron (XHR) und stoert den laufenden Hub nicht.
-    // GameScene.preload holt evtl. noch Fehlende als Sicherheitsnetz nach.
-    // Siehe js/enemyAssets.js.
-    if (typeof window.queueEnemySprites === 'function') {
-      try {
-        window.queueEnemySprites(this);
-        // WICHTIG: Beim create-Aufruf verarbeitet der Loader oft noch die
-        // NPC-Sprites aus preload (isLoading=true). Ein direktes start() verpufft
-        // dann, und nachtraeglich in die Queue gelegte Dateien laufen NIE los ->
-        // die Gegner-Sprites blieben ungeladen, das GameScene-Sicherheitsnetz lud
-        // sie erst beim Dungeon-Eintritt (lange Ladezeit). Ein once('complete')
-        // hilft NICHT, weil genau dieses Event schon feuerte (es hat create
-        // ausgeloest). Loesung: pollen, bis der Loader idle ist, DANN starten.
-        // (start() aus State COMPLETE/IDLE funktioniert zuverlaessig.)
-        let _kickTries = 0;
-        const _kickEnemyLoad = () => {
-          if (!this.load || this.load.list.size === 0) return;         // nichts (mehr) zu laden
-          if (!this.load.isLoading) { try { this.load.start(); } catch (e) {} return; }
-          if (_kickTries++ < 25 && this.time) this.time.delayedCall(150, _kickEnemyLoad);
-        };
-        _kickEnemyLoad();
-      } catch (e) { /* Hintergrund-Load ist optional — Sicherheitsnetz greift */ }
-    }
+    // (Gegner-Sprites werden jetzt zuverlaessig im Hub-preload geladen, nicht
+    //  mehr per fragilem Hintergrund-Poll hier — siehe preload().)
 
     // Debug-Direkteinstieg (?dungeon=N in startScene): sobald der Hub steht,
     // automatisch in den Dungeon absteigen — ueber denselben _enterLocation-Pfad
