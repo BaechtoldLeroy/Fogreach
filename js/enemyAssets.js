@@ -33,15 +33,25 @@
   window.queueEnemySprites = function (scene) {
     if (!scene || !scene.load) return;
     var L = scene.load;
+    var tex = scene.textures;
+    // Schon gecachte Keys NICHT erneut queuen. Ohne das re-fetchte Phasers Loader
+    // beim Dungeon-Eintritt ALLE 87 Sprites nochmal (auch wenn der Hub sie im
+    // Hintergrund schon geladen hatte) -> lange Ladezeit, egal wie lange man im
+    // Hub war. Mit dem Guard ist das GameScene.preload-Sicherheitsnetz gratis,
+    // wenn der Hub-Load fertig war, und laedt sonst nur die noch fehlenden.
+    var img = function (key, url) {
+      if (tex && typeof tex.exists === 'function' && tex.exists(key)) return;
+      L.image(key, url);
+    };
     ENEMY_TYPES.forEach(function (t) {
-      FRAMES.forEach(function (f) { L.image(t + '_' + f, 'assets/enemy/' + t + '/' + f + '.png'); });
+      FRAMES.forEach(function (f) { img(t + '_' + f, 'assets/enemy/' + t + '/' + f + '.png'); });
     });
     Object.keys(SINGLE_FALLBACKS).forEach(function (key) {
-      L.image(key, 'assets/enemy/' + SINGLE_FALLBACKS[key]);
+      img(key, 'assets/enemy/' + SINGLE_FALLBACKS[key]);
     });
     BOSSES.forEach(function (b) {
-      FRAMES.forEach(function (f) { L.image(b + '_' + f, 'assets/enemy/' + b + '/' + f + '.png'); });
-      L.image('sprite_' + b, 'assets/enemy/' + b + '/idle.png'); // sprite_boss_chain etc.
+      FRAMES.forEach(function (f) { img(b + '_' + f, 'assets/enemy/' + b + '/' + f + '.png'); });
+      img('sprite_' + b, 'assets/enemy/' + b + '/idle.png'); // sprite_boss_chain etc.
     });
   };
 })();

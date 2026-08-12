@@ -454,7 +454,21 @@ class HubSceneV2 extends Phaser.Scene {
     if (typeof window.queueEnemySprites === 'function') {
       try {
         window.queueEnemySprites(this);
-        if (this.load && !this.load.isLoading) this.load.start();
+        // WICHTIG: Beim create-Aufruf verarbeitet der Loader oft noch die
+        // NPC-Sprites aus preload (isLoading=true). Ein direktes start() verpufft
+        // dann, und nachtraeglich in die Queue gelegte Dateien laufen NIE los ->
+        // die Gegner-Sprites blieben ungeladen, das GameScene-Sicherheitsnetz lud
+        // sie erst beim Dungeon-Eintritt (lange Ladezeit). Ein once('complete')
+        // hilft NICHT, weil genau dieses Event schon feuerte (es hat create
+        // ausgeloest). Loesung: pollen, bis der Loader idle ist, DANN starten.
+        // (start() aus State COMPLETE/IDLE funktioniert zuverlaessig.)
+        let _kickTries = 0;
+        const _kickEnemyLoad = () => {
+          if (!this.load || this.load.list.size === 0) return;         // nichts (mehr) zu laden
+          if (!this.load.isLoading) { try { this.load.start(); } catch (e) {} return; }
+          if (_kickTries++ < 25 && this.time) this.time.delayedCall(150, _kickEnemyLoad);
+        };
+        _kickEnemyLoad();
       } catch (e) { /* Hintergrund-Load ist optional — Sicherheitsnetz greift */ }
     }
 
