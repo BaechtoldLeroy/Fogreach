@@ -252,7 +252,7 @@
   function groupCounts() {
     var out = {};
     var W = (typeof window !== 'undefined') ? window : {};
-    var groups = { enem: W.enemies, gold: W.goldGroup, loot: W.lootGroup, proj: W.enemyProjectiles };
+    var groups = { enem: W.enemies, gold: W.goldGroup, loot: W.lootGroup, proj: W.enemyProjectiles, obst: W.obstacles };
     Object.keys(groups).forEach(function (k) {
       try {
         var grp = groups[k];
