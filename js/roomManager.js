@@ -1089,6 +1089,39 @@ function enterRoom(scene, roomId) {
     stair.setAlpha(0.95).setDepth(40).refreshBody();
   });
 
+  // Sicherheitsnetz: zerstoerbare Props (Fass/Kiste/Geroell/Saeule ...), die auf
+  // einer Treppe liegen, entfernen. Grund: die Platzierungs-Checks nutzen
+  // STAIR_HALF (44px), das Treppen-Sprite ist aber 80px — Rand-Ueberlappungen
+  // konnten durchrutschen (bes. im proc-"verified clear"-Pfad, der Nudge/Destroy
+  // ueberspringt). Hier gegen die ECHTEN Treppen-Bounds pruefen und nur als
+  // destructible markierte Props raeumen (Waende bleiben unberuehrt). Ein Prop
+  // unter einer Treppe ist Wegwerf-Deko; die Treppe hat Vorrang.
+  if (obstacles && typeof obstacles.getChildren === 'function' && scene.stairsGroup
+      && Phaser && Phaser.Geom && Phaser.Geom.Intersects) {
+    const _stairsArr = scene.stairsGroup.getChildren();
+    if (_stairsArr.length > 0) {
+      const _obsArr = obstacles.getChildren().slice(); // Kopie: wir destroyen waehrend Iteration
+      for (let oi = 0; oi < _obsArr.length; oi++) {
+        const o = _obsArr[oi];
+        if (!o || !o.active || !(o.getData && o.getData('destructible')) || !o.getBounds) continue;
+        const ob = o.getBounds();
+        for (let si = 0; si < _stairsArr.length; si++) {
+          const s = _stairsArr[si];
+          if (!s || !s.getBounds) continue;
+          if (Phaser.Geom.Intersects.RectangleToRectangle(ob, s.getBounds())) {
+            try { if (o.body) o.body.enable = false; } catch (e) {}
+            if (Array.isArray(scene._templateWalls)) {
+              const wi = scene._templateWalls.indexOf(o);
+              if (wi >= 0) scene._templateWalls.splice(wi, 1);
+            }
+            try { o.destroy(); } catch (e) {}
+            break;
+          }
+        }
+      }
+    }
+  }
+
   // INVARIANTE: jeder Raum MUSS mindestens eine ERREICHBARE Treppe haben —
   // sonst ist der Run softgelockt. Es genuegt NICHT, dass eine Treppe existiert:
   // sie kann in einer Wand oder einer vom Spawn abgeschnittenen Tasche gelandet
