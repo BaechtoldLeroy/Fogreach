@@ -1850,11 +1850,12 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
   }
   if (!enemy) return null;
 
-  // Mini-boss stats. #65: HP-Multiplikator frueh SANFTER, damit der neue Tiefe-1..4-
-  // Climax auf der Onboarding-Rampe lesbar/schlagbar bleibt (skaliert ja ohnehin
-  // mit der run-konstanten Tiefe des Basisgegners). Ab Tiefe 5 wie bisher 5x.
+  // Mini-boss stats. HP-Multiplikator angehoben (Mini-Bosse gingen zu schnell
+  // um): Tiefe 1-2 x6, Tiefe 3-4 x7, ab Tiefe 5 x8 (skaliert zusaetzlich mit der
+  // run-konstanten Tiefe des Basisgegners). Frueh leicht flacher, damit der
+  // Tiefe-1..4-Climax auf der Onboarding-Rampe schlagbar bleibt.
   const _depth = Math.max(1, (typeof window !== 'undefined' && window.DUNGEON_DEPTH) || window.currentWave || 1);
-  const _hpMult = _depth <= 2 ? 3 : (_depth <= 4 ? 4 : 5);
+  const _hpMult = _depth <= 2 ? 6 : (_depth <= 4 ? 7 : 8);
   enemy.isMiniBoss = true;
   enemy.hp = Math.ceil(enemy.hp * _hpMult);
   enemy.maxHp = enemy.hp;
