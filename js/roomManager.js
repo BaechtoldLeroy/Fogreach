@@ -799,6 +799,12 @@ function enterRoom(scene, roomId) {
   const PLACED_STAIRS = []; // pixel coords of stairs placed in this loop
   const STAIR_SEPARATION = Math.min(Math.max(STAIR_HALF * 3, roomDiagPx * 0.30), _roomMin * 0.5);
   const STAIR_SEPARATION_SQ = STAIR_SEPARATION * STAIR_SEPARATION;
+  // Mindestabstand Treppe <-> Tuer: verhindert, dass die Treppe auf/an einer Tuer
+  // liegt (gemeldeter Bug). STAIR_HALF (44) + Tuerrahmen/-durchgang (~44) -> ~88px
+  // Zentrum-zu-Zentrum, damit der Durchgang frei bleibt. Der Tuer-Versatz unten
+  // (96px) ist bewusst groesser, sodass die tuer-abgeleitete Treppe die Pruefung
+  // besteht und trotzdem in Tuernaehe bleibt.
+  const DOOR_CLEARANCE_SQ = 88 * 88;
 
   // True if (cx, cy) is inside the room bounds with a STAIR_HALF margin AND
   // not blocked by walls or physics obstacles AND reachable from the player
@@ -807,6 +813,14 @@ function enterRoom(scene, roomId) {
   const isProceduralCandidateValid = (cx, cy) => {
     if (cx < STAIR_HALF || cx > builtWidth - STAIR_HALF) return false;
     if (cy < STAIR_HALF || cy > builtHeight - STAIR_HALF) return false;
+    // Nicht auf/an einer Tuer platzieren (Bug: Treppe lag auf einer Tuer). Gegen
+    // ALLE Tueren pruefen, nicht nur die eigene — so blockiert eine Treppe auch
+    // keinen benachbarten Durchgang.
+    for (let i = 0; i < doorList.length; i++) {
+      const ddx = cx - doorList[i].x;
+      const ddy = cy - doorList[i].y;
+      if (ddx * ddx + ddy * ddy < DOOR_CLEARANCE_SQ) return false;
+    }
     // Distance from player spawn (only when we know where the player is)
     if (playerSpawnX !== null) {
       const dpx = cx - playerSpawnX;
@@ -834,11 +848,16 @@ function enterRoom(scene, roomId) {
     // Offset stair away from wall into room interior
     let sx = d.x, sy = d.y;
     const dir = d.dir || '';
-    if (dir === 'N' || dir === 'n') sy += 64;       // wall at top → move down
-    else if (dir === 'S' || dir === 's') sy -= 64;   // wall at bottom → move up
-    else if (dir === 'W' || dir === 'w') sx += 64;   // wall at left → move right
-    else if (dir === 'E' || dir === 'e') sx -= 64;   // wall at right → move left
-    else sy -= 48; // default: assume bottom wall
+    // Versatz ins Rauminnere. Proc-Raeume: > DOOR_CLEARANCE (88), damit die
+    // Treppe die Tuer klar freihaelt (Bug: lag vorher bei 64px auf dem
+    // Tuerrahmen). Authored-Templates bleiben bei ihren getunten 64/48px
+    // (deren Ausgaenge sind handplatziert).
+    const _inset = isProceduralRoom ? 96 : 64;
+    if (dir === 'N' || dir === 'n') sy += _inset;       // wall at top → move down
+    else if (dir === 'S' || dir === 's') sy -= _inset;   // wall at bottom → move up
+    else if (dir === 'W' || dir === 'w') sx += _inset;   // wall at left → move right
+    else if (dir === 'E' || dir === 'e') sx -= _inset;   // wall at right → move left
+    else sy -= (isProceduralRoom ? 96 : 48); // default: assume bottom wall
 
     let placedX = sx, placedY = sy;
     let proceduralPlaced = false; // true if we already chose a verified spot
