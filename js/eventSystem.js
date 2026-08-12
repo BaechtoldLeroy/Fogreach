@@ -1493,6 +1493,16 @@
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2501);
     elements.push(titleText);
 
+    // Layout-Fix (Mobile): langer Text (z.B. Elaras 3-Absatz-Dialog) wuchs bei
+    // fixem Titel-Zentrum ueber die Bildschirmmitte hinaus und ueberlappte den
+    // "Weiter"-Button (der bei cy begann). Jetzt den GANZEN Block (Titel + gap +
+    // Buttons) vertikal zentrieren, oben abfangen, und die Buttons UNTER das
+    // tatsaechliche Textende setzen.
+    var _estBtnBlock = Math.min(choices.length, 3) * 44;
+    var _blockTop = Math.max(20, cy - (titleText.height + 16 + _estBtnBlock) / 2);
+    titleText.setY(_blockTop + titleText.height / 2);
+    var _buttonsTop = _blockTop + titleText.height + 16;
+
     var dismissKeyHandler = null;
     var cleanup = function () {
       scene._eventChoiceActive = false;
@@ -1516,7 +1526,7 @@
     var BTN_PAD_X = 16;
     var BTN_PAD_Y = 8;
     var BTN_GAP = 10;
-    var cursorY = cy; // top edge of next button
+    var cursorY = _buttonsTop; // top edge of next button — unter dem Titel-Text
     for (var i = 0; i < choices.length && i < 3; i++) {
       var btnText = scene.add.text(0, 0, choices[i].label, {
         fontSize: '14px', fill: '#f1e9d8', fontFamily: 'monospace',
