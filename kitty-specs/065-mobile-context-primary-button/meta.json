@@ -2,8 +2,10 @@
   "created_at": "2026-08-13T13:56:47.831784+00:00",
   "feature_number": "065",
   "feature_slug": "065-mobile-context-primary-button",
-  "friendly_name": "mobile context primary button",
+  "friendly_name": "Mobile Kontext-Primärbutton",
   "mission": "software-dev",
   "slug": "065-mobile-context-primary-button",
-  "target_branch": "main"
+  "source_description": "GitHub #80 — Mobile: Skill- & Aktionsbuttons optimieren. MVP: attack+interact zu einer kontext-sensitiven Primärzelle zusammenlegen (friedliche Ziele NPC/Tür/Loot -> Aktion, sonst Angriff).",
+  "target_branch": "main",
+  "vcs": "git"
 }
