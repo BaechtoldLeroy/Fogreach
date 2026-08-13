@@ -1,108 +1,84 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: Mobile-UI-Benchmark & Rework-Prinzipien (research)
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` | **Date**: 2026-08-13 | **Spec**: [spec.md](spec.md)
+**Input**: Research specification from `kitty-specs/067-mobile-ui-benchmark-rework/spec.md`
+**Mission**: research (question → methodology → gather → analyze → synthesize → publish)
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Beobachtender **Benchmark** der Mobile-Touch-UI führender ARPG-/Roguelite-Games entlang
+7 Achsen, erhoben in einer **Achsen×Titel-Matrix** (Zwischenartefakt), daraus zwei
+synthetisierte Markdown-Deliverables: **D-A** (Fogreach-Prinzipien mit Belegen + Delta zum
+Ist-Zustand) und **D-B** (priorisiertes Rework-Backlog, 065/#80 als Eintrag). Kein Code.
 
-## Technical Context
+## Technical Context (Methodik)
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Vorgehensart**: Beobachtender Sekundär-Benchmark (keine Nutzertests, kein Reverse-
+Engineering). Öffentlich beobachtbare UI-Praxis der Referenz-Titel + anerkannte Mobile-UX-
+Ergonomie werden erhoben und auf Fogreach übertragen.
+**Erhebungs-Struktur**: Eine Matrix `Achse × Referenz-Titel` — pro Zelle „was macht der
+Titel auf dieser Achse, wie". Verdichtet zu Prinzipien (D-A) und Rework-Items (D-B).
+**Quellen**: (1) öffentlich beobachtbare UI (Gameplay-Videos/Screenshots/Reviews/
+Store-Material der Referenz-Titel); (2) etablierte Mobile-UX-Ergonomie (Daumen-/Reach-
+Zonen, Mindest-Trefferflächen ~44–48 px, Safe-Area-Konventionen). Jede Aussage in D-A ist
+auf ≥1 Beleg rückführbar (NFR-001).
+**Belegführung**: Beobachtungen werden als solche markiert und von Empfehlungen getrennt;
+nicht-übertragbare Praktiken werden mit Grund ausgewiesen (FR-006).
+**Referenz-Titel**: Diablo Immortal, Archero, Soul Knight, Vampire Survivors (Mobile),
+Genshin Impact, Brawl Stars; optional Torchlight Infinite, Path of Exile Mobile.
+**Achsen (7)**: Daumen-Zonen/Reachability · minimaler HUD · kontextuelle Buttons ·
+Safe-Area/Notch · Lesbarkeit/Kontrast/Feedback · Auto-Targeting/Assist · Trefferflächen-
+Ergonomie.
+**Vergleichs-Baseline (Fogreach heute)**: 8-Zellen-Ability-Bar (`attack`, `slot1–4`,
+`potion`, `roll`, `interact`) + fester Joystick; HUD `js/hudV2.js`; Steuerung
+`js/mobileControls.js` / `js/mobileAbilityButtons.js`; Safe-Area `js/mobileSafeArea.js`.
+**Output-Form**: Markdown-Artefakte im Feature-Verzeichnis (`research/`). Keine
+Code-Änderung, kein Build, keine Tests am Spielcode.
+**Ziel-Plattform-Rahmen**: Phaser-Browser-Game, Touch — Empfehlungen müssen in diesem
+Rahmen umsetzbar sein (keine Nativ-only-Annahmen).
+**Scope/Umfang**: 5 Pflicht-Titel × 7 Achsen (35 Kern-Zellen) + 2 optionale Titel;
+Synthese zu D-A (≥7 Prinzipien) und D-B (priorisierte Item-Liste inkl. 065).
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*GATE: Must pass before Phase 0.*
 
-[Gates determined based on constitution file]
+Kein durchsetzbares Constitution-File aufgelöst (Governance meldet `unresolved`: Tools
+node/npm/phaser nicht in der Runtime-Registry — nicht blockierend für ein reines
+Research-Feature ohne Code/Build). **Gate: übersprungen** (keine Code-/Tool-Gates
+anwendbar). Projekt-Konventionen (Umlaute, Markdown-Doku im Feature-Verzeichnis) werden
+eingehalten.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
+kitty-specs/067-mobile-ui-benchmark-rework/
+├── plan.md                 # Diese Datei (Methodik-Plan)
+├── research.md             # Phase 0: Methodik-Entscheidungen (Decision/Rationale/Alternatives)
+├── data-model.md           # Phase 1: Entitäten (Referenz-Titel, UI-Prinzip, Rework-Item)
+├── quickstart.md           # Phase 1: Abnahme-/Validierungs-Leitfaden für D-A/D-B
+├── contracts/              # Phase 1: Format-Kontrakte der Deliverables
+│   ├── matrix.contract.md      # Achsen×Titel-Matrix (Zwischenartefakt)
+│   ├── D-A-principles.contract.md
+│   └── D-B-backlog.contract.md
+└── research/               # Phase „gather/analyze/synthesize" (in /spec-kitty.implement)
+    ├── matrix.md               # ausgefüllte Achsen×Titel-Matrix
+    ├── D-A-principles.md       # Deliverable A
+    └── D-B-backlog.md          # Deliverable B
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
-```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+**Keine.** Reines Research-/Synthese-Feature — es werden ausschließlich Markdown-Artefakte
+im Feature-Verzeichnis erzeugt. Am Spielcode (`js/…`) wird nichts geändert.
 
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
-```
-
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Research-Mission — Deliverables leben unter
+`kitty-specs/067-mobile-ui-benchmark-rework/research/`, ihre Formate als Kontrakte unter
+`contracts/`. Die spätere Umsetzung (abgeleitete Features) ist ausdrücklich NICHT Teil
+dieses Features (C-004).
 
 ## Complexity Tracking
 
-*Fill ONLY if Constitution Check has violations that must be justified*
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+*Keine Constitution-Verletzungen — Tabelle entfällt.*
