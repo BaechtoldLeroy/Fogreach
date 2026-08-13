@@ -1,108 +1,54 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: Mobile Kontext-Primärbutton (065)
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `main` | **Date**: 2026-08-13 | **Spec**: [spec.md](spec.md)
+**Mission**: software-dev · **Scope**: Mobile-only (Touch), Desktop unverändert.
 
 ## Summary
-
-[Extract from feature spec: primary requirement + technical approach from research]
+Die zwei mobilen Zellen `attack` und `interact` zu **einer** kontextsensitiven Primärzelle
+zusammenlegen. Ein pro-Frame-Poll ermittelt `hasPeacefulTarget` (NPC/Tür/Loot in Reichweite,
+NICHT Gegner/zerstörbare Props) und schaltet Glyph/Label um (⚔️ „Angr" ↔ ✋ „Aktion"); der
+Tap-Handler dispatcht kontextabhängig Angriff bzw. Interaktion über die **bestehenden** Pfade.
 
 ## Technical Context
-
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+- **Sprache/Umgebung**: Classic-Script JS, Phaser 3.70 (window-Globals, IIFE). Kein Build.
+- **Betroffene Dateien**: `js/mobileControls.js` (`ABILITY_LAYOUT`, `_interact`,
+  `__MOBILE_INTERACT_ACTIVE__`), `js/mobileAbilityButtons.js` (Dekoration/Glyph/Label +
+  `_pollEnabledState`). Optional ein kleiner Helfer (window-Global) für `hasPeacefulTarget`.
+- **Bestätigte Signal-Quellen** (nur konsumiert, nicht geändert — C-003):
+  - Hub: `HubSceneV2._activeInteractable` (gesetzt in `_refreshInteractionPrompt`, ~Z.1072/1110).
+  - Dungeon Tür: `DoorSystem` — nächste Tür < `INTERACT_DIST` (=100); Proxy `scene._doorPrompt.visible`
+    (updateDoors zeigt/versteckt den [E]-Prompt entsprechend). Sauberer: kleiner DoorSystem-Getter.
+  - Dungeon NPC/Event (z. B. Elara) + Loot: über bestehende Reichweiten; im Dungeon ggf. kein
+    `_activeInteractable` — in Phase 0 (research) geklärt, Aggregation im Helfer.
+  - Mobile-Interakt-Auslösung existiert: `mobileControls._interact()` setzt
+    `__MOBILE_INTERACT_ACTIVE__` (180 ms) + dispatcht `demonfall:mobile-interact`; main.js
+    (~Z.1930) triggert daraus `DoorSystem.tryInteractDoor`, Hub öffnet Dialog für `_activeInteractable`.
+- **Ausgeschlossen von „peaceful"**: Gegner; zerstörbare Props (`destructible`-Flag:
+  barrel/crate/statue/pillar/altar/…) → bleiben Angriff (FR-006).
+- **Perf**: Kontext-Check leichtgewichtig, läuft im bestehenden `_pollEnabledState` mit (NFR-002).
+- **Erhalten**: Cooldown-/Sekunden-Anzeige des Angriffs am Primärbutton (b19/b22/b59),
+  Icon-Padding/Label-Fixes (b59).
 
 ## Constitution Check
-
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
-
-[Gates determined based on constitution file]
+Kein durchsetzbares Constitution-File (Governance `unresolved`, nicht blockierend). **Gate
+übersprungen**. Projektkonventionen eingehalten: Umlaute, `?v=`-Cache-Buster + `GAME_VERSION`
+bumpen, 600 Tests grün, keine `STORY_VERSION`-Änderung.
 
 ## Project Structure
-
 ### Documentation (this feature)
-
 ```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
+kitty-specs/065-mobile-context-primary-button/
+├── plan.md · research.md · data-model.md · quickstart.md
+└── contracts/  (has-peaceful-target.contract.md, primary-button.contract.md)
 ```
-
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
-
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+js/mobileControls.js        # ABILITY_LAYOUT: attack+interact -> eine Primärzelle; Dispatch-Weiche
+js/mobileAbilityButtons.js  # Kontext-Poll: Glyph/Label-Swap; Tap-Dispatch nach Kontext
+# optional: window-Helfer hasPeacefulTarget(scene) (in einer der beiden Dateien)
 ```
-
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Mobile-only; genau 2 Dateien (+ optional 1 Helfer). Kein Worktree-
+Konflikt mit anderen Features. Desktop-Pfade (Tastatur) unangetastet (C-001).
 
 ## Complexity Tracking
-
-*Fill ONLY if Constitution Check has violations that must be justified*
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+Keine Constitution-Verletzungen — entfällt.
