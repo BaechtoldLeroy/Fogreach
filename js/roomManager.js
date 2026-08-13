@@ -1770,6 +1770,11 @@ function initFogOfWar() {
 }
 
 let _fogFrameCounter = 0;
+// #70: Wird gesetzt, wenn sich die Sicht-Geometrie aendert (Tuer auf/zu, Prop
+// zerstoert -> invalidateWallCache). Erzwingt EINEN sofortigen Fog-Tick (bypass
+// des Skip-Intervalls), damit das Sichtfeld nicht bis zu fogSkipInterval Frames
+// hinterherhinkt. window.forceFogUpdate() setzt es ebenfalls.
+let _forceFogTick = false;
 function updateFogOfWar() {
   const scene = this;
   if (!scene.spotlightDim || !scene.exploredRT || !player) return;
@@ -1816,7 +1821,11 @@ function updateFogOfWar() {
   // senkt den periodischen ~17ms-Fog-Frame; Sichtkegel-Edge minimal weniger reaktiv.
   const fogSkipInterval = (typeof _ovr === 'number' && _ovr > 0) ? _ovr : (isMobileFog ? 6 : 1);
   _fogFrameCounter++;
-  if (_fogFrameCounter % fogSkipInterval !== 0) return;
+  // Erzwungener Tick (Tuer/Prop -> invalidateWallCache): bypass des Skip-Intervalls,
+  // sonst haengt das Sichtfeld nach dem Oeffnen bis zu fogSkipInterval Frames nach.
+  const _forcedTick = _forceFogTick;
+  _forceFogTick = false;
+  if (!_forcedTick && _fogFrameCounter % fogSkipInterval !== 0) return;
 
   const cam = scene.cameras.main;
   const px = player.x,
@@ -1846,8 +1855,8 @@ function updateFogOfWar() {
   //    also jeden Tick (Karte bleibt reaktiv, KEIN Lag wie b54), im Stillstand
   //    ueberspringen wir (spart den Stall in Steh-/Kampfmomenten). 6px-Schwelle.
   let _doStamp;
-  if (scene._explLastX == null) {
-    _doStamp = true;
+  if (_forcedTick || scene._explLastX == null) {
+    _doStamp = true; // Tuer auf/erster Tick: erkundete Flaeche sofort mitstempeln
   } else {
     const _mdx = px - scene._explLastX, _mdy = py - scene._explLastY;
     _doStamp = (_mdx * _mdx + _mdy * _mdy) > 36;
@@ -1995,6 +2004,10 @@ function invalidateWallCache() {
   _wallCache = null;
   _wallGrid = null;
   if (obstacles) obstacles._walls_version = (obstacles._walls_version || 0) + 1;
+  // #70: Sicht-Geometrie hat sich geaendert (Tuer, zerstoerter Prop) -> naechsten
+  // Fog-Tick erzwingen, damit das Sichtfeld nicht bis zu fogSkipInterval Frames
+  // hinterherhinkt (Tuer-Oeffnen fuehlte sich traege an).
+  _forceFogTick = true;
 }
 
 function isBlockedByObstacle(x, y) {
@@ -2013,6 +2026,9 @@ function isBlockedByObstacle(x, y) {
   return false;
 }
 window.invalidateWallCache = invalidateWallCache;
+// #70: Erzwingt EINEN sofortigen Fog-Tick (bypass Skip-Intervall) — fuer Systeme,
+// die die Sicht aendern, ohne den Wand-Cache zu invalidieren.
+window.forceFogUpdate = function () { _forceFogTick = true; };
 
 const VISION_MIN_RADIUS = 0; // No artificial minimum — walls block immediately
 
