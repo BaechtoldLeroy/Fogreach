@@ -1693,6 +1693,7 @@ function initFogOfWar() {
     ? _explOvr
     : ((typeof isMobile !== 'undefined' && isMobile) ? 0.25 : 1);
   scene._exploredRes = explRes;
+  scene._explLastX = null; // #70: Bewegungs-Tracker fuer den Explored-Stamp neu (frischer Stamp im neuen Raum)
   scene.exploredRT = scene.add
     .renderTexture(0, 0, Math.ceil(worldW * explRes), Math.ceil(worldH * explRes))
     .setOrigin(0, 0)
@@ -1830,17 +1831,20 @@ function updateFogOfWar() {
 
   // 2) Explored stamp in WORLD coords — exploredRT is a world-sized RT,
   //    so previously-explored tiles remain painted as the camera scrolls.
-  // #70: Der exploredRT.draw ist der teure Teil des Fog-Frames (Framebuffer-Bind/
-  //    Stall auf der welt-grossen RT, ~17ms). Der A/B-Dump zeigte: Rays senken half
-  //    NICHT, nur die Frequenz. Die "erkundet"-Erinnerung aendert sich aber langsam,
-  //    also stempeln wir sie auf Mobile nur jeden 3. Fog-Tick — der reaktive Teil
-  //    (Spotlight/Gegner-Maske unten) laeuft weiter jeden Tick. Kein Gap, weil der
-  //    220px-Sichtradius zwischen den Stamps (~60-90px Bewegung) stark ueberlappt.
-  scene._explStampCtr = (scene._explStampCtr || 0);
-  const _explEvery = (typeof isMobile !== 'undefined' && isMobile) ? 3 : 1;
-  const _doStamp = (scene._explStampCtr % _explEvery) === 0;
-  scene._explStampCtr++;
+  // #70: Der exploredRT.draw ist der teure Teil des Fog-Frames (Framebuffer-Stall auf
+  //    der welt-grossen RT). Er muss aber NUR neu stempeln, wenn sich die erkundete
+  //    Flaeche aendert = wenn der Spieler sich BEWEGT hat. Beim Laufen stempeln wir
+  //    also jeden Tick (Karte bleibt reaktiv, KEIN Lag wie b54), im Stillstand
+  //    ueberspringen wir (spart den Stall in Steh-/Kampfmomenten). 6px-Schwelle.
+  let _doStamp;
+  if (scene._explLastX == null) {
+    _doStamp = true;
+  } else {
+    const _mdx = px - scene._explLastX, _mdy = py - scene._explLastY;
+    _doStamp = (_mdx * _mdx + _mdy * _mdy) > 36;
+  }
   if (!_P.noexpl && _doStamp) {
+    scene._explLastX = px; scene._explLastY = py;
     // Koords mit _exploredRes skalieren: die RT ist auf Mobile halb-aufgelöst
     // (WP06), wird aber zur Anzeige auf Weltgröße hochskaliert.
     const _res = scene._exploredRes || 1;
