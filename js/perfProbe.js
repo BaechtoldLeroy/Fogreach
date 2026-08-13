@@ -246,6 +246,38 @@
     return { active: -1, total: -1 };
   }
 
+  // --- CPU-Timing: wo geht die Frame-Zeit hin? -----------------------
+  // Wrappt GameScene.update (JS-CPU pro Frame gesamt) + updateFogOfWar
+  // (Fog-Anteil). Zeigt, ob der Flaschenhals CPU (update) statt GPU (draws) ist
+  // und wie viel davon das Fog frisst. Nur wenn die Funktionen existieren.
+  var _cpu = { updMs: 0, updN: 0, fogMs: 0, fogN: 0 };
+  function hookSceneTiming(game) {
+    try {
+      var gs = game.scene.getScene('GameScene');
+      if (!gs || gs.__perfCpuHooked) return;
+      gs.__perfCpuHooked = true;
+      if (typeof gs.update === 'function') {
+        var origU = gs.update;
+        gs.update = function (t, d) {
+          var s = _now();
+          var r = origU.call(this, t, d);
+          _cpu.updMs += _now() - s; _cpu.updN++;
+          return r;
+        };
+      }
+      if (typeof gs.updateFogOfWar === 'function') {
+        var origF = gs.updateFogOfWar;
+        gs.updateFogOfWar = function () {
+          var s = _now();
+          var r = origF.apply(this, arguments);
+          _cpu.fogMs += _now() - s; _cpu.fogN++;
+          return r;
+        };
+      }
+    } catch (e) { /* Hook optional */ }
+  }
+  function _now() { try { return performance.now(); } catch (e) { return 0; } }
+
   // Sprite-Poster aufschluesseln: aktive/sichtbare Mitglieder der grossen
   // sprite-produzierenden Gruppen. Zeigt, ob der Sprite-Draw-Posten von Gegnern,
   // Gold, Loot oder Projektilen getrieben wird.
@@ -317,6 +349,7 @@
   var preEl = null;
   function tick(game) {
     try {
+      hookSceneTiming(game); // CPU-Timing-Hooks setzen, sobald GameScene existiert
       var scene = activeScene(game);
       var fps = game.loop && game.loop.actualFps ? game.loop.actualFps : 0;
       var ms = game.loop && game.loop.delta ? game.loop.delta : 0;
@@ -351,9 +384,11 @@
 
       if (preEl) {
         // Kompakt: 2 Zeilen fuers schnelle A/B (der volle Report steckt im DUMP).
+        var _u = _cpu.updN ? (_cpu.updMs / _cpu.updN) : 0;
+        var _f = _cpu.fogN ? (_cpu.fogMs / _cpu.fogN) : 0;
         preEl.textContent =
           fps.toFixed(0) + 'fps ' + ms.toFixed(0) + 'ms · en' + ec.active + ' · dr' + DRAW.last + '\n' +
-          histTop(scene ? visibleTypeHistogram(scene) : {}, 4);
+          'upd' + _u.toFixed(1) + ' fog' + _f.toFixed(1) + ' · ' + histTop(scene ? visibleTypeHistogram(scene) : {}, 3);
       }
     } catch (e) { /* keep ticking */ }
   }
@@ -380,6 +415,13 @@
         textSample: s.textSample || []
       };
     }
+    // CPU-Timing (GameScene, global gemittelt): zeigt, ob der Flaschenhals die
+    // JS-update() ist (CPU) statt der Draws (GPU), und wie viel davon das Fog ist.
+    out.cpu = {
+      updateMsAvg: _cpu.updN ? Math.round((_cpu.updMs / _cpu.updN) * 100) / 100 : 0,
+      fogMsAvg: _cpu.fogN ? Math.round((_cpu.fogMs / _cpu.fogN) * 100) / 100 : 0,
+      updateFrames: _cpu.updN
+    };
     try {
       var rows = [];
       for (var c in out.contexts) rows.push(Object.assign({ context: c }, out.contexts[c]));
