@@ -1256,6 +1256,9 @@ function create() {
     }
   }
   createAllGraphics.call(this);
+  // #70: Welt-Objekt-Atlas bauen (Hindernisse/Props/Deko in EINE Textur) -> weniger
+  // Draw-Calls in grossen Raeumen. Idempotent, degradiert bei Fehler auf Einzeltexturen.
+  if (typeof window.buildWorldAtlas === 'function') window.buildWorldAtlas(this);
   // Initialize particle effects system
   if (window.ParticleFactory) {
     window.particleFactory = new window.ParticleFactory(this);

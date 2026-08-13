@@ -2109,3 +2109,82 @@ function createPropTextures(scene) {
 if (typeof window !== 'undefined') {
   window.createPropTextures = createPropTextures;
 }
+
+// ========== Welt-Objekt-Atlas (#70, GPU-Draw-Reduktion) ==========
+// Hindernisse/Props/Deko werden prozedural als je EIGENE Textur erzeugt (graphics.js).
+// Im Top-Down-Rendern wechseln sich diese vielen Texturen ab -> jeder Wechsel = ein
+// eigener Draw-Call (large-room: ~247/Frame). Loesung: alle kleinen Welt-Objekt-
+// Texturen EINMALIG in EINE Canvas-Textur ('worldAtlas') packen + Frames definieren.
+// Konsumenten (obstacles.create / add.image) zeichnen dann Frames DERSELBEN Basis-
+// textur -> Phasers Batcher flusht nicht mehr pro Objekt. Originaltexturen bleiben als
+// Fallback erhalten; schlaegt der Bau fehl, laufen alle Pfade unveraendert weiter.
+function buildWorldAtlas(scene) {
+  try {
+    if (!scene || !scene.textures || typeof document === 'undefined') return;
+    if (scene.textures.exists('worldAtlas')) return;
+    // Deko-Props sind lazy -> vor dem Packen sicher erzeugen.
+    if (typeof createPropTextures === 'function') {
+      try { createPropTextures(scene); } catch (e) { /* optional */ }
+    }
+    var KEYS = [
+      'obstacleWall', 'obstacleTree', 'obstacleRock',
+      'pillar_small', 'pillar_large', 'statue_knight', 'brazier', 'crate',
+      'barrel', 'rubble', 'altar',
+      'chest_small', 'chest_medium', 'chest_large',
+      'prop_barrel', 'prop_crate', 'prop_pillar', 'prop_rubble', 'prop_puddle', 'prop_cobweb'
+    ];
+    var items = [];
+    for (var i = 0; i < KEYS.length; i++) {
+      var k = KEYS[i];
+      if (!scene.textures.exists(k)) continue;
+      var src = scene.textures.get(k).getSourceImage();
+      if (!src || !src.width || !src.height) continue;
+      items.push({ key: k, img: src, w: src.width, h: src.height });
+    }
+    if (!items.length) return;
+    // Regal-Packing (nach Hoehe absteigend), 2px Rand gegen Bleeding bei Skalierung.
+    items.sort(function (a, b) { return b.h - a.h; });
+    var PAD = 2, MAXW = 512;
+    var x = PAD, y = PAD, rowH = 0;
+    for (var j = 0; j < items.length; j++) {
+      var it = items[j];
+      if (x + it.w + PAD > MAXW) { x = PAD; y += rowH + PAD; rowH = 0; }
+      it.ax = x; it.ay = y;
+      x += it.w + PAD;
+      if (it.h > rowH) rowH = it.h;
+    }
+    var atlasH = y + rowH + PAD;
+    var canvas = document.createElement('canvas');
+    canvas.width = MAXW; canvas.height = atlasH;
+    var ctx = canvas.getContext('2d');
+    for (var m = 0; m < items.length; m++) {
+      var t = items[m];
+      ctx.drawImage(t.img, t.ax, t.ay, t.w, t.h);
+    }
+    var tex = scene.textures.addCanvas('worldAtlas', canvas);
+    if (!tex) return;
+    var frames = {};
+    for (var n = 0; n < items.length; n++) {
+      var f = items[n];
+      tex.add(f.key, 0, f.ax, f.ay, f.w, f.h);
+      frames[f.key] = true;
+    }
+    window.__worldAtlasFrames = frames;
+  } catch (e) {
+    window.__worldAtlasFrames = null;
+    try { console.warn('[buildWorldAtlas] fehlgeschlagen, nutze Einzeltexturen', e); } catch (_) {}
+  }
+}
+
+// Liefert [textureKey, frame] fuer add.image/group.create: den Atlas, wenn der Key als
+// Frame existiert, sonst die Originaltextur (frame undefined). Ein einziger Umschaltpunkt.
+function worldTexArgs(key) {
+  var f = window.__worldAtlasFrames;
+  if (f && f[key]) return ['worldAtlas', key];
+  return [key, undefined];
+}
+
+if (typeof window !== 'undefined') {
+  window.buildWorldAtlas = buildWorldAtlas;
+  window.worldTexArgs = worldTexArgs;
+}

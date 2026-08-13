@@ -245,8 +245,10 @@ function placeObstaclesForWave() {
     const y = Phaser.Math.Between(margin, H - margin);
     const key = Phaser.Utils.Array.GetRandom(types);
 
+    // #70: Atlas-Frame statt Einzeltextur, wenn vorhanden (Batching).
+    const _ta = (typeof window.worldTexArgs === 'function') ? window.worldTexArgs(key) : [key, undefined];
     const obs = obstacles
-      .create(x, y, key)
+      .create(x, y, _ta[0], _ta[1])
       .setData('type', key)
       .setOrigin(0.5, 0.5);
     obs.refreshBody();

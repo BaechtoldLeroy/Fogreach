@@ -874,7 +874,9 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       const scaleVar = 0.85 + Math.random() * 0.3;  // 0.85–1.15
       const alphaVar = 0.55 + Math.random() * 0.25;  // 0.55–0.80
       const depthVar = d.type === 'prop_pillar' ? 41 : -2; // pillars render above floor
-      const prop = scene.add.image(dpx, dpy, d.type)
+      // #70: Atlas-Frame statt Einzeltextur, wenn vorhanden (Batching).
+      const _ta = (typeof window.worldTexArgs === 'function') ? window.worldTexArgs(d.type) : [d.type, undefined];
+      const prop = scene.add.image(dpx, dpy, _ta[0], _ta[1])
         .setDepth(depthVar)
         .setAlpha(alphaVar)
         .setScale(scaleVar);
@@ -1410,7 +1412,10 @@ function spawnObstacle(x, y, key) {
     warnMissingTexture(scene, fallback, 'obstacle fallback');
     textureKey = fallback;
   }
-  const o = obstacles.create(x, y, textureKey);
+  // #70: Atlas-Frame statt Einzeltextur, wenn vorhanden (Batching). Auf den bereits
+  // aufgeloesten textureKey anwenden (nach Fallback), damit auch 'pillar'->'pillar_small' greift.
+  const _ta = (typeof window.worldTexArgs === 'function') ? window.worldTexArgs(textureKey) : [textureKey, undefined];
+  const o = obstacles.create(x, y, _ta[0], _ta[1]);
 
   // Standard-Setup
   o.setOrigin(0.5, 0.5);
