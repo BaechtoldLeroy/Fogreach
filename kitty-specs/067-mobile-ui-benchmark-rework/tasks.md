@@ -60,10 +60,10 @@ priorisieren (Top-3 eindeutig), 065/#80 als Eintrag; Format nach `contracts/D-B-
 **Independent test**: quickstart.md Schritt 3+4 erfüllt.
 **Dependencies**: WP01, WP02.
 
-- [ ] T011 Rework-Items aus den Prinzipien ableiten (inkl. 065/#80 als eigenen Eintrag).
-- [ ] T012 Je Item Impact + Aufwand (H/M/N) + Prinzip-/Achsen-Bezug einschätzen.
-- [ ] T013 Nach Impact×Aufwand priorisieren (Quick-Wins zuerst; Tie-Break R5; Top-3 eindeutig).
-- [ ] T014 D-B nach Kontrakt formatieren + Selbstprüfung (quickstart Schritt 3+4).
+- [x] T011 Rework-Items aus den Prinzipien ableiten (inkl. 065/#80 als eigenen Eintrag).
+- [x] T012 Je Item Impact + Aufwand (H/M/N) + Prinzip-/Achsen-Bezug einschätzen.
+- [x] T013 Nach Impact×Aufwand priorisieren (Quick-Wins zuerst; Tie-Break R5; Top-3 eindeutig).
+- [x] T014 D-B nach Kontrakt formatieren + Selbstprüfung (quickstart Schritt 3+4).
 
 **Risiken**: unklare Reihenfolge → NFR-002 Top-3 eindeutig; 065 vergessen → FR-005-Checkliste.
 
