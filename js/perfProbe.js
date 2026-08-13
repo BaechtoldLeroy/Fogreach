@@ -213,6 +213,34 @@
     return h;
   }
 
+  // Diagnose: WELCHE Textur liegt auf dem Boden? Histogramm der Textur-Schluessel
+  // aller sichtbaren Image/Sprite mit depth < 45 (Boden -5 bis Hindernisse ~42),
+  // Key = 'texturKey[:frame] @dTIEFE'. Damit laesst sich ein unbekanntes Boden-
+  // Objekt (z.B. "der graue Kreis") eindeutig benennen statt zu raten.
+  function floorTextureHistogram(scene) {
+    var h = {};
+    try {
+      var walk = function (arr, parentVis) {
+        for (var i = 0; i < arr.length; i++) {
+          var c = arr[i];
+          if (!c) continue;
+          var vis = parentVis && (c.visible !== false) && (c.alpha === undefined || c.alpha > 0.01);
+          if (c.list && c.list.length) { walk(c.list, vis); continue; }
+          if (!vis) continue;
+          if (c.type !== 'Image' && c.type !== 'Sprite') continue;
+          var d = (typeof c.depth === 'number') ? c.depth : 0;
+          if (d >= 45) continue;
+          var key = (c.texture && c.texture.key) ? c.texture.key : '?';
+          var fr = (c.frame && c.frame.name != null && c.frame.name !== '__BASE') ? (':' + c.frame.name) : '';
+          var kk = key + fr + ' @d' + Math.round(d);
+          h[kk] = (h[kk] || 0) + 1;
+        }
+      };
+      walk(scene.children.list, true);
+    } catch (e) { /* partial ok */ }
+    return h;
+  }
+
   // Sammelt bis zu `max` Text-Inhalte (Diagnose: woher der hohe Text-Grundwert?).
   function collectTextSamples(scene, max) {
     var out = [];
@@ -441,6 +469,13 @@
       slowFrameUpdateMsAvg: _cpu.slowN ? Math.round((_cpu.slowUpdMs / _cpu.slowN) * 100) / 100 : 0,
       updateFrames: _cpu.updN
     };
+    // Boden-Textur-Histogramm der aktiven GameScene (Diagnose "grauer Kreis").
+    try {
+      var gsFloor = window.game && window.game.scene.getScene('GameScene');
+      if (gsFloor && gsFloor.scene && gsFloor.scene.isActive()) {
+        out.floorTextures = floorTextureHistogram(gsFloor);
+      }
+    } catch (e) { /* optional */ }
     try {
       var rows = [];
       for (var c in out.contexts) rows.push(Object.assign({ context: c }, out.contexts[c]));
