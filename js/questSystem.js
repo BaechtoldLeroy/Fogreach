@@ -102,7 +102,7 @@
     magistrat_verification: {
       id: 'magistrat_verification',
       title: 'Verifikation des Magistrats',
-      description: 'Sichere die Umgebung — beseitige 8 Störer während der Magistrat die Akten ordnet.',
+      description: 'Beschaffe das ratsgesiegelte Verifikationsdokument für den Magistrat.',
       npcId: 'aldric',
       type: 'fetch',
       chain: 2,
@@ -772,7 +772,7 @@
       'quest.harren_daughter_investigation.title': 'The Vanished Daughter',
       'quest.harren_daughter_investigation.description': 'Find the mayor daughter\'s journal fragment in the Rathauskeller.',
       'quest.magistrat_verification.title': 'Magistrate Verification',
-      'quest.magistrat_verification.description': 'Secure the area — defeat 8 trespassers while the Magistrate handles the paperwork.',
+      'quest.magistrat_verification.description': 'Obtain the council-sealed verification document for the Magistrate.',
       'quest.klerus_purification.title': 'Purification of the Lower Chambers',
       'quest.klerus_purification.description': 'Cleanse the lower Rathauskeller chambers — defeat 3 elite enemies. The heretic leaders only lurk from depth 3.',
       'quest.garde_patrol_expansion.title': 'Patrol Expansion',
