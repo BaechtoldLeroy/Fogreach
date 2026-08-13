@@ -44,10 +44,10 @@ Empfehlung → Delta zum Ist → Übertragbarkeit), Format nach `contracts/D-A-p
 **Independent test**: quickstart.md Schritt 2 erfüllt.
 **Dependencies**: WP01.
 
-- [ ] T007 Je Achse Beleglage aus der Matrix verdichten (Beobachtung/Beleg).
-- [ ] T008 Je Achse Fogreach-Empfehlung + Delta zum Ist-Zustand formulieren.
-- [ ] T009 Übertragbarkeit prüfen; nicht übertragbare Praktiken mit Grund markieren (FR-006).
-- [ ] T010 D-A nach Kontrakt formatieren + Selbstprüfung (quickstart Schritt 2).
+- [x] T007 Je Achse Beleglage aus der Matrix verdichten (Beobachtung/Beleg).
+- [x] T008 Je Achse Fogreach-Empfehlung + Delta zum Ist-Zustand formulieren.
+- [x] T009 Übertragbarkeit prüfen; nicht übertragbare Praktiken mit Grund markieren (FR-006).
+- [x] T010 D-A nach Kontrakt formatieren + Selbstprüfung (quickstart Schritt 2).
 
 **Risiken**: Empfehlung ohne Beleg/Delta → Kontrakt-Pflichtfelder erzwingen beides; Cargo-Cult → FR-006-Markierung.
 
