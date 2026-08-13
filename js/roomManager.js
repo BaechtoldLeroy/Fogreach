@@ -1830,7 +1830,17 @@ function updateFogOfWar() {
 
   // 2) Explored stamp in WORLD coords — exploredRT is a world-sized RT,
   //    so previously-explored tiles remain painted as the camera scrolls.
-  if (!_P.noexpl) {
+  // #70: Der exploredRT.draw ist der teure Teil des Fog-Frames (Framebuffer-Bind/
+  //    Stall auf der welt-grossen RT, ~17ms). Der A/B-Dump zeigte: Rays senken half
+  //    NICHT, nur die Frequenz. Die "erkundet"-Erinnerung aendert sich aber langsam,
+  //    also stempeln wir sie auf Mobile nur jeden 3. Fog-Tick — der reaktive Teil
+  //    (Spotlight/Gegner-Maske unten) laeuft weiter jeden Tick. Kein Gap, weil der
+  //    220px-Sichtradius zwischen den Stamps (~60-90px Bewegung) stark ueberlappt.
+  scene._explStampCtr = (scene._explStampCtr || 0);
+  const _explEvery = (typeof isMobile !== 'undefined' && isMobile) ? 3 : 1;
+  const _doStamp = (scene._explStampCtr % _explEvery) === 0;
+  scene._explStampCtr++;
+  if (!_P.noexpl && _doStamp) {
     // Koords mit _exploredRes skalieren: die RT ist auf Mobile halb-aufgelöst
     // (WP06), wird aber zur Anzeige auf Weltgröße hochskaliert.
     const _res = scene._exploredRes || 1;
