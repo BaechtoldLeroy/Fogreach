@@ -343,6 +343,15 @@ function initDungeonRun() {
         : { key: 'medium', width: 80, height: 80 };
       procWidth = _bucket.width;
       procHeight = _bucket.height;
+      // #70: Auf Mobile Riesenraeume deckeln. Der large-Bucket (bis 116x107, Flaeche
+      // ~12.400) erzeugt GPU-Monster: ~28 Gegner + ~179 Hindernisse + 200+ Sprites ->
+      // ~34fps. Da Gegnerzahl (Flaeche/85000) UND Prop-Dichte (pro Kammer-Flaeche) mit
+      // der Groesse skalieren, senkt ein Dimensions-Deckel alles proportional mit,
+      // OHNE die Dichte zu erhoehen (kein Gedraenge). ~oberes-Medium; Werte tunebar.
+      if (typeof isMobile !== 'undefined' && isMobile) {
+        procWidth = Math.min(procWidth, 74);
+        procHeight = Math.min(procHeight, 64);
+      }
       var _style = (window.ProceduralRooms && window.ProceduralRooms.pickProcStyle)
         ? window.ProceduralRooms.pickProcStyle(Math.random, _bucket.key)
         : 'cave';
