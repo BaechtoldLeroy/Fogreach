@@ -1801,7 +1801,10 @@ function updateFogOfWar() {
   // weniger reaktiv (≈15Hz). __PERF.fogInterval erlaubt Live-Tuning (?perf).
   const isMobileFog = !!(typeof isMobile !== 'undefined' && isMobile);
   const _ovr = window.__PERF && window.__PERF.fogInterval;
-  const fogSkipInterval = (typeof _ovr === 'number' && _ovr > 0) ? _ovr : (isMobileFog ? 4 : 1);
+  // #70: 4->6 auf Mobile. A/B-Dump zeigte Fog = ~2/3 der CPU-Last (updateMsAvg
+  // 15.5 mit Fog vs 5.7 ohne, fpsAvg 42->50). Seltener stempeln (10Hz statt 15Hz)
+  // senkt den periodischen ~17ms-Fog-Frame; Sichtkegel-Edge minimal weniger reaktiv.
+  const fogSkipInterval = (typeof _ovr === 'number' && _ovr > 0) ? _ovr : (isMobileFog ? 6 : 1);
   _fogFrameCounter++;
   if (_fogFrameCounter % fogSkipInterval !== 0) return;
 
@@ -1895,7 +1898,7 @@ function buildRandomRoom(scene, room) {
 const VISION_RADIUS = 220;
 // Mobile gets fewer rays (90 vs 180) to reduce CPU cost
 const VISION_RAYS_DESKTOP = 180;
-const VISION_RAYS_MOBILE = 64; // 053: 64 reicht für runde Sicht, halbiert Raycast vs 180-Desktop
+const VISION_RAYS_MOBILE = 48; // #70: 64->48, senkt Raycast ~25% (48 Rays = noch rund genug)
 // BUGFIX (053): früher ein load-time const — aber roomManager.js lädt VOR
 // main.js, wo `isMobile` erst gesetzt wird. Dadurch war isMobile beim Laden
 // immer undefined -> VISION_RAYS dauerhaft 180 (Desktop), auch auf Mobile.
