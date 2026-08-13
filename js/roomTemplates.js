@@ -562,37 +562,10 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       scene._bakedFloorKeys.push(bakedKey);
     }
 
-    // Scatter 8-12 random "detail tiles" to break up tiling repetition.
-    // Perf (053 WP02): alle in EIN Graphics-Objekt zeichnen statt 8-12
-    // separate — jedes Graphics ist ein eigener Draw-Call. Visuell identisch.
-    if (scene.add?.graphics) {
-      const scatterCount = Phaser.Math.Between(8, 12);
-      const detGfx = scene.add.graphics().setDepth(-4);
-      for (let si = 0; si < scatterCount; si++) {
-        const stx = Phaser.Math.Between(2, W - 3);
-        const sty = Phaser.Math.Between(2, H - 3);
-        if (isWalkableTile(stx, sty)) {
-          const spx = ox + stx * T + T / 2;
-          const spy = oy + sty * T + T / 2;
-          const kind = Math.random();
-          if (kind < 0.35) {
-            detGfx.fillStyle(0x000000, 0.1 + Math.random() * 0.15);
-            detGfx.fillCircle(spx, spy, 3 + Math.random() * 4);
-          } else if (kind < 0.65) {
-            detGfx.fillStyle(0xffffff, 0.05 + Math.random() * 0.1);
-            detGfx.fillCircle(spx, spy, 2 + Math.random() * 5);
-          } else {
-            detGfx.lineStyle(1, 0x000000, 0.1 + Math.random() * 0.15);
-            detGfx.beginPath();
-            detGfx.moveTo(spx - 4, spy);
-            detGfx.lineTo(spx + 2, spy + 4);
-            detGfx.lineTo(spx + 6, spy + 2);
-            detGfx.strokePath();
-          }
-        }
-      }
-      templateWalls.push(detGfx);
-    }
+    // Boden-Detail-Streuer ENTFERNT (#70): malte 8-12 kleine dunkle/helle Kreise
+    // + Risse pro Raum (depth -4) zur Kachel-Aufbrechung. Nach der Prop-Dichte-
+    // Reduktion fielen v.a. die dunklen Kreise als deplatzierte "graue Kreise" auf
+    // dem leereren Boden auf -> auf Nutzerwunsch komplett raus.
   }
 
   const canRenderWalls = !!(wallTexture && scene.add?.tileSprite);
