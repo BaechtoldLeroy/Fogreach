@@ -38,12 +38,13 @@ grau anzeigen, und HUD-Randinfos (Stats) verdichten.
 **Beobachtung/Beleg**: DI trennt Angriff/Skills, verlagert das Aufheben aber auf **Auto-
 Pickup**; Genshin nutzt einen **kontextuellen Interact-Prompt** bei Reichweite; Soul Knight
 teilt sich Feuer+Interagieren einen Button.
-**Empfehlung für Fogreach**: (1) `attack` + `interact` zu **einem kontextsensitiven
-Primärbutton** zusammenlegen (friedliches Ziel → Aktion, sonst Angriff) — deckt sich mit
-Feature 065. (2) Zusätzlich **Auto-Pickup** von Loot wie DI, damit „Interagieren" seltener
-gebraucht wird und der Kontext-Button primär Angriff/Dialog/Tür bleibt.
-**Delta zum Ist-Zustand**: Fogreach hat redundante getrennte Zellen `attack` + `interact`,
-kein Auto-Pickup.
+**Empfehlung für Fogreach**: `attack` + `interact` zu **einem kontextsensitiven Primärbutton**
+zusammenlegen (friedliches Ziel → Aktion, sonst Angriff) — deckt sich mit Feature 065.
+**Auto-Pickup existiert bereits** (Gold-Overlap + magnetische Anziehung via Wissensbaum,
+`pickupAddRange`) und reduziert den Interakt-Bedarf schon heute; der Kontext-Button bleibt
+damit v. a. Angriff/Dialog/Tür.
+**Delta zum Ist-Zustand**: Fogreach hat redundante getrennte Zellen `attack` + `interact`
+(Auto-Pickup ist schon vorhanden).
 **Übertragbarkeit**: übertragbar.
 
 ## A4 — Safe-Area / Notch / Ränder
@@ -60,12 +61,13 @@ offen ist die *Verifikation* der Cluster-Platzierung.
 ## A5 — Lesbarkeit / Kontrast / Feedback
 **Beobachtung/Beleg**: Genshin zeigt **radiale Cooldown-Timer** an Skill-Buttons + Ladezustand
 am Burst-Icon; DI gated Fähigkeiten sichtbar über Cooldowns an den Buttons.
-**Empfehlung für Fogreach**: (1) Cooldown als **radialen Sweep** über dem Button darstellen
-(nicht nur Sekundenzahl) + klares „bereit"-Aufblitzen. (2) **Label-Kontrast** auf hell
-gefärbten Buttons (z. B. Cyan Frostnova/Wirbelwind) sicherstellen (dunkler Text/Outline).
-**Delta zum Ist-Zustand**: Fogreach zeigt Sekunden + Labels (zuletzt gefixt, gameNow-korrekt),
-aber keinen radialen Sweep; Kontrast auf hellen Buttons ist ungeprüft.
-**Übertragbarkeit**: übertragbar.
+**Empfehlung für Fogreach**: **Cooldown-Darstellung bleibt wie sie ist** (Sekunden + Labels,
+gameNow-korrekt) — bewusste Entscheidung, kein radialer Sweep nötig. Einzige Empfehlung auf
+dieser Achse: **Label-Kontrast** auf hell gefärbten Buttons (z. B. Cyan Frostnova/Wirbelwind)
+sicherstellen (dunkler Text/Outline).
+**Delta zum Ist-Zustand**: Cooldown-Anzeige ist ok und wird beibehalten; offen ist nur der
+Kontrast auf hellen Buttons.
+**Übertragbarkeit**: übertragbar (nur Kontrast; radialer Sweep bewusst NICHT übernommen).
 
 ## A6 — Auto-Targeting / Assist (Kampf bleibt manuell)
 **Beobachtung/Beleg**: DI-Kampf ist **manuell** (Auto-Pickup/Auto-Navigate ja, Angriff nein);
@@ -73,11 +75,12 @@ Genshin **auto-targetet** den nächsten Gegner (Feuern bleibt gerichtet-automati
 Auto-Attack-Titel (AR/VS/SK) feuern vollautomatisch.
 **Empfehlung für Fogreach**: **Kein Auto-Attack** (Leitbild-Entscheidung). Optional und
 **niedrig priorisiert**: eine Genshin-artige **Ziel-*hilfe*** (Angriff/Skill richtet sich auf
-den nächsten Gegner), Feuern bleibt spielergetriggert. Nicht-Kampf-Erleichterung: Auto-Pickup
-(s. A3).
-**Delta zum Ist-Zustand**: Fogreach ist voll manuell, ohne Zielhilfe/Auto-Pickup.
+den nächsten Gegner), Feuern bleibt spielergetriggert. Nicht-Kampf-Erleichterung Auto-Pickup
+ist bereits vorhanden (s. A3).
+**Delta zum Ist-Zustand**: Fogreach ist voll manuell und hat bereits Auto-Pickup; es fehlt nur
+(optional) die Zielhilfe.
 **Übertragbarkeit**: **Auto-Attack: nicht übertragbar** (bewusste Leitbild-Entscheidung —
-Fogreach bleibt DI-Stil). Zielhilfe/Auto-Pickup: übertragbar, optional.
+Fogreach bleibt DI-Stil). Zielhilfe: übertragbar, optional.
 
 ## A7 — Button-Größe & Trefferflächen-Ergonomie
 **Beobachtung/Beleg**: DI nutzt bewusst **überdimensionierte**, daumenfreundliche Skill-Buttons
@@ -92,11 +95,11 @@ Targets; Mindestgrößen ungeprüft.
 ---
 
 ## Zusammenfassung (Leitbild-gefiltert)
-Volles DI-ARPG-Modell: manueller Kampf, aber **weniger Reibung + bessere Lesbarkeit/
-Ergonomie**. Kern-Empfehlungen: kontextueller Primärbutton (065) + Auto-Pickup (A3);
-Reachability-Anordnung + ≥48 px + größter Primärbutton (A1/A7); radialer Cooldown + Kontrast
-(A5); leere Slots ausblenden (A2); Cluster-Platzierung in Safe-Area verifizieren (A4).
-Bewusst **draußen**: Auto-Attack (A6).
+Volles DI-ARPG-Modell: manueller Kampf, aber **bessere Lesbarkeit/Ergonomie**. Kern-
+Empfehlungen: kontextueller Primärbutton (065, A3); Reachability-Anordnung + ≥48 px + größter
+Primärbutton (A1/A7); Label-Kontrast auf hellen Buttons (A5); leere Slots ausblenden (A2);
+Cluster-Platzierung in Safe-Area verifizieren (A4). Bereits vorhanden (kein Handlungsbedarf):
+Auto-Pickup, Cooldown-Anzeige. Bewusst **draußen**: Auto-Attack (A6), radialer Cooldown-Sweep.
 
 ## Selbstprüfung (quickstart Schritt 2)
 - [x] Je Achse ≥1 Prinzip-Block (A1–A7).
