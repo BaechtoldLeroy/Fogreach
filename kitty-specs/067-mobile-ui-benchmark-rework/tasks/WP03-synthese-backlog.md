@@ -64,3 +64,7 @@ jedes Item auf ein Prinzip?
 ## Branch Strategy
 Plan/Basis-Branch: `main`. Merge-Ziel: `main`. Dependencies WP01+WP02 →
 `spec-kitty implement WP03 --base WP02`.
+
+## Activity Log
+
+- 2026-08-13T15:32:06Z – unknown – lane=in_progress – Synthese D-B, DI-Leitbild
