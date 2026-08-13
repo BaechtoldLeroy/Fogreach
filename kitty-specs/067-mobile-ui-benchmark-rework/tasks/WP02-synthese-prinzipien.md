@@ -67,3 +67,4 @@ Plan/Basis-Branch: `main`. Merge-Ziel: `main`. Dependency WP01 →
 ## Activity Log
 
 - 2026-08-13T15:29:51Z – unknown – lane=in_progress – Synthese D-A, DI-Leitbild
+- 2026-08-13T15:31:12Z – unknown – lane=done – D-A synthetisiert, quickstart Schritt 2 erfuellt | Done override: planning_artifact ohne WP-Branch, direkt auf main
