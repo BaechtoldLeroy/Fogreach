@@ -83,3 +83,7 @@ versehentlich Empfehlungen (gehört nicht hierher)? Ist die Fogreach-Ist-Zeile j
 
 ## Branch Strategy
 Plan/Basis-Branch: `main`. Merge-Ziel: `main`. Keine Dependencies → `spec-kitty implement WP01`.
+
+## Activity Log
+
+- 2026-08-13T15:13:31Z – unknown – lane=done – Benchmark-Matrix erhoben, quickstart Schritt 1 erfuellt | Done override: planning_artifact ohne WP-Branch/Worktree — direkt auf main committet; keine Merge-Ancestry moeglich
