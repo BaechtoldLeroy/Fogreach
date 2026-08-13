@@ -26,12 +26,12 @@ in `research/matrix.md` nach `contracts/matrix.contract.md` festhalten.
 Beobachtung+Beleg, Fogreach-Ist-Zeile je Achse).
 **Dependencies**: none.
 
-- [ ] T001 Fogreach-Ist-Baseline je Achse festhalten (aus plan.md/Code) — die Vergleichs-Zeile.
-- [ ] T002 [P] Referenz-Recherche Gruppe A (Diablo Immortal, Genshin Impact) über alle 7 Achsen, mit Belegen.
-- [ ] T003 [P] Referenz-Recherche Gruppe B (Archero, Soul Knight, Vampire Survivors Mobile) über alle 7 Achsen, mit Belegen.
-- [ ] T004 [P] Referenz-Recherche Gruppe C (Brawl Stars; optional Torchlight Infinite / PoE Mobile) über alle 7 Achsen, mit Belegen.
-- [ ] T005 Matrix zusammenführen + Format nach `contracts/matrix.contract.md` (7 Tabellen).
-- [ ] T006 Selbstprüfung gegen quickstart Schritt 1 (Vollständigkeit, ≥2 Titel/Achse, Belege, Ist-Zeile).
+- [x] T001 Fogreach-Ist-Baseline je Achse festhalten (aus plan.md/Code) — die Vergleichs-Zeile.
+- [x] T002 [P] Referenz-Recherche Gruppe A (Diablo Immortal, Genshin Impact) über alle 7 Achsen, mit Belegen.
+- [x] T003 [P] Referenz-Recherche Gruppe B (Archero, Soul Knight, Vampire Survivors Mobile) über alle 7 Achsen, mit Belegen.
+- [x] T004 [P] Referenz-Recherche Gruppe C (Brawl Stars; optional Torchlight Infinite / PoE Mobile) über alle 7 Achsen, mit Belegen.
+- [x] T005 Matrix zusammenführen + Format nach `contracts/matrix.contract.md` (7 Tabellen).
+- [x] T006 Selbstprüfung gegen quickstart Schritt 1 (Vollständigkeit, ≥2 Titel/Achse, Belege, Ist-Zeile).
 
 **Risiken**: unbelegte Aussagen (NFR-001) → jede Zelle mit Beleg; Achsen-Lücken → Matrix erzwingt Abdeckung.
 
