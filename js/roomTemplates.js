@@ -724,7 +724,9 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       if (isWalkableTile(dtx, dty)) {
         const dpx = ox + dtx * T + T / 2;
         const dpy = oy + dty * T + T / 2;
-        const detailKey = Math.random() < 0.5 ? 'floor_crack' : 'floor_stain';
+        // #70-DIAG: floor_stain (graue Kreise) temporaer aus, um zu pruefen ob DAS
+        // die vom Nutzer gemeldeten grauen Kreise sind. floor_crack (Risse) bleibt.
+        const detailKey = 'floor_crack';
         if (scene.textures?.exists?.(detailKey)) {
           const detail = scene.add.image(dpx, dpy, detailKey);
           detail.setDepth(-4);
