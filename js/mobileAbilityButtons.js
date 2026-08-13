@@ -114,9 +114,16 @@
     const radius = baseRadius * scale;
 
     // Icon glyph (emoji) centered on the button, offset slightly up.
+    // BUG-FIX: padding gegen Emoji-Clipping. Phaser dimensioniert die Text-Canvas
+    // nach Font-Metriken; voll-fuellende Emojis (z.B. 🌀 Wirbelwind) ragen darueber
+    // hinaus und werden an den Raendern abgeschnitten. Symmetrisches Padding (origin
+    // 0.5 zentriert weiter) gibt der Canvas Rand -> kein Beschnitt. Duenne Glyphen
+    // (➡/❄) erreichten den Rand nie, darum fiel es nur beim Wirbelwind auf.
+    const _iconPad = Math.ceil(radius * 0.22);
     const icon = scene.add.text(0, 0, dec.glyph, {
       fontSize: Math.round(radius * 0.9) + 'px',
       color: '#ffffff',
+      padding: { x: _iconPad, y: _iconPad },
     }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1201);
 
     // Label underneath, inside the button.
@@ -214,7 +221,16 @@
       // (Alt-Build) bleibt es beim cdText-Verhalten oben.
       if (dec.abilityId && window.AbilitySystem
           && typeof window.AbilitySystem.getCooldownRemaining === 'function') {
-        const now = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : undefined;
+        // BUG-FIX: Cooldowns werden bei der Aktivierung in der PAUSE-UHR-Timebase
+        // gespeichert (abilitySystem tryActivate: window.gameNow(scene), pausierte
+        // Spannen rausgerechnet). Der Poll MUSS mit derselben Uhr abfragen — sonst
+        // driften beide nach jedem Inventar-Oeffnen um die aufsummierte Pausenzeit
+        // auseinander, remaining wird negativ -> Cooldown wird NICHT mehr angezeigt.
+        // Desktop-HUD (main.js) nutzt bereits gameNow; hier zog Mobile faelschlich
+        // scene.time.now.
+        const now = (typeof window.gameNow === 'function')
+          ? window.gameNow(scene)
+          : ((scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : undefined);
         const remainMs = window.AbilitySystem.getCooldownRemaining(dec.abilityId, now) || 0;
         const onCd = remainMs > 0;
         _applyEnabledVisual(dec, !onCd);
