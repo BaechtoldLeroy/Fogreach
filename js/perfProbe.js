@@ -227,12 +227,23 @@
           var vis = parentVis && (c.visible !== false) && (c.alpha === undefined || c.alpha > 0.01);
           if (c.list && c.list.length) { walk(c.list, vis); continue; }
           if (!vis) continue;
-          if (c.type !== 'Image' && c.type !== 'Sprite') continue;
           var d = (typeof c.depth === 'number') ? c.depth : 0;
           if (d >= 45) continue;
-          var key = (c.texture && c.texture.key) ? c.texture.key : '?';
-          var fr = (c.frame && c.frame.name != null && c.frame.name !== '__BASE') ? (':' + c.frame.name) : '';
-          var kk = key + fr + ' @d' + Math.round(d);
+          var kk = null;
+          if (c.type === 'Image' || c.type === 'Sprite') {
+            var key = (c.texture && c.texture.key) ? c.texture.key : '?';
+            var fr = (c.frame && c.frame.name != null && c.frame.name !== '__BASE') ? (':' + c.frame.name) : '';
+            kk = key + fr + ' @d' + Math.round(d);
+          } else if (c.type === 'Arc' || c.type === 'Ellipse') {
+            // Gezeichneter Kreis/Ellipse -> DER Hauptverdaechtige fuer "grauer Kreis".
+            var col = (typeof c.fillColor === 'number') ? ('#' + c.fillColor.toString(16)) : '?';
+            var rad = (typeof c.radius === 'number') ? Math.round(c.radius) : Math.round((c.width || 0) / 2);
+            kk = c.type + ' fill=' + col + ' a=' + (c.fillAlpha != null ? c.fillAlpha : '?') + ' r~' + rad + ' @d' + Math.round(d);
+          } else if (c.type === 'Graphics') {
+            kk = 'Graphics @d' + Math.round(d);
+          } else {
+            kk = c.type + ' @d' + Math.round(d);
+          }
           h[kk] = (h[kk] || 0) + 1;
         }
       };
