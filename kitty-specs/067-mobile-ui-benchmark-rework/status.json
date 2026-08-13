@@ -1,16 +1,16 @@
 {
-  "event_count": 12,
+  "event_count": 15,
   "feature_slug": "067-mobile-ui-benchmark-rework",
-  "last_event_id": "01KZXW116WK6QYTC9ZTXRX2ZYF",
-  "materialized_at": "2026-08-13T15:32:06.001514+00:00",
+  "last_event_id": "01KZXW2VRDZ6VVCNJ3AHMC1AZZ",
+  "materialized_at": "2026-08-13T15:33:05.958977+00:00",
   "summary": {
     "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 2,
+    "done": 3,
     "for_review": 0,
-    "in_progress": 1,
+    "in_progress": 0,
     "planned": 0
   },
   "work_packages": {
@@ -31,9 +31,9 @@
     "WP03": {
       "actor": "user",
       "force_count": 0,
-      "lane": "in_progress",
-      "last_event_id": "01KZXW116WK6QYTC9ZTXRX2ZYF",
-      "last_transition_at": "2026-08-13T15:32:05.980796+00:00"
+      "lane": "done",
+      "last_event_id": "01KZXW2VRDZ6VVCNJ3AHMC1AZZ",
+      "last_transition_at": "2026-08-13T15:33:05.933132+00:00"
     }
   }
 }
