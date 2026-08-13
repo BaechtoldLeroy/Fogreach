@@ -47,6 +47,20 @@ function cohesion(me, neighbors, radius=220, strength=1){
   return seek(me, {x:cx,y:cy}, strength); // hier "strength" als Pseudo‑speed
 }
 
+// Perf (#70): Hindernisse sind pro Frame statisch. Statt in jeder Steering-
+// Funktion pro Gegner o.getBounds() (alloziert Rectangle + Transform-Walk) für
+// ALLE Hindernisse aufzurufen, baut handleEnemies EINMAL pro Frame die Bounds-
+// Liste und hängt sie als obstacles.__steerRects an. Existiert sie, iterieren
+// wir das billige Array statt der Gruppe. Fällt sonst auf den alten Pfad zurück.
+function _obsRects(obstacles){
+  const cached = obstacles.__steerRects;
+  if (cached) return cached;
+  // Fallback: einmalig auf-die-Schnelle-Liste (kein Frame-Cache vorhanden).
+  const list = [];
+  obstacles.children?.iterate(o=>{ if(o) list.push(o.getBounds()); });
+  return list;
+}
+
 function obstacleAvoidance(me, obstacles, aheadDist=80){
   // einfacher „Feeler“ nach vorn: weiche ab, wenn ein Hindernis nahe der Bahn liegt
   if (!obstacles) return v();
@@ -56,22 +70,21 @@ function obstacleAvoidance(me, obstacles, aheadDist=80){
   const ahead = v(me.x, me.y).add(dir.clone().normalize().scale(aheadDist));
   let closest=null, minD2=Infinity;
 
-  obstacles.children?.iterate(o=>{
-    if(!o) return;
-    const b = o.getBounds();
+  const rects = _obsRects(obstacles);
+  for (let i = 0; i < rects.length; i++){
+    const b = rects[i];
     // Distanz Punkt->Rect
     const px = Phaser.Math.Clamp(ahead.x, b.left, b.right);
     const py = Phaser.Math.Clamp(ahead.y, b.top,  b.bottom);
     const dx = ahead.x - px, dy = ahead.y - py;
     const d2 = dx*dx+dy*dy;
-    if(d2 < minD2){ minD2=d2; closest=o; }
-  });
+    if(d2 < minD2){ minD2=d2; closest=b; }
+  }
 
   if (!closest) return v();
 
   // Weglenken: von Hindernis‑Center weg
-  const cb = closest.getBounds();
-  const center = v((cb.left+cb.right)/2, (cb.top+cb.bottom)/2);
+  const center = v((closest.left+closest.right)/2, (closest.top+closest.bottom)/2);
   const away = v(me.x - center.x, me.y - center.y);
   if (away.lengthSq()===0) return v();
   return away.normalize().scale(120); // „Stärke“ der Vermeidung
@@ -80,13 +93,11 @@ function obstacleAvoidance(me, obstacles, aheadDist=80){
 function hasLineOfSight(from, to, obstacles){
   if(!obstacles) return true;
   const line = new Phaser.Geom.Line(from.x, from.y, to.x, to.y);
-  let blocked = false;
-  obstacles.children?.iterate(o=>{
-    if(blocked || !o) return;
-    const r = o.getBounds();
-    if (Phaser.Geom.Intersects.LineToRectangle(line, r)) blocked = true;
-  });
-  return !blocked;
+  const rects = _obsRects(obstacles);
+  for (let i = 0; i < rects.length; i++){
+    if (Phaser.Geom.Intersects.LineToRectangle(line, rects[i])) return false;
+  }
+  return true;
 }
 
 window.Steering = {

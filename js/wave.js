@@ -225,6 +225,7 @@ function placeObstaclesForWave() {
   }
 
   obstacles.clear(true, true);
+  obstacles.__steerRects = null; // Perf-Cache (#70) invalidieren: Hindernisse neu
 
   const scene = obstacles.scene;
   if (!scene || !scene.scale) {

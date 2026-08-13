@@ -867,6 +867,16 @@ function handleEnemies(time, delta = 16) {
     cullBottom = cam.scrollY + cam.height + CULL_MARGIN;
   }
 
+  // Perf (#70): Hindernis-Bounds EINMAL pro Frame cachen. Steering.obstacleAvoidance
+  // + hasLineOfSight lesen obstacles.__steerRects statt pro Gegner o.getBounds()
+  // über alle Hindernisse zu rufen (war ~N_Gegner × N_Hindernisse getBounds/Frame).
+  // Statisch innerhalb des Frames -> stets frisch, keine Stale-Cache-Gefahr.
+  if (obstacles && obstacles.children) {
+    const _rects = [];
+    obstacles.children.iterate((o) => { if (o) _rects.push(o.getBounds()); });
+    obstacles.__steerRects = _rects;
+  }
+
   enemies.children.iterate((enemy) => {
     if (!enemy || !enemy.active) return;
 

@@ -630,6 +630,7 @@ function enterRoom(scene, roomId) {
   }
   if (obstacles && typeof obstacles.clear === 'function') {
     obstacles.clear(true, true);
+    obstacles.__steerRects = null; // Perf-Cache (#70) invalidieren: Hindernisse neu
   }
   // Clear door tracking list (door sprites were just destroyed with obstacles)
   if (window.DoorSystem?.clearDoors) window.DoorSystem.clearDoors(scene);
