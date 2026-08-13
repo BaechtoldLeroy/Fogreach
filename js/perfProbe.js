@@ -250,7 +250,11 @@
   // Wrappt GameScene.update (JS-CPU pro Frame gesamt) + updateFogOfWar
   // (Fog-Anteil). Zeigt, ob der Flaschenhals CPU (update) statt GPU (draws) ist
   // und wie viel davon das Fog frisst. Nur wenn die Funktionen existieren.
-  var _cpu = { updMs: 0, updN: 0, fogMs: 0, fogN: 0 };
+  // updMax/fogMax = schlimmster EINZELframe (Dip-Jagd: Avg verwischt periodische
+  // Spikes). slowN = Frames mit delta>25ms (<40fps) = wie OFT es ruckelt. slowUpdMs =
+  // aufsummierte update-ms NUR auf langsamen Frames -> zeigt, ob der Dip in der JS-CPU
+  // steckt (dann ~= slow-Frame-Zeit) oder ausserhalb (Render/GC zwischen Frames).
+  var _cpu = { updMs: 0, updN: 0, updMax: 0, fogMs: 0, fogN: 0, fogMax: 0, slowN: 0, slowUpdMs: 0 };
   // WICHTIG: update() existiert ab Scene-Konstruktion, updateFogOfWar erst nach
   // create() (main.js: this.updateFogOfWar = ...bind(this)). Darum HIER die zwei
   // Hooks UNABHAENGIG mit je eigenem Guard setzen und jeden Tick nachziehen, bis
@@ -265,7 +269,11 @@
         gs.update = function (t, d) {
           var s = _now();
           var r = origU.call(this, t, d);
-          _cpu.updMs += _now() - s; _cpu.updN++;
+          var ms = _now() - s;
+          _cpu.updMs += ms; _cpu.updN++;
+          if (ms > _cpu.updMax) _cpu.updMax = ms;
+          // d = Frame-Delta (Zeit seit letztem Frame). >25ms = <40fps = ein Dip.
+          if (typeof d === 'number' && d > 25) { _cpu.slowN++; _cpu.slowUpdMs += ms; }
           return r;
         };
       }
@@ -275,7 +283,9 @@
         gs.updateFogOfWar = function () {
           var s = _now();
           var r = origF.apply(this, arguments);
-          _cpu.fogMs += _now() - s; _cpu.fogN++;
+          var ms = _now() - s;
+          _cpu.fogMs += ms; _cpu.fogN++;
+          if (ms > _cpu.fogMax) _cpu.fogMax = ms;
           return r;
         };
       }
@@ -424,7 +434,11 @@
     // JS-update() ist (CPU) statt der Draws (GPU), und wie viel davon das Fog ist.
     out.cpu = {
       updateMsAvg: _cpu.updN ? Math.round((_cpu.updMs / _cpu.updN) * 100) / 100 : 0,
+      updateMsMax: Math.round(_cpu.updMax * 100) / 100,
       fogMsAvg: _cpu.fogN ? Math.round((_cpu.fogMs / _cpu.fogN) * 100) / 100 : 0,
+      fogMsMax: Math.round(_cpu.fogMax * 100) / 100,
+      slowFrames: _cpu.slowN,
+      slowFrameUpdateMsAvg: _cpu.slowN ? Math.round((_cpu.slowUpdMs / _cpu.slowN) * 100) / 100 : 0,
       updateFrames: _cpu.updN
     };
     try {
