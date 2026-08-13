@@ -8,7 +8,7 @@ requirement_refs:
 - FR-007
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: 'Plan/Basis: main. Merge-Ziel: main. Haengt an WP01 -> in /spec-kitty.implement base=WP01 (spec-kitty implement WP02 --base WP01).'
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks: [T007, T008, T009, T010]
 history:
 - '2026-08-13: erstellt (/spec-kitty.tasks)'
