@@ -73,14 +73,14 @@ Kontrast auf hellen Buttons.
 **Beobachtung/Beleg**: DI-Kampf ist **manuell** (Auto-Pickup/Auto-Navigate ja, Angriff nein);
 Genshin **auto-targetet** den nächsten Gegner (Feuern bleibt gerichtet-automatisch); die
 Auto-Attack-Titel (AR/VS/SK) feuern vollautomatisch.
-**Empfehlung für Fogreach**: **Kein Auto-Attack** (Leitbild-Entscheidung). Optional und
-**niedrig priorisiert**: eine Genshin-artige **Ziel-*hilfe*** (Angriff/Skill richtet sich auf
-den nächsten Gegner), Feuern bleibt spielergetriggert. Nicht-Kampf-Erleichterung Auto-Pickup
+**Empfehlung für Fogreach**: **Kein Auto-Attack** (Leitbild-Entscheidung). Eine Genshin-artige
+**Ziel-*hilfe*** (Angriff/Skill richtet sich auf den nächsten Gegner) wäre denkbar, wird aber
+**bewusst nicht verfolgt** — Zielen/Feuern bleibt manuell. Nicht-Kampf-Erleichterung Auto-Pickup
 ist bereits vorhanden (s. A3).
-**Delta zum Ist-Zustand**: Fogreach ist voll manuell und hat bereits Auto-Pickup; es fehlt nur
-(optional) die Zielhilfe.
-**Übertragbarkeit**: **Auto-Attack: nicht übertragbar** (bewusste Leitbild-Entscheidung —
-Fogreach bleibt DI-Stil). Zielhilfe: übertragbar, optional.
+**Delta zum Ist-Zustand**: Fogreach ist voll manuell (DI-Stil, wie gewünscht) und hat bereits
+Auto-Pickup — kein Handlungsbedarf auf dieser Achse.
+**Übertragbarkeit**: **Auto-Attack: nicht übertragbar** (Leitbild-Entscheidung). Zielhilfe:
+technisch übertragbar, aber **nicht verfolgt** (Entscheidung).
 
 ## A7 — Button-Größe & Trefferflächen-Ergonomie
 **Beobachtung/Beleg**: DI nutzt bewusst **überdimensionierte**, daumenfreundliche Skill-Buttons

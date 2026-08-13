@@ -14,8 +14,7 @@ Aufwand) zuerst; Tie-Break nach research R5. Format nach `contracts/D-B-backlog.
 | 4 | RW-04 | **Trefferflächen ≥48 px** + Primärangriff als größtes Target + ausreichend Abstand | M | N–M | A7 | Weniger Fehl-Taps; folgt Apple/Material/WCAG-Mindestgrößen. |
 | 5 | RW-05 | **Reachability-Anordnung**: häufigste Aktionen in den unteren-rechten Daumenbogen | M | M | A1 | Ergonomie-Gewinn ohne neue Mechanik; Layout-Umbau der Zellen. |
 | 6 | RW-06 | **Safe-Area-Platzierung** von Cluster+Joystick verifizieren/feintunen | N | N | A4 | Grundlage (mobileSafeArea) da; nur Prüfung/Feintuning der Cluster-Lage. |
-| 7 | RW-07 | *(optional)* **Ziel-hilfe** à la Genshin (Angriff/Skill richtet sich auf nächsten Gegner; Feuern bleibt manuell) | M | M | A6 | Verbessert Touch-Zielen; **kein** Auto-Attack — passt ins DI-Leitbild. |
-| 8 | RW-08 | *(optional)* **Floating/adaptiver Joystick** (re-zentriert unter dem Daumen, Brawl-Stars-Stil) | M | H | A1, A7 | Reachability-Plus; Input-Umbau, rex-Plugin-Fallstricke (bekannt) → höherer Aufwand. |
+| 7 | RW-07 | *(optional)* **Floating/adaptiver Joystick** (re-zentriert unter dem Daumen, Brawl-Stars-Stil) | M | M | A1, A7 | Reachability-Plus. Blocker aufgelöst: via rex-**Reposition** (globaler pointerdown setzt die Joystick-Basis auf den Touch) ODER kleines **Custom-Widget** — nicht mehr via setVisible (das war das ursprüngliche Recapture-Problem). Kein Plugin-Wechsel nötig. |
 
 **Top-3 (eindeutig)**: RW-01 (065, H-Impact) → RW-02 (Kontrast, M/N Quick Win) → RW-03
 (leere Slots, M/N Quick Win). Tie-Break RW-02 vor RW-03: kleinerer Eingriff (reiner Style).
@@ -26,7 +25,8 @@ Aufwand) zuerst; Tie-Break nach research R5. Format nach `contracts/D-B-backlog.
 - **Cooldown-Anzeige**: aktuelle Darstellung (Sekunden + Labels, gameNow-korrekt) wird bewusst
   **beibehalten** — kein radialer Sweep.
 - **Auto-Attack** (Archero/VS/SK-Modell): per Leitbild-Entscheidung ausgeschlossen — Fogreach
-  bleibt manueller DI-Stil-Kampf (siehe D-A A6). Nur die optionale Ziel-*hilfe* (RW-07) bleibt.
+  bleibt manueller DI-Stil-Kampf (siehe D-A A6). Auch die optionale **Zielhilfe** (auto-target)
+  wird bewusst **nicht verfolgt** — Zielen/Feuern bleibt manuell.
 
 ## Einordnung von Feature 065 / #80
 065 (Kontext-Primärbutton) steht auf **Prio 1** — höchster Impact (H) bei mittlerem Aufwand,
