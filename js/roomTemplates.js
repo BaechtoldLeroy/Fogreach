@@ -862,17 +862,9 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     const maxDecorations = isMobileProp
       ? Math.min(tpl.decorations.length, Math.floor(tpl.decorations.length * 0.5))
       : tpl.decorations.length;
-    // #70: die kosmetischen Deko-Props (depth -2, nie zerstoert) in EIN Bild
-    // backen statt je ein Image = je ein Draw-Call. Saeulen (depth 41,
-    // Vordergrund) bleiben einzeln. Fallback auf Einzel-Images, wenn kein Canvas.
-    let _decoCtx = null, _decoCanvas = null;
-    if (typeof document !== 'undefined') {
-      _decoCanvas = document.createElement('canvas');
-      _decoCanvas.width = W * T; _decoCanvas.height = H * T;
-      _decoCtx = _decoCanvas.getContext('2d');
-      if (_decoCtx) _decoCtx.imageSmoothingEnabled = false;
-    }
-    let _decoBaked = 0;
+    // Hinweis (#70): Deko NICHT in eine eigene welt-grosse RT backen — das kostete
+    // ~19 MB Textur pro Raum und machte die Perf SCHLECHTER (Messung b40), weil es
+    // nur ~20 Draws spart. Deko bleibt als Einzel-Images (wenige, depth -2/41).
     for (let di = 0; di < maxDecorations; di++) {
       const d = tpl.decorations[di];
       if (!scene.textures.exists(d.type)) continue;
@@ -881,35 +873,12 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       // Subtle visual variety: randomize scale and alpha slightly
       const scaleVar = 0.85 + Math.random() * 0.3;  // 0.85–1.15
       const alphaVar = 0.55 + Math.random() * 0.25;  // 0.55–0.80
-      const isPillar = (d.type === 'prop_pillar');   // Vordergrund -> nicht backen
-      if (!isPillar && _decoCtx) {
-        const _st = scene.textures.get(d.type);
-        const _si = (_st && _st.source && _st.source[0]) ? _st.source[0].image : null;
-        if (_si) {
-          const _sw = (_si.width || T) * scaleVar, _sh = (_si.height || T) * scaleVar;
-          _decoCtx.globalAlpha = alphaVar;
-          _decoCtx.drawImage(_si, (dpx - ox) - _sw / 2, (dpy - oy) - _sh / 2, _sw, _sh);
-          _decoCtx.globalAlpha = 1;
-          _decoBaked++;
-          continue;
-        }
-      }
-      const depthVar = isPillar ? 41 : -2; // pillars render above floor
+      const depthVar = d.type === 'prop_pillar' ? 41 : -2; // pillars render above floor
       const prop = scene.add.image(dpx, dpy, d.type)
         .setDepth(depthVar)
         .setAlpha(alphaVar)
         .setScale(scaleVar);
       templateWalls.push(prop);
-    }
-    if (_decoBaked > 0 && _decoCanvas) {
-      const bakedDecoKey = '__deco_baked_' + (++FLOOR_BAKE_COUNTER);
-      try { scene.textures.removeKey(bakedDecoKey); } catch (e) { /* fresh */ }
-      scene.textures.addCanvas(bakedDecoKey, _decoCanvas);
-      const decoImg = scene.add.image(ox, oy, bakedDecoKey).setOrigin(0, 0).setDepth(-2);
-      decoImg.setData('isFloor', true); // Treppen-Fallback ignoriert das grosse Bild
-      templateWalls.push(decoImg);
-      scene._bakedFloorKeys = scene._bakedFloorKeys || [];
-      scene._bakedFloorKeys.push(bakedDecoKey);
     }
   }
 
