@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-08-13T14:48:59.050863+00:00",
+  "feature_number": "066",
+  "feature_slug": "066-mobile-ui-benchmark-rework",
+  "friendly_name": "mobile ui benchmark rework",
+  "mission": "software-dev",
+  "slug": "066-mobile-ui-benchmark-rework",
+  "target_branch": "main"
+}
