@@ -213,45 +213,6 @@
     return h;
   }
 
-  // Diagnose: WELCHE Textur liegt auf dem Boden? Histogramm der Textur-Schluessel
-  // aller sichtbaren Image/Sprite mit depth < 45 (Boden -5 bis Hindernisse ~42),
-  // Key = 'texturKey[:frame] @dTIEFE'. Damit laesst sich ein unbekanntes Boden-
-  // Objekt (z.B. "der graue Kreis") eindeutig benennen statt zu raten.
-  function floorTextureHistogram(scene) {
-    var h = {};
-    try {
-      var walk = function (arr, parentVis) {
-        for (var i = 0; i < arr.length; i++) {
-          var c = arr[i];
-          if (!c) continue;
-          var vis = parentVis && (c.visible !== false) && (c.alpha === undefined || c.alpha > 0.01);
-          if (c.list && c.list.length) { walk(c.list, vis); continue; }
-          if (!vis) continue;
-          var d = (typeof c.depth === 'number') ? c.depth : 0;
-          if (d >= 45) continue;
-          var kk = null;
-          if (c.type === 'Image' || c.type === 'Sprite') {
-            var key = (c.texture && c.texture.key) ? c.texture.key : '?';
-            var fr = (c.frame && c.frame.name != null && c.frame.name !== '__BASE') ? (':' + c.frame.name) : '';
-            kk = key + fr + ' @d' + Math.round(d);
-          } else if (c.type === 'Arc' || c.type === 'Ellipse') {
-            // Gezeichneter Kreis/Ellipse -> DER Hauptverdaechtige fuer "grauer Kreis".
-            var col = (typeof c.fillColor === 'number') ? ('#' + c.fillColor.toString(16)) : '?';
-            var rad = (typeof c.radius === 'number') ? Math.round(c.radius) : Math.round((c.width || 0) / 2);
-            kk = c.type + ' fill=' + col + ' a=' + (c.fillAlpha != null ? c.fillAlpha : '?') + ' r~' + rad + ' @d' + Math.round(d);
-          } else if (c.type === 'Graphics') {
-            kk = 'Graphics @d' + Math.round(d);
-          } else {
-            kk = c.type + ' @d' + Math.round(d);
-          }
-          h[kk] = (h[kk] || 0) + 1;
-        }
-      };
-      walk(scene.children.list, true);
-    } catch (e) { /* partial ok */ }
-    return h;
-  }
-
   // Sammelt bis zu `max` Text-Inhalte (Diagnose: woher der hohe Text-Grundwert?).
   function collectTextSamples(scene, max) {
     var out = [];
@@ -289,11 +250,7 @@
   // Wrappt GameScene.update (JS-CPU pro Frame gesamt) + updateFogOfWar
   // (Fog-Anteil). Zeigt, ob der Flaschenhals CPU (update) statt GPU (draws) ist
   // und wie viel davon das Fog frisst. Nur wenn die Funktionen existieren.
-  // updMax/fogMax = schlimmster EINZELframe (Dip-Jagd: Avg verwischt periodische
-  // Spikes). slowN = Frames mit delta>25ms (<40fps) = wie OFT es ruckelt. slowUpdMs =
-  // aufsummierte update-ms NUR auf langsamen Frames -> zeigt, ob der Dip in der JS-CPU
-  // steckt (dann ~= slow-Frame-Zeit) oder ausserhalb (Render/GC zwischen Frames).
-  var _cpu = { updMs: 0, updN: 0, updMax: 0, fogMs: 0, fogN: 0, fogMax: 0, slowN: 0, slowUpdMs: 0 };
+  var _cpu = { updMs: 0, updN: 0, fogMs: 0, fogN: 0 };
   // WICHTIG: update() existiert ab Scene-Konstruktion, updateFogOfWar erst nach
   // create() (main.js: this.updateFogOfWar = ...bind(this)). Darum HIER die zwei
   // Hooks UNABHAENGIG mit je eigenem Guard setzen und jeden Tick nachziehen, bis
@@ -308,11 +265,7 @@
         gs.update = function (t, d) {
           var s = _now();
           var r = origU.call(this, t, d);
-          var ms = _now() - s;
-          _cpu.updMs += ms; _cpu.updN++;
-          if (ms > _cpu.updMax) _cpu.updMax = ms;
-          // d = Frame-Delta (Zeit seit letztem Frame). >25ms = <40fps = ein Dip.
-          if (typeof d === 'number' && d > 25) { _cpu.slowN++; _cpu.slowUpdMs += ms; }
+          _cpu.updMs += _now() - s; _cpu.updN++;
           return r;
         };
       }
@@ -322,9 +275,7 @@
         gs.updateFogOfWar = function () {
           var s = _now();
           var r = origF.apply(this, arguments);
-          var ms = _now() - s;
-          _cpu.fogMs += ms; _cpu.fogN++;
-          if (ms > _cpu.fogMax) _cpu.fogMax = ms;
+          _cpu.fogMs += _now() - s; _cpu.fogN++;
           return r;
         };
       }
@@ -473,20 +424,9 @@
     // JS-update() ist (CPU) statt der Draws (GPU), und wie viel davon das Fog ist.
     out.cpu = {
       updateMsAvg: _cpu.updN ? Math.round((_cpu.updMs / _cpu.updN) * 100) / 100 : 0,
-      updateMsMax: Math.round(_cpu.updMax * 100) / 100,
       fogMsAvg: _cpu.fogN ? Math.round((_cpu.fogMs / _cpu.fogN) * 100) / 100 : 0,
-      fogMsMax: Math.round(_cpu.fogMax * 100) / 100,
-      slowFrames: _cpu.slowN,
-      slowFrameUpdateMsAvg: _cpu.slowN ? Math.round((_cpu.slowUpdMs / _cpu.slowN) * 100) / 100 : 0,
       updateFrames: _cpu.updN
     };
-    // Boden-Textur-Histogramm der aktiven GameScene (Diagnose "grauer Kreis").
-    try {
-      var gsFloor = window.game && window.game.scene.getScene('GameScene');
-      if (gsFloor && gsFloor.scene && gsFloor.scene.isActive()) {
-        out.floorTextures = floorTextureHistogram(gsFloor);
-      }
-    } catch (e) { /* optional */ }
     try {
       var rows = [];
       for (var c in out.contexts) rows.push(Object.assign({ context: c }, out.contexts[c]));
