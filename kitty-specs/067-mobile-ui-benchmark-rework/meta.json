@@ -2,8 +2,10 @@
   "created_at": "2026-08-13T14:49:03.654853+00:00",
   "feature_number": "067",
   "feature_slug": "067-mobile-ui-benchmark-rework",
-  "friendly_name": "mobile ui benchmark rework",
-  "mission": "software-dev",
+  "friendly_name": "Mobile-UI-Benchmark & Rework-Prinzipien",
+  "mission": "research",
   "slug": "067-mobile-ui-benchmark-rework",
-  "target_branch": "main"
+  "source_description": "Holistisches Mobile-UI-Rework, research-first: Benchmark führender Touch-Games (ARPG/Roguelite), daraus Prinzipien-Doc + priorisiertes Rework-Backlog für Fogreach. Feature 065 (#80 Button-Merge) wird ein Backlog-Eintrag.",
+  "target_branch": "main",
+  "vcs": "git"
 }
