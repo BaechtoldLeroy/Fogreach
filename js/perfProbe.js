@@ -251,12 +251,16 @@
   // (Fog-Anteil). Zeigt, ob der Flaschenhals CPU (update) statt GPU (draws) ist
   // und wie viel davon das Fog frisst. Nur wenn die Funktionen existieren.
   var _cpu = { updMs: 0, updN: 0, fogMs: 0, fogN: 0 };
+  // WICHTIG: update() existiert ab Scene-Konstruktion, updateFogOfWar erst nach
+  // create() (main.js: this.updateFogOfWar = ...bind(this)). Darum HIER die zwei
+  // Hooks UNABHAENGIG mit je eigenem Guard setzen und jeden Tick nachziehen, bis
+  // beide sitzen — sonst latcht ein gemeinsames Flag den Fog-Hook auf 0 (Bug b42).
   function hookSceneTiming(game) {
     try {
       var gs = game.scene.getScene('GameScene');
-      if (!gs || gs.__perfCpuHooked) return;
-      gs.__perfCpuHooked = true;
-      if (typeof gs.update === 'function') {
+      if (!gs) return;
+      if (!gs.__perfUpdHooked && typeof gs.update === 'function') {
+        gs.__perfUpdHooked = true;
         var origU = gs.update;
         gs.update = function (t, d) {
           var s = _now();
@@ -265,7 +269,8 @@
           return r;
         };
       }
-      if (typeof gs.updateFogOfWar === 'function') {
+      if (!gs.__perfFogHooked && typeof gs.updateFogOfWar === 'function') {
+        gs.__perfFogHooked = true;
         var origF = gs.updateFogOfWar;
         gs.updateFogOfWar = function () {
           var s = _now();
