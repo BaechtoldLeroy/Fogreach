@@ -2121,6 +2121,16 @@ class HubSceneV2 extends Phaser.Scene {
       this.input.keyboard.off(eventName, handler);
     }
     this._currentKeyClosers = null;
+
+    // Nutzer-Fix: Akt-Titelkarte/Hub-Overlay feuerten bisher nur beim naechsten
+    // Betreten des Hubs (_checkStoryEvent lief bislang NUR in create()). Eine
+    // Quest, die per Dialog abgeschlossen wird, setzt advanceToAct synchron
+    // VOR dem Schliessen dieses Dialogs (questSystem.completeQuest) — darum
+    // hier direkt nachschauen, statt bis zum naechsten Szenen-Eintritt zu
+    // warten. _dialogOpen ist an dieser Stelle bereits false (s.o.), die neue
+    // Ueberlagerung kann also sofort geoeffnet werden. Kein Pending-Event ->
+    // no-op (consumePendingEvent() gibt dann null zurueck).
+    this._checkStoryEvent();
   }
 
   _checkStoryEvent() {
