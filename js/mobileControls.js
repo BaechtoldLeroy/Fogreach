@@ -42,7 +42,9 @@ if (window.i18n) {
     { key: 'roll',     col: 0, row: 1, color: 0x8844cc, abilityId: null },
     { key: 'slot3',    col: 1, row: 1, color: 0x888888, slotIndex: 3 },
     { key: 'slot4',    col: 2, row: 1, color: 0x888888, slotIndex: 4 },
-    { key: 'interact', col: 3, row: 1, color: 0xffdd44, abilityId: null },
+    // #065: 'attack' + 'interact' zu EINEM kontextsensitiven Primärbutton
+    // zusammengelegt (attack-Zelle bleibt, wird kontext-sensitiv). Die frei
+    // gewordene Position (col3,row1) bleibt leer (MVP).
   ];
 
   // Mapping classic-ability-id → desktop-Cooldown-Window-Refs.
@@ -261,6 +263,36 @@ if (window.i18n) {
     _dispatch('demonfall:mobile-interact', {});
   }
 
+  // #065 Kontext-Primärbutton: ist ein FRIEDLICHES Interaktionsziel in Reichweite?
+  // (NPC/Tür/Loot/Event/Treppe — NICHT Gegner, NICHT zerstörbare Props). Reine
+  // Query aus bestehenden Signalen (C-003):
+  //  - Hub: HubSceneV2._activeInteractable.
+  //  - Dungeon: Tür in Reichweite (DoorSystem.isDoorInRange) ODER ein sichtbarer
+  //    "[E]"-Interakt-Prompt (Tür/Händler/Schrein/Treppe/Loot zeigen alle "[E] …";
+  //    zerstörbare Props/Gegner zeigen KEINEN [E]-Prompt -> bleiben Angriff).
+  // Defensiv: im Zweifel false (Angriff bleibt möglich).
+  function _hasVisibleInteractPrompt(scene) {
+    try {
+      const list = scene && scene.children && scene.children.list;
+      if (!list) return false;
+      for (let i = 0; i < list.length; i++) {
+        const c = list[i];
+        if (c && c.type === 'Text' && c.visible !== false &&
+            typeof c.text === 'string' && c.text.indexOf('[E]') === 0) return true;
+      }
+    } catch (e) { /* defensiv */ }
+    return false;
+  }
+  function hasPeacefulTarget(scene) {
+    if (!scene) return false;
+    if (scene._activeInteractable) return true; // Hub-NPC/Gebäude
+    const p = (typeof player !== 'undefined' && player) ? player : window.player;
+    if (window.DoorSystem && typeof window.DoorSystem.isDoorInRange === 'function'
+        && p && window.DoorSystem.isDoorInRange(scene, p)) return true; // Dungeon-Tür
+    return _hasVisibleInteractPrompt(scene); // Events/Treppe/Händler/Loot ([E]-Prompt)
+  }
+  window.hasPeacefulTarget = hasPeacefulTarget;
+
   function _rebuildAbilityButtons() {
     const scene = state.scene;
     if (!scene) return;
@@ -288,9 +320,15 @@ if (window.i18n) {
   // Ability, baut Circle + Cooldown-Label + wired window.*Btn-refs.
   function _buildButtonsAndCooldowns(scene) {
     const staticHandlers = {
-      attack:   { onDown: attack,     onUp: null },
+      // #065 Primärbutton: kontext-sensitiv. Friedliches Ziel in Reichweite ->
+      // Interaktion (Dialog/Tür/Loot), sonst Angriff. Genau EIN Pfad pro Tap,
+      // entschieden nach dem zum Tap-Zeitpunkt gültigen Kontext.
+      attack:   { onDown: function () {
+        if (hasPeacefulTarget(this)) { _interact(); }
+        else if (typeof attack === 'function') { attack.call(this); }
+      }, onUp: null },
       potion:   { onDown: _usePotion, onUp: null },
-      interact: { onDown: _interact,  onUp: null },
+      interact: { onDown: _interact,  onUp: null }, // Legacy-Handler (Zelle entfernt), harmlos
       roll:     { onDown: performRoll, onUp: null },
     };
 

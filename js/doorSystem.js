@@ -392,6 +392,25 @@
     }
   }
 
+  /**
+   * #065 Kontext-Primärbutton: leichtes Query-Signal, ob eine Tür in
+   * Interaktions-Reichweite ist. Dieselbe Prüfung wie updateDoors (nearest door
+   * < INTERACT_DIST), aber reine Query ohne Nebenwirkung. Defensiv -> false.
+   * @returns {boolean}
+   */
+  function isDoorInRange(scene, player) {
+    if (!scene || !player) return false;
+    var doors = scene._doors;
+    if (!doors || !doors.length) return false;
+    for (var i = 0; i < doors.length; i++) {
+      var door = doors[i];
+      if (!door || !door.active) continue;
+      var dx = door.x - player.x, dy = door.y - player.y;
+      if (dx * dx + dy * dy < INTERACT_DIST * INTERACT_DIST) return true;
+    }
+    return false;
+  }
+
   // ─── Public API ──────────────────────────────────────────────────────────
 
   window.DoorSystem = {
@@ -399,6 +418,7 @@
     spawnDoor: spawnDoor,
     updateDoors: updateDoors,
     tryInteractDoor: tryInteractDoor,
+    isDoorInRange: isDoorInRange,
     clearDoors: clearDoors
   };
 })();

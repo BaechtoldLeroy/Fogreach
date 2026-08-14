@@ -297,17 +297,37 @@
       // Timer hat label=null), darum Restzeit aus window.__abilityCooldownMs__['attack']
       // treiben — Sekunden-Overlay + Dimmen wie roll/potion.
       if (dec.key === 'attack') {
-        const remainMs = (window.__abilityCooldownMs__ && typeof window.__abilityCooldownMs__.attack === 'number')
-          ? window.__abilityCooldownMs__.attack : 0;
-        const onCd = remainMs > 0;
-        _applyEnabledVisual(dec, !onCd);
-        if (dec.cdOverlay) {
-          if (onCd) {
-            dec.cdOverlay.setText((remainMs / 1000).toFixed(1));
-            dec.cdOverlay.setVisible(true);
-            if (dec.icon) dec.icon.setAlpha(0.35);
-          } else {
-            dec.cdOverlay.setVisible(false);
+        // #065 Kontext-Primärbutton: friedliches Ziel in Reichweite -> ✋/"Aktion"
+        // (kein Cooldown-Overlay), sonst ⚔️/"Angr" mit normaler Cooldown-Anzeige.
+        if (dec._baseGlyph == null && dec.icon) dec._baseGlyph = dec.icon.text;
+        if (dec._baseLabel == null && dec.label) dec._baseLabel = dec.label.text;
+        const peaceful = !!(window.hasPeacefulTarget && window.hasPeacefulTarget(scene));
+        const ctxMode = peaceful ? 'action' : 'attack';
+        if (dec._ctxMode !== ctxMode) {
+          dec._ctxMode = ctxMode;
+          if (dec.icon) dec.icon.setText(peaceful ? '✋' : (dec._baseGlyph || '⚔️'));
+          if (dec.label) {
+            const actionLbl = (typeof T === 'function') ? T('mobile.btn.interact', 'Aktion') : 'Aktion';
+            dec.label.setText(peaceful ? actionLbl : (dec._baseLabel || 'Angr'));
+          }
+        }
+        if (peaceful) {
+          _applyEnabledVisual(dec, true);
+          if (dec.cdOverlay) dec.cdOverlay.setVisible(false);
+          if (dec.icon) dec.icon.setAlpha(1.0);
+        } else {
+          const remainMs = (window.__abilityCooldownMs__ && typeof window.__abilityCooldownMs__.attack === 'number')
+            ? window.__abilityCooldownMs__.attack : 0;
+          const onCd = remainMs > 0;
+          _applyEnabledVisual(dec, !onCd);
+          if (dec.cdOverlay) {
+            if (onCd) {
+              dec.cdOverlay.setText((remainMs / 1000).toFixed(1));
+              dec.cdOverlay.setVisible(true);
+              if (dec.icon) dec.icon.setAlpha(0.35);
+            } else {
+              dec.cdOverlay.setVisible(false);
+            }
           }
         }
       }
