@@ -162,10 +162,36 @@
       }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1202).setVisible(false);
     }
 
+    // Trank-Aufladungs-Punkte (3 Ladungen, siehe LootSystem.getPotionCharges):
+    // kleine Pips am oberen Rand des Buttons, gefuellt = verfuegbar, hohl =
+    // verbraucht — mobiles Gegenstueck zum Desktop-HUD-"●●○"-Indikator.
+    // Anzahl kommt aus getPotionChargesMax() (aktuell 3), defensiv Fallback 3.
+    let chargePips = null;
+    if (spec.key === 'potion') {
+      const maxCharges = (window.LootSystem && typeof window.LootSystem.getPotionChargesMax === 'function')
+        ? window.LootSystem.getPotionChargesMax() : 3;
+      chargePips = [];
+      for (let i = 0; i < maxCharges; i++) {
+        chargePips.push(
+          scene.add.circle(0, 0, Math.max(2, radius * 0.11), 0x78f3c7, 1)
+            .setStrokeStyle(1, 0x000000, 0.7)
+            .setScrollFactor(0)
+            .setDepth(1202)
+        );
+      }
+    }
+
     const place = () => {
       icon.setPosition(circle.x, circle.y - radius * 0.12);
       label.setPosition(circle.x, circle.y + radius * 0.55);
       if (cdOverlay) cdOverlay.setPosition(circle.x, circle.y - radius * 0.12);
+      if (chargePips) {
+        const n = chargePips.length;
+        const step = radius * 0.32;
+        const startX = circle.x - step * (n - 1) / 2;
+        const pipY = circle.y - radius * 0.82;
+        chargePips.forEach((pip, i) => pip.setPosition(startX + i * step, pipY));
+      }
     };
     place();
 
@@ -183,6 +209,7 @@
       labelLiteral: dec.label || null,  // fallback when no labelKey + dynamic labels
       cdText,
       cdOverlay,
+      chargePips,
       originalColor: circle.fillColor,
       place,
       // Track per-decoration state for polling
@@ -272,6 +299,15 @@
           } else {
             dec.cdOverlay.setVisible(false);
           }
+        }
+        // Ladungs-Pips: gefuellt = verfuegbar, hohl = verbraucht.
+        if (dec.chargePips && window.LootSystem
+            && typeof window.LootSystem.getPotionCharges === 'function') {
+          const charges = window.LootSystem.getPotionCharges();
+          dec.chargePips.forEach((pip, i) => {
+            const available = i < charges;
+            pip.setFillStyle(available ? 0x78f3c7 : 0x333333, available ? 1 : 0.6);
+          });
         }
       }
 
@@ -392,6 +428,8 @@
       prev.decorations.forEach((d) => {
         d.icon && d.icon.destroy();
         d.label && d.label.destroy();
+        d.cdOverlay && d.cdOverlay.destroy();
+        d.chargePips && d.chargePips.forEach((pip) => pip.destroy());
       });
       scene.events.off('update', prev.poll);
     }
@@ -432,6 +470,7 @@
         d.icon && d.icon.destroy();
         d.label && d.label.destroy();
         d.cdOverlay && d.cdOverlay.destroy();
+        d.chargePips && d.chargePips.forEach((pip) => pip.destroy());
       });
       sceneState.delete(scene);
     });
