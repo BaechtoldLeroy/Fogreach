@@ -31,18 +31,18 @@ if (window.i18n) {
   // Bildschirmgrenzen für alle Button-Scales (0.8/1.0/1.2) und Safe-Area-
   // Insets numerisch verifiziert (Rechercheskript, siehe tools/fanlayout.js).
   // Vorbild Diablo Immortal: EIN grosser Angriff/Aktion-Button in der Ecke,
-  // ein enger Faecher aus deutlich KLEINEREN Skill-Buttons direkt daran
-  // (kein gleich grosser Ring — das war der Schluessel, um DIs Look zu
-  // treffen), Dash separat und bodennah, Trank oben rechts. Nur 6 Buttons
-  // im Cluster (wie DI) + der Trank on top, den DI nicht hat.
-  const PRIMAR_FACTOR = 1.9;    // Angriff/Aktion — deutlich groesstes Ziel
-  const SKILL_FACTOR  = 0.9;    // Skills 1-4 — kleiner als Primär, eng gefaechert
-  const TRANK_FACTOR  = 0.85;   // Trank — etwas kleiner als Basis
+  // Trank oben rechts. Nutzer-Wunsch: Primär auf 90% + die uebrigen 5 Buttons
+  // (Dash + Skills 1-4) als ECHTER gleichmaessiger Ring um den Primär, so eng
+  // wie geometrisch moeglich (durchgerechnet: 12px Rand-Abstand ist das engste,
+  // das ueber alle Button-Scales + Safe-Areas kollisionsfrei bleibt).
+  const PRIMAR_FACTOR = 1.9 * 0.9; // = 1.71 — Angriff/Aktion, groesstes Ziel
+  const RING_FACTOR   = 0.9;    // Dash + Skills 1-4 — gleiche Groesse, gleichmaessiger Ring
+  const TRANK_FACTOR  = 1.0;    // Trank — Basisgroesse
   const CORNER_INSET_X = 50;    // Primär-Versatz von der Ecke (X)
-  const SKILL_GAP       = 12;   // Rand-Abstand zwischen benachbarten Skills
-  const SKILL_ARC_START = 35;   // Winkel (° ab Horizontale) des ersten Skills (S1, rechts)
-  const DASH_OFFSET_X   = 130;  // Dash-Versatz links vom Primär-Zentrum
-  const TRANK_GAP        = 4;   // Rand-Abstand Trank -> Skills 1/2
+  const CORNER_INSET_Y = 15;    // Primär-Versatz von der Ecke (Y)
+  const RING_GAP        = 12;   // Rand-Abstand zwischen benachbarten Ring-Buttons
+  const RING_ARC_START  = 40;   // Winkel (° ab Horizontale) des ersten Ring-Buttons (Dash)
+  const TRANK_GAP        = 4;   // Rand-Abstand Trank -> Dash+Skill 1
   const TRANK_EDGE_PAD   = 4;   // Trank-Abstand vom rechten Bildschirmrand
 
   // 054 (slot-index Layout): die 4 mittleren Cells sind generische Slot-
@@ -53,16 +53,15 @@ if (window.i18n) {
   // (überlebt _runtimeSpec, das spec.key auf die Ability-id umschreibt) — die
   // Geometrie liegt in _fanLayout.
   //  - primar: großer kontext-sensitiver Angriff/Aktion-Button in der Ecke.
-  //  - dash:   eigener, bodennaher Button links vom Primär.
-  //  - S1..S4: enger Skill-Fächer direkt am Primär (kleinere Buttons).
-  //  - trank:  oben rechts über Skill 1+2.
+  //  - dash, S1..S4: gleichmäßiger Ring um Primär (gleiche Größe, gleicher Winkelschritt).
+  //  - trank:  oben rechts über Dash+Skill 1.
   const ABILITY_LAYOUT = [
     { key: 'attack',   pos: 'primar', radiusFactor: PRIMAR_FACTOR, color: 0xff0000, abilityId: null },
-    { key: 'slot1',    pos: 'S1',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 1 },
-    { key: 'slot2',    pos: 'S2',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 2 },
-    { key: 'slot3',    pos: 'S3',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 3 },
-    { key: 'slot4',    pos: 'S4',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 4 },
-    { key: 'roll',     pos: 'dash',   color: 0x8844cc, abilityId: null },
+    { key: 'roll',     pos: 'dash',   radiusFactor: RING_FACTOR, color: 0x8844cc, abilityId: null },
+    { key: 'slot1',    pos: 'S1',     radiusFactor: RING_FACTOR, color: 0x888888, slotIndex: 1 },
+    { key: 'slot2',    pos: 'S2',     radiusFactor: RING_FACTOR, color: 0x888888, slotIndex: 2 },
+    { key: 'slot3',    pos: 'S3',     radiusFactor: RING_FACTOR, color: 0x888888, slotIndex: 3 },
+    { key: 'slot4',    pos: 'S4',     radiusFactor: RING_FACTOR, color: 0x888888, slotIndex: 4 },
     { key: 'potion',   pos: 'trank',  radiusFactor: TRANK_FACTOR, color: 0xd02040, abilityId: null },
   ];
 
@@ -171,55 +170,52 @@ if (window.i18n) {
     return Math.max(BASE_RADIUS * 2 * scale, 44) + GRID_GAP;
   }
 
-  // Polar "Daumen-Bogen"-Layout: liefert die Button-Zentren je Positions-Schlüssel
-  // (primar/dash/S1..S4/trank) im 960×480-Canvas. Primär hugt die Ecke; Skills
-  // 1-4 faechern eng um ihn herum (kleinerer Radius als Primär — DAS ist der
-  // Schluessel zum DI-Look: ein reiner Ring aus GLEICH grossen Buttons zwingt
-  // 4 Kreise mathematisch auf einen Bogen von >150° [siehe Recherche-Skripte
-  // di.js-di8.js in der Session] — mit kleineren Skills bleibt der Faecher eng
-  // UND kollisionsfrei). Dash ist bodennah UND vom Primär-Radius komplett
-  // getrennt platziert (Primär ist riesig — dashDx muss gross genug sein, um
-  // den Primär-Umkreis zu meiden). Trank oben rechts ueber Skill 1+2.
+  // Ring-Layout: liefert die Button-Zentren je Positions-Schlüssel
+  // (primar/dash/S1..S4/trank) im 960×480-Canvas. Primär hugt die Ecke;
+  // Dash + Skills 1-4 (gleiche Größe, RING_FACTOR) sitzen als ECHTER
+  // gleichmäßiger Ring um ihn herum — fester Winkelschritt, aus der Ring-
+  // Buttongröße abgeleitet, sodass Nachbarn IMMER exakt RING_GAP auseinander
+  // liegen (kein Overlap, keine Lücken). Trank oben rechts über Dash+Skill 1.
   // Alle Werte fuer Scale 0.8/1.0/1.2 + Safe-Area-Insets numerisch verifiziert.
   function _fanLayout(screenW, screenH) {
     const scale = _buttonScale();
     const sa = _safeArea();
     const BR = BASE_RADIUS * scale;
     const PR = BR * PRIMAR_FACTOR;
-    const SR = BR * SKILL_FACTOR;
+    const RR = BR * RING_FACTOR;
     const TR = BR * TRANK_FACTOR;
-    const Gs = SKILL_GAP * scale;
+    const G  = RING_GAP * scale;
     const Cx = screenW - (CORNER_PAD + sa.right);   // untere-rechte Ecke
     const Cy = screenH - (CORNER_PAD + sa.bottom);
     const Px = Cx - PR - CORNER_INSET_X * scale;
-    const Py = Cy - PR;                              // Primär bodenbuendig
+    const Py = Cy - PR - CORNER_INSET_Y * scale;
 
     const pos = {};
     pos.primar = { x: Px, y: Py };
-    // Dash: eigener bodenbuendiger Anker, links vom Primär-Zentrum versetzt.
-    pos.dash = { x: Px - DASH_OFFSET_X * scale, y: Cy - BR };
 
-    // Skill-Faecher: enger Bogen um Primär, Winkelschritt aus Skillgroesse
-    // abgeleitet (wie beim vorherigen Layout) -> kein Overlap/keine Luecken.
-    const Rs = PR + SR + Gs;
-    const chord = 2 * SR + Gs;
-    const dBeta = 2 * Math.asin(Math.min(1, chord / (2 * Rs)));
-    const start = SKILL_ARC_START * Math.PI / 180;
-    const skillY = [];
-    for (let k = 0; k < 4; k++) {
+    // Ring: Dash, S1, S2, S3, S4 in dieser Reihenfolge, gleichmäßiger
+    // Winkelschritt (dBeta) aus der Ring-Buttongröße abgeleitet.
+    const Rr = PR + RR + G;
+    const chord = 2 * RR + G;
+    const dBeta = 2 * Math.asin(Math.min(1, chord / (2 * Rr)));
+    const start = RING_ARC_START * Math.PI / 180;
+    const ringKeys = ['dash', 'S1', 'S2', 'S3', 'S4'];
+    const ringY = [];
+    for (let k = 0; k < ringKeys.length; k++) {
       const th = start + k * dBeta;
-      const sx = Px + Rs * Math.cos(th);
-      const sy = Py - Rs * Math.sin(th);
-      pos['S' + (k + 1)] = { x: sx, y: sy };
-      skillY.push(sy);
+      const rx = Px + Rr * Math.cos(th);
+      const ry = Py - Rr * Math.sin(th);
+      pos[ringKeys[k]] = { x: rx, y: ry };
+      ringY.push(ry);
     }
 
-    // Trank: rechter Bildschirmrand, ueber Skill 1+2 (grosser Horizontal-
-    // Abstand zu S3/S4 -> braucht keinen vollen Durchmesser Vertikalpuffer).
-    const minSkillY = Math.min(skillY[0], skillY[1]);
+    // Trank: rechter Bildschirmrand, ueber den ersten beiden Ring-Buttons
+    // (Dash+S1, grosser Horizontal-Abstand zu S3/S4 -> braucht keinen vollen
+    // Durchmesser Vertikalpuffer).
+    const minRingY = Math.min(ringY[0], ringY[1]);
     pos.trank = {
       x: Cx - TR - TRANK_EDGE_PAD * scale,
-      y: minSkillY - TR - SR - TRANK_GAP * scale,
+      y: minRingY - TR - RR - TRANK_GAP * scale,
     };
     return pos;
   }

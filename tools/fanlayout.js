@@ -1,47 +1,47 @@
-// "Diablo-Immortal"-Layout generator + collision/fit verifier for the mobile
-// ability cluster. Mirrors js/mobileControls.js:_fanLayout() 1:1 (same
+// Ring-Layout generator + collision/fit verifier for the mobile ability
+// cluster. Mirrors js/mobileControls.js:_fanLayout() 1:1 (same
 // constants/formulas) — re-run this after touching that geometry. Game
 // renders at fixed 960x480 (Phaser FIT); we verify spacing & bounds across
 // button scales and safe-area insets.
 
 const BASE_RADIUS = 38, CORNER_PAD = 20, MIN_HIT_HALF = 22;
-const PRIMAR_FACTOR = 1.9, SKILL_FACTOR = 0.9, TRANK_FACTOR = 0.85;
-const CORNER_INSET_X = 50, SKILL_GAP = 12, SKILL_ARC_START = 35;
-const DASH_OFFSET_X = 130, TRANK_GAP = 4, TRANK_EDGE_PAD = 4;
+const PRIMAR_FACTOR = 1.9 * 0.9, RING_FACTOR = 0.9, TRANK_FACTOR = 1.0;
+const CORNER_INSET_X = 50, CORNER_INSET_Y = 15;
+const RING_GAP = 12, RING_ARC_START = 40, TRANK_GAP = 4, TRANK_EDGE_PAD = 4;
 
 function computeLayout(screenW, screenH, scale, sa) {
   const BR = BASE_RADIUS * scale;
   const PR = BR * PRIMAR_FACTOR;
-  const SR = BR * SKILL_FACTOR;
+  const RR = BR * RING_FACTOR;
   const TR = BR * TRANK_FACTOR;
-  const Gs = SKILL_GAP * scale;
+  const G = RING_GAP * scale;
   const Cx = screenW - (CORNER_PAD + (sa.right || 0));
   const Cy = screenH - (CORNER_PAD + (sa.bottom || 0));
   const Px = Cx - PR - CORNER_INSET_X * scale;
-  const Py = Cy - PR;
+  const Py = Cy - PR - CORNER_INSET_Y * scale;
 
   const out = [];
   out.push({ key: 'primar', x: Px, y: Py, r: PR });
-  out.push({ key: 'dash', x: Px - DASH_OFFSET_X * scale, y: Cy - BR, r: BR });
 
-  const Rs = PR + SR + Gs;
-  const chord = 2 * SR + Gs;
-  const dBeta = 2 * Math.asin(Math.min(1, chord / (2 * Rs)));
-  const start = SKILL_ARC_START * Math.PI / 180;
-  const skillY = [];
-  for (let k = 0; k < 4; k++) {
+  const Rr = PR + RR + G;
+  const chord = 2 * RR + G;
+  const dBeta = 2 * Math.asin(Math.min(1, chord / (2 * Rr)));
+  const start = RING_ARC_START * Math.PI / 180;
+  const ringKeys = ['dash', 'S1', 'S2', 'S3', 'S4'];
+  const ringY = [];
+  for (let k = 0; k < ringKeys.length; k++) {
     const th = start + k * dBeta;
-    const sx = Px + Rs * Math.cos(th);
-    const sy = Py - Rs * Math.sin(th);
-    out.push({ key: 'S' + (k + 1), x: sx, y: sy, r: SR });
-    skillY.push(sy);
+    const rx = Px + Rr * Math.cos(th);
+    const ry = Py - Rr * Math.sin(th);
+    out.push({ key: ringKeys[k], x: rx, y: ry, r: RR });
+    ringY.push(ry);
   }
 
-  const minSkillY = Math.min(skillY[0], skillY[1]);
+  const minRingY = Math.min(ringY[0], ringY[1]);
   out.push({
     key: 'trank',
     x: Cx - TR - TRANK_EDGE_PAD * scale,
-    y: minSkillY - TR - SR - TRANK_GAP * scale,
+    y: minRingY - TR - RR - TRANK_GAP * scale,
     r: TR,
   });
   return out;
