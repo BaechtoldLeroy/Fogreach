@@ -1861,11 +1861,13 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
   if (!enemy) return null;
 
   // Mini-boss stats. HP-Multiplikator angehoben (Mini-Bosse gingen zu schnell
-  // um): Tiefe 1-2 x6, Tiefe 3-4 x7, ab Tiefe 5 x8 (skaliert zusaetzlich mit der
-  // run-konstanten Tiefe des Basisgegners). Frueh leicht flacher, damit der
-  // Tiefe-1..4-Climax auf der Onboarding-Rampe schlagbar bleibt.
+  // um): Tiefe 1-2 x12, Tiefe 3-4 x14, ab Tiefe 5 x16 (skaliert zusaetzlich mit
+  // der run-konstanten Tiefe des Basisgegners) — nochmals verdoppelt gegenueber
+  // 6/7/8, damit Mini-Bosse wie die Vollbosse doppelt so viel HP haben.
+  // Frueh leicht flacher, damit der Tiefe-1..4-Climax auf der Onboarding-Rampe
+  // schlagbar bleibt.
   const _depth = Math.max(1, (typeof window !== 'undefined' && window.DUNGEON_DEPTH) || window.currentWave || 1);
-  const _hpMult = _depth <= 2 ? 6 : (_depth <= 4 ? 7 : 8);
+  const _hpMult = _depth <= 2 ? 12 : (_depth <= 4 ? 14 : 16);
   enemy.isMiniBoss = true;
   enemy.hp = Math.ceil(enemy.hp * _hpMult);
   enemy.maxHp = enemy.hp;
@@ -2306,7 +2308,7 @@ const BOSS_DEFINITIONS = {
     name: 'Kettenmeister',
     texture: 'boss_chain_right0',
     fallbackTexture: 'sprite_boss_chain',
-    baseHP: 48,
+    baseHP: 96,
     baseSpeed: 70,
     baseDamage: 6,
     scale: 1.6,
@@ -2319,7 +2321,7 @@ const BOSS_DEFINITIONS = {
     name: 'Zeremonienmeister',
     texture: 'boss_ceremony_right0',
     fallbackTexture: 'sprite_boss_ceremony',
-    baseHP: 78,
+    baseHP: 156,
     baseSpeed: 45,
     baseDamage: 9,
     scale: 1.7,
@@ -2333,9 +2335,10 @@ const BOSS_DEFINITIONS = {
     texture: 'boss_shadow_right0',
     fallbackTexture: 'sprite_boss_shadow',
     // Finaler Boss der Leiter (Tiefe 30) — deutlich härter als die beiden
-    // davor: 3x HP (80->240) und 2x Schaden (8->16). scale 1.8->3.6 = doppelte
-    // Darstellungsgrösse (bossTargetPx = 96 * scale, siehe makeBoss).
-    baseHP: 240,
+    // davor: 3x HP (80->240, seither nochmals verdoppelt ->480) und 2x Schaden
+    // (8->16). scale 1.8->3.6 = doppelte Darstellungsgrösse (bossTargetPx =
+    // 96 * scale, siehe makeBoss).
+    baseHP: 480,
     baseSpeed: 70,
     baseDamage: 16,
     scale: 3.6,
