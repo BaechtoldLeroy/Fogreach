@@ -13,7 +13,7 @@ history:
 - '2026-08-13: erstellt (/spec-kitty.tasks)'
 authoritative_surface: kitty-specs/067-mobile-ui-benchmark-rework/research/D-B-backlog.md
 execution_mode: planning_artifact
-lane: planned
+lane: done
 owned_files: [kitty-specs/067-mobile-ui-benchmark-rework/research/D-B-backlog.md]
 ---
 

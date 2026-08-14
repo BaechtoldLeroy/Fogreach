@@ -17,9 +17,10 @@ branch_strategy: Planning artifacts for this feature were generated on main. Dur
 subtasks: [T001, T002, T003, T004, T005, T006]
 history:
 - '2026-08-13: erstellt (/spec-kitty.tasks)'
+- '2026-08-14: done — Code live auf main (Commits 73c236d, 7223899, 62fcc2b, 298704a, edba1f0/bbe6675, 4070383, 5bef9d5, 97c46e8); Nutzer bestaetigt Abschluss'
 authoritative_surface: js/
 execution_mode: code_change
-lane: planned
+lane: done
 owned_files: [js/mobileControls.js, js/mobileAbilityButtons.js, js/doorSystem.js]
 ---
 

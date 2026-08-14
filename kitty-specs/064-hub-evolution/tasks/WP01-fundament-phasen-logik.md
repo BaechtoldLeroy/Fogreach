@@ -14,7 +14,7 @@ created_at: '2026-07-20T16:24:38.939795+00:00'
 subtasks: [T001, T002, T003, T004]
 authoritative_surface: js/hubPhase.js
 execution_mode: code_change
-lane: planned
+lane: done
 owned_files: [js/hubPhase.js, tests/hubPhase.test.js]
 shell_pid: "33028"
 agent: "claude"

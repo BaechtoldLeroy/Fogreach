@@ -19,7 +19,7 @@ created_at: '2026-07-20T16:28:32.809080+00:00'
 subtasks: [T009, T010, T011, T012, T013, T014]
 authoritative_surface: js/scenes/HubSceneV2.js
 execution_mode: code_change
-lane: planned
+lane: done
 owned_files: [js/scenes/HubSceneV2.js, js/scenes/hub/hubLayout.js, index.html]
 shell_pid: "33368"
 agent: "claude"
