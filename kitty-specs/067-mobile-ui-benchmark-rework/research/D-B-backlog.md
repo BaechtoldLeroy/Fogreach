@@ -11,13 +11,14 @@ Aufwand) zuerst; Tie-Break nach research R5. Format nach `contracts/D-B-backlog.
 | 1 | RW-01 | **Kontext-Primärbutton**: `attack` + `interact` zu einer kontextsensitiven Zelle (= Feature **065** / #80) | H | M | A3 | **✅ DONE (b61)** — umgesetzt, live. |
 | 2 | RW-02 | **Label-Kontrast** auf hell gefärbten Buttons (z. B. Cyan Frostnova/Wirbelwind): dunkler Text/Outline | M | N | A5 | **✅ DONE (b62)** — Umriss 2→3.5 + Schatten. |
 | 3 | RW-03 | **Leere Slots ausblenden** statt grau anzeigen | M | N | A2 | **✓ WAR SCHON ERFÜLLT** — `_resolveSlot`/`_runtimeSpec` geben für leere Slots `null` → Button wird gar nicht gebaut. |
-| 4 | RW-04 | Trefferflächen ≥48 px + Primärangriff als größtes Target | M | N–M | A7 | **✓ ≥48px ERFÜLLT** (BASE_RADIUS 38 = 76px). Offener Rest: „größter Primärbutton" (optional). |
-| 5 | RW-05 | **Reachability-Anordnung**: häufigste Aktionen in den unteren-rechten Daumenbogen | M | M | A1 | ⏳ OFFEN — Layout-Umbau, ändert Muskelgedächtnis (Design-Entscheidung). |
-| 6 | RW-06 | **Safe-Area-Platzierung** von Cluster+Joystick verifizieren/feintunen | N | N | A4 | ⏳ OFFEN — reine Prüfung/Feintuning (Grundlage mobileSafeArea da). |
-| 7 | RW-07 | *(optional)* **Floating/adaptiver Joystick** (re-zentriert unter dem Daumen, Brawl-Stars-Stil) | M | M | A1, A7 | ⏳ OFFEN — via rex-**Reposition** (globaler pointerdown setzt Basis auf Touch) ODER Custom-Widget; nicht mehr via setVisible. Input-kritisch → Feel prüfen. |
+| 4 | RW-04 | Trefferflächen ≥48 px + Primärangriff als größtes Target | M | N–M | A7 | **✓ ≥48px ERFÜLLT** (BASE_RADIUS 38 = 76px). „Größter Primärbutton" NICHT gemacht — Grid ist eng (Zelle 88px / Button 76px), größer riskiert Overlap. |
+| 5 | RW-05 | **Reachability-Anordnung**: häufigste Aktionen in den unteren-rechten Daumenbogen | M | M | A1 | **✓ WAR SCHON ERFÜLLT** — Grid ist bottom-right verankert; `attack` sitzt auf col0/row0 = unten-rechts = beste Rechtsdaumen-Lage; häufige Skills daneben. |
+| 6 | RW-06 | **Safe-Area-Platzierung** von Cluster+Joystick | N | N | A4 | **✓ WAR SCHON ERFÜLLT** — `_cellCenter`/`_anchorOrigin` nutzen `sa.right`/`sa.bottom` (Safe-Area-Insets). |
+| 7 | RW-07 | **Floating/adaptiver Joystick** (re-zentriert unter dem Daumen) | M | M | A1, A7 | **✅ DONE (b63)** — via rex-Reposition (pointerdown setzt Basis auf Touch), additiv mit Tap-to-Move-Fallback; pointerup resettet auf Ruhelage. **Braucht Geräte-Test** (rex-Recapture). |
 
-**Stand**: RW-01/02 umgesetzt (b61/b62); RW-03/04 waren bereits erfüllt. Offen: RW-05
-(Reachability, subjektiv), RW-06 (Safe-Area-Check), RW-07 (floating Joystick, input-kritisch).
+**Stand**: RW-01/02/07 umgesetzt (b61/b62/b63). RW-03/04/05/06 waren bereits erfüllt.
+„Größter Primärbutton" (RW-04-Rest) bewusst weggelassen (enges Grid). **Backlog abgearbeitet** —
+offen bleibt nur der Geräte-Test von RW-07 (floating Joystick).
 
 ## Bereits gelöst / bewusst so gelassen (NICHT im Backlog)
 - **Auto-Pickup von Loot**: bereits vorhanden (Gold-Overlap + magnetische Anziehung via
