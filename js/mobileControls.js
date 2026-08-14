@@ -25,37 +25,45 @@ if (window.i18n) {
 //   - 'demonfall:mobile-layout-changed' detail: {scene, width, height}
 
 (function () {
-  // ----- Polar "Daumen-Bogen"-Layout: Tuning-Konstanten -----
-  // (Muss VOR ABILITY_LAYOUT stehen — PRIMAR_FACTOR wird dort beim Init genutzt.)
-  // Die Geometrie ist in js: _fanLayout() umgesetzt und in tools/…/fanlayout.js
-  // gegen Overlap/Bildschirmgrenzen für alle Button-Scales (0.8/1.0/1.2) und
-  // Safe-Area-Insets verifiziert. Werte in 960×480-Canvas-Einheiten (FIT-Scale),
-  // × __MOBILE_BUTTON_SCALE__.
-  const PRIMAR_FACTOR   = 1.26;   // Primär-Radius relativ zu BASE_RADIUS (größtes Ziel)
-  const POLAR_GAP       = 12;     // gewünschter Rand-Abstand zwischen Nachbar-Buttons
-  const ARC_RADIUS      = 250;    // Radius des Skill-Fächers um die untere-rechte Ecke
-  const ARC_BETA_BOTTOM = 68;     // Winkel (° ab Vertikale) des untersten Skills S1
+  // ----- "Diablo-Immortal"-Layout: Tuning-Konstanten -----
+  // (Muss VOR ABILITY_LAYOUT stehen — die *_FACTOR-Konstanten werden dort beim
+  // Init genutzt.) Geometrie in _fanLayout() umgesetzt, gegen Overlap und
+  // Bildschirmgrenzen für alle Button-Scales (0.8/1.0/1.2) und Safe-Area-
+  // Insets numerisch verifiziert (Rechercheskript, siehe tools/fanlayout.js).
+  // Vorbild Diablo Immortal: EIN grosser Angriff/Aktion-Button in der Ecke,
+  // ein enger Faecher aus deutlich KLEINEREN Skill-Buttons direkt daran
+  // (kein gleich grosser Ring — das war der Schluessel, um DIs Look zu
+  // treffen), Dash separat und bodennah, Trank oben rechts. Nur 6 Buttons
+  // im Cluster (wie DI) + der Trank on top, den DI nicht hat.
+  const PRIMAR_FACTOR = 1.9;    // Angriff/Aktion — deutlich groesstes Ziel
+  const SKILL_FACTOR  = 0.9;    // Skills 1-4 — kleiner als Primär, eng gefaechert
+  const TRANK_FACTOR  = 0.85;   // Trank — etwas kleiner als Basis
+  const CORNER_INSET_X = 50;    // Primär-Versatz von der Ecke (X)
+  const SKILL_GAP       = 12;   // Rand-Abstand zwischen benachbarten Skills
+  const SKILL_ARC_START = 35;   // Winkel (° ab Horizontale) des ersten Skills (S1, rechts)
+  const DASH_OFFSET_X   = 130;  // Dash-Versatz links vom Primär-Zentrum
+  const TRANK_GAP        = 4;   // Rand-Abstand Trank -> Skills 1/2
+  const TRANK_EDGE_PAD   = 4;   // Trank-Abstand vom rechten Bildschirmrand
 
   // 054 (slot-index Layout): die 4 mittleren Cells sind generische Slot-
   // Buttons (slot1-4) die zur Laufzeit von AbilitySystem.getActiveLoadout()
   // mit der equipped-Ability gefüllt werden. abilityId matcht isEquipped()-IDs;
   // null = immer sichtbar (Angriff, Trank).
-  // #80/Variante A "Daumen-Bogen": Polar-Layout statt starrem 2×4-Raster.
-  // `pos` ist ein STABILER Positions-Schlüssel (überlebt _runtimeSpec, das
-  // spec.key auf die Ability-id umschreibt) — die Geometrie liegt in _fanLayout.
-  //  - primar: großer kontext-sensitiver Angriff/Aktion-Button im Daumen-Drehpunkt
-  //    (unten-rechts). radiusFactor > 1 macht ihn zum größten Ziel.
-  //  - dash:   direkt links neben primär, ebenfalls im Reflex-Bogen.
-  //  - S1..S4: Skill-Fächer, entlang der Daumen-Rotation nach oben-links.
-  //  - trank:  bewusst oben-links abgesetzt (kein Fehl-Tap im Gefecht).
+  // #80/Diablo-Immortal-Layout: `pos` ist ein STABILER Positions-Schlüssel
+  // (überlebt _runtimeSpec, das spec.key auf die Ability-id umschreibt) — die
+  // Geometrie liegt in _fanLayout.
+  //  - primar: großer kontext-sensitiver Angriff/Aktion-Button in der Ecke.
+  //  - dash:   eigener, bodennaher Button links vom Primär.
+  //  - S1..S4: enger Skill-Fächer direkt am Primär (kleinere Buttons).
+  //  - trank:  oben rechts über Skill 1+2.
   const ABILITY_LAYOUT = [
     { key: 'attack',   pos: 'primar', radiusFactor: PRIMAR_FACTOR, color: 0xff0000, abilityId: null },
-    { key: 'slot1',    pos: 'S1',     color: 0x888888, slotIndex: 1 },
-    { key: 'slot2',    pos: 'S2',     color: 0x888888, slotIndex: 2 },
-    { key: 'slot3',    pos: 'S3',     color: 0x888888, slotIndex: 3 },
-    { key: 'slot4',    pos: 'S4',     color: 0x888888, slotIndex: 4 },
+    { key: 'slot1',    pos: 'S1',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 1 },
+    { key: 'slot2',    pos: 'S2',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 2 },
+    { key: 'slot3',    pos: 'S3',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 3 },
+    { key: 'slot4',    pos: 'S4',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 4 },
     { key: 'roll',     pos: 'dash',   color: 0x8844cc, abilityId: null },
-    { key: 'potion',   pos: 'trank',  color: 0xd02040, abilityId: null },
+    { key: 'potion',   pos: 'trank',  radiusFactor: TRANK_FACTOR, color: 0xd02040, abilityId: null },
   ];
 
   // Mapping classic-ability-id → desktop-Cooldown-Window-Refs.
@@ -164,36 +172,55 @@ if (window.i18n) {
   }
 
   // Polar "Daumen-Bogen"-Layout: liefert die Button-Zentren je Positions-Schlüssel
-  // (primar/dash/S1..S4/trank) im 960×480-Canvas. Der Skill-Fächer ist ein Arc um
-  // die untere-rechte Ecke; der Winkelschritt wird AUS der Buttongröße abgeleitet,
-  // sodass benachbarte Buttons IMMER exakt POLAR_GAP auseinander liegen (kein
-  // Overlap, keine zu großen Lücken). Verifiziert in tools-Skript fanlayout.js.
+  // (primar/dash/S1..S4/trank) im 960×480-Canvas. Primär hugt die Ecke; Skills
+  // 1-4 faechern eng um ihn herum (kleinerer Radius als Primär — DAS ist der
+  // Schluessel zum DI-Look: ein reiner Ring aus GLEICH grossen Buttons zwingt
+  // 4 Kreise mathematisch auf einen Bogen von >150° [siehe Recherche-Skripte
+  // di.js-di8.js in der Session] — mit kleineren Skills bleibt der Faecher eng
+  // UND kollisionsfrei). Dash ist bodennah UND vom Primär-Radius komplett
+  // getrennt platziert (Primär ist riesig — dashDx muss gross genug sein, um
+  // den Primär-Umkreis zu meiden). Trank oben rechts ueber Skill 1+2.
+  // Alle Werte fuer Scale 0.8/1.0/1.2 + Safe-Area-Insets numerisch verifiziert.
   function _fanLayout(screenW, screenH) {
     const scale = _buttonScale();
     const sa = _safeArea();
     const BR = BASE_RADIUS * scale;
     const PR = BR * PRIMAR_FACTOR;
-    const G  = POLAR_GAP * scale;
-    const Cx = screenW - (CORNER_PAD + sa.right);   // untere-rechte Ecke (Drehpunkt)
+    const SR = BR * SKILL_FACTOR;
+    const TR = BR * TRANK_FACTOR;
+    const Gs = SKILL_GAP * scale;
+    const Cx = screenW - (CORNER_PAD + sa.right);   // untere-rechte Ecke
     const Cy = screenH - (CORNER_PAD + sa.bottom);
-    const step = 2 * BR + G;                         // Soll-Mittenabstand benachbarter Buttons
-    const Rs = ARC_RADIUS * scale;
-    const dBeta = 2 * Math.asin(Math.min(1, step / (2 * Rs)));
-    const betaBottom = ARC_BETA_BOTTOM * Math.PI / 180;
+    const Px = Cx - PR - CORNER_INSET_X * scale;
+    const Py = Cy - PR;                              // Primär bodenbuendig
 
     const pos = {};
-    // Primär hugt die Ecke (Radius PR); Dash direkt links daneben, bodennah.
-    pos.primar = { x: Cx - PR, y: Cy - PR };
-    pos.dash   = { x: Cx - (2 * PR + BR + G), y: Cy - BR };
-    // Skill-Fächer S1 (unten) .. S4 (oben, am rechten Rand).
+    pos.primar = { x: Px, y: Py };
+    // Dash: eigener bodenbuendiger Anker, links vom Primär-Zentrum versetzt.
+    pos.dash = { x: Px - DASH_OFFSET_X * scale, y: Cy - BR };
+
+    // Skill-Faecher: enger Bogen um Primär, Winkelschritt aus Skillgroesse
+    // abgeleitet (wie beim vorherigen Layout) -> kein Overlap/keine Luecken.
+    const Rs = PR + SR + Gs;
+    const chord = 2 * SR + Gs;
+    const dBeta = 2 * Math.asin(Math.min(1, chord / (2 * Rs)));
+    const start = SKILL_ARC_START * Math.PI / 180;
+    const skillY = [];
     for (let k = 0; k < 4; k++) {
-      const beta = betaBottom - k * dBeta;           // aufwärts = kleinerer Winkel
-      pos['S' + (k + 1)] = { x: Cx - Rs * Math.sin(beta), y: Cy - Rs * Math.cos(beta) };
+      const th = start + k * dBeta;
+      const sx = Px + Rs * Math.cos(th);
+      const sy = Py - Rs * Math.sin(th);
+      pos['S' + (k + 1)] = { x: sx, y: sy };
+      skillY.push(sy);
     }
-    // Trank abgesetzt oben-links, Zwischenwinkel S1/S2, eine Stufe weiter außen.
-    const betaTrank = betaBottom - 0.5 * dBeta;
-    const Rt = Rs + step;
-    pos.trank = { x: Cx - Rt * Math.sin(betaTrank), y: Cy - Rt * Math.cos(betaTrank) };
+
+    // Trank: rechter Bildschirmrand, ueber Skill 1+2 (grosser Horizontal-
+    // Abstand zu S3/S4 -> braucht keinen vollen Durchmesser Vertikalpuffer).
+    const minSkillY = Math.min(skillY[0], skillY[1]);
+    pos.trank = {
+      x: Cx - TR - TRANK_EDGE_PAD * scale,
+      y: minSkillY - TR - SR - TRANK_GAP * scale,
+    };
     return pos;
   }
 
