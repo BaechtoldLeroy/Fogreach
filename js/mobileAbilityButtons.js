@@ -127,12 +127,15 @@
     }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1201);
 
     // Label underneath, inside the button.
+    // #80/RW-02 Kontrast: dickerer dunkler Umriss + Schatten, damit weißer Text
+    // auch auf hell gefärbten Buttons (z. B. Cyan Frostnova/Wirbelwind) lesbar bleibt.
     const label = scene.add.text(0, 0, _initialLabel(dec), {
       fontSize: Math.max(9, Math.round(radius * 0.32)) + 'px',
       fontStyle: 'bold',
       color: '#ffffff',
       stroke: '#000000',
-      strokeThickness: 2,
+      strokeThickness: 3.5,
+      shadow: { offsetX: 0, offsetY: 1, color: '#000000', blur: 2, stroke: true, fill: true },
     }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1201);
 
     // Optional CD overlay text for buttons with no per-ability cooldown text
