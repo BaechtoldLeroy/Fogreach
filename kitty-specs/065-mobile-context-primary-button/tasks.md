@@ -12,12 +12,12 @@ Label reaktiv (✋„Aktion" ↔ ⚔️„Angr"); Tap dispatcht kontextabhängig
 **Independent test**: quickstart.md (Kampf/Tür/Loot/NPC/Prop/Übergang/Cooldown/Desktop).
 **Dependencies**: none.
 
-- [ ] T001 `DoorSystem.isDoorInRange(scene, player)` — leichter Getter (nearest door < INTERACT_DIST).
-- [ ] T002 `hasPeacefulTarget(scene)`-Helfer (window-Global) — Aggregation Hub/Dungeon; nie Gegner/destructible.
-- [ ] T003 `ABILITY_LAYOUT`: `attack`+`interact` → eine Primärzelle (`primary`), frei werdende Position leer.
-- [ ] T004 Kontext-Poll in `_pollEnabledState`: Glyph/Label des Primärbuttons nach `hasPeacefulTarget`.
-- [ ] T005 Tap-Dispatch-Weiche: peaceful → `_interact()`, sonst Angriff; genau EIN Pfad.
-- [ ] T006 Cooldown-Anzeige + Icon-Padding erhalten; Verifikation, `?v=`-Bumps + `GAME_VERSION`, Tests.
+- [x] T001 `DoorSystem.isDoorInRange(scene, player)` — leichter Getter (nearest door < INTERACT_DIST).
+- [x] T002 `hasPeacefulTarget(scene)`-Helfer (window-Global) — Aggregation Hub/Dungeon; nie Gegner/destructible.
+- [x] T003 `ABILITY_LAYOUT`: `attack`+`interact` → eine Primärzelle (`primary`), frei werdende Position leer.
+- [x] T004 Kontext-Poll in `_pollEnabledState`: Glyph/Label des Primärbuttons nach `hasPeacefulTarget`.
+- [x] T005 Tap-Dispatch-Weiche: peaceful → `_interact()`, sonst Angriff; genau EIN Pfad.
+- [x] T006 Cooldown-Anzeige + Icon-Padding erhalten; Verifikation, `?v=`-Bumps + `GAME_VERSION`, Tests.
 
 **Implementation sketch**: T001→T002 (Signale) → T003 (Layout) → T004/T005 (View+Controller) → T006 (Erhalt+Verify).
 **Risiken**: doppelte Auslösung (nur EIN Pfad, R3); Cooldown-Regress (b59 erhalten); Desktop-Pfade nicht anfassen (C-001).
