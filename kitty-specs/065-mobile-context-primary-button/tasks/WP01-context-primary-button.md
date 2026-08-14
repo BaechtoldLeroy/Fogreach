@@ -135,3 +135,4 @@ Plan/Basis-Branch: `main`. Merge-Ziel: `main`. Keine Dependencies → `spec-kitt
 ## Activity Log
 
 - 2026-08-14T05:44:32Z – unknown – lane=in_progress – Umsetzung Kontext-Primaerbutton
+- 2026-08-14T05:53:31Z – unknown – lane=done – Umgesetzt, 600 Tests gruen, Boot verifiziert | Done override: code_change ohne WP-Branch/Worktree — direkt auf main committet (Solo-Flow); keine Merge-Ancestry
