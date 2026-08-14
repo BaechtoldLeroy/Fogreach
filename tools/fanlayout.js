@@ -5,15 +5,14 @@
 // button scales and safe-area insets.
 
 const BASE_RADIUS = 38, CORNER_PAD = 20, MIN_HIT_HALF = 22;
-const PRIMAR_FACTOR = 1.9 * 0.8, SKILL_FACTOR = 1.0, DASH_FACTOR = 1.3, TRANK_FACTOR = 1.05;
-const CORNER_INSET_X = 40, SKILL_GAP = 12, SKILL_ARC_START = 50;
-const DASH_OFFSET_X = 200, TRANK_GAP = 4, TRANK_EDGE_PAD = 4;
+const PRIMAR_FACTOR = 1.9, SKILL_FACTOR = 0.9, TRANK_FACTOR = 0.85;
+const CORNER_INSET_X = 50, SKILL_GAP = 12, SKILL_ARC_START = 35;
+const DASH_OFFSET_X = 130, TRANK_GAP = 4, TRANK_EDGE_PAD = 4;
 
 function computeLayout(screenW, screenH, scale, sa) {
   const BR = BASE_RADIUS * scale;
   const PR = BR * PRIMAR_FACTOR;
   const SR = BR * SKILL_FACTOR;
-  const DR = BR * DASH_FACTOR;
   const TR = BR * TRANK_FACTOR;
   const Gs = SKILL_GAP * scale;
   const Cx = screenW - (CORNER_PAD + (sa.right || 0));
@@ -23,7 +22,7 @@ function computeLayout(screenW, screenH, scale, sa) {
 
   const out = [];
   out.push({ key: 'primar', x: Px, y: Py, r: PR });
-  out.push({ key: 'dash', x: Px - DASH_OFFSET_X * scale, y: Cy - DR, r: DR });
+  out.push({ key: 'dash', x: Px - DASH_OFFSET_X * scale, y: Cy - BR, r: BR });
 
   const Rs = PR + SR + Gs;
   const chord = 2 * SR + Gs;
