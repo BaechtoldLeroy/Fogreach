@@ -31,17 +31,22 @@ if (window.i18n) {
   // Bildschirmgrenzen für alle Button-Scales (0.8/1.0/1.2) und Safe-Area-
   // Insets numerisch verifiziert (Rechercheskript, siehe tools/fanlayout.js).
   // Vorbild Diablo Immortal: EIN grosser Angriff/Aktion-Button in der Ecke,
-  // ein enger Faecher aus deutlich KLEINEREN Skill-Buttons direkt daran
-  // (kein gleich grosser Ring — das war der Schluessel, um DIs Look zu
-  // treffen), Dash separat und bodennah, Trank oben rechts. Nur 6 Buttons
-  // im Cluster (wie DI) + der Trank on top, den DI nicht hat.
-  const PRIMAR_FACTOR = 1.9;    // Angriff/Aktion — deutlich groesstes Ziel
-  const SKILL_FACTOR  = 0.9;    // Skills 1-4 — kleiner als Primär, eng gefaechert
-  const TRANK_FACTOR  = 0.85;   // Trank — etwas kleiner als Basis
-  const CORNER_INSET_X = 50;    // Primär-Versatz von der Ecke (X)
+  // ein enger Faecher aus Skill-Buttons direkt daran, Dash separat und
+  // bodennah, Trank oben rechts. Nur 6 Buttons im Cluster (wie DI) + der
+  // Trank on top, den DI nicht hat.
+  // Nutzer-Korrektur: Primär war zu gross -> auf 80% verkleinert (1.9->1.52);
+  // die anderen Buttons dafuer entsprechend vergroessert (Skills zurueck auf
+  // Basisgroesse, Dash+Trank sogar ueber Basisgroesse) — neu durchgerechnet,
+  // da sich damit auch die Kollisionsgeometrie (Faecher-Winkel, Dash-Abstand)
+  // verschiebt.
+  const PRIMAR_FACTOR = 1.9 * 0.8; // = 1.52 — Angriff/Aktion, weiterhin groesstes Ziel
+  const SKILL_FACTOR  = 1.0;    // Skills 1-4 — Basisgroesse
+  const DASH_FACTOR   = 1.3;    // Dash — groesser als Basis
+  const TRANK_FACTOR  = 1.05;   // Trank — leicht groesser als Basis
+  const CORNER_INSET_X = 40;    // Primär-Versatz von der Ecke (X)
   const SKILL_GAP       = 12;   // Rand-Abstand zwischen benachbarten Skills
-  const SKILL_ARC_START = 35;   // Winkel (° ab Horizontale) des ersten Skills (S1, rechts)
-  const DASH_OFFSET_X   = 130;  // Dash-Versatz links vom Primär-Zentrum
+  const SKILL_ARC_START = 50;   // Winkel (° ab Horizontale) des ersten Skills (S1, rechts)
+  const DASH_OFFSET_X   = 200;  // Dash-Versatz links vom Primär-Zentrum
   const TRANK_GAP        = 4;   // Rand-Abstand Trank -> Skills 1/2
   const TRANK_EDGE_PAD   = 4;   // Trank-Abstand vom rechten Bildschirmrand
 
@@ -62,7 +67,7 @@ if (window.i18n) {
     { key: 'slot2',    pos: 'S2',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 2 },
     { key: 'slot3',    pos: 'S3',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 3 },
     { key: 'slot4',    pos: 'S4',     radiusFactor: SKILL_FACTOR, color: 0x888888, slotIndex: 4 },
-    { key: 'roll',     pos: 'dash',   color: 0x8844cc, abilityId: null },
+    { key: 'roll',     pos: 'dash',   radiusFactor: DASH_FACTOR, color: 0x8844cc, abilityId: null },
     { key: 'potion',   pos: 'trank',  radiusFactor: TRANK_FACTOR, color: 0xd02040, abilityId: null },
   ];
 
@@ -187,6 +192,7 @@ if (window.i18n) {
     const BR = BASE_RADIUS * scale;
     const PR = BR * PRIMAR_FACTOR;
     const SR = BR * SKILL_FACTOR;
+    const DR = BR * DASH_FACTOR;
     const TR = BR * TRANK_FACTOR;
     const Gs = SKILL_GAP * scale;
     const Cx = screenW - (CORNER_PAD + sa.right);   // untere-rechte Ecke
@@ -196,8 +202,9 @@ if (window.i18n) {
 
     const pos = {};
     pos.primar = { x: Px, y: Py };
-    // Dash: eigener bodenbuendiger Anker, links vom Primär-Zentrum versetzt.
-    pos.dash = { x: Px - DASH_OFFSET_X * scale, y: Cy - BR };
+    // Dash: eigener bodenbuendiger Anker (eigener Radius DR), links vom
+    // Primär-Zentrum versetzt.
+    pos.dash = { x: Px - DASH_OFFSET_X * scale, y: Cy - DR };
 
     // Skill-Faecher: enger Bogen um Primär, Winkelschritt aus Skillgroesse
     // abgeleitet (wie beim vorherigen Layout) -> kein Overlap/keine Luecken.
