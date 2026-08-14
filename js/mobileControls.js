@@ -283,10 +283,30 @@ if (window.i18n) {
     } catch (e) { /* defensiv */ }
     return false;
   }
+  // Ist ein lebender Gegner näher als `range` am Spieler? (Kampf-Nähe)
+  const _PEACE_ENEMY_RANGE = 240;
+  function _enemyNearby(p, range) {
+    try {
+      const grp = (typeof enemies !== 'undefined' && enemies) ? enemies : window.enemies;
+      if (!grp || typeof grp.getChildren !== 'function') return false;
+      const arr = grp.getChildren();
+      const r2 = range * range;
+      for (let i = 0; i < arr.length; i++) {
+        const e = arr[i];
+        if (!e || !e.active) continue;
+        const dx = e.x - p.x, dy = e.y - p.y;
+        if (dx * dx + dy * dy < r2) return true;
+      }
+    } catch (e) { /* defensiv */ }
+    return false;
+  }
   function hasPeacefulTarget(scene) {
     if (!scene) return false;
-    if (scene._activeInteractable) return true; // Hub-NPC/Gebäude
     const p = (typeof player !== 'undefined' && player) ? player : window.player;
+    // #065-Refinement (Nutzer): "Aktion" NUR wenn keine Gegner in der Nähe sind —
+    // im Kampf will man neben Tür/Loot angreifen, nicht interagieren.
+    if (p && _enemyNearby(p, _PEACE_ENEMY_RANGE)) return false;
+    if (scene._activeInteractable) return true; // Hub-NPC/Gebäude
     if (window.DoorSystem && typeof window.DoorSystem.isDoorInRange === 'function'
         && p && window.DoorSystem.isDoorInRange(scene, p)) return true; // Dungeon-Tür
     return _hasVisibleInteractPrompt(scene); // Events/Treppe/Händler/Loot ([E]-Prompt)
