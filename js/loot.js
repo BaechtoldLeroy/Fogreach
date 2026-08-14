@@ -291,29 +291,32 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
   }
 
   // Elite enemies have higher loot chance and better tier
-  // D2-like drop frequencies: trash rarely drops, elites modestly, minibosses often.
-  // Item-Drop-Chancen (1 Basis + Bonus = Prozent): Trash 1%, Elite 3%,
-  // Miniboss 5%. Die drei Zahlen sind die Tunables.
+  // D2-like drop frequencies: trash rarely drops, elites modestly, minibosses
+  // often, echte Bosse am häufigsten. Item-Drop-Chancen (Prozent): Trash 0.5%,
+  // Elite 2%, Miniboss 6%, Boss 10%. Die vier Zahlen sind die Tunables.
   const isEliteDrop = sourceEnemy && sourceEnemy.isElite;
   const isMiniBossDrop = sourceEnemy && sourceEnemy.isMiniBoss;
-  const lootChanceBonus = isMiniBossDrop ? 4 : (isEliteDrop ? 2 : 0);
+  const isBossDrop = sourceEnemy && sourceEnemy.isBoss;
+  const dropThresholdBase = isBossDrop ? 10 : (isMiniBossDrop ? 6 : (isEliteDrop ? 2 : 0.5));
 
-  // Diminishing Returns: sind in diesem Run schon >10 ECHTE Items gedroppt
+  // Diminishing Returns: sind in diesem Run schon >3 ECHTE Items gedroppt
   // (Tränke/Rollen NICHT mitgezählt), wird die zufällige Item-Chance HALBIERT.
-  let dropThreshold = 1 + lootChanceBonus;
-  if ((window.__runItemsDropped || 0) > 10) dropThreshold = dropThreshold / 2;
+  let dropThreshold = dropThresholdBase;
+  if ((window.__runItemsDropped || 0) > 3) dropThreshold = dropThreshold / 2;
 
   // Float-Roll (0..100), damit halbierte Bruch-Schwellen (z.B. 0.5) exakt greifen.
   const roll = Math.random() * 100;
 
   if (maybeItem || roll < dropThreshold) {
     // KEIN Tier-Bump mehr. Elites droppen normale Qualität (nur höhere Drop-Rate).
-    // Minibosse rollen mit einem Qualitäts-BIAS -> erhöhte CHANCE auf Magic/Rare/
-    // Legendär (kein garantierter +Tier-Sprung).
+    // Minibosse UND echte Bosse rollen mit einem Qualitäts-BIAS -> erhöhte
+    // CHANCE auf Magic/Rare/Legendär (kein garantierter +Tier-Sprung). Vorher
+    // war hier nur isMiniBoss geprüft — ein Boss-Kill droppte Equipment in
+    // Trash-Qualität, obwohl seine Drop-CHANCE schon bevorzugt war.
     const MINIBOSS_QUALITY_BIAS = 3;
     const baseItem = maybeItem
       ? { ...maybeItem }
-      : randomLoot(isMiniBossDrop ? MINIBOSS_QUALITY_BIAS : 1);
+      : randomLoot((isMiniBossDrop || isBossDrop) ? MINIBOSS_QUALITY_BIAS : 1);
     let tier = (typeof baseItem?.tier === 'number') ? baseItem.tier : 0;
     let item;
     if (maybeItem) {
