@@ -348,9 +348,32 @@ if (window.i18n) {
     } catch (e) { /* defensiv */ }
     return false;
   }
+  // Liegt eine GESCHLOSSENE Tür auf der Luftlinie zwischen zwei Punkten?
+  // Gegner hinter einer zu-Tür sind physisch blockiert (Tür hat einen soliden
+  // Body, solange walkthrough=false) — sie duerfen die Primaerbutton-Wertung
+  // nicht auf "Angriff" zwingen, sonst laesst sich die Tuer nie oeffnen (Bug:
+  // Gegner im Nachbarraum halten den Button dauerhaft auf "Angr").
+  function _lineBlockedByClosedDoor(scene, ax, ay, bx, by) {
+    try {
+      const doors = scene && scene._doors;
+      if (!doors || !doors.length) return false;
+      const line = new Phaser.Geom.Line(ax, ay, bx, by);
+      for (let i = 0; i < doors.length; i++) {
+        const d = doors[i];
+        if (!d || !d.active) continue;
+        if (d.getData && d.getData('doorState') !== 'closed') continue;
+        const body = d.body;
+        const rect = body
+          ? new Phaser.Geom.Rectangle(body.x, body.y, body.width, body.height)
+          : new Phaser.Geom.Rectangle(d.x - d.width / 2, d.y - d.height / 2, d.width, d.height);
+        if (Phaser.Geom.Intersects.LineToRectangle(line, rect)) return true;
+      }
+    } catch (e) { /* defensiv */ }
+    return false;
+  }
   // Ist ein lebender Gegner näher als `range` am Spieler? (Kampf-Nähe)
   const _PEACE_ENEMY_RANGE = 240;
-  function _enemyNearby(p, range) {
+  function _enemyNearby(scene, p, range) {
     try {
       const grp = (typeof enemies !== 'undefined' && enemies) ? enemies : window.enemies;
       if (!grp || typeof grp.getChildren !== 'function') return false;
@@ -360,7 +383,9 @@ if (window.i18n) {
         const e = arr[i];
         if (!e || !e.active) continue;
         const dx = e.x - p.x, dy = e.y - p.y;
-        if (dx * dx + dy * dy < r2) return true;
+        if (dx * dx + dy * dy >= r2) continue;
+        if (_lineBlockedByClosedDoor(scene, p.x, p.y, e.x, e.y)) continue; // hinter zu-Tür -> zaehlt nicht
+        return true;
       }
     } catch (e) { /* defensiv */ }
     return false;
@@ -370,7 +395,7 @@ if (window.i18n) {
     const p = (typeof player !== 'undefined' && player) ? player : window.player;
     // #065-Refinement (Nutzer): "Aktion" NUR wenn keine Gegner in der Nähe sind —
     // im Kampf will man neben Tür/Loot angreifen, nicht interagieren.
-    if (p && _enemyNearby(p, _PEACE_ENEMY_RANGE)) return false;
+    if (p && _enemyNearby(scene, p, _PEACE_ENEMY_RANGE)) return false;
     if (scene._activeInteractable) return true; // Hub-NPC/Gebäude
     if (window.DoorSystem && typeof window.DoorSystem.isDoorInRange === 'function'
         && p && window.DoorSystem.isDoorInRange(scene, p)) return true; // Dungeon-Tür
