@@ -131,3 +131,7 @@ Query mit Guards?
 
 ## Branch Strategy
 Plan/Basis-Branch: `main`. Merge-Ziel: `main`. Keine Dependencies → `spec-kitty implement WP01`.
+
+## Activity Log
+
+- 2026-08-14T05:44:32Z – unknown – lane=in_progress – Umsetzung Kontext-Primaerbutton
