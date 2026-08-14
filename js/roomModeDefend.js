@@ -115,7 +115,7 @@
   }
 
   function DefendMode() {
-    var scene = null, sprite = null;
+    var scene = null, sprite = null, playerCollider = null;
     var maxHp = BASE_HP, hp = BASE_HP;
     var objX = 0, objY = 0;
     var duration = _depthSeconds(), remaining = duration, spawnAcc = 0;
@@ -125,7 +125,7 @@
         maxHp = hp = BASE_HP;
         duration = remaining = _depthSeconds();
         spawnAcc = 0;
-        // Altar FIX in der Raummitte (begehbar); Fallbacks für prozedurale Räume.
+        // Altar FIX in der Raummitte (solides Hindernis, #82); Fallbacks für prozedurale Räume.
         objX = objY = 0;
         var b = scene && scene.physics && scene.physics.world && scene.physics.world.bounds;
         if (b) { objX = b.centerX; objY = b.centerY; }
@@ -142,6 +142,23 @@
           _ensureTex(scene);
           try { sprite = scene.add.sprite(objX, objY, DEPTH_TEX).setDepth(400).setScrollFactor(1); }
           catch (e) { sprite = null; }
+        }
+        // #82: solider Physics-Body NUR fuer den Spieler — Gegner sollen den
+        // Altar weiterhin umringen/erreichen koennen (Drain ist radiusbasiert
+        // ueber DRAIN_RADIUS, nicht beruehrungsbasiert, s. _enemiesNearAltar).
+        // Body-Groesse an das sichtbare Steinpodest angepasst (nicht das volle
+        // 64x60-Sprite-Rechteck, sonst blockiert der schwebende Kristall/Halo
+        // mit, der optisch weit ueber das Podest hinausragt).
+        if (sprite && scene.physics) {
+          try {
+            scene.physics.add.existing(sprite, true);
+            sprite.body.setSize(48, 22);
+            sprite.body.setOffset(8, 34);
+            if (typeof sprite.body.updateFromGameObject === 'function') sprite.body.updateFromGameObject();
+            if (window.player) {
+              playerCollider = scene.physics.add.collider(window.player, sprite);
+            }
+          } catch (e) { /* nie den Raum-Modus crashen */ }
         }
         // Gegner zum Altar ZIEHEN (Melee-Ziel-Override in enemy.js). So spielt
         // sich der Kampf am Altar ab, unabhängig von der Raumgröße.
@@ -190,6 +207,7 @@
       // Wechsel) — sonst bleibt der Sprite hängen bzw. Gegner laufen weiter zum
       // alten Altar-Punkt.
       stop: function () {
+        if (playerCollider) { try { playerCollider.destroy(); } catch (e) {} playerCollider = null; }
         if (sprite) { try { sprite.destroy(); } catch (e) {} sprite = null; }
         if (typeof window !== 'undefined') window.__ENEMY_CHASE_OVERRIDE__ = null;
       },
