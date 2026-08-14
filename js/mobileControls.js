@@ -448,11 +448,27 @@ if (window.i18n) {
       // Ignore if tapping on UI (right side ability area or top bar)
       if (pointer.x > scene.scale.width * 0.65 && pointer.y > scene.scale.height * 0.4) return;
       if (pointer.y < 60) return; // top HUD bar
-      // Ignore if in joystick zone
-      const jx = state.joystick ? state.joystick.base.x : 100;
-      const jy = state.joystick ? state.joystick.base.y : scene.scale.height - 100;
-      const jdx = pointer.x - jx, jdy = pointer.y - jy;
-      if (jdx * jdx + jdy * jdy < JOYSTICK_ZONE_RADIUS * JOYSTICK_ZONE_RADIUS) return;
+      // #80/RW-07 Floating Joystick: der Bewegungs-Stick erscheint dort, wo der
+      // LINKE Daumen aufsetzt (statt fest unten-links). Reposition der rex-Basis
+      // auf den Touch — rex startet das Tracking via pointerover-Recapture (KEIN
+      // setVisible, das war der alte Blocker). Additiv: Tap-to-Move bleibt als
+      // Fallback, falls rex nicht recaptured -> Bewegung kann nicht ganz brechen.
+      let _floating = false;
+      if (state.joystick && pointer.x < scene.scale.width * 0.5) {
+        try {
+          state.joystick.base.setPosition(pointer.x, pointer.y);
+          if (state.joystick.thumb) state.joystick.thumb.setPosition(pointer.x, pointer.y);
+          _floating = true;
+        } catch (e) { /* defensiv */ }
+      }
+      // Ignore if in joystick zone — aber NICHT wenn wir gerade floating
+      // repositioniert haben (dann soll Tap-to-Move als Fallback durchlaufen).
+      if (!_floating) {
+        const jx = state.joystick ? state.joystick.base.x : 100;
+        const jy = state.joystick ? state.joystick.base.y : scene.scale.height - 100;
+        const jdx = pointer.x - jx, jdy = pointer.y - jy;
+        if (jdx * jdx + jdy * jdy < JOYSTICK_ZONE_RADIUS * JOYSTICK_ZONE_RADIUS) return;
+      }
       // Ignore if any interactive UI was hit
       if (pointer.camera && scene.input.hitTestPointer) {
         const hits = scene.input.hitTestPointer(pointer);
@@ -495,8 +511,17 @@ if (window.i18n) {
       const worldPt = cam.getWorldPoint(pointer.x, pointer.y);
       window.__MOBILE_MOVE_TARGET__ = { x: worldPt.x, y: worldPt.y };
     });
-    scene.input.on('pointerup', () => {
-      // Don't clear target — let player walk to last tapped position
+    scene.input.on('pointerup', (pointer) => {
+      // Don't clear target — let player walk to last tapped position.
+      // #80/RW-07: Floating Joystick beim Loslassen (linke Seite) auf die feste
+      // Ruheposition zurücksetzen, damit er nicht mitten im Bild hängen bleibt.
+      if (state.joystick && pointer && pointer.x < scene.scale.width * 0.5) {
+        try {
+          const rx = 100, ry = scene.scale.height - 100;
+          state.joystick.base.setPosition(rx, ry);
+          if (state.joystick.thumb) state.joystick.thumb.setPosition(rx, ry);
+        } catch (e) { /* defensiv */ }
+      }
     });
 
     // Rebuild mobile buttons whenever the desktop HUD refreshes (i.e. when
