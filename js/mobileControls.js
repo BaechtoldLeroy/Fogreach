@@ -25,26 +25,37 @@ if (window.i18n) {
 //   - 'demonfall:mobile-layout-changed' detail: {scene, width, height}
 
 (function () {
-  // Declarative grid — col 0 = innermost (closest to bottom-right corner).
-  // row 0 = bottom row, row 1 = upper row.
-  // abilityId matches window.AbilitySystem.isEquipped() IDs; null means
-  // the button is always visible (basic attack, potion).
+  // ----- Polar "Daumen-Bogen"-Layout: Tuning-Konstanten -----
+  // (Muss VOR ABILITY_LAYOUT stehen — PRIMAR_FACTOR wird dort beim Init genutzt.)
+  // Die Geometrie ist in js: _fanLayout() umgesetzt und in tools/…/fanlayout.js
+  // gegen Overlap/Bildschirmgrenzen für alle Button-Scales (0.8/1.0/1.2) und
+  // Safe-Area-Insets verifiziert. Werte in 960×480-Canvas-Einheiten (FIT-Scale),
+  // × __MOBILE_BUTTON_SCALE__.
+  const PRIMAR_FACTOR   = 1.26;   // Primär-Radius relativ zu BASE_RADIUS (größtes Ziel)
+  const POLAR_GAP       = 12;     // gewünschter Rand-Abstand zwischen Nachbar-Buttons
+  const ARC_RADIUS      = 250;    // Radius des Skill-Fächers um die untere-rechte Ecke
+  const ARC_BETA_BOTTOM = 68;     // Winkel (° ab Vertikale) des untersten Skills S1
+
   // 054 (slot-index Layout): die 4 mittleren Cells sind generische Slot-
   // Buttons (slot1-4) die zur Laufzeit von AbilitySystem.getActiveLoadout()
-  // mit der equipped-Ability gefüllt werden. Vorher hatte jede Ability eine
-  // fixe Cell — Shield-Equip führte zum Crash weil keine Cell existierte.
-  // Slot-Reihenfolge: slot1 (Q) am Daumen, slot4 (R) am weitesten.
+  // mit der equipped-Ability gefüllt werden. abilityId matcht isEquipped()-IDs;
+  // null = immer sichtbar (Angriff, Trank).
+  // #80/Variante A "Daumen-Bogen": Polar-Layout statt starrem 2×4-Raster.
+  // `pos` ist ein STABILER Positions-Schlüssel (überlebt _runtimeSpec, das
+  // spec.key auf die Ability-id umschreibt) — die Geometrie liegt in _fanLayout.
+  //  - primar: großer kontext-sensitiver Angriff/Aktion-Button im Daumen-Drehpunkt
+  //    (unten-rechts). radiusFactor > 1 macht ihn zum größten Ziel.
+  //  - dash:   direkt links neben primär, ebenfalls im Reflex-Bogen.
+  //  - S1..S4: Skill-Fächer, entlang der Daumen-Rotation nach oben-links.
+  //  - trank:  bewusst oben-links abgesetzt (kein Fehl-Tap im Gefecht).
   const ABILITY_LAYOUT = [
-    { key: 'attack',   col: 0, row: 0, color: 0xff0000, abilityId: null },
-    { key: 'slot1',    col: 1, row: 0, color: 0x888888, slotIndex: 1 },
-    { key: 'slot2',    col: 2, row: 0, color: 0x888888, slotIndex: 2 },
-    { key: 'potion',   col: 3, row: 0, color: 0xd02040, abilityId: null },
-    { key: 'roll',     col: 0, row: 1, color: 0x8844cc, abilityId: null },
-    { key: 'slot3',    col: 1, row: 1, color: 0x888888, slotIndex: 3 },
-    { key: 'slot4',    col: 2, row: 1, color: 0x888888, slotIndex: 4 },
-    // #065: 'attack' + 'interact' zu EINEM kontextsensitiven Primärbutton
-    // zusammengelegt (attack-Zelle bleibt, wird kontext-sensitiv). Die frei
-    // gewordene Position (col3,row1) bleibt leer (MVP).
+    { key: 'attack',   pos: 'primar', radiusFactor: PRIMAR_FACTOR, color: 0xff0000, abilityId: null },
+    { key: 'slot1',    pos: 'S1',     color: 0x888888, slotIndex: 1 },
+    { key: 'slot2',    pos: 'S2',     color: 0x888888, slotIndex: 2 },
+    { key: 'slot3',    pos: 'S3',     color: 0x888888, slotIndex: 3 },
+    { key: 'slot4',    pos: 'S4',     color: 0x888888, slotIndex: 4 },
+    { key: 'roll',     pos: 'dash',   color: 0x8844cc, abilityId: null },
+    { key: 'potion',   pos: 'trank',  color: 0xd02040, abilityId: null },
   ];
 
   // Mapping classic-ability-id → desktop-Cooldown-Window-Refs.
@@ -152,14 +163,38 @@ if (window.i18n) {
     return Math.max(BASE_RADIUS * 2 * scale, 44) + GRID_GAP;
   }
 
-  function _cellCenter(screenW, screenH, col, row) {
+  // Polar "Daumen-Bogen"-Layout: liefert die Button-Zentren je Positions-Schlüssel
+  // (primar/dash/S1..S4/trank) im 960×480-Canvas. Der Skill-Fächer ist ein Arc um
+  // die untere-rechte Ecke; der Winkelschritt wird AUS der Buttongröße abgeleitet,
+  // sodass benachbarte Buttons IMMER exakt POLAR_GAP auseinander liegen (kein
+  // Overlap, keine zu großen Lücken). Verifiziert in tools-Skript fanlayout.js.
+  function _fanLayout(screenW, screenH) {
+    const scale = _buttonScale();
     const sa = _safeArea();
-    const cs = _cellSide();
-    const padRight = CORNER_PAD + sa.right;
-    const padBottom = CORNER_PAD + sa.bottom;
-    const x = screenW - padRight - cs * (col + 0.5);
-    const y = screenH - padBottom - cs * (row + 0.5);
-    return { x, y, cellSide: cs };
+    const BR = BASE_RADIUS * scale;
+    const PR = BR * PRIMAR_FACTOR;
+    const G  = POLAR_GAP * scale;
+    const Cx = screenW - (CORNER_PAD + sa.right);   // untere-rechte Ecke (Drehpunkt)
+    const Cy = screenH - (CORNER_PAD + sa.bottom);
+    const step = 2 * BR + G;                         // Soll-Mittenabstand benachbarter Buttons
+    const Rs = ARC_RADIUS * scale;
+    const dBeta = 2 * Math.asin(Math.min(1, step / (2 * Rs)));
+    const betaBottom = ARC_BETA_BOTTOM * Math.PI / 180;
+
+    const pos = {};
+    // Primär hugt die Ecke (Radius PR); Dash direkt links daneben, bodennah.
+    pos.primar = { x: Cx - PR, y: Cy - PR };
+    pos.dash   = { x: Cx - (2 * PR + BR + G), y: Cy - BR };
+    // Skill-Fächer S1 (unten) .. S4 (oben, am rechten Rand).
+    for (let k = 0; k < 4; k++) {
+      const beta = betaBottom - k * dBeta;           // aufwärts = kleinerer Winkel
+      pos['S' + (k + 1)] = { x: Cx - Rs * Math.sin(beta), y: Cy - Rs * Math.cos(beta) };
+    }
+    // Trank abgesetzt oben-links, Zwischenwinkel S1/S2, eine Stufe weiter außen.
+    const betaTrank = betaBottom - 0.5 * dBeta;
+    const Rt = Rs + step;
+    pos.trank = { x: Cx - Rt * Math.sin(betaTrank), y: Cy - Rt * Math.cos(betaTrank) };
+    return pos;
   }
 
   function _anchorOrigin(screenW, screenH) {
@@ -187,7 +222,8 @@ if (window.i18n) {
 
   function _makeAbilityButton(scene, spec, onDown, onUp) {
     const scale = _buttonScale();
-    const visualRadius = BASE_RADIUS * scale;
+    const rf = (typeof spec.radiusFactor === 'number' && spec.radiusFactor > 0) ? spec.radiusFactor : 1;
+    const visualRadius = BASE_RADIUS * scale * rf;
     const hitHalf = Math.max(MIN_HIT_HALF, visualRadius);
 
     const btn = scene.add.circle(0, 0, visualRadius, spec.color, 0.6)
@@ -226,16 +262,18 @@ if (window.i18n) {
   }
 
   function _positionAll(screenW, screenH) {
+    const fan = _fanLayout(screenW, screenH);
     state.buttons.forEach(({ circle, spec }) => {
-      const pos = _cellCenter(screenW, screenH, spec.col, spec.row);
+      const pos = fan[spec.pos] || fan.primar;
       circle.setPosition(pos.x, pos.y);
     });
     Object.keys(state.cooldownTexts).forEach((key) => {
       // Cooldown-Text-Position folgt der Button-Position desselben Keys.
-      // Bei slot-Cells ist key = decKey (z.B. 'spin') = aktueller spec.key.
+      // Bei slot-Cells ist key = decKey (z.B. 'spin') = aktueller spec.key;
+      // spec.pos (Positions-Schlüssel) überlebt _runtimeSpec.
       const btn = state.buttons.find((b) => b.spec.key === key);
       if (!btn) return;
-      const pos = _cellCenter(screenW, screenH, btn.spec.col, btn.spec.row);
+      const pos = fan[btn.spec.pos] || fan.primar;
       state.cooldownTexts[key].setPosition(pos.x, pos.y);
     });
 
