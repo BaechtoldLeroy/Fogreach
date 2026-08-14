@@ -2302,6 +2302,16 @@ function makeElite(enemy) {
 // ===================================================================
 // Boss Definitions: 3 unique bosses tied to Kettenrat lore
 // ===================================================================
+// WICHTIG zu `baseHP`: das ist die HP auf TIEFE 1, nicht die absolute HP.
+// makeBoss multipliziert mit derselben Tiefen-Kurve wie normale Gegner
+// (1 + (depth-1)*0.1). Vorher war baseHP absolut und Bosse skalierten GAR NICHT
+// mit der Tiefe — dadurch war der Kettenmeister (96 HP) auf Tiefe 10 nur 1.6x
+// so zaeh wie ein durchschnittlicher Mini-Boss (60.8 HP), der JEDEN Raum
+// abschliesst, und schwaecher als ein zaeher Mini-Boss (bis 160 HP).
+// Kalibrierung (Ziel: Boss ~3x Mini-Boss-Durchschnitt auf seiner Gate-Tiefe):
+//   Kettenmeister      @T10:  96 * 1.9 = 183 HP = 3.01x
+//   Zeremonienmeister  @T20:  94 * 2.9 = 273 HP = 2.99x
+//   Schattenrat        @T30: 123 * 3.9 = 480 HP = 3.95x (bewusst haerter, s.u.)
 const BOSS_DEFINITIONS = {
   chainMaster: {
     id: 'chainMaster',
@@ -2321,7 +2331,7 @@ const BOSS_DEFINITIONS = {
     name: 'Zeremonienmeister',
     texture: 'boss_ceremony_right0',
     fallbackTexture: 'sprite_boss_ceremony',
-    baseHP: 156,
+    baseHP: 94,
     baseSpeed: 45,
     baseDamage: 9,
     scale: 1.7,
@@ -2334,11 +2344,12 @@ const BOSS_DEFINITIONS = {
     name: 'Schattenrat',
     texture: 'boss_shadow_right0',
     fallbackTexture: 'sprite_boss_shadow',
-    // Finaler Boss der Leiter (Tiefe 30) — deutlich härter als die beiden
-    // davor: 3x HP (80->240, seither nochmals verdoppelt ->480) und 2x Schaden
-    // (8->16). scale 1.8->3.6 = doppelte Darstellungsgrösse (bossTargetPx =
-    // 96 * scale, siehe makeBoss).
-    baseHP: 480,
+    // Finaler Boss der Leiter (Tiefe 30) — bewusst härter als die beiden davor
+    // und als die 3x-Regel: 123 * 3.9 = 480 HP auf Tiefe 30 = 3.95x Mini-Boss.
+    // Damit bleibt seine absolute HP gegenüber vorher exakt gleich (480), er
+    // skaliert jetzt aber in späteren Zyklen korrekt mit. 2x Schaden (8->16),
+    // scale 1.8->3.6 = doppelte Darstellungsgrösse (bossTargetPx = 96 * scale).
+    baseHP: 123,
     baseSpeed: 70,
     baseDamage: 16,
     scale: 3.6,
@@ -2573,7 +2584,15 @@ function makeBoss(boss, def, cycle) {
   const hpMult = 1 + cycle * 0.5;
   const dmgMult = 1 + cycle * 0.25;
 
-  boss.hp = Math.ceil(def.baseHP * hpMult);
+  // Tiefen-Skalierung der Boss-HP — dieselbe Kurve wie bei normalen Gegnern
+  // (enemy.js spawnEnemy: 1 + (depth-1)*0.1). Ohne sie hatten Bosse eine FIXE
+  // HP und wurden gegenüber den mit der Tiefe wachsenden Mini-Bossen, die jeden
+  // Raum abschliessen, immer schwaecher. def.baseHP ist entsprechend die HP auf
+  // Tiefe 1 (siehe Kalibrierung an BOSS_DEFINITIONS).
+  const _bossDepth = Math.max(1, (typeof window !== 'undefined' && window.DUNGEON_DEPTH) || 1);
+  const depthMult = 1 + (_bossDepth - 1) * 0.1;
+
+  boss.hp = Math.ceil(def.baseHP * depthMult * hpMult);
   boss.damage = Math.ceil(def.baseDamage * dmgMult);
   boss.speed = def.baseSpeed;
   boss.isRanged = false;
