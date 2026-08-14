@@ -418,14 +418,16 @@ if (window.i18n) {
     // und ggü. früher ~halbiert, damit normale Gegner 1-3 Schläge brauchen statt
     // sofort zu sterben — der Gear-Spielraum (Affixe/Krit) zieht dann auf 1-2.
     // Boss/Elite/Miniboss-Multiplikatoren bewusst noch unverändert (Playtest).
+    // Nochmals -30% (Nutzer-Balancing, Dezimalwerte bewusst): der Roll rundet
+    // ohnehin auf 1 Nachkommastelle (s. rollItem-Bandauflösung weiter unten).
     Object.freeze({ key: 'WPN_EISENKLINGE', type: 'weapon', name: 'Eisenklinge', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 2, max: 5 }) }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 1.4, max: 3.5 }) }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
     Object.freeze({ key: 'WPN_SCHATTENDOLCH', type: 'weapon', name: 'Schattendolch', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 1, max: 4 }), speed: 15, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 0.7, max: 2.8 }), speed: 15, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
     Object.freeze({ key: 'WPN_KETTENMORGENSTERN', type: 'weapon', name: 'Kettenmorgenstern', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 7 }), speed: -5 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 2.8, max: 4.9 }), speed: -5 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
     Object.freeze({ key: 'WPN_GLUTAXT', type: 'weapon', name: 'Glutaxt', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 6 }), speed: -10 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 2.8, max: 4.2 }), speed: -10 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
 
     // --- Spät-Tier-Waffen (ab ~Tiefe 15) --------------------------------------
     // Deutlich stärkere Basisbänder als die Start-Waffen (die bei ~7 kappen), damit
@@ -433,20 +435,20 @@ if (window.i18n) {
     // dropWeight-Key hat Gewicht 0 (unter diesem iLevel gilt genau dieses Gewicht
     // -> Basis wird nicht in den Pool aufgenommen). Bänder bewusst eng (~1.4-1.6x).
     Object.freeze({ key: 'WPN_RICHTSCHWERT', type: 'weapon', name: 'Richtschwert', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 7, max: 11 }) }), dropWeight: Object.freeze({ 14: 0, 17: 60, 24: 100 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 4.9, max: 7.7 }) }), dropWeight: Object.freeze({ 14: 0, 17: 60, 24: 100 }) }),
     Object.freeze({ key: 'WPN_KRIEGSHAMMER', type: 'weapon', name: 'Kettenrat-Kriegshammer', iconKey: 'itWeapon',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 9, max: 13 }), speed: -10 }), dropWeight: Object.freeze({ 14: 0, 18: 40, 26: 80 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 6.3, max: 9.1 }), speed: -10 }), dropWeight: Object.freeze({ 14: 0, 18: 40, 26: 80 }) }),
 
     // Bows (ranged weapons — equipping one swaps default attack to a projectile)
     Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 1, max: 4 }), range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 0.7, max: 2.8 }), range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
     Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 3, max: 6 }), range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 2.1, max: 4.2 }), range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
     Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 4, max: 7 }), range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 2.8, max: 4.9 }), range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
     // Spät-Tier-Bogen (ab ~Tiefe 15), s. Kommentar bei den Spät-Tier-Nahkampfwaffen.
     Object.freeze({ key: 'WPN_NEBELBOGEN', type: 'weapon', subtype: 'bow', name: 'Nebelbogen', iconKey: 'itBow',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 7, max: 11 }), range: 130, crit: 3 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
+      baseStats: Object.freeze({ damage: Object.freeze({ min: 4.9, max: 7.7 }), range: 130, crit: 3 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
 
     // Helms (3)
     Object.freeze({ key: 'HD_KETTENHAUBE', type: 'head', name: 'Kettenhaube', iconKey: 'itHead',
