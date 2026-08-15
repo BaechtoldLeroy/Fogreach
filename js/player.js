@@ -687,6 +687,28 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
     if (_src === enemy._enchant.resist) multiplier *= (enemy._enchant.resistMul || 0.3);
   }
 
+  // #90 Elite-Affix 'magic_resistant': Faehigkeiten richten nur die Haelfte aus,
+  // der Basis-Angriff bleibt voll wirksam -> zwingt zum Waffenkampf statt Skill-Spam.
+  if (enemy.isMagicResistant && abilityKey !== 'attack') {
+    multiplier *= (typeof enemy.abilityDamageMul === 'number' ? enemy.abilityDamageMul : 0.5);
+  }
+
+  // #90 Elite-Affix 'spectral_hit': gewoehnliche Waffen richten kaum etwas aus.
+  // ABWEICHUNG vom urspruenglichen TODO ("nur Magic+ verursacht Schaden"): eine
+  // harte Immunitaet koennte einen Spieler mit Common-Waffe vor einen
+  // unbesiegbaren Gegner stellen (Elites sperren als Mini-Boss die Treppe).
+  // Stattdessen starke Reduktion — gleiche Aussage ("bring bessere Ausruestung"),
+  // ohne Sackgasse.
+  if (enemy.isSpectralHit) {
+    let _wTier = 1;
+    try {
+      const _w = (typeof equipment === 'object' && equipment) ? equipment.weapon : null;
+      if (_w && typeof _w.tier === 'number') _wTier = _w.tier;
+      else if (!_w) _wTier = 0; // ohne Waffe: wie Common behandeln
+    } catch (e) { /* defensiv: volle Wirkung lassen */ }
+    if (_wTier < 1) multiplier *= 0.35;
+  }
+
   // Kettenwächter (Chain Guard): shield blocks the first hit then breaks
   if (enemy.isChainGuard && enemy.shieldActive) {
     enemy.shieldActive = false;
@@ -1585,6 +1607,35 @@ function handleEnemyHit(scene, enemy, options = {}) {
     // noch -> x/y gültig für AoE-Effekte.
     if (window.AmuletEffects && typeof window.AmuletEffects.onEnemyKilled === 'function') {
       try { window.AmuletEffects.onEnemyKilled(enemy, scene); } catch (e) { /* never crash */ }
+    }
+    // #90 Elite-Affix 'lightning_enchanted': beim Tod entlaedt sich ein Blitzring.
+    // Bestraft es, im Nahkampf stehen zu bleiben — der Kill selbst ist die Gefahr.
+    if (enemy.isLightningEnchanted) {
+      try {
+        const _lx = enemy.x, _ly = enemy.y;
+        const _lr = 130;
+        if (scene && scene.add && typeof scene.add.circle === 'function') {
+          const _ring = scene.add.circle(_lx, _ly, _lr * 0.35, 0x88aaff, 0.45).setDepth(79);
+          if (scene.tweens) {
+            scene.tweens.add({
+              targets: _ring, alpha: 0, scale: 2.9, duration: 260,
+              onComplete: () => { try { _ring.destroy(); } catch (_) {} }
+            });
+          } else if (scene.time) {
+            scene.time.delayedCall(260, () => { try { _ring.destroy(); } catch (_) {} });
+          }
+        }
+        const _p = (typeof player !== 'undefined' && player) ? player : window.player;
+        if (_p && typeof _p.x === 'number') {
+          const _dx = _p.x - _lx, _dy = _p.y - _ly;
+          if (_dx * _dx + _dy * _dy <= _lr * _lr && typeof applyPlayerDamage === 'function') {
+            // Schaden aus der Gegnerstaerke abgeleitet, gedeckelt — soll weh tun,
+            // aber keinen One-Shot aus voller Gesundheit erzeugen.
+            const _bolt = Math.max(2, Math.min(12, Math.round((enemy.baseDamage || enemy.damage || 4) * 1.2)));
+            applyPlayerDamage(_bolt, scene);
+          }
+        }
+      } catch (e) { /* never crash the kill path */ }
     }
     // Feature 059 WP03: Aschefunke (killburst) — dying enemy explodes for AoE.
     // Cascades are allowed but bounded by maxDepth (window.__killburstDepth).

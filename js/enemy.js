@@ -970,6 +970,25 @@ function handleEnemies(time, delta = 16) {
       }
     }
 
+    // #90 Elite-Affix 'cold_aura': verlangsamt den Spieler in der Naehe.
+    // Nutzt den bestehenden StatusEffect SLOW und erneuert ihn, solange der
+    // Spieler im Radius steht — laeuft nach dem Verlassen von selbst aus.
+    if (enemy.hasColdAura && enemy.hp > 0 && player) {
+      const _cr = enemy.coldAuraRadius || 150;
+      const _cdx = player.x - enemy.x, _cdy = player.y - enemy.y;
+      if (_cdx * _cdx + _cdy * _cdy <= _cr * _cr) {
+        if (!enemy._lastColdMs || time - enemy._lastColdMs >= 500) {
+          enemy._lastColdMs = time;
+          if (window.statusEffectManager && window.StatusEffectType
+              && typeof window.statusEffectManager.applyEffect === 'function') {
+            try {
+              window.statusEffectManager.applyEffect(player, window.StatusEffectType.SLOW, 'eliteColdAura');
+            } catch (e) { /* nie den Tick brechen */ }
+          }
+        }
+      }
+    }
+
     // Draw the regular enemy hp bar (created lazily on first hit by
     // handleEnemyHit). Only present after the enemy has taken damage; the
     // bar tracks the enemy's position so it stays above the head as they
@@ -1276,10 +1295,15 @@ function handleEnemies(time, delta = 16) {
     }
 
     // --- Angriff / Schaden unverändert
-    const attackCooldown = 1500;
+    // #90 Nebenbefund: der Elite-Affix 'fanatic' setzt `_attackCdMul` (halbe
+    // Abklingzeit), aber der Wert wurde NIRGENDS gelesen — nur sein Tempo-Anteil
+    // wirkte. Beide Angriffstakte (Nah + Fern) respektieren ihn jetzt.
+    const _cdMul = (typeof enemy._attackCdMul === 'number' && enemy._attackCdMul > 0)
+      ? enemy._attackCdMul : 1;
+    const attackCooldown = 1500 * _cdMul;
 
     if (enemy.isRanged) {
-      if (!enemy.lastShotTime || time - enemy.lastShotTime > 1500) {
+      if (!enemy.lastShotTime || time - enemy.lastShotTime > 1500 * _cdMul) {
         const maxRange = enemy.rangedAttackRange || DEFAULT_RANGED_ATTACK_RANGE;
         if (dToPlayer <= maxRange && Steering.hasLineOfSight(enemy, player, obstacles)) {
           if (enemy.isFlameWeaver) {
@@ -1422,7 +1446,7 @@ function handleEnemies(time, delta = 16) {
           // No temporary collider — prevents pushing player through walls
 
           // Schaden wie bisher
-          applyPlayerDamage(enemy.damage, this);
+          applyPlayerDamage(enemy.damage, this, enemy);
           showEnemyMeleeEffect(this, enemy, player);
 
           // Brute melee: 30% chance to apply STUN on player
@@ -1549,6 +1573,14 @@ if (typeof window !== 'undefined') {
 }
 
 function shootProjectile(enemy) {
+  // #90 Elite-Affix 'multishot': statt eines Geschosses ein Faecher. Nutzt die
+  // bestehende Flammenweber-Streuung (shootSpreadProjectiles) — dadurch teilen
+  // sich beide Pfade Schadens-, Pool- und Masken-Logik.
+  if (enemy && enemy.isMultishot && typeof shootSpreadProjectiles === 'function') {
+    const _n = Math.max(2, enemy.multishotCount || 3);
+    shootSpreadProjectiles.call(this, enemy, _n, Math.PI / 6);
+    return;
+  }
   const texKey = getProjectileTextureFor(enemy);
   const ang = Math.atan2(player.y - enemy.y, player.x - enemy.x);
   const projectile = acquireEnemyProjectile(this, enemy.x, enemy.y, texKey);
@@ -1636,7 +1668,7 @@ function miniBossSlam(enemy) {
       if (player && player.active) {
         const d = Phaser.Math.Distance.Between(cx, cy, player.x, player.y);
         if (d <= r + (player.body?.width || 0) * 0.5) {
-          applyPlayerDamage(enemy.damage, scene);
+          applyPlayerDamage(enemy.damage, scene, enemy);
         }
       }
       try { scene.cameras.main.shake(120, 0.004); } catch (e) {}
@@ -1706,7 +1738,7 @@ function miniBossCharge(enemy) {
       enemy._dashOnArrive = () => {
         if (player && player.active) {
           const d = _distPointToSegment(player.x, player.y, sx, sy, ex, ey);
-          if (d <= w * 0.6 + (player.body?.width || 0) * 0.5) applyPlayerDamage(enemy.damage, scene);
+          if (d <= w * 0.6 + (player.body?.width || 0) * 0.5) applyPlayerDamage(enemy.damage, scene, enemy);
         }
         try { scene.cameras.main.shake(140, 0.004); } catch (e) {}
       };
@@ -1751,7 +1783,7 @@ function miniBossLeap(enemy) {
         g.lineStyle(4, 0xffe0a0, 1).strokeCircle(tx, ty, r);
         if (player && player.active) {
           const d = Phaser.Math.Distance.Between(tx, ty, player.x, player.y);
-          if (d <= r + (player.body?.width || 0) * 0.5) applyPlayerDamage(enemy.damage, scene);
+          if (d <= r + (player.body?.width || 0) * 0.5) applyPlayerDamage(enemy.damage, scene, enemy);
         }
         try { scene.cameras.main.shake(130, 0.004); } catch (e) {}
         scene.time.delayedCall(150, () => { if (g.scene) g.destroy(); });
@@ -1995,7 +2027,7 @@ function hitByMelee(playerSprite, enemy) {
       ? Math.max(1, Math.round(baseDamage * difficulty))
       : Math.max(1, Math.round(baseDamage));
     enemy.damage = scaledDamage;
-    applyPlayerDamage(scaledDamage, this);
+    applyPlayerDamage(scaledDamage, this, enemy);
     // Particle effects: player hit + screen shake
     if (window.particleFactory && playerSprite) {
       window.particleFactory.playerHit(playerSprite.x, playerSprite.y);
@@ -2090,7 +2122,16 @@ function ensureEnemyMeleeFXTextures(scene) {
   }
 }
 
-function applyPlayerDamage(rawDamage, scene) {
+// `attacker` ist OPTIONAL und nur fuer Gegner-Affixe noetig (#90: vampiric,
+// berserker). Alle Alt-Aufrufe ohne dritten Parameter verhalten sich unveraendert.
+function applyPlayerDamage(rawDamage, scene, attacker) {
+  // #90 Elite-Affix 'berserker': unter 30% eigener HP doppelter Schaden.
+  // VOR der Ausweich-/Ruestungsrechnung, damit es wie ein staerkerer Schlag wirkt.
+  if (attacker && attacker.isBerserker) {
+    const _mx = (typeof attacker.maxHp === 'number' && attacker.maxHp > 0) ? attacker.maxHp : null;
+    if (_mx && (attacker.hp / _mx) < 0.3) rawDamage = rawDamage * 2;
+  }
+
   // Blitzreflex (Lightning Reflex): if player has invincibility active, ignore damage
   if (window._playerInvincible) {
     return 0;
@@ -2150,6 +2191,20 @@ function applyPlayerDamage(rawDamage, scene) {
   }
 
   if (window.soundManager) window.soundManager.playSFX('hit_player');
+
+  // #90 Elite-Affix 'vampiric': der Angreifer heilt sich am zugefuegten Schaden.
+  // Auf maxHp gedeckelt; ohne maxHp (normale Gegner tragen es erst ab dem ersten
+  // Treffer) wird nichts geheilt, statt einen unbegrenzten Heilwert zu erlauben.
+  if (attacker && attacker.isVampiric && attacker.active && typeof attacker.hp === 'number') {
+    const _mx = (typeof attacker.maxHp === 'number' && attacker.maxHp > 0) ? attacker.maxHp : null;
+    if (_mx) {
+      const _heal = Math.max(1, Math.round(mitigated * (attacker.lifestealPct || 0.30)));
+      attacker.hp = Math.min(_mx, attacker.hp + _heal);
+      if (typeof drawEnemyHpBar === 'function' && attacker.hpBar) {
+        try { drawEnemyHpBar(attacker); } catch (e) { /* nie den Treffer brechen */ }
+      }
+    }
+  }
 
   if (scene && player) {
     player.setTint(0xff4444);

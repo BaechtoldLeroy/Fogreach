@@ -48,7 +48,7 @@
       category: 'element',
       apply: function (enemy) {
         enemy.isLightningEnchanted = true;
-        // TODO: hook into combat — spawn a ring of lightning bolts on death
+        // Wirkung: Blitzring beim Tod (player.js, Gegner-Tod-Block, #90).
       },
       revert: function (enemy) { delete enemy.isLightningEnchanted; }
     },
@@ -61,7 +61,7 @@
       apply: function (enemy) {
         enemy.hasColdAura = true;
         enemy.coldAuraRadius = 150;
-        // TODO: hook into combat — slow player within 150px by 30%
+        // Wirkung: SLOW-StatusEffect im Update-Tick (enemy.js handleEnemies, #90).
       },
       revert: function (enemy) { delete enemy.hasColdAura; delete enemy.coldAuraRadius; }
     },
@@ -73,7 +73,8 @@
       category: 'defense',
       apply: function (enemy) {
         enemy.isSpectralHit = true;
-        // TODO: hook into combat — only Magic+ items deal damage
+        // Wirkung: Common-Waffen richten nur 35% aus (player.js dealDamageToEnemy, #90).
+        // Bewusst keine harte Immunitaet — sonst unbesiegbar ohne Magic-Waffe.
       },
       revert: function (enemy) { delete enemy.isSpectralHit; }
     },
@@ -86,7 +87,7 @@
       apply: function (enemy) {
         enemy.isMultishot = true;
         enemy.multishotCount = 3;
-        // TODO: hook into combat — ranged attacks fire 3 projectiles
+        // Wirkung: shootProjectile leitet auf shootSpreadProjectiles um (enemy.js, #90).
       },
       revert: function (enemy) { delete enemy.isMultishot; delete enemy.multishotCount; }
     },
@@ -99,7 +100,7 @@
       apply: function (enemy) {
         enemy.isVampiric = true;
         enemy.lifestealPct = 0.30;
-        // TODO: hook into combat — 30% lifesteal on hit
+        // Wirkung: Heilung am zugefuegten Schaden (enemy.js applyPlayerDamage, #90).
       },
       revert: function (enemy) { delete enemy.isVampiric; delete enemy.lifestealPct; }
     },
@@ -111,7 +112,7 @@
       category: 'offense',
       apply: function (enemy) {
         enemy.isBerserker = true;
-        // TODO: hook into combat — 2x damage below 30% HP
+        // Wirkung: Schadensverdopplung unter 30% HP (enemy.js applyPlayerDamage, #90).
       },
       revert: function (enemy) { delete enemy.isBerserker; }
     },
@@ -159,7 +160,7 @@
       apply: function (enemy) {
         enemy.isMagicResistant = true;
         enemy.abilityDamageMul = 0.5;
-        // TODO: hook into combat — abilities deal 50% damage
+        // Wirkung: abilityKey !== attack -> halber Schaden (player.js dealDamageToEnemy, #90).
       },
       revert: function (enemy) { delete enemy.isMagicResistant; delete enemy.abilityDamageMul; }
     }
