@@ -1089,13 +1089,11 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // delta (since the running max already included skills) → playerHealth
   // dropped by the skill HP amount on every equip even though max didn't
   // change. We compute skill HP up front and roll it into newMaxHealth.
+  // #94: kam frueher aus skillSystem.js (calculateSkillEffects().playerMaxHealth).
+  // Das Modul ist entfernt -> derzeit kein Skill-basierter Max-LP-Bonus. Die
+  // Variable bleibt als Einhaengepunkt fuer passive Knoten aus #93 bestehen,
+  // damit die umgebende Delta-Rechnung unveraendert bleibt.
   let _skillMaxHpBonus = 0;
-  if (typeof window.calculateSkillEffects === 'function') {
-    try {
-      const _se = window.calculateSkillEffects() || {};
-      _skillMaxHpBonus = _se.playerMaxHealth || 0;
-    } catch (e) { /* swallow */ }
-  }
   const _affixHpBonus = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
     ? (window.LootSystem.getBonus('hp') || 0)
     : 0;
@@ -1148,19 +1146,16 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // NOTE: skillEffects.playerMaxHealth was already baked into newMaxHealth
   // above (step 3), so we DO NOT add it again here. Adding it twice would
   // double-count skill HP and break the delta-based current-HP adjustment.
-  if (typeof window.calculateSkillEffects === 'function') {
-    const skillEffects = window.calculateSkillEffects();
-
-    // Add skill bonuses to already-calculated equipment stats
-    weaponDamage += skillEffects.weaponDamage || 0;
-    weaponAttackSpeed += skillEffects.weaponAttackSpeed || 0;
-    attackRange += skillEffects.attackRange || 0;
-    playerArmor = Math.min(0.85, playerArmor + (skillEffects.playerArmor || 0));
-    playerSpeed += skillEffects.playerSpeed || 0;
-    playerCritChance = Math.min(0.9, playerCritChance + (skillEffects.playerCritChance || 0));
-    window.PLAYER_DODGE_CHANCE = skillEffects.dodgeChance > 0 ? Math.min(0.5, skillEffects.dodgeChance) : 0;
-    window.PLAYER_HEALTH_REGEN = skillEffects.healthRegen > 0 ? skillEffects.healthRegen : 0;
-  }
+  // #94: der abgeloeste skillSystem.js speiste hier seine Passiv-Boni ein
+  // (calculateSkillEffects). Das Modul ist entfernt; die Boni kommen kuenftig
+  // aus passiven Knoten des SkillTree (#93).
+  //
+  // WICHTIG: die beiden Globals wurden hier ZUGEWIESEN (=), nicht addiert — sie
+  // waren damit zugleich der Reset pro Neuberechnung. Ohne diesen Reset wuerden
+  // sich die weiter unten ADDIERENDEN Quellen (Endless-Buffs, Geschick/Vitalitaet)
+  // bei jedem recalc aufsummieren. Darum bleiben sie hier explizit stehen.
+  window.PLAYER_DODGE_CHANCE = 0;
+  window.PLAYER_HEALTH_REGEN = 0;
 
   // Reset additive globals that are only written inside the endless block
   // below — otherwise they accumulate across recalcs instead of rebuilding fresh.

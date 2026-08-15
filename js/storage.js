@@ -44,11 +44,6 @@ function saveGame(scene) {
         ? window.computeWaveEnemyTotal(waveForCount, window.__WALKABLE_AREA_PX__ || 0)
         : 4 + (waveForCount - 1) * 2;
 
-    const cloneSkills = () => {
-      if (typeof window === 'undefined' || !window.playerSkills) return {};
-      return JSON.parse(JSON.stringify(window.playerSkills));
-    };
-
     const cloneQuests = () => {
       if (typeof window.questSystem === 'object' && typeof window.questSystem.getQuestSaveData === 'function') {
         return window.questSystem.getQuestSaveData();
@@ -100,7 +95,11 @@ function saveGame(scene) {
       inventory: cloneInventory,
       equipment: cloneEquipment(equipment),
       materials: cloneMaterials,
-      skills: cloneSkills(),
+      // #94: `skills` (Alt-Baum aus skillSystem.js) wird NICHT mehr geschrieben.
+      // `legacySkillsMigrated` merkt sich, dass ein Altstand bereits in
+      // Talentpunkte umgerechnet wurde — sonst gaebe es bei jedem Laden erneut
+      // Punkte. Der Merker bleibt dauerhaft im Save.
+      legacySkillsMigrated: true,
       skillTree: cloneSkillTree(),
       quests: cloneQuests(),
       story: cloneStory()
@@ -299,10 +298,26 @@ function applySaveToState(scene, s) {
     }
   }
 
-  if (s.skills && typeof s.skills === 'object') {
-    if (typeof window !== 'undefined') {
-      window.playerSkills = s.skills;
+  // #94: Altstand-Migration. Der alte Baum (js/skillSystem.js) ist entfernt;
+  // `s.skills` ist eine flache Map { skillId: true } aus dieser Zeit. Die
+  // Faehigkeiten wurden mit EISENBROCKEN bezahlt — sie ersatzlos zu verwerfen
+  // waere ein stiller Verlust. Darum: je gekaufter Alt-Faehigkeit einen
+  // Talentpunkt fuer den aktuellen Baum gutschreiben, danach den Alt-Zustand
+  // fallen lassen (er wird nicht mehr gespeichert, s. getSaveData).
+  // Einmalig: das Flag verhindert Mehrfach-Gutschrift bei erneutem Laden.
+  if (s.skills && typeof s.skills === 'object' && typeof window !== 'undefined') {
+    var _legacyCount = 0;
+    try { _legacyCount = Object.keys(s.skills).filter(function (k) { return !!s.skills[k]; }).length; }
+    catch (e) { _legacyCount = 0; }
+    if (_legacyCount > 0 && !s.legacySkillsMigrated
+        && window.SkillTree && typeof window.SkillTree.grantSkillPoint === 'function') {
+      try {
+        for (var _i = 0; _i < _legacyCount; _i++) window.SkillTree.grantSkillPoint();
+        console.log('[Storage] #94 Migration: ' + _legacyCount
+          + ' Alt-Faehigkeit(en) -> ' + _legacyCount + ' Talentpunkt(e) gutgeschrieben');
+      } catch (e) { console.warn('[Storage] Alt-Skill-Migration fehlgeschlagen', e); }
     }
+    delete window.playerSkills;
   }
 
   // Feature 060 (WP05): Skill-Baum-State aus dem Haupt-Save anwenden.
@@ -340,9 +355,8 @@ function applySaveToState(scene, s) {
     window.storySystem.loadStorySaveData(s.story);
   }
 
-  if (typeof applySkillEffects === 'function') {
-    applySkillEffects();
-  }
+  // #94: applySkillEffects() (aus dem entfernten skillSystem.js) entfaellt —
+  // recalcDerived() darunter baut die abgeleiteten Werte ohnehin neu auf.
 
   if (typeof recalcDerived === 'function') {
     recalcDerived(0, 0);

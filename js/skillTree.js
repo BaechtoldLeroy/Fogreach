@@ -386,4 +386,28 @@
 
   if (typeof window !== 'undefined') window.SkillTree = SkillTree;
   if (typeof module !== 'undefined' && module.exports) module.exports = SkillTree;
+
+  // -------------------------------------------------------------------------
+  // #94: Kompatibilitaets-Shim fuer das abgeloeste js/skillSystem.js
+  // -------------------------------------------------------------------------
+  // Das alte Modul (29 Knoten, mit Eisenbrocken bezahlt) ist entfernt. Seine
+  // EFFEKTE sind aber wertvoll und bleiben im Code erhalten — 11 Hooks in
+  // enemy.js / player.js / main.js fragen `window.hasSkill(id)` ab:
+  //   mobility_lightning_reflex, mobility_shadow_step, mobility_wind_gust,
+  //   survival_thorn_armor, survival_second_chance, survival_life_steal,
+  //   combat_poison_blade, combat_chain_lightning, combat_lethal_thrust
+  //
+  // Diese Funktion haelt die Hooks am Leben, OHNE das alte Modul. Sie liefert
+  // derzeit immer false, weil der neue Baum noch keine passiven Knoten kennt.
+  // SOBALD #93 passive Knoten einfuehrt: hier auf `getRank(id) > 0` mappen —
+  // dann werden alle 11 Effekte ohne weitere Aenderung wieder wirksam.
+  if (typeof window !== 'undefined' && typeof window.hasSkill !== 'function') {
+    window.hasSkill = function (skillId) {
+      if (!skillId) return false;
+      try {
+        // Platzhalter fuer #93: passive Knoten mit gleichlautender id.
+        return getRank(skillId) > 0;
+      } catch (e) { return false; }
+    };
+  }
 })();

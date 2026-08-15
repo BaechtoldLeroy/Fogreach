@@ -214,7 +214,6 @@ class PerformanceMonitor {
     if (this.scene && this.scene.physics) count += 5;
     
     // Custom game events
-    count += Object.keys(window.playerSkills || {}).length * 2;
     count += (window.inventory?.length || 0);
     
     return count;
@@ -233,10 +232,6 @@ class PerformanceMonitor {
       bytes += Object.keys(window.equipment).length * 500;
     }
     
-    // Skills
-    if (window.playerSkills) {
-      bytes += Object.keys(window.playerSkills).length * 200;
-    }
     
     // Material storage
     if (window.materialStorage) {
