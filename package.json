@@ -7,7 +7,8 @@
     "test:unit": "node tools/runTests.js",
     "test:smoke": "node tools/testGame.js --loadout",
     "test:smoke:tutorial": "node tools/testGame.js --tutorial",
-    "test:all": "node tools/runTests.js && node tools/testGame.js --loadout"
+    "test:all": "node tools/runTests.js && node tools/headless.js && node tools/testGame.js --loadout",
+    "test:headless": "node tools/headless.js"
   },
   "keywords": [],
   "author": "",
