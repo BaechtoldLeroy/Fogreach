@@ -13,6 +13,7 @@
 // damit Tests nicht jedes Mal die Warte-/Takt-Choreografie nachbauen muessen.
 
 const { boot, readScriptOrder } = require('./boot');
+const { attachLab } = require('./lab');
 
 const SCENE_STATUS = {
   0: 'PENDING', 1: 'INIT', 2: 'START', 3: 'LOADING',
@@ -256,6 +257,7 @@ function decorate(h) {
   };
 
   h.flush = flush;
+  attachLab(h);   // Stufe 3: Gameplay-Pruefwerkzeuge (h.lab)
   return h;
 }
 

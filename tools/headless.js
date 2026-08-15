@@ -7,6 +7,8 @@
 //   node tools/headless.js --play      in einen Dungeon-Run einsteigen und den
 //                                      Bot spielen lassen
 //   node tools/headless.js --play --depth 5   Run auf Tiefe 5
+//   node tools/headless.js --soak 25 Dauerlauf ueber 25 Raeume (sucht Fehler,
+//                                     die erst in der Menge auftreten)
 //
 // Exit-Code 0 = sauber, 1 = Fehler (fuer CI verwendbar).
 
@@ -25,7 +27,8 @@ function arg(name, dflt) {
   const verbose = process.argv.includes('--verbose');
   const extraFrames = parseInt(arg('--frames', '0'), 10) || 0;
 
-  const play = process.argv.includes('--play');
+  const soakRooms = parseInt(arg('--soak', '0'), 10) || 0;
+  const play = process.argv.includes('--play') || soakRooms > 0;
   const depth = parseInt(arg('--depth', '1'), 10) || 1;
 
   const t0 = Date.now();
@@ -35,7 +38,10 @@ function arg(name, dflt) {
   const bootMs = Date.now() - t0;
 
   let botResult = null;
-  if (play) {
+  let soakResult = null;
+  if (soakRooms > 0) {
+    soakResult = await h.soak({ rooms: soakRooms });
+  } else if (play) {
     botResult = await h.bot.hunt({ rounds: parseInt(arg('--rounds', '250'), 10) || 250 });
   }
 
@@ -64,7 +70,12 @@ function arg(name, dflt) {
     console.log(`Run             : Tiefe ${w.depth}, Welle ${w.wave}`);
     console.log(`Spieler         : ${w.hp}/${w.maxHp} LP`);
     console.log(`Gegner im Raum  : ${w.enemies}`);
-    console.log(`Bot             : ${botResult.kills} erlegt in ${botResult.rounds} Runden`);
+    if (botResult) console.log(`Bot             : ${botResult.kills} erlegt in ${botResult.rounds} Runden`);
+    if (soakResult) {
+      console.log(`Dauerlauf       : ${soakResult.rooms} Raeume, ${soakResult.kills} Kills`);
+      console.log(`  ohne Gegner   : ${soakResult.roomsWithoutEnemies}`);
+      console.log(`  Abbrueche     : ${soakResult.errors.length ? soakResult.errors.join('; ') : 'keine'}`);
+    }
   }
   console.log(`Fehler          : ${errs.length}`);
   console.log(`Warnungen       : ${warns.length}`);

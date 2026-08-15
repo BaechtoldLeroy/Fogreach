@@ -9,7 +9,8 @@
     "test:smoke:tutorial": "node tools/testGame.js --tutorial",
     "test:all": "node tools/runTests.js && node tools/headless.js && node tools/testGame.js --loadout",
     "test:headless": "node tools/headless.js",
-    "test:headless:play": "node tools/headless.js --play"
+    "test:headless:play": "node tools/headless.js --play",
+    "test:headless:soak": "node tools/headless.js --soak 25"
   },
   "keywords": [],
   "author": "",
