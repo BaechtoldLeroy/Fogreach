@@ -88,7 +88,195 @@ function decorate(h) {
     await flush();
   };
 
+  // -------------------------------------------------------------------------
+  // Eingabe-Treiber
+  // -------------------------------------------------------------------------
+  // Schreibt auf DIESELBEN Pfade wie echte Eingaben, damit Tests den echten
+  // Spielcode durchlaufen und keinen Sonderweg:
+  //   Bewegung  -> cursors.<dir>.isDown   (gelesen in player.js handlePlayerMovement)
+  //   Angriff   -> globales attack()      (player.js)
+  //   Faehigkeit-> AbilitySystem.tryActivate(slot, scene)  (wie Q/W/E/R und Mobile)
+  h.input = {
+    /** Richtungstasten setzen, z. B. hold({ left: true, up: true }). */
+    hold(dirs) {
+      const d = dirs || {};
+      ['left', 'right', 'up', 'down'].forEach((k) => {
+        const v = !!d[k];
+        try { h.run(`if (typeof cursors !== 'undefined' && cursors && cursors.${k}) cursors.${k}.isDown = ${v};`); }
+        catch (e) { /* Szene evtl. noch ohne cursors */ }
+      });
+    },
+    releaseAll() { h.input.hold({}); },
+
+    /** Bewegt sich Richtung Zielpunkt, indem die passenden Tasten gehalten werden. */
+    steerTowards(x, y, deadzone) {
+      const dz = typeof deadzone === 'number' ? deadzone : 8;
+      const p = h.run('(typeof player !== "undefined" && player) ? { x: player.x, y: player.y } : null');
+      if (!p) return false;
+      h.input.hold({
+        left: p.x - x > dz,
+        right: x - p.x > dz,
+        up: p.y - y > dz,
+        down: y - p.y > dz,
+      });
+      return true;
+    },
+
+    // WICHTIG: attack() erwartet die Szene als `this` (nutzt this.time.delayedCall).
+    // Im Spiel wird es als `attack.call(this)` aus dem Eingabe-Handler gerufen
+    // (main.js:1168) — headless muss denselben Kontext liefern, sonst passiert
+    // nichts (und zwar lautlos, ohne Fehler).
+    attack(sceneKey) {
+      try {
+        h.run(`(function () {
+          var sc = window.game.scene.getScene('${sceneKey || 'GameScene'}');
+          if (sc && typeof attack === 'function') attack.call(sc);
+        })()`);
+        return true;
+      } catch (e) { return false; }
+    },
+
+    ability(slot, sceneKey) {
+      try {
+        h.run(`(function () {
+          var sc = window.game.scene.getScene('${sceneKey || 'GameScene'}');
+          if (window.AbilitySystem && typeof window.AbilitySystem.tryActivate === 'function') {
+            window.AbilitySystem.tryActivate('slot${slot}', sc);
+          }
+        })()`);
+        return true;
+      } catch (e) { return false; }
+    },
+
+    interact() {
+      try { h.run('window.__MOBILE_INTERACT_ACTIVE__ = true;'); return true; }
+      catch (e) { return false; }
+    },
+  };
+
+  // -------------------------------------------------------------------------
+  // Weltzustand — bequemer Lesezugriff auf die top-level-Globals
+  // -------------------------------------------------------------------------
+  h.world = function world() {
+    return h.run(`(function () {
+      var p = (typeof player !== 'undefined' && player) ? player : null;
+      var e = (typeof enemies !== 'undefined' && enemies) ? enemies : window.enemies;
+      return {
+        player: p ? { x: p.x, y: p.y, active: !!p.active } : null,
+        hp: window.playerHealth, maxHp: window.playerMaxHealth,
+        enemies: (e && e.countActive) ? e.countActive(true) : 0,
+        depth: window.DUNGEON_DEPTH, wave: window.currentWave,
+        enemyList: (e && e.getChildren) ? e.getChildren()
+          .filter(function (x) { return x && x.active; })
+          .map(function (x) { return { x: x.x, y: x.y, hp: x.hp }; }) : [],
+      };
+    })()`);
+  };
+
+  /** Gesamtzahl erlegter Gegner im Run (aus der Run-Statistik des Spiels). */
+  h.kills = function kills() {
+    return h.run('(window.runStats && window.runStats.enemiesKilled) || 0');
+  };
+
+  // -------------------------------------------------------------------------
+  // Bot — spielt das Spiel ueber den Eingabe-Treiber
+  // -------------------------------------------------------------------------
+  h.bot = {
+    /**
+     * Laeuft zum naechsten Gegner und schlaegt zu, bis `rounds` verbraucht sind
+     * oder `stopWhen(h)` wahr wird. Bewusst simpel: der Bot muss nicht klug
+     * sein, er soll den Zustandsraum abdecken.
+     * @returns {Promise<{kills:number, rounds:number}>}
+     */
+    async hunt(opts) {
+      opts = opts || {};
+      const rounds = opts.rounds || 250;
+      const framesPerRound = opts.framesPerRound || 4;
+      // 60 px: die Nahkampf-Reichweite des Spiels ist groesser als sie aussieht.
+      // Mit 34 blieb der Bot ausserhalb und traf nie (0 Kills ueber 200 Runden).
+      const attackRange = opts.attackRange || 60;
+      const k0 = h.kills();
+      let used = 0;
+
+      // Feststeck-Erkennung: Die Lenkung haelt nur Richtungstasten, sie kennt
+      // keine Wegfindung. An Waenden/Hindernissen bleibt der Bot sonst dauerhaft
+      // in konstanter Distanz haengen (beobachtet: 67 px). Bewegt er sich ueber
+      // mehrere Runden kaum, weicht er kurz zufaellig aus. Gegner verfolgen den
+      // Spieler ohnehin — Warten allein bringt oft schon Treffer.
+      let lastX = null; let lastY = null; let stuckFor = 0; let detourLeft = 0; let detour = null;
+
+      for (let i = 0; i < rounds; i++) {
+        used++;
+        if (typeof opts.stopWhen === 'function' && opts.stopWhen(h)) break;
+        const w = h.world();
+        if (!w.player || !w.enemyList.length) {
+          h.input.releaseAll();
+          h.step(framesPerRound);
+          await flush();
+          continue;
+        }
+
+        if (lastX !== null) {
+          const moved = Math.hypot(w.player.x - lastX, w.player.y - lastY);
+          stuckFor = moved < 2 ? stuckFor + 1 : 0;
+        }
+        lastX = w.player.x; lastY = w.player.y;
+
+        let best = null; let bd = Infinity;
+        for (const e of w.enemyList) {
+          const d = Math.hypot(e.x - w.player.x, e.y - w.player.y);
+          if (d < bd) { bd = d; best = e; }
+        }
+
+        if (bd <= attackRange) {
+          h.input.releaseAll();
+          h.input.attack();
+          detourLeft = 0;
+        } else if (detourLeft > 0) {
+          h.input.hold(detour);
+          detourLeft--;
+        } else if (stuckFor >= 4) {
+          // Zufaellige Ausweichrichtung fuer ein paar Runden
+          const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
+            { left: true, up: true }, { right: true, down: true }];
+          detour = dirs[Math.floor(Math.random() * dirs.length)];
+          detourLeft = 8;
+          stuckFor = 0;
+          h.input.hold(detour);
+        } else {
+          h.input.steerTowards(best.x, best.y);
+        }
+
+        h.step(framesPerRound);
+        await flush();
+      }
+      h.input.releaseAll();
+      return { kills: h.kills() - k0, rounds: used };
+    },
+  };
+
   h.flush = flush;
+  return h;
+}
+
+/**
+ * Startet direkt in einen Dungeon-Run (Tiefe `depth`).
+ * Nutzt den vorhandenen Debug-Einstieg `?dungeon=N`, der intern denselben
+ * _enterLocation-Pfad geht wie ein echter Klick im Hub.
+ * Braucht den CANVAS-Renderer: graphics.js erzeugt Spieler-/Weltgrafik ueber
+ * generateTexture(), was ohne echten Renderer nicht funktioniert.
+ */
+async function launchDungeon(opts) {
+  opts = opts || {};
+  const depth = opts.depth || 1;
+  const h = await launch(Object.assign({}, opts, {
+    search: '?dungeon=' + depth,
+    renderer: opts.renderer || 'canvas',
+    waitFor: 'StartScene',
+  }));
+  const ok = await h.waitForScene('GameScene', { maxRounds: opts.maxRounds || 250 });
+  if (!ok) throw new Error('GameScene wurde nicht erreicht');
+  await h.settle(() => false, { maxRounds: opts.warmupRounds || 10 });
   return h;
 }
 
@@ -105,4 +293,4 @@ async function launch(opts) {
   return h;
 }
 
-module.exports = { launch, boot, readScriptOrder, flush, SCENE_STATUS };
+module.exports = { launch, launchDungeon, boot, readScriptOrder, flush, SCENE_STATUS };

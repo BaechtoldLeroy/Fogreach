@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 // tools/headless.js — CLI: startet Fogreach ohne Rendering und berichtet.
 //
-//   node tools/headless.js            kurzer Statusbericht
-//   node tools/headless.js --verbose  zusaetzlich die Spiel-Konsolenausgabe
-//   node tools/headless.js --frames N nach dem Boot N Frames takten
+//   node tools/headless.js             Statusbericht (Boot bis StartScene)
+//   node tools/headless.js --verbose   zusaetzlich die Spiel-Konsolenausgabe
+//   node tools/headless.js --frames N  nach dem Boot N Frames takten
+//   node tools/headless.js --play      in einen Dungeon-Run einsteigen und den
+//                                      Bot spielen lassen
+//   node tools/headless.js --play --depth 5   Run auf Tiefe 5
 //
-// Exit-Code 0 = Boot sauber, 1 = Fehler (fuer CI verwendbar).
+// Exit-Code 0 = sauber, 1 = Fehler (fuer CI verwendbar).
 
 // Explizit auf index.js: `require('./headless')` wuerde in Node zuerst diese
 // Datei selbst treffen (Datei schlaegt Ordner) -> Zirkelbezug.
-const { launch } = require('./headless/index.js');
+const { launch, launchDungeon } = require('./headless/index.js');
 
 function arg(name, dflt) {
   const i = process.argv.indexOf(name);
@@ -22,9 +25,19 @@ function arg(name, dflt) {
   const verbose = process.argv.includes('--verbose');
   const extraFrames = parseInt(arg('--frames', '0'), 10) || 0;
 
+  const play = process.argv.includes('--play');
+  const depth = parseInt(arg('--depth', '1'), 10) || 1;
+
   const t0 = Date.now();
-  const h = await launch({ verbose });
+  const h = play
+    ? await launchDungeon({ verbose, depth })
+    : await launch({ verbose });
   const bootMs = Date.now() - t0;
+
+  let botResult = null;
+  if (play) {
+    botResult = await h.bot.hunt({ rounds: parseInt(arg('--rounds', '250'), 10) || 250 });
+  }
 
   if (extraFrames > 0) {
     await h.settle(() => false, { maxRounds: Math.ceil(extraFrames / 10), framesPerRound: 10 });
@@ -43,7 +56,16 @@ function arg(name, dflt) {
   if (start && start.load) {
     console.log(`Assets          : ${start.load.totalComplete} geladen, ${start.load.totalFailed} fehlgeschlagen`);
   }
-  console.log(`Anzeigeobjekte  : ${start && start.children ? start.children.list.length : '?'}`);
+  // Objekte der AKTIVEN Szene zaehlen (nach --play ist StartScene beendet).
+  const liveScene = running.length ? h.scene(running[0].key) : start;
+  console.log(`Anzeigeobjekte  : ${liveScene && liveScene.children ? liveScene.children.list.length : '?'}`);
+  if (play) {
+    const w = h.world();
+    console.log(`Run             : Tiefe ${w.depth}, Welle ${w.wave}`);
+    console.log(`Spieler         : ${w.hp}/${w.maxHp} LP`);
+    console.log(`Gegner im Raum  : ${w.enemies}`);
+    console.log(`Bot             : ${botResult.kills} erlegt in ${botResult.rounds} Runden`);
+  }
   console.log(`Fehler          : ${errs.length}`);
   console.log(`Warnungen       : ${warns.length}`);
 

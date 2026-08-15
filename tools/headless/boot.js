@@ -94,9 +94,19 @@ function boot(opts) {
     if (!headlessPatched && opts.forceHeadless !== false && sandbox.Phaser && sandbox.Phaser.Game) {
       headlessPatched = true;
       const OrigGame = sandbox.Phaser.Game;
-      const HEADLESS = sandbox.Phaser.HEADLESS;
+      // Zwei Betriebsarten:
+      //   'headless' (Standard) — schnellster Lauf, KEIN Renderer. Phaser setzt
+      //      dann game.renderer = null; unten haengen wir eine Attrappe ein.
+      //      Reicht fuer Boot-, Logik- und Zustandstests.
+      //   'canvas' — echter Canvas-Renderer auf node-canvas. Noetig, sobald der
+      //      Spielcode ZEICHNET, um daraus Daten zu gewinnen: graphics.js nutzt
+      //      78x generateTexture(), was ohne echten Renderer nicht geht
+      //      (Graphics.renderCanvas). Langsamer, dafuer verhaltenstreu.
+      const rendererType = (opts.renderer === 'canvas')
+        ? sandbox.Phaser.CANVAS
+        : sandbox.Phaser.HEADLESS;
       function HeadlessGame(cfg) {
-        const c = Object.assign({}, cfg || {}, { type: HEADLESS });
+        const c = Object.assign({}, cfg || {}, { type: rendererType });
         // Banner/AutoFocus fassen DOM-Details an, die der Stub nicht abbildet.
         c.banner = false;
         c.autoFocus = false;
@@ -155,6 +165,18 @@ function boot(opts) {
     return simulated;
   }
 
+  /**
+   * Fuehrt Code IM Spiel-Kontext aus und gibt das Ergebnis zurueck.
+   *
+   * Notwendig, weil die Spiel-Globals als top-level `let` deklariert sind
+   * (`player`, `cursors`, `enemies` ...) und damit NICHT auf `window` liegen —
+   * von aussen sind sie sonst unerreichbar. Das ist derselbe Zugriff, den die
+   * Browser-Konsole haette.
+   */
+  function run(code) {
+    return vm.runInContext(code, ctx, { filename: 'headless-eval', timeout: opts.timeout || 20000 });
+  }
+
   return {
     ctx,
     window: sandbox,
@@ -162,6 +184,7 @@ function boot(opts) {
     loaded,
     skipped,
     step,
+    run,
     dispatch: dom.dispatch,
     getRafCallback: dom.getRafCallback,
   };

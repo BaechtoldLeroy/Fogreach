@@ -12,7 +12,14 @@
 
 const fs = require('fs');
 const path = require('path');
-const { createCanvas, Image: CanvasImage } = require('canvas');
+const {
+  createCanvas,
+  Image: CanvasImage,
+  CanvasRenderingContext2D,
+  ImageData,
+  CanvasGradient,
+  CanvasPattern,
+} = require('canvas');
 
 function createDomStub(opts) {
   opts = opts || {};
@@ -117,7 +124,72 @@ function createDomStub(opts) {
     (listeners[type] || []).forEach((fn) => { try { fn(ev || { type }); } catch (e) { /* Stub schluckt */ } });
   }
 
+  /**
+   * Haengt die 2D-Kontext-Anpassung an ein ECHTES node-canvas an.
+   * Phaser ruft ctx.setTransform(matrixObjekt) mit EINEM Argument auf; Browser
+   * akzeptieren dort ein DOMMatrix-aehnliches Objekt, node-canvas nur 6 Zahlen
+   * (sonst "Expected DOMMatrix"). Wir packen das Objekt auseinander.
+   */
+  function patchContext(ctx) {
+    if (!ctx || ctx.__fogreachPatched) return ctx;
+    const orig = ctx.setTransform.bind(ctx);
+    ctx.setTransform = function (a, b, c, d, e, f) {
+      if (arguments.length === 1 && a && typeof a === 'object') {
+        const m = a;
+        const nums = (Array.isArray(m) || typeof m.length === 'number')
+          ? [m[0], m[1], m[2], m[3], m[4], m[5]]
+          : [m.a, m.b, m.c, m.d, m.e, m.f];
+        if (nums.every((n) => typeof n === 'number' && isFinite(n))) {
+          return orig(nums[0], nums[1], nums[2], nums[3], nums[4], nums[5]);
+        }
+        return orig(1, 0, 0, 1, 0, 0);
+      }
+      return orig(a, b, c, d, e, f);
+    };
+    ctx.__fogreachPatched = true;
+    return ctx;
+  }
+
+  /**
+   * Canvas-Elemente sind ECHTE node-canvas-Objekte, nur um die DOM-Felder
+   * ergaenzt, die Phaser anfasst. Wichtig: KEIN Wrapper-Objekt — der Spielcode
+   * reicht Canvas/Image an ctx.drawImage() weiter (z. B. player.js
+   * getDirectionalFrameMeta), und node-canvas lehnt alles ab, was nicht sein
+   * eigener Typ ist ("Image or Canvas expected").
+   */
+  function makeCanvasElement() {
+    const cv = createCanvas(width, height);
+    const origGetContext = cv.getContext.bind(cv);
+    cv.getContext = function (type, attrs) {
+      let ctx;
+      try { ctx = origGetContext(type === 'webgl' ? '2d' : type, attrs); }
+      catch (e) { ctx = origGetContext('2d'); }
+      return patchContext(ctx);
+    };
+    cv.tagName = 'CANVAS';
+    cv.nodeName = 'CANVAS';
+    cv.style = {};
+    cv.className = '';
+    cv.parentNode = null;
+    cv.addEventListener = addEventListener;
+    cv.removeEventListener = removeEventListener;
+    cv.setAttribute = function () {};
+    cv.getAttribute = function () { return null; };
+    cv.removeAttribute = function () {};
+    cv.focus = function () {};
+    cv.blur = function () {};
+    cv.getBoundingClientRect = function () {
+      return { x: 0, y: 0, top: 0, left: 0, right: cv.width, bottom: cv.height, width: cv.width, height: cv.height };
+    };
+    Object.defineProperty(cv, 'clientWidth', { get: () => cv.width, configurable: true });
+    Object.defineProperty(cv, 'clientHeight', { get: () => cv.height, configurable: true });
+    Object.defineProperty(cv, 'offsetWidth', { get: () => cv.width, configurable: true });
+    Object.defineProperty(cv, 'offsetHeight', { get: () => cv.height, configurable: true });
+    return cv;
+  }
+
   function makeElement(tag) {
+    if (String(tag).toLowerCase() === 'canvas') return makeCanvasElement();
     const el = {
       tagName: String(tag || 'div').toUpperCase(),
       style: {},
@@ -142,17 +214,6 @@ function createDomStub(opts) {
       querySelector() { return null; },
       querySelectorAll() { return []; },
     };
-    if (el.tagName === 'CANVAS') {
-      // Echtes node-canvas: getContext('2d') liefert einen funktionsfaehigen
-      // 2D-Kontext, damit generateTexture() reale Pixel erzeugt.
-      const real = createCanvas(width, height);
-      el.getContext = function (type, attrs) {
-        try { return real.getContext(type === 'webgl' ? '2d' : type, attrs); }
-        catch (e) { return real.getContext('2d'); }
-      };
-      el.toDataURL = function () { try { return real.toDataURL(); } catch (e) { return ''; } };
-      el.__realCanvas = real;
-    }
     return el;
   }
 
@@ -189,7 +250,17 @@ function createDomStub(opts) {
     innerWidth: width,
     innerHeight: height,
     devicePixelRatio: 1,
-    location: { href: 'http://localhost/', search: '', protocol: 'http:', hostname: 'localhost' },
+    // `search` ist konfigurierbar, damit Tests die vorhandenen Debug-Einstiege
+    // nutzen koennen (z. B. '?dungeon=1' fuer den Direkteinstieg in einen Run —
+    // derselbe _enterLocation-Pfad wie ein echter Klick).
+    location: {
+      href: 'http://localhost/' + (opts.search || ''),
+      search: opts.search || '',
+      protocol: 'http:',
+      hostname: 'localhost',
+      reload() {},
+      replace() {},
+    },
     navigator: {
       userAgent: 'HeadlessFogreach/1.0 (Node)',
       language: 'de-DE',
@@ -204,6 +275,14 @@ function createDomStub(opts) {
     performance: { now: () => Number(process.hrtime.bigint() / 1000000n) },
     console,
     Image: HeadlessImage,
+    // Phasers Feature-Erkennung (Features.js) setzt `features.canvas` allein
+    // anhand der Existenz von window.CanvasRenderingContext2D. Ohne diese
+    // Klasse meldet Phaser "Cannot create Canvas context, aborting" und
+    // verweigert den CANVAS-Renderer — obwohl node-canvas voll funktioniert.
+    CanvasRenderingContext2D,
+    ImageData,
+    CanvasGradient,
+    CanvasPattern,
     // Phaser prueft beim Laden auf diese Konstruktoren (Feature-Detection fuer
     // Video-/Audio-Dateitypen). Reine Platzhalter — headless wird nichts davon
     // instanziiert, aber ihr Fehlen bricht schon das Parsen von phaser.min.js.
