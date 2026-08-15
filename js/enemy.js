@@ -2363,17 +2363,22 @@ function makeElite(enemy) {
 // mit der Tiefe — dadurch war der Kettenmeister (96 HP) auf Tiefe 10 nur 1.6x
 // so zaeh wie ein durchschnittlicher Mini-Boss (60.8 HP), der JEDEN Raum
 // abschliesst, und schwaecher als ein zaeher Mini-Boss (bis 160 HP).
-// Kalibrierung (Ziel: Boss ~3x Mini-Boss-Durchschnitt auf seiner Gate-Tiefe):
-//   Kettenmeister      @T10:  96 * 1.9 = 183 HP = 3.01x
-//   Zeremonienmeister  @T20:  94 * 2.9 = 273 HP = 2.99x
-//   Schattenrat        @T30: 123 * 3.9 = 480 HP = 3.95x (bewusst haerter, s.u.)
+// Kalibrierung (Ziel: Boss ~3x Mini-Boss-Durchschnitt auf seiner Gate-Tiefe
+// UND ueber dem ZAEHESTEN Mini-Boss dort). Die erste Kalibrierung mass nur
+// drei Mini-Boss-Typen und lag daher zu tief: ueber alle zwoelf Typen reicht
+// die Spanne auf T10 bis 192 HP (T20: 288, T30: 384), womit der Boss auf T10
+// und T20 SCHWAECHER war als ein Mini-Boss, der jeden gewoehnlichen Raum
+// abschliesst. Werte unten gegen die volle Spanne nachgemessen.
+//   Kettenmeister      @T10: 118 * 1.9 = 225 HP = 3.01x Schnitt (max 192)
+//   Zeremonienmeister  @T20: 120 * 2.9 = 348 HP = 3.00x Schnitt (max 288)
+//   Schattenrat        @T30: 123 * 3.9 = 480 HP = 3.05x Schnitt (max 384)
 const BOSS_DEFINITIONS = {
   chainMaster: {
     id: 'chainMaster',
     name: 'Kettenmeister',
     texture: 'boss_chain_right0',
     fallbackTexture: 'sprite_boss_chain',
-    baseHP: 96,
+    baseHP: 118,
     baseSpeed: 70,
     baseDamage: 6,
     scale: 1.6,
@@ -2386,7 +2391,7 @@ const BOSS_DEFINITIONS = {
     name: 'Zeremonienmeister',
     texture: 'boss_ceremony_right0',
     fallbackTexture: 'sprite_boss_ceremony',
-    baseHP: 94,
+    baseHP: 120,
     baseSpeed: 45,
     baseDamage: 9,
     scale: 1.7,

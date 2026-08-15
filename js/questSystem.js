@@ -725,6 +725,12 @@
         { type: 'dialogue', target: 'press_decision', current: 0, required: 1 }
       ],
       rewards: { xp: 500, unlocks: ['story_ending'] },
+      // `unlocks` landet in window._questUnlocks, die Hub-Phase liest aber die
+      // Flags (hubPhase.js -> getFlags()). Ohne diesen Zwilling bleibt der Hub
+      // nach dem Story-Ende dauerhaft in Phase 'broken' und der gesamte
+      // Epilog-Zustand aus Feature 064 ist unerreichbar (#100). Gleiches
+      // Doppel-Muster wie bei elara_meeting (elara_trust).
+      completionFlags: ['story_ending'],
       prerequisites: ['schattenrat_finale'],
       requiredAct: 4,
       dialogueOffer: 'Die Platten liegen, das Archiv ist entschlüsselt. Was ich setze, liest morgen die ganze Stadt. Es ist Zeit.',

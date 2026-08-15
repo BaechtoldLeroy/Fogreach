@@ -143,3 +143,56 @@ test('hub: convoy_blown ist irgendwo setzbar (#84)',
     assert.strictEqual(canBeUnset, false,
       'convoy_blown ist nie gesetzt — Maras Finale-Bedingung ist wirkungslos');
   });
+
+// ---------------------------------------------------------------------------
+// Behobene Defekte — Regression
+// ---------------------------------------------------------------------------
+// Steht bewusst am Dateiende: der Test faehrt den Quest-Stand ans Story-Ende
+// und laesst ihn dort. Alles davor laeuft auf dem frischen Stand.
+
+test('hub: the_reckoning schaltet den Epilog-Zustand frei (#100)', () => {
+  const res = H.run(`(function () {
+    var qs = window.questSystem;
+
+    // Aufsetzen ueber den ECHTEN Speicherstand-Pfad — entspricht dem Laden
+    // eines Spielstands kurz vor dem Finale. Nur die beiden Tore von
+    // the_reckoning werden gestellt (Akt 4, Vorgaenger abgeschlossen), der
+    // Abschluss selbst laeuft danach ueber acceptQuest/completeQuest.
+    var quests = {};
+    Object.keys(qs.QUEST_DEFINITIONS).forEach(function (id) {
+      quests[id] = { status: 'available', objectives: null };
+    });
+    quests.schattenrat_finale = { status: 'completed', objectives: null };
+    qs.loadQuestSaveData({ storyVersion: qs.STORY_VERSION, quests: quests, flags: {} });
+    window.storySystem.advanceToAct(4);
+
+    var offered = qs.getAvailableQuests('thom').map(function (q) { return q.id; });
+    if (offered.indexOf('the_reckoning') < 0) {
+      return { fehler: 'the_reckoning wird nicht angeboten: ' + offered.join(', ') };
+    }
+    if (!qs.acceptQuest('the_reckoning')) return { fehler: 'acceptQuest schlug fehl' };
+    if (!qs.completeQuest('the_reckoning')) return { fehler: 'completeQuest schlug fehl' };
+
+    var aldric = null;
+    var sc = window.game.scene.getScene('HubSceneV2');
+    if (sc && sc.npcGroup) {
+      sc.npcGroup.getChildren().forEach(function (n) {
+        if (n && n.npcId === 'aldric') aldric = { visible: n.visible, active: n.active };
+      });
+    }
+    return {
+      unlock: !!(window._questUnlocks && window._questUnlocks.story_ending),
+      flag: !!qs.getFlags().story_ending,
+      phase: window.HubPhase.current(),
+      aldric: aldric,
+    };
+  })()`);
+
+  assert.ok(!res.fehler, res.fehler);
+  assert.strictEqual(res.unlock, true, 'story_ending fehlt in window._questUnlocks');
+  // Der eigentliche Fix: der Unlock hat einen Flag-Zwilling (completionFlags).
+  assert.strictEqual(res.flag, true,
+    'story_ending erreicht die questFlags nicht — Hub bliebe in "broken" haengen');
+  assert.strictEqual(res.phase, 'epilogue',
+    'Hub-Phase nach dem Story-Ende ist "' + res.phase + '" statt "epilogue"');
+});
