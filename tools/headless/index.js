@@ -98,7 +98,16 @@ function decorate(h) {
   //   Angriff   -> globales attack()      (player.js)
   //   Faehigkeit-> AbilitySystem.tryActivate(slot, scene)  (wie Q/W/E/R und Mobile)
   h.input = {
-    /** Richtungstasten setzen, z. B. hold({ left: true, up: true }). */
+    /**
+     * Richtungstasten setzen, z. B. hold({ left: true, up: true }).
+     *
+     * Setzt BEIDE Tastenquellen: das globale `cursors` (GameScene, player.js
+     * handlePlayerMovement) UND `scene.cursors` jeder laufenden Szene. Der Hub
+     * legt sich naemlich ein eigenes an (HubSceneV2.js:280) und liest nur
+     * dieses (HubSceneV2.js:913) — wer nur das globale setzt, bewegt im Hub
+     * gar nichts. Das sah in zwei Spieltests wie "der Weg ist blockiert" aus,
+     * war aber schlicht eine Luecke im Testwerkzeug.
+     */
     hold(dirs) {
       const d = dirs || {};
       ['left', 'right', 'up', 'down'].forEach((k) => {
@@ -106,6 +115,24 @@ function decorate(h) {
         try { h.run(`if (typeof cursors !== 'undefined' && cursors && cursors.${k}) cursors.${k}.isDown = ${v};`); }
         catch (e) { /* Szene evtl. noch ohne cursors */ }
       });
+      // Werte vereinheitlichen: hold({ left: 1 }) muss genauso wirken wie
+      // hold({ left: true }).
+      const norm = JSON.stringify({
+        left: !!d.left, right: !!d.right, up: !!d.up, down: !!d.down,
+      });
+      try {
+        h.run(`(function () {
+          var want = ${norm};
+          var g = window.game;
+          if (!g || !g.scene) return;
+          g.scene.scenes.forEach(function (s) {
+            if (!s || !s.cursors || !s.sys || !s.sys.isActive || !s.sys.isActive()) return;
+            ['left', 'right', 'up', 'down'].forEach(function (k) {
+              if (s.cursors[k]) s.cursors[k].isDown = want[k];
+            });
+          });
+        })()`);
+      } catch (e) { /* keine Szene mit eigenen Tasten */ }
     },
     releaseAll() { h.input.hold({}); },
 
@@ -149,9 +176,32 @@ function decorate(h) {
       } catch (e) { return false; }
     },
 
+    /**
+     * Interagieren — [E].
+     *
+     * Zwei Wege, weil das Spiel zwei kennt: die Mobile-Flagge (Dungeon-Treppen,
+     * Tueren) UND das Tastaturereignis `keydown-E`. Der Hub haengt
+     * ausschliesslich am Ereignis (HubSceneV2.js:394), der Dungeon nutzt es fuer
+     * NPCs und Haendler (eventSystem.js:503). Wer nur die Flagge setzt, kann im
+     * Hub keinen Ort betreten.
+     */
     interact() {
-      try { h.run('window.__MOBILE_INTERACT_ACTIVE__ = true;'); return true; }
-      catch (e) { return false; }
+      let ok = false;
+      try { h.run('window.__MOBILE_INTERACT_ACTIVE__ = true;'); ok = true; } catch (e) { /* egal */ }
+      try {
+        h.run(`(function () {
+          var g = window.game;
+          if (!g || !g.scene) return;
+          g.scene.scenes.forEach(function (s) {
+            if (!s || !s.sys || !s.sys.isActive || !s.sys.isActive()) return;
+            if (s.input && s.input.keyboard && s.input.keyboard.emit) {
+              s.input.keyboard.emit('keydown-E');
+            }
+          });
+        })()`);
+        ok = true;
+      } catch (e) { /* keine Szene mit Tastatur */ }
+      return ok;
     },
   };
 
