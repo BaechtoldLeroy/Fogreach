@@ -254,6 +254,201 @@ function decorate(h) {
       h.input.releaseAll();
       return { kills: h.kills() - k0, rounds: used };
     },
+
+    /**
+     * Vollwertiger Spieltest-Bot. Anders als hunt() nutzt er die Systeme:
+     * Truhen zerschlagen, Faehigkeiten zuenden, Tranke trinken, bessere
+     * Ausruestung anlegen — und weicht Hindernissen gezielter aus.
+     *
+     * Hintergrund: hunt() war fuer Stufe 2 gebaut ("laeuft die Schleife?") und
+     * ignorierte strukturell die ergiebigere Haelfte des Lootsystems — Truhen
+     * sind ZERSTOERBARE HINDERNISSE (main.js breakDestructibleObstacle), keine
+     * [E]-Objekte, und hunt() greift nur Gegner an. Bodenbeute wird dagegen
+     * automatisch eingesammelt (overlap player<->lootGroup).
+     */
+    async play(opts) {
+      opts = opts || {};
+      const rounds = opts.rounds || 400;
+      const framesPerRound = opts.framesPerRound || 4;
+      const attackRange = opts.attackRange || 60;
+      const potionAt = typeof opts.potionAt === 'number' ? opts.potionAt : 0.45;
+      const equipEvery = opts.equipEvery || 40;
+
+      const k0 = h.kills();
+      const stats = { kills: 0, chestsBroken: 0, potions: 0, abilities: 0, equipped: 0,
+        skillPoints: 0, abilitiesEquipped: 0, rounds: 0, deaths: 0 };
+      let lastX = null; let lastY = null; let stuckFor = 0; let detourLeft = 0; let detour = null;
+
+      for (let i = 0; i < rounds; i++) {
+        stats.rounds++;
+
+        // --- Zustand in EINEM Durchgriff holen (spart vm-Uebergaenge) --------
+        const st = h.run(`(function () {
+          var p = (typeof player !== 'undefined' && player) ? player : null;
+          var eg = (typeof enemies !== 'undefined' && enemies) ? enemies : window.enemies;
+          var og = (typeof obstacles !== 'undefined' && obstacles) ? obstacles : window.obstacles;
+          var list = (eg && eg.getChildren) ? eg.getChildren().filter(function (x) { return x && x.active; })
+            .map(function (x) { return { x: x.x, y: x.y }; }) : [];
+          // Truhen/Faesser/Kisten = zerstoerbare Hindernisse mit lootTier
+          var chests = [];
+          if (og && og.getChildren) {
+            og.getChildren().forEach(function (o) {
+              if (!o || !o.active || !o.getData) return;
+              var t = String(o.getData('type') || '').toLowerCase();
+              if (t.indexOf('chest') === 0 || t.indexOf('barrel') === 0 || t.indexOf('crate') === 0) {
+                chests.push({ x: o.x, y: o.y });
+              }
+            });
+          }
+          return {
+            px: p ? p.x : null, py: p ? p.y : null,
+            hp: window.playerHealth, maxHp: window.playerMaxHealth,
+            enemies: list, chests: chests,
+          };
+        })()`);
+
+        if (!st || st.px === null) { stats.deaths++; break; }
+        const enemyList = Array.from(st.enemies || []);
+        const chestList = Array.from(st.chests || []);
+
+        // --- Trank, wenn es eng wird ----------------------------------------
+        if (st.maxHp > 0 && (st.hp / st.maxHp) < potionAt) {
+          const drank = h.run(`(function () {
+            if (window.LootSystem && typeof window.LootSystem.onPotionKey === 'function') {
+              return !!window.LootSystem.onPotionKey();
+            }
+            return false;
+          })()`);
+          if (drank) stats.potions++;
+        }
+
+        // --- Fortschritt ausgeben: Talentpunkte + Faehigkeiten in die Slots --
+        // Ein frischer Charakter hat NULL von 12 Faehigkeiten gelernt — sie
+        // haengen komplett am Talentbaum. Die Kette lautet:
+        //   Level -> Talentpunkt -> investPoint() -> Faehigkeit GELERNT
+        //   -> setSlot() -> erst jetzt per tryActivate nutzbar.
+        // Ohne den setSlot-Schritt bleibt das Loadout leer und der Bot koennte
+        // nie eine Faehigkeit zuenden.
+        // ACHTUNG: isNodeAvailable(id, playerLevel) und investPoint(id, playerLevel)
+        // nehmen das Level als PARAMETER und fallen ohne ihn auf 0 zurueck —
+        // dann ist KEIN Knoten verfuegbar (minLevel 1).
+        if (i % equipEvery === 0) {
+          const prog = h.run(`(function () {
+            var ST = window.SkillTree, A = window.AbilitySystem;
+            if (!ST || !A) return { invested: 0, slotted: 0 };
+            var lvl = window.playerLevel || 1;
+            var invested = 0;
+            for (var guard = 0; guard < 20 && ST.getSkillPoints() > 0; guard++) {
+              var avail = ST.getAllNodes().filter(function (n) { return ST.isNodeAvailable(n.id, lvl); });
+              if (!avail.length) break;
+              if (!ST.investPoint(avail[0].id, lvl)) break;
+              invested++;
+            }
+            var slotted = 0;
+            var learned = A.getLearnedAbilities() || [];
+            var loadout = A.getActiveLoadout() || {};
+            for (var s = 0; s < A.SLOT_KEYS.length; s++) {
+              var key = A.SLOT_KEYS[s];
+              if (loadout[key]) continue;
+              var free = learned.filter(function (id) { return !A.isEquipped(id); });
+              if (!free.length) break;
+              if (A.setSlot(key, free[0])) slotted++;
+            }
+            return { invested: invested, slotted: slotted };
+          })()`);
+          stats.skillPoints += prog.invested;
+          stats.abilitiesEquipped += prog.slotted;
+        }
+
+        // --- Bessere Ausruestung anlegen (nicht jede Runde) -----------------
+        if (i % equipEvery === 0) {
+          stats.equipped += h.run(`(function () {
+            if (typeof inventory === 'undefined' || !Array.isArray(inventory)) return 0;
+            if (typeof equipSelectedItem !== 'function' || typeof window.computeItemPower !== 'function') return 0;
+            var slots = ['weapon', 'head', 'body', 'boots', 'amulet'];
+            var n = 0;
+            for (var s = 0; s < slots.length; s++) {
+              var slot = slots[s];
+              var cur = (typeof equipment !== 'undefined' && equipment) ? equipment[slot] : null;
+              var curPow = cur ? window.computeItemPower(cur) : -1;
+              var bestIdx = -1, bestPow = curPow;
+              for (var idx = 0; idx < inventory.length; idx++) {
+                var it = inventory[idx];
+                if (!it || it.type !== slot) continue;
+                var pw = window.computeItemPower(it);
+                if (pw > bestPow) { bestPow = pw; bestIdx = idx; }
+              }
+              if (bestIdx >= 0) { invSelected = bestIdx; equipSelectedItem(); n++; }
+            }
+            return n;
+          })()`);
+        }
+
+        // --- Ziel waehlen: Gegner zuerst, sonst Truhe -----------------------
+        let target = null; let td = Infinity; let targetIsChest = false;
+        enemyList.forEach((e) => {
+          const d = Math.hypot(e.x - st.px, e.y - st.py);
+          if (d < td) { td = d; target = e; }
+        });
+        if (!target) {
+          chestList.forEach((c) => {
+            const d = Math.hypot(c.x - st.px, c.y - st.py);
+            if (d < td) { td = d; target = c; targetIsChest = true; }
+          });
+        }
+
+        if (!target) { h.input.releaseAll(); h.step(framesPerRound); await flush(); continue; }
+
+        // --- Feststeck-Erkennung -------------------------------------------
+        if (lastX !== null) {
+          stuckFor = Math.hypot(st.px - lastX, st.py - lastY) < 2 ? stuckFor + 1 : 0;
+        }
+        lastX = st.px; lastY = st.py;
+
+        if (td <= attackRange) {
+          h.input.releaseAll();
+          detourLeft = 0;
+          if (targetIsChest) {
+            // Truhen brechen ueber den echten Pfad (dieselbe Funktion, die auch
+            // Skills nutzen), nicht ueber einen Sonderweg.
+            const broke = h.run(`(function () {
+              var sc = window.game.scene.getScene('GameScene');
+              if (typeof breakDestructiblesInRange !== 'function') return 0;
+              return breakDestructiblesInRange(sc, 90) || 0;
+            })()`);
+            stats.chestsBroken += broke;
+            if (!broke) h.input.attack();
+          } else {
+            h.input.attack();
+            // Faehigkeit zuenden, wenn eine bereit ist (rotierend ueber die Slots)
+            const slot = (i % 4) + 1;
+            const fired = h.run(`(function () {
+              var sc = window.game.scene.getScene('GameScene');
+              if (!window.AbilitySystem || typeof window.AbilitySystem.tryActivate !== 'function') return false;
+              try { return !!window.AbilitySystem.tryActivate('slot${slot}', sc); } catch (e) { return false; }
+            })()`);
+            if (fired) stats.abilities++;
+          }
+        } else if (detourLeft > 0) {
+          h.input.hold(detour); detourLeft--;
+        } else if (stuckFor >= 4) {
+          const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
+            { left: true, up: true }, { right: true, down: true }, { left: true, down: true }, { right: true, up: true }];
+          detour = dirs[Math.floor(Math.random() * dirs.length)];
+          detourLeft = 10; stuckFor = 0;
+          h.input.hold(detour);
+        } else {
+          h.input.steerTowards(target.x, target.y);
+        }
+
+        h.step(framesPerRound);
+        await flush();
+      }
+
+      h.input.releaseAll();
+      stats.kills = h.kills() - k0;
+      return stats;
+    },
   };
 
   h.flush = flush;
