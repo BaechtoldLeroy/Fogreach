@@ -329,9 +329,17 @@ function decorate(h) {
         skillPoints: 0, abilitiesEquipped: 0, rounds: 0, deaths: 0,
         roomsEntered: 0, stairsTaken: 0, abandoned: 0 };
       // Ziele, die sich als unerreichbar erwiesen haben (Rasterschluessel).
-      // Wird bei jedem Raumwechsel geleert.
-      const aufgegeben = new Set();
-      let roomId = null;
+      // Wird bei jedem Raumwechsel geleert — aber NICHT zwischen zwei
+      // play()-Aufrufen: das Gedaechtnis haengt an `h`, nicht am Aufruf.
+      //
+      // Frueher war es eine lokale Variable. Wer play() in kleinen Haeppchen
+      // aufruft (etwa um zwischendurch den Fortschritt zu lesen), setzte damit
+      // bei jedem Aufruf das Wissen zurueck und lief dieselbe blockierte Treppe
+      // endlos wieder an — beobachtet als Pendeln zwischen zwei Positionen
+      // ueber Tausende Runden ohne Fortschritt.
+      if (!h._botGedaechtnis) h._botGedaechtnis = { aufgegeben: new Set(), roomId: null };
+      const aufgegeben = h._botGedaechtnis.aufgegeben;
+      let roomId = h._botGedaechtnis.roomId;
       let verfolgtKey = null; let verfolgtRunden = 0; let besteDistanz = Infinity;
       // Wie lange der Bot schon auf einer Treppe steht, ohne dass der Raum
       // wechselt. Dient dazu, eine nicht funktionierende Treppe aufzugeben.
@@ -480,6 +488,7 @@ function decorate(h) {
         if (st.roomId && st.roomId !== roomId) {
           if (roomId !== null) stats.roomsEntered++;
           roomId = st.roomId;
+          h._botGedaechtnis.roomId = roomId;
           aufgegeben.clear();
           verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
         }
