@@ -326,8 +326,28 @@ function decorate(h) {
 
       const k0 = h.kills();
       const stats = { kills: 0, chestsBroken: 0, potions: 0, abilities: 0, equipped: 0,
-        skillPoints: 0, abilitiesEquipped: 0, rounds: 0, deaths: 0 };
+        skillPoints: 0, abilitiesEquipped: 0, rounds: 0, deaths: 0,
+        roomsEntered: 0, stairsTaken: 0, abandoned: 0 };
+      // Ziele, die sich als unerreichbar erwiesen haben (Rasterschluessel).
+      // Wird bei jedem Raumwechsel geleert.
+      const aufgegeben = new Set();
+      let roomId = null;
+      let verfolgtKey = null; let verfolgtRunden = 0; let besteDistanz = Infinity;
+      // Wie lange der Bot schon auf einer Treppe steht, ohne dass der Raum
+      // wechselt. Dient dazu, eine nicht funktionierende Treppe aufzugeben.
+      let treppeSeit = 0;
+      const gibAufNach = opts.gibAufNach || 50;
+      // Wie weit der Bot fuer eine Truhe vom Weg abweicht. Truhen sind Beiwerk,
+      // nicht das Rundenziel — alles Weitere liegt einfach nicht am Weg.
+      const chestDetour = typeof opts.chestDetour === "number" ? opts.chestDetour : 200;
       let lastX = null; let lastY = null; let stuckFor = 0; let detourLeft = 0; let detour = null;
+
+      /** Zerstoerbares in Reichweite aufschlagen. Meldet, wie viel fiel. */
+      const brich = () => h.run(`(function () {
+        var sc = window.game.scene.getScene('GameScene');
+        if (typeof breakDestructiblesInRange !== 'function') return 0;
+        return breakDestructiblesInRange(sc, 90) || 0;
+      })()`);
 
       for (let i = 0; i < rounds; i++) {
         stats.rounds++;
@@ -337,11 +357,17 @@ function decorate(h) {
           var p = (typeof player !== 'undefined' && player) ? player : null;
           var eg = (typeof enemies !== 'undefined' && enemies) ? enemies : window.enemies;
           var og = (typeof obstacles !== 'undefined' && obstacles) ? obstacles : window.obstacles;
-          var list = (eg && eg.getChildren) ? eg.getChildren().filter(function (x) { return x && x.active; })
+          // WICHTIG: waehrend eines Raumwechsels sind die Gruppen bereits
+          // zerstoert, ihre Referenzen aber noch gesetzt. getChildren() wirft
+          // dann in Phaser (Cannot read properties of undefined, reading
+          // entries) und riss den ganzen Bot-Lauf ab. Deshalb ueberall
+          // zusaetzlich children mitpruefen.
+          var lebt = function (grp) { return !!(grp && grp.children && grp.getChildren); };
+          var list = lebt(eg) ? eg.getChildren().filter(function (x) { return x && x.active; })
             .map(function (x) { return { x: x.x, y: x.y }; }) : [];
           // Truhen/Faesser/Kisten = zerstoerbare Hindernisse mit lootTier
           var chests = [];
-          if (og && og.getChildren) {
+          if (lebt(og)) {
             og.getChildren().forEach(function (o) {
               if (!o || !o.active || !o.getData) return;
               var t = String(o.getData('type') || '').toLowerCase();
@@ -350,10 +376,25 @@ function decorate(h) {
               }
             });
           }
+          // Treppen: das eigentliche Rundenziel. Ohne sie endet jeder Run im
+          // ersten Raum, egal wie gut gekaempft wird.
+          var stairs = [];
+          var sc = window.game.scene.getScene('GameScene');
+          // Waehrend eines Raumwechsels ist die Gruppe bereits zerstoert, die
+          // Referenz auf der Szene aber noch gesetzt — getChildren() wirft dann
+          // in Phaser. Deshalb children mitpruefen und absichern.
+          try {
+            if (sc && lebt(sc.stairsGroup)) {
+              sc.stairsGroup.getChildren().forEach(function (s) {
+                if (s && s.active) stairs.push({ x: s.x, y: s.y });
+              });
+            }
+          } catch (e) { stairs = []; }
           return {
             px: p ? p.x : null, py: p ? p.y : null,
             hp: window.playerHealth, maxHp: window.playerMaxHealth,
-            enemies: list, chests: chests,
+            enemies: list, chests: chests, stairs: stairs,
+            roomId: (sc && sc.currentRoom) ? String(sc.currentRoom.id) : null,
           };
         })()`);
 
@@ -434,17 +475,83 @@ function decorate(h) {
           })()`);
         }
 
-        // --- Ziel waehlen: Gegner zuerst, sonst Truhe -----------------------
-        let target = null; let td = Infinity; let targetIsChest = false;
-        enemyList.forEach((e) => {
-          const d = Math.hypot(e.x - st.px, e.y - st.py);
-          if (d < td) { td = d; target = e; }
-        });
-        if (!target) {
-          chestList.forEach((c) => {
-            const d = Math.hypot(c.x - st.px, c.y - st.py);
-            if (d < td) { td = d; target = c; targetIsChest = true; }
+        // --- Raumwechsel bemerken ------------------------------------------
+        // Neuer Raum: aufgegebene Ziele wieder freigeben, Verfolgung zuruecksetzen.
+        if (st.roomId && st.roomId !== roomId) {
+          if (roomId !== null) stats.roomsEntered++;
+          roomId = st.roomId;
+          aufgegeben.clear();
+          verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
+        }
+
+        // --- Ziel waehlen: Gegner -> Truhe -> TREPPE ------------------------
+        // Die Treppe ist das Rundenziel, nicht bloss Beiwerk. Ohne sie bleibt
+        // der Bot im ersten Raum stehen, auch wenn er dort alles erschlaegt.
+        const zielKey = (o) => Math.round(o.x / 16) + '|' + Math.round(o.y / 16);
+        const naechstes = (liste) => {
+          let best = null; let bestD = Infinity;
+          liste.forEach((o) => {
+            if (aufgegeben.has(zielKey(o))) return;
+            const d = Math.hypot(o.x - st.px, o.y - st.py);
+            if (d < bestD) { bestD = d; best = o; }
           });
+          return best ? { obj: best, d: bestD } : null;
+        };
+
+        let target = null; let td = Infinity;
+        let targetIsChest = false; let targetIsStairs = false;
+        const g = naechstes(enemyList);
+        if (g) {
+          target = g.obj; td = g.d;
+        } else {
+          // Kein Gegner mehr -> zur TREPPE. Truhen sind KEIN Ziel.
+          //
+          // Ein Raum enthaelt bis zu 38 zerstoerbare Objekte. Solange sie als
+          // Ziel zaehlen, findet der Bot immer noch eine in der Naehe und kommt
+          // nie zur Treppe — gemessen mit 200 px Toleranz: nach 600 Runden
+          // 23 Truhen zerschlagen, 0 Gegner uebrig, 0 Treppen erreicht.
+          // Deshalb: Truhen werden nur noch NEBENBEI aufgeschlagen (unten),
+          // wenn sie ohnehin in Schlagreichweite liegen.
+          const s = naechstes(Array.from(st.stairs || []));
+          if (s) { target = s.obj; td = s.d; targetIsStairs = true; } else {
+            const t = naechstes(chestList);
+            if (t) { target = t.obj; td = t.d; targetIsChest = true; }
+          }
+        }
+
+        // Truhen im Vorbeigehen mitnehmen — kostet keinen Umweg, weil nur
+        // geschlagen wird, was ohnehin in Reichweite steht.
+        if (!targetIsChest && chestList.some(
+          (c) => Math.hypot(c.x - st.px, c.y - st.py) <= 85)) {
+          stats.chestsBroken += brich();
+        }
+
+        // --- Nicht endlos umrunden ------------------------------------------
+        // Kommt der Bot einem Ziel ueber laengere Zeit nicht naeher, ist es
+        // unerreichbar (hinter einer Wand, in einer Nische). Dann wird es
+        // aufgegeben und das naechste angegangen, statt es weiter zu umkreisen.
+        if (target) {
+          const k = zielKey(target);
+          if (k !== verfolgtKey) {
+            verfolgtKey = k; verfolgtRunden = 0; besteDistanz = td;
+          } else if (td <= attackRange) {
+            // In Reichweite = der Bot KAEMPFT bzw. schlaegt auf. Das ist kein
+            // Umrunden, also darf hier nichts aufgegeben werden. Ohne diese
+            // Ausnahme gab der Bot ausgerechnet den Gegner auf, den er gerade
+            // erschlug — die Kills fielen dadurch von 29 auf 18.
+            verfolgtRunden = 0; besteDistanz = Math.min(besteDistanz, td);
+          } else {
+            verfolgtRunden++;
+            if (td < besteDistanz - 8) { besteDistanz = td; verfolgtRunden = 0; }
+            if (verfolgtRunden > gibAufNach) {
+              aufgegeben.add(k);
+              stats.abandoned++;
+              verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
+              h.input.releaseAll();
+              h.step(framesPerRound); await flush();
+              continue;
+            }
+          }
         }
 
         if (!target) { h.input.releaseAll(); h.step(framesPerRound); await flush(); continue; }
@@ -454,6 +561,35 @@ function decorate(h) {
           stuckFor = Math.hypot(st.px - lastX, st.py - lastY) < 2 ? stuckFor + 1 : 0;
         }
         lastX = st.px; lastY = st.py;
+
+        // Muss VOR dem Angriffs-Zweig stehen und dessen Reichweite abdecken:
+        // eine Treppe wird betreten, nicht erschlagen. Mit einer Schwelle von
+        // 44 px bei attackRange 60 landete der Bot im Angriffs-Zweig und
+        // preschte 600 Runden lang auf die Treppe ein, statt hineinzugehen
+        // (gemessen: Position unveraendert, Geschwindigkeit 0).
+        if (targetIsStairs) {
+          // NICHT stehenbleiben und nur [E] druecken: der Raumwechsel haengt am
+          // Overlap-Ausloeser (roomManager onStairOverlap), also muss der Bot
+          // WEITER in die Treppe hineinlaufen. Eine fruehere Fassung hielt hier
+          // an und drueckte [E] — in vier von fuenf Laeufen stand der Bot
+          // danach 1300 Runden regungslos auf der Treppe.
+          h.input.steerTowards(target.x, target.y, 2);
+          if (td <= 70) h.input.interact();
+          treppeSeit = (td <= 70) ? treppeSeit + 1 : 0;
+          if (treppeSeit === 1) stats.stairsTaken++;
+          // Tut sich nichts, ist diese Treppe nicht die richtige (oder noch
+          // verschlossen) — aufgeben und die naechste nehmen. Es liegen in der
+          // Regel mehrere im Raum.
+          if (treppeSeit > 45) {
+            aufgegeben.add(zielKey(target));
+            stats.abandoned++;
+            treppeSeit = 0;
+            verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
+          }
+          h.step(framesPerRound); await flush();
+          continue;
+        }
+        if (!targetIsStairs) treppeSeit = 0;
 
         if (td <= attackRange) {
           h.input.releaseAll();
@@ -481,14 +617,37 @@ function decorate(h) {
           }
         } else if (detourLeft > 0) {
           h.input.hold(detour); detourLeft--;
-        } else if (stuckFor >= 4) {
-          const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
-            { left: true, up: true }, { right: true, down: true }, { left: true, down: true }, { right: true, up: true }];
-          detour = dirs[Math.floor(Math.random() * dirs.length)];
-          detourLeft = 10; stuckFor = 0;
-          h.input.hold(detour);
         } else {
           h.input.steerTowards(target.x, target.y);
+
+          // Festgefahren: ERST freischlagen, dann erst ausweichen.
+          //
+          // Das ist der wirksamste Hebel am ganzen Bot. Wer sofort ausweicht,
+          // umrundet endlos das Fass, das ihm im Weg steht; wer zuschlaegt,
+          // raeumt es weg und geht geradeaus weiter. Gemessen ueber je acht
+          // Laeufe a 400 Runden auf Tiefe 1:
+          //   vorher (nur ausweichen) : 17/33 Gegner,  10 Truhen, --
+          //   nachher (erst schlagen) : 35/36 Gegner,  91 Truhen, 7/8 Raeume leer
+          //
+          // Eine echte Wegfindung (Raster + Dijkstra, siehe nav.js) wurde
+          // zweimal dagegen gemessen und war BEIDE Male deutlich schlechter
+          // (12/35 Gegner, 27 Truhen, 1/8 Raeume) — die Raeume sind offen
+          // genug, dass die gerade Linie plus Freischlagen gewinnt. Deshalb
+          // steht hier bewusst kein Wegplaner.
+          if (stuckFor >= 4) {
+            const fiel = brich();
+            stuckFor = 0;
+            if (fiel) {
+              stats.chestsBroken += fiel;
+            } else {
+              const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
+                { left: true, up: true }, { right: true, down: true },
+                { left: true, down: true }, { right: true, up: true }];
+              detour = dirs[Math.floor(Math.random() * dirs.length)];
+              detourLeft = 8;
+              h.input.hold(detour);
+            }
+          }
         }
 
         h.step(framesPerRound);

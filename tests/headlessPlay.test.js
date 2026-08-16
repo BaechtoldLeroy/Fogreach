@@ -92,6 +92,57 @@ test('play: der Bot laeuft eine Jagd-Schleife ohne Fehler durch', async () => {
     'Fehler waehrend der Bot-Schleife:\n' + H.hardErrors().map((e) => '  ' + e.msg).join('\n'));
 });
 
+test('play: der Bot betritt die Treppe, statt sie anzugreifen', async () => {
+  // Gezielt aufgesetzt statt einen ganzen Bot-Lauf abzuwarten: ob der Bot in
+  // 1500 Runden zufaellig eine Treppe findet, schwankt stark (gemessen: 0 bis
+  // 5 Raumwechsel je Lauf) und waere als Zusicherung flaky. Hier wird nur der
+  // Treppen-Zweig geprueft, und der ist deterministisch.
+  //
+  // Der Fehler, den dieser Test festhaelt: die Treppen-Schwelle lag mit 44 px
+  // INNERHALB der Angriffsreichweite von 60 px. Der Bot fiel dadurch in den
+  // Angriffs-Zweig und drosch auf die Treppe ein, statt sie zu betreten —
+  // ueber 600 Runden unveraendert an derselben Stelle, Geschwindigkeit 0.
+  const aufbau = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    // Treppen greifen erst ohne Gegner — sonst ist der Bot im Kampf.
+    // Erst sammeln, dann zerstoeren: waehrend der Iteration aus der Gruppe zu
+    // entfernen ueberspringt Eintraege (dieselbe Falle wie in
+    // player.js breakDestructiblesInRange).
+    if (enemies && enemies.children) {
+      var weg = enemies.getChildren().slice();
+      weg.forEach(function (e) { if (e && e.destroy) e.destroy(); });
+    }
+    if (!sc.stairsGroup || !sc.stairsGroup.children) return { fehler: 'keine Treppengruppe' };
+    var s = sc.stairsGroup.getChildren().filter(function (x) { return x && x.active; })[0];
+    if (!s) return { fehler: 'keine aktive Treppe' };
+    // Knapp ausserhalb der Treppe absetzen — in der Zone zwischen 44 und 60 px,
+    // in der die alte Fassung haengen blieb. body.reset() statt x/y zu setzen:
+    // sonst bleibt der Physikkoerper an der alten Stelle stehen.
+    if (player.body && player.body.reset) player.body.reset(s.x + 55, s.y);
+    else { player.x = s.x + 55; player.y = s.y; }
+    return { raum: sc.currentRoom ? String(sc.currentRoom.id) : null,
+      treppe: { x: Math.round(s.x), y: Math.round(s.y) },
+      gegnerUebrig: (enemies && enemies.children)
+        ? enemies.getChildren().filter(function (e) { return e && e.active; }).length : -1 };
+  })()`);
+  assert.ok(!aufbau.fehler, aufbau.fehler);
+  assert.strictEqual(aufbau.gegnerUebrig, 0,
+    'Aufbau unvollstaendig: noch ' + aufbau.gegnerUebrig + ' Gegner aktiv');
+
+  await H.bot.play({ rounds: 80 });
+
+  const danach = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    return { raum: sc.currentRoom ? String(sc.currentRoom.id) : null,
+      p: player ? { x: Math.round(player.x), y: Math.round(player.y) } : null };
+  })()`);
+
+  assert.notStrictEqual(danach.raum, aufbau.raum,
+    'Raum wechselte nicht — der Bot steht bei ('
+    + (danach.p ? danach.p.x + ',' + danach.p.y : '?') + '), Treppe bei ('
+    + aufbau.treppe.x + ',' + aufbau.treppe.y + ')');
+});
+
 test('play: ein gespielter Run erzeugt keine Konsolenfehler', () => {
   const errs = H.hardErrors();
   assert.strictEqual(errs.length, 0,
