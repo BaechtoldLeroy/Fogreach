@@ -3301,7 +3301,11 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
     seen[eid] = true;
     projectile.setData('twHitForward', seen);
     const twMult = projectile.getData('damageMult') ?? 1;
-    const { isCrit } = dealDamageToEnemy(scene, enemy, twMult, 'twistingBlades');
+    // Wirbelklingen sind eine GEWORFENE Waffe und zaehlen deshalb als
+    // Fernkampf — wie der gewoehnliche Dolchwurf. Damit daempft sie der
+    // Fernkampfpanzer (bulwark), nicht mehr das Bannschild (warded).
+    // Vorher lief sie als 'skill', was zur sichtbaren Wurfbewegung nicht passte.
+    const { isCrit } = dealDamageToEnemy(scene, enemy, twMult, 'twistingBlades', { ranged: true });
     handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0xffaa88, duration: isCrit ? 200 : 140 });
     const tkb = projectile.getData('knockback') ?? 120;
     if (enemy.active && enemy.body) {

@@ -268,12 +268,13 @@ test('Wirbelklingen: ausserhalb des Kegels bleibt die Richtung unangetastet', ()
     + 'die Zielhilfe zieht die Klinge um Ecken');
 });
 
-test('Wirbelklingen zaehlen als Faehigkeit, nicht als Nahkampf', () => {
-  // Klassifizierung in dealDamageToEnemy (player.js): 'melee' ist NUR der
-  // Basisangriff. Nahkampfhaut (bruiser) darf die Wurfklinge deshalb nicht
-  // daempfen — Bannschild (warded) schon.
-  // WICHTIG: alle drei Messungen am SELBEN Gegner. Frisch gespawnte Gegner
-  // unterscheiden sich in Ruestung und Typ — ein Vergleich ueber drei
+test('Wirbelklingen zaehlen als FERNKAMPF', () => {
+  // Die Wurfklinge laeuft ueber denselben Weg wie der Dolchwurf und wird mit
+  // { ranged: true } gemeldet. Damit daempft sie der Fernkampfpanzer
+  // (bulwark) — und WEDER Nahkampfhaut (bruiser) NOCH Bannschild (warded).
+  //
+  // WICHTIG: alle Messungen am SELBEN Gegner. Frisch gespawnte Gegner
+  // unterscheiden sich in Ruestung und Typ — ein Vergleich ueber mehrere
   // Exemplare hinweg schlug dadurch sporadisch fehl (20 gegen 7 Schaden,
   // ohne dass eine Resistenz im Spiel war).
   const ref = L.spawnEnemy(3, 150, 0);
@@ -286,19 +287,59 @@ test('Wirbelklingen zaehlen als Faehigkeit, nicht als Nahkampf', () => {
       e.maxHp = 100000; e.hp = 100000;
       e._enchant = ${ench};
       var vor = e.hp;
-      dealDamageToEnemy(sc, e, 1, 'twistingBlades');
+      dealDamageToEnemy(sc, e, 1, 'twistingBlades', { ranged: true });
       return vor - e.hp;
     })()`);
   };
   const ohne = messen(null);
   const nahkampfhaut = messen('melee');
   const bannschild = messen('skill');
+  const fernkampfpanzer = messen('ranged');
 
   assert.ok(ohne > 0, 'Grundschaden nicht messbar: ' + ohne);
   assert.strictEqual(nahkampfhaut, ohne,
     'Nahkampfhaut daempft Wirbelklingen (' + nahkampfhaut + ' statt ' + ohne + ')');
-  assert.ok(bannschild < ohne,
-    'Bannschild daempft Wirbelklingen NICHT (' + bannschild + ' wie ' + ohne + ')');
+  assert.strictEqual(bannschild, ohne,
+    'Bannschild daempft Wirbelklingen (' + bannschild + ' statt ' + ohne + ')');
+  assert.ok(fernkampfpanzer < ohne,
+    'Fernkampfpanzer daempft Wirbelklingen NICHT (' + fernkampfpanzer + ' wie ' + ohne + ')');
+});
+
+test('Wirbelklingen: der ECHTE Treffer meldet sich als Fernkampf', () => {
+  // Der Fall darueber ruft dealDamageToEnemy direkt auf. Faellt das
+  // { ranged: true } im Treffer-Zweig von player.js weg, bemerkt er das NICHT.
+  // Hier wird der Schaden ueber den echten Kollisionspfad ausgeloest.
+  const ref = L.spawnEnemy(3, 120, 0);
+  const res = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var e = window.__lab.refs[${ref}];
+    if (!e) return { fehler: 'Gegner fehlt' };
+
+    function treffer(resist) {
+      e.maxHp = 100000; e.hp = 100000;
+      e._enchant = resist ? { resist: resist, resistMul: 0.3 } : null;
+      e._twId = null;
+      if (playerProjectiles && playerProjectiles.children) {
+        playerProjectiles.getChildren().slice().forEach(function (p) { if (p && p.destroy) p.destroy(); });
+      }
+      lastMoveDirection.set(1, 0);
+      castTwistingBlades.call(sc);
+      var k = playerProjectiles.getChildren().filter(function (p) {
+        return p && p.active && p.getData && p.getData('twistingBlades');
+      })[0];
+      if (!k) return null;
+      var vor = e.hp;
+      handlePlayerProjectileEnemyOverlap.call(sc, k, e);   // echter Kollisions-Handler
+      return vor - e.hp;
+    }
+    return { ohne: treffer(null), fern: treffer('ranged') };
+  })()`);
+
+  assert.ok(!res.fehler, res.fehler);
+  assert.ok(res.ohne > 0, 'kein Schaden ueber den Kollisionspfad: ' + JSON.stringify(res));
+  assert.ok(res.fern < res.ohne,
+    'Fernkampfpanzer greift beim echten Treffer nicht (' + res.fern + ' wie ' + res.ohne
+    + ') — das { ranged: true } fehlt im Treffer-Zweig');
 });
 
 test('Wirbelklingen: der ECHTE Wurf nutzt die Zielhilfe', () => {
