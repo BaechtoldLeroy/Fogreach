@@ -344,6 +344,9 @@ function decorate(h) {
       // Wie lange der Bot schon auf einer Treppe steht, ohne dass der Raum
       // wechselt. Dient dazu, eine nicht funktionierende Treppe aufzugeben.
       let treppeSeit = 0;
+      // Wirkt der Angriff? HP des aktuellen Ziels und wie lange sie schon
+      // nicht mehr faellt.
+      let zielHp = null; let zielKeyHp = null; let ohneWirkung = 0;
       const gibAufNach = opts.gibAufNach || 50;
       // Wie weit der Bot fuer eine Truhe vom Weg abweicht. Truhen sind Beiwerk,
       // nicht das Rundenziel — alles Weitere liegt einfach nicht am Weg.
@@ -372,7 +375,7 @@ function decorate(h) {
           // zusaetzlich children mitpruefen.
           var lebt = function (grp) { return !!(grp && grp.children && grp.getChildren); };
           var list = lebt(eg) ? eg.getChildren().filter(function (x) { return x && x.active; })
-            .map(function (x) { return { x: x.x, y: x.y }; }) : [];
+            .map(function (x) { return { x: x.x, y: x.y, hp: x.hp }; }) : [];
           // Truhen/Faesser/Kisten = zerstoerbare Hindernisse mit lootTier
           var chests = [];
           if (lebt(og)) {
@@ -601,9 +604,9 @@ function decorate(h) {
         if (!targetIsStairs) treppeSeit = 0;
 
         if (td <= attackRange) {
-          h.input.releaseAll();
           detourLeft = 0;
           if (targetIsChest) {
+            h.input.releaseAll();
             // Truhen brechen ueber den echten Pfad (dieselbe Funktion, die auch
             // Skills nutzen), nicht ueber einen Sonderweg.
             const broke = h.run(`(function () {
@@ -614,7 +617,42 @@ function decorate(h) {
             stats.chestsBroken += broke;
             if (!broke) h.input.attack();
           } else {
+            // WEITER auf den Gegner zusteuern statt anzuhalten.
+            //
+            // Der Nahkampf trifft nur in einem 60-Grad-Kegel in BLICKRICHTUNG
+            // (player.js:1866, dot <= 0.5 verwirft den Treffer), und die
+            // Blickrichtung ist die letzte BEWEGUNGSrichtung. Wer bei Reichweite
+            // anhaelt, friert sie ein: steht der Gegner ausserhalb des Kegels,
+            // geht jeder Schlag daneben — und weil der Bot "in Reichweite" ist,
+            // bewegt er sich nie wieder. Gemessen: 7200 Runden regungslos auf
+            // demselben Pixel, 56 px neben einem lebenden Gegner.
+            //
+            // Weiterlaufen haelt die Blickrichtung am Ziel; die Kollision
+            // verhindert, dass er hindurchlaeuft.
+            h.input.steerTowards(target.x, target.y, 4);
             h.input.attack();
+
+            // Sicherung nach dem Grundsatz "nimmt er keinen Schaden, muss man
+            // naeher ran": faellt die HP des Ziels ueber viele Runden nicht,
+            // zaehlt das NICHT als Kampf — dann darf die Aufgeben-Logik greifen
+            // und der Bot sucht sich ein anderes Ziel.
+            if (typeof target.hp === 'number') {
+              const kHp = zielKey(target);
+              if (zielHp === null || zielKeyHp !== kHp) {
+                zielHp = target.hp; zielKeyHp = kHp; ohneWirkung = 0;
+              } else if (target.hp < zielHp) {
+                zielHp = target.hp; ohneWirkung = 0;
+              } else {
+                ohneWirkung++;
+                if (ohneWirkung > 30) {
+                  aufgegeben.add(kHp);
+                  stats.abandoned++;
+                  ohneWirkung = 0; zielHp = null; zielKeyHp = null;
+                  verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
+                }
+              }
+            }
+
             // Faehigkeit zuenden, wenn eine bereit ist (rotierend ueber die Slots)
             const slot = (i % 4) + 1;
             const fired = h.run(`(function () {
