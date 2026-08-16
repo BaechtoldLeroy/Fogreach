@@ -1408,6 +1408,23 @@ function onStairOverlap(player, stair) {
 
   // Require E key to confirm — no accidental room transitions
   const scene = obstacles?.scene;
+
+  // Die TUER hat Vorrang. Liegt eine geschlossene Tuer in Reichweite, gehoert
+  // der E-Druck ihr: sonst oeffnet ein einziger Druck die Tuer UND nimmt im
+  // selben Moment die dahinterliegende Treppe — der Spieler sieht den Raum
+  // hinter der Tuer nie. Ist die Tuer bereits offen, greift die Regel nicht,
+  // dann will man die Treppe wirklich benutzen.
+  if (scene && Array.isArray(scene._doors)) {
+    const REICHWEITE = 100;   // identisch zu DoorSystem.INTERACT_DIST
+    for (let i = 0; i < scene._doors.length; i++) {
+      const tuer = scene._doors[i];
+      if (!tuer || !tuer.active || !tuer.getData) continue;
+      if (tuer.getData('doorState') !== 'closed') continue;
+      const dx = tuer.x - player.x;
+      const dy = tuer.y - player.y;
+      if (dx * dx + dy * dy < REICHWEITE * REICHWEITE) return;
+    }
+  }
   if (scene && scene.input && scene.input.keyboard) {
     const eKey = scene.input.keyboard.addKey('E');
     const mobileInteract = !!window.__MOBILE_INTERACT_ACTIVE__;

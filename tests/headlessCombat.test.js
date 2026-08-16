@@ -217,3 +217,112 @@ test('jeder Elite-Affix setzt nur Werte, die der Spielcode auch liest', () => {
   assert.strictEqual(dead.length, 0,
     'Affix-Werte ohne Leser (wie in #90): ' + dead.map((d) => d.affix + '.' + d.key).join(', '));
 });
+
+// ---------------------------------------------------------------------------
+// Wirbelklingen: Zielhilfe und Verzauberungs-Klassifizierung
+// ---------------------------------------------------------------------------
+// Hinweis zum Aufbau: der Winkel wird ueber die SPIELER-Position gesetzt, nicht
+// ueber die des Gegners. `spawnEnemy` verschiebt den Gegner auf einen
+// erreichbaren Punkt (gemessen: angefordert +100/+400, gelandet -150/-270), der
+// Winkel waere damit nicht steuerbar und der Test verliesse sich auf Zufall.
+
+/** Genau EIN Gegner im Raum, Spieler im gewuenschten Winkel davor. */
+function stelleAuf(dx, dy) {
+  L.clearEnemies();
+  const ref = L.spawnEnemy(3, 150, 0);
+  return H.run(`(function () {
+    var e = window.__lab.refs[${ref}];
+    if (!e) return null;
+    player.body.reset(e.x - ${dx}, e.y - ${dy});
+    lastMoveDirection.set(1, 0);          // Blick exakt waagerecht
+    return { grad: Math.atan2(e.y - player.y, e.x - player.x) * 180 / Math.PI };
+  })()`);
+}
+
+test('Wirbelklingen: die Wurfrichtung dreht auf einen Gegner im Kegel', () => {
+  const auf = stelleAuf(200, 60);         // ~17 Grad — innerhalb der 30
+  assert.ok(auf, 'Aufbau fehlgeschlagen');
+  assert.ok(Math.abs(auf.grad) < 30, 'Aufbau liegt ausserhalb des Kegels: ' + auf.grad);
+
+  const ist = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var d = _aimAssistVector(_getAimVector2(sc), 420, 30);
+    return Math.atan2(d.y, d.x) * 180 / Math.PI;
+  })()`);
+  assert.ok(Math.abs(auf.grad - ist) < 0.5,
+    'Wurf zielt auf ' + ist.toFixed(1) + ' statt ' + auf.grad.toFixed(1) + ' Grad');
+});
+
+test('Wirbelklingen: ausserhalb des Kegels bleibt die Richtung unangetastet', () => {
+  const auf = stelleAuf(100, 400);        // ~76 Grad — deutlich ausserhalb
+  assert.ok(auf, 'Aufbau fehlgeschlagen');
+  assert.ok(Math.abs(auf.grad) > 30, 'Aufbau liegt im Kegel: ' + auf.grad);
+
+  const abweichung = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var d = _aimAssistVector(_getAimVector2(sc), 420, 30);
+    return Math.abs(d.y);
+  })()`);
+  assert.ok(abweichung < 0.01,
+    'Richtung wurde trotz ' + auf.grad.toFixed(0) + ' Grad gedreht (y=' + abweichung + ') — '
+    + 'die Zielhilfe zieht die Klinge um Ecken');
+});
+
+test('Wirbelklingen zaehlen als Faehigkeit, nicht als Nahkampf', () => {
+  // Klassifizierung in dealDamageToEnemy (player.js): 'melee' ist NUR der
+  // Basisangriff. Nahkampfhaut (bruiser) darf die Wurfklinge deshalb nicht
+  // daempfen — Bannschild (warded) schon.
+  // WICHTIG: alle drei Messungen am SELBEN Gegner. Frisch gespawnte Gegner
+  // unterscheiden sich in Ruestung und Typ — ein Vergleich ueber drei
+  // Exemplare hinweg schlug dadurch sporadisch fehl (20 gegen 7 Schaden,
+  // ohne dass eine Resistenz im Spiel war).
+  const ref = L.spawnEnemy(3, 150, 0);
+  const messen = (resist) => {
+    const ench = resist ? "{ resist: '" + resist + "', resistMul: 0.3 }" : 'null';
+    return H.run(`(function () {
+      var sc = window.game.scene.getScene('GameScene');
+      var e = window.__lab.refs[${ref}];
+      if (!e) return null;
+      e.maxHp = 100000; e.hp = 100000;
+      e._enchant = ${ench};
+      var vor = e.hp;
+      dealDamageToEnemy(sc, e, 1, 'twistingBlades');
+      return vor - e.hp;
+    })()`);
+  };
+  const ohne = messen(null);
+  const nahkampfhaut = messen('melee');
+  const bannschild = messen('skill');
+
+  assert.ok(ohne > 0, 'Grundschaden nicht messbar: ' + ohne);
+  assert.strictEqual(nahkampfhaut, ohne,
+    'Nahkampfhaut daempft Wirbelklingen (' + nahkampfhaut + ' statt ' + ohne + ')');
+  assert.ok(bannschild < ohne,
+    'Bannschild daempft Wirbelklingen NICHT (' + bannschild + ' wie ' + ohne + ')');
+});
+
+test('Wirbelklingen: der ECHTE Wurf nutzt die Zielhilfe', () => {
+  // Der Fall darueber prueft nur die Hilfsfunktion. Wird sie in
+  // castTwistingBlades nicht mehr aufgerufen, faellt das dort NICHT auf —
+  // hier schon: gemessen wird die Flugrichtung des erzeugten Geschosses.
+  const auf = stelleAuf(200, 60);          // ~17 Grad, Blick waagerecht
+  assert.ok(auf, 'Aufbau fehlgeschlagen');
+
+  const res = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    if (playerProjectiles && playerProjectiles.children) {
+      playerProjectiles.getChildren().slice().forEach(function (p) { if (p && p.destroy) p.destroy(); });
+    }
+    castTwistingBlades.call(sc);
+    var klinge = playerProjectiles.getChildren().filter(function (p) {
+      return p && p.active && p.getData && p.getData('twistingBlades');
+    })[0];
+    if (!klinge || !klinge.body) return { fehler: 'keine Klinge erzeugt' };
+    return { grad: Math.atan2(klinge.body.velocity.y, klinge.body.velocity.x) * 180 / Math.PI };
+  })()`);
+
+  assert.ok(!res.fehler, res.fehler);
+  assert.ok(Math.abs(res.grad - auf.grad) < 1.5,
+    'Klinge fliegt auf ' + res.grad.toFixed(1) + ' statt ' + auf.grad.toFixed(1)
+    + ' Grad — castTwistingBlades ruft die Zielhilfe nicht auf');
+});

@@ -148,3 +148,54 @@ test('play: ein gespielter Run erzeugt keine Konsolenfehler', () => {
   assert.strictEqual(errs.length, 0,
     'Fehler waehrend des Spielens:\n' + errs.map((e) => '  ' + e.msg).join('\n'));
 });
+
+test('play: eine geschlossene Tuer hat Vorrang vor der Treppe dahinter', async () => {
+  // Sonst oeffnet ein einziger E-Druck die Tuer UND nimmt im selben Moment die
+  // Treppe dahinter — der Spieler sieht den Raum hinter der Tuer nie.
+  // Gegner entfernen und ein paar Frames takten: Treppen werden erst im
+  // naechsten Update entsperrt. Ohne diese Pause ist die Treppe im
+  // Kontroll-Zweig noch `locked` und der Test schlug sporadisch fehl.
+  H.run(`(function () {
+    if (enemies && enemies.children) {
+      enemies.getChildren().slice().forEach(function (e) { if (e && e.destroy) e.destroy(); });
+    }
+  })()`);
+  await H.settle(() => false, { maxRounds: 8, framesPerRound: 8 });
+
+  const res = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    if (!sc.stairsGroup || !sc.stairsGroup.children) return { fehler: 'keine Treppengruppe' };
+    var s = sc.stairsGroup.getChildren().filter(function (x) { return x && x.active; })[0];
+    if (!s) return { fehler: 'keine aktive Treppe' };
+    // Sperre im Aufbau aufheben: geprueft wird der VORRANG der Tuer, nicht die
+    // Entsperr-Regel. Ob eine Treppe gerade entsperrt ist, haengt am Raum, in
+    // dem der vorherige Fall gelandet ist — davon darf dieser Test nicht
+    // abhaengen (er schlug sonst sporadisch fehl).
+    s.setData('locked', false);
+
+    player.body.reset(s.x, s.y);
+    window.__MOBILE_INTERACT_ACTIVE__ = true;
+    var vorher = String(sc.currentRoom.id);
+
+    // Geschlossene Tuer in Reichweite (100 px = DoorSystem.INTERACT_DIST).
+    sc._doors = sc._doors || [];
+    var tuer = { active: true, x: s.x + 40, y: s.y,
+      getData: function (k) { return k === 'doorState' ? 'closed' : null; } };
+    sc._doors.push(tuer);
+    onStairOverlap(player, s);
+    var mitTuer = String(sc.currentRoom.id);
+
+    // Ohne Tuer muss dieselbe Treppe wirken — sonst prueft der Test nichts.
+    sc._doors.pop();
+    onStairOverlap(player, s);
+    var ohneTuer = String(sc.currentRoom.id);
+
+    return { vorher: vorher, mitTuer: mitTuer, ohneTuer: ohneTuer };
+  })()`);
+
+  assert.ok(!res.fehler, res.fehler);
+  assert.strictEqual(res.mitTuer, res.vorher,
+    'Treppe loeste trotz geschlossener Tuer in Reichweite aus (' + res.vorher + ' -> ' + res.mitTuer + ')');
+  assert.notStrictEqual(res.ohneTuer, res.vorher,
+    'Treppe wirkte auch ohne Tuer nicht — der Test prueft nichts');
+});

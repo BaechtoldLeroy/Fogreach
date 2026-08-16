@@ -3555,6 +3555,41 @@ function _pullEnemyToPlayer(scene, enemy, speed, durationMs) {
 // Basiert auf daggerThrow: Projektil fliegt in Blickrichtung bis zur Reichweite
 // und KEHRT dann zum Spieler ZURÜCK; Schaden auf Hin- und Rückweg (über die
 // bestehende playerProjectiles↔enemies-Overlap, mit Hit-Set gegen Doppelhits).
+// Zielhilfe fuer Wirbelklingen: bewusst schmal gehalten. Die Wurfrichtung
+// kommt aus der Bewegungsrichtung (_getAimVector2), und die trifft auf
+// Tastatur selten genau — ein Gegner, der sichtbar vor einem steht, wird
+// dadurch knapp verfehlt. 30 Grad korrigieren das, ohne dass die Klinge
+// um Ecken fliegt: wer bewusst woanders hinwirft, behaelt seine Richtung.
+const TW_AIM_DEG = 30;
+const TW_AIM_RANGE = 420;
+
+/**
+ * Dreht `dir` auf den am besten passenden Gegner, falls einer nah genug am
+ * Blickvektor liegt. Ohne Treffer bleibt `dir` unveraendert.
+ * @param {Phaser.Math.Vector2} dir normalisierte Wunschrichtung
+ * @param {number} maxDist  Reichweite in Pixel
+ * @param {number} maxDeg   maximale Korrektur in Grad
+ * @returns {Phaser.Math.Vector2}
+ */
+function _aimAssistVector(dir, maxDist, maxDeg) {
+  if (!dir || !player || !enemies || !enemies.children) return dir;
+  const minDot = Math.cos((maxDeg * Math.PI) / 180);
+  let bestDot = minDot;
+  let best = null;
+  enemies.children.iterate((enemy) => {
+    if (!enemy || !enemy.active) return;
+    const dx = enemy.x - player.x;
+    const dy = enemy.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1 || dist > maxDist) return;
+    const dot = (dir.x * dx + dir.y * dy) / dist;
+    // Bei gleichem Winkel gewinnt der naehere Gegner nicht automatisch —
+    // entscheidend ist, wie genau er schon getroffen waere.
+    if (dot > bestDot) { bestDot = dot; best = { x: dx / dist, y: dy / dist }; }
+  });
+  return best ? new Phaser.Math.Vector2(best.x, best.y) : dir;
+}
+
 function castTwistingBlades() {
   const scene = this;
   if (!scene || !player || !playerProjectiles) return;
@@ -3562,7 +3597,7 @@ function castTwistingBlades() {
   if (typeof ensurePlayerDaggerTexture === 'function') ensurePlayerDaggerTexture(scene);
 
   const dmgMult = _kettenDmgMult('twistingBlades');
-  const dir = _getAimVector2(scene);
+  const dir = _aimAssistVector(_getAimVector2(scene), TW_AIM_RANGE, TW_AIM_DEG);
   const spawnOffset = 24;
   const projectile = scene.physics.add.sprite(
     player.x + dir.x * spawnOffset,

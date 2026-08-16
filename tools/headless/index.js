@@ -14,6 +14,7 @@
 
 const { boot, readScriptOrder } = require('./boot');
 const { attachLab } = require('./lab');
+const { attachNav } = require('./nav');
 
 const SCENE_STATUS = {
   0: 'PENDING', 1: 'INIT', 2: 'START', 3: 'LOADING',
@@ -327,7 +328,7 @@ function decorate(h) {
       const k0 = h.kills();
       const stats = { kills: 0, chestsBroken: 0, potions: 0, abilities: 0, equipped: 0,
         skillPoints: 0, abilitiesEquipped: 0, rounds: 0, deaths: 0,
-        roomsEntered: 0, stairsTaken: 0, abandoned: 0, retries: 0 };
+        roomsEntered: 0, stairsTaken: 0, abandoned: 0, retries: 0, paths: 0 };
       // Ziele, die sich als unerreichbar erwiesen haben (Rasterschluessel).
       // Wird bei jedem Raumwechsel geleert — aber NICHT zwischen zwei
       // play()-Aufrufen: das Gedaechtnis haengt an `h`, nicht am Aufruf.
@@ -344,6 +345,8 @@ function decorate(h) {
       // Wie lange der Bot schon auf einer Treppe steht, ohne dass der Raum
       // wechselt. Dient dazu, eine nicht funktionierende Treppe aufzugeben.
       let treppeSeit = 0;
+      // Weg aus der Wegsuche — nur aktiv, wenn die gerade Linie versagt hat.
+      let notweg = null; let notwegIdx = 0; let notwegAlter = 0; let notwegZiel = null;
       // Wirkt der Angriff? HP des aktuellen Ziels und wie lange sie schon
       // nicht mehr faellt.
       let zielHp = null; let zielKeyHp = null; let ohneWirkung = 0;
@@ -492,6 +495,7 @@ function decorate(h) {
           if (roomId !== null) stats.roomsEntered++;
           roomId = st.roomId;
           h._botGedaechtnis.roomId = roomId;
+          notweg = null;
           aufgegeben.clear();
           verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
         }
@@ -614,8 +618,34 @@ function decorate(h) {
           // WEITER in die Treppe hineinlaufen. Eine fruehere Fassung hielt hier
           // an und drueckte [E] — in vier von fuenf Laeufen stand der Bot
           // danach 1300 Runden regungslos auf der Treppe.
-          h.input.steerTowards(target.x, target.y, 2);
-          if (td <= 70) h.input.interact();
+          // Wegsuche NUR hier: die Treppe steht still. Isoliert gemessen
+          // erreicht Weg + Freischlagen sie in 5 von 5 Faellen mit 0-1
+          // Planungen. Auf einen wandernden Gegner geplant, zerfaellt der Weg
+          // dagegen staendig (ueber 400 Planungen je Lauf) und macht den Bot
+          // schlechter als geradeaus — deshalb dort bewusst keine Wegsuche.
+          if (stuckFor >= 4) {
+            stats.chestsBroken += brich();
+            const w = h.nav.path(target.x, target.y);
+            if (w && w.length) { notweg = w; notwegIdx = 0; stats.paths++; }
+            stuckFor = 0;
+          }
+
+          if (notweg && notwegIdx < notweg.length && td > 70) {
+            while (notwegIdx < notweg.length - 1
+                   && Math.hypot(st.px - notweg[notwegIdx].x, st.py - notweg[notwegIdx].y) <= 18) {
+              notwegIdx++;
+            }
+            const wp = notweg[notwegIdx];
+            // Der Weg fuehrt bewusst DURCH Zerstoerbares — dort aufschlagen.
+            if (wp.brechen && Math.hypot(st.px - wp.x, st.py - wp.y) < 80) {
+              stats.chestsBroken += brich();
+            }
+            h.input.steerTowards(wp.x, wp.y, 4);
+          } else {
+            h.input.steerTowards(target.x, target.y, 2);
+          }
+
+          if (td <= 70) { h.input.interact(); notweg = null; }
           treppeSeit = (td <= 70) ? treppeSeit + 1 : 0;
           if (treppeSeit === 1) stats.stairsTaken++;
           // Tut sich nichts, ist diese Treppe nicht die richtige (oder noch
@@ -694,7 +724,29 @@ function decorate(h) {
         } else if (detourLeft > 0) {
           h.input.hold(detour); detourLeft--;
         } else {
-          h.input.steerTowards(target.x, target.y);
+          // Liegt ein Weg an, diesem folgen — sonst gerade Linie.
+          if (notweg && notwegIdx < notweg.length) {
+            while (notwegIdx < notweg.length - 1
+                   && Math.hypot(st.px - notweg[notwegIdx].x, st.py - notweg[notwegIdx].y) <= 18) {
+              notwegIdx++;
+            }
+            const wp = notweg[notwegIdx];
+            // Der Weg fuehrt bewusst DURCH zerstoerbare Hindernisse (Fass,
+            // Kiste, kleine Saeule) — dort aufschlagen statt davorstehen.
+            if (wp.brechen && Math.hypot(st.px - wp.x, st.py - wp.y) < 80) {
+              stats.chestsBroken += brich();
+            }
+            h.input.steerTowards(wp.x, wp.y, 4);
+            notwegAlter++;
+            // Der Weg gehoert zu SEINEM Ziel. Verworfen wird er nur, wenn das
+            // Ziel weit weggewandert ist (Gegner bewegen sich) oder er zu alt
+            // wird — nicht bei jedem Feststecken.
+            const zielWeg = notwegZiel
+              ? Math.hypot(target.x - notwegZiel.x, target.y - notwegZiel.y) : 0;
+            if (notwegAlter > 400 || zielWeg > 140) notweg = null;
+          } else {
+            h.input.steerTowards(target.x, target.y);
+          }
 
           // Festgefahren: ERST freischlagen, dann erst ausweichen.
           //
@@ -705,17 +757,23 @@ function decorate(h) {
           //   vorher (nur ausweichen) : 17/33 Gegner,  10 Truhen, --
           //   nachher (erst schlagen) : 35/36 Gegner,  91 Truhen, 7/8 Raeume leer
           //
-          // Eine echte Wegfindung (Raster + Dijkstra, siehe nav.js) wurde
-          // zweimal dagegen gemessen und war BEIDE Male deutlich schlechter
-          // (12/35 Gegner, 27 Truhen, 1/8 Raeume) — die Raeume sind offen
-          // genug, dass die gerade Linie plus Freischlagen gewinnt. Deshalb
-          // steht hier bewusst kein Wegplaner.
+          // Die Wegsuche (nav.js) steht bewusst NUR hier unten als Notnagel:
+          // als Ersatz fuer die gerade Linie wurde sie dreimal gemessen und
+          // war jedes Mal schlechter. Im offenen Raum gewinnt geradeaus.
           if (stuckFor >= 4) {
             const fiel = brich();
             stuckFor = 0;
-            if (fiel) {
-              stats.chestsBroken += fiel;
-            } else {
+            // Weg NEU PLANEN statt verwerfen. Isoliert gemessen (ohne Gegner)
+            // erreicht Weg + Freischlagen die Treppe in 5 von 5 Faellen mit
+            // 0-1 Neuplanungen. Im Bot waren es 103 pro Lauf — weil hier bei
+            // jedem Feststecken der Weg weggeworfen wurde und beim naechsten
+            // HIER bewusst KEINE Wegsuche. Ziele in diesem Zweig sind Gegner
+            // und Truhen; auf ein wanderndes Ziel geplant zerfaellt der Weg
+            // staendig (ueber 400 Planungen je Lauf gemessen) und der Bot wird
+            // dadurch schlechter als geradeaus. Die Wegsuche steht nur im
+            // Treppen-Zweig, wo das Ziel stillsteht.
+            if (fiel) stats.chestsBroken += fiel;
+            if (!fiel) {
               const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
                 { left: true, up: true }, { right: true, down: true },
                 { left: true, down: true }, { right: true, up: true }];
@@ -738,6 +796,7 @@ function decorate(h) {
 
   h.flush = flush;
   attachLab(h);   // Stufe 3: Gameplay-Pruefwerkzeuge (h.lab)
+  attachNav(h);   // Wegsuche als Notnagel (h.nav) — siehe nav.js
   return h;
 }
 
