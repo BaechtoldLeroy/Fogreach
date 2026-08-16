@@ -327,7 +327,7 @@ function decorate(h) {
       const k0 = h.kills();
       const stats = { kills: 0, chestsBroken: 0, potions: 0, abilities: 0, equipped: 0,
         skillPoints: 0, abilitiesEquipped: 0, rounds: 0, deaths: 0,
-        roomsEntered: 0, stairsTaken: 0, abandoned: 0 };
+        roomsEntered: 0, stairsTaken: 0, abandoned: 0, retries: 0 };
       // Ziele, die sich als unerreichbar erwiesen haben (Rasterschluessel).
       // Wird bei jedem Raumwechsel geleert — aber NICHT zwischen zwei
       // play()-Aufrufen: das Gedaechtnis haengt an `h`, nicht am Aufruf.
@@ -566,7 +566,36 @@ function decorate(h) {
           }
         }
 
-        if (!target) { h.input.releaseAll(); h.step(framesPerRound); await flush(); continue; }
+        if (!target) {
+          // Kein Ziel mehr — fast immer, weil der Bot ALLES aufgegeben hat.
+          //
+          // Die Aufgeben-Liste wird sonst nur bei einem Raumwechsel geleert.
+          // Kommt der aber nie zustande, streicht sich der Bot nacheinander
+          // Gegner UND Treppen weg und steht danach endgueltig still: gemessen
+          // dreimal in Folge exakt dasselbe Muster — Aufgaben haeufen sich
+          // (3, 4, 6), dann faellt der Zaehler auf 0 und die Position aendert
+          // sich ueber Tausende Runden nicht mehr, obwohl Treppen im Raum
+          // liegen. Die Logik gegen das Umrunden erzeugte so ihre eigene
+          // Sackgasse.
+          //
+          // Also: Liste leeren und neu ansetzen. Vorher ein Stueck umsetzen —
+          // vom selben Fleck aus scheitert der zweite Anlauf genauso wie der
+          // erste.
+          if (aufgegeben.size > 0) {
+            aufgegeben.clear();
+            stats.retries++;
+            verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
+            const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
+              { left: true, up: true }, { right: true, down: true },
+              { left: true, down: true }, { right: true, up: true }];
+            detour = dirs[Math.floor(Math.random() * dirs.length)];
+            detourLeft = 25;
+            h.input.hold(detour);
+          } else {
+            h.input.releaseAll();
+          }
+          h.step(framesPerRound); await flush(); continue;
+        }
 
         // --- Feststeck-Erkennung -------------------------------------------
         if (lastX !== null) {
