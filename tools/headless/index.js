@@ -338,18 +338,44 @@ function decorate(h) {
       // bei jedem Aufruf das Wissen zurueck und lief dieselbe blockierte Treppe
       // endlos wieder an — beobachtet als Pendeln zwischen zwei Positionen
       // ueber Tausende Runden ohne Fortschritt.
-      if (!h._botGedaechtnis) h._botGedaechtnis = { aufgegeben: new Set(), roomId: null };
-      const aufgegeben = h._botGedaechtnis.aufgegeben;
-      let roomId = h._botGedaechtnis.roomId;
-      let verfolgtKey = null; let verfolgtRunden = 0; let besteDistanz = Infinity;
+      // ---- Gedaechtnis ueber play()-Aufrufe hinweg ------------------------
+      //
+      // ALLES, was den Raum ueberdauern muss, haengt an `h` — nicht am Aufruf.
+      // Wer play() in Haeppchen ruft (naheliegend, um zwischendurch den
+      // Fortschritt zu lesen), setzte sonst bei jedem Aufruf zurueck: den Weg
+      // zur Treppe, die aufgegebenen Ziele, den Verfolgungsstand. Gemessen
+      // wurde der Unterschied deutlich — 12x400 Runden kamen auf 13
+      // Raumwechsel, 1x4800 Runden auf 19. Derselbe Fehler ist mir hier
+      // zweimal unterlaufen (erst beim Aufgeben-Set, dann beim Weg); deshalb
+      // steht der Zustand jetzt geschlossen an EINER Stelle.
+      if (!h._botGedaechtnis) {
+        h._botGedaechtnis = {
+          aufgegeben: new Set(), roomId: null,
+          notweg: null, notwegIdx: 0,
+          verfolgtKey: null, verfolgtRunden: 0, besteDistanz: Infinity,
+          treppeSeit: 0, zielHp: null, zielKeyHp: null, ohneWirkung: 0,
+        };
+      }
+      const G = h._botGedaechtnis;
+      const aufgegeben = G.aufgegeben;
+      let roomId = G.roomId;
+      let verfolgtKey = G.verfolgtKey; let verfolgtRunden = G.verfolgtRunden;
+      let besteDistanz = G.besteDistanz;
       // Wie lange der Bot schon auf einer Treppe steht, ohne dass der Raum
       // wechselt. Dient dazu, eine nicht funktionierende Treppe aufzugeben.
-      let treppeSeit = 0;
+      let treppeSeit = G.treppeSeit;
       // Weg aus der Wegsuche — nur aktiv, wenn die gerade Linie versagt hat.
-      let notweg = null; let notwegIdx = 0; let notwegAlter = 0; let notwegZiel = null;
+      // Der geplante Weg haengt an `h`, NICHT am Aufruf. Als lokale Variable
+      // ging er bei jedem play()-Aufruf verloren: wer in Haeppchen spielt —
+      // naheliegend, um zwischendurch den Fortschritt zu lesen — verlor damit
+      // staendig den Weg zur Treppe und kam nie aus dem Raum. Genau derselbe
+      // Fehler wie zuvor beim Aufgeben-Gedaechtnis.
+      let notweg = G.notweg;
+      let notwegIdx = G.notwegIdx || 0;
+      let notwegAlter = 0; let notwegZiel = null;
       // Wirkt der Angriff? HP des aktuellen Ziels und wie lange sie schon
       // nicht mehr faellt.
-      let zielHp = null; let zielKeyHp = null; let ohneWirkung = 0;
+      let zielHp = G.zielHp; let zielKeyHp = G.zielKeyHp; let ohneWirkung = G.ohneWirkung;
       const gibAufNach = opts.gibAufNach || 50;
       // Wie weit der Bot fuer eine Truhe vom Weg abweicht. Truhen sind Beiwerk,
       // nicht das Rundenziel — alles Weitere liegt einfach nicht am Weg.
@@ -494,10 +520,13 @@ function decorate(h) {
         if (st.roomId && st.roomId !== roomId) {
           if (roomId !== null) stats.roomsEntered++;
           roomId = st.roomId;
-          h._botGedaechtnis.roomId = roomId;
-          notweg = null;
+          G.roomId = roomId;
+          // Im neuen Raum ist alles wertlos: der Weg zeigt auf die alte
+          // Treppe, aufgegebene Ziele gibt es nicht mehr.
+          notweg = null; notwegIdx = 0;
           aufgegeben.clear();
           verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
+          treppeSeit = 0; zielHp = null; zielKeyHp = null; ohneWirkung = 0;
         }
 
         // --- Ziel waehlen: Gegner -> Truhe -> TREPPE ------------------------
@@ -789,6 +818,11 @@ function decorate(h) {
       }
 
       h.input.releaseAll();
+      // Weg fuer den naechsten Aufruf sichern (siehe oben).
+      G.notweg = notweg; G.notwegIdx = notwegIdx;
+      G.verfolgtKey = verfolgtKey; G.verfolgtRunden = verfolgtRunden;
+      G.besteDistanz = besteDistanz; G.treppeSeit = treppeSeit;
+      G.zielHp = zielHp; G.zielKeyHp = zielKeyHp; G.ohneWirkung = ohneWirkung;
       stats.kills = h.kills() - k0;
       return stats;
     },
