@@ -238,8 +238,46 @@
 
   // Per-button live state polling: cooldown enable/disable, dynamic potion
   // label (count + cooldown overlay), interact button tap-feedback flash.
+  /**
+   * Lebt der Node noch? Ein zerstoertes Phaser-Objekt ist WEITERHIN truthy,
+   * destroy() setzt aber `scene` und `active` zurueck (gemessen: truthy true,
+   * scene false, active false). Genau daran ist die Abfrage vorbeigelaufen.
+   */
+  function _lebtNode(o) { return !!(o && o.scene); }
+
+  /**
+   * Eine Dekoration wird als EINHEIT erzeugt und zerstoert. Ist irgendein
+   * vorhandener Node tot, ist der ganze Eintrag veraltet und darf nicht mehr
+   * angefasst werden.
+   *
+   * Warum das noetig ist: `dec.icon && dec.icon.setText(...)` prueft nur den
+   * Wahrheitswert. setText rendert die Textur neu und greift dabei auf
+   * frame.source zu, das nach destroy() null ist -> Absturz in Phasers
+   * updateText ("Cannot read properties of null (reading 'glTexture')" auf
+   * WebGL, "(reading 'cut')" auf Canvas). Vor Feature 065 machte diese Abfrage
+   * nur setVisible/setAlpha — die fassen die Textur nicht an und ueberlebten
+   * ein totes Objekt klaglos. Erst der Kontext-Primaerbutton mit seinen zwei
+   * setText-Aufrufen hat aus der latenten Luecke einen harten Fehler gemacht.
+   */
+  function _lebtDeko(dec) {
+    if (!dec) return false;
+    var nodes = [dec.icon, dec.label, dec.cdOverlay, dec.cdText];
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i] && !_lebtNode(nodes[i])) return false;
+    }
+    if (dec.chargePips) {
+      for (var p = 0; p < dec.chargePips.length; p++) {
+        if (dec.chargePips[p] && !_lebtNode(dec.chargePips[p])) return false;
+      }
+    }
+    return true;
+  }
+
   function _pollEnabledState(decorations, scene) {
     decorations.forEach((dec) => {
+      // Veraltete Dekoration (Szene beendet oder Layout neu aufgebaut, waehrend
+      // dieser Lauscher noch haengt) -> nicht anfassen.
+      if (!_lebtDeko(dec)) return;
       // Standard cooldown-text-driven enable/disable
       const cdVisible = !!(dec.cdText && dec.cdText.visible);
       _applyEnabledVisual(dec, !cdVisible);
@@ -425,13 +463,17 @@
     // Clean up any previous decorations on this scene
     const prev = sceneState.get(scene);
     if (prev) {
+      // ERST abmelden, DANN zerstoeren. Andersherum bleibt ein Zeitfenster, in
+      // dem der noch angemeldete Lauscher auf bereits zerstoerte Nodes
+      // zugreift — wird onLayoutReady aus einem update() heraus ausgeloest,
+      // laeuft die laufende Emit-Schleife genau da hinein.
+      scene.events.off('update', prev.poll);
       prev.decorations.forEach((d) => {
         d.icon && d.icon.destroy();
         d.label && d.label.destroy();
         d.cdOverlay && d.cdOverlay.destroy();
         d.chargePips && d.chargePips.forEach((pip) => pip.destroy());
       });
-      scene.events.off('update', prev.poll);
     }
 
     const decorations = detail.buttons
@@ -483,4 +525,7 @@
   // Exports for tests / other WPs
   window.mobileAbilityButtonsDecorate = onLayoutReady;
   window.styleCooldownText = _styleCooldownText;
+  // Fuer den Regressionstest zum Absturz auf zerstoerten Nodes (glTexture).
+  window.mobileAbilityPoll = _pollEnabledState;
+  window.mobileAbilityDekoLebt = _lebtDeko;
 })();
