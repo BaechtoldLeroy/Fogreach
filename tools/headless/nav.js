@@ -56,59 +56,77 @@ function attachNav(h, sceneKey) {
         wand.push(r);
       }
 
-      // Schritt 2: platzierte Hindernisse eintragen — sie fehlen im Raster
-      // vollstaendig. Eine Kachel gilt als betroffen, wenn der Spieler-
-      // Mittelpunkt dort mit dem Koerper des Hindernisses kollidieren wuerde;
-      // deshalb wird dessen Rechteck um die halbe Spielergroesse aufgeblasen.
+      // Schritt 2: alles eintragen, was den SPIELER blockiert — und zwar
+      // nicht mehr nach Objektart aufgezaehlt. Erst stand nur \`obstacles\`
+      // hier, dann wurden Tueren nachgereicht, dann fiel der defend-Altar auf:
+      // dreimal derselbe Fehler an einer neuen Stelle, jedes Mal erst nach
+      // einem verlorenen Lauf sichtbar.
+      //
+      // Phaser weiss es selbst. In physics.world.colliders steht jedes
+      // registrierte Paar; \`overlapOnly\` trennt dabei sauber "blockiert" von
+      // "loest nur aus". Gemessen in einem defend-Raum, alle Eintraege mit dem
+      // Spieler:
+      //     BLOCK   Gruppe[8]  wolf_right0            <- Gegner
+      //     BLOCK   Gruppe[56] worldAtlas             <- obstacles
+      //     BLOCK   Objekt roommode_defend_altar      <- Altar, GRUPPENLOS
+      //     OVERLAP Gegner / stairDown / 3 leere Gruppen
+      // Damit ist der Altar zwangslaeufig dabei, und kuenftige Hindernisse
+      // ebenfalls, ohne dass hier noch einmal jemand nachtragen muss.
       var hind = [];
       for (var y2 = 0; y2 < rows; y2++) { var r2 = []; for (var x2 = 0; x2 < cols; x2++) r2.push(0); hind.push(r2); }
 
-      if (typeof obstacles !== 'undefined' && obstacles && obstacles.children) {
-        obstacles.getChildren().forEach(function (o) {
-          if (!o || !o.active || !o.body) return;
-          var brechbar = !!(o.getData && o.getData('destructible'));
-          var bx = o.body.x - ${HALB_B};
-          var by = o.body.y - ${HALB_H};
-          var bw = o.body.width + ${HALB_B} * 2;
-          var bh = o.body.height + ${HALB_H} * 2;
-          var tx0 = Math.floor(bx / T), tx1 = Math.floor((bx + bw) / T);
-          var ty0 = Math.floor(by / T), ty1 = Math.floor((by + bh) / T);
-          for (var ty = Math.max(0, ty0); ty <= Math.min(rows - 1, ty1); ty++) {
-            for (var tx = Math.max(0, tx0); tx <= Math.min(cols - 1, tx1); tx++) {
-              // Fest schlaegt zerstoerbar: liegt beides auf derselben Kachel,
-              // kommt man dort auch nach dem Zerschlagen nicht durch.
-              if (brechbar) { if (hind[ty][tx] === 0) hind[ty][tx] = 1; }
-              else hind[ty][tx] = 2;
-            }
-          }
-        });
-      }
-
-      // Schritt 2b: TUEREN. Sie liegen in scene._doorGroup (statische
-      // Physikgruppe mit Spieler-Kollider, doorSystem.js:163) — NICHT in der
-      // obstacles-Gruppe. Ohne sie fuehrt der Weg mitten durch eine
-      // geschlossene Tuer, und der Bot drueckt dagegen, statt sie zu oeffnen.
-      // Eine geschlossene Tuer ist kein Hindernis, sondern ein DURCHGANG mit
-      // einem Tastendruck: begehbar, aber teurer als offener Boden.
-      // 3 = Tuer.
-      var tueren = (sc._doors && sc._doors.length)
-        ? sc._doors
-        : ((sc._doorGroup && sc._doorGroup.getChildren) ? sc._doorGroup.getChildren() : []);
-      tueren.forEach(function (d) {
-        if (!d || !d.active || !d.body) return;
-        // Offene Tueren blockieren nicht — nur geschlossene eintragen.
-        if (!(d.getData && d.getData('doorState') === 'closed')) return;
-        var bx = d.body.x - ${HALB_B};
-        var by = d.body.y - ${HALB_H};
-        var bw = d.body.width + ${HALB_B} * 2;
-        var bh = d.body.height + ${HALB_H} * 2;
+      /** Eine Kachel gilt als betroffen, wenn der Spieler-MITTELPUNKT dort mit
+       *  dem Koerper kollidieren wuerde — deshalb das Rechteck um die halbe
+       *  Spielergroesse aufblasen. */
+      function eintragen(o, wert) {
+        if (!o || !o.active || !o.body) return;
+        var bx = o.body.x - ${HALB_B};
+        var by = o.body.y - ${HALB_H};
+        var bw = o.body.width + ${HALB_B} * 2;
+        var bh = o.body.height + ${HALB_H} * 2;
         var tx0 = Math.floor(bx / T), tx1 = Math.floor((bx + bw) / T);
         var ty0 = Math.floor(by / T), ty1 = Math.floor((by + bh) / T);
         for (var ty = Math.max(0, ty0); ty <= Math.min(rows - 1, ty1); ty++) {
           for (var tx = Math.max(0, tx0); tx <= Math.min(cols - 1, tx1); tx++) {
-            if (hind[ty][tx] === 0) hind[ty][tx] = 3;
+            // Fest schlaegt zerstoerbar schlaegt Tuer: liegt mehreres auf
+            // derselben Kachel, zaehlt die teuerste Wahrheit.
+            if (wert === 2) hind[ty][tx] = 2;
+            else if (wert === 1 && hind[ty][tx] !== 2) hind[ty][tx] = 1;
+            else if (wert === 3 && hind[ty][tx] === 0) hind[ty][tx] = 3;
           }
         }
+      }
+
+      var welt = sc.physics && sc.physics.world;
+      var liste = welt && welt.colliders && (welt.colliders._active || []);
+      var spieler = (typeof player !== 'undefined') ? player : window.player;
+      var gesehen = [];
+      for (var ci = 0; ci < liste.length; ci++) {
+        var c = liste[ci];
+        if (!c || c.active === false || c.overlapOnly) continue;
+        var trifft = (c.object1 === spieler) || (c.object2 === spieler);
+        if (!trifft) continue;
+        var gegen = (c.object1 === spieler) ? c.object2 : c.object1;
+        if (!gegen) continue;
+        // Gegner NICHT als Wand fuehren: sie laufen herum, wuerden die Karte
+        // jede Runde zerlegen und sind fuer den Bot ohnehin Ziele, keine
+        // Hindernisse.
+        if (gegen === (typeof enemies !== 'undefined' ? enemies : window.enemies)) continue;
+        var teile = (gegen.getChildren) ? gegen.getChildren() : [gegen];
+        for (var ti = 0; ti < teile.length; ti++) gesehen.push(teile[ti]);
+      }
+
+      gesehen.forEach(function (o) {
+        if (!o || !o.active || !o.body) return;
+        var zustand = o.getData && o.getData('doorState');
+        if (zustand) {
+          // Eine geschlossene Tuer ist kein Hindernis, sondern ein DURCHGANG
+          // mit einem Tastendruck: begehbar, nur teurer als offener Boden.
+          // Offene Tueren blockieren gar nicht.
+          if (zustand === 'closed') eintragen(o, 3);
+          return;
+        }
+        eintragen(o, (o.getData && o.getData('destructible')) ? 1 : 2);
       });
 
       // Schritt 3: zusammenfuehren, inklusive Spieler-Abdruck gegen Waende.
