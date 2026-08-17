@@ -226,8 +226,26 @@ function decorate(h) {
   };
 
   /** Gesamtzahl erlegter Gegner im Run (aus der Run-Statistik des Spiels). */
+  /**
+   * Erlegte Gegner — LAUFEND, ueber Runs hinweg.
+   *
+   * `window.runStats` wird beim Verlassen des Dungeons auf null gesetzt
+   * (main.js:2025). Wer einfach den Zaehler liest, sieht danach wieder 0 —
+   * und wer Differenzen bildet, bekommt einen NEGATIVEN Wert, der die zuvor
+   * gezaehlten Kills wieder auffrisst. Genau daran lag es, dass abgeschlossene
+   * Runs im Protokoll mit "0 Kills" standen, obwohl der Bot den Mini-Boss
+   * erschlagen haben muss: jeder Run endet mit einem Klimax-Gegner, der die
+   * Treppe sperrt (wave.js:122).
+   *
+   * Deshalb wird ein Nullstellen erkannt und der bisherige Stand aufaddiert.
+   */
   h.kills = function kills() {
-    return h.run('(window.runStats && window.runStats.enemiesKilled) || 0');
+    const cur = h.run('(window.runStats && window.runStats.enemiesKilled) || 0') || 0;
+    if (!h._killStand) h._killStand = { summe: 0, zuletzt: 0 };
+    const s = h._killStand;
+    if (cur < s.zuletzt) s.summe += s.zuletzt;   // runStats wurde genullt
+    s.zuletzt = cur;
+    return s.summe + cur;
   };
 
   // -------------------------------------------------------------------------
@@ -328,7 +346,7 @@ function decorate(h) {
       const k0 = h.kills();
       const stats = { kills: 0, chestsBroken: 0, potions: 0, abilities: 0, equipped: 0,
         skillPoints: 0, abilitiesEquipped: 0, rounds: 0, deaths: 0,
-        roomsEntered: 0, stairsTaken: 0, abandoned: 0, retries: 0, paths: 0 };
+        roomsEntered: 0, stairsTaken: 0, abandoned: 0, retries: 0, paths: 0, tueren: 0 };
       // Ziele, die sich als unerreichbar erwiesen haben (Rasterschluessel).
       // Wird bei jedem Raumwechsel geleert — aber NICHT zwischen zwei
       // play()-Aufrufen: das Gedaechtnis haengt an `h`, nicht am Aufruf.
@@ -352,7 +370,7 @@ function decorate(h) {
         h._botGedaechtnis = {
           aufgegeben: new Set(), roomId: null,
           notweg: null, notwegIdx: 0,
-          verfolgtKey: null, verfolgtRunden: 0, besteDistanz: Infinity,
+          verfolgtKey: null, verfolgtRunden: 0, besteDistanz: Infinity, besterWegpunkt: 0, planFehler: 0,
           treppeSeit: 0, zielHp: null, zielKeyHp: null, ohneWirkung: 0,
         };
       }
@@ -361,6 +379,10 @@ function decorate(h) {
       let roomId = G.roomId;
       let verfolgtKey = G.verfolgtKey; let verfolgtRunden = G.verfolgtRunden;
       let besteDistanz = G.besteDistanz;
+      // Weitester bereits erreichter Wegpunkt des aktuellen Weges — misst
+      // Fortschritt ENTLANG des Weges statt in der Luftlinie.
+      let besterWegpunkt = G.besterWegpunkt || 0;
+      let planFehler = G.planFehler || 0;
       // Wie lange der Bot schon auf einer Treppe steht, ohne dass der Raum
       // wechselt. Dient dazu, eine nicht funktionierende Treppe aufzugeben.
       let treppeSeit = G.treppeSeit;
@@ -388,6 +410,28 @@ function decorate(h) {
         if (typeof breakDestructiblesInRange !== 'function') return 0;
         return breakDestructiblesInRange(sc, 90) || 0;
       })()`);
+
+      /**
+       * Festgefahren -> aufraeumen, was VOR einem steht. Drei Moeglichkeiten,
+       * alle billig, deshalb einfach alle drei:
+       *
+       *   Tuer  — [E] oeffnet sie. Vorher wurde nur gedrueckt, wenn der
+       *           aktuelle WEGPUNKT eine Tuer war; liegt sie zwischen zwei
+       *           Wegpunkten, lief der Bot dagegen. Gemessen: 500 Runden auf
+       *           demselben Pixel gegen proc_door_closed_192x24.
+       *   Gegner— schubst physisch (main.js:2875 Kollider), ist aber ausserhalb
+       *           von 60 px kein Angriffsziel. Gemessen: haengengeblieben mit
+       *           einem Gegner auf 73 px, ohne dass ihn etwas beruehrte.
+       *           Deshalb hier bis 110 px zuschlagen — mit Blick auf ihn, sonst
+       *           verfehlt der 60-Grad-Kegel (player.js:1866).
+       *   Prop  — zerschlagen.
+       */
+      const freimachen = (naheGegner) => {
+        h.input.interact();                     // Tuer oeffnen
+        const g = (naheGegner || [])[0];
+        if (g) { h.input.steerTowards(g.x, g.y, 4); h.input.attack(); }
+        return brich();
+      };
 
       for (let i = 0; i < rounds; i++) {
         stats.rounds++;
@@ -426,11 +470,22 @@ function decorate(h) {
           try {
             if (sc && lebt(sc.stairsGroup)) {
               sc.stairsGroup.getChildren().forEach(function (s) {
-                if (s && s.active) stairs.push({ x: s.x, y: s.y });
+                // Der locked-Merker entscheidet ueber die ganze Strategie:
+                // normale Raeume lassen die Treppe OFFEN (roomManager.js:1326,
+                // "player can leave room even with enemies alive"), nur
+                // Spezialraeume (defend/hunt) sperren sie bis zum Ziel.
+                if (s && s.active) {
+                  stairs.push({ x: s.x, y: s.y,
+                    locked: !!(s.getData && s.getData('locked')) });
+                }
               });
             }
           } catch (e) { stairs = []; }
+          // Der Klimax-Gegner haelt die Treppe zu, bis er faellt.
+          var kl = window.__climaxEnemy;
+          var klimax = (kl && kl.active) ? { x: kl.x, y: kl.y, hp: kl.hp } : null;
           return {
+            klimax: klimax,
             px: p ? p.x : null, py: p ? p.y : null,
             hp: window.playerHealth, maxHp: window.playerMaxHealth,
             enemies: list, chests: chests, stairs: stairs,
@@ -545,23 +600,68 @@ function decorate(h) {
 
         let target = null; let td = Infinity;
         let targetIsChest = false; let targetIsStairs = false;
-        const g = naechstes(enemyList);
-        if (g) {
-          target = g.obj; td = g.d;
-        } else {
-          // Kein Gegner mehr -> zur TREPPE. Truhen sind KEIN Ziel.
-          //
-          // Ein Raum enthaelt bis zu 38 zerstoerbare Objekte. Solange sie als
-          // Ziel zaehlen, findet der Bot immer noch eine in der Naehe und kommt
-          // nie zur Treppe — gemessen mit 200 px Toleranz: nach 600 Runden
-          // 23 Truhen zerschlagen, 0 Gegner uebrig, 0 Treppen erreicht.
-          // Deshalb: Truhen werden nur noch NEBENBEI aufgeschlagen (unten),
-          // wenn sie ohnehin in Schlagreichweite liegen.
-          const s = naechstes(Array.from(st.stairs || []));
-          if (s) { target = s.obj; td = s.d; targetIsStairs = true; } else {
-            const t = naechstes(chestList);
-            if (t) { target = t.obj; td = t.d; targetIsChest = true; }
+
+        // --- Zwei Raumarten, zwei Strategien ------------------------------
+        //
+        // Normale Raeume lassen die Treppe OFFEN — man darf sie verlassen,
+        // auch wenn noch Gegner leben (roomManager.js:1326). Nur
+        // Spezialraeume (defend/hunt) sperren sie bis zum Ziel.
+        //
+        // Alles zu erschlagen ist dort also reine Zeitverschwendung: gemessen
+        // waren in den Stillstands-Aufnahmen 4 von 5 Raeume Spezialraeume mit
+        // gesperrter Treppe, der Rest hatte offene Treppen und haette sofort
+        // verlassen werden koennen. Ein Raum mit 27 ueber tausende Pixel
+        // verstreuten Gegnern kostet sonst Minuten, obwohl der Ausgang offen
+        // danebenliegt.
+        const stairsAlle = Array.from(st.stairs || []);
+        const offeneTreppen = stairsAlle.filter((s) => !s.locked);
+
+        if (offeneTreppen.length) {
+          // MODUS A — Ausgang offen: direkt dorthin. Gegner werden nur
+          // mitgenommen, wenn sie ohnehin in Schlagreichweite stehen (siehe
+          // unten); hinterherlaufen lohnt nicht.
+          const s = naechstes(offeneTreppen);
+          if (s) { target = s.obj; td = s.d; targetIsStairs = true; }
+        } else if (enemyList.length) {
+          // MODUS B — Ausgang gesperrt: RAEUMEN. Die Treppe oeffnet erst,
+          // wenn das Raumziel erfuellt ist, also fuehrt der einzige Weg
+          // hinaus ueber die Gegner. Eine gesperrte Treppe anzulaufen ist
+          // sinnlos — vorher tat der Bot genau das und lief von einer
+          // gesperrten zur naechsten: gemessen 8 erreichte Treppen bei nur
+          // EINEM Raumwechsel und 222 aufgegebenen Zielen.
+          // Klimax-Gegner zuerst. Im Boss-/Mini-Boss-Raum sperrt wave.js die
+          // Treppe, bis GENAU dieser Gegner tot ist (window.__climaxEnemy,
+          // wave.js:122/146) — Trash zu erschlagen oeffnet sie nicht. Wer hier
+          // den naechstbesten nimmt, raeumt am Ziel vorbei.
+          let g2 = null;
+          if (st.klimax) {
+            const kd = Math.hypot(st.klimax.x - st.px, st.klimax.y - st.py);
+            if (!aufgegeben.has(zielKey(st.klimax))) g2 = { obj: st.klimax, d: kd };
           }
+          if (!g2) g2 = naechstes(enemyList);
+          if (!g2) {
+            // Alle Gegner stehen auf der Aufgeben-Liste, aber sie LEBEN noch.
+            // Im gesperrten Raum gibt es nichts anderes zu tun, also Liste
+            // leeren und erneut versuchen, statt untaetig zu warten.
+            aufgegeben.clear();
+            stats.retries++;
+            verfolgtKey = null; verfolgtRunden = 0;
+            besteDistanz = Infinity; besterWegpunkt = 0;
+            g2 = naechstes(enemyList);
+          }
+          if (g2) { target = g2.obj; td = g2.d; }
+        }
+
+        if (!target) {
+          // Weder offener Ausgang noch lebende Gegner — bleibt nur der
+          // Sonderfall eines Spezialraums mit nicht-toedlichem Ziel (Zeit
+          // ueberstehen, Altar halten). Dann wenigstens Zerstoerbares
+          // aufschlagen, statt untaetig zu stehen. Truhen sind bewusst NIE
+          // ein regulaeres Ziel: ein Raum enthaelt bis zu 38 davon, und wer
+          // sie abarbeitet, kommt nie zur Treppe (gemessen: nach 600 Runden
+          // 23 Truhen zerschlagen, 0 Treppen erreicht).
+          const t = naechstes(chestList);
+          if (t) { target = t.obj; td = t.d; targetIsChest = true; }
         }
 
         // Truhen im Vorbeigehen mitnehmen — kostet keinen Umweg, weil nur
@@ -571,30 +671,59 @@ function decorate(h) {
           stats.chestsBroken += brich();
         }
 
-        // --- Nicht endlos umrunden ------------------------------------------
-        // Kommt der Bot einem Ziel ueber laengere Zeit nicht naeher, ist es
-        // unerreichbar (hinter einer Wand, in einer Nische). Dann wird es
-        // aufgegeben und das naechste angegangen, statt es weiter zu umkreisen.
+        // --- Erreichbarkeit: die KARTE entscheidet, nicht die Luftlinie -----
+        //
+        // Frueher galt ein Ziel als unerreichbar, wenn die LUFTLINIE ueber 50
+        // Runden nicht kleiner wurde. Das war die Ursache fast aller Haenger
+        // dieser Sitzung: jeder Bogen um ein Hindernis vergroessert die
+        // Luftlinie voruebergehend, also wurden erreichbare Ziele reihenweise
+        // weggestrichen (gemessen: 210 bis 226 pro Lauf, waehrend der Spieler
+        // frei stand und sich bewegte).
+        //
+        // Jetzt gilt: Es gibt einen Weg -> das Ziel ist erreichbar, Punkt.
+        // Findet die Karte keinen, ist es unerreichbar und wird gesperrt.
+        // Zusaetzlich wird nur noch der Fortschritt ENTLANG des Weges
+        // beobachtet; bleibt der ueber laengere Zeit stehen, wird einmal neu
+        // geplant und beim zweiten Mal aufgegeben.
         if (target) {
           const k = zielKey(target);
           if (k !== verfolgtKey) {
-            verfolgtKey = k; verfolgtRunden = 0; besteDistanz = td;
-          } else if (td <= attackRange) {
-            // In Reichweite = der Bot KAEMPFT bzw. schlaegt auf. Das ist kein
-            // Umrunden, also darf hier nichts aufgegeben werden. Ohne diese
-            // Ausnahme gab der Bot ausgerechnet den Gegner auf, den er gerade
-            // erschlug — die Kills fielen dadurch von 29 auf 18.
-            verfolgtRunden = 0; besteDistanz = Math.min(besteDistanz, td);
-          } else {
-            verfolgtRunden++;
-            if (td < besteDistanz - 8) { besteDistanz = td; verfolgtRunden = 0; }
-            if (verfolgtRunden > gibAufNach) {
+            verfolgtKey = k; verfolgtRunden = 0; besterWegpunkt = 0;
+            notweg = null; notwegIdx = 0; planFehler = 0;
+          }
+
+          if (!notweg) {
+            const w = h.nav.path(target.x, target.y);
+            if (w && w.length) {
+              notweg = w; notwegIdx = 0; besterWegpunkt = 0; stats.paths++;
+            } else if (td > attackRange) {
+              // Kein Weg -> unerreichbar. Sperren und naechstes Ziel nehmen.
               aufgegeben.add(k);
               stats.abandoned++;
-              verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
-              h.input.releaseAll();
+              verfolgtKey = null; notweg = null;
               h.step(framesPerRound); await flush();
               continue;
+            }
+          }
+
+          if (td <= attackRange) {
+            // In Reichweite: kaempfen bzw. aufschlagen. Kein Aufgeben.
+            verfolgtRunden = 0;
+          } else {
+            verfolgtRunden++;
+            if (notwegIdx > besterWegpunkt) { besterWegpunkt = notwegIdx; verfolgtRunden = 0; }
+            if (verfolgtRunden > gibAufNach) {
+              verfolgtRunden = 0;
+              planFehler++;
+              notweg = null;            // einmal neu planen
+              if (planFehler >= 2) {
+                aufgegeben.add(k);
+                stats.abandoned++;
+                verfolgtKey = null; planFehler = 0;
+                h.input.releaseAll();
+                h.step(framesPerRound); await flush();
+                continue;
+              }
             }
           }
         }
@@ -647,13 +776,38 @@ function decorate(h) {
           // WEITER in die Treppe hineinlaufen. Eine fruehere Fassung hielt hier
           // an und drueckte [E] — in vier von fuenf Laeufen stand der Bot
           // danach 1300 Runden regungslos auf der Treppe.
+          // Gegner in Schlagreichweite unterwegs mitnehmen: kostet keinen
+          // Umweg, bringt XP und raeumt Blockierer aus dem Weg.
+          const nah = enemyList.find(
+            (e) => Math.hypot(e.x - st.px, e.y - st.py) <= attackRange);
+          if (nah) {
+            h.input.steerTowards(nah.x, nah.y, 4);   // Blickrichtung aufs Ziel
+            h.input.attack();
+          }
+
           // Wegsuche NUR hier: die Treppe steht still. Isoliert gemessen
           // erreicht Weg + Freischlagen sie in 5 von 5 Faellen mit 0-1
           // Planungen. Auf einen wandernden Gegner geplant, zerfaellt der Weg
           // dagegen staendig (ueber 400 Planungen je Lauf) und macht den Bot
           // schlechter als geradeaus — deshalb dort bewusst keine Wegsuche.
+          // Weg planen, sobald die Treppe WEIT weg ist — nicht erst beim
+          // Festklemmen.
+          //
+          // Vorher wurde nur unter `stuckFor >= 4` geplant. Wer sich bewegt,
+          // klemmt aber nie fest: der Bot lief mit voller Geschwindigkeit im
+          // Freien, ohne je einen Weg zu berechnen. Ohne Weg zaehlt wieder die
+          // LUFTLINIE als Fortschritt, jeder Bogen um ein Hindernis gilt als
+          // Rueckschritt, und nach 50 Runden fliegt die Treppe auf die
+          // Aufgeben-Liste. Gemessen: offene Treppe 1033 px entfernt, gueltiger
+          // 9-Punkte-Weg vorhanden, Geschwindigkeit (113,113) — und trotzdem
+          // 6000 Runden ohne Raumwechsel.
+          if (!notweg && td > 300) {
+            const w = h.nav.path(target.x, target.y);
+            if (w && w.length) { notweg = w; notwegIdx = 0; stats.paths++; }
+          }
           if (stuckFor >= 4) {
-            stats.chestsBroken += brich();
+            stats.chestsBroken += freimachen(
+              enemyList.filter((e) => Math.hypot(e.x - st.px, e.y - st.py) <= 110));
             const w = h.nav.path(target.x, target.y);
             if (w && w.length) { notweg = w; notwegIdx = 0; stats.paths++; }
             stuckFor = 0;
@@ -666,6 +820,14 @@ function decorate(h) {
             }
             const wp = notweg[notwegIdx];
             // Der Weg fuehrt bewusst DURCH Zerstoerbares — dort aufschlagen.
+            // Tuer im Weg: OEFFNEN statt dagegenzulaufen. Geschlossene Tueren
+            // liegen in scene._doorGroup und blockieren den Spieler
+            // (doorSystem.js:163). Die Karte fuehrt bewusst hindurch, weil ein
+            // Tastendruck billiger ist als der Umweg.
+            if (wp.tuer && Math.hypot(st.px - wp.x, st.py - wp.y) < 90) {
+              h.input.interact();
+              stats.tueren++;
+            }
             if (wp.brechen && Math.hypot(st.px - wp.x, st.py - wp.y) < 80) {
               stats.chestsBroken += brich();
             }
@@ -762,6 +924,14 @@ function decorate(h) {
             const wp = notweg[notwegIdx];
             // Der Weg fuehrt bewusst DURCH zerstoerbare Hindernisse (Fass,
             // Kiste, kleine Saeule) — dort aufschlagen statt davorstehen.
+            // Tuer im Weg: OEFFNEN statt dagegenzulaufen. Geschlossene Tueren
+            // liegen in scene._doorGroup und blockieren den Spieler
+            // (doorSystem.js:163). Die Karte fuehrt bewusst hindurch, weil ein
+            // Tastendruck billiger ist als der Umweg.
+            if (wp.tuer && Math.hypot(st.px - wp.x, st.py - wp.y) < 90) {
+              h.input.interact();
+              stats.tueren++;
+            }
             if (wp.brechen && Math.hypot(st.px - wp.x, st.py - wp.y) < 80) {
               stats.chestsBroken += brich();
             }
@@ -790,19 +960,32 @@ function decorate(h) {
           // als Ersatz fuer die gerade Linie wurde sie dreimal gemessen und
           // war jedes Mal schlechter. Im offenen Raum gewinnt geradeaus.
           if (stuckFor >= 4) {
-            const fiel = brich();
+            const fiel = freimachen(
+              enemyList.filter((e) => Math.hypot(e.x - st.px, e.y - st.py) <= 110));
             stuckFor = 0;
             // Weg NEU PLANEN statt verwerfen. Isoliert gemessen (ohne Gegner)
             // erreicht Weg + Freischlagen die Treppe in 5 von 5 Faellen mit
             // 0-1 Neuplanungen. Im Bot waren es 103 pro Lauf — weil hier bei
             // jedem Feststecken der Weg weggeworfen wurde und beim naechsten
-            // HIER bewusst KEINE Wegsuche. Ziele in diesem Zweig sind Gegner
-            // und Truhen; auf ein wanderndes Ziel geplant zerfaellt der Weg
-            // staendig (ueber 400 Planungen je Lauf gemessen) und der Bot wird
-            // dadurch schlechter als geradeaus. Die Wegsuche steht nur im
-            // Treppen-Zweig, wo das Ziel stillsteht.
+            // Auch fuer Gegner planen, wenn die gerade Linie versagt.
+            //
+            // Frueher stand hier bewusst KEINE Wegsuche: auf ein wanderndes
+            // Ziel geplant zerfiel der Weg staendig und der Bot wurde
+            // schlechter. Das war aber gemessen, BEVOR die Karte die
+            // Hindernisse kannte. Inzwischen ist klar, dass Laufen der Engpass
+            // ist und nicht der Kampf — Gegner sterben auf Tiefe 2 mit einem
+            // Schlag (HP 1-2), waehrend ein Raum mit 27 Gegnern ueber mehrere
+            // tausend Pixel verstreut ist. Deshalb hier erneut, mit Messung.
             if (fiel) stats.chestsBroken += fiel;
-            if (!fiel) {
+            if (!fiel && !notweg && !opts.keineGegnerWege) {
+              const w = h.nav.path(target.x, target.y);
+              if (w && w.length) {
+                notweg = w; notwegIdx = 0; notwegAlter = 0;
+                notwegZiel = { x: target.x, y: target.y };
+                stats.paths++;
+              }
+            }
+            if (!fiel && !notweg) {
               const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
                 { left: true, up: true }, { right: true, down: true },
                 { left: true, down: true }, { right: true, up: true }];
@@ -822,6 +1005,7 @@ function decorate(h) {
       G.notweg = notweg; G.notwegIdx = notwegIdx;
       G.verfolgtKey = verfolgtKey; G.verfolgtRunden = verfolgtRunden;
       G.besteDistanz = besteDistanz; G.treppeSeit = treppeSeit;
+      G.besterWegpunkt = besterWegpunkt; G.planFehler = planFehler;
       G.zielHp = zielHp; G.zielKeyHp = zielKeyHp; G.ohneWirkung = ohneWirkung;
       stats.kills = h.kills() - k0;
       return stats;

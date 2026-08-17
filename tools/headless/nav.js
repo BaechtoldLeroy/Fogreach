@@ -26,6 +26,7 @@ const HALB_B = 17;
 const HALB_H = 28;
 const KOSTEN_FREI = 1;
 const KOSTEN_BRECHBAR = 8;   // ~8 offene Kacheln Umweg lohnen sich noch
+const KOSTEN_TUER = 3;       // ein Tastendruck — billiger als sich durchzuschlagen
 
 const NACHBARN = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
@@ -83,6 +84,33 @@ function attachNav(h, sceneKey) {
         });
       }
 
+      // Schritt 2b: TUEREN. Sie liegen in scene._doorGroup (statische
+      // Physikgruppe mit Spieler-Kollider, doorSystem.js:163) — NICHT in der
+      // obstacles-Gruppe. Ohne sie fuehrt der Weg mitten durch eine
+      // geschlossene Tuer, und der Bot drueckt dagegen, statt sie zu oeffnen.
+      // Eine geschlossene Tuer ist kein Hindernis, sondern ein DURCHGANG mit
+      // einem Tastendruck: begehbar, aber teurer als offener Boden.
+      // 3 = Tuer.
+      var tueren = (sc._doors && sc._doors.length)
+        ? sc._doors
+        : ((sc._doorGroup && sc._doorGroup.getChildren) ? sc._doorGroup.getChildren() : []);
+      tueren.forEach(function (d) {
+        if (!d || !d.active || !d.body) return;
+        // Offene Tueren blockieren nicht — nur geschlossene eintragen.
+        if (!(d.getData && d.getData('doorState') === 'closed')) return;
+        var bx = d.body.x - ${HALB_B};
+        var by = d.body.y - ${HALB_H};
+        var bw = d.body.width + ${HALB_B} * 2;
+        var bh = d.body.height + ${HALB_H} * 2;
+        var tx0 = Math.floor(bx / T), tx1 = Math.floor((bx + bw) / T);
+        var ty0 = Math.floor(by / T), ty1 = Math.floor((by + bh) / T);
+        for (var ty = Math.max(0, ty0); ty <= Math.min(rows - 1, ty1); ty++) {
+          for (var tx = Math.max(0, tx0); tx <= Math.min(cols - 1, tx1); tx++) {
+            if (hind[ty][tx] === 0) hind[ty][tx] = 3;
+          }
+        }
+      });
+
       // Schritt 3: zusammenfuehren, inklusive Spieler-Abdruck gegen Waende.
       var art = [];
       for (var y3 = 0; y3 < rows; y3++) {
@@ -126,7 +154,8 @@ function attachNav(h, sceneKey) {
     const rows = g.rows;
     const drin = (tx, ty) => tx >= 0 && ty >= 0 && tx < cols && ty < rows;
     const offen = (tx, ty) => drin(tx, ty) && art[ty][tx] !== 2;
-    const kosten = (tx, ty) => (art[ty][tx] === 1 ? KOSTEN_BRECHBAR : KOSTEN_FREI);
+    const kosten = (tx, ty) => (art[ty][tx] === 1 ? KOSTEN_BRECHBAR
+      : (art[ty][tx] === 3 ? KOSTEN_TUER : KOSTEN_FREI));
 
     const einrasten = (tx, ty) => {
       if (offen(tx, ty)) return { tx, ty };
@@ -194,12 +223,13 @@ function attachNav(h, sceneKey) {
       const b = kacheln[i];
       const c = kacheln[i + 1];
       const brechen = art[b.ty][b.tx] === 1;
+      const tuer = art[b.ty][b.tx] === 3;
       const knick = !c || (c.tx - b.tx) !== (b.tx - a.tx) || (c.ty - b.ty) !== (b.ty - a.ty);
-      if (brechen || knick) {
-        punkte.push({ x: b.tx * T + T / 2, y: b.ty * T + T / 2, brechen });
+      if (brechen || tuer || knick) {
+        punkte.push({ x: b.tx * T + T / 2, y: b.ty * T + T / 2, brechen, tuer });
       }
     }
-    punkte.push({ x: zx, y: zy, brechen: false });
+    punkte.push({ x: zx, y: zy, brechen: false, tuer: false });
     return punkte;
   }
 
