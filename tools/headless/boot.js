@@ -49,7 +49,16 @@ function boot(opts) {
   dom.window.console = consoleProxy;
 
   // localStorage-Stub (dasselbe Verhalten wie tests/setup.js)
+  //
+  // `opts.storage` fuellt ihn VOR dem Laden der Skripte. Das ist der einzige
+  // Zeitpunkt, der taugt: die Module latchen ihren Zustand beim Init, ein
+  // spaeter eingespielter Spielstand wird nicht mehr gelesen. Damit kann ein
+  // Dauerlauf nach einem Neustart weitermachen, statt wieder bei Level 1 und
+  // Tiefe 1 zu beginnen.
   const store = Object.create(null);
+  if (opts.storage && typeof opts.storage === 'object') {
+    Object.keys(opts.storage).forEach((k) => { store[k] = String(opts.storage[k]); });
+  }
   const localStorage = {
     getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
     setItem: (k, v) => { store[k] = String(v); },
