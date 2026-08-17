@@ -424,6 +424,7 @@ function decorate(h) {
       const chestDetour = typeof opts.chestDetour === "number" ? opts.chestDetour : 200;
       let lastX = null; let lastY = null; let stuckFor = 0; let detourLeft = 0; let detour = null;
       const fenster = [];   // letzte Positionen, fuer die Nettostrecke
+      let planSperre = 0;   // Runden, bevor erneut umgeplant werden darf
 
       /** Zerstoerbares in Reichweite aufschlagen. Meldet, wie viel fiel. */
       const brich = () => h.run(`(function () {
@@ -818,6 +819,8 @@ function decorate(h) {
         }
         lastX = st.px; lastY = st.py;
 
+        if (planSperre > 0) planSperre--;
+
         fenster.push({ x: st.px, y: st.py });
         if (fenster.length > 12) fenster.shift();
         if (fenster.length === 12) {
@@ -871,8 +874,21 @@ function decorate(h) {
           if (stuckFor >= 4) {
             stats.chestsBroken += freimachen(
               enemyList.filter((e) => Math.hypot(e.x - st.px, e.y - st.py) <= 110));
-            const w = h.nav.path(target.x, target.y);
-            if (w && w.length) { notweg = w; notwegIdx = 0; stats.paths++; }
+            // NEU PLANEN NUR MIT SPERRFRIST.
+            //
+            // Vorher wurde hier bedingungslos geplant und notwegIdx auf 0
+            // gesetzt. Solange Feststecken selten war, ging das gut. Seit die
+            // Erkennung auch Pendeln erfasst (Nettostrecke ueber 12 Runden),
+            // loest sie viel oefter aus — und warf damit alle 12 Runden den
+            // Wegfortschritt weg. Gemessen an drei Stillstaenden in Folge:
+            // "Weg 0/3", "Weg 0/20", "Weg 1/17" — er kam nie ueber den Anfang
+            // hinaus, obwohl jedes Mal ein gueltiger Weg dalag.
+            //
+            // Freischlagen darf jede Runde passieren, Umplanen nicht.
+            if (planSperre <= 0) {
+              const w = h.nav.path(target.x, target.y);
+              if (w && w.length) { notweg = w; notwegIdx = 0; stats.paths++; planSperre = 60; }
+            }
             stuckFor = 0;
           }
 
