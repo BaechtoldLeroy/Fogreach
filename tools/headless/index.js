@@ -423,6 +423,7 @@ function decorate(h) {
       // nicht das Rundenziel — alles Weitere liegt einfach nicht am Weg.
       const chestDetour = typeof opts.chestDetour === "number" ? opts.chestDetour : 200;
       let lastX = null; let lastY = null; let stuckFor = 0; let detourLeft = 0; let detour = null;
+      const fenster = [];   // letzte Positionen, fuer die Nettostrecke
 
       /** Zerstoerbares in Reichweite aufschlagen. Meldet, wie viel fiel. */
       const brich = () => h.run(`(function () {
@@ -801,10 +802,31 @@ function decorate(h) {
         }
 
         // --- Feststeck-Erkennung -------------------------------------------
+        //
+        // Frueher wurde NUR die Bewegung seit der letzten Runde gemessen
+        // (Schwelle 2 px). Wer pendelt, gilt damit als in Bewegung: gemessen
+        // wurde ein Bot, der zwischen y=1299 und y=1293 hin und her lief —
+        // 6 px pro Runde, also jedes Mal stuckFor = 0. Die Rettung
+        // (freimachen) verlangt stuckFor >= 4 und schaltete sich deshalb NIE
+        // ein, waehrend ein Wolf koerperlich an ihm klebte.
+        //
+        // Deshalb zusaetzlich die NETTOSTRECKE ueber ein Fenster: wer sich in
+        // 12 Runden nicht 24 px vom Fleck bewegt hat, steckt fest — egal wie
+        // hektisch er dabei zappelt.
         if (lastX !== null) {
           stuckFor = Math.hypot(st.px - lastX, st.py - lastY) < 2 ? stuckFor + 1 : 0;
         }
         lastX = st.px; lastY = st.py;
+
+        fenster.push({ x: st.px, y: st.py });
+        if (fenster.length > 12) fenster.shift();
+        if (fenster.length === 12) {
+          const a = fenster[0];
+          if (Math.hypot(st.px - a.x, st.py - a.y) < 24) {
+            stuckFor = Math.max(stuckFor, 4);   // Pendeln zaehlt als Feststecken
+            fenster.length = 0;                 // nach dem Ausloesen neu messen
+          }
+        }
 
         // Muss VOR dem Angriffs-Zweig stehen und dessen Reichweite abdecken:
         // eine Treppe wird betreten, nicht erschlagen. Mit einer Schwelle von
