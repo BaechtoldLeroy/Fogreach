@@ -135,7 +135,12 @@ function decorate(h) {
         })()`);
       } catch (e) { /* keine Szene mit eigenen Tasten */ }
     },
-    releaseAll() { h.input.hold({}); },
+    releaseAll() {
+      h.input.hold({});
+      // Auch die Aktionstaste loslassen — sonst bleibt sie gedrueckt und
+      // main.js verriegelt jede weitere Tuerbetaetigung (s. interact()).
+      try { h.run('window.__MOBILE_INTERACT_ACTIVE__ = false;'); } catch (e) { /* egal */ }
+    },
 
     /** Bewegt sich Richtung Zielpunkt, indem die passenden Tasten gehalten werden. */
     steerTowards(x, y, deadzone) {
@@ -188,7 +193,22 @@ function decorate(h) {
      */
     interact() {
       let ok = false;
-      try { h.run('window.__MOBILE_INTERACT_ACTIVE__ = true;'); ok = true; } catch (e) { /* egal */ }
+      // Ein Tastendruck ist ein IMPULS, kein Dauerzustand. Vorher wurde die
+      // Flagge nur gesetzt und nie geloescht — main.js:1929 verriegelt daraufhin
+      // fuer immer:
+      //     if (AKTIV && !verbraucht) { tryInteractDoor(); verbraucht = true; }
+      //     if (!AKTIV)              { verbraucht = false; }
+      // Die Flagge wurde schon im Hub gesetzt (Rathaus betreten) und blieb
+      // stehen, also gab es GENAU EINE Tuerbetaetigung pro Lauf, irgendwo
+      // zufaellig verbraucht. Danach lief der Bot gegen jede geschlossene Tuer
+      // und drueckte tausendfach ins Leere — gemessen in 3 von 4 Versuchen,
+      // einmal 164 px vor der offenen Treppe.
+      // Deshalb: Verriegelung mitloesen, dann druecken. Losgelassen wird in
+      // releaseAll(), das der Bot ohnehin jede Runde aufruft.
+      try {
+        h.run('window.__doorInteractConsumed = false; window.__MOBILE_INTERACT_ACTIVE__ = true;');
+        ok = true;
+      } catch (e) { /* egal */ }
       try {
         h.run(`(function () {
           var g = window.game;
@@ -426,8 +446,29 @@ function decorate(h) {
        *           verfehlt der 60-Grad-Kegel (player.js:1866).
        *   Prop  — zerschlagen.
        */
+      /**
+       * Steht eine GESCHLOSSENE Tuer in Betaetigungsreichweite?
+       * DoorSystem.tryInteractDoor SCHALTET UM (doorSystem.js:256) — wer an
+       * einer offenen Tuer weiterdrueckt, macht sie wieder zu. Deshalb wird
+       * nie blind gedrueckt, sondern nur bei tatsaechlich geschlossener Tuer.
+       * 100 px = INTERACT_DIST (doorSystem.js:250).
+       */
+      const tuerZuNah = () => h.run(`(function () {
+        var sc = window.game.scene.getScene('GameScene');
+        if (!sc || typeof player === 'undefined' || !player) return false;
+        var liste = sc._doors || [];
+        for (var i = 0; i < liste.length; i++) {
+          var t = liste[i];
+          if (!t || !t.active) continue;
+          if (t.getData && t.getData('doorState') !== 'closed') continue;
+          var dx = t.x - player.x, dy = t.y - player.y;
+          if (dx * dx + dy * dy < 100 * 100) return true;
+        }
+        return false;
+      })()`);
+
       const freimachen = (naheGegner) => {
-        h.input.interact();                     // Tuer oeffnen
+        if (tuerZuNah()) h.input.interact();
         const g = (naheGegner || [])[0];
         if (g) { h.input.steerTowards(g.x, g.y, 4); h.input.attack(); }
         return brich();
@@ -824,7 +865,7 @@ function decorate(h) {
             // liegen in scene._doorGroup und blockieren den Spieler
             // (doorSystem.js:163). Die Karte fuehrt bewusst hindurch, weil ein
             // Tastendruck billiger ist als der Umweg.
-            if (wp.tuer && Math.hypot(st.px - wp.x, st.py - wp.y) < 90) {
+            if (wp.tuer && Math.hypot(st.px - wp.x, st.py - wp.y) < 90 && tuerZuNah()) {
               h.input.interact();
               stats.tueren++;
             }
@@ -928,7 +969,7 @@ function decorate(h) {
             // liegen in scene._doorGroup und blockieren den Spieler
             // (doorSystem.js:163). Die Karte fuehrt bewusst hindurch, weil ein
             // Tastendruck billiger ist als der Umweg.
-            if (wp.tuer && Math.hypot(st.px - wp.x, st.py - wp.y) < 90) {
+            if (wp.tuer && Math.hypot(st.px - wp.x, st.py - wp.y) < 90 && tuerZuNah()) {
               h.input.interact();
               stats.tueren++;
             }
