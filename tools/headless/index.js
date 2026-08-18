@@ -425,6 +425,11 @@ function decorate(h) {
       let lastX = null; let lastY = null; let stuckFor = 0; let detourLeft = 0; let detour = null;
       const fenster = [];   // letzte Positionen, fuer die Nettostrecke
       let planSperre = 0;   // Runden, bevor erneut umgeplant werden darf
+      // Stabiler Schluessel fuer ein Ziel (16-px-Raster). MUSS hier oben
+      // stehen: freimachen() weiter unten benutzt ihn, und eine Deklaration
+      // in der Rundenschleife war fuer diese Funktion unsichtbar
+      // ("zielKey is not defined", drei Versuche in Folge abgebrochen).
+      const zielKey = (o) => Math.round(o.x / 16) + '|' + Math.round(o.y / 16);
       let blockerKey = null;   // Gegner, der uns gerade physisch festhaelt
       let blockerRunden = 0;   // wie lange er noch Vorrang als Ziel hat
 
@@ -639,7 +644,6 @@ function decorate(h) {
         // --- Ziel waehlen: Gegner -> Truhe -> TREPPE ------------------------
         // Die Treppe ist das Rundenziel, nicht bloss Beiwerk. Ohne sie bleibt
         // der Bot im ersten Raum stehen, auch wenn er dort alles erschlaegt.
-        const zielKey = (o) => Math.round(o.x / 16) + '|' + Math.round(o.y / 16);
         const naechstes = (liste) => {
           let best = null; let bestD = Infinity;
           liste.forEach((o) => {
