@@ -425,6 +425,8 @@ function decorate(h) {
       let lastX = null; let lastY = null; let stuckFor = 0; let detourLeft = 0; let detour = null;
       const fenster = [];   // letzte Positionen, fuer die Nettostrecke
       let planSperre = 0;   // Runden, bevor erneut umgeplant werden darf
+      let blockerKey = null;   // Gegner, der uns gerade physisch festhaelt
+      let blockerRunden = 0;   // wie lange er noch Vorrang als Ziel hat
 
       /** Zerstoerbares in Reichweite aufschlagen. Meldet, wie viel fiel. */
       const brich = () => h.run(`(function () {
@@ -472,7 +474,14 @@ function decorate(h) {
       const freimachen = (naheGegner) => {
         if (tuerZuNah()) h.input.interact();
         const g = (naheGegner || [])[0];
-        if (g) { h.input.steerTowards(g.x, g.y, 4); h.input.attack(); }
+        if (g) {
+          h.input.steerTowards(g.x, g.y, 4);
+          h.input.attack();
+          // Merken: der naechste Zug gehoert ihm. Ein Einzelschlag aus alter
+          // Blickrichtung verfehlt, ein paar Runden Verfolgung nicht.
+          blockerKey = zielKey(g);
+          blockerRunden = 40;
+        }
         return brich();
       };
 
@@ -659,7 +668,35 @@ function decorate(h) {
         const stairsAlle = Array.from(st.stairs || []);
         const offeneTreppen = stairsAlle.filter((s) => !s.locked);
 
-        if (offeneTreppen.length) {
+        // WER UNS FESTHAELT, WIRD ZUM ZIEL.
+        //
+        // Bei offener Treppe ist die TREPPE das Ziel — ein blockierender
+        // Gegner also kein Angriffsziel. Die Notlösung freimachen() schlug
+        // zwar zu, aber in derselben Runde, in der sie erst die Tasten setzt:
+        // die Blickrichtung stammt aus handlePlayerMovement (player.js:1429)
+        // und zeigte damit noch zur Treppe, nicht auf den Gegner. Der
+        // 60-Grad-Kegel verfehlt, und weil danach stuckFor = 0 gesetzt wird,
+        // bleibt es bei diesem einen Fehlschlag.
+        //
+        // Gemessen auf Tiefe 7: in 3 von 4 Stillstaenden beruehrte ein Gegner
+        // den Spieler (Spalt 0), naechster Abstand 33/43/55 px — alle
+        // INNERHALB der Reichweite von 60. Einmal stand er auf der Treppe und
+        // wurde von Wolf, Magier und Bogenschuetze festgehalten.
+        //
+        // Ihn stattdessen zum Ziel zu machen fuehrt in den regulaeren
+        // Kampfzweig, der JEDE Runde nachsteuert — dort holt die
+        // Blickrichtung nach einer Runde auf und der Schlag sitzt.
+        if (blockerRunden > 0) blockerRunden--;
+        let blockerZiel = null;
+        if (blockerKey && blockerRunden > 0) {
+          blockerZiel = enemyList.find((e) => zielKey(e) === blockerKey) || null;
+          if (!blockerZiel) { blockerKey = null; blockerRunden = 0; }
+        }
+
+        if (blockerZiel) {
+          target = blockerZiel;
+          td = Math.hypot(blockerZiel.x - st.px, blockerZiel.y - st.py);
+        } else if (offeneTreppen.length) {
           // MODUS A — Ausgang offen: direkt dorthin. Gegner werden nur
           // mitgenommen, wenn sie ohnehin in Schlagreichweite stehen (siehe
           // unten); hinterherlaufen lohnt nicht.
