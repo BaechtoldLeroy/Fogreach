@@ -508,6 +508,14 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   const depthForStats = window.DUNGEON_DEPTH || 1;
   const statScale = 1 + (depthForStats - 1) * 0.1; // +10% per depth level
   enemy.hp = Math.max(1, Math.round(hp * statScale));
+  // #107: maxHp UNBEDINGT setzen. Vorher entstand sie nur in bedingten Zweigen
+  // (Edikt-Buff :776, Raum-Modus :806, Elite :1905, Boss :2702) — ein gewoehnlicher
+  // Gegner in einem normalen Raum hatte gar keine. Gemessen in den Spieltest-
+  // Protokollen: "HP 2/undefined", "HP 3/undefined", waehrend Elites "HP 83/83"
+  // zeigten. Der Rueckfall in :1999 nimmt dann die AKTUELLE HP als Maximum, also
+  // zeigen HP-Balken immer voll und jede Prozentrechnung sitzt auf falscher Basis.
+  // Die spaeteren Zweige setzen maxHp ohnehin nach; sie bleiben korrekt.
+  enemy.maxHp = enemy.hp;
   enemy.isRanged = isRanged;
   enemy.enemyType = type; // 1=Imp, 2=Archer, 3=Brute, 4=Mage
   enemy._originalTint = tint; // store for status effect visual reset
