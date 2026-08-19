@@ -1002,6 +1002,21 @@ function preload() {
 // ==================================================
 function create() {
   playerDeathHandled = false;
+  // #106: attackCooldown und isAttacking werden AUSSCHLIESSLICH in einem
+  // scene.time-Timer zurueckgesetzt (player.js:1837 Bogen, :1961 Nahkampf).
+  // Der Timer stirbt mit der Szene, die beiden Flaggen sind aber Modul-let in
+  // player.js und ueberleben sie — der Zustand ueberlebt also den Timer, der
+  // ihn aufraeumen soll. Endet die Szene mit laufendem Cooldown (Dungeon
+  // betreten, Tod, Stadtportal), bleibt die Sperre in attack() (player.js:1807)
+  // fuer immer stehen und der Spieler kann NIE WIEDER angreifen.
+  //
+  // Gemessen mit dem Spieltest-Bot: 504 Angriffsaufrufe, 0 ausgefuehrt, waehrend
+  // ein Gegner mit 2 HP 7 px entfernt stand — fuenf Stillstaende in Folge.
+  //
+  // Die drei uebrigen Sperrflaggen stehen laengst weiter unten; nur diese zwei
+  // fehlten — ausgerechnet die per Timer aufgeraeumten.
+  attackCooldown = false;
+  isAttacking = false;
   window._secondChanceUsed = false; // Reset Zweite Chance for new dungeon run
   window._playerInvincible = false; // Reset invincibility flag
   isReturningToHub = false;
