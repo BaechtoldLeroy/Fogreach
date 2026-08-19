@@ -703,6 +703,14 @@
         { type: 'observe', target: 'three_hands_seen', current: 0, required: 1 }
       ],
       rewards: { xp: 200, fragments: 2 },
+      // #83: Das Objective feuert three_hands_seen NUR als Quest-Fortschritt
+      // (storyScenes.js:106 -> _fireObserve -> updateQuestProgress). questFinale
+      // liest es aber aus dem FLAG-Speicher (questFinale.js:22 und :44) — beide
+      // ODER-Zweige waren damit dauerhaft false. Folge: der Finale-Regler
+      // "Verrat vorhergesehen" und die Option, Elara zu verschonen, hingen
+      // faktisch allein an mole_evidence. Gleiches Doppel-Muster wie bei
+      // elara_meeting (elara_trust).
+      completionFlags: ['three_hands_seen'],
       prerequisites: ['thom_truth', 'elara_ritual'],
       requiredAct: 3,
       dialogueOffer: 'Bevor du das Letzte tust, sollst du wissen, für wen. Komm, nur wir zwei.',

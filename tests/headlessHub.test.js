@@ -114,21 +114,8 @@ test('hub: Verdacht steigt und wird vom Vergeltungssystem gelesen', () => {
 // heute fehl. Die Suite bleibt dadurch gruen, aber sobald der Fix kommt, meldet
 // node:test den Test als unerwartet bestanden — dann `todo` entfernen.
 
-test('hub: observe-Trigger three_hands_seen erreicht das Finale (#83)',
-  { todo: 'Bug #83 — Flag wird nur als Quest-Objective gefeuert, nie als Story-Flag' },
-  () => {
-    const res = H.run(`(function () {
-      var qs = window.questSystem;
-      qs.updateQuestProgress('observe', 'three_hands_seen', 1);
-      var flags = qs.getFlags();
-      return {
-        flag: !!flags.three_hands_seen,
-        regler: window.QuestFinale.computeFinaleState(flags).betrayalForeseen,
-      };
-    })()`);
-    assert.strictEqual(res.flag, true, 'three_hands_seen wurde nicht als Flag gesetzt');
-    assert.strictEqual(res.regler, true, 'Finale-Regler "Verrat vorhergesehen" bleibt false');
-  });
+// (#83 ist behoben — der Regressionstest steht am Dateiende, weil er den
+//  Quest-Stand veraendert.)
 
 test('hub: convoy_blown ist irgendwo setzbar (#84)',
   { todo: 'Bug #84 — der Flag wird im ganzen Projekt nur GELESEN, nie gesetzt' },
@@ -195,4 +182,35 @@ test('hub: the_reckoning schaltet den Epilog-Zustand frei (#100)', () => {
     'story_ending erreicht die questFlags nicht — Hub bliebe in "broken" haengen');
   assert.strictEqual(res.phase, 'epilogue',
     'Hub-Phase nach dem Story-Ende ist "' + res.phase + '" statt "epilogue"');
+});
+
+
+// #83 steht bewusst HIER unten, nicht bei den uebrigen Hub-Tests: er nimmt zwei
+// Vorbedingungs-Quests an und schliesst sie ab, veraendert also den geteilten
+// Quest-Stand. Mitten in der Datei platziert hat er den #84-Test darunter
+// verfaelscht (convoy_blown schlug ploetzlich um). Gleiche Begruendung wie beim
+// #100-Test daneben.
+test('hub: Abschluss von elara_second_truth setzt three_hands_seen (#83)', () => {
+  // Der Flag wird beim ABSCHLUSS gesetzt (completionFlags, questSystem.js:1496),
+  // nicht schon beim Fortschritt. Der Test durchlaeuft deshalb den echten Weg:
+  // annehmen -> Objective erfuellen -> abschliessen. Die Vorgaengerfassung
+  // feuerte nur updateQuestProgress und haette am Fix vorbeigeprueft.
+  const res = H.run(`(function () {
+    var qs = window.questSystem;
+    var id = 'elara_second_truth';
+    ['thom_truth', 'elara_ritual'].forEach(function (v) {
+      if (qs.QUEST_DEFINITIONS[v]) { qs.acceptQuest(v); qs.completeQuest(v); }
+    });
+    var vorher = !!qs.getFlags().three_hands_seen;
+    qs.acceptQuest(id);
+    qs.updateQuestProgress('observe', 'three_hands_seen', 1);
+    var fertig = qs.completeQuest(id);
+    var flags = qs.getFlags();
+    return { vorher: vorher, fertig: fertig, flag: !!flags.three_hands_seen,
+             regler: window.QuestFinale.computeFinaleState(flags).betrayalForeseen };
+  })()`);
+  assert.strictEqual(res.vorher, false, 'Flag darf vorher nicht gesetzt sein');
+  assert.strictEqual(res.fertig, true, 'Quest liess sich nicht abschliessen: ' + JSON.stringify(res));
+  assert.strictEqual(res.flag, true, 'three_hands_seen wurde beim Abschluss nicht gesetzt');
+  assert.strictEqual(res.regler, true, 'Finale-Regler bleibt false');
 });
