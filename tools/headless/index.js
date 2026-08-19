@@ -111,6 +111,12 @@ function decorate(h) {
      */
     hold(dirs) {
       const d = dirs || {};
+      // Letzten Tastenstand merken. play() ruft am Ende releaseAll(), also
+      // misst jede Aufnahme NACH einem Block zwangslaeufig "keine Taste
+      // gedrueckt, Geschwindigkeit 0". Genau daraus hatte ich faelschlich
+      // geschlossen, der Bot stehe still — der Wert konnte gar nichts anderes
+      // zeigen. Deshalb hier den letzten ECHTEN Stand festhalten.
+      h._letzteTasten = { left: !!d.left, right: !!d.right, up: !!d.up, down: !!d.down };
       ['left', 'right', 'up', 'down'].forEach((k) => {
         const v = !!d[k];
         try { h.run(`if (typeof cursors !== 'undefined' && cursors && cursors.${k}) cursors.${k}.isDown = ${v};`); }
@@ -136,7 +142,9 @@ function decorate(h) {
       } catch (e) { /* keine Szene mit eigenen Tasten */ }
     },
     releaseAll() {
+      const gemerkt = h._letzteTasten;   // Aufraeumen faelscht die Messung nicht
       h.input.hold({});
+      h._letzteTasten = gemerkt;
       // Auch die Aktionstaste loslassen — sonst bleibt sie gedrueckt und
       // main.js verriegelt jede weitere Tuerbetaetigung (s. interact()).
       try { h.run('window.__MOBILE_INTERACT_ACTIVE__ = false;'); } catch (e) { /* egal */ }
@@ -391,7 +399,7 @@ function decorate(h) {
           aufgegeben: new Set(), roomId: null,
           notweg: null, notwegIdx: 0,
           verfolgtKey: null, verfolgtRunden: 0, besteDistanz: Infinity, besterWegpunkt: 0, planFehler: 0,
-          treppeSeit: 0, zielHp: null, zielKeyHp: null, ohneWirkung: 0,
+          treppeSeit: 0, zielHp: null, zielKeyHp: null, ohneWirkung: 0, zweig: null,
         };
       }
       const G = h._botGedaechtnis;
@@ -827,6 +835,7 @@ function decorate(h) {
           // Also: Liste leeren und neu ansetzen. Vorher ein Stueck umsetzen —
           // vom selben Fleck aus scheitert der zweite Anlauf genauso wie der
           // erste.
+          G.zweig = aufgegeben.size > 0 ? 'kein Ziel -> Liste leeren + ausweichen' : 'kein Ziel -> STEHEN';
           if (aufgegeben.size > 0) {
             aufgegeben.clear();
             stats.retries++;
@@ -956,6 +965,8 @@ function decorate(h) {
             h.input.steerTowards(target.x, target.y, 2);
           }
 
+          G.zweig = 'Treppe' + (notweg ? ' ueber Weg ' + notwegIdx + '/' + notweg.length : ' geradeaus')
+            + ' d=' + Math.round(td);
           if (td <= 70) { h.input.interact(); notweg = null; }
           treppeSeit = (td <= 70) ? treppeSeit + 1 : 0;
           if (treppeSeit === 1) stats.stairsTaken++;
@@ -999,6 +1010,7 @@ function decorate(h) {
             //
             // Weiterlaufen haelt die Blickrichtung am Ziel; die Kollision
             // verhindert, dass er hindurchlaeuft.
+            G.zweig = 'Kampf d=' + Math.round(td);
             h.input.steerTowards(target.x, target.y, 4);
             h.input.attack();
 
@@ -1033,6 +1045,7 @@ function decorate(h) {
             if (fired) stats.abilities++;
           }
         } else if (detourLeft > 0) {
+          G.zweig = 'Ausweichen (' + detourLeft + ')';
           h.input.hold(detour); detourLeft--;
         } else {
           // Liegt ein Weg an, diesem folgen — sonst gerade Linie.
@@ -1064,6 +1077,7 @@ function decorate(h) {
               ? Math.hypot(target.x - notwegZiel.x, target.y - notwegZiel.y) : 0;
             if (notwegAlter > 400 || zielWeg > 140) notweg = null;
           } else {
+            G.zweig = 'Luftlinie d=' + Math.round(td);
             h.input.steerTowards(target.x, target.y);
           }
 
