@@ -433,6 +433,16 @@ function decorate(h) {
       let lastX = null; let lastY = null; let stuckFor = 0; let detourLeft = 0; let detour = null;
       const fenster = [];   // letzte Positionen, fuer die Nettostrecke
       let planSperre = 0;   // Runden, bevor erneut umgeplant werden darf
+
+      // FLUGSCHREIBER. Eine Momentaufnahme NACH play() kann nicht zeigen,
+      // woran der Bot haengt: play() endet mit releaseAll(), also sind
+      // Tastenstand und Geschwindigkeit dort zwangslaeufig leer. Genau daran
+      // bin ich zweimal hereingefallen ("er drueckt keine Taste", "er drueckt
+      // und bewegt sich nicht") — beides waren Artefakte der Messung.
+      //
+      // Deshalb JEDE Runde mitschreiben, waehrend es passiert. Der Puffer
+      // haelt die letzten 40 Runden; h.flugschreiber() liest sie aus.
+      const schreiber = h._flug || (h._flug = []);
       // Stabiler Schluessel fuer ein Ziel (16-px-Raster). MUSS hier oben
       // stehen: freimachen() weiter unten benutzt ihn, und eine Deklaration
       // in der Rundenschleife war fuer diese Funktion unsichtbar
@@ -552,6 +562,11 @@ function decorate(h) {
           return {
             klimax: klimax,
             px: p ? p.x : null, py: p ? p.y : null,
+            // Geschwindigkeit gehoert in den Rundenzustand, nicht in eine
+            // Aufnahme danach: play() endet mit releaseAll(), dort ist sie
+            // immer 0. Hier ist sie echt.
+            vx: (p && p.body) ? p.body.velocity.x : null,
+            vy: (p && p.body) ? p.body.velocity.y : null,
             hp: window.playerHealth, maxHp: window.playerMaxHealth,
             enemies: list, chests: chests, stairs: stairs,
             roomId: (sc && sc.currentRoom) ? String(sc.currentRoom.id) : null,
@@ -871,6 +886,21 @@ function decorate(h) {
 
         if (planSperre > 0) planSperre--;
 
+        // Zustand DIESER Runde festhalten, bevor irgendetwas aufgeraeumt wird.
+        schreiber.push({
+          i,
+          x: Math.round(st.px), y: Math.round(st.py),
+          vx: st.vx === undefined ? null : Math.round(st.vx),
+          vy: st.vy === undefined ? null : Math.round(st.vy),
+          zweig: G.zweig || null,
+          tasten: h._letzteTasten
+            ? (['left', 'right', 'up', 'down'].filter((k) => h._letzteTasten[k]).join('+') || '-')
+            : '?',
+          wp: notweg ? (notwegIdx + "/" + notweg.length) : null,
+          stuck: stuckFor,
+        });
+        if (schreiber.length > 40) schreiber.shift();
+
         fenster.push({ x: st.px, y: st.py });
         if (fenster.length > 12) fenster.shift();
         if (fenster.length === 12) {
@@ -1149,6 +1179,16 @@ function decorate(h) {
   h.flush = flush;
   attachLab(h);   // Stufe 3: Gameplay-Pruefwerkzeuge (h.lab)
   attachNav(h);   // Wegsuche als Notnagel (h.nav) — siehe nav.js
+  /**
+   * Die letzten Runden aus dem Flugschreiber (siehe play()). Zeigt, was der
+   * Bot WAEHREND der Runden tat — im Gegensatz zu einer Aufnahme danach, die
+   * durch releaseAll() immer leere Tasten und Geschwindigkeit 0 zeigt.
+   */
+  h.flugschreiber = function flugschreiber(n) {
+    const a = h._flug || [];
+    return a.slice(Math.max(0, a.length - (n || 40)));
+  };
+
   return h;
 }
 
