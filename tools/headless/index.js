@@ -589,6 +589,18 @@ function decorate(h) {
             // sieht immer "keiner" — genau das hat mich zweimal in die Irre
             // gefuehrt. Sie sagen als Einzige, ob ihn etwas aufhaelt, das die
             // Navigationskarte nicht kennt (so lag es beim defend-Altar).
+            // Die verbleibenden Kandidaten fuer "Tasten gedrueckt, kein
+            // Anschlag, keine Sperre, trotzdem v=0":
+            //  * _pullUntil — handlePlayerMovement kehrt still zurueck,
+            //    solange es laeuft (player.js:1383). Gesetzt von Ketten-Zuegen
+            //    (enemy.js:2911/3347) gegen Date.now(), also ECHTZEIT.
+            //  * isMobile — dann laeuft handleMobileMovement und liest den
+            //    Joystick statt cursors; der Bot setzt aber cursors.
+            //  * playerSpeed — waere er 0, bliebe die Zielgeschwindigkeit 0.
+            zug: (window._pullUntil && Date.now() < window._pullUntil)
+              ? (window._pullUntil - Date.now()) : null,
+            mobil: (typeof isMobile !== "undefined") ? !!isMobile : null,
+            tempo: (typeof playerSpeed === "number") ? Math.round(playerSpeed) : null,
             anschlag: (p && p.body && p.body.blocked)
               ? (["left","right","up","down"].filter(function (k) {
                   return p.body.blocked[k]; }).join("+") || null)
@@ -936,6 +948,9 @@ function decorate(h) {
           cursorsDown: st.cursorsDown || null,
           anschlag: st.anschlag || null,
           beruehrt: st.beruehrt || null,
+          zug: st.zug || null,
+          mobil: st.mobil,
+          tempo: st.tempo,
         });
         if (schreiber.length > 40) schreiber.shift();
 
