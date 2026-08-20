@@ -584,6 +584,19 @@ function decorate(h) {
               (p && p.active === false) ? "inaktiv" : null
             ].filter(Boolean).join("+") || null,
             // Liest der Spielcode ueberhaupt die Tasten, die wir setzen?
+            // Phasers Kollisionsflaggen PRO RUNDE. blocked wird jeden
+            // Physikschritt neu gesetzt; wer sie nach releaseAll() liest,
+            // sieht immer "keiner" — genau das hat mich zweimal in die Irre
+            // gefuehrt. Sie sagen als Einzige, ob ihn etwas aufhaelt, das die
+            // Navigationskarte nicht kennt (so lag es beim defend-Altar).
+            anschlag: (p && p.body && p.body.blocked)
+              ? (["left","right","up","down"].filter(function (k) {
+                  return p.body.blocked[k]; }).join("+") || null)
+              : null,
+            beruehrt: (p && p.body && p.body.touching)
+              ? (["left","right","up","down"].filter(function (k) {
+                  return p.body.touching[k]; }).join("+") || null)
+              : null,
             cursorsDown: (typeof cursors !== "undefined" && cursors)
               ? ["left","right","up","down"].filter(function (k) {
                   return cursors[k] && cursors[k].isDown; }).join("+") || "-"
@@ -921,6 +934,8 @@ function decorate(h) {
           stuck: stuckFor,
           sperren: st.sperren || null,
           cursorsDown: st.cursorsDown || null,
+          anschlag: st.anschlag || null,
+          beruehrt: st.beruehrt || null,
         });
         if (schreiber.length > 40) schreiber.shift();
 
