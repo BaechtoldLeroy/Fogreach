@@ -443,6 +443,7 @@ function decorate(h) {
       // Deshalb JEDE Runde mitschreiben, waehrend es passiert. Der Puffer
       // haelt die letzten 40 Runden; h.flugschreiber() liest sie aus.
       const schreiber = h._flug || (h._flug = []);
+      let beruehrer = null;   // was den Bot beim Feststecken beruehrt
       // Stabiler Schluessel fuer ein Ziel (16-px-Raster). MUSS hier oben
       // stehen: freimachen() weiter unten benutzt ihn, und eine Deklaration
       // in der Rundenschleife war fuer diese Funktion unsichtbar
@@ -951,6 +952,7 @@ function decorate(h) {
           zug: st.zug || null,
           mobil: st.mobil,
           tempo: st.tempo,
+          beruehrer,
         });
         if (schreiber.length > 40) schreiber.shift();
 
@@ -1005,6 +1007,30 @@ function decorate(h) {
             if (w && w.length) { notweg = w; notwegIdx = 0; stats.paths++; }
           }
           if (stuckFor >= 4) {
+            // WAS beruehrt ihn? Der Flugschreiber zeigt beruehrt:left,
+            // waehrend die Karte dort frei ist — dieselbe Signatur wie beim
+            // defend-Altar (Kollider ohne Karteneintrag). Nur eine Abfrage
+            // WAEHREND der Runde kann es benennen; nach dem Aufraeumen ist der
+            // Kontakt weg und Gegner sind laengst weitergelaufen.
+            beruehrer = h.run(`(function () {
+              var sc = window.game.scene.getScene("GameScene");
+              if (!sc || typeof player === "undefined" || !player.body) return null;
+              var hw = player.body.halfWidth + 6, hh = player.body.halfHeight + 6;
+              var raus = [];
+              sc.physics.overlapRect(player.x - hw, player.y - hh, hw * 2, hh * 2, true, true)
+                .forEach(function (b) {
+                  var o = b.gameObject;
+                  if (!o || o === player) return;
+                  var inObs = !!(typeof obstacles !== "undefined" && obstacles
+                    && obstacles.contains && obstacles.contains(o));
+                  var inTuer = !!(sc._doorGroup && sc._doorGroup.contains && sc._doorGroup.contains(o));
+                  var inGegner = !!(typeof enemies !== "undefined" && enemies
+                    && enemies.contains && enemies.contains(o));
+                  raus.push(((o.texture && o.texture.key) || "?")
+                    + (inObs ? "[obst]" : inTuer ? "[tuer]" : inGegner ? "[gegner]" : "[UNBEKANNT]"));
+                });
+              return raus.slice(0, 4).join(",") || "nichts";
+            })()`);
             stats.chestsBroken += freimachen(
               enemyList.filter((e) => Math.hypot(e.x - st.px, e.y - st.py) <= 110));
             // NEU PLANEN NUR MIT SPERRFRIST.
