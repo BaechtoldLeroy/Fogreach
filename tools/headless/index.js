@@ -600,6 +600,17 @@ function decorate(h) {
             //  * playerSpeed — waere er 0, bliebe die Zielgeschwindigkeit 0.
             zug: (window._pullUntil && Date.now() < window._pullUntil)
               ? (window._pullUntil - Date.now()) : null,
+            // DER Pruefstein fuer Stillstand-Art B (v=0, nichts blockiert,
+            // nichts beruehrt): handlePlayerMovement holt die Richtung NICHT
+            // aus cursors, sondern aus InputScheme.getMovementInput(), das
+            // eigene Tastenobjekte liest (inputScheme.js:56 kb.addKey). Und
+            // init(scene) wird von ZWEI Szenen gerufen — Hub und Dungeon.
+            // Liefert es {0,0}, waehrend cursors gedrueckt sind, sind die
+            // Primitive an die falsche Szene gebunden. Ohne Fehlermeldung.
+            eingabe: (window.InputScheme && window.InputScheme.getMovementInput)
+              ? (function () { var m = window.InputScheme.getMovementInput();
+                  return m.x + "," + m.y; })()
+              : null,
             mobil: (typeof isMobile !== "undefined") ? !!isMobile : null,
             tempo: (typeof playerSpeed === "number") ? Math.round(playerSpeed) : null,
             anschlag: (p && p.body && p.body.blocked)
@@ -950,6 +961,7 @@ function decorate(h) {
           anschlag: st.anschlag || null,
           beruehrt: st.beruehrt || null,
           zug: st.zug || null,
+          eingabe: st.eingabe,
           mobil: st.mobil,
           tempo: st.tempo,
           beruehrer,
