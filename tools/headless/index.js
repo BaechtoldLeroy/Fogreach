@@ -567,6 +567,27 @@ function decorate(h) {
             // immer 0. Hier ist sie echt.
             vx: (p && p.body) ? p.body.velocity.x : null,
             vy: (p && p.body) ? p.body.velocity.y : null,
+            // WARUM keine Geschwindigkeit? Der Flugschreiber zeigt Tasten
+            // gehalten, Position eingefroren, v=0 — waehrend der Runde
+            // gemessen, also echt. handlePlayerMovement setzt die
+            // Geschwindigkeit also nicht. Diese Sperren kommen dafuer in
+            // Frage; sie werden hier mitgelesen statt geraten.
+            sperren: [
+              (typeof playerStunned !== "undefined" && playerStunned) ? "stunned" : null,
+              (typeof isRolling !== "undefined" && isRolling) ? "rolling" : null,
+              (typeof isDashing !== "undefined" && isDashing) ? "dashing" : null,
+              (typeof isChargingSlash !== "undefined" && isChargingSlash) ? "charging" : null,
+              (typeof isReturningToHub !== "undefined" && isReturningToHub) ? "zurueckZumHub" : null,
+              (window.statusEffectManager && window.statusEffectManager.isStunned
+                && window.statusEffectManager.isStunned(p)) ? "statusStun" : null,
+              (p && p.body && p.body.moves === false) ? "bodyMovesFalse" : null,
+              (p && p.active === false) ? "inaktiv" : null
+            ].filter(Boolean).join("+") || null,
+            // Liest der Spielcode ueberhaupt die Tasten, die wir setzen?
+            cursorsDown: (typeof cursors !== "undefined" && cursors)
+              ? ["left","right","up","down"].filter(function (k) {
+                  return cursors[k] && cursors[k].isDown; }).join("+") || "-"
+              : "kein cursors",
             hp: window.playerHealth, maxHp: window.playerMaxHealth,
             enemies: list, chests: chests, stairs: stairs,
             roomId: (sc && sc.currentRoom) ? String(sc.currentRoom.id) : null,
@@ -898,6 +919,8 @@ function decorate(h) {
             : '?',
           wp: notweg ? (notwegIdx + "/" + notweg.length) : null,
           stuck: stuckFor,
+          sperren: st.sperren || null,
+          cursorsDown: st.cursorsDown || null,
         });
         if (schreiber.length > 40) schreiber.shift();
 
