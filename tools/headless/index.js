@@ -607,6 +607,29 @@ function decorate(h) {
             // init(scene) wird von ZWEI Szenen gerufen — Hub und Dungeon.
             // Liefert es {0,0}, waehrend cursors gedrueckt sind, sind die
             // Primitive an die falsche Szene gebunden. Ohne Fehlermeldung.
+            // LAEUFT die Szene ueberhaupt? Die Bewegungskette ist zu Ende
+            // gelesen: setVelocity wird bedingungslos aufgerufen, die Eingabe
+            // ist nachweislich ungleich null, keine Sperre, kein Anschlag —
+            // rechnerisch KANN v nicht 0 sein. Also stimmt die Annahme nicht,
+            // dass update() in diesen Runden laeuft. Die Szenenuhr beweist es:
+            // steht sie still, wird die Szene nicht getaktet.
+            // scene.time.now taugt NICHT als Taktnachweis: im Normalbetrieb
+            // steht sie ebenfalls konstant bei 67, waehrend sich der Spieler
+            // bewegt. Statt ihrer die Loop-Zeit, die nachweislich laeuft.
+            loopZeit: (window.game && window.game.loop) ? Math.round(window.game.loop.time) : null,
+            // Zeigt window.player noch auf das AKTUELLE Sprite? Ein veraltetes
+            // waere genau das gemessene Bild: Position eingefroren,
+            // Geschwindigkeit 0, nichts beruehrt es, keine Sperre — waehrend
+            // die Szene normal weiterlaeuft.
+            spielerGeist: (function () {
+              if (!p) return "kein player";
+              var inListe = !!(sc && sc.children && sc.children.list.indexOf(p) >= 0);
+              var szeneOk = !!(p.scene && sc && p.scene === sc);
+              if (inListe && szeneOk) return null;
+              return (inListe ? "" : "nichtInAnzeigeliste ") + (szeneOk ? "" : "fremdeSzene");
+            })(),
+            szeneAktiv: (sc && sc.sys && sc.sys.isActive) ? !!sc.sys.isActive() : null,
+            szenePausiert: (sc && sc.sys && sc.sys.isPaused) ? !!sc.sys.isPaused() : null,
             eingabe: (window.InputScheme && window.InputScheme.getMovementInput)
               ? (function () { var m = window.InputScheme.getMovementInput();
                   return m.x + "," + m.y; })()
@@ -961,6 +984,10 @@ function decorate(h) {
           anschlag: st.anschlag || null,
           beruehrt: st.beruehrt || null,
           zug: st.zug || null,
+          loopZeit: st.loopZeit,
+          spielerGeist: st.spielerGeist,
+          szeneAktiv: st.szeneAktiv,
+          szenePausiert: st.szenePausiert,
           eingabe: st.eingabe,
           mobil: st.mobil,
           tempo: st.tempo,
