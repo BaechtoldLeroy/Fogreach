@@ -718,11 +718,24 @@ function decorate(h) {
             for (var s = 0; s < slots.length; s++) {
               var slot = slots[s];
               var cur = (typeof equipment !== 'undefined' && equipment) ? equipment[slot] : null;
-              var curPow = cur ? window.computeItemPower(cur) : -1;
+              // KEINE BOEGEN. Auf Tuchfuehlung geht jeder Pfeil daneben:
+              // kontrolliert gemessen (sonde_naehe.js) trifft ein Bogen bei
+              // einem Koerperspalt von 0-1 px NIE, ab etwa 6 px zuverlaessig.
+              // Der Bot draengt aber genau auf Tuchfuehlung — gemessen 35
+              // Pfeile auf einen Gegner in 11 px, null Treffer, 486 Runden
+              // festgefahren. Im Spiel selbst ist der Bogen in Ordnung (vom
+              // Projektinhaber im Browser geprueft); es ist die Kombination
+              // aus Bogen und Bot-Nahverhalten, die nicht funktioniert.
+              var istBogen = function (x) { return !!(x && x.subtype === 'bow'); };
+              // Ein bereits angelegter Bogen muss ERSETZBAR sein, sonst bleibt
+              // der Bot fuer immer damit stehen: seine Wertung schlaegt sonst
+              // jede Nahkampfwaffe.
+              var curPow = (cur && !istBogen(cur)) ? window.computeItemPower(cur) : -1;
               var bestIdx = -1, bestPow = curPow;
               for (var idx = 0; idx < inventory.length; idx++) {
                 var it = inventory[idx];
                 if (!it || it.type !== slot) continue;
+                if (istBogen(it)) continue;
                 var pw = window.computeItemPower(it);
                 if (pw > bestPow) { bestPow = pw; bestIdx = idx; }
               }
