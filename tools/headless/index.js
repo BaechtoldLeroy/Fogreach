@@ -433,6 +433,7 @@ function decorate(h) {
       let lastX = null; let lastY = null; let stuckFor = 0; let detourLeft = 0; let detour = null;
       const fenster = [];   // letzte Positionen, fuer die Nettostrecke
       let planSperre = 0;   // Runden, bevor erneut umgeplant werden darf
+      let rueckzugLeft = 0;   // Runden, die der Bot noch rueckwaerts geht
 
       // FLUGSCHREIBER. Eine Momentaufnahme NACH play() kann nicht zeigen,
       // woran der Bot haengt: play() endet mit releaseAll(), also sind
@@ -1158,6 +1159,37 @@ function decorate(h) {
             //
             // Weiterlaufen haelt die Blickrichtung am Ziel; die Kollision
             // verhindert, dass er hindurchlaeuft.
+            // ZU NAH DRAN: Abstand gewinnen statt weiter ins Leere schiessen.
+            //
+            // Der Kampf-Zweig war der EINZIGE ohne Feststeck-Behandlung —
+            // freimachen() wird hier nicht gerufen. Gemessen: stuck stand bei
+            // 486 statt zwischen 1 und 4 zu pendeln, ueber 500 Runden hinweg:
+            //   Kampf d=11 stuck486 ANSCHLAG:down beruehrt:down
+            //   Aufrufe 480, ausgefuehrt 35, Pfeile 35, Treffer 0, Schaden 0
+            //   Gegner rat_right0 HP 24/32 -> 24
+            //
+            // Ursache ist die Naehe selbst. Kontrolliert gemessen
+            // (sonde_naehe.js): bei einem Koerperspalt von 0-1 px geht JEDER
+            // Bogenschuss daneben, ab etwa 6 px trifft er zuverlaessig.
+            // Weiter zuzudruecken macht es also schlimmer, nicht besser.
+            //
+            // Deshalb: festgefahren im Kampf -> ein paar Runden ZURUECK vom
+            // Ziel. Das stellt die wirksame Distanz wieder her und loest
+            // zugleich die Blockade.
+            if (stuckFor >= 6 && rueckzugLeft <= 0) {
+              rueckzugLeft = 12;
+              stats.rueckzuege = (stats.rueckzuege || 0) + 1;
+              stuckFor = 0;
+            }
+            if (rueckzugLeft > 0) {
+              rueckzugLeft--;
+              G.zweig = "Rueckzug (" + rueckzugLeft + ") d=" + Math.round(td);
+              // Vom Ziel WEG steuern: Zielpunkt am Spieler gespiegelt.
+              h.input.steerTowards(st.px - (target.x - st.px), st.py - (target.y - st.py), 4);
+              h.step(framesPerRound); await flush();
+              continue;
+            }
+
             G.zweig = 'Kampf d=' + Math.round(td);
             h.input.steerTowards(target.x, target.y, 4);
             h.input.attack();
