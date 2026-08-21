@@ -434,6 +434,7 @@ function decorate(h) {
       const fenster = [];   // letzte Positionen, fuer die Nettostrecke
       let planSperre = 0;   // Runden, bevor erneut umgeplant werden darf
       let rueckzugLeft = 0;   // Runden, die der Bot noch rueckwaerts geht
+      let spionageWeg = null; let spionageIdx = 0;   // Weg zur Beobachtungszone
 
       // FLUGSCHREIBER. Eine Momentaufnahme NACH play() kann nicht zeigen,
       // woran der Bot haengt: play() endet mit releaseAll(), also sind
@@ -650,6 +651,28 @@ function decorate(h) {
                   return cursors[k] && cursors[k].isDown; }).join("+") || "-"
               : "kein cursors",
             hp: window.playerHealth, maxHp: window.playerMaxHealth,
+            // SPIONAGE-Beobachtungszonen. Sie sind der einzige Weg, die
+            // Quest-Kette zum Kettenmeister zu oeffnen: espionage_convoy
+            // verlangt das Ziel convoy_intel, das NUR feuert, wenn der Spieler
+            // eine bestimmte Zeit lang in einer Zone steht (espionageSystem.js:466).
+            // Ohne diese Zonen bleibt maxDepth bei 9 stehen — das Gate in
+            // runDepth.js:22 haengt daran. Treppen, Gegner und Truhen reichen
+            // dafuer nicht; sie sind bisher die einzigen Zielarten des Bots.
+            spionage: (function () {
+              var E = window.EspionageSystem;
+              if (!E || typeof E.isActive !== "function" || !E.isActive()) return null;
+              var s2 = (typeof E.getState === "function") ? E.getState() : null;
+              if (!s2) return null;
+              return {
+                enttarnt: !!s2.exposed,
+                zonen: (s2.observeZones || []).filter(function (zz) { return zz && !zz._done; })
+                  .map(function (zz) {
+                    return { x: zz.x, y: zz.y, r: zz.r || 60,
+                             sek: zz.seconds || 0, bisher: zz._elapsed || 0,
+                             ziel: zz.questTarget || null };
+                  })
+              };
+            })(),
             enemies: list, chests: chests, stairs: stairs,
             roomId: (sc && sc.currentRoom) ? String(sc.currentRoom.id) : null,
           };
@@ -657,6 +680,7 @@ function decorate(h) {
 
         if (!st || st.px === null) { stats.deaths++; break; }
         const enemyList = Array.from(st.enemies || []);
+
         const chestList = Array.from(st.chests || []);
 
         // --- Trank, wenn es eng wird ----------------------------------------
@@ -1008,6 +1032,69 @@ function decorate(h) {
           beruehrer,
         });
         if (schreiber.length > 40) schreiber.shift();
+
+        // --- SPIONAGE hat Vorrang vor allem -------------------------------
+        //
+        // Beobachtungszonen sind der einzige Weg, die Quest-Kette zum
+        // Kettenmeister zu oeffnen, und die haelt die Tiefe bei 9 fest:
+        //   runDepth.js:22   Tiefe 9 -> 10 nur mit mara_warning
+        //   mara_warning     braucht espionage_convoy abgeschlossen
+        //   espionage_convoy braucht das Ziel convoy_intel
+        //   convoy_intel     feuert NUR aus einer Beobachtungszone
+        // Gemessen im Spielstand: mara_contact completed, espionage_convoy
+        // ACTIVE, mara_warning available — die Kette haengt genau hier.
+        //
+        // Steht BEWUSST nach der Feststeck-Erkennung: der erste Anlauf sprang
+        // davor ab, damit lief stuckFor nie hoch und keine Rettung griff — der
+        // Bot blieb 720 Runden auf 101 px vor der Zone stehen (Radius 62).
+        // Und er braucht die Wegsuche: Luftlinie allein hat es nicht geschafft.
+        if (st.spionage && st.spionage.zonen && st.spionage.zonen.length) {
+          const zonen = Array.from(st.spionage.zonen);
+          let beste = null;
+          zonen.forEach((zn) => {
+            const d = Math.hypot(zn.x - st.px, zn.y - st.py);
+            if (!beste || d < beste.d) beste = { zn, d };
+          });
+          if (beste) {
+            const drin = beste.d <= Math.max(10, beste.zn.r - 12);
+            if (drin) {
+              // STEHENBLEIBEN: der Zaehler laeuft nur drinnen und wird beim
+              // Verlassen auf 0 zurueckgesetzt (espionageSystem.js:471).
+              G.zweig = `Spionage WARTEN (${Math.round(beste.zn.bisher * 10) / 10}/${beste.zn.sek}s)`;
+              h.input.releaseAll();
+              stats.spionageWarten = (stats.spionageWarten || 0) + 1;
+            } else {
+              G.zweig = `Spionage ZONE d=${Math.round(beste.d)}`;
+              if (stuckFor >= 4) {
+                stats.chestsBroken += freimachen(
+                  enemyList.filter((en) => Math.hypot(en.x - st.px, en.y - st.py) <= 110));
+                spionageWeg = null;
+                stuckFor = 0;
+              }
+              if (!spionageWeg) {
+                const w = h.nav.path(beste.zn.x, beste.zn.y);
+                if (w && w.length) { spionageWeg = w; spionageIdx = 0; stats.paths++; }
+              }
+              if (spionageWeg && spionageIdx < spionageWeg.length) {
+                while (spionageIdx < spionageWeg.length - 1
+                       && Math.hypot(st.px - spionageWeg[spionageIdx].x,
+                                     st.py - spionageWeg[spionageIdx].y) <= 18) {
+                  spionageIdx++;
+                }
+                const wp = spionageWeg[spionageIdx];
+                if (wp.tuer && Math.hypot(st.px - wp.x, st.py - wp.y) < 90 && tuerZuNah()) h.input.interact();
+                if (wp.brechen && Math.hypot(st.px - wp.x, st.py - wp.y) < 80) stats.chestsBroken += brich();
+                h.input.steerTowards(wp.x, wp.y, 4);
+              } else {
+                h.input.steerTowards(beste.zn.x, beste.zn.y, 4);
+              }
+              stats.spionageWeg = (stats.spionageWeg || 0) + 1;
+            }
+            h.step(framesPerRound); await flush();
+            continue;
+          }
+        }
+
 
         fenster.push({ x: st.px, y: st.py });
         if (fenster.length > 12) fenster.shift();
