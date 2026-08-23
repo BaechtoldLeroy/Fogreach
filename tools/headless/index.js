@@ -638,6 +638,26 @@ function decorate(h) {
               : null,
             mobil: (typeof isMobile !== "undefined") ? !!isMobile : null,
             tempo: (typeof playerSpeed === "number") ? Math.round(playerSpeed) : null,
+            // DIE DREI AUSSTIEGE am Anfang von update() (main.js:1680-1700).
+            // Laeuft einer davon, wird handlePlayerMovement NIE gerufen — von
+            // aussen ununterscheidbar von "Bewegung kaputt": keine
+            // Geschwindigkeit, keine Kollision, keine Sperrflagge, aber
+            // tickende Szene. Genau dieses Profil hat mich neun Kandidaten
+            // lang in die Irre gefuehrt.
+            //
+            // Zwei Reproduktionsversuche im kontrollierten Aufbau sind
+            // gescheitert (frisches Spiel und echter Stand auf Tiefe 10, beide
+            // ohne Stillstand). Deshalb steht die Messung jetzt im laufenden
+            // Betrieb, wo der Fehler nachweislich auftritt.
+            ausstieg: [
+              (typeof invOpen !== "undefined" && invOpen) ? "invOpen" : null,
+              (window.__GAME_PAUSE && window.__GAME_PAUSE.since != null) ? "pause" : null,
+              (typeof playerDeathHandled !== "undefined" && playerDeathHandled) ? "todGehandhabt" : null
+            ].filter(Boolean).join("+") || null,
+            // Ohne Zeitfortschritt bewegt die Physik nichts, egal wie hoch die
+            // Geschwindigkeit ist. In der Sonde fiel delta beim Einzelschritt
+            // auf 0 — im Dauerlauf bisher ungemessen.
+            delta: (sc && sc.game && sc.game.loop) ? Math.round(sc.game.loop.delta) : null,
             anschlag: (p && p.body && p.body.blocked)
               ? (["left","right","up","down"].filter(function (k) {
                   return p.body.blocked[k]; }).join("+") || null)
@@ -1067,6 +1087,8 @@ function decorate(h) {
           stuck: stuckFor,
           sperren: st.sperren || null,
           cursorsDown: st.cursorsDown || null,
+          ausstieg: st.ausstieg || null,
+          delta: st.delta,
           anschlag: st.anschlag || null,
           beruehrt: st.beruehrt || null,
           zug: st.zug || null,
