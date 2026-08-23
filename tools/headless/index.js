@@ -681,6 +681,54 @@ function decorate(h) {
         if (!st || st.px === null) { stats.deaths++; break; }
         const enemyList = Array.from(st.enemies || []);
 
+        // --- SPIONAGE: Bedingung beim Betreten als erfuellt werten --------
+        // Steht GANZ OBEN in der Runde, direkt nach dem Zustandslesen.
+        // Vorher sass er weit unten — und mehrere Zweige springen davor mit
+        // continue ab (z. B. "kein Ziel"). Damit wurde er in genau den
+        // Runden uebersprungen, in denen der Bot herumirrt: gemessen
+        // "Spionage 0 Weg / 0 Warten" in jedem Versuch, obwohl der Raum
+        // nachweislich an Position 1 im Dungeon-Plan steht.
+        // Er steuert nichts und setzt nur einen Fortschritt, gehoert also
+        // an keinen bestimmten Zweig.
+        //
+        // ABKUERZUNG, bewusst gesetzt. Die Beobachtungs-Mechanik (in der Zone
+        // stehen, ohne enttarnt zu werden) wird damit NICHT mehr getestet —
+        // wer sie pruefen will, muss diesen Block abschalten.
+        //
+        // Grund: die Zone ist nur Mittel zum Zweck. Sie oeffnet die Kette
+        //   convoy_intel -> espionage_convoy -> mara_warning -> Tiefe 10
+        //   (runDepth.js:22), und ohne sie steht der Bot bei Tiefe 9 fest.
+        // Gemessen: der Spionage-Raum kam in 11 Versuchen genau EINMAL, und
+        // der Bot war dort eine einzige Runde — die Mission endete sofort
+        // wieder. Das auszureizen kostet mehr Zeit, als der Fortschritt wert
+        // ist; dieselbe Abkuerzung nutzt der Lauf schon beim Annehmen und
+        // Abgeben von Quests.
+        if (st.spionage && st.spionage.zonen && st.spionage.zonen.length) {
+          const erfuellt = h.run(`(function () {
+            var E = window.EspionageSystem;
+            if (!E || !E.isActive || !E.isActive()) return 0;
+            var s2 = E.getState ? E.getState() : null;
+            if (!s2 || !s2.observeZones) return 0;
+            var n = 0;
+            s2.observeZones.forEach(function (zz) {
+              if (!zz || zz._done) return;
+              zz._done = true;
+              if (zz.questTarget && window.questSystem
+                  && typeof window.questSystem.updateQuestProgress === "function") {
+                try { window.questSystem.updateQuestProgress("observe", zz.questTarget, 1); n++; }
+                catch (err) {}
+              }
+            });
+            return n;
+          })()`) || 0;
+          if (erfuellt) {
+            stats.spionageWarten = (stats.spionageWarten || 0) + erfuellt;
+            G.zweig = "Spionage ERFUELLT (" + erfuellt + " Zonen)";
+          }
+          stats.spionageWeg = (stats.spionageWeg || 0) + 1;
+          // KEIN continue: der Bot spielt den Raum danach normal weiter.
+        }
+
         const chestList = Array.from(st.chests || []);
 
         // --- Trank, wenn es eng wird ----------------------------------------
@@ -1033,45 +1081,6 @@ function decorate(h) {
         });
         if (schreiber.length > 40) schreiber.shift();
 
-        // --- SPIONAGE: Bedingung beim Betreten als erfuellt werten --------
-        //
-        // ABKUERZUNG, bewusst gesetzt. Die Beobachtungs-Mechanik (in der Zone
-        // stehen, ohne enttarnt zu werden) wird damit NICHT mehr getestet —
-        // wer sie pruefen will, muss diesen Block abschalten.
-        //
-        // Grund: die Zone ist nur Mittel zum Zweck. Sie oeffnet die Kette
-        //   convoy_intel -> espionage_convoy -> mara_warning -> Tiefe 10
-        //   (runDepth.js:22), und ohne sie steht der Bot bei Tiefe 9 fest.
-        // Gemessen: der Spionage-Raum kam in 11 Versuchen genau EINMAL, und
-        // der Bot war dort eine einzige Runde — die Mission endete sofort
-        // wieder. Das auszureizen kostet mehr Zeit, als der Fortschritt wert
-        // ist; dieselbe Abkuerzung nutzt der Lauf schon beim Annehmen und
-        // Abgeben von Quests.
-        if (st.spionage && st.spionage.zonen && st.spionage.zonen.length) {
-          const erfuellt = h.run(`(function () {
-            var E = window.EspionageSystem;
-            if (!E || !E.isActive || !E.isActive()) return 0;
-            var s2 = E.getState ? E.getState() : null;
-            if (!s2 || !s2.observeZones) return 0;
-            var n = 0;
-            s2.observeZones.forEach(function (zz) {
-              if (!zz || zz._done) return;
-              zz._done = true;
-              if (zz.questTarget && window.questSystem
-                  && typeof window.questSystem.updateQuestProgress === "function") {
-                try { window.questSystem.updateQuestProgress("observe", zz.questTarget, 1); n++; }
-                catch (err) {}
-              }
-            });
-            return n;
-          })()`) || 0;
-          if (erfuellt) {
-            stats.spionageWarten = (stats.spionageWarten || 0) + erfuellt;
-            G.zweig = "Spionage ERFUELLT (" + erfuellt + " Zonen)";
-          }
-          stats.spionageWeg = (stats.spionageWeg || 0) + 1;
-          // KEIN continue: der Bot spielt den Raum danach normal weiter.
-        }
 
 
         fenster.push({ x: st.px, y: st.py });
