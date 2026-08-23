@@ -2790,6 +2790,12 @@ class HubSceneV2 extends Phaser.Scene {
     const usualOpt = options.find((o) => o.key === 'hub.descent.option.usual');
     const quickStartDepth = usualOpt ? usualOpt.depth : (options[0] ? options[0].depth : lastKnown);
     this._waveDialogConfirm = () => chooseDepth(quickStartDepth);
+    // Gezielte Tiefenwahl fuer den Testlauf. _waveDialogConfirm nimmt bewusst
+    // den "Gewohnten Abstieg", die Zifferntasten haengen an der Listenposition
+    // — beides taugt nicht, um ein bestimmtes Boss-Tor anzusteuern. Nur ein
+    // Durchreicher, keine eigene Logik.
+    this._waveDialogChooseDepth = (d) => chooseDepth(d);
+    this._waveDialogOptions = options.map((o) => ({ depth: o.depth, boss: !!o.boss }));
 
     const onKeyDown = (event) => {
       switch (event.code) {

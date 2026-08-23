@@ -374,7 +374,8 @@ function decorate(h) {
       const k0 = h.kills();
       const stats = { kills: 0, chestsBroken: 0, potions: 0, abilities: 0, equipped: 0,
         skillPoints: 0, abilitiesEquipped: 0, rounds: 0, deaths: 0,
-        roomsEntered: 0, stairsTaken: 0, abandoned: 0, retries: 0, paths: 0, tueren: 0 };
+        roomsEntered: 0, stairsTaken: 0, abandoned: 0, retries: 0, paths: 0, tueren: 0,
+        bossGesehen: null, bossTot: null };
       // Ziele, die sich als unerreichbar erwiesen haben (Rasterschluessel).
       // Wird bei jedem Raumwechsel geleert — aber NICHT zwischen zwei
       // play()-Aufrufen: das Gedaechtnis haengt an `h`, nicht am Aufruf.
@@ -693,6 +694,21 @@ function decorate(h) {
                   })
               };
             })(),
+            // BOSS. Am Kettenmeister-Tor (Tiefe 10) liess sich nachtraeglich
+            // nicht mehr feststellen, ob der Bot dem Boss ueberhaupt begegnet
+            // ist: das Laufprotokoll kannte weder Boss-Raum noch Boss-Tod, und
+            // der Quest-Zaehler mara_warning stand auf 0. Ohne diese Zeilen
+            // bleibt beides Ratesache.
+            boss: (function () {
+              if (!lebt(eg)) return null;
+              var b = eg.getChildren()
+                .filter(function (x) { return x && x.active && x.bossType; })
+                .map(function (x) {
+                  return { typ: String(x.bossType), x: Math.round(x.x), y: Math.round(x.y),
+                           hp: Math.round(x.hp || 0), maxHp: Math.round(x.maxHp || 0) };
+                });
+              return b.length ? b : null;
+            })(),
             enemies: list, chests: chests, stairs: stairs,
             roomId: (sc && sc.currentRoom) ? String(sc.currentRoom.id) : null,
           };
@@ -747,6 +763,21 @@ function decorate(h) {
           }
           stats.spionageWeg = (stats.spionageWeg || 0) + 1;
           // KEIN continue: der Bot spielt den Raum danach normal weiter.
+        }
+
+        // --- BOSS: Begegnung und Tod festhalten -----------------------------
+        // Nur die ERSTE Sichtung je Lauf, sonst flutet es jede Runde. Der Tod
+        // kommt aus dem Haken auf questSystem.onBossKilled (nacht2.js), weil
+        // der Gegner beim Sterben sofort aus der Gruppe verschwindet und eine
+        // Sichtungspruefung ihn nie erwischen wuerde.
+        if (st.boss && st.boss.length && !stats.bossGesehen) {
+          stats.bossGesehen = st.boss.map(function (b) {
+            return b.typ + " " + b.hp + "/" + b.maxHp; }).join(", ");
+        }
+        if (!stats.bossTot) {
+          const tot = h.run('(window.__bossProtokoll && window.__bossProtokoll.length)'
+            + ' ? window.__bossProtokoll.join(",") : null');
+          if (tot) stats.bossTot = tot;
         }
 
         const chestList = Array.from(st.chests || []);
