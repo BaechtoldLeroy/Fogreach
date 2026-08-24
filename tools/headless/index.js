@@ -718,6 +718,51 @@ function decorate(h) {
         if (!st || st.px === null) { stats.deaths++; break; }
         const enemyList = Array.from(st.enemies || []);
 
+        // --- BLOCKADE LOESEN: pausiert wartende Dialoge beantworten ------
+        // Mehrere Stellen pausieren das Spiel und warten auf eine Eingabe:
+        //   eventSystem.js:1480  Ereignis-Auswahl (window.eventChoiceOpen)
+        //   eventSystem.js:1290  Ereignis-Dialog
+        //   abilitySystem.js:574 Lernhinweis (loest sich nach 15 s selbst)
+        //   inventory.js:1300    Inventar
+        // Der Bot beantwortete keinen davon. Folge: pauseGameClock haelt die
+        // Physik an, waehrend Eingabe, Schleife und Szene normal weiterlaufen —
+        // der lange ungeklaerte Stillstand "Art B". Gemessen:
+        //     weltPausiert true | blockiert false/false/false/false
+        //     v 0,-170 | pos unveraendert | delta 13
+        // und im Mitschnitt EIN PAUSE-Eintrag ohne passendes RESUME:
+        //     PAUSE pauseGameClock (main.js:862) <- showEventChoiceDialog
+        //
+        // Bewusst NICHT je Dialogart nachgeruestet: nach dem Ereignis-Dialog
+        // stand sofort der naechste Pausierer im Weg. Der Loeser fragt deshalb
+        // den ZUSTAND ab (pausiert?) statt die Art, und probiert der Reihe
+        // nach das, was ein Spieler taete: Knopf druecken, sonst Leertaste,
+        // sonst Escape.
+        if (h.run('!!(window.__GAME_PAUSE && window.__GAME_PAUSE.since != null)')) {
+          const geloest = h.run(`(function () {
+            var s = window.game.scene.getScene("GameScene");
+            if (!s || !s.children) return "keine Szene";
+            var knoepfe = s.children.list.filter(function (o) {
+              return o && o.input && o.input.enabled && o.visible
+                && (o.type === "Rectangle" || o.type === "Text" || o.type === "Container");
+            }).sort(function (a2, b2) { return (b2.depth || 0) - (a2.depth || 0) || a2.y - b2.y; });
+            if (knoepfe.length) {
+              knoepfe[0].emit("pointerdown");
+              if (!(window.__GAME_PAUSE && window.__GAME_PAUSE.since != null)) return "Knopf";
+            }
+            if (s.input && s.input.keyboard && s.input.keyboard.emit) {
+              ["keydown-SPACE", "keydown-ENTER", "keydown-ESC"].forEach(function (ev) {
+                s.input.keyboard.emit(ev, { preventDefault: function () {} });
+              });
+              s.input.keyboard.emit("keydown", { code: "Space", preventDefault: function () {} });
+              if (!(window.__GAME_PAUSE && window.__GAME_PAUSE.since != null)) return "Taste";
+            }
+            return "haelt an (" + knoepfe.length + " Knoepfe)";
+          })()`);
+          stats.blockaden = (stats.blockaden || 0) + 1;
+          G.zweig = "Blockade: " + geloest;
+          continue;
+        }
+
         // --- SPIONAGE: Bedingung beim Betreten als erfuellt werten --------
         // Steht GANZ OBEN in der Runde, direkt nach dem Zustandslesen.
         // Vorher sass er weit unten — und mehrere Zweige springen davor mit
