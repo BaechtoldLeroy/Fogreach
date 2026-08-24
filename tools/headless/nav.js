@@ -98,7 +98,8 @@ function attachNav(h, sceneKey) {
       }
 
       var welt = sc.physics && sc.physics.world;
-      var liste = welt && welt.colliders && (welt.colliders._active || []);
+      var liste = (welt && welt.colliders) ? (welt.colliders._active || []) : null;
+      if (!liste) return null;
       var spieler = (typeof player !== 'undefined') ? player : window.player;
       var gesehen = [];
       for (var ci = 0; ci < liste.length; ci++) {
