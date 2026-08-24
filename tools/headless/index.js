@@ -816,9 +816,15 @@ function decorate(h) {
         // kommt aus dem Haken auf questSystem.onBossKilled (nacht2.js), weil
         // der Gegner beim Sterben sofort aus der Gruppe verschwindet und eine
         // Sichtungspruefung ihn nie erwischen wuerde.
-        if (st.boss && st.boss.length && !stats.bossGesehen) {
-          stats.bossGesehen = st.boss.map(function (b) {
-            return b.typ + " " + b.hp + "/" + b.maxHp; }).join(", ");
+        if (st.boss && st.boss.length) {
+          if (!stats.bossGesehen) {
+            stats.bossGesehen = st.boss.map(function (b) {
+              return b.typ + " " + b.hp + "/" + b.maxHp; }).join(", ");
+          }
+          stats.bossRunden = (stats.bossRunden || 0) + 1;
+          st.boss.forEach(function (b) {
+            if (stats.bossMinHp == null || b.hp < stats.bossMinHp) stats.bossMinHp = b.hp;
+          });
         }
         if (!stats.bossTot) {
           const tot = h.run('(window.__bossProtokoll && window.__bossProtokoll.length)'
