@@ -74,8 +74,24 @@ function startNextWave(noIncrement) {
     spawnedEnemiesInWave = 0;    // no regular spawns this wave
     waveInProgress = true;
     waveText.setText((window.roomProgressText ? window.roomProgressText + '  |  ' : '') + 'Dungeon Level: ' + currentWave + '  (BOSS)');
-    spawnBoss.call(this);        // <-- defined below
+    const _boss = spawnBoss.call(this);   // <-- defined below
     if (window.soundManager) window.soundManager.playMusic('boss_music');
+
+    // #109: Treppe SPERREN, bis der Voll-Boss besiegt ist — genau wie beim
+    // Mini-Boss weiter unten. Ohne das war ausgerechnet der story-tragende
+    // Boss der EINZIGE Gegner im Spiel, an dem man vorbeilaufen konnte:
+    // gemessen zwei Laeufe auf Tiefe 10, beide "Dungeon abgeschlossen", der
+    // Kettenmeister dabei unberuehrt bei voller HP. Damit war mara_warning
+    // (boss_kill kettenmeister, questSystem.js:506) praktisch unerfuellbar —
+    // und daran haengt das Tor von Tiefe 9 auf 10 (runDepth.js:22).
+    // Entsperrt wird nicht hier: checkWaveEnd gibt die Treppe generisch frei,
+    // sobald __climaxEnemy nicht mehr aktiv ist.
+    if (_boss) {
+      window.__climaxEnemy = _boss;
+      if (typeof window.lockStairs === 'function' && this.stairsGroup) {
+        try { window.lockStairs(this, true); } catch (e) {}
+      }
+    }
     return;                      // skip normal spawn setup
   }
 

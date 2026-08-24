@@ -2497,6 +2497,10 @@ function spawnBoss() {
 
   // Boss intro lore text
   showBossIntro.call(this, def);
+
+  // #109: Der Aufrufer braucht den Boss, um ihn als Klimax-Gegner zu fuehren
+  // (wave.js -> window.__climaxEnemy) und damit die Treppe zu sperren.
+  return boss;
 }
 
 // Wenn die fuehrende Quest aktiv ist, liest die Kettenmeister-Intro nicht die
