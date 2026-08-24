@@ -148,6 +148,28 @@ function attachNav(h, sceneKey) {
         }
         art.push(r3);
       }
+      // Die Welt ist breiter als die Vorlage: roomManager.js:609 haengt
+      // WORLD_RIGHT_PADDING an die Grenzen, das Minimap-Raster kennt es nicht.
+      // Gemessen: Raster 3552 px, Weltgrenze 3808 px — acht Kacheln fehlten.
+      // Wegpunkte dort galten als "ausserhalb", der Weg entartete auf einen
+      // einzigen Punkt, und der Bot lief Luftlinie in die naechste Wand.
+      // Der Rand ist kein Raum, also blockiert eintragen statt weglassen.
+      var wb = sc.physics && sc.physics.world && sc.physics.world.bounds;
+      if (wb && wb.width && wb.height) {
+        var sollCols = Math.ceil(wb.width / T);
+        var sollRows = Math.ceil(wb.height / T);
+        for (var yr = 0; yr < art.length; yr++) {
+          while (art[yr].length < sollCols) art[yr].push(2);
+        }
+        while (art.length < sollRows) {
+          var neueZeile = [];
+          for (var xr = 0; xr < sollCols; xr++) neueZeile.push(2);
+          art.push(neueZeile);
+        }
+        cols = Math.max(cols, sollCols);
+        rows = Math.max(rows, sollRows);
+      }
+
       return { tile: T, cols: cols, rows: rows, art: art };
     })()`);
   }

@@ -763,6 +763,36 @@ function decorate(h) {
           continue;
         }
 
+        // --- BLOCKIERT? Dann steht meist ein GEGNER im Weg ----------------
+        // body.blocked ist das direkte Signal. Der positionsbasierte Zaehler
+        // ist es nicht: gemessen pendelte er 3,4,1,2 und erreichte die
+        // Schwelle stuckFor >= 4 kaum, waehrend der Bot minutenlang gegen eine
+        // Gegnergruppe drueckte.
+        //
+        // Gemessen im eingefrorenen Zustand, ein Schritt (-6 px) in
+        // Laufrichtung:  trifft: ["imp_right0", "mage_right0"]
+        // Das Navigationsraster fuehrt Gegner bewusst NICHT als Wand — sie
+        // laufen herum und wuerden die Karte jede Runde zerlegen. Es meldet
+        // dort also zu Recht "frei", und der Bot lief endlos dagegen.
+        //
+        // Dieselbe Ursache im Boss-Raum: 6402 Runden, Boss von 225 auf 219,
+        // Spieler unverletzt auf 90/90. Er drueckte gegen die Gegner, statt
+        // zuzuschlagen.
+        if (st.anschlag && enemyList.length) {
+          const nahDran = enemyList
+            .map((e) => ({ e: e, d: Math.hypot(e.x - st.px, e.y - st.py) }))
+            .filter((q) => q.d <= 70)
+            .sort((q1, q2) => q1.d - q2.d)
+            .map((q) => q.e);
+          if (nahDran.length) {
+            stats.chestsBroken += freimachen(nahDran);
+            stats.blockiertGegner = (stats.blockiertGegner || 0) + 1;
+            G.zweig = "Anschlag -> Gegner schlagen (" + nahDran.length + ")";
+            h.step(framesPerRound); await flush();
+            continue;
+          }
+        }
+
         // --- SPIONAGE: Bedingung beim Betreten als erfuellt werten --------
         // Steht GANZ OBEN in der Runde, direkt nach dem Zustandslesen.
         // Vorher sass er weit unten — und mehrere Zweige springen davor mit
