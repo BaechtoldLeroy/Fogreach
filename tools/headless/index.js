@@ -653,7 +653,8 @@ function decorate(h) {
             ausstieg: [
               (typeof invOpen !== "undefined" && invOpen) ? "invOpen" : null,
               (window.__GAME_PAUSE && window.__GAME_PAUSE.since != null) ? "pause" : null,
-              (typeof playerDeathHandled !== "undefined" && playerDeathHandled) ? "todGehandhabt" : null
+              (typeof playerDeathHandled !== "undefined" && playerDeathHandled) ? "todGehandhabt" : null,
+              (typeof isReturningToHub !== "undefined" && isReturningToHub) ? "zurueckZumHub" : null
             ].filter(Boolean).join("+") || null,
             // Ohne Zeitfortschritt bewegt die Physik nichts, egal wie hoch die
             // Geschwindigkeit ist. In der Sonde fiel delta beim Einzelschritt
