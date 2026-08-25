@@ -426,6 +426,10 @@ function decorate(h) {
       let notwegAlter = 0; let notwegZiel = null;
       // Naehert sich der Bot dem AKTUELLEN Wegpunkt ueberhaupt? Ohne diese
       // Buchfuehrung war "unerreichbar" nicht von "gleich da" zu unterscheiden.
+      // Wie lange schlaegt der Bot schon auf einen Blockierer ein, ohne
+      // freizukommen? Ohne Deckel frisst dieser Zweig jede Runde auf.
+      let schlagRunden = G.schlagRunden || 0;
+      let schlagPause = G.schlagPause || 0;
       let wpBest = (typeof G.wpBest === 'number') ? G.wpBest : null;
       let wpZaeh = G.wpZaeh || 0;
       // Wirkt der Angriff? HP des aktuellen Ziels und wie lange sie schon
@@ -782,18 +786,31 @@ function decorate(h) {
         // Dieselbe Ursache im Boss-Raum: 6402 Runden, Boss von 225 auf 219,
         // Spieler unverletzt auf 90/90. Er drueckte gegen die Gegner, statt
         // zuzuschlagen.
-        if (st.anschlag && enemyList.length) {
+        if (schlagPause > 0) schlagPause--;
+        if (st.anschlag && enemyList.length && schlagPause === 0) {
           const nahDran = enemyList
             .map((e) => ({ e: e, d: Math.hypot(e.x - st.px, e.y - st.py) }))
             .filter((q) => q.d <= 70)
             .sort((q1, q2) => q1.d - q2.d)
             .map((q) => q.e);
           if (nahDran.length) {
-            stats.chestsBroken += freimachen(nahDran);
-            stats.blockiertGegner = (stats.blockiertGegner || 0) + 1;
-            G.zweig = "Anschlag -> Gegner schlagen (" + nahDran.length + ")";
-            h.step(framesPerRound); await flush();
-            continue;
+            // GEDECKELT. Ohne Deckel lief dieser Zweig endlos: gemessen 14
+            // identische Runden auf 910,741 mit anschlag "left+down", waehrend
+            // er in genau diese Richtung lenkte und ins Leere schlug. Das
+            // continue verhinderte dabei JEDE andere Reaktion — Ausweichen,
+            // Neuplanen und die Stillstandsrettung kamen nie mehr dran.
+            // Nach 30 Runden ohne Erfolg also 90 Runden Ruhe, damit die
+            // normale Logik den Fall uebernehmen kann.
+            if (++schlagRunden > 30) {
+              schlagRunden = 0; schlagPause = 90;
+              stats.schlagAufgegeben = (stats.schlagAufgegeben || 0) + 1;
+            } else {
+              stats.chestsBroken += freimachen(nahDran);
+              stats.blockiertGegner = (stats.blockiertGegner || 0) + 1;
+              G.zweig = "Anschlag -> Gegner schlagen (" + nahDran.length + "/" + schlagRunden + ")";
+              h.step(framesPerRound); await flush();
+              continue;
+            }
           }
         }
 
@@ -866,6 +883,7 @@ function decorate(h) {
           if (tot) stats.bossTot = tot;
         }
 
+        if (!st.anschlag) schlagRunden = 0;
         const chestList = Array.from(st.chests || []);
 
         // --- Trank, wenn es eng wird ----------------------------------------
@@ -1599,6 +1617,7 @@ function decorate(h) {
       // Weg fuer den naechsten Aufruf sichern (siehe oben).
       G.notweg = notweg; G.notwegIdx = notwegIdx;
       G.wpBest = wpBest; G.wpZaeh = wpZaeh;
+      G.schlagRunden = schlagRunden; G.schlagPause = schlagPause;
       G.verfolgtKey = verfolgtKey; G.verfolgtRunden = verfolgtRunden;
       G.besteDistanz = besteDistanz; G.treppeSeit = treppeSeit;
       G.besterWegpunkt = besterWegpunkt; G.planFehler = planFehler;
