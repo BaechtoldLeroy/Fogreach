@@ -152,7 +152,7 @@ function decorate(h) {
 
     /** Bewegt sich Richtung Zielpunkt, indem die passenden Tasten gehalten werden. */
     steerTowards(x, y, deadzone) {
-      const dz = typeof deadzone === 'number' ? deadzone : 8;
+      const dz = typeof deadzone === 'number' ? deadzone : 12;
       const p = h.run('(typeof player !== "undefined" && player) ? { x: player.x, y: player.y } : null');
       if (!p) return false;
       h.input.hold({
@@ -424,6 +424,10 @@ function decorate(h) {
       let notweg = G.notweg;
       let notwegIdx = G.notwegIdx || 0;
       let notwegAlter = 0; let notwegZiel = null;
+      // Naehert sich der Bot dem AKTUELLEN Wegpunkt ueberhaupt? Ohne diese
+      // Buchfuehrung war "unerreichbar" nicht von "gleich da" zu unterscheiden.
+      let wpBest = (typeof G.wpBest === 'number') ? G.wpBest : null;
+      let wpZaeh = G.wpZaeh || 0;
       // Wirkt der Angriff? HP des aktuellen Ziels und wie lange sie schon
       // nicht mehr faellt.
       let zielHp = G.zielHp; let zielKeyHp = G.zielKeyHp; let ohneWirkung = G.ohneWirkung;
@@ -1197,6 +1201,11 @@ function decorate(h) {
             ? (['left', 'right', 'up', 'down'].filter((k) => h._letzteTasten[k]).join('+') || '-')
             : '?',
           wp: notweg ? (notwegIdx + "/" + notweg.length) : null,
+          wpAbstand: (notweg && notweg[notwegIdx])
+            ? Math.round(Math.hypot(st.px - notweg[notwegIdx].x, st.py - notweg[notwegIdx].y))
+            : null,
+          wpDx: (notweg && notweg[notwegIdx]) ? Math.round(notweg[notwegIdx].x - st.px) : null,
+          wpDy: (notweg && notweg[notwegIdx]) ? Math.round(notweg[notwegIdx].y - st.py) : null,
           stuck: stuckFor,
           sperren: st.sperren || null,
           cursorsDown: st.cursorsDown || null,
@@ -1318,7 +1327,32 @@ function decorate(h) {
                    && Math.hypot(st.px - notweg[notwegIdx].x, st.py - notweg[notwegIdx].y) <= 18) {
               notwegIdx++;
             }
-            const wp = notweg[notwegIdx];
+            // WEGPUNKT AUFGEBEN, wenn er sich nicht naehert.
+            //
+            // Die Weiterschaltung verlangt 18 px. Gemessen im Stillstand:
+            //     wpAbstand 31 | wpDx -28 wpDy -13 | anschlag "left+up"
+            // Der Wegpunkt lag diagonal hinter einer Ecke, der Spieler war in
+            // genau diese beiden Richtungen blockiert — er kam nie unter 18 px,
+            // der Index blieb auf 0. Im Dauerlauf: wp 0/9 ueber 6363 Runden,
+            // waehrend x zwischen 548 und 559 pendelte und y konstant blieb.
+            //
+            // Naehert sich der Abstand ueber 20 Runden nicht um mindestens
+            // 4 px, gilt der Wegpunkt als unerreichbar und wird uebersprungen.
+            // War es der letzte, wird der Weg verworfen — dann wird neu geplant.
+            {
+              const wpJetzt = notweg[notwegIdx]
+                ? Math.hypot(st.px - notweg[notwegIdx].x, st.py - notweg[notwegIdx].y) : null;
+              if (wpJetzt == null || wpBest == null || wpJetzt < wpBest - 4) {
+                wpBest = wpJetzt; wpZaeh = 0;
+              } else if (++wpZaeh >= 20) {
+                wpZaeh = 0; wpBest = null;
+                stats.wpUebersprungen = (stats.wpUebersprungen || 0) + 1;
+                if (notwegIdx < notweg.length - 1) notwegIdx++;
+                else { notweg = null; notwegIdx = 0; }
+              }
+            }
+            const wp = notweg ? notweg[notwegIdx] : null;
+            if (!wp) { h.step(framesPerRound); await flush(); continue; }
             // Der Weg fuehrt bewusst DURCH Zerstoerbares — dort aufschlagen.
             // Tuer im Weg: OEFFNEN statt dagegenzulaufen. Geschlossene Tueren
             // liegen in scene._doorGroup und blockieren den Spieler
@@ -1456,7 +1490,32 @@ function decorate(h) {
                    && Math.hypot(st.px - notweg[notwegIdx].x, st.py - notweg[notwegIdx].y) <= 18) {
               notwegIdx++;
             }
-            const wp = notweg[notwegIdx];
+            // WEGPUNKT AUFGEBEN, wenn er sich nicht naehert.
+            //
+            // Die Weiterschaltung verlangt 18 px. Gemessen im Stillstand:
+            //     wpAbstand 31 | wpDx -28 wpDy -13 | anschlag "left+up"
+            // Der Wegpunkt lag diagonal hinter einer Ecke, der Spieler war in
+            // genau diese beiden Richtungen blockiert — er kam nie unter 18 px,
+            // der Index blieb auf 0. Im Dauerlauf: wp 0/9 ueber 6363 Runden,
+            // waehrend x zwischen 548 und 559 pendelte und y konstant blieb.
+            //
+            // Naehert sich der Abstand ueber 20 Runden nicht um mindestens
+            // 4 px, gilt der Wegpunkt als unerreichbar und wird uebersprungen.
+            // War es der letzte, wird der Weg verworfen — dann wird neu geplant.
+            {
+              const wpJetzt = notweg[notwegIdx]
+                ? Math.hypot(st.px - notweg[notwegIdx].x, st.py - notweg[notwegIdx].y) : null;
+              if (wpJetzt == null || wpBest == null || wpJetzt < wpBest - 4) {
+                wpBest = wpJetzt; wpZaeh = 0;
+              } else if (++wpZaeh >= 20) {
+                wpZaeh = 0; wpBest = null;
+                stats.wpUebersprungen = (stats.wpUebersprungen || 0) + 1;
+                if (notwegIdx < notweg.length - 1) notwegIdx++;
+                else { notweg = null; notwegIdx = 0; }
+              }
+            }
+            const wp = notweg ? notweg[notwegIdx] : null;
+            if (!wp) { h.step(framesPerRound); await flush(); continue; }
             // Der Weg fuehrt bewusst DURCH zerstoerbare Hindernisse (Fass,
             // Kiste, kleine Saeule) — dort aufschlagen statt davorstehen.
             // Tuer im Weg: OEFFNEN statt dagegenzulaufen. Geschlossene Tueren
@@ -1539,6 +1598,7 @@ function decorate(h) {
       h.input.releaseAll();
       // Weg fuer den naechsten Aufruf sichern (siehe oben).
       G.notweg = notweg; G.notwegIdx = notwegIdx;
+      G.wpBest = wpBest; G.wpZaeh = wpZaeh;
       G.verfolgtKey = verfolgtKey; G.verfolgtRunden = verfolgtRunden;
       G.besteDistanz = besteDistanz; G.treppeSeit = treppeSeit;
       G.besterWegpunkt = besterWegpunkt; G.planFehler = planFehler;
