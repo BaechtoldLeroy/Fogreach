@@ -718,6 +718,39 @@ function decorate(h) {
                 });
               return b.length ? b : null;
             })(),
+            // WER blockiert? "anschlag" sagt nur, DASS etwas blockiert.
+            // Gemessen: 18 von 19 Stillstaenden hingen an einer obstacleWall,
+            // waehrend der Bot auf einen zufaellig nahen Gegner einschlug —
+            // die Bedingung lautete "Gegner in 70 px", nicht "Gegner
+            // blockiert mich". Deshalb hier der echte Ueberlappungstest eine
+            // Schrittweite in die blockierte Richtung.
+            blockierer: (function () {
+              if (!p || !p.body) return null;
+              var b = p.body;
+              var sx = b.blocked.left ? -8 : (b.blocked.right ? 8 : 0);
+              var sy = b.blocked.up ? -8 : (b.blocked.down ? 8 : 0);
+              if (!sx && !sy) return null;
+              var w = sc && sc.physics && sc.physics.world;
+              if (!w) return null;
+              var gl = lebt(eg) ? eg.getChildren() : [];
+              var gegner = false, name = null;
+              [w.bodies, w.staticBodies].forEach(function (menge) {
+                if (!menge || !menge.entries) return;
+                menge.entries.forEach(function (o) {
+                  if (!o || o === b || !o.gameObject) return;
+                  var rx = b.x + sx, ry = b.y + sy;
+                  if (rx < o.right && rx + b.width > o.left
+                      && ry < o.bottom && ry + b.height > o.top) {
+                    if (gl.indexOf(o.gameObject) >= 0) gegner = true;
+                    else if (!name) {
+                      name = (o.gameObject.getData && o.gameObject.getData("type"))
+                        || (o.gameObject.texture && o.gameObject.texture.key) || "?";
+                    }
+                  }
+                });
+              });
+              return { gegner: gegner, name: name };
+            })(),
             enemies: list, chests: chests, stairs: stairs,
             roomId: (sc && sc.currentRoom) ? String(sc.currentRoom.id) : null,
           };
@@ -787,7 +820,8 @@ function decorate(h) {
         // Spieler unverletzt auf 90/90. Er drueckte gegen die Gegner, statt
         // zuzuschlagen.
         if (schlagPause > 0) schlagPause--;
-        if (st.anschlag && enemyList.length && schlagPause === 0) {
+        if (st.anschlag && st.blockierer && st.blockierer.gegner
+            && enemyList.length && schlagPause === 0) {
           const nahDran = enemyList
             .map((e) => ({ e: e, d: Math.hypot(e.x - st.px, e.y - st.py) }))
             .filter((q) => q.d <= 70)
