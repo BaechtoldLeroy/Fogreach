@@ -2721,7 +2721,11 @@ class HubSceneV2 extends Phaser.Scene {
         const vis = ly >= -4 && ly <= viewportH + 4;
         if (r.hit.input) r.hit.input.enabled = vis;
       }
-      if (thumb) {
+      // thumb.scene mitpruefen: ein zerstoertes Phaser-Objekt bleibt TRUTHY,
+      // `if (thumb)` faengt es also nicht. setSize greift dann auf eine
+      // null-Geometrie zu — gemeldet als "Cannot read properties of null
+      // (reading 'setSize')" bei jeder Mausbewegung.
+      if (thumb && thumb.scene) {
         const trackH = viewportH - 8;
         const thumbH = Math.max(24, trackH * (viewportH / contentH));
         const tt = maxScroll > 0 ? _scroll / maxScroll : 0;
@@ -2829,12 +2833,16 @@ class HubSceneV2 extends Phaser.Scene {
     this.input.keyboard.on('keydown', onKeyDown);
 
     const cleanup = () => {
-      if (!container.active) return;
+      // Zeiger-Handler ZUERST abmelden — vor jedem vorzeitigen Ausstieg.
+      // Vorher stand "if (!container.active) return;" davor: war der
+      // Container schon zerstoert, blieben die Handler registriert und
+      // feuerten weiter auf zerstoerte Objekte.
       // Scroll-Handler + Maske abräumen (maskG hängt nicht am Container).
       if (this._waveWheel) { this.input.off('wheel', this._waveWheel); this._waveWheel = null; }
       if (this._wavePointerDown) { this.input.off('pointerdown', this._wavePointerDown); this._wavePointerDown = null; }
       if (this._wavePointerMove) { this.input.off('pointermove', this._wavePointerMove); this._wavePointerMove = null; }
       if (this._wavePointerUp) { this.input.off('pointerup', this._wavePointerUp); this._wavePointerUp = null; }
+      if (!container.active) return;
       try { maskG.destroy(); } catch (e) {}
       container.destroy(true);
       overlay?.destroy();
