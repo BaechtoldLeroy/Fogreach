@@ -522,6 +522,27 @@ function decorate(h) {
         return brich();
       };
 
+      // INPUT-SCHEMA AN DIE LAUFENDE SZENE BINDEN.
+      //
+      // hold() setzt `cursors` — InputScheme liest aber eigene Tastenobjekte
+      // aus kb.addKey. Gehoeren beide zur selben Szene, ist es dasselbe
+      // Objekt. `primitives` ist jedoch modulweit und wird von init(scene)
+      // gesetzt; nach einem Szenenwechsel zeigt es auf die ALTE Szene, und
+      // der Bot drueckt ins Leere.
+      //
+      // Gemessen, 10 von 10 Faellen "steht trotz gedrueckter Tasten":
+      //     v=0,0 | anschlag null | Tempo 170 | Koerper aktiv und beweglich
+      //     eingabe "0,0"  <- InputScheme meldet dem Spiel KEINE Richtung
+      // Alle anderen Kandidaten waren aus: kein Rollen, Sprint, Aufladen,
+      // Wirbeln, kein Zug. init ist idempotent (addKey liefert bestehende
+      // Tasten zurueck), einmal je play() genuegt.
+      h.run(`(function () {
+        if (!window.InputScheme || typeof window.InputScheme.init !== "function") return 0;
+        var sc = window.game.scene.getScene("GameScene");
+        if (!sc || !sc.input || !sc.input.keyboard) return 0;
+        try { window.InputScheme.init(sc); return 1; } catch (e) { return 0; }
+      })()`);
+
       for (let i = 0; i < rounds; i++) {
         stats.rounds++;
 
