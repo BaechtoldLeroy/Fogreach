@@ -428,6 +428,8 @@ function decorate(h) {
       // Buchfuehrung war "unerreichbar" nicht von "gleich da" zu unterscheiden.
       // Wie lange schlaegt der Bot schon auf einen Blockierer ein, ohne
       // freizukommen? Ohne Deckel frisst dieser Zweig jede Runde auf.
+      // Wie lange drueckt der Bot schon gegen eine WAND (kein Gegner)?
+      let wandRunden = G.wandRunden || 0;
       let schlagRunden = G.schlagRunden || 0;
       let schlagPause = G.schlagPause || 0;
       let wpBest = (typeof G.wpBest === 'number') ? G.wpBest : null;
@@ -918,6 +920,30 @@ function decorate(h) {
         }
 
         if (!st.anschlag) schlagRunden = 0;
+
+        // --- GEGEN EINE WAND? Dann ist das Ziel nicht erreichbar -----------
+        // Naeher als 70 px verwirft der Bot seinen Weg und laeuft Luftlinie
+        // (steerTowards mit Totzone 2). Liegt eine Wand dazwischen, drueckt er
+        // dagegen — und weil notweg in JEDER Runde erneut auf null gesetzt
+        // wird, kann er auch keinen neuen Weg bauen.
+        //
+        // Fuer Treppen gibt es eine Notbremse (treppeSeit > 45), fuer Gegner
+        // nicht. Gemessen: von 12 Wand-Stillstaenden lagen 6 im Kampf-Zweig.
+        //
+        // Belegt ist ausserdem, was NICHT die Ursache ist: das Raster kennt
+        // die Waende (alle Kacheln auf 2, nav.js sieht die Objekte), und der
+        // Wegstart rastet nicht durch die Wand (0 von 12 Faellen).
+        if (st.anschlag && st.blockierer && !st.blockierer.gegner) {
+          if (++wandRunden > 25) {
+            wandRunden = 0;
+            if (verfolgtKey) { aufgegeben.add(verfolgtKey); stats.abandoned++; }
+            verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
+            notweg = null; notwegIdx = 0;
+            G.zweig = "Wand -> Ziel aufgegeben";
+          }
+        } else {
+          wandRunden = 0;
+        }
         const chestList = Array.from(st.chests || []);
 
         // --- Trank, wenn es eng wird ----------------------------------------
@@ -1652,6 +1678,7 @@ function decorate(h) {
       G.notweg = notweg; G.notwegIdx = notwegIdx;
       G.wpBest = wpBest; G.wpZaeh = wpZaeh;
       G.schlagRunden = schlagRunden; G.schlagPause = schlagPause;
+      G.wandRunden = wandRunden;
       G.verfolgtKey = verfolgtKey; G.verfolgtRunden = verfolgtRunden;
       G.besteDistanz = besteDistanz; G.treppeSeit = treppeSeit;
       G.besterWegpunkt = besterWegpunkt; G.planFehler = planFehler;
