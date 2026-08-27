@@ -162,10 +162,23 @@ function checkWaveEnd(time) {
   // lebt (der Mini-Boss ist die Bedingung, nicht der ganze Raum).
   if (window.__climaxEnemy) {
     if (!window.__climaxEnemy.active) {
-      window.__climaxEnemy = null;
+      // ERST entsperren, DANN den Merker verbrauchen.
+      //
+      // Vorher stand es umgekehrt: der Merker wurde geloescht, bevor die
+      // Entsperrung ueberhaupt versucht wurde. Schlug sie fehl — kein `this`,
+      // oder stairsGroup im Raumwechsel noch nicht da — blieb die Treppe
+      // DAUERHAFT gesperrt, denn einen zweiten Versuch gab es nicht. Der
+      // Spieler waere im Boss-Raum eingesperrt und muesste das Portal nehmen.
+      //
+      // Im Testlauf gemessen: von 5 Boss-Siegen endeten 2 mit "Portal
+      // (Stillstand)" statt "Dungeon abgeschlossen".
+      //
+      // Bleibt der Merker stehen, versucht es der naechste Frame erneut.
+      var entsperrt = false;
       if (typeof window.lockStairs === 'function' && this && this.stairsGroup) {
-        try { window.lockStairs(this, false); } catch (e) {}
+        try { window.lockStairs(this, false); entsperrt = true; } catch (e) {}
       }
+      if (entsperrt) window.__climaxEnemy = null;
     }
   }
 
