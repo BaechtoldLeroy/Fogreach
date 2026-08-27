@@ -182,12 +182,26 @@ function boot(opts) {
    * von aussen sind sie sonst unerreichbar. Das ist derselbe Zugriff, den die
    * Browser-Konsole haette.
    */
+  let letzterCode = null;
+  let langsamste = { ms: 0, code: null };
+
   function run(code) {
-    return vm.runInContext(code, ctx, { filename: 'headless-eval', timeout: opts.timeout || 20000 });
+    letzterCode = String(code).replace(/s+/g, ' ').slice(0, 160);
+    const t0 = Date.now();
+    try {
+      return vm.runInContext(code, ctx, { filename: 'headless-eval', timeout: opts.timeout || 20000 });
+    } finally {
+      const dauer = Date.now() - t0;
+      if (dauer > langsamste.ms) langsamste = { ms: dauer, code: letzterCode };
+    }
   }
+
+  /** Zuletzt ausgefuehrter Schnipsel — bei einer Zeitueberschreitung der Taeter. */
+  function letzterAufruf() { return { letzter: letzterCode, langsamste: langsamste }; }
 
   return {
     ctx,
+    letzterAufruf,
     window: sandbox,
     errors,
     loaded,
