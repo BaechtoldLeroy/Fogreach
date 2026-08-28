@@ -34,7 +34,26 @@ function startNextWave(noIncrement) {
   // Spawn-Tempo ggf. neu berechnen
   if (!noIncrement) currentWave += 1;
   window.currentWave = currentWave;
-  window.DUNGEON_DEPTH = currentWave;
+  // Die LAUFTIEFE haengt NICHT am Wellenzaehler.
+  //
+  // Vorher stand hier "window.DUNGEON_DEPTH = currentWave;". Jede neue Welle
+  // hob damit die Tiefe des laufenden Runs — im Widerspruch zu Feature 058
+  // (#41): "within a run the depth never climbs per room" (runDepth.js:50).
+  // Die Identitaets-Funktion nextRoomDepth hatte den Aufstieg pro RAUM
+  // beseitigt, den pro WELLE aber nicht.
+  //
+  // Gemessen mit einem Mitschnitt aller Schreibzugriffe auf DUNGEON_DEPTH:
+  //     20 -> 20  startDungeon (HubSceneV2.js:2405)
+  //     20 -> 20  applySaveToState (storage.js:255)
+  //     20 -> 20  enterRoom (roomManager.js:1292)
+  //     20 -> 20  startNextWave <- enterRoom
+  //     20 -> 21  startNextWave <- callback (wave.js:242)   <-- hier
+  //
+  // Folgen: Gegner-Skalierung, Beute-Stufe und vor allem das Boss-Tor
+  // (Vielfache von 10) verschieben sich mitten im Lauf. Wer Tiefe 20 waehlte,
+  // stand auf 21 und traf keinen Voll-Boss mehr.
+  //
+  // enterRoom setzt die Tiefe je Raum bereits korrekt (roomManager.js:1292).
 
   if (playerHealth > 1) {
     saveGame(this);

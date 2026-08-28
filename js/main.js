@@ -1017,6 +1017,14 @@ function create() {
   // fehlten — ausgerechnet die per Timer aufgeraeumten.
   attackCooldown = false;
   isAttacking = false;
+  // Dieselbe Falle wie oben, eine Ebene weiter: bossActive wird nur dann
+  // falsch, wenn checkWaveEnd den Tod des Bosses bemerkt (wave.js:240).
+  // Wer den Dungeon vorher verlaesst — Portal, Tod —, nimmt das Flag mit in
+  // den naechsten Lauf. Dort meldet checkWaveEnd sofort "Boss weg", startet
+  // per delayedCall eine ZUSATZWELLE (wave.js:242) und hob damit frueher die
+  // Lauftiefe um 1.
+  bossActive = false;
+  currentBoss = null;
   window._secondChanceUsed = false; // Reset Zweite Chance for new dungeon run
   window._playerInvincible = false; // Reset invincibility flag
   isReturningToHub = false;
