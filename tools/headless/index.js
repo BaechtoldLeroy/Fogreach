@@ -668,6 +668,14 @@ function decorate(h) {
               ? (function () { var m = window.InputScheme.getMovementInput();
                   return m.x + "," + m.y; })()
               : null,
+            bewegungsSperren: (function () {
+              var n = [];
+              try { if (typeof isRolling !== "undefined" && isRolling) n.push("rollt"); } catch (e) {}
+              try { if (typeof isDashing !== "undefined" && isDashing) n.push("sprintet"); } catch (e) {}
+              try { if (typeof isChargingSlash !== "undefined" && isChargingSlash) n.push("laedt"); } catch (e) {}
+              try { if (typeof isSpinning !== "undefined" && isSpinning) n.push("wirbelt"); } catch (e) {}
+              return n.length ? n.join("+") : null;
+            })(),
             mobil: (typeof isMobile !== "undefined") ? !!isMobile : null,
             tempo: (typeof playerSpeed === "number") ? Math.round(playerSpeed) : null,
             // DIE DREI AUSSTIEGE am Anfang von update() (main.js:1680-1700).
@@ -1309,6 +1317,7 @@ function decorate(h) {
           sperren: st.sperren || null,
           cursorsDown: st.cursorsDown || null,
           ausstieg: st.ausstieg || null,
+          bewegungsSperren: st.bewegungsSperren || null,
           delta: st.delta,
           anschlag: st.anschlag || null,
           beruehrt: st.beruehrt || null,
