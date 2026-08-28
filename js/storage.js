@@ -247,27 +247,11 @@ function applySaveToState(scene, s) {
   weaponDamage       = (s.weaponDamage ?? weaponDamage);
   weaponAttackSpeed  = (s.weaponAttackSpeed ?? weaponAttackSpeed);
   attackRange        = (s.attackRange ?? attackRange);
-  // Die gewaehlte Tiefe hat VORRANG vor dem Wellenzaehler.
-  //
-  // Vorher stand hier Math.max(dungeonDepth, currentWave). currentWave
-  // startet bei depth - 1 (roomManager.js:1322) und waechst mit jeder Welle
-  // (wave.js:35), liegt am Laufende also auf oder ueber der Tiefe. Und
-  // startDungeon speichert und setzt danach pendingLoadedSave neu
-  // (HubSceneV2.js:2428), sodass dieser Block bei JEDEM Dungeon-Start laeuft.
-  //
-  // Folge: wer im Hub Tiefe 20 waehlte, landete auf 21 — gemessen
-  //     Tiefenwahl: DUNGEON_DEPTH=20 OVERRIDE=20
-  //     Dungeon gestartet auf Tiefe 21
-  // Damit wurde das Boss-Tor uebersprungen (Voll-Bosse stehen nur auf
-  // Vielfachen von 10), und der Lauf hob die Tiefengrenze weiter an.
-  //
-  // currentWave bleibt nur der Rueckfall fuer alte Spielstaende ohne
-  // dungeonDepth — dafuer war das Maximum urspruenglich gedacht.
-  const _tiefeAusSave = (typeof s.dungeonDepth === 'number' && isFinite(s.dungeonDepth))
-    ? Math.round(s.dungeonDepth) : 0;
-  const _welleAusSave = (typeof s.currentWave === 'number' && isFinite(s.currentWave))
-    ? Math.round(s.currentWave) : 0;
-  const restoredDepth = Math.max(1, _tiefeAusSave > 0 ? _tiefeAusSave : _welleAusSave);
+  const restoredDepth = Math.max(
+    1,
+    typeof s.dungeonDepth === 'number' ? Math.round(s.dungeonDepth) : 0,
+    typeof s.currentWave === 'number' ? Math.round(s.currentWave) : 0
+  );
   window.DUNGEON_DEPTH = restoredDepth;
   window.NEXT_DUNGEON_DEPTH = restoredDepth + 1;
 
