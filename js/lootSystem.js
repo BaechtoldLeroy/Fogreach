@@ -1454,6 +1454,15 @@ if (window.i18n) {
     const ver = (typeof saveData.saveVersion === 'number') ? saveData.saveVersion : 1;
     if (ver >= 3) return saveData;
 
+    // Gegenstaende, deren baseStats die Migration selbst aus den Oberwerten
+    // gebaut hat. Fuer sie darf die Prozent-Reparatur unten NICHT greifen:
+    // sie erkennt einen Rohprozentwert daran, dass Oberwert und baseStats
+    // gleich sind — und genau diese Gleichheit erzeugt die Synthese selbst.
+    // Gemessen an Elaras Klinge (Questbelohnung ohne baseStats, Tempo 1.3):
+    // die Reparatur machte daraus 0.013, die Waffe verlor 99% ihres Tempos
+    // und fiel in der Staerkeanzeige von 272 auf 117 — unter einen Dolch
+    // mit 1.4 Schaden.
+    const _synthetisiert = new Set();
     const migrateItem = function (item) {
       if (!item || typeof item !== 'object') return item;
       // Already migrated?
@@ -1480,6 +1489,7 @@ if (window.i18n) {
           if (typeof item[k] === 'number') stats[k] = item[k];
         }
         item.baseStats = stats;
+        _synthetisiert.add(item);
       }
       if (!item.displayName) {
         item.displayName = item._baseName || item.name || 'Item';
@@ -1495,6 +1505,7 @@ if (window.i18n) {
     const _PCT_STATS = ['speed', 'armor', 'crit'];
     const repairItem = function (item) {
       if (!item || typeof item !== 'object' || !item.baseStats) return item;
+      if (_synthetisiert.has(item)) return item;
       for (let i = 0; i < _PCT_STATS.length; i++) {
         const k = _PCT_STATS[i];
         const bv = item.baseStats[k];

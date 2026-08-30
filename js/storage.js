@@ -72,6 +72,16 @@ function saveGame(scene) {
 
     const payload = {
       ts: Date.now(),
+      // Speicherstand-Version MITSCHREIBEN. Ohne dieses Feld las
+      // LootSystem.migrateSave jeden Spielstand als Version 1 und liess seine
+      // Alt-Migrationen bei JEDEM Laden erneut laufen — es setzt zwar
+      // saveData.saveVersion = 3, aber saveGame baute davor ein frisches
+      // Objekt ohne das Feld, also ging die Marke sofort wieder verloren.
+      // Folge war messbar: die Migration erfand fuer Questgegenstaende
+      // baseStats aus den Oberwerten, und die Prozent-Reparatur hielt das
+      // Ergebnis fuer einen Rohprozentwert. Elaras Klinge verlor so 99%
+      // ihres Angriffstempos (1.3 -> 0.013).
+      saveVersion: 3,
       // Core Progress
       currentWave,
       enemiesPerWave: normalizedEnemies,

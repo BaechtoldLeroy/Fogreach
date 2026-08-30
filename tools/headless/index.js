@@ -1035,6 +1035,21 @@ function decorate(h) {
             if (typeof inventory === 'undefined' || !Array.isArray(inventory)) return 0;
             if (typeof equipSelectedItem !== 'function' || typeof window.computeItemPower !== 'function') return 0;
             var slots = ['weapon', 'head', 'body', 'boots', 'amulet'];
+            // computeItemPower ist laut inventory.js ausdruecklich eine
+            // ANZEIGE-Heuristik und gewichtet Affixe hoch: ein Affix bringt
+            // 10 Punkte plus Wert*1.2, ein Schadenspunkt nur 3. Gemessen:
+            // ein Schattendolch mit 1.4 Schaden und einem Affix vom Wert 76
+            // kam auf 123 und schlug damit eine Klinge mit 22 Schaden.
+            // Fuer die WAFFE zaehlt deshalb der Schaden; die Anzeigezahl
+            // entscheidet nur noch bei Gleichstand. Die uebrigen Teile
+            // (Ruestung, Amulett) bleiben bei der Gesamtwertung, dort ist
+            // sie sinnvoll.
+            var werte = function (it) {
+              if (!it) return -1;
+              var pw = window.computeItemPower(it);
+              if (it.type !== "weapon") return pw;
+              return (Number(it.damage) || 0) * 1000 + Math.min(999, pw);
+            };
             var n = 0;
             for (var s = 0; s < slots.length; s++) {
               var slot = slots[s];
@@ -1051,13 +1066,13 @@ function decorate(h) {
               // Ein bereits angelegter Bogen muss ERSETZBAR sein, sonst bleibt
               // der Bot fuer immer damit stehen: seine Wertung schlaegt sonst
               // jede Nahkampfwaffe.
-              var curPow = (cur && !istBogen(cur)) ? window.computeItemPower(cur) : -1;
+              var curPow = (cur && !istBogen(cur)) ? werte(cur) : -1;
               var bestIdx = -1, bestPow = curPow;
               for (var idx = 0; idx < inventory.length; idx++) {
                 var it = inventory[idx];
                 if (!it || it.type !== slot) continue;
                 if (istBogen(it)) continue;
-                var pw = window.computeItemPower(it);
+                var pw = werte(it);
                 if (pw > bestPow) { bestPow = pw; bestIdx = idx; }
               }
               if (bestIdx >= 0) { invSelected = bestIdx; equipSelectedItem(); n++; }
@@ -1077,6 +1092,8 @@ function decorate(h) {
           notweg = null; notwegIdx = 0;
           aufgegeben.clear();
           G.zielStand.clear();
+          stats.standGeleert = (stats.standGeleert || 0) + 1;
+          stats.standGeleertWo = 'raumwechsel';
           verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
           treppeSeit = 0; zielHp = null; zielKeyHp = null; ohneWirkung = 0;
         }
@@ -1169,6 +1186,8 @@ function decorate(h) {
             // leeren und erneut versuchen, statt untaetig zu warten.
             aufgegeben.clear();
             G.zielStand.clear();
+            stats.standGeleert = (stats.standGeleert || 0) + 1;
+            stats.standGeleertWo = 'gegnerFreigabe';
             stats.retries++;
             verfolgtKey = null; verfolgtRunden = 0;
             besteDistanz = Infinity; besterWegpunkt = 0;
@@ -1286,6 +1305,8 @@ function decorate(h) {
           if (aufgegeben.size > 0) {
             aufgegeben.clear();
             G.zielStand.clear();
+            stats.standGeleert = (stats.standGeleert || 0) + 1;
+            stats.standGeleertWo = 'zielLeer';
             stats.retries++;
             verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
             const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
@@ -1347,6 +1368,12 @@ function decorate(h) {
           bw: besterWegpunkt,
           pf: planFehler,
           auf: aufgegeben.size,
+          // Wie oft der Zielstand schon geleert wurde und von wo. Ohne das
+          // war nicht zu unterscheiden, ob ein Ziel seinen Stand nie hatte
+          // oder ihn zwischendurch verloren hat.
+          zs: G.zielStand.size,
+          sg: stats.standGeleert || 0,
+          swo: stats.standGeleertWo || null,
           sperren: st.sperren || null,
           cursorsDown: st.cursorsDown || null,
           ausstieg: st.ausstieg || null,
