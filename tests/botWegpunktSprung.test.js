@@ -64,3 +64,33 @@ test('Wegpunkt-Sprung: die Schwellen stehen noch im gemessenen Verhaeltnis', () 
   assert.ok(Number(m[1]) > 20,
     'Aufgeben-Schwelle (' + m[1] + ') liegt nicht mehr ueber der Sprung-Schwelle (20)');
 });
+
+test('Zielwechsel: der Verfolgungsstand wird je Ziel gemerkt, nicht verworfen', () => {
+  // Zweiter Ruecksetzpfad — sichtbar geworden, nachdem der erste zu war.
+  // Gemessen: 5 Zielwechsel in 160 Runden, immer zwischen denselben zwei
+  // Treppen (41|7 <-> 41|41). Jeder Wechsel nullte verfolgtRunden, planFehler
+  // und den Weg; Pendeln hielt den Ausstieg damit dauerhaft entschaerft.
+  const i = CODE.indexOf('if (k !== verfolgtKey) {');
+  assert.ok(i > 0, 'Zielwechsel-Block nicht gefunden');
+  const block = CODE.slice(i, i + 600);
+  assert.ok(block.includes('G.zielStand.set(verfolgtKey'),
+    'der Stand des verlassenen Ziels wird nicht gesichert');
+  assert.ok(block.includes('G.zielStand.get(k)'),
+    'der Stand des neuen Ziels wird nicht wiederhergestellt');
+  assert.ok(!block.includes('verfolgtKey = k; verfolgtRunden = 0'),
+    'verfolgtRunden wird beim Zielwechsel weiterhin bedingungslos genullt');
+});
+
+test('Zielwechsel: jede Freigabe der Aufgeben-Liste leert auch die Staende', () => {
+  // Sonst wuerde ein frisch freigegebenes Ziel sofort wieder aufgegeben — sein
+  // alter Zaehlerstand steht ja noch —, und der Bot haette gar kein Ziel mehr.
+  const zeilen = CODE.split('\n').map((z) => z.trim());
+  const stellen = [];
+  zeilen.forEach((z, n) => { if (z === 'aufgegeben.clear();') stellen.push(n); });
+  assert.ok(stellen.length >= 3,
+    'erwartet: mindestens 3 Freigabestellen, gefunden: ' + stellen.length);
+  stellen.forEach((n) => {
+    assert.strictEqual(zeilen[n + 1], 'G.zielStand.clear();',
+      'Zeile ' + (n + 1) + ': aufgegeben.clear() ohne zielStand.clear() daneben');
+  });
+});

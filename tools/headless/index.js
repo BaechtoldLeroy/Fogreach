@@ -401,6 +401,9 @@ function decorate(h) {
           notweg: null, notwegIdx: 0,
           verfolgtKey: null, verfolgtRunden: 0, besteDistanz: Infinity, besterWegpunkt: 0, planFehler: 0,
           treppeSeit: 0, zielHp: null, zielKeyHp: null, ohneWirkung: 0, zweig: null,
+          // Verfolgungsstand JE ZIEL. Ein einzelner Zaehler liess sich durch
+          // blosses Hin- und Herwechseln zwischen zwei Zielen auf 0 halten.
+          zielStand: new Map(),
         };
       }
       const G = h._botGedaechtnis;
@@ -1073,6 +1076,7 @@ function decorate(h) {
           // Treppe, aufgegebene Ziele gibt es nicht mehr.
           notweg = null; notwegIdx = 0;
           aufgegeben.clear();
+          G.zielStand.clear();
           verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
           treppeSeit = 0; zielHp = null; zielKeyHp = null; ohneWirkung = 0;
         }
@@ -1164,6 +1168,7 @@ function decorate(h) {
             // Im gesperrten Raum gibt es nichts anderes zu tun, also Liste
             // leeren und erneut versuchen, statt untaetig zu warten.
             aufgegeben.clear();
+            G.zielStand.clear();
             stats.retries++;
             verfolgtKey = null; verfolgtRunden = 0;
             besteDistanz = Infinity; besterWegpunkt = 0;
@@ -1208,8 +1213,22 @@ function decorate(h) {
         if (target) {
           const k = zielKey(target);
           if (k !== verfolgtKey) {
-            verfolgtKey = k; verfolgtRunden = 0; besterWegpunkt = 0;
-            notweg = null; notwegIdx = 0; planFehler = 0;
+            // Der Zielwechsel loeschte bisher den Verfolgungsstand, den
+            // Planfehler und den Weg. Damit liess sich der Ausstieg durch
+            // ein Pendeln zwischen zwei Zielen dauerhaft entschaerfen —
+            // dieselbe Bauform wie beim uebersprungenen Wegpunkt, nur im
+            // anderen Zweig. Gemessen in einem Stillstand: 5 Wechsel in 160
+            // Runden, immer zwischen denselben zwei Treppen (41|7 <-> 41|41),
+            // die Verfolgung kam nie ueber 32 bei Schwelle 50.
+            //
+            // Jetzt behaelt JEDES Ziel seinen eigenen Stand. Wer pendelt,
+            // sammelt auf beiden Zielen weiter und gibt irgendwann beide auf.
+            if (verfolgtKey) G.zielStand.set(verfolgtKey, { vr: verfolgtRunden, pf: planFehler });
+            const frueher = G.zielStand.get(k);
+            verfolgtKey = k;
+            verfolgtRunden = frueher ? frueher.vr : 0;
+            planFehler = frueher ? frueher.pf : 0;
+            besterWegpunkt = 0; notweg = null; notwegIdx = 0;
           }
 
           if (!notweg) {
@@ -1266,6 +1285,7 @@ function decorate(h) {
           G.zweig = aufgegeben.size > 0 ? 'kein Ziel -> Liste leeren + ausweichen' : 'kein Ziel -> STEHEN';
           if (aufgegeben.size > 0) {
             aufgegeben.clear();
+            G.zielStand.clear();
             stats.retries++;
             verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
             const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
