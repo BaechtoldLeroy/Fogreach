@@ -454,7 +454,9 @@ function decorate(h) {
       // und bewegt sich nicht") — beides waren Artefakte der Messung.
       //
       // Deshalb JEDE Runde mitschreiben, waehrend es passiert. Der Puffer
-      // haelt die letzten 40 Runden; h.flugschreiber() liest sie aus.
+      // haelt die letzten 160 Runden; h.flugschreiber() liest sie aus.
+      // 40 war zu kurz: die Aufgabe-Schwelle liegt bei 50 Runden, ein
+      // vollstaendiger Ruecksetzzyklus passte gar nicht ins Fenster.
       const schreiber = h._flug || (h._flug = []);
       let beruehrer = null;   // was den Bot beim Feststecken beruehrt
       // Stabiler Schluessel fuer ein Ziel (16-px-Raster). MUSS hier oben
@@ -1314,6 +1316,17 @@ function decorate(h) {
           wpDx: (notweg && notweg[notwegIdx]) ? Math.round(notweg[notwegIdx].x - st.px) : null,
           wpDy: (notweg && notweg[notwegIdx]) ? Math.round(notweg[notwegIdx].y - st.py) : null,
           stuck: stuckFor,
+          // Die Aufgabe-Buchfuehrung. Gemessen ueber 13 Stillstaende: der
+          // Planfehler-Zaehler stand JEDES Mal auf 0 und die Verfolgung nie
+          // ueber 28, obwohl die Schwelle bei 50 liegt und der Bot tausende
+          // Runden feststeckte. Der Ausstieg wird also zurueckgesetzt, bevor
+          // er greift — von WELCHER der drei Ruecksetzstellen, war aus einer
+          // Momentaufnahme nicht zu sehen. Deshalb die Zaehler pro Runde.
+          vk: verfolgtKey || null,
+          vr: verfolgtRunden,
+          bw: besterWegpunkt,
+          pf: planFehler,
+          auf: aufgegeben.size,
           sperren: st.sperren || null,
           cursorsDown: st.cursorsDown || null,
           ausstieg: st.ausstieg || null,
@@ -1331,7 +1344,7 @@ function decorate(h) {
           tempo: st.tempo,
           beruehrer,
         });
-        if (schreiber.length > 40) schreiber.shift();
+        if (schreiber.length > 160) schreiber.shift();
 
 
 
@@ -1455,7 +1468,22 @@ function decorate(h) {
               } else if (++wpZaeh >= 20) {
                 wpZaeh = 0; wpBest = null;
                 stats.wpUebersprungen = (stats.wpUebersprungen || 0) + 1;
-                if (notwegIdx < notweg.length - 1) notwegIdx++;
+                // Ein UEBERSPRUNGENER Wegpunkt ist kein Fortschritt.
+                //
+                // Ohne die Zeile mit besterWegpunkt hob der Sprung den
+                // Weg-Fortschritt, und der Zielblock las das als echtes
+                // Vorankommen: verfolgtRunden ging auf 0. Da diese Regel
+                // nach 20 Runden feuert, die Aufgeben-Schwelle aber erst
+                // bei 50 liegt, kam der Ausstieg NIE zustande — der Sprung
+                // war immer schneller. Gemessen ueber 13 Stillstaende:
+                // Planfehler jedes Mal 0, Verfolgung nie ueber 28, waehrend
+                // der Bot 3000 bis 6400 Runden feststeckte. Die Aufgabe-Spur
+                // eines weiteren Stillstands: 7 von 7 Ruecksetzungen aus
+                // genau diesem Zweig, 0 aus Zielwechseln.
+                if (notwegIdx < notweg.length - 1) {
+                  notwegIdx++;
+                  besterWegpunkt = Math.max(besterWegpunkt, notwegIdx);
+                }
                 else { notweg = null; notwegIdx = 0; }
               }
             }
@@ -1618,7 +1646,22 @@ function decorate(h) {
               } else if (++wpZaeh >= 20) {
                 wpZaeh = 0; wpBest = null;
                 stats.wpUebersprungen = (stats.wpUebersprungen || 0) + 1;
-                if (notwegIdx < notweg.length - 1) notwegIdx++;
+                // Ein UEBERSPRUNGENER Wegpunkt ist kein Fortschritt.
+                //
+                // Ohne die Zeile mit besterWegpunkt hob der Sprung den
+                // Weg-Fortschritt, und der Zielblock las das als echtes
+                // Vorankommen: verfolgtRunden ging auf 0. Da diese Regel
+                // nach 20 Runden feuert, die Aufgeben-Schwelle aber erst
+                // bei 50 liegt, kam der Ausstieg NIE zustande — der Sprung
+                // war immer schneller. Gemessen ueber 13 Stillstaende:
+                // Planfehler jedes Mal 0, Verfolgung nie ueber 28, waehrend
+                // der Bot 3000 bis 6400 Runden feststeckte. Die Aufgabe-Spur
+                // eines weiteren Stillstands: 7 von 7 Ruecksetzungen aus
+                // genau diesem Zweig, 0 aus Zielwechseln.
+                if (notwegIdx < notweg.length - 1) {
+                  notwegIdx++;
+                  besterWegpunkt = Math.max(besterWegpunkt, notwegIdx);
+                }
                 else { notweg = null; notwegIdx = 0; }
               }
             }
