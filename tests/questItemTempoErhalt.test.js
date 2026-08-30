@@ -150,3 +150,30 @@ test('Bot: der Schattendolch schlaegt Elaras Klinge nicht mehr', () => {
   assert.ok(werte(klinge) > werte(dolch),
     'die neue Bewertung greift nicht — der Bot wuerde weiterhin abruesten');
 });
+
+test('Elaras Klinge bleibt im Rahmen der Fundwaffen', () => {
+  // Vorher: 22 fester Schaden gegen ein Beutefeld, dessen bester Basiswert bei
+  // 9.1 endet (Kriegshammer) und mit dem staerksten Schadensaffix (+33%) auf
+  // rund 12.1 kommt. Ab Akt 2 konnte damit KEIN Waffendrop mehr ein Aufstieg
+  // sein — die halbe Beutetabelle war totes Material.
+  //
+  // Jetzt: stark auf ihrer Zieltiefe (itemLevel 15, dort liegt das Beste bei
+  // etwa 4.9), aber von den Spaet-Tier-Waffen einholbar.
+  const qs = fs.readFileSync(path.join(WURZEL, 'js', 'questSystem.js'), 'utf8');
+  const m = qs.match(/key: 'ELARAS_KLINGE'[^}]*?damage:\s*([0-9.]+)/);
+  assert.ok(m, 'Elaras Klinge nicht gefunden');
+  const schaden = Number(m[1]);
+
+  const loot = fs.readFileSync(path.join(WURZEL, 'js', 'lootSystem.js'), 'utf8');
+  const re = /key: '(WPN_[A-Z_]+)'[\s\S]{0,300}?damage: Object\.freeze\(\{ min: [0-9.]+, max: ([0-9.]+) \}\)/g;
+  let x; let bestesFeld = 0;
+  while ((x = re.exec(loot))) bestesFeld = Math.max(bestesFeld, Number(x[2]));
+  assert.ok(bestesFeld > 0, 'keine Fundwaffen gelesen');
+
+  assert.ok(schaden < bestesFeld,
+    'die Questwaffe (' + schaden + ') liegt weiterhin ueber der besten Fundwaffe ('
+    + bestesFeld + ') — Waffendrops bleiben damit wertlos');
+  assert.ok(schaden > 4.9,
+    'die Questwaffe (' + schaden + ') schlaegt nicht einmal die Waffen ihrer '
+    + 'eigenen Zieltiefe (itemLevel 15, dort bis 4.9)');
+});
