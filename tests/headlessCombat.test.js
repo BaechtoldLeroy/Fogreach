@@ -94,9 +94,27 @@ test('Boss-HP waechst mit der Tiefe (nicht mehr fix)', () => {
 // Elite-Affixe (b76 / #90)
 // ---------------------------------------------------------------------------
 
+// FLATTERN (#110), behoben: der KONTROLLGEGNER war nicht zuverlaessig
+// gewoehnlich. spawnEnemy wuerfelt zum Schluss Elite-Affixe (auf Tiefe 10 in
+// 17,5 % der Spawns, gemessen ueber 200 Wuerfe). Kam dabei magic_resistant
+// oder spectral_hit heraus, mass der Test zwei resistente Gegner
+// gegeneinander — daher "ohne=10, mit=10" bzw. "ohne=4, mit=10"
+// (20 x 0.5 x 0.35 = 3.5 -> 4). Nicht die Toleranz war zu eng, die
+// Ausgangslage war es. lab.spawnEnemy legt den Wurf jetzt still; die
+// istGewoehnlich-Zusicherungen unten halten das fest, falls je eine neue
+// Zufallsquelle dazukommt.
+function istGewoehnlich(ref, wer) {
+  const e = L.enemy(ref);
+  assert.ok(e && !e.isElite,
+    `${wer} kam als Elite aus dem Spawn (Affixe: ${e ? e.affixe : '?'}) — `
+    + 'die Messung haette keine Aussagekraft');
+}
+
 test('magic_resistant halbiert Faehigkeitsschaden, laesst den Basisangriff voll', () => {
   const plain = L.spawnEnemy(3, 150, 0);
   const warded = L.spawnEnemy(3, -150, 0);
+  istGewoehnlich(plain, 'Kontrollgegner');
+  istGewoehnlich(warded, 'Testgegner');
   L.applyAffix(warded, 'magic_resistant');
 
   const abilityPlain = L.hitEnemy(plain, { ability: 'whirlwind' }).dealt;
@@ -109,6 +127,8 @@ test('magic_resistant halbiert Faehigkeitsschaden, laesst den Basisangriff voll'
   // Der Basisangriff muss unberuehrt bleiben — das ist der Kniff des Affixes.
   const plain2 = L.spawnEnemy(3, 200, 0);
   const warded2 = L.spawnEnemy(3, -200, 0);
+  istGewoehnlich(plain2, 'Kontrollgegner (Basisangriff)');
+  istGewoehnlich(warded2, 'Testgegner (Basisangriff)');
   L.applyAffix(warded2, 'magic_resistant');
   assert.strictEqual(
     L.hitEnemy(warded2, { ability: 'attack' }).dealt,
@@ -135,12 +155,17 @@ test('vampiric heilt den Angreifer am zugefuegten Schaden', () => {
 
 test('berserker verdoppelt den Schaden unter 30% eigener HP', () => {
   // Kontrolle: gleicher Gegner, gleicher Rohschaden, aber ohne Affix.
+  // FLATTERN (#110): der Kontrollgegner wuerfelte in ~2 % der Spawns selbst
+  // 'berserker' — dann waren beide Messungen 12 und der Test meldete
+  // "berserker richtete nicht mehr Schaden an: ohne=12, mit=12".
   const control = L.spawnEnemy(3, 150, 0);
+  istGewoehnlich(control, 'Kontrollgegner');
   H.run(`(function () { var e = window.__lab.refs[${control}]; e.maxHp = 100; e.hp = 20; })()`);
   L.healPlayer();
   const plainLoss = L.hitPlayerFrom(control, 6).playerLost;
 
   const raging = L.spawnEnemy(3, -150, 0);
+  istGewoehnlich(raging, 'Testgegner');
   L.applyAffix(raging, 'berserker');
   H.run(`(function () { var e = window.__lab.refs[${raging}]; e.maxHp = 100; e.hp = 20; })()`);
   L.healPlayer();

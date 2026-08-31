@@ -155,6 +155,10 @@ test('play: eine geschlossene Tuer hat Vorrang vor der Treppe dahinter', async (
   // Gegner entfernen und ein paar Frames takten: Treppen werden erst im
   // naechsten Update entsperrt. Ohne diese Pause ist die Treppe im
   // Kontroll-Zweig noch `locked` und der Test schlug sporadisch fehl.
+  //
+  // Der Fall flatterte danach WEITER (#110). Die dritte und letzte Ursache
+  // steckte in der Tuerliste des Raums — siehe die Begruendung unten bei
+  // `sc._doors`.
   H.run(`(function () {
     if (enemies && enemies.children) {
       enemies.getChildren().slice().forEach(function (e) { if (e && e.destroy) e.destroy(); });
@@ -177,25 +181,60 @@ test('play: eine geschlossene Tuer hat Vorrang vor der Treppe dahinter', async (
     window.__MOBILE_INTERACT_ACTIVE__ = true;
     var vorher = String(sc.currentRoom.id);
 
-    // Geschlossene Tuer in Reichweite (100 px = DoorSystem.INTERACT_DIST).
-    sc._doors = sc._doors || [];
+    // FLATTER-URSACHE (#110), belegt: frueher haengte der Test seine Tuer nur
+    // an die ECHTE Tuerliste des Raums an (push/pop). Prozedurale Raeume
+    // tragen aber bis zu 21 geschlossene Tueren, und ihr Abstand zur Treppe
+    // ist Zufall — gemessen ueber vier Laeufe x sieben Raeume: 190, 365, 93
+    // und 210 px. Liegt eine ECHTE Tuer unter 100 px (= DoorSystem.INTERACT_DIST,
+    // hier 93 px), blockiert sie die Treppe auch im Kontroll-Zweig, und der
+    // Test meldete "Treppe wirkte auch ohne Tuer nicht". Die Tuerliste wird
+    // deshalb fuer die Messung KOMPLETT ersetzt, statt nur ergaenzt.
+    //
+    // Kein Zurueckschreiben noetig: der Kontroll-Zweig wechselt den Raum, und
+    // enterRoom leert die Liste ueber DoorSystem.clearDoors an Ort und Stelle
+    // und fuellt sie mit den Tueren des neuen Raums.
+    var echteTueren = Array.isArray(sc._doors) ? sc._doors : [];
+    var naechste = -1;
+    for (var i = 0; i < echteTueren.length; i++) {
+      var t = echteTueren[i];
+      if (!t || !t.active || !t.getData) continue;
+      if (t.getData('doorState') !== 'closed') continue;
+      var d = Math.hypot(t.x - player.x, t.y - player.y);
+      if (naechste < 0 || d < naechste) naechste = Math.round(d);
+    }
+
+    // Genau EINE geschlossene Tuer in Reichweite (100 px).
     var tuer = { active: true, x: s.x + 40, y: s.y,
       getData: function (k) { return k === 'doorState' ? 'closed' : null; } };
-    sc._doors.push(tuer);
+    sc._doors = [tuer];
     onStairOverlap(player, s);
     var mitTuer = String(sc.currentRoom.id);
 
-    // Ohne Tuer muss dieselbe Treppe wirken — sonst prueft der Test nichts.
-    sc._doors.pop();
+    // Ohne JEDE Tuer muss dieselbe Treppe wirken — sonst prueft der Test nichts.
+    sc._doors = [];
     onStairOverlap(player, s);
     var ohneTuer = String(sc.currentRoom.id);
 
-    return { vorher: vorher, mitTuer: mitTuer, ohneTuer: ohneTuer };
+    return { vorher: vorher, mitTuer: mitTuer, ohneTuer: ohneTuer,
+      raumIndex: (typeof currentRoomId === 'number') ? currentRoomId : null,
+      gesamtRaeume: (typeof dungeonRun !== 'undefined' && dungeonRun) ? dungeonRun.totalRooms : null,
+      echteTuerenZu: echteTueren.length, naechsteTuerDist: naechste };
   })()`);
 
   assert.ok(!res.fehler, res.fehler);
+  const lage = ` [Raum ${res.vorher} -> ${res.raumIndex} von ${res.gesamtRaeume}, `
+    + `${res.echteTuerenZu} echte Tueren im Raum, naechste geschlossene ${res.naechsteTuerDist} px]`;
+
+  // Vorbedingung: hinter dem aktuellen Raum MUSS noch einer liegen. Im letzten
+  // Raum fuehrt die Treppe in den Hub statt in den naechsten Raum, dann kann
+  // der Kontroll-Zweig die Raum-Nummer gar nicht aendern. Bei Tiefe 1 sind es
+  // sieben Raeume und die Vortests stehen bei ~2 — faellt das je auseinander,
+  // soll hier eine klare Meldung stehen statt eines Raetsels.
+  assert.ok(Number(res.vorher) + 1 < res.gesamtRaeume,
+    'Aufbau untauglich: die Treppe fuehrt aus dem letzten Raum in den Hub' + lage);
+
   assert.strictEqual(res.mitTuer, res.vorher,
-    'Treppe loeste trotz geschlossener Tuer in Reichweite aus (' + res.vorher + ' -> ' + res.mitTuer + ')');
+    'Treppe loeste trotz geschlossener Tuer in Reichweite aus (' + res.vorher + ' -> ' + res.mitTuer + ')' + lage);
   assert.notStrictEqual(res.ohneTuer, res.vorher,
-    'Treppe wirkte auch ohne Tuer nicht — der Test prueft nichts');
+    'Treppe wirkte auch ohne Tuer nicht — der Test prueft nichts' + lage);
 });
