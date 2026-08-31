@@ -392,3 +392,96 @@ test('Wirbelklingen: der ECHTE Wurf nutzt die Zielhilfe', () => {
     'Klinge fliegt auf ' + res.grad.toFixed(1) + ' statt ' + auf.grad.toFixed(1)
     + ' Grad — castTwistingBlades ruft die Zielhilfe nicht auf');
 });
+
+// ---------------------------------------------------------------------------
+// Bogen: Zielhilfe (#119)
+// ---------------------------------------------------------------------------
+// Aufbau wie oben ueber `stelleAuf`: Gegner fest, Spieler im gewuenschten
+// Winkel und Abstand davor, Blick exakt waagerecht.
+
+/** Feuert einen Pfeil und meldet dessen Flugrichtung in Grad. */
+function schiesse(opts) {
+  return H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    if (playerProjectiles && playerProjectiles.children) {
+      playerProjectiles.getChildren().slice().forEach(function (p) { if (p && p.destroy) p.destroy(); });
+    }
+    _fireBowArrow(sc, ${JSON.stringify(opts || {})});
+    var pfeil = playerProjectiles.getChildren().filter(function (p) {
+      return p && p.active && p.getData && p.getData('isBowArrow');
+    })[0];
+    if (!pfeil || !pfeil.body) return { fehler: 'kein Pfeil erzeugt' };
+    return { grad: Math.atan2(pfeil.body.velocity.y, pfeil.body.velocity.x) * 180 / Math.PI };
+  })()`);
+}
+
+test('Bogen: der ECHTE Schuss dreht auf einen Gegner im Kegel', () => {
+  const auf = stelleAuf(200, 60);          // ~17 Grad, gut innerhalb der 30
+  assert.ok(auf, 'Aufbau fehlgeschlagen');
+  assert.ok(Math.abs(auf.grad) < 30, 'Aufbau liegt ausserhalb des Kegels: ' + auf.grad);
+
+  const res = schiesse();
+  assert.ok(!res.fehler, res.fehler);
+  assert.ok(Math.abs(res.grad - auf.grad) < 1.5,
+    'Pfeil fliegt auf ' + res.grad.toFixed(1) + ' statt ' + auf.grad.toFixed(1)
+    + ' Grad — _fireBowArrow ruft die Zielhilfe nicht auf');
+});
+
+test('Bogen: ausserhalb des Kegels bleibt die Schussrichtung unangetastet', () => {
+  // Gegenprobe zum Fall darueber: eine Zielhilfe, die IMMER dreht, waere dort
+  // nicht von einer richtigen zu unterscheiden.
+  const auf = stelleAuf(100, 400);         // ~76 Grad — deutlich ausserhalb
+  assert.ok(auf, 'Aufbau fehlgeschlagen');
+  assert.ok(Math.abs(auf.grad) > 30, 'Aufbau liegt im Kegel: ' + auf.grad);
+
+  const res = schiesse();
+  assert.ok(!res.fehler, res.fehler);
+  assert.ok(Math.abs(res.grad) < 0.6,
+    'Richtung wurde trotz ' + auf.grad.toFixed(0) + ' Grad auf ' + res.grad.toFixed(1)
+    + ' Grad gedreht — die Zielhilfe zieht den Pfeil um Ecken');
+});
+
+test('Bogen: der Zwillings-Versatz ueberlebt die Zielhilfe', () => {
+  // Reihenfolge-Falle: liefe die Zielhilfe NACH dem Versatz, zoege sie den
+  // zweiten Pfeil wieder auf denselben Gegner — der Faecher waere weg.
+  const auf = stelleAuf(200, 60);
+  assert.ok(auf, 'Aufbau fehlgeschlagen');
+
+  const VERSATZ = 0.18;                    // wie in attack() fuer den 2. Pfeil
+  const erster = schiesse();
+  const zweiter = schiesse({ angleOffset: VERSATZ });
+  assert.ok(!erster.fehler && !zweiter.fehler, erster.fehler || zweiter.fehler);
+
+  const soll = auf.grad + (VERSATZ * 180 / Math.PI);
+  assert.ok(Math.abs(zweiter.grad - soll) < 1.5,
+    'zweiter Pfeil fliegt auf ' + zweiter.grad.toFixed(1) + ' statt ' + soll.toFixed(1)
+    + ' Grad (erster: ' + erster.grad.toFixed(1) + ') — der Versatz wurde von der '
+    + 'Zielhilfe wieder eingesammelt');
+});
+
+test('Bogen: die Zielhilfe reicht genau so weit wie der Pfeil fliegt', () => {
+  // Bewusst NICHT die 420 px der Wirbelklingen: die stammen aus einer
+  // Nahkampf-Faehigkeit. Der Pfeil kommt bei Grundreichweite nur ~372 px weit
+  // und mit Reichweiten-Boni deutlich weiter. Gemessen wird an einem Gegner
+  // auf 400 px — der laege bei fixen 420 px IMMER im Kegel, bei einer an die
+  // Flugweite gebundenen Zielhilfe dagegen erst nach einem Reichweiten-Bonus.
+  const auf = stelleAuf(383, 115);         // ~16.7 Grad, ~400 px entfernt
+  assert.ok(auf, 'Aufbau fehlgeschlagen');
+  assert.ok(Math.abs(auf.grad) < 30, 'Aufbau liegt ausserhalb des Kegels: ' + auf.grad);
+
+  const messen = (range) => {
+    H.run('attackRange = ' + range + ';');
+    return schiesse();
+  };
+  const kurz = messen(100);                // Flugweite ~372 px < 400
+  const weit = messen(140);                // Flugweite ~471 px > 400
+  H.run('attackRange = 100;');
+
+  assert.ok(!kurz.fehler && !weit.fehler, kurz.fehler || weit.fehler);
+  assert.ok(Math.abs(kurz.grad) < 0.6,
+    'auf Grundreichweite wurde auf einen Gegner gedreht, den der Pfeil nicht '
+    + 'erreicht (' + kurz.grad.toFixed(1) + ' Grad)');
+  assert.ok(Math.abs(weit.grad - auf.grad) < 1.5,
+    'mit Reichweiten-Bonus wird der erreichbare Gegner nicht anvisiert ('
+    + weit.grad.toFixed(1) + ' statt ' + auf.grad.toFixed(1) + ' Grad)');
+});
