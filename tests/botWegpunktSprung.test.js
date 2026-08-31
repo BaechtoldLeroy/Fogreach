@@ -81,16 +81,68 @@ test('Zielwechsel: der Verfolgungsstand wird je Ziel gemerkt, nicht verworfen', 
     'verfolgtRunden wird beim Zielwechsel weiterhin bedingungslos genullt');
 });
 
-test('Zielwechsel: jede Freigabe der Aufgeben-Liste leert auch die Staende', () => {
-  // Sonst wuerde ein frisch freigegebenes Ziel sofort wieder aufgegeben — sein
-  // alter Zaehlerstand steht ja noch —, und der Bot haette gar kein Ziel mehr.
+test('Freigabe: Staende werden halbiert, nicht geleert', () => {
+  // Die Aufgeben-Liste wird freigegeben, sobald dem Bot die Ziele ausgehen —
+  // sonst streicht er sich Gegner UND Treppen weg und steht endgueltig still.
+  // Diese Freigabe loeschte auch die Verfolgungsstaende, und damit lief der
+  // Ausstieg in einen Kreis:
+  //     bremsen -> sperren -> alles gesperrt -> freigeben -> Uhr auf 0
+  // Gemessen in Kampagne 2: hoechster Zaehler 28 bei Schwelle 50, fuenf
+  // Ruecksetzungen in 160 Runden, alle von der Stelle "kein Ziel mehr".
+  //
+  // Halbieren durchbricht den Kreis, ohne ihn zu kappen.
   const zeilen = CODE.split('\n').map((z) => z.trim());
   const stellen = [];
   zeilen.forEach((z, n) => { if (z === 'aufgegeben.clear();') stellen.push(n); });
   assert.ok(stellen.length >= 3,
     'erwartet: mindestens 3 Freigabestellen, gefunden: ' + stellen.length);
+
+  let geleert = 0; let halbiert = 0;
   stellen.forEach((n) => {
-    assert.strictEqual(zeilen[n + 1], 'G.zielStand.clear();',
-      'Zeile ' + (n + 1) + ': aufgegeben.clear() ohne zielStand.clear() daneben');
+    const folge = zeilen[n + 1] || '';
+    if (folge === 'G.zielStand.clear();') geleert++;
+    else if (folge.startsWith('staendeHalbieren(')) halbiert++;
+    else assert.fail('Zeile ' + (n + 1) + ': aufgegeben.clear() ohne Standbehandlung — ' + folge);
   });
+
+  // Nur der Raumwechsel darf noch vollstaendig leeren: dort gibt es die alten
+  // Ziele wirklich nicht mehr. Alles andere haelt den Ausstieg sonst offen.
+  assert.strictEqual(geleert, 1,
+    'genau eine Freigabe (der Raumwechsel) darf leeren, gefunden: ' + geleert);
+  assert.ok(halbiert >= 2,
+    'die uebrigen Freigaben halbieren nicht, gefunden: ' + halbiert);
+
+  // Und die Rechnung SELBST pruefen, nicht nur den Aufruf. Ohne das ging
+  // eine Mutation durch, die staendeHalbieren still auf Nullung umstellte —
+  // die Aufrufstelle sah unveraendert aus.
+  const iFn = CODE.indexOf('const staendeHalbieren =');
+  assert.ok(iFn > 0, 'staendeHalbieren nicht gefunden');
+  const rumpf = CODE.slice(iFn, iFn + 400);
+  const inSchleife = rumpf.slice(rumpf.indexOf('forEach'));
+  const gesetzt = (inSchleife.match(/vr:[^,]*/) || ['?'])[0];
+  assert.ok(gesetzt.includes('Math.floor') && gesetzt.includes('/ 2'),
+    'staendeHalbieren halbiert nicht — der Stand wird gesetzt als: ' + gesetzt);
+});
+
+test('Halbierung: der Zaehler erreicht die Schwelle trotz Freigaben', () => {
+  // Die eigentliche Zusicherung: mit Halbierung konvergiert die Uhr gegen die
+  // Schwelle, mit Leerung nie. Ohne diese Rechnung waere der Test nur eine
+  // Formpruefung.
+  const SCHWELLE = 50;
+  const laufBis = (nachFreigabe) => {
+    let uhr = 0;
+    for (let runde = 0; runde < 2000; runde++) {
+      uhr++;
+      if (uhr >= SCHWELLE) return runde;      // Ausstieg feuert
+      // Alle 30 Runden gehen die Ziele aus -> Freigabe.
+      if (runde % 30 === 29) uhr = nachFreigabe(uhr);
+    }
+    return null;                               // nie ausgeloest
+  };
+
+  assert.strictEqual(laufBis(() => 0), null,
+    'Voraussetzung entfaellt: mit Leerung feuert der Ausstieg doch');
+  const mitHalbierung = laufBis((u) => Math.floor(u / 2));
+  assert.ok(mitHalbierung !== null,
+    'mit Halbierung feuert der Ausstieg immer noch nicht');
 });

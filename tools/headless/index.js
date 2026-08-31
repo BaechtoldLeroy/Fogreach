@@ -407,6 +407,29 @@ function decorate(h) {
         };
       }
       const G = h._botGedaechtnis;
+      /**
+       * Verfolgungsstaende HALBIEREN statt loeschen.
+       *
+       * Die Aufgeben-Liste wird freigegeben, sobald dem Bot die Ziele
+       * ausgehen — sonst streicht er sich Gegner UND Treppen weg und steht
+       * endgueltig. Diese Freigabe loeschte bisher auch die Staende, und
+       * damit lief der Ausstieg in einen Kreis: bremsen -> sperren -> alles
+       * gesperrt -> freigeben -> Uhr auf 0. Gemessen: der Zaehler kam auf 28
+       * bei einer Schwelle von 50, fuenf Ruecksetzungen in 160 Runden, alle
+       * von dieser Stelle.
+       *
+       * Halbieren durchbricht den Kreis, ohne ihn zu kappen: ein zweiter
+       * Anlauf bekommt Luft, aber die Schwelle bleibt erreichbar (0 -> 25 ->
+       * 37 -> 43 …). Der Schutz vor der Sackgasse gilt weiter, er wird nur
+       * endlich. Der Stand des AKTUELLEN Ziels wandert vorher in die Karte,
+       * sonst ginge sein Fortschritt bei jeder Freigabe verloren.
+       */
+      const staendeHalbieren = (aktKey, aktVr, aktPf) => {
+        if (aktKey) G.zielStand.set(aktKey, { vr: aktVr || 0, pf: aktPf || 0 });
+        G.zielStand.forEach((v, k) => {
+          G.zielStand.set(k, { vr: Math.floor((v.vr || 0) / 2), pf: 0 });
+        });
+      };
       const aufgegeben = G.aufgegeben;
       let roomId = G.roomId;
       let verfolgtKey = G.verfolgtKey; let verfolgtRunden = G.verfolgtRunden;
@@ -1185,9 +1208,9 @@ function decorate(h) {
             // Im gesperrten Raum gibt es nichts anderes zu tun, also Liste
             // leeren und erneut versuchen, statt untaetig zu warten.
             aufgegeben.clear();
-            G.zielStand.clear();
+            staendeHalbieren(verfolgtKey, verfolgtRunden, planFehler);
             stats.standGeleert = (stats.standGeleert || 0) + 1;
-            stats.standGeleertWo = 'gegnerFreigabe';
+            stats.standGeleertWo = 'gegnerFreigabe (halbiert)';
             stats.retries++;
             verfolgtKey = null; verfolgtRunden = 0;
             besteDistanz = Infinity; besterWegpunkt = 0;
@@ -1304,9 +1327,9 @@ function decorate(h) {
           G.zweig = aufgegeben.size > 0 ? 'kein Ziel -> Liste leeren + ausweichen' : 'kein Ziel -> STEHEN';
           if (aufgegeben.size > 0) {
             aufgegeben.clear();
-            G.zielStand.clear();
+            staendeHalbieren(verfolgtKey, verfolgtRunden, planFehler);
             stats.standGeleert = (stats.standGeleert || 0) + 1;
-            stats.standGeleertWo = 'zielLeer';
+            stats.standGeleertWo = 'zielLeer (halbiert)';
             stats.retries++;
             verfolgtKey = null; verfolgtRunden = 0; besteDistanz = Infinity;
             const dirs = [{ left: true }, { right: true }, { up: true }, { down: true },
