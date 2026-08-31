@@ -186,6 +186,16 @@ function _dropEnemyGold(scene, enemy) {
   _spawnGoldPile(scene, gx, gy, amount);
 }
 
+// Aufsammel-Sperre fuer Ausruestung: Waffen und Ruestungsteile lassen sich
+// erst nach einer kurzen Frist aufheben. Ohne sie verschwindet ein Fund, der
+// dem Spieler direkt vor die Fuesse faellt, im selben Bild im Inventar —
+// gesehen hat er ihn dann nie.
+//
+// Traenke, Material, Gold und Questgegenstaende sind bewusst AUSGENOMMEN:
+// die sammelt man im Vorbeilaufen ein, dort waere eine Sperre nur laestig.
+const AUFSAMMEL_SPERRE_MS = 1500;
+const AUFSAMMEL_GESPERRT = { weapon: 1, head: 1, body: 1, boots: 1 };
+
 function spawnLoot(x, y, maybeItem, sourceEnemy) {
   const scene = (this && this.physics && this.physics.world) ? this : (obstacles?.scene || window.currentScene);
   // WP03: enemies always roll a gold drop in addition to their item drop.
@@ -344,6 +354,13 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     const loot = lootGroup.create(x, y, item.iconKey || 'itMat');
     loot.setDisplaySize(32, 24);
     loot.setData('item', item);
+    // Zeitbasis gameNow, nicht scene.time.now: eine Pause soll die Frist
+    // nicht verbrauchen (dieselbe Basis wie die Faehigkeiten-Abklingzeiten).
+    if (item && AUFSAMMEL_GESPERRT[item.type]) {
+      const jetzt = (typeof window.gameNow === "function")
+        ? window.gameNow(scene || loot.scene) : Date.now();
+      loot.setData('aufsammelbarAb', jetzt + AUFSAMMEL_SPERRE_MS);
+    }
     loot.setDepth(80);
     trackLootSprite(scene || loot.scene, loot);
     _attachRarityFx(scene || loot.scene, loot, item);
@@ -458,6 +475,16 @@ function _cleanupRarityFx(loot) {
 }
 
 function collectLoot(playerSprite, loot) {
+  // Die Ueberlappung feuert JEDES Bild, solange der Spieler darauf steht —
+  // ein frueher Ausstieg genuegt also, es braucht keinen eigenen Zeitgeber.
+  if (loot && typeof loot.getData === "function") {
+    const frei = loot.getData('aufsammelbarAb');
+    if (typeof frei === "number") {
+      const jetzt = (typeof window.gameNow === "function")
+        ? window.gameNow(loot.scene || this) : Date.now();
+      if (jetzt < frei) return;
+    }
+  }
   _cleanupRarityFx(loot);
   if (window.soundManager) window.soundManager.playSFX('loot_pickup');
   // Particle effects: loot sparkle

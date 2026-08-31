@@ -800,7 +800,13 @@ const EQUIP_STEP = 72;
   // Slots etwas größer
   const slotScaleX = (cellW * 0.95) / SLOT_W;
   const slotScaleY = (cellH * 0.95) / SLOT_H;
-  const slotScale = Math.min(slotScaleX, slotScaleY, 0.65);
+  // Der feste Deckel war die Fessel, nicht die Zelle: gemessen ergab
+  // Math.min(0.95, 1.19, 0.65) immer die 0.65, das Fach blieb also 62x42 px
+  // in einer 96x80-Zelle und das Symbol darin 25x25 bei einer 48x48-Textur.
+  // Mit 0.88 misst das Fach 84x56 und laesst rundum noch Luft (11 px zur
+  // Nachbarspalte, 24 px zur naechsten Zeile). Hoeher geht nicht: slotScaleX
+  // deckelt bei 0.95, dann stossen die Faecher fast aneinander.
+  const slotScale = Math.min(slotScaleX, slotScaleY, 0.88);
 
   for (let r = 0; r < GRID_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
@@ -838,7 +844,13 @@ const EQUIP_STEP = 72;
       panel.add(highlight);
       bg.__hoverHighlight = highlight;
 
-      const icon = scene.add.image(x, y - 10, 'itMat').setOrigin(0.5).setVisible(false).setScale(slotScale * 0.8).setScrollFactor(0);
+      // Versatz und Beschriftung hingen an festen Pixelwerten (-10 / +20),
+      // die zum alten Deckel 0.65 passten. Beide jetzt an der Fachhoehe
+      // aufgehaengt, damit die Anordnung mit dem Fach mitwaechst statt zu
+      // verrutschen. Die Faktoren geben exakt die alten Werte, wenn man
+      // slotScale = 0.65 einsetzt.
+      const icon = scene.add.image(x, y - slotScale * SLOT_H * 0.2404, 'itMat')
+        .setOrigin(0.5).setVisible(false).setScale(slotScale * 0.8).setScrollFactor(0);
       panel.add(icon);
 
       const indicator = scene.add.image(
@@ -850,7 +862,7 @@ const EQUIP_STEP = 72;
       indicator.setDepth((panel.depth || 10000) + 5);
       panel.add(indicator);
 
-      const label = scene.add.text(x, y + 20, '', {
+      const label = scene.add.text(x, y + slotScale * SLOT_H * 0.4808, '', {
         fontSize: '15px', fill: '#fff', fontStyle: 'bold'
       }).setOrigin(0.5, 0).setScrollFactor(0).setVisible(false);
       panel.add(label);
