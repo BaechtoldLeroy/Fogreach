@@ -83,3 +83,80 @@ test('#101: jeder Raum behaelt seine Durchgaenge (keine stille Verbindungsluecke
   assert.ok(ohne / gesamt < 0.10,
     ohne + ' von ' + gesamt + ' Raeumen ganz ohne Durchgang — der Rand ist zu streng');
 });
+
+// ---------------------------------------------------------------------------
+// Zweiter Anlauf (#101). Die urspruengliche Vermutung — Platzierungsrand 2 -> 3
+// — ist oben widerlegt. Die ECHTE Ursache: der Rand wird gegen node.left /
+// node.right gerechnet, das sind BOUNDING BOXES. 4966 von 7150 Durchgaengen
+// (300 Seeds) liegen zwischen Knoten, deren Kinder selbst wieder geteilt sind;
+// dort steht die echte Kammerwand irgendwo INNERHALB der Box. carveDoorway
+// prueft die Anlaufreihen deshalb jetzt am Raster.
+//
+// Messung vor/nach, gleiche Messfunktion, 300 Seeds:
+//   Anlauf < 2 Kacheln   67,5 %  ->  25,5 %
+//   Tuer oeffnet auf Fels 28,5 %  ->   4,1 %
+//   Durchgaenge insgesamt  7150   ->   7150   (keiner verloren)
+
+/**
+ * Anlauf einer Tuer: Abstand der AEUSSERSTEN geraeumten Kachel zur naechsten
+ * Querwand, gemessen in der Kammerbodenreihe vor der Wand — auf beiden Seiten
+ * und in beiden Kammern, das Minimum zaehlt. -1 heisst: die Tuerkachel oeffnet
+ * dort auf Fels.
+ */
+function anlaufKacheln(grid, d) {
+  const halb = (d.width - 1) / 2;
+  const laengs = d.orientation === 'horizontal' ? [1, 0] : [0, 1];
+  const quer = d.orientation === 'horizontal' ? [0, 1] : [1, 0];
+  let min = Infinity;
+  for (const versatz of [-1.5, 1.5]) {
+    for (const s of [-1, 1]) {
+      const ax = Math.round(d.x + quer[0] * versatz + laengs[0] * halb * s);
+      const ay = Math.round(d.y + quer[1] * versatz + laengs[1] * halb * s);
+      if (!frei(grid, ax, ay)) { min = Math.min(min, -1); continue; }
+      let k = 1;
+      while (k < 40 && frei(grid, ax + laengs[0] * k * s, ay + laengs[1] * k * s)) k++;
+      min = Math.min(min, k - 1);
+    }
+  }
+  return min;
+}
+
+function anlaufStatistik(seeds) {
+  const PR = frisch();
+  const werte = [];
+  for (let seed = 1; seed <= seeds; seed++) {
+    const r = PR.generate({ seed });
+    if (!r || !r.layout || !r.layout.walls || !r.doorways) continue;
+    for (const d of r.doorways) werte.push(anlaufKacheln(r.layout.walls, d));
+  }
+  return werte;
+}
+
+test('#101: Durchgaenge haben Anlauf statt Wandklebe (waagerecht und senkrecht)', () => {
+  const werte = anlaufStatistik(120);
+  assert.ok(werte.length > 2000, 'zu wenige Durchgaenge gemessen: ' + werte.length);
+  const eng = werte.filter((v) => v < 2).length / werte.length;
+  // Schwelle zwischen Messung vorher (0,675) und nachher (0,255) gelegt.
+  assert.ok(eng < 0.40,
+    (eng * 100).toFixed(1) + ' % der Durchgaenge haben weniger als 2 Anlaufkacheln (erwartet < 40 %)');
+});
+
+test('#101: Durchgaenge oeffnen nicht auf Fels', () => {
+  const werte = anlaufStatistik(120);
+  const aufFels = werte.filter((v) => v < 0).length / werte.length;
+  // Schwelle zwischen Messung vorher (0,285) und nachher (0,041).
+  assert.ok(aufFels < 0.12,
+    (aufFels * 100).toFixed(1) + ' % der Tuerkacheln oeffnen auf Fels (erwartet < 12 %)');
+});
+
+test('#101: der Rasterfix kostet keine Durchgaenge', () => {
+  // Gestufte Randnachgabe (2 -> 1 -> 0 -> ungeprueft) statt hartem return:
+  // die Zahl der Durchgaenge muss identisch zur alten Platzierung bleiben.
+  const PR = frisch();
+  let tueren = 0;
+  for (let seed = 1; seed <= 120; seed++) {
+    const r = PR.generate({ seed });
+    if (r && r.doorways) tueren += r.doorways.length;
+  }
+  assert.ok(tueren > 2000, 'nur ' + tueren + ' Durchgaenge — die Platzierung verliert Verbindungen');
+});

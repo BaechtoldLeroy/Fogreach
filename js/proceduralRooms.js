@@ -84,6 +84,43 @@
     }
   }
 
+  // #101: Der Platzierungsrand galt gegen node.left/node.right — das sind
+  // BOUNDING BOXES, keine Kammern. Gemessen ueber 300 Seeds sind 4966 von 7150
+  // Durchgaengen zwischen Knoten gelegt, deren Kinder selbst wieder geteilt
+  // sind; dort liegen die echten Seitenwaende irgendwo INNERHALB der Box, der
+  // Rand sagt also nichts. Deshalb wurde ein groesserer Rand (2 -> 3) auch
+  // gemessen wirkungslos: Anlauf < 2 Kacheln sank nur von 67,5 % auf 62,9 %,
+  // dafuer fielen Durchgaenge weg. Geprueft wird jetzt am RASTER, also an den
+  // tatsaechlich begehbaren Anlaufreihen beiderseits der Wand.
+  function begehbar(grid, x, y) {
+    var z = grid[y];
+    return !!z && z[x] !== undefined && z[x] !== '#';
+  }
+
+  // Waehlt eine Position aus [von..bis], bei der die geraeumte Spanne
+  // [-1 .. doorWidth] plus `luft` Kacheln zu beiden Seiten in beiden
+  // Anlaufreihen frei ist. Der Rand wird gestuft nachgegeben (2 -> 1 -> 0 ->
+  // ohne Pruefung), damit nie ein Durchgang ERSATZLOS entfaellt — das war der
+  // stille Verbindungsverlust aus dem Issue.
+  function waehleDurchgang(rng, von, bis, doorWidth, frei) {
+    var stufen = [2, 1, 0];
+    for (var s = 0; s < stufen.length; s++) {
+      var luft = stufen[s];
+      var treffer = [];
+      for (var p = von; p <= bis; p++) {
+        var ok = true;
+        for (var k = -1 - luft; k <= doorWidth + luft && ok; k++) {
+          if (!frei(p + k)) ok = false;
+        }
+        if (ok) treffer.push(p);
+      }
+      // Genau EIN rng()-Zug pro Durchgang, unabhaengig von der Stufe — sonst
+      // verschiebt sich der Zufallsstrom und das ganze Layout mit ihm.
+      if (treffer.length) return treffer[Math.floor(rng() * treffer.length)];
+    }
+    return von + Math.floor(rng() * (bis - von + 1));
+  }
+
   // Carve a doorway in the shared wall between two BSP children
   // width: 3-4 tiles so the player collider reliably fits through
   function carveDoorway(grid, node, rng, doorwayTiles, doorways) {
@@ -98,7 +135,11 @@
       var overlapX1 = Math.max(node.left.x, node.right.x) + 2;
       var overlapX2 = Math.min(node.left.x + node.left.w, node.right.x + node.right.w) - 2 - doorWidth;
       if (overlapX2 < overlapX1) return;
-      var dx = overlapX1 + Math.floor(rng() * (overlapX2 - overlapX1 + 1));
+      // Anlaufreihen: die Kammerboeden direkt vor der Wand (splitPos-2 oben,
+      // splitPos+1 unten). Nur wo BEIDE frei sind, kann man gerade durchlaufen.
+      var dx = waehleDurchgang(rng, overlapX1, overlapX2, doorWidth, function (x) {
+        return begehbar(grid, x, node.splitPos - 2) && begehbar(grid, x, node.splitPos + 1);
+      });
       // Carve 2 rows at the split wall + clear 1 tile on each side for corner clearance
       for (var i = -1; i < doorWidth + 1; i++) {
         if (grid[node.splitPos - 1] && dx + i >= 0 && dx + i < grid[node.splitPos - 1].length) {
@@ -126,7 +167,10 @@
       var overlapY1 = Math.max(node.left.y, node.right.y) + 2;
       var overlapY2 = Math.min(node.left.y + node.left.h, node.right.y + node.right.h) - 2 - doorWidth;
       if (overlapY2 < overlapY1) return;
-      var dy = overlapY1 + Math.floor(rng() * (overlapY2 - overlapY1 + 1));
+      // Anlaufspalten: splitPos-2 links, splitPos+1 rechts — s. waagerechte Achse.
+      var dy = waehleDurchgang(rng, overlapY1, overlapY2, doorWidth, function (y) {
+        return begehbar(grid, node.splitPos - 2, y) && begehbar(grid, node.splitPos + 1, y);
+      });
       // Carve 2 columns at the split wall + clear 1 tile on each side for corner clearance
       for (var j = -1; j < doorWidth + 1; j++) {
         if (grid[dy + j] && node.splitPos - 1 >= 0 && node.splitPos - 1 < grid[dy + j].length) {
