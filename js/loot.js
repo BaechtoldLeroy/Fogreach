@@ -193,7 +193,7 @@ function _dropEnemyGold(scene, enemy) {
 //
 // Traenke, Material, Gold und Questgegenstaende sind bewusst AUSGENOMMEN:
 // die sammelt man im Vorbeilaufen ein, dort waere eine Sperre nur laestig.
-const AUFSAMMEL_SPERRE_MS = 1500;
+const AUFSAMMEL_SPERRE_MS = 900;
 const AUFSAMMEL_GESPERRT = { weapon: 1, head: 1, body: 1, boots: 1 };
 
 function spawnLoot(x, y, maybeItem, sourceEnemy) {

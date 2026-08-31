@@ -849,8 +849,12 @@ const EQUIP_STEP = 72;
       // aufgehaengt, damit die Anordnung mit dem Fach mitwaechst statt zu
       // verrutschen. Die Faktoren geben exakt die alten Werte, wenn man
       // slotScale = 0.65 einsetzt.
-      const icon = scene.add.image(x, y - slotScale * SLOT_H * 0.2404, 'itMat')
-        .setOrigin(0.5).setVisible(false).setScale(slotScale * 0.8).setScrollFactor(0);
+      // Zweiter Schritt auf Rueckmeldung "noch etwas groesser": 34 -> 44 px.
+      // Obergrenze ist die Textur selbst — sie wird mit 48 px erzeugt, darueber
+      // wuerde hochskaliert und unscharf. 44 px lassen oben 2.6 px Rand im Fach
+      // und unten 8 px bis zur Stueckzahl.
+      const icon = scene.add.image(x, y - slotScale * SLOT_H * 0.06, 'itMat')
+        .setOrigin(0.5).setVisible(false).setScale(slotScale * 1.05).setScrollFactor(0);
       panel.add(icon);
 
       const indicator = scene.add.image(

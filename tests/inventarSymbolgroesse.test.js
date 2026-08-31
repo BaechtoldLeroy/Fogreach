@@ -43,11 +43,13 @@ test('Inventar: das Symbol fuellt das Fach spuerbar aus', () => {
   const slotScale = Math.min((cellW * 0.95) / SLOT_W, (cellH * 0.95) / SLOT_H, deckel);
   const symbolPx = 48 * slotScale * symbolFaktor;
 
-  // Vor der Korrektur: 25 px. Die Schwelle liegt bewusst bei 30 — hoch genug,
-  // um eine Rueckkehr zum alten Deckel zu fangen, niedrig genug, um bei einer
-  // Umgestaltung des Panels nicht grundlos zu reissen.
-  assert.ok(symbolPx >= 30,
-    'das Symbol ist nur ' + symbolPx.toFixed(0) + ' px gross — vor der Korrektur waren es 25');
+  // Verlauf: 25 px (urspruenglich) -> 34 (groesserer Deckel) -> 44 (groesserer
+  // Symbolfaktor). Die Schwelle wandert mit: bei 30 haette sie den Rueckfall
+  // von 44 auf 34 nicht gefangen — in der Mutationspruefung aufgefallen.
+  // 40 laesst der Textur (48 px) noch Spielraum nach unten, ohne den
+  // erreichten Stand preiszugeben.
+  assert.ok(symbolPx >= 40,
+    'das Symbol ist nur ' + symbolPx.toFixed(0) + ' px gross — erwartet mindestens 40 (Verlauf 25 -> 34 -> 44)');
 
   // Und die Faecher duerfen sich dabei nicht beruehren.
   assert.ok(SLOT_W * slotScale < cellW - 6,

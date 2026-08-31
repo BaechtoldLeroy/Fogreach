@@ -46,7 +46,7 @@ function macheBeute(item, frei) {
 test('Aufsammel-Sperre: eine Waffe bleibt vor Ablauf der Frist liegen', () => {
   W.inventory.fill(null);
   uhr = 1000;
-  const beute = macheBeute({ type: 'weapon', name: 'Testklinge' }, 1000 + 1500);
+  const beute = macheBeute({ type: 'weapon', name: 'Testklinge' }, 1000 + 900);
   W.collectLoot.call({}, W.player, beute);
   assert.ok(!W.inventory.some((s) => s && s.name === 'Testklinge'),
     'die Waffe wurde trotz laufender Sperre eingesammelt');
@@ -56,9 +56,9 @@ test('Aufsammel-Sperre: eine Waffe bleibt vor Ablauf der Frist liegen', () => {
 test('Aufsammel-Sperre: nach Ablauf wird dieselbe Waffe aufgehoben', () => {
   W.inventory.fill(null);
   uhr = 1000;
-  const beute = macheBeute({ type: 'weapon', name: 'Testklinge' }, 1000 + 1500);
+  const beute = macheBeute({ type: 'weapon', name: 'Testklinge' }, 1000 + 900);
   W.collectLoot.call({}, W.player, beute);          // zu frueh
-  uhr = 1000 + 1500;                                 // Frist genau abgelaufen
+  uhr = 1000 + 900;                                 // Frist genau abgelaufen
   W.collectLoot.call({}, W.player, beute);
   assert.ok(W.inventory.some((s) => s && s.name === 'Testklinge'),
     'die Waffe wurde nach Ablauf der Sperre nicht aufgehoben');
@@ -79,7 +79,7 @@ test('Aufsammel-Sperre: die Frist betraegt 1500 ms und gilt fuer alle vier Slots
     require('path').join(__dirname, '..', 'js', 'loot.js'), 'utf8');
   const m = quelle.match(/AUFSAMMEL_SPERRE_MS\s*=\s*(\d+)/);
   assert.ok(m, 'AUFSAMMEL_SPERRE_MS nicht gefunden');
-  assert.strictEqual(Number(m[1]), 1500, 'die Frist ist nicht mehr 1500 ms');
+  assert.strictEqual(Number(m[1]), 900, 'die Frist ist nicht mehr 900 ms');
 
   const g = quelle.match(/AUFSAMMEL_GESPERRT\s*=\s*\{([^}]*)\}/);
   assert.ok(g, 'AUFSAMMEL_GESPERRT nicht gefunden');
@@ -133,7 +133,7 @@ test('Aufsammel-Sperre: spawnLoot stempelt die Waffe beim Ablegen', () => {
   W.spawnLoot(10, 10, { type: 'weapon', name: 'Stempelklinge', iconKey: 'itSword', tier: 0 });
   const waffe = abgelegt.find((s) => s.getData('item') && s.getData('item').name === 'Stempelklinge');
   assert.ok(waffe, 'spawnLoot hat die Waffe gar nicht abgelegt');
-  assert.strictEqual(waffe.getData('aufsammelbarAb'), 5000 + 1500,
+  assert.strictEqual(waffe.getData('aufsammelbarAb'), 5000 + 900,
     'spawnLoot setzt keinen (oder einen falschen) Freigabe-Zeitpunkt');
 
   // Gegenprobe: ein Trank darf KEINEN Stempel bekommen.
