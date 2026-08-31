@@ -3119,12 +3119,40 @@ function _hasBowEquipped() {
   return !!(eq && eq.weapon && eq.weapon.subtype === 'bow');
 }
 
+// Zielhilfe fuer den Bogen (#119). Begruendung wie bei den Wirbelklingen: die
+// Schussrichtung kommt aus der Bewegungsrichtung (_getAimVector2) und trifft
+// auf Tastatur selten genau. Beim Bogen wiegt das schwerer — ein Fehlschuss
+// fliegt davon, waehrend ein Nahkampfschwung sofort wiederholbar ist. Der
+// Kegel bleibt bei denselben 30 Grad, damit ein bewusst danebengesetzter
+// Schuss seine Richtung behaelt.
+const BOW_AIM_DEG = 30;
+const BOW_ARROW_SPEED = 620;
+const BOW_ARROW_LIFESPAN_BASE = 600;
+
+// Lebensdauer eines Pfeils in ms. Waechst mit der Reichweite des Spielers,
+// damit Reichweiten-Boni (Aufwertungen/Affixe) auch die Flugweite verlaengern.
+function _bowArrowLifespan() {
+  const r = (typeof attackRange === 'number') ? attackRange : DEFAULT_ATTACK_RANGE_BASE;
+  return BOW_ARROW_LIFESPAN_BASE + Math.max(0, r - DEFAULT_ATTACK_RANGE_BASE) * 4;
+}
+
+// Reichweite der Bogen-Zielhilfe = genau die Flugweite des Pfeils. Eine feste
+// Zahl (etwa die 420 px der Wirbelklingen, die aus einer Nahkampf-Faehigkeit
+// stammen) waere in beide Richtungen falsch: sie drehte auf Gegner, die der
+// Pfeil gar nicht erreicht, und liesse erreichbare aus, sobald Reichweiten-
+// Boni die Flugweite darueber hinaus verlaengern.
+function _bowAimRange() {
+  return BOW_ARROW_SPEED * (_bowArrowLifespan() / 1000);
+}
+
 function _fireBowArrow(scene, opts) {
   if (!scene || !player || !playerProjectiles) return;
   opts = opts || {};
   ensurePlayerArrowTexture(scene);
 
-  const dir = _getAimVector2(scene);
+  // Zielhilfe VOR dem Zwillings-Versatz: andersherum zoege sie den gewollten
+  // Faecher wieder auf denselben Gegner zusammen.
+  const dir = _aimAssistVector(_getAimVector2(scene), _bowAimRange(), BOW_AIM_DEG);
   // Feature 059 WP03: optional angle offset for the Zwillingsklinge 2nd arrow.
   if (opts.angleOffset) {
     const _a = dir.angle() + opts.angleOffset;
@@ -3149,14 +3177,9 @@ function _fireBowArrow(scene, opts) {
 
   playerProjectiles.add(projectile);
 
-  const ARROW_SPEED = 620;
-  projectile.body.setVelocity(dir.x * ARROW_SPEED, dir.y * ARROW_SPEED);
+  projectile.body.setVelocity(dir.x * BOW_ARROW_SPEED, dir.y * BOW_ARROW_SPEED);
 
-  // Lifespan scales with the player's effective range (so range upgrades /
-  // affixes also extend bow shots). Reference: ~750ms at attackRange ~120.
-  const baseLifespan = 600;
-  const rangeBoost = Math.max(0, (attackRange - 100)) * 4;
-  const lifespan = baseLifespan + rangeBoost;
+  const lifespan = _bowArrowLifespan();
   scene.time.delayedCall(lifespan, () => {
     if (projectile && projectile.active) projectile.destroy();
   });
