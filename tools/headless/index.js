@@ -404,6 +404,9 @@ function decorate(h) {
           // Verfolgungsstand JE ZIEL. Ein einzelner Zaehler liess sich durch
           // blosses Hin- und Herwechseln zwischen zwei Zielen auf 0 halten.
           zielStand: new Map(),
+          // Wirkung des Blockierer-Zweigs: HP-Summe zu Beginn eines Schubs
+          // und wie viele Schuebe in Folge nichts bewirkt haben.
+          schlagHp: null, schlagOhneWirkung: 0,
         };
       }
       const G = h._botGedaechtnis;
@@ -458,6 +461,8 @@ function decorate(h) {
       let wandRunden = G.wandRunden || 0;
       let schlagRunden = G.schlagRunden || 0;
       let schlagPause = G.schlagPause || 0;
+      let schlagHp = (typeof G.schlagHp === 'number') ? G.schlagHp : null;
+      let schlagOhneWirkung = G.schlagOhneWirkung || 0;
       let wpBest = (typeof G.wpBest === 'number') ? G.wpBest : null;
       let wpZaeh = G.wpZaeh || 0;
       // Wirkt der Angriff? HP des aktuellen Ziels und wie lange sie schon
@@ -892,11 +897,54 @@ function decorate(h) {
             // er in genau diese Richtung lenkte und ins Leere schlug. Das
             // continue verhinderte dabei JEDE andere Reaktion — Ausweichen,
             // Neuplanen und die Stillstandsrettung kamen nie mehr dran.
-            // Nach 30 Runden ohne Erfolg also 90 Runden Ruhe, damit die
-            // normale Logik den Fall uebernehmen kann.
+            // Nach 30 Runden ohne Erfolg folgt eine Ruhephase, damit die
+            // normale Logik den Fall uebernehmen kann — wie lang, entscheidet
+            // die Wirkungspruefung darunter.
+            // WIRKUNG messen, nicht nur Zeit zaehlen.
+            //
+            // Der Deckel allein war zahnlos: 30 Runden schlagen, 90 Runden
+            // Pause, von vorn — nach der Pause ist die Lage unveraendert,
+            // also greift die Bedingung sofort wieder. Gemessen am
+            // Kettenmeister: dreimal dieselbe Mauer (32x160, Spieler 37px,
+            // Boss 50px dahinter), 6105 bis 6223 Runden je Versuch, Boss
+            // konstant 225/225 — kein einziger Trefferpunkt.
+            //
+            // Der Boss ist dabei nicht unerreichbar, der Bot steht nur
+            // falsch. Die Wegsuche KENNT die Mauer und wuerde herumfuehren —
+            // sie kam nur nie dran, weil dieser Zweig jede Runde mit
+            // `continue` abbricht. Deshalb: erst herumgehen lassen, aufgeben
+            // nur als Rueckfallebene.
+            const hpSumme = nahDran.reduce(
+              (s, e2) => s + ((typeof e2.hp === 'number') ? e2.hp : 0), 0);
+            if (schlagRunden === 0) schlagHp = hpSumme;
             if (++schlagRunden > 30) {
-              schlagRunden = 0; schlagPause = 90;
+              schlagRunden = 0;
               stats.schlagAufgegeben = (stats.schlagAufgegeben || 0) + 1;
+              // Ein Schub ohne einen einzigen Trefferpunkt war wirkungslos.
+              // Einer allein kann an einer Abklingzeit liegen, zwei mal 30
+              // Runden nicht.
+              if (schlagHp !== null && hpSumme >= schlagHp) schlagOhneWirkung++;
+              else schlagOhneWirkung = 0;
+              schlagHp = null;
+              if (schlagOhneWirkung >= 2) {
+                // Stufe 1: Zweig lange sperren und den Weg verwerfen, damit
+                // die Wegsuche einen echten Versuch bekommt, herumzufuehren.
+                schlagPause = 300;
+                notweg = null; notwegIdx = 0;
+                stats.schlagUmgehung = (stats.schlagUmgehung || 0) + 1;
+                // Stufe 2: hilft auch das nicht, gilt das Ziel als
+                // unerreichbar. In einem Bossraum sind die Treppen bis zum
+                // Bosstod verriegelt — der Bot wartet dann aufs Rundenbudget
+                // statt Tausende Runden in eine Mauer zu schlagen.
+                if (schlagOhneWirkung >= 4) {
+                  nahDran.forEach((e2) => aufgegeben.add(zielKey(e2)));
+                  stats.abandoned += nahDran.length;
+                  schlagOhneWirkung = 0;
+                  verfolgtKey = null; verfolgtRunden = 0;
+                }
+              } else {
+                schlagPause = 90;
+              }
             } else {
               stats.chestsBroken += freimachen(nahDran);
               stats.blockiertGegner = (stats.blockiertGegner || 0) + 1;
@@ -1820,7 +1868,7 @@ function decorate(h) {
       // Weg fuer den naechsten Aufruf sichern (siehe oben).
       G.notweg = notweg; G.notwegIdx = notwegIdx;
       G.wpBest = wpBest; G.wpZaeh = wpZaeh;
-      G.schlagRunden = schlagRunden; G.schlagPause = schlagPause;
+      G.schlagRunden = schlagRunden; G.schlagPause = schlagPause; G.schlagHp = schlagHp; G.schlagOhneWirkung = schlagOhneWirkung;
       G.wandRunden = wandRunden;
       G.verfolgtKey = verfolgtKey; G.verfolgtRunden = verfolgtRunden;
       G.besteDistanz = besteDistanz; G.treppeSeit = treppeSeit;

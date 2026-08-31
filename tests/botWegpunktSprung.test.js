@@ -146,3 +146,59 @@ test('Halbierung: der Zaehler erreicht die Schwelle trotz Freigaben', () => {
   assert.ok(mitHalbierung !== null,
     'mit Halbierung feuert der Ausstieg immer noch nicht');
 });
+
+test('Blockierer-Zweig: wirkungslose Schuebe loesen ein Umgehen aus', () => {
+  // Der Deckel im Blockierer-Zweig war zahnlos: 30 Runden schlagen, 90 Runden
+  // Pause, von vorn. Nach der Pause ist die Lage unveraendert, also greift die
+  // Bedingung sofort wieder. Gemessen am Kettenmeister: dreimal dieselbe Mauer,
+  // 6105 bis 6223 Runden je Versuch, Boss konstant 225/225.
+  const i = CODE.indexOf('stats.schlagAufgegeben');
+  assert.ok(i > 0, 'Blockierer-Deckel nicht gefunden');
+  const block = CODE.slice(i - 400, i + 1200);
+
+  assert.ok(block.includes('schlagOhneWirkung++'),
+    'der Zweig zaehlt wirkungslose Schuebe nicht');
+  assert.ok(block.includes('schlagPause = 300'),
+    'Stufe 1 fehlt: der Zweig wird nicht lange genug gesperrt');
+  assert.ok(/notweg = null; notwegIdx = 0;/.test(block),
+    'Stufe 1 verwirft den Weg nicht — die Wegsuche bekommt keinen neuen Versuch');
+  assert.ok(block.includes('aufgegeben.add(zielKey(e2))'),
+    'Stufe 2 fehlt: das Ziel wird nie als unerreichbar gesperrt');
+});
+
+test('Blockierer-Zweig: die Umgehung greift, das Zuschlagen bleibt erlaubt', () => {
+  // Modell des Zweigs, mit den Schwellen aus dem Code. Zweck: zeigen, dass die
+  // Umgehung bei ausbleibender Wirkung KOMMT und bei echtem Schaden AUSBLEIBT —
+  // eine reine Formpruefung liesse beides offen.
+  const lauf = (hpFaellt) => {
+    let schlagRunden = 0; let schlagPause = 0;
+    let schlagHp = null; let ohneWirkung = 0;
+    let hp = 225;
+    for (let runde = 0; runde < 5000; runde++) {
+      if (schlagPause > 0) { schlagPause--; continue; }
+      const summe = hp;
+      if (schlagRunden === 0) schlagHp = summe;
+      if (++schlagRunden > 30) {
+        schlagRunden = 0;
+        if (schlagHp !== null && summe >= schlagHp) ohneWirkung++;
+        else ohneWirkung = 0;
+        schlagHp = null;
+        if (ohneWirkung >= 2) return { umgangen: true, runde };
+        schlagPause = 90;
+      } else if (hpFaellt) {
+        hp -= 1;                       // ein Treffer je Runde
+      }
+    }
+    return { umgangen: false, runde: null };
+  };
+
+  const ohneSchaden = lauf(false);
+  assert.ok(ohneSchaden.umgangen,
+    'ohne jeden Trefferpunkt kommt die Umgehung nicht zustande');
+  assert.ok(ohneSchaden.runde < 300,
+    'die Umgehung kommt zu spaet (Runde ' + ohneSchaden.runde
+    + ') — gemessen wurden zuvor ueber 6000 Runden');
+
+  assert.strictEqual(lauf(true).umgangen, false,
+    'die Umgehung feuert auch dann, wenn der Bot tatsaechlich Schaden macht');
+});
