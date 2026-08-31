@@ -4,7 +4,7 @@
 // The equipment.amulet SLOT + equip/swap live in main.js/inventory.js (Phaser,
 // not unit-loadable) and are verified via the smoke test + manual play.
 
-const { test } = require('node:test');
+const { test, before } = require('node:test');
 const assert = require('node:assert');
 const { resetStore } = require('./setup');
 const { loadGameModule } = require('./loadGameModule');
@@ -216,4 +216,76 @@ test('#42 WP05: composeName faellt ohne i18n auf den DE-Basisnamen zurueck', () 
   const a = sys.rollAmulet(12, makeRng(3));
   // No i18n registered in the headless harness -> composeName returns _baseName.
   assert.strictEqual(sys.composeName(a), a._baseName, 'falls back to DE base name');
+});
+
+// --- Issue #120: WO im Lauf das Amulett liegt (ab Raum 3) ---
+//
+// Getestet wird die reine Raumregel aus js/roomManager.js. Die Frage OB
+// ueberhaupt (Tiefe + Chance) bleibt in shouldSpawnRunAmulet und ist oben
+// abgedeckt.
+
+let placeHere; // window.shouldPlaceRunAmuletHere
+
+before(() => {
+  if (!globalThis.window) require('./setup');
+  loadGameModule('js/roomManager.js');
+  placeHere = globalThis.window.shouldPlaceRunAmuletHere;
+});
+
+test('#120: Raum 1 und 2 eines normalen Laufs bekommen das Amulett NICHT', () => {
+  // 8-Raum-Lauf: roomsEntered 1 -> Index 0, roomsEntered 2 -> Index 1.
+  assert.strictEqual(placeHere(1, 0, 8), false, 'Raum 1 bleibt leer');
+  assert.strictEqual(placeHere(2, 1, 8), false, 'Raum 2 bleibt leer');
+});
+
+test('#120: ab Raum 3 wird abgelegt (Grenze inklusiv, danach weiterhin)', () => {
+  assert.strictEqual(placeHere(3, 2, 8), true, 'Raum 3 legt ab');
+  assert.strictEqual(placeHere(4, 3, 8), true, 'spaeter ebenfalls (Vormerkung traegt)');
+  assert.strictEqual(placeHere(8, 7, 8), true);
+});
+
+test('#120: RUN_AMULET_MIN_ROOM ist die einzige Quelle der Schwelle', () => {
+  const min = globalThis.window.RUN_AMULET_MIN_ROOM;
+  assert.strictEqual(min, 3, 'Vorgabe aus #120');
+  assert.strictEqual(placeHere(min - 1, 0, 8), false);
+  assert.strictEqual(placeHere(min, 5, 8), true);
+});
+
+test('#120 Randfall: kurzer Lauf (< 3 Raeume) reicht im LETZTEN Raum nach', () => {
+  // Zwei-Raum-Lauf: Raum 3 wird nie erreicht -> ohne Nachreichen stiller Verlust.
+  assert.strictEqual(placeHere(1, 0, 2), false, 'Raum 1 noch nicht');
+  assert.strictEqual(placeHere(2, 1, 2), true, 'letzter Raum reicht nach');
+  // Ein-Raum-Lauf: der einzige Raum IST der letzte.
+  assert.strictEqual(placeHere(1, 0, 1), true);
+});
+
+test('#120 Randfall: der Nachreich-Zweig feuert nur im letzten Raum', () => {
+  assert.strictEqual(placeHere(1, 0, 3), false, 'Index 0 von 3 ist nicht der letzte');
+  assert.strictEqual(placeHere(2, 1, 3), false, 'Index 1 von 3 ist nicht der letzte');
+});
+
+test('#120 Verdrahtung: Vormerkung ueberlebt Raum 1 und wird ab Raum 3 verbraucht', () => {
+  const w = globalThis.window;
+  const spawn = w._maybeSpawnRunAmulet;
+  w._pendingRunAmulet = { type: 'amulet', effect: 'twin' };
+  // Raum 1 (Index 0): zu frueh -> Vormerkung bleibt fuer den naechsten Raum stehen.
+  w.runStats = { roomsEntered: 1 };
+  spawn(null, 0);
+  assert.ok(w._pendingRunAmulet, 'Amulett bleibt vorgemerkt, geht nicht verloren');
+  // Raum 2 (Index 1): immer noch zu frueh.
+  w.runStats = { roomsEntered: 2 };
+  spawn(null, 1);
+  assert.ok(w._pendingRunAmulet, 'auch Raum 2 legt noch nicht ab');
+  // Raum 3 (Index 2): jetzt wird abgelegt -> Vormerkung verbraucht.
+  w.runStats = { roomsEntered: 3 };
+  spawn(null, 2);
+  assert.strictEqual(w._pendingRunAmulet, null, 'ab Raum 3 verbraucht');
+});
+
+test('#120: defensiv gegen unbekannte Raumzahl / kaputte Zaehler', () => {
+  assert.strictEqual(placeHere(NaN, 0, NaN), false, 'nichts bekannt -> nicht ablegen');
+  assert.strictEqual(placeHere(undefined, undefined, 8), false);
+  assert.strictEqual(placeHere(1, 0, 0), false, 'leere Raumliste -> kein Nachreichen');
+  // Ein intakter Zaehler genuegt: roomsEntered allein traegt die Entscheidung.
+  assert.strictEqual(placeHere(5, NaN, NaN), true);
 });
