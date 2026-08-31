@@ -1417,6 +1417,296 @@ function createItemGraphics() {
         g.fillRect(cx - 3, 7, 2, 6);
       }
     },
+
+    // --- #117: waffentypische Symbole ---------------------------------------
+    // Sechs eigene Umrisse statt eines Sammel-Icons. Der Spieler soll die
+    // Waffenart am UMRISS erkennen, nicht am Namen — im 48x48-Inventarslot ist
+    // die Silhouette das Einzige, was auf einen Blick ankommt. Deshalb tragen
+    // Länge, Breite und Lage der Masse den Charakter (kurz/schmal beim Dolch,
+    // ein schwerer Block beim Hammer, schräg beim Morgenstern) und nicht bloss
+    // die Farbe.
+    // `itWeapon` oben bleibt absichtlich stehen: es ist der Rückfall für Waffen
+    // ohne erkannten iconKey (FALLBACK_ITEM_ICONS in js/inventory.js) und darf
+    // deshalb nie verschwinden.
+    {
+      key: 'itSword',
+      draw: () => {
+        const cx = SIZE / 2;
+        // Eisenklinge — schlichtes Kurzschwert. Bewusst die Mitte des Feldes:
+        // die Bezugsgrösse, an der Dolch (kürzer) und Richtschwert (länger)
+        // gelesen werden.
+        // Schatten
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillTriangle(cx - 2, 15, cx + 6, 15, cx + 2, 7);
+        g.fillRect(cx - 2, 15, 8, 17);
+        g.fillRect(cx - 7, 32, 18, 4);
+        // Klinge
+        g.fillStyle(0xc8cdd2, 1);
+        g.fillTriangle(cx - 4, 13, cx + 4, 13, cx, 5);
+        g.fillRect(cx - 4, 13, 8, 17);
+        // Mittelgrat
+        g.fillStyle(0xe8edf2, 1);
+        g.fillTriangle(cx - 2, 13, cx + 2, 13, cx, 9);
+        g.fillRect(cx - 2, 13, 4, 17);
+        // Schneidenglanz
+        g.fillStyle(0xf8fcff, 0.7);
+        g.fillRect(cx - 1, 13, 2, 17);
+        // Parierstange
+        g.fillStyle(0xd4a030, 1);
+        g.fillRect(cx - 9, 30, 18, 4);
+        g.fillStyle(0xffe080, 0.5);
+        g.fillRect(cx - 8, 30, 16, 2);
+        // Griff
+        g.fillStyle(0x5c3318, 1);
+        g.fillRect(cx - 2, 34, 4, 8);
+        // Knauf
+        g.fillStyle(0xd4a030, 1);
+        g.fillCircle(cx, 43, 4);
+        // Glanzkante oben links
+        g.fillStyle(0xffffff, 0.40);
+        g.fillRect(cx - 3, 15, 2, 6);
+      }
+    },
+    {
+      key: 'itDagger',
+      draw: () => {
+        const cx = SIZE / 2;
+        // Schattendolch — kürzeste und schmalste Klinge der sechs, dazu tief
+        // im Feld sitzend: viel Leerraum oben ist selbst ein Erkennungsmerkmal.
+        // Schattenschleier (Namensgeber und zweiter, farblicher Unterschied
+        // zum Kurzschwert, falls die Grösse allein nicht trägt)
+        g.fillStyle(0x6a3a8a, 0.26);
+        g.fillEllipse(cx, 24, 22, 28);
+        // Schatten
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillTriangle(cx, 21, cx + 5, 21, cx + 2, 14);
+        g.fillRect(cx, 21, 5, 10);
+        // Klinge (kalter, dunklerer Stahl als beim Schwert)
+        g.fillStyle(0xb8c4cc, 1);
+        g.fillTriangle(cx - 3, 19, cx + 3, 19, cx, 11);
+        g.fillRect(cx - 3, 19, 6, 11);
+        // Mittelgrat + Schneidenglanz
+        g.fillStyle(0xdfe9f0, 1);
+        g.fillRect(cx - 1, 19, 3, 11);
+        g.fillStyle(0xf8fcff, 0.65);
+        g.fillRect(cx - 1, 14, 2, 16);
+        // Kleine Parierstange (gedecktes Gold — der Dolch ist kein Prunkstück)
+        g.fillStyle(0x9a7a30, 1);
+        g.fillRect(cx - 6, 30, 12, 3);
+        g.fillStyle(0xd4a030, 0.6);
+        g.fillRect(cx - 6, 30, 12, 1);
+        // Umwickelter Griff
+        g.fillStyle(0x3a2a3a, 1);
+        g.fillRect(cx - 2, 33, 4, 8);
+        g.fillStyle(0x6a4a6a, 0.7);
+        g.fillRect(cx - 2, 35, 4, 1);
+        g.fillRect(cx - 2, 38, 4, 1);
+        // Knauf
+        g.fillStyle(0x9a7a30, 1);
+        g.fillCircle(cx, 42, 3);
+      }
+    },
+    {
+      key: 'itFlail',
+      draw: () => {
+        const cx = SIZE / 2;
+        // Kettenmorgenstern — als Einziges ein SCHRÄGER Umriss: Stiel unten
+        // links, Masse oben rechts, dazwischen sichtbare Kettenglieder.
+        // Stielschatten
+        g.lineStyle(6, 0x1a1a1a, 0.30);
+        g.beginPath();
+        g.moveTo(12, 45); g.lineTo(21, 31); g.strokePath();
+        // Stiel (Holz)
+        g.lineStyle(6, 0x6a3818, 1);
+        g.beginPath();
+        g.moveTo(10, 43); g.lineTo(19, 29); g.strokePath();
+        g.lineStyle(2, 0xc88a44, 1);
+        g.beginPath();
+        g.moveTo(9, 42); g.lineTo(18, 29); g.strokePath();
+        // Lederwicklung am Stielende
+        g.lineStyle(7, 0x3a2410, 1);
+        g.beginPath();
+        g.moveTo(10, 43); g.lineTo(13, 38); g.strokePath();
+        // Kettenglieder
+        g.fillStyle(0x8a9298, 1);
+        g.fillCircle(21, 26, 2.6);
+        g.fillCircle(24, 22, 2.6);
+        g.fillCircle(27, 19, 2.6);
+        g.fillStyle(0xc0c8ce, 0.7);
+        g.fillCircle(21, 25, 1.2);
+        g.fillCircle(24, 21, 1.2);
+        g.fillCircle(27, 18, 1.2);
+        // Kugel: Schatten zuerst, dann Stacheln, dann der Körper darüber —
+        // so ragen die Stacheln heraus, ohne den Schatten zu zerschneiden.
+        const bx = 33, by = 15, br = 9;
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillCircle(bx + 2, by + 2, br);
+        g.fillStyle(0x7a8288, 1);
+        [-105, -45, 12, 68, 140, 200].forEach((deg) => {
+          const a = deg * Math.PI / 180;
+          const ux = Math.cos(a), uy = Math.sin(a);
+          g.fillTriangle(
+            bx + ux * (br + 5), by + uy * (br + 5),
+            bx + ux * (br - 2) - uy * 3.5, by + uy * (br - 2) + ux * 3.5,
+            bx + ux * (br - 2) + uy * 3.5, by + uy * (br - 2) - ux * 3.5
+          );
+        });
+        g.fillStyle(0x5e666c, 1);
+        g.fillCircle(bx, by, br);
+        g.fillStyle(0x8a9298, 0.8);
+        g.fillCircle(bx - 3, by - 3, 4);
+        g.fillStyle(0xffffff, 0.35);
+        g.fillCircle(bx - 4, by - 4, 2);
+      }
+    },
+    {
+      key: 'itAxe',
+      draw: () => {
+        const cx = SIZE / 2;
+        // Glutaxt — Stiel rechts, das Blatt hängt als breiter Keil nach links.
+        // Diese Asymmetrie ist das Erkennungsmerkmal; Schwert und Hammer sind
+        // beide achsensymmetrisch.
+        const hx = cx + 5;
+        // Schatten (Stiel + Blatt)
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillRect(hx - 1, 9, 6, 35);
+        g.fillTriangle(hx + 1, 10, hx - 14, 12, hx - 17, 25);
+        g.fillTriangle(hx + 1, 10, hx - 17, 25, hx + 1, 29);
+        // Stiel
+        g.fillStyle(0x6a3818, 1);
+        g.fillRect(hx - 2, 7, 5, 36);
+        g.fillStyle(0xc88a44, 0.55);
+        g.fillRect(hx - 2, 7, 2, 36);
+        // Lederwicklung
+        g.fillStyle(0x3a2410, 1);
+        g.fillRect(hx - 3, 33, 7, 9);
+        g.fillStyle(0x6a4a28, 0.6);
+        g.fillRect(hx - 3, 35, 7, 1);
+        g.fillRect(hx - 3, 39, 7, 1);
+        // Blatt (Viereck aus zwei Dreiecken)
+        g.fillStyle(0x9aa2a8, 1);
+        g.fillTriangle(hx - 1, 8, hx - 16, 10, hx - 19, 23);
+        g.fillTriangle(hx - 1, 8, hx - 19, 23, hx - 1, 27);
+        // Blattschattierung unten
+        g.fillStyle(0x6e767c, 0.55);
+        g.fillTriangle(hx - 1, 20, hx - 19, 23, hx - 1, 27);
+        // Schneide
+        g.lineStyle(3, 0xf0f6fa, 0.9);
+        g.beginPath();
+        g.moveTo(hx - 16, 10); g.lineTo(hx - 19, 23); g.strokePath();
+        // Glut entlang der Schneide (Namensgeber)
+        g.lineStyle(3, 0xff7020, 0.65);
+        g.beginPath();
+        g.moveTo(hx - 14, 13); g.lineTo(hx - 16, 21); g.strokePath();
+        g.fillStyle(0xffc040, 0.85);
+        g.fillCircle(hx - 12, 15, 1.5);
+        g.fillCircle(hx - 14, 20, 1.2);
+        // Augenringe am Stiel
+        g.fillStyle(0xd4a030, 1);
+        g.fillRect(hx - 4, 8, 9, 3);
+        g.fillRect(hx - 4, 24, 9, 3);
+        g.fillStyle(0xffe080, 0.5);
+        g.fillRect(hx - 4, 8, 9, 1);
+        // Gegendorn
+        g.fillStyle(0x8a9298, 1);
+        g.fillTriangle(hx + 3, 11, hx + 3, 21, hx + 10, 16);
+      }
+    },
+    {
+      key: 'itGreatsword',
+      draw: () => {
+        const cx = SIZE / 2;
+        // Richtschwert — längste und breiteste Klinge, füllt das Feld von oben
+        // bis unten. Zusammen mit der weit ausladenden Parierstange und dem
+        // zweihändigen Griff der wuchtigste Schwert-Umriss.
+        // Schatten
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillTriangle(cx - 4, 11, cx + 8, 11, cx + 2, 3);
+        g.fillRect(cx - 4, 11, 12, 23);
+        g.fillRect(cx - 11, 34, 26, 4);
+        // Klinge
+        g.fillStyle(0xc8cdd2, 1);
+        g.fillTriangle(cx - 6, 9, cx + 6, 9, cx, 1);
+        g.fillRect(cx - 6, 9, 12, 23);
+        // Blutrinne
+        g.fillStyle(0xe8edf2, 1);
+        g.fillRect(cx - 3, 9, 6, 23);
+        g.fillStyle(0x8a9298, 0.5);
+        g.fillRect(cx - 1, 11, 2, 20);
+        // Schneidenglanz aussen
+        g.fillStyle(0xf8fcff, 0.7);
+        g.fillRect(cx - 6, 9, 2, 23);
+        // Parierstange (breit, mit herabgezogenen Enden)
+        g.fillStyle(0xd4a030, 1);
+        g.fillRect(cx - 13, 32, 26, 4);
+        g.fillRect(cx - 13, 36, 4, 4);
+        g.fillRect(cx + 9, 36, 4, 4);
+        g.fillStyle(0xffe080, 0.5);
+        g.fillRect(cx - 12, 32, 24, 2);
+        // Zweihandgriff
+        g.fillStyle(0x5c3318, 1);
+        g.fillRect(cx - 3, 36, 6, 8);
+        g.fillStyle(0x8a5828, 0.6);
+        g.fillRect(cx - 3, 38, 6, 1);
+        g.fillRect(cx - 3, 41, 6, 1);
+        // Knauf
+        g.fillStyle(0xd4a030, 1);
+        g.fillCircle(cx, 45, 3.5);
+        // Glanzkante
+        g.fillStyle(0xffffff, 0.40);
+        g.fillRect(cx - 5, 12, 2, 8);
+      }
+    },
+    {
+      key: 'itHammer',
+      draw: () => {
+        const cx = SIZE / 2;
+        // Kettenrat-Kriegshammer — ein einziger schwerer Block obenauf. Die
+        // grösste zusammenhängende Fläche aller sechs Symbole; "schwer und
+        // langsam" soll ohne Text ankommen.
+        // Schatten
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillRect(cx - 12, 9, 28, 16);
+        g.fillRect(cx - 1, 24, 6, 21);
+        // Stiel
+        g.fillStyle(0x6a3818, 1);
+        g.fillRect(cx - 3, 6, 6, 38);
+        g.fillStyle(0xc88a44, 0.5);
+        g.fillRect(cx - 3, 6, 2, 38);
+        // Lederwicklung
+        g.fillStyle(0x3a2410, 1);
+        g.fillRect(cx - 4, 31, 8, 12);
+        g.fillStyle(0x6a4a28, 0.6);
+        g.fillRect(cx - 4, 33, 8, 1);
+        g.fillRect(cx - 4, 36, 8, 1);
+        g.fillRect(cx - 4, 39, 8, 1);
+        // Kopf
+        g.fillStyle(0x5e666c, 1);
+        g.fillRect(cx - 14, 7, 28, 16);
+        g.fillStyle(0x7e878e, 1);
+        g.fillRect(cx - 14, 7, 28, 5);
+        g.fillStyle(0x3e4449, 1);
+        g.fillRect(cx - 14, 20, 28, 3);
+        // Schlagflächen links/rechts
+        g.fillStyle(0x9aa2a8, 1);
+        g.fillRect(cx - 14, 7, 4, 16);
+        g.fillRect(cx + 10, 7, 4, 16);
+        // Goldbänder
+        g.fillStyle(0xd4a030, 1);
+        g.fillRect(cx - 10, 7, 3, 16);
+        g.fillRect(cx + 7, 7, 3, 16);
+        // Nieten
+        g.fillStyle(0xffe080, 0.8);
+        g.fillCircle(cx - 8.5, 11, 1.3);
+        g.fillCircle(cx - 8.5, 19, 1.3);
+        g.fillCircle(cx + 8.5, 11, 1.3);
+        g.fillCircle(cx + 8.5, 19, 1.3);
+        // Glanzkante
+        g.fillStyle(0xffffff, 0.35);
+        g.fillRect(cx - 13, 8, 26, 2);
+      }
+    },
+
     {
       key: 'itPortalScroll',
       draw: () => {

@@ -446,13 +446,13 @@ if (window.i18n) {
     // sondern skaliert über getRangeFromBase (js/player.js) auch Wirbelwind,
     // Dash-Slash (Reichweite UND Distanz), Schildstoß und die Dolchwurf-
     // Lebensdauer. Ein grösserer Ausschlag verschöbe diese Fähigkeiten mit.
-    Object.freeze({ key: 'WPN_EISENKLINGE', type: 'weapon', name: 'Eisenklinge', iconKey: 'itWeapon',
+    Object.freeze({ key: 'WPN_EISENKLINGE', type: 'weapon', name: 'Eisenklinge', iconKey: 'itSword',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 1.4, max: 3.5 }), speed: 5, range: -8 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
-    Object.freeze({ key: 'WPN_SCHATTENDOLCH', type: 'weapon', name: 'Schattendolch', iconKey: 'itWeapon',
+    Object.freeze({ key: 'WPN_SCHATTENDOLCH', type: 'weapon', name: 'Schattendolch', iconKey: 'itDagger',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 0.7, max: 2.8 }), speed: 15, range: -25, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
-    Object.freeze({ key: 'WPN_KETTENMORGENSTERN', type: 'weapon', name: 'Kettenmorgenstern', iconKey: 'itWeapon',
+    Object.freeze({ key: 'WPN_KETTENMORGENSTERN', type: 'weapon', name: 'Kettenmorgenstern', iconKey: 'itFlail',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 2.8, max: 4.9 }), speed: -5, range: 8 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
-    Object.freeze({ key: 'WPN_GLUTAXT', type: 'weapon', name: 'Glutaxt', iconKey: 'itWeapon',
+    Object.freeze({ key: 'WPN_GLUTAXT', type: 'weapon', name: 'Glutaxt', iconKey: 'itAxe',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 2.8, max: 4.2 }), speed: -10, range: 18 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
 
     // --- Spät-Tier-Waffen (ab ~Tiefe 15) --------------------------------------
@@ -460,9 +460,9 @@ if (window.i18n) {
     // sich der Abstieg in die Tiefe auch beim Basisschaden lohnt. Gate: der erste
     // dropWeight-Key hat Gewicht 0 (unter diesem iLevel gilt genau dieses Gewicht
     // -> Basis wird nicht in den Pool aufgenommen). Bänder bewusst eng (~1.4-1.6x).
-    Object.freeze({ key: 'WPN_RICHTSCHWERT', type: 'weapon', name: 'Richtschwert', iconKey: 'itWeapon',
+    Object.freeze({ key: 'WPN_RICHTSCHWERT', type: 'weapon', name: 'Richtschwert', iconKey: 'itGreatsword',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 4.9, max: 7.7 }), speed: -15, range: 25 }), dropWeight: Object.freeze({ 14: 0, 17: 60, 24: 100 }) }),
-    Object.freeze({ key: 'WPN_KRIEGSHAMMER', type: 'weapon', name: 'Kettenrat-Kriegshammer', iconKey: 'itWeapon',
+    Object.freeze({ key: 'WPN_KRIEGSHAMMER', type: 'weapon', name: 'Kettenrat-Kriegshammer', iconKey: 'itHammer',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 6.3, max: 9.1 }), speed: -10, range: 18 }), dropWeight: Object.freeze({ 14: 0, 18: 40, 26: 80 }) }),
 
     // Bows (ranged weapons — equipping one swaps default attack to a projectile)
