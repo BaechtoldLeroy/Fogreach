@@ -1379,8 +1379,60 @@ function createEnemyGraphics() {
   }
 }
 
+// #117-Nachtrag: Die Waffensymbole waren zu SCHMAL — fünf von acht blieben
+// unter 25 von 48 Pixeln Breite und liessen seitlich mehr als die halbe Kachel
+// leer. Statt jede einzelne Zahl in jeder Zeichenroutine nachzuziehen (und dabei
+// die mühsam abgestimmten Proportionen zu zerlegen), bekommt jedes Symbol einen
+// eigenen Streckfaktor um die Kachelmitte.
+//
+// X wird stärker gestreckt als Y, weil nur die Breite fehlte: die Höhen waren
+// schon in Ordnung, und das Richtschwert stand mit 46 von 48 ohnehin am Anschlag.
+//
+// WICHTIG — die Faktoren sind mit Absicht VERSCHIEDEN, nicht aus Nachlässigkeit:
+// Dolch < Kurzschwert < Axt < Hammer < Richtschwert ist die gewollte Rangfolge.
+// Die Grösse selbst trägt die Erkennbarkeit im 48x48-Slot — der Dolch soll klein
+// und tief sitzen, das Richtschwert die Kachel füllen. Wer hier später einen
+// gemeinsamen Faktor "sauber glattzieht", nimmt dem Inventar genau diesen
+// Kontrast. tests/waffenSymbole.test.js hält die Rangfolge deshalb fest.
+function gestrecktesZeichnen(g, sx, sy, dx, dy) {
+  const P = 24;                               // Kachelmitte (SIZE / 2)
+  const vx = dx || 0, vy = dy || 0;
+  const X = (x) => P + (x - P) * sx + vx;
+  const Y = (y) => P + (y - P) * sy + vy;
+  const L = (w) => w * (sx + sy) / 2;         // Linien bleiben rund, kein Ei
+  const w = {
+    fillStyle: (c, a) => { g.fillStyle(c, a); return w; },
+    lineStyle: (lw, c, a) => { g.lineStyle(L(lw), c, a); return w; },
+    fillRect: (x, y, bw, bh) => { g.fillRect(X(x), Y(y), bw * sx, bh * sy); return w; },
+    fillRoundedRect: (x, y, bw, bh, r) => {
+      g.fillRoundedRect(X(x), Y(y), bw * sx, bh * sy, r * Math.min(sx, sy)); return w;
+    },
+    strokeRoundedRect: (x, y, bw, bh, r) => {
+      g.strokeRoundedRect(X(x), Y(y), bw * sx, bh * sy, r * Math.min(sx, sy)); return w;
+    },
+    // Kreise werden VERSCHOBEN wie alles andere, wachsen aber RUND (Mittel aus
+    // beiden Faktoren): ein zum Ei gezogener Knauf oder eine ovale Niete fiele
+    // sofort als Fehler auf, während ein zu schmaler Knauf neben der
+    // verbreiterten Klinge nur mickrig wirkt.
+    fillCircle: (x, y, r) => { g.fillCircle(X(x), Y(y), L(r)); return w; },
+    fillEllipse: (x, y, bw, bh) => { g.fillEllipse(X(x), Y(y), bw * sx, bh * sy); return w; },
+    fillTriangle: (x1, y1, x2, y2, x3, y3) => {
+      g.fillTriangle(X(x1), Y(y1), X(x2), Y(y2), X(x3), Y(y3)); return w;
+    },
+    beginPath: () => { g.beginPath(); return w; },
+    closePath: () => { g.closePath(); return w; },
+    moveTo: (x, y) => { g.moveTo(X(x), Y(y)); return w; },
+    lineTo: (x, y) => { g.lineTo(X(x), Y(y)); return w; },
+    strokePath: () => { g.strokePath(); return w; }
+  };
+  return w;
+}
+
 function createItemGraphics() {
   const g = this.add.graphics();
+  // Rohes Graphics-Objekt für die gestreckten Waffensymbole (siehe
+  // gestrecktesZeichnen): dort verdeckt ein lokales `g` dieses hier.
+  const gBasis = g;
   const SIZE = 48;
 
   const icons = [
@@ -1431,6 +1483,8 @@ function createItemGraphics() {
     {
       key: 'itSword',
       draw: () => {
+        // Bezugsgrösse der Rangfolge (siehe gestrecktesZeichnen).
+        const g = gestrecktesZeichnen(gBasis, 1.45, 1.0, 0, -1);
         const cx = SIZE / 2;
         // Eisenklinge — schlichtes Kurzschwert. Bewusst die Mitte des Feldes:
         // die Bezugsgrösse, an der Dolch (kürzer) und Richtschwert (länger)
@@ -1470,6 +1524,8 @@ function createItemGraphics() {
     {
       key: 'itDagger',
       draw: () => {
+        // Kleinstes der sechs — bleibt es auch (siehe gestrecktesZeichnen).
+        const g = gestrecktesZeichnen(gBasis, 1.42, 1.08, 0, -1);
         const cx = SIZE / 2;
         // Schattendolch — kürzeste und schmalste Klinge der sechs, dazu tief
         // im Feld sitzend: viel Leerraum oben ist selbst ein Erkennungsmerkmal.
@@ -1509,6 +1565,9 @@ function createItemGraphics() {
     {
       key: 'itFlail',
       draw: () => {
+        // Der Morgenstern füllte die Kachel schon vorher; er wird nur minimal
+        // eingezogen, damit die Stacheln nicht an der Kante kleben.
+        const g = gestrecktesZeichnen(gBasis, 1.0, 0.96, 0, -0.5);
         const cx = SIZE / 2;
         // Kettenmorgenstern — als Einziges ein SCHRÄGER Umriss: Stiel unten
         // links, Masse oben rechts, dazwischen sichtbare Kettenglieder.
@@ -1562,6 +1621,8 @@ function createItemGraphics() {
     {
       key: 'itAxe',
       draw: () => {
+        // Grösser als das Kurzschwert, kleiner als der Hammer.
+        const g = gestrecktesZeichnen(gBasis, 1.34, 1.08);
         const cx = SIZE / 2;
         // Glutaxt — Stiel rechts, das Blatt hängt als breiter Keil nach links.
         // Diese Asymmetrie ist das Erkennungsmerkmal; Schwert und Hammer sind
@@ -1626,6 +1687,10 @@ function createItemGraphics() {
     {
       key: 'itGreatsword',
       draw: () => {
+        // Grösstes der fünf gereihten Symbole. In der Höhe stand es schon am
+        // Anschlag, deshalb wächst hier nur die Breite (sy = 1) und der
+        // Versatz hebt die Klinge von der Kachelkante weg.
+        const g = gestrecktesZeichnen(gBasis, 1.45, 0.95, 0, -1.6);
         const cx = SIZE / 2;
         // Richtschwert — längste und breiteste Klinge, füllt das Feld von oben
         // bis unten. Zusammen mit der weit ausladenden Parierstange und dem
@@ -1671,6 +1736,9 @@ function createItemGraphics() {
     {
       key: 'itHammer',
       draw: () => {
+        // Zwischen Axt und Richtschwert; der Kopf war schon breit, deshalb der
+        // kleinste X-Faktor der fünf.
+        const g = gestrecktesZeichnen(gBasis, 1.26, 1.1);
         const cx = SIZE / 2;
         // Kettenrat-Kriegshammer — ein einziger schwerer Block obenauf. Die
         // grösste zusammenhängende Fläche aller sechs Symbole; "schwer und

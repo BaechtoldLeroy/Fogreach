@@ -172,3 +172,81 @@ test('#117: unbekannter iconKey faellt auf das Typ-Symbol zurueck statt abzustue
   assert.strictEqual(aufloesen({ type: 'quatsch', iconKey: 'itGibtEsNicht' }), 'itMat');
   assert.strictEqual(aufloesen(null), null);
 });
+
+// --- Groesse (Nachtrag zu #117) -------------------------------------------
+//
+// Die sechs Symbole waren zwar unterscheidbar, aber zu SCHMAL: fuenf von acht
+// blieben unter 25 von 48 Pixeln Breite und liessen seitlich mehr als die
+// halbe Kachel leer. Nachgezogen wird das ueber je einen Streckfaktor pro
+// Symbol in js/graphics.js (gestrecktesZeichnen).
+//
+// Hier festgehalten wird, was dabei still verloren gehen kann:
+//   1. die Breite rutscht wieder zurueck (jemand dreht einen Faktor heraus),
+//   2. die RANGFOLGE Dolch < Kurzschwert < Axt < Hammer < Richtschwert wird
+//      eingeebnet — sie ist gewollt und traegt die Erkennbarkeit im Slot: der
+//      Dolch ist mit Absicht der kleinste, das Richtschwert fuellt die Kachel.
+//      Ein "aufgeraeumter" gemeinsamer Faktor waere genau der Fehler,
+//   3. ein Symbol waechst ueber den Rand hinaus und klebt an der Kachelkante.
+//
+// Gemessen wird der Umriss-Rahmen, indem die Zeichenbefehle wirklich
+// ausgefuehrt und gerastert werden (tests/iconRaster.js) — nicht, indem
+// Zahlen im Quelltext gelesen werden.
+
+const { alleRahmen } = require('./iconRaster');
+
+// Die sechs Waffensymbole aus #117. itWeapon (Sammel-Icon) und itBow sind
+// bewusst NICHT dabei: sie wurden nicht angefasst; itBow fuellt die Kachel
+// senkrecht ohnehin von 0 bis 47.
+const SECHS = {
+  itDagger: 'Dolch',
+  itSword: 'Kurzschwert',
+  itAxe: 'Axt',
+  itHammer: 'Hammer',
+  itGreatsword: 'Richtschwert',
+  itFlail: 'Morgenstern'
+};
+
+// Rangfolge nach Flaeche des Umriss-Rahmens. Der Morgenstern steht bewusst
+// ausserhalb: er ist schraeg gezeichnet und fuellt die Kachel von jeher.
+const RANGFOLGE = ['itDagger', 'itSword', 'itAxe', 'itHammer', 'itGreatsword'];
+
+const MIN_BREITE = 24;   // halbe Kachel — darunter war der Befund "zu schmal"
+const RAND_MIN = 1;      // Zeile/Spalte 0 bleibt frei
+const RAND_MAX = 46;     // Zeile/Spalte 47 bleibt frei
+const MIN_ABSTAND = 100; // px^2 Flaechenabstand zwischen zwei Raengen
+
+test('#117: kein Waffensymbol bleibt schmaler als die halbe Kachel', () => {
+  const r = alleRahmen();
+  Object.keys(SECHS).forEach((k) => {
+    assert.ok(r[k], k + ' wird gar nicht gezeichnet');
+    assert.ok(r[k].breite >= MIN_BREITE,
+      SECHS[k] + ' (' + k + ') ist nur ' + r[k].breite + '/48 breit — erwartet mindestens '
+      + MIN_BREITE + '/48, sonst steht das Symbol wieder als Streifen in der Kachel');
+  });
+});
+
+test('#117: die Groessen-Rangfolge Dolch < Kurzschwert < Axt < Hammer < Richtschwert haelt', () => {
+  const r = alleRahmen();
+  const flaeche = (k) => r[k].breite * r[k].hoehe;
+  for (let i = 1; i < RANGFOLGE.length; i++) {
+    const klein = RANGFOLGE[i - 1], gross = RANGFOLGE[i];
+    assert.ok(flaeche(gross) - flaeche(klein) >= MIN_ABSTAND,
+      SECHS[gross] + ' (' + r[gross].breite + 'x' + r[gross].hoehe + ') muss deutlich groesser sein als '
+      + SECHS[klein] + ' (' + r[klein].breite + 'x' + r[klein].hoehe + ') — Abstand '
+      + (flaeche(gross) - flaeche(klein)) + ' px^2, verlangt sind ' + MIN_ABSTAND
+      + '. Der Groessenunterschied ist gewollt, nicht Schlamperei.');
+  }
+});
+
+test('#117: kein Waffensymbol klebt an der Kachelkante', () => {
+  const r = alleRahmen();
+  Object.keys(SECHS).forEach((k) => {
+    const b = r[k];
+    assert.ok(b.breite <= RAND_MAX && b.hoehe <= RAND_MAX,
+      SECHS[k] + ' misst ' + b.breite + 'x' + b.hoehe + '/48 — hoechstens '
+      + RAND_MAX + '/48 erlaubt');
+    assert.ok(b.x0 >= RAND_MIN && b.x1 <= RAND_MAX && b.y0 >= RAND_MIN && b.y1 <= RAND_MAX,
+      SECHS[k] + ' reicht bis x ' + b.x0 + '..' + b.x1 + ', y ' + b.y0 + '..' + b.y1
+      + ' — es muss rundum mindestens ein Pixel Rand bleiben');
+  });
+});
