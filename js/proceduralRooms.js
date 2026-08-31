@@ -97,22 +97,12 @@
     return !!z && z[x] !== undefined && z[x] !== '#';
   }
 
-  // Die SUCHSPANNE kommt aus dem Raster, nicht aus den BSP-Boxen. Gemessen
-  // ueber 300 Seeds: 1824 von 7150 Durchgaengen hatten hoechstens eine Kachel
-  // seitliche Luft, und 1643 davon (90.1 %) haetten an derselben Wand einen
-  // besseren Platz gehabt. Die Boxen waren die Fessel, nicht die Geometrie —
-  // sie beschreiben Bounding Boxes, deren Kinder oft selbst wieder geteilt
-  // sind, sodass die echte Kammer irgendwo INNERHALB der Box liegt.
-  //
-  // Die Pruefung `frei` verlangt beide Anlaufreihen begehbar und ist damit
-  // selbst der Kammertest: wo sie zutrifft, liegt beidseits Boden. Deshalb
-  // darf breiter gesucht werden, ohne die Verbindung zu gefaehrden.
   // Waehlt eine Position aus [von..bis], bei der die geraeumte Spanne
   // [-1 .. doorWidth] plus `luft` Kacheln zu beiden Seiten in beiden
   // Anlaufreihen frei ist. Der Rand wird gestuft nachgegeben (2 -> 1 -> 0 ->
   // ohne Pruefung), damit nie ein Durchgang ERSATZLOS entfaellt — das war der
   // stille Verbindungsverlust aus dem Issue.
-  function waehleDurchgang(rng, von, bis, doorWidth, frei, notVon, notBis) {
+  function waehleDurchgang(rng, von, bis, doorWidth, frei) {
     var stufen = [2, 1, 0];
     for (var s = 0; s < stufen.length; s++) {
       var luft = stufen[s];
@@ -128,13 +118,7 @@
       // verschiebt sich der Zufallsstrom und das ganze Layout mit ihm.
       if (treffer.length) return treffer[Math.floor(rng() * treffer.length)];
     }
-    // Rueckfall NUR innerhalb der BSP-Spanne: dort liegt garantiert die
-    // gemeinsame Wand beider Kinder. Die weitere Suchspanne oben darf frei
-    // raten nicht mitziehen, sonst landet ein ungeprueter Durchgang
-    // irgendwo am Rasterrand.
-    var rv = (typeof notVon === 'number') ? notVon : von;
-    var rb = (typeof notBis === 'number') ? notBis : bis;
-    return rv + Math.floor(rng() * (rb - rv + 1));
+    return von + Math.floor(rng() * (bis - von + 1));
   }
 
   // Carve a doorway in the shared wall between two BSP children
@@ -153,14 +137,9 @@
       if (overlapX2 < overlapX1) return;
       // Anlaufreihen: die Kammerboeden direkt vor der Wand (splitPos-2 oben,
       // splitPos+1 unten). Nur wo BEIDE frei sind, kann man gerade durchlaufen.
-      var freiX = function (x) {
+      var dx = waehleDurchgang(rng, overlapX1, overlapX2, doorWidth, function (x) {
         return begehbar(grid, x, node.splitPos - 2) && begehbar(grid, x, node.splitPos + 1);
-      };
-      // Gesucht wird ueber die ganze Rasterzeile, geraten nur in der
-      // BSP-Spanne (s. waehleDurchgang).
-      var breiteH = String(grid[node.splitPos] || '').length;
-      var dx = waehleDurchgang(rng, 1, Math.max(1, breiteH - doorWidth - 2),
-        doorWidth, freiX, overlapX1, overlapX2);
+      });
       // Carve 2 rows at the split wall + clear 1 tile on each side for corner clearance
       for (var i = -1; i < doorWidth + 1; i++) {
         if (grid[node.splitPos - 1] && dx + i >= 0 && dx + i < grid[node.splitPos - 1].length) {
@@ -189,12 +168,9 @@
       var overlapY2 = Math.min(node.left.y + node.left.h, node.right.y + node.right.h) - 2 - doorWidth;
       if (overlapY2 < overlapY1) return;
       // Anlaufspalten: splitPos-2 links, splitPos+1 rechts — s. waagerechte Achse.
-      var freiY = function (y) {
+      var dy = waehleDurchgang(rng, overlapY1, overlapY2, doorWidth, function (y) {
         return begehbar(grid, node.splitPos - 2, y) && begehbar(grid, node.splitPos + 1, y);
-      };
-      var hoeheV = grid.length;
-      var dy = waehleDurchgang(rng, 1, Math.max(1, hoeheV - doorWidth - 2),
-        doorWidth, freiY, overlapY1, overlapY2);
+      });
       // Carve 2 columns at the split wall + clear 1 tile on each side for corner clearance
       for (var j = -1; j < doorWidth + 1; j++) {
         if (grid[dy + j] && node.splitPos - 1 >= 0 && node.splitPos - 1 < grid[dy + j].length) {
