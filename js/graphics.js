@@ -1475,8 +1475,8 @@ function createItemGraphics() {
         // im Feld sitzend: viel Leerraum oben ist selbst ein Erkennungsmerkmal.
         // Schattenschleier (Namensgeber und zweiter, farblicher Unterschied
         // zum Kurzschwert, falls die Grösse allein nicht trägt)
-        g.fillStyle(0x6a3a8a, 0.26);
-        g.fillEllipse(cx, 24, 22, 28);
+        g.fillStyle(0x6a3a8a, 0.20);
+        g.fillEllipse(cx, 23, 19, 26);
         // Schatten
         g.fillStyle(0x1a1a1a, 0.30);
         g.fillTriangle(cx, 21, cx + 5, 21, cx + 2, 14);
@@ -1567,11 +1567,20 @@ function createItemGraphics() {
         // Diese Asymmetrie ist das Erkennungsmerkmal; Schwert und Hammer sind
         // beide achsensymmetrisch.
         const hx = cx + 5;
+        // Blatt als geflanschtes Trapez: am Stiel SCHMAL, an der Schneide HOCH
+        // und leicht nach aussen gewölbt. Genau diese Umkehrung macht den
+        // Axtumriss aus — ein gleich hohes Viereck las sich als Rechteck.
+        const A = { x: hx - 1, y: 12 };    // Stiel oben
+        const B = { x: hx - 1, y: 25 };    // Stiel unten
+        const D = { x: hx - 16, y: 6 };    // Schneide oben
+        const M = { x: hx - 19, y: 16 };   // Schneide Mitte (Wölbung)
+        const C = { x: hx - 17, y: 28 };   // Schneide unten
         // Schatten (Stiel + Blatt)
         g.fillStyle(0x1a1a1a, 0.30);
         g.fillRect(hx - 1, 9, 6, 35);
-        g.fillTriangle(hx + 1, 10, hx - 14, 12, hx - 17, 25);
-        g.fillTriangle(hx + 1, 10, hx - 17, 25, hx + 1, 29);
+        g.fillTriangle(A.x + 2, A.y + 2, D.x + 2, D.y + 2, M.x + 2, M.y + 2);
+        g.fillTriangle(A.x + 2, A.y + 2, M.x + 2, M.y + 2, C.x + 2, C.y + 2);
+        g.fillTriangle(A.x + 2, A.y + 2, C.x + 2, C.y + 2, B.x + 2, B.y + 2);
         // Stiel
         g.fillStyle(0x6a3818, 1);
         g.fillRect(hx - 2, 7, 5, 36);
@@ -1583,33 +1592,35 @@ function createItemGraphics() {
         g.fillStyle(0x6a4a28, 0.6);
         g.fillRect(hx - 3, 35, 7, 1);
         g.fillRect(hx - 3, 39, 7, 1);
-        // Blatt (Viereck aus zwei Dreiecken)
+        // Blatt
         g.fillStyle(0x9aa2a8, 1);
-        g.fillTriangle(hx - 1, 8, hx - 16, 10, hx - 19, 23);
-        g.fillTriangle(hx - 1, 8, hx - 19, 23, hx - 1, 27);
-        // Blattschattierung unten
-        g.fillStyle(0x6e767c, 0.55);
-        g.fillTriangle(hx - 1, 20, hx - 19, 23, hx - 1, 27);
+        g.fillTriangle(A.x, A.y, D.x, D.y, M.x, M.y);
+        g.fillTriangle(A.x, A.y, M.x, M.y, C.x, C.y);
+        g.fillTriangle(A.x, A.y, C.x, C.y, B.x, B.y);
+        // Untere Blatthälfte abdunkeln (Volumen)
+        g.fillStyle(0x6e767c, 0.5);
+        g.fillTriangle(A.x, A.y, M.x, M.y, C.x, C.y);
+        g.fillTriangle(A.x, A.y, C.x, C.y, B.x, B.y);
         // Schneide
         g.lineStyle(3, 0xf0f6fa, 0.9);
         g.beginPath();
-        g.moveTo(hx - 16, 10); g.lineTo(hx - 19, 23); g.strokePath();
-        // Glut entlang der Schneide (Namensgeber)
-        g.lineStyle(3, 0xff7020, 0.65);
+        g.moveTo(D.x, D.y); g.lineTo(M.x, M.y); g.lineTo(C.x, C.y);
+        g.strokePath();
+        // Glut direkt hinter der Schneide (Namensgeber)
+        g.lineStyle(3, 0xff7020, 0.6);
         g.beginPath();
-        g.moveTo(hx - 14, 13); g.lineTo(hx - 16, 21); g.strokePath();
+        g.moveTo(D.x + 2, D.y + 2); g.lineTo(M.x + 3, M.y); g.lineTo(C.x + 2, C.y - 2);
+        g.strokePath();
         g.fillStyle(0xffc040, 0.85);
-        g.fillCircle(hx - 12, 15, 1.5);
-        g.fillCircle(hx - 14, 20, 1.2);
-        // Augenringe am Stiel
+        g.fillCircle(M.x + 4, 11, 1.4);
+        g.fillCircle(M.x + 4, 22, 1.2);
+        // Augenringe: nur knapp breiter als der Stiel, sonst lesen sie sich als
+        // eigenes Objekt neben der Axt statt als Beschlag.
         g.fillStyle(0xd4a030, 1);
-        g.fillRect(hx - 4, 8, 9, 3);
-        g.fillRect(hx - 4, 24, 9, 3);
+        g.fillRect(hx - 3, 10, 7, 3);
+        g.fillRect(hx - 3, 24, 7, 3);
         g.fillStyle(0xffe080, 0.5);
-        g.fillRect(hx - 4, 8, 9, 1);
-        // Gegendorn
-        g.fillStyle(0x8a9298, 1);
-        g.fillTriangle(hx + 3, 11, hx + 3, 21, hx + 10, 16);
+        g.fillRect(hx - 3, 10, 7, 1);
       }
     },
     {
