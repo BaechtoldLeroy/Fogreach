@@ -128,7 +128,8 @@ class CraftingScene extends Phaser.Scene {
         cost: 15,
         item: {
           type: 'weapon', key: 'WPN_CRAFT', name: 'Eisenklinge',
-          iconKey: 'itWeapon',
+          // #117: gleiche Waffe wie WPN_EISENKLINGE — also auch gleiches Symbol.
+          iconKey: 'itSword',
           tier: 0, affixes: [], iLevel: 1, itemLevel: 1,
           baseStats: { damage: 8 },
           hp: 0, damage: 8, speed: 0, range: 0, armor: 0, crit: 0
