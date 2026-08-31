@@ -121,8 +121,49 @@
     return von + Math.floor(rng() * (bis - von + 1));
   }
 
+  // #101, dritter Anlauf. Gemessen ueber 300 Seeds / 7150 Durchgaenge: bei
+  // ALLEN 25,5 % der zu engen Durchgaenge bietet die Kandidatenspanne gar
+  // keinen besseren Platz (0,0 % "Auswahl verschenkt"). Die Position ist also
+  // ausgereizt — deshalb scheiterten die beiden Vorlaeufer, die nur die Suche
+  // umbauten. Zerlegt man die engen Faelle, liegen 78,6 % daran, dass schon
+  // die freie Anlaufreihe EINER Kammer kuerzer ist als die geraeumte Spanne
+  // plus Luft, 21,4 % am Versatz beider Reihen zueinander.
+  //
+  // Die Ursache ist ein Groessenmissverhaeltnis: MIN_NODE 9 heisst 7 Kacheln
+  // Kammerboden, die Oeffnung ist aber doorWidth+2 = 5–6 Kacheln breit. Eine
+  // 6-Kachel-Oeffnung passt in 7 Kacheln Wand nie mit Luft hinein.
+  // Konsequenz: nicht die Kammer an die Tuer anpassen (MIN_NODE 12 loest es
+  // zwar auf 0,6 %, kostet aber 30 % aller Durchgaenge und damit die
+  // Kammerdichte), sondern die Tuer an die Kammer — die Breite wird auf das
+  // groesste Mass gestutzt, das dort noch mit 2 Kacheln Luft Platz findet.
+  // Untergrenze 2, das sind mit den beiden Freiraumkacheln immer noch 4
+  // Kacheln = 128 px Oeffnung bei 34 px Spielerbreite.
+  //
+  // Verbraucht KEINEN rng()-Zug: die Wunschbreite kommt weiter aus dem einen
+  // Zug in carveDoorway, die Position aus dem einen Zug in waehleDurchgang.
+  // Die Luftstufe steht AUSSEN, die Breite innen: lieber eine schmalere Tuer
+  // mit 2 Kacheln Luft als eine breite, an der man haengenbleibt. Erst wenn
+  // keine Breite die Stufe schafft, wird die Stufe nachgegeben — dieselbe
+  // Reihenfolge wie in waehleDurchgang, damit beide dieselbe Stelle finden.
+  function breitePassend(von, bisFuer, wunsch, frei) {
+    for (var luft = 2; luft >= 0; luft--) {
+      for (var b = wunsch; b >= 2; b--) {
+        var bis = bisFuer(b);
+        for (var p = von; p <= bis; p++) {
+          var ok = true;
+          for (var k = -1 - luft; k <= b + luft && ok; k++) {
+            if (!frei(p + k)) ok = false;
+          }
+          if (ok) return b;
+        }
+      }
+    }
+    return wunsch;
+  }
+
   // Carve a doorway in the shared wall between two BSP children
-  // width: 3-4 tiles so the player collider reliably fits through
+  // Wunschbreite 3-4 Kacheln; breitePassend stutzt sie bei Bedarf auf 2 (s.
+  // dort). Geraeumt wird immer Wunsch+2, die Oeffnung ist also 4-6 Kacheln.
   function carveDoorway(grid, node, rng, doorwayTiles, doorways) {
     if (!node.left || !node.right) return;
     var doorWidth = 3 + Math.floor(rng() * 2); // 3-4 tiles (96-128px)
@@ -133,13 +174,18 @@
 
     if (node.splitAxis === 'h') {
       var overlapX1 = Math.max(node.left.x, node.right.x) + 2;
-      var overlapX2 = Math.min(node.left.x + node.left.w, node.right.x + node.right.w) - 2 - doorWidth;
-      if (overlapX2 < overlapX1) return;
+      var bisX = function (b) {
+        return Math.min(node.left.x + node.left.w, node.right.x + node.right.w) - 2 - b;
+      };
       // Anlaufreihen: die Kammerboeden direkt vor der Wand (splitPos-2 oben,
       // splitPos+1 unten). Nur wo BEIDE frei sind, kann man gerade durchlaufen.
-      var dx = waehleDurchgang(rng, overlapX1, overlapX2, doorWidth, function (x) {
+      var freiX = function (x) {
         return begehbar(grid, x, node.splitPos - 2) && begehbar(grid, x, node.splitPos + 1);
-      });
+      };
+      doorWidth = breitePassend(overlapX1, bisX, doorWidth, freiX);
+      var overlapX2 = bisX(doorWidth);
+      if (overlapX2 < overlapX1) return;
+      var dx = waehleDurchgang(rng, overlapX1, overlapX2, doorWidth, freiX);
       // Carve 2 rows at the split wall + clear 1 tile on each side for corner clearance
       for (var i = -1; i < doorWidth + 1; i++) {
         if (grid[node.splitPos - 1] && dx + i >= 0 && dx + i < grid[node.splitPos - 1].length) {
@@ -165,12 +211,17 @@
       }
     } else if (node.splitAxis === 'v') {
       var overlapY1 = Math.max(node.left.y, node.right.y) + 2;
-      var overlapY2 = Math.min(node.left.y + node.left.h, node.right.y + node.right.h) - 2 - doorWidth;
-      if (overlapY2 < overlapY1) return;
+      var bisY = function (b) {
+        return Math.min(node.left.y + node.left.h, node.right.y + node.right.h) - 2 - b;
+      };
       // Anlaufspalten: splitPos-2 links, splitPos+1 rechts — s. waagerechte Achse.
-      var dy = waehleDurchgang(rng, overlapY1, overlapY2, doorWidth, function (y) {
+      var freiY = function (y) {
         return begehbar(grid, node.splitPos - 2, y) && begehbar(grid, node.splitPos + 1, y);
-      });
+      };
+      doorWidth = breitePassend(overlapY1, bisY, doorWidth, freiY);
+      var overlapY2 = bisY(doorWidth);
+      if (overlapY2 < overlapY1) return;
+      var dy = waehleDurchgang(rng, overlapY1, overlapY2, doorWidth, freiY);
       // Carve 2 columns at the split wall + clear 1 tile on each side for corner clearance
       for (var j = -1; j < doorWidth + 1; j++) {
         if (grid[dy + j] && node.splitPos - 1 >= 0 && node.splitPos - 1 < grid[dy + j].length) {

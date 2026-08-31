@@ -160,3 +160,59 @@ test('#101: der Rasterfix kostet keine Durchgaenge', () => {
   }
   assert.ok(tueren > 2000, 'nur ' + tueren + ' Durchgaenge — die Platzierung verliert Verbindungen');
 });
+
+// ---------------------------------------------------------------------------
+// Dritter Anlauf (#101). Der Rasterfix oben liess 25,5 % der Durchgaenge mit
+// hoechstens einer Kachel seitlicher Luft zurueck. Instrumentiert gemessen
+// (300 Seeds, 7150 Durchgaenge): in 0,0 % dieser Faelle haette die
+// Kandidatenspanne einen besseren Platz geboten — die POSITION ist also
+// ausgereizt, egal wie man sie sucht. Deshalb scheiterten beide Vorlaeufer.
+//
+// Zerlegung der engen Faelle: 78,6 % haben schon in EINER Kammer eine zu
+// kurze freie Anlaufreihe, 21,4 % scheitern am Versatz beider Reihen. Ursache
+// ist ein Groessenmissverhaeltnis: MIN_NODE 9 ergibt 7 Kacheln Kammerboden,
+// die Oeffnung ist aber 5–6 Kacheln breit.
+//
+// Gegenprobe zur Alternative "Kammern vergroessern": MIN_NODE 12 senkt die
+// Quote auf 0,6 %, kostet aber 2139 von 7150 Durchgaengen (-30 %) und damit
+// die Kammerdichte. Stattdessen wird die TUER an die Kammer angepasst.
+//
+// Messung vor/nach, gleiche Messfunktion, 300 Seeds:
+//   Anlauf < 2 Kacheln   25,5 %  ->  9,0 %
+//   gar keine Luft        2,4 %  ->  0,3 %
+//   Durchgaenge insgesamt  7150   ->  7150   (keiner verloren)
+
+test('#101: die Tuer wird an die Kammer angepasst statt umgekehrt', () => {
+  const werte = anlaufStatistik(120);
+  assert.ok(werte.length > 2000, 'zu wenige Durchgaenge gemessen: ' + werte.length);
+  const eng = werte.filter((v) => v < 2).length / werte.length;
+  // Schwelle zwischen Messung vorher (0,256) und nachher (0,094) gelegt.
+  assert.ok(eng < 0.15,
+    (eng * 100).toFixed(1) + ' % der Durchgaenge haben weniger als 2 Anlaufkacheln (erwartet < 15 %)');
+});
+
+test('#101: kaum ein Durchgang bleibt ganz ohne seitliche Luft', () => {
+  const werte = anlaufStatistik(120);
+  // Genau 0 Luft heisst: die aeusserste geraeumte Kachel klebt an der
+  // Querwand — das ist der im Browser gemeldete "geht um die Ecke"-Fall.
+  // Vorher 2,5 %, nachher 0,3 %.
+  const null_ = werte.filter((v) => v === 0).length / werte.length;
+  assert.ok(null_ < 0.012,
+    (null_ * 100).toFixed(1) + ' % der Durchgaenge haben null Anlaufkacheln (erwartet < 1,2 %)');
+});
+
+test('#101: die angepasste Breite unterschreitet nie 4 Kacheln Oeffnung', () => {
+  // Die Anpassung darf nicht zum Schlupfloch werden: enger als 4 Kacheln
+  // (128 px bei 34 px Spielerbreite) wird nie gestutzt. Ohne diese Grenze
+  // wuerde die Quote zwar weiter fallen, aber auf Kosten der Passierbarkeit.
+  const PR = frisch();
+  let min = Infinity;
+  let gesamt = 0;
+  for (let seed = 1; seed <= 120; seed++) {
+    const r = PR.generate({ seed });
+    if (!r || !r.doorways) continue;
+    for (const d of r.doorways) { gesamt++; if (d.width < min) min = d.width; }
+  }
+  assert.ok(gesamt > 2000, 'zu wenige Durchgaenge gemessen: ' + gesamt);
+  assert.ok(min >= 4, 'schmalste Oeffnung nur ' + min + ' Kacheln (erwartet >= 4)');
+});
