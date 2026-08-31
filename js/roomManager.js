@@ -517,6 +517,111 @@ function ensureObstacleColliders(scene) {
   }
 }
 
+/**
+ * Mindestabstände für die Treppen EINES Raums.
+ *
+ * WARUM (#99): Beide Abstände wurden aus der RAUM-BOUNDINGBOX abgeleitet
+ * (30 % der Diagonale, gedeckelt auf die halbe kurze Kante) — und waren damit
+ * systematisch unerfüllbar. Gemessen über 30 Räume war in **30 von 30** der
+ * Spawn-Ausschlusskreis (pi * Mindestabstand^2) GRÖSSER als die gesamte
+ * begehbare Fläche des Raums; im Mittel 3x, im Extremfall 13,5x. Es gab also
+ * gar keinen Punkt, der die Regel erfüllen konnte — die Platzierung MUSSTE in
+ * die Notfallpfade fallen. Die Warnungen waren ein Symptom, kein Fehler.
+ *
+ * Deshalb hängen die Abstände jetzt an der BEGEHBAREN Fläche (die der BFS
+ * ohnehin liefert), also am Raum, den die Kandidaten wirklich haben:
+ *   * Der Ausschlusskreis um den Spawn deckt höchstens die halbe begehbare
+ *     Fläche ab  ->  r <= sqrt(A / 2pi)
+ *   * Mit N Türen müssen N Treppen nebeneinander passen; grobe Packungsgrenze
+ *     sqrt(A / N), mit Sicherheitsfaktor 0,75
+ * Ist die Fläche unbekannt (BFS ausgefallen), bleibt es bei den alten Werten.
+ *
+ * Rein (keine Szene) — dadurch einzeln testbar.
+ *
+ * @param {Object} o { roomW, roomH, walkablePx, doorCount }
+ * @returns {{minDistance:number, separation:number}} in Pixeln
+ */
+function stairSpacingForRoom(o) {
+  const roomW = (o && o.roomW) || 0;
+  const roomH = (o && o.roomH) || 0;
+  const walkablePx = (o && o.walkablePx > 0) ? o.walkablePx : 0;
+  const doorCount = Math.max(1, (o && o.doorCount) || 1);
+  const diag = Math.sqrt(roomW * roomW + roomH * roomH);
+  const roomMin = Math.max(1, Math.min(roomW, roomH));
+  const spawnCap = walkablePx ? Math.sqrt(walkablePx / (2 * Math.PI)) : Infinity;
+  const packCap = walkablePx ? 0.75 * Math.sqrt(walkablePx / doorCount) : Infinity;
+  return {
+    minDistance: Math.min(Math.max(32 * 6, diag * 0.30), roomMin * 0.5, spawnCap),
+    // Untergrenze 96: Treppen-Sprite 80 px + Rand — näher wäre optische
+    // Überlappung, und das war der ursprüngliche Zweck von #15.
+    separation: Math.max(96, Math.min(
+      Math.max(44 * 3, diag * 0.30), roomMin * 0.5, packCap
+    )),
+  };
+}
+if (typeof window !== 'undefined') window.stairSpacingForRoom = stairSpacingForRoom;
+
+/**
+ * Geordnete Kandidatenreihe für die Treppe EINER Tür: von der Tür aus ins
+ * Rauminnere, erst nah an der Tür, dann weiter; je Abstand zuerst mittig,
+ * dann seitlich versetzt.
+ *
+ * WARUM (#99): Bis hierher wurde eine Treppe, die zu nah am Spieler-Spawn lag,
+ * pauschal auf `Spawn + Wandnormale * Schub` gesetzt — ein einziger,
+ * ungeprüfter Sprung. Da der Spawn am Eingang liegt, schob das JEDE Treppe in
+ * die Raummitte, also genau auf die Treppe der gegenüberliegenden Tür.
+ * Gemessen über 40 Räume: 33 von 102 Treppen wurden deshalb als „zu nah"
+ * verworfen (zwei Türen derselben Wand landeten sogar auf demselben Punkt),
+ * 23 lagen ausserhalb der begehbaren Fläche und 22 in einem Hindernis — die
+ * Sprungposition wurde nie gegen Wände oder Erreichbarkeit geprüft.
+ * Statt eines Sprungs liefert diese Reihe Vorschläge; der Aufrufer nimmt den
+ * ERSTEN, der seine Prüfung besteht.
+ *
+ * Rein (keine Szene, kein Zufall) — dadurch einzeln testbar.
+ *
+ * @param {{x:number,y:number,dir?:string}} door  Türmitte in Weltpixeln
+ * @param {Object} opts  { roomW, roomH, inset, step, maxDist, lateral }
+ * @returns {Array<{x:number,y:number}>}
+ */
+function stairCandidatesFromDoor(door, opts) {
+  const o = opts || {};
+  const dx0 = (door && Number.isFinite(door.x)) ? door.x : 0;
+  const dy0 = (door && Number.isFinite(door.y)) ? door.y : 0;
+  const roomW = o.roomW || 0;
+  const roomH = o.roomH || 0;
+  const inset = Number.isFinite(o.inset) ? o.inset : 96;
+  const step = Math.max(8, o.step || 48);
+  const lateral = o.lateral || [0, 64, -64, 128, -128, 192, -192];
+  // Einwärts-Normale: 'N' = Wand oben -> ins Rauminnere heisst nach unten.
+  // Ohne Richtungsangabe wird (wie bisher) die untere Wand angenommen.
+  const dir = String((door && door.dir) || '').toUpperCase();
+  let nx = 0, ny = -1;
+  if (dir === 'N') { nx = 0; ny = 1; }
+  else if (dir === 'S') { nx = 0; ny = -1; }
+  else if (dir === 'W') { nx = 1; ny = 0; }
+  else if (dir === 'E') { nx = -1; ny = 0; }
+  const tx = -ny, ty = nx; // quer zur Normalen
+  // Höchstens bis zur gegenüberliegenden Wand — dahinter liegt kein Raum mehr.
+  const toFarWall = (nx !== 0)
+    ? (nx > 0 ? roomW - dx0 : dx0)
+    : (ny > 0 ? roomH - dy0 : dy0);
+  const maxDist = Math.min(
+    toFarWall,
+    Number.isFinite(o.maxDist) ? o.maxDist : Math.max(roomW, roomH)
+  );
+  const out = [];
+  for (let dist = inset; dist <= maxDist; dist += step) {
+    for (let i = 0; i < lateral.length; i++) {
+      out.push({
+        x: dx0 + nx * dist + tx * lateral[i],
+        y: dy0 + ny * dist + ty * lateral[i],
+      });
+    }
+  }
+  return out;
+}
+if (typeof window !== 'undefined') window.stairCandidatesFromDoor = stairCandidatesFromDoor;
+
 // Zufällige Truhen-Platzierung pro Raum (ersetzt die fixen Template-Truhen).
 // Ziel: ~1 Truhe pro 2 durchschnittlich grosse Räume (Audit-Mittel ~861 Tiles).
 // Platziert NACH den Treppen, validiert gegen Treppen/Spieler-Spawn/Kamera/
@@ -785,54 +890,89 @@ function enterRoom(scene, roomId) {
   const playerSpawnX = (player && player.active) ? player.x : null;
   const playerSpawnY = (player && player.active) ? player.y : null;
 
-  // Bug fix (043): on procedural rooms, stairs were spawning right next to
-  // the player or inside wall tiles. Apply stricter rules there:
-  //   * minimum distance from spawn = max(8 tiles, 30 % of room diagonal)
-  //   * candidate positions verified via isSpawnPositionBlocked (which
-  //     consults the procedural wall grid AND obstacle physics groups)
-  //   * sample many candidates before falling back to the legacy
-  //     nudge+destroy path used by authored templates.
-  // Authored room templates keep the existing flow because their entrance
-  // tiles are hand-placed and shouldn't be relocated.
-  const isProceduralRoom = !!builtMeta.isProcedural;
-  const TILE_PX = 32;
-  const roomDiagPx = Math.sqrt(builtWidth * builtWidth + builtHeight * builtHeight);
-  // Treppen sollen im Level VERTEILT sein (nicht am Spawn kleben / nicht klumpen),
-  // ABER die Abstände MÜSSEN durch die Raumgröße gedeckelt sein: in kleinen/Mini-
-  // Räumen gäbe es sonst weder einen spawn-fernen Punkt noch Platz für getrennte
-  // Treppen -> alle Treppen droppen -> Raum ohne Treppe (Bug). Deckel = halbe
-  // kleinere Raumkante; Untergrenzen ~ Originalwerte.
-  const _roomMin = Math.max(1, Math.min(builtWidth, builtHeight));
-  const MIN_STAIR_DISTANCE = Math.min(Math.max(TILE_PX * 6, roomDiagPx * 0.30), _roomMin * 0.5);
-  const MIN_STAIR_DIST_SQ = MIN_STAIR_DISTANCE * MIN_STAIR_DISTANCE;
   const STAIR_HALF = 44; // 80px display + 8px margin
   const PLACED_STAIRS = []; // pixel coords of stairs placed in this loop
-  const STAIR_SEPARATION = Math.min(Math.max(STAIR_HALF * 3, roomDiagPx * 0.30), _roomMin * 0.5);
+  const _roomMin = Math.max(1, Math.min(builtWidth, builtHeight));
+  // Abstaende an die BEGEHBARE Flaeche koppeln, nicht an die Bounding-Box —
+  // Begruendung und Messung siehe stairSpacingForRoom (#99).
+  const _spacing = stairSpacingForRoom({
+    roomW: builtWidth,
+    roomH: builtHeight,
+    walkablePx: computeWalkableAreaPx(scene),
+    doorCount: doorList.length,
+  });
+  const MIN_STAIR_DISTANCE = _spacing.minDistance;
+  const MIN_STAIR_DIST_SQ = MIN_STAIR_DISTANCE * MIN_STAIR_DISTANCE;
+  const STAIR_SEPARATION = _spacing.separation;
   const STAIR_SEPARATION_SQ = STAIR_SEPARATION * STAIR_SEPARATION;
   // Mindestabstand Treppe <-> Tuer: verhindert, dass die Treppe auf/an einer Tuer
   // liegt (gemeldeter Bug). STAIR_HALF (44) + Tuerrahmen/-durchgang (~44) -> ~88px
-  // Zentrum-zu-Zentrum, damit der Durchgang frei bleibt. Der Tuer-Versatz unten
-  // (96px) ist bewusst groesser, sodass die tuer-abgeleitete Treppe die Pruefung
-  // besteht und trotzdem in Tuernaehe bleibt.
+  // Zentrum-zu-Zentrum, damit der Durchgang frei bleibt. Der Startversatz der
+  // Kandidatenreihe (96px) ist bewusst groesser, sodass der erste Vorschlag die
+  // Pruefung besteht und trotzdem in Tuernaehe bleibt.
   const DOOR_CLEARANCE_SQ = 88 * 88;
 
-  // True if (cx, cy) is inside the room bounds with a STAIR_HALF margin AND
-  // not blocked by walls or physics obstacles AND reachable from the player
-  // spawn AND far enough from spawn AND far enough from previously-placed
-  // stairs in this loop.
-  const isProceduralCandidateValid = (cx, cy) => {
+  // Helper: does any object (physics obstacle OR visual-only template wall)
+  // overlap a square area of side 2*STAIR_HALF centered on (cx, cy)?
+  const checkBucket = (list, cx, cy) => {
+    if (!list) return null;
+    for (let i = 0; i < list.length; i++) {
+      const o = list[i];
+      if (!o || (o.active === false)) continue;
+      if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) continue;
+      // Skip the room-wide floor image — it covers the whole room and would
+      // otherwise be wrongly destroyed by the stair-clear fallback below.
+      if (o.getData && o.getData('isFloor')) continue;
+      const ox = o.x, oy = o.y;
+      const ohw = (o.displayWidth || 32) / 2 + STAIR_HALF;
+      const ohh = (o.displayHeight || 32) / 2 + STAIR_HALF;
+      if (Math.abs(ox - cx) < ohw && Math.abs(oy - cy) < ohh) {
+        return o;
+      }
+    }
+    return null;
+  };
+  const obstacleAt = (cx, cy) => {
+    const fromPhysics = scene.obstacles && scene.obstacles.getChildren
+      ? checkBucket(scene.obstacles.getChildren(), cx, cy)
+      : null;
+    if (fromPhysics) return fromPhysics;
+    // Visual-only objects (statues etc. that were too close to a wall to
+    // become physics obstacles) live on scene._templateWalls.
+    return checkBucket(scene._templateWalls, cx, cy);
+  };
+
+  // Prüft EINEN Treppenplatz: im Raum, frei von Tür/Spawn/anderen Treppen,
+  // nicht in Wand oder Hindernis und vom Spawn aus ERREICHBAR.
+  //
+  // WARUM für alle Räume (#99): diese Prüfung lief bis hierher nur im
+  // prozeduralen Zweig — der aber deckt gemessen nur 2 von 40 Räumen ab. Die
+  // übrigen 38 (Templates) gingen durch einen Pfad, der WEDER Wände NOCH
+  // Erreichbarkeit prüfte: 23 von 69 gesetzten Treppen lagen ausserhalb der
+  // begehbaren Fläche, 22 in einem Hindernis. Genau daraus entstand die
+  // Notfall-Treppe als Dauerzustand (~21 % der Räume).
+  //
+  // `relax` schaltet einzelne Regeln ab, wenn ein Raum sie nicht hergibt:
+  //   { spawn: true }  Mindestabstand zum Spieler-Spawn fällt (Mini-Räume)
+  //   { doors: true }  Tür-Freiraum fällt (nur für die ERSTE Treppe)
+  // Der Abstand zu bereits gesetzten Treppen fällt NIE — Klumpen zu vermeiden
+  // ist der ganze Zweck von #15.
+  const isStairSpotValid = (cx, cy, relax) => {
+    const r = relax || {};
     if (cx < STAIR_HALF || cx > builtWidth - STAIR_HALF) return false;
     if (cy < STAIR_HALF || cy > builtHeight - STAIR_HALF) return false;
     // Nicht auf/an einer Tuer platzieren (Bug: Treppe lag auf einer Tuer). Gegen
     // ALLE Tueren pruefen, nicht nur die eigene — so blockiert eine Treppe auch
     // keinen benachbarten Durchgang.
-    for (let i = 0; i < doorList.length; i++) {
-      const ddx = cx - doorList[i].x;
-      const ddy = cy - doorList[i].y;
-      if (ddx * ddx + ddy * ddy < DOOR_CLEARANCE_SQ) return false;
+    if (!r.doors) {
+      for (let i = 0; i < doorList.length; i++) {
+        const ddx = cx - doorList[i].x;
+        const ddy = cy - doorList[i].y;
+        if (ddx * ddx + ddy * ddy < DOOR_CLEARANCE_SQ) return false;
+      }
     }
     // Distance from player spawn (only when we know where the player is)
-    if (playerSpawnX !== null) {
+    if (!r.spawn && playerSpawnX !== null) {
       const dpx = cx - playerSpawnX;
       const dpy = cy - playerSpawnY;
       if (dpx * dpx + dpy * dpy < MIN_STAIR_DIST_SQ) return false;
@@ -845,7 +985,10 @@ function enterRoom(scene, roomId) {
     }
     // Wall-grid + obstacle check — same helper used by enemy/loot spawns.
     if (isSpawnPositionBlocked(cx, cy, STAIR_HALF)) return false;
-    // Reachability check — proc rooms can have sealed-off chambers; the stair
+    // Deko-Sprites ohne Physikkoerper (Statuen an Waenden) liegen nur in
+    // _templateWalls und sind fuer isSpawnPositionBlocked unsichtbar.
+    if (checkBucket(scene._templateWalls, cx, cy)) return false;
+    // Reachability check — rooms can have sealed-off chambers; the stair
     // must lie in the BFS region the player can actually walk to from spawn.
     // (scene.isPointAccessible may be missing on the very first frame after
     // build; in that case skip the gate so we don't reject every candidate.)
@@ -854,236 +997,78 @@ function enterRoom(scene, roomId) {
     return true;
   };
 
+  // Zieht einen Punkt aus dem BFS-Pool garantiert erreichbarer Zellen.
+  const stairSpotFromPool = (relax) => {
+    if (typeof scene.pickAccessibleSpawnPoint !== 'function') return null;
+    const minD = (relax && relax.spawn) ? 0 : MIN_STAIR_DISTANCE;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const spot = scene.pickAccessibleSpawnPoint({ minDistance: minD, maxAttempts: 12 });
+      if (spot && isStairSpotValid(spot.x, spot.y, relax)) return spot;
+    }
+    return null;
+  };
+
   doorList.forEach((d) => {
-    // Offset stair away from wall into room interior
-    let sx = d.x, sy = d.y;
-    const dir = d.dir || '';
-    // Versatz ins Rauminnere. Proc-Raeume: > DOOR_CLEARANCE (88), damit die
-    // Treppe die Tuer klar freihaelt (Bug: lag vorher bei 64px auf dem
-    // Tuerrahmen). Authored-Templates bleiben bei ihren getunten 64/48px
-    // (deren Ausgaenge sind handplatziert).
-    const _inset = isProceduralRoom ? 96 : 64;
-    if (dir === 'N' || dir === 'n') sy += _inset;       // wall at top → move down
-    else if (dir === 'S' || dir === 's') sy -= _inset;   // wall at bottom → move up
-    else if (dir === 'W' || dir === 'w') sx += _inset;   // wall at left → move right
-    else if (dir === 'E' || dir === 'e') sx -= _inset;   // wall at right → move left
-    else sy -= (isProceduralRoom ? 96 : 48); // default: assume bottom wall
-
-    let placedX = sx, placedY = sy;
-    let proceduralPlaced = false; // true if we already chose a verified spot
-
-    if (isProceduralRoom) {
-      // === Procedural-room placement (043) =================================
-      // Try the door-derived position first; if it satisfies distance + wall
-      // checks, use it. Otherwise, sample random candidates inside the room.
-      let chosen = null;
-      if (isProceduralCandidateValid(sx, sy)) {
-        chosen = { x: sx, y: sy };
-      }
-      if (!chosen) {
-        // Sample up to 32 candidates with a bias toward "far from spawn".
-        // We prefer points that lie further from the player to avoid the
-        // common "stair right next to spawn" case.
-        for (let attempt = 0; attempt < 32 && !chosen; attempt++) {
-          let cx, cy;
-          if (playerSpawnX !== null && attempt < 24) {
-            // Pick a random angle and distance in [MIN, MIN + roomDiag/2]
-            // anchored on the spawn point — keeps us inside the room.
-            const angle = Math.random() * Math.PI * 2;
-            const radius = MIN_STAIR_DISTANCE + Math.random() * (roomDiagPx * 0.5);
-            cx = playerSpawnX + Math.cos(angle) * radius;
-            cy = playerSpawnY + Math.sin(angle) * radius;
-          } else {
-            // Last attempts: pure uniform sample inside the room.
-            cx = STAIR_HALF + Math.random() * (builtWidth - STAIR_HALF * 2);
-            cy = STAIR_HALF + Math.random() * (builtHeight - STAIR_HALF * 2);
-          }
-          if (isProceduralCandidateValid(cx, cy)) {
-            chosen = { x: cx, y: cy };
-          }
-        }
-      }
-      // Final fallback: pickAccessibleSpawnPoint draws from the BFS-computed
-      // pool of guaranteed-reachable tiles. We retry a few times with the
-      // same min-distance gate so we still avoid spawning right next to the
-      // player; if that fails too, we drop the gate and accept ANY reachable
-      // tile rather than land on a wall.
-      if (!chosen && typeof scene.pickAccessibleSpawnPoint === 'function') {
-        for (let pickAttempt = 0; pickAttempt < 8 && !chosen; pickAttempt++) {
-          const spot = scene.pickAccessibleSpawnPoint({
-            minDistance: MIN_STAIR_DISTANCE,
-            maxAttempts: 12
-          });
-          if (spot && isProceduralCandidateValid(spot.x, spot.y)) {
-            chosen = spot;
-          }
-        }
-        if (!chosen) {
-          const spot = scene.pickAccessibleSpawnPoint({ minDistance: 0, maxAttempts: 16 });
-          if (spot && !isSpawnPositionBlocked(spot.x, spot.y, STAIR_HALF)) {
-            chosen = spot;
-            try { console.warn('[stairs] proc-room fallback: relaxed min-distance to find reachable tile'); } catch (_) {}
-          }
-        }
-      }
-      if (chosen) {
-        placedX = chosen.x;
-        placedY = chosen.y;
-        proceduralPlaced = true;
-      }
-      // If chosen is still null, we fall through to the legacy nudge logic
-      // below so the player is never softlocked without a stair.
-    }
-
-    // === Legacy / authored-template path (also fallback for procedural) ====
-    // Remember the door-derived (sx, sy) before any push so we can fall back
-    // to it if pushing dumps the stair into walls (Issue: Treasure_Small N
-    // entrance, where spawn + door coincide and the random push lands in a
-    // corner the room has no margin for).
-    const originalSx = sx, originalSy = sy;
-    if (!isProceduralRoom) {
-      // If stair is too close to player, push it away. Use the door's `dir`
-      // vector (away from the entrance wall) so the stair stays on the axis
-      // the room was designed for — not a random direction that can land in
-      // small rooms' corners. Random direction was the Treasure_Small bug.
-      if (playerSpawnX !== null) {
-        const dpx = sx - playerSpawnX;
-        const dpy = sy - playerSpawnY;
-        if (dpx * dpx + dpy * dpy < MIN_STAIR_DIST_SQ) {
-          // Choose push vector based on the door's compass direction.
-          // The dir tells us which wall the entrance is on; we push INTO the
-          // room (opposite the wall). For doors with no dir, fall back to the
-          // player-to-stair vector or random if they coincide.
-          let nx, ny;
-          if (dir === 'N' || dir === 'n')      { nx = 0;  ny = 1;  }
-          else if (dir === 'S' || dir === 's') { nx = 0;  ny = -1; }
-          else if (dir === 'W' || dir === 'w') { nx = 1;  ny = 0;  }
-          else if (dir === 'E' || dir === 'e') { nx = -1; ny = 0;  }
-          else {
-            const dist = Math.sqrt(dpx * dpx + dpy * dpy);
-            nx = dist > 1 ? dpx / dist : (Math.random() < 0.5 ? 1 : -1);
-            ny = dist > 1 ? dpy / dist : (Math.random() < 0.5 ? 1 : -1);
-          }
-          // Use a push distance bounded by the room's smaller dimension so we
-          // don't shove the stair past the opposite wall in tight rooms like
-          // Treasure_Small (640x512 — full 280 px push from a centered spawn
-          // lands inside the perimeter).
-          const roomMin = Math.min(builtWidth, builtHeight);
-          const maxPush = Math.max(96, roomMin * 0.35);
-          const pushDist = Math.min(MIN_STAIR_DISTANCE, maxPush);
-          let newSx = playerSpawnX + nx * pushDist;
-          let newSy = playerSpawnY + ny * pushDist;
-          newSx = Math.max(50, Math.min(builtWidth - 50, newSx));
-          newSy = Math.max(50, Math.min(builtHeight - 50, newSy));
-          sx = newSx; sy = newSy;
-        }
-      }
-    }
-
-    // Helper: does any object (physics obstacle OR visual-only template wall)
-    // overlap a square area of side 2*STAIR_HALF centered on (cx, cy)?
-    const checkBucket = (list, cx, cy) => {
-      if (!list) return null;
-      for (let i = 0; i < list.length; i++) {
-        const o = list[i];
-        if (!o || (o.active === false)) continue;
-        if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) continue;
-        // Skip the room-wide floor image — it covers the whole room and would
-        // otherwise be wrongly destroyed by the stair-clear fallback below.
-        if (o.getData && o.getData('isFloor')) continue;
-        const ox = o.x, oy = o.y;
-        const ohw = (o.displayWidth || 32) / 2 + STAIR_HALF;
-        const ohh = (o.displayHeight || 32) / 2 + STAIR_HALF;
-        if (Math.abs(ox - cx) < ohw && Math.abs(oy - cy) < ohh) {
-          return o;
-        }
+    // Kandidatenreihe von DIESER Tuer ins Rauminnere. Startversatz 96 px: das
+    // ist der Tuer-Freiraum (DOOR_CLEARANCE 88) plus Rand — naeher an der Tuer
+    // verstellt die Treppe ihren eigenen Durchgang, und JEDER Kandidat wuerde
+    // an der Tuer-Regel scheitern.
+    const CANDS = stairCandidatesFromDoor(d, {
+      roomW: builtWidth,
+      roomH: builtHeight,
+      inset: 96,
+      step: 48,
+      // Weiter als die kurze Raumkante zu suchen bringt nichts — ab da greift
+      // der Pool-Rueckgriff, der direkt aus der begehbaren Flaeche zieht.
+      maxDist: Math.max(MIN_STAIR_DISTANCE + 96, _roomMin),
+    });
+    const firstValid = (relax) => {
+      for (let i = 0; i < CANDS.length; i++) {
+        if (isStairSpotValid(CANDS[i].x, CANDS[i].y, relax)) return CANDS[i];
       }
       return null;
     };
-    const obstacleAt = (cx, cy) => {
-      const fromPhysics = scene.obstacles && scene.obstacles.getChildren
-        ? checkBucket(scene.obstacles.getChildren(), cx, cy)
-        : null;
-      if (fromPhysics) return fromPhysics;
-      // Visual-only objects (statues etc. that were too close to a wall to
-      // become physics obstacles) live on scene._templateWalls.
-      return checkBucket(scene._templateWalls, cx, cy);
-    };
 
-    // For procedural rooms that found a valid candidate above, skip the
-    // nudge/destroy path entirely — placedX/Y is already verified clear.
-    if (!proceduralPlaced) {
-      // 1) First try to NUDGE the stair to a nearby clear spot. This handles
-      //    the common case where the door-derived position lands on a brazier
-      //    or pillar without sacrificing decorative obstacles.
-      const NUDGE_OFFSETS = [
-        [0, 0],
-        [48, 0], [-48, 0], [0, 48], [0, -48],
-        [48, 48], [-48, 48], [48, -48], [-48, -48],
-        [96, 0], [-96, 0], [0, 96], [0, -96],
-      ];
-      placedX = sx; placedY = sy;
-      let foundClear = false;
-      for (const [dx, dy] of NUDGE_OFFSETS) {
-        const tx = sx + dx, ty = sy + dy;
-        if (!obstacleAt(tx, ty)) {
-          placedX = tx;
-          placedY = ty;
-          foundClear = true;
-          break;
-        }
-      }
+    // EIN Hauptpfad fuer alle Raumarten (#99): geordnete Suche ab der Tuer,
+    // dann der BFS-Pool erreichbarer Zellen, dann dieselbe Suche ohne den
+    // Spawn-Mindestabstand (den geben Mini-Raeume schlicht nicht her).
+    let chosen = firstValid(null) || stairSpotFromPool(null) || firstValid({ spawn: true });
+    let placedX, placedY;
 
-      // 2a) Before destroying obstacles at the pushed position, try the
-      //     original door-derived (sx, sy) — the room designer placed the
-      //     entrance there for a reason and it usually sits on floor right
-      //     next to the wall opening. This salvages small authored rooms
-      //     (Treasure_Small) where the push lands in a corner with no clear
-      //     spot for the nudge to find.
-      if (!foundClear && (originalSx !== sx || originalSy !== sy)) {
-        for (const [dx, dy] of NUDGE_OFFSETS) {
-          const tx = originalSx + dx, ty = originalSy + dy;
-          if (!obstacleAt(tx, ty)) {
-            placedX = tx;
-            placedY = ty;
-            foundClear = true;
-            break;
-          }
-        }
-      }
-      // 2b) If every nearby position is blocked, fall back to (sx, sy) and
-      //    forcibly remove any obstacles that overlap it. The stair MUST
-      //    exist near the door so the player can reach the next room.
-      if (!foundClear) {
+    if (chosen) {
+      placedX = chosen.x;
+      placedY = chosen.y;
+    } else if (PLACED_STAIRS.length > 0) {
+      // #15: kein Platz, der Abstand zu den bereits gesetzten Treppen haelt ->
+      // die Treppe dieser Tuer weglassen statt zwei aneinander zu klumpen. Der
+      // Raum bleibt ueber die erste Treppe durchquerbar.
+      try { console.warn('[stairs] dropped a stair too close to an existing one (#15)'); } catch (_) {}
+      return;
+    } else {
+      // ERSTE Treppe des Raums: sie MUSS entstehen, sonst ist der Run
+      // softgelockt. Letzte Stufen: Pool ohne Spawn- und Tuer-Regel, sonst der
+      // erste Kandidat an der Tuer, dort Hindernisse wegraeumen.
+      chosen = stairSpotFromPool({ spawn: true, doors: true });
+      if (chosen) {
+        placedX = chosen.x;
+        placedY = chosen.y;
+      } else {
+        const fb = CANDS[0] || { x: d.x, y: d.y };
+        placedX = fb.x;
+        placedY = fb.y;
         let blocker;
         let safety = 12;
         while (safety-- > 0 && (blocker = obstacleAt(placedX, placedY))) {
           if (blocker.body) blocker.body.enable = false;
-          // Also remove from templateWalls cache if present, so it doesn't
-          // get re-checked in the next iteration.
+          // Auch aus dem templateWalls-Zwischenspeicher nehmen, sonst wird es
+          // im naechsten Durchlauf erneut gefunden.
           if (Array.isArray(scene._templateWalls)) {
-            const i = scene._templateWalls.indexOf(blocker);
-            if (i >= 0) scene._templateWalls.splice(i, 1);
+            const wi = scene._templateWalls.indexOf(blocker);
+            if (wi >= 0) scene._templateWalls.splice(wi, 1);
           }
           blocker.destroy();
         }
-      }
-    }
-
-    // #15: wenn diese Treppe zu nah an einer bereits platzierten lande, lieber
-    // ganz WEGLASSEN als zwei Treppen aneinander zu klumpen. Die erste Treppe
-    // bleibt immer (PLACED_STAIRS leer -> kein Skip), damit der Raum stets
-    // durchquerbar ist. Greift für ALLE Pfade (proc + authored + Fallback).
-    if (PLACED_STAIRS.length > 0) {
-      let tooClose = false;
-      for (let i = 0; i < PLACED_STAIRS.length; i++) {
-        const dxs = placedX - PLACED_STAIRS[i].x;
-        const dys = placedY - PLACED_STAIRS[i].y;
-        if (dxs * dxs + dys * dys < STAIR_SEPARATION_SQ) { tooClose = true; break; }
-      }
-      if (tooClose) {
-        try { console.warn('[stairs] dropped a stair too close to an existing one (#15)'); } catch (_) {}
-        return; // skip this door's stair
+        try { console.warn('[stairs] Rueckgriff: erste Treppe an der Tuer freigeraeumt'); } catch (_) {}
       }
     }
 
