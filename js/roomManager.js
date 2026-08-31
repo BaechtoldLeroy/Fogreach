@@ -1375,20 +1375,49 @@ function enterRoom(scene, roomId) {
     }
   } catch (e) { /* nie den Raumaufbau brechen */ }
 
-  // Feature 059 (#42) WP04: early run-amulet drop (first room only).
-  _maybeSpawnRunAmulet(scene);
+  // Feature 059 (#42) WP04 / Issue #120: Lauf-Amulett ablegen, sobald der Raum
+  // dafür in Frage kommt (ab Raum 3, Notfallabwurf im Finalraum).
+  _maybeSpawnRunAmulet(scene, roomId);
 }
 
-// Feature 059 (#42) WP04: spawn the pending run-amulet as a floor pickup in
-// the FIRST room of a run (decided in initDungeonRun). Chance + depth gating
-// already happened; here we only place the drop near the player on a walkable
-// tile. Defensive: a failure must never break room entry.
-function _maybeSpawnRunAmulet(scene) {
+// Ab welchem betretenen Raum das Lauf-Amulett frühestens liegt (Issue #120).
+var RUN_AMULET_MIN_ROOM = 3;
+
+// Issue #120: Entscheidet, ob das vorgemerkte Lauf-Amulett in DIESEM Raum liegt.
+// Rein und ohne Seiteneffekte, damit die Regel testbar bleibt.
+//
+// WARUM ab Raum 3: im ersten Raum liegt das Amulett vor Laufbeginn vor den
+// Füßen — es wirkt wie Startausstattung statt wie ein Fund.
+//
+// WARUM der Notfallabwurf im letzten Raum: ein Amulett, das die Chance-Prüfung
+// bereits BESTANDEN hat, dem Spieler aber wegen eines kurzen Laufs (< 3 Räume)
+// vorenthalten wird, wäre ein stiller Verlust — im Spiel nicht nachvollziehbar
+// und von aussen nicht von Pech zu unterscheiden. Lieber spät als gar nicht.
+function shouldPlaceRunAmuletHere(roomsEntered, roomIndex, totalRooms) {
+  var betreten = Number(roomsEntered);
+  if (Number.isFinite(betreten) && betreten >= RUN_AMULET_MIN_ROOM) return true;
+  // Letzte Gelegenheit: nur bei bekannter Raumzahl entscheidbar.
+  var idx = Number(roomIndex);
+  var gesamt = Number(totalRooms);
+  if (!Number.isFinite(idx) || !Number.isFinite(gesamt) || gesamt < 1) return false;
+  return idx >= gesamt - 1;
+}
+
+// Feature 059 (#42) WP04: spawn the pending run-amulet as a floor pickup
+// (decided in initDungeonRun). Chance + depth gating already happened; here we
+// only pick the room (shouldPlaceRunAmuletHere) and place the drop near the
+// player on a walkable tile. Defensive: a failure must never break room entry.
+function _maybeSpawnRunAmulet(scene, roomIndex) {
   try {
     var amulet = window._pendingRunAmulet;
     if (!amulet) return;
-    // First room only — roomsEntered was just incremented at enterRoom start.
-    if (!window.runStats || window.runStats.roomsEntered > 1) return;
+    // Noch zu früh? Vormerkung bleibt bestehen und trägt in den nächsten Raum.
+    var _tR = (dungeonRun && dungeonRun.totalRooms) ? dungeonRun.totalRooms : rooms.length;
+    var _betreten = window.runStats ? window.runStats.roomsEntered : NaN;
+    // Ohne explizites Argument auf den laufenden Raum zurückfallen — sonst
+    // stirbt der Notfallabwurf still, wenn ein Aufrufer den Index vergisst.
+    var _idx = (typeof roomIndex === 'number') ? roomIndex : currentRoomId;
+    if (!shouldPlaceRunAmuletHere(_betreten, _idx, _tR)) return;
     window._pendingRunAmulet = null;
     if (typeof window.spawnLoot !== 'function' || typeof player === 'undefined' || !player) return;
     var px = player.x + 90, py = player.y;
@@ -2732,3 +2761,8 @@ window.rooms = () => rooms;
 window.currentRoomId = () => currentRoomId;
 window.initDungeonRun = initDungeonRun;
 window.updateRoomCounter = updateRoomCounter;
+window.shouldPlaceRunAmuletHere = shouldPlaceRunAmuletHere;   // #120 (rein/testbar)
+window.RUN_AMULET_MIN_ROOM = RUN_AMULET_MIN_ROOM;
+// Nur zum Testen exportiert: belegt, dass die Raumregel wirklich VERDRAHTET ist
+// und die Vormerkung bis zum passenden Raum stehen bleibt (#120).
+window._maybeSpawnRunAmulet = _maybeSpawnRunAmulet;
