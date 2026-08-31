@@ -17,7 +17,33 @@ function attachLab(h) {
 
   /** Registry im Kontext anlegen (idempotent). */
   function ensureRegistry() {
-    h.run('window.__lab = window.__lab || { refs: [] };');
+    h.run(`(function () {
+      window.__lab = window.__lab || { refs: [] };
+
+      // __labOhneElite(fn): fuehrt fn aus, waehrend BEIDE Elite-Wuerfe aus
+      // spawnEnemy stillgelegt sind. Begruendung siehe lab.spawnEnemy (#110).
+      //
+      // Die Zuweisung an window.makeElite greift, weil die Spielskripte im
+      // vm-Kontext auf oberster Ebene laufen: eine \`function\`-Deklaration legt
+      // dort eine Eigenschaft auf dem globalen Objekt an, und die Aufrufstelle
+      // in enemy.js (\`makeElite.call(this, enemy)\`) loest ueber genau diese
+      // Eigenschaft auf. (Fuer \`let\`/\`const\` gilt das NICHT — die liegen nur
+      // im lexikalischen Scope und sind von aussen unerreichbar.)
+      if (!window.__labOhneElite) {
+        window.__labOhneElite = function (fn) {
+          var altMake = window.makeElite;
+          var EE = window.EliteEnemies;
+          var altApply = EE ? EE.applyEliteToEnemy : null;
+          window.makeElite = function () {};
+          if (EE) EE.applyEliteToEnemy = function () {};
+          try { return fn(); }
+          finally {
+            window.makeElite = altMake;
+            if (EE) EE.applyEliteToEnemy = altApply;
+          }
+        };
+      }
+    })()`);
   }
 
   const lab = {
@@ -43,19 +69,49 @@ function attachLab(h) {
     },
 
     /**
-     * Erzeugt einen Gegner und legt ihn in die Registry.
+     * Erzeugt einen GEWOEHNLICHEN Gegner und legt ihn in die Registry.
+     *
+     * FLATTER-URSACHE (#110), belegt: spawnEnemy wuerfelt ganz am Ende ZWEI
+     * Elite-Chancen — Legacy-Elite (makeElite, ~8 % ab Tiefe 5) und
+     * Champion/Unique (EliteEnemies.applyEliteToEnemy, ~11 % auf Tiefe 10).
+     * Messung ueber 200 Spawns (Typ 3, Tiefe 10): 17,5 % kamen als Elite
+     * heraus, darunter magic_resistant und spectral_hit. Beide senken den
+     * Schaden in genau dem Funnel, den die Affix-Tests messen:
+     *   Faehigkeitsschaden bei weaponDamage 20 -> 20 (196x), 10 (2x), 7 (2x).
+     * Der "gewoehnliche" Kontrollgegner war also gelegentlich selbst resistent
+     * bzw. selbst ein Berserker. Daher die Meldungen "ohne=10, mit=10" und
+     * "ohne=4, mit=10" (20 x 0.5 x 0.35 = 3.5 -> gerundet 4).
+     *
+     * Der Wurf wird deshalb UNTERDRUECKT statt hinterher rueckgaengig gemacht:
+     * removeEliteFromEnemy laesst die HP-/Tempo-Aufschlaege stehen, und ein
+     * halb zurueckgebauter Gegner ist als Kontrolle wertlos.
+     *
+     * @param {object} [opts] { elite: true } laesst den Zufallswurf wieder zu.
      * @returns {number} ref-Index
      */
-    spawnEnemy(type, dx, dy) {
+    spawnEnemy(type, dx, dy, opts) {
       ensureRegistry();
+      const roh = `spawnEnemy.call(sc, player.x + ${dx || 150}, player.y + ${dy || 0}, ${type || 1})`;
+      const ausdruck = (opts && opts.elite)
+        ? roh
+        : `window.__labOhneElite(function () { return ${roh}; })`;
       return h.run(`(function () {
         var sc = window.game.scene.getScene('${SCENE}');
-        var e = spawnEnemy.call(sc, player.x + ${dx || 150}, player.y + ${dy || 0}, ${type || 1});
+        var e = ${ausdruck};
         window.__lab.refs.push(e);
         return window.__lab.refs.length - 1;
       })()`);
     },
 
+    /**
+     * Mini-Boss erzeugen. ABSICHTLICH MIT Elite-Wurf (anders als spawnEnemy):
+     * der Boss/Mini-Boss-Test misst das HP-VERHAELTNIS gegen die Verteilung,
+     * wie sie im Spiel wirklich vorkommt. Nachgemessen (5 x 36 Wuerfe, T10):
+     * mit Wurf liegt das Verhaeltnis bei 3.29-3.84, ohne Wurf bei 3.78-4.15 —
+     * letzteres kratzt an der Obergrenze 4.2 des Zielbands. Den Wurf hier
+     * stillzulegen wuerde also ein NEUES Flattern erzeugen, kein altes
+     * beheben (#110).
+     */
     spawnMiniBoss(baseType, dx, dy) {
       ensureRegistry();
       return h.run(`(function () {
@@ -104,6 +160,11 @@ function attachLab(h) {
           speed: e.speed, x: e.x, y: e.y, active: !!e.active,
           isMiniBoss: !!e.isMiniBoss, isBoss: !!e.isBoss,
           attackCdMul: e._attackCdMul,
+          // #110: Elite-Zustand mitmelden, damit ein Test seine Ausgangslage
+          // zusichern kann ("mein Kontrollgegner ist wirklich gewoehnlich")
+          // statt sie nur anzunehmen.
+          isElite: !!(e.isElite || e._isElite),
+          affixe: (e.eliteAffixes || []).join(','),
         };
       })()`);
     },
