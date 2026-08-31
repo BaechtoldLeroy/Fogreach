@@ -603,7 +603,10 @@ function initInventoryUI() {
     // Tempo zeigen, nicht verstecken. Nur exakt 0 (kein Modifikator) wird
     // ausgelassen.
     pushStat(_INV_T('inventory.label.speed'), (it.speed || 0) * 100, 1, '%', true);
-    pushStat(_INV_T('inventory.label.range'), it.range, 1);
+    // allowNegative wie beim Tempo: seit #121 tragen Dolch und Eisenklinge eine
+    // NEGATIVE Reichweite. Ohne das Flag verwarf pushStat sie bei num <= 0 — der
+    // Nachteil wäre unsichtbar gewesen, die Waffe sähe reinen Vorteil aus.
+    pushStat(_INV_T('inventory.label.range'), it.range, 1, '', true);
     pushStat(_INV_T('inventory.label.armor'), (it.armor || 0) * 100, 1, '%');
     pushStat(_INV_T('inventory.label.crit'), (it.crit || 0) * 100, 1, '%');
     pushStat(_INV_T('inventory.label.move'), it.move, 1);
