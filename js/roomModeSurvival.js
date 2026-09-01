@@ -17,12 +17,12 @@
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
       'roommode.survival.banner': 'Überlebe {seconds} Sekunden!',
-      'roommode.survival.info': 'Es rückt ständig Nachschub nach — überlebe, bis der Timer abläuft.',
+      'roommode.survival.info': 'Es rückt ständig Nachschub nach — und die Gegner hier sind zäher als üblich. Überlebe, bis der Timer abläuft.',
       'roommode.survival.hud': 'Überleben: {seconds}s'
     });
     window.i18n.register('en', {
       'roommode.survival.banner': 'Survive {seconds} seconds!',
-      'roommode.survival.info': 'Reinforcements keep coming — stay alive until the timer runs out.',
+      'roommode.survival.info': 'Reinforcements keep coming — and the enemies here are tougher than usual. Stay alive until the timer runs out.',
       'roommode.survival.hud': 'Survive: {seconds}s'
     });
   }
@@ -32,7 +32,9 @@
   var SPAWN_INTERVAL = 2.5;   // s zwischen Nachschub-Schüben (halbiert -> schwerer)
   var SPAWN_BATCH = 2;        // Gegner pro Schub
   var MAX_CONCURRENT = 14;    // Deckel gleichzeitiger Gegner (Anti-Überfüllung)
-  var HP_MULT = 2;            // Gegner-HP im Überlebensmodus (× Basis) — mehr Druck
+  // Gegner-HP im Überlebensmodus (× Basis) — mehr Druck. Wird im Banner
+  // ANGESAGT ('roommode.survival.info'): wer hier dreht, muss den Text mitziehen.
+  var HP_MULT = 2;
 
   // Nachschub spawnt in einem RING um die AKTUELLE Spieler-Position (jeder Schub
   // liest window.player LIVE, folgt also dem Spieler statt an einem festen Punkt

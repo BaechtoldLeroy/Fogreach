@@ -189,6 +189,7 @@
   function _zielStarten() {
     _armed = false;
     try { if (_current && _current.start) _current.start(_scene, _ctx); } catch (e) {}
+    _bestandAufwerten();
     if (_ctx && _ctx.modeId && _ctx.modeId !== 'clear' && _ctx.modeId !== 'escape') {
       try {
         if (typeof window !== 'undefined' && typeof window.lockStairs === 'function') {
@@ -196,6 +197,45 @@
         }
       } catch (e) {}
     }
+  }
+
+  /**
+   * Wertet die Gegner auf, die beim Ausloesen SCHON im Raum stehen.
+   *
+   * Der Modus-Faktor greift sonst nur beim Spawn — die Welle, die man beim
+   * Betreten vorgefunden hat, bliebe fuer immer die leichte, waehrend der
+   * Nachschub daneben doppelt so zaeh ist. Zwei Klassen desselben Gegners im
+   * selben Raum liest niemand als Absicht.
+   *
+   * hp UND maxHp werden skaliert, damit ein angeschlagener Gegner sein
+   * Schadensverhaeltnis behaelt (der Balken springt nicht).
+   *
+   * Modi ohne eigenen Faktor (defend, escape, hunt) sind hier ein No-op —
+   * bekaeme einer je einen, gilt das hier automatisch mit.
+   *
+   * Ein Schutz gegen doppelte Anwendung waere toter Code: _zielStarten laeuft
+   * je Raum genau einmal, und enterRoom raeumt mit enemies.clear(true, true)
+   * jeden Gegner weg, bevor der naechste Raum steht. Ein Gegner kann also
+   * niemals zwei Ausloesungen erleben.
+   */
+  function _bestandAufwerten() {
+    var f = enemyHpMultiplier();          // nach _armed=false: der echte Faktor
+    // Reine Abkuerzung: mit f=1 waere die Schleife folgenlos (hp*1), sie muss
+    // aber fuer drei von vier Modi gar nicht erst laufen. KEIN Verhalten —
+    // ein Mutationstest kann diese Zeile deshalb nicht fangen.
+    if (!(f > 1)) return;
+    try {
+      var g = (typeof window !== 'undefined' && window.enemies
+        && typeof window.enemies.getChildren === 'function') ? window.enemies.getChildren() : null;
+      if (!g) return;
+      for (var i = 0; i < g.length; i++) {
+        var e = g[i];
+        if (!e || !e.active || typeof e.hp !== 'number') continue;
+        if (typeof e.maxHp === 'number' && e.maxHp > 0) e.maxHp = Math.round(e.maxHp * f);
+        e.hp = Math.round(e.hp * f);
+        if (typeof e.maxHp !== 'number' || e.maxHp < e.hp) e.maxHp = e.hp;
+      }
+    } catch (e) {}
   }
 
   /**

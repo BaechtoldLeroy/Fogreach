@@ -440,3 +440,102 @@ test('hunt: faellt der Kandidat vor dem Sichtkontakt, rueckt ein anderer nach', 
   assert.deepStrictEqual(m.ankerPunkt(), { x: 70, y: 0 }, 'nachgerueckt');
   delete w.enemies;
 });
+
+// --- Bestand nachtraeglich aufwerten ---------------------------------------
+
+// Ein Modus mit Faktor, der wie survival an einem Anker haengt.
+function zaehModus(faktor) {
+  return function () {
+    return {
+      arm: function () { return { x: 500, y: 500 }; },
+      start: function () {},
+      update: function () {}, isComplete: function () { return false; },
+      objectiveFailed: function () { return false; },
+      enemyHpMultiplier: function () { return faktor; },
+      getState: function () { return {}; }
+    };
+  };
+}
+
+function raumMitGegnern(liste) {
+  globalThis.window.enemies = { getChildren: () => liste };
+}
+
+test('Beim Ausloesen werden die schon stehenden Gegner mit aufgewertet', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  R.register('zaeh', zaehModus(2));
+  w.location.search = '?mode=zaeh';
+  const g = [
+    { active: true, hp: 10, maxHp: 10 },
+    { active: true, hp: 3, maxHp: 6 },     // angeschlagen
+    { active: false, hp: 5, maxHp: 5 },    // tot -> unangetastet
+  ];
+  raumMitGegnern(g);
+  w.player = { x: 0, y: 0 };
+
+  R.beginRoom({}, { roomIndex: 0, depth: 1 });
+  R.updateActive(16);
+  assert.deepStrictEqual([g[0].hp, g[1].hp, g[2].hp], [10, 3, 5], 'scharfgestellt: noch nichts');
+
+  w.player = { x: 500, y: 500 };
+  R.updateActive(16);
+  assert.strictEqual(g[0].hp, 20);
+  assert.strictEqual(g[0].maxHp, 20);
+  assert.strictEqual(g[1].hp, 6, 'angeschlagener Gegner');
+  assert.strictEqual(g[1].maxHp, 12, 'Schadensverhaeltnis bleibt (halb voll)');
+  assert.strictEqual(g[2].hp, 5, 'toter Gegner unangetastet');
+  delete w.enemies;
+});
+
+test('Ein Modus ohne eigenen Faktor laesst den Bestand in Ruhe', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  R.register('ohnefaktor', function () {
+    return {
+      arm: function () { return { x: 500, y: 500 }; },
+      start: function () {}, update: function () {},
+      isComplete: function () { return false; },
+      objectiveFailed: function () { return false; },
+      getState: function () { return {}; }
+    };
+  });
+  w.location.search = '?mode=ohnefaktor';
+  const g = [{ active: true, hp: 10, maxHp: 10 }];
+  raumMitGegnern(g);
+  w.player = { x: 500, y: 500 };
+
+  R.beginRoom({}, { roomIndex: 0, depth: 1 });
+  R.updateActive(16);
+  assert.strictEqual(g[0].hp, 10, 'HP unveraendert');
+  delete w.enemies;
+});
+
+test('Der Anker flammt beim Wecken auf — und laesst die Gegner in Ruhe', () => {
+  const A = globalThis.window.RoomModeAnchor;
+  // Gemessen: ein Tween ueber die GEGNER liess die uebrigen Ziele auf halber
+  // Skalierung stehen, sobald eines mittendrin starb. Der Effekt gehoert
+  // deshalb an den Anker, der den ganzen Raum ueberlebt.
+  const gespielt = [];
+  const sprite = {
+    scene: { tweens: { add: (cfg) => gespielt.push(cfg) } },
+    setAlpha() { return this; },
+    clearTint() { return this; },
+  };
+  A.geweckt(sprite);
+  assert.strictEqual(gespielt.length, 1, 'genau ein Aufflammen');
+  assert.strictEqual(gespielt[0].targets, sprite, 'am Anker, nicht an Gegnern');
+  assert.strictEqual(gespielt[0].yoyo, true, 'kehrt zur Ausgangsgroesse zurueck');
+});
+
+test('Der ruhende Zustand flammt nicht auf', () => {
+  const A = globalThis.window.RoomModeAnchor;
+  const gespielt = [];
+  const sprite = {
+    scene: { tweens: { add: (cfg) => gespielt.push(cfg) } },
+    setAlpha() { return this; },
+    setTint() { return this; },
+  };
+  A.ruhend(sprite);
+  assert.strictEqual(gespielt.length, 0);
+});

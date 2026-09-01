@@ -102,10 +102,27 @@
     return sprite;
   }
 
-  /** Der geweckte Zustand: volle Farbe, das Ereignis laeuft. */
+  /**
+   * Der geweckte Zustand: volle Farbe, das Ereignis laeuft.
+   *
+   * Dazu ein kurzes Aufflammen, damit der Uebergang einen MOMENT hat und nicht
+   * bloss eine Zahl aendert. Bewusst am Anker und nicht an den Gegnern: der
+   * Anker ueberlebt den ganzen Raum, waehrend ein Gegner mitten im Tween
+   * sterben kann — gemessen blieben die uebrigen Ziele dann auf halber
+   * Skalierung stehen.
+   */
   function geweckt(sprite) {
     if (!sprite) return sprite;
     try { sprite.setAlpha(1); if (sprite.clearTint) sprite.clearTint(); } catch (e) {}
+    try {
+      var sc = sprite.scene;
+      if (sc && sc.tweens && typeof sc.tweens.add === 'function') {
+        sc.tweens.add({
+          targets: sprite, scale: '*=1.25', duration: 180,
+          yoyo: true, repeat: 1, ease: 'Quad.easeOut'
+        });
+      }
+    } catch (e) {}
     return sprite;
   }
 
