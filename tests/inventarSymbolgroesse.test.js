@@ -56,7 +56,7 @@ test('Inventar: das Symbol fuellt seine Zellen spuerbar aus', () => {
   const gfx = fs.readFileSync(path.join(__dirname, "..", "js", "graphics.js"), "utf8");
   const iBow = gfx.indexOf("key: 'itBow'");
   assert.ok(iBow > 0, "itBow nicht gefunden");
-  assert.ok(gfx.slice(iBow, iBow + 600).includes("gestrecktesZeichnen(gBasis, 1.9"),
+  assert.ok(gfx.slice(iBow, iBow + 1200).includes("gestrecktesZeichnen(gBasis, 1.9"),
     "die Bogenzeichnung wird nicht mehr verbreitert — sie wird im 1x3-Feld zum Faden");
 
   const COLS = 10, ROWS = 4;                 // INV_COLS / INV_ROWS aus main.js

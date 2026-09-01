@@ -1942,7 +1942,11 @@ function createItemGraphics() {
         // ein 1x3-Rasterfeld (45 px breit) gezogen blieben davon 17 px —
         // im Spiel ein Faden. Waagerecht gestreckt fuellt sie das Feld,
         // ohne dass die Zeichnung selbst angefasst werden muss.
-        const g = gestrecktesZeichnen(gBasis, 1.9, 1.0);
+        // Versatz 19: die Zeichnung ist NICHT mittig — ihr Buegel liegt bei x 6..20,
+        // also links der Kachelmitte 24. Ohne Ausgleich zieht die Streckung sie
+        // bis x=-10 aus der Kachel heraus (gemessen). Mit 19 sitzt sie bei
+        // 8.8..39.7, also mittig und breit.
+        const g = gestrecktesZeichnen(gBasis, 1.9, 1.0, 19, 0);
         const cx = SIZE / 2;
         const cy = SIZE / 2;
         // Big vertical recurve: bold filled crescent, tip flares, taut string

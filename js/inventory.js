@@ -716,40 +716,32 @@ function initInventoryUI() {
     }
   };
 
-const equipKeys = ['weapon', 'head', 'body', 'boots', 'amulet'];
+const equipKeys = ['weapon', 'offhand', 'head', 'body', 'boots', 'amulet'];
 const EQUIP_X = -PANEL_W / 2 + 130;   // Mittelachse der Silhouette
 const EQUIP_Y0 = -PANEL_H / 2 + 130;  // Kopfhoehe; darueber liegt die Materialzeile
 const EQUIP_STEP = 72;                // Zeilenabstand der Silhouette
 
-// #123 A: Die Ausruestung stand als senkrechte Liste da — fuenf gleiche
-// Kaesten untereinander, deren Reihenfolge nichts bedeutete. Jetzt liegen
-// die Plaetze dort, wo das Teil am Koerper sitzt: Kopf oben, Koerper
-// darunter, Waffe an der linken Hand, Amulett am Hals, Stiefel unten. Das
-// spart jede Beschriftung — die Lage sagt bereits, was hingehoert.
+// PAPIERPUPPE nach dem Vorbild von Diablo 2 / Path of Exile: die Plaetze
+// haben UNTERSCHIEDLICHE Groessen, passend zu dem, was hineingehoert. Fuenf
+// gleich grosse Quadrate lasen sich als Zettelkasten; erst die verschiedenen
+// Formen machen daraus eine Gestalt, die man ohne Beschriftung liest.
 //
-// Versatz gegen EQUIP_X/EQUIP_Y0 in Pixeln.
-// Die Plaetze waren uiSlot-Bilder von 96x64 px, die Versaetze aber nur 46
-// bzw. 52 px — kleiner als die Plaetze breit sind. Kopf/Amulett,
-// Amulett/Koerper und Koerper/Waffe ueberlappten dadurch. Jetzt 72x48 mit
-// Versaetzen, die groesser sind als der Platz.
-// Quadratisch und so gross wie eine Rasterzelle mal 1.33 — die Ausruestung
-// soll als Koerper lesbar sein, nicht als Zettelkasten. Die Versaetze sind
-// 80 px, lassen also 16 px Fuge; bei 72x48 mit 76/56 stiessen die Kaesten
-// fast aneinander und lasen sich als ein Block.
-const EQUIP_SLOT_W = 64, EQUIP_SLOT_H = 64;
+// Die Masse spiegeln die Rastergroessen der Gegenstaende (Kopf 2x2, Koerper
+// 2x2 hoch dargestellt, Waffe/Nebenhand hochkant, Amulett 1x1).
 const EQUIP_LAGE = {
-  head:   { dx:   0, dy:   0 },
-  amulet: { dx:  80, dy:   0 },
-  body:   { dx:   0, dy:  80 },
-  weapon: { dx: -80, dy:  80 },
-  boots:  { dx:   0, dy: 160 },
+  head:    { dx:   0, dy:   0, w: 64, h: 64 },
+  amulet:  { dx:  74, dy:  -6, w: 40, h: 40 },
+  weapon:  { dx: -74, dy:  86, w: 64, h: 96 },
+  body:    { dx:   0, dy:  86, w: 64, h: 96 },
+  offhand: { dx:  74, dy:  86, w: 64, h: 96 },
+  boots:   { dx:   0, dy: 178, w: 64, h: 64 },
 };
 function equipPos(key, index) {
   const l = EQUIP_LAGE[key];
-  if (l) return { x: EQUIP_X + l.dx, y: EQUIP_Y0 + l.dy };
+  if (l) return { x: EQUIP_X + l.dx, y: EQUIP_Y0 + l.dy, w: l.w, h: l.h };
   // Unbekannter Slot (kuenftige Erweiterung): unten anhaengen statt
   // stillschweigend auf dem Kopf zu landen.
-  return { x: EQUIP_X, y: EQUIP_Y0 + 152 + (index + 1) * EQUIP_STEP };
+  return { x: EQUIP_X, y: EQUIP_Y0 + 250 + (index + 1) * 72, w: 64, h: 64 };
 }
 
   for (let i = 0; i < equipKeys.length; i++) {
@@ -758,7 +750,7 @@ function equipPos(key, index) {
     const _ex = _lage.x;
 
     const slot = scene.add.image(_ex, y, 'uiZelle')
-      .setOrigin(0.5).setDisplaySize(EQUIP_SLOT_W, EQUIP_SLOT_H)
+      .setOrigin(0.5).setDisplaySize(_lage.w, _lage.h)
       .setScrollFactor(0).setInteractive({ useHandCursor: true });
     slot.on('pointerdown', (pointer) => {
       selectEquipSlot(equipKeys[i]);
@@ -795,7 +787,7 @@ function equipPos(key, index) {
     // Das Symbol fuellt den Platz wie im Raster. Vorher lief es auf der
     // Grundgroesse der Textur mit und wirkte darin verloren.
     const icon = scene.add.image(_ex, y, 'itMat').setOrigin(0.5)
-      .setDisplaySize(EQUIP_SLOT_W * 0.82, EQUIP_SLOT_H * 0.82)
+      .setDisplaySize(_lage.w * 0.82, _lage.h * 0.82)
       .setVisible(false).setScrollFactor(0);
     panel.add(icon);
 
@@ -1039,8 +1031,8 @@ function equipPos(key, index) {
       const q = equipPos(equipKeys[i], i);
       // Grosszuegiger Treffer (halbe Slotgroesse), damit man nicht
       // pixelgenau zielen muss.
-      if (Math.abs(lx - q.x) <= EQUIP_SLOT_W / 2 + 4
-          && Math.abs(ly - q.y) <= EQUIP_SLOT_H / 2 + 4) return equipKeys[i];
+      if (Math.abs(lx - q.x) <= q.w / 2 + 4
+          && Math.abs(ly - q.y) <= q.h / 2 + 4) return equipKeys[i];
     }
     return null;
   }
