@@ -12,6 +12,9 @@ const { loadGameModule } = require('./loadGameModule');
 function fresh() {
   if (!globalThis.window) require('./setup');
   delete globalThis.window.RoomMode;
+  // #88: Debug-Flaggen wirken nur bei aktivem Gate.
+  delete globalThis.window.DebugGate;
+  loadGameModule('js/debugGate.js');
   loadGameModule('js/roomModes.js');
   return globalThis.window.RoomMode;
 }
@@ -132,9 +135,11 @@ test('updateActive tickt nicht, solange die Pause-Uhr laeuft', () => {
   });
   // beginRoom waehlt den Modus selbst; ?mode= erzwingt ihn im ersten Raum.
   const _loc = globalThis.window.location;
-  globalThis.window.location = { search: '?mode=paustest' };
+  globalThis.window.location = { search: '?mode=paustest', hostname: 'localhost', protocol: 'http:' };
+  globalThis.window.DebugGate._vergessen();
   R.beginRoom(null, { roomIndex: 0 });
   globalThis.window.location = _loc;
+  globalThis.window.DebugGate._vergessen();
   assert.strictEqual(R.activeModeId(), 'paustest', 'Test-Modus ist aktiv');
 
   delete globalThis.window.__GAME_PAUSE;

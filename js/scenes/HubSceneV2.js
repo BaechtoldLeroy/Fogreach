@@ -107,7 +107,7 @@ const _HUB_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key)
 // HUB_HITBOXES-Boxen (inkl. forest_*) beschriftet zu sehen — Werkzeug zum
 // Feinjustieren der Collider ohne Raten.
 const HUB_DEBUG = (function () {
-  try { return typeof location !== 'undefined' && /[?&]hubdebug=1\b/.test(location.search || ''); }
+  try { return !!(window.DebugGate && window.DebugGate.an('hubdebug')); }   // #88
   catch (e) { return false; }
 })();
 const SCALE_FACTOR = 1536 / 960;

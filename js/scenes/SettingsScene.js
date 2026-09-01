@@ -141,7 +141,12 @@
       if (settings.muted && !window.soundManager.muted) window.soundManager.mute();
       if (!settings.muted && window.soundManager.muted) window.soundManager.unmute();
     }
-    window.__DEBUG_NO_FOW__ = !!settings.debug.noFow;
+    // #88: Die Sektion auszublenden reicht NICHT — wer den Schalter frueher
+    // einmal gesetzt hat, traegt ihn im Spielstand weiter. Gespeicherte
+    // Debug-Werte wirken deshalb nur bei aktivem Debug-Modus. Sie bleiben
+    // gespeichert (kein stilles Ueberschreiben), sie greifen bloss nicht.
+    var _debugAn = !!(window.DebugGate && window.DebugGate.aktiv());
+    window.__DEBUG_NO_FOW__ = _debugAn && !!settings.debug.noFow;
     window.__REDUCED_EFFECTS__ = !!settings.reducedEffects;
     // Feature 051: surface skip-tutorial flag for tutorialSystem.maybeAutoSkip.
     window.__SKIP_TUTORIAL__ = !!(settings.gameplay && settings.gameplay.skipTutorial);
@@ -301,16 +306,21 @@
         });
       }
 
-      this._sectionLabel(RIGHT_LBL, rightY, T('settings.section.debug')); rightY += 18;
-      this._toggleRow(RIGHT_C, rightY, T('settings.debug.autostart'), 'debug.autostart', COL_W); rightY += 22;
-      this._toggleRow(RIGHT_C, rightY, T('settings.debug.no_fow'),    'debug.noFow',     COL_W); rightY += 22;
-      this._actionRow(RIGHT_C, rightY, T('settings.debug.add_iron'), () => {
-        if (typeof window.changeMaterialCount === 'function') {
-          window.changeMaterialCount('MAT', 100);
-          this._toast(T('settings.debug.toast_added_iron'));
-        }
-      }, COL_W);
-      rightY += 32;
+      // #88: Die Debug-Sektion enthaelt mit "+100 Eisenbrocken" einen Cheat und
+      // mit Auto-Start etwas, das den Spielstand LOESCHT. Beides stand bisher im
+      // normalen Einstellungsmenue. Nur noch bei aktivem Debug-Modus.
+      if (window.DebugGate && window.DebugGate.aktiv()) {
+        this._sectionLabel(RIGHT_LBL, rightY, T('settings.section.debug')); rightY += 18;
+        this._toggleRow(RIGHT_C, rightY, T('settings.debug.autostart'), 'debug.autostart', COL_W); rightY += 22;
+        this._toggleRow(RIGHT_C, rightY, T('settings.debug.no_fow'),    'debug.noFow',     COL_W); rightY += 22;
+        this._actionRow(RIGHT_C, rightY, T('settings.debug.add_iron'), () => {
+          if (typeof window.changeMaterialCount === 'function') {
+            window.changeMaterialCount('MAT', 100);
+            this._toast(T('settings.debug.toast_added_iron'));
+          }
+        }, COL_W);
+        rightY += 32;
+      }
 
       // Close button
       const closeBtnY = py + panelH / 2 - 30;

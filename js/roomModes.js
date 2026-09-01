@@ -79,12 +79,12 @@
   // durch clear ersetzt: sonst sucht man den Tippfehler im falschen Modul.
   function _forcedMode(info) {
     try {
-      if (typeof window === 'undefined' || !window.location) return null;
-      var suche = window.location.search || '';
+      var G = (typeof window !== 'undefined') ? window.DebugGate : null;
+      if (!G || !G.aktiv()) return null;      // #88: nur im Debug-Modus
 
-      var l = /[?&]modes=([a-z,]+)/.exec(suche);
-      if (l && l[1] && info && !info.isBoss) {
-        var gewuenscht = l[1].split(',');
+      var wert = G.flagge('modes');
+      if (wert && info && !info.isBoss) {
+        var gewuenscht = wert.split(',');
         var liste = [], verworfen = [];
         for (var i = 0; i < gewuenscht.length; i++) {
           var id = gewuenscht[i];
@@ -101,11 +101,11 @@
         }
       }
 
-      // Das '=' im Muster trennt die beiden Schalter sauber: in '?modes=a,b'
-      // folgt auf 'mode' ein 's', das Muster greift dort also gar nicht. Wer
-      // das hier je auf Teilstring-Suche umstellt, bricht den Rundgang.
-      var m = /[?&]mode=([a-z]+)/.exec(suche);
-      if (m && m[1] && info && info.roomIndex === 0 && (has(m[1]) || m[1] === 'clear')) return m[1];
+      // DebugGate.flagge trennt die beiden Schalter sauber ueber das '=' im
+      // Muster: in '?modes=a,b' folgt auf 'mode' ein 's', 'mode=' greift dort
+      // also gar nicht.
+      var eins = G.flagge('mode');
+      if (eins && info && info.roomIndex === 0 && (has(eins) || eins === 'clear')) return eins;
     } catch (e) {}
     return null;
   }
@@ -116,7 +116,7 @@
   function _rundgangMelden(info, gearmt, anker) {
     try {
       if (typeof window === 'undefined' || !window.location) return;
-      if (!/[?&]modes=/.test(window.location.search || '')) return;
+      if (!(window.DebugGate && window.DebugGate.flagge('modes'))) return;
       if (typeof console === 'undefined' || !console.log) return;
       var wo = gearmt
         ? (anker

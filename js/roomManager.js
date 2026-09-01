@@ -373,7 +373,7 @@ function initDungeonRun() {
       // Debug (#43): ?roomsize=1 loggt jede gerollte Grösse + laufende
       // Bucket-Verteilung, um ~20/60/20 im Playtest zu verifizieren. Zero-Effekt
       // ohne den URL-Parameter (analog ?perf=1 / __ENEMY_COUNT_DEBUG__).
-      if (/[?&]roomsize=1\b/.test((window.location && window.location.search) || '')) {
+      if (window.DebugGate && window.DebugGate.an('roomsize')) {          // #88
         window.__ROOM_SIZE_TALLY__ = window.__ROOM_SIZE_TALLY__ || { small: 0, medium: 0, large: 0 };
         window.__ROOM_SIZE_TALLY__[_bucket.key] = (window.__ROOM_SIZE_TALLY__[_bucket.key] || 0) + 1;
         var _rs = window.__ROOM_SIZE_TALLY__;
@@ -2499,7 +2499,7 @@ function _forceEspionageDebug() {
   try {
     if (typeof window === 'undefined') return false;
     if (window.__FORCE_ESPIONAGE__) return true;
-    return !!(window.location && /[?&]spy=1(\b|&|$)/.test(window.location.search));
+    return !!(window.DebugGate && window.DebugGate.an('spy'));            // #88
   } catch (e) { return false; }
 }
 

@@ -22,10 +22,10 @@
 (function () {
   'use strict';
 
-  // --- Gate: nur bei ?perf=1 aktiv -----------------------------------
+  // --- Gate: nur bei ?perf=1 UND aktivem Debug-Modus (#88) -------------
   try {
-    var qs = (typeof window !== 'undefined' && window.location && window.location.search) || '';
-    if (!/[?&]perf=1\b/.test(qs)) return;
+    var G = (typeof window !== 'undefined') ? window.DebugGate : null;
+    if (!G || !G.an('perf')) return;
   } catch (e) { return; }
 
   var DRAW = { frame: 0, last: 0 };     // Draw-Calls: laufend / letzter Frame
@@ -36,14 +36,16 @@
   // Zero-Effekt für normale Spieler, weil __PERF nur bei ?perf=1 existiert.
   // Initialzustand optional aus URL (z.B. &nofog=1 / &nospot=1).
   function _numParam(name) {
-    var m = new RegExp('[?&]' + name + '=([0-9.]+)').exec(window.location.search);
-    return m ? parseFloat(m[1]) : undefined;
+    var v = window.DebugGate.flagge(name);
+    if (v === null) return undefined;
+    var n = parseFloat(v);
+    return isNaN(n) ? undefined : n;
   }
   window.__PERF = window.__PERF || {
-    nofog: /[?&]nofog=1\b/.test(window.location.search),
-    nomask: /[?&]nomask=1\b/.test(window.location.search),
-    nospot: /[?&]nospot=1\b/.test(window.location.search),
-    noexpl: /[?&]noexpl=1\b/.test(window.location.search),
+    nofog: window.DebugGate.an('nofog'),
+    nomask: window.DebugGate.an('nomask'),
+    nospot: window.DebugGate.an('nospot'),
+    noexpl: window.DebugGate.an('noexpl'),
     // Numerische Live-Tuner (vom Spiel honoriert): explRes (RT-Auflösung
     // 0..1), fogInterval (Update jeden N-ten Frame), rays (Vision-Rays).
     explRes: _numParam('explRes'),

@@ -18,7 +18,11 @@ function fresh() {
   delete w.DUNGEON_DEPTH;
   delete w.player;
   delete w.Phaser;
-  w.location = { search: '' };
+  // #88: Debug-Flaggen wirken nur bei aktivem Gate. Die Tests laufen als
+  // 'localhost', damit sie die Flaggen wie ein Entwickler nutzen koennen.
+  w.location = { search: '', hostname: 'localhost', protocol: 'http:' };
+  delete w.DebugGate;
+  loadGameModule('js/debugGate.js');
   w.__gesperrt = [];
   w.lockStairs = (scene, lock) => { w.__gesperrt.push(lock); };
   loadGameModule('js/roomModes.js');

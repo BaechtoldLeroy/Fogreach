@@ -311,9 +311,12 @@ StartScene.prototype.create = function () {
   // Dungeon-Bugs treu reproduziert werden (man sieht die Konsole auf Mobile nicht).
   // MUSS vor dem Autostart-Block stehen (der sonst greifen wuerde, wenn beide
   // Parameter zusammenkommen — hier nicht der Fall, aber Reihenfolge ist eindeutig).
-  const _dungeonParam = ((window.location && window.location.search) || '').match(/[?&]dungeon=(\d+)/);
+  // #88: nur im Debug-Modus. Der Einstieg loescht den Spielstand (clearSave
+  // gleich unten) — das darf kein Spieler versehentlich ueber einen geteilten
+  // Link ausloesen.
+  const _dungeonParam = window.DebugGate ? window.DebugGate.flagge('dungeon') : null;
   if (_dungeonParam) {
-    window.__DEBUG_AUTO_DESCEND__ = Math.max(1, parseInt(_dungeonParam[1], 10) || 1);
+    window.__DEBUG_AUTO_DESCEND__ = Math.max(1, parseInt(_dungeonParam, 10) || 1);
     if (window.clearSave) clearSave();
     if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') window.AbilitySystem.resetForNewGame();
     if (window.KnowledgeTree && typeof window.KnowledgeTree.resetForNewGame === 'function') window.KnowledgeTree.resetForNewGame();
@@ -325,13 +328,19 @@ StartScene.prototype.create = function () {
 
   // Auto-start support: ?autostart=1 in URL OR debug.autostart in settings.
   // Treated as a fresh new game — wipe persistent state so test runs are deterministic.
+  // #88: Autostart LOESCHT den Spielstand (clearSave gleich unten). Beide
+  // Quellen — URL-Flagge und gespeicherter Schalter — haengen deshalb am
+  // Debug-Modus. Der gespeicherte Schalter ist der gefaehrlichere Fall: er
+  // ueberlebt das Ausblenden der Sektion.
   const settingsAutostart = (() => {
     try {
+      if (!(window.DebugGate && window.DebugGate.aktiv())) return false;
       const s = window.loadGameSettings && window.loadGameSettings();
       return !!(s && s.debug && s.debug.autostart);
     } catch (e) { return false; }
   })();
-  if (typeof window !== 'undefined' && window.location && (window.location.search.includes('autostart=1') || settingsAutostart)) {
+  const urlAutostart = !!(window.DebugGate && window.DebugGate.an('autostart'));
+  if (urlAutostart || settingsAutostart) {
     if (window.clearSave) clearSave();
     if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
       window.AbilitySystem.resetForNewGame();
