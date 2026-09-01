@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-09-01T16:15:01.624485+00:00",
+  "feature_number": "068",
+  "feature_slug": "068-events-im-blickbereich",
+  "friendly_name": "events im blickbereich",
+  "mission": "software-dev",
+  "slug": "068-events-im-blickbereich",
+  "target_branch": "main"
+}
