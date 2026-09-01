@@ -808,72 +808,113 @@ const EQUIP_STEP = 72;
   // deckelt bei 0.95, dann stossen die Faecher fast aneinander.
   const slotScale = Math.min(slotScaleX, slotScaleY, 0.88);
 
+  // ZELLENRASTER (#123 B). Frueher war jedes Fach ein Inventarplatz; jetzt
+  // ist jede Zelle nur Untergrund, und ein Gegenstand liegt DARUEBER und
+  // ueberdeckt so viele Zellen, wie seine Groesse verlangt.
+  //
+  // Die Zellen tragen die Bedienung, nicht die Gegenstaende: welcher
+  // Gegenstand an einer Zelle liegt, loest InventoryGrid.indexAn zur
+  // Klickzeit auf. Haetten die Gegenstands-Bilder die Zeiger-Ereignisse,
+  // muesste bei jedem Umlegen neu verdrahtet werden.
+  // QUADRATISCHE Zellen. Wuerde man die Rasterflaeche einfach aufteilen,
+  // kaemen 48 x 80 px heraus (480/10 gegen 320/4) — ein 1x1-Trank saehe dann
+  // aus wie ein Hochformat, und die Silhouette eines 2x3-Teils waere
+  // verzerrt. Also das kleinere Mass nehmen und das Raster senkrecht
+  // mittig setzen; der freie Rest bleibt unten stehen.
+  const zelle = Math.min(GRID_W / GRID_COLS, GRID_H / GRID_ROWS);
+  const zelleW = zelle;
+  const zelleH = zelle;
+  const rasterY0 = GRID_Y0 + (GRID_H - zelle * GRID_ROWS) / 2;
+  const zelleBild = zelle * 0.94;   // mit Fuge zwischen den Zellen
+  invUI.zellen = [];
+
+  const zelleMitte = (c, r) => ({
+    x: GRID_X0 + c * zelleW + zelleW / 2,
+    y: rasterY0 + r * zelleH + zelleH / 2,
+  });
+  invUI._zelleMitte = zelleMitte;
+  invUI._zelleW = zelleW;
+  invUI._zelleH = zelleH;
+  invUI._zelleBild = zelleBild;
+
+  const indexAnZelle = (c, r) => {
+    if (window.InventoryGrid && typeof window.InventoryGrid.indexAn === "function") {
+      return window.InventoryGrid.indexAn(inventory, c, r);
+    }
+    return -1;
+  };
+
   for (let r = 0; r < GRID_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
-      const x = GRID_X0 + c * cellW + cellW / 2;
-      const y = GRID_Y0 + r * cellH + cellH / 2;
-
-      const bg = scene.add.image(x, y, 'uiSlot').setOrigin(0.5).setScale(slotScale).setScrollFactor(0).setInteractive({ useHandCursor: true });
-      bg.idx = idx;
-      bg.on('pointerdown', () => {
-        selectInventorySlot(bg.idx);
+      const m = zelleMitte(c, r);
+      const bg = scene.add.image(m.x, m.y, "uiSlot").setOrigin(0.5)
+        .setDisplaySize(zelleBild, zelleBild).setScrollFactor(0)
+        .setInteractive({ useHandCursor: true });
+      bg.spalte = c;
+      bg.zeile = r;
+      bg.on("pointerdown", () => {
+        const i = indexAnZelle(bg.spalte, bg.zeile);
+        selectInventorySlot(i >= 0 ? i : -1);
         hideTooltip();
         clearSlotHoverTint(bg);
       });
-      bg.on('pointerover', (pointer) => {
-        const item = inventory[bg.idx];
+      bg.on("pointerover", (pointer) => {
+        const i = indexAnZelle(bg.spalte, bg.zeile);
+        const item = i >= 0 ? inventory[i] : null;
         const compare = item && equipment[item.type];
         applySlotHoverTint(bg, item);
         showItemTooltip(pointer, item, compare);
       });
-      bg.on('pointermove', (pointer) => {
+      bg.on("pointermove", (pointer) => {
         if (tooltip?.visible) {
-          const item = inventory[bg.idx];
+          const i = indexAnZelle(bg.spalte, bg.zeile);
+          const item = i >= 0 ? inventory[i] : null;
           const compare = item && equipment[item.type];
           applySlotHoverTint(bg, item);
           showItemTooltip(pointer, item, compare);
         }
       });
-      bg.on('pointerout', () => {
+      bg.on("pointerout", () => {
         clearSlotHoverTint(bg);
         hideTooltip();
       });
       panel.add(bg);
 
-      const highlight = scene.add.image(x, y, 'uiSlot').setOrigin(0.5).setScale(slotScale).setScrollFactor(0).setVisible(false).setAlpha(SLOT_BASE_ALPHA);
+      const highlight = scene.add.image(m.x, m.y, "uiSlot").setOrigin(0.5)
+        .setDisplaySize(zelleBild, zelleBild).setScrollFactor(0)
+        .setVisible(false).setAlpha(SLOT_BASE_ALPHA);
       panel.add(highlight);
       bg.__hoverHighlight = highlight;
 
-      // Versatz und Beschriftung hingen an festen Pixelwerten (-10 / +20),
-      // die zum alten Deckel 0.65 passten. Beide jetzt an der Fachhoehe
-      // aufgehaengt, damit die Anordnung mit dem Fach mitwaechst statt zu
-      // verrutschen. Die Faktoren geben exakt die alten Werte, wenn man
-      // slotScale = 0.65 einsetzt.
-      // Zweiter Schritt auf Rueckmeldung "noch etwas groesser": 34 -> 44 px.
-      // Obergrenze ist die Textur selbst — sie wird mit 48 px erzeugt, darueber
-      // wuerde hochskaliert und unscharf. 44 px lassen oben 2.6 px Rand im Fach
-      // und unten 8 px bis zur Stueckzahl.
-      const icon = scene.add.image(x, y - slotScale * SLOT_H * 0.06, 'itMat')
-        .setOrigin(0.5).setVisible(false).setScale(slotScale * 1.05).setScrollFactor(0);
-      panel.add(icon);
-
-      const indicator = scene.add.image(
-        x + slotScale * SLOT_W * 0.28,
-        y - slotScale * SLOT_H * 0.35,
-        'uiItemBetter'
-      ).setOrigin(0.5).setScale(Math.min(0.55, slotScale * 0.6)).setScrollFactor(0).setVisible(false);
-      indicator.setAlpha(0.9);
-      indicator.setDepth((panel.depth || 10000) + 5);
-      panel.add(indicator);
-
-      const label = scene.add.text(x, y + slotScale * SLOT_H * 0.4808, '', {
-        fontSize: '15px', fill: '#fff', fontStyle: 'bold'
-      }).setOrigin(0.5, 0).setScrollFactor(0).setVisible(false);
-      panel.add(label);
-
-      invUI.slots.push({ bg, icon, label, highlight, indicator });
-      idx++;
+      invUI.zellen.push({ bg, highlight, c, r });
     }
+  }
+
+  // GEGENSTANDS-SCHICHT: je Inventarplatz ein Satz Bilder, der beim
+  // Auffrischen an die Lage des Gegenstands gesetzt wird. Unbenutzte bleiben
+  // unsichtbar. Ein Vorrat statt Erzeugen-und-Wegwerfen, damit das Oeffnen
+  // des Inventars keine Objekte anlegt.
+  for (let i = 0; i < INV_SLOTS; i++) {
+    const rahmen = scene.add.image(0, 0, "uiSlot").setOrigin(0.5)
+      .setScrollFactor(0).setVisible(false);
+    panel.add(rahmen);
+
+    const icon = scene.add.image(0, 0, "itMat").setOrigin(0.5)
+      .setScrollFactor(0).setVisible(false);
+    panel.add(icon);
+
+    const indicator = scene.add.image(0, 0, "uiItemBetter").setOrigin(0.5)
+      .setScale(0.5).setScrollFactor(0).setVisible(false);
+    indicator.setAlpha(0.9);
+    indicator.setDepth((panel.depth || 10000) + 5);
+    panel.add(indicator);
+
+    const label = scene.add.text(0, 0, "", {
+      fontSize: "15px", fill: "#fff", fontStyle: "bold"
+    }).setOrigin(0.5, 1).setScrollFactor(0).setVisible(false);
+    panel.add(label);
+
+    invUI.slots.push({ bg: rahmen, icon, label, highlight: null, indicator });
   }
 
   // --- Buttons ---
@@ -1390,44 +1431,80 @@ function refreshInventoryUI() {
   if (!invUI || !Array.isArray(invUI.slots) || invUI.slots.length !== INV_SLOTS) {
     return;
   }
-  // Grid
+  // RASTER (#123 B). Zwei Schichten: die Zellen liegen fest, die Gegenstaende
+  // werden bei jedem Auffrischen an ihre Lage gesetzt und ueber so viele
+  // Zellen gespannt, wie ihre Groesse verlangt.
+  const G = window.InventoryGrid;
+  const mitte = invUI._zelleMitte;
+  const zW = invUI._zelleW, zH = invUI._zelleH, zBild = invUI._zelleBild;
+
+  // 1) Zellen zuruecksetzen: Auswahl und Belegungstoenung haengen am
+  //    Gegenstand, der GERADE darauf liegt.
+  (invUI.zellen || []).forEach((z) => {
+    const bg = isValidGameObject(z.bg) ? z.bg : null;
+    if (!bg) return;
+    const i = (G && typeof G.indexAn === "function") ? G.indexAn(inventory, z.c, z.r) : -1;
+    const it = i >= 0 ? inventory[i] : null;
+    bg.setTexture(i >= 0 && i === invSelected ? "uiSlotSel" : "uiSlot");
+    bg.setDisplaySize(zBild, zBild);
+    setSlotHighlight(bg, it);
+  });
+
+  // 2) Gegenstaende setzen.
   for (let i = 0; i < INV_SLOTS; i++) {
-    const it = inventory[i];
     const slot = invUI.slots[i];
     if (!slot) continue;
-    const bg = isValidGameObject(slot.bg) ? slot.bg : null;
-    if (!bg) continue;
+    const it = inventory[i];
+    const rahmen = isValidGameObject(slot.bg) ? slot.bg : null;
     const icon = isValidGameObject(slot.icon) ? slot.icon : null;
     const label = isValidGameObject(slot.label) ? slot.label : null;
     const indicator = isValidGameObject(slot.indicator) ? slot.indicator : null;
-    bg.setTexture(i === invSelected ? 'uiSlotSel' : 'uiSlot');
-    setSlotHighlight(bg, it);
-    if (it) {
-      const iconKey = resolveItemIconKey(it);
-      if (icon && iconKey) icon.setTexture(iconKey);
-      if (icon) icon.setVisible(true);
-      if (label) {
-        const stack = it.stack || 1;
-        if (stack > 1) {
-          label.setText('x' + stack);
-          label.setVisible(true);
-        } else {
-          label.setText('');
-          label.setVisible(false);
-        }
-      }
-      if (indicator) {
-        indicator.setVisible(isItemUpgrade(it));
-      }
-    } else {
+
+    const lageDa = it && typeof it.gridX === "number" && typeof it.gridY === "number";
+    if (!lageDa) {
+      // Ohne Lage nicht zeichnen — sonst klebte ein Gegenstand bei 0,0 und
+      // ueberdeckte den, der dort wirklich liegt.
+      if (rahmen) rahmen.setVisible(false);
       if (icon) icon.setVisible(false);
-      if (label) {
-        label.setText('');
-        label.setVisible(false);
+      if (label) label.setVisible(false);
+      if (indicator) indicator.setVisible(false);
+      continue;
+    }
+
+    const g = G.groesse(it);
+    const o = mitte(it.gridX, it.gridY);
+    // Mittelpunkt des belegten Rechtecks.
+    const cx = o.x + (g.b - 1) * zW / 2;
+    const cy = o.y + (g.h - 1) * zH / 2;
+    const breite = g.b * zW * 0.94;
+    const hoehe = g.h * zH * 0.94;
+
+    if (rahmen) {
+      rahmen.setTexture(i === invSelected ? "uiSlotSel" : "uiSlot");
+      rahmen.setPosition(cx, cy).setDisplaySize(breite, hoehe).setVisible(true);
+      setSlotHighlight(rahmen, it);
+    }
+    if (icon) {
+      const iconKey = resolveItemIconKey(it);
+      if (iconKey) icon.setTexture(iconKey);
+      // Das Symbol fuellt das Rechteck, bleibt aber unter der Texturgroesse
+      // von 48 px je Zelle — darueber wuerde hochskaliert und unscharf.
+      const mass = Math.min(breite, hoehe) * 0.86;
+      icon.setPosition(cx, cy).setDisplaySize(mass, mass).setVisible(true);
+    }
+    if (label) {
+      const stack = it.stack || 1;
+      if (stack > 1) {
+        label.setPosition(cx + breite / 2 - 3, cy + hoehe / 2 - 1);
+        label.setOrigin(1, 1);
+        label.setText("x" + stack).setVisible(true);
+      } else {
+        label.setText("").setVisible(false);
       }
-      if (indicator) {
-        indicator.setVisible(false);
-      }
+    }
+    if (indicator) {
+      indicator.setPosition(cx + breite / 2 - 8, cy - hoehe / 2 + 8);
+      indicator.setVisible(isItemUpgrade(it));
     }
   }
 
@@ -1477,8 +1554,40 @@ function equipSelectedItem() {
     // Swap: new item into the equipment slot, old item back into the
     // inventory slot the new item came from. Without this swap, the old
     // item would be lost on equip.
+    // #123 B: Der Tausch ist kein blosser Platztausch mehr. Das angelegte
+    // Stueck gibt seine Zellen frei, das abgelegte braucht welche — und die
+    // beiden koennen verschieden gross sein. Legt man einen Dolch (1x2) an,
+    // waehrend ein Richtschwert (2x4) getragen wird, entsteht durch den
+    // Tausch weniger Platz, als das Schwert braucht.
+    //
+    // Deshalb: erst freigeben, dann einen Platz SUCHEN. Findet sich keiner,
+    // unterbleibt der Tausch ganz. Das Schwert einfach ueberlappend
+    // abzulegen waere schlimmer — es waere unsichtbar und beim naechsten
+    // Fund ueberschrieben.
+    inventory[invSelected] = null;
+    if (oldItem) {
+      const G = window.InventoryGrid;
+      const platz = (G && typeof G.findePlatz === "function")
+        ? G.findePlatz(inventory, oldItem) : { x: 0, y: 0 };
+      if (!platz) {
+        inventory[invSelected] = it;        // Tausch zuruecknehmen
+        // Rueckmeldung ueber den vorhandenen Ereignis-Toast statt einer
+        // erfundenen Funktion — ein stiller Abbruch waere fuer den Spieler
+        // von einem Fehler nicht zu unterscheiden. Signatur ist
+        // showEventToast(scene, text, id); die Szene haengt an invUI.
+        try {
+          const _sz = invUI && invUI._scene;
+          if (_sz && typeof window.showEventToast === "function") {
+            window.showEventToast(_sz, "Kein Platz im Inventar");
+          }
+        } catch (e2) { /* Hinweis darf den Tausch nie brechen */ }
+        return;
+      }
+      oldItem.gridX = platz.x;
+      oldItem.gridY = platz.y;
+      inventory[invSelected] = oldItem;
+    }
     equipment[slotKey] = it;
-    inventory[invSelected] = oldItem || null;
     // Feature 059 (#42): the amulet EFFECT system reads window.runAmulet
     // (AmuletEffects.activeEffect -> player.js updateAmuletPerFrame), NOT
     // equipment.amulet. Without syncing it here, equipping an amulet from the

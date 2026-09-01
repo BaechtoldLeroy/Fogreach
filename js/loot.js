@@ -535,9 +535,17 @@ function collectLoot(playerSprite, loot) {
       return false;
     })();
     if (!isMaterial && !isStackedPotion) {
-      const idx = inventory.findIndex((slot) => !slot);
+      // #123 B: Platz wird im RASTER gesucht, nicht im naechsten freien
+      // Feld — ein Richtschwert (2x4) braucht eine ganze Saeule, ein Trank
+      // (1x1) passt in jede Luecke. Findet sich keiner, greift derselbe
+      // Einschmelz-Zweig wie frueher bei vollem Inventar.
+      const idx = (window.InventoryGrid && typeof window.InventoryGrid.einfuegen === "function")
+        ? window.InventoryGrid.einfuegen(inventory, item)
+        : inventory.findIndex((slot) => !slot);
       if (idx >= 0) {
-        inventory[idx] = item;
+        // einfuegen() hat den Gegenstand schon abgelegt; der Rueckfall oben
+        // liefert nur den Index und braucht die Zuweisung noch.
+        if (inventory[idx] !== item) inventory[idx] = item;
       } else {
         // Inventory full → salvage to Eisenbrocken based on tier
         const tier = (typeof item?.tier === 'number') ? item.tier : 0;

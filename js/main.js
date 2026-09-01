@@ -834,7 +834,15 @@ window.RollConfig = window.RollConfig || {
 let playerDeathHandled = false;
 
 // ==== INVENTAR & AUSRÜSTUNG ====
-const INV_COLS = 5, INV_ROWS = 4;
+// #123 B: Das Inventar ist ein Raster aus ZELLEN, nicht aus gleich grossen
+// Faechern — ein Dolch belegt 1x2, ein Richtschwert 2x4. 10 Spalten passen
+// genau in die 480 px Rasterbreite des Panels (48 px je Zelle).
+//
+// INV_SLOTS ist damit nur noch die Obergrenze der ANZAHL, nicht der Platz.
+// Sie liegt bewusst bei Zellenzahl, damit immer das Raster zuerst voll ist
+// und nicht das Feld — sonst waere "Inventar voll" von der Groesse der
+// Gegenstaende entkoppelt und fuer den Spieler nicht nachvollziehbar.
+const INV_COLS = 10, INV_ROWS = 4;
 const INV_SLOTS = INV_COLS * INV_ROWS;
 
 let inventory = new Array(INV_SLOTS).fill(null); // Grid

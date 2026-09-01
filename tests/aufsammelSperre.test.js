@@ -28,6 +28,7 @@ globalThis.inventory = W.inventory;
 W.player = { x: 0, y: 0 };
 W.materialCounts = {};
 
+loadGameModule('js/inventoryGrid.js');
 loadGameModule('js/loot.js');
 
 function macheBeute(item, frei) {
@@ -143,4 +144,25 @@ test('Aufsammel-Sperre: spawnLoot stempelt die Waffe beim Ablegen', () => {
   assert.ok(trank, 'spawnLoot hat den Trank gar nicht abgelegt');
   assert.strictEqual(trank.getData('aufsammelbarAb'), undefined,
     'der Trank bekam eine Sperre — sie greift zu weit');
+});
+
+test('Aufsammeln: der Fund bekommt eine Rasterlage, kein blosses Feld', () => {
+  // #123 B. Ohne diesen Fall war die Verdrahtung ungeprueft: das Aufsammeln
+  // liess sich auf das alte "naechstes freies Feld" zuruecksetzen, ohne dass
+  // ein Test rot wurde — in der Mutationspruefung aufgefallen.
+  W.inventory.fill(null);
+  uhr = 0;
+  const beute = macheBeute({ type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'Rasterklinge' }, null);
+  W.collectLoot.call({}, W.player, beute);
+
+  const abgelegt = W.inventory.find((s) => s && s.name === 'Rasterklinge');
+  assert.ok(abgelegt, 'die Waffe wurde gar nicht aufgenommen');
+  assert.strictEqual(typeof abgelegt.gridX, 'number', 'ohne Rasterlage abgelegt (gridX fehlt)');
+  assert.strictEqual(typeof abgelegt.gridY, 'number', 'ohne Rasterlage abgelegt (gridY fehlt)');
+
+  // Und die Groesse muss belegt sein, nicht nur eine Zelle.
+  const G = W.InventoryGrid;
+  const frei = G.freieZellen(W.inventory);
+  assert.strictEqual(frei, G.COLS * G.ROWS - 8,
+    'ein Richtschwert (2x4) belegt nicht 8 Zellen — frei: ' + frei);
 });

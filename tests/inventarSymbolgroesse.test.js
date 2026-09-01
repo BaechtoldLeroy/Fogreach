@@ -1,19 +1,17 @@
 // tests/inventarSymbolgroesse.test.js — Die Symbole im Inventarraster duerfen
-// nicht wieder schrumpfen.
+// nicht schrumpfen.
 //
-// Rueckmeldung des Projektinhabers: "die icons werden im inventar raster zu
-// klein dargestellt". Gemessen war die Ursache ein FESTER Deckel:
+// Vorgeschichte: Erst waren es 20 gleich grosse Faecher, und ein fester Deckel
+// (0.65) hielt Fach und Symbol klein — 62x42 px Fach, 25x25 px Symbol bei einer
+// 48x48-Textur. Nach zwei Runden Nachbesserung stand es bei 84x56 und 44x44.
 //
-//   slotScale = Math.min(slotScaleX, slotScaleY, 0.65)
-//               Math.min(0.95,       1.19,       0.65)  -> immer 0.65
+// Mit #123 B ist das Modell ein anderes: das Inventar ist ein Raster aus
+// QUADRATISCHEN Zellen, und ein Gegenstand ueberdeckt so viele davon, wie seine
+// Groesse verlangt. "Fachgroesse" gibt es nicht mehr — deshalb prueft dieser
+// Test jetzt die ZELLE und die daraus abgeleitete Symbolgroesse.
 //
-// Das Fach blieb damit 62x42 px in einer 96x80-Zelle, das Symbol darin 25x25
-// bei einer 48x48-Textur. Nicht die Zelle war zu klein, sondern der Deckel zu
-// niedrig.
-//
-// Geprueft wird die Rechnung, nicht die Optik: aus den Konstanten der Quelle
-// werden Fach- und Symbolgroesse nachgerechnet und gegen Untergrenzen sowie
-// gegen Ueberlappung der Nachbarfaecher gestellt.
+// Die alte Zusicherung bleibt in der Sache erhalten: ein Symbol darf nicht
+// wieder auf ein Viertel seiner Textur zusammenfallen.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -29,43 +27,48 @@ function zahl(muster, name) {
   return Number(m[1]);
 }
 
-test('Inventar: das Symbol fuellt das Fach spuerbar aus', () => {
-  const PANEL_W = zahl(/PANEL_W = (\d+)/, 'PANEL_W');
-  const PANEL_H = zahl(/PANEL_H = (\d+)/, 'PANEL_H');
-  const SLOT_W = zahl(/SLOT_W = (\d+)/, 'SLOT_W');
-  const SLOT_H = zahl(/SLOT_H = ([0-9]+)/, 'SLOT_H');
-  const deckel = zahl(/slotScale = Math\.min\(slotScaleX, slotScaleY, ([0-9.]+)\)/, 'Deckel');
-  const symbolFaktor = zahl(/setScale\(slotScale \* ([0-9.]+)\)\.setScrollFactor/, 'Symbolfaktor');
-
-  const COLS = 5, ROWS = 4;                 // INV_COLS / INV_ROWS aus main.js
-  const cellW = (PANEL_W - 320) / COLS;
-  const cellH = (PANEL_H - 160) / ROWS;
-  const slotScale = Math.min((cellW * 0.95) / SLOT_W, (cellH * 0.95) / SLOT_H, deckel);
-  const symbolPx = 48 * slotScale * symbolFaktor;
-
-  // Verlauf: 25 px (urspruenglich) -> 34 (groesserer Deckel) -> 44 (groesserer
-  // Symbolfaktor). Die Schwelle wandert mit: bei 30 haette sie den Rueckfall
-  // von 44 auf 34 nicht gefangen — in der Mutationspruefung aufgefallen.
-  // 40 laesst der Textur (48 px) noch Spielraum nach unten, ohne den
-  // erreichten Stand preiszugeben.
-  assert.ok(symbolPx >= 40,
-    'das Symbol ist nur ' + symbolPx.toFixed(0) + ' px gross — erwartet mindestens 40 (Verlauf 25 -> 34 -> 44)');
-
-  // Und die Faecher duerfen sich dabei nicht beruehren.
-  assert.ok(SLOT_W * slotScale < cellW - 6,
-    'die Faecher stossen waagerecht aneinander: ' + (SLOT_W * slotScale).toFixed(0)
-    + ' px in einer Zelle von ' + cellW);
-  assert.ok(SLOT_H * slotScale < cellH - 6,
-    'die Faecher stossen senkrecht aneinander: ' + (SLOT_H * slotScale).toFixed(0)
-    + ' px in einer Zelle von ' + cellH);
+test('Inventar: die Zellen sind quadratisch', () => {
+  // Ohne das kaemen 48 x 80 px heraus (480/10 gegen 320/4) — ein 1x1-Trank
+  // saehe aus wie ein Hochformat, eine 2x3-Ruestung waere verzerrt.
+  assert.ok(QUELLE.includes('Math.min(GRID_W / GRID_COLS, GRID_H / GRID_ROWS)'),
+    'die Zellenkante wird nicht als kleineres der beiden Masse gebildet');
+  assert.ok(/const zelleW = zelle;/.test(QUELLE) && /const zelleH = zelle;/.test(QUELLE),
+    'Breite und Hoehe der Zelle sind nicht dasselbe Mass');
 });
 
-test('Inventar: Symbol und Beschriftung haengen an der Fachhoehe, nicht an festen Pixeln', () => {
-  // Beide sassen auf -10 bzw. +20 — Werte, die zum alten Deckel 0.65 passten.
-  // Bleiben sie fest, waehrend das Fach waechst, verrutscht die Anordnung:
-  // das Symbol wandert in die obere Kante, die Stueckzahl mitten ins Fach.
-  assert.ok(/scene\.add\.image\(x, y - slotScale \* SLOT_H \* [0-9.]+, 'itMat'\)/.test(QUELLE),
-    'der Symbolversatz haengt nicht an der Fachhoehe');
-  assert.ok(/scene\.add\.text\(x, y \+ slotScale \* SLOT_H \* [0-9.]+, ''/.test(QUELLE),
-    'die Beschriftung haengt nicht an der Fachhoehe');
+test('Inventar: das Symbol fuellt seine Zellen spuerbar aus', () => {
+  const PANEL_W = zahl(/PANEL_W = ([0-9]+)/, 'PANEL_W');
+  const PANEL_H = zahl(/PANEL_H = ([0-9]+)/, 'PANEL_H');
+  const fuge = zahl(/const zelleBild = zelle \* ([0-9.]+);/, 'Zellenfuge');
+  const symbolAnteil = zahl(/Math\.min\(breite, hoehe\) \* ([0-9.]+);/, 'Symbolanteil');
+
+  const COLS = 10, ROWS = 4;                 // INV_COLS / INV_ROWS aus main.js
+  const GRID_W = PANEL_W - 320;
+  const GRID_H = PANEL_H - 160;
+  const zelle = Math.min(GRID_W / COLS, GRID_H / ROWS);
+
+  // Kleinster Fall: ein 1x1-Gegenstand (Trank, Material, Amulett).
+  const kleinstesRechteck = zelle * fuge;
+  const symbolPx = kleinstesRechteck * symbolAnteil;
+
+  // Verlauf im alten Modell: 25 -> 34 -> 44 px. Die Schwelle bleibt bei 36 —
+  // im Rastermodell ist die Zelle 48 px, ein 1x1-Symbol also naturgemaess
+  // kleiner als ein 2x4-Symbol, aber es darf nicht wieder Richtung 25 fallen.
+  assert.ok(symbolPx >= 36,
+    'ein 1x1-Symbol ist nur ' + symbolPx.toFixed(0) + ' px gross — erwartet mindestens 36');
+
+  // Und das Raster muss in die Flaeche passen, sonst ragt es aus dem Panel.
+  assert.ok(zelle * COLS <= GRID_W && zelle * ROWS <= GRID_H,
+    'das Raster passt nicht in die Rasterflaeche: ' + (zelle * COLS) + ' x ' + (zelle * ROWS)
+    + ' in ' + GRID_W + ' x ' + GRID_H);
+});
+
+test('Inventar: Gegenstaende werden ueber ihre Zellen gespannt, nicht fest gesetzt', () => {
+  // Der Kern von #123 B. Bliebe die Groesse fest, waere das Raster nur Kosmetik.
+  assert.ok(/const g = G\.groesse\(it\);/.test(QUELLE),
+    'die Gegenstandsgroesse wird beim Zeichnen nicht abgefragt');
+  assert.ok(/const breite = g\.b \* zW \* [0-9.]+;/.test(QUELLE),
+    'die Breite wird nicht aus der Gegenstandsgroesse gebildet');
+  assert.ok(/const hoehe = g\.h \* zH \* [0-9.]+;/.test(QUELLE),
+    'die Hoehe wird nicht aus der Gegenstandsgroesse gebildet');
 });

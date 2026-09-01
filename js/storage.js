@@ -287,6 +287,26 @@ function applySaveToState(scene, s) {
       inventory = s.inventory.slice();
     }
     if (typeof window !== 'undefined') window.inventory = inventory;
+    // #123 B: Ein Spielstand aus der Zeit gleich grosser Faecher kennt kein
+    // gridX/gridY. Ohne das Nachtragen waeren die Gegenstaende im Raster
+    // unsichtbar und wuerden vom naechsten Fund ueberschrieben.
+    //
+    // Was keinen Platz mehr findet, wird eingeschmolzen statt still
+    // verworfen — ein Gegenstand, der beim Laden spurlos verschwindet, ist
+    // fuer den Spieler nicht von einem Fehler zu unterscheiden.
+    try {
+      if (window.InventoryGrid && typeof window.InventoryGrid.lageErgaenzen === "function") {
+        const heimatlos = window.InventoryGrid.lageErgaenzen(inventory);
+        if (heimatlos.length && typeof changeMaterialCount === "function") {
+          heimatlos.forEach((it) => {
+            const tier = (typeof it.tier === "number") ? it.tier : 0;
+            changeMaterialCount("MAT", (tier + 1) * 2);
+          });
+          console.warn("[storage] " + heimatlos.length
+            + " Gegenstand(e) fanden im neuen Raster keinen Platz und wurden eingeschmolzen");
+        }
+      }
+    } catch (e) { /* Laden darf daran nie scheitern */ }
   }
 
   if (typeof setMaterialCounts === 'function') {
