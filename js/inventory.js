@@ -467,7 +467,11 @@ function initInventoryUI() {
     .setDepth(10000).setScrollFactor(0).setVisible(false);
   if (typeof panel.setName === 'function') panel.setName('InventoryPanel');
 
-  const panelBg = scene.add.image(0, 0, 'uiPanel').setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0);
+  // Der Hintergrund muss KLICKBAR sein, auch wenn er nichts tut: sonst
+  // fallen Klicks in die Fugen zwischen den Zellen durch bis zur
+  // Verdunkelung dahinter — und die schliesst das Inventar. Ein Fehlklick
+  // zwischen zwei Faechern warf den Spieler bisher aus dem Menue.
+  const panelBg = scene.add.image(0, 0, 'uiPanel').setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0).setInteractive();
   panel.add(panelBg);
 
   const title = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 12, _INV_T('inventory.title'), {
@@ -713,8 +717,8 @@ function initInventoryUI() {
   };
 
 const equipKeys = ['weapon', 'head', 'body', 'boots', 'amulet'];
-const EQUIP_X = -PANEL_W / 2 + 130;   // Mittelachse der Silhouette
-const EQUIP_Y0 = -PANEL_H / 2 + 96;   // Kopfhoehe
+const EQUIP_X = -PANEL_W / 2 + 140;   // Mittelachse der Silhouette
+const EQUIP_Y0 = -PANEL_H / 2 + 100;  // Kopfhoehe
 const EQUIP_STEP = 72;                // Zeilenabstand der Silhouette
 
 // #123 A: Die Ausruestung stand als senkrechte Liste da — fuenf gleiche
@@ -724,12 +728,17 @@ const EQUIP_STEP = 72;                // Zeilenabstand der Silhouette
 // spart jede Beschriftung — die Lage sagt bereits, was hingehoert.
 //
 // Versatz gegen EQUIP_X/EQUIP_Y0 in Pixeln.
+// Die Plaetze waren uiSlot-Bilder von 96x64 px, die Versaetze aber nur 46
+// bzw. 52 px — kleiner als die Plaetze breit sind. Kopf/Amulett,
+// Amulett/Koerper und Koerper/Waffe ueberlappten dadurch. Jetzt 72x48 mit
+// Versaetzen, die groesser sind als der Platz.
+const EQUIP_SLOT_W = 72, EQUIP_SLOT_H = 48;
 const EQUIP_LAGE = {
-  head:   { dx:   0, dy: 0 },
-  amulet: { dx:  46, dy: 34 },
-  body:   { dx:   0, dy: 76 },
-  weapon: { dx: -52, dy: 76 },
-  boots:  { dx:   0, dy: 152 },
+  head:   { dx:   0, dy:   0 },
+  amulet: { dx:  76, dy:   0 },
+  body:   { dx:   0, dy:  56 },
+  weapon: { dx: -76, dy:  56 },
+  boots:  { dx:   0, dy: 112 },
 };
 function equipPos(key, index) {
   const l = EQUIP_LAGE[key];
@@ -745,7 +754,8 @@ function equipPos(key, index) {
     const _ex = _lage.x;
 
     const slot = scene.add.image(_ex, y, 'uiSlot')
-      .setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
+      .setOrigin(0.5).setDisplaySize(EQUIP_SLOT_W, EQUIP_SLOT_H)
+      .setScrollFactor(0).setInteractive({ useHandCursor: true });
     slot.on('pointerdown', (pointer) => {
       selectEquipSlot(equipKeys[i]);
       hideTooltip();
@@ -1021,7 +1031,8 @@ function equipPos(key, index) {
       const q = equipPos(equipKeys[i], i);
       // Grosszuegiger Treffer (halbe Slotgroesse), damit man nicht
       // pixelgenau zielen muss.
-      if (Math.abs(lx - q.x) <= 50 && Math.abs(ly - q.y) <= 34) return equipKeys[i];
+      if (Math.abs(lx - q.x) <= EQUIP_SLOT_W / 2 + 4
+          && Math.abs(ly - q.y) <= EQUIP_SLOT_H / 2 + 4) return equipKeys[i];
     }
     return null;
   }
@@ -1715,7 +1726,18 @@ function refreshInventoryUI() {
       // 2x2 der Hammer breit — die Rasterform und die Zeichnung sagen dann
       // dasselbe. Quadratisch skaliert blieb bei hohen Teilen die halbe
       // Flaeche leer.
-      icon.setPosition(cx, cy).setDisplaySize(breite * 0.86, hoehe * 0.86).setVisible(true);
+      // VERZERRUNG DECKELN. Voll auf das Rechteck gezogen wurde der Bogen
+      // zum Faden: seine Zeichnung ist in der 48er-Textur nur 21 px breit,
+      // auf ein 1x3-Rechteck (45x135) gestreckt blieben davon 17 px auf
+      // 116 px Hoehe. Deshalb hoechstens Faktor 1.6 Unterschied zwischen
+      // den Achsen — die Form bleibt erkennbar, ohne auszufransen.
+      const _sx = (breite * 0.86) / 48;
+      const _sy = (hoehe * 0.86) / 48;
+      const _s = Math.min(_sx, _sy);
+      const _kap = 1.6;
+      icon.setPosition(cx, cy)
+        .setDisplaySize(48 * Math.min(_sx, _s * _kap), 48 * Math.min(_sy, _s * _kap))
+        .setVisible(true);
     }
     if (label) {
       const stack = it.stack || 1;

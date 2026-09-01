@@ -40,11 +40,19 @@ test('Inventar: das Symbol fuellt seine Zellen spuerbar aus', () => {
   const PANEL_W = zahl(/PANEL_W = ([0-9]+)/, 'PANEL_W');
   const PANEL_H = zahl(/PANEL_H = ([0-9]+)/, 'PANEL_H');
   const fuge = zahl(/const zelleBild = zelle \* ([0-9.]+);/, 'Zellenfuge');
-  const marke = "setDisplaySize(breite * ";
+  const marke = "const _sx = (breite * ";
   const iA = QUELLE.indexOf(marke);
   assert.ok(iA > 0, "Symbolanteil nicht gefunden");
   const symbolAnteil = parseFloat(QUELLE.slice(iA + marke.length));
   assert.ok(symbolAnteil > 0, "Symbolanteil nicht lesbar");
+
+  // Die Verzerrung muss gedeckelt sein. Voll auf das Rechteck gezogen wurde
+  // der Bogen zum Faden: seine Zeichnung ist in der 48er-Textur nur 21 px
+  // breit, auf ein 1x3-Rechteck gestreckt blieben 17 px auf 116 px Hoehe.
+  assert.ok(QUELLE.includes("const _kap = 1.6;"),
+    "die Verzerrung ist nicht gedeckelt — hohe Teile fransen aus");
+  assert.ok(QUELLE.includes("Math.min(_sx, _s * _kap)"),
+    "der Deckel wird beim Skalieren nicht angewandt");
 
   const COLS = 10, ROWS = 4;                 // INV_COLS / INV_ROWS aus main.js
   const GRID_W = PANEL_W - 320;
