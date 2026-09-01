@@ -118,11 +118,13 @@
       if (typeof window === 'undefined' || !window.location) return;
       if (!/[?&]modes=/.test(window.location.search || '')) return;
       if (typeof console === 'undefined' || !console.log) return;
-      console.log('[Rundgang] Raum ' + (info && info.roomIndex) + ': ' + (info && info.modeId)
-        + (gearmt
-          ? ' scharfgestellt, Anker bei ' + Math.round(anker.x) + '/' + Math.round(anker.y)
-            + ' — hinlaufen, bis er im Blick liegt'
-          : ' sofort gestartet'));
+      var wo = gearmt
+        ? (anker
+            ? ' scharfgestellt, Anker bei ' + Math.round(anker.x) + '/' + Math.round(anker.y)
+              + ' — hinlaufen, bis er im Blick liegt'
+            : ' scharfgestellt, beweglicher Anker — losgehen, bis das Ziel im Blick liegt')
+        : ' sofort gestartet';
+      console.log('[Rundgang] Raum ' + (info && info.roomIndex) + ': ' + (info && info.modeId) + wo);
     } catch (e) {}
   }
 
@@ -142,12 +144,19 @@
     // #112: Modi mit Ankerobjekt starten NICHT beim Betreten. Sie stellen nur
     // ihr Objekt hin; das Ziel beginnt, sobald der Spieler es sieht. Modi ohne
     // `arm` (clear, escape) verhalten sich unveraendert.
+    //
+    // `arm` liefert entweder einen FESTEN Punkt {x,y} (defend/survival stellen
+    // etwas in den Raum) oder einfach true — dann ist der Anker BEWEGLICH und
+    // der Modus nennt ihn pro Frame ueber `ankerPunkt()` (hunt haengt an einem
+    // Gegner, der herumlaeuft).
     if (_current && typeof _current.arm === 'function') {
       var a = null;
       try { a = _current.arm(scene, _ctx); } catch (e) { a = null; }
-      if (a && typeof a.x === 'number' && typeof a.y === 'number' && (a.x || a.y)) {
-        _anker = a; _armed = true;
-        _rundgangMelden(_ctx, true, a);
+      var beweglich = (typeof _current.ankerPunkt === 'function');
+      if (beweglich ? !!a : (a && typeof a.x === 'number' && typeof a.y === 'number' && (a.x || a.y))) {
+        _anker = beweglich ? null : a;
+        _armed = true;
+        _rundgangMelden(_ctx, true, beweglich ? null : a);
         return id;
       }
       // Kein Platz fuer den Anker: lieber sofort starten als das Ereignis
@@ -156,6 +165,19 @@
     _zielStarten();
     _rundgangMelden(_ctx, false, null);
     return id;
+  }
+
+  // Wo liegt der Anker GERADE? Bei einem beweglichen Anker fragt das den Modus
+  // pro Frame; ein Gegner als Anker steht nicht still. null heisst: derzeit
+  // nichts zu sehen (z. B. die Welle ist noch nicht gespawnt) — dann wartet der
+  // Raum einfach weiter.
+  function _ankerPunkt() {
+    if (_current && typeof _current.ankerPunkt === 'function') {
+      var p = null;
+      try { p = _current.ankerPunkt(); } catch (e) { p = null; }
+      return (p && typeof p.x === 'number' && typeof p.y === 'number') ? p : null;
+    }
+    return _anker;
   }
 
   // Startet das Ziel — beim Betreten (Modi ohne Anker) oder beim Sichtkontakt.
@@ -213,7 +235,8 @@
     // Scharfgestellt: nur auf Sichtkontakt warten, sonst passiert nichts.
     if (_armed) {
       var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
-      if (_anker && A && typeof A.sichtbar === 'function' && A.sichtbar(_scene, _anker.x, _anker.y)) {
+      var pkt = _ankerPunkt();
+      if (pkt && A && typeof A.sichtbar === 'function' && A.sichtbar(_scene, pkt.x, pkt.y)) {
         _zielStarten();
       }
       return;

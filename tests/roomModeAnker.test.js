@@ -196,17 +196,27 @@ test('Welle gecleart nimmt ein noch nicht ausgeloestes Ereignis zurueck', () => 
 
 // --- Die echten Modi bringen ihren Anker mit --------------------------------
 
-test('defend, survival und hunt haben alle ein arm()', () => {
+test('defend und survival stellen ein Objekt hin und raeumen es wieder weg', () => {
   const w = globalThis.window;
   loadGameModule('js/roomModeDefend.js');
   loadGameModule('js/roomModeSurvival.js');
-  loadGameModule('js/roomModeHunt.js');
   const R = w.RoomMode;
-  ['defend', 'survival', 'hunt'].forEach((id) => {
+  ['defend', 'survival'].forEach((id) => {
     const m = R.create(id);
     assert.strictEqual(typeof m.arm, 'function', id + ' braucht arm()');
     assert.strictEqual(typeof m.stop, 'function', id + ' muss seinen Anker aufraeumen koennen');
+    assert.strictEqual(typeof m.ankerPunkt, 'undefined', id + ' hat einen FESTEN Anker');
   });
+});
+
+test('hunt haengt am Rudel statt an einem hingestellten Objekt', () => {
+  const w = globalThis.window;
+  loadGameModule('js/roomModeHunt.js');
+  const m = w.RoomMode.create('hunt');
+  assert.strictEqual(typeof m.arm, 'function');
+  assert.strictEqual(typeof m.ankerPunkt, 'function', 'beweglicher Anker');
+  assert.strictEqual(m.arm(null), true, 'kein fester Punkt, nur scharfgestellt');
+  assert.strictEqual(typeof m.stop, 'undefined', 'nichts hingestellt, nichts wegzuraeumen');
 });
 
 test('escape bleibt ohne Anker — die Flucht beginnt beim Betreten', () => {
@@ -338,4 +348,95 @@ test('?mode= gilt weiter nur fuer den ersten Raum', () => {
   assert.strictEqual(R.activeModeId(), 'a');
   R.beginRoom({}, { roomIndex: 1, depth: 1 });
   assert.notStrictEqual(R.activeModeId(), 'a', 'ab Raum 1 wieder die normale Auswahl');
+});
+
+// --- Beweglicher Anker (hunt haengt an einem Gegner, der laeuft) ------------
+
+test('Ein beweglicher Anker wird pro Frame neu erfragt', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  const mob = { x: 900, y: 900, active: true };
+  let gestartet = false, abfragen = 0;
+  R.register('jagd', function () {
+    return {
+      arm: function () { return true; },
+      ankerPunkt: function () { abfragen++; return { x: mob.x, y: mob.y }; },
+      start: function () { gestartet = true; },
+      update: function () {}, isComplete: function () { return false; },
+      objectiveFailed: function () { return false; },
+      getState: function () { return {}; }
+    };
+  });
+  w.location.search = '?mode=jagd';
+  w.player = { x: 0, y: 0 };
+
+  R.beginRoom({}, { roomIndex: 0, depth: 1 });
+  assert.strictEqual(R.isArmed(), true, 'scharf, obwohl arm() keinen Punkt lieferte');
+  R.updateActive(16);
+  assert.strictEqual(gestartet, false, 'Mob weit weg');
+  assert.ok(abfragen > 0, 'der Punkt wird ueberhaupt erfragt');
+
+  // Der Mob laeuft heran — ohne dass sich am Raum etwas aendert.
+  mob.x = 100; mob.y = 0;
+  R.updateActive(16);
+  assert.strictEqual(gestartet, true, 'Sichtkontakt zum Mob startet die Jagd');
+});
+
+test('Ohne sichtbares Ziel wartet die Jagd, statt loszulaufen', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  let gestartet = false;
+  R.register('jagd', function () {
+    return {
+      arm: function () { return true; },
+      ankerPunkt: function () { return null; },   // Welle noch nicht gespawnt
+      start: function () { gestartet = true; },
+      update: function () {}, isComplete: function () { return false; },
+      objectiveFailed: function () { return false; },
+      getState: function () { return {}; }
+    };
+  });
+  w.location.search = '?mode=jagd';
+  w.player = { x: 0, y: 0 };
+
+  R.beginRoom({}, { roomIndex: 0, depth: 1 });
+  for (let i = 0; i < 5; i++) R.updateActive(16);
+  assert.strictEqual(gestartet, false);
+  assert.strictEqual(R.isArmed(), true, 'bleibt scharf und wartet');
+});
+
+test('hunt: der GESEHENE Gegner wird der Rudelfuehrer', () => {
+  const w = globalThis.window;
+  loadGameModule('js/roomModeHunt.js');
+  const naher = { x: 60, y: 0, active: true, hp: 10, maxHp: 10 };
+  const ferner = { x: 900, y: 900, active: true, hp: 10, maxHp: 10 };
+  // _pickTarget nimmt ohne EliteEnemies den ersten aktiven Gegner.
+  w.enemies = { getChildren: () => [naher, ferner] };
+
+  const m = w.RoomMode.create('hunt');
+  assert.strictEqual(m.arm(null), true);
+  const p = m.ankerPunkt();
+  assert.deepStrictEqual(p, { x: 60, y: 0 }, 'der Kandidat ist der Anker');
+
+  m.start(null);
+  assert.strictEqual(naher.__huntTarget, true, 'genau dieser Gegner tritt hervor');
+  assert.ok(naher.hp > 10, 'und wird zum Mini-Boss aufgewertet');
+  assert.notStrictEqual(ferner.__huntTarget, true);
+  assert.strictEqual(m.getState().picked, true);
+  delete w.enemies;
+});
+
+test('hunt: faellt der Kandidat vor dem Sichtkontakt, rueckt ein anderer nach', () => {
+  const w = globalThis.window;
+  loadGameModule('js/roomModeHunt.js');
+  const erster = { x: 60, y: 0, active: true, hp: 10 };
+  const zweiter = { x: 70, y: 0, active: true, hp: 10 };
+  w.enemies = { getChildren: () => [erster, zweiter].filter((e) => e.active) };
+
+  const m = w.RoomMode.create('hunt');
+  m.arm(null);
+  assert.deepStrictEqual(m.ankerPunkt(), { x: 60, y: 0 });
+  erster.active = false;
+  assert.deepStrictEqual(m.ankerPunkt(), { x: 70, y: 0 }, 'nachgerueckt');
+  delete w.enemies;
 });
