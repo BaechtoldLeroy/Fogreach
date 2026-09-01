@@ -45,7 +45,12 @@
       type: 'tap',
       icon: '\u{1F300}',
       color: 0x00ffff,
-      cooldownMs: 2500,
+      // 2500 ms war der mit Abstand kuerzeste Wert im ganzen Baum — die
+      // naechste Faehigkeit lag bei 6000, also mehr als das Doppelte. Alle
+      // Senkungen (Skillbaum bis -50 %, Wissensbaum -15 %, Fokus -40 %)
+      // wirken multiplikativ, das Verhaeltnis blieb auf JEDER Ausbaustufe
+      // exakt 2.40x. Talentpunkte konnten den Ausreisser also nie einholen.
+      cooldownMs: 5000,
       activate(scene) {
         // 060: beweglicher Channel (castWhirlwind in player.js) statt Einzel-Spin.
         try {
