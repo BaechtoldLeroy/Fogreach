@@ -260,3 +260,82 @@ test('mitteImRaum nimmt die Raummitte, wenn sie begehbar ist', () => {
   assert.deepStrictEqual(A.mitteImRaum(scene), { x: 640, y: 512 });
   assert.strictEqual(gezogen, 0, 'gar nicht erst nach Ersatz suchen');
 });
+
+// --- Rundgang: ?modes=a,b,c ------------------------------------------------
+
+function tourModus(id) {
+  globalThis.window.RoomMode.register(id, function () {
+    return {
+      start: function () {}, update: function () {},
+      isComplete: function () { return false; },
+      objectiveFailed: function () { return false; },
+      getState: function () { return { mode: id }; }
+    };
+  });
+}
+
+test('Rundgang verteilt die Modi der Reihe nach auf die Raeume', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  ['a', 'b', 'c'].forEach(tourModus);
+  w.location.search = '?dungeon=1&modes=a,b,c';
+
+  const gesehen = [];
+  for (let raum = 0; raum < 7; raum++) {
+    R.beginRoom({}, { roomIndex: raum, depth: 1 });
+    gesehen.push(R.activeModeId());
+  }
+  assert.deepStrictEqual(gesehen, ['a', 'b', 'c', 'a', 'b', 'c', 'a']);
+});
+
+test('Rundgang laesst den Bossraum in Ruhe', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  ['a'].forEach(tourModus);
+  w.location.search = '?modes=a';
+  R.beginRoom({}, { roomIndex: 3, depth: 1, isBoss: true });
+  assert.strictEqual(R.activeModeId(), 'clear');
+});
+
+test('Rundgang verwirft unbekannte Namen, statt sie durchzuwinken', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  ['a'].forEach(tourModus);
+  w.location.search = '?modes=gibtsnicht,a';
+  // Raum 0 -> erster GUELTIGER Eintrag, Raum 1 -> wieder von vorn.
+  R.beginRoom({}, { roomIndex: 0, depth: 1 });
+  assert.strictEqual(R.activeModeId(), 'a');
+  R.beginRoom({}, { roomIndex: 1, depth: 1 });
+  assert.strictEqual(R.activeModeId(), 'a');
+});
+
+test('Ist kein Name der Liste bekannt, greift der Rundgang gar nicht', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  w.location.search = '?modes=quatsch';
+  R.beginRoom({}, { roomIndex: 0, depth: 1 });
+  assert.strictEqual(R.activeModeId(), 'clear');
+});
+
+test('?modes= wird nicht versehentlich als ?mode= gelesen', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  ['a', 'b'].forEach(tourModus);
+  // Beide Schalter stehen im selben Suchstring. Dass sie sich nicht in die
+  // Quere kommen, haengt am '=' im Muster ([?&]mode=) — ein Umbau auf
+  // Teilstring-Suche waere der wahrscheinlichste Weg, das zu brechen.
+  w.location.search = '?modes=a,b';
+  R.beginRoom({}, { roomIndex: 1, depth: 1 });
+  assert.strictEqual(R.activeModeId(), 'b');
+});
+
+test('?mode= gilt weiter nur fuer den ersten Raum', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  ['a'].forEach(tourModus);
+  w.location.search = '?mode=a';
+  R.beginRoom({}, { roomIndex: 0, depth: 1 });
+  assert.strictEqual(R.activeModeId(), 'a');
+  R.beginRoom({}, { roomIndex: 1, depth: 1 });
+  assert.notStrictEqual(R.activeModeId(), 'a', 'ab Raum 1 wieder die normale Auswahl');
+});

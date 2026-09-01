@@ -65,14 +65,65 @@
     return ids[ids.length - 1];
   }
 
-  // Debug: ?mode=<id> erzwingt den Modus im ERSTEN Dungeon-Raum (Vorbild ?spy=1).
+  // Debug-Einstiege (Vorbild ?spy=1):
+  //
+  //   ?mode=<id>          erzwingt den Modus im ERSTEN Dungeon-Raum.
+  //   ?modes=<a,b,c,...>  RUNDGANG: Raum 0 bekommt a, Raum 1 b, Raum 2 c,
+  //                       danach wieder von vorn. So laesst sich jeder Modus
+  //                       in einem Durchgang nacheinander ansehen, ohne den
+  //                       Lauf jedes Mal neu zu starten.
+  //
+  // Der Boss-/Finalraum bleibt beim Rundgang ausgenommen — dort haengt der
+  // Klimax des Laufs dran, den ein aufgesetztes Raumziel nur stoert.
+  // Unbekannte Namen in der Liste werden verworfen, nicht stillschweigend
+  // durch clear ersetzt: sonst sucht man den Tippfehler im falschen Modul.
   function _forcedMode(info) {
     try {
       if (typeof window === 'undefined' || !window.location) return null;
-      var m = /[?&]mode=([a-z]+)/.exec(window.location.search || '');
+      var suche = window.location.search || '';
+
+      var l = /[?&]modes=([a-z,]+)/.exec(suche);
+      if (l && l[1] && info && !info.isBoss) {
+        var gewuenscht = l[1].split(',');
+        var liste = [], verworfen = [];
+        for (var i = 0; i < gewuenscht.length; i++) {
+          var id = gewuenscht[i];
+          if (!id) continue;
+          if (has(id) || id === 'clear') liste.push(id); else verworfen.push(id);
+        }
+        if (verworfen.length && typeof console !== 'undefined' && console.warn) {
+          console.warn('[Rundgang] unbekannte Modi uebersprungen: ' + verworfen.join(', ')
+            + ' — bekannt sind: ' + Object.keys(_registry).join(', '));
+        }
+        if (liste.length) {
+          var n = (typeof info.roomIndex === 'number' && info.roomIndex >= 0) ? info.roomIndex : 0;
+          return liste[n % liste.length];
+        }
+      }
+
+      // Das '=' im Muster trennt die beiden Schalter sauber: in '?modes=a,b'
+      // folgt auf 'mode' ein 's', das Muster greift dort also gar nicht. Wer
+      // das hier je auf Teilstring-Suche umstellt, bricht den Rundgang.
+      var m = /[?&]mode=([a-z]+)/.exec(suche);
       if (m && m[1] && info && info.roomIndex === 0 && (has(m[1]) || m[1] === 'clear')) return m[1];
     } catch (e) {}
     return null;
+  }
+
+  // Beim Rundgang mitschreiben, was der Raum vorhat. Ohne das sieht man einem
+  // scharfgestellten Raum absichtlich NICHTS an (kein Banner, keine Sperre) —
+  // beim Testen will man aber wissen, worauf man zulaeuft und wo es liegt.
+  function _rundgangMelden(info, gearmt, anker) {
+    try {
+      if (typeof window === 'undefined' || !window.location) return;
+      if (!/[?&]modes=/.test(window.location.search || '')) return;
+      if (typeof console === 'undefined' || !console.log) return;
+      console.log('[Rundgang] Raum ' + (info && info.roomIndex) + ': ' + (info && info.modeId)
+        + (gearmt
+          ? ' scharfgestellt, Anker bei ' + Math.round(anker.x) + '/' + Math.round(anker.y)
+            + ' — hinlaufen, bis er im Blick liegt'
+          : ' sofort gestartet'));
+    } catch (e) {}
   }
 
   // --- Lifecycle -----------------------------------------------------------
@@ -96,12 +147,14 @@
       try { a = _current.arm(scene, _ctx); } catch (e) { a = null; }
       if (a && typeof a.x === 'number' && typeof a.y === 'number' && (a.x || a.y)) {
         _anker = a; _armed = true;
+        _rundgangMelden(_ctx, true, a);
         return id;
       }
       // Kein Platz fuer den Anker: lieber sofort starten als das Ereignis
       // stillschweigend verlieren.
     }
     _zielStarten();
+    _rundgangMelden(_ctx, false, null);
     return id;
   }
 
