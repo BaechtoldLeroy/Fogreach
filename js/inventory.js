@@ -894,24 +894,6 @@ function equipPos(key, index) {
       bg.on("pointerdown", (pointer) => {
         const i = indexAnZelle(bg.spalte, bg.zeile);
         selectInventorySlot(i >= 0 ? i : -1);
-        // Zweiter Klick auf DENSELBEN Gegenstand innerhalb der Spanne:
-        // anlegen. Die Zeitbasis ist die Spieluhr, damit eine Pause zwischen
-        // den Klicks nicht als langsamer Doppelklick durchgeht.
-        if (i >= 0) {
-          const jetzt = (typeof window.gameNow === "function")
-            ? window.gameNow(scene) : Date.now();
-          if (letzterKlick.index === i && (jetzt - letzterKlick.zeit) <= DOPPELKLICK_MS) {
-            letzterKlick = { index: -1, zeit: -1e9 };   // nicht dreifach ausloesen
-            hideTooltip();
-            clearSlotHoverTint(bg);
-            if (typeof equipSelectedItem === "function") equipSelectedItem();
-            refreshInventoryUI();
-            return;
-          }
-          letzterKlick = { index: i, zeit: jetzt };
-        } else {
-          letzterKlick = { index: -1, zeit: -1e9 };
-        }
         hideTooltip();
         clearSlotHoverTint(bg);
         // Ein Druck auf ein belegtes Feld ist noch KEIN Ziehen — erst eine
@@ -1073,7 +1055,33 @@ function equipPos(key, index) {
     zug = null;
     schemen.setVisible(false);
     vorschau.setVisible(false);
-    if (!gestartet) return;                 // war nur ein Klick
+    if (!gestartet) {
+      // Es war ein Klick, kein Zug. ERST HIER wird auf Doppelklick geprueft.
+      //
+      // Beim Druecken zu pruefen war falsch: auf dem Touchscreen ist das
+      // zweite Antippen, mit dem man zu ziehen beginnt, genau ein zweiter
+      // Klick innerhalb der Spanne — ein ausgewaehltes Stueck wurde dadurch
+      // beim Verschieben sofort angelegt statt bewegt. Am Loslassen laesst
+      // sich Klick von Zug sauber unterscheiden.
+      if (index >= 0 && !ausEquip) {
+        const jetzt = (typeof window.gameNow === "function")
+          ? window.gameNow(scene) : Date.now();
+        if (letzterKlick.index === index && (jetzt - letzterKlick.zeit) <= DOPPELKLICK_MS) {
+          letzterKlick = { index: -1, zeit: -1e9 };   // nicht dreifach ausloesen
+          hideTooltip();
+          selectInventorySlot(index);
+          if (typeof equipSelectedItem === "function") equipSelectedItem();
+          refreshInventoryUI();
+          return;
+        }
+        letzterKlick = { index: index, zeit: jetzt };
+      } else {
+        letzterKlick = { index: -1, zeit: -1e9 };
+      }
+      return;
+    }
+    // Ein Zug hat stattgefunden — er darf NIE als Doppelklick durchgehen.
+    letzterKlick = { index: -1, zeit: -1e9 };
     const l = inPanel(pointer);
     const z = zelleAus(l.x, l.y);
 

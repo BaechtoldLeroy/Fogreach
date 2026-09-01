@@ -132,7 +132,7 @@ test('Ausruestung: das Seltenheits-Overlay folgt der Platzgroesse', () => {
 test('Inventar: Doppelklick legt an', () => {
   assert.ok(QUELLE.includes('const DOPPELKLICK_MS = 350;'),
     'keine Doppelklick-Spanne gesetzt');
-  const i = QUELLE.indexOf('letzterKlick.index === i');
+  const i = QUELLE.indexOf('letzterKlick.index === index');
   assert.ok(i > 0, 'der zweite Klick wird nicht gegen den ersten geprueft');
   const block = QUELLE.slice(i, i + 500);
   assert.ok(block.includes('equipSelectedItem()'),
@@ -142,4 +142,16 @@ test('Inventar: Doppelklick legt an', () => {
   const vor = QUELLE.slice(Math.max(0, i - 400), i);
   assert.ok(vor.includes('window.gameNow'),
     'der Doppelklick misst nicht gegen die Spieluhr');
+
+  // Und sie muss beim LOSLASSEN stehen, nicht beim Druecken: auf dem
+  // Touchscreen ist das zweite Antippen, mit dem man zu ziehen beginnt,
+  // genau ein zweiter Klick innerhalb der Spanne — ein ausgewaehltes Stueck
+  // wurde dadurch beim Verschieben sofort angelegt statt bewegt.
+  const iBeenden = QUELLE.indexOf("function zugBeenden");
+  assert.ok(iBeenden > 0 && i > iBeenden,
+    "die Doppelklick-Pruefung steht nicht in zugBeenden — ein Zug loest damit an");
+  const iDown = QUELLE.indexOf('bg.on("pointerdown"');
+  const downBlock = QUELLE.slice(iDown, iDown + 900);
+  assert.ok(!downBlock.includes("DOPPELKLICK_MS"),
+    "beim Druecken wird weiterhin auf Doppelklick geprueft");
 });
