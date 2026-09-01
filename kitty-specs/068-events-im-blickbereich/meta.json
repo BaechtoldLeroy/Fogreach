@@ -2,8 +2,10 @@
   "created_at": "2026-09-01T16:15:01.624485+00:00",
   "feature_number": "068",
   "feature_slug": "068-events-im-blickbereich",
-  "friendly_name": "events im blickbereich",
+  "friendly_name": "Ereignisse im Blickbereich",
   "mission": "software-dev",
   "slug": "068-events-im-blickbereich",
-  "target_branch": "main"
+  "source_description": "GitHub-Issue #112: Raum-Ereignisse (Altar-Verteidigung, Ueberleben) erst ausloesen, wenn sie im Blickbereich des Spielers liegen, statt beim Betreten des Raums. Die Treppensperre wandert vom Raumaufbau an den Ereignisstart, damit das Ereignis ein Angebot bleibt statt einer Pflicht.",
+  "target_branch": "main",
+  "vcs": "git"
 }
