@@ -33,7 +33,11 @@
     WPN_EISENKLINGE: [1, 3],
     WPN_KETTENMORGENSTERN: [2, 3],
     WPN_GLUTAXT: [2, 3],
-    WPN_RICHTSCHWERT: [2, 4],
+    // Kein Gegenstand ist so hoch wie das Raster (4 Zeilen). Ein 2x4-Stueck
+    // belegt sonst eine Doppelspalte von oben bis unten und ZERSCHNEIDET das
+    // Raster, statt nur Platz zu kosten — in der untersten Zeile bliebe dann
+    // nichts mehr fuer Kleinteile.
+    WPN_RICHTSCHWERT: [2, 3],
     WPN_KRIEGSHAMMER: [2, 3],
     ELARAS_KLINGE: [1, 3],
   };
@@ -59,7 +63,7 @@
   function groesse(item) {
     if (!item) return { b: 1, h: 1 };
     var m = GROESSE_NACH_SCHLUESSEL[item.key];
-    if (!m && item.subtype === 'bow') m = [2, 4];
+    if (!m && item.subtype === 'bow') m = [2, 3];   // s. Richtschwert
     if (!m) m = GROESSE_NACH_ART[item.type];
     if (!m) m = [1, 1];
     return {
@@ -184,6 +188,32 @@
     return heimatlos;
   }
 
+  /**
+   * Darf der Gegenstand an Platz `index` nach (x,y)?
+   *
+   * Der Gegenstand selbst wird beim Pruefen AUSGEBLENDET (`ausser`) — sonst
+   * blockierte er sich beim Verschieben um eine Zelle mit seinen eigenen
+   * Zellen und man koennte ihn nie leicht versetzen.
+   */
+  function kannHin(inventar, index, x, y) {
+    if (!Array.isArray(inventar)) return false;
+    var it = inventar[index];
+    if (!it) return false;
+    var g = groesse(it);
+    return passt(belegung(inventar), x, y, g.b, g.h, index);
+  }
+
+  /**
+   * Verschiebt einen Gegenstand, wenn der Zielplatz frei ist.
+   * @returns {boolean} ob verschoben wurde
+   */
+  function verschiebe(inventar, index, x, y) {
+    if (!kannHin(inventar, index, x, y)) return false;
+    inventar[index].gridX = x;
+    inventar[index].gridY = y;
+    return true;
+  }
+
   /** Gegenstand an einer Rasterzelle, oder null. */
   function itemAn(inventar, x, y) {
     var karte = belegung(inventar);
@@ -214,6 +244,8 @@
     belegung: belegung,
     passt: passt,
     findePlatz: findePlatz,
+    kannHin: kannHin,
+    verschiebe: verschiebe,
     einfuegen: einfuegen,
     lageErgaenzen: lageErgaenzen,
     itemAn: itemAn,

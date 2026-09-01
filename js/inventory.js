@@ -852,11 +852,15 @@ const EQUIP_STEP = 72;
         .setInteractive({ useHandCursor: true });
       bg.spalte = c;
       bg.zeile = r;
-      bg.on("pointerdown", () => {
+      bg.on("pointerdown", (pointer) => {
         const i = indexAnZelle(bg.spalte, bg.zeile);
         selectInventorySlot(i >= 0 ? i : -1);
         hideTooltip();
         clearSlotHoverTint(bg);
+        // Ein Druck auf ein belegtes Feld ist noch KEIN Ziehen — erst eine
+        // Bewegung ueber die Totzone macht eines daraus. Sonst waere jeder
+        // Klick zum Auswaehlen ein Mini-Umzug.
+        if (i >= 0) zugVormerken(i, bg.spalte, bg.zeile, pointer);
       });
       bg.on("pointerover", (pointer) => {
         const i = indexAnZelle(bg.spalte, bg.zeile);
@@ -889,6 +893,104 @@ const EQUIP_STEP = 72;
       invUI.zellen.push({ bg, highlight, c, r });
     }
   }
+
+  // UMLEGEN VON HAND (#123). Ohne das waere das Packraster nur eine
+  // Einschraenkung: der Spieler saehe, dass sein Richtschwert nicht mehr
+  // passt, koennte aber nichts dagegen tun. Erst das Umsortieren macht aus
+  // der Beschraenkung ein Puzzle.
+  const ZUG_TOTZONE = 6;   // px, bevor aus einem Klick ein Zug wird
+  let zug = null;
+
+  // Schemen, der am Zeiger haengt. Einer fuer alle Zuege — Erzeugen und
+  // Wegwerfen bei jedem Zug waere Muell fuer nichts.
+  const schemen = scene.add.image(0, 0, "itMat").setOrigin(0.5)
+    .setScrollFactor(0).setVisible(false).setAlpha(0.85);
+  schemen.setDepth((panel.depth || 10000) + 20);
+  panel.add(schemen);
+  invUI._schemen = schemen;
+
+  // Zielvorschau: gruen wenn es passt, rot wenn nicht. Ein Zug, der
+  // kommentarlos zurueckspringt, sieht wie ein Fehler aus.
+  const vorschau = scene.add.rectangle(0, 0, zelleBild, zelleBild, 0x66ff88, 0.22)
+    .setOrigin(0.5).setScrollFactor(0).setVisible(false);
+  vorschau.setDepth((panel.depth || 10000) + 18);
+  panel.add(vorschau);
+  invUI._vorschau = vorschau;
+
+  // Zeiger -> Panelkoordinaten. Das Panel sitzt mittig und ist skaliert;
+  // ohne diese Umrechnung landet der Zug bei jeder Fenstergroesse woanders.
+  const inPanel = (pointer) => {
+    const sx = panel.scaleX || 1, sy = panel.scaleY || 1;
+    return { x: (pointer.x - panel.x) / sx, y: (pointer.y - panel.y) / sy };
+  };
+  const zelleAus = (lx, ly) => ({
+    c: Math.floor((lx - GRID_X0) / zelleW),
+    r: Math.floor((ly - rasterY0) / zelleH),
+  });
+
+  function zugVormerken(index, c, r, pointer) {
+    const it = inventory[index];
+    if (!it) return;
+    const l = inPanel(pointer);
+    zug = {
+      index, gestartet: false,
+      // Welche Zelle INNERHALB des Gegenstands gegriffen wurde — damit er
+      // beim Aufnehmen nicht an die Zeigerspitze springt.
+      griffC: c - it.gridX, griffR: r - it.gridY,
+      startX: l.x, startY: l.y,
+    };
+  }
+
+  function zugBewegen(pointer) {
+    if (!zug) return;
+    const l = inPanel(pointer);
+    if (!zug.gestartet) {
+      if (Math.hypot(l.x - zug.startX, l.y - zug.startY) < ZUG_TOTZONE) return;
+      zug.gestartet = true;
+      const it = inventory[zug.index];
+      const g = window.InventoryGrid.groesse(it);
+      const key = resolveItemIconKey(it);
+      if (key) schemen.setTexture(key);
+      const mass = Math.min(g.b, g.h) * zelleW * 0.94 * 0.86;
+      schemen.setDisplaySize(mass, mass).setVisible(true);
+      vorschau.setVisible(true);
+      hideTooltip();
+    }
+    schemen.setPosition(l.x, l.y);
+
+    const it = inventory[zug.index];
+    const g = window.InventoryGrid.groesse(it);
+    const z = zelleAus(l.x, l.y);
+    const zx = z.c - zug.griffC, zy = z.r - zug.griffR;
+    const geht = window.InventoryGrid.kannHin(inventory, zug.index, zx, zy);
+    const m = zelleMitte(Math.max(0, zx), Math.max(0, zy));
+    vorschau.setPosition(m.x + (g.b - 1) * zelleW / 2, m.y + (g.h - 1) * zelleH / 2);
+    vorschau.setSize(g.b * zelleW * 0.94, g.h * zelleH * 0.94);
+    vorschau.setFillStyle(geht ? 0x66ff88 : 0xff6666, 0.22);
+  }
+
+  function zugBeenden(pointer) {
+    if (!zug) return;
+    const gestartet = zug.gestartet;
+    const index = zug.index, griffC = zug.griffC, griffR = zug.griffR;
+    zug = null;
+    schemen.setVisible(false);
+    vorschau.setVisible(false);
+    if (!gestartet) return;                 // war nur ein Klick
+    const l = inPanel(pointer);
+    const z = zelleAus(l.x, l.y);
+    // Schlaegt es fehl, bleibt der Gegenstand einfach liegen — das ist die
+    // sichtbare Antwort, es braucht keine eigene Meldung.
+    window.InventoryGrid.verschiebe(inventory, index, z.c - griffC, z.r - griffR);
+    refreshInventoryUI();
+  }
+
+  scene.input.on("pointermove", zugBewegen);
+  scene.input.on("pointerup", zugBeenden);
+  invUI._zugAb = () => {
+    try { scene.input.off("pointermove", zugBewegen); } catch (e) {}
+    try { scene.input.off("pointerup", zugBeenden); } catch (e) {}
+  };
 
   // GEGENSTANDS-SCHICHT: je Inventarplatz ein Satz Bilder, der beim
   // Auffrischen an die Lage des Gegenstands gesetzt wird. Unbenutzte bleiben
@@ -1419,6 +1521,14 @@ function destroyInventoryUI() {
   invUI.hideTooltip = null;
   invUI.showTooltip = null;
   invUI._scene = null;
+  // Die Zeiger-Handler des Umlegens haengen an der SZENE, nicht am Panel —
+  // ohne Abmelden sammelten sie sich bei jedem Oeffnen und griffen spaeter
+  // auf zerstoerte Objekte zu.
+  if (typeof invUI._zugAb === "function") { try { invUI._zugAb(); } catch (e) {} }
+  invUI._zugAb = null;
+  invUI._schemen = null;
+  invUI._vorschau = null;
+  invUI.zellen = [];
   invUI._placeHandler = null;
   if (typeof tooltip !== 'undefined') {
     tooltip = null;

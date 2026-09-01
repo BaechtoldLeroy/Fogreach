@@ -163,6 +163,6 @@ test('Aufsammeln: der Fund bekommt eine Rasterlage, kein blosses Feld', () => {
   // Und die Groesse muss belegt sein, nicht nur eine Zelle.
   const G = W.InventoryGrid;
   const frei = G.freieZellen(W.inventory);
-  assert.strictEqual(frei, G.COLS * G.ROWS - 8,
-    'ein Richtschwert (2x4) belegt nicht 8 Zellen — frei: ' + frei);
+  assert.strictEqual(frei, G.COLS * G.ROWS - 6,
+    'ein Richtschwert (2x3) belegt nicht 6 Zellen — frei: ' + frei);
 });

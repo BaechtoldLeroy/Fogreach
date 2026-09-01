@@ -26,7 +26,7 @@ test('Raster: jede Waffenart hat ihre eigene Silhouette', () => {
   const trank = G.groesse({ type: 'potion' });
 
   assert.deepStrictEqual([dolch.b, dolch.h], [1, 2], 'Dolch');
-  assert.deepStrictEqual([schwert.b, schwert.h], [2, 4], 'Richtschwert');
+  assert.deepStrictEqual([schwert.b, schwert.h], [2, 3], 'Richtschwert');
   assert.deepStrictEqual([hammer.b, hammer.h], [2, 3], 'Kriegshammer');
   assert.deepStrictEqual([trank.b, trank.h], [1, 1], 'Trank');
 
@@ -65,26 +65,28 @@ test('Raster: der naechste Fund legt sich daneben, nicht darueber', () => {
 
 test('Raster: ist kein Platz mehr, wird NICHT eingefuegt', () => {
   const inv = leer();
-  // 10x4 = 40 Zellen. Richtschwerter sind 2x4 -> genau 5 passen nebeneinander.
+  // 10x4 = 40 Zellen. Richtschwerter sind 2x3 -> fuenf passen nebeneinander und
+  // fuellen die oberen drei Zeilen; die unterste Zeile bleibt frei.
   for (let i = 0; i < 5; i++) {
     assert.ok(G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'S' + i }) >= 0,
       'Schwert ' + i + ' passte nicht, obwohl das Raster es hergibt');
   }
-  assert.strictEqual(G.freieZellen(inv), 0, 'das Raster ist nicht voll');
+  assert.strictEqual(G.freieZellen(inv), 10, 'unerwartete Restflaeche');
   assert.strictEqual(G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'zuviel' }), -1,
-    'ein sechstes Schwert wurde eingefuegt, obwohl kein Platz ist');
+    'ein sechstes Schwert wurde eingefuegt, obwohl nur noch eine Zeile frei ist');
 });
 
-test('Raster: ein Trank passt noch in eine Luecke, ein Schwert nicht', () => {
+test('Raster: in die Restzeile passt ein Trank, aber kein Schwert', () => {
   const inv = leer();
-  // Vier Schwerter (2x4) fuellen 8 der 10 Spalten. Rest: 2 Spalten x 4 Zeilen.
-  for (let i = 0; i < 4; i++) G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'S' + i });
-  // Ein Trank (1x1) in die Restspalte.
-  assert.ok(G.einfuegen(inv, { type: 'potion', name: 'Trank' }) >= 0, 'Trank passte nicht');
-  assert.strictEqual(G.freieZellen(inv), 7, 'unerwartete Restflaeche');
-  // Jetzt ist keine volle 2x4-Saeule mehr frei.
+  for (let i = 0; i < 5; i++) G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'S' + i });
+  // Uebrig ist die unterste Zeile: 10 Zellen, aber nur EINE hoch.
+  assert.ok(G.einfuegen(inv, { type: 'potion', name: 'Trank' }) >= 0,
+    'ein 1x1-Trank passte nicht in die freie Zeile');
   assert.strictEqual(G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'X' }), -1,
-    'ein Schwert wurde in eine Luecke gelegt, in die es nicht passt');
+    'ein 2x3-Schwert wurde in eine einzeilige Luecke gelegt');
+  // Genau darum geht es beim Verkleinern von 2x4 auf 2x3: es bleibt IMMER eine
+  // Zeile fuer Kleinteile, statt dass eine Doppelspalte das Raster zerschneidet.
+  assert.strictEqual(G.freieZellen(inv), 9, 'unerwartete Restflaeche');
 });
 
 test('Raster: Altbestand ohne Lage bekommt einen Platz zugewiesen', () => {
@@ -110,4 +112,32 @@ test('Raster: was beim Nachtragen keinen Platz findet, wird GEMELDET statt versc
   assert.strictEqual(heimatlos.length, 1,
     'erwartet: genau eines faellt heraus (5 passen, 6 nicht), gemeldet: ' + heimatlos.length);
   assert.ok(inv.filter(Boolean).length === 5, 'das Feld enthaelt noch das heimatlose Stueck');
+});
+
+test('Umlegen: ein Gegenstand blockiert sich beim Verschieben nicht selbst', () => {
+  // Ohne das Ausblenden des eigenen Stuecks waere jede Bewegung um eine Zelle
+  // unmoeglich — es kollidierte mit sich selbst.
+  const inv = leer();
+  const i = G.einfuegen(inv, { type: 'body', name: 'Panzer' });   // 2x3 auf 0,0
+  assert.ok(G.kannHin(inv, i, 1, 0), 'Verschieben um eine Spalte wurde abgelehnt');
+  assert.ok(G.verschiebe(inv, i, 1, 0), 'Verschieben schlug fehl');
+  assert.strictEqual(inv[i].gridX, 1);
+});
+
+test('Umlegen: auf einen belegten Platz geht nicht', () => {
+  const inv = leer();
+  const a = G.einfuegen(inv, { type: 'body', name: 'A' });          // 2x3 auf 0,0
+  const b = G.einfuegen(inv, { type: 'body', name: 'B' });          // 2x3 auf 2,0
+  assert.ok(!G.kannHin(inv, b, 0, 0), 'B durfte auf A gelegt werden');
+  assert.ok(!G.verschiebe(inv, b, 0, 0), 'B wurde auf A gelegt');
+  assert.strictEqual(inv[b].gridX, 2, 'B ist trotz Ablehnung gewandert');
+  assert.strictEqual(inv[a].gridX, 0, 'A wurde ueberschrieben');
+});
+
+test('Umlegen: ueber den Rand hinaus geht nicht', () => {
+  const inv = leer();
+  const i = G.einfuegen(inv, { type: 'body', name: 'Panzer' });     // 2x3
+  assert.ok(!G.kannHin(inv, i, G.COLS - 1, 0), 'ragt rechts hinaus');
+  assert.ok(!G.kannHin(inv, i, 0, G.ROWS - 1), 'ragt unten hinaus');
+  assert.ok(!G.kannHin(inv, i, -1, 0), 'ragt links hinaus');
 });
