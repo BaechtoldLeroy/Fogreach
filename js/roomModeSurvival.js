@@ -48,22 +48,33 @@
   function _ensureTex(scene) {
     if (!scene || !scene.textures || scene.textures.exists(ANKER_TEX)) return;
     try {
+      // Bildsprache wie beim Altar: dunkler Koerper, heller Akzent, weicher
+      // Schein. Eine flaechig gefuellte Scheibe verschwindet auf dem dunklen
+      // Boden — es traegt der leuchtende Ring, nicht die Flaeche.
       var g = scene.make.graphics({ add: false });
       var c = 48;
-      g.fillStyle(0x3a2a6a, 0.22); g.fillCircle(c, c, 44);
-      g.lineStyle(3, 0x8f6bff, 0.85); g.strokeCircle(c, c, 42);
-      g.lineStyle(2, 0x8f6bff, 0.55); g.strokeCircle(c, c, 30);
-      g.lineStyle(1.5, 0xd8c4ff, 0.7); g.strokeCircle(c, c, 12);
-      // Acht Runenstriche auf dem aeusseren Ring.
-      g.lineStyle(3, 0xd8c4ff, 0.8);
+      // Schein
+      g.fillStyle(0x7a3ff0, 0.14); g.fillCircle(c, c, 46);
+      g.fillStyle(0x7a3ff0, 0.10); g.fillCircle(c, c, 34);
+      // Dunkles Steinband, darauf die glimmende Rune
+      g.lineStyle(8, 0x241f30, 0.9); g.strokeCircle(c, c, 40);
+      g.lineStyle(3, 0x9a5cff, 0.95); g.strokeCircle(c, c, 40);
+      g.lineStyle(2, 0x7a3ff0, 0.7); g.strokeCircle(c, c, 26);
+      // Acht Runenstriche zwischen den Ringen
+      g.lineStyle(3.5, 0xd8c4ff, 0.9);
       for (var i = 0; i < 8; i++) {
         var a = (Math.PI * 2 / 8) * i;
         var ca = Math.cos(a), sa = Math.sin(a);
         g.beginPath();
-        g.moveTo(c + ca * 30, c + sa * 30);
-        g.lineTo(c + ca * 42, c + sa * 42);
+        g.moveTo(c + ca * 26, c + sa * 26);
+        g.lineTo(c + ca * 40, c + sa * 40);
         g.strokePath();
       }
+      // Kristallzeichen in der Mitte — dieselbe Raute wie auf dem Altar.
+      g.fillStyle(0x9a5cff, 1);
+      g.beginPath(); g.moveTo(c, c - 14); g.lineTo(c + 9, c); g.lineTo(c, c + 14); g.lineTo(c - 9, c); g.closePath(); g.fillPath();
+      g.fillStyle(0xe6d8ff, 0.95);
+      g.beginPath(); g.moveTo(c, c - 8); g.lineTo(c + 5, c); g.lineTo(c, c + 8); g.lineTo(c - 5, c); g.closePath(); g.fillPath();
       g.generateTexture(ANKER_TEX, 96, 96); g.destroy();
     } catch (e) {}
   }

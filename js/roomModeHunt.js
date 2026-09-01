@@ -73,22 +73,31 @@
   function _ensureTex(scene) {
     if (!scene || !scene.textures || scene.textures.exists(ANKER_TEX)) return;
     try {
+      // Anders als der Altar traegt hier die HELLE Form die Silhouette: auf dem
+      // dunklen Dungeon-Boden sind es die Knochen, die man sieht. Ein dunkler
+      // Sockel verschluckte sie (erster Versuch) und der Haufen las sich als
+      // schwarzer Klumpen. Der Schaedel sitzt bewusst aus der Mitte, damit das
+      // Bild ein Lager bleibt und kein Gesicht wird.
       var g = scene.make.graphics({ add: false });
-      // Bodenschatten
-      g.fillStyle(0x140f14, 0.35); g.fillEllipse(32, 44, 56, 18);
-      // Knochen quer im Haufen
-      g.fillStyle(0xcfc6b4, 1);
-      g.fillRect(8, 36, 26, 5); g.fillCircle(8, 38, 3.5); g.fillCircle(34, 38, 3.5);
-      g.fillRect(28, 30, 24, 4); g.fillCircle(28, 32, 3); g.fillCircle(52, 32, 3);
-      g.fillStyle(0xb8ad99, 1);
-      g.fillRect(14, 42, 30, 4); g.fillCircle(14, 44, 3); g.fillCircle(44, 44, 3);
-      // Schaedel obenauf
-      g.fillStyle(0xe4dccb, 1);
-      g.fillEllipse(30, 20, 26, 22);
-      g.fillRect(24, 27, 12, 7);
-      g.fillStyle(0x241c22, 1);
-      g.fillEllipse(25, 19, 7, 8); g.fillEllipse(35, 19, 7, 8);
-      g.fillRect(28, 28, 2, 5); g.fillRect(32, 28, 2, 5);
+      // Weicher Bodenschatten
+      g.fillStyle(0x000000, 0.32); g.fillEllipse(32, 46, 56, 14);
+      // Hintere Knochen (abgedunkelt = weiter hinten)
+      g.fillStyle(0x9d947f, 1);
+      g.fillRect(7, 33, 23, 4); g.fillCircle(7, 35, 3); g.fillCircle(30, 35, 3);
+      g.fillRect(35, 31, 22, 4); g.fillCircle(35, 33, 3); g.fillCircle(57, 33, 3);
+      // Vordere Knochen
+      g.fillStyle(0xd9d0bd, 1);
+      g.fillRect(11, 41, 29, 5); g.fillCircle(11, 43.5, 3.5); g.fillCircle(40, 43.5, 3.5);
+      g.fillRect(28, 46, 25, 4); g.fillCircle(28, 48, 3); g.fillCircle(53, 48, 3);
+      // Schaedel obenauf, nach links versetzt
+      g.fillStyle(0xe8e0cf, 1);
+      g.fillEllipse(24, 21, 23, 20);
+      g.fillRect(19, 27, 10, 6);
+      g.fillStyle(0xbcb2a0, 1); g.fillRect(19, 31, 10, 2);
+      // Augenhoehlen + Nasenoeffnung
+      g.fillStyle(0x1a141a, 1);
+      g.fillEllipse(19, 21, 7, 8); g.fillEllipse(29, 21, 7, 8);
+      g.beginPath(); g.moveTo(24, 25); g.lineTo(26, 29); g.lineTo(22, 29); g.closePath(); g.fillPath();
       g.generateTexture(ANKER_TEX, 64, 56); g.destroy();
     } catch (e) {}
   }
