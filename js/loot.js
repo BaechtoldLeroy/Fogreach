@@ -377,30 +377,36 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
   }
 }
 
-// Rare/Legendary drops get an audio jingle + pulsing colored beacon
-// (D2-style). Tier 2 = rare (gold), Tier 3 = legendary (orange).
+// Besondere Funde leuchten am Boden in ihrer Seltenheitsfarbe (D2-Stil).
+// Tier 1 = magisch (blau), Tier 2 = selten (gold), Tier 3 = legendaer (orange).
+//
+// #123: Blau fehlte — Gold und Orange leuchteten, ein magischer Fund lag
+// unscheinbar da wie ein gewoehnlicher. Es bekommt aber bewusst das LEISESTE
+// Leuchten und KEINEN Jingle: magische Funde sind haeufig, und ein voller
+// Leuchtturm samt Ton bei jedem waere Laerm statt Signal. Die Abstufung
+// blau < gold < orange traegt die Information, nicht das blosse Vorhandensein.
 function _attachRarityFx(scene, loot, item) {
   const tier = item && typeof item.tier === 'number' ? item.tier : 0;
-  if (tier < 2 || !scene || !loot) return;
+  if (tier < 1 || !scene || !loot) return;
 
   const tierHex = [0xcccccc, 0x88aaff, 0xffdd44, 0xff8844][tier] || 0xffffff;
-  const sfxKey = tier >= 3 ? 'loot_legendary' : 'loot_rare';
-  if (window.soundManager && typeof window.soundManager.playSFX === 'function') {
+  const sfxKey = tier >= 3 ? 'loot_legendary' : (tier >= 2 ? 'loot_rare' : null);
+  if (sfxKey && window.soundManager && typeof window.soundManager.playSFX === 'function') {
     try { window.soundManager.playSFX(sfxKey); } catch (e) { /* ignore */ }
   }
 
-  // Glow beacon under the loot sprite — larger + brighter for legendary
-  const radius = tier >= 3 ? 34 : 26;
-  const glow = scene.add.circle(loot.x, loot.y, radius, tierHex, 0.35);
+  // Glow beacon under the loot sprite — je seltener, desto groesser und heller
+  const radius = tier >= 3 ? 34 : (tier >= 2 ? 26 : 20);
+  const glow = scene.add.circle(loot.x, loot.y, radius, tierHex, tier >= 2 ? 0.35 : 0.22);
   glow.setDepth(79); // under the item sprite (80)
   glow.setBlendMode(Phaser.BlendModes.ADD);
 
   // Pulse tween
   const pulseTween = scene.tweens.add({
     targets: glow,
-    scale: { from: 0.8, to: 1.25 },
-    alpha: { from: 0.25, to: 0.55 },
-    duration: tier >= 3 ? 650 : 900,
+    scale: { from: 0.8, to: tier >= 2 ? 1.25 : 1.12 },
+    alpha: tier >= 2 ? { from: 0.25, to: 0.55 } : { from: 0.16, to: 0.34 },
+    duration: tier >= 3 ? 650 : (tier >= 2 ? 900 : 1200),
     yoyo: true,
     repeat: -1,
     ease: 'Sine.easeInOut'
@@ -815,6 +821,10 @@ if (typeof window !== 'undefined') {
   window.addBoostsToItem = addBoostsToItem;
   window.normalizeItemStatsForTier = normalizeItemStatsForTier;
   window.TIER_COLORS = LOOT_TIER_COLORS;
+  // Das Bodenleuchten ist eine eigene Entscheidung (welche Seltenheit
+  // bekommt welches Signal) und wird deshalb einzeln ansprechbar — sonst
+  // waere sie nur ueber den ganzen spawnLoot-Pfad zu erreichen.
+  window.attachRarityFx = _attachRarityFx;
   // Legacy aliases for any loose references that haven't been migrated yet
   // (e.g. js/scenes/HubScene.js is parsed but never instantiated).
   window.normalizeItemStatsForRarity = normalizeItemStatsForTier;
