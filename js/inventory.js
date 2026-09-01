@@ -713,22 +713,47 @@ function initInventoryUI() {
   };
 
 const equipKeys = ['weapon', 'head', 'body', 'boots', 'amulet'];
-const EQUIP_X = -PANEL_W / 2 + 160;  // Slots leicht nach rechts
-// Interim (#42 WP01): Abstände so eng, dass alle 5 Slots ins 480px-Panel
-// passen (der 5. Amulett-Slot lag vorher bei y=280 unter dem Panel-Rand).
-// Das richtige 5-Slot-Layout + Amulett-Slot-Optik/Badge folgt in WP05.
-const EQUIP_Y0 = -PANEL_H / 2 + 118;
-const EQUIP_STEP = 72;
+const EQUIP_X = -PANEL_W / 2 + 130;   // Mittelachse der Silhouette
+const EQUIP_Y0 = -PANEL_H / 2 + 96;   // Kopfhoehe
+const EQUIP_STEP = 72;                // Zeilenabstand der Silhouette
+
+// #123 A: Die Ausruestung stand als senkrechte Liste da — fuenf gleiche
+// Kaesten untereinander, deren Reihenfolge nichts bedeutete. Jetzt liegen
+// die Plaetze dort, wo das Teil am Koerper sitzt: Kopf oben, Koerper
+// darunter, Waffe an der linken Hand, Amulett am Hals, Stiefel unten. Das
+// spart jede Beschriftung — die Lage sagt bereits, was hingehoert.
+//
+// Versatz gegen EQUIP_X/EQUIP_Y0 in Pixeln.
+const EQUIP_LAGE = {
+  head:   { dx:   0, dy: 0 },
+  amulet: { dx:  46, dy: 34 },
+  body:   { dx:   0, dy: 76 },
+  weapon: { dx: -52, dy: 76 },
+  boots:  { dx:   0, dy: 152 },
+};
+function equipPos(key, index) {
+  const l = EQUIP_LAGE[key];
+  if (l) return { x: EQUIP_X + l.dx, y: EQUIP_Y0 + l.dy };
+  // Unbekannter Slot (kuenftige Erweiterung): unten anhaengen statt
+  // stillschweigend auf dem Kopf zu landen.
+  return { x: EQUIP_X, y: EQUIP_Y0 + 152 + (index + 1) * EQUIP_STEP };
+}
 
   for (let i = 0; i < equipKeys.length; i++) {
-    const y = EQUIP_Y0 + i * EQUIP_STEP;
+    const _lage = equipPos(equipKeys[i], i);
+    const y = _lage.y;
+    const _ex = _lage.x;
 
-    const slot = scene.add.image(EQUIP_X, y, 'uiSlot')
+    const slot = scene.add.image(_ex, y, 'uiSlot')
       .setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
-    slot.on('pointerdown', () => {
+    slot.on('pointerdown', (pointer) => {
       selectEquipSlot(equipKeys[i]);
       hideTooltip();
       clearSlotHoverTint(slot);
+      // Angelegtes Stueck ins Raster zurueckziehen. Vorgemerkt wird nur —
+      // erst eine Bewegung ueber die Totzone macht daraus einen Zug, damit
+      // das blosse Auswaehlen nichts ablegt.
+      if (equipment[equipKeys[i]]) zugVormerkenAusEquip(equipKeys[i], pointer);
     });
     slot.on('pointerover', (pointer) => {
       const item = equipment[equipKeys[i]];
@@ -748,12 +773,12 @@ const EQUIP_STEP = 72;
     });
     panel.add(slot);
 
-    const highlight = scene.add.image(EQUIP_X, y, 'uiSlot')
+    const highlight = scene.add.image(_ex, y, 'uiSlot')
       .setOrigin(0.5).setScrollFactor(0).setVisible(false).setAlpha(SLOT_BASE_ALPHA);
     panel.add(highlight);
     slot.__hoverHighlight = highlight;
 
-    const icon = scene.add.image(EQUIP_X, y, 'itMat').setOrigin(0.5).setVisible(false).setScrollFactor(0);
+    const icon = scene.add.image(_ex, y, 'itMat').setOrigin(0.5).setVisible(false).setScrollFactor(0);
     panel.add(icon);
 
     // Feature 059 (#42) WP05: the run-amulet slot gets its own optic — a purple
@@ -763,16 +788,16 @@ const EQUIP_STEP = 72;
     if (equipKeys[i] === 'amulet') {
       const fw = (slot.displayWidth || 64) + 6;
       const fh = (slot.displayHeight || 64) + 6;
-      const frame = scene.add.rectangle(EQUIP_X, y, fw, fh, 0x000000, 0)
+      const frame = scene.add.rectangle(_ex, y, fw, fh, 0x000000, 0)
         .setStrokeStyle(2, 0xc792ea, 0.9).setScrollFactor(0);
       panel.add(frame);
       slot.setTint(0xb79edb); // subtle purple base so the slot reads as special
-      const badge = scene.add.text(EQUIP_X, y + fh / 2 + 9, _INV_T('inv.amulet.badge'), {
+      const badge = scene.add.text(_ex, y + fh / 2 + 9, _INV_T('inv.amulet.badge'), {
         fontFamily: 'monospace', fontSize: '12px', fontStyle: 'bold', color: '#f1e2ff',
         backgroundColor: '#4a3a63', padding: { x: 5, y: 2 }
       }).setOrigin(0.5, 0.5).setScrollFactor(0);
       panel.add(badge);
-      const lock = scene.add.text(EQUIP_X, y + fh / 2 + 9, _INV_T('inv.amulet.locked'), {
+      const lock = scene.add.text(_ex, y + fh / 2 + 9, _INV_T('inv.amulet.locked'), {
         fontFamily: 'monospace', fontSize: '12px', fontStyle: 'bold', color: '#d8d8d8',
         backgroundColor: '#333333', padding: { x: 5, y: 2 }
       }).setOrigin(0.5, 0.5).setScrollFactor(0).setVisible(false);
@@ -847,7 +872,7 @@ const EQUIP_STEP = 72;
   for (let r = 0; r < GRID_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
       const m = zelleMitte(c, r);
-      const bg = scene.add.image(m.x, m.y, "uiSlot").setOrigin(0.5)
+      const bg = scene.add.image(m.x, m.y, "uiZelle").setOrigin(0.5)
         .setDisplaySize(zelleBild, zelleBild).setScrollFactor(0)
         .setInteractive({ useHandCursor: true });
       bg.spalte = c;
@@ -884,7 +909,7 @@ const EQUIP_STEP = 72;
       });
       panel.add(bg);
 
-      const highlight = scene.add.image(m.x, m.y, "uiSlot").setOrigin(0.5)
+      const highlight = scene.add.image(m.x, m.y, "uiZelle").setOrigin(0.5)
         .setDisplaySize(zelleBild, zelleBild).setScrollFactor(0)
         .setVisible(false).setAlpha(SLOT_BASE_ALPHA);
       panel.add(highlight);
@@ -928,6 +953,16 @@ const EQUIP_STEP = 72;
     r: Math.floor((ly - rasterY0) / zelleH),
   });
 
+  function zugVormerkenAusEquip(slotKey, pointer) {
+    const it = equipment[slotKey];
+    if (!it) return;
+    const l = inPanel(pointer);
+    // griffC/griffR sind 0: ein angelegtes Stueck hat keine Rasterlage, an
+    // der man es greifen koennte — es haengt mit der Ecke am Zeiger.
+    zug = { ausEquip: slotKey, index: -1, gestartet: false, griffC: 0, griffR: 0,
+            startX: l.x, startY: l.y };
+  }
+
   function zugVormerken(index, c, r, pointer) {
     const it = inventory[index];
     if (!it) return;
@@ -947,38 +982,114 @@ const EQUIP_STEP = 72;
     if (!zug.gestartet) {
       if (Math.hypot(l.x - zug.startX, l.y - zug.startY) < ZUG_TOTZONE) return;
       zug.gestartet = true;
-      const it = inventory[zug.index];
+      const it = zug.ausEquip ? equipment[zug.ausEquip] : inventory[zug.index];
       const g = window.InventoryGrid.groesse(it);
       const key = resolveItemIconKey(it);
       if (key) schemen.setTexture(key);
-      const mass = Math.min(g.b, g.h) * zelleW * 0.94 * 0.86;
-      schemen.setDisplaySize(mass, mass).setVisible(true);
+      // Auch der Schemen traegt die Rechteckform — sonst saehe der gezogene
+      // Gegenstand anders aus als der abgelegte.
+      schemen.setDisplaySize(g.b * zelleW * 0.94 * 0.86, g.h * zelleH * 0.94 * 0.86)
+        .setVisible(true);
       vorschau.setVisible(true);
       hideTooltip();
     }
     schemen.setPosition(l.x, l.y);
 
-    const it = inventory[zug.index];
+    const it = zug.ausEquip ? equipment[zug.ausEquip] : inventory[zug.index];
     const g = window.InventoryGrid.groesse(it);
     const z = zelleAus(l.x, l.y);
     const zx = z.c - zug.griffC, zy = z.r - zug.griffR;
-    const geht = window.InventoryGrid.kannHin(inventory, zug.index, zx, zy);
+    // Aus der Ausruestung gibt es keinen eigenen Platz zu ignorieren —
+    // deshalb gegen ein LEERES Ausnahmefeld pruefen (-1 trifft keinen Platz).
+    const geht = window.InventoryGrid.passt(
+      window.InventoryGrid.belegung(inventory), zx, zy, g.b, g.h,
+      zug.ausEquip ? -2 : zug.index);
     const m = zelleMitte(Math.max(0, zx), Math.max(0, zy));
     vorschau.setPosition(m.x + (g.b - 1) * zelleW / 2, m.y + (g.h - 1) * zelleH / 2);
     vorschau.setSize(g.b * zelleW * 0.94, g.h * zelleH * 0.94);
     vorschau.setFillStyle(geht ? 0x66ff88 : 0xff6666, 0.22);
   }
 
+  // Welcher Ausruestungsplatz liegt unter dem Zeiger? Die Plaetze stehen in
+  // einer Spalte links vom Raster; ihre Geometrie steht in EQUIP_X/EQUIP_Y0/
+  // EQUIP_STEP. Ein Treffer wird grosszuegig gerechnet (halbe Schrittweite),
+  // damit man nicht pixelgenau zielen muss.
+  function equipPlatzAus(lx, ly) {
+    // Muss dieselbe Lage benutzen wie der Aufbau (equipPos) — sonst zielt
+    // man auf das Bild und trifft die alte Spaltenposition dahinter.
+    for (let i = 0; i < equipKeys.length; i++) {
+      const q = equipPos(equipKeys[i], i);
+      // Grosszuegiger Treffer (halbe Slotgroesse), damit man nicht
+      // pixelgenau zielen muss.
+      if (Math.abs(lx - q.x) <= 50 && Math.abs(ly - q.y) <= 34) return equipKeys[i];
+    }
+    return null;
+  }
+
   function zugBeenden(pointer) {
     if (!zug) return;
     const gestartet = zug.gestartet;
     const index = zug.index, griffC = zug.griffC, griffR = zug.griffR;
+    const ausEquip = zug.ausEquip || null;
     zug = null;
     schemen.setVisible(false);
     vorschau.setVisible(false);
     if (!gestartet) return;                 // war nur ein Klick
     const l = inPanel(pointer);
     const z = zelleAus(l.x, l.y);
+
+    // Aus der Ausruestung ins Raster: das Stueck bekommt die Zielzellen,
+    // wenn sie frei sind. Kein Platz -> es bleibt angelegt. Ein angelegtes
+    // Stueck kommentarlos verschwinden zu lassen waere der schlimmste
+    // Ausgang, deshalb hier lieber gar nichts tun.
+    if (ausEquip) {
+      const it = equipment[ausEquip];
+      if (it) {
+        const g = window.InventoryGrid.groesse(it);
+        const zx = z.c, zy = z.r;
+        const frei = window.InventoryGrid.passt(
+          window.InventoryGrid.belegung(inventory), zx, zy, g.b, g.h, -2);
+        const platzImFeld = inventory.findIndex((s) => !s);
+        if (frei && platzImFeld >= 0) {
+          it.gridX = zx;
+          it.gridY = zy;
+          inventory[platzImFeld] = it;
+          equipment[ausEquip] = null;
+          if (ausEquip === "amulet") window.runAmulet = null;
+          // Abgeleitete Werte neu rechnen — sonst traegt der Spieler die
+          // Boni eines Teils weiter, das er gar nicht mehr anhat.
+          if (typeof recalcDerived === "function") {
+            try { recalcDerived(it.hp || 0, 0); } catch (e4) { recalcDerived(); }
+          }
+        }
+      }
+      refreshInventoryUI();
+      return;
+    }
+    // Zuerst pruefen, ob ueber einem Ausruestungsplatz losgelassen wurde —
+    // Ziehen auf den Koerper ist das natuerlichere Anlegen als der Umweg
+    // ueber Auswaehlen und Knopf.
+    const platz = equipPlatzAus(l.x, l.y);
+    if (platz) {
+      const it = inventory[index];
+      if (it && it.type === platz) {
+        // equipSelectedItem arbeitet auf invSelected; also dorthin zeigen
+        // lassen statt die Tauschlogik ein zweites Mal zu schreiben —
+        // sie enthaelt Platzsuche, HP-Verrechnung und Amulett-Sonderfall.
+        selectInventorySlot(index);
+        if (typeof equipSelectedItem === "function") equipSelectedItem();
+      } else if (it) {
+        // Falscher Platz: liegen lassen und sagen, warum.
+        try {
+          const _sz = invUI && invUI._scene;
+          if (_sz && typeof window.showEventToast === "function") {
+            window.showEventToast(_sz, "Passt nicht in diesen Platz");
+          }
+        } catch (e3) {}
+      }
+      refreshInventoryUI();
+      return;
+    }
     // Schlaegt es fehl, bleibt der Gegenstand einfach liegen — das ist die
     // sichtbare Antwort, es braucht keine eigene Meldung.
     window.InventoryGrid.verschiebe(inventory, index, z.c - griffC, z.r - griffR);
@@ -1555,7 +1666,7 @@ function refreshInventoryUI() {
     if (!bg) return;
     const i = (G && typeof G.indexAn === "function") ? G.indexAn(inventory, z.c, z.r) : -1;
     const it = i >= 0 ? inventory[i] : null;
-    bg.setTexture(i >= 0 && i === invSelected ? "uiSlotSel" : "uiSlot");
+    bg.setTexture(i >= 0 && i === invSelected ? "uiZelleSel" : "uiZelle");
     bg.setDisplaySize(zBild, zBild);
     setSlotHighlight(bg, it);
   });
@@ -1597,10 +1708,14 @@ function refreshInventoryUI() {
     if (icon) {
       const iconKey = resolveItemIconKey(it);
       if (iconKey) icon.setTexture(iconKey);
-      // Das Symbol fuellt das Rechteck, bleibt aber unter der Texturgroesse
-      // von 48 px je Zelle — darueber wuerde hochskaliert und unscharf.
-      const mass = Math.min(breite, hoehe) * 0.86;
-      icon.setPosition(cx, cy).setDisplaySize(mass, mass).setVisible(true);
+      // Das Symbol fuellt sein RECHTECK, nicht ein Quadrat darin. Die
+      // Zeichnungen sind zwar quadratische 48er-Texturen, tragen ihre Form
+      // aber im Umriss: ein Bogen ist darin 21x48, eine Klinge 29x42. Auf
+      // ein 1x3-Rechteck gezogen wird der Bogen lang und schmal, auf ein
+      // 2x2 der Hammer breit — die Rasterform und die Zeichnung sagen dann
+      // dasselbe. Quadratisch skaliert blieb bei hohen Teilen die halbe
+      // Flaeche leer.
+      icon.setPosition(cx, cy).setDisplaySize(breite * 0.86, hoehe * 0.86).setVisible(true);
     }
     if (label) {
       const stack = it.stack || 1;

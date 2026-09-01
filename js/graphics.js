@@ -2244,6 +2244,38 @@ function createInventoryGraphics() {
   g.generateTexture('uiSlot', 96, 64);
   g.clear();
 
+  // ── uiZelle / uiZelleSel (#123 A): VERTIEFTE Rasterzelle ────────────────
+  //
+  // Das Rasterinventar braucht eine andere Anmutung als die alten Faecher:
+  // eine Zelle ist eine Mulde, in die etwas hineingelegt wird, kein Knopf.
+  // Deshalb umgekehrte Kantenbeleuchtung — oben und links dunkel (Schatten
+  // faellt hinein), unten und rechts hell (Lichtkante am Wannenrand). Das
+  // ist derselbe Trick wie bei einem eingelassenen Feld in einer Oberflaeche,
+  // nur mit vertauschten Seiten.
+  const _zelle = (key, grund, rand, akzent) => {
+    g.fillStyle(grund, 1);
+    g.fillRoundedRect(0, 0, 48, 48, 5);
+    // Schattenkante innen oben/links
+    g.fillStyle(0x000000, 0.34);
+    g.fillRect(2, 2, 44, 2);
+    g.fillRect(2, 2, 2, 44);
+    // Lichtkante innen unten/rechts
+    g.fillStyle(0xffffff, 0.07);
+    g.fillRect(2, 44, 44, 2);
+    g.fillRect(44, 2, 2, 44);
+    // Aussenrahmen
+    g.lineStyle(1, rand, 0.85);
+    g.strokeRoundedRect(0.5, 0.5, 47, 47, 5);
+    if (akzent) {
+      g.lineStyle(2, akzent, 0.95);
+      g.strokeRoundedRect(1.5, 1.5, 45, 45, 5);
+    }
+    g.generateTexture(key, 48, 48);
+    g.clear();
+  };
+  _zelle("uiZelle", 0x1b1e23, 0x3a404a, null);
+  _zelle("uiZelleSel", 0x24282f, 0x3a404a, 0xffd33b);
+
   // ── uiSlotSel: slot selected ─────────────────────────────────────────────
   g.fillStyle(0x3a3a3a, 1);
   g.fillRoundedRect(0, 0, 96, 64, 8);

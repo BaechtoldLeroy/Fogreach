@@ -29,26 +29,25 @@
   // ein Kriegshammer breit. Wer das Raster ansieht, erkennt die Waffenart, bevor
   // er den Namen liest.
   var GROESSE_NACH_SCHLUESSEL = {
-    WPN_SCHATTENDOLCH: [1, 2],
-    WPN_EISENKLINGE: [1, 3],
-    WPN_KETTENMORGENSTERN: [2, 3],
-    WPN_GLUTAXT: [2, 3],
-    // Kein Gegenstand ist so hoch wie das Raster (4 Zeilen). Ein 2x4-Stueck
-    // belegt sonst eine Doppelspalte von oben bis unten und ZERSCHNEIDET das
-    // Raster, statt nur Platz zu kosten — in der untersten Zeile bliebe dann
-    // nichts mehr fuer Kleinteile.
-    WPN_RICHTSCHWERT: [2, 3],
-    WPN_KRIEGSHAMMER: [2, 3],
-    ELARAS_KLINGE: [1, 3],
+    // Kein Gegenstand ist so hoch wie das Raster (4 Zeilen). Ein Stueck
+    // ueber die volle Hoehe belegt sonst eine Spalte von oben bis unten und
+    // ZERSCHNEIDET das Raster, statt nur Platz zu kosten.
+    WPN_SCHATTENDOLCH: [1, 1],
+    WPN_EISENKLINGE: [1, 2],
+    ELARAS_KLINGE: [1, 2],
+    WPN_KETTENMORGENSTERN: [2, 2],
+    WPN_GLUTAXT: [2, 2],
+    WPN_KRIEGSHAMMER: [2, 2],
+    WPN_RICHTSCHWERT: [2, 2],
   };
 
   // Rueckfall nach Art, wenn der Schluessel unbekannt ist. Ein neuer
   // Gegenstand landet damit auf einem sinnvollen Mass statt auf 1x1 —
   // stillschweigend zu klein waere schlimmer als grob geschaetzt.
   var GROESSE_NACH_ART = {
-    weapon: [1, 3],
+    weapon: [1, 2],
     head: [2, 2],
-    body: [2, 3],
+    body: [2, 2],
     boots: [2, 2],
     amulet: [1, 1],
     potion: [1, 1],
@@ -63,7 +62,7 @@
   function groesse(item) {
     if (!item) return { b: 1, h: 1 };
     var m = GROESSE_NACH_SCHLUESSEL[item.key];
-    if (!m && item.subtype === 'bow') m = [2, 3];   // s. Richtschwert
+    if (!m && item.subtype === 'bow') m = [1, 3];   // schmal und lang
     if (!m) m = GROESSE_NACH_ART[item.type];
     if (!m) m = [1, 1];
     return {

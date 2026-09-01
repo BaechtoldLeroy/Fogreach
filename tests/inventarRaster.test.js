@@ -25,9 +25,9 @@ test('Raster: jede Waffenart hat ihre eigene Silhouette', () => {
   const hammer = G.groesse({ type: 'weapon', key: 'WPN_KRIEGSHAMMER' });
   const trank = G.groesse({ type: 'potion' });
 
-  assert.deepStrictEqual([dolch.b, dolch.h], [1, 2], 'Dolch');
-  assert.deepStrictEqual([schwert.b, schwert.h], [2, 3], 'Richtschwert');
-  assert.deepStrictEqual([hammer.b, hammer.h], [2, 3], 'Kriegshammer');
+  assert.deepStrictEqual([dolch.b, dolch.h], [1, 1], 'Dolch');
+  assert.deepStrictEqual([schwert.b, schwert.h], [2, 2], 'Richtschwert');
+  assert.deepStrictEqual([hammer.b, hammer.h], [2, 2], 'Kriegshammer');
   assert.deepStrictEqual([trank.b, trank.h], [1, 1], 'Trank');
 
   const flaeche = (g) => g.b * g.h;
@@ -40,7 +40,7 @@ test('Raster: ein unbekannter Gegenstand faellt auf seine Art zurueck, nicht auf
   // Stillschweigend zu klein waere schlimmer als grob geschaetzt: der
   // Gegenstand passte dann ueberall hin und das Packproblem waere ausgehebelt.
   const g = G.groesse({ type: 'body', key: 'GIBT_ES_NICHT' });
-  assert.deepStrictEqual([g.b, g.h], [2, 3], 'Ruestung ohne bekannten Schluessel');
+  assert.deepStrictEqual([g.b, g.h], [2, 2], 'Ruestung ohne bekannten Schluessel');
 });
 
 test('Raster: Einfuegen belegt genau die Zellen der Groesse', () => {
@@ -49,7 +49,7 @@ test('Raster: Einfuegen belegt genau die Zellen der Groesse', () => {
   assert.ok(idx >= 0, 'nicht eingefuegt');
   assert.strictEqual(inv[idx].gridX, 0);
   assert.strictEqual(inv[idx].gridY, 0);
-  assert.strictEqual(G.freieZellen(inv), G.COLS * G.ROWS - 6, '2x3 belegt nicht 6 Zellen');
+  assert.strictEqual(G.freieZellen(inv), G.COLS * G.ROWS - 4, '2x2 belegt nicht 4 Zellen');
 });
 
 test('Raster: der naechste Fund legt sich daneben, nicht darueber', () => {
@@ -65,28 +65,26 @@ test('Raster: der naechste Fund legt sich daneben, nicht darueber', () => {
 
 test('Raster: ist kein Platz mehr, wird NICHT eingefuegt', () => {
   const inv = leer();
-  // 10x4 = 40 Zellen. Richtschwerter sind 2x3 -> fuenf passen nebeneinander und
-  // fuellen die oberen drei Zeilen; die unterste Zeile bleibt frei.
-  for (let i = 0; i < 5; i++) {
+  // 10x4 = 40 Zellen, Richtschwerter sind 2x2 -> genau zehn passen hinein.
+  for (let i = 0; i < 10; i++) {
     assert.ok(G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'S' + i }) >= 0,
       'Schwert ' + i + ' passte nicht, obwohl das Raster es hergibt');
   }
-  assert.strictEqual(G.freieZellen(inv), 10, 'unerwartete Restflaeche');
+  assert.strictEqual(G.freieZellen(inv), 0, 'das Raster ist nicht voll');
   assert.strictEqual(G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'zuviel' }), -1,
-    'ein sechstes Schwert wurde eingefuegt, obwohl nur noch eine Zeile frei ist');
+    'ein elftes Schwert wurde eingefuegt, obwohl kein Platz ist');
 });
 
-test('Raster: in die Restzeile passt ein Trank, aber kein Schwert', () => {
+test('Raster: in eine Restluecke passt ein Trank, aber kein Bogen', () => {
   const inv = leer();
-  for (let i = 0; i < 5; i++) G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'S' + i });
-  // Uebrig ist die unterste Zeile: 10 Zellen, aber nur EINE hoch.
+  // Neun Richtschwerter (2x2) lassen genau eine 2x2-Ecke frei.
+  for (let i = 0; i < 9; i++) G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'S' + i });
+  assert.strictEqual(G.freieZellen(inv), 4, 'unerwartete Restflaeche');
+  // Ein Bogen ist 1x3 und passt nicht in eine 2x2-Ecke.
+  assert.strictEqual(G.einfuegen(inv, { type: 'weapon', subtype: 'bow', name: 'Bogen' }), -1,
+    'ein 1x3-Bogen wurde in eine 2x2-Luecke gelegt');
   assert.ok(G.einfuegen(inv, { type: 'potion', name: 'Trank' }) >= 0,
-    'ein 1x1-Trank passte nicht in die freie Zeile');
-  assert.strictEqual(G.einfuegen(inv, { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'X' }), -1,
-    'ein 2x3-Schwert wurde in eine einzeilige Luecke gelegt');
-  // Genau darum geht es beim Verkleinern von 2x4 auf 2x3: es bleibt IMMER eine
-  // Zeile fuer Kleinteile, statt dass eine Doppelspalte das Raster zerschneidet.
-  assert.strictEqual(G.freieZellen(inv), 9, 'unerwartete Restflaeche');
+    'ein 1x1-Trank passte nicht in die freie Ecke');
 });
 
 test('Raster: Altbestand ohne Lage bekommt einen Platz zugewiesen', () => {
@@ -107,11 +105,11 @@ test('Raster: Altbestand ohne Lage bekommt einen Platz zugewiesen', () => {
 
 test('Raster: was beim Nachtragen keinen Platz findet, wird GEMELDET statt verschluckt', () => {
   const inv = leer();
-  for (let i = 0; i < 6; i++) inv[i] = { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'S' + i };
+  for (let i = 0; i < 11; i++) inv[i] = { type: 'weapon', key: 'WPN_RICHTSCHWERT', name: 'S' + i };
   const heimatlos = G.lageErgaenzen(inv);
   assert.strictEqual(heimatlos.length, 1,
-    'erwartet: genau eines faellt heraus (5 passen, 6 nicht), gemeldet: ' + heimatlos.length);
-  assert.ok(inv.filter(Boolean).length === 5, 'das Feld enthaelt noch das heimatlose Stueck');
+    'erwartet: genau eines faellt heraus (10 passen, 11 nicht), gemeldet: ' + heimatlos.length);
+  assert.ok(inv.filter(Boolean).length === 10, 'das Feld enthaelt noch das heimatlose Stueck');
 });
 
 test('Umlegen: ein Gegenstand blockiert sich beim Verschieben nicht selbst', () => {

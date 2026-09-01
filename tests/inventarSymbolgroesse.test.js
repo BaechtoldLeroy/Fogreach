@@ -40,7 +40,11 @@ test('Inventar: das Symbol fuellt seine Zellen spuerbar aus', () => {
   const PANEL_W = zahl(/PANEL_W = ([0-9]+)/, 'PANEL_W');
   const PANEL_H = zahl(/PANEL_H = ([0-9]+)/, 'PANEL_H');
   const fuge = zahl(/const zelleBild = zelle \* ([0-9.]+);/, 'Zellenfuge');
-  const symbolAnteil = zahl(/Math\.min\(breite, hoehe\) \* ([0-9.]+);/, 'Symbolanteil');
+  const marke = "setDisplaySize(breite * ";
+  const iA = QUELLE.indexOf(marke);
+  assert.ok(iA > 0, "Symbolanteil nicht gefunden");
+  const symbolAnteil = parseFloat(QUELLE.slice(iA + marke.length));
+  assert.ok(symbolAnteil > 0, "Symbolanteil nicht lesbar");
 
   const COLS = 10, ROWS = 4;                 // INV_COLS / INV_ROWS aus main.js
   const GRID_W = PANEL_W - 320;
