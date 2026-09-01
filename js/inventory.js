@@ -779,8 +779,12 @@ function equipPos(key, index) {
     });
     panel.add(slot);
 
-    const highlight = scene.add.image(_ex, y, 'uiSlot')
-      .setOrigin(0.5).setScrollFactor(0).setVisible(false).setAlpha(SLOT_BASE_ALPHA);
+    // Das Overlay lag auf der Naturgroesse der uiSlot-Textur (96x64) und war
+    // damit BREITER als der Platz, seit die Plaetze eigene Masse haben. Es
+    // muss dem Platz folgen, sonst faerbt die Seltenheit ueber den Rand.
+    const highlight = scene.add.image(_ex, y, 'uiZelle')
+      .setOrigin(0.5).setDisplaySize(_lage.w, _lage.h)
+      .setScrollFactor(0).setVisible(false).setAlpha(SLOT_BASE_ALPHA);
     panel.add(highlight);
     slot.__hoverHighlight = highlight;
 
@@ -890,6 +894,24 @@ function equipPos(key, index) {
       bg.on("pointerdown", (pointer) => {
         const i = indexAnZelle(bg.spalte, bg.zeile);
         selectInventorySlot(i >= 0 ? i : -1);
+        // Zweiter Klick auf DENSELBEN Gegenstand innerhalb der Spanne:
+        // anlegen. Die Zeitbasis ist die Spieluhr, damit eine Pause zwischen
+        // den Klicks nicht als langsamer Doppelklick durchgeht.
+        if (i >= 0) {
+          const jetzt = (typeof window.gameNow === "function")
+            ? window.gameNow(scene) : Date.now();
+          if (letzterKlick.index === i && (jetzt - letzterKlick.zeit) <= DOPPELKLICK_MS) {
+            letzterKlick = { index: -1, zeit: -1e9 };   // nicht dreifach ausloesen
+            hideTooltip();
+            clearSlotHoverTint(bg);
+            if (typeof equipSelectedItem === "function") equipSelectedItem();
+            refreshInventoryUI();
+            return;
+          }
+          letzterKlick = { index: i, zeit: jetzt };
+        } else {
+          letzterKlick = { index: -1, zeit: -1e9 };
+        }
         hideTooltip();
         clearSlotHoverTint(bg);
         // Ein Druck auf ein belegtes Feld ist noch KEIN Ziehen — erst eine
@@ -934,6 +956,12 @@ function equipPos(key, index) {
   // passt, koennte aber nichts dagegen tun. Erst das Umsortieren macht aus
   // der Beschraenkung ein Puzzle.
   const ZUG_TOTZONE = 6;   // px, bevor aus einem Klick ein Zug wird
+  // DOPPELKLICK legt an. Der Umweg ueber Auswaehlen und Knopf ist der
+  // langsamste Weg; in Diablo 2 wie in Path of Exile ruestet ein Doppelklick
+  // direkt aus. 350 ms ist die uebliche Spanne — kuerzer verfehlt man leicht,
+  // laenger loest ein zweiter bewusster Klick faelschlich aus.
+  const DOPPELKLICK_MS = 350;
+  let letzterKlick = { index: -1, zeit: -1e9 };
   let zug = null;
 
   // Schemen, der am Zeiger haengt. Einer fuer alle Zuege — Erzeugen und
@@ -1772,7 +1800,19 @@ function refreshInventoryUI() {
     if (it) {
       const iconKey = resolveItemIconKey(it);
       if (icon && iconKey) icon.setTexture(iconKey);
-      if (icon) icon.setVisible(true);
+      if (icon) {
+        // Das Symbol traegt die Form des GEGENSTANDS, nicht die des Platzes.
+        // Auf die Platzform gezogen wurde ein 2x2-Helm im 64x96-Koerperplatz
+        // um das Anderthalbfache in die Laenge gestreckt — im Raster daneben
+        // sah derselbe Helm anders aus.
+        const gg = (window.InventoryGrid && window.InventoryGrid.groesse)
+          ? window.InventoryGrid.groesse(it) : { b: 1, h: 1 };
+        const platzB = slot.displayWidth * 0.82;
+        const platzH = slot.displayHeight * 0.82;
+        const f = Math.min(platzB / gg.b, platzH / gg.h);
+        icon.setDisplaySize(gg.b * f, gg.h * f);
+        icon.setVisible(true);
+      }
     } else if (icon) {
       icon.setVisible(false);
     }

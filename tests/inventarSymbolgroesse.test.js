@@ -89,3 +89,57 @@ test('Inventar: Gegenstaende werden ueber ihre Zellen gespannt, nicht fest geset
   assert.ok(/const hoehe = g\.h \* zH \* [0-9.]+;/.test(QUELLE),
     'die Hoehe wird nicht aus der Gegenstandsgroesse gebildet');
 });
+
+test('Ausruestung: das Symbol traegt die Form des Gegenstands, nicht die des Platzes', () => {
+  // Die Plaetze der Papierpuppe haben verschiedene Formen (Kopf 64x64,
+  // Koerper/Waffe 64x96). Auf die PLATZform gezogen wurde ein 2x2-Helm im
+  // Koerperplatz um das Anderthalbfache in die Laenge gestreckt — im Raster
+  // daneben sah derselbe Helm anders aus.
+  assert.ok(QUELLE.includes('window.InventoryGrid.groesse(it)'),
+    'die Ausruestung fragt die Gegenstandsgroesse nicht ab');
+  assert.ok(QUELLE.includes('const f = Math.min(platzB / gg.b, platzH / gg.h);'),
+    'das Symbol wird nicht verhaeltnistreu in den Platz eingepasst');
+
+  // Nachgerechnet: ein 2x2-Gegenstand bleibt quadratisch, egal in welchem Platz.
+  const einpassen = (b, h, pw, ph) => {
+    const pb = pw * 0.82, phh = ph * 0.82;
+    const f = Math.min(pb / b, phh / h);
+    return { w: b * f, h: h * f };
+  };
+  const imKopf = einpassen(2, 2, 64, 64);
+  const imKoerper = einpassen(2, 2, 64, 96);
+  assert.ok(Math.abs(imKopf.w / imKopf.h - 1) < 0.001, 'im Kopfplatz nicht quadratisch');
+  assert.ok(Math.abs(imKoerper.w / imKoerper.h - 1) < 0.001,
+    'im Koerperplatz verzerrt — Verhaeltnis ' + (imKoerper.w / imKoerper.h).toFixed(2));
+
+  // Und ein 1x3-Bogen bleibt hoch und schmal.
+  const bogen = einpassen(1, 3, 64, 96);
+  assert.ok(bogen.h > bogen.w * 2.5,
+    'der Bogen ist im Platz nicht mehr hoch und schmal: ' + bogen.w.toFixed(0) + 'x' + bogen.h.toFixed(0));
+});
+
+test('Ausruestung: das Seltenheits-Overlay folgt der Platzgroesse', () => {
+  // Es lag auf der Naturgroesse der uiSlot-Textur (96x64) und war damit
+  // BREITER als der Platz, seit die Plaetze eigene Masse haben — die Farbe
+  // faerbte ueber den Rand hinaus.
+  const i = QUELLE.indexOf("const highlight = scene.add.image(_ex, y,");
+  assert.ok(i > 0, 'Ausruestungs-Overlay nicht gefunden');
+  const block = QUELLE.slice(i, i + 260);
+  assert.ok(block.includes('setDisplaySize(_lage.w, _lage.h)'),
+    'das Overlay folgt nicht der Platzgroesse');
+});
+
+test('Inventar: Doppelklick legt an', () => {
+  assert.ok(QUELLE.includes('const DOPPELKLICK_MS = 350;'),
+    'keine Doppelklick-Spanne gesetzt');
+  const i = QUELLE.indexOf('letzterKlick.index === i');
+  assert.ok(i > 0, 'der zweite Klick wird nicht gegen den ersten geprueft');
+  const block = QUELLE.slice(i, i + 500);
+  assert.ok(block.includes('equipSelectedItem()'),
+    'der Doppelklick legt nichts an');
+  // Die Zeitbasis muss die Spieluhr sein: sonst geht eine Pause zwischen zwei
+  // Klicks als langsamer Doppelklick durch.
+  const vor = QUELLE.slice(Math.max(0, i - 400), i);
+  assert.ok(vor.includes('window.gameNow'),
+    'der Doppelklick misst nicht gegen die Spieluhr');
+});
