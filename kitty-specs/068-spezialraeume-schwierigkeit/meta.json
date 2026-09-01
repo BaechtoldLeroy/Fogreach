@@ -1,0 +1,11 @@
+{
+  "created_at": "2026-09-01T16:19:47.467609+00:00",
+  "feature_number": "068",
+  "feature_slug": "068-spezialraeume-schwierigkeit",
+  "friendly_name": "Spezialräume Schwierigkeit harmonisieren",
+  "mission": "software-dev",
+  "slug": "068-spezialraeume-schwierigkeit",
+  "target_branch": "spec/issue-103",
+  "vcs": "git",
+  "source_description": "GitHub-Issue #103 — Spezialräume: HP-Modifikator nur in survival; Schwierigkeit der vier Raum-Modi (survival/escape/defend/hunt) angleichen und an EINER Stelle dokumentieren. Ist-Zustand kopflos gemessen (tools/headless), Zahlen in spec.md Abschnitt 2."
+}
