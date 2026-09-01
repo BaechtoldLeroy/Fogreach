@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-09-01T16:17:19.388653+00:00",
+  "feature_number": "069",
+  "feature_slug": "069-debug-gate",
+  "friendly_name": "debug gate",
+  "mission": "software-dev",
+  "slug": "069-debug-gate",
+  "target_branch": "main"
+}
