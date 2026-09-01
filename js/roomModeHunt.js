@@ -5,6 +5,11 @@
  * Der Kill des Ziels schließt den Raum ab — unabhängig vom restlichen
  * Trash. Kein Verfehlen möglich. Self-registrierend. Der Ziel-Marker
  * rendert das Visuals-Modul (WP05) aus getState().
+ *
+ * #112: Auch hier fehlte ein Objekt, an dem der Spieler das Ereignis
+ * festmachen konnte. Es gibt jetzt ein BEUTELAGER — einen Knochenhaufen als
+ * Bau des Rudels. Erst wenn der Spieler ihn sieht, tritt der Rudelfuehrer
+ * aus dem Pulk hervor.
  * ===================================================================== */
 (function () {
   'use strict';
@@ -62,6 +67,32 @@
   // Rudelführer heraussticht).
   var EXTRA_ENEMIES = 4;
 
+  var ANKER_TEX = 'roommode_hunt_beutelager';
+
+  // Beutelager: Knochenhaufen mit Schaedel — das Rudel hat hier gefressen.
+  function _ensureTex(scene) {
+    if (!scene || !scene.textures || scene.textures.exists(ANKER_TEX)) return;
+    try {
+      var g = scene.make.graphics({ add: false });
+      // Bodenschatten
+      g.fillStyle(0x140f14, 0.35); g.fillEllipse(32, 44, 56, 18);
+      // Knochen quer im Haufen
+      g.fillStyle(0xcfc6b4, 1);
+      g.fillRect(8, 36, 26, 5); g.fillCircle(8, 38, 3.5); g.fillCircle(34, 38, 3.5);
+      g.fillRect(28, 30, 24, 4); g.fillCircle(28, 32, 3); g.fillCircle(52, 32, 3);
+      g.fillStyle(0xb8ad99, 1);
+      g.fillRect(14, 42, 30, 4); g.fillCircle(14, 44, 3); g.fillCircle(44, 44, 3);
+      // Schaedel obenauf
+      g.fillStyle(0xe4dccb, 1);
+      g.fillEllipse(30, 20, 26, 22);
+      g.fillRect(24, 27, 12, 7);
+      g.fillStyle(0x241c22, 1);
+      g.fillEllipse(25, 19, 7, 8); g.fillEllipse(35, 19, 7, 8);
+      g.fillRect(28, 28, 2, 5); g.fillRect(32, 28, 2, 5);
+      g.generateTexture(ANKER_TEX, 64, 56); g.destroy();
+    } catch (e) {}
+  }
+
   // Rudelführer tot -> der Rest des Pulks löst sich auf (kurzer Fade, dann weg).
   // Kein Kill-Reward (die verschwinden, sie werden nicht "erlegt").
   function _clearOtherEnemies() {
@@ -84,9 +115,29 @@
 
   function HuntMode() {
     var scene = null, target = null, picked = false, cleared = false, clearedOthers = false;
+    var sprite = null, ankerX = 0, ankerY = 0;
     return {
+      // #112: Beutelager hinstellen, ohne den Rudelfuehrer schon zu bestimmen.
+      arm: function (sc) {
+        scene = sc || null;
+        var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
+        var mitte = (A && typeof A.mitteImRaum === 'function') ? A.mitteImRaum(scene) : { x: 0, y: 0 };
+        ankerX = mitte.x; ankerY = mitte.y;
+        if (scene && scene.add) {
+          _ensureTex(scene);
+          // Depth 80 wie liegende Beute — ein Gegenstand am Boden, kein Bauwerk.
+          try { sprite = scene.add.sprite(ankerX, ankerY, ANKER_TEX).setDepth(80).setScrollFactor(1); }
+          catch (e) { sprite = null; }
+        }
+        if (sprite && A && typeof A.ruhend === 'function') A.ruhend(sprite);
+        return { x: ankerX, y: ankerY };
+      },
       start: function (sc) {
-        scene = sc || null; target = null; picked = false; cleared = false; clearedOthers = false;
+        if (sc) scene = sc;
+        target = null; picked = false; cleared = false; clearedOthers = false;
+        if (!sprite && this.arm) { try { this.arm(scene); } catch (e) {} }
+        var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
+        if (sprite && A && typeof A.geweckt === 'function') A.geweckt(sprite);
         // Ein paar zusätzliche Gegner spawnen -> vollerer Raum.
         try {
           if (scene && typeof window !== 'undefined' && typeof window.spawnEnemy === 'function') {
@@ -109,6 +160,10 @@
           _clearOtherEnemies();
         }
       },
+      // Raum-/Modus-Wechsel: das Beutelager darf nicht mitwandern.
+      stop: function () {
+        if (sprite) { try { sprite.destroy(); } catch (e) {} sprite = null; }
+      },
       onWaveCleared: function () { cleared = true; },
       isComplete: function () {
         if (picked) return !target || !target.active;
@@ -119,7 +174,7 @@
         var alive = !!(target && target.active);
         return {
           mode: 'hunt', picked: picked, targetAlive: alive,
-          x: alive ? target.x : 0, y: alive ? target.y : 0
+          x: alive ? target.x : ankerX, y: alive ? target.y : ankerY
         };
       }
     };

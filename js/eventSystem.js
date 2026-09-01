@@ -1637,8 +1637,12 @@
       // Feature 061: In Spezialräumen (survival/defend/hunt/escape) KEIN Event —
       // der Raum hat bereits ein Ziel. Der 800ms-Delay stellt sicher, dass
       // beginRoom den Modus schon gesetzt hat (isSpecialRoom ist hier korrekt).
+      // #112: isSpecialRoom() ist erst true, wenn das Ziel LAEUFT. Ein noch
+      // scharfgestellter Raum hat aber ebenso schon sein Objekt stehen — dort
+      // gehoert kein zweites Ereignis dazu.
       if (window.RoomMode && typeof window.RoomMode.isSpecialRoom === 'function'
-          && window.RoomMode.isSpecialRoom()) return;
+          && (window.RoomMode.isSpecialRoom()
+              || (typeof window.RoomMode.isArmed === 'function' && window.RoomMode.isArmed()))) return;
       // Doppelte Absicherung: falls die Spionage-Mission erst nach dem Roll aktiv
       // wurde, hier ebenfalls abbrechen.
       if (window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'

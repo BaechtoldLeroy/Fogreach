@@ -25,6 +25,9 @@
   var _current = null;      // aktive Modus-Instanz
   var _ctx = null;          // aktueller Raum-Kontext (inkl. modeId)
   var _completedFired = false;
+  var _scene = null;        // fuer den Anker-Test und den verzoegerten start()
+  var _armed = false;       // Ereignis steht bereit, wartet auf Sichtkontakt (#112)
+  var _anker = null;        // {x,y} des Ankerobjekts, solange scharfgestellt
 
   // Kandidaten-Spezialmodi + Gewichte (tunebar). Nur REGISTRIERTE Modi zählen —
   // in WP01 ist noch keiner davon registriert, also fällt alles auf `clear`.
@@ -82,10 +85,62 @@
     var id = _forcedMode(_ctx) || selectForRoom(_ctx, Math.random);
     if (!has(id)) id = 'clear';
     _ctx.modeId = id;
+    _scene = scene;
+    _armed = false; _anker = null;
     _current = create(id, _ctx);
-    try { if (_current && _current.start) _current.start(scene, _ctx); } catch (e) {}
+    // #112: Modi mit Ankerobjekt starten NICHT beim Betreten. Sie stellen nur
+    // ihr Objekt hin; das Ziel beginnt, sobald der Spieler es sieht. Modi ohne
+    // `arm` (clear, escape) verhalten sich unveraendert.
+    if (_current && typeof _current.arm === 'function') {
+      var a = null;
+      try { a = _current.arm(scene, _ctx); } catch (e) { a = null; }
+      if (a && typeof a.x === 'number' && typeof a.y === 'number' && (a.x || a.y)) {
+        _anker = a; _armed = true;
+        return id;
+      }
+      // Kein Platz fuer den Anker: lieber sofort starten als das Ereignis
+      // stillschweigend verlieren.
+    }
+    _zielStarten();
     return id;
   }
+
+  // Startet das Ziel — beim Betreten (Modi ohne Anker) oder beim Sichtkontakt.
+  //
+  // Hier haengt seit #112 auch die Treppensperre: sie sass frueher im Raumaufbau
+  // und sperrte damit, BEVOR der Spieler das Ereignis ueberhaupt sehen konnte.
+  // Das Ereignis ist ein Angebot — wer es nicht annimmt, darf gehen; wer es
+  // annimmt, sitzt drin. Escape ist eine Flucht: dort bleibt der Ausgang offen.
+  function _zielStarten() {
+    _armed = false;
+    try { if (_current && _current.start) _current.start(_scene, _ctx); } catch (e) {}
+    if (_ctx && _ctx.modeId && _ctx.modeId !== 'clear' && _ctx.modeId !== 'escape') {
+      try {
+        if (typeof window !== 'undefined' && typeof window.lockStairs === 'function') {
+          window.lockStairs(_scene, true);
+        }
+      } catch (e) {}
+    }
+  }
+
+  /**
+   * Nimmt ein noch nicht ausgeloestes Ereignis zurueck (#112).
+   *
+   * Gerufen, wenn der Raum auf dem normalen Weg gecleart wurde: das Angebot ist
+   * dann verfallen. Ohne das wuerde ein spaeterer Blick auf den Altar den
+   * bereits abgeschlossenen Raum wieder zusperren.
+   *
+   * @returns {boolean} ob wirklich etwas zurueckgenommen wurde
+   */
+  function disarm() {
+    if (!_armed) return false;
+    _armed = false; _anker = null;
+    try { if (_current && _current.stop) _current.stop(); } catch (e) {}
+    _current = _registry.clear ? _registry.clear(_ctx || {}) : null;
+    if (_ctx) _ctx.modeId = 'clear';
+    return true;
+  }
+  function isArmed() { return _armed; }
 
   // Pause-Uhr (main.js window.__GAME_PAUSE). Beim Pausieren werden scene.time und
   // die Physik eingefroren, die Scene selbst läuft aber weiter — main.js update()
@@ -102,6 +157,14 @@
   function updateActive(dt) {
     if (!_current) return;
     if (_clockPaused()) return;
+    // Scharfgestellt: nur auf Sichtkontakt warten, sonst passiert nichts.
+    if (_armed) {
+      var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
+      if (_anker && A && typeof A.sichtbar === 'function' && A.sichtbar(_scene, _anker.x, _anker.y)) {
+        _zielStarten();
+      }
+      return;
+    }
     try { if (_current.update) _current.update(dt); } catch (e) {}
     // Nicht-`clear`-Modi schalten die Treppe SELBST frei, sobald ihr Ziel
     // erfüllt ist (`clear` nutzt weiter die checkWaveEnd→markRoomCleared-Kette).
@@ -122,14 +185,25 @@
   // `clear` schaltet die Treppe über die bestehende checkWaveEnd-Kette frei;
   // andere Modi unterdrücken das (sie haben ihre eigene Abschluss-Bedingung).
   function allowWaveClearUnlock() {
-    return !_ctx || _ctx.modeId === 'clear';
+    // Solange nur scharfgestellt, ist der Raum ein GANZ normaler Raum: die Welle
+    // clearen muss ihn oeffnen und die uebliche Belohnung geben (#112).
+    return !_ctx || _armed || _ctx.modeId === 'clear';
   }
   function onWaveCleared() {
+    // #112: Wer den Raum leergeraeumt hat, ohne das Ereignis je zu sehen, hat es
+    // verpasst — das Angebot verfaellt HIER, vor der Unlock-Abfrage in wave.js.
+    // Ohne das wuerde ein spaeterer Blick auf den Anker einen bereits
+    // abgeschlossenen Raum wieder zusperren.
+    disarm();
     try { if (_current && _current.onWaveCleared) _current.onWaveCleared(); } catch (e) {}
   }
 
   function activeModeId() { return _ctx ? _ctx.modeId : 'clear'; }
-  function isSpecialRoom() { return !!(_ctx && _ctx.modeId && _ctx.modeId !== 'clear'); }
+  // "Ein Spezialziel LAEUFT" — nicht "der Raum hat eines vorgesehen". Banner,
+  // HUD und Treppensperre haengen daran und duerfen im scharfgestellten Zustand
+  // noch nicht greifen. Wer den Raum nur vormerken will (eventSystem: kein
+  // Zufallsereignis obendrauf), fragt zusaetzlich isArmed().
+  function isSpecialRoom() { return !!(_ctx && _ctx.modeId && _ctx.modeId !== 'clear' && !_armed); }
   function isObjectiveComplete() { return _completedFired; }
   function objectiveFailed() {
     try { return !!(_current && _current.objectiveFailed && _current.objectiveFailed()); }
@@ -143,6 +217,9 @@
   // spawnEnemy pro Gegner abgefragt. Modi ohne den Hook / `clear` liefern ×1.
   function enemyHpMultiplier() {
     try {
+      // Vor dem Ausloesen ist die Welle eine normale Welle — der Survival-
+      // Zuschlag darf sie nicht schon zaeher machen.
+      if (_armed) return 1;
       if (_current && typeof _current.enemyHpMultiplier === 'function') {
         var m = _current.enemyHpMultiplier();
         if (typeof m === 'number' && m > 0) return m;
@@ -153,6 +230,7 @@
   function reset() {
     try { if (_current && _current.stop) _current.stop(); } catch (e) {}
     _current = null; _ctx = null; _completedFired = false;
+    _scene = null; _armed = false; _anker = null;
   }
 
   // --- ClearMode: kapselt das heutige "Welle clearen" (verlustfrei) --------
@@ -176,6 +254,7 @@
     activeModeId: activeModeId, isSpecialRoom: isSpecialRoom,
     isObjectiveComplete: isObjectiveComplete,
     objectiveFailed: objectiveFailed, activeState: activeState, reset: reset,
+    isArmed: isArmed, disarm: disarm,
     enemyHpMultiplier: enemyHpMultiplier,
     _SPECIAL_WEIGHTS: SPECIAL_WEIGHTS
   };

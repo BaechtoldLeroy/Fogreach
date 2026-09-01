@@ -5,6 +5,11 @@
  * Treppe öffnet, wenn der Timer abläuft (nicht wenn der Raum leer ist).
  * Self-registrierend über window.RoomMode.register('survival', …). Kein
  * Rendering hier — der HUD-State kommt über getState() (Visuals = WP05).
+ *
+ * #112: Der Modus hatte als einziger KEIN Objekt im Raum — die Uhr lief los,
+ * sobald man eintrat, ohne dass irgendwo stand warum. Er bekommt deshalb einen
+ * BANNKREIS als Anker: ein Runenring am Boden, der ruhend daliegt und den
+ * Ansturm erst ausloest, wenn der Spieler ihn sieht.
  * ===================================================================== */
 (function () {
   'use strict';
@@ -35,6 +40,33 @@
   // nichts auf dem Spieler aufpoppt, aber nah genug zum schnellen Herandrängen.
   var SPAWN_MIN_R = 320;
   var SPAWN_MAX_R = 440;
+
+  var ANKER_TEX = 'roommode_survival_bannkreis';
+
+  // Bannkreis: ein flacher Runenring am Boden. Bewusst KEIN Hindernis und
+  // KEIN Sprite in Augenhoehe — er markiert eine Stelle, er versperrt sie nicht.
+  function _ensureTex(scene) {
+    if (!scene || !scene.textures || scene.textures.exists(ANKER_TEX)) return;
+    try {
+      var g = scene.make.graphics({ add: false });
+      var c = 48;
+      g.fillStyle(0x3a2a6a, 0.22); g.fillCircle(c, c, 44);
+      g.lineStyle(3, 0x8f6bff, 0.85); g.strokeCircle(c, c, 42);
+      g.lineStyle(2, 0x8f6bff, 0.55); g.strokeCircle(c, c, 30);
+      g.lineStyle(1.5, 0xd8c4ff, 0.7); g.strokeCircle(c, c, 12);
+      // Acht Runenstriche auf dem aeusseren Ring.
+      g.lineStyle(3, 0xd8c4ff, 0.8);
+      for (var i = 0; i < 8; i++) {
+        var a = (Math.PI * 2 / 8) * i;
+        var ca = Math.cos(a), sa = Math.sin(a);
+        g.beginPath();
+        g.moveTo(c + ca * 30, c + sa * 30);
+        g.lineTo(c + ca * 42, c + sa * 42);
+        g.strokePath();
+      }
+      g.generateTexture(ANKER_TEX, 96, 96); g.destroy();
+    } catch (e) {}
+  }
 
   // Dauer skaliert mit Tiefe: 60s .. 120s.
   function _depthSeconds() {
@@ -70,12 +102,35 @@
     var duration = _depthSeconds();
     var remaining = duration;
     var spawnAcc = 0;
+    var sprite = null, ankerX = 0, ankerY = 0;
     return {
-      start: function (sc) {
+      // #112: Bannkreis hinlegen, ohne die Uhr zu starten.
+      arm: function (sc) {
         scene = sc || null;
+        var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
+        var mitte = (A && typeof A.mitteImRaum === 'function') ? A.mitteImRaum(scene) : { x: 0, y: 0 };
+        ankerX = mitte.x; ankerY = mitte.y;
+        if (scene && scene.add) {
+          _ensureTex(scene);
+          // Depth -2: ueber der Bodenzeichnung (-5..-3), unter allem Beweglichen.
+          try { sprite = scene.add.sprite(ankerX, ankerY, ANKER_TEX).setDepth(-2).setScrollFactor(1); }
+          catch (e) { sprite = null; }
+        }
+        if (sprite && A && typeof A.ruhend === 'function') A.ruhend(sprite);
+        return { x: ankerX, y: ankerY };
+      },
+      start: function (sc) {
+        if (sc) scene = sc;
+        if (!sprite && this.arm) { try { this.arm(scene); } catch (e) {} }
         duration = _depthSeconds();
         remaining = duration;
         spawnAcc = 0;
+        var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
+        if (sprite && A && typeof A.geweckt === 'function') A.geweckt(sprite);
+      },
+      // Raum-/Modus-Wechsel: der Bannkreis darf nicht in den naechsten Raum haengen.
+      stop: function () {
+        if (sprite) { try { sprite.destroy(); } catch (e) {} sprite = null; }
       },
       update: function (dtMs) {
         var dt = (typeof dtMs === 'number' && dtMs > 0 ? dtMs : 16) / 1000;
@@ -104,7 +159,8 @@
       // window.RoomMode.enemyHpMultiplier() pro Gegner abgefragt.
       enemyHpMultiplier: function () { return HP_MULT; },
       getState: function () {
-        return { mode: 'survival', remaining: remaining, duration: duration, seconds: Math.ceil(remaining) };
+        return { mode: 'survival', remaining: remaining, duration: duration,
+                 seconds: Math.ceil(remaining), x: ankerX, y: ankerY };
       }
     };
   }

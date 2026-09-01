@@ -1347,18 +1347,11 @@ function enterRoom(scene, roomId) {
     } catch (e) { /* nie den Raumaufbau brechen */ }
   }
 
-  // Feature 061: Spezialräume SPERREN die Treppe bis das Ziel erfüllt ist — sonst
-  // könnte man den Raum sofort verlassen und das Objektiv umgehen. AUSNAHME:
-  // Escape ist eine FLUCHT — dort ist der Ausgang bewusst von Anfang an offen
-  // (durchhalten für die Bonus-Truhe ist optional). markRoomCleared öffnet die
-  // Treppe der übrigen Modi beim Zielabschluss.
-  try {
-    if (window.RoomMode && typeof window.RoomMode.isSpecialRoom === 'function'
-        && window.RoomMode.isSpecialRoom()
-        && window.RoomMode.activeModeId && window.RoomMode.activeModeId() !== 'escape') {
-      lockStairs(scene, true);
-    }
-  } catch (e) { /* nie den Raumaufbau brechen */ }
+  // Feature 061 sperrte die Treppe HIER, im Raumaufbau — also bevor der Spieler
+  // ueberhaupt sehen konnte, worum es geht. Seit #112 haengt die Sperre am
+  // EREIGNISSTART (roomModes._zielStarten): das Ereignis ist ein Angebot, wer es
+  // nicht ausloest darf weiterziehen. Escape bleibt ausgenommen (offene Flucht).
+  // markRoomCleared oeffnet die Treppe beim Zielabschluss wie bisher.
 
   // Feature 059 (#42) WP04 / Issue #120: Lauf-Amulett ablegen, sobald der Raum
   // dafür in Frage kommt (ab Raum 3, Notfallabwurf im Finalraum).

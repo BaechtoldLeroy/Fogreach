@@ -10,6 +10,10 @@
  * __ENEMY_CHASE_OVERRIDE__) zum Altar GEZOGEN, damit sich der Kampf dort
  * konzentriert — sonst lockt man sie in großen Räumen einfach weg.
  * HP-Balken/Banner rendert das Visuals-Modul (WP05) aus getState().
+ *
+ * #112: Der Altar STEHT beim Betreten schon da, aber ruhend — der Ansturm
+ * beginnt erst, wenn der Spieler ihn sieht (`arm` stellt ihn hin, `start`
+ * weckt ihn). Vorher laeuft keine Uhr und die Treppe bleibt offen.
  * ===================================================================== */
 (function () {
   'use strict';
@@ -120,28 +124,22 @@
     var objX = 0, objY = 0;
     var duration = _depthSeconds(), remaining = duration, spawnAcc = 0;
     return {
-      start: function (sc) {
+      // #112: Stellt den Altar hin, ohne den Ansturm zu starten. Der
+      // Rueckgabepunkt ist das, was der Spieler sehen muss.
+      arm: function (sc) {
         scene = sc || null;
-        maxHp = hp = BASE_HP;
-        duration = remaining = _depthSeconds();
-        spawnAcc = 0;
         // Altar FIX in der Raummitte (solides Hindernis, #82); Fallbacks für prozedurale Räume.
-        objX = objY = 0;
-        var b = scene && scene.physics && scene.physics.world && scene.physics.world.bounds;
-        if (b) { objX = b.centerX; objY = b.centerY; }
-        if (scene && typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(objX, objY)) {
-          if (typeof scene.pickAccessibleSpawnPoint === 'function') {
-            var sp = scene.pickAccessibleSpawnPoint({ maxAttempts: 24 });
-            if (sp) { objX = sp.x; objY = sp.y; }
-          } else if (window.player) { objX = window.player.x; objY = window.player.y; }
-        }
-        if (!objX && !objY && typeof window !== 'undefined' && window.player) {
-          objX = window.player.x; objY = window.player.y - 120;
-        }
+        var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
+        var mitte = (A && typeof A.mitteImRaum === 'function') ? A.mitteImRaum(scene) : { x: 0, y: 0 };
+        objX = mitte.x; objY = mitte.y;
         if (scene && scene.add) {
           _ensureTex(scene);
           try { sprite = scene.add.sprite(objX, objY, DEPTH_TEX).setDepth(400).setScrollFactor(1); }
           catch (e) { sprite = null; }
+        }
+        // Ruhend darstellen: sichtbar, aber erkennbar noch nicht scharf.
+        if (sprite && typeof window !== 'undefined' && window.RoomModeAnchor) {
+          window.RoomModeAnchor.ruhend(sprite);
         }
         // #82: solider Physics-Body NUR fuer den Spieler — Gegner sollen den
         // Altar weiterhin umringen/erreichen koennen (Drain ist radiusbasiert
@@ -159,6 +157,20 @@
               playerCollider = scene.physics.add.collider(window.player, sprite);
             }
           } catch (e) { /* nie den Raum-Modus crashen */ }
+        }
+        return { x: objX, y: objY };
+      },
+      // Weckt den Altar: ab hier laeuft die Uhr und der Ansturm rueckt nach.
+      start: function (sc) {
+        if (sc) scene = sc;
+        // Ohne vorheriges arm() (kein Anker platzierbar) hier nachholen, damit
+        // der Modus nie ohne Altar laeuft.
+        if (!sprite && this.arm) { try { this.arm(scene); } catch (e) {} }
+        maxHp = hp = BASE_HP;
+        duration = remaining = _depthSeconds();
+        spawnAcc = 0;
+        if (sprite && typeof window !== 'undefined' && window.RoomModeAnchor) {
+          window.RoomModeAnchor.geweckt(sprite);
         }
         // Gegner zum Altar ZIEHEN (Melee-Ziel-Override in enemy.js). So spielt
         // sich der Kampf am Altar ab, unabhängig von der Raumgröße.
