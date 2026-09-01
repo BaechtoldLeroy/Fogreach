@@ -2,8 +2,10 @@
   "created_at": "2026-09-01T16:17:19.388653+00:00",
   "feature_number": "069",
   "feature_slug": "069-debug-gate",
-  "friendly_name": "debug gate",
+  "friendly_name": "Debug-Gate",
   "mission": "software-dev",
   "slug": "069-debug-gate",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "source_description": "GitHub-Issue #88 — Release: Debug-Oberflaechen hinter ein Gate legen (Settings-Cheats, Fehler-Overlay, URL-Flags). Ein zentrales Laufzeit-Gate (?debug=1 oder lokale Ausfuehrung), an dem alle Debug-Zugaenge haengen; kopfloses Testsystem und Spieltest-Bot muessen weiter funktionieren."
 }
