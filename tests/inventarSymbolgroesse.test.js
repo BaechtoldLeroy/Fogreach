@@ -46,13 +46,18 @@ test('Inventar: das Symbol fuellt seine Zellen spuerbar aus', () => {
   const symbolAnteil = parseFloat(QUELLE.slice(iA + marke.length));
   assert.ok(symbolAnteil > 0, "Symbolanteil nicht lesbar");
 
-  // Die Verzerrung muss gedeckelt sein. Voll auf das Rechteck gezogen wurde
-  // der Bogen zum Faden: seine Zeichnung ist in der 48er-Textur nur 21 px
-  // breit, auf ein 1x3-Rechteck gestreckt blieben 17 px auf 116 px Hoehe.
-  assert.ok(QUELLE.includes("const _kap = 1.6;"),
-    "die Verzerrung ist nicht gedeckelt — hohe Teile fransen aus");
-  assert.ok(QUELLE.includes("Math.min(_sx, _s * _kap)"),
-    "der Deckel wird beim Skalieren nicht angewandt");
+  // Der Deckel von vorher ist WIEDER RAUS: er machte den Bogen kuerzer, aber
+  // nicht breiter — die Enge kam aus der Zeichnung selbst (in der 48er-Textur
+  // nur 21 px breit). Behoben wurde sie an der Quelle, indem die
+  // Bogenzeichnung waagerecht gestreckt wird. Hier wird deshalb das Gegenteil
+  // festgehalten: es darf voll auf das Rechteck skaliert werden.
+  assert.ok(QUELLE.includes("setDisplaySize(breite * 0.86, hoehe * 0.86)"),
+    "das Symbol fuellt sein Rechteck nicht mehr voll aus");
+  const gfx = fs.readFileSync(path.join(__dirname, "..", "js", "graphics.js"), "utf8");
+  const iBow = gfx.indexOf("key: 'itBow'");
+  assert.ok(iBow > 0, "itBow nicht gefunden");
+  assert.ok(gfx.slice(iBow, iBow + 600).includes("gestrecktesZeichnen(gBasis, 1.9"),
+    "die Bogenzeichnung wird nicht mehr verbreitert — sie wird im 1x3-Feld zum Faden");
 
   const COLS = 10, ROWS = 4;                 // INV_COLS / INV_ROWS aus main.js
   const GRID_W = PANEL_W - 320;

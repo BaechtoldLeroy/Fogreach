@@ -1423,7 +1423,26 @@ function gestrecktesZeichnen(g, sx, sy, dx, dy) {
     closePath: () => { g.closePath(); return w; },
     moveTo: (x, y) => { g.moveTo(X(x), Y(y)); return w; },
     lineTo: (x, y) => { g.lineTo(X(x), Y(y)); return w; },
-    strokePath: () => { g.strokePath(); return w; }
+    strokePath: () => { g.strokePath(); return w; },
+    // ARC fehlte: der Helfer wurde fuer die sechs Nahkampfsymbole gebaut, und
+    // die zeichnen keine Boegen. Der Bogen tut es — ohne diesen Eintrag warf
+    // er "g.arc is not a function", sobald er gestreckt werden sollte.
+    //
+    // Ein ungleich gestreckter Kreisbogen ist ein ELLIPSENbogen, den Phaser
+    // Graphics nicht direkt kann. Deshalb als Streckenzug annaehern: 20
+    // Stuetzpunkte sind bei 48 px Kachelgroesse nicht mehr unterscheidbar.
+    arc: (x, y, r, a1, a2, gegen) => {
+      const N = 20;
+      let b1 = a1, b2 = a2;
+      if (gegen && b2 > b1) b2 -= Math.PI * 2;
+      for (let k = 0; k <= N; k++) {
+        const a = b1 + (b2 - b1) * (k / N);
+        const px = X(x + Math.cos(a) * r);
+        const py = Y(y + Math.sin(a) * r);
+        if (k === 0) g.moveTo(px, py); else g.lineTo(px, py);
+      }
+      return w;
+    }
   };
   return w;
 }
@@ -1919,6 +1938,11 @@ function createItemGraphics() {
     {
       key: 'itBow',
       draw: () => {
+        // Die Bogenzeichnung war in der 48er-Textur nur 21 px breit. Auf
+        // ein 1x3-Rasterfeld (45 px breit) gezogen blieben davon 17 px —
+        // im Spiel ein Faden. Waagerecht gestreckt fuellt sie das Feld,
+        // ohne dass die Zeichnung selbst angefasst werden muss.
+        const g = gestrecktesZeichnen(gBasis, 1.9, 1.0);
         const cx = SIZE / 2;
         const cy = SIZE / 2;
         // Big vertical recurve: bold filled crescent, tip flares, taut string

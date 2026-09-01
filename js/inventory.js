@@ -717,8 +717,8 @@ function initInventoryUI() {
   };
 
 const equipKeys = ['weapon', 'head', 'body', 'boots', 'amulet'];
-const EQUIP_X = -PANEL_W / 2 + 140;   // Mittelachse der Silhouette
-const EQUIP_Y0 = -PANEL_H / 2 + 100;  // Kopfhoehe
+const EQUIP_X = -PANEL_W / 2 + 130;   // Mittelachse der Silhouette
+const EQUIP_Y0 = -PANEL_H / 2 + 130;  // Kopfhoehe; darueber liegt die Materialzeile
 const EQUIP_STEP = 72;                // Zeilenabstand der Silhouette
 
 // #123 A: Die Ausruestung stand als senkrechte Liste da — fuenf gleiche
@@ -732,13 +732,17 @@ const EQUIP_STEP = 72;                // Zeilenabstand der Silhouette
 // bzw. 52 px — kleiner als die Plaetze breit sind. Kopf/Amulett,
 // Amulett/Koerper und Koerper/Waffe ueberlappten dadurch. Jetzt 72x48 mit
 // Versaetzen, die groesser sind als der Platz.
-const EQUIP_SLOT_W = 72, EQUIP_SLOT_H = 48;
+// Quadratisch und so gross wie eine Rasterzelle mal 1.33 — die Ausruestung
+// soll als Koerper lesbar sein, nicht als Zettelkasten. Die Versaetze sind
+// 80 px, lassen also 16 px Fuge; bei 72x48 mit 76/56 stiessen die Kaesten
+// fast aneinander und lasen sich als ein Block.
+const EQUIP_SLOT_W = 64, EQUIP_SLOT_H = 64;
 const EQUIP_LAGE = {
   head:   { dx:   0, dy:   0 },
-  amulet: { dx:  76, dy:   0 },
-  body:   { dx:   0, dy:  56 },
-  weapon: { dx: -76, dy:  56 },
-  boots:  { dx:   0, dy: 112 },
+  amulet: { dx:  80, dy:   0 },
+  body:   { dx:   0, dy:  80 },
+  weapon: { dx: -80, dy:  80 },
+  boots:  { dx:   0, dy: 160 },
 };
 function equipPos(key, index) {
   const l = EQUIP_LAGE[key];
@@ -753,7 +757,7 @@ function equipPos(key, index) {
     const y = _lage.y;
     const _ex = _lage.x;
 
-    const slot = scene.add.image(_ex, y, 'uiSlot')
+    const slot = scene.add.image(_ex, y, 'uiZelle')
       .setOrigin(0.5).setDisplaySize(EQUIP_SLOT_W, EQUIP_SLOT_H)
       .setScrollFactor(0).setInteractive({ useHandCursor: true });
     slot.on('pointerdown', (pointer) => {
@@ -788,7 +792,11 @@ function equipPos(key, index) {
     panel.add(highlight);
     slot.__hoverHighlight = highlight;
 
-    const icon = scene.add.image(_ex, y, 'itMat').setOrigin(0.5).setVisible(false).setScrollFactor(0);
+    // Das Symbol fuellt den Platz wie im Raster. Vorher lief es auf der
+    // Grundgroesse der Textur mit und wirkte darin verloren.
+    const icon = scene.add.image(_ex, y, 'itMat').setOrigin(0.5)
+      .setDisplaySize(EQUIP_SLOT_W * 0.82, EQUIP_SLOT_H * 0.82)
+      .setVisible(false).setScrollFactor(0);
     panel.add(icon);
 
     // Feature 059 (#42) WP05: the run-amulet slot gets its own optic — a purple
@@ -1211,7 +1219,9 @@ function equipPos(key, index) {
   };
   window._refreshStairButton();
 
-  const btnY = PANEL_H / 2 - 24;
+  // Die Knoepfe klebten am unteren Panelrand, 100 px unter dem Raster —
+  // dazwischen lag nichts als Leere. Jetzt direkt darunter.
+  const btnY = PANEL_H / 2 - 84;
   const btnEquip = scene.add.text(-70, btnY, _INV_T('inventory.btn.equip'), { fontSize: '14px', fill: '#fff', backgroundColor: '#47a', padding: { x: 10, y: 5 } })
     .setOrigin(0.5, 1).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => equipSelectedItem.call(scene));
   const btnDrop = scene.add.text(70, btnY, _INV_T('inventory.btn.drop'), { fontSize: '14px', fill: '#fff', backgroundColor: '#a44', padding: { x: 10, y: 5 } })
@@ -1734,9 +1744,13 @@ function refreshInventoryUI() {
       const _sx = (breite * 0.86) / 48;
       const _sy = (hoehe * 0.86) / 48;
       const _s = Math.min(_sx, _sy);
-      const _kap = 1.6;
+      // Das Symbol fuellt sein Rechteck VOLL. Der Deckel von vorher machte
+      // den Bogen zwar weniger lang, aber nicht breiter — die Enge kam aus
+      // der Zeichnung selbst (in der 48er-Textur nur 21 px breit). Deshalb
+      // ist stattdessen die BOGEN-ZEICHNUNG verbreitert; hier darf wieder
+      // voll auf das Raster skaliert werden.
       icon.setPosition(cx, cy)
-        .setDisplaySize(48 * Math.min(_sx, _s * _kap), 48 * Math.min(_sy, _s * _kap))
+        .setDisplaySize(breite * 0.86, hoehe * 0.86)
         .setVisible(true);
     }
     if (label) {
