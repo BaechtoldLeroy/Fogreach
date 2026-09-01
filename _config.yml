@@ -1,0 +1,29 @@
+# Jekyll-Konfiguration fuer GitHub Pages (#88).
+#
+# Pages baut dieses Repo im "legacy"-Modus direkt aus dem main-Wurzelverzeichnis.
+# Alles, was hier liegt, wird damit oeffentlich ausgeliefert — auch
+# deploy/demonfall/game/, eine 311 Dateien grosse ZWEITKOPIE des Spiels aus
+# einem frueheren Stand. Deren js/main.js ruft noch dreimal
+# grantCheatTestWeapon() auf, das im echten js/main.js laengst entfernt ist.
+#
+# Ein Debug-Gate ueber js/ waere wirkungslos, solange daneben eine ungegatete
+# Kopie erreichbar bleibt. Der Ordner bleibt im Repo (Historie), wird aber
+# nicht mehr veroeffentlicht.
+#
+# WICHTIG: `exclude` ERSETZT Jekylls Standardliste, statt sie zu ergaenzen.
+# Die Standardeintraege stehen deshalb hier mit drin — ohne sie wuerden
+# node_modules/ und vendor/ mitveroeffentlicht, sobald sie je im Repo landen.
+exclude:
+  # Jekylls Standardausschluesse (nicht entfernen)
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  # Zweitkopie des Spiels aus einem frueheren Stand (#88)
+  - deploy/
