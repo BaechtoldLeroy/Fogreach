@@ -80,10 +80,10 @@ Zweig einen Boss ohne Definition und riss das Spiel mit (gemessen mit
 
 | Flagge | Wirkung |
 |---|---|
-|  | Wandnische in JEDEM Raum |
-|  | Verlassenes Lager |
-|  | Koederfalle |
-|  | verschuetteter Durchgang (Kammer + Geroell), kein Fund am Weg |
+| `?find=nische` | Wandnische in JEDEM Raum |
+| `?find=lager` | Verlassenes Lager |
+| `?find=falle` | Koederfalle |
+| `?find=durchgang` | verschuetteter Durchgang (Kammer + Geroell), kein Fund am Weg |
 
 Die Flagge erzwingt nicht nur die ART, sondern auch DASS ein Fund erscheint.
 Ohne sie liegt die Rate bei ~26 % je Raum und der Durchgang bei 22 % — gezielt
@@ -91,6 +91,9 @@ zu treffen ist das nicht. Findet sich keine Stelle weit genug abseits, weicht
 der erzwungene Fund auf einen beliebigen begehbaren Punkt aus; gemessen gab es
 Raeume ganz ohne brauchbaren Kandidaten.
 
+```
+?debug=1&dungeon=4&find=durchgang
+```
 
 
 ### Leistungsmessung
