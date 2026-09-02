@@ -411,7 +411,14 @@
     var EVENT_HALF = 20; // 32px sprite + small margin
     var cx = 400, cy = 250;
     var foundSpot = false;
-    if (scene.pickAccessibleSpawnPoint) {
+    // #113: Der Aufrufer darf den Platz vorgeben. Verborgene Funde muessen
+    // ABSEITS des Wegs liegen — eine eigene Suche hier waere genau die
+    // Beliebigkeit, die das Issue beseitigt.
+    if (opts && opts.spawnAt && typeof opts.spawnAt.x === 'number'
+        && typeof opts.spawnAt.y === 'number') {
+      cx = opts.spawnAt.x; cy = opts.spawnAt.y; foundSpot = true;
+    }
+    if (!foundSpot && scene.pickAccessibleSpawnPoint) {
       for (var sa = 0; sa < 12 && !foundSpot; sa++) {
         var spot = scene.pickAccessibleSpawnPoint({ maxAttempts: 24 });
         if (!spot) break;

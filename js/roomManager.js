@@ -1356,6 +1356,124 @@ function enterRoom(scene, roomId) {
   // Feature 059 (#42) WP04 / Issue #120: Lauf-Amulett ablegen, sobald der Raum
   // dafür in Frage kommt (ab Raum 3, Notfallabwurf im Finalraum).
   _maybeSpawnRunAmulet(scene, roomId);
+
+  // #113: ein verborgener Fund abseits des Wegs — als LETZTES, weil er die
+  // Treppenposition braucht (die Strecke Eingang->Treppe ist der Weg, von dem
+  // er wegliegen soll).
+  _maybeSpawnHiddenFind(scene);
+}
+
+/**
+ * Legt einen verborgenen Fund ab — abseits der Strecke Eingang -> Treppe (#113).
+ *
+ * Der schnellste Weg durch einen Raum war auch der beste. Ein Fund, der auf
+ * diesem Weg liegt, aendert daran nichts; er muss dort liegen, wo man beim
+ * Durchqueren NICHT vorbeikommt. Die Auswahl macht HiddenFinds (rein,
+ * getestet), hier wird nur eingesammelt und hingestellt.
+ *
+ * Bricht nie den Raumaufbau: fehlt ein Baustein, gibt es in diesem Raum eben
+ * keinen Fund.
+ */
+function _maybeSpawnHiddenFind(scene) {
+  try {
+    var HF = window.HiddenFinds;
+    if (!HF || !scene || typeof player === 'undefined' || !player) return;
+    if (!window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
+    if (typeof scene.pickAccessibleSpawnPoint !== 'function') return;
+    if (!HF.anzahlFuerRaum(Math.random)) return;
+
+    // Der Weg: von da, wo der Spieler steht (= Eingang), zur Treppe.
+    var eingang = { x: player.x, y: player.y };
+    var ausgang = null;
+    if (scene.stairsGroup && typeof scene.stairsGroup.getChildren === 'function') {
+      var st = scene.stairsGroup.getChildren().filter(function (s) { return s && s.active; })[0];
+      if (st) ausgang = { x: st.x, y: st.y };
+    }
+    // Ohne Treppe gibt es keinen "Weg", von dem etwas abliegen koennte.
+    if (!ausgang) return;
+
+    // Kandidaten einsammeln. Mehr Zuege als noetig: die begehbaren Punkte sind
+    // ueber den Raum gestreut, und nur wenige davon liegen weit genug abseits.
+    var kandidaten = [];
+    for (var i = 0; i < 40; i++) {
+      var p = scene.pickAccessibleSpawnPoint({ maxAttempts: 8 });
+      if (!p) continue;
+      if (typeof window.isSpawnPositionBlocked === 'function'
+          && window.isSpawnPositionBlocked(p.x, p.y, 20)) continue;
+      if (typeof window.isNearStair === 'function' && window.isNearStair(scene, p.x, p.y, 60)) continue;
+      kandidaten.push(p);
+    }
+    var plaetze = HF.waehleAbseits(kandidaten, eingang, ausgang, 1);
+    if (!plaetze.length) return;   // kein Winkel weit genug weg -> kein Fund
+
+    _spawnWandnische(scene, plaetze[0]);
+  } catch (e) { /* nie den Raumaufbau brechen */ }
+}
+
+// Was in der Nische liegt. Bewusst kein garantierter Ausruestungsfund: der
+// Reiz soll das Abbiegen sein, nicht die Beute — sonst wird Erkunden Pflicht.
+var NISCHEN_BEUTE = [
+  { gewicht: 45, art: 'material' },
+  { gewicht: 30, art: 'trank' },
+  { gewicht: 20, art: 'item' },
+  { gewicht: 5,  art: 'fragment' }
+];
+
+function _nischenBeute(rng) {
+  var r = (typeof rng === 'function') ? rng : Math.random;
+  var summe = 0, i;
+  for (i = 0; i < NISCHEN_BEUTE.length; i++) summe += NISCHEN_BEUTE[i].gewicht;
+  var wurf = r() * summe;
+  for (i = 0; i < NISCHEN_BEUTE.length; i++) {
+    wurf -= NISCHEN_BEUTE[i].gewicht;
+    if (wurf <= 0) return NISCHEN_BEUTE[i].art;
+  }
+  return NISCHEN_BEUTE[NISCHEN_BEUTE.length - 1].art;
+}
+
+function _spawnWandnische(scene, pos) {
+  var _t = function (k, f) {
+    try {
+      if (window.i18n && typeof window.i18n.t === 'function') {
+        var s = window.i18n.t(k);
+        if (s && s !== k) return s;
+      }
+    } catch (e) {}
+    return f;
+  };
+  window.EventSystem.spawnEventObject(
+    scene, 'evt_nische', 0x4a4356, 0xd8c48a,
+    _t('find.nische.label', 'Lose Steine'),
+    function () {
+      var art = _nischenBeute(Math.random);
+      var tiefe = Math.max(1, window.DUNGEON_DEPTH || 1);
+      try {
+        if (art === 'fragment' && window.KnowledgeTree
+            && typeof window.KnowledgeTree.addFragments === 'function') {
+          window.KnowledgeTree.addFragments(1);
+        } else if (art === 'material' && typeof window.changeMaterialCount === 'function') {
+          window.changeMaterialCount('MAT', 2 + Math.floor(Math.random() * 3));
+        } else if (typeof window.spawnLoot === 'function') {
+          // Trank/Item ueber den normalen Beute-Pfad, damit Seltenheitsfarbe,
+          // Aufsammel-Sperre und Rasterplatzierung genauso greifen wie sonst.
+          // 4. Argument ist sourceEnemy, NICHT die Tiefe — dort eine Zahl zu
+          // uebergeben wuerde einen Gegner-Goldabwurf ausloesen.
+          var beute = null;
+          if (art === 'trank' && typeof window.makePotionDrop === 'function') {
+            beute = window.makePotionDrop(tiefe);
+          }
+          window.spawnLoot.call(scene, pos.x, pos.y + 24, beute);
+        }
+      } catch (e) { /* ein leerer Fund ist besser als ein Absturz */ }
+      try {
+        if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+          window.EventSystem.showToast(scene, _t('find.nische.toast',
+            'Hinter den losen Steinen war etwas verborgen.'));
+        }
+      } catch (e) {}
+    },
+    { spawnAt: pos }
+  );
 }
 
 // Ab welchem betretenen Raum das Lauf-Amulett frühestens liegt (Issue #120).
