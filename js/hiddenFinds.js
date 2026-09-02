@@ -418,17 +418,33 @@
     //
     // Sonst sieht man durch die Oeffnung eine fertige Kammer samt Truhe und
     // weiss vorher, was drin ist — der Reiz des Aufbrechens ist dann weg.
-    // Die Verdeckung liegt auf Wand-Tiefe (39, wie die Wand-TileSprites) und
-    // ist reine Optik: blockiert wird ueber den Schutt, nicht hierueber.
+    //
+    // Gemacht wie der Nebel selbst, nicht als schwarzes Viereck: derselbe Ton
+    // (reines Schwarz) auf derselben Ebene (Tiefe 1000, wo fogUnseen liegt),
+    // und der Rand laeuft ueber mehrere Stufen aus, statt hart abzubrechen —
+    // die Kante ist es, die ein Rechteck als Rechteck verraet.
     var verdeckung = [];
     try {
-      if (scene.add && scene.add.rectangle) {
+      if (scene.add && scene.add.graphics) {
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         kammerInfo.kammer.forEach(function (t) {
-          var m = mitte(t);
-          var r = scene.add.rectangle(m.x, m.y, T + 2, T + 2, 0x0d0b11, 1);
-          r.setDepth(39);
-          verdeckung.push(r);
+          minX = Math.min(minX, t.x); maxX = Math.max(maxX, t.x);
+          minY = Math.min(minY, t.y); maxY = Math.max(maxY, t.y);
         });
+        var x0 = ox + minX * T, y0 = oy + minY * T;
+        var w = (maxX - minX + 1) * T, hh = (maxY - minY + 1) * T;
+
+        var g = scene.add.graphics().setDepth(1000);
+        // Eindeutig markieren: auf Tiefe 1000 liegt auch fogUnseen selbst.
+        if (typeof g.setData === 'function') g.setData('kammerVerdeckung', true);
+        // Auslaufender Saum von aussen nach innen, dann der volle Kern.
+        [[18, 0.15], [13, 0.35], [8, 0.60], [4, 0.85]].forEach(function (s) {
+          g.fillStyle(0x000000, s[1]);
+          g.fillRect(x0 - s[0], y0 - s[0], w + s[0] * 2, hh + s[0] * 2);
+        });
+        g.fillStyle(0x000000, 1);
+        g.fillRect(x0, y0, w, hh);
+        verdeckung.push(g);
       }
     } catch (e) {}
 
@@ -448,8 +464,23 @@
       zerschlagen++;
       if (zerschlagen < schuttStuecke.length) return;
       geoeffnet = true;
-      verdeckung.forEach(function (r) { try { r.destroy(); } catch (e) {} });
-      verdeckung.length = 0;
+      // Weglichten statt wegschalten: der Nebel weicht, er verschwindet nicht
+      // schlagartig. Ohne Tween-Manager (Test) sofort raus.
+      var weg = function () {
+        verdeckung.forEach(function (r) { try { r.destroy(); } catch (e) {} });
+        verdeckung.length = 0;
+      };
+      if (scene.tweens && typeof scene.tweens.add === 'function' && verdeckung.length) {
+        try {
+          scene.tweens.add({ targets: verdeckung.slice(), alpha: 0, duration: 420,
+            ease: 'Quad.easeOut', onComplete: weg });
+          // Sicherung: klemmt der Tween, bleibt die Kammer sonst fuer immer
+          // schwarz. Echte Zeit, unabhaengig von Spieluhr und Bildrate.
+          setTimeout(weg, 2000);
+        } catch (e) { weg(); }
+      } else {
+        weg();
+      }
       try {
         var b = mitte(hinten);
         if (typeof window.spawnLoot === 'function') {
