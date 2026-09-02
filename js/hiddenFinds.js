@@ -468,11 +468,10 @@
     var geoeffnet = false, zerschlagen = 0;
     function oeffnen() {
       if (geoeffnet) return;
-      // Selbst mitzaehlen statt s.active abzufragen: ein zerstoertes Phaser-
-      // Objekt meldet nicht zuverlaessig active=false, und die Verdeckung
-      // blieb dadurch stehen (gemessen: Schutt 0, Verdeckung 9).
+      // Beim ERSTEN Brocken, nicht erst beim letzten: sobald eine Luecke da
+      // ist, sieht man hinein — der Rest waere nur noch Aufraeumen vor einer
+      // schwarzen Wand.
       zerschlagen++;
-      if (zerschlagen < schuttStuecke.length) return;
       geoeffnet = true;
       // Weglichten statt wegschalten: der Nebel weicht, er verschwindet nicht
       // schlagartig. Ohne Tween-Manager (Test) sofort raus.

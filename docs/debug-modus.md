@@ -111,6 +111,27 @@ Auf der **Minikarte** ist die Kammer im Debug-Modus **blau** markiert, das Gerö
 ```
 
 
+### Raumtypen
+
+| Flagge | Wirkung |
+|---|---|
+| `?room=<Name>` | setzt diese Vorlage in **jeden** Raum |
+| `?rooms=a,b,c` | Rundgang: Raum 0 bekommt a, Raum 1 b, Raum 2 c, danach von vorn |
+| `?room=cave` | zwingt die prozeduralen Räume auf den Höhlen-Generator |
+| `?room=bsp` | zwingt sie auf den BSP-Generator (rechteckige Kammern) |
+
+Namen werden ohne Rücksicht auf Groß-/Kleinschreibung aufgelöst; unbekannte
+werden mit der vollen Liste auf der Konsole benannt und dann ignoriert (der Lauf
+bleibt zufällig). Es gibt rund 36 Vorlagen — die Liste steht in
+`RoomTemplates.TEMPLATES`.
+
+```
+?debug=1&dungeon=3&rooms=Arena,Cathedral
+```
+
+Nachgemessen an der Rastergröße je Raum: ohne Flagge 24×24, 30×30, 32×32,
+65×69 — mit `?room=Arena` viermal 36×28.
+
 ### Leistungsmessung
 
 | Flagge | Wirkung |

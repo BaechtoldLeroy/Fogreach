@@ -326,6 +326,7 @@ function initDungeonRun() {
     templateOrder.push(finalRoom);
   }
 
+
   // Inject 2-4 procedural rooms into the run for variety. Each room flips a
   // coin between the two generators so a single run can show both styles:
   //   • ProceduralRooms  → BSP-style rectangular chambers (D2 catacombs feel)
@@ -352,9 +353,13 @@ function initDungeonRun() {
         procWidth = Math.min(procWidth, 74);
         procHeight = Math.min(procHeight, 64);
       }
-      var _style = (window.ProceduralRooms && window.ProceduralRooms.pickProcStyle)
-        ? window.ProceduralRooms.pickProcStyle(Math.random, _bucket.key)
-        : 'cave';
+      // Debug (?room=cave / ?room=bsp): den Generator festnageln. Sonst wirft
+      // jeder Raum eine eigene Muenze und man trifft einen Stil nur zufaellig.
+      var _erzwungenerStil = _debugRaumStil();
+      var _style = _erzwungenerStil
+        || ((window.ProceduralRooms && window.ProceduralRooms.pickProcStyle)
+          ? window.ProceduralRooms.pickProcStyle(Math.random, _bucket.key)
+          : 'cave');
       // Availability fallback: use whichever generator is actually loaded
       // (preserves the old single-generator behaviour).
       var useCave = window.CaveGenerator && (!window.ProceduralRooms || _style === 'cave');
@@ -781,7 +786,18 @@ function enterRoom(scene, roomId) {
   let builtMeta = null;
   let pickedType = null;
 
-  const templateName = dungeonRun && dungeonRun.templateOrder[roomId];
+  // Debug (?room=/?rooms=): hier erzwingen, nicht beim Bauen der Reihenfolge —
+  // der Direkteinstieg ?dungeon=N laeuft an jener Stelle vorbei, und die
+  // prozeduralen Raeume werden danach ohnehin noch eingespleisst.
+  var _erzwungen = (typeof _debugRaumFolge === 'function')
+    ? _debugRaumFolge(Object.keys((window.RoomTemplates && window.RoomTemplates.TEMPLATES) || {}))
+    : null;
+  const templateName = (_erzwungen && _erzwungen.length)
+    ? _erzwungen[roomId % _erzwungen.length]
+    : (dungeonRun && dungeonRun.templateOrder[roomId]);
+  if (_erzwungen && _erzwungen.length) {
+    try { console.log('[Raumtypen] Raum ' + roomId + ': ' + templateName); } catch (e) {}
+  }
   if (templateName) {
     builtMeta = buildTemplateRoom(scene, templateName);
     pickedType = "template";
@@ -2181,6 +2197,56 @@ const CHAR_CLEAR_HALF_H = 28;
 const ROOM_SPAWN_PAD = 0;
 const ACCESS_GRID_SIZE = 32;
 const MIN_PLAYER_SPAWN_DISTANCE = 160;
+
+/**
+ * Debug: erzwungener Generator-Stil aus ?room=cave|bsp, sonst null.
+ *
+ * Getrennt von der Vorlagen-Auswahl, weil beides unter demselben Schalter
+ * liegt: 'cave'/'bsp' sind keine Vorlagennamen, sondern Generatoren.
+ */
+function _debugRaumStil() {
+  try {
+    var v = window.DebugGate && window.DebugGate.flagge('room');
+    if (!v) return null;
+    v = String(v).toLowerCase();
+    return (v === 'cave' || v === 'bsp') ? v : null;
+  } catch (e) { return null; }
+}
+
+/**
+ * Debug: erzwungene Vorlagenfolge aus ?room=<Name> oder ?rooms=a,b,c.
+ *
+ * Namen werden ohne Ruecksicht auf Gross-/Kleinschreibung aufgeloest — beim
+ * Tippen in die Adresszeile will niemand 'PrisonDepths' buchstabengetreu
+ * treffen. Unbekannte Namen werden mit der Liste auf der Konsole benannt
+ * statt still verworfen.
+ *
+ * @param {Array<string>} allNames alle bekannten Vorlagen
+ * @returns {Array<string>|null}
+ */
+function _debugRaumFolge(allNames) {
+  try {
+    var G = window.DebugGate;
+    if (!G || !G.aktiv()) return null;
+    var roh = G.flagge('rooms') || G.flagge('room');
+    if (!roh) return null;
+    var karte = {};
+    (allNames || []).forEach(function (n) { karte[String(n).toLowerCase()] = n; });
+    var gewuenscht = String(roh).split(',');
+    var folge = [], unbekannt = [];
+    gewuenscht.forEach(function (w) {
+      var k = String(w).trim().toLowerCase();
+      if (!k) return;
+      if (k === 'cave' || k === 'bsp') return;   // Stil, keine Vorlage
+      if (karte[k]) folge.push(karte[k]); else unbekannt.push(w);
+    });
+    if (unbekannt.length && typeof console !== 'undefined' && console.warn) {
+      console.warn('[Raumtypen] unbekannt: ' + unbekannt.join(', ')
+        + ' — bekannt sind: ' + (allNames || []).join(', '));
+    }
+    return folge.length ? folge : null;
+  } catch (e) { return null; }
+}
 
 function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
   if (!obstacles || typeof obstacles.getChildren !== "function") return false;
