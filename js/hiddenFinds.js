@@ -426,8 +426,16 @@
     var verdeckung = [];
     try {
       if (scene.add && scene.add.graphics) {
+        // Nur der Teil HINTER dem Geroell wird verdeckt. Lag der Nebel auch
+        // ueber dem Schutt, sah man nicht mehr, worauf man einschlagen soll —
+        // und ohne sichtbares Geroell gibt es keinen Grund, es zu versuchen.
+        var _istSchutt = function (t) {
+          return eingangsReihe.some(function (e) { return e.x === t.x && e.y === t.y; });
+        };
+        var dahinter = kammerInfo.kammer.filter(function (t) { return !_istSchutt(t); });
+        if (!dahinter.length) dahinter = kammerInfo.kammer;
         var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        kammerInfo.kammer.forEach(function (t) {
+        dahinter.forEach(function (t) {
           minX = Math.min(minX, t.x); maxX = Math.max(maxX, t.x);
           minY = Math.min(minY, t.y); maxY = Math.max(maxY, t.y);
         });
@@ -444,6 +452,8 @@
         });
         g.fillStyle(0x000000, 1);
         g.fillRect(x0, y0, w, hh);
+        // Flaeche merken, damit sich pruefen laesst, was sie verdeckt.
+        g.__flaeche = { x: x0, y: y0, w: w, h: hh };
         verdeckung.push(g);
       }
     } catch (e) {}
@@ -483,9 +493,7 @@
       }
       try {
         var b = mitte(hinten);
-        if (typeof window.spawnLoot === 'function') {
-          window.spawnLoot.call(scene, b.x, b.y, _truhe(true));
-        }
+        _belohnung(scene, b.x, b.y);
       } catch (e) {}
       try {
         if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
@@ -561,8 +569,44 @@
    */
   function _truhe(gut) {
     var r = Math.random();
-    if (gut) return { type: 'chest_medium', locked: false, tier: r < 0.5 ? 2 : 1 };
+    if (gut) return { type: 'chest_large', locked: false, tier: r < 0.6 ? 2 : 3 };
     return { type: 'chest_small', locked: false, tier: r < 0.35 ? 1 : 0 };
+  }
+
+  /**
+   * Legt eine Belohnung ab, die BESSER ist als ein gewoehnlicher Fund.
+   *
+   * Nicht ueber eine Truhe: die schuettet beim Zerschlagen nur mit der
+   * Behaelter-Chance aus (chest_medium 10 %, chest_large 15 %), und fuer eine
+   * Kammer, die man erst aufschlagen muss, ist das praktisch immer leer. Der
+   * Umweg ueber isRewardChest schlug fehl, weil die von spawnLoot
+   * zurueckgegebene Truhe die Marke nicht annahm (gemessen: getData lieferte
+   * durchweg undefined).
+   *
+   * Stattdessen direkt der Gegenstand, mit derselben Qualitaetsverteilung, die
+   * eine Belohnungstruhe erzeugt (main.js: 82 % Magisch / 15 % Selten /
+   * 3 % Legendaer) und iLevel wie eine grosse Truhe (Tiefe + 8).
+   */
+  function _belohnung(scene, x, y) {
+    var tiefe = Math.max(1, (typeof window !== 'undefined' && window.DUNGEON_DEPTH) || 1);
+    var iLevel = tiefe + 8;
+    var r = Math.random();
+    var stufe = r < 0.03 ? 3 : (r < 0.18 ? 2 : 1);
+    try {
+      if (window.LootSystem && typeof window.LootSystem.rollItem === 'function'
+          && typeof window.spawnLoot === 'function') {
+        var item = window.LootSystem.rollItem(null, iLevel, stufe);
+        if (item) { window.spawnLoot.call(scene, x, y, item, null); return true; }
+      }
+    } catch (e) {}
+    // Rueckfall: lieber eine Truhe als gar nichts.
+    try {
+      if (typeof window.spawnLoot === 'function') {
+        window.spawnLoot.call(scene, x, y, _truhe(true));
+        return true;
+      }
+    } catch (e) {}
+    return false;
   }
 
   /**
@@ -651,10 +695,8 @@
         try {
           // Erst die Beute: sie darf nicht daran haengen, dass der Spieler den
           // Hinterhalt ueberlebt.
-          if (typeof window.spawnLoot === 'function') {
-            // Garantiert, nicht gewuerfelt: der Hinterhalt ist der Preis.
-            window.spawnLoot.call(scene, pos.x, pos.y + 24, _truhe(true));
-          }
+          // Garantiert, nicht gewuerfelt: der Hinterhalt ist der Preis.
+          _belohnung(scene, pos.x, pos.y + 24);
           if (typeof window.spawnEnemy === 'function') {
             // Solange abtasten, bis die Zahl steht: ein fester Winkel je Gegner
             // scheitert an Waenden, und gemessen kam nur EINER von dreien an.
@@ -745,6 +787,7 @@
     erzwungeneArt: erzwungeneArt,
     stanzeKammer: stanzeKammer,
     _truhe: _truhe,
+    _belohnung: _belohnung,
     kammerEingang: kammerEingang,
     verschuetteKammer: verschuetteKammer,
     LAGER_HEILUNG: LAGER_HEILUNG,

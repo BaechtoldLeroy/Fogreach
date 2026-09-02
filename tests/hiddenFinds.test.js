@@ -244,3 +244,37 @@ test('Die Belohnung hinter dem Schutt ist garantiert, nicht gewuerfelt', () => {
       'immer eine Truhe, bekam ' + JSON.stringify(t));
   }
 });
+
+test('Die Kammer-Belohnung geht NICHT ueber eine Truhe', () => {
+  // Eine Truhe schuettet beim Zerschlagen nur mit der Behaelter-Chance aus
+  // (chest_medium 10 %, chest_large 15 %) — fuer einen Fund, den man erst
+  // aufschlagen muss, ist das praktisch immer leer. Gemessen: 40 von 40
+  // direkten Belohnungen gaben einen Gegenstand.
+  const W = globalThis.window || (globalThis.window = {});
+  const gespawnt = [];
+  W.LootSystem = { rollItem: (a, iLevel, stufe) => ({ tier: stufe, iLevel: iLevel }) };
+  W.spawnLoot = function (x, y, item) { gespawnt.push({ x, y, item }); };
+  W.DUNGEON_DEPTH = 6;
+  try {
+    assert.strictEqual(H._belohnung({}, 100, 200), true);
+    assert.strictEqual(gespawnt.length, 1);
+    assert.ok(gespawnt[0].item, 'ein Gegenstand, keine Truhe');
+    assert.ok(gespawnt[0].item.tier >= 1, 'mindestens magisch, nie gewoehnlich');
+    // iLevel wie eine grosse Truhe: Tiefe + 8.
+    assert.strictEqual(gespawnt[0].item.iLevel, 14);
+  } finally {
+    delete W.LootSystem; delete W.spawnLoot; delete W.DUNGEON_DEPTH;
+  }
+});
+
+test('Ohne LootSystem faellt die Belohnung auf eine Truhe zurueck', () => {
+  // Lieber eine Truhe als eine leere Kammer.
+  const W = globalThis.window || (globalThis.window = {});
+  const gespawnt = [];
+  W.spawnLoot = function (x, y, item) { gespawnt.push(item); };
+  try {
+    assert.strictEqual(H._belohnung({}, 0, 0), true);
+    assert.strictEqual(gespawnt.length, 1);
+    assert.ok(String(gespawnt[0].type).indexOf('chest') === 0, 'Rueckfall ist eine Truhe');
+  } finally { delete W.spawnLoot; }
+});
