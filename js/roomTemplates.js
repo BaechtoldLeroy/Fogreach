@@ -457,7 +457,12 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     registerBrazierGlow(brazierGlowGfx, brazierGlowPoints, cx, cy);
 
   for (let y = 0; y < H; y++) {
-    const row = tpl.layout.walls[y];
+    // #113: die KOPIE lesen, nicht tpl.layout.walls. Aus dieser Schleife
+    // entstehen Physik-Waende und das gebackene Wandbild — las sie weiter
+    // das Original, blieb die gestanzte Kammer als solide Wand stehen,
+    // waehrend das Raster brav Boden meldete. Gemessen: keine einzige
+    // Kammer war begehbar, auch als 5x5 nicht.
+    const row = wallsGrid[y];
     const spansInRow = new Set();
     let x = 0;
     while (x < W) {
