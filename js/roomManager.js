@@ -1361,6 +1361,18 @@ function enterRoom(scene, roomId) {
   // Treppenposition braucht (die Strecke Eingang->Treppe ist der Weg, von dem
   // er wegliegen soll).
   _maybeSpawnHiddenFind(scene);
+
+  // #113: Wurde beim Raumaufbau eine Kammer gestanzt, jetzt zuschuetten und
+  // die Belohnung hineinlegen. Erst hier, weil spawnObstacle die fertige
+  // Szene braucht.
+  try {
+    var k = scene && scene._kammer;
+    if (k && window.HiddenFinds && typeof window.HiddenFinds.verschuetteKammer === 'function') {
+      var T = scene._minimapTileSize || 32;
+      window.HiddenFinds.verschuetteKammer(scene, k, 0, 0, T);
+      scene._kammer = null;   // nur einmal je Raum
+    }
+  } catch (e) { /* nie den Raumaufbau brechen */ }
 }
 
 /**

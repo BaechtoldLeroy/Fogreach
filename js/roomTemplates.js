@@ -182,7 +182,25 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
 
   const H = tpl.layout.walls.length;
   const W = tpl.layout.walls[0].length;
-  const wallsGrid = tpl.layout?.walls || [];
+  // #113: KOPIE statt Verweis. scene._minimapWallsGrid zeigte direkt auf
+  // tpl.layout.walls — also auf die geteilte Template-Definition. Wer da
+  // hineinschreibt, beschaedigt die Vorlage fuer jeden kuenftigen Raum. Das
+  // Stanzen der Kammer unten tut genau das, und auch ohne sie war es eine
+  // Falle, die nur darauf wartete, jemandem zuzustossen.
+  const _quellGrid = tpl.layout?.walls || [];
+  const wallsGrid = _quellGrid.map(function (zeile) { return zeile.slice(); });
+
+  // #113: Verschuetteter Durchgang — eine Kammer in die Wand stanzen, SOLANGE
+  // das Raster noch aus Zellen besteht. Danach fasst spawnWallRect zu
+  // Rechtecken zusammen und die Optik wird in ein Bild gebacken; ein Loch
+  // waere dort nur noch mit Rechteck-Chirurgie zu haben.
+  scene._kammer = null;
+  try {
+    if (window.HiddenFinds && typeof window.HiddenFinds.stanzeKammer === 'function'
+        && window.HiddenFinds.willDurchgang(Math.random)) {
+      scene._kammer = window.HiddenFinds.stanzeKammer(wallsGrid, Math.random);
+    }
+  } catch (e) { scene._kammer = null; }
 
   // Store walls grid on the scene for minimap access
   scene._minimapWallsGrid = wallsGrid;

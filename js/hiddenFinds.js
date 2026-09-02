@@ -32,7 +32,8 @@
       'find.lager.rast':       'Du rastest kurz. {n} Leben zurueck.',
       'find.lager.voll':       'Nichts zu heilen — du gehst weiter.',
       'find.falle.label':      'Zurueckgelassener Beutel',
-      'find.falle.zuschnappt': 'Ein Hinterhalt! Aber der Beutel ist voll.'
+      'find.falle.zuschnappt': 'Ein Hinterhalt! Aber der Beutel ist voll.',
+      'find.durchgang.toast':  'Der Schutt gibt nach — dahinter liegt eine Kammer.'
     });
     window.i18n.register('en', {
       'find.nische.label':     'Loose Stones',
@@ -44,7 +45,8 @@
       'find.lager.rast':       'You rest a moment. {n} health back.',
       'find.lager.voll':       'Nothing to heal — you move on.',
       'find.falle.label':      'Abandoned Pouch',
-      'find.falle.zuschnappt': 'An ambush! But the pouch is full.'
+      'find.falle.zuschnappt': 'An ambush! But the pouch is full.',
+      'find.durchgang.toast':  'The rubble gives way — a chamber lies behind it.'
     });
   }
 
@@ -174,6 +176,192 @@
     return BEUTE[BEUTE.length - 1].art;
   }
 
+  // --- Verschuetteter Durchgang (#113) -------------------------------------
+  //
+  // Die Kammer wird beim RAUMAUFBAU gestanzt, nicht zur Laufzeit. Zur Laufzeit
+  // ginge es nicht sinnvoll: spawnWallRect fasst Waende zu Rechtecken zusammen
+  // und die Optik wird in EIN Bild gebacken (__wall_baked_*, aus #70). Ein Loch
+  // spaeter hiesse Rechtecke zerschneiden und neu backen. Vor der
+  // Zusammenfassung sind es dagegen nur ein paar Rasterzellen.
+  //
+  // Rein gehalten: Raster rein, Raster raus. Kein Phaser, kein Zustand.
+
+  var KAMMER_B = 2, KAMMER_H = 2;   // Groesse in Kacheln
+
+  // Wie oft bekommt ein Raum ueberhaupt eine Kammer? Deutlich seltener als ein
+  // gewoehnlicher Fund: sie veraendert die Raumgeometrie, und in jedem zweiten
+  // Raum ein zugeschuetteter Gang laesst die Karte beliebig wirken.
+  var DURCHGANG_CHANCE = 0.22;
+
+  function willDurchgang(rng) {
+    var r = (typeof rng === 'function') ? rng : Math.random;
+    return r() < HiddenFinds.DURCHGANG_CHANCE;
+  }
+
+  // Das Wandraster besteht aus ZEICHEN, nicht aus Zahlen, und die Zeilen sind
+  // STRINGS: '#' Wand, '.' Boden, 'P' Startpunkt (auch Boden). Der erste
+  // Entwurf pruefte auf Truthiness und hielt damit jeden Boden fuer Wand — und
+  // das Schreiben in einen String ist ohnehin unmoeglich. Beide Zeilenformen
+  // werden hier bedient, damit ein spaeterer Umbau auf Felder nichts bricht.
+  var BODEN = '.';
+
+  function _zeichen(raster, x, y) {
+    var z = raster[y];
+    if (z === undefined || z === null) return null;
+    var c = z[x];
+    return (c === undefined) ? null : c;
+  }
+
+  function _istWand(raster, x, y) {
+    var c = _zeichen(raster, x, y);
+    if (c === null) return true;          // ausserhalb zaehlt als Wand
+    if (typeof c === 'number') return c !== 0;
+    return c !== BODEN && c !== 'P';
+  }
+
+  function _setzeBoden(raster, x, y) {
+    var z = raster[y];
+    if (typeof z === 'string') {
+      raster[y] = z.slice(0, x) + BODEN + z.slice(x + 1);
+    } else if (Array.isArray(z)) {
+      z[x] = (typeof z[x] === 'number') ? 0 : BODEN;
+    }
+  }
+
+  /**
+   * Sucht eine Wandflaeche, die zur Kammer werden kann, und stanzt sie aus.
+   *
+   * Bedingungen an den Platz:
+   *  - KAMMER_B x KAMMER_H Zellen, ALLE Wand
+   *  - nicht am Kartenrand (sonst stanzt man nach draussen)
+   *  - genau EIN angrenzendes Bodenfeld als Mund — mehrere Zugaenge waeren
+   *    kein verschuetteter Durchgang, sondern eine Abkuerzung
+   *
+   * @param {Array<Array<number>>} raster wird VERAENDERT (Aufrufer kopiert)
+   * @param {function} [rng]
+   * @returns {{kammer:Array,mund:{x:number,y:number}}|null}
+   */
+  function stanzeKammer(raster, rng) {
+    // Zeilen sind Strings ODER Felder — beides zulassen. Die urspruengliche
+    // Pruefung verlangte Felder und brach bei den echten String-Zeilen
+    // sofort ab, ohne dass es auffiel: sie gab einfach null zurueck.
+    if (!Array.isArray(raster) || !raster.length) return null;
+    if (typeof raster[0] !== 'string' && !Array.isArray(raster[0])) return null;
+    var r = (typeof rng === 'function') ? rng : Math.random;
+    var H = raster.length, W = raster[0].length;
+    if (!W) return null;
+
+    var kandidaten = [];
+    for (var y = 1; y + KAMMER_H <= H - 1; y++) {
+      for (var x = 1; x + KAMMER_B <= W - 1; x++) {
+        var alleWand = true, dx, dy;
+        for (dy = 0; dy < KAMMER_H && alleWand; dy++) {
+          for (dx = 0; dx < KAMMER_B; dx++) {
+            if (!_istWand(raster, x + dx, y + dy)) { alleWand = false; break; }
+          }
+        }
+        if (!alleWand) continue;
+
+        // Angrenzende Bodenfelder zaehlen (4er-Nachbarschaft des Blocks).
+        var muender = [];
+        for (dy = 0; dy < KAMMER_H; dy++) {
+          if (!_istWand(raster, x - 1, y + dy)) muender.push({ x: x - 1, y: y + dy });
+          if (!_istWand(raster, x + KAMMER_B, y + dy)) muender.push({ x: x + KAMMER_B, y: y + dy });
+        }
+        for (dx = 0; dx < KAMMER_B; dx++) {
+          if (!_istWand(raster, x + dx, y - 1)) muender.push({ x: x + dx, y: y - 1 });
+          if (!_istWand(raster, x + dx, y + KAMMER_H)) muender.push({ x: x + dx, y: y + KAMMER_H });
+        }
+        // Alle Muender muessen auf DERSELBEN Seite liegen. "Genau einer" war zu
+        // streng: eine Nische an einer Korridorwand hat zwei Muender
+        // nebeneinander und ist trotzdem eine Sackgasse. Was hier ausgeschlossen
+        // wird, ist der Durchbruch zwischen zwei Seiten — das waere eine
+        // Abkuerzung, kein verschuetteter Durchgang.
+        if (!muender.length) continue;                       // eingemauert
+        var seiten = {};
+        muender.forEach(function (m) {
+          if (m.x < x) seiten.links = 1;
+          else if (m.x >= x + KAMMER_B) seiten.rechts = 1;
+          else if (m.y < y) seiten.oben = 1;
+          else seiten.unten = 1;
+        });
+        if (Object.keys(seiten).length !== 1) continue;
+        kandidaten.push({ x: x, y: y, mund: muender[0] });
+      }
+    }
+    if (!kandidaten.length) return null;
+
+    var w = kandidaten[Math.floor(r() * kandidaten.length)];
+    var kammer = [];
+    for (var ky = 0; ky < KAMMER_H; ky++) {
+      for (var kx = 0; kx < KAMMER_B; kx++) {
+        _setzeBoden(raster, w.x + kx, w.y + ky);
+        kammer.push({ x: w.x + kx, y: w.y + ky });
+      }
+    }
+    return { kammer: kammer, mund: w.mund };
+  }
+
+  /**
+   * Welche Kammerkachel liegt am Mund? Dorthin kommt der Schutt.
+   *
+   * Nicht auf den Mund selbst: der ist Boden ausserhalb der Kammer und liegt im
+   * begehbaren Raum — Schutt dort staende mitten im Weg.
+   */
+  function kammerEingang(kammer, mund) {
+    if (!Array.isArray(kammer) || !kammer.length || !mund) return null;
+    var beste = null, bestD = Infinity;
+    for (var i = 0; i < kammer.length; i++) {
+      var d = Math.abs(kammer[i].x - mund.x) + Math.abs(kammer[i].y - mund.y);
+      if (d < bestD) { bestD = d; beste = kammer[i]; }
+    }
+    return beste;
+  }
+
+  /**
+   * Schuettet die gestanzte Kammer zu und legt die Belohnung hinein (unrein).
+   *
+   * Der Schutt ist ein gewoehnliches zerstoerbares Hindernis vom Typ 'rubble' —
+   * das kennt das Spiel schon (roomTemplates: destructibleTypes), also gilt
+   * dieselbe Zerschlag-Mechanik wie bei Faessern, ohne neuen Sonderweg.
+   *
+   * @param {object} kammerInfo  Rueckgabe von stanzeKammer
+   * @param {number} ox,oy,T     Ursprung und Kachelgroesse in Weltkoordinaten
+   */
+  function verschuetteKammer(scene, kammerInfo, ox, oy, T) {
+    if (!scene || !kammerInfo || !kammerInfo.kammer || !kammerInfo.mund) return false;
+    var eingang = kammerEingang(kammerInfo.kammer, kammerInfo.mund);
+    if (!eingang) return false;
+    var mitte = function (t) { return { x: ox + (t.x + 0.5) * T, y: oy + (t.y + 0.5) * T }; };
+
+    // Schutt in den Zugang.
+    try {
+      var spawn = scene.spawnObstacle
+        || (window.RoomTemplates && window.RoomTemplates.spawnObstacle);
+      if (typeof spawn !== 'function') return false;
+      var p = mitte(eingang);
+      var schutt = spawn.call(scene, p.x, p.y, 'rubble');
+      if (schutt && typeof schutt.setData === 'function') {
+        schutt.setData('kammerSchutt', true);
+      }
+    } catch (e) { return false; }
+
+    // Belohnung in die HINTERSTE Kammerkachel — sie soll hinter dem Schutt
+    // liegen, nicht daneben.
+    try {
+      var hinten = kammerInfo.kammer[0], weit = -1;
+      kammerInfo.kammer.forEach(function (t) {
+        var d = Math.abs(t.x - kammerInfo.mund.x) + Math.abs(t.y - kammerInfo.mund.y);
+        if (d > weit) { weit = d; hinten = t; }
+      });
+      var b = mitte(hinten);
+      if (typeof window.spawnLoot === 'function') {
+        window.spawnLoot.call(scene, b.x, b.y, _truhe(true));
+      }
+    } catch (e) {}
+    return true;
+  }
+
   // Wie oft welche Art? Die Nische bleibt der Regelfall; Lager und Falle geben
   // dem Absuchen zwei ANDERE Antworten als "noch etwas Beute".
   var ARTEN = [
@@ -201,6 +389,20 @@
     if (art === 'lager') return spawneLager(scene, pos);
     if (art === 'falle') return spawneFalle(scene, pos);
     return spawneNische(scene, pos);
+  }
+
+  /**
+   * Eine GARANTIERTE Belohnung.
+   *
+   * spawnLoot ohne uebergebenen Gegenstand wuerfelt nur eine Drop-Chance
+   * (loot.js: `if (maybeItem || roll < dropThreshold)`) — gemessen blieb die
+   * Kammer damit leer. Wer erst Schutt wegschlaegt oder einen Hinterhalt
+   * ueberlebt, darf nicht mit nichts dastehen.
+   */
+  function _truhe(gut) {
+    var r = Math.random();
+    if (gut) return { type: 'chest_medium', locked: false, tier: r < 0.5 ? 2 : 1 };
+    return { type: 'chest_small', locked: false, tier: r < 0.35 ? 1 : 0 };
   }
 
   function _melde(scene, text) {
@@ -262,8 +464,8 @@
           // Erst die Beute: sie darf nicht daran haengen, dass der Spieler den
           // Hinterhalt ueberlebt.
           if (typeof window.spawnLoot === 'function') {
-            window.spawnLoot.call(scene, pos.x, pos.y + 24);
-            window.spawnLoot.call(scene, pos.x + 26, pos.y + 24);
+            // Garantiert, nicht gewuerfelt: der Hinterhalt ist der Preis.
+            window.spawnLoot.call(scene, pos.x, pos.y + 24, _truhe(true));
           }
           if (typeof window.spawnEnemy === 'function') {
             for (var i = 0; i < FALLE_GEGNER; i++) {
@@ -336,6 +538,14 @@
 
   var HiddenFinds = {
     MIN_ABSTAND: MIN_ABSTAND,
+    KAMMER_B: KAMMER_B,
+    KAMMER_H: KAMMER_H,
+    DURCHGANG_CHANCE: DURCHGANG_CHANCE,
+    willDurchgang: willDurchgang,
+    stanzeKammer: stanzeKammer,
+    _truhe: _truhe,
+    kammerEingang: kammerEingang,
+    verschuetteKammer: verschuetteKammer,
     LAGER_HEILUNG: LAGER_HEILUNG,
     FALLE_GEGNER: FALLE_GEGNER,
     beuteArt: beuteArt,

@@ -165,3 +165,79 @@ test('Ohne Szene stellt keine Art etwas hin, statt zu werfen', () => {
     assert.strictEqual(H[fn]({}, null), false, fn + ' ohne Platz');
   });
 });
+
+// --- Verschuetteter Durchgang: die Kammer ----------------------------------
+//
+// Das Wandraster besteht aus ZEICHEN in STRING-Zeilen ('#' Wand, '.' Boden,
+// 'P' Start). Der erste Entwurf ging von Zahlen in Feldern aus: er hielt jeden
+// Boden fuer Wand, konnte nicht in Strings schreiben, und seine Eingangspruefung
+// verwarf String-Zeilen kommentarlos. Diese Tests halten das Format fest.
+
+test('Eine Nische in dicker Wand wird gestanzt', () => {
+  const g = ['#########', '#.......#', '#.......#', '#########', '#########', '#########'];
+  const r = H.stanzeKammer(g, () => 0);
+  assert.ok(r, 'es gibt hier einen Platz');
+  assert.strictEqual(r.kammer.length, H.KAMMER_B * H.KAMMER_H);
+  // Die Zellen sind wirklich Boden geworden — in den STRING-Zeilen.
+  r.kammer.forEach((t) => {
+    assert.strictEqual(g[t.y][t.x], '.', 'Zelle ' + t.x + '/' + t.y + ' nicht ausgestanzt');
+  });
+  // Der Mund liegt ausserhalb der Kammer und ist Boden.
+  assert.strictEqual(g[r.mund.y][r.mund.x], '.');
+  assert.ok(!r.kammer.some((t) => t.x === r.mund.x && t.y === r.mund.y),
+    'der Mund gehoert NICHT zur Kammer');
+});
+
+test('Ein freistehender Pfeiler wird nicht ausgehoehlt', () => {
+  // Boden auf drei Seiten: das waere keine Nische, sondern ein Loch mitten im
+  // Raum — und mit zwei Zugaengen eine Abkuerzung statt eines Durchgangs.
+  const g = ['#########', '#.......#', '#.......#', '#..##...#', '#..##...#', '#########'];
+  assert.strictEqual(H.stanzeKammer(g, () => 0), null);
+});
+
+test('Massive Wand ohne Zugang bleibt massiv', () => {
+  const g = ['######', '######', '######', '######', '######'];
+  assert.strictEqual(H.stanzeKammer(g, () => 0), null);
+});
+
+test("'P' zaehlt als Boden, nicht als Wand", () => {
+  // Der Startpunkt steht als eigenes Zeichen im Raster. Wer ihn fuer Wand
+  // haelt, stanzt Kammern in den Eingangsbereich.
+  const mitP = ['#########', '#PPPPPPP#', '#.......#', '#########', '#########', '#########'];
+  const r = H.stanzeKammer(mitP, () => 0);
+  assert.ok(r, 'unter dem Boden ist trotzdem eine Nische moeglich');
+  assert.ok(!r.kammer.some((t) => t.y <= 1), 'nicht in die P-Zeile stanzen');
+});
+
+test('Kaputte Raster liefern null, statt zu werfen', () => {
+  [null, [], [[]], ['']].forEach((g) => {
+    assert.strictEqual(H.stanzeKammer(g, () => 0), null, JSON.stringify(g));
+  });
+});
+
+test('Der Schutt kommt in die Kammerkachel am Mund, nicht auf den Mund', () => {
+  const kammer = [{ x: 4, y: 3 }, { x: 5, y: 3 }, { x: 4, y: 4 }, { x: 5, y: 4 }];
+  const eingang = H.kammerEingang(kammer, { x: 3, y: 3 });
+  assert.deepStrictEqual(eingang, { x: 4, y: 3 });
+  assert.strictEqual(H.kammerEingang([], { x: 0, y: 0 }), null);
+  assert.strictEqual(H.kammerEingang(kammer, null), null);
+});
+
+test('Eine Kammer ist seltener als ein gewoehnlicher Fund', () => {
+  // Sie veraendert die Raumgeometrie — in jedem zweiten Raum ein zugeschuetteter
+  // Gang liesse die Karte beliebig wirken.
+  assert.ok(H.DURCHGANG_CHANCE < H.CHANCE,
+    'Durchgang ' + H.DURCHGANG_CHANCE + ' vs Fund ' + H.CHANCE);
+  assert.strictEqual(H.willDurchgang(() => 0.001), true);
+  assert.strictEqual(H.willDurchgang(() => 0.999), false);
+});
+
+test('Die Belohnung hinter dem Schutt ist garantiert, nicht gewuerfelt', () => {
+  // spawnLoot ohne Gegenstand wuerfelt nur eine Drop-Chance — gemessen blieb
+  // die Kammer damit leer. Wer Schutt wegschlaegt, darf nicht leer ausgehen.
+  for (let i = 0; i < 50; i++) {
+    const t = H._truhe(true);
+    assert.ok(t && typeof t.type === 'string' && t.type.indexOf('chest') === 0,
+      'immer eine Truhe, bekam ' + JSON.stringify(t));
+  }
+});
