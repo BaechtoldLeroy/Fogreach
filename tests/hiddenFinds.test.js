@@ -98,3 +98,29 @@ test('Die Chance laesst sich nachjustieren, ohne den Code anzufassen', () => {
     H.CHANCE = echt;
   }
 });
+
+// --- Was der Fund hergibt --------------------------------------------------
+
+test('Die Beute-Verteilung folgt ihren Gewichten', () => {
+  // 45/30/20/5 — Material am haeufigsten, Wissensfragment selten.
+  const grenzen = [
+    [0.00, 'material'], [0.44, 'material'],
+    [0.46, 'trank'],    [0.74, 'trank'],
+    [0.76, 'item'],     [0.94, 'item'],
+    [0.96, 'fragment'], [0.99, 'fragment'],
+  ];
+  grenzen.forEach(([r, erwartet]) => {
+    assert.strictEqual(H.beuteArt(() => r), erwartet, 'bei r=' + r);
+  });
+});
+
+test('Ein garantierter Ausruestungsfund waere zu viel', () => {
+  // Wer in jedem Fund Ausruestung findet, MUSS absuchen. Material und Trank
+  // zusammen tragen die Mehrheit.
+  let material = 0;
+  for (let i = 0; i < 1000; i++) {
+    const a = H.beuteArt(() => i / 1000);
+    if (a === 'material' || a === 'trank') material++;
+  }
+  assert.ok(material > 700, 'Alltagsbeute ueberwiegt (gemessen ' + material + '/1000)');
+});

@@ -394,6 +394,23 @@
         g.fillStyle(0xaa44ff, 0.6); g.fillCircle(10, 14, 1.5); // particle
         g.fillStyle(0xaa44ff, 0.4); g.fillCircle(22, 12, 1.5); // particle
         g.generateTexture(texKey, 32, 32);
+      } else if (texKey === 'evt_nische') {
+        // #113: Lose Steine in einer Mauerspalte. Bewusst KEINE Truhe — der
+        // Fund soll wie ein Teil der Wand aussehen, den jemand aufgebrochen
+        // hat, nicht wie noch eine Kiste zum Anklicken.
+        g.fillStyle(0x1a1620, 1); g.fillRect(5, 3, 22, 26);        // dunkle Spalte
+        g.fillStyle(0x3b3548, 1);                                   // Mauerquader
+        g.fillRect(3, 2, 12, 8); g.fillRect(17, 2, 12, 8);
+        g.fillRect(3, 22, 11, 8); g.fillRect(16, 22, 13, 8);
+        g.fillStyle(0x4a4356, 1);                                   // herausgebrochen
+        g.fillRect(4, 12, 9, 7); g.fillRect(19, 11, 9, 8);
+        g.fillStyle(0x2a2534, 1);                                   // Fugen
+        g.fillRect(15, 2, 2, 8); g.fillRect(14, 22, 2, 8);
+        g.fillStyle(0x6b6178, 1);                                   // Geroell davor
+        g.fillRect(9, 26, 6, 4); g.fillRect(16, 27, 5, 3);
+        g.fillStyle(0xd8c48a, 0.55); g.fillRect(13, 12, 6, 8);      // Schimmer im Spalt
+        g.fillStyle(0xffeebb, 0.8); g.fillCircle(16, 16, 1.6);
+        g.generateTexture(texKey, 32, 32);
       } else {
         // Generic fallback
         g.fillStyle(color, 1); g.fillRect(4, 4, 24, 28);

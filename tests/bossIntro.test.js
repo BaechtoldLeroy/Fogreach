@@ -37,12 +37,28 @@ function szene() {
     cameras: { main: kam },
     add: { rectangle: () => objekt(), text: () => objekt() },
     tweens: { add: (cfg) => { tweens.push(cfg); return cfg; } },
+    input: {
+      _tasten: {}, _zeiger: [],
+      keyboard: {
+        on(ev, fn) { (this._t = this._t || {})[ev] = fn; },
+        off(ev) { if (this._t) delete this._t[ev]; },
+      },
+      on(ev, fn) { if (ev === 'pointerdown') this._pd = fn; },
+      off(ev) { if (ev === 'pointerdown') this._pd = null; },
+    },
     time: { now: 0 },
     physics: { world: { pause() {}, resume() {} } },
   };
 }
 
 function boss() { return { x: 100, y: 100, body: { setVelocity() {} } }; }
+
+/** Leertaste druecken, so wie Phaser es meldet. */
+function leertaste(sc) {
+  const fn = sc.input.keyboard._t && sc.input.keyboard._t['keydown-SPACE'];
+  assert.ok(fn, 'auf die Leertaste wird gar nicht gehoert');
+  fn();
+}
 
 // Die Sequenz laeuft auf ECHTER Zeit (setTimeout), nicht auf Tween-Ketten —
 // der erste Entwurf haengte daran und blieb im Spiel bei 5,3 s stehen. Mit
@@ -53,11 +69,14 @@ async function sequenzAbwarten(faktor) {
 
 function frisch() {
   W.__GAME_PAUSE = { offset: 0, since: null, _scene: null };
-  W.player = { x: 0, y: 0 };
+  const figur = { x: 0, y: 0 };
+  W.player = figur;
   let pausiert = false;
   W.pauseGameClock = () => { pausiert = true; W.__GAME_PAUSE.since = 0; };
   W.resumeGameClock = () => { pausiert = false; W.__GAME_PAUSE.since = null; };
-  return () => pausiert;
+  const q = () => pausiert;
+  q.figur = figur;
+  return q;
 }
 
 test('Der Beat haelt das Spiel an und legt den Boss still', () => {
@@ -72,19 +91,37 @@ test('Der Beat haelt das Spiel an und legt den Boss still', () => {
   assert.strictEqual(sc._kam._gestoppt, true, 'Kamera folgt nicht mehr dem Spieler');
 });
 
-test('Am Ende ist ALLES zurueckgedreht', async () => {
+test('Ohne Bestaetigung geht es NICHT weiter', async () => {
   const istPausiert = frisch();
   const sc = szene();
   const b = boss();
   const echt = W.BossIntro._TEMPO;
   W.BossIntro._TEMPO = 0.01;
+  try {
+    W.BossIntro.inszeniere(sc, b, 'Kettenmeister', 'Die Siegel...');
+    await sequenzAbwarten(0.01);
+    // Eine feste Lesezeit gibt es nicht mehr — der Spieler entscheidet.
+    assert.strictEqual(istPausiert(), true, 'Spiel wartet weiter');
+    assert.strictEqual(sc.__bossIntroLaeuft, true);
+  } finally { W.BossIntro._TEMPO = echt; }
+});
+
+test('Nach der Bestaetigung ist ALLES zurueckgedreht', async () => {
+  const istPausiert = frisch();
+  const sc = szene();
+  const b = boss();
+  const echt = W.BossIntro._TEMPO;
+  W.BossIntro._TEMPO = 0.01;
+  await new Promise((r) => setTimeout(r, 5));
   W.BossIntro.inszeniere(sc, b, 'Kettenmeister', 'Die Siegel...');
-  await sequenzAbwarten(0.01);
+  await new Promise((r) => setTimeout(r, 30));   // Eingabe-Sperre abwarten
+  leertaste(sc);
+  await new Promise((r) => setTimeout(r, 40));
   W.BossIntro._TEMPO = echt;
 
   assert.strictEqual(istPausiert(), false, 'Spiel laeuft wieder');
   assert.strictEqual(b._introHaltBis, 0, 'Boss darf wieder');
-  assert.strictEqual(sc._kam._folgt, W.player, 'Kamera folgt wieder dem Spieler');
+  assert.strictEqual(sc._kam._folgt, istPausiert.figur, 'Kamera folgt wieder dem Spieler');
   assert.strictEqual(sc._kam.zoom, 1, 'Zoom zurueckgesetzt');
   assert.strictEqual(sc.__bossIntroLaeuft, false);
 });
@@ -121,7 +158,7 @@ test('Der Notausgang dreht alles zurueck, wenn kein Tween je fertig wird', async
 
     assert.strictEqual(istPausiert(), false, 'Notausgang hat das Spiel freigegeben');
     assert.strictEqual(b._introHaltBis, 0, 'Boss darf wieder');
-    assert.strictEqual(sc._kam._folgt, W.player, 'Kamera folgt wieder');
+    assert.strictEqual(sc._kam._folgt, istPausiert.figur, 'Kamera folgt wieder');
     assert.strictEqual(sc.__bossIntroLaeuft, false, 'Sperre geloest');
     // Der Rueckweg wird hier NIE animiert — nur das harte Zuruecksetzen
     // im Aufraeumen bringt den Zoom zurueck.
@@ -131,10 +168,27 @@ test('Der Notausgang dreht alles zurueck, wenn kein Tween je fertig wird', async
   }
 });
 
-test('Die Frist liegt deutlich ueber der Sequenz', () => {
-  // Sonst schneidet der Notausgang den Beat mitten im Lesen ab.
-  const summe = W.BossIntro._BALKEN_MS + W.BossIntro._HALTEN_MS;
-  assert.ok(W.BossIntro._NOTAUSGANG_MS > summe * 2,
-    'Frist ' + W.BossIntro._NOTAUSGANG_MS + ' zu knapp bei Sequenz ~' + summe);
+test('Der Notausgang laesst dem Spieler wirklich Zeit', () => {
+  // Er ist KEINE Lesezeit-Obergrenze mehr, sondern der Fall "Eingabe kommt
+  // nicht an". Eine knappe Frist wuerde den Beat mitten im Lesen abschneiden.
+  assert.ok(W.BossIntro._NOTAUSGANG_MS >= 30000,
+    'Frist ' + W.BossIntro._NOTAUSGANG_MS + ' ms schneidet Lesende ab');
+  assert.ok(W.BossIntro._EINGABE_AB >= 150,
+    'ohne Sperre beendet ein noch fliegender Tastendruck den Beat sofort');
+});
+
+test('Ein Tipp auf den Schirm bestaetigt genauso', async () => {
+  const istPausiert = frisch();
+  const sc = szene();
+  const echt = W.BossIntro._TEMPO;
+  W.BossIntro._TEMPO = 0.01;
+  try {
+    W.BossIntro.inszeniere(sc, boss(), 'Kettenmeister', 'Die Siegel...');
+    await new Promise((r) => setTimeout(r, 30));
+    assert.ok(sc.input._pd, 'auf Tippen wird gar nicht gehoert');
+    sc.input._pd();
+    await new Promise((r) => setTimeout(r, 40));
+    assert.strictEqual(istPausiert(), false, 'Tippen gibt das Spiel frei');
+  } finally { W.BossIntro._TEMPO = echt; }
 });
 

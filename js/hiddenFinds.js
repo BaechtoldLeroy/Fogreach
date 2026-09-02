@@ -17,6 +17,34 @@
 (function () {
   'use strict';
 
+  // Die Texte gehoerten frueher als Rueckfall in den Aufrufer — im Spiel stand
+  // deshalb "[E] [MISSING:find.nische.label]" auf dem Schirm: i18n.t liefert
+  // bei unbekanntem Schluessel diese Markierung zurueck, nicht den Schluessel,
+  // und der Rueckfall griff nie. Registrierte Schluessel statt Rueckfall.
+  if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
+    window.i18n.register('de', {
+      'find.nische.label':     'Lose Steine',
+      'find.nische.material':  'Hinter den Steinen: {n} Eisenbrocken.',
+      'find.nische.fragment':  'Hinter den Steinen: ein Wissensfragment.',
+      'find.nische.beute':     'Hinter den Steinen lag etwas.',
+      'find.nische.leer':      'Hinter den Steinen: nichts als Staub.'
+    });
+    window.i18n.register('en', {
+      'find.nische.label':     'Loose Stones',
+      'find.nische.material':  'Behind the stones: {n} iron chunks.',
+      'find.nische.fragment':  'Behind the stones: a knowledge fragment.',
+      'find.nische.beute':     'Something lay behind the stones.',
+      'find.nische.leer':      'Behind the stones: nothing but dust.'
+    });
+  }
+
+  function _t(key, vars) {
+    try {
+      if (window.i18n && typeof window.i18n.t === 'function') return window.i18n.t(key, vars);
+    } catch (e) {}
+    return key;
+  }
+
   // Naeher als das am Durchgangsweg gilt nicht als abseits. 160 px sind gut
   // zwei Spielerbreiten neben der Laufspur — nah genug, dass man den Fund im
   // Vorbeigehen SIEHT, weit genug, dass man dafuer abbiegen muss.
@@ -114,8 +142,83 @@
     return r() < HiddenFinds.CHANCE ? 1 : 0;
   }
 
+  // Was in der Nische liegt. Bewusst kein garantierter Ausruestungsfund: der
+  // Reiz soll das Abbiegen sein, nicht die Beute — sonst wird Erkunden Pflicht.
+  var BEUTE = [
+    { gewicht: 45, art: 'material' },
+    { gewicht: 30, art: 'trank' },
+    { gewicht: 20, art: 'item' },
+    { gewicht: 5,  art: 'fragment' }
+  ];
+
+  /** Was gibt dieser Fund her? Gewichtet gezogen. */
+  function beuteArt(rng) {
+    var r = (typeof rng === 'function') ? rng : Math.random;
+    var summe = 0, i;
+    for (i = 0; i < BEUTE.length; i++) summe += BEUTE[i].gewicht;
+    var wurf = r() * summe;
+    for (i = 0; i < BEUTE.length; i++) {
+      wurf -= BEUTE[i].gewicht;
+      if (wurf <= 0) return BEUTE[i].art;
+    }
+    return BEUTE[BEUTE.length - 1].art;
+  }
+
+  /**
+   * Stellt die Wandnische hin (unrein: braucht Szene und EventSystem).
+   *
+   * JEDER Ausgang sagt dem Spieler, was er bekommen hat. Material und
+   * Wissensfragment sind sonst UNSICHTBAR — changeMaterialCount und
+   * addFragments zeigen von sich aus nichts an, und der Fund fuehlte sich an,
+   * als sei nichts passiert.
+   */
+  function spawneNische(scene, pos) {
+    if (!scene || !pos || !window.EventSystem
+        || typeof window.EventSystem.spawnEventObject !== 'function') return false;
+
+    window.EventSystem.spawnEventObject(
+      scene, 'evt_nische', 0x4a4356, 0xd8c48a, _t('find.nische.label'),
+      function () {
+        // Ueber das Modul-Objekt, nicht die lokale Fassung: sonst laesst sich
+        // kein einzelner Ausgang gezielt pruefen (erster Versuch lief ins
+        // Leere und meldete bei "trank" Eisenbrocken).
+        var art = HiddenFinds.beuteArt(Math.random);
+        var tiefe = Math.max(1, window.DUNGEON_DEPTH || 1);
+        var meldung = _t('find.nische.leer');
+        try {
+          if (art === 'fragment' && window.KnowledgeTree
+              && typeof window.KnowledgeTree.addFragments === 'function') {
+            window.KnowledgeTree.addFragments(1);
+            meldung = _t('find.nische.fragment');
+          } else if (art === 'material' && typeof window.changeMaterialCount === 'function') {
+            var n = 2 + Math.floor(Math.random() * 3);
+            window.changeMaterialCount('MAT', n);
+            meldung = _t('find.nische.material', { n: n });
+          } else if (typeof window.spawnLoot === 'function') {
+            // Ueber den normalen Beute-Pfad, damit Seltenheitsfarbe,
+            // Aufsammel-Sperre und Rasterplatzierung genauso greifen wie sonst.
+            // 4. Argument ist sourceEnemy, NICHT die Tiefe.
+            var beute = (art === 'trank' && typeof window.makePotionDrop === 'function')
+              ? window.makePotionDrop(tiefe) : null;
+            window.spawnLoot.call(scene, pos.x, pos.y + 24, beute);
+            meldung = _t('find.nische.beute');
+          }
+        } catch (e) { /* ein leerer Fund ist besser als ein Absturz */ }
+        try {
+          if (typeof window.EventSystem.showToast === 'function') {
+            window.EventSystem.showToast(scene, meldung);
+          }
+        } catch (e) {}
+      },
+      { spawnAt: pos }
+    );
+    return true;
+  }
+
   var HiddenFinds = {
     MIN_ABSTAND: MIN_ABSTAND,
+    beuteArt: beuteArt,
+    spawneNische: spawneNische,
     CHANCE: CHANCE,
     abstandZurStrecke: abstandZurStrecke,
     abseitsWert: abseitsWert,

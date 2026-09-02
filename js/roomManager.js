@@ -1406,75 +1406,10 @@ function _maybeSpawnHiddenFind(scene) {
     var plaetze = HF.waehleAbseits(kandidaten, eingang, ausgang, 1);
     if (!plaetze.length) return;   // kein Winkel weit genug weg -> kein Fund
 
-    _spawnWandnische(scene, plaetze[0]);
+    HF.spawneNische(scene, plaetze[0]);
   } catch (e) { /* nie den Raumaufbau brechen */ }
 }
 
-// Was in der Nische liegt. Bewusst kein garantierter Ausruestungsfund: der
-// Reiz soll das Abbiegen sein, nicht die Beute — sonst wird Erkunden Pflicht.
-var NISCHEN_BEUTE = [
-  { gewicht: 45, art: 'material' },
-  { gewicht: 30, art: 'trank' },
-  { gewicht: 20, art: 'item' },
-  { gewicht: 5,  art: 'fragment' }
-];
-
-function _nischenBeute(rng) {
-  var r = (typeof rng === 'function') ? rng : Math.random;
-  var summe = 0, i;
-  for (i = 0; i < NISCHEN_BEUTE.length; i++) summe += NISCHEN_BEUTE[i].gewicht;
-  var wurf = r() * summe;
-  for (i = 0; i < NISCHEN_BEUTE.length; i++) {
-    wurf -= NISCHEN_BEUTE[i].gewicht;
-    if (wurf <= 0) return NISCHEN_BEUTE[i].art;
-  }
-  return NISCHEN_BEUTE[NISCHEN_BEUTE.length - 1].art;
-}
-
-function _spawnWandnische(scene, pos) {
-  var _t = function (k, f) {
-    try {
-      if (window.i18n && typeof window.i18n.t === 'function') {
-        var s = window.i18n.t(k);
-        if (s && s !== k) return s;
-      }
-    } catch (e) {}
-    return f;
-  };
-  window.EventSystem.spawnEventObject(
-    scene, 'evt_nische', 0x4a4356, 0xd8c48a,
-    _t('find.nische.label', 'Lose Steine'),
-    function () {
-      var art = _nischenBeute(Math.random);
-      var tiefe = Math.max(1, window.DUNGEON_DEPTH || 1);
-      try {
-        if (art === 'fragment' && window.KnowledgeTree
-            && typeof window.KnowledgeTree.addFragments === 'function') {
-          window.KnowledgeTree.addFragments(1);
-        } else if (art === 'material' && typeof window.changeMaterialCount === 'function') {
-          window.changeMaterialCount('MAT', 2 + Math.floor(Math.random() * 3));
-        } else if (typeof window.spawnLoot === 'function') {
-          // Trank/Item ueber den normalen Beute-Pfad, damit Seltenheitsfarbe,
-          // Aufsammel-Sperre und Rasterplatzierung genauso greifen wie sonst.
-          // 4. Argument ist sourceEnemy, NICHT die Tiefe — dort eine Zahl zu
-          // uebergeben wuerde einen Gegner-Goldabwurf ausloesen.
-          var beute = null;
-          if (art === 'trank' && typeof window.makePotionDrop === 'function') {
-            beute = window.makePotionDrop(tiefe);
-          }
-          window.spawnLoot.call(scene, pos.x, pos.y + 24, beute);
-        }
-      } catch (e) { /* ein leerer Fund ist besser als ein Absturz */ }
-      try {
-        if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
-          window.EventSystem.showToast(scene, _t('find.nische.toast',
-            'Hinter den losen Steinen war etwas verborgen.'));
-        }
-      } catch (e) {}
-    },
-    { spawnAt: pos }
-  );
-}
 
 // Ab welchem betretenen Raum das Lauf-Amulett frühestens liegt (Issue #120).
 var RUN_AMULET_MIN_ROOM = 3;
