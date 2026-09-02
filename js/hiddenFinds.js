@@ -377,41 +377,95 @@
       }
     }
 
-    // Schutt in den Zugang.
+    // Schutt ueber die GANZE Oeffnung, nicht nur eine Kachel: ein einzelnes
+    // 32-px-Stueck in einer 96 px breiten Kammer laesst rechts und links frei,
+    // man sieht hindurch und laeuft daran vorbei.
+    // Liegt der Mund seitlich, ist die Oeffnungskante die SPALTE des Eingangs;
+    // liegt er ober- oder unterhalb, die ZEILE.
+    var seitlich = (kammerInfo.mund.x !== eingang.x);
+    var eingangsReihe = kammerInfo.kammer.filter(function (t) {
+      return seitlich ? (t.x === eingang.x) : (t.y === eingang.y);
+    });
+    if (!eingangsReihe.length) eingangsReihe = [eingang];
+
+    var schuttStuecke = [];
     try {
       var spawn = scene.spawnObstacle
         || (window.RoomTemplates && window.RoomTemplates.spawnObstacle);
       if (typeof spawn !== 'function') return false;
-      var p = mitte(eingang);
-      var schutt = spawn.call(scene, p.x, p.y, 'rubble');
-      if (schutt && typeof schutt.setData === 'function') {
-        schutt.setData('kammerSchutt', true);
-      }
+      eingangsReihe.forEach(function (t) {
+        var p = mitte(t);
+        var s = spawn.call(scene, p.x, p.y, 'rubble');
+        if (s && typeof s.setData === 'function') {
+          s.setData('kammerSchutt', true);
+          schuttStuecke.push(s);
+        }
+      });
+      if (!schuttStuecke.length) return false;
       // Fuer den Minikarten-Marker im Debug-Modus (minimap.js).
       scene._kammerMarkierung = { kammer: kammerInfo.kammer, schutt: eingang };
       try {
         if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
-          console.log('[Durchgang] Geroell bei Welt ' + Math.round(p.x) + '/' + Math.round(p.y)
-            + ' (Kachel ' + eingang.x + '/' + eingang.y + ')'
-            + (schutt ? ', zerschlagbar' : ' — SPAWN FEHLGESCHLAGEN')
-            + '. Auf der Minikarte blau = Kammer, orange = Geroell.');
+          console.log('[Durchgang] Geroell auf ' + schuttStuecke.length + ' Kachel(n) ab '
+            + eingang.x + '/' + eingang.y + ', zerschlagbar.'
+            + ' Kammer verdeckt, oeffnet sich beim letzten Stueck.'
+            + ' Minikarte: blau = Kammer, orange = Geroell.');
         }
       } catch (e) {}
     } catch (e) { return false; }
 
-    // Belohnung in die HINTERSTE Kammerkachel — sie soll hinter dem Schutt
-    // liegen, nicht daneben.
+    // --- Die Kammer bleibt VERBORGEN, bis der Schutt faellt -----------------
+    //
+    // Sonst sieht man durch die Oeffnung eine fertige Kammer samt Truhe und
+    // weiss vorher, was drin ist — der Reiz des Aufbrechens ist dann weg.
+    // Die Verdeckung liegt auf Wand-Tiefe (39, wie die Wand-TileSprites) und
+    // ist reine Optik: blockiert wird ueber den Schutt, nicht hierueber.
+    var verdeckung = [];
     try {
-      var hinten = kammerInfo.kammer[0], weit = -1;
-      kammerInfo.kammer.forEach(function (t) {
-        var d = Math.abs(t.x - kammerInfo.mund.x) + Math.abs(t.y - kammerInfo.mund.y);
-        if (d > weit) { weit = d; hinten = t; }
-      });
-      var b = mitte(hinten);
-      if (typeof window.spawnLoot === 'function') {
-        window.spawnLoot.call(scene, b.x, b.y, _truhe(true));
+      if (scene.add && scene.add.rectangle) {
+        kammerInfo.kammer.forEach(function (t) {
+          var m = mitte(t);
+          var r = scene.add.rectangle(m.x, m.y, T + 2, T + 2, 0x0d0b11, 1);
+          r.setDepth(39);
+          verdeckung.push(r);
+        });
       }
     } catch (e) {}
+
+    // Belohnung erst, wenn aufgebrochen ist — vorher waere sie sichtbar.
+    var hinten = kammerInfo.kammer[0], weit = -1;
+    kammerInfo.kammer.forEach(function (t) {
+      var d = Math.abs(t.x - kammerInfo.mund.x) + Math.abs(t.y - kammerInfo.mund.y);
+      if (d > weit) { weit = d; hinten = t; }
+    });
+
+    var geoeffnet = false, zerschlagen = 0;
+    function oeffnen() {
+      if (geoeffnet) return;
+      // Selbst mitzaehlen statt s.active abzufragen: ein zerstoertes Phaser-
+      // Objekt meldet nicht zuverlaessig active=false, und die Verdeckung
+      // blieb dadurch stehen (gemessen: Schutt 0, Verdeckung 9).
+      zerschlagen++;
+      if (zerschlagen < schuttStuecke.length) return;
+      geoeffnet = true;
+      verdeckung.forEach(function (r) { try { r.destroy(); } catch (e) {} });
+      verdeckung.length = 0;
+      try {
+        var b = mitte(hinten);
+        if (typeof window.spawnLoot === 'function') {
+          window.spawnLoot.call(scene, b.x, b.y, _truhe(true));
+        }
+      } catch (e) {}
+      try {
+        if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+          window.EventSystem.showToast(scene, _t('find.durchgang.toast'));
+        }
+      } catch (e) {}
+    }
+    schuttStuecke.forEach(function (s) {
+      try { if (s && typeof s.once === 'function') s.once('destroy', oeffnen); } catch (e) {}
+    });
+
     return true;
   }
 
