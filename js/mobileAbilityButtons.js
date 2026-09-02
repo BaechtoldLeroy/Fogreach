@@ -543,11 +543,19 @@
     try {
       (_letzteDekorationen || []).forEach(function (d) {
         if (!d) return;
-        [d.circle, d.icon, d.label, d.cdText, d.cdOverlay].forEach(function (o) {
-          if (o && typeof o.setVisible === 'function') { o.setVisible(!!sichtbar); n++; }
-        });
-        (d.chargePips || []).forEach(function (p) {
-          if (p && typeof p.setVisible === 'function') { p.setVisible(!!sichtbar); n++; }
+        // Zustand merken statt blind einblenden: cdText und cdOverlay sind
+        // meist versteckt (nur waehrend eines Cooldowns sichtbar) und wuerden
+        // sonst nach dem Beat auf allen Buttons stehen.
+        var teile = [d.circle, d.icon, d.label, d.cdText, d.cdOverlay].concat(d.chargePips || []);
+        if (!sichtbar) d.__warSichtbar = teile.map(function (o) { return !!(o && o.visible); });
+        teile.forEach(function (o, i) {
+          if (!o || typeof o.setVisible !== 'function') return;
+          if (sichtbar) {
+            if (d.__warSichtbar && d.__warSichtbar[i]) o.setVisible(true);
+          } else {
+            o.setVisible(false);
+          }
+          n++;
         });
       });
     } catch (e) {}

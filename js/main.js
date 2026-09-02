@@ -2428,6 +2428,10 @@ function initUI() {
     const tilePadding = 12;
 
     // Build a single tile (used for both fixed attack tile and 4 slot tiles)
+    // #77: JEDE gebaute Kachel, unabhaengig davon, wo sie spaeter landet.
+    // abilityStatusDisplay fuehrt nur attack und roll — Trank und die vier
+    // Slot-Kacheln standen deshalb waehrend des Boss-Beats weiter da.
+    const alleKacheln = [];
     const buildTile = (initialLabel, initialKeyLabel, color) => {
       const container = this.add.container(0, 0).setDepth(1001).setScrollFactor(0);
       const bg = this.add.rectangle(0, 0, tileWidth, tileHeight, 0x10131c, 0.65)
@@ -2484,13 +2488,15 @@ function initUI() {
       container.add([bg, fill, iconBg, radialOverlay, iconText, nameText, keyBadge, keyText, statusText, bonusBadge]);
       nameText.setWordWrapWidth(badgeX - tilePadding - ICON_R * 2 - 12);
       nameText.setMaxLines(2);
-      return {
+      const kachel = {
         container, fill, bg, statusText, nameText, keyText, keyBadge,
         iconText, iconBg, radialOverlay, bonusBadge,
         iconCx: ICON_CX, iconCy: ICON_CY, iconR: ICON_R,
         width: tileWidth, durationMs: 0, color,
         labelWidth: badgeX - tilePadding
       };
+      alleKacheln.push(kachel);
+      return kachel;
     };
 
     // Fixed attack tile — uses a sword emoji icon since there's no entry in ABILITY_DEFS
@@ -2507,12 +2513,19 @@ function initUI() {
     window.faehigkeitsLeisteSichtbar = function (sichtbar) {
       var n = 0;
       try {
-        Object.keys(abilityStatusDisplay).forEach(function (k) {
-          var kachel = abilityStatusDisplay[k];
-          if (kachel && kachel.container && typeof kachel.container.setVisible === 'function') {
-            kachel.container.setVisible(!!sichtbar);
-            n++;
+        alleKacheln.forEach(function (kachel) {
+          var c = kachel && kachel.container;
+          if (!c || typeof c.setVisible !== 'function') return;
+          if (sichtbar) {
+            // NUR das wiederherstellen, was vorher auch sichtbar war: leere
+            // Slot-Kacheln sind absichtlich versteckt und wuerden sonst beim
+            // Einblenden auftauchen (gemessen: 3 sichtbar vorher, 7 danach).
+            if (kachel.__warSichtbar) c.setVisible(true);
+          } else {
+            kachel.__warSichtbar = !!c.visible;
+            c.setVisible(false);
           }
+          n++;
         });
       } catch (e) {}
       return n;
