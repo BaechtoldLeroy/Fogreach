@@ -394,6 +394,38 @@
         g.fillStyle(0xaa44ff, 0.6); g.fillCircle(10, 14, 1.5); // particle
         g.fillStyle(0xaa44ff, 0.4); g.fillCircle(22, 12, 1.5); // particle
         g.generateTexture(texKey, 32, 32);
+      } else if (texKey === 'evt_lager') {
+        // #113: Verlassenes Lager — erkaltete Feuerstelle mit Decke. Warm und
+        // menschlich, damit es sich von Truhe und Mauerspalte abhebt.
+        g.fillStyle(0x241c22, 0.5); g.fillEllipse(16, 25, 26, 9);   // Bodenschatten
+        g.fillStyle(0x4a4038, 1);                                    // Steinkranz
+        [[8,24],[24,24],[6,19],[26,19],[10,15],[22,15]].forEach(function (p) {
+          g.fillCircle(p[0], p[1], 3);
+        });
+        g.fillStyle(0x2b2018, 1);                                    // Asche
+        g.fillEllipse(16, 20, 14, 7);
+        g.fillStyle(0x6b4a2a, 1);                                    // Scheite
+        g.fillRect(10, 17, 12, 3); g.fillRect(13, 21, 10, 3);
+        g.fillStyle(0xd88a3a, 0.75); g.fillCircle(16, 19, 2.5);      // letzte Glut
+        g.fillStyle(0xffd08a, 0.5); g.fillCircle(16, 19, 4.5);
+        g.fillStyle(0x7a5a4a, 1);                                    // Decke daneben
+        g.fillRect(2, 20, 8, 7);
+        g.fillStyle(0x8d6a58, 1); g.fillRect(2, 20, 8, 3);
+        g.generateTexture(texKey, 32, 32);
+      } else if (texKey === 'evt_falle') {
+        // #113: Koeder — sieht bewusst nach Beute aus. Dass es eine Falle ist,
+        // soll der Spieler erst merken, wenn er zugreift; deshalb KEIN
+        // Warnzeichen an der Textur.
+        g.fillStyle(0x241c22, 0.45); g.fillEllipse(16, 26, 24, 8);
+        g.fillStyle(0x6b5a2a, 1); g.fillRect(7, 17, 18, 10);        // Beutel
+        g.fillStyle(0x8a7538, 1); g.fillRect(7, 17, 18, 3);
+        g.fillStyle(0x4a3f1e, 1); g.fillRect(14, 14, 4, 4);         // Schnur
+        g.fillStyle(0xffd966, 1);                                    // Muenzen davor
+        g.fillCircle(10, 25, 2.5); g.fillCircle(15, 26, 2.5); g.fillCircle(20, 25, 2.5);
+        g.fillStyle(0xfff0b0, 0.9);
+        g.fillCircle(9.3, 24.3, 1); g.fillCircle(14.3, 25.3, 1);
+        g.fillStyle(0xffeebb, 0.35); g.fillCircle(16, 22, 11);      // Schimmer
+        g.generateTexture(texKey, 32, 32);
       } else if (texKey === 'evt_nische') {
         // #113: Lose Steine in einer Mauerspalte. Bewusst KEINE Truhe — der
         // Fund soll wie ein Teil der Wand aussehen, den jemand aufgebrochen

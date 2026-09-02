@@ -1406,7 +1406,7 @@ function _maybeSpawnHiddenFind(scene) {
     var plaetze = HF.waehleAbseits(kandidaten, eingang, ausgang, 1);
     if (!plaetze.length) return;   // kein Winkel weit genug weg -> kein Fund
 
-    HF.spawneNische(scene, plaetze[0]);
+    HF.spawne(scene, plaetze[0]);
   } catch (e) { /* nie den Raumaufbau brechen */ }
 }
 

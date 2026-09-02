@@ -124,3 +124,44 @@ test('Ein garantierter Ausruestungsfund waere zu viel', () => {
   }
   assert.ok(material > 700, 'Alltagsbeute ueberwiegt (gemessen ' + material + '/1000)');
 });
+
+// --- Welche Fundart steht im Raum? -----------------------------------------
+
+test('Die Fundarten folgen ihren Gewichten', () => {
+  // 45/30/25 — die Nische bleibt der Regelfall, Lager und Falle geben dem
+  // Absuchen zwei ANDERE Antworten als "noch etwas Beute".
+  assert.strictEqual(H.fundArt(() => 0.00), 'nische');
+  assert.strictEqual(H.fundArt(() => 0.44), 'nische');
+  assert.strictEqual(H.fundArt(() => 0.46), 'lager');
+  assert.strictEqual(H.fundArt(() => 0.74), 'lager');
+  assert.strictEqual(H.fundArt(() => 0.76), 'falle');
+  assert.strictEqual(H.fundArt(() => 0.99), 'falle');
+});
+
+test('Keine Art dominiert das Absuchen', () => {
+  const zaehl = { nische: 0, lager: 0, falle: 0 };
+  for (let i = 0; i < 1000; i++) zaehl[H.fundArt(() => i / 1000)]++;
+  Object.keys(zaehl).forEach((k) => {
+    assert.ok(zaehl[k] > 150, k + ' kommt zu selten (' + zaehl[k] + '/1000)');
+    assert.ok(zaehl[k] < 550, k + ' kommt zu oft (' + zaehl[k] + '/1000)');
+  });
+});
+
+test('Die Rast gibt einen spuerbaren, aber begrenzten Anteil zurueck', () => {
+  // Zu wenig ist keine Entscheidung, zu viel ersetzt den Trankvorrat.
+  assert.ok(H.LAGER_HEILUNG >= 0.15, 'unter 15 % merkt es niemand');
+  assert.ok(H.LAGER_HEILUNG <= 0.4, 'ueber 40 % waere ein Volltrank umsonst');
+});
+
+test('Die Falle schickt eine Handvoll Gegner, keinen Ansturm', () => {
+  // Erkunden soll ein Einsatz sein, keine Bestrafung.
+  assert.ok(H.FALLE_GEGNER >= 2 && H.FALLE_GEGNER <= 5,
+    'gemessen ' + H.FALLE_GEGNER);
+});
+
+test('Ohne Szene stellt keine Art etwas hin, statt zu werfen', () => {
+  ['spawneNische', 'spawneLager', 'spawneFalle'].forEach((fn) => {
+    assert.strictEqual(H[fn](null, { x: 0, y: 0 }), false, fn);
+    assert.strictEqual(H[fn]({}, null), false, fn + ' ohne Platz');
+  });
+});

@@ -27,14 +27,24 @@
       'find.nische.material':  'Hinter den Steinen: {n} Eisenbrocken.',
       'find.nische.fragment':  'Hinter den Steinen: ein Wissensfragment.',
       'find.nische.beute':     'Hinter den Steinen lag etwas.',
-      'find.nische.leer':      'Hinter den Steinen: nichts als Staub.'
+      'find.nische.leer':      'Hinter den Steinen: nichts als Staub.',
+      'find.lager.label':      'Verlassenes Lager',
+      'find.lager.rast':       'Du rastest kurz. {n} Leben zurueck.',
+      'find.lager.voll':       'Nichts zu heilen — du gehst weiter.',
+      'find.falle.label':      'Zurueckgelassener Beutel',
+      'find.falle.zuschnappt': 'Ein Hinterhalt! Aber der Beutel ist voll.'
     });
     window.i18n.register('en', {
       'find.nische.label':     'Loose Stones',
       'find.nische.material':  'Behind the stones: {n} iron chunks.',
       'find.nische.fragment':  'Behind the stones: a knowledge fragment.',
       'find.nische.beute':     'Something lay behind the stones.',
-      'find.nische.leer':      'Behind the stones: nothing but dust.'
+      'find.nische.leer':      'Behind the stones: nothing but dust.',
+      'find.lager.label':      'Abandoned Camp',
+      'find.lager.rast':       'You rest a moment. {n} health back.',
+      'find.lager.voll':       'Nothing to heal — you move on.',
+      'find.falle.label':      'Abandoned Pouch',
+      'find.falle.zuschnappt': 'An ambush! But the pouch is full.'
     });
   }
 
@@ -164,6 +174,115 @@
     return BEUTE[BEUTE.length - 1].art;
   }
 
+  // Wie oft welche Art? Die Nische bleibt der Regelfall; Lager und Falle geben
+  // dem Absuchen zwei ANDERE Antworten als "noch etwas Beute".
+  var ARTEN = [
+    { id: 'nische', gewicht: 45 },
+    { id: 'lager',  gewicht: 30 },
+    { id: 'falle',  gewicht: 25 }
+  ];
+
+  /** Welche Fundart steht in diesem Raum? Gewichtet gezogen. */
+  function fundArt(rng) {
+    var r = (typeof rng === 'function') ? rng : Math.random;
+    var summe = 0, i;
+    for (i = 0; i < ARTEN.length; i++) summe += ARTEN[i].gewicht;
+    var wurf = r() * summe;
+    for (i = 0; i < ARTEN.length; i++) {
+      wurf -= ARTEN[i].gewicht;
+      if (wurf <= 0) return ARTEN[i].id;
+    }
+    return ARTEN[ARTEN.length - 1].id;
+  }
+
+  /** Stellt den Fund dieses Raums hin — welchen, entscheidet fundArt. */
+  function spawne(scene, pos) {
+    var art = HiddenFinds.fundArt(Math.random);
+    if (art === 'lager') return spawneLager(scene, pos);
+    if (art === 'falle') return spawneFalle(scene, pos);
+    return spawneNische(scene, pos);
+  }
+
+  function _melde(scene, text) {
+    try {
+      if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+        window.EventSystem.showToast(scene, text);
+      }
+    } catch (e) {}
+  }
+
+  // Anteil der maximalen Lebenspunkte, den eine Rast zurueckgibt.
+  var LAGER_HEILUNG = 0.28;
+
+  /**
+   * Verlassenes Lager: eine einmalige Rast.
+   *
+   * Der Reiz liegt in der KONKURRENZ zum Trankvorrat — es fuellt ihn nicht auf,
+   * es ersetzt einen Trank an dieser Stelle. Wer voll ist, hat nichts davon;
+   * das ist Absicht und wird auch so gesagt, statt stumm nichts zu tun.
+   */
+  function spawneLager(scene, pos) {
+    if (!scene || !pos || !window.EventSystem
+        || typeof window.EventSystem.spawnEventObject !== 'function') return false;
+    window.EventSystem.spawnEventObject(
+      scene, 'evt_lager', 0x6b4a2a, 0xffd08a, _t('find.lager.label'),
+      function () {
+        try {
+          var max = window.playerMaxHealth || 0;
+          var jetzt = window.playerHealth || 0;
+          if (!max || jetzt >= max) { _melde(scene, _t('find.lager.voll')); return; }
+          var heilung = Math.max(1, Math.round(max * LAGER_HEILUNG));
+          var neu = Math.min(max, jetzt + heilung);
+          if (typeof window.setPlayerHealth === 'function') window.setPlayerHealth(neu);
+          _melde(scene, _t('find.lager.rast', { n: neu - jetzt }));
+        } catch (e) { /* eine misslungene Rast darf nichts brechen */ }
+      },
+      { spawnAt: pos }
+    );
+    return true;
+  }
+
+  var FALLE_GEGNER = 3;
+  var FALLE_RING_MIN = 90, FALLE_RING_MAX = 170;
+
+  /**
+   * Koeder mit Falle: sichtbar wertvolle Beute, aber bewacht.
+   *
+   * Die Beute faellt TROTZDEM — die Falle ist der Preis, nicht die Strafe. Wer
+   * fuer das Absuchen nur Aerger bekommt, sucht beim naechsten Mal nicht mehr,
+   * und genau das soll #113 ja beheben.
+   */
+  function spawneFalle(scene, pos) {
+    if (!scene || !pos || !window.EventSystem
+        || typeof window.EventSystem.spawnEventObject !== 'function') return false;
+    window.EventSystem.spawnEventObject(
+      scene, 'evt_falle', 0x6b5a2a, 0xffd966, _t('find.falle.label'),
+      function () {
+        try {
+          // Erst die Beute: sie darf nicht daran haengen, dass der Spieler den
+          // Hinterhalt ueberlebt.
+          if (typeof window.spawnLoot === 'function') {
+            window.spawnLoot.call(scene, pos.x, pos.y + 24);
+            window.spawnLoot.call(scene, pos.x + 26, pos.y + 24);
+          }
+          if (typeof window.spawnEnemy === 'function') {
+            for (var i = 0; i < FALLE_GEGNER; i++) {
+              var a = (Math.PI * 2 / FALLE_GEGNER) * i + Math.random();
+              var r = FALLE_RING_MIN + Math.random() * (FALLE_RING_MAX - FALLE_RING_MIN);
+              var x = pos.x + Math.cos(a) * r, y = pos.y + Math.sin(a) * r;
+              if (x <= 0 || y <= 0) continue;
+              if (scene.isPointAccessible && !scene.isPointAccessible(x, y)) continue;
+              try { window.spawnEnemy.call(scene, x, y, 'enemy'); } catch (e) {}
+            }
+          }
+          _melde(scene, _t('find.falle.zuschnappt'));
+        } catch (e) {}
+      },
+      { spawnAt: pos }
+    );
+    return true;
+  }
+
   /**
    * Stellt die Wandnische hin (unrein: braucht Szene und EventSystem).
    *
@@ -217,8 +336,14 @@
 
   var HiddenFinds = {
     MIN_ABSTAND: MIN_ABSTAND,
+    LAGER_HEILUNG: LAGER_HEILUNG,
+    FALLE_GEGNER: FALLE_GEGNER,
     beuteArt: beuteArt,
+    fundArt: fundArt,
+    spawne: spawne,
     spawneNische: spawneNische,
+    spawneLager: spawneLager,
+    spawneFalle: spawneFalle,
     CHANCE: CHANCE,
     abstandZurStrecke: abstandZurStrecke,
     abseitsWert: abseitsWert,
