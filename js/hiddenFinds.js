@@ -192,7 +192,13 @@
   //
   // Rein gehalten: Raster rein, Raster raus. Kein Phaser, kein Zustand.
 
-  var KAMMER_B = 2, KAMMER_H = 2;   // Groesse in Kacheln
+  // Groesse in Kacheln. 3x3 und nicht kleiner: die Spielfigur braucht 34x56 px
+  // Freiraum (CHAR_CLEAR_HALF_W/H in roomManager). Eine 2x2-Kammer ist 64x64 px
+  // — die obere Pruefstelle liegt dann schon in der Wand, isPointAccessible
+  // meldet "nicht begehbar", und der Spieler kaeme nicht hinein. Gemessen:
+  // Raster sagte Boden, isPointAccessible sagte false. Genau deshalb war der
+  // Durchgang im Spiel nicht zu benutzen.
+  var KAMMER_B = 3, KAMMER_H = 3;
 
   // Wie oft bekommt ein Raum ueberhaupt eine Kammer? Deutlich seltener als ein
   // gewoehnlicher Fund: sie veraendert die Raumgeometrie, und in jedem zweiten
@@ -288,7 +294,12 @@
         // nebeneinander und ist trotzdem eine Sackgasse. Was hier ausgeschlossen
         // wird, ist der Durchbruch zwischen zwei Seiten — das waere eine
         // Abkuerzung, kein verschuetteter Durchgang.
-        if (!muender.length) continue;                       // eingemauert
+        // MINDESTENS ZWEI Muender: die Begehbarkeitspruefung verwirft
+        // 1-Kachel-Engstellen ausdruecklich (CHAR_CLEAR_HALF_W/H in
+        // roomManager, "1-Tile-Korridore als unpassierbar"). Mit einem
+        // Kachel breiten Mund war die Kammer NIE erreichbar — gemessen war
+        // keine einzige betretbar, obwohl das Wandraster Boden meldete.
+        if (muender.length < 2) continue;
         var seiten = {};
         muender.forEach(function (m) {
           if (m.x < x) seiten.links = 1;
@@ -345,6 +356,27 @@
     if (!eingang) return false;
     var mitte = function (t) { return { x: ox + (t.x + 0.5) * T, y: oy + (t.y + 0.5) * T }; };
 
+    // Ist die Kammer ueberhaupt BETRETBAR? Das Wandraster allein genuegt
+    // nicht: die Spielfigur braucht 34x56 px Freiraum, und je nach Lage der
+    // Kammer passt sie nirgends hinein. Gemessen waren so 3 von 5 Kammern
+    // unbenutzbar — Geroell davor waere dann eine Kulisse, hinter der man
+    // nie steht. Lieber gar kein Durchgang als ein toter.
+    if (typeof scene.isPointAccessible === 'function') {
+      var frei = kammerInfo.kammer.some(function (t) {
+        var m = mitte(t);
+        return scene.isPointAccessible(m.x, m.y);
+      });
+      if (!frei) {
+        try {
+          if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
+            console.log('[Durchgang] Kammer bei Kachel ' + eingang.x + '/' + eingang.y
+              + ' waere nicht betretbar (Figur passt nicht hinein) — kein Geroell gesetzt.');
+          }
+        } catch (e) {}
+        return false;
+      }
+    }
+
     // Schutt in den Zugang.
     try {
       var spawn = scene.spawnObstacle
@@ -355,6 +387,16 @@
       if (schutt && typeof schutt.setData === 'function') {
         schutt.setData('kammerSchutt', true);
       }
+      // Fuer den Minikarten-Marker im Debug-Modus (minimap.js).
+      scene._kammerMarkierung = { kammer: kammerInfo.kammer, schutt: eingang };
+      try {
+        if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
+          console.log('[Durchgang] Geroell bei Welt ' + Math.round(p.x) + '/' + Math.round(p.y)
+            + ' (Kachel ' + eingang.x + '/' + eingang.y + ')'
+            + (schutt ? ', zerschlagbar' : ' — SPAWN FEHLGESCHLAGEN')
+            + '. Auf der Minikarte blau = Kammer, orange = Geroell.');
+        }
+      } catch (e) {}
     } catch (e) { return false; }
 
     // Belohnung in die HINTERSTE Kammerkachel — sie soll hinter dem Schutt

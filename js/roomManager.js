@@ -1362,6 +1362,10 @@ function enterRoom(scene, roomId) {
   // er wegliegen soll).
   _maybeSpawnHiddenFind(scene);
 
+  // Die Markierung der VORIGEN Kammer muss weg, sonst zeigt die Minikarte im
+  // neuen Raum auf eine Stelle, an der nichts ist.
+  try { if (scene) scene._kammerMarkierung = null; } catch (e) {}
+
   // #113: Wurde beim Raumaufbau eine Kammer gestanzt, jetzt zuschuetten und
   // die Belohnung hineinlegen. Erst hier, weil spawnObstacle die fertige
   // Szene braucht.

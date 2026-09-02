@@ -174,7 +174,8 @@ test('Ohne Szene stellt keine Art etwas hin, statt zu werfen', () => {
 // verwarf String-Zeilen kommentarlos. Diese Tests halten das Format fest.
 
 test('Eine Nische in dicker Wand wird gestanzt', () => {
-  const g = ['#########', '#.......#', '#.......#', '#########', '#########', '#########'];
+  const g = ['###########', '#.........#', '#.........#',
+             '###########', '###########', '###########', '###########'];
   const r = H.stanzeKammer(g, () => 0);
   assert.ok(r, 'es gibt hier einen Platz');
   assert.strictEqual(r.kammer.length, H.KAMMER_B * H.KAMMER_H);
@@ -191,7 +192,8 @@ test('Eine Nische in dicker Wand wird gestanzt', () => {
 test('Ein freistehender Pfeiler wird nicht ausgehoehlt', () => {
   // Boden auf drei Seiten: das waere keine Nische, sondern ein Loch mitten im
   // Raum — und mit zwei Zugaengen eine Abkuerzung statt eines Durchgangs.
-  const g = ['#########', '#.......#', '#.......#', '#..##...#', '#..##...#', '#########'];
+  const g = ['###########', '#.........#', '#.........#',
+             '#..###....#', '#..###....#', '#..###....#', '###########'];
   assert.strictEqual(H.stanzeKammer(g, () => 0), null);
 });
 
@@ -203,7 +205,8 @@ test('Massive Wand ohne Zugang bleibt massiv', () => {
 test("'P' zaehlt als Boden, nicht als Wand", () => {
   // Der Startpunkt steht als eigenes Zeichen im Raster. Wer ihn fuer Wand
   // haelt, stanzt Kammern in den Eingangsbereich.
-  const mitP = ['#########', '#PPPPPPP#', '#.......#', '#########', '#########', '#########'];
+  const mitP = ['###########', '#PPPPPPPPP#', '#.........#',
+                '###########', '###########', '###########', '###########'];
   const r = H.stanzeKammer(mitP, () => 0);
   assert.ok(r, 'unter dem Boden ist trotzdem eine Nische moeglich');
   assert.ok(!r.kammer.some((t) => t.y <= 1), 'nicht in die P-Zeile stanzen');

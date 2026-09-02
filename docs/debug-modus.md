@@ -95,6 +95,21 @@ Raeume ganz ohne brauchbaren Kandidaten.
 ?debug=1&dungeon=4&find=durchgang
 ```
 
+Der Durchgang erscheint auch mit der Flagge nur in etwa **jedem dritten Raum**: er
+braucht eine 3×3-Wandfläche mit mindestens **zwei** Bodenfeldern auf *einer* Seite.
+Ein nur eine Kachel breiter Mund reicht nicht — die Begehbarkeitsprüfung verwirft
+1-Kachel-Engstellen ausdrücklich, die Kammer wäre dann nie erreichbar.
+
+Auf der **Minikarte** ist die Kammer im Debug-Modus **blau** markiert, das Geröll
+**orange**. Dazu sagt die Konsole, welcher Fall vorliegt:
+
+```
+[Durchgang] Kammer gestanzt — Kacheln 34/8 35/8 …, Mund 33/8  (Welt ~1104/272)
+[Durchgang] Geroell bei Welt 1104/272 (Kachel 34/8), zerschlagbar.
+[Durchgang] keine geeignete Wandflaeche in diesem Raum — Kammer entfaellt
+[Durchgang] Kammer … waere nicht betretbar (Figur passt nicht hinein)
+```
+
 
 ### Leistungsmessung
 

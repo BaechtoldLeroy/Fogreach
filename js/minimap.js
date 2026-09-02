@@ -269,6 +269,23 @@ function updateMinimap(scene) {
     });
   }
 
+  // #113: Im Debug-Modus die gestanzte Kammer und ihr Geroell markieren.
+  // Der Durchgang ist absichtlich schwer zu finden — beim Testen will man
+  // trotzdem wissen, ob er ueberhaupt da ist und wo.
+  if (window.DebugGate && window.DebugGate.aktiv() && scene._kammerMarkierung) {
+    var mk = scene._kammerMarkierung;
+    (mk.kammer || []).forEach(function (t) {
+      if (t.x < 0 || t.x >= gridW || t.y < 0 || t.y >= gridH) return;
+      gfx.fillStyle(0x44ddff, 0.85);
+      gfx.fillRect(offX + t.x * tpx, offY + t.y * tpx, Math.max(2, tpx), Math.max(2, tpx));
+    });
+    if (mk.schutt) {
+      gfx.fillStyle(0xffaa22, 1);
+      gfx.fillRect(offX + mk.schutt.x * tpx - 1, offY + mk.schutt.y * tpx - 1,
+        Math.max(3, tpx + 1), Math.max(3, tpx + 1));
+    }
+  }
+
   // Draw player as green blinking dot
   if (player && player.active) {
     // Blink toggle every ~15 frames (every 3 update calls at 5-frame interval)

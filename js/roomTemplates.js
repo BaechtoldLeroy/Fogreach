@@ -199,6 +199,20 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     if (window.HiddenFinds && typeof window.HiddenFinds.stanzeKammer === 'function'
         && window.HiddenFinds.willDurchgang(Math.random)) {
       scene._kammer = window.HiddenFinds.stanzeKammer(wallsGrid, Math.random);
+      // #113: Ohne Mitschrift ist nicht zu unterscheiden, ob die Kammer gar
+      // nicht gestanzt wurde oder ob man sie nur nicht findet.
+      if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
+        if (scene._kammer) {
+          var _m = scene._kammer.mund, _k = scene._kammer.kammer[0];
+          console.log('[Durchgang] Kammer gestanzt — Kacheln '
+            + scene._kammer.kammer.map(function (t) { return t.x + '/' + t.y; }).join(' ')
+            + ', Mund ' + _m.x + '/' + _m.y
+            + '  (Welt ~' + Math.round((_k.x + 0.5) * T) + '/' + Math.round((_k.y + 0.5) * T) + ')');
+        } else {
+          console.log('[Durchgang] keine geeignete Wandflaeche in diesem Raum'
+            + ' — Kammer entfaellt (Raster ' + W + 'x' + H + ')');
+        }
+      }
     }
   } catch (e) { scene._kammer = null; }
 
