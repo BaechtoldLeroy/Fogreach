@@ -86,8 +86,17 @@ function startNextWave(noIncrement) {
   const _climaxArmed = _isFinalRoom && !window.__runClimaxSpawned;
   const _isTierGate = (currentWave >= 10) && (currentWave % 10 === 0);
 
+  // Debug (?boss=<name>): den Boss SOFORT setzen, statt Tiefe, Finalraum und
+  // Akt-Freischaltung zusammenkommen zu lassen. Nur einmal je Lauf — sonst
+  // stuende in jedem Raum einer.
+  var _debugBoss = false;
+  try {
+    _debugBoss = !!(typeof window.debugForcedBoss === 'function'
+      && window.debugForcedBoss() && !window.__runClimaxSpawned);
+  } catch (e) { _debugBoss = false; }
+
   // Full boss: final room, on a tier gate, bosses narratively unlocked (Akt 2+).
-  if (_climaxArmed && bossesUnlocked && _isTierGate) {
+  if (_debugBoss || (_climaxArmed && bossesUnlocked && _isTierGate)) {
     window.__runClimaxSpawned = true;
     bossActive = true;
     spawnedEnemiesInWave = 0;    // no regular spawns this wave

@@ -54,6 +54,28 @@ weil einem scharfgestellten Raum absichtlich nichts anzusehen ist:
 Unbekannte Namen werden benannt statt verschluckt:
 `[Rundgang] unbekannte Modi uebersprungen: defnd — bekannt sind: clear, defend, escape, hunt, survival`
 
+### Bosse (#77)
+
+| Flagge | Wirkung |
+|---|---|
+| `?boss=<name>` | setzt den Boss SOFORT in den ersten Raum, statt Tiefe, Finalraum und Akt-Freischaltung zusammenkommen zu lassen |
+| `&beat=1` | zeigt die Kettenmeister-Inszenierung, ohne dass `mara_warning` laufen muss |
+
+| Boss | akzeptierte Namen |
+|---|---|
+| Kettenmeister | `kettenmeister`, `ketten`, `chainMaster`, `1` |
+| Zeremonienmeister | `zeremonienmeister`, `zeremonie`, `ceremonyMaster`, `2` |
+| Schattenrat | `schattenrat`, `schatten`, `shadowCouncillor`, `3` |
+
+```
+?dungeon=1&boss=kettenmeister&beat=1
+```
+
+Ein unbekannter Name loest bewusst NICHT auf — die Konsole nennt die Liste, und
+der Boss-Zweig wird gar nicht erst betreten. Ohne diese Bedingung spawnte der
+Zweig einen Boss ohne Definition und riss das Spiel mit (gemessen mit
+`?boss=quatsch`: "Cannot read properties of undefined").
+
 ### Leistungsmessung
 
 | Flagge | Wirkung |

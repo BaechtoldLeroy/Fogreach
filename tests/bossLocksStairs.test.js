@@ -40,7 +40,9 @@ function block(quelle, start) {
 }
 
 const WAVE = lies('wave.js');
-const VOLLBOSS = block(WAVE, 'if (_climaxArmed && bossesUnlocked && _isTierGate) {');
+// Der Anker traegt seit dem Debug-Einstieg ?boss=<name> zusaetzlich _debugBoss.
+// Am ZWEIG selbst aendert das nichts — er sperrt weiter, egal wer ihn betritt.
+const VOLLBOSS = block(WAVE, 'if (_debugBoss || (_climaxArmed && bossesUnlocked && _isTierGate)) {');
 
 test('#109: der Voll-Boss-Zweig fuehrt den Boss als Klimax-Gegner', () => {
   assert.match(VOLLBOSS, /window\.__climaxEnemy\s*=/,

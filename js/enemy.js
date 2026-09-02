@@ -2427,11 +2427,55 @@ const BOSS_DEFINITIONS = {
   },
 };
 
+// Debug: welchen Boss meint ?boss=<name>? Akzeptiert die interne Id und den
+// deutschen Namen, klein geschrieben und ohne Umlaute — beim Tippen in die
+// Adresszeile will niemand nachschlagen.
+const BOSS_ALIASE = {
+  chainmaster: 'chainMaster', kettenmeister: 'chainMaster', ketten: 'chainMaster', '1': 'chainMaster',
+  ceremonymaster: 'ceremonyMaster', zeremonienmeister: 'ceremonyMaster', zeremonie: 'ceremonyMaster', '2': 'ceremonyMaster',
+  shadowcouncillor: 'shadowCouncillor', schattenrat: 'shadowCouncillor', schatten: 'shadowCouncillor', '3': 'shadowCouncillor'
+};
+
+/**
+ * Erzwungener Boss aus ?boss=<name> (#88-Gate), oder null.
+ *
+ * Der regulaere Weg zu einem Boss ist lang: richtige Tiefe, Finalraum, Akt 2+.
+ * Zum Ansehen einer Inszenierung ist das unbrauchbar.
+ */
+function debugForcedBoss() {
+  try {
+    if (typeof window === 'undefined' || !window.DebugGate) return null;
+    var v = window.DebugGate.flagge('boss');
+    if (!v) return null;
+    var id = BOSS_ALIASE[String(v).toLowerCase()];
+    if (!id && BOSS_DEFINITIONS[v]) id = v;
+    if (!id) {
+      try {
+        console.warn('[?boss] unbekannt: "' + v + '" — bekannt sind: '
+          + Object.keys(BOSS_ALIASE).join(', '));
+      } catch (e) {}
+      return null;
+    }
+    return BOSS_DEFINITIONS[id] || null;
+  } catch (e) { return null; }
+}
+
+// Fuer wave.js: nur wenn der Name AUFLOESBAR ist, darf der Debug-Zweig
+// gezogen werden. Sonst landete ?boss=quatsch im Boss-Zweig ohne Definition
+// und riss das Spiel mit (gemessen).
+if (typeof window !== 'undefined') window.debugForcedBoss = debugForcedBoss;
+
 function getBossDefinition(wave) {
+  var _erzwungen = debugForcedBoss();
+  if (_erzwungen) return { def: _erzwungen, cycle: 0 };
   const bossOrder = ['chainMaster', 'ceremonyMaster', 'shadowCouncillor'];
   const bossIndex = (Math.floor(wave / 10) - 1) % 3;
-  const cycle = Math.floor((Math.floor(wave / 10) - 1) / 3);
-  return { def: BOSS_DEFINITIONS[bossOrder[bossIndex]], cycle: cycle };
+  const cycle = Math.max(0, Math.floor((Math.floor(wave / 10) - 1) / 3));
+  // Unter Welle 10 ist bossIndex negativ und der Zugriff undefined — bisher
+  // unerreichbar (Tier-Gate), aber ein Absturz, sobald ein Aufrufer frueher
+  // fragt. Erster Boss als Rueckfall.
+  const id = bossOrder[bossIndex] || bossOrder[0];
+  return { def: BOSS_DEFINITIONS[id], cycle: cycle };
 }
 
 function spawnBoss() {
@@ -2527,6 +2571,10 @@ function spawnBoss() {
  */
 function _istInszenierteBegegnung(def) {
   if (!def || def.id !== 'chainMaster') return false;
+  // Debug: ?beat=1 zeigt die Inszenierung, ohne mara_warning spielen zu muessen.
+  try {
+    if (typeof window !== 'undefined' && window.DebugGate && window.DebugGate.an('beat')) return true;
+  } catch (e) {}
   try {
     if (typeof window === 'undefined' || !window.questSystem
         || typeof window.questSystem.getActiveQuests !== 'function') return false;

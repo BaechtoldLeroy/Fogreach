@@ -137,3 +137,4 @@ test('Die Frist liegt deutlich ueber der Sequenz', () => {
   assert.ok(W.BossIntro._NOTAUSGANG_MS > summe * 2,
     'Frist ' + W.BossIntro._NOTAUSGANG_MS + ' zu knapp bei Sequenz ~' + summe);
 });
+
