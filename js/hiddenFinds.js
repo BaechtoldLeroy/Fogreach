@@ -148,6 +148,12 @@
   var CHANCE = 0.35;
 
   function anzahlFuerRaum(rng) {
+    // ?find=<art> soll den Fund auch WIRKLICH herbeifuehren, nicht nur seine
+    // Art bestimmen — sonst muesste man fuer einen Test durch Raeume laufen,
+    // bis der Wuerfel mitspielt. ?find=durchgang meint die Kammer und laesst
+    // den Fund am Weg bewusst weg.
+    var erzwungen = erzwungeneArt();
+    if (erzwungen) return erzwungen === 'durchgang' ? 0 : 1;
     var r = (typeof rng === 'function') ? rng : Math.random;
     // Chance ueber das Modul-Objekt, nicht die Konstante: so laesst sich die
     // Haeufigkeit messen und nachjustieren, ohne den Code anzufassen.
@@ -194,6 +200,11 @@
   var DURCHGANG_CHANCE = 0.22;
 
   function willDurchgang(rng) {
+    // ?find=durchgang erzwingt die Kammer in JEDEM Raum.
+    try {
+      if (window.DebugGate && window.DebugGate.flagge('find')
+          && String(window.DebugGate.flagge('find')).toLowerCase() === 'durchgang') return true;
+    } catch (e) {}
     var r = (typeof rng === 'function') ? rng : Math.random;
     return r() < HiddenFinds.DURCHGANG_CHANCE;
   }
@@ -383,9 +394,31 @@
     return ARTEN[ARTEN.length - 1].id;
   }
 
+  /**
+   * Debug: ?find=<art> erzwingt die Fundart (nische|lager|falle|durchgang).
+   * Ohne das trifft man eine bestimmte Art nur ueber viele Laeufe — der
+   * Durchgang ist bei 22 % je Raum praktisch nicht gezielt zu erreichen.
+   */
+  function erzwungeneArt() {
+    try {
+      var v = window.DebugGate && window.DebugGate.flagge('find');
+      if (!v) return null;
+      v = String(v).toLowerCase();
+      if (v === 'durchgang' || v === 'nische' || v === 'lager' || v === 'falle') return v;
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('[?find] unbekannt: "' + v + '" — bekannt: nische, lager, falle, durchgang');
+      }
+    } catch (e) {}
+    return null;
+  }
+
   /** Stellt den Fund dieses Raums hin — welchen, entscheidet fundArt. */
   function spawne(scene, pos) {
-    var art = HiddenFinds.fundArt(Math.random);
+    var erzwungen = erzwungeneArt();
+    // ?find=durchgang meint die Kammer, nicht den Fund am Weg — dann steht
+    // hier gar nichts, damit man das Geroell nicht mit einem Fund verwechselt.
+    if (erzwungen === 'durchgang') return false;
+    var art = erzwungen || HiddenFinds.fundArt(Math.random);
     if (art === 'lager') return spawneLager(scene, pos);
     if (art === 'falle') return spawneFalle(scene, pos);
     return spawneNische(scene, pos);
@@ -405,12 +438,40 @@
     return { type: 'chest_small', locked: false, tier: r < 0.35 ? 1 : 0 };
   }
 
-  function _melde(scene, text) {
+  /**
+   * Sagt an, was der Fund hergab — AM OBJEKT und am Bildrand.
+   *
+   * Der Toast allein reichte nicht: er erscheint oben am Rand, der Blick des
+   * Spielers ist aber beim Objekt, das er gerade aufgebrochen hat ("man sieht
+   * nicht gut was gedroppt wurde"). Der aufsteigende Text folgt dem Muster von
+   * _healFx in player.js.
+   *
+   * @param {{x:number,y:number}} [pos]  wo der Text aufsteigt; ohne ihn nur Toast
+   * @param {string} [farbe]             Schriftfarbe des aufsteigenden Texts
+   */
+  function _melde(scene, text, pos, farbe) {
     try {
       if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
         window.EventSystem.showToast(scene, text);
       }
     } catch (e) {}
+    if (!pos || !scene || !scene.add || !scene.add.text) return;
+    try {
+      var txt = scene.add.text(pos.x, pos.y - 20, text, {
+        fontFamily: 'monospace', fontSize: '13px', color: farbe || '#ffe9b0',
+        fontStyle: 'bold', stroke: '#000000', strokeThickness: 4,
+        align: 'center', wordWrap: { width: 200 }
+      }).setOrigin(0.5, 1).setDepth(520);
+      if (scene.tweens && scene.tweens.add) {
+        scene.tweens.add({
+          targets: txt, y: pos.y - 62, alpha: 0, duration: 1800,
+          ease: 'Sine.easeOut',
+          onComplete: function () { try { txt.destroy(); } catch (e) {} }
+        });
+      } else if (scene.time && scene.time.delayedCall) {
+        scene.time.delayedCall(1800, function () { try { txt.destroy(); } catch (e) {} });
+      }
+    } catch (e) { /* nur Optik */ }
   }
 
   // Anteil der maximalen Lebenspunkte, den eine Rast zurueckgibt.
@@ -432,11 +493,11 @@
         try {
           var max = window.playerMaxHealth || 0;
           var jetzt = window.playerHealth || 0;
-          if (!max || jetzt >= max) { _melde(scene, _t('find.lager.voll')); return; }
+          if (!max || jetzt >= max) { _melde(scene, _t('find.lager.voll'), pos, '#b9b2a4'); return; }
           var heilung = Math.max(1, Math.round(max * LAGER_HEILUNG));
           var neu = Math.min(max, jetzt + heilung);
           if (typeof window.setPlayerHealth === 'function') window.setPlayerHealth(neu);
-          _melde(scene, _t('find.lager.rast', { n: neu - jetzt }));
+          _melde(scene, _t('find.lager.rast', { n: neu - jetzt }), pos, '#7dffa0');
         } catch (e) { /* eine misslungene Rast darf nichts brechen */ }
       },
       { spawnAt: pos }
@@ -468,16 +529,28 @@
             window.spawnLoot.call(scene, pos.x, pos.y + 24, _truhe(true));
           }
           if (typeof window.spawnEnemy === 'function') {
-            for (var i = 0; i < FALLE_GEGNER; i++) {
-              var a = (Math.PI * 2 / FALLE_GEGNER) * i + Math.random();
+            // Solange abtasten, bis die Zahl steht: ein fester Winkel je Gegner
+            // scheitert an Waenden, und gemessen kam nur EINER von dreien an.
+            var gesetzt = 0;
+            for (var v = 0; v < 24 && gesetzt < FALLE_GEGNER; v++) {
+              var a = Math.random() * Math.PI * 2;
               var r = FALLE_RING_MIN + Math.random() * (FALLE_RING_MAX - FALLE_RING_MIN);
               var x = pos.x + Math.cos(a) * r, y = pos.y + Math.sin(a) * r;
               if (x <= 0 || y <= 0) continue;
               if (scene.isPointAccessible && !scene.isPointAccessible(x, y)) continue;
-              try { window.spawnEnemy.call(scene, x, y, 'enemy'); } catch (e) {}
+              try {
+                var g = window.spawnEnemy.call(scene, x, y, 'enemy');
+                // spawnEnemy lehnt JEDEN Platz unter 300 px vom Spieler ab
+                // (MIN_SPAWN_DISTANCE) und versetzt den Gegner quer durch den
+                // Raum. Fuer normale Wellen richtig — ein Hinterhalt AM Koeder
+                // ist die bewusste Ausnahme, sonst passiert er woanders und der
+                // Spieler merkt gar nichts davon (gemeldet und nachgemessen).
+                if (g && g.body && typeof g.body.reset === 'function') { g.body.reset(x, y); gesetzt++; }
+                else if (g) { g.x = x; g.y = y; gesetzt++; }
+              } catch (e) {}
             }
           }
-          _melde(scene, _t('find.falle.zuschnappt'));
+          _melde(scene, _t('find.falle.zuschnappt'), pos, '#ff8a6a');
         } catch (e) {}
       },
       { spawnAt: pos }
@@ -506,15 +579,18 @@
         var art = HiddenFinds.beuteArt(Math.random);
         var tiefe = Math.max(1, window.DUNGEON_DEPTH || 1);
         var meldung = _t('find.nische.leer');
+        var farbe = '#b9b2a4';           // Staub — nichts gefunden
         try {
           if (art === 'fragment' && window.KnowledgeTree
               && typeof window.KnowledgeTree.addFragments === 'function') {
             window.KnowledgeTree.addFragments(1);
             meldung = _t('find.nische.fragment');
+            farbe = '#c8a8ff';
           } else if (art === 'material' && typeof window.changeMaterialCount === 'function') {
             var n = 2 + Math.floor(Math.random() * 3);
             window.changeMaterialCount('MAT', n);
             meldung = _t('find.nische.material', { n: n });
+            farbe = '#d8c48a';
           } else if (typeof window.spawnLoot === 'function') {
             // Ueber den normalen Beute-Pfad, damit Seltenheitsfarbe,
             // Aufsammel-Sperre und Rasterplatzierung genauso greifen wie sonst.
@@ -523,13 +599,10 @@
               ? window.makePotionDrop(tiefe) : null;
             window.spawnLoot.call(scene, pos.x, pos.y + 24, beute);
             meldung = _t('find.nische.beute');
+            farbe = '#88ddff';
           }
         } catch (e) { /* ein leerer Fund ist besser als ein Absturz */ }
-        try {
-          if (typeof window.EventSystem.showToast === 'function') {
-            window.EventSystem.showToast(scene, meldung);
-          }
-        } catch (e) {}
+        _melde(scene, meldung, pos, farbe);
       },
       { spawnAt: pos }
     );
@@ -542,6 +615,7 @@
     KAMMER_H: KAMMER_H,
     DURCHGANG_CHANCE: DURCHGANG_CHANCE,
     willDurchgang: willDurchgang,
+    erzwungeneArt: erzwungeneArt,
     stanzeKammer: stanzeKammer,
     _truhe: _truhe,
     kammerEingang: kammerEingang,

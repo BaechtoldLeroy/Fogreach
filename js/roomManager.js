@@ -1416,7 +1416,17 @@ function _maybeSpawnHiddenFind(scene) {
       kandidaten.push(p);
     }
     var plaetze = HF.waehleAbseits(kandidaten, eingang, ausgang, 1);
-    if (!plaetze.length) return;   // kein Winkel weit genug weg -> kein Fund
+    if (!plaetze.length) {
+      // Im normalen Spiel heisst das: dieser Raum hat keine Stelle weit genug
+      // abseits, also gibt es hier keinen Fund. Beim TESTEN (?find=<art>) waere
+      // das nutzlos — gemessen fand sich in manchen Raeumen kein einziger
+      // Kandidat, und der Slug lieferte dann gar nichts.
+      if (!(HF.erzwungeneArt && HF.erzwungeneArt())) return;
+      var ersatz = kandidaten[0]
+        || (typeof scene.pickAccessibleSpawnPoint === 'function' ? scene.pickAccessibleSpawnPoint({ maxAttempts: 24 }) : null)
+        || { x: player.x + 70, y: player.y };
+      plaetze = [ersatz];
+    }
 
     HF.spawne(scene, plaetze[0]);
   } catch (e) { /* nie den Raumaufbau brechen */ }

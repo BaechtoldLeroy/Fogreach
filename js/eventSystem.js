@@ -395,53 +395,83 @@
         g.fillStyle(0xaa44ff, 0.4); g.fillCircle(22, 12, 1.5); // particle
         g.generateTexture(texKey, 32, 32);
       } else if (texKey === 'evt_lager') {
-        // #113: Verlassenes Lager — erkaltete Feuerstelle mit Decke. Warm und
-        // menschlich, damit es sich von Truhe und Mauerspalte abhebt.
-        g.fillStyle(0x241c22, 0.5); g.fillEllipse(16, 25, 26, 9);   // Bodenschatten
-        g.fillStyle(0x4a4038, 1);                                    // Steinkranz
-        [[8,24],[24,24],[6,19],[26,19],[10,15],[22,15]].forEach(function (p) {
-          g.fillCircle(p[0], p[1], 3);
-        });
-        g.fillStyle(0x2b2018, 1);                                    // Asche
-        g.fillEllipse(16, 20, 14, 7);
-        g.fillStyle(0x6b4a2a, 1);                                    // Scheite
-        g.fillRect(10, 17, 12, 3); g.fillRect(13, 21, 10, 3);
-        g.fillStyle(0xd88a3a, 0.75); g.fillCircle(16, 19, 2.5);      // letzte Glut
-        g.fillStyle(0xffd08a, 0.5); g.fillCircle(16, 19, 4.5);
-        g.fillStyle(0x7a5a4a, 1);                                    // Decke daneben
-        g.fillRect(2, 20, 8, 7);
-        g.fillStyle(0x8d6a58, 1); g.fillRect(2, 20, 8, 3);
+        // Verlassenes Lager: erkaltete Feuerstelle. Der Blickfang ist die
+        // Restglut — sie sagt "hier war eben noch jemand".
+        g.fillStyle(0x000000, 0.30); g.fillEllipse(16, 26, 26, 8);      // Schatten
+        // Steinkranz: je Stein dunkler Umriss, Flaeche, Lichtkante oben.
+        [[7,25,3.4],[25,25,3.4],[5,20,3.0],[27,20,3.0],[9,16,2.8],[23,16,2.8]]
+          .forEach(function (s) {
+            g.fillStyle(0x1d1a20, 1); g.fillCircle(s[0], s[1] + 0.8, s[2] + 0.8);
+            g.fillStyle(0x5a5350, 1); g.fillCircle(s[0], s[1], s[2]);
+            g.fillStyle(0x807771, 1); g.fillCircle(s[0] - 0.6, s[1] - 0.9, s[2] * 0.5);
+          });
+        // Aschebett
+        g.fillStyle(0x1a1418, 1); g.fillEllipse(16, 21, 15, 8);
+        g.fillStyle(0x38302c, 1); g.fillEllipse(16, 20.5, 12, 6);
+        // Scheite, ueberkreuz
+        g.fillStyle(0x2a1d14, 1); g.fillRect(9, 18, 14, 4);
+        g.fillStyle(0x5c3f26, 1); g.fillRect(9, 17, 14, 3);
+        g.fillStyle(0x7a5636, 1); g.fillRect(9, 17, 14, 1);
+        g.fillStyle(0x2a1d14, 1); g.fillRect(13, 21, 11, 4);
+        g.fillStyle(0x4d3520, 1); g.fillRect(13, 20.5, 11, 3);
+        // Restglut mit Schein
+        g.fillStyle(0xff8a2a, 0.20); g.fillCircle(16, 20, 8);
+        g.fillStyle(0xff8a2a, 0.35); g.fillCircle(16, 20, 5);
+        g.fillStyle(0xff9d3d, 1); g.fillCircle(15, 20, 1.8);
+        g.fillStyle(0xffd08a, 1); g.fillCircle(18, 21, 1.2);
+        g.fillStyle(0xfff0c0, 1); g.fillCircle(15, 19.6, 0.7);
+        // Zusammengerollte Decke daneben
+        g.fillStyle(0x241a1c, 1); g.fillEllipse(6, 23, 10, 7);
+        g.fillStyle(0x6d4a44, 1); g.fillEllipse(6, 22.4, 9, 6);
+        g.fillStyle(0x8f6459, 1); g.fillEllipse(5.6, 21, 7, 2.6);
         g.generateTexture(texKey, 32, 32);
       } else if (texKey === 'evt_falle') {
-        // #113: Koeder — sieht bewusst nach Beute aus. Dass es eine Falle ist,
-        // soll der Spieler erst merken, wenn er zugreift; deshalb KEIN
-        // Warnzeichen an der Textur.
-        g.fillStyle(0x241c22, 0.45); g.fillEllipse(16, 26, 24, 8);
-        g.fillStyle(0x6b5a2a, 1); g.fillRect(7, 17, 18, 10);        // Beutel
-        g.fillStyle(0x8a7538, 1); g.fillRect(7, 17, 18, 3);
-        g.fillStyle(0x4a3f1e, 1); g.fillRect(14, 14, 4, 4);         // Schnur
-        g.fillStyle(0xffd966, 1);                                    // Muenzen davor
-        g.fillCircle(10, 25, 2.5); g.fillCircle(15, 26, 2.5); g.fillCircle(20, 25, 2.5);
-        g.fillStyle(0xfff0b0, 0.9);
-        g.fillCircle(9.3, 24.3, 1); g.fillCircle(14.3, 25.3, 1);
-        g.fillStyle(0xffeebb, 0.35); g.fillCircle(16, 22, 11);      // Schimmer
+        // Koeder: ein umgekippter Beutel, aus dem Muenzen rollen. Sieht bewusst
+        // nach Beute aus — kein Warnzeichen, das gehoert zur Falle.
+        g.fillStyle(0x000000, 0.30); g.fillEllipse(16, 27, 26, 7);
+        // Beutel: Umriss, Leder, Lichtkante, Schnuerung
+        g.fillStyle(0x241b10, 1); g.fillEllipse(15, 20, 19, 16);
+        g.fillStyle(0x6b5426, 1); g.fillEllipse(15, 19.4, 17, 14);
+        g.fillStyle(0x8f7334, 1); g.fillEllipse(13, 16.5, 10, 6);
+        g.fillStyle(0xb39448, 0.7); g.fillEllipse(12, 15.4, 6, 2.6);
+        g.fillStyle(0x3d3018, 1); g.fillRect(10, 13, 11, 2.5);       // Schnur
+        g.fillStyle(0x241b10, 1); g.fillRect(19, 12, 3, 4);          // Halsfalte
+        // Muenzen: je dunkler Rand, Gold, Glanz
+        [[9,25,3.2],[15,26.5,3.0],[21,25,2.8],[24,22,2.4]].forEach(function (m) {
+          g.fillStyle(0x6b5410, 1); g.fillCircle(m[0], m[1] + 0.7, m[2] + 0.6);
+          g.fillStyle(0xe8b93c, 1); g.fillCircle(m[0], m[1], m[2]);
+          g.fillStyle(0xffe89a, 1); g.fillCircle(m[0] - 0.8, m[1] - 0.9, m[2] * 0.45);
+        });
+        g.fillStyle(0xffeebb, 0.22); g.fillCircle(16, 22, 12);       // Schimmer
         g.generateTexture(texKey, 32, 32);
       } else if (texKey === 'evt_nische') {
         // #113: Lose Steine in einer Mauerspalte. Bewusst KEINE Truhe — der
         // Fund soll wie ein Teil der Wand aussehen, den jemand aufgebrochen
         // hat, nicht wie noch eine Kiste zum Anklicken.
-        g.fillStyle(0x1a1620, 1); g.fillRect(5, 3, 22, 26);        // dunkle Spalte
-        g.fillStyle(0x3b3548, 1);                                   // Mauerquader
-        g.fillRect(3, 2, 12, 8); g.fillRect(17, 2, 12, 8);
-        g.fillRect(3, 22, 11, 8); g.fillRect(16, 22, 13, 8);
-        g.fillStyle(0x4a4356, 1);                                   // herausgebrochen
-        g.fillRect(4, 12, 9, 7); g.fillRect(19, 11, 9, 8);
-        g.fillStyle(0x2a2534, 1);                                   // Fugen
-        g.fillRect(15, 2, 2, 8); g.fillRect(14, 22, 2, 8);
-        g.fillStyle(0x6b6178, 1);                                   // Geroell davor
-        g.fillRect(9, 26, 6, 4); g.fillRect(16, 27, 5, 3);
-        g.fillStyle(0xd8c48a, 0.55); g.fillRect(13, 12, 6, 8);      // Schimmer im Spalt
-        g.fillStyle(0xffeebb, 0.8); g.fillCircle(16, 16, 1.6);
+        // Mauerquader mit Umriss + Lichtkante, dazwischen eine SCHWARZE Spalte
+        // mit Schimmer dahinter. Der erste Wurf war eine flache Kachelflaeche.
+        var quader = function (x, y, w, h) {
+          g.fillStyle(0x15121b, 1); g.fillRect(x, y, w, h);           // Fuge/Umriss
+          g.fillStyle(0x453e52, 1); g.fillRect(x + 1, y + 1, w - 2, h - 2);
+          g.fillStyle(0x5d556e, 1); g.fillRect(x + 1, y + 1, w - 2, 1.5);
+          g.fillStyle(0x2b2634, 1); g.fillRect(x + 1, y + h - 2.5, w - 2, 1.5);
+        };
+        g.fillStyle(0x0a080d, 1); g.fillRect(2, 1, 28, 30);          // Grundschatten
+        quader(2, 1, 13, 9);   quader(17, 1, 13, 9);
+        quader(2, 11, 9, 10);  quader(21, 11, 9, 10);
+        quader(2, 22, 12, 9);  quader(18, 22, 12, 9);
+        // Die Oeffnung: tiefes Schwarz, darin ein warmer Schimmer
+        g.fillStyle(0x000000, 1); g.fillRect(11, 11, 10, 11);
+        g.fillStyle(0x2a1d10, 1); g.fillRect(12, 13, 8, 8);
+        g.fillStyle(0xd8a84a, 0.35); g.fillCircle(16, 17, 4.5);
+        g.fillStyle(0xffd98a, 0.75); g.fillCircle(16, 17, 2.2);
+        g.fillStyle(0xfff2c8, 1); g.fillCircle(15.4, 16.4, 0.9);
+        // Herausgebrochenes Geroell davor
+        [[10,27,3.0],[15,29,2.6],[20,27.5,2.8]].forEach(function (s) {
+          g.fillStyle(0x15121b, 1); g.fillCircle(s[0], s[1] + 0.7, s[2] + 0.7);
+          g.fillStyle(0x554d64, 1); g.fillCircle(s[0], s[1], s[2]);
+          g.fillStyle(0x776d88, 1); g.fillCircle(s[0] - 0.7, s[1] - 0.9, s[2] * 0.45);
+        });
         g.generateTexture(texKey, 32, 32);
       } else {
         // Generic fallback
