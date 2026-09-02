@@ -85,3 +85,31 @@ test('Ohne location faellt das Gate zu, statt zu werfen', () => {
   assert.strictEqual(G.aktiv(), false);
   assert.strictEqual(G.flagge('perf'), null);
 });
+
+test('Eine Flagge bei geschlossenem Gate bleibt nicht stumm', () => {
+  // Ohne Hinweis passiert schlicht nichts und man sucht den Fehler im Spiel
+  // statt in der Adresse — genau so ist es beim ersten Einsatz von ?boss=
+  // passiert.
+  const echt = console.warn;
+  const gesagt = [];
+  console.warn = (m) => gesagt.push(String(m));
+  try {
+    const G = mit(Object.assign({ search: '?boss=kettenmeister&beat=1' }, FREMD));
+    G.aktiv();
+    assert.strictEqual(gesagt.length, 1, 'genau ein Hinweis');
+    assert.match(gesagt[0], /boss/);
+    assert.match(gesagt[0], /debug=1/, 'sagt auch, was zu tun ist');
+    G.aktiv(); G.aktiv();
+    assert.strictEqual(gesagt.length, 1, 'und nicht bei jedem Aufruf erneut');
+  } finally { console.warn = echt; }
+});
+
+test('Ohne Flagge gibt es auch keinen Hinweis', () => {
+  const echt = console.warn;
+  const gesagt = [];
+  console.warn = (m) => gesagt.push(String(m));
+  try {
+    mit(Object.assign({ search: '?utm_source=irgendwas' }, FREMD)).aktiv();
+    assert.deepStrictEqual(gesagt, []);
+  } finally { console.warn = echt; }
+});
