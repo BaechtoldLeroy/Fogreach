@@ -77,6 +77,7 @@
     var balkenH = Math.round(h * 0.14);
     var teile = [];
     var uhren = [];
+    var leisteWarAn = false;
     var beendet = false;
     var abmelden = [];                       // Eingabe-Handler zum Loesen
     var choiceVorher = (typeof window !== 'undefined') ? window.eventChoiceOpen : undefined;
@@ -118,12 +119,36 @@
         } catch (e) {}
       }
       try {
+        if (leisteWarAn && typeof window !== 'undefined') {
+          if (typeof window.faehigkeitsLeisteSichtbar === 'function') {
+            window.faehigkeitsLeisteSichtbar(true);
+          }
+          if (typeof window.mobileAbilityLeisteSichtbar === 'function') {
+            window.mobileAbilityLeisteSichtbar(true);
+          }
+        }
+      } catch (e) {}
+      try {
         if (typeof window !== 'undefined' && typeof window.resumeGameClock === 'function') {
           window.resumeGameClock(scene);
         }
       } catch (e) {}
       scene.__bossIntroLaeuft = false;
     }
+
+    // Faehigkeitsleiste aus: sie gehoert zum Kampf, nicht zum Moment davor.
+    // Beide Fassungen (Desktop-Kacheln, Mobile-Buttons) melden, ob sie ueberhaupt
+    // etwas versteckt haben — nur dann wird spaeter wieder eingeblendet.
+    try {
+      if (typeof window !== 'undefined') {
+        if (typeof window.faehigkeitsLeisteSichtbar === 'function') {
+          leisteWarAn = window.faehigkeitsLeisteSichtbar(false) > 0 || leisteWarAn;
+        }
+        if (typeof window.mobileAbilityLeisteSichtbar === 'function') {
+          leisteWarAn = window.mobileAbilityLeisteSichtbar(false) > 0 || leisteWarAn;
+        }
+      }
+    } catch (e) {}
 
     // Ab hier steht das Spiel. eventChoiceOpen unterdrueckt zusaetzlich die
     // Kampfeingabe (inputScheme.shouldSuppressCombatInput) — sonst schwingt die

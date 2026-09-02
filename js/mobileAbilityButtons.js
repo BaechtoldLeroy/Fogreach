@@ -15,6 +15,9 @@
 // color which is enough visual differentiation at a glance.
 
 (function () {
+  // Die zuletzt aufgebauten Button-Dekorationen — Grundlage fuer das Aus- und
+  // Einblenden der Leiste (#77). Wird bei jedem Layout-Aufbau ersetzt.
+  var _letzteDekorationen = [];
   // WICHTIG: Diese Datei laedt in index.html VOR i18n.js — beim ersten Aufruf ist
   // window.i18n also noch undefined und die Registrierung wuerde uebersprungen
   // (das war der Bug: leeres Attack-/Aktion-Label, weil mobile.btn.* nie
@@ -479,6 +482,8 @@
     const decorations = detail.buttons
       .map((b) => _decorateButton(scene, b))
       .filter(Boolean);
+    // Fuer mobileAbilityLeisteSichtbar festhalten (#77).
+    _letzteDekorationen = decorations;
 
     const poll = () => _pollEnabledState(decorations, scene);
     // Poll enabled state each tick — cheap (visibility check on 6 text nodes).
@@ -526,6 +531,28 @@
   window.mobileAbilityButtonsDecorate = onLayoutReady;
   window.styleCooldownText = _styleCooldownText;
   // Fuer den Regressionstest zum Absturz auf zerstoerten Nodes (glTexture).
+  // #77: Die Faehigkeitsleiste waehrend eines inszenierten Moments ausblenden.
+  // Eine Sammelfunktion statt eines Griffs von aussen in die Dekorationen —
+  // die kennen nur wir, und was zu einem Button gehoert (Kreis, Symbol, Label,
+  // Cooldown-Text, Overlay, Ladungspunkte) aendert sich hier drin.
+  //
+  // setVisible statt destroy: die Buttons kommen unveraendert zurueck, und die
+  // Trefferflaechen bleiben unangetastet (sie haengen an mobileControls).
+  window.mobileAbilityLeisteSichtbar = function (sichtbar) {
+    var n = 0;
+    try {
+      (_letzteDekorationen || []).forEach(function (d) {
+        if (!d) return;
+        [d.circle, d.icon, d.label, d.cdText, d.cdOverlay].forEach(function (o) {
+          if (o && typeof o.setVisible === 'function') { o.setVisible(!!sichtbar); n++; }
+        });
+        (d.chargePips || []).forEach(function (p) {
+          if (p && typeof p.setVisible === 'function') { p.setVisible(!!sichtbar); n++; }
+        });
+      });
+    } catch (e) {}
+    return n;
+  };
   window.mobileAbilityPoll = _pollEnabledState;
   window.mobileAbilityDekoLebt = _lebtDeko;
 })();

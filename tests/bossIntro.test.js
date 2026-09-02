@@ -192,3 +192,45 @@ test('Ein Tipp auf den Schirm bestaetigt genauso', async () => {
   } finally { W.BossIntro._TEMPO = echt; }
 });
 
+
+test('Waehrend des Beats ist die Faehigkeitsleiste aus — danach wieder an', async () => {
+  // Die Leiste gehoert zum Kampf, nicht zum Moment davor.
+  const istPausiert = frisch();
+  const sc = szene();
+  const schaltungen = [];
+  W.faehigkeitsLeisteSichtbar = (an) => { schaltungen.push('desktop:' + an); return 6; };
+  W.mobileAbilityLeisteSichtbar = (an) => { schaltungen.push('mobil:' + an); return 0; };
+  const echt = W.BossIntro._TEMPO;
+  W.BossIntro._TEMPO = 0.01;
+  try {
+    W.BossIntro.inszeniere(sc, boss(), 'Kettenmeister', 'Die Siegel...');
+    assert.deepStrictEqual(schaltungen, ['desktop:false', 'mobil:false'],
+      'beide Fassungen werden ausgeblendet');
+    await new Promise((r) => setTimeout(r, 30));
+    leertaste(sc);
+    await new Promise((r) => setTimeout(r, 40));
+    assert.deepStrictEqual(schaltungen.slice(2), ['desktop:true', 'mobil:true'],
+      'und danach wieder eingeblendet');
+    assert.strictEqual(istPausiert(), false);
+  } finally {
+    W.BossIntro._TEMPO = echt;
+    delete W.faehigkeitsLeisteSichtbar; delete W.mobileAbilityLeisteSichtbar;
+  }
+});
+
+test('Gab es nichts auszublenden, wird auch nichts eingeblendet', async () => {
+  // Sonst zaubert der Beat auf einem Geraet ohne Leiste eine herbei.
+  frisch();
+  const sc = szene();
+  const schaltungen = [];
+  W.faehigkeitsLeisteSichtbar = (an) => { schaltungen.push(an); return 0; };
+  const echt = W.BossIntro._TEMPO;
+  W.BossIntro._TEMPO = 0.01;
+  try {
+    W.BossIntro.inszeniere(sc, boss(), 'A', 'x');
+    await new Promise((r) => setTimeout(r, 30));
+    leertaste(sc);
+    await new Promise((r) => setTimeout(r, 40));
+    assert.deepStrictEqual(schaltungen, [false], 'nur der Versuch, kein Wiederherstellen');
+  } finally { W.BossIntro._TEMPO = echt; delete W.faehigkeitsLeisteSichtbar; }
+});

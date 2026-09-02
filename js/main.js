@@ -2498,6 +2498,26 @@ function initUI() {
     if (attackTile.iconText) attackTile.iconText.setText('\u2694'); // ⚔
     abilityStatusDisplay.attack = attackTile;
 
+    // #77: Die Faehigkeitsleiste waehrend eines inszenierten Moments
+    // ausblenden. abilityStatusDisplay ist ein top-level let und damit fuer
+    // andere Dateien NICHT sichtbar (Classic-Script-Falle) — deshalb eine
+    // Funktion statt eines Verweises. Rueckgabe: wieviele Kacheln
+    // umgeschaltet wurden, damit der Aufrufer weiss, ob es ueberhaupt
+    // etwas auszublenden gab.
+    window.faehigkeitsLeisteSichtbar = function (sichtbar) {
+      var n = 0;
+      try {
+        Object.keys(abilityStatusDisplay).forEach(function (k) {
+          var kachel = abilityStatusDisplay[k];
+          if (kachel && kachel.container && typeof kachel.container.setVisible === 'function') {
+            kachel.container.setVisible(!!sichtbar);
+            n++;
+          }
+        });
+      } catch (e) {}
+      return n;
+    };
+
     // 054 WP02: Roll-Tile (zwischen Attack und Loadout-Slots). Cooldown wird
     // per Frame in der update-loop getickt — siehe rollCooldownStartTime.
     const rollTile = buildTile('Dash', 'SHIFT', 0x8844cc);
