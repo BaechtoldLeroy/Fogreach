@@ -2489,14 +2489,24 @@ function spawnBoss() {
 
   makeBoss.call(this, boss, def, cycle);
 
-  // Boss arena effects: screen flash + camera shake
-  if (this.cameras?.main) {
+  // #77: Bei der inszenierten Erstbegegnung KEIN Blitz und kein Ruckeln —
+  // beides zerschlaegt genau den ruhigen Moment, den der Beat herstellt.
+  const _inszeniert = _istInszenierteBegegnung(def);
+  if (!_inszeniert && this.cameras?.main) {
     this.cameras.main.flash(300, 255, 255, 255, true);
     this.cameras.main.shake(400, 0.01);
   }
 
-  // Boss intro lore text
-  showBossIntro.call(this, def);
+  // #77: Vorkampf-Beat statt Banner — aber nur einmal, und nur wenn das Modul
+  // da ist und den Beat auch wirklich uebernimmt. Sonst der bisherige Banner.
+  let _beatLaeuft = false;
+  if (_inszeniert && typeof window !== 'undefined'
+      && window.BossIntro && typeof window.BossIntro.inszeniere === 'function') {
+    try {
+      _beatLaeuft = window.BossIntro.inszeniere(this, boss, def.name, _bossIntroLore(def));
+    } catch (e) { _beatLaeuft = false; }
+  }
+  if (!_beatLaeuft) showBossIntro.call(this, def);
 
   // #109: Der Aufrufer braucht den Boss, um ihn als Klimax-Gegner zu fuehren
   // (wave.js -> window.__climaxEnemy) und damit die Treppe zu sperren.
@@ -2507,18 +2517,29 @@ function spawnBoss() {
 // generische Lore, sondern knuepft an Maras Warnung an — so ist die (durch die
 // Tiefensperre garantiert quest-getriebene) ERSTE Begegnung eine echte
 // Inszenierung statt eines anonymen Boss-Banners.
+/**
+ * Ist das die inszenierte ERSTE Begegnung mit dem Kettenmeister?
+ *
+ * Bedingung ist die aktive Quest, nicht die Tiefe: die Tiefensperre in
+ * runDepth.js garantiert ohnehin, dass man den Boss ohne `mara_warning` nicht
+ * erreicht. Wer spaeter wieder auf Tiefe 10 hinabsteigt, bekommt den kurzen
+ * Banner — ein Beat, den man zum fuenften Mal sieht, ist eine Wartezeit.
+ */
+function _istInszenierteBegegnung(def) {
+  if (!def || def.id !== 'chainMaster') return false;
+  try {
+    if (typeof window === 'undefined' || !window.questSystem
+        || typeof window.questSystem.getActiveQuests !== 'function') return false;
+    var active = window.questSystem.getActiveQuests() || [];
+    return active.some(function (q) { return q && q.id === 'mara_warning'; });
+  } catch (e) { return false; }
+}
+
 function _bossIntroLore(def) {
-  if (def && def.id === 'chainMaster'
-      && typeof window !== 'undefined' && window.questSystem
-      && typeof window.questSystem.getActiveQuests === 'function') {
-    try {
-      var active = window.questSystem.getActiveQuests() || [];
-      if (active.some(function (q) { return q && q.id === 'mara_warning'; })) {
-        return 'Die Siegel, vor denen Mara warnte. Der Kettenmeister fesselt, '
-          + 'was der Rat verschwinden lässt — schlag die Ketten, sonst wirst Du '
-          + 'selbst zu einem Namen auf seinen Listen.';
-      }
-    } catch (e) { /* Lore ist optional — fällt auf die Standardzeile zurück */ }
+  if (_istInszenierteBegegnung(def)) {
+    return 'Die Siegel, vor denen Mara warnte. Der Kettenmeister fesselt, '
+      + 'was der Rat verschwinden lässt — schlag die Ketten, sonst wirst Du '
+      + 'selbst zu einem Namen auf seinen Listen.';
   }
   return def.loreIntro;
 }
@@ -2730,6 +2751,13 @@ function makeBoss(boss, def, cycle) {
 
 function handleBossAI(time, boss, scene) {
   if (!boss.active) return;
+
+  // #77: Waehrend des Vorkampf-Beats steht der Boss. `active` bleibt bewusst
+  // unangetastet — daran haengen Trefferkennung und die Klimax-Logik (#109).
+  if (boss._introHaltBis && time < boss._introHaltBis) {
+    try { if (boss.body && boss.body.setVelocity) boss.body.setVelocity(0, 0); } catch (e) {}
+    return;
+  }
 
   // #62: Phasenwechsel bei 66% / 33% HP (Kadenz + Tempo hoch, sichtbarer Wechsel).
   updateBossPhase(boss, scene, time);
