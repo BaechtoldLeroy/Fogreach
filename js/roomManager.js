@@ -1564,6 +1564,14 @@ function onStairOverlap(player, stair) {
     if (endlessActive) {
       // Generate one more procedural room, extend the run, descend.
       const newDepth = (window.DUNGEON_DEPTH || 1) + 1;
+      // Tiefen-Buffs enden mit der Tiefe. Im Normalmodus erledigt das der
+      // Rueckweg in den Hub; hier geht der Lauf weiter, also hier loeschen.
+      if (window.tiefenBuffs) {
+        window.tiefenBuffs = null;
+        if (typeof recalcDerived === 'function') {
+          try { recalcDerived(0, 0); } catch (e) {}
+        }
+      }
       window.DUNGEON_DEPTH = newDepth;
       window.NEXT_DUNGEON_DEPTH = newDepth;
       window.SELECTED_WAVE_OVERRIDE = newDepth;

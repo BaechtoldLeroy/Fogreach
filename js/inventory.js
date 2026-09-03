@@ -1534,6 +1534,9 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
       0.85
     );
     playerSpeed = Math.max(60, Math.round(playerSpeed * (buffs.speedMult || 1)));
+    // Angriffstempo: der Schrein zieht seit #71 auch dieses als Segen ODER
+    // als Preis. Ohne diese Zeile waeren beide wirkungslos.
+    weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (buffs.attackSpeedMult || 1));
   }
 
   // 3.7) Brunnen run-scoped buffs (Issue #16). Same shape as eventBuffs but
@@ -1549,6 +1552,20 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
       0.85
     );
     playerSpeed = Math.max(60, Math.round(playerSpeed * (bb.speedMult || 1)));
+  }
+  // 3.8) Tiefen-Buffs: gelten bis zum Ende der TIEFE, nicht des Raums. Im
+  // Normalmodus ist ein Lauf genau eine Tiefe, im Endlosmodus loescht der
+  // Aufstieg sie. Traeger ist heute das Gluecksspiel-Zeichen.
+  const tb = window.tiefenBuffs;
+  if (tb) {
+    weaponDamage = Math.max(1, Math.round(weaponDamage * (tb.damageMult || 1)));
+    playerArmor = Phaser.Math.Clamp(
+      (playerArmor + (tb.armorAdd || 0)) * (tb.armorMult || 1),
+      0,
+      0.85
+    );
+    playerSpeed = Math.max(60, Math.round(playerSpeed * (tb.speedMult || 1)));
+    weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (tb.attackSpeedMult || 1));
   }
 
   // 3.8) Printing-House run-scoped buffs (Issue #24). Layered LAST so edict

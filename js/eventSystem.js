@@ -51,11 +51,19 @@
       'event.shrine.name': 'Mystischer Schrein',
       'event.shrine.toast_spawn': 'Ein mystischer Schrein erscheint...',
       'event.shrine.object_label': 'Schrein',
-      'event.shrine.choice_power': 'Kraft (+25% Schaden, -{armor}% Rüstung)',
-      'event.shrine.choice_protection': 'Schutz (+5% Rüstung, -10% Geschw.)',
       'event.shrine.choice_ignore': 'Ignorieren',
-      'event.shrine.toast_power': 'Kraft des Schreins: +25% Schaden, -{armor}% Rüstung!',
-      'event.shrine.toast_protection': 'Schutz des Schreins: +5% Rüstung!',
+      // #71: Der Schrein zieht Segen UND Preis. Beides steht als Zahl im Text,
+      // damit die Entscheidung ohne Raten faellt.
+      'event.shrine.angebot': '{segen}, dafür {preis}',
+      'event.shrine.toast_angenommen': 'Der Schrein nimmt seinen Preis: {segen}, {preis}.',
+      'event.shrine.segen.macht': '+{wert}% Schaden',
+      'event.shrine.segen.hast': '+{wert}% Angriffstempo',
+      'event.shrine.segen.zaehigkeit': '+{wert}% Rüstung',
+      'event.shrine.segen.eile': '+{wert}% Lauftempo',
+      'event.shrine.preis.ruestung': '-{wert}% Rüstung',
+      'event.shrine.preis.lauftempo': '-{wert}% Lauftempo',
+      'event.shrine.preis.angriffstempo': '-{wert}% Angriffstempo',
+      'event.shrine.preis.schaden': '-{wert}% Schaden',
       // Gambling
       'event.gambling.name': 'Glücksspiel',
       'event.gambling.toast_spawn': 'Ein Spieltisch taucht auf...',
@@ -131,11 +139,17 @@
       'event.shrine.name': 'Mystical Shrine',
       'event.shrine.toast_spawn': 'A mystical shrine appears...',
       'event.shrine.object_label': 'Shrine',
-      'event.shrine.choice_power': 'Power (+25% damage, -{armor}% armor)',
-      'event.shrine.choice_protection': 'Protection (+5% armor, -10% speed)',
       'event.shrine.choice_ignore': 'Ignore',
-      'event.shrine.toast_power': 'Shrine of Power: +25% damage, -{armor}% armor!',
-      'event.shrine.toast_protection': 'Shrine of Protection: +5% armor!',
+      'event.shrine.angebot': '{segen}, at the cost of {preis}',
+      'event.shrine.toast_angenommen': 'The shrine takes its price: {segen}, {preis}.',
+      'event.shrine.segen.macht': '+{wert}% damage',
+      'event.shrine.segen.hast': '+{wert}% attack speed',
+      'event.shrine.segen.zaehigkeit': '+{wert}% armor',
+      'event.shrine.segen.eile': '+{wert}% movement speed',
+      'event.shrine.preis.ruestung': '-{wert}% armor',
+      'event.shrine.preis.lauftempo': '-{wert}% movement speed',
+      'event.shrine.preis.angriffstempo': '-{wert}% attack speed',
+      'event.shrine.preis.schaden': '-{wert}% damage',
       'event.gambling.name': 'Gambling',
       'event.gambling.toast_spawn': 'A gambling table appears...',
       'event.gambling.object_label': 'Gambling',
@@ -646,6 +660,77 @@
 
   // --- Choice-based events: spawn object, player interacts, then shows dialog ---
 
+  // #71 — Der Schrein zieht seinen Segen UND seinen Preis.
+  //
+  // Vorher: zwei feste Knoepfe, und der Preis hing an der SPIELERSTUFE
+  // (-30 % Ruestung, +0,5 % je Stufe, Deckel -50 %). Der Handel wurde also mit
+  // jedem Aufstieg teurer, waehrend der Ertrag bei x1,25 stehen blieb — und er
+  // hing an der falschen Groesse, denn die Gefahr kommt aus der Tiefe.
+  //
+  // Jetzt: vier moegliche Segen, vier moegliche Preise. Gezogen wird ein Paar
+  // je Angebot, und der Preis trifft NIE die Groesse, die der Segen hebt —
+  // sonst hoeben sich beide auf und die Wahl waere leer.
+  var SCHREIN_SEGEN = [
+    { id: 'macht',       feld: 'damageMult',      basis: 0.25, jeTiefe: 0.015, deckel: 0.55 },
+    { id: 'hast',        feld: 'attackSpeedMult', basis: 0.15, jeTiefe: 0.010, deckel: 0.35 },
+    { id: 'zaehigkeit',  feld: 'armorMult',       basis: 0.20, jeTiefe: 0.012, deckel: 0.45 },
+    { id: 'eile',        feld: 'speedMult',       basis: 0.12, jeTiefe: 0.008, deckel: 0.28 }
+  ];
+  // Preise als Band: zwei Begegnungen sind dann nicht identisch.
+  var SCHREIN_PREISE = [
+    { id: 'ruestung',      feld: 'armorMult',       von: 0.30, bis: 0.40 },
+    { id: 'lauftempo',     feld: 'speedMult',       von: 0.15, bis: 0.22 },
+    { id: 'angriffstempo', feld: 'attackSpeedMult', von: 0.15, bis: 0.22 },
+    { id: 'schaden',       feld: 'damageMult',      von: 0.15, bis: 0.22 }
+  ];
+
+  /**
+   * Zieht die Angebote eines Schreins.
+   *
+   * @param {number} tiefe  aktuelle Dungeon-Tiefe
+   * @param {function} rng  Zufallsquelle (fuer Tests steuerbar)
+   * @param {number} [anzahl=2] wie viele Angebote nebeneinander stehen
+   * @returns {Array<{segen,preis,segenProzent,preisProzent,segenFaktor,preisFaktor}>}
+   */
+  function schreinAngebote(tiefe, rng, anzahl) {
+    var r = (typeof rng === 'function') ? rng : Math.random;
+    var t = Math.max(1, tiefe || 1);
+    var wieViele = anzahl || 2;
+    var offen = SCHREIN_SEGEN.slice();
+    var raus = [];
+    for (var i = 0; i < wieViele && offen.length; i++) {
+      var segen = offen.splice(Math.floor(r() * offen.length), 1)[0];
+      // Preis darf nicht dieselbe Groesse treffen wie der Segen.
+      var moegliche = SCHREIN_PREISE.filter(function (p) { return p.feld !== segen.feld; });
+      var preis = moegliche[Math.floor(r() * moegliche.length)];
+      var segenAnteil = Math.min(segen.deckel, segen.basis + segen.jeTiefe * (t - 1));
+      var preisAnteil = preis.von + r() * (preis.bis - preis.von);
+      raus.push({
+        segen: segen,
+        preis: preis,
+        segenFaktor: 1 + segenAnteil,
+        preisFaktor: 1 - preisAnteil,
+        segenProzent: Math.round(segenAnteil * 100),
+        preisProzent: Math.round(preisAnteil * 100)
+      });
+    }
+    return raus;
+  }
+
+  /** Traegt ein angenommenes Angebot in die Lauf-Buffs ein. */
+  function schreinAnwenden(angebot) {
+    if (!angebot) return null;
+    window.eventBuffs = window.eventBuffs
+      || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1, attackSpeedMult: 1 };
+    var b = window.eventBuffs;
+    // Aeltere Spielstaende kennen attackSpeedMult noch nicht.
+    if (typeof b.attackSpeedMult !== 'number') b.attackSpeedMult = 1;
+    b[angebot.segen.feld] = (b[angebot.segen.feld] || 1) * angebot.segenFaktor;
+    b[angebot.preis.feld] = (b[angebot.preis.feld] || 1) * angebot.preisFaktor;
+    if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+    return b;
+  }
+
   EVENT_TYPES.push({
     id: 'shrine_buff',
     name: T('event.shrine.name'),
@@ -653,38 +738,23 @@
     minDepth: 2,
     handler: function (scene) {
       showEventToast(scene, T('event.shrine.toast_spawn'), 'shrine_buff');
-      // Altar power debuff scales with player level so the choice stays meaningful in late game.
-      // Base: -30% armor (was -15%). Per-level: +0.5%. Cap: -50% armor.
-      // Armor is clamped 0..0.85 in inventory.recalcDerived, so this never permanently bricks the player.
-      var lvl = (typeof window.playerLevel === 'number') ? window.playerLevel : 1;
-      var debuffPct = Math.min(0.50, 0.30 + lvl * 0.005);
-      var armorMultStep = 1 - debuffPct;
-      var armorPctLabel = Math.round(debuffPct * 100);
+      var angebote = schreinAngebote(window.DUNGEON_DEPTH || 1, Math.random);
       spawnEventObject(scene, 'evt_shrine', 0x6644aa, 0xaa88ff, T('event.shrine.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('level_up'); } catch (e) {}
-        showEventChoiceDialog(scene, T('event.shrine.name'), [
-          {
-            label: T('event.shrine.choice_power', { armor: armorPctLabel }),
+        var wahlen = angebote.map(function (a) {
+          var segenText = T('event.shrine.segen.' + a.segen.id, { wert: a.segenProzent });
+          var preisText = T('event.shrine.preis.' + a.preis.id, { wert: a.preisProzent });
+          return {
+            label: T('event.shrine.angebot', { segen: segenText, preis: preisText }),
             callback: function () {
-              window.eventBuffs = window.eventBuffs || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1 };
-              window.eventBuffs.damageMult *= 1.25;
-              window.eventBuffs.armorMult *= armorMultStep;
-              if (typeof recalcDerived === 'function') recalcDerived(0, 0);
-              showEventToast(scene, T('event.shrine.toast_power', { armor: armorPctLabel }), 'shrine_buff');
+              schreinAnwenden(a);
+              showEventToast(scene, T('event.shrine.toast_angenommen',
+                { segen: segenText, preis: preisText }), 'shrine_buff');
             }
-          },
-          {
-            label: T('event.shrine.choice_protection'),
-            callback: function () {
-              window.eventBuffs = window.eventBuffs || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1 };
-              window.eventBuffs.armorAdd += 0.05;
-              window.eventBuffs.speedMult *= 0.9;
-              if (typeof recalcDerived === 'function') recalcDerived(0, 0);
-              showEventToast(scene, T('event.shrine.toast_protection'), 'shrine_buff');
-            }
-          },
-          { label: T('event.shrine.choice_ignore'), callback: function () {} }
-        ]);
+          };
+        });
+        wahlen.push({ label: T('event.shrine.choice_ignore'), callback: function () {} });
+        showEventChoiceDialog(scene, T('event.shrine.name'), wahlen);
       });
     }
   });
@@ -866,7 +936,11 @@
       case 'rare_loot':
         if (window.LootSystem && typeof window.LootSystem.rollItem === 'function' && typeof spawnLoot === 'function') {
           try {
-            var rare = window.LootSystem.rollItem(null, 8, 2); // forceTier 2
+            // iLevel 8 stand hier fest verdrahtet: auf Tiefe 20 war der
+            // Hauptpreis des teuersten Brunnen-Wegs ein Stueck vom Niveau
+            // Tiefe 8. Belohnungen muessen mit der Tiefe wachsen.
+            var _rareLvl = (window.DUNGEON_DEPTH || 1) + 3;
+            var rare = window.LootSystem.rollItem(null, _rareLvl, 2); // forceTier 2
             spawnLoot.call(scene, px + 30, py, rare, null);
           } catch (e) {
             // Fall back to a plain loot drop if the roll fails.
@@ -1791,6 +1865,11 @@
     // can reuse the same panel-styled, scroll-fixed toast instead of rolling
     // a new one.
     showToast: showEventToast,
-    EVENT_TYPES: EVENT_TYPES
+    EVENT_TYPES: EVENT_TYPES,
+    // #71: reine Ziehung, damit das Balancing pruefbar bleibt.
+    schreinAngebote: schreinAngebote,
+    schreinAnwenden: schreinAnwenden,
+    SCHREIN_SEGEN: SCHREIN_SEGEN,
+    SCHREIN_PREISE: SCHREIN_PREISE
   };
 })();

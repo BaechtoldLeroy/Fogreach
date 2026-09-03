@@ -2060,8 +2060,18 @@ function leaveDungeonForHub(scene, options = {}) {
   // before the heal-on-return so the next dungeon entry starts clean.
   // Run recalcDerived() afterward so the player's max HP / damage / speed
   // / armor immediately revert to their gear+skill baseline.
-  if (window.brunnenBuffs) {
+  // Schrein-Buffs (window.eventBuffs) hingen NIRGENDS an einer Ruecksetzung —
+  // gemessen: nach dieser Funktion war brunnenBuffs geleert, eventBuffs stand
+  // unveraendert da. Der Schrein-Handel galt damit fuer die ganze Sitzung und
+  // stapelte ueber Laeufe: zehnmal "Macht" sind 1,25^10 Schaden bei praktisch
+  // keiner Ruestung. Jede Zahl am Schrein war sinnlos, solange das galt.
+  //
+  // Auch die Tiefen-Buffs (Gluecksspiel-Zeichen) enden spaetestens hier; im
+  // Endlosmodus loescht sie zusaetzlich der Tiefenaufstieg.
+  if (window.brunnenBuffs || window.eventBuffs || window.tiefenBuffs) {
     window.brunnenBuffs = null;
+    window.eventBuffs = null;
+    window.tiefenBuffs = null;
     if (typeof recalcDerived === 'function') {
       try { recalcDerived(0, 0); } catch (err) { console.warn('[leaveDungeonForHub] recalcDerived failed', err); }
     }
