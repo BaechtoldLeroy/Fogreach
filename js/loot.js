@@ -96,22 +96,20 @@ function getTierFromLegacyRarityKey(key) {
 // Cap an item's non-zero stat count by its tier+1 so that a newly-rolled item
 // doesn't silently outshine its intended tier budget. Keeps the strongest
 // stats and zeros the rest.
-function normalizeItemStatsForTier(item, tier = 0) {
-  if (!item) return item;
-  const allowed = Math.max(1, Math.round(Number(tier) || 0) + 1);
-  const stats = ITEM_ALL_STAT_KEYS
-    .map((key) => ({ key, value: Number(item[key]) || 0 }))
-    .filter((entry) => entry.value !== 0);
-
-  if (stats.length <= allowed) return item;
-
-  stats.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-  const keep = new Set(stats.slice(0, allowed).map((entry) => entry.key));
-  ITEM_ALL_STAT_KEYS.forEach((key) => {
-    if (!keep.has(key)) item[key] = 0;
-  });
-  return item;
-}
+// ENTFERNT: normalizeItemStatsForTier — die alte Deckelung auf "Seltenheitsstufe
+// + 1 Werte".
+//
+// Sie war doppelt falsch. Erstens sortierte sie nach ROHEM Betrag und verglich
+// dabei unvergleichbare Einheiten: Reichweite zaehlt in Pixeln (25), Tempo und
+// Krit als Bruch (0.15 / 0.05) — die Reichweite gewann immer. Zweitens traf sie
+// ueberhaupt die falsche Groesse: die Seltenheit steuert die ANZAHL DER AFFIXE
+// (rollItem wuerfelt tier viele), und die liegen additiv obendrauf (siehe
+// recalcDerived in inventory.js). Was die Basiswaffe kann, ist ihre Identitaet
+// und darf nichts wegnehmen.
+//
+// Gemessen an einem magischen Schattendolch, bevor sie fiel:
+//   {dmg 1.4, spd 0.15, rng -25, crit 0.05} -> {dmg 1.4, spd 0, rng -25, crit 0}
+// und bei Gewoehnlich blieb von vier Werten nur die Reichweite uebrig.
 
 // WP03: Spawn a goldPile sprite at (x, y) worth `amount` gold.
 // Auto-collected by the player-overlap registered in main.js via window.goldGroup.
@@ -215,10 +213,10 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     }
   }
 
-  // Feature 059 (#42) WP04: run-amulet pickup. Bypass the tier/normalize
-  // droproll path entirely — amulets carry no stats, only an `effect` key that
-  // normalizeItemStatsForTier/scaleItemForDifficulty would strip. Spawn the
-  // sprite directly and give it the legendary beacon so it reads as special.
+  // Feature 059 (#42) WP04: run-amulet pickup. Bypass the droproll path
+  // entirely — amulets carry no stats, only an `effect` key that the stat
+  // shaping would strip. Spawn the sprite directly and give it the legendary
+  // beacon so it reads as special.
   if (maybeItem && maybeItem.isAmulet) {
     const aScene = scene || (typeof lootGroup !== 'undefined' && lootGroup && lootGroup.scene) || window.currentScene;
     const aloot = lootGroup.create(x, y, maybeItem.iconKey || 'itAmulet');
@@ -340,8 +338,9 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       // Elite-Garantien, Ereignisse) sollten die BESSEREN sein.
       //
       // Darum derselbe Weg wie beim normalen Gegner-Drop: Schwierigkeit ohne
-      // Deckelung. Die Deckelung bleibt fuer alles ohne baseStats — von Hand
-      // gebaute Alt-Items, die ihr Budget wirklich brauchen.
+      // Deckelung. Die Deckelung ist inzwischen ganz weg (siehe unten): die
+      // Seltenheit steuert die ANZAHL DER AFFIXE, nicht die Anzahl der
+      // Basiswerte. Was die Waffe kann, gehoert der Waffe.
       const _hatBasiswerte = !!(baseItem && baseItem.baseStats
         && Object.keys(baseItem.baseStats).length);
       if (_hatBasiswerte) {
@@ -350,13 +349,17 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
         baseItem.baseStats = { ...baseItem.baseStats };
         item = _applyDifficultyToRolledItem(baseItem, Math.max(1, currentWave));
       } else {
-        item = normalizeItemStatsForTier(scaleItemForDifficulty(baseItem, Math.max(1, currentWave)), tier);
+        // Von Hand gebaute Alt-Items (Elaras Klinge, Ritualamulett): kein
+        // baseStats, auch kein tier — sie liefen deshalb als Tier 0 durch die
+        // Deckelung und haetten von vier Werten EINEN behalten. Auch sie sind
+        // reine Basiswerte, also nur noch Schwierigkeitsskalierung.
+        item = scaleItemForDifficulty(baseItem, Math.max(1, currentWave));
       }
     } else {
       // Unified rollItem drop (#36 Phase 2b): rollItem rollt Affixe passend zum
       // Tier, daher greift die Re-Roll-Absicherung normalerweise nicht mehr (kein
-      // Tier-Bump). NO stat-cap — ITEM_BASES-Items haben absichtliche Multi-Stat-
-      // Budgets, die normalizeItemStatsForTier zerstören würde.
+      // Tier-Bump). Die Seltenheit steuert hier ausschliesslich die ANZAHL DER
+      // AFFIXE — die Basiswerte des Stuecks bleiben unangetastet.
       item = baseItem;
       const affixCount = Array.isArray(item.affixes) ? item.affixes.length : 0;
       if (item.tier > affixCount && item.type
@@ -664,11 +667,7 @@ function computeItemLevelFromStats(stats, depth) {
 function scaleItemForDifficulty(item, depth) {
   if (!item) return item;
   const multiplier = getDifficultyMultiplierValue();
-  if (multiplier === 1) {
-    const tier = (typeof item.tier === 'number') ? item.tier : 0;
-    normalizeItemStatsForTier(item, tier);
-    return item;
-  }
+  if (multiplier === 1) return item;
 
   ITEM_STAT_KEYS.forEach((key) => {
     if (typeof item[key] === 'number') {
@@ -687,19 +686,12 @@ function scaleItemForDifficulty(item, depth) {
     Math.max(1, Math.round((depth || currentWave || 1) * multiplier))
   );
 
-   const tier = (typeof item.tier === 'number') ? item.tier : 0;
-   normalizeItemStatsForTier(item, tier);
-
   return item;
 }
 
 function addBoostsToItem(item, boosts, depth) {
   const totalBoosts = Math.max(0, boosts);
-  if (!totalBoosts) {
-    const tier = (typeof item?.tier === 'number') ? item.tier : 0;
-    normalizeItemStatsForTier(item, tier);
-    return;
-  }
+  if (!totalBoosts) return;
   const potentials = rollItemStatPotentials(item?.type || 'weapon', depth);
   const available = ITEM_STAT_KEYS.filter(key => (potentials[key] ?? 0) > 0);
   const keysPool = available.length ? available : ITEM_STAT_KEYS;
@@ -710,9 +702,6 @@ function addBoostsToItem(item, boosts, depth) {
     item[statKey] = clampStat(statKey, current + addition);
   }
   item.itemLevel = computeItemLevelFromStats(item, depth);
-
-  const tier = (typeof item.tier === 'number') ? item.tier : Math.max(0, totalBoosts - 1);
-  normalizeItemStatsForTier(item, tier);
 }
 
 function randomLoot(qualityBias) {
@@ -755,11 +744,10 @@ function randomLoot(qualityBias) {
   });
 }
 
-// Apply the difficulty multiplier to a freshly-rolled ITEM_BASES item WITHOUT
-// the legacy tier stat-cap (normalizeItemStatsForTier) — ITEM_BASES items have
-// intentional multi-stat budgets that the cap would destroy. The multiplier is
-// positive (0.6/1.0/1.5) so it preserves the sign of penalty stats (e.g. a
-// heavy weapon's negative attack-speed). At Normal (1.0) this is a no-op.
+// Apply the difficulty multiplier to a freshly-rolled ITEM_BASES item. The
+// multiplier is positive (0.6/1.0/1.5) so it preserves the sign of penalty
+// stats (e.g. a heavy weapon's negative attack-speed). At Normal (1.0) this is
+// a no-op.
 function _applyDifficultyToRolledItem(item, depth) {
   if (!item) return item;
   const mult = getDifficultyMultiplierValue();
@@ -838,7 +826,6 @@ if (typeof window !== 'undefined') {
   window.computeItemLevelFromStats = computeItemLevelFromStats;
   window.rollItemStatPotentials = rollItemStatPotentials;
   window.addBoostsToItem = addBoostsToItem;
-  window.normalizeItemStatsForTier = normalizeItemStatsForTier;
   window.TIER_COLORS = LOOT_TIER_COLORS;
   // Das Bodenleuchten ist eine eigene Entscheidung (welche Seltenheit
   // bekommt welches Signal) und wird deshalb einzeln ansprechbar — sonst
@@ -846,7 +833,6 @@ if (typeof window !== 'undefined') {
   window.attachRarityFx = _attachRarityFx;
   // Legacy aliases for any loose references that haven't been migrated yet
   // (e.g. js/scenes/HubScene.js is parsed but never instantiated).
-  window.normalizeItemStatsForRarity = normalizeItemStatsForTier;
   window.getRarityValueFromKey = getTierFromLegacyRarityKey;
   window.ITEM_RARITIES = [];
   // WP03: expose gold-drop helpers so chest-open code and future systems can

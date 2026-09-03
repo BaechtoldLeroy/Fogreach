@@ -17,7 +17,11 @@
 // Bei Gewoehnlich fiel also sogar der Schaden weg. Betroffen war ausgerechnet
 // der Zweig fuer die BESSEREN Wege — Truhen, Elite-Garantien, Ereignisse,
 // Questbelohnungen —, waehrend der gewoehnliche Gegner-Drop die Deckelung
-// laengst umgeht (siehe Kommentar im else-Zweig von spawnLoot).
+// laengst umging.
+//
+// Die Deckelung ist inzwischen ganz entfernt. Die Regel lautet: die Seltenheit
+// steuert die ANZAHL DER AFFIXE, und die liegen additiv obendrauf. Die
+// Basiswerte eines Stuecks zaehlen nie gegen diese Grenze — sie SIND das Stueck.
 //
 // Geprueft wird die ABGELEGTE Beute, nicht der Quelltext: spawnLoot bekommt ein
 // fertiges Item und muss es mit allen Werten wieder herausgeben.
@@ -81,7 +85,11 @@ function macheDolch(tier) {
   return {
     key: 'WPN_SCHATTENDOLCH', type: 'weapon', name: 'Schattendolch',
     displayName: 'Schattendolch', iconKey: 'itDagger',
-    tier: tier, iLevel: 6, itemLevel: 18, affixes: [],
+    tier: tier, iLevel: 6, itemLevel: 18,
+    // So viele Affixe wie die Stufe hergibt — genau das legt rollItem an.
+    affixes: Array.from({ length: tier }, function (_, i) {
+      return { defId: 'affix' + i, value: 1 };
+    }),
     baseStats: { damage: 2.1, speed: 15, range: -25, crit: 5 },
     damage: 2.1, speed: 0.15, range: -25, crit: 0.05,
   };
@@ -125,31 +133,37 @@ test('Ein Dolch aus der Truhe behaelt Tempo und Krit — auf jeder Seltenheit', 
     assert.strictEqual(abgelegt.crit, 0.05, 'Tier ' + tier + ': Krit verloren');
     assert.strictEqual(abgelegt.damage, 2.1, 'Tier ' + tier + ': Schaden verloren');
     assert.strictEqual(abgelegt.range, -25, 'Tier ' + tier + ': Reichweite verloren');
+    // Und die Affixe der Seltenheitsstufe kommen ZUSAETZLICH mit — sie sind
+    // der Zuwachs, den die Seltenheit bringt, nicht ein Tausch gegen Basiswerte.
+    assert.strictEqual(abgelegt.affixes.length, tier,
+      'Tier ' + tier + ': Affixe verloren oder verdoppelt');
   }
 });
 
-test('Die Deckelung greift weiterhin bei Items OHNE baseStats', () => {
-  // Von Hand gebaute Alt-Items haben kein Budget aus ITEM_BASES. Fuer sie war
-  // die Deckelung gedacht, und dort muss sie bleiben — sonst waere der Fix ein
-  // stiller Freibrief fuer beliebig viele Werte.
-  const alt = {
-    type: 'weapon', name: 'Altstueck', tier: 0,
-    damage: 3, speed: 0.4, range: 40, crit: 0.2,
+test('Auch von Hand gebaute Queststuecke behalten alle Werte', () => {
+  // Elaras Klinge und das Ritualamulett stehen als Literal in questSystem.js:
+  // ohne baseStats UND ohne tier. Sie liefen deshalb als Tier 0 durch die
+  // Deckelung — von vier Werten waere EINER geblieben, und zwar der mit dem
+  // groessten Rohbetrag: die Reichweite. Aus einer legendaeren Klinge waere
+  // "+120 Reichweite und sonst nichts" geworden.
+  const klinge = {
+    type: 'weapon', key: 'ELARAS_KLINGE', name: 'Elaras Klinge',
+    damage: 7, speed: 1.3, range: 120, crit: 0.15, hp: 0,
   };
-  const abgelegt = legeAb(alt);
+  const abgelegt = legeAb(klinge);
   assert.ok(abgelegt, 'nichts abgelegt');
-  const gesetzt = ['damage', 'speed', 'range', 'crit']
-    .filter((k) => (Number(abgelegt[k]) || 0) !== 0);
-  assert.strictEqual(gesetzt.length, 1,
-    'Gewoehnlich erlaubt genau EINEN Wert, bekam: ' + gesetzt.join(', '));
+  assert.strictEqual(abgelegt.damage, 7, 'Schaden verloren');
+  assert.strictEqual(abgelegt.speed, 1.3, 'Angriffstempo verloren');
+  assert.strictEqual(abgelegt.range, 120, 'Reichweite verloren');
+  assert.strictEqual(abgelegt.crit, 0.15, 'Krit verloren');
 });
 
-test('Die Deckelung selbst vergleicht unvergleichbare Einheiten', () => {
-  // Der eigentliche Konstruktionsfehler, festgehalten damit ihn niemand als
-  // "funktioniert doch" wieder auf ITEM_BASES-Items loslaesst: sortiert wird
-  // nach ROHEM Betrag. Reichweite in Pixeln schlaegt jeden Bruch.
-  const dolch = { damage: 2.1, speed: 0.15, range: -25, crit: 0.05 };
-  W.normalizeItemStatsForTier(dolch, 1);
-  assert.strictEqual(dolch.range, -25, 'die Reichweite gewinnt');
-  assert.strictEqual(dolch.speed, 0, 'das Tempo verliert, obwohl es die Waffe ausmacht');
+test('Es gibt keine Werte-Deckelung mehr', () => {
+  // Die Seltenheit steuert die ANZAHL DER AFFIXE, nicht die Anzahl der
+  // Basiswerte. Wer die Deckelung wieder einfuehrt, faellt hier auf — auch
+  // dann, wenn er sie nur "vorsichtig" an einer Stelle wieder aufruft.
+  assert.strictEqual(typeof W.normalizeItemStatsForTier, 'undefined',
+    'die Deckelung ist wieder exportiert');
+  assert.strictEqual(typeof W.normalizeItemStatsForRarity, 'undefined',
+    'der Alt-Name der Deckelung ist wieder exportiert');
 });
