@@ -330,9 +330,28 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     let tier = (typeof baseItem?.tier === 'number') ? baseItem.tier : 0;
     let item;
     if (maybeItem) {
-      // Explicit drop (quest reward / chest / boss table): keep legacy shaping
-      // incl. the tier stat-cap so hand-authored items stay within budget.
-      item = normalizeItemStatsForTier(scaleItemForDifficulty(baseItem, Math.max(1, currentWave)), tier);
+      // ITEM_BASES-Items (alles aus LootSystem.rollItem) tragen ein ABSICHTLICHES
+      // Mehrwert-Budget: der Schattendolch IST sein Angriffstempo, die Glutaxt
+      // ihr Minus darauf. Die alte Tier-Deckelung behielt nur die betragsmaessig
+      // groessten Werte — und weil Reichweite in PIXELN zaehlt (25) und Tempo/Krit
+      // als Bruch (0.15 / 0.05), gewann die Reichweite immer. Gemessen an einem
+      // magischen Schattendolch: Tempo +15 % und Krit +5 % wurden auf 0 gesetzt,
+      // bei Gewoehnlich sogar der SCHADEN. Genau diese Wege (Truhen, Belohnungen,
+      // Elite-Garantien, Ereignisse) sollten die BESSEREN sein.
+      //
+      // Darum derselbe Weg wie beim normalen Gegner-Drop: Schwierigkeit ohne
+      // Deckelung. Die Deckelung bleibt fuer alles ohne baseStats — von Hand
+      // gebaute Alt-Items, die ihr Budget wirklich brauchen.
+      const _hatBasiswerte = !!(baseItem && baseItem.baseStats
+        && Object.keys(baseItem.baseStats).length);
+      if (_hatBasiswerte) {
+        // baseStats mitkopieren: _applyDifficultyToRolledItem schreibt hinein,
+        // und { ...maybeItem } teilt das Unterobjekt sonst mit dem Aufrufer.
+        baseItem.baseStats = { ...baseItem.baseStats };
+        item = _applyDifficultyToRolledItem(baseItem, Math.max(1, currentWave));
+      } else {
+        item = normalizeItemStatsForTier(scaleItemForDifficulty(baseItem, Math.max(1, currentWave)), tier);
+      }
     } else {
       // Unified rollItem drop (#36 Phase 2b): rollItem rollt Affixe passend zum
       // Tier, daher greift die Re-Roll-Absicherung normalerweise nicht mehr (kein
