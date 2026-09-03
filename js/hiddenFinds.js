@@ -203,7 +203,14 @@
   // Wie oft bekommt ein Raum ueberhaupt eine Kammer? Deutlich seltener als ein
   // gewoehnlicher Fund: sie veraendert die Raumgeometrie, und in jedem zweiten
   // Raum ein zugeschuetteter Gang laesst die Karte beliebig wirken.
-  var DURCHGANG_CHANCE = 0.22;
+  // Der Wurf laeuft VOR der Platzsuche: die tatsaechliche Rate ist
+  // DURCHGANG_CHANCE mal dem Anteil der Raeume, die ueberhaupt eine geeignete
+  // Wandflaeche haben. Die Randregel (keine Kammern in freistehenden Klotzen)
+  // hat diesen Anteil gemessen von 10/30 auf 8/30 gedrueckt — Faktor 0,8.
+  //
+  // 0,22 / 0,8 = 0,275 gleicht genau das aus und nicht mehr: der Durchgang
+  // soll so haeufig bleiben wie vorher, nicht haeufiger werden.
+  var DURCHGANG_CHANCE = 0.275;
 
   function willDurchgang(rng) {
     // ?find=durchgang erzwingt die Kammer in JEDEM Raum.
