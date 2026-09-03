@@ -278,3 +278,45 @@ test('Ohne LootSystem faellt die Belohnung auf eine Truhe zurueck', () => {
     assert.ok(String(gespawnt[0].type).indexOf('chest') === 0, 'Rueckfall ist eine Truhe');
   } finally { delete W.spawnLoot; }
 });
+
+test('Ein freistehender Wandklotz mitten im Raum wird nicht ausgehoehlt', () => {
+  // GEMESSEN im Spiel: 2 von 5 Kammern lagen in einer freistehenden Wandinsel,
+  // eine davon in nur 11 Wandkacheln — also einer duennen Schale um das Loch.
+  // Der Spieler stand vor einem Geroellhaufen im offenen Raum.
+  //
+  // Die Pfeiler-Pruefung reichte nicht: sie sieht nur den unmittelbaren Ring
+  // des 3x3-Blocks. In einem 5x5-Klotz hat der obere linke 3x3-Teilblock auf
+  // drei Seiten Wand und faellt trotzdem nicht unter "Pfeiler".
+  const g = [
+    '###########',
+    '#.........#',
+    '#..#####..#',
+    '#..#####..#',
+    '#..#####..#',
+    '#..#####..#',
+    '#..#####..#',
+    '#.........#',
+    '###########',
+  ];
+  assert.strictEqual(H.stanzeKammer(g, () => 0), null,
+    'in eine freistehende Insel darf keine Kammer');
+});
+
+test('An der durchgehenden Mauer wird weiterhin gestanzt', () => {
+  // Gegenprobe: dieselbe Dicke, aber mit dem Raumrand verbunden. Ohne diesen
+  // Test waere "gar nicht mehr stanzen" eine bestandene Loesung.
+  const g = [
+    '###########',
+    '#.........#',
+    '#.........#',
+    '###########',
+    '###########',
+    '###########',
+    '###########',
+  ];
+  const r = H.stanzeKammer(g, () => 0);
+  assert.ok(r, 'an der Mauer muss es weiter gehen');
+  r.kammer.forEach((t) => {
+    assert.strictEqual(g[t.y][t.x], '.', 'Zelle ' + t.x + '/' + t.y + ' nicht ausgestanzt');
+  });
+});

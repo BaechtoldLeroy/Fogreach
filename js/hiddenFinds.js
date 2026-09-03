@@ -236,6 +236,46 @@
     return c !== BODEN && c !== 'P';
   }
 
+  /**
+   * Teilt alle Wandkacheln in zusammenhaengende Massen und sagt je Masse, ob
+   * sie den Raumrand erreicht.
+   *
+   * Wozu: "in der Wand" heisst fuer den Spieler die MAUER des Raums, nicht
+   * irgendein Felsklotz mitten drin. Gemessen lagen 2 von 5 Kammern in einer
+   * freistehenden Insel — eine davon in nur 11 Wandkacheln, also einer duennen
+   * Schale um das ausgestanzte Loch. Der Spieler stand dann vor einem Geroell-
+   * haufen im offenen Raum.
+   *
+   * Die alte Pfeiler-Pruefung reichte dafuer nicht: sie sieht nur den
+   * unmittelbaren Ring des 3x3-Blocks. Ein 5x5-Klotz enthaelt Teilbloecke, die
+   * ringsum Wand haben und trotzdem freistehen.
+   *
+   * @returns {{ label: Array<Int32Array|Array>, amRand: Object }}
+   */
+  function _wandMassen(raster, W, H) {
+    var label = [], y, x;
+    for (y = 0; y < H; y++) {
+      label.push(new Array(W).fill(0));
+    }
+    var naechste = 1, amRand = {};
+    for (y = 0; y < H; y++) {
+      for (x = 0; x < W; x++) {
+        if (label[y][x] || !_istWand(raster, x, y)) continue;
+        var id = naechste++;
+        var stapel = [[x, y]];
+        while (stapel.length) {
+          var p = stapel.pop(), px = p[0], py = p[1];
+          if (px < 0 || py < 0 || px >= W || py >= H) continue;
+          if (label[py][px] || !_istWand(raster, px, py)) continue;
+          label[py][px] = id;
+          if (px === 0 || py === 0 || px === W - 1 || py === H - 1) amRand[id] = 1;
+          stapel.push([px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]);
+        }
+      }
+    }
+    return { label: label, amRand: amRand };
+  }
+
   function _setzeBoden(raster, x, y) {
     var z = raster[y];
     if (typeof z === 'string') {
@@ -267,6 +307,9 @@
     var r = (typeof rng === 'function') ? rng : Math.random;
     var H = raster.length, W = raster[0].length;
     if (!W) return null;
+
+    // Einmal je Raum: welche Wandmasse haengt am Raumrand?
+    var massen = _wandMassen(raster, W, H);
 
     var kandidaten = [];
     for (var y = 1; y + KAMMER_H <= H - 1; y++) {
@@ -308,6 +351,12 @@
           else seiten.unten = 1;
         });
         if (Object.keys(seiten).length !== 1) continue;
+
+        // Die Masse, in der der Block steckt, muss bis zum Raumrand reichen —
+        // sonst ist es keine Mauer, sondern ein Felsklotz im offenen Raum.
+        // Der Block ist hier noch Wand, traegt also selbst ein Label.
+        if (!massen.amRand[massen.label[y][x]]) continue;
+
         kandidaten.push({ x: x, y: y, mund: muender[0] });
       }
     }
