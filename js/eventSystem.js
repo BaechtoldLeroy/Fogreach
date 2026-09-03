@@ -56,6 +56,20 @@
       'event.shrine.toast_spawn': 'Ein mystischer Schrein erscheint...',
       'event.shrine.object_label': 'Schrein',
       'event.shrine.choice_ignore': 'Ignorieren',
+      'event.altar.name': 'Opferstein',
+      'event.altar.toast_spawn': 'Ein blutiger Opferstein steht im Halbdunkel...',
+      'event.altar.object_label': 'Opferstein',
+      'event.altar.choice': '{name} opfern ({slot})',
+      'event.altar.choice_ignore': 'Nichts hergeben',
+      'event.altar.nothing_equipped': 'Du trägst nichts, das er annehmen würde.',
+      'event.altar.better': 'Der Stein gibt mehr zurück, als er nahm. ({alt} → {neu})',
+      'event.altar.same': 'Ein Tausch ohne Gewinn. ({alt} → {neu})',
+      'event.altar.worse': 'Der Stein hat dich übervorteilt. ({alt} → {neu})',
+      'event.altar.slot.weapon': 'Waffe',
+      'event.altar.slot.head': 'Kopf',
+      'event.altar.slot.body': 'Rüstung',
+      'event.altar.slot.boots': 'Stiefel',
+      'event.altar.slot.offhand': 'Nebenhand',
       // #71: Der Schrein zieht Segen UND Preis. Beides steht als Zahl im Text,
       // damit die Entscheidung ohne Raten faellt.
       'event.shrine.angebot': '{segen}, dafür {preis}',
@@ -155,6 +169,20 @@
       'event.shrine.toast_spawn': 'A mystical shrine appears...',
       'event.shrine.object_label': 'Shrine',
       'event.shrine.choice_ignore': 'Ignore',
+      'event.altar.name': 'Sacrificial Stone',
+      'event.altar.toast_spawn': 'A bloodied sacrificial stone stands in the gloom...',
+      'event.altar.object_label': 'Sacrificial Stone',
+      'event.altar.choice': 'Sacrifice {name} ({slot})',
+      'event.altar.choice_ignore': 'Give nothing',
+      'event.altar.nothing_equipped': 'You carry nothing it would accept.',
+      'event.altar.better': 'The stone gives back more than it took. ({alt} → {neu})',
+      'event.altar.same': 'An even trade. ({alt} → {neu})',
+      'event.altar.worse': 'The stone got the better of you. ({alt} → {neu})',
+      'event.altar.slot.weapon': 'weapon',
+      'event.altar.slot.head': 'head',
+      'event.altar.slot.body': 'body',
+      'event.altar.slot.boots': 'boots',
+      'event.altar.slot.offhand': 'off-hand',
       'event.shrine.angebot': '{segen}, at the cost of {preis}',
       'event.shrine.toast_angenommen': 'The shrine takes its price: {segen}, {preis}.',
       'event.shrine.segen.macht': '+{wert}% damage',
@@ -471,6 +499,30 @@
         g.fillStyle(0x777788, 1); g.fillRect(12, 4, 8, 4); // capital
         g.fillStyle(0x44aaff, 0.6); g.fillCircle(16, 4, 3); // glow orb
         g.fillStyle(0x88ddff, 0.3); g.fillCircle(16, 4, 5); // outer glow
+        g.generateTexture(texKey, 32, 32);
+      } else if (texKey === 'evt_opferstein') {
+        // Ein niedriger Blutstein: dunkle Grundform, Steinflaeche, EINE helle
+        // Lichtkante, dazu die Rinne mit getrocknetem Blut. Dieselben drei
+        // Lagen wie bei den Funden aus #113 — ohne sie wirkt alles flach.
+        g.fillStyle(0x000000, 0.34); g.fillEllipse(16, 27.5, 26, 7);
+        g.fillStyle(0x14121a, 1); g.fillRect(5, 13, 22, 14);          // Umriss
+        g.fillStyle(0x4b4657, 1); g.fillRect(6, 14, 20, 12);          // Stein
+        g.fillStyle(0x655f73, 1); g.fillRect(6, 14, 20, 2);           // Lichtkante
+        g.fillStyle(0x2c2836, 1); g.fillRect(6, 24, 20, 2);           // Schattenfuss
+        // Deckplatte mit Rinne
+        g.fillStyle(0x14121a, 1); g.fillEllipse(16, 13, 24, 9);
+        g.fillStyle(0x585267, 1); g.fillEllipse(16, 12.4, 22, 8);
+        g.fillStyle(0x6e6880, 1); g.fillEllipse(13, 10.8, 12, 3.5);
+        g.fillStyle(0x241a20, 1); g.fillEllipse(16, 13, 12, 4.5);     // Rinne
+        // Getrocknetes Blut in der Rinne und ein Rinnsal ueber die Kante
+        g.fillStyle(0x6b1518, 1); g.fillEllipse(16, 13.4, 9, 3);
+        g.fillStyle(0x8c1d20, 1); g.fillEllipse(15, 12.9, 5, 1.6);
+        g.fillStyle(0x6b1518, 1); g.fillRect(20, 15, 2, 7);
+        g.fillStyle(0x8c1d20, 1); g.fillRect(20, 15, 1, 5);
+        g.fillStyle(0x6b1518, 1); g.fillCircle(21, 22.5, 1.6);
+        // Zwei Kerben als Zierrat
+        g.fillStyle(0x332e3d, 1);
+        g.fillRect(9, 18, 3, 1.4); g.fillRect(20, 20, 3, 1.4);
         g.generateTexture(texKey, 32, 32);
       } else if (texKey === 'evt_shrine') {
         // Stone altar with purple crystal
@@ -994,6 +1046,96 @@
       } catch (e) { /* Optik und Zusatzbeute duerfen den Kampf nie brechen */ }
     });
   }
+
+  // --- Opferstein (#71) ----------------------------------------------------
+  //
+  // Tiefe 1 kannte nur Schatz und Lore-Fragment, beide ohne Entscheidung. Der
+  // Opferstein braucht kein Gold und keinen Kampf und kostet trotzdem etwas:
+  // er nimmt ein ANGELEGTES Stueck, nicht eines aus dem Inventar. Man gibt
+  // her, was man gerade traegt.
+  //
+  // Zurueck kommt kein garantierter Aufstieg, sondern ein UMWURF: dieselbe
+  // Basis, dieselbe Seltenheit, frisch gewuerfelt auf Tiefe + 2. Besser,
+  // gleichwertig oder schlechter — das entscheidet der Wurf.
+  var ALTAR_SLOTS = ['weapon', 'head', 'body', 'boots', 'offhand'];
+
+  /** Welche angelegten Stuecke koennte der Stein annehmen? */
+  function opferKandidaten() {
+    var aus = [];
+    var eq = window.equipment;
+    if (!eq) return aus;
+    ALTAR_SLOTS.forEach(function (slot) {
+      var it = eq[slot];
+      // Amulette bleiben aussen vor: sie tragen keine Werte, nur einen Effekt.
+      if (it && it.key && !it.isAmulet && it.type !== 'amulet') {
+        aus.push({ slot: slot, item: it });
+      }
+    });
+    return aus;
+  }
+
+  /**
+   * Wirft ein angelegtes Stueck neu.
+   *
+   * @returns {{alt:number, neu:number, item:object}|null} Item-Staerke vorher
+   *          und nachher, plus das neue Stueck.
+   */
+  function opferUmwurf(slot, tiefe) {
+    var eq = window.equipment;
+    if (!eq || !eq[slot] || !window.LootSystem
+        || typeof window.LootSystem.rollItem !== 'function') return null;
+    var alt = eq[slot];
+    var stufe = (typeof alt.tier === 'number') ? alt.tier : 0;
+    var neu = window.LootSystem.rollItem(alt.key, Math.max(1, (tiefe || 1) + 2), stufe);
+    if (!neu) return null;
+    var staerke = (typeof window.computeItemPower === 'function')
+      ? window.computeItemPower : function () { return 0; };
+    var vorher = staerke(alt), nachher = staerke(neu);
+    eq[slot] = neu;
+    if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+    if (typeof window.updateInventoryUI === 'function') {
+      try { window.updateInventoryUI(); } catch (e) {}
+    }
+    return { alt: vorher, neu: nachher, item: neu };
+  }
+
+  EVENT_TYPES.push({
+    id: 'sacrifice_altar',
+    name: T('event.altar.name'),
+    weight: 10,
+    minDepth: 1,
+    handler: function (scene) {
+      showEventToast(scene, T('event.altar.toast_spawn'), 'sacrifice_altar');
+      spawnEventObject(scene, 'evt_opferstein', 0x4b4657, 0x8c1d20,
+        T('event.altar.object_label'), function () {
+        try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
+        var tiefe = window.DUNGEON_DEPTH || 1;
+        var kandidaten = opferKandidaten();
+        if (!kandidaten.length) {
+          showEventToast(scene, T('event.altar.nothing_equipped'), 'sacrifice_altar');
+          return;
+        }
+        var wahlen = kandidaten.map(function (k) {
+          return {
+            label: T('event.altar.choice', {
+              name: k.item.displayName || k.item.name || '?',
+              slot: T('event.altar.slot.' + k.slot)
+            }),
+            callback: function () {
+              var r = opferUmwurf(k.slot, tiefe);
+              if (!r) return;
+              var schluessel = (r.neu > r.alt) ? 'better'
+                             : (r.neu === r.alt) ? 'same' : 'worse';
+              showEventToast(scene, T('event.altar.' + schluessel,
+                { alt: r.alt, neu: r.neu }), 'sacrifice_altar');
+            }
+          };
+        });
+        wahlen.push({ label: T('event.altar.choice_ignore'), callback: function () {} });
+        showEventChoiceDialog(scene, T('event.altar.name'), wahlen);
+      });
+    }
+  });
 
   // -------------------------------------------------------------------------
   // Healing fountain — REWORKED (#16). Risk/reward choice with weighted
@@ -2139,6 +2281,8 @@
     showToast: showEventToast,
     EVENT_TYPES: EVENT_TYPES,
     // #71: reine Ziehung, damit das Balancing pruefbar bleibt.
+    opferKandidaten: opferKandidaten,
+    opferUmwurf: opferUmwurf,
     schreinAngebote: schreinAngebote,
     schreinAnwenden: schreinAnwenden,
     SCHREIN_SEGEN: SCHREIN_SEGEN,

@@ -1575,17 +1575,24 @@ function onStairOverlap(player, stair) {
   if (stair.getData("locked")) {
     // Vorher kehrte die Funktion still zurueck: der Spieler stand auf der
     // Treppe, drueckte E und nichts geschah — ohne jeden Hinweis, warum.
-    var jetzt = (typeof window.gameNow === 'function')
-      ? window.gameNow(obstacles && obstacles.scene) : Date.now();
-    if (jetzt >= _treppeGemeldetBis) {
-      _treppeGemeldetBis = jetzt + TREPPE_MELDE_PAUSE;
-      try {
-        var sc = (obstacles && obstacles.scene) || window.currentScene;
-        if (sc && window.EventSystem && typeof window.EventSystem.showToast === 'function') {
-          window.EventSystem.showToast(sc, treppenSperrGrund(sc));
+    //
+    // ALLES in einem try: die Zeitabfrage stand zuerst davor und griff auf
+    // `obstacles` zu — ein blosser Bezeichner, kein Fensterfeld. Ist er zum
+    // Zeitpunkt des Overlaps nicht gesetzt, wirft die Zeile einen
+    // ReferenceError, und der Overlap-Haken der Treppe bricht mit ihr ab. Eine
+    // Meldung darf niemals den Weg nach unten verstellen.
+    try {
+      var _sc = (typeof obstacles !== 'undefined' && obstacles && obstacles.scene)
+        ? obstacles.scene : window.currentScene;
+      var jetzt = (typeof window.gameNow === 'function' && _sc)
+        ? window.gameNow(_sc) : Date.now();
+      if (jetzt >= _treppeGemeldetBis) {
+        _treppeGemeldetBis = jetzt + TREPPE_MELDE_PAUSE;
+        if (_sc && window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+          window.EventSystem.showToast(_sc, treppenSperrGrund(_sc));
         }
-      } catch (e) { /* eine fehlende Meldung darf den Raum nicht brechen */ }
-    }
+      }
+    } catch (e) { /* eine fehlende Meldung darf den Raum nicht brechen */ }
     return;
   }
 
