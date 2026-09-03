@@ -10,11 +10,15 @@
       'event.treasure.object_label': 'Schatz',
       'event.treasure.choice_gold': 'Gold nehmen (+{amount})',
       'event.treasure.choice_search': 'Gründlich durchsuchen (Item)',
+      'event.treasure.choice_ransack': 'Gründlich durchwühlen (seltenes Item — weckt {gegner} Wachen)',
       'event.treasure.choice_ignore': 'Ignorieren',
+      'event.treasure.toast_ransack': 'Ein seltener Fund — aber der Lärm weckt {gegner} Wachen!',
+      'event.treasure.toast_ransack_fragment': 'Zwischen dem Plunder liegt ein Wissensfragment.',
       'event.treasure.toast_gold': '+{amount} Gold!',
       'event.treasure.toast_item': 'Ein Gegenstand gefunden!',
       // Ambush
       'event.ambush.name': 'Hinterhalt!',
+      'event.ambush.toast_looter': 'Einer von ihnen trägt Beute — der Plünderer!',
       // Wandering merchant
       'event.merchant.name': 'Wandernder Händler',
       'event.merchant.toast_spawn': '🛒 Ein wandernder Händler ist erschienen!',
@@ -69,7 +73,8 @@
       'event.gambling.toast_spawn': 'Ein Spieltisch taucht auf...',
       'event.gambling.object_label': 'Glücksspiel',
       'event.gambling.title': 'Glücksspiel ({cost} Gold)',
-      'event.gambling.choice_bet': 'Wette {cost} Gold (40% Chance auf 3x)',
+      'event.gambling.choice_bet': 'Wette {cost} Gold (30% auf das Dreifache)',
+      'event.gambling.toast_marked': 'Das Haus zeichnet dich: -{wert}% Rüstung bis zum Ende der Tiefe.',
       'event.gambling.choice_decline': 'Ablehnen',
       'event.gambling.toast_no_gold': 'Nicht genug Gold!',
       'event.gambling.toast_won': 'Gewonnen! Netto +{amount} Gold!',
@@ -77,6 +82,10 @@
       // Elite ambush
       'event.elite.name': 'Elite-Hinterhalt',
       'event.elite.toast_spawn': 'Ein mächtiger Feind nähert sich!',
+      'event.elite.choice_accept': 'Annehmen (garantierte Beute)',
+      'event.elite.choice_challenge': 'Herausfordern (+30% Leben, +15% Schaden — bessere Beute)',
+      'event.elite.toast_challenge': 'Du forderst ihn heraus. Er wird stärker — und wertvoller.',
+      'event.elite.toast_reward': 'Die Beute des Elite-Gegners.',
       // Healing fountain (rework #16) — risk/reward choices with weighted
       // outcomes. All Brunnen buffs/debuffs are run-scoped (cleared on hub
       // return). HP debuff is on max HP, not current HP.
@@ -84,8 +93,8 @@
       'event.fountain.toast_spawn': 'Ein leuchtender Brunnen erscheint...',
       'event.fountain.object_label': 'Brunnen',
       'event.fountain.choice_drink': 'Trinken',
-      'event.fountain.choice_offer': 'Opfern (-25% Max-LP für den Run)',
-      'event.fountain.choice_offer_gold': 'Opfern (-50 Gold)',
+      'event.fountain.choice_offer': 'Blut geben (-25% Max-LP für den Run) — Segen',
+      'event.fountain.choice_offer_gold': 'Münzen opfern (-{kosten} Gold) — Beute',
       'event.fountain.choice_ignore': 'Ignorieren',
       'event.fountain.outcome.heal':       'Reines Wasser! Volle Heilung.',
       'event.fountain.outcome.damage_buff':'Stärke! +25% Schaden bis Run-Ende.',
@@ -98,6 +107,8 @@
       'event.fountain.outcome.nothing':    'Nichts geschieht.',
       'event.fountain.outcome.strong_buff':'Mächtige Gabe! +50% Schaden bis Run-Ende.',
       'event.fountain.outcome.rare_loot':  'Seltener Schatz!',
+      'event.fountain.outcome.haste_buff': 'Das Wasser beschleunigt deine Hand: +25% Angriffstempo!',
+      'event.fountain.outcome.potions':    'Zwei Fläschchen treiben an die Oberfläche.',
     });
     window.i18n.register('en', {
       'event.treasure.name': 'Hidden Treasure',
@@ -105,10 +116,14 @@
       'event.treasure.object_label': 'Treasure',
       'event.treasure.choice_gold': 'Take gold (+{amount})',
       'event.treasure.choice_search': 'Search thoroughly (Item)',
+      'event.treasure.choice_ransack': 'Ransack it (rare item — wakes {gegner} guards)',
       'event.treasure.choice_ignore': 'Ignore',
+      'event.treasure.toast_ransack': 'A rare find — but the noise wakes {gegner} guards!',
+      'event.treasure.toast_ransack_fragment': 'A knowledge fragment lies among the junk.',
       'event.treasure.toast_gold': '+{amount} gold!',
       'event.treasure.toast_item': 'Found an item!',
       'event.ambush.name': 'Ambush!',
+      'event.ambush.toast_looter': 'One of them carries loot — the looter!',
       'event.merchant.name': 'Wandering Merchant',
       'event.merchant.toast_spawn': '🛒 A wandering merchant has appeared!',
       'event.cursed.name': 'Cursed Chest',
@@ -154,19 +169,24 @@
       'event.gambling.toast_spawn': 'A gambling table appears...',
       'event.gambling.object_label': 'Gambling',
       'event.gambling.title': 'Gambling ({cost} gold)',
-      'event.gambling.choice_bet': 'Bet {cost} gold (40% chance for 3x)',
+      'event.gambling.choice_bet': 'Bet {cost} gold (30% for triple)',
+      'event.gambling.toast_marked': 'The house marks you: -{wert}% armor until the end of this depth.',
       'event.gambling.choice_decline': 'Decline',
       'event.gambling.toast_no_gold': 'Not enough gold!',
       'event.gambling.toast_won': 'You won! Net +{amount} gold!',
       'event.gambling.toast_lost': 'Lost! -{amount} gold',
       'event.elite.name': 'Elite Ambush',
       'event.elite.toast_spawn': 'A mighty foe approaches!',
+      'event.elite.choice_accept': 'Accept (guaranteed loot)',
+      'event.elite.choice_challenge': 'Challenge (+30% health, +15% damage — better loot)',
+      'event.elite.toast_challenge': 'You challenge him. He grows stronger — and richer.',
+      'event.elite.toast_reward': 'The elite\'s loot.',
       'event.fountain.name': 'Mysterious Fountain',
       'event.fountain.toast_spawn': 'A glowing fountain appears...',
       'event.fountain.object_label': 'Fountain',
       'event.fountain.choice_drink': 'Drink',
-      'event.fountain.choice_offer': 'Sacrifice (-25% max HP for the run)',
-      'event.fountain.choice_offer_gold': 'Sacrifice (-50 gold)',
+      'event.fountain.choice_offer': 'Give blood (-25% max HP for the run) — blessing',
+      'event.fountain.choice_offer_gold': 'Offer coin (-{kosten} gold) — loot',
       'event.fountain.choice_ignore': 'Ignore',
       'event.fountain.outcome.heal':       'Pure water! Fully healed.',
       'event.fountain.outcome.damage_buff':'Strength! +25% damage for the rest of the run.',
@@ -179,6 +199,8 @@
       'event.fountain.outcome.nothing':    'Nothing happens.',
       'event.fountain.outcome.strong_buff':'Mighty gift! +50% damage for the rest of the run.',
       'event.fountain.outcome.rare_loot':  'A rare treasure!',
+      'event.fountain.outcome.haste_buff': 'The water quickens your hand: +25% attack speed!',
+      'event.fountain.outcome.potions':    'Two vials float to the surface.',
     });
   }
   var T = function (key, params) { return window.i18n ? window.i18n.t(key, params) : key; };
@@ -219,6 +241,34 @@
                   // gefunden", der Spieler bekam aber nichts).
                   if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(goldAmount);
                   showEventToast(scene, T('event.treasure.toast_gold', { amount: goldAmount }), 'treasure_cache');
+                }
+              }
+            },
+            {
+              // #71: Der Schatz war die einzige Wahl OHNE Preis — und das
+              // haeufigste Ereignis auf Tiefe 1. Wer mehr will, macht Laerm.
+              label: T('event.treasure.choice_ransack',
+                { gegner: wachenBeimDurchwuehlen(window.DUNGEON_DEPTH || 1) }),
+              callback: function () {
+                var tiefe = window.DUNGEON_DEPTH || 1;
+                var wachen = wachenBeimDurchwuehlen(tiefe);
+                if (window.LootSystem && window.LootSystem.rollItem && typeof spawnLoot === 'function') {
+                  try {
+                    var stueck = window.LootSystem.rollItem(null, tiefe + 5, 2);   // Selten
+                    if (stueck) spawnLoot.call(scene, player.x, player.y - 30, stueck, null);
+                  } catch (e) {}
+                }
+                // Das Gold gibt es NICHT zusaetzlich: die Truhe ist danach leer.
+                weckeWachen(scene, wachen);
+                showEventToast(scene, T('event.treasure.toast_ransack', { gegner: wachen }), 'treasure_cache');
+                // Ein seltener Nebenfund haelt das Durchwuehlen interessant,
+                // auch wenn die Ausruestung gerade nicht passt.
+                if (Math.random() < 0.15 && window.KnowledgeTree
+                    && typeof window.KnowledgeTree.addFragments === 'function') {
+                  try {
+                    window.KnowledgeTree.addFragments(1);
+                    showEventToast(scene, T('event.treasure.toast_ransack_fragment'), 'treasure_cache');
+                  } catch (e) {}
                 }
               }
             },
@@ -274,8 +324,12 @@
                 // Fluch-Kosten: -25% der AKTUELLEN Max-LP (prozentual statt flat
                 // -3, das in der Tiefe belanglos wurde). Als flacher Abzug im
                 // maxHpAdd-Slot verbucht -> skaliert mit dem Gear-Stand.
+                // #71: Anteil aus einem Band statt fester 25 %. Zwei Kisten
+                // waren sonst dieselbe Entscheidung; der genaue Preis steht im
+                // Toast.
                 var _curMax = Math.max(1, window.playerMaxHealth || 1);
-                var _penalty = Math.max(1, Math.round(_curMax * 0.25));
+                var _anteil = 0.20 + Math.random() * 0.10;   // 20 - 30 %
+                var _penalty = Math.max(1, Math.round(_curMax * _anteil));
                 window.brunnenBuffs.maxHpAdd -= _penalty;
                 if (typeof recalcDerived === 'function') recalcDerived(0, 0);
                 // Preserve the player's existing wound: clamp current HP to
@@ -337,6 +391,46 @@
   ];
 
   // --- Interactable event objects (spawn in room, player presses E to interact) ---
+
+  /**
+   * Wie viele Wachen der Laerm beim Durchwuehlen weckt (#71).
+   *
+   * Waechst mit der Tiefe, aber langsam: der Preis soll spuerbar bleiben, ohne
+   * in der Endlostiefe zu einem zweiten Hinterhalt zu werden.
+   * T1-4: 2, T5-9: 3, T10-14: 4, ...
+   */
+  function wachenBeimDurchwuehlen(tiefe) {
+    return 2 + Math.floor(Math.max(1, tiefe || 1) / 5);
+  }
+
+  /**
+   * Weckt die Wachen um den Spieler herum.
+   *
+   * spawnEnemy haelt 300 px Mindestabstand zum Spieler ein und wuerde die
+   * Wachen sonst irgendwo im Raum absetzen — dieselbe Falle wie bei der
+   * Koederfalle in #113. Darum nach dem Spawn auf den Ring zurueckholen.
+   */
+  function weckeWachen(scene, anzahl) {
+    if (typeof spawnEnemy !== 'function' || typeof player === 'undefined' || !player) return 0;
+    var gesetzt = 0;
+    for (var i = 0; i < anzahl; i++) {
+      var winkel = (Math.PI * 2 * i) / anzahl + Math.random() * 0.5;
+      var radius = 110 + Math.random() * 70;
+      try {
+        var g = spawnEnemy.call(scene);
+        if (!g) continue;
+        var zx = player.x + Math.cos(winkel) * radius;
+        var zy = player.y + Math.sin(winkel) * radius;
+        if (typeof window.isSpawnPositionBlocked !== 'function'
+            || !window.isSpawnPositionBlocked(zx, zy, 20)) {
+          g.x = zx; g.y = zy;
+          if (g.body && typeof g.body.reset === 'function') g.body.reset(zx, zy);
+        }
+        gesetzt++;
+      } catch (e) { /* ein Gegner weniger ist besser als ein Absturz */ }
+    }
+    return gesetzt;
+  }
 
   var activeEventObjects = []; // track spawned event objects for cleanup
 
@@ -765,7 +859,8 @@
     weight: 10,
     minDepth: 3,
     handler: function (scene) {
-      var cost = 50 + Math.floor(Math.random() * 50);
+      // Der Einsatz stand fest bei 50-99 Gold: ab Tiefe 10 war das Trinkgeld.
+      var cost = 50 + 25 * Math.max(1, window.DUNGEON_DEPTH || 1);
       showEventToast(scene, T('event.gambling.toast_spawn'), 'gambling');
       spawnEventObject(scene, 'evt_gamble', 0x886622, 0xffcc44, T('event.gambling.object_label'), function () {
         try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
@@ -777,16 +872,28 @@
                 showEventToast(scene, T('event.gambling.toast_no_gold'), 'gambling');
                 return;
               }
-              if (Math.random() < 0.4) {
-                // Won: return bet + winnings (net gain = 2x bet)
+              // 40 % auf das Dreifache ergaben einen Erwartungswert von +20 %
+              // je Wurf: immer setzen war die einzig richtige Antwort, der
+              // Tisch also eine Gelddruckmaschine statt eines Wagnisses.
+              //
+              // Jetzt drei Ausgaenge: 30 % Dreifaches (Erwartungswert -10 %),
+              // 50 % Einsatz weg, 20 % Einsatz weg UND gezeichnet.
+              var _wurf = Math.random();
+              if (_wurf < 0.30) {
                 var winnings = cost * 3;
                 if (window.LootSystem && window.LootSystem.grantGold) {
                   window.LootSystem.grantGold(winnings);
                 }
                 var netGain = winnings - cost;
                 showEventToast(scene, T('event.gambling.toast_won', { amount: netGain }), 'gambling');
-              } else {
+              } else if (_wurf < 0.80) {
                 showEventToast(scene, T('event.gambling.toast_lost', { amount: cost }), 'gambling');
+              } else {
+                // Gezeichnet: gilt bis zum Ende der TIEFE, nicht des Raums.
+                // window.tiefenBuffs wird beim Rueckweg in den Hub und im
+                // Endlosmodus beim Aufstieg geleert.
+                zeichneSpieler(0.10);
+                showEventToast(scene, T('event.gambling.toast_marked', { wert: 10 }), 'gambling');
               }
             }
           },
@@ -795,6 +902,22 @@
       });
     }
   });
+
+  /**
+   * Setzt das Zeichen des Hauses: Ruestungsabzug bis zum Ende der Tiefe.
+   *
+   * Eigene Schicht (window.tiefenBuffs), NICHT eventBuffs: die gelten fuer den
+   * ganzen Durchgang, das Zeichen nur fuer diese Tiefe.
+   *
+   * @param {number} anteil z.B. 0.10 fuer -10 % Ruestung
+   */
+  function zeichneSpieler(anteil) {
+    window.tiefenBuffs = window.tiefenBuffs
+      || { damageMult: 1, armorAdd: 0, armorMult: 1, speedMult: 1, attackSpeedMult: 1 };
+    window.tiefenBuffs.armorMult = (window.tiefenBuffs.armorMult || 1) * (1 - anteil);
+    if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+    return window.tiefenBuffs;
+  }
 
   // Elite ambush — fires immediately (no interaction needed)
   EVENT_TYPES.push({
@@ -805,13 +928,54 @@
     handler: function (scene) {
       try { window.soundManager && window.soundManager.playSFX('enemy_death'); } catch (e) {}
       showEventToast(scene, T('event.elite.toast_spawn'), 'elite_ambush');
-      if (typeof spawnMiniBoss === 'function') {
-        scene.time.delayedCall(500, function () {
-          spawnMiniBoss.call(scene, 0, 0, 0);
-        });
-      }
+      // #71: Der Elite-Hinterhalt zahlte nichts Eigenes — die Beute kam aus der
+      // gewoehnlichen Tabelle, ein Mini-Boss lohnte also nicht mehr als ein
+      // normaler Kampf. Jetzt eine garantierte Beute UND eine Wahl davor: der
+      // Preis, den ein Kampfereignis tragen kann, ohne zu bestrafen.
+      showEventChoiceDialog(scene, T('event.elite.name'), [
+        {
+          label: T('event.elite.choice_accept'),
+          callback: function () { eliteStellen(scene, false); }
+        },
+        {
+          label: T('event.elite.choice_challenge'),
+          callback: function () {
+            showEventToast(scene, T('event.elite.toast_challenge'), 'elite_ambush');
+            eliteStellen(scene, true);
+          }
+        }
+      ]);
     }
   });
+
+  /**
+   * Setzt den Elite-Gegner und haengt ihm seine Belohnung an.
+   *
+   * @param {Phaser.Scene} scene
+   * @param {boolean} herausgefordert staerker, dafuer eine Stufe bessere Beute
+   */
+  function eliteStellen(scene, herausgefordert) {
+    if (typeof spawnMiniBoss !== 'function' || !scene.time) return;
+    var tiefe = window.DUNGEON_DEPTH || 1;
+    scene.time.delayedCall(500, function () {
+      var elite = null;
+      try { elite = spawnMiniBoss.call(scene, 0, 0, 0); } catch (e) { return; }
+      if (!elite) return;
+      try {
+        if (herausgefordert) {
+          elite.maxHp = Math.round((elite.maxHp || 100) * 1.3);
+          elite.hp = elite.maxHp;
+          elite.damage = Math.round((elite.damage || 10) * 1.15);
+        }
+        // Beute haengt am Gegner, nicht an einem Wellen-Haken: er faellt, sie
+        // faellt. Dieselbe Verdrahtung wie beim Pluenderer im Hinterhalt.
+        elite.setData('eliteBeute', {
+          iLevel: tiefe + 4,
+          stufe: herausgefordert ? 3 : 2
+        });
+      } catch (e) { /* Optik und Zusatzbeute duerfen den Kampf nie brechen */ }
+    });
+  }
 
   // -------------------------------------------------------------------------
   // Healing fountain — REWORKED (#16). Risk/reward choice with weighted
@@ -835,16 +999,30 @@
       { weight:  6, kind: 'debuff_speed',  toastKey: 'event.fountain.outcome.speed_debuff'  },
       { weight:  6, kind: 'debuff_damage', toastKey: 'event.fountain.outcome.damage_debuff' }
     ],
-    offer: [
-      // 70% strong positive: heal + a buff stacked
-      { weight: 35, kind: 'buff_damage_strong', toastKey: 'event.fountain.outcome.strong_buff' },
-      { weight: 35, kind: 'heal_and_buff_armor', toastKey: 'event.fountain.outcome.armor_buff' },
-      // 20% rare loot
-      { weight: 20, kind: 'rare_loot',          toastKey: 'event.fountain.outcome.rare_loot'  },
-      // 10% nothing (the tease)
-      { weight: 10, kind: 'nothing',            toastKey: 'event.fountain.outcome.nothing'    }
+    // #71: Blut und Gold fuehrten frueher auf DIESELBE Tabelle — 25 % des
+    // maximalen Lebens fuer den ganzen Lauf und 50 Gold kauften exakt dasselbe.
+    // In der Tiefe ist Gold reichlich und Leben knapp; die Wahl war keine.
+    // Jetzt kauft jeder Weg etwas anderes.
+    //
+    // Blut kauft KRAFT. Kein "nichts" mehr: wer bleibende Leben hergibt, darf
+    // nicht leer ausgehen.
+    blut: [
+      { weight: 40, kind: 'buff_damage_strong',  toastKey: 'event.fountain.outcome.strong_buff' },
+      { weight: 35, kind: 'heal_and_buff_armor', toastKey: 'event.fountain.outcome.armor_buff'  },
+      { weight: 25, kind: 'buff_attackspeed',    toastKey: 'event.fountain.outcome.haste_buff'  }
+    ],
+    // Gold kauft BEUTE. Alles auf Tiefenniveau, damit der Preis mitwaechst.
+    gold: [
+      { weight: 60, kind: 'loot_magisch', toastKey: 'event.fountain.outcome.loot'      },
+      { weight: 30, kind: 'loot_selten',  toastKey: 'event.fountain.outcome.rare_loot' },
+      { weight: 10, kind: 'traenke',      toastKey: 'event.fountain.outcome.potions'   }
     ]
   };
+  // Der Goldpreis waechst mit der Tiefe: 50 Gold waren ab Tiefe 5 geschenkt,
+  // waehrend der Blutpreis (25 % Max-LP) immer gleich weh tat.
+  function brunnenGoldPreis(tiefe) {
+    return 40 + 20 * Math.max(1, tiefe || 1);
+  }
 
   function _pickFountainOutcome(table) {
     var total = 0;
@@ -933,6 +1111,31 @@
           try { spawnLoot.call(scene, px + 30, py, null, null); } catch (e) {}
         }
         break;
+      case 'buff_attackspeed':
+        bb.attackSpeedMult = (bb.attackSpeedMult || 1) * 1.25;
+        if (typeof recalcDerived === 'function') recalcDerived(0, 0);
+        break;
+      case 'loot_magisch':
+      case 'loot_selten':
+        if (window.LootSystem && typeof window.LootSystem.rollItem === 'function'
+            && typeof spawnLoot === 'function') {
+          try {
+            var _stufe = (outcome.kind === 'loot_selten') ? 2 : 1;
+            var _lvl = (window.DUNGEON_DEPTH || 1) + 3;
+            var _stueck = window.LootSystem.rollItem(null, _lvl, _stufe);
+            if (_stueck) spawnLoot.call(scene, px + 30, py, _stueck, null);
+          } catch (e) {}
+        }
+        break;
+      case 'traenke':
+        if (typeof window.makePotionDrop === 'function' && typeof spawnLoot === 'function') {
+          try {
+            var _t = (window.DUNGEON_DEPTH || 1);
+            spawnLoot.call(scene, px + 20, py, window.makePotionDrop(_t), null);
+            spawnLoot.call(scene, px + 44, py, window.makePotionDrop(_t), null);
+          } catch (e) {}
+        }
+        break;
       case 'rare_loot':
         if (window.LootSystem && typeof window.LootSystem.rollItem === 'function' && typeof spawnLoot === 'function') {
           try {
@@ -972,7 +1175,8 @@
         var maxHp = (typeof window.playerMaxHealth === 'number') ? window.playerMaxHealth : 1;
         var canPayHp = maxHp > 4; // max 5+ → 25% cut leaves >= 4 max-HP for the run
         var gold = (window.LootSystem && typeof window.LootSystem.getGold === 'function') ? window.LootSystem.getGold() : 0;
-        var canPayGold = gold >= 50;
+        var goldKosten = brunnenGoldPreis(window.DUNGEON_DEPTH || 1);
+        var canPayGold = gold >= goldKosten;
 
         var choices = [
           {
@@ -1006,19 +1210,24 @@
               if (typeof window.setPlayerHealth === 'function') {
                 window.setPlayerHealth(Math.min(origCurrent, newMax), true);
               }
-              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.offer);
+              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.blut);
               _applyFountainOutcome(scene, outcome);
               showEventToast(scene, T(outcome.toastKey), 'healing_fountain');
             }
           });
-        } else if (canPayGold) {
+        }
+        // Frueher stand die Goldwahl im else-Zweig: sie erschien NUR, wenn die
+        // Leben nicht zahlbar waren. Die beiden Wege standen also nie
+        // nebeneinander — und da sie ohnehin dieselbe Tabelle zogen, fiel es
+        // nicht auf. Jetzt kaufen sie Verschiedenes und muessen beide dastehen.
+        if (canPayGold) {
           choices.push({
-            label: T('event.fountain.choice_offer_gold'),
+            label: T('event.fountain.choice_offer_gold', { kosten: goldKosten }),
             callback: function () {
               if (window.LootSystem && typeof window.LootSystem.spendGold === 'function') {
-                window.LootSystem.spendGold(50);
+                window.LootSystem.spendGold(goldKosten);
               }
-              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.offer);
+              var outcome = _pickFountainOutcome(FOUNTAIN_OUTCOMES.gold);
               _applyFountainOutcome(scene, outcome);
               showEventToast(scene, T(outcome.toastKey), 'healing_fountain');
             }
@@ -1561,14 +1770,50 @@
     var extraCount = 2 + Math.floor((window.DUNGEON_DEPTH || 1) / 3);
     if (scene.time && scene.time.delayedCall) {
       scene.time.delayedCall(1500, function() {
+        // #71: Einer der Angreifer traegt die Beute.
+        //
+        // Vorher schrieb diese Stelle scene._ambushBonus und das war es —
+        // nachgesehen: die Eigenschaft wird im ganzen Projekt NIRGENDS gelesen.
+        // Der Hinterhalt zahlte also gar nichts, obwohl der Kommentar eine
+        // Belohnung beim Wellenende versprach.
+        //
+        // Statt eines Wellen-Hakens haengt die Belohnung jetzt an einem
+        // bestimmten Gegner: der Pluenderer faellt, die Beute faellt. Das
+        // braucht keine neue Verdrahtung und macht aus dem Kampf ein Ziel.
+        var gegner = [];
         for (var i = 0; i < extraCount; i++) {
-          if (typeof spawnEnemy === 'function') spawnEnemy.call(scene, 0, 0, 'enemy');
+          if (typeof spawnEnemy === 'function') {
+            var g = spawnEnemy.call(scene, 0, 0, 'enemy');
+            if (g) gegner.push(g);
+          }
         }
-        // Bonus reward for surviving
-        var bonusGold = 50 + (window.DUNGEON_DEPTH || 1) * 20;
-        if (window.LootSystem && window.LootSystem.grantGold) {
-          // Delayed reward note — gold given when wave clears
-          scene._ambushBonus = bonusGold;
+        if (gegner.length) {
+          var pluenderer = gegner[Math.floor(Math.random() * gegner.length)];
+          var beuteGold = 40 + 15 * (window.DUNGEON_DEPTH || 1);
+          try {
+            pluenderer.setData('pluendererGold', beuteGold);
+            // Sichtbar: goldener Schimmer, damit man weiss, wen man jagt.
+            if (typeof pluenderer.setTint === 'function') pluenderer.setTint(0xffd98a);
+            if (scene.add && typeof scene.add.circle === 'function') {
+              var schein = scene.add.circle(pluenderer.x, pluenderer.y, 22, 0xffd98a, 0.22);
+              schein.setDepth((pluenderer.depth || 10) - 1);
+              schein.setBlendMode(Phaser.BlendModes.ADD);
+              pluenderer.setData('pluendererSchein', schein);
+              // Der Schimmer folgt seinem Traeger und verschwindet mit ihm.
+              if (scene.events && typeof scene.events.on === 'function') {
+                var mit = function () {
+                  if (!pluenderer.active) {
+                    schein.destroy();
+                    scene.events.off('update', mit);
+                    return;
+                  }
+                  schein.setPosition(pluenderer.x, pluenderer.y);
+                };
+                scene.events.on('update', mit);
+              }
+            }
+          } catch (e) { /* Optik darf den Kampf nie brechen */ }
+          showEventToast(scene, T('event.ambush.toast_looter'), 'ambush');
         }
       });
     }

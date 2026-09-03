@@ -1726,6 +1726,30 @@ function handleEnemyHit(scene, enemy, options = {}) {
       });
     }
     spawnLoot.call(scene, enemy.x, enemy.y, null, enemy);
+    // #71: Der Pluenderer aus dem Hinterhalt traegt die Beute des Ereignisses.
+    // Vorher schrieb der Hinterhalt scene._ambushBonus — nachgesehen: diese
+    // Eigenschaft wird im ganzen Projekt NIRGENDS gelesen. Der Hinterhalt zahlte
+    // also gar nichts, obwohl der Kommentar dort eine Belohnung beim Wellenende
+    // versprach. Jetzt haengt sie an DIESEM Gegner: er faellt, die Beute faellt.
+    try {
+      const _plGold = (typeof enemy.getData === 'function') ? enemy.getData('pluendererGold') : 0;
+      if (_plGold > 0) {
+        if (window.LootSystem && window.LootSystem.grantGold) window.LootSystem.grantGold(_plGold);
+        if (typeof window.makePotionDrop === 'function') {
+          spawnLoot.call(scene, enemy.x + 26, enemy.y,
+            window.makePotionDrop(window.DUNGEON_DEPTH || 1), null);
+        }
+        const _schein = enemy.getData('pluendererSchein');
+        if (_schein && _schein.destroy) _schein.destroy();
+      }
+      // #71: Elite-Hinterhalt — garantierte Beute statt der gewoehnlichen
+      // Tabelle. Herausgefordert liegt sie eine Seltenheitsstufe hoeher.
+      const _eb = (typeof enemy.getData === 'function') ? enemy.getData('eliteBeute') : null;
+      if (_eb && window.LootSystem && typeof window.LootSystem.rollItem === 'function') {
+        const _stueck = window.LootSystem.rollItem(null, _eb.iLevel, _eb.stufe);
+        if (_stueck) spawnLoot.call(scene, enemy.x + 30, enemy.y, _stueck, null);
+      }
+    } catch (e) { /* nie den Tod eines Gegners brechen */ }
     enemy.destroy();
     defeatedEnemiesInWave += 1;
     // Run-summary: count every kill, plus elite/boss subcounts for the modal.
