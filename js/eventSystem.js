@@ -426,23 +426,49 @@
         g.fillStyle(0x8f6459, 1); g.fillEllipse(5.6, 21, 7, 2.6);
         g.generateTexture(texKey, 32, 32);
       } else if (texKey === 'evt_falle') {
-        // Koeder: ein umgekippter Beutel, aus dem Muenzen rollen. Sieht bewusst
-        // nach Beute aus — kein Warnzeichen, das gehoert zur Falle.
-        g.fillStyle(0x000000, 0.30); g.fillEllipse(16, 27, 26, 7);
-        // Beutel: Umriss, Leder, Lichtkante, Schnuerung
-        g.fillStyle(0x241b10, 1); g.fillEllipse(15, 20, 19, 16);
-        g.fillStyle(0x6b5426, 1); g.fillEllipse(15, 19.4, 17, 14);
-        g.fillStyle(0x8f7334, 1); g.fillEllipse(13, 16.5, 10, 6);
-        g.fillStyle(0xb39448, 0.7); g.fillEllipse(12, 15.4, 6, 2.6);
-        g.fillStyle(0x3d3018, 1); g.fillRect(10, 13, 11, 2.5);       // Schnur
-        g.fillStyle(0x241b10, 1); g.fillRect(19, 12, 3, 4);          // Halsfalte
-        // Muenzen: je dunkler Rand, Gold, Glanz
-        [[9,25,3.2],[15,26.5,3.0],[21,25,2.8],[24,22,2.4]].forEach(function (m) {
-          g.fillStyle(0x6b5410, 1); g.fillCircle(m[0], m[1] + 0.7, m[2] + 0.6);
-          g.fillStyle(0xe8b93c, 1); g.fillCircle(m[0], m[1], m[2]);
-          g.fillStyle(0xffe89a, 1); g.fillCircle(m[0] - 0.8, m[1] - 0.9, m[2] * 0.45);
-        });
-        g.fillStyle(0xffeebb, 0.22); g.fillCircle(16, 22, 12);       // Schimmer
+        // Koeder: ein umgekippter Lederbeutel, aus dem Muenzen rollen. Sieht
+        // bewusst nach Beute aus — kein Warnzeichen, das gehoert zur Falle.
+        //
+        // Das LEDER ist braun, nicht golden: im ersten Wurf hatten Beutel und
+        // Muenzen fast denselben Ton und verschmolzen zu einem gelben Klumpen.
+        // Erst der Farbabstand macht aus zwei Formen zwei Dinge.
+        g.fillStyle(0x000000, 0.32); g.fillEllipse(15, 27.5, 25, 6);   // Bodenschatten
+
+        // Beutelkoerper: Umriss, Leder, dunklere Unterseite, Lichtkante
+        g.fillStyle(0x1b1309, 1); g.fillEllipse(13, 20, 21, 18);
+        g.fillStyle(0x6b4a2a, 1); g.fillEllipse(13, 19.6, 19, 16);
+        g.fillStyle(0x4a3220, 1); g.fillEllipse(13, 23, 17, 8);
+        g.fillStyle(0x8f6538, 1); g.fillEllipse(10.5, 15.8, 10, 6.5);
+        g.fillStyle(0xa87a45, 0.85); g.fillEllipse(9.5, 14.4, 5.5, 2.6);
+        // Zwei Falten, damit es Stoff ist und keine Kugel
+        g.fillStyle(0x3f2c18, 0.55);
+        g.fillEllipse(16.5, 21, 2.2, 9); g.fillEllipse(9, 22.5, 1.8, 7);
+
+        // Hals: Schnuerung, gerafftes Oberteil, zwei lose Schnurenden
+        g.fillStyle(0x1b1309, 1); g.fillRect(8, 9, 11, 4);
+        g.fillStyle(0x5c4020, 1); g.fillRect(8.6, 9.4, 9.8, 3);
+        g.fillStyle(0x7d5a30, 1); g.fillRect(8.6, 9.4, 9.8, 1);
+        g.fillStyle(0x4a3220, 1); g.fillRect(10, 5.5, 7, 4);           // gerafft
+        g.fillStyle(0x2e2114, 1);
+        g.fillRect(10.5, 5.5, 1.4, 4); g.fillRect(13.4, 5.5, 1.4, 4);  // Raffung
+        g.fillStyle(0x2e2114, 1);                                       // Schnurenden
+        g.fillRect(18, 10.5, 5, 1.4); g.fillRect(21.5, 11.5, 3.5, 1.3);
+        g.fillStyle(0x4d3a24, 1); g.fillRect(18, 10.5, 5, 0.6);
+
+        // Muenzen: gross genug, um einzeln lesbar zu sein, mit dunklem Rand
+        [[21.5, 25.5, 3.6], [26, 22.5, 3.0], [24, 28, 2.6], [18, 27, 2.3]]
+          .forEach(function (m) {
+            g.fillStyle(0x7a5f10, 1); g.fillCircle(m[0], m[1] + 0.8, m[2] + 0.7);
+            g.fillStyle(0xe8b93c, 1); g.fillCircle(m[0], m[1], m[2]);
+            g.fillStyle(0xc79a22, 1); g.fillCircle(m[0] + 0.5, m[1] + 0.6, m[2] * 0.7);
+            g.fillStyle(0xfff0b4, 1); g.fillCircle(m[0] - 0.9, m[1] - 1.0, m[2] * 0.42);
+          });
+        // Eine Muenze hochkant an der Beutelkante — bricht die Reihe auf
+        g.fillStyle(0x7a5f10, 1); g.fillEllipse(19.5, 21.5, 3.2, 7);
+        g.fillStyle(0xdcae32, 1); g.fillEllipse(19.3, 21.2, 2.2, 6);
+        g.fillStyle(0xfff0b4, 0.8); g.fillEllipse(18.9, 19.5, 1, 2);
+
+        g.fillStyle(0xffd98a, 0.16); g.fillCircle(20, 24, 13);          // warmer Schein
         g.generateTexture(texKey, 32, 32);
       } else if (texKey === 'evt_nische') {
         // #113: Lose Steine in einer Mauerspalte. Bewusst KEINE Truhe — der
