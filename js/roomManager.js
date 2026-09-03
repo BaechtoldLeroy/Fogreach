@@ -12,7 +12,17 @@ if (window.i18n) {
     'room.cleared.6': 'Ein Raum mehr im Rücken der Stadt.',
     'room.cleared.7': 'Die Ketten werden leichter.',
     'room.objective_done': '✓ Ziel erfüllt!',
-    'room.objective_failed': '✗ Ziel verfehlt'
+    'room.objective_failed': '✗ Ziel verfehlt',
+    // Gesperrte Treppe: der Spieler stand davor und nichts geschah — ohne
+    // jeden Hinweis, warum. Je Sperrgrund ein eigener Satz.
+    'stairs.locked.objective': 'Die Aufgabe dieses Raums ist noch offen.',
+    'stairs.locked.defend': 'Der Altar steht noch unter Beschuss — halte ihn.',
+    'stairs.locked.survival': 'Der Ansturm ist nicht vorbei. Halte durch.',
+    'stairs.locked.hunt': 'Das Ziel lebt noch. Finde es.',
+    'stairs.locked.escape': 'Der Weg nach unten ist erst frei, wenn du entkommen bist.',
+    'stairs.locked.leader': 'Der Anführer lebt noch — er versperrt den Abstieg.',
+    'stairs.locked.enemies': 'Noch {n} Gegner im Raum.',
+    'stairs.locked.generic': 'Hier wartet noch eine Aufgabe.'
   });
   window.i18n.register('en', {
     'room.counter': 'Room {cur}/{total}',
@@ -25,7 +35,15 @@ if (window.i18n) {
     'room.cleared.4': 'The shadows recede — for now.',
     'room.cleared.5': 'Their ashes drift in the candlelight.',
     'room.cleared.6': 'Another room reclaimed for the city.',
-    'room.cleared.7': 'The chains grow lighter.'
+    'room.cleared.7': 'The chains grow lighter.',
+    'stairs.locked.objective': "This room's task is still open.",
+    'stairs.locked.defend': 'The altar is still under fire — hold it.',
+    'stairs.locked.survival': 'The assault is not over. Hold out.',
+    'stairs.locked.hunt': 'The target still lives. Find it.',
+    'stairs.locked.escape': 'The way down opens once you have escaped.',
+    'stairs.locked.leader': 'The leader still lives — he bars the descent.',
+    'stairs.locked.enemies': '{n} enemies still in the room.',
+    'stairs.locked.generic': 'Something here still needs doing.'
   });
 }
 const _ROOM_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
@@ -1504,9 +1522,72 @@ function _maybeSpawnRunAmulet(scene, roomIndex) {
   } catch (e) { /* never break room entry */ }
 }
 
+// Wie lange nach einer Treppen-Meldung geschwiegen wird. Der Overlap feuert
+// jeden Frame, solange man auf der Treppe steht — ohne Sperre waere das ein
+// Dauerfeuer aus Meldungen.
+var _treppeGemeldetBis = 0;
+var TREPPE_MELDE_PAUSE = 3000;
+
+/**
+ * Warum ist die Treppe zu? Gibt einen fertigen Satz zurueck, oder null.
+ *
+ * Reihenfolge nach Dringlichkeit: ein laufendes Raumziel ist die konkreteste
+ * Antwort, danach der Anfuehrer, zuletzt die uebrigen Gegner.
+ */
+function treppenSperrGrund(scene) {
+  var _t = function (k, f) {
+    try {
+      if (window.i18n && typeof window.i18n.t === 'function') {
+        var s = window.i18n.t(k);
+        if (s && s.indexOf('[MISSING:') !== 0) return s;
+      }
+    } catch (e) {}
+    return f;
+  };
+  try {
+    if (window.RoomMode && typeof window.RoomMode.activeModeId === 'function') {
+      var id = window.RoomMode.activeModeId();
+      if (id && id !== 'clear') {
+        return _t('stairs.locked.' + id, _t('stairs.locked.objective',
+          'Die Aufgabe dieses Raums ist noch offen.'));
+      }
+    }
+  } catch (e) {}
+  try {
+    var chef = window.__climaxEnemy;
+    if (chef && chef.active) {
+      return _t('stairs.locked.leader', 'Der Anführer lebt noch — er versperrt den Abstieg.');
+    }
+  } catch (e) {}
+  try {
+    var uebrig = (window.enemies && typeof window.enemies.getChildren === 'function')
+      ? window.enemies.getChildren().filter(function (g) { return g && g.active; }).length
+      : 0;
+    if (uebrig > 0) {
+      return _t('stairs.locked.enemies', 'Noch {n} Gegner im Raum.').replace('{n}', uebrig);
+    }
+  } catch (e) {}
+  return _t('stairs.locked.generic', 'Hier wartet noch eine Aufgabe.');
+}
+
 function onStairOverlap(player, stair) {
   // nur wenn freigeschaltet
-  if (stair.getData("locked")) return;
+  if (stair.getData("locked")) {
+    // Vorher kehrte die Funktion still zurueck: der Spieler stand auf der
+    // Treppe, drueckte E und nichts geschah — ohne jeden Hinweis, warum.
+    var jetzt = (typeof window.gameNow === 'function')
+      ? window.gameNow(obstacles && obstacles.scene) : Date.now();
+    if (jetzt >= _treppeGemeldetBis) {
+      _treppeGemeldetBis = jetzt + TREPPE_MELDE_PAUSE;
+      try {
+        var sc = (obstacles && obstacles.scene) || window.currentScene;
+        if (sc && window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+          window.EventSystem.showToast(sc, treppenSperrGrund(sc));
+        }
+      } catch (e) { /* eine fehlende Meldung darf den Raum nicht brechen */ }
+    }
+    return;
+  }
 
   // Require E key to confirm — no accidental room transitions
   const scene = obstacles?.scene;

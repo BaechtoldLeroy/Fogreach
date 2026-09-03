@@ -432,6 +432,24 @@
     return gesetzt;
   }
 
+  /**
+   * Kleine Erfahrungsgutschrift fuers Erreichen eines Ereignisses (#71).
+   *
+   * Bewusst deutlich unter dem Lore-Fragment (15 + 5 je Tiefe), das seine XP
+   * fuer eine echte Interaktion gibt.
+   */
+  function ereignisXp(tiefe) {
+    return 6 + 2 * Math.max(1, tiefe || 1);
+  }
+
+  function gibEreignisXp(scene) {
+    try {
+      var menge = ereignisXp(window.DUNGEON_DEPTH || 1);
+      if (typeof addXP === 'function') addXP.call(scene, menge);
+      else if (typeof window.addXP === 'function') window.addXP.call(scene, menge);
+    } catch (e) { /* nie ein Ereignis wegen der XP verlieren */ }
+  }
+
   var activeEventObjects = []; // track spawned event objects for cleanup
 
   function spawnEventObject(scene, texKey, color, glowColor, label, onInteract, opts) {
@@ -2047,8 +2065,12 @@
       if (forced) {
         lastEventId = forced.id;
         if (scene && scene.time && scene.time.delayedCall) {
-          scene.time.delayedCall(800, function() { forced.handler(scene); });
+          scene.time.delayedCall(800, function() {
+            gibEreignisXp(scene);
+            forced.handler(scene);
+          });
         } else {
+          gibEreignisXp(scene);
           forced.handler(scene);
         }
         return;
@@ -2078,6 +2100,11 @@
       // wurde, hier ebenfalls abbrechen.
       if (window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
           && window.EspionageSystem.isActive()) return;
+      // #71: Jedes Zufallsereignis gibt etwas Erfahrung — auch die, deren
+      // Belohnung man ausschlaegt oder verliert. Ein Ereignis ueberhaupt
+      // erreicht zu haben, soll sich lohnen; die Menge bleibt klein genug,
+      // dass niemand deswegen Raeume nach Ereignissen absucht.
+      gibEreignisXp(scene);
       var result = event.handler(scene);
       // If handler returns a choice descriptor, show the dialog
       if (result && result.title && Array.isArray(result.choices)) {

@@ -776,6 +776,9 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
     scene.time.delayedCall(160, () => {
       if (enemy && enemy.active) enemy.clearTint();
     });
+    // Ein Krit war bisher nur ein 160-ms-Aufblitzen — im Getuemmel kaum vom
+    // normalen Treffer zu unterscheiden. Jetzt sagt er auch, WIE hart er war.
+    zeigeKritText(scene, enemy.x, enemy.y, damage);
   }
 
   // Lebensraub (Life Steal): combine skill + loot affix "of the Leech" + endless buff.
@@ -3454,6 +3457,40 @@ function _levelUpFx(scene, level) {
     }
     if (window.particleFactory) { try { window.particleFactory.abilityTrail(cx, cy, GOLD); } catch (e) {} }
   } catch (e) { /* visual only */ }
+}
+
+/**
+ * Aufschlagtext bei einem kritischen Treffer.
+ *
+ * Bewusst anders als die gruene XP-Zahl: warmes Gold, groesser, mit Stoss nach
+ * oben und leichtem Zurueckfallen. Rein optisch — faellt etwas aus, geht der
+ * Treffer trotzdem durch.
+ */
+function zeigeKritText(scene, x, y, schaden) {
+  try {
+    if (!scene || !scene.add || !scene.add.text) return;
+    var streuung = (Math.random() - 0.5) * 26;
+    var txt = scene.add.text(x + streuung, y - 26, 'KRIT ' + Math.round(schaden), {
+      fontFamily: 'serif', fontSize: '22px', color: '#ffd166',
+      fontStyle: 'bold', stroke: '#4a2a00', strokeThickness: 4
+    }).setOrigin(0.5).setDepth(76);
+    var T = scene.tweens;
+    if (T) {
+      txt.setScale(0.6);
+      T.add({
+        targets: txt, scale: 1.15, duration: 110, ease: 'Back.easeOut',
+        onComplete: function () {
+          T.add({
+            targets: txt, y: y - 62, alpha: 0, scale: 0.95,
+            duration: 620, ease: 'Sine.easeIn',
+            onComplete: function () { try { txt.destroy(); } catch (e) {} }
+          });
+        }
+      });
+    } else if (scene.time) {
+      scene.time.delayedCall(700, function () { try { txt.destroy(); } catch (e) {} });
+    }
+  } catch (e) { /* rein optisch */ }
 }
 
 function addXP(amount = 1) {
