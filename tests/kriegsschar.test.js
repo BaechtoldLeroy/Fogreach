@@ -196,3 +196,35 @@ test('erbeAffix faerbt NICHT mehr', () => {
   assert.ok(!/setTint\(/.test(block),
     'erbeAffix faerbt wieder — das uebersteht keinen Trefferblitz');
 });
+
+test('In einem Raum steht genau EIN Banner', () => {
+  // Nutzerbefund: ein Raum mit drei Bannertraegern. Ursache war nicht der
+  // Test-Slug allein — shouldSpawnElite wuerfelt PRO GEGNER auf 'unique'
+  // (ab Tiefe 16: 5 %). In einem 28-Gegner-Raum sind das 27 weitere Wuerfe,
+  // Erwartungswert 1,35 zusaetzliche Bannertraeger. Der Slug legte nur einen
+  // erzwungenen obendrauf.
+  //
+  // Steht eine Schar im Raum, wird jede weitere 'unique'-Rolle auf 'champion'
+  // heruntergestuft: der Raum behaelt seine Abwechslung, der Rang bleibt
+  // einmalig. Geprueft am Quelltext, weil der Wurf tief in spawnEnemy sitzt.
+  const fs = require('fs');
+  const path = require('path');
+  const wurzel = path.join(__dirname, '..');
+
+  const enemy = fs.readFileSync(path.join(wurzel, 'js', 'enemy.js'), 'utf8');
+  assert.ok(/tier === 'unique' && window\.__scharImRaum/.test(enemy),
+    'spawnEnemy stuft weitere Uniques nicht herunter — es koennen mehrere '
+    + 'Bannertraeger in einem Raum stehen');
+
+  // Der Merker gehoert zum RAUM. Bliebe er stehen, unterdrueckte ein
+  // Bannertraeger die Uniques aller folgenden Raeume.
+  const wave = fs.readFileSync(path.join(wurzel, 'js', 'wave.js'), 'utf8');
+  assert.ok(/window\.__scharImRaum = false/.test(wave),
+    'wave.js setzt den Merker vor der Welle nicht zurueck');
+  assert.ok(/window\.__scharImRaum = true/.test(wave),
+    'wave.js setzt den Merker beim Bannertraeger nicht');
+
+  const rm = fs.readFileSync(path.join(wurzel, 'js', 'roomManager.js'), 'utf8');
+  assert.ok(/window\.__scharImRaum = false/.test(rm),
+    'roomManager loescht den Merker beim Raumwechsel nicht');
+});

@@ -143,6 +143,9 @@ function startNextWave(noIncrement) {
     enemiesPerWave = window.enemiesPerWave = total;
     if (total > 0) {
       let spawned = 0;
+      // Ein Raum, ein Banner (siehe spawnEnemy in enemy.js). Vor JEDER Welle
+      // zuruecksetzen, sonst traegt der Merker in den naechsten Raum.
+      window.__scharImRaum = false;
       // #95: Kriegsschar. Der Bannertraeger und sein Gefolge werden ZUERST
       // gesetzt, damit der Rest der Welle nur noch auffuellt — so bleibt die
       // Gesamtzahl unter Kontrolle, ohne dass frisch gespawnte Gegner wieder
@@ -159,6 +162,7 @@ function startNextWave(noIncrement) {
                 : K.plane(total, window.__WALKABLE_AREA_PX__ || 0, window.DUNGEON_DEPTH || 1, Math.random))
             : null;
           if (plan) {
+            window.__scharImRaum = true;
             const fuehrer = spawnEnemy.call(scene, 0, 0, 'enemy');
             if (fuehrer && window.EliteEnemies
                 && typeof window.EliteEnemies.applyEliteToEnemy === 'function') {

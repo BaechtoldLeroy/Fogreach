@@ -1370,12 +1370,58 @@ const STATUS_EFFECT_LABELS = {
   burned: 'BRN'
 };
 
+/**
+ * Ring am Boden des Spielers, solange ein Statuseffekt laeuft.
+ *
+ * Warum nicht einfach die Toenung: die ist ein umkaempfter Kanal. Am Spieler
+ * loescht die Animationsschleife sie jeden Frame, dazu setzen Trefferblitze,
+ * Verkleidung und Heilung eigene Farben und rufen danach clearTint(). Ein
+ * eigenes Anzeigeobjekt kann davon nichts erreichen — dieselbe Lehre wie beim
+ * Zeichen der Kriegsschar (#95).
+ *
+ * Die Farbe kommt aus STATUS_EFFECT_CONFIG, gilt also fuer Slow, Gift, Blutung
+ * und Betaeubung gleichermassen.
+ */
+let _statusRing = null;
+function updateStatusRing(scene, effects) {
+  try {
+    if (!scene || !player) return;
+    if (!effects || !effects.length) {
+      if (_statusRing) { _statusRing.destroy(); _statusRing = null; }
+      return;
+    }
+    // Vorrang wie bei der Toenung: der stoerendste Effekt gewinnt die Farbe.
+    const reihenfolge = ['stun', 'poison', 'bleed', 'slow'];
+    const cfg = window.STATUS_EFFECT_CONFIG || {};
+    let farbe = 0xffffff;
+    for (const typ of reihenfolge) {
+      if (effects.some((e) => e.type === typ) && cfg[typ] && typeof cfg[typ].tint === 'number') {
+        farbe = cfg[typ].tint;
+        break;
+      }
+    }
+    if (!_statusRing) {
+      _statusRing = scene.add.graphics();
+      if (_statusRing.setDepth) _statusRing.setDepth(9);
+    }
+    // Pulsieren, damit der Ring auch im Getuemmel auffaellt.
+    const t = (typeof window.gameNow === 'function') ? window.gameNow(scene) : Date.now();
+    const puls = 0.75 + 0.25 * Math.sin(t / 180);
+    _statusRing.clear();
+    _statusRing.lineStyle(3, farbe, 0.85 * puls);
+    _statusRing.strokeEllipse(player.x, player.y + 22, 44 * puls, 18 * puls);
+    _statusRing.fillStyle(farbe, 0.18 * puls);
+    _statusRing.fillEllipse(player.x, player.y + 22, 44 * puls, 18 * puls);
+  } catch (e) { /* rein optisch */ }
+}
+
 function updateStatusEffectHUD(scene) {
   if (!scene || !player) return;
 
   const effects = window.statusEffectManager
     ? window.statusEffectManager.getActiveEffects(player)
     : [];
+  updateStatusRing(scene, effects);
 
   // Remove old icons
   for (const icon of statusEffectHudIcons) {

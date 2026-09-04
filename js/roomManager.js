@@ -714,6 +714,9 @@ function enterRoom(scene, roomId) {
   // Mini-Boss-Treppensperre pro Raum zurücksetzen (kein Stale-Ref aus dem
   // Vorraum, der die Treppe eines neuen Raums fälschlich entsperren würde).
   if (typeof window !== 'undefined') window.__climaxEnemy = null;
+  // #95: Der Schar-Merker gehoert zum Raum, nicht zum Lauf. Bliebe er stehen,
+  // unterdrueckte ein Bannertraeger die Uniques aller FOLGENDEN Raeume.
+  if (typeof window !== 'undefined') window.__scharImRaum = false;
 
   // Run-summary: each room entry counts as one cleared room (the player only
   // reaches the next via the stair, which requires waves to be cleared).

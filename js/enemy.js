@@ -763,7 +763,15 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   if (!enemy._eliteApplied && window.EliteEnemies && typeof window.EliteEnemies.shouldSpawnElite === 'function') {
     try {
       const depth = typeof currentWave === 'number' ? currentWave : (window.currentWave || 1);
-      const tier = window.EliteEnemies.shouldSpawnElite(depth);
+      let tier = window.EliteEnemies.shouldSpawnElite(depth);
+      // #95: In einem Raum gibt es genau EIN Banner. Der Anfuehrer der
+      // Kriegsschar wird gezielt auf 'unique' gesetzt; wuerfelte danach ein
+      // weiterer Wellengegner ebenfalls 'unique', staenden zwei Bannertraeger
+      // mit zwei Gefolgen im selben Raum — und der Rang saege nichts mehr aus.
+      //
+      // Heruntergestuft statt gestrichen: der Raum behaelt seine Abwechslung,
+      // nur der Rang bleibt einmalig.
+      if (tier === 'unique' && window.__scharImRaum) tier = 'champion';
       if (tier && typeof window.EliteEnemies.applyEliteToEnemy === 'function') {
         window.EliteEnemies.applyEliteToEnemy(enemy, tier);
         enemy._eliteApplied = true;

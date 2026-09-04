@@ -246,6 +246,14 @@ class StatusEffectManager {
     }
   }
 
+  // ACHTUNG, gemessen (#95): am SPIELER haelt diese Faerbung nicht. Direkt nach
+  // applyEffect steht sie da (#4488ff, isTinted true), einen Frame spaeter ist
+  // sie weg — und zwar OHNE dass clearTint gerufen wird, am selben Objekt und
+  // bei gleicher Textur. Etwas im Animationspfad setzt sie zurueck.
+  //
+  // Die sichtbare Rueckmeldung am Spieler ist darum ein eigener Bodenring
+  // (updateStatusRing in main.js): ein eigenes Anzeigeobjekt kann kein
+  // Toenungs-Zugriff erreichen. An GEGNERN funktioniert die Faerbung weiterhin.
   _applyVisual(target, effectType) {
     if (!target || !target.setTint) return;
     const cfg = STATUS_EFFECT_CONFIG[effectType];
@@ -253,6 +261,12 @@ class StatusEffectManager {
       target.setTint(cfg.tint);
     }
   }
+
+  /**
+   * Setzt die Statusfarbe neu — oeffentlich, weil die Spieler-Animation die
+   * Toenung jeden Frame loescht und sie danach wiederherstellen muss.
+   */
+  refreshVisual(target) { this._refreshVisual(target); }
 
   _refreshVisual(target) {
     if (!target || !target.setTint) return;
