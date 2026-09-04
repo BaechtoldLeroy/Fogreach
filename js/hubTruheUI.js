@@ -223,7 +223,12 @@
         if (q.welches === 'truhe') window.HubTruhe.verschiebe(q.index, zx, zy);
         else window.InventoryGrid.verschiebe(_inventar(), q.index, zx, zy);
       } else if (z.welches === 'truhe') {
-        if (!window.HubTruhe.hineinlegen(_inventar(), q.index, zx, zy)) _meldung('truhe.voll');
+        // Zwei verschiedene Absagen — und sie muessen sich unterscheiden.
+        // Vorher hiess jede Absage "Die Truhe ist voll", auch die bei einem
+        // Stueck, das gar nicht hineindarf. Wer dann in eine leere Truhe sah,
+        // hielt die Truhe fuer kaputt.
+        if (!window.HubTruhe.darfHinein(it)) _meldung('nicht.erlaubt');
+        else if (!window.HubTruhe.hineinlegen(_inventar(), q.index, zx, zy)) _meldung('truhe.voll');
       } else {
         if (!window.HubTruhe.herausnehmen(_inventar(), q.index, zx, zy)) _meldung('inv.voll');
       }
@@ -234,9 +239,12 @@
   function _meldung(art) {
     if (!hinweis) return;
     hinweis.setColor('#ff9d6b');
-    hinweis.setText(art === 'truhe.voll'
-      ? _t('stash.full', 'Die Truhe ist voll.')
-      : _t('stash.inv_full', 'Kein Platz im Inventar.'));
+    var text;
+    if (art === 'truhe.voll') text = _t('stash.full', 'Die Truhe ist voll.');
+    else if (art === 'nicht.erlaubt') {
+      text = _t('stash.rejected', 'Das gehört nicht in die Truhe — Material hat seinen eigenen Vorrat.');
+    } else text = _t('stash.inv_full', 'Kein Platz im Inventar.');
+    hinweis.setText(text);
     if (scene.time && scene.time.delayedCall) {
       scene.time.delayedCall(1600, function () {
         if (hinweis && hinweis.active) { hinweis.setColor('#8d8798'); hinweis.setText(_hinweisText()); }

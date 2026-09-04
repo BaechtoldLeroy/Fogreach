@@ -1074,10 +1074,11 @@ function handleEnemies(time, delta = 16) {
       }
       var _fluchtCd = enemy._fluchtCd || 2400;
       var _bereit = !enemy._letzteFlucht || (time - enemy._letzteFlucht > _fluchtCd);
-      // Er flieht, sobald er gesehen wurde — nicht erst, wenn man ihm auf den
-      // Fersen ist. Vorher setzte er nur unter 300 px ab; wer ihn aus der
-      // Ferne beschoss, sah nie eine Flucht.
-      var _laeuft = !!enemy._pluendererGemeldet || dToPlayer < 300;
+      // Er rennt ERST, wenn er einmal zugeschlagen und dabei zugegriffen hat.
+      // Vorher floh er, sobald man ihn sah — dann war er nie einzuholen und die
+      // Beute nie zu bekommen. Jetzt hat er einen Grund zu rennen, und der
+      // Spieler hat einen Grund, ihm nachzusetzen.
+      var _laeuft = !!enemy._hatGeklaut;
       if (_bereit && _laeuft && !(enemy._dashUntil && time < enemy._dashUntil)) {
         var _ziel = _pluendererFluchtziel(this, enemy);
         if (_ziel) {
@@ -1532,6 +1533,11 @@ function handleEnemies(time, delta = 16) {
 
           // Schaden wie bisher
           applyPlayerDamage(enemy.damage, this, enemy);
+          // #129: Der Pluenderer greift beim ERSTEN Treffer in den Beutel und
+          // rennt danach los.
+          if (enemy._istPluenderer) {
+            try { _pluendererKlaut(this, enemy); } catch (e) {}
+          }
           showEnemyMeleeEffect(this, enemy, player);
 
           // Brute melee: 30% chance to apply STUN on player
@@ -2237,6 +2243,63 @@ function _pluendererEntkommt(scene, enemy) {
   try { enemy.destroy(); } catch (e) {}
 }
 
+/**
+ * Der Griff in den Beutel.
+ *
+ * Der Pluenderer flieht erst, NACHDEM er den Spieler einmal erwischt hat —
+ * und er nimmt dabei Gold mit. Das dreht das Ereignis um: vorher trug er
+ * Beute, die man ihm abnehmen konnte; jetzt nimmt er DIR etwas weg, und die
+ * Jagd holt es zurueck. Wer ihn laufen laesst, zahlt dafuer.
+ *
+ * Anteilig statt fest: ein fester Betrag waere frueh vernichtend und spaeter
+ * belanglos. Ein Fuenftel tut immer weh und ruiniert nie.
+ *
+ * @returns {number} das erbeutete Gold (0, wenn nichts zu holen war)
+ */
+function _pluendererKlaut(scene, enemy) {
+  if (!enemy || enemy._hatGeklaut) return 0;
+  enemy._hatGeklaut = true;
+  var beute = 0;
+  try {
+    var LS = window.LootSystem;
+    if (LS && typeof LS.getGold === 'function' && typeof LS.spendGold === 'function') {
+      var da = LS.getGold() || 0;
+      beute = Math.min(da, Math.max(20, Math.floor(da * 0.2)));
+      if (beute > 0 && !LS.spendGold(beute)) beute = 0;
+    }
+  } catch (e) {}
+  if (beute > 0) {
+    // Auf denselben Topf legen, der beim Tod ausgeschuettet wird — so kommt
+    // das Gestohlene automatisch zurueck, wenn er faellt.
+    try {
+      var alt = (typeof enemy.getData === 'function' && enemy.getData('pluendererGold')) || 0;
+      enemy.setData('pluendererGold', alt + beute);
+    } catch (e) {}
+  }
+  try {
+    if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+      window.EventSystem.showToast(scene, _pluendererKlauText(beute), 'ambush');
+    }
+  } catch (e) {}
+  return beute;
+}
+
+function _pluendererKlauText(gold) {
+  var vorlage = null;
+  try {
+    if (window.i18n && typeof window.i18n.t === 'function') {
+      var v = window.i18n.t(gold > 0 ? 'event.ambush.looter_stole' : 'event.ambush.looter_nothing');
+      if (v && String(v).indexOf('[MISSING:') !== 0) vorlage = v;
+    }
+  } catch (e) {}
+  if (!vorlage) {
+    vorlage = gold > 0
+      ? 'Er greift dir in den Beutel — {gold} Gold! Hinterher!'
+      : 'Er greift dir in den Beutel — und findet nichts. Trotzdem: hinterher!';
+  }
+  return String(vorlage).replace('{gold}', String(gold));
+}
+
 /** "Einer von ihnen traegt Beute" — erst bei Sicht. */
 function _pluendererMeldung() {
   try {
@@ -2294,6 +2357,12 @@ function hitByMelee(playerSprite, enemy) {
       : Math.max(1, Math.round(baseDamage));
     enemy.damage = scaledDamage;
     applyPlayerDamage(scaledDamage, this, enemy);
+    // #129: Auch ein Treffer aus dem Koerperkontakt zaehlt — sonst haenge der
+    // Diebstahl davon ab, ueber welchen der beiden Schadenspfade er gerade
+    // trifft, und das waere von aussen nicht nachvollziehbar.
+    if (enemy._istPluenderer) {
+      try { _pluendererKlaut(this, enemy); } catch (e) {}
+    }
     // Particle effects: player hit + screen shake
     if (window.particleFactory && playerSprite) {
       window.particleFactory.playerHit(playerSprite.x, playerSprite.y);

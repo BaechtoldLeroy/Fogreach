@@ -2461,11 +2461,13 @@ class HubSceneV2 extends Phaser.Scene {
    * der Hub nie braucht.
    */
   _zeichneTruhe(e) {
-    // Etwas groesser als die Hitbox und auf ihrem Fuss stehend: die Zone ist
-    // zum Hingehen da, das Bild zum Ansehen.
-    const b = e.w * SCALE_FACTOR * 1.25;
-    const h = e.h * SCALE_FACTOR * 1.35;
-    const x = e.x * SCALE_FACTOR - (b - e.w * SCALE_FACTOR) / 2;
+    // Etwa so gross wie die Hitbox und auf ihrem Fuss stehend: die Zone ist
+    // zum Hingehen da, das Bild zum Ansehen. Der erste Anlauf zeichnete sie mit
+    // Faktor 1,25/1,35 deutlich groesser als die Zone — sie ueberragte die
+    // Schmiede und stand wie ein Moebel mitten auf dem Platz.
+    const b = e.w * SCALE_FACTOR * 0.95;
+    const h = e.h * SCALE_FACTOR * 1.02;
+    const x = e.x * SCALE_FACTOR + (e.w * SCALE_FACTOR - b) / 2;
     const y = e.y * SCALE_FACTOR + e.h * SCALE_FACTOR - h;
 
     const deckelH = Math.round(h * 0.40);

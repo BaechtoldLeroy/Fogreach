@@ -39,8 +39,25 @@
   var ZEILEN_START = 3;
   var ZEILEN_MAX = 6;          // Obergrenze fuer spaetere Erweiterungen
 
-  // Was darf hinein? Material bewusst nicht (siehe Kopf).
-  var ERLAUBT = { weapon: 1, head: 1, body: 1, boots: 1, amulet: 1, consumable: 1 };
+  // Was darf hinein?
+  //
+  // Die Liste ist AUS DEN ECHTEN ARTEN GEZOGEN, nicht geraten. Der erste
+  // Anlauf hatte 'consumable' darin — die Art gibt es bei Traenken gar nicht,
+  // sie heissen 'potion' (js/loot.js, _makePotionDrop). Und 'accessory' fehlte
+  // ganz, obwohl das Ritualamulett aus der Quest genau so heisst. Beides wurde
+  // abgewiesen, und die Oberflaeche meldete dazu "Die Truhe ist voll" —
+  // gemeldet als "es kommt die Meldung die Truhe ist voll, obwohl nichts drin
+  // liegt".
+  //
+  // Draussen bleiben:
+  //   material    — hat mit changeMaterialCount schon einen eigenen,
+  //                 unbegrenzten Vorrat; ein zweiter waere nur verwirrend.
+  //   quest_item  — gehoert zum laufenden Auftrag, nicht ins Lager.
+  var ERLAUBT = {
+    weapon: 1, head: 1, body: 1, boots: 1,
+    amulet: 1, accessory: 1,
+    potion: 1, consumable: 1
+  };
 
   var _faecher = [];
   var _zeilen = ZEILEN_START;

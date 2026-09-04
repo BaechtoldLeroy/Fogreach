@@ -831,3 +831,75 @@ test('Ein Boss laesst IMMER Ausruestung fallen', () => {
   assert.ok(quote('normal', N) < N * 0.5,
     'auch normale Gegner lassen jetzt fast immer etwas fallen');
 });
+
+test('Der Pluenderer klaut beim ersten Treffer und rennt erst dann los', () => {
+  // Das dreht das Ereignis um: vorher trug er Beute, die man ihm abnehmen
+  // konnte; jetzt nimmt er DIR etwas weg, und die Jagd holt es zurueck. Wer
+  // ihn laufen laesst, zahlt dafuer.
+  //
+  // Anteilig statt fest: ein fester Betrag waere frueh vernichtend und
+  // spaeter belanglos.
+  const lauf = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
+    sc._enemyAttackGraceUntil = 0;
+    playerMaxHealth = 99999; playerHealth = 99999;
+    var LS = window.LootSystem;
+    LS.spendGold(LS.getGold() || 0); LS.grantGold(1000);
+    var start = LS.getGold();
+    var e = spawnEnemy.call(sc, player.x + 200, player.y, 3);
+    e._istPluenderer = true; e.setData('pluendererGold', 100); e.hp = 9999;
+    window.__pl = e;
+    return { start: start, hatGeklaut: !!e._hatGeklaut, gerannt: !!e._letzteFlucht };
+  })()`);
+  assert.strictEqual(lauf.hatGeklaut, false);
+
+  // Ungeschlagen bleibt er stehen — sonst waere er nie einzuholen.
+  H.step(200);
+  const ohne = H.run('(function(){var e=window.__pl;return {geklaut:!!e._hatGeklaut,gerannt:!!e._letzteFlucht};})()');
+  assert.strictEqual(ohne.geklaut, false, 'er klaut ohne Treffer');
+  assert.strictEqual(ohne.gerannt, false, 'er rennt schon vor dem ersten Treffer los');
+
+  // Der Griff in den Beutel.
+  const klau = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var e = window.__pl, LS = window.LootSystem;
+    var vorher = LS.getGold();
+    var beute = _pluendererKlaut(sc, e);
+    return { beute: beute, vorher: vorher, nachher: LS.getGold(),
+             seineBeute: e.getData('pluendererGold'), geklaut: !!e._hatGeklaut };
+  })()`);
+  assert.ok(klau.beute > 0, 'er nimmt nichts');
+  assert.strictEqual(klau.nachher, klau.vorher - klau.beute, 'der Beutel stimmt nicht');
+  assert.strictEqual(klau.seineBeute, 100 + klau.beute,
+    'das Gestohlene liegt nicht auf dem Topf, der beim Tod ausgeschuettet wird');
+
+  // Ein zweiter Griff darf nicht nochmal zulangen.
+  const zweimal = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var LS = window.LootSystem, vorher = LS.getGold();
+    _pluendererKlaut(sc, window.__pl);
+    return LS.getGold() === vorher;
+  })()`);
+  assert.strictEqual(zweimal, true, 'er klaut mehrfach');
+
+  // Jetzt rennt er.
+  H.step(60);
+  const danach = H.run('(function(){var e=window.__pl;return !e||!e.active?true:!!e._letzteFlucht;})()');
+  assert.strictEqual(danach, true, 'nach dem Griff rennt er nicht');
+
+  // Und beim Tod kommt alles zurueck: seine Beute UND das Gestohlene.
+  const tot = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var e = window.__pl, LS = window.LootSystem;
+    if (!e || !e.active) return null;
+    var vorher = LS.getGold();
+    var trug = e.getData('pluendererGold');
+    e.hp = 0; handleEnemyHit(sc, e, {});
+    return { vorher: vorher, trug: trug, nachher: LS.getGold() };
+  })()`);
+  if (tot) {
+    assert.strictEqual(tot.nachher, tot.vorher + tot.trug,
+      'der Erschlagene zahlt nicht alles aus: ' + JSON.stringify(tot));
+  }
+});

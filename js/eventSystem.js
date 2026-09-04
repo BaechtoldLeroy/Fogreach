@@ -20,6 +20,8 @@
       'event.ambush.name': 'Hinterhalt!',
       'event.ambush.toast_looter': 'Einer von ihnen trägt Beute — und will damit weg!',
       'event.ambush.looter_escaped': 'Der Plünderer ist mit der Beute die Treppe hinunter.',
+      'event.ambush.looter_stole': 'Er greift dir in den Beutel — {gold} Gold! Hinterher!',
+      'event.ambush.looter_nothing': 'Er greift dir in den Beutel — und findet nichts. Trotzdem: hinterher!',
       // Wandering merchant
       'event.merchant.name': 'Wandernder Händler',
       'event.merchant.toast_spawn': '🛒 Ein wandernder Händler ist erschienen!',
@@ -158,6 +160,8 @@
       'event.ambush.name': 'Ambush!',
       'event.ambush.toast_looter': 'One of them carries loot — and wants out!',
       'event.ambush.looter_escaped': 'The looter is down the stairs with the loot.',
+      'event.ambush.looter_stole': 'He cuts your purse — {gold} gold! After him!',
+      'event.ambush.looter_nothing': 'He cuts your purse — and finds nothing. After him anyway!',
       'event.merchant.name': 'Wandering Merchant',
       'event.merchant.toast_spawn': '🛒 A wandering merchant has appeared!',
       'event.cursed.name': 'Cursed Chest',

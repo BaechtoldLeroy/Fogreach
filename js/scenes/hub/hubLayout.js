@@ -128,7 +128,7 @@ window.HUB_HITBOXES = {
     // rechts vom Waldrand (forest_left_mid reicht bis x 187) und mit rund
     // 110 px Abstand zu Branka und zum Werkstatt-Eingang, damit sich die drei
     // nicht um dieselbe [E]-Taste streiten.
-    { id: 'truhe_entrance', x: 200, y: 322, w: 48, h: 32, label: 'Truhe [E]', target: 'truhe' }
+    { id: 'truhe_entrance', x: 202, y: 338, w: 44, h: 28, label: 'Truhe [E]', target: 'truhe' }
   ],
   npcs: [
     {
