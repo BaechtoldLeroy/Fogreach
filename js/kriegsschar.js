@@ -55,6 +55,107 @@
     lightning_enchanted: 1
   };
 
+  // Ersatzfarbe, wenn der Anführer keine Affixfarbe hergibt: Bannergold.
+  var BANNER_GOLD = 0xffd166;
+
+  /**
+   * Die Farbe, in der die Schar auftritt.
+   *
+   * Aus dem ersten Affix des Anführers, damit Ring und Wimpel zu seiner Aura
+   * passen — er ist die Quelle, nicht der Zufall.
+   */
+  function scharFarbe(fuehrer) {
+    try {
+      var defs = (window.EliteEnemies && window.EliteEnemies.ENEMY_AFFIX_DEFS) || [];
+      var ids = (fuehrer && fuehrer.eliteAffixes) || [];
+      for (var i = 0; i < ids.length; i++) {
+        for (var k = 0; k < defs.length; k++) {
+          if (defs[k].id === ids[i] && typeof defs[k].auraColor === 'number') {
+            return defs[k].auraColor;
+          }
+        }
+      }
+    } catch (e) {}
+    return BANNER_GOLD;
+  }
+
+  /**
+   * Hängt einem Gefolgsmann sein Zeichen an: Bodenring und Wimpel.
+   *
+   * WARUM keine Tönung: der erste Entwurf faerbte das Gefolge über setTint.
+   * Gemessen kam davon nichts an. setTint teilen sich die Grundfarbe je
+   * Gegnertyp, die Affixfarbe eines Elite (ein Gefolgsmann kann selbst einer
+   * werden), das Mini-Boss-Orange und die Trefferblitze — und die rufen danach
+   * clearTint(), LOESCHEN die Markierung also dauerhaft. Im Test stand ein
+   * Gefolgsmann auf #ffffff (gar nichts) und einer auf der Blitzfarbe #ffe066.
+   *
+   * Eigene Anzeigeobjekte kann kein setTint zerstoeren. Beide sind Graphics
+   * und haengen im enemyLayer, also greift dessen Nebelmaske automatisch —
+   * anders als bei Text, der sie umgeht und einen eigenen Sichttest braucht.
+   *
+   * Faellt der Anfuehrer, verschwindet das Zeichen: die Bindung loest sich,
+   * und das soll man sehen.
+   */
+  function scharZeichen(scene, gegner, fuehrer, farbe) {
+    if (!scene || !scene.add || !gegner || typeof scene.add.graphics !== 'function') return false;
+    try {
+      // Bodenring — unter der Elite-Aura (Tiefe 38), damit ein Gefolgsmann,
+      // der selbst Elite ist, beide Ringe zeigt.
+      var ring = scene.add.graphics();
+      ring.lineStyle(3, farbe, 0.55);
+      ring.strokeCircle(0, 0, 21);
+      ring.fillStyle(farbe, 0.12);
+      ring.fillCircle(0, 0, 21);
+      ring.setPosition(gegner.x, gegner.y);
+      if (typeof ring.setDepth === 'function') ring.setDepth(37);
+
+      // Wimpel ueber dem Kopf: Stange plus Fahne. Liest sich auch dann noch,
+      // wenn mehrere Gegner uebereinanderstehen.
+      var wimpel = scene.add.graphics();
+      wimpel.fillStyle(0x1a1a1a, 0.9);
+      wimpel.fillRect(-1, -10, 2, 14);
+      wimpel.fillStyle(farbe, 0.95);
+      wimpel.fillTriangle(1, -10, 11, -6.5, 1, -3);
+      wimpel.setPosition(gegner.x, gegner.y - 26);
+      if (typeof wimpel.setDepth === 'function') wimpel.setDepth(39);
+
+      if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
+        scene.enemyLayer.add(ring);
+        scene.enemyLayer.add(wimpel);
+      }
+      gegner._scharRing = ring;
+      gegner._scharWimpel = wimpel;
+
+      // EIN Timer je Gefolgsmann fuer beide Objekte — dasselbe Muster wie bei
+      // der Elite-Aura (Perf #70): einmal zeichnen, danach nur verschieben.
+      if (scene.time && typeof scene.time.addEvent === 'function') {
+        var timer = scene.time.addEvent({
+          delay: 16,
+          loop: true,
+          callback: function () {
+            var lebt = gegner && gegner.active;
+            var fuehrerLebt = fuehrer && fuehrer.active;
+            var szeneLebt = ring && ring.scene && ring.scene.sys;
+            if (!lebt || !fuehrerLebt || !szeneLebt) {
+              try { if (ring) ring.destroy(); } catch (e) {}
+              try { if (wimpel) wimpel.destroy(); } catch (e) {}
+              if (gegner) { gegner._scharRing = null; gegner._scharWimpel = null; }
+              if (timer && typeof timer.remove === 'function') timer.remove();
+              return;
+            }
+            ring.setPosition(gegner.x, gegner.y);
+            wimpel.setPosition(gegner.x, gegner.y - 26);
+            var sichtbar = !!gegner.visible;
+            ring.setVisible(sichtbar);
+            wimpel.setVisible(sichtbar);
+          }
+        });
+        gegner._scharZeichenTimer = timer;
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
   /** Wie viele folgen dem Bannerträger in einem Raum mit n Gegnern? */
   function gefolgeGroesse(n) {
     var roh = Math.round((Math.max(1, n || 1) - 1) / 2);
@@ -140,6 +241,7 @@
     var raus = [];
     if (!scene || !fuehrer || typeof spawnEnemy !== 'function') return raus;
     var typ = (typeof fuehrer.enemyType === 'number') ? fuehrer.enemyType : undefined;
+    var farbe = scharFarbe(fuehrer);
     for (var i = 0; i < anzahl; i++) {
       var g = null;
       try { g = spawnEnemy.call(scene, 0, 0, typ); } catch (e) { g = null; }
@@ -162,6 +264,12 @@
       // er lebt. Faellt er, loest sich die Bindung — das ist gleichzeitig die
       // Belohnung dafuer, ihn zuerst zu toeten.
       g._scharFuehrer = fuehrer;
+      // Das Zeichen haengt an der ZUGEHOERIGKEIT, nicht am Affix. Im ersten
+      // Entwurf kam es aus erbeAffix — und wenn der Anfuehrer nur unsichere
+      // Affixe hatte (gemessen in einem von drei Laeufen: cold_aura,
+      // extra_fast, lightning_enchanted), wurde nichts vererbt und das Gefolge
+      // sah aus wie beliebige Gegner.
+      scharZeichen(scene, g, fuehrer, farbe);
       if (affixId) erbeAffix(g, affixId);
       raus.push(g);
     }
@@ -187,12 +295,9 @@
       if (!def) return false;
       if (typeof def.apply === 'function') def.apply(gegner);
       gegner._scharAffix = affixId;
-      // Sichtbares Zeichen der Zugehoerigkeit: die Toenung des Anfuehrer-Affixes,
-      // aber blasser als beim Elite selbst.
-      if (typeof gegner.setTint === 'function' && typeof def.tint === 'number') {
-        gegner.setTint(def.tint);
-        if (typeof gegner.setAlpha === 'function') gegner.setAlpha(0.92);
-      }
+      // KEINE Toenung mehr: die uebersteht weder einen Trefferblitz (der ruft
+      // danach clearTint) noch eine eigene Elite-Rolle. Das sichtbare Zeichen
+      // sind Ring und Wimpel — eigene Objekte, die kein setTint erreicht.
       return true;
     } catch (e) { return false; }
   }
@@ -208,7 +313,10 @@
     plane: plane,
     erbbarerAffix: erbbarerAffix,
     gefolgeSpawnen: gefolgeSpawnen,
-    erbeAffix: erbeAffix
+    erbeAffix: erbeAffix,
+    scharFarbe: scharFarbe,
+    scharZeichen: scharZeichen,
+    BANNER_GOLD: BANNER_GOLD
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = window.Kriegsschar;
 })();

@@ -122,3 +122,77 @@ test('Ohne Szene oder Anfuehrer setzt sich kein Gefolge', () => {
   assert.deepStrictEqual(K.gefolgeSpawnen(null, {}, 3, null), []);
   assert.deepStrictEqual(K.gefolgeSpawnen({}, null, 3, null), []);
 });
+
+// --- Das Zeichen der Zugehoerigkeit ---------------------------------------
+//
+// Gemessen im ersten Entwurf: das Gefolge wurde ueber setTint gefaerbt, und in
+// einem von drei Laeufen hatte der Anfuehrer NUR unsichere Affixe (cold_aura,
+// extra_fast, lightning_enchanted). Dann wurde nichts vererbt — und weil die
+// Faerbung an der Vererbung hing, sah das Gefolge aus wie beliebige Gegner:
+// tint #ffffff, isTinted false, genau wie ein Fremder.
+
+function attrappe() {
+  const gemacht = { graphics: 0, timer: 0 };
+  const grafik = () => ({
+    lineStyle() { return this; }, strokeCircle() { return this; },
+    fillStyle() { return this; }, fillCircle() { return this; },
+    fillRect() { return this; }, fillTriangle() { return this; },
+    setPosition() { return this; }, setDepth() { return this; },
+    setVisible() { return this; }, destroy() { this.active = false; },
+    active: true, scene: { sys: {} },
+  });
+  const scene = {
+    add: { graphics: () => { gemacht.graphics++; return grafik(); } },
+    time: { addEvent: () => { gemacht.timer++; return { remove() {} }; } },
+    enemyLayer: { add() {} },
+  };
+  return { scene, gemacht };
+}
+
+test('Das Zeichen haengt an der Zugehoerigkeit, nicht am Affix', () => {
+  // Der eigentliche Fehler des ersten Entwurfs: ohne vererbbaren Affix gab es
+  // gar keine Markierung.
+  const { scene, gemacht } = attrappe();
+  const gegner = { x: 100, y: 100, active: true, visible: true };
+  const fuehrer = { x: 100, y: 100, active: true, eliteAffixes: ['cold_aura', 'extra_fast'] };
+  assert.strictEqual(K.erbbarerAffix(fuehrer.eliteAffixes, Math.random), null,
+    'Vorbedingung: aus diesen Affixen ist keiner vererbbar');
+  assert.strictEqual(K.scharZeichen(scene, gegner, fuehrer, K.BANNER_GOLD), true);
+  assert.ok(gegner._scharRing, 'kein Ring');
+  assert.ok(gegner._scharWimpel, 'kein Wimpel');
+  assert.strictEqual(gemacht.graphics, 2, 'Ring und Wimpel sind eigene Objekte');
+});
+
+test('Die Farbe kommt vom Anfuehrer, mit Bannergold als Rueckfall', () => {
+  const defs = (globalThis.window.EliteEnemies && globalThis.window.EliteEnemies.ENEMY_AFFIX_DEFS) || [];
+  if (defs.length) {
+    const ersterMitFarbe = defs.find((d) => typeof d.auraColor === 'number');
+    if (ersterMitFarbe) {
+      assert.strictEqual(K.scharFarbe({ eliteAffixes: [ersterMitFarbe.id] }), ersterMitFarbe.auraColor);
+    }
+  }
+  assert.strictEqual(K.scharFarbe({ eliteAffixes: [] }), K.BANNER_GOLD, 'ohne Affixe Bannergold');
+  assert.strictEqual(K.scharFarbe(null), K.BANNER_GOLD, 'ohne Anfuehrer Bannergold');
+  assert.strictEqual(K.scharFarbe({ eliteAffixes: ['gibtsnicht'] }), K.BANNER_GOLD, 'unbekannter Affix');
+});
+
+test('Ohne Szene entsteht kein Zeichen, statt zu werfen', () => {
+  assert.strictEqual(K.scharZeichen(null, {}, {}, 0xffffff), false);
+  assert.strictEqual(K.scharZeichen({}, {}, {}, 0xffffff), false, 'Szene ohne add');
+  assert.strictEqual(K.scharZeichen(attrappe().scene, null, {}, 0xffffff), false, 'ohne Gegner');
+});
+
+test('erbeAffix faerbt NICHT mehr', () => {
+  // Toenung ist der falsche Kanal: sie teilt sich mit der Grundfarbe je
+  // Gegnertyp, der Affixfarbe eines Elite, dem Mini-Boss-Orange und den
+  // Trefferblitzen — und die rufen danach clearTint(), loeschen die Markierung
+  // also dauerhaft.
+  const fs = require('fs');
+  const path = require('path');
+  const s = fs.readFileSync(path.join(__dirname, '..', 'js', 'kriegsschar.js'), 'utf8');
+  const i = s.indexOf('function erbeAffix');
+  assert.ok(i > 0, 'erbeAffix nicht gefunden');
+  const block = s.slice(i, s.indexOf('window.Kriegsschar', i));
+  assert.ok(!/setTint\(/.test(block),
+    'erbeAffix faerbt wieder — das uebersteht keinen Trefferblitz');
+});
