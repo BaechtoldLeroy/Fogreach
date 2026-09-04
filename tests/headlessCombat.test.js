@@ -485,3 +485,47 @@ test('Bogen: die Zielhilfe reicht genau so weit wie der Pfeil fliegt', () => {
     'mit Reichweiten-Bonus wird der erreichbare Gegner nicht anvisiert ('
     + weit.grad.toFixed(1) + ' statt ' + auf.grad.toFixed(1) + ' Grad)');
 });
+
+test('Beruehrungsschaden stempelt auf der Szenenuhr, nicht auf der Wanduhr', () => {
+  // Die Angriffs-KI und der Beruehrungsschaden aus dem Physik-Overlap teilen
+  // sich EIN Feld: enemy.lastAttackTime. Die KI rechnet mit der Szenenzeit
+  // (Sekunden seit Szenenstart), hitByMelee stempelte Date.now() (~1,79
+  // Billionen). Nach der ersten Beruehrung war 'time - lastAttackTime' in der
+  // KI fuer immer negativ — der Gegner griff nie wieder sichtbar an, sondern
+  // stand scheinbar untaetig auf dem Spieler und tat trotzdem weh.
+  L.clearEnemies();
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var e = spawnEnemy.call(sc, player.x + 300, player.y, 10);
+    e.lastAttackTime = 0;
+    hitByMelee.call(sc, player, e);
+    return { stempel: e.lastAttackTime, szene: sc.time.now, wanduhr: Date.now() };
+  })()`);
+  assert.ok(Math.abs(r.stempel - r.szene) < 1000,
+    'Stempel ' + r.stempel + ' passt nicht zur Szenenuhr ' + Math.round(r.szene));
+  assert.ok(r.stempel < r.wanduhr / 1000,
+    'Stempel liegt auf der Wanduhr: ' + r.stempel);
+});
+
+test('Beruehrungsschaden laesst dem KI-Angriff den Vortritt', () => {
+  // Wer zuletzt stempelt, schiebt den anderen. Beide Pfade auf demselben Takt
+  // hiessen: bei Koerperkontakt gewann die Beruehrung das Rennen, und der
+  // sichtbare Angriff kam nie — genau der Fall "man steht auf dem Wolf, er
+  // greift nicht an". Der Beruehrungstakt ist deshalb LAENGER als die 1500 ms
+  // der KI; im Fenster dazwischen haelt er sich heraus.
+  const probe = (verstrichen) => H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    enemies.getChildren().slice().forEach(function (x) { try { x.destroy(); } catch (e) {} });
+    playerMaxHealth = 99999; playerHealth = 99999;
+    var e = spawnEnemy.call(sc, player.x + 300, player.y, 10);
+    e.lastAttackTime = sc.time.now - ${verstrichen};
+    var vorher = playerHealth;
+    hitByMelee.call(sc, player, e);
+    return vorher - playerHealth;
+  })()`);
+
+  assert.strictEqual(probe(1600), 0,
+    'Beruehrung schlaegt schon im KI-Fenster zu und nimmt ihr den Takt');
+  assert.ok(probe(2500) > 0,
+    'Beruehrung greift gar nicht mehr — der Notnagel fuer Fernkaempfer faellt weg');
+});

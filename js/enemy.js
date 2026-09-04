@@ -2051,8 +2051,32 @@ function drawEnemyHpBar(enemy) {
 
 function hitByMelee(playerSprite, enemy) {
   if (!enemy || !enemy.active) return;
-  const now = Date.now();
-  if (!enemy.lastAttackTime || now - enemy.lastAttackTime > 1000) {
+  // Zeitbasis: die Szenenuhr — DIESELBE, mit der die Angriffs-KI rechnet.
+  //
+  // Hier stand Date.now(). Beide Schadenspfade schreiben aber in dasselbe Feld
+  // enemy.lastAttackTime: die KI stempelt die Szenenzeit (Sekunden seit
+  // Szenenstart), dieser Pfad stempelte eine Unix-Zeit (~1,79 Billionen).
+  // Sobald sich die Koerper einmal beruehrten — also genau dann, wenn man auf
+  // dem Gegner steht — war 'time - lastAttackTime' in der KI fuer immer
+  // negativ und ihre Abklingzeit nie wieder erreicht. Der Gegner griff danach
+  // NIE mehr sichtbar an, sondern verteilte nur noch stillen Beruehrungs-
+  // schaden. Gemessen: Wolf auf 22 px, 250 Bilder, genau 1 Angriff; auf 60 px
+  // (kein Koerperkontakt) drei.
+  //
+  // Und die Abklingzeit ist bewusst LAENGER als die der KI. Beide Pfade
+  // teilen sich ein Feld; wer zuerst stempelt, schiebt den anderen. Bei
+  // Koerperkontakt gewann bisher immer die Beruehrung — der Gegner stand
+  // scheinbar untaetig auf dem Spieler und tat trotzdem weh. Mit dem
+  // laengeren Takt kommt die KI jedes Mal zuerst dran, und die Beruehrung
+  // bleibt das, was sie sein soll: der Notnagel fuer die Faelle, in denen die
+  // KI nicht zuschlaegt (Fernkaempfer, den man mit dem Koerper blockiert).
+  // Gemessen bei 22 px Abstand ueber 250 Bilder: vorher 1 sichtbarer Angriff,
+  // danach 3 — genauso viele wie ausserhalb der Koerperreichweite.
+  const now = (this && this.time && typeof this.time.now === 'number')
+    ? this.time.now : Date.now();
+  const _cdMul = (typeof enemy._attackCdMul === 'number' && enemy._attackCdMul > 0)
+    ? enemy._attackCdMul : 1;
+  if (!enemy.lastAttackTime || now - enemy.lastAttackTime > 1500 * _cdMul + 600) {
     enemy.lastAttackTime = now;
     const difficulty = getDifficultyMultiplierValue();
     const baseDamage = enemy.baseDamage || enemy.damage || 1;
