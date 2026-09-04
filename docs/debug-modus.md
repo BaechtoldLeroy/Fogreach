@@ -132,6 +132,42 @@ bleibt zufällig). Es gibt rund 36 Vorlagen — die Liste steht in
 Nachgemessen an der Rastergröße je Raum: ohne Flagge 24×24, 30×30, 32×32,
 65×69 — mit `?room=Arena` viermal 36×28.
 
+### Kriegsschar (#95)
+
+| Flagge | Wirkung |
+|---|---|
+| `?schar=1` | erzwingt in JEDEM Raum einen Bannerträger mit Gefolge |
+
+Ohne die Flagge kommt die Schar so oft wie bisher ein Unique: gar nicht unter
+Tiefe 6, danach etwa **ein- bis zweimal je Lauf** (gemessen: 0 von 10 Räumen auf
+Tiefe 4, 2 von 10 auf Tiefe 20).
+
+```
+?debug=1&dungeon=12&schar=1
+```
+
+Die Flagge erzwingt den Plan, **nicht** die Mindestfläche: in einem Raum unter
+150 000 px² kommt trotzdem keine Schar, weil dort das Gefolge nur eine Falle
+wäre. Gemessen gibt es Räume mit 20k, 63k und 84k px² — rund ein Viertel fällt
+darunter. Wer eine Schar sehen will und keine bekommt, ist in so einem Raum.
+
+Die Konsole schreibt mit, was gesetzt wurde:
+
+```
+[Kriegsschar] Bannertraeger (Typ 1) + 3 Gefolge, geerbter Affix: spectral_hit — Raum bekommt 5 Gegner statt 4
+```
+
+Woran man die Schar im Spiel erkennt:
+
+- Der Anführer trägt einen **zweizeiligen goldenen** Namenszug `BANNERTRÄGER · <Typ>`
+  mit seinen Affixen darunter. Ein Champion bleibt einzeilig und orange.
+- Das Gefolge hat **denselben Gegnertyp** wie er und trägt die Tönung seines
+  geerbten Affixes, etwas blasser.
+- Auren, Tempo und Mehrfachschuss werden **nie** vererbt — fünf Gegner mit
+  Frostaura wären dauerhaft verlangsamt ohne Ausweg.
+- Fällt der Anführer, löst sich die Bindung und das Gefolge verhält sich wieder
+  gewöhnlich.
+
 ### Leistungsmessung
 
 | Flagge | Wirkung |

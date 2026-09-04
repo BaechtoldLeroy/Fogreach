@@ -1116,8 +1116,25 @@ function handleEnemies(time, delta = 16) {
       // #061 Defend-Modus: ein Ziel-Override (Altar) ZIEHT die Melee-Gegner AN,
       // statt dass sie den Spieler jagen — sonst lockt man sie in großen Räumen
       // einfach vom Altar weg und der Drain passiert nie. Ohne Override = Spieler.
-      const chaseTarget = (typeof window !== 'undefined' && window.__ENEMY_CHASE_OVERRIDE__)
+      let chaseTarget = (typeof window !== 'undefined' && window.__ENEMY_CHASE_OVERRIDE__)
         ? window.__ENEMY_CHASE_OVERRIDE__ : player;
+      // #95: Die Leine der Kriegsschar. Ein Gefolgsmann, der weiter als
+      // LEINE_PX von seinem Bannertraeger entfernt ist, kehrt zu IHM zurueck,
+      // statt weiter zum Spieler zu laufen.
+      //
+      // Erster Versuch war eine Zusatzkraft auf 'desired'. Gemessen brachte das
+      // fast nichts (Abstand nach 150 Frames 299 px mit, 323 px ohne): das
+      // Spieler-Verfolgen zieht mit voller Geschwindigkeit, und Steering.limit
+      // verrechnet beides zu einem Kompromiss, in dem die Leine untergeht. Ein
+      // Zielwechsel ist eindeutig — und genau das Verhalten, das die Schar als
+      // Verband lesbar macht.
+      //
+      // Faellt der Anfuehrer, loest sich die Bindung von selbst.
+      if (enemy._scharFuehrer && enemy._scharFuehrer.active) {
+        const _lx = enemy._scharFuehrer.x - enemy.x;
+        const _ly = enemy._scharFuehrer.y - enemy.y;
+        if (_lx * _lx + _ly * _ly > 220 * 220) chaseTarget = enemy._scharFuehrer;
+      }
       const _tgtBodyW = (chaseTarget.body && chaseTarget.body.width) || 24;
       const stopDist = (enemy.body.width + _tgtBodyW) / 1.5;
       const dToTarget = Phaser.Math.Distance.Between(

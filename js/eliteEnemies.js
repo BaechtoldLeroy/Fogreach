@@ -306,12 +306,23 @@
       if (typeof scene.add.text === 'function') {
         try {
           const baseTypeName = _enemyTypeName(enemy);
-          const tagText = picked.map((d) => d.displayName).join(' ') + ' ' + baseTypeName;
+          const affixText = picked.map((d) => d.displayName).join(' ');
+          // #95: Der Unique heisst jetzt Bannertraeger und bekommt einen
+          // zweizeiligen Zug — Rang und Gegnertyp oben, Affixe klein darunter.
+          // Vorher standen beide Stufen als eine orange Zeile da; mit drei
+          // Affixen war das eine Textwurst, und man konnte Champion und Unique
+          // nicht auseinanderhalten. Wenn die Kriegsschar an der Stufe haengt,
+          // muss die Stufe lesbar sein.
+          const istBanner = (eliteTier === 'unique');
+          const tagText = istBanner
+            ? ('BANNERTRÄGER · ' + baseTypeName + '\n' + affixText)
+            : (affixText + ' ' + baseTypeName);
           const tag = scene.add.text(enemy.x, enemy.y - 30, tagText, {
             fontFamily: 'monospace',
             fontSize: '11px',
-            color: '#ffaa00',
+            color: istBanner ? '#ffe08a' : '#ffaa00',
             backgroundColor: '#000a',
+            align: 'center',
             padding: { x: 3, y: 1 }
           });
           if (typeof tag.setOrigin === 'function') tag.setOrigin(0.5);

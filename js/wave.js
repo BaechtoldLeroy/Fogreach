@@ -143,8 +143,41 @@ function startNextWave(noIncrement) {
     enemiesPerWave = window.enemiesPerWave = total;
     if (total > 0) {
       let spawned = 0;
+      // #95: Kriegsschar. Der Bannertraeger und sein Gefolge werden ZUERST
+      // gesetzt, damit der Rest der Welle nur noch auffuellt — so bleibt die
+      // Gesamtzahl unter Kontrolle, ohne dass frisch gespawnte Gegner wieder
+      // entfernt werden muessten (die haengen an einer hpBar, die dabei
+      // zurueckbliebe).
+      let ziel = total;
       const spawnBatch = () => {
-        while (spawned < total) {
+        try {
+          const K = window.Kriegsschar;
+          const erzwungen = window.DebugGate && window.DebugGate.an('schar');
+          const plan = (K && typeof K.plane === 'function')
+            ? (erzwungen
+                ? { gefolge: K.gefolgeGroesse(total), gesamt: K.zielGesamt(total, K.gefolgeGroesse(total)) }
+                : K.plane(total, window.__WALKABLE_AREA_PX__ || 0, window.DUNGEON_DEPTH || 1, Math.random))
+            : null;
+          if (plan) {
+            const fuehrer = spawnEnemy.call(scene, 0, 0, 'enemy');
+            if (fuehrer && window.EliteEnemies
+                && typeof window.EliteEnemies.applyEliteToEnemy === 'function') {
+              window.EliteEnemies.applyEliteToEnemy(fuehrer, 'unique');
+              spawned += 1;
+              const affix = K.erbbarerAffix(fuehrer.eliteAffixes || [], Math.random);
+              const folge = K.gefolgeSpawnen(scene, fuehrer, plan.gefolge, affix, Math.random);
+              spawned += folge.length;
+              ziel = Math.max(plan.gesamt, spawned + 1);   // ein Fremder bleibt
+              spawnedEnemiesInWave = spawned;
+              if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
+                console.log('[Kriegsschar] Bannertraeger (Typ ' + fuehrer.enemyType
+                  + ') + ' + folge.length + ' Gefolge, geerbter Affix: ' + (affix || 'keiner')
+                  + ' — Raum bekommt ' + ziel + ' Gegner statt ' + total);
+              }
+            }
+          }
+        } catch (e) { /* eine fehlende Schar darf die Welle nie brechen */ }
+        while (spawned < ziel) {
           const enemy = spawnEnemy.call(scene, 0, 0, 'enemy');
           if (!enemy) break;
           spawned += 1;
