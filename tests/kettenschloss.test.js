@@ -62,8 +62,10 @@ test('Die feinste Anzeigestufe ist BREITER als die Trefferzone', () => {
 
 test('Blindes Zugreifen im greifenden Bereich hat eine mittlere Chance', () => {
   // Weder geschenkt noch aussichtslos: wer sofort zupackt, sobald es greift,
-  // soll ungefaehr zwei von fuenf Versuchen schaffen. Sonst kippt das Spiel
-  // entweder in Geduld (immer Treffer) oder in Frust (nie).
+  // soll gut die Haelfte schaffen. Sonst kippt das Spiel entweder in Geduld
+  // (immer Treffer) oder in Frust. Der erste Anlauf stand bei 40 % und wurde
+  // im Spiel als "funktioniert nie" erlebt — mit dem Richtungshinweis nach
+  // einem Fehlgriff ist der Rest jetzt aufloesbar statt geraten.
   const tol = 0.03, ziel = 0.5;
   let greift = 0, trifft = 0;
   for (let i = 0; i <= 2000; i++) {
@@ -73,7 +75,33 @@ test('Blindes Zugreifen im greifenden Bereich hat eine mittlere Chance', () => {
     if (K.istTreffer(x, ziel, tol)) trifft++;
   }
   const quote = trifft / greift;
-  assert.ok(quote > 0.3 && quote < 0.55, 'Trefferquote blind: ' + quote.toFixed(2));
+  assert.ok(quote > 0.45 && quote < 0.7, 'Trefferquote blind: ' + quote.toFixed(2));
+});
+
+test('Ein Fehlgriff verraet, auf welcher Seite der Stift liegt', () => {
+  // Das ist der Gegenwert fuer den verbrauchten Dietrich. Ohne ihn ist der
+  // Widerstands-Anzeiger symmetrisch und es bleibt beim Raten — genau daran
+  // ist die Fassung davor gescheitert.
+  assert.strictEqual(K.seiteZumStift(0.2, 0.7), 1, 'Stift liegt rechts');
+  assert.strictEqual(K.seiteZumStift(0.9, 0.7), -1, 'Stift liegt links');
+  assert.strictEqual(K.seiteZumStift(0.7, 0.7), 0, 'genau drauf');
+  // Auch dicht daneben muss die Richtung stimmen — dort wird sie gebraucht.
+  assert.strictEqual(K.seiteZumStift(0.7 - 1e-6, 0.7), 1);
+  assert.strictEqual(K.seiteZumStift(0.7 + 1e-6, 0.7), -1);
+});
+
+test('Richtungshinweis und Anzeiger widersprechen sich nie', () => {
+  // Der Anzeiger ist symmetrisch, der Hinweis gerichtet. Wer dem Hinweis
+  // folgt, muss naeher kommen — sonst fuehrt das Spiel in die Irre.
+  const tol = 0.04, ziel = 0.62;
+  for (let i = 0; i <= 500; i++) {
+    const x = i / 500;
+    if (K.istTreffer(x, ziel, tol)) continue;
+    const seite = K.seiteZumStift(x, ziel);
+    const naeher = K.dietrichSchritt(x, seite, 50);
+    assert.ok(Math.abs(naeher - ziel) < Math.abs(x - ziel) + 1e-9,
+      'Hinweis fuehrt weg bei x=' + x.toFixed(3));
+  }
 });
 
 test('Der Widerstand steigt streng, je naeher man kommt', () => {
@@ -180,6 +208,7 @@ test('Kaputte Eingaben liefern etwas Sinnvolles, statt zu werfen', () => {
   assert.ok(K.gesamtzeit(0) > 0);
   assert.strictEqual(K.widerstandStufe(0.5, 0.5, 0), 5, 'Toleranz 0 darf nicht durch null teilen');
   assert.ok(K.zielPosition(0, Math.random) >= 0);
+  assert.strictEqual(K.seiteZumStift(undefined, undefined), 0);
 });
 
 test('Ohne Szene startet kein Spiel, sondern es meldet sich sauber zurueck', () => {

@@ -529,3 +529,48 @@ test('Beruehrungsschaden laesst dem KI-Angriff den Vortritt', () => {
   assert.ok(probe(2500) > 0,
     'Beruehrung greift gar nicht mehr — der Notnagel fuer Fernkaempfer faellt weg');
 });
+
+test('Das Kettenschloss laesst die Laufsteuerung unangetastet', async () => {
+  // Der erste Anlauf holte sich die Richtungstasten ueber
+  // scene.input.keyboard.addKey('LEFT'). Phaser gibt dabei die BEREITS
+  // vorhandene Key-Instanz zurueck — dieselbe, die createCursorKeys() in
+  // main.js fuer die Laufsteuerung angelegt hat. Das removeKey() beim
+  // Aufraeumen nahm sie der Tastaturverwaltung wieder weg: nach dem Minispiel
+  // liefen Pfeil links/rechts im ganzen Spiel nicht mehr.
+  //
+  // Ein Minispiel darf die Steuerung des Spiels nicht anfassen.
+  L.clearEnemies();
+  const registrierung = () => H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var vorhanden = sc.input.keyboard.keys.filter(function (k) { return !!k; });
+    return {
+      links: vorhanden.indexOf(cursors.left) >= 0,
+      rechts: vorhanden.indexOf(cursors.right) >= 0,
+      anzahl: vorhanden.length
+    };
+  })()`);
+
+  const vorher = registrierung();
+  assert.ok(vorher.links && vorher.rechts, 'Ausgangslage stimmt nicht');
+
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    window.__griff = window.Kettenschloss.spiele(sc, 10, function () {});
+    return 1;
+  })()`);
+  H.step(3);
+  H.run('window.__griff.abbrechen()');
+  H.step(3);
+
+  const nachher = registrierung();
+  assert.ok(nachher.links, 'Pfeil links ist aus der Tastaturverwaltung verschwunden');
+  assert.ok(nachher.rechts, 'Pfeil rechts ist aus der Tastaturverwaltung verschwunden');
+  assert.strictEqual(nachher.anzahl, vorher.anzahl,
+    'Tastenzahl veraendert: ' + vorher.anzahl + ' -> ' + nachher.anzahl);
+
+  // Und der Beweis, dass es nicht nur die Registrierung ist: die Figur laeuft.
+  const x0 = H.run('(function () { cursors.right.isDown = true; return Math.round(player.x); })()');
+  H.step(30);
+  const x1 = H.run('(function () { cursors.right.isDown = false; return Math.round(player.x); })()');
+  assert.ok(x1 > x0, 'Die Figur bewegt sich nach dem Minispiel nicht: ' + x0 + ' -> ' + x1);
+});

@@ -39,21 +39,25 @@
   var STIFTE_MIN = 3;
   var STIFTE_MAX = 5;
 
-  // Dietriche = erlaubte Fehlgriffe. Drei, weil ein Fehlgriff jetzt nicht mehr
-  // nur Pech ist, sondern eine bewusst eingegangene Wette.
-  var DIETRICHE = 3;
+  // Dietriche = erlaubte Fehlgriffe. Vier, weil ein Fehlgriff jetzt etwas
+  // VERRÄT (die Richtung zum Stift) und damit ein Zug ist, kein blosser
+  // Verlust. Mit dreien war ein Durchgang meist vorbei, bevor der erste Stift
+  // sass — gemeldet als "es scheint nie zu funktionieren".
+  var DIETRICHE = 4;
 
   // Halbe Breite der Trefferzone als Anteil der Leiste, erster bis letzter
   // Stift. 0,045 heisst ein Fenster von 9 % der Leiste.
-  var TOLERANZ_START = 0.045;
-  var TOLERANZ_ENDE = 0.020;
+  var TOLERANZ_START = 0.055;
+  var TOLERANZ_ENDE = 0.028;
 
   // Wie viel breiter als die Trefferzone ist die feinste Anzeigestufe? DAS ist
   // die Stellschraube des ganzen Spiels: bei 1,0 wäre "es greift" dasselbe wie
-  // "Treffer" und alles Können bestünde im Warten. Bei 2,5 hat blindes
-  // Zugreifen im greifenden Bereich rund 40 % Erfolg — genug, dass Sondieren
-  // sich lohnt, wenig genug, dass Ungeduld nicht bestraft wirkt.
-  var STUFE_FAKTOR = 2.5;
+  // "Treffer" und alles Können bestünde im Warten. Bei 1,8 hat blindes
+  // Zugreifen im greifenden Bereich gut die Hälfte Erfolg — es bleibt eine
+  // Restunsicherheit, die man durch Abtasten und durch die Richtungsangabe
+  // nach einem Fehlgriff auflösen kann. 2,5 war zu streng: ein Durchgang
+  // endete meist ohne einen einzigen gesetzten Stift.
+  var STUFE_FAKTOR = 1.8;
 
   // Die Stufen als Vielfache der Toleranz, grob nach fein. Absichtlich weit
   // gespreizt: von aussen soll man merken, dass man in die richtige Richtung
@@ -119,6 +123,21 @@
     for (var i = STUFEN.length - 1; i >= 0; i--) {
       if (d <= STUFEN[i]) return i + 1;
     }
+    return 0;
+  }
+
+  /**
+   * Auf welcher Seite liegt der Stift? -1 = links, +1 = rechts, 0 = drauf.
+   *
+   * Das ist die wichtigste Auskunft des Spiels und der Grund, warum ein
+   * Fehlgriff kein reiner Verlust mehr ist: er kostet einen Dietrich, sagt
+   * aber, wohin. Ohne sie ist der Anzeiger symmetrisch und es bleibt beim
+   * Raten — genau daran ist die Fassung davor gescheitert.
+   */
+  function seiteZumStift(x, ziel) {
+    var d = (ziel || 0) - (x || 0);
+    if (d > 0) return 1;
+    if (d < 0) return -1;
     return 0;
   }
 
@@ -195,7 +214,17 @@
     var dietriche = DIETRICHE;
     var beendet = false;
     var elemente = [];
-    var tasten = [];
+    // Gedrueckte Richtungstasten, als eigene Buchfuehrung.
+    //
+    // NICHT ueber scene.input.keyboard.addKey(): das liefert bei einer schon
+    // registrierten Taste DIESELBE Key-Instanz zurueck, die createCursorKeys()
+    // in main.js fuer die Laufsteuerung angelegt hat. Das zugehoerige
+    // removeKey() beim Aufraeumen nahm sie der Tastaturverwaltung wieder weg —
+    // danach liefen Pfeil links/rechts im ganzen Spiel nicht mehr. Ein
+    // Minispiel darf die Steuerung des Spiels nicht anfassen; keydown/keyup
+    // horchen nur mit.
+    var gedrueckt = { links: false, rechts: false };
+    var richtungsHaken = [];
     var cam = scene.cameras && scene.cameras.main;
     var camW = cam ? cam.width : 960;
     var camH = cam ? cam.height : 480;
@@ -212,6 +241,12 @@
     var letzterTick = start;
     var frist = gesamtzeit(anzahl);
     var ruettelBis = 0;
+    // Wo wurde bei DIESEM Stift schon danebengegriffen? Die Marken bleiben auf
+    // der Leiste stehen, bis der Stift sitzt. Zusammen mit der Richtungsangabe
+    // wird aus Raten ein Einkreisen — man sieht, was man schon ausgeschlossen
+    // hat.
+    var marken = [];
+    var meldungBis = 0;
 
     var halten = function (o) {
       if (o) { o.setScrollFactor(0); o.setDepth(4000); elemente.push(o); }
@@ -227,10 +262,28 @@
       _t('lock.hint', '← → tasten · Leertaste setzen · E aufhören'), {
       fontFamily: 'monospace', fontSize: '13px', color: '#cfd4dd'
     }).setOrigin(0.5));
-    var stand = halten(scene.add.text(cx, leisteY + 84, '', {
+    var gefuehl = halten(scene.add.text(cx, leisteY - 50, '', {
+      fontFamily: 'serif', fontSize: '17px', color: '#cfd4dd'
+    }).setOrigin(0.5));
+    var stand = halten(scene.add.text(cx, leisteY + 88, '', {
       fontFamily: 'monospace', fontSize: '14px', color: '#ffffff'
     }).setOrigin(0.5));
+    var meldung = halten(scene.add.text(cx, leisteY + 112, '', {
+      fontFamily: 'serif', fontSize: '16px', color: '#ff9d6b'
+    }).setOrigin(0.5));
+    halten(scene.add.text(cx - 108, leisteY + 51, _t('lock.resist', 'Widerstand'), {
+      fontFamily: 'monospace', fontSize: '11px', color: '#8d8798'
+    }).setOrigin(1, 0.5));
     var gfx = halten(scene.add.graphics());
+
+    // Was der Dietrich gerade spürt — in Worten. Der Balkenanzeiger allein
+    // sagte niemandem, was zu tun ist.
+    var gefuehlText = function (stufe) {
+      if (stufe >= 5) return _t('lock.feel.grip', 'Er greift — jetzt die Mitte treffen');
+      if (stufe >= 3) return _t('lock.feel.near', 'Der Stift ist nah');
+      if (stufe >= 1) return _t('lock.feel.far', 'Etwas gibt nach');
+      return _t('lock.feel.none', 'Nichts zu spüren');
+    };
 
     var standText = function () {
       var stifte = '';
@@ -267,6 +320,13 @@
       gfx.fillStyle(stufe >= 5 ? 0xffd166 : 0x6b6478, 1);
       gfx.fillRect(px - 3, leisteY - 34 + zitter, 6, 6);
 
+      // Marken der Fehlgriffe bei diesem Stift.
+      for (var m = 0; m < marken.length; m++) {
+        var mx = leisteX + marken[m] * leisteB;
+        gfx.fillStyle(0xff6b6b, 0.9);
+        gfx.fillRect(mx - 1, leisteY + 17, 2, 9);
+      }
+
       // Widerstands-Anzeige: fünf Balken, links grob, rechts fein.
       var bx = cx - 100, by = leisteY + 46, bw = 36, bh = 10;
       for (var i = 0; i < 5; i++) {
@@ -296,12 +356,15 @@
         if (scene.input && scene.input.keyboard) {
           scene.input.keyboard.off('keydown-SPACE', setzen);
           scene.input.keyboard.off('keydown-E', aufhoeren);
-          for (var k = 0; k < tasten.length; k++) {
-            try { scene.input.keyboard.removeKey(tasten[k]); } catch (e) {}
+          for (var k = 0; k < richtungsHaken.length; k++) {
+            try {
+              scene.input.keyboard.off(richtungsHaken[k][0], richtungsHaken[k][1]);
+            } catch (e) {}
           }
         }
       } catch (e) {}
-      tasten.length = 0;
+      richtungsHaken.length = 0;
+      gedrueckt.links = gedrueckt.rechts = false;
       try {
         if (scene.input) {
           scene.input.off('pointerdown', zeigen);
@@ -328,6 +391,9 @@
     var naechsterStift = function () {
       tol = toleranz(gesetzt, anzahl);
       ziel = zielPosition(tol, Math.random);
+      marken.length = 0;
+      meldung.setText('');
+      meldungBis = 0;
     };
 
     var setzen = function () {
@@ -341,6 +407,13 @@
       } else {
         dietriche--;
         ruettelBis = Date.now() + 220;
+        marken.push(pos);
+        // Die Richtung ist der Gegenwert für den verbrauchten Dietrich: der
+        // Fehlgriff kostet, sagt aber, wohin. Sonst bliebe nur Raten.
+        meldung.setText(seiteZumStift(pos, ziel) > 0
+          ? _t('lock.miss.right', 'Weiter rechts →')
+          : _t('lock.miss.left', '← Weiter links'));
+        meldungBis = Date.now() + 1600;
         try { window.soundManager && window.soundManager.playSFX('hit'); } catch (e) {}
         standText();
         // Der Stift bleibt, wo er ist: ein Fehlgriff kostet einen Dietrich,
@@ -367,13 +440,12 @@
       var dt = jetzt - letzterTick;
       letzterTick = jetzt;
 
-      var richtung = 0;
-      for (var i = 0; i < tasten.length; i++) {
-        if (tasten[i] && tasten[i].isDown) richtung += tasten[i].__richtung;
-      }
+      var richtung = (gedrueckt.rechts ? 1 : 0) - (gedrueckt.links ? 1 : 0);
       if (richtung) pos = dietrichSchritt(pos, richtung, dt);
 
       if (jetzt - start >= frist) { schliesse(false, false); return; }
+      if (meldungBis && jetzt > meldungBis) { meldung.setText(''); meldungBis = 0; }
+      gefuehl.setText(gefuehlText(widerstandStufe(pos, ziel, tol)));
       standText();
       zeichne();
     };
@@ -387,18 +459,24 @@
     // als Aufhören zählt (b153: __eventConsumedEAt).
     try { window.__eventConsumedEAt = Date.now(); } catch (e) {}
 
+    gefuehl.setText(gefuehlText(widerstandStufe(pos, ziel, tol)));
     standText();
     zeichne();
     scene.events.on('update', tick);
     if (scene.input && scene.input.keyboard) {
-      var lege = function (code, richtung) {
-        try {
-          var taste = scene.input.keyboard.addKey(code);
-          if (taste) { taste.__richtung = richtung; tasten.push(taste); }
-        } catch (e) {}
+      var horche = function (ereignis, seite, wert) {
+        var haken = function () { gedrueckt[seite] = wert; };
+        scene.input.keyboard.on(ereignis, haken);
+        richtungsHaken.push([ereignis, haken]);
       };
-      lege('LEFT', -1); lege('A', -1);
-      lege('RIGHT', 1); lege('D', 1);
+      horche('keydown-LEFT', 'links', true);
+      horche('keyup-LEFT', 'links', false);
+      horche('keydown-A', 'links', true);
+      horche('keyup-A', 'links', false);
+      horche('keydown-RIGHT', 'rechts', true);
+      horche('keyup-RIGHT', 'rechts', false);
+      horche('keydown-D', 'rechts', true);
+      horche('keyup-D', 'rechts', false);
       scene.input.keyboard.on('keydown-SPACE', setzen);
       scene.input.keyboard.on('keydown-E', aufhoeren);
     }
@@ -441,6 +519,7 @@
     zielPosition: zielPosition,
     widerstandStufe: widerstandStufe,
     istTreffer: istTreffer,
+    seiteZumStift: seiteZumStift,
     dietrichSchritt: dietrichSchritt,
     belohnung: belohnung,
     spiele: spiele
