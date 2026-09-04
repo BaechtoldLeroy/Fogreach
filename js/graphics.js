@@ -1454,6 +1454,46 @@ function createItemGraphics() {
   const gBasis = g;
   const SIZE = 48;
 
+  // --- Bausteine fuer die Ausruestungs-Symbole (#125) -----------------------
+  //
+  // Vierzehn Amulette teilten sich EIN Bild, dazu je drei Helme, Ruestungen und
+  // Stiefel und vier Boegen — 27 von 33 Basen waren im Inventar nicht
+  // auseinanderzuhalten. Die Faelle unten geben jeder Basis eine eigene
+  // Silhouette.
+  //
+  // Drei Lagen, wie schon bei den Fund-Texturen (#113): dunkle Grundform als
+  // Umriss, darauf die Flaeche, darauf EINE helle Lichtkante plus ein
+  // Glanzpunkt. Ohne diese drei Lagen wirkt alles flach. Und: die Form muss
+  // schon in Graustufen tragen — Farbe ist die Zugabe, nicht die Auskunft.
+
+  /** Die Kette, an der jedes Amulett haengt. Bei allen gleich — sie ist der
+   *  gemeinsame Rahmen, vor dem der Anhaenger auffaellt. */
+  const amuKette = () => {
+    const cx = SIZE / 2;
+    g.fillStyle(0x8a6a20, 1);
+    g.fillRect(cx - 11, 9, 3, 3); g.fillRect(cx + 8, 9, 3, 3);
+    g.fillRect(cx - 8, 13, 3, 3); g.fillRect(cx + 5, 13, 3, 3);
+    g.fillStyle(0xd4a030, 1);
+    g.fillRect(cx - 11, 9, 3, 1.4); g.fillRect(cx + 8, 9, 3, 1.4);
+    g.fillRect(cx - 5, 17, 10, 2.5);
+    g.fillStyle(0xf0d48a, 0.8); g.fillRect(cx - 5, 17, 10, 1);
+  };
+
+  /** Grundform des Anhaengers: dunkler Umriss + Flaeche + Lichtkante oben. */
+  const amuScheibe = (r, aussen, innen, licht) => {
+    const cx = SIZE / 2, cy = 31;
+    g.fillStyle(0x120e18, 1); g.fillCircle(cx, cy, r + 1.5);
+    g.fillStyle(aussen, 1); g.fillCircle(cx, cy, r);
+    g.fillStyle(innen, 1); g.fillCircle(cx, cy, r - 3);
+    g.fillStyle(licht, 0.55); g.fillEllipse(cx - r * 0.3, cy - r * 0.45, r * 0.8, r * 0.4);
+  };
+
+  /** Ein Glanzpunkt — die letzte Lage, ohne die alles stumpf bleibt. */
+  const glanz = (x, y, r, farbe) => {
+    g.fillStyle(farbe === undefined ? 0xffffff : farbe, 0.85);
+    g.fillCircle(x, y, r === undefined ? 1.6 : r);
+  };
+
   const icons = [
     {
       key: 'itWeapon',
@@ -2226,6 +2266,534 @@ function createItemGraphics() {
         g.fillStyle(0x6a3fb0, 1); g.fillCircle(cx, 30, 8);  // purple gem
         g.fillStyle(0xb085e8, 0.85); g.fillCircle(cx, 30, 4);
         g.fillStyle(0xeadcff, 0.8); g.fillCircle(cx - 3, 27, 2); // highlight
+      }
+    },
+
+    // ── Amulette (#125) ────────────────────────────────────────────────────
+    // Jeder Name gibt die Form vor. Wer "Frostsiegel" liest und ein Sechseck
+    // aus Eis sieht, muss den Namen nicht mehr lesen.
+
+    {
+      key: 'amuZwillingsklinge',       // zwei gekreuzte Klingen
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2;
+        g.fillStyle(0x120e18, 1);
+        g.fillTriangle(cx - 11, 41, cx - 7, 41, cx + 10, 20);
+        g.fillTriangle(cx + 11, 41, cx + 7, 41, cx - 10, 20);
+        g.fillStyle(0xb9c4d6, 1);
+        g.fillTriangle(cx - 10, 40, cx - 8, 40, cx + 9, 21);
+        g.fillTriangle(cx + 10, 40, cx + 8, 40, cx - 9, 21);
+        g.fillStyle(0xeef3fb, 0.9);
+        g.fillTriangle(cx - 10, 40, cx - 9.2, 40, cx + 9, 21);
+        g.fillStyle(0x7a5a20, 1);
+        g.fillRect(cx - 12, 39, 6, 3); g.fillRect(cx + 6, 39, 6, 3);
+        glanz(cx + 6, 25, 1.4);
+      }
+    },
+    {
+      key: 'amuKettenherz',            // ein Herz aus Kettengliedern
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2, cy = 31;
+        g.fillStyle(0x120e18, 1);
+        g.fillCircle(cx - 5, cy - 3, 7); g.fillCircle(cx + 5, cy - 3, 7);
+        g.fillTriangle(cx - 11, cy, cx + 11, cy, cx, cy + 12);
+        g.fillStyle(0x8a2230, 1);
+        g.fillCircle(cx - 5, cy - 3, 5.6); g.fillCircle(cx + 5, cy - 3, 5.6);
+        g.fillTriangle(cx - 9.6, cy, cx + 9.6, cy, cx, cy + 10.4);
+        // Kettenglieder als dunkle Ringe darauf
+        g.fillStyle(0x3a1018, 1);
+        [[cx - 5, cy - 4], [cx + 5, cy - 4], [cx, cy + 3]].forEach((p) => {
+          g.fillCircle(p[0], p[1], 3.1);
+        });
+        g.fillStyle(0x8a2230, 1);
+        [[cx - 5, cy - 4], [cx + 5, cy - 4], [cx, cy + 3]].forEach((p) => {
+          g.fillCircle(p[0], p[1], 1.6);
+        });
+        g.fillStyle(0xd4566a, 0.7); g.fillEllipse(cx - 5, cy - 7, 6, 3);
+        glanz(cx - 6, cy - 7, 1.5);
+      }
+    },
+    {
+      key: 'amuSchnitterband',         // eine Sensenklinge als Anhaenger
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2;
+        g.fillStyle(0x120e18, 1);
+        g.fillTriangle(cx - 13, 24, cx + 12, 22, cx + 3, 42);
+        g.fillStyle(0xb0bccd, 1);
+        g.fillTriangle(cx - 11, 25, cx + 10, 23.5, cx + 2.5, 40);
+        // Schneide: eine einzelne helle Kante
+        g.fillStyle(0xf2f7ff, 0.95);
+        g.fillTriangle(cx - 11, 25, cx + 10, 23.5, cx + 8, 26);
+        g.fillStyle(0x5a3a18, 1); g.fillRect(cx + 6, 22, 4, 18);
+        g.fillStyle(0x8a5c28, 1); g.fillRect(cx + 6, 22, 1.6, 18);
+        glanz(cx - 6, 27, 1.3);
+      }
+    },
+    {
+      key: 'amuAderlass',              // Phiole mit einem Tropfen
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2;
+        g.fillStyle(0x120e18, 1); g.fillRoundedRect(cx - 7, 20, 14, 22, 5);
+        g.fillStyle(0x2a2230, 1); g.fillRoundedRect(cx - 5.6, 21.5, 11.2, 19, 4);
+        g.fillStyle(0x9a1828, 1); g.fillRoundedRect(cx - 5.6, 28, 11.2, 12.5, 4);
+        g.fillStyle(0xd4404e, 0.8); g.fillEllipse(cx, 28.5, 11, 3);
+        g.fillStyle(0x6a5020, 1); g.fillRect(cx - 4, 18, 8, 4);
+        g.fillStyle(0xc0a050, 1); g.fillRect(cx - 4, 18, 8, 1.4);
+        g.fillStyle(0xe8eef8, 0.35); g.fillRect(cx - 4, 23, 2, 14);
+        glanz(cx - 3, 32, 1.4, 0xffd0d8);
+      }
+    },
+    {
+      key: 'amuBrandmal',              // eingebranntes Zeichen, gluehend
+      draw: () => {
+        amuKette();
+        amuScheibe(11, 0x4a2a12, 0x1c1008, 0xffb050);
+        const cx = SIZE / 2, cy = 31;
+        g.fillStyle(0xff8a20, 1);
+        g.fillRect(cx - 6, cy - 1.2, 12, 2.4);
+        g.fillRect(cx - 1.2, cy - 6, 2.4, 12);
+        g.fillStyle(0xffd070, 0.9);
+        g.fillRect(cx - 6, cy - 1.2, 12, 1);
+        g.fillStyle(0xff6a00, 0.35); g.fillCircle(cx, cy, 9);
+        glanz(cx, cy, 1.8, 0xfff0c0);
+      }
+    },
+    {
+      key: 'amuSturmschritt',          // Feder / Fluegel
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2;
+        g.fillStyle(0x120e18, 1);
+        g.fillTriangle(cx - 2, 19, cx + 12, 33, cx - 4, 43);
+        g.fillStyle(0x6fa8c8, 1);
+        g.fillTriangle(cx - 2, 20.5, cx + 10.5, 33, cx - 3.5, 41.5);
+        // Fahnen: drei helle Streifen quer
+        g.fillStyle(0xbfe4f5, 0.9);
+        g.fillTriangle(cx - 2, 22, cx + 5, 29, cx - 2, 30);
+        g.fillTriangle(cx - 2, 31, cx + 6.5, 34, cx - 2, 37);
+        g.fillStyle(0x2a5468, 1); g.fillRect(cx - 3, 20, 2, 22);
+        glanz(cx + 1, 26, 1.3, 0xeafaff);
+      }
+    },
+    {
+      key: 'amuTrabantenstein',        // Stein mit umlaufenden Trabanten
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2, cy = 31;
+        g.lineStyle(1.6, 0x4a4266, 0.9);
+        g.beginPath(); g.arc(cx, cy, 12, 0, Math.PI * 2); g.strokePath();
+        amuScheibe(7, 0x3a3450, 0x7a6ac0, 0xc8bcff);
+        g.fillStyle(0x120e18, 1);
+        [[cx + 12, cy], [cx - 8.5, cy + 8.5], [cx - 8.5, cy - 8.5]].forEach((p) => g.fillCircle(p[0], p[1], 3));
+        g.fillStyle(0xc8bcff, 1);
+        [[cx + 12, cy], [cx - 8.5, cy + 8.5], [cx - 8.5, cy - 8.5]].forEach((p) => g.fillCircle(p[0], p[1], 2));
+        glanz(cx - 2, cy - 3, 1.5);
+      }
+    },
+    {
+      key: 'amuAschefunke',            // Glut mit Funken
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2, cy = 32;
+        g.fillStyle(0x120e18, 1); g.fillCircle(cx, cy, 9);
+        g.fillStyle(0x3a2018, 1); g.fillCircle(cx, cy, 7.6);
+        g.fillStyle(0xd05a10, 1); g.fillCircle(cx, cy, 5);
+        g.fillStyle(0xffb040, 1); g.fillCircle(cx - 1, cy - 1, 2.6);
+        // Funken springen weg — ungleichmaessig, sonst wirkt es wie ein Muster
+        g.fillStyle(0xffd070, 0.95);
+        [[cx + 9, cy - 7, 1.5], [cx - 8, cy - 9, 1.2], [cx + 6, cy + 8, 1.1], [cx - 10, cy + 3, 1]]
+          .forEach((p) => g.fillCircle(p[0], p[1], p[2]));
+        glanz(cx - 2, cy - 2, 1.2, 0xfff4d0);
+      }
+    },
+    {
+      key: 'amuSchattenmantel',        // Kapuze im Profil
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2;
+        g.fillStyle(0x0e0c14, 1);
+        g.fillTriangle(cx, 18, cx - 11, 42, cx + 11, 42);
+        g.fillStyle(0x2e2840, 1);
+        g.fillTriangle(cx, 20.5, cx - 9, 40.5, cx + 9, 40.5);
+        // Dunkles Innere: die Kapuze ist leer
+        g.fillStyle(0x0a0810, 1);
+        g.fillTriangle(cx, 27, cx - 5, 39.5, cx + 5, 39.5);
+        g.fillStyle(0x6a5fa0, 0.85);
+        g.fillTriangle(cx, 20.5, cx - 9, 40.5, cx - 6.5, 40.5);
+        glanz(cx - 2, 34, 1.2, 0x9a86ff);
+      }
+    },
+    {
+      key: 'amuSchlaechterkrone',      // gezackte Krone
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2;
+        g.fillStyle(0x120e18, 1); g.fillRect(cx - 12, 33, 24, 9);
+        g.fillTriangle(cx - 12, 33, cx - 7, 20, cx - 2, 33);
+        g.fillTriangle(cx - 5, 33, cx, 17, cx + 5, 33);
+        g.fillTriangle(cx + 2, 33, cx + 7, 20, cx + 12, 33);
+        g.fillStyle(0xb08820, 1); g.fillRect(cx - 10.5, 34, 21, 6.5);
+        g.fillTriangle(cx - 10.5, 33, cx - 7, 22.5, cx - 3.5, 33);
+        g.fillTriangle(cx - 4, 33, cx, 19.5, cx + 4, 33);
+        g.fillTriangle(cx + 3.5, 33, cx + 7, 22.5, cx + 10.5, 33);
+        g.fillStyle(0xf0d070, 0.9); g.fillRect(cx - 10.5, 34, 21, 1.4);
+        g.fillStyle(0x9a1828, 1); g.fillCircle(cx, 37.5, 2.2);
+        glanz(cx - 6, 26, 1.2);
+      }
+    },
+    {
+      key: 'amuFrostsiegel',           // Sechseck aus Eis
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2, cy = 31, r = 11;
+        const ecke = (i, rr) => [cx + Math.cos(Math.PI / 3 * i - Math.PI / 2) * rr,
+                                 cy + Math.sin(Math.PI / 3 * i - Math.PI / 2) * rr];
+        const sechs = (rr, farbe, deckung) => {
+          g.fillStyle(farbe, deckung === undefined ? 1 : deckung);
+          for (let i = 0; i < 6; i++) {
+            const a = ecke(i, rr), b = ecke((i + 1) % 6, rr);
+            g.fillTriangle(cx, cy, a[0], a[1], b[0], b[1]);
+          }
+        };
+        sechs(r + 1.5, 0x123040);
+        sechs(r, 0x3a86a8);
+        sechs(r - 3.5, 0x9fdcf0);
+        // Kristallachsen
+        g.fillStyle(0xffffff, 0.85);
+        for (let i = 0; i < 3; i++) {
+          const a = ecke(i, r - 1.5), b = ecke(i + 3, r - 1.5);
+          g.fillTriangle(a[0], a[1], b[0], b[1], cx + 0.9, cy + 0.9);
+        }
+        glanz(cx - 3, cy - 4, 1.5, 0xffffff);
+      }
+    },
+    {
+      key: 'amuGlasherz',              // ein zersprungener Glasscherben-Splitter
+      draw: () => {
+        // Erster Entwurf war ein rundes Herz — und damit im Rastervergleich
+        // 0,0010 von amuKettenherz entfernt, also praktisch deckungsgleich.
+        // Beide Namen enthalten "Herz", beide Formen waren rund; in Graustufen
+        // war es dasselbe Bild. Jetzt ein KANTIGER, geschliffener Splitter mit
+        // einer fehlenden Ecke: dieselbe Idee, andere Silhouette.
+        amuKette();
+        const cx = SIZE / 2, cy = 31;
+        g.fillStyle(0x101820, 1);
+        g.fillTriangle(cx - 11, cy - 8, cx + 11, cy - 8, cx, cy + 12);
+        g.fillTriangle(cx - 11, cy - 8, cx, cy - 13, cx + 11, cy - 8);
+        g.fillStyle(0x9fd8e8, 0.9);
+        g.fillTriangle(cx - 9.2, cy - 7, cx + 9.2, cy - 7, cx, cy + 10);
+        g.fillTriangle(cx - 9.2, cy - 7, cx, cy - 11.4, cx + 9.2, cy - 7);
+        // Schliff: drei Facetten, unterschiedlich hell
+        g.fillStyle(0x6fb4cc, 1);
+        g.fillTriangle(cx - 9.2, cy - 7, cx, cy - 7, cx, cy + 10);
+        g.fillStyle(0xd8f2fb, 0.9);
+        g.fillTriangle(cx, cy - 11.4, cx + 9.2, cy - 7, cx, cy - 7);
+        // Die fehlende Ecke — hier ist er zerbrochen
+        g.fillStyle(0x0a0e14, 1);
+        g.fillTriangle(cx + 3, cy - 7, cx + 9.2, cy - 7, cx + 4.5, cy + 1);
+        // Sprung quer durch den Rest
+        g.lineStyle(1.3, 0x14242e, 0.95);
+        g.beginPath(); g.moveTo(cx - 7, cy - 6); g.lineTo(cx - 2, cy - 1);
+        g.lineTo(cx - 4.5, cy + 2); g.lineTo(cx, cy + 8); g.strokePath();
+        glanz(cx - 5, cy - 5, 1.5);
+      }
+    },
+    {
+      key: 'amuZweiterAtem',           // Sanduhr
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2;
+        g.fillStyle(0x120e18, 1);
+        g.fillRect(cx - 9, 19, 18, 3); g.fillRect(cx - 9, 40, 18, 3);
+        g.fillTriangle(cx - 8, 22, cx + 8, 22, cx, 31);
+        g.fillTriangle(cx - 8, 40, cx + 8, 40, cx, 31);
+        g.fillStyle(0x5a4a30, 1);
+        g.fillRect(cx - 8, 19.5, 16, 2.2); g.fillRect(cx - 8, 40.2, 16, 2.2);
+        g.fillStyle(0xbfe8d0, 0.75);
+        g.fillTriangle(cx - 6.5, 23, cx + 6.5, 23, cx, 30.5);
+        g.fillTriangle(cx - 6.5, 39.5, cx + 6.5, 39.5, cx, 32);
+        // Der Sand, der schon unten liegt
+        g.fillStyle(0x7ad0a0, 1);
+        g.fillTriangle(cx - 5, 39.5, cx + 5, 39.5, cx, 35);
+        g.fillStyle(0xe8f8f0, 0.9); g.fillRect(cx - 8, 19.5, 16, 1);
+        glanz(cx - 3, 25, 1.2, 0xeafff4);
+      }
+    },
+    {
+      key: 'amuBlutpakt',              // Siegel mit Nagel
+      draw: () => {
+        amuKette();
+        const cx = SIZE / 2, cy = 32;
+        g.fillStyle(0x120e18, 1); g.fillCircle(cx, cy, 10.5);
+        g.fillStyle(0x7a1420, 1); g.fillCircle(cx, cy, 9);
+        g.fillStyle(0xa82838, 1); g.fillCircle(cx, cy, 6.5);
+        g.fillStyle(0xd45a68, 0.6); g.fillEllipse(cx - 2, cy - 4, 8, 3.5);
+        // Der Nagel steckt schraeg im Siegel
+        g.fillStyle(0x14121a, 1);
+        g.fillTriangle(cx - 7, 22, cx - 4, 21, cx + 5, 39);
+        g.fillStyle(0x9aa4b4, 1);
+        g.fillTriangle(cx - 6.2, 23, cx - 4.6, 22.4, cx + 4, 38);
+        g.fillStyle(0xdfe6f0, 0.9);
+        g.fillTriangle(cx - 6.2, 23, cx - 5.6, 22.7, cx + 4, 38);
+        glanz(cx - 3, cy - 4, 1.4, 0xffc8c8);
+      }
+    },
+
+    // ── Helme ──────────────────────────────────────────────────────────────
+    // Drei Stufen, drei Umrisse: runde Kappe, Kettenhaube mit Nackenschutz,
+    // kantige Maske. Ueber Masse und Zierrat getrennt, nicht ueber Farbe —
+    // sonst wuerden sie in Graustufen wieder gleich aussehen.
+    {
+      key: 'itHeadBronze',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0x1a1208, 1); g.fillCircle(cx, 26, 14);
+        g.fillRect(cx - 14, 26, 28, 11);
+        g.fillStyle(0x8a6420, 1); g.fillCircle(cx, 26, 12.5);
+        g.fillRect(cx - 12.5, 26, 25, 9);
+        g.fillStyle(0x1a1208, 1); g.fillRect(cx - 2, 20, 4, 16);   // Nasenschutz
+        g.fillStyle(0x6a4a14, 1); g.fillRect(cx - 11, 30, 22, 4);  // Augenschlitz
+        g.fillStyle(0xd8a840, 0.9); g.fillEllipse(cx - 3, 19, 13, 5); // Lichtkante
+        g.fillStyle(0x4a3208, 1); g.fillRect(cx - 12.5, 34, 25, 2);
+        glanz(cx - 5, 19, 1.6);
+      }
+    },
+    {
+      key: 'itHeadKettenhaube',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0x101218, 1);
+        g.fillCircle(cx, 24, 13); g.fillRect(cx - 13, 24, 26, 18);
+        g.fillStyle(0x5a6070, 1);
+        g.fillCircle(cx, 24, 11.5); g.fillRect(cx - 11.5, 24, 23, 16);
+        // Geflecht: Punktraster statt Flaeche — das macht Kettenzeug aus
+        g.fillStyle(0x2a3040, 1);
+        for (let ry = 0; ry < 5; ry++) {
+          for (let rx = 0; rx < 6; rx++) {
+            g.fillCircle(cx - 9 + rx * 3.7 + (ry % 2) * 1.8, 21 + ry * 3.9, 1.1);
+          }
+        }
+        g.fillStyle(0x101218, 1); g.fillEllipse(cx, 28, 15, 11); // Gesichtsoeffnung
+        g.fillStyle(0x9aa4b8, 0.85); g.fillEllipse(cx - 3, 16, 12, 4);
+        glanz(cx - 5, 16, 1.5);
+      }
+    },
+    {
+      key: 'itHeadSchlangenmaske',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0x0c1410, 1);
+        g.fillTriangle(cx, 12, cx - 14, 30, cx + 14, 30);
+        g.fillTriangle(cx - 14, 30, cx + 14, 30, cx, 44);
+        g.fillStyle(0x2a7a4a, 1);
+        g.fillTriangle(cx, 14.5, cx - 12, 30, cx + 12, 30);
+        g.fillTriangle(cx - 12, 30, cx + 12, 30, cx, 41.5);
+        // Schlitzaugen — schraeg, das gibt der Maske ihr Gesicht
+        g.fillStyle(0xd8e820, 1);
+        g.fillTriangle(cx - 9, 26, cx - 2, 28, cx - 9, 30);
+        g.fillTriangle(cx + 9, 26, cx + 2, 28, cx + 9, 30);
+        g.fillStyle(0x0c1410, 1);
+        g.fillTriangle(cx - 7.5, 27.2, cx - 4, 28, cx - 7.5, 28.8);
+        g.fillTriangle(cx + 7.5, 27.2, cx + 4, 28, cx + 7.5, 28.8);
+        // Fangzaehne
+        g.fillStyle(0xeaf4e8, 1);
+        g.fillTriangle(cx - 4, 34, cx - 2, 34, cx - 3, 40);
+        g.fillTriangle(cx + 4, 34, cx + 2, 34, cx + 3, 40);
+        g.fillStyle(0x6adc90, 0.8); g.fillTriangle(cx, 14.5, cx - 12, 30, cx - 9, 30);
+        glanz(cx - 4, 20, 1.4, 0xcfffe0);
+      }
+    },
+
+    // ── Ruestungen ─────────────────────────────────────────────────────────
+    {
+      key: 'itBodyLeder',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0x180f08, 1); g.fillRoundedRect(cx - 13, 12, 26, 30, 5);
+        g.fillStyle(0x6a4520, 1); g.fillRoundedRect(cx - 11.5, 13.5, 23, 27, 4);
+        // Riemen quer — das Erkennungszeichen des Lederharnischs
+        g.fillStyle(0x3a2410, 1);
+        g.fillRect(cx - 11.5, 20, 23, 3.5); g.fillRect(cx - 11.5, 29, 23, 3.5);
+        g.fillStyle(0xb08a40, 1);
+        g.fillCircle(cx, 21.7, 1.8); g.fillCircle(cx, 30.7, 1.8);
+        g.fillStyle(0x9a7038, 0.85); g.fillRect(cx - 11.5, 13.5, 23, 2);
+        g.fillStyle(0x2a1808, 1); g.fillRect(cx - 11.5, 38, 23, 2.5);
+        glanz(cx - 6, 16, 1.5);
+      }
+    },
+    {
+      key: 'itBodyPlatte',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0x0e1016, 1);
+        g.fillRoundedRect(cx - 15, 12, 30, 30, 4);
+        g.fillCircle(cx - 14, 17, 6); g.fillCircle(cx + 14, 17, 6);   // Schulterstuecke
+        g.fillStyle(0x6a7288, 1);
+        g.fillRoundedRect(cx - 13.5, 13.5, 27, 27, 3);
+        g.fillCircle(cx - 13.5, 17, 4.8); g.fillCircle(cx + 13.5, 17, 4.8);
+        // Mittelgrat: eine Kante teilt die Brust
+        g.fillStyle(0x3a4050, 1); g.fillRect(cx - 1, 15, 2, 24);
+        g.fillStyle(0x2a3040, 1); g.fillRect(cx - 13.5, 27, 27, 2.5);
+        g.fillStyle(0xb8c4d8, 0.9); g.fillRect(cx - 13.5, 13.5, 27, 2);
+        g.fillStyle(0xb8c4d8, 0.55); g.fillEllipse(cx - 13.5, 15, 7, 3);
+        glanz(cx - 7, 18, 1.6);
+      }
+    },
+    {
+      key: 'itBodySchattenkutte',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0x08070c, 1);
+        g.fillTriangle(cx, 10, cx - 15, 42, cx + 15, 42);
+        g.fillStyle(0x322a48, 1);
+        g.fillTriangle(cx, 12.5, cx - 12.5, 40.5, cx + 12.5, 40.5);
+        // Kapuze und Schattenspalt
+        g.fillStyle(0x08070c, 1);
+        g.fillTriangle(cx, 15, cx - 6, 27, cx + 6, 27);
+        g.fillStyle(0x1a1628, 1);
+        g.fillTriangle(cx, 27, cx - 4, 40.5, cx + 4, 40.5);
+        g.fillStyle(0x6a5fa0, 0.8);
+        g.fillTriangle(cx, 12.5, cx - 12.5, 40.5, cx - 9.5, 40.5);
+        g.fillStyle(0x9a86ff, 0.5); g.fillCircle(cx, 22, 1.6);
+        glanz(cx - 6, 24, 1.2, 0x9a86ff);
+      }
+    },
+
+    // ── Stiefel ────────────────────────────────────────────────────────────
+    {
+      key: 'itBootsLeder',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0x180f08, 1);
+        g.fillRoundedRect(cx - 9, 12, 15, 22, 3);
+        g.fillRoundedRect(cx - 9, 30, 24, 10, 3);
+        g.fillStyle(0x6a4520, 1);
+        g.fillRoundedRect(cx - 7.5, 13.5, 12, 20, 2);
+        g.fillRoundedRect(cx - 7.5, 31, 21.5, 7.5, 2);
+        g.fillStyle(0x3a2410, 1); g.fillRect(cx - 7.5, 20, 12, 3); // Schaftriemen
+        g.fillStyle(0x2a1808, 1); g.fillRect(cx - 9, 38, 24, 2.5); // Sohle
+        g.fillStyle(0x9a7038, 0.85); g.fillRect(cx - 7.5, 13.5, 12, 1.8);
+        glanz(cx - 4, 16, 1.4);
+      }
+    },
+    {
+      key: 'itBootsStahl',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0x0e1016, 1);
+        g.fillRoundedRect(cx - 10, 11, 17, 23, 2);
+        g.fillRoundedRect(cx - 10, 30, 26, 11, 2);
+        g.fillStyle(0x6a7288, 1);
+        g.fillRoundedRect(cx - 8.5, 12.5, 14, 21, 1.5);
+        g.fillRoundedRect(cx - 8.5, 31.2, 23.5, 8, 1.5);
+        // Lamellen: waagerechte Baender machen den Stahlschuh aus
+        g.fillStyle(0x2a3040, 1);
+        [16, 21, 26].forEach((y) => g.fillRect(cx - 8.5, y, 14, 2));
+        g.fillStyle(0x3a4050, 1); g.fillRect(cx - 8.5, 35, 23.5, 2);
+        g.fillStyle(0xb8c4d8, 0.9); g.fillRect(cx - 8.5, 12.5, 14, 1.8);
+        g.fillStyle(0x14161e, 1); g.fillRect(cx - 10, 39, 26, 2.5);
+        glanz(cx - 5, 14.5, 1.5);
+      }
+    },
+    {
+      key: 'itBootsWindlaeufer',
+      draw: () => {
+        const cx = SIZE / 2;
+        g.fillStyle(0x0c1418, 1);
+        g.fillRoundedRect(cx - 8, 14, 13, 20, 4);
+        g.fillRoundedRect(cx - 8, 30, 21, 9, 4);
+        g.fillStyle(0x2a6a80, 1);
+        g.fillRoundedRect(cx - 6.5, 15.5, 10, 18, 3);
+        g.fillRoundedRect(cx - 6.5, 31, 18.5, 6.5, 3);
+        // Der Fluegel am Knoechel — das Erkennungszeichen
+        g.fillStyle(0x0c1418, 1);
+        g.fillTriangle(cx - 8, 20, cx - 18, 15, cx - 8, 27);
+        g.fillStyle(0xbfe4f5, 1);
+        g.fillTriangle(cx - 8.5, 21, cx - 16.5, 16.5, cx - 8.5, 26);
+        g.fillStyle(0x6fa8c8, 1);
+        g.fillTriangle(cx - 8.5, 23, cx - 13, 20, cx - 8.5, 26);
+        g.fillStyle(0x9fdcf0, 0.9); g.fillRect(cx - 6.5, 15.5, 10, 1.6);
+        g.fillStyle(0x0c1418, 1); g.fillRect(cx - 8, 37, 21, 2);
+        glanz(cx - 3, 18, 1.4, 0xeafaff);
+      }
+    },
+
+    // ── Boegen ─────────────────────────────────────────────────────────────
+    // Vier Boegen, vier Umrisse: schlichter Langbogen, Reflexbogen mit
+    // Hornspitzen, glimmender Bogen, blasser Nebelbogen.
+    {
+      key: 'itBowEsche',
+      draw: () => {
+        g.lineStyle(4.5, 0x2a1c0e, 1);
+        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
+        g.lineStyle(2.6, 0x8a6a34, 1);
+        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
+        g.lineStyle(1, 0xc0a060, 0.8);
+        g.beginPath(); g.arc(30, 24, 19.2, -Math.PI * 0.6, Math.PI * 0.2); g.strokePath();
+        g.lineStyle(1.2, 0xe8e0cc, 0.9);
+        g.beginPath(); g.moveTo(16.5, 7.5); g.lineTo(16.5, 40.5); g.strokePath();
+        g.fillStyle(0x5a4020, 1); g.fillRect(26, 20, 5, 8);
+        glanz(30, 12, 1.2, 0xf0e0b0);
+      }
+    },
+    {
+      key: 'itBowHorn',
+      draw: () => {
+        // Reflexbogen: zwei Gegenbiegungen statt eines Bogens
+        g.lineStyle(5, 0x1a1208, 1);
+        g.beginPath(); g.moveTo(14, 40); g.lineTo(24, 32); g.lineTo(26, 24);
+        g.lineTo(24, 16); g.lineTo(14, 8); g.strokePath();
+        g.lineStyle(3, 0x9a7a3a, 1);
+        g.beginPath(); g.moveTo(14, 40); g.lineTo(24, 32); g.lineTo(26, 24);
+        g.lineTo(24, 16); g.lineTo(14, 8); g.strokePath();
+        // Hornspitzen
+        g.fillStyle(0xe8e0cc, 1);
+        g.fillTriangle(14, 8, 18, 6, 14.5, 11);
+        g.fillTriangle(14, 40, 18, 42, 14.5, 37);
+        g.lineStyle(1.2, 0xf0ece0, 0.9);
+        g.beginPath(); g.moveTo(15, 7.5); g.lineTo(15, 40.5); g.strokePath();
+        g.fillStyle(0x3a2a12, 1); g.fillRect(23, 20, 5, 8);
+        g.fillStyle(0xc8a860, 0.9); g.fillRect(23, 20, 5, 1.5);
+        glanz(25, 14, 1.2);
+      }
+    },
+    {
+      key: 'itBowGlut',
+      draw: () => {
+        g.lineStyle(5, 0x2a0c04, 1);
+        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
+        g.lineStyle(3, 0x8a2a10, 1);
+        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
+        // Die Glut sitzt IM Bogen, nicht darauf
+        g.lineStyle(1.4, 0xff8a20, 1);
+        g.beginPath(); g.arc(30, 24, 17, -Math.PI * 0.55, Math.PI * 0.55); g.strokePath();
+        g.fillStyle(0xff6a00, 0.28); g.fillCircle(16, 24, 9);
+        g.lineStyle(1.2, 0xffd070, 0.95);
+        g.beginPath(); g.moveTo(16.5, 7.5); g.lineTo(16.5, 40.5); g.strokePath();
+        g.fillStyle(0x3a1408, 1); g.fillRect(26, 20, 5, 8);
+        g.fillStyle(0xffb040, 1); g.fillCircle(16, 24, 2.4);
+        glanz(16, 23, 1.2, 0xfff0c0);
+      }
+    },
+    {
+      key: 'itBowNebel',
+      draw: () => {
+        g.lineStyle(5, 0x141a22, 1);
+        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
+        g.lineStyle(3, 0x6a7a8a, 0.9);
+        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
+        // Schwaden: weiche Flecken, die den Umriss aufloesen
+        g.fillStyle(0xc8d8e8, 0.16);
+        g.fillCircle(20, 16, 7); g.fillCircle(22, 32, 8); g.fillCircle(14, 24, 6);
+        g.lineStyle(1.2, 0xdfe8f0, 0.75);
+        g.beginPath(); g.moveTo(16.5, 7.5); g.lineTo(16.5, 40.5); g.strokePath();
+        g.fillStyle(0x1e2630, 1); g.fillRect(26, 20, 5, 8);
+        g.fillStyle(0xaebfd0, 0.9); g.fillRect(26, 20, 5, 1.4);
+        glanz(21, 14, 1.4, 0xeaf2fa);
       }
     }
   ];

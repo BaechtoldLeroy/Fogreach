@@ -466,39 +466,39 @@ if (window.i18n) {
       baseStats: Object.freeze({ damage: Object.freeze({ min: 6.3, max: 9.1 }), speed: -10, range: 18 }), dropWeight: Object.freeze({ 14: 0, 18: 40, 26: 80 }) }),
 
     // Bows (ranged weapons — equipping one swaps default attack to a projectile)
-    Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itBow',
+    Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itBowEsche',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 0.7, max: 2.8 }), range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
-    Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBow',
+    Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBowHorn',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 2.1, max: 4.2 }), range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
-    Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itBow',
+    Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itBowGlut',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 2.8, max: 4.9 }), range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
     // Spät-Tier-Bogen (ab ~Tiefe 15), s. Kommentar bei den Spät-Tier-Nahkampfwaffen.
-    Object.freeze({ key: 'WPN_NEBELBOGEN', type: 'weapon', subtype: 'bow', name: 'Nebelbogen', iconKey: 'itBow',
+    Object.freeze({ key: 'WPN_NEBELBOGEN', type: 'weapon', subtype: 'bow', name: 'Nebelbogen', iconKey: 'itBowNebel',
       baseStats: Object.freeze({ damage: Object.freeze({ min: 4.9, max: 7.7 }), range: 130, crit: 3 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
 
     // Helms (3)
-    Object.freeze({ key: 'HD_KETTENHAUBE', type: 'head', name: 'Kettenhaube', iconKey: 'itHead',
+    Object.freeze({ key: 'HD_KETTENHAUBE', type: 'head', name: 'Kettenhaube', iconKey: 'itHeadKettenhaube',
       baseStats: Object.freeze({ armor: 5 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 40 }) }),
-    Object.freeze({ key: 'HD_BRONZEHELM', type: 'head', name: 'Bronzehelm', iconKey: 'itHead',
+    Object.freeze({ key: 'HD_BRONZEHELM', type: 'head', name: 'Bronzehelm', iconKey: 'itHeadBronze',
       baseStats: Object.freeze({ armor: 8 }), dropWeight: Object.freeze({ 4: 80, 10: 100, 15: 60 }) }),
-    Object.freeze({ key: 'HD_SCHLANGENMASKE', type: 'head', name: 'Schlangenmaske', iconKey: 'itHead',
+    Object.freeze({ key: 'HD_SCHLANGENMASKE', type: 'head', name: 'Schlangenmaske', iconKey: 'itHeadSchlangenmaske',
       baseStats: Object.freeze({ armor: 4, crit: 5 }), dropWeight: Object.freeze({ 6: 50, 12: 80, 18: 100 }) }),
 
     // Body armor (3)
-    Object.freeze({ key: 'BD_LEDERHARNISCH', type: 'body', name: 'Lederharnisch', iconKey: 'itBody',
+    Object.freeze({ key: 'BD_LEDERHARNISCH', type: 'body', name: 'Lederharnisch', iconKey: 'itBodyLeder',
       baseStats: Object.freeze({ armor: 6, speed: 5 }), dropWeight: Object.freeze({ 1: 100, 5: 60, 10: 30 }) }),
-    Object.freeze({ key: 'BD_PLATTENPANZER', type: 'body', name: 'Plattenpanzer', iconKey: 'itBody',
+    Object.freeze({ key: 'BD_PLATTENPANZER', type: 'body', name: 'Plattenpanzer', iconKey: 'itBodyPlatte',
       baseStats: Object.freeze({ armor: 15, speed: -5 }), dropWeight: Object.freeze({ 5: 60, 10: 100, 15: 80 }) }),
-    Object.freeze({ key: 'BD_SCHATTENKUTTE', type: 'body', name: 'Schattenkutte', iconKey: 'itBody',
+    Object.freeze({ key: 'BD_SCHATTENKUTTE', type: 'body', name: 'Schattenkutte', iconKey: 'itBodySchattenkutte',
       baseStats: Object.freeze({ armor: 4, speed: 10, crit: 3 }), dropWeight: Object.freeze({ 6: 40, 12: 80, 18: 100 }) }),
 
     // Boots (3) — geben Lauftempo (move), nicht Angriffstempo. 'move' ist flach
     // (px/s auf playerSpeed), daher hier ganze Zahlen statt Prozent-Stil.
-    Object.freeze({ key: 'BT_LEDERSTIEFEL', type: 'boots', name: 'Lederstiefel', iconKey: 'itBoots',
+    Object.freeze({ key: 'BT_LEDERSTIEFEL', type: 'boots', name: 'Lederstiefel', iconKey: 'itBootsLeder',
       baseStats: Object.freeze({ move: 18 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 40 }) }),
-    Object.freeze({ key: 'BT_STAHLSOHLEN', type: 'boots', name: 'Stahlsohlen', iconKey: 'itBoots',
+    Object.freeze({ key: 'BT_STAHLSOHLEN', type: 'boots', name: 'Stahlsohlen', iconKey: 'itBootsStahl',
       baseStats: Object.freeze({ armor: 6, move: 10 }), dropWeight: Object.freeze({ 4: 80, 10: 100 }) }),
-    Object.freeze({ key: 'BT_WINDLAEUFER', type: 'boots', name: 'Windläufer', iconKey: 'itBoots',
+    Object.freeze({ key: 'BT_WINDLAEUFER', type: 'boots', name: 'Windläufer', iconKey: 'itBootsWindlaeufer',
       baseStats: Object.freeze({ move: 30, crit: 2 }), dropWeight: Object.freeze({ 8: 50, 14: 100 }) })
   ]);
 
@@ -509,21 +509,21 @@ if (window.i18n) {
   // EFFECTS (effect key) are wired in WP03, spawn/merchant gating in WP04.
   // ---------------------------------------------------------------------------
   const AMULET_DEFS = Object.freeze([
-    Object.freeze({ key: 'AMU_ZWILLINGSKLINGE', type: 'amulet', name: 'Amulett der Zwillingsklinge', iconKey: 'itAmulet', effect: 'twin',      depthMin: 10 }),
-    Object.freeze({ key: 'AMU_KETTENHERZ',      type: 'amulet', name: 'Kettenherz',                  iconKey: 'itAmulet', effect: 'chain',     depthMin: 10 }),
-    Object.freeze({ key: 'AMU_SCHNITTERBAND',   type: 'amulet', name: 'Schnitterband',               iconKey: 'itAmulet', effect: 'cleave',    depthMin: 10 }),
-    Object.freeze({ key: 'AMU_ADERLASS',        type: 'amulet', name: 'Aderlass-Talisman',           iconKey: 'itAmulet', effect: 'lifesteal', depthMin: 10 }),
-    Object.freeze({ key: 'AMU_BRANDMAL',        type: 'amulet', name: 'Brandmal der Gier',           iconKey: 'itAmulet', effect: 'aura',      depthMin: 10 }),
-    Object.freeze({ key: 'AMU_STURMSCHRITT',    type: 'amulet', name: 'Sturmschritt-Amulett',        iconKey: 'itAmulet', effect: 'tempo',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_ZWILLINGSKLINGE', type: 'amulet', name: 'Amulett der Zwillingsklinge', iconKey: 'amuZwillingsklinge', effect: 'twin',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_KETTENHERZ',      type: 'amulet', name: 'Kettenherz',                  iconKey: 'amuKettenherz', effect: 'chain',     depthMin: 10 }),
+    Object.freeze({ key: 'AMU_SCHNITTERBAND',   type: 'amulet', name: 'Schnitterband',               iconKey: 'amuSchnitterband', effect: 'cleave',    depthMin: 10 }),
+    Object.freeze({ key: 'AMU_ADERLASS',        type: 'amulet', name: 'Aderlass-Talisman',           iconKey: 'amuAderlass', effect: 'lifesteal', depthMin: 10 }),
+    Object.freeze({ key: 'AMU_BRANDMAL',        type: 'amulet', name: 'Brandmal der Gier',           iconKey: 'amuBrandmal', effect: 'aura',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_STURMSCHRITT',    type: 'amulet', name: 'Sturmschritt-Amulett',        iconKey: 'amuSturmschritt', effect: 'tempo',      depthMin: 10 }),
     // Run-defining "verb changers" (WP03 implements the behaviour per effect key):
-    Object.freeze({ key: 'AMU_TRABANTENSTEIN',  type: 'amulet', name: 'Trabantenstein',              iconKey: 'itAmulet', effect: 'orbit',      depthMin: 10 }),
-    Object.freeze({ key: 'AMU_ASCHEFUNKE',      type: 'amulet', name: 'Aschefunke',                  iconKey: 'itAmulet', effect: 'killburst',  depthMin: 10 }),
-    Object.freeze({ key: 'AMU_SCHATTENMANTEL',  type: 'amulet', name: 'Schattenmantel',              iconKey: 'itAmulet', effect: 'dashstrike', depthMin: 10 }),
-    Object.freeze({ key: 'AMU_SCHLAECHTERKRONE',type: 'amulet', name: 'Schlächterkrone',             iconKey: 'itAmulet', effect: 'momentum',   depthMin: 10 }),
-    Object.freeze({ key: 'AMU_FROSTSIEGEL',     type: 'amulet', name: 'Frostsiegel',                 iconKey: 'itAmulet', effect: 'frost',      depthMin: 10 }),
-    Object.freeze({ key: 'AMU_GLASHERZ',        type: 'amulet', name: 'Glasherz',                    iconKey: 'itAmulet', effect: 'glass',      depthMin: 10 }),
-    Object.freeze({ key: 'AMU_ZWEITER_ATEM',    type: 'amulet', name: 'Zweiter Atem',                iconKey: 'itAmulet', effect: 'revive',     depthMin: 10 }),
-    Object.freeze({ key: 'AMU_BLUTPAKT',        type: 'amulet', name: 'Blutpakt',                    iconKey: 'itAmulet', effect: 'bloodpact',  depthMin: 10 })
+    Object.freeze({ key: 'AMU_TRABANTENSTEIN',  type: 'amulet', name: 'Trabantenstein',              iconKey: 'amuTrabantenstein', effect: 'orbit',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_ASCHEFUNKE',      type: 'amulet', name: 'Aschefunke',                  iconKey: 'amuAschefunke', effect: 'killburst',  depthMin: 10 }),
+    Object.freeze({ key: 'AMU_SCHATTENMANTEL',  type: 'amulet', name: 'Schattenmantel',              iconKey: 'amuSchattenmantel', effect: 'dashstrike', depthMin: 10 }),
+    Object.freeze({ key: 'AMU_SCHLAECHTERKRONE',type: 'amulet', name: 'Schlächterkrone',             iconKey: 'amuSchlaechterkrone', effect: 'momentum',   depthMin: 10 }),
+    Object.freeze({ key: 'AMU_FROSTSIEGEL',     type: 'amulet', name: 'Frostsiegel',                 iconKey: 'amuFrostsiegel', effect: 'frost',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_GLASHERZ',        type: 'amulet', name: 'Glasherz',                    iconKey: 'amuGlasherz', effect: 'glass',      depthMin: 10 }),
+    Object.freeze({ key: 'AMU_ZWEITER_ATEM',    type: 'amulet', name: 'Zweiter Atem',                iconKey: 'amuZweiterAtem', effect: 'revive',     depthMin: 10 }),
+    Object.freeze({ key: 'AMU_BLUTPAKT',        type: 'amulet', name: 'Blutpakt',                    iconKey: 'amuBlutpakt', effect: 'bloodpact',  depthMin: 10 })
   ]);
 
   // Roll a run amulet (separate path from rollItem). Depth-bias on stronger

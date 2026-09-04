@@ -125,11 +125,23 @@ test('#117: jede der sechs Nahkampfwaffen traegt ein EIGENES Symbol', () => {
   assert.strictEqual(gesehen.size, 6);
 });
 
-test('#117: die Boegen bleiben bewusst auf itBow', () => {
+test('Auch die Boegen haben eigene Symbole (#125 loest #117 ab)', () => {
+  // #117 liess die vier Boegen bewusst auf dem Sammel-Icon itBow: dort ging es
+  // um die Nahkampfwaffen. #125 hat den Umfang erweitert — vier gleich
+  // aussehende Boegen sind derselbe Befund wie vierzehn gleich aussehende
+  // Amulette. Der Test kehrt sich damit um: er hielt das Sammel-Icon fest,
+  // jetzt haelt er die Trennung fest.
   const basen = waffenBasen();
+  const gesehen = new Map();
   ['WPN_ESCHENBOGEN', 'WPN_HORNBOGEN', 'WPN_GLUTBOGEN', 'WPN_NEBELBOGEN'].forEach((k) => {
-    assert.strictEqual(basen[k].iconKey, 'itBow', k + ' wurde ungewollt mitgeaendert');
+    const b = basen[k];
+    assert.ok(b, k + ' fehlt in ITEM_BASES');
+    assert.notStrictEqual(b.iconKey, 'itBow', k + ' haengt wieder am Sammel-Icon itBow');
+    const doppelt = gesehen.get(b.iconKey);
+    assert.ok(!doppelt, k + ' teilt sich ' + b.iconKey + ' mit ' + doppelt);
+    gesehen.set(b.iconKey, k);
   });
+  assert.strictEqual(gesehen.size, 4);
 });
 
 test('#117: Elaras Klinge traegt ein Schwert-Symbol, nicht mehr das Sammel-Icon', () => {
