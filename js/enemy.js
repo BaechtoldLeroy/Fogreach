@@ -1048,6 +1048,41 @@ function handleEnemies(time, delta = 16) {
       player.y,
     );
 
+    // --- Pluenderer: Flucht zur Treppe (#129) --------------------------------
+    //
+    // Der Beutetraeger aus dem Hinterhalt soll nicht dastehen wie jeder andere.
+    // Die Meldung verspricht eine Jagd — also gibt es eine.
+    //
+    // Bewusst KEINE neue Fluchtkraft in der Steering: bei der Leine der
+    // Kriegsschar (#95) ging eine Zusatzkraft in Steering.limit unter (gemessen
+    // 299 px mit gegen 323 px ohne — praktisch wirkungslos). Stattdessen die
+    // erprobte Ansturm-Maschinerie (_dashTarget/_dashUntil), die die Steering
+    // ohnehin umgeht: ein Satz alle paar Sekunden, sichtbar und unterbrechbar.
+    //
+    // Ziel ist die Treppe. Erreicht er sie, ist er weg — samt Beute. Das macht
+    // aus dem Hinterhalt eine Entscheidung: den Traeger jagen oder erst die
+    // anderen abraeumen.
+    if (enemy._istPluenderer && enemy.hp > 0 && player && player.active) {
+      var _fluchtCd = enemy._fluchtCd || 3200;
+      var _bereit = !enemy._letzteFlucht || (time - enemy._letzteFlucht > _fluchtCd);
+      var _bedraengt = dToPlayer < (enemy._fluchtRadius || 300);
+      if (_bereit && _bedraengt && !(enemy._dashUntil && time < enemy._dashUntil)) {
+        var _ziel = _pluendererFluchtziel(this, enemy);
+        if (_ziel) {
+          enemy._letzteFlucht = time;
+          enemy._dashTarget = _ziel;
+          enemy._dashSpeed = 420;                 // langsamer als ein Boss-Ansturm:
+          enemy._dashUntil = time + 620;          // einholbar, wenn man dranbleibt
+          enemy._dashOnArrive = null;
+        }
+      }
+      // Angekommen? Dann ist er mit der Beute unten durch.
+      if (_pluendererAmAusgang(this, enemy)) {
+        _pluendererEntkommt(this, enemy);
+        return;
+      }
+    }
+
     // Schattenschleicher: teleport when player gets within 100px
     if (enemy.isShadowCreeper && dToPlayer < 100) {
       if (!enemy.lastTeleportTime || time - enemy.lastTeleportTime > 2000) {
@@ -2047,6 +2082,109 @@ function drawEnemyHpBar(enemy) {
   else if (pct > 0.33) color = 0xfdd835;  // yellow
   g.fillStyle(color, 1);
   g.fillRect(x, y, barW * pct, barH);
+}
+
+// --- Pluenderer (#129) -------------------------------------------------------
+
+/** Naechste Treppe im Raum — das Fluchtziel. */
+function _pluendererTreppe(scene) {
+  try {
+    var grp = scene && scene.stairsGroup;
+    if (!grp || typeof grp.getChildren !== 'function') return null;
+    var liste = grp.getChildren();
+    for (var i = 0; i < liste.length; i++) {
+      if (liste[i] && liste[i].active) return liste[i];
+    }
+  } catch (e) {}
+  return null;
+}
+
+/**
+ * Wohin springt er?
+ *
+ * Erste Wahl ist die Treppe. Steht eine Wand im Weg, faechert er auf: erst
+ * schraeg an der Wand vorbei, dann notfalls einfach vom Spieler weg. Ohne
+ * diesen Faecher blieb er in verwinkelten Raeumen einfach stehen — gemessen
+ * 517 px zur Treppe vor dem Sprungversuch, 522 danach — und verhielt sich dann
+ * wie jeder andere Gegner, obwohl die Meldung eine Jagd versprach.
+ *
+ * Der Sprung ist auf 260 px begrenzt, damit er nicht quer durch den Raum saust
+ * und die Jagd aussichtslos wird.
+ */
+function _pluendererFluchtziel(scene, enemy) {
+  var richtungen = [];
+  var treppe = _pluendererTreppe(scene);
+  if (treppe) richtungen.push(Math.atan2(treppe.y - enemy.y, treppe.x - enemy.x));
+  if (typeof player !== 'undefined' && player) {
+    richtungen.push(Math.atan2(enemy.y - player.y, enemy.x - player.x));
+  }
+  if (!richtungen.length) return null;
+
+  // Je Grundrichtung erst geradeaus, dann schraeg — und je Winkel von weit
+  // nach kurz. So bleibt die Treppe die erste Wahl, ohne dass eine Wand die
+  // Flucht ganz verhindert.
+  var abweichungen = [0, 0.5, -0.5, 1.0, -1.0, 1.6, -1.6];
+  var weiten = [260, 190, 120, 70];
+  var frei = function (x, y) {
+    try {
+      if (scene.isPointAccessible && !scene.isPointAccessible(x, y)) return false;
+      if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(x, y)) return false;
+    } catch (e) {}
+    return true;
+  };
+
+  for (var r = 0; r < richtungen.length; r++) {
+    for (var a = 0; a < abweichungen.length; a++) {
+      var winkel = richtungen[r] + abweichungen[a];
+      for (var w = 0; w < weiten.length; w++) {
+        var nx = enemy.x + Math.cos(winkel) * weiten[w];
+        var ny = enemy.y + Math.sin(winkel) * weiten[w];
+        if (frei(nx, ny)) return { x: nx, y: ny };
+      }
+    }
+  }
+  return null;
+}
+
+/** Steht er auf der Treppe? Dann ist er unten durch. */
+function _pluendererAmAusgang(scene, enemy) {
+  var treppe = _pluendererTreppe(scene);
+  if (!treppe) return false;
+  var dx = treppe.x - enemy.x, dy = treppe.y - enemy.y;
+  return (dx * dx + dy * dy) < 48 * 48;
+}
+
+/**
+ * Er entkommt: Beute weg, Meldung, Gegner weg.
+ *
+ * Die Beutedaten werden VOR dem Zerstoeren geloescht — sonst schuettet der
+ * Todes-Pfad in player.js sie doch noch aus, und die Flucht waere folgenlos.
+ */
+function _pluendererEntkommt(scene, enemy) {
+  try {
+    enemy.setData('pluendererGold', 0);
+    enemy._istPluenderer = false;
+  } catch (e) {}
+  try {
+    var schein = enemy.getData && enemy.getData('pluendererSchein');
+    if (schein && schein.destroy) schein.destroy();
+  } catch (e) {}
+  try {
+    if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+      window.EventSystem.showToast(scene, _pluendererText(), 'ambush');
+    }
+  } catch (e) {}
+  try { enemy.destroy(); } catch (e) {}
+}
+
+function _pluendererText() {
+  try {
+    if (window.i18n && typeof window.i18n.t === 'function') {
+      var v = window.i18n.t('event.ambush.looter_escaped');
+      if (v && String(v).indexOf('[MISSING:') !== 0) return v;
+    }
+  } catch (e) {}
+  return 'Der Pluenderer ist mit der Beute die Treppe hinunter.';
 }
 
 function hitByMelee(playerSprite, enemy) {

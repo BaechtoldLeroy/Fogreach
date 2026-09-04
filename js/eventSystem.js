@@ -18,7 +18,8 @@
       'event.treasure.toast_item': 'Ein Gegenstand gefunden!',
       // Ambush
       'event.ambush.name': 'Hinterhalt!',
-      'event.ambush.toast_looter': 'Einer von ihnen trägt Beute — der Plünderer!',
+      'event.ambush.toast_looter': 'Einer von ihnen trägt Beute — und will damit weg!',
+      'event.ambush.looter_escaped': 'Der Plünderer ist mit der Beute die Treppe hinunter.',
       // Wandering merchant
       'event.merchant.name': 'Wandernder Händler',
       'event.merchant.toast_spawn': '🛒 Ein wandernder Händler ist erschienen!',
@@ -155,7 +156,8 @@
       'event.treasure.toast_gold': '+{amount} gold!',
       'event.treasure.toast_item': 'Found an item!',
       'event.ambush.name': 'Ambush!',
-      'event.ambush.toast_looter': 'One of them carries loot — the looter!',
+      'event.ambush.toast_looter': 'One of them carries loot — and wants out!',
+      'event.ambush.looter_escaped': 'The looter is down the stairs with the loot.',
       'event.merchant.name': 'Wandering Merchant',
       'event.merchant.toast_spawn': '🛒 A wandering merchant has appeared!',
       'event.cursed.name': 'Cursed Chest',
@@ -2066,7 +2068,17 @@
           var beuteGold = 40 + 15 * (window.DUNGEON_DEPTH || 1);
           try {
             pluenderer.setData('pluendererGold', beuteGold);
+            // #129: Er flieht jetzt wirklich — zur Treppe, und wenn er sie
+            // erreicht, ist die Beute weg. Das Verhalten steckt in der
+            // Gegner-Schleife (enemy.js, _pluendererFluchtziel); hier wird nur
+            // markiert.
+            pluenderer._istPluenderer = true;
             // Sichtbar: goldener Schimmer, damit man weiss, wen man jagt.
+            // _pluendererToenung ueberlebt den Trefferblitz (player.js,
+            // _dauerToenungHerstellen) — ohne den Merker war er nach dem ersten
+            // Treffer nicht mehr von den anderen Angreifern zu unterscheiden.
+            pluenderer._pluendererToenung = 0xffd98a;
+            pluenderer._originalTint = 0xffd98a;
             if (typeof pluenderer.setTint === 'function') pluenderer.setTint(0xffd98a);
             if (scene.add && typeof scene.add.circle === 'function') {
               var schein = scene.add.circle(pluenderer.x, pluenderer.y, 22, 0xffd98a, 0.22);

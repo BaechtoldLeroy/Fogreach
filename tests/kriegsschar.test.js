@@ -163,12 +163,20 @@ test('Die Toenung haengt an der Zugehoerigkeit, nicht am Affix', () => {
 test('Der Merker ueberlebt die Trefferblitze', () => {
   // Drei Stellen in player.js loeschen die Gegner-Toenung nach einem Blitz.
   // Ohne Wiederherstellung war die Markierung nach dem ersten Treffer weg.
+  //
+  // Seit #129 steht die Wiederherstellung nicht mehr dreimal ausgeschrieben da,
+  // sondern in _dauerToenungHerstellen() — der Pluenderer braucht sie genauso.
+  // Geprueft wird deshalb beides: dass alle drei Stellen die Funktion rufen und
+  // dass die Funktion die Schar-Toenung kennt.
   const fs2 = require('fs');
   const path2 = require('path');
   const s2 = fs2.readFileSync(path2.join(__dirname, '..', 'js', 'player.js'), 'utf8');
-  const treffer = (s2.match(/_scharToenung === 'number'/g) || []).length;
-  assert.strictEqual(treffer, 3,
-    'erwartet drei Wiederherstellungen in player.js, fand ' + treffer);
+  const stellen = (s2.match(/_dauerToenungHerstellen\(enemy\);/g) || []).length;
+  assert.strictEqual(stellen, 3,
+    'erwartet drei Aufrufstellen in player.js, fand ' + stellen);
+  const kern = s2.slice(s2.indexOf('function _dauerToenungHerstellen'));
+  assert.ok(/_scharToenung/.test(kern.slice(0, 900)),
+    'die gemeinsame Wiederherstellung kennt die Schar-Toenung nicht mehr');
 });
 
 test('_originalTint wird mitgesetzt, damit Statuseffekte sauber zuruecksetzen', () => {

@@ -461,6 +461,35 @@ function getPlayerTextureKey(scene) {
  * Reihenfolge wie in statusEffects._refreshVisual: der stoerendste Effekt
  * gewinnt.
  */
+/**
+ * Stellt nach einem Trefferblitz die Toenung wieder her, die dauerhaft
+ * gelten soll.
+ *
+ * setTint ist ein umkaempfter Kanal: Grundfarbe je Gegnertyp, Elite-Affix,
+ * Mini-Boss-Orange und die Trefferblitze teilen ihn sich — und die Blitze
+ * rufen danach clearTint(). Jede Markierung, die ueberleben soll, muss hier
+ * wieder aufgetragen werden. Bisher stand die Wiederherstellung dreimal
+ * ausgeschrieben da und kannte nur die Kriegsschar; der Pluenderer (#129)
+ * verlor seinen Goldton beim ersten Treffer und war danach nicht mehr von
+ * den anderen Angreifern zu unterscheiden.
+ *
+ * Reihenfolge: der Pluenderer sticht die Schar. Wer beides ist, soll als
+ * Beutetraeger erkennbar sein — das ist die Auskunft, die etwas kostet.
+ */
+function _dauerToenungHerstellen(enemy) {
+  if (!enemy) return false;
+  if (typeof enemy._pluendererToenung === 'number') {
+    enemy.setTint(enemy._pluendererToenung);
+    return true;
+  }
+  if (typeof enemy._scharToenung === 'number') {
+    enemy.setTint(enemy._scharToenung);
+    return true;
+  }
+  return false;
+}
+if (typeof window !== 'undefined') window._dauerToenungHerstellen = _dauerToenungHerstellen;
+
 function _spielerStatusFarbe() {
   try {
     var sm = window.statusEffectManager;
@@ -757,9 +786,7 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
       scene.time.delayedCall(200, () => {
         if (enemy && enemy.active) {
           enemy.clearTint();
-          // #95: die Schar-Toenung ueberlebt den Blitz — sonst ist die
-          // Zugehoerigkeit nach dem ersten Treffer nicht mehr zu sehen.
-          if (typeof enemy._scharToenung === 'number') enemy.setTint(enemy._scharToenung);
+          _dauerToenungHerstellen(enemy);
           if (enemy.isElite) enemy.setTint(0xffe066);
         }
       });
@@ -818,8 +845,7 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
     scene.time.delayedCall(160, () => {
       if (enemy && enemy.active) {
         enemy.clearTint();
-        // #95: Schar-Toenung wiederherstellen (siehe oben).
-        if (typeof enemy._scharToenung === 'number') enemy.setTint(enemy._scharToenung);
+        _dauerToenungHerstellen(enemy);
       }
     });
     // Ein Krit war bisher nur ein 160-ms-Aufblitzen — im Getuemmel kaum vom
@@ -1873,8 +1899,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
     scene.time.delayedCall(duration, () => {
       if (enemy && enemy.active) {
         enemy.clearTint();
-        // #95: Schar-Toenung wiederherstellen (siehe oben).
-        if (typeof enemy._scharToenung === 'number') enemy.setTint(enemy._scharToenung);
+        _dauerToenungHerstellen(enemy);
       }
     }, null, scene);
   }

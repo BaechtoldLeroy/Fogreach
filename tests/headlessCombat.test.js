@@ -694,3 +694,98 @@ test('Ein verfehltes Raumziel gibt gar keine Belohnung', () => {
     })()`);
   }
 });
+
+test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
+  // Die Meldung im Hinterhalt versprach eine Jagd, das Verhalten lieferte
+  // einen ganz normalen Gegner (#129). Jetzt setzt er zur Treppe ab — ueber
+  // die vorhandene Ansturm-Maschinerie (_dashTarget/_dashUntil), nicht ueber
+  // eine neue Kraft in der Steering: bei der Leine der Kriegsschar (#95) ging
+  // eine Zusatzkraft in Steering.limit unter und war praktisch wirkungslos.
+  const lauf = (flieht) => {
+    L.clearEnemies();
+    const start = H.run(`(function () {
+      var sc = window.game.scene.getScene('GameScene');
+      sc._enemyAttackGraceUntil = 0;
+      var t = sc.stairsGroup && sc.stairsGroup.getChildren()[0];
+      if (!t) return null;
+      var e = spawnEnemy.call(sc, player.x + 300, player.y, 3);
+      e.x = player.x + 90; e.y = player.y;
+      if (e.body) e.body.reset(e.x, e.y);
+      e.hp = 9999;
+      e._istPluenderer = ${flieht};
+      window.__p = e;
+      return { treppe: Math.round(Math.hypot(t.x - e.x, t.y - e.y)) };
+    })()`);
+    if (!start) return null;
+    H.step(400);
+    const ende = H.run(`(function () {
+      var sc = window.game.scene.getScene('GameScene');
+      var t = sc.stairsGroup.getChildren()[0];
+      var e = window.__p;
+      if (!e || !e.active) return { weg: true };
+      return { treppe: Math.round(Math.hypot(t.x - e.x, t.y - e.y)),
+               spieler: Math.round(Math.hypot(e.x - player.x, e.y - player.y)) };
+    })()`);
+    return { start: start, ende: ende };
+  };
+
+  const ohne = lauf(false);
+  if (!ohne) return;                     // Raum ohne Treppe: nicht messbar
+  const mit = lauf(true);
+
+  // Die Kontrolle muss stehenbleiben und den Spieler jagen, sonst misst der
+  // Fall nichts.
+  assert.ok(!ohne.ende.weg, 'die Kontrolle ist verschwunden');
+  assert.ok(ohne.ende.treppe > ohne.start.treppe - 100,
+    'die Kontrolle laeuft selbst zur Treppe — Fall nicht aussagekraeftig');
+
+  // Der staerkste Beleg: er hat die Treppe erreicht und ist samt Beute weg.
+  // Je nach Raumzuschnitt schafft er das in den vier Sekunden nicht immer —
+  // dann muss er ihr wenigstens deutlich naeher gekommen sein und Abstand zum
+  // Spieler halten.
+  if (mit.ende.weg) return;
+  assert.ok(mit.ende.treppe < mit.start.treppe - 150,
+    'er kommt der Treppe nicht naeher: ' + mit.start.treppe + ' -> ' + mit.ende.treppe);
+  assert.ok(mit.ende.spieler > ohne.ende.spieler + 100,
+    'er haelt keinen Abstand: mit ' + mit.ende.spieler + ' vs ohne ' + ohne.ende.spieler);
+});
+
+test('Entkommt der Pluenderer, ist die Beute weg — erschlagen zahlt sie aus', () => {
+  // Erst das macht aus dem Hinterhalt eine Entscheidung: den Traeger jagen
+  // oder erst die anderen abraeumen. Ohne Folgen waere die Flucht Dekoration.
+  const probe = (wie) => H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    enemies.getChildren().slice().forEach(function (x) { try { x.destroy(); } catch (e) {} });
+    sc._enemyAttackGraceUntil = 0;
+    var t = sc.stairsGroup.getChildren()[0];
+    if (!window.__goldHaken) {
+      window.__goldHaken = true;
+      var o = window.LootSystem.grantGold;
+      window.LootSystem.grantGold = function (n) { window.__gold += n; return o.apply(this, arguments); };
+    }
+    window.__gold = 0;
+    var e = spawnEnemy.call(sc, player.x + 300, player.y, 3);
+    e._istPluenderer = true;
+    e.setData('pluendererGold', 200);
+    if ('${wie}' === 'flucht') {
+      e.x = t.x + 20; e.y = t.y; if (e.body) e.body.reset(e.x, e.y);
+    } else {
+      e.hp = 0;
+      handleEnemyHit(sc, e, {});
+    }
+    window.__p = e;
+    return 1;
+  })()`);
+
+  probe('tot');
+  H.step(20);
+  const tot = H.run('(function(){var e=window.__p;return {weg:!(e&&e.active&&e.scene),gold:window.__gold};})()');
+  assert.strictEqual(tot.weg, true, 'der erschlagene Traeger bleibt stehen');
+  assert.strictEqual(tot.gold, 200, 'der erschlagene Traeger zahlt nicht aus');
+
+  probe('flucht');
+  H.step(20);
+  const weg = H.run('(function(){var e=window.__p;return {weg:!(e&&e.active&&e.scene),gold:window.__gold};})()');
+  assert.strictEqual(weg.weg, true, 'er erreicht die Treppe, verschwindet aber nicht');
+  assert.strictEqual(weg.gold, 0, 'die Flucht bleibt folgenlos: er zahlt trotzdem');
+});
