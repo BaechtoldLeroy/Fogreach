@@ -360,6 +360,13 @@
             const sceneAlive = (aura && aura.scene && aura.scene.sys)
               || (tag && tag.scene && tag.scene.sys);
             if (!enemy || !enemy.active || !sceneAlive) {
+              // Nicht nur den Timer stoppen: sonst bleiben Aura und Namenszug
+              // an der letzten Stelle im Raum stehen (#128). Der Fall tritt
+              // ein, sobald ein Gegner deaktiviert statt zerstoert wird — z. B.
+              // wenn sich das Rudel nach dem Fall des Rudelfuehrers aufloest
+              // (roomModeHunt._clearOtherEnemies) und der Aufloese-Tween nie
+              // fertig laeuft.
+              _eliteAnzeigeAbraeumen(enemy);
               if (visualTimer && typeof visualTimer.remove === 'function') visualTimer.remove();
               return;
             }
@@ -393,6 +400,49 @@
   // removeEliteFromEnemy(enemy)  (T030)
   // -------------------------------------------------------------------------
 
+  /**
+   * Aura, Namenszug und ihren Timer abraeumen — OHNE die Affixe
+   * zurueckzunehmen.
+   *
+   * Eigene Routine, weil sie an zwei Stellen gebraucht wird: beim
+   * endgueltigen Entfernen des Elite-Status UND in dem Moment, in dem der
+   * Gegner nur noch inaktiv ist. Genau dort fehlte sie: der Sicht-Timer stieg
+   * bei !enemy.active aus und nahm nur SICH mit — Aura und Namenszug blieben
+   * an der letzten Stelle im Raum stehen, bis der Raum gewechselt wurde
+   * (#128). Gemessen: bei destroy() 2 Auren -> 1, bei setActive(false)
+   * 3 -> 3.
+   *
+   * Die Objekte werden zerstoert, nicht nur versteckt: ein deaktivierter
+   * Gegner kommt in diesem Spiel nicht zurueck, und ein verstecktes Objekt
+   * waere derselbe Muell, nur unsichtbar.
+   */
+  function _eliteAnzeigeAbraeumen(enemy) {
+    if (!enemy) return;
+    if (enemy._eliteVisualTimer) {
+      try { if (typeof enemy._eliteVisualTimer.remove === 'function') enemy._eliteVisualTimer.remove(); } catch (e) {}
+      enemy._eliteVisualTimer = null;
+    }
+    // Alt-Timer defensiv mit abraeumen, falls je noch ein Gegner welche traegt.
+    if (enemy._eliteAuraTimer) {
+      try { if (typeof enemy._eliteAuraTimer.remove === 'function') enemy._eliteAuraTimer.remove(); } catch (e) {}
+      enemy._eliteAuraTimer = null;
+    }
+    if (enemy._eliteNameTagTimer) {
+      try { if (typeof enemy._eliteNameTagTimer.remove === 'function') enemy._eliteNameTagTimer.remove(); } catch (e) {}
+      enemy._eliteNameTagTimer = null;
+    }
+    // Erst die Referenz loeschen, dann zerstoeren: so ist ein zweiter Aufruf
+    // wirkungslos, auch wenn destroy() unterwegs wirft (b147).
+    var aura = enemy._eliteAura;
+    enemy._eliteAura = null;
+    if (aura) { try { if (typeof aura.destroy === 'function') aura.destroy(); } catch (e) {} }
+
+    var tag = enemy._eliteNameTag;
+    enemy._eliteNameTag = null;
+    enemy.eliteNameTag = null;
+    if (tag) { try { if (typeof tag.destroy === 'function') tag.destroy(); } catch (e) {} }
+  }
+
   function removeEliteFromEnemy(enemy) {
     if (!enemy) return;
     // Revert each affix (best-effort)
@@ -403,30 +453,7 @@
         }
       }
     }
-    // Gemeinsamer Visual-Timer (Perf #70) zuerst stoppen, bevor Aura/Tag weg sind.
-    if (enemy._eliteVisualTimer) {
-      try { if (typeof enemy._eliteVisualTimer.remove === 'function') enemy._eliteVisualTimer.remove(); } catch (e) {}
-      enemy._eliteVisualTimer = null;
-    }
-    // Alt-Timer defensiv mit abraeumen, falls je noch ein Enemy welche traegt.
-    if (enemy._eliteAuraTimer) {
-      try { if (typeof enemy._eliteAuraTimer.remove === 'function') enemy._eliteAuraTimer.remove(); } catch (e) {}
-      enemy._eliteAuraTimer = null;
-    }
-    if (enemy._eliteNameTagTimer) {
-      try { if (typeof enemy._eliteNameTagTimer.remove === 'function') enemy._eliteNameTagTimer.remove(); } catch (e) {}
-      enemy._eliteNameTagTimer = null;
-    }
-    // Destroy aura
-    if (enemy._eliteAura) {
-      try { if (typeof enemy._eliteAura.destroy === 'function') enemy._eliteAura.destroy(); } catch (e) {}
-      enemy._eliteAura = null;
-    }
-    // Destroy name tag
-    if (enemy._eliteNameTag) {
-      try { if (typeof enemy._eliteNameTag.destroy === 'function') enemy._eliteNameTag.destroy(); } catch (e) {}
-      enemy._eliteNameTag = null;
-    }
+    _eliteAnzeigeAbraeumen(enemy);
     enemy._isElite = false;
   }
 
