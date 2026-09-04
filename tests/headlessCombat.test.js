@@ -987,3 +987,40 @@ test('Ein gleichmaessiger Satz haelt sein Tempo — der Yank ueberstimmt es nich
   assert.ok(ruhig > 40 && ruhig < 110,
     'der gleichmaessige Satz haelt sein Tempo nicht: ' + ruhig + ' px in 20 Bildern');
 });
+
+test('Kein Hinterhalt in Raeumen mit Tueren', () => {
+  // Der Pluenderer flieht zur Treppe, und geschlossene Tueren blockieren
+  // Gegner (doorSystem.js: collider(enemies, _doorGroup)). In einem Tuerraum
+  // rennt er gegen ein Brett und bleibt stehen — das Ereignis verspricht eine
+  // Jagd, die der Raum nicht zulaesst.
+  //
+  // Ganz abgemeldet statt nur ohne Pluenderer: er IST die Belohnung des
+  // Hinterhalts. Ohne ihn zahlt das Ereignis wieder nichts — genau der
+  // Zustand, aus dem er entstanden ist.
+  const ziehe = (tueren) => H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var alt = sc._doors;
+    sc._doors = ${tueren} ? [{}] : [];
+    var zaehler = {}, gesamt = 0;
+    try {
+      for (var i = 0; i < 400; i++) {
+        var e = window.EventSystem.pickEvent(10, sc);
+        if (!e) continue;
+        zaehler[e.id] = (zaehler[e.id] || 0) + 1; gesamt++;
+      }
+    } finally { sc._doors = alt; }
+    return { gesamt: gesamt, ambush: zaehler.ambush || 0, arten: Object.keys(zaehler).length };
+  })()`);
+
+  const ohne = ziehe(false);
+  assert.ok(ohne.ambush > 10,
+    'ohne Tueren kommt der Hinterhalt kaum vor — misst der Fall noch etwas? ' + ohne.ambush);
+
+  const mit = ziehe(true);
+  assert.strictEqual(mit.ambush, 0,
+    'in einem Tuerraum wurde ' + mit.ambush + ' mal der Hinterhalt gezogen');
+  // Und die Auswahl bricht nicht ein: es bleiben genug andere Ereignisse.
+  assert.ok(mit.arten >= ohne.arten - 1,
+    'mit Tueren fallen zu viele Ereignisse weg: ' + ohne.arten + ' -> ' + mit.arten);
+  assert.strictEqual(mit.gesamt, 400, 'in einem Tuerraum gibt es gar kein Ereignis mehr');
+});

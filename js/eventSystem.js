@@ -351,6 +351,22 @@
     },
     {
       id: 'ambush',
+      // Kein Hinterhalt in Raeumen mit Tueren.
+      //
+      // Der Pluenderer flieht zur Treppe — geschlossene Tueren blockieren
+      // Gegner (doorSystem.js: collider(enemies, _doorGroup)). In einem
+      // Tuerraum rennt er also gegen ein Brett und bleibt dort stehen, und das
+      // Ereignis verspricht eine Jagd, die der Raum gar nicht zulaesst.
+      //
+      // Lieber ganz abmelden als den Pluenderer weglassen: er IST die
+      // Belohnung des Hinterhalts. Ohne ihn zahlt das Ereignis wieder nichts —
+      // genau der Zustand, aus dem er entstanden ist. Faellt der Hinterhalt
+      // weg, waehlt die Ziehung einfach ein anderes Ereignis.
+      passtZuRaum: function (scene) {
+        try {
+          return !(scene && Array.isArray(scene._doors) && scene._doors.length > 0);
+        } catch (e) { return true; }
+      },
       name: T('event.ambush.name'),
       weight: 12,
       minDepth: 2,
@@ -1530,10 +1546,23 @@
     return Math.random() < Math.min(0.55, chance);
   }
 
-  function pickEvent(depth) {
+  /**
+   * Waehlt ein Ereignis fuer diesen Raum.
+   *
+   * Neben Tiefe und Wiederholungssperre fragt der Filter jetzt eine optionale
+   * Bedingung am Ereignis (passtZuRaum(scene)). Damit kann ein Ereignis sagen,
+   * dass es in DIESEM Raum keinen Sinn ergibt, ohne dass die Auswahl jede
+   * Sonderregel kennen muss.
+   */
+  function pickEvent(depth, scene) {
     var eligible = EVENT_TYPES.filter(function(e) {
       if (depth < e.minDepth) return false;
       if (e.id === lastEventId) return false;
+      if (typeof e.passtZuRaum === 'function') {
+        var ok = true;
+        try { ok = !!e.passtZuRaum(scene); } catch (x) { ok = true; }
+        if (!ok) return false;
+      }
       // Anti-repetition: reduce weight if event appeared in last 3
       return true;
     });
@@ -1543,7 +1572,15 @@
       for (var i = 0; i < recentEvents.length; i++) {
         if (recentEvents[i] === e.id) count++;
       }
-      if (count > 0) return { id: e.id, name: e.name, weight: Math.max(1, Math.floor(e.weight / (count + 1))), minDepth: e.minDepth, handler: e.handler };
+      if (count > 0) {
+        // passtZuRaum wird mitkopiert, damit das Abbild vollstaendig bleibt.
+        // Noetig ist es heute nicht — der Filter oben laeuft VOR dieser Stelle,
+        // ein ausgeschlossenes Ereignis kommt hier also gar nicht an (im
+        // Mutationstest belegt: das Weglassen aendert nichts). Es steht hier
+        // fuer den Tag, an dem jemand die Reihenfolge dreht.
+        return { id: e.id, name: e.name, weight: Math.max(1, Math.floor(e.weight / (count + 1))),
+                 minDepth: e.minDepth, handler: e.handler, passtZuRaum: e.passtZuRaum };
+      }
       return e;
     });
     if (!eligible.length) return null;
@@ -2407,7 +2444,7 @@
 
     if (!shouldTriggerEvent(depth)) return;
 
-    var event = pickEvent(depth);
+    var event = pickEvent(depth, scene);
     if (!event) return;
 
     lastEventId = event.id;
@@ -2466,6 +2503,10 @@
     // a new one.
     showToast: showEventToast,
     EVENT_TYPES: EVENT_TYPES,
+    // Fuer die Verifikation: die reine Ziehung, ohne Ausloese-Chance und
+    // Verzoegerung. Nur so laesst sich pruefen, dass eine Raum-Bedingung
+    // (passtZuRaum) wirklich greift, statt nur im Code zu stehen.
+    pickEvent: pickEvent,
     // #71: reine Ziehung, damit das Balancing pruefbar bleibt.
     opferKandidaten: opferKandidaten,
     opferUmwurf: opferUmwurf,
