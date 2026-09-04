@@ -1,12 +1,17 @@
 // tests/kettenschloss.test.js — Das Kettenschloss-Minispiel (#71).
 //
 // Warum kein Kartenspiel: Blackjack und Roulette waeren generisches
-// Taverneninventar. Die Stadt heisst nach ihren Ketten — ein verkettetes Gitter
-// aufzubrechen kommt aus dem Stoff des Spiels.
+// Taverneninventar. Die Stadt heisst nach ihren Ketten — ein verkettetes
+// Gitter aufzubrechen kommt aus dem Stoff des Spiels.
+//
+// ZWEITE FASSUNG. Die erste liess einen Zeiger laufen und war beides: kaputt
+// (der Zeiger stand still, weil er an der angehaltenen Spieluhr hing) und
+// duenn (eine Achse, ein Knopf, keine Entscheidung). Jetzt wird das Schloss
+// abgetastet: der Widerstands-Anzeiger sagt, wie nah der Stift ist, aber
+// seine feinste Stufe ist BREITER als die Trefferzone.
 //
 // Geprueft wird die Rechnerei: sie ist der Teil, der balanciert werden muss.
-// Die Oberflaeche selbst ist am laufenden Spiel gemessen (Overlay erscheint,
-// Kampfeingabe gesperrt, nach dem Ende null Reste).
+// Die Oberflaeche selbst ist am laufenden Spiel gemessen.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -27,65 +32,103 @@ test('Die Stiftzahl waechst mit der Tiefe und bleibt im Rahmen', () => {
   assert.strictEqual(K.stifteFuerTiefe(0), 3, 'kaputte Eingabe faellt auf das Minimum');
 });
 
-test('Das Trefferfenster wird von Stift zu Stift enger', () => {
+test('Die Trefferzone wird von Stift zu Stift enger', () => {
   // Die Spannung soll steigen, nicht am Anfang stehen.
   const n = 5;
   let vorher = Infinity;
   for (let i = 0; i < n; i++) {
-    const b = K.zonenBreite(i, n);
-    assert.ok(b < vorher, 'Stift ' + i + ' ist nicht enger als der vorige');
-    vorher = b;
+    const t = K.toleranz(i, n);
+    assert.ok(t < vorher, 'Stift ' + i + ' ist nicht enger als der vorige');
+    vorher = t;
   }
-  assert.ok(Math.abs(K.zonenBreite(0, n) - K.ZONE_START) < 1e-9, 'erster Stift');
-  assert.ok(Math.abs(K.zonenBreite(n - 1, n) - K.ZONE_ENDE) < 1e-9, 'letzter Stift');
+  assert.ok(Math.abs(K.toleranz(0, n) - K.TOLERANZ_START) < 1e-9, 'erster Stift');
+  assert.ok(Math.abs(K.toleranz(n - 1, n) - K.TOLERANZ_ENDE) < 1e-9, 'letzter Stift');
 });
 
-test('Der Zeiger wird von Stift zu Stift schneller', () => {
-  // Zwei Achsen statt einer: enger UND schneller.
-  const n = 5;
-  assert.ok(K.laufzeit(n - 1, n) < K.laufzeit(0, n),
-    'der letzte Stift muss schneller laufen als der erste');
+test('Die feinste Anzeigestufe ist BREITER als die Trefferzone', () => {
+  // Das ist die Stellschraube des ganzen Spiels. Waeren beide gleich breit,
+  // hiesse "es greift" dasselbe wie "Treffer" — dann bestuende das Koennen
+  // im Warten und das Spiel waere wieder so dumm wie die erste Fassung.
+  assert.ok(K.STUFE_FAKTOR > 1.5,
+    'zu knapp: blindes Zugreifen waere ein sicherer Treffer');
+
+  const tol = 0.03;
+  const ziel = 0.5;
+  // Genau am Rand der greifenden Stufe: es greift, trifft aber nicht.
+  const randInnen = ziel + tol * (K.STUFE_FAKTOR - 0.05);
+  assert.strictEqual(K.widerstandStufe(randInnen, ziel, tol), 5, 'greift noch');
+  assert.strictEqual(K.istTreffer(randInnen, ziel, tol), false, 'trifft aber nicht');
 });
 
-test('Der Zeiger kehrt um, statt zu springen', () => {
-  // Ein Sprung am Rand waere unfair — man sieht ihn nicht kommen.
-  const d = 1000;
-  assert.ok(Math.abs(K.zeigerPosition(0, d) - 0) < 1e-9, 'Start links');
-  assert.ok(Math.abs(K.zeigerPosition(d, d) - 1) < 1e-9, 'nach einer Dauer rechts');
-  assert.ok(Math.abs(K.zeigerPosition(d * 2, d) - 0) < 1e-9, 'nach zwei Dauern wieder links');
-  // Stetig: zwei benachbarte Zeitpunkte duerfen nie weit auseinanderliegen.
-  let vorher = K.zeigerPosition(0, d);
-  for (let ms = 10; ms <= d * 4; ms += 10) {
-    const jetzt = K.zeigerPosition(ms, d);
-    assert.ok(Math.abs(jetzt - vorher) < 0.05,
-      'Sprung bei ' + ms + ' ms: ' + vorher + ' -> ' + jetzt);
-    vorher = jetzt;
+test('Blindes Zugreifen im greifenden Bereich hat eine mittlere Chance', () => {
+  // Weder geschenkt noch aussichtslos: wer sofort zupackt, sobald es greift,
+  // soll ungefaehr zwei von fuenf Versuchen schaffen. Sonst kippt das Spiel
+  // entweder in Geduld (immer Treffer) oder in Frust (nie).
+  const tol = 0.03, ziel = 0.5;
+  let greift = 0, trifft = 0;
+  for (let i = 0; i <= 2000; i++) {
+    const x = i / 2000;                       // die ganze Leiste abfahren
+    if (K.widerstandStufe(x, ziel, tol) < 5) continue;
+    greift++;
+    if (K.istTreffer(x, ziel, tol)) trifft++;
+  }
+  const quote = trifft / greift;
+  assert.ok(quote > 0.3 && quote < 0.55, 'Trefferquote blind: ' + quote.toFixed(2));
+});
+
+test('Der Widerstand steigt streng, je naeher man kommt', () => {
+  // Sonst waere die Rueckmeldung nicht lesbar: man muss aus zwei Messungen
+  // schliessen koennen, in welche Richtung es besser wird.
+  const tol = 0.03, ziel = 0.5;
+  let vorher = -1;
+  for (const abstand of [0.9, 0.45, 0.25, 0.13, 0.06, 0.0]) {
+    const s = K.widerstandStufe(ziel + abstand, ziel, tol);
+    assert.ok(s >= vorher, 'Stufe faellt bei Abstand ' + abstand + ': ' + s);
+    vorher = s;
+  }
+  assert.strictEqual(K.widerstandStufe(ziel, ziel, tol), 5, 'auf dem Stift');
+  assert.strictEqual(K.widerstandStufe(0, 1, 0.02), 0, 'am anderen Ende: nichts');
+});
+
+test('Der Widerstand ist symmetrisch — die Richtung verraet nichts', () => {
+  const tol = 0.03, ziel = 0.4;
+  for (const d of [0.02, 0.08, 0.2, 0.5]) {
+    assert.strictEqual(K.widerstandStufe(ziel - d, ziel, tol),
+                       K.widerstandStufe(ziel + d, ziel, tol), 'Abstand ' + d);
   }
 });
 
-test('Der Zeiger bleibt auf der Leiste', () => {
-  for (let ms = 0; ms < 5000; ms += 7) {
-    const p = K.zeigerPosition(ms, 900);
-    assert.ok(p >= 0 && p <= 1, 'ausserhalb bei ' + ms + ' ms: ' + p);
+test('Der Stift sitzt nie so nah am Rand, dass der Anschlag ihn verraet', () => {
+  // Sonst waere er durch blosses Anfahren des Endes zu finden.
+  for (let i = 0; i < 2000; i++) {
+    const tol = K.toleranz(i % 5, 5);
+    const z = K.zielPosition(tol, Math.random);
+    assert.ok(z - tol >= -1e-9, 'links raus: ' + z);
+    assert.ok(z + tol <= 1 + 1e-9, 'rechts raus: ' + z);
   }
 });
 
-test('Das Trefferfenster ragt nie ueber den Rand hinaus', () => {
-  // Sonst waere ein Stift durch blosses Warten am Umkehrpunkt zu treffen —
-  // dort steht der Zeiger am laengsten still.
-  for (let i = 0; i < 500; i++) {
-    const b = K.zonenBreite(i % 5, 5);
-    const m = K.zonenMitte(b, Math.random);
-    assert.ok(m - b / 2 >= -1e-9, 'links raus: ' + m + ' bei Breite ' + b);
-    assert.ok(m + b / 2 <= 1 + 1e-9, 'rechts raus: ' + m + ' bei Breite ' + b);
-  }
+test('Der Dietrich bleibt auf der Leiste und laeuft mit festem Tempo', () => {
+  // Festes Tempo ist Absicht: wuerde er in der Naehe langsamer, verriete
+  // schon die Bewegung die Stelle.
+  assert.ok(Math.abs(K.dietrichSchritt(0.5, 1, 1000) - (0.5 + K.TEMPO)) < 1e-9);
+  assert.ok(Math.abs(K.dietrichSchritt(0.5, -1, 1000) - (0.5 - K.TEMPO)) < 1e-9);
+  assert.strictEqual(K.dietrichSchritt(0.5, 0, 1000), 0.5, 'ohne Taste kein Schritt');
+  assert.strictEqual(K.dietrichSchritt(0.98, 1, 1000), 1, 'rechts gedeckelt');
+  assert.strictEqual(K.dietrichSchritt(0.02, -1, 1000), 0, 'links gedeckelt');
+  assert.strictEqual(K.dietrichSchritt(0.5, 1, -50), 0.5, 'negative Zeit bewegt nicht');
 });
 
-test('Der Treffertest sitzt genau auf der Fensterkante', () => {
-  assert.strictEqual(K.istTreffer(0.5, 0.5, 0.2), true, 'Mitte');
-  assert.strictEqual(K.istTreffer(0.6, 0.5, 0.2), true, 'genau auf der Kante');
-  assert.strictEqual(K.istTreffer(0.61, 0.5, 0.2), false, 'knapp daneben');
-  assert.strictEqual(K.istTreffer(0.39, 0.5, 0.2), false, 'andere Seite');
+test('Die Frist reicht zum Sondieren, aber nicht fuer beliebig viel', () => {
+  // Ohne Uhr waere Sondieren gratis und jeder Stift sicher.
+  const drei = K.gesamtzeit(3);
+  const fuenf = K.gesamtzeit(5);
+  assert.ok(fuenf > drei, 'mehr Stifte, mehr Zeit');
+  // Eine volle Leiste kostet 1/TEMPO Sekunden. Pro Stift muss mindestens
+  // rund ein Durchgang drin sein, sonst ist es Rennen statt Tasten.
+  const proStift = fuenf / 5 / 1000;
+  assert.ok(proStift > 1 / K.TEMPO * 0.9, 'zu knapp: ' + proStift.toFixed(1) + 's je Stift');
+  assert.ok(proStift < 4 / K.TEMPO, 'zu grosszuegig: ' + proStift.toFixed(1) + 's je Stift');
 });
 
 test('Die Belohnung ist gestaffelt, nicht alles oder nichts', () => {
@@ -103,6 +146,17 @@ test('Die Belohnung ist gestaffelt, nicht alles oder nichts', () => {
   assert.strictEqual(nichts.gold, 0);
 });
 
+test('Wer den letzten Dietrich verliert, geht leer aus', () => {
+  // DAS macht das Aufhoeren zu einer Entscheidung: sicheres Gold jetzt gegen
+  // Ausruestung mit Risiko. Ohne diese Regel waere Weitermachen immer richtig.
+  const abgebrochen = K.belohnung(3, 4, 10, false);
+  const verloren = K.belohnung(3, 4, 10, true);
+  assert.strictEqual(abgebrochen.art, 'gold', 'aufhoeren zahlt anteilig');
+  assert.ok(abgebrochen.gold > 0);
+  assert.strictEqual(verloren.art, 'nichts', 'verlieren zahlt nichts');
+  assert.strictEqual(verloren.gold, 0);
+});
+
 test('Mehr Stifte bringen mehr Gold', () => {
   const eins = K.belohnung(1, 4, 10).gold;
   const drei = K.belohnung(3, 4, 10).gold;
@@ -115,17 +169,17 @@ test('Das Gold bleibt unter einem ganzen anderen Ereignis', () => {
   const tiefe = 10;
   const schatzMax = 70 + 15 * tiefe;
   for (let g = 1; g < 5; g++) {
-    assert.ok(K.belohnung(g, 5, tiefe).gold < schatzMax,
-      g + ' von 5 zahlt zu viel');
+    assert.ok(K.belohnung(g, 5, tiefe).gold < schatzMax, g + ' von 5 zahlt zu viel');
   }
 });
 
 test('Kaputte Eingaben liefern etwas Sinnvolles, statt zu werfen', () => {
   assert.strictEqual(K.belohnung(-5, 4, 10).art, 'nichts');
   assert.strictEqual(K.belohnung(99, 4, 10).art, 'item', 'mehr als moeglich zaehlt als voll');
-  assert.ok(K.zonenBreite(99, 3) > 0);
-  assert.ok(K.laufzeit(-3, 3) > 0);
-  assert.ok(K.zeigerPosition(0, 0) >= 0, 'Dauer 0 darf nicht durch null teilen');
+  assert.ok(K.toleranz(99, 3) > 0);
+  assert.ok(K.gesamtzeit(0) > 0);
+  assert.strictEqual(K.widerstandStufe(0.5, 0.5, 0), 5, 'Toleranz 0 darf nicht durch null teilen');
+  assert.ok(K.zielPosition(0, Math.random) >= 0);
 });
 
 test('Ohne Szene startet kein Spiel, sondern es meldet sich sauber zurueck', () => {
@@ -133,4 +187,5 @@ test('Ohne Szene startet kein Spiel, sondern es meldet sich sauber zurueck', () 
   K.spiele(null, 10, (e) => { erg = e; });
   assert.ok(erg, 'kein Rueckruf');
   assert.strictEqual(erg.geschafft, false);
+  assert.strictEqual(erg.verloren, false);
 });

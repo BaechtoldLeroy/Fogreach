@@ -60,11 +60,11 @@
       'event.lock.toast_spawn': 'Schwere Ketten im Halbdunkel — dahinter liegt etwas.',
       'event.lock.object_label': 'Kettenschloss',
       'event.lock.won': 'Die Kette fällt. Was dahinter lag, gehört dir.',
-      'event.lock.partial': 'Zwei Stifte sitzen, dann bricht der Dietrich. {gold} Gold aus der Fuge.',
-      'event.lock.lost': 'Das Schloss klemmt. Die Kette bleibt, wo sie ist.',
+      'event.lock.partial': 'Nicht ganz — aber die Fuge gibt {gold} Gold her.',
+      'event.lock.lost': 'Der letzte Dietrich bricht. Die Kette bleibt, wo sie ist.',
       'lock.title': 'Kettenschloss',
-      'lock.hint': 'Leertaste, wenn der Zeiger im Licht steht',
-      'lock.status': 'Stifte {stifte}   Dietriche {picks}',
+      'lock.hint': '← → tasten · Leertaste setzen · E aufhören und Gold nehmen',
+      'lock.status': 'Stifte {stifte}   Dietriche {picks}   {zeit}s',
       'event.altar.name': 'Opferstein',
       'event.altar.toast_spawn': 'Ein blutiger Opferstein steht im Halbdunkel...',
       'event.altar.object_label': 'Opferstein',
@@ -182,11 +182,11 @@
       'event.lock.toast_spawn': 'Heavy chains in the gloom — something lies behind them.',
       'event.lock.object_label': 'Chain Lock',
       'event.lock.won': 'The chain falls. What lay behind it is yours.',
-      'event.lock.partial': 'Two pins seat, then the pick snaps. {gold} gold from the gap.',
-      'event.lock.lost': 'The lock jams. The chain stays where it is.',
+      'event.lock.partial': 'Not quite — but the gap yields {gold} gold.',
+      'event.lock.lost': 'The last pick snaps. The chain stays where it is.',
       'lock.title': 'Chain Lock',
-      'lock.hint': 'Space when the pointer is in the light',
-      'lock.status': 'Pins {stifte}   Picks {picks}',
+      'lock.hint': '← → to feel · Space to set · E to stop and take the gold',
+      'lock.status': 'Pins {stifte}   Picks {picks}   {zeit}s',
       'event.altar.name': 'Sacrificial Stone',
       'event.altar.toast_spawn': 'A bloodied sacrificial stone stands in the gloom...',
       'event.altar.object_label': 'Sacrificial Stone',
@@ -1171,7 +1171,7 @@
         var tiefe = window.DUNGEON_DEPTH || 1;
         if (!window.Kettenschloss || typeof window.Kettenschloss.spiele !== 'function') return;
         window.Kettenschloss.spiele(scene, tiefe, function (erg) {
-          var lohn = window.Kettenschloss.belohnung(erg.gesetzt, erg.anzahl, tiefe);
+          var lohn = window.Kettenschloss.belohnung(erg.gesetzt, erg.anzahl, tiefe, erg.verloren);
           try {
             if (lohn.art === 'item' && window.LootSystem
                 && typeof window.LootSystem.rollItem === 'function'
