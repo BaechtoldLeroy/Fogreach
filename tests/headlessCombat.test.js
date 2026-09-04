@@ -624,3 +624,73 @@ test('Ein deaktivierter Elite laesst weder Aura noch Namenszug zurueck', () => {
   assert.strictEqual(inaktiv.nachher.tafel, false,
     'deaktivierter Elite laesst den Namenszug im Raum liegen');
 });
+
+test('Ein verfehltes Raumziel gibt gar keine Belohnung', () => {
+  // Es gibt ZWEI Belohnungswege beim Raumabschluss: den Bonus-Chest fuers
+  // erfuellte Spezialziel und den Lohn fuers Leerraeumen eines prozeduralen
+  // Raums. Nur der erste fragte nach dem Ziel. Wer den Altar verlor und danach
+  // die Wellen raeumte, bekam den zweiten trotzdem — in einem Viertel der
+  // Faelle eine grosse Truhe (Stufe 2/3).
+  //
+  // Beide markRoomCleared-Aufrufe werden nachgestellt: der des Modus (mit
+  // failed) und der spaetere aus der Wellen-Kette, bei dem der Modus schon
+  // nichts mehr zu melden hat. Genau der vergab die Truhe doch.
+  const vorbereitet = H.run(`(function () {
+    var r = window.dungeonRun, idx = -1;
+    for (var i = 0; i < r.templateOrder.length; i++) {
+      var t = window.RoomTemplates.TEMPLATES[r.templateOrder[i]];
+      if (t && t._procedural) { idx = i; break; }
+    }
+    if (idx < 0) return false;                 // ohne prozeduralen Raum nicht messbar
+    window.__altarSicherung = {
+      raum: currentRoomId, spawnLoot: window.spawnLoot,
+      isSpecialRoom: window.RoomMode.isSpecialRoom,
+      objectiveFailed: window.RoomMode.objectiveFailed
+    };
+    currentRoomId = idx; window.currentRoomId = idx;
+    if (!rooms[idx]) rooms[idx] = {};
+    // Beute nur zaehlen, nicht wirklich in die Welt legen.
+    window.spawnLoot = function (x, y, item) {
+      window.__lohn.push((item && item.type) ? item.type : 'zufall');
+      return { setData: function () {}, getData: function () {} };
+    };
+    return true;
+  })()`);
+  assert.ok(vorbereitet, 'kein prozeduraler Raum im Lauf — Fall nicht messbar');
+
+  try {
+    const durchgang = (verloren) => H.run(`(function () {
+      window.RoomMode.isSpecialRoom = function () { return true; };
+      window.RoomMode.objectiveFailed = function () { return ${verloren}; };
+      var r = rooms[currentRoomId];
+      delete r._rewardGranted; delete r._bonusGranted;
+      delete r._bonusEntschieden; delete r._bonusVerfehlt;
+      window.__lohn = [];
+      window.markRoomCleared({ objective: true, failed: ${verloren} });
+      window.markRoomCleared({});
+      return window.__lohn;
+    })()`);
+
+    // Kontrolle: gehalten muss zuverlaessig zahlen, sonst misst der Fall nichts.
+    let gehalten = 0;
+    for (let i = 0; i < 20; i++) gehalten += durchgang(false).length;
+    assert.ok(gehalten >= 20,
+      'gehaltener Altar zahlt nicht — Kontrolle wertlos: ' + gehalten + ' aus 20');
+
+    let verloren = 0;
+    for (let i = 0; i < 40; i++) verloren += durchgang(true).length;
+    assert.strictEqual(verloren, 0,
+      'verlorener Altar zahlt trotzdem: ' + verloren + ' Belohnungen aus 40 Durchgaengen');
+  } finally {
+    H.run(`(function () {
+      var s = window.__altarSicherung;
+      if (!s) return 0;
+      currentRoomId = s.raum; window.currentRoomId = s.raum;
+      window.spawnLoot = s.spawnLoot;
+      window.RoomMode.isSpecialRoom = s.isSpecialRoom;
+      window.RoomMode.objectiveFailed = s.objectiveFailed;
+      window.__altarSicherung = null;
+      return 1;
+    })()`);
+  }
+});

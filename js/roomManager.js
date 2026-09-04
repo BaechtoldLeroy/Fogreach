@@ -1771,13 +1771,51 @@ function markRoomCleared(opts) {
   // Expose lockStairs so endlessMode can re-lock during the pick.
   window.lockStairs = lockStairs;
 
+  // Verfehltes Raumziel: EINMAL entscheiden, dann fuer BEIDE Belohnungswege
+  // gelten lassen.
+  //
+  // Die Frage wurde bisher erst unten beim Bonus-Chest gestellt. Der
+  // prozedurale Raum-Lohn direkt darunter fragte sie gar nicht — und der
+  // vergibt in 25 % der Faelle ebenfalls eine grosse Truhe (Stufe 2/3). Wer den
+  // Altar verlor und danach die Wellen leerraeumte, bekam also weiter eine
+  // Truhe; der Malus fuers verfehlte Ziel war ein Viertel der Zeit wirkungslos.
+  // Gemeldet als "wenn man den Altar failed, gibts immer noch eine Truhe".
+  //
+  // opts.failed zaehlt mit: der Aufrufer weiss im Moment des Abschlusses, wie
+  // der Raum ausging, waehrend eine spaetere Abfrage am Modus schon veraendert
+  // sein kann.
+  var _spezial = false, _zielVerfehlt = false;
+  try {
+    _spezial = !!(window.RoomMode && window.RoomMode.isSpecialRoom
+      && window.RoomMode.isSpecialRoom());
+    _zielVerfehlt = !!(opts && opts.failed);
+    try {
+      if (window.RoomMode && typeof window.RoomMode.objectiveFailed === 'function') {
+        _zielVerfehlt = _zielVerfehlt || !!window.RoomMode.objectiveFailed();
+      }
+    } catch (e) {}
+    // Der Merker am Raum ueberlebt den ZWEITEN markRoomCleared-Aufruf, bei dem
+    // der Modus schon nichts mehr zu melden hat.
+    if (_spezial && !room._bonusEntschieden) {
+      room._bonusEntschieden = true;
+      room._bonusVerfehlt = _zielVerfehlt;
+    }
+    _zielVerfehlt = _zielVerfehlt || !!room._bonusVerfehlt;
+  } catch (e) { /* eine kaputte Abfrage darf den Raum-Abschluss nie brechen */ }
+
   // Procedural room reward: spawn a chest with a high-quality item when all
   // enemies in the room have been defeated.
   const currentTplName = dungeonRun && dungeonRun.templateOrder && dungeonRun.templateOrder[currentRoomId];
   const tpl = currentTplName && window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[currentTplName];
   if (tpl && tpl._procedural && !room._rewardGranted) {
+    // Der Merker faellt AUCH beim verfehlten Ziel: sonst stellt der zweite
+    // markRoomCleared-Aufruf (Wellen-Kette nach dem letzten Kill) die Frage neu
+    // und vergibt die Truhe doch — dieselbe Falle wie beim Bonus-Chest.
     room._rewardGranted = true;
-    if (typeof spawnLoot === 'function') {
+    if (_spezial && _zielVerfehlt) {
+      // Nichts. Wer das Raumziel verliert, geht ohne Lohn raus — so haelt es
+      // die XP-Vergabe weiter unten schon.
+    } else if (typeof spawnLoot === 'function') {
       // Weighted proc-room reward. Previously EVERY cleared proc room dropped a
       // guaranteed tier-2/3 chest (rare/legendary) — far too generous. Now it
       // mostly drops ordinary loot / consumables, with the special chest as the
@@ -1858,19 +1896,7 @@ function markRoomCleared(opts) {
   // weiss im Moment des Abschlusses, wie er ausging, waehrend eine spaetere
   // Abfrage am Modus schon veraendert sein kann.
   try {
-    var _spezial = !!(window.RoomMode && window.RoomMode.isSpecialRoom
-      && window.RoomMode.isSpecialRoom());
-    var _verfehlt = !!(opts && opts.failed);
-    try {
-      if (window.RoomMode && typeof window.RoomMode.objectiveFailed === 'function') {
-        _verfehlt = _verfehlt || !!window.RoomMode.objectiveFailed();
-      }
-    } catch (e) {}
-    if (_spezial && !room._bonusEntschieden) {
-      room._bonusEntschieden = true;
-      room._bonusVerfehlt = _verfehlt;
-    }
-    if (_spezial && !_verfehlt && !room._bonusVerfehlt
+    if (_spezial && !_zielVerfehlt
         && !room._bonusGranted && typeof spawnLoot === 'function') {
       room._bonusGranted = true;
       var _bx = (player ? player.x : 0) + 60, _by = (player ? player.y : 0) - 60;
