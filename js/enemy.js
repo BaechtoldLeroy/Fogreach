@@ -1063,10 +1063,22 @@ function handleEnemies(time, delta = 16) {
     // aus dem Hinterhalt eine Entscheidung: den Traeger jagen oder erst die
     // anderen abraeumen.
     if (enemy._istPluenderer && enemy.hp > 0 && player && player.active) {
-      var _fluchtCd = enemy._fluchtCd || 3200;
+      // Die Meldung kommt erst, wenn man ihn WIRKLICH sieht.
+      if (!enemy._pluendererGemeldet && _pluendererSichtbar(this, enemy)) {
+        enemy._pluendererGemeldet = true;
+        try {
+          if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+            window.EventSystem.showToast(this, _pluendererMeldung(), 'ambush');
+          }
+        } catch (e) {}
+      }
+      var _fluchtCd = enemy._fluchtCd || 2400;
       var _bereit = !enemy._letzteFlucht || (time - enemy._letzteFlucht > _fluchtCd);
-      var _bedraengt = dToPlayer < (enemy._fluchtRadius || 300);
-      if (_bereit && _bedraengt && !(enemy._dashUntil && time < enemy._dashUntil)) {
+      // Er flieht, sobald er gesehen wurde — nicht erst, wenn man ihm auf den
+      // Fersen ist. Vorher setzte er nur unter 300 px ab; wer ihn aus der
+      // Ferne beschoss, sah nie eine Flucht.
+      var _laeuft = !!enemy._pluendererGemeldet || dToPlayer < 300;
+      if (_bereit && _laeuft && !(enemy._dashUntil && time < enemy._dashUntil)) {
         var _ziel = _pluendererFluchtziel(this, enemy);
         if (_ziel) {
           enemy._letzteFlucht = time;
@@ -2086,17 +2098,58 @@ function drawEnemyHpBar(enemy) {
 
 // --- Pluenderer (#129) -------------------------------------------------------
 
-/** Naechste Treppe im Raum — das Fluchtziel. */
-function _pluendererTreppe(scene) {
+/**
+ * NAECHSTE Treppe zum Fluechtenden — nicht die erste beste.
+ *
+ * Raeume haben bis zu vier Treppen (gemessen). Die erste aus der Gruppe lag
+ * gern auf der anderen Raumseite, hinter dem Spieler: der Pluenderer rannte
+ * dann quer an ihm vorbei und sah aus, als flöhe er ueberhaupt nicht.
+ */
+function _pluendererTreppe(scene, enemy) {
   try {
     var grp = scene && scene.stairsGroup;
     if (!grp || typeof grp.getChildren !== 'function') return null;
     var liste = grp.getChildren();
+    var beste = null, bestD = Infinity;
     for (var i = 0; i < liste.length; i++) {
-      if (liste[i] && liste[i].active) return liste[i];
+      var s = liste[i];
+      if (!s || !s.active) continue;
+      if (!enemy) return s;
+      var dx = s.x - enemy.x, dy = s.y - enemy.y;
+      var d = dx * dx + dy * dy;
+      if (d < bestD) { bestD = d; beste = s; }
     }
+    return beste;
   } catch (e) {}
   return null;
+}
+
+/**
+ * Sieht der Spieler den Pluenderer gerade?
+ *
+ * Die Meldung "Einer von ihnen traegt Beute" kam bisher in dem Moment, in dem
+ * der Hinterhalt die Gegner setzte — also bevor man ueberhaupt jemanden sah.
+ * Sie soll erst kommen, wenn er im Bild ist; sonst sucht man einen Goldton,
+ * der noch gar nicht da ist.
+ */
+function _pluendererSichtbar(scene, enemy) {
+  if (!scene || !enemy || !enemy.active) return false;
+  if (typeof player === 'undefined' || !player) return false;
+  var dx = enemy.x - player.x, dy = enemy.y - player.y;
+  if (dx * dx + dy * dy > 420 * 420) return false;          // ausserhalb des Blickfelds
+  try {
+    var poly = scene._lastVisionPolygon;
+    if (poly && poly.length >= 6 && window.Phaser && window.Phaser.Geom
+        && window.Phaser.Geom.Polygon) {
+      if (!scene.__plPolyObj || scene.__plPolyData !== poly) {
+        scene.__plPolyObj = new window.Phaser.Geom.Polygon(poly);
+        scene.__plPolyData = poly;
+      }
+      return window.Phaser.Geom.Polygon.Contains(scene.__plPolyObj, enemy.x, enemy.y);
+    }
+  } catch (e) {}
+  // Ohne Sichtpolygon (Desktop ohne Nebel): Naehe genuegt.
+  return true;
 }
 
 /**
@@ -2113,7 +2166,7 @@ function _pluendererTreppe(scene) {
  */
 function _pluendererFluchtziel(scene, enemy) {
   var richtungen = [];
-  var treppe = _pluendererTreppe(scene);
+  var treppe = _pluendererTreppe(scene, enemy);
   if (treppe) richtungen.push(Math.atan2(treppe.y - enemy.y, treppe.x - enemy.x));
   if (typeof player !== 'undefined' && player) {
     richtungen.push(Math.atan2(enemy.y - player.y, enemy.x - player.x));
@@ -2148,7 +2201,7 @@ function _pluendererFluchtziel(scene, enemy) {
 
 /** Steht er auf der Treppe? Dann ist er unten durch. */
 function _pluendererAmAusgang(scene, enemy) {
-  var treppe = _pluendererTreppe(scene);
+  var treppe = _pluendererTreppe(scene, enemy);
   if (!treppe) return false;
   var dx = treppe.x - enemy.x, dy = treppe.y - enemy.y;
   return (dx * dx + dy * dy) < 48 * 48;
@@ -2175,6 +2228,17 @@ function _pluendererEntkommt(scene, enemy) {
     }
   } catch (e) {}
   try { enemy.destroy(); } catch (e) {}
+}
+
+/** "Einer von ihnen traegt Beute" — erst bei Sicht. */
+function _pluendererMeldung() {
+  try {
+    if (window.i18n && typeof window.i18n.t === 'function') {
+      var v = window.i18n.t('event.ambush.toast_looter');
+      if (v && String(v).indexOf('[MISSING:') !== 0) return v;
+    }
+  } catch (e) {}
+  return 'Einer von ihnen traegt Beute — und will damit weg!';
 }
 
 function _pluendererText() {

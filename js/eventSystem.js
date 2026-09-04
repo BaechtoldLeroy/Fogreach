@@ -2099,7 +2099,11 @@
               }
             }
           } catch (e) { /* Optik darf den Kampf nie brechen */ }
-          showEventToast(scene, T('event.ambush.toast_looter'), 'ambush');
+          // Die Meldung kommt NICHT mehr hier. Zu diesem Zeitpunkt steht der
+          // Pluenderer irgendwo im Raum, oft ausser Sicht — man suchte einen
+          // Goldton, der noch gar nicht zu sehen war. Sie kommt jetzt aus der
+          // Gegner-Schleife, sobald er im Blickfeld auftaucht (enemy.js,
+          // _pluendererSichtbar).
         }
       });
     }

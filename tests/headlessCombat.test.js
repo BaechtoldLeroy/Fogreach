@@ -789,3 +789,45 @@ test('Entkommt der Pluenderer, ist die Beute weg — erschlagen zahlt sie aus', 
   assert.strictEqual(weg.weg, true, 'er erreicht die Treppe, verschwindet aber nicht');
   assert.strictEqual(weg.gold, 0, 'die Flucht bleibt folgenlos: er zahlt trotzdem');
 });
+
+test('Ein Boss laesst IMMER Ausruestung fallen', () => {
+  // Gemessen ueber 200 Kills auf Tiefe 10: vorher fiel bei einem Boss in
+  // 10,5 % der Faelle etwas — neun von zehn Bosskaempfen endeten ohne ein
+  // einziges Stueck (#130). Ein Boss erscheint ohnehin nur alle zehn Tiefen,
+  // das ist also kein Beutestrom, sondern eine Handvoll Stuecke ueber einen
+  // ganzen Durchgang.
+  //
+  // Garantiert ist DASS etwas faellt, nicht WAS — die Qualitaet bleibt
+  // gewuerfelt.
+  const quote = (was, n) => H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var mit = 0;
+    for (var i = 0; i < ${n}; i++) {
+      enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
+      lootGroup.getChildren().slice().forEach(function (d) { try { d.destroy(); } catch (x) {} });
+      window.__runItemsDropped = 0;
+      var e = null;
+      if ('${was}' === 'boss') { spawnBoss.call(sc); e = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0]; }
+      else { e = spawnEnemy.call(sc, player.x + 200, player.y, 3); }
+      if (!e) continue;
+      e.hp = 0;
+      handleEnemyHit(sc, e, {});
+      var stuecke = 0;
+      lootGroup.getChildren().forEach(function (d) {
+        var it = d.getData && d.getData('item');
+        if (it && it.type && it.type !== 'gold') stuecke++;
+      });
+      if (stuecke > 0) mit++;
+    }
+    return mit;
+  })()`);
+
+  const N = 40;
+  assert.strictEqual(quote('boss', N), N, 'ein Boss ging leer aus');
+
+  // Gegenprobe: fuer normale Gegner bleibt es beim Wurf. Sonst waere aus dem
+  // garantierten Bossabwurf versehentlich ein garantierter Abwurf fuer alle
+  // geworden — und der Beuteregen haette das ganze Gleichgewicht gekippt.
+  assert.ok(quote('normal', N) < N * 0.5,
+    'auch normale Gegner lassen jetzt fast immer etwas fallen');
+});

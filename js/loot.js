@@ -309,13 +309,34 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
 
   // Diminishing Returns: sind in diesem Run schon >3 ECHTE Items gedroppt
   // (Tränke/Rollen NICHT mitgezählt), wird die zufällige Item-Chance HALBIERT.
+  //
+  // Bosse sind davon AUSGENOMMEN. Die Daempfung soll den Trash-Regen bremsen,
+  // nicht die Belohnung fuer den schwersten Kampf des Durchgangs — und ein Boss
+  // am Ende eines langen Laufs stand damit bei 5 % statt 10 %.
   let dropThreshold = dropThresholdBase;
-  if ((window.__runItemsDropped || 0) > 3) dropThreshold = dropThreshold / 2;
+  if (!isBossDrop && (window.__runItemsDropped || 0) > 3) dropThreshold = dropThreshold / 2;
+
+  // GARANTIERTER ABWURF FUER BOSSE (#130).
+  //
+  // Gemessen ueber 200 Kills auf Tiefe 10: ein Boss liess in 10,5 % der Faelle
+  // Ausruestung fallen — neun von zehn Bosskaempfen endeten ohne ein einziges
+  // Stueck. Fuer den Spieler sah das aus wie ein Fehler, und es war der
+  // Hoehepunkt einer Tiefe. Ein Boss erscheint ohnehin nur alle zehn Tiefen
+  // (roomManager.js: depth % 10 === 0), das hier ist also kein Beutestrom,
+  // sondern eine Handvoll garantierter Stuecke ueber einen ganzen Durchgang.
+  //
+  // Die Qualitaet bleibt gewuerfelt (MINIBOSS_QUALITY_BIAS unten): garantiert
+  // ist DASS etwas faellt, nicht WAS.
+  //
+  // Der Pluenderer aus dem Hinterhalt ebenso: er TRAEGT die Beute des
+  // Ereignisses — das ist seine ganze Rolle. Ihn zu erlegen und nichts zu
+  // bekommen macht die Jagd sinnlos.
+  const garantiert = !!isBossDrop || !!(sourceEnemy && sourceEnemy._istPluenderer);
 
   // Float-Roll (0..100), damit halbierte Bruch-Schwellen (z.B. 0.5) exakt greifen.
   const roll = Math.random() * 100;
 
-  if (maybeItem || roll < dropThreshold) {
+  if (maybeItem || garantiert || roll < dropThreshold) {
     // KEIN Tier-Bump mehr. Elites droppen normale Qualität (nur höhere Drop-Rate).
     // Minibosse UND echte Bosse rollen mit einem Qualitäts-BIAS -> erhöhte
     // CHANCE auf Magic/Rare/Legendär (kein garantierter +Tier-Sprung). Vorher
