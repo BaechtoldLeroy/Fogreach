@@ -455,6 +455,29 @@ function getPlayerTextureKey(scene) {
 // Zustandsabhängiger Spieler-Tint: wird jeden Frame in updatePlayerSpriteAnimation
 // gesetzt (sonst überschreibt das Richtungs-Sprite jeden Overlay-Tint sofort).
 // Berserker -> rot, Heilung -> kurzer grüner Flash, sonst neutral.
+/**
+ * Farbe des staerksten aktiven Statuseffekts am Spieler, sonst null.
+ *
+ * Reihenfolge wie in statusEffects._refreshVisual: der stoerendste Effekt
+ * gewinnt.
+ */
+function _spielerStatusFarbe() {
+  try {
+    var sm = window.statusEffectManager;
+    if (!sm || typeof sm.getActiveEffects !== 'function') return null;
+    var aktiv = sm.getActiveEffects(player);
+    if (!aktiv || !aktiv.length) return null;
+    var cfg = window.STATUS_EFFECT_CONFIG || {};
+    var reihenfolge = ['stun', 'poison', 'bleed', 'slow'];
+    for (var i = 0; i < reihenfolge.length; i++) {
+      var typ = reihenfolge[i];
+      var hat = aktiv.some(function (e) { return e && e.type === typ; });
+      if (hat && cfg[typ] && typeof cfg[typ].tint === 'number') return cfg[typ].tint;
+    }
+  } catch (e) {}
+  return null;
+}
+
 function _playerOverlayTint() {
   try {
     // Heil-Flash gegen die Wall-Clock (Date.now) — scene.time.now ist pro Szene
@@ -462,6 +485,22 @@ function _playerOverlayTint() {
     if (window._healFlashUntil && Date.now() < window._healFlashUntil) return 0x66ff8a;
     var sc = (typeof player !== 'undefined' && player && player.scene) ? player.scene : null;
     var now = (sc && sc.time && typeof sc.time.now === 'number') ? sc.time.now : 0;
+    // #95: Statuseffekte faerben die Figur — Frost blau, Gift gruen, Blutung
+    // rot, Betaeubung gelb. Farben aus STATUS_EFFECT_CONFIG, also dieselben wie
+    // bei Gegnern und im HUD.
+    //
+    // WARUM HIER: diese Funktion ist die EINZIGE Autoritaet fuer die
+    // Spieler-Toenung; Zeile ~629 wendet ihr Ergebnis jeden Frame an. Ein
+    // setTint von aussen (wie es statusEffects._applyVisual versucht) wird
+    // deshalb im naechsten Frame ueberschrieben — gemessen: direkt nach
+    // applyEffect stand #4488ff da, einen Frame spaeter #ffffff, ohne dass je
+    // clearTint gerufen wurde. Genau das hat den Slow unsichtbar gemacht.
+    //
+    // Vorrang: der Heil-Blitz ist kurz und darf oben stehen. Der Status kommt
+    // VOR dem Berserker — wer eingefroren ist, muss das sehen, auch wenn er
+    // gerade rasend ist.
+    var st = _spielerStatusFarbe();
+    if (st !== null) return st;
     var bs = window.berserkState;
     if (bs && bs.active && (typeof bs.expiry !== 'number' || now < bs.expiry)) return 0xff4040;
   } catch (e) { /* fall through to neutral */ }
