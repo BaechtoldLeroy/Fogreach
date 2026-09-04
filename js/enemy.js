@@ -950,7 +950,23 @@ function handleEnemies(time, delta = 16) {
         if (typeof cb === 'function') { try { cb(); } catch (e) {} }
       } else {
         const ds = enemy._dashSpeed || 800;
-        const step = Math.min(dl, Math.max(ds * (delta / 1000), dl * 0.25));
+        // Der zweite Term ist der "Yank": mindestens ein Viertel der
+        // Reststrecke PRO BILD. Er macht den Boss-Ansturm wuchtig und
+        // bildratenunabhaengig — aber er ueberstimmt das Tempo voellig. Bei
+        // 150 px Reststrecke und 60 Bildern/s sind das 37,5 px je Bild, also
+        // 2250 px/s, egal was in _dashSpeed steht. Genau daran ist die
+        // Verlangsamung des Pluenderers zweimal wirkungslos verpufft
+        // (420 -> 230 aenderte nichts).
+        //
+        // Wer gleichmaessig laufen soll statt zu reissen, setzt
+        // _dashGleichmaessig — dann zaehlt nur noch das Tempo.
+        // Bildzeit absichern: ein delta von 0 (erstes Bild, angehaltene
+        // Uhr) liesse den gleichmaessigen Lauf stillstehen, waehrend der Yank
+        // ihn ueber dl*0.25 trotzdem bewegt haette.
+        const _bz = (typeof delta === 'number' && delta > 0 ? delta : 16.7) / 1000;
+        const step = enemy._dashGleichmaessig
+          ? Math.min(dl, ds * _bz)
+          : Math.min(dl, Math.max(ds * _bz, dl * 0.25));
         const nx = enemy.x + (dxt / dl) * step, ny = enemy.y + (dyt / dl) * step;
         if (enemy.body.reset) enemy.body.reset(nx, ny); else { enemy.x = nx; enemy.y = ny; }
       }
@@ -1091,11 +1107,20 @@ function handleEnemies(time, delta = 16) {
           // zuruecklegen und kann ihm nachsetzen.
           enemy._dashSpeed = 230;
           enemy._dashUntil = time + 900;
+          // Gleichmaessig laufen statt reissen — siehe die Rechnung oben am
+          // Ansturm-Schritt. Ohne das ist jede Tempoangabe hier Zierde.
+          enemy._dashGleichmaessig = true;
           enemy._dashOnArrive = null;
         }
       }
       // Angekommen? Dann ist er mit der Beute unten durch.
-      if (_pluendererAmAusgang(this, enemy)) {
+      //
+      // NUR wenn er ueberhaupt etwas hat. Ohne diese Bedingung verschwand er,
+      // sobald er zufaellig neben einer Treppe auftauchte — vor dem ersten
+      // Schlagabtausch, ohne Beute, ohne dass der Spieler ihn je gesehen hat.
+      // (Im Test als flatternder Fehlschlag aufgefallen: seine Beute stand auf
+      // 0, weil _pluendererEntkommt sie schon geleert hatte.)
+      if (enemy._hatGeklaut && _pluendererAmAusgang(this, enemy)) {
         _pluendererEntkommt(this, enemy);
         return;
       }

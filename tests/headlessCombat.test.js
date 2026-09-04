@@ -713,6 +713,9 @@ test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
       if (e.body) e.body.reset(e.x, e.y);
       e.hp = 9999;
       e._istPluenderer = ${flieht};
+      // Seit b171 rennt er erst NACH dem Griff in den Beutel. Der Test misst
+      // die Flucht, nicht den Ausloeser — also wird der Zustand hergestellt.
+      e._hatGeklaut = ${flieht};
       window.__p = e;
       return { treppe: Math.round(Math.hypot(t.x - e.x, t.y - e.y)) };
     })()`);
@@ -744,9 +747,12 @@ test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
   // dann muss er ihr wenigstens deutlich naeher gekommen sein und Abstand zum
   // Spieler halten.
   if (mit.ende.weg) return;
-  assert.ok(mit.ende.treppe < mit.start.treppe - 150,
+  // Schranke an das ECHTE Tempo angepasst: seit b173 laeuft er gleichmaessig
+  // mit 230 px/s statt in Rucken von 2250 px/s. In vier Sekunden legt er
+  // entsprechend weniger zurueck — und genau das war ja das Ziel.
+  assert.ok(mit.ende.treppe < mit.start.treppe - 60,
     'er kommt der Treppe nicht naeher: ' + mit.start.treppe + ' -> ' + mit.ende.treppe);
-  assert.ok(mit.ende.spieler > ohne.ende.spieler + 100,
+  assert.ok(mit.ende.spieler > ohne.ende.spieler + 60,
     'er haelt keinen Abstand: mit ' + mit.ende.spieler + ' vs ohne ' + ohne.ende.spieler);
 });
 
@@ -766,6 +772,9 @@ test('Entkommt der Pluenderer, ist die Beute weg — erschlagen zahlt sie aus', 
     window.__gold = 0;
     var e = spawnEnemy.call(sc, player.x + 300, player.y, 3);
     e._istPluenderer = true;
+    // Er verlaesst den Raum erst, wenn er etwas hat — sonst waere er weg,
+    // bevor der Spieler ihn je gesehen hat (b173).
+    e._hatGeklaut = true;
     e.setData('pluendererGold', 200);
     if ('${wie}' === 'flucht') {
       e.x = t.x + 20; e.y = t.y; if (e.body) e.body.reset(e.x, e.y);
@@ -933,4 +942,40 @@ test('Debug-Kraftaufschlag haengt an einer EIGENEN Flagge, nicht am Debug-Modus'
   const wild = messe("'100'");
   assert.ok(wild.lauf <= ohne.lauf * 2.5 + 1,
     'das Lauftempo ist ungedeckelt: ' + wild.lauf);
+});
+
+test('Ein gleichmaessiger Satz haelt sein Tempo — der Yank ueberstimmt es nicht', () => {
+  // Der Ansturm-Schritt nimmt das GROESSERE aus Tempo und einem Viertel der
+  // Reststrecke pro Bild. Der zweite Term macht den Boss-Ansturm wuchtig,
+  // ueberstimmt aber jede Tempoangabe: bei 150 px Reststrecke und 60 Bildern/s
+  // sind das 37,5 px je Bild, also 2250 px/s — egal was in _dashSpeed steht.
+  // Genau daran ist die Verlangsamung des Pluenderers ZWEIMAL wirkungslos
+  // verpufft (420 -> 230 aenderte nichts, weil nie das Tempo zaehlte).
+  const weg = (gleichmaessig) => {
+    H.run(`(function () {
+      var sc = window.game.scene.getScene('GameScene');
+      enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
+      sc._enemyAttackGraceUntil = 0;
+      var e = spawnEnemy.call(sc, player.x + 300, player.y, 3);
+      e.hp = 9999; e.x = player.x + 40; e.y = player.y;
+      if (e.body) e.body.reset(e.x, e.y);
+      e._dashTarget = { x: e.x + 150, y: e.y };
+      e._dashSpeed = 230;
+      e._dashUntil = sc.time.now + 5000;
+      e._dashGleichmaessig = ${gleichmaessig};
+      window.__dash = e; window.__dashX0 = e.x;
+      return 1;
+    })()`);
+    H.step(20);              // EIN Aufruf: darin laeuft die Zeit sauber
+    return H.run('(function(){var e=window.__dash;return Math.round((e.x - window.__dashX0)*10)/10;})()');
+  };
+
+  const mitYank = weg(false);
+  const ruhig = weg(true);
+  assert.ok(mitYank > ruhig * 1.5,
+    'der Yank ist nicht mehr schneller — misst der Fall noch, was er soll? ' + mitYank + ' vs ' + ruhig);
+  // 230 px/s ueber 20 Bilder zu 16,7 ms sind rund 77 px. Grosszuegige Schranke,
+  // damit die Bildzeit im Takt nicht zum Flattern fuehrt.
+  assert.ok(ruhig > 40 && ruhig < 110,
+    'der gleichmaessige Satz haelt sein Tempo nicht: ' + ruhig + ' px in 20 Bildern');
 });
