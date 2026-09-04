@@ -32,6 +32,7 @@
   var hinweis = null;
   var zug = null;
   var geometrie = null;
+  var tipp = null;
 
   function _t(key, fallback) {
     try {
@@ -164,6 +165,52 @@
     });
   }
 
+  /**
+   * Tooltip-Kasten. Die TEXTE kommen aus window.formatItemTooltip
+   * (js/inventory.js) — derselbe Aufbau wie im Inventar. Nachgebaut waere er
+   * beim naechsten Affix auseinandergelaufen; hier ist nur der Kasten neu.
+   */
+  function _tippAufbauen() {
+    var box = scene.add.container(0, 0).setScrollFactor(0).setDepth(TIEFE + 5).setVisible(false);
+    // Benannt, damit die Verifikation ihn eindeutig findet — die Szene traegt
+    // mehrere Container in aehnlicher Tiefe.
+    if (typeof box.setName === 'function') box.setName('TruheTooltip');
+    var grund = scene.add.rectangle(0, 0, 10, 10, 0x0d0b12, 0.97).setOrigin(0, 0);
+    grund.setStrokeStyle(1.5, 0x6b5426);
+    var titel = scene.add.text(9, 7, '', {
+      fontFamily: 'serif', fontSize: '14px', color: '#ffd166', fontStyle: 'bold'
+    });
+    var text = scene.add.text(9, 26, '', {
+      fontFamily: 'monospace', fontSize: '11px', color: '#cfd4dd', lineSpacing: 2
+    });
+    box.add([grund, titel, text]);
+    box.__grund = grund; box.__titel = titel; box.__text = text;
+    elemente.push(box);
+    return box;
+  }
+
+  function _tippZeigen(item, x, y) {
+    if (!tipp || !item) return;
+    var info = (typeof window.formatItemTooltip === 'function')
+      ? window.formatItemTooltip(item)
+      : { title: item.name || '', body: '' };
+    tipp.__titel.setText(info.title || '');
+    tipp.__text.setText(info.body || '');
+    var b = Math.max(tipp.__titel.width, tipp.__text.width) + 18;
+    var h = tipp.__text.height + 34;
+    tipp.__grund.setSize(b, h);
+    // Am Rand umklappen, statt aus dem Bild zu laufen.
+    var cam = scene.cameras.main;
+    var px = (x + 16 + b > cam.width) ? x - b - 16 : x + 16;
+    var py = (y + h > cam.height) ? cam.height - h - 4 : y;
+    tipp.setPosition(Math.max(2, px), Math.max(2, py));
+    tipp.setVisible(true);
+  }
+
+  function _tippVerbergen() {
+    if (tipp) tipp.setVisible(false);
+  }
+
   // -------------------------------------------------------------------------
   // Ziehen
   // -------------------------------------------------------------------------
@@ -180,6 +227,7 @@
       welches: z.welches, index: idx,
       griffC: z.c - it.gridX, griffR: z.r - it.gridY
     };
+    _tippVerbergen();
     var g = window.InventoryGrid.groesse(it, _mass(z.welches));
     schemen.setTexture(_symbol(it));
     schemen.setDisplaySize(g.b * ZELLE * 0.8, g.h * ZELLE * 0.8);
@@ -188,7 +236,16 @@
   }
 
   function _bewege(zeiger) {
-    if (!zug) return;
+    if (!zug) {
+      // Kein Zug: dann ist es ein Schweben — Tooltip zeigen, was da liegt.
+      var zz = _zelleAus(zeiger.x, zeiger.y);
+      if (!zz) { _tippVerbergen(); return; }
+      var ii = window.InventoryGrid.indexAn(_behaelter(zz.welches), zz.c, zz.r, _mass(zz.welches));
+      var stueck = ii >= 0 ? _behaelter(zz.welches)[ii] : null;
+      if (stueck) _tippZeigen(stueck, zeiger.x, zeiger.y);
+      else _tippVerbergen();
+      return;
+    }
     schemen.setPosition(zeiger.x, zeiger.y);
     var it = _behaelter(zug.welches)[zug.index];
     if (!it) return;
@@ -214,6 +271,7 @@
     var q = zug; zug = null;
     schemen.setVisible(false);
     vorschau.setVisible(false);
+    _tippVerbergen();
 
     var it = _behaelter(q.welches)[q.index];
     var z = _zelleAus(zeiger.x, zeiger.y);
@@ -289,6 +347,7 @@
         fontFamily: 'monospace', fontSize: '12px', color: '#8d8798'
       }).setOrigin(0.5));
 
+    tipp = _tippAufbauen();
     vorschau = _halten(scene.add.rectangle(0, 0, ZELLE, ZELLE, 0x66ff88, 0.22).setVisible(false));
     schemen = _halten(scene.add.image(0, 0, 'itMat').setVisible(false));
     schemen.setDepth(TIEFE + 2);
@@ -335,7 +394,7 @@
       try { if (elemente[i] && elemente[i].destroy) elemente[i].destroy(); } catch (e) {}
     }
     elemente.length = 0;
-    gfx = schemen = vorschau = hinweis = null;
+    gfx = schemen = vorschau = hinweis = tipp = null;
     window.eventChoiceOpen = false;
     try {
       if (typeof window.resumeGameClock === 'function') window.resumeGameClock(scene);

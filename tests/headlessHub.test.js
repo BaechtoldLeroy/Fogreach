@@ -413,3 +413,48 @@ test('hub: ein Tor oeffnet sich, sobald sein Auftrag laeuft (#131)', () => {
   assert.strictEqual(erg.nachher, false,
     'das Tor bleibt zu, obwohl der Auftrag laeuft — dann kaeme man nie zum Boss');
 });
+
+test('hub: die Truhe zeigt Tooltips — mit denselben Texten wie das Inventar (#127)', () => {
+  // Der Textaufbau kommt aus window.formatItemTooltip (js/inventory.js). Ein
+  // nachgebauter Tooltip waere beim naechsten Affix auseinandergelaufen; hier
+  // ist nur der Kasten neu.
+  const erg = H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    window.HubTruhe.leeren();
+    var it = { key: 'WPN_EISENKLINGE', type: 'weapon', name: 'Testklinge', damage: 7 };
+    window.InventoryGrid.einfuegen(window.inventory, it);
+    var e = window.HUB_HITBOXES.entrances.filter(function (x) { return x.target === 'truhe'; })[0];
+    sc._enterLocation(e);
+    var geo = window.HubTruheUI.geometrie(), Z = window.HubTruheUI.ZELLE;
+    var finde = function () {
+      return sc.children.list.filter(function (o) { return o.name === 'TruheTooltip'; })[0];
+    };
+    // 1) Ueber ein Stueck schweben
+    sc.input.emit('pointermove', { x: geo.inv.x + (it.gridX + 0.5) * Z,
+                                   y: geo.inv.y + (it.gridY + 0.5) * Z, isDown: false });
+    var t = finde();
+    var beimSchweben = { da: !!t, sichtbar: !!(t && t.visible),
+      texte: t ? t.list.filter(function (o) { return o.type === 'Text'; }).map(function (o) { return o.text; }) : [] };
+    // 2) Ueber eine LEERE Zelle
+    sc.input.emit('pointermove', { x: geo.truhe.x + 6.5 * Z, y: geo.truhe.y + 1.5 * Z, isDown: false });
+    var ueberLeer = !!(finde() && finde().visible);
+    // 3) Waehrend des Ziehens
+    sc.input.emit('pointerdown', { x: geo.inv.x + (it.gridX + 0.5) * Z, y: geo.inv.y + (it.gridY + 0.5) * Z });
+    var beimZiehen = !!(finde() && finde().visible);
+    sc.input.emit('pointerup', { x: geo.truhe.x + 1.5 * Z, y: geo.truhe.y + 0.5 * Z });
+    var vorher = sc.children.list.length;
+    window.HubTruheUI.schliesse();
+    return { schweben: beimSchweben, ueberLeer: ueberLeer, beimZiehen: beimZiehen,
+             vorher: vorher, nachher: sc.children.list.length };
+  })()`);
+
+  assert.ok(erg.schweben.da, 'die Truhe hat gar keinen Tooltip');
+  assert.strictEqual(erg.schweben.sichtbar, true, 'der Tooltip erscheint beim Schweben nicht');
+  assert.ok(erg.schweben.texte.join(' ').indexOf('Testklinge') >= 0,
+    'der Tooltip nennt das Stueck nicht: ' + JSON.stringify(erg.schweben.texte));
+  assert.ok(/Seltenheit|Item-St/.test(erg.schweben.texte.join(' ')),
+    'der Tooltip nutzt nicht die Formatierung des Inventars');
+  assert.strictEqual(erg.ueberLeer, false, 'ueber einer leeren Zelle bleibt der Tooltip stehen');
+  assert.strictEqual(erg.beimZiehen, false, 'beim Ziehen steht der Tooltip im Weg');
+  assert.ok(erg.nachher < erg.vorher, 'beim Schliessen bleibt etwas zurueck');
+});

@@ -637,6 +637,12 @@ function initInventoryUI() {
     };
   };
 
+  // #127: Die Truhe im Hub zeigt dieselben Tooltips. Der Textaufbau ist die
+  // Arbeit, der Kasten drumherum trivial — also wird die Formatierung geteilt
+  // statt nachgebaut. Nachgebaut waere sie beim naechsten Affix auseinander
+  // gelaufen.
+  if (typeof window !== 'undefined') window.formatItemTooltip = formatItemTooltip;
+
   const applyTooltipContent = (box, item, heading) => {
     if (!box || !item || !box.title || !box.body) return false;
     const info = formatItemTooltip(item, heading);
