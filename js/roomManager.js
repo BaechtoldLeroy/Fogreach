@@ -1840,9 +1840,38 @@ function markRoomCleared(opts) {
   // Feature 061 (FR-08): Bonus-Chest bei erfolgreich abgeschlossenem SPEZIAL-Raum
   // (Modus != clear UND Ziel nicht verfehlt). Verfehlen = Malus (kein Chest), aber
   // der Raum bleibt passierbar. In WP01 dormant (nur `clear` registriert).
+  //
+  // WICHTIG — die Frage wird GENAU EINMAL entschieden.
+  //
+  // Vorher setzte nur der Erfolgsfall einen Merker. Bei verfehltem Ziel blieb
+  // room._bonusGranted leer, und markRoomCleared wird ein ZWEITES Mal gerufen:
+  // einmal vom Modus selbst (mit failed:true), danach nochmal von der
+  // Wellen-Kette nach dem letzten Kill. Der zweite Aufruf wertete die Frage neu
+  // aus — und vergab die Truhe doch.
+  //
+  // Gemessen im zerstoerten Verteidigungsraum:
+  //   markRoomCleared({objective:true, failed:true}) -> 0 Bonus-Truhen
+  //   danach markRoomCleared({})                     -> 1 Bonus-Truhe
+  //
+  // Darum: _bonusEntschieden wird IMMER gesetzt, sobald ein Spezialraum
+  // abschliesst — egal wie er ausgeht. Und opts.failed zaehlt mit: der Aufrufer
+  // weiss im Moment des Abschlusses, wie er ausging, waehrend eine spaetere
+  // Abfrage am Modus schon veraendert sein kann.
   try {
-    if (window.RoomMode && window.RoomMode.isSpecialRoom && window.RoomMode.isSpecialRoom()
-        && !window.RoomMode.objectiveFailed() && !room._bonusGranted && typeof spawnLoot === 'function') {
+    var _spezial = !!(window.RoomMode && window.RoomMode.isSpecialRoom
+      && window.RoomMode.isSpecialRoom());
+    var _verfehlt = !!(opts && opts.failed);
+    try {
+      if (window.RoomMode && typeof window.RoomMode.objectiveFailed === 'function') {
+        _verfehlt = _verfehlt || !!window.RoomMode.objectiveFailed();
+      }
+    } catch (e) {}
+    if (_spezial && !room._bonusEntschieden) {
+      room._bonusEntschieden = true;
+      room._bonusVerfehlt = _verfehlt;
+    }
+    if (_spezial && !_verfehlt && !room._bonusVerfehlt
+        && !room._bonusGranted && typeof spawnLoot === 'function') {
       room._bonusGranted = true;
       var _bx = (player ? player.x : 0) + 60, _by = (player ? player.y : 0) - 60;
       if (player && scene.isPointAccessible && !scene.isPointAccessible(_bx, _by) && scene.pickAccessibleSpawnPoint) {
