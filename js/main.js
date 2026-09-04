@@ -165,6 +165,33 @@ if (typeof window !== 'undefined' && !window.__GLOBAL_ERROR_LOGGER__) {
   window.__GLOBAL_ERROR_LOGGER__ = true;
 }
 
+// Ein Text darf nur EINMAL zerstoert werden (#95).
+//
+// Gemessen beim Spielertod: "Cannot read properties of null (reading
+// 'removeKey')". Entschluesselt zeigt der Stacktrace Text.preDestroy ->
+// Texture.destroy -> this.manager.removeKey(...) — und manager ist bereits
+// null, weil derselbe Text schon einmal zerstoert wurde.
+//
+// Warum das ueberhaupt passieren kann: Phasers GameObject.destroy() setzt
+// this.scene erst am ENDE auf null. Bricht preDestroy dazwischen ab — und die
+// Container-Absicherung direkt darunter schluckt genau solche Fehler —, bleibt
+// ein halb zerstoerter Text zurueck, der beim naechsten Durchgang wieder als
+// lebendig gilt. Der zweite Aufruf laeuft dann in den null-manager.
+//
+// Gemessen: ohne diese Absicherung stuerzte der Tod in 1 von 5 Laeufen ab,
+// sobald eine Kriegsschar im Raum stand (ohne Schar 0 von 5) — die Schar
+// garantiert einen Elite und damit mehr Anzeigeobjekte im Abbau.
+if (typeof Phaser !== 'undefined' && Phaser?.GameObjects?.Text
+    && !Phaser.GameObjects.Text.__einmalZerstoeren) {
+  const originalTextDestroy = Phaser.GameObjects.Text.prototype.destroy;
+  Phaser.GameObjects.Text.prototype.destroy = function einmalZerstoeren(fromScene) {
+    if (this.__schonZerstoert) return;
+    this.__schonZerstoert = true;
+    return originalTextDestroy.call(this, fromScene);
+  };
+  Phaser.GameObjects.Text.__einmalZerstoeren = true;
+}
+
 if (typeof Phaser !== 'undefined' && Phaser?.GameObjects?.Container && !Phaser.GameObjects.Container.__debugUndefinedPatch) {
   const originalPreDestroy = Phaser.GameObjects.Container.prototype.preDestroy;
   Phaser.GameObjects.Container.prototype.preDestroy = function patchedPreDestroy() {
