@@ -1488,6 +1488,38 @@ function createItemGraphics() {
     g.fillStyle(licht, 0.55); g.fillEllipse(cx - r * 0.3, cy - r * 0.45, r * 0.8, r * 0.4);
   };
 
+  /**
+   * Ein gefuellter Bogenschenkel (Sichel) statt einer gezogenen Linie.
+   *
+   * Die erste Fassung der Boegen bestand aus lineStyle+arc. Eine Linie hat
+   * keine Dicke, die man staffeln kann — also kein dunkler Umriss, keine
+   * Lichtkante, kein Koerper. Sie sahen aus wie ein Draht. Hier wird der
+   * Schenkel als geschlossene Flaeche zwischen zwei Radien gezogen; darauf
+   * lassen sich dieselben drei Lagen legen wie bei allem anderen.
+   */
+  const bogenSichel = (mx, my, r, dicke, a0, a1, farbe, deckung) => {
+    const N = 18;
+    g.fillStyle(farbe, deckung === undefined ? 1 : deckung);
+    g.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const a = a0 + (a1 - a0) * (i / N);
+      const x = mx + Math.cos(a) * r, y = my + Math.sin(a) * r;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    for (let i = N; i >= 0; i--) {
+      const a = a0 + (a1 - a0) * (i / N);
+      g.lineTo(mx + Math.cos(a) * (r - dicke), my + Math.sin(a) * (r - dicke));
+    }
+    g.fillPath();
+  };
+
+  /** Sehne und Nocken — bei jedem Bogen gleich, sie machen ihn erst zum Bogen. */
+  const bogenSehne = (x, y0, y1, farbe) => {
+    g.fillStyle(0x14121a, 1); g.fillRect(x - 1.5, y0, 3, y1 - y0);
+    g.fillStyle(farbe === undefined ? 0xe8e0cc : farbe, 0.95);
+    g.fillRect(x - 0.7, y0, 1.4, y1 - y0);
+  };
+
   /** Ein Glanzpunkt — die letzte Lage, ohne die alles stumpf bleibt. */
   const glanz = (x, y, r, farbe) => {
     g.fillStyle(farbe === undefined ? 0xffffff : farbe, 0.85);
@@ -2274,21 +2306,34 @@ function createItemGraphics() {
     // aus Eis sieht, muss den Namen nicht mehr lesen.
 
     {
-      key: 'amuZwillingsklinge',       // zwei gekreuzte Klingen
+      key: 'amuZwillingsklinge',       // zwei gekreuzte Klingen an einem Ring
       draw: () => {
+        // Die Klingen haengen an einem Ring, der Ring an der Kette. Vorher
+        // schwebten sie frei unter dem Band — es war nicht zu sehen, woran sie
+        // haengen, und das Amulett zerfiel in zwei Bilder.
         amuKette();
         const cx = SIZE / 2;
+        // Traegerring, in dem sich die Klingen kreuzen
+        g.fillStyle(0x120e18, 1); g.fillCircle(cx, 22, 5.2);
+        g.fillStyle(0xd4a030, 1); g.fillCircle(cx, 22, 4.2);
+        g.fillStyle(0x2a2018, 1); g.fillCircle(cx, 22, 2.2);
+        // Klingen: Spitzen nach unten, Griffe oben AM RING
         g.fillStyle(0x120e18, 1);
-        g.fillTriangle(cx - 11, 41, cx - 7, 41, cx + 10, 20);
-        g.fillTriangle(cx + 11, 41, cx + 7, 41, cx - 10, 20);
+        g.fillTriangle(cx - 9, 23, cx - 5, 22, cx + 8, 43);
+        g.fillTriangle(cx + 9, 23, cx + 5, 22, cx - 8, 43);
         g.fillStyle(0xb9c4d6, 1);
-        g.fillTriangle(cx - 10, 40, cx - 8, 40, cx + 9, 21);
-        g.fillTriangle(cx + 10, 40, cx + 8, 40, cx - 9, 21);
-        g.fillStyle(0xeef3fb, 0.9);
-        g.fillTriangle(cx - 10, 40, cx - 9.2, 40, cx + 9, 21);
+        g.fillTriangle(cx - 8, 23.5, cx - 5.6, 23, cx + 7, 41.5);
+        g.fillTriangle(cx + 8, 23.5, cx + 5.6, 23, cx - 7, 41.5);
+        // EINE Lichtkante je Klinge
+        g.fillStyle(0xeef3fb, 0.95);
+        g.fillTriangle(cx - 8, 23.5, cx - 7.2, 23.3, cx + 7, 41.5);
+        g.fillTriangle(cx + 8, 23.5, cx + 7.2, 23.3, cx - 7, 41.5);
+        // Parierstangen, damit die Klingen am Ring ansetzen statt daran zu kleben
         g.fillStyle(0x7a5a20, 1);
-        g.fillRect(cx - 12, 39, 6, 3); g.fillRect(cx + 6, 39, 6, 3);
-        glanz(cx + 6, 25, 1.4);
+        g.fillRect(cx - 10, 21.5, 6, 2.6); g.fillRect(cx + 4, 21.5, 6, 2.6);
+        g.fillStyle(0xc0a050, 1);
+        g.fillRect(cx - 10, 21.5, 6, 1); g.fillRect(cx + 4, 21.5, 6, 1);
+        glanz(cx - 2, 20, 1.4);
       }
     },
     {
@@ -2551,60 +2596,112 @@ function createItemGraphics() {
       key: 'itHeadBronze',
       draw: () => {
         const cx = SIZE / 2;
-        g.fillStyle(0x1a1208, 1); g.fillCircle(cx, 26, 14);
-        g.fillRect(cx - 14, 26, 28, 11);
-        g.fillStyle(0x8a6420, 1); g.fillCircle(cx, 26, 12.5);
-        g.fillRect(cx - 12.5, 26, 25, 9);
-        g.fillStyle(0x1a1208, 1); g.fillRect(cx - 2, 20, 4, 16);   // Nasenschutz
-        g.fillStyle(0x6a4a14, 1); g.fillRect(cx - 11, 30, 22, 4);  // Augenschlitz
-        g.fillStyle(0xd8a840, 0.9); g.fillEllipse(cx - 3, 19, 13, 5); // Lichtkante
-        g.fillStyle(0x4a3208, 1); g.fillRect(cx - 12.5, 34, 25, 2);
-        glanz(cx - 5, 19, 1.6);
+        // Helmbusch — er gibt dem Bronzehelm seinen Umriss und trennt ihn von
+        // allem anderen im Raster.
+        g.fillStyle(0x4a1010, 1);
+        g.fillTriangle(cx - 3, 12, cx + 3, 12, cx, 3);
+        g.fillTriangle(cx - 4, 14, cx + 4, 14, cx + 1, 5);
+        g.fillStyle(0x8a2020, 1);
+        g.fillTriangle(cx - 2.4, 12.5, cx + 2.4, 12.5, cx + 0.3, 5);
+        g.fillStyle(0xc04040, 0.75);
+        g.fillTriangle(cx - 2.4, 12.5, cx - 1.2, 12.5, cx + 0.3, 6);
+        // Glocke
+        g.fillStyle(0x1a1208, 1); g.fillCircle(cx, 27, 14); g.fillRect(cx - 14, 27, 28, 10);
+        g.fillStyle(0x7a5618, 1); g.fillCircle(cx, 27, 12.6); g.fillRect(cx - 12.6, 27, 25.2, 8.6);
+        // Kammleiste ueber der Kuppe
+        g.fillStyle(0xa87c26, 1); g.fillRect(cx - 1.6, 14, 3.2, 12);
+        g.fillStyle(0xd8a840, 0.9); g.fillRect(cx - 1.6, 14, 1.2, 12);
+        // Augenschlitz mit dunkler Tiefe, Nasensteg dazwischen
+        g.fillStyle(0x0e0a04, 1); g.fillRect(cx - 11, 29, 22, 5);
+        g.fillStyle(0x7a5618, 1); g.fillRect(cx - 1.8, 29, 3.6, 5);
+        g.fillStyle(0x1a1208, 1); g.fillRect(cx - 2.2, 32, 4.4, 6);
+        g.fillStyle(0x8a6420, 1); g.fillRect(cx - 1.6, 32, 3.2, 5.4);
+        // Nieten am Rand
+        g.fillStyle(0xd8a840, 1);
+        [-9, -3, 3, 9].forEach((dx) => g.fillCircle(cx + dx, 36.4, 1.15));
+        // Eine Lichtkante oben, ein Schattenfuss unten
+        g.fillStyle(0xd8a840, 0.85); g.fillEllipse(cx - 3, 19.5, 14, 4.6);
+        g.fillStyle(0x3a2606, 1); g.fillRect(cx - 12.6, 35, 25.2, 2.4);
+        glanz(cx - 6, 19, 1.7);
       }
     },
     {
       key: 'itHeadKettenhaube',
       draw: () => {
         const cx = SIZE / 2;
-        g.fillStyle(0x101218, 1);
-        g.fillCircle(cx, 24, 13); g.fillRect(cx - 13, 24, 26, 18);
-        g.fillStyle(0x5a6070, 1);
-        g.fillCircle(cx, 24, 11.5); g.fillRect(cx - 11.5, 24, 23, 16);
-        // Geflecht: Punktraster statt Flaeche — das macht Kettenzeug aus
-        g.fillStyle(0x2a3040, 1);
-        for (let ry = 0; ry < 5; ry++) {
-          for (let rx = 0; rx < 6; rx++) {
-            g.fillCircle(cx - 9 + rx * 3.7 + (ry % 2) * 1.8, 21 + ry * 3.9, 1.1);
+        // Haube mit ausgestelltem Nackenschutz — breiter unten als oben.
+        g.fillStyle(0x0c0e14, 1);
+        g.fillCircle(cx, 23, 13.5);
+        g.fillTriangle(cx - 13.5, 23, cx + 13.5, 23, cx + 15, 42);
+        g.fillTriangle(cx - 13.5, 23, cx - 15, 42, cx + 15, 42);
+        g.fillStyle(0x4e5464, 1);
+        g.fillCircle(cx, 23, 12);
+        g.fillTriangle(cx - 12, 23, cx + 12, 23, cx + 13.4, 40.5);
+        g.fillTriangle(cx - 12, 23, cx - 13.4, 40.5, cx + 13.4, 40.5);
+        // Geflecht: versetzte Ringe, jeder mit hellem Oberrand — DAS macht
+        // Kettenzeug aus, eine glatte Flaeche waere nur ein grauer Fleck.
+        for (let ry = 0; ry < 6; ry++) {
+          for (let rx = 0; rx < 8; rx++) {
+            const gx = cx - 12.5 + rx * 3.4 + (ry % 2) * 1.7;
+            const gy = 15 + ry * 4.2;
+            if (Math.hypot(gx - cx, (gy - 23) * 0.9) > 14) continue;
+            g.fillStyle(0x232936, 1); g.fillCircle(gx, gy, 1.5);
+            g.fillStyle(0x7d8698, 1); g.fillCircle(gx, gy - 0.45, 1.0);
+            g.fillStyle(0x232936, 1); g.fillCircle(gx, gy, 0.55);
           }
         }
-        g.fillStyle(0x101218, 1); g.fillEllipse(cx, 28, 15, 11); // Gesichtsoeffnung
-        g.fillStyle(0x9aa4b8, 0.85); g.fillEllipse(cx - 3, 16, 12, 4);
-        glanz(cx - 5, 16, 1.5);
+        // Gesichtsoeffnung mit Lederrand
+        g.fillStyle(0x0a0c10, 1); g.fillEllipse(cx, 29, 15.5, 12);
+        g.fillStyle(0x3a2a18, 1); g.fillEllipse(cx, 29, 17, 13.4);
+        g.fillStyle(0x0a0c10, 1); g.fillEllipse(cx, 29, 15, 11.6);
+        g.fillStyle(0x5a422a, 0.9); g.fillEllipse(cx, 23.4, 15, 2.4);
+        // Kappe oben: eine Lichtkante ueber dem Geflecht
+        g.fillStyle(0xa4aebe, 0.75); g.fillEllipse(cx - 3, 14.5, 12, 4);
+        glanz(cx - 6, 14.5, 1.5);
       }
     },
     {
       key: 'itHeadSchlangenmaske',
       draw: () => {
         const cx = SIZE / 2;
-        g.fillStyle(0x0c1410, 1);
-        g.fillTriangle(cx, 12, cx - 14, 30, cx + 14, 30);
-        g.fillTriangle(cx - 14, 30, cx + 14, 30, cx, 44);
-        g.fillStyle(0x2a7a4a, 1);
-        g.fillTriangle(cx, 14.5, cx - 12, 30, cx + 12, 30);
-        g.fillTriangle(cx - 12, 30, cx + 12, 30, cx, 41.5);
-        // Schlitzaugen — schraeg, das gibt der Maske ihr Gesicht
-        g.fillStyle(0xd8e820, 1);
-        g.fillTriangle(cx - 9, 26, cx - 2, 28, cx - 9, 30);
-        g.fillTriangle(cx + 9, 26, cx + 2, 28, cx + 9, 30);
-        g.fillStyle(0x0c1410, 1);
-        g.fillTriangle(cx - 7.5, 27.2, cx - 4, 28, cx - 7.5, 28.8);
-        g.fillTriangle(cx + 7.5, 27.2, cx + 4, 28, cx + 7.5, 28.8);
-        // Fangzaehne
+        // Kapuzenhaube mit Schlangenkopf: oben breit, unten spitz.
+        g.fillStyle(0x08120c, 1);
+        g.fillTriangle(cx, 10, cx - 15, 29, cx + 15, 29);
+        g.fillTriangle(cx - 15, 29, cx + 15, 29, cx, 45);
+        g.fillStyle(0x1e5c38, 1);
+        g.fillTriangle(cx, 13, cx - 13, 29, cx + 13, 29);
+        g.fillTriangle(cx - 13, 29, cx + 13, 29, cx, 42.5);
+        // Schuppen: versetzte Boegen, nach unten kleiner werdend
+        for (let sr = 0; sr < 4; sr++) {
+          const sy = 18 + sr * 4.6;
+          const halb = 11 - sr * 1.9;
+          for (let sc = -3; sc <= 3; sc++) {
+            const sx = cx + sc * (halb / 2.6) + (sr % 2) * 1.3;
+            if (Math.abs(sx - cx) > halb) continue;
+            g.fillStyle(0x143f26, 1); g.fillEllipse(sx, sy, 3.4, 2.6);
+            g.fillStyle(0x2f8a52, 1); g.fillEllipse(sx, sy - 0.5, 2.8, 1.9);
+          }
+        }
+        // Schlitzaugen, tiefliegend mit dunklem Grund
+        g.fillStyle(0x050a06, 1);
+        g.fillTriangle(cx - 10, 25.5, cx - 1.5, 28.2, cx - 10, 30.5);
+        g.fillTriangle(cx + 10, 25.5, cx + 1.5, 28.2, cx + 10, 30.5);
+        g.fillStyle(0xe4f430, 1);
+        g.fillTriangle(cx - 8.6, 26.6, cx - 3, 28.2, cx - 8.6, 29.6);
+        g.fillTriangle(cx + 8.6, 26.6, cx + 3, 28.2, cx + 8.6, 29.6);
+        g.fillStyle(0x0a1a0e, 1);
+        g.fillTriangle(cx - 7.4, 27.4, cx - 4.4, 28.2, cx - 7.4, 29);
+        g.fillTriangle(cx + 7.4, 27.4, cx + 4.4, 28.2, cx + 7.4, 29);
+        // Fangzaehne aus dem Maul
+        g.fillStyle(0x08120c, 1); g.fillRect(cx - 6, 33, 12, 3);
         g.fillStyle(0xeaf4e8, 1);
-        g.fillTriangle(cx - 4, 34, cx - 2, 34, cx - 3, 40);
-        g.fillTriangle(cx + 4, 34, cx + 2, 34, cx + 3, 40);
-        g.fillStyle(0x6adc90, 0.8); g.fillTriangle(cx, 14.5, cx - 12, 30, cx - 9, 30);
-        glanz(cx - 4, 20, 1.4, 0xcfffe0);
+        g.fillTriangle(cx - 4.6, 35, cx - 2.2, 35, cx - 3.4, 41.5);
+        g.fillTriangle(cx + 4.6, 35, cx + 2.2, 35, cx + 3.4, 41.5);
+        g.fillStyle(0xffffff, 0.7);
+        g.fillTriangle(cx - 4.6, 35, cx - 3.9, 35, cx - 3.4, 41.5);
+        // Eine Lichtkante links, damit der Kopf Volumen bekommt
+        g.fillStyle(0x6adc90, 0.7); g.fillTriangle(cx, 13, cx - 13, 29, cx - 10, 29);
+        glanz(cx - 4, 17, 1.4, 0xcfffe0);
       }
     },
 
@@ -2613,53 +2710,111 @@ function createItemGraphics() {
       key: 'itBodyLeder',
       draw: () => {
         const cx = SIZE / 2;
-        g.fillStyle(0x180f08, 1); g.fillRoundedRect(cx - 13, 12, 26, 30, 5);
-        g.fillStyle(0x6a4520, 1); g.fillRoundedRect(cx - 11.5, 13.5, 23, 27, 4);
-        // Riemen quer — das Erkennungszeichen des Lederharnischs
-        g.fillStyle(0x3a2410, 1);
-        g.fillRect(cx - 11.5, 20, 23, 3.5); g.fillRect(cx - 11.5, 29, 23, 3.5);
-        g.fillStyle(0xb08a40, 1);
-        g.fillCircle(cx, 21.7, 1.8); g.fillCircle(cx, 30.7, 1.8);
-        g.fillStyle(0x9a7038, 0.85); g.fillRect(cx - 11.5, 13.5, 23, 2);
-        g.fillStyle(0x2a1808, 1); g.fillRect(cx - 11.5, 38, 23, 2.5);
-        glanz(cx - 6, 16, 1.5);
+        // Torso-Umriss mit Schulterkappen und schmalerer Taille — nicht der
+        // Kasten von vorher.
+        g.fillStyle(0x180f08, 1);
+        g.fillRoundedRect(cx - 13, 13, 26, 28, 5);
+        g.fillCircle(cx - 12, 17, 5.5); g.fillCircle(cx + 12, 17, 5.5);
+        g.fillStyle(0x63401e, 1);
+        g.fillRoundedRect(cx - 11.6, 14.4, 23.2, 25.4, 4);
+        g.fillCircle(cx - 11.6, 17, 4.4); g.fillCircle(cx + 11.6, 17, 4.4);
+        // Halsausschnitt
+        g.fillStyle(0x180f08, 1); g.fillEllipse(cx, 14.6, 12, 6);
+        g.fillStyle(0x2a1a0c, 1); g.fillEllipse(cx, 14, 10, 4.6);
+        // Genaehte Platten: drei Bahnen mit Naht dazwischen
+        g.fillStyle(0x4e3116, 1);
+        g.fillRect(cx - 11.6, 22.6, 23.2, 1.3); g.fillRect(cx - 11.6, 31.2, 23.2, 1.3);
+        g.fillStyle(0x8a5f2c, 0.8);
+        for (let sx = -10; sx <= 10; sx += 2.6) {
+          g.fillRect(cx + sx, 22.8, 1.1, 0.9); g.fillRect(cx + sx, 31.4, 1.1, 0.9);
+        }
+        // Riemen quer mit Schnalle
+        g.fillStyle(0x33200e, 1); g.fillRect(cx - 11.6, 26.4, 23.2, 3.6);
+        g.fillStyle(0x1e1208, 1); g.fillRect(cx - 3.2, 25.6, 6.4, 5.2);
+        g.fillStyle(0xc79a48, 1); g.fillRect(cx - 2.6, 26.2, 5.2, 4);
+        g.fillStyle(0x33200e, 1); g.fillRect(cx - 1.1, 27.2, 2.2, 2);
+        // Nieten an den Schultern
+        g.fillStyle(0xc79a48, 1);
+        [[-11, 17], [11, 17], [-9.5, 20.5], [9.5, 20.5]].forEach((p) => g.fillCircle(cx + p[0], p[1], 1.1));
+        // Lichtkante oben, Schatten unten
+        g.fillStyle(0x9a7038, 0.85); g.fillRect(cx - 11.6, 14.4, 23.2, 1.8);
+        g.fillStyle(0x2a1808, 1); g.fillRect(cx - 11.6, 37.6, 23.2, 2.3);
+        glanz(cx - 7, 18, 1.5);
       }
     },
     {
       key: 'itBodyPlatte',
       draw: () => {
         const cx = SIZE / 2;
-        g.fillStyle(0x0e1016, 1);
-        g.fillRoundedRect(cx - 15, 12, 30, 30, 4);
-        g.fillCircle(cx - 14, 17, 6); g.fillCircle(cx + 14, 17, 6);   // Schulterstuecke
-        g.fillStyle(0x6a7288, 1);
-        g.fillRoundedRect(cx - 13.5, 13.5, 27, 27, 3);
-        g.fillCircle(cx - 13.5, 17, 4.8); g.fillCircle(cx + 13.5, 17, 4.8);
-        // Mittelgrat: eine Kante teilt die Brust
-        g.fillStyle(0x3a4050, 1); g.fillRect(cx - 1, 15, 2, 24);
-        g.fillStyle(0x2a3040, 1); g.fillRect(cx - 13.5, 27, 27, 2.5);
-        g.fillStyle(0xb8c4d8, 0.9); g.fillRect(cx - 13.5, 13.5, 27, 2);
-        g.fillStyle(0xb8c4d8, 0.55); g.fillEllipse(cx - 13.5, 15, 7, 3);
-        glanz(cx - 7, 18, 1.6);
+        // Geschulterter Kuerass: breite Schulterstuecke, verjuengte Taille,
+        // Lamellenschuerze unten.
+        g.fillStyle(0x0b0d13, 1);
+        g.fillCircle(cx - 14, 18, 7); g.fillCircle(cx + 14, 18, 7);
+        g.fillTriangle(cx - 15, 16, cx + 15, 16, cx + 11, 34);
+        g.fillTriangle(cx - 15, 16, cx - 11, 34, cx + 11, 34);
+        g.fillRoundedRect(cx - 11.5, 32, 23, 10, 3);
+        g.fillStyle(0x646c82, 1);
+        g.fillTriangle(cx - 13.4, 17.4, cx + 13.4, 17.4, cx + 9.8, 33);
+        g.fillTriangle(cx - 13.4, 17.4, cx - 9.8, 33, cx + 9.8, 33);
+        g.fillCircle(cx - 13.6, 18, 5.6); g.fillCircle(cx + 13.6, 18, 5.6);
+        // Schulterstuecke bekommen eigene Rippen
+        g.fillStyle(0x39404f, 1);
+        g.fillEllipse(cx - 13.6, 18, 9, 2.2); g.fillEllipse(cx + 13.6, 18, 9, 2.2);
+        // Halsausschnitt
+        g.fillStyle(0x0b0d13, 1); g.fillEllipse(cx, 16.6, 12, 6);
+        g.fillStyle(0x272d39, 1); g.fillEllipse(cx, 16, 10, 4.4);
+        // Mittelgrat mit Lichtkante — er teilt die Brust und traegt das Volumen
+        g.fillStyle(0x39404f, 1); g.fillTriangle(cx - 2.2, 18, cx + 2.2, 18, cx, 33);
+        g.fillStyle(0x9aa6bc, 0.9); g.fillTriangle(cx - 0.9, 18, cx + 0.2, 18, cx, 33);
+        // Lamellenschuerze
+        g.fillStyle(0x525a6e, 1); g.fillRoundedRect(cx - 10.4, 32.6, 20.8, 8.6, 2);
+        g.fillStyle(0x2f3542, 1);
+        [35.2, 38].forEach((y) => g.fillRect(cx - 10.4, y, 20.8, 1.4));
+        // Nieten am Brustrand
+        g.fillStyle(0xb8c4d8, 1);
+        [[-8, 20], [8, 20], [-9.4, 27], [9.4, 27]].forEach((p) => g.fillCircle(cx + p[0], p[1], 1.15));
+        // EINE Lichtkante ueber der Brust, ein Schattenfuss
+        g.fillStyle(0xb8c4d8, 0.9); g.fillRect(cx - 12.6, 17.4, 25.2, 1.8);
+        g.fillStyle(0x1a1e26, 1); g.fillRect(cx - 10.4, 39.6, 20.8, 1.8);
+        glanz(cx - 8, 21, 1.7);
       }
     },
     {
       key: 'itBodySchattenkutte',
       draw: () => {
         const cx = SIZE / 2;
-        g.fillStyle(0x08070c, 1);
-        g.fillTriangle(cx, 10, cx - 15, 42, cx + 15, 42);
-        g.fillStyle(0x322a48, 1);
-        g.fillTriangle(cx, 12.5, cx - 12.5, 40.5, cx + 12.5, 40.5);
-        // Kapuze und Schattenspalt
-        g.fillStyle(0x08070c, 1);
-        g.fillTriangle(cx, 15, cx - 6, 27, cx + 6, 27);
-        g.fillStyle(0x1a1628, 1);
-        g.fillTriangle(cx, 27, cx - 4, 40.5, cx + 4, 40.5);
-        g.fillStyle(0x6a5fa0, 0.8);
-        g.fillTriangle(cx, 12.5, cx - 12.5, 40.5, cx - 9.5, 40.5);
-        g.fillStyle(0x9a86ff, 0.5); g.fillCircle(cx, 22, 1.6);
-        glanz(cx - 6, 24, 1.2, 0x9a86ff);
+        // Kutte mit Kapuze und Faltenwurf. Die Falten machen den Unterschied:
+        // ein glatter Kegel sah aus wie ein Huetchen.
+        g.fillStyle(0x07060b, 1);
+        g.fillTriangle(cx, 9, cx - 16, 43, cx + 16, 43);
+        g.fillStyle(0x2c2540, 1);
+        g.fillTriangle(cx, 11.5, cx - 13.6, 41.2, cx + 13.6, 41.2);
+        // Falten: drei dunkle Bahnen von der Schulter zum Saum
+        g.fillStyle(0x1b172a, 1);
+        g.fillTriangle(cx - 6, 20, cx - 4.4, 20, cx - 8.6, 41.2);
+        g.fillTriangle(cx + 6, 20, cx + 4.4, 20, cx + 8.6, 41.2);
+        g.fillTriangle(cx - 1, 24, cx + 1, 24, cx + 0.4, 41.2);
+        // Kapuze: dunkler Bogen ueber der Brust, darin die Leere
+        g.fillStyle(0x07060b, 1);
+        g.fillTriangle(cx, 12, cx - 8.4, 27, cx + 8.4, 27);
+        g.fillEllipse(cx, 26.5, 16.8, 7);
+        g.fillStyle(0x241e36, 1);
+        g.fillTriangle(cx, 14.6, cx - 7, 26, cx + 7, 26);
+        g.fillStyle(0x07060b, 1);
+        g.fillTriangle(cx, 17.5, cx - 4.6, 26.5, cx + 4.6, 26.5);
+        // Guertelstrick mit Knoten
+        g.fillStyle(0x4a3f22, 1); g.fillRect(cx - 9.6, 30.5, 19.2, 2.2);
+        g.fillStyle(0x7a6a38, 1); g.fillRect(cx - 9.6, 30.5, 19.2, 0.9);
+        g.fillStyle(0x4a3f22, 1); g.fillCircle(cx + 5.5, 31.6, 2);
+        g.fillStyle(0x2a2412, 1); g.fillCircle(cx + 5.5, 31.6, 0.9);
+        // Saum und EINE Lichtkante an der linken Flanke
+        g.fillStyle(0x171326, 1); g.fillRect(cx - 13.6, 39.6, 27.2, 1.8);
+        g.fillStyle(0x6a5fa0, 0.85);
+        g.fillTriangle(cx, 11.5, cx - 13.6, 41.2, cx - 10.8, 41.2);
+        // Ein Glimmen im Kapuzenschatten — bewusst EIN Punkt, kein Augenpaar:
+        // die Kutte soll leer wirken.
+        g.fillStyle(0x9a86ff, 0.55); g.fillCircle(cx, 22.5, 1.5);
+        glanz(cx - 7, 20, 1.3, 0x9a86ff);
       }
     },
 
@@ -2728,16 +2883,29 @@ function createItemGraphics() {
     {
       key: 'itBowEsche',
       draw: () => {
-        g.lineStyle(4.5, 0x2a1c0e, 1);
-        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
-        g.lineStyle(2.6, 0x8a6a34, 1);
-        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
-        g.lineStyle(1, 0xc0a060, 0.8);
-        g.beginPath(); g.arc(30, 24, 19.2, -Math.PI * 0.6, Math.PI * 0.2); g.strokePath();
-        g.lineStyle(1.2, 0xe8e0cc, 0.9);
-        g.beginPath(); g.moveTo(16.5, 7.5); g.lineTo(16.5, 40.5); g.strokePath();
-        g.fillStyle(0x5a4020, 1); g.fillRect(26, 20, 5, 8);
-        glanz(30, 12, 1.2, 0xf0e0b0);
+        // Langbogen aus Eschenholz: EIN grosser Schenkel, dicker Griff, Sehne.
+        // Vorher waren die Boegen gezogene Linien — eine Linie hat keine
+        // Dicke, die man staffeln kann, und sah aus wie ein Draht.
+        const MX = 31, MY = 24, A0 = -Math.PI * 0.60, A1 = Math.PI * 0.60;
+        bogenSichel(MX, MY, 20.5, 6.5, A0, A1, 0x241708);     // Umriss
+        bogenSichel(MX, MY, 19.6, 4.8, A0, A1, 0x8a6a34);     // Holz
+        bogenSichel(MX, MY, 19.6, 1.6, A0, A1, 0xc6a262, 0.95); // Lichtkante aussen
+        bogenSichel(MX, MY, 15.6, 1.3, A0, A1, 0x4a3418, 0.9);  // Schattenkante innen
+        // Maserung: zwei kurze dunkle Striche auf dem Holz
+        g.fillStyle(0x60481f, 0.9);
+        g.fillRect(20, 12.5, 5.5, 1); g.fillRect(20, 34.5, 5.5, 1);
+        // Griffwicklung
+        g.fillStyle(0x2a1c0c, 1); g.fillRect(24.5, 18, 8, 12);
+        g.fillStyle(0x6a4a22, 1); g.fillRect(25.2, 18.6, 6.6, 10.8);
+        g.fillStyle(0x3a2810, 1);
+        [20.4, 23.4, 26.4].forEach((y) => g.fillRect(25.2, y, 6.6, 1.2));
+        g.fillStyle(0x9a7038, 0.85); g.fillRect(25.2, 18.6, 1.4, 10.8);
+        // Nocken und Sehne
+        g.fillStyle(0x241708, 1);
+        g.fillCircle(MX + Math.cos(A0) * 18.5, MY + Math.sin(A0) * 18.5, 2);
+        g.fillCircle(MX + Math.cos(A1) * 18.5, MY + Math.sin(A1) * 18.5, 2);
+        bogenSehne(MX + Math.cos(A0) * 18.5, MY + Math.sin(A0) * 18.5, MY + Math.sin(A1) * 18.5);
+        glanz(24, 11, 1.3, 0xf0e0b0);
       }
     },
     {
@@ -2764,36 +2932,59 @@ function createItemGraphics() {
     {
       key: 'itBowGlut',
       draw: () => {
-        g.lineStyle(5, 0x2a0c04, 1);
-        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
-        g.lineStyle(3, 0x8a2a10, 1);
-        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
-        // Die Glut sitzt IM Bogen, nicht darauf
-        g.lineStyle(1.4, 0xff8a20, 1);
-        g.beginPath(); g.arc(30, 24, 17, -Math.PI * 0.55, Math.PI * 0.55); g.strokePath();
-        g.fillStyle(0xff6a00, 0.28); g.fillCircle(16, 24, 9);
-        g.lineStyle(1.2, 0xffd070, 0.95);
-        g.beginPath(); g.moveTo(16.5, 7.5); g.lineTo(16.5, 40.5); g.strokePath();
-        g.fillStyle(0x3a1408, 1); g.fillRect(26, 20, 5, 8);
-        g.fillStyle(0xffb040, 1); g.fillCircle(16, 24, 2.4);
-        glanz(16, 23, 1.2, 0xfff0c0);
+        // Verkohltes Holz mit einer gluehenden Spalte, die MITTEN durch den
+        // Schenkel laeuft. Die Glut sitzt IM Bogen, nicht als Schein daneben.
+        const MX = 31, MY = 24, A0 = -Math.PI * 0.60, A1 = Math.PI * 0.60;
+        g.fillStyle(0xff5a00, 0.13); g.fillCircle(16, 24, 13);   // Hitzeschleier
+        bogenSichel(MX, MY, 20.5, 7, A0, A1, 0x1c0a04);          // verkohlter Umriss
+        bogenSichel(MX, MY, 19.6, 5.2, A0, A1, 0x5e2410);        // Holz
+        bogenSichel(MX, MY, 17.4, 1.5, A0, A1, 0xff8a20);        // die Spalte
+        bogenSichel(MX, MY, 17.9, 0.7, A0, A1, 0xffd070, 0.95);  // ihr heller Kern
+        bogenSichel(MX, MY, 19.6, 1.3, A0, A1, 0x8a3a18, 0.9);   // Aussenkante
+        // Glutflecken auf dem Holz
+        g.fillStyle(0xff8a20, 0.9);
+        [[19.5, 13.5], [18.5, 33], [22.5, 9.5]].forEach((p) => g.fillCircle(p[0], p[1], 1.2));
+        // Griff aus dunklem Eisen
+        g.fillStyle(0x140804, 1); g.fillRect(24.5, 18, 8, 12);
+        g.fillStyle(0x4a2418, 1); g.fillRect(25.2, 18.6, 6.6, 10.8);
+        g.fillStyle(0x8a4a28, 0.9); g.fillRect(25.2, 18.6, 1.4, 10.8);
+        g.fillStyle(0xff8a20, 1); g.fillRect(25.2, 23.4, 6.6, 1.2);
+        // Nocken und Sehne — die Sehne glimmt mit
+        g.fillStyle(0x1c0a04, 1);
+        g.fillCircle(MX + Math.cos(A0) * 18.5, MY + Math.sin(A0) * 18.5, 2);
+        g.fillCircle(MX + Math.cos(A1) * 18.5, MY + Math.sin(A1) * 18.5, 2);
+        bogenSehne(MX + Math.cos(A0) * 18.5, MY + Math.sin(A0) * 18.5,
+                   MY + Math.sin(A1) * 18.5, 0xffb040);
+        glanz(21, 11, 1.3, 0xfff0c0);
       }
     },
     {
       key: 'itBowNebel',
       draw: () => {
-        g.lineStyle(5, 0x141a22, 1);
-        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
-        g.lineStyle(3, 0x6a7a8a, 0.9);
-        g.beginPath(); g.moveTo(16, 8); g.arc(30, 24, 18, -Math.PI * 0.62, Math.PI * 0.62); g.strokePath();
-        // Schwaden: weiche Flecken, die den Umriss aufloesen
-        g.fillStyle(0xc8d8e8, 0.16);
-        g.fillCircle(20, 16, 7); g.fillCircle(22, 32, 8); g.fillCircle(14, 24, 6);
-        g.lineStyle(1.2, 0xdfe8f0, 0.75);
-        g.beginPath(); g.moveTo(16.5, 7.5); g.lineTo(16.5, 40.5); g.strokePath();
-        g.fillStyle(0x1e2630, 1); g.fillRect(26, 20, 5, 8);
-        g.fillStyle(0xaebfd0, 0.9); g.fillRect(26, 20, 5, 1.4);
-        glanz(21, 14, 1.4, 0xeaf2fa);
+        // Bleiches Horn, an den Enden vom Nebel aufgezehrt: der Schenkel ist
+        // ganz da, aber seine Spitzen verschwimmen. Die Schwaden liegen DAVOR,
+        // nicht daneben — sonst sind es nur Flecken.
+        const MX = 31, MY = 24, A0 = -Math.PI * 0.60, A1 = Math.PI * 0.60;
+        bogenSichel(MX, MY, 20.5, 6.5, A0, A1, 0x101820);        // Umriss
+        bogenSichel(MX, MY, 19.6, 4.8, A0, A1, 0x7d8ea0);        // bleiches Horn
+        bogenSichel(MX, MY, 19.6, 1.5, A0, A1, 0xc8d8e8, 0.95);  // Lichtkante
+        bogenSichel(MX, MY, 15.6, 1.2, A0, A1, 0x3a4552, 0.9);   // Schattenkante
+        // Griff aus dunklem Leder
+        g.fillStyle(0x0c1218, 1); g.fillRect(24.5, 18, 8, 12);
+        g.fillStyle(0x2e3a48, 1); g.fillRect(25.2, 18.6, 6.6, 10.8);
+        g.fillStyle(0x1a222c, 1);
+        [20.4, 23.4, 26.4].forEach((y) => g.fillRect(25.2, y, 6.6, 1.2));
+        g.fillStyle(0x9aacc0, 0.85); g.fillRect(25.2, 18.6, 1.4, 10.8);
+        // Nocken und Sehne
+        g.fillStyle(0x101820, 1);
+        g.fillCircle(MX + Math.cos(A0) * 18.5, MY + Math.sin(A0) * 18.5, 2);
+        g.fillCircle(MX + Math.cos(A1) * 18.5, MY + Math.sin(A1) * 18.5, 2);
+        bogenSehne(MX + Math.cos(A0) * 18.5, MY + Math.sin(A0) * 18.5, MY + Math.sin(A1) * 18.5);
+        // Schwaden ZULETZT, damit sie die Enden wirklich verschlucken
+        g.fillStyle(0xc8d8e8, 0.20); g.fillEllipse(17, 11, 20, 11);
+        g.fillStyle(0xc8d8e8, 0.16); g.fillEllipse(18, 38, 22, 10);
+        g.fillStyle(0xdfe8f0, 0.10); g.fillEllipse(24, 24, 26, 30);
+        glanz(23, 20, 1.4, 0xeaf2fa);
       }
     }
   ];

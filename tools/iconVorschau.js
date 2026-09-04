@@ -60,8 +60,11 @@ function macheAufzeichner() {
     moveTo(x, y) { pfad.push([x, y]); return g; },
     lineTo(x, y) { pfad.push([x, y]); return g; },
     arc(x, y, r, a0, a1) {
-      // Grob in Segmente zerlegen — fuer Vorschau und Vergleich reicht das.
-      const schritte = 12;
+      // Fein zerlegen. Zwoelf Segmente waren zu grob: der alte Bogen sah in der
+      // Vorschau eckig aus und wirkte dadurch veraendert, obwohl an seinem
+      // Code nichts angefasst war. Eine Vorschau, der man das nicht ansieht,
+      // ist schlimmer als keine.
+      const schritte = 64;
       for (let i = 0; i <= schritte; i++) {
         const a = a0 + (a1 - a0) * (i / schritte);
         pfad.push([x + Math.cos(a) * r, y + Math.sin(a) * r]);

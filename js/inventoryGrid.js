@@ -22,6 +22,24 @@
   var COLS = 10;
   var ROWS = 4;
 
+  /**
+   * Rastermass eines Behaelters.
+   *
+   * Alle Funktionen unten nehmen es als LETZTEN, optionalen Parameter. Ohne
+   * Angabe gilt das Laufinventar — damit bleiben die bestehenden Aufrufe
+   * unveraendert gueltig. Gebraucht wird das fuer die Hub-Truhe (#127): sie
+   * ist ein zweites Raster mit eigener Hoehe, aber derselben Packlogik. Die
+   * Alternative waere gewesen, die Rechnerei zu kopieren — dann waeren zwei
+   * Packverfahren nebeneinander gelaufen und irgendwann auseinandergelaufen.
+   */
+  function _mass(m) {
+    if (!m) return { c: COLS, r: ROWS };
+    return {
+      c: (typeof m.cols === 'number' && m.cols > 0) ? m.cols : COLS,
+      r: (typeof m.rows === 'number' && m.rows > 0) ? m.rows : ROWS
+    };
+  }
+
   // Groesse je Gegenstand in Zellen: [Breite, Hoehe].
   //
   // Die Silhouette soll die Waffenart tragen — dieselbe Absicht wie bei den
@@ -59,15 +77,16 @@
    * @param {object} item
    * @returns {{b:number,h:number}} Breite und Hoehe, mindestens 1x1
    */
-  function groesse(item) {
+  function groesse(item, mass) {
     if (!item) return { b: 1, h: 1 };
+    var M = _mass(mass);
     var m = GROESSE_NACH_SCHLUESSEL[item.key];
     if (!m && item.subtype === 'bow') m = [1, 3];   // schmal und lang
     if (!m) m = GROESSE_NACH_ART[item.type];
     if (!m) m = [1, 1];
     return {
-      b: Math.max(1, Math.min(COLS, m[0])),
-      h: Math.max(1, Math.min(ROWS, m[1])),
+      b: Math.max(1, Math.min(M.c, m[0])),
+      h: Math.max(1, Math.min(M.r, m[1])),
     };
   }
 
@@ -76,11 +95,12 @@
    * @param {Array} inventar
    * @returns {Array<Array<number>>} rows x cols, -1 = frei, sonst Feldindex
    */
-  function belegung(inventar) {
+  function belegung(inventar, mass) {
+    var M = _mass(mass);
     var karte = [];
-    for (var y = 0; y < ROWS; y++) {
+    for (var y = 0; y < M.r; y++) {
       var z = [];
-      for (var x = 0; x < COLS; x++) z.push(-1);
+      for (var x = 0; x < M.c; x++) z.push(-1);
       karte.push(z);
     }
     if (!Array.isArray(inventar)) return karte;
@@ -90,11 +110,11 @@
       // Gegenstaende ohne Lage (Altbestand, frisch geladen) bleiben hier
       // unsichtbar — `lageErgaenzen` weist ihnen erst einen Platz zu.
       if (typeof it.gridX !== 'number' || typeof it.gridY !== 'number') continue;
-      var g = groesse(it);
+      var g = groesse(it, mass);
       for (var dy = 0; dy < g.h; dy++) {
         for (var dx = 0; dx < g.b; dx++) {
           var yy = it.gridY + dy, xx = it.gridX + dx;
-          if (yy >= 0 && yy < ROWS && xx >= 0 && xx < COLS) karte[yy][xx] = i;
+          if (yy >= 0 && yy < M.r && xx >= 0 && xx < M.c) karte[yy][xx] = i;
         }
       }
     }
@@ -110,8 +130,9 @@
    * @param {number} h Hoehe
    * @param {number} [ausser] Feldindex, der ignoriert wird (fuer Umlegen)
    */
-  function passt(karte, x, y, b, h, ausser) {
-    if (x < 0 || y < 0 || x + b > COLS || y + h > ROWS) return false;
+  function passt(karte, x, y, b, h, ausser, mass) {
+    var M = _mass(mass);
+    if (x < 0 || y < 0 || x + b > M.c || y + h > M.r) return false;
     for (var dy = 0; dy < h; dy++) {
       for (var dx = 0; dx < b; dx++) {
         var belegt = karte[y + dy][x + dx];
@@ -131,12 +152,13 @@
    *
    * @returns {{x:number,y:number}|null} null, wenn nichts passt
    */
-  function findePlatz(inventar, item, ausser) {
-    var g = groesse(item);
-    var karte = belegung(inventar);
-    for (var y = 0; y <= ROWS - g.h; y++) {
-      for (var x = 0; x <= COLS - g.b; x++) {
-        if (passt(karte, x, y, g.b, g.h, ausser)) return { x: x, y: y };
+  function findePlatz(inventar, item, ausser, mass) {
+    var M = _mass(mass);
+    var g = groesse(item, mass);
+    var karte = belegung(inventar, mass);
+    for (var y = 0; y <= M.r - g.h; y++) {
+      for (var x = 0; x <= M.c - g.b; x++) {
+        if (passt(karte, x, y, g.b, g.h, ausser, mass)) return { x: x, y: y };
       }
     }
     return null;
@@ -146,9 +168,9 @@
    * Legt einen Gegenstand ins Inventar, wenn Platz ist.
    * @returns {number} Feldindex, oder -1 wenn das Raster voll ist
    */
-  function einfuegen(inventar, item) {
+  function einfuegen(inventar, item, mass) {
     if (!Array.isArray(inventar) || !item) return -1;
-    var platz = findePlatz(inventar, item);
+    var platz = findePlatz(inventar, item, undefined, mass);
     if (!platz) return -1;
     var idx = inventar.findIndex(function (s) { return !s; });
     if (idx < 0) return -1;              // Feld voll (sollte vor dem Raster nie eintreten)
@@ -172,14 +194,14 @@
    *
    * @returns {Array} die Gegenstaende, fuer die kein Platz war
    */
-  function lageErgaenzen(inventar) {
+  function lageErgaenzen(inventar, mass) {
     if (!Array.isArray(inventar)) return [];
     var heimatlos = [];
     for (var i = 0; i < inventar.length; i++) {
       var it = inventar[i];
       if (!it) continue;
       if (typeof it.gridX === 'number' && typeof it.gridY === 'number') continue;
-      var platz = findePlatz(inventar, it);
+      var platz = findePlatz(inventar, it, undefined, mass);
       if (!platz) { heimatlos.push(it); inventar[i] = null; continue; }
       it.gridX = platz.x;
       it.gridY = platz.y;
@@ -194,45 +216,48 @@
    * blockierte er sich beim Verschieben um eine Zelle mit seinen eigenen
    * Zellen und man koennte ihn nie leicht versetzen.
    */
-  function kannHin(inventar, index, x, y) {
+  function kannHin(inventar, index, x, y, mass) {
     if (!Array.isArray(inventar)) return false;
     var it = inventar[index];
     if (!it) return false;
-    var g = groesse(it);
-    return passt(belegung(inventar), x, y, g.b, g.h, index);
+    var g = groesse(it, mass);
+    return passt(belegung(inventar, mass), x, y, g.b, g.h, index, mass);
   }
 
   /**
    * Verschiebt einen Gegenstand, wenn der Zielplatz frei ist.
    * @returns {boolean} ob verschoben wurde
    */
-  function verschiebe(inventar, index, x, y) {
-    if (!kannHin(inventar, index, x, y)) return false;
+  function verschiebe(inventar, index, x, y, mass) {
+    if (!kannHin(inventar, index, x, y, mass)) return false;
     inventar[index].gridX = x;
     inventar[index].gridY = y;
     return true;
   }
 
   /** Gegenstand an einer Rasterzelle, oder null. */
-  function itemAn(inventar, x, y) {
-    var karte = belegung(inventar);
-    if (y < 0 || y >= ROWS || x < 0 || x >= COLS) return null;
+  function itemAn(inventar, x, y, mass) {
+    var M = _mass(mass);
+    var karte = belegung(inventar, mass);
+    if (y < 0 || y >= M.r || x < 0 || x >= M.c) return null;
     var i = karte[y][x];
     return i === -1 ? null : inventar[i];
   }
 
   /** Feldindex an einer Rasterzelle, oder -1. */
-  function indexAn(inventar, x, y) {
-    var karte = belegung(inventar);
-    if (y < 0 || y >= ROWS || x < 0 || x >= COLS) return -1;
+  function indexAn(inventar, x, y, mass) {
+    var M = _mass(mass);
+    var karte = belegung(inventar, mass);
+    if (y < 0 || y >= M.r || x < 0 || x >= M.c) return -1;
     return karte[y][x];
   }
 
   /** Wie viele Zellen sind frei? Fuer Anzeige und Tests. */
-  function freieZellen(inventar) {
-    var karte = belegung(inventar);
+  function freieZellen(inventar, mass) {
+    var M = _mass(mass);
+    var karte = belegung(inventar, mass);
     var n = 0;
-    for (var y = 0; y < ROWS; y++) for (var x = 0; x < COLS; x++) if (karte[y][x] === -1) n++;
+    for (var y = 0; y < M.r; y++) for (var x = 0; x < M.c; x++) if (karte[y][x] === -1) n++;
     return n;
   }
 

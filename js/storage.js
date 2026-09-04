@@ -105,6 +105,13 @@ function saveGame(scene) {
       inventory: cloneInventory,
       equipment: cloneEquipment(equipment),
       materials: cloneMaterials,
+      // #127: die Hub-Truhe gehoert in DENSELBEN Spielstand wie alles andere.
+      // Ein eigener Speicher waere beim Slot-Wechsel im falschen Durchgang
+      // aufgetaucht (#63) — und ueber window.SlotStorage laeuft dieser Stand
+      // ohnehin schon.
+      truhe: (typeof window !== 'undefined' && window.HubTruhe
+        && typeof window.HubTruhe.alsSpielstand === 'function')
+        ? window.HubTruhe.alsSpielstand() : null,
       // #94: `skills` (Alt-Baum aus skillSystem.js) wird NICHT mehr geschrieben.
       // `legacySkillsMigrated` merkt sich, dass ein Altstand bereits in
       // Talentpunkte umgerechnet wurde — sonst gaebe es bei jedem Laden erneut
@@ -311,6 +318,19 @@ function applySaveToState(scene, s) {
 
   if (typeof setMaterialCounts === 'function') {
     setMaterialCounts(s.materials || {});
+    // #127: Truhe zurueckholen. Altstaende haben kein 'truhe' — dann bleibt
+    // sie leer, statt dass das Laden scheitert. Stuecke ohne Rasterlage
+    // bekommen einen Platz zugewiesen; was keinen mehr findet, wird gemeldet
+    // statt still verschluckt.
+    if (typeof window !== 'undefined' && window.HubTruhe
+        && typeof window.HubTruhe.ausSpielstand === 'function') {
+      try {
+        const heimatlos = window.HubTruhe.ausSpielstand(s.truhe || null);
+        if (heimatlos && heimatlos.length) {
+          console.warn('[Truhe] kein Platz mehr fuer ' + heimatlos.length + ' Stueck(e)');
+        }
+      } catch (err) { console.warn('[Truhe] Laden fehlgeschlagen', err); }
+    }
   }
 
   if (s.equipment && typeof s.equipment === 'object') {
