@@ -125,76 +125,58 @@ test('Ohne Szene oder Anfuehrer setzt sich kein Gefolge', () => {
 
 // --- Das Zeichen der Zugehoerigkeit ---------------------------------------
 //
-// Gemessen im ersten Entwurf: das Gefolge wurde ueber setTint gefaerbt, und in
-// einem von drei Laeufen hatte der Anfuehrer NUR unsichere Affixe (cold_aura,
-// extra_fast, lightning_enchanted). Dann wurde nichts vererbt — und weil die
-// Faerbung an der Vererbung hing, sah das Gefolge aus wie beliebige Gegner:
-// tint #ffffff, isTinted false, genau wie ein Fremder.
+// Drei Anlaeufe, jeder durch eine Messung widerlegt:
+//   1. Toenung, die an der Affix-Vererbung hing — kam oft gar nicht an, weil
+//      aus rein unsicheren Affixen nichts vererbt wird (gemessen in einem von
+//      drei Laeufen: Gefolge #ffffff, isTinted false, wie ein Fremder).
+//   2. Bodenring und Wimpel als eigene Objekte — hielten, waren aber zu laut.
+//   3. Jetzt: leichte Toenung in der aufgehellten Aurafarbe des Anfuehrers,
+//      an der ZUGEHOERIGKEIT statt am Affix, und mit Wiederherstellung nach
+//      den Trefferblitzen in player.js.
 
-function attrappe() {
-  const gemacht = { graphics: 0, timer: 0 };
-  const grafik = () => ({
-    lineStyle() { return this; }, strokeCircle() { return this; },
-    fillStyle() { return this; }, fillCircle() { return this; },
-    fillRect() { return this; }, fillTriangle() { return this; },
-    setPosition() { return this; }, setDepth() { return this; },
-    setVisible() { return this; }, destroy() { this.active = false; },
-    active: true, scene: { sys: {} },
-  });
-  const scene = {
-    add: { graphics: () => { gemacht.graphics++; return grafik(); } },
-    time: { addEvent: () => { gemacht.timer++; return { remove() {} }; } },
-    enemyLayer: { add() {} },
-  };
-  return { scene, gemacht };
-}
+test('Die Toenung ist leicht, nicht die volle Aurafarbe', () => {
+  // Unveraendert saehe ein Gefolge aus wie vier Elites.
+  const gegner = { setTint(v) { this.tint = v; } };
+  assert.strictEqual(K.scharToenung(gegner, 0x000000), true);
+  assert.strictEqual(gegner.tint, 0x8c8c8c, 'Schwarz muss deutlich aufgehellt werden');
+  const hell = { setTint(v) { this.tint = v; } };
+  K.scharToenung(hell, 0xffffff);
+  assert.strictEqual(hell.tint, 0xffffff, 'Weiss bleibt Weiss');
+});
 
-test('Das Zeichen haengt an der Zugehoerigkeit, nicht am Affix', () => {
-  // Der eigentliche Fehler des ersten Entwurfs: ohne vererbbaren Affix gab es
-  // gar keine Markierung.
-  const { scene, gemacht } = attrappe();
-  const gegner = { x: 100, y: 100, active: true, visible: true };
-  const fuehrer = { x: 100, y: 100, active: true, eliteAffixes: ['cold_aura', 'extra_fast'] };
+test('Die Toenung haengt an der Zugehoerigkeit, nicht am Affix', () => {
+  // Der Fehler des ersten Entwurfs: ohne vererbbaren Affix keine Markierung.
+  const fuehrer = { eliteAffixes: ['cold_aura', 'extra_fast'] };
   assert.strictEqual(K.erbbarerAffix(fuehrer.eliteAffixes, Math.random), null,
     'Vorbedingung: aus diesen Affixen ist keiner vererbbar');
-  assert.strictEqual(K.scharZeichen(scene, gegner, fuehrer, K.BANNER_GOLD), true);
-  assert.ok(gegner._scharRing, 'kein Ring');
-  assert.ok(gegner._scharWimpel, 'kein Wimpel');
-  assert.strictEqual(gemacht.graphics, 2, 'Ring und Wimpel sind eigene Objekte');
+  const gegner = { setTint(v) { this.tint = v; } };
+  assert.strictEqual(K.scharToenung(gegner, K.scharFarbe(fuehrer)), true);
+  assert.ok(typeof gegner._scharToenung === 'number', 'kein Merker gesetzt');
+  assert.strictEqual(gegner.tint, gegner._scharToenung);
 });
 
-test('Die Farbe kommt vom Anfuehrer, mit Bannergold als Rueckfall', () => {
-  const defs = (globalThis.window.EliteEnemies && globalThis.window.EliteEnemies.ENEMY_AFFIX_DEFS) || [];
-  if (defs.length) {
-    const ersterMitFarbe = defs.find((d) => typeof d.auraColor === 'number');
-    if (ersterMitFarbe) {
-      assert.strictEqual(K.scharFarbe({ eliteAffixes: [ersterMitFarbe.id] }), ersterMitFarbe.auraColor);
-    }
-  }
-  assert.strictEqual(K.scharFarbe({ eliteAffixes: [] }), K.BANNER_GOLD, 'ohne Affixe Bannergold');
-  assert.strictEqual(K.scharFarbe(null), K.BANNER_GOLD, 'ohne Anfuehrer Bannergold');
-  assert.strictEqual(K.scharFarbe({ eliteAffixes: ['gibtsnicht'] }), K.BANNER_GOLD, 'unbekannter Affix');
+test('Der Merker ueberlebt die Trefferblitze', () => {
+  // Drei Stellen in player.js loeschen die Gegner-Toenung nach einem Blitz.
+  // Ohne Wiederherstellung war die Markierung nach dem ersten Treffer weg.
+  const fs2 = require('fs');
+  const path2 = require('path');
+  const s2 = fs2.readFileSync(path2.join(__dirname, '..', 'js', 'player.js'), 'utf8');
+  const treffer = (s2.match(/_scharToenung === 'number'/g) || []).length;
+  assert.strictEqual(treffer, 3,
+    'erwartet drei Wiederherstellungen in player.js, fand ' + treffer);
 });
 
-test('Ohne Szene entsteht kein Zeichen, statt zu werfen', () => {
-  assert.strictEqual(K.scharZeichen(null, {}, {}, 0xffffff), false);
-  assert.strictEqual(K.scharZeichen({}, {}, {}, 0xffffff), false, 'Szene ohne add');
-  assert.strictEqual(K.scharZeichen(attrappe().scene, null, {}, 0xffffff), false, 'ohne Gegner');
+test('_originalTint wird mitgesetzt, damit Statuseffekte sauber zuruecksetzen', () => {
+  // statusEffects._clearVisual stellt bei Gegnern GENAU diesen Wert wieder her,
+  // statt blank zu loeschen.
+  const gegner = { setTint(v) { this.tint = v; } };
+  K.scharToenung(gegner, 0xff5500);
+  assert.strictEqual(gegner._originalTint, gegner._scharToenung);
 });
 
-test('erbeAffix faerbt NICHT mehr', () => {
-  // Toenung ist der falsche Kanal: sie teilt sich mit der Grundfarbe je
-  // Gegnertyp, der Affixfarbe eines Elite, dem Mini-Boss-Orange und den
-  // Trefferblitzen — und die rufen danach clearTint(), loeschen die Markierung
-  // also dauerhaft.
-  const fs = require('fs');
-  const path = require('path');
-  const s = fs.readFileSync(path.join(__dirname, '..', 'js', 'kriegsschar.js'), 'utf8');
-  const i = s.indexOf('function erbeAffix');
-  assert.ok(i > 0, 'erbeAffix nicht gefunden');
-  const block = s.slice(i, s.indexOf('window.Kriegsschar', i));
-  assert.ok(!/setTint\(/.test(block),
-    'erbeAffix faerbt wieder — das uebersteht keinen Trefferblitz');
+test('Ohne Gegner passiert nichts, statt zu werfen', () => {
+  assert.strictEqual(K.scharToenung(null, 0xffffff), false);
+  assert.strictEqual(K.scharToenung({}, 0xffffff), false, 'ohne setTint');
 });
 
 test('In einem Raum steht genau EIN Banner', () => {

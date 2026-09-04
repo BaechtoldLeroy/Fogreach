@@ -718,6 +718,9 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
       scene.time.delayedCall(200, () => {
         if (enemy && enemy.active) {
           enemy.clearTint();
+          // #95: die Schar-Toenung ueberlebt den Blitz — sonst ist die
+          // Zugehoerigkeit nach dem ersten Treffer nicht mehr zu sehen.
+          if (typeof enemy._scharToenung === 'number') enemy.setTint(enemy._scharToenung);
           if (enemy.isElite) enemy.setTint(0xffe066);
         }
       });
@@ -774,7 +777,11 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
   if (isCrit && enemy.active && scene?.time) {
     enemy.setTintFill(0xfff2a6);
     scene.time.delayedCall(160, () => {
-      if (enemy && enemy.active) enemy.clearTint();
+      if (enemy && enemy.active) {
+        enemy.clearTint();
+        // #95: Schar-Toenung wiederherstellen (siehe oben).
+        if (typeof enemy._scharToenung === 'number') enemy.setTint(enemy._scharToenung);
+      }
     });
     // Ein Krit war bisher nur ein 160-ms-Aufblitzen — im Getuemmel kaum vom
     // normalen Treffer zu unterscheiden. Jetzt sagt er auch, WIE hart er war.
@@ -1825,7 +1832,11 @@ function handleEnemyHit(scene, enemy, options = {}) {
   } else if (enemy.setTint) {
     enemy.setTint(tint);
     scene.time.delayedCall(duration, () => {
-      if (enemy && enemy.active) enemy.clearTint();
+      if (enemy && enemy.active) {
+        enemy.clearTint();
+        // #95: Schar-Toenung wiederherstellen (siehe oben).
+        if (typeof enemy._scharToenung === 'number') enemy.setTint(enemy._scharToenung);
+      }
     }, null, scene);
   }
 }

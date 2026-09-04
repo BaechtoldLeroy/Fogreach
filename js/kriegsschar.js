@@ -80,78 +80,40 @@
   }
 
   /**
-   * Hängt einem Gefolgsmann sein Zeichen an: Bodenring und Wimpel.
+   * Mischt eine Farbe Richtung Weiss — fuer eine LEICHTE Toenung.
    *
-   * WARUM keine Tönung: der erste Entwurf faerbte das Gefolge über setTint.
-   * Gemessen kam davon nichts an. setTint teilen sich die Grundfarbe je
-   * Gegnertyp, die Affixfarbe eines Elite (ein Gefolgsmann kann selbst einer
-   * werden), das Mini-Boss-Orange und die Trefferblitze — und die rufen danach
-   * clearTint(), LOESCHEN die Markierung also dauerhaft. Im Test stand ein
-   * Gefolgsmann auf #ffffff (gar nichts) und einer auf der Blitzfarbe #ffe066.
-   *
-   * Eigene Anzeigeobjekte kann kein setTint zerstoeren. Beide sind Graphics
-   * und haengen im enemyLayer, also greift dessen Nebelmaske automatisch —
-   * anders als bei Text, der sie umgeht und einen eigenen Sichttest braucht.
-   *
-   * Faellt der Anfuehrer, verschwindet das Zeichen: die Bindung loest sich,
-   * und das soll man sehen.
+   * Die Aurafarben sind kraeftig (z. B. 0xff5500). Unveraendert auf ein
+   * Gefolge gelegt saehe die Schar aus wie vier Elites.
    */
-  function scharZeichen(scene, gegner, fuehrer, farbe) {
-    if (!scene || !scene.add || !gegner || typeof scene.add.graphics !== 'function') return false;
+  function _hell(farbe, anteil) {
+    var r = (farbe >> 16) & 0xff, g = (farbe >> 8) & 0xff, b = farbe & 0xff;
+    var m = function (k) { return Math.round(k + (255 - k) * anteil); };
+    return (m(r) << 16) | (m(g) << 8) | m(b);
+  }
+
+  /**
+   * Zeichnet einen Gefolgsmann in der aufgehellten Farbe seines Anfuehrers.
+   *
+   * ERSTER ENTWURF war eine Toenung, die an der Affix-Vererbung hing — und die
+   * kam oft gar nicht an, weil aus rein unsicheren Affixen nichts vererbt wird.
+   * ZWEITER ENTWURF waren Bodenring und Wimpel als eigene Objekte; die hielten
+   * zwar, waren aber zu laut.
+   *
+   * Jetzt wieder Toenung, aber an der ZUGEHOERIGKEIT statt am Affix — und mit
+   * dem Merker _scharToenung, den die drei Trefferblitz-Stellen in player.js
+   * nach ihrem clearTint() wiederherstellen. Ohne das war die Markierung nach
+   * dem ersten Treffer weg (gemessen: ein Gefolgsmann stand auf der Blitzfarbe
+   * #ffe066, ein anderer auf #ffffff).
+   */
+  function scharToenung(gegner, farbe) {
+    if (!gegner || typeof gegner.setTint !== 'function') return false;
     try {
-      // Bodenring — unter der Elite-Aura (Tiefe 38), damit ein Gefolgsmann,
-      // der selbst Elite ist, beide Ringe zeigt.
-      var ring = scene.add.graphics();
-      ring.lineStyle(3, farbe, 0.55);
-      ring.strokeCircle(0, 0, 21);
-      ring.fillStyle(farbe, 0.12);
-      ring.fillCircle(0, 0, 21);
-      ring.setPosition(gegner.x, gegner.y);
-      if (typeof ring.setDepth === 'function') ring.setDepth(37);
-
-      // Wimpel ueber dem Kopf: Stange plus Fahne. Liest sich auch dann noch,
-      // wenn mehrere Gegner uebereinanderstehen.
-      var wimpel = scene.add.graphics();
-      wimpel.fillStyle(0x1a1a1a, 0.9);
-      wimpel.fillRect(-1, -10, 2, 14);
-      wimpel.fillStyle(farbe, 0.95);
-      wimpel.fillTriangle(1, -10, 11, -6.5, 1, -3);
-      wimpel.setPosition(gegner.x, gegner.y - 26);
-      if (typeof wimpel.setDepth === 'function') wimpel.setDepth(39);
-
-      if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
-        scene.enemyLayer.add(ring);
-        scene.enemyLayer.add(wimpel);
-      }
-      gegner._scharRing = ring;
-      gegner._scharWimpel = wimpel;
-
-      // EIN Timer je Gefolgsmann fuer beide Objekte — dasselbe Muster wie bei
-      // der Elite-Aura (Perf #70): einmal zeichnen, danach nur verschieben.
-      if (scene.time && typeof scene.time.addEvent === 'function') {
-        var timer = scene.time.addEvent({
-          delay: 16,
-          loop: true,
-          callback: function () {
-            var lebt = gegner && gegner.active;
-            var fuehrerLebt = fuehrer && fuehrer.active;
-            var szeneLebt = ring && ring.scene && ring.scene.sys;
-            if (!lebt || !fuehrerLebt || !szeneLebt) {
-              try { if (ring) ring.destroy(); } catch (e) {}
-              try { if (wimpel) wimpel.destroy(); } catch (e) {}
-              if (gegner) { gegner._scharRing = null; gegner._scharWimpel = null; }
-              if (timer && typeof timer.remove === 'function') timer.remove();
-              return;
-            }
-            ring.setPosition(gegner.x, gegner.y);
-            wimpel.setPosition(gegner.x, gegner.y - 26);
-            var sichtbar = !!gegner.visible;
-            ring.setVisible(sichtbar);
-            wimpel.setVisible(sichtbar);
-          }
-        });
-        gegner._scharZeichenTimer = timer;
-      }
+      var leicht = _hell(farbe, 0.55);
+      gegner._scharToenung = leicht;
+      // _originalTint ist die bestehende Konvention: statusEffects stellt
+      // danach GENAU diesen Wert wieder her statt blank zu loeschen.
+      gegner._originalTint = leicht;
+      gegner.setTint(leicht);
       return true;
     } catch (e) { return false; }
   }
@@ -269,7 +231,7 @@
       // Affixe hatte (gemessen in einem von drei Laeufen: cold_aura,
       // extra_fast, lightning_enchanted), wurde nichts vererbt und das Gefolge
       // sah aus wie beliebige Gegner.
-      scharZeichen(scene, g, fuehrer, farbe);
+      scharToenung(g, farbe);
       if (affixId) erbeAffix(g, affixId);
       raus.push(g);
     }
@@ -315,7 +277,7 @@
     gefolgeSpawnen: gefolgeSpawnen,
     erbeAffix: erbeAffix,
     scharFarbe: scharFarbe,
-    scharZeichen: scharZeichen,
+    scharToenung: scharToenung,
     BANNER_GOLD: BANNER_GOLD
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = window.Kriegsschar;
