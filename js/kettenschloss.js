@@ -258,9 +258,17 @@
       fontFamily: 'serif', fontSize: '26px', color: '#ffd166', fontStyle: 'bold',
       stroke: '#2a1c00', strokeThickness: 4
     }).setOrigin(0.5));
+    // Das Ziel muss oben stehen, nicht in den Statuskringeln versteckt: aus
+    // "○○○○" liest niemand heraus, dass mehrere Stifte nacheinander drankommen.
     halten(scene.add.text(cx, leisteY - 78,
+      _t('lock.goal', 'Alle {n} Stifte setzen, dann fällt die Kette')
+        .replace('{n}', String(anzahl)), {
+      fontFamily: 'serif', fontSize: '15px', color: '#e8d9a8'
+    }).setOrigin(0.5));
+    // Die Tastenbelegung steht unten: sie schlägt man nach, das Ziel liest man.
+    halten(scene.add.text(cx, leisteY + 138,
       _t('lock.hint', '← → tasten · Leertaste setzen · E aufhören'), {
-      fontFamily: 'monospace', fontSize: '13px', color: '#cfd4dd'
+      fontFamily: 'monospace', fontSize: '12px', color: '#8d8798'
     }).setOrigin(0.5));
     var gefuehl = halten(scene.add.text(cx, leisteY - 50, '', {
       fontFamily: 'serif', fontSize: '17px', color: '#cfd4dd'
@@ -291,7 +299,9 @@
       var picks = '';
       for (var k = 0; k < DIETRICHE; k++) picks += (k < dietriche) ? '†' : '·';
       var rest = Math.max(0, frist - (Date.now() - start));
-      stand.setText(_t('lock.status', 'Stifte {stifte}   Dietriche {picks}   {zeit}s')
+      var dran = Math.min(anzahl, gesetzt + 1);
+      stand.setText(_t('lock.status', 'Stift {i}/{n}  {stifte}   Dietriche {picks}   {zeit}s')
+        .replace('{i}', String(dran)).replace('{n}', String(anzahl))
         .replace('{stifte}', stifte).replace('{picks}', picks)
         .replace('{zeit}', (rest / 1000).toFixed(1)));
     };
@@ -395,6 +405,8 @@
       meldung.setText('');
       meldungBis = 0;
     };
+    // Anmerkung: der Erfolgshinweis wird bewusst NACH naechsterStift() gesetzt
+    // — sonst raeumt es ihn im selben Atemzug wieder weg.
 
     var setzen = function () {
       if (beendet) return;
@@ -404,12 +416,17 @@
         standText();
         if (gesetzt >= anzahl) { schliesse(true, false); return; }
         naechsterStift();
+        meldung.setColor('#7dffa0');
+        meldung.setText(_t('lock.pin.set', 'Stift {i} sitzt. Noch {rest}.')
+          .replace('{i}', String(gesetzt)).replace('{rest}', String(anzahl - gesetzt)));
+        meldungBis = Date.now() + 1600;
       } else {
         dietriche--;
         ruettelBis = Date.now() + 220;
         marken.push(pos);
         // Die Richtung ist der Gegenwert für den verbrauchten Dietrich: der
         // Fehlgriff kostet, sagt aber, wohin. Sonst bliebe nur Raten.
+        meldung.setColor('#ff9d6b');
         meldung.setText(seiteZumStift(pos, ziel) > 0
           ? _t('lock.miss.right', 'Weiter rechts →')
           : _t('lock.miss.left', '← Weiter links'));
