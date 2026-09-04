@@ -1326,6 +1326,42 @@
    * Called when a boss is killed. Updates boss_kill objectives.
    * @param {string} bossType - e.g. 'kettenmeister', 'schattenrat'
    */
+  /**
+   * Elara in den Hub holen, sobald das Doppelspiel beginnt (#131).
+   *
+   * Ihr Eintrag im Hub-Layout traegt visibleAfterFlag: 'elaraReturnedToHub' —
+   * und diese Flagge wurde im ganzen Projekt NIRGENDS gesetzt. Ein einziges
+   * Vorkommen, im Layout selbst. Elara war damit im Hub nie sichtbar und
+   * konnte KEINE ihrer vier Quests vergeben:
+   *
+   *     elara_meeting -> elara_ritual -> elara_second_truth -> bruch_confrontation
+   *
+   * Und bruch_confrontation ist der einzige Weg nach Akt 5. Der ganze Strang
+   * war tot, unabhaengig von jeder Tiefe. Der Kommentar im Layout wusste es
+   * sogar ("references a flag that is currently never set") — er stand nur an
+   * einer Stelle, an der niemand nach der Ursache eines fehlenden Auftrags
+   * sucht.
+   *
+   * Akt 2 ist der richtige Zeitpunkt: in Akt 1 versteckt sie sich aktiv vor
+   * dem Rat (deshalb die Kellerbegegnungen), ab dem Doppelspiel steht der
+   * Spieler auf ihrer Seite.
+   *
+   * Laeuft bei jeder Quest-Aenderung mit, damit auch Altstaende, die schon in
+   * Akt 2 oder spaeter stehen, sie beim naechsten Hub-Betreten sehen.
+   */
+  function _elaraSichtbarkeitNachziehen() {
+    try {
+      if (questFlags.elaraReturnedToHub) return;
+      var a = (typeof window !== 'undefined' && window.storySystem
+        && typeof window.storySystem.getCurrentActIndex === 'function')
+        ? window.storySystem.getCurrentActIndex() : 0;
+      if (a >= 2) {
+        questFlags.elaraReturnedToHub = true;
+        console.log('[QuestSystem] Elara kehrt in den Hub zurueck (Akt ' + (a + 1) + ')');
+      }
+    } catch (e) { /* nie den Questfluss brechen */ }
+  }
+
   function onBossKilled(bossType) {
     var changed = false;
     Object.keys(questState).forEach(function (id) {
@@ -1484,6 +1520,8 @@
         && typeof window.storySystem.advanceToAct === 'function') {
       try {
         window.storySystem.advanceToAct(_advDef.advanceAct);
+        // #131: Ab Akt 2 gehoert Elara in den Hub.
+        _elaraSichtbarkeitNachziehen();
       } catch (err) {
         console.warn('[QuestSystem] advanceToAct(' + _advDef.advanceAct + ') failed', err);
       }
@@ -1623,6 +1661,11 @@
       questFlags[k] = !!srcFlags[k];
     });
     _backfillAdvanceActs();
+    // #131: Ein Stand, der schon in Akt 2 oder spaeter steht, bekommt Elara
+    // nachgereicht. Bewusst HIER und nicht in _notifyUpdate: der Altstand-Reset
+    // weiter oben kehrt vorher zurueck, und dort muessen die Flags leer
+    // bleiben.
+    _elaraSichtbarkeitNachziehen();
     _notifyUpdate();
   }
 
@@ -1702,6 +1745,9 @@
     onWaveCompleted: onWaveCompleted,
     onDungeonCompleted: onDungeonCompleted,
     onBossKilled: onBossKilled,
+    // #131: Tiefensperre vor einem Story-Boss, dessen Quest noch nicht laeuft.
+    // #131: fuer die Verifikation — holt Elara nach, wenn der Akt schon passt.
+    elaraSichtbarkeitNachziehen: _elaraSichtbarkeitNachziehen,
     onItemCrafted: onItemCrafted,
     areAllQuestChainsComplete: areAllQuestChainsComplete,
     isQuestReadyToComplete: isQuestReadyToComplete,

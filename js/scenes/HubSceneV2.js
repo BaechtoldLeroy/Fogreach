@@ -1963,16 +1963,30 @@ class HubSceneV2 extends Phaser.Scene {
       // Feature 063 WP05: elara_second_truth ist jetzt observe (three_hands_seen).
       // Statt still auto-zu-completen spielt die Riss-Szene (feuert den observe-
       // Trigger) und schliesst danach ab.
-      if (questData && questData.id === 'elara_second_truth'
-          && window.storyScenes && typeof window.storyScenes.playElaraFirstCrack === 'function') {
+      if (questData && questData.id === 'elara_second_truth') {
+        // #131: Der Abschluss haengt NICHT mehr daran, dass die Szene laeuft.
+        //
+        // Vorher stand die Szene in der Bedingung: fehlte storyScenes oder warf
+        // sie, fiel der Zweig durch, die Quest blieb aktiv — und ihr einziges
+        // Ziel ist ein observe-Trigger, den NUR diese Szene feuert. Damit waere
+        // sie unabschliessbar, und mit ihr bruch_confrontation und Akt 5.
+        //
+        // Die Szene ist die Inszenierung, der Abschluss ist die Mechanik. Die
+        // Mechanik laeuft jetzt in jedem Fall.
         this._closeDialog(keyClosers);
         const self = this;
-        window.storyScenes.playElaraFirstCrack(this, function () {
+        const abschluss = function () {
           if (qs && typeof qs.completeQuest === 'function') {
             try { qs.completeQuest('elara_second_truth'); } catch (_) {}
           }
           self._refreshQuestIndicators();
-        });
+        };
+        if (window.storyScenes && typeof window.storyScenes.playElaraFirstCrack === 'function') {
+          try { window.storyScenes.playElaraFirstCrack(this, abschluss); }
+          catch (_) { abschluss(); }
+        } else {
+          abschluss();
+        }
         return;
       }
       this._refreshQuestIndicators();
@@ -2533,9 +2547,19 @@ class HubSceneV2 extends Phaser.Scene {
         // Feature 058 (#41) WP04: depth is run-constant + chosen here. Clamp to
         // [1, MAX_DEPTH] so "An die Grenze" = exactly the ceiling and flatter
         // options stay valid (D2). The ceiling only grows via run completion.
-        const _maxDepth = (window.Persistence && typeof window.Persistence.getMaxDepth === 'function')
+        let _maxDepth = (window.Persistence && typeof window.Persistence.getMaxDepth === 'function')
           ? window.Persistence.getMaxDepth()
           : Math.max(1, parseInt((window.SlotStorage || localStorage).getItem('demonfall_maxDepth') || '1', 10) || 1);
+        // #131: Vor einem Story-Boss ist Schluss, solange seine Quest nicht
+        // laeuft. Ein Boss erscheint nur alle zehn Tiefen; wer ihn ohne den
+        // Auftrag erschlaegt, verliert ihn fuer dreissig Tiefen — und mit dem
+        // Zeremonienmeister den ganzen Weg nach Akt 5.
+        try {
+          if (window.RunDepth && typeof window.RunDepth.torBei === 'function') {
+            var _tor = window.RunDepth.torBei(_maxDepth);
+            if (_tor) _maxDepth = Math.min(_maxDepth, _tor.tiefe);
+          }
+        } catch (e) {}
         selectedWave = Math.max(1, Math.min(Math.round(Number(selectedWave) || 1), _maxDepth));
         window.SELECTED_WAVE_OVERRIDE = selectedWave;
         window.DUNGEON_DEPTH = selectedWave;
@@ -2638,7 +2662,17 @@ class HubSceneV2 extends Phaser.Scene {
     const pad = 22;
 
     // Hinabstieg: tiefste je erreichte Tiefe (vom Spieler je betreten).
-    const lastKnown = Math.max(1, parseInt((window.SlotStorage || localStorage).getItem('demonfall_maxDepth') || '1', 10) || 1);
+    let lastKnown = Math.max(1, parseInt((window.SlotStorage || localStorage).getItem('demonfall_maxDepth') || '1', 10) || 1);
+    // #131: Story-Sperre vor einem Boss, dessen Auftrag noch fehlt. Sie wird
+    // ANGEZEIGT, nicht nur angewandt — eine unsichtbare Wand waere derselbe
+    // stumme Fehler wie vorher, nur andersherum.
+    let _sperre = null;
+    try {
+      if (window.RunDepth && typeof window.RunDepth.torBei === 'function') {
+        _sperre = window.RunDepth.torBei(lastKnown);
+      }
+    } catch (e) {}
+    if (_sperre && lastKnown > _sperre.tiefe) lastKnown = _sperre.tiefe;
 
     // Tiefen-Stratum 1..4 + Gefahr/Beute-Farbe (grün -> rot mit der Tiefe).
     const STRATUM_COLORS = ['#9fd98f', '#d9cf8f', '#d9a07a', '#d97a7a'];

@@ -318,3 +318,98 @@ test('hub: die Truhe laesst sich oeffnen, befuellen und raeumt sich ab (#127)', 
   assert.ok(zu.objekte < vorher.objekte,
     'das Panel laesst Objekte zurueck: ' + vorher.objekte + ' -> ' + zu.objekte);
 });
+
+
+test('hub: Elara kehrt ab Akt 2 in den Hub zurueck (#131)', () => {
+  // Ihr Layout-Eintrag traegt visibleAfterFlag: 'elaraReturnedToHub' — und
+  // diese Flagge wurde im ganzen Projekt NIRGENDS gesetzt. Ein einziges
+  // Vorkommen, im Layout selbst.
+  //
+  // Im Dungeon erscheint sie nur, solange widerstand_proof offen ist — und
+  // die MUSS man abschliessen, um Akt 2 zu erreichen (council_collusion_reveal
+  // verlangt sie). Ab Akt 2 gab es Elara also nirgends mehr: nicht im Hub,
+  // nicht im Dungeon. Mit ihr waren elara_meeting, elara_ritual und
+  // elara_second_truth unerreichbar — und damit Akt 5.
+  const erg = H.run(`(function () {
+    var qs = window.questSystem;
+    window.storySystem.resetToAct0();
+    qs.loadQuestSaveData(qs.getQuestSaveData());
+    var inAkt1 = qs.hasFlag('elaraReturnedToHub');
+    window.storySystem.advanceToAct(2);
+    qs.loadQuestSaveData(qs.getQuestSaveData());   // wie ein geladener Stand
+    return { akt1: inAkt1, akt2: qs.hasFlag('elaraReturnedToHub') };
+  })()`);
+  assert.strictEqual(erg.akt1, false, 'Elara steht schon in Akt 1 im Hub');
+  assert.strictEqual(erg.akt2, true,
+    'Elara kommt auch in Akt 2 nicht in den Hub — ihre ganze Questkette bleibt tot');
+});
+
+test('hub: Elara ist im Hub wirklich sichtbar und bietet ihre Kette an (#131)', () => {
+  const erg = H.run(`(function () {
+    var qs = window.questSystem;
+    window.storySystem.advanceToAct(2);
+    qs.loadQuestSaveData(qs.getQuestSaveData());
+    var sc = window.game.scene.getScene('HubSceneV2');
+    sc.scene.restart();
+    return 1;
+  })()`);
+  H.step(60);
+  const sicht = H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    var e = sc.children.list.filter(function (o) {
+      return o.getData && o.getData('id') === 'elara';
+    })[0];
+    return { da: !!e, sichtbar: !!(e && e.visible),
+             bietet: window.questSystem.getAvailableQuests('elara').map(function (q) { return q.id; }) };
+  })()`);
+  assert.ok(sicht.da, 'Elara fehlt im Hub ganz');
+  assert.strictEqual(sicht.sichtbar, true, 'Elara steht im Hub, ist aber unsichtbar');
+  assert.ok(sicht.bietet.indexOf('elara_meeting') >= 0,
+    'Elara bietet ihre Kette nicht an: ' + JSON.stringify(sicht.bietet));
+});
+
+test('hub: die Tiefe bleibt vor jedem Story-Boss stehen (#131)', () => {
+  // Es gab genau EIN Tor — vor dem Kettenmeister auf Tiefe 10. Der Gedanke
+  // stimmte, wurde aber nie auf die anderen beiden Bosse uebertragen. Der
+  // Zeremonienmeister steht auf Tiefe 20 und dann erst wieder auf 50; wer ihn
+  // ohne 'Die Ritualkammer' erschlug, verlor den Weg nach Akt 5 fuer dreissig
+  // Tiefen.
+  const tore = H.run(`(function () {
+    var qs = window.questSystem;
+    // Ausgangslage ausdruecklich herstellen: die Faelle davor in dieser Datei
+    // nehmen Quests an und schliessen sie ab. Geerbter Zustand wuerde hier
+    // messen, was vorher passiert ist, nicht die Regel.
+    var stand = qs.getQuestSaveData();
+    ['mara_warning', 'elara_ritual', 'schattenrat_finale'].forEach(function (id) {
+      stand.quests[id] = { status: 'available', objectives: null };
+    });
+    qs.loadQuestSaveData(stand);
+    var RD = window.RunDepth;
+    return {
+      t9: RD.torBei(9), t19: RD.torBei(19), t29: RD.torBei(29),
+      t15: RD.torBei(15), t20: RD.torBei(20)
+    };
+  })()`);
+  assert.ok(tore.t9 && tore.t9.questId === 'mara_warning', 'Tor auf 9 fehlt');
+  assert.ok(tore.t19 && tore.t19.questId === 'elara_ritual',
+    'Tor auf 19 fehlt — genau hier ist der Durchgang gescheitert');
+  assert.ok(tore.t29 && tore.t29.questId === 'schattenrat_finale', 'Tor auf 29 fehlt');
+  assert.strictEqual(tore.t15, null, 'zwischen den Bossen darf nichts sperren');
+  assert.strictEqual(tore.t20, null, 'das Tor sitzt VOR dem Boss, nicht auf ihm');
+});
+
+test('hub: ein Tor oeffnet sich, sobald sein Auftrag laeuft (#131)', () => {
+  const erg = H.run(`(function () {
+    var qs = window.questSystem;
+    var RD = window.RunDepth;
+    var stand = qs.getQuestSaveData();
+    stand.quests['elara_ritual'] = { status: 'available', objectives: null };
+    qs.loadQuestSaveData(stand);
+    var zu = !!RD.torBei(19);
+    qs.acceptQuest('elara_ritual');
+    return { vorher: zu, nachher: !!RD.torBei(19) };
+  })()`);
+  assert.strictEqual(erg.vorher, true, 'das Tor war gar nicht zu');
+  assert.strictEqual(erg.nachher, false,
+    'das Tor bleibt zu, obwohl der Auftrag laeuft — dann kaeme man nie zum Boss');
+});

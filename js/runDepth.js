@@ -22,9 +22,31 @@
   var KETTENMEISTER_GATE_DEPTH = 9;
   var KETTENMEISTER_QUEST_ID = 'mara_warning';
 
-  // Gate offen, wenn die fuehrende Quest aktiv ODER abgeschlossen ist. DOM-frei
-  // ueber window.questSystem; fehlt es, ist das Gate ZU (kein Bump ueber 9).
-  function _defaultGateOpen() {
+  /**
+   * Alle Boss-Tore (#131).
+   *
+   * Es gab genau EINS — vor dem Kettenmeister auf Tiefe 10. Der Gedanke
+   * dahinter stimmte, aber er wurde nie auf die anderen beiden Bosse
+   * uebertragen, und daran ist ein ganzer Durchgang gescheitert:
+   *
+   * Bosse erscheinen nur alle zehn Tiefen, und welcher kommt, entscheidet
+   * (floor(Tiefe/10) - 1) % 3. Der Zeremonienmeister steht damit auf Tiefe 20
+   * und dann erst wieder auf 50. onBossKilled zaehlt nur fuer AKTIVE Quests —
+   * wer Tiefe 20 raeumte, ohne 'Die Ritualkammer' angenommen zu haben, verlor
+   * den Fortschritt fuer dreissig Tiefen. Und mit ihm den Weg nach Akt 5, denn
+   * bruch_confrontation haengt ueber elara_second_truth daran.
+   *
+   * Jetzt bleibt die Tiefe eine Stufe VOR jedem Story-Boss stehen, bis sein
+   * Auftrag laeuft. Die erste Begegnung ist damit immer die inszenierte.
+   */
+  var BOSS_TORE = [
+    { tiefe: 9,  questId: 'mara_warning',       titel: 'Maras Warnung' },
+    { tiefe: 19, questId: 'elara_ritual',       titel: 'Die Ritualkammer' },
+    { tiefe: 29, questId: 'schattenrat_finale', titel: 'Der Schattenrat' }
+  ];
+
+  /** Laeuft (oder lief) diese Quest schon? */
+  function _questBekannt(questId) {
     if (typeof window === 'undefined' || !window.questSystem) return false;
     var qs = window.questSystem;
     try {
@@ -32,11 +54,31 @@
         if (typeof getter !== 'function') return false;
         var list = getter.call(qs);
         return Array.isArray(list) && list.some(function (q) {
-          return q && q.id === KETTENMEISTER_QUEST_ID;
+          return q && q.id === questId;
         });
       };
       return hasQuest(qs.getActiveQuests) || hasQuest(qs.getCompletedQuests);
     } catch (e) { return false; }
+  }
+
+  /**
+   * Welches Tor haelt gerade? null = keins.
+   *
+   * Nur EXAKT auf der Torstufe geprueft: wer schon tiefer steht (Altstand oder
+   * weil das Tor einmal offen war) wird nicht rueckwirkend zurueckgehalten.
+   */
+  function _torBei(tiefe) {
+    for (var i = 0; i < BOSS_TORE.length; i++) {
+      if (BOSS_TORE[i].tiefe !== tiefe) continue;
+      return _questBekannt(BOSS_TORE[i].questId) ? null : BOSS_TORE[i];
+    }
+    return null;
+  }
+
+  // Gate offen, wenn die fuehrende Quest aktiv ODER abgeschlossen ist. DOM-frei
+  // ueber window.questSystem; fehlt es, ist das Gate ZU (kein Bump ueber 9).
+  function _defaultGateOpen() {
+    return _questBekannt(KETTENMEISTER_QUEST_ID);
   }
 
   // Injizierbar fuer Tests (sonst muesste jeder Test window.questSystem stellen).
@@ -82,14 +124,19 @@
           && startDepth < window.Persistence.getMaxDepth()) {
         return null; // Wiederholung unterhalb der Grenze -> keine Progression
       }
-      // Kettenmeister-Gate: der Bump von 9 -> 10 (Tiefe des Bosses) bleibt
-      // gesperrt, solange die fuehrende Quest nicht aktiv/abgeschlossen ist.
-      // Nur exakt auf 9 pruefen: bereits tiefere Staende (Alt-Saves, oder nachdem
-      // das Gate einmal offen war) werden NICHT rueckwirkend zurueckgehalten.
-      if (typeof window.Persistence.getMaxDepth === 'function'
-          && window.Persistence.getMaxDepth() === KETTENMEISTER_GATE_DEPTH
-          && !_gateOpen()) {
-        return null; // Tiefe 10 erst mit angenommener Kettenmeister-Quest
+      // Boss-Tore: der Bump auf eine Boss-Tiefe bleibt gesperrt, solange der
+      // zugehoerige Auftrag nicht laeuft. Nur exakt auf der Torstufe pruefen —
+      // wer schon tiefer steht, wird nicht rueckwirkend zurueckgehalten.
+      if (typeof window.Persistence.getMaxDepth === 'function') {
+        var _jetzt = window.Persistence.getMaxDepth();
+        // Das Kettenmeister-Tor bleibt ueber _gateOpen ansprechbar, damit die
+        // vorhandene Test-Injektion (_setGateForTest) weiter greift.
+        if (_jetzt === KETTENMEISTER_GATE_DEPTH && !_gateOpen()) {
+          return null;
+        }
+        if (_jetzt !== KETTENMEISTER_GATE_DEPTH && _torBei(_jetzt)) {
+          return null;
+        }
       }
       return window.Persistence.bumpMaxDepth();
     }
@@ -108,6 +155,15 @@
     // Fuer UI/Hinweise (z. B. Hinabstiegs-Dialog): ist die Tiefe-10-Sperre offen?
     isKettenmeisterGateOpen: function () { return _gateOpen(); },
     KETTENMEISTER_GATE_DEPTH: KETTENMEISTER_GATE_DEPTH,
+    // #131: alle Boss-Tore, fuer UI-Hinweise und Verifikation.
+    BOSS_TORE: BOSS_TORE,
+    /** Das Tor, das bei dieser Tiefe haelt — oder null. */
+    torBei: function (tiefe) {
+      if (tiefe === KETTENMEISTER_GATE_DEPTH) {
+        return _gateOpen() ? null : BOSS_TORE[0];
+      }
+      return _torBei(tiefe);
+    },
     _resetForTest: _resetForTest,
     _setGateForTest: _setGateForTest
   };
