@@ -1400,6 +1400,31 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     window.playerFocusAbilityDmg = _attrFoc * 0.005;  // Fokus  -> Fähigkeitsschaden
   }
 
+  // Debug: staerker und schneller zum Durchtesten (?debug=1&stark=1).
+  //
+  // BEWUSST an einer EIGENEN Flagge und nicht am blossen Debug-Modus: der
+  // gilt laut DebugGate auch auf localhost, und dort laufen die
+  // Headless-Tests. Ein Kraftaufschlag allein durch "lokal" wuerde jede
+  // Schadens- und Bossmessung still verfaelschen — also muss man ihn
+  // ausdruecklich anfordern.
+  //
+  // 'stark' nimmt optional einen Faktor: ?stark=1 heisst der Vorgabewert,
+  // ?stark=10 zehnfacher Schaden. Das Lauftempo waechst gedaempft mit (Wurzel),
+  // sonst rennt man bei stark=10 durch Waende, bevor die Physik hinterherkommt.
+  try {
+    var _stark = window.DebugGate && window.DebugGate.flagge('stark');
+    if (_stark !== null && _stark !== undefined) {
+      var _f = parseFloat(_stark);
+      if (!isFinite(_f) || _f <= 0) _f = 5;          // ?stark=1 -> Vorgabe
+      else if (_f === 1) _f = 5;
+      weaponDamage *= _f;
+      weaponAttackSpeed = Math.max(0.08, weaponAttackSpeed / Math.sqrt(_f));
+      playerSpeed = Math.round(playerSpeed * Math.min(2.5, Math.sqrt(_f)));
+      playerCritChance = Math.min(0.9, playerCritChance + 0.25);
+      window.__debugStark = _f;
+    }
+  } catch (e) { /* eine kaputte Flagge darf die Werte nie brechen */ }
+
   // Round the final weapon damage to ONE decimal so band-rolled bases (e.g.
   // 4.3) and percent affixes read cleanly in HUD/tooltip without float drift.
   weaponDamage = Math.round(weaponDamage * 10) / 10;

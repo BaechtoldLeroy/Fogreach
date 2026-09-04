@@ -903,3 +903,34 @@ test('Der Pluenderer klaut beim ersten Treffer und rennt erst dann los', () => {
       'der Erschlagene zahlt nicht alles aus: ' + JSON.stringify(tot));
   }
 });
+
+test('Debug-Kraftaufschlag haengt an einer EIGENEN Flagge, nicht am Debug-Modus', () => {
+  // Wichtig, weil DebugGate.aktiv() auch auf localhost true ist — und dort
+  // laufen diese Tests. Ein Aufschlag allein durch 'lokal' wuerde jede
+  // Schadens- und Bossmessung still verfaelschen.
+  const messe = (flagge) => H.run(`(function () {
+    var alt = window.DebugGate.flagge;
+    window.DebugGate.flagge = function (n) { return n === 'stark' ? ${flagge} : alt(n); };
+    try { recalcDerived(); return { schaden: weaponDamage, takt: weaponAttackSpeed,
+                                    lauf: playerSpeed, krit: playerCritChance }; }
+    finally { window.DebugGate.flagge = alt; recalcDerived(); }
+  })()`);
+
+  const ohne = messe('null');
+  const mit = messe("'5'");
+  assert.ok(mit.schaden > ohne.schaden * 4,
+    'kein Schadensaufschlag: ' + ohne.schaden + ' -> ' + mit.schaden);
+  assert.ok(mit.lauf > ohne.lauf, 'kein Tempoaufschlag: ' + ohne.lauf + ' -> ' + mit.lauf);
+  assert.ok(mit.takt < ohne.takt, 'der Angriffstakt wurde nicht schneller');
+  assert.ok(mit.krit > ohne.krit, 'keine Krit-Zugabe');
+
+  // Und der Normalzustand ist danach wieder hergestellt.
+  const danach = messe('null');
+  assert.strictEqual(danach.schaden, ohne.schaden, 'der Aufschlag bleibt haengen');
+
+  // Das Lauftempo ist gedeckelt — sonst rennt man durch Waende, bevor die
+  // Physik hinterherkommt.
+  const wild = messe("'100'");
+  assert.ok(wild.lauf <= ohne.lauf * 2.5 + 1,
+    'das Lauftempo ist ungedeckelt: ' + wild.lauf);
+});

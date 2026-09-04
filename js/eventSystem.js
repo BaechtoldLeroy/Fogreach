@@ -18,7 +18,9 @@
       'event.treasure.toast_item': 'Ein Gegenstand gefunden!',
       // Ambush
       'event.ambush.name': 'Hinterhalt!',
-      'event.ambush.toast_looter': 'Einer von ihnen trägt Beute — und will damit weg!',
+      // Er TRAEGT zu Beginn nichts — er nimmt sich beim ersten Treffer, was
+      // er kriegt. Der alte Text versprach Beute an ihm und war damit falsch.
+      'event.ambush.toast_looter': 'Einer von ihnen hat flinke Finger — halt deinen Beutel fest!',
       'event.ambush.looter_escaped': 'Der Plünderer ist mit der Beute die Treppe hinunter.',
       'event.ambush.looter_stole': 'Er greift dir in den Beutel — {gold} Gold! Hinterher!',
       'event.ambush.looter_nothing': 'Er greift dir in den Beutel — und findet nichts. Trotzdem: hinterher!',
@@ -158,7 +160,7 @@
       'event.treasure.toast_gold': '+{amount} gold!',
       'event.treasure.toast_item': 'Found an item!',
       'event.ambush.name': 'Ambush!',
-      'event.ambush.toast_looter': 'One of them carries loot — and wants out!',
+      'event.ambush.toast_looter': 'One of them has quick fingers — mind your purse!',
       'event.ambush.looter_escaped': 'The looter is down the stairs with the loot.',
       'event.ambush.looter_stole': 'He cuts your purse — {gold} gold! After him!',
       'event.ambush.looter_nothing': 'He cuts your purse — and finds nothing. After him anyway!',
