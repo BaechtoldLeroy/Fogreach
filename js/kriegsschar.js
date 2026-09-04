@@ -108,7 +108,11 @@
   function scharToenung(gegner, farbe) {
     if (!gegner || typeof gegner.setTint !== 'function') return false;
     try {
-      var leicht = _hell(farbe, 0.55);
+      // 0,55 war zu blass: gemessen wurde aus Aura #44aaff ein #abd9ff, und
+      // auf einem ohnehin hellen Sprite blieb davon nichts sichtbar — im Raum
+      // stach nur noch der Bannertraeger heraus. 0,30 bleibt deutlich unter
+      // seiner vollen Aurafarbe und ist trotzdem zu erkennen.
+      var leicht = _hell(farbe, 0.30);
       gegner._scharToenung = leicht;
       // _originalTint ist die bestehende Konvention: statusEffects stellt
       // danach GENAU diesen Wert wieder her statt blank zu loeschen.

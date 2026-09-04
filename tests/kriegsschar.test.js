@@ -138,7 +138,12 @@ test('Die Toenung ist leicht, nicht die volle Aurafarbe', () => {
   // Unveraendert saehe ein Gefolge aus wie vier Elites.
   const gegner = { setTint(v) { this.tint = v; } };
   assert.strictEqual(K.scharToenung(gegner, 0x000000), true);
-  assert.strictEqual(gegner.tint, 0x8c8c8c, 'Schwarz muss deutlich aufgehellt werden');
+  assert.strictEqual(gegner.tint, 0x4d4d4d, 'Schwarz muss aufgehellt werden');
+  // Die Aufhellung darf die Farbe nicht auswaschen: 0,55 war gemessen zu blass
+  // (Aura #44aaff wurde #abd9ff und war auf hellen Sprites nicht mehr zu sehen).
+  const stark = { setTint(v) { this.tint = v; } };
+  K.scharToenung(stark, 0x44aaff);
+  assert.strictEqual(stark.tint, 0x7cc4ff, 'Aura #44aaff soll #7cc4ff werden');
   const hell = { setTint(v) { this.tint = v; } };
   K.scharToenung(hell, 0xffffff);
   assert.strictEqual(hell.tint, 0xffffff, 'Weiss bleibt Weiss');

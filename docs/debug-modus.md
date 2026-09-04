@@ -162,8 +162,8 @@ Woran man die Schar im Spiel erkennt:
 - Der Anführer trägt einen **zweizeiligen goldenen** Namenszug `BANNERTRÄGER · <Typ>`
   mit seinen Affixen darunter. Ein Champion bleibt einzeilig und orange.
 - Das Gefolge hat **denselben Gegnertyp** wie er und ist **leicht in seiner
-  Aurafarbe getönt** (55 % Richtung Weiss aufgehellt, damit es nicht wie vier
-  Elites aussieht). Die Tönung überlebt Trefferblitze.
+  Aurafarbe getönt** (30 % Richtung Weiss aufgehellt: hell genug, um nicht wie
+  vier Elites zu wirken, kräftig genug, um im Raum aufzufallen). Die Tönung überlebt Trefferblitze.
 - Auren, Tempo und Mehrfachschuss werden **nie** vererbt — fünf Gegner mit
   Frostaura wären dauerhaft verlangsamt ohne Ausweg.
 
