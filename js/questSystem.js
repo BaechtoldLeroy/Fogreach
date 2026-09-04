@@ -1342,9 +1342,12 @@
    * einer Stelle, an der niemand nach der Ursache eines fehlenden Auftrags
    * sucht.
    *
-   * Akt 2 ist der richtige Zeitpunkt: in Akt 1 versteckt sie sich aktiv vor
-   * dem Rat (deshalb die Kellerbegegnungen), ab dem Doppelspiel steht der
-   * Spieler auf ihrer Seite.
+   * WANN: erst in Akt 5, wenn der Rat gefallen ist. Ihre Auftraege davor
+   * vergibt sie im Dungeon (roomManager: _elaraSpaetereAuftraege) — der Hub
+   * ist die Stadt des Rates, und waehrend des Doppelspiels dort offen zu
+   * stehen wuerde untergraben, was der Akt gerade aufbaut. Der Wechsel IST
+   * die Aussage: in der Phase, in der Aldric keine Auftraege mehr vergibt,
+   * steht Elara auf dem Platz.
    *
    * Laeuft bei jeder Quest-Aenderung mit, damit auch Altstaende, die schon in
    * Akt 2 oder spaeter stehen, sie beim naechsten Hub-Betreten sehen.
@@ -1355,7 +1358,7 @@
       var a = (typeof window !== 'undefined' && window.storySystem
         && typeof window.storySystem.getCurrentActIndex === 'function')
         ? window.storySystem.getCurrentActIndex() : 0;
-      if (a >= 2) {
+      if (a >= 4) {
         questFlags.elaraReturnedToHub = true;
         console.log('[QuestSystem] Elara kehrt in den Hub zurueck (Akt ' + (a + 1) + ')');
       }

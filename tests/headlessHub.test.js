@@ -320,7 +320,7 @@ test('hub: die Truhe laesst sich oeffnen, befuellen und raeumt sich ab (#127)', 
 });
 
 
-test('hub: Elara kehrt ab Akt 2 in den Hub zurueck (#131)', () => {
+test('hub: Elara kehrt erst in Akt 5 in den Hub zurueck (#131)', () => {
   // Ihr Layout-Eintrag traegt visibleAfterFlag: 'elaraReturnedToHub' — und
   // diese Flagge wurde im ganzen Projekt NIRGENDS gesetzt. Ein einziges
   // Vorkommen, im Layout selbst.
@@ -336,18 +336,23 @@ test('hub: Elara kehrt ab Akt 2 in den Hub zurueck (#131)', () => {
     qs.loadQuestSaveData(qs.getQuestSaveData());
     var inAkt1 = qs.hasFlag('elaraReturnedToHub');
     window.storySystem.advanceToAct(2);
+    qs.loadQuestSaveData(qs.getQuestSaveData());
+    var inAkt3 = qs.hasFlag('elaraReturnedToHub');
+    window.storySystem.advanceToAct(4);
     qs.loadQuestSaveData(qs.getQuestSaveData());   // wie ein geladener Stand
-    return { akt1: inAkt1, akt2: qs.hasFlag('elaraReturnedToHub') };
+    return { akt1: inAkt1, akt3: inAkt3, akt5: qs.hasFlag('elaraReturnedToHub') };
   })()`);
   assert.strictEqual(erg.akt1, false, 'Elara steht schon in Akt 1 im Hub');
-  assert.strictEqual(erg.akt2, true,
-    'Elara kommt auch in Akt 2 nicht in den Hub — ihre ganze Questkette bleibt tot');
+  assert.strictEqual(erg.akt3, false,
+    'Elara steht schon waehrend des Doppelspiels offen im Hub — das untergraebt es');
+  assert.strictEqual(erg.akt5, true,
+    'Elara kommt auch nach dem Fall des Rates nicht in den Hub');
 });
 
-test('hub: Elara ist im Hub wirklich sichtbar und bietet ihre Kette an (#131)', () => {
+test('hub: Elara ist ab Akt 5 im Hub wirklich sichtbar (#131)', () => {
   const erg = H.run(`(function () {
     var qs = window.questSystem;
-    window.storySystem.advanceToAct(2);
+    window.storySystem.advanceToAct(4);
     qs.loadQuestSaveData(qs.getQuestSaveData());
     var sc = window.game.scene.getScene('HubSceneV2');
     sc.scene.restart();
@@ -364,8 +369,9 @@ test('hub: Elara ist im Hub wirklich sichtbar und bietet ihre Kette an (#131)', 
   })()`);
   assert.ok(sicht.da, 'Elara fehlt im Hub ganz');
   assert.strictEqual(sicht.sichtbar, true, 'Elara steht im Hub, ist aber unsichtbar');
-  assert.ok(sicht.bietet.indexOf('elara_meeting') >= 0,
-    'Elara bietet ihre Kette nicht an: ' + JSON.stringify(sicht.bietet));
+  // Was sie im Hub anbietet, ist hier nicht der Punkt — ihre Auftraege vergibt
+  // sie im Dungeon (siehe headlessCombat: 'Elara vergibt ihre spaeteren
+  // Auftraege im Dungeon'). Hier zaehlt nur, dass sie ueberhaupt dasteht.
 });
 
 test('hub: die Tiefe bleibt vor jedem Story-Boss stehen (#131)', () => {

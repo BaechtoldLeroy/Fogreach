@@ -2926,14 +2926,71 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
   }
 
   // Stage 1: Q1 done, Q5 not yet active, !elaraMet → spawn Elara for the offer
-  if (qs.hasFlag('elaraMet')) return;
-  if (q5Done) return;
-  _spawnElaraSprite(scene, /* stage */ 1);
+  if (!qs.hasFlag('elaraMet') && !q5Done) {
+    _spawnElaraSprite(scene, /* stage */ 1);
+    return;
+  }
+
+  // Ab hier: ihre spaeteren Auftraege — ebenfalls im Dungeon.
+  _elaraSpaetereAuftraege(scene, roomId);
+}
+
+/**
+ * Elaras Auftraege NACH dem Widerstands-Beweis — Geheimnis, Ritualkammer,
+ * zweite Wahrheit.
+ *
+ * Warum im Dungeon und nicht im Hub: der Hub ist die Stadt des Rates
+ * (Rathaus, Aldric, Stadtwache). Elara versteckt sich vor genau diesen Leuten
+ * — das ist der Grund fuer die Kellerbegegnungen ueberhaupt. Waehrend des
+ * Doppelspiels auf dem Marktplatz zu stehen wuerde untergraben, was der Akt
+ * gerade aufbaut. Erst wenn der Rat gefallen ist (Akt 5), kommt sie offen in
+ * den Hub; bis dahin trifft man sie unten.
+ *
+ * Verallgemeinert statt weiterer Sonderstufen: die Liste unten ist die
+ * Reihenfolge, und der erste Auftrag, der abzugeben ODER anzunehmen ist,
+ * bringt sie in den Raum. Ein vierter Auftrag waere eine Zeile.
+ *
+ * Wie bei den Stufen davor wird das ZIEL nachgewuerfelt, sobald man daran
+ * vorbei ist — sie steht damit immer noch vor einem, nie dahinter. Eine
+ * pflichtgemaesse Story-Quest darf keine Zufallsbegegnung sein.
+ */
+var ELARA_AUFTRAEGE = ['elara_meeting', 'elara_ritual', 'elara_second_truth'];
+var _elaraSpaetSpawnZiel = null;
+
+function _elaraSpaetereAuftraege(scene, roomId) {
+  var qs = window.questSystem;
+  if (!qs) return;
+
+  var faellig = null;
+  for (var i = 0; i < ELARA_AUFTRAEGE.length; i++) {
+    var id = ELARA_AUFTRAEGE[i];
+    // Abgabe geht vor Annahme: wer fertig ist, soll zuerst abgeben duerfen.
+    if (typeof qs.isQuestReadyToComplete === 'function' && qs.isQuestReadyToComplete(id)) {
+      var aktiv = (typeof qs.getActiveQuests === 'function') ? qs.getActiveQuests() : [];
+      var obj = aktiv.filter(function (q) { return q && q.id === id; })[0];
+      faellig = { id: id, modus: 'abgabe', quest: obj || null };
+      break;
+    }
+    var offen = (typeof qs.getAvailableQuests === 'function')
+      ? qs.getAvailableQuests('elara').filter(function (q) { return q && q.id === id; })[0]
+      : null;
+    if (offen) { faellig = { id: id, modus: 'angebot', quest: offen }; break; }
+  }
+  if (!faellig) { _elaraSpaetSpawnZiel = null; return; }
+
+  if (_elaraSpaetSpawnZiel === null || roomId > _elaraSpaetSpawnZiel) {
+    _elaraSpaetSpawnZiel = roomId + _rollDistance();
+  }
+  if (roomId !== _elaraSpaetSpawnZiel) return;
+  _elaraSpaetSpawnZiel = null;                   // verbraucht; naechster Bedarf wuerfelt neu
+  _spawnElaraSprite(scene, faellig);
 }
 
 // Spawn Elara as an interactive [E]-prompt sprite in the current room.
 // `stage` selects which dialog to show on interact: 1 = offer, 2 = turn-in.
 function _spawnElaraSprite(scene, stage) {
+  // 'stage' ist entweder eine Zahl (die alten Akt-1-Stufen) oder
+  // { id, modus } fuer die spaeteren Auftraege.
   if (!scene || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
   const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
   const promptLabel = isEn ? 'Elara' : 'Elara';
@@ -2950,6 +3007,13 @@ function _showElaraDialog(scene, stage) {
   const qs = window.questSystem;
   const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
   const btnContinueLabel = isEn ? 'Continue' : 'Weiter';
+
+  // Die spaeteren Auftraege: Text kommt aus der Quest-Definition selbst, damit
+  // er an EINER Stelle steht und nicht hier nochmal.
+  if (stage && typeof stage === 'object' && stage.id) {
+    _elaraAuftragsDialog(scene, stage, btnContinueLabel, isEn);
+    return;
+  }
 
   let text;
   let onContinue;
@@ -2974,6 +3038,54 @@ function _showElaraDialog(scene, stage) {
     label: btnContinueLabel,
     callback: onContinue
   }]);
+}
+
+/**
+ * Angebot oder Abgabe eines von Elaras spaeteren Auftraegen.
+ *
+ * Die Texte stammen aus der Quest-Definition (dialogueOffer / dialogueComplete)
+ * — dieselben, die der Hub zeigen wuerde. Sie hier zu wiederholen hiesse, sie
+ * beim naechsten Umschreiben an zwei Stellen pflegen zu muessen.
+ */
+function _elaraAuftragsDialog(scene, auftrag, btnLabel, isEn) {
+  var qs = window.questSystem;
+  if (!qs) return;
+  var abgabe = (auftrag.modus === 'abgabe');
+  var q = auftrag.quest;
+  var text = '';
+  if (q && typeof qs.getQuestDialogue === 'function') {
+    text = qs.getQuestDialogue(q, abgabe ? 'complete' : 'offer') || '';
+    if (!text && typeof qs.getQuestDescription === 'function') text = qs.getQuestDescription(q) || '';
+  }
+  if (!text) {
+    text = abgabe
+      ? (isEn ? 'Elara takes what you brought.' : 'Elara nimmt entgegen, was du gebracht hast.')
+      : (isEn ? 'Elara has a task for you.' : 'Elara hat einen Auftrag fuer dich.');
+  }
+
+  var weiter = function () {
+    try {
+      if (abgabe) {
+        qs.completeQuest(auftrag.id);
+        return;
+      }
+      qs.acceptQuest(auftrag.id);
+      // #131: elara_second_truth wird beim ANNEHMEN ueber die Riss-Szene
+      // abgeschlossen — ihr einziges Ziel ist ein observe-Trigger, den nur
+      // diese Szene feuert. Faellt die Szene aus, wird trotzdem
+      // abgeschlossen: die Szene ist die Inszenierung, der Abschluss die
+      // Mechanik.
+      if (auftrag.id === 'elara_second_truth') {
+        var fertig = function () { try { qs.completeQuest('elara_second_truth'); } catch (e) {} };
+        if (window.storyScenes && typeof window.storyScenes.playElaraFirstCrack === 'function') {
+          try { window.storyScenes.playElaraFirstCrack(scene, fertig); }
+          catch (e) { fertig(); }
+        } else { fertig(); }
+      }
+    } catch (e) { console.warn('[Elara] Auftrag ' + auftrag.id + ' fehlgeschlagen', e); }
+  };
+
+  window.EventSystem.showEventChoiceDialog(scene, text, [{ label: btnLabel, callback: weiter }]);
 }
 
 // Spawn the council document as a quest-item loot drop in the current room.

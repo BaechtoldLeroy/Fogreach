@@ -1024,3 +1024,89 @@ test('Kein Hinterhalt in Raeumen mit Tueren', () => {
     'mit Tueren fallen zu viele Ereignisse weg: ' + ohne.arten + ' -> ' + mit.arten);
   assert.strictEqual(mit.gesamt, 400, 'in einem Tuerraum gibt es gar kein Ereignis mehr');
 });
+
+test('Elara vergibt ihre spaeteren Auftraege im Dungeon (#131)', () => {
+  // Der Hub ist die Stadt des Rates. Elara versteckt sich vor genau diesen
+  // Leuten — das ist der Grund fuer die Kellerbegegnungen. Waehrend des
+  // Doppelspiels offen auf dem Marktplatz zu stehen wuerde untergraben, was
+  // der Akt gerade aufbaut. Ihre Auftraege vergibt sie deshalb unten; in den
+  // Hub kommt sie erst, wenn der Rat gefallen ist (Akt 5).
+  //
+  // Die Begegnung ist NICHT zufaellig: das Ziel wird nachgewuerfelt, sobald
+  // man daran vorbei ist. Eine pflichtgemaesse Story-Quest darf keine
+  // Zufallsbegegnung sein — genau daran ist der Strang vorher gescheitert.
+  const kette = H.run(`(function () {
+    var qs = window.questSystem, sc = window.game.scene.getScene('GameScene');
+    var schliesse = function () {
+      window.eventChoiceOpen = false;
+      sc.children.list.filter(function (o) { return o.depth >= 1500; })
+        .forEach(function (o) { try { o.destroy(); } catch (e) {} });
+    };
+    var faellig = function () {
+      for (var i = 0; i < ELARA_AUFTRAEGE.length; i++) {
+        var id = ELARA_AUFTRAEGE[i];
+        if (qs.isQuestReadyToComplete(id)) {
+          return { id: id, modus: 'abgabe',
+                   quest: qs.getActiveQuests().filter(function (q) { return q.id === id; })[0] };
+        }
+        var o = qs.getAvailableQuests('elara').filter(function (q) { return q.id === id; })[0];
+        if (o) return { id: id, modus: 'angebot', quest: o };
+      }
+      return null;
+    };
+
+    window.storySystem.advanceToAct(2);
+    var st = qs.getQuestSaveData();
+    st.quests['harren_daughter_investigation'] = { status: 'completed', objectives: [] };
+    st.quests['widerstand_proof'] = { status: 'completed', objectives: [] };
+    st.quests['elara_meeting'] = { status: 'available', objectives: null };
+    st.flags = { elaraMet: true };
+    qs.loadQuestSaveData(st);
+
+    // 1) Erscheint sie ueberhaupt? Raeume durchgehen wie beim Spielen.
+    var trefferRaum = -1;
+    for (var raum = 2; raum <= 14; raum++) {
+      sc.children.list.filter(function (o) { return o.texture && o.texture.key === 'elara_right0'; })
+        .forEach(function (o) { try { o.destroy(); } catch (e) {} });
+      _maybeFireElaraCellarEncounter(sc, raum);
+      if (sc.children.list.some(function (o) { return o.texture && o.texture.key === 'elara_right0'; })) {
+        trefferRaum = raum; break;
+      }
+    }
+
+    // 2) Annehmen ueber den ECHTEN Dialogweg
+    var f1 = faellig();
+    _showElaraDialog(sc, f1);
+    var dialogTexte = sc.children.list
+      .filter(function (o) { return o.type === 'Text' && o.text && o.text.length > 40; })
+      .map(function (o) { return o.text; }).join(' ');
+    qs.acceptQuest(f1.id); schliesse();
+    var nachAnnahme = qs.getActiveQuests().map(function (q) { return q.id; });
+
+    // 3) Abgeben
+    qs.updateQuestProgress('fetch', 'document', 2);
+    var f2 = faellig();
+    qs.completeQuest(f2.id); schliesse();
+
+    // 4) Akt 4 -> die Ritualkammer ist als naechstes faellig
+    window.storySystem.advanceToAct(3);
+    var f3 = faellig();
+    return { raum: trefferRaum, f1: f1 && f1.id, modus1: f1 && f1.modus,
+             dialogHatText: dialogTexte.length > 40,
+             nachAnnahme: nachAnnahme, f2: f2 && f2.id, modus2: f2 && f2.modus,
+             f3: f3 && f3.id, imHub: qs.hasFlag('elaraReturnedToHub') };
+  })()`);
+
+  assert.ok(kette.raum >= 2, 'Elara erscheint im Dungeon ueberhaupt nicht');
+  assert.ok(kette.raum <= 14, 'sie taucht erst viel zu spaet auf: Raum ' + kette.raum);
+  assert.strictEqual(kette.f1, 'elara_meeting', 'falscher erster Auftrag: ' + kette.f1);
+  assert.strictEqual(kette.modus1, 'angebot');
+  assert.strictEqual(kette.dialogHatText, true, 'der Dialog zeigt keinen Auftragstext');
+  assert.ok(kette.nachAnnahme.indexOf('elara_meeting') >= 0, 'annehmen wirkte nicht');
+  assert.strictEqual(kette.f2, 'elara_meeting', 'die Abgabe wurde nicht angeboten');
+  assert.strictEqual(kette.modus2, 'abgabe', 'Abgabe geht nicht vor Annahme');
+  assert.strictEqual(kette.f3, 'elara_ritual',
+    'die Ritualkammer folgt nicht nach — genau hier war die Sackgasse');
+  assert.strictEqual(kette.imHub, false,
+    'Elara steht schon waehrend des Doppelspiels im Hub');
+});
