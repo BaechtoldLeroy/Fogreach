@@ -137,7 +137,7 @@ Nachgemessen an der Rastergröße je Raum: ohne Flagge 24×24, 30×30, 32×32,
 | Flagge | Wirkung |
 |---|---|
 | `?event=<id>` | erzwingt dieses Ereignis in JEDEM Raum |
-| `?stark=<faktor>` | Figur staerker und schneller: Schaden x Faktor, Angriffstakt und Lauftempo mit der Wurzel davon, +25 % Krit. `?stark=1` heisst Faktor 5. Lauftempo bei x2,5 gedeckelt. |
+| `?stark=<faktor>` | Figur staerker, schneller, zaeher: Schaden und Maximal-LP x Faktor; Angriffstempo und Lauftempo mit der Wurzel davon; +25 Prozentpunkte Krit. `?stark=1` heisst Faktor 5. Lauftempo bei x2,5 gedeckelt, Angriffs-Abklingzeit bei 320 ms (Spiel-Untergrenze). |
 
 Raum 0 bekommt grundsätzlich nie ein Ereignis — die Flagge greift ab dem
 zweiten Raum. Ein unbekannter Name wird mit der vollen Liste auf der Konsole

@@ -921,7 +921,8 @@ test('Debug-Kraftaufschlag haengt an einer EIGENEN Flagge, nicht am Debug-Modus'
     var alt = window.DebugGate.flagge;
     window.DebugGate.flagge = function (n) { return n === 'stark' ? ${flagge} : alt(n); };
     try { recalcDerived(); return { schaden: weaponDamage, takt: weaponAttackSpeed,
-                                    lauf: playerSpeed, krit: playerCritChance }; }
+                                    lauf: playerSpeed, krit: playerCritChance,
+                                    leben: playerMaxHealth }; }
     finally { window.DebugGate.flagge = alt; recalcDerived(); }
   })()`);
 
@@ -930,12 +931,19 @@ test('Debug-Kraftaufschlag haengt an einer EIGENEN Flagge, nicht am Debug-Modus'
   assert.ok(mit.schaden > ohne.schaden * 4,
     'kein Schadensaufschlag: ' + ohne.schaden + ' -> ' + mit.schaden);
   assert.ok(mit.lauf > ohne.lauf, 'kein Tempoaufschlag: ' + ohne.lauf + ' -> ' + mit.lauf);
-  assert.ok(mit.takt < ohne.takt, 'der Angriffstakt wurde nicht schneller');
+  // MAL, nicht GETEILT: die Abklingzeit ist 650 / weaponAttackSpeed, ein
+  // hoeherer Wert heisst also kuerzere Abklingzeit. Der erste Anlauf teilte und
+  // hat den Angriffstakt damit verdoppelt statt halbiert (650 ms -> 1444 ms).
+  assert.ok(mit.takt > ohne.takt,
+    'der Angriffstakt wurde langsamer statt schneller: ' + ohne.takt + ' -> ' + mit.takt);
+  assert.ok(mit.leben > ohne.leben * 2,
+    'die Lebenspunkte steigen nicht mit: ' + ohne.leben + ' -> ' + mit.leben);
   assert.ok(mit.krit > ohne.krit, 'keine Krit-Zugabe');
 
   // Und der Normalzustand ist danach wieder hergestellt.
   const danach = messe('null');
   assert.strictEqual(danach.schaden, ohne.schaden, 'der Aufschlag bleibt haengen');
+  assert.strictEqual(danach.leben, ohne.leben, 'die Lebenspunkte bleiben erhoeht');
 
   // Das Lauftempo ist gedeckelt — sonst rennt man durch Waende, bevor die
   // Physik hinterherkommt.

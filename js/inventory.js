@@ -1413,12 +1413,22 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // sonst rennt man bei stark=10 durch Waende, bevor die Physik hinterherkommt.
   try {
     var _stark = window.DebugGate && window.DebugGate.flagge('stark');
+    // Ohne Flagge zuruecksetzen: der Merker wird weiter unten fuer die
+    // Lebenspunkte gelesen. Bliebe er stehen, wirkte der Aufschlag weiter,
+    // nachdem die Flagge weg ist — im Test faellt so etwas erst spaeter auf,
+    // an einer ganz anderen Stelle.
+    window.__debugStark = 0;
     if (_stark !== null && _stark !== undefined) {
       var _f = parseFloat(_stark);
       if (!isFinite(_f) || _f <= 0) _f = 5;          // ?stark=1 -> Vorgabe
       else if (_f === 1) _f = 5;
       weaponDamage *= _f;
-      weaponAttackSpeed = Math.max(0.08, weaponAttackSpeed / Math.sqrt(_f));
+      // ANGRIFFSTEMPO: MAL, nicht GETEILT. Die Abklingzeit ist
+      // 650 / getAttackSpeedMultiplier() (player.js) — ein hoeherer Wert heisst
+      // also KUERZERE Abklingzeit. Der erste Anlauf teilte und hat den
+      // Angriffstakt damit glatt verdoppelt statt halbiert: aus 1,00 wurde
+      // 0,45, aus 650 ms wurden 1444 ms. Genau umgekehrt zum Zweck.
+      weaponAttackSpeed = Math.min(6, weaponAttackSpeed * Math.sqrt(_f));
       playerSpeed = Math.round(playerSpeed * Math.min(2.5, Math.sqrt(_f)));
       playerCritChance = Math.min(0.9, playerCritChance + 0.25);
       window.__debugStark = _f;
@@ -1472,7 +1482,14 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // damageMul/speedMul/moveAdd weiter unten NACH allen Buff-Layern angewandt.
   const _amuletStatMods = (window.AmuletEffects && typeof window.AmuletEffects.getStatMods === 'function')
     ? window.AmuletEffects.getStatMods() : { moveAdd: 0, speedMul: 1, damageMul: 1, maxHpMul: 1 };
-  const newMaxHealth = Math.max(1, Math.round((_hpBeforePrinting + _printingFlatHp + _hpBeforePrinting * _printingPctHp) * _amuletStatMods.maxHpMul));
+  let newMaxHealth = Math.max(1, Math.round((_hpBeforePrinting + _printingFlatHp + _hpBeforePrinting * _printingPctHp) * _amuletStatMods.maxHpMul));
+  // Debug (?stark=): auch die Lebenspunkte hoch. Ohne das faellt man beim
+  // Durchtesten in der Tiefe um, bevor man das Stueck erreicht, das man
+  // ansehen wollte — und genau dafuer ist die Flagge da.
+  if (typeof window !== 'undefined' && typeof window.__debugStark === 'number'
+      && window.__debugStark > 0) {
+    newMaxHealth = Math.max(1, Math.round(newMaxHealth * window.__debugStark));
+  }
   if (typeof setPlayerMaxHealth === 'function') {
     setPlayerMaxHealth(newMaxHealth, { updateUi: false });
   } else {
