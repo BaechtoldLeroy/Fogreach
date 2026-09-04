@@ -214,3 +214,39 @@ test('hub: Abschluss von elara_second_truth setzt three_hands_seen (#83)', () =>
   assert.strictEqual(res.flag, true, 'three_hands_seen wurde beim Abschluss nicht gesetzt');
   assert.strictEqual(res.regler, true, 'Finale-Regler bleibt false');
 });
+test('hub: ein Aktwechsel zieht das Phasen-Overlay sofort nach', async () => {
+  // Vorher wurde die Phase EINMAL in create() berechnet. Wechselte der Akt,
+  // waehrend man im Hub stand, blieb das alte Overlay stehen — es kam erst
+  // beim naechsten Betreten des Hubs. Dieselbe Ursache liess den Hub nach
+  // einem Neustart ganz ohne Overlay dastehen: create() rechnete, bevor der
+  // Spielstand angewendet war, und sah darum immer Akt 0.
+  const zustand = () => H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    return { phase: sc._hubPhase,
+             objekte: sc._hubPhaseViewObjs ? sc._hubPhaseViewObjs.length : 0 };
+  })()`);
+
+  // Die Pruefung laeuft gedrosselt (400 ms Wanduhr) — also echte Zeit
+  // verstreichen lassen und danach takten.
+  const nachziehen = async () => {
+    await new Promise((r) => setTimeout(r, 450));
+    H.step(5);
+  };
+
+  H.run(`(function () {
+    window.questSystem.setFlag('story_ending', false);
+    window.storySystem.resetToAct0();
+  })()`);
+  await nachziehen();
+  assert.strictEqual(zustand().phase, 'council', 'Ausgangslage');
+
+  H.run(`window.storySystem.advanceToAct(2)`);
+  await nachziehen();
+  const doppelt = zustand();
+  assert.strictEqual(doppelt.phase, 'doubleAgent', 'Akt 2 ohne Hubwechsel');
+  assert.ok(doppelt.objekte > 0, 'kein Overlay aufgebaut: ' + doppelt.objekte);
+
+  H.run(`window.storySystem.advanceToAct(4)`);
+  await nachziehen();
+  assert.strictEqual(zustand().phase, 'broken', 'Akt 4 ohne Hubwechsel');
+});

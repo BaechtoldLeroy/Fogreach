@@ -180,8 +180,12 @@ class HubSceneV2 extends Phaser.Scene {
     // Darstellungs-Schicht anwenden (Tint/Nebel/Anschlagtafeln/feindliches
     // Rathaus). Phase in this._hubPhase merken — die Aldric-Quest-Sperre, die
     // Quest-Indikatoren und die phasenabhängige NPC-Flavor lesen sie unten.
-    this._hubPhase = (window.HubPhase && typeof window.HubPhase.current === 'function')
-      ? window.HubPhase.current() : 'council';
+    // Die Phase wird hier NICHT mehr berechnet: an dieser Stelle ist der
+    // Spielstand noch nicht angewendet (_ensureSaveHydrated() laeuft erst rund
+    // achtzig Zeilen weiter unten). Nach einem Neustart lieferte
+    // HubPhase.current() darum immer den Startwert 'council' — der Hub stand
+    // ohne Overlay da, bis man ihn einmal verliess und neu betrat. Der Aufruf
+    // sitzt jetzt hinter der Hydrierung.
     // Refs EINMAL bauen und an der Szene merken. Sie sind die vollständige
     // Beschreibung dessen, was die View braucht — wer die Phase später neu
     // anwendet (Playtest-Vorschau, Phasenwechsel zur Laufzeit), muss sie nicht
@@ -208,10 +212,6 @@ class HubSceneV2 extends Phaser.Scene {
         { x: 548 * SCALE_FACTOR, y: 300 * SCALE_FACTOR }
       ]
     };
-    if (window.HubPhaseView && typeof window.HubPhaseView.apply === 'function') {
-      this._hubPhaseHandle = window.HubPhaseView.apply(this, this._hubPhase, this._hubPhaseRefs);
-    }
-
     this._dialogOpen = false;
     this._activeInteractable = null;
     this._dialogContainer = null;
@@ -264,6 +264,10 @@ class HubSceneV2 extends Phaser.Scene {
     const _saveApplied = this._ensureSaveHydrated();
     // Neues Spiel (kein Save geladen): Starter-Kit ins Inventar legen.
     this._grantStarterKit(_saveApplied);
+
+    // Jetzt erst steht der echte Akt-Index/Flag-Stand — Phase ableiten und
+    // anwenden.
+    this._wendeHubPhaseAn(this._ermittelePhase());
 
     this.createColliders();
     this.createEntrances();
@@ -897,6 +901,8 @@ class HubSceneV2 extends Phaser.Scene {
         this._perfMonitor.updateOverlay();
       }
     }
+    this._pruefeHubPhase();
+
     if (!this.player) return;
 
     const p = this.player;
@@ -1995,6 +2001,57 @@ class HubSceneV2 extends Phaser.Scene {
     }
   }
 
+  /** Die Phase aus dem aktuellen Spielstand ableiten. Faellt auf 'council'. */
+  _ermittelePhase() {
+    return (window.HubPhase && typeof window.HubPhase.current === 'function')
+      ? window.HubPhase.current() : 'council';
+  }
+
+  /**
+   * Eine Phase anwenden: alte Darstellung abraeumen, neue aufbauen.
+   * Einziger Weg, ueber den _hubPhase und _hubPhaseHandle gesetzt werden —
+   * vorher gab es zwei (Aufbau und Vorschau), und nur einer raeumte auf.
+   */
+  _wendeHubPhaseAn(phase) {
+    if (!window.HubPhaseView || typeof window.HubPhaseView.apply !== 'function') {
+      this._hubPhase = phase;
+      return false;
+    }
+    if (!this._hubPhaseRefs) return false;
+    if (this._hubPhaseHandle && typeof this._hubPhaseHandle.destroy === 'function') {
+      try { this._hubPhaseHandle.destroy(); } catch (e) {}
+    }
+    this._hubPhaseHandle = null;
+    this._hubPhase = phase;
+    this._hubPhaseHandle = window.HubPhaseView.apply(this, phase, this._hubPhaseRefs);
+    return true;
+  }
+
+  /**
+   * Wechselt die Phase, waehrend man im Hub steht, dann sofort nachziehen.
+   *
+   * Warum eine Wiederholpruefung und kein Ereignis: die Phase haengt am
+   * Akt-Index UND an mehreren Quest-Flags, und beide werden an vielen Stellen
+   * gesetzt (Dialogwahl, Questabschluss, advanceToAct, Spielstand laden). Ein
+   * Ereignis muesste an jeder davon haengen und wuerde beim naechsten
+   * vergessen. Die Ableitung ist billig; alle 400 ms genuegt, damit ein
+   * Aktwechsel im Hub sofort sichtbar wird, ohne dass getFlags() pro Bild ein
+   * Objekt kopiert.
+   */
+  _pruefeHubPhase() {
+    if (this._phasenVorschau) return;           // Playtest-Vorschau nicht ueberschreiben
+    if (!this._hubPhaseRefs) return;
+    // Date.now() statt der Phaser-Zeit: die Hub-Uhr wird nirgends angehalten,
+    // und eine Wanduhr kann nicht rueckwaerts springen, wenn die Loop neu
+    // aufsetzt — dann bliebe die Pruefung fuer immer stumm.
+    var jetzt = Date.now();
+    if (this._naechstePhasenPruefung && jetzt < this._naechstePhasenPruefung) return;
+    this._naechstePhasenPruefung = jetzt + 400;
+    const neu = this._ermittelePhase();
+    if (neu === this._hubPhase) return;
+    this._wendeHubPhaseAn(neu);
+  }
+
   // Playtest-Helfer: eine Hub-Phase zur Laufzeit anwenden, OHNE den Spielstand
   // anzufassen (Akt-Index und Flags bleiben unberührt — beim nächsten
   // Hub-Betreten gilt wieder die echte Phase). Nutzt die gemerkten Refs, damit
@@ -2005,11 +2062,10 @@ class HubSceneV2 extends Phaser.Scene {
       return 'HubPhaseView fehlt';
     }
     if (!this._hubPhaseRefs) return 'Refs fehlen — Szene noch nicht aufgebaut?';
-    if (this._hubPhaseHandle && typeof this._hubPhaseHandle.destroy === 'function') {
-      this._hubPhaseHandle.destroy();
-    }
-    this._hubPhase = phase;
-    this._hubPhaseHandle = window.HubPhaseView.apply(this, phase, this._hubPhaseRefs);
+    // Ab jetzt haelt die Vorschau: sonst zoege _pruefeHubPhase() sie innerhalb
+    // von 400 ms wieder auf die echte Phase zurueck.
+    this._phasenVorschau = true;
+    this._wendeHubPhaseAn(phase);
 
     // Die NPC-Sichtbarkeit hängt NICHT an der Phase, sondern am echten
     // Akt-Index (Bürger ab 'erste_risse') und an Story-Flags (Aldric weg ab
