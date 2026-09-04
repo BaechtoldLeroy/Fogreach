@@ -5,6 +5,7 @@
 if (window.i18n) {
   window.i18n.register('de', {
     'hub.entrance.rathaus': 'Rathauskeller [E]',
+    'hub.entrance.truhe': 'Truhe [E]',
     'hub.entrance.schmiede': 'Werkstatt [E]',
     'hub.entrance.druckerei': 'Druckerei [E]',
     'hub.npc.branka.name': 'Schmiedemeisterin Branka',
@@ -28,6 +29,7 @@ if (window.i18n) {
   });
   window.i18n.register('en', {
     'hub.entrance.rathaus': 'Town Hall Cellar [E]',
+    'hub.entrance.truhe': 'Stash [E]',
     'hub.entrance.schmiede': 'Workshop [E]',
     'hub.entrance.druckerei': 'Print Shop [E]',
     'hub.npc.branka.name': 'Smith Master Branka',
@@ -115,7 +117,16 @@ window.HUB_HITBOXES = {
   entrances: [
     { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]', target: 'GameScene' },
     { id: 'schmiede_entrance',  x: 292, y: 318, w: 64, h: 34, label: 'Werkstatt [E]', target: 'CraftingScene' },
-    { id: 'druckerei_entrance', x: 668, y: 334, w: 64, h: 34, label: 'Druckerei [E]', target: 'druckerei' }
+    { id: 'druckerei_entrance', x: 668, y: 334, w: 64, h: 34, label: 'Druckerei [E]', target: 'druckerei' },
+    // #127: Die Truhe steht am rechten Platzrand, unterhalb der Druckerei und
+    // oberhalb des rechten Cottages. Kein Gebaeude — man geht hin, nicht hinein.
+    //
+    // NICHT in die Platzmitte: die Figur startet im Hub bei Layout (480, 461),
+    // und der Weg zum Rathauskeller fuehrt von dort schnurgerade nach oben. Ein
+    // erster Anlauf setzte die Truhe auf (560, 418) — in Reichweite des
+    // Startpunkts. Der Bot-Test lief prompt in ihre Zone und oeffnete mit [E]
+    // die Truhe statt den Dungeon.
+    { id: 'truhe_entrance', x: 700, y: 424, w: 44, h: 30, label: 'Truhe [E]', target: 'truhe' }
   ],
   npcs: [
     {
@@ -281,7 +292,8 @@ if (window.i18n) {
   window.HUB_HITBOXES.entrances.forEach(function (e) {
     var key = 'hub.entrance.' + (e.target === 'GameScene' ? 'rathaus'
                               : e.target === 'CraftingScene' ? 'schmiede'
-                              : e.target === 'druckerei' ? 'druckerei' : null);
+                              : e.target === 'druckerei' ? 'druckerei'
+                              : e.target === 'truhe' ? 'truhe' : null);
     if (!key) return;
     var fallback = e.label;
     try {

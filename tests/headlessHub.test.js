@@ -250,3 +250,71 @@ test('hub: ein Aktwechsel zieht das Phasen-Overlay sofort nach', async () => {
   await nachziehen();
   assert.strictEqual(zustand().phase, 'broken', 'Akt 4 ohne Hubwechsel');
 });
+
+test('hub: die Truhe laesst sich oeffnen, befuellen und raeumt sich ab (#127)', () => {
+  // Die eine Regel, an der alles haengt: ein Stueck liegt nie doppelt. Hier
+  // wird sie ueber die ECHTE Oberflaeche geprueft — Zeigerereignisse auf die
+  // gerechneten Rasterzellen, nicht die Funktionen direkt.
+  const zone = H.run(`(function () {
+    var e = window.HUB_HITBOXES.entrances.filter(function (x) { return x.target === 'truhe'; })[0];
+    var sc = window.game.scene.getScene('HubSceneV2');
+    return { hitbox: !!e, bild: !!sc._truheBild, ui: typeof window.HubTruheUI };
+  })()`);
+  assert.ok(zone.hitbox, 'keine Truhen-Hitbox im Hub');
+  assert.ok(zone.bild, 'die Truhe hat kein Bild — man stuende vor einer unsichtbaren Zone');
+  assert.strictEqual(zone.ui, 'object', 'HubTruheUI fehlt');
+
+  const vorher = H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    window.HubTruhe.leeren();
+    var it = { key: 'WPN_EISENKLINGE', type: 'weapon', name: 'Testklinge' };
+    window.InventoryGrid.einfuegen(window.inventory, it);
+    window.__truheIt = it;
+    var e = window.HUB_HITBOXES.entrances.filter(function (x) { return x.target === 'truhe'; })[0];
+    sc._enterLocation(e);
+    return { offen: window.HubTruheUI.istOffen(), gesperrt: !!window.eventChoiceOpen,
+             objekte: sc.children.list.length };
+  })()`);
+  assert.strictEqual(vorher.offen, true, 'die Truhe ging nicht auf');
+  assert.strictEqual(vorher.gesperrt, true, 'die Eingabe laeuft weiter — man greift beim Umlegen an');
+
+  // Ins Truhenraster ziehen, auf eine BESTIMMTE Zelle.
+  const hin = H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    var geo = window.HubTruheUI.geometrie(), Z = window.HubTruheUI.ZELLE, it = window.__truheIt;
+    var von = { x: geo.inv.x + (it.gridX + 0.5) * Z, y: geo.inv.y + (it.gridY + 0.5) * Z };
+    var nach = { x: geo.truhe.x + 2.5 * Z, y: geo.truhe.y + 1.5 * Z };
+    sc.input.emit('pointerdown', von); sc.input.emit('pointermove', nach); sc.input.emit('pointerup', nach);
+    return { imInventar: window.inventory.filter(function (s) { return s === it; }).length,
+             inDerTruhe: window.HubTruhe.faecher().filter(function (s) { return s === it; }).length,
+             x: it.gridX, y: it.gridY };
+  })()`);
+  assert.strictEqual(hin.inDerTruhe, 1, 'das Stueck kam nicht in der Truhe an');
+  assert.strictEqual(hin.imInventar, 0, 'es liegt DOPPELT — im Inventar und in der Truhe');
+  assert.strictEqual(hin.x, 2, 'es landete nicht auf der gezielten Zelle');
+  assert.strictEqual(hin.y, 1, 'es landete nicht auf der gezielten Zeile');
+
+  // Und wieder zurueck.
+  const zurueck = H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    var geo = window.HubTruheUI.geometrie(), Z = window.HubTruheUI.ZELLE, it = window.__truheIt;
+    var von = { x: geo.truhe.x + (it.gridX + 0.5) * Z, y: geo.truhe.y + (it.gridY + 0.5) * Z };
+    var nach = { x: geo.inv.x + 5.5 * Z, y: geo.inv.y + 2.5 * Z };
+    sc.input.emit('pointerdown', von); sc.input.emit('pointermove', nach); sc.input.emit('pointerup', nach);
+    return { imInventar: window.inventory.filter(function (s) { return s === it; }).length,
+             inDerTruhe: window.HubTruhe.faecher().filter(function (s) { return s === it; }).length };
+  })()`);
+  assert.strictEqual(zurueck.imInventar, 1, 'das Stueck kam nicht zurueck');
+  assert.strictEqual(zurueck.inDerTruhe, 0, 'es liegt DOPPELT — in der Truhe und im Inventar');
+
+  const zu = H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    window.HubTruheUI.schliesse();
+    return { offen: window.HubTruheUI.istOffen(), frei: !window.eventChoiceOpen,
+             objekte: sc.children.list.length };
+  })()`);
+  assert.strictEqual(zu.offen, false);
+  assert.strictEqual(zu.frei, true, 'die Eingabe bleibt gesperrt — der Hub waere tot');
+  assert.ok(zu.objekte < vorher.objekte,
+    'das Panel laesst Objekte zurueck: ' + vorher.objekte + ' -> ' + zu.objekte);
+});

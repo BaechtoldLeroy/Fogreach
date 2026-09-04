@@ -642,6 +642,11 @@ class HubSceneV2 extends Phaser.Scene {
     this.entranceLabels = [];
     
     HUB_HITBOXES.entrances.forEach(e => {
+      // #127: Die Truhe hat kein Gebaeude im Hintergrundbild — sie braucht ein
+      // eigenes Bild, sonst steht man vor einer unsichtbaren Zone.
+      if (e.target === 'truhe' && typeof this._zeichneTruhe === 'function') {
+        this._zeichneTruhe(e);
+      }
       const sx = e.x * SCALE_FACTOR;
       const sy = e.y * SCALE_FACTOR;
       const sw = e.w * SCALE_FACTOR;
@@ -2440,7 +2445,46 @@ class HubSceneV2 extends Phaser.Scene {
     }
   }
 
+  /**
+   * Zeichnet die Hub-Truhe an ihren Platz.
+   *
+   * Direkt gezeichnet statt als Textur aus graphics.js: sie kommt genau
+   * einmal vor, und so steht ihre Lage neben der Hitbox, die sie beschreibt.
+   */
+  _zeichneTruhe(e) {
+    const x = e.x * SCALE_FACTOR, y = e.y * SCALE_FACTOR;
+    const b = e.w * SCALE_FACTOR, h = e.h * SCALE_FACTOR;
+    const g = this.add.graphics();
+    g.setDepth(y + h);                        // y-sortiert wie die uebrigen Props
+    // Schatten
+    g.fillStyle(0x000000, 0.30); g.fillEllipse(x + b / 2, y + h - 1, b * 0.95, h * 0.24);
+    // Korpus
+    g.fillStyle(0x140f08, 1); g.fillRect(x, y + h * 0.34, b, h * 0.62);
+    g.fillStyle(0x6b4a22, 1); g.fillRect(x + 1.5, y + h * 0.38, b - 3, h * 0.54);
+    // Deckel
+    g.fillStyle(0x140f08, 1); g.fillEllipse(x + b / 2, y + h * 0.36, b, h * 0.5);
+    g.fillStyle(0x7d5729, 1); g.fillEllipse(x + b / 2, y + h * 0.36, b - 3, h * 0.42);
+    g.fillStyle(0xa87940, 0.85); g.fillEllipse(x + b / 2 - b * 0.12, y + h * 0.28, b * 0.5, h * 0.14);
+    // Eisenbaender
+    g.fillStyle(0x3a3446, 1);
+    g.fillRect(x + b * 0.16, y + h * 0.2, b * 0.1, h * 0.76);
+    g.fillRect(x + b * 0.74, y + h * 0.2, b * 0.1, h * 0.76);
+    // Schloss
+    g.fillStyle(0x2a2634, 1); g.fillRect(x + b / 2 - b * 0.09, y + h * 0.5, b * 0.18, h * 0.22);
+    g.fillStyle(0xd4a030, 1); g.fillRect(x + b / 2 - b * 0.07, y + h * 0.53, b * 0.14, h * 0.16);
+    g.fillStyle(0x2a2634, 1); g.fillCircle(x + b / 2, y + h * 0.61, b * 0.035);
+    this._truheBild = g;
+  }
+
   _enterLocation(entranceData) {
+    // #127: Die Truhe wechselt keine Szene — sie oeffnet ein Panel und der
+    // Spieler bleibt stehen, wo er ist.
+    if (entranceData && entranceData.target === 'truhe') {
+      if (window.HubTruheUI && typeof window.HubTruheUI.oeffne === 'function') {
+        window.HubTruheUI.oeffne(this);
+      }
+      return;
+    }
     console.log('[HubSceneV2] Entering:', entranceData.id, '-> target:', entranceData.target);
     // Tutorial: emit hub.entrance.entered before any scene transition or
     // dialog-stub flow runs (covers steps 6 and 12). Stable id used.
