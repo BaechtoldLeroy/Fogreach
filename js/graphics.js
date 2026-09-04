@@ -2737,44 +2737,60 @@ function createItemGraphics() {
       key: 'itHeadSchlangenmaske',
       draw: () => {
         const cx = SIZE / 2;
-        // Kapuzenhaube mit Schlangenkopf: oben breit, unten spitz.
-        g.fillStyle(0x08120c, 1);
-        g.fillTriangle(cx, 10, cx - 15, 29, cx + 15, 29);
-        g.fillTriangle(cx - 15, 29, cx + 15, 29, cx, 45);
-        g.fillStyle(0x1e5c38, 1);
-        g.fillTriangle(cx, 13, cx - 13, 29, cx + 13, 29);
-        g.fillTriangle(cx - 13, 29, cx + 13, 29, cx, 42.5);
-        // Schuppen: versetzte Boegen, nach unten kleiner werdend
-        for (let sr = 0; sr < 4; sr++) {
-          const sy = 18 + sr * 4.6;
-          const halb = 11 - sr * 1.9;
+        // Kobrahaube: die ausgestellten Seitenlappen. Sie geben der Maske
+        // ihren Umriss, noch bevor man die Schuppen sieht.
+        g.fillStyle(0x07110b, 1);
+        g.fillTriangle(cx - 4, 12, cx - 21, 24, cx - 5, 32);
+        g.fillTriangle(cx + 4, 12, cx + 21, 24, cx + 5, 32);
+        g.fillStyle(0x1a4f30, 1);
+        g.fillTriangle(cx - 5, 14, cx - 18.5, 24, cx - 6, 30.5);
+        g.fillTriangle(cx + 5, 14, cx + 18.5, 24, cx + 6, 30.5);
+        g.fillStyle(0x2f8a52, 0.75);
+        g.fillTriangle(cx - 5, 14, cx - 18.5, 24, cx - 13, 20);
+        // Maskenkoerper: runde Kuppe, verjuengtes Kinn
+        g.fillStyle(0x07110b, 1);
+        g.fillCircle(cx, 22, 12.5);
+        g.fillTriangle(cx - 12.5, 22, cx + 12.5, 22, cx, 44);
+        g.fillStyle(0x256b40, 1);
+        g.fillCircle(cx, 22, 11.2);
+        g.fillTriangle(cx - 11.2, 22, cx + 11.2, 22, cx, 41.6);
+        // Schuppen ueber die Kuppe
+        for (let sr = 0; sr < 3; sr++) {
+          const sy = 14.5 + sr * 4.2;
+          const halb = 9.5 - sr * 0.6;
           for (let sc = -3; sc <= 3; sc++) {
-            const sx = cx + sc * (halb / 2.6) + (sr % 2) * 1.3;
+            const sx = cx + sc * (halb / 2.4) + (sr % 2) * 1.4;
             if (Math.abs(sx - cx) > halb) continue;
-            g.fillStyle(0x143f26, 1); g.fillEllipse(sx, sy, 3.4, 2.6);
-            g.fillStyle(0x2f8a52, 1); g.fillEllipse(sx, sy - 0.5, 2.8, 1.9);
+            g.fillStyle(0x143f26, 1); g.fillEllipse(sx, sy, 3.6, 2.7);
+            g.fillStyle(0x38a061, 1); g.fillEllipse(sx, sy - 0.55, 2.9, 1.9);
           }
         }
-        // Schlitzaugen, tiefliegend mit dunklem Grund
-        g.fillStyle(0x050a06, 1);
-        g.fillTriangle(cx - 10, 25.5, cx - 1.5, 28.2, cx - 10, 30.5);
-        g.fillTriangle(cx + 10, 25.5, cx + 1.5, 28.2, cx + 10, 30.5);
+        // Augen: grosse Schlitze mit dunkler Tiefe und senkrechter Pupille
+        g.fillStyle(0x040a06, 1);
+        g.fillTriangle(cx - 10.5, 23.5, cx - 1.8, 26.5, cx - 10.5, 29);
+        g.fillTriangle(cx + 10.5, 23.5, cx + 1.8, 26.5, cx + 10.5, 29);
         g.fillStyle(0xe4f430, 1);
-        g.fillTriangle(cx - 8.6, 26.6, cx - 3, 28.2, cx - 8.6, 29.6);
-        g.fillTriangle(cx + 8.6, 26.6, cx + 3, 28.2, cx + 8.6, 29.6);
+        g.fillTriangle(cx - 9.2, 24.6, cx - 3.2, 26.6, cx - 9.2, 28);
+        g.fillTriangle(cx + 9.2, 24.6, cx + 3.2, 26.6, cx + 9.2, 28);
         g.fillStyle(0x0a1a0e, 1);
-        g.fillTriangle(cx - 7.4, 27.4, cx - 4.4, 28.2, cx - 7.4, 29);
-        g.fillTriangle(cx + 7.4, 27.4, cx + 4.4, 28.2, cx + 7.4, 29);
-        // Fangzaehne aus dem Maul
-        g.fillStyle(0x08120c, 1); g.fillRect(cx - 6, 33, 12, 3);
-        g.fillStyle(0xeaf4e8, 1);
-        g.fillTriangle(cx - 4.6, 35, cx - 2.2, 35, cx - 3.4, 41.5);
-        g.fillTriangle(cx + 4.6, 35, cx + 2.2, 35, cx + 3.4, 41.5);
+        g.fillTriangle(cx - 7.2, 25, cx - 6.2, 26.6, cx - 7.2, 27.6);
+        g.fillTriangle(cx + 7.2, 25, cx + 6.2, 26.6, cx + 7.2, 27.6);
         g.fillStyle(0xffffff, 0.7);
-        g.fillTriangle(cx - 4.6, 35, cx - 3.9, 35, cx - 3.4, 41.5);
-        // Eine Lichtkante links, damit der Kopf Volumen bekommt
-        g.fillStyle(0x6adc90, 0.7); g.fillTriangle(cx, 13, cx - 13, 29, cx - 10, 29);
-        glanz(cx - 4, 17, 1.4, 0xcfffe0);
+        g.fillTriangle(cx - 9.2, 24.6, cx - 6.5, 25.5, cx - 9.2, 25.4);
+        // Nasenloecher — kleine Striche, die das Gesicht erst zum Gesicht machen
+        g.fillStyle(0x0a1a0e, 1);
+        g.fillEllipse(cx - 2.2, 31, 1.8, 1.2); g.fillEllipse(cx + 2.2, 31, 1.8, 1.2);
+        // Maul mit Fangzaehnen
+        g.fillStyle(0x07110b, 1); g.fillEllipse(cx, 35.5, 12, 4.4);
+        g.fillStyle(0x040a06, 1); g.fillEllipse(cx, 35.5, 10, 3);
+        g.fillStyle(0xeaf4e8, 1);
+        g.fillTriangle(cx - 4.8, 35.5, cx - 2.4, 35.5, cx - 3.6, 42.5);
+        g.fillTriangle(cx + 4.8, 35.5, cx + 2.4, 35.5, cx + 3.6, 42.5);
+        g.fillStyle(0xffffff, 0.75);
+        g.fillTriangle(cx - 4.8, 35.5, cx - 4.1, 35.5, cx - 3.6, 42.5);
+        // EINE Lichtkante ueber der Kuppe
+        g.fillStyle(0x6adc90, 0.7); g.fillEllipse(cx - 3, 13.5, 13, 4);
+        glanz(cx - 6, 13.5, 1.6, 0xcfffe0);
       }
     },
 
@@ -2886,38 +2902,51 @@ function createItemGraphics() {
       key: 'itBodySchattenkutte',
       draw: () => {
         const cx = SIZE / 2;
-        // Kutte mit Kapuze und Faltenwurf. Die Falten machen den Unterschied:
-        // ein glatter Kegel sah aus wie ein Huetchen.
-        g.fillStyle(0x07060b, 1);
-        g.fillTriangle(cx, 9, cx - 16, 43, cx + 16, 43);
+        // Torso mit Schultern und weiten Aermeln
+        g.fillStyle(0x06050a, 1);
+        g.fillCircle(cx - 13.5, 19, 6.5); g.fillCircle(cx + 13.5, 19, 6.5);
+        g.fillTriangle(cx - 14.5, 17, cx + 14.5, 17, cx + 13, 42);
+        g.fillTriangle(cx - 14.5, 17, cx - 13, 42, cx + 13, 42);
         g.fillStyle(0x2c2540, 1);
-        g.fillTriangle(cx, 11.5, cx - 13.6, 41.2, cx + 13.6, 41.2);
-        // Falten: drei dunkle Bahnen von der Schulter zum Saum
+        g.fillCircle(cx - 13.4, 19, 5.3); g.fillCircle(cx + 13.4, 19, 5.3);
+        g.fillTriangle(cx - 13, 18.4, cx + 13, 18.4, cx + 11.6, 40.6);
+        g.fillTriangle(cx - 13, 18.4, cx - 11.6, 40.6, cx + 11.6, 40.6);
+        // Aermel: dunklere Bahnen aussen, damit die Arme lesbar werden
         g.fillStyle(0x1b172a, 1);
-        g.fillTriangle(cx - 6, 20, cx - 4.4, 20, cx - 8.6, 41.2);
-        g.fillTriangle(cx + 6, 20, cx + 4.4, 20, cx + 8.6, 41.2);
-        g.fillTriangle(cx - 1, 24, cx + 1, 24, cx + 0.4, 41.2);
-        // Kapuze: dunkler Bogen ueber der Brust, darin die Leere
-        g.fillStyle(0x07060b, 1);
-        g.fillTriangle(cx, 12, cx - 8.4, 27, cx + 8.4, 27);
-        g.fillEllipse(cx, 26.5, 16.8, 7);
-        g.fillStyle(0x241e36, 1);
-        g.fillTriangle(cx, 14.6, cx - 7, 26, cx + 7, 26);
-        g.fillStyle(0x07060b, 1);
-        g.fillTriangle(cx, 17.5, cx - 4.6, 26.5, cx + 4.6, 26.5);
+        g.fillTriangle(cx - 13.4, 22, cx - 8.6, 22, cx - 10.6, 40.6);
+        g.fillTriangle(cx + 13.4, 22, cx + 8.6, 22, cx + 10.6, 40.6);
+        // Faltenwurf in der Mitte
+        g.fillStyle(0x221c34, 1);
+        g.fillTriangle(cx - 4.6, 26, cx - 3, 26, cx - 5.6, 40.6);
+        g.fillTriangle(cx + 4.6, 26, cx + 3, 26, cx + 5.6, 40.6);
+        g.fillTriangle(cx - 0.9, 28, cx + 0.9, 28, cx + 0.3, 40.6);
+        // Kapuze: liegt AUF den Schultern, nicht ueber dem ganzen Bild
+        g.fillStyle(0x06050a, 1);
+        g.fillCircle(cx, 15.5, 10.5);
+        g.fillTriangle(cx - 10.5, 15.5, cx + 10.5, 15.5, cx, 27);
+        g.fillStyle(0x353052, 1);
+        g.fillCircle(cx, 15.5, 9.2);
+        g.fillTriangle(cx - 9.2, 15.5, cx + 9.2, 15.5, cx, 25.4);
+        // Die Leere darin
+        g.fillStyle(0x06050a, 1);
+        g.fillCircle(cx, 17.5, 6.4);
+        g.fillTriangle(cx - 6.4, 17.5, cx + 6.4, 17.5, cx, 25);
         // Guertelstrick mit Knoten
-        g.fillStyle(0x4a3f22, 1); g.fillRect(cx - 9.6, 30.5, 19.2, 2.2);
-        g.fillStyle(0x7a6a38, 1); g.fillRect(cx - 9.6, 30.5, 19.2, 0.9);
-        g.fillStyle(0x4a3f22, 1); g.fillCircle(cx + 5.5, 31.6, 2);
+        g.fillStyle(0x4a3f22, 1); g.fillRect(cx - 11.8, 30.4, 23.6, 2.4);
+        g.fillStyle(0x7a6a38, 1); g.fillRect(cx - 11.8, 30.4, 23.6, 0.9);
+        g.fillStyle(0x4a3f22, 1); g.fillCircle(cx + 5.5, 31.6, 2.2);
         g.fillStyle(0x2a2412, 1); g.fillCircle(cx + 5.5, 31.6, 0.9);
+        g.fillStyle(0x4a3f22, 1);
+        g.fillTriangle(cx + 4.6, 33.2, cx + 6.4, 33.2, cx + 5.2, 38);
         // Saum und EINE Lichtkante an der linken Flanke
-        g.fillStyle(0x171326, 1); g.fillRect(cx - 13.6, 39.6, 27.2, 1.8);
+        g.fillStyle(0x171326, 1); g.fillRect(cx - 12.4, 39, 24.8, 1.9);
         g.fillStyle(0x6a5fa0, 0.85);
-        g.fillTriangle(cx, 11.5, cx - 13.6, 41.2, cx - 10.8, 41.2);
-        // Ein Glimmen im Kapuzenschatten — bewusst EIN Punkt, kein Augenpaar:
+        g.fillTriangle(cx - 13, 18.4, cx - 11.6, 40.6, cx - 9.6, 40.6);
+        g.fillStyle(0x6a5fa0, 0.7); g.fillEllipse(cx - 3, 8.6, 11, 3.2);
+        // Ein Glimmen im Kapuzenschatten — EIN Punkt, kein Augenpaar:
         // die Kutte soll leer wirken.
-        g.fillStyle(0x9a86ff, 0.55); g.fillCircle(cx, 22.5, 1.5);
-        glanz(cx - 7, 20, 1.3, 0x9a86ff);
+        g.fillStyle(0x9a86ff, 0.55); g.fillCircle(cx, 18.5, 1.5);
+        glanz(cx - 6, 12.5, 1.4, 0x9a86ff);
       }
     },
 
