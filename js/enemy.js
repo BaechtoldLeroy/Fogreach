@@ -1083,8 +1083,13 @@ function handleEnemies(time, delta = 16) {
         if (_ziel) {
           enemy._letzteFlucht = time;
           enemy._dashTarget = _ziel;
-          enemy._dashSpeed = 420;                 // langsamer als ein Boss-Ansturm:
-          enemy._dashUntil = time + 620;          // einholbar, wenn man dranbleibt
+          // Ein SATZ, kein Blinzeln. 420 px/s ueber 620 ms sahen aus, als wuerde
+          // er sich versetzen statt zu laufen — bei 260 px Sprungweite war er in
+          // gut einer halben Sekunde am anderen Ende des Blickfelds. Jetzt
+          // langsamer und laenger unterwegs: man sieht ihn die Strecke
+          // zuruecklegen und kann ihm nachsetzen.
+          enemy._dashSpeed = 230;
+          enemy._dashUntil = time + 900;
           enemy._dashOnArrive = null;
         }
       }
@@ -2161,8 +2166,8 @@ function _pluendererSichtbar(scene, enemy) {
  * 517 px zur Treppe vor dem Sprungversuch, 522 danach — und verhielt sich dann
  * wie jeder andere Gegner, obwohl die Meldung eine Jagd versprach.
  *
- * Der Sprung ist auf 260 px begrenzt, damit er nicht quer durch den Raum saust
- * und die Jagd aussichtslos wird.
+ * Der Sprung ist kurz gehalten, damit er nicht quer durch den Raum saust und
+ * die Jagd aussichtslos wird.
  */
 function _pluendererFluchtziel(scene, enemy) {
   var richtungen = [];
@@ -2177,7 +2182,9 @@ function _pluendererFluchtziel(scene, enemy) {
   // nach kurz. So bleibt die Treppe die erste Wahl, ohne dass eine Wand die
   // Flucht ganz verhindert.
   var abweichungen = [0, 0.5, -0.5, 1.0, -1.0, 1.6, -1.6];
-  var weiten = [260, 190, 120, 70];
+  // Kuerzere Saetze: 260 px waren gut ein Drittel der Blickfeldbreite auf
+  // einmal — das las sich als Sprung, nicht als Flucht.
+  var weiten = [150, 110, 75, 45];
   var frei = function (x, y) {
     try {
       if (scene.isPointAccessible && !scene.isPointAccessible(x, y)) return false;

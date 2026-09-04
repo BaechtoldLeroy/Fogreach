@@ -2084,6 +2084,13 @@
               var schein = scene.add.circle(pluenderer.x, pluenderer.y, 22, 0xffd98a, 0.22);
               schein.setDepth((pluenderer.depth || 10) - 1);
               schein.setBlendMode(Phaser.BlendModes.ADD);
+              // In den enemyLayer haengen: dessen GeometryMask ist das, was
+              // Gegner im Nebel verbirgt. Frei in der Szene leuchtete der
+              // Schimmer durch die Dunkelheit und verriet den Pluenderer,
+              // bevor man ihn sehen konnte.
+              if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
+                try { scene.enemyLayer.add(schein); } catch (e) {}
+              }
               pluenderer.setData('pluendererSchein', schein);
               // Der Schimmer folgt seinem Traeger und verschwindet mit ihm.
               if (scene.events && typeof scene.events.on === 'function') {
@@ -2094,6 +2101,16 @@
                     return;
                   }
                   schein.setPosition(pluenderer.x, pluenderer.y);
+                  // Zweiter Riegel neben der Maske: ein Kreis ist kein Sprite,
+                  // und die Maske greift nicht ueberall gleich. Sichtpruefung
+                  // wie beim Elite-Schein.
+                  var sicht = pluenderer.visible;
+                  try {
+                    if (typeof _pluendererSichtbar === 'function') {
+                      sicht = sicht && _pluendererSichtbar(scene, pluenderer);
+                    }
+                  } catch (e) {}
+                  schein.setVisible(sicht);
                 };
                 scene.events.on('update', mit);
               }

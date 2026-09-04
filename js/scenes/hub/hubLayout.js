@@ -118,15 +118,17 @@ window.HUB_HITBOXES = {
     { id: 'rathaus_entrance',   x: 452, y: 296, w: 56, h: 26, label: 'Rathauskeller [E]', target: 'GameScene' },
     { id: 'schmiede_entrance',  x: 292, y: 318, w: 64, h: 34, label: 'Werkstatt [E]', target: 'CraftingScene' },
     { id: 'druckerei_entrance', x: 668, y: 334, w: 64, h: 34, label: 'Druckerei [E]', target: 'druckerei' },
-    // #127: Die Truhe steht am rechten Platzrand, unterhalb der Druckerei und
-    // oberhalb des rechten Cottages. Kein Gebaeude — man geht hin, nicht hinein.
+    // #127: Die Truhe steht UNTER DER SCHMIEDE — dort, wo Ausruestung ohnehin
+    // hingehoert, und weit weg vom Rathaus.
     //
-    // NICHT in die Platzmitte: die Figur startet im Hub bei Layout (480, 461),
-    // und der Weg zum Rathauskeller fuehrt von dort schnurgerade nach oben. Ein
-    // erster Anlauf setzte die Truhe auf (560, 418) — in Reichweite des
-    // Startpunkts. Der Bot-Test lief prompt in ihre Zone und oeffnete mit [E]
-    // die Truhe statt den Dungeon.
-    { id: 'truhe_entrance', x: 700, y: 424, w: 44, h: 30, label: 'Truhe [E]', target: 'truhe' }
+    // Zwei Stellen davor waren falsch: (560, 418) lag in Reichweite des
+    // Startpunkts der Figur (480, 461), der Bot-Test oeffnete prompt die Truhe
+    // statt den Dungeon. (700, 424) lag zu nah beim Buergermeister. Jetzt
+    // direkt unter dem Schmiedegebaeude (Collider x 160-308, endet bei y 306),
+    // rechts vom Waldrand (forest_left_mid reicht bis x 187) und mit rund
+    // 110 px Abstand zu Branka und zum Werkstatt-Eingang, damit sich die drei
+    // nicht um dieselbe [E]-Taste streiten.
+    { id: 'truhe_entrance', x: 200, y: 322, w: 48, h: 32, label: 'Truhe [E]', target: 'truhe' }
   ],
   npcs: [
     {

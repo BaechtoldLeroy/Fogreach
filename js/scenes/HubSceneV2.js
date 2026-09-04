@@ -2448,31 +2448,65 @@ class HubSceneV2 extends Phaser.Scene {
   /**
    * Zeichnet die Hub-Truhe an ihren Platz.
    *
-   * Direkt gezeichnet statt als Textur aus graphics.js: sie kommt genau
-   * einmal vor, und so steht ihre Lage neben der Hitbox, die sie beschreibt.
+   * NACH DEM REZEPT DER SPIEL-TRUHEN (createObstacleGraphics, chestDefs):
+   * gerundetes Unterteil, gerundeter Deckel mit Maserung, waagerechtes
+   * Eisenband, senkrechtes Schlossband, goldenes Schloss mit Glanz. Der
+   * erste Anlauf war frei Hand gezeichnet — ein Ellipsen-Deckel auf einem
+   * Rechteck — und sah aus wie ein Fass mit Huetchen. Wer im Dungeon eine
+   * Truhe aufgemacht hat, soll diese hier sofort als dasselbe Ding erkennen.
+   *
+   * Warum nicht die Textur selbst: chest_large entsteht in
+   * createObstacleGraphics, und die ruft nur die Dungeon-Szene. Sie im Hub
+   * mitlaufen zu lassen hiesse, den ganzen Hindernis-Satz zu erzeugen, den
+   * der Hub nie braucht.
    */
   _zeichneTruhe(e) {
-    const x = e.x * SCALE_FACTOR, y = e.y * SCALE_FACTOR;
-    const b = e.w * SCALE_FACTOR, h = e.h * SCALE_FACTOR;
+    // Etwas groesser als die Hitbox und auf ihrem Fuss stehend: die Zone ist
+    // zum Hingehen da, das Bild zum Ansehen.
+    const b = e.w * SCALE_FACTOR * 1.25;
+    const h = e.h * SCALE_FACTOR * 1.35;
+    const x = e.x * SCALE_FACTOR - (b - e.w * SCALE_FACTOR) / 2;
+    const y = e.y * SCALE_FACTOR + e.h * SCALE_FACTOR - h;
+
+    const deckelH = Math.round(h * 0.40);
+    const unterH = h - deckelH;
+    const bandY = Math.round(unterH * 0.45);
     const g = this.add.graphics();
     g.setDepth(y + h);                        // y-sortiert wie die uebrigen Props
-    // Schatten
-    g.fillStyle(0x000000, 0.30); g.fillEllipse(x + b / 2, y + h - 1, b * 0.95, h * 0.24);
-    // Korpus
-    g.fillStyle(0x140f08, 1); g.fillRect(x, y + h * 0.34, b, h * 0.62);
-    g.fillStyle(0x6b4a22, 1); g.fillRect(x + 1.5, y + h * 0.38, b - 3, h * 0.54);
+
+    // Schatten auf dem Pflaster
+    g.fillStyle(0x000000, 0.32);
+    g.fillEllipse(x + b / 2, y + h - 1, b * 0.92, h * 0.16);
+
+    // Unterteil
+    g.fillStyle(0x8c5223, 1); g.fillRoundedRect(x, y + deckelH, b, unterH, 5);
+    g.fillStyle(0xa8662e, 1); g.fillRoundedRect(x + 2.5, y + deckelH + 2.5, b - 5, unterH - 5, 4);
     // Deckel
-    g.fillStyle(0x140f08, 1); g.fillEllipse(x + b / 2, y + h * 0.36, b, h * 0.5);
-    g.fillStyle(0x7d5729, 1); g.fillEllipse(x + b / 2, y + h * 0.36, b - 3, h * 0.42);
-    g.fillStyle(0xa87940, 0.85); g.fillEllipse(x + b / 2 - b * 0.12, y + h * 0.28, b * 0.5, h * 0.14);
+    g.fillStyle(0xa15b28, 1); g.fillRoundedRect(x, y, b, deckelH + 5, 7);
+    g.fillStyle(0xc97b36, 1); g.fillRoundedRect(x + 2.5, y + 2.5, b - 5, deckelH, 6);
+    // Maserung im Deckel
+    g.lineStyle(1, 0x9a6020, 0.28);
+    for (let ly = 4; ly < deckelH; ly += 4) g.lineBetween(x + 4, y + ly, x + b - 4, y + ly);
+
     // Eisenbaender
-    g.fillStyle(0x3a3446, 1);
-    g.fillRect(x + b * 0.16, y + h * 0.2, b * 0.1, h * 0.76);
-    g.fillRect(x + b * 0.74, y + h * 0.2, b * 0.1, h * 0.76);
-    // Schloss
-    g.fillStyle(0x2a2634, 1); g.fillRect(x + b / 2 - b * 0.09, y + h * 0.5, b * 0.18, h * 0.22);
-    g.fillStyle(0xd4a030, 1); g.fillRect(x + b / 2 - b * 0.07, y + h * 0.53, b * 0.14, h * 0.16);
-    g.fillStyle(0x2a2634, 1); g.fillCircle(x + b / 2, y + h * 0.61, b * 0.035);
+    g.fillStyle(0x3d2b1f, 1);
+    g.fillRect(x, y + deckelH + bandY, b, 5);
+    g.fillRect(x + Math.floor(b / 2) - 3, y + deckelH - 3, 6, unterH + 5);
+
+    // Schloss mit Glanz
+    g.fillStyle(0xe6c97d, 1);
+    g.fillRect(x + Math.floor(b / 2) - 4.5, y + deckelH + bandY - 3, 9, 9);
+    g.fillRect(x + Math.floor(b / 2) - 1.5, y + deckelH + bandY + 6, 3, 8);
+    g.fillStyle(0xfff0c0, 0.75);
+    g.fillRect(x + Math.floor(b / 2) - 3, y + deckelH + bandY - 1.5, 3, 3);
+
+    // Kanten: helle oben, dunkle unten
+    g.lineStyle(1.5, 0xf2d9a0, 0.6); g.strokeRoundedRect(x + 1.5, y + 1.5, b - 3, deckelH, 6);
+    g.lineStyle(1.5, 0x6e3f1b, 0.75); g.strokeRoundedRect(x, y + deckelH, b, unterH, 5);
+    // Ein Lichtstreifen quer ueber den Deckel
+    g.fillStyle(0xffe3ad, 0.22);
+    g.fillEllipse(x + b * 0.38, y + deckelH * 0.42, b * 0.55, deckelH * 0.34);
+
     this._truheBild = g;
   }
 
