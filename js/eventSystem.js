@@ -175,9 +175,9 @@
       'event.altar.choice': 'Sacrifice {name} ({slot})',
       'event.altar.choice_ignore': 'Give nothing',
       'event.altar.nothing_equipped': 'You carry nothing it would accept.',
-      'event.altar.better': 'The stone gives back more than it took. ({alt} → {neu})',
-      'event.altar.same': 'An even trade. ({alt} → {neu})',
-      'event.altar.worse': 'The stone got the better of you. ({alt} → {neu})',
+      'event.altar.better': 'The stone gives back more than it took.',
+      'event.altar.same': 'An even trade — no better, no worse.',
+      'event.altar.worse': 'The stone gave back worse. Bad luck.',
       'event.altar.slot.weapon': 'weapon',
       'event.altar.slot.head': 'head',
       'event.altar.slot.body': 'body',
@@ -1126,8 +1126,10 @@
               if (!r) return;
               var schluessel = (r.neu > r.alt) ? 'better'
                              : (r.neu === r.alt) ? 'same' : 'worse';
-              showEventToast(scene, T('event.altar.' + schluessel,
-                { alt: r.alt, neu: r.neu }), 'sacrifice_altar');
+              // Ohne Zahlen: die Item-Staerke ist eine interne Kennzahl, und
+              // "18 -> 21" sagt am Bildschirmrand niemandem etwas. Was das
+              // Stueck taugt, steht im Tooltip.
+              showEventToast(scene, T('event.altar.' + schluessel), 'sacrifice_altar');
             }
           };
         });
@@ -2053,6 +2055,10 @@
   }
 
   // --- Choice dialog overlay (032-random-event-rework) ---
+  // Wie viele Wahlen der Dialog hoechstens zeigt. Wer mehr uebergibt, verliert
+  // die hinteren — und das ist genau einmal passiert (siehe unten).
+  var MAX_WAHLEN = 6;
+
   function showEventChoiceDialog(scene, title, choices) {
     if (!scene || !scene.add || !choices || !choices.length) return;
     var cam = scene.cameras && scene.cameras.main;
@@ -2089,7 +2095,11 @@
     // "Weiter"-Button (der bei cy begann). Jetzt den GANZEN Block (Titel + gap +
     // Buttons) vertikal zentrieren, oben abfangen, und die Buttons UNTER das
     // tatsaechliche Textende setzen.
-    var _estBtnBlock = Math.min(choices.length, 3) * 44;
+    // Frueher gedeckelt auf 3. Der Opferstein bietet bei vier angelegten
+    // Stuecken fuenf Wahlen an — "Nichts hergeben" steht zuletzt und wurde
+    // deshalb NIE gezeichnet: es gab keine Moeglichkeit, nichts zu opfern.
+    // 6 passt auch auf die kleinste Kamera (6*44 + Titel < 480).
+    var _estBtnBlock = Math.min(choices.length, MAX_WAHLEN) * 44;
     var _blockTop = Math.max(20, cy - (titleText.height + 16 + _estBtnBlock) / 2);
     titleText.setY(_blockTop + titleText.height / 2);
     var _buttonsTop = _blockTop + titleText.height + 16;
@@ -2118,7 +2128,7 @@
     var BTN_PAD_Y = 8;
     var BTN_GAP = 10;
     var cursorY = _buttonsTop; // top edge of next button — unter dem Titel-Text
-    for (var i = 0; i < choices.length && i < 3; i++) {
+    for (var i = 0; i < choices.length && i < MAX_WAHLEN; i++) {
       var btnText = scene.add.text(0, 0, choices[i].label, {
         fontSize: '14px', fill: '#f1e9d8', fontFamily: 'monospace',
         align: 'center',

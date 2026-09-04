@@ -29,7 +29,7 @@
       'find.nische.beute':     'Hinter den Steinen lag etwas.',
       'find.nische.leer':      'Hinter den Steinen: nichts als Staub.',
       'find.lager.label':      'Verlassenes Lager',
-      'find.lager.rast':       'Du rastest kurz. {n} Leben zurueck.',
+      'find.lager.rast':       'Du rastest kurz. {n} Leben zurück.',
       'find.lager.voll':       'Nichts zu heilen — du gehst weiter.',
       'find.falle.label':      'Zurueckgelassener Beutel',
       'find.falle.zuschnappt': 'Ein Hinterhalt! Aber der Beutel ist voll.',
@@ -723,7 +723,10 @@
           var heilung = Math.max(1, Math.round(max * LAGER_HEILUNG));
           var neu = Math.min(max, jetzt + heilung);
           if (typeof window.setPlayerHealth === 'function') window.setPlayerHealth(neu);
-          _melde(scene, _t('find.lager.rast', { n: neu - jetzt }), pos, '#7dffa0');
+          // Ohne Runden steht dort "12.399999999999999 Leben": die Heilmenge ist
+          // ganzzahlig, das AKTUELLE Leben aber nicht (Lebensraub und prozentuale
+          // Treffer erzeugen Brueche).
+          _melde(scene, _t('find.lager.rast', { n: Math.round(neu - jetzt) }), pos, '#7dffa0');
         } catch (e) { /* eine misslungene Rast darf nichts brechen */ }
       },
       { spawnAt: pos }
