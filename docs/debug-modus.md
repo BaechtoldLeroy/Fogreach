@@ -132,6 +132,31 @@ bleibt zufällig). Es gibt rund 36 Vorlagen — die Liste steht in
 Nachgemessen an der Rastergröße je Raum: ohne Flagge 24×24, 30×30, 32×32,
 65×69 — mit `?room=Arena` viermal 36×28.
 
+### Ereignisse erzwingen (#71, #129)
+
+| Flagge | Wirkung |
+|---|---|
+| `?event=<id>` | erzwingt dieses Ereignis in JEDEM Raum |
+
+Raum 0 bekommt grundsätzlich nie ein Ereignis — die Flagge greift ab dem
+zweiten Raum. Ein unbekannter Name wird mit der vollen Liste auf der Konsole
+benannt statt still verschluckt.
+
+Bekannte Namen: `treasure_cache`, `ambush`, `wandering_merchant`,
+`trapped_chest`, `lore_fragment`, `environmental_hazard`, `shrine_buff`,
+`gambling`, `elite_ambush`, `healing_fountain`, `sacrifice_altar`,
+`chain_lock`.
+
+```
+?debug=1&dungeon=10&event=chain_lock
+```
+
+Das **Kettenschloss** (`chain_lock`) startet ein Minispiel: ein Zeiger wandert
+über eine Leiste, Leertaste im hellen Fenster setzt einen Stift. Von Stift zu
+Stift wird das Fenster enger und der Zeiger schneller; zwei Fehlgriffe sind
+frei. Alle Stifte → Ausrüstung auf Belohnungstruhen-Niveau, ein Teil → Gold
+nach Anteil, keiner → nichts.
+
 ### Kriegsschar (#95)
 
 | Flagge | Wirkung |

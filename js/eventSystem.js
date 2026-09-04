@@ -56,6 +56,15 @@
       'event.shrine.toast_spawn': 'Ein mystischer Schrein erscheint...',
       'event.shrine.object_label': 'Schrein',
       'event.shrine.choice_ignore': 'Ignorieren',
+      'event.lock.name': 'Verkettetes Gitter',
+      'event.lock.toast_spawn': 'Schwere Ketten im Halbdunkel — dahinter liegt etwas.',
+      'event.lock.object_label': 'Kettenschloss',
+      'event.lock.won': 'Die Kette fällt. Was dahinter lag, gehört dir.',
+      'event.lock.partial': 'Zwei Stifte sitzen, dann bricht der Dietrich. {gold} Gold aus der Fuge.',
+      'event.lock.lost': 'Das Schloss klemmt. Die Kette bleibt, wo sie ist.',
+      'lock.title': 'Kettenschloss',
+      'lock.hint': 'Leertaste, wenn der Zeiger im Licht steht',
+      'lock.status': 'Stifte {stifte}   Dietriche {picks}',
       'event.altar.name': 'Opferstein',
       'event.altar.toast_spawn': 'Ein blutiger Opferstein steht im Halbdunkel...',
       'event.altar.object_label': 'Opferstein',
@@ -169,6 +178,15 @@
       'event.shrine.toast_spawn': 'A mystical shrine appears...',
       'event.shrine.object_label': 'Shrine',
       'event.shrine.choice_ignore': 'Ignore',
+      'event.lock.name': 'Chained Grate',
+      'event.lock.toast_spawn': 'Heavy chains in the gloom — something lies behind them.',
+      'event.lock.object_label': 'Chain Lock',
+      'event.lock.won': 'The chain falls. What lay behind it is yours.',
+      'event.lock.partial': 'Two pins seat, then the pick snaps. {gold} gold from the gap.',
+      'event.lock.lost': 'The lock jams. The chain stays where it is.',
+      'lock.title': 'Chain Lock',
+      'lock.hint': 'Space when the pointer is in the light',
+      'lock.status': 'Pins {stifte}   Picks {picks}',
       'event.altar.name': 'Sacrificial Stone',
       'event.altar.toast_spawn': 'A bloodied sacrificial stone stands in the gloom...',
       'event.altar.object_label': 'Sacrificial Stone',
@@ -499,6 +517,33 @@
         g.fillStyle(0x777788, 1); g.fillRect(12, 4, 8, 4); // capital
         g.fillStyle(0x44aaff, 0.6); g.fillCircle(16, 4, 3); // glow orb
         g.fillStyle(0x88ddff, 0.3); g.fillCircle(16, 4, 5); // outer glow
+        g.generateTexture(texKey, 32, 32);
+      } else if (texKey === 'evt_schloss') {
+        // Ein Buegelschloss an schweren Kettengliedern. Dieselben drei Lagen
+        // wie bei den Funden aus #113: dunkle Grundform, Flaeche, EINE helle
+        // Lichtkante — ohne die wirkt alles flach.
+        g.fillStyle(0x000000, 0.32); g.fillEllipse(16, 28, 24, 6);
+        // Kettenglieder links und rechts
+        [[4, 12], [4, 20], [27, 12], [27, 20]].forEach(function (p) {
+          g.fillStyle(0x14121a, 1); g.fillEllipse(p[0], p[1], 9, 7);
+          g.fillStyle(0x5a5568, 1); g.fillEllipse(p[0], p[1], 7.5, 5.5);
+          g.fillStyle(0x2a2634, 1); g.fillEllipse(p[0], p[1], 4.5, 3);
+          g.fillStyle(0x7d768c, 1); g.fillEllipse(p[0] - 0.8, p[1] - 1.4, 4, 1.6);
+        });
+        // Buegel
+        g.fillStyle(0x14121a, 1); g.fillRect(10, 6, 12, 9);
+        g.fillStyle(0x8a8298, 1); g.fillRect(11, 7, 10, 7);
+        g.fillStyle(0x2a2634, 1); g.fillRect(13, 9, 6, 5);
+        g.fillStyle(0xaaa2b8, 1); g.fillRect(11, 7, 10, 1.5);
+        // Schlosskoerper
+        g.fillStyle(0x140f08, 1); g.fillRect(8, 14, 16, 13);
+        g.fillStyle(0x6b5426, 1); g.fillRect(9, 15, 14, 11);
+        g.fillStyle(0x8f7334, 1); g.fillRect(9, 15, 14, 2);      // Lichtkante
+        g.fillStyle(0x4a3a18, 1); g.fillRect(9, 24, 14, 2);      // Schattenfuss
+        // Schluesselloch
+        g.fillStyle(0x1a1206, 1); g.fillCircle(16, 20, 2.6);
+        g.fillStyle(0x1a1206, 1); g.fillTriangle(14.6, 21, 17.4, 21, 16, 25);
+        g.fillStyle(0xffd166, 0.5); g.fillCircle(15.3, 19.3, 0.9);
         g.generateTexture(texKey, 32, 32);
       } else if (texKey === 'evt_opferstein') {
         // Ein niedriger Blutstein: dunkle Grundform, Steinflaeche, EINE helle
@@ -1103,6 +1148,50 @@
     }
     return { alt: vorher, neu: nachher, item: neu };
   }
+
+  // --- Kettenschloss (#71) -------------------------------------------------
+  //
+  // Ein echtes Minispiel statt eines Knopfdrucks. Warum kein Kartenspiel: diese
+  // Stadt heisst nach ihren Ketten. Ein verkettetes Gitter aufzubrechen kommt
+  // aus dem Stoff des Spiels, Blackjack waere Taverneninventar.
+  //
+  // Eigenes Ereignis, nicht an Truhen allgemein gehaengt: so hat es eine eigene
+  // Haeufigkeit und laesst sich abschalten. Ein Minispiel vor JEDER Truhe
+  // nervt beim zehnten Mal.
+  EVENT_TYPES.push({
+    id: 'chain_lock',
+    name: T('event.lock.name'),
+    weight: 11,
+    minDepth: 2,
+    handler: function (scene) {
+      showEventToast(scene, T('event.lock.toast_spawn'), 'chain_lock');
+      spawnEventObject(scene, 'evt_schloss', 0x6b5426, 0xffd166,
+        T('event.lock.object_label'), function () {
+        try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
+        var tiefe = window.DUNGEON_DEPTH || 1;
+        if (!window.Kettenschloss || typeof window.Kettenschloss.spiele !== 'function') return;
+        window.Kettenschloss.spiele(scene, tiefe, function (erg) {
+          var lohn = window.Kettenschloss.belohnung(erg.gesetzt, erg.anzahl, tiefe);
+          try {
+            if (lohn.art === 'item' && window.LootSystem
+                && typeof window.LootSystem.rollItem === 'function'
+                && typeof spawnLoot === 'function') {
+              var stueck = window.LootSystem.rollItem(null, lohn.iLevel, lohn.stufe);
+              if (stueck) spawnLoot.call(scene, player.x, player.y - 30, stueck, null);
+              showEventToast(scene, T('event.lock.won'), 'chain_lock');
+            } else if (lohn.art === 'gold') {
+              if (window.LootSystem && window.LootSystem.grantGold) {
+                window.LootSystem.grantGold(lohn.gold);
+              }
+              showEventToast(scene, T('event.lock.partial', { gold: lohn.gold }), 'chain_lock');
+            } else {
+              showEventToast(scene, T('event.lock.lost'), 'chain_lock');
+            }
+          } catch (e) { /* eine fehlende Belohnung darf den Raum nie brechen */ }
+        });
+      });
+    }
+  });
 
   EVENT_TYPES.push({
     id: 'sacrifice_altar',
@@ -2217,6 +2306,31 @@
 
     // Debug: force a specific event in a specific room
     // Set window.DEBUG_FORCE_EVENT = { roomId: 1, eventId: 'wandering_merchant' }
+    // Debug (?event=<id>): dasselbe Ereignis in JEDEM Raum. Bisher liess sich
+    // ein Ereignis nur ueber window.DEBUG_FORCE_EVENT erzwingen — keine
+    // URL-Flagge, nirgends dokumentiert, und erst ab roomId >= 1. Damit war
+    // kein Ereignis gezielt testbar (#129).
+    var _flagge = null;
+    try { _flagge = window.DebugGate && window.DebugGate.flagge('event'); } catch (e) {}
+    if (_flagge) {
+      var _gewuenscht = String(_flagge).toLowerCase();
+      var _treffer = EVENT_TYPES.filter(function (e) {
+        return String(e.id).toLowerCase() === _gewuenscht;
+      })[0];
+      if (_treffer) {
+        lastEventId = _treffer.id;
+        var _los = function () { gibEreignisXp(scene); _treffer.handler(scene); };
+        if (scene && scene.time && scene.time.delayedCall) scene.time.delayedCall(800, _los);
+        else _los();
+        return;
+      }
+      try {
+        if (typeof console !== 'undefined' && console.warn) {
+          console.warn('[Ereignis] unbekannt: ' + _flagge + ' — bekannt sind: '
+            + EVENT_TYPES.map(function (e) { return e.id; }).join(', '));
+        }
+      } catch (e) {}
+    }
     if (window.DEBUG_FORCE_EVENT && window.DEBUG_FORCE_EVENT.roomId === roomId) {
       var forced = EVENT_TYPES.find(function(e) { return e.id === window.DEBUG_FORCE_EVENT.eventId; });
       if (forced) {
