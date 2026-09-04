@@ -925,6 +925,14 @@ function _stairJustConsumedE() {
   return at > 0 && (Date.now() - at) < STAIR_E_CONSUME_WINDOW_MS;
 }
 
+// Dasselbe fuer Ereignisobjekte (Koederbeutel, Wandnische, Schrein, Brunnen …).
+// Sie haengen ihren Handler direkt an keydown-E; ohne diese Marke feuerte
+// derselbe Druck zusaetzlich die Faehigkeit auf Slot 3.
+function _eventJustConsumedE() {
+  const at = window.__eventConsumedEAt || 0;
+  return at > 0 && (Date.now() - at) < STAIR_E_CONSUME_WINDOW_MS;
+}
+
 // True, wenn der Spieler auf/an einer ENTSPERRTEN Treppe steht. Wird beim
 // E-Druck (Classic slot3) geprüft, damit der Raumwechsel das E konsumiert und
 // die Ability nicht zusätzlich feuert.
@@ -1941,8 +1949,14 @@ function update(time, delta) {
           // Marke, (b) der Spieler steht auf einer Treppe, der Wechsel kam aber
           // (noch) nicht zustande — Geometrie.
           const onStair = _stairJustConsumedE() || _playerOnUnlockedStair(this);
-          const doorHandled = !onStair && window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
-          if (!onStair && !doorHandled) window.AbilitySystem.tryActivate('slot3', this);
+          // Ein Ereignisobjekt hat den Druck schon verbraucht (Koederbeutel &
+          // Co.) — dann gehoert er ihm allein.
+          const eventHandled = !onStair && _eventJustConsumedE();
+          const doorHandled = !onStair && !eventHandled
+            && window.DoorSystem && window.DoorSystem.tryInteractDoor(this, player);
+          if (!onStair && !eventHandled && !doorHandled) {
+            window.AbilitySystem.tryActivate('slot3', this);
+          }
         } else {
           window.AbilitySystem.tryActivate('slot' + slot, this);
         }

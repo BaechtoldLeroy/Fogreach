@@ -783,6 +783,11 @@
       var dy = obj.y - player.y;
       if (Math.sqrt(dx * dx + dy * dy) > 80) return;
       used = true;
+      // Dem Ability-Zweig melden, dass DIESES E schon vergeben ist. Ohne die
+      // Marke loest derselbe Druck zusaetzlich die Faehigkeit auf Slot 3 aus:
+      // main.js kennt die Kette Treppe -> Tuer -> Ability, Ereignisobjekte
+      // kamen darin nicht vor. Dasselbe Muster wie __stairConsumedEAt.
+      try { window.__eventConsumedEAt = Date.now(); } catch (e) {}
       scene.input.keyboard.off('keydown-E', interactHandler);
       scene.events.off('update', updateHandler);
       prompt.destroy();
