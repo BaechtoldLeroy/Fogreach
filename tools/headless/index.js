@@ -370,6 +370,23 @@ function decorate(h) {
       const attackRange = opts.attackRange || 60;
       const potionAt = typeof opts.potionAt === 'number' ? opts.potionAt : 0.45;
       const equipEvery = opts.equipEvery || 40;
+      /**
+       * RAEUMEN statt durchrennen (opts.raeumen).
+       *
+       * play() ist als Schnelldurchlauf gebaut: steht die Treppe offen, ist
+       * sie das Ziel, und Gegner werden nur mitgenommen, wenn sie ohnehin im
+       * Weg stehen. Fuer die Abdeckungspruefung ist das richtig — fuer eine
+       * MESSUNG ist es falsch. Gemessen ueber 250 Runden: 0 Kills, 5 Truhen,
+       * 3 Treppen, und beim Verlassen standen noch 28 Gegner im Raum. Wer so
+       * misst, misst Truhen, nicht das Spiel.
+       *
+       * Mit dieser Fahne kehrt sich die Reihenfolge um: erst die Gegner, die
+       * Treppe zuletzt. Aufgegebene Ziele bleiben aufgegeben — sind ALLE
+       * uebrig gebliebenen unerreichbar, geht es doch zur Treppe. Sonst
+       * stuende der Bot im Raum, weil ein Bogenschuetze hinter einer Wand
+       * klemmt.
+       */
+      const raeumen = !!opts.raeumen;
 
       const k0 = h.kills();
       const stats = { kills: 0, chestsBroken: 0, potions: 0, abilities: 0, equipped: 0,
@@ -1228,6 +1245,16 @@ function decorate(h) {
         if (blockerZiel) {
           target = blockerZiel;
           td = Math.hypot(blockerZiel.x - st.px, blockerZiel.y - st.py);
+        } else if (raeumen && enemyList.some(function (e) { return !aufgegeben.has(zielKey(e)); })) {
+          // MODUS F — raeumen: Gegner zuerst, auch bei offener Treppe.
+          // Die Auswahl ist dieselbe wie im gesperrten Raum (Klimax zuerst),
+          // nur die Vorfahrt ist getauscht.
+          let gf = null;
+          if (st.klimax && !aufgegeben.has(zielKey(st.klimax))) {
+            gf = { obj: st.klimax, d: Math.hypot(st.klimax.x - st.px, st.klimax.y - st.py) };
+          }
+          if (!gf) gf = naechstes(enemyList);
+          if (gf) { target = gf.obj; td = gf.d; }
         } else if (offeneTreppen.length) {
           // MODUS A — Ausgang offen: direkt dorthin. Gegner werden nur
           // mitgenommen, wenn sie ohnehin in Schlagreichweite stehen (siehe
