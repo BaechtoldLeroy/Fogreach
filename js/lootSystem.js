@@ -1324,6 +1324,40 @@ if (window.i18n) {
   const BLACK_MARKET_MIN_DEPTH = 4;
   const BLACK_MARKET_DEPTH_OFFSET = 3;
 
+  // === #132: alle Preise als Vielfaches EINES TIEFENEINKOMMENS ==============
+  //
+  // Das Problem war nie ein einzelner Preis, sondern die Form: gemessen an
+  // echten Spielstaenden wuchs der Gold-Bestand ueber 30 Tiefen um das 41-Fache,
+  // die steilste Senke um das 10,7-Fache und vier Senken gar nicht. Jede feste
+  // Zahl verliert damit zwangslaeufig den Anschluss.
+  //
+  // Nach der Neuordnung der Abwuerfe verdient man je Tiefe rund
+  // GOLD_JE_TIEFE * Tiefe. Ein Preis von n Tiefeneinkommen kostet deshalb
+  // n * GOLD_JE_TIEFE * maxDepth — und bleibt damit auf JEDER Tiefe gleich
+  // teuer, statt zurueckzufallen.
+  //
+  // GOLD_JE_TIEFE ist die eine Zahl zum Nachjustieren: steigt das Einkommen,
+  // steigen alle Preise mit. Modell dahinter (tools/goldMessung.js): 50
+  // Destructibles, 10 Kisten, 120 Gegner, 1 Chef je Tiefe.
+  const GOLD_JE_TIEFE = 13;
+
+  /** Preis in Gold fuer n Tiefeneinkommen (auf maxDepth, oder einer Vorgabe). */
+  function preisNachTiefeneinkommen(n, tiefe) {
+    const t = (typeof tiefe === 'number' && tiefe > 0) ? tiefe : _maxDepth();
+    return Math.max(1, Math.round((Number(n) || 0) * GOLD_JE_TIEFE * t));
+  }
+
+  /** Tiefeneinkommen je Ware — die Preistabelle des Spiels an EINER Stelle. */
+  const PREIS_TIEFEN = {
+    itemTier: [1, 2, 5, 10],   // gewoehnlich / magisch / selten / legendaer
+    blindkauf: 2,
+    reroll: 1,
+    treppe: 0.8,
+    portalrolle: 1.2,
+    trank: [0.2, 0.3, 0.4, 0.5], // potionTier 1..4
+    respec: 8
+  };
+
   // Tiefste je erreichte Tiefe (persistiert). Bevorzugt Persistence.getMaxDepth,
   // fällt auf den localStorage-Key bzw. 1 zurück. Defensiv gegen fehlende Module.
   function _maxDepth() {
@@ -1347,9 +1381,9 @@ if (window.i18n) {
   }
 
   function getBlindBuyPrice(depthOverride) {
-    const d = (typeof depthOverride === 'number' && depthOverride > 0) ? depthOverride : _maxDepth();
-    // ×2: alle Käufe bei Mara sind doppelt so teuer (Blindkauf ist Mara-exklusiv).
-    return Math.max(1, Math.round((BLIND_BUY_BASE + d * BLIND_BUY_PER_DEPTH) * 2));
+    // #132: zwei Tiefeneinkommen. Der Mara-Aufschlag (x2) entfaellt — die
+    // Tabelle nennt bereits den Endpreis.
+    return preisNachTiefeneinkommen(PREIS_TIEFEN.blindkauf, depthOverride);
   }
 
   // Kauft eine Blind-Ware: zieht Gold ab, würfelt ein Item auf maxDepth mit einem
@@ -1417,11 +1451,10 @@ if (window.i18n) {
 
   function _computeRerollCost(item, locked) {
     if (!item || typeof item.tier !== 'number') return 0;
-    const tierMult = [1, 2, 4, 8];
-    const t = Math.max(0, Math.min(3, item.tier));
-    const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
-    // Basis 100 (vorher 50) — Reroll bei Mara doppelt so teuer.
-    const base = 100 * tierMult[t] * (1 + iLevel * 0.05);
+    // #132: EIN Tiefeneinkommen, unabhaengig vom Rang. Vorher skalierte der
+    // Preis mit dem Item-Rang (Faktor 1/2/4/8) — das bestrafte genau die
+    // Stuecke, bei denen sich ein Reroll ueberhaupt lohnt.
+    const base = preisNachTiefeneinkommen(PREIS_TIEFEN.reroll);
     return Math.max(1, Math.round(base * (locked ? REROLL_LOCK_SURCHARGE : 1)));
   }
 
@@ -1591,6 +1624,10 @@ if (window.i18n) {
 
     // stubs (later WPs)
     rollItem: rollItem,
+    // #132: Preisanker fuer ShopScene / SkillTree.
+    preisNachTiefeneinkommen: preisNachTiefeneinkommen,
+    PREIS_TIEFEN: PREIS_TIEFEN,
+    GOLD_JE_TIEFE: GOLD_JE_TIEFE,
     composeName: composeName,
     // i18n helper: always re-resolves item name + affixes against current
     // language. Consumers should prefer this over reading item.displayName

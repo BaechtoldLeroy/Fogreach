@@ -559,12 +559,19 @@
     }
 
     _computeItemPrice(item) {
-      const tierMul = [10, 50, 200, 800];
+      // #132: Preis in TIEFENEINKOMMEN statt in tierMul x iLevel.
+      //   gewoehnlich 1 | magisch 2 | selten 5 | legendaer 10
+      // Der Mara-Aufschlag (x2) entfaellt: die Tabelle nennt den Endpreis.
       const t = Math.max(0, Math.min(3, item.tier || 0));
-      const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
-      let base = Math.max(1, Math.round(tierMul[t] * (1 + iLevel * 0.1)));
-      // Mara: alle Käufe doppelt so teuer (gilt NICHT für den Dungeon-Händler).
-      if (!this.isDungeonMerchant) base = base * 2;
+      const LS = window.LootSystem;
+      let base;
+      if (LS && typeof LS.preisNachTiefeneinkommen === 'function') {
+        base = LS.preisNachTiefeneinkommen(LS.PREIS_TIEFEN.itemTier[t]);
+      } else {
+        // Fallback ohne LootSystem: alte Formel, damit die Szene nie bricht.
+        const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
+        base = Math.max(1, Math.round([10, 50, 200, 800][t] * (1 + iLevel * 0.1) * 2));
+      }
       // Dungeon merchant offers 30% discount
       if (this.isDungeonMerchant) base = Math.max(1, Math.round(base * 0.7));
       // Printing-House edict: hub-side shop discount (run-scoped, only at Mara, not at dungeon merchant)
@@ -649,7 +656,12 @@
       const defs = (window.LootSystem && window.LootSystem.POTION_DEFS) || [];
 
       // Portal scroll row at the top. Mara: doppelter Preis (Dungeon-Händler nicht).
-      const scrollPrice = this.isDungeonMerchant ? 75 : 150;
+      // #132: 1,2 Tiefeneinkommen (Dungeon-Haendler behaelt seinen Rabatt).
+      const _scrollBase = (window.LootSystem && typeof window.LootSystem.preisNachTiefeneinkommen === 'function')
+        ? window.LootSystem.preisNachTiefeneinkommen(window.LootSystem.PREIS_TIEFEN.portalrolle)
+        : 150;
+      const scrollPrice = this.isDungeonMerchant
+        ? Math.max(1, Math.round(_scrollBase * 0.7)) : _scrollBase;
       const scrollY = startY;
       const scrollRowBg = this.add.rectangle(px, scrollY + rowH / 2, panelW - 30, rowH - 4, 0x2a2a2a)
         .setStrokeStyle(1, 0x444444).setScrollFactor(0).setDepth(2002);
@@ -694,7 +706,12 @@
       });
 
       // Treppenrolle-Zeile direkt unter der Portalrolle. Mara: doppelter Preis.
-      const stairPrice = this.isDungeonMerchant ? 60 : 120;
+      // #132: 0,8 Tiefeneinkommen.
+      const _stairBase = (window.LootSystem && typeof window.LootSystem.preisNachTiefeneinkommen === 'function')
+        ? window.LootSystem.preisNachTiefeneinkommen(window.LootSystem.PREIS_TIEFEN.treppe)
+        : 120;
+      const stairPrice = this.isDungeonMerchant
+        ? Math.max(1, Math.round(_stairBase * 0.7)) : _stairBase;
       const stairY = startY + rowH;
       const stairRowBg = this.add.rectangle(px, stairY + rowH / 2, panelW - 30, rowH - 4, 0x2a2a2a)
         .setStrokeStyle(1, 0x444444).setScrollFactor(0).setDepth(2002);
@@ -753,8 +770,15 @@
         }).setScrollFactor(0).setDepth(2003);
         this.tabBody.push(healText);
 
-        // Mara: doppelter Preis; Dungeon-Händler 30% Rabatt.
-        let potionPrice = this.isDungeonMerchant ? Math.max(1, Math.round(def.goldCost * 0.7)) : (def.goldCost * 2);
+        // #132: 0,2 / 0,3 / 0,4 / 0,5 Tiefeneinkommen je Trankstufe.
+        // Dungeon-Haendler behaelt seine 30 % Rabatt; der Mara-Aufschlag
+        // entfaellt, weil die Tabelle den Endpreis nennt.
+        const _LSp = window.LootSystem;
+        const _pTier = Math.max(1, Math.min(4, def.potionTier || 1));
+        let potionPrice = (_LSp && typeof _LSp.preisNachTiefeneinkommen === 'function')
+          ? _LSp.preisNachTiefeneinkommen(_LSp.PREIS_TIEFEN.trank[_pTier - 1])
+          : (def.goldCost * 2);
+        if (this.isDungeonMerchant) potionPrice = Math.max(1, Math.round(potionPrice * 0.7));
         const _phPot = (typeof window !== 'undefined') ? window.printingBuffs : null;
         if (_phPot && !this.isDungeonMerchant && typeof _phPot.shopPriceMult === 'number' && _phPot.shopPriceMult > 0) {
           potionPrice = Math.max(1, Math.round(potionPrice * _phPot.shopPriceMult));

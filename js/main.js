@@ -1609,8 +1609,24 @@ function breakDestructibleObstacle(scene, obs) {
   // Behälter: nur etwas Gold, keine Ausrüstung/Tränke/Rollen. Die Tabellen
   // hier greifen über `|| <default>` — ein unbekannter Tier fällt sonst still
   // auf Fass-Beute zurück, darum steht 'stone' überall explizit drin.
-  const goldDrop = { stone: 3, minor: 5, small: 15, medium: 35, large: 75 }[tier] || 5;
-  const goldAmount = goldDrop + Math.floor(Math.random() * goldDrop);
+  // #132: Behaelter-Gold war FLACH — ein Fass gab auf Tiefe 30 dieselben 7 Gold
+  // wie auf Tiefe 1, waehrend Gegner-Gold mitwuchs. Gemessen ueber einen
+  // Aufstieg 1..30 und an echten Spielstaenden: der Bestand waechst 41x, die
+  // Preise 3,6x — deshalb lagen am Ende 61626 Gold ungenutzt herum.
+  //
+  // Neu: Kulisse und Faesser sind Kleingeld MIT CHANCE (die meisten geben
+  // nichts), Truhen skalieren mit der Tiefe.
+  //   stone/minor  10 % auf 1..5
+  //   small  Tiefe x 0,3   medium  Tiefe x 0,6   large  Tiefe x 1
+  const _goldTiefe = Math.max(1, (typeof window !== 'undefined' && window.DUNGEON_DEPTH) || 1);
+  const _truhenFaktor = { small: 0.3, medium: 0.6, large: 1.0 }[tier];
+  let goldAmount;
+  if (typeof _truhenFaktor === 'number') {
+    // +/-20 % Streuung, damit zwei gleiche Truhen nicht identisch aussehen.
+    goldAmount = Math.max(1, Math.round(_goldTiefe * _truhenFaktor * (0.8 + Math.random() * 0.4)));
+  } else {
+    goldAmount = (Math.random() < 0.10) ? (1 + Math.floor(Math.random() * 5)) : 0;
+  }
   // Truhe? Robust über den lootTier erkennen (small/medium/large gehört NUR
   // Truhen — Fässer/Kisten sind 'minor', Kulisse 'stone'), plus type-String und
   // die Chest-Marker als Backup. Deckt alle Truhen-Typen/-Versionen ab, auch
@@ -1646,7 +1662,7 @@ function breakDestructibleObstacle(scene, obs) {
       }
     }
   }
-  if (!goldShown && window.LootSystem && window.LootSystem.grantGold) {
+  if (goldAmount > 0 && !goldShown && window.LootSystem && window.LootSystem.grantGold) {
     window.LootSystem.grantGold(goldAmount);
   }
 

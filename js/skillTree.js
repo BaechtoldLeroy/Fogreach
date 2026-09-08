@@ -270,12 +270,27 @@
   // Skalierende Gold-Kosten für einen Respec. Reine Formel — den Gold-Abzug und
   // den Bestätigungs-Flow übernimmt die UI (P2). Zentral tunebar über die zwei
   // Konstanten. Ganzzahlig.
-  var RESPEC_COST_BASE    = 100; // Grundkosten
+  var RESPEC_COST_BASE    = 100; // Grundkosten (Rueckfall ohne LootSystem)
   var RESPEC_COST_PER_PT  = 50;  // Aufschlag je investiertem Skill-Punkt
 
-  // Gold-Kosten eines Respecs: BASE + investierte Punkte * PER_PT. 0 investierte
-  // Punkte -> nur Grundkosten. Immer ganzzahlig.
+  /**
+   * Gold-Kosten eines Respecs.
+   *
+   * #132: acht Tiefeneinkommen — die teuerste Einzelposition im Spiel, teurer
+   * als ein legendaeres Stueck (zehn). Umskillen soll eine Grundsatz-
+   * entscheidung sein, kein Zwischenschritt.
+   *
+   * Vorher haing der Preis an den investierten Punkten (100 + 50 je Punkt).
+   * Das lief mit dem Level mit, aber nicht mit dem Einkommen: gemessen war ein
+   * Respec auf Tiefe 30 noch 39-mal bezahlbar.
+   *
+   * Rueckfall auf die alte Formel, wenn LootSystem fehlt (Tests, frueher Start).
+   */
   function getRespecCost() {
+    var LS = (typeof window !== 'undefined') ? window.LootSystem : null;
+    if (LS && typeof LS.preisNachTiefeneinkommen === 'function' && LS.PREIS_TIEFEN) {
+      return LS.preisNachTiefeneinkommen(LS.PREIS_TIEFEN.respec);
+    }
     return RESPEC_COST_BASE + getSpentPoints() * RESPEC_COST_PER_PT;
   }
 

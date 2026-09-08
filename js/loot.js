@@ -153,22 +153,53 @@ function _spawnGoldPile(scene, x, y, amount) {
 
 // WP03: Roll how much gold an enemy drops. Boss: mLevel * 50 (flat, reliable).
 // Regular: 30% chance to drop, 1..(mLevel*5) with ±20% jitter.
-function _rollEnemyGoldDrop(mLevel, isBoss) {
+// #132: Gold nach RANG statt nach einem boolean.
+//
+// Vorher lagen Boss und Mini-Boss auf derselben Zahl (Level x 50), und Elite
+// wie Unique zaehlten ueberhaupt nicht — ein Champion gab so viel wie ein
+// Fledermausschwarm. Gemessen ueber einen Aufstieg 1..30: die Belohnung je
+// Gegner stieg zwar 3,1x, die Kill-Rate halbierte sich aber, sodass netto nur
+// 1,53x uebrig blieb.
+//
+// Die Spannen sind Vielfache der TIEFE, damit alles gemeinsam mitwaechst:
+//   normal  20 % auf Tiefe x 0,15     elite   30 % auf Tiefe x 0,3
+//   unique  30 % auf Tiefe x 0,5      mini   100 % auf Tiefe x 1..2
+//   boss   100 % auf Tiefe x 4..6
+const ENEMY_GOLD_RANKS = {
+  normal: { chance: 0.20, von: 0.15, bis: 0.15 },
+  elite:  { chance: 0.30, von: 0.30, bis: 0.30 },
+  unique: { chance: 0.30, von: 0.50, bis: 0.50 },
+  mini:   { chance: 1.00, von: 1.00, bis: 2.00 },
+  boss:   { chance: 1.00, von: 4.00, bis: 6.00 }
+};
+
+function _rollEnemyGoldDrop(mLevel, rang) {
   const level = Math.max(1, Math.floor(Number(mLevel) || 1));
-  if (isBoss) {
-    const base = level * 50;
-    return Math.max(1, Math.floor(base * (0.8 + Math.random() * 0.4)));
-  }
-  if (Math.random() >= 0.30) return 0;
-  const raw = 1 + Math.floor(Math.random() * (level * 5));
-  return Math.max(1, Math.floor(raw * (0.8 + Math.random() * 0.4)));
+  // Alt-Aufrufer uebergaben ein boolean fuer "ist Boss".
+  if (rang === true) rang = 'boss';
+  else if (rang === false || rang == null) rang = 'normal';
+  const def = ENEMY_GOLD_RANKS[rang] || ENEMY_GOLD_RANKS.normal;
+  if (Math.random() >= def.chance) return 0;
+  const spanne = def.von + Math.random() * (def.bis - def.von);
+  // +/-20 % Streuung wie bisher. Untergrenze 1: ein Abwurf, der stattfindet,
+  // soll nie 0 Gold zeigen — das faellt vor allem auf Tiefe 1-2 ins Gewicht.
+  return Math.max(1, Math.round(level * spanne * (0.8 + Math.random() * 0.4)));
+}
+
+/** Rang eines Gegners fuer die Gold-Tabelle. */
+function _enemyGoldRank(enemy) {
+  if (!enemy) return 'normal';
+  if (enemy.isBoss) return 'boss';
+  if (enemy.isMiniBoss) return 'mini';
+  if (enemy.eliteTier === 'unique') return 'unique';
+  if (enemy.isElite || enemy._isElite) return 'elite';
+  return 'normal';
 }
 
 function _dropEnemyGold(scene, enemy) {
   if (!scene || !enemy) return;
   const level = enemy.iLevel || enemy.mLevel || (typeof currentWave !== 'undefined' ? currentWave : 1) || 1;
-  const isBoss = !!(enemy.isBoss || enemy.isMiniBoss);
-  let amount = _rollEnemyGoldDrop(level, isBoss);
+  let amount = _rollEnemyGoldDrop(level, _enemyGoldRank(enemy));
   if (amount <= 0) return;
   // Printing-House edict: gold drop multiplier (open_rebellion).
   const _ph = (typeof window !== 'undefined') ? window.printingBuffs : null;

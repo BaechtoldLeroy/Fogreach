@@ -771,21 +771,25 @@ function freshShopSystem() {
   return globalThis.window.LootSystem;
 }
 
-test('_computeRerollCost: tier 0 scales at base * (1 + iLevel*0.05)', () => {
+test('_computeRerollCost: ein Tiefeneinkommen, gemessen an maxDepth (#132)', () => {
   const sys = freshShopSystem();
-  const item = { tier: 0, iLevel: 1 };
-  // 100 * 1 * (1 + 0.05) = 105 (Basis 100, Mara-Verdopplung)
-  assert.strictEqual(sys._computeRerollCost(item), 105);
+  globalThis.localStorage.setItem('demonfall_maxDepth', '10');
+  // 1 Tiefeneinkommen x GOLD_JE_TIEFE (13) x maxDepth (10) = 130
+  assert.strictEqual(sys._computeRerollCost({ tier: 0, iLevel: 1 }), 130);
+  globalThis.localStorage.setItem('demonfall_maxDepth', '30');
+  assert.strictEqual(sys._computeRerollCost({ tier: 0, iLevel: 1 }), 390);
 });
 
-test('_computeRerollCost: higher tiers use the tier multiplier [1,2,4,8]', () => {
+test('_computeRerollCost: unabhaengig von Rang und iLevel (#132)', () => {
+  // Vorher skalierte der Preis mit dem Rang (1/2/4/8) und dem iLevel — das
+  // bestrafte genau die Stuecke, bei denen sich ein Reroll lohnt. Jetzt kostet
+  // jeder Reroll gleich viel; teuer wird er nur mit der Tiefe.
   const sys = freshShopSystem();
-  const base = { iLevel: 10 };
-  // 1 + 10*0.05 = 1.5 ; Basis 100
-  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 0 }), Math.round(100 * 1 * 1.5));
-  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 1 }), Math.round(100 * 2 * 1.5));
-  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 2 }), Math.round(100 * 4 * 1.5));
-  assert.strictEqual(sys._computeRerollCost({ ...base, tier: 3 }), Math.round(100 * 8 * 1.5));
+  globalThis.localStorage.setItem('demonfall_maxDepth', '10');
+  const t0 = sys._computeRerollCost({ tier: 0, iLevel: 1 });
+  assert.strictEqual(sys._computeRerollCost({ tier: 1, iLevel: 10 }), t0);
+  assert.strictEqual(sys._computeRerollCost({ tier: 2, iLevel: 20 }), t0);
+  assert.strictEqual(sys._computeRerollCost({ tier: 3, iLevel: 40 }), t0);
 });
 
 test('_computeRerollCost: never returns less than 1', () => {
@@ -934,7 +938,8 @@ test('black market: unlocks at maxDepth 4 and rolls at maxDepth-3 (#51)', () => 
 test('blindBuy without override rolls/prices at maxDepth (#51)', () => {
   const sys = freshShopSystem();
   globalThis.localStorage.setItem('demonfall_maxDepth', '12');
-  assert.strictEqual(sys.getBlindBuyPrice(), (80 + 12 * 30) * 2, 'Blindkauf-Preis auf maxDepth (×2 Mara)');
+  // #132: zwei Tiefeneinkommen -> 2 x 13 x 12 = 312
+  assert.strictEqual(sys.getBlindBuyPrice(), 2 * 13 * 12, 'Blindkauf-Preis auf maxDepth');
   globalThis.window.materialCounts = { GOLD: 1000000, MAT: 999 };
   const res = sys.blindBuy();
   assert.strictEqual(res.ok, true);
@@ -949,7 +954,7 @@ test('getBlindBuyPrice scales with depth', () => {
   const p3 = sys.getBlindBuyPrice(3);
   const p10 = sys.getBlindBuyPrice(10);
   assert.ok(p10 > p3, 'deeper -> pricier');
-  assert.strictEqual(p3, (80 + 3 * 30) * 2);   // (BASE + depth*PER_DEPTH) * 2 (Mara-Verdopplung)
+  assert.strictEqual(p3, 2 * 13 * 3);   // #132: 2 Tiefeneinkommen x GOLD_JE_TIEFE x Tiefe
 });
 
 test('blindBuy fails and refunds nothing when gold is insufficient (#51)', () => {
