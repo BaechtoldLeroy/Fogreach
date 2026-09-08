@@ -41,6 +41,18 @@
       'skilltree.toast.no_points': 'Keine Skillpunkte',
       'skilltree.toast.locked': 'Knoten gesperrt',
       'skilltree.toast.maxed': 'Maximaler Rang erreicht',
+      // #93: Passive haben keine abilityId, also auch keine Ability-Beschreibung.
+      // Der Text steht deshalb hier — je Rang formuliert, weil die Wirkung
+      // mit dem Rang waechst.
+      'skilltree.passive.combat_poison_blade': '10 % Chance je Rang, einen Gegner zu vergiften.',
+      'skilltree.passive.combat_lethal_thrust': '+10 % Kritchance je Rang waehrend des Stosses.',
+      'skilltree.passive.combat_chain_lightning': 'Der Wirbel springt je Rang auf einen weiteren Gegner ueber.',
+      'skilltree.passive.mobility_wind_gust': 'Geschosse durchschlagen je Rang einen Gegner mehr.',
+      'skilltree.passive.survival_thorn_armor': 'Reflektiert 1,5 % der max-LP des Angreifers je Rang.',
+      'skilltree.passive.survival_second_chance': 'Einmal je Lauf zurueck ins Leben, mit 15 % Leben je Rang.',
+      'skilltree.passive.mobility_shadow_step': '+20 % Weite der Ausweichrolle je Rang.',
+      'skilltree.passive.mobility_lightning_reflex': '+3 % Ausweichen je Rang. Nach einem Ausweichen 250 ms je Rang unverwundbar.',
+      'skilltree.passive.survival_life_steal': '+4 % Lebensraub je Rang.',
       'skilltree.toast.respec_done': 'Talente zurückgesetzt — {points} Punkte erstattet',
       'skilltree.toast.respec_nogold': 'Nicht genug Gold',
       'skilltree.toast.respec_nothing': 'Nichts zum Zurücksetzen'
@@ -64,6 +76,15 @@
       'skilltree.toast.no_points': 'No skill points',
       'skilltree.toast.locked': 'Node locked',
       'skilltree.toast.maxed': 'Maximum rank reached',
+      'skilltree.passive.combat_poison_blade': '10% chance per rank to poison an enemy.',
+      'skilltree.passive.combat_lethal_thrust': '+10% crit chance per rank during the thrust.',
+      'skilltree.passive.combat_chain_lightning': 'The spin chains to one more enemy per rank.',
+      'skilltree.passive.mobility_wind_gust': 'Projectiles pierce one more enemy per rank.',
+      'skilltree.passive.survival_thorn_armor': 'Reflects 1.5% of the attacker max HP per rank.',
+      'skilltree.passive.survival_second_chance': 'Revive once per run with 15% life per rank.',
+      'skilltree.passive.mobility_shadow_step': '+20% dodge roll distance per rank.',
+      'skilltree.passive.mobility_lightning_reflex': '+3% dodge per rank. After a dodge, 250ms invulnerable per rank.',
+      'skilltree.passive.survival_life_steal': '+4% life steal per rank.',
       'skilltree.toast.respec_done': 'Talents reset — {points} points refunded',
       'skilltree.toast.respec_nogold': 'Not enough gold',
       'skilltree.toast.respec_nothing': 'Nothing to reset'
@@ -280,6 +301,9 @@
       const lvl = _playerLevel();
 
       const all = ST.getAllNodes() || [];
+      // #93/UI: Geometrie je Knoten merken, damit die Voraussetzungen
+      // anschliessend als Pfeile gezeichnet werden koennen (D2-artig).
+      this._nodeGeo = {};
 
       STRANDS.forEach((strand, ci) => {
         const cx = left + ci * colW + colW / 2;
@@ -302,7 +326,89 @@
 
         nodes.forEach((node, ri) => {
           const cy = rowsTop + ri * rowGap + rowGap / 2;
+          this._nodeGeo[node.id] = { x: cx, y: cy, w: cardW, h: cardH, strand: strand };
+        });
+      });
+
+      // Erst die Pfeile (unter den Karten), dann die Karten darueber.
+      this._renderPfeile(lvl);
+
+      STRANDS.forEach((strand, ci) => {
+        const cx = left + ci * colW + colW / 2;
+        const nodes = all.filter(n => n && n.strand === strand);
+        nodes.sort((a, b) => this._tierOf(a) - this._tierOf(b));
+        const rowsTop = top + 30;
+        const rowGap = (bottom - rowsTop) / Math.max(1, nodes.length);
+        const cardW = Math.min(colW - 12, 220);
+        const cardH = Math.min(rowGap - 8, 78);
+        nodes.forEach((node, ri) => {
+          const cy = rowsTop + ri * rowGap + rowGap / 2;
           this._renderNode(node, cx, cy, cardW, cardH, lvl);
+        });
+      });
+    }
+
+    /**
+     * Voraussetzungen als Pfeile — analog zum Talentbaum von Diablo 2.
+     *
+     * Bis hierher stand die Bedingung nur als Text auf der gesperrten Karte
+     * ("Benoetigt Hammer Rang 2"). Bei 21 Knoten ist eine Linie schneller zu
+     * lesen als neun Saetze.
+     *
+     * Gefuehrt wird seitlich an der Spalte entlang: alle Knoten eines Strangs
+     * stehen untereinander, eine gerade Verbindung liefe quer durch die Karten
+     * dazwischen. Der Pfeil geht also aus der Flanke heraus, an der Spalte
+     * hinunter und von der Seite in den Zielknoten.
+     */
+    _renderPfeile(playerLevel) {
+      const ST = window.SkillTree;
+      if (!ST || !this._nodeGeo) return;
+      const g = this.add.graphics().setScrollFactor(0).setDepth(2001);
+      this.nodeViews.push(g);
+
+      const alle = ST.getAllNodes() || [];
+      alle.forEach((node) => {
+        const req = node.requires || {};
+        const quellen = [];
+        if (req.node) quellen.push({ node: req.node, rank: req.rank || 1 });
+        if (Array.isArray(req.nodes)) {
+          req.nodes.forEach((nr) => { if (nr && nr.node) quellen.push({ node: nr.node, rank: nr.rank || 1 }); });
+        }
+        const ziel = this._nodeGeo[node.id];
+        if (!ziel || !quellen.length) return;
+
+        quellen.forEach((q, qi) => {
+          const von = this._nodeGeo[q.node];
+          if (!von) return;
+          // Erfuellt? Dann kraeftig, sonst gedaempft — man sieht auf einen
+          // Blick, welcher Weg schon offen ist.
+          const erfuellt = ST.getRank(q.node) >= q.rank;
+          const farbe = erfuellt ? (STRAND_COLORS[node.strand] || 0x8899aa) : 0x44444c;
+          g.lineStyle(erfuellt ? 2 : 1.5, farbe, erfuellt ? 0.85 : 0.45);
+
+          // Schiene rechts bzw. links neben der Spalte; bei zwei Quellen
+          // (Capstone) je eine Seite, damit sie sich nicht ueberdecken.
+          const seite = (qi % 2 === 0) ? 1 : -1;
+          const randVon = von.x + seite * (von.w / 2);
+          const randZiel = ziel.x + seite * (ziel.w / 2);
+          const schiene = von.x + seite * (von.w / 2 + 10);
+
+          g.beginPath();
+          g.moveTo(randVon, von.y);
+          g.lineTo(schiene, von.y);
+          g.lineTo(schiene, ziel.y);
+          g.lineTo(randZiel, ziel.y);
+          g.strokePath();
+
+          // Spitze am Zielknoten, zeigt nach innen.
+          const s = 5;
+          g.fillStyle(farbe, erfuellt ? 0.9 : 0.5);
+          g.beginPath();
+          g.moveTo(randZiel, ziel.y);
+          g.lineTo(randZiel + seite * s, ziel.y - s * 0.8);
+          g.lineTo(randZiel + seite * s, ziel.y + s * 0.8);
+          g.closePath();
+          g.fillPath();
         });
       });
     }
@@ -372,8 +478,17 @@
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
       this.nodeViews.push(pipText);
 
-      // Sub-line: requirement hint (locked) OR rank x/max + synergy marker.
+      // Sub-line auf der KARTE: nur noch die Synergie-Notiz.
+      //
+      // Rang und Rangkosten standen frueher hier ("Rang 2/5 · Naechster Rang:
+      // 5 Pkt"). Beides ist auf dem Hover besser aufgehoben: den Rang zeigen
+      // die Pips darueber ohnehin, und die Voraussetzungen sind jetzt als
+      // Pfeile gezeichnet statt als Satz. Die Karte bleibt damit lesbar,
+      // gerade bei 21 Knoten auf drei Spalten.
+      //
+      // `sub` wird weiter unten fuer den Tooltip vollstaendig gebaut.
       let sub = '';
+      let kartenSub = '';
       if (!prereqOk && rank === 0) {
         const req = node.requires || {};
         // Alle Knoten-Vorbedingungen sammeln (Einzel-`node` + `nodes`-Array).
@@ -395,6 +510,11 @@
         }
         if (reqParts.length) sub = reqParts.join('\n');
         else if (req.minLevel) sub = _ST_T('skilltree.node.req_level', { level: req.minLevel });
+        // Auf der Karte bleibt bei gesperrten Knoten nur das Level-Tor stehen:
+        // WELCHER Knoten fehlt, sagt der Pfeil.
+        if (req.minLevel && playerLevel < req.minLevel) {
+          kartenSub = _ST_T('skilltree.node.req_level', { level: req.minLevel });
+        }
       } else {
         sub = _ST_T('skilltree.node.rank', { cur: rank, max: maxRank });
         // Kosten des nächsten Rangs anzeigen, solange nicht gemaxt.
@@ -408,10 +528,12 @@
             const nm = (sn && sn.name) || s.from;
             if (srcNames.indexOf(nm) === -1) srcNames.push(nm);
           });
-          sub += '\n' + _ST_T('skilltree.node.synergy', { source: srcNames.join(', ') });
+          const synZeile = _ST_T('skilltree.node.synergy', { source: srcNames.join(', ') });
+          sub += '\n' + synZeile;
+          kartenSub = kartenSub ? (kartenSub + '\n' + synZeile) : synZeile;
         }
       }
-      const subText = this.add.text(cx, topY + 34, sub, {
+      const subText = this.add.text(cx, topY + 34, kartenSub, {
         fontFamily: 'monospace', fontSize: '9px', color: descColor,
         align: 'center', wordWrap: { width: w - 8 }
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
@@ -422,8 +544,15 @@
       // aus Platzgruenden nicht. EN ueber i18n-Key, sonst Inline-Beschreibung.
       const strandName = _ST_T('skilltree.strand.' + node.strand);
       let effect = '';
+      // #93: Passive haben keine abilityId — ihr Text kommt aus der
+      // i18n-Tabelle dieser Szene. Ohne das blieb der Hover leer.
+      if (node.passiv) {
+        const pk = 'skilltree.passive.' + node.id;
+        const pt = _ST_T(pk);
+        if (pt && pt !== pk) effect = pt;
+      }
       const AS = window.AbilitySystem;
-      if (AS && typeof AS.getAbilityDef === 'function' && node.abilityId) {
+      if (!effect && AS && typeof AS.getAbilityDef === 'function' && node.abilityId) {
         const adef = AS.getAbilityDef(node.abilityId);
         if (adef) {
           const dkey = 'ability.' + node.abilityId + '.description';
