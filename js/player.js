@@ -856,8 +856,11 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
   // Lebensraub (Life Steal): combine skill + loot affix "of the Leech" + endless buff.
   if (damage > 0 && typeof addPlayerHealth === 'function') {
     let lsPct = 0;
-    if (typeof window.hasSkill === 'function' && window.hasSkill('survival_life_steal')) {
-      lsPct += 0.10;
+    // #93: +4 % Lebensraub je Rang (war pauschal +10 %).
+    var _raubRang = (typeof window.skillRang === 'function')
+      ? window.skillRang('survival_life_steal') : 0;
+    if (_raubRang > 0) {
+      lsPct += 0.04 * _raubRang;
     }
     if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
       lsPct += (window.LootSystem.getBonus('lifesteal') || 0) / 100;
@@ -1356,8 +1359,11 @@ function getDashSlashRange() {
 function getDashSlashDistance() {
   let dist = getRangeFromBase(DASH_SLASH_DISTANCE_BASE);
   // Schattensprung (Shadow Step): dash slash distance +50%
-  if (typeof window.hasSkill === 'function' && window.hasSkill('mobility_shadow_step')) {
-    dist *= 1.5;
+  // #93: +20 % Rollweite je Rang (war pauschal x1,5).
+  var _satzRang = (typeof window.skillRang === 'function')
+    ? window.skillRang('mobility_shadow_step') : 0;
+  if (_satzRang > 0) {
+    dist *= 1 + 0.2 * _satzRang;
   }
   return dist;
 }
@@ -1970,10 +1976,12 @@ function attack() {
     if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
     handleEnemyHit(this, enemy, { useTween: true, duration: 100 });
 
-    // Giftklinge (Poison Blade): 20% chance to apply POISON on melee attacks
-    if (typeof window.hasSkill === 'function' && window.hasSkill('combat_poison_blade')
+    // #93: 10 % Giftchance je Rang (war pauschal 20 %).
+    var _giftRang = (typeof window.skillRang === 'function')
+      ? window.skillRang('combat_poison_blade') : 0;
+    if (_giftRang > 0
         && window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
-      if (Math.random() < 0.2) {
+      if (Math.random() < 0.10 * _giftRang) {
         window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'poisonBlade');
       }
     }
@@ -2119,10 +2127,12 @@ function spinAttack() {
       window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'spinAttack');
     }
 
-    // Giftklinge (Poison Blade): 20% chance to apply POISON on melee attacks
-    if (typeof window.hasSkill === 'function' && window.hasSkill('combat_poison_blade')
+    // #93: 10 % Giftchance je Rang (war pauschal 20 %).
+    var _giftRang = (typeof window.skillRang === 'function')
+      ? window.skillRang('combat_poison_blade') : 0;
+    if (_giftRang > 0
         && window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
-      if (Math.random() < 0.2) {
+      if (Math.random() < 0.10 * _giftRang) {
         window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'poisonBlade');
       }
     }
@@ -2131,8 +2141,12 @@ function spinAttack() {
   }, { requireLineOfSight: true });
 
   // Kettenblitz (Chain Lightning): spin attack chains to 1 nearby enemy for 50% damage
-  if (typeof window.hasSkill === 'function' && window.hasSkill('combat_chain_lightning') && spinHitEnemies.length > 0) {
+  // #93: je Rang springt der Blitz auf einen Gegner mehr (war genau einer).
+  const _ketteRang = (typeof window.skillRang === 'function')
+    ? window.skillRang('combat_chain_lightning') : 0;
+  if (_ketteRang > 0 && spinHitEnemies.length > 0) {
     const chainRange = 120;
+    let _spruengeUebrig = _ketteRang;
     const hitSet = new Set(spinHitEnemies);
     for (const hitEnemy of spinHitEnemies) {
       if (!hitEnemy || !hitEnemy.active) continue;
@@ -2165,7 +2179,7 @@ function spinAttack() {
         chainFx.lineTo(nearestChainTarget.x, nearestChainTarget.y);
         chainFx.strokePath();
         spinScene.time.delayedCall(200, () => chainFx.destroy(), null, spinScene);
-        break; // only chain once per spin
+        if (--_spruengeUebrig <= 0) break;   // Raenge erlauben mehrere Spruenge
       }
     }
   }
@@ -2274,9 +2288,12 @@ function releaseChargedSlash(forceMaxCharge = false) {
 
   // Tödlicher Stoß (Lethal Thrust): +25% crit chance
   let _savedCritChance;
-  if (typeof window.hasSkill === 'function' && window.hasSkill('combat_lethal_thrust')) {
+  // #93: +10 % Kritchance je Rang waehrend des Stosses (war pauschal +25 %).
+  const _schwachRang = (typeof window.skillRang === 'function')
+    ? window.skillRang('combat_lethal_thrust') : 0;
+  if (_schwachRang > 0) {
     _savedCritChance = playerCritChance;
-    playerCritChance = Math.min(1, (playerCritChance || 0) + 0.25);
+    playerCritChance = Math.min(1, (playerCritChance || 0) + 0.10 * _schwachRang);
   }
 
   const hits = new Set();
@@ -3476,9 +3493,15 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
   // Windstoß (Wind Gust): dagger pierces through first enemy
   // Bow arrows always destroy on first hit (no pierce). Daggers may pierce
   // once if the player has the Wind Gust skill.
-  if (!isBowArrow && typeof window.hasSkill === 'function' && window.hasSkill('mobility_wind_gust')
-      && !projectile.getData('hasPierced')) {
-    projectile.setData('hasPierced', true);
+  // #93: je Rang durchschlaegt das Geschoss einen Gegner mehr (war genau
+  // einer). GEZAEHLT statt geschaltet — mit einem boolean liesse sich der
+  // Rang nicht abbilden.
+  const _windRang = (typeof window.skillRang === 'function')
+    ? window.skillRang('mobility_wind_gust') : 0;
+  const _bisher = projectile.getData('pierceAnzahl') || 0;
+  if (!isBowArrow && _windRang > 0 && _bisher < _windRang) {
+    projectile.setData('pierceAnzahl', _bisher + 1);
+    projectile.setData('hasPierced', true);   // Altfeld: andere Stellen lesen es
     // Don't destroy, let it continue
   } else {
     projectile.destroy();

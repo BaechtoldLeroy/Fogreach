@@ -2498,7 +2498,12 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
   }
 
   // Dodge check (using PLAYER_DODGE_CHANCE)
-  const dodgeChance = window.PLAYER_DODGE_CHANCE || 0;
+  // #93: Blitzreflex bringt +3 % Ausweichchance JE RANG mit. Vorher setzte er
+  // eine Ausweichchance voraus, die ohne Ausruestung 0 ist (inventory.js:1527)
+  // — der Knoten tat fuer die meisten Spieler schlicht nichts.
+  const _reflexRang = (typeof window.skillRang === 'function')
+    ? window.skillRang('mobility_lightning_reflex') : 0;
+  const dodgeChance = (window.PLAYER_DODGE_CHANCE || 0) + _reflexRang * 0.03;
   if (dodgeChance > 0 && Math.random() < dodgeChance) {
     // Dodge successful
     if (scene && player) {
@@ -2507,15 +2512,16 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
         if (player && player.active && player.clearTint) player.clearTint();
       }, null, scene);
     }
-    // Blitzreflex (Lightning Reflex): dodge triggers 0.5s invincibility
-    if (typeof window.hasSkill === 'function' && window.hasSkill('mobility_lightning_reflex')) {
+    // Blitzreflex: 250 ms Unverwundbarkeit JE RANG nach einem Ausweichen.
+    if (_reflexRang > 0) {
+      const _unverwundbarMs = 250 * _reflexRang;
       window._playerInvincible = true;
       if (scene?.time) {
-        scene.time.delayedCall(500, () => {
+        scene.time.delayedCall(_unverwundbarMs, () => {
           window._playerInvincible = false;
         });
       } else {
-        setTimeout(() => { window._playerInvincible = false; }, 500);
+        setTimeout(() => { window._playerInvincible = false; }, _unverwundbarMs);
       }
     }
     return 0;
@@ -2571,8 +2577,14 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
     scene.time.delayedCall(200, () => player.clearTint(), null, scene);
   }
 
-  // Dornenrüstung (Thorn Armor): reflect 2 damage back to melee attackers
-  if (typeof window.hasSkill === 'function' && window.hasSkill('survival_thorn_armor')) {
+  // Dornenruestung: reflektiert 1,5 % der max-LP des Angreifers JE RANG.
+  //
+  // Vorher waren es flache 2 Schaden. Gegner-LP skalieren aber mit +10 % je
+  // Tiefe (enemy.js:509): auf Tiefe 1 waren 2 Schaden 6,7 % eines Gegners,
+  // auf Tiefe 30 nur noch 1,7 %. Der Knoten starb mit der Tiefe.
+  const _dornenRang = (typeof window.skillRang === 'function')
+    ? window.skillRang('survival_thorn_armor') : 0;
+  if (_dornenRang > 0) {
     if (enemies?.children) {
       let nearestEnemy = null;
       let nearestDist = 100; // only reflect to close melee range
@@ -2587,7 +2599,12 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
         }
       });
       if (nearestEnemy && typeof nearestEnemy.hp === 'number') {
-        nearestEnemy.hp -= 2;
+        // Prozent der MAX-LP, damit der Wert mit der Tiefe mitwaechst.
+        // Rueckfall auf die aktuellen LP, falls maxHp fehlt (#107 hat das
+        // zwar gesetzt, aber Alt-Gegner koennen ohne durchkommen).
+        var _dornBasis = (typeof nearestEnemy.maxHp === 'number' && nearestEnemy.maxHp > 0)
+          ? nearestEnemy.maxHp : nearestEnemy.hp;
+        nearestEnemy.hp -= Math.max(1, Math.round(_dornBasis * 0.015 * _dornenRang));
         if (nearestEnemy.active && nearestEnemy.setTint && scene?.time) {
           nearestEnemy.setTint(0xff8844);
           scene.time.delayedCall(150, () => {
@@ -2602,11 +2619,14 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
   }
 
   if (playerHealth <= 0) {
-    // Zweite Chance (Second Chance): revive once per dungeon run with 30% HP
-    if (typeof window.hasSkill === 'function' && window.hasSkill('survival_second_chance')
-        && !window._secondChanceUsed) {
+    // Zweite Chance: einmal je Lauf zurueck, mit 15 % LP JE RANG (15/30/45 %).
+    // Rang 1 kostet nur einen Punkt — deshalb faengt die Wiederbelebung
+    // schwach an; die Staerke steckt im Rang, nicht im Zugang.
+    const _zweiteRang = (typeof window.skillRang === 'function')
+      ? window.skillRang('survival_second_chance') : 0;
+    if (_zweiteRang > 0 && !window._secondChanceUsed) {
       window._secondChanceUsed = true;
-      const reviveHP = Math.max(1, Math.round(playerMaxHealth * 0.3));
+      const reviveHP = Math.max(1, Math.round(playerMaxHealth * 0.15 * _zweiteRang));
       if (typeof setPlayerHealth === 'function') {
         setPlayerHealth(reviveHP);
       } else {

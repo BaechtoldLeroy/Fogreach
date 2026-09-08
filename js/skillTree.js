@@ -58,7 +58,53 @@
       heilwunde:     { abilityId: 'heilwunde',    name: 'Heilwunde',       strand: 'schatten', maxRank: 5, requires: { minLevel: 4, node: 'charge', rank: 2 } },
       deathBlow:     { abilityId: 'deathBlow',    name: 'Todesstoss',      strand: 'schatten', maxRank: 3, requires: { minLevel: 8, nodes: [{ node: 'teleportDash', rank: 2 }, { node: 'heilwunde', rank: 2 }] },
                        synergies: [{ from: 'charge', perRank: 0.03, stat: 'threshold' },
-                                   { from: 'frenzy', perRank: 0.02, stat: 'threshold' }] }
+                                   { from: 'frenzy', perRank: 0.02, stat: 'threshold' }] },
+
+      // === PASSIVE KNOTEN (#93) ==========================================
+      //
+      // Diese neun Effekte sind seit c5d7e84 (#94) VOLLSTAENDIG im Spiel
+      // gebaut — elf Hooks in enemy.js / player.js / main.js fragen sie ab.
+      // Sie liefen nur nie, weil kein Knoten ihre ID trug: geprueft waren es
+      // 0 von 9 Uebereinstimmungen, also gab window.hasSkill() ausnahmslos
+      // false zurueck. Die IDs unten sind daher NICHT frei waehlbar — sie
+      // muessen genau so heissen, sonst bleibt der Effekt tot.
+      //
+      // Raenge statt An/Aus: die Hooks lesen getRank(), damit die bestehende
+      // Rangkosten-Kurve (1/3/5, Rang 3 = 9 Punkte) greift und kein
+      // Sonderpreis noetig ist.
+      //
+      // Die Lage ist der Preis: ein Strang-Finale haengt hinter dem Capstone.
+      // Der Weg dorthin kostet 13 Punkte (whirlwind@2 + hammer@2 + frenzy@2 +
+      // berserk@1), das Finale auf Rang 3 weitere 9 — zusammen 22 von rund 28
+      // Punkten am Story-Ende. Damit sind zwei Finalen rechnerisch unmoeglich,
+      // ohne dass es dafuer eine Sonderregel braucht.
+
+      // --- Strang I: Wut & Wucht ---
+      combat_poison_blade:   { passiv: true, name: 'Giftklinge',     strand: 'wut',      maxRank: 3,
+                               requires: { minLevel: 2, node: 'whirlwind', rank: 1 } },
+      combat_lethal_thrust:  { passiv: true, name: 'Schwachstelle',  strand: 'wut',      maxRank: 3,
+                               requires: { minLevel: 6, node: 'hammer', rank: 2 } },
+      combat_chain_lightning:{ passiv: true, name: 'Kettenblitz',    strand: 'wut',      maxRank: 3,
+                               requires: { minLevel: 14, node: 'berserk', rank: 1 } },
+
+      // --- Strang II: Ketten & Kontrolle ---
+      mobility_wind_gust:    { passiv: true, name: 'Windstoss',      strand: 'ketten',   maxRank: 3,
+                               requires: { minLevel: 2, node: 'twistingBlades', rank: 1 } },
+      survival_thorn_armor:  { passiv: true, name: 'Dornenruestung', strand: 'ketten',   maxRank: 3,
+                               requires: { minLevel: 6, node: 'steelGrasp', rank: 2 } },
+      survival_second_chance:{ passiv: true, name: 'Zweite Chance',  strand: 'ketten',   maxRank: 3,
+                               requires: { minLevel: 14, node: 'frostNova', rank: 1 } },
+
+      // --- Strang III: Schatten & Jagd ---
+      // "Weiter Satz" statt "Schattenschritt": den Namen traegt bereits
+      // teleportDash. Dasselbe bei "Schwachstelle" oben — "Todesstoss" ist
+      // deathBlow.
+      mobility_shadow_step:     { passiv: true, name: 'Weiter Satz', strand: 'schatten', maxRank: 3,
+                                  requires: { minLevel: 2, node: 'charge', rank: 1 } },
+      mobility_lightning_reflex:{ passiv: true, name: 'Blitzreflex',  strand: 'schatten', maxRank: 3,
+                                  requires: { minLevel: 6, node: 'teleportDash', rank: 2 } },
+      survival_life_steal:      { passiv: true, name: 'Lebensraub',   strand: 'schatten', maxRank: 3,
+                                  requires: { minLevel: 14, node: 'deathBlow', rank: 1 } }
     })
   });
 
@@ -412,17 +458,25 @@
   //   survival_thorn_armor, survival_second_chance, survival_life_steal,
   //   combat_poison_blade, combat_chain_lightning, combat_lethal_thrust
   //
-  // Diese Funktion haelt die Hooks am Leben, OHNE das alte Modul. Sie liefert
-  // derzeit immer false, weil der neue Baum noch keine passiven Knoten kennt.
-  // SOBALD #93 passive Knoten einfuehrt: hier auf `getRank(id) > 0` mappen —
-  // dann werden alle 11 Effekte ohne weitere Aenderung wieder wirksam.
+  // #93 ist da: die neun passiven Knoten oben tragen genau diese IDs, also
+  // liefert hasSkill() jetzt echte Werte statt immer false.
+  //
+  // Neu daneben: window.skillRang(id) gibt den RANG zurueck. Die Effekte
+  // skalieren damit, statt nur an/aus zu sein — ein Schalter waere die
+  // schwaechere Bauform gewesen (kein Investitionsbogen), und flache Werte
+  // veralten: Dornenruestung reflektierte 2 Schaden, was bei +10 % Gegner-LP
+  // je Tiefe (enemy.js:509) auf Tiefe 30 noch 1,7 % eines Gegners war.
   if (typeof window !== 'undefined' && typeof window.hasSkill !== 'function') {
     window.hasSkill = function (skillId) {
       if (!skillId) return false;
-      try {
-        // Platzhalter fuer #93: passive Knoten mit gleichlautender id.
-        return getRank(skillId) > 0;
-      } catch (e) { return false; }
+      try { return getRank(skillId) > 0; } catch (e) { return false; }
+    };
+  }
+  if (typeof window !== 'undefined' && typeof window.skillRang !== 'function') {
+    /** Rang eines passiven Knotens (0 = nicht investiert). Nie werfend. */
+    window.skillRang = function (skillId) {
+      if (!skillId) return 0;
+      try { return getRank(skillId) | 0; } catch (e) { return 0; }
     };
   }
 })();

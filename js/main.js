@@ -1790,7 +1790,9 @@ function update(time, delta) {
 
   if (playerHealth <= 0) {
     // Zweite Chance (Second Chance): revive once per dungeon run with 30% HP
-    if (typeof window.hasSkill === 'function' && window.hasSkill('survival_second_chance')
+    // #93: Raenge — 15 % LP je Rang, wie in enemy.js. Es gibt ZWEI
+    // Todespfade; beide muessen die Regel kennen.
+    if ((typeof window.skillRang === 'function' ? window.skillRang('survival_second_chance') : 0) > 0
         && !window._secondChanceUsed) {
       window._secondChanceUsed = true;
       const reviveHP = Math.max(1, Math.round(playerMaxHealth * 0.3));

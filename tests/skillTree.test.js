@@ -17,22 +17,38 @@ const ST = globalThis.window.SkillTree;
 
 beforeEach(() => { ST._configureForTest({}); });
 
-test('Modul exportiert die erwartete API + 12-Knoten-Baum', () => {
+test('Modul exportiert die erwartete API + 21-Knoten-Baum (12 aktiv, 9 passiv)', () => {
   ['getSkillPoints', 'getRank', 'isNodeAvailable', 'grantSkillPoint', 'investPoint',
    'getSynergyValue', 'respec', 'getSaveData', 'loadSaveData'].forEach((fn) => {
     assert.strictEqual(typeof ST[fn], 'function', 'fehlt: ' + fn);
   });
   const nodes = ST.SKILL_TREE.nodes;
-  assert.strictEqual(Object.keys(nodes).length, 12, '12 Knoten erwartet');
-  // jeder Knoten hat abilityId/name/strand/maxRank/requires
+  // #93: 12 aktive Knoten + 9 passive.
+  assert.strictEqual(Object.keys(nodes).length, 21, '21 Knoten erwartet');
+  const aktive = Object.keys(nodes).filter((id) => !nodes[id].passiv);
+  const passive = Object.keys(nodes).filter((id) => nodes[id].passiv);
+  assert.strictEqual(aktive.length, 12, '12 aktive Knoten');
+  assert.strictEqual(passive.length, 9, '9 passive Knoten');
+  // Aktive haben eine abilityId, passive ausdruecklich nicht.
   Object.keys(nodes).forEach((id) => {
     const n = nodes[id];
-    assert.ok(n.abilityId && n.name && n.strand && n.maxRank && n.requires, 'Knoten unvollständig: ' + id);
+    assert.ok(n.name && n.strand && n.maxRank && n.requires, 'Knoten unvollständig: ' + id);
+    if (n.passiv) {
+      assert.strictEqual(n.abilityId, undefined, 'Passiv darf keine abilityId haben: ' + id);
+    } else {
+      assert.ok(n.abilityId, 'Aktiver Knoten ohne abilityId: ' + id);
+    }
   });
-  // 3 Stränge, je 4 Knoten
+  // 3 Stränge, je 7 Knoten (4 aktiv + 3 passiv) — #93 verteilt die Passiven
+  // gleichmässig, damit kein Strang bevorzugt wird.
   const byStrand = {};
   Object.keys(nodes).forEach((id) => { byStrand[nodes[id].strand] = (byStrand[nodes[id].strand] || 0) + 1; });
-  assert.deepStrictEqual(byStrand, { wut: 4, ketten: 4, schatten: 4 });
+  assert.deepStrictEqual(byStrand, { wut: 7, ketten: 7, schatten: 7 });
+  const passivProStrang = {};
+  Object.keys(nodes).forEach((id) => {
+    if (nodes[id].passiv) passivProStrang[nodes[id].strand] = (passivProStrang[nodes[id].strand] | 0) + 1;
+  });
+  assert.deepStrictEqual(passivProStrang, { wut: 3, ketten: 3, schatten: 3 });
 });
 
 test('(a) grantSkillPoint erhöht die Punkte (default +1)', () => {
@@ -209,4 +225,71 @@ test('getSaveData/loadSaveData round-trip (Save-Einbettung WP05)', () => {
   ST.loadSaveData({ skillPoints: 2, ranks: { whirlwind: 99, doesNotExist: 3 } });
   assert.strictEqual(ST.getRank('whirlwind'), ST.getNode('whirlwind').maxRank);
   assert.strictEqual(ST.getRank('doesNotExist'), 0);
+});
+
+// ---------------------------------------------------------------------------
+// #93 — passive Knoten
+// ---------------------------------------------------------------------------
+// Die neun IDs sind NICHT frei waehlbar: elf Hooks in enemy.js / player.js /
+// main.js fragen genau diese Namen ab (Shim aus #94, skillTree.js). Heisst ein
+// Knoten anders, bleibt sein Effekt tot — dieser Test ist die Sperre dagegen.
+const HOOK_IDS = [
+  'mobility_lightning_reflex', 'mobility_shadow_step', 'mobility_wind_gust',
+  'survival_thorn_armor', 'survival_second_chance', 'survival_life_steal',
+  'combat_poison_blade', 'combat_chain_lightning', 'combat_lethal_thrust'
+];
+
+test('#93: die neun Passiven tragen exakt die IDs, die die Hooks abfragen', () => {
+  const da = Object.keys(ST.SKILL_TREE.nodes);
+  HOOK_IDS.forEach((id) => {
+    assert.ok(da.indexOf(id) >= 0, 'Hook-ID fehlt im Baum: ' + id);
+    assert.ok(ST.SKILL_TREE.nodes[id].passiv, id + ' muss passiv sein');
+  });
+});
+
+test('#93: hasSkill/skillRang folgen dem Rang', () => {
+  ST._configureForTest({});
+  assert.strictEqual(globalThis.window.skillRang('survival_thorn_armor'), 0);
+  assert.strictEqual(globalThis.window.hasSkill('survival_thorn_armor'), false);
+  ST.grantSkillPoint(20);
+  ST.investPoint('twistingBlades', 30);
+  ST.investPoint('twistingBlades', 30);
+  ST.investPoint('steelGrasp', 30);
+  ST.investPoint('steelGrasp', 30);
+  ST.investPoint('survival_thorn_armor', 30);
+  assert.strictEqual(globalThis.window.skillRang('survival_thorn_armor'), 1);
+  assert.strictEqual(globalThis.window.hasSkill('survival_thorn_armor'), true);
+  ST.investPoint('survival_thorn_armor', 30);
+  assert.strictEqual(globalThis.window.skillRang('survival_thorn_armor'), 2);
+});
+
+test('#93: ein Strang-Finale kostet inklusive Weg 22 Punkte', () => {
+  // Die Lage IST der Preis — deshalb braucht "Zweite Chance" keinen Sonderpreis.
+  ST._configureForTest({});
+  ST.grantSkillPoint(100);
+  const vorher = ST.getSkillPoints();
+  [['whirlwind', 2], ['hammer', 2], ['frenzy', 2], ['berserk', 1], ['combat_chain_lightning', 3]]
+    .forEach(([id, r]) => {
+      while (ST.getRank(id) < r) {
+        assert.ok(ST.investPoint(id, 30), 'investPoint fehlgeschlagen: ' + id);
+      }
+    });
+  assert.strictEqual(ST.getRank('combat_chain_lightning'), 3);
+  assert.strictEqual(vorher - ST.getSkillPoints(), 22);
+});
+
+test('#93: Finalen sind ohne ihren Capstone gesperrt', () => {
+  ST._configureForTest({});
+  ST.grantSkillPoint(100);
+  assert.strictEqual(ST.isNodeAvailable('combat_chain_lightning', 30), false);
+  assert.strictEqual(ST.isNodeAvailable('survival_second_chance', 30), false);
+  assert.strictEqual(ST.isNodeAvailable('survival_life_steal', 30), false);
+});
+
+test('#93: Level-Tore der Passiven greifen', () => {
+  ST._configureForTest({});
+  ST.grantSkillPoint(100);
+  ST.investPoint('whirlwind', 30);
+  assert.strictEqual(ST.isNodeAvailable('combat_poison_blade', 1), false, 'L2-Tor haelt');
+  assert.strictEqual(ST.isNodeAvailable('combat_poison_blade', 2), true);
 });
