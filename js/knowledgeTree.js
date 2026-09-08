@@ -57,6 +57,8 @@
     'knowledge.node.magic_find.desc':    '+5 % seltene Drops pro Rang',
     // #116: Keystones. Der Name nennt die Haltung, die Beschreibung den
     // Tausch — Preis zuerst, damit niemand ihn uebersieht.
+    'knowledge.respec.cost':            'Kostet {n} Gold.',
+    'knowledge.respec.broke':           'Du brauchst {n} Gold.',
     'knowledge.zweig.kraft':            'Kraft',
     'knowledge.zweig.zaehigkeit':       'Zähigkeit',
     'knowledge.zweig.gier':             'Gier',
@@ -125,6 +127,8 @@
     'knowledge.node.pickup.desc':        '+20 px pickup radius per rank',
     'knowledge.node.magic_find.label':   'Magic Sense',
     'knowledge.node.magic_find.desc':    '+5% magic find per rank',
+    'knowledge.respec.cost':            'Costs {n} gold.',
+    'knowledge.respec.broke':           'You need {n} gold.',
     'knowledge.zweig.kraft':            'Force',
     'knowledge.zweig.zaehigkeit':       'Fortitude',
     'knowledge.zweig.gier':             'Greed',
@@ -725,14 +729,41 @@
     return true;
   }
 
+  /**
+   * Gold-Kosten eines Respecs — dieselbe Formel wie im Talentbaum
+   * (skillTree.js getRespecCost): acht Tiefeneinkommen. Zwei Baeume, die
+   * dasselbe tun, sollen nicht verschieden viel kosten.
+   *
+   * Ohne LootSystem (Tests, frueher Start) kostet er nichts — ein Respec darf
+   * nie daran scheitern, dass ein Modul fehlt.
+   */
+  function getRespecCost() {
+    var LS = (typeof window !== 'undefined') ? window.LootSystem : null;
+    if (LS && typeof LS.preisNachTiefeneinkommen === 'function' && LS.PREIS_TIEFEN) {
+      return LS.preisNachTiefeneinkommen(LS.PREIS_TIEFEN.respec);
+    }
+    return 0;
+  }
+
   function respec() {
+    // ERSTATTUNG NACH PREIS, nicht nach Rang.
+    //
+    // Vorher zaehlte die Schleife nur die Raenge — ein Keystone (5 Fragmente)
+    // und ein Buendel (4) haben aber Rang 1 und kamen mit je EINEM Fragment
+    // zurueck. Gemessen: 50 investiert, 43 erstattet, sieben weg. Und die
+    // Loeschschleife lief nur ueber CATALOG, sodass beide GESETZT blieben,
+    // obwohl sie erstattet waren.
     var refund = 0;
     for (var nodeId in state.ranks) {
-      if (Object.prototype.hasOwnProperty.call(state.ranks, nodeId)) {
-        refund += (state.ranks[nodeId] | 0);
-      }
+      if (!Object.prototype.hasOwnProperty.call(state.ranks, nodeId)) continue;
+      var r = state.ranks[nodeId] | 0;
+      if (r <= 0) continue;
+      if (KEYSTONE_BY_ID[nodeId]) refund += KEYSTONE_KOSTEN;
+      else if (NOTABLE_BY_ID[nodeId]) refund += NOTABLE_KOSTEN;
+      else refund += r;
     }
     state.fragments = (state.fragments | 0) + refund;
+    state.ranks = {};                       // alles loesen, nicht nur den Katalog
     for (var i = 0; i < CATALOG.length; i++) state.ranks[CATALOG[i].id] = 0;
     _applyRanksToBuffs();
     _persist();
@@ -794,6 +825,8 @@
     getState: getState,
     addFragments: addFragments,
     invest: invest,
+    // #116: Respec kostet Gold — gleich viel wie im Talentbaum.
+    getRespecCost: getRespecCost,
     // #116: Notables — Buendel, hinter sechs Raengen im eigenen Zweig.
     getNotables: function () { return NOTABLES.slice(); },
     investNotable: investNotable,

@@ -595,3 +595,38 @@ test('Notable-Altstand wird nicht als unbekannter Knoten erstattet', () => {
   assert.strictEqual(KT.getRank('not_aasgeier'), 1, 'Notable bleibt gesetzt');
   assert.strictEqual(KT.getFragments(), 2, 'nichts faelschlich erstattet');
 });
+
+test('Respec erstattet nach PREIS und loest Keystone wie Notable', () => {
+  // Vorher zaehlte die Erstattung nur die Raenge — ein Keystone (5) und ein
+  // Buendel (4) haben aber Rang 1 und kamen mit je EINEM Fragment zurueck:
+  // 50 investiert, 43 erstattet. Und die Loeschschleife lief nur ueber den
+  // Katalog, sodass beide gesetzt blieben, obwohl sie erstattet waren.
+  const { KT } = fresh();
+  KT.addFragments(50);
+  for (let i = 0; i < 5; i++) KT.invest('node_damage');
+  KT.invest('node_crit');
+  assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
+  assert.strictEqual(KT.investKeystone('key_turmwache'), true);
+  KT.respec();
+  assert.strictEqual(KT.getFragments(), 50, 'alles zurueck, nicht 43');
+  assert.strictEqual(KT.getActiveKeystone(), null, 'Keystone muss geloest sein');
+  assert.strictEqual(KT.getRank('not_kaltbluetig'), 0, 'Buendel muss geloest sein');
+  assert.strictEqual(KT.getRank('node_damage'), 0);
+  assert.strictEqual(globalThis.window.knowledgeTreeBuffs.damageMult, 1);
+});
+
+test('Respec kostet dasselbe wie im Talentbaum', () => {
+  const { KT } = fresh();
+  // Ohne LootSystem: kostenlos, damit ein Respec nie an einem fehlenden
+  // Modul scheitert.
+  const alt = globalThis.window.LootSystem;
+  delete globalThis.window.LootSystem;
+  assert.strictEqual(KT.getRespecCost(), 0);
+  // Mit LootSystem: acht Tiefeneinkommen, exakt wie skillTree.getRespecCost.
+  globalThis.window.LootSystem = {
+    PREIS_TIEFEN: { respec: 8 },
+    preisNachTiefeneinkommen: (n) => n * 13 * 10
+  };
+  assert.strictEqual(KT.getRespecCost(), 8 * 13 * 10);
+  if (alt) globalThis.window.LootSystem = alt; else delete globalThis.window.LootSystem;
+});

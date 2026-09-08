@@ -3444,18 +3444,40 @@ class HubSceneV2 extends Phaser.Scene {
     panel.strokeRoundedRect(-200, -80, 400, 160, 10);
     dlg.add(panel);
 
-    const msg = this.add.text(0, -30, _HUB_T('knowledge.respec.confirm'), {
+    // #116: Respec kostet Gold (gleich viel wie im Talentbaum). Der Preis
+    // steht im Dialog, damit niemand ihn erst nach dem Klick bemerkt.
+    const preis = (window.KnowledgeTree && typeof window.KnowledgeTree.getRespecCost === 'function')
+      ? window.KnowledgeTree.getRespecCost() : 0;
+    const gold = (window.LootSystem && typeof window.LootSystem.getGold === 'function')
+      ? window.LootSystem.getGold() : 0;
+    const bezahlbar = (preis <= 0) || (gold >= preis);
+
+    const msg = this.add.text(0, -38, _HUB_T('knowledge.respec.confirm'), {
       fontFamily: 'serif', fontSize: 15, color: '#fff', resolution: 2, align: 'center', wordWrap: { width: 380 }
     }).setOrigin(0.5);
     dlg.add(msg);
 
+    if (preis > 0) {
+      dlg.add(this.add.text(0, -8, _HUB_T(bezahlbar ? 'knowledge.respec.cost' : 'knowledge.respec.broke',
+        { n: preis }), {
+        fontFamily: 'serif', fontSize: 13, resolution: 2, align: 'center',
+        color: bezahlbar ? '#ffd166' : '#ff9a9a'
+      }).setOrigin(0.5));
+    }
+
     const yes = this.add.text(-60, 30, _HUB_T('knowledge.respec.yes'), {
-      fontFamily: 'serif', fontSize: 14, color: '#fff', backgroundColor: '#7a3a3a', padding: { x: 14, y: 6 }, resolution: 2
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      fontFamily: 'serif', fontSize: 14, color: bezahlbar ? '#fff' : '#7a7a84',
+      backgroundColor: bezahlbar ? '#7a3a3a' : '#2a2a30', padding: { x: 14, y: 6 }, resolution: 2
+    }).setOrigin(0.5).setInteractive({ useHandCursor: bezahlbar });
     yes.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
-      try { window.KnowledgeTree.respec(); }
-      catch (e) { try { console.warn('[HubSceneV2] respec failed', e); } catch (_) {} }
+      if (!bezahlbar) return;
+      try {
+        // Erst zahlen, dann zuruecksetzen: schlaegt der Abzug fehl, bleibt
+        // der Baum wie er war.
+        if (preis > 0 && !window.LootSystem.spendGold(preis)) return;
+        window.KnowledgeTree.respec();
+      } catch (e) { try { console.warn('[HubSceneV2] respec failed', e); } catch (_) {} }
       this._ktCloseConfirm();
     });
     dlg.add(yes);
