@@ -1121,3 +1121,47 @@ test('getHeartHeal: monoton und robust gegen Muell-Eingaben', () => {
   assert.strictEqual(sys.getHeartHeal(NaN), 2);
   assert.strictEqual(sys.getHeartHeal(7.9), 3, 'Bruchtiefen werden abgerundet');
 });
+
+// ---------------------------------------------------------------------------
+// magicFindMult: der Wert 0 muss ANKOMMEN
+// ---------------------------------------------------------------------------
+// Die Pruefung in _rollTier lautete "> 0" und fiel bei 0 auf 1 zurueck. Ein
+// Effekt, der die Fundqualitaet unterdruecken soll, war damit wirkungslos —
+// er haette nur seinen Bonus gegeben und den Preis nie eingezogen. Gemessen
+// mit dem alten Guard: 26,7 % ueber gewoehnlich bei magicFindMult 0, also
+// exakt der Basiswert.
+function _anteilUeberGewoehnlich(sys, mf, n) {
+  globalThis.window.knowledgeTreeBuffs = { magicFindMult: mf };
+  let hoeher = 0;
+  for (let i = 0; i < n; i++) {
+    const it = sys.rollItem(null, 30);
+    if (it && (it.tier | 0) > 0) hoeher++;
+  }
+  return 100 * hoeher / n;
+}
+
+test('magicFindMult 0 unterdrueckt hoehere Stufen wirklich (Guard >= 0)', () => {
+  const sys = freshShopSystem();
+  try {
+    const basis = _anteilUeberGewoehnlich(sys, 1.0, 3000);
+    const null_ = _anteilUeberGewoehnlich(sys, 0, 3000);
+    assert.ok(basis > 15, 'Basis sollte deutlich ueber 15 % liegen, war ' + basis.toFixed(1));
+    assert.ok(null_ < 0.5, 'magicFindMult 0 muss unterdruecken, war ' + null_.toFixed(1) + ' %');
+  } finally {
+    delete globalThis.window.knowledgeTreeBuffs;
+  }
+});
+
+test('magicFindMult 0.5 halbiert den Anteil ueber gewoehnlich', () => {
+  const sys = freshShopSystem();
+  try {
+    const basis = _anteilUeberGewoehnlich(sys, 1.0, 3000);
+    const halb = _anteilUeberGewoehnlich(sys, 0.5, 3000);
+    // Erwartet rund 26 % -> 15 % (gerechnet aus den Gewichten in _rollTier).
+    assert.ok(halb < basis * 0.8,
+      'halbierter Bias muss deutlich unter der Basis liegen: ' + halb.toFixed(1) + ' vs ' + basis.toFixed(1));
+    assert.ok(halb > basis * 0.35, 'aber nicht auf null fallen: ' + halb.toFixed(1));
+  } finally {
+    delete globalThis.window.knowledgeTreeBuffs;
+  }
+});

@@ -819,13 +819,20 @@ if (window.i18n) {
     const shift = Math.max(0, (iLevel - 5)) * 0.003;
     // Printing-House loot rarity bias: scales the higher-tier weights
     // (Magic/Rare/Legendary) and inversely shrinks Common.
+    // ACHTUNG bei der Pruefung: sie lautete "> 0", also fiel der Wert 0 auf 1
+    // zurueck — ein Effekt, der die Fundqualität WIRKLICH unterdruecken soll,
+    // waere damit wirkungslos gewesen und haette nur seinen Bonus gegeben.
+    // Jetzt zaehlt jede endliche Zahl >= 0; 1 bleibt der Rueckfall fuer
+    // fehlende/kaputte Werte.
     const _ph = (typeof window !== 'undefined') ? window.printingBuffs : null;
-    const phBias = (_ph && typeof _ph.lootRarityBias === 'number' && _ph.lootRarityBias > 0)
+    const phBias = (_ph && typeof _ph.lootRarityBias === 'number'
+      && isFinite(_ph.lootRarityBias) && _ph.lootRarityBias >= 0)
       ? _ph.lootRarityBias : 1;
     // Issue #26 — Knowledge-Tree magicFindMult stacks multiplicatively with
     // the Printing-House bias. HIGHER magicFindMult → MORE rare/legendary.
     const _kt = (typeof window !== 'undefined') ? window.knowledgeTreeBuffs : null;
-    const ktMf = (_kt && typeof _kt.magicFindMult === 'number' && _kt.magicFindMult > 0)
+    const ktMf = (_kt && typeof _kt.magicFindMult === 'number'
+      && isFinite(_kt.magicFindMult) && _kt.magicFindMult >= 0)
       ? _kt.magicFindMult : 1;
     // Optionaler Extra-Qualitäts-Bias (z. B. Blindkauf): multipliziert auf die
     // bestehenden Boni, sodass die Quelle IMMER >= Basis-Odds rollt.
