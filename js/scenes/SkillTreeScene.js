@@ -183,6 +183,9 @@
       let y = cy - cardH / 2 - 8 - boxH;
       if (y < 8) y = cy + cardH / 2 + 8;
       y = Math.max(8, Math.min(ch - boxH - 8, y));
+      // Ganze Pixel, sonst flimmert der Tooltip-Text beim Wechsel zwischen
+      // zwei Karten (derselbe Grund wie bei der Knoten-Geometrie).
+      x = Math.round(x); y = Math.round(y);
       const bg = this._tt.bg;
       bg.clear();
       bg.fillStyle(0x0c0c14, 0.97).fillRoundedRect(x, y, boxW, boxH, 8);
@@ -354,7 +357,17 @@
             } else {
               ox = (ki - (anzahl - 1) / 2) * (cardW + 12);
             }
-            this._nodeGeo[node.id] = { x: cx + ox, y: cy, w: cardW, h: cardH, strand: strand };
+            // AUF GANZE PIXEL RUNDEN.
+            //
+            // rowGap und die Spaltenmitte sind Brueche: gemessen lagen Knoten
+            // auf x 214.04 und y 362.50000000000006. Canvas rastert Text auf
+            // Sub-Pixeln mit Kantenglaettung — beim Neuzeichnen (z. B. wenn
+            // der Hover die Fuellfarbe wechselt) faellt die Rasterung anders
+            // aus, und die Beschriftung wirkt um ein Pixel verschoben.
+            this._nodeGeo[node.id] = {
+              x: Math.round(cx + ox), y: Math.round(cy),
+              w: Math.round(cardW), h: Math.round(cardH), strand: strand
+            };
           });
         });
       });
@@ -459,18 +472,18 @@
       const investable = prereqOk && !isMax && canAfford;
 
       // State: locked (prereq not met), maxed, invested (>0), available.
-      let fill, stroke, nameColor, descColor;
+      let fill, stroke, nameColor;
       if (!prereqOk && rank === 0) {
-        fill = 0x1c1c22; stroke = 0x3a3a3a; nameColor = '#666666'; descColor = '#555555';
+        fill = 0x1c1c22; stroke = 0x3a3a3a; nameColor = '#666666';
       } else if (isMax) {
-        fill = 0x243024; stroke = 0x66cc66; nameColor = '#cfffcf'; descColor = '#88bb88';
+        fill = 0x243024; stroke = 0x66cc66; nameColor = '#cfffcf';
       } else if (rank > 0) {
-        fill = 0x232830; stroke = STRAND_COLORS[node.strand]; nameColor = STRAND_COLORS_HEX[node.strand]; descColor = '#aaaaaa';
+        fill = 0x232830; stroke = STRAND_COLORS[node.strand]; nameColor = STRAND_COLORS_HEX[node.strand];
       } else if (investable) {
-        fill = 0x2c2a1a; stroke = 0xffd166; nameColor = '#ffe9a8'; descColor = '#bbbbaa';
+        fill = 0x2c2a1a; stroke = 0xffd166; nameColor = '#ffe9a8';
       } else {
         // prereq met but no points to spend yet
-        fill = 0x222226; stroke = 0x555555; nameColor = '#cccccc'; descColor = '#888888';
+        fill = 0x222226; stroke = 0x555555; nameColor = '#cccccc';
       }
 
       const card = this.add.rectangle(cx, cy, w, h, fill)
@@ -502,24 +515,26 @@
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
       this.nodeViews.push(pipText);
 
-      // Sub-line auf der KARTE: nur noch die Synergie-Notiz.
+      // UNTER DEN PIPS STEHT NICHTS MEHR.
       //
-      // Rang und Rangkosten standen frueher hier ("Rang 2/5 · Naechster Rang:
-      // 5 Pkt"). Beides ist auf dem Hover besser aufgehoben: den Rang zeigen
-      // die Pips darueber ohnehin, und die Voraussetzungen sind jetzt als
-      // Pfeile gezeichnet statt als Satz. Die Karte bleibt damit lesbar,
-      // gerade bei 21 Knoten auf drei Spalten.
+      // Hier standen nacheinander: "Rang 2/5", "Naechster Rang: 5 Pkt",
+      // "Ab Stufe 6" und "Staerker mit Wirbelwind". Vier Zeilen auf einer
+      // Karte, die bei 21 Knoten auf drei Spalten 140 px breit ist — das war
+      // nicht mehr zu lesen.
       //
-      // `sub` wird weiter unten fuer den Tooltip vollstaendig gebaut.
-      let sub = '';
-      let kartenSub = '';
+      // Alles davon liegt jetzt im Hover. Die Karte zeigt nur noch, was auf
+      // einen Blick erfassbar sein muss: Name, Rang als Pips, Zustand ueber
+      // die Farbe. Die Voraussetzungen zeigen die Pfeile.
+      const infoZeilen = [];
+      infoZeilen.push(_ST_T('skilltree.node.rank', { cur: rank, max: maxRank }));
+      if (!isMax) infoZeilen.push(_ST_T('skilltree.node.cost', { cost: nextCost }));
+
+      const req = node.requires || {};
       if (!prereqOk && rank === 0) {
-        const req = node.requires || {};
         // Alle Knoten-Vorbedingungen sammeln (Einzel-`node` + `nodes`-Array).
-        const reqParts = [];
         if (req.node) {
           const reqNode = ST.getNode(req.node);
-          reqParts.push(_ST_T('skilltree.node.req_node', {
+          infoZeilen.push(_ST_T('skilltree.node.req_node', {
             name: (reqNode && reqNode.name) || req.node, rank: req.rank || 1
           }));
         }
@@ -527,41 +542,29 @@
           req.nodes.forEach((nr) => {
             if (!nr || !nr.node) return;
             const rn = ST.getNode(nr.node);
-            reqParts.push(_ST_T('skilltree.node.req_node', {
+            infoZeilen.push(_ST_T('skilltree.node.req_node', {
               name: (rn && rn.name) || nr.node, rank: nr.rank || 1
             }));
           });
         }
-        if (reqParts.length) sub = reqParts.join('\n');
-        else if (req.minLevel) sub = _ST_T('skilltree.node.req_level', { level: req.minLevel });
-        // Auf der Karte bleibt bei gesperrten Knoten nur das Level-Tor stehen:
-        // WELCHER Knoten fehlt, sagt der Pfeil.
-        if (req.minLevel && playerLevel < req.minLevel) {
-          kartenSub = _ST_T('skilltree.node.req_level', { level: req.minLevel });
-        }
-      } else {
-        sub = _ST_T('skilltree.node.rank', { cur: rank, max: maxRank });
-        // Kosten des nächsten Rangs anzeigen, solange nicht gemaxt.
-        if (!isMax) sub += '  ·  ' + _ST_T('skilltree.node.cost', { cost: nextCost });
-        if (Array.isArray(node.synergies) && node.synergies.length > 0) {
-          // Nenne die Quell-Knoten: dieser Skill wird stärker, je höher die
-          // genannten geskillt sind (z.B. Hammer stärker mit Wirbelwind).
-          const srcNames = [];
-          node.synergies.forEach((s) => {
-            const sn = ST.getNode(s.from);
-            const nm = (sn && sn.name) || s.from;
-            if (srcNames.indexOf(nm) === -1) srcNames.push(nm);
-          });
-          const synZeile = _ST_T('skilltree.node.synergy', { source: srcNames.join(', ') });
-          sub += '\n' + synZeile;
-          kartenSub = kartenSub ? (kartenSub + '\n' + synZeile) : synZeile;
-        }
       }
-      const subText = this.add.text(cx, topY + 34, kartenSub, {
-        fontFamily: 'monospace', fontSize: '9px', color: descColor,
-        align: 'center', wordWrap: { width: w - 8 }
-      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
-      this.nodeViews.push(subText);
+      // Das Level-Tor auch dann nennen, wenn die Knoten-Bedingung erfuellt
+      // ist — sonst steht man vor einem gesperrten Knoten ohne Grund.
+      if (req.minLevel && playerLevel < req.minLevel) {
+        infoZeilen.push(_ST_T('skilltree.node.req_level', { level: req.minLevel }));
+      }
+      if (Array.isArray(node.synergies) && node.synergies.length > 0) {
+        // Nenne die Quell-Knoten: dieser Skill wird stärker, je höher die
+        // genannten geskillt sind (z.B. Hammer stärker mit Wirbelwind).
+        const srcNames = [];
+        node.synergies.forEach((s) => {
+          const sn = ST.getNode(s.from);
+          const nm = (sn && sn.name) || s.from;
+          if (srcNames.indexOf(nm) === -1) srcNames.push(nm);
+        });
+        infoZeilen.push(_ST_T('skilltree.node.synergy', { source: srcNames.join(', ') }));
+      }
+      const sub = infoZeilen.join('\n');
 
       // #78: Mouse-over-Tooltip mit voller Talent-Erklaerung. Der Effekt-Text
       // kommt aus dem AbilitySystem (getAbilityDef) — die Karte selbst zeigt ihn

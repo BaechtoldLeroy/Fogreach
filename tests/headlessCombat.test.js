@@ -720,8 +720,20 @@ test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
       return { treppe: Math.round(Math.hypot(t.x - e.x, t.y - e.y)) };
     })()`);
     if (!start) return null;
-    H.step(400);
-    const ende = H.run(`(function () {
+    // IN ABSCHNITTEN PUMPEN UND DAS BESTE MERKEN (#136).
+    //
+    // Vorher lief ein Block von 400 Bildern und danach wurde der ENDZUSTAND
+    // geprueft. Das machte den Test von einem Zeitpunkt abhaengig: erreicht er
+    // die Treppe frueher und laeuft weiter, oder braucht er einen Tick laenger,
+    // steht am Ende eine andere Zahl. Im Gesamtlauf fiel er dadurch sporadisch
+    // (gemessen 5,1 s isoliert gegen 7,4 und 9,6 s unter Last), isoliert war er
+    // immer gruen.
+    //
+    // Dieselben 400 Bilder, aber gemessen wird die DICHTESTE Annaeherung an die
+    // Treppe und der GROESSTE Abstand zum Spieler. Beides sind Aussagen ueber
+    // den Verlauf statt ueber einen Augenblick — und genau das behauptet der
+    // Test ja: dass er zur Treppe absetzt und Abstand haelt.
+    const stand = () => H.run(`(function () {
       var sc = window.game.scene.getScene('GameScene');
       var t = sc.stairsGroup.getChildren()[0];
       var e = window.__p;
@@ -729,6 +741,18 @@ test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
       return { treppe: Math.round(Math.hypot(t.x - e.x, t.y - e.y)),
                spieler: Math.round(Math.hypot(e.x - player.x, e.y - player.y)) };
     })()`);
+    let ende = null;
+    let naechste = Infinity;   // dichteste Annaeherung an die Treppe
+    let weiteste = 0;          // groesster Abstand zum Spieler
+    for (let i = 0; i < 8; i++) {
+      H.step(50);
+      const z = stand();
+      if (z.weg) { ende = z; break; }
+      naechste = Math.min(naechste, z.treppe);
+      weiteste = Math.max(weiteste, z.spieler);
+      ende = z;
+    }
+    if (ende && !ende.weg) { ende.treppe = naechste; ende.spieler = weiteste; }
     return { start: start, ende: ende };
   };
 
