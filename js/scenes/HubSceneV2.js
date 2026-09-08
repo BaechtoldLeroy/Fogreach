@@ -3165,6 +3165,13 @@ class HubSceneV2 extends Phaser.Scene {
     if (!this._ktCardLayer || !window.KnowledgeTree) return;
     this._ktCardLayer.removeAll(true);
 
+    // #116: zwei Ansichten in einem Fenster. Die sechs Grundsaetze zu den zehn
+    // Knoten in dasselbe Raster zu legen haette 16 Karten in zwei Spalten
+    // ergeben — bei 460 px Panelhoehe waeren das Streifen von 25 px. Ausserdem
+    // sind sie inhaltlich etwas anderes: die Knoten sammelt man, vom Grundsatz
+    // gilt genau EINER.
+    if (this._ktAnsicht === 'grundsaetze') { this._ktRenderKeystones(); return; }
+
     const catalog = window.KnowledgeTree.getCatalog();
     const state = window.KnowledgeTree.getState();
     const fragments = state.fragments;
@@ -3251,6 +3258,94 @@ class HubSceneV2 extends Phaser.Scene {
     }
   }
 
+  /**
+   * Die sechs Grundsaetze. Anders als die Knoten kein Rang, sondern ein
+   * Schalter — und es gilt immer nur einer.
+   */
+  _ktRenderKeystones() {
+    const KT = window.KnowledgeTree;
+    const keys = (typeof KT.getKeystones === 'function') ? KT.getKeystones() : [];
+    if (!keys.length) return;
+    const aktiv = KT.getActiveKeystone();
+    const kosten = KT.KEYSTONE_KOSTEN || 5;
+    const fragmente = KT.getFragments();
+
+    const panelW = this._ktPanelW || 920;
+    const panelH = this._ktPanelH || 460;
+    const bodyW = panelW - 32;
+    const bodyH = panelH - 32 - 64 - 24;
+    const bodyTop = -panelH / 2 + 32 + 12;
+
+    const cols = 2;
+    const rows = Math.ceil(keys.length / cols);
+    const gap = 10;
+    const cardW = (bodyW - gap * (cols - 1)) / cols;
+    const cardH = (bodyH - gap * (rows - 1)) / rows;
+
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
+      const istAktiv = (aktiv === k.id);
+      // Gesperrt heisst: ein ANDERER Grundsatz gilt bereits.
+      const gesperrt = !!aktiv && !istAktiv;
+      const cardX = -bodyW / 2 + (i % cols) * (cardW + gap) + cardW / 2;
+      const cardY = bodyTop + Math.floor(i / cols) * (cardH + gap) + cardH / 2;
+
+      const c = this.add.container(cardX, cardY);
+      this._ktCardLayer.add(c);
+
+      const bg = this.add.graphics();
+      bg.fillStyle(istAktiv ? 0x2a2438 : 0x1a1a28, 0.95);
+      bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      bg.lineStyle(istAktiv ? 2 : 1, istAktiv ? 0xc9a0ff : 0x3a3a4a, gesperrt ? 0.4 : 0.85);
+      bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      c.add(bg);
+
+      c.add(this.add.text(-cardW / 2 + 10, -cardH / 2 + 6, _HUB_T(k.labelKey), {
+        fontFamily: 'serif', fontSize: 15, fontStyle: 'bold', resolution: 2,
+        color: istAktiv ? '#e8d5ff' : (gesperrt ? '#6a6a72' : '#ffd166')
+      }));
+
+      c.add(this.add.text(-cardW / 2 + 10, -cardH / 2 + 26, _HUB_T(k.descKey), {
+        fontFamily: 'serif', fontSize: 12, resolution: 2,
+        color: gesperrt ? '#5f5f66' : '#dde0e6', wordWrap: { width: cardW - 20 }
+      }));
+
+      // Knopf: setzen / loesen / gesperrt
+      let text, farbe, hintergrund, aktivierbar;
+      if (istAktiv) {
+        text = _HUB_T('knowledge.key.btn_release'); farbe = '#ffdada';
+        hintergrund = '#7a3a3a'; aktivierbar = true;
+      } else if (gesperrt) {
+        text = _HUB_T('knowledge.key.only_one'); farbe = '#6a6a72';
+        hintergrund = '#26262c'; aktivierbar = false;
+      } else if (fragmente < kosten) {
+        text = _HUB_T('knowledge.key.cost', { n: kosten }); farbe = '#666';
+        hintergrund = '#2a2a2a'; aktivierbar = false;
+      } else {
+        text = _HUB_T('knowledge.key.btn_set', { n: kosten }); farbe = '#9bff9b';
+        hintergrund = '#1f3a1f'; aktivierbar = true;
+      }
+      const btn = this.add.text(cardW / 2 - 10, cardH / 2 - 26, text, {
+        fontFamily: 'serif', fontSize: 13, color: farbe, backgroundColor: hintergrund,
+        padding: { x: 8, y: 4 }, resolution: 2
+      }).setOrigin(1, 0);
+      btn.setInteractive({ useHandCursor: aktivierbar });
+      c.add(btn);
+
+      const id = k.id;
+      const setzen = !istAktiv;
+      const geht = aktivierbar;
+      btn.on('pointerdown', (pointer, x, y, event) => {
+        if (event && event.stopPropagation) event.stopPropagation();
+        if (!geht) return;
+        try {
+          if (setzen) window.KnowledgeTree.investKeystone(id);
+          else window.KnowledgeTree.loeseKeystone();
+        } catch (e) { try { console.warn('[HubSceneV2] Keystone fehlgeschlagen', e); } catch (_) {} }
+      });
+    }
+  }
+
   _ktRenderFooter() {
     if (!this._ktFooterLayer) return;
     this._ktFooterLayer.removeAll(true);
@@ -3292,6 +3387,25 @@ class HubSceneV2 extends Phaser.Scene {
         catch (e) { try { console.warn('[HubSceneV2] addFragments failed', e); } catch (_) {} }
       });
     }
+
+    // #116: Umschalter zwischen den zehn Knoten und den sechs Grundsaetzen.
+    const aufGrundsaetze = (this._ktAnsicht !== 'grundsaetze');
+    const wechselBtn = this.add.text(
+      0, footerY,
+      aufGrundsaetze ? _HUB_T('knowledge.btn.to_keystones') : _HUB_T('knowledge.btn.to_nodes'),
+      { fontFamily: 'serif', fontSize: 14, color: '#e8d5ff', backgroundColor: '#3a2f4a',
+        padding: { x: 10, y: 4 }, resolution: 2 }
+    ).setOrigin(0.5, 0);
+    wechselBtn.setInteractive({ useHandCursor: true });
+    this._ktFooterLayer.add(wechselBtn);
+    wechselBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      this._ktAnsicht = aufGrundsaetze ? 'grundsaetze' : 'knoten';
+      this._ktRenderCards();
+      this._ktRenderFooter();
+      // Neue Knoepfe brauchen wieder scrollFactor 0, sonst gehen die Taps daneben.
+      if (this._dialogContainer) this._ktPropagateScrollFactor(this._dialogContainer, 0, 0);
+    });
 
     // Close button (right, grey bg)
     const closeBtn = this.add.text(

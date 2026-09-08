@@ -25,6 +25,10 @@
     'knowledge.fragments':         'Fragmente: {count}',
     'knowledge.btn.respec':        '[ Zurücksetzen ]',
     'knowledge.btn.close':         '[ Schließen ]',
+    'knowledge.btn.to_keystones':  '[ Grundsätze ]',
+    'knowledge.btn.to_nodes':      '[ Wissen ]',
+    'knowledge.key.btn_set':       'Wählen ({n})',
+    'knowledge.key.btn_release':   'Ablegen',
     'knowledge.btn.test_give':     '[ +1 Fragment ]',
     'knowledge.respec.confirm':    'Wissen wirklich zurücksetzen?',
     'knowledge.respec.yes':        'Ja',
@@ -51,6 +55,22 @@
     'knowledge.node.pickup.desc':        '+20 px Aufnahme-Radius pro Rang',
     'knowledge.node.magic_find.label':   'Magisches Gespür',
     'knowledge.node.magic_find.desc':    '+5 % seltene Drops pro Rang',
+    // #116: Keystones. Der Name nennt die Haltung, die Beschreibung den
+    // Tausch — Preis zuerst, damit niemand ihn uebersieht.
+    'knowledge.key.ruhige_hand.label': 'Ruhige Hand',
+    'knowledge.key.ruhige_hand.desc':  'Keine kritischen Treffer mehr, −35 % Tempo — dafür +45 % Schaden.',
+    'knowledge.key.blutrausch.label':  'Blutrausch',
+    'knowledge.key.blutrausch.desc':   'Keine Rüstung mehr — dafür +40 % Schaden und +15 % Kritchance.',
+    'knowledge.key.turmwache.label':   'Turmwache',
+    'knowledge.key.turmwache.desc':    '−40 % Schaden — dafür +0,20 Rüstung und +40 Leben.',
+    'knowledge.key.leichter_schritt.label': 'Leichter Schritt',
+    'knowledge.key.leichter_schritt.desc':  'Keine Rüstung mehr — dafür +20 % Schaden, +35 % Tempo und +60 Aufsammelweite.',
+    'knowledge.key.zaeher_fund.label': 'Zäher Fund',
+    'knowledge.key.zaeher_fund.desc':  'Halbierte Fundqualität, −40 % Erfahrung — dafür +80 % Gold.',
+    'knowledge.key.sammler.label':     'Sammler',
+    'knowledge.key.sammler.desc':      '−50 % Gold — dafür +50 % Fundqualität und +30 % Erfahrung.',
+    'knowledge.key.only_one':          'Nur ein Grundsatz zur Zeit.',
+    'knowledge.key.cost':              '{n} Fragmente',
     'knowledge.node.cdr.label':          'Geübte Hände',
     'knowledge.node.cdr.desc':           '-3 % Cooldown (alle Fähigkeiten) pro Rang'
   };
@@ -59,6 +79,10 @@
     'knowledge.fragments':         'Fragments: {count}',
     'knowledge.btn.respec':        '[ Respec ]',
     'knowledge.btn.close':         '[ Close ]',
+    'knowledge.btn.to_keystones':  '[ Tenets ]',
+    'knowledge.btn.to_nodes':      '[ Knowledge ]',
+    'knowledge.key.btn_set':       'Choose ({n})',
+    'knowledge.key.btn_release':   'Release',
     'knowledge.btn.test_give':     '[ +1 Fragment ]',
     'knowledge.respec.confirm':    'Really reset the knowledge tree?',
     'knowledge.respec.yes':        'Yes',
@@ -84,6 +108,20 @@
     'knowledge.node.pickup.desc':        '+20 px pickup radius per rank',
     'knowledge.node.magic_find.label':   'Magic Sense',
     'knowledge.node.magic_find.desc':    '+5% magic find per rank',
+    'knowledge.key.ruhige_hand.label': 'Steady Hand',
+    'knowledge.key.ruhige_hand.desc':  'No more critical hits, −35% move speed — but +45% damage.',
+    'knowledge.key.blutrausch.label':  'Blood Rage',
+    'knowledge.key.blutrausch.desc':   'No more armour — but +40% damage and +15% crit chance.',
+    'knowledge.key.turmwache.label':   'Tower Guard',
+    'knowledge.key.turmwache.desc':    '−40% damage — but +0.20 armour and +40 life.',
+    'knowledge.key.leichter_schritt.label': 'Light Step',
+    'knowledge.key.leichter_schritt.desc':  'No more armour — but +20% damage, +35% move speed and +60 pickup range.',
+    'knowledge.key.zaeher_fund.label': 'Hard Bargain',
+    'knowledge.key.zaeher_fund.desc':  'Halved find quality, −40% experience — but +80% gold.',
+    'knowledge.key.sammler.label':     'Collector',
+    'knowledge.key.sammler.desc':      '−50% gold — but +50% find quality and +30% experience.',
+    'knowledge.key.only_one':          'Only one tenet at a time.',
+    'knowledge.key.cost':              '{n} fragments',
     'knowledge.node.cdr.label':          'Practiced Hands',
     'knowledge.node.cdr.desc':           '-3% cooldown (all abilities) per rank'
   };
@@ -109,6 +147,89 @@
 
   var CATALOG_BY_ID = {};
   for (var ci = 0; ci < CATALOG.length; ci++) CATALOG_BY_ID[CATALOG[ci].id] = CATALOG[ci];
+
+  // === KEYSTONES (#116) ====================================================
+  //
+  // Die zehn Knoten oben sind allesamt das, was PoE "Small Passives" nennt:
+  // ein Wert, unbedingt, linear. Der Baum bestand damit nur aus Verbindungs-
+  // stuecken und hatte kein Ziel — und weil Fragmente sich ueber die Laeufe
+  // unbegrenzt ansammeln (resetForNewGame nur bei NEUEM Spiel), lief jede
+  // Knappheit ohnehin ab. Dauerhaft ist nur, was sich gegenseitig ausschliesst.
+  //
+  // Darum: sechs Keystones, von denen HOECHSTENS EINER gesetzt sein darf. Das
+  // bleibt eine Wahl, egal wie viele Fragmente jemand hat.
+  //
+  // ZU DEN PREISEN. Ein frueherer Entwurf liess sie auf Werte zeigen, die bei
+  // null anfangen ("kein Krit", "keine Ruestung"). Gerechnet mit critMult 1,5
+  // haette "kein Krit" selbst einen Krit-Aufbau nur 15 % Schaden gekostet und
+  // +30 % gebracht — ein Bonus im Kostuem eines Tauschs. Jeder Preis hier
+  // trifft deshalb einen Wert, der laeuft:
+  //
+  //   Kampfwert (Angriff x effektive LP) gegen einen Bezugscharakter auf
+  //   Tiefe 20 (Schaden 6, Krit 0,20, Ruestung 0,35, 120 LP):
+  //     Ruhige Hand      +32 %   (zahlt mit 35 % Bewegungstempo)
+  //     Blutrausch        -3 %
+  //     Turmwache        +16 %
+  //     Leichter Schritt -22 %   (bekommt 35 % Bewegungstempo)
+  //     Zaeher Fund        0 %   (reiner Wirtschaftstausch)
+  //     Sammler            0 %
+  //
+  // Die beiden Ausreisser sind genau die, die Bewegungstempo tauschen — das
+  // die Kampfmetrik nicht erfasst. Wer Tempo hergibt, bekommt Kampfkraft;
+  // wer Tempo will, zahlt dafuer.
+  //
+  // ENTZUG UEBER NEGATIVE ADDITIVE: critAdd/armorAdd werden bei 0 geklemmt
+  // (inventory.js:1636/1645), ein Wert von -1 erzwingt also die Null,
+  // unabhaengig von Ausruestung und Baum. Im Spiel nachgemessen:
+  // Krit 0,25 -> 0, Ruestung 0,30 -> 0.
+  var KEYSTONE_KOSTEN = 5;
+  var KEYSTONES = [
+    { id: 'key_ruhige_hand', zweig: 'kraft',
+      labelKey: 'knowledge.key.ruhige_hand.label', descKey: 'knowledge.key.ruhige_hand.desc',
+      effekte: [
+        { field: 'critAdd',    kind: 'add',  value: -1 },
+        { field: 'speedMult',  kind: 'mult', value: 0.65 },
+        { field: 'damageMult', kind: 'mult', value: 1.45 }
+      ] },
+    { id: 'key_blutrausch', zweig: 'kraft',
+      labelKey: 'knowledge.key.blutrausch.label', descKey: 'knowledge.key.blutrausch.desc',
+      effekte: [
+        { field: 'armorAdd',   kind: 'add',  value: -1 },
+        { field: 'damageMult', kind: 'mult', value: 1.40 },
+        { field: 'critAdd',    kind: 'add',  value: 0.15 }
+      ] },
+    { id: 'key_turmwache', zweig: 'zaehigkeit',
+      labelKey: 'knowledge.key.turmwache.label', descKey: 'knowledge.key.turmwache.desc',
+      effekte: [
+        { field: 'damageMult', kind: 'mult', value: 0.60 },
+        { field: 'armorAdd',   kind: 'add',  value: 0.20 },
+        { field: 'maxHpAdd',   kind: 'add',  value: 40 }
+      ] },
+    { id: 'key_leichter_schritt', zweig: 'zaehigkeit',
+      labelKey: 'knowledge.key.leichter_schritt.label', descKey: 'knowledge.key.leichter_schritt.desc',
+      effekte: [
+        { field: 'armorAdd',       kind: 'add',  value: -1 },
+        { field: 'damageMult',     kind: 'mult', value: 1.20 },
+        { field: 'speedMult',      kind: 'mult', value: 1.35 },
+        { field: 'pickupAddRange', kind: 'add',  value: 60 }
+      ] },
+    { id: 'key_zaeher_fund', zweig: 'gier',
+      labelKey: 'knowledge.key.zaeher_fund.label', descKey: 'knowledge.key.zaeher_fund.desc',
+      effekte: [
+        { field: 'magicFindMult', kind: 'mult', value: 0.5 },
+        { field: 'xpMult',        kind: 'mult', value: 0.60 },
+        { field: 'goldMult',      kind: 'mult', value: 1.80 }
+      ] },
+    { id: 'key_sammler', zweig: 'gier',
+      labelKey: 'knowledge.key.sammler.label', descKey: 'knowledge.key.sammler.desc',
+      effekte: [
+        { field: 'goldMult',      kind: 'mult', value: 0.5 },
+        { field: 'magicFindMult', kind: 'mult', value: 1.50 },
+        { field: 'xpMult',        kind: 'mult', value: 1.30 }
+      ] }
+  ];
+  var KEYSTONE_BY_ID = {};
+  for (var ki = 0; ki < KEYSTONES.length; ki++) KEYSTONE_BY_ID[KEYSTONES[ki].id] = KEYSTONES[ki];
 
   // --- Default primitives (window-bound, swappable via _configureForTest) -
   function _defaultPrimitives() {
@@ -194,6 +315,21 @@
     for (var nodeId in incoming) {
       if (!Object.prototype.hasOwnProperty.call(incoming, nodeId)) continue;
       var desired = Math.max(0, Math.floor(Number(incoming[nodeId]) || 0));
+      // #116: Keystones stehen im selben Rang-Beutel, sind aber 0/1 und
+      // duerfen nur EINMAL vorkommen. Ohne diesen Zweig fielen sie unten in
+      // den "unbekannter Knoten"-Fall und wuerden mit 1 statt 5 Fragmenten
+      // erstattet — der Spieler haette vier Fragmente verloren.
+      if (KEYSTONE_BY_ID[nodeId]) {
+        if (desired <= 0) continue;
+        if (getActiveKeystone()) {
+          // Zwei Keystones im Stand (Handarbeit oder alter Fehler): der
+          // zweite wird erstattet, gesetzt bleibt der erste.
+          fragments += KEYSTONE_KOSTEN;
+          continue;
+        }
+        state.ranks[nodeId] = 1;
+        continue;
+      }
       var node = CATALOG_BY_ID[nodeId];
       if (!node) {
         fragments += desired;
@@ -247,6 +383,10 @@
     b.magicFindMult = 1.0;
     b.cdrAll = 0;
     // Apply each rank
+    // AKKUMULIEREN statt zuweisen. Bisher gehoerte jedes Feld genau einem
+    // Knoten, da war die Zuweisung gleichwertig. Keystones greifen aber auf
+    // dieselben Felder — ohne Akkumulation wuerde der zuletzt angewandte
+    // Effekt die anderen ueberschreiben.
     for (var i = 0; i < CATALOG.length; i++) {
       var node = CATALOG[i];
       var rank = state.ranks[node.id] | 0;
@@ -254,11 +394,33 @@
       var pr = node.perRank;
       var delta = rank * pr.value;
       if (pr.kind === 'mult') {
-        b[pr.field] = 1 + delta;
+        b[pr.field] = (typeof b[pr.field] === 'number' ? b[pr.field] : 1) * (1 + delta);
       } else {
-        b[pr.field] = delta;
+        b[pr.field] = (typeof b[pr.field] === 'number' ? b[pr.field] : 0) + delta;
       }
     }
+    // Keystone zuletzt: sein Entzug soll ueber allem stehen, was die kleinen
+    // Knoten beigesteuert haben (critAdd -1 schlaegt node_crit +0,10).
+    var aktiv = getActiveKeystone();
+    if (aktiv) {
+      var ks = KEYSTONE_BY_ID[aktiv];
+      for (var ei = 0; ei < ks.effekte.length; ei++) {
+        var ef = ks.effekte[ei];
+        if (ef.kind === 'mult') {
+          b[ef.field] = (typeof b[ef.field] === 'number' ? b[ef.field] : 1) * ef.value;
+        } else {
+          b[ef.field] = (typeof b[ef.field] === 'number' ? b[ef.field] : 0) + ef.value;
+        }
+      }
+    }
+  }
+
+  /** Welcher Keystone ist gesetzt? null = keiner. */
+  function getActiveKeystone() {
+    for (var i = 0; i < KEYSTONES.length; i++) {
+      if ((state.ranks[KEYSTONES[i].id] | 0) > 0) return KEYSTONES[i].id;
+    }
+    return null;
   }
 
   // --- Subscribers --------------------------------------------------------
@@ -352,7 +514,44 @@
     _notify();
   }
 
+  /**
+   * Keystone setzen. Kostet KEYSTONE_KOSTEN Fragmente, und es darf immer nur
+   * EINER gesetzt sein — das ist der Teil, der den Vollausbau ueberlebt.
+   *
+   * Wechseln geht ueber loeseKeystone(): der Einsatz kommt vollstaendig
+   * zurueck. Der Preis ist nicht die Huerde, der Ausschluss ist es.
+   */
+  function investKeystone(id) {
+    var k = KEYSTONE_BY_ID[id];
+    if (!k) return false;
+    if ((state.ranks[id] | 0) > 0) return false;      // schon gesetzt
+    if (getActiveKeystone()) return false;            // ein anderer laeuft
+    if (state.fragments < KEYSTONE_KOSTEN) return false;
+    state.fragments -= KEYSTONE_KOSTEN;
+    state.ranks[id] = 1;
+    _applyRanksToBuffs();
+    _persist();
+    _callRecalc();
+    _notify();
+    return true;
+  }
+
+  /** Gesetzten Keystone loesen; der Einsatz wird erstattet. */
+  function loeseKeystone() {
+    var aktiv = getActiveKeystone();
+    if (!aktiv) return false;
+    delete state.ranks[aktiv];
+    state.fragments += KEYSTONE_KOSTEN;
+    _applyRanksToBuffs();
+    _persist();
+    _callRecalc();
+    _notify();
+    return true;
+  }
+
   function invest(nodeId) {
+    // Keystones laufen ueber ihren eigenen Pfad (Festpreis + Ausschluss).
+    if (KEYSTONE_BY_ID[nodeId]) return investKeystone(nodeId);
     var node = CATALOG_BY_ID[nodeId];
     if (!node) return false;
     var currentRank = state.ranks[nodeId] | 0;
@@ -436,6 +635,12 @@
     getState: getState,
     addFragments: addFragments,
     invest: invest,
+    // #116: Keystones — hoechstens einer, Festpreis, gegenseitiger Ausschluss.
+    getKeystones: function () { return KEYSTONES.slice(); },
+    getActiveKeystone: getActiveKeystone,
+    investKeystone: investKeystone,
+    loeseKeystone: loeseKeystone,
+    KEYSTONE_KOSTEN: KEYSTONE_KOSTEN,
     respec: respec,
     onChange: onChange,
     resetForNewGame: resetForNewGame,

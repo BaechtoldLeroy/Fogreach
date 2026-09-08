@@ -416,3 +416,88 @@ test('T011: multiple subscribers each receive the same snapshot', () => {
   KT.addFragments(4);
   assert.deepStrictEqual(snaps, [['a', 4], ['b', 4]]);
 });
+
+// ---------------------------------------------------------------------------
+// #116 — Keystones
+// ---------------------------------------------------------------------------
+// Die zehn Kleinknoten sind unbedingte Einzelwerte; die Knappheit laeuft ab,
+// weil Fragmente sich ueber die Laeufe ansammeln. Dauerhaft ist nur, was sich
+// ausschliesst — darum sechs Keystones, von denen HOECHSTENS EINER gilt.
+
+test('Keystones: sechs Stueck, je mindestens drei Effekte', () => {
+  const { KT } = fresh();
+  const ks = KT.getKeystones();
+  assert.strictEqual(ks.length, 6, 'sechs Keystones erwartet');
+  ks.forEach((k) => {
+    assert.ok(Array.isArray(k.effekte) && k.effekte.length >= 3,
+      k.id + ' braucht mindestens drei Effekte');
+    assert.ok(k.labelKey && k.descKey && k.zweig, k.id + ' unvollstaendig');
+  });
+});
+
+test('Keystones: hoechstens einer darf gesetzt sein', () => {
+  const { KT } = fresh();
+  KT.addFragments(50);
+  assert.strictEqual(KT.getActiveKeystone(), null);
+  assert.strictEqual(KT.investKeystone('key_turmwache'), true);
+  assert.strictEqual(KT.getActiveKeystone(), 'key_turmwache');
+  assert.strictEqual(KT.investKeystone('key_blutrausch'), false, 'zweiter muss abgelehnt werden');
+  assert.strictEqual(KT.investKeystone('key_sammler'), false);
+  assert.strictEqual(KT.getActiveKeystone(), 'key_turmwache');
+});
+
+test('Keystones: Kosten abgezogen, beim Loesen erstattet', () => {
+  const { KT } = fresh();
+  KT.addFragments(20);
+  const vor = KT.getFragments();
+  KT.investKeystone('key_sammler');
+  assert.strictEqual(KT.getFragments(), vor - KT.KEYSTONE_KOSTEN);
+  assert.strictEqual(KT.loeseKeystone(), true);
+  assert.strictEqual(KT.getFragments(), vor, 'Einsatz kommt vollstaendig zurueck');
+  assert.strictEqual(KT.getActiveKeystone(), null);
+});
+
+test('Keystones: zu wenig Fragmente -> abgelehnt', () => {
+  const { KT } = fresh();
+  KT.addFragments(KT.KEYSTONE_KOSTEN - 1);
+  assert.strictEqual(KT.investKeystone('key_turmwache'), false);
+  assert.strictEqual(KT.getActiveKeystone(), null);
+});
+
+test('Keystones: der Entzug schlaegt die kleinen Knoten', () => {
+  // node_crit gibt +0,10 critAdd. "Ruhige Hand" setzt critAdd -1 — der
+  // Clamp in inventory.js:1645 macht daraus 0 Kritchance. Ohne diesen Test
+  // koennte ein spaeterer Umbau die Reihenfolge drehen und der Preis waere
+  // still verschwunden.
+  const { KT } = fresh();
+  KT.addFragments(50);
+  for (let i = 0; i < 5; i++) KT.invest('node_crit');
+  assert.ok(Math.abs(globalThis.window.knowledgeTreeBuffs.critAdd - 0.10) < 1e-9);
+  KT.investKeystone('key_ruhige_hand');
+  const b = globalThis.window.knowledgeTreeBuffs;
+  assert.ok(b.critAdd <= -0.8, 'Entzug muss durchschlagen, war ' + b.critAdd);
+  assert.ok(Math.abs(b.damageMult - 1.45) < 1e-9, 'damageMult 1,45, war ' + b.damageMult);
+  assert.ok(Math.abs(b.speedMult - 0.65) < 1e-9, 'speedMult 0,65, war ' + b.speedMult);
+});
+
+test('Keystones: multiplizieren mit den kleinen Knoten statt zu ueberschreiben', () => {
+  const { KT } = fresh();
+  KT.addFragments(50);
+  for (let i = 0; i < 5; i++) KT.invest('node_damage');   // +25 % -> 1,25
+  assert.ok(Math.abs(globalThis.window.knowledgeTreeBuffs.damageMult - 1.25) < 1e-9);
+  KT.investKeystone('key_turmwache');                     // x0,60
+  const d = globalThis.window.knowledgeTreeBuffs.damageMult;
+  assert.ok(Math.abs(d - 0.75) < 1e-9, 'erwartet 0,75 (1,25 x 0,60), war ' + d);
+});
+
+test('Keystones: Altstand behaelt einen, erstattet den zweiten', () => {
+  const blob = JSON.stringify({
+    version: 1, fragments: 3,
+    ranks: { key_turmwache: 1, key_sammler: 1, node_damage: 2 }
+  });
+  const { KT } = fresh({ storage: makeStorage({ [STORAGE_KEY]: blob }) });
+  assert.strictEqual(KT.getActiveKeystone(), 'key_turmwache', 'erster bleibt gesetzt');
+  assert.strictEqual(KT.getRank('node_damage'), 2, 'kleine Knoten unberuehrt');
+  assert.strictEqual(KT.getFragments(), 3 + KT.KEYSTONE_KOSTEN,
+    'der zweite Keystone wird mit vollem Preis erstattet');
+});
