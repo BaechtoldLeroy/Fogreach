@@ -94,7 +94,9 @@ test('T008: getCatalog returns 10 nodes with stable shape', () => {
   // Spot-check stable IDs (persisted contract — never rename).
   assert.ok(ids.includes('node_damage'));
   assert.ok(ids.includes('node_xp'));
-  assert.ok(ids.includes('node_cdr'));
+  // #116: node_cdr ist in den Talentbaum gewandert (dort haengt die
+  // Abklingzeit an einer Entscheidung), ersetzt durch node_angriffstempo.
+  assert.ok(ids.includes('node_angriffstempo'));
   for (const node of catalog) {
     assert.strictEqual(typeof node.id, 'string');
     assert.strictEqual(typeof node.maxRank, 'number');
@@ -500,4 +502,96 @@ test('Keystones: Altstand behaelt einen, erstattet den zweiten', () => {
   assert.strictEqual(KT.getRank('node_damage'), 2, 'kleine Knoten unberuehrt');
   assert.strictEqual(KT.getFragments(), 3 + KT.KEYSTONE_KOSTEN,
     'der zweite Keystone wird mit vollem Preis erstattet');
+});
+
+// ---------------------------------------------------------------------------
+// #116 — node_cdr abgeloest, Notables
+// ---------------------------------------------------------------------------
+
+test('node_cdr ist weg, node_angriffstempo da — Rangsumme bleibt 42', () => {
+  const { KT } = fresh();
+  const ids = KT.getCatalog().map((n) => n.id);
+  assert.ok(ids.indexOf('node_cdr') === -1, 'node_cdr gehoert in den Talentbaum');
+  assert.ok(ids.indexOf('node_angriffstempo') >= 0, 'node_angriffstempo fehlt');
+  const summe = KT.getCatalog().reduce((s2, n) => s2 + n.maxRank, 0);
+  assert.strictEqual(summe, 42, 'die 42 Fragmente muessen bleiben');
+});
+
+test('node_angriffstempo speist attackSpeedMult, nicht cdrAll', () => {
+  const { KT } = fresh();
+  KT.addFragments(20);
+  for (let i = 0; i < 5; i++) KT.invest('node_angriffstempo');
+  const b = globalThis.window.knowledgeTreeBuffs;
+  assert.ok(Math.abs(b.attackSpeedMult - 1.15) < 1e-9,
+    '+3 % je Rang -> 1,15, war ' + b.attackSpeedMult);
+  assert.strictEqual(b.cdrAll, 0, 'die Abklingzeit gehoert dem Talentbaum');
+});
+
+test('Altstand mit node_cdr: Fragmente kommen zurueck', () => {
+  const blob = JSON.stringify({ version: 1, fragments: 0, ranks: { node_cdr: 4 } });
+  const { KT } = fresh({ storage: makeStorage({ [STORAGE_KEY]: blob }) });
+  assert.strictEqual(KT.getRank('node_cdr'), 0);
+  assert.strictEqual(KT.getFragments(), 4, 'die vier Raenge werden erstattet');
+});
+
+test('Notables: sechs Stueck, je zwei Effekte, je Zweig zwei', () => {
+  const { KT } = fresh();
+  const ns = KT.getNotables();
+  assert.strictEqual(ns.length, 6);
+  const proZweig = {};
+  ns.forEach((n) => {
+    assert.strictEqual(n.effekte.length, 2, n.id + ' buendelt genau zwei Wirkungen');
+    proZweig[n.zweig] = (proZweig[n.zweig] | 0) + 1;
+  });
+  assert.deepStrictEqual(proZweig, { kraft: 2, zaehigkeit: 2, gier: 2 });
+});
+
+test('Notables: gesperrt, bis der Zweig sechs Raenge hat', () => {
+  const { KT } = fresh();
+  KT.addFragments(50);
+  assert.strictEqual(KT.notableOffen('not_kaltbluetig'), false, 'anfangs zu');
+  assert.strictEqual(KT.investNotable('not_kaltbluetig'), false);
+  // fuenf Raenge reichen noch nicht
+  for (let i = 0; i < 5; i++) KT.invest('node_damage');
+  assert.strictEqual(KT.zweigRaenge('kraft'), 5);
+  assert.strictEqual(KT.notableOffen('not_kaltbluetig'), false, 'fuenf reichen nicht');
+  // der sechste oeffnet
+  KT.invest('node_crit');
+  assert.strictEqual(KT.zweigRaenge('kraft'), 6);
+  assert.strictEqual(KT.notableOffen('not_kaltbluetig'), true);
+  assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
+});
+
+test('Notables: Kosten und Wirkung', () => {
+  const { KT } = fresh();
+  KT.addFragments(50);
+  for (let i = 0; i < 5; i++) KT.invest('node_damage');   // 1,25
+  KT.invest('node_crit');                                  // +0,02, oeffnet den Zweig
+  const vor = KT.getFragments();
+  assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
+  assert.strictEqual(KT.getFragments(), vor - KT.NOTABLE_KOSTEN);
+  const b = globalThis.window.knowledgeTreeBuffs;
+  // 1,25 (Knoten) x 1,10 (Notable) = 1,375
+  assert.ok(Math.abs(b.damageMult - 1.375) < 1e-9, 'erwartet 1,375, war ' + b.damageMult);
+  assert.ok(Math.abs(b.critAdd - (0.02 + 0.05)) < 1e-9, 'erwartet 0,07, war ' + b.critAdd);
+});
+
+test('Notables sind nicht ausschliessend — anders als die Keystones', () => {
+  const { KT } = fresh();
+  KT.addFragments(80);
+  for (let i = 0; i < 5; i++) KT.invest('node_damage');
+  KT.invest('node_crit');
+  for (let i = 0; i < 5; i++) KT.invest('node_armor');
+  KT.invest('node_max_hp');
+  assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
+  assert.strictEqual(KT.investNotable('not_eisenhaut'), true, 'zweiter Notable muss gehen');
+});
+
+test('Notable-Altstand wird nicht als unbekannter Knoten erstattet', () => {
+  const blob = JSON.stringify({
+    version: 1, fragments: 2, ranks: { not_aasgeier: 1, node_gold: 3 }
+  });
+  const { KT } = fresh({ storage: makeStorage({ [STORAGE_KEY]: blob }) });
+  assert.strictEqual(KT.getRank('not_aasgeier'), 1, 'Notable bleibt gesetzt');
+  assert.strictEqual(KT.getFragments(), 2, 'nichts faelschlich erstattet');
 });

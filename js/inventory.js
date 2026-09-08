@@ -1639,6 +1639,10 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
       0.85
     );
     playerSpeed = Math.max(60, Math.round(playerSpeed * (kb.speedMult || 1)));
+    // #116: Angriffstempo aus dem Wissensbaum (loest node_cdr ab — die
+    // Abklingzeit gehoert in den Talentbaum, wo sie an einer Entscheidung
+    // haengt).
+    weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (kb.attackSpeedMult || 1));
     // critAdd is folded in here as well so invest()-triggered recalcDerived()
     // refreshes the HUD crit % between runs. The line-806 init in main.js
     // covers fresh-load before recalcDerived runs.

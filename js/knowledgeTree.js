@@ -57,6 +57,19 @@
     'knowledge.node.magic_find.desc':    '+5 % seltene Drops pro Rang',
     // #116: Keystones. Der Name nennt die Haltung, die Beschreibung den
     // Tausch — Preis zuerst, damit niemand ihn uebersieht.
+    'knowledge.not.kaltbluetig.label':  'Kaltblütig',
+    'knowledge.not.kaltbluetig.desc':   '+10 % Schaden und +5 % Kritchance.',
+    'knowledge.not.schlagfolge.label':  'Schlagfolge',
+    'knowledge.not.schlagfolge.desc':   '+8 % Angriffstempo und +8 % Schaden.',
+    'knowledge.not.eisenhaut.label':    'Eisenhaut',
+    'knowledge.not.eisenhaut.desc':     '+0,15 Rüstung und +30 Leben.',
+    'knowledge.not.zaeher_lauf.label':  'Zäher Lauf',
+    'knowledge.not.zaeher_lauf.desc':   '+0,10 Rüstung und +8 % Tempo.',
+    'knowledge.not.aasgeier.label':     'Aasgeier',
+    'knowledge.not.aasgeier.desc':      '+20 % Gold und +40 Aufsammelweite.',
+    'knowledge.not.gelehrter.label':    'Gelehrter',
+    'knowledge.not.gelehrter.desc':     '+15 % Erfahrung und +10 % Fundqualität.',
+    'knowledge.not.locked':             'Braucht {n} Ränge im Zweig',
     'knowledge.key.ruhige_hand.label': 'Ruhige Hand',
     'knowledge.key.ruhige_hand.desc':  'Keine kritischen Treffer mehr, −35 % Tempo — dafür +45 % Schaden.',
     'knowledge.key.blutrausch.label':  'Blutrausch',
@@ -71,8 +84,8 @@
     'knowledge.key.sammler.desc':      '−50 % Gold — dafür +50 % Fundqualität und +30 % Erfahrung.',
     'knowledge.key.only_one':          'Nur ein Grundsatz zur Zeit.',
     'knowledge.key.cost':              '{n} Fragmente',
-    'knowledge.node.cdr.label':          'Geübte Hände',
-    'knowledge.node.cdr.desc':           '-3 % Cooldown (alle Fähigkeiten) pro Rang'
+    'knowledge.node.atkspeed.label':     'Geübte Hände',
+    'knowledge.node.atkspeed.desc':      '+3 % Angriffstempo pro Rang'
   };
   var I18N_EN = {
     'knowledge.title':             'Knowledge Tree',
@@ -108,6 +121,19 @@
     'knowledge.node.pickup.desc':        '+20 px pickup radius per rank',
     'knowledge.node.magic_find.label':   'Magic Sense',
     'knowledge.node.magic_find.desc':    '+5% magic find per rank',
+    'knowledge.not.kaltbluetig.label':  'Cold Blood',
+    'knowledge.not.kaltbluetig.desc':   '+10% damage and +5% crit chance.',
+    'knowledge.not.schlagfolge.label':  'Cadence',
+    'knowledge.not.schlagfolge.desc':   '+8% attack speed and +8% damage.',
+    'knowledge.not.eisenhaut.label':    'Ironskin',
+    'knowledge.not.eisenhaut.desc':     '+0.15 armour and +30 life.',
+    'knowledge.not.zaeher_lauf.label':  'Steady Gait',
+    'knowledge.not.zaeher_lauf.desc':   '+0.10 armour and +8% move speed.',
+    'knowledge.not.aasgeier.label':     'Carrion Eye',
+    'knowledge.not.aasgeier.desc':      '+20% gold and +40 pickup range.',
+    'knowledge.not.gelehrter.label':    'Scholar',
+    'knowledge.not.gelehrter.desc':     '+15% experience and +10% find quality.',
+    'knowledge.not.locked':             'Needs {n} ranks in the branch',
     'knowledge.key.ruhige_hand.label': 'Steady Hand',
     'knowledge.key.ruhige_hand.desc':  'No more critical hits, −35% move speed — but +45% damage.',
     'knowledge.key.blutrausch.label':  'Blood Rage',
@@ -122,8 +148,8 @@
     'knowledge.key.sammler.desc':      '−50% gold — but +50% find quality and +30% experience.',
     'knowledge.key.only_one':          'Only one tenet at a time.',
     'knowledge.key.cost':              '{n} fragments',
-    'knowledge.node.cdr.label':          'Practiced Hands',
-    'knowledge.node.cdr.desc':           '-3% cooldown (all abilities) per rank'
+    'knowledge.node.atkspeed.label':     'Practiced Hands',
+    'knowledge.node.atkspeed.desc':      '+3% attack speed per rank'
   };
 
   // --- Static catalog -----------------------------------------------------
@@ -141,7 +167,20 @@
     { id: 'node_gold',       labelKey: 'knowledge.node.gold.label',       descKey: 'knowledge.node.gold.desc',       maxRank: 3, perRank: { field: 'goldMult',      kind: 'mult', value: 0.05 } },
     { id: 'node_pickup',     labelKey: 'knowledge.node.pickup.label',     descKey: 'knowledge.node.pickup.desc',     maxRank: 3, perRank: { field: 'pickupAddRange', kind: 'add', value: 20   } },
     { id: 'node_magic_find', labelKey: 'knowledge.node.magic_find.label', descKey: 'knowledge.node.magic_find.desc', maxRank: 3, perRank: { field: 'magicFindMult', kind: 'mult', value: 0.05 } },
-    { id: 'node_cdr',        labelKey: 'knowledge.node.cdr.label',        descKey: 'knowledge.node.cdr.desc',        maxRank: 5, perRank: { field: 'cdrAll',        kind: 'add',  value: 0.03 } }
+    // #116: node_cdr ist WEG. Die Abklingzeit gab es in BEIDEN Baeumen —
+    // getLootAbilityCooldownReduction (player.js:1230) addiert cdrAll zu drei
+    // weiteren Quellen, und der Talentbaum senkt sie zusaetzlich ueber den
+    // Rang (bis -50 %). Zwei unbegrenzte Systeme auf einer Zahl enden am
+    // 100-ms-Boden.
+    //
+    // Sie bleibt beim Talentbaum, weil sie dort an eine ENTSCHEIDUNG haengt
+    // ("welche Faehigkeit baue ich aus"); hier haing sie an nichts.
+    // Angriffstempo ist der saubere Ersatz: es betrifft den Grundangriff, hat
+    // im Talentbaum keinen Gegenpart, und die Rangsumme bleibt bei 42.
+    //
+    // Altstaende mit node_cdr laufen in den "unbekannter Knoten"-Zweig von
+    // _absorbPersisted und bekommen ihre Fragmente zurueck.
+    { id: 'node_angriffstempo', labelKey: 'knowledge.node.atkspeed.label', descKey: 'knowledge.node.atkspeed.desc', maxRank: 5, perRank: { field: 'attackSpeedMult', kind: 'mult', value: 0.03 } }
   ];
   // Sum of maxRanks = 5+5+5+5+5+3+3+3+3+5 = 42 fragments to max all nodes.
 
@@ -231,6 +270,74 @@
   var KEYSTONE_BY_ID = {};
   for (var ki = 0; ki < KEYSTONES.length; ki++) KEYSTONE_BY_ID[KEYSTONES[ki].id] = KEYSTONES[ki];
 
+  // === ZWEIGE (#116) =======================================================
+  // Die zehn Knoten teilen sich in drei Zweige — die Rangsummen gehen genau
+  // auf: Kraft 15, Zaehigkeit 15, Gier 12 = 42.
+  var ZWEIG = {
+    node_damage: 'kraft', node_crit: 'kraft', node_angriffstempo: 'kraft',
+    node_armor: 'zaehigkeit', node_max_hp: 'zaehigkeit', node_speed: 'zaehigkeit',
+    node_xp: 'gier', node_gold: 'gier', node_pickup: 'gier', node_magic_find: 'gier'
+  };
+
+  /** Wie viele Raenge stecken in einem Zweig? */
+  function zweigRaenge(zweig) {
+    var s = 0;
+    for (var id in ZWEIG) {
+      if (ZWEIG[id] === zweig) s += (state.ranks[id] | 0);
+    }
+    return s;
+  }
+
+  // === NOTABLES (#116) =====================================================
+  //
+  // Die zehn Knoten sind Verbindungsstuecke: ein Wert, unbedingt, linear. In
+  // PoE waere das der Teil des Baums, den man durchquert, ohne hinzusehen.
+  // Was fehlte, waren ZIELE — Knoten, auf die man zusteuert.
+  //
+  // Ein Notable buendelt zwei zusammengehoerige Wirkungen und verlangt sechs
+  // Raenge im eigenen Zweig. Damit ist er kein Krumel mehr, sondern eine
+  // Anschaffung, auf die man hinspart.
+  //
+  // Nicht ausschliessend (anders als die Keystones): man darf alle sechs
+  // haben. Die dauerhafte Entscheidung traegt der Keystone.
+  var NOTABLE_KOSTEN = 4;
+  var NOTABLE_BRAUCHT = 6;
+  var NOTABLES = [
+    { id: 'not_kaltbluetig', zweig: 'kraft',
+      labelKey: 'knowledge.not.kaltbluetig.label', descKey: 'knowledge.not.kaltbluetig.desc',
+      effekte: [{ field: 'damageMult', kind: 'mult', value: 1.10 },
+                { field: 'critAdd',    kind: 'add',  value: 0.05 }] },
+    { id: 'not_schlagfolge', zweig: 'kraft',
+      labelKey: 'knowledge.not.schlagfolge.label', descKey: 'knowledge.not.schlagfolge.desc',
+      effekte: [{ field: 'attackSpeedMult', kind: 'mult', value: 1.08 },
+                { field: 'damageMult',      kind: 'mult', value: 1.08 }] },
+    { id: 'not_eisenhaut', zweig: 'zaehigkeit',
+      labelKey: 'knowledge.not.eisenhaut.label', descKey: 'knowledge.not.eisenhaut.desc',
+      effekte: [{ field: 'armorAdd', kind: 'add', value: 0.15 },
+                { field: 'maxHpAdd', kind: 'add', value: 30 }] },
+    { id: 'not_zaeher_lauf', zweig: 'zaehigkeit',
+      labelKey: 'knowledge.not.zaeher_lauf.label', descKey: 'knowledge.not.zaeher_lauf.desc',
+      effekte: [{ field: 'armorAdd',  kind: 'add',  value: 0.10 },
+                { field: 'speedMult', kind: 'mult', value: 1.08 }] },
+    { id: 'not_aasgeier', zweig: 'gier',
+      labelKey: 'knowledge.not.aasgeier.label', descKey: 'knowledge.not.aasgeier.desc',
+      effekte: [{ field: 'goldMult',       kind: 'mult', value: 1.20 },
+                { field: 'pickupAddRange', kind: 'add',  value: 40 }] },
+    { id: 'not_gelehrter', zweig: 'gier',
+      labelKey: 'knowledge.not.gelehrter.label', descKey: 'knowledge.not.gelehrter.desc',
+      effekte: [{ field: 'xpMult',        kind: 'mult', value: 1.15 },
+                { field: 'magicFindMult', kind: 'mult', value: 1.10 }] }
+  ];
+  var NOTABLE_BY_ID = {};
+  for (var ni = 0; ni < NOTABLES.length; ni++) NOTABLE_BY_ID[NOTABLES[ni].id] = NOTABLES[ni];
+
+  /** Ist der Zweig weit genug ausgebaut? */
+  function notableOffen(id) {
+    var n = NOTABLE_BY_ID[id];
+    if (!n) return false;
+    return zweigRaenge(n.zweig) >= NOTABLE_BRAUCHT;
+  }
+
   // --- Default primitives (window-bound, swappable via _configureForTest) -
   function _defaultPrimitives() {
     var hasWindow = typeof window !== 'undefined';
@@ -319,6 +426,12 @@
       // duerfen nur EINMAL vorkommen. Ohne diesen Zweig fielen sie unten in
       // den "unbekannter Knoten"-Fall und wuerden mit 1 statt 5 Fragmenten
       // erstattet — der Spieler haette vier Fragmente verloren.
+      if (NOTABLE_BY_ID[nodeId]) {
+        // Wie die Keystones: 0/1, und ohne diesen Zweig faenden sie sich im
+        // "unbekannter Knoten"-Fall mit 1 statt NOTABLE_KOSTEN wieder.
+        if (desired > 0) state.ranks[nodeId] = 1;
+        continue;
+      }
       if (KEYSTONE_BY_ID[nodeId]) {
         if (desired <= 0) continue;
         if (getActiveKeystone()) {
@@ -381,6 +494,9 @@
     b.goldMult = 1.0;
     b.pickupAddRange = 0;
     b.magicFindMult = 1.0;
+    b.attackSpeedMult = 1.0;
+    // cdrAll bleibt auf 0: player.js:1230 liest das Feld weiterhin, es wird
+    // nur von keinem Knoten mehr gespeist.
     b.cdrAll = 0;
     // Apply each rank
     // AKKUMULIEREN statt zuweisen. Bisher gehoerte jedes Feld genau einem
@@ -397,6 +513,20 @@
         b[pr.field] = (typeof b[pr.field] === 'number' ? b[pr.field] : 1) * (1 + delta);
       } else {
         b[pr.field] = (typeof b[pr.field] === 'number' ? b[pr.field] : 0) + delta;
+      }
+    }
+    // Notables nach den kleinen Knoten, aber VOR dem Keystone — sie sind
+    // gewoehnliche Boni, der Keystone ist der Tausch, der zuletzt gilt.
+    for (var nj = 0; nj < NOTABLES.length; nj++) {
+      var nt = NOTABLES[nj];
+      if ((state.ranks[nt.id] | 0) <= 0) continue;
+      for (var nk = 0; nk < nt.effekte.length; nk++) {
+        var nf = nt.effekte[nk];
+        if (nf.kind === 'mult') {
+          b[nf.field] = (typeof b[nf.field] === 'number' ? b[nf.field] : 1) * nf.value;
+        } else {
+          b[nf.field] = (typeof b[nf.field] === 'number' ? b[nf.field] : 0) + nf.value;
+        }
       }
     }
     // Keystone zuletzt: sein Entzug soll ueber allem stehen, was die kleinen
@@ -549,9 +679,30 @@
     return true;
   }
 
+  /**
+   * Notable setzen. Festpreis, und der Zweig muss weit genug ausgebaut sein —
+   * das ist der Unterschied zu einem blossen Bonus: man kommt nur hin, wenn
+   * man den Weg gegangen ist.
+   */
+  function investNotable(id) {
+    var n = NOTABLE_BY_ID[id];
+    if (!n) return false;
+    if ((state.ranks[id] | 0) > 0) return false;
+    if (!notableOffen(id)) return false;
+    if (state.fragments < NOTABLE_KOSTEN) return false;
+    state.fragments -= NOTABLE_KOSTEN;
+    state.ranks[id] = 1;
+    _applyRanksToBuffs();
+    _persist();
+    _callRecalc();
+    _notify();
+    return true;
+  }
+
   function invest(nodeId) {
     // Keystones laufen ueber ihren eigenen Pfad (Festpreis + Ausschluss).
     if (KEYSTONE_BY_ID[nodeId]) return investKeystone(nodeId);
+    if (NOTABLE_BY_ID[nodeId]) return investNotable(nodeId);
     var node = CATALOG_BY_ID[nodeId];
     if (!node) return false;
     var currentRank = state.ranks[nodeId] | 0;
@@ -635,6 +786,14 @@
     getState: getState,
     addFragments: addFragments,
     invest: invest,
+    // #116: Notables — Buendel, hinter sechs Raengen im eigenen Zweig.
+    getNotables: function () { return NOTABLES.slice(); },
+    investNotable: investNotable,
+    notableOffen: notableOffen,
+    zweigRaenge: zweigRaenge,
+    NOTABLE_KOSTEN: NOTABLE_KOSTEN,
+    NOTABLE_BRAUCHT: NOTABLE_BRAUCHT,
+    ZWEIG: ZWEIG,
     // #116: Keystones — hoechstens einer, Festpreis, gegenseitiger Ausschluss.
     getKeystones: function () { return KEYSTONES.slice(); },
     getActiveKeystone: getActiveKeystone,

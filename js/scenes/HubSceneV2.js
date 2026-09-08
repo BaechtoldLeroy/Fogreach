@@ -3265,9 +3265,16 @@ class HubSceneV2 extends Phaser.Scene {
   _ktRenderKeystones() {
     const KT = window.KnowledgeTree;
     const keys = (typeof KT.getKeystones === 'function') ? KT.getKeystones() : [];
-    if (!keys.length) return;
+    // #116: Notables stehen in derselben Ansicht — beides sind Anschaffungen
+    // mit Festpreis, waehrend die zehn Knoten Raenge sammeln. Erst die
+    // Buendel, dann die Grundsaetze: man kauft sie in dieser Reihenfolge.
+    const nots = (typeof KT.getNotables === 'function') ? KT.getNotables() : [];
+    const eintraege = nots.map(function (n) { return { art: 'notable', d: n }; })
+      .concat(keys.map(function (k) { return { art: 'keystone', d: k }; }));
+    if (!eintraege.length) return;
     const aktiv = KT.getActiveKeystone();
     const kosten = KT.KEYSTONE_KOSTEN || 5;
+    const notKosten = KT.NOTABLE_KOSTEN || 4;
     const fragmente = KT.getFragments();
 
     const panelW = this._ktPanelW || 920;
@@ -3276,17 +3283,24 @@ class HubSceneV2 extends Phaser.Scene {
     const bodyH = panelH - 32 - 64 - 24;
     const bodyTop = -panelH / 2 + 32 + 12;
 
-    const cols = 2;
-    const rows = Math.ceil(keys.length / cols);
-    const gap = 10;
+    const cols = 3;
+    const rows = Math.ceil(eintraege.length / cols);
+    const gap = 8;
     const cardW = (bodyW - gap * (cols - 1)) / cols;
     const cardH = (bodyH - gap * (rows - 1)) / rows;
 
-    for (let i = 0; i < keys.length; i++) {
-      const k = keys[i];
-      const istAktiv = (aktiv === k.id);
-      // Gesperrt heisst: ein ANDERER Grundsatz gilt bereits.
-      const gesperrt = !!aktiv && !istAktiv;
+    for (let i = 0; i < eintraege.length; i++) {
+      const eintrag = eintraege[i];
+      const k = eintrag.d;
+      const istKeystone = (eintrag.art === 'keystone');
+      const preis = istKeystone ? kosten : notKosten;
+      const gesetzt = istKeystone ? (aktiv === k.id) : (KT.getRank(k.id) > 0);
+      const istAktiv = gesetzt;
+      // Gesperrt: bei Grundsaetzen, weil schon einer gilt; bei Buendeln,
+      // weil der Zweig noch nicht weit genug ausgebaut ist.
+      const zweigZu = !istKeystone && typeof KT.notableOffen === 'function'
+        && !KT.notableOffen(k.id) && !gesetzt;
+      const gesperrt = (istKeystone ? (!!aktiv && !istAktiv) : false) || zweigZu;
       const cardX = -bodyW / 2 + (i % cols) * (cardW + gap) + cardW / 2;
       const cardY = bodyTop + Math.floor(i / cols) * (cardH + gap) + cardH / 2;
 
@@ -3294,40 +3308,47 @@ class HubSceneV2 extends Phaser.Scene {
       this._ktCardLayer.add(c);
 
       const bg = this.add.graphics();
-      bg.fillStyle(istAktiv ? 0x2a2438 : 0x1a1a28, 0.95);
+      bg.fillStyle(istAktiv ? (istKeystone ? 0x2a2438 : 0x24302a) : 0x1a1a28, 0.95);
       bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
-      bg.lineStyle(istAktiv ? 2 : 1, istAktiv ? 0xc9a0ff : 0x3a3a4a, gesperrt ? 0.4 : 0.85);
+      bg.lineStyle(istAktiv ? 2 : 1,
+        istAktiv ? (istKeystone ? 0xc9a0ff : 0x8fd6a0) : 0x3a3a4a, gesperrt ? 0.4 : 0.85);
       bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
       c.add(bg);
 
-      c.add(this.add.text(-cardW / 2 + 10, -cardH / 2 + 6, _HUB_T(k.labelKey), {
-        fontFamily: 'serif', fontSize: 15, fontStyle: 'bold', resolution: 2,
-        color: istAktiv ? '#e8d5ff' : (gesperrt ? '#6a6a72' : '#ffd166')
+      c.add(this.add.text(-cardW / 2 + 8, -cardH / 2 + 5, _HUB_T(k.labelKey), {
+        fontFamily: 'serif', fontSize: 14, fontStyle: 'bold', resolution: 2,
+        color: istAktiv ? (istKeystone ? '#e8d5ff' : '#cfffcf') : (gesperrt ? '#6a6a72' : '#ffd166')
       }));
 
-      c.add(this.add.text(-cardW / 2 + 10, -cardH / 2 + 26, _HUB_T(k.descKey), {
-        fontFamily: 'serif', fontSize: 12, resolution: 2,
-        color: gesperrt ? '#5f5f66' : '#dde0e6', wordWrap: { width: cardW - 20 }
+      c.add(this.add.text(-cardW / 2 + 8, -cardH / 2 + 23, _HUB_T(k.descKey), {
+        fontFamily: 'serif', fontSize: 11, resolution: 2,
+        color: gesperrt ? '#5f5f66' : '#dde0e6', wordWrap: { width: cardW - 16 }
       }));
 
       // Knopf: setzen / loesen / gesperrt
       let text, farbe, hintergrund, aktivierbar;
       if (istAktiv) {
-        text = _HUB_T('knowledge.key.btn_release'); farbe = '#ffdada';
-        hintergrund = '#7a3a3a'; aktivierbar = true;
+        // Buendel bleiben gekauft; nur Grundsaetze lassen sich ablegen.
+        text = istKeystone ? _HUB_T('knowledge.key.btn_release') : '\u2713';
+        farbe = istKeystone ? '#ffdada' : '#cfffcf';
+        hintergrund = istKeystone ? '#7a3a3a' : '#1f3a2a';
+        aktivierbar = istKeystone;
+      } else if (zweigZu) {
+        text = _HUB_T('knowledge.not.locked', { n: KT.NOTABLE_BRAUCHT || 6 });
+        farbe = '#6a6a72'; hintergrund = '#26262c'; aktivierbar = false;
       } else if (gesperrt) {
         text = _HUB_T('knowledge.key.only_one'); farbe = '#6a6a72';
         hintergrund = '#26262c'; aktivierbar = false;
-      } else if (fragmente < kosten) {
-        text = _HUB_T('knowledge.key.cost', { n: kosten }); farbe = '#666';
+      } else if (fragmente < preis) {
+        text = _HUB_T('knowledge.key.cost', { n: preis }); farbe = '#666';
         hintergrund = '#2a2a2a'; aktivierbar = false;
       } else {
-        text = _HUB_T('knowledge.key.btn_set', { n: kosten }); farbe = '#9bff9b';
+        text = _HUB_T('knowledge.key.btn_set', { n: preis }); farbe = '#9bff9b';
         hintergrund = '#1f3a1f'; aktivierbar = true;
       }
-      const btn = this.add.text(cardW / 2 - 10, cardH / 2 - 26, text, {
-        fontFamily: 'serif', fontSize: 13, color: farbe, backgroundColor: hintergrund,
-        padding: { x: 8, y: 4 }, resolution: 2
+      const btn = this.add.text(cardW / 2 - 8, cardH / 2 - 24, text, {
+        fontFamily: 'serif', fontSize: 12, color: farbe, backgroundColor: hintergrund,
+        padding: { x: 7, y: 3 }, resolution: 2
       }).setOrigin(1, 0);
       btn.setInteractive({ useHandCursor: aktivierbar });
       c.add(btn);
@@ -3335,13 +3356,15 @@ class HubSceneV2 extends Phaser.Scene {
       const id = k.id;
       const setzen = !istAktiv;
       const geht = aktivierbar;
+      const alsKeystone = istKeystone;
       btn.on('pointerdown', (pointer, x, y, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
         if (!geht) return;
         try {
-          if (setzen) window.KnowledgeTree.investKeystone(id);
-          else window.KnowledgeTree.loeseKeystone();
-        } catch (e) { try { console.warn('[HubSceneV2] Keystone fehlgeschlagen', e); } catch (_) {} }
+          if (!setzen) window.KnowledgeTree.loeseKeystone();
+          else if (alsKeystone) window.KnowledgeTree.investKeystone(id);
+          else window.KnowledgeTree.investNotable(id);
+        } catch (e) { try { console.warn('[HubSceneV2] Anschaffung fehlgeschlagen', e); } catch (_) {} }
       });
     }
   }
