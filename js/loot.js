@@ -114,10 +114,15 @@ function getTierFromLegacyRarityKey(key) {
 // WP03: Spawn a goldPile sprite at (x, y) worth `amount` gold.
 // Auto-collected by the player-overlap registered in main.js via window.goldGroup.
 // Each pile despawns after 5 minutes to cap sprite count (see feature 020 assumption 7).
-function _spawnGoldPile(scene, x, y, amount) {
+function _spawnGoldPile(scene, x, y, amount, gross) {
   if (!scene || !scene.physics || !scene.add) return null;
   if (typeof scene.textures?.exists === 'function' && !scene.textures.exists('goldPile')) return null;
   const safeAmount = Math.max(1, Math.floor(Number(amount) || 1));
+  // #132: Chefs bekommen ein eigenes Symbol. Faellt die Textur aus, bleibt es
+  // beim normalen Haufen — sichtbar ist wichtiger als schoen.
+  const grossTex = !!gross
+    && (typeof scene.textures?.exists !== 'function' || scene.textures.exists('goldHoard'));
+  const tex = grossTex ? 'goldHoard' : 'goldPile';
   // Perf (#70): nahe Gold-Piles ZUSAMMENFUEHREN statt fuer jeden Drop ein neues
   // Sprite zu spawnen. In grossen Raeumen mit vielen Kills waren das sonst
   // Dutzende Gold-Sprites — jedes ein eigener Draw-Call und ein Physik-Body.
@@ -131,13 +136,21 @@ function _spawnGoldPile(scene, x, y, amount) {
       const dx = gp.x - x, dy = gp.y - y;
       if (dx * dx + dy * dy <= _mergeR2) {
         gp.setData('goldAmount', (gp.getData('goldAmount') || 0) + safeAmount);
+        // Verschmilzt ein Chef-Abwurf mit einem Haufen, gewinnt der Beutel —
+        // sonst versteckt sich der grosse Betrag hinter drei Muenzen.
+        if (grossTex && gp.texture && gp.texture.key !== 'goldHoard'
+            && typeof gp.setTexture === 'function') {
+          gp.setTexture('goldHoard');
+          gp.setData('goldGross', true);
+        }
         return gp;
       }
     }
   }
-  const sprite = scene.physics.add.sprite(x, y, 'goldPile');
+  const sprite = scene.physics.add.sprite(x, y, tex);
   if (!sprite) return null;
   sprite.setData('goldAmount', safeAmount);
+  if (grossTex) sprite.setData('goldGross', true);
   sprite.setDepth(80);
   if (window.goldGroup && typeof window.goldGroup.add === 'function') {
     window.goldGroup.add(sprite);
@@ -199,7 +212,8 @@ function _enemyGoldRank(enemy) {
 function _dropEnemyGold(scene, enemy) {
   if (!scene || !enemy) return;
   const level = enemy.iLevel || enemy.mLevel || (typeof currentWave !== 'undefined' ? currentWave : 1) || 1;
-  let amount = _rollEnemyGoldDrop(level, _enemyGoldRank(enemy));
+  const _rang = _enemyGoldRank(enemy);
+  let amount = _rollEnemyGoldDrop(level, _rang);
   if (amount <= 0) return;
   // Printing-House edict: gold drop multiplier (open_rebellion).
   const _ph = (typeof window !== 'undefined') ? window.printingBuffs : null;
@@ -212,7 +226,7 @@ function _dropEnemyGold(scene, enemy) {
   const dist = 18 + Math.random() * 22; // 18..40 px from enemy
   const gx = enemy.x + Math.cos(angle) * dist;
   const gy = enemy.y + Math.sin(angle) * dist;
-  _spawnGoldPile(scene, gx, gy, amount);
+  _spawnGoldPile(scene, gx, gy, amount, _rang === 'boss' || _rang === 'mini');
 }
 
 // Aufsammel-Sperre fuer Ausruestung: Waffen und Ruestungsteile lassen sich

@@ -3324,6 +3324,61 @@ function createGoldPileGraphics() {
   g.fillCircle(10, 5, 1.5);
   g.generateTexture('goldPile', 24, 20);
   g.destroy();
+  createGoldHoardGraphics.call(this);
+}
+
+/**
+ * #132: eigenes Symbol fuer GROSSE Betraege (Mini-Boss und Boss).
+ *
+ * Ein Boss laesst auf Tiefe 30 rund 150 Gold fallen, ein Fass 3 — beides sah
+ * bisher gleich aus. Der Beutel ist deutlich groesser, hat eine Schnur und
+ * ueberquellende Muenzen, damit der Hoehepunkt eines Laufs auch am Boden als
+ * solcher zu erkennen ist.
+ */
+function createGoldHoardGraphics() {
+  if (!this || !this.add || !this.add.graphics) return;
+  if (this.textures && typeof this.textures.exists === 'function' && this.textures.exists('goldHoard')) {
+    return;
+  }
+  const g = this.add.graphics();
+  // Schatten
+  g.fillStyle(0x000000, 0.45);
+  g.fillEllipse(19, 27, 30, 8);
+  // Beutel (Sack aus Leder), unten breit, oben zugeschnuert
+  g.fillStyle(0x6b4a2a, 1);
+  g.fillEllipse(19, 20, 26, 20);
+  g.fillStyle(0x7d5832, 1);
+  g.fillEllipse(16, 18, 16, 13);
+  // Schnur
+  g.lineStyle(2.5, 0x3d2a17, 1);
+  g.strokeEllipse(19, 11, 13, 5);
+  // Hals des Beutels
+  g.fillStyle(0x5a3d22, 1);
+  g.fillRect(13, 6, 12, 5);
+  // Ueberquellende Muenzen
+  const muenzen = [[14, 6, 4], [21, 5, 3.5], [18, 3, 3], [25, 9, 3]];
+  for (let i = 0; i < muenzen.length; i++) {
+    const m = muenzen[i];
+    g.fillStyle(0xffd166, 1);
+    g.fillCircle(m[0], m[1], m[2]);
+    g.lineStyle(1, 0xb89030, 0.9);
+    g.strokeCircle(m[0], m[1], m[2]);
+  }
+  // Muenzen davor am Boden
+  g.fillStyle(0xffd166, 1);
+  g.fillCircle(8, 25, 3.5);
+  g.fillCircle(30, 24, 3);
+  g.lineStyle(1, 0xb89030, 0.9);
+  g.strokeCircle(8, 25, 3.5);
+  g.strokeCircle(30, 24, 3);
+  // Glanz
+  g.fillStyle(0xffffff, 0.5);
+  g.fillCircle(16, 2, 1.6);
+  g.generateTexture('goldHoard', 38, 32);
+  g.destroy();
+}
+if (typeof window !== 'undefined') {
+  window.createGoldHoardGraphics = createGoldHoardGraphics;
 }
 if (typeof window !== 'undefined') {
   window.createGoldPileGraphics = createGoldPileGraphics;

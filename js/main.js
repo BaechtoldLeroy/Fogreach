@@ -1636,11 +1636,28 @@ function breakDestructibleObstacle(scene, obs) {
     || tier === 'small' || tier === 'medium' || tier === 'large'
     || !!(_gd('isRewardChest') || _gd('isBonusChest') || _gd('eventChest'));
 
-  // Truhen: Gold als SICHTBAREN Drop am Boden verstreuen (auto-eingesammelt bei
-  // Berührung) statt still gutzuschreiben. Andere Behälter/Kulisse behalten die
-  // stille Gutschrift. Fällt spawnGoldPile aus (Textur/Physik fehlt), sichere
-  // Gutschrift als Fallback, damit nie Gold verloren geht.
+  // #132: JEDER Gold-Abwurf liegt sichtbar am Boden — auch der aus Faessern
+  // und Kulisse. Vorher wurde er dort still gutgeschrieben: die Zahl im HUD
+  // sprang, ohne dass je etwas zu sehen war. Bei einem Zehntel des frueheren
+  // Goldes zaehlt jeder einzelne Fund, also soll man ihn auch finden.
+  //
+  // Truhen streuen mehrere Haufen (es ist mehr Gold), alles andere legt einen.
+  // Faellt spawnGoldPile aus (Textur/Physik fehlt), bleibt die stille
+  // Gutschrift als Rueckfall — verlorenes Gold waere schlimmer als unsichtbares.
   let goldShown = false;
+  if (!isChest && goldAmount > 0 && typeof window.spawnGoldPile === 'function') {
+    const _p = window.spawnGoldPile(scene, x, y, goldAmount);
+    if (_p) {
+      goldShown = true;
+      // Dieselbe kurze Sperre wie bei Truhen: der Spieler steht beim
+      // Zerschlagen direkt daneben und wuerde den Haufen im selben Frame
+      // aufheben, ohne ihn je gesehen zu haben.
+      if (_p.body && scene.time && typeof scene.time.delayedCall === 'function') {
+        _p.body.enable = false;
+        scene.time.delayedCall(500, () => { if (_p && _p.active && _p.body) _p.body.enable = true; });
+      }
+    }
+  }
   if (isChest && typeof window.spawnGoldPile === 'function') {
     const piles = Math.max(2, Math.min(5, Math.round(goldAmount / 15)));
     let remaining = goldAmount;
