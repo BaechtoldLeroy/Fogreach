@@ -319,32 +319,54 @@
         const nodes = all.filter(n => n && n.strand === strand);
         nodes.sort((a, b) => this._tierOf(a) - this._tierOf(b));
 
-        const rowsTop = top + 30;
-        const rowGap = (bottom - rowsTop) / Math.max(1, nodes.length);
-        const cardW = Math.min(colW - 12, 220);
-        const cardH = Math.min(rowGap - 8, 78);
+        // GLEICHRANGIGE KNOTEN TEILEN SICH EINE ZEILE (D2-artig).
+        //
+        // Vorher bekam jeder Knoten eine eigene Zeile — 21 Knoten ergaben drei
+        // perfekte Saeulen, in denen nichts die Struktur des Baums zeigte.
+        // Hammer und Raserei stehen aber auf DERSELBEN Stufe; nebeneinander
+        // gesetzt sieht man das sofort, und die Pfeile darunter gabeln sich
+        // sichtbar auf den Capstone zu.
+        const zeilen = [];
+        nodes.forEach((n) => {
+          const t = this._tierOf(n);
+          const letzte = zeilen[zeilen.length - 1];
+          if (letzte && letzte.tier === t) letzte.knoten.push(n);
+          else zeilen.push({ tier: t, knoten: [n] });
+        });
 
-        nodes.forEach((node, ri) => {
+        const rowsTop = top + 30;
+        const rowGap = (bottom - rowsTop) / Math.max(1, zeilen.length);
+        const cardH = Math.min(rowGap - 10, 74);
+
+        zeilen.forEach((z, ri) => {
           const cy = rowsTop + ri * rowGap + rowGap / 2;
-          this._nodeGeo[node.id] = { x: cx, y: cy, w: cardW, h: cardH, strand: strand };
+          const anzahl = z.knoten.length;
+          // Schmaler als vorher (220 -> 140): die Karte traegt seit dem
+          // Entschlacken nur noch Name, Pips und ggf. eine Zeile.
+          const cardW = Math.min((colW - 20) / anzahl - 8, 140);
+          z.knoten.forEach((node, ki) => {
+            let ox;
+            if (anzahl === 1) {
+              // Einzelne Knoten leicht versetzt, damit keine perfekte Saeule
+              // entsteht. Wechselnd nach Zeile — das erzeugt den leichten
+              // Zickzack, den die D2-Baeume haben.
+              ox = ((ri % 2 === 0) ? -1 : 1) * (colW * 0.09);
+            } else {
+              ox = (ki - (anzahl - 1) / 2) * (cardW + 12);
+            }
+            this._nodeGeo[node.id] = { x: cx + ox, y: cy, w: cardW, h: cardH, strand: strand };
+          });
         });
       });
 
       // Erst die Pfeile (unter den Karten), dann die Karten darueber.
       this._renderPfeile(lvl);
 
-      STRANDS.forEach((strand, ci) => {
-        const cx = left + ci * colW + colW / 2;
-        const nodes = all.filter(n => n && n.strand === strand);
-        nodes.sort((a, b) => this._tierOf(a) - this._tierOf(b));
-        const rowsTop = top + 30;
-        const rowGap = (bottom - rowsTop) / Math.max(1, nodes.length);
-        const cardW = Math.min(colW - 12, 220);
-        const cardH = Math.min(rowGap - 8, 78);
-        nodes.forEach((node, ri) => {
-          const cy = rowsTop + ri * rowGap + rowGap / 2;
-          this._renderNode(node, cx, cy, cardW, cardH, lvl);
-        });
+      // Karten aus der gespeicherten Geometrie — nicht nochmal rechnen, sonst
+      // laufen Pfeile und Karten beim naechsten Umbau auseinander.
+      all.forEach((node) => {
+        const geo = this._nodeGeo[node.id];
+        if (geo) this._renderNode(node, geo.x, geo.y, geo.w, geo.h, lvl);
       });
     }
 
@@ -377,7 +399,7 @@
         const ziel = this._nodeGeo[node.id];
         if (!ziel || !quellen.length) return;
 
-        quellen.forEach((q, qi) => {
+        quellen.forEach((q) => {
           const von = this._nodeGeo[q.node];
           if (!von) return;
           // Erfuellt? Dann kraeftig, sonst gedaempft — man sieht auf einen
@@ -386,27 +408,29 @@
           const farbe = erfuellt ? (STRAND_COLORS[node.strand] || 0x8899aa) : 0x44444c;
           g.lineStyle(erfuellt ? 2 : 1.5, farbe, erfuellt ? 0.85 : 0.45);
 
-          // Schiene rechts bzw. links neben der Spalte; bei zwei Quellen
-          // (Capstone) je eine Seite, damit sie sich nicht ueberdecken.
-          const seite = (qi % 2 === 0) ? 1 : -1;
-          const randVon = von.x + seite * (von.w / 2);
-          const randZiel = ziel.x + seite * (ziel.w / 2);
-          const schiene = von.x + seite * (von.w / 2 + 10);
+          // Ellbogen von unten nach oben: senkrecht aus der Quelle heraus, auf
+          // halber Hoehe waagerecht herueber, senkrecht in das Ziel. Seit die
+          // Knoten seitlich versetzt sind, laeuft eine gerade Linie nicht mehr
+          // durch die Karten dazwischen — und die Gabelung zweier Quellen auf
+          // einen Capstone wird als solche sichtbar.
+          const vonY = von.y + von.h / 2;
+          const zielY = ziel.y - ziel.h / 2;
+          const mitteY = vonY + (zielY - vonY) * 0.5;
 
           g.beginPath();
-          g.moveTo(randVon, von.y);
-          g.lineTo(schiene, von.y);
-          g.lineTo(schiene, ziel.y);
-          g.lineTo(randZiel, ziel.y);
+          g.moveTo(von.x, vonY);
+          g.lineTo(von.x, mitteY);
+          g.lineTo(ziel.x, mitteY);
+          g.lineTo(ziel.x, zielY);
           g.strokePath();
 
-          // Spitze am Zielknoten, zeigt nach innen.
+          // Spitze am Zielknoten, zeigt nach unten auf ihn.
           const s = 5;
           g.fillStyle(farbe, erfuellt ? 0.9 : 0.5);
           g.beginPath();
-          g.moveTo(randZiel, ziel.y);
-          g.lineTo(randZiel + seite * s, ziel.y - s * 0.8);
-          g.lineTo(randZiel + seite * s, ziel.y + s * 0.8);
+          g.moveTo(ziel.x, zielY);
+          g.lineTo(ziel.x - s * 0.8, zielY - s);
+          g.lineTo(ziel.x + s * 0.8, zielY - s);
           g.closePath();
           g.fillPath();
         });
