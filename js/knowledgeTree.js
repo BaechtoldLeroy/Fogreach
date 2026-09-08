@@ -57,6 +57,10 @@
     'knowledge.node.magic_find.desc':    '+5 % seltene Drops pro Rang',
     // #116: Keystones. Der Name nennt die Haltung, die Beschreibung den
     // Tausch — Preis zuerst, damit niemand ihn uebersieht.
+    'knowledge.zweig.kraft':            'Kraft',
+    'knowledge.zweig.zaehigkeit':       'Zähigkeit',
+    'knowledge.zweig.gier':             'Gier',
+    'knowledge.zweig.open':             '— Zweig offen —',
     'knowledge.not.kaltbluetig.label':  'Kaltblütig',
     'knowledge.not.kaltbluetig.desc':   '+10 % Schaden und +5 % Kritchance.',
     'knowledge.not.schlagfolge.label':  'Schlagfolge',
@@ -121,6 +125,10 @@
     'knowledge.node.pickup.desc':        '+20 px pickup radius per rank',
     'knowledge.node.magic_find.label':   'Magic Sense',
     'knowledge.node.magic_find.desc':    '+5% magic find per rank',
+    'knowledge.zweig.kraft':            'Force',
+    'knowledge.zweig.zaehigkeit':       'Fortitude',
+    'knowledge.zweig.gier':             'Greed',
+    'knowledge.zweig.open':             '— branch open —',
     'knowledge.not.kaltbluetig.label':  'Cold Blood',
     'knowledge.not.kaltbluetig.desc':   '+10% damage and +5% crit chance.',
     'knowledge.not.schlagfolge.label':  'Cadence',

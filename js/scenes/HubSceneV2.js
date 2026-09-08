@@ -3161,213 +3161,214 @@ class HubSceneV2 extends Phaser.Scene {
     this.events.once('sleep',    () => { try { this._ktCloseModal(); } catch (_) {} });
   }
 
+  /**
+   * Der Wissensbaum als DREI ZWEIGE nebeneinander.
+   *
+   * Vorher lagen alle Knoten in einem 2-Spalten-Raster und die Grundsaetze in
+   * einer zweiten Ansicht dahinter. Die Zweige — Kraft, Zaehigkeit, Gier — sind
+   * aber die tragende Struktur: an ihnen haengt, welcher Notable sich oeffnet
+   * (sechs Raenge im eigenen Zweig). Im Raster war davon nichts zu sehen.
+   *
+   * Jetzt eine Saeule je Zweig, von oben nach unten gelesen:
+   *   Kopf mit Namen und Rangstand (z. B. "6 / 15")
+   *   die kleinen Knoten des Zweigs, jeder mit Pips und [+]
+   *   ein Tor, das die noetigen sechs Raenge nennt
+   *   die zwei Buendel des Zweigs
+   *   die zwei Grundsaetze des Zweigs
+   * Eine senkrechte Linie verbindet das Ganze — erfuellt in Zweigfarbe,
+   * offen gedaempft, damit man auf einen Blick sieht, wie weit man ist.
+   *
+   * Der Umschalter zwischen zwei Ansichten entfaellt damit; alles passt auf
+   * einen Schirm (gerechnet: 314 px fuer den vollsten Zweig bei 340 px Hoehe).
+   */
   _ktRenderCards() {
     if (!this._ktCardLayer || !window.KnowledgeTree) return;
     this._ktCardLayer.removeAll(true);
 
-    // #116: zwei Ansichten in einem Fenster. Die sechs Grundsaetze zu den zehn
-    // Knoten in dasselbe Raster zu legen haette 16 Karten in zwei Spalten
-    // ergeben — bei 460 px Panelhoehe waeren das Streifen von 25 px. Ausserdem
-    // sind sie inhaltlich etwas anderes: die Knoten sammelt man, vom Grundsatz
-    // gilt genau EINER.
-    if (this._ktAnsicht === 'grundsaetze') { this._ktRenderKeystones(); return; }
+    const KT = window.KnowledgeTree;
+    const fragmente = KT.getFragments();
+    const aktiverKey = (typeof KT.getActiveKeystone === 'function') ? KT.getActiveKeystone() : null;
+    const notKosten = KT.NOTABLE_KOSTEN || 4;
+    const keyKosten = KT.KEYSTONE_KOSTEN || 5;
+    const braucht = KT.NOTABLE_BRAUCHT || 6;
 
-    const catalog = window.KnowledgeTree.getCatalog();
-    const state = window.KnowledgeTree.getState();
-    const fragments = state.fragments;
+    const ZWEIGE = [
+      { id: 'kraft',      farbe: 0xd86a6a, hex: '#ff9a9a' },
+      { id: 'zaehigkeit', farbe: 0x6a9ad8, hex: '#9ac4ff' },
+      { id: 'gier',       farbe: 0xd8b45a, hex: '#ffd98a' }
+    ];
 
     const panelW = this._ktPanelW || 920;
     const panelH = this._ktPanelH || 460;
-    const headerH = 32;
-    const footerH = 64;
-    const bodyW = panelW - 32;
-    const bodyH = panelH - headerH - footerH - 24;
-    const bodyTop = -panelH / 2 + headerH + 12;
+    const bodyTop = -panelH / 2 + 32 + 8;
+    const spalte = (panelW - 32 - 24) / 3;
 
-    const cols = 2;
-    const rows = Math.ceil(catalog.length / cols);
-    const cardGap = 10;
-    const cardW = (bodyW - cardGap * (cols - 1)) / cols;
-    const cardH = (bodyH - cardGap * (rows - 1)) / rows;
+    const katalog = KT.getCatalog();
+    const notables = (typeof KT.getNotables === 'function') ? KT.getNotables() : [];
+    const keystones = (typeof KT.getKeystones === 'function') ? KT.getKeystones() : [];
+    const zweigVon = KT.ZWEIG || {};
 
-    for (let i = 0; i < catalog.length; i++) {
-      const node = catalog[i];
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const cardX = -bodyW / 2 + col * (cardW + cardGap) + cardW / 2;
-      const cardY = bodyTop + row * (cardH + cardGap) + cardH / 2;
+    ZWEIGE.forEach((zw, si) => {
+      const cx = -panelW / 2 + 16 + si * (spalte + 12) + spalte / 2;
+      const raenge = (typeof KT.zweigRaenge === 'function') ? KT.zweigRaenge(zw.id) : 0;
+      const offen = raenge >= braucht;
+      let y = bodyTop;
 
-      const cardContainer = this.add.container(cardX, cardY);
-      this._ktCardLayer.add(cardContainer);
+      // --- Kopf: Zweigname + Rangstand -------------------------------------
+      const kopf = this.add.text(cx, y, _HUB_T('knowledge.zweig.' + zw.id), {
+        fontFamily: 'serif', fontSize: 15, fontStyle: 'bold', color: zw.hex, resolution: 2
+      }).setOrigin(0.5, 0);
+      this._ktCardLayer.add(kopf);
+      const stand = this.add.text(cx, y + 18, raenge + ' / ' + this._ktZweigMax(zw.id), {
+        fontFamily: 'monospace', fontSize: 11,
+        color: offen ? zw.hex : '#7a7a84', resolution: 2
+      }).setOrigin(0.5, 0);
+      this._ktCardLayer.add(stand);
+      y += 36;
 
-      // Card bg
-      const cardBg = this.add.graphics();
-      cardBg.fillStyle(0x1a1a28, 0.95);
-      cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
-      cardBg.lineStyle(1, 0x3a3a4a, 0.8);
-      cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
-      cardContainer.add(cardBg);
+      // --- Senkrechte Spange hinter der Saeule ------------------------------
+      const spange = this.add.graphics();
+      spange.lineStyle(2, zw.farbe, offen ? 0.55 : 0.2);
+      spange.beginPath();
+      spange.moveTo(cx - spalte / 2 + 6, y);
+      spange.lineTo(cx - spalte / 2 + 6, bodyTop + 300);
+      spange.strokePath();
+      this._ktCardLayer.add(spange);
 
-      // Label
-      const label = this.add.text(
-        -cardW / 2 + 10, -cardH / 2 + 6,
-        _HUB_T(node.labelKey),
-        { fontFamily: 'serif', fontSize: 15, color: '#ffd166', fontStyle: 'bold', resolution: 2 }
-      );
-      cardContainer.add(label);
-
-      // Description
-      const desc = this.add.text(
-        -cardW / 2 + 10, -cardH / 2 + 26,
-        _HUB_T(node.descKey),
-        { fontFamily: 'serif', fontSize: 12, color: '#dde0e6', resolution: 2, wordWrap: { width: cardW - 60 } }
-      );
-      cardContainer.add(desc);
-
-      // Rank text
-      const rank = state.ranks[node.id] | 0;
-      const rankText = this.add.text(
-        -cardW / 2 + 10, cardH / 2 - 22,
-        _HUB_T('knowledge.rank', { rank: rank, max: node.maxRank }),
-        { fontFamily: 'serif', fontSize: 12, color: '#a0a4ad', resolution: 2 }
-      );
-      cardContainer.add(rankText);
-
-      // Invest button - green if enabled, grey if not (no fragments OR maxed).
-      const canInvest = (fragments >= 1) && (rank < node.maxRank);
-      const btnColor = canInvest ? '#9bff9b' : '#666';
-      const btnBg = canInvest ? '#1f3a1f' : '#2a2a2a';
-      const investBtn = this.add.text(
-        cardW / 2 - 10, cardH / 2 - 26,
-        '+',
-        { fontFamily: 'monospace', fontSize: 18, fontStyle: 'bold', color: btnColor, backgroundColor: btnBg, padding: { x: 10, y: 2 }, resolution: 2 }
-      ).setOrigin(1, 0);
-      investBtn.setInteractive({ useHandCursor: canInvest });
-      cardContainer.add(investBtn);
-
-      // Capture per-iteration so the re-render uses a fresh closure each time.
-      const nodeId = node.id;
-      const enabled = canInvest;
-      investBtn.on('pointerdown', (pointer, x, y, event) => {
-        if (event && event.stopPropagation) event.stopPropagation();
-        if (!enabled) return;
-        try { window.KnowledgeTree.invest(nodeId); }
-        catch (e) { try { console.warn('[HubSceneV2] invest failed', e); } catch (_) {} }
-        // Re-render is triggered by the onChange subscriber.
+      // --- Die kleinen Knoten des Zweigs -----------------------------------
+      katalog.filter((n) => zweigVon[n.id] === zw.id).forEach((node) => {
+        const rank = KT.getRank(node.id);
+        const voll = rank >= node.maxRank;
+        const kannMehr = (fragmente >= 1) && !voll;
+        this._ktZeile(cx, y, spalte, {
+          farbe: zw.farbe,
+          titel: _HUB_T(node.labelKey),
+          titelHex: rank > 0 ? zw.hex : '#b9b9c2',
+          rechts: this._ktPips(rank, node.maxRank),
+          rechtsHex: voll ? '#8fd6a0' : (rank > 0 ? zw.hex : '#5f5f68'),
+          knopf: voll ? null : '+',
+          knopfAn: kannMehr,
+          tip: _HUB_T(node.descKey),
+          tun: () => { try { KT.invest(node.id); } catch (e) {} }
+        });
+        y += 30;
       });
-    }
+
+      // --- Tor zu den Buendeln ---------------------------------------------
+      y += 4;
+      const tor = this.add.text(cx, y, offen
+        ? _HUB_T('knowledge.zweig.open')
+        : _HUB_T('knowledge.not.locked', { n: braucht }), {
+        fontFamily: 'monospace', fontSize: 10,
+        color: offen ? '#8fd6a0' : '#6a6a72', resolution: 2
+      }).setOrigin(0.5, 0);
+      this._ktCardLayer.add(tor);
+      y += 18;
+
+      // --- Die zwei Buendel --------------------------------------------------
+      notables.filter((n) => n.zweig === zw.id).forEach((n) => {
+        const hat = KT.getRank(n.id) > 0;
+        const kann = !hat && offen && fragmente >= notKosten;
+        this._ktZeile(cx, y, spalte, {
+          farbe: zw.farbe, dick: true, gesetzt: hat, gesperrt: !hat && !offen,
+          titel: _HUB_T(n.labelKey),
+          titelHex: hat ? '#cfffcf' : (offen ? '#ffd166' : '#6a6a72'),
+          unter: _HUB_T(n.descKey),
+          knopf: hat ? '\u2713' : (offen ? _HUB_T('knowledge.key.btn_set', { n: notKosten }) : null),
+          knopfAn: kann,
+          tun: () => { try { KT.investNotable(n.id); } catch (e) {} }
+        });
+        y += 38;
+      });
+
+      // --- Die zwei Grundsaetze ---------------------------------------------
+      y += 2;
+      keystones.filter((k) => k.zweig === zw.id).forEach((k) => {
+        const ist = aktiverKey === k.id;
+        const blockiert = !!aktiverKey && !ist;
+        const kann = ist || (!blockiert && fragmente >= keyKosten);
+        this._ktZeile(cx, y, spalte, {
+          farbe: 0xc9a0ff, dick: true, gesetzt: ist, gesperrt: blockiert, grundsatz: true,
+          titel: _HUB_T(k.labelKey),
+          titelHex: ist ? '#e8d5ff' : (blockiert ? '#6a6a72' : '#c9a0ff'),
+          unter: _HUB_T(k.descKey),
+          knopf: ist ? _HUB_T('knowledge.key.btn_release')
+            : (blockiert ? _HUB_T('knowledge.key.only_one')
+              : _HUB_T('knowledge.key.btn_set', { n: keyKosten })),
+          knopfAn: kann,
+          tun: () => {
+            try { if (ist) KT.loeseKeystone(); else KT.investKeystone(k.id); } catch (e) {}
+          }
+        });
+        y += 38;
+      });
+    });
+  }
+
+  /** Hoechstmoegliche Rangsumme eines Zweigs — fuer die Anzeige "6 / 15". */
+  _ktZweigMax(zweig) {
+    const KT = window.KnowledgeTree;
+    const zv = KT.ZWEIG || {};
+    return KT.getCatalog().reduce((s, n) => s + (zv[n.id] === zweig ? n.maxRank : 0), 0);
+  }
+
+  _ktPips(rank, max) {
+    let s = '';
+    for (let i = 0; i < max; i++) s += (i < rank ? '\u25C6' : '\u25C7');
+    return s;
   }
 
   /**
-   * Die sechs Grundsaetze. Anders als die Knoten kein Rang, sondern ein
-   * Schalter — und es gilt immer nur einer.
+   * Eine Zeile in einer Zweig-Saeule. Kleine Knoten sind schmal (Titel + Pips
+   * + [+]), Buendel und Grundsaetze hoeher (Titel, Beschreibung, Knopf).
    */
-  _ktRenderKeystones() {
-    const KT = window.KnowledgeTree;
-    const keys = (typeof KT.getKeystones === 'function') ? KT.getKeystones() : [];
-    // #116: Notables stehen in derselben Ansicht — beides sind Anschaffungen
-    // mit Festpreis, waehrend die zehn Knoten Raenge sammeln. Erst die
-    // Buendel, dann die Grundsaetze: man kauft sie in dieser Reihenfolge.
-    const nots = (typeof KT.getNotables === 'function') ? KT.getNotables() : [];
-    const eintraege = nots.map(function (n) { return { art: 'notable', d: n }; })
-      .concat(keys.map(function (k) { return { art: 'keystone', d: k }; }));
-    if (!eintraege.length) return;
-    const aktiv = KT.getActiveKeystone();
-    const kosten = KT.KEYSTONE_KOSTEN || 5;
-    const notKosten = KT.NOTABLE_KOSTEN || 4;
-    const fragmente = KT.getFragments();
+  _ktZeile(cx, y, breite, o) {
+    const hoch = o.dick ? 36 : 28;
+    const c = this.add.container(cx, y + hoch / 2);
+    this._ktCardLayer.add(c);
 
-    const panelW = this._ktPanelW || 920;
-    const panelH = this._ktPanelH || 460;
-    const bodyW = panelW - 32;
-    const bodyH = panelH - 32 - 64 - 24;
-    const bodyTop = -panelH / 2 + 32 + 12;
+    const bg = this.add.graphics();
+    bg.fillStyle(o.gesetzt ? 0x243024 : 0x16161f, o.gesperrt ? 0.5 : 0.92);
+    bg.fillRoundedRect(-breite / 2, -hoch / 2, breite, hoch, 4);
+    bg.lineStyle(o.gesetzt ? 2 : 1, o.gesetzt ? 0x8fd6a0 : o.farbe, o.gesperrt ? 0.25 : 0.6);
+    bg.strokeRoundedRect(-breite / 2, -hoch / 2, breite, hoch, 4);
+    c.add(bg);
 
-    const cols = 3;
-    const rows = Math.ceil(eintraege.length / cols);
-    const gap = 8;
-    const cardW = (bodyW - gap * (cols - 1)) / cols;
-    const cardH = (bodyH - gap * (rows - 1)) / rows;
+    c.add(this.add.text(-breite / 2 + 8, -hoch / 2 + 4, o.titel, {
+      fontFamily: 'serif', fontSize: o.dick ? 13 : 12, fontStyle: 'bold',
+      color: o.titelHex, resolution: 2
+    }));
 
-    for (let i = 0; i < eintraege.length; i++) {
-      const eintrag = eintraege[i];
-      const k = eintrag.d;
-      const istKeystone = (eintrag.art === 'keystone');
-      const preis = istKeystone ? kosten : notKosten;
-      const gesetzt = istKeystone ? (aktiv === k.id) : (KT.getRank(k.id) > 0);
-      const istAktiv = gesetzt;
-      // Gesperrt: bei Grundsaetzen, weil schon einer gilt; bei Buendeln,
-      // weil der Zweig noch nicht weit genug ausgebaut ist.
-      const zweigZu = !istKeystone && typeof KT.notableOffen === 'function'
-        && !KT.notableOffen(k.id) && !gesetzt;
-      const gesperrt = (istKeystone ? (!!aktiv && !istAktiv) : false) || zweigZu;
-      const cardX = -bodyW / 2 + (i % cols) * (cardW + gap) + cardW / 2;
-      const cardY = bodyTop + Math.floor(i / cols) * (cardH + gap) + cardH / 2;
-
-      const c = this.add.container(cardX, cardY);
-      this._ktCardLayer.add(c);
-
-      const bg = this.add.graphics();
-      bg.fillStyle(istAktiv ? (istKeystone ? 0x2a2438 : 0x24302a) : 0x1a1a28, 0.95);
-      bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
-      bg.lineStyle(istAktiv ? 2 : 1,
-        istAktiv ? (istKeystone ? 0xc9a0ff : 0x8fd6a0) : 0x3a3a4a, gesperrt ? 0.4 : 0.85);
-      bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
-      c.add(bg);
-
-      c.add(this.add.text(-cardW / 2 + 8, -cardH / 2 + 5, _HUB_T(k.labelKey), {
-        fontFamily: 'serif', fontSize: 14, fontStyle: 'bold', resolution: 2,
-        color: istAktiv ? (istKeystone ? '#e8d5ff' : '#cfffcf') : (gesperrt ? '#6a6a72' : '#ffd166')
+    if (o.unter) {
+      c.add(this.add.text(-breite / 2 + 8, -hoch / 2 + 19, o.unter, {
+        fontFamily: 'serif', fontSize: 10, color: o.gesperrt ? '#55555c' : '#b9bcc4',
+        resolution: 2, wordWrap: { width: breite - 90 }
       }));
+    }
+    if (o.rechts) {
+      c.add(this.add.text(breite / 2 - 26, -hoch / 2 + 6, o.rechts, {
+        fontFamily: 'monospace', fontSize: 11, color: o.rechtsHex, resolution: 2
+      }).setOrigin(1, 0));
+    }
 
-      c.add(this.add.text(-cardW / 2 + 8, -cardH / 2 + 23, _HUB_T(k.descKey), {
-        fontFamily: 'serif', fontSize: 11, resolution: 2,
-        color: gesperrt ? '#5f5f66' : '#dde0e6', wordWrap: { width: cardW - 16 }
-      }));
-
-      // Knopf: setzen / loesen / gesperrt
-      let text, farbe, hintergrund, aktivierbar;
-      if (istAktiv) {
-        // Buendel bleiben gekauft; nur Grundsaetze lassen sich ablegen.
-        text = istKeystone ? _HUB_T('knowledge.key.btn_release') : '\u2713';
-        farbe = istKeystone ? '#ffdada' : '#cfffcf';
-        hintergrund = istKeystone ? '#7a3a3a' : '#1f3a2a';
-        aktivierbar = istKeystone;
-      } else if (zweigZu) {
-        text = _HUB_T('knowledge.not.locked', { n: KT.NOTABLE_BRAUCHT || 6 });
-        farbe = '#6a6a72'; hintergrund = '#26262c'; aktivierbar = false;
-      } else if (gesperrt) {
-        text = _HUB_T('knowledge.key.only_one'); farbe = '#6a6a72';
-        hintergrund = '#26262c'; aktivierbar = false;
-      } else if (fragmente < preis) {
-        text = _HUB_T('knowledge.key.cost', { n: preis }); farbe = '#666';
-        hintergrund = '#2a2a2a'; aktivierbar = false;
-      } else {
-        text = _HUB_T('knowledge.key.btn_set', { n: preis }); farbe = '#9bff9b';
-        hintergrund = '#1f3a1f'; aktivierbar = true;
-      }
-      const btn = this.add.text(cardW / 2 - 8, cardH / 2 - 24, text, {
-        fontFamily: 'serif', fontSize: 12, color: farbe, backgroundColor: hintergrund,
-        padding: { x: 7, y: 3 }, resolution: 2
-      }).setOrigin(1, 0);
-      btn.setInteractive({ useHandCursor: aktivierbar });
+    if (o.knopf) {
+      const an = !!o.knopfAn;
+      const btn = this.add.text(breite / 2 - 6, 0, o.knopf, {
+        fontFamily: o.dick ? 'serif' : 'monospace', fontSize: o.dick ? 11 : 14,
+        color: an ? (o.gesetzt ? '#ffdada' : '#9bff9b') : '#5f5f68',
+        backgroundColor: an ? (o.gesetzt ? '#7a3a3a' : '#1f3a1f') : '#26262c',
+        padding: { x: 6, y: 2 }, resolution: 2
+      }).setOrigin(1, 0.5);
+      btn.setInteractive({ useHandCursor: an });
       c.add(btn);
-
-      const id = k.id;
-      const setzen = !istAktiv;
-      const geht = aktivierbar;
-      const alsKeystone = istKeystone;
-      btn.on('pointerdown', (pointer, x, y, event) => {
+      btn.on('pointerdown', (pointer, x, yy, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
-        if (!geht) return;
-        try {
-          if (!setzen) window.KnowledgeTree.loeseKeystone();
-          else if (alsKeystone) window.KnowledgeTree.investKeystone(id);
-          else window.KnowledgeTree.investNotable(id);
-        } catch (e) { try { console.warn('[HubSceneV2] Anschaffung fehlgeschlagen', e); } catch (_) {} }
+        if (!an) return;
+        o.tun();
       });
     }
   }
+
 
   _ktRenderFooter() {
     if (!this._ktFooterLayer) return;
@@ -3410,25 +3411,6 @@ class HubSceneV2 extends Phaser.Scene {
         catch (e) { try { console.warn('[HubSceneV2] addFragments failed', e); } catch (_) {} }
       });
     }
-
-    // #116: Umschalter zwischen den zehn Knoten und den sechs Grundsaetzen.
-    const aufGrundsaetze = (this._ktAnsicht !== 'grundsaetze');
-    const wechselBtn = this.add.text(
-      0, footerY,
-      aufGrundsaetze ? _HUB_T('knowledge.btn.to_keystones') : _HUB_T('knowledge.btn.to_nodes'),
-      { fontFamily: 'serif', fontSize: 14, color: '#e8d5ff', backgroundColor: '#3a2f4a',
-        padding: { x: 10, y: 4 }, resolution: 2 }
-    ).setOrigin(0.5, 0);
-    wechselBtn.setInteractive({ useHandCursor: true });
-    this._ktFooterLayer.add(wechselBtn);
-    wechselBtn.on('pointerdown', (pointer, x, y, event) => {
-      if (event && event.stopPropagation) event.stopPropagation();
-      this._ktAnsicht = aufGrundsaetze ? 'grundsaetze' : 'knoten';
-      this._ktRenderCards();
-      this._ktRenderFooter();
-      // Neue Knoepfe brauchen wieder scrollFactor 0, sonst gehen die Taps daneben.
-      if (this._dialogContainer) this._ktPropagateScrollFactor(this._dialogContainer, 0, 0);
-    });
 
     // Close button (right, grey bg)
     const closeBtn = this.add.text(
