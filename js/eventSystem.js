@@ -10,9 +10,9 @@
       'event.treasure.object_label': 'Schatz',
       'event.treasure.choice_gold': 'Gold nehmen (+{amount})',
       'event.treasure.choice_search': 'Gründlich durchsuchen (Item)',
-      'event.treasure.choice_ransack': 'Gründlich durchwühlen (seltenes Item — weckt {gegner} Wachen)',
+      'event.treasure.choice_ransack': 'Gründlich durchwühlen (seltenes Item — weckt {gegner} Elitewachen)',
       'event.treasure.choice_ignore': 'Ignorieren',
-      'event.treasure.toast_ransack': 'Ein seltener Fund — aber der Lärm weckt {gegner} Wachen!',
+      'event.treasure.toast_ransack': 'Ein seltener Fund — aber der Lärm weckt {gegner} Elitewachen!',
       'event.treasure.toast_ransack_fragment': 'Zwischen dem Plunder liegt ein Wissensfragment.',
       'event.treasure.toast_gold': '+{amount} Gold!',
       'event.treasure.toast_item': 'Ein Gegenstand gefunden!',
@@ -85,9 +85,9 @@
       'event.altar.choice': '{name} opfern ({slot})',
       'event.altar.choice_ignore': 'Nichts hergeben',
       'event.altar.nothing_equipped': 'Du trägst nichts, das er annehmen würde.',
-      'event.altar.better': 'Der Stein gibt mehr zurück, als er nahm. ({alt} → {neu})',
-      'event.altar.same': 'Ein Tausch ohne Gewinn. ({alt} → {neu})',
-      'event.altar.worse': 'Der Stein hat dich übervorteilt. ({alt} → {neu})',
+      'event.altar.better': 'Der Stein gibt mehr zurück, als er nahm.',
+      'event.altar.same': 'Ein Tausch ohne Gewinn.',
+      'event.altar.worse': 'Der Stein gibt weniger zurück, als er nahm.',
       'event.altar.slot.weapon': 'Waffe',
       'event.altar.slot.head': 'Kopf',
       'event.altar.slot.body': 'Rüstung',
@@ -153,9 +153,9 @@
       'event.treasure.object_label': 'Treasure',
       'event.treasure.choice_gold': 'Take gold (+{amount})',
       'event.treasure.choice_search': 'Search thoroughly (Item)',
-      'event.treasure.choice_ransack': 'Ransack it (rare item — wakes {gegner} guards)',
+      'event.treasure.choice_ransack': 'Ransack it (rare item — wakes {gegner} elite guards)',
       'event.treasure.choice_ignore': 'Ignore',
-      'event.treasure.toast_ransack': 'A rare find — but the noise wakes {gegner} guards!',
+      'event.treasure.toast_ransack': 'A rare find — but the noise wakes {gegner} elite guards!',
       'event.treasure.toast_ransack_fragment': 'A knowledge fragment lies among the junk.',
       'event.treasure.toast_gold': '+{amount} gold!',
       'event.treasure.toast_item': 'Found an item!',
@@ -498,8 +498,39 @@
    * Wachen sonst irgendwo im Raum absetzen — dieselbe Falle wie bei der
    * Koederfalle in #113. Darum nach dem Spawn auf den Ring zurueckholen.
    */
+  /**
+   * Eine Wache ist kein Streuner — sie bewacht etwas.
+   *
+   * Vorher waren es gewoehnliche Gegner aus spawnEnemy: der Spieler gab ein
+   * ausgeruestetes Stueck her (bzw. nahm den Laerm in Kauf) und bekam dafuer
+   * Gegner, die im selben Raum ohnehin herumstehen. Jetzt ist jede Wache
+   * mindestens ein Champion, und die erste ist der Hauptmann (unique).
+   *
+   * Zwei Ruecksichten:
+   *   - Wer schon aufgewertet ist (spawnEnemy wuerfelt ab Tiefe 5 selbst),
+   *     wird NICHT nochmal aufgewertet — applyEliteToEnemy multipliziert die
+   *     LP, zweimal angewandt waere es das Vierfache.
+   *   - Der Hauptmann bleibt ab Tiefe 5 dem unique-Rang vorbehalten. Davor
+   *     traefe ein Unique (2x LP, 2-3 Affixe) auf einen Spieler, der
+   *     womoeglich noch mit Waffenschaden 1 unterwegs ist.
+   *   - __scharImRaum (#95): in einem Raum gibt es genau EIN Banner. Steht
+   *     schon eines, bleibt der Hauptmann Champion.
+   */
+  function _wacheAufwerten(gegner, alsHauptmann, tiefe) {
+    var EE = (typeof window !== 'undefined') ? window.EliteEnemies : null;
+    if (!gegner || !EE || typeof EE.applyEliteToEnemy !== 'function') return;
+    if (gegner._eliteApplied) return;
+    var rang = 'champion';
+    if (alsHauptmann && tiefe >= 5 && !window.__scharImRaum) rang = 'unique';
+    try {
+      EE.applyEliteToEnemy(gegner, rang);
+      gegner._eliteApplied = true;
+    } catch (e) { /* eine schwaechere Wache ist besser als ein Absturz */ }
+  }
+
   function weckeWachen(scene, anzahl) {
     if (typeof spawnEnemy !== 'function' || typeof player === 'undefined' || !player) return 0;
+    var _wachTiefe = Math.max(1, (typeof window !== 'undefined' && window.DUNGEON_DEPTH) || 1);
     var gesetzt = 0;
     for (var i = 0; i < anzahl; i++) {
       var winkel = (Math.PI * 2 * i) / anzahl + Math.random() * 0.5;
@@ -514,6 +545,7 @@
           g.x = zx; g.y = zy;
           if (g.body && typeof g.body.reset === 'function') g.body.reset(zx, zy);
         }
+        _wacheAufwerten(g, gesetzt === 0, _wachTiefe);
         gesetzt++;
       } catch (e) { /* ein Gegner weniger ist besser als ein Absturz */ }
     }
@@ -2508,6 +2540,10 @@
     // (passtZuRaum) wirklich greift, statt nur im Code zu stehen.
     pickEvent: pickEvent,
     // #71: reine Ziehung, damit das Balancing pruefbar bleibt.
+    // weckeWachen ebenso: nur so laesst sich pruefen, dass die Wachen
+    // tatsaechlich als Champion/Unique erscheinen und nah genug stehen.
+    weckeWachen: weckeWachen,
+    wachenBeimDurchwuehlen: wachenBeimDurchwuehlen,
     opferKandidaten: opferKandidaten,
     opferUmwurf: opferUmwurf,
     schreinAngebote: schreinAngebote,
