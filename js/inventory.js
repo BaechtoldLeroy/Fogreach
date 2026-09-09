@@ -18,6 +18,10 @@ if (window.i18n) {
     'inventory.label.crit': 'Krit',
     'inventory.label.move': 'Lauftempo',
     'inventory.label.hp': 'LP',
+    // #124: Nebenhand.
+    'inventory.label.block': 'Block',
+    'inventory.label.brand': 'Brand',
+    'inventory.label.sicht': 'Sichtweite',
     'inventory.attack.cooldown': '{name}: -{pct}% Cooldown',
     'inventory.attack.damage': '{name}: +{pct}% Schaden',
     'inventory.unknown_item': 'Unbekanntes Item',
@@ -49,6 +53,9 @@ if (window.i18n) {
     'inventory.label.crit': 'Crit',
     'inventory.label.move': 'Movement Speed',
     'inventory.label.hp': 'HP',
+    'inventory.label.block': 'Block',
+    'inventory.label.brand': 'Burn',
+    'inventory.label.sicht': 'Sight',
     'inventory.attack.cooldown': '{name}: -{pct}% Cooldown',
     'inventory.attack.damage': '{name}: +{pct}% Damage',
     'inventory.unknown_item': 'Unknown Item',
@@ -121,6 +128,11 @@ const computeItemPower = (it) => {
   p += (Number(it.armor) || 0) * 2;
   p += (Number(it.crit) || 0) * 2.5;
   p += (Number(it.move) || 0) * 0.3;
+  // #124: Nebenhand. Block wiegt schwerer als Ruestung (er umgeht sie ganz),
+  // Sicht ist Nutzen und zaehlt nur wenig.
+  p += (Number(it.block) || 0) * 3;
+  p += (Number(it.brand) || 0) * 2;
+  p += (Number(it.sicht) || 0) * 0.15;
   // Affixe = Rarität: je Affix ein Rarity-Bonus + die Affix-Stärke.
   if (Array.isArray(it.affixes)) {
     for (let i = 0; i < it.affixes.length; i++) {
@@ -627,6 +639,12 @@ function initInventoryUI() {
     pushStat(_INV_T('inventory.label.armor'), it.armor, 1);
     pushStat(_INV_T('inventory.label.crit'), it.crit, 1);
     pushStat(_INV_T('inventory.label.move'), it.move, 1);
+    // #124: block und brand sind wie Ruestung absolute Punkte — ohne Prozent.
+    // Sichtweite ist als einziger Nebenhand-Wert WIRKLICH ein Prozentwert
+    // (Aufschlag auf den Erkundungsradius) und traegt sein Zeichen deshalb.
+    pushStat(_INV_T('inventory.label.block'), it.block, 1);
+    pushStat(_INV_T('inventory.label.brand'), it.brand, 1);
+    pushStat(_INV_T('inventory.label.sicht'), it.sicht, 0, '%');
     // Affix lines (WP02+). Each affix renders its tooltipText with {value} replaced.
     // Prefer LootSystem.getAffixTooltipText (i18n-aware) over the raw def.tooltipText.
     if (Array.isArray(it.affixes) && it.affixes.length && window.LootSystem?.AFFIX_DEFS) {
@@ -1381,7 +1399,8 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     }
     return wert;
   };
-  const sum = { damage: 0, speed: 0, range: 0, maxHPAnteil: 0, move: 0, armor: 0, crit: 0 };
+  const sum = { damage: 0, speed: 0, range: 0, maxHPAnteil: 0, move: 0, armor: 0, crit: 0,
+    block: 0, brand: 0, sicht: 0 };
   Object.values(equipment).forEach(it => {
     if (!it) return;
     sum.damage += (it.damage || 0);
@@ -1391,6 +1410,12 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     sum.move += _tw('move', it.move || 0);
     sum.armor += _tw('armor', it.armor || 0);
     sum.crit += _tw('crit', it.crit || 0);
+    // #124: Nebenhand. block und brand sind Machtwerte und werden mit der
+    // Tiefe umgerechnet; sicht ist Nutzen und bleibt, wie es dasteht — eine
+    // Laterne, die in der Tiefe blinder wird, ergaebe keinen Sinn.
+    sum.block += _tw('block', it.block || 0);
+    sum.brand += _tw('brand', it.brand || 0);
+    sum.sicht += (it.sicht || 0);
   });
 
   // 2) Neue "abgeleitete" Stats einmalig aus Basis + Summe
@@ -1400,6 +1425,15 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // Lauftempo aus der Ausruestung wirkt jetzt PROZENTUAL — 0,16 heisst +16 %.
   playerSpeed = Math.max(60, baseStats.move * (1 + Math.max(0, sum.move)));
   playerArmor = Phaser.Math.Clamp((baseStats.armor || 0) + sum.armor, 0, 0.85);
+  // #124: Die drei Nebenhand-Wirkungen. Immer frisch geschrieben (auch auf 0),
+  // damit nichts haengen bleibt, wenn das Stueck abgelegt wird.
+  //
+  // Der Block ist bei 40 % gedeckelt: er umgeht die Ruestungsrechnung ganz,
+  // und zwei gestapelte Quellen ohne Deckel machten den Spieler unantastbar.
+  window.playerBlockChance = Phaser.Math.Clamp(sum.block, 0, 0.40);
+  window.playerBrandChance = Phaser.Math.Clamp(sum.brand, 0, 0.50);
+  // Prozentpunkte auf den Erkundungsradius der Minikarte (minimap.js).
+  window.playerSichtBonus = Math.max(0, sum.sicht) / 100;
   playerCritChance = Phaser.Math.Clamp((baseStats.crit || 0) + sum.crit, 0, 0.9);
 
   // 2.5) Loot-Affix-Boni (Issue #36) — die AFFIX_DEFS-Basis-Stat-Affixe in die
@@ -2011,9 +2045,40 @@ function equipSelectedItem() {
   const it = inventory[invSelected];
   if (!it) return;
 
-  // nur Gear ausrüstbar (Feature 059: + amulet als 5. Slot)
-  if (['weapon', 'head', 'body', 'boots', 'amulet'].includes(it.type)) {
+  // nur Gear ausrüstbar (Feature 059: + amulet als 5. Slot, #124: + offhand)
+  if (['weapon', 'offhand', 'head', 'body', 'boots', 'amulet'].includes(it.type)) {
     const slotKey = it.type;
+
+    // #124: Zweihaender und Nebenhand schliessen sich aus.
+    //
+    // Beide Richtungen laufen hier durch (der Zug auf die Papierpuppe
+    // delegiert an diese Funktion), deshalb genuegt EINE Pruefung.
+    //
+    // Ein getragener Zweihaender BLOCKT die zweite Hand; umgekehrt wandert ein
+    // getragenes Nebenhand-Stueck ins Inventar, wenn ein Zweihaender angelegt
+    // wird. Nicht andersherum: einen Waffenwechsel an einem Schild scheitern zu
+    // lassen waere die aergerlichere der beiden Regeln.
+    const _melden = (text) => {
+      try {
+        const _sz = invUI && invUI._scene;
+        if (_sz && typeof window.showEventToast === 'function') window.showEventToast(_sz, text);
+      } catch (e) { /* ein Hinweis darf nie den Tausch brechen */ }
+    };
+    if (slotKey === 'offhand' && equipment.weapon && equipment.weapon.zweihaendig) {
+      _melden('Zweihänder — die zweite Hand bleibt frei');
+      return;
+    }
+    if (slotKey === 'weapon' && it.zweihaendig && equipment.offhand) {
+      const _neben = equipment.offhand;
+      const _G = window.InventoryGrid;
+      const _wohin = (_G && typeof _G.einlagern === 'function') ? _G.einlagern(_neben) : -1;
+      if (_wohin < 0) {
+        _melden('Kein Platz für die zweite Hand');
+        return;
+      }
+      equipment.offhand = null;
+      _melden('Zweihänder — die zweite Hand wird frei');
+    }
 
     // HP-Bonus des alten Items in diesem Slot merken
     const oldItem = equipment[slotKey] || null;

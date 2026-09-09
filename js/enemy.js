@@ -2565,6 +2565,21 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
     return 0;
   }
 
+  // #124: Blockchance (Wandschirm des Magistrats). Sie steht bewusst NACH dem
+  // Ausweichen und VOR der Ruestung: sie vereitelt den Treffer ganz, statt ihn
+  // zu daempfen — das ist der Unterschied, der einen Schild von mehr Ruestung
+  // unterscheidet. Wie das Ausweichen gibt sie 0 Schaden zurueck.
+  const _block = Math.max(0, Math.min(0.6, window.playerBlockChance || 0));
+  if (_block > 0 && Math.random() < _block) {
+    if (scene && player) {
+      player.setTint(0xdfd6a8);
+      scene.time.delayedCall(160, () => {
+        if (player && player.active && player.clearTint) player.clearTint();
+      }, null, scene);
+    }
+    return 0;
+  }
+
   const armor = Phaser.Math.Clamp(playerArmor || 0, 0, 0.9);
   const mitigated = Math.max(1, Math.round(rawDamage * (1 - armor)));
 

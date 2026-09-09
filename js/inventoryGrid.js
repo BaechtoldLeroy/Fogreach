@@ -64,6 +64,9 @@
   // stillschweigend zu klein waere schlimmer als grob geschaetzt.
   var GROESSE_NACH_ART = {
     weapon: [1, 2],
+    // #124: hochkant wie die Waffe — der Platz in der Papierpuppe ist 64x96.
+    // Ohne Eintrag fiele ein Nebenhand-Stueck stillschweigend auf 1x1.
+    offhand: [1, 2],
     head: [2, 2],
     body: [2, 2],
     boots: [2, 2],

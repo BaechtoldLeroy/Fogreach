@@ -285,19 +285,19 @@ if (window.i18n) {
       appliesTo: Object.freeze(['weapon']), tooltipText: '+{value}% Damage' }),
     Object.freeze({ id: 'sturdy_armor', displayName: 'Sturdy', position: 'prefix', statKey: 'armor',
       valueType: 'percent', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 1, weight: 100,
-      appliesTo: Object.freeze(['head', 'body', 'boots']), tooltipText: '+{value}% Armor' }),
+      appliesTo: Object.freeze(['head', 'body', 'boots', 'offhand']), tooltipText: '+{value}% Armor' }),
     Object.freeze({ id: 'of_health', displayName: 'of the Bear', position: 'suffix', statKey: 'hp',
       valueType: 'flat', range: Object.freeze({ min: 3, max: 34 }), iLevelMin: 1, weight: 100,
-      appliesTo: Object.freeze(['head', 'body', 'boots', 'weapon']), tooltipText: '+{value} HP' }),
+      appliesTo: Object.freeze(['head', 'body', 'boots', 'weapon', 'offhand']), tooltipText: '+{value} HP' }),
     Object.freeze({ id: 'swift_speed', displayName: 'Swift', position: 'prefix', statKey: 'speed',
       valueType: 'percent', range: Object.freeze({ min: 4, max: 21 }), iLevelMin: 1, weight: 80,
-      appliesTo: Object.freeze(['boots', 'body']), tooltipText: '+{value}% Speed' }),
+      appliesTo: Object.freeze(['boots', 'body', 'offhand']), tooltipText: '+{value}% Speed' }),
     Object.freeze({ id: 'of_precision', displayName: 'of Precision', position: 'suffix', statKey: 'crit',
       valueType: 'percent', range: Object.freeze({ min: 2, max: 13 }), iLevelMin: 3, weight: 80,
-      appliesTo: Object.freeze(['weapon', 'head']), tooltipText: '+{value}% Crit Chance' }),
+      appliesTo: Object.freeze(['weapon', 'head', 'offhand']), tooltipText: '+{value}% Crit Chance' }),
     Object.freeze({ id: 'of_reach', displayName: 'of Reach', position: 'suffix', statKey: 'range',
       valueType: 'flat', range: Object.freeze({ min: 8, max: 41 }), iLevelMin: 2, weight: 70,
-      appliesTo: Object.freeze(['weapon']), tooltipText: '+{value} Range' }),
+      appliesTo: Object.freeze(['weapon', 'offhand']), tooltipText: '+{value} Range' }),
     // Lauftempo (movement speed) — wirkt auf playerSpeed via getBonus('move').
     // Bewusst getrennt von swift_speed (statKey 'speed' = ANGRIFFstempo).
     // Bereich klein + nur Stiefel (1 Slot): Bewegung ist sensibel, und #37
@@ -327,7 +327,7 @@ if (window.i18n) {
       appliesTo: Object.freeze(['weapon', 'head']), tooltipText: '+{value}% Frost Nova Damage' }),
     Object.freeze({ id: 'bashing_dmg', displayName: 'Deadly', position: 'prefix', statKey: 'dmg_shieldBash',
       valueType: 'percent', range: Object.freeze({ min: 8, max: 46 }), iLevelMin: 2, weight: 6,
-      appliesTo: Object.freeze(['weapon', 'body']), tooltipText: '+{value}% Death Blow Damage' }),
+      appliesTo: Object.freeze(['weapon', 'body', 'offhand']), tooltipText: '+{value}% Death Blow Damage' }),
     // 060: Schaden-Affixe für die übrigen schadensbringenden Skills.
     Object.freeze({ id: 'twisting_dmg', displayName: 'Twisting', position: 'prefix', statKey: 'dmg_twistingBlades',
       valueType: 'percent', range: Object.freeze({ min: 8, max: 46 }), iLevelMin: 2, weight: 6,
@@ -354,7 +354,7 @@ if (window.i18n) {
       appliesTo: Object.freeze(['head']), tooltipText: '-{value}% Frost Nova Cooldown' }),
     Object.freeze({ id: 'of_swift_bash', displayName: 'of Execution', position: 'suffix', statKey: 'cd_shieldBash',
       valueType: 'percent', range: Object.freeze({ min: 6, max: 24 }), iLevelMin: 3, weight: 6,
-      appliesTo: Object.freeze(['body', 'weapon']), tooltipText: '-{value}% Death Blow Cooldown' }),
+      appliesTo: Object.freeze(['body', 'weapon', 'offhand']), tooltipText: '-{value}% Death Blow Cooldown' }),
     // 060: Cooldown-Affixe für die übrigen Skills mit Abklingzeit.
     Object.freeze({ id: 'of_swift_grasp', displayName: 'of Swift Grasp', position: 'suffix', statKey: 'cd_steelGrasp',
       valueType: 'percent', range: Object.freeze({ min: 6, max: 24 }), iLevelMin: 3, weight: 6,
@@ -389,7 +389,7 @@ if (window.i18n) {
       appliesTo: Object.freeze(['head']), tooltipText: '+{value}% XP Gain' }),
     Object.freeze({ id: 'of_greed', displayName: 'of Greed', position: 'suffix', statKey: 'gold_find',
       valueType: 'percent', range: Object.freeze({ min: 8, max: 41 }), iLevelMin: 5, weight: 30,
-      appliesTo: Object.freeze(['head', 'boots']), tooltipText: '+{value}% Gold Find' }),
+      appliesTo: Object.freeze(['head', 'boots', 'offhand']), tooltipText: '+{value}% Gold Find' }),
 
     // === D2-artige Kern-Attribute (4, #60) — flach, nur über Items. Fliessen
     // in recalcDerived: Stärke->Schaden%, Geschick->Krit+Tempo, Vitalität->LP,
@@ -402,10 +402,10 @@ if (window.i18n) {
       appliesTo: Object.freeze(['weapon', 'boots']), tooltipText: '+{value} Dexterity' }),
     Object.freeze({ id: 'attr_vitality', displayName: 'of Vitality', position: 'suffix', statKey: 'vitality',
       valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 2, weight: 70,
-      appliesTo: Object.freeze(['body', 'head']), tooltipText: '+{value} Vitality' }),
+      appliesTo: Object.freeze(['body', 'head', 'offhand']), tooltipText: '+{value} Vitality' }),
     Object.freeze({ id: 'attr_focus', displayName: 'of Focus', position: 'suffix', statKey: 'focus',
       valueType: 'flat', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 2, weight: 70,
-      appliesTo: Object.freeze(['head', 'boots']), tooltipText: '+{value} Focus' })
+      appliesTo: Object.freeze(['head', 'boots', 'offhand']), tooltipText: '+{value} Focus' })
   ]);
 
   // ---------------------------------------------------------------------------
@@ -466,10 +466,10 @@ if (window.i18n) {
     // sich der Abstieg in die Tiefe auch beim Basisschaden lohnt. Gate: der erste
     // dropWeight-Key hat Gewicht 0 (unter diesem iLevel gilt genau dieses Gewicht
     // -> Basis wird nicht in den Pool aufgenommen). Bänder bewusst eng (~1.4-1.6x).
-    Object.freeze({ key: 'WPN_RICHTSCHWERT', type: 'weapon', name: 'Richtschwert', iconKey: 'itGreatsword',
+    Object.freeze({ key: 'WPN_RICHTSCHWERT', type: 'weapon', zweihaendig: true, name: 'Richtschwert', iconKey: 'itGreatsword',
       damageKurve: Object.freeze({ anteil: 0.99, spanne: 0.62 }),
       baseStats: Object.freeze({ speed: -15, range: 25 }), dropWeight: Object.freeze({ 14: 0, 17: 60, 24: 100 }) }),
-    Object.freeze({ key: 'WPN_KRIEGSHAMMER', type: 'weapon', name: 'Kettenrat-Kriegshammer', iconKey: 'itHammer',
+    Object.freeze({ key: 'WPN_KRIEGSHAMMER', type: 'weapon', zweihaendig: true, name: 'Kettenrat-Kriegshammer', iconKey: 'itHammer',
       damageKurve: Object.freeze({ anteil: 1.00, spanne: 0.55 }),
       baseStats: Object.freeze({ speed: -10, range: 18 }), dropWeight: Object.freeze({ 14: 0, 18: 40, 26: 80 }) }),
 
@@ -480,11 +480,11 @@ if (window.i18n) {
     Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBowHorn',
       damageKurve: Object.freeze({ anteil: 0.90, spanne: 0.58 }),
       baseStats: Object.freeze({ range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
-    Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itBowGlut',
+    Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', zweihaendig: true, subtype: 'bow', name: 'Glutbogen', iconKey: 'itBowGlut',
       damageKurve: Object.freeze({ anteil: 0.92, spanne: 0.60 }),
       baseStats: Object.freeze({ range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
     // Spät-Tier-Bogen (ab ~Tiefe 15), s. Kommentar bei den Spät-Tier-Nahkampfwaffen.
-    Object.freeze({ key: 'WPN_NEBELBOGEN', type: 'weapon', subtype: 'bow', name: 'Nebelbogen', iconKey: 'itBowNebel',
+    Object.freeze({ key: 'WPN_NEBELBOGEN', type: 'weapon', zweihaendig: true, subtype: 'bow', name: 'Nebelbogen', iconKey: 'itBowNebel',
       damageKurve: Object.freeze({ anteil: 0.89, spanne: 0.62 }),
       baseStats: Object.freeze({ range: 130, crit: 3 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
 
@@ -526,7 +526,64 @@ if (window.i18n) {
       baseStats: Object.freeze({}), dropWeight: Object.freeze({ 4: 80, 10: 100 }) }),
     Object.freeze({ key: 'BT_WINDLAEUFER', type: 'boots', name: 'Windläufer', iconKey: 'itBootsWindlaeufer',
       wertKurve: Object.freeze({ move: 0.22, crit: 0.06 }),
-      baseStats: Object.freeze({}), dropWeight: Object.freeze({ 8: 50, 14: 100 }) })
+      baseStats: Object.freeze({}), dropWeight: Object.freeze({ 8: 50, 14: 100 }) }),
+
+    // --- Nebenhand (#124) -----------------------------------------------------
+    // Der Platz war seit dem Inventar-Umbau da und blieb leer, weil es keine
+    // Gegenstaende dafuer gab. Drei Richtungen, die sich mechanisch
+    // unterscheiden — sonst waere es nur ein zweiter Ruestungsplatz:
+    //
+    //   Schilde       Ruestung gegen Tempo
+    //   Lichtquellen  Sicht gegen Wehrhaftigkeit
+    //   Zweitwaffen   Tempo gegen Reichweite
+    //
+    // Die Machtwerte stehen wie bei den Ruestungsbasen in der wertKurve und
+    // wachsen mit der Fundtiefe. In baseStats stehen nur die EIGENARTEN
+    // (Tempo, Reichweite, Sicht) — sie machen das Stueck aus und duerfen
+    // deshalb nicht mit der Tiefe verrechnet werden.
+
+    // Schilde: Ruestung gegen Tempo.
+    Object.freeze({ key: 'OF_BUCHBINDERSCHILD', type: 'offhand', name: 'Buchbinderschild', iconKey: 'itOffBuchbinder',
+      wertKurve: Object.freeze({ armor: 0.06 }),
+      baseStats: Object.freeze({ speed: -4 }), dropWeight: Object.freeze({ 1: 70, 6: 45, 12: 15 }) }),
+    Object.freeze({ key: 'OF_PAVESE', type: 'offhand', name: 'Kettenrat-Pavese', iconKey: 'itOffPavese',
+      wertKurve: Object.freeze({ armor: 0.12, hp: 0.07 }),
+      baseStats: Object.freeze({ speed: -12 }), dropWeight: Object.freeze({ 7: 0, 10: 30, 18: 40 }) }),
+    // Der Wandschirm vereitelt einen Treffer GANZ, statt ihn zu daempfen — der
+    // einzige Weg an der Ruestungsrechnung vorbei.
+    Object.freeze({ key: 'OF_WANDSCHIRM', type: 'offhand', name: 'Wandschirm des Magistrats', iconKey: 'itOffWandschirm',
+      wertKurve: Object.freeze({ armor: 0.07, block: 0.10 }),
+      baseStats: Object.freeze({ speed: -6 }), dropWeight: Object.freeze({ 15: 0, 19: 25, 26: 40 }) }),
+
+    // Lichtquellen: 'sicht' hebt den Erkundungsradius der Minikarte (minimap.js,
+    // heute 8 Kacheln mit Sichtlinie). Das ist die Sichtweite, die es im Spiel
+    // WIRKLICH gibt — ein Nebel-Overlay am Bildschirm haengt an #69 und waere
+    // hier eine Zahl ohne Wirkung gewesen.
+    //
+    // 'sicht' steht bewusst in baseStats und nicht in der wertKurve: mehr Karte
+    // zu sehen ist kein Machtwert, der mit der Tiefe entwertet werden duerfte.
+    Object.freeze({ key: 'OF_TALGLICHT', type: 'offhand', name: 'Talglicht', iconKey: 'itOffTalglicht',
+      baseStats: Object.freeze({ sicht: 25 }), dropWeight: Object.freeze({ 1: 55, 6: 35, 12: 10 }) }),
+    Object.freeze({ key: 'OF_BANNLATERNE', type: 'offhand', name: 'Bannlaterne', iconKey: 'itOffBannlaterne',
+      wertKurve: Object.freeze({ crit: 0.06 }),
+      baseStats: Object.freeze({ sicht: 40 }), dropWeight: Object.freeze({ 9: 0, 12: 30, 20: 35 }) }),
+    Object.freeze({ key: 'OF_GLUTSCHALE', type: 'offhand', name: 'Glutschale', iconKey: 'itOffGlutschale',
+      wertKurve: Object.freeze({ brand: 0.12 }),
+      baseStats: Object.freeze({ sicht: 30 }), dropWeight: Object.freeze({ 13: 0, 17: 25, 25: 35 }) }),
+
+    // Zweitwaffen: Tempo gegen Reichweite, dieselbe Achse wie bei den Waffen
+    // selbst (s. Kommentar oben bei WPN_*). Der Fangdolch zieht den Arm ein,
+    // der Kettenhaken verlaengert ihn.
+    Object.freeze({ key: 'OF_FANGDOLCH', type: 'offhand', name: 'Fangdolch', iconKey: 'itOffFangdolch',
+      wertKurve: Object.freeze({ crit: 0.05 }),
+      baseStats: Object.freeze({ speed: 10, range: -12 }), dropWeight: Object.freeze({ 3: 0, 6: 40, 14: 35 }) }),
+    // KEIN Nebenhand-Stueck gibt rohen Schaden. Die Schadenszahlen kommen seit
+    // #135 aus der DPS-Decke, die je WAFFE gerechnet wird — ein Zuschlag aus
+    // der zweiten Hand liefe an ihr vorbei und haette die Decke ausgehebelt.
+    // Der Kettenhaken gewinnt deshalb ueber Reichweite und Krit.
+    Object.freeze({ key: 'OF_KETTENHAKEN', type: 'offhand', name: 'Kettenhaken', iconKey: 'itOffKettenhaken',
+      wertKurve: Object.freeze({ crit: 0.04, armor: 0.04 }),
+      baseStats: Object.freeze({ speed: -8, range: 30 }), dropWeight: Object.freeze({ 13: 0, 16: 25, 24: 35 }) })
   ]);
 
   // ---------------------------------------------------------------------------
@@ -629,7 +686,10 @@ if (window.i18n) {
   // PERSISTENT_EQUIP_SLOTS is the save whitelist — it deliberately OMITS
   // 'amulet' so storage.js never serialises it (FR-12 save-guard). Single
   // source of truth shared with storage.js cloneEquipment.
-  const PERSISTENT_EQUIP_SLOTS = Object.freeze(['weapon', 'head', 'body', 'boots']);
+  // #124: 'offhand' gehoert dazu. Ohne den Eintrag waere jedes Nebenhand-Stueck
+  // beim naechsten Speichern still verschwunden — dieselbe Liste steuert
+  // storage.js cloneEquipment.
+  const PERSISTENT_EQUIP_SLOTS = Object.freeze(['weapon', 'offhand', 'head', 'body', 'boots']);
 
   // Null the amulet slot on a passed equipment object (used by the run-reset
   // in leaveDungeonForHub). Null-safe; returns the object for chaining.
@@ -873,7 +933,13 @@ if (window.i18n) {
   // Waffenschaden steht bewusst NICHT hier: er kommt seit #135 aus der
   // DPS-Decke, die selbst mit der Tiefe waechst. Eine zweite Umrechnung
   // darueber waere doppelt gemoppelt.
-  var BASIS_TIEFENWERTE = { armor: true, crit: true, move: true, hp: true };
+  //
+  // #124: 'block' (Chance, einen Treffer ganz zu vereiteln) und 'brand'
+  // (Chance, bei einem Nahkampftreffer zu entzuenden) sind Machtwerte und
+  // gehoeren dazu. 'sicht' NICHT: mehr Karte zu sehen ist Nutzen, keine Macht,
+  // und eine Laterne, die in der Tiefe blinder wird, waere widersinnig.
+  var BASIS_TIEFENWERTE = { armor: true, crit: true, move: true, hp: true,
+    block: true, brand: true };
 
   function istTiefenBasiswert(stat) {
     return Object.prototype.hasOwnProperty.call(BASIS_TIEFENWERTE, stat);
@@ -1266,6 +1332,9 @@ if (window.i18n) {
       key: base.key,
       type: base.type,
       subtype: base.subtype,
+      // #124: Zweihaender sperren die Nebenhand. Ohne diesen Merker auf dem
+      // gerollten Stueck traege man Richtschwert UND Pavese.
+      zweihaendig: !!base.zweihaendig,
       name: _localizedBase,
       nameKey: _itemNameKey,
       _baseName: _localizedBase,
@@ -1285,7 +1354,10 @@ if (window.i18n) {
     // NOTE: ITEM_BASES stores speed/armor/crit as percentages (e.g. -10 = -10%)
     // but recalcDerived adds them as FLAT values. Convert the percent-style
     // stats to fractions here so summing them in recalcDerived works correctly.
-    const _statKeys = ['hp', 'damage', 'speed', 'range', 'armor', 'crit', 'move'];
+    // #124: block, brand und sicht gehoeren dazu, sonst faende recalcDerived
+    // sie nur im baseStats-Unterobjekt und der Wandschirm blockte nie.
+    const _statKeys = ['hp', 'damage', 'speed', 'range', 'armor', 'crit', 'move',
+      'block', 'brand', 'sicht'];
     // speed bleibt ein Prozentwert (Eigenart der Basis, /100 in den Bruch).
     // armor/crit/move/hp sind seit #104 TIEFENWERTE: sie stehen als absolute
     // Punkte da und werden erst beim Tragen umgerechnet — hier also unberuehrt

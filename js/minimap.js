@@ -168,7 +168,12 @@ function updateMinimap(scene) {
     const origin = scene.currentRoom ? scene.currentRoom.origin : { x: 0, y: 0 };
     const ptx = Math.floor((player.x - origin.x) / tileSize);
     const pty = Math.floor((player.y - origin.y) / tileSize);
-    const visionRadius = 8;
+    // #124: Lichtquellen in der Nebenhand heben den Erkundungsradius. Das ist
+    // die Sichtweite, die es im Spiel WIRKLICH gibt — ein Nebel-Overlay am
+    // Bildschirm haengt an #69, und eine Zahl ohne Wirkung waere schlimmer als
+    // gar kein Licht.
+    const _sicht = (typeof window.playerSichtBonus === 'number') ? window.playerSichtBonus : 0;
+    const visionRadius = Math.round(8 * (1 + Math.max(0, Math.min(1, _sicht))));
 
     // Helper: is the ray from player center to tile center blocked by walls?
     const hasLineOfSight = (worldTileX, worldTileY) => {

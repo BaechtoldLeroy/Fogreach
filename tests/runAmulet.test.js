@@ -99,7 +99,11 @@ test('rollAmulet defaults (no rng / no depth) do not throw and return an amulet'
 test('#42 WP02: PERSISTENT_EQUIP_SLOTS excludes amulet (Save-Guard FR-12)', () => {
   const sys = freshSystem();
   assert.ok(Array.isArray(sys.PERSISTENT_EQUIP_SLOTS), 'whitelist exists');
-  assert.deepStrictEqual(sys.PERSISTENT_EQUIP_SLOTS, ['weapon', 'head', 'body', 'boots']);
+  // #124: 'offhand' kam dazu, als die Nebenhand Gegenstaende bekam. Worum es
+  // dem Test geht, bleibt die zweite Zeile: das Amulett gilt nur fuer EINEN
+  // Lauf und darf nie in den Spielstand.
+  assert.deepStrictEqual(sys.PERSISTENT_EQUIP_SLOTS,
+    ['weapon', 'offhand', 'head', 'body', 'boots']);
   assert.ok(!sys.PERSISTENT_EQUIP_SLOTS.includes('amulet'), 'amulet is never persisted');
 });
 

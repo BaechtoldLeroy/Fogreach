@@ -2016,6 +2016,15 @@ function attack() {
         window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'poisonBlade');
       }
     }
+    // #124: Glutschale — Brand bei Nahkampftreffern. Dasselbe Muster wie oben;
+    // BURNED gibt es seit statusEffects.js, es brauchte keinen neuen Effekt.
+    var _brand = (typeof window.playerBrandChance === 'number') ? window.playerBrandChance : 0;
+    if (_brand > 0
+        && window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
+      if (Math.random() < _brand) {
+        window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.BURNED, 'glutschale');
+      }
+    }
   }, { requireLineOfSight: true });
 
   // Espionage: derselbe Schwung trifft auch Wachen (offener Nahkampf) — im

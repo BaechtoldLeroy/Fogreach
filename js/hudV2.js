@@ -28,6 +28,10 @@
       'hud.stats.label.armor': 'Rüstung',
       'hud.stats.label.crit': 'Krit. Chance',
       'hud.stats.label.move_speed': 'Lauftempo',
+      // #124: Nebenhand.
+      'hud.stats.label.block': 'Blockchance',
+      'hud.stats.label.brand': 'Brandchance',
+      'hud.stats.label.sicht': 'Sichtweite',
       'hud.stats.points': 'Pkt.',
       'hud.stats.depth_note': 'Punkte wirken je nach Tiefe — hier Tiefe {n}',
       'hud.stats.attributes': '— Attribute (von Items) —',
@@ -56,6 +60,9 @@
       'hud.stats.label.armor': 'Armor',
       'hud.stats.label.crit': 'Crit Chance',
       'hud.stats.label.move_speed': 'Movement Speed',
+      'hud.stats.label.block': 'Block Chance',
+      'hud.stats.label.brand': 'Burn Chance',
+      'hud.stats.label.sicht': 'Sight',
       'hud.stats.points': 'pts',
       'hud.stats.depth_note': 'Points scale with depth — showing depth {n}',
       'hud.stats.attributes': '— Attributes (from items) —',
@@ -392,6 +399,10 @@
     const _d = (typeof window.playerDexterity === 'number') ? window.playerDexterity : 0;
     const _v = (typeof window.playerVitality === 'number') ? window.playerVitality : 0;
     const _vhp = (typeof window.playerVitalityHp === 'number') ? window.playerVitalityHp : 0;
+    // #124: Nebenhand-Wirkungen.
+    const _blk = (typeof window.playerBlockChance === 'number') ? window.playerBlockChance : 0;
+    const _brn = (typeof window.playerBrandChance === 'number') ? window.playerBrandChance : 0;
+    const _sch = (typeof window.playerSichtBonus === 'number') ? window.playerSichtBonus : 0;
     const _f = (typeof window.playerFocus === 'number') ? window.playerFocus : 0;
 
     // #122/#104: Ruestung, Krit und Lauftempo stehen auf der Ausruestung als
@@ -427,10 +438,16 @@
       [T('hud.stats.label.armor'), _mitPunkten(Math.round(arm * 100) + '%', 'armor', 'armor')],
       [T('hud.stats.label.crit'), _mitPunkten((crt * 100).toFixed(1) + '%', 'crit', 'crit')],
       [T('hud.stats.label.move_speed'), _mitPunkten(String(spd), 'move', 'move')],
+      // #124: Nur zeigen, wenn ueberhaupt etwas da ist — drei Nullzeilen im
+      // Bogen waeren fuer jeden ohne Nebenhand-Stueck reines Rauschen.
+    ].concat(_blk > 0 ? [[T('hud.stats.label.block'), _mitPunkten(Math.round(_blk * 100) + '%', 'block', null)]] : [])
+     .concat(_brn > 0 ? [[T('hud.stats.label.brand'), _mitPunkten(Math.round(_brn * 100) + '%', 'brand', null)]] : [])
+     .concat(_sch > 0 ? [[T('hud.stats.label.sicht'), '+' + Math.round(_sch * 100) + '%']] : [])
+     .concat([
       // Woran die Umrechnung haengt: ohne diese Zeile wirkt es wie Willkuer,
       // dass dieselbe Ausruestung eine Tiefe tiefer weniger bringt.
       ['', T('hud.stats.depth_note', { n: _tiefe })]
-    ];
+    ]);
     // #104: Auch die Attribute stehen auf der Ausruestung als ABSOLUTE Punkte
     // und werden mit der aktuellen Tiefe umgerechnet. Ohne die Punkte daneben
     // sieht man nur das Ergebnis: ein Stueck mit "+7,5 Vitalitaet" im Tooltip

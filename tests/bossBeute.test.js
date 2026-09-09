@@ -37,7 +37,7 @@ function serie(quelle, n) {
   return H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     window.currentWave = 10; window.DUNGEON_DEPTH = 10;
-    var AUS = { weapon: 1, head: 1, body: 1, boots: 1 };
+    var AUS = { weapon: 1, offhand: 1, head: 1, body: 1, boots: 1 };
     var orig = window.randomLoot;
     var stufen = [0, 0, 0, 0], iLs = [], arten = {};
     window.randomLoot = function () {
@@ -87,14 +87,20 @@ test('Der Aufschlag gilt NUR fuer echte Bosse', () => {
     + 'damit seine Sonderstellung');
 });
 
+// #124: 'offhand' gehoert dazu, seit die Nebenhand Gegenstaende hat. Beide
+// Tests unten pruefen weiter dasselbe (Boss: nur Ausruestung, Mini-Boss: auch
+// anderes) — die Liste zaehlt nur eine Ausruestungsart mehr.
+const AUSRUESTUNG = ['weapon', 'offhand', 'head', 'body', 'boots'];
+function fremdeArten(arten) {
+  return Object.keys(arten).filter(function (a) { return AUSRUESTUNG.indexOf(a) < 0; });
+}
+
 test('Ein Boss laesst IMMER ein Ausruestungsstueck fallen', () => {
   // Sonst greifen weder Tiefenbonus noch Mindeststufe: gemessen waren 26 %
   // seiner Abwuerfe ein Trank oder ein Eisenbrocken, und der schwerste Kampf
   // eines Durchgangs endete mit einem Heiltrank.
   const r = serie({ isBoss: true }, 400);
-  const fremd = Object.keys(r.arten).filter(function (a) {
-    return a !== 'weapon' && a !== 'head' && a !== 'body' && a !== 'boots';
-  });
+  const fremd = fremdeArten(r.arten);
   assert.deepStrictEqual(fremd.length, 0,
     'der Boss liess auch das fallen: ' + fremd.join(', ')
     + '  (' + JSON.stringify(r.arten) + ')');
@@ -106,9 +112,7 @@ test('Mini-Bosse behalten die gemischte Beute', () => {
   // Der Boss soll sich abheben. Waere die Ausruestungsgarantie auch bei
   // Mini-Bossen, waeren Traenke und Brocken praktisch aus dem Spiel.
   const r = serie({ isMiniBoss: true }, 1200);
-  const fremd = Object.keys(r.arten).filter(function (a) {
-    return a !== 'weapon' && a !== 'head' && a !== 'body' && a !== 'boots';
-  });
+  const fremd = fremdeArten(r.arten);
   assert.ok(fremd.length > 0,
     'auch Mini-Bosse lassen nur noch Ausruestung fallen: ' + JSON.stringify(r.arten));
 });

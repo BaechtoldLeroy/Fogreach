@@ -19,7 +19,8 @@ function saveGame(scene) {
       // (LootSystem.PERSISTENT_EQUIP_SLOTS) deliberately omits 'amulet' — run
       // amulets must never be saved (FR-12 save-guard).
       const SLOTS = (typeof window !== 'undefined' && window.LootSystem
-        && window.LootSystem.PERSISTENT_EQUIP_SLOTS) || ['weapon', 'head', 'body', 'boots'];
+        && window.LootSystem.PERSISTENT_EQUIP_SLOTS)
+        || ['weapon', 'offhand', 'head', 'body', 'boots'];
       const out = {};
       SLOTS.forEach((k) => { out[k] = obj[k] ? JSON.parse(JSON.stringify(obj[k])) : null; });
       return out;
