@@ -1167,10 +1167,11 @@ test('#36: gold_find affix aggregates as a percent bonus via getBonus', () => {
       affixes: [{ defId: 'of_greed', value: punkteFuer(sys, 0.10, 20) }] }
   };
   sys.recomputeBonuses();
-  // of_greed liegt auf keiner der beiden Achsen (kein DPS, kein EHP) und traegt
-  // deshalb den Faehigkeitsfaktor 3 — Goldfund darf ruhig deutlich ausfallen.
-  assert.ok(Math.abs(sys.getBonus('gold_find') - 0.30) < 1e-9,
-    'erwartet 0,30, war ' + sys.getBonus('gold_find'));
+  // Goldfund liegt auf keiner der beiden Kampfachsen und traegt deshalb den
+  // Faktor 2 — er darf deutlich ausfallen, ohne in den Kampf zu wirken. Bis
+  // b209 fiel er versehentlich in den Faehigkeits-Rueckfall (Faktor 3).
+  assert.ok(Math.abs(sys.getBonus('gold_find') - 0.20) < 1e-9,
+    'erwartet 0,20, war ' + sys.getBonus('gold_find'));
 });
 
 test('WP08 T048: Ablegen setzt den Bonus wieder auf 0', () => {

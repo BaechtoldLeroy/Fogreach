@@ -761,7 +761,16 @@ if (window.i18n) {
     crit:      { einheit: 'bruch', faktor: 2 },
     move:      { einheit: 'bruch', faktor: 1 },
     range:     { einheit: 'bruch', faktor: 1 },
-    lifesteal: { einheit: 'bruch', faktor: 0.2 },
+    lifesteal: { einheit: 'bruch', faktor: 0.2 },
+    // Diese vier fielen bis b209 versehentlich in den Faehigkeits-Rueckfall und
+    // trugen dessen Faktor 3. of_might gab damit 24-36 % Schaden auf ALLE
+    // Faehigkeiten, waehrend sharp_dmg 8-12 % auf die Waffe gab — bei einem
+    // Viertel des Ziehungsgewichts. Der Rueckfall soll nur greifen, wo ein
+    // Affix wirklich an EINER Faehigkeit haengt.
+    dmg_all_abilities: { einheit: 'bruch', faktor: 1 },
+    cd_all_abilities:  { einheit: 'bruch', faktor: 1.5 },
+    xp_gain:           { einheit: 'bruch', faktor: 2 },
+    gold_find:         { einheit: 'bruch', faktor: 2 },
     // Attribute: die Punktzahl ist die Anzeige, ihre Wirkung steckt in
     // recalcDerived (Staerke +1 % Schaden je Punkt, usw.). Die Faktoren sind
     // so gewaehlt, dass die PRIMAERwirkung wieder bei 8-12 % landet.
