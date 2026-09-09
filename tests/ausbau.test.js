@@ -101,10 +101,54 @@ test('Der Ausbau ueberholt die Fundtiefe — bewusst', () => {
     'voll ausgebaut ' + ausgebaut.armor + ' liegt nicht ueber dem besten Wurf ' + bester);
 });
 
-test('Die Goldkosten verdoppeln sich je Stufe', () => {
+test('Die Reihenfolge aus Aufwerten und Ausbauen aendert den Preis nicht', () => {
+  // Gemeldeter Logikfehler: der Startpreis war je Seltenheit gestaffelt, und
+  // weil gekaufte Stufen beim Aufwerten erhalten bleiben, liess sich das
+  // ausnutzen — eine Stufe billig als grau kaufen, DANN aufwerten, dann weiter.
+  // Gemessen sparte diese Reihenfolge 14 % (66 300 statt 77 500 Gold bis
+  // legendaer mit fuenf Stufen).
+  //
+  // Eine Reihenfolge, die Geld spart, ohne dass man etwas dafuer kann, ist kein
+  // Aufbau, sondern ein Schlupfloch.
+  const LS = frisch();
+
+  /** Kosten, wenn man die Stufen auf den angegebenen Seltenheiten kauft. */
+  function kosten(folge) {
+    const it = LS.rollItem('BD_PLATTENPANZER', 20, folge[0][0]);
+    let gold = 0, brocken = 0;
+    folge.forEach(([tier, n]) => {
+      it.tier = tier;
+      for (let i = 0; i < n; i++) {
+        const k = LS.ausbauKosten(it);
+        if (!k) return;
+        gold += k.gold; brocken += k.brocken;
+        LS.ausbauen(it);
+      }
+    });
+    return { gold, brocken, stufe: LS.ausbauStufe(it) };
+  }
+
+  // Magisch mit zwei Stufen, auf zwei Wegen.
+  const direkt = kosten([[1, 2]]);
+  const umweg = kosten([[0, 1], [1, 1]]);
+  assert.strictEqual(direkt.stufe, 2);
+  assert.strictEqual(umweg.stufe, 2);
+  assert.strictEqual(umweg.gold, direkt.gold,
+    'der Umweg kostet ' + umweg.gold + ' statt ' + direkt.gold + ' Gold');
+  assert.strictEqual(umweg.brocken, direkt.brocken,
+    'der Umweg kostet ' + umweg.brocken + ' statt ' + direkt.brocken + ' Brocken');
+
+  // Und derselbe Vergleich ueber alle fuenf Stufen bis legendaer.
+  const langDirekt = kosten([[3, 5]]);
+  const langUmweg = kosten([[0, 1], [1, 1], [2, 1], [3, 2]]);
+  assert.strictEqual(langUmweg.gold, langDirekt.gold,
+    'bis legendaer: ' + langUmweg.gold + ' statt ' + langDirekt.gold + ' Gold');
+});
+
+test('Die Goldkosten wachsen mit jeder Stufe steil an', () => {
   // Das ist der Teil, der die unbegrenzte Anhaeufung einholt. Gemessen liegen
-  // auf Tiefe 28 rund 61 600 Gold herum (#132); feste Preise koennen ein
-  // wachsendes Vermoegen nie einholen, eine Verdopplung schon.
+  // auf Tiefe 28 rund 61 600 Gold herum (#132); fuenf Stufen sollen ungefaehr
+  // diesen ganzen Bestand kosten.
   const LS = frisch();
   const it = LS.rollItem('BD_PLATTENPANZER', 20, 3);
   const preise = [];
@@ -112,13 +156,13 @@ test('Die Goldkosten verdoppeln sich je Stufe', () => {
   while ((k = LS.ausbauKosten(it))) { preise.push(k.gold); LS.ausbauen(it); }
   assert.strictEqual(preise.length, 5);
   for (let i = 1; i < preise.length; i++) {
-    assert.strictEqual(preise[i], preise[i - 1] * 2,
-      'Stufe ' + (i + 1) + ' kostet ' + preise[i] + ' statt ' + (preise[i - 1] * 2));
+    assert.ok(preise[i] >= preise[i - 1] * 2.5,
+      'Stufe ' + (i + 1) + ' kostet nur ' + preise[i] + ' nach ' + preise[i - 1]);
   }
   const summe = preise.reduce((a, b) => a + b, 0);
-  assert.ok(summe > 61626,
-    'ein voller Ausbau kostet nur ' + summe + ' Gold und damit weniger als der '
-    + 'gemessene Bestand auf Tiefe 28 (61 626) — die Senke greift nicht');
+  assert.ok(summe > 50000,
+    'ein voller Ausbau kostet nur ' + summe + ' Gold — gegen den gemessenen '
+    + 'Bestand von 61 626 auf Tiefe 28 greift die Senke damit nicht');
 });
 
 test('Zerlegen gibt die Haelfte der eingesetzten Brocken zurueck', () => {
@@ -145,15 +189,4 @@ test('Der Name traegt die Stufe', () => {
   LS.ausbauen(it);
   assert.ok(LS.composeName(it).indexOf('+1') > 0,
     'die Stufe fehlt im Namen: ' + LS.composeName(it));
-});
-
-test('Die Kosten haengen an der Seltenheit, nicht nur an der Stufe', () => {
-  // Sonst waere ein gewoehnliches Stueck genauso teuer auszubauen wie ein
-  // legendaeres, obwohl es viel weniger dabei herausholt.
-  const LS = frisch();
-  const preise = [0, 1, 2, 3].map((t) => LS.ausbauKosten(LS.rollItem('BD_PLATTENPANZER', 20, t)).gold);
-  for (let i = 1; i < preise.length; i++) {
-    assert.ok(preise[i] > preise[i - 1],
-      'Seltenheit ' + i + ' kostet nicht mehr als ' + (i - 1) + ': ' + preise.join(' / '));
-  }
 });

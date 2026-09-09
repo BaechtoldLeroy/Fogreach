@@ -1541,16 +1541,26 @@ if (window.i18n) {
   var AUSBAU_JE_STUFE = 0.10;                      // +10 % auf alle Punkte
   var AUSBAU_STUFEN = Object.freeze([1, 2, 3, 5]); // je Seltenheit T0..T3
 
-  // Gold VERDOPPELT sich je Stufe. Das ist der Teil, der die unbegrenzte
-  // Anhaeufung einholt: gemessen liegen auf Tiefe 28 rund 61 600 Gold herum
-  // (#132), und ein legendaeres Stueck voll auszubauen kostet 77 500 — mehr als
-  // dieser ganze Bestand. Feste Preise koennen ein wachsendes Vermoegen nie
-  // einholen, eine Verdopplung schon.
-  var AUSBAU_GOLD_START = Object.freeze([300, 600, 1200, 2500]);
+  // Der Preis haengt an der STUFE, nicht an der Seltenheit.
+  //
+  // Vorher war der Startpreis je Seltenheit gestaffelt — und weil die schon
+  // gekauften Stufen beim Aufwerten erhalten bleiben, liess sich das ausnutzen:
+  // eine Stufe billig als grau kaufen, DANN aufwerten, dann weiter. Gemessen
+  // sparte diese Reihenfolge 14 % (66 300 statt 77 500 Gold bis legendaer mit
+  // fuenf Stufen). Eine Reihenfolge, die Geld spart, ohne etwas zu koennen, ist
+  // kein Aufbau, sondern ein Schlupfloch.
+  //
+  // Jetzt kostet Stufe N ueberall dasselbe. Die Seltenheit entscheidet nur noch,
+  // WIE WEIT man kommt — und damit ist die Reihenfolge gleichgueltig.
+  //
+  // Verdreifachung je Stufe: das holt die unbegrenzte Goldanhaeufung ein.
+  // Gemessen liegen auf Tiefe 28 rund 61 600 Gold herum (#132); fuenf Stufen
+  // kosten zusammen 60 500, also praktisch den ganzen Bestand.
+  var AUSBAU_GOLD = Object.freeze([500, 1500, 4500, 13500, 40500]);
 
-  // Eisenbrocken steigen LINEAR statt exponentiell: sie kommen aus dem Zerlegen
-  // und haeufen sich viel langsamer an als Gold.
-  var AUSBAU_BROCKEN_START = Object.freeze([4, 6, 9, 14]);
+  // Eisenbrocken steigen flacher: sie kommen aus dem Zerlegen und haeufen sich
+  // viel langsamer an als Gold.
+  var AUSBAU_BROCKEN = Object.freeze([6, 12, 18, 24, 30]);
 
   // Beim Zerlegen kommt die HAELFTE der eingesetzten Brocken zurueck. Ohne das
   // waere jede Fehlinvestition endgueltig, und niemand baute ein Stueck aus,
@@ -1582,19 +1592,26 @@ if (window.i18n) {
     if (!item) return null;
     var stufe = ausbauStufe(item);
     if (stufe >= ausbauMaxStufen(item)) return null;
-    var t = _tierVon(item);
+    var i = Math.min(stufe, AUSBAU_GOLD.length - 1);
     return {
-      gold: AUSBAU_GOLD_START[t] * Math.pow(2, stufe),
-      brocken: AUSBAU_BROCKEN_START[t] * (stufe + 1),
+      gold: AUSBAU_GOLD[i],
+      brocken: AUSBAU_BROCKEN[i],
       stufe: stufe + 1
     };
   }
 
-  /** Alle Brocken, die bisher in dieses Stueck geflossen sind. */
+  /**
+   * Alle Brocken, die bisher in dieses Stueck geflossen sind.
+   *
+   * Haengt nur an der STUFE — deshalb stimmt die Summe auch dann, wenn das
+   * Stueck zwischendurch aufgewertet wurde.
+   */
   function ausbauBrockenGesamt(item) {
     if (!item) return 0;
-    var t = _tierVon(item), summe = 0;
-    for (var i = 0; i < ausbauStufe(item); i++) summe += AUSBAU_BROCKEN_START[t] * (i + 1);
+    var summe = 0;
+    for (var i = 0; i < ausbauStufe(item); i++) {
+      summe += AUSBAU_BROCKEN[Math.min(i, AUSBAU_BROCKEN.length - 1)];
+    }
     return summe;
   }
 

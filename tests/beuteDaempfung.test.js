@@ -9,6 +9,11 @@
 // Vorher setzte sie erst ab dem 4. Stueck ein und blieb dann bei der Haelfte
 // stehen — nach oben war der Ertrag unbegrenzt.
 //
+// Stichprobe 5000 je Messung, Toleranz entsprechend weit: bei 6 % Grundchance
+// liegt der Standardfehler des Verhaeltnisses bei rund 4 Prozentpunkten. Mit
+// enger Toleranz flackerte der Test im Gesamtlauf, mit 12 000 Wuerfen lief er
+// in die Zeitgrenze des Testkopfs (20 s).
+//
 // Der Test misst die WIRKUNG (wie oft faellt etwas), nicht die Formel: eine
 // Pruefung auf "der Code enthaelt / 4" saehe gleich aus und sagte nichts
 // darueber, ob die Zahl je einen Wurf erreicht.
@@ -55,20 +60,20 @@ test('Ab dem 3. Stueck faellt nur noch halb so oft etwas', () => {
   // Mini-Bosse gewaehlt, weil ihre Grundchance (6 %) gross genug ist, um den
   // Unterschied in vertretbar vielen Wuerfen zu sehen. Bei Trash (0,5 %)
   // braeuchte es Zehntausende.
-  const voll = trefferQuote(0, { isMiniBoss: true }, 4000);
-  const halb = trefferQuote(3, { isMiniBoss: true }, 4000);
+  const voll = trefferQuote(0, { isMiniBoss: true }, 5000);
+  const halb = trefferQuote(3, { isMiniBoss: true }, 5000);
   assert.ok(voll > 0.03, 'die volle Quote ist schon zu klein: ' + voll);
   const anteil = halb / voll;
-  assert.ok(Math.abs(anteil - 0.5) < 0.15,
+  assert.ok(Math.abs(anteil - 0.5) < 0.20,
     'ab dem 3. Stueck fallen ' + (anteil * 100).toFixed(0) + ' % statt rund 50 %'
     + '  (' + (voll * 100).toFixed(1) + ' % -> ' + (halb * 100).toFixed(1) + ' %)');
 });
 
 test('Ab dem 6. Stueck nur noch ein Viertel', () => {
-  const voll = trefferQuote(0, { isMiniBoss: true }, 6000);
-  const viertel = trefferQuote(6, { isMiniBoss: true }, 6000);
+  const voll = trefferQuote(0, { isMiniBoss: true }, 5000);
+  const viertel = trefferQuote(6, { isMiniBoss: true }, 5000);
   const anteil = viertel / voll;
-  assert.ok(Math.abs(anteil - 0.25) < 0.12,
+  assert.ok(Math.abs(anteil - 0.25) < 0.14,
     'ab dem 6. Stueck fallen ' + (anteil * 100).toFixed(0) + ' % statt rund 25 %'
     + '  (' + (voll * 100).toFixed(1) + ' % -> ' + (viertel * 100).toFixed(1) + ' %)');
 });
@@ -78,7 +83,7 @@ test('Bei 2 Stuecken bremst noch nichts', () => {
   // passiert — vorher setzte die Bremse tatsaechlich erst ab vier ein.
   const voll = trefferQuote(0, { isMiniBoss: true }, 5000);
   const zwei = trefferQuote(2, { isMiniBoss: true }, 5000);
-  assert.ok(Math.abs(zwei / voll - 1) < 0.15,
+  assert.ok(Math.abs(zwei / voll - 1) < 0.20,
     'bei 2 Stuecken wird schon gebremst: ' + (voll * 100).toFixed(1)
     + ' % -> ' + (zwei * 100).toFixed(1) + ' %');
 });
