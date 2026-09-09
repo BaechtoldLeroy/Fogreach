@@ -456,7 +456,12 @@ if (window.i18n) {
       baseStats: Object.freeze({ speed: 5, range: -8 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
     Object.freeze({ key: 'WPN_SCHATTENDOLCH', type: 'weapon', name: 'Schattendolch', iconKey: 'itDagger',
       damageKurve: Object.freeze({ anteil: 0.90, spanne: 0.62 }),
-      baseStats: Object.freeze({ speed: 15, range: -25, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
+      // #104-Nachzug: crit steht in der wertKurve, nicht in baseStats. Dort war
+      // er eine glatte Prozentzahl (5 = 5 %) und wurde seit der Umstellung als
+      // Punktzahl gelesen — 12,5 % auf Tiefe 1, 1,5 % auf Tiefe 30. Als Kurve
+      // bleibt er bei rund 5 %, egal wie tief man steht.
+      wertKurve: Object.freeze({ crit: 0.05 }),
+      baseStats: Object.freeze({ speed: 15, range: -25 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
     Object.freeze({ key: 'WPN_KETTENMORGENSTERN', type: 'weapon', name: 'Kettenmorgenstern', iconKey: 'itFlail',
       damageKurve: Object.freeze({ anteil: 0.96, spanne: 0.60 }),
       baseStats: Object.freeze({ speed: -5, range: 8 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
@@ -482,14 +487,16 @@ if (window.i18n) {
       baseStats: Object.freeze({ range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
     Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBowHorn',
       damageKurve: Object.freeze({ anteil: 0.90, spanne: 0.58 }),
-      baseStats: Object.freeze({ range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
+      wertKurve: Object.freeze({ crit: 0.04 }),
+      baseStats: Object.freeze({ range: 100 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
     Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', zweihaendig: true, subtype: 'bow', name: 'Glutbogen', iconKey: 'itBowGlut',
       damageKurve: Object.freeze({ anteil: 0.92, spanne: 0.60 }),
       baseStats: Object.freeze({ range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
     // Spät-Tier-Bogen (ab ~Tiefe 15), s. Kommentar bei den Spät-Tier-Nahkampfwaffen.
     Object.freeze({ key: 'WPN_NEBELBOGEN', type: 'weapon', zweihaendig: true, subtype: 'bow', name: 'Nebelbogen', iconKey: 'itBowNebel',
       damageKurve: Object.freeze({ anteil: 0.89, spanne: 0.62 }),
-      baseStats: Object.freeze({ range: 130, crit: 3 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
+      wertKurve: Object.freeze({ crit: 0.03 }),
+      baseStats: Object.freeze({ range: 130 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
 
     // Helms (3)
     // #104: Die Ruestungsbasen trugen feste Zahlen (armor: 5, armor: 15 ...) —

@@ -307,6 +307,52 @@ test('#114: die HOEHE kommt trotzdem aus der Fundtiefe', () => {
   }
 });
 
+test('#104: kein Tiefenwert steht in baseStats', () => {
+  // Der Fehler, der den Schattendolch getroffen hat: crit stand dort als
+  // glatte Prozentzahl (5 = 5 %). Seit #104 liest recalcDerived armor, crit,
+  // move und hp als absolute PUNKTE und rechnet sie mit der Tiefe um — aus
+  // 5 wurden 12,5 % auf Tiefe 1 und 1,5 % auf Tiefe 30.
+  //
+  // Diese Werte gehoeren in die wertKurve. In baseStats stehen nur die
+  // EIGENARTEN einer Basis (Tempo, Reichweite, Sichtweite), die bewusst nicht
+  // mit der Tiefe verrechnet werden.
+  const sys = freshSystem();
+  const TIEFENWERTE = ['armor', 'crit', 'move', 'hp'];
+  const falsch = [];
+  sys.ITEM_BASES.forEach((b) => {
+    TIEFENWERTE.forEach((k) => {
+      if (b.baseStats && typeof b.baseStats[k] === 'number') falsch.push(b.key + '.' + k);
+    });
+  });
+  assert.deepStrictEqual(falsch, [],
+    'diese Basen tragen einen Tiefenwert in baseStats statt in der wertKurve: ' + falsch.join(', '));
+});
+
+test('#104: der Krit der Waffen bleibt ueber alle Tiefen gleich viel wert', () => {
+  // Der Schattendolch IST seine Kritchance. Vorher gab er 12,5 % auf Tiefe 1
+  // und 1,5 % auf Tiefe 30 — er verlor unten genau die Eigenschaft, fuer die
+  // man ihn nimmt.
+  const sys = freshSystem();
+  [['WPN_SCHATTENDOLCH', 0.05], ['WPN_HORNBOGEN', 0.04], ['WPN_NEBELBOGEN', 0.03]]
+    .forEach(([key, ziel]) => {
+      const gemessen = [1, 5, 10, 20, 30].map((t) => {
+        aufTiefe(t);
+        // Ueber viele Wuerfe: die wertKurve streut bewusst 80 bis 120 %.
+        let summe = 0;
+        for (let i = 0; i < 200; i++) {
+          const it = sys.rollItem(key, t, 0);
+          summe += sys.basiswertWirkung('crit', it.crit || 0, t);
+        }
+        return summe / 200;
+      });
+      gemessen.forEach((w, i) => {
+        assert.ok(Math.abs(w - ziel) < ziel * 0.15,
+          key + ' auf Tiefe ' + [1, 5, 10, 20, 30][i] + ': ' + (w * 100).toFixed(2)
+          + ' % statt ' + (ziel * 100).toFixed(0) + ' %  (' + gemessen.map((x) => (x * 100).toFixed(1)).join(' / ') + ')');
+      });
+    });
+});
+
 test('#114: auch die Lebenspunkte AUS VITALITAET fallen nicht mit der Tiefe', () => {
   // Die Asymmetrie, die nach der +LP-Umstellung uebrig blieb: Vitalitaet gab
   // Lebenspunkte ueber eine PUNKTZAHL, und Punktzahlen fallen mit der Tiefe.

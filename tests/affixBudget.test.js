@@ -492,6 +492,51 @@ test('Die Lebensregeneration aus Vitalitaet ersetzt keine Traenke', () => {
   });
 });
 
+test('Geschick gibt Krit als ZWEITwirkung, nicht als zweite Hauptquelle', () => {
+  // Geschick lief neben seiner Primaerwirkung (Angriffstempo, 1 % je Punkt)
+  // mit 0,67 % Krit je Punkt auch noch als zweitbeste Kritquelle mit. Jetzt
+  // 80 % davon.
+  //
+  // Der Test misst gegen das TEMPO, nicht gegen eine feste Zahl: das Verhaeltnis
+  // der beiden Wirkungen ist die Aussage, die absolute Zahl nur ihre Folge.
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    window.DUNGEON_DEPTH = 20; window.currentWave = 20;
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    var def = LS.AFFIX_DEFS.find(function (d) { return d.id === 'attr_dexterity'; });
+    var it = LS.rollItem('BT_LEDERSTIEFEL', 20, 0);
+    it.affixes = [{ defId: 'attr_dexterity', value: LS.affixWert(def, 0.10, 20) }];
+    window.equipment.boots = it;
+    LS.recomputeBonuses(); recalcDerived(0, 0);
+    var raus = { punkte: window.playerDexterity, krit: window.playerDexCrit };
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    return raus;
+  })()`);
+  assert.ok(r.punkte > 0, 'Testaufbau: kein Geschick angelegt');
+  const jePunkt = r.krit / r.punkte;
+  // Primaerwirkung ist 1 % Tempo je Punkt. Krit soll gut die Haelfte davon sein.
+  assert.ok(jePunkt > 0.004 && jePunkt < 0.006,
+    'Krit je Geschickpunkt liegt bei ' + (jePunkt * 100).toFixed(3) + ' %');
+  assert.ok(Math.abs(jePunkt / 0.0067 - 0.8) < 0.05,
+    'das sind ' + (100 * jePunkt / 0.0067).toFixed(0) + ' % der alten Kurve, erwartet rund 80');
+});
+
+test('Anzeige und Wirkung des Geschick-Krits lesen dieselbe Zahl', () => {
+  // Derselbe Fehler wie bei der Regeneration: der Faktor stand doppelt im
+  // Code, einmal in recalcDerived und einmal im Charakterbogen.
+  const inv = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'js', 'inventory.js'), 'utf8');
+  const hud = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'js', 'hudV2.js'), 'utf8');
+  assert.ok(/DEX_KRIT_JE_PUNKT/.test(inv), 'die Konstante fehlt in inventory.js');
+  assert.ok(/playerDexCrit/.test(hud),
+    'der Charakterbogen rechnet den Geschick-Krit selbst aus statt ihn zu lesen');
+  assert.ok(!/_d * 0.67/.test(hud),
+    'im Charakterbogen steht noch eine zweite Kopie des Faktors');
+});
+
 test('Anzeige und Wirkung der Regeneration lesen dieselbe Zahl', () => {
   // Die 0,1 standen doppelt im Code — einmal in recalcDerived, einmal im
   // Charakterbogen. Beim Nachziehen waere nur eine der beiden mitgekommen.

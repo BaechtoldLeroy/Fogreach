@@ -1382,6 +1382,11 @@ function makeItem(opts) {
 // Wirkung beim ersten Nachziehen auseinander.
 const VIT_REGEN_JE_PUNKT = 0.02;
 
+// Kritchance je Geschickpunkt. War 0,0067 und damit rund ein Fuenftel zu hoch:
+// Geschick lief neben dem Angriffstempo (seiner Primaerwirkung) auch noch als
+// zweitbeste Kritquelle mit. Jetzt 80 % davon.
+const DEX_KRIT_JE_PUNKT = 0.0054;
+
 function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // Refresh affix bonus cache before reading it: callers (equip swap, save
   // load, endless buffs, events) may have mutated equipment without yet
@@ -1472,7 +1477,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // Jedes Attribut hat einen PRIMAER- und einen einzigartigen ZWEIT-Effekt, damit
   // es kein reiner Klon eines Einzel-Affixes ist:
   //   Stärke    -> +1 % Waffenschaden  + 1.5 % Krit-SCHADEN je Punkt
-  //   Geschick   -> +0.2 % Krit + 0.3 % Angriffstempo + 0.25 % AUSWEICHEN je Punkt
+  //   Geschick   -> DEX_KRIT_JE_PUNKT Krit + 1 % Angriffstempo + 0.83 % Ausweichen
   //   Vitalität -> +1 % Max-LP          + VIT_REGEN_JE_PUNKT LP/s je Punkt
   //   Fokus      -> −0.4 % globale CD   + 0.5 % FAEHIGKEITSschaden je Punkt
   // Ausweichen/Regen werden UNTEN (nach Skills/Endless) additiv draufgelegt,
@@ -1489,7 +1494,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     // Geschick: Angriffstempo ist die Primaerwirkung, 1 % je Punkt. Krit und
     // Ausweichen behalten ihr Verhaeltnis dazu (0,2/0,3 bzw. 0,25/0,3).
     weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + _attrDex * 0.01));
-    playerCritChance = Phaser.Math.Clamp(playerCritChance + _attrDex * 0.0067, 0, 0.9);
+    playerCritChance = Phaser.Math.Clamp(playerCritChance + _attrDex * DEX_KRIT_JE_PUNKT, 0, 0.9);
   }
   // #114: Vitalitaet gibt FLACHE Lebenspunkte, festgezurrt auf der Fundtiefe
   // des Stuecks — genau wie der +LP-Affix. Die Punktzahl _attrVit taugt dafuer
@@ -1512,6 +1517,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     // waere hier irrefuehrend, weil er nicht mehr aus der Punktzahl folgt.
     window.playerVitalityHp = _attrVitHp;
     window.playerVitalityRegen = _attrVit * VIT_REGEN_JE_PUNKT;
+    window.playerDexCrit = _attrDex * DEX_KRIT_JE_PUNKT;
     window.playerFocus = _attrFoc;
     window.playerFocusCdr = _attrFocusCdr;
     // Zweit-Effekte auf eigenen Globals (immer frisch, 0 wenn kein Attribut):

@@ -401,6 +401,7 @@
     // sonst zeigt der Bogen beim naechsten Nachziehen etwas anderes an, als
     // das Spiel tut.
     const _vreg = (typeof window.playerVitalityRegen === 'number') ? window.playerVitalityRegen : 0;
+    const _dcrit = (typeof window.playerDexCrit === 'number') ? window.playerDexCrit : 0;
     // #124: Nebenhand-Wirkungen.
     const _blk = (typeof window.playerBlockChance === 'number') ? window.playerBlockChance : 0;
     const _brn = (typeof window.playerBrandChance === 'number') ? window.playerBrandChance : 0;
@@ -464,7 +465,7 @@
       { label: T('hud.stats.label.strength'), val: _attrPunkte('strength'),
         desc: '+' + _a1(_s) + '% Waffenschaden · +' + (_s * 1.5).toFixed(1) + '% Krit-Schaden' },
       { label: T('hud.stats.label.dexterity'), val: _attrPunkte('dexterity'),
-        desc: '+' + (_d * 1).toFixed(1) + '% Tempo · +' + (_d * 0.67).toFixed(1) + '% Krit · +' + (_d * 0.83).toFixed(1) + '% Ausweichen' },
+        desc: '+' + (_d * 1).toFixed(1) + '% Tempo · +' + (_dcrit * 100).toFixed(1) + '% Krit · +' + (_d * 0.83).toFixed(1) + '% Ausweichen' },
       { label: T('hud.stats.label.vitality'), val: _attrPunkte('vitality'),
         // #114: Die Lebenspunkte stehen ABSOLUT da. Sie folgen nicht mehr aus
         // der Punktzahl daneben, sondern haengen an der Fundtiefe der Stuecke
