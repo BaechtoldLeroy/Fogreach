@@ -28,6 +28,10 @@
       'settings.difficulty.easy': 'Leicht',
       'settings.difficulty.normal': 'Normal',
       'settings.difficulty.hard': 'Schwer',
+      'settings.text.label': 'Texttempo',
+      'settings.text.langsam': 'Langsam',
+      'settings.text.normal': 'Normal',
+      'settings.text.sofort': 'Sofort',
       'settings.display.language.de': 'Deutsch',
       'settings.display.language.en': 'Englisch',
       'settings.debug.autostart': 'Auto-Start',
@@ -63,7 +67,11 @@
       'settings.difficulty.label': 'Difficulty',
       'settings.difficulty.easy': 'Easy',
       'settings.difficulty.normal': 'Normal',
-      'settings.difficulty.hard': 'Hard',
+      'settings.difficulty.hard': 'Hard',
+      'settings.text.label': 'Text speed',
+      'settings.text.langsam': 'Slow',
+      'settings.text.normal': 'Normal',
+      'settings.text.sofort': 'Instant',
       'settings.display.language.de': 'German',
       'settings.display.language.en': 'English',
       'settings.debug.autostart': 'Autostart',
@@ -246,6 +254,7 @@
       this._sectionLabel(LEFT_LBL, leftY, T('settings.section.controls')); leftY += 18;
       this._volumeRow(LEFT_C, leftY, T('settings.controls.movement_weight'), 'movementWeight', COL_W); leftY += 28;
       this._difficultyRow(LEFT_C, leftY, COL_W); leftY += 22;
+      this._textTempoRow(LEFT_C, leftY, COL_W); leftY += 22;
 
       this._sectionLabel(LEFT_LBL, leftY, T('settings.section.display')); leftY += 18;
       this._fullscreenRow(LEFT_C, leftY, COL_W); leftY += 22;
@@ -608,6 +617,35 @@
         const val = TIERS[next].mult;
         window.DIFFICULTY_MULTIPLIER = val;
         try { (window.SlotStorage || localStorage).setItem('demonfall_lastDifficulty', JSON.stringify(val)); } catch (e) {}
+        refresh();
+      });
+    }
+
+    // #139: Wie schnell sich Questtexte Wort fuer Wort aufbauen. "Sofort"
+    // schaltet den Aufbau ganz ab — fuer den zweiten Durchlauf, in dem man die
+    // Texte schon kennt.
+    _textTempoRow(centerX, y, panelW) {
+      const TW = window.DialogTypewriter;
+      const namen = TW ? TW.tempoNamen() : ['normal'];
+      this.add.text(centerX - panelW / 2 + 20, y, T('settings.text.label') + ':', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
+      }).setScrollFactor(0).setDepth(2002);
+
+      const valueText = this.add.text(centerX + 80, y, '', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
+
+      const jetzt = () => (TW ? TW.gewaehltesTempo() : 'normal');
+      const refresh = () => { valueText.setText(T('settings.text.' + jetzt())); };
+      refresh();
+
+      const btnBg = this.add.rectangle(centerX + 80, y + 8, 80, 22, 0x2a2a2a)
+        .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2001)
+        .setInteractive({ useHandCursor: true });
+      btnBg.on('pointerdown', () => {
+        if (!TW) return;
+        const next = namen[(namen.indexOf(jetzt()) + 1) % namen.length];
+        TW.setzeTempo(next);
         refresh();
       });
     }

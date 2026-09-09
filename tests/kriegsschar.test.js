@@ -165,15 +165,23 @@ test('Der Merker ueberlebt die Trefferblitze', () => {
   // Ohne Wiederherstellung war die Markierung nach dem ersten Treffer weg.
   //
   // Seit #129 steht die Wiederherstellung nicht mehr dreimal ausgeschrieben da,
-  // sondern in _dauerToenungHerstellen() — der Pluenderer braucht sie genauso.
-  // Geprueft wird deshalb beides: dass alle drei Stellen die Funktion rufen und
-  // dass die Funktion die Schar-Toenung kennt.
+  // sondern in einer gemeinsamen Funktion. Seit #139 ist eine zweite Stufe
+  // dazugekommen: _toenungNachBlitz nimmt ZUERST die Dauertoenung (Schar,
+  // Pluenderer) und nur sonst eine laufende Statusfarbe. Die Kette muss also
+  // ganz stehen — drei Aufrufstellen, Vorrang der Dauertoenung, und die kennt
+  // die Schar.
   const fs2 = require('fs');
   const path2 = require('path');
   const s2 = fs2.readFileSync(path2.join(__dirname, '..', 'js', 'player.js'), 'utf8');
-  const stellen = (s2.match(/_dauerToenungHerstellen\(enemy\);/g) || []).length;
+  const stellen = (s2.match(/_toenungNachBlitz\(enemy\);/g) || []).length;
   assert.strictEqual(stellen, 3,
     'erwartet drei Aufrufstellen in player.js, fand ' + stellen);
+
+  const blitz = s2.slice(s2.indexOf('function _toenungNachBlitz'));
+  assert.ok(/_dauerToenungHerstellen\(enemy\)/.test(blitz.slice(0, 800)),
+    '_toenungNachBlitz fragt die Dauertoenung nicht mehr zuerst — eine vergiftete '
+    + 'Schar verloere ihre Kennfarbe');
+
   const kern = s2.slice(s2.indexOf('function _dauerToenungHerstellen'));
   assert.ok(/_scharToenung/.test(kern.slice(0, 900)),
     'die gemeinsame Wiederherstellung kennt die Schar-Toenung nicht mehr');

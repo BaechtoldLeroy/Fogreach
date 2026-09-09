@@ -1526,6 +1526,9 @@ class HubSceneV2 extends Phaser.Scene {
     // or an orphaned window (1500) must be gone before this page renders, else
     // the new surface stacks in front of a leftover one.
     this._sweepDialogSurfaces();
+    // #139: ein noch laufender Wortaufbau der VORIGEN Seite schriebe sonst in
+    // ein gleich zerstoertes Textobjekt.
+    this._dialogTextAbbrechen();
     // Clean up any existing key closers
     if (this._currentKeyClosers) {
       while (this._currentKeyClosers.length) {
@@ -1644,6 +1647,10 @@ class HubSceneV2 extends Phaser.Scene {
     bodyText.setPosition(-panelWidth / 2 + pad, header.y + headerHeight + 12).setVisible(true);
     container.add(header);
     container.add(bodyText);
+
+    // #139: Erst JETZT wortweise aufbauen — die Panelhoehe oben ist bereits aus
+    // dem vollen Text gerechnet, der Kasten waechst also nicht mit.
+    this._dialogTextAufbauen(bodyText, page.text, titleStr);
 
     // Page indicator for multi-page dialogues
     const totalVisiblePages = pages.filter(p => !p._isInfoPage).length;
@@ -1808,6 +1815,9 @@ class HubSceneV2 extends Phaser.Scene {
       if (hasNextPage && !hasChoices) {
         // Space/Enter/E advance to next page
         const advanceHandler = () => {
+          // #139: Der erste Druck holt den Text zu Ende, der zweite blaettert.
+          // Ohne das waere ein Aufbau eine Bevormundung — man muesste warten.
+          if (this._dialogTextUeberspringen()) return;
           this._cleanupKeyClosers(keyClosers);
           this._showDialoguePages(npcData, titleStr, pages, questMode, questData, pageIndex + 1);
         };
@@ -1819,7 +1829,8 @@ class HubSceneV2 extends Phaser.Scene {
         keyClosers.push({ eventName: 'keydown-E', handler: advanceHandler });
       } else if (!hasChoices) {
         // Last page without choices — close on space/enter/E
-        const closeHandler = () => closeDialog();
+        // #139: erst den Text zu Ende holen, dann schliessen.
+        const closeHandler = () => { if (!this._dialogTextUeberspringen()) closeDialog(); };
         this.input.keyboard.on('keydown-SPACE', closeHandler);
         keyClosers.push({ eventName: 'keydown-SPACE', handler: closeHandler });
         this.input.keyboard.on('keydown-ENTER', closeHandler);
@@ -1834,6 +1845,9 @@ class HubSceneV2 extends Phaser.Scene {
           || page.choices[0];
         if (primaryChoice) {
           const primaryHandler = () => {
+            // #139: erst zu Ende lesen lassen, dann bestaetigen. Die Knoepfe
+            // selbst wirken sofort — wer gezielt klickt, hat sich entschieden.
+            if (this._dialogTextUeberspringen()) return;
             this._handleDialogueChoice(primaryChoice.action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers);
           };
           this.input.keyboard.on('keydown-E', primaryHandler);
@@ -1895,6 +1909,15 @@ class HubSceneV2 extends Phaser.Scene {
       // re-enters closeDialog() and tears the modal down.
       const advanceHandler = () => {
         if (!this._dialogOpen) return; // dialog was already closed by a button
+        // #139: Der erste Tipp holt den Text zu Ende. Danach MUSS der Handler
+        // neu angemeldet werden — er haengt an input.once und waere sonst
+        // verbraucht, der naechste Tipp bliebe wirkungslos.
+        if (this._dialogTextUeberspringen()) {
+          if (this._dialogOpen && this._dialogPointerOnce === advanceHandler) {
+            this.input.once('pointerdown', advanceHandler);
+          }
+          return;
+        }
         this._dialogPointerOnce = null;
         if (hasNextPage) {
           this._cleanupKeyClosers(keyClosers);
@@ -2156,9 +2179,98 @@ class HubSceneV2 extends Phaser.Scene {
     }
   }
 
+  /**
+   * Laesst einen Dialogtext Wort fuer Wort erscheinen (#139).
+   *
+   * Der Textkasten wird VORHER mit dem vollen Text vermessen (die Panelhoehe
+   * haengt an bodyText.height) und erst danach geleert. Sonst waechst der
+   * Kasten waehrend des Schreibens mit — genau das, was ein Aufbau nicht tun
+   * darf.
+   *
+   * @param {Phaser.GameObjects.Text} textObj  schon gesetzt und vermessen
+   * @param {string} voll                      der ganze Text
+   * @param {string} sprecher                  fuer die Tonhoehe des Klangs
+   */
+  _dialogTextAufbauen(textObj, voll, sprecher) {
+    this._dialogTextAbbrechen();
+    var TW = window.DialogTypewriter;
+    if (!TW || !textObj || typeof textObj.setText !== 'function') return;
+
+    // Takt auf der SZENENUHR, nicht auf Date.now(). Phasers time.addEvent
+    // feuert auf der Spielzeit; mischte man beides, liefen Tick und Fortschritt
+    // auseinander — im Testkopf sichtbar, wo zwoelf gepumpte Frames 200 ms
+    // Spielzeit sind, aber kaum Wanduhrzeit.
+    var selbst = this;
+    var uhr = function () { return selbst.time.now; };
+    var lauf = TW.starte(voll, { jetzt: uhr });
+    if (lauf.fertig()) return;            // Tempo "sofort" — nichts zu tun
+
+    textObj.setText('');
+    var ton = TW.tonhoehe(sprecher || '');
+    var letzterKlang = -1e9;
+
+    this._dialogTextLauf = lauf;
+    this._dialogTextObj = textObj;
+    this._dialogTextTakt = this.time.addEvent({
+      delay: 16, loop: true,
+      callback: function () {
+        // Das Textobjekt kann zwischen zwei Ticks zerstoert worden sein
+        // (Seitenwechsel, Schliessen). .scene ist bei Phaser der verlaessliche
+        // Zerstoert-Test — .destroyed gibt es nicht.
+        if (!textObj.scene) { selbst._dialogTextAbbrechen(); return; }
+        var stand = lauf.tick();
+        textObj.setText(stand.text);
+        if (stand.neueWorte > 0) {
+          var jetzt = uhr();
+          // Hoechstens alle 90 ms ein Klang: bei schnellem Tempo faellt sonst
+          // alle 55 ms einer an, und aus dem Sprechen wird ein Maschinengewehr.
+          if (jetzt - letzterKlang >= 90) {
+            letzterKlang = jetzt;
+            try {
+              if (window.soundManager && typeof window.soundManager.playSFX === 'function') {
+                window.soundManager.playSFX('dialog_blip', { pitch: ton });
+              }
+            } catch (e) { /* Klang darf den Dialog nie brechen */ }
+          }
+        }
+        if (stand.fertig) selbst._dialogTextAbbrechen();
+      }
+    });
+  }
+
+  /** Laeuft gerade ein Aufbau? */
+  _dialogTextLaeuft() {
+    return !!(this._dialogTextLauf && !this._dialogTextLauf.fertig());
+  }
+
+  /**
+   * Ueberspringen: sofort den vollen Text zeigen.
+   * @returns {boolean} true, wenn wirklich etwas uebersprungen wurde
+   */
+  _dialogTextUeberspringen() {
+    if (!this._dialogTextLaeuft()) return false;
+    var voll = this._dialogTextLauf.sofortFertig();
+    try {
+      if (this._dialogTextObj && this._dialogTextObj.scene) this._dialogTextObj.setText(voll);
+    } catch (e) {}
+    this._dialogTextAbbrechen();
+    return true;
+  }
+
+  /** Timer weg. Muss bei JEDEM Seitenwechsel und Schliessen laufen. */
+  _dialogTextAbbrechen() {
+    if (this._dialogTextTakt) {
+      try { this._dialogTextTakt.remove(false); } catch (e) {}
+      this._dialogTextTakt = null;
+    }
+    this._dialogTextLauf = null;
+    this._dialogTextObj = null;
+  }
+
   _closeDialog(keyClosers) {
     if (!this._dialogOpen) return;
     this._dialogOpen = false;
+    this._dialogTextAbbrechen();
     // Detach the page-advance/close once-pointerdown if it's still pending.
     // Otherwise it survives into any modal opened right after this dialog
     // (Knowledge Tree, Shop, etc.) and closes that modal on the first click.

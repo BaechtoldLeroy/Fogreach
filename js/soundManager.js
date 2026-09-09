@@ -142,6 +142,12 @@ class SoundManager {
   static PITCH_VARIATION = 0.06; // ±6% rate
 
   _getPitchMul(type, opts) {
+    // #139: der Sprechklang braucht eine FESTE Tonhoehe je Figur, nicht die
+    // uebliche Zufallsstreuung — sonst klingt dieselbe Figur in jedem Satz
+    // anders und der Effekt ist weg.
+    if (opts && typeof opts.pitch === 'number' && isFinite(opts.pitch) && opts.pitch > 0) {
+      return opts.pitch;
+    }
     if (opts && opts.noPitch) return 1;
     if (SoundManager.PITCH_EXEMPT_SFX.has(type)) return 1;
     const v = SoundManager.PITCH_VARIATION;
@@ -177,6 +183,7 @@ class SoundManager {
         case 'loot_legendary': this._sfxLootLegendary(now); break;
         case 'level_up': this._sfxLevelUp(now); break;
         case 'ui_click': this._sfxUIClick(now); break;
+        case 'dialog_blip': this._sfxDialogBlip(now); break;
         case 'quest_complete': this._sfxQuestComplete(now); break;
         default:
           console.warn('[SoundManager] Unknown SFX type:', type);
@@ -439,6 +446,23 @@ class SoundManager {
     gain.connect(this._sfxGain);
     osc.start(t);
     osc.stop(t + 0.03);
+  }
+
+  // #139 Sprechklang: ein sehr kurzer, leiser Ton je Wort. Bewusst deutlich
+  // leiser (0.045 statt 0.15) und kuerzer (12 statt 20 ms) als der UI-Klick —
+  // er faellt zwanzigmal je Satz an und darf dabei nicht nerven. Die Tonhoehe
+  // kommt von aussen (opts.pitch) und ist je Figur fest.
+  _sfxDialogBlip(t) {
+    const osc = this.context.createOscillator();
+    const gain = this.context.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(this._pf(620), t);
+    gain.gain.setValueAtTime(0.045, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.012);
+    osc.connect(gain);
+    gain.connect(this._sfxGain);
+    osc.start(t);
+    osc.stop(t + 0.02);
   }
 
   // Quest complete: fanfare major chord arpeggio (C-E-G)
