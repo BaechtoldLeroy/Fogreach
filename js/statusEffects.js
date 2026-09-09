@@ -275,7 +275,10 @@ class StatusEffectManager {
       return;
     }
     // Apply tint of the first active effect (priority order)
-    const priority = [StatusEffectType.STUN, StatusEffectType.POISON, StatusEffectType.BLEED, StatusEffectType.SLOW];
+    // BURNED fehlte hier: ein brennender Gegner fiel durch die Schleife und
+    // landete in _clearVisual — die Glutschale (#124) faerbte also nie.
+    const priority = [StatusEffectType.STUN, StatusEffectType.POISON,
+      StatusEffectType.BURNED, StatusEffectType.BLEED, StatusEffectType.SLOW];
     const targetEffects = this._effects.get(target);
     for (const type of priority) {
       if (targetEffects.has(type)) {
@@ -288,14 +291,22 @@ class StatusEffectManager {
 
   _clearVisual(target) {
     if (!target || !target.clearTint) return;
-    // Restore original tint for enemies
-    if (target !== player && target._originalTint !== undefined) {
+    // Grundton zurueck — aber NUR, wenn es einen gibt.
+    //
+    // Gemessen: enemy._originalTint ist bei allen Sprite-Gegnern NULL (nur die
+    // Rechteck-Rueckfaelle tragen eine Farbe, s. enemy.js createEnemy). Die
+    // Pruefung stand auf "!== undefined", und null besteht sie. Phaser macht
+    // aus setTint(null) SCHWARZ: der Standardwert 0xffffff greift nur bei
+    // undefined, und GetColorFromValue(null) ist 0.
+    //
+    // Sichtbar wurde das beim Krit-Blitz: der ruft clearTint und danach
+    // _toenungNachBlitz (player.js), das hier landet, wenn kein Statuseffekt
+    // laeuft — der Gegner blieb schwarz stehen.
+    if (target !== player && typeof target._originalTint === 'number') {
       target.setTint(target._originalTint);
-    } else if (target === player) {
-      target.clearTint();
-    } else {
-      target.clearTint();
+      return;
     }
+    target.clearTint();
   }
 }
 
