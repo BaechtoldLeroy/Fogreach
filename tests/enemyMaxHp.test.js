@@ -47,3 +47,60 @@ test('#107: die bedingten Nachsetzer bleiben erhalten', () => {
   assert.ok(treffer >= 3,
     'erwartet: Normalpfad plus die bedingten Nachsetzer, gefunden ' + treffer);
 });
+
+// ---------------------------------------------------------------------------
+// Der Schwierigkeitsregler skalierte hp, aber nicht maxHp.
+//
+// spawnEnemy setzt maxHp aus der ungeskalierten HP und multipliziert die HP
+// erst danach mit dem Schwierigkeitsfaktor. Auf "schwer" (1,5) stand damit
+// hp=2 gegen maxHp=1; drawEnemyHpBar klemmt hp/maxHp auf 1, der Balken blieb
+// also voll, bis die HP auf das alte Maximum gefallen war. Gemeldet als
+// "der erste Schlag macht keinen Schaden, er macht nur den Balken sichtbar" —
+// auf Tiefe 1 gingen so die halben Lebenspunkte unsichtbar weg.
+//
+// Diese Pruefung laeuft im Testkopf, misst also das VERHALTEN und nicht den
+// Quelltext: die drei Zuweisungen richtig zu sortieren ist leicht, sie beim
+// naechsten Umbau wieder zu vertauschen ebenso.
+// ---------------------------------------------------------------------------
+
+const { launch } = require('../tools/headless/index.js');
+
+test('Schwierigkeit: hp und maxHp bleiben im Gleichschritt', async () => {
+  const H = await launch({ search: '?autostart=1&dungeon=1', renderer: 'canvas', waitFor: 'StartScene' });
+  try {
+    const ok = await H.waitForScene('GameScene', { maxRounds: 400 });
+    assert.ok(ok, 'GameScene wurde nicht erreicht');
+
+    const mess = H.run(`(function () {
+      var sc = window.game.scene.getScene('GameScene');
+      var vorher = window.DIFFICULTY_MULTIPLIER;
+      var raus = {};
+      [1, 1.5, 0.6].forEach(function (mult) {
+        window.DIFFICULTY_MULTIPLIER = mult;
+        var e = spawnEnemy.call(sc, 400, 300, 1);
+        if (!e) { raus[mult] = null; return; }
+        raus[mult] = { hp: e.hp, maxHp: e.maxHp };
+        e.destroy();
+      });
+      window.DIFFICULTY_MULTIPLIER = vorher;
+      return raus;
+    })()`);
+
+    ['1', '1.5', '0.6'].forEach((k) => {
+      const v = mess[k];
+      assert.ok(v, 'kein Gegner bei Schwierigkeit ' + k);
+      assert.strictEqual(v.hp, v.maxHp,
+        'Schwierigkeit ' + k + ': hp=' + v.hp + ' aber maxHp=' + v.maxHp
+        + ' — der Balken rechnet ' + (v.hp / v.maxHp).toFixed(2) + ' und wird geklemmt');
+    });
+
+    // Und der Regler muss ueberhaupt noch etwas bewirken: waere die
+    // Skalierung versehentlich ganz herausgefallen, stuende hp === maxHp
+    // ebenfalls, aber "schwer" waere wirkungslos.
+    assert.ok(mess['1.5'].hp > mess['1'].hp,
+      'schwer erhoeht die Lebenspunkte nicht mehr: '
+      + mess['1'].hp + ' -> ' + mess['1.5'].hp);
+  } finally {
+    await H.shutdown();
+  }
+});

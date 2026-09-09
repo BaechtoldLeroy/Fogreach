@@ -740,6 +740,14 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   const difficulty = getDifficultyMultiplierValue();
   if (difficulty !== 1) {
     enemy.hp = Math.max(1, Math.round(enemy.hp * difficulty));
+    // maxHp MUSS mitwachsen. Sie entsteht oben (:518) aus der UNGESKALIERTEN
+    // HP; ohne diese Zeile steht auf "schwer" hp=2 gegen maxHp=1. Der Balken
+    // rechnet dann 200 % und wird auf 100 % geklemmt (drawEnemyHpBar) — der
+    // erste Treffer laesst den Balken nur erscheinen und sieht wirkungslos
+    // aus. Auf Tiefe 1 sind das die halben Lebenspunkte, die unsichtbar
+    // weggehen. Auf "leicht" (0,6) lief es andersherum: der Balken startete
+    // bei 60 %, der Gegner wirkte schon angeschlagen.
+    enemy.maxHp = enemy.hp;
     enemy.damage = Math.max(1, Math.round(enemy.baseDamage * difficulty));
   }
 
@@ -2034,6 +2042,10 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
   const difficulty = getDifficultyMultiplierValue();
   if (difficulty !== 1) {
     enemy.hp = Math.max(1, Math.round(enemy.hp * difficulty));
+    // Wie beim gewoehnlichen Gegner: maxHp steht schon (:2021) und muss
+    // nachgezogen werden. Beim Boss ist das nicht noetig — dort faellt die
+    // Zuweisung (:3155) ohnehin HINTER die Schwierigkeit.
+    enemy.maxHp = enemy.hp;
     enemy.damage = Math.max(1, Math.round(enemy.baseDamage * difficulty));
   }
 
