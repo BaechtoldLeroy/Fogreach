@@ -3093,6 +3093,241 @@ function createItemGraphics() {
         g.fillStyle(0xdfe8f0, 0.09); g.fillEllipse(24, 24, 30, 30);
         glanz(B.bauchX + 6, 19, 1.4, 0xeaf2fa);
       }
+    },
+
+    // --- Off-Hand (#124) ----------------------------------------------------
+    //
+    // Acht Symbole in drei Familien: Schilde, Lichter, Zweitwaffen. Die
+    // SILHOUETTE traegt sie auseinander, nicht die Farbe — im Raster sieht man
+    // zuerst die Form. Innerhalb der Schilde heisst das: ein Buch steht
+    // hochkant und schmal, die Pavese fuellt die Kachel, der Wandschirm liegt
+    // BREIT. Bei den Lichtern: eine duenne Kerze, ein kastiger Laternenkorpus
+    // mit Buegel, eine flache Schale auf drei Beinen.
+    //
+    // tests/itemIcons.test.js haelt fest, dass sich keine zwei Symbole naeher
+    // als 0,01 kommen. Das ist keine Formalie: der erste Entwurf des Glasherzes
+    // lag 0,0010 vom Kettenherz entfernt und war in Graustufen dasselbe Bild.
+
+    {
+      key: 'itOffBuchbinder',
+      draw: () => {
+        // Buchbinderschild — ein gebundener Aktenband, den man sich vor den
+        // Leib haelt. Hochkant und schmal: das kleinste der drei Schilde.
+        const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
+        g2.fillStyle(0x1a1a1a, 0.30).fillRoundedRect(16, 10, 19, 30, 2);
+        // Buchdeckel
+        g2.fillStyle(0x6b3a22, 1).fillRoundedRect(14, 8, 19, 30, 2);
+        g2.fillStyle(0x8a4e2e, 1).fillRoundedRect(15, 9, 17, 28, 2);
+        // Seiten an der offenen Kante
+        g2.fillStyle(0xe8dcc0, 1).fillRect(29, 11, 4, 24);
+        g2.fillStyle(0xc9b892, 1);
+        for (let i = 0; i < 6; i++) g2.fillRect(29, 12 + i * 4, 4, 1);
+        // Ruecken mit Buenden
+        g2.fillStyle(0x4a2616, 1).fillRect(14, 8, 4, 30);
+        g2.fillStyle(0xd4a030, 1);
+        g2.fillRect(14, 14, 4, 2).fillRect(14, 22, 4, 2).fillRect(14, 30, 4, 2);
+        // Beschlagecken — daran liest man "Schild", nicht "Buch im Regal"
+        g2.fillStyle(0xb9932f, 1);
+        g2.fillRect(28, 8, 5, 3).fillRect(28, 35, 5, 3);
+        g2.fillStyle(0xffffff, 0.25).fillRect(16, 10, 2, 24);
+      }
+    },
+    {
+      key: 'itOffPavese',
+      draw: () => {
+        // Kettenrat-Pavese — die Mauer. Fuellt die Kachel, oben gerade, unten
+        // spitz zulaufend, mit senkrechtem Grat.
+        const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
+        const cx = 24;
+        g2.fillStyle(0x1a1a1a, 0.32);
+        g2.fillRect(11, 8, 28, 24);
+        g2.fillTriangle(11, 32, 39, 32, 25, 43);
+        // Korpus
+        g2.fillStyle(0x4a4f57, 1);
+        g2.fillRect(9, 6, 28, 24);
+        g2.fillTriangle(9, 30, 37, 30, 23, 42);
+        // Beschlagrand
+        g2.fillStyle(0x2c3036, 1);
+        g2.fillRect(9, 6, 28, 3).fillRect(9, 6, 3, 24).fillRect(34, 6, 3, 24);
+        // Senkrechter Grat
+        g2.fillStyle(0x6d747e, 1).fillRect(cx - 3, 7, 5, 23);
+        g2.fillTriangle(cx - 3, 30, cx + 2, 30, cx - 1, 40);
+        g2.fillStyle(0x8b939e, 0.8).fillRect(cx - 2, 8, 2, 21);
+        // Kettenwappen: drei Glieder
+        g2.fillStyle(0xd4a030, 1);
+        g2.fillCircle(cx - 1, 14, 3).fillCircle(cx - 1, 20, 3).fillCircle(cx - 1, 26, 3);
+        g2.fillStyle(0x4a4f57, 1);
+        g2.fillCircle(cx - 1, 14, 1.4).fillCircle(cx - 1, 20, 1.4).fillCircle(cx - 1, 26, 1.4);
+        // Nieten
+        g2.fillStyle(0x9aa2ac, 1);
+        g2.fillCircle(12, 9, 1.4).fillCircle(34, 9, 1.4).fillCircle(12, 27, 1.4).fillCircle(34, 27, 1.4);
+        g2.fillStyle(0xffffff, 0.20).fillRect(11, 8, 3, 20);
+      }
+    },
+    {
+      key: 'itOffWandschirm',
+      draw: () => {
+        // Wandschirm des Magistrats — ein FALTBARER Paravent, drei Felder,
+        // deutlich breiter als hoch. Die einzige liegende Silhouette der acht.
+        const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
+        g2.fillStyle(0x1a1a1a, 0.30).fillRect(6, 16, 38, 20);
+        const felder = [[4, 15, 13, 20], [17, 12, 14, 24], [31, 15, 13, 20]];
+        felder.forEach(function (f, i) {
+          g2.fillStyle(i === 1 ? 0x3b3550 : 0x322c44, 1).fillRect(f[0], f[1], f[2], f[3]);
+          g2.fillStyle(0x8d7bb5, 1)
+            .fillRect(f[0], f[1], f[2], 2)
+            .fillRect(f[0], f[1] + f[3] - 2, f[2], 2)
+            .fillRect(f[0], f[1], 2, f[3])
+            .fillRect(f[0] + f[2] - 2, f[1], 2, f[3]);
+          // Siegel im Feld
+          g2.fillStyle(0xd4a030, 0.85).fillCircle(f[0] + f[2] / 2, f[1] + f[3] / 2, 2.6);
+          g2.fillStyle(0x322c44, 1).fillCircle(f[0] + f[2] / 2, f[1] + f[3] / 2, 1.1);
+        });
+        // Standfuesse
+        g2.fillStyle(0x241f31, 1);
+        g2.fillRect(5, 35, 11, 3).fillRect(32, 35, 11, 3);
+        g2.fillStyle(0xffffff, 0.16).fillRect(18, 13, 12, 2);
+      }
+    },
+    {
+      key: 'itOffTalglicht',
+      draw: () => {
+        // Talglicht — duenne Kerze auf flachem Teller. Viel Leerraum, ganz
+        // schmale Masse: das genaue Gegenteil der Pavese.
+        const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
+        const cx = 24;
+        g2.fillStyle(0x1a1a1a, 0.28).fillEllipse(cx + 1, 40, 20, 6);
+        // Teller
+        g2.fillStyle(0x7d6a4a, 1).fillEllipse(cx, 39, 22, 7);
+        g2.fillStyle(0x9c8760, 1).fillEllipse(cx, 38, 18, 5);
+        // Kerze
+        g2.fillStyle(0xd9cfae, 1).fillRect(cx - 3, 20, 6, 18);
+        g2.fillStyle(0xefe7cc, 1).fillRect(cx - 3, 20, 2, 18);
+        // Wachsnasen
+        g2.fillStyle(0xc9bd97, 1);
+        g2.fillEllipse(cx - 3, 30, 3, 6).fillEllipse(cx + 3, 26, 3, 5);
+        // Docht
+        g2.fillStyle(0x30281c, 1).fillRect(cx - 1, 16, 2, 5);
+        // Flamme
+        g2.fillStyle(0xff9a2e, 0.9).fillEllipse(cx, 12, 7, 12);
+        g2.fillStyle(0xffd66b, 1).fillEllipse(cx, 12, 4, 8);
+        g2.fillStyle(0xfff6d0, 0.9).fillEllipse(cx, 13, 2, 4);
+      }
+    },
+    {
+      key: 'itOffBannlaterne',
+      draw: () => {
+        // Bannlaterne — kastiger Korpus mit Buegel obendrauf. Der Buegel ist
+        // das Merkmal: keine andere der acht Silhouetten hat einen Henkel.
+        const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
+        const cx = 24;
+        g2.fillStyle(0x1a1a1a, 0.30).fillRect(14, 16, 22, 24);
+        // Buegel
+        g2.lineStyle(2.4, 0x8a7a52, 1).beginPath().arc(cx, 12, 7, Math.PI, 0, false).strokePath();
+        // Dach
+        g2.fillStyle(0x6d5c3a, 1).fillTriangle(11, 16, 37, 16, 24, 9);
+        g2.fillStyle(0x8a7a52, 1).fillRect(11, 15, 26, 3);
+        // Korpus
+        g2.fillStyle(0x3a3220, 1).fillRect(13, 18, 22, 20);
+        // Scheiben
+        g2.fillStyle(0xffe08a, 0.85).fillRect(15, 20, 7, 16);
+        g2.fillStyle(0xffd066, 0.7).fillRect(26, 20, 7, 16);
+        g2.fillStyle(0x6d5c3a, 1).fillRect(22, 18, 4, 20);
+        // Flamme innen
+        g2.fillStyle(0xff9a2e, 0.85).fillEllipse(cx, 29, 6, 10);
+        g2.fillStyle(0xfff2c0, 0.9).fillEllipse(cx, 30, 3, 5);
+        // Fuss
+        g2.fillStyle(0x6d5c3a, 1).fillRect(12, 37, 24, 4);
+        g2.fillStyle(0xffffff, 0.20).fillRect(15, 20, 2, 14);
+      }
+    },
+    {
+      key: 'itOffGlutschale',
+      draw: () => {
+        // Glutschale — weite flache Schale auf drei Beinen, Flammen darueber.
+        // Oben breit, unten schmal: die einzige Silhouette der acht, die sich
+        // nach unten verjuengt.
+        const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
+        const cx = 24;
+        // Flammen zuerst, damit die Schale sie unten abschneidet
+        g2.fillStyle(0xd6431a, 0.75).fillEllipse(cx, 17, 20, 20);
+        g2.fillStyle(0xff8a1e, 0.9).fillEllipse(cx - 4, 18, 9, 14);
+        g2.fillStyle(0xff8a1e, 0.9).fillEllipse(cx + 5, 19, 8, 12);
+        g2.fillStyle(0xffc85a, 1).fillEllipse(cx, 20, 7, 12);
+        g2.fillStyle(0xfff0c0, 0.9).fillEllipse(cx, 22, 3, 6);
+        // Schale
+        g2.fillStyle(0x1a1a1a, 0.30).fillEllipse(cx + 1, 30, 30, 10);
+        g2.fillStyle(0x4a3a2a, 1).fillEllipse(cx, 28, 30, 11);
+        g2.fillStyle(0x6b5540, 1).fillEllipse(cx, 27, 26, 8);
+        g2.fillStyle(0x2a1f16, 1).fillEllipse(cx, 26, 21, 6);
+        // Glut in der Schale
+        g2.fillStyle(0xff6a1e, 0.8).fillEllipse(cx, 26, 15, 4);
+        // Drei Beine
+        g2.fillStyle(0x4a3a2a, 1);
+        g2.fillRect(cx - 11, 31, 3, 9).fillRect(cx - 1, 32, 3, 9).fillRect(cx + 8, 31, 3, 9);
+        g2.fillStyle(0x2a1f16, 1).fillRect(cx - 13, 39, 26, 3);
+      }
+    },
+    {
+      key: 'itOffFangdolch',
+      draw: () => {
+        // Fangdolch — SCHRAEG gestellt und mit weit ausgreifendem Fangbuegel.
+        // Der Schattendolch steht senkrecht und hat nur eine kurze Parierstange;
+        // die Schraege plus der Buegel sind der Unterschied in der Silhouette.
+        const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
+        // Klinge, von unten links nach oben rechts
+        g2.fillStyle(0x1a1a1a, 0.30);
+        g2.fillTriangle(19, 31, 24, 29, 36, 9);
+        g2.fillStyle(0xb8c4cc, 1);
+        g2.fillTriangle(17, 30, 23, 27, 34, 7);
+        g2.fillStyle(0xdfe9f0, 1);
+        g2.fillTriangle(19, 29, 22, 28, 33, 9);
+        g2.fillStyle(0xf8fcff, 0.7);
+        g2.fillTriangle(20, 28.5, 21.5, 28, 32.5, 10);
+        // Fangbuegel — der grosse geschwungene Haken zur Seite
+        g2.lineStyle(2.6, 0x9a7a30, 1);
+        g2.beginPath().arc(19, 30, 9, -Math.PI * 0.95, Math.PI * 0.15, false).strokePath();
+        g2.lineStyle(1.2, 0xd4a030, 0.8);
+        g2.beginPath().arc(19, 30, 9, -Math.PI * 0.95, Math.PI * 0.15, false).strokePath();
+        // Parierstange quer
+        g2.fillStyle(0x9a7a30, 1).fillRect(11, 29, 16, 3);
+        // Griff nach unten links
+        g2.fillStyle(0x3a2a20, 1).fillRect(13, 32, 5, 9);
+        g2.fillStyle(0x6a5040, 0.7).fillRect(13, 34, 5, 1).fillRect(13, 37, 5, 1);
+        g2.fillStyle(0x9a7a30, 1).fillCircle(15.5, 42, 3);
+      }
+    },
+    {
+      key: 'itOffKettenhaken',
+      draw: () => {
+        // Kettenhaken — ein grosses J aus Eisen, oben die Kette. Der
+        // Morgenstern hat auch eine Kette, endet aber in einer KUGEL; hier
+        // laeuft der Umriss unten offen aus.
+        const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
+        const cx = 25;
+        // Kette nach oben
+        g2.fillStyle(0x5a6068, 1);
+        for (let i = 0; i < 4; i++) {
+          g2.fillCircle(cx - 1, 7 + i * 4, 2.6);
+          g2.fillStyle(0x2e3238, 1); g2.fillCircle(cx - 1, 7 + i * 4, 1.2);
+          g2.fillStyle(0x5a6068, 1);
+        }
+        // Oese
+        g2.lineStyle(2.4, 0x7b838d, 1);
+        g2.beginPath().arc(cx - 1, 24, 4, Math.PI * 1.1, Math.PI * 1.9, false).strokePath();
+        // Der Haken selbst: ein weiter Bogen, unten offen
+        g2.lineStyle(5.2, 0x1f2328, 1);
+        g2.beginPath().arc(cx - 3, 31, 9, -Math.PI * 0.35, Math.PI * 0.95, false).strokePath();
+        g2.lineStyle(3.6, 0x8f98a3, 1);
+        g2.beginPath().arc(cx - 3, 31, 9, -Math.PI * 0.35, Math.PI * 0.95, false).strokePath();
+        g2.lineStyle(1.3, 0xd6dde5, 0.85);
+        g2.beginPath().arc(cx - 3, 31, 10, -Math.PI * 0.2, Math.PI * 0.8, false).strokePath();
+        // Spitze
+        g2.fillStyle(0xd6dde5, 1);
+        g2.fillTriangle(cx + 3, 24, cx + 8, 27, cx + 3, 29);
+        // Schaft zwischen Oese und Bogen
+        g2.fillStyle(0x6d757f, 1).fillRect(cx - 3, 24, 4, 6);
+      }
     }
   ];
 
