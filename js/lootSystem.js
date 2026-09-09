@@ -674,6 +674,123 @@ if (window.i18n) {
   const AFFIX_ILVL_VALUE_GROWTH = 0.03;
   const AFFIX_ILVL_VALUE_MAX_SCALE = 2.5;
 
+  // ---------------------------------------------------------------------------
+  // #122 / #114 / #104 — Affixe tragen ABSOLUTE Werte, die Wirkung ist relativ
+  // ---------------------------------------------------------------------------
+  //
+  // Vorher hing der Wert eines Affixes allein an seiner eigenen Zahlenspanne.
+  // Gemessen ueber die abgeleiteten Werte (DPS und effektive Lebenspunkte) kam
+  // dabei heraus, dass ein einziger Affix zwischen 0 und 97 % wert war:
+  //
+  //   Tiefe 20, mittlerer Wurf, Summe aus dDPS und dEHP
+  //     of_health      +97 %        sturdy_armor   +11 %
+  //     attr_vitality  +83 %        of_precision    +6 %
+  //     swift_speed    +20 %        29 weitere       0 %
+  //
+  // +LP war neunmal so viel wert wie Ruestung, und der Abstand WUCHS mit der
+  // Tiefe (63 % auf Tiefe 1, 117 % auf Tiefe 30) — weil die Zahl flach war und
+  // die Basis-Lebenspunkte (30 + 2 je Stufe) kaum mitwachsen.
+  //
+  // Jetzt zwei getrennte Groessen:
+  //
+  //   ANTEIL   was der Affix auf seiner Achse wert sein soll. Zufaellig
+  //            zwischen 8 und 12 Prozent — fuer JEDEN Affix gleich, unabhaengig
+  //            von Seltenheit. Drei Affixe sind damit rund +30 %.
+  //
+  //   PUNKTE   die absolute Zahl auf dem Gegenstand. Sie waechst mit der Tiefe,
+  //            auf der er gefunden wurde: punkte = anteil * SKALA * (iLevel + SOCKEL)
+  //
+  // Beim Tragen wird zurueckgerechnet, aber mit der AKTUELLEN Tiefe:
+  //
+  //            anteil = punkte / (SKALA * (aktuelleTiefe + SOCKEL))
+  //
+  // Damit faellt altes Zeug von selbst ab (Punkt 3 der Vorgabe): ein Stueck von
+  // Tiefe 5 ist auf Tiefe 5 volle 10 % wert, auf Tiefe 20 nur noch
+  // (5+3)/(20+3) = 35 % davon, also 3,5 %. Ein Stueck der passenden Tiefe ist
+  // immer genau seine 8 bis 12 Prozent wert, egal wie tief man steht.
+  var AFFIX_ANTEIL_MIN = 0.08;
+  var AFFIX_ANTEIL_MAX = 0.12;
+  var TIEFEN_SOCKEL = 3;
+  var PUNKTE_SKALA = 10;    // nur die Lesbarkeit der Zahl, kuerzt sich weg
+
+  function _tiefenNenner(tiefe) {
+    var t = (typeof tiefe === 'number' && tiefe > 0) ? tiefe : 1;
+    return t + TIEFEN_SOCKEL;
+  }
+
+  /** Aktuelle Tiefe fuer die Umrechnung. Ohne Lauf: 1. */
+  function _aktuelleTiefe() {
+    if (typeof window === 'undefined') return 1;
+    var d = window.DUNGEON_DEPTH;
+    if (typeof d === 'number' && d > 0) return d;
+    var w = window.currentWave;
+    return (typeof w === 'number' && w > 0) ? w : 1;
+  }
+
+  // Wie ein Anteil in die Einheit des jeweiligen Werts uebersetzt wird.
+  //
+  //   'bruch'  — der Verbraucher erwartet einen Bruch (0,10 = +10 %)
+  //   'punkte' — der Verbraucher erwartet eine Punktzahl (Attribute)
+  //
+  // faktor rechnet den Anteil in die Einheit um, in der die WIRKUNG dann
+  // tatsaechlich 8-12 % betraegt. Zwei Beispiele, warum er nicht ueberall 1 ist:
+  //   crit  — der Kritmultiplikator ist 1,5, ein Kritpunkt bringt also nur
+  //           einen halben Schadenspunkt. Fuer +10 % DPS braucht es +20 % Krit.
+  //   armor — Ruestung senkt den Schaden; fuer +10 % effektive Lebenspunkte
+  //           muss sie um rund 0,9 * p steigen, nicht um p.
+  var WIRKUNG = {
+    damage:    { einheit: 'bruch', faktor: 1 },
+    speed:     { einheit: 'bruch', faktor: 1 },
+    hp:        { einheit: 'bruch', faktor: 1 },
+    armor:     { einheit: 'bruch', faktor: 0.9 },
+    crit:      { einheit: 'bruch', faktor: 2 },
+    move:      { einheit: 'bruch', faktor: 1 },
+    range:     { einheit: 'bruch', faktor: 1 },
+    lifesteal: { einheit: 'bruch', faktor: 0.2 },
+    // Attribute: die Punktzahl ist die Anzeige, ihre Wirkung steckt in
+    // recalcDerived (Staerke +1 % Schaden je Punkt, usw.). Die Faktoren sind
+    // so gewaehlt, dass die PRIMAERwirkung wieder bei 8-12 % landet.
+    strength:  { einheit: 'punkte', faktor: 100 },
+    dexterity: { einheit: 'punkte', faktor: 250 },
+    // Vitalitaet gibt +0,5 % Lebenspunkte je Punkt, es braucht also ZWANZIG
+    // Punkte fuer 10 % — nicht zwei. Der erste Ansatz stand auf 20 und lieferte
+    // 1 %; gemessen fiel er als einziges Attribut aus der Reihe.
+    vitality:  { einheit: 'punkte', faktor: 200 },
+    focus:     { einheit: 'punkte', faktor: 111 }
+  };
+  // Faehigkeitsaffixe (dmg_*, cd_*) wirken nur auf EINE Faehigkeit. Sie duerfen
+  // deshalb deutlich groesser ausfallen — sonst waere ein seltener Fund, der
+  // genau zum Aufbau passt, schwaecher als ein beliebiger Allerweltsaffix.
+  var WIRKUNG_FAEHIGKEIT = { einheit: 'bruch', faktor: 3 };
+
+  function _wirkungFuer(statKey) {
+    if (Object.prototype.hasOwnProperty.call(WIRKUNG, statKey)) return WIRKUNG[statKey];
+    return WIRKUNG_FAEHIGKEIT;
+  }
+
+  /** Absolute Punktzahl fuer einen Anteil auf dieser Tiefe. */
+  function affixPunkte(anteil, iLevel) {
+    return anteil * PUNKTE_SKALA * _tiefenNenner(iLevel);
+  }
+
+  /** Zurueck: welchen ANTEIL bedeuten diese Punkte auf der aktuellen Tiefe? */
+  function affixAnteil(punkte, tiefe) {
+    return (Number(punkte) || 0) / (PUNKTE_SKALA * _tiefenNenner(tiefe));
+  }
+
+  /**
+   * Die tatsaechliche Wirkung eines Affixes, in der Einheit seines Verbrauchers.
+   * @param {object} def   AFFIX_DEFS-Eintrag
+   * @param {number} punkte  die Zahl auf dem Gegenstand
+   * @param {number} [tiefe] Vorgabe: die aktuelle Lauftiefe
+   */
+  function affixWirkung(def, punkte, tiefe) {
+    if (!def) return 0;
+    var t = (typeof tiefe === 'number' && tiefe > 0) ? tiefe : _aktuelleTiefe();
+    var w = _wirkungFuer(def.statKey);
+    return affixAnteil(punkte, t) * w.faktor;
+  }
+
   function _affixValueScale(iLevel, iLevelMin) {
     const growth = Math.max(0, (iLevel || 1) - (iLevelMin || 1));
     return Math.min(AFFIX_ILVL_VALUE_MAX_SCALE, 1 + growth * AFFIX_ILVL_VALUE_GROWTH);
@@ -716,27 +833,16 @@ if (window.i18n) {
       }
       used[pickedDef.id] = true;
 
-      // Roll value inside the iLevel-scaled range (inclusive). The base range
-      // is multiplied by an iLevel curve so deeper items roll bigger numbers of
-      // the same affix (#37). At iLevel == iLevelMin the scale is 1 (base range).
-      const range = pickedDef.range;
-      // noIlvlScale: manche Affixe (z. B. Lebensraub) sollen NICHT mit der Tiefe
-      // hochskalieren, sondern in ihrem Basisband bleiben.
-      const scale = pickedDef.noIlvlScale ? 1 : _affixValueScale(iLevel, pickedDef.iLevelMin);
-      const effMin = range.min * scale;
-      const effMax = range.max * scale;
-      const dec = pickedDef.decimals || 0;
-      let value;
-      if (dec > 0) {
-        // Dezimal-Affix (z. B. 0.1–3 % Lebensraub): auf `dec` Nachkommastellen
-        // runden statt auf Ganzzahl; Floor = Band-Minimum (nicht 1).
-        const f = Math.pow(10, dec);
-        value = Math.round((effMin + rng() * (effMax - effMin)) * f) / f;
-        if (value < range.min) value = range.min;
-      } else {
-        value = Math.round(effMin + rng() * (effMax - effMin));
-        if (value < 1) value = 1;
-      }
+      // #122: Nicht mehr eine Zahl aus einer festen Spanne, sondern ein ANTEIL
+      // zwischen 8 und 12 Prozent, in absolute Punkte fuer DIESE Tiefe
+      // umgerechnet. Die alte Spanne (range) bleibt in den Definitionen stehen —
+      // sie beschreibt jetzt nichts mehr, was gewuerfelt wird, und wird beim
+      // naechsten Aufraeumen entfernt.
+      const anteil = AFFIX_ANTEIL_MIN + rng() * (AFFIX_ANTEIL_MAX - AFFIX_ANTEIL_MIN);
+      let value = affixPunkte(anteil, iLevel);
+      // Eine Nachkommastelle: die Zahl waechst mit der Tiefe (Tiefe 1 rund 0,4,
+      // Tiefe 30 rund 3,3), ganzzahlig gerundet waere sie unten sprunghaft.
+      value = Math.round(value * 10) / 10;
       result.push({ defId: pickedDef.id, value: value });
     }
     return result;
@@ -762,12 +868,17 @@ if (window.i18n) {
           if (AFFIX_DEFS[k].id === inst.defId) { def = AFFIX_DEFS[k]; break; }
         }
         if (!def) continue;
-        if (def.valueType === 'percent') {
-          const cur = _bonusCache.percent[def.statKey] || 0;
-          _bonusCache.percent[def.statKey] = cur + (inst.value / 100);
-        } else {
+        // #122: Die Zahl auf dem Gegenstand ist absolut. Was sie BEWIRKT,
+        // haengt an der Tiefe, auf der man gerade steht — dadurch faellt altes
+        // Zeug von selbst ab, ohne dass irgendwo etwas ablaufen muss.
+        const wirkung = affixWirkung(def, inst.value);
+        const einheit = _wirkungFuer(def.statKey).einheit;
+        if (einheit === 'punkte') {
           const curF = _bonusCache.flat[def.statKey] || 0;
-          _bonusCache.flat[def.statKey] = curF + inst.value;
+          _bonusCache.flat[def.statKey] = curF + wirkung;
+        } else {
+          const cur = _bonusCache.percent[def.statKey] || 0;
+          _bonusCache.percent[def.statKey] = cur + wirkung;
         }
       }
     }
@@ -1740,6 +1851,13 @@ if (window.i18n) {
     getBonus: getBonus,
     // #37: exposed so callers/tests share the same iLevel value-scaling curve.
     _affixValueScale: _affixValueScale,
+    // #122: Affixwerte sind absolut, ihre Wirkung haengt an der aktuellen Tiefe.
+    affixPunkte: affixPunkte,
+    affixAnteil: affixAnteil,
+    affixWirkung: affixWirkung,
+    AFFIX_ANTEIL_MIN: AFFIX_ANTEIL_MIN,
+    AFFIX_ANTEIL_MAX: AFFIX_ANTEIL_MAX,
+    TIEFEN_SOCKEL: TIEFEN_SOCKEL,
     // #135: Waffenbaender haengen von der Tiefe ab — Tests und tools/ rechnen
     // mit denselben Funktionen wie das Spiel.
     dpsDecke: dpsDecke,

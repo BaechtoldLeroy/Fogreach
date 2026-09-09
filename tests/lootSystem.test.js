@@ -179,6 +179,20 @@ function makeMockItem(affixes) {
   return { affixes };
 }
 
+// #122: Ein Affix traegt eine ABSOLUTE Punktzahl; was sie bewirkt, haengt an
+// der Tiefe, auf der man gerade steht. Die Tests setzen die Tiefe deshalb
+// ausdruecklich und rechnen die Punktzahl mit derselben Funktion aus, die auch
+// das Spiel benutzt — sonst prueften sie eine handgeschriebene Zweitrechnung.
+function aufTiefe(t) {
+  globalThis.window.DUNGEON_DEPTH = t;
+  globalThis.window.currentWave = t;
+}
+
+/** Punkte fuer einen Zielanteil auf dieser Tiefe. */
+function punkteFuer(sys, anteil, tiefe) {
+  return sys.affixPunkte(anteil, tiefe);
+}
+
 test('getBonus returns 0 for unknown statKey with empty equipment', () => {
   const sys = freshSystem();
   sys.recomputeBonuses();
@@ -186,36 +200,83 @@ test('getBonus returns 0 for unknown statKey with empty equipment', () => {
   assert.strictEqual(sys.getBonus('nonexistent_stat'), 0);
 });
 
-test('getBonus returns the percent fraction for one damage affix', () => {
+test('#122: ein Schadensaffix wirkt auf seiner Fundtiefe mit genau seinem Anteil', () => {
   const sys = freshSystem();
+  aufTiefe(20);
   globalThis.window.equipment = {
-    weapon: makeMockItem([{ defId: 'sharp_dmg', value: 22 }])
+    weapon: makeMockItem([{ defId: 'sharp_dmg', value: punkteFuer(sys, 0.10, 20) }])
   };
   sys.recomputeBonuses();
-  // 22% -> 0.22
-  assert.ok(Math.abs(sys.getBonus('damage') - 0.22) < 1e-9);
+  assert.ok(Math.abs(sys.getBonus('damage') - 0.10) < 1e-9,
+    'erwartet 0,10, war ' + sys.getBonus('damage'));
 });
 
-test('getBonus sums percent affixes across multiple items', () => {
+test('#122: derselbe Affix wirkt tiefer unten SCHWAECHER — altes Zeug faellt ab', () => {
+  // Das ist der Kern von Punkt 3: die Zahl auf dem Gegenstand bleibt, ihre
+  // Wirkung nicht. Ein Stueck von Tiefe 5 ist auf Tiefe 20 noch
+  // (5+3)/(20+3) = 35 % dessen wert, was es auf Tiefe 5 war.
   const sys = freshSystem();
-  globalThis.window.equipment = {
-    weapon: makeMockItem([{ defId: 'sharp_dmg', value: 20 }]),
-    body: makeMockItem([{ defId: 'spinning_dmg', value: 10 }])
-  };
-  // sharp_dmg -> damage 0.20; spinning_dmg -> dmg_spinAttack 0.10
-  sys.recomputeBonuses();
-  assert.ok(Math.abs(sys.getBonus('damage') - 0.20) < 1e-9);
-  assert.ok(Math.abs(sys.getBonus('dmg_spinAttack') - 0.10) < 1e-9);
+  const punkte = punkteFuer(sys, 0.10, 5);
+  globalThis.window.equipment = { weapon: makeMockItem([{ defId: 'sharp_dmg', value: punkte }]) };
+
+  aufTiefe(5); sys.recomputeBonuses();
+  const beiFund = sys.getBonus('damage');
+  aufTiefe(20); sys.recomputeBonuses();
+  const spaeter = sys.getBonus('damage');
+
+  assert.ok(Math.abs(beiFund - 0.10) < 1e-9, 'auf der Fundtiefe erwartet 0,10, war ' + beiFund);
+  const soll = 0.10 * (5 + sys.TIEFEN_SOCKEL) / (20 + sys.TIEFEN_SOCKEL);
+  assert.ok(Math.abs(spaeter - soll) < 1e-9,
+    'auf Tiefe 20 erwartet ' + soll.toFixed(4) + ', war ' + spaeter.toFixed(4));
+  assert.ok(spaeter < beiFund * 0.4, 'der Abfall ist zu schwach');
 });
 
-test('getBonus sums flat affixes across multiple items', () => {
+test('#122: ein Stueck der PASSENDEN Tiefe ist ueberall gleich viel wert', () => {
+  // Die Gegenprobe zum Test darueber: wer aktuell bleibt, merkt von der
+  // Abwertung nichts.
   const sys = freshSystem();
+  [1, 5, 10, 20, 30].forEach((t) => {
+    aufTiefe(t);
+    globalThis.window.equipment = {
+      weapon: makeMockItem([{ defId: 'sharp_dmg', value: punkteFuer(sys, 0.10, t) }])
+    };
+    sys.recomputeBonuses();
+    assert.ok(Math.abs(sys.getBonus('damage') - 0.10) < 1e-9,
+      'Tiefe ' + t + ': erwartet 0,10, war ' + sys.getBonus('damage').toFixed(4));
+  });
+});
+
+test('getBonus summiert Anteile ueber mehrere Stuecke', () => {
+  const sys = freshSystem();
+  aufTiefe(20);
+  const p = punkteFuer(sys, 0.10, 20);
   globalThis.window.equipment = {
-    weapon: makeMockItem([{ defId: 'of_health', value: 15 }]),
-    head: makeMockItem([{ defId: 'of_health', value: 20 }])
+    weapon: makeMockItem([{ defId: 'sharp_dmg', value: p }]),
+    body: makeMockItem([{ defId: 'spinning_dmg', value: p }])
   };
   sys.recomputeBonuses();
-  assert.strictEqual(sys.getBonus('hp'), 35);
+  assert.ok(Math.abs(sys.getBonus('damage') - 0.10) < 1e-9);
+  // Faehigkeitsaffixe wirken nur auf EINE Faehigkeit und duerfen deshalb
+  // groesser ausfallen (Faktor 3) — sonst waere ein passender Fund schwaecher
+  // als ein beliebiger Allerweltsaffix.
+  assert.ok(Math.abs(sys.getBonus('dmg_spinAttack') - 0.30) < 1e-9,
+    'erwartet 0,30, war ' + sys.getBonus('dmg_spinAttack'));
+});
+
+test('#114: der LP-Affix ist ein ANTEIL, kein flacher Zuschlag mehr', () => {
+  // Gemessen war er vorher 97 % wert, waehrend Ruestung bei 11 % lag: er rollte
+  // bis 29 flache Punkte auf eine Basis von 30. Jetzt liefert er einen Bruch,
+  // den recalcDerived auf die Basis-Lebenspunkte anwendet.
+  const sys = freshSystem();
+  aufTiefe(20);
+  const p = punkteFuer(sys, 0.10, 20);
+  globalThis.window.equipment = {
+    weapon: makeMockItem([{ defId: 'of_health', value: p }]),
+    head: makeMockItem([{ defId: 'of_health', value: p }])
+  };
+  sys.recomputeBonuses();
+  assert.ok(Math.abs(sys.getBonus('hp') - 0.20) < 1e-9,
+    'zwei Stuecke zu je 10 % erwartet 0,20, war ' + sys.getBonus('hp'));
 });
 
 test('D2 core-attribute affixes exist as flat stats and aggregate via getBonus (#60)', () => {
@@ -229,14 +290,21 @@ test('D2 core-attribute affixes exist as flat stats and aggregate via getBonus (
     assert.strictEqual(def.statKey, keys[i], id + ' -> statKey ' + keys[i]);
   });
   // Two items each rolling +Strength stack as a flat sum.
+  // Attribute bleiben PUNKTE (die Anzeige im Charakterbogen), aber ihre Zahl
+  // kommt aus demselben Anteilsbudget wie alles andere: Staerke gibt +1 %
+  // Schaden je Punkt, zehn Punkte sind also die 10 %.
+  aufTiefe(20);
+  const p = punkteFuer(sys, 0.10, 20);
   globalThis.window.equipment = {
-    weapon: makeMockItem([{ defId: 'attr_strength', value: 5 }, { defId: 'attr_focus', value: 4 }]),
-    body: makeMockItem([{ defId: 'attr_strength', value: 3 }, { defId: 'attr_vitality', value: 6 }])
+    weapon: makeMockItem([{ defId: 'attr_strength', value: p }, { defId: 'attr_focus', value: p }]),
+    body: makeMockItem([{ defId: 'attr_strength', value: p }, { defId: 'attr_vitality', value: p }])
   };
   sys.recomputeBonuses();
-  assert.strictEqual(sys.getBonus('strength'), 8, '+5 and +3 Strength -> 8');
-  assert.strictEqual(sys.getBonus('vitality'), 6);
-  assert.strictEqual(sys.getBonus('focus'), 4);
+  assert.ok(Math.abs(sys.getBonus('strength') - 20) < 1e-6,
+    'zweimal 10 Punkte Staerke -> 20, war ' + sys.getBonus('strength'));
+  assert.ok(Math.abs(sys.getBonus('vitality') - 20) < 1e-6,
+    'Vitalitaet gibt 0,5 % LP je Punkt, 10 % brauchen also 20 Punkte');
+  assert.ok(sys.getBonus('focus') > 0);
   assert.strictEqual(sys.getBonus('dexterity'), 0);
 });
 
@@ -244,12 +312,15 @@ test('armor affix is percent (fraction), consistent with base armor display', ()
   const sys = freshSystem();
   const def = sys.AFFIX_DEFS.find((d) => d.id === 'sturdy_armor');
   assert.strictEqual(def.valueType, 'percent'); // not 'flat' — armor is a % stat
+  aufTiefe(20);
   globalThis.window.equipment = {
-    head: makeMockItem([{ defId: 'sturdy_armor', value: 5 }])
+    head: makeMockItem([{ defId: 'sturdy_armor', value: punkteFuer(sys, 0.10, 20) }])
   };
   sys.recomputeBonuses();
-  // percent affixes are stored as value/100, so +5% Armor -> 0.05
-  assert.ok(Math.abs(sys.getBonus('armor') - 0.05) < 1e-9);
+  // Ruestung senkt den Schaden; fuer +10 % effektive Lebenspunkte muss sie um
+  // rund 0,9 * p steigen, nicht um p — daher der Faktor 0,9.
+  assert.ok(Math.abs(sys.getBonus('armor') - 0.09) < 1e-9,
+    'erwartet 0,09, war ' + sys.getBonus('armor'));
 });
 
 test('recomputeBonuses bumps version counter', () => {
@@ -276,9 +347,10 @@ test('recomputeBonuses wipes previous cache state', () => {
 
 test('recomputeBonuses ignores affixes with unknown defId', () => {
   const sys = freshSystem();
+  aufTiefe(20);
   globalThis.window.equipment = {
     weapon: makeMockItem([
-      { defId: 'sharp_dmg', value: 10 },
+      { defId: 'sharp_dmg', value: punkteFuer(sys, 0.10, 20) },
       { defId: 'ghost_affix_that_does_not_exist', value: 9999 }
     ])
   };
@@ -288,12 +360,14 @@ test('recomputeBonuses ignores affixes with unknown defId', () => {
 
 test('getBonus returns positive value for cd_* affixes (combat applies sign)', () => {
   const sys = freshSystem();
+  aufTiefe(20);
   globalThis.window.equipment = {
-    weapon: makeMockItem([{ defId: 'of_swift_spin', value: 12 }])
+    weapon: makeMockItem([{ defId: 'of_swift_spin', value: punkteFuer(sys, 0.10, 20) }])
   };
   sys.recomputeBonuses();
-  // cd_spinAttack is stored as +0.12; combat code multiplies baseCd * (1 - x).
-  assert.ok(Math.abs(sys.getBonus('cd_spinAttack') - 0.12) < 1e-9);
+  // Faehigkeitsaffix -> Faktor 3. Der Kampfcode rechnet baseCd * (1 - x).
+  assert.ok(Math.abs(sys.getBonus('cd_spinAttack') - 0.30) < 1e-9,
+    'erwartet 0,30, war ' + sys.getBonus('cd_spinAttack'));
 });
 
 // ---------------------------------------------------------------------------
@@ -1022,26 +1096,29 @@ function mockAbilityItem(sys, defId, value) {
   };
 }
 
-test('WP08 T048: equipping a per-ability damage item aggregates into getBonus', () => {
+test('WP08 T048: ein Faehigkeitsaffix landet im getBonus-Zwischenspeicher', () => {
   const sys = freshSystem();
+  aufTiefe(20);
   globalThis.window.equipment = {
-    weapon: mockAbilityItem(sys, 'spinning_dmg', 25) // 25 percent
+    weapon: mockAbilityItem(sys, 'spinning_dmg', punkteFuer(sys, 0.10, 20))
   };
   sys.recomputeBonuses();
-  // percent affixes are stored as value/100 in the cache
-  assert.strictEqual(sys.getBonus('dmg_spinAttack'), 0.25);
+  // #122: Faehigkeitsaffixe tragen den Faktor 3 — sie wirken nur auf EINE
+  // Faehigkeit, ein Anteil von 10 % waere dort weniger wert als anderswo.
+  assert.ok(Math.abs(sys.getBonus('dmg_spinAttack') - 0.30) < 1e-9,
+    'erwartet 0,30, war ' + sys.getBonus('dmg_spinAttack'));
 });
 
-test('WP08 T048: stacking two items sums their per-ability damage bonuses', () => {
+test('WP08 T048: zwei Stuecke summieren ihren Faehigkeitsbonus', () => {
   const sys = freshSystem();
+  aufTiefe(20);
   globalThis.window.equipment = {
-    weapon: mockAbilityItem(sys, 'spinning_dmg', 20), // +20%
-    body:   mockAbilityItem(sys, 'spinning_dmg', 15)  // +15%
+    weapon: mockAbilityItem(sys, 'spinning_dmg', punkteFuer(sys, 0.10, 20)),
+    body:   mockAbilityItem(sys, 'spinning_dmg', punkteFuer(sys, 0.05, 20))
   };
   sys.recomputeBonuses();
   const bonus = sys.getBonus('dmg_spinAttack');
-  // Floating-point friendly comparison
-  assert.ok(Math.abs(bonus - 0.35) < 1e-9, 'expected +35% combined, got ' + bonus);
+  assert.ok(Math.abs(bonus - 0.45) < 1e-9, 'erwartet 0,45 zusammen, war ' + bonus);
 });
 
 // ---------------------------------------------------------------------------
@@ -1063,12 +1140,16 @@ test('#36: of_swiftness move affix exists and aggregates as a flat move bonus', 
   assert.ok(def, 'of_swiftness affix must exist');
   assert.strictEqual(def.statKey, 'move');
   assert.strictEqual(def.valueType, 'flat');
+  aufTiefe(20);
   globalThis.window.equipment = {
-    boots: { type: 'boots', tier: 1, affixes: [{ defId: 'of_swiftness', value: 30 }] }
+    boots: { type: 'boots', tier: 1,
+      affixes: [{ defId: 'of_swiftness', value: punkteFuer(sys, 0.10, 20) }] }
   };
   sys.recomputeBonuses();
-  // flat affixes are stored verbatim (not /100)
-  assert.strictEqual(sys.getBonus('move'), 30);
+  // #122: Lauftempo wirkt jetzt PROZENTUAL. Ein flacher Zuschlag auf eine
+  // Basis, die nicht mitwaechst, ist frueh zu stark und spaet wertlos.
+  assert.ok(Math.abs(sys.getBonus('move') - 0.10) < 1e-9,
+    'erwartet 0,10, war ' + sys.getBonus('move'));
 });
 
 test('#36: swift_speed remains an attack-speed (statKey speed) affix', () => {
@@ -1080,20 +1161,26 @@ test('#36: swift_speed remains an attack-speed (statKey speed) affix', () => {
 
 test('#36: gold_find affix aggregates as a percent bonus via getBonus', () => {
   const sys = freshSystem();
+  aufTiefe(20);
   globalThis.window.equipment = {
-    head: { type: 'head', tier: 1, affixes: [{ defId: 'of_greed', value: 25 }] }
+    head: { type: 'head', tier: 1,
+      affixes: [{ defId: 'of_greed', value: punkteFuer(sys, 0.10, 20) }] }
   };
   sys.recomputeBonuses();
-  assert.ok(Math.abs(sys.getBonus('gold_find') - 0.25) < 1e-9);
+  // of_greed liegt auf keiner der beiden Achsen (kein DPS, kein EHP) und traegt
+  // deshalb den Faehigkeitsfaktor 3 — Goldfund darf ruhig deutlich ausfallen.
+  assert.ok(Math.abs(sys.getBonus('gold_find') - 0.30) < 1e-9,
+    'erwartet 0,30, war ' + sys.getBonus('gold_find'));
 });
 
-test('WP08 T048: unequipping drops the bonus back to 0 after recompute', () => {
+test('WP08 T048: Ablegen setzt den Bonus wieder auf 0', () => {
   const sys = freshSystem();
+  aufTiefe(20);
   globalThis.window.equipment = {
-    weapon: mockAbilityItem(sys, 'spinning_dmg', 25)
+    weapon: mockAbilityItem(sys, 'spinning_dmg', punkteFuer(sys, 0.10, 20))
   };
   sys.recomputeBonuses();
-  assert.strictEqual(sys.getBonus('dmg_spinAttack'), 0.25);
+  assert.ok(sys.getBonus('dmg_spinAttack') > 0, 'der Bonus greift gar nicht');
 
   // Simulate unequip
   globalThis.window.equipment = {};

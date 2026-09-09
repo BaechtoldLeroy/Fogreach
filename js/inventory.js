@@ -1389,10 +1389,14 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   //   move   (des Windes, flat)   -> additiv auf playerSpeed (Lauftempo)
   if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
     const _gb = window.LootSystem.getBonus;
+    // #122: Alle vier wirken PROZENTUAL. Reichweite und Lauftempo waren
+    // vorher flache Zuschlaege — auf einer Basis, die nicht mitwaechst, ist ein
+    // flacher Zuschlag entweder frueh zu stark oder spaet wertlos. Genau daran
+    // ist +LP zerbrochen (gemessen: 97 % Wirkung gegen 11 % bei Ruestung).
     weaponDamage = weaponDamage * (1 + Math.max(0, _gb('damage') || 0));
     weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + Math.max(0, _gb('speed') || 0)));
-    attackRange = Math.max(20, attackRange + (_gb('range') || 0));
-    playerSpeed = Math.max(60, playerSpeed + (_gb('move') || 0));
+    attackRange = Math.max(20, attackRange * (1 + Math.max(0, _gb('range') || 0)));
+    playerSpeed = Math.max(60, playerSpeed * (1 + Math.max(0, _gb('move') || 0)));
     playerArmor = Phaser.Math.Clamp(playerArmor + (_gb('armor') || 0), 0, 0.85);
     playerCritChance = Phaser.Math.Clamp(playerCritChance + (_gb('crit') || 0), 0, 0.9);
   }
@@ -1418,7 +1422,11 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + _attrDex * 0.003));
     playerCritChance = Phaser.Math.Clamp(playerCritChance + _attrDex * 0.002, 0, 0.9);
   }
-  const _attrVitHp = _attrVit * 3;
+  // #122/#114: Vitalitaet gab +3 LEBENSPUNKTE je Punkt. Auf einer Basis von
+  // 30 + 2 je Stufe war ein Punkt damit rund 5 % wert — acht Punkte also 40 %,
+  // waehrend Ruestung bei 11 % lag. Jetzt +0,5 % der Basis je Punkt: zwanzig
+  // Punkte sind +10 %, und der Wert waechst mit dem Charakter statt gegen ihn.
+  const _attrVitHp = Math.round((baseStats.maxHP || 30) * _attrVit * 0.005);
   const _attrFocusCdr = Math.min(0.40, _attrFoc * 0.004);
   // Nach aussen sichtbar: Charakter-Menü (Anzeige) + Combat-Anwendung (player.js).
   if (typeof window !== 'undefined') {
@@ -1469,6 +1477,12 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
 
   // Round the final weapon damage to ONE decimal so band-rolled bases (e.g.
   // 4.3) and percent affixes read cleanly in HUD/tooltip without float drift.
+  // #122: EINE Nachkommastelle, und zwar ueberall. Weiter unten stand
+  // sechsmal Math.round(...) — GANZZAHLIG, auch bei einem Multiplikator von 1.
+  // Bei einem Waffenschaden um 4 ist eine ganze Zahl ein Schritt von 25 %:
+  // ein Affix mit +10 % verschwand darin spurlos. Gemessen: 3,7 ohne Affix und
+  // 3,7 mit +10 % — beide zeigten 4.
+  function _dmgRund(x) { return Math.round(x * 10) / 10; }
   weaponDamage = Math.round(weaponDamage * 10) / 10;
 
   // 3) Max-Health neu bestimmen (Basis + Gear + Skills).
@@ -1483,9 +1497,15 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // Variable bleibt als Einhaengepunkt fuer passive Knoten aus #93 bestehen,
   // damit die umgebende Delta-Rechnung unveraendert bleibt.
   let _skillMaxHpBonus = 0;
-  const _affixHpBonus = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
-    ? (window.LootSystem.getBonus('hp') || 0)
+  // #122/#114: der hp-Affix ist jetzt ein ANTEIL (0,10 = +10 %), kein flacher
+  // Zuschlag mehr. Er wirkt auf die Basis-Lebenspunkte, waechst also mit dem
+  // Charakter statt ihn frueh zu ueberrennen. Vorher rollte er bis 29 flache
+  // Punkte auf eine Basis von 30 — ein einziger Affix verdoppelte die
+  // Lebenspunkte und war damit neunmal so viel wert wie Ruestung.
+  const _affixHpAnteil = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
+    ? Math.max(0, window.LootSystem.getBonus('hp') || 0)
     : 0;
+  const _affixHpBonus = Math.round((baseStats.maxHP || 30) * _affixHpAnteil);
   // Brunnen run-scoped max-HP delta (Issue #16).
   const _brunnenMaxHpAdd = (window.brunnenBuffs && typeof window.brunnenBuffs.maxHpAdd === 'number')
     ? window.brunnenBuffs.maxHpAdd
@@ -1601,7 +1621,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // 3.6) Event-Buffs (Shrine etc.) als letzte Schicht — überleben Equipment-Recalcs.
   const buffs = window.eventBuffs;
   if (buffs) {
-    weaponDamage = Math.max(1, Math.round(weaponDamage * (buffs.damageMult || 1)));
+    weaponDamage = Math.max(1, _dmgRund(weaponDamage * (buffs.damageMult || 1)));
     playerArmor = Phaser.Math.Clamp(
       (playerArmor + (buffs.armorAdd || 0)) * (buffs.armorMult || 1),
       0,
@@ -1619,7 +1639,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // speed / armor multipliers.
   const bb = window.brunnenBuffs;
   if (bb) {
-    weaponDamage = Math.max(1, Math.round(weaponDamage * (bb.damageMult || 1)));
+    weaponDamage = Math.max(1, _dmgRund(weaponDamage * (bb.damageMult || 1)));
     playerArmor = Phaser.Math.Clamp(
       playerArmor + (bb.armorAdd || 0),
       0,
@@ -1632,7 +1652,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // Aufstieg sie. Traeger ist heute das Gluecksspiel-Zeichen.
   const tb = window.tiefenBuffs;
   if (tb) {
-    weaponDamage = Math.max(1, Math.round(weaponDamage * (tb.damageMult || 1)));
+    weaponDamage = Math.max(1, _dmgRund(weaponDamage * (tb.damageMult || 1)));
     playerArmor = Phaser.Math.Clamp(
       (playerArmor + (tb.armorAdd || 0)) * (tb.armorMult || 1),
       0,
@@ -1647,7 +1667,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // and armor delta apply here; max-HP is already in newMaxHealth.
   const pb = window.printingBuffs;
   if (pb) {
-    weaponDamage = Math.max(1, Math.round(weaponDamage * (pb.damageMult || 1)));
+    weaponDamage = Math.max(1, _dmgRund(weaponDamage * (pb.damageMult || 1)));
   }
 
   // 3.9) Knowledge-Tree permanent buffs (Issue #26). Permanent across runs.
@@ -1658,7 +1678,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // — see WP03 T013-T015).
   const kb = window.knowledgeTreeBuffs;
   if (kb) {
-    weaponDamage = Math.max(1, Math.round(weaponDamage * (kb.damageMult || 1)));
+    weaponDamage = Math.max(1, _dmgRund(weaponDamage * (kb.damageMult || 1)));
     playerArmor = Phaser.Math.Clamp(
       playerArmor + (kb.armorAdd || 0),
       0,
@@ -1683,7 +1703,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
 
   // 3.95) Run-amulet stat mods applied LAST, on top of all buff layers
   // (Glasherz Schaden, Sturmschritt Tempo). maxHpMul ist bereits in newMaxHealth.
-  if (_amuletStatMods.damageMul !== 1) weaponDamage = Math.max(1, Math.round(weaponDamage * _amuletStatMods.damageMul));
+  if (_amuletStatMods.damageMul !== 1) weaponDamage = Math.max(1, _dmgRund(weaponDamage * _amuletStatMods.damageMul));
   if (_amuletStatMods.speedMul !== 1) weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * _amuletStatMods.speedMul);
   if (_amuletStatMods.moveAdd) playerSpeed = Math.max(60, playerSpeed + _amuletStatMods.moveAdd);
 
