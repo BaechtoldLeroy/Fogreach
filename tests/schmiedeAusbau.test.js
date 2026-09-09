@@ -151,7 +151,7 @@ test('Das rechte Panel sagt, was die naechste Stufe kostet', () => {
     sc._selection = { kind: 'equip', key: 'body' };
     sc._refreshAusbau();
     var kosten = LS.ausbauKosten(window.equipment.body);
-    return { text: String(sc.ausbauInfo.text),
+    return { text: String(sc.werkbankKosten.text),
              knopf: !!(sc.ausbauBtn && sc.ausbauBtn.container.visible),
              gold: kosten ? kosten.gold : 0 };
   })()`);
@@ -174,4 +174,40 @@ test('Ein voll ausgebautes Stueck zeigt keinen Knopf mehr', () => {
   })()`);
   assert.strictEqual(r.stufe, 5, 'ein legendaeres Stueck kam nicht auf fuenf Stufen');
   assert.strictEqual(r.knopf, false, 'der Knopf bleibt sichtbar, obwohl nichts mehr geht');
+});
+
+test('Auch die Massenzerlegung gibt die Ausbau-Brocken zurueck', () => {
+  // Der Einzelweg tat es schon, der Massenweg nicht. Wer zwei ausgebaute
+  // Stuecke auf einmal einschmolz, verlor stillschweigend mehr als beim
+  // Zerlegen einzeln — und ein Unterschied, den man nicht sieht, ist der
+  // aergerlichste.
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    window.DUNGEON_DEPTH = 20; window.currentWave = 20;
+    var sc = window.game.scene.getScene('CraftingScene');
+    if (!sc || !sc.scene.isActive()) { window.game.scene.start('CraftingScene'); }
+    sc = window.game.scene.getScene('CraftingScene');
+    for (var i = 0; i < window.inventory.length; i++) window.inventory[i] = null;
+    window.materialCounts.GOLD = 999999;
+    window.materialCounts.MAT = 9999;
+
+    // Zwei magische Stuecke, eines davon ausgebaut.
+    var roh = LS.rollItem('BD_LEDERHARNISCH', 20, 1);
+    var aus = LS.rollItem('BD_LEDERHARNISCH', 20, 1);
+    while (LS.ausbauKosten(aus)) LS.ausbauen(aus);
+    window.InventoryGrid.einlagern(roh);
+    window.InventoryGrid.einlagern(aus);
+
+    var erwartet = sc._salvageValue(roh.tier)
+                 + sc._salvageValue(aus.tier) + LS.ausbauRueckgabe(aus);
+    var ohneAusbau = sc._salvageValue(roh.tier) + sc._salvageValue(aus.tier);
+    var vorher = window.materialCounts.MAT;
+    sc._massSalvage();
+    return { bekommen: window.materialCounts.MAT - vorher,
+             erwartet: erwartet, ohneAusbau: ohneAusbau };
+  })()`);
+  assert.ok(r.erwartet > r.ohneAusbau, 'Testaufbau: das Stueck ist gar nicht ausgebaut');
+  assert.strictEqual(r.bekommen, r.erwartet,
+    'zurueck kamen ' + r.bekommen + ' statt ' + r.erwartet
+    + ' (ohne die Ausbau-Rueckgabe waeren es ' + r.ohneAusbau + ')');
 });

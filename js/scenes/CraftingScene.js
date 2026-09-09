@@ -4,6 +4,7 @@ if (window.i18n) {
   window.i18n.register('de', {
     'crafting.title': 'ARCHIVSCHMIEDE',
     'crafting.materials.counter': 'Eisenbrocken: {count}',
+    'crafting.materials.gold': 'Gold: {count}',
     'crafting.section.enhance': 'Ausrüstung verbessern',
     'crafting.section.inventory': 'Inventar (Equipment)',
     'crafting.section.ausbau': 'Ausbau',
@@ -49,6 +50,7 @@ if (window.i18n) {
   window.i18n.register('en', {
     'crafting.title': 'ARCHIVE FORGE',
     'crafting.materials.counter': 'Iron Chunks: {count}',
+    'crafting.materials.gold': 'Gold: {count}',
     'crafting.section.enhance': 'Enhance Equipment',
     'crafting.section.inventory': 'Inventory (Equipment)',
     'crafting.section.ausbau': 'Upgrade',
@@ -157,7 +159,12 @@ class CraftingScene extends Phaser.Scene {
     // --- Left panel: Equipment enhancement ---
     const leftX = 30;
     const panelY = 80;
-    const panelW = (W / 2) - 50;
+    // Die linke Spalte zeigt nur noch, WAS man besitzt: Platz, Name,
+    // Seltenheit, Ausbaustufe. Die Einzelwerte standen frueher als gequetschte
+    // Zeile darunter und liefen ueber die Spalte hinaus; sie stehen jetzt
+    // rechts im Werktisch, wo Platz ist. Dadurch traegt die rechte Haelfte,
+    // die vorher fast leer war, den eigentlichen Inhalt.
+    const panelW = 330;
 
     this.add.text(leftX + panelW / 2, panelY, _CRAFT_T('crafting.section.enhance'), {
       fontFamily: 'monospace', fontSize: '16px', color: COL_GOLD
@@ -199,8 +206,11 @@ class CraftingScene extends Phaser.Scene {
         fontFamily: 'monospace', fontSize: '11px', color: color
       }).setDepth(10);
 
-      const statsText = this.add.text(leftX + 8, sy + 26, item ? this._getStatsLine(item) : '', {
-        fontFamily: 'monospace', fontSize: '9px', color: '#888888'
+      // Statt der Wertezeile: Seltenheit und, wenn vorhanden, Ausbaustufe.
+      // Beides entscheidet, ob sich ein Blick lohnt — die Einzelwerte liest
+      // man rechts.
+      const statsText = this.add.text(leftX + 8, sy + 26, this._platzZeile(item), {
+        fontFamily: 'monospace', fontSize: '9px', color: '#8f8f8f'
       }).setDepth(10);
 
       bg.on('pointerdown', () => this._selectEquip(slot));
@@ -253,69 +263,82 @@ class CraftingScene extends Phaser.Scene {
       }
     ).setOrigin(1, 0).setDepth(10);
 
-    // ----- Salvage section (bottom of left panel) -----
-    // WP08 T050: Verbessern button removed. Reroll vendor at Mara (ShopScene)
-    // replaces the old enhance flow. Salvage stays for converting unwanted
-    // equipment into Eisenbrocken.
-    const enhY = this.invListY + this.invRowH * this.invMaxRows + 14;
-    this.enhanceInfo = this.add.text(leftX + 8, enhY, _CRAFT_T('crafting.info.idle'), {
-      fontFamily: 'monospace', fontSize: '10px', color: COL_PARCHMENT,
-      wordWrap: { width: slotW - 16 }
+    // --- Rechter Werktisch (#115) ---
+    //
+    // Hier standen bis b226 die Schmiedeplaene: drei Rezepte mit FESTEN Werten
+    // (Eisenklinge Schaden 8, iLevel 1, keine Affixe). Danach war die Haelfte
+    // fast leer — eine Ueberschrift und vier Zeilen Text.
+    //
+    // Jetzt traegt sie das ausgewaehlte Stueck: Name in seiner Seltenheitsfarbe,
+    // Ausbaustufe als Punktreihe, alle Werte untereinander statt in einer
+    // Zeile mit Trennstrichen, die Affixe darunter, und ganz unten die beiden
+    // Handlungen mit ihren Preisen.
+    const rightX = leftX + panelW + 24;
+    const rightW = W - rightX - 30;
+    const werkY = panelY;
+
+    this.werkbankRahmen = this.add.rectangle(
+      rightX + rightW / 2, werkY + 158, rightW, 316, COL_PANEL
+    ).setDepth(8).setStrokeStyle(1, 0x444444);
+
+    this.werkbankName = this.add.text(rightX + 14, werkY + 12, '', {
+      fontFamily: 'monospace', fontSize: '13px', color: COL_PARCHMENT,
+      fontStyle: 'bold', wordWrap: { width: rightW - 28 }
     }).setDepth(10);
 
-    // Post-WP08 hotfix: Verbessern button is BACK, but with new semantics —
-    // it now bumps the item's tier (Common → Magic → Rare → Legendary) and
-    // re-rolls a fresh affix set for the new tier. Cost scales with the
-    // target tier. The reroll vendor at Mara stays for affix-only rerolls.
-    // Buttons are pushed down (enhY + 80) so they don't overlap the now
-    // 4-line enhance info text (name / tier+affix count / cost / Mara hint).
+    this.werkbankStufe = this.add.text(rightX + 14, werkY + 48, '', {
+      fontFamily: 'monospace', fontSize: '11px', color: COL_GOLD
+    }).setDepth(10);
+
+    // Zwei Spalten in EINEM Textobjekt: Name links, Zahl rechtsbuendig durch
+    // Auffuellen. Untereinander liest man Zahlen deutlich schneller als in
+    // einer Zeile mit Trennstrichen.
+    this.werkbankWerte = this.add.text(rightX + 14, werkY + 70, '', {
+      fontFamily: 'monospace', fontSize: '11px', color: '#cfcabb', lineSpacing: 2
+    }).setDepth(10);
+
+    this.werkbankAffixe = this.add.text(rightX + 14, werkY + 70, '', {
+      fontFamily: 'monospace', fontSize: '10px', color: '#88aaff',
+      lineSpacing: 2, wordWrap: { width: rightW - 28 }
+    }).setDepth(10);
+
+    // Trennlinie: darueber steht, WAS das Stueck ist, darunter, was man damit
+    // tun kann. Ohne sie liest sich der Abstand wie eine Luecke statt wie eine
+    // Gliederung.
+    this.add.rectangle(rightX + rightW / 2, werkY + 196, rightW - 28, 1, 0x444444).setDepth(9);
+
+    this.werkbankKosten = this.add.text(rightX + 14, werkY + 208, '', {
+      fontFamily: 'monospace', fontSize: '11px', color: COL_PARCHMENT, lineSpacing: 2
+    }).setDepth(10);
+
+    // Alle drei Handlungen an EINEM Ort. Vorher lagen Aufwerten und Zerlegen
+    // unten links, der Ausbau rechts, und die Auskunft ueber das gewaehlte
+    // Stueck stand in beiden Haelften — man musste zwischen ihnen hin und her
+    // schauen, um eine einzige Entscheidung zu treffen.
+    const btnB = 168, btnAbstand = 12;
+    const btnY = werkY + 288;
+    const btn0 = rightX + 14 + btnB / 2;
     this.enhanceBtn = this._createButton(
-      leftX + slotW / 2 - 60, enhY + 80, 110, 26,
-      _CRAFT_T('crafting.btn.enhance'), () => this._enhanceItem()
+      btn0, btnY, btnB, 28, _CRAFT_T('crafting.btn.enhance'), () => this._enhanceItem()
     );
-    this.enhanceBtn.container.setVisible(false);
-
-    this.salvageBtn = this._createButton(
-      leftX + slotW / 2 + 60, enhY + 80, 110, 26,
-      _CRAFT_T('crafting.btn.salvage'), () => this._salvageItem()
-    );
-    this.salvageBtn.container.setVisible(false);
-
-    // --- Rechtes Panel: AUSBAU (#115) ---
-    //
-    // Hier standen bis b226 die Schmiedeplaene: drei Rezepte mit FESTEN
-    // Werten (Eisenklinge Schaden 8, iLevel 1, keine Affixe). Gemessen war
-    // die geschmiedete Klinge auf Tiefe 1 dreissigmal so stark wie ein Fund
-    // und auf Tiefe 30 immer noch besser — sie lief an der DPS-Decke aus
-    // #135 vorbei, weil ihre Zahl von Hand dastand.
-    //
-    // An ihrer Stelle: ein gefundenes Stueck weiter verbessern. Damit
-    // bekommt Beute einen zweiten Nutzen, und das Gold eine Senke, die mit
-    // dem Vermoegen mitwaechst (s. LootSystem.ausbauKosten).
-    const rightX = W / 2 + 20;
-    const rightW = (W / 2) - 50;
-
-    this.add.text(rightX + rightW / 2, panelY, _CRAFT_T('crafting.section.ausbau'), {
-      fontFamily: 'monospace', fontSize: '16px', color: COL_GOLD
-    }).setOrigin(0.5, 0).setDepth(10);
-
-    this.ausbauInfo = this.add.text(rightX + 10, panelY + 30, '', {
-      fontFamily: 'monospace', fontSize: '11px', color: COL_PARCHMENT,
-      wordWrap: { width: rightW - 20 }, lineSpacing: 3
-    }).setDepth(10);
-
     this.ausbauBtn = this._createButton(
-      rightX + rightW / 2, panelY + 130, 200, 30,
+      btn0 + btnB + btnAbstand, btnY, btnB, 28,
       _CRAFT_T('crafting.btn.ausbau'), () => this._ausbauen()
     );
+    this.salvageBtn = this._createButton(
+      btn0 + 2 * (btnB + btnAbstand), btnY, btnB, 28,
+      _CRAFT_T('crafting.btn.salvage'), () => this._salvageItem()
+    );
+    this.enhanceBtn.container.setVisible(false);
     this.ausbauBtn.container.setVisible(false);
+    this.salvageBtn.container.setVisible(false);
 
-    // ----- Massenzerlegung (persistent) — rechtes Panel, unter dem Ausbau -----
+    // ----- Massenzerlegung (persistent) — unter dem Werktisch -----
     // Bulk-salvage all unequipped Common+Magic gear in one click. Always
     // visible (unlike the selection-only Zerlegen button) and kept off the
     // crowded left/bottom area. Rare + Legendary are never touched, so a stray
     // click can't destroy good gear.
-    const _massY = panelY + 190;
+    const _massY = H - 64;
     this.massSalvageHint = this.add.text(rightX + rightW / 2, _massY - 17, '', {
       fontFamily: 'monospace', fontSize: '9px', color: COL_PARCHMENT
     }).setOrigin(0.5, 0.5).setDepth(10);
@@ -435,38 +458,68 @@ class CraftingScene extends Phaser.Scene {
   }
 
   _updateMatText() {
-    const count = getMaterialCount('MAT');
-    this.matText.setText(_CRAFT_T('crafting.materials.counter', { count: count }));
+    // BEIDE Vorraete. Der Ausbau kostet Gold UND Brocken, hier stand aber nur
+    // der Brockenstand — man konnte den Preis lesen und trotzdem nicht wissen,
+    // ob man ihn bezahlen kann.
+    const brocken = getMaterialCount('MAT');
+    const LS = window.LootSystem;
+    const gold = (LS && typeof LS.getGold === 'function') ? LS.getGold() : 0;
+    this.matText.setText(_CRAFT_T('crafting.materials.gold', { count: gold })
+      + '      ' + _CRAFT_T('crafting.materials.counter', { count: brocken }));
   }
 
+  /** Eine Zeile fuer die kompakte Anzeige in der Platzspalte. */
   _getStatsLine(item) {
-    if (!item) return '';
-    // speed/armor/crit sind prozentuale Brüche (0.15 = +15%) -> als % anzeigen,
-    // konsistent mit dem Inventar-Tooltip. damage bekommt 1 Dezimale (Band-Roll),
-    // hp/range sind flache Werte. Vorzeichen wird gesetzt (auch negativ, z.B.
-    // Glutaxt Tempo -10%).
-    const PERCENT = { speed: true, armor: true, crit: true };
-    const labels = { hp: 'LP', damage: 'Schaden', speed: 'Angr.tempo', range: 'Reichw.', armor: 'Rüstung', crit: 'Krit' };
-    const parts = [];
-    ['hp', 'damage', 'speed', 'range', 'armor', 'crit'].forEach(s => {
-      const val = item[s];
-      if (!val || val === 0) return;
-      const sign = val >= 0 ? '+' : '';
-      let str;
-      if (PERCENT[s]) {
-        str = `${sign}${(val * 100).toFixed(1)}%`;
-      } else if (s === 'damage') {
-        str = `${sign}${val.toFixed(1)}`;
-      } else {
-        str = `${sign}${val}`;
-      }
-      parts.push(`${labels[s]}:${str}`);
+    return this._statPaare(item).map(function (z) { return z[0] + ' ' + z[1]; }).join('  ');
+  }
+
+  /**
+   * Die Werte eines Stuecks als [Name, Wert]-Paare.
+   *
+   * NUR 'speed' ist ein Bruch (Eigenart der Basis, 0,15 = +15 %). Ruestung,
+   * Krit, Lauftempo, Block und Brand stehen seit #104 als absolute PUNKTE da
+   * und werden erst beim Tragen mit der Tiefe umgerechnet. Sie hier mit 100
+   * zu multiplizieren ergab "Ruestung +2220,0 %" an einem Bronzehelm —
+   * derselbe Fehler, der im Inventar-Tooltip in b215 behoben wurde.
+   */
+  _statPaare(item) {
+    if (!item) return [];
+    const PERCENT = { speed: true };
+    const labels = {
+      hp: 'LP', damage: 'Schaden', speed: 'Angr.tempo', range: 'Reichweite',
+      armor: 'Rüstung', crit: 'Krit', move: 'Lauftempo',
+      block: 'Block', brand: 'Brand', sicht: 'Sichtweite'
+    };
+    const paare = [];
+    ['damage', 'armor', 'hp', 'crit', 'move', 'speed', 'range', 'block', 'brand', 'sicht']
+      .forEach((k) => {
+        const val = item[k];
+        if (!val) return;
+        const vz = val >= 0 ? '+' : '';
+        let str;
+        if (PERCENT[k]) str = vz + (val * 100).toFixed(1) + '%';
+        else if (k === 'sicht') str = vz + val + '%';
+        else str = vz + (Math.round(val * 10) / 10);
+        paare.push([labels[k] || k, str]);
+      });
+    return paare;
+  }
+
+  /** Die Affixzeilen eines Stuecks, so wie sie im Inventar-Tooltip stehen. */
+  _affixZeilen(item) {
+    const LS = window.LootSystem;
+    if (!item || !Array.isArray(item.affixes) || !LS || !LS.AFFIX_DEFS) return [];
+    const raus = [];
+    item.affixes.forEach((inst) => {
+      if (!inst) return;
+      const def = LS.AFFIX_DEFS.find((d) => d.id === inst.defId);
+      if (!def) return;
+      const txt = (typeof LS.getAffixTooltipText === 'function')
+        ? LS.getAffixTooltipText(def, inst.value)
+        : String(inst.value) + ' ' + def.statKey;
+      if (txt) raus.push(txt);
     });
-    // Append a compact affix count, e.g. "[2 affix]" for magic/rare/legendary.
-    if (Array.isArray(item.affixes) && item.affixes.length) {
-      parts.push(`[${item.affixes.length} affix]`);
-    }
-    return parts.join(' | ');
+    return raus;
   }
 
   // =================== Selection ===================
@@ -548,32 +601,9 @@ class CraftingScene extends Phaser.Scene {
     this._applySelection('inv', idx);
   }
 
+  /** Die Auswahl hat sich geaendert — der Werktisch zeigt jetzt alles. */
   _showEnhanceInfoForSelection() {
-    const item = this._getSelectedItem();
-    if (!item) return;
-
-    this.salvageBtn.container.setVisible(true);
-
-    // Tier/affix-aware info panel.
-    const tier = (typeof item.tier === 'number') ? item.tier : 0;
-    const tierName = (idx) => _CRAFT_T(_CRAFT_TIER_KEYS[Math.max(0, Math.min(3, idx))]);
-    const affixCount = Array.isArray(item.affixes) ? item.affixes.length : 0;
-    const enhanceCost = this._getEnhanceCost(item);
-    const canEnhance = tier < 3;
-    if (this.enhanceBtn) {
-      this.enhanceBtn.container.setVisible(canEnhance);
-    }
-    const lines = [
-      `${_composeItemName(item)}`,
-      _CRAFT_T('crafting.info.tier_affix', { tier: tierName(tier), count: affixCount })
-    ];
-    if (canEnhance) {
-      lines.push(_CRAFT_T('crafting.info.enhance_to', { tier: tierName(tier + 1), cost: enhanceCost }));
-    } else {
-      lines.push(_CRAFT_T('crafting.info.already_legendary'));
-    }
-    lines.push(_CRAFT_T('crafting.info.reroll_hint'));
-    this.enhanceInfo.setText(lines.join('\n'));
+    this._refreshAusbau();
   }
 
   _getEnhanceCost(item) {
@@ -654,37 +684,100 @@ class CraftingScene extends Phaser.Scene {
 
   // =================== Ausbau (#115) ===================
 
-  /** Zeichnet das rechte Panel neu: Stand, Kosten, Knopf. */
+  /** Die kurze Zeile unter einem Ausruestungsplatz. */
+  _platzZeile(item) {
+    if (!item) return '';
+    const LS = window.LootSystem;
+    const teile = [_CRAFT_T(_CRAFT_TIER_KEYS[Math.max(0, Math.min(3, Number(item.tier) || 0))])];
+    const stufe = (LS && typeof LS.ausbauStufe === 'function') ? LS.ausbauStufe(item) : 0;
+    if (stufe > 0) teile.push('Ausbau +' + stufe);
+    return teile.join('  ·  ');
+  }
+
+  /**
+   * Die Ausbaustufe als Punktreihe: gefuellt, was bezahlt ist, offen der Rest.
+   * Auf einen Blick lesbar, ohne "3 von 5" im Kopf zu verrechnen.
+   */
+  _stufenPunkte(stufe, max) {
+    let raus = '';
+    for (let i = 0; i < max; i++) raus += (i < stufe) ? '●' : '○';
+    return raus;
+  }
+
+  /** Zeichnet den Werktisch neu: Stueck, Werte, Affixe, Preise, Knopf. */
   _refreshAusbau() {
-    if (!this.ausbauInfo) return;
+    if (!this.werkbankName) return;
     const LS = window.LootSystem;
     const item = this._getSelectedItem();
-    if (!LS || typeof LS.ausbauKosten !== 'function' || !item) {
-      this.ausbauInfo.setText(_CRAFT_T('crafting.ausbau.keins'));
+    const leer = !item;
+
+    if (leer) {
+      this.werkbankName.setText(_CRAFT_T('crafting.ausbau.keins')).setColor('#8f8f8f');
+      this.werkbankStufe.setText('');
+      this.werkbankWerte.setText('');
+      this.werkbankAffixe.setText('');
+      this.werkbankKosten.setText('');
       if (this.ausbauBtn) this.ausbauBtn.container.setVisible(false);
+      if (this.salvageBtn) this.salvageBtn.container.setVisible(false);
       return;
     }
-    const stufe = LS.ausbauStufe(item);
-    const max = LS.ausbauMaxStufen(item);
-    const kosten = LS.ausbauKosten(item);
-    const zeilen = [
-      _composeItemName(item),
-      _CRAFT_T('crafting.ausbau.stufe', { n: stufe, max: max }),
-      _CRAFT_T('crafting.ausbau.wirkung', { pct: Math.round(LS.AUSBAU_JE_STUFE * 100) })
-    ];
+
+    this.werkbankName.setText(_composeItemName(item)).setColor(_getTierColor(item));
+
+    const stufe = (LS && typeof LS.ausbauStufe === 'function') ? LS.ausbauStufe(item) : 0;
+    const max = (LS && typeof LS.ausbauMaxStufen === 'function') ? LS.ausbauMaxStufen(item) : 0;
+    const seltenheit = _CRAFT_T(_CRAFT_TIER_KEYS[Math.max(0, Math.min(3, Number(item.tier) || 0))]);
+    this.werkbankStufe.setText(seltenheit + '   ' + this._stufenPunkte(stufe, max)
+      + '  ' + _CRAFT_T('crafting.ausbau.stufe', { n: stufe, max: max }));
+
+    // Name links, Zahl rechtsbuendig — untereinander liest man Zahlen
+    // schneller als in einer Zeile mit Trennstrichen.
+    const paare = this._statPaare(item);
+    const breite = 26;
+    this.werkbankWerte.setText(paare.map(function (z) {
+      const luecke = Math.max(1, breite - z[0].length - z[1].length);
+      return z[0] + new Array(luecke + 1).join(' ') + z[1];
+    }).join(String.fromCharCode(10)));
+
+    const affixe = this._affixZeilen(item);
+    this.werkbankAffixe.y = this.werkbankWerte.y + this.werkbankWerte.height + 8;
+    this.werkbankAffixe.setText(affixe.join(String.fromCharCode(10)));
+
+    // Preise: was fehlt, steht rot da. Rot heisst hier nicht "verboten",
+    // sondern "dafuer reicht es noch nicht" — deshalb bleibt der Knopf sichtbar.
+    const kosten = (LS && typeof LS.ausbauKosten === 'function') ? LS.ausbauKosten(item) : null;
+    const gold = (LS && typeof LS.getGold === 'function') ? LS.getGold() : 0;
+    const brocken = getMaterialCount('MAT');
+    const zeilen = [];
+
+    // Aufwerten hebt die SELTENHEIT und gibt einen Affix dazu — und schaltet
+    // damit weitere Ausbaustufen frei. Beide Wege gehoeren nebeneinander,
+    // sonst sieht man den Zusammenhang nicht.
+    const tier = Math.max(0, Math.min(3, Number(item.tier) || 0));
+    const kannAufwerten = tier < 3;
+    if (kannAufwerten) {
+      zeilen.push(_CRAFT_T('crafting.info.enhance_to', {
+        tier: _CRAFT_T(_CRAFT_TIER_KEYS[tier + 1]),
+        cost: this._getEnhanceCost(item)
+      }));
+    }
+    if (this.enhanceBtn) this.enhanceBtn.container.setVisible(kannAufwerten);
     if (kosten) {
-      zeilen.push(_CRAFT_T('crafting.ausbau.kosten',
-        { gold: kosten.gold, brocken: kosten.brocken }));
+      zeilen.push(_CRAFT_T('crafting.ausbau.wirkung', { pct: Math.round(LS.AUSBAU_JE_STUFE * 100) }));
+      zeilen.push(_CRAFT_T('crafting.ausbau.kosten', { gold: kosten.gold, brocken: kosten.brocken }));
+      const reicht = gold >= kosten.gold && brocken >= kosten.brocken;
+      this.werkbankKosten.setColor(reicht ? '#f1e9d8' : '#ff8844');
     } else {
       zeilen.push(_CRAFT_T('crafting.ausbau.voll'));
+      this.werkbankKosten.setColor('#8f8f8f');
     }
-    // Was beim Zerlegen zurueckkommt, gehoert VOR die Entscheidung: sonst
-    // erfaehrt man erst nach dem Zerlegen, dass die Haelfte weg ist.
     if (stufe > 0) {
       zeilen.push(_CRAFT_T('crafting.ausbau.rueckgabe', { n: LS.ausbauRueckgabe(item) }));
     }
-    this.ausbauInfo.setText(zeilen.join(String.fromCharCode(10)));
+    this.werkbankKosten.setText(zeilen.join(String.fromCharCode(10)));
+
     if (this.ausbauBtn) this.ausbauBtn.container.setVisible(!!kosten);
+    if (this.salvageBtn) this.salvageBtn.container.setVisible(true);
   }
 
   _ausbauen() {
@@ -744,6 +837,12 @@ class CraftingScene extends Phaser.Scene {
     return VALUES[t];
   }
 
+  /** Was der Ausbau eines Stuecks beim Zerlegen zurueckgibt (0 ohne Ausbau). */
+  _ausbauRueckgabe(item) {
+    const LS = window.LootSystem;
+    return (LS && typeof LS.ausbauRueckgabe === 'function') ? LS.ausbauRueckgabe(item) : 0;
+  }
+
   _salvageItem() {
     const item = this._getSelectedItem();
     if (!item) return;
@@ -751,10 +850,7 @@ class CraftingScene extends Phaser.Scene {
     // #115: Die HAELFTE der Brocken, die in den Ausbau geflossen sind, kommt
     // zurueck. Ohne das waere jede Fehlinvestition endgueltig, und niemand
     // baute ein Stueck aus, das er vielleicht noch ersetzt.
-    const LS115 = window.LootSystem;
-    const ausbauZurueck = (LS115 && typeof LS115.ausbauRueckgabe === 'function')
-      ? LS115.ausbauRueckgabe(item) : 0;
-    const matValue = this._salvageValue(item.tier) + ausbauZurueck;
+    const matValue = this._salvageValue(item.tier) + this._ausbauRueckgabe(item);
 
     // Remove item from its source (equipment slot or inventory slot)
     this._setSelectedItem(null);
@@ -780,9 +876,7 @@ class CraftingScene extends Phaser.Scene {
     this._selection = null;
     this._selectedSlot = null;
     this._clearVisualSelection();
-    this.salvageBtn.container.setVisible(false);
-    if (this.enhanceBtn) this.enhanceBtn.container.setVisible(false);
-    this.enhanceInfo.setText(_CRAFT_T('crafting.info.idle'));
+    this._refreshAusbau();
     this._refreshAll();
     this._showFeedback(_CRAFT_T('crafting.feedback.salvaged', { amount: matValue }), '#ccaa33');
     this._flashEffect();
@@ -829,7 +923,7 @@ class CraftingScene extends Phaser.Scene {
     for (let i = 0; i < inventory.length; i++) {
       const it = inventory[i];
       if (!this._isMassSalvageable(it)) continue;
-      total += this._salvageValue(it.tier); // same value as single salvage
+      total += this._salvageValue(it.tier) + this._ausbauRueckgabe(it);
       inventory[i] = null;
       count++;
     }
@@ -849,9 +943,7 @@ class CraftingScene extends Phaser.Scene {
     this._selection = null;
     this._selectedSlot = null;
     this._clearVisualSelection();
-    if (this.salvageBtn) this.salvageBtn.container.setVisible(false);
-    if (this.enhanceBtn) this.enhanceBtn.container.setVisible(false);
-    this.enhanceInfo.setText(_CRAFT_T('crafting.info.idle'));
+    this._refreshAusbau();
 
     if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
       try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
@@ -883,7 +975,7 @@ class CraftingScene extends Phaser.Scene {
 
       el.nameText.setText(nameStr);
       el.nameText.setColor(color);
-      el.statsText.setText(item ? this._getStatsLine(item) : '');
+      el.statsText.setText(this._platzZeile(item));
     });
 
     // Refresh inventory list

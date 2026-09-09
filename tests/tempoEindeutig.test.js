@@ -95,3 +95,45 @@ test('Auch die englischen Fassungen nennen die Achse', () => {
     assert.ok(ok, 'nennt die Achse nicht: ' + z.trim());
   });
 });
+
+test('Ruestung im Wissensbaum steht als PROZENT, nicht als roher Bruch', () => {
+  // armorAdd 0,15 heisst 15 Prozentpunkte auf playerArmor (dort ein Bruch
+  // 0..0,85). Drei Beschreibungen schrieben den rohen Bruch hin ("+0,15
+  // Ruestung"), eine schrieb ihn richtig als Prozent. "0,15" ist fuer den
+  // Spieler keine Groesse, die er mit irgendetwas vergleichen kann — der
+  // Charakterbogen zeigt Ruestung in Prozent.
+  //
+  // Der Test bindet die ZAHL im Text an den EFFEKT: eine blosse Suche nach dem
+  // Prozentzeichen liesse "+99 % Ruestung" bei einem Effekt von 0,15 durch.
+  const quelle = fs.readFileSync(path.join(WURZEL, 'js/knowledgeTree.js'), 'utf8');
+  const zeilen = quelle.split(/\r?\n/);
+  [
+    ['not_eisenhaut', 'eisenhaut'],
+    ['not_zaeher_lauf', 'zaeher_lauf'],
+    ['key_turmwache', 'turmwache']
+  ].forEach(([id, schluessel]) => {
+    const i2 = quelle.indexOf("id: '" + id + "'");
+    assert.ok(i2 > 0, id + ' nicht gefunden');
+    const block = quelle.slice(i2, i2 + 500);
+    const m = /field:\s*'armorAdd',\s*kind:\s*'add',\s*value:\s*([0-9.]+)/.exec(block);
+    assert.ok(m, id + ' aendert gar keine Ruestung');
+    const prozent = Math.round(Number(m[1]) * 100);
+
+    const zeile = zeilen.find((z) =>
+      z.indexOf(schluessel + ".desc':") >= 0 && z.indexOf('Rüstung') >= 0);
+    assert.ok(zeile, id + ': keine deutsche Beschreibung mit Ruestung gefunden');
+    assert.ok(zeile.indexOf(prozent + ' % Rüstung') >= 0,
+      id + ': erwartet "' + prozent + ' % Rüstung", Zeile lautet ' + zeile.trim());
+  });
+});
+
+test('Kein Wissensbaum-Text schreibt Ruestung als rohen Bruch', () => {
+  // Die Gegenprobe: der Test oben kennt drei Stellen, diese Regel gilt fuer
+  // alle. '0,15 Ruestung' darf nirgends mehr stehen, auch nicht auf Englisch.
+  const quelle = fs.readFileSync(path.join(WURZEL, 'js/knowledgeTree.js'), 'utf8');
+  const schlecht = quelle.split(/\r?\n/)
+    .map((z, n) => ({ nr: n + 1, text: z }))
+    .filter((z) => /0[.,][0-9]+\s*(Rüstung|armour|armor)/.test(z.text));
+  assert.deepStrictEqual(schlecht.map((z) => z.nr + ': ' + z.text.trim()), [],
+    'diese Zeilen schreiben Ruestung als rohen Bruch');
+});

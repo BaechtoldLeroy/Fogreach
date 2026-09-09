@@ -99,11 +99,15 @@ test('Der graue Kasten der Liste verdeckt keinen Ausruestungsplatz', () => {
     + m.letzterPlatz + ')');
 });
 
-test('Verbessern und Zerlegen bleiben im Bild — auch unter dem laengsten Infotext', () => {
+test('Die drei Handlungen bleiben im Bild und laufen nicht in den Text', () => {
   // Der laengste Fall ist NICHT das legendaere Stueck, sondern das
-  // gewoehnliche: nur dort steht die Zeile "Verbessern: -> Magisch, +1 Affix
-  // (behaelt bestehende) — 10 Eisenbrocken", und die bricht um. Gemessen sind
-  // das fuenf Zeilen zu 11 px.
+  // gewoehnliche: nur dort steht zusaetzlich die Zeile "Verbessern: -> Magisch",
+  // und der Preisblock wird am hoechsten.
+  //
+  // Seit dem Umbau liegen alle drei Handlungen nebeneinander am Werktisch
+  // rechts. Vorher lagen Verbessern und Zerlegen unten links und der Ausbau
+  // rechts — man musste zwischen zwei Haelften schauen, um eine Entscheidung
+  // zu treffen.
   const res = H.run(`(function () {
     var sc = window.game.scene.getScene('CraftingScene');
     var it = window.LootSystem.rollItem('WPN_EISENKLINGE', 40, 0);
@@ -111,26 +115,38 @@ test('Verbessern und Zerlegen bleiben im Bild — auch unter dem laengsten Infot
     window.equipment.weapon = it;
     sc._refreshAll();
     sc._selectEquip('weapon');
-
-    var knopf = sc.salvageBtn.bg;
+    function kasten(b) {
+      return { oben: b.bg.y - b.bg.height / 2, unten: b.bg.y + b.bg.height / 2,
+               links: b.bg.x - b.bg.width / 2, rechts: b.bg.x + b.bg.width / 2,
+               sichtbar: b.container.visible };
+    }
     return {
-      infoOben: sc.enhanceInfo.y,
-      infoUnten: sc.enhanceInfo.y + sc.enhanceInfo.height,
-      infoZeilen: String(sc.enhanceInfo.text).split('\\n').length,
-      knopfOben: knopf.y - knopf.height / 2,
-      knopfUnten: knopf.y + knopf.height / 2,
-      knopfSichtbar: sc.salvageBtn.container.visible,
-      bildHoehe: sc.scale.height
+      preiseUnten: sc.werkbankKosten.y + sc.werkbankKosten.height,
+      aufwerten: kasten(sc.enhanceBtn),
+      ausbauen: kasten(sc.ausbauBtn),
+      zerlegen: kasten(sc.salvageBtn),
+      massen: kasten(sc.massSalvageBtn),
+      bildHoehe: sc.scale.height, bildBreite: sc.scale.width
     };
   })()`);
 
-  assert.strictEqual(res.knopfSichtbar, true, 'der Zerlegen-Knopf blieb versteckt');
-  assert.ok(res.knopfUnten <= res.bildHoehe,
-    'der Zerlegen-Knopf endet bei y=' + res.knopfUnten
-    + ', das Bild ist nur ' + res.bildHoehe + ' px hoch');
-  assert.ok(res.infoUnten <= res.knopfOben,
-    'der Infotext reicht bis y=' + res.infoUnten
-    + ' und laeuft in den Knopf (Oberkante y=' + res.knopfOben + ')');
+  ['aufwerten', 'ausbauen', 'zerlegen', 'massen'].forEach((k) => {
+    const b = res[k];
+    assert.strictEqual(b.sichtbar, true, k + ' ist versteckt');
+    assert.ok(b.unten <= res.bildHoehe,
+      k + ' endet bei y=' + b.unten + ', das Bild ist nur ' + res.bildHoehe + ' px hoch');
+    assert.ok(b.rechts <= res.bildBreite,
+      k + ' endet bei x=' + b.rechts + ', das Bild ist nur ' + res.bildBreite + ' px breit');
+    assert.ok(b.links >= 0, k + ' beginnt links ausserhalb: x=' + b.links);
+  });
+  assert.ok(res.preiseUnten <= res.aufwerten.oben,
+    'der Preisblock reicht bis y=' + res.preiseUnten
+    + ' und laeuft in die Knopfreihe (Oberkante y=' + res.aufwerten.oben + ')');
+  // Und sie ueberlappen sich nicht gegenseitig.
+  assert.ok(res.aufwerten.rechts <= res.ausbauen.links,
+    'Verbessern und Ausbauen ueberlappen');
+  assert.ok(res.ausbauen.rechts <= res.zerlegen.links,
+    'Ausbauen und Zerlegen ueberlappen');
 });
 
 test('Die Ausruestungsplaetze stehen nur an EINER Stelle in der Datei', () => {

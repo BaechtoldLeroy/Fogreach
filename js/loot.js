@@ -352,14 +352,24 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
   const isBossDrop = sourceEnemy && sourceEnemy.isBoss;
   const dropThresholdBase = isBossDrop ? 10 : (isMiniBossDrop ? 6 : (isEliteDrop ? 2 : 0.5));
 
-  // Diminishing Returns: sind in diesem Run schon >3 ECHTE Items gedroppt
-  // (Tränke/Rollen NICHT mitgezählt), wird die zufällige Item-Chance HALBIERT.
+  // Nachlassender Ertrag: je mehr ECHTE Ausruestung in diesem Lauf schon
+  // gefallen ist, desto seltener faellt weitere. Traenke, Rollen und
+  // Eisenbrocken zaehlen NICHT mit.
   //
-  // Bosse sind davon AUSGENOMMEN. Die Daempfung soll den Trash-Regen bremsen,
-  // nicht die Belohnung fuer den schwersten Kampf des Durchgangs — und ein Boss
-  // am Ende eines langen Laufs stand damit bei 5 % statt 10 %.
+  //   ab dem 3. Stueck   halbe Chance
+  //   ab dem 6. Stueck   ein Viertel
+  //
+  // Vorher setzte die Bremse erst ab dem 4. Stueck ein und blieb dann bei der
+  // Haelfte stehen — nach oben war der Ertrag also unbegrenzt.
+  //
+  // Bosse betrifft das nicht: sie lassen GARANTIERT etwas fallen (`garantiert`
+  // weiter unten), ihr Wurf wird also nie befragt. Hier stand dafuer lange ein
+  // eigener !isBossDrop-Zweig — er war wirkungslos, und eine Mutationsprobe
+  // konnte ihn nicht zum Fallen bringen, weil es nichts zu messen gab.
+  const _gefallen = window.__runItemsDropped || 0;
   let dropThreshold = dropThresholdBase;
-  if (!isBossDrop && (window.__runItemsDropped || 0) > 3) dropThreshold = dropThreshold / 2;
+  if (_gefallen >= 6) dropThreshold = dropThreshold / 4;
+  else if (_gefallen >= 3) dropThreshold = dropThreshold / 2;
 
   // GARANTIERTER ABWURF FUER BOSSE (#130).
   //

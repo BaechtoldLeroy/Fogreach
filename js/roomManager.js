@@ -223,8 +223,12 @@ function initDungeonRun() {
   }
   // Feature 058 (#41) Option B: re-arm the once-per-run boss/mini-boss climax.
   window.__runClimaxSpawned = false;
-  // Item-Drop-Zähler pro Run zurücksetzen (steuert die Halbierung der Item-Chance
-  // ab dem 11. echten Item; Tränke/Rollen zählen nicht — s. loot.js spawnLoot).
+  // Item-Drop-Zaehler pro Lauf zuruecksetzen. Er steuert die Daempfung in
+  // loot.js spawnLoot: ab dem 3. Stueck halbe Chance, ab dem 6. ein Viertel.
+  // Traenke und Rollen zaehlen nicht mit.
+  //
+  // (Hier stand "ab dem 11. echten Item" — die Zahl im Code war laengst eine
+  //  andere. Ein Kommentar, der eine Zahl nennt, veraltet mit ihr.)
   window.__runItemsDropped = 0;
   // Reroll the Elara cellar-encounter spawn targets each run so a player
   // who abandons mid-run gets fresh distances next time.
