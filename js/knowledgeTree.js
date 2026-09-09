@@ -27,7 +27,9 @@
     'knowledge.btn.close':         '[ Schließen ]',
     'knowledge.btn.to_keystones':  '[ Grundsätze ]',
     'knowledge.btn.to_nodes':      '[ Wissen ]',
-    'knowledge.key.btn_set':       'Wählen ({n})',
+    // Der Preis steht NUR noch im Hover — auf dem Knopf verbrauchte er
+    // Kachelbreite fuer eine Zahl, die daneben ohnehin gross im Kopf steht.
+    'knowledge.key.btn_set':       'Wählen',
     'knowledge.key.btn_release':   'Ablegen',
     'knowledge.btn.test_give':     '[ +1 Fragment ]',
     'knowledge.respec.confirm':    'Wissen wirklich zurücksetzen?',
@@ -91,6 +93,9 @@
     'knowledge.key.only_one':          'Nur ein Grundsatz zur Zeit.',
     'knowledge.key.needs_notable':     'Braucht ein Bündel',
     'knowledge.key.cost':              '{n} Fragmente',
+    // Seit der Preis im Hover steht, faellt der Einzelfall auf: bei den
+    // Kleinknoten kostet ein Rang genau eines, und "1 Fragmente" ist falsch.
+    'knowledge.key.cost_one':          '1 Fragment',
     'knowledge.node.critdmg.label':      'Wuchtiger Hieb',
     'knowledge.node.critdmg.desc':       '+6 % Kritschaden pro Rang',
     'knowledge.node.dodge.label':        'Leichtfüssig',
@@ -105,7 +110,7 @@
     'knowledge.btn.close':         '[ Close ]',
     'knowledge.btn.to_keystones':  '[ Tenets ]',
     'knowledge.btn.to_nodes':      '[ Knowledge ]',
-    'knowledge.key.btn_set':       'Choose ({n})',
+    'knowledge.key.btn_set':       'Choose',
     'knowledge.key.btn_release':   'Release',
     'knowledge.btn.test_give':     '[ +1 Fragment ]',
     'knowledge.respec.confirm':    'Really reset the knowledge tree?',
@@ -166,6 +171,7 @@
     'knowledge.key.only_one':          'Only one tenet at a time.',
     'knowledge.key.needs_notable':     'Needs a bundle',
     'knowledge.key.cost':              '{n} fragments',
+    'knowledge.key.cost_one':          '1 fragment',
     'knowledge.node.critdmg.label':      'Heavy Blow',
     'knowledge.node.critdmg.desc':       '+6% critical damage per rank',
     'knowledge.node.dodge.label':        'Light-footed',

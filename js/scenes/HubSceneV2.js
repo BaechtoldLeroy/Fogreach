@@ -3249,7 +3249,7 @@ class HubSceneV2 extends Phaser.Scene {
           tipTitel: _HUB_T(node.labelKey),
           tipText: _HUB_T(node.descKey) + '\n\n'
             + _HUB_T('knowledge.rank', { rank: rank, max: node.maxRank })
-            + (voll ? '' : '  \u00b7  ' + _HUB_T('knowledge.key.cost', { n: 1 })),
+            + (voll ? '' : '  \u00b7  ' + _HUB_T('knowledge.key.cost_one')),
           tun: () => { try { KT.invest(node.id); } catch (e) {} }
         });
         y += kh + 4;
@@ -3285,12 +3285,12 @@ class HubSceneV2 extends Phaser.Scene {
           farbe: zw.farbe, gross: true, gesetzt: hat, gesperrt: !hat && !torOffen,
           titel: _HUB_T(n.labelKey),
           titelHex: hat ? '#cfffcf' : (torOffen ? '#ffd166' : '#6a6a72'),
-          knopf: hat ? '\u2713' : _HUB_T('knowledge.key.btn_set', { n: notKosten }),
+          knopf: hat ? '\u2713' : _HUB_T('knowledge.key.btn_set'),
           knopfAn: !hat && torOffen && frag >= notKosten,
           tipTitel: _HUB_T(n.labelKey),
           tipText: _HUB_T(n.descKey) + '\n\n'
-            + (torOffen ? _HUB_T('knowledge.key.cost', { n: notKosten })
-              : _HUB_T('knowledge.not.locked', { n: braucht })),
+            + _HUB_T('knowledge.key.cost', { n: notKosten })
+            + (torOffen ? '' : '\n' + _HUB_T('knowledge.not.locked', { n: braucht })),
           tun: () => { try { KT.investNotable(n.id); } catch (e) {} }
         });
         letzteY = y + nh;
@@ -3331,12 +3331,15 @@ class HubSceneV2 extends Phaser.Scene {
           titel: _HUB_T(k.labelKey),
           titelHex: ist ? '#e8d5ff' : ((blockiert || zu) ? '#6a6a72' : '#c9a0ff'),
           knopf: ist ? _HUB_T('knowledge.key.btn_release')
-            : (blockiert ? _HUB_T('knowledge.key.only_one')
-              : _HUB_T('knowledge.key.btn_set', { n: keyKosten })),
+            : _HUB_T('knowledge.key.btn_set'),
           knopfAn: ist || (!blockiert && !zu && frag >= keyKosten),
           tipTitel: _HUB_T(k.labelKey),
+          // "Nur ein Grundsatz zur Zeit" stand frueher auf dem Knopf, sobald
+          // ein anderer gesetzt war — und verdraengte dort den Preis. Beides
+          // gehoert in den Hover, der Knopf sagt nur noch, was er tut.
           tipText: _HUB_T(k.descKey) + '\n\n' + _HUB_T('knowledge.key.only_one')
-            + '\n' + _HUB_T('knowledge.key.cost', { n: keyKosten }),
+            + '\n' + _HUB_T('knowledge.key.cost', { n: keyKosten })
+            + (zu ? '\n' + _HUB_T('knowledge.key.needs_notable') : ''),
           tun: () => {
             try { if (ist) KT.loeseKeystone(); else KT.investKeystone(k.id); } catch (e) {}
           }
@@ -3429,11 +3432,17 @@ class HubSceneV2 extends Phaser.Scene {
     let knopfB = 0;
     if (o.knopf) {
       const an = !!o.knopfAn;
-      const btn = this._ktTxt(w - (o.sechseck ? 9 : 4), 0, o.knopf, {
+      // Ein GRAUER KASTEN nur fuer "geht gerade nicht" war zu laut: er sass
+      // 4 px neben der Kachelkante und war heller als die Kontur selbst, die
+      // gesperrt nur mit Alpha 0,3 gezeichnet wird. Im Gier-Strang (Gold auf
+      // Dunkel) schluckte er die Kontur regelrecht. Gesperrt bleibt jetzt
+      // blosser grauer Text — der Kasten ist die Zusage "das kannst du
+      // druecken" und gehoert deshalb nur an den aktiven Knopf.
+      const btn = this._ktTxt(w - (o.sechseck ? 10 : 6), 0, o.knopf, {
         fontFamily: o.gross ? 'serif' : 'monospace', fontSize: o.gross ? 13 : 15,
         color: an ? (o.gesetzt ? '#ffdada' : '#9bff9b') : '#5f5f68',
-        backgroundColor: an ? (o.gesetzt ? '#7a3a3a' : '#1f3a1f') : '#26262c',
-        padding: { x: 5, y: 2 }, resolution: 2
+        backgroundColor: an ? (o.gesetzt ? '#7a3a3a' : '#1f3a1f') : null,
+        padding: { x: an ? 5 : 1, y: 2 }, resolution: 2
       }).setOrigin(1, 0.5);
       btn.setInteractive({ useHandCursor: an });
       c.add(btn);
