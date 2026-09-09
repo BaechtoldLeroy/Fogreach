@@ -27,6 +27,7 @@ if (window.i18n) {
     'inventory.btn.drop': 'Entfernen',
     'inventory.btn.portal': 'Portal ({count})',
     'inventory.btn.stair': 'Treppe ({count})',
+    'inventory.btn.stats': 'Charakterwerte',
     // Feature 059 (#42) WP05: run-amulet slot styling.
     'inv.amulet.badge': 'Nur dieser Run',
     'inv.amulet.locked': 'Ab Tiefe 10',
@@ -57,6 +58,7 @@ if (window.i18n) {
     'inventory.btn.drop': 'Drop',
     'inventory.btn.portal': 'Portal ({count})',
     'inventory.btn.stair': 'Stairs ({count})',
+    'inventory.btn.stats': 'Character Stats',
     // Feature 059 (#42) WP05: run-amulet slot styling.
     'inv.amulet.badge': 'This run only',
     'inv.amulet.locked': 'From depth 10',
@@ -1252,6 +1254,30 @@ function equipPos(key, index) {
     });
   };
   window._refreshStairButton();
+
+  // Charakterwerte — dieselbe Ansicht wie im Burger-Menue und hinter dem
+  // Portrait. Der Knopf SCHLIESST das Inventar, bevor er sie oeffnet: die
+  // Werteansicht liegt auf Tiefe 2500, das Inventarfenster auf 10000, sie
+  // waere uebereinander schlicht unsichtbar.
+  const btnStats = scene.add.text(PANEL_W / 2 - 30, -PANEL_H / 2 + 118,
+    _INV_T('inventory.btn.stats'), {
+      fontSize: '13px',
+      fill: '#ffd166',
+      fontFamily: 'monospace',
+      backgroundColor: '#4a3a1d',
+      padding: { x: 10, y: 5 }
+    })
+    .setOrigin(1, 0)
+    .setScrollFactor(0)
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => {
+      closeInventory();
+      if (window.HUDv2 && typeof window.HUDv2.openStats === 'function') {
+        window.HUDv2.openStats(scene);
+      }
+    });
+  panel.add(btnStats);
+  invUI.statsBtn = btnStats;
 
   // Die Knoepfe klebten am unteren Panelrand, 100 px unter dem Raster —
   // dazwischen lag nichts als Leere. Jetzt direkt darunter.

@@ -507,21 +507,15 @@
     if (HUDv2._menuContainer) return;
     const cw = scene.cameras.main.width;
     const ch = scene.cameras.main.height;
-    const panelW = 280;
-    const panelH = 400;
-    const px = cw / 2;
-    const py = ch / 2;
 
-    const overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7)
-      .setScrollFactor(0).setDepth(2500).setInteractive();
-    const panel = scene.add.graphics().setScrollFactor(0).setDepth(2501);
-    panel.fillStyle(0x10131c, 0.97).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
-    panel.lineStyle(3, 0xd4a543, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
-    const title = scene.add.text(px, py - panelH / 2 + 14, T('hud.menu.title'), {
-      fontFamily: 'serif', fontSize: '22px', color: '#ffd166', fontStyle: 'bold'
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2502);
-
+    // Die Eintraege stehen VOR der Geometrie, weil die Panelhoehe sich aus
+    // ihrer Zahl ergibt. Mit der frueheren festen 400 waere der sechste Knopf
+    // in die Schliessen-Zeile gelaufen.
     const items = [
+      // Die Charakterwerte lagen bisher NUR hinter dem Portrait im HUD — ein
+      // Klickziel ohne Beschriftung. Hier stehen sie zuerst, weil man sie
+      // haeufiger nachschlaegt als alles andere im Menue.
+      { label: T('hud.stats.title'), action: () => { _openStatsMenu(scene); } },
       { label: T('hud.menu.btn.loadout'), action: () => {
           if (typeof window.openLoadoutUI === 'function') window.openLoadoutUI(scene);
         } },
@@ -545,6 +539,22 @@
           }
         } }
     ];
+
+    const panelW = 280;
+    // 60 px Kopfzeile, je Eintrag 56 px, 40 px fuer den Schliessen-Knopf.
+    const panelH = 60 + items.length * 56 + 40;
+    const px = cw / 2;
+    const py = ch / 2;
+
+    const overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7)
+      .setScrollFactor(0).setDepth(2500).setInteractive();
+    const panel = scene.add.graphics().setScrollFactor(0).setDepth(2501);
+    panel.fillStyle(0x10131c, 0.97).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+    panel.lineStyle(3, 0xd4a543, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+    const title = scene.add.text(px, py - panelH / 2 + 14, T('hud.menu.title'), {
+      fontFamily: 'serif', fontSize: '22px', color: '#ffd166', fontStyle: 'bold'
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2502);
+
     const btns = [];
     items.forEach((it, i) => {
       const by = py - panelH / 2 + 60 + i * 56;
@@ -596,6 +606,11 @@
   // dasselbe Menü-Overlay öffnen können (Talente/Loadout/Journal/Einstellungen).
   HUDv2.openMenu = function (scene) {
     if (scene && scene.cameras && scene.cameras.main) _openMenuOverlay(scene);
+  };
+  // Dieselbe Werteansicht wie hinter dem Portrait — als Einstieg fuer das
+  // Inventar, das in einer anderen Datei liegt.
+  HUDv2.openStats = function (scene) {
+    if (scene && scene.cameras && scene.cameras.main) _openStatsMenu(scene);
   };
   window.HUDv2 = HUDv2;
 })();
