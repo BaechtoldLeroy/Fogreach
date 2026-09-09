@@ -426,6 +426,20 @@ test('T011: multiple subscribers each receive the same snapshot', () => {
 // weil Fragmente sich ueber die Laeufe ansammeln. Dauerhaft ist nur, was sich
 // ausschliesst — darum sechs Keystones, von denen HOECHSTENS EINER gilt.
 
+// #116: Ein Grundsatz verlangt seit der Verkettung ein Buendel seines Zweigs
+// (6 Raenge -> Buendel -> Grundsatz). Die Tests unten wollen den Grundsatz
+// pruefen, nicht den Weg dorthin — dieser Helfer geht ihn.
+function oeffneZweig(KT, zweig, notableId) {
+  const wege = {
+    kraft: ['node_damage', 'node_damage', 'node_damage', 'node_damage', 'node_damage', 'node_angriffstempo'],
+    zaehigkeit: ['node_armor', 'node_armor', 'node_armor', 'node_armor', 'node_armor', 'node_speed'],
+    gier: ['node_gold', 'node_gold', 'node_gold', 'node_xp', 'node_xp', 'node_xp']
+  };
+  wege[zweig].forEach((id) => KT.invest(id));
+  const nid = notableId || { kraft: 'not_schlagfolge', zaehigkeit: 'not_zaeher_lauf', gier: 'not_aasgeier' }[zweig];
+  assert.strictEqual(KT.investNotable(nid), true, 'Buendel ' + nid + ' muss setzbar sein');
+}
+
 test('Keystones: sechs Stueck, je mindestens drei Effekte', () => {
   const { KT } = fresh();
   const ks = KT.getKeystones();
@@ -439,7 +453,10 @@ test('Keystones: sechs Stueck, je mindestens drei Effekte', () => {
 
 test('Keystones: hoechstens einer darf gesetzt sein', () => {
   const { KT } = fresh();
-  KT.addFragments(50);
+  KT.addFragments(80);
+  oeffneZweig(KT, 'zaehigkeit');
+  oeffneZweig(KT, 'kraft');
+  oeffneZweig(KT, 'gier');
   assert.strictEqual(KT.getActiveKeystone(), null);
   assert.strictEqual(KT.investKeystone('key_turmwache'), true);
   assert.strictEqual(KT.getActiveKeystone(), 'key_turmwache');
@@ -450,7 +467,8 @@ test('Keystones: hoechstens einer darf gesetzt sein', () => {
 
 test('Keystones: Kosten abgezogen, beim Loesen erstattet', () => {
   const { KT } = fresh();
-  KT.addFragments(20);
+  KT.addFragments(40);
+  oeffneZweig(KT, 'gier');
   const vor = KT.getFragments();
   KT.investKeystone('key_sammler');
   assert.strictEqual(KT.getFragments(), vor - KT.KEYSTONE_KOSTEN);
@@ -461,8 +479,13 @@ test('Keystones: Kosten abgezogen, beim Loesen erstattet', () => {
 
 test('Keystones: zu wenig Fragmente -> abgelehnt', () => {
   const { KT } = fresh();
-  KT.addFragments(KT.KEYSTONE_KOSTEN - 1);
-  assert.strictEqual(KT.investKeystone('key_turmwache'), false);
+  // Genau so viele Fragmente, dass der Zweig aufgeht (6 Raenge + Buendel = 10)
+  // und danach EINES zu wenig fuer den Grundsatz bleibt.
+  KT.addFragments(10 + KT.KEYSTONE_KOSTEN - 1);
+  oeffneZweig(KT, 'zaehigkeit');
+  assert.strictEqual(KT.getFragments(), KT.KEYSTONE_KOSTEN - 1, 'ein Fragment zu wenig');
+  assert.strictEqual(KT.keystoneOffen('key_turmwache'), true, 'der Weg ist offen');
+  assert.strictEqual(KT.investKeystone('key_turmwache'), false, 'aber das Gold fehlt');
   assert.strictEqual(KT.getActiveKeystone(), null);
 });
 
@@ -472,21 +495,31 @@ test('Keystones: der Entzug schlaegt die kleinen Knoten', () => {
   // koennte ein spaeterer Umbau die Reihenfolge drehen und der Preis waere
   // still verschwunden.
   const { KT } = fresh();
-  KT.addFragments(50);
+  KT.addFragments(60);
   for (let i = 0; i < 5; i++) KT.invest('node_crit');
   assert.ok(Math.abs(globalThis.window.knowledgeTreeBuffs.critAdd - 0.10) < 1e-9);
+  // Zweig oeffnen — ueber ein Buendel OHNE critAdd, damit die Zahl oben klar
+  // bleibt (Kaltbluetig gaebe +0,05 dazu).
+  KT.invest('node_angriffstempo');
+  assert.strictEqual(KT.investNotable('not_schlagfolge'), true);
   KT.investKeystone('key_ruhige_hand');
   const b = globalThis.window.knowledgeTreeBuffs;
   assert.ok(b.critAdd <= -0.8, 'Entzug muss durchschlagen, war ' + b.critAdd);
-  assert.ok(Math.abs(b.damageMult - 1.45) < 1e-9, 'damageMult 1,45, war ' + b.damageMult);
+  // 1,45 (Grundsatz) x 1,08 (Schlagfolge) — das Buendel, das den Zweig
+  // geoeffnet hat, faerbt mit ab. Beide Kraft-Buendel beruehren damageMult,
+  // ein "sauberer" Weg in diesen Zweig existiert nicht.
+  assert.ok(Math.abs(b.damageMult - 1.45 * 1.08) < 1e-9,
+    'damageMult 1,566, war ' + b.damageMult);
   assert.ok(Math.abs(b.speedMult - 0.65) < 1e-9, 'speedMult 0,65, war ' + b.speedMult);
 });
 
 test('Keystones: multiplizieren mit den kleinen Knoten statt zu ueberschreiben', () => {
   const { KT } = fresh();
-  KT.addFragments(50);
+  KT.addFragments(60);
   for (let i = 0; i < 5; i++) KT.invest('node_damage');   // +25 % -> 1,25
   assert.ok(Math.abs(globalThis.window.knowledgeTreeBuffs.damageMult - 1.25) < 1e-9);
+  // Turmwache liegt in Zaehigkeit; ueber ein Buendel OHNE damageMult oeffnen.
+  oeffneZweig(KT, 'zaehigkeit');
   KT.investKeystone('key_turmwache');                     // x0,60
   const d = globalThis.window.knowledgeTreeBuffs.damageMult;
   assert.ok(Math.abs(d - 0.75) < 1e-9, 'erwartet 0,75 (1,25 x 0,60), war ' + d);
@@ -602,15 +635,17 @@ test('Respec erstattet nach PREIS und loest Keystone wie Notable', () => {
   // 50 investiert, 43 erstattet. Und die Loeschschleife lief nur ueber den
   // Katalog, sodass beide gesetzt blieben, obwohl sie erstattet waren.
   const { KT } = fresh();
-  KT.addFragments(50);
+  KT.addFragments(60);
   for (let i = 0; i < 5; i++) KT.invest('node_damage');
   KT.invest('node_crit');
   assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
+  oeffneZweig(KT, 'zaehigkeit');
   assert.strictEqual(KT.investKeystone('key_turmwache'), true);
   KT.respec();
-  assert.strictEqual(KT.getFragments(), 50, 'alles zurueck, nicht 43');
+  assert.strictEqual(KT.getFragments(), 60, 'alles zurueck — auch Buendel und Grundsatz zum vollen Preis');
   assert.strictEqual(KT.getActiveKeystone(), null, 'Keystone muss geloest sein');
   assert.strictEqual(KT.getRank('not_kaltbluetig'), 0, 'Buendel muss geloest sein');
+  assert.strictEqual(KT.getRank('not_zaeher_lauf'), 0);
   assert.strictEqual(KT.getRank('node_damage'), 0);
   assert.strictEqual(globalThis.window.knowledgeTreeBuffs.damageMult, 1);
 });
@@ -629,4 +664,49 @@ test('Respec kostet dasselbe wie im Talentbaum', () => {
   };
   assert.strictEqual(KT.getRespecCost(), 8 * 13 * 10);
   if (alt) globalThis.window.LootSystem = alt; else delete globalThis.window.LootSystem;
+});
+
+test('Keystone verlangt ein Buendel seines Zweigs (die Kette)', () => {
+  // Ohne diese Bedingung war ein Grundsatz fuer fuenf Fragmente zu haben,
+  // ganz ohne Investition — und das drehte die Anreize um: sein Preis trifft
+  // einen Wert, den erst der Zweig liefert. Gerechnet fuer "Ruhige Hand":
+  // bei 0 Kraft-Raengen netto +45 % Schaden, bei 10 nur +38 %. Der Grundsatz
+  // war also am staerksten, wenn man nichts investiert hatte.
+  const { KT } = fresh();
+  KT.addFragments(60);
+  assert.strictEqual(KT.keystoneOffen('key_ruhige_hand'), false, 'anfangs zu');
+  assert.strictEqual(KT.investKeystone('key_ruhige_hand'), false);
+
+  for (let i = 0; i < 5; i++) KT.invest('node_damage');
+  KT.invest('node_crit');                       // sechs Raenge -> Buendel offen
+  assert.strictEqual(KT.keystoneOffen('key_ruhige_hand'), false,
+    'Raenge allein reichen nicht — es braucht das Buendel');
+  assert.strictEqual(KT.investKeystone('key_ruhige_hand'), false);
+
+  assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
+  assert.strictEqual(KT.keystoneOffen('key_ruhige_hand'), true);
+  assert.strictEqual(KT.investKeystone('key_ruhige_hand'), true);
+});
+
+test('Ein Buendel oeffnet BEIDE Grundsaetze seines Zweigs, keine fremden', () => {
+  const { KT } = fresh();
+  KT.addFragments(60);
+  for (let i = 0; i < 5; i++) KT.invest('node_damage');
+  KT.invest('node_crit');
+  KT.investNotable('not_kaltbluetig');
+  assert.strictEqual(KT.keystoneOffen('key_ruhige_hand'), true);
+  assert.strictEqual(KT.keystoneOffen('key_blutrausch'), true, 'zweiter Kraft-Grundsatz auch');
+  assert.strictEqual(KT.keystoneOffen('key_turmwache'), false, 'fremder Zweig bleibt zu');
+  assert.strictEqual(KT.keystoneOffen('key_sammler'), false);
+});
+
+test('Mindestpreis eines Grundsatzes: 15 Fragmente', () => {
+  const { KT } = fresh();
+  KT.addFragments(60);
+  const vor = KT.getFragments();
+  for (let i = 0; i < 5; i++) KT.invest('node_damage');   // 5
+  KT.invest('node_crit');                                 // 1
+  KT.investNotable('not_kaltbluetig');                    // 4
+  KT.investKeystone('key_ruhige_hand');                   // 5
+  assert.strictEqual(vor - KT.getFragments(), 15);
 });

@@ -89,6 +89,7 @@
     'knowledge.key.sammler.label':     'Sammler',
     'knowledge.key.sammler.desc':      '−50 % Gold — dafür +50 % Fundqualität und +30 % Erfahrung.',
     'knowledge.key.only_one':          'Nur ein Grundsatz zur Zeit.',
+    'knowledge.key.needs_notable':     'Braucht ein Bündel',
     'knowledge.key.cost':              '{n} Fragmente',
     'knowledge.node.atkspeed.label':     'Geübte Hände',
     'knowledge.node.atkspeed.desc':      '+3 % Angriffstempo pro Rang'
@@ -159,6 +160,7 @@
     'knowledge.key.sammler.label':     'Collector',
     'knowledge.key.sammler.desc':      '−50% gold — but +50% find quality and +30% experience.',
     'knowledge.key.only_one':          'Only one tenet at a time.',
+    'knowledge.key.needs_notable':     'Needs a bundle',
     'knowledge.key.cost':              '{n} fragments',
     'knowledge.node.atkspeed.label':     'Practiced Hands',
     'knowledge.node.atkspeed.desc':      '+3% attack speed per rank'
@@ -663,11 +665,37 @@
    * Wechseln geht ueber loeseKeystone(): der Einsatz kommt vollstaendig
    * zurueck. Der Preis ist nicht die Huerde, der Ausschluss ist es.
    */
+  /**
+   * Steht der Weg zu diesem Grundsatz offen?
+   *
+   * Er verlangt MINDESTENS EIN BUENDEL seines Zweigs. Ohne das war er fuer
+   * fuenf Fragmente zu haben, ganz ohne Investition — und das drehte die
+   * Anreize um: sein Preis trifft einen Wert, den erst der Zweig liefert.
+   * Gemessen fuer "Ruhige Hand" (kein Krit, +45 % Schaden):
+   *     0 Kraft-Raenge -> Krit 0, Verlust 0 %,   netto +45 %
+   *    10 Kraft-Raenge -> Krit 10 %, Verlust 4,8 %, netto +38 %
+   * Der Grundsatz war also am staerksten, wenn man nichts investiert hatte.
+   *
+   * Verkettet statt beziffert: 6 Raenge -> Buendel -> Grundsatz. Der
+   * Mindestpreis ist damit 6 + 4 + 5 = 15 Fragmente, und die Bedingung
+   * skaliert von selbst mit, statt an einer erfundenen Schwelle zu haengen.
+   */
+  function keystoneOffen(id) {
+    var k = KEYSTONE_BY_ID[id];
+    if (!k) return false;
+    for (var i = 0; i < NOTABLES.length; i++) {
+      if (NOTABLES[i].zweig !== k.zweig) continue;
+      if ((state.ranks[NOTABLES[i].id] | 0) > 0) return true;
+    }
+    return false;
+  }
+
   function investKeystone(id) {
     var k = KEYSTONE_BY_ID[id];
     if (!k) return false;
     if ((state.ranks[id] | 0) > 0) return false;      // schon gesetzt
     if (getActiveKeystone()) return false;            // ein anderer laeuft
+    if (!keystoneOffen(id)) return false;             // Zweig nicht gegangen
     if (state.fragments < KEYSTONE_KOSTEN) return false;
     state.fragments -= KEYSTONE_KOSTEN;
     state.ranks[id] = 1;
@@ -838,6 +866,7 @@
     // #116: Keystones — hoechstens einer, Festpreis, gegenseitiger Ausschluss.
     getKeystones: function () { return KEYSTONES.slice(); },
     getActiveKeystone: getActiveKeystone,
+    keystoneOffen: keystoneOffen,
     investKeystone: investKeystone,
     loeseKeystone: loeseKeystone,
     KEYSTONE_KOSTEN: KEYSTONE_KOSTEN,

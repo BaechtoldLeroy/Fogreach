@@ -3162,32 +3162,39 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   /**
-   * Der Wissensbaum als DREI ZWEIGE nebeneinander.
+   * Der Wissensbaum als TRICHTER je Zweig.
    *
-   * Vorher lagen alle Knoten in einem 2-Spalten-Raster und die Grundsaetze in
-   * einer zweiten Ansicht dahinter. Die Zweige — Kraft, Zaehigkeit, Gier — sind
-   * aber die tragende Struktur: an ihnen haengt, welcher Notable sich oeffnet
-   * (sechs Raenge im eigenen Zweig). Im Raster war davon nichts zu sehen.
+   * Vorher waren alle drei Sorten gleich breite Zeilen untereinander: ein
+   * Kleinknoten sah aus wie ein Buendel sah aus wie ein Grundsatz. Die
+   * Hierarchie stand nur in den Zwischenueberschriften.
    *
-   * Jetzt eine Saeule je Zweig, von oben nach unten gelesen:
-   *   Kopf mit Namen und Rangstand (z. B. "6 / 15")
-   *   die kleinen Knoten des Zweigs, jeder mit Pips und [+]
-   *   ein Tor, das die noetigen sechs Raenge nennt
-   *   die zwei Buendel des Zweigs
-   *   die zwei Grundsaetze des Zweigs
-   * Eine senkrechte Linie verbindet das Ganze — erfuellt in Zweigfarbe,
-   * offen gedaempft, damit man auf einen Blick sieht, wie weit man ist.
+   * PoE loest das ueber die KNOTENFORM — kleiner Kreis, groesserer Notable,
+   * grosses Keystone-Sechseck; man erkennt den Rang, bevor man den Text
+   * liest. Ein Spinnennetz waere hier dagegen Form ohne Funktion: wir haben
+   * 22 Knoten, einen Startpunkt, keine zweiguebergreifenden Kanten und keine
+   * alternativen Wege (die Bedingung ist eine Schwelle, kein Pfad). Ein Netz
+   * wuerde eine Wahlfreiheit zeichnen, die es nicht gibt — und in 40-px-Kreise
+   * passt ohne Zoom keine Beschriftung.
    *
-   * Der Umschalter zwischen zwei Ansichten entfaellt damit; alles passt auf
-   * einen Schirm (gerechnet: 314 px fuer den vollsten Zweig bei 340 px Hoehe).
+   * Uebernommen ist deshalb die Form, nicht das Netz:
+   *   viele kleine Kacheln (zwei je Reihe)
+   *        |  Linien laufen zusammen
+   *   ein Tor ("Braucht 6 Raenge") als Knotenpunkt
+   *        |  faechert auf
+   *   zwei Buendel, volle Breite
+   *        |
+   *   zwei Grundsaetze, hoeher und mit Sechseck-Kontur
+   *
+   * Die Linien sind nicht Zierde: seit dem Zweig-Tor fuer Grundsaetze
+   * (keystoneOffen) bildet die untere Linie eine echte Bedingung ab.
    */
   _ktRenderCards() {
     if (!this._ktCardLayer || !window.KnowledgeTree) return;
     this._ktCardLayer.removeAll(true);
 
     const KT = window.KnowledgeTree;
-    const fragmente = KT.getFragments();
-    const aktiverKey = (typeof KT.getActiveKeystone === 'function') ? KT.getActiveKeystone() : null;
+    const frag = KT.getFragments();
+    const aktiverKey = KT.getActiveKeystone();
     const notKosten = KT.NOTABLE_KOSTEN || 4;
     const keyKosten = KT.KEYSTONE_KOSTEN || 5;
     const braucht = KT.NOTABLE_BRAUCHT || 6;
@@ -3200,161 +3207,205 @@ class HubSceneV2 extends Phaser.Scene {
 
     const panelW = this._ktPanelW || 920;
     const panelH = this._ktPanelH || 460;
-    const bodyTop = -panelH / 2 + 32 + 8;
     const spalte = (panelW - 32 - 24) / 3;
+    const oben = -panelH / 2 + 32 + 6;
 
     const katalog = KT.getCatalog();
-    const notables = (typeof KT.getNotables === 'function') ? KT.getNotables() : [];
-    const keystones = (typeof KT.getKeystones === 'function') ? KT.getKeystones() : [];
+    const notables = KT.getNotables ? KT.getNotables() : [];
+    const keystones = KT.getKeystones ? KT.getKeystones() : [];
     const zweigVon = KT.ZWEIG || {};
 
     ZWEIGE.forEach((zw, si) => {
       const cx = -panelW / 2 + 16 + si * (spalte + 12) + spalte / 2;
-      const raenge = (typeof KT.zweigRaenge === 'function') ? KT.zweigRaenge(zw.id) : 0;
-      const offen = raenge >= braucht;
-      let y = bodyTop;
+      const raenge = KT.zweigRaenge ? KT.zweigRaenge(zw.id) : 0;
+      const torOffen = raenge >= braucht;
 
-      // --- Kopf: Zweigname + Rangstand -------------------------------------
-      const kopf = this.add.text(cx, y, _HUB_T('knowledge.zweig.' + zw.id), {
+      // Linien zuerst, damit die Kacheln darueber liegen.
+      const linien = this.add.graphics();
+      this._ktCardLayer.add(linien);
+
+      // --- Kopf -------------------------------------------------------------
+      let y = oben;
+      this._ktCardLayer.add(this.add.text(cx, y, _HUB_T('knowledge.zweig.' + zw.id), {
         fontFamily: 'serif', fontSize: 15, fontStyle: 'bold', color: zw.hex, resolution: 2
-      }).setOrigin(0.5, 0);
-      this._ktCardLayer.add(kopf);
-      const stand = this.add.text(cx, y + 18, raenge + ' / ' + this._ktZweigMax(zw.id), {
+      }).setOrigin(0.5, 0));
+      this._ktCardLayer.add(this.add.text(cx, y + 17, raenge + ' / ' + this._ktZweigMax(zw.id), {
         fontFamily: 'monospace', fontSize: 11,
-        color: offen ? zw.hex : '#7a7a84', resolution: 2
-      }).setOrigin(0.5, 0);
-      this._ktCardLayer.add(stand);
-      y += 36;
+        color: torOffen ? zw.hex : '#7a7a84', resolution: 2
+      }).setOrigin(0.5, 0));
+      y += 34;
 
-      // --- Senkrechte Spange hinter der Saeule ------------------------------
-      const spange = this.add.graphics();
-      spange.lineStyle(2, zw.farbe, offen ? 0.55 : 0.2);
-      spange.beginPath();
-      spange.moveTo(cx - spalte / 2 + 6, y);
-      spange.lineTo(cx - spalte / 2 + 6, bodyTop + 300);
-      spange.strokePath();
-      this._ktCardLayer.add(spange);
-
-      // --- Die kleinen Knoten des Zweigs -----------------------------------
-      katalog.filter((n) => zweigVon[n.id] === zw.id).forEach((node) => {
+      // --- Kleinknoten: zwei je Reihe ---------------------------------------
+      const klein = katalog.filter((n) => zweigVon[n.id] === zw.id);
+      const kb = (spalte - 6) / 2;          // Kachelbreite
+      const kh = 26;
+      const ankerX = [];                    // Ausgangspunkte der Linien
+      klein.forEach((node, i) => {
+        const sp = i % 2;
+        const reihe = Math.floor(i / 2);
+        const x = cx - spalte / 2 + sp * (kb + 6) + kb / 2;
+        const yy = y + reihe * (kh + 5);
         const rank = KT.getRank(node.id);
         const voll = rank >= node.maxRank;
-        const kannMehr = (fragmente >= 1) && !voll;
-        this._ktZeile(cx, y, spalte, {
-          farbe: zw.farbe,
+        this._ktKachel(x, yy, kb, kh, {
+          farbe: zw.farbe, gesetzt: rank > 0,
           titel: _HUB_T(node.labelKey),
           titelHex: rank > 0 ? zw.hex : '#b9b9c2',
           rechts: this._ktPips(rank, node.maxRank),
           rechtsHex: voll ? '#8fd6a0' : (rank > 0 ? zw.hex : '#5f5f68'),
           knopf: voll ? null : '+',
-          knopfAn: kannMehr,
-          tip: _HUB_T(node.descKey),
+          knopfAn: frag >= 1 && !voll,
           tun: () => { try { KT.invest(node.id); } catch (e) {} }
         });
-        y += 30;
+        ankerX.push({ x: x, y: yy + kh });
       });
+      y += Math.ceil(klein.length / 2) * (kh + 5) + 6;
 
-      // --- Tor zu den Buendeln ---------------------------------------------
-      y += 4;
-      const tor = this.add.text(cx, y, offen
+      // --- Tor: Knotenpunkt, in dem die Linien zusammenlaufen ---------------
+      const torY = y + 8;
+      linien.lineStyle(1.5, zw.farbe, torOffen ? 0.7 : 0.25);
+      ankerX.forEach((a) => {
+        linien.beginPath();
+        linien.moveTo(a.x, a.y);
+        linien.lineTo(a.x, torY - 6);
+        linien.lineTo(cx, torY - 6);
+        linien.lineTo(cx, torY);
+        linien.strokePath();
+      });
+      linien.fillStyle(torOffen ? zw.farbe : 0x3a3a44, 1);
+      linien.fillCircle(cx, torY, 4);
+      this._ktCardLayer.add(this.add.text(cx + 10, torY - 7, torOffen
         ? _HUB_T('knowledge.zweig.open')
         : _HUB_T('knowledge.not.locked', { n: braucht }), {
         fontFamily: 'monospace', fontSize: 10,
-        color: offen ? '#8fd6a0' : '#6a6a72', resolution: 2
-      }).setOrigin(0.5, 0);
-      this._ktCardLayer.add(tor);
-      y += 18;
+        color: torOffen ? '#8fd6a0' : '#6a6a72', resolution: 2
+      }).setOrigin(0, 0));
+      y = torY + 12;
 
-      // --- Die zwei Buendel --------------------------------------------------
-      notables.filter((n) => n.zweig === zw.id).forEach((n) => {
+      // --- Buendel: volle Breite --------------------------------------------
+      const nb = spalte;
+      const nh = 34;
+      const notAnker = [];
+      notables.filter((n) => n.zweig === zw.id).forEach((n, i) => {
+        const yy = y + i * (nh + 5);
         const hat = KT.getRank(n.id) > 0;
-        const kann = !hat && offen && fragmente >= notKosten;
-        this._ktZeile(cx, y, spalte, {
-          farbe: zw.farbe, dick: true, gesetzt: hat, gesperrt: !hat && !offen,
+        linien.lineStyle(1.5, zw.farbe, hat ? 0.7 : (torOffen ? 0.35 : 0.15));
+        linien.beginPath();
+        linien.moveTo(cx, i === 0 ? torY : y - 5);
+        linien.lineTo(cx, yy);
+        linien.strokePath();
+        this._ktKachel(cx, yy, nb, nh, {
+          farbe: zw.farbe, gross: true, gesetzt: hat, gesperrt: !hat && !torOffen,
           titel: _HUB_T(n.labelKey),
-          titelHex: hat ? '#cfffcf' : (offen ? '#ffd166' : '#6a6a72'),
+          titelHex: hat ? '#cfffcf' : (torOffen ? '#ffd166' : '#6a6a72'),
           unter: _HUB_T(n.descKey),
-          knopf: hat ? '\u2713' : (offen ? _HUB_T('knowledge.key.btn_set', { n: notKosten }) : null),
-          knopfAn: kann,
+          knopf: hat ? '\u2713' : (torOffen ? _HUB_T('knowledge.key.btn_set', { n: notKosten }) : null),
+          knopfAn: !hat && torOffen && frag >= notKosten,
           tun: () => { try { KT.investNotable(n.id); } catch (e) {} }
         });
-        y += 38;
+        notAnker.push({ y: yy + nh, hat: hat });
       });
+      y += 2 * (nh + 5) + 4;
 
-      // --- Die zwei Grundsaetze ---------------------------------------------
-      y += 2;
-      keystones.filter((k) => k.zweig === zw.id).forEach((k) => {
+      // --- Grundsaetze: hoeher, mit Sechseck-Kontur -------------------------
+      const kyH = 44;
+      const wegOffen = notAnker.some((a) => a.hat);
+      keystones.filter((k) => k.zweig === zw.id).forEach((k, i) => {
+        const yy = y + i * (kyH + 5);
         const ist = aktiverKey === k.id;
         const blockiert = !!aktiverKey && !ist;
-        const kann = ist || (!blockiert && fragmente >= keyKosten);
-        this._ktZeile(cx, y, spalte, {
-          farbe: 0xc9a0ff, dick: true, gesetzt: ist, gesperrt: blockiert, grundsatz: true,
+        const zu = !wegOffen && !ist;
+        linien.lineStyle(2, 0xc9a0ff, wegOffen ? 0.65 : 0.15);
+        linien.beginPath();
+        linien.moveTo(cx, i === 0 ? (notAnker.length ? notAnker[notAnker.length - 1].y : y - 5) : y - 5);
+        linien.lineTo(cx, yy);
+        linien.strokePath();
+        this._ktKachel(cx, yy, nb, kyH, {
+          farbe: 0xc9a0ff, gross: true, sechseck: true,
+          gesetzt: ist, gesperrt: blockiert || zu,
           titel: _HUB_T(k.labelKey),
-          titelHex: ist ? '#e8d5ff' : (blockiert ? '#6a6a72' : '#c9a0ff'),
+          titelHex: ist ? '#e8d5ff' : ((blockiert || zu) ? '#6a6a72' : '#c9a0ff'),
           unter: _HUB_T(k.descKey),
           knopf: ist ? _HUB_T('knowledge.key.btn_release')
-            : (blockiert ? _HUB_T('knowledge.key.only_one')
-              : _HUB_T('knowledge.key.btn_set', { n: keyKosten })),
-          knopfAn: kann,
+            : (zu ? _HUB_T('knowledge.key.needs_notable')
+              : (blockiert ? _HUB_T('knowledge.key.only_one')
+                : _HUB_T('knowledge.key.btn_set', { n: keyKosten }))),
+          knopfAn: ist || (!blockiert && !zu && frag >= keyKosten),
           tun: () => {
             try { if (ist) KT.loeseKeystone(); else KT.investKeystone(k.id); } catch (e) {}
           }
         });
-        y += 38;
       });
     });
   }
 
-  /** Hoechstmoegliche Rangsumme eines Zweigs — fuer die Anzeige "6 / 15". */
   _ktZweigMax(zweig) {
     const KT = window.KnowledgeTree;
     const zv = KT.ZWEIG || {};
-    return KT.getCatalog().reduce((s, n) => s + (zv[n.id] === zweig ? n.maxRank : 0), 0);
+    return KT.getCatalog().reduce((s2, n) => s2 + (zv[n.id] === zweig ? n.maxRank : 0), 0);
   }
 
   _ktPips(rank, max) {
-    let s = '';
-    for (let i = 0; i < max; i++) s += (i < rank ? '\u25C6' : '\u25C7');
-    return s;
+    let s2 = '';
+    for (let i = 0; i < max; i++) s2 += (i < rank ? '\u25C6' : '\u25C7');
+    return s2;
   }
 
   /**
-   * Eine Zeile in einer Zweig-Saeule. Kleine Knoten sind schmal (Titel + Pips
-   * + [+]), Buendel und Grundsaetze hoeher (Titel, Beschreibung, Knopf).
+   * Eine Kachel. `gross` gibt Beschreibung und mehr Hoehe, `sechseck`
+   * abgeschraegte Ecken — daran erkennt man einen Grundsatz auf einen Blick,
+   * ohne den Text zu lesen.
    */
-  _ktZeile(cx, y, breite, o) {
-    const hoch = o.dick ? 36 : 28;
-    const c = this.add.container(cx, y + hoch / 2);
+  _ktKachel(cx, oben, breite, hoch, o) {
+    const c = this.add.container(cx, oben + hoch / 2);
     this._ktCardLayer.add(c);
 
     const bg = this.add.graphics();
-    bg.fillStyle(o.gesetzt ? 0x243024 : 0x16161f, o.gesperrt ? 0.5 : 0.92);
-    bg.fillRoundedRect(-breite / 2, -hoch / 2, breite, hoch, 4);
-    bg.lineStyle(o.gesetzt ? 2 : 1, o.gesetzt ? 0x8fd6a0 : o.farbe, o.gesperrt ? 0.25 : 0.6);
-    bg.strokeRoundedRect(-breite / 2, -hoch / 2, breite, hoch, 4);
+    const fill = o.gesetzt ? 0x243024 : 0x16161f;
+    const alpha = o.gesperrt ? 0.5 : 0.94;
+    const rand = o.gesetzt ? 0x8fd6a0 : o.farbe;
+    const dicke = o.gesetzt ? 2 : 1;
+    const w = breite / 2, h = hoch / 2;
+    if (o.sechseck) {
+      const e = 9;
+      const pts = [-w + e, -h, w - e, -h, w, 0, w - e, h, -w + e, h, -w, 0];
+      bg.fillStyle(fill, alpha);
+      bg.fillPoints(pts.reduce((a, v, i) => {
+        if (i % 2 === 0) a.push({ x: v, y: pts[i + 1] });
+        return a;
+      }, []), true);
+      bg.lineStyle(dicke, rand, o.gesperrt ? 0.3 : 0.75);
+      bg.strokePoints(pts.reduce((a, v, i) => {
+        if (i % 2 === 0) a.push({ x: v, y: pts[i + 1] });
+        return a;
+      }, []), true);
+    } else {
+      bg.fillStyle(fill, alpha);
+      bg.fillRoundedRect(-w, -h, breite, hoch, 4);
+      bg.lineStyle(dicke, rand, o.gesperrt ? 0.3 : 0.6);
+      bg.strokeRoundedRect(-w, -h, breite, hoch, 4);
+    }
     c.add(bg);
 
-    c.add(this.add.text(-breite / 2 + 8, -hoch / 2 + 4, o.titel, {
-      fontFamily: 'serif', fontSize: o.dick ? 13 : 12, fontStyle: 'bold',
+    c.add(this.add.text(-w + (o.sechseck ? 14 : 8), -h + 4, o.titel, {
+      fontFamily: 'serif', fontSize: o.gross ? 13 : 12, fontStyle: 'bold',
       color: o.titelHex, resolution: 2
     }));
-
     if (o.unter) {
-      c.add(this.add.text(-breite / 2 + 8, -hoch / 2 + 19, o.unter, {
+      c.add(this.add.text(-w + (o.sechseck ? 14 : 8), -h + 19, o.unter, {
         fontFamily: 'serif', fontSize: 10, color: o.gesperrt ? '#55555c' : '#b9bcc4',
-        resolution: 2, wordWrap: { width: breite - 90 }
+        resolution: 2, wordWrap: { width: breite - (o.sechseck ? 110 : 95) }
       }));
     }
     if (o.rechts) {
-      c.add(this.add.text(breite / 2 - 26, -hoch / 2 + 6, o.rechts, {
-        fontFamily: 'monospace', fontSize: 11, color: o.rechtsHex, resolution: 2
+      c.add(this.add.text(w - 24, -h + 6, o.rechts, {
+        fontFamily: 'monospace', fontSize: 10, color: o.rechtsHex, resolution: 2
       }).setOrigin(1, 0));
     }
-
     if (o.knopf) {
       const an = !!o.knopfAn;
-      const btn = this.add.text(breite / 2 - 6, 0, o.knopf, {
-        fontFamily: o.dick ? 'serif' : 'monospace', fontSize: o.dick ? 11 : 14,
+      const btn = this.add.text(w - (o.sechseck ? 12 : 5), 0, o.knopf, {
+        fontFamily: o.gross ? 'serif' : 'monospace', fontSize: o.gross ? 11 : 13,
         color: an ? (o.gesetzt ? '#ffdada' : '#9bff9b') : '#5f5f68',
         backgroundColor: an ? (o.gesetzt ? '#7a3a3a' : '#1f3a1f') : '#26262c',
         padding: { x: 6, y: 2 }, resolution: 2
