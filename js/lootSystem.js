@@ -768,6 +768,8 @@ if (window.i18n) {
   //
   //   'bruch'  — der Verbraucher erwartet einen Bruch (0,10 = +10 %)
   //   'punkte' — der Verbraucher erwartet eine Punktzahl (Attribute)
+  //   'flach'  — die Zahl auf dem Gegenstand IST die Wirkung und wird NICHT
+  //              mit der Tiefe umgerechnet
   //
   // faktor rechnet den Anteil in die Einheit um, in der die WIRKUNG dann
   // tatsaechlich 8-12 % betraegt. Zwei Beispiele, warum er nicht ueberall 1 ist:
@@ -778,7 +780,16 @@ if (window.i18n) {
   var WIRKUNG = {
     damage:    { einheit: 'bruch', faktor: 1 },
     speed:     { einheit: 'bruch', faktor: 1 },
-    hp:        { einheit: 'bruch', faktor: 1 },
+    // Lebenspunkte sind KEIN abstrakter Wert. Wer +7 Lebenspunkte gefunden
+    // hat, soll +7 behalten — eine Zahl, die beim Abstieg kleiner wird, waere
+    // fuer den Spieler schlicht unverstaendlich. Der relative Wert faellt
+    // ohnehin von selbst, weil die Gegner haerter zuschlagen und die eigene
+    // Basis mitwaechst; dafuer braucht es keine zweite Abwertung.
+    //
+    // Die Hoehe kommt trotzdem aus dem gemeinsamen Budget: beim WURF wird der
+    // Anteil einmal gegen die Referenzkurve der Fundtiefe gerechnet, danach
+    // steht die Zahl fest.
+    hp:        { einheit: 'flach', faktor: 1 },
     armor:     { einheit: 'bruch', faktor: 0.9 },
     crit:      { einheit: 'bruch', faktor: 2 },
     move:      { einheit: 'bruch', faktor: 1 },
@@ -839,6 +850,30 @@ if (window.i18n) {
     return Object.prototype.hasOwnProperty.call(BASIS_TIEFENWERTE, stat);
   }
 
+  /**
+   * Der Wert, der fuer diesen Zielanteil auf dieser Fundtiefe auf dem
+   * Gegenstand STEHT — in der Einheit, die der Affix braucht.
+   *
+   * Ohne diesen Helfer muss jeder Aufrufer wissen, dass hp flach gerechnet
+   * wird und alles andere in Punkten. Genau daran ist die erste Messung nach
+   * der Umstellung gescheitert: sie fuetterte Punkte in einen flachen Affix
+   * und las 34 % statt 10.
+   */
+  function affixWert(def, anteil, iLevel) {
+    var d = def;
+    if (typeof def === 'string') {
+      d = null;
+      for (var i = 0; i < AFFIX_DEFS.length; i++) {
+        if (AFFIX_DEFS[i].id === def) { d = AFFIX_DEFS[i]; break; }
+      }
+    }
+    if (!d) return 0;
+    if (_wirkungFuer(d.statKey).einheit === 'flach') {
+      return Math.max(1, Math.round(anteil * referenzLebenspunkte(iLevel)));
+    }
+    return Math.round(affixPunkte(anteil, iLevel) * 10) / 10;
+  }
+
   /** Zurueck: welchen ANTEIL bedeuten diese Punkte auf der aktuellen Tiefe? */
   function affixAnteil(punkte, tiefe) {
     return (Number(punkte) || 0) / (PUNKTE_SKALA * _tiefenNenner(tiefe));
@@ -852,8 +887,10 @@ if (window.i18n) {
    */
   function affixWirkung(def, punkte, tiefe) {
     if (!def) return 0;
-    var t = (typeof tiefe === 'number' && tiefe > 0) ? tiefe : _aktuelleTiefe();
     var w = _wirkungFuer(def.statKey);
+    // 'flach': die Zahl auf dem Gegenstand IST die Wirkung — keine Umrechnung.
+    if (w.einheit === 'flach') return (Number(punkte) || 0) * w.faktor;
+    var t = (typeof tiefe === 'number' && tiefe > 0) ? tiefe : _aktuelleTiefe();
     return affixAnteil(punkte, t) * w.faktor;
   }
 
@@ -905,10 +942,17 @@ if (window.i18n) {
       // sie beschreibt jetzt nichts mehr, was gewuerfelt wird, und wird beim
       // naechsten Aufraeumen entfernt.
       const anteil = AFFIX_ANTEIL_MIN + rng() * (AFFIX_ANTEIL_MAX - AFFIX_ANTEIL_MIN);
-      let value = affixPunkte(anteil, iLevel);
-      // Eine Nachkommastelle: die Zahl waechst mit der Tiefe (Tiefe 1 rund 0,4,
-      // Tiefe 30 rund 3,3), ganzzahlig gerundet waere sie unten sprunghaft.
-      value = Math.round(value * 10) / 10;
+      let value;
+      if (_wirkungFuer(pickedDef.statKey).einheit === 'flach') {
+        // Der Anteil wird EINMAL gegen die Referenzkurve der Fundtiefe
+        // gerechnet; die Zahl steht danach fest und wird nicht mehr umgerechnet.
+        value = Math.max(1, Math.round(anteil * referenzLebenspunkte(iLevel)));
+      } else {
+        value = affixPunkte(anteil, iLevel);
+        // Eine Nachkommastelle: die Zahl waechst mit der Tiefe (Tiefe 1 rund
+        // 0,4, Tiefe 30 rund 3,3), ganzzahlig waere sie unten sprunghaft.
+        value = Math.round(value * 10) / 10;
+      }
       result.push({ defId: pickedDef.id, value: value });
     }
     return result;
@@ -939,7 +983,7 @@ if (window.i18n) {
         // Zeug von selbst ab, ohne dass irgendwo etwas ablaufen muss.
         const wirkung = affixWirkung(def, inst.value);
         const einheit = _wirkungFuer(def.statKey).einheit;
-        if (einheit === 'punkte') {
+        if (einheit === 'punkte' || einheit === 'flach') {
           const curF = _bonusCache.flat[def.statKey] || 0;
           _bonusCache.flat[def.statKey] = curF + wirkung;
         } else {
@@ -1935,6 +1979,7 @@ if (window.i18n) {
     _affixValueScale: _affixValueScale,
     // #122: Affixwerte sind absolut, ihre Wirkung haengt an der aktuellen Tiefe.
     affixPunkte: affixPunkte,
+    affixWert: affixWert,
     affixAnteil: affixAnteil,
     affixWirkung: affixWirkung,
     // #114: Bezug fuer flache Lebenspunkte — nach Tiefe, nicht nach Stufe.

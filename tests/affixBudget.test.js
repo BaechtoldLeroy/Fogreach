@@ -81,7 +81,10 @@ function messeAufTiefe(tiefe) {
     LS.AFFIX_DEFS.forEach(function (def) {
       var slot = (def.appliesTo && def.appliesTo.length) ? def.appliesTo[0] : 'body';
       if (['weapon','head','body','boots'].indexOf(slot) < 0) slot = 'body';
-      var mit = anlegen({ defId: def.id, value: LS.affixPunkte(0.10, T) }, slot);
+      // affixWert liefert die Zahl in der Einheit, die DIESER Affix braucht —
+      // fuer Lebenspunkte eine flache Zahl, sonst Punkte. Ohne den Helfer
+      // fuetterte die Messung Punkte in einen flachen Affix und las 34 %.
+      var mit = anlegen({ defId: def.id, value: LS.affixWert(def, 0.10, T) }, slot);
       raus[def.id] = (mit.dps / grund.dps - 1) * 100 + (mit.ehp / grund.ehp - 1) * 100;
     });
     baseStats.maxHP = 30;
@@ -202,6 +205,8 @@ test('Ein Stueck von weiter oben faellt mit der Tiefe ab', () => {
   })()`);
   // Auf der Fundtiefe voll, danach fallend — (5+3)/(T+3).
   assert.ok(Math.abs(r['5'] - 0.09) < 1e-6, 'auf Tiefe 5 erwartet 0,09, war ' + r['5']);
+  // Ruestung ist ein abstrakter Wert und faellt deshalb ab. Lebenspunkte nicht
+  // — die haben ihren eigenen Test weiter unten.
   assert.ok(r['10'] < r['5'] * 0.7, 'auf Tiefe 10 faellt es zu wenig ab');
   assert.ok(r['20'] < r['5'] * 0.4, 'auf Tiefe 20 faellt es zu wenig ab');
   assert.ok(r['30'] < r['20'], 'es faellt nicht weiter');

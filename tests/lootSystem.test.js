@@ -263,20 +263,41 @@ test('getBonus summiert Anteile ueber mehrere Stuecke', () => {
     'erwartet 0,30, war ' + sys.getBonus('dmg_spinAttack'));
 });
 
-test('#114: der LP-Affix ist ein ANTEIL, kein flacher Zuschlag mehr', () => {
-  // Gemessen war er vorher 97 % wert, waehrend Ruestung bei 11 % lag: er rollte
-  // bis 29 flache Punkte auf eine Basis von 30. Jetzt liefert er einen Bruch,
-  // den recalcDerived auf die Basis-Lebenspunkte anwendet.
+test('#114: der LP-Affix traegt eine FLACHE Zahl, die nicht mit der Tiefe faellt', () => {
+  // Zwei Korrekturen stecken hier drin. Erstens war er frueher 97 % wert
+  // (bis 29 flache Punkte auf eine Basis von 30), waehrend Ruestung bei 11 %
+  // lag — die Hoehe kommt jetzt aus demselben 8-12-%-Budget wie alles andere.
+  //
+  // Zweitens wird er als EINZIGER nicht mit der Tiefe umgerechnet:
+  // Lebenspunkte sind kein abstrakter Wert. Wer +7 gefunden hat, behaelt +7.
+  // Der relative Wert faellt ohnehin von selbst, weil die Gegner haerter
+  // zuschlagen und die eigene Basis mitwaechst.
   const sys = freshSystem();
-  aufTiefe(20);
-  const p = punkteFuer(sys, 0.10, 20);
+  const wert = sys.affixWert('of_health', 0.10, 20);
   globalThis.window.equipment = {
-    weapon: makeMockItem([{ defId: 'of_health', value: p }]),
-    head: makeMockItem([{ defId: 'of_health', value: p }])
+    weapon: makeMockItem([{ defId: 'of_health', value: wert }]),
+    head: makeMockItem([{ defId: 'of_health', value: wert }])
   };
-  sys.recomputeBonuses();
-  assert.ok(Math.abs(sys.getBonus('hp') - 0.20) < 1e-9,
-    'zwei Stuecke zu je 10 % erwartet 0,20, war ' + sys.getBonus('hp'));
+  const gemessen = {};
+  [5, 20, 30].forEach((t) => { aufTiefe(t); sys.recomputeBonuses(); gemessen[t] = sys.getBonus('hp'); });
+
+  assert.ok(Math.abs(gemessen[20] - 2 * wert) < 1e-9,
+    'zwei Stuecke zu je ' + wert + ' LP erwartet ' + (2 * wert) + ', war ' + gemessen[20]);
+  assert.strictEqual(gemessen[5], gemessen[20],
+    'der Zuwachs aendert sich mit der Tiefe — Lebenspunkte sollen fest bleiben');
+  assert.strictEqual(gemessen[30], gemessen[20],
+    'der Zuwachs aendert sich mit der Tiefe — Lebenspunkte sollen fest bleiben');
+});
+
+test('#114: die HOEHE kommt trotzdem aus der Fundtiefe', () => {
+  // Fest heisst nicht gleich: ein Stueck von weiter unten gibt mehr, es
+  // verliert nur nachtraeglich nichts mehr.
+  const sys = freshSystem();
+  const flach = [1, 10, 20, 30].map((t) => sys.affixWert('of_health', 0.10, t));
+  for (let i = 1; i < flach.length; i++) {
+    assert.ok(flach[i] > flach[i - 1],
+      'die Fundtiefe hebt den Wert nicht mehr: ' + flach.join(' / '));
+  }
 });
 
 test('D2 core-attribute affixes exist as flat stats and aggregate via getBonus (#60)', () => {

@@ -1527,13 +1527,12 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // Vorher rollte er bis 29 flache Punkte auf eine Basis von 30 — ein einziger
   // Affix verdoppelte die Lebenspunkte und war neunmal so viel wert wie
   // Ruestung.
-  const _affixHpAnteil = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
-    ? Math.max(0, window.LootSystem.getBonus('hp') || 0)
+  // Die Zahl auf dem Gegenstand IST der Zuwachs: getBonus liefert hier keine
+  // Quote, sondern die Lebenspunkte selbst. Sie aendert sich nicht mehr, wenn
+  // man tiefer geht.
+  const _affixHpBonus = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
+    ? Math.max(0, Math.round(window.LootSystem.getBonus('hp') || 0))
     : 0;
-  const _refLp = (window.LootSystem && typeof window.LootSystem.referenzLebenspunkte === 'function')
-    ? window.LootSystem.referenzLebenspunkte()
-    : (baseStats.maxHP || 30);
-  const _affixHpBonus = Math.round(_refLp * _affixHpAnteil);
   // Brunnen run-scoped max-HP delta (Issue #16).
   const _brunnenMaxHpAdd = (window.brunnenBuffs && typeof window.brunnenBuffs.maxHpAdd === 'number')
     ? window.brunnenBuffs.maxHpAdd
