@@ -1441,9 +1441,21 @@
     if (rewards.items && Array.isArray(rewards.items)) {
       rewards.items.forEach(function (item) {
         if (typeof inventory !== 'undefined' && Array.isArray(inventory)) {
-          var idx = inventory.findIndex(function (slot) { return !slot; });
-          if (idx >= 0) inventory[idx] = Object.assign({}, item);
-          else inventory[0] = Object.assign({}, item);
+          var kopie = Object.assign({}, item);
+          // Ueber InventoryGrid, sonst fehlt die Rasterlage und der Lohn ist
+          // im Inventar unsichtbar. Und: bei vollem Inventar NICHT mehr Platz 0
+          // ueberschreiben — das loeschte stillschweigend ein anderes Stueck.
+          var abgelegt = false;
+          if (window.InventoryGrid && typeof window.InventoryGrid.einlagern === 'function') {
+            abgelegt = window.InventoryGrid.einlagern(kopie) >= 0;
+          } else {
+            var idx = inventory.findIndex(function (slot) { return !slot; });
+            if (idx >= 0) { inventory[idx] = kopie; abgelegt = true; }
+          }
+          if (!abgelegt) {
+            console.warn('[QuestSystem] Inventar voll — Belohnung nicht vergeben: '
+              + (item.name || item.key || '?'));
+          }
           if (typeof refreshInventoryUI === 'function') refreshInventoryUI();
         }
       });

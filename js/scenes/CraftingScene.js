@@ -858,11 +858,19 @@ class CraftingScene extends Phaser.Scene {
     const newItem = JSON.parse(JSON.stringify(recipe.item));
     newItem._baseName = newItem.name;
 
-    // Add to inventory
-    const idx = inventory.findIndex(slot => !slot);
-    if (idx >= 0) {
-      inventory[idx] = newItem;
-      if (typeof window !== 'undefined') window.inventory = inventory;
+    // Add to inventory — ueber InventoryGrid, damit das Stueck eine Rasterlage
+    // bekommt. Ohne die ist es im Inventar unsichtbar (InventoryGrid.belegung
+    // ueberspringt Gegenstaende ohne gridX/gridY).
+    if (typeof window !== 'undefined' && window.InventoryGrid
+        && typeof window.InventoryGrid.einlagern === 'function') {
+      window.inventory = inventory;
+      window.InventoryGrid.einlagern(newItem);
+    } else {
+      const idx = inventory.findIndex(slot => !slot);
+      if (idx >= 0) {
+        inventory[idx] = newItem;
+        if (typeof window !== 'undefined') window.inventory = inventory;
+      }
     }
 
     // Save game

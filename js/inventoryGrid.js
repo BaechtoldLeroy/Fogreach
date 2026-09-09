@@ -194,6 +194,25 @@
    *
    * @returns {Array} die Gegenstaende, fuer die kein Platz war
    */
+  /**
+   * Legt einen Gegenstand ins GLOBALE Inventar — der Weg fuer alles, was neu
+   * hereinkommt: Kauf, Blindkauf, Amulett, Trank, Bauplan, Questlohn,
+   * Startausruestung.
+   *
+   * Wer stattdessen `inventory[ersterFreierIndex] = item` schreibt, setzt KEINE
+   * Lage. `belegung` ueberspringt solche Gegenstaende (siehe dort), sie sind im
+   * Raster also unsichtbar — waehrend Schmiede, Umwurf und Spielstand sie
+   * sehen, weil die die flache Liste ablaufen. Genau so ist der Fehler
+   * entstanden, dass ein bei Mara gekauftes Stueck nur in der Schmiede auftaucht.
+   *
+   * @returns {number} Feldindex, oder -1 wenn kein Platz ist
+   */
+  function einlagern(item, mass) {
+    var inv = (typeof window !== 'undefined') ? window.inventory : null;
+    if (!Array.isArray(inv) || !item) return -1;
+    return einfuegen(inv, item, mass);
+  }
+
   function lageErgaenzen(inventar, mass) {
     if (!Array.isArray(inventar)) return [];
     var heimatlos = [];
@@ -271,6 +290,7 @@
     kannHin: kannHin,
     verschiebe: verschiebe,
     einfuegen: einfuegen,
+    einlagern: einlagern,
     lageErgaenzen: lageErgaenzen,
     itemAn: itemAn,
     indexAn: indexAn,

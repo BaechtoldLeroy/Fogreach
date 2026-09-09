@@ -539,16 +539,20 @@
         this._showToast(_SHOP_T('shop.toast.reroll_unavailable'));
         return;
       }
-      const inv = window.inventory;
-      const slot = Array.isArray(inv) ? inv.findIndex((s) => !s) : -1;
-      if (slot < 0) { this._showToast(_SHOP_T('shop.blind_buy.full')); return; }
+      // Platz erst NACH dem Wurf pruefen — vorher steht das Stueck noch nicht
+      // fest, und seine Groesse entscheidet, ob es ins Raster passt.
+      if (!Array.isArray(window.inventory)) { return; }
       const res = window.LootSystem.blindBuy();
       if (!res || !res.ok) {
         this._showToast(_SHOP_T(res && res.reason === 'gold'
           ? 'shop.toast.not_enough_gold' : 'shop.toast.reroll_unavailable'));
         return;
       }
-      window.inventory[slot] = res.item;
+      if (!this._einlagern(res.item)) {
+        this._showToast(_SHOP_T('shop.blind_buy.full'));
+        window.LootSystem.grantGold(res.price);
+        return;
+      }
       if (typeof window._refreshInventoryHUD === 'function') { try { window._refreshInventoryHUD(); } catch (e) {} }
       this._refreshGold();
       this._renderTab('items'); // Preis kann tiefenabhängig sein -> neu zeichnen
@@ -582,6 +586,25 @@
       return base;
     }
 
+    /**
+     * Ein gekauftes Stueck ins Inventar legen — MIT Rasterlage.
+     *
+     * Vier Kaufwege schrieben es frueher direkt in den ersten freien
+     * Listenplatz. Ohne gridX/gridY ueberspringt InventoryGrid.belegung den
+     * Gegenstand: im Inventar unsichtbar, in Schmiede und Umwurf aber da.
+     */
+    _einlagern(item) {
+      if (!item) return false;
+      if (window.InventoryGrid && typeof window.InventoryGrid.einlagern === 'function') {
+        return window.InventoryGrid.einlagern(item) >= 0;
+      }
+      if (!Array.isArray(window.inventory)) return false;
+      const slot = window.inventory.findIndex((s) => !s);
+      if (slot < 0) return false;
+      window.inventory[slot] = item;
+      return true;
+    }
+
     _tryBuyItem(stockIdx, price) {
       if (!window.LootSystem || !window.LootSystem.spendGold(price)) {
         this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
@@ -589,14 +612,10 @@
       }
       const item = this.shopState.itemStock[stockIdx];
       if (!item) return;
-      if (Array.isArray(window.inventory)) {
-        const slot = window.inventory.findIndex(s => !s);
-        if (slot < 0) {
-          this._showToast(_SHOP_T('shop.toast.inventory_full'));
-          window.LootSystem.grantGold(price); // refund
-          return;
-        }
-        window.inventory[slot] = item;
+      if (Array.isArray(window.inventory) && !this._einlagern(item)) {
+        this._showToast(_SHOP_T('shop.toast.inventory_full'));
+        window.LootSystem.grantGold(price); // refund
+        return;
       }
       this.shopState.itemStock.splice(stockIdx, 1);
       this._refreshGold();
@@ -625,14 +644,10 @@
         this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
         return;
       }
-      if (Array.isArray(window.inventory)) {
-        const slot = window.inventory.findIndex(s => !s);
-        if (slot < 0) {
-          this._showToast(_SHOP_T('shop.toast.inventory_full'));
-          window.LootSystem.grantGold(price); // refund
-          return;
-        }
-        window.inventory[slot] = amulet;
+      if (Array.isArray(window.inventory) && !this._einlagern(amulet)) {
+        this._showToast(_SHOP_T('shop.toast.inventory_full'));
+        window.LootSystem.grantGold(price); // refund
+        return;
       }
       state.amuletStock.splice(stockIdx, 1);
       this._refreshGold();
@@ -825,20 +840,19 @@
         }
       }
       if (!stacked) {
-        const slot = window.inventory.findIndex(s => !s);
-        if (slot < 0) {
-          this._showToast(_SHOP_T('shop.toast.inventory_full'));
-          window.LootSystem.grantGold(cost); // refund
-          return;
-        }
-        window.inventory[slot] = {
+        const ok = this._einlagern({
           type: 'potion',
           potionTier: def.potionTier,
           name: def.name,
           nameKey: 'loot.potion.t' + def.potionTier,
           iconKey: def.iconKey,
           stack: 1
-        };
+        });
+        if (!ok) {
+          this._showToast(_SHOP_T('shop.toast.inventory_full'));
+          window.LootSystem.grantGold(cost); // refund
+          return;
+        }
       }
       this._refreshGold();
       const potName = (window.i18n ? window.i18n.t('loot.potion.t' + def.potionTier) : def.name);

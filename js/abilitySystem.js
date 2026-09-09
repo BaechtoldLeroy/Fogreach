@@ -893,16 +893,20 @@
     }
     // FR-028 (WP04): seed 2 Minor health potions in the first empty inventory slot
     if (Array.isArray(window.inventory)) {
-      for (let i = 0; i < window.inventory.length; i++) {
-        if (!window.inventory[i]) {
-          window.inventory[i] = {
-            type: 'potion',
-            potionTier: 1,
-            name: 'Heiltrank (S)',
-            iconKey: 'itPotionMinor',
-            stack: 2
-          };
-          break;
+      // Ueber InventoryGrid, damit der Trank eine Rasterlage bekommt — sonst
+      // ist er im Inventar unsichtbar (siehe InventoryGrid.einlagern).
+      const _trank = {
+        type: 'potion',
+        potionTier: 1,
+        name: 'Heiltrank (S)',
+        iconKey: 'itPotionMinor',
+        stack: 2
+      };
+      if (window.InventoryGrid && typeof window.InventoryGrid.einlagern === 'function') {
+        window.InventoryGrid.einlagern(_trank);
+      } else {
+        for (let i = 0; i < window.inventory.length; i++) {
+          if (!window.inventory[i]) { window.inventory[i] = _trank; break; }
         }
       }
       if (typeof window._refreshInventoryHUD === 'function') {
