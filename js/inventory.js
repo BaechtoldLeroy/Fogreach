@@ -1438,11 +1438,13 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + _attrDex * 0.01));
     playerCritChance = Phaser.Math.Clamp(playerCritChance + _attrDex * 0.0067, 0, 0.9);
   }
-  // #122/#114: Vitalitaet gab +3 LEBENSPUNKTE je Punkt. Auf einer Basis von
-  // 30 + 2 je Stufe war ein Punkt damit rund 5 % wert — acht Punkte also 40 %,
-  // waehrend Ruestung bei 11 % lag. Jetzt 1 % der Basis je Punkt, wie bei allen
-  // vier Attributen: zehn Punkte sind +10 %.
-  const _attrVitHp = Math.round((baseStats.maxHP || 30) * _attrVit * 0.01);
+  // #114: Vitalitaet gibt ebenfalls FLACHE Lebenspunkte, auf denselben Bezug
+  // gerechnet wie der hp-Affix — 1 % der Referenzkurve je Punkt. Vorher waren
+  // es +3 flach je Punkt auf eine Basis von 30, also rund 5 % je Punkt.
+  const _attrVitHp = Math.round(
+    ((window.LootSystem && typeof window.LootSystem.referenzLebenspunkte === 'function')
+      ? window.LootSystem.referenzLebenspunkte()
+      : (baseStats.maxHP || 30)) * _attrVit * 0.01);
   // Fokus: Abklingzeit ist die Primaerwirkung, 1 % je Punkt (Deckel 40 %).
   // Der Faehigkeitsschaden behaelt sein Verhaeltnis dazu (0,5/0,4).
   const _attrFocusCdr = Math.min(0.40, _attrFoc * 0.01);
@@ -1515,15 +1517,23 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // Variable bleibt als Einhaengepunkt fuer passive Knoten aus #93 bestehen,
   // damit die umgebende Delta-Rechnung unveraendert bleibt.
   let _skillMaxHpBonus = 0;
-  // #122/#114: der hp-Affix ist jetzt ein ANTEIL (0,10 = +10 %), kein flacher
-  // Zuschlag mehr. Er wirkt auf die Basis-Lebenspunkte, waechst also mit dem
-  // Charakter statt ihn frueh zu ueberrennen. Vorher rollte er bis 29 flache
-  // Punkte auf eine Basis von 30 — ein einziger Affix verdoppelte die
-  // Lebenspunkte und war damit neunmal so viel wert wie Ruestung.
+  // #114: der hp-Affix gibt eine FLACHE Zahl Lebenspunkte. Ein Prozentwert
+  // traegt hier nicht — "+10 % Leben" sagt nichts, solange man nicht weiss,
+  // wovon. Der Bezug ist eine Referenzkurve nach TIEFE (LootSystem
+  // .referenzLebenspunkte), nicht die Spielerstufe: jeder andere Affix haengt
+  // an der Tiefe, und dieser eine soll nicht davon abhaengen, wie viel man
+  // vorher gegrindet hat.
+  //
+  // Vorher rollte er bis 29 flache Punkte auf eine Basis von 30 — ein einziger
+  // Affix verdoppelte die Lebenspunkte und war neunmal so viel wert wie
+  // Ruestung.
   const _affixHpAnteil = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
     ? Math.max(0, window.LootSystem.getBonus('hp') || 0)
     : 0;
-  const _affixHpBonus = Math.round((baseStats.maxHP || 30) * _affixHpAnteil);
+  const _refLp = (window.LootSystem && typeof window.LootSystem.referenzLebenspunkte === 'function')
+    ? window.LootSystem.referenzLebenspunkte()
+    : (baseStats.maxHP || 30);
+  const _affixHpBonus = Math.round(_refLp * _affixHpAnteil);
   // Brunnen run-scoped max-HP delta (Issue #16).
   const _brunnenMaxHpAdd = (window.brunnenBuffs && typeof window.brunnenBuffs.maxHpAdd === 'number')
     ? window.brunnenBuffs.maxHpAdd

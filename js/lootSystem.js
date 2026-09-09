@@ -728,6 +728,28 @@ if (window.i18n) {
   var TIEFEN_SOCKEL = 3;
   var PUNKTE_SKALA = 10;    // nur die Lesbarkeit der Zahl, kuerzt sich weg
 
+  // Lebenspunkte sind die eine Achse, auf der ein PROZENTWERT nicht traegt:
+  // "+10 % Leben" sagt nichts, solange man nicht weiss, wovon. Der Affix gibt
+  // deshalb eine FLACHE Zahl — abgeleitet aus einer Referenzkurve nach TIEFE,
+  // nicht nach Stufe.
+  //
+  // Warum nach Tiefe: jeder andere Affix haengt an der Tiefe. Haenge dieser
+  // eine an der Spielerstufe, waere er als einziger davon abhaengig, wie viel
+  // man vorher gegrindet hat.
+  //
+  // Der Faktor 2 ist an die tatsaechlichen Lebenspunkte angelegt: die Basis
+  // waechst mit +2 je Stufe (player.js:3644), und die Stufe laeuft ungefaehr
+  // mit der Tiefe mit. Mit 30 + 2 * Tiefe liegt der Affix damit auf Tiefe 20
+  // bei rund 10 % der echten Lebenspunkte — im selben Budget wie alle anderen.
+  // Ein steilerer Faktor (30 + 4 * Tiefe) waere dort schon 16 % gewesen.
+  var REF_LP_BASIS = 30;
+  var REF_LP_JE_TIEFE = 2;
+
+  function referenzLebenspunkte(tiefe) {
+    var t = (typeof tiefe === 'number' && tiefe > 0) ? tiefe : _aktuelleTiefe();
+    return REF_LP_BASIS + REF_LP_JE_TIEFE * t;
+  }
+
   function _tiefenNenner(tiefe) {
     var t = (typeof tiefe === 'number' && tiefe > 0) ? tiefe : 1;
     return t + TIEFEN_SOCKEL;
@@ -1915,6 +1937,8 @@ if (window.i18n) {
     affixPunkte: affixPunkte,
     affixAnteil: affixAnteil,
     affixWirkung: affixWirkung,
+    // #114: Bezug fuer flache Lebenspunkte — nach Tiefe, nicht nach Stufe.
+    referenzLebenspunkte: referenzLebenspunkte,
     AFFIX_ANTEIL_MIN: AFFIX_ANTEIL_MIN,
     AFFIX_ANTEIL_MAX: AFFIX_ANTEIL_MAX,
     TIEFEN_SOCKEL: TIEFEN_SOCKEL,

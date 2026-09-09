@@ -44,6 +44,13 @@ function messeAufTiefe(tiefe) {
   return H.run(`(function () {
     var LS = window.LootSystem, T = ${tiefe};
     window.DUNGEON_DEPTH = T; window.currentWave = T;
+    // #114: Der Testkopf steht immer auf Stufe 1 mit 30 Lebenspunkten. Der
+    // +LP-Affix rechnet aber gegen eine Referenzkurve nach TIEFE (30 + 2 * T),
+    // weil er nicht davon abhaengen soll, wie viel man vorher gegrindet hat.
+    // Gemessen an einem Stufe-1-Charakter auf Tiefe 30 saehe er deshalb wie
+    // 30 % aus statt wie 10. Hier also ein Charakter, dessen Stufe zur Tiefe
+    // passt — die Basis waechst mit +2 je Stufe (player.js:3644).
+    baseStats.maxHP = 30 + 2 * (T - 1);
     function leere(){ ['weapon','offhand','head','body','boots','amulet']
       .forEach(function(k){ window.equipment[k]=null; }); }
     function werte(){
@@ -77,6 +84,7 @@ function messeAufTiefe(tiefe) {
       var mit = anlegen({ defId: def.id, value: LS.affixPunkte(0.10, T) }, slot);
       raus[def.id] = (mit.dps / grund.dps - 1) * 100 + (mit.ehp / grund.ehp - 1) * 100;
     });
+    baseStats.maxHP = 30;
     return raus;
   })()`);
 }
