@@ -26,6 +26,15 @@ const path = require('path');
 
 const WURZEL = path.join(__dirname, '..');
 
+// #135: Waffenbaender haengen jetzt von der Tiefe ab. Die Pruefung unten kann
+// sie deshalb nicht mehr aus dem Quelltext lesen — sie muss rechnen.
+function ladeLootSystem() {
+  require('./setup');
+  const { loadGameModule } = require('./loadGameModule');
+  loadGameModule('js/lootSystem.js');
+  return globalThis.window.LootSystem;
+}
+
 function ohneKommentare(s) {
   return s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
 }
@@ -164,16 +173,18 @@ test('Elaras Klinge bleibt im Rahmen der Fundwaffen', () => {
   assert.ok(m, 'Elaras Klinge nicht gefunden');
   const schaden = Number(m[1]);
 
-  const loot = fs.readFileSync(path.join(WURZEL, 'js', 'lootSystem.js'), 'utf8');
-  const re = /key: '(WPN_[A-Z_]+)'[\s\S]{0,300}?damage: Object\.freeze\(\{ min: [0-9.]+, max: ([0-9.]+) \}\)/g;
-  let x; let bestesFeld = 0;
-  while ((x = re.exec(loot))) bestesFeld = Math.max(bestesFeld, Number(x[2]));
-  assert.ok(bestesFeld > 0, 'keine Fundwaffen gelesen');
+  // #135: Fundwaffen haben kein festes Band mehr — es waechst mit der Tiefe.
+  // Die Klinge muss deshalb gegen ZWEI Tiefen gemessen werden: auf ihrer
+  // eigenen (15) soll sie stark sein, spaeter einholbar.
+  const LS = ladeLootSystem();
+  const basen = LS.ITEM_BASES.filter((b) => b.type === 'weapon' && b.damageKurve);
+  assert.ok(basen.length >= 10, 'keine Fundwaffen gelesen: ' + basen.length);
+  const besteAuf = (t) => Math.max.apply(null, basen.map((b) => LS.waffenBand(b, t).max));
 
-  assert.ok(schaden < bestesFeld,
-    'die Questwaffe (' + schaden + ') liegt weiterhin ueber der besten Fundwaffe ('
-    + bestesFeld + ') — Waffendrops bleiben damit wertlos');
-  assert.ok(schaden > 4.9,
+  assert.ok(schaden > besteAuf(15),
     'die Questwaffe (' + schaden + ') schlaegt nicht einmal die Waffen ihrer '
-    + 'eigenen Zieltiefe (itemLevel 15, dort bis 4.9)');
+    + 'eigenen Zieltiefe (itemLevel 15, dort bis ' + besteAuf(15).toFixed(1) + ')');
+  assert.ok(schaden < besteAuf(30),
+    'die Questwaffe (' + schaden + ') liegt bis Tiefe 30 ueber jeder Fundwaffe ('
+    + besteAuf(30).toFixed(1) + ') — Waffendrops blieben damit wertlos');
 });

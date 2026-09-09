@@ -442,18 +442,24 @@ if (window.i18n) {
     // Bögen bleiben unangetastet: dort bedeutet `range` die Flugweite des
     // Pfeils, nicht die Schwungweite.
     //
+    // (Waffenbaender siehe waffenBand weiter unten — sie stehen nicht mehr hier,
+    //  weil sie von der Tiefe abhaengen.)
     // Spanne bewusst nur ±25: `range` wirkt nicht nur auf forEachEnemyInRange,
     // sondern skaliert über getRangeFromBase (js/player.js) auch Wirbelwind,
     // Dash-Slash (Reichweite UND Distanz), Schildstoß und die Dolchwurf-
     // Lebensdauer. Ein grösserer Ausschlag verschöbe diese Fähigkeiten mit.
     Object.freeze({ key: 'WPN_EISENKLINGE', type: 'weapon', name: 'Eisenklinge', iconKey: 'itSword',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 1.4, max: 3.5 }), speed: 5, range: -8 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
+      damageKurve: Object.freeze({ anteil: 0.95, spanne: 0.66 }),
+      baseStats: Object.freeze({ speed: 5, range: -8 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 50, 15: 30 }) }),
     Object.freeze({ key: 'WPN_SCHATTENDOLCH', type: 'weapon', name: 'Schattendolch', iconKey: 'itDagger',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 0.7, max: 2.8 }), speed: 15, range: -25, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
+      damageKurve: Object.freeze({ anteil: 0.90, spanne: 0.62 }),
+      baseStats: Object.freeze({ speed: 15, range: -25, crit: 5 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
     Object.freeze({ key: 'WPN_KETTENMORGENSTERN', type: 'weapon', name: 'Kettenmorgenstern', iconKey: 'itFlail',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 2.8, max: 4.9 }), speed: -5, range: 8 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
+      damageKurve: Object.freeze({ anteil: 0.96, spanne: 0.60 }),
+      baseStats: Object.freeze({ speed: -5, range: 8 }), dropWeight: Object.freeze({ 5: 40, 10: 80, 18: 60 }) }),
     Object.freeze({ key: 'WPN_GLUTAXT', type: 'weapon', name: 'Glutaxt', iconKey: 'itAxe',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 2.8, max: 4.2 }), speed: -10, range: 18 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
+      damageKurve: Object.freeze({ anteil: 0.94, spanne: 0.72 }),
+      baseStats: Object.freeze({ speed: -10, range: 18 }), dropWeight: Object.freeze({ 8: 30, 12: 60, 18: 80 }) }),
 
     // --- Spät-Tier-Waffen (ab ~Tiefe 15) --------------------------------------
     // Deutlich stärkere Basisbänder als die Start-Waffen (die bei ~7 kappen), damit
@@ -461,20 +467,26 @@ if (window.i18n) {
     // dropWeight-Key hat Gewicht 0 (unter diesem iLevel gilt genau dieses Gewicht
     // -> Basis wird nicht in den Pool aufgenommen). Bänder bewusst eng (~1.4-1.6x).
     Object.freeze({ key: 'WPN_RICHTSCHWERT', type: 'weapon', name: 'Richtschwert', iconKey: 'itGreatsword',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 4.9, max: 7.7 }), speed: -15, range: 25 }), dropWeight: Object.freeze({ 14: 0, 17: 60, 24: 100 }) }),
+      damageKurve: Object.freeze({ anteil: 0.99, spanne: 0.62 }),
+      baseStats: Object.freeze({ speed: -15, range: 25 }), dropWeight: Object.freeze({ 14: 0, 17: 60, 24: 100 }) }),
     Object.freeze({ key: 'WPN_KRIEGSHAMMER', type: 'weapon', name: 'Kettenrat-Kriegshammer', iconKey: 'itHammer',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 6.3, max: 9.1 }), speed: -10, range: 18 }), dropWeight: Object.freeze({ 14: 0, 18: 40, 26: 80 }) }),
+      damageKurve: Object.freeze({ anteil: 1.00, spanne: 0.55 }),
+      baseStats: Object.freeze({ speed: -10, range: 18 }), dropWeight: Object.freeze({ 14: 0, 18: 40, 26: 80 }) }),
 
     // Bows (ranged weapons — equipping one swaps default attack to a projectile)
     Object.freeze({ key: 'WPN_ESCHENBOGEN', type: 'weapon', subtype: 'bow', name: 'Eschenbogen', iconKey: 'itBowEsche',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 0.7, max: 2.8 }), range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
+      damageKurve: Object.freeze({ anteil: 0.94, spanne: 0.55 }),
+      baseStats: Object.freeze({ range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
     Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBowHorn',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 2.1, max: 4.2 }), range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
+      damageKurve: Object.freeze({ anteil: 0.90, spanne: 0.58 }),
+      baseStats: Object.freeze({ range: 100, crit: 4 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
     Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', subtype: 'bow', name: 'Glutbogen', iconKey: 'itBowGlut',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 2.8, max: 4.9 }), range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
+      damageKurve: Object.freeze({ anteil: 0.92, spanne: 0.60 }),
+      baseStats: Object.freeze({ range: 120, speed: -5 }), dropWeight: Object.freeze({ 10: 30, 15: 60, 20: 70 }) }),
     // Spät-Tier-Bogen (ab ~Tiefe 15), s. Kommentar bei den Spät-Tier-Nahkampfwaffen.
     Object.freeze({ key: 'WPN_NEBELBOGEN', type: 'weapon', subtype: 'bow', name: 'Nebelbogen', iconKey: 'itBowNebel',
-      baseStats: Object.freeze({ damage: Object.freeze({ min: 4.9, max: 7.7 }), range: 130, crit: 3 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
+      damageKurve: Object.freeze({ anteil: 0.89, spanne: 0.62 }),
+      baseStats: Object.freeze({ range: 130, crit: 3 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
 
     // Helms (3)
     Object.freeze({ key: 'HD_KETTENHAUBE', type: 'head', name: 'Kettenhaube', iconKey: 'itHeadKettenhaube',
@@ -781,6 +793,65 @@ if (window.i18n) {
   // WP02: rollItem / composeName / migrateSave
   // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // #135 — Waffenbaender wachsen mit der Tiefe
+  // ---------------------------------------------------------------------------
+  //
+  // Vorher war jedes Band eine Konstante: der Kriegshammer wuerfelte auf Tiefe
+  // 30 dasselbe 6,3–9,1 wie auf Tiefe 15, waehrend die Gegner-LP mit
+  // 1 + (Tiefe-1) * 0,1 weiterliefen (enemy.js:509). Ab Tiefe 26 stand der
+  // Basisschaden sogar voellig still, weil alle dropWeight-Kurven dort ihren
+  // letzten Stuetzpunkt haben.
+  //
+  // Jetzt gibt eine DPS-DECKE die Obergrenze vor, und jede Basis bekommt ihr
+  // Band daraus zurueckgerechnet. Zwei Folgen:
+  //   - Keine Waffe veraltet. Der Schattendolch auf Tiefe 30 ist ein
+  //     Tiefe-30-Dolch, kein Fundstueck aus dem ersten Raum.
+  //   - Die Basen unterscheiden sich nicht mehr in der Staerke, sondern in
+  //     Tempo, Reichweite, Krit und der SPANNE ihres Bandes. Genau das ist
+  //     ueber die Dominanzpruefung in tests/waffenBaender.test.js abgesichert.
+  //
+  // Rechenkette (dieselbe wie im Kampf):
+  //   Tempo   = 1 + speed/100                      inventory.js:1374
+  //   Abkling = max(320, 650 / Tempo) ms           player.js:1339
+  //   Schaden = SPIELER_GRUNDSCHADEN + Waffe       inventory.js:1373
+  //   DPS     = Schaden * 1000 / Abkling
+  var DPS_DECKE_TEILER = 2.5;
+  // ACHTUNG: der Boden liegt UNTER dem, was der Spieler ohne Waffe schafft
+  // (1 Schaden bei Tempo 1,0 = 1,54 DPS). Bis Tiefe 4 kommt aus der Decke
+  // deshalb ein Band von 0 heraus — die Waffe traegt dort nichts bei und
+  // unterscheidet sich nur ueber Tempo, Reichweite und Krit. Wer das nicht
+  // will, hebt DPS_DECKE_BODEN auf 2,0; ab da traegt jede Basis ab Tiefe 1.
+  var DPS_DECKE_BODEN = 1.25;
+  var SPIELER_GRUNDSCHADEN = 1.0;   // main.js:990, baseStats.damage
+  var ANGRIFF_GRUNDZEIT = 650;      // player.js:1339
+  var ANGRIFF_MINDESTZEIT = 320;
+
+  /** Hoechste erreichbare DPS auf dieser Tiefe. */
+  function dpsDecke(iLevel) {
+    var t = (typeof iLevel === 'number' && iLevel > 0) ? iLevel : 1;
+    return Math.max(DPS_DECKE_BODEN, t / DPS_DECKE_TEILER);
+  }
+
+  function _schlaegeProSekunde(base) {
+    var tempo = Math.max(0.2, 1 + ((base.baseStats && base.baseStats.speed) || 0) / 100);
+    return 1000 / Math.max(ANGRIFF_MINDESTZEIT, ANGRIFF_GRUNDZEIT / tempo);
+  }
+
+  /**
+   * Das Schadensband einer Waffenbasis auf einer Tiefe.
+   *
+   * anteil = welchen Teil der Decke ihr BESTER Wurf erreicht.
+   * spanne = min/max, also wie verlaesslich sie wuerfelt.
+   */
+  function waffenBand(base, iLevel) {
+    if (!base || !base.damageKurve) return null;
+    var proSek = _schlaegeProSekunde(base);
+    var max = dpsDecke(iLevel) * base.damageKurve.anteil / proSek - SPIELER_GRUNDSCHADEN;
+    if (!(max > 0)) return { min: 0, max: 0 };
+    return { min: max * base.damageKurve.spanne, max: max };
+  }
+
   function _interpolateDropWeight(dropWeightMap, iLevel) {
     const keys = Object.keys(dropWeightMap).map(Number).sort(function (a, b) { return a - b; });
     if (keys.length === 0) return 0;
@@ -881,6 +952,15 @@ if (window.i18n) {
     // (#38: weapons roll their base damage within a band, like affixes). Roll
     // once here so item.baseStats and the mirrored flat fields share the value.
     const _resolvedBase = {};
+    // #135: Waffen tragen keinen festen Schaden mehr in baseStats, sondern
+    // eine Kurve. Das Band kommt erst hier zustande, weil es die Tiefe
+    // braucht — deshalb VOR der Schleife, damit die Spiegelung nach unten
+    // (item.damage) den Wert genauso findet wie jeden anderen Grundwert.
+    const _waffenband = waffenBand(base, iLevel);
+    if (_waffenband) {
+      const _roh = _waffenband.min + Math.random() * (_waffenband.max - _waffenband.min);
+      _resolvedBase.damage = Math.round(_roh * 10) / 10;
+    }
     const _baseKeys = Object.keys(base.baseStats);
     for (let _r = 0; _r < _baseKeys.length; _r++) {
       const _bk = _baseKeys[_r];
@@ -1229,7 +1309,21 @@ if (window.i18n) {
   let _lastShopRunId = null;
   // Feature 060 (WP05 / #51): Maras Schwarzmarkt aufgewertet → größerer Bestand,
   // damit pro Besuch mehr (und höherwertige) Items zum Gold-Ausgeben da sind.
-  const SHOP_STOCK_COUNT = 10;
+  // Fuenf statt zehn. Zehn Stuecke klangen nach Auswahl, waren aber gemessen
+  // 7,5 gewoehnliche und 2 magische — auf JEDER Tiefe, bis hinunter zu 30.
+  // Weniger Ware, dafuer bessere: eine Schwarzmarkthaendlerin fuehrt keine
+  // Grabbelkiste.
+  const SHOP_STOCK_COUNT = 5;
+
+  // Qualitaetsbonus der sichtbaren Auslage. Er multipliziert die Gewichte fuer
+  // magisch/selten/legendaer, waehrend das Gewicht fuer "gewoehnlich"
+  // unangetastet bleibt (_rollTier) — der Anteil gewoehnlicher Stuecke sinkt
+  // dadurch von rund 75 % auf rund 40 %. Gemessen ueber 40 000 Wuerfe:
+  //     maxDepth  gewoehnlich  magisch  selten  legendaer
+  //           10       41,9 %   51,1 %   5,7 %      1,3 %
+  //           20       39,0 %   48,5 %   9,0 %      3,4 %
+  //           30       37,4 %   45,6 %  11,8 %      5,2 %
+  const SHOP_QUALITY_BIAS = 4.7;
   // Gold-Sink: kompletter Lager-Reroll (frische Auslage gegen Gold). Tunebar.
   const SHOP_REROLL_BASE_COST = 120;
 
@@ -1251,7 +1345,7 @@ if (window.i18n) {
     const stock = [];
     for (let i = 0; i < SHOP_STOCK_COUNT; i++) {
       try {
-        const it = rollItem(null, depth);
+        const it = rollItem(null, depth, null, SHOP_QUALITY_BIAS);
         if (it) stock.push(it);
       } catch (err) { /* skip */ }
     }
@@ -1322,7 +1416,12 @@ if (window.i18n) {
   const BLIND_BUY_BASE = 80;        // Grundpreis
   const BLIND_BUY_PER_DEPTH = 30;   // Aufschlag je Tiefe
   // Multiplikator auf die Magic/Rare/Legendary-Gewichte ggue. Basis-Odds (>1).
-  const BLIND_BUY_BIAS = 1.8;
+  // Der Blindkauf muss BESSER bleiben als die sichtbare Auslage — man kauft
+  // die Katze im Sack, das ist sein ganzer Reiz. Frueher stand hier eine 1,8
+  // gegen eine Auslage ohne Bonus; seit die Auslage selbst einen Bonus hat,
+  // waere eine feste 1,8 pluetzlich SCHLECHTER als das, was offen ausliegt.
+  // Darum abgeleitet statt fest: derselbe Abstand wie vorher.
+  const BLIND_BUY_BIAS = SHOP_QUALITY_BIAS * 1.8;
 
   // Schwarzmarkt-Gating (#51): Maras SICHTBARE Auslage ist erst ab dieser je
   // erreichten Tiefe verfügbar und rollt dann auf (maxDepth - OFFSET) — also
@@ -1628,6 +1727,10 @@ if (window.i18n) {
     getBonus: getBonus,
     // #37: exposed so callers/tests share the same iLevel value-scaling curve.
     _affixValueScale: _affixValueScale,
+    // #135: Waffenbaender haengen von der Tiefe ab — Tests und tools/ rechnen
+    // mit denselben Funktionen wie das Spiel.
+    dpsDecke: dpsDecke,
+    waffenBand: waffenBand,
 
     // stubs (later WPs)
     rollItem: rollItem,
@@ -1635,6 +1738,10 @@ if (window.i18n) {
     preisNachTiefeneinkommen: preisNachTiefeneinkommen,
     PREIS_TIEFEN: PREIS_TIEFEN,
     GOLD_JE_TIEFE: GOLD_JE_TIEFE,
+    // Fuer tests/marasAuslage.test.js und tools/: die Auslage-Kennzahlen.
+    SHOP_STOCK_COUNT: SHOP_STOCK_COUNT,
+    SHOP_QUALITY_BIAS: SHOP_QUALITY_BIAS,
+    BLIND_BUY_BIAS: BLIND_BUY_BIAS,
     composeName: composeName,
     // i18n helper: always re-resolves item name + affixes against current
     // language. Consumers should prefer this over reading item.displayName

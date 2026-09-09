@@ -348,27 +348,35 @@ test('rollItem with forceTier overrides random tier and matches affix count', ()
 test('rollItem resolves + deep-copies baseStats so template is not shared/mutated', () => {
   const sys = freshSystem();
   const tmpl = sys.ITEM_BASES.find(function (b) { return b.key === 'WPN_EISENKLINGE'; });
-  const item = sys.rollItem('WPN_EISENKLINGE', 5, 0);
+  const item = sys.rollItem('WPN_EISENKLINGE', 15, 0);
   assert.notStrictEqual(item.baseStats, tmpl.baseStats);
-  // #38: the template stores damage as a {min,max} band; the rolled item must
-  // carry a concrete NUMBER, and mutating it must not affect the frozen template.
+  // #135: der Schaden steht nicht mehr als Band in der Vorlage, sondern kommt
+  // aus damageKurve + Tiefe. Das gerollte Stueck traegt trotzdem eine ZAHL,
+  // und die Vorlage darf davon nichts mitbekommen.
   assert.strictEqual(typeof item.baseStats.damage, 'number');
-  const before = JSON.stringify(tmpl.baseStats.damage);
+  assert.strictEqual(typeof tmpl.baseStats.damage, 'undefined',
+    'Waffen tragen keinen festen Schaden mehr in baseStats');
+  const vorher = JSON.stringify(tmpl.damageKurve);
   item.baseStats.damage = 9999;
-  assert.strictEqual(JSON.stringify(tmpl.baseStats.damage), before);
+  assert.strictEqual(JSON.stringify(tmpl.damageKurve), vorher);
 });
 
-test('#38: rolled weapon base damage stays within the template band', () => {
+test('#38/#135: gewuerfelter Waffenschaden bleibt im Band DIESER Tiefe', () => {
   const sys = freshSystem();
   const tmpl = sys.ITEM_BASES.find((b) => b.key === 'WPN_GLUTAXT');
-  const band = tmpl.baseStats.damage;
-  assert.ok(band && typeof band.min === 'number' && typeof band.max === 'number', 'damage must be a band');
-  for (let i = 0; i < 50; i++) {
-    const item = sys.rollItem('WPN_GLUTAXT', 10, 0);
-    assert.ok(item.damage >= band.min && item.damage <= band.max,
-      `rolled damage ${item.damage} outside [${band.min}, ${band.max}]`);
-    assert.strictEqual(item.damage, item.baseStats.damage); // flat mirror == baseStats
-  }
+  [5, 10, 20, 30].forEach((tiefe) => {
+    const band = sys.waffenBand(tmpl, tiefe);
+    assert.ok(band && typeof band.min === 'number' && typeof band.max === 'number',
+      'waffenBand liefert kein Band fuer Tiefe ' + tiefe);
+    for (let i = 0; i < 40; i++) {
+      const item = sys.rollItem('WPN_GLUTAXT', tiefe, 0);
+      // Rundung auf 0,1 kann knapp ueber das Bandende hinausgehen.
+      assert.ok(item.damage >= band.min - 0.05 && item.damage <= band.max + 0.05,
+        'Tiefe ' + tiefe + ': ' + item.damage + ' ausserhalb ['
+        + band.min.toFixed(2) + ', ' + band.max.toFixed(2) + ']');
+      assert.strictEqual(item.damage, item.baseStats.damage);
+    }
+  });
 });
 
 test('rollItem(null, iLevel) picks one of the 13 base keys via weighted drop', () => {
