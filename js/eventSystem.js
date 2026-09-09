@@ -1178,10 +1178,36 @@
   // er nimmt ein ANGELEGTES Stueck, nicht eines aus dem Inventar. Man gibt
   // her, was man gerade traegt.
   //
-  // Zurueck kommt kein garantierter Aufstieg, sondern ein UMWURF: dieselbe
-  // Basis, dieselbe Seltenheit, frisch gewuerfelt auf Tiefe + 2. Besser,
-  // gleichwertig oder schlechter — das entscheidet der Wurf.
+  // Zurueck kommt kein garantierter Aufstieg, sondern ein Wagnis — aber ein
+  // EHRLICHES.
+  //
+  // Frueher wurde einfach neu gewuerfelt und hinterher verglichen. Das klang
+  // nach Muenzwurf und war keiner: man traegt das BESTE aus allem, was man
+  // gefunden hat, und ein einzelner Wurf tritt gegen ein Maximum an. Gemessen
+  // ueber je 5000 Umwuerfe lag die Gewinnquote bei
+  //     bestes aus  1 Fund  ->  53 %
+  //     bestes aus  3 Funden -> 28 %
+  //     bestes aus 10 Funden -> 11 %
+  //     bestes aus 20 Funden ->  7 %
+  // Der Stein war also praktisch ein Zerstoerer, kein Wagnis.
+  //
+  // Jetzt faellt ZUERST die Entscheidung (besser oder schlechter, halb und
+  // halb), und DANACH wird ein Stueck gesucht, das auf dieser Seite liegt.
+  // Der Betrag ist multiplikativ symmetrisch: besser mal (1+s), schlechter
+  // geteilt durch (1+s). Ein Paar aus Gewinn und Verlust ist damit exakt
+  // neutral — wichtig, weil der Stein mehrfach je Lauf vorkommen kann.
   var ALTAR_SLOTS = ['weapon', 'head', 'body', 'boots', 'offhand'];
+
+  // Halb und halb. Der Stein kostet ein getragenes Stueck; ein fairer
+  // Muenzwurf ist der Preis wert, ein guenstiger waere geschenkt.
+  var UMWURF_CHANCE_BESSER = 0.5;
+  // Wie deutlich der Unterschied ausfaellt: 10 bis 35 Prozent.
+  var UMWURF_MIN_SPANNE = 0.10;
+  var UMWURF_MAX_SPANNE = 0.35;
+  // Ziehungen je Stufe. 60 reicht: selbst gegen ein Stueck, das das beste aus
+  // zwanzig Funden ist (Trefferquote 7 %), landet man damit zu 99 % auf der
+  // gewollten Seite.
+  var UMWURF_ZIEHUNGEN = 60;
 
   /** Welche angelegten Stuecke koennte der Stein annehmen? */
   function opferKandidaten() {
@@ -1204,23 +1230,73 @@
    * @returns {{alt:number, neu:number, item:object}|null} Item-Staerke vorher
    *          und nachher, plus das neue Stueck.
    */
+  /**
+   * Ein Kandidat fuer den Umwurf — gleiche Basis, gleiche Seltenheit.
+   *
+   * Der Schwierigkeitsaufschlag muss mit: getragene Stuecke kommen aus einem
+   * Abwurf und sind dort mit dem Regler multipliziert worden (loot.js:416).
+   * Ohne diesen Schritt trat auf "schwer" ein Stueck mit x1,5 gegen eines mit
+   * x1,0 an, und der Vergleich war schief.
+   */
+  function _umwurfKandidat(key, iLevel, stufe) {
+    var it = null;
+    try { it = window.LootSystem.rollItem(key, Math.max(1, Math.round(iLevel)), stufe); } catch (e) {}
+    if (it && typeof window._applyDifficultyToRolledItem === 'function') {
+      try { it = window._applyDifficultyToRolledItem(it, Math.max(1, Math.round(iLevel))); } catch (e) {}
+    }
+    return it;
+  }
+
+  /**
+   * Wirft ein angelegtes Stueck neu — auf die vorher ausgewuerfelte Seite.
+   *
+   * @returns {{alt:number, neu:number, item:object, besser:boolean,
+   *            unveraendert?:boolean}|null}
+   */
   function opferUmwurf(slot, tiefe) {
     var eq = window.equipment;
     if (!eq || !eq[slot] || !window.LootSystem
         || typeof window.LootSystem.rollItem !== 'function') return null;
     var alt = eq[slot];
     var stufe = (typeof alt.tier === 'number') ? alt.tier : 0;
-    var neu = window.LootSystem.rollItem(alt.key, Math.max(1, (tiefe || 1) + 2), stufe);
-    if (!neu) return null;
     var staerke = (typeof window.computeItemPower === 'function')
       ? window.computeItemPower : function () { return 0; };
-    var vorher = staerke(alt), nachher = staerke(neu);
-    eq[slot] = neu;
+    var altP = staerke(alt);
+
+    // 1. Erst die Entscheidung.
+    var besser = Math.random() < UMWURF_CHANCE_BESSER;
+    var s = UMWURF_MIN_SPANNE + Math.random() * (UMWURF_MAX_SPANNE - UMWURF_MIN_SPANNE);
+    var ziel = besser ? altP * (1 + s) : altP / (1 + s);
+
+    // 2. Dann ein Stueck suchen, das auf dieser Seite liegt. Anker ist der
+    //    Gegenstandsstufe des getragenen Stuecks, mindestens die aktuelle
+    //    Tiefe. Findet sich nichts, wird der Hebel groesser: die Affixwerte
+    //    haengen an iLevel (_affixValueScale), also hilft ein Sprung dort.
+    var iL = Math.max(1, alt.iLevel || tiefe || 1, tiefe || 1);
+    var stufen = besser ? [iL, iL + 6, iL + 15] : [iL, Math.max(1, iL - 6), 1];
+    var best = null, bestAbstand = Infinity;
+    for (var st = 0; st < stufen.length && !best; st++) {
+      for (var i = 0; i < UMWURF_ZIEHUNGEN; i++) {
+        var k = _umwurfKandidat(alt.key, stufen[st], stufe);
+        if (!k) continue;
+        var p = staerke(k);
+        if (besser ? (p <= altP) : (p >= altP)) continue;
+        var d = Math.abs(p - ziel);
+        if (d < bestAbstand) { bestAbstand = d; best = k; }
+      }
+    }
+
+    // 3. Nichts gefunden: das Stueck steht am Anschlag dessen, was seine Basis
+    //    und Seltenheit hergeben. Dann NICHT tauschen — lieber "kein Gewinn"
+    //    melden als ein Stueck stillschweigend gegen ein gleichwertiges.
+    if (!best) return { alt: altP, neu: altP, item: alt, besser: besser, unveraendert: true };
+
+    eq[slot] = best;
     if (typeof recalcDerived === 'function') recalcDerived(0, 0);
     if (typeof window.updateInventoryUI === 'function') {
       try { window.updateInventoryUI(); } catch (e) {}
     }
-    return { alt: vorher, neu: nachher, item: neu };
+    return { alt: altP, neu: staerke(best), item: best, besser: besser };
   }
 
   // --- Kettenschloss (#71) -------------------------------------------------
