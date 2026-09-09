@@ -218,7 +218,9 @@
     if (!door) return null;
 
     door.setOrigin(0.5, 0.5);
-    door.setDepth(42);
+    // Eine Tuer ist hohe Architektur wie Statue und Saeule: sie steht aufrecht
+    // im Rahmen und darf von keinem Prop geschnitten werden.
+    door.setDepth(window.WELT_TIEFEN.PROP_HOCH);
 
     // Set the physics body to match the texture size exactly (no rotation needed)
     if (door.body) {

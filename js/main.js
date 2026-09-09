@@ -3008,7 +3008,7 @@ function initializeGameObjects() {
   lootGroup = this.physics.add.group();
   // WP03: gold piles (auto-collected by player overlap)
   window.goldGroup = this.physics.add.group();
-  this.enemyLayer = this.add.layer().setDepth(50);
+  this.enemyLayer = this.add.layer().setDepth(window.WELT_TIEFEN.GEGNER);
   this.physics.world.setBounds(0, 0, this.scale.width + WORLD_RIGHT_PADDING, this.scale.height, true, true, true, true);
   this.physics.world.TILE_BIAS = 24;
 

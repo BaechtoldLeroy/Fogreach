@@ -1,4 +1,34 @@
 // roomTemplates.js
+
+// ========== Zeichentiefen der Weltebene ==========
+// EINE Stelle fuer die Reihenfolge zwischen Boden und Gegnern. Vorher standen
+// diese Zahlen nackt in vier Dateien verstreut, und Treppe wie Fass trugen beide
+// die 40. Bei gleicher Tiefe entscheidet Phaser nach der Anzeigeliste, also nach
+// der Erzeugungsreihenfolge: mal lag das Fass vorn, mal die Treppe. Ein Fehler,
+// der nur manchmal auftritt, ist der teuerste (#142).
+//
+// RICHTUNG: Props liegen VOR der Treppe. Eine Treppe, die ueber einem Fass oder
+// einer Statue klebt, laesst das Layout falsch aussehen — deshalb ist die Treppe
+// die UNTERSTE Ebene ueber der Bodendeko, nicht die oberste. Der Preis dafuer:
+// ein Prop auf der Treppe verdeckt sie zuverlaessig. Dagegen sichert allein
+// raeumePropsAufTreppen() in roomManager.js; diese Pruefung muss bleiben.
+//
+// PFLICHT: kein Prop-Wert darf gleich TREPPE sein.
+(function (w) {
+  if (w.WELT_TIEFEN) return;
+  w.WELT_TIEFEN = Object.freeze({
+    BODENDEKO_MAX: 30,   // Boden, Risse, Flecken, Spinnweben liegen darunter
+    TREPPE: 34,          // unter ALLEN Props, ueber der Bodendeko
+    PROP_SCHATTEN: 38,   // Schlagschatten der Props (gehoert zum Prop, nicht zum Boden)
+    WAND: 39,            // gebackene Wandebene
+    WANDKANTE: 39.5,     // 2px-Schattenkante, wo Wand auf Boden trifft
+    PROP: 40,            // Fass, Kiste, Geroell
+    UEBER_PROP: 41,      // Fackel-Licht und Deko-Saeulen: vor flachen Props
+    PROP_HOCH: 42,       // Statue, Saeule, Altar, Tuer — vor allem anderen Prop
+    GEGNER: 50           // ab hier gehoert die Ebene den Figuren (Spieler >= 100)
+  });
+})(window);
+
 (function(w) {
   // 1) Globales Objekt sicherstellen
   if (!w.RoomTemplates) w.RoomTemplates = {};
@@ -440,11 +470,13 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   // eigener Draw-Call. Render-Order kommt aus setDepth, daher ist die
   // Insertion-Reihenfolge egal; visuell identisch (Alpha-Blending der
   // einzelnen Fills bleibt gleich).
-  const obstacleShadowGfx = scene.add?.graphics ? scene.add.graphics().setDepth(38) : null;
-  // Brazier-Glow ueber Treppen (depth 40) und Obstacles legen (41), damit das
-  // warme Licht auch VOR einer Treppe sichtbar ist. Bleibt unter Gegnern (50)
-  // und Spieler (100). Vorher -3 -> lag hinter allem, die Treppe verdeckte es.
-  const brazierGlowGfx = scene.add?.graphics ? scene.add.graphics().setDepth(41) : null;
+  const obstacleShadowGfx = scene.add?.graphics
+    ? scene.add.graphics().setDepth(window.WELT_TIEFEN.PROP_SCHATTEN) : null;
+  // Brazier-Glow ueber Treppe und Props legen, damit das warme Licht auch VOR
+  // einer Treppe sichtbar ist. Bleibt unter Gegnern und Spieler. Vorher -3 ->
+  // lag hinter allem, die Treppe verdeckte es.
+  const brazierGlowGfx = scene.add?.graphics
+    ? scene.add.graphics().setDepth(window.WELT_TIEFEN.UEBER_PROP) : null;
   if (obstacleShadowGfx) templateWalls.push(obstacleShadowGfx);
   if (brazierGlowGfx) templateWalls.push(brazierGlowGfx);
 
@@ -612,7 +644,8 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   // senkt draws/Frame deutlich, visuell identisch. Depth 39.5 hält die
   // Schatten/Marks (wie bisher per Insertion-Order) über den Wand-Sprites
   // (39) und unter Obstacles (40).
-  const wallDecoGfx = scene.add?.graphics ? scene.add.graphics().setDepth(39.5) : null;
+  const wallDecoGfx = scene.add?.graphics
+    ? scene.add.graphics().setDepth(window.WELT_TIEFEN.WANDKANTE) : null;
 
   // Perf (#70): Waende in EIN gebackenes Bild backen statt pro Wand-Rect ein
   // TileSprite. In grossen Raeumen waren das ~480 TileSprites = der dominante
@@ -660,7 +693,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       } else {
         const sprite = scene.add.tileSprite(cx, cy, widthPx, heightPx, wallTexture);
         sprite.setOrigin(0.5);
-        sprite.setDepth(39);
+        sprite.setDepth(window.WELT_TIEFEN.WAND);
         if (wallTint) sprite.setTint(wallTint);
         templateWalls.push(sprite);
       }
@@ -704,7 +737,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     }
   });
 
-  // Gebackene Wand-Ebene als EIN Bild (Perf #70). Depth 39 wie die alten
+  // Gebackene Wand-Ebene als EIN Bild (Perf #70). Dieselbe Tiefe wie die alten
   // TileSprites; wallTint uniform wie zuvor pro Sprite. Als isFloor markiert,
   // damit die Treppen-Fallback-Logik das grosse Bild nicht als Hindernis sieht
   // (Placement/Kollision laufen ueber Physik-Waende + Wandgitter, nicht ueber
@@ -713,7 +746,8 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     const bakedWallKey = '__wall_baked_' + (++FLOOR_BAKE_COUNTER);
     try { scene.textures.removeKey(bakedWallKey); } catch (e) { /* fresh key */ }
     scene.textures.addCanvas(bakedWallKey, _wallCanvas);
-    const wallImg = scene.add.image(ox, oy, bakedWallKey).setOrigin(0, 0).setDepth(39);
+    const wallImg = scene.add.image(ox, oy, bakedWallKey).setOrigin(0, 0)
+      .setDepth(window.WELT_TIEFEN.WAND);
     if (wallTint) wallImg.setTint(wallTint);
     wallImg.setData('isFloor', true);
     wallImg.setData('isBakedWall', true);
@@ -883,7 +917,9 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       // Subtle visual variety: randomize scale and alpha slightly
       const scaleVar = 0.85 + Math.random() * 0.3;  // 0.85–1.15
       const alphaVar = 0.55 + Math.random() * 0.25;  // 0.55–0.80
-      const depthVar = d.type === 'prop_pillar' ? 41 : -2; // pillars render above floor
+      // Deko-Saeulen stehen aufrecht im Raum und gehoeren deshalb vor die
+      // flachen Props; alle uebrige Deko liegt flach auf dem Boden.
+      const depthVar = d.type === 'prop_pillar' ? window.WELT_TIEFEN.UEBER_PROP : -2;
       // #70: Atlas-Frame statt Einzeltextur, wenn vorhanden (Batching).
       const _ta = (typeof window.worldTexArgs === 'function') ? window.worldTexArgs(d.type) : [d.type, undefined];
       const prop = scene.add.image(dpx, dpy, _ta[0], _ta[1])
@@ -1430,12 +1466,15 @@ function spawnObstacle(x, y, key) {
   // Standard-Setup
   o.setOrigin(0.5, 0.5);
   o.refreshBody();              // wichtig bei staticGroup
-  // Depth: hinter Gegnern (50), vor Boden. Hohe Architektur (Statue/Saeule/Altar)
-  // liegt bei 42 -> VOR der Treppe (depth 40), sonst wird eine Treppe ueber der
-  // Statue gezeichnet und das sieht falsch aus. Sonstige Props bleiben bei 40.
+  // Props liegen VOR der Treppe — das war fuer Statue/Saeule/Altar schon so
+  // gedacht und gilt seit #142 fuer JEDES Prop: sonst wird eine Treppe ueber
+  // einem Fass gezeichnet und das Layout sieht falsch aus. Die Treppe liegt
+  // dafuer als unterste Ebene ueber dem Boden (WELT_TIEFEN.TREPPE), damit sich
+  // kein Prop ihre Tiefe teilt. Hohe Architektur steht noch einmal davor, damit
+  // eine Statue nicht von einem Fass geschnitten wird.
   var _lk = String(key).toLowerCase();
   var _tall = _lk.indexOf('statue') === 0 || _lk.indexOf('pillar') === 0 || _lk.indexOf('altar') === 0;
-  o.setDepth(_tall ? 42 : 40);  // hinter Gegnern, aber vor Boden (Statue/Saeule vor Treppe)
+  o.setDepth(_tall ? window.WELT_TIEFEN.PROP_HOCH : window.WELT_TIEFEN.PROP);
 
   // Optionale Metadaten
   o.setData('type', key);

@@ -22,6 +22,9 @@ if (window.i18n) {
     'inventory.label.block': 'Block',
     'inventory.label.brand': 'Brand',
     'inventory.label.sicht': 'Sichtweite',
+    // #115: Ausbau.
+    'inventory.label.ausbau': 'Ausbau',
+    'inventory.ausbau.stufe': 'Stufe {n} von {max}  (+{pct}% auf alle Werte)',
     'inventory.attack.cooldown': '{name}: -{pct}% Cooldown',
     'inventory.attack.damage': '{name}: +{pct}% Schaden',
     'inventory.unknown_item': 'Unbekanntes Item',
@@ -56,6 +59,8 @@ if (window.i18n) {
     'inventory.label.block': 'Block',
     'inventory.label.brand': 'Burn',
     'inventory.label.sicht': 'Sight',
+    'inventory.label.ausbau': 'Upgrade',
+    'inventory.ausbau.stufe': 'Level {n} of {max}  (+{pct}% to all values)',
     'inventory.attack.cooldown': '{name}: -{pct}% Cooldown',
     'inventory.attack.damage': '{name}: +{pct}% Damage',
     'inventory.unknown_item': 'Unknown Item',
@@ -133,6 +138,12 @@ const computeItemPower = (it) => {
   p += (Number(it.block) || 0) * 3;
   p += (Number(it.brand) || 0) * 2;
   p += (Number(it.sicht) || 0) * 0.15;
+  // #115: Der Ausbau steckt bereits IN den Werten oben — hier nur ein kleiner
+  // Zuschlag, damit zwei sonst gleiche Stuecke in der Sortierung auseinander
+  // liegen und das ausgebaute vorn steht.
+  if (window.LootSystem && typeof window.LootSystem.ausbauStufe === 'function') {
+    p += window.LootSystem.ausbauStufe(it) * 2;
+  }
   // Affixe = Rarität: je Affix ein Rarity-Bonus + die Affix-Stärke.
   if (Array.isArray(it.affixes)) {
     for (let i = 0; i < it.affixes.length; i++) {
@@ -616,6 +627,17 @@ function initInventoryUI() {
       bodyLines.push(`${label}: ${sign}${num.toFixed(decimals)}${suffix}`);
     };
 
+    // #115: Ausbaustufe zuerst — sie erklaert, warum die Zahlen darunter hoeher
+    // stehen als bei einem frischen Fund derselben Basis.
+    const _LS115 = window.LootSystem;
+    if (_LS115 && typeof _LS115.ausbauStufe === 'function' && _LS115.ausbauStufe(it) > 0) {
+      const _st = _LS115.ausbauStufe(it);
+      const _pct = Math.round((Math.pow(1 + _LS115.AUSBAU_JE_STUFE, _st) - 1) * 100);
+      bodyLines.push(_INV_T('inventory.label.ausbau') + ': '
+        + _INV_T('inventory.ausbau.stufe', {
+            n: _st, max: _LS115.ausbauMaxStufen(it), pct: _pct
+          }));
+    }
     pushStat(_INV_T('inventory.label.hp'), it.hp, 1);
     pushStat(_INV_T('inventory.label.damage'), it.damage, 1);
     // Angriffstempo ist prozentual (Basis-Multiplikator) — als % anzeigen, nicht

@@ -31,10 +31,12 @@ test('survival: duration scales with depth', () => {
   const R = globalThis.window.RoomMode;
   globalThis.window.DUNGEON_DEPTH = 10;
   let m = R.create('survival'); m.start(null);
-  assert.strictEqual(m.getState().duration, 78); // 60 + (10-1)*2
+  // Halbiert: 30 + (10-1) = 39. Vorher 60 + (10-1)*2 = 78 — der Modus lief zu
+  // lange fuer einen Raum, den man auf dem Weg nach unten mitnimmt.
+  assert.strictEqual(m.getState().duration, 39);
   globalThis.window.DUNGEON_DEPTH = 40;
   m = R.create('survival'); m.start(null);
-  assert.strictEqual(m.getState().duration, 120); // capped at 120
+  assert.strictEqual(m.getState().duration, 60); // Deckel, war 120
 });
 
 test('survival: enemies are tougher (2x HP multiplier)', () => {
@@ -52,14 +54,14 @@ test('RoomMode.enemyHpMultiplier is ×1 for clear, delegates for special modes',
 
 test('survival: timer counts down, completes at 0, never fails', () => {
   const R = globalThis.window.RoomMode;
-  globalThis.window.DUNGEON_DEPTH = 10; // 78s
+  globalThis.window.DUNGEON_DEPTH = 10; // 39s
   const m = R.create('survival'); m.start(null);
   assert.strictEqual(m.isComplete(), false);
-  m.update(40000); // 40s elapsed
+  m.update(20000); // 20s elapsed
   const st = m.getState();
-  assert.ok(st.remaining > 0 && st.remaining < 78, `remaining mid-run (got ${st.remaining})`);
+  assert.ok(st.remaining > 0 && st.remaining < 39, `remaining mid-run (got ${st.remaining})`);
   assert.strictEqual(m.isComplete(), false);
-  m.update(40000); // total 80s > 78 -> complete
+  m.update(20000); // zusammen 40s > 39 -> fertig
   assert.strictEqual(m.isComplete(), true);
   assert.strictEqual(m.objectiveFailed(), false);
   assert.strictEqual(m.getState().remaining, 0);
@@ -70,7 +72,7 @@ test('survival: getState exposes rounded seconds for the HUD', () => {
   globalThis.window.DUNGEON_DEPTH = 10;
   const m = R.create('survival'); m.start(null);
   m.update(500); // 0.5s
-  assert.strictEqual(m.getState().seconds, 78); // ceil(77.5), depth 10 → 78s
+  assert.strictEqual(m.getState().seconds, 39); // ceil(38,5), Tiefe 10 -> 39 s
   assert.strictEqual(m.getState().mode, 'survival');
 });
 

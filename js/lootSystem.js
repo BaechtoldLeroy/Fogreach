@@ -1443,6 +1443,15 @@ if (window.i18n) {
 
   function composeName(item) {
     if (!item) return (window.i18n ? window.i18n.t('loot.fallback.item') : 'Item');
+    // #115: Die Ausbaustufe haengt hinten dran ("Plattenpanzer +3"). Ohne sie
+    // sind zwei gleich heissende Stuecke im Inventar nicht zu unterscheiden,
+    // und das ist beim Vergleichen die eigentliche Frage.
+    var _stufe = ausbauStufe(item);
+    if (_stufe > 0) return _composeGrundname(item) + ' +' + _stufe;
+    return _composeGrundname(item);
+  }
+
+  function _composeGrundname(item) {
     // Potions: derive i18n key from potionTier when nameKey is missing.
     let nameKey = item.nameKey;
     if (!nameKey && item.type === 'potion' && item.potionTier) {
@@ -1504,6 +1513,161 @@ if (window.i18n) {
     }
     return name;
   }
+
+  // ---------------------------------------------------------------------------
+  // #115: AUSBAU — ein gefundenes Stueck weiter verbessern
+  //
+  // Bis hierher war ein Fund entweder besser als das Getragene oder wertlos.
+  // Der Ausbau gibt dem Spieler einen Hebel, den er selbst in der Hand hat.
+  //
+  // Warum genau DIESER Hebel: seit #122 steht auf jedem Stueck eine absolute
+  // PUNKTZAHL, und was sie bewirkt, entscheidet die aktuelle Tiefe. Eine
+  // Ausbaustufe hebt einfach diese Punkte. Das braucht keine neue Mechanik —
+  // recalcDerived rechnet sie ohnehin bei jeder Aenderung neu um.
+  //
+  // Die SELTENHEIT entscheidet, wie weit es geht. Damit haengen die beiden Wege
+  // der Schmiede zusammen, statt nebeneinanderher zu laufen: Aufwerten gibt
+  // einen Affix DAZU und schaltet zugleich weitere Ausbaustufen frei.
+  //
+  // Das beantwortet nebenbei #105 ("die Seltenheit soll auch die WERTE heben").
+  // Ein stiller Aufschlag je Stufe waere die schwaechere Antwort gewesen: so
+  // ist es eine Entscheidung des Spielers, die etwas kostet.
+  //
+  // Bewusst NICHT gedeckelt auf die eigene Tiefe: ein voll ausgebautes
+  // legendaeres Stueck darf besser sein als alles, was faellt. Das ist der
+  // Sinn eines Projekts ueber mehrere Laeufe.
+  // ---------------------------------------------------------------------------
+
+  var AUSBAU_JE_STUFE = 0.10;                      // +10 % auf alle Punkte
+  var AUSBAU_STUFEN = Object.freeze([1, 2, 3, 5]); // je Seltenheit T0..T3
+
+  // Gold VERDOPPELT sich je Stufe. Das ist der Teil, der die unbegrenzte
+  // Anhaeufung einholt: gemessen liegen auf Tiefe 28 rund 61 600 Gold herum
+  // (#132), und ein legendaeres Stueck voll auszubauen kostet 77 500 — mehr als
+  // dieser ganze Bestand. Feste Preise koennen ein wachsendes Vermoegen nie
+  // einholen, eine Verdopplung schon.
+  var AUSBAU_GOLD_START = Object.freeze([300, 600, 1200, 2500]);
+
+  // Eisenbrocken steigen LINEAR statt exponentiell: sie kommen aus dem Zerlegen
+  // und haeufen sich viel langsamer an als Gold.
+  var AUSBAU_BROCKEN_START = Object.freeze([4, 6, 9, 14]);
+
+  // Beim Zerlegen kommt die HAELFTE der eingesetzten Brocken zurueck. Ohne das
+  // waere jede Fehlinvestition endgueltig, und niemand baute ein Stueck aus,
+  // das er vielleicht noch ersetzt.
+  var AUSBAU_RUECKGABE = 0.5;
+
+  function _tierVon(item) {
+    var t = (item && typeof item.tier === 'number') ? item.tier : 0;
+    return Math.max(0, Math.min(AUSBAU_STUFEN.length - 1, Math.round(t)));
+  }
+
+  /** Wieviele Stufen erlaubt die Seltenheit dieses Stuecks? */
+  function ausbauMaxStufen(item) {
+    if (!item) return 0;
+    return AUSBAU_STUFEN[_tierVon(item)];
+  }
+
+  /** Wie weit ist es schon ausgebaut? */
+  function ausbauStufe(item) {
+    var n = (item && typeof item.ausbauStufe === 'number') ? item.ausbauStufe : 0;
+    return Math.max(0, Math.round(n));
+  }
+
+  /**
+   * Was die NAECHSTE Stufe kostet. null, wenn keine mehr moeglich ist.
+   * @returns {{gold:number, brocken:number, stufe:number}|null}
+   */
+  function ausbauKosten(item) {
+    if (!item) return null;
+    var stufe = ausbauStufe(item);
+    if (stufe >= ausbauMaxStufen(item)) return null;
+    var t = _tierVon(item);
+    return {
+      gold: AUSBAU_GOLD_START[t] * Math.pow(2, stufe),
+      brocken: AUSBAU_BROCKEN_START[t] * (stufe + 1),
+      stufe: stufe + 1
+    };
+  }
+
+  /** Alle Brocken, die bisher in dieses Stueck geflossen sind. */
+  function ausbauBrockenGesamt(item) {
+    if (!item) return 0;
+    var t = _tierVon(item), summe = 0;
+    for (var i = 0; i < ausbauStufe(item); i++) summe += AUSBAU_BROCKEN_START[t] * (i + 1);
+    return summe;
+  }
+
+  /** Was das Zerlegen aus dem Ausbau zurueckgibt, zusaetzlich zum Grundwert. */
+  function ausbauRueckgabe(item) {
+    return Math.floor(ausbauBrockenGesamt(item) * AUSBAU_RUECKGABE);
+  }
+
+  /**
+   * Welche GRUNDwerte hebt eine Ausbaustufe?
+   *
+   * Nur die Machtwerte. 'speed' und 'range' auf einer Basis sind ihre EIGENART,
+   * nicht ihre Staerke (s. BASIS_TIEFENWERTE): das Minus der Glutaxt aufs Tempo
+   * mit 1,1 zu multiplizieren machte die Waffe SCHLECHTER, und die Reichweite
+   * eines Bogens ist keine Frage der Guete.
+   */
+  function _hebbarerGrundwert(stat) {
+    return stat === 'damage' || istTiefenBasiswert(stat);
+  }
+
+  /**
+   * Eine Stufe ausbauen. Aendert das Stueck an Ort und Stelle.
+   *
+   * Die Kosten werden hier NICHT abgebucht: nur der Aufrufer weiss, ob Gold und
+   * Brocken reichen und wo sie liegen.
+   *
+   * @returns {boolean} false, wenn keine Stufe mehr moeglich ist
+   */
+  function ausbauen(item) {
+    if (!item || !ausbauKosten(item)) return false;
+    var f = 1 + AUSBAU_JE_STUFE;
+
+    // Grundwerte: oben UND im baseStats-Unterobjekt, sonst laufen die beiden
+    // Fassungen auseinander (rollItem spiegelt sie beim Erzeugen).
+    //
+    // Welche gehoben werden, entscheidet _hebbarerGrundwert — nicht eine
+    // zweite Liste hier. 'speed' und 'range' stehen bewusst nicht drin.
+    var stats = ['hp', 'damage', 'speed', 'range', 'armor', 'crit', 'move', 'block', 'brand'];
+    for (var i = 0; i < stats.length; i++) {
+      var k = stats[i];
+      if (!_hebbarerGrundwert(k)) continue;
+      if (typeof item[k] === 'number' && item[k] > 0) {
+        item[k] = Math.round(item[k] * f * 10) / 10;
+      }
+      if (item.baseStats && typeof item.baseStats[k] === 'number' && item.baseStats[k] > 0) {
+        item.baseStats[k] = Math.round(item.baseStats[k] * f * 10) / 10;
+      }
+    }
+
+    // Affixe: ALLE. Sie sind durchweg Machtwerte — auch die flachen
+    // (Lebenspunkte, Reichweite), die ihre Zahl schon beim Wurf festgezurrt
+    // haben. Bei denen ganzzahlig bleiben, sonst stuenden 5,5 Lebenspunkte da;
+    // und mindestens +1, damit eine bezahlte Stufe nie wirkungslos verpufft.
+    if (Array.isArray(item.affixes)) {
+      for (var a = 0; a < item.affixes.length; a++) {
+        var inst = item.affixes[a];
+        if (!inst || typeof inst.value !== 'number') continue;
+        var def = null;
+        for (var d = 0; d < AFFIX_DEFS.length; d++) {
+          if (AFFIX_DEFS[d].id === inst.defId) { def = AFFIX_DEFS[d]; break; }
+        }
+        var flach = !!(def && _wirkungFuer(def.statKey).einheit === 'flach');
+        inst.value = flach
+          ? Math.max(inst.value + 1, Math.round(inst.value * f))
+          : Math.round(inst.value * f * 10) / 10;
+      }
+    }
+
+    item.ausbauStufe = ausbauStufe(item) + 1;
+    try { item.displayName = composeName(item); } catch (e) {}
+    return true;
+  }
+
   // ---------------------------------------------------------------------------
   // WP03: Gold Currency
   //
@@ -2173,6 +2337,15 @@ if (window.i18n) {
     SHOP_QUALITY_BIAS: SHOP_QUALITY_BIAS,
     BLIND_BUY_BIAS: BLIND_BUY_BIAS,
     composeName: composeName,
+    // #115: Ausbau.
+    ausbauen: ausbauen,
+    ausbauKosten: ausbauKosten,
+    ausbauStufe: ausbauStufe,
+    ausbauMaxStufen: ausbauMaxStufen,
+    ausbauRueckgabe: ausbauRueckgabe,
+    ausbauBrockenGesamt: ausbauBrockenGesamt,
+    AUSBAU_JE_STUFE: AUSBAU_JE_STUFE,
+    AUSBAU_STUFEN: AUSBAU_STUFEN,
     // i18n helper: always re-resolves item name + affixes against current
     // language. Consumers should prefer this over reading item.displayName
     // (which is snapped at instantiation and may be stale after a switch).

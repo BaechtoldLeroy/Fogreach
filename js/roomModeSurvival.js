@@ -27,8 +27,16 @@
     });
   }
 
-  var BASE_SECONDS = 60;      // Grunddauer
-  var MAX_SECONDS = 120;      // Deckel bei großer Tiefe
+  // Halbiert (war 60 / 120 / +2 je Tiefe): der Modus lief 60 Sekunden auf
+  // Tiefe 1 und 118 auf Tiefe 30 — zu lange fuer einen Raum, den man auf dem
+  // Weg nach unten mitnimmt.
+  //
+  // Die Nachschubrate bleibt, wie sie war. Damit halbiert sich auch die Zahl
+  // der Gegner: der Modus wird kuerzer UND etwas leichter. Wollte man denselben
+  // Druck in der halben Zeit, muesste SPAWN_INTERVAL mit halbiert werden — das
+  // waere aber eine andere Entscheidung als "dauert zu lange".
+  var BASE_SECONDS = 30;      // Grunddauer
+  var MAX_SECONDS = 60;       // Deckel bei großer Tiefe
   var SPAWN_INTERVAL = 2.5;   // s zwischen Nachschub-Schüben (halbiert -> schwerer)
   var SPAWN_BATCH = 2;        // Gegner pro Schub
   var MAX_CONCURRENT = 14;    // Deckel gleichzeitiger Gegner (Anti-Überfüllung)
@@ -85,7 +93,7 @@
   function _depthSeconds() {
     var d = 1;
     if (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number' && window.DUNGEON_DEPTH > 0) d = window.DUNGEON_DEPTH;
-    return Math.min(MAX_SECONDS, BASE_SECONDS + (d - 1) * 2);
+    return Math.min(MAX_SECONDS, BASE_SECONDS + (d - 1));
   }
 
   // Zufällige Ring-Position um die AKTUELLE Spieler-Position. Bevorzugt eine

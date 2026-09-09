@@ -78,6 +78,11 @@ if (window.i18n) {
 }
 const _CRAFT_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
 const _CRAFT_TIER_KEYS = ['crafting.tier.common', 'crafting.tier.magic', 'crafting.tier.rare', 'crafting.tier.legendary'];
+// Die Ausruestungsplaetze — EINE Liste fuer Anzeige, Auffrischen, Filter und
+// Layoutrechnung. Sie stand frueher viermal in dieser Datei, und die Hoehe
+// der Platzspalte war zusaetzlich als Zahl 4 notiert; #124 trug den fuenften
+// Platz zwar in die Listen ein, nicht aber in die Rechnung (#141).
+const _CRAFT_EQUIP_SLOTS = ['weapon', 'offhand', 'head', 'body', 'boots'];
 
 // Tier color map (WP08 T050): 0=Common, 1=Magic, 2=Rare, 3=Legendary.
 // Reads window.TIER_COLORS (loot.js) with a local fallback so this module
@@ -193,14 +198,13 @@ class CraftingScene extends Phaser.Scene {
     const leftX = 30;
     const panelY = 80;
     const panelW = (W / 2) - 50;
-    const panelH = H - 140;
 
     this.add.text(leftX + panelW / 2, panelY, _CRAFT_T('crafting.section.enhance'), {
       fontFamily: 'monospace', fontSize: '16px', color: COL_GOLD
     }).setOrigin(0.5, 0).setDepth(10);
 
     // ----- Equipped slots (top of left panel) -----
-    const slots = ['weapon', 'offhand', 'head', 'body', 'boots'];
+    const slots = _CRAFT_EQUIP_SLOTS;
     const slotLabels = {
       weapon: _CRAFT_T('crafting.slot.weapon'),
       offhand: _CRAFT_T('crafting.slot.offhand'),
@@ -213,10 +217,11 @@ class CraftingScene extends Phaser.Scene {
 
     const slotStartY = panelY + 24;
     const slotH = 36;
+    const slotGap = 2;
     const slotW = panelW;
 
     slots.forEach((slot, i) => {
-      const sy = slotStartY + i * (slotH + 4);
+      const sy = slotStartY + i * (slotH + slotGap);
       const bg = this.add.rectangle(leftX + slotW / 2, sy + slotH / 2, slotW, slotH, COL_SLOT)
         .setDepth(9).setInteractive({ useHandCursor: true });
       bg.setStrokeStyle(2, 0x444444);
@@ -251,14 +256,19 @@ class CraftingScene extends Phaser.Scene {
     });
 
     // ----- Inventory list (middle of left panel) -----
-    const invHeaderY = slotStartY + 4 * (slotH + 4) + 8;
+    // #141: hier stand `4 * (slotH + 4)` — die Platzanzahl von VOR der
+    // Nebenhand. Seit #124 sind es fuenf Kaesten, die Ueberschrift landete
+    // deshalb 28 px innerhalb des Stiefel-Platzes und die Liste darunter
+    // verdeckte ihn. Die Zahl haengt an der Laenge der Platzliste, also
+    // steht sie jetzt auch dort.
+    const invHeaderY = slotStartY + slots.length * (slotH + slotGap) + 6;
     this.add.text(leftX + 8, invHeaderY, _CRAFT_T('crafting.section.inventory'), {
       fontFamily: 'monospace', fontSize: '10px', color: COL_GOLD
     }).setDepth(10);
 
     this.invListY = invHeaderY + 14;
     this.invRowH = 28;
-    this.invMaxRows = 3;
+    this.invMaxRows = 2;
     this.invScrollOffset = 0; // index of the first visible row
     this.invRows = [];
     this.invListBg = this.add.rectangle(
@@ -773,7 +783,7 @@ class CraftingScene extends Phaser.Scene {
   // here — only inventory items are salvaged (per request).
   _isMassSalvageable(it) {
     if (!it || it.devCheat) return false;
-    if (['weapon', 'offhand', 'head', 'body', 'boots'].indexOf(it.type) === -1) return false;
+    if (_CRAFT_EQUIP_SLOTS.indexOf(it.type) === -1) return false;
     const tier = (typeof it.tier === 'number') ? it.tier : 0;
     return tier <= 2;
   }
@@ -901,7 +911,7 @@ class CraftingScene extends Phaser.Scene {
     this._updateMatText();
 
     // Refresh equipment slots
-    const slots = ['weapon', 'offhand', 'head', 'body', 'boots'];
+    const slots = _CRAFT_EQUIP_SLOTS;
     slots.forEach(slot => {
       const el = this.equipSlots[slot];
       if (!el) return;
@@ -955,7 +965,7 @@ class CraftingScene extends Phaser.Scene {
     }
 
     // Collect all equipment items in inventory (with original index)
-    const EQUIP_TYPES = new Set(['weapon', 'offhand', 'head', 'body', 'boots']);
+    const EQUIP_TYPES = new Set(_CRAFT_EQUIP_SLOTS);
     const equipItems = [];
     for (let i = 0; i < inventory.length; i++) {
       const it = inventory[i];

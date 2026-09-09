@@ -645,6 +645,76 @@ function stairCandidatesFromDoor(door, opts) {
 }
 if (typeof window !== 'undefined') window.stairCandidatesFromDoor = stairCandidatesFromDoor;
 
+// Freiraum um eine Treppe: halbes Treppen-Sprite (80px/2) plus 4px Marge.
+// Dieselbe Zahl wie STAIR_HALF in der Platzierung — die Treppe reserviert diesen
+// Ring ohnehin, also wird er auch verteidigt.
+var TREPPEN_FREIRAUM = 44;
+
+// Raeumt jedes Prop weg, das eine Treppe verdeckt.
+//
+// WARUM (#142): seit die Zeichentiefen geordnet sind, liegen ALLE Props vor der
+// Treppe — WELT_TIEFEN.TREPPE ist die unterste Ebene ueber dem Boden. Das ist
+// gewollt, sonst klebt eine Treppe ueber Fass und Statue und das Layout sieht
+// falsch aus. Der Preis: ein Prop auf der Treppe verdeckt sie zuverlaessig, und
+// die Treppe ist der Ausgang. Diese Funktion ist die EINZIGE Sicherung dagegen.
+//
+// Sie fasste frueher im ersten Durchgang nur `destructible`-Props an; ein Altar
+// blieb stehen. Jetzt gilt sie fuer jedes Prop, auch fuer die Fackel — deren
+// Licht wird getrennt gefuehrt und muss mit weg, sonst leuchtet es ohne Quelle.
+//
+// AUSGENOMMEN sind Waende: die liegen in derselben obstacles-Gruppe, und eine
+// entfernte Wandspanne reisst ein Loch in den Raum. Ihre displayWidth ist die
+// ganze Spanne, der Freiraum-Test haette also ganze Waende gefressen.
+//
+// Geprueft wird mit Freiraum statt auf blosse Ueberlappung: ein Prop, das knapp
+// neben der Treppe steht, ragt mit seinem Sprite trotzdem hinein.
+function raeumePropsAufTreppen(scene, obstaclesGroup) {
+  if (!scene || !scene.stairsGroup || typeof scene.stairsGroup.getChildren !== 'function') return 0;
+  if (!obstaclesGroup || typeof obstaclesGroup.getChildren !== 'function') return 0;
+  var treppen = scene.stairsGroup.getChildren();
+  if (!treppen.length) return 0;
+  var entfernt = 0;
+  // Kopie: wir zerstoeren waehrend der Iteration.
+  obstaclesGroup.getChildren().slice().forEach(function (o) {
+    if (!o || o.active === false) return;
+    if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) return;
+    var typ = (o.getData && o.getData('type')) || '';
+    if (typ === 'obstacleWall') return;
+    if (o.getData && (o.getData('isMergedWall') || o.getData('isFloor'))) return;
+    // Truhen NICHT. Der Freiraum von 44 px ist grosszuegig gewaehlt, damit auch
+    // ein knapp danebenstehendes Fass fliegt — bei einer Truhe hiesse das aber,
+    // BEUTE zu zerstoeren, und das ist schlimmer als eine seltene Verdeckung.
+    // Eine Truhe verschwindet ohnehin, sobald man sie oeffnet.
+    //
+    // Die zufaellig gesetzten Truhen (_spawnRandomRoomChests) pruefen ihre
+    // Lage schon selbst gegen die Treppen; betroffen waeren nur die aus den
+    // Raumvorlagen.
+    if (typeof typ === 'string' && typ.toLowerCase().indexOf('chest') === 0) return;
+    var ohw = (o.displayWidth || 32) / 2 + TREPPEN_FREIRAUM;
+    var ohh = (o.displayHeight || 32) / 2 + TREPPEN_FREIRAUM;
+    for (var i = 0; i < treppen.length; i++) {
+      var st = treppen[i];
+      if (!st || !Number.isFinite(st.x) || !Number.isFinite(st.y)) continue;
+      if (Math.abs(o.x - st.x) >= ohw || Math.abs(o.y - st.y) >= ohh) continue;
+      if ((typ === 'brazier' || typ === 'brazer') && window.RoomTemplates
+          && typeof window.RoomTemplates.removeBrazierGlow === 'function') {
+        try { window.RoomTemplates.removeBrazierGlow(scene, o.x, o.y); } catch (e) {}
+      }
+      if (Array.isArray(scene._templateWalls)) {
+        var wi = scene._templateWalls.indexOf(o);
+        if (wi >= 0) scene._templateWalls.splice(wi, 1);
+      }
+      try { if (o.body) o.body.enable = false; } catch (e) {}
+      try { o.destroy(); } catch (e) {}
+      entfernt++;
+      try { console.warn('[stairs] Prop auf Treppe entfernt: ' + (typ || '?')); } catch (e) {}
+      return;
+    }
+  });
+  return entfernt;
+}
+if (typeof window !== 'undefined') window.raeumePropsAufTreppen = raeumePropsAufTreppen;
+
 // Zufällige Truhen-Platzierung pro Raum (ersetzt die fixen Template-Truhen).
 // Ziel: ~1 Truhe pro 2 durchschnittlich grosse Räume (Audit-Mittel ~861 Tiles).
 // Platziert NACH den Treppen, validiert gegen Treppen/Spieler-Spawn/Kamera/
@@ -1115,44 +1185,19 @@ function enterRoom(scene, roomId) {
     stair.setData("dir", d.dir || null);
     // Scale 500x500 source down to ~80px tile-fit display size
     stair.setDisplaySize(80, 80);
-    // Fixed depth 40: above floor decorations (depth 0-30) but below the
-    // enemy layer (depth 50) and player (>= 100), so enemies and the player
-    // always render on top of the stair tile.
-    stair.setAlpha(0.95).setDepth(40).refreshBody();
+    // Die Treppe liegt ueber der Bodendeko, aber UNTER allen Props (#142).
+    // Vorher teilte sie sich die 40 mit Fass und Kiste — bei gleicher Tiefe
+    // entscheidet die Anzeigeliste, also der Zufall. Dass Props vorn liegen, ist
+    // gewollt; dass die Treppe trotzdem sichtbar bleibt, sichert allein
+    // raeumePropsAufTreppen().
+    stair.setAlpha(0.95).setDepth(window.WELT_TIEFEN.TREPPE).refreshBody();
   });
 
-  // Sicherheitsnetz: zerstoerbare Props (Fass/Kiste/Geroell/Saeule ...), die auf
-  // einer Treppe liegen, entfernen. Grund: die Platzierungs-Checks nutzen
-  // STAIR_HALF (44px), das Treppen-Sprite ist aber 80px — Rand-Ueberlappungen
-  // konnten durchrutschen (bes. im proc-"verified clear"-Pfad, der Nudge/Destroy
-  // ueberspringt). Hier gegen die ECHTEN Treppen-Bounds pruefen und nur als
-  // destructible markierte Props raeumen (Waende bleiben unberuehrt). Ein Prop
-  // unter einer Treppe ist Wegwerf-Deko; die Treppe hat Vorrang.
-  if (obstacles && typeof obstacles.getChildren === 'function' && scene.stairsGroup
-      && Phaser && Phaser.Geom && Phaser.Geom.Intersects) {
-    const _stairsArr = scene.stairsGroup.getChildren();
-    if (_stairsArr.length > 0) {
-      const _obsArr = obstacles.getChildren().slice(); // Kopie: wir destroyen waehrend Iteration
-      for (let oi = 0; oi < _obsArr.length; oi++) {
-        const o = _obsArr[oi];
-        if (!o || !o.active || !(o.getData && o.getData('destructible')) || !o.getBounds) continue;
-        const ob = o.getBounds();
-        for (let si = 0; si < _stairsArr.length; si++) {
-          const s = _stairsArr[si];
-          if (!s || !s.getBounds) continue;
-          if (Phaser.Geom.Intersects.RectangleToRectangle(ob, s.getBounds())) {
-            try { if (o.body) o.body.enable = false; } catch (e) {}
-            if (Array.isArray(scene._templateWalls)) {
-              const wi = scene._templateWalls.indexOf(o);
-              if (wi >= 0) scene._templateWalls.splice(wi, 1);
-            }
-            try { o.destroy(); } catch (e) {}
-            break;
-          }
-        }
-      }
-    }
-  }
+  // Sicherheitsnetz, erster Durchgang: die regulaer gesetzten Treppen freihalten.
+  // Die Platzierungs-Checks rechnen mit STAIR_HALF (44px), das Treppen-Sprite ist
+  // aber 80px breit — Rand-Ueberlappungen rutschten durch, besonders im
+  // prozeduralen "verified clear"-Pfad, der Nudge/Destroy ueberspringt.
+  raeumePropsAufTreppen(scene, obstacles);
 
   // INVARIANTE: jeder Raum MUSS mindestens eine ERREICHBARE Treppe haben —
   // sonst ist der Run softgelockt. Es genuegt NICHT, dass eine Treppe existiert:
@@ -1182,38 +1227,19 @@ function enterRoom(scene, roomId) {
     _emStair.setData("locked", true);
     _emStair.setData("dir", null);
     _emStair.setDisplaySize(80, 80);
-    _emStair.setAlpha(0.95).setDepth(40).refreshBody();
+    _emStair.setAlpha(0.95).setDepth(window.WELT_TIEFEN.TREPPE).refreshBody();
     try { console.warn('[stairs] Notfall-Treppe erzwungen — keine ERREICHBARE Treppe (Raum hatte ' + _stairCount + ')'); } catch (_) {}
   }
 
-  // Absolute Garantie: KEIN blockierendes Objekt (Saeule/Statue/Fass/Kiste)
-  // hinter/unter einer Treppe. Deckt auch den PROZEDURALEN Pfad (der den
-  // Nudge/Destroy oben ueberspringt) und die Notfall-Treppe ab — dort schaute
-  // sonst z.B. eine Saeule hinter der Treppe hervor. Nur die Physik-Obstacles
-  // (scene.obstacles), NICHT die Wand-/Deko-Sprites in _templateWalls. Braziers
-  // bleiben ABSICHTLICH stehen (ihr Licht liegt jetzt vor der Treppe).
-  if (scene.stairsGroup && scene.stairsGroup.getChildren
-      && scene.obstacles && scene.obstacles.getChildren) {
-    var _stairsList = scene.stairsGroup.getChildren();
-    scene.obstacles.getChildren().slice().forEach(function (o) {
-      if (!o || o.active === false) return;
-      if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) return;
-      if (o.getData && o.getData('isFloor')) return;
-      var _ty = (o.getData && o.getData('type')) || '';
-      if (_ty === 'brazier' || _ty === 'brazer') return; // Fackeln behalten
-      var _STAIR_HALF = 44; // 80px Treppe/2 + 4px Marge
-      var ohw = (o.displayWidth || 32) / 2 + _STAIR_HALF;
-      var ohh = (o.displayHeight || 32) / 2 + _STAIR_HALF;
-      for (var _si = 0; _si < _stairsList.length; _si++) {
-        var st = _stairsList[_si];
-        if (st && Math.abs(o.x - st.x) < ohw && Math.abs(o.y - st.y) < ohh) {
-          try { if (o.body) o.body.enable = false; o.destroy(); } catch (e) {}
-          try { console.warn('[stairs] Objekt hinter Treppe entfernt: ' + (_ty || '?')); } catch (_) {}
-          return;
-        }
-      }
-    });
-  }
+  // Zweiter Durchgang: die Notfall-Treppe oben faellt ALLE Platzierungsregeln und
+  // kann deshalb mitten in der Deko landen. Sie ist erst jetzt da, also muss das
+  // Netz danach noch einmal laufen.
+  //
+  // Auf die GLOBALE Gruppe, nicht auf scene.obstacles: die Szene traegt diese
+  // Eigenschaft nie (main.js legt die Gruppe als globales `obstacles` an). Der
+  // alte Block hier war deshalb an seiner eigenen Bedingung stumm gescheitert
+  // und hat nie ein einziges Objekt geraeumt.
+  raeumePropsAufTreppen(scene, obstacles);
 
   // Truhen werden NICHT mehr aus den Templates gespawnt (spawns.loot-Truhen
   // entfernt), sondern hier ZUFAELLIG platziert — nach den Treppen, damit die
