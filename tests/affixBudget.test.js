@@ -57,7 +57,12 @@ function messeAufTiefe(tiefe) {
       LS.recomputeBonuses(); recalcDerived(0,0);
       var tempo = Math.max(0.2, weaponAttackSpeed || 1);
       var proSek = 1000 / Math.max(320, 650 / tempo);
-      return { dps: weaponDamage * proSek * (1 + playerCritChance * 0.5),
+      // Der Kritzuschlag kommt aus dem SPIEL (window.PLAYER_CRIT_MULT), nicht
+      // aus einer Zahl hier. Mit einer eigenen Kopie liess sich der
+      // Multiplikator aendern, ohne dass ein einziger Test fiel — aufgefallen
+      // ist es nur, weil eine Mutation nicht gefallen ist.
+      var kritZuschlag = (window.PLAYER_CRIT_MULT || 1.5) - 1;
+      return { dps: weaponDamage * proSek * (1 + playerCritChance * kritZuschlag),
                ehp: (window.playerMaxHealth || 30) / Math.max(0.15, 1 - playerArmor) };
     }
     // FESTE Traeger, einmal gerollt: nur die Affixliste wird getauscht, sonst
@@ -497,13 +502,54 @@ test('Die Lebensregeneration aus Vitalitaet ersetzt keine Traenke', () => {
   });
 });
 
+test('Kritchance laeuft nicht mehr in ihren Deckel', () => {
+  // Krit ist der einzige gedeckelte Wert des Spiels (90 %). Bei
+  // Multiplikator 1,5x brachte ein Prozentpunkt Krit nur einen halben
+  // Prozentpunkt Schaden, Krit musste also DOPPELT so hoch stehen wie jeder
+  // andere Wert, um dasselbe wert zu sein — und lief damit in den Deckel:
+  // Kritbasen auf allen fuenf Plaetzen plus Affixe ergaben exakt 90 %.
+  //
+  // Bei 2,0x ist ein Prozentpunkt Krit einen Prozentpunkt Schaden wert; alle
+  // Kritquellen sind entsprechend halbiert. Gemessen wird der schlimmste Fall,
+  // nicht der Durchschnitt — der Deckel interessiert nur dort.
+  const r = H.run(`(function () {
+    var LS = window.LootSystem, T = 20;
+    window.DUNGEON_DEPTH = T; window.currentWave = T;
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    var satz = { weapon: 'WPN_SCHATTENDOLCH', offhand: 'OF_BANNLATERNE',
+                 head: 'HD_SCHLANGENMASKE', body: 'BD_SCHATTENKUTTE',
+                 boots: 'BT_WINDLAEUFER' };
+    var prec = LS.AFFIX_DEFS.find(function (d) { return d.id === 'of_precision'; });
+    var dexd = LS.AFFIX_DEFS.find(function (d) { return d.id === 'attr_dexterity'; });
+    Object.keys(satz).forEach(function (p2) {
+      var it = LS.rollItem(satz[p2], T, 3), a = [];
+      if (prec.appliesTo.indexOf(it.type) >= 0) a.push({ defId: 'of_precision', value: LS.affixWert(prec, 0.12, T) });
+      if (dexd.appliesTo.indexOf(it.type) >= 0) a.push({ defId: 'attr_dexterity', value: LS.affixWert(dexd, 0.12, T) });
+      it.affixes = a; window.equipment[p2] = it;
+    });
+    LS.recomputeBonuses(); recalcDerived(0, 0);
+    var krit = playerCritChance;
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    return krit;
+  })()`);
+  assert.ok(r > 0.35,
+    'der kritstaerkste Satz kommt nur auf ' + (r * 100).toFixed(0) + ' % — Krit ist wertlos geworden');
+  assert.ok(r < 0.80,
+    'der kritstaerkste Satz kommt auf ' + (r * 100).toFixed(0) + ' % und damit an den Deckel (90 %)');
+});
+
 test('Geschick gibt Krit als ZWEITwirkung, nicht als zweite Hauptquelle', () => {
   // Geschick lief neben seiner Primaerwirkung (Angriffstempo, 1 % je Punkt)
-  // mit 0,67 % Krit je Punkt auch noch als zweitbeste Kritquelle mit. Jetzt
-  // 80 % davon.
+  // mit 0,67 % Krit je Punkt auch noch als zweitbeste Kritquelle mit. Auf
+  // 80 % gesenkt.
   //
-  // Der Test misst gegen das TEMPO, nicht gegen eine feste Zahl: das Verhaeltnis
-  // der beiden Wirkungen ist die Aussage, die absolute Zahl nur ihre Folge.
+  // Gemessen wird der SCHADENSbeitrag, nicht die Kritchance: als der
+  // Multiplikator von 1,5x auf 2,0x stieg, wurde jeder Prozentpunkt Krit
+  // doppelt so viel wert, und alle Kritquellen wurden halbiert. Eine Pruefung
+  // auf die blosse Chance haette dann falschen Alarm geschlagen — obwohl sich
+  // am Ergebnis nichts geaendert hat.
   const r = H.run(`(function () {
     var LS = window.LootSystem;
     window.DUNGEON_DEPTH = 20; window.currentWave = 20;
@@ -514,18 +560,23 @@ test('Geschick gibt Krit als ZWEITwirkung, nicht als zweite Hauptquelle', () => 
     it.affixes = [{ defId: 'attr_dexterity', value: LS.affixWert(def, 0.10, 20) }];
     window.equipment.boots = it;
     LS.recomputeBonuses(); recalcDerived(0, 0);
-    var raus = { punkte: window.playerDexterity, krit: window.playerDexCrit };
+    var raus = { punkte: window.playerDexterity, krit: window.playerDexCrit,
+                 multiplikator: window.PLAYER_CRIT_MULT };
     ['weapon','offhand','head','body','boots','amulet']
       .forEach(function (k) { window.equipment[k] = null; });
     return raus;
   })()`);
   assert.ok(r.punkte > 0, 'Testaufbau: kein Geschick angelegt');
   const jePunkt = r.krit / r.punkte;
-  // Primaerwirkung ist 1 % Tempo je Punkt. Krit soll gut die Haelfte davon sein.
-  assert.ok(jePunkt > 0.004 && jePunkt < 0.006,
-    'Krit je Geschickpunkt liegt bei ' + (jePunkt * 100).toFixed(3) + ' %');
-  assert.ok(Math.abs(jePunkt / 0.0067 - 0.8) < 0.05,
-    'das sind ' + (100 * jePunkt / 0.0067).toFixed(0) + ' % der alten Kurve, erwartet rund 80');
+  // Der Zuschlag kommt aus dem Spiel, nicht aus einer Zahl hier.
+  const schadenJePunkt = jePunkt * (r.multiplikator - 1);
+  const frueher = 0.0067 * 0.5;
+  assert.ok(Math.abs(schadenJePunkt / frueher - 0.8) < 0.05,
+    'Geschick gibt ' + (100 * schadenJePunkt / frueher).toFixed(0)
+    + ' % des frueheren Schadensbeitrags, erwartet rund 80');
+  // Und die Primaerwirkung bleibt das Tempo: 1 % je Punkt.
+  assert.ok(schadenJePunkt < 0.01,
+    'Krit ueberholt das Angriffstempo als Primaerwirkung: ' + schadenJePunkt);
 });
 
 test('Anzeige und Wirkung des Geschick-Krits lesen dieselbe Zahl', () => {

@@ -307,6 +307,29 @@ test('#114: die HOEHE kommt trotzdem aus der Fundtiefe', () => {
   }
 });
 
+test('Keine Basis gibt mehr als 5 % Kritchance', () => {
+  // Krit ist der einzige gedeckelte Wert (90 %), und Basiswerte stapeln sich
+  // ueber alle fuenf Plaetze. Bei 10 % je Basis kamen allein daraus 38 %, und
+  // mit den Affixen war der Deckel erreicht.
+  //
+  // Die Grenze haengt am Kritmultiplikator: bei 2,0x ist ein Prozentpunkt Krit
+  // einen Prozentpunkt Schaden wert, 5 % sind also ein halbes Affixbudget —
+  // spuerbar, aber nicht stapelbar bis an den Deckel. Steigt der Multiplikator
+  // wieder, muessen die Kurven mit.
+  const sys = freshSystem();
+  const zuHoch = [];
+  sys.ITEM_BASES.forEach((b) => {
+    const c = b.wertKurve && b.wertKurve.crit;
+    if (typeof c === 'number' && c > 0.05) zuHoch.push(b.key + ' ' + (c * 100).toFixed(1) + ' %');
+  });
+  assert.deepStrictEqual(zuHoch, [],
+    'diese Basen geben zu viel Krit: ' + zuHoch.join(', '));
+
+  // Gegenprobe: es soll ueberhaupt noch Basen mit Krit geben.
+  const mitKrit = sys.ITEM_BASES.filter((b) => b.wertKurve && b.wertKurve.crit);
+  assert.ok(mitKrit.length >= 6, 'nur noch ' + mitKrit.length + ' Basen tragen Krit');
+});
+
 test('#104: kein Tiefenwert steht in baseStats', () => {
   // Der Fehler, der den Schattendolch getroffen hat: crit stand dort als
   // glatte Prozentzahl (5 = 5 %). Seit #104 liest recalcDerived armor, crit,
@@ -333,7 +356,10 @@ test('#104: der Krit der Waffen bleibt ueber alle Tiefen gleich viel wert', () =
   // und 1,5 % auf Tiefe 30 — er verlor unten genau die Eigenschaft, fuer die
   // man ihn nimmt.
   const sys = freshSystem();
-  [['WPN_SCHATTENDOLCH', 0.05], ['WPN_HORNBOGEN', 0.04], ['WPN_NEBELBOGEN', 0.03]]
+  // Die Zielwerte sind halbiert, seit der Kritmultiplikator bei 2,0x liegt:
+  // derselbe Schadensbeitrag, halb so viel Chance. Worum es dem Test geht,
+  // bleibt unberuehrt — dass die Zahl ueber alle Tiefen STEHT.
+  [['WPN_SCHATTENDOLCH', 0.025], ['WPN_HORNBOGEN', 0.02], ['WPN_NEBELBOGEN', 0.015]]
     .forEach(([key, ziel]) => {
       const gemessen = [1, 5, 10, 20, 30].map((t) => {
         aufTiefe(t);

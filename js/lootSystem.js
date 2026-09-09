@@ -460,7 +460,7 @@ if (window.i18n) {
       // er eine glatte Prozentzahl (5 = 5 %) und wurde seit der Umstellung als
       // Punktzahl gelesen — 12,5 % auf Tiefe 1, 1,5 % auf Tiefe 30. Als Kurve
       // bleibt er bei rund 5 %, egal wie tief man steht.
-      wertKurve: Object.freeze({ crit: 0.05 }),
+      wertKurve: Object.freeze({ crit: 0.025 }),
       baseStats: Object.freeze({ speed: 15, range: -25 }), dropWeight: Object.freeze({ 3: 60, 8: 80, 15: 100 }) }),
     Object.freeze({ key: 'WPN_KETTENMORGENSTERN', type: 'weapon', name: 'Kettenmorgenstern', iconKey: 'itFlail',
       damageKurve: Object.freeze({ anteil: 0.96, spanne: 0.60 }),
@@ -487,7 +487,7 @@ if (window.i18n) {
       baseStats: Object.freeze({ range: 80 }), dropWeight: Object.freeze({ 2: 40, 6: 60, 12: 30 }) }),
     Object.freeze({ key: 'WPN_HORNBOGEN', type: 'weapon', subtype: 'bow', name: 'Hornbogen', iconKey: 'itBowHorn',
       damageKurve: Object.freeze({ anteil: 0.90, spanne: 0.58 }),
-      wertKurve: Object.freeze({ crit: 0.04 }),
+      wertKurve: Object.freeze({ crit: 0.02 }),
       baseStats: Object.freeze({ range: 100 }), dropWeight: Object.freeze({ 6: 40, 12: 70, 18: 50 }) }),
     Object.freeze({ key: 'WPN_GLUTBOGEN', type: 'weapon', zweihaendig: true, subtype: 'bow', name: 'Glutbogen', iconKey: 'itBowGlut',
       damageKurve: Object.freeze({ anteil: 0.92, spanne: 0.60 }),
@@ -495,7 +495,7 @@ if (window.i18n) {
     // Spät-Tier-Bogen (ab ~Tiefe 15), s. Kommentar bei den Spät-Tier-Nahkampfwaffen.
     Object.freeze({ key: 'WPN_NEBELBOGEN', type: 'weapon', zweihaendig: true, subtype: 'bow', name: 'Nebelbogen', iconKey: 'itBowNebel',
       damageKurve: Object.freeze({ anteil: 0.89, spanne: 0.62 }),
-      wertKurve: Object.freeze({ crit: 0.03 }),
+      wertKurve: Object.freeze({ crit: 0.015 }),
       baseStats: Object.freeze({ range: 130 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
 
     // Helms (3)
@@ -512,7 +512,7 @@ if (window.i18n) {
       wertKurve: Object.freeze({ armor: 0.10 }),
       baseStats: Object.freeze({}), dropWeight: Object.freeze({ 4: 80, 10: 100, 15: 60 }) }),
     Object.freeze({ key: 'HD_SCHLANGENMASKE', type: 'head', name: 'Schlangenmaske', iconKey: 'itHeadSchlangenmaske',
-      wertKurve: Object.freeze({ armor: 0.05, crit: 0.10 }),
+      wertKurve: Object.freeze({ armor: 0.05, crit: 0.050 }),
       baseStats: Object.freeze({}), dropWeight: Object.freeze({ 6: 50, 12: 80, 18: 100 }) }),
 
     // Body armor (3)
@@ -523,7 +523,7 @@ if (window.i18n) {
       wertKurve: Object.freeze({ armor: 0.16 }),
       baseStats: Object.freeze({ speed: -5 }), dropWeight: Object.freeze({ 5: 60, 10: 100, 15: 80 }) }),
     Object.freeze({ key: 'BD_SCHATTENKUTTE', type: 'body', name: 'Schattenkutte', iconKey: 'itBodySchattenkutte',
-      wertKurve: Object.freeze({ armor: 0.07, crit: 0.08 }),
+      wertKurve: Object.freeze({ armor: 0.07, crit: 0.04 }),
       baseStats: Object.freeze({ speed: 10 }), dropWeight: Object.freeze({ 6: 40, 12: 80, 18: 100 }) }),
 
     // Boots (3) — geben Lauftempo (move), nicht Angriffstempo. 'move' ist flach
@@ -535,7 +535,7 @@ if (window.i18n) {
       wertKurve: Object.freeze({ armor: 0.06, move: 0.08 }),
       baseStats: Object.freeze({}), dropWeight: Object.freeze({ 4: 80, 10: 100 }) }),
     Object.freeze({ key: 'BT_WINDLAEUFER', type: 'boots', name: 'Windläufer', iconKey: 'itBootsWindlaeufer',
-      wertKurve: Object.freeze({ move: 0.22, crit: 0.06 }),
+      wertKurve: Object.freeze({ move: 0.22, crit: 0.03 }),
       baseStats: Object.freeze({}), dropWeight: Object.freeze({ 8: 50, 14: 100 }) }),
 
     // --- Nebenhand (#124) -----------------------------------------------------
@@ -575,7 +575,7 @@ if (window.i18n) {
     Object.freeze({ key: 'OF_TALGLICHT', type: 'offhand', name: 'Talglicht', iconKey: 'itOffTalglicht',
       baseStats: Object.freeze({ sicht: 25 }), dropWeight: Object.freeze({ 1: 55, 6: 35, 12: 10 }) }),
     Object.freeze({ key: 'OF_BANNLATERNE', type: 'offhand', name: 'Bannlaterne', iconKey: 'itOffBannlaterne',
-      wertKurve: Object.freeze({ crit: 0.06 }),
+      wertKurve: Object.freeze({ crit: 0.03 }),
       baseStats: Object.freeze({ sicht: 40 }), dropWeight: Object.freeze({ 9: 0, 12: 30, 20: 35 }) }),
     Object.freeze({ key: 'OF_GLUTSCHALE', type: 'offhand', name: 'Glutschale', iconKey: 'itOffGlutschale',
       wertKurve: Object.freeze({ brand: 0.12 }),
@@ -585,14 +585,14 @@ if (window.i18n) {
     // selbst (s. Kommentar oben bei WPN_*). Der Fangdolch zieht den Arm ein,
     // der Kettenhaken verlaengert ihn.
     Object.freeze({ key: 'OF_FANGDOLCH', type: 'offhand', name: 'Fangdolch', iconKey: 'itOffFangdolch',
-      wertKurve: Object.freeze({ crit: 0.05 }),
+      wertKurve: Object.freeze({ crit: 0.025 }),
       baseStats: Object.freeze({ speed: 10, range: -12 }), dropWeight: Object.freeze({ 3: 0, 6: 40, 14: 35 }) }),
     // KEIN Nebenhand-Stueck gibt rohen Schaden. Die Schadenszahlen kommen seit
     // #135 aus der DPS-Decke, die je WAFFE gerechnet wird — ein Zuschlag aus
     // der zweiten Hand liefe an ihr vorbei und haette die Decke ausgehebelt.
     // Der Kettenhaken gewinnt deshalb ueber Reichweite und Krit.
     Object.freeze({ key: 'OF_KETTENHAKEN', type: 'offhand', name: 'Kettenhaken', iconKey: 'itOffKettenhaken',
-      wertKurve: Object.freeze({ crit: 0.04, armor: 0.04 }),
+      wertKurve: Object.freeze({ crit: 0.02, armor: 0.04 }),
       baseStats: Object.freeze({ speed: -8, range: 30 }), dropWeight: Object.freeze({ 13: 0, 16: 25, 24: 35 }) })
   ]);
 
@@ -897,7 +897,10 @@ if (window.i18n) {
     // steht die Zahl fest.
     hp:        { einheit: 'flach', faktor: 1 },
     armor:     { einheit: 'bruch', faktor: 0.9 },
-    crit:      { einheit: 'bruch', faktor: 2 },
+    // Faktor 1 statt 2, seit der Kritmultiplikator bei 2,0x liegt: ein
+    // Prozentpunkt Kritchance ist jetzt einen Prozentpunkt Schaden wert, der
+    // Affix braucht also nicht mehr die doppelte Zahl fuer dasselbe Budget.
+    crit:      { einheit: 'bruch', faktor: 1 },
     move:      { einheit: 'bruch', faktor: 1 },
     // Reichweite ist wie Lebenspunkte eine konkrete Groesse, kein Anteil:
     // "+12 % Reichweite" sagt nichts, solange man nicht weiss, wovon. Vor allem
@@ -970,6 +973,11 @@ if (window.i18n) {
 
   // Welche GRUNDwerte werden wie die Affixe behandelt — also absolut
   // gespeichert und beim Tragen mit der aktuellen Tiefe umgerechnet?
+  //
+  // Die KRITKURVEN der Basen sind mit dem Multiplikator halbiert worden
+  // (Schlangenmaske 10 -> 5 %, Schattenkutte 8 -> 4 % usw.). Sonst waere ihr
+  // Schadensbeitrag mit 2,0x auf einen Schlag doppelt so gross geworden,
+  // waehrend der Affix daneben gleich blieb.
   //
   // Nur die reinen MACHTwerte. `speed` und `range` auf einer Basis sind ihre
   // EIGENART, nicht ihre Staerke: das Minus der Glutaxt aufs Tempo und das

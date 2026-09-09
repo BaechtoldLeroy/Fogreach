@@ -14,6 +14,15 @@ const PLAYER_COLLIDER_HEIGHT = 56;
 const PLAYER_COLLIDER_HEAD_CLEARANCE = 0;
 const PLAYER_COLLIDER_FOOT_OVERHANG = 0;
 const PLAYER_TINT_COLOR = 0xffffff; // Neutral tint (no color change)
+
+// Wieviel ein Krittreffer macht. EINE Zahl, gespiegelt nach window, weil die
+// Balance-Messung (tests/affixBudget.test.js) und der Wert des Kritaffixes
+// unmittelbar daran haengen: bei 1,5x ist ein Prozentpunkt Kritchance einen
+// halben Prozentpunkt Schaden wert, bei 2,0x einen ganzen. Fuehrt die Messung
+// ihre eigene Kopie, laesst sich der Multiplikator aendern, ohne dass ein Test
+// faellt — genau das ist beim ersten Versuch passiert.
+const PLAYER_CRIT_MULT = 2.0;
+if (typeof window !== "undefined") window.PLAYER_CRIT_MULT = PLAYER_CRIT_MULT;
 const PLAYER_FRAME_METADATA = {};
 const PLAYER_WIDTH_STRETCH = 1;
 const PLAYER_SIDEWAYS_SCALE = 0.8;
@@ -853,8 +862,20 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
     if (typeof sc === 'number' && isFinite(sc) && sc > 0) skillCastDmgMul = sc;
   } catch (e) { /* never break combat */ }
   const base = Math.max(1, weaponDamage * multiplier * damageMult * lootDmgMul * amuletDmgMul * berserkDmgMul * skillCastDmgMul);
-  // #60: Krit-Multiplikator 1.5x + Stärke-Zweiteffekt (playerCritDamageBonus).
-  const critMult = 1.5 + (typeof window.playerCritDamageBonus === 'number' ? window.playerCritDamageBonus : 0);
+  // Krit-Multiplikator 2.0x + Staerke-Zweiteffekt (playerCritDamageBonus).
+  //
+  // War 1,5x. Dort bringt ein Prozentpunkt Kritchance nur einen halben
+  // Prozentpunkt Schaden — Krit musste deshalb DOPPELT so hoch stehen wie
+  // jeder andere Wert, um dasselbe wert zu sein. Genau daran lief der einzige
+  // gedeckelte Wert des Spiels in seinen Deckel: mit Kritbasen auf allen fuenf
+  // Plaetzen plus Affixen kam man auf exakt 90 %, und jeder weitere Punkt war
+  // wertlos.
+  //
+  // Bei 2,0x ist ein Prozentpunkt Kritchance einen Prozentpunkt Schaden wert.
+  // Alle Kritquellen sind deshalb im selben Zug halbiert worden (Affixfaktor,
+  // Basiskurven, Geschick): derselbe Schaden, halb so viel Chance, doppelter
+  // Abstand zum Deckel.
+  const critMult = PLAYER_CRIT_MULT + (typeof window.playerCritDamageBonus === 'number' ? window.playerCritDamageBonus : 0);
   const damage = Math.max(1, Math.round(isCrit ? base * critMult : base));
 
   // Snapshot maxHp on first hit so the lazy enemy hp bar (drawn by
@@ -4190,3 +4211,4 @@ function castWhirlwind() {
   scene.time.delayedCall(durationMs, () => { try { gfx.destroy(); } catch (e) {} try { spinTimer.remove(); } catch (e) {} });
 }
 window.castWhirlwind = castWhirlwind;
+

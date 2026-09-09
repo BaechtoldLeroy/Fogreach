@@ -1384,8 +1384,12 @@ const VIT_REGEN_JE_PUNKT = 0.02;
 
 // Kritchance je Geschickpunkt. War 0,0067 und damit rund ein Fuenftel zu hoch:
 // Geschick lief neben dem Angriffstempo (seiner Primaerwirkung) auch noch als
-// zweitbeste Kritquelle mit. Jetzt 80 % davon.
-const DEX_KRIT_JE_PUNKT = 0.0054;
+// zweitbeste Kritquelle mit — auf 80 % gesenkt, also 0,0054.
+//
+// Dann nochmals halbiert, als der Kritmultiplikator von 1,5x auf 2,0x stieg:
+// derselbe Schadensbeitrag, halb so viel Chance. Alle Kritquellen sind in
+// diesem Zug gleich behandelt worden.
+const DEX_KRIT_JE_PUNKT = 0.0027;
 
 function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // Refresh affix bonus cache before reading it: callers (equip swap, save
