@@ -817,12 +817,22 @@ if (window.i18n) {
   //   Schaden = SPIELER_GRUNDSCHADEN + Waffe       inventory.js:1373
   //   DPS     = Schaden * 1000 / Abkling
   var DPS_DECKE_TEILER = 2.5;
-  // ACHTUNG: der Boden liegt UNTER dem, was der Spieler ohne Waffe schafft
-  // (1 Schaden bei Tempo 1,0 = 1,54 DPS). Bis Tiefe 4 kommt aus der Decke
-  // deshalb ein Band von 0 heraus — die Waffe traegt dort nichts bei und
-  // unterscheidet sich nur ueber Tempo, Reichweite und Krit. Wer das nicht
-  // will, hebt DPS_DECKE_BODEN auf 2,0; ab da traegt jede Basis ab Tiefe 1.
-  var DPS_DECKE_BODEN = 1.25;
+  // Unterhalb von Tiefe 8 ist die Decke NICHT Tiefe/2,5.
+  //
+  // Warum nicht: der Spieler macht ohne Waffe schon 1,54 DPS (1 Schaden bei
+  // Tempo 1,0). Tiefe/2,5 liegt bis Tiefe 4 darunter, es bliebe also nichts
+  // uebrig, was die Waffe beitragen koennte — gemessen zeigte JEDE Waffe auf
+  // den Tiefen 1 bis 3 einen Schaden von 0, und der Schattendolch bis Tiefe 5.
+  // Damit waeren auch die Prozent-Affixe wirkungslos gewesen: +33 % auf einen
+  // Grundwert von 1 sind 0,33.
+  //
+  // Darum ein Knick: ab Tiefe 8 gilt Tiefe/2,5 unveraendert (3,2 / 8,0 / 12,0
+  // auf 8 / 20 / 30), darunter laeuft die Decke gleichmaessig von DPS_DECKE_START
+  // auf Tiefe 1 dorthin hoch. Der Startwert ist so gewaehlt, dass die
+  // SCHWAECHSTE Basis (Schattendolch) auf Tiefe 1 noch 0,1 Schaden zeigt —
+  // keine Waffe steht irgendwo auf 0.
+  var DPS_DECKE_KNICK = 8;
+  var DPS_DECKE_START = 2.17;
   var SPIELER_GRUNDSCHADEN = 1.0;   // main.js:990, baseStats.damage
   var ANGRIFF_GRUNDZEIT = 650;      // player.js:1339
   var ANGRIFF_MINDESTZEIT = 320;
@@ -830,7 +840,10 @@ if (window.i18n) {
   /** Hoechste erreichbare DPS auf dieser Tiefe. */
   function dpsDecke(iLevel) {
     var t = (typeof iLevel === 'number' && iLevel > 0) ? iLevel : 1;
-    return Math.max(DPS_DECKE_BODEN, t / DPS_DECKE_TEILER);
+    if (t >= DPS_DECKE_KNICK) return t / DPS_DECKE_TEILER;
+    var amKnick = DPS_DECKE_KNICK / DPS_DECKE_TEILER;
+    var stufe = (amKnick - DPS_DECKE_START) / (DPS_DECKE_KNICK - 1);
+    return DPS_DECKE_START + (Math.max(1, t) - 1) * stufe;
   }
 
   function _schlaegeProSekunde(base) {
@@ -1731,6 +1744,8 @@ if (window.i18n) {
     // mit denselben Funktionen wie das Spiel.
     dpsDecke: dpsDecke,
     waffenBand: waffenBand,
+    DPS_DECKE_KNICK: DPS_DECKE_KNICK,
+    DPS_DECKE_TEILER: DPS_DECKE_TEILER,
 
     // stubs (later WPs)
     rollItem: rollItem,
