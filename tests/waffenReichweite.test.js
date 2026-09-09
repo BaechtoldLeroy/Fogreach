@@ -107,8 +107,50 @@ test('#121: eine negative Reichweite wird im Tooltip nicht verschluckt', () => {
   // Reichweite an Dolch/Eisenklinge waere der Nachteil unsichtbar gewesen.
   const quelle = require('fs').readFileSync(
     require('path').join(__dirname, '..', 'js', 'inventory.js'), 'utf8');
-  const zeile = quelle.split(/\r?\n/).find((z) => z.includes("inventory.label.range'), it.range"));
+  const zeile = quelle.split(String.fromCharCode(10))
+    .find((z) => z.indexOf("inventory.label.range'), it.range") >= 0);
   assert.ok(zeile, 'Tooltip-Zeile fuer Reichweite nicht gefunden');
   assert.ok(/,\s*true\s*\)/.test(zeile),
     'pushStat fuer Reichweite ohne allowNegative — negative Werte werden verschluckt: ' + zeile.trim());
+});
+
+test('#122: Basis und Affix tragen Reichweite in DERSELBEN Einheit', () => {
+  // Sie trugen zwei Einheiten unter einem Namen: auf der Basis Pixel
+  // (Nebelbogen +130), im Affix Punkte, die als PROZENTSATZ auf die
+  // Gesamtreichweite wirkten. Der Tooltip schrieb beide gleich an, und ein
+  // Affix mit '+23' bedeutete etwas voellig anderes als eine Basis mit '+23'.
+  //
+  // Jetzt beides Pixel. Der Bezug ist der Grundwert des Spielers (100) und
+  // waechst NICHT mit der Tiefe — anders als bei den Lebenspunkten, wo die
+  // Basis mit jeder Stufe steigt. Es gibt hier nichts, woran der Affix
+  // mitwachsen koennte.
+  const LS = frisch();
+  const def = LS.AFFIX_DEFS.find((d) => d.statKey === 'range');
+  assert.ok(def, 'kein Reichweitenaffix mehr vorhanden');
+
+  const tiefen = [1, 5, 10, 20, 30];
+  const werte = tiefen.map((t) => LS.affixWert(def, 0.10, t));
+  werte.forEach((w, i2) => {
+    assert.ok(w >= 8 && w <= 12,
+      'Fundtiefe ' + tiefen[i2] + ': ' + w + ' px liegt nicht im 8-12-Band');
+  });
+
+  // Und die Zahl wird beim Tragen NICHT umgerechnet: 10 bleiben 10.
+  [1, 20, 30].forEach((d) => {
+    const wirk = LS.affixWirkung(def, werte[2], d);
+    assert.strictEqual(wirk, werte[2],
+      'auf Tiefe ' + d + ' wirken ' + wirk + ' statt der ' + werte[2] + ' vom Stueck');
+  });
+});
+
+test('#122: der Reichweitenaffix wird ADDIERT, nicht multipliziert', () => {
+  // Solange er ein Anteil war, stand in recalcDerived eine Multiplikation.
+  // Mit Pixeln waere sie um Groessenordnungen daneben.
+  const quelle = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'js', 'inventory.js'), 'utf8');
+  const zeile = quelle.split(String.fromCharCode(10))
+    .find((z) => z.indexOf("_gb('range')") >= 0);
+  assert.ok(zeile, 'die Zeile fuer den Reichweitenaffix fehlt');
+  assert.ok(zeile.indexOf('attackRange +') >= 0,
+    'der Affix wird nicht addiert: ' + zeile.trim());
 });

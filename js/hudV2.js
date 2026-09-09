@@ -429,18 +429,20 @@
       [T('hud.stats.label.level'), String(lvl)],
       [T('hud.stats.label.xp'), xp + ' / ' + need],
       [T('hud.stats.label.damage'), String(wpd)],
-      [T('hud.stats.label.attack_speed'), Number(was).toFixed(2)],
-      // Reichweite ist eine Pixelzahl. Die Nachkommastellen kamen aus der
-      // Affixrechnung und sagten nichts — 118,4 statt 118 ist keine
-      // Auskunft, die man beim Vergleichen braucht.
-      [T('hud.stats.label.range'), String(Math.round(rng))],
-      // Hier steht nur noch, was der Wert BEWIRKT. Die Punkte daneben
-      // ("16% (36.3 Pkt.)") waren eine Zwischengroesse: sie erklaerten die
-      // Umrechnung, aber die Zeile mit der Tiefe weiter unten tut das auch —
-      // und die Punkte selbst liest man am Gegenstand ab.
-      [T('hud.stats.label.armor'), Math.round(arm * 100) + '%'],
-      [T('hud.stats.label.crit'), (crt * 100).toFixed(1) + '%'],
-      [T('hud.stats.label.move_speed'), String(Math.round(spd))],
+      // Nur die AFFIX-Punkte: das Tempo auf einer Basis ist ein Bruch
+      // (Glutaxt -0,1), der Affix eine Punktzahl. Beide zu addieren ergaebe
+      // eine Zahl aus zwei Einheiten. Bei Ruestung, Krit, Lauftempo und
+      // Reichweite tragen Basis und Affix dieselbe Einheit, dort geht es.
+      [T('hud.stats.label.attack_speed'), _mitPunkten(Number(was).toFixed(2), null, 'speed')],
+      // Vorn der Wirkwert, in Klammern die Punkte, die auf der Ausruestung
+      // stehen — dieselbe Zahl wie im Tooltip, also unmittelbar vergleichbar.
+      //
+      // Reichweite wird gerundet: die Nachkommastellen kamen aus der
+      // Affixrechnung und sagten nichts.
+      [T('hud.stats.label.range'), _mitPunkten(String(Math.round(rng)), 'range', 'range')],
+      [T('hud.stats.label.armor'), _mitPunkten(Math.round(arm * 100) + '%', 'armor', 'armor')],
+      [T('hud.stats.label.crit'), _mitPunkten((crt * 100).toFixed(1) + '%', 'crit', 'crit')],
+      [T('hud.stats.label.move_speed'), _mitPunkten(String(Math.round(spd)), 'move', 'move')],
       // #124: Nur zeigen, wenn ueberhaupt etwas da ist — drei Nullzeilen im
       // Bogen waeren fuer jeden ohne Nebenhand-Stueck reines Rauschen.
     ].concat(_blk > 0 ? [[T('hud.stats.label.block'), Math.round(_blk * 100) + '%']] : [])
@@ -456,6 +458,13 @@
     // Zeile darunter, und zwar in Einheiten, die man kennt (Waffenschaden,
     // Lebenspunkte, Abklingzeit). Die Umrechnung passiert dort still.
     const _a1 = (x) => String(Math.round(x * 10) / 10);
+    /** "28 % (32 Pkt.)" — der Wirkwert vorn, die Punkte vom Stueck dahinter. */
+    function _mitPunkten(text, stat, affixKey) {
+      const p = _punkte(stat, affixKey);
+      if (!p) return text;
+      return text + '  (' + p + ' ' + T('hud.stats.points') + ')';
+    }
+
     /** Die Punkte, die auf der Ausruestung STEHEN — ohne die Umrechnung. */
     const _attrPunkte = (stat) => {
       const p = _punkte(stat, stat);

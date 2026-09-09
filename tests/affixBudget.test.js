@@ -398,25 +398,29 @@ test2('#122: der Gegenstands-Tooltip zeigt die absolute Punktzahl, ohne Prozentz
   });
 });
 
-test2('#122: der Charakterbogen zeigt je Zeile EINE Zahl, und sagt die Tiefe dazu', () => {
-  // Frueher stand hier "16% (36.3 Pkt.)": der Wirkwert und die Punkte vom
-  // Stueck nebeneinander. Die Punktzahl ist aber eine Zwischengroesse, die
-  // fuer sich genommen nichts aussagt — und am Gegenstand steht sie ohnehin.
+test2('#122: der Bogen zeigt den Wirkwert und die Punkte vom Stueck daneben', () => {
+  // Die oberen Zeilen zeigen beides: "16% (36.3 Pkt.)". Vorn, was der Wert
+  // BEWIRKT; in Klammern die Punkte, die auf der Ausruestung stehen — dieselbe
+  // Zahl wie im Tooltip, also unmittelbar vergleichbar.
   //
-  // Jetzt tragen die oberen Zeilen den WIRKWERT (Ruestung in Prozent) und die
-  // Attributzeilen die PUNKTE vom Stueck, weil dort die Wirkung eine Zeile
-  // tiefer ausgeschrieben steht. Die Zeile mit der Tiefe erklaert beides.
+  // Die Attributzeilen zeigen NUR die Punkte, weil dort die Wirkung eine
+  // Zeile tiefer ausgeschrieben steht ("+5 Max-LP").
   const r = H.run(`(function () {
     var LS = window.LootSystem;
     window.DUNGEON_DEPTH = 20; window.currentWave = 20;
     ['weapon','offhand','head','body','boots','amulet']
       .forEach(function(k){ window.equipment[k]=null; });
-    window.equipment.head  = LS.rollItem('HD_BRONZEHELM', 20, 1);
+    // Die Traeger sind so gewaehlt, dass JEDE der fuenf Zeilen Punkte hat:
+    // Schlangenmaske bringt Krit, Windlaeufer Lauftempo, Plattenpanzer
+    // Ruestung, die Eisenklinge unten Tempo und Reichweite.
+    window.equipment.head  = LS.rollItem('HD_SCHLANGENMASKE', 20, 1);
     window.equipment.body  = LS.rollItem('BD_PLATTENPANZER', 20, 1);
+    window.equipment.boots = LS.rollItem('BT_WINDLAEUFER', 20, 1);
     // Eine Waffe mit Reichweitenaffix: ohne sie steht die Reichweite auf
     // glatten 100, und ob gerundet wird oder nicht, sieht man nicht.
     var waffe = LS.rollItem('WPN_EISENKLINGE', 20, 1);
-    waffe.affixes = [{ defId: 'of_reach', value: LS.affixPunkte(0.10, 20) }];
+    waffe.affixes = [{ defId: 'of_reach', value: LS.affixWert('of_reach', 0.10, 20) },
+                     { defId: 'swift_speed', value: LS.affixWert('swift_speed', 0.10, 20) }];
     window.equipment.weapon = waffe;
     LS.recomputeBonuses(); recalcDerived(0, 0);
     var sc = window.game.scene.getScene('GameScene');
@@ -431,14 +435,15 @@ test2('#122: der Charakterbogen zeigt je Zeile EINE Zahl, und sagt die Tiefe daz
     return zeilen;
   })()`);
   const ruestung = r[r.indexOf('Rüstung:') + 1];
-  assert.ok(/^[0-9]+%$/.test(ruestung || ''),
-    'die Ruestungszeile ist nicht mehr nur ein Prozentwert: "' + ruestung + '"');
+  assert.ok(/^[0-9]+%\s+\([0-9.]+ Pkt\.\)$/.test(ruestung || ''),
+    'die Ruestungszeile zeigt nicht Prozent UND Punkte: "' + ruestung + '"');
   const reichweite = r[r.indexOf('Reichweite:') + 1];
-  assert.ok(/^[0-9]+$/.test(reichweite || ''),
+  assert.ok(/^[0-9]+(\s|$)/.test(reichweite || ''),
     'die Reichweite zeigt Nachkommastellen: "' + reichweite + '"');
-  const mitBeidem = r.filter((z) => z.indexOf('%') >= 0 && z.indexOf('Pkt.') >= 0);
-  assert.strictEqual(mitBeidem.length, 0,
-    'eine Zeile zeigt wieder beides: ' + mitBeidem.join(' | '));
+  ['Angriffstempo:', 'Krit. Chance:', 'Lauftempo:'].forEach((L) => {
+    const z = r[r.indexOf(L) + 1];
+    assert.ok((z || '').indexOf('Pkt.') > 0, L + ' zeigt keine Punkte: "' + z + '"');
+  });
   // Die Fusszeile ueber die Tiefenumrechnung ist weg: sie erklaerte eine
   // Darstellung, die es nicht mehr gibt.
   assert.ok(!r.some((z) => z.indexOf('wirken je nach Tiefe') >= 0),

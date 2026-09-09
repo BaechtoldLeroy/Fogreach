@@ -830,6 +830,23 @@ if (window.i18n) {
   // wirkung je Punkt).
   var VIT_LP_JE_PUNKT = 0.01;
 
+  // Bezug fuer die flache Reichweite: der Grundwert des Spielers (main.js
+  // baseStats.range). Er waechst NICHT mit der Tiefe — anders als die
+  // Lebenspunkte, die mit jeder Stufe steigen. Deshalb waechst auch der
+  // Reichweitenaffix nicht mit der Fundtiefe: es gibt nichts, woran er
+  // mitwachsen koennte.
+  //
+  // Praktisch aendert das kaum etwas. Als Anteil gerechnet war der Affix auf
+  // seiner Fundtiefe ohnehin immer rund 10 Pixel wert; nur ein weit ueber der
+  // eigenen Tiefe gefundenes Stueck wich davon ab.
+  var REF_REICHWEITE = 100;
+
+  /** Der Bezug, gegen den ein FLACHER Affix gerechnet wird. */
+  function _flachBezug(statKey, iLevel) {
+    if (statKey === 'range') return REF_REICHWEITE;
+    return referenzLebenspunkte(iLevel);
+  }
+
   function referenzLebenspunkte(tiefe) {
     var t = (typeof tiefe === 'number' && tiefe > 0) ? tiefe : _aktuelleTiefe();
     return REF_LP_BASIS + REF_LP_JE_TIEFE * t;
@@ -882,7 +899,13 @@ if (window.i18n) {
     armor:     { einheit: 'bruch', faktor: 0.9 },
     crit:      { einheit: 'bruch', faktor: 2 },
     move:      { einheit: 'bruch', faktor: 1 },
-    range:     { einheit: 'bruch', faktor: 1 },
+    // Reichweite ist wie Lebenspunkte eine konkrete Groesse, kein Anteil:
+    // "+12 % Reichweite" sagt nichts, solange man nicht weiss, wovon. Vor allem
+    // aber trug sie zwei Einheiten unter einem Namen — auf der Basis Pixel
+    // (Nebelbogen +130), im Affix Punkte, die als Prozentsatz wirkten. Der
+    // Tooltip schrieb beide gleich an, und "+12" bedeutete etwas voellig
+    // anderes als "+130".
+    range:     { einheit: 'flach', faktor: 1 },
     lifesteal: { einheit: 'bruch', faktor: 0.2 },
     // Diese vier fielen bis b209 versehentlich in den Faehigkeits-Rueckfall und
     // trugen dessen Faktor 3. of_might gab damit 24-36 % Schaden auf ALLE
@@ -988,7 +1011,7 @@ if (window.i18n) {
     }
     if (!d) return 0;
     if (_wirkungFuer(d.statKey).einheit === 'flach') {
-      return Math.max(1, Math.round(anteil * referenzLebenspunkte(iLevel)));
+      return Math.max(1, Math.round(anteil * _flachBezug(d.statKey, iLevel)));
     }
     return Math.round(affixPunkte(anteil, iLevel) * 10) / 10;
   }
@@ -1063,9 +1086,9 @@ if (window.i18n) {
       const anteil = AFFIX_ANTEIL_MIN + rng() * (AFFIX_ANTEIL_MAX - AFFIX_ANTEIL_MIN);
       let value;
       if (_wirkungFuer(pickedDef.statKey).einheit === 'flach') {
-        // Der Anteil wird EINMAL gegen die Referenzkurve der Fundtiefe
-        // gerechnet; die Zahl steht danach fest und wird nicht mehr umgerechnet.
-        value = Math.max(1, Math.round(anteil * referenzLebenspunkte(iLevel)));
+        // Der Anteil wird EINMAL gegen den Bezug der Fundtiefe gerechnet; die
+        // Zahl steht danach fest und wird nicht mehr umgerechnet.
+        value = Math.max(1, Math.round(anteil * _flachBezug(pickedDef.statKey, iLevel)));
       } else {
         value = affixPunkte(anteil, iLevel);
         // Eine Nachkommastelle: die Zahl waechst mit der Tiefe (Tiefe 1 rund
