@@ -3271,62 +3271,81 @@ function createItemGraphics() {
     {
       key: 'itOffFangdolch',
       draw: () => {
-        // Fangdolch — SCHRAEG gestellt und mit weit ausgreifendem Fangbuegel.
-        // Der Schattendolch steht senkrecht und hat nur eine kurze Parierstange;
-        // die Schraege plus der Buegel sind der Unterschied in der Silhouette.
-        const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
-        // Klinge, von unten links nach oben rechts
+        // Fangdolch — senkrechte Klinge wie beim Dolch, ABER mit einem
+        // Fangring seitlich am Griff. Der Ring ist das Merkmal: er sitzt
+        // ausserhalb der Klingenachse und macht die Silhouette unverwechselbar.
+        //
+        // Erster Entwurf war schraeg gestellt und aus drei duennen Dreiecken
+        // gebaut — auf 48 px las sich das als Gekritzel. Eine Klinge braucht
+        // einen KOERPER (Rechteck) und obendrauf eine Spitze, so wie itSword
+        // und itDagger es machen.
+        const g2 = gestrecktesZeichnen(gBasis, 1.18, 1.06, -3, 0);
+        const cx = 27;
+        // Schatten
         g2.fillStyle(0x1a1a1a, 0.30);
-        g2.fillTriangle(19, 31, 24, 29, 36, 9);
+        g2.fillRect(cx - 2, 14, 7, 15).fillTriangle(cx - 2, 14, cx + 5, 14, cx + 1, 8);
+        // Klinge
         g2.fillStyle(0xb8c4cc, 1);
-        g2.fillTriangle(17, 30, 23, 27, 34, 7);
-        g2.fillStyle(0xdfe9f0, 1);
-        g2.fillTriangle(19, 29, 22, 28, 33, 9);
-        g2.fillStyle(0xf8fcff, 0.7);
-        g2.fillTriangle(20, 28.5, 21.5, 28, 32.5, 10);
-        // Fangbuegel — der grosse geschwungene Haken zur Seite
-        g2.lineStyle(2.6, 0x9a7a30, 1);
-        g2.beginPath().arc(19, 30, 9, -Math.PI * 0.95, Math.PI * 0.15, false).strokePath();
-        g2.lineStyle(1.2, 0xd4a030, 0.8);
-        g2.beginPath().arc(19, 30, 9, -Math.PI * 0.95, Math.PI * 0.15, false).strokePath();
-        // Parierstange quer
-        g2.fillStyle(0x9a7a30, 1).fillRect(11, 29, 16, 3);
-        // Griff nach unten links
-        g2.fillStyle(0x3a2a20, 1).fillRect(13, 32, 5, 9);
-        g2.fillStyle(0x6a5040, 0.7).fillRect(13, 34, 5, 1).fillRect(13, 37, 5, 1);
-        g2.fillStyle(0x9a7a30, 1).fillCircle(15.5, 42, 3);
+        g2.fillTriangle(cx - 4, 14, cx + 4, 14, cx, 7);
+        g2.fillRect(cx - 4, 14, 8, 15);
+        // Mittelgrat
+        g2.fillStyle(0xdfe9f0, 1).fillRect(cx - 2, 14, 4, 15);
+        g2.fillStyle(0xf8fcff, 0.7).fillRect(cx - 1, 12, 2, 17);
+        // Parierstange
+        g2.fillStyle(0x9a7a30, 1).fillRect(cx - 8, 29, 16, 3);
+        g2.fillStyle(0xd4a030, 0.6).fillRect(cx - 8, 29, 16, 1);
+        // FANGRING seitlich — geschlossener Kreis, klar neben der Klinge
+        g2.lineStyle(2.8, 0x7a5f24, 1);
+        g2.beginPath().arc(cx + 9, 36, 7, 0, Math.PI * 2, false).closePath().strokePath();
+        g2.lineStyle(1.2, 0xd4a030, 0.85);
+        g2.beginPath().arc(cx + 9, 36, 7, 0, Math.PI * 2, false).closePath().strokePath();
+        // Steg vom Ring zur Parierstange
+        g2.fillStyle(0x9a7a30, 1).fillRect(cx + 2, 31, 4, 3);
+        // Griff
+        g2.fillStyle(0x3a2a20, 1).fillRect(cx - 3, 32, 6, 9);
+        g2.fillStyle(0x6a5040, 0.7).fillRect(cx - 3, 34, 6, 1).fillRect(cx - 3, 37, 6, 1);
+        // Knauf
+        g2.fillStyle(0x9a7a30, 1).fillCircle(cx, 42, 3);
       }
     },
     {
       key: 'itOffKettenhaken',
       draw: () => {
-        // Kettenhaken — ein grosses J aus Eisen, oben die Kette. Der
-        // Morgenstern hat auch eine Kette, endet aber in einer KUGEL; hier
-        // laeuft der Umriss unten offen aus.
+        // Kettenhaken — ein J: Kette oben, Schaft links herunter, unten eine
+        // Kehre nach rechts und ein Widerhaken nach oben.
+        //
+        // Erster Entwurf legte drei Boegen um DENSELBEN Mittelpunkt und setzte
+        // die Spitze oben an — die Kehre lief dadurch in sich zurueck und die
+        // Spitze zeigte ins Leere. Jetzt EINE Kehre, und die Spitze sitzt an
+        // ihrem Ende.
         const g2 = gestrecktesZeichnen(gBasis, 1.0, 1.0, 0, 0);
-        const cx = 25;
-        // Kette nach oben
-        g2.fillStyle(0x5a6068, 1);
-        for (let i = 0; i < 4; i++) {
-          g2.fillCircle(cx - 1, 7 + i * 4, 2.6);
-          g2.fillStyle(0x2e3238, 1); g2.fillCircle(cx - 1, 7 + i * 4, 1.2);
-          g2.fillStyle(0x5a6068, 1);
+        const sx = 17;          // Achse des Schafts
+        const mx = 24, my = 33; // Mittelpunkt der Kehre
+        const r = 7;
+        // Kette oben, an der Schaftachse
+        for (let i = 0; i < 3; i++) {
+          g2.fillStyle(0x5a6068, 1).fillCircle(sx, 7 + i * 4.5, 2.8);
+          g2.fillStyle(0x22262b, 1).fillCircle(sx, 7 + i * 4.5, 1.3);
         }
-        // Oese
-        g2.lineStyle(2.4, 0x7b838d, 1);
-        g2.beginPath().arc(cx - 1, 24, 4, Math.PI * 1.1, Math.PI * 1.9, false).strokePath();
-        // Der Haken selbst: ein weiter Bogen, unten offen
-        g2.lineStyle(5.2, 0x1f2328, 1);
-        g2.beginPath().arc(cx - 3, 31, 9, -Math.PI * 0.35, Math.PI * 0.95, false).strokePath();
-        g2.lineStyle(3.6, 0x8f98a3, 1);
-        g2.beginPath().arc(cx - 3, 31, 9, -Math.PI * 0.35, Math.PI * 0.95, false).strokePath();
-        g2.lineStyle(1.3, 0xd6dde5, 0.85);
-        g2.beginPath().arc(cx - 3, 31, 10, -Math.PI * 0.2, Math.PI * 0.8, false).strokePath();
-        // Spitze
-        g2.fillStyle(0xd6dde5, 1);
-        g2.fillTriangle(cx + 3, 24, cx + 8, 27, cx + 3, 29);
-        // Schaft zwischen Oese und Bogen
-        g2.fillStyle(0x6d757f, 1).fillRect(cx - 3, 24, 4, 6);
+        // Schaft
+        g2.fillStyle(0x1f2328, 1).fillRect(sx - 3, 18, 6, 16);
+        g2.fillStyle(0x8f98a3, 1).fillRect(sx - 2, 18, 4, 16);
+        g2.fillStyle(0xd6dde5, 0.7).fillRect(sx - 2, 18, 1, 16);
+        // Kehre: von links (pi) abwaerts nach rechts (0) — eine nach oben
+        // offene Schale. Dunkel unterlegt, damit sie Gewicht bekommt.
+        g2.lineStyle(6.4, 0x1f2328, 1);
+        g2.beginPath().arc(mx, my, r, Math.PI, 0, false).strokePath();
+        g2.lineStyle(4.4, 0x8f98a3, 1);
+        g2.beginPath().arc(mx, my, r, Math.PI, 0, false).strokePath();
+        g2.lineStyle(1.4, 0xd6dde5, 0.8);
+        g2.beginPath().arc(mx, my, r - 1.6, Math.PI * 0.92, Math.PI * 0.08, false).strokePath();
+        // Widerhaken am Ende der Kehre, nach oben
+        g2.fillStyle(0x1f2328, 1);
+        g2.fillTriangle(mx + r - 3, my + 1, mx + r + 3, my + 1, mx + r + 1, my - 9);
+        g2.fillStyle(0xb9c2cc, 1);
+        g2.fillTriangle(mx + r - 2, my, mx + r + 2, my, mx + r + 0.6, my - 8);
+        g2.fillStyle(0xf0f5fa, 0.85);
+        g2.fillTriangle(mx + r - 1, my - 1, mx + r + 0.4, my - 1, mx + r + 0.2, my - 7);
       }
     }
   ];
