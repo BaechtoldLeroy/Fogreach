@@ -6,21 +6,30 @@ if (window.i18n) {
     'crafting.materials.counter': 'Eisenbrocken: {count}',
     'crafting.section.enhance': 'Ausrüstung verbessern',
     'crafting.section.inventory': 'Inventar (Equipment)',
-    'crafting.section.recipes': 'Schmiedepläne',
+    'crafting.section.ausbau': 'Ausbau',
+    'crafting.ausbau.keins': 'Wähle links ein Stück aus.',
+    'crafting.ausbau.stufe': 'Stufe {n} von {max}',
+    'crafting.ausbau.wirkung': 'Jede Stufe hebt alle Werte um {pct} %.',
+    'crafting.ausbau.kosten': 'Nächste Stufe: {gold} Gold + {brocken} Eisenbrocken',
+    'crafting.ausbau.voll': 'Voll ausgebaut. Eine höhere Seltenheit gibt mehr Stufen.',
+    'crafting.ausbau.rueckgabe': 'Beim Zerlegen kommen {n} Eisenbrocken zurück.',
+    'crafting.btn.ausbau': 'Ausbauen',
+    'crafting.feedback.ausbau_ok': 'Ausgebaut auf Stufe {n}.',
+    'crafting.feedback.ausbau_gold': 'Zu wenig Gold: {gold} nötig.',
+    'crafting.feedback.ausbau_brocken': 'Zu wenig Eisenbrocken: {brocken} nötig.',
+    'crafting.feedback.ausbau_voll': 'Dieses Stück ist voll ausgebaut.',
     'crafting.btn.enhance': 'Verbessern',
     'crafting.btn.salvage': 'Zerlegen',
     'crafting.btn.mass_salvage': 'Massenzerlegung',
     'crafting.mass_salvage.hint': 'Zerlegt Inventar bis Selten/gelb — Legendär bleibt ({count})',
     'crafting.feedback.mass_salvaged': '{count} Items zerlegt: +{amount} Eisenbrocken',
     'crafting.feedback.mass_salvaged_none': 'Nichts zu zerlegen (gewöhnl./magisch)',
-    'crafting.btn.craft': 'Schmieden',
     'crafting.empty_slot': '(leer)',
     'crafting.slot.weapon': 'Waffe',
     'crafting.slot.offhand': 'Nebenhand',
     'crafting.slot.head': 'Helm',
     'crafting.slot.body': 'Rüstung',
     'crafting.slot.boots': 'Stiefel',
-    'crafting.recipe.cost': 'Kosten: {cost} Eisenbrocken',
     'crafting.info.idle': 'Klicke einen Slot oder ein Inventar-Item zum Verbessern oder Zerlegen.\nReroll bei Mara im Schwarzmarkt.',
     'crafting.info.tier_affix': 'Tier: {tier}  |  Affixe: {count}',
     'crafting.info.enhance_to': 'Verbessern: -> {tier}, +1 Affix (behält bestehende) — {cost} Eisenbrocken',
@@ -32,7 +41,6 @@ if (window.i18n) {
     'crafting.feedback.already_legendary': 'Item ist bereits Legendär.',
     'crafting.feedback.not_enough_iron_for': 'Nicht genug Eisenbrocken ({cost} nötig).',
     'crafting.feedback.not_enough_iron': 'Nicht genug Eisenbrocken!',
-    'crafting.feedback.inventory_full': 'Inventar voll!',
     'crafting.tier.common': 'Gewöhnlich',
     'crafting.tier.magic': 'Magisch',
     'crafting.tier.rare': 'Selten',
@@ -43,21 +51,30 @@ if (window.i18n) {
     'crafting.materials.counter': 'Iron Chunks: {count}',
     'crafting.section.enhance': 'Enhance Equipment',
     'crafting.section.inventory': 'Inventory (Equipment)',
-    'crafting.section.recipes': 'Smithing Plans',
+    'crafting.section.ausbau': 'Upgrade',
+    'crafting.ausbau.keins': 'Pick an item on the left.',
+    'crafting.ausbau.stufe': 'Level {n} of {max}',
+    'crafting.ausbau.wirkung': 'Each level raises all values by {pct}%.',
+    'crafting.ausbau.kosten': 'Next level: {gold} gold + {brocken} iron chunks',
+    'crafting.ausbau.voll': 'Fully upgraded. A higher rarity grants more levels.',
+    'crafting.ausbau.rueckgabe': 'Salvaging returns {n} iron chunks.',
+    'crafting.btn.ausbau': 'Upgrade',
+    'crafting.feedback.ausbau_ok': 'Upgraded to level {n}.',
+    'crafting.feedback.ausbau_gold': 'Not enough gold: {gold} needed.',
+    'crafting.feedback.ausbau_brocken': 'Not enough iron chunks: {brocken} needed.',
+    'crafting.feedback.ausbau_voll': 'This item is fully upgraded.',
     'crafting.btn.enhance': 'Enhance',
     'crafting.btn.salvage': 'Salvage',
     'crafting.btn.mass_salvage': 'Mass Salvage',
     'crafting.mass_salvage.hint': 'Salvages inventory up to Rare/yellow — keeps Legendary ({count})',
     'crafting.feedback.mass_salvaged': '{count} items salvaged: +{amount} Iron Chunks',
     'crafting.feedback.mass_salvaged_none': 'Nothing to salvage (common/magic)',
-    'crafting.btn.craft': 'Forge',
     'crafting.empty_slot': '(empty)',
     'crafting.slot.weapon': 'Weapon',
     'crafting.slot.offhand': 'Off-Hand',
     'crafting.slot.head': 'Helm',
     'crafting.slot.body': 'Armor',
     'crafting.slot.boots': 'Boots',
-    'crafting.recipe.cost': 'Cost: {cost} Iron Chunks',
     'crafting.info.idle': 'Click a slot or inventory item to enhance or salvage.\nReroll available at Mara in the Black Market.',
     'crafting.info.tier_affix': 'Tier: {tier}  |  Affixes: {count}',
     'crafting.info.enhance_to': 'Enhance: -> {tier}, +1 affix (keeps existing) — {cost} Iron Chunks',
@@ -69,7 +86,6 @@ if (window.i18n) {
     'crafting.feedback.already_legendary': 'Item is already Legendary.',
     'crafting.feedback.not_enough_iron_for': 'Not enough Iron Chunks ({cost} needed).',
     'crafting.feedback.not_enough_iron': 'Not enough Iron Chunks!',
-    'crafting.feedback.inventory_full': 'Inventory full!',
     'crafting.tier.common': 'Common',
     'crafting.tier.magic': 'Magic',
     'crafting.tier.rare': 'Rare',
@@ -125,62 +141,6 @@ class CraftingScene extends Phaser.Scene {
     const COL_DISABLED = '#666666';
     const COL_RED      = '#ff4444';
     const COL_GREEN    = '#44ff44';
-
-    // --- Crafting recipes (tier 0 / Common items; no affixes). ---
-    this.RECIPES = [
-      {
-        id: 'eisenklinge',
-        name: 'Eisenklinge',
-        type: 'weapon',
-        cost: 15,
-        item: {
-          type: 'weapon', key: 'WPN_CRAFT', name: 'Eisenklinge',
-          // #117: gleiche Waffe wie WPN_EISENKLINGE — also auch gleiches Symbol.
-          iconKey: 'itSword',
-          tier: 0, affixes: [], iLevel: 1, itemLevel: 1,
-          baseStats: { damage: 8 },
-          hp: 0, damage: 8, speed: 0, range: 0, armor: 0, crit: 0
-        }
-      },
-      {
-        id: 'kettenhaube',
-        name: 'Kettenhaube',
-        type: 'head',
-        cost: 12,
-        item: {
-          type: 'head', key: 'HD_CRAFT', name: 'Kettenhaube',
-          iconKey: 'itHead',
-          tier: 0, affixes: [], iLevel: 1, itemLevel: 1,
-          baseStats: { armor: 5 },
-          hp: 0, damage: 0, speed: 0, range: 0, armor: 5, crit: 0
-        }
-      },
-      {
-        id: 'lederstiefel',
-        name: 'Lederstiefel',
-        type: 'boots',
-        cost: 10,
-        item: {
-          type: 'boots', key: 'BT_CRAFT', name: 'Lederstiefel',
-          iconKey: 'itBoots',
-          tier: 0, affixes: [], iLevel: 1, itemLevel: 1,
-          baseStats: { speed: 15 },
-          hp: 0, damage: 0, speed: 15, range: 0, armor: 0, crit: 0
-        }
-      }
-    ];
-
-    // --- State ---
-    // Selection model: { kind: 'equip'|'inv', key: <slot-name|inventory-index> } | null
-    this._selection = null;
-    // Legacy alias kept for any external reads
-    this._selectedSlot = null;
-
-    // --- Background ---
-    this.add.rectangle(W / 2, H / 2, W, H, COL_BG).setDepth(0);
-
-    // Draw procedural forge background
-    this._drawForgeBackground(W, H);
 
     // --- Title ---
     this.add.text(W / 2, 20, _CRAFT_T('crafting.title'), {
@@ -321,60 +281,41 @@ class CraftingScene extends Phaser.Scene {
     );
     this.salvageBtn.container.setVisible(false);
 
-    // --- Right panel: Crafting recipes ---
+    // --- Rechtes Panel: AUSBAU (#115) ---
+    //
+    // Hier standen bis b226 die Schmiedeplaene: drei Rezepte mit FESTEN
+    // Werten (Eisenklinge Schaden 8, iLevel 1, keine Affixe). Gemessen war
+    // die geschmiedete Klinge auf Tiefe 1 dreissigmal so stark wie ein Fund
+    // und auf Tiefe 30 immer noch besser — sie lief an der DPS-Decke aus
+    // #135 vorbei, weil ihre Zahl von Hand dastand.
+    //
+    // An ihrer Stelle: ein gefundenes Stueck weiter verbessern. Damit
+    // bekommt Beute einen zweiten Nutzen, und das Gold eine Senke, die mit
+    // dem Vermoegen mitwaechst (s. LootSystem.ausbauKosten).
     const rightX = W / 2 + 20;
     const rightW = (W / 2) - 50;
 
-    this.add.text(rightX + rightW / 2, panelY, _CRAFT_T('crafting.section.recipes'), {
+    this.add.text(rightX + rightW / 2, panelY, _CRAFT_T('crafting.section.ausbau'), {
       fontFamily: 'monospace', fontSize: '16px', color: COL_GOLD
     }).setOrigin(0.5, 0).setDepth(10);
 
-    const recipeStartY = panelY + 30;
-    const recipeH = 80;
+    this.ausbauInfo = this.add.text(rightX + 10, panelY + 30, '', {
+      fontFamily: 'monospace', fontSize: '11px', color: COL_PARCHMENT,
+      wordWrap: { width: rightW - 20 }, lineSpacing: 3
+    }).setDepth(10);
 
-    this.recipeElements = [];
-    this.RECIPES.forEach((recipe, i) => {
-      const ry = recipeStartY + i * (recipeH + 10);
-      const bg = this.add.rectangle(rightX + rightW / 2, ry + recipeH / 2, rightW, recipeH, COL_SLOT)
-        .setDepth(9).setStrokeStyle(2, 0x444444);
+    this.ausbauBtn = this._createButton(
+      rightX + rightW / 2, panelY + 130, 200, 30,
+      _CRAFT_T('crafting.btn.ausbau'), () => this._ausbauen()
+    );
+    this.ausbauBtn.container.setVisible(false);
 
-      const title = this.add.text(rightX + 10, ry + 8, recipe.name, {
-        fontFamily: 'monospace', fontSize: '14px', color: COL_PARCHMENT, fontStyle: 'bold'
-      }).setDepth(10);
-
-      const desc = this.add.text(rightX + 10, ry + 26, this._getRecipeDesc(recipe), {
-        fontFamily: 'monospace', fontSize: '10px', color: '#aaaaaa'
-      }).setDepth(10);
-
-      const canAfford = getMaterialCount('MAT') >= recipe.cost;
-      const hasSpace = this._hasInventorySpace();
-      const costColor = canAfford ? COL_GREEN : COL_RED;
-      const costText = this.add.text(rightX + 10, ry + 42, _CRAFT_T('crafting.recipe.cost', { cost: recipe.cost }), {
-        fontFamily: 'monospace', fontSize: '11px', color: costColor
-      }).setDepth(10);
-
-      const craftBtn = this._createButton(
-        rightX + rightW - 60, ry + recipeH / 2, 100, 30,
-        _CRAFT_T('crafting.btn.craft'), () => this._craftRecipe(recipe, i)
-      );
-
-      if (!canAfford || !hasSpace) {
-        craftBtn.bg.setFillStyle(0x222222);
-        craftBtn.text.setColor(COL_DISABLED);
-      }
-
-      bg.on('pointerover', () => bg.setFillStyle(COL_BTN_HOVER));
-      bg.on('pointerout', () => bg.setFillStyle(COL_SLOT));
-
-      this.recipeElements.push({ bg, title, desc, costText, craftBtn });
-    });
-
-    // ----- Massenzerlegung (persistent) — right panel, below the recipes -----
+    // ----- Massenzerlegung (persistent) — rechtes Panel, unter dem Ausbau -----
     // Bulk-salvage all unequipped Common+Magic gear in one click. Always
     // visible (unlike the selection-only Zerlegen button) and kept off the
     // crowded left/bottom area. Rare + Legendary are never touched, so a stray
     // click can't destroy good gear.
-    const _massY = recipeStartY + this.RECIPES.length * (recipeH + 10) + 22;
+    const _massY = panelY + 190;
     this.massSalvageHint = this.add.text(rightX + rightW / 2, _massY - 17, '', {
       fontFamily: 'monospace', fontSize: '9px', color: COL_PARCHMENT
     }).setOrigin(0.5, 0.5).setDepth(10);
@@ -505,7 +446,7 @@ class CraftingScene extends Phaser.Scene {
     // hp/range sind flache Werte. Vorzeichen wird gesetzt (auch negativ, z.B.
     // Glutaxt Tempo -10%).
     const PERCENT = { speed: true, armor: true, crit: true };
-    const labels = { hp: 'LP', damage: 'Schaden', speed: 'Tempo', range: 'Reichw.', armor: 'Rüstung', crit: 'Krit' };
+    const labels = { hp: 'LP', damage: 'Schaden', speed: 'Angr.tempo', range: 'Reichw.', armor: 'Rüstung', crit: 'Krit' };
     const parts = [];
     ['hp', 'damage', 'speed', 'range', 'armor', 'crit'].forEach(s => {
       const val = item[s];
@@ -526,21 +467,6 @@ class CraftingScene extends Phaser.Scene {
       parts.push(`[${item.affixes.length} affix]`);
     }
     return parts.join(' | ');
-  }
-
-  _getRecipeDesc(recipe) {
-    const item = recipe.item;
-    const parts = [];
-    if (item.damage) parts.push(`Schaden: ${item.damage}`);
-    if (item.armor) parts.push(`Rüstung: ${item.armor}`);
-    if (item.speed) parts.push(`Tempo: ${item.speed}`);
-    if (item.hp) parts.push(`LP: ${item.hp}`);
-    return parts.join(' | ');
-  }
-
-  _hasInventorySpace() {
-    if (typeof inventory === 'undefined' || !Array.isArray(inventory)) return false;
-    return inventory.some(slot => !slot);
   }
 
   // =================== Selection ===================
@@ -726,6 +652,88 @@ class CraftingScene extends Phaser.Scene {
     this._flashEffect();
   }
 
+  // =================== Ausbau (#115) ===================
+
+  /** Zeichnet das rechte Panel neu: Stand, Kosten, Knopf. */
+  _refreshAusbau() {
+    if (!this.ausbauInfo) return;
+    const LS = window.LootSystem;
+    const item = this._getSelectedItem();
+    if (!LS || typeof LS.ausbauKosten !== 'function' || !item) {
+      this.ausbauInfo.setText(_CRAFT_T('crafting.ausbau.keins'));
+      if (this.ausbauBtn) this.ausbauBtn.container.setVisible(false);
+      return;
+    }
+    const stufe = LS.ausbauStufe(item);
+    const max = LS.ausbauMaxStufen(item);
+    const kosten = LS.ausbauKosten(item);
+    const zeilen = [
+      _composeItemName(item),
+      _CRAFT_T('crafting.ausbau.stufe', { n: stufe, max: max }),
+      _CRAFT_T('crafting.ausbau.wirkung', { pct: Math.round(LS.AUSBAU_JE_STUFE * 100) })
+    ];
+    if (kosten) {
+      zeilen.push(_CRAFT_T('crafting.ausbau.kosten',
+        { gold: kosten.gold, brocken: kosten.brocken }));
+    } else {
+      zeilen.push(_CRAFT_T('crafting.ausbau.voll'));
+    }
+    // Was beim Zerlegen zurueckkommt, gehoert VOR die Entscheidung: sonst
+    // erfaehrt man erst nach dem Zerlegen, dass die Haelfte weg ist.
+    if (stufe > 0) {
+      zeilen.push(_CRAFT_T('crafting.ausbau.rueckgabe', { n: LS.ausbauRueckgabe(item) }));
+    }
+    this.ausbauInfo.setText(zeilen.join(String.fromCharCode(10)));
+    if (this.ausbauBtn) this.ausbauBtn.container.setVisible(!!kosten);
+  }
+
+  _ausbauen() {
+    const LS = window.LootSystem;
+    const item = this._getSelectedItem();
+    if (!LS || typeof LS.ausbauen !== 'function' || !item) return;
+    const kosten = LS.ausbauKosten(item);
+    if (!kosten) {
+      this._showFeedback(_CRAFT_T('crafting.feedback.ausbau_voll'), '#ff4444');
+      return;
+    }
+    // BEIDE Vorraete pruefen, BEVOR einer abgebucht wird. Sonst zahlt man
+    // das Gold und scheitert dann an den Brocken.
+    const gold = (typeof LS.getGold === 'function') ? LS.getGold() : 0;
+    if (gold < kosten.gold) {
+      this._showFeedback(_CRAFT_T('crafting.feedback.ausbau_gold', { gold: kosten.gold }), '#ff4444');
+      return;
+    }
+    if (getMaterialCount('MAT') < kosten.brocken) {
+      this._showFeedback(_CRAFT_T('crafting.feedback.ausbau_brocken', { brocken: kosten.brocken }), '#ff4444');
+      return;
+    }
+    if (typeof LS.spendGold !== 'function' || !LS.spendGold(kosten.gold)) {
+      this._showFeedback(_CRAFT_T('crafting.feedback.ausbau_gold', { gold: kosten.gold }), '#ff4444');
+      return;
+    }
+    if (typeof changeMaterialCount === 'function') changeMaterialCount('MAT', -kosten.brocken);
+
+    LS.ausbauen(item);
+
+    // Die Werte des Stuecks haben sich geaendert — wer es traegt, muss das
+    // sofort spueren, nicht erst im naechsten Raum.
+    if (typeof LS.recomputeBonuses === 'function') { try { LS.recomputeBonuses(); } catch (e) {} }
+    if (typeof recalcDerived === 'function') { try { recalcDerived(0, 0); } catch (e) {} }
+
+    // Ausbauen IST das Herstellen fuer craft-Quests (branka_weapons, "Stelle
+    // 3 Gegenstaende her"). Vorher haing der Haken am Schmieden von Rezepten;
+    // die gibt es nicht mehr, also muss er hier sitzen — sonst waere die
+    // Quest nur noch ueber das Aufwerten erfuellbar.
+    if (window.questSystem && typeof window.questSystem.onItemCrafted === 'function') {
+      try { window.questSystem.onItemCrafted(); } catch (e) { /* swallow */ }
+    }
+    if (typeof saveGame === 'function') { try { saveGame(); } catch (e) {} }
+
+    this._showFeedback(_CRAFT_T('crafting.feedback.ausbau_ok', { n: LS.ausbauStufe(item) }), '#44ff44');
+    this._refreshAll();
+    this._flashEffect();
+  }
+
   // =================== Salvage ===================
   // Eisenbrocken pro zerlegtem Item nach Tier: Gewöhnlich 1, Magisch 2,
   // Selten 4, Legendär 6. (Vorher 3/6/9/12 — zu grosszügig: Upgrades wurden
@@ -740,7 +748,13 @@ class CraftingScene extends Phaser.Scene {
     const item = this._getSelectedItem();
     if (!item) return;
 
-    const matValue = this._salvageValue(item.tier);
+    // #115: Die HAELFTE der Brocken, die in den Ausbau geflossen sind, kommt
+    // zurueck. Ohne das waere jede Fehlinvestition endgueltig, und niemand
+    // baute ein Stueck aus, das er vielleicht noch ersetzt.
+    const LS115 = window.LootSystem;
+    const ausbauZurueck = (LS115 && typeof LS115.ausbauRueckgabe === 'function')
+      ? LS115.ausbauRueckgabe(item) : 0;
+    const matValue = this._salvageValue(item.tier) + ausbauZurueck;
 
     // Remove item from its source (equipment slot or inventory slot)
     this._setSelectedItem(null);
@@ -853,62 +867,10 @@ class CraftingScene extends Phaser.Scene {
   }
 
   // =================== Crafting ===================
-  _craftRecipe(recipe, index) {
-    const cost = recipe.cost;
-    if (getMaterialCount('MAT') < cost) {
-      this._showFeedback(_CRAFT_T('crafting.feedback.not_enough_iron'), '#ff4444');
-      return;
-    }
-    if (!this._hasInventorySpace()) {
-      this._showFeedback(_CRAFT_T('crafting.feedback.inventory_full'), '#ff4444');
-      return;
-    }
-
-    // Spend materials
-    spendMaterialFromStorage('MAT', cost);
-
-    // Create item copy
-    const newItem = JSON.parse(JSON.stringify(recipe.item));
-    newItem._baseName = newItem.name;
-
-    // Add to inventory — ueber InventoryGrid, damit das Stueck eine Rasterlage
-    // bekommt. Ohne die ist es im Inventar unsichtbar (InventoryGrid.belegung
-    // ueberspringt Gegenstaende ohne gridX/gridY).
-    if (typeof window !== 'undefined' && window.InventoryGrid
-        && typeof window.InventoryGrid.einlagern === 'function') {
-      window.inventory = inventory;
-      window.InventoryGrid.einlagern(newItem);
-    } else {
-      const idx = inventory.findIndex(slot => !slot);
-      if (idx >= 0) {
-        inventory[idx] = newItem;
-        if (typeof window !== 'undefined') window.inventory = inventory;
-      }
-    }
-
-    // Save game
-    if (typeof saveGame === 'function') {
-      try { saveGame(this); } catch (e) { console.warn('[CraftingScene] save failed', e); }
-    }
-
-    // Quest progress: forging a recipe item IS the "herstellen" action for
-    // craft-type quests (branka_weapons "Stelle 3 Gegenstände her"). This hook
-    // was previously only called from _enhanceItem (Verbessern), so crafting via
-    // the recipes never advanced the quest — it stuck at whatever a stray
-    // enhance had given. Tick it here too so Schmieden counts.
-    if (window.questSystem && typeof window.questSystem.onItemCrafted === 'function') {
-      try { window.questSystem.onItemCrafted(); } catch (e) { /* swallow */ }
-    }
-
-    // Refresh
-    this._refreshAll();
-    this._showFeedback(`${recipe.name} geschmiedet!`, '#44ff44');
-    this._flashEffect();
-  }
-
   // =================== Refresh ===================
   _refreshAll() {
     this._updateMatText();
+    this._refreshAusbau();
 
     // Refresh equipment slots
     const slots = _CRAFT_EQUIP_SLOTS;
@@ -922,23 +884,6 @@ class CraftingScene extends Phaser.Scene {
       el.nameText.setText(nameStr);
       el.nameText.setColor(color);
       el.statsText.setText(item ? this._getStatsLine(item) : '');
-    });
-
-    // Refresh recipe costs
-    this.RECIPES.forEach((recipe, i) => {
-      const el = this.recipeElements[i];
-      if (!el) return;
-      const canAfford = getMaterialCount('MAT') >= recipe.cost;
-      const hasSpace = this._hasInventorySpace();
-      el.costText.setColor(canAfford ? '#44ff44' : '#ff4444');
-
-      if (canAfford && hasSpace) {
-        el.craftBtn.bg.setFillStyle(0x3a3a3a);
-        el.craftBtn.text.setColor('#f1e9d8');
-      } else {
-        el.craftBtn.bg.setFillStyle(0x222222);
-        el.craftBtn.text.setColor('#666666');
-      }
     });
 
     // Refresh inventory list
