@@ -28,6 +28,8 @@
       'hud.stats.label.armor': 'Rüstung',
       'hud.stats.label.crit': 'Krit. Chance',
       'hud.stats.label.move_speed': 'Lauftempo',
+      'hud.stats.points': 'Pkt.',
+      'hud.stats.depth_note': 'Punkte wirken je nach Tiefe — hier Tiefe {n}',
       'hud.stats.attributes': '— Attribute (von Items) —',
       'hud.stats.label.strength': 'Stärke',
       'hud.stats.label.dexterity': 'Geschicklichkeit',
@@ -54,6 +56,8 @@
       'hud.stats.label.armor': 'Armor',
       'hud.stats.label.crit': 'Crit Chance',
       'hud.stats.label.move_speed': 'Movement Speed',
+      'hud.stats.points': 'pts',
+      'hud.stats.depth_note': 'Points scale with depth — showing depth {n}',
       'hud.stats.attributes': '— Attributes (from items) —',
       'hud.stats.label.strength': 'Strength',
       'hud.stats.label.dexterity': 'Dexterity',
@@ -389,6 +393,29 @@
     const _v = (typeof window.playerVitality === 'number') ? window.playerVitality : 0;
     const _f = (typeof window.playerFocus === 'number') ? window.playerFocus : 0;
 
+    // #122/#104: Ruestung, Krit und Lauftempo stehen auf der Ausruestung als
+    // ABSOLUTE Punkte, die mit der Fundtiefe gewachsen sind. Was sie hier
+    // bewirken, entscheidet die aktuelle Tiefe. Der Gegenstands-Tooltip zeigt
+    // die Punkte (damit sich zwei Funde vergleichen lassen), dieser Bogen
+    // zeigt BEIDES nebeneinander — sonst weiss man nie, warum ein Stueck von
+    // weiter oben plötzlich weniger bringt.
+    const _LS = window.LootSystem;
+    const _tiefe = (typeof window.DUNGEON_DEPTH === 'number' && window.DUNGEON_DEPTH > 0)
+      ? window.DUNGEON_DEPTH : 1;
+    function _punkte(stat, affixKey) {
+      if (!_LS) return 0;
+      let p = 0;
+      if (typeof _LS.basisPunkteSumme === 'function') p += _LS.basisPunkteSumme(stat);
+      if (affixKey && typeof _LS.affixPunkteSumme === 'function') p += _LS.affixPunkteSumme(affixKey);
+      return Math.round(p * 10) / 10;
+    }
+    /** "28 % (32 Pkt.)" — der Wirkwert vorn, die Punkte dahinter. */
+    function _mitPunkten(prozentText, stat, affixKey) {
+      const p = _punkte(stat, affixKey);
+      if (!p) return prozentText;
+      return prozentText + '  (' + p + ' ' + T('hud.stats.points') + ')';
+    }
+
     const rows = [
       [T('hud.stats.label.health'), Math.round(cur) + ' / ' + Math.round(max)],
       [T('hud.stats.label.level'), String(lvl)],
@@ -396,9 +423,12 @@
       [T('hud.stats.label.damage'), String(wpd)],
       [T('hud.stats.label.attack_speed'), Number(was).toFixed(2)],
       [T('hud.stats.label.range'), String(rng)],
-      [T('hud.stats.label.armor'), Math.round(arm * 100) + '%'],
-      [T('hud.stats.label.crit'), (crt * 100).toFixed(1) + '%'],
-      [T('hud.stats.label.move_speed'), String(spd)]
+      [T('hud.stats.label.armor'), _mitPunkten(Math.round(arm * 100) + '%', 'armor', 'armor')],
+      [T('hud.stats.label.crit'), _mitPunkten((crt * 100).toFixed(1) + '%', 'crit', 'crit')],
+      [T('hud.stats.label.move_speed'), _mitPunkten(String(spd), 'move', 'move')],
+      // Woran die Umrechnung haengt: ohne diese Zeile wirkt es wie Willkuer,
+      // dass dieselbe Ausruestung eine Tiefe tiefer weniger bringt.
+      ['', T('hud.stats.depth_note', { n: _tiefe })]
     ];
     const attrDefs = [
       { label: T('hud.stats.label.strength'), val: _s,
@@ -406,7 +436,8 @@
       { label: T('hud.stats.label.dexterity'), val: _d,
         desc: '+' + (_d * 0.2).toFixed(1) + '% Krit · +' + (_d * 0.3).toFixed(1) + '% Tempo · +' + (_d * 0.25).toFixed(1) + '% Ausweichen' },
       { label: T('hud.stats.label.vitality'), val: _v,
-        desc: '+' + (_v * 3) + ' Max-LP · +' + (_v * 0.1).toFixed(1) + ' LP/s Regen' },
+        // #122: Vitalitaet gibt +0,5 % der Basis-LP je Punkt statt +3 flach.
+        desc: '+' + (_v * 0.5).toFixed(1) + '% Max-LP · +' + (_v * 0.1).toFixed(1) + ' LP/s Regen' },
       { label: T('hud.stats.label.focus'), val: _f,
         desc: '−' + Math.min(40, _f * 0.4).toFixed(0) + '% Cooldown · +' + (_f * 0.5).toFixed(1) + '% Fähigkeitsschaden' }
     ];
@@ -447,6 +478,9 @@
       }).setScrollFactor(0));
       cy += 34;
     });
+    // Nur fuer tests/ und Sonden: der Inhalt liegt in einem Container und ist
+    // sonst von aussen nicht erreichbar.
+    HUDv2._statsInhalt = content;
     const contentH = cy - (viewTop + 2);
     const scrollMax = Math.max(0, contentH - viewH);
 

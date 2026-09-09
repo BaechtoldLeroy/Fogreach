@@ -1357,23 +1357,37 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   }
 
   // 1) Alle Boni aus aktueller Ausrüstung aufsummieren
-  const sum = { damage: 0, speed: 0, range: 0, maxHP: 0, move: 0, armor: 0, crit: 0 };
+  //
+  // #104: Ruestung, Krit, Lauftempo und Lebenspunkte stehen auf dem Stueck als
+  // ABSOLUTE Punkte, die mit der Fundtiefe gewachsen sind. Was sie bewirken,
+  // entscheidet die Tiefe, auf der man GERADE steht — genau daran faellt altes
+  // Zeug von selbst ab. Tempo und Reichweite bleiben unberuehrt: sie sind die
+  // Eigenart einer Basis (das Minus der Glutaxt aufs Tempo), nicht ihre Macht.
+  const _tw = (stat, wert) => {
+    if (!wert) return 0;
+    if (window.LootSystem && typeof window.LootSystem.basiswertWirkung === 'function') {
+      return window.LootSystem.basiswertWirkung(stat, wert);
+    }
+    return wert;
+  };
+  const sum = { damage: 0, speed: 0, range: 0, maxHPAnteil: 0, move: 0, armor: 0, crit: 0 };
   Object.values(equipment).forEach(it => {
     if (!it) return;
     sum.damage += (it.damage || 0);
     sum.speed += (it.speed || 0);
     sum.range += (it.range || 0);
-    sum.maxHP += (it.hp || 0);
-    sum.move += (it.move || 0);
-    sum.armor += (it.armor || 0);
-    sum.crit += (it.crit || 0);
+    sum.maxHPAnteil += _tw('hp', it.hp || 0);
+    sum.move += _tw('move', it.move || 0);
+    sum.armor += _tw('armor', it.armor || 0);
+    sum.crit += _tw('crit', it.crit || 0);
   });
 
   // 2) Neue "abgeleitete" Stats einmalig aus Basis + Summe
   weaponDamage = baseStats.damage + sum.damage;
   weaponAttackSpeed = Math.max(0.2, baseStats.speed + sum.speed);
   attackRange = Math.max(20, baseStats.range + sum.range);
-  playerSpeed = Math.max(60, baseStats.move + sum.move);
+  // Lauftempo aus der Ausruestung wirkt jetzt PROZENTUAL — 0,16 heisst +16 %.
+  playerSpeed = Math.max(60, baseStats.move * (1 + Math.max(0, sum.move)));
   playerArmor = Phaser.Math.Clamp((baseStats.armor || 0) + sum.armor, 0, 0.85);
   playerCritChance = Phaser.Math.Clamp((baseStats.crit || 0) + sum.crit, 0, 0.9);
 
@@ -1528,7 +1542,10 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   const _ktMaxHpAdd = (window.knowledgeTreeBuffs && typeof window.knowledgeTreeBuffs.maxHpAdd === 'number')
     ? window.knowledgeTreeBuffs.maxHpAdd
     : 0;
-  const _hpBeforePrinting = (baseStats.maxHP || 0) + sum.maxHP + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd + _ktMaxHpAdd + _attrVitHp;
+  // #104: sum.maxHPAnteil ist ein BRUCH (Grundwerte auf Ausruestung), nicht
+  // mehr eine flache Zahl — deshalb erst auf die Basis anwenden.
+  const _basisHpAusRuestung = Math.round((baseStats.maxHP || 0) * Math.max(0, sum.maxHPAnteil));
+  const _hpBeforePrinting = (baseStats.maxHP || 0) + _basisHpAusRuestung + _skillMaxHpBonus + _affixHpBonus + _brunnenMaxHpAdd + _ktMaxHpAdd + _attrVitHp;
   // Feature 059 WP03: run-amulet stat mods (Glasherz −25% MaxHP / +50% Schaden,
   // Sturmschritt +Lauf-/Angriffstempo). maxHpMul wird hier in den Commit gefaltet;
   // damageMul/speedMul/moveAdd weiter unten NACH allen Buff-Layern angewandt.

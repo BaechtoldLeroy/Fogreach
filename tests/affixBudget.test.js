@@ -199,3 +199,134 @@ test2('Rund 90 % der gezogenen Affixe wirken fuer jeden Charakter', () => {
       slot + ': ' + r[slot].toFixed(1) + ' % faehigkeitsspezifisch — vorher waren es bis 59 %');
   });
 });
+
+// ---------------------------------------------------------------------------
+// #104: Auch die GRUNDwerte der Ruestung sind jetzt tiefenabhaengig.
+//
+// Vorher trugen sie feste Zahlen (Kettenhaube armor: 5, Plattenpanzer
+// armor: 15). Ein Stueck von Tiefe 1 war auf Tiefe 30 damit genauso gut wie
+// ein frisches — und die Basen wuchsen nie mit.
+//
+// Jetzt: ein Zielanteil je Machtwert, gewuerfelt in einem Band von 80 bis
+// 120 %, in Punkte fuer die Fundtiefe umgerechnet und beim Tragen mit der
+// AKTUELLEN Tiefe zurueckgerechnet.
+//
+// NICHT umgestellt sind Tempo und Reichweite: sie sind die EIGENART einer
+// Basis (das Minus der Glutaxt aufs Tempo), nicht ihre Macht. Mit der Tiefe
+// verrechnet wuerden alle Basen gleich.
+// ---------------------------------------------------------------------------
+
+test2('#104: Ruestungsbasen wuerfeln in einem Band, und das Band waechst mit der Tiefe', () => {
+  const r = H.run(`(function () {
+    var LS = window.LootSystem, raus = {};
+    [1, 10, 30].forEach(function (t) {
+      var lo = 1e9, hi = -1e9;
+      for (var i = 0; i < 300; i++) {
+        var it = LS.rollItem('BD_PLATTENPANZER', t, 0);
+        if (it.armor < lo) lo = it.armor;
+        if (it.armor > hi) hi = it.armor;
+      }
+      raus[t] = { lo: lo, hi: hi };
+    });
+    return raus;
+  })()`);
+  [1, 10, 30].forEach((t) => {
+    assert.ok(r[t].hi > r[t].lo * 1.2,
+      'Tiefe ' + t + ': das Band ist zu eng (' + r[t].lo + ' bis ' + r[t].hi + ')');
+  });
+  assert.ok(r['10'].lo > r['1'].hi, 'Tiefe 10 wuerfelt nicht ueber Tiefe 1');
+  assert.ok(r['30'].lo > r['10'].hi, 'Tiefe 30 wuerfelt nicht ueber Tiefe 10');
+});
+
+test2('#104: ein Satz der passenden Tiefe ist ueberall gleich stark', () => {
+  const r = H.run(`(function () {
+    var LS = window.LootSystem, raus = {};
+    [1, 10, 20, 30].forEach(function (t) {
+      window.DUNGEON_DEPTH = t; window.currentWave = t;
+      ['weapon','offhand','head','body','boots','amulet']
+        .forEach(function(k){ window.equipment[k]=null; });
+      window.equipment.head  = LS.rollItem('HD_BRONZEHELM', t, 0);
+      window.equipment.body  = LS.rollItem('BD_PLATTENPANZER', t, 0);
+      window.equipment.boots = LS.rollItem('BT_STAHLSOHLEN', t, 0);
+      LS.recomputeBonuses(); recalcDerived(0, 0);
+      raus[t] = playerArmor;
+    });
+    return raus;
+  })()`);
+  const werte = [1, 10, 20, 30].map((t) => r[t]);
+  const hoch = Math.max.apply(null, werte), tief = Math.min.apply(null, werte);
+  assert.ok(hoch / tief < 1.35,
+    'die Ruestung eines passenden Satzes schwankt zu stark ueber die Tiefen: '
+    + werte.map((x) => Math.round(x * 100) + ' %').join(' / '));
+});
+
+test2('#104: ein alter Satz faellt mit der Tiefe ab', () => {
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function(k){ window.equipment[k]=null; });
+    window.equipment.head  = LS.rollItem('HD_BRONZEHELM', 5, 0);
+    window.equipment.body  = LS.rollItem('BD_PLATTENPANZER', 5, 0);
+    window.equipment.boots = LS.rollItem('BT_STAHLSOHLEN', 5, 0);
+    var raus = {};
+    [5, 10, 20, 30].forEach(function (t) {
+      window.DUNGEON_DEPTH = t; window.currentWave = t;
+      LS.recomputeBonuses(); recalcDerived(0, 0);
+      raus[t] = playerArmor;
+    });
+    return raus;
+  })()`);
+  assert.ok(r['10'] < r['5'] * 0.75, 'auf Tiefe 10 faellt der alte Satz zu wenig ab');
+  assert.ok(r['20'] < r['5'] * 0.45, 'auf Tiefe 20 faellt er zu wenig ab');
+  assert.ok(r['30'] > 0, 'er soll abfallen, nicht verschwinden');
+});
+
+test2('#122: der Gegenstands-Tooltip zeigt die absolute Punktzahl, ohne Prozentzeichen', () => {
+  // Der Tooltip vergleicht zwei FUNDE; die aktuelle Tiefe darf da nicht
+  // hineinspielen. Was die Punkte hier bewirken, steht im Charakterbogen.
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    window.DUNGEON_DEPTH = 20; window.currentWave = 20;
+    var punkte = Math.round(LS.affixPunkte(0.10, 20) * 10) / 10;
+    var raus = {};
+    ['sharp_dmg', 'sturdy_armor', 'of_health'].forEach(function (id) {
+      var def = LS.AFFIX_DEFS.find(function (d) { return d.id === id; });
+      raus[id] = LS.getAffixTooltipText(def, punkte);
+    });
+    raus.punkte = punkte;
+    return raus;
+  })()`);
+  ['sharp_dmg', 'sturdy_armor', 'of_health'].forEach((id) => {
+    assert.ok(r[id].indexOf(String(r.punkte)) >= 0,
+      id + ': die Punktzahl ' + r.punkte + ' steht nicht im Tooltip — "' + r[id] + '"');
+    assert.strictEqual(r[id].indexOf('%'), -1,
+      id + ': ein Prozentzeichen hinter einer Punktzahl waere falsch — "' + r[id] + '"');
+  });
+});
+
+test2('#122: der Charakterbogen zeigt Prozent UND Punkte', () => {
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    window.DUNGEON_DEPTH = 20; window.currentWave = 20;
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function(k){ window.equipment[k]=null; });
+    window.equipment.head  = LS.rollItem('HD_BRONZEHELM', 20, 1);
+    window.equipment.body  = LS.rollItem('BD_PLATTENPANZER', 20, 1);
+    LS.recomputeBonuses(); recalcDerived(0, 0);
+    var sc = window.game.scene.getScene('GameScene');
+    window.HUDv2.openStats(sc);
+    var zeilen = [];
+    (function geh(o) {
+      if (!o) return;
+      if (o.type === 'Text') zeilen.push(String(o.text));
+      if (o.list) o.list.forEach(geh);
+    })(window.HUDv2._statsInhalt || { list: [] });
+    if (window.HUDv2._statsContainer) window.HUDv2._statsContainer.close();
+    return zeilen;
+  })()`);
+  const mitBeidem = r.filter((z) => z.indexOf('%') >= 0 && z.indexOf('Pkt.') >= 0);
+  assert.ok(mitBeidem.length >= 1,
+    'keine Zeile zeigt Prozent und Punkte nebeneinander: ' + JSON.stringify(r.slice(0, 20)));
+  assert.ok(r.some((z) => z.indexOf('Tiefe 20') >= 0),
+    'der Bogen sagt nicht, auf welcher Tiefe die Umrechnung gilt');
+});

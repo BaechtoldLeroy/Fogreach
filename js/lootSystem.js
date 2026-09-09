@@ -489,29 +489,44 @@ if (window.i18n) {
       baseStats: Object.freeze({ range: 130, crit: 3 }), dropWeight: Object.freeze({ 14: 0, 18: 50, 26: 90 }) }),
 
     // Helms (3)
+    // #104: Die Ruestungsbasen trugen feste Zahlen (armor: 5, armor: 15 ...) —
+    // sie wuchsen nicht mit der Tiefe und wurden mit ihr wertlos, waehrend ein
+    // Stueck von Tiefe 1 auf Tiefe 30 genauso gut war wie ein frisches. Jetzt
+    // ein ZIELANTEIL je Machtwert; die Zahl auf dem Stueck folgt daraus und
+    // aus seiner Fundtiefe, und beim Tragen wird mit der AKTUELLEN Tiefe
+    // zurueckgerechnet (BASIS_TIEFENWERTE).
     Object.freeze({ key: 'HD_KETTENHAUBE', type: 'head', name: 'Kettenhaube', iconKey: 'itHeadKettenhaube',
-      baseStats: Object.freeze({ armor: 5 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 40 }) }),
+      wertKurve: Object.freeze({ armor: 0.07 }),
+      baseStats: Object.freeze({}), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 40 }) }),
     Object.freeze({ key: 'HD_BRONZEHELM', type: 'head', name: 'Bronzehelm', iconKey: 'itHeadBronze',
-      baseStats: Object.freeze({ armor: 8 }), dropWeight: Object.freeze({ 4: 80, 10: 100, 15: 60 }) }),
+      wertKurve: Object.freeze({ armor: 0.10 }),
+      baseStats: Object.freeze({}), dropWeight: Object.freeze({ 4: 80, 10: 100, 15: 60 }) }),
     Object.freeze({ key: 'HD_SCHLANGENMASKE', type: 'head', name: 'Schlangenmaske', iconKey: 'itHeadSchlangenmaske',
-      baseStats: Object.freeze({ armor: 4, crit: 5 }), dropWeight: Object.freeze({ 6: 50, 12: 80, 18: 100 }) }),
+      wertKurve: Object.freeze({ armor: 0.05, crit: 0.10 }),
+      baseStats: Object.freeze({}), dropWeight: Object.freeze({ 6: 50, 12: 80, 18: 100 }) }),
 
     // Body armor (3)
     Object.freeze({ key: 'BD_LEDERHARNISCH', type: 'body', name: 'Lederharnisch', iconKey: 'itBodyLeder',
-      baseStats: Object.freeze({ armor: 6, speed: 5 }), dropWeight: Object.freeze({ 1: 100, 5: 60, 10: 30 }) }),
+      wertKurve: Object.freeze({ armor: 0.11 }),
+      baseStats: Object.freeze({ speed: 5 }), dropWeight: Object.freeze({ 1: 100, 5: 60, 10: 30 }) }),
     Object.freeze({ key: 'BD_PLATTENPANZER', type: 'body', name: 'Plattenpanzer', iconKey: 'itBodyPlatte',
-      baseStats: Object.freeze({ armor: 15, speed: -5 }), dropWeight: Object.freeze({ 5: 60, 10: 100, 15: 80 }) }),
+      wertKurve: Object.freeze({ armor: 0.16 }),
+      baseStats: Object.freeze({ speed: -5 }), dropWeight: Object.freeze({ 5: 60, 10: 100, 15: 80 }) }),
     Object.freeze({ key: 'BD_SCHATTENKUTTE', type: 'body', name: 'Schattenkutte', iconKey: 'itBodySchattenkutte',
-      baseStats: Object.freeze({ armor: 4, speed: 10, crit: 3 }), dropWeight: Object.freeze({ 6: 40, 12: 80, 18: 100 }) }),
+      wertKurve: Object.freeze({ armor: 0.07, crit: 0.08 }),
+      baseStats: Object.freeze({ speed: 10 }), dropWeight: Object.freeze({ 6: 40, 12: 80, 18: 100 }) }),
 
     // Boots (3) — geben Lauftempo (move), nicht Angriffstempo. 'move' ist flach
     // (px/s auf playerSpeed), daher hier ganze Zahlen statt Prozent-Stil.
     Object.freeze({ key: 'BT_LEDERSTIEFEL', type: 'boots', name: 'Lederstiefel', iconKey: 'itBootsLeder',
-      baseStats: Object.freeze({ move: 18 }), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 40 }) }),
+      wertKurve: Object.freeze({ move: 0.16 }),
+      baseStats: Object.freeze({}), dropWeight: Object.freeze({ 1: 100, 5: 80, 10: 40 }) }),
     Object.freeze({ key: 'BT_STAHLSOHLEN', type: 'boots', name: 'Stahlsohlen', iconKey: 'itBootsStahl',
-      baseStats: Object.freeze({ armor: 6, move: 10 }), dropWeight: Object.freeze({ 4: 80, 10: 100 }) }),
+      wertKurve: Object.freeze({ armor: 0.06, move: 0.08 }),
+      baseStats: Object.freeze({}), dropWeight: Object.freeze({ 4: 80, 10: 100 }) }),
     Object.freeze({ key: 'BT_WINDLAEUFER', type: 'boots', name: 'Windläufer', iconKey: 'itBootsWindlaeufer',
-      baseStats: Object.freeze({ move: 30, crit: 2 }), dropWeight: Object.freeze({ 8: 50, 14: 100 }) })
+      wertKurve: Object.freeze({ move: 0.22, crit: 0.06 }),
+      baseStats: Object.freeze({}), dropWeight: Object.freeze({ 8: 50, 14: 100 }) })
   ]);
 
   // ---------------------------------------------------------------------------
@@ -771,6 +786,24 @@ if (window.i18n) {
   /** Absolute Punktzahl fuer einen Anteil auf dieser Tiefe. */
   function affixPunkte(anteil, iLevel) {
     return anteil * PUNKTE_SKALA * _tiefenNenner(iLevel);
+  }
+
+  // Welche GRUNDwerte werden wie die Affixe behandelt — also absolut
+  // gespeichert und beim Tragen mit der aktuellen Tiefe umgerechnet?
+  //
+  // Nur die reinen MACHTwerte. `speed` und `range` auf einer Basis sind ihre
+  // EIGENART, nicht ihre Staerke: das Minus der Glutaxt aufs Tempo und das
+  // Plus des Nebelbogens auf die Reichweite machen die Waffe aus. Sie mit der
+  // Tiefe zu verrechnen naehme den Basen ihren Charakter und liesse sie alle
+  // gleich werden.
+  //
+  // Waffenschaden steht bewusst NICHT hier: er kommt seit #135 aus der
+  // DPS-Decke, die selbst mit der Tiefe waechst. Eine zweite Umrechnung
+  // darueber waere doppelt gemoppelt.
+  var BASIS_TIEFENWERTE = { armor: true, crit: true, move: true, hp: true };
+
+  function istTiefenBasiswert(stat) {
+    return Object.prototype.hasOwnProperty.call(BASIS_TIEFENWERTE, stat);
   }
 
   /** Zurueck: welchen ANTEIL bedeuten diese Punkte auf der aktuellen Tiefe? */
@@ -1085,6 +1118,18 @@ if (window.i18n) {
       const _roh = _waffenband.min + Math.random() * (_waffenband.max - _waffenband.min);
       _resolvedBase.damage = Math.round(_roh * 10) / 10;
     }
+    // #104: Machtwerte aus der wertKurve. Gewuerfelt wird in derselben Spanne
+    // wie bei den Affixen (80 bis 120 % des Ziels), damit "jedes Stueck
+    // wuerfelt in einem Band" ueberall dasselbe heisst.
+    if (base.wertKurve) {
+      const _kurve = Object.keys(base.wertKurve);
+      for (let _w = 0; _w < _kurve.length; _w++) {
+        const _stat = _kurve[_w];
+        const _ziel = base.wertKurve[_stat];
+        const _spanne = 0.8 + Math.random() * 0.4;      // 80 bis 120 %
+        _resolvedBase[_stat] = Math.round(affixPunkte(_ziel * _spanne, iLevel) * 10) / 10;
+      }
+    }
     const _baseKeys = Object.keys(base.baseStats);
     for (let _r = 0; _r < _baseKeys.length; _r++) {
       const _bk = _baseKeys[_r];
@@ -1125,7 +1170,11 @@ if (window.i18n) {
     // but recalcDerived adds them as FLAT values. Convert the percent-style
     // stats to fractions here so summing them in recalcDerived works correctly.
     const _statKeys = ['hp', 'damage', 'speed', 'range', 'armor', 'crit', 'move'];
-    const _percentStats = { speed: true, armor: true, crit: true };
+    // speed bleibt ein Prozentwert (Eigenart der Basis, /100 in den Bruch).
+    // armor/crit/move/hp sind seit #104 TIEFENWERTE: sie stehen als absolute
+    // Punkte da und werden erst beim Tragen umgerechnet — hier also unberuehrt
+    // uebernehmen, sonst waeren sie zweimal geteilt.
+    const _percentStats = { speed: true };
     for (let _i = 0; _i < _statKeys.length; _i++) {
       const _k = _statKeys[_i];
       if (typeof _resolvedBase[_k] === 'number') {
@@ -1883,14 +1932,63 @@ if (window.i18n) {
     // i18n helper: resolve an affix's tooltip string in the active language
     // with the {value} placeholder filled in. Falls back to def.tooltipText
     // when no key is registered.
+    // #122: Der Tooltip am Gegenstand zeigt den ABSOLUTEN Wert — die Zahl, die
+    // auf dem Stueck steht und mit seiner Fundtiefe gewachsen ist. Damit lassen
+    // sich zwei Fundstuecke unmittelbar vergleichen, ohne dass die aktuelle
+    // Tiefe hineinspielt. Was diese Punkte HIER bewirken, steht im
+    // Charakterbogen (absolut und in Prozent nebeneinander).
+    //
+    // Das Prozentzeichen faellt dabei weg: die Vorlagen lauten '+{value}%
+    // Schaden', und "+23 % Schaden" waere fuer eine Punktzahl schlicht falsch.
+    // Es wird an EINER Stelle aus der Vorlage genommen statt in 35 Eintraegen
+    // je Sprache — sonst laufen die beiden Fassungen beim naechsten Affix
+    // wieder auseinander.
     getAffixTooltipText: function (def, value) {
       if (!def) return '';
+      var anzeige = String(Math.round((Number(value) || 0) * 10) / 10);
+      var vorlage = null;
       if (window.i18n) {
-        var v = window.i18n.t('loot.affix.' + def.id + '.tooltip', { value: value });
-        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+        var v = window.i18n.t('loot.affix.' + def.id + '.tooltip', { value: '\u0000' });
+        if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) vorlage = v.split('\u0000').join('{value}');
       }
-      return (def.tooltipText || '').split('{value}').join(String(value));
+      if (vorlage === null) vorlage = def.tooltipText || '';
+      return vorlage.split('{value}%').join('{value}').split('{value}').join(anzeige);
     },
+    /** Summe der absoluten Punkte eines Grundwerts ueber die Ausruestung. */
+    basisPunkteSumme: function (stat) {
+      var eq = (typeof window !== 'undefined' && window.equipment) ? window.equipment : {};
+      var summe = 0;
+      Object.keys(eq).forEach(function (s) {
+        var it = eq[s];
+        if (it && typeof it[stat] === 'number') summe += it[stat];
+      });
+      return Math.round(summe * 10) / 10;
+    },
+    /** Summe der absoluten Affixpunkte fuer einen statKey. */
+    affixPunkteSumme: function (statKey) {
+      var eq = (typeof window !== 'undefined' && window.equipment) ? window.equipment : {};
+      var summe = 0;
+      Object.keys(eq).forEach(function (s) {
+        var it = eq[s];
+        if (!it || !Array.isArray(it.affixes)) return;
+        it.affixes.forEach(function (inst) {
+          if (!inst) return;
+          for (var k = 0; k < AFFIX_DEFS.length; k++) {
+            if (AFFIX_DEFS[k].id === inst.defId && AFFIX_DEFS[k].statKey === statKey) {
+              summe += (Number(inst.value) || 0);
+              break;
+            }
+          }
+        });
+      });
+      return Math.round(summe * 10) / 10;
+    },
+    // #104: dasselbe fuer einen GRUNDwert — was bewirken diese Punkte hier?
+    basiswertWirkung: function (stat, punkte, tiefe) {
+      if (!istTiefenBasiswert(stat)) return Number(punkte) || 0;
+      return affixAnteil(punkte, (typeof tiefe === 'number' && tiefe > 0) ? tiefe : _aktuelleTiefe());
+    },
+    istTiefenBasiswert: istTiefenBasiswert,
     grantGold: grantGold,
     getGold: getGold,
     spendGold: spendGold,
