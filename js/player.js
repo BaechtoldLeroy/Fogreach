@@ -490,6 +490,31 @@ function _dauerToenungHerstellen(enemy) {
 }
 if (typeof window !== 'undefined') window._dauerToenungHerstellen = _dauerToenungHerstellen;
 
+/**
+ * Was nach einem Aufblitzen wieder auf dem Gegner liegen muss.
+ *
+ * Reihenfolge: Dauertoenung (Pluenderer, Schar) vor Statusfarbe (Gift,
+ * Blutung, Betaeubung, Verlangsamung). Ohne den zweiten Teil sah ein
+ * vergifteter Gegner nach dem naechsten Treffer wieder normal aus, obwohl das
+ * Gift weiterlief — gemessen: Toenung 44ff44 vor dem Blitz, ffffff danach,
+ * waehrend hasEffect(e,'poison') weiter true meldete. Genau deshalb faellt der
+ * Gifteffekt im Spiel praktisch nie auf, obwohl er zuverlaessig greift.
+ *
+ * Drei Stellen blitzen: Schildbruch, Krit und der allgemeine Trefferblitz.
+ * Der Krit ist die haeufigste davon.
+ */
+function _toenungNachBlitz(enemy) {
+  if (!enemy) return;
+  if (_dauerToenungHerstellen(enemy)) return;
+  try {
+    if (window.statusEffectManager
+        && typeof window.statusEffectManager.refreshVisual === 'function') {
+      window.statusEffectManager.refreshVisual(enemy);
+    }
+  } catch (e) { /* eine fehlende Toenung darf den Treffer nie brechen */ }
+}
+if (typeof window !== 'undefined') window._toenungNachBlitz = _toenungNachBlitz;
+
 function _spielerStatusFarbe() {
   try {
     var sm = window.statusEffectManager;
@@ -786,7 +811,7 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
       scene.time.delayedCall(200, () => {
         if (enemy && enemy.active) {
           enemy.clearTint();
-          _dauerToenungHerstellen(enemy);
+          _toenungNachBlitz(enemy);
           if (enemy.isElite) enemy.setTint(0xffe066);
         }
       });
@@ -845,7 +870,7 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
     scene.time.delayedCall(160, () => {
       if (enemy && enemy.active) {
         enemy.clearTint();
-        _dauerToenungHerstellen(enemy);
+        _toenungNachBlitz(enemy);
       }
     });
     // Ein Krit war bisher nur ein 160-ms-Aufblitzen — im Getuemmel kaum vom
@@ -1905,7 +1930,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
     scene.time.delayedCall(duration, () => {
       if (enemy && enemy.active) {
         enemy.clearTint();
-        _dauerToenungHerstellen(enemy);
+        _toenungNachBlitz(enemy);
       }
     }, null, scene);
   }

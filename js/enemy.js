@@ -1834,6 +1834,32 @@ function _fireLockedSpread(enemy, count, totalSpread, baseAng) {
 // #65 Signature-Angriff: ANSTURM (Tank). Telegraph = rote Gefahren-Linie in
 // Spielerrichtung (Aim gelockt); dann prescht der Boss die Bahn entlang, Schaden
 // wer nahe an der Linie steht. Seitlich ausweichen = kein Treffer.
+/**
+ * Legt die Sichtmaske auf ein Anzeigeobjekt.
+ *
+ * Gegner (:539) und Geschosse (:1666) bekommen sie beim Erzeugen; die
+ * Telegraphen der Mini-Boss-Angriffe bekamen sie NICHT. Die Ansturm-Linie,
+ * der Sprung-Zielkreis und der Salven-Faecher lagen deshalb ueber allem und
+ * waren durch Waende zu sehen — man wusste von einem Angriff, bevor man den
+ * Gegner ueberhaupt sehen konnte.
+ *
+ * Ist die Maske beim Szenenstart noch nicht da, wird das Objekt in dieselbe
+ * Nachreih-Liste gelegt, die auch die Geschosse benutzen.
+ */
+function _sichtMaskeAnlegen(scene, obj) {
+  if (!scene || !obj) return obj;
+  try {
+    if (scene._enemyVisionMask && typeof obj.setMask === 'function') {
+      obj.setMask(scene._enemyVisionMask);
+    } else {
+      scene._needsMaskProj = scene._needsMaskProj || [];
+      scene._needsMaskProj.push(obj);
+    }
+  } catch (e) { /* eine fehlende Maske darf den Angriff nie brechen */ }
+  return obj;
+}
+if (typeof window !== 'undefined') window._sichtMaskeAnlegen = _sichtMaskeAnlegen;
+
 function miniBossCharge(enemy) {
   const scene = this;
   if (!player || !player.active || !scene.time) return;
@@ -1842,7 +1868,7 @@ function miniBossCharge(enemy) {
   const sx = enemy.x, sy = enemy.y;
   const ex = sx + Math.cos(ang) * dist, ey = sy + Math.sin(ang) * dist;
   enemy._castingUntil = scene.time.now + TELE;
-  const g = scene.add.graphics().setDepth(1001);
+  const g = _sichtMaskeAnlegen(scene, scene.add.graphics().setDepth(1001));
   const st = { t: 0 };
   scene.tweens.add({
     targets: st, t: 1, duration: TELE, ease: 'Linear',
@@ -1882,7 +1908,7 @@ function miniBossLeap(enemy) {
   const TELE = 620, DASH = 380, r = 105;
   const baseScale = enemy.scaleX || 1;
   enemy._castingUntil = scene.time.now + TELE;
-  const g = scene.add.graphics().setDepth(1001);
+  const g = _sichtMaskeAnlegen(scene, scene.add.graphics().setDepth(1001));
   const st = { t: 0 };
   scene.tweens.add({
     targets: st, t: 1, duration: TELE, ease: 'Linear',
@@ -1926,7 +1952,7 @@ function miniBossSalve(enemy) {
   const ang = Math.atan2(player.y - enemy.y, player.x - enemy.x);
   const TELE = 700, cone = 0.9, len = 320, N = 7;
   enemy._castingUntil = scene.time.now + TELE + 100;
-  const g = scene.add.graphics().setDepth(1001);
+  const g = _sichtMaskeAnlegen(scene, scene.add.graphics().setDepth(1001));
   const st = { t: 0 };
   scene.tweens.add({
     targets: st, t: 1, duration: TELE, ease: 'Linear',
