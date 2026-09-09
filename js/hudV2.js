@@ -399,6 +399,10 @@
     const _d = (typeof window.playerDexterity === 'number') ? window.playerDexterity : 0;
     const _v = (typeof window.playerVitality === 'number') ? window.playerVitality : 0;
     const _vhp = (typeof window.playerVitalityHp === 'number') ? window.playerVitalityHp : 0;
+    // Die Zahl kommt aus recalcDerived, nicht aus einer zweiten Rechnung hier:
+    // sonst zeigt der Bogen beim naechsten Nachziehen etwas anderes an, als
+    // das Spiel tut.
+    const _vreg = (typeof window.playerVitalityRegen === 'number') ? window.playerVitalityRegen : 0;
     // #124: Nebenhand-Wirkungen.
     const _blk = (typeof window.playerBlockChance === 'number') ? window.playerBlockChance : 0;
     const _brn = (typeof window.playerBrandChance === 'number') ? window.playerBrandChance : 0;
@@ -421,50 +425,59 @@
       if (affixKey && typeof _LS.affixPunkteSumme === 'function') p += _LS.affixPunkteSumme(affixKey);
       return Math.round(p * 10) / 10;
     }
-    /** "28 % (32 Pkt.)" — der Wirkwert vorn, die Punkte dahinter. */
-    function _mitPunkten(prozentText, stat, affixKey) {
-      const p = _punkte(stat, affixKey);
-      if (!p) return prozentText;
-      return prozentText + '  (' + p + ' ' + T('hud.stats.points') + ')';
-    }
-
     const rows = [
       [T('hud.stats.label.health'), Math.round(cur) + ' / ' + Math.round(max)],
       [T('hud.stats.label.level'), String(lvl)],
       [T('hud.stats.label.xp'), xp + ' / ' + need],
       [T('hud.stats.label.damage'), String(wpd)],
       [T('hud.stats.label.attack_speed'), Number(was).toFixed(2)],
-      [T('hud.stats.label.range'), String(rng)],
-      [T('hud.stats.label.armor'), _mitPunkten(Math.round(arm * 100) + '%', 'armor', 'armor')],
-      [T('hud.stats.label.crit'), _mitPunkten((crt * 100).toFixed(1) + '%', 'crit', 'crit')],
-      [T('hud.stats.label.move_speed'), _mitPunkten(String(spd), 'move', 'move')],
+      // Reichweite ist eine Pixelzahl. Die Nachkommastellen kamen aus der
+      // Affixrechnung und sagten nichts — 118,4 statt 118 ist keine
+      // Auskunft, die man beim Vergleichen braucht.
+      [T('hud.stats.label.range'), String(Math.round(rng))],
+      // Hier steht nur noch, was der Wert BEWIRKT. Die Punkte daneben
+      // ("16% (36.3 Pkt.)") waren eine Zwischengroesse: sie erklaerten die
+      // Umrechnung, aber die Zeile mit der Tiefe weiter unten tut das auch —
+      // und die Punkte selbst liest man am Gegenstand ab.
+      [T('hud.stats.label.armor'), Math.round(arm * 100) + '%'],
+      [T('hud.stats.label.crit'), (crt * 100).toFixed(1) + '%'],
+      [T('hud.stats.label.move_speed'), String(Math.round(spd))],
       // #124: Nur zeigen, wenn ueberhaupt etwas da ist — drei Nullzeilen im
       // Bogen waeren fuer jeden ohne Nebenhand-Stueck reines Rauschen.
-    ].concat(_blk > 0 ? [[T('hud.stats.label.block'), _mitPunkten(Math.round(_blk * 100) + '%', 'block', null)]] : [])
-     .concat(_brn > 0 ? [[T('hud.stats.label.brand'), _mitPunkten(Math.round(_brn * 100) + '%', 'brand', null)]] : [])
+    ].concat(_blk > 0 ? [[T('hud.stats.label.block'), Math.round(_blk * 100) + '%']] : [])
+     .concat(_brn > 0 ? [[T('hud.stats.label.brand'), Math.round(_brn * 100) + '%']] : [])
      .concat(_sch > 0 ? [[T('hud.stats.label.sicht'), '+' + Math.round(_sch * 100) + '%']] : [])
      .concat([
       // Woran die Umrechnung haengt: ohne diese Zeile wirkt es wie Willkuer,
       // dass dieselbe Ausruestung eine Tiefe tiefer weniger bringt.
       ['', T('hud.stats.depth_note', { n: _tiefe })]
     ]);
-    // #104: Auch die Attribute stehen auf der Ausruestung als ABSOLUTE Punkte
-    // und werden mit der aktuellen Tiefe umgerechnet. Ohne die Punkte daneben
-    // sieht man nur das Ergebnis: ein Stueck mit "+7,5 Vitalitaet" im Tooltip
-    // zeigte hier "18.75", und nichts sagte, woher der Unterschied kommt. Die
-    // Zeile mit der Tiefe steht schon oben — sie erklaert jetzt auch diesen Block.
+    // #104: Die Attribute stehen auf der Ausruestung als ABSOLUTE Punkte und
+    // werden mit der aktuellen Tiefe umgerechnet. Beide Zahlen nebeneinander zu
+    // zeigen ("18.8 (7.5 Pkt.)") half nicht: die umgerechnete Punktzahl ist eine
+    // Zwischengroesse, die fuer sich genommen nichts aussagt.
+    //
+    // Deshalb hier nur die Punkte vom Stueck — dieselbe Zahl, die auch im
+    // Tooltip steht, also unmittelbar vergleichbar. Was sie BEWIRKEN, sagt die
+    // Zeile darunter, und zwar in Einheiten, die man kennt (Waffenschaden,
+    // Lebenspunkte, Abklingzeit). Die Umrechnung passiert dort still.
     const _a1 = (x) => String(Math.round(x * 10) / 10);
+    /** Die Punkte, die auf der Ausruestung STEHEN — ohne die Umrechnung. */
+    const _attrPunkte = (stat) => {
+      const p = _punkte(stat, stat);
+      return p ? p + ' ' + T('hud.stats.points') : '0';
+    };
     const attrDefs = [
-      { label: T('hud.stats.label.strength'), val: _mitPunkten(_a1(_s), 'strength', 'strength'),
+      { label: T('hud.stats.label.strength'), val: _attrPunkte('strength'),
         desc: '+' + _a1(_s) + '% Waffenschaden · +' + (_s * 1.5).toFixed(1) + '% Krit-Schaden' },
-      { label: T('hud.stats.label.dexterity'), val: _mitPunkten(_a1(_d), 'dexterity', 'dexterity'),
+      { label: T('hud.stats.label.dexterity'), val: _attrPunkte('dexterity'),
         desc: '+' + (_d * 1).toFixed(1) + '% Tempo · +' + (_d * 0.67).toFixed(1) + '% Krit · +' + (_d * 0.83).toFixed(1) + '% Ausweichen' },
-      { label: T('hud.stats.label.vitality'), val: _mitPunkten(_a1(_v), 'vitality', 'vitality'),
+      { label: T('hud.stats.label.vitality'), val: _attrPunkte('vitality'),
         // #114: Die Lebenspunkte stehen ABSOLUT da. Sie folgen nicht mehr aus
         // der Punktzahl daneben, sondern haengen an der Fundtiefe der Stuecke
         // — ein Prozentsatz an dieser Stelle waere schlicht falsch.
-        desc: '+' + _vhp + ' Max-LP · +' + (_v * 0.1).toFixed(1) + ' LP/s Regen' },
-      { label: T('hud.stats.label.focus'), val: _mitPunkten(_a1(_f), 'focus', 'focus'),
+        desc: '+' + _vhp + ' Max-LP · +' + _vreg.toFixed(2) + ' LP/s Regen' },
+      { label: T('hud.stats.label.focus'), val: _attrPunkte('focus'),
         desc: '−' + Math.min(40, _f * 1).toFixed(0) + '% Cooldown · +' + (_f * 1.25).toFixed(1) + '% Fähigkeitsschaden' }
     ];
 

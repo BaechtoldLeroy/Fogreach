@@ -1377,6 +1377,11 @@ function makeItem(opts) {
   }, opts || {});
 }
 
+// Lebensregeneration je Vitalitaetspunkt (LP/s). Steht hier oben, weil der
+// Charakterbogen dieselbe Zahl anzeigt — mit zwei Kopien liefen Anzeige und
+// Wirkung beim ersten Nachziehen auseinander.
+const VIT_REGEN_JE_PUNKT = 0.02;
+
 function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // Refresh affix bonus cache before reading it: callers (equip swap, save
   // load, endless buffs, events) may have mutated equipment without yet
@@ -1465,7 +1470,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // es kein reiner Klon eines Einzel-Affixes ist:
   //   Stärke    -> +1 % Waffenschaden  + 1.5 % Krit-SCHADEN je Punkt
   //   Geschick   -> +0.2 % Krit + 0.3 % Angriffstempo + 0.25 % AUSWEICHEN je Punkt
-  //   Vitalität -> +3 Max-LP           + 0.1 LP/s REGENERATION je Punkt
+  //   Vitalität -> +1 % Max-LP          + VIT_REGEN_JE_PUNKT LP/s je Punkt
   //   Fokus      -> −0.4 % globale CD   + 0.5 % FAEHIGKEITSschaden je Punkt
   // Ausweichen/Regen werden UNTEN (nach Skills/Endless) additiv draufgelegt,
   // damit sie nicht überschrieben werden; Krit-Schaden/Skill-Schaden liegen auf
@@ -1503,6 +1508,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     // Der Charakterbogen zeigt die Lebenspunkte absolut — ein Prozentsatz
     // waere hier irrefuehrend, weil er nicht mehr aus der Punktzahl folgt.
     window.playerVitalityHp = _attrVitHp;
+    window.playerVitalityRegen = _attrVit * VIT_REGEN_JE_PUNKT;
     window.playerFocus = _attrFoc;
     window.playerFocusCdr = _attrFocusCdr;
     // Zweit-Effekte auf eigenen Globals (immer frisch, 0 wenn kein Attribut):
@@ -1690,12 +1696,19 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // NACH Skills/Endless additiv drauflegen, sonst würden die Zuweisungen oben
   // (PLAYER_DODGE_CHANCE/PLAYER_HEALTH_REGEN) sie überschreiben.
   //   Geschick   -> +0.83 % Ausweichen je Punkt
-  //   Vitalität -> +0.1 LP/s Regeneration je Punkt
+  //   Vitalität -> VIT_REGEN_JE_PUNKT LP/s Regeneration je Punkt
+  //
+  // Die Regeneration lag bei 0,1 LP/s je Punkt und war damit die staerkste
+  // Einzelwirkung im Spiel: zwei tiefengerechte Vitalitaetsstuecke geben 20
+  // Punkte, also 2 LP/s auf einen Vorrat von 32 bis 90 — ein voller Balken in
+  // 16 bis 45 Sekunden. Zum Vergleich heilt der kleinste Trank 30 % in drei
+  // Sekunden; die Regeneration war praktisch ein Dauertrank und machte Traenke
+  // ueberfluessig.
   if (_attrDex > 0) {
     window.PLAYER_DODGE_CHANCE = Math.min(0.5, (window.PLAYER_DODGE_CHANCE || 0) + _attrDex * 0.0083);
   }
   if (_attrVit > 0) {
-    window.PLAYER_HEALTH_REGEN = (window.PLAYER_HEALTH_REGEN || 0) + _attrVit * 0.1;
+    window.PLAYER_HEALTH_REGEN = (window.PLAYER_HEALTH_REGEN || 0) + _attrVit * VIT_REGEN_JE_PUNKT;
   }
 
   // 3.6) Event-Buffs (Shrine etc.) als letzte Schicht — überleben Equipment-Recalcs.

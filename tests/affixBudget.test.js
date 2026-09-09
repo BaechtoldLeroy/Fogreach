@@ -398,7 +398,14 @@ test2('#122: der Gegenstands-Tooltip zeigt die absolute Punktzahl, ohne Prozentz
   });
 });
 
-test2('#122: der Charakterbogen zeigt Prozent UND Punkte', () => {
+test2('#122: der Charakterbogen zeigt je Zeile EINE Zahl, und sagt die Tiefe dazu', () => {
+  // Frueher stand hier "16% (36.3 Pkt.)": der Wirkwert und die Punkte vom
+  // Stueck nebeneinander. Die Punktzahl ist aber eine Zwischengroesse, die
+  // fuer sich genommen nichts aussagt — und am Gegenstand steht sie ohnehin.
+  //
+  // Jetzt tragen die oberen Zeilen den WIRKWERT (Ruestung in Prozent) und die
+  // Attributzeilen die PUNKTE vom Stueck, weil dort die Wirkung eine Zeile
+  // tiefer ausgeschrieben steht. Die Zeile mit der Tiefe erklaert beides.
   const r = H.run(`(function () {
     var LS = window.LootSystem;
     window.DUNGEON_DEPTH = 20; window.currentWave = 20;
@@ -406,6 +413,11 @@ test2('#122: der Charakterbogen zeigt Prozent UND Punkte', () => {
       .forEach(function(k){ window.equipment[k]=null; });
     window.equipment.head  = LS.rollItem('HD_BRONZEHELM', 20, 1);
     window.equipment.body  = LS.rollItem('BD_PLATTENPANZER', 20, 1);
+    // Eine Waffe mit Reichweitenaffix: ohne sie steht die Reichweite auf
+    // glatten 100, und ob gerundet wird oder nicht, sieht man nicht.
+    var waffe = LS.rollItem('WPN_EISENKLINGE', 20, 1);
+    waffe.affixes = [{ defId: 'of_reach', value: LS.affixPunkte(0.10, 20) }];
+    window.equipment.weapon = waffe;
     LS.recomputeBonuses(); recalcDerived(0, 0);
     var sc = window.game.scene.getScene('GameScene');
     window.HUDv2.openStats(sc);
@@ -418,18 +430,110 @@ test2('#122: der Charakterbogen zeigt Prozent UND Punkte', () => {
     if (window.HUDv2._statsContainer) window.HUDv2._statsContainer.close();
     return zeilen;
   })()`);
+  const ruestung = r[r.indexOf('Rüstung:') + 1];
+  assert.ok(/^[0-9]+%$/.test(ruestung || ''),
+    'die Ruestungszeile ist nicht mehr nur ein Prozentwert: "' + ruestung + '"');
+  const reichweite = r[r.indexOf('Reichweite:') + 1];
+  assert.ok(/^[0-9]+$/.test(reichweite || ''),
+    'die Reichweite zeigt Nachkommastellen: "' + reichweite + '"');
   const mitBeidem = r.filter((z) => z.indexOf('%') >= 0 && z.indexOf('Pkt.') >= 0);
-  assert.ok(mitBeidem.length >= 1,
-    'keine Zeile zeigt Prozent und Punkte nebeneinander: ' + JSON.stringify(r.slice(0, 20)));
+  assert.strictEqual(mitBeidem.length, 0,
+    'eine Zeile zeigt wieder beides: ' + mitBeidem.join(' | '));
   assert.ok(r.some((z) => z.indexOf('Tiefe 20') >= 0),
     'der Bogen sagt nicht, auf welcher Tiefe die Umrechnung gilt');
 });
 
-test('#104: auch die Attribute nennen die Punkte, die auf der Ausruestung stehen', () => {
+test('Die Lebensregeneration aus Vitalitaet ersetzt keine Traenke', () => {
+  // Sie lag bei 0,1 LP/s je Punkt. Zwei tiefengerechte Vitalitaetsstuecke
+  // geben 20 Punkte, also 2 LP/s auf einen Vorrat von 32 bis 90 — ein voller
+  // Balken in 16 bis 45 Sekunden. Der kleinste Heiltrank gibt 30 % in drei
+  // Sekunden; die Regeneration war damit ein Dauertrank.
+  //
+  // Der Test misst gegen den TRANK, nicht gegen eine feste Zahl: eine Grenze
+  // wie "unter 0,5 LP/s" saehe hier gleich aus, sagte aber nichts darueber,
+  // ob sie noch im Verhaeltnis steht.
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    var def = LS.AFFIX_DEFS.find(function (d) { return d.id === 'attr_vitality'; });
+    var raus = {};
+    [1, 10, 30].forEach(function (t) {
+      window.DUNGEON_DEPTH = t; window.currentWave = t;
+      ['weapon','offhand','head','body','boots','amulet']
+        .forEach(function (k) { window.equipment[k] = null; });
+      var wert = LS.affixWert(def, 0.10, t);
+      ['body', 'head'].forEach(function (s) {
+        var it = LS.rollItem(s === 'body' ? 'BD_LEDERHARNISCH' : 'HD_KETTENHAUBE', t, 0);
+        it.affixes = [{ defId: 'attr_vitality', value: wert }];
+        window.equipment[s] = it;
+      });
+      LS.recomputeBonuses(); recalcDerived(0, 0);
+      raus[t] = { regen: window.PLAYER_HEALTH_REGEN || 0,
+                  maxLp: window.playerMaxHealth || 0 };
+    });
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    return raus;
+  })()`);
+  [1, 10, 30].forEach((t) => {
+    const a = r[t];
+    assert.ok(a.regen > 0, 'Tiefe ' + t + ': Vitalitaet regeneriert gar nicht mehr');
+    // Ein kleiner Trank gibt 30 % des Vorrats in 3 s. Die Regeneration soll
+    // deutlich darunter liegen — gemessen sind es 11 % auf Tiefe 1 und 4 %
+    // auf Tiefe 30, weil der Vorrat waechst und die Rate flach bleibt.
+    const trankProSek = a.maxLp * 0.30 / 3;
+    assert.ok(a.regen < trankProSek * 0.15,
+      'Tiefe ' + t + ': ' + a.regen.toFixed(2) + ' LP/s sind '
+      + (100 * a.regen / trankProSek).toFixed(0) + ' % der Trankheilung je Sekunde');
+    // Und ein voller Balken soll laenger dauern als ein Raum.
+    assert.ok(a.maxLp / a.regen > 60,
+      'Tiefe ' + t + ': voller Balken in ' + (a.maxLp / a.regen).toFixed(0) + ' s');
+  });
+});
+
+test('Anzeige und Wirkung der Regeneration lesen dieselbe Zahl', () => {
+  // Die 0,1 standen doppelt im Code — einmal in recalcDerived, einmal im
+  // Charakterbogen. Beim Nachziehen waere nur eine der beiden mitgekommen.
+  const inv = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'js', 'inventory.js'), 'utf8');
+  const hud = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'js', 'hudV2.js'), 'utf8');
+  assert.ok(/VIT_REGEN_JE_PUNKT\s*=\s*[0-9.]+/.test(inv),
+    'die Konstante fehlt in inventory.js');
+  assert.ok(/playerVitalityRegen/.test(hud),
+    'der Charakterbogen rechnet die Regeneration selbst aus statt sie zu lesen');
+  assert.ok(!/_v \* 0\.1/.test(hud),
+    'im Charakterbogen steht noch eine zweite Kopie des Faktors');
+
+  // Und die Spiegelung muss WIRKLICH stattfinden: eine Quelltextpruefung
+  // allein liess sich austricksen, indem man die Zeile in recalcDerived
+  // loeschte — der Bogen las dann undefined und zeigte 0,00.
+  const g = H.run(`(function () {
+    var LS = window.LootSystem;
+    window.DUNGEON_DEPTH = 10; window.currentWave = 10;
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    var def = LS.AFFIX_DEFS.find(function (d) { return d.id === 'attr_vitality'; });
+    var it = LS.rollItem('BD_LEDERHARNISCH', 10, 0);
+    it.affixes = [{ defId: 'attr_vitality', value: LS.affixWert(def, 0.10, 10) }];
+    window.equipment.body = it;
+    LS.recomputeBonuses(); recalcDerived(0, 0);
+    var raus = { angezeigt: window.playerVitalityRegen, gewirkt: window.PLAYER_HEALTH_REGEN };
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    return raus;
+  })()`);
+  assert.ok(g.gewirkt > 0, 'Testaufbau: die Vitalitaet regeneriert gar nicht');
+  assert.strictEqual(g.angezeigt, g.gewirkt,
+    'der Bogen zeigt ' + g.angezeigt + ' LP/s, gewirkt werden ' + g.gewirkt);
+});
+
+test('#104: die Attributzeile zeigt die Punkte vom Stueck, nicht die Umrechnung', () => {
   // Gemeldet: "+7,5 Vitalitaet" im Tooltip, "18.75" im Charaktermenue. Die
   // Zahl stimmte — ein Stueck von Tiefe 5 wirkt auf Tiefe 1 staerker —, aber
-  // nichts im Bogen sagte das. Ruestung, Krit und Lauftempo zeigten ihre
-  // Punkte laengst daneben, die vier Attribute nicht.
+  // die umgerechnete Punktzahl ist eine Zwischengroesse, die fuer sich
+  // genommen nichts aussagt. In der Zeile steht deshalb dieselbe Zahl wie im
+  // Tooltip; was sie bewirkt, sagt die Beschreibung darunter in Einheiten,
+  // die man kennt.
   const r = H.run(`(function () {
     var LS = window.LootSystem;
     window.DUNGEON_DEPTH = 1; window.currentWave = 1;
@@ -456,9 +560,14 @@ test('#104: auch die Attribute nennen die Punkte, die auf der Ausruestung stehen
   // 7,5 Punkte auf Tiefe 1: 7,5 / (10 * (1+3)) * 100 = 18,75.
   assert.ok(Math.abs(r.punkte - 18.75) < 0.01,
     'Testannahme verfehlt: gemessen wurden ' + r.punkte + ' statt 18,75 Punkte');
-  const zeile = r.zeilen.find((z) => z.indexOf('18.8') === 0 || z.indexOf('18,8') === 0);
+  const zeile = r.zeilen.find((z) => z.indexOf('7.5 Pkt.') === 0 || z.indexOf('7,5 Pkt.') === 0);
   assert.ok(zeile,
-    'keine Vitalitaetszeile mit gerundetem Wert: ' + JSON.stringify(r.zeilen.slice(0, 30)));
-  assert.ok(zeile.indexOf('7.5') >= 0 && zeile.indexOf('Pkt.') >= 0,
-    'die Zeile nennt die 7,5 Punkte vom Stueck nicht: ' + zeile);
+    'keine Attributzeile mit den 7,5 Punkten vom Stueck: '
+    + JSON.stringify(r.zeilen.slice(0, 30)));
+  assert.ok(zeile.indexOf('18.8') < 0 && zeile.indexOf('18.75') < 0,
+    'die umgerechnete Punktzahl steht noch in der Zeile: ' + zeile);
+  // Die WIRKUNG bleibt sichtbar — nur eben in Lebenspunkten statt in Punkten.
+  const wirkung = r.zeilen.find((z) => z.indexOf('Max-LP') >= 0);
+  assert.ok(wirkung, 'die Wirkzeile unter dem Attribut fehlt: '
+    + JSON.stringify(r.zeilen.slice(0, 30)));
 });
