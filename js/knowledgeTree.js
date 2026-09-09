@@ -91,6 +91,10 @@
     'knowledge.key.only_one':          'Nur ein Grundsatz zur Zeit.',
     'knowledge.key.needs_notable':     'Braucht ein Bündel',
     'knowledge.key.cost':              '{n} Fragmente',
+    'knowledge.node.critdmg.label':      'Wuchtiger Hieb',
+    'knowledge.node.critdmg.desc':       '+6 % Kritschaden pro Rang',
+    'knowledge.node.dodge.label':        'Leichtfüssig',
+    'knowledge.node.dodge.desc':         '+2 % Ausweichchance pro Rang',
     'knowledge.node.atkspeed.label':     'Geübte Hände',
     'knowledge.node.atkspeed.desc':      '+3 % Angriffstempo pro Rang'
   };
@@ -162,6 +166,10 @@
     'knowledge.key.only_one':          'Only one tenet at a time.',
     'knowledge.key.needs_notable':     'Needs a bundle',
     'knowledge.key.cost':              '{n} fragments',
+    'knowledge.node.critdmg.label':      'Heavy Blow',
+    'knowledge.node.critdmg.desc':       '+6% critical damage per rank',
+    'knowledge.node.dodge.label':        'Light-footed',
+    'knowledge.node.dodge.desc':         '+2% dodge chance per rank',
     'knowledge.node.atkspeed.label':     'Practiced Hands',
     'knowledge.node.atkspeed.desc':      '+3% attack speed per rank'
   };
@@ -177,10 +185,30 @@
     { id: 'node_speed',      labelKey: 'knowledge.node.speed.label',      descKey: 'knowledge.node.speed.desc',      maxRank: 5, perRank: { field: 'speedMult',     kind: 'mult', value: 0.03 } },
     { id: 'node_max_hp',     labelKey: 'knowledge.node.max_hp.label',     descKey: 'knowledge.node.max_hp.desc',     maxRank: 5, perRank: { field: 'maxHpAdd',      kind: 'add',  value: 10   } },
     { id: 'node_crit',       labelKey: 'knowledge.node.crit.label',       descKey: 'knowledge.node.crit.desc',       maxRank: 5, perRank: { field: 'critAdd',       kind: 'add',  value: 0.02 } },
-    { id: 'node_xp',         labelKey: 'knowledge.node.xp.label',         descKey: 'knowledge.node.xp.desc',         maxRank: 3, perRank: { field: 'xpMult',        kind: 'mult', value: 0.05 } },
-    { id: 'node_gold',       labelKey: 'knowledge.node.gold.label',       descKey: 'knowledge.node.gold.desc',       maxRank: 3, perRank: { field: 'goldMult',      kind: 'mult', value: 0.05 } },
-    { id: 'node_pickup',     labelKey: 'knowledge.node.pickup.label',     descKey: 'knowledge.node.pickup.desc',     maxRank: 3, perRank: { field: 'pickupAddRange', kind: 'add', value: 20   } },
-    { id: 'node_magic_find', labelKey: 'knowledge.node.magic_find.label', descKey: 'knowledge.node.magic_find.desc', maxRank: 3, perRank: { field: 'magicFindMult', kind: 'mult', value: 0.05 } },
+    // #116: ALLE Knoten auf maxRank 5.
+    //
+    // Die Gier-Knoten standen auf 3, wodurch der Zweig 12 statt 15 Raenge
+    // hatte — mit den zwei neuen Knoten unten waere die Schieflage auf 20/20/12
+    // gewachsen. Jetzt haben alle drei Zweige 20 Raenge, und das Tor (8) ist
+    // ueberall derselbe Anteil.
+    //
+    // Der DECKEL bleibt, indem der Wert je Rang faellt: 5 % x 3 = 3 % x 5.
+    // Nur die Koernung wird feiner, die Obergrenze ist unveraendert.
+    { id: 'node_xp',         labelKey: 'knowledge.node.xp.label',         descKey: 'knowledge.node.xp.desc',         maxRank: 5, perRank: { field: 'xpMult',        kind: 'mult', value: 0.03 } },
+    { id: 'node_gold',       labelKey: 'knowledge.node.gold.label',       descKey: 'knowledge.node.gold.desc',       maxRank: 5, perRank: { field: 'goldMult',      kind: 'mult', value: 0.03 } },
+    { id: 'node_pickup',     labelKey: 'knowledge.node.pickup.label',     descKey: 'knowledge.node.pickup.desc',     maxRank: 5, perRank: { field: 'pickupAddRange', kind: 'add', value: 12   } },
+    { id: 'node_magic_find', labelKey: 'knowledge.node.magic_find.label', descKey: 'knowledge.node.magic_find.desc', maxRank: 5, perRank: { field: 'magicFindMult', kind: 'mult', value: 0.03 } },
+    // Neu in Kraft: der Kritmultiplikator ist 1,5 + playerCritDamageBonus
+    // (player.js:832) und wurde bisher NUR von Staerke gespeist. Zusammen mit
+    // node_crit ergibt das einen echten Krit-Aufbau — der eine macht Krits
+    // haeufiger, der andere haerter. Nebenwirkung: der Grundsatz "Ruhige Hand"
+    // (kein Krit) wird dadurch teurer, und genau der Preis fehlte ihm.
+    { id: 'node_kritschaden', labelKey: 'knowledge.node.critdmg.label', descKey: 'knowledge.node.critdmg.desc', maxRank: 5, perRank: { field: 'critDamageAdd', kind: 'add', value: 0.06 } },
+    // Neu in Zaehigkeit: PLAYER_DODGE_CHANCE ist ohne Ausruestung 0
+    // (inventory.js:1527). Das belebt nebenbei mobility_lightning_reflex aus
+    // #93 — das Passiv feuert nur nach einem bestandenen Ausweichen und war
+    // fuer die meisten Spieler deshalb wirkungslos.
+    { id: 'node_ausweichen',  labelKey: 'knowledge.node.dodge.label',  descKey: 'knowledge.node.dodge.desc',  maxRank: 5, perRank: { field: 'dodgeAdd',      kind: 'add', value: 0.02 } },
     // #116: node_cdr ist WEG. Die Abklingzeit gab es in BEIDEN Baeumen —
     // getLootAbilityCooldownReduction (player.js:1230) addiert cdrAll zu drei
     // weiteren Quellen, und der Talentbaum senkt sie zusaetzlich ueber den
@@ -289,7 +317,9 @@
   // auf: Kraft 15, Zaehigkeit 15, Gier 12 = 42.
   var ZWEIG = {
     node_damage: 'kraft', node_crit: 'kraft', node_angriffstempo: 'kraft',
+    node_kritschaden: 'kraft',
     node_armor: 'zaehigkeit', node_max_hp: 'zaehigkeit', node_speed: 'zaehigkeit',
+    node_ausweichen: 'zaehigkeit',
     node_xp: 'gier', node_gold: 'gier', node_pickup: 'gier', node_magic_find: 'gier'
   };
 
@@ -315,7 +345,9 @@
   // Nicht ausschliessend (anders als die Keystones): man darf alle sechs
   // haben. Die dauerhafte Entscheidung traegt der Keystone.
   var NOTABLE_KOSTEN = 4;
-  var NOTABLE_BRAUCHT = 6;
+  // 8 statt 6: bei 20 Raengen je Zweig waeren 6 nur noch 30 % statt der
+  // vorherigen 40 %. Mindestpreis eines Grundsatzes damit 8 + 4 + 5 = 17.
+  var NOTABLE_BRAUCHT = 8;
   var NOTABLES = [
     { id: 'not_kaltbluetig', zweig: 'kraft',
       labelKey: 'knowledge.not.kaltbluetig.label', descKey: 'knowledge.not.kaltbluetig.desc',
@@ -509,6 +541,8 @@
     b.pickupAddRange = 0;
     b.magicFindMult = 1.0;
     b.attackSpeedMult = 1.0;
+    b.critDamageAdd = 0;
+    b.dodgeAdd = 0;
     // cdrAll bleibt auf 0: player.js:1230 liest das Feld weiterhin, es wird
     // nur von keinem Knoten mehr gespeist.
     b.cdrAll = 0;

@@ -80,16 +80,17 @@ test('T008: clean state after _configureForTest with empty storage', () => {
   const { KT } = fresh();
   assert.strictEqual(KT.getFragments(), 0);
   const state = KT.getState();
-  assert.strictEqual(Object.keys(state.ranks).length, 10);
+  assert.strictEqual(Object.keys(state.ranks).length, 12);
   for (const id in state.ranks) {
     assert.strictEqual(state.ranks[id], 0, 'rank for ' + id + ' starts at 0');
   }
 });
 
-test('T008: getCatalog returns 10 nodes with stable shape', () => {
+test('T008: getCatalog returns 12 nodes with stable shape', () => {
   const { KT } = fresh();
   const catalog = KT.getCatalog();
-  assert.strictEqual(catalog.length, 10);
+  // #116: vier Knoten je Zweig, alle maxRank 5 -> 12 Knoten, 60 Raenge.
+  assert.strictEqual(catalog.length, 12);
   const ids = catalog.map((n) => n.id);
   // Spot-check stable IDs (persisted contract — never rename).
   assert.ok(ids.includes('node_damage'));
@@ -180,14 +181,16 @@ test('T009: invest blocked once maxRank is reached (maxRank=5, node_damage)', ()
   assert.strictEqual(KT.getFragments(), 5);
 });
 
-test('T009: invest blocked at maxRank=3 (node_xp)', () => {
+test('T009: invest blocked at maxRank=5 (node_xp)', () => {
+  // #116: die Gier-Knoten standen auf maxRank 3; jetzt 5, damit alle drei
+  // Zweige 20 Raenge haben. Der DECKEL ist derselbe (3 % x 5 statt 5 % x 3).
   const { KT } = fresh();
-  KT.addFragments(5);
-  assert.strictEqual(KT.invest('node_xp'), true);
-  assert.strictEqual(KT.invest('node_xp'), true);
-  assert.strictEqual(KT.invest('node_xp'), true);
-  assert.strictEqual(KT.invest('node_xp'), false, 'capped at 3');
-  assert.strictEqual(KT.getRank('node_xp'), 3);
+  KT.addFragments(7);
+  for (let i = 0; i < 5; i++) {
+    assert.strictEqual(KT.invest('node_xp'), true, 'Rang ' + (i + 1));
+  }
+  assert.strictEqual(KT.invest('node_xp'), false, 'bei 5 gedeckelt');
+  assert.strictEqual(KT.getRank('node_xp'), 5);
   assert.strictEqual(KT.getFragments(), 2);
 });
 
@@ -430,10 +433,15 @@ test('T011: multiple subscribers each receive the same snapshot', () => {
 // (6 Raenge -> Buendel -> Grundsatz). Die Tests unten wollen den Grundsatz
 // pruefen, nicht den Weg dorthin — dieser Helfer geht ihn.
 function oeffneZweig(KT, zweig, notableId) {
+  // Acht Raenge, seit NOTABLE_BRAUCHT von 6 auf 8 gezogen ist (bei 20 Raengen
+  // je Zweig waeren 6 nur noch 30 % statt 40 %).
   const wege = {
-    kraft: ['node_damage', 'node_damage', 'node_damage', 'node_damage', 'node_damage', 'node_angriffstempo'],
-    zaehigkeit: ['node_armor', 'node_armor', 'node_armor', 'node_armor', 'node_armor', 'node_speed'],
-    gier: ['node_gold', 'node_gold', 'node_gold', 'node_xp', 'node_xp', 'node_xp']
+    kraft: ['node_damage', 'node_damage', 'node_damage', 'node_damage', 'node_damage',
+      'node_angriffstempo', 'node_angriffstempo', 'node_angriffstempo'],
+    zaehigkeit: ['node_armor', 'node_armor', 'node_armor', 'node_armor', 'node_armor',
+      'node_speed', 'node_speed', 'node_speed'],
+    gier: ['node_gold', 'node_gold', 'node_gold', 'node_gold',
+      'node_xp', 'node_xp', 'node_xp', 'node_xp']
   };
   wege[zweig].forEach((id) => KT.invest(id));
   const nid = notableId || { kraft: 'not_schlagfolge', zaehigkeit: 'not_zaeher_lauf', gier: 'not_aasgeier' }[zweig];
@@ -481,7 +489,7 @@ test('Keystones: zu wenig Fragmente -> abgelehnt', () => {
   const { KT } = fresh();
   // Genau so viele Fragmente, dass der Zweig aufgeht (6 Raenge + Buendel = 10)
   // und danach EINES zu wenig fuer den Grundsatz bleibt.
-  KT.addFragments(10 + KT.KEYSTONE_KOSTEN - 1);
+  KT.addFragments(12 + KT.KEYSTONE_KOSTEN - 1);
   oeffneZweig(KT, 'zaehigkeit');
   assert.strictEqual(KT.getFragments(), KT.KEYSTONE_KOSTEN - 1, 'ein Fragment zu wenig');
   assert.strictEqual(KT.keystoneOffen('key_turmwache'), true, 'der Weg ist offen');
@@ -500,7 +508,7 @@ test('Keystones: der Entzug schlaegt die kleinen Knoten', () => {
   assert.ok(Math.abs(globalThis.window.knowledgeTreeBuffs.critAdd - 0.10) < 1e-9);
   // Zweig oeffnen — ueber ein Buendel OHNE critAdd, damit die Zahl oben klar
   // bleibt (Kaltbluetig gaebe +0,05 dazu).
-  KT.invest('node_angriffstempo');
+  for (let i = 0; i < 3; i++) KT.invest('node_angriffstempo');
   assert.strictEqual(KT.investNotable('not_schlagfolge'), true);
   KT.investKeystone('key_ruhige_hand');
   const b = globalThis.window.knowledgeTreeBuffs;
@@ -541,13 +549,19 @@ test('Keystones: Altstand behaelt einen, erstattet den zweiten', () => {
 // #116 — node_cdr abgeloest, Notables
 // ---------------------------------------------------------------------------
 
-test('node_cdr ist weg, node_angriffstempo da — Rangsumme bleibt 42', () => {
+test('node_cdr ist weg, node_angriffstempo da — 20 Raenge je Zweig', () => {
   const { KT } = fresh();
   const ids = KT.getCatalog().map((n) => n.id);
   assert.ok(ids.indexOf('node_cdr') === -1, 'node_cdr gehoert in den Talentbaum');
   assert.ok(ids.indexOf('node_angriffstempo') >= 0, 'node_angriffstempo fehlt');
   const summe = KT.getCatalog().reduce((s2, n) => s2 + n.maxRank, 0);
-  assert.strictEqual(summe, 42, 'die 42 Fragmente muessen bleiben');
+  // Alle 12 Knoten stehen auf maxRank 5 -> 60 Raenge, exakt 20 je Zweig.
+  assert.strictEqual(summe, 60, 'zwoelf Knoten x fuenf Raenge');
+  ['kraft', 'zaehigkeit', 'gier'].forEach((z) => {
+    const zs = KT.getCatalog().filter((n) => KT.ZWEIG[n.id] === z)
+      .reduce((s3, n) => s3 + n.maxRank, 0);
+    assert.strictEqual(zs, 20, z + ' hat ' + zs + ' statt 20 Raenge');
+  });
 });
 
 test('node_angriffstempo speist attackSpeedMult, nicht cdrAll', () => {
@@ -584,13 +598,14 @@ test('Notables: gesperrt, bis der Zweig sechs Raenge hat', () => {
   KT.addFragments(50);
   assert.strictEqual(KT.notableOffen('not_kaltbluetig'), false, 'anfangs zu');
   assert.strictEqual(KT.investNotable('not_kaltbluetig'), false);
-  // fuenf Raenge reichen noch nicht
+  // sieben Raenge reichen noch nicht
   for (let i = 0; i < 5; i++) KT.invest('node_damage');
-  assert.strictEqual(KT.zweigRaenge('kraft'), 5);
-  assert.strictEqual(KT.notableOffen('not_kaltbluetig'), false, 'fuenf reichen nicht');
-  // der sechste oeffnet
+  KT.invest('node_crit'); KT.invest('node_crit');
+  assert.strictEqual(KT.zweigRaenge('kraft'), 7);
+  assert.strictEqual(KT.notableOffen('not_kaltbluetig'), false, 'sieben reichen nicht');
+  // der achte oeffnet
   KT.invest('node_crit');
-  assert.strictEqual(KT.zweigRaenge('kraft'), 6);
+  assert.strictEqual(KT.zweigRaenge('kraft'), 8);
   assert.strictEqual(KT.notableOffen('not_kaltbluetig'), true);
   assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
 });
@@ -599,23 +614,23 @@ test('Notables: Kosten und Wirkung', () => {
   const { KT } = fresh();
   KT.addFragments(50);
   for (let i = 0; i < 5; i++) KT.invest('node_damage');   // 1,25
-  KT.invest('node_crit');                                  // +0,02, oeffnet den Zweig
+  for (let i = 0; i < 3; i++) KT.invest('node_crit');     // +0,06, oeffnet den Zweig
   const vor = KT.getFragments();
   assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
   assert.strictEqual(KT.getFragments(), vor - KT.NOTABLE_KOSTEN);
   const b = globalThis.window.knowledgeTreeBuffs;
   // 1,25 (Knoten) x 1,10 (Notable) = 1,375
   assert.ok(Math.abs(b.damageMult - 1.375) < 1e-9, 'erwartet 1,375, war ' + b.damageMult);
-  assert.ok(Math.abs(b.critAdd - (0.02 + 0.05)) < 1e-9, 'erwartet 0,07, war ' + b.critAdd);
+  assert.ok(Math.abs(b.critAdd - (0.06 + 0.05)) < 1e-9, 'erwartet 0,11, war ' + b.critAdd);
 });
 
 test('Notables sind nicht ausschliessend — anders als die Keystones', () => {
   const { KT } = fresh();
   KT.addFragments(80);
   for (let i = 0; i < 5; i++) KT.invest('node_damage');
-  KT.invest('node_crit');
+  for (let i = 0; i < 3; i++) KT.invest('node_crit');
   for (let i = 0; i < 5; i++) KT.invest('node_armor');
-  KT.invest('node_max_hp');
+  for (let i = 0; i < 3; i++) KT.invest('node_max_hp');
   assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
   assert.strictEqual(KT.investNotable('not_eisenhaut'), true, 'zweiter Notable muss gehen');
 });
@@ -637,7 +652,7 @@ test('Respec erstattet nach PREIS und loest Keystone wie Notable', () => {
   const { KT } = fresh();
   KT.addFragments(60);
   for (let i = 0; i < 5; i++) KT.invest('node_damage');
-  KT.invest('node_crit');
+  for (let i = 0; i < 3; i++) KT.invest('node_crit');
   assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);
   oeffneZweig(KT, 'zaehigkeit');
   assert.strictEqual(KT.investKeystone('key_turmwache'), true);
@@ -678,7 +693,7 @@ test('Keystone verlangt ein Buendel seines Zweigs (die Kette)', () => {
   assert.strictEqual(KT.investKeystone('key_ruhige_hand'), false);
 
   for (let i = 0; i < 5; i++) KT.invest('node_damage');
-  KT.invest('node_crit');                       // sechs Raenge -> Buendel offen
+  for (let i = 0; i < 3; i++) KT.invest('node_crit');   // acht Raenge -> Buendel offen
   assert.strictEqual(KT.keystoneOffen('key_ruhige_hand'), false,
     'Raenge allein reichen nicht — es braucht das Buendel');
   assert.strictEqual(KT.investKeystone('key_ruhige_hand'), false);
@@ -692,7 +707,7 @@ test('Ein Buendel oeffnet BEIDE Grundsaetze seines Zweigs, keine fremden', () =>
   const { KT } = fresh();
   KT.addFragments(60);
   for (let i = 0; i < 5; i++) KT.invest('node_damage');
-  KT.invest('node_crit');
+  for (let i = 0; i < 3; i++) KT.invest('node_crit');
   KT.investNotable('not_kaltbluetig');
   assert.strictEqual(KT.keystoneOffen('key_ruhige_hand'), true);
   assert.strictEqual(KT.keystoneOffen('key_blutrausch'), true, 'zweiter Kraft-Grundsatz auch');
@@ -700,13 +715,62 @@ test('Ein Buendel oeffnet BEIDE Grundsaetze seines Zweigs, keine fremden', () =>
   assert.strictEqual(KT.keystoneOffen('key_sammler'), false);
 });
 
-test('Mindestpreis eines Grundsatzes: 15 Fragmente', () => {
+test('Mindestpreis eines Grundsatzes: 17 Fragmente', () => {
   const { KT } = fresh();
   KT.addFragments(60);
   const vor = KT.getFragments();
   for (let i = 0; i < 5; i++) KT.invest('node_damage');   // 5
-  KT.invest('node_crit');                                 // 1
-  KT.investNotable('not_kaltbluetig');                    // 4
-  KT.investKeystone('key_ruhige_hand');                   // 5
-  assert.strictEqual(vor - KT.getFragments(), 15);
+  for (let i = 0; i < 3; i++) KT.invest('node_crit');     // 3  -> Tor bei 8
+  assert.strictEqual(KT.investNotable('not_kaltbluetig'), true);   // 4
+  assert.strictEqual(KT.investKeystone('key_ruhige_hand'), true);  // 5
+  assert.strictEqual(vor - KT.getFragments(), 17);
+});
+
+test('alle Knoten haben maxRank 5, jeder Zweig 20 Raenge', () => {
+  const { KT } = fresh();
+  const kat = KT.getCatalog();
+  assert.strictEqual(kat.length, 12, 'vier Knoten je Zweig');
+  kat.forEach((n) => assert.strictEqual(n.maxRank, 5, n.id + ' muss maxRank 5 haben'));
+  const zv = KT.ZWEIG;
+  ['kraft', 'zaehigkeit', 'gier'].forEach((z) => {
+    const summe = kat.reduce((s2, n) => s2 + (zv[n.id] === z ? n.maxRank : 0), 0);
+    assert.strictEqual(summe, 20, z + ' muss 20 Raenge haben');
+  });
+});
+
+test('Gier behaelt seine Deckel trotz 3 -> 5 Raengen', () => {
+  // Der Wert je Rang faellt (5 % x 3 -> 3 % x 5), die Obergrenze bleibt.
+  // Ohne diese Anpassung waere der Zweig um zwei Drittel staerker geworden.
+  const { KT } = fresh();
+  KT.addFragments(60);
+  ['node_xp', 'node_gold', 'node_pickup', 'node_magic_find'].forEach((id) => {
+    for (let i = 0; i < 5; i++) KT.invest(id);
+  });
+  const b = globalThis.window.knowledgeTreeBuffs;
+  assert.ok(Math.abs(b.xpMult - 1.15) < 1e-9, 'xpMult 1,15, war ' + b.xpMult);
+  assert.ok(Math.abs(b.goldMult - 1.15) < 1e-9, 'goldMult 1,15, war ' + b.goldMult);
+  assert.strictEqual(b.pickupAddRange, 60);
+  assert.ok(Math.abs(b.magicFindMult - 1.15) < 1e-9, 'magicFindMult 1,15, war ' + b.magicFindMult);
+});
+
+test('die zwei neuen Knoten speisen eigene Felder', () => {
+  const { KT } = fresh();
+  KT.addFragments(60);
+  for (let i = 0; i < 5; i++) KT.invest('node_kritschaden');
+  for (let i = 0; i < 5; i++) KT.invest('node_ausweichen');
+  const b = globalThis.window.knowledgeTreeBuffs;
+  assert.ok(Math.abs(b.critDamageAdd - 0.30) < 1e-9, 'critDamageAdd 0,30, war ' + b.critDamageAdd);
+  assert.ok(Math.abs(b.dodgeAdd - 0.10) < 1e-9, 'dodgeAdd 0,10, war ' + b.dodgeAdd);
+});
+
+test('das Tor liegt bei 8 Raengen, nicht mehr bei 6', () => {
+  // Bei 20 Raengen je Zweig waeren 6 nur noch 30 % statt 40 %.
+  const { KT } = fresh();
+  KT.addFragments(60);
+  assert.strictEqual(KT.NOTABLE_BRAUCHT, 8);
+  for (let i = 0; i < 5; i++) KT.invest('node_damage');
+  KT.invest('node_crit'); KT.invest('node_crit');       // 7 Raenge
+  assert.strictEqual(KT.notableOffen('not_kaltbluetig'), false, 'sieben reichen nicht');
+  KT.invest('node_crit');                                // 8
+  assert.strictEqual(KT.notableOffen('not_kaltbluetig'), true);
 });

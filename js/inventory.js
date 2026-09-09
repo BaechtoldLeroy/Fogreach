@@ -1643,6 +1643,12 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     // Abklingzeit gehoert in den Talentbaum, wo sie an einer Entscheidung
     // haengt).
     weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (kb.attackSpeedMult || 1));
+    // #116: Kritschaden und Ausweichen aus dem Wissensbaum. Beide Werte
+    // werden weiter oben ZUGEWIESEN (critDamageBonus aus Staerke, Zeile 1405;
+    // dodge auf 0, Zeile 1527) — hier wird deshalb addiert, nicht gesetzt.
+    window.playerCritDamageBonus = (window.playerCritDamageBonus || 0) + (kb.critDamageAdd || 0);
+    window.PLAYER_DODGE_CHANCE = Math.min(0.5,
+      (window.PLAYER_DODGE_CHANCE || 0) + (kb.dodgeAdd || 0));
     // critAdd is folded in here as well so invest()-triggered recalcDerived()
     // refreshes the HUD crit % between runs. The line-806 init in main.js
     // covers fresh-load before recalcDerived runs.

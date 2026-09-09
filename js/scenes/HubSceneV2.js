@@ -3203,6 +3203,10 @@ class HubSceneV2 extends Phaser.Scene {
     const panelW = this._ktPanelW || 920;
     const panelH = this._ktPanelH || 460;
     const spalte = (panelW - 32 - 24) / 3;
+    // Die Kacheln fuellen die Spalte nicht mehr ganz aus: schmaler wirkt der
+    // Strang als Strang, und die groessere Schrift bekommt trotzdem Platz,
+    // weil gleichzeitig der Innenabstand sinkt.
+    const kachelB = Math.round(spalte * 0.88);
     const oben = -panelH / 2 + 32 + 8;
 
     const katalog = KT.getCatalog();
@@ -3219,22 +3223,22 @@ class HubSceneV2 extends Phaser.Scene {
       this._ktCardLayer.add(linien);
 
       let y = oben;
-      this._ktCardLayer.add(this.add.text(cx, y, _HUB_T('knowledge.zweig.' + zw.id), {
-        fontFamily: 'serif', fontSize: 15, fontStyle: 'bold', color: zw.hex, resolution: 2
+      this._ktCardLayer.add(this._ktTxt(cx, y, _HUB_T('knowledge.zweig.' + zw.id), {
+        fontFamily: 'serif', fontSize: 18, fontStyle: 'bold', color: zw.hex, resolution: 2
       }).setOrigin(0.5, 0));
-      this._ktCardLayer.add(this.add.text(cx, y + 17, raenge + ' / ' + this._ktZweigMax(zw.id), {
-        fontFamily: 'monospace', fontSize: 11,
+      this._ktCardLayer.add(this._ktTxt(cx, y + 21, raenge + ' / ' + this._ktZweigMax(zw.id), {
+        fontFamily: 'monospace', fontSize: 12,
         color: torOffen ? zw.hex : '#7a7a84', resolution: 2
       }).setOrigin(0.5, 0));
-      y += 36;
+      y += 40;
 
       // --- Kleinknoten: volle Breite, einer je Zeile -----------------------
-      const kh = 26;
+      const kh = 28;
       const klein = katalog.filter((n) => zweigVon[n.id] === zw.id);
       klein.forEach((node) => {
         const rank = KT.getRank(node.id);
         const voll = rank >= node.maxRank;
-        this._ktKachel(cx, y, spalte, kh, {
+        this._ktKachel(cx, y, kachelB, kh, {
           farbe: zw.farbe, gesetzt: rank > 0,
           titel: _HUB_T(node.labelKey),
           titelHex: rank > 0 ? zw.hex : '#b9b9c2',
@@ -3258,18 +3262,17 @@ class HubSceneV2 extends Phaser.Scene {
       linien.moveTo(cx, y - 4);
       linien.lineTo(cx, torY);
       linien.strokePath();
-      linien.fillStyle(torOffen ? zw.farbe : 0x3a3a44, 1);
-      linien.fillCircle(cx, torY, 4);
-      this._ktCardLayer.add(this.add.text(cx + 10, torY - 6, torOffen
+      this._ktCardLayer.add(this._ktTxt(cx, torY, torOffen
         ? _HUB_T('knowledge.zweig.open')
         : _HUB_T('knowledge.not.locked', { n: braucht }), {
-        fontFamily: 'monospace', fontSize: 10,
-        color: torOffen ? '#8fd6a0' : '#6a6a72', resolution: 2
-      }).setOrigin(0, 0));
-      y = torY + 12;
+        fontFamily: 'monospace', fontSize: 12,
+        color: torOffen ? '#8fd6a0' : '#6a6a72',
+        backgroundColor: '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
+      }).setOrigin(0.5, 0.5));
+      y = torY + 14;
 
       // --- Buendel ----------------------------------------------------------
-      const nh = 28;
+      const nh = 31;
       let letzteY = torY;
       notables.filter((n) => n.zweig === zw.id).forEach((n) => {
         const hat = KT.getRank(n.id) > 0;
@@ -3278,11 +3281,11 @@ class HubSceneV2 extends Phaser.Scene {
         linien.moveTo(cx, letzteY);
         linien.lineTo(cx, y);
         linien.strokePath();
-        this._ktKachel(cx, y, spalte, nh, {
+        this._ktKachel(cx, y, kachelB, nh, {
           farbe: zw.farbe, gross: true, gesetzt: hat, gesperrt: !hat && !torOffen,
           titel: _HUB_T(n.labelKey),
           titelHex: hat ? '#cfffcf' : (torOffen ? '#ffd166' : '#6a6a72'),
-          knopf: hat ? '\u2713' : (torOffen ? _HUB_T('knowledge.key.btn_set', { n: notKosten }) : null),
+          knopf: hat ? '\u2713' : _HUB_T('knowledge.key.btn_set', { n: notKosten }),
           knopfAn: !hat && torOffen && frag >= notKosten,
           tipTitel: _HUB_T(n.labelKey),
           tipText: _HUB_T(n.descKey) + '\n\n'
@@ -3295,10 +3298,24 @@ class HubSceneV2 extends Phaser.Scene {
       });
 
       // --- Grundsaetze -------------------------------------------------------
-      y += 3;
-      const kyH = 30;
+      //
+      // "braucht ein Buendel" stand frueher als Knopfbeschriftung AUF dem
+      // Grundsatz. Das war die falsche Stelle: der Satz beschreibt nicht den
+      // Grundsatz, sondern die KANTE dorthin — und er verdraengte den Preis,
+      // sodass man erst nach dem Freischalten sah, was er kostet. Jetzt haengt
+      // er an der Linie, und der Knopf zeigt durchgehend den Preis (nur grau).
+      const kyH = 33;
       const wegOffen = notables.filter((n) => n.zweig === zw.id)
         .some((n) => KT.getRank(n.id) > 0);
+      const kantenY = y + 3;
+      y = kantenY + (wegOffen ? 8 : 18);
+      if (!wegOffen) {
+        this._ktCardLayer.add(this._ktTxt(cx, kantenY + 9,
+          _HUB_T('knowledge.key.needs_notable'), {
+            fontFamily: 'monospace', fontSize: 12, color: '#6a6a72',
+            backgroundColor: '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
+          }).setOrigin(0.5, 0.5));
+      }
       keystones.filter((k) => k.zweig === zw.id).forEach((k) => {
         const ist = aktiverKey === k.id;
         const blockiert = !!aktiverKey && !ist;
@@ -3308,15 +3325,14 @@ class HubSceneV2 extends Phaser.Scene {
         linien.moveTo(cx, letzteY);
         linien.lineTo(cx, y);
         linien.strokePath();
-        this._ktKachel(cx, y, spalte, kyH, {
+        this._ktKachel(cx, y, kachelB, kyH, {
           farbe: 0xc9a0ff, gross: true, sechseck: true,
           gesetzt: ist, gesperrt: blockiert || zu,
           titel: _HUB_T(k.labelKey),
           titelHex: ist ? '#e8d5ff' : ((blockiert || zu) ? '#6a6a72' : '#c9a0ff'),
           knopf: ist ? _HUB_T('knowledge.key.btn_release')
-            : (zu ? _HUB_T('knowledge.key.needs_notable')
-              : (blockiert ? _HUB_T('knowledge.key.only_one')
-                : _HUB_T('knowledge.key.btn_set', { n: keyKosten }))),
+            : (blockiert ? _HUB_T('knowledge.key.only_one')
+              : _HUB_T('knowledge.key.btn_set', { n: keyKosten })),
           knopfAn: ist || (!blockiert && !zu && frag >= keyKosten),
           tipTitel: _HUB_T(k.labelKey),
           tipText: _HUB_T(k.descKey) + '\n\n' + _HUB_T('knowledge.key.only_one')
@@ -3329,6 +3345,46 @@ class HubSceneV2 extends Phaser.Scene {
         y += kyH + 5;
       });
     });
+  }
+
+  /**
+   * Ein Text fuer den Wissensbaum — wie add.text, nur scharf.
+   *
+   * Die Leinwand ist 960 x 480 und wird vom Browser auf die Fensterbreite
+   * hochgezogen (main.js:101, Scale.FIT). Dazu steht pixelArt: true, und
+   * Phaser setzt daraufhin JEDE Text-Textur auf NEAREST. Mit resolution 2
+   * wird die Schrift also in doppelter Aufloesung gerastert und danach
+   * punktweise halbiert — jede zweite Pixelspalte faellt ersatzlos weg. Genau
+   * das sah man: harte Treppen an den Rundungen, danach vom Browser weich
+   * gezogen. Mit LINEAR wird beim Halbieren gemittelt statt weggeworfen.
+   */
+  _ktTxt(x, y, s, style) {
+    return this._ktScharf(this.add.text(x, y, s, style));
+  }
+
+  /**
+   * LINEAR auf die Textur legen — und zwar NACH jedem setText.
+   *
+   * Phasers Text.updateText() laedt die Leinwand neu in die GL-Textur und
+   * nimmt den Filter dabei wieder aus der Spielkonfiguration (antialias:
+   * false, main.js:100) — die einmalige Zuweisung im Konstruktor ist also
+   * beim ersten setText schon wieder weg. Darum liegt sie in einem eigenen
+   * Helfer, den jeder setText-Aufrufer nachzieht.
+   *
+   * Unter dem Canvas-Renderer (Testkopf) ist setFilter ein Nulloperator —
+   * dort steht scaleMode bleibend auf 0. Das ist kein Fehler, sondern die
+   * Grenze des Testkopfes: der Filter greift nur unter WebGL.
+   */
+  _ktScharf(t) {
+    try {
+      const FM = Phaser.Textures.FilterMode;
+      if (t && t.texture && FM && typeof FM.LINEAR === 'number') {
+        if (t.texture.setFilter) t.texture.setFilter(FM.LINEAR);
+        const q = t.texture.source && t.texture.source[0];
+        if (q) q.scaleMode = FM.LINEAR;
+      }
+    } catch (e) { /* egal — schlimmstenfalls bleibt es beim alten Filter */ }
+    return t;
   }
 
   _ktZweigMax(zweig) {
@@ -3373,15 +3429,15 @@ class HubSceneV2 extends Phaser.Scene {
     let knopfB = 0;
     if (o.knopf) {
       const an = !!o.knopfAn;
-      const btn = this.add.text(w - (o.sechseck ? 11 : 5), 0, o.knopf, {
-        fontFamily: o.gross ? 'serif' : 'monospace', fontSize: o.gross ? 11 : 13,
+      const btn = this._ktTxt(w - (o.sechseck ? 9 : 4), 0, o.knopf, {
+        fontFamily: o.gross ? 'serif' : 'monospace', fontSize: o.gross ? 13 : 15,
         color: an ? (o.gesetzt ? '#ffdada' : '#9bff9b') : '#5f5f68',
         backgroundColor: an ? (o.gesetzt ? '#7a3a3a' : '#1f3a1f') : '#26262c',
-        padding: { x: 6, y: 2 }, resolution: 2
+        padding: { x: 5, y: 2 }, resolution: 2
       }).setOrigin(1, 0.5);
       btn.setInteractive({ useHandCursor: an });
       c.add(btn);
-      knopfB = btn.width + 10;
+      knopfB = btn.width + 8;
       btn.on('pointerdown', (pointer, x, yy, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
         if (!an) return;
@@ -3391,24 +3447,25 @@ class HubSceneV2 extends Phaser.Scene {
 
     let pipsB = 0;
     if (o.pips) {
-      const p = this.add.text(w - knopfB - 4, 0, o.pips, {
-        fontFamily: 'monospace', fontSize: 10, color: o.pipsHex, resolution: 2
+      const p = this._ktTxt(w - knopfB - 3, 0, o.pips, {
+        fontFamily: 'monospace', fontSize: 12, color: o.pipsHex, resolution: 2
       }).setOrigin(1, 0.5);
       c.add(p);
-      pipsB = p.width + 8;
+      pipsB = p.width + 6;
     }
 
     // Name auf den verbleibenden Platz begrenzen — lieber gekuerzt als
     // ueberlappend. Der volle Name steht ohnehin im Hover.
-    const platz = breite - (o.sechseck ? 22 : 14) - knopfB - pipsB;
-    const t = this.add.text(-w + (o.sechseck ? 12 : 7), 0, o.titel, {
-      fontFamily: 'serif', fontSize: o.gross ? 13 : 12, fontStyle: 'bold',
+    const platz = breite - (o.sechseck ? 18 : 12) - knopfB - pipsB;
+    const t = this._ktTxt(-w + (o.sechseck ? 10 : 6), 0, o.titel, {
+      fontFamily: 'serif', fontSize: o.gross ? 15 : 13, fontStyle: 'bold',
       color: o.titelHex, resolution: 2
     }).setOrigin(0, 0.5);
     if (t.width > platz && platz > 20) {
       let txt = o.titel;
       while (txt.length > 4 && t.width > platz) { txt = txt.slice(0, -1); t.setText(txt + '\u2026'); }
     }
+    this._ktScharf(t);
     c.add(t);
 
     // Hover ueber die ganze Kachel.
@@ -3424,12 +3481,12 @@ class HubSceneV2 extends Phaser.Scene {
   _ktBuildTip() {
     if (this._ktTip) return;
     const bg = this.add.graphics().setDepth(2060).setScrollFactor(0).setVisible(false);
-    const kopf = this.add.text(0, 0, '', {
-      fontFamily: 'serif', fontSize: 14, fontStyle: 'bold', color: '#ffd166', resolution: 2
+    const kopf = this._ktTxt(0, 0, '', {
+      fontFamily: 'serif', fontSize: 17, fontStyle: 'bold', color: '#ffd166', resolution: 2
     }).setDepth(2061).setScrollFactor(0).setVisible(false);
-    const txt = this.add.text(0, 0, '', {
-      fontFamily: 'serif', fontSize: 12, color: '#dde0e6', resolution: 2,
-      wordWrap: { width: 250 }, lineSpacing: 2
+    const txt = this._ktTxt(0, 0, '', {
+      fontFamily: 'serif', fontSize: 15, color: '#dde0e6', resolution: 2,
+      wordWrap: { width: 300 }, lineSpacing: 3
     }).setDepth(2061).setScrollFactor(0).setVisible(false);
     this._ktTip = { bg: bg, kopf: kopf, txt: txt };
     if (this._dialogContainer) {
@@ -3445,21 +3502,25 @@ class HubSceneV2 extends Phaser.Scene {
     if (!t || !titel) return;
     t.kopf.setText(titel);
     t.txt.setText(text || '');
-    const b = Math.max(t.kopf.width, t.txt.width) + 20;
-    const h = t.kopf.height + t.txt.height + 22;
+    this._ktScharf(t.kopf);
+    this._ktScharf(t.txt);
+    const b = Math.round(Math.max(t.kopf.width, t.txt.width)) + 24;
+    const h = Math.round(t.kopf.height + t.txt.height) + 26;
     const panelW = this._ktPanelW || 920;
     const panelH = this._ktPanelH || 460;
     // Neben der Kachel, an der Panelkante umklappend.
-    let px = x + (this._ktPanelW || 920) / 6;
-    if (px + b / 2 > panelW / 2 - 8) px = x - (panelW / 6);
-    let py = y + hoch / 2 + 8;
-    if (py + h > panelH / 2 - 8) py = y - hoch / 2 - 8 - h;
+    let px = Math.round(x + panelW / 6);
+    if (px + b / 2 > panelW / 2 - 8) px = Math.round(x - panelW / 6);
+    let py = Math.round(y + hoch / 2 + 8);
+    if (py + h > panelH / 2 - 8) py = Math.round(y - hoch / 2 - 8 - h);
     t.bg.clear();
     t.bg.fillStyle(0x0c0c14, 0.98).fillRoundedRect(px - b / 2, py, b, h, 6);
     t.bg.lineStyle(1.5, 0xd4a543, 0.9).strokeRoundedRect(px - b / 2, py, b, h, 6);
     t.bg.setVisible(true);
-    t.kopf.setPosition(px - b / 2 + 10, py + 7).setVisible(true);
-    t.txt.setPosition(px - b / 2 + 10, py + 9 + t.kopf.height).setVisible(true);
+    // Ganzzahlig setzen: auf Sub-Pixeln rastert die Leinwand die Schrift weich.
+    t.kopf.setPosition(Math.round(px - b / 2 + 12), Math.round(py + 8)).setVisible(true);
+    t.txt.setPosition(Math.round(px - b / 2 + 12),
+      Math.round(py + 10 + t.kopf.height)).setVisible(true);
   }
 
   _ktHideTip() {
