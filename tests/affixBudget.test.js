@@ -155,6 +155,40 @@ test('Alle vier Attribute brauchen gleich viele Punkte fuer dieselbe Wirkung', (
   });
 });
 
+test('#114: Vitalitaet gibt im SPIEL feste Lebenspunkte, die nicht mit der Tiefe fallen', () => {
+  // Dieser Test greift ueber recalcDerived, nicht ueber LootSystem allein.
+  // Grund: die Umrechnung Punkte -> Lebenspunkte sitzt in inventory.js, und
+  // eine Messung nur am LootSystem haette den Konsumenten offen gelassen —
+  // gemutiert (getBonus('vitality') statt getBonus('vitality_hp')) lief die
+  // ganze Suite gruen durch.
+  const r = H.run(`(function () {
+    var LS = window.LootSystem, T = 10;
+    var def = LS.AFFIX_DEFS.find(function (d) { return d.id === 'attr_vitality'; });
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    var stueck = LS.rollItem('BD_LEDERHARNISCH', T, 0);
+    stueck.affixes = [];
+    window.equipment.body = stueck;
+    function maxLp() { LS.recomputeBonuses(); recalcDerived(0, 0); return window.playerMaxHealth || 0; }
+    var raus = {};
+    [10, 20, 30].forEach(function (t) {
+      window.DUNGEON_DEPTH = t; window.currentWave = t;
+      stueck.affixes = [];               var ohne = maxLp();
+      stueck.affixes = [{ defId: 'attr_vitality', value: LS.affixWert(def, 0.10, T) }];
+      raus[t] = maxLp() - ohne;
+    });
+    stueck.affixes = [];
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    return raus;
+  })()`);
+  assert.ok(r['10'] > 0, 'Vitalitaet gibt gar keine Lebenspunkte mehr');
+  assert.strictEqual(r['20'], r['10'],
+    'der Zuwachs faellt mit der Tiefe: ' + r['10'] + ' -> ' + r['20']);
+  assert.strictEqual(r['30'], r['10'],
+    'der Zuwachs faellt mit der Tiefe: ' + r['10'] + ' -> ' + r['30']);
+});
+
 test('Attributpunkte fallen mit der Tiefe ab wie alles andere', () => {
   const r = H.run(`(function () {
     var LS = window.LootSystem;
@@ -389,4 +423,42 @@ test2('#122: der Charakterbogen zeigt Prozent UND Punkte', () => {
     'keine Zeile zeigt Prozent und Punkte nebeneinander: ' + JSON.stringify(r.slice(0, 20)));
   assert.ok(r.some((z) => z.indexOf('Tiefe 20') >= 0),
     'der Bogen sagt nicht, auf welcher Tiefe die Umrechnung gilt');
+});
+
+test('#104: auch die Attribute nennen die Punkte, die auf der Ausruestung stehen', () => {
+  // Gemeldet: "+7,5 Vitalitaet" im Tooltip, "18.75" im Charaktermenue. Die
+  // Zahl stimmte — ein Stueck von Tiefe 5 wirkt auf Tiefe 1 staerker —, aber
+  // nichts im Bogen sagte das. Ruestung, Krit und Lauftempo zeigten ihre
+  // Punkte laengst daneben, die vier Attribute nicht.
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    window.DUNGEON_DEPTH = 1; window.currentWave = 1;
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function(k){ window.equipment[k]=null; });
+    var def = LS.AFFIX_DEFS.find(function (d) { return d.id === 'attr_vitality'; });
+    var stueck = LS.rollItem('BD_LEDERHARNISCH', 5, 0);
+    stueck.affixes = [{ defId: 'attr_vitality', value: 7.5 }];
+    window.equipment.body = stueck;
+    LS.recomputeBonuses(); recalcDerived(0, 0);
+    var sc = window.game.scene.getScene('GameScene');
+    window.HUDv2.openStats(sc);
+    var zeilen = [];
+    (function geh(o) {
+      if (!o) return;
+      if (o.type === 'Text') zeilen.push(String(o.text));
+      if (o.list) o.list.forEach(geh);
+    })(window.HUDv2._statsInhalt || { list: [] });
+    if (window.HUDv2._statsContainer) window.HUDv2._statsContainer.close();
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function(k){ window.equipment[k]=null; });
+    return { zeilen: zeilen, punkte: window.playerVitality };
+  })()`);
+  // 7,5 Punkte auf Tiefe 1: 7,5 / (10 * (1+3)) * 100 = 18,75.
+  assert.ok(Math.abs(r.punkte - 18.75) < 0.01,
+    'Testannahme verfehlt: gemessen wurden ' + r.punkte + ' statt 18,75 Punkte');
+  const zeile = r.zeilen.find((z) => z.indexOf('18.8') === 0 || z.indexOf('18,8') === 0);
+  assert.ok(zeile,
+    'keine Vitalitaetszeile mit gerundetem Wert: ' + JSON.stringify(r.zeilen.slice(0, 30)));
+  assert.ok(zeile.indexOf('7.5') >= 0 && zeile.indexOf('Pkt.') >= 0,
+    'die Zeile nennt die 7,5 Punkte vom Stueck nicht: ' + zeile);
 });

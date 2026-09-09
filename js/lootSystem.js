@@ -745,6 +745,11 @@ if (window.i18n) {
   var REF_LP_BASIS = 30;
   var REF_LP_JE_TIEFE = 2;
 
+  // Wieviel Lebenspunkte ein Vitalitaetspunkt wert ist — 1 % der Referenzkurve,
+  // dieselbe Normalisierung wie bei den drei anderen Attributen (1 % Primaer-
+  // wirkung je Punkt).
+  var VIT_LP_JE_PUNKT = 0.01;
+
   function referenzLebenspunkte(tiefe) {
     var t = (typeof tiefe === 'number' && tiefe > 0) ? tiefe : _aktuelleTiefe();
     return REF_LP_BASIS + REF_LP_JE_TIEFE * t;
@@ -825,6 +830,30 @@ if (window.i18n) {
   function _wirkungFuer(statKey) {
     if (Object.prototype.hasOwnProperty.call(WIRKUNG, statKey)) return WIRKUNG[statKey];
     return WIRKUNG_FAEHIGKEIT;
+  }
+
+  /**
+   * Die Lebenspunkte, die dieser Vitalitaetsaffix gibt — festgezurrt auf der
+   * Fundtiefe des Stuecks.
+   *
+   * Vitalitaet ist der eine Attributwert, dessen Primaerwirkung KEIN Anteil
+   * ist: Lebenspunkte sind eine flache Zahl (s. Kommentar bei WIRKUNG.hp).
+   * Die Punktzahl selbst faellt weiter mit der Tiefe wie bei Staerke, Geschick
+   * und Fokus — dort beschreibt sie eine relative Wirkung (Schaden, Tempo,
+   * Abklingzeit), und dass die mit der Tiefe abnimmt, ist gewollt.
+   *
+   * Ohne diese Trennung sank der Lebenspunkte-Zuwachs eines Vitalitaetsstuecks
+   * von Tiefe 10 auf dem Weg nach Tiefe 30 von 5,0 auf 3,55, waehrend der
+   * +LP-Affix daneben bei 5 stehen blieb — dieselbe Zahl, zwei Ergebnisse.
+   */
+  function vitalitaetLebenspunkte(punkte, iLevel) {
+    var def = null;
+    for (var i = 0; i < AFFIX_DEFS.length; i++) {
+      if (AFFIX_DEFS[i].statKey === 'vitality') { def = AFFIX_DEFS[i]; break; }
+    }
+    if (!def) return 0;
+    var aufFundtiefe = affixWirkung(def, punkte, iLevel);
+    return referenzLebenspunkte(iLevel) * aufFundtiefe * VIT_LP_JE_PUNKT;
   }
 
   /** Absolute Punktzahl fuer einen Anteil auf dieser Tiefe. */
@@ -982,6 +1011,16 @@ if (window.i18n) {
         // haengt an der Tiefe, auf der man gerade steht — dadurch faellt altes
         // Zeug von selbst ab, ohne dass irgendwo etwas ablaufen muss.
         const wirkung = affixWirkung(def, inst.value);
+        // Vitalitaet zaehlt doppelt: die Punktzahl oben (Regeneration, Anzeige)
+        // und daneben die Lebenspunkte, die sie traegt. Letztere haengen an der
+        // FUNDtiefe des Stuecks, nicht an der, auf der man gerade steht —
+        // deshalb hier je Gegenstand und nicht spaeter aus der Summe.
+        if (def.statKey === 'vitality') {
+          const _ilv = (item && typeof item.iLevel === 'number' && item.iLevel > 0)
+            ? item.iLevel : 1;
+          const _curV = _bonusCache.flat.vitality_hp || 0;
+          _bonusCache.flat.vitality_hp = _curV + vitalitaetLebenspunkte(inst.value, _ilv);
+        }
         const einheit = _wirkungFuer(def.statKey).einheit;
         if (einheit === 'punkte' || einheit === 'flach') {
           const curF = _bonusCache.flat[def.statKey] || 0;
@@ -1984,6 +2023,7 @@ if (window.i18n) {
     affixWirkung: affixWirkung,
     // #114: Bezug fuer flache Lebenspunkte — nach Tiefe, nicht nach Stufe.
     referenzLebenspunkte: referenzLebenspunkte,
+    vitalitaetLebenspunkte: vitalitaetLebenspunkte,
     AFFIX_ANTEIL_MIN: AFFIX_ANTEIL_MIN,
     AFFIX_ANTEIL_MAX: AFFIX_ANTEIL_MAX,
     TIEFEN_SOCKEL: TIEFEN_SOCKEL,

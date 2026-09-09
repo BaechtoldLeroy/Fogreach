@@ -110,13 +110,16 @@ const getItemLevel = (it) => {
 const computeItemPower = (it) => {
   if (!it) return 0;
   let p = 0;
-  // Basis-Stats (speed/armor/crit sind Brüche 0..1 -> *100 für %-Grössenordnung).
+  // speed ist ein Bruch 0..1 (-> *100 fuer %-Groessenordnung). armor, crit und
+  // hp sind seit #104 ABSOLUTE Punkte und stehen schon in dieser Groessenordnung
+  // — mit dem alten *100 wog ein Plattenpanzer von Tiefe 20 allein ueber die
+  // Ruestung 7260 Punkte und riss die ganze Heuristik an sich.
   p += (Number(it.damage) || 0) * 3;
   p += (Number(it.hp) || 0) * 0.5;
   p += (Number(it.speed) || 0) * 100 * 1.2;
   p += (Number(it.range) || 0) * 0.1;
-  p += (Number(it.armor) || 0) * 100 * 2;
-  p += (Number(it.crit) || 0) * 100 * 2.5;
+  p += (Number(it.armor) || 0) * 2;
+  p += (Number(it.crit) || 0) * 2.5;
   p += (Number(it.move) || 0) * 0.3;
   // Affixe = Rarität: je Affix ein Rarity-Bonus + die Affix-Stärke.
   if (Array.isArray(it.affixes)) {
@@ -613,8 +616,16 @@ function initInventoryUI() {
     // NEGATIVE Reichweite. Ohne das Flag verwarf pushStat sie bei num <= 0 — der
     // Nachteil wäre unsichtbar gewesen, die Waffe sähe reinen Vorteil aus.
     pushStat(_INV_T('inventory.label.range'), it.range, 1, '', true);
-    pushStat(_INV_T('inventory.label.armor'), (it.armor || 0) * 100, 1, '%');
-    pushStat(_INV_T('inventory.label.crit'), (it.crit || 0) * 100, 1, '%');
+    // #104: Ruestung und Krit stehen auf der Basis als ABSOLUTE Punkte, die mit
+    // der Fundtiefe gewachsen sind — nicht mehr als Bruch. Das alte "* 100 %"
+    // stammt aus der Zeit davor und zeigte einen Plattenpanzer von Tiefe 20 mit
+    // "+3630 %" an.
+    //
+    // Ohne Prozentzeichen, genau wie bei den Affixen (getAffixTooltipText):
+    // der Tooltip vergleicht zwei Fundstuecke, der Charakterbogen sagt, was die
+    // Punkte auf der aktuellen Tiefe bewirken.
+    pushStat(_INV_T('inventory.label.armor'), it.armor, 1);
+    pushStat(_INV_T('inventory.label.crit'), it.crit, 1);
     pushStat(_INV_T('inventory.label.move'), it.move, 1);
     // Affix lines (WP02+). Each affix renders its tooltipText with {value} replaced.
     // Prefer LootSystem.getAffixTooltipText (i18n-aware) over the raw def.tooltipText.
@@ -1438,13 +1449,15 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + _attrDex * 0.01));
     playerCritChance = Phaser.Math.Clamp(playerCritChance + _attrDex * 0.0067, 0, 0.9);
   }
-  // #114: Vitalitaet gibt ebenfalls FLACHE Lebenspunkte, auf denselben Bezug
-  // gerechnet wie der hp-Affix — 1 % der Referenzkurve je Punkt. Vorher waren
-  // es +3 flach je Punkt auf eine Basis von 30, also rund 5 % je Punkt.
-  const _attrVitHp = Math.round(
-    ((window.LootSystem && typeof window.LootSystem.referenzLebenspunkte === 'function')
-      ? window.LootSystem.referenzLebenspunkte()
-      : (baseStats.maxHP || 30)) * _attrVit * 0.01);
+  // #114: Vitalitaet gibt FLACHE Lebenspunkte, festgezurrt auf der Fundtiefe
+  // des Stuecks — genau wie der +LP-Affix. Die Punktzahl _attrVit taugt dafuer
+  // NICHT als Bezug: sie faellt mit der Tiefe (das ist bei Staerke, Geschick
+  // und Fokus gewollt, weil sie dort relative Wirkungen beschreibt). Mit ihr
+  // gerechnet sank ein Vitalitaetsstueck von Tiefe 10 auf dem Weg nach Tiefe 30
+  // von 5,0 auf 3,55 Lebenspunkte, waehrend der +LP-Affix daneben bei 5 blieb.
+  const _attrVitHp = (window.LootSystem && typeof window.LootSystem.getBonus === 'function')
+    ? Math.max(0, Math.round(window.LootSystem.getBonus('vitality_hp') || 0))
+    : 0;
   // Fokus: Abklingzeit ist die Primaerwirkung, 1 % je Punkt (Deckel 40 %).
   // Der Faehigkeitsschaden behaelt sein Verhaeltnis dazu (0,5/0,4).
   const _attrFocusCdr = Math.min(0.40, _attrFoc * 0.01);
@@ -1453,6 +1466,9 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     window.playerStrength = _attrStr;
     window.playerDexterity = _attrDex;
     window.playerVitality = _attrVit;
+    // Der Charakterbogen zeigt die Lebenspunkte absolut — ein Prozentsatz
+    // waere hier irrefuehrend, weil er nicht mehr aus der Punktzahl folgt.
+    window.playerVitalityHp = _attrVitHp;
     window.playerFocus = _attrFoc;
     window.playerFocusCdr = _attrFocusCdr;
     // Zweit-Effekte auf eigenen Globals (immer frisch, 0 wenn kein Attribut):

@@ -300,6 +300,57 @@ test('#114: die HOEHE kommt trotzdem aus der Fundtiefe', () => {
   }
 });
 
+test('#114: auch die Lebenspunkte AUS VITALITAET fallen nicht mit der Tiefe', () => {
+  // Die Asymmetrie, die nach der +LP-Umstellung uebrig blieb: Vitalitaet gab
+  // Lebenspunkte ueber eine PUNKTZAHL, und Punktzahlen fallen mit der Tiefe.
+  // Gemessen sank ein Vitalitaetsstueck von Tiefe 10 auf dem Weg nach Tiefe 30
+  // von 5,0 auf 3,55 Lebenspunkte, waehrend der +LP-Affix daneben bei 5 blieb —
+  // dieselbe Zahl auf demselben Stueck, zwei Ergebnisse.
+  const sys = freshSystem();
+  const vitDef = sys.AFFIX_DEFS.find((d) => d.id === 'attr_vitality');
+  const wert = sys.affixWert(vitDef, 0.10, 10);
+  globalThis.window.equipment = {
+    body: { iLevel: 10, affixes: [{ defId: 'attr_vitality', value: wert }] }
+  };
+  const gemessen = {};
+  [10, 20, 30].forEach((t) => { aufTiefe(t); sys.recomputeBonuses(); gemessen[t] = sys.getBonus('vitality_hp'); });
+
+  assert.ok(gemessen[10] > 0, 'Vitalitaet gibt ueberhaupt keine Lebenspunkte mehr');
+  assert.strictEqual(gemessen[20], gemessen[10],
+    'der Zuwachs faellt mit der Tiefe: ' + gemessen[10] + ' -> ' + gemessen[20]);
+  assert.strictEqual(gemessen[30], gemessen[10],
+    'der Zuwachs faellt mit der Tiefe: ' + gemessen[10] + ' -> ' + gemessen[30]);
+
+  // Die PUNKTZAHL faellt weiter — das ist bei Staerke, Geschick und Fokus
+  // gewollt, weil sie dort eine relative Wirkung beschreibt. Nur die
+  // Lebenspunkte sind davon abgekoppelt.
+  aufTiefe(30); sys.recomputeBonuses();
+  const pkt30 = sys.getBonus('vitality');
+  aufTiefe(10); sys.recomputeBonuses();
+  assert.ok(pkt30 < sys.getBonus('vitality'),
+    'die Punktzahl soll weiterhin mit der Tiefe fallen');
+});
+
+test('#114: Vitalitaet und der +LP-Affix geben bei gleichem Anteil dasselbe', () => {
+  // Die Normalisierung, auf die sich alles stuetzt: 10 % Budget sind 10 %
+  // Budget, egal ueber welchen der beiden Wege sie kommen. Ohne diese Bindung
+  // waere das eine oder das andere still die bessere Wahl.
+  const sys = freshSystem();
+  const vitDef = sys.AFFIX_DEFS.find((d) => d.id === 'attr_vitality');
+  [1, 5, 10, 20, 30].forEach((t) => {
+    aufTiefe(t);
+    globalThis.window.equipment = {
+      body: { iLevel: t, affixes: [{ defId: 'attr_vitality', value: sys.affixWert(vitDef, 0.10, t) }] },
+      head: { iLevel: t, affixes: [{ defId: 'of_health', value: sys.affixWert('of_health', 0.10, t) }] }
+    };
+    sys.recomputeBonuses();
+    const ausVit = sys.getBonus('vitality_hp');
+    const ausAffix = sys.getBonus('hp');
+    assert.ok(Math.abs(ausVit - ausAffix) <= 0.5,
+      'Tiefe ' + t + ': Vitalitaet gibt ' + ausVit + ' LP, der +LP-Affix ' + ausAffix);
+  });
+});
+
 test('D2 core-attribute affixes exist as flat stats and aggregate via getBonus (#60)', () => {
   const sys = freshSystem();
   const ids = ['attr_strength', 'attr_dexterity', 'attr_vitality', 'attr_focus'];

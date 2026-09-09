@@ -391,6 +391,7 @@
     const _s = (typeof window.playerStrength === 'number') ? window.playerStrength : 0;
     const _d = (typeof window.playerDexterity === 'number') ? window.playerDexterity : 0;
     const _v = (typeof window.playerVitality === 'number') ? window.playerVitality : 0;
+    const _vhp = (typeof window.playerVitalityHp === 'number') ? window.playerVitalityHp : 0;
     const _f = (typeof window.playerFocus === 'number') ? window.playerFocus : 0;
 
     // #122/#104: Ruestung, Krit und Lauftempo stehen auf der Ausruestung als
@@ -430,15 +431,23 @@
       // dass dieselbe Ausruestung eine Tiefe tiefer weniger bringt.
       ['', T('hud.stats.depth_note', { n: _tiefe })]
     ];
+    // #104: Auch die Attribute stehen auf der Ausruestung als ABSOLUTE Punkte
+    // und werden mit der aktuellen Tiefe umgerechnet. Ohne die Punkte daneben
+    // sieht man nur das Ergebnis: ein Stueck mit "+7,5 Vitalitaet" im Tooltip
+    // zeigte hier "18.75", und nichts sagte, woher der Unterschied kommt. Die
+    // Zeile mit der Tiefe steht schon oben — sie erklaert jetzt auch diesen Block.
+    const _a1 = (x) => String(Math.round(x * 10) / 10);
     const attrDefs = [
-      { label: T('hud.stats.label.strength'), val: _s,
-        desc: '+' + _s + '% Waffenschaden · +' + (_s * 1.5).toFixed(1) + '% Krit-Schaden' },
-      { label: T('hud.stats.label.dexterity'), val: _d,
+      { label: T('hud.stats.label.strength'), val: _mitPunkten(_a1(_s), 'strength', 'strength'),
+        desc: '+' + _a1(_s) + '% Waffenschaden · +' + (_s * 1.5).toFixed(1) + '% Krit-Schaden' },
+      { label: T('hud.stats.label.dexterity'), val: _mitPunkten(_a1(_d), 'dexterity', 'dexterity'),
         desc: '+' + (_d * 1).toFixed(1) + '% Tempo · +' + (_d * 0.67).toFixed(1) + '% Krit · +' + (_d * 0.83).toFixed(1) + '% Ausweichen' },
-      { label: T('hud.stats.label.vitality'), val: _v,
-        // #122: Vitalitaet gibt +1 % der Basis-LP je Punkt statt +3 flach.
-        desc: '+' + (_v * 1).toFixed(1) + '% Max-LP · +' + (_v * 0.1).toFixed(1) + ' LP/s Regen' },
-      { label: T('hud.stats.label.focus'), val: _f,
+      { label: T('hud.stats.label.vitality'), val: _mitPunkten(_a1(_v), 'vitality', 'vitality'),
+        // #114: Die Lebenspunkte stehen ABSOLUT da. Sie folgen nicht mehr aus
+        // der Punktzahl daneben, sondern haengen an der Fundtiefe der Stuecke
+        // — ein Prozentsatz an dieser Stelle waere schlicht falsch.
+        desc: '+' + _vhp + ' Max-LP · +' + (_v * 0.1).toFixed(1) + ' LP/s Regen' },
+      { label: T('hud.stats.label.focus'), val: _mitPunkten(_a1(_f), 'focus', 'focus'),
         desc: '−' + Math.min(40, _f * 1).toFixed(0) + '% Cooldown · +' + (_f * 1.25).toFixed(1) + '% Fähigkeitsschaden' }
     ];
 
