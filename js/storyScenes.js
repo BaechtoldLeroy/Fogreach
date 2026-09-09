@@ -13,6 +13,11 @@
 (function () {
   'use strict';
 
+  // Wie lange der fertige Text noch stehen bleibt, bevor die Szene weitergeht.
+  // Frueher war das die GESAMTE Anzeigedauer (900 ms fuer zwei Saetze); jetzt
+  // laeuft sie erst NACH dem Aufbau an.
+  var LESEPAUSE_MS = 900;
+
   function _fireObserve(target) {
     if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
       window.questSystem.updateQuestProgress('observe', target, 1);
@@ -25,6 +30,46 @@
       align: 'center', wordWrap: { width: 520 }, lineSpacing: 4
     }).setOrigin(0.5, 0.5).setDepth(1550).setScrollFactor(0);
     return text;
+  }
+
+  /**
+   * Wie _lines, aber der Text baut sich Wort fuer Wort auf (#139).
+   *
+   * Der volle Text wird zuerst gesetzt und damit VERMESSEN — bei origin
+   * 0.5/0.5 waechst der Block sonst waehrend des Schreibens aus der Mitte
+   * heraus, und die Zeilen wandern unter dem Lesen weg.
+   *
+   * Der Sprecher kommt aus der ersten Zeile, die mit "NAME:" beginnt. Damit
+   * klingt Elara ueberall gleich, ohne dass hier eine Stimmentabelle stuende.
+   *
+   * @param {function} [fertig]  laeuft, wenn der Aufbau durch ist
+   */
+  function _zeilenAufbauen(scene, arr, cx, cy, fertig) {
+    var text = _lines(scene, arr, cx, cy);
+    var voll = arr.join('\n\n');
+    var sprecher = '';
+    for (var i = 0; i < arr.length; i++) {
+      var m = /^([A-ZÄÖÜ][A-ZÄÖÜ ]+):/.exec(arr[i] || '');
+      if (m) { sprecher = m[1]; break; }
+    }
+    var TW = window.DialogTypewriter;
+    if (!TW || typeof TW.anTextobjekt !== 'function') {
+      if (typeof fertig === 'function') fertig();
+      return { text: text, lauf: null };
+    }
+    var lauf = TW.anTextobjekt(scene, text, voll, { sprecher: sprecher, onFertig: fertig });
+
+    // Klicken ueberspringt den Aufbau — dieselbe Geste wie im Hub.
+    if (scene.input && typeof scene.input.on === 'function') {
+      var beiKlick = function () { lauf.ueberspringen(); };
+      scene.input.on('pointerdown', beiKlick);
+      var altAbbrechen = lauf.abbrechen;
+      lauf.abbrechen = function () {
+        try { scene.input.off('pointerdown', beiKlick); } catch (e) {}
+        altAbbrechen();
+      };
+    }
+    return { text: text, lauf: lauf };
   }
 
   function _choiceOrDone(scene, sceneKey, onFinished) {
@@ -47,11 +92,12 @@
     var cy = cam.height / 2 - 40;
     var done = false;
 
-    var intro = _lines(scene, [
+    var auf = _zeilenAufbauen(scene, [
       '(Die drei legen die Farben ab. Ein Blatt. Drei Siegel.)',
       'ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.',
       '(Du bleibst im Schatten und hörst zu.)'
     ], cx, cy);
+    var intro = auf.text;
 
     // Zuhören-Leiste
     var barW = 360, barH = 16;
@@ -65,6 +111,7 @@
 
     var progress = { v: 0 };
     function cleanup() {
+      if (auf.lauf) auf.lauf.abbrechen();
       [intro, frame, fill, label].forEach(function (o) { if (o && o.destroy) o.destroy(); });
     }
     function finish() {
@@ -95,12 +142,19 @@
   function playElaraFirstCrack(scene, onDone) {
     var cam = scene.cameras.main;
     var cx = cam.width / 2, cy = cam.height / 2 - 20;
-    var intro = _lines(scene, [
+    // Die Lesepause laeuft erst, wenn der Text fertig geschrieben ist.
+    // Vorher stand hier eine feste Verzoegerung von 900 ms — sie haette
+    // den Aufbau mitten im Satz abgeschnitten.
+    var auf = _zeilenAufbauen(scene, [
       '(Ein Bote bringt eine Meldung. Elara liest, faltet das Blatt weg.)',
       'ELARA: Das kommt nicht in die Presse.'
-    ], cx, cy);
-    scene.time && scene.time.delayedCall ? scene.time.delayedCall(900, step) : step();
+    ], cx, cy, function () {
+      if (scene.time && scene.time.delayedCall) scene.time.delayedCall(LESEPAUSE_MS, step);
+      else step();
+    });
+    var intro = auf.text;
     function step() {
+      if (auf.lauf) auf.lauf.abbrechen();
       if (intro && intro.destroy) intro.destroy();
       _choiceOrDone(scene, 'elara_first_crack', function () {
         _fireObserve('three_hands_seen');             // Trigger am Ende der Szene
@@ -113,12 +167,19 @@
   function playElaraCamp(scene, onDone) {
     var cam = scene.cameras.main;
     var cx = cam.width / 2, cy = cam.height / 2 - 20;
-    var intro = _lines(scene, [
+    // Die Lesepause laeuft erst, wenn der Text fertig geschrieben ist.
+    // Vorher stand hier eine feste Verzoegerung von 900 ms — sie haette
+    // den Aufbau mitten im Satz abgeschnitten.
+    var auf = _zeilenAufbauen(scene, [
       '(Elara legt etwas Kleines vor Dich hin, abgegriffen, alt. Dein Zeichen.)',
       'ELARA: Das lag in Deiner alten Werkstatt, bevor der Nebel Dich holte. Ich habe es aufgehoben.'
-    ], cx, cy);
-    scene.time && scene.time.delayedCall ? scene.time.delayedCall(900, step) : step();
+    ], cx, cy, function () {
+      if (scene.time && scene.time.delayedCall) scene.time.delayedCall(LESEPAUSE_MS, step);
+      else step();
+    });
+    var intro = auf.text;
     function step() {
+      if (auf.lauf) auf.lauf.abbrechen();
       if (intro && intro.destroy) intro.destroy();
       _choiceOrDone(scene, 'elara_camp', function () {
         if (typeof onDone === 'function') onDone();   // kein Objective-Trigger

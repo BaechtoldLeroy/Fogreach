@@ -2187,6 +2187,10 @@ class HubSceneV2 extends Phaser.Scene {
    * Kasten waehrend des Schreibens mit — genau das, was ein Aufbau nicht tun
    * darf.
    *
+   * Der Antrieb selbst steht in DialogTypewriter.anTextobjekt: die
+   * Story-Szenen (js/storyScenes.js) brauchen denselben Aufbau, und zwei
+   * Kopien laufen beim ersten Nachziehen auseinander.
+   *
    * @param {Phaser.GameObjects.Text} textObj  schon gesetzt und vermessen
    * @param {string} voll                      der ganze Text
    * @param {string} sprecher                  fuer die Tonhoehe des Klangs
@@ -2194,53 +2198,13 @@ class HubSceneV2 extends Phaser.Scene {
   _dialogTextAufbauen(textObj, voll, sprecher) {
     this._dialogTextAbbrechen();
     var TW = window.DialogTypewriter;
-    if (!TW || !textObj || typeof textObj.setText !== 'function') return;
-
-    // Takt auf der SZENENUHR, nicht auf Date.now(). Phasers time.addEvent
-    // feuert auf der Spielzeit; mischte man beides, liefen Tick und Fortschritt
-    // auseinander — im Testkopf sichtbar, wo zwoelf gepumpte Frames 200 ms
-    // Spielzeit sind, aber kaum Wanduhrzeit.
-    var selbst = this;
-    var uhr = function () { return selbst.time.now; };
-    var lauf = TW.starte(voll, { jetzt: uhr });
-    if (lauf.fertig()) return;            // Tempo "sofort" — nichts zu tun
-
-    textObj.setText('');
-    var ton = TW.tonhoehe(sprecher || '');
-    var letzterKlang = -1e9;
-
-    this._dialogTextLauf = lauf;
-    this._dialogTextObj = textObj;
-    this._dialogTextTakt = this.time.addEvent({
-      delay: 16, loop: true,
-      callback: function () {
-        // Das Textobjekt kann zwischen zwei Ticks zerstoert worden sein
-        // (Seitenwechsel, Schliessen). .scene ist bei Phaser der verlaessliche
-        // Zerstoert-Test — .destroyed gibt es nicht.
-        if (!textObj.scene) { selbst._dialogTextAbbrechen(); return; }
-        var stand = lauf.tick();
-        textObj.setText(stand.text);
-        if (stand.neueWorte > 0) {
-          var jetzt = uhr();
-          // Hoechstens alle 90 ms ein Klang: bei schnellem Tempo faellt sonst
-          // alle 55 ms einer an, und aus dem Sprechen wird ein Maschinengewehr.
-          if (jetzt - letzterKlang >= 90) {
-            letzterKlang = jetzt;
-            try {
-              if (window.soundManager && typeof window.soundManager.playSFX === 'function') {
-                window.soundManager.playSFX('dialog_blip', { pitch: ton });
-              }
-            } catch (e) { /* Klang darf den Dialog nie brechen */ }
-          }
-        }
-        if (stand.fertig) selbst._dialogTextAbbrechen();
-      }
-    });
+    if (!TW || typeof TW.anTextobjekt !== 'function') return;
+    this._dialogTextLauf = TW.anTextobjekt(this, textObj, voll, { sprecher: sprecher });
   }
 
   /** Laeuft gerade ein Aufbau? */
   _dialogTextLaeuft() {
-    return !!(this._dialogTextLauf && !this._dialogTextLauf.fertig());
+    return !!(this._dialogTextLauf && this._dialogTextLauf.laeuft());
   }
 
   /**
@@ -2248,25 +2212,16 @@ class HubSceneV2 extends Phaser.Scene {
    * @returns {boolean} true, wenn wirklich etwas uebersprungen wurde
    */
   _dialogTextUeberspringen() {
-    if (!this._dialogTextLaeuft()) return false;
-    var voll = this._dialogTextLauf.sofortFertig();
-    try {
-      if (this._dialogTextObj && this._dialogTextObj.scene) this._dialogTextObj.setText(voll);
-    } catch (e) {}
-    this._dialogTextAbbrechen();
-    return true;
+    return !!(this._dialogTextLauf && this._dialogTextLauf.ueberspringen());
   }
 
   /** Timer weg. Muss bei JEDEM Seitenwechsel und Schliessen laufen. */
   _dialogTextAbbrechen() {
-    if (this._dialogTextTakt) {
-      try { this._dialogTextTakt.remove(false); } catch (e) {}
-      this._dialogTextTakt = null;
+    if (this._dialogTextLauf) {
+      try { this._dialogTextLauf.abbrechen(); } catch (e) {}
+      this._dialogTextLauf = null;
     }
-    this._dialogTextLauf = null;
-    this._dialogTextObj = null;
   }
-
   _closeDialog(keyClosers) {
     if (!this._dialogOpen) return;
     this._dialogOpen = false;

@@ -152,6 +152,96 @@
     return Math.round((0.82 + t * 0.48) * 1000) / 1000;
   }
 
+  /**
+   * Treibt einen Aufbau an einem Phaser-Textobjekt an: Takt, Klang, Abbruch.
+   *
+   * Diese Funktion ist der EINZIGE Ort, an dem der Aufbau mit Phaser spricht.
+   * Vorher stand sie als Methode in HubSceneV2; storyScenes haette eine zweite
+   * Kopie gebraucht, und zwei Kopien laufen beim ersten Nachziehen auseinander.
+   *
+   * @param {Phaser.Scene} scene
+   * @param {object} textObj  Phaser-Textobjekt, schon gesetzt und vermessen
+   * @param {string} voll     der ganze Text
+   * @param {object} [opts]   { sprecher, onFertig }
+   * @returns {{laeuft:function, ueberspringen:function, abbrechen:function}}
+   */
+  function anTextobjekt(scene, textObj, voll, opts) {
+    var o = opts || {};
+    var leer = {
+      laeuft: function () { return false; },
+      ueberspringen: function () { return false; },
+      abbrechen: function () {}
+    };
+    if (!scene || !textObj || typeof textObj.setText !== 'function') return leer;
+
+    // Takt auf der SZENENUHR, nicht auf Date.now(). Phasers time.addEvent
+    // feuert auf der Spielzeit; mischte man beides, liefen Tick und Fortschritt
+    // auseinander — im Testkopf sichtbar, wo zwoelf gepumpte Frames 200 ms
+    // Spielzeit sind, aber kaum Wanduhrzeit.
+    var uhr = function () { return (scene.time && typeof scene.time.now === 'number') ? scene.time.now : 0; };
+    var lauf = starte(voll, { jetzt: uhr });
+    if (lauf.fertig()) {                       // Tempo "sofort" — nichts zu tun
+      if (typeof o.onFertig === 'function') o.onFertig();
+      return leer;
+    }
+
+    textObj.setText('');
+    var ton = tonhoehe(o.sprecher || '');
+    var letzterKlang = -1e9;
+    var takt = null;
+    var beendet = false;
+
+    function abbrechen() {
+      if (takt && takt.remove) { try { takt.remove(false); } catch (e) {} }
+      takt = null;
+    }
+    function fertigMelden() {
+      if (beendet) return;
+      beendet = true;
+      if (typeof o.onFertig === 'function') { try { o.onFertig(); } catch (e) {} }
+    }
+
+    takt = scene.time.addEvent({
+      delay: 16, loop: true,
+      callback: function () {
+        // Das Textobjekt kann zwischen zwei Ticks zerstoert worden sein
+        // (Seitenwechsel, Schliessen). .scene ist bei Phaser der verlaessliche
+        // Zerstoert-Test — .destroyed gibt es nicht.
+        if (!textObj.scene) { abbrechen(); return; }
+        var stand = lauf.tick();
+        textObj.setText(stand.text);
+        if (stand.neueWorte > 0) {
+          var jetzt = uhr();
+          // Hoechstens alle 90 ms ein Klang: bei schnellem Tempo faellt sonst
+          // alle 55 ms einer an, und aus dem Sprechen wird ein Maschinengewehr.
+          if (jetzt - letzterKlang >= 90) {
+            letzterKlang = jetzt;
+            try {
+              if (window.soundManager && typeof window.soundManager.playSFX === 'function') {
+                window.soundManager.playSFX('dialog_blip', { pitch: ton });
+              }
+            } catch (e) { /* Klang darf den Dialog nie brechen */ }
+          }
+        }
+        if (stand.fertig) { abbrechen(); fertigMelden(); }
+      }
+    });
+
+    return {
+      laeuft: function () { return !lauf.fertig(); },
+      /** Sofort den vollen Text zeigen. true, wenn wirklich etwas ausstand. */
+      ueberspringen: function () {
+        if (lauf.fertig()) return false;
+        var text = lauf.sofortFertig();
+        try { if (textObj.scene) textObj.setText(text); } catch (e) {}
+        abbrechen();
+        fertigMelden();
+        return true;
+      },
+      abbrechen: abbrechen
+    };
+  }
+
   var API = {
     TEMPI: TEMPI,
     STANDARD: STANDARD,
@@ -162,7 +252,8 @@
     msJeWort: msJeWort,
     inWorte: inWorte,
     starte: starte,
-    tonhoehe: tonhoehe
+    tonhoehe: tonhoehe,
+    anTextobjekt: anTextobjekt
   };
 
   if (typeof window !== 'undefined') window.DialogTypewriter = API;
