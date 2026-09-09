@@ -3271,41 +3271,40 @@ function createItemGraphics() {
     {
       key: 'itOffFangdolch',
       draw: () => {
-        // Fangdolch — senkrechte Klinge wie beim Dolch, ABER mit einem
-        // Fangring seitlich am Griff. Der Ring ist das Merkmal: er sitzt
-        // ausserhalb der Klingenachse und macht die Silhouette unverwechselbar.
+        // Fangdolch — die Klinge zeigt nach UNTEN.
         //
-        // Erster Entwurf war schraeg gestellt und aus drei duennen Dreiecken
-        // gebaut — auf 48 px las sich das als Gekritzel. Eine Klinge braucht
-        // einen KOERPER (Rechteck) und obendrauf eine Spitze, so wie itSword
-        // und itDagger es machen.
-        const g2 = gestrecktesZeichnen(gBasis, 1.18, 1.06, -3, 0);
-        const cx = 27;
-        // Schatten
-        g2.fillStyle(0x1a1a1a, 0.30);
-        g2.fillRect(cx - 2, 14, 7, 15).fillTriangle(cx - 2, 14, cx + 5, 14, cx + 1, 8);
-        // Klinge
-        g2.fillStyle(0xb8c4cc, 1);
-        g2.fillTriangle(cx - 4, 14, cx + 4, 14, cx, 7);
-        g2.fillRect(cx - 4, 14, 8, 15);
-        // Mittelgrat
-        g2.fillStyle(0xdfe9f0, 1).fillRect(cx - 2, 14, 4, 15);
-        g2.fillStyle(0xf8fcff, 0.7).fillRect(cx - 1, 12, 2, 17);
-        // Parierstange
-        g2.fillStyle(0x9a7a30, 1).fillRect(cx - 8, 29, 16, 3);
-        g2.fillStyle(0xd4a030, 0.6).fillRect(cx - 8, 29, 16, 1);
-        // FANGRING seitlich — geschlossener Kreis, klar neben der Klinge
-        g2.lineStyle(2.8, 0x7a5f24, 1);
-        g2.beginPath().arc(cx + 9, 36, 7, 0, Math.PI * 2, false).closePath().strokePath();
-        g2.lineStyle(1.2, 0xd4a030, 0.85);
-        g2.beginPath().arc(cx + 9, 36, 7, 0, Math.PI * 2, false).closePath().strokePath();
-        // Steg vom Ring zur Parierstange
-        g2.fillStyle(0x9a7a30, 1).fillRect(cx + 2, 31, 4, 3);
+        // Zwei Entwuerfe davor sind daran gescheitert, den Dolch neben
+        // itDagger unterscheidbar zu machen: schraeg gestellt las er sich als
+        // Gekritzel, mit seitlichem Fangring als Kreis, der auf der Klinge
+        // klebt. Beide Male war zu viel im unteren Drittel los.
+        //
+        // Jetzt traegt die LAGE den Unterschied: alle anderen Klingen im Satz
+        // zeigen nach oben, diese haengt mit der Spitze nach unten — so haelt
+        // man einen Fangdolch auch. Dazu die breiteste Parierstange des
+        // Satzes mit zwei aufgebogenen Enden, und sonst nichts.
+        const g2 = gestrecktesZeichnen(gBasis, 1.12, 1.06, 0, 0);
+        const cx = 24;
+        // Knauf oben
+        g2.fillStyle(0x9a7a30, 1).fillCircle(cx, 7, 3.4);
+        g2.fillStyle(0xd4a030, 0.6).fillCircle(cx - 1, 6, 1.6);
         // Griff
-        g2.fillStyle(0x3a2a20, 1).fillRect(cx - 3, 32, 6, 9);
-        g2.fillStyle(0x6a5040, 0.7).fillRect(cx - 3, 34, 6, 1).fillRect(cx - 3, 37, 6, 1);
-        // Knauf
-        g2.fillStyle(0x9a7a30, 1).fillCircle(cx, 42, 3);
+        g2.fillStyle(0x3a2a20, 1).fillRect(cx - 3, 10, 6, 9);
+        g2.fillStyle(0x6a5040, 0.75).fillRect(cx - 3, 12, 6, 1).fillRect(cx - 3, 15, 6, 1);
+        // Parierstange — die breiteste im Satz, mit aufgebogenen Enden
+        g2.fillStyle(0x7a5f24, 1).fillRect(cx - 12, 19, 24, 4);
+        g2.fillStyle(0xd4a030, 1).fillRect(cx - 12, 19, 24, 2);
+        g2.fillStyle(0x7a5f24, 1).fillRect(cx - 12, 13, 3, 7).fillRect(cx + 9, 13, 3, 7);
+        g2.fillStyle(0xd4a030, 0.85).fillRect(cx - 12, 13, 1, 7).fillRect(cx + 9, 13, 1, 7);
+        // Schatten der Klinge
+        g2.fillStyle(0x1a1a1a, 0.30);
+        g2.fillRect(cx - 2, 23, 7, 12).fillTriangle(cx - 2, 35, cx + 5, 35, cx + 1, 43);
+        // Klinge, Spitze nach unten
+        g2.fillStyle(0xb8c4cc, 1).fillRect(cx - 4, 23, 8, 12);
+        g2.fillTriangle(cx - 4, 35, cx + 4, 35, cx, 43);
+        // Mittelgrat
+        g2.fillStyle(0xdfe9f0, 1).fillRect(cx - 2, 23, 4, 12);
+        g2.fillTriangle(cx - 2, 35, cx + 2, 35, cx, 40);
+        g2.fillStyle(0xf8fcff, 0.72).fillRect(cx - 1, 23, 2, 14);
       }
     },
     {
