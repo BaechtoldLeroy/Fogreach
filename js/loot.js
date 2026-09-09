@@ -237,7 +237,7 @@ function _dropEnemyGold(scene, enemy) {
 // Traenke, Material, Gold und Questgegenstaende sind bewusst AUSGENOMMEN:
 // die sammelt man im Vorbeilaufen ein, dort waere eine Sperre nur laestig.
 const AUFSAMMEL_SPERRE_MS = 900;
-const AUFSAMMEL_GESPERRT = { weapon: 1, head: 1, body: 1, boots: 1 };
+const AUFSAMMEL_GESPERRT = { weapon: 1, offhand: 1, head: 1, body: 1, boots: 1 };
 
 function spawnLoot(x, y, maybeItem, sourceEnemy) {
   const scene = (this && this.physics && this.physics.world) ? this : (obstacles?.scene || window.currentScene);
@@ -465,7 +465,7 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     _attachRarityFx(scene || loot.scene, loot, item);
     // Run-Zähler: nur ECHTE Ausrüstung zählen (Tränke/Rollen/Truhen ausgenommen)
     // -> steuert die Halbierung oben ab dem 11. Item.
-    const _gearTypes = { weapon: 1, head: 1, body: 1, boots: 1, amulet: 1 };
+    const _gearTypes = { weapon: 1, offhand: 1, head: 1, body: 1, boots: 1, amulet: 1 };
     if (item && _gearTypes[item.type]) {
       window.__runItemsDropped = (window.__runItemsDropped || 0) + 1;
     }

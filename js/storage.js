@@ -336,10 +336,13 @@ function applySaveToState(scene, s) {
 
   if (s.equipment && typeof s.equipment === 'object') {
     equipment = equipment || {};
-    equipment.weapon = s.equipment.weapon || null;
-    equipment.head   = s.equipment.head   || null;
-    equipment.body   = s.equipment.body   || null;
-    equipment.boots  = s.equipment.boots  || null;
+    // Dieselbe Liste wie beim Speichern (cloneEquipment oben). Vorher standen
+    // hier vier hart notierte Zeilen, und die Nebenhand fehlte: gespeichert
+    // wurde sie, geladen nicht — beim Fortsetzen war das Stueck weg.
+    const SLOTS = (typeof window !== 'undefined' && window.LootSystem
+      && window.LootSystem.PERSISTENT_EQUIP_SLOTS)
+      || ['weapon', 'offhand', 'head', 'body', 'boots'];
+    SLOTS.forEach((k) => { equipment[k] = s.equipment[k] || null; });
     // Feature 059 (#42): amulet is run-specific — never restore it from a save
     // (defensive against a hand-edited/old save that carries one, SC-06).
     equipment.amulet = null;

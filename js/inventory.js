@@ -163,7 +163,7 @@ const FALLBACK_ITEM_ICONS = {
   material: 'itMat'
 };
 
-const UPGRADEABLE_TYPES = new Set(['weapon', 'head', 'body', 'boots']);
+const UPGRADEABLE_TYPES = new Set(['weapon', 'offhand', 'head', 'body', 'boots']);
 
 let materialCounts = window.materialCounts;
 if (!materialCounts || typeof materialCounts !== 'object') {

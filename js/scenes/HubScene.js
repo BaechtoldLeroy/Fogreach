@@ -1731,7 +1731,7 @@ if (b.id === 'rathaus' && this.textures.exists('rathaus')) {
 
     const materialKey = 'MAT';
     const materialName = 'Eisenbrocken';
-    const upgradeableTypes = ['weapon', 'head', 'body', 'boots'];
+    const upgradeableTypes = ['weapon', 'offhand', 'head', 'body', 'boots'];
 
     const getItemMaterialKey = (item) => {
       if (!item) return null;

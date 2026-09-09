@@ -696,10 +696,20 @@ if (window.i18n) {
   // PERSISTENT_EQUIP_SLOTS is the save whitelist — it deliberately OMITS
   // 'amulet' so storage.js never serialises it (FR-12 save-guard). Single
   // source of truth shared with storage.js cloneEquipment.
-  // #124: 'offhand' gehoert dazu. Ohne den Eintrag waere jedes Nebenhand-Stueck
-  // beim naechsten Speichern still verschwunden — dieselbe Liste steuert
-  // storage.js cloneEquipment.
-  const PERSISTENT_EQUIP_SLOTS = Object.freeze(['weapon', 'offhand', 'head', 'body', 'boots']);
+  // Die Ausruestungsarten mit einem festen Platz an der Papierpuppe. Das
+  // Amulett fehlt bewusst: es gilt nur einen Lauf lang (#42, FR-12) und darf
+  // nie in den Spielstand.
+  //
+  // EINE Liste, weil ein neuer Typ sonst in einem Dutzend handgeschriebener
+  // Aufzaehlungen nachgetragen werden muss. Genau daran ist die Nebenhand
+  // verschwunden: gespeichert wurde sie ueber diese Liste, GELADEN aber ueber
+  // vier hart notierte Zeilen in storage.js — beim Fortsetzen war sie weg.
+  const AUSRUESTUNGS_ARTEN = Object.freeze(['weapon', 'offhand', 'head', 'body', 'boots']);
+
+  // Was in den Spielstand darf. Heute deckungsgleich mit AUSRUESTUNGS_ARTEN,
+  // aber ein eigener Name: die Frage "welche Plaetze gibt es" ist eine andere
+  // als "was wird gespeichert", und das Amulett ist der lebende Beweis.
+  const PERSISTENT_EQUIP_SLOTS = AUSRUESTUNGS_ARTEN;
 
   // Null the amulet slot on a passed equipment object (used by the run-reset
   // in leaveDungeonForHub). Null-safe; returns the object for chaining.
@@ -2090,6 +2100,7 @@ if (window.i18n) {
     AMULET_DEFS: AMULET_DEFS,
     rollAmulet: rollAmulet,
     PERSISTENT_EQUIP_SLOTS: PERSISTENT_EQUIP_SLOTS,
+    AUSRUESTUNGS_ARTEN: AUSRUESTUNGS_ARTEN,
     clearRunAmulet: clearRunAmulet,
     // WP04: spawn gate + merchant auslage + effect blurb.
     shouldSpawnRunAmulet: shouldSpawnRunAmulet,
@@ -2290,7 +2301,7 @@ if (window.i18n) {
         var isPickupItem = false;
         if (item && typeof item.type === 'string') {
           var t = item.type.toLowerCase();
-          if (t === 'weapon' || t === 'head' || t === 'body' || t === 'boots' || t === 'accessory' || t === 'potion') {
+          if (AUSRUESTUNGS_ARTEN.indexOf(t) >= 0 || t === 'accessory' || t === 'potion') {
             isPickupItem = true;
           }
         }
@@ -2314,7 +2325,7 @@ if (window.i18n) {
         var equippable = false;
         if (item && typeof item.type === 'string') {
           var ct = item.type.toLowerCase();
-          if (ct === 'weapon' || ct === 'head' || ct === 'body' || ct === 'boots' || ct === 'accessory' || ct === 'potion') {
+          if (AUSRUESTUNGS_ARTEN.indexOf(ct) >= 0 || ct === 'accessory' || ct === 'potion') {
             equippable = true;
           }
         }

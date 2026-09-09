@@ -16,6 +16,7 @@ if (window.i18n) {
     'crafting.btn.craft': 'Schmieden',
     'crafting.empty_slot': '(leer)',
     'crafting.slot.weapon': 'Waffe',
+    'crafting.slot.offhand': 'Nebenhand',
     'crafting.slot.head': 'Helm',
     'crafting.slot.body': 'Rüstung',
     'crafting.slot.boots': 'Stiefel',
@@ -52,6 +53,7 @@ if (window.i18n) {
     'crafting.btn.craft': 'Forge',
     'crafting.empty_slot': '(empty)',
     'crafting.slot.weapon': 'Weapon',
+    'crafting.slot.offhand': 'Off-Hand',
     'crafting.slot.head': 'Helm',
     'crafting.slot.body': 'Armor',
     'crafting.slot.boots': 'Boots',
@@ -198,9 +200,10 @@ class CraftingScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setDepth(10);
 
     // ----- Equipped slots (top of left panel) -----
-    const slots = ['weapon', 'head', 'body', 'boots'];
+    const slots = ['weapon', 'offhand', 'head', 'body', 'boots'];
     const slotLabels = {
       weapon: _CRAFT_T('crafting.slot.weapon'),
+      offhand: _CRAFT_T('crafting.slot.offhand'),
       head: _CRAFT_T('crafting.slot.head'),
       body: _CRAFT_T('crafting.slot.body'),
       boots: _CRAFT_T('crafting.slot.boots')
@@ -770,7 +773,7 @@ class CraftingScene extends Phaser.Scene {
   // here — only inventory items are salvaged (per request).
   _isMassSalvageable(it) {
     if (!it || it.devCheat) return false;
-    if (['weapon', 'head', 'body', 'boots'].indexOf(it.type) === -1) return false;
+    if (['weapon', 'offhand', 'head', 'body', 'boots'].indexOf(it.type) === -1) return false;
     const tier = (typeof it.tier === 'number') ? it.tier : 0;
     return tier <= 2;
   }
@@ -898,7 +901,7 @@ class CraftingScene extends Phaser.Scene {
     this._updateMatText();
 
     // Refresh equipment slots
-    const slots = ['weapon', 'head', 'body', 'boots'];
+    const slots = ['weapon', 'offhand', 'head', 'body', 'boots'];
     slots.forEach(slot => {
       const el = this.equipSlots[slot];
       if (!el) return;
@@ -952,7 +955,7 @@ class CraftingScene extends Phaser.Scene {
     }
 
     // Collect all equipment items in inventory (with original index)
-    const EQUIP_TYPES = new Set(['weapon', 'head', 'body', 'boots']);
+    const EQUIP_TYPES = new Set(['weapon', 'offhand', 'head', 'body', 'boots']);
     const equipItems = [];
     for (let i = 0; i < inventory.length; i++) {
       const it = inventory[i];
@@ -1003,7 +1006,7 @@ class CraftingScene extends Phaser.Scene {
         .setStrokeStyle(isSelected ? 2 : 1, isSelected ? 0xd4a543 : 0x444444)
         .setInteractive({ useHandCursor: true });
 
-      const SLOT_LABEL = { weapon: 'W', head: 'H', body: 'R', boots: 'S' };
+      const SLOT_LABEL = { weapon: 'W', offhand: 'N', head: 'H', body: 'R', boots: 'S' };
       const labelTxt = SLOT_LABEL[entry.item.type] || '?';
       const color = _getTierColor(entry.item);
       const nameText = this.add.text(leftX + 12, ry - 8, `[${labelTxt}] ${_composeItemName(entry.item)}`, {

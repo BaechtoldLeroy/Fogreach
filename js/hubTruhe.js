@@ -54,7 +54,7 @@
   //                 unbegrenzten Vorrat; ein zweiter waere nur verwirrend.
   //   quest_item  — gehoert zum laufenden Auftrag, nicht ins Lager.
   var ERLAUBT = {
-    weapon: 1, head: 1, body: 1, boots: 1,
+    weapon: 1, offhand: 1, head: 1, body: 1, boots: 1,
     amulet: 1, accessory: 1,
     potion: 1, consumable: 1
   };

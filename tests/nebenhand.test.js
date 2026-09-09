@@ -143,6 +143,62 @@ test('Nebenhand-Ausruestung ueberlebt das Speichern', () => {
   assert.ok(r.indexOf('amulet') < 0, 'das Amulett darf weiterhin NICHT gespeichert werden');
 });
 
+test('Ein Nebenhand-Stueck ueberlebt Speichern UND Laden', () => {
+  // Der gemeldete Fehler: beim Fortsetzen war das Stueck weg. Gespeichert
+  // wurde es ueber PERSISTENT_EQUIP_SLOTS, GELADEN aber ueber vier hart
+  // notierte Zeilen in storage.js, in denen 'offhand' fehlte.
+  //
+  // Der Test daneben prueft nur die Liste. Er blieb deshalb gruen, waehrend
+  // die Ladeseite das Stueck verwarf — eine Liste zu pruefen sagt nichts
+  // darueber, ob beide Seiten sie auch benutzen. Hier also der ganze Weg.
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    window.DUNGEON_DEPTH = 20; window.currentWave = 20;
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    window.equipment.weapon  = LS.rollItem('WPN_EISENKLINGE', 20, 1);
+    window.equipment.offhand = LS.rollItem('OF_PAVESE', 20, 1);
+    window.equipment.head    = LS.rollItem('HD_BRONZEHELM', 20, 1);
+
+    var sc = window.game.scene.getScene('GameScene');
+    window.saveGame(sc);
+    // Alles leeren, als waere das Spiel geschlossen worden.
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    // loadGame() liest nur die Datei; angewendet wird sie von
+    // applySaveToState — genau dort sass der Fehler.
+    applySaveToState(sc, window.loadGame());
+
+    var eq = window.equipment;
+    var raus = { waffe: eq.weapon ? eq.weapon.key : null,
+                 hand:  eq.offhand ? eq.offhand.key : null,
+                 kopf:  eq.head ? eq.head.key : null,
+                 amulett: eq.amulet };
+    ['weapon','offhand','head','body','boots','amulet']
+      .forEach(function (k) { window.equipment[k] = null; });
+    return raus;
+  })()`);
+  assert.strictEqual(r.waffe, 'WPN_EISENKLINGE', 'schon die Waffe kam nicht zurueck — Testaufbau pruefen');
+  assert.strictEqual(r.hand, 'OF_PAVESE',
+    'die Nebenhand ist beim Laden verschwunden (zurueck kam: ' + r.hand + ')');
+  assert.strictEqual(r.kopf, 'HD_BRONZEHELM', 'der Helm kam nicht zurueck');
+  // Die Gegenprobe: das Amulett gilt nur einen Lauf und darf NICHT zurueckkommen.
+  assert.strictEqual(r.amulett, null, 'das Amulett wurde aus dem Spielstand geladen');
+});
+
+test('Ein Nebenhand-Stueck darf in die Hub-Truhe', () => {
+  // Vier weitere handgeschriebene Aufzaehlungen hatten kein 'offhand'. Ohne
+  // sie war das Stueck zwar tragbar, aber nicht einlagerbar, nicht aufwertbar
+  // und nicht zerlegbar.
+  const r = H.run(`(function () {
+    var it = window.LootSystem.rollItem('OF_PAVESE', 20, 1);
+    return { darf: window.HubTruhe.darfHinein(it),
+             vergleich: window.HubTruhe.darfHinein(window.LootSystem.rollItem('HD_BRONZEHELM', 20, 1)) };
+  })()`);
+  assert.strictEqual(r.vergleich, true, 'schon der Helm darf nicht hinein — Testaufbau pruefen');
+  assert.strictEqual(r.darf, true, 'die Hub-Truhe nimmt keine Nebenhand-Stuecke an');
+});
+
 test('Blockchance vereitelt Treffer GANZ statt sie zu daempfen', () => {
   // Der Unterschied zu mehr Ruestung: ein geblockter Treffer gibt 0 zurueck,
   // ein durchgekommener den vollen Betrag. Es gibt nichts dazwischen — daran

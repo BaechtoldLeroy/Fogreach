@@ -395,7 +395,7 @@ if (typeof window.ensureDebugPanel !== 'function') {
   window.debugSummarizeEquipment = function (eq) {
     if (!eq || typeof eq !== 'object') return '{}';
     const parts = [];
-    ['weapon', 'head', 'body', 'boots'].forEach((slot) => {
+    ['weapon', 'offhand', 'head', 'body', 'boots'].forEach((slot) => {
       const item = eq[slot];
       parts.push(`${slot}:${item ? (item.name || item.key || 'item') : '-'}`);
     });

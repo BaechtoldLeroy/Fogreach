@@ -877,7 +877,7 @@
         }
       });
       const eq = window.equipment || {};
-      ['weapon', 'head', 'body', 'boots'].forEach((slot) => {
+      ['weapon', 'offhand', 'head', 'body', 'boots'].forEach((slot) => {
         const it = eq[slot];
         if (it && it.type !== 'potion' && typeof it.tier === 'number') {
           items.push({ item: it, source: 'equip', label: '[E] ' });
