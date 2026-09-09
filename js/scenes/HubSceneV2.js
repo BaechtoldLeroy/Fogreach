@@ -3162,35 +3162,30 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   /**
-   * Der Wissensbaum als TRICHTER je Zweig.
+   * Der Wissensbaum als TRICHTER je Zweig — NUR NAMEN, alles Weitere im Hover.
    *
-   * Vorher waren alle drei Sorten gleich breite Zeilen untereinander: ein
-   * Kleinknoten sah aus wie ein Buendel sah aus wie ein Grundsatz. Die
-   * Hierarchie stand nur in den Zwischenueberschriften.
+   * Die erste Fassung zeigte jede Beschreibung inline. Auf dem Schirm lief das
+   * ineinander: Pips schoben sich in die Titel ("Kraft des Wissens<>>>"),
+   * Knoepfe lagen AUF den Beschreibungen, lange Namen wurden abgeschnitten
+   * ("Magnetische Anziehu"), und unten blieben 150 px leer.
    *
-   * PoE loest das ueber die KNOTENFORM — kleiner Kreis, groesserer Notable,
-   * grosses Keystone-Sechseck; man erkennt den Rang, bevor man den Text
-   * liest. Ein Spinnennetz waere hier dagegen Form ohne Funktion: wir haben
-   * 22 Knoten, einen Startpunkt, keine zweiguebergreifenden Kanten und keine
-   * alternativen Wege (die Bedingung ist eine Schwelle, kein Pfad). Ein Netz
-   * wuerde eine Wahlfreiheit zeichnen, die es nicht gibt — und in 40-px-Kreise
-   * passt ohne Zoom keine Beschriftung.
+   * Jetzt traegt eine Kachel nur, was auf einen Blick erfassbar sein muss:
+   * Namen, Rang als Pips, Zustand ueber die Farbe. Was ein Knoten TUT, sagt
+   * der Hover — dieselbe Entscheidung wie im Talentbaum.
    *
-   * Uebernommen ist deshalb die Form, nicht das Netz:
-   *   viele kleine Kacheln (zwei je Reihe)
-   *        |  Linien laufen zusammen
-   *   ein Tor ("Braucht 6 Raenge") als Knotenpunkt
-   *        |  faechert auf
-   *   zwei Buendel, volle Breite
-   *        |
-   *   zwei Grundsaetze, hoeher und mit Sechseck-Kontur
+   * Kleinknoten liegen jetzt in voller Spaltenbreite statt zwei nebeneinander:
+   * bei 140 px kollidierten Name und Pips zwangslaeufig, bei 288 px passt
+   * beides samt Knopf in eine Zeile.
    *
-   * Die Linien sind nicht Zierde: seit dem Zweig-Tor fuer Grundsaetze
-   * (keystoneOffen) bildet die untere Linie eine echte Bedingung ab.
+   * Kein Spinnennetz: 22 Knoten, ein Startpunkt, null zweiguebergreifende
+   * Kanten, null alternative Wege — ein Netz zeichnete eine Wahlfreiheit, die
+   * es nicht gibt. Uebernommen ist PoEs KNOTENFORM (klein / breiter / Sechseck),
+   * damit man den Rang erkennt, bevor man liest.
    */
   _ktRenderCards() {
     if (!this._ktCardLayer || !window.KnowledgeTree) return;
     this._ktCardLayer.removeAll(true);
+    this._ktHideTip();
 
     const KT = window.KnowledgeTree;
     const frag = KT.getFragments();
@@ -3208,7 +3203,7 @@ class HubSceneV2 extends Phaser.Scene {
     const panelW = this._ktPanelW || 920;
     const panelH = this._ktPanelH || 460;
     const spalte = (panelW - 32 - 24) / 3;
-    const oben = -panelH / 2 + 32 + 6;
+    const oben = -panelH / 2 + 32 + 8;
 
     const katalog = KT.getCatalog();
     const notables = KT.getNotables ? KT.getNotables() : [];
@@ -3220,11 +3215,9 @@ class HubSceneV2 extends Phaser.Scene {
       const raenge = KT.zweigRaenge ? KT.zweigRaenge(zw.id) : 0;
       const torOffen = raenge >= braucht;
 
-      // Linien zuerst, damit die Kacheln darueber liegen.
       const linien = this.add.graphics();
       this._ktCardLayer.add(linien);
 
-      // --- Kopf -------------------------------------------------------------
       let y = oben;
       this._ktCardLayer.add(this.add.text(cx, y, _HUB_T('knowledge.zweig.' + zw.id), {
         fontFamily: 'serif', fontSize: 15, fontStyle: 'bold', color: zw.hex, resolution: 2
@@ -3233,48 +3226,41 @@ class HubSceneV2 extends Phaser.Scene {
         fontFamily: 'monospace', fontSize: 11,
         color: torOffen ? zw.hex : '#7a7a84', resolution: 2
       }).setOrigin(0.5, 0));
-      y += 34;
+      y += 36;
 
-      // --- Kleinknoten: zwei je Reihe ---------------------------------------
-      const klein = katalog.filter((n) => zweigVon[n.id] === zw.id);
-      const kb = (spalte - 6) / 2;          // Kachelbreite
+      // --- Kleinknoten: volle Breite, einer je Zeile -----------------------
       const kh = 26;
-      const ankerX = [];                    // Ausgangspunkte der Linien
-      klein.forEach((node, i) => {
-        const sp = i % 2;
-        const reihe = Math.floor(i / 2);
-        const x = cx - spalte / 2 + sp * (kb + 6) + kb / 2;
-        const yy = y + reihe * (kh + 5);
+      const klein = katalog.filter((n) => zweigVon[n.id] === zw.id);
+      klein.forEach((node) => {
         const rank = KT.getRank(node.id);
         const voll = rank >= node.maxRank;
-        this._ktKachel(x, yy, kb, kh, {
+        this._ktKachel(cx, y, spalte, kh, {
           farbe: zw.farbe, gesetzt: rank > 0,
           titel: _HUB_T(node.labelKey),
           titelHex: rank > 0 ? zw.hex : '#b9b9c2',
-          rechts: this._ktPips(rank, node.maxRank),
-          rechtsHex: voll ? '#8fd6a0' : (rank > 0 ? zw.hex : '#5f5f68'),
+          pips: this._ktPips(rank, node.maxRank),
+          pipsHex: voll ? '#8fd6a0' : (rank > 0 ? zw.hex : '#5f5f68'),
           knopf: voll ? null : '+',
           knopfAn: frag >= 1 && !voll,
+          tipTitel: _HUB_T(node.labelKey),
+          tipText: _HUB_T(node.descKey) + '\n\n'
+            + _HUB_T('knowledge.rank', { rank: rank, max: node.maxRank })
+            + (voll ? '' : '  \u00b7  ' + _HUB_T('knowledge.key.cost', { n: 1 })),
           tun: () => { try { KT.invest(node.id); } catch (e) {} }
         });
-        ankerX.push({ x: x, y: yy + kh });
+        y += kh + 4;
       });
-      y += Math.ceil(klein.length / 2) * (kh + 5) + 6;
 
-      // --- Tor: Knotenpunkt, in dem die Linien zusammenlaufen ---------------
-      const torY = y + 8;
+      // --- Tor -------------------------------------------------------------
+      const torY = y + 6;
       linien.lineStyle(1.5, zw.farbe, torOffen ? 0.7 : 0.25);
-      ankerX.forEach((a) => {
-        linien.beginPath();
-        linien.moveTo(a.x, a.y);
-        linien.lineTo(a.x, torY - 6);
-        linien.lineTo(cx, torY - 6);
-        linien.lineTo(cx, torY);
-        linien.strokePath();
-      });
+      linien.beginPath();
+      linien.moveTo(cx, y - 4);
+      linien.lineTo(cx, torY);
+      linien.strokePath();
       linien.fillStyle(torOffen ? zw.farbe : 0x3a3a44, 1);
       linien.fillCircle(cx, torY, 4);
-      this._ktCardLayer.add(this.add.text(cx + 10, torY - 7, torOffen
+      this._ktCardLayer.add(this.add.text(cx + 10, torY - 6, torOffen
         ? _HUB_T('knowledge.zweig.open')
         : _HUB_T('knowledge.not.locked', { n: braucht }), {
         fontFamily: 'monospace', fontSize: 10,
@@ -3282,59 +3268,65 @@ class HubSceneV2 extends Phaser.Scene {
       }).setOrigin(0, 0));
       y = torY + 12;
 
-      // --- Buendel: volle Breite --------------------------------------------
-      const nb = spalte;
-      const nh = 34;
-      const notAnker = [];
-      notables.filter((n) => n.zweig === zw.id).forEach((n, i) => {
-        const yy = y + i * (nh + 5);
+      // --- Buendel ----------------------------------------------------------
+      const nh = 28;
+      let letzteY = torY;
+      notables.filter((n) => n.zweig === zw.id).forEach((n) => {
         const hat = KT.getRank(n.id) > 0;
         linien.lineStyle(1.5, zw.farbe, hat ? 0.7 : (torOffen ? 0.35 : 0.15));
         linien.beginPath();
-        linien.moveTo(cx, i === 0 ? torY : y - 5);
-        linien.lineTo(cx, yy);
+        linien.moveTo(cx, letzteY);
+        linien.lineTo(cx, y);
         linien.strokePath();
-        this._ktKachel(cx, yy, nb, nh, {
+        this._ktKachel(cx, y, spalte, nh, {
           farbe: zw.farbe, gross: true, gesetzt: hat, gesperrt: !hat && !torOffen,
           titel: _HUB_T(n.labelKey),
           titelHex: hat ? '#cfffcf' : (torOffen ? '#ffd166' : '#6a6a72'),
-          unter: _HUB_T(n.descKey),
           knopf: hat ? '\u2713' : (torOffen ? _HUB_T('knowledge.key.btn_set', { n: notKosten }) : null),
           knopfAn: !hat && torOffen && frag >= notKosten,
+          tipTitel: _HUB_T(n.labelKey),
+          tipText: _HUB_T(n.descKey) + '\n\n'
+            + (torOffen ? _HUB_T('knowledge.key.cost', { n: notKosten })
+              : _HUB_T('knowledge.not.locked', { n: braucht })),
           tun: () => { try { KT.investNotable(n.id); } catch (e) {} }
         });
-        notAnker.push({ y: yy + nh, hat: hat });
+        letzteY = y + nh;
+        y += nh + 5;
       });
-      y += 2 * (nh + 5) + 4;
 
-      // --- Grundsaetze: hoeher, mit Sechseck-Kontur -------------------------
-      const kyH = 44;
-      const wegOffen = notAnker.some((a) => a.hat);
-      keystones.filter((k) => k.zweig === zw.id).forEach((k, i) => {
-        const yy = y + i * (kyH + 5);
+      // --- Grundsaetze -------------------------------------------------------
+      y += 3;
+      const kyH = 30;
+      const wegOffen = notables.filter((n) => n.zweig === zw.id)
+        .some((n) => KT.getRank(n.id) > 0);
+      keystones.filter((k) => k.zweig === zw.id).forEach((k) => {
         const ist = aktiverKey === k.id;
         const blockiert = !!aktiverKey && !ist;
         const zu = !wegOffen && !ist;
         linien.lineStyle(2, 0xc9a0ff, wegOffen ? 0.65 : 0.15);
         linien.beginPath();
-        linien.moveTo(cx, i === 0 ? (notAnker.length ? notAnker[notAnker.length - 1].y : y - 5) : y - 5);
-        linien.lineTo(cx, yy);
+        linien.moveTo(cx, letzteY);
+        linien.lineTo(cx, y);
         linien.strokePath();
-        this._ktKachel(cx, yy, nb, kyH, {
+        this._ktKachel(cx, y, spalte, kyH, {
           farbe: 0xc9a0ff, gross: true, sechseck: true,
           gesetzt: ist, gesperrt: blockiert || zu,
           titel: _HUB_T(k.labelKey),
           titelHex: ist ? '#e8d5ff' : ((blockiert || zu) ? '#6a6a72' : '#c9a0ff'),
-          unter: _HUB_T(k.descKey),
           knopf: ist ? _HUB_T('knowledge.key.btn_release')
             : (zu ? _HUB_T('knowledge.key.needs_notable')
               : (blockiert ? _HUB_T('knowledge.key.only_one')
                 : _HUB_T('knowledge.key.btn_set', { n: keyKosten }))),
           knopfAn: ist || (!blockiert && !zu && frag >= keyKosten),
+          tipTitel: _HUB_T(k.labelKey),
+          tipText: _HUB_T(k.descKey) + '\n\n' + _HUB_T('knowledge.key.only_one')
+            + '\n' + _HUB_T('knowledge.key.cost', { n: keyKosten }),
           tun: () => {
             try { if (ist) KT.loeseKeystone(); else KT.investKeystone(k.id); } catch (e) {}
           }
         });
+        letzteY = y + kyH;
+        y += kyH + 5;
       });
     });
   }
@@ -3352,9 +3344,8 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   /**
-   * Eine Kachel. `gross` gibt Beschreibung und mehr Hoehe, `sechseck`
-   * abgeschraegte Ecken — daran erkennt man einen Grundsatz auf einen Blick,
-   * ohne den Text zu lesen.
+   * Eine Kachel: Name links, Pips rechts daneben, Knopf ganz rechts.
+   * Die BESCHREIBUNG steht nicht mehr drin — sie kommt beim Hover.
    */
   _ktKachel(cx, oben, breite, hoch, o) {
     const c = this.add.container(cx, oben + hoch / 2);
@@ -3364,47 +3355,25 @@ class HubSceneV2 extends Phaser.Scene {
     const fill = o.gesetzt ? 0x243024 : 0x16161f;
     const alpha = o.gesperrt ? 0.5 : 0.94;
     const rand = o.gesetzt ? 0x8fd6a0 : o.farbe;
-    const dicke = o.gesetzt ? 2 : 1;
     const w = breite / 2, h = hoch / 2;
     if (o.sechseck) {
-      const e = 9;
-      const pts = [-w + e, -h, w - e, -h, w, 0, w - e, h, -w + e, h, -w, 0];
-      bg.fillStyle(fill, alpha);
-      bg.fillPoints(pts.reduce((a, v, i) => {
-        if (i % 2 === 0) a.push({ x: v, y: pts[i + 1] });
-        return a;
-      }, []), true);
-      bg.lineStyle(dicke, rand, o.gesperrt ? 0.3 : 0.75);
-      bg.strokePoints(pts.reduce((a, v, i) => {
-        if (i % 2 === 0) a.push({ x: v, y: pts[i + 1] });
-        return a;
-      }, []), true);
+      const e = 8;
+      const pts = [{ x: -w + e, y: -h }, { x: w - e, y: -h }, { x: w, y: 0 },
+        { x: w - e, y: h }, { x: -w + e, y: h }, { x: -w, y: 0 }];
+      bg.fillStyle(fill, alpha); bg.fillPoints(pts, true);
+      bg.lineStyle(o.gesetzt ? 2 : 1.5, rand, o.gesperrt ? 0.3 : 0.8); bg.strokePoints(pts, true);
     } else {
-      bg.fillStyle(fill, alpha);
-      bg.fillRoundedRect(-w, -h, breite, hoch, 4);
-      bg.lineStyle(dicke, rand, o.gesperrt ? 0.3 : 0.6);
+      bg.fillStyle(fill, alpha); bg.fillRoundedRect(-w, -h, breite, hoch, 4);
+      bg.lineStyle(o.gesetzt ? 2 : 1, rand, o.gesperrt ? 0.3 : 0.6);
       bg.strokeRoundedRect(-w, -h, breite, hoch, 4);
     }
     c.add(bg);
 
-    c.add(this.add.text(-w + (o.sechseck ? 14 : 8), -h + 4, o.titel, {
-      fontFamily: 'serif', fontSize: o.gross ? 13 : 12, fontStyle: 'bold',
-      color: o.titelHex, resolution: 2
-    }));
-    if (o.unter) {
-      c.add(this.add.text(-w + (o.sechseck ? 14 : 8), -h + 19, o.unter, {
-        fontFamily: 'serif', fontSize: 10, color: o.gesperrt ? '#55555c' : '#b9bcc4',
-        resolution: 2, wordWrap: { width: breite - (o.sechseck ? 110 : 95) }
-      }));
-    }
-    if (o.rechts) {
-      c.add(this.add.text(w - 24, -h + 6, o.rechts, {
-        fontFamily: 'monospace', fontSize: 10, color: o.rechtsHex, resolution: 2
-      }).setOrigin(1, 0));
-    }
+    // Der Knopf steht rechts; Name und Pips teilen sich den Rest.
+    let knopfB = 0;
     if (o.knopf) {
       const an = !!o.knopfAn;
-      const btn = this.add.text(w - (o.sechseck ? 12 : 5), 0, o.knopf, {
+      const btn = this.add.text(w - (o.sechseck ? 11 : 5), 0, o.knopf, {
         fontFamily: o.gross ? 'serif' : 'monospace', fontSize: o.gross ? 11 : 13,
         color: an ? (o.gesetzt ? '#ffdada' : '#9bff9b') : '#5f5f68',
         backgroundColor: an ? (o.gesetzt ? '#7a3a3a' : '#1f3a1f') : '#26262c',
@@ -3412,12 +3381,91 @@ class HubSceneV2 extends Phaser.Scene {
       }).setOrigin(1, 0.5);
       btn.setInteractive({ useHandCursor: an });
       c.add(btn);
+      knopfB = btn.width + 10;
       btn.on('pointerdown', (pointer, x, yy, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
         if (!an) return;
         o.tun();
       });
     }
+
+    let pipsB = 0;
+    if (o.pips) {
+      const p = this.add.text(w - knopfB - 4, 0, o.pips, {
+        fontFamily: 'monospace', fontSize: 10, color: o.pipsHex, resolution: 2
+      }).setOrigin(1, 0.5);
+      c.add(p);
+      pipsB = p.width + 8;
+    }
+
+    // Name auf den verbleibenden Platz begrenzen — lieber gekuerzt als
+    // ueberlappend. Der volle Name steht ohnehin im Hover.
+    const platz = breite - (o.sechseck ? 22 : 14) - knopfB - pipsB;
+    const t = this.add.text(-w + (o.sechseck ? 12 : 7), 0, o.titel, {
+      fontFamily: 'serif', fontSize: o.gross ? 13 : 12, fontStyle: 'bold',
+      color: o.titelHex, resolution: 2
+    }).setOrigin(0, 0.5);
+    if (t.width > platz && platz > 20) {
+      let txt = o.titel;
+      while (txt.length > 4 && t.width > platz) { txt = txt.slice(0, -1); t.setText(txt + '\u2026'); }
+    }
+    c.add(t);
+
+    // Hover ueber die ganze Kachel.
+    const treffer = this.add.rectangle(0, 0, breite, hoch, 0x000000, 0)
+      .setInteractive({ useHandCursor: false });
+    c.add(treffer);
+    c.sendToBack(treffer);
+    treffer.on('pointerover', () => this._ktShowTip(o.tipTitel, o.tipText, cx, oben + hoch / 2, hoch));
+    treffer.on('pointerout', () => this._ktHideTip());
+  }
+
+  /** Gemeinsamer Hover-Kasten; ueberlebt Re-Renders (nicht im Card-Layer). */
+  _ktBuildTip() {
+    if (this._ktTip) return;
+    const bg = this.add.graphics().setDepth(2060).setScrollFactor(0).setVisible(false);
+    const kopf = this.add.text(0, 0, '', {
+      fontFamily: 'serif', fontSize: 14, fontStyle: 'bold', color: '#ffd166', resolution: 2
+    }).setDepth(2061).setScrollFactor(0).setVisible(false);
+    const txt = this.add.text(0, 0, '', {
+      fontFamily: 'serif', fontSize: 12, color: '#dde0e6', resolution: 2,
+      wordWrap: { width: 250 }, lineSpacing: 2
+    }).setDepth(2061).setScrollFactor(0).setVisible(false);
+    this._ktTip = { bg: bg, kopf: kopf, txt: txt };
+    if (this._dialogContainer) {
+      this._dialogContainer.add(bg);
+      this._dialogContainer.add(kopf);
+      this._dialogContainer.add(txt);
+    }
+  }
+
+  _ktShowTip(titel, text, x, y, hoch) {
+    this._ktBuildTip();
+    const t = this._ktTip;
+    if (!t || !titel) return;
+    t.kopf.setText(titel);
+    t.txt.setText(text || '');
+    const b = Math.max(t.kopf.width, t.txt.width) + 20;
+    const h = t.kopf.height + t.txt.height + 22;
+    const panelW = this._ktPanelW || 920;
+    const panelH = this._ktPanelH || 460;
+    // Neben der Kachel, an der Panelkante umklappend.
+    let px = x + (this._ktPanelW || 920) / 6;
+    if (px + b / 2 > panelW / 2 - 8) px = x - (panelW / 6);
+    let py = y + hoch / 2 + 8;
+    if (py + h > panelH / 2 - 8) py = y - hoch / 2 - 8 - h;
+    t.bg.clear();
+    t.bg.fillStyle(0x0c0c14, 0.98).fillRoundedRect(px - b / 2, py, b, h, 6);
+    t.bg.lineStyle(1.5, 0xd4a543, 0.9).strokeRoundedRect(px - b / 2, py, b, h, 6);
+    t.bg.setVisible(true);
+    t.kopf.setPosition(px - b / 2 + 10, py + 7).setVisible(true);
+    t.txt.setPosition(px - b / 2 + 10, py + 9 + t.kopf.height).setVisible(true);
+  }
+
+  _ktHideTip() {
+    const t = this._ktTip;
+    if (!t) return;
+    try { t.bg.clear().setVisible(false); t.kopf.setVisible(false); t.txt.setVisible(false); } catch (e) {}
   }
 
 
@@ -3558,6 +3606,11 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   _ktCloseModal() {
+    // Hover-Kasten mit aufraeumen: er haengt im _dialogContainer und wird mit
+    // ihm zerstoert — die Referenz muss weg, sonst zeigt _ktShowTip beim
+    // naechsten Oeffnen auf tote Objekte.
+    this._ktHideTip();
+    this._ktTip = null;
     // Detach onChange subscriber so a re-open registers a fresh listener.
     if (this._ktUnsub) {
       try { this._ktUnsub(); } catch (e) { /* swallow */ }
