@@ -888,7 +888,13 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
       lsPct += 0.04 * _raubRang;
     }
     if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
-      lsPct += (window.LootSystem.getBonus('lifesteal') || 0) / 100;
+      // getBonus liefert einen BRUCH (0,02 = 2 %), keine Prozentzahl. Das
+      // zusaetzliche / 100 machte aus 2 % Lebensraub 0,02 % — hundertmal zu
+      // wenig. Der Fehler steht seit adeda74 (2026-04-24) drin und faellt
+      // nicht auf, weil ein Affix mit 0,02 % genauso aussieht wie gar keiner.
+      // Gemessen mit einem Stueck der Tiefe 20: getBonus 0,02, daraus wurde
+      // 0,0200 % statt 2,0 %.
+      lsPct += (window.LootSystem.getBonus('lifesteal') || 0);
     }
     lsPct += window.PLAYER_LIFESTEAL || 0;
     // Feature 059 WP03: Aderlass-Talisman — starker Lebensraub (über Affixe).
