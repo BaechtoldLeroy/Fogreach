@@ -33,6 +33,16 @@
   var zug = null;
   var geometrie = null;
   var tipp = null;
+  // #134: Ein Tipp NEBEN das Panel schliesst — aber nicht schon durch den
+  // Druck, der sie geoeffnet hat. Auf Mobile oeffnet der [E]-Knopf die Truhe
+  // IM pointerdown; waere das Schliessen sofort scharf, finge derselbe
+  // Zeigerdruck sie gleich wieder ein und die Truhe blitzte nur auf.
+  //
+  // Scharf wird deshalb beim LOSLASSEN, nicht nach einer Zeitspanne: der
+  // oeffnende Druck muss erst enden. Wurde die Truhe ohne Zeiger geoeffnet
+  // (Taste E am Rechner), ist sie sofort scharf — dort gibt es kein
+  // Loslassen, auf das man warten koennte.
+  var zeigerScharf = false;
 
   function _t(key, fallback) {
     try {
@@ -217,6 +227,14 @@
 
   function _griff(zeiger) {
     if (!offen || zug) return;
+    // #134: neben dem Panel schliesst. Das ist der zweite Weg heraus, falls
+    // das ✕ auf einem kleinen Schirm daneben getippt wird.
+    var p = geometrie && geometrie.panel;
+    if (zeigerScharf && p && (zeiger.x < p.x || zeiger.x > p.x + p.b
+        || zeiger.y < p.y || zeiger.y > p.y + p.h)) {
+      schliesse();
+      return;
+    }
     var z = _zelleAus(zeiger.x, zeiger.y);
     if (!z) return;
     var idx = window.InventoryGrid.indexAn(_behaelter(z.welches), z.c, z.r, _mass(z.welches));
@@ -267,6 +285,8 @@
   }
 
   function _lass(zeiger) {
+    // Der oeffnende Druck ist vorbei — ab jetzt schliesst ein Tipp daneben.
+    zeigerScharf = true;
     if (!zug) return;
     var q = zug; zug = null;
     schemen.setVisible(false);
@@ -310,7 +330,30 @@
     }
   }
 
+  /**
+   * Laeuft das hier auf einem Beruehrungsgeraet?
+   *
+   * Ueber die Szene, nicht ueber window.isMobile: dessen Zuweisung in
+   * main.js:833 ist ein script-scoped `let` und landet NICHT auf window —
+   * ein Blick dorthin liefert immer undefined.
+   */
+  function _istBeruehrung() {
+    try {
+      if (scene && scene.sys && scene.sys.game && scene.sys.game.device
+          && scene.sys.game.device.input) {
+        return !!scene.sys.game.device.input.touch;
+      }
+    } catch (e) {}
+    try { if (typeof window.isMobile === 'boolean') return window.isMobile; } catch (e) {}
+    return false;
+  }
+
   function _hinweisText() {
+    // Auf dem Handy gibt es keine Tastatur — der alte Hinweis nannte die
+    // einzigen beiden Wege, die es dort NICHT gibt.
+    if (_istBeruehrung()) {
+      return _t('stash.hint_touch', 'Ziehen zum Umlegen  ·  ✕ oder daneben tippen schliesst');
+    }
     return _t('stash.hint', 'Ziehen zum Umlegen  ·  E oder Esc schliesst');
   }
 
@@ -347,6 +390,24 @@
         fontFamily: 'monospace', fontSize: '12px', color: '#8d8798'
       }).setOrigin(0.5));
 
+    // #134: sichtbarer Schliess-Knopf. Bis hierher gab es NUR Tastatur-Horcher
+    // (E, Esc) — auf Mobile kam man aus der Truhe nur durch Neuladen heraus.
+    // Muster und Zeichen wie im Inventar (inventory.js:498).
+    var schliessKnopf = _halten(scene.add.text(
+      geometrie.panel.x + geometrie.panel.b - 14, geometrie.panel.y + 10, '✕', {
+        fontFamily: 'monospace', fontSize: '20px', color: '#ff6666', fontStyle: 'bold'
+      }).setOrigin(1, 0));
+    schliessKnopf.setDepth(TIEFE + 3);
+    // Grosszuegige Trefferflaeche: 20 px Zeichen sind auf dem Handy zu klein.
+    schliessKnopf.setInteractive(
+      new Phaser.Geom.Rectangle(-16, -10, schliessKnopf.width + 32, schliessKnopf.height + 20),
+      Phaser.Geom.Rectangle.Contains
+    );
+    schliessKnopf.on('pointerdown', function (zeiger, x, y, ereignis) {
+      if (ereignis && ereignis.stopPropagation) ereignis.stopPropagation();
+      schliesse();
+    });
+
     tipp = _tippAufbauen();
     vorschau = _halten(scene.add.rectangle(0, 0, ZELLE, ZELLE, 0x66ff88, 0.22).setVisible(false));
     schemen = _halten(scene.add.image(0, 0, 'itMat').setVisible(false));
@@ -367,6 +428,13 @@
     scene.input.on('pointerdown', _griff);
     scene.input.on('pointermove', _bewege);
     scene.input.on('pointerup', _lass);
+    // Scharf erst, wenn der oeffnende Druck vorbei ist (s. oben).
+    var zeigerUnten = false;
+    try {
+      zeigerUnten = !!(scene.input && scene.input.activePointer
+        && scene.input.activePointer.isDown);
+    } catch (e) {}
+    zeigerScharf = !zeigerUnten;
     if (scene.input.keyboard) {
       scene.input.keyboard.on('keydown-E', schliesse);
       scene.input.keyboard.on('keydown-ESC', schliesse);
@@ -378,6 +446,7 @@
     if (!offen) return;
     offen = false;
     zug = null;
+    zeigerScharf = false;
     try {
       scene.input.off('pointerdown', _griff);
       scene.input.off('pointermove', _bewege);
@@ -407,6 +476,9 @@
 
   window.HubTruheUI = {
     ZELLE: ZELLE,
+    // Nur fuer tests/hubTruheSchliessen.test.js: ist das Schliessen per Tipp
+    // daneben schon scharf?
+    _scharf: function () { return zeigerScharf; },
     oeffne: oeffne,
     schliesse: schliesse,
     istOffen: function () { return offen; },
