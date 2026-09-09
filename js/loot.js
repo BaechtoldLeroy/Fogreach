@@ -388,9 +388,16 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     // war hier nur isMiniBoss geprüft — ein Boss-Kill droppte Equipment in
     // Trash-Qualität, obwohl seine Drop-CHANCE schon bevorzugt war.
     const MINIBOSS_QUALITY_BIAS = 3;
+    // #111: Der Boss ist der Hoehepunkt eines Laufs und erscheint nur alle zehn
+    // Tiefen (roomManager: depth % 10 === 0). Seine Beute wuerfelt deshalb drei
+    // Tiefen hoeher und ist mindestens magisch. Beides bewusst klein: ein
+    // Sprung, kein Aufstieg — das Tiefenniveau als Ganzes bleibt, wo es ist.
+    const BOSS_TIEFENBONUS = 3;
+    const BOSS_MINDEST_STUFE = 1;   // 1 = magisch (blau), s. INV_TIER_LABELS
     const baseItem = maybeItem
       ? { ...maybeItem }
-      : randomLoot((isMiniBossDrop || isBossDrop) ? MINIBOSS_QUALITY_BIAS : 1);
+      : randomLoot((isMiniBossDrop || isBossDrop) ? MINIBOSS_QUALITY_BIAS : 1,
+        isBossDrop ? { tiefenBonus: BOSS_TIEFENBONUS, mindestStufe: BOSS_MINDEST_STUFE } : null);
     let tier = (typeof baseItem?.tier === 'number') ? baseItem.tier : 0;
     let item;
     if (maybeItem) {
@@ -770,7 +777,18 @@ function addBoostsToItem(item, boosts, depth) {
   item.itemLevel = computeItemLevelFromStats(item, depth);
 }
 
-function randomLoot(qualityBias) {
+/**
+ * Ein zufaelliger Abwurf.
+ *
+ * @param {number} [qualityBias]  hebt die Magic/Rare/Legendaer-Gewichte an
+ * @param {object} [opts]         #111: { tiefenBonus, mindestStufe } fuer Bosse
+ */
+function randomLoot(qualityBias, opts) {
+  const _o = opts || {};
+  const tiefenBonus = (typeof _o.tiefenBonus === 'number' && _o.tiefenBonus > 0)
+    ? Math.round(_o.tiefenBonus) : 0;
+  const mindestStufe = (typeof _o.mindestStufe === 'number' && _o.mindestStufe > 0)
+    ? Math.round(_o.mindestStufe) : 0;
   const depth = Math.max(1, currentWave);
   const roll = Phaser.Math.Between(1, 100);
 
@@ -784,8 +802,20 @@ function randomLoot(qualityBias) {
       try {
         // qualityBias (>1) hebt die Magic/Rare/Legendär-Chancen an — genutzt für
         // Miniboss-Drops (erhöhte Qualitäts-CHANCE statt festem Tier-Bump).
-        const it = window.LootSystem.rollItem(null, depth, undefined, qualityBias);
-        if (it) return _applyDifficultyToRolledItem(it, depth);
+        // #111: Bosse wuerfeln auf einer HOEHEREN Tiefe als der aktuellen.
+        // Der Aufschlag laeuft ueber das iLevel, nicht ueber die Seltenheit —
+        // so wachsen Grundwerte UND Affixe mit, statt nur die Farbe.
+        const iL = Math.max(1, depth + tiefenBonus);
+        let it = window.LootSystem.rollItem(null, iL, undefined, qualityBias);
+        // ... und mindestens magisch (Stufe 1, blau). Nicht per forceTier beim
+        // ersten Wurf: das nimmt der Seltenheit ihre Verteilung nach OBEN weg
+        // (ein forcierter Wurf ist IMMER genau diese Stufe). Stattdessen nur
+        // nachziehen, wenn er zu tief lag — dieselbe Basis, gehobene Stufe.
+        if (it && mindestStufe > 0 && (it.tier || 0) < mindestStufe) {
+          const gehoben = window.LootSystem.rollItem(it.key, iL, mindestStufe, qualityBias);
+          if (gehoben) it = gehoben;
+        }
+        if (it) return _applyDifficultyToRolledItem(it, iL);
       } catch (e) { /* fall through to fallback */ }
     }
     return _legacyEquipmentFallback(depth);
