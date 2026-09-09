@@ -439,8 +439,10 @@ test2('#122: der Charakterbogen zeigt je Zeile EINE Zahl, und sagt die Tiefe daz
   const mitBeidem = r.filter((z) => z.indexOf('%') >= 0 && z.indexOf('Pkt.') >= 0);
   assert.strictEqual(mitBeidem.length, 0,
     'eine Zeile zeigt wieder beides: ' + mitBeidem.join(' | '));
-  assert.ok(r.some((z) => z.indexOf('Tiefe 20') >= 0),
-    'der Bogen sagt nicht, auf welcher Tiefe die Umrechnung gilt');
+  // Die Fusszeile ueber die Tiefenumrechnung ist weg: sie erklaerte eine
+  // Darstellung, die es nicht mehr gibt.
+  assert.ok(!r.some((z) => z.indexOf('wirken je nach Tiefe') >= 0),
+    'die Fusszeile ueber die Tiefe steht wieder im Bogen');
 });
 
 test('Die Lebensregeneration aus Vitalitaet ersetzt keine Traenke', () => {

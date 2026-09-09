@@ -33,7 +33,6 @@
       'hud.stats.label.brand': 'Brandchance',
       'hud.stats.label.sicht': 'Sichtweite',
       'hud.stats.points': 'Pkt.',
-      'hud.stats.depth_note': 'Punkte wirken je nach Tiefe — hier Tiefe {n}',
       'hud.stats.attributes': '— Attribute (von Items) —',
       'hud.stats.label.strength': 'Stärke',
       'hud.stats.label.dexterity': 'Geschicklichkeit',
@@ -64,7 +63,6 @@
       'hud.stats.label.brand': 'Burn Chance',
       'hud.stats.label.sicht': 'Sight',
       'hud.stats.points': 'pts',
-      'hud.stats.depth_note': 'Points scale with depth — showing depth {n}',
       'hud.stats.attributes': '— Attributes (from items) —',
       'hud.stats.label.strength': 'Strength',
       'hud.stats.label.dexterity': 'Dexterity',
@@ -411,13 +409,13 @@
 
     // #122/#104: Ruestung, Krit und Lauftempo stehen auf der Ausruestung als
     // ABSOLUTE Punkte, die mit der Fundtiefe gewachsen sind. Was sie hier
-    // bewirken, entscheidet die aktuelle Tiefe. Der Gegenstands-Tooltip zeigt
-    // die Punkte (damit sich zwei Funde vergleichen lassen), dieser Bogen
-    // zeigt BEIDES nebeneinander — sonst weiss man nie, warum ein Stueck von
-    // weiter oben plötzlich weniger bringt.
+    // bewirken, entscheidet die aktuelle Tiefe.
+    //
+    // Der Bogen erklaert das nicht mehr: die Zeilen oben zeigen einfach, was
+    // gerade gilt, die Attributzeilen die Punkte vom Stueck. Eine Fusszeile
+    // ueber die Umrechnung war Erklaerung fuer eine Darstellung, die es nicht
+    // mehr gibt.
     const _LS = window.LootSystem;
-    const _tiefe = (typeof window.DUNGEON_DEPTH === 'number' && window.DUNGEON_DEPTH > 0)
-      ? window.DUNGEON_DEPTH : 1;
     function _punkte(stat, affixKey) {
       if (!_LS) return 0;
       let p = 0;
@@ -446,12 +444,7 @@
       // Bogen waeren fuer jeden ohne Nebenhand-Stueck reines Rauschen.
     ].concat(_blk > 0 ? [[T('hud.stats.label.block'), Math.round(_blk * 100) + '%']] : [])
      .concat(_brn > 0 ? [[T('hud.stats.label.brand'), Math.round(_brn * 100) + '%']] : [])
-     .concat(_sch > 0 ? [[T('hud.stats.label.sicht'), '+' + Math.round(_sch * 100) + '%']] : [])
-     .concat([
-      // Woran die Umrechnung haengt: ohne diese Zeile wirkt es wie Willkuer,
-      // dass dieselbe Ausruestung eine Tiefe tiefer weniger bringt.
-      ['', T('hud.stats.depth_note', { n: _tiefe })]
-    ]);
+     .concat(_sch > 0 ? [[T('hud.stats.label.sicht'), '+' + Math.round(_sch * 100) + '%']] : []);
     // #104: Die Attribute stehen auf der Ausruestung als ABSOLUTE Punkte und
     // werden mit der aktuellen Tiefe umgerechnet. Beide Zahlen nebeneinander zu
     // zeigen ("18.8 (7.5 Pkt.)") half nicht: die umgerechnete Punktzahl ist eine
