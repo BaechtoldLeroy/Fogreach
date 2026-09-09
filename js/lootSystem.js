@@ -774,13 +774,15 @@ if (window.i18n) {
     // Attribute: die Punktzahl ist die Anzeige, ihre Wirkung steckt in
     // recalcDerived (Staerke +1 % Schaden je Punkt, usw.). Die Faktoren sind
     // so gewaehlt, dass die PRIMAERwirkung wieder bei 8-12 % landet.
+    // Alle vier gleich: 1 % Primaerwirkung je Punkt, also 100 Punkte je
+    // vollem Anteil. Vorher standen hier 100 / 250 / 200 / 111, weil jedes
+    // Attribut eine andere Wirkung je Punkt hatte — dieselben 10 % kosteten
+    // dann 10, 25, 20 oder 11 Punkte, und die Zahlen im Charakterbogen waren
+    // nicht mehr vergleichbar.
     strength:  { einheit: 'punkte', faktor: 100 },
-    dexterity: { einheit: 'punkte', faktor: 250 },
-    // Vitalitaet gibt +0,5 % Lebenspunkte je Punkt, es braucht also ZWANZIG
-    // Punkte fuer 10 % — nicht zwei. Der erste Ansatz stand auf 20 und lieferte
-    // 1 %; gemessen fiel er als einziges Attribut aus der Reihe.
-    vitality:  { einheit: 'punkte', faktor: 200 },
-    focus:     { einheit: 'punkte', faktor: 111 }
+    dexterity: { einheit: 'punkte', faktor: 100 },
+    vitality:  { einheit: 'punkte', faktor: 100 },
+    focus:     { einheit: 'punkte', faktor: 100 }
   };
   // Faehigkeitsaffixe (dmg_*, cd_*) wirken nur auf EINE Faehigkeit. Sie duerfen
   // deshalb deutlich groesser ausfallen — sonst waere ein seltener Fund, der

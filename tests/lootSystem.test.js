@@ -300,11 +300,14 @@ test('D2 core-attribute affixes exist as flat stats and aggregate via getBonus (
     body: makeMockItem([{ defId: 'attr_strength', value: p }, { defId: 'attr_vitality', value: p }])
   };
   sys.recomputeBonuses();
+  // Alle vier Attribute geben 1 % Primaerwirkung je Punkt, ein Anteil von
+  // 10 % ist also ueberall genau 10 Punkte. Staerke liegt zweimal an.
   assert.ok(Math.abs(sys.getBonus('strength') - 20) < 1e-6,
     'zweimal 10 Punkte Staerke -> 20, war ' + sys.getBonus('strength'));
-  assert.ok(Math.abs(sys.getBonus('vitality') - 20) < 1e-6,
-    'Vitalitaet gibt 0,5 % LP je Punkt, 10 % brauchen also 20 Punkte');
-  assert.ok(sys.getBonus('focus') > 0);
+  assert.ok(Math.abs(sys.getBonus('vitality') - 10) < 1e-6,
+    'einmal 10 Punkte Vitalitaet -> 10, war ' + sys.getBonus('vitality'));
+  assert.ok(Math.abs(sys.getBonus('focus') - 10) < 1e-6,
+    'einmal 10 Punkte Fokus -> 10, war ' + sys.getBonus('focus'));
   assert.strictEqual(sys.getBonus('dexterity'), 0);
 });
 

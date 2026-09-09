@@ -85,8 +85,15 @@ function messeAufTiefe(tiefe) {
 // uebrigen (Reichweite, Goldfund, Lebensraub, Faehigkeitsschaden) liegen auf
 // eigenen Achsen und werden hier bewusst NICHT gemessen — eine erfundene
 // Umrechnung waere schlechter als gar keine.
+//
+// Die ATTRIBUTE stehen bewusst nicht in dieser Liste. Sie haben zwei
+// Wirkungen, und bei Geschick liegen beide auf der DPS-Achse (Tempo als
+// Primaeres, Krit als Zweites): zusammen misst es 13,6 % statt 10. Das ist so
+// gewollt — vereinbart war, dass die PRIMAERwirkung gleich viele Punkte
+// kostet, nicht die Summe. Sie werden deshalb weiter unten ueber die
+// Punktzahl geprueft, nicht ueber DPS und EHP.
 const MESSBAR = ['sharp_dmg', 'sturdy_armor', 'of_health', 'swift_speed',
-  'of_precision', 'attr_strength', 'attr_dexterity', 'attr_vitality'];
+  'of_precision'];
 
 test('Jeder messbare Affix liegt bei rund 10 % — keiner ragt heraus', () => {
   const m = messeAufTiefe(20);
@@ -110,6 +117,46 @@ test('Der Abstand zwischen staerkstem und schwaechstem Affix ist klein', () => {
   assert.ok(hoch / tief < 1.6,
     'Verhaeltnis staerkster/schwaechster ist ' + (hoch / tief).toFixed(2)
     + ' (' + tief.toFixed(1) + ' bis ' + hoch.toFixed(1) + ' %) — vorher waren es 9');
+});
+
+test('Alle vier Attribute brauchen gleich viele Punkte fuer dieselbe Wirkung', () => {
+  // Vorher kostete dieselbe Primaerwirkung von 10 % je nach Attribut 10, 25,
+  // 20 oder 11 Punkte — "+25 Geschick" klang nach mehr als "+10 Staerke" und
+  // war dasselbe. Jetzt geben alle vier 1 % je Punkt.
+  const r = H.run(`(function () {
+    var LS = window.LootSystem, raus = {};
+    ['attr_strength', 'attr_dexterity', 'attr_vitality', 'attr_focus'].forEach(function (id) {
+      var def = LS.AFFIX_DEFS.find(function (d) { return d.id === id; });
+      raus[id] = {};
+      [1, 10, 20, 30].forEach(function (t) {
+        raus[id][t] = LS.affixWirkung(def, LS.affixPunkte(0.10, t), t);
+      });
+    });
+    return raus;
+  })()`);
+  const ids = ['attr_strength', 'attr_dexterity', 'attr_vitality', 'attr_focus'];
+  ids.forEach((id) => {
+    [1, 10, 20, 30].forEach((t) => {
+      const p = r[id][t];
+      assert.ok(Math.abs(p - 10) < 0.01,
+        id + ' auf Tiefe ' + t + ': ' + p.toFixed(1) + ' Punkte, erwartet 10');
+    });
+  });
+});
+
+test('Attributpunkte fallen mit der Tiefe ab wie alles andere', () => {
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    var def = LS.AFFIX_DEFS.find(function (d) { return d.id === 'attr_strength'; });
+    var punkte = LS.affixPunkte(0.10, 10);   // auf Tiefe 10 gefunden
+    var raus = {};
+    [10, 20, 30].forEach(function (t) { raus[t] = LS.affixWirkung(def, punkte, t); });
+    return raus;
+  })()`);
+  assert.ok(Math.abs(r['10'] - 10) < 0.01, 'auf der Fundtiefe erwartet 10 Punkte');
+  assert.ok(r['20'] < r['10'] * 0.7, 'auf Tiefe 20 faellt es zu wenig ab: ' + r['20'].toFixed(1));
+  assert.ok(r['30'] < r['20'], 'es faellt nicht weiter');
+  assert.ok(r['30'] > 0, 'es soll abfallen, nicht verschwinden');
 });
 
 test('Der Wert bleibt ueber alle Tiefen gleich, wenn die Ausruestung mitwaechst', () => {

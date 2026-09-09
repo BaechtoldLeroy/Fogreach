@@ -434,12 +434,12 @@
       { label: T('hud.stats.label.strength'), val: _s,
         desc: '+' + _s + '% Waffenschaden · +' + (_s * 1.5).toFixed(1) + '% Krit-Schaden' },
       { label: T('hud.stats.label.dexterity'), val: _d,
-        desc: '+' + (_d * 0.2).toFixed(1) + '% Krit · +' + (_d * 0.3).toFixed(1) + '% Tempo · +' + (_d * 0.25).toFixed(1) + '% Ausweichen' },
+        desc: '+' + (_d * 1).toFixed(1) + '% Tempo · +' + (_d * 0.67).toFixed(1) + '% Krit · +' + (_d * 0.83).toFixed(1) + '% Ausweichen' },
       { label: T('hud.stats.label.vitality'), val: _v,
-        // #122: Vitalitaet gibt +0,5 % der Basis-LP je Punkt statt +3 flach.
-        desc: '+' + (_v * 0.5).toFixed(1) + '% Max-LP · +' + (_v * 0.1).toFixed(1) + ' LP/s Regen' },
+        // #122: Vitalitaet gibt +1 % der Basis-LP je Punkt statt +3 flach.
+        desc: '+' + (_v * 1).toFixed(1) + '% Max-LP · +' + (_v * 0.1).toFixed(1) + ' LP/s Regen' },
       { label: T('hud.stats.label.focus'), val: _f,
-        desc: '−' + Math.min(40, _f * 0.4).toFixed(0) + '% Cooldown · +' + (_f * 0.5).toFixed(1) + '% Fähigkeitsschaden' }
+        desc: '−' + Math.min(40, _f * 1).toFixed(0) + '% Cooldown · +' + (_f * 1.25).toFixed(1) + '% Fähigkeitsschaden' }
     ];
 
     // Scrollbereich zwischen Titel und Close-Button.

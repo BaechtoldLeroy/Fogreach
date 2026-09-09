@@ -1433,15 +1433,19 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     _attrVit = Math.max(0, _gb2('vitality') || 0);
     _attrFoc = Math.max(0, _gb2('focus') || 0);
     weaponDamage = weaponDamage * (1 + _attrStr * 0.01);
-    weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + _attrDex * 0.003));
-    playerCritChance = Phaser.Math.Clamp(playerCritChance + _attrDex * 0.002, 0, 0.9);
+    // Geschick: Angriffstempo ist die Primaerwirkung, 1 % je Punkt. Krit und
+    // Ausweichen behalten ihr Verhaeltnis dazu (0,2/0,3 bzw. 0,25/0,3).
+    weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + _attrDex * 0.01));
+    playerCritChance = Phaser.Math.Clamp(playerCritChance + _attrDex * 0.0067, 0, 0.9);
   }
   // #122/#114: Vitalitaet gab +3 LEBENSPUNKTE je Punkt. Auf einer Basis von
   // 30 + 2 je Stufe war ein Punkt damit rund 5 % wert — acht Punkte also 40 %,
-  // waehrend Ruestung bei 11 % lag. Jetzt +0,5 % der Basis je Punkt: zwanzig
-  // Punkte sind +10 %, und der Wert waechst mit dem Charakter statt gegen ihn.
-  const _attrVitHp = Math.round((baseStats.maxHP || 30) * _attrVit * 0.005);
-  const _attrFocusCdr = Math.min(0.40, _attrFoc * 0.004);
+  // waehrend Ruestung bei 11 % lag. Jetzt 1 % der Basis je Punkt, wie bei allen
+  // vier Attributen: zehn Punkte sind +10 %.
+  const _attrVitHp = Math.round((baseStats.maxHP || 30) * _attrVit * 0.01);
+  // Fokus: Abklingzeit ist die Primaerwirkung, 1 % je Punkt (Deckel 40 %).
+  // Der Faehigkeitsschaden behaelt sein Verhaeltnis dazu (0,5/0,4).
+  const _attrFocusCdr = Math.min(0.40, _attrFoc * 0.01);
   // Nach aussen sichtbar: Charakter-Menü (Anzeige) + Combat-Anwendung (player.js).
   if (typeof window !== 'undefined') {
     window.playerStrength = _attrStr;
@@ -1451,7 +1455,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     window.playerFocusCdr = _attrFocusCdr;
     // Zweit-Effekte auf eigenen Globals (immer frisch, 0 wenn kein Attribut):
     window.playerCritDamageBonus = _attrStr * 0.015; // Stärke -> Krit-Schaden
-    window.playerFocusAbilityDmg = _attrFoc * 0.005;  // Fokus  -> Fähigkeitsschaden
+    window.playerFocusAbilityDmg = _attrFoc * 0.0125; // Fokus  -> Fähigkeitsschaden
   }
 
   // Debug: staerker und schneller zum Durchtesten (?debug=1&stark=1).
@@ -1626,10 +1630,10 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   // 3.57) #60 Attribut-Zweiteffekte, die auf gemeinsam genutzte Globals gehen:
   // NACH Skills/Endless additiv drauflegen, sonst würden die Zuweisungen oben
   // (PLAYER_DODGE_CHANCE/PLAYER_HEALTH_REGEN) sie überschreiben.
-  //   Geschick   -> +0.25 % Ausweichen je Punkt
+  //   Geschick   -> +0.83 % Ausweichen je Punkt
   //   Vitalität -> +0.1 LP/s Regeneration je Punkt
   if (_attrDex > 0) {
-    window.PLAYER_DODGE_CHANCE = Math.min(0.5, (window.PLAYER_DODGE_CHANCE || 0) + _attrDex * 0.0025);
+    window.PLAYER_DODGE_CHANCE = Math.min(0.5, (window.PLAYER_DODGE_CHANCE || 0) + _attrDex * 0.0083);
   }
   if (_attrVit > 0) {
     window.PLAYER_HEALTH_REGEN = (window.PLAYER_HEALTH_REGEN || 0) + _attrVit * 0.1;
