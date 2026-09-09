@@ -103,7 +103,7 @@ function messeAufTiefe(tiefe) {
 // gewollt — vereinbart war, dass die PRIMAERwirkung gleich viele Punkte
 // kostet, nicht die Summe. Sie werden deshalb weiter unten ueber die
 // Punktzahl geprueft, nicht ueber DPS und EHP.
-const MESSBAR = ['sharp_dmg', 'sturdy_armor', 'of_health', 'swift_speed',
+const MESSBAR = ['swift_speed', 'sturdy_armor', 'of_health', 'swift_speed',
   'of_precision'];
 
 test('Jeder messbare Affix liegt bei rund 10 % — keiner ragt heraus', () => {
@@ -383,14 +383,14 @@ test2('#122: der Gegenstands-Tooltip zeigt die absolute Punktzahl, ohne Prozentz
     window.DUNGEON_DEPTH = 20; window.currentWave = 20;
     var punkte = Math.round(LS.affixPunkte(0.10, 20) * 10) / 10;
     var raus = {};
-    ['sharp_dmg', 'sturdy_armor', 'of_health'].forEach(function (id) {
+    ['swift_speed', 'sturdy_armor', 'of_health'].forEach(function (id) {
       var def = LS.AFFIX_DEFS.find(function (d) { return d.id === id; });
       raus[id] = LS.getAffixTooltipText(def, punkte);
     });
     raus.punkte = punkte;
     return raus;
   })()`);
-  ['sharp_dmg', 'sturdy_armor', 'of_health'].forEach((id) => {
+  ['swift_speed', 'sturdy_armor', 'of_health'].forEach((id) => {
     assert.ok(r[id].indexOf(String(r.punkte)) >= 0,
       id + ': die Punktzahl ' + r.punkte + ' steht nicht im Tooltip — "' + r[id] + '"');
     assert.strictEqual(r[id].indexOf('%'), -1,

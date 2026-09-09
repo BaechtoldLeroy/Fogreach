@@ -1457,6 +1457,9 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     // vorher flache Zuschlaege — auf einer Basis, die nicht mitwaechst, ist ein
     // flacher Zuschlag entweder frueh zu stark oder spaet wertlos. Genau daran
     // ist +LP zerbrochen (gemessen: 97 % Wirkung gegen 11 % bei Ruestung).
+    // Seit b219 gibt es keinen Schadensaffix mehr (s. lootSystem.js): er zeigte
+    // am Gegenstand eine Punktzahl an und wirkte als Prozentsatz. Die Zeile
+    // bleibt, damit ein kuenftiger Affix mit statKey 'damage' sofort greift.
     weaponDamage = weaponDamage * (1 + Math.max(0, _gb('damage') || 0));
     weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (1 + Math.max(0, _gb('speed') || 0)));
     attackRange = Math.max(20, attackRange * (1 + Math.max(0, _gb('range') || 0)));

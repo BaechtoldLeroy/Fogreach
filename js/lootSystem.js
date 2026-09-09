@@ -4,7 +4,6 @@
 if (window.i18n) {
   window.i18n.register('de', {
     // Affix displayNames (used in composeName to build "Sharp Iron Blade")
-    'loot.affix.sharp_dmg': 'Scharfe',
     'loot.affix.sturdy_armor': 'Robuste',
     'loot.affix.of_health': 'des Bären',
     'loot.affix.swift_speed': 'Flinke',
@@ -42,7 +41,6 @@ if (window.i18n) {
 
     // Affix tooltip texts (with {value} placeholder). Used by inventory.js
     // when rendering item tooltips.
-    'loot.affix.sharp_dmg.tooltip': '+{value}% Schaden',
     'loot.affix.sturdy_armor.tooltip': '+{value}% Rüstung',
     'loot.affix.of_health.tooltip': '+{value} LP',
     'loot.affix.swift_speed.tooltip': '+{value}% Angriffstempo',
@@ -132,7 +130,6 @@ if (window.i18n) {
     'amulet.name.bloodpact': 'Blutpakt'
   });
   window.i18n.register('en', {
-    'loot.affix.sharp_dmg': 'Sharp',
     'loot.affix.sturdy_armor': 'Sturdy',
     'loot.affix.of_health': 'of the Bear',
     'loot.affix.swift_speed': 'Swift',
@@ -168,7 +165,6 @@ if (window.i18n) {
     'loot.affix.attr_vitality': 'of Vitality',
     'loot.affix.attr_focus': 'of Focus',
 
-    'loot.affix.sharp_dmg.tooltip': '+{value}% Damage',
     'loot.affix.sturdy_armor.tooltip': '+{value}% Armor',
     'loot.affix.of_health.tooltip': '+{value} HP',
     'loot.affix.swift_speed.tooltip': '+{value}% Attack Speed',
@@ -280,9 +276,16 @@ if (window.i18n) {
   // ---------------------------------------------------------------------------
   const AFFIX_DEFS = Object.freeze([
     // === Base stats (7) ===
-    Object.freeze({ id: 'sharp_dmg', displayName: 'Sharp', position: 'prefix', statKey: 'damage',
-      valueType: 'percent', range: Object.freeze({ min: 6, max: 33 }), iLevelMin: 1, weight: 100,
-      appliesTo: Object.freeze(['weapon']), tooltipText: '+{value}% Damage' }),
+    // ENTFERNT: 'sharp_dmg' (+Schaden). Der Affix las sich am Gegenstand als
+    // "+23 Schaden", wirkte aber als PROZENTSATZ auf den Waffenschaden — eine
+    // Waffe mit 3,7 wurde damit zu 4,1. Zwei Zahlen fuer dieselbe Sache, und
+    // die groessere war die unwichtigere.
+    //
+    // Zu heilen waere das nur gewesen, indem man ihn als einzigen Affix wieder
+    // in Prozent anschreibt (dann faellt er aus der Vergleichbarkeit aller
+    // anderen heraus) oder ihn flach macht (dann ueberholt er die DPS-Decke
+    // aus #135). Die Richtung deckt STAERKE bereits ab: +1 % Waffenschaden je
+    // Punkt, und dort steht die Prozentzahl in der Beschreibung darunter.
     Object.freeze({ id: 'sturdy_armor', displayName: 'Sturdy', position: 'prefix', statKey: 'armor',
       valueType: 'percent', range: Object.freeze({ min: 2, max: 9 }), iLevelMin: 1, weight: 100,
       appliesTo: Object.freeze(['head', 'body', 'boots', 'offhand']), tooltipText: '+{value}% Armor' }),
@@ -843,6 +846,10 @@ if (window.i18n) {
   //   armor — Ruestung senkt den Schaden; fuer +10 % effektive Lebenspunkte
   //           muss sie um rund 0,9 * p steigen, nicht um p.
   var WIRKUNG = {
+    // 'damage' hat seit dem Entfernen von sharp_dmg keinen Affix mehr. Der
+    // Eintrag bleibt trotzdem stehen: _wirkungFuer faellt fuer UNBEKANNTE
+    // Schluessel auf den Faehigkeitsfaktor 3 zurueck, ein neuer Schadensaffix
+    // bekaeme also stillschweigend das Dreifache.
     damage:    { einheit: 'bruch', faktor: 1 },
     speed:     { einheit: 'bruch', faktor: 1 },
     // Lebenspunkte sind KEIN abstrakter Wert. Wer +7 Lebenspunkte gefunden
@@ -859,15 +866,15 @@ if (window.i18n) {
     crit:      { einheit: 'bruch', faktor: 2 },
     move:      { einheit: 'bruch', faktor: 1 },
     range:     { einheit: 'bruch', faktor: 1 },
-    lifesteal: { einheit: 'bruch', faktor: 0.2 },
-    // Diese vier fielen bis b209 versehentlich in den Faehigkeits-Rueckfall und
-    // trugen dessen Faktor 3. of_might gab damit 24-36 % Schaden auf ALLE
-    // Faehigkeiten, waehrend sharp_dmg 8-12 % auf die Waffe gab — bei einem
-    // Viertel des Ziehungsgewichts. Der Rueckfall soll nur greifen, wo ein
-    // Affix wirklich an EINER Faehigkeit haengt.
-    dmg_all_abilities: { einheit: 'bruch', faktor: 1 },
-    cd_all_abilities:  { einheit: 'bruch', faktor: 1.5 },
-    xp_gain:           { einheit: 'bruch', faktor: 2 },
+    lifesteal: { einheit: 'bruch', faktor: 0.2 },
+    // Diese vier fielen bis b209 versehentlich in den Faehigkeits-Rueckfall und
+    // trugen dessen Faktor 3. of_might gab damit 24-36 % Schaden auf ALLE
+    // Faehigkeiten, waehrend ein gewoehnlicher Affix bei 8-12 % lag — bei einem
+    // Viertel des Ziehungsgewichts. Der Rueckfall soll nur greifen, wo ein
+    // Affix wirklich an EINER Faehigkeit haengt.
+    dmg_all_abilities: { einheit: 'bruch', faktor: 1 },
+    cd_all_abilities:  { einheit: 'bruch', faktor: 1.5 },
+    xp_gain:           { einheit: 'bruch', faktor: 2 },
     gold_find:         { einheit: 'bruch', faktor: 2 },
     // Attribute: die Punktzahl ist die Anzeige, ihre Wirkung steckt in
     // recalcDerived (Staerke +1 % Schaden je Punkt, usw.). Die Faktoren sind

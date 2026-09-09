@@ -41,11 +41,11 @@ beforeEach(() => {
 // Phase 1: rollAffixes
 // ---------------------------------------------------------------------------
 
-test('AFFIX_DEFS has exactly 35 entries', () => {
+test('AFFIX_DEFS has exactly 34 entries', () => {
   const sys = freshSystem();
   // 060: per-Skill-Affixe für alle 12 Skills ergänzt (8 dmg + 11 cd) -> 31.
   // #60: 4 D2-Kern-Attribut-Affixe (Stärke/Geschick/Vita/Fokus) -> 35.
-  assert.strictEqual(sys.AFFIX_DEFS.length, 35);
+  assert.strictEqual(sys.AFFIX_DEFS.length, 34);
 });
 
 test('AFFIX_DEFS is frozen (top-level)', () => {
@@ -130,11 +130,15 @@ test('rollAffixes entries each have defId and numeric value', () => {
   for (const inst of out) {
     assert.ok(typeof inst.defId === 'string' && inst.defId.length > 0);
     assert.ok(typeof inst.value === 'number' && Number.isFinite(inst.value));
-    // value must lie within the iLevel-scaled range (#37). Floor stays at
-    // range.min (scale >= 1); ceiling is range.max * scale at this iLevel.
+    // #122: Der Wert kommt aus dem Anteilsband (8 bis 12 % des Budgets),
+    // umgerechnet auf die Fundtiefe — NICHT mehr aus def.range. Der Test
+    // prueft frueher gegen range.max * scale und ging nur deshalb durch, weil
+    // die alten Spannen zufaellig weit genug waren.
     const def = sys.AFFIX_DEFS.find((d) => d.id === inst.defId);
-    const scale = sys._affixValueScale(10, def.iLevelMin);
-    assert.ok(inst.value >= 1 && inst.value <= Math.round(def.range.max * scale) + 1);
+    const unten = sys.affixWert(def, 0.08, 10);
+    const oben = sys.affixWert(def, 0.12, 10);
+    assert.ok(inst.value >= unten - 0.05 && inst.value <= oben + 0.05,
+      inst.defId + ': ' + inst.value + ' liegt nicht zwischen ' + unten + ' und ' + oben);
   }
 });
 
@@ -150,19 +154,22 @@ test('#37: _affixValueScale is 1 at iLevelMin and grows, capped at MAX_SCALE', (
 
 test('#37: same affix rolls a higher value at deep iLevel than shallow', () => {
   const sys = freshSystem();
-  // Average sharp_dmg's rolled value ONLY over rolls where it was picked (deep
+  // Average swift_speed's rolled value ONLY over rolls where it was picked (deep
   // iLevel has more competing affixes, so a high count keeps it usually present
   // without letting selection-dilution skew the magnitude comparison).
+  //
+  // Platz 'boots': swift_speed gehoert zu Stiefeln und Koerper, nicht zur
+  // Waffe. Mit 'weapon' wurde er nie gezogen und der Mittelwert war 0.
   const avgSharpAt = (iLevel) => {
     let sum = 0, n = 0;
     for (let s = 0; s < 400; s++) {
-      const out = sys.rollAffixes(iLevel, 5, makeRng(s + 1), 'weapon');
-      const sharp = out.find((a) => a.defId === 'sharp_dmg');
+      const out = sys.rollAffixes(iLevel, 5, makeRng(s + 1), 'boots');
+      const sharp = out.find((a) => a.defId === 'swift_speed');
       if (sharp) { sum += sharp.value; n++; }
     }
     return n ? sum / n : 0;
   };
-  assert.ok(avgSharpAt(40) > avgSharpAt(1) * 1.5, 'deep sharp_dmg should roll markedly higher');
+  assert.ok(avgSharpAt(40) > avgSharpAt(1) * 1.5, 'deep swift_speed should roll markedly higher');
 });
 
 test('rollAffixes returns [] when count is 0', () => {
@@ -196,7 +203,7 @@ function punkteFuer(sys, anteil, tiefe) {
 test('getBonus returns 0 for unknown statKey with empty equipment', () => {
   const sys = freshSystem();
   sys.recomputeBonuses();
-  assert.strictEqual(sys.getBonus('damage'), 0);
+  assert.strictEqual(sys.getBonus('speed'), 0);
   assert.strictEqual(sys.getBonus('nonexistent_stat'), 0);
 });
 
@@ -204,11 +211,11 @@ test('#122: ein Schadensaffix wirkt auf seiner Fundtiefe mit genau seinem Anteil
   const sys = freshSystem();
   aufTiefe(20);
   globalThis.window.equipment = {
-    weapon: makeMockItem([{ defId: 'sharp_dmg', value: punkteFuer(sys, 0.10, 20) }])
+    weapon: makeMockItem([{ defId: 'swift_speed', value: punkteFuer(sys, 0.10, 20) }])
   };
   sys.recomputeBonuses();
-  assert.ok(Math.abs(sys.getBonus('damage') - 0.10) < 1e-9,
-    'erwartet 0,10, war ' + sys.getBonus('damage'));
+  assert.ok(Math.abs(sys.getBonus('speed') - 0.10) < 1e-9,
+    'erwartet 0,10, war ' + sys.getBonus('speed'));
 });
 
 test('#122: derselbe Affix wirkt tiefer unten SCHWAECHER — altes Zeug faellt ab', () => {
@@ -217,12 +224,12 @@ test('#122: derselbe Affix wirkt tiefer unten SCHWAECHER — altes Zeug faellt a
   // (5+3)/(20+3) = 35 % dessen wert, was es auf Tiefe 5 war.
   const sys = freshSystem();
   const punkte = punkteFuer(sys, 0.10, 5);
-  globalThis.window.equipment = { weapon: makeMockItem([{ defId: 'sharp_dmg', value: punkte }]) };
+  globalThis.window.equipment = { weapon: makeMockItem([{ defId: 'swift_speed', value: punkte }]) };
 
   aufTiefe(5); sys.recomputeBonuses();
-  const beiFund = sys.getBonus('damage');
+  const beiFund = sys.getBonus('speed');
   aufTiefe(20); sys.recomputeBonuses();
-  const spaeter = sys.getBonus('damage');
+  const spaeter = sys.getBonus('speed');
 
   assert.ok(Math.abs(beiFund - 0.10) < 1e-9, 'auf der Fundtiefe erwartet 0,10, war ' + beiFund);
   const soll = 0.10 * (5 + sys.TIEFEN_SOCKEL) / (20 + sys.TIEFEN_SOCKEL);
@@ -238,11 +245,11 @@ test('#122: ein Stueck der PASSENDEN Tiefe ist ueberall gleich viel wert', () =>
   [1, 5, 10, 20, 30].forEach((t) => {
     aufTiefe(t);
     globalThis.window.equipment = {
-      weapon: makeMockItem([{ defId: 'sharp_dmg', value: punkteFuer(sys, 0.10, t) }])
+      weapon: makeMockItem([{ defId: 'swift_speed', value: punkteFuer(sys, 0.10, t) }])
     };
     sys.recomputeBonuses();
-    assert.ok(Math.abs(sys.getBonus('damage') - 0.10) < 1e-9,
-      'Tiefe ' + t + ': erwartet 0,10, war ' + sys.getBonus('damage').toFixed(4));
+    assert.ok(Math.abs(sys.getBonus('speed') - 0.10) < 1e-9,
+      'Tiefe ' + t + ': erwartet 0,10, war ' + sys.getBonus('speed').toFixed(4));
   });
 });
 
@@ -251,11 +258,11 @@ test('getBonus summiert Anteile ueber mehrere Stuecke', () => {
   aufTiefe(20);
   const p = punkteFuer(sys, 0.10, 20);
   globalThis.window.equipment = {
-    weapon: makeMockItem([{ defId: 'sharp_dmg', value: p }]),
+    weapon: makeMockItem([{ defId: 'swift_speed', value: p }]),
     body: makeMockItem([{ defId: 'spinning_dmg', value: p }])
   };
   sys.recomputeBonuses();
-  assert.ok(Math.abs(sys.getBonus('damage') - 0.10) < 1e-9);
+  assert.ok(Math.abs(sys.getBonus('speed') - 0.10) < 1e-9);
   // Faehigkeitsaffixe wirken nur auf EINE Faehigkeit und duerfen deshalb
   // groesser ausfallen (Faktor 3) — sonst waere ein passender Fund schwaecher
   // als ein beliebiger Allerweltsaffix.
@@ -409,15 +416,15 @@ test('recomputeBonuses bumps version counter', () => {
 test('recomputeBonuses wipes previous cache state', () => {
   const sys = freshSystem();
   globalThis.window.equipment = {
-    weapon: makeMockItem([{ defId: 'sharp_dmg', value: 25 }])
+    weapon: makeMockItem([{ defId: 'swift_speed', value: 25 }])
   };
   sys.recomputeBonuses();
-  assert.ok(sys.getBonus('damage') > 0);
+  assert.ok(sys.getBonus('speed') > 0);
 
   // Unequip everything, recompute — stale entries should be gone.
   globalThis.window.equipment = {};
   sys.recomputeBonuses();
-  assert.strictEqual(sys.getBonus('damage'), 0);
+  assert.strictEqual(sys.getBonus('speed'), 0);
 });
 
 test('recomputeBonuses ignores affixes with unknown defId', () => {
@@ -425,12 +432,12 @@ test('recomputeBonuses ignores affixes with unknown defId', () => {
   aufTiefe(20);
   globalThis.window.equipment = {
     weapon: makeMockItem([
-      { defId: 'sharp_dmg', value: punkteFuer(sys, 0.10, 20) },
+      { defId: 'swift_speed', value: punkteFuer(sys, 0.10, 20) },
       { defId: 'ghost_affix_that_does_not_exist', value: 9999 }
     ])
   };
   sys.recomputeBonuses();
-  assert.ok(Math.abs(sys.getBonus('damage') - 0.10) < 1e-9);
+  assert.ok(Math.abs(sys.getBonus('speed') - 0.10) < 1e-9);
 });
 
 test('getBonus returns positive value for cd_* affixes (combat applies sign)', () => {
@@ -552,9 +559,9 @@ test('composeName: tier 1 with prefix-only affix → "Prefix BaseName"', () => {
   const sys = freshSystem();
   const name = sys.composeName({
     tier: 1, _baseName: 'Eisenklinge',
-    affixes: [{ defId: 'sharp_dmg', value: 20 }]
+    affixes: [{ defId: 'swift_speed', value: 20 }]
   });
-  assert.strictEqual(name, 'Sharp Eisenklinge');
+  assert.strictEqual(name, 'Swift Eisenklinge');
 });
 
 test('composeName: tier 1 with suffix-only affix → "BaseName Suffix"', () => {
@@ -571,11 +578,11 @@ test('composeName: tier 2 with prefix + suffix → "Prefix BaseName Suffix"', ()
   const name = sys.composeName({
     tier: 2, _baseName: 'Eisenklinge',
     affixes: [
-      { defId: 'sharp_dmg', value: 20 },
+      { defId: 'swift_speed', value: 20 },
       { defId: 'of_health', value: 25 }
     ]
   });
-  assert.strictEqual(name, 'Sharp Eisenklinge of the Bear');
+  assert.strictEqual(name, 'Swift Eisenklinge of the Bear');
 });
 
 test('composeName: tier 3 legendary with 4 affixes composes a long name', () => {
@@ -583,7 +590,7 @@ test('composeName: tier 3 legendary with 4 affixes composes a long name', () => 
   const name = sys.composeName({
     tier: 3, _baseName: 'Sword',
     affixes: [
-      { defId: 'sharp_dmg', value: 20 },
+      { defId: 'swift_speed', value: 20 },
       { defId: 'spinning_dmg', value: 15 },
       { defId: 'of_health', value: 20 },
       { defId: 'of_precision', value: 5 }
@@ -1242,10 +1249,10 @@ test('#36: gold_find affix aggregates as a percent bonus via getBonus', () => {
       affixes: [{ defId: 'of_greed', value: punkteFuer(sys, 0.10, 20) }] }
   };
   sys.recomputeBonuses();
-  // Goldfund liegt auf keiner der beiden Kampfachsen und traegt deshalb den
-  // Faktor 2 — er darf deutlich ausfallen, ohne in den Kampf zu wirken. Bis
-  // b209 fiel er versehentlich in den Faehigkeits-Rueckfall (Faktor 3).
-  assert.ok(Math.abs(sys.getBonus('gold_find') - 0.20) < 1e-9,
+  // Goldfund liegt auf keiner der beiden Kampfachsen und traegt deshalb den
+  // Faktor 2 — er darf deutlich ausfallen, ohne in den Kampf zu wirken. Bis
+  // b209 fiel er versehentlich in den Faehigkeits-Rueckfall (Faktor 3).
+  assert.ok(Math.abs(sys.getBonus('gold_find') - 0.20) < 1e-9,
     'erwartet 0,20, war ' + sys.getBonus('gold_find'));
 });
 

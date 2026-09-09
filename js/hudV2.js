@@ -510,9 +510,9 @@
       }).setScrollFactor(0));
       cy += 34;
     });
-    // Nur fuer tests/ und Sonden: der Inhalt liegt in einem Container und ist
-    // sonst von aussen nicht erreichbar.
-    HUDv2._statsInhalt = content;
+    // Nur fuer tests/ und Sonden: der Inhalt liegt in einem Container und ist
+    // sonst von aussen nicht erreichbar.
+    HUDv2._statsInhalt = content;
     const contentH = cy - (viewTop + 2);
     const scrollMax = Math.max(0, contentH - viewH);
 
