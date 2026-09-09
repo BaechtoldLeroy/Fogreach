@@ -397,7 +397,11 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     const baseItem = maybeItem
       ? { ...maybeItem }
       : randomLoot((isMiniBossDrop || isBossDrop) ? MINIBOSS_QUALITY_BIAS : 1,
-        isBossDrop ? { tiefenBonus: BOSS_TIEFENBONUS, mindestStufe: BOSS_MINDEST_STUFE } : null);
+        isBossDrop ? {
+          tiefenBonus: BOSS_TIEFENBONUS,
+          mindestStufe: BOSS_MINDEST_STUFE,
+          nurAusruestung: true
+        } : null);
     let tier = (typeof baseItem?.tier === 'number') ? baseItem.tier : 0;
     let item;
     if (maybeItem) {
@@ -781,7 +785,8 @@ function addBoostsToItem(item, boosts, depth) {
  * Ein zufaelliger Abwurf.
  *
  * @param {number} [qualityBias]  hebt die Magic/Rare/Legendaer-Gewichte an
- * @param {object} [opts]         #111: { tiefenBonus, mindestStufe } fuer Bosse
+ * @param {object} [opts]         #111: { tiefenBonus, mindestStufe,
+ *                                nurAusruestung } fuer Bosse
  */
 function randomLoot(qualityBias, opts) {
   const _o = opts || {};
@@ -790,7 +795,12 @@ function randomLoot(qualityBias, opts) {
   const mindestStufe = (typeof _o.mindestStufe === 'number' && _o.mindestStufe > 0)
     ? Math.round(_o.mindestStufe) : 0;
   const depth = Math.max(1, currentWave);
-  const roll = Phaser.Math.Between(1, 100);
+  // #111: Normalerweise entscheidet der Wurf zwischen Ausruestung (77 %),
+  // Trank, Portalrolle und Eisenbrocken. Beim Boss faellt diese Wahl weg:
+  // gemessen waren sonst 26 % seiner Abwuerfe ein Trank oder ein Brocken —
+  // fuer die greift weder der Tiefenbonus noch die Mindeststufe, und der
+  // schwerste Kampf eines Durchgangs endete mit einem Heiltrank.
+  const roll = _o.nurAusruestung ? 1 : Phaser.Math.Between(1, 100);
 
   // Equipment (77%) — Issue #36 Phase 2b: single unified pipeline via
   // LootSystem.rollItem (ITEM_BASES base + affixes). ITEM_BASES dropWeight

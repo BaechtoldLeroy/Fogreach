@@ -87,6 +87,32 @@ test('Der Aufschlag gilt NUR fuer echte Bosse', () => {
     + 'damit seine Sonderstellung');
 });
 
+test('Ein Boss laesst IMMER ein Ausruestungsstueck fallen', () => {
+  // Sonst greifen weder Tiefenbonus noch Mindeststufe: gemessen waren 26 %
+  // seiner Abwuerfe ein Trank oder ein Eisenbrocken, und der schwerste Kampf
+  // eines Durchgangs endete mit einem Heiltrank.
+  const r = serie({ isBoss: true }, 400);
+  const fremd = Object.keys(r.arten).filter(function (a) {
+    return a !== 'weapon' && a !== 'head' && a !== 'body' && a !== 'boots';
+  });
+  assert.deepStrictEqual(fremd.length, 0,
+    'der Boss liess auch das fallen: ' + fremd.join(', ')
+    + '  (' + JSON.stringify(r.arten) + ')');
+  assert.strictEqual(r.ausruestung, 400,
+    'nicht jeder Abwurf war Ausruestung: ' + r.ausruestung + ' von 400');
+});
+
+test('Mini-Bosse behalten die gemischte Beute', () => {
+  // Der Boss soll sich abheben. Waere die Ausruestungsgarantie auch bei
+  // Mini-Bossen, waeren Traenke und Brocken praktisch aus dem Spiel.
+  const r = serie({ isMiniBoss: true }, 1200);
+  const fremd = Object.keys(r.arten).filter(function (a) {
+    return a !== 'weapon' && a !== 'head' && a !== 'body' && a !== 'boots';
+  });
+  assert.ok(fremd.length > 0,
+    'auch Mini-Bosse lassen nur noch Ausruestung fallen: ' + JSON.stringify(r.arten));
+});
+
 test('Die Seltenheit bleibt eine VERTEILUNG, kein fester Rang', () => {
   // Wuerde die Mindeststufe per forceTier auf den ersten Wurf gelegt, waere
   // JEDES Bossstueck genau magisch — die Chance auf selten/legendaer waere weg.
