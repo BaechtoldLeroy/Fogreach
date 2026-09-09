@@ -152,3 +152,50 @@ test('Ein Stueck von weiter oben faellt mit der Tiefe ab', () => {
   assert.ok(r['30'] < r['20'], 'es faellt nicht weiter');
   assert.ok(r['30'] > 0, 'es soll abfallen, nicht verschwinden');
 });
+
+// ---------------------------------------------------------------------------
+// Punkt 4 der Vorgabe: rund 90 % der gezogenen Affixe sollen JEDEM Charakter
+// etwas bringen, rund 10 % an eine bestimmte Faehigkeit gebunden sein.
+//
+// Vorher waren es 31 bis 59 % faehigkeitsspezifisch — auf der Waffe war es
+// wahrscheinlicher, einen Affix fuer eine Faehigkeit zu ziehen, die man
+// vielleicht gar nicht gewaehlt hat, als einen, der immer wirkt.
+//
+// Der Anteil laesst sich nicht je Platz exakt einstellen: die Gewichte sind
+// fest, aber welche Affixe ueberhaupt in Frage kommen, haengt am Platz. Die
+// Waffe hat die meisten faehigkeitsgebundenen zur Auswahl und liegt deshalb
+// oben, die Stiefel unten. Gemessen mit Gewicht 6: 14,2 / 8,8 / 9,9 / 4,8 %,
+// im Mittel 9,4 %.
+// ---------------------------------------------------------------------------
+
+const { test: test2 } = require('node:test');
+
+test2('Rund 90 % der gezogenen Affixe wirken fuer jeden Charakter', () => {
+  const r = H.run(`(function () {
+    var LS = window.LootSystem;
+    var spez = {};
+    LS.AFFIX_DEFS.forEach(function (d) {
+      if (/^(dmg_|cd_)/.test(d.statKey) && d.statKey.indexOf('all_abilities') < 0) spez[d.id] = true;
+    });
+    var raus = {}, gesamt = 0, gesamtSpez = 0;
+    ['weapon', 'head', 'body', 'boots'].forEach(function (slot) {
+      var n = 0, s = 0;
+      for (var i = 0; i < 8000; i++) {
+        LS.rollAffixes(20, 1, Math.random, slot).forEach(function (a) {
+          n++; if (spez[a.defId]) s++;
+        });
+      }
+      raus[slot] = 100 * s / n; gesamt += n; gesamtSpez += s;
+    });
+    raus.mittel = 100 * gesamtSpez / gesamt;
+    return raus;
+  })()`);
+
+  assert.ok(r.mittel >= 7 && r.mittel <= 13,
+    'ueber alle Plaetze ' + r.mittel.toFixed(1) + ' % faehigkeitsspezifisch, erwartet rund 10');
+  // Je Platz darf es streuen, aber nicht zurueck in die alte Groessenordnung.
+  ['weapon', 'head', 'body', 'boots'].forEach((slot) => {
+    assert.ok(r[slot] < 20,
+      slot + ': ' + r[slot].toFixed(1) + ' % faehigkeitsspezifisch — vorher waren es bis 59 %');
+  });
+});
