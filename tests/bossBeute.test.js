@@ -49,9 +49,18 @@ function serie(quelle, n) {
       return it;
     };
     for (var i = 0; i < ${n}; i++) {
+      // Laufzaehler VOR jedem Wurf zurueck. Ohne das bremst die Serie sich
+      // selbst aus: jeder Treffer erhoeht ihn, und ab dem 6. faellt die Chance
+      // des Minibosses auf einen Bruchteil. Aus 900 Wuerfen wurden so statt
+      // rund 54 Abwuerfen etwa 13 — knapp an der Schranke "> 5", und die
+      // Stufenverteilung darin so duenn, dass "mindestens ein gewoehnliches
+      // Stueck" manchmal nicht mehr zutraf. Genau daran ist dieser Test im
+      // Gesamtlauf gelegentlich gefallen, waehrend er einzeln durchlief.
+      window.__runItemsDropped = 0;
       try { spawnLoot.call(sc, 400, 300, null, ${JSON.stringify(quelle)}); } catch (e) {}
     }
     window.randomLoot = orig;
+    window.__runItemsDropped = 0;
     var summe = stufen.reduce(function (a, b) { return a + b; }, 0);
     return {
       stufen: stufen, ausruestung: summe, arten: arten,

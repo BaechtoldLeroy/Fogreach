@@ -815,6 +815,17 @@ function enterRoom(scene, roomId) {
   scene.cameras.main.setBounds(0, 0, ROOM_W + rightPadding, ROOM_H);
 
   enemies?.clear(true, true);
+  // Kehraus fuer Auren und Namenszuege ohne Besitzer. Gemeldet als "tote Auren
+  // und Labels, die beim Raumwechsel nicht abgeraeumt wurden".
+  //
+  // Er laeuft NACH dem Leeren der Gruppe: erst dann steht fest, welche Gegner
+  // es noch gibt. Der normale Weg raeumt sauber ab (gemessen ueber fuenf
+  // Wechsel mit bis zu 21 Eliten: kein einziges verwaistes Objekt) — dies ist
+  // die Engstelle, an der auch ein unbekannter Leckpfad auffliegt.
+  if (window.EliteEnemies
+      && typeof window.EliteEnemies.verwaisteAnzeigenAbraeumen === 'function') {
+    try { window.EliteEnemies.verwaisteAnzeigenAbraeumen(scene, enemies); } catch (e) {}
+  }
   enemyProjectiles?.clear(true, true);
   // Pool sprites were just destroyed by the group clear above; reset the pool
   // so we don't hand out dead references.
@@ -1044,8 +1055,23 @@ function enterRoom(scene, roomId) {
     return null;
   };
   const obstacleAt = (cx, cy) => {
-    const fromPhysics = scene.obstacles && scene.obstacles.getChildren
-      ? checkBucket(scene.obstacles.getChildren(), cx, cy)
+    // Auf die GLOBALE Gruppe, nicht auf scene.obstacles: die Szene traegt diese
+    // Eigenschaft nie — main.js legt die Gruppe als globales `obstacles` an.
+    // Der Griff hier ging deshalb immer ins Leere, und die Treppenpruefung sah
+    // nur die reinen Sicht-Objekte (scene._templateWalls). Faesser, Kisten und
+    // Statuen MIT Koerper waren fuer sie unsichtbar.
+    //
+    // Aufgeraeumt wurde das erst hinterher, indem das Prop ZERSTOERT wurde
+    // (raeumePropsAufTreppen, zweiter Durchgang). Ein freier Platz ist besser
+    // als ein freigeraeumter: so bleibt die Deko stehen.
+    //
+    // Dieselbe Falle steht schon einmal weiter unten im Kommentar zum zweiten
+    // Durchgang — dort wurde sie behoben, hier blieb sie stehen.
+    const _hindernisse = (typeof obstacles !== 'undefined' && obstacles)
+      ? obstacles
+      : (scene.obstacles || null);
+    const fromPhysics = _hindernisse && _hindernisse.getChildren
+      ? checkBucket(_hindernisse.getChildren(), cx, cy)
       : null;
     if (fromPhysics) return fromPhysics;
     // Visual-only objects (statues etc. that were too close to a wall to

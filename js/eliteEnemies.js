@@ -16,6 +16,16 @@
 (function () {
   'use strict';
 
+  // Zeichentiefen der Elite-Anzeige. Sie stehen hier als Namen, weil der
+  // Kehraus weiter unten (verwaisteAnzeigenAbraeumen) an genau diesen Zahlen
+  // erkennt, was zu ihm gehoert. Zwei Stellen mit derselben eingetippten Zahl
+  // laufen beim ersten Verschieben auseinander, und der Kehraus wuerde still
+  // nichts mehr finden.
+  const AURA_TIEFE = 38;
+  const NAMENSZUG_TIEFE = 51;
+  // Das Miniboss-Label setzt enemy.js (dort direkt 1003).
+  const MINIBOSS_LABEL_TIEFE = 1003;
+
   // -------------------------------------------------------------------------
   // ENEMY_AFFIX_DEFS (T027) — 10 entries per data-model.md
   // -------------------------------------------------------------------------
@@ -293,7 +303,7 @@
           aura.fillStyle(picked[0].auraColor, 0.35);
           aura.fillCircle(0, 0, 36);
           aura.setPosition(enemy.x, enemy.y);
-          if (typeof aura.setDepth === 'function') aura.setDepth(38);
+          if (typeof aura.setDepth === 'function') aura.setDepth(AURA_TIEFE);
           // Put aura in enemyLayer so it respects the enemy vision mask
           if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
             scene.enemyLayer.add(aura);
@@ -326,7 +336,7 @@
             padding: { x: 3, y: 1 }
           });
           if (typeof tag.setOrigin === 'function') tag.setOrigin(0.5);
-          if (typeof tag.setDepth === 'function') tag.setDepth(51);
+          if (typeof tag.setDepth === 'function') tag.setDepth(NAMENSZUG_TIEFE);
           // Put name tag in enemyLayer so it respects the vision mask
           if (scene.enemyLayer && typeof scene.enemyLayer.add === 'function') {
             scene.enemyLayer.add(tag);
@@ -550,7 +560,59 @@
   // Export
   // -------------------------------------------------------------------------
 
+  /**
+   * Kehraus: entfernt Auren und Namenszuege, zu denen es keinen lebenden
+   * Gegner mehr gibt.
+   *
+   * Gemeldet: "ich seh manchmal noch tote Auren und Labels von Eliten oder
+   * Uniques, die wurden beim Raumwechsel nicht abgeraeumt."
+   *
+   * Der normale Weg raeumt sauber ab — ueber fuenf gemessene Raumwechsel mit
+   * bis zu 21 Eliten blieb kein einziges verwaistes Objekt zurueck. Der
+   * leckende Pfad ist ein anderer und liess sich nicht einfangen. Statt weiter
+   * zu raten setzt dieser Kehraus an EINER Engstelle an, dem Raumabbau, und
+   * greift unabhaengig davon, wie ein Gegner verschwunden ist.
+   *
+   * Er arbeitet nach BESITZ, nicht nach Alter oder Sichtbarkeit: was kein
+   * lebender Gegner mehr als seine Aura oder seinen Namenszug ausweist, ist
+   * Muell. Deshalb kann er auch nichts wegnehmen, was noch gebraucht wird.
+   *
+   * @param {Phaser.Scene} scene
+   * @param {Phaser.GameObjects.Group} gegnerGruppe
+   * @returns {number} wie viele Objekte entfernt wurden
+   */
+  function verwaisteAnzeigenAbraeumen(scene, gegnerGruppe) {
+    if (!scene || !scene.enemyLayer || !Array.isArray(scene.enemyLayer.list)) return 0;
+
+    var besessen = new Set();
+    var merke = function (e) {
+      if (!e) return;
+      if (e._eliteAura) besessen.add(e._eliteAura);
+      if (e._eliteNameTag) besessen.add(e._eliteNameTag);
+      if (e.miniBossLabel) besessen.add(e.miniBossLabel);
+      if (e.miniBossBar) besessen.add(e.miniBossBar);
+    };
+    if (gegnerGruppe && gegnerGruppe.children
+        && typeof gegnerGruppe.children.iterate === 'function') {
+      gegnerGruppe.children.iterate(merke);
+    }
+
+    // Ueber eine KOPIE laufen: destroy() nimmt das Objekt aus derselben Liste,
+    // ueber die wir gerade gehen, und ein Eintrag wuerde uebersprungen.
+    var muell = [];
+    scene.enemyLayer.list.slice().forEach(function (o) {
+      if (!o || besessen.has(o)) return;
+      var istAura = (o.type === 'Graphics' && o.depth === AURA_TIEFE);
+      var istZug = (o.type === 'Text' && o.depth === NAMENSZUG_TIEFE);
+      var istLabel = (o.type === 'Text' && o.depth === MINIBOSS_LABEL_TIEFE);
+      if (istAura || istZug || istLabel) muell.push(o);
+    });
+    muell.forEach(function (o) { try { o.destroy(); } catch (e) {} });
+    return muell.length;
+  }
+
   window.EliteEnemies = {
+    verwaisteAnzeigenAbraeumen: verwaisteAnzeigenAbraeumen,
     ENEMY_AFFIX_DEFS: ENEMY_AFFIX_DEFS,
     shouldSpawnElite: shouldSpawnElite,
     rollEliteAffixes: rollEliteAffixes,

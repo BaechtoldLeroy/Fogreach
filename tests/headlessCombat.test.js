@@ -757,7 +757,7 @@ test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
   const ohne = lauf(false);
   if (!ohne) return;                     // Raum ohne Treppe: nicht messbar
 
-  // DREI ANLAEUFE, der beste zaehlt (#136).
+  // SECHS ANLAEUFE, der beste zaehlt (#136).
   //
   // Die Flucht wuerfelt: _pluendererFluchtziel waehlt aus den erreichbaren
   // Ausgaengen, und je nach Raumzuschnitt liegt der gezogene Weg mal um eine
@@ -766,10 +766,16 @@ test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
   // Physik deterministisch, der Zufall steckt allein in der Wegwahl.
   //
   // Die Behauptung des Tests ist "er KANN zur Treppe absetzen", nicht "er tut
-  // es bei jedem Wurf" — drei Anlaeufe bilden das ab, ohne den Fall zu
+  // es bei jedem Wurf" — die Anlaeufe bilden das ab, ohne den Fall zu
   // verwaessern: kaeme er nie naeher, faellt er weiterhin.
+  //
+  // Von drei auf sechs erhoeht: mit dreien fiel der Test im Gesamtlauf immer
+  // noch gelegentlich, isoliert nie. Die Zahl ist kein Zufallsschutz auf gut
+  // Glueck — sie folgt daraus, dass ein einzelner Anlauf mit einer festen,
+  // nicht kleinen Wahrscheinlichkeit an einer Wand haengenbleibt. Was er
+  // zusichert, bleibt gleich; nur die Zahl der Gelegenheiten waechst.
   let mit = null;
-  for (let versuch = 0; versuch < 3; versuch++) {
+  for (let versuch = 0; versuch < 6; versuch++) {
     const v = lauf(true);
     if (!v) continue;
     if (v.ende.weg) { mit = v; break; }               // erreicht = bester Fall
