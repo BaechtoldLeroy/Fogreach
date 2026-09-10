@@ -43,13 +43,6 @@ before(async () => {
   }
   assert.ok(gefunden >= 2, 'im Raum stehen nur ' + gefunden + ' Gegner');
 
-  // Meldungen mitschneiden statt zeichnen: der Toast ist das, was der Spieler
-  // sieht, und genau daran haengt die Fehlermeldung.
-  H.run(`(function () {
-    var ES = window.EventSystem;
-    window.__rufe = [];
-    ES.showToast = function (sc, text) { window.__rufe.push(String(text)); };
-  })()`);
 });
 after(async () => { if (H) await H.shutdown(); });
 
@@ -105,7 +98,6 @@ function wirbeln(weite, hpImKanal) {
 
     window.__g1 = g1; window.__g2 = g2;
     window.__vorG2 = g2.hp;
-    window.__rufe.length = 0;
     window.castWhirlwind.call(sc);
     return {
       kanal: kanal,
@@ -122,43 +114,38 @@ function wirbeln(weite, hpImKanal) {
       rang: window.skillRang('combat_chain_lightning'),
       schadenG2: window.__vorG2 - window.__g2.hp,
       g1Lebt: !!window.__g1.active,
-      meldungen: window.__rufe.slice()
+      reichweite: Math.round(window.kettenReichweite())
     };
   })()`));
 }
-
-const sprang = (r) => r.meldungen.some((t) => t.indexOf('Kettenblitz springt') >= 0);
 
 test('Ohne den Knoten bleibt der zweite Gegner unberuehrt', () => {
   // Die Gegenprobe zuerst, solange der Knoten noch nicht investiert ist. Sie
   // beweist, dass die Lage stimmt: traefe der Kanal g2 auch so, sagte alles
   // Weitere nichts aus.
-  const r = wirbeln(150);
+  const r = wirbeln(60);
   assert.ok(!r.fehler, r.fehler);
   assert.strictEqual(r.rang, 0, 'der Knoten ist schon investiert');
   assert.ok(r.g2VomSpieler > r.kanal,
     'g2 steht mit ' + r.g2VomSpieler + ' px INNERHALB des Kanals (' + r.kanal + ' px)');
   assert.strictEqual(r.schadenG2, 0,
     'g2 nimmt ' + r.schadenG2 + ' Schaden, obwohl kein Kettenblitz investiert ist');
-  assert.ok(!sprang(r),
-    'ohne Knoten meldet sich trotzdem ein Sprung: ' + JSON.stringify(r.meldungen));
 });
 
 test('Der ECHTE Wirbel loest den Kettenblitz aus', () => {
   // Der Kern der ganzen Sache. Bis b235 stand der Knoten nur in spinAttack,
   // das seit 060 niemand mehr aufruft — im Spiel passierte nie etwas.
   assert.strictEqual(knotenSetzen(), 1, 'der Knoten liess sich nicht investieren');
-  const r = wirbeln(150);
+  const r = wirbeln(60);
   assert.ok(!r.fehler, r.fehler);
   assert.ok(r.schadenG2 > 0,
     'g2 nimmt nichts — der Blitz springt am echten Wirbel nicht');
-  assert.ok(sprang(r), 'keine Meldung: ' + JSON.stringify(r.meldungen));
 });
 
 test('Der Sprung macht die HALBE Wirkung eines vollen Treffers', () => {
   // 50 % steht so im Code. Ein Sprung, der genauso hart trifft wie der Wirbel
   // selbst, waere eine stille Verdopplung des Knotens.
-  const r = wirbeln(150);
+  const r = wirbeln(60);
   assert.ok(!r.fehler, r.fehler);
   assert.strictEqual(r.schadenG2, 50,
     'der Sprung macht ' + r.schadenG2 + ' statt 50 bei Waffenschaden 100');
@@ -167,11 +154,10 @@ test('Der Sprung macht die HALBE Wirkung eines vollen Treffers', () => {
 test('Der Blitz springt nur EINMAL je Einsatz, nicht je Tick', () => {
   // Der Kanal tickt sieben- bis elfmal. Feuerte jeder Tick, waere der Knoten
   // das Zehnfache wert — und der Toast klebte am Bildschirm.
-  const r = wirbeln(150);
+  const r = wirbeln(60);
   assert.ok(!r.fehler, r.fehler);
-  const meldungen = r.meldungen.filter((t) => t.indexOf('Kettenblitz springt') >= 0);
-  assert.strictEqual(meldungen.length, 1,
-    'der Blitz meldet sich ' + meldungen.length + '-mal in einem Einsatz');
+  // Der Schaden IST die Zaehlung: ein Sprung macht 50 bei Waffenschaden 100.
+  // Feuerte jeder Tick, staende hier ein Vielfaches davon.
   assert.strictEqual(r.schadenG2, 50,
     'g2 nimmt ' + r.schadenG2 + ' statt 50 — der Sprung wiederholt sich');
 });
@@ -179,22 +165,40 @@ test('Der Blitz springt nur EINMAL je Einsatz, nicht je Tick', () => {
 test('Der Blitz springt auch vom GEFALLENEN Gegner weiter', () => {
   // Der Wirbel toetet meistens, was er trifft. Sammelte man nur Ueberlebende
   // als Absprungpunkt, fiele der Sprung im echten Kampf fast immer aus.
-  const r = wirbeln(150, 5);
+  const r = wirbeln(60, 5);
   assert.ok(!r.fehler, r.fehler);
   assert.strictEqual(r.g1Lebt, false, 'der Gegner im Kanal hat ueberlebt');
   assert.ok(r.schadenG2 > 0,
     'g2 nimmt nichts — der Blitz springt nicht vom Gefallenen');
-  assert.ok(sprang(r), 'keine Meldung: ' + JSON.stringify(r.meldungen));
 });
 
-test('Der Blitz springt weiter als die alten 120 px', () => {
-  // Bei 120 px mussten zwei Gegner fast aneinander stehen; im Spiel sah man den
-  // Sprung praktisch nie.
-  const r = wirbeln(400);
+test('Die Reichweite ist doppelt so gross wie die Klingenscheibe', () => {
+  // Gewuenscht: "die Range vom Kettenblitz soll circa doppelt so gross sein"
+  // wie der Effekt des Wirbelwinds. Die Scheibe misst getSpinRange() * 0,6.
+  //
+  // Geprueft wird das VERHAELTNIS, nicht die Zahl: eine eingetragene 168 waere
+  // beim ersten Reichweitenaffix falsch, das Verhaeltnis bleibt richtig.
+  const r = wirbeln(60);
   assert.ok(!r.fehler, r.fehler);
-  assert.strictEqual(r.abstand, 400, 'g2 steht ' + r.abstand + ' px von g1, nicht 400');
-  assert.ok(r.schadenG2 > 0,
-    'ueber ' + r.abstand + ' px springt der Blitz nicht');
+  const verhaeltnis = r.reichweite / r.kanal;
+  assert.ok(Math.abs(verhaeltnis - 2) < 0.05,
+    'die Kette reicht ' + r.reichweite + ' px, die Scheibe ' + r.kanal
+    + ' px — das ist das ' + verhaeltnis.toFixed(2) + '-fache statt des Doppelten');
+});
+
+test('Innerhalb der Reichweite springt er, ausserhalb nicht', () => {
+  // Beide Seiten. Nur "er springt" waere auch bei unbegrenzter Reichweite gruen,
+  // und genau darauf stand sie zum Suchen eine Weile.
+  const nah = wirbeln(60);
+  assert.ok(!nah.fehler, nah.fehler);
+  assert.ok(nah.schadenG2 > 0,
+    'auf 60 px springt der Blitz nicht (Reichweite ' + nah.reichweite + ')');
+
+  const weit = wirbeln(Math.round(nah.reichweite * 2));
+  assert.ok(!weit.fehler, weit.fehler);
+  assert.strictEqual(weit.schadenG2, 0,
+    'auf ' + weit.abstand + ' px springt er noch, die Reichweite ist aber nur '
+    + weit.reichweite + ' px');
 });
 
 test('Der Kettenblitz haengt am Wirbel, den der Spieler wirklich benutzt', () => {

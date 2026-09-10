@@ -24,14 +24,22 @@ const PLAYER_TINT_COLOR = 0xffffff; // Neutral tint (no color change)
 const PLAYER_CRIT_MULT = 2.0;
 if (typeof window !== "undefined") window.PLAYER_CRIT_MULT = PLAYER_CRIT_MULT;
 
-// Wie weit der Kettenblitz vom getroffenen Gegner aus springt.
-// ZUM AUSPROBIEREN unbegrenzt (war 120, dann 300): bei 120 px mussten zwei
-// Gegner fast aneinander stehen, und man sah den Sprung im Spiel praktisch nie
-// — deshalb wirkte der Knoten kaputt. Unbegrenzt heisst: der Blitz sucht sich
-// den naechsten Gegner im ganzen Raum. Die Zahl steht nur EINMAL da und wird
-// nach window gespiegelt, damit der Test dieselbe liest.
-const KETTEN_REICHWEITE = Infinity;
-if (typeof window !== "undefined") window.KETTEN_REICHWEITE = KETTEN_REICHWEITE;
+// Wie weit der Kettenblitz springt: doppelt so weit wie die Klingenscheibe des
+// Wirbels reicht.
+//
+// Keine feste Zahl mehr. Die Scheibe misst getSpinRange() * 0,6, und
+// getSpinRange haengt an der Reichweite der Waffe — eine eingetragene 168 waere
+// beim ersten Reichweitenaffix wieder falsch. Der Faktor haelt das Verhaeltnis
+// auf jeder Ausbaustufe.
+//
+// Vorgeschichte: 120 px waren so eng, dass zwei Gegner fast aneinander stehen
+// mussten und man den Sprung nie sah. Zum Suchen stand er kurz auf unbegrenzt.
+const KETTEN_SCHEIBEN_FAKTOR = 2;
+function kettenReichweite() {
+  var scheibe = ((typeof getSpinRange === 'function') ? getSpinRange() : 140) * 0.6;
+  return scheibe * KETTEN_SCHEIBEN_FAKTOR;
+}
+if (typeof window !== "undefined") window.kettenReichweite = kettenReichweite;
 const PLAYER_FRAME_METADATA = {};
 const PLAYER_WIDTH_STRETCH = 1;
 const PLAYER_SIDEWAYS_SCALE = 0.8;
@@ -2148,6 +2156,127 @@ function _abilityGate(id) {
   return window.AbilitySystem.isLearned(id);
 }
 
+// Farben des Bogens. Aussen kalt und breit, innen weiss und duenn — so liest
+// sich ein Blitz auch dann noch als Blitz, wenn er nur 300 ms steht.
+const BLITZ_KERN = 0xffffff;
+const BLITZ_GLUT = 0x9fdcff;
+const BLITZ_AUSSEN = 0x3a7fe0;
+const BLITZ_DAUER = 320;
+
+/**
+ * Ein gezackter Pfad von A nach B, per Mittelpunktverschiebung.
+ *
+ * Eine gerade Linie sieht aus wie ein Strich, nicht wie Strom. Jede Runde
+ * halbiert jedes Teilstueck und schiebt den neuen Punkt quer zur Strecke; die
+ * Streuung faellt dabei, damit die grosse Form erhalten bleibt und nur die
+ * Kanten feiner werden.
+ */
+function _blitzPfad(x1, y1, x2, y2, streuung) {
+  var punkte = [{ x: x1, y: y1 }, { x: x2, y: y2 }];
+  for (var runde = 0; runde < 5; runde++) {
+    var neu = [punkte[0]];
+    for (var i = 1; i < punkte.length; i++) {
+      var a = punkte[i - 1], b = punkte[i];
+      var dx = b.x - a.x, dy = b.y - a.y;
+      var len = Math.hypot(dx, dy) || 1;
+      var versatz = (Math.random() - 0.5) * len * streuung;
+      neu.push({
+        x: (a.x + b.x) / 2 - (dy / len) * versatz,
+        y: (a.y + b.y) / 2 + (dx / len) * versatz
+      });
+      neu.push(b);
+    }
+    punkte = neu;
+    streuung *= 0.62;
+  }
+  return punkte;
+}
+
+/** Zeichnet einen fertigen Pfad als Linienzug. */
+function _blitzStrich(gfx, punkte, breite, farbe, alpha) {
+  if (alpha <= 0.02) return;
+  gfx.lineStyle(breite, farbe, alpha);
+  gfx.beginPath();
+  gfx.moveTo(punkte[0].x, punkte[0].y);
+  for (var i = 1; i < punkte.length; i++) gfx.lineTo(punkte[i].x, punkte[i].y);
+  gfx.strokePath();
+}
+
+/**
+ * Der Bogen des Kettenblitzes von einem getroffenen Gegner zum naechsten.
+ *
+ * Vorher war das eine gerade 2-px-Linie, 200 ms lang — gemeldet als "der
+ * Grafikeffekt ist deutlich zu wenig". Jetzt:
+ *   - ein gezackter Pfad, der sich alle zwei Frames neu wuerfelt (Flackern),
+ *   - drei Lagen uebereinander: breiter kalter Halo, mittlere Glut, weisser Kern,
+ *   - ein bis drei Aeste, die ins Leere auslaufen,
+ *   - ein Blitzball am Absprung und ein aufgehender Ring am Einschlag.
+ *
+ * Alles in EINEM Graphics-Objekt und einem Takt: ein Dutzend Einzelobjekte je
+ * Sprung waere bei mehreren Raengen und mehreren Gegnern spuerbar.
+ */
+function blitzbogen(scene, x1, y1, x2, y2) {
+  if (!scene || !scene.add) return;
+  var gfx = scene.add.graphics().setDepth(71);
+  var verstrichen = 0;
+  var pfad = _blitzPfad(x1, y1, x2, y2, 0.42);
+  var aeste = [];
+
+  var takt = scene.time.addEvent({ delay: 16, loop: true, callback: function () {
+    verstrichen += 16;
+    var t = Math.min(1, verstrichen / BLITZ_DAUER);
+    if (!gfx.scene) { takt.remove(); return; }
+    if (t >= 1) { try { gfx.destroy(); } catch (e) {} takt.remove(); return; }
+
+    // Alle zwei Frames neu wuerfeln: das ist das Flackern. Jeden Frame waere
+    // es Rauschen, jeden vierten sieht man die Einzelbilder.
+    if (verstrichen % 32 < 16) {
+      pfad = _blitzPfad(x1, y1, x2, y2, 0.42 * (1 - t * 0.5));
+      aeste = [];
+      var anzahl = 1 + Math.floor(Math.random() * 3);
+      for (var a = 0; a < anzahl; a++) {
+        var von = pfad[1 + Math.floor(Math.random() * (pfad.length - 2))];
+        var winkel = Math.random() * Math.PI * 2;
+        var laenge = 14 + Math.random() * 26;
+        aeste.push(_blitzPfad(von.x, von.y,
+          von.x + Math.cos(winkel) * laenge, von.y + Math.sin(winkel) * laenge, 0.5));
+      }
+    }
+
+    // Abklingen: erst voll, dann in den letzten 45 Prozent ausblenden.
+    var alpha = t < 0.55 ? 1 : Math.max(0, 1 - (t - 0.55) / 0.45);
+    gfx.clear();
+
+    // Drei Lagen. Die breite aussen traegt das Leuchten, der Kern die Schaerfe.
+    _blitzStrich(gfx, pfad, 9, BLITZ_AUSSEN, 0.20 * alpha);
+    _blitzStrich(gfx, pfad, 5, BLITZ_GLUT,   0.55 * alpha);
+    _blitzStrich(gfx, pfad, 2, BLITZ_KERN,   0.95 * alpha);
+    for (var b = 0; b < aeste.length; b++) {
+      _blitzStrich(gfx, aeste[b], 3, BLITZ_GLUT, 0.35 * alpha);
+      _blitzStrich(gfx, aeste[b], 1, BLITZ_KERN, 0.70 * alpha);
+    }
+
+    // Absprung: ein kleiner Ball, der mit dem Bogen verglueht.
+    gfx.fillStyle(BLITZ_GLUT, 0.35 * alpha);
+    gfx.fillCircle(x1, y1, 9);
+    gfx.fillStyle(BLITZ_KERN, 0.85 * alpha);
+    gfx.fillCircle(x1, y1, 4);
+
+    // Einschlag: ein Ring, der in den ersten 40 Prozent aufgeht, plus Kern.
+    var ringT = Math.min(1, t / 0.4);
+    gfx.lineStyle(3 * (1 - ringT) + 1, BLITZ_GLUT, (1 - ringT) * 0.9 * alpha);
+    gfx.strokeCircle(x2, y2, 6 + ringT * 26);
+    gfx.fillStyle(BLITZ_KERN, 0.9 * alpha);
+    gfx.fillCircle(x2, y2, 6 * (1 - t) + 2);
+  }});
+
+  // Funken am Einschlag, wenn das Spiel sie hat — sie liegen ueber dem Bogen
+  // und geben ihm Tiefe.
+  if (window.particleFactory && typeof window.particleFactory.hitSpark === "function") {
+    try { window.particleFactory.hitSpark(x2, y2); } catch (e) {}
+  }
+}
+
 /**
  * Laesst den Kettenblitz von den getroffenen Stellen weiterspringen.
  *
@@ -2168,10 +2297,7 @@ function kettenblitzAusloesen(scene, treffer) {
   const rang = (typeof window.skillRang === 'function')
     ? window.skillRang('combat_chain_lightning') : 0;
   let getroffen = 0;
-  let grund = null;
-  if (rang <= 0) grund = 'Knoten nicht investiert (Rang 0)';
-  else if (!treffer || treffer.length === 0) grund = 'der Wirbel hat niemanden getroffen';
-
+  const weite = kettenReichweite();
   if (rang > 0 && treffer && treffer.length > 0) {
     let spruengeUebrig = rang;
     const hitSet = new Set(treffer.map((t) => t.ziel));
@@ -2183,53 +2309,20 @@ function kettenblitzAusloesen(scene, treffer) {
         enemies.children.iterate((kandidat) => {
           if (!kandidat || !kandidat.active || hitSet.has(kandidat)) return;
           const d = Math.hypot(kandidat.x - t.x, kandidat.y - t.y);
-          if (d < KETTEN_REICHWEITE && d < naechste) { naechste = d; ziel = kandidat; }
+          if (d < weite && d < naechste) { naechste = d; ziel = kandidat; }
         });
       }
       if (ziel) {
         hitSet.add(ziel);
         dealDamageToEnemy(scene, ziel, 0.5, 'spin');
         handleEnemyHit(scene, ziel, { tint: 0x88ccff, duration: 120 });
-        const fx = scene.add.graphics();
-        fx.lineStyle(2, 0x88ccff, 0.8);
-        fx.beginPath();
-        fx.moveTo(t.x, t.y);
-        fx.lineTo(ziel.x, ziel.y);
-        fx.strokePath();
-        scene.time.delayedCall(200, () => fx.destroy(), null, scene);
+        blitzbogen(scene, t.x, t.y, ziel.x, ziel.y);
         getroffen++;
         if (--spruengeUebrig <= 0) break;   // Raenge erlauben mehrere Spruenge
       }
     }
-    if (getroffen === 0) {
-      let frei = 0;
-      if (enemies?.children) {
-        enemies.children.iterate((e) => { if (e && e.active && !hitSet.has(e)) frei++; });
-      }
-      grund = frei === 0
-        ? 'kein weiterer Gegner im Raum (alle vom Wirbel erfasst)'
-        : frei + ' Gegner da, aber keiner in Reichweite (' + KETTEN_REICHWEITE + ')';
-    }
   }
 
-  // ZUM AUSPROBIEREN: nach jedem Wirbel eine Meldung. Sprang der Blitz, sagt
-  // sie das; sprang er nicht, sagt sie warum. Faellt wieder raus.
-  if (window.__KETTE_STUMM !== true) {
-    try {
-      console.log('[Kettenblitz] Rang ' + rang
-        + ', vom Wirbel getroffen ' + ((treffer && treffer.length) || 0)
-        + ', Spruenge ' + getroffen
-        + ', Reichweite ' + KETTEN_REICHWEITE
-        + (grund ? ' -> ' + grund : ''));
-    } catch (e) {}
-    if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
-      window.EventSystem.showToast(scene,
-        getroffen > 0
-          ? '⚡ Kettenblitz springt auf ' + getroffen + ' Gegner'
-          : '⚡ kein Sprung: ' + (grund || 'unbekannt'),
-        'chain_lightning');
-    }
-  }
   return getroffen;
 }
 if (typeof window !== 'undefined') window.kettenblitzAusloesen = kettenblitzAusloesen;
