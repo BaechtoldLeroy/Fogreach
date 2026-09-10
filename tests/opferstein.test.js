@@ -104,6 +104,52 @@ test('Der Umwurf ist ein Wagnis, kein garantierter Aufstieg', () => {
     'zu selten besser (' + Math.round(100 * besser / gesamt) + ' %) — lohnt nicht');
 });
 
+test('Der Ausbau wandert mit — der Stein enteignet nicht', () => {
+  // Gemeldet: "der Opferstein hat den Ausbau des Items zurueckgesetzt".
+  // Gemessen ging er in 200 von 200 Tauschen verloren: der Stein wuerfelte ein
+  // frisches Stueck und schrieb es UNGEBAUT in den Platz. Jeder Umwurf war
+  // damit zugleich eine stille Enteignung von Gold und Brocken — unabhaengig
+  // davon, wie die Muenze fiel.
+  W.recalcDerived = () => {};
+  let getauscht = 0, behalten = 0;
+  for (let i = 0; i < 120; i++) {
+    const alt = LS.rollItem('WPN_SCHATTENDOLCH', 10, 2);
+    LS.ausbauen(alt);
+    LS.ausbauen(alt);
+    assert.strictEqual(LS.ausbauStufe(alt), 2, 'das Ausgangsstueck ist nicht ausgebaut');
+    ausruesten(alt);
+    const r = E.opferUmwurf('weapon', 10);
+    assert.ok(r, 'kein Ergebnis');
+    if (r.unveraendert) continue;
+    getauscht++;
+    if (LS.ausbauStufe(r.item) === 2) behalten++;
+  }
+  assert.ok(getauscht > 100, 'zu wenige echte Tausche: ' + getauscht);
+  assert.strictEqual(behalten, getauscht,
+    (getauscht - behalten) + ' von ' + getauscht + ' Tauschen haben den Ausbau verloren');
+});
+
+test('Die Seite der Muenze gilt fuer das FERTIGE Stueck, nicht fuer den Rohwurf', () => {
+  // Der Ausbau muss VOR dem Vergleich angelegt werden. Sonst traete ein
+  // ungebautes Stueck gegen ein ausgebautes an, und das Ergebnis landete auf
+  // einer anderen Seite als der ausgewuerfelten.
+  W.recalcDerived = () => {};
+  let falscheSeite = 0, gesamt = 0;
+  for (let i = 0; i < 200; i++) {
+    const alt = LS.rollItem('WPN_SCHATTENDOLCH', 10, 2);
+    LS.ausbauen(alt);
+    LS.ausbauen(alt);
+    ausruesten(alt);
+    const r = E.opferUmwurf('weapon', 10);
+    if (!r || r.unveraendert) continue;
+    gesamt++;
+    if (r.besser ? (r.neu <= r.alt) : (r.neu >= r.alt)) falscheSeite++;
+  }
+  assert.ok(gesamt > 150, 'zu wenige Wuerfe: ' + gesamt);
+  assert.strictEqual(falscheSeite, 0,
+    falscheSeite + ' von ' + gesamt + ' Wuerfen landeten auf der falschen Seite');
+});
+
 test('Ein leerer Platz wirft nichts um', () => {
   W.equipment = { weapon: null };
   assert.strictEqual(E.opferUmwurf('weapon', 5), null);

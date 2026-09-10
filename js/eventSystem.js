@@ -1238,11 +1238,26 @@
    * Ohne diesen Schritt trat auf "schwer" ein Stueck mit x1,5 gegen eines mit
    * x1,0 an, und der Vergleich war schief.
    */
-  function _umwurfKandidat(key, iLevel, stufe) {
+  function _umwurfKandidat(key, iLevel, stufe, ausbau) {
     var it = null;
     try { it = window.LootSystem.rollItem(key, Math.max(1, Math.round(iLevel)), stufe); } catch (e) {}
     if (it && typeof window._applyDifficultyToRolledItem === 'function') {
       try { it = window._applyDifficultyToRolledItem(it, Math.max(1, Math.round(iLevel))); } catch (e) {}
+    }
+    // Der AUSBAU wandert mit. Gemeldet: "der Opferstein hat den Ausbau des
+    // Items zurueckgesetzt". Gemessen ging er in 200 von 200 Tauschen
+    // verloren — der Stein wuerfelte ein frisches Stueck und schrieb es
+    // ungebaut in den Platz. Damit war jeder Umwurf zugleich eine stille
+    // Enteignung von Gold und Brocken, unabhaengig davon, wie die Muenze fiel.
+    //
+    // Er wird VOR dem Vergleich angelegt, nicht danach: sonst traete ein
+    // ungebautes Stueck gegen ein ausgebautes an, und die Seite, auf der das
+    // Ergebnis landet, waere gar nicht die ausgewuerfelte.
+    if (it && ausbau > 0 && window.LootSystem
+        && typeof window.LootSystem.ausbauen === 'function') {
+      for (var a = 0; a < ausbau; a++) {
+        if (!window.LootSystem.ausbauen(it)) break;   // Decke der Seltenheit
+      }
     }
     return it;
   }
@@ -1259,6 +1274,8 @@
         || typeof window.LootSystem.rollItem !== 'function') return null;
     var alt = eq[slot];
     var stufe = (typeof alt.tier === 'number') ? alt.tier : 0;
+    var ausbau = (typeof window.LootSystem.ausbauStufe === 'function')
+      ? window.LootSystem.ausbauStufe(alt) : 0;
     var staerke = (typeof window.computeItemPower === 'function')
       ? window.computeItemPower : function () { return 0; };
     var altP = staerke(alt);
@@ -1277,7 +1294,7 @@
     var best = null, bestAbstand = Infinity;
     for (var st = 0; st < stufen.length && !best; st++) {
       for (var i = 0; i < UMWURF_ZIEHUNGEN; i++) {
-        var k = _umwurfKandidat(alt.key, stufen[st], stufe);
+        var k = _umwurfKandidat(alt.key, stufen[st], stufe, ausbau);
         if (!k) continue;
         var p = staerke(k);
         if (besser ? (p <= altP) : (p >= altP)) continue;
