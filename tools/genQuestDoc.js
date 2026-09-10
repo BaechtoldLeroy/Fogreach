@@ -123,6 +123,48 @@ out += '| `wave` (`reach_wave`) | Run auf Tiefe ≥ Ziel (`onWaveCompleted`) |\n
 out += '| `dungeon_run` | Abgeschlossener Run (`onDungeonCompleted`) |\n';
 out += '| `craft` | Item gecraftet (`onCraft`) |\n';
 out += '| `dialogue` | **Auto-Complete bei Annahme** |\n\n';
+out += '## Wie die Sammelstücke ins Spiel kommen\n\n';
+out += 'Gilt für alle ' + TICK + 'fetch' + TICK + '-Ziele. Quelle: ' + TICK + 'js/loot.js' + TICK
+  + ' (questItemDefs) und ' + TICK + 'js/roomManager.js' + TICK + '.\n\n';
+out += '- **Sie fallen nur, wenn sie gebraucht werden.** Ein Questgegenstand fällt'
+  + ' ausschliesslich, solange die passende Quest läuft UND ihr Zähler noch nicht voll'
+  + ' ist. Ohne angenommene Quest gibt es das Stück nicht, und nach dem letzten Exemplar'
+  + ' hört es sofort auf zu fallen.\n';
+out += '- **Sie fallen von Gegnern.** Je erschlagenem Gegner 10 %. Einzige Ausnahme ist das'
+  + ' Ratsdokument mit 20 %. Pro Gegner fällt höchstens EIN Questgegenstand, auch wenn'
+  + ' zwei Sammelquests gleichzeitig laufen: die Schleife bricht nach dem ersten Treffer'
+  + ' ab.\n';
+out += '- **Sie landen nie in einer Wand.** Stirbt der Gegner auf einem unbegehbaren Feld,'
+  + ' rückt das Stück auf den nächsten erreichbaren Punkt. Sonst könnte eine'
+  + ' Sammelquest unerfüllbar werden.\n';
+out += '- **Aufheben zählt, nicht Tragen.** Der Zähler springt beim Darüberlaufen.'
+  + ' Questgegenstände gehen nicht ins Inventar und belegen keinen Rasterplatz.\n';
+out += '- **Ausnahme Ratsdokument.** Es liegt zusätzlich einmal garantiert in Elaras'
+  + ' Kellerbegegnung. Vorher gab es nur die Platzierung, und Spieler suchten zu lange.\n';
+out += '- **Beobachten ist etwas anderes.** Die ' + TICK + 'observe' + TICK + '-Ziele sammelt man'
+  + ' nicht ein. Sie sind Spionagemissionen in eigenen Raumvorlagen (CouncilWarehouse,'
+  + ' SealedArchive, InformantDen): verkleidet in die Zone, dort bleiben, nicht gesehen'
+  + ' werden. Zieht man die Klinge, fliegt die Tarnung auf.\n\n';
+
+out += '## Befunde\n\n';
+out += 'Aus dem Abgleich mit der Story-Bibel v4 (Stand b246). Keine davon ist ein Fehler im'
+  + ' engeren Sinn. Jede ist eine Stelle, an der Umsetzung und Entwurf auseinandergehen.\n\n';
+out += '**Vier Quests erfüllen ihr Kriterium beim Annehmen automatisch**, weil sie vom Typ '
+  + TICK + 'dialogue' + TICK + ' sind: die geheime Sitzung, Elaras Geschenk, Elaras zweite'
+  + ' Wahrheit, die Abrechnung.\n\n';
+out += '**Die Abweichung liegt nicht bei den Quests, sondern unter ihnen.** Die geheime'
+  + ' Sitzung, der Kippmoment der ganzen Geschichte, ist eine Quest, die sich beim Annehmen'
+  + ' selbst abhakt. Ein Kommentar im Code sagt das offen: die inszenierte Szene sollte mit'
+  + ' einem späteren Feature kommen. Dasselbe gilt für Elaras Geschenk und ihre zweite'
+  + ' Wahrheit.\n\n';
+out += '**Die Doppelagenten-Tonspur trägt vier der fünf verlangten Quests.** Überwachung'
+  + ' fällt heraus: der Abschlusstext sagt nur, dass man keine Verschwörer gesehen hat.'
+  + ' Der vom Entwurf verlangte Halbsatz, dass Mara erfährt, was der Rat nicht erfährt,'
+  + ' fehlt.\n\n';
+out += '**Eine Unstimmigkeit in der Reihenfolge.** Die Keller-Patrouille trägt '
+  + TICK + 'chain: 2' + TICK + ', ihre Folgequest aber ' + TICK + 'chain: 1' + TICK + '. Die'
+  + ' Reihenfolge im Hub stellt damit den Auftraggeber vor seine eigene Voraussetzung.\n\n';
+
 out += '## Boss-Leiter ↔ Quest-Leiter\n\n';
 out += 'Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):\n\n';
 out += '| Boss | Tiefe | Quest |\n|---|---|---|\n';
