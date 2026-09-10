@@ -15,6 +15,8 @@ if (window.i18n) {
     'crafting.ausbau.voll': 'Voll ausgebaut. Eine höhere Seltenheit gibt mehr Stufen.',
     'crafting.ausbau.rueckgabe': 'Beim Zerlegen kommen {n} Eisenbrocken zurück.',
     'crafting.btn.ausbau': 'Ausbauen',
+    'crafting.kosten.aufwerten': 'Auf {tier}, +1 Affix\n{brocken} Eisenbrocken',
+    'crafting.kosten.zerlegen': 'Bringt {brocken} Eisenbrocken',
     'crafting.feedback.ausbau_ok': 'Ausgebaut auf Stufe {n}.',
     'crafting.feedback.ausbau_gold': 'Zu wenig Gold: {gold} nötig.',
     'crafting.feedback.ausbau_brocken': 'Zu wenig Eisenbrocken: {brocken} nötig.',
@@ -61,6 +63,8 @@ if (window.i18n) {
     'crafting.ausbau.voll': 'Fully upgraded. A higher rarity grants more levels.',
     'crafting.ausbau.rueckgabe': 'Salvaging returns {n} iron chunks.',
     'crafting.btn.ausbau': 'Upgrade',
+    'crafting.kosten.aufwerten': 'To {tier}, +1 affix\n{brocken} iron chunks',
+    'crafting.kosten.zerlegen': 'Yields {brocken} iron chunks',
     'crafting.feedback.ausbau_ok': 'Upgraded to level {n}.',
     'crafting.feedback.ausbau_gold': 'Not enough gold: {gold} needed.',
     'crafting.feedback.ausbau_brocken': 'Not enough iron chunks: {brocken} needed.',
@@ -307,9 +311,27 @@ class CraftingScene extends Phaser.Scene {
     // Gliederung.
     this.add.rectangle(rightX + rightW / 2, werkY + 196, rightW - 28, 1, 0x444444).setDepth(9);
 
-    this.werkbankKosten = this.add.text(rightX + 14, werkY + 208, '', {
+    // Drei Preisspalten, jede genau ueber IHREM Knopf. Vorher standen alle
+    // Preise untereinander in einem Block, und man musste raten, welche Zeile
+    // zu welcher Handlung gehoert — bei zwei Waehrungen und drei Handlungen ist
+    // das die Stelle, an der man sich verklickt.
+    const spaltenB = 168, spaltenAbstand = 12;
+    const spalte0 = rightX + 14;
+    const spaltenStil = {
+      fontFamily: 'monospace', fontSize: '10px', color: COL_PARCHMENT,
+      lineSpacing: 2, wordWrap: { width: spaltenB }
+    };
+    this.kostenAufwerten = this.add.text(spalte0, werkY + 206, '', spaltenStil).setDepth(10);
+    this.kostenAusbau = this.add.text(
+      spalte0 + spaltenB + spaltenAbstand, werkY + 206, '', spaltenStil).setDepth(10);
+    this.kostenZerlegen = this.add.text(
+      spalte0 + 2 * (spaltenB + spaltenAbstand), werkY + 206, '', spaltenStil).setDepth(10);
+
+    // Sammelfeld: die drei Spalten in einem String. Nur fuer Tests und Sonden —
+    // sichtbar ist es nie.
+    this.werkbankKosten = this.add.text(spalte0, werkY + 206, '', {
       fontFamily: 'monospace', fontSize: '11px', color: COL_PARCHMENT, lineSpacing: 2
-    }).setDepth(10);
+    }).setDepth(10).setVisible(false);
 
     // Alle drei Handlungen an EINEM Ort. Vorher lagen Aufwerten und Zerlegen
     // unten links, der Ausbau rechts, und die Auskunft ueber das gewaehlte
@@ -338,12 +360,14 @@ class CraftingScene extends Phaser.Scene {
     // visible (unlike the selection-only Zerlegen button) and kept off the
     // crowded left/bottom area. Rare + Legendary are never touched, so a stray
     // click can't destroy good gear.
-    const _massY = H - 64;
-    this.massSalvageHint = this.add.text(rightX + rightW / 2, _massY - 17, '', {
+    // Weiter nach rechts und unten: sie steht unter der rechten Knopfreihe,
+    // nicht mittig unter dem ganzen Bild — sie gehoert zum Werktisch.
+    const _massY = H - 46;
+this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 16, '', {
       fontFamily: 'monospace', fontSize: '9px', color: COL_PARCHMENT
     }).setOrigin(0.5, 0.5).setDepth(10);
     this.massSalvageBtn = this._createButton(
-      rightX + rightW / 2, _massY, 240, 26,
+      rightX + rightW - 120, _massY, 240, 26,
       _CRAFT_T('crafting.btn.mass_salvage'), () => this._massSalvage()
     );
     this._updateMassSalvageHint();
@@ -717,6 +741,10 @@ class CraftingScene extends Phaser.Scene {
       this.werkbankWerte.setText('');
       this.werkbankAffixe.setText('');
       this.werkbankKosten.setText('');
+      this.kostenAufwerten.setText('');
+      this.kostenAusbau.setText('');
+      this.kostenZerlegen.setText('');
+      if (this.enhanceBtn) this.enhanceBtn.container.setVisible(false);
       if (this.ausbauBtn) this.ausbauBtn.container.setVisible(false);
       if (this.salvageBtn) this.salvageBtn.container.setVisible(false);
       return;
@@ -748,33 +776,43 @@ class CraftingScene extends Phaser.Scene {
     const kosten = (LS && typeof LS.ausbauKosten === 'function') ? LS.ausbauKosten(item) : null;
     const gold = (LS && typeof LS.getGold === 'function') ? LS.getGold() : 0;
     const brocken = getMaterialCount('MAT');
-    const zeilen = [];
 
     // Aufwerten hebt die SELTENHEIT und gibt einen Affix dazu — und schaltet
-    // damit weitere Ausbaustufen frei. Beide Wege gehoeren nebeneinander,
-    // sonst sieht man den Zusammenhang nicht.
+    // damit weitere Ausbaustufen frei. Beide Wege stehen nebeneinander, jeder
+    // ueber seinem eigenen Knopf.
     const tier = Math.max(0, Math.min(3, Number(item.tier) || 0));
     const kannAufwerten = tier < 3;
     if (kannAufwerten) {
-      zeilen.push(_CRAFT_T('crafting.info.enhance_to', {
-        tier: _CRAFT_T(_CRAFT_TIER_KEYS[tier + 1]),
-        cost: this._getEnhanceCost(item)
+      const preisAuf = this._getEnhanceCost(item);
+      this.kostenAufwerten.setText(_CRAFT_T('crafting.kosten.aufwerten', {
+        tier: _CRAFT_T(_CRAFT_TIER_KEYS[tier + 1]), brocken: preisAuf
       }));
+      this.kostenAufwerten.setColor(brocken >= preisAuf ? '#f1e9d8' : '#ff8844');
+    } else {
+      this.kostenAufwerten.setText(_CRAFT_T('crafting.info.already_legendary'))
+        .setColor('#8f8f8f');
     }
     if (this.enhanceBtn) this.enhanceBtn.container.setVisible(kannAufwerten);
     if (kosten) {
-      zeilen.push(_CRAFT_T('crafting.ausbau.wirkung', { pct: Math.round(LS.AUSBAU_JE_STUFE * 100) }));
-      zeilen.push(_CRAFT_T('crafting.ausbau.kosten', { gold: kosten.gold, brocken: kosten.brocken }));
+      this.kostenAusbau.setText(
+        _CRAFT_T('crafting.ausbau.wirkung', { pct: Math.round(LS.AUSBAU_JE_STUFE * 100) })
+        + String.fromCharCode(10)
+        + _CRAFT_T('crafting.ausbau.kosten', { gold: kosten.gold, brocken: kosten.brocken }));
       const reicht = gold >= kosten.gold && brocken >= kosten.brocken;
-      this.werkbankKosten.setColor(reicht ? '#f1e9d8' : '#ff8844');
+      this.kostenAusbau.setColor(reicht ? '#f1e9d8' : '#ff8844');
     } else {
-      zeilen.push(_CRAFT_T('crafting.ausbau.voll'));
-      this.werkbankKosten.setColor('#8f8f8f');
+      this.kostenAusbau.setText(_CRAFT_T('crafting.ausbau.voll')).setColor('#8f8f8f');
     }
-    if (stufe > 0) {
-      zeilen.push(_CRAFT_T('crafting.ausbau.rueckgabe', { n: LS.ausbauRueckgabe(item) }));
-    }
-    this.werkbankKosten.setText(zeilen.join(String.fromCharCode(10)));
+
+    // Was das Zerlegen einbringt, gehoert ueber SEINEN Knopf — und VOR die
+    // Entscheidung, sonst erfaehrt man erst hinterher, was verloren geht.
+    const zurueck = (stufe > 0) ? LS.ausbauRueckgabe(item) : 0;
+    this.kostenZerlegen.setText(_CRAFT_T('crafting.kosten.zerlegen', {
+      brocken: this._salvageValue(item.tier) + zurueck
+    })).setColor('#8f8f8f');
+
+    this.werkbankKosten.setText([this.kostenAufwerten.text, this.kostenAusbau.text,
+      this.kostenZerlegen.text].join(String.fromCharCode(10)));
 
     if (this.ausbauBtn) this.ausbauBtn.container.setVisible(!!kosten);
     if (this.salvageBtn) this.salvageBtn.container.setVisible(true);

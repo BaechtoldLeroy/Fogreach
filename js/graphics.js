@@ -1971,6 +1971,48 @@ function createItemGraphics() {
       }
     },
     {
+      key: 'itStairScroll',
+      // Die Treppenrolle liegt QUER, die Portalrolle steht hochkant.
+      //
+      // Der erste Entwurf hatte dieselbe Silhouette und unterschied sich nur
+      // durch die Bandfarbe — tests/itemIcons.test.js mass daraufhin einen
+      // Abstand von exakt 0,0000 zur Portalrolle. Das ist die Lehre aus #124:
+      // bei 48 px traegt die GRUNDFORM oder die LAGE den Unterschied, nicht ein
+      // angehaengtes Kleinteil.
+      //
+      // Verwandt bleiben sie trotzdem: dasselbe Pergament, dieselben dunklen
+      // Rollkanten. Nur eben liegend, halb aufgerollt, mit der Treppe sichtbar
+      // auf dem offenen Blatt.
+      draw: () => {
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
+        // Schatten
+        g.fillStyle(0x1a1a1a, 0.30);
+        g.fillRoundedRect(cx - 14, cy - 8, 30, 20, 3);
+        // Offenes Blatt, quer
+        g.fillStyle(0xe8d8a0, 1);
+        g.fillRoundedRect(cx - 16, cy - 10, 32, 20, 3);
+        g.fillStyle(0xc8b070, 0.5);
+        g.fillRect(cx - 16, cy + 4, 32, 6);
+        // Die beiden Rollkanten LINKS und RECHTS statt oben und unten
+        g.fillStyle(0x8a6a30, 1);
+        g.fillRoundedRect(cx - 20, cy - 12, 6, 24, 3);
+        g.fillRoundedRect(cx + 14, cy - 12, 6, 24, 3);
+        g.fillStyle(0xd8b878, 0.5);
+        g.fillRect(cx - 19, cy - 11, 1, 22);
+        g.fillRect(cx + 15, cy - 11, 1, 22);
+        // Treppe: drei absteigende Stufen auf dem offenen Blatt
+        g.fillStyle(0x2f6a3a, 1);
+        g.fillRect(cx - 10, cy - 6, 7, 3);
+        g.fillRect(cx - 4, cy - 1, 7, 3);
+        g.fillRect(cx + 2, cy + 4, 7, 3);
+        g.fillStyle(0x6fc07f, 0.7);
+        g.fillRect(cx - 10, cy - 6, 7, 1);
+        g.fillRect(cx - 4, cy - 1, 7, 1);
+        g.fillRect(cx + 2, cy + 4, 7, 1);
+      }
+    },
+    {
       key: 'itPotionMinor',
       draw: () => {
         const cx = SIZE / 2;

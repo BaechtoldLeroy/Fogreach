@@ -6,6 +6,7 @@ if (window.i18n) {
     'loot.legacy.boots': 'Stiefel',
     'loot.legacy.material': 'Eisenbrocken',
     'loot.material.portal_scroll': 'Portalrolle',
+    'loot.material.stair_scroll': 'Treppenrolle',
     'loot.quest_item.QUEST_DOC': 'Protokoll-Abschrift',
     'loot.quest_item.QUEST_PLATE': 'Verbotene Druckplatte',
     'loot.quest_item.JOURNAL_FRAGMENT': 'Tagebuchfragment der Tochter',
@@ -24,6 +25,7 @@ if (window.i18n) {
     'loot.legacy.boots': 'Boots',
     'loot.legacy.material': 'Iron Chunk',
     'loot.material.portal_scroll': 'Portal Scroll',
+    'loot.material.stair_scroll': 'Stair Scroll',
     'loot.quest_item.QUEST_DOC': 'Protocol Transcript',
     'loot.quest_item.QUEST_PLATE': 'Forbidden Print Plate',
     'loot.quest_item.JOURNAL_FRAGMENT': "Daughter's Journal Fragment",
@@ -841,7 +843,15 @@ function randomLoot(qualityBias, opts) {
     return _legacyEquipmentFallback(depth);
   }
   if (roll <= 89) return _makePotionDrop(depth);   // Potions, depth-scaled tier
-  if (roll <= 92) return _makePortalScrollDrop();  // Portal scroll material
+  // #Rollen: ein DRITTEL der fallenden Rollen ist eine Treppenrolle. Sie war
+  // bisher nur bei Mara zu kaufen und tauchte im Lauf nie auf, obwohl sie
+  // genau dort nuetzt — sie bringt einen zur naechsten Treppe.
+  //
+  // Der Anteil kommt aus DIESEM Wurf, nicht aus einem eigenen: sonst haette
+  // sich die Gesamtzahl der Rollen erhoeht, und das war nicht gewollt.
+  if (roll <= 92) {
+    return (Math.random() < 1 / 3) ? _makeStairScrollDrop() : _makePortalScrollDrop();
+  }
 
   // Crafting material (Eisenbrocken).
   return makeItem({
@@ -894,6 +904,30 @@ function _legacyEquipmentFallback(depth) {
 }
 
 // Build a portal scroll material item — incremented onto materialCounts.PORTAL_SCROLL on pickup.
+/**
+ * Treppenrolle: bringt den Spieler zur naechsten Treppe im Raum.
+ *
+ * Bis auf Schluessel, Name und Symbol identisch zur Portalrolle — beide sind
+ * Material, beide zaehlen in materialCounts, beide haben keine Werte.
+ */
+function _makeStairScrollDrop() {
+  return {
+    type: 'material',
+    key: 'STAIR_SCROLL',
+    materialKey: 'STAIR_SCROLL',
+    name: _LOOT_T('loot.material.stair_scroll'),
+    nameKey: 'loot.material.stair_scroll',
+    iconKey: 'itStairScroll',
+    amount: 1,
+    tier: 0,
+    affixes: [],
+    iLevel: 1,
+    itemLevel: 1,
+    baseStats: {},
+    hp: 0, damage: 0, speed: 0, range: 0, armor: 0, crit: 0
+  };
+}
+
 function _makePortalScrollDrop() {
   return {
     type: 'material',

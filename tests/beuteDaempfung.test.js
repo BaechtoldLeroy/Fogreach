@@ -109,3 +109,61 @@ test('Der Zaehler wird bei jedem neuen Lauf zurueckgesetzt', () => {
   assert.ok(/__runItemsDropped\s*=\s*0/.test(quelle),
     'der Laufzaehler wird nirgends zurueckgesetzt');
 });
+
+test('Ein Drittel der fallenden Rollen ist eine Treppenrolle', () => {
+  // Die Treppenrolle war nur bei Mara zu kaufen und tauchte im Lauf nie auf,
+  // obwohl sie genau dort nuetzt — sie bringt einen zur naechsten Treppe.
+  //
+  // Der Anteil kommt aus DEMSELBEN Wurf wie die Portalrolle, nicht aus einem
+  // eigenen: sonst haette sich die Gesamtzahl der Rollen erhoeht, und das war
+  // nicht gewollt. Genau das prueft die letzte Zusicherung.
+  const r = H.run(`(function () {
+    window.DUNGEON_DEPTH = 10; window.currentWave = 10;
+    var z = { portal: 0, treppe: 0, gesamt: 0 };
+    for (var i = 0; i < 20000; i++) {
+      var it = window.randomLoot(1, null);
+      if (!it) continue;
+      z.gesamt++;
+      if (it.key === 'PORTAL_SCROLL') z.portal++;
+      else if (it.key === 'STAIR_SCROLL') z.treppe++;
+    }
+    return z;
+  })()`);
+  const rollen = r.portal + r.treppe;
+  assert.ok(rollen > 300, 'zu wenige Rollen gemessen: ' + rollen);
+  const anteil = r.treppe / rollen;
+  assert.ok(Math.abs(anteil - 1 / 3) < 0.06,
+    (anteil * 100).toFixed(1) + ' % der Rollen sind Treppenrollen, erwartet rund 33');
+
+  // Und der Anteil ALLER Rollen an der Beute darf sich nicht geaendert haben:
+  // die Treppenrolle teilt sich den Wurf mit der Portalrolle (roll 90..92),
+  // sie kommt nicht dazu.
+  const anteilRollen = rollen / r.gesamt;
+  assert.ok(Math.abs(anteilRollen - 0.03) < 0.01,
+    'Rollen machen ' + (anteilRollen * 100).toFixed(1) + ' % der Beute aus, erwartet rund 3');
+});
+
+test('Die Treppenrolle hat ein eigenes Symbol und einen eigenen Namen', () => {
+  const r = H.run(`(function () {
+    window.DUNGEON_DEPTH = 10; window.currentWave = 10;
+    var probe = null;
+    for (var k = 0; k < 20000 && !probe; k++) {
+      var x = window.randomLoot(1, null);
+      if (x && x.key === 'STAIR_SCROLL') probe = { name: x.name, icon: x.iconKey, mat: x.materialKey };
+    }
+    return { probe: probe,
+             texturTreppe: window.game.textures.exists('itStairScroll'),
+             texturPortal: window.game.textures.exists('itPortalScroll') };
+  })()`);
+  assert.ok(r.probe, 'in 20 000 Wuerfen fiel keine Treppenrolle');
+  assert.strictEqual(r.probe.icon, 'itStairScroll',
+    'die Treppenrolle traegt das Symbol ' + r.probe.icon);
+  assert.notStrictEqual(r.probe.icon, 'itPortalScroll',
+    'sie teilt sich das Symbol mit der Portalrolle');
+  assert.strictEqual(r.probe.mat, 'STAIR_SCROLL',
+    'sie zaehlt auf den falschen Vorrat: ' + r.probe.mat);
+  assert.ok(r.probe.name && r.probe.name.indexOf('MISSING') < 0,
+    'der Name fehlt in der Sprachtabelle: ' + r.probe.name);
+  assert.strictEqual(r.texturTreppe, true, 'das Symbol wurde nie gezeichnet');
+  assert.strictEqual(r.texturPortal, true, 'die Portalrolle hat ihr Symbol verloren');
+});

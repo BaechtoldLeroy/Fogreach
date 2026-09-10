@@ -193,7 +193,8 @@
         }
         this._teardownScroll();
         if (this.tabBody) {
-          this.tabBody.forEach(g => g && g.destroy && g.destroy());
+          this._versteckeItemTip();
+        this.tabBody.forEach(g => g && g.destroy && g.destroy());
           this.tabBody = [];
         }
       });
@@ -219,6 +220,7 @@
       // Tear down old tab body (+ any scroll mask/handlers from the items tab).
       this._teardownScroll();
       if (this.tabBody && this.tabBody.length) {
+        this._versteckeItemTip();
         this.tabBody.forEach(g => g && g.destroy && g.destroy());
       }
       this.tabBody = [];
@@ -366,6 +368,14 @@
         const rowBg = this.add.rectangle(px, ry + rowH / 2, panelW - 30, rowH - 4, 0x2a2a2a)
           .setStrokeStyle(1, 0x444444).setScrollFactor(0).setDepth(2002);
         this.tabBody.push(rowBg);
+
+        // Der ganze Gegenstand beim Ueberfahren — Grundwerte, Affixe,
+        // Ausbaustufe. Im Laden stand bisher nur die Affixzeile, und die
+        // Grundwerte (Ruestung, Schaden, Tempo) fehlten ganz. Man kaufte also
+        // blind das halbe Stueck.
+        rowBg.setInteractive({ useHandCursor: true });
+        rowBg.on('pointerover', () => this._zeigeItemTip(item, ry));
+        rowBg.on('pointerout', () => this._versteckeItemTip());
 
         const nameColor = TIER_COLORS[item.tier || 0] || '#cccccc';
         const nameText = this.add.text(px - panelW / 2 + 24, ry + 6, item.displayName || item._baseName || 'Item', {
@@ -560,6 +570,48 @@
         ? window.LootSystem.getLocalizedDisplayName(res.item)
         : (res.item.displayName || res.item.name || 'Item');
       this._showToast(_SHOP_T('shop.blind_buy.result', { name: nm }));
+    }
+
+    /**
+     * Der ganze Gegenstand beim Ueberfahren einer Ladenzeile.
+     *
+     * Die Texte kommen aus window.formatItemTooltip — demselben Formatierer,
+     * den das Inventar benutzt. Eine zweite Fassung hier haette sich beim
+     * ersten Nachziehen von der ersten unterschieden, und dann zeigte der
+     * Laden etwas anderes an als der Rucksack fuer dasselbe Stueck.
+     */
+    _zeigeItemTip(item, zeilenY) {
+      this._versteckeItemTip();
+      if (!item || typeof window.formatItemTooltip !== 'function') return;
+      let info;
+      try { info = window.formatItemTooltip(item); } catch (e) { return; }
+      if (!info) return;
+
+      const W = this.scale.width, H = this.scale.height;
+      const text = [info.title, info.body].filter(Boolean).join(String.fromCharCode(10));
+      const inhalt = this.add.text(0, 0, text, {
+        fontFamily: 'monospace', fontSize: '11px', color: '#f1e9d8',
+        lineSpacing: 2, wordWrap: { width: 260 }
+      }).setScrollFactor(0).setDepth(2101);
+
+      const rand = 8;
+      const b = Math.min(280, inhalt.width + rand * 2);
+      const h = inhalt.height + rand * 2;
+      // Rechts neben der Liste, und nach oben geschoben, wenn er sonst unten
+      // hinauslaufen wuerde.
+      let x = Math.min(W - b - 12, W * 0.5 + 180);
+      let y = Math.min(H - h - 12, Math.max(12, zeilenY));
+      const kasten = this.add.rectangle(x + b / 2, y + h / 2, b, h, 0x14140f, 0.96)
+        .setStrokeStyle(1, 0xd4a543).setScrollFactor(0).setDepth(2100);
+      inhalt.setPosition(x + rand, y + rand);
+      this._itemTip = { kasten, inhalt };
+    }
+
+    _versteckeItemTip() {
+      if (!this._itemTip) return;
+      try { this._itemTip.kasten.destroy(); } catch (e) {}
+      try { this._itemTip.inhalt.destroy(); } catch (e) {}
+      this._itemTip = null;
     }
 
     _computeItemPrice(item) {

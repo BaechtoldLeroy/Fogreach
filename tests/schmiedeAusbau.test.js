@@ -211,3 +211,60 @@ test('Auch die Massenzerlegung gibt die Ausbau-Brocken zurueck', () => {
     'zurueck kamen ' + r.bekommen + ' statt ' + r.erwartet
     + ' (ohne die Ausbau-Rueckgabe waeren es ' + r.ohneAusbau + ')');
 });
+
+test('Die drei Preise stehen getrennt, jeder ueber seinem Knopf', () => {
+  // Vorher standen alle Preise untereinander in EINEM Block, und man musste
+  // raten, welche Zeile zu welcher Handlung gehoert. Bei zwei Waehrungen und
+  // drei Handlungen ist das die Stelle, an der man sich verklickt.
+  const r = H.run(`(function () {
+    ${AUFBAU}
+    var LS = window.LootSystem;
+    window.materialCounts.GOLD = 999999;
+    window.materialCounts.MAT = 9999;
+    sc._selection = { kind: 'equip', key: 'body' };
+    sc._refreshAusbau();
+    function mitte(o) { return Math.round(o.x); }
+    return {
+      texte: [String(sc.kostenAufwerten.text), String(sc.kostenAusbau.text),
+              String(sc.kostenZerlegen.text)],
+      spaltenX: [mitte(sc.kostenAufwerten), mitte(sc.kostenAusbau), mitte(sc.kostenZerlegen)],
+      knopfX: [Math.round(sc.enhanceBtn.bg.x - sc.enhanceBtn.bg.width / 2),
+               Math.round(sc.ausbauBtn.bg.x - sc.ausbauBtn.bg.width / 2),
+               Math.round(sc.salvageBtn.bg.x - sc.salvageBtn.bg.width / 2)],
+      kosten: LS.ausbauKosten(window.equipment.body)
+    };
+  })()`);
+  // Jede Spalte beginnt genau am linken Rand ihres Knopfes.
+  r.spaltenX.forEach((x, i) => {
+    assert.strictEqual(x, r.knopfX[i],
+      'Spalte ' + i + ' beginnt bei x=' + x + ', ihr Knopf bei x=' + r.knopfX[i]);
+  });
+  // Und der Ausbaupreis steht in SEINER Spalte, nicht in einer anderen.
+  assert.ok(r.texte[1].indexOf(String(r.kosten.gold)) >= 0,
+    'der Goldpreis steht nicht in der Ausbau-Spalte: ' + JSON.stringify(r.texte[1]));
+  assert.ok(r.texte[0].indexOf(String(r.kosten.gold)) < 0,
+    'der Goldpreis steht auch in der Aufwerten-Spalte: ' + JSON.stringify(r.texte[0]));
+  // Die Zerlegen-Spalte sagt, was zurueckkommt.
+  assert.ok(/[0-9]/.test(r.texte[2]),
+    'die Zerlegen-Spalte nennt keine Zahl: ' + JSON.stringify(r.texte[2]));
+});
+
+test('Ein zu teurer Preis wird eingefaerbt, der Knopf bleibt', () => {
+  // Die Farbe sagt "dafuer reicht es noch nicht", nicht "verboten" — deshalb
+  // bleibt der Knopf sichtbar.
+  const r = H.run(`(function () {
+    ${AUFBAU}
+    sc._selection = { kind: 'equip', key: 'body' };
+    window.materialCounts.GOLD = 999999;
+    window.materialCounts.MAT = 9999;
+    sc._refreshAusbau();
+    var reich = sc.kostenAusbau.style.color;
+    window.materialCounts.GOLD = 0;
+    sc._refreshAusbau();
+    return { reich: reich, arm: sc.kostenAusbau.style.color,
+             knopf: sc.ausbauBtn.container.visible };
+  })()`);
+  assert.notStrictEqual(r.arm, r.reich,
+    'die Farbe aendert sich nicht, wenn das Gold fehlt (beide ' + r.arm + ')');
+  assert.strictEqual(r.knopf, true, 'der Knopf verschwindet, statt sich nur zu faerben');
+});
