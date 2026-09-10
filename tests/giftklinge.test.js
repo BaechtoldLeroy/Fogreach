@@ -83,18 +83,74 @@ test('Ohne Angabe bleibt der Tabellenwert stehen', () => {
   assert.strictEqual(r, 2, 'der Standardwert ist nicht mehr 2, sondern ' + r);
 });
 
-// HIER FEHLT EINE PROBE AM ECHTEN WEG.
-//
-// Ein Test, der ueber castWhirlwind laeuft und den gelegten Giftwert misst,
-// stand hier und lief einzeln zuverlaessig durch — im Gesamtlauf fiel er auch
-// mit vier Anlaeufen und sieben Sekunden Taktung: dort erwischt der Wirbel
-// niemanden mehr. Die Ursache habe ich nicht gefunden, und ein Test, der
-// gruen ist, weil er nichts mehr misst, waere schlimmer als keiner.
-//
-// Was dadurch NICHT abgesichert ist: dass der Wirbel den Anteil wirklich
-// einsetzt. Die Probe darunter liest nur den Quelltext — sie faellt, wenn die
-// Zeile verschwindet, aber nicht, wenn jemand GIFT_ANTEIL_JE_RANG auf 0
-// setzt. Genau diese Mutation ueberlebt derzeit.
+test('Der ECHTE Wirbel legt Gift in Hoehe des Waffenschadens an', () => {
+  // Die Proben darueber rufen applyEffect selbst und reichen den Anteil von
+  // Hand herein — sie pruefen den Effekt, nicht den Weg dorthin. Diese hier
+  // geht durch castWhirlwind.
+  //
+  // WARUM SIE ZWEIMAL DANEBEN GING, damit es nicht ein drittes Mal passiert:
+  // Math.random war nur WAEHREND des Aufrufs ersetzt. Der Giftwurf faellt aber
+  // erst in den Schadens-Ticks, und die kommen spaeter — der Wurf lief also mit
+  // dem echten Zufall, und der Test war in Wahrheit eine 30-Prozent-Chance.
+  // Einzeln ging sie oft auf, im Gesamtlauf nicht. Der Zufall bleibt jetzt
+  // ueber die ganze Taktung hinweg festgehalten.
+  const rang = H.run(`(function () {
+    var ST = window.SkillTree;
+    for (var i = 0; i < 60; i++) ST.grantSkillPoint();
+    for (var k = 0; k < 2; k++) ST.investPoint('whirlwind', 30);
+    for (var m = 0; m < 3; m++) ST.investPoint('combat_poison_blade', 30);
+    return window.skillRang('combat_poison_blade');
+  })()`);
+  assert.strictEqual(rang, 3, 'die Giftklinge liess sich nicht auf Rang 3 bringen');
+
+  // Vorigen Kanal auslaufen lassen: seine Ticks laufen sonst in diesen hinein.
+  H.step(90);
+
+  const start = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var alle = [];
+    enemies.children.iterate(function (e) { if (e && e.active) alle.push(e); });
+    if (!alle.length) return { fehler: 'keine Gegner' };
+    var g = alle[0];
+    var kanal = Math.round(window.getSpinRange() * 0.6);
+    g.x = player.x + Math.round(kanal * 0.5); g.y = player.y;
+    if (g.body && g.body.reset) g.body.reset(g.x, g.y);
+    g.hp = 99999; g.maxHp = 99999;
+    weaponDamage = 100;
+    playerCritChance = 0;
+    window.__giftZiel = g;
+
+    // Zufall festhalten und NICHT sofort zuruecksetzen — die Ticks kommen erst.
+    window.__echterZufall = Math.random;
+    Math.random = function () { return 0; };
+    window.castWhirlwind.call(sc);
+    return { ok: true };
+  })()`);
+  assert.ok(!start.fehler, start.fehler);
+
+  H.step(30);   // der Kanal schlaegt in Ticks zu, nicht sofort
+
+  const gift = H.run(`(function () {
+    Math.random = window.__echterZufall;   // erst jetzt zurueck
+    var M = window.statusEffectManager;
+    var werte = [];
+    var pruefe = function (ziel) {
+      if (!ziel) return;
+      M.getActiveEffects(ziel).forEach(function (e) {
+        if (e && e.type === 'poison') werte.push(e.effect.damage);
+      });
+    };
+    pruefe(window.__giftZiel);
+    enemies.children.iterate(function (e) { if (e && e !== window.__giftZiel) pruefe(e); });
+    return werte;
+  })()`);
+
+  assert.ok(gift.length > 0,
+    'kein Gegner ist vergiftet — der Wirbel legt gar kein Gift an');
+  assert.ok(gift.every((w) => w === 30),
+    'das Gift macht ' + JSON.stringify(gift)
+    + ' je Tick statt 30 (Rang 3, Waffenschaden 100)');
+});
 
 test('Der Wirbel ruft das Gift ueberhaupt auf', () => {
   // Der Effekt koennte tadellos skalieren und trotzdem nie mit einem Anteil
