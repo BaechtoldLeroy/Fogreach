@@ -24,20 +24,22 @@ const PLAYER_TINT_COLOR = 0xffffff; // Neutral tint (no color change)
 const PLAYER_CRIT_MULT = 2.0;
 if (typeof window !== "undefined") window.PLAYER_CRIT_MULT = PLAYER_CRIT_MULT;
 
-// Wie weit der Kettenblitz springt: doppelt so weit wie die Klingenscheibe des
-// Wirbels reicht.
+// Wie weit der Kettenblitz springt: 225 px, fest.
 //
-// Keine feste Zahl mehr. Die Scheibe misst getSpinRange() * 0,6, und
-// getSpinRange haengt an der Reichweite der Waffe — eine eingetragene 168 waere
-// beim ersten Reichweitenaffix wieder falsch. Der Faktor haelt das Verhaeltnis
-// auf jeder Ausbaustufe.
+// Zum Vergleich: die Klingenscheibe des Wirbels misst 84 px im Grundzustand
+// (getSpinRange() * 0,6). Der Blitz reicht also gut zweieinhalbmal so weit.
+//
+// Bewusst eine feste Zahl und nicht mehr an die Waffenreichweite gekoppelt: der
+// Sprung soll ueberall gleich weit gehen, unabhaengig davon, womit man kaempft.
+// Wer das aendert, aendert HIER — die Zahl steht nur einmal da, und der Test
+// misst sie am laufenden Spiel.
 //
 // Vorgeschichte: 120 px waren so eng, dass zwei Gegner fast aneinander stehen
-// mussten und man den Sprung nie sah. Zum Suchen stand er kurz auf unbegrenzt.
-const KETTEN_SCHEIBEN_FAKTOR = 2;
+// mussten und man den Sprung nie sah. Zum Suchen stand er kurz auf unbegrenzt,
+// dann auf dem Doppelten der Scheibe (168 px).
+const KETTEN_REICHWEITE_PX = 225;
 function kettenReichweite() {
-  var scheibe = ((typeof getSpinRange === 'function') ? getSpinRange() : 140) * 0.6;
-  return scheibe * KETTEN_SCHEIBEN_FAKTOR;
+  return KETTEN_REICHWEITE_PX;
 }
 if (typeof window !== "undefined") window.kettenReichweite = kettenReichweite;
 const PLAYER_FRAME_METADATA = {};

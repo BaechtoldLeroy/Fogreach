@@ -172,18 +172,14 @@ test('Der Blitz springt auch vom GEFALLENEN Gegner weiter', () => {
     'g2 nimmt nichts — der Blitz springt nicht vom Gefallenen');
 });
 
-test('Die Reichweite ist doppelt so gross wie die Klingenscheibe', () => {
-  // Gewuenscht: "die Range vom Kettenblitz soll circa doppelt so gross sein"
-  // wie der Effekt des Wirbelwinds. Die Scheibe misst getSpinRange() * 0,6.
-  //
-  // Geprueft wird das VERHAELTNIS, nicht die Zahl: eine eingetragene 168 waere
-  // beim ersten Reichweitenaffix falsch, das Verhaeltnis bleibt richtig.
+test('Die Reichweite betraegt 225 px', () => {
+  // Gemessen am laufenden Spiel, nicht an der Konstante: so faellt der Test
+  // auch dann, wenn die Zahl zwar dasteht, aber ein zweiter Rechenweg
+  // dazwischenfunkt.
   const r = wirbeln(60);
   assert.ok(!r.fehler, r.fehler);
-  const verhaeltnis = r.reichweite / r.kanal;
-  assert.ok(Math.abs(verhaeltnis - 2) < 0.05,
-    'die Kette reicht ' + r.reichweite + ' px, die Scheibe ' + r.kanal
-    + ' px — das ist das ' + verhaeltnis.toFixed(2) + '-fache statt des Doppelten');
+  assert.strictEqual(r.reichweite, 225,
+    'die Kette reicht ' + r.reichweite + ' px statt 225');
 });
 
 test('Innerhalb der Reichweite springt er, ausserhalb nicht', () => {
