@@ -70,6 +70,11 @@ function wirbeln(mitKette) {
     // Spuerbarer Schaden, damit die HALBE Kette sichtbar wird, und die Sperre
     // zuruecksetzen, damit jeder Durchgang wirklich wirbelt.
     weaponDamage = 100;
+    // Krit AUS. Er verdoppelt einzelne Treffer, und ob der Wirbel oder der
+    // Sprung ihn erwischt, ist Zufall — der Anteil waere dann mal 0,5, mal
+    // 0,25, mal 1,0. Genau daran ist der Test im Gesamtlauf gefallen,
+    // waehrend er einzeln zwanzigmal durchlief.
+    playerCritChance = 0;
     isSpinning = false; lastSpinTime = -999999;
 
     var imWirbel = 0;
