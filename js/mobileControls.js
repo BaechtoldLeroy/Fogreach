@@ -70,11 +70,14 @@ if (window.i18n) {
   // wir wired sie pro Rebuild damit der Cooldown-Visual am richtigen Mobile-
   // Button sitzt. Neue Abilities (heilwunde etc.) haben keine refs, deren
   // Cooldown wird via AbilitySystem.getCooldownRemaining gepollt.
+  // ACHTUNG: die Schluessel sind Faehigkeits-IDs von VOR Version 060. Seither
+  // heissen sie whirlwind, hammer, cycloneStrike und so weiter — der Nachschlag
+  // greift also fuer keine heutige Faehigkeit, und ihr Abklingzeit-Ring wird
+  // ueber AbilitySystem.getCooldownRemaining gepollt (siehe oben).
+  //
+  // Vier tote Eintraege sind in b245 entfallen. shieldBash bleibt, solange die
+  // gleichnamige Funktion in player.js fuer spaeter stehenbleibt.
   const CLASSIC_REFS = {
-    spinAttack:  { btnRef: 'spinBtn',          cdRef: 'spinBtnCooldownText'     },
-    chargeSlash: { btnRef: 'chargeSlashBtn',   cdRef: 'chargeSlashCooldownText' },
-    dashSlash:   { btnRef: 'dashSlashBtn',     cdRef: 'dashSlashCooldownText'   },
-    daggerThrow: { btnRef: 'daggerThrowBtn',   cdRef: 'daggerThrowCooldownText' },
     shieldBash:  { btnRef: 'shieldBashBtn',    cdRef: 'shieldBashCooldownText'  },
   };
 
@@ -441,15 +444,7 @@ if (window.i18n) {
     // Reset alle ability-id-basierten window-Refs — werden unten neu gesetzt
     // wenn die Ability im aktuellen Loadout ist. Sonst bleiben sie null und
     // startCooldownTimer behandelt das via null-guard.
-    window.spinBtn = null;
-    window.chargeSlashBtn = null;
-    window.dashSlashBtn = null;
-    window.daggerThrowBtn = null;
     window.shieldBashBtn = null;
-    window.spinBtnCooldownText = null;
-    window.chargeSlashCooldownText = null;
-    window.dashSlashCooldownText = null;
-    window.daggerThrowCooldownText = null;
     window.shieldBashCooldownText = null;
 
     ABILITY_LAYOUT.forEach((origSpec) => {
@@ -520,9 +515,7 @@ if (window.i18n) {
 
     // Destroy previous cooldown texts if any, then create fresh per equipped button.
     [
-      'attackBtnCooldownText', 'spinBtnCooldownText',
-      'chargeSlashCooldownText', 'dashSlashCooldownText',
-      'daggerThrowCooldownText', 'shieldBashCooldownText',
+      'attackBtnCooldownText', 'shieldBashCooldownText',
     ].forEach((g) => { if (window[g] && window[g].destroy) window[g].destroy(); });
 
     // ----- Ability + potion buttons -----

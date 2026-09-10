@@ -56,10 +56,10 @@
   // Key → { glyph (emoji/unicode), labelKey (i18n) | label (literal), cd }
   const DECORATION = {
     attack: { glyph: '\u2694\uFE0F',       labelKey: 'mobile.btn.attack',   cd: 'attackBtnCooldownText'   },
-    spin:   { glyph: '\uD83C\uDF00',       labelKey: 'mobile.btn.spin',     cd: 'spinBtnCooldownText'     },
-    charge: { glyph: '\u26A1',             labelKey: 'mobile.btn.charge',   cd: 'chargeSlashCooldownText' },
-    dash:   { glyph: '\uD83D\uDCA8',       labelKey: 'mobile.btn.dash',     cd: 'dashSlashCooldownText'   },
-    dagger: { glyph: '\uD83D\uDDE1\uFE0F', labelKey: 'mobile.btn.dagger',   cd: 'daggerThrowCooldownText' },
+    // spin/charge/dash/dagger sind in b245 entfallen. Nachgeschlagen wird mit
+    // spec.key, und der ist entweder ein Layout-Schluessel (attack, roll,
+    // slot1..slot4, potion, interact) oder eine heutige Faehigkeits-ID — nie
+    // einer dieser vier Kurznamen aus der Zeit vor Version 060.
     shield: { glyph: '\uD83D\uDEE1\uFE0F', labelKey: 'mobile.btn.shield',   cd: 'shieldBashCooldownText'  },
     potion:   { glyph: '\uD83E\uDDEA', label: 'x0',                        cd: null, dynamicLabel: true },
     interact: { glyph: '\u270B',       labelKey: 'mobile.btn.interact',    cd: null, tapFeedback: true  },

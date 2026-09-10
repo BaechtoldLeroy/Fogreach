@@ -2466,7 +2466,10 @@ function releaseChargedSlash(forceMaxCharge = false) {
     try { window.AbilitySystem.setCooldown('hammer', finalCooldown, _hnow); } catch (e) {}
   }
   startCooldownTimer(scene, finalCooldown, {
-    button: chargeSlashBtn,
+    // Kein button mehr: chargeSlashBtn wurde nie gesetzt (der Nachschlag lief
+    // ueber die alte ID 'chargeSlash', die es seit 060 nicht mehr gibt) und ist
+    // in b245 entfallen. Die Textanzeige bleibt — in die schreibt der Hammer
+    // wirklich, er recycelt die Funktionen des alten Ladehiebs.
     label: chargeSlashCooldownText,
     statusKey: 'charge',
     onComplete: () => {

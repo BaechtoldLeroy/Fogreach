@@ -422,9 +422,19 @@ if (typeof window.ensureDebugPanel !== 'function') {
 
 let player, cursors, spaceKey, rKey, eKey, qKey, wKey;
 let enemies, enemyProjectiles, playerProjectiles, obstacles, lootGroup;
-let attackBtn, spinBtn, chargeSlashBtn, dashSlashBtn, daggerThrowBtn, shieldBashBtn;
-let attackBtnCooldownText, spinBtnCooldownText, chargeSlashCooldownText,
-  dashSlashCooldownText, daggerThrowCooldownText, shieldBashCooldownText;
+// Knoepfe und Abklingzeit-Anzeigen der Faehigkeiten.
+//
+// Hier standen sechs Paare, benannt nach den Faehigkeits-IDs von VOR Version
+// 060. Seither heissen die Faehigkeiten whirlwind, hammer, cycloneStrike und
+// so weiter; die alten Namen kamen in keiner Definition mehr vor, und die
+// Zuweisung haengt an genau diesem Nachschlag (mobileControls: CLASSIC_REFS).
+// Vier Paare bekamen deshalb nie einen Wert.
+//
+// Geblieben sind: attack (lebt), chargeSlashCooldownText (der Hammer schreibt
+// hinein, er recycelt die Funktionen des alten Ladehiebs) und shieldBash — die
+// Funktion steht bewusst weiter da, siehe den Hinweis an ihr in player.js.
+let attackBtn, shieldBashBtn;
+let attackBtnCooldownText, chargeSlashCooldownText, shieldBashCooldownText;
 let weaponStatsText, playerHealthText,
   playerXPText, waveText, gameOverText, levelUpText, defeatedEnemiesInWave, joystick;
 let abilityStatusDisplay = {};
@@ -477,21 +487,16 @@ window.abilityBonuses = abilityBonuses;
 window.resetAbilityBonuses = resetAbilityBonuses;
 window.applyAbilityEffect = applyAbilityEffect;
 
+// Nur noch, was es wirklich gibt. Hier standen die sechs Namen von vor 060 —
+// spin, charge, dash und dagger zeigten auf Faehigkeiten, die seither anders
+// heissen, und der Nachschlag lief ins Leere.
 const ABILITY_STATUS_CONFIG = [
   { key: 'attack', label: 'Attack', control: 'SPACE' },
-  { key: 'spin', label: 'Spin Attack', control: '—' },
-  { key: 'charge', label: 'Charged Slash', control: '—' },
-  { key: 'dash', label: 'Dash Slash', control: '—' },
-  { key: 'dagger', label: 'Throw Dagger', control: '—' },
   { key: 'shield', label: 'Shield Bash', control: '—' }
 ];
 
 // Maps statusKey (used in updateAbilityStatus) ↔ AbilitySystem ability id
 const STATUS_KEY_TO_ABILITY_ID = {
-  spin: 'spinAttack',
-  charge: 'chargeSlash',
-  dash: 'dashSlash',
-  dagger: 'daggerThrow',
   shield: 'shieldBash'
 };
 const ABILITY_ID_TO_STATUS_KEY = Object.fromEntries(
@@ -2518,13 +2523,7 @@ function initUI() {
   const abilityTextStyle = { fontSize: '18px', fill: '#fff' };
   attackBtnCooldownText = this.add.text(0, 0, '', abilityTextStyle)
     .setOrigin(0.5).setDepth(101).setScrollFactor(0).setVisible(false);
-  spinBtnCooldownText = this.add.text(0, 0, '', abilityTextStyle)
-    .setOrigin(0.5).setDepth(101).setScrollFactor(0).setVisible(false);
   chargeSlashCooldownText = this.add.text(0, 0, '', abilityTextStyle)
-    .setOrigin(0.5).setDepth(101).setScrollFactor(0).setVisible(false);
-  dashSlashCooldownText = this.add.text(0, 0, '', abilityTextStyle)
-    .setOrigin(0.5).setDepth(101).setScrollFactor(0).setVisible(false);
-  daggerThrowCooldownText = this.add.text(0, 0, '', abilityTextStyle)
     .setOrigin(0.5).setDepth(101).setScrollFactor(0).setVisible(false);
   shieldBashCooldownText = this.add.text(0, 0, '', abilityTextStyle)
     .setOrigin(0.5).setDepth(101).setScrollFactor(0).setVisible(false);
@@ -2534,10 +2533,7 @@ function initUI() {
     const baseX = width - 80;
     const baseY = height - 80;
     attackBtnCooldownText?.setPosition(baseX, baseY);
-    spinBtnCooldownText?.setPosition(baseX - 80, baseY);
     chargeSlashCooldownText?.setPosition(baseX, baseY - 40);
-    dashSlashCooldownText?.setPosition(baseX - 80, baseY - 40);
-    daggerThrowCooldownText?.setPosition(baseX - 160, baseY);
     shieldBashCooldownText?.setPosition(baseX - 160, baseY - 40);
   };
 
@@ -2954,16 +2950,9 @@ function initControls() {
       const syncFromWindow = () => {
         joystick = window.joystick || null;
         attackBtn = window.attackBtn || null;
-        spinBtn = window.spinBtn || null;
-        chargeSlashBtn = window.chargeSlashBtn || null;
-        dashSlashBtn = window.dashSlashBtn || null;
-        daggerThrowBtn = window.daggerThrowBtn || null;
         shieldBashBtn = window.shieldBashBtn || null;
         attackBtnCooldownText = window.attackBtnCooldownText || null;
-        spinBtnCooldownText = window.spinBtnCooldownText || null;
         chargeSlashCooldownText = window.chargeSlashCooldownText || null;
-        dashSlashCooldownText = window.dashSlashCooldownText || null;
-        daggerThrowCooldownText = window.daggerThrowCooldownText || null;
         shieldBashCooldownText = window.shieldBashCooldownText || null;
       };
       syncFromWindow();
