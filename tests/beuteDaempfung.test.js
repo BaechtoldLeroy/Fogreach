@@ -3,20 +3,23 @@
 // Es gibt KEINE harte Grenze, nur eine Bremse: je mehr echte Ausruestung in
 // einem Lauf schon gefallen ist, desto seltener faellt weitere.
 //
-//   ab dem 3. Stueck   halbe Chance
-//   ab dem 6. Stueck   ein Viertel
+//   ab dem 3. Stueck   30 Prozent der Chance
+//   ab dem 6. Stueck   20 Prozent
 //
-// Vorher setzte sie erst ab dem 4. Stueck ein und blieb dann bei der Haelfte
-// stehen — nach oben war der Ertrag unbegrenzt.
+// MINIBOSSE sind ausgenommen: sie sind der Grund, einen Raum zu kaempfen statt
+// ihn zu durchqueren, und sollen spaet im Lauf nicht weniger wert sein.
 //
-// Stichprobe 5000 je Messung, Toleranz entsprechend weit: bei 6 % Grundchance
-// liegt der Standardfehler des Verhaeltnisses bei rund 4 Prozentpunkten. Mit
-// enger Toleranz flackerte der Test im Gesamtlauf, mit 12 000 Wuerfen lief er
-// in die Zeitgrenze des Testkopfs (20 s).
+// Wie hier gemessen wird: der Wurf ist `Math.random() * 100 < schwelle`. Haelt
+// man Math.random fest, faellt genau dann etwas, wenn der feste Wert unter der
+// Schwelle liegt — eine Intervallschachtelung findet die WIRKSAME Schwelle auf
+// zwei Nachkommastellen.
 //
-// Der Test misst die WIRKUNG (wie oft faellt etwas), nicht die Formel: eine
-// Pruefung auf "der Code enthaelt / 4" saehe gleich aus und sagte nichts
-// darueber, ob die Zahl je einen Wurf erreicht.
+// Das ist immer noch eine Messung am laufenden Spiel und keine Pruefung des
+// Quelltexts: sie fragt, was beim Wurf herauskommt. Der frueher hier stehende
+// Weg ueber 5000 Stichproben je Messung sagte dasselbe, nur mit so viel
+// Rauschen, dass die Toleranzen bei +/- 20 Prozentpunkten lagen — bei
+// Elite-Gegnern (2 % Grundchance) haette er den Unterschied zwischen 30 und
+// 50 Prozent gar nicht mehr aufgeloest.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
@@ -56,36 +59,82 @@ function trefferQuote(schon, gegnerArt, versuche) {
   })()`);
 }
 
-test('Ab dem 3. Stueck faellt nur noch halb so oft etwas', () => {
-  // Mini-Bosse gewaehlt, weil ihre Grundchance (6 %) gross genug ist, um den
-  // Unterschied in vertretbar vielen Wuerfen zu sehen. Bei Trash (0,5 %)
-  // braeuchte es Zehntausende.
-  const voll = trefferQuote(0, { isMiniBoss: true }, 5000);
-  const halb = trefferQuote(3, { isMiniBoss: true }, 5000);
-  assert.ok(voll > 0.03, 'die volle Quote ist schon zu klein: ' + voll);
-  const anteil = halb / voll;
-  assert.ok(Math.abs(anteil - 0.5) < 0.20,
-    'ab dem 3. Stueck fallen ' + (anteil * 100).toFixed(0) + ' % statt rund 50 %'
-    + '  (' + (voll * 100).toFixed(1) + ' % -> ' + (halb * 100).toFixed(1) + ' %)');
+/**
+ * Die WIRKSAME Abwurfschwelle in Prozent, per Intervallschachtelung.
+ *
+ * Zaehlt wird, ob randomLoot ueberhaupt gerufen wird — das passiert nur, wenn
+ * der Wurf durchkommt. Ueber die Art des Stuecks sagt das nichts, und das ist
+ * hier auch nicht die Frage.
+ */
+function wirksameSchwelle(gegnerArt, schon) {
+  return H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var art = ${JSON.stringify(gegnerArt)};
+    function faellt(wert) {
+      var gerufen = false;
+      var origLoot = window.randomLoot;
+      var origRnd = Math.random;
+      window.randomLoot = function () { gerufen = true; return null; };
+      Math.random = function () { return wert; };
+      window.__runItemsDropped = ${schon};
+      try { spawnLoot.call(sc, 400, 300, null, art); } catch (e) {}
+      Math.random = origRnd;
+      window.randomLoot = origLoot;
+      window.__runItemsDropped = 0;
+      return gerufen;
+    }
+    if (!faellt(0)) return 0;
+    var lo = 0, hi = 1;
+    for (var i = 0; i < 24; i++) {
+      var m = (lo + hi) / 2;
+      if (faellt(m)) lo = m; else hi = m;
+    }
+    return Math.round(lo * 100 * 100) / 100;
+  })()`);
+}
+
+test('Ab dem 3. Stueck bleiben 30 Prozent der Chance', () => {
+  const voll = wirksameSchwelle({ isElite: true }, 0);
+  const gebremst = wirksameSchwelle({ isElite: true }, 3);
+  assert.strictEqual(voll, 2, 'die Grundchance eines Elite ist nicht mehr 2 %: ' + voll);
+  assert.strictEqual(gebremst, 0.6,
+    'ab dem 3. Stueck stehen ' + gebremst + ' % statt 0,6 % (30 % von 2 %)');
 });
 
-test('Ab dem 6. Stueck nur noch ein Viertel', () => {
-  const voll = trefferQuote(0, { isMiniBoss: true }, 5000);
-  const viertel = trefferQuote(6, { isMiniBoss: true }, 5000);
-  const anteil = viertel / voll;
-  assert.ok(Math.abs(anteil - 0.25) < 0.14,
-    'ab dem 6. Stueck fallen ' + (anteil * 100).toFixed(0) + ' % statt rund 25 %'
-    + '  (' + (voll * 100).toFixed(1) + ' % -> ' + (viertel * 100).toFixed(1) + ' %)');
+test('Ab dem 6. Stueck bleiben 20 Prozent', () => {
+  const gebremst = wirksameSchwelle({ isElite: true }, 6);
+  assert.strictEqual(gebremst, 0.4,
+    'ab dem 6. Stueck stehen ' + gebremst + ' % statt 0,4 % (20 % von 2 %)');
 });
 
 test('Bei 2 Stuecken bremst noch nichts', () => {
   // Die Grenze liegt bei DREI. Ein Off-by-one waere hier am leichtesten
   // passiert — vorher setzte die Bremse tatsaechlich erst ab vier ein.
-  const voll = trefferQuote(0, { isMiniBoss: true }, 5000);
-  const zwei = trefferQuote(2, { isMiniBoss: true }, 5000);
-  assert.ok(Math.abs(zwei / voll - 1) < 0.20,
-    'bei 2 Stuecken wird schon gebremst: ' + (voll * 100).toFixed(1)
-    + ' % -> ' + (zwei * 100).toFixed(1) + ' %');
+  assert.strictEqual(wirksameSchwelle({ isElite: true }, 2), 2,
+    'bei 2 Stuecken wird schon gebremst');
+});
+
+test('Auch der normale Gegner wird gebremst, nicht nur der Elite', () => {
+  // Sonst haenge die Bremse an einer Gegnerart statt am Beutestrom.
+  assert.strictEqual(wirksameSchwelle({}, 0), 0.5, 'die Grundchance ist nicht mehr 0,5 %');
+  assert.strictEqual(wirksameSchwelle({}, 3), 0.15, 'ab 3 Stuecken stimmt es nicht');
+  assert.strictEqual(wirksameSchwelle({}, 6), 0.1, 'ab 6 Stuecken stimmt es nicht');
+});
+
+test('Der Miniboss ist von der Bremse AUSGENOMMEN', () => {
+  // Er ist der Grund, einen Raum zu kaempfen statt ihn zu durchqueren. Wer
+  // spaet im Lauf einen erlegt, soll nicht dafuer bestraft werden, dass er
+  // vorher fleissig war.
+  //
+  // Diese Ausnahme ist — anders als der frueher hier stehende !isBossDrop-Zweig
+  // — wirksam: der Wurf eines Minibosses wird wirklich befragt.
+  const voll = wirksameSchwelle({ isMiniBoss: true }, 0);
+  assert.strictEqual(voll, 6, 'die Grundchance eines Minibosses ist nicht mehr 6 %: ' + voll);
+  [3, 6, 12].forEach((schon) => {
+    assert.strictEqual(wirksameSchwelle({ isMiniBoss: true }, schon), voll,
+      'nach ' + schon + ' Stuecken faellt der Miniboss auf '
+      + wirksameSchwelle({ isMiniBoss: true }, schon) + ' % statt auf ' + voll + ' %');
+  });
 });
 
 test('Der Boss laesst IMMER etwas fallen, egal wie viel schon gefallen ist', () => {

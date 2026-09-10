@@ -358,20 +358,30 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
   // gefallen ist, desto seltener faellt weitere. Traenke, Rollen und
   // Eisenbrocken zaehlen NICHT mit.
   //
-  //   ab dem 3. Stueck   halbe Chance
-  //   ab dem 6. Stueck   ein Viertel
+  //   ab dem 3. Stueck   30 Prozent der Chance
+  //   ab dem 6. Stueck   20 Prozent
   //
-  // Vorher setzte die Bremse erst ab dem 4. Stueck ein und blieb dann bei der
-  // Haelfte stehen — nach oben war der Ertrag also unbegrenzt.
+  // Vorher setzte die Bremse erst ab dem 4. Stueck ein und blieb bei der
+  // Haelfte stehen; danach lag sie bei 50 und 25 Prozent.
+  const DAEMPFUNG_AB_3 = 0.3;
+  const DAEMPFUNG_AB_6 = 0.2;
+
+  // MINIBOSSE SIND AUSGENOMMEN.
   //
-  // Bosse betrifft das nicht: sie lassen GARANTIERT etwas fallen (`garantiert`
-  // weiter unten), ihr Wurf wird also nie befragt. Hier stand dafuer lange ein
-  // eigener !isBossDrop-Zweig — er war wirkungslos, und eine Mutationsprobe
-  // konnte ihn nicht zum Fallen bringen, weil es nichts zu messen gab.
+  // Sie sind der Grund, einen Raum ueberhaupt zu kaempfen statt zu durchqueren.
+  // Wer spaet im Lauf einen erlegt, soll nicht dafuer bestraft werden, dass er
+  // vorher fleissig war — die Bremse gehoert auf den Beutestrom aus normalen
+  // Gegnern, nicht auf den Hoehepunkt eines Raums.
+  //
+  // Anders als der frueher hier stehende !isBossDrop-Zweig ist diese Ausnahme
+  // WIRKSAM: echte Bosse lassen ohnehin garantiert etwas fallen (`garantiert`
+  // weiter unten) und erreichen den Wurf nie, ein Miniboss dagegen schon.
   const _gefallen = window.__runItemsDropped || 0;
   let dropThreshold = dropThresholdBase;
-  if (_gefallen >= 6) dropThreshold = dropThreshold / 4;
-  else if (_gefallen >= 3) dropThreshold = dropThreshold / 2;
+  if (!isMiniBossDrop) {
+    if (_gefallen >= 6) dropThreshold = dropThreshold * DAEMPFUNG_AB_6;
+    else if (_gefallen >= 3) dropThreshold = dropThreshold * DAEMPFUNG_AB_3;
+  }
 
   // GARANTIERTER ABWURF FUER BOSSE (#130).
   //
