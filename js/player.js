@@ -2226,10 +2226,20 @@ function spinAttack() {
   // #93: je Rang springt der Blitz auf einen Gegner mehr (war genau einer).
   const _ketteRang = (typeof window.skillRang === 'function')
     ? window.skillRang('combat_chain_lightning') : 0;
+  // ZUR DIAGNOSE (#93): jeder Wirbel sagt, was mit dem Kettenblitz war.
+  //
+  // Gemeldet: "der Toast loest immer noch nicht aus, immer noch eines von
+  // beiden kaputt". Beide Bauteile sind einzeln gemessen heil — der Toast
+  // blendet auf, der Sprung trifft. Was fehlt, ist die Auskunft, WELCHE der
+  // Bedingungen im echten Spiel nicht erfuellt ist. Genau die steht hier.
+  let _ketteGrund = null;
+  let _getroffen = 0;
+  if (_ketteRang <= 0) _ketteGrund = 'Knoten nicht investiert (Rang 0)';
+  else if (spinHitEnemies.length === 0) _ketteGrund = 'der Wirbel hat niemanden getroffen';
+
   if (_ketteRang > 0 && spinHitEnemies.length > 0) {
     const chainRange = KETTEN_REICHWEITE;
     let _spruengeUebrig = _ketteRang;
-    let _getroffen = 0;
     const hitSet = new Set(spinHitEnemies.map((t) => t.ziel));
     for (const treffer of spinHitEnemies) {
       if (!treffer) continue;
@@ -2266,13 +2276,35 @@ function spinAttack() {
         if (--_spruengeUebrig <= 0) break;   // Raenge erlauben mehrere Spruenge
       }
     }
-    // ZUM AUSPROBIEREN: eine Meldung, wenn der Blitz wirklich gesprungen ist.
-    // Die blaue Linie liegt nur 200 ms lang zwischen zwei Gegnern, mitten im
-    // Wirbel — man uebersieht sie. Der Toast sagt, DASS es passiert ist.
-    if (_getroffen > 0 && window.EventSystem
-        && typeof window.EventSystem.showToast === 'function') {
+    if (_getroffen === 0) {
+      var _lebende = 0;
+      if (enemies?.children) {
+        enemies.children.iterate((e) => { if (e && e.active && !hitSet.has(e)) _lebende++; });
+      }
+      _ketteGrund = _lebende === 0
+        ? 'kein weiterer Gegner im Raum (alle vom Wirbel erfasst)'
+        : _lebende + ' Gegner da, aber keiner in Reichweite (' + chainRange + ')';
+    }
+  }
+
+  // ZUM AUSPROBIEREN: nach JEDEM Wirbel eine Meldung. Sprang der Blitz, sagt
+  // sie das; sprang er nicht, sagt sie warum. Damit laesst sich von aussen
+  // trennen, ob der Toast oder der Blitz haengt — bisher war beides nur "es
+  // kommt nichts". Beides zusammen faellt raus, sobald der Knoten steht.
+  if (window.__KETTE_STUMM !== true) {
+    try {
+      console.log('[Kettenblitz] Rang ' + _ketteRang
+        + ', vom Wirbel getroffen ' + spinHitEnemies.length
+        + ', Spruenge ' + _getroffen
+        + ', Reichweite ' + KETTEN_REICHWEITE
+        + (_ketteGrund ? ' -> ' + _ketteGrund : ''));
+    } catch (e) {}
+    if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
       window.EventSystem.showToast(spinScene,
-        '⚡ Kettenblitz springt auf ' + _getroffen + ' Gegner', 'chain_lightning');
+        _getroffen > 0
+          ? '⚡ Kettenblitz springt auf ' + _getroffen + ' Gegner'
+          : '⚡ kein Sprung: ' + (_ketteGrund || 'unbekannt'),
+        'chain_lightning');
     }
   }
 
