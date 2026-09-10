@@ -713,8 +713,21 @@ if (window.i18n) {
 
   // Null the amulet slot on a passed equipment object (used by the run-reset
   // in leaveDungeonForHub). Null-safe; returns the object for chaining.
-  function clearRunAmulet(equipment) {
+  function clearRunAmulet(equipment, inventar) {
     if (equipment && typeof equipment === 'object') equipment.amulet = null;
+    // Auch die NICHT getragenen. Gemeldet: ein Amulett im Beutel kam mit in den
+    // Hub und blieb im Spielstand stehen — hier wurde bis dahin nur der Platz
+    // am Hals geleert. Ein Amulett gehoert zum Gang, egal wo es liegt.
+    //
+    // Der Beutel ist ein Feld fester Laenge mit Luecken (inventory[i] = null),
+    // kein dichtes Feld — splice wuerde die Rasterplaetze aller nachfolgenden
+    // Stuecke verschieben.
+    if (Array.isArray(inventar)) {
+      for (var i = 0; i < inventar.length; i++) {
+        var it = inventar[i];
+        if (it && (it.type === 'amulet' || it.isAmulet === true)) inventar[i] = null;
+      }
+    }
     return equipment;
   }
 

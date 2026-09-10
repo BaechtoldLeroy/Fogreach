@@ -141,7 +141,11 @@ test('Ueberspringen zeigt sofort den vollen Text', () => {
   assert.strictEqual(lauf.ueberspringen(), false, 'ein zweites Ueberspringen meldet Erfolg');
 });
 
-test('Auch der Dungeon-Dialog baut sich Wort fuer Wort auf', () => {
+test('Der Dungeon-Dialog ist an den gemeinsamen Aufbau angeschlossen', () => {
+  // ACHTUNG: dieser Test liest nur den Quelltext. Er sagt, dass die Zeile da
+  // steht — nicht, dass sie laeuft. Genau daran ist der naechste Fehler
+  // vorbeigekommen: der Takt sass auf der angehaltenen Spieluhr und ruehrte
+  // sich nie. Gemessen wird das in tests/dungeonDialogAufbau.test.js.
   // Gemeldet: "Elara-Text wird immer noch nicht Wort fuer Wort eingeblendet im
   // Dungeon". Stimmt — ihre Auftritte IM DUNGEON laufen ueber
   // EventSystem.showEventChoiceDialog, einen dritten Weg neben HubSceneV2 und

@@ -2169,9 +2169,14 @@ function leaveDungeonForHub(scene, options = {}) {
   // it never carries into the next run or persists. recalcDerived reverts any
   // amulet stat contribution to the gear+skill baseline (same pattern as above).
   if (window.LootSystem && typeof window.LootSystem.clearRunAmulet === 'function') {
-    window.LootSystem.clearRunAmulet(window.equipment);
+    window.LootSystem.clearRunAmulet(window.equipment, window.inventory);
   } else if (window.equipment) {
     window.equipment.amulet = null;
+  }
+  // Und die Truhe: das waere sonst der eine Weg, auf dem ein Amulett doch
+  // dauerhaft bleibt (aus alten Spielstaenden, in denen eines in den Hub kam).
+  if (window.HubTruhe && typeof window.HubTruhe.amuletteEntfernen === 'function') {
+    try { window.HubTruhe.amuletteEntfernen(); } catch (e) {}
   }
   window.runAmulet = null;
   // Feature 059 WP03: clear transient effect state (momentum stacks, revive-used)

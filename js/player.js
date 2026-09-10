@@ -25,11 +25,12 @@ const PLAYER_CRIT_MULT = 2.0;
 if (typeof window !== "undefined") window.PLAYER_CRIT_MULT = PLAYER_CRIT_MULT;
 
 // Wie weit der Kettenblitz vom getroffenen Gegner aus springt.
-// ZUM AUSPROBIEREN von 120 auf 300 gesetzt: bei 120 px muessen zwei Gegner
-// fast aneinander stehen, und man sieht den Sprung im Spiel praktisch nie —
-// deshalb wirkte der Knoten kaputt. Auch diese Zahl steht nur EINMAL da und
-// wird nach window gespiegelt, damit der Test dieselbe liest.
-const KETTEN_REICHWEITE = 300;
+// ZUM AUSPROBIEREN unbegrenzt (war 120, dann 300): bei 120 px mussten zwei
+// Gegner fast aneinander stehen, und man sah den Sprung im Spiel praktisch nie
+// — deshalb wirkte der Knoten kaputt. Unbegrenzt heisst: der Blitz sucht sich
+// den naechsten Gegner im ganzen Raum. Die Zahl steht nur EINMAL da und wird
+// nach window gespiegelt, damit der Test dieselbe liest.
+const KETTEN_REICHWEITE = Infinity;
 if (typeof window !== "undefined") window.KETTEN_REICHWEITE = KETTEN_REICHWEITE;
 const PLAYER_FRAME_METADATA = {};
 const PLAYER_WIDTH_STRETCH = 1;

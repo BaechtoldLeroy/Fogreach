@@ -162,7 +162,13 @@
    * @param {Phaser.Scene} scene
    * @param {object} textObj  Phaser-Textobjekt, schon gesetzt und vermessen
    * @param {string} voll     der ganze Text
-   * @param {object} [opts]   { sprecher, onFertig }
+   * @param {object} [opts]   { sprecher, onFertig, wanduhr }
+   *
+   * wanduhr: Takt auf Date.now() statt auf der Szenenuhr. Noetig ueberall dort,
+   * wo der Dialog das Spiel ANHAELT — pauseGameClock setzt scene.time.paused,
+   * und eine angehaltene Phaser-Uhr feuert keine Ereignisse mehr. Der Aufbau
+   * stand dann still, bis man ihn uebersprang: genau das Bild, das gemeldet
+   * wurde ("zuerst nicht sichtbar, nach der Leertaste der ganze Text").
    * @returns {{laeuft:function, ueberspringen:function, abbrechen:function}}
    */
   function anTextobjekt(scene, textObj, voll, opts) {
@@ -178,7 +184,10 @@
     // feuert auf der Spielzeit; mischte man beides, liefen Tick und Fortschritt
     // auseinander — im Testkopf sichtbar, wo zwoelf gepumpte Frames 200 ms
     // Spielzeit sind, aber kaum Wanduhrzeit.
-    var uhr = function () { return (scene.time && typeof scene.time.now === 'number') ? scene.time.now : 0; };
+    var aufWanduhr = (o.wanduhr === true);
+    var uhr = aufWanduhr
+      ? function () { return Date.now(); }
+      : function () { return (scene.time && typeof scene.time.now === 'number') ? scene.time.now : 0; };
     var lauf = starte(voll, { jetzt: uhr });
     if (lauf.fertig()) {                       // Tempo "sofort" — nichts zu tun
       if (typeof o.onFertig === 'function') o.onFertig();
@@ -201,9 +210,18 @@
       if (typeof o.onFertig === 'function') { try { o.onFertig(); } catch (e) {} }
     }
 
-    takt = scene.time.addEvent({
-      delay: 16, loop: true,
-      callback: function () {
+    // Ein Takt, zwei Antriebe. Die Szenenuhr bleibt der Normalfall; nur wenn
+    // das Spiel angehalten ist, treibt ein Fenster-Intervall den Aufbau. Beide
+    // liefern dasselbe { remove }, damit abbrechen() nichts unterscheiden muss.
+    function taktGeben(schritt) {
+      if (aufWanduhr) {
+        var id = setInterval(schritt, 16);
+        return { remove: function () { clearInterval(id); } };
+      }
+      return scene.time.addEvent({ delay: 16, loop: true, callback: schritt });
+    }
+
+    takt = taktGeben(function () {
         // Das Textobjekt kann zwischen zwei Ticks zerstoert worden sein
         // (Seitenwechsel, Schliessen). .scene ist bei Phaser der verlaessliche
         // Zerstoert-Test — .destroyed gibt es nicht.
@@ -224,7 +242,6 @@
           }
         }
         if (stand.fertig) { abbrechen(); fertigMelden(); }
-      }
     });
 
     return {

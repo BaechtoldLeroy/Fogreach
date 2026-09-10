@@ -1980,6 +1980,23 @@
   // --- Lore Fragment ---
   var activeLore = null;
 
+  // Wie weit das Wissensfragment vom Spieler weg liegt.
+  //
+  // Gemeldet: "Wissensfragmente nicht so nahe vom Player-Spawn generieren."
+  // Die alte Untergrenze war 60 px — die Rolle lag praktisch auf dem Spieler,
+  // und weil sie sich beim Beruehren SELBST einsammelt, hatte man sie
+  // aufgehoben, bevor man sie gesehen hat. Der Fund war damit kein Fund.
+  //
+  // 220 px sind gemessen erreichbar: im Raum (1408 x 896) liegen 23 von 24
+  // Richtungen um den Spieler weiter als 220 px frei, die mittlere freie
+  // Strecke betraegt 340 px.
+  var LORE_ABSTAND_MIN = 220;
+  var LORE_ABSTAND_MAX = 430;
+  // Findet sich in dem Band nichts Freies, wird die Untergrenze schrittweise
+  // gelockert, statt sofort auf den Spielerplatz zurueckzufallen. Ein enger
+  // Raum bekommt so immer noch den groesstmoeglichen Abstand.
+  var LORE_LOCKERUNG = [1, 0.7, 0.45];
+
   function spawnLoreFragment(scene) {
     if (!scene || !scene.add || !scene.physics) return;
     cleanupLore();
@@ -1988,30 +2005,33 @@
     var bx = bounds ? bounds.x + bounds.width / 2 : 400;
     var by = bounds ? bounds.y + bounds.height / 2 : 300;
     if (typeof player !== 'undefined' && player) {
-      // Try up to 16 random offsets around the player (60 - 220 px) and
-      // pick the first one that isn't blocked by a wall / obstacle. The
-      // old code picked a single fixed-radius angle and would happily
-      // place the scroll inside a wall — making the lore unreachable.
+      // Zufaellige Punkte im Band um den Spieler, der erste freie gewinnt.
+      // Ein fester Winkel mit festem Abstand hatte die Rolle frueher in Waende
+      // gesetzt — dann war das Fragment nicht erreichbar.
       var placed = false;
       var halfSize = 18; // ~ scroll sprite half-width
-      for (var attempt = 0; attempt < 16 && !placed; attempt++) {
-        var ang = Math.random() * Math.PI * 2;
-        var radius = 60 + Math.random() * 160;
-        var tx = player.x + Math.cos(ang) * radius;
-        var ty = player.y + Math.sin(ang) * radius;
-        // Stay inside the world bounds (with margin) when known.
-        if (bounds) {
-          var margin = halfSize + 8;
-          if (tx < bounds.x + margin || tx > bounds.x + bounds.width - margin) continue;
-          if (ty < bounds.y + margin || ty > bounds.y + bounds.height - margin) continue;
-        }
-        var blocked = false;
-        if (typeof window !== 'undefined' && typeof window.isSpawnPositionBlocked === 'function') {
-          try { blocked = !!window.isSpawnPositionBlocked(tx, ty, halfSize); } catch (_) { blocked = false; }
-        }
-        if (!blocked) {
-          bx = tx; by = ty;
-          placed = true;
+      for (var stufe = 0; stufe < LORE_LOCKERUNG.length && !placed; stufe++) {
+        var minAbstand = LORE_ABSTAND_MIN * LORE_LOCKERUNG[stufe];
+        var spanne = Math.max(40, LORE_ABSTAND_MAX - minAbstand);
+        for (var attempt = 0; attempt < 24 && !placed; attempt++) {
+          var ang = Math.random() * Math.PI * 2;
+          var radius = minAbstand + Math.random() * spanne;
+          var tx = player.x + Math.cos(ang) * radius;
+          var ty = player.y + Math.sin(ang) * radius;
+          // Stay inside the world bounds (with margin) when known.
+          if (bounds) {
+            var margin = halfSize + 8;
+            if (tx < bounds.x + margin || tx > bounds.x + bounds.width - margin) continue;
+            if (ty < bounds.y + margin || ty > bounds.y + bounds.height - margin) continue;
+          }
+          var blocked = false;
+          if (typeof window !== 'undefined' && typeof window.isSpawnPositionBlocked === 'function') {
+            try { blocked = !!window.isSpawnPositionBlocked(tx, ty, halfSize); } catch (_) { blocked = false; }
+          }
+          if (!blocked) {
+            bx = tx; by = ty;
+            placed = true;
+          }
         }
       }
       // If every attempt was blocked, fall back to the player's own tile —
@@ -2419,8 +2439,10 @@
       // Der Sprecher steckt im Text selbst ("ELARA: ..."), damit die Tonhoehe
       // ueber alle Auftritte hinweg dieselbe ist.
       var _m = /^([A-ZÄÖÜ][A-ZÄÖÜ ]+):/.exec(String(title || ''));
+      // wanduhr: dieser Dialog hat die Spieluhr weiter oben angehalten
+      // (pauseGameClock). Auf scene.time laeuft ab hier kein Takt mehr.
       _aufbau = TW.anTextobjekt(scene, titleText, String(title || ''),
-        { sprecher: _m ? _m[1] : '' });
+        { sprecher: _m ? _m[1] : '', wanduhr: true });
     }
 
     var dismissKeyHandler = null;
@@ -2634,6 +2656,9 @@
     // can reuse the same panel-styled, scroll-fixed toast instead of rolling
     // a new one.
     showToast: showEventToast,
+    // Fuer tests/wissensfragmentAbstand.test.js: die Bandgrenzen messbar machen.
+    LORE_ABSTAND_MIN: LORE_ABSTAND_MIN,
+    LORE_ABSTAND_MAX: LORE_ABSTAND_MAX,
     EVENT_TYPES: EVENT_TYPES,
     // Fuer die Verifikation: die reine Ziehung, ohne Ausloese-Chance und
     // Verzoegerung. Nur so laesst sich pruefen, dass eine Raum-Bedingung

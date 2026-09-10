@@ -120,6 +120,37 @@ test('#42 WP02: clearRunAmulet is null-safe (no throw)', () => {
   assert.doesNotThrow(() => sys.clearRunAmulet(null));
   assert.doesNotThrow(() => sys.clearRunAmulet(undefined));
   assert.doesNotThrow(() => sys.clearRunAmulet({}));
+  assert.doesNotThrow(() => sys.clearRunAmulet({}, null));
+  assert.doesNotThrow(() => sys.clearRunAmulet({}, 'kein Feld'));
+});
+
+test('clearRunAmulet raeumt auch die NICHT getragenen aus dem Beutel', () => {
+  // Gemeldet: "Amulette sollen immer zerstoert werden bei der Rueckkehr in den
+  // Hub, auch wenn sie nicht getragen wurden". Geleert wurde bis dahin nur der
+  // Platz am Hals; eines im Beutel kam mit und stand im Spielstand.
+  const sys = freshSystem();
+  const waffe = { type: 'weapon', gridX: 0, gridY: 0 };
+  const trank = { type: 'potion', gridX: 4, gridY: 0 };
+  const beutel = [
+    waffe,
+    { type: 'amulet', effect: 'twin', gridX: 2, gridY: 0 },
+    null,
+    { isAmulet: true, effect: 'chain', gridX: 3, gridY: 0 },
+    trank
+  ];
+  const eq = { weapon: waffe, amulet: { effect: 'aura' } };
+
+  sys.clearRunAmulet(eq, beutel);
+
+  assert.strictEqual(eq.amulet, null, 'das getragene bleibt liegen');
+  assert.strictEqual(beutel[1], null, 'Amulett nach type nicht entfernt');
+  assert.strictEqual(beutel[3], null, 'Amulett nach isAmulet nicht entfernt');
+  // Die Laenge bleibt: der Beutel ist ein Raster mit festen Plaetzen. Ein
+  // splice wuerde jedes nachfolgende Stueck einen Platz nach vorn ziehen.
+  assert.strictEqual(beutel.length, 5, 'die Plaetze haben sich verschoben');
+  assert.strictEqual(beutel[0], waffe, 'die Waffe hat den Platz gewechselt');
+  assert.strictEqual(beutel[4], trank, 'der Trank hat den Platz gewechselt');
+  assert.strictEqual(trank.gridX, 4, 'die Rasterposition wurde veraendert');
 });
 
 // --- WP04: Spawn-Gating + fliegender Händler (Auslage) ---

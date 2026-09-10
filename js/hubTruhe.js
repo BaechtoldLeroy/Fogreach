@@ -243,6 +243,23 @@
     _sicherstellen();
   }
 
+  /**
+   * Nimmt alle Amulette aus der Truhe und sagt, wie viele es waren.
+   *
+   * Amulette gelten nur fuer den laufenden Gang. Getragene und solche im Beutel
+   * loescht leaveDungeonForHub; ein eingelagertes waere sonst der eine Weg, auf
+   * dem eines doch dauerhaft bleibt.
+   */
+  function amuletteEntfernen() {
+    var f = _sicherstellen();
+    var n = 0;
+    for (var i = 0; i < f.length; i++) {
+      var it = f[i];
+      if (it && (it.type === 'amulet' || it.isAmulet === true)) { f[i] = null; n++; }
+    }
+    return n;
+  }
+
   window.HubTruhe = {
     SPALTEN: SPALTEN,
     ZEILEN_START: ZEILEN_START,
@@ -260,6 +277,7 @@
     indexAn: indexAn,
     alsSpielstand: alsSpielstand,
     ausSpielstand: ausSpielstand,
+    amuletteEntfernen: amuletteEntfernen,
     leeren: leeren
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = window.HubTruhe;
