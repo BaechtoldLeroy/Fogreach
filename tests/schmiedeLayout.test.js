@@ -39,6 +39,35 @@ before(async () => {
 });
 after(async () => { if (H) await H.shutdown(); });
 
+/**
+ * Fuellt das Inventar mit Ausruestung und misst die gezeichneten Balken.
+ *
+ * Ohne Ausruestung im Inventar zeichnet die Szene gar keine Zeile — der Test
+ * waere dann gruen, ohne je einen Balken gesehen zu haben.
+ */
+function balken() {
+  return H.run(`(function () {
+    var sc = window.game.scene.getScene('CraftingScene');
+    for (var i = 0; i < 6; i++) inventory.push(window.LootSystem.rollItem(null, 5));
+    sc._refreshInventoryList();
+    return {
+      kasten: {
+        links: sc.invListBg.x - sc.invListBg.width / 2,
+        rechts: sc.invListBg.x + sc.invListBg.width / 2,
+        oben: sc.invListBg.y - sc.invListBg.height / 2,
+        unten: sc.invListBg.y + sc.invListBg.height / 2
+      },
+      zeilen: sc.invRows.map(function (r) {
+        return { links: r.bg.x - r.bg.width / 2, rechts: r.bg.x + r.bg.width / 2,
+                 oben: r.bg.y - r.bg.height / 2, unten: r.bg.y + r.bg.height / 2 };
+      }),
+      maxZeilen: sc.invMaxRows,
+      werkbankLinks: sc.werkbankRahmen.x - sc.werkbankRahmen.width / 2,
+      bildHoehe: sc.scale.height
+    };
+  })()`);
+}
+
 /** Misst den Inventarblock gegen den untersten Ausruestungsplatz. */
 function messen() {
   return H.run(`(function () {
@@ -159,4 +188,49 @@ test('Die Ausruestungsplaetze stehen nur an EINER Stelle in der Datei', () => {
   assert.strictEqual(treffer, 1,
     'die Platzliste steht ' + treffer + '-mal in CraftingScene.js — '
     + 'beim naechsten Platz wird wieder eine davon vergessen');
+});
+
+test('Die Balken der Inventarliste bleiben in ihrem Kasten', () => {
+  // Gemeldet: "die Balken fuers Equipment im Inventar sind zu breit".
+  // Gemessen ragte jeder Balken 97 px ueber seinen eigenen grauen Kasten
+  // hinaus und damit bis x 457 — der Werktisch beginnt bei x 384, die Liste
+  // lag also unter ihm.
+  //
+  // Der Grund: die Breite wurde an ZWEI Stellen gerechnet. Der Kasten nahm
+  // panelW (330), die Balken rechneten sich Bildbreite / 2 minus 50 (430)
+  // selbst aus. Der Test prueft deshalb den Balken gegen den Kasten, nicht
+  // gegen eine Zahl.
+  const m = balken();
+  assert.ok(m.zeilen.length > 0, "es wurde keine Zeile gezeichnet");
+  m.zeilen.forEach((z, i) => {
+    assert.ok(z.links >= m.kasten.links,
+      'Balken ' + (i + 1) + ' beginnt bei x=' + z.links
+      + ', sein Kasten erst bei x=' + m.kasten.links);
+    assert.ok(z.rechts <= m.kasten.rechts,
+      'Balken ' + (i + 1) + ' endet bei x=' + z.rechts
+      + ', sein Kasten schon bei x=' + m.kasten.rechts
+      + ' — er ragt ' + (z.rechts - m.kasten.rechts) + ' px hinaus');
+    assert.ok(z.rechts <= m.werkbankLinks,
+      'Balken ' + (i + 1) + ' reicht bis x=' + z.rechts
+      + ' und liegt damit unter dem Werktisch (beginnt bei x=' + m.werkbankLinks + ')');
+  });
+});
+
+test('Die Liste nutzt den Platz unter der Spalte, ohne aus dem Bild zu laufen', () => {
+  // Beide Richtungen. Zu kurz: der Platz unter der Spalte bleibt leer, obwohl
+  // die Werte nach rechts gewandert sind. Zu lang: die Liste schiebt sich
+  // ueber die Rueckmeldung und den Zurueck-Knopf am unteren Rand.
+  const m = balken();
+  assert.ok(m.maxZeilen >= 4,
+    'die Liste zeigt nur ' + m.maxZeilen + ' Zeilen, unter ihr bleiben '
+    + Math.round(m.bildHoehe - m.kasten.unten) + ' px ungenutzt');
+  assert.ok(m.kasten.unten <= m.bildHoehe - 50,
+    'die Liste endet bei y=' + m.kasten.unten + ' und laesst nur noch '
+    + Math.round(m.bildHoehe - m.kasten.unten) + ' px fuer die untere Knopfreihe');
+  // Und die gezeichneten Zeilen bleiben in ihrem Kasten.
+  m.zeilen.forEach((z, i) => {
+    assert.ok(z.unten <= m.kasten.unten,
+      'Balken ' + (i + 1) + ' endet bei y=' + z.unten
+      + ', sein Kasten schon bei y=' + m.kasten.unten);
+  });
 });

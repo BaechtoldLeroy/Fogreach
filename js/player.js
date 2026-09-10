@@ -23,6 +23,14 @@ const PLAYER_TINT_COLOR = 0xffffff; // Neutral tint (no color change)
 // faellt — genau das ist beim ersten Versuch passiert.
 const PLAYER_CRIT_MULT = 2.0;
 if (typeof window !== "undefined") window.PLAYER_CRIT_MULT = PLAYER_CRIT_MULT;
+
+// Wie weit der Kettenblitz vom getroffenen Gegner aus springt.
+// ZUM AUSPROBIEREN von 120 auf 300 gesetzt: bei 120 px muessen zwei Gegner
+// fast aneinander stehen, und man sieht den Sprung im Spiel praktisch nie —
+// deshalb wirkte der Knoten kaputt. Auch diese Zahl steht nur EINMAL da und
+// wird nach window gespiegelt, damit der Test dieselbe liest.
+const KETTEN_REICHWEITE = 300;
+if (typeof window !== "undefined") window.KETTEN_REICHWEITE = KETTEN_REICHWEITE;
 const PLAYER_FRAME_METADATA = {};
 const PLAYER_WIDTH_STRETCH = 1;
 const PLAYER_SIDEWAYS_SCALE = 0.8;
@@ -2206,8 +2214,9 @@ function spinAttack() {
   const _ketteRang = (typeof window.skillRang === 'function')
     ? window.skillRang('combat_chain_lightning') : 0;
   if (_ketteRang > 0 && spinHitEnemies.length > 0) {
-    const chainRange = 120;
+    const chainRange = KETTEN_REICHWEITE;
     let _spruengeUebrig = _ketteRang;
+    let _getroffen = 0;
     const hitSet = new Set(spinHitEnemies);
     for (const hitEnemy of spinHitEnemies) {
       if (!hitEnemy || !hitEnemy.active) continue;
@@ -2240,8 +2249,17 @@ function spinAttack() {
         chainFx.lineTo(nearestChainTarget.x, nearestChainTarget.y);
         chainFx.strokePath();
         spinScene.time.delayedCall(200, () => chainFx.destroy(), null, spinScene);
+        _getroffen++;
         if (--_spruengeUebrig <= 0) break;   // Raenge erlauben mehrere Spruenge
       }
+    }
+    // ZUM AUSPROBIEREN: eine Meldung, wenn der Blitz wirklich gesprungen ist.
+    // Die blaue Linie liegt nur 200 ms lang zwischen zwei Gegnern, mitten im
+    // Wirbel — man uebersieht sie. Der Toast sagt, DASS es passiert ist.
+    if (_getroffen > 0 && window.EventSystem
+        && typeof window.EventSystem.showToast === 'function') {
+      window.EventSystem.showToast(spinScene,
+        '⚡ Kettenblitz springt auf ' + _getroffen + ' Gegner', 'chain_lightning');
     }
   }
 

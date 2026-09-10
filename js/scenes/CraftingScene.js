@@ -242,7 +242,17 @@ class CraftingScene extends Phaser.Scene {
 
     this.invListY = invHeaderY + 14;
     this.invRowH = 28;
-    this.invMaxRows = 2;
+    // Vier Zeilen statt zwei. Seit die Werte nach rechts gewandert sind, endet
+    // die linke Spalte bei y 370 und darunter liegen 110 px Leerraum: der
+    // Zurueck-Knopf steht mittig ab x 370, die Rueckmeldung ebenfalls mittig.
+    // Vier Zeilen enden bei y 426 und bleiben davon frei.
+    this.invMaxRows = 4;
+    // Die Balken der Liste sind so breit wie die Ausruestungsplaetze darueber.
+    // _refreshInventoryList rechnete sie frueher selbst aus (Bildbreite / 2
+    // minus 50 = 430) — 97 px breiter als ihr eigener Kasten, sodass sie bis
+    // in den Werktisch hineinragten. Ein zweiter Rechenweg fuer dieselbe
+    // Breite ist genau die Falle; es gibt jetzt nur noch diesen einen.
+    this.invW = slotW;
     this.invScrollOffset = 0; // index of the first visible row
     this.invRows = [];
     this.invListBg = this.add.rectangle(
@@ -1079,7 +1089,7 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     this._setInvScrollButtons(_hasOverflow, this.invScrollOffset, maxOffset);
 
     const leftX = 30;
-    const slotW = (this.scale.width / 2) - 50;
+    const slotW = this.invW;
 
     visible.forEach((entry, row) => {
       const ry = this.invListY + row * this.invRowH + this.invRowH / 2;

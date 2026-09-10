@@ -41,9 +41,13 @@ after(async () => { if (H) await H.shutdown(); });
  * Wirbelt einmal und gibt den Schaden an beiden Gegnern zurueck.
  *
  * g1 steht IM Wirbel, g2 knapp ausserhalb — aber innerhalb der Kettenreichweite
- * (120 px) von g1. Genau diese Lage trennt "Wirbel trifft" von "Kette springt".
+ * von g1. Genau diese Lage trennt "Wirbel trifft" von "Kette springt".
+ *
+ * Die Kettenreichweite wird NICHT nachgetragen, sondern aus dem Spiel gelesen
+ * (window.KETTEN_REICHWEITE). Eine eigene Kopie waere still falsch, sobald die
+ * Zahl sich aendert — genau das ist beim Sprung von 120 auf 300 passiert.
  */
-function wirbeln(mitKette) {
+function wirbeln(mitKette, weite) {
   return H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     var ST = window.SkillTree;
@@ -61,7 +65,12 @@ function wirbeln(mitKette) {
     var r = Math.round(window.getSpinRange());
     var g1 = alle[0], g2 = alle[1];
     g1.x = px + 30;      g1.y = py;   // im Wirbel
-    g2.x = px + r + 8;   g2.y = py;   // knapp ausserhalb, ~118 px von g1
+    // Standard: knapp ausserhalb des Wirbels. Mit dem Argument weite steht g2 stattdessen
+    // genau so viele Pixel von g1 entfernt — damit laesst sich pruefen, wie
+    // weit die Kette wirklich reicht.
+    var _weite = ${typeof weite === 'number' ? weite : 'null'};
+    g2.x = (_weite === null) ? (px + r + 8) : (px + 30 + _weite);
+    g2.y = py;
     for (var j = 2; j < alle.length; j++) { alle[j].x = px + 3000; alle[j].y = py + 3000; }
     alle.forEach(function (g) {
       if (g.body && g.body.reset) g.body.reset(g.x, g.y);
@@ -80,8 +89,15 @@ function wirbeln(mitKette) {
     var imWirbel = 0;
     window.forEachEnemyInRange(r, function () { imWirbel++; }, { requireLineOfSight: true });
     var vor = [g1.hp, g2.hp];
-    window.spinAttack.call(sc);
+    // Meldungen mitschneiden: der Toast ist das, was man im Spiel sieht.
+    var meldungen = [];
+    var ES = window.EventSystem;
+    var echt = ES.showToast;
+    ES.showToast = function (s, text, id) { meldungen.push(String(text)); };
+    try { window.spinAttack.call(sc); } finally { ES.showToast = echt; }
     return {
+      meldungen: meldungen,
+      kettenReichweite: window.KETTEN_REICHWEITE,
       rang: window.skillRang('combat_chain_lightning'),
       reichweite: r, imWirbel: imWirbel,
       abstand: Math.round(Math.hypot(g2.x - g1.x, g2.y - g1.y)),
@@ -99,11 +115,16 @@ test('Ohne den Knoten bleibt der zweite Gegner unberuehrt', () => {
   assert.strictEqual(r.rang, 0, 'der Knoten ist schon investiert');
   assert.ok(r.vomSpieler > r.reichweite,
     'g2 steht mit ' + r.vomSpieler + ' px INNERHALB des Wirbels (' + r.reichweite + ' px)');
-  assert.ok(r.abstand < 120,
-    'g2 steht ' + r.abstand + ' px von g1 entfernt, ausserhalb der Kettenreichweite (120)');
+  assert.ok(typeof r.kettenReichweite === 'number' && r.kettenReichweite > 0,
+    'window.KETTEN_REICHWEITE fehlt — der Test wuesste nicht, wie weit die Kette springt');
+  assert.ok(r.abstand < r.kettenReichweite,
+    'g2 steht ' + r.abstand + ' px von g1 entfernt, ausserhalb der Kettenreichweite ('
+    + r.kettenReichweite + ')');
   assert.ok(r.schaden[0] > 0, 'schon der Wirbel selbst richtet nichts an');
   assert.strictEqual(r.schaden[1], 0,
     'g2 nimmt ' + r.schaden[1] + ' Schaden, obwohl kein Kettenblitz investiert ist');
+  assert.ok(!r.meldungen.some((t) => t.indexOf('Kettenblitz') >= 0),
+    'ohne investierten Knoten meldet sich trotzdem ein Sprung: ' + JSON.stringify(r.meldungen));
 });
 
 test('Mit dem Knoten springt der Blitz auf den zweiten Gegner', () => {
@@ -123,6 +144,34 @@ test('Der Sprung macht die HALBE Wirbelwirkung', () => {
   assert.ok(Math.abs(anteil - 0.5) < 0.1,
     'der Sprung macht ' + (anteil * 100).toFixed(0) + ' % statt 50 %'
     + '  (' + r.schaden[0] + ' gegen ' + r.schaden[1] + ')');
+});
+
+test('Ein Sprung meldet sich — sonst sieht man ihn im Spiel nicht', () => {
+  // Die blaue Linie liegt 200 ms lang zwischen zwei Gegnern, mitten im Wirbel.
+  // Genau deshalb kam die Meldung "Kettenblitz funktioniert glaubs noch nicht":
+  // er sprang, aber nichts sagte es. Der Toast sagt es.
+  //
+  // Die Gegenprobe steht im ersten Test: dort ist der Knoten noch nicht
+  // investiert, und dort darf sich nichts melden. Hier waere sie wertlos —
+  // der Wissensbaum behaelt seinen Stand ueber die Tests hinweg.
+  const mit = wirbeln(true);
+  assert.ok(!mit.fehler, mit.fehler);
+  assert.ok(mit.meldungen.some((t) => t.indexOf('Kettenblitz') >= 0),
+    'kein Toast beim Sprung — gemeldet wurde: ' + JSON.stringify(mit.meldungen));
+});
+
+test('Der Blitz springt weiter als die alten 120 px', () => {
+  // Bei 120 px mussten zwei Gegner fast aneinander stehen; im Spiel sah man den
+  // Sprung praktisch nie. Diese Probe steht auf 200 px — sie faellt, sobald die
+  // Reichweite wieder unter diesen Abstand rutscht.
+  const r = wirbeln(true, 200);
+  assert.ok(!r.fehler, r.fehler);
+  assert.strictEqual(r.abstand, 200, 'g2 steht ' + r.abstand + ' px von g1, nicht 200');
+  assert.ok(r.vomSpieler > r.reichweite,
+    'g2 steht mit ' + r.vomSpieler + ' px INNERHALB des Wirbels (' + r.reichweite + ' px)');
+  assert.ok(r.schaden[1] > 0,
+    'ueber ' + r.abstand + ' px springt der Blitz nicht (Reichweite '
+    + r.kettenReichweite + ')');
 });
 
 test('Der Kettenblitz haengt am WIRBEL, nicht am Grundangriff', () => {
