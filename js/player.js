@@ -2148,6 +2148,92 @@ function _abilityGate(id) {
   return window.AbilitySystem.isLearned(id);
 }
 
+/**
+ * Laesst den Kettenblitz von den getroffenen Stellen weiterspringen.
+ *
+ * Stand bis b235 MITTEN in spinAttack — und genau das war der Fehler: seit 060
+ * loest der Spieler den Wirbel ueber castWhirlwind aus, den beweglichen Kanal.
+ * spinAttack wird von nichts mehr aufgerufen (geprueft: kein Aufrufer ausserhalb
+ * player.js). Der Knoten lag damit in totem Code — investiert, bezahlt, wirkungslos.
+ *
+ * Deshalb steht er jetzt hier, EINMAL, und beide Wege rufen ihn.
+ *
+ * @param {Phaser.Scene} scene
+ * @param {Array<{ziel:object,x:number,y:number}>} treffer  wo der Wirbel getroffen hat
+ *        — mit Stelle, weil ein gefallener Gegner keine brauchbaren Koordinaten
+ *        mehr hat, er als Absprungpunkt aber trotzdem zaehlt.
+ * @returns {number} wie viele Spruenge stattgefunden haben
+ */
+function kettenblitzAusloesen(scene, treffer) {
+  const rang = (typeof window.skillRang === 'function')
+    ? window.skillRang('combat_chain_lightning') : 0;
+  let getroffen = 0;
+  let grund = null;
+  if (rang <= 0) grund = 'Knoten nicht investiert (Rang 0)';
+  else if (!treffer || treffer.length === 0) grund = 'der Wirbel hat niemanden getroffen';
+
+  if (rang > 0 && treffer && treffer.length > 0) {
+    let spruengeUebrig = rang;
+    const hitSet = new Set(treffer.map((t) => t.ziel));
+    for (const t of treffer) {
+      if (!t) continue;
+      let ziel = null;
+      let naechste = Infinity;
+      if (enemies?.children) {
+        enemies.children.iterate((kandidat) => {
+          if (!kandidat || !kandidat.active || hitSet.has(kandidat)) return;
+          const d = Math.hypot(kandidat.x - t.x, kandidat.y - t.y);
+          if (d < KETTEN_REICHWEITE && d < naechste) { naechste = d; ziel = kandidat; }
+        });
+      }
+      if (ziel) {
+        hitSet.add(ziel);
+        dealDamageToEnemy(scene, ziel, 0.5, 'spin');
+        handleEnemyHit(scene, ziel, { tint: 0x88ccff, duration: 120 });
+        const fx = scene.add.graphics();
+        fx.lineStyle(2, 0x88ccff, 0.8);
+        fx.beginPath();
+        fx.moveTo(t.x, t.y);
+        fx.lineTo(ziel.x, ziel.y);
+        fx.strokePath();
+        scene.time.delayedCall(200, () => fx.destroy(), null, scene);
+        getroffen++;
+        if (--spruengeUebrig <= 0) break;   // Raenge erlauben mehrere Spruenge
+      }
+    }
+    if (getroffen === 0) {
+      let frei = 0;
+      if (enemies?.children) {
+        enemies.children.iterate((e) => { if (e && e.active && !hitSet.has(e)) frei++; });
+      }
+      grund = frei === 0
+        ? 'kein weiterer Gegner im Raum (alle vom Wirbel erfasst)'
+        : frei + ' Gegner da, aber keiner in Reichweite (' + KETTEN_REICHWEITE + ')';
+    }
+  }
+
+  // ZUM AUSPROBIEREN: nach jedem Wirbel eine Meldung. Sprang der Blitz, sagt
+  // sie das; sprang er nicht, sagt sie warum. Faellt wieder raus.
+  if (window.__KETTE_STUMM !== true) {
+    try {
+      console.log('[Kettenblitz] Rang ' + rang
+        + ', vom Wirbel getroffen ' + ((treffer && treffer.length) || 0)
+        + ', Spruenge ' + getroffen
+        + ', Reichweite ' + KETTEN_REICHWEITE
+        + (grund ? ' -> ' + grund : ''));
+    } catch (e) {}
+    if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+      window.EventSystem.showToast(scene,
+        getroffen > 0
+          ? '⚡ Kettenblitz springt auf ' + getroffen + ' Gegner'
+          : '⚡ kein Sprung: ' + (grund || 'unbekannt'),
+        'chain_lightning');
+    }
+  }
+  return getroffen;
+}
+if (typeof window !== 'undefined') window.kettenblitzAusloesen = kettenblitzAusloesen;
+
 function spinAttack() {
   // Gating passiert in AbilitySystem.tryActivate (prüft die GELERNTE Ability,
   // z.B. 'whirlwind'). Kein interner _abilityGate('spinAttack') mehr — die alte
@@ -2222,91 +2308,11 @@ function spinAttack() {
     if (enemy) spinHitEnemies.push({ ziel: enemy, x: enemy.x, y: enemy.y });
   }, { requireLineOfSight: true });
 
-  // Kettenblitz (Chain Lightning): spin attack chains to 1 nearby enemy for 50% damage
-  // #93: je Rang springt der Blitz auf einen Gegner mehr (war genau einer).
-  const _ketteRang = (typeof window.skillRang === 'function')
-    ? window.skillRang('combat_chain_lightning') : 0;
-  // ZUR DIAGNOSE (#93): jeder Wirbel sagt, was mit dem Kettenblitz war.
-  //
-  // Gemeldet: "der Toast loest immer noch nicht aus, immer noch eines von
-  // beiden kaputt". Beide Bauteile sind einzeln gemessen heil — der Toast
-  // blendet auf, der Sprung trifft. Was fehlt, ist die Auskunft, WELCHE der
-  // Bedingungen im echten Spiel nicht erfuellt ist. Genau die steht hier.
-  let _ketteGrund = null;
-  let _getroffen = 0;
-  if (_ketteRang <= 0) _ketteGrund = 'Knoten nicht investiert (Rang 0)';
-  else if (spinHitEnemies.length === 0) _ketteGrund = 'der Wirbel hat niemanden getroffen';
-
-  if (_ketteRang > 0 && spinHitEnemies.length > 0) {
-    const chainRange = KETTEN_REICHWEITE;
-    let _spruengeUebrig = _ketteRang;
-    const hitSet = new Set(spinHitEnemies.map((t) => t.ziel));
-    for (const treffer of spinHitEnemies) {
-      if (!treffer) continue;
-      let nearestChainTarget = null;
-      let nearestDist = Infinity;
-      if (enemies?.children) {
-        enemies.children.iterate((candidate) => {
-          if (!candidate || !candidate.active || hitSet.has(candidate)) return;
-          const cdx = candidate.x - treffer.x;
-          const cdy = candidate.y - treffer.y;
-          const dist = Math.hypot(cdx, cdy);
-          if (dist < chainRange && dist < nearestDist) {
-            nearestDist = dist;
-            nearestChainTarget = candidate;
-          }
-        });
-      }
-      if (nearestChainTarget) {
-        hitSet.add(nearestChainTarget);
-        dealDamageToEnemy(spinScene, nearestChainTarget, 0.5, 'spin');
-        handleEnemyHit(spinScene, nearestChainTarget, {
-          tint: 0x88ccff,
-          duration: 120
-        });
-        // Visual: chain lightning line
-        const chainFx = spinScene.add.graphics();
-        chainFx.lineStyle(2, 0x88ccff, 0.8);
-        chainFx.beginPath();
-        chainFx.moveTo(treffer.x, treffer.y);
-        chainFx.lineTo(nearestChainTarget.x, nearestChainTarget.y);
-        chainFx.strokePath();
-        spinScene.time.delayedCall(200, () => chainFx.destroy(), null, spinScene);
-        _getroffen++;
-        if (--_spruengeUebrig <= 0) break;   // Raenge erlauben mehrere Spruenge
-      }
-    }
-    if (_getroffen === 0) {
-      var _lebende = 0;
-      if (enemies?.children) {
-        enemies.children.iterate((e) => { if (e && e.active && !hitSet.has(e)) _lebende++; });
-      }
-      _ketteGrund = _lebende === 0
-        ? 'kein weiterer Gegner im Raum (alle vom Wirbel erfasst)'
-        : _lebende + ' Gegner da, aber keiner in Reichweite (' + chainRange + ')';
-    }
-  }
-
-  // ZUM AUSPROBIEREN: nach JEDEM Wirbel eine Meldung. Sprang der Blitz, sagt
-  // sie das; sprang er nicht, sagt sie warum. Damit laesst sich von aussen
-  // trennen, ob der Toast oder der Blitz haengt — bisher war beides nur "es
-  // kommt nichts". Beides zusammen faellt raus, sobald der Knoten steht.
-  if (window.__KETTE_STUMM !== true) {
-    try {
-      console.log('[Kettenblitz] Rang ' + _ketteRang
-        + ', vom Wirbel getroffen ' + spinHitEnemies.length
-        + ', Spruenge ' + _getroffen
-        + ', Reichweite ' + KETTEN_REICHWEITE
-        + (_ketteGrund ? ' -> ' + _ketteGrund : ''));
-    } catch (e) {}
-    if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
-      window.EventSystem.showToast(spinScene,
-        _getroffen > 0
-          ? '⚡ Kettenblitz springt auf ' + _getroffen + ' Gegner'
-          : '⚡ kein Sprung: ' + (_ketteGrund || 'unbekannt'),
-        'chain_lightning');
-    }
-  }
+  // spinAttack ist der ALTE Einzelwirbel. Er wird von nichts mehr aufgerufen —
+  // der Spieler wirbelt seit 060 ueber castWhirlwind. Der Aufruf bleibt hier
+  // stehen, damit die beiden Wege nicht auseinanderlaufen, falls der alte
+  // wieder angeschlossen wird.
+  kettenblitzAusloesen(spinScene, spinHitEnemies);
 
   // 3) Ende des Spin-State
   this.time.delayedCall(300, () => {
@@ -4243,15 +4249,28 @@ function castWhirlwind() {
   }});
   if (window.particleFactory) { try { window.particleFactory.abilityTrail(player.x, player.y, STEEL); } catch (e) {} }
 
+  // Die passiven Knoten des Strangs haengen am Wirbel — und zwar EINMAL je
+  // Einsatz, nicht je Tick. Der Kanal tickt sieben- bis elfmal; wuerde jeder
+  // Tick den Blitz feuern, waere der Knoten das Zehnfache wert.
+  let ketteGefeuert = false;
+  const giftGewuerfelt = new Set();
+
   // Schadens-Ticks: treffen alle in Reichweite, folgen dem (beweglichen) Spieler.
   scene.time.addEvent({ delay: tickMs, repeat: tickCount - 1, callback: () => {
     if (!player || !player.active) return;
     let hitThisTick = 0;
+    const trefferDiesenTick = [];
     // Pro Tick — Props sind nach dem ersten weg, der Rest läuft ins Leere.
     breakDestructiblesInRange(scene, range);
     forEachEnemyInRange(range, (enemy) => {
       if (!enemy || !enemy.active) return;
       hitThisTick++;
+      // Die Stelle SOFORT mitschreiben, vor allem Weiteren: ein vom Wirbel
+      // gefaellter Gegner zaehlt als Absprungpunkt genauso, hat danach aber
+      // keine brauchbaren Koordinaten mehr. Stand das erst weiter unten, riss
+      // ein Griff auf den toten Gegner den Rueckruf vorher ab und der Sprung
+      // fiel genau in dem Fall aus, der im Kampf der haeufigste ist.
+      trefferDiesenTick.push({ ziel: enemy, x: enemy.x, y: enemy.y });
       const { isCrit } = dealDamageToEnemy(scene, enemy, perTick, 'whirlwind');
       // Funken in Klingen-Tangenten-Richtung (2 kleine Bursts).
       if (window.particleFactory) {
@@ -4264,7 +4283,25 @@ function castWhirlwind() {
       if (window.statusEffectManager && window.StatusEffectType) {
         try { window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'whirlwind'); } catch (e) {}
       }
+      // Giftklinge: 10 % je Rang, EIN Wurf je Gegner und Einsatz. Sie lag aus
+      // demselben Grund brach wie der Kettenblitz — nur im alten spinAttack.
+      var giftRang = (typeof window.skillRang === 'function')
+        ? window.skillRang('combat_poison_blade') : 0;
+      if (giftRang > 0 && !giftGewuerfelt.has(enemy)
+          && window.statusEffectManager && window.StatusEffectType) {
+        giftGewuerfelt.add(enemy);
+        if (Math.random() < 0.10 * giftRang) {
+          try { window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'poisonBlade'); } catch (e) {}
+        }
+      }
     });
+
+    // Kettenblitz beim ERSTEN Tick, der jemanden erwischt. Der Blitz gehoert an
+    // den Anfang des Wirbels, nicht ans Ende — und einmal je Einsatz.
+    if (!ketteGefeuert && trefferDiesenTick.length > 0) {
+      ketteGefeuert = true;
+      kettenblitzAusloesen(scene, trefferDiesenTick);
+    }
     // Mini-Screenshake, wenn das Sägeblatt mehrere Gegner gleichzeitig erwischt.
     if (hitThisTick >= 2 && scene.cameras && scene.cameras.main) {
       try { scene.cameras.main.shake(70, 0.0028); } catch (e) {}
