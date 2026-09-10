@@ -1011,10 +1011,7 @@ window.normalizePlayerDirectionalFrames = normalizePlayerDirectionalFrames;
 window.ensureDirectionLoaded = ensureDirectionLoaded;
 window.beginChargedSlash = beginChargedSlash;
 window.releaseChargedSlash = releaseChargedSlash;
-window.spinAttack = spinAttack;
-window.dashSlash = dashSlash;
 window.performRoll = performRoll;
-window.throwDagger = throwDagger;
 window.shieldBash = shieldBash;
 window.handlePlayerProjectileEnemyOverlap = handlePlayerProjectileEnemyOverlap;
 
@@ -1413,16 +1410,8 @@ function getSpinRange() {
   return getRangeFromBase(SPIN_RANGE_BASE);
 }
 
-function getSpinCooldown() {
-  return Math.max(SPIN_COOLDOWN_MIN, SPIN_COOLDOWN_BASE / getAttackSpeedMultiplier());
-}
-
 function getChargedSlashCooldown() {
   return Math.max(CHARGED_SLASH_COOLDOWN_MIN, CHARGED_SLASH_COOLDOWN_BASE / getAttackSpeedMultiplier());
-}
-
-function getDashSlashRange() {
-  return getRangeFromBase(DASH_SLASH_RANGE_BASE);
 }
 
 function getDashSlashDistance() {
@@ -1441,20 +1430,12 @@ function getDashSlashDuration() {
   return Math.max(140, DASH_SLASH_DURATION_BASE / getAttackSpeedMultiplier());
 }
 
-function getDashSlashCooldown() {
-  return Math.max(DASH_SLASH_COOLDOWN_MIN, DASH_SLASH_COOLDOWN_BASE / getAttackSpeedMultiplier());
-}
-
 function getDaggerThrowSpeed() {
   return DAGGER_THROW_SPEED_BASE * getAttackSpeedMultiplier();
 }
 
 function getDaggerThrowLifespan() {
   return DAGGER_THROW_LIFESPAN_BASE * (attackRange / DEFAULT_ATTACK_RANGE_BASE);
-}
-
-function getDaggerThrowCooldown() {
-  return Math.max(DAGGER_THROW_COOLDOWN_MIN, DAGGER_THROW_COOLDOWN_BASE / getAttackSpeedMultiplier());
 }
 
 function getShieldBashRange() {
@@ -2281,11 +2262,12 @@ function blitzbogen(scene, x1, y1, x2, y2) {
  * Laesst den Kettenblitz von den getroffenen Stellen weiterspringen.
  *
  * Stand bis b235 MITTEN in spinAttack — und genau das war der Fehler: seit 060
- * loest der Spieler den Wirbel ueber castWhirlwind aus, den beweglichen Kanal.
- * spinAttack wird von nichts mehr aufgerufen (geprueft: kein Aufrufer ausserhalb
- * player.js). Der Knoten lag damit in totem Code — investiert, bezahlt, wirkungslos.
+ * loest der Spieler den Wirbel ueber castWhirlwind aus, den beweglichen Kanal,
+ * und spinAttack hatte keinen Aufrufer mehr. Der Knoten lag damit in totem Code:
+ * investiert, bezahlt, wirkungslos. In b239 ist spinAttack entfernt worden.
  *
- * Deshalb steht er jetzt hier, EINMAL, und beide Wege rufen ihn.
+ * Wer einen weiteren Weg zum Wirbel baut, ruft DIESE Funktion — nicht eine
+ * zweite Fassung daneben.
  *
  * @param {Phaser.Scene} scene
  * @param {Array<{ziel:object,x:number,y:number}>} treffer  wo der Wirbel getroffen hat
@@ -2326,92 +2308,6 @@ function kettenblitzAusloesen(scene, treffer) {
   return getroffen;
 }
 if (typeof window !== 'undefined') window.kettenblitzAusloesen = kettenblitzAusloesen;
-
-function spinAttack() {
-  // Gating passiert in AbilitySystem.tryActivate (prüft die GELERNTE Ability,
-  // z.B. 'whirlwind'). Kein interner _abilityGate('spinAttack') mehr — die alte
-  // ID wird nie gelernt, das würde whirlwind tot-gaten (060).
-  const now = (typeof window.gameNow === 'function') ? window.gameNow(this) : this.time.now;
-  const baseCooldown = getSpinCooldown();
-  const abilityCooldown = applyCooldownModifier(baseCooldown, 'spin');
-  if (isSpinning || now - lastSpinTime < abilityCooldown || isChargingSlash || isDashing || isRolling) return;
-
-  isSpinning = true;
-  lastSpinTime = now;
-  if (window.soundManager) window.soundManager.playSFX('ability_spin');
-
-  startCooldownTimer(this, abilityCooldown, {
-    button: spinBtn,
-    label: spinBtnCooldownText,
-    statusKey: 'spin'
-  });
-
-  const range = getSpinRange();
-
-  // 1) visueller Effekt: Kreis um Spieler
-  const fx = this.add.graphics();
-  fx.lineStyle(2, 0x00ffff, 0.8);
-  const x = Math.round(player.x);
-  const y = Math.round(player.y);
-  fx.strokeCircle(x, y, range);
-  this.time.delayedCall(200, () => fx.destroy(), null, this);
-  // Spin ability trail
-  if (window.particleFactory) window.particleFactory.abilityTrail(x, y, 0x00ff88);
-
-  // 2) Schaden an allen Gegnern im Umkreis
-  const spinBonus = getAbilityBonus('spin');
-  const spinScene = this;
-  const spinHitEnemies = [];
-  breakDestructiblesInRange(spinScene, range);
-  forEachEnemyInRange(range, (enemy) => {
-    const { isCrit } = dealDamageToEnemy(spinScene, enemy, 1, 'spin');
-    if (window.particleFactory) window.particleFactory.hitSpark(enemy.x, enemy.y);
-    handleEnemyHit(spinScene, enemy, {
-      tint: isCrit ? 0xfff2a6 : 0xffff00,
-      duration: isCrit ? 160 : 100
-    });
-
-    // Spin attack applies SLOW
-    if (window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
-      window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'spinAttack');
-    }
-
-    // #93: 10 % Giftchance je Rang (war pauschal 20 %).
-    var _giftRang = (typeof window.skillRang === 'function')
-      ? window.skillRang('combat_poison_blade') : 0;
-    if (_giftRang > 0
-        && window.statusEffectManager && window.StatusEffectType && enemy && enemy.active) {
-      if (Math.random() < 0.10 * _giftRang) {
-        window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'poisonBlade');
-      }
-    }
-
-    // Auch die GEFALLENEN. Der Blitz springt von der Stelle, an der der Wirbel
-    // getroffen hat — ob der Getroffene den Schlag ueberlebt hat, aendert
-    // daran nichts.
-    //
-    // Bis hierher stand ein "&& enemy.active" davor, und genau daran ist der
-    // Knoten im Spiel nie aufgefallen: der Wirbel toetet meistens, was er
-    // trifft, danach war die Liste leer und der Sprung fiel aus. Gemessen mit
-    // echten Lebenspunkten — zaeher Gegner: Sprung und Meldung; sterbender
-    // Gegner: 0 Schaden, keine Meldung.
-    //
-    // Die Stelle wird MITGESCHRIEBEN statt spaeter vom Gegner gelesen: ein
-    // zerstoertes Phaser-Objekt hat keine brauchbaren Koordinaten mehr.
-    if (enemy) spinHitEnemies.push({ ziel: enemy, x: enemy.x, y: enemy.y });
-  }, { requireLineOfSight: true });
-
-  // spinAttack ist der ALTE Einzelwirbel. Er wird von nichts mehr aufgerufen —
-  // der Spieler wirbelt seit 060 ueber castWhirlwind. Der Aufruf bleibt hier
-  // stehen, damit die beiden Wege nicht auseinanderlaufen, falls der alte
-  // wieder angeschlossen wird.
-  kettenblitzAusloesen(spinScene, spinHitEnemies);
-
-  // 3) Ende des Spin-State
-  this.time.delayedCall(300, () => {
-    isSpinning = false;
-  }, null, this);
-}
 
 function beginChargedSlash() {
   if (!this || !player) return;
@@ -2910,158 +2806,6 @@ function performRoll() {
   return true;
 }
 
-function dashSlash() {
-  if (!this || !player) return;
-  if (dashSlashCooldown || isDashing || isSpinning || isChargingSlash || isRolling) return;
-
-  const scene = this;
-  const baseCooldown = getDashSlashCooldown();
-  const finalCooldown = applyCooldownModifier(baseCooldown, 'dash');
-  const dashDir = _getAimVector2(scene);
-
-  if (isDashing) return;
-  isDashing = true;
-  if (window.soundManager) window.soundManager.playSFX('ability_dash');
-
-  const dashRange = getDashSlashRange();
-  const dashDistance = getDashSlashDistance();
-  const dashDuration = getDashSlashDuration();
-  const dashSpeed = dashDistance / (dashDuration / 1000);
-  if (player?.setTint) player.setTint(0x7fd6ff);
-  if (player?.body) player.body.setMaxVelocity(dashSpeed, dashSpeed);
-  if (player?.setVelocity) {
-    player.setVelocity(dashDir.x * dashSpeed, dashDir.y * dashSpeed);
-  }
-
-  const tempVec = new Phaser.Math.Vector2();
-  const dashHits = new Set();
-  const threshold = Math.cos(DASH_SLASH_ARC / 2);
-  const knockback = 180;
-  const damageMultiplier = 1.1;
-
-  // Track previous position to detect wall crossings (Issue #21).
-  // High dash velocity (~1000 px/s) can tunnel through static obstacle bodies
-  // before the physics collider resolves; we manually raycast each tick.
-  let prevDashX = player.x;
-  let prevDashY = player.y;
-
-  // Returns true if the segment from (fromX,fromY)->(toX,toY) crosses a wall
-  // (obstacle group rectangle or closed door). Mirrors hasLineOfSightToEnemy
-  // but operates on arbitrary points instead of two sprites.
-  const dashCrossedWall = (fromX, fromY, toX, toY) => {
-    const line = new Phaser.Geom.Line(fromX, fromY, toX, toY);
-    if (obstacles && obstacles.children) {
-      let blocked = false;
-      obstacles.children.iterate((o) => {
-        if (blocked || !o) return;
-        if (o.getData && o.getData('walkthrough')) return;
-        if (Phaser.Geom.Intersects.LineToRectangle(line, o.getBounds())) blocked = true;
-      });
-      if (blocked) return true;
-    }
-    if (scene && scene._doorGroup) {
-      let blocked = false;
-      scene._doorGroup.children.iterate((door) => {
-        if (blocked || !door || !door.active) return;
-        if (door.getData && door.getData('walkthrough')) return;
-        if (Phaser.Geom.Intersects.LineToRectangle(line, door.getBounds())) blocked = true;
-      });
-      if (blocked) return true;
-    }
-    return false;
-  };
-
-  const stopDashAtWall = () => {
-    if (!isDashing) return;
-    if (player && player.active) {
-      // Snap back to the last known safe position to undo any tunneling that
-      // happened during this physics step.
-      player.x = prevDashX;
-      player.y = prevDashY;
-      if (player.setVelocity) player.setVelocity(0, 0);
-      if (player.body) player.body.setMaxVelocity(220, 220);
-      if (player.clearTint) player.clearTint();
-    }
-    isDashing = false;
-  };
-
-  const applyDashDamage = () => {
-    breakDestructiblesInRange(scene, dashRange);
-    forEachEnemyInRange(dashRange, (enemy, { dx, dy }) => {
-      if (dashHits.has(enemy)) return;
-      tempVec.set(dx, dy);
-      const len = tempVec.length();
-      if (len === 0) return;
-      tempVec.scale(1 / len);
-      if (dashDir.dot(tempVec) <= threshold) return;
-
-      dashHits.add(enemy);
-      const { isCrit } = dealDamageToEnemy(scene, enemy, damageMultiplier, 'dash');
-      handleEnemyHit(scene, enemy, {
-        tint: isCrit ? 0xfff2a6 : 0x7fd6ff,
-        duration: isCrit ? 180 : 120
-      });
-
-      if (!enemy || !enemy.active || !enemy.body) return;
-      enemy.body.setVelocity(tempVec.x * knockback, tempVec.y * knockback);
-      scene.time.delayedCall(140, () => {
-        if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
-      });
-    }, { requireLineOfSight: true });
-  };
-
-  applyDashDamage();
-  // Dash ability trail (blue)
-  if (window.particleFactory && player) {
-    window.particleFactory.abilityTrail(player.x, player.y, 0x7fd6ff);
-  }
-  const tick = 40;
-  const repeat = Math.max(0, Math.floor(dashDuration / tick) - 1);
-  for (let i = 1; i <= repeat; i++) {
-    scene.time.delayedCall(i * tick, () => {
-      if (!isDashing || !player || !player.active) return;
-      // Issue #21: abort the dash if we crossed a wall since the last tick.
-      if (dashCrossedWall(prevDashX, prevDashY, player.x, player.y)) {
-        stopDashAtWall();
-        return;
-      }
-      prevDashX = player.x;
-      prevDashY = player.y;
-      applyDashDamage();
-      if (window.particleFactory) {
-        window.particleFactory.abilityTrail(player.x, player.y, 0x7fd6ff);
-      }
-    });
-  }
-
-  showAttackEffect(scene, {
-    range: dashRange,
-    arcWidth: DASH_SLASH_ARC,
-    color: 0x7fd6ff,
-    alpha: 0.25,
-    duration: dashDuration
-  });
-
-  scene.time.delayedCall(dashDuration, () => {
-    if (player && player.active) {
-      player.setVelocity(0, 0);
-      if (player.body) player.body.setMaxVelocity(220, 220);
-      if (player.clearTint) player.clearTint();
-    }
-    isDashing = false;
-  });
-
-  dashSlashCooldown = true;
-  startCooldownTimer(scene, finalCooldown, {
-    button: dashSlashBtn,
-    label: dashSlashCooldownText,
-    statusKey: 'dash',
-    onComplete: () => {
-      dashSlashCooldown = false;
-    }
-  });
-}
-
 // ============================================================
 // === 060 Strang SCHATTEN — Helper-Funktionen ===
 // Saubere, selbstständige Helfer für die vier neuen SkillTree-
@@ -3529,56 +3273,21 @@ function _fireBowArrow(scene, opts) {
   if (window.soundManager) try { window.soundManager.playSFX('attack'); } catch (e) {}
 }
 
-function throwDagger() {
-  if (!this || !player || !playerProjectiles) return;
-  if (daggerThrowCooldown || isChargingSlash || isRolling) return;
-
-  if (window.soundManager) window.soundManager.playSFX('ability_dagger');
-  const scene = this;
-  ensurePlayerDaggerTexture(scene);
-
-  const dir = _getAimVector2(scene);
-
-  const spawnOffset = 24;
-  const projectile = scene.physics.add.sprite(
-    player.x + dir.x * spawnOffset,
-    player.y + dir.y * spawnOffset,
-    'playerDagger'
-  );
-
-  projectile.setDepth(70);
-  projectile.setRotation(dir.angle());
-  projectile.setOrigin(0.3, 0.5);
-  projectile.setScale(0.8);
-  projectile.body?.setAllowGravity?.(false);
-  projectile.body?.setSize?.(14, 6);
-  projectile.body?.setOffset?.(6, 9);
-  projectile.setData('damageMult', 1.0);
-  projectile.setData('knockback', DAGGER_THROW_KNOCKBACK);
-
-  playerProjectiles.add(projectile);
-
-  const projectileSpeed = getDaggerThrowSpeed();
-  projectile.body.setVelocity(dir.x * projectileSpeed, dir.y * projectileSpeed);
-
-  const lifespan = getDaggerThrowLifespan();
-  scene.time.delayedCall(lifespan, () => {
-    if (projectile && projectile.active) projectile.destroy();
-  });
-
-  daggerThrowCooldown = true;
-  const baseCooldown = getDaggerThrowCooldown();
-  const finalCooldown = applyCooldownModifier(baseCooldown, 'dagger');
-  startCooldownTimer(scene, finalCooldown, {
-    button: daggerThrowBtn,
-    label: daggerThrowCooldownText,
-    statusKey: 'dagger',
-    onComplete: () => {
-      daggerThrowCooldown = false;
-    }
-  });
-}
-
+// MOMENTAN NICHT VERWENDET.
+//
+// Seit 060 laeuft der Erwerb ueber den Skillbaum, und die alten Defs sind aus
+// ABILITY_DEFS verschwunden. shieldBash hat seither keinen Aufrufer mehr —
+// die Faehigkeiten rufen castWhirlwind, beginChargedSlash/releaseChargedSlash,
+// castCycloneStrike, castFrostNova, castTwistingBlades, castSteelGrasp,
+// shadowCharge, shadowTeleportDash, shadowHeilwunde und shadowDeathBlow.
+//
+// Anders als spinAttack, dashSlash und throwDagger (in b239 entfernt, weil
+// ersetzt) steht der Schildstoss hier bewusst weiter: er hat keinen Nachfolger.
+//
+// ACHTUNG, falls er wieder angeschlossen wird: passive Knoten gehoeren NICHT
+// hier hinein, sondern in die Funktion, die die Faehigkeit wirklich aufruft.
+// Genau daran sind Kettenblitz und Giftklinge still verhungert — investiert,
+// bezahlt, wirkungslos (siehe tests/kettenblitz.test.js).
 function shieldBash() {
   if (!this || !player) return;
   if (shieldBashCooldown || isDashing || isRolling) return;

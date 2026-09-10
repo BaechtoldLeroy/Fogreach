@@ -2013,6 +2013,13 @@
   // gelockert, statt sofort auf den Spielerplatz zurueckzufallen. Ein enger
   // Raum bekommt so immer noch den groesstmoeglichen Abstand.
   var LORE_LOCKERUNG = [1, 0.7, 0.45];
+  // Aber nie naeher als das, auch nicht auf der letzten Stufe.
+  //
+  // Ohne diese Schranke landete die unterste Stufe bei 0,45 * 220 = 99 px —
+  // haarscharf unter dem, was als "nah beim Spieler" gilt. Im Gesamtlauf ist
+  // der Test genau daran gefallen, einzeln lief er durch: es braucht einen
+  // engen Raum, damit die letzte Stufe ueberhaupt greift.
+  var LORE_ABSTAND_HART = 130;
 
   function spawnLoreFragment(scene) {
     if (!scene || !scene.add || !scene.physics) return;
@@ -2028,7 +2035,8 @@
       var placed = false;
       var halfSize = 18; // ~ scroll sprite half-width
       for (var stufe = 0; stufe < LORE_LOCKERUNG.length && !placed; stufe++) {
-        var minAbstand = LORE_ABSTAND_MIN * LORE_LOCKERUNG[stufe];
+        var minAbstand = Math.max(LORE_ABSTAND_HART,
+          LORE_ABSTAND_MIN * LORE_LOCKERUNG[stufe]);
         var spanne = Math.max(40, LORE_ABSTAND_MAX - minAbstand);
         for (var attempt = 0; attempt < 24 && !placed; attempt++) {
           var ang = Math.random() * Math.PI * 2;
@@ -2676,6 +2684,7 @@
     // Fuer tests/wissensfragmentAbstand.test.js: die Bandgrenzen messbar machen.
     LORE_ABSTAND_MIN: LORE_ABSTAND_MIN,
     LORE_ABSTAND_MAX: LORE_ABSTAND_MAX,
+    LORE_ABSTAND_HART: LORE_ABSTAND_HART,
     EVENT_TYPES: EVENT_TYPES,
     // Fuer die Verifikation: die reine Ziehung, ohne Ausloese-Chance und
     // Verzoegerung. Nur so laesst sich pruefen, dass eine Raum-Bedingung

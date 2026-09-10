@@ -32,8 +32,14 @@
     // Cooldowns mit cdMult skaliert; beide defensiv aus window.SkillTree gelesen
     // (SkillTree kann theoretisch fehlen -> Fallback 1).
     //
-    // whirlwind/hammer recyceln die bestehenden Basis-Funktionen (spinAttack /
-    // beginChargedSlash+releaseChargedSlash) und setzen window._skillCastDmgMult
+    // hammer recycelt die bestehenden Basis-Funktionen
+    // (beginChargedSlash+releaseChargedSlash), whirlwind hat mit castWhirlwind
+    // einen eigenen, beweglichen Kanal. Der Satz stand hier bis b239 falsch
+    // ("whirlwind recycelt spinAttack") und hat die Suche nach dem toten
+    // Kettenblitz zweimal in die falsche Funktion geschickt. spinAttack ist
+    // inzwischen entfernt.
+    //
+    // Beide setzen window._skillCastDmgMult
     // für die Dauer des Casts, damit dealDamageToEnemy (player.js) den
     // Rang-Multiplikator berücksichtigt. frenzy/berserk setzen globale Buff-
     // States (window.frenzyState / window.berserkState), die player.js liest
