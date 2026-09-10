@@ -2207,7 +2207,19 @@ function spinAttack() {
       }
     }
 
-    if (enemy && enemy.active) spinHitEnemies.push(enemy);
+    // Auch die GEFALLENEN. Der Blitz springt von der Stelle, an der der Wirbel
+    // getroffen hat — ob der Getroffene den Schlag ueberlebt hat, aendert
+    // daran nichts.
+    //
+    // Bis hierher stand ein "&& enemy.active" davor, und genau daran ist der
+    // Knoten im Spiel nie aufgefallen: der Wirbel toetet meistens, was er
+    // trifft, danach war die Liste leer und der Sprung fiel aus. Gemessen mit
+    // echten Lebenspunkten — zaeher Gegner: Sprung und Meldung; sterbender
+    // Gegner: 0 Schaden, keine Meldung.
+    //
+    // Die Stelle wird MITGESCHRIEBEN statt spaeter vom Gegner gelesen: ein
+    // zerstoertes Phaser-Objekt hat keine brauchbaren Koordinaten mehr.
+    if (enemy) spinHitEnemies.push({ ziel: enemy, x: enemy.x, y: enemy.y });
   }, { requireLineOfSight: true });
 
   // Kettenblitz (Chain Lightning): spin attack chains to 1 nearby enemy for 50% damage
@@ -2218,16 +2230,16 @@ function spinAttack() {
     const chainRange = KETTEN_REICHWEITE;
     let _spruengeUebrig = _ketteRang;
     let _getroffen = 0;
-    const hitSet = new Set(spinHitEnemies);
-    for (const hitEnemy of spinHitEnemies) {
-      if (!hitEnemy || !hitEnemy.active) continue;
+    const hitSet = new Set(spinHitEnemies.map((t) => t.ziel));
+    for (const treffer of spinHitEnemies) {
+      if (!treffer) continue;
       let nearestChainTarget = null;
       let nearestDist = Infinity;
       if (enemies?.children) {
         enemies.children.iterate((candidate) => {
           if (!candidate || !candidate.active || hitSet.has(candidate)) return;
-          const cdx = candidate.x - hitEnemy.x;
-          const cdy = candidate.y - hitEnemy.y;
+          const cdx = candidate.x - treffer.x;
+          const cdy = candidate.y - treffer.y;
           const dist = Math.hypot(cdx, cdy);
           if (dist < chainRange && dist < nearestDist) {
             nearestDist = dist;
@@ -2246,7 +2258,7 @@ function spinAttack() {
         const chainFx = spinScene.add.graphics();
         chainFx.lineStyle(2, 0x88ccff, 0.8);
         chainFx.beginPath();
-        chainFx.moveTo(hitEnemy.x, hitEnemy.y);
+        chainFx.moveTo(treffer.x, treffer.y);
         chainFx.lineTo(nearestChainTarget.x, nearestChainTarget.y);
         chainFx.strokePath();
         spinScene.time.delayedCall(200, () => chainFx.destroy(), null, spinScene);

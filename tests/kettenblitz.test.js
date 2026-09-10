@@ -174,6 +174,49 @@ test('Der Blitz springt weiter als die alten 120 px', () => {
     + r.kettenReichweite + ')');
 });
 
+test('Der Blitz springt auch vom GEFALLENEN Gegner weiter', () => {
+  // Der Grund, warum der Knoten im Spiel nie auffiel: der Wirbel sammelte nur
+  // UEBERLEBENDE als Quelle fuer den Sprung. Im echten Kampf stirbt aber genau
+  // der Gegner, den man mitten im Wirbel hat — danach war die Liste leer und
+  // der Blitz sprang nicht. Alle frueheren Tests hier liefen mit 99999
+  // Lebenspunkten und haben das nie gesehen.
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var alle = [];
+    enemies.children.iterate(function (e) { if (e && e.active) alle.push(e); });
+    if (alle.length < 2) return { fehler: 'nur ' + alle.length + ' Gegner' };
+    var px = player.x, py = player.y;
+    var r = Math.round(window.getSpinRange());
+    var g1 = alle[0], g2 = alle[1];
+    g1.x = px + 30;      g1.y = py;
+    g2.x = px + r + 60;  g2.y = py;
+    for (var j = 2; j < alle.length; j++) { alle[j].x = px + 3000; alle[j].y = py + 3000; }
+    alle.forEach(function (g) { if (g.body && g.body.reset) g.body.reset(g.x, g.y); });
+    // g1 stirbt am Wirbel, g2 ist zaeh.
+    g1.hp = 5;    g1.maxHp = 9999;
+    g2.hp = 9999; g2.maxHp = 9999;
+    weaponDamage = 100;
+    playerCritChance = 0;
+    isSpinning = false; lastSpinTime = -999999;
+    var vor = g2.hp;
+    var meldungen = [];
+    var ES = window.EventSystem;
+    var echt = ES.showToast;
+    ES.showToast = function (s, text) { meldungen.push(String(text)); };
+    try { window.spinAttack.call(sc); } finally { ES.showToast = echt; }
+    return { g1Lebt: !!g1.active, schaden: vor - g2.hp, meldungen: meldungen };
+  })()`);
+
+  assert.ok(!r.fehler, r.fehler);
+  // Gegenprobe: der Gegner im Wirbel muss wirklich gefallen sein, sonst prueft
+  // der Test denselben Fall wie die Tests darueber.
+  assert.strictEqual(r.g1Lebt, false, 'der Gegner im Wirbel hat ueberlebt');
+  assert.ok(r.schaden > 0,
+    'der zweite Gegner nimmt nichts — der Blitz springt nicht vom Gefallenen');
+  assert.ok(r.meldungen.some((t) => t.indexOf('Kettenblitz') >= 0),
+    'kein Toast: ' + JSON.stringify(r.meldungen));
+});
+
 test('Der Kettenblitz haengt am WIRBEL, nicht am Grundangriff', () => {
   // Der wahrscheinlichste Grund, ihn fuer kaputt zu halten: er feuert nur beim
   // Wirbel. Wer ihn nicht benutzt, sieht nie einen Blitz.
