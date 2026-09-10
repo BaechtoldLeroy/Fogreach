@@ -919,8 +919,42 @@ if (typeof window !== 'undefined') {
 // dann nur noch den NEUEN Raum und meldet fälschlich "keine Treppe". Das kurze
 // Fenster läuft von selbst ab, damit eine Marke aus einem abgebrochenen
 // Wechsel nicht den nächsten E-Druck schluckt.
+// Wie lange ein verbrauchtes E noch als verbraucht gilt.
+//
+// Die Zeitschranke allein reichte NICHT. Gemessen dauert ein Raumaufbau 27 bis
+// 1643 ms — die Treppe setzt ihre Marke, dann blockiert der Aufbau die
+// Schleife, und wenn der Faehigkeits-Versand im naechsten Frame endlich
+// drankommt, sind die 300 ms laengst verstrichen. Derselbe Druck feuerte dann
+// zusaetzlich die Faehigkeit auf Slot 3: "beim Betreten eines Raums wird
+// manchmal noch Skill E ausgefuehrt" — manchmal, weil nur langsame Aufbauten
+// betroffen sind.
+//
+// Deshalb traegt jetzt eine EINMAL-MARKE die Hauptlast: sie ueberlebt beliebig
+// lange Aufbauten und wird vom ersten Versand danach verbraucht. Die Zeit
+// bleibt als zweite Sicherung — grosszuegig, aber endlich, damit eine Marke
+// ohne folgenden Tastendruck (Treppe per Ueberlappung statt per E) nicht den
+// NAECHSTEN Druck verschluckt.
 const STAIR_E_CONSUME_WINDOW_MS = 300;
+const E_MARKE_MAX_MS = 4000;
+
+/**
+ * Verbraucht eine Einmal-Marke, wenn sie frisch genug ist.
+ *
+ * @param {string} markeName   Name der Marke auf window (true/false)
+ * @param {string} zeitName    Name des Zeitstempels auf window
+ */
+function _markeVerbrauchen(markeName, zeitName) {
+  var at = window[zeitName] || 0;
+  if (window[markeName] === true) {
+    window[markeName] = false;
+    // Eine uralte Marke gehoert nicht mehr zu diesem Druck.
+    if (at > 0 && (Date.now() - at) > E_MARKE_MAX_MS) return false;
+    return true;
+  }
+  return false;
+}
 function _stairJustConsumedE() {
+  if (_markeVerbrauchen('__stairConsumedE', '__stairConsumedEAt')) return true;
   const at = window.__stairConsumedEAt || 0;
   return at > 0 && (Date.now() - at) < STAIR_E_CONSUME_WINDOW_MS;
 }
@@ -929,6 +963,7 @@ function _stairJustConsumedE() {
 // Sie haengen ihren Handler direkt an keydown-E; ohne diese Marke feuerte
 // derselbe Druck zusaetzlich die Faehigkeit auf Slot 3.
 function _eventJustConsumedE() {
+  if (_markeVerbrauchen('__eventConsumedE', '__eventConsumedEAt')) return true;
   const at = window.__eventConsumedEAt || 0;
   return at > 0 && (Date.now() - at) < STAIR_E_CONSUME_WINDOW_MS;
 }

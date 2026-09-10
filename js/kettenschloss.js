@@ -474,7 +474,7 @@
     } catch (e) {}
     // Damit derselbe E-Druck, der das Schloss geöffnet hat, hier nicht sofort
     // als Aufhören zählt (b153: __eventConsumedEAt).
-    try { window.__eventConsumedEAt = Date.now(); } catch (e) {}
+    try { window.__eventConsumedEAt = Date.now(); window.__eventConsumedE = true; } catch (e) {}
 
     gefuehl.setText(gefuehlText(widerstandStufe(pos, ziel, tol)));
     standText();

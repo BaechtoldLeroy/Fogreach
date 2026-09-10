@@ -1673,6 +1673,10 @@ function onStairOverlap(player, stair) {
   // main.js beim E-Druck konsumiert. Date.now() statt scene.time.now: die Marke
   // wird ggf. scene-übergreifend gelesen (Raumwechsel/Hub-Rückkehr).
   window.__stairConsumedEAt = Date.now();
+  // Einmal-Marke zusaetzlich zur Zeit: der Raumaufbau gleich danach kann
+  // laenger dauern als das Zeitfenster (gemessen bis 1,6 s), und dann feuerte
+  // derselbe Druck noch die Faehigkeit auf Slot 3.
+  window.__stairConsumedE = true;
 
   const nextIndex = currentRoomId + 1;
   const totalRooms = dungeonRun ? dungeonRun.totalRooms : rooms.length;

@@ -124,6 +124,23 @@ const _composeItemName = (item) => {
   }
   return item.displayName || item._baseName || item.name || 'Item';
 };
+/**
+ * Die Gegenstandsstufe eines Stuecks, oder 0.
+ *
+ * An ihr haengt, wie stark die Affixe auf der aktuellen Tiefe wirken
+ * (LootSystem.affixAnteil rechnet mit ihr) — und damit, ob ein Fund das
+ * Getragene wirklich schlaegt. Bis b242 stand sie in der Schmiede nirgends.
+ *
+ * Zwei Felder tragen sie: iLevel setzt rollItem, itemLevel schreibt die
+ * Inventaranzeige nach. Beide koennen fehlen (Alt-Spielstaende), deshalb hier
+ * an EINER Stelle abgefragt statt an dreien.
+ */
+const _itemStufe = (item) => {
+  if (!item) return 0;
+  const roh = Number.isFinite(Number(item.iLevel)) ? Number(item.iLevel)
+    : (Number.isFinite(Number(item.itemLevel)) ? Number(item.itemLevel) : 0);
+  return Math.max(0, Math.round(roh));
+};
 
 class CraftingScene extends Phaser.Scene {
   constructor() {
@@ -725,6 +742,8 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     const teile = [_CRAFT_T(_CRAFT_TIER_KEYS[Math.max(0, Math.min(3, Number(item.tier) || 0))])];
     const stufe = (LS && typeof LS.ausbauStufe === 'function') ? LS.ausbauStufe(item) : 0;
     if (stufe > 0) teile.push('Ausbau +' + stufe);
+    const gs = _itemStufe(item);
+    if (gs) teile.push('Gst ' + gs);
     return teile.join('  ·  ');
   }
 
@@ -765,8 +784,14 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     const stufe = (LS && typeof LS.ausbauStufe === 'function') ? LS.ausbauStufe(item) : 0;
     const max = (LS && typeof LS.ausbauMaxStufen === 'function') ? LS.ausbauMaxStufen(item) : 0;
     const seltenheit = _CRAFT_T(_CRAFT_TIER_KEYS[Math.max(0, Math.min(3, Number(item.tier) || 0))]);
+    // Die Gegenstandsstufe gehoert sichtbar dazu: an ihr haengt, wie stark die
+    // Affixe auf der aktuellen Tiefe wirken (affixAnteil rechnet mit ihr), und
+    // sie entscheidet mit, ob ein Fund das Getragene schlaegt. Bis hierher
+    // stand sie nur im Tooltip.
+    const gStufe = _itemStufe(item);
     this.werkbankStufe.setText(seltenheit + '   ' + this._stufenPunkte(stufe, max)
-      + '  ' + _CRAFT_T('crafting.ausbau.stufe', { n: stufe, max: max }));
+      + '  ' + _CRAFT_T('crafting.ausbau.stufe', { n: stufe, max: max })
+      + (gStufe ? '   ·   Gegenstandsstufe ' + gStufe : ''));
 
     // Name links, Zahl rechtsbuendig — untereinander liest man Zahlen
     // schneller als in einer Zeile mit Trennstrichen.

@@ -423,7 +423,7 @@
     try {
       if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
     } catch (e) {}
-    try { window.__eventConsumedEAt = Date.now(); } catch (e) {}
+    try { window.__eventConsumedEAt = Date.now(); window.__eventConsumedE = true; } catch (e) {}
 
     scene.input.on('pointerdown', _griff);
     scene.input.on('pointermove', _bewege);

@@ -178,6 +178,35 @@ test('Die drei Handlungen bleiben im Bild und laufen nicht in den Text', () => {
     'Ausbauen und Zerlegen ueberlappen');
 });
 
+test('Die Gegenstandsstufe steht in der Beschreibung', () => {
+  // An ihr haengt, wie stark die Affixe auf der aktuellen Tiefe wirken, und
+  // damit, ob ein Fund das Getragene wirklich schlaegt. Bis b242 stand sie in
+  // der Schmiede nirgends — nur im Tooltip.
+  //
+  // Geprueft an einem Stueck mit einer Zahl, die sonst nirgends vorkommt (17):
+  // eine Pruefung auf "steht irgendeine Zahl da" waere auch von der
+  // Ausbaustufe oder der Seltenheit erfuellt.
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('CraftingScene');
+    var LS = window.LootSystem;
+    var it = LS.rollItem('WPN_GLUTAXT', 17, 2);
+    window.equipment.weapon = it;
+    sc._refreshAll();
+    sc._selectEquip('weapon');
+    return {
+      iLevel: it.iLevel,
+      links: String(sc._platzZeile(it) || ''),
+      rechts: String(sc.werkbankStufe.text || '')
+    };
+  })()`);
+
+  assert.strictEqual(r.iLevel, 17, 'das Teststueck hat nicht die erwartete Stufe');
+  assert.ok(r.links.indexOf('17') >= 0,
+    'die Platzzeile links nennt die Stufe nicht: "' + r.links + '"');
+  assert.ok(r.rechts.indexOf('17') >= 0,
+    'der Werktisch nennt die Stufe nicht: "' + r.rechts + '"');
+});
+
 test('Die Ausruestungsplaetze stehen nur an EINER Stelle in der Datei', () => {
   // #124 musste 'offhand' in zwoelf Listen nachtragen; vier davon lagen in
   // dieser Datei. Genau daran ist #141 haengengeblieben — die Listen wuchsen,
