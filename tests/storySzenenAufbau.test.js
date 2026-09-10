@@ -140,3 +140,37 @@ test('Ueberspringen zeigt sofort den vollen Text', () => {
   assert.strictEqual(fertig, 1, 'onFertig lief nicht genau einmal');
   assert.strictEqual(lauf.ueberspringen(), false, 'ein zweites Ueberspringen meldet Erfolg');
 });
+
+test('Auch der Dungeon-Dialog baut sich Wort fuer Wort auf', () => {
+  // Gemeldet: "Elara-Text wird immer noch nicht Wort fuer Wort eingeblendet im
+  // Dungeon". Stimmt — ihre Auftritte IM DUNGEON laufen ueber
+  // EventSystem.showEventChoiceDialog, einen dritten Weg neben HubSceneV2 und
+  // storyScenes. Der stand weiter in einem Stueck da.
+  const quelle = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'js', 'eventSystem.js'), 'utf8');
+  const i = quelle.indexOf('function showEventChoiceDialog');
+  assert.ok(i > 0, 'showEventChoiceDialog nicht gefunden');
+  const block = quelle.slice(i, i + 4000);
+  assert.ok(block.indexOf('anTextobjekt') > 0,
+    'der Dungeon-Dialog benutzt den gemeinsamen Aufbau nicht');
+  assert.ok(block.indexOf('ueberspringen') > 0,
+    'der Aufbau laesst sich nicht ueberspringen');
+  assert.ok(block.indexOf('abbrechen') > 0,
+    'der Takt wird beim Schliessen nicht abgeraeumt — er schreibt dann auf ein '
+    + 'zerstoertes Textobjekt');
+});
+
+test('Der Aufbau startet NACH der Hoehenmessung des Titels', () => {
+  // Der Kasten richtet die Knopfreihe an titleText.height aus. Leerte man den
+  // Text vorher, fiele die Hoehe auf eine Zeile zusammen und die Knoepfe
+  // ruecken nach oben — der Kasten wuechse beim Schreiben mit.
+  const quelle = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'js', 'eventSystem.js'), 'utf8');
+  const i = quelle.indexOf('function showEventChoiceDialog');
+  const block = quelle.slice(i, i + 4000);
+  const messung = block.indexOf('_buttonsTop = _blockTop + titleText.height');
+  const aufbau = block.indexOf('anTextobjekt');
+  assert.ok(messung > 0, 'die Hoehenmessung ist verschwunden');
+  assert.ok(aufbau > messung,
+    'der Aufbau startet VOR der Hoehenmessung — die Knopfreihe verrutscht');
+});

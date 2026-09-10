@@ -363,7 +363,7 @@ class CraftingScene extends Phaser.Scene {
     // Weiter nach rechts und unten: sie steht unter der rechten Knopfreihe,
     // nicht mittig unter dem ganzen Bild — sie gehoert zum Werktisch.
     const _massY = H - 46;
-this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 16, '', {
+this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
       fontFamily: 'monospace', fontSize: '9px', color: COL_PARCHMENT
     }).setOrigin(0.5, 0.5).setDepth(10);
     this.massSalvageBtn = this._createButton(

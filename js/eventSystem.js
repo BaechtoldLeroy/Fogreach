@@ -2377,6 +2377,11 @@
     var overlay = scene.add.rectangle(cx, cy, camW, camH, 0x000000, 0.6)
       .setScrollFactor(0).setDepth(2500).setInteractive();
     elements.push(overlay);
+    // Klick auf die dunkle Flaeche ueberspringt den Aufbau. Die Knoepfe bleiben
+    // unberuehrt — sonst entscheidet man sich versehentlich beim Weiterklicken.
+    overlay.on('pointerdown', function () {
+      if (_aufbau) _aufbau.ueberspringen();
+    });
 
     // Title
     var titleText = scene.add.text(cx, cy - 60, title, {
@@ -2400,8 +2405,27 @@
     titleText.setY(_blockTop + titleText.height / 2);
     var _buttonsTop = _blockTop + titleText.height + 16;
 
+    // #139: Der Text baut sich Wort fuer Wort auf — wie im Hub und in den
+    // inszenierten Szenen. Dieser Weg war bisher aussen vor: Elaras Auftritte
+    // IM DUNGEON laufen ueber showEventChoiceDialog, nicht ueber HubSceneV2
+    // oder storyScenes, und standen deshalb weiter in einem Stueck da.
+    //
+    // Der Aufbau startet ERST hier, nachdem die Hoehe des Titels feststeht und
+    // die Knopfreihe daran ausgerichtet ist. Leerte man den Text vorher, fiele
+    // seine Hoehe auf eine Zeile zusammen und die Knoepfe ruecken nach oben.
+    var _aufbau = null;
+    var TW = window.DialogTypewriter;
+    if (TW && typeof TW.anTextobjekt === 'function') {
+      // Der Sprecher steckt im Text selbst ("ELARA: ..."), damit die Tonhoehe
+      // ueber alle Auftritte hinweg dieselbe ist.
+      var _m = /^([A-ZÄÖÜ][A-ZÄÖÜ ]+):/.exec(String(title || ''));
+      _aufbau = TW.anTextobjekt(scene, titleText, String(title || ''),
+        { sprecher: _m ? _m[1] : '' });
+    }
+
     var dismissKeyHandler = null;
     var cleanup = function () {
+      if (_aufbau) { try { _aufbau.abbrechen(); } catch (e) {} _aufbau = null; }
       scene._eventChoiceActive = false;
       window.eventChoiceOpen = false;
       if (dismissKeyHandler && scene.input && scene.input.keyboard) {
