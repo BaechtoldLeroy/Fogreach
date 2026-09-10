@@ -38,6 +38,14 @@ if (typeof window !== "undefined") window.PLAYER_CRIT_MULT = PLAYER_CRIT_MULT;
 // mussten und man den Sprung nie sah. Zum Suchen stand er kurz auf unbegrenzt,
 // dann auf dem Doppelten der Scheibe (168 px).
 const KETTEN_REICHWEITE_PX = 225;
+
+// Giftklinge: Chance und Staerke je Rang.
+//
+// Chance 10/20/30 Prozent, Schaden je Tick 10/20/30 Prozent des
+// Waffenschadens ueber fuenf Ticks — bei Rang 3 also 1,5 volle Waffentreffer
+// verteilt ueber fuenf Sekunden.
+const GIFT_CHANCE_JE_RANG = 0.10;
+const GIFT_ANTEIL_JE_RANG = 0.10;
 function kettenReichweite() {
   return KETTEN_REICHWEITE_PX;
 }
@@ -4087,15 +4095,31 @@ function castWhirlwind() {
       if (window.statusEffectManager && window.StatusEffectType) {
         try { window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.SLOW, 'whirlwind'); } catch (e) {}
       }
-      // Giftklinge: 10 % je Rang, EIN Wurf je Gegner und Einsatz. Sie lag aus
-      // demselben Grund brach wie der Kettenblitz — nur im alten spinAttack.
+      // Giftklinge: 10 % Chance je Rang, EIN Wurf je Gegner und Einsatz. Sie
+      // lag aus demselben Grund brach wie der Kettenblitz — nur im alten
+      // spinAttack.
+      //
+      // Der Schaden je Tick haengt am WAFFENSCHADEN: 10, 20 oder 30 Prozent je
+      // nach Rang, ueber fuenf Ticks. Die fruehere feste 2 wuchs weder mit der
+      // Tiefe noch mit der Ausruestung — gemessen lagen Gegner bei 1 bis 4
+      // Lebenspunkten, das Gift machte 10 flach und toetete alles, was es traf,
+      // waehrend es spaeter belanglos gewesen waere.
       var giftRang = (typeof window.skillRang === 'function')
         ? window.skillRang('combat_poison_blade') : 0;
       if (giftRang > 0 && !giftGewuerfelt.has(enemy)
           && window.statusEffectManager && window.StatusEffectType) {
         giftGewuerfelt.add(enemy);
-        if (Math.random() < 0.10 * giftRang) {
-          try { window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'poisonBlade'); } catch (e) {}
+        if (Math.random() < GIFT_CHANCE_JE_RANG * giftRang) {
+          // Auf eine Nachkommastelle: 0,1 * 3 ist in Fliesskomma
+          // 0.30000000000000004, und daraus wuerden 30.000000000000004
+          // Schaden je Tick. Keine Auswirkung im Spiel, aber jede Anzeige und
+          // jeder Test muesste die Unschaerfe mitschleppen.
+          var giftTick = Math.round((typeof weaponDamage === 'number' ? weaponDamage : 1)
+            * GIFT_ANTEIL_JE_RANG * giftRang * 10) / 10;
+          try {
+            window.statusEffectManager.applyEffect(
+              enemy, window.StatusEffectType.POISON, 'poisonBlade', giftTick);
+          } catch (e) {}
         }
       }
     });

@@ -65,7 +65,12 @@ const STATUS_EFFECT_SOURCE_OVERRIDES = {
 };
 
 class StatusEffect {
-  constructor(type, source) {
+  /**
+   * @param {string} type
+   * @param {string} source
+   * @param {number} [schadenJeTick]  ueberschreibt den Wert aus der Tabelle
+   */
+  constructor(type, source, schadenJeTick) {
     const cfg = STATUS_EFFECT_CONFIG[type];
     this.type = type;
     this.duration = cfg.duration;
@@ -75,7 +80,11 @@ class StatusEffect {
       this.duration = overrides[source];
     }
     this.tickInterval = cfg.tickInterval;
-    this.damage = cfg.damage;
+    // Der Schaden je Tick kann vom Ausloeser kommen. Die Giftklinge braucht
+    // das: ihre 2 flachen Punkte waren fruehe Uebermacht und spaeter belanglos,
+    // weil sie weder mit der Tiefe noch mit der Ausruestung wuchsen.
+    this.damage = Number.isFinite(schadenJeTick) && schadenJeTick > 0
+      ? schadenJeTick : cfg.damage;
     this.stacks = 1;
     this.maxStacks = cfg.maxStacks;
     this.stackable = cfg.stackable;
@@ -101,7 +110,13 @@ class StatusEffectManager {
     this._effects = new Map();
   }
 
-  applyEffect(target, effectType, source) {
+  /**
+   * @param {object} target
+   * @param {string} effectType
+   * @param {string} source
+   * @param {number} [schadenJeTick]  ueberschreibt den Tabellenwert
+   */
+  applyEffect(target, effectType, source, schadenJeTick) {
     if (!target || !effectType) return;
     const cfg = STATUS_EFFECT_CONFIG[effectType];
     if (!cfg) return;
@@ -122,8 +137,14 @@ class StatusEffectManager {
         existing.startTime = Date.now();
         existing.lastTickTime = Date.now();
       }
+      // Der staerkere Wert gewinnt beim Auffrischen: sonst wuerde ein
+      // schwaecherer Ausloeser (Falle, anderer Gegner) das Gift der Klinge
+      // stillschweigend entwerten.
+      if (Number.isFinite(schadenJeTick) && schadenJeTick > existing.damage) {
+        existing.damage = schadenJeTick;
+      }
     } else {
-      targetEffects.set(effectType, new StatusEffect(effectType, source));
+      targetEffects.set(effectType, new StatusEffect(effectType, source, schadenJeTick));
       this._applyVisual(target, effectType);
     }
   }

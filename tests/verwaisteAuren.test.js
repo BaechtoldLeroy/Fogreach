@@ -82,7 +82,10 @@ test('Der Raumwechsel nimmt verwaiste Auren und Labels mit', () => {
     'der Muell wurde gar nicht erst abgelegt (' + vor.verwaist + ' verwaist)');
 
   raumWechseln();
-  H.step(30);
+  // Grosszuegig takten: der Aufbau des neuen Raums dauert gemessen 27 bis
+  // 1643 ms, und unter Last ist er das obere Ende. Mit 30 Bildern war der Test
+  // im Gesamtlauf rot, einzeln gruen.
+  H.step(120);
 
   const nach = zaehle();
   assert.strictEqual(nach.verwaist, 0,
