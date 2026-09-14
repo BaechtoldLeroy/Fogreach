@@ -1,7 +1,7 @@
 /* =====================================================================
  * ruestungsquellen.js — Dev-Konsole: woher kommt die Ruestung? (#152)
  * ---------------------------------------------------------------------
- * In der Browser-Konsole, bei aktivem Debug-Modus (lokal oder ?debug=1):
+ * In der Browser-Konsole, immer verfuegbar (auch ohne Debug-Modus):
  *
  *   __ruestung()
  *
@@ -22,14 +22,14 @@
  * abgeschaltet und recalcDerived neu gerufen wird. So zaehlt auch, was die
  * Klemmung bei 0,85 ihnen wegnimmt.
  *
- * Hinter DebugGate wie perfProbe (#88): ein Spieler sieht nichts davon.
+ * Bewusst NICHT hinter DebugGate (#88): der Befehl soll auch auf der
+ * ausgelieferten Seite ohne ?debug=1 laufen. Er liest nur und aendert am
+ * Spielstand nichts — die Buff-Schichten werden kurz abgeschaltet und sofort
+ * zurueckgesetzt, danach wird neu gerechnet. Sichtbar ist er nur fuer wen,
+ * der die Konsole oeffnet und den Namen kennt.
  * ===================================================================== */
 (function () {
   'use strict';
-
-  try {
-    if (!window.DebugGate || !window.DebugGate.aktiv()) return;
-  } catch (e) { return; }
 
   var PLAETZE = ['weapon', 'offhand', 'head', 'body', 'boots'];
   var SCHICHTEN = [

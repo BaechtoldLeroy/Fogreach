@@ -232,7 +232,7 @@ gespeichert, sie greifen bloss nicht.
 
 ## Konsolenbefehle
 
-Nur bei eingeschaltetem Debug-Modus vorhanden. In der Browser-Konsole aufrufen.
+In der Browser-Konsole aufrufen. `__ruestung()` gibt es immer, auch auf der ausgelieferten Seite ohne `?debug=1`; `__perfDump()` nur im Debug-Modus.
 
 | Befehl | Wirkung |
 |---|---|
