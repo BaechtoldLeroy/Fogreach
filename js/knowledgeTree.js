@@ -42,7 +42,7 @@
     'knowledge.node.damage.label':       'Kraft des Wissens',
     'knowledge.node.damage.desc':        '+5 % Schaden pro Rang',
     'knowledge.node.armor.label':        'Gehärtete Haut',
-    'knowledge.node.armor.desc':         '+5 % Rüstung pro Rang',
+    'knowledge.node.armor.desc':         '+2,5 % Rüstung pro Rang',
     'knowledge.node.speed.label':        'Schnelle Schritte',
     'knowledge.node.speed.desc':         '+3 % Lauftempo pro Rang',
     'knowledge.node.max_hp.label':       'Robuster Körper',
@@ -70,9 +70,9 @@
     'knowledge.not.schlagfolge.label':  'Schlagfolge',
     'knowledge.not.schlagfolge.desc':   '+8 % Angriffstempo und +8 % Schaden.',
     'knowledge.not.eisenhaut.label':    'Eisenhaut',
-    'knowledge.not.eisenhaut.desc':     '+15 % Rüstung und +30 Leben.',
+    'knowledge.not.eisenhaut.desc':     '+8 % Rüstung und +30 Leben.',
     'knowledge.not.zaeher_lauf.label':  'Zäher Lauf',
-    'knowledge.not.zaeher_lauf.desc':   '+10 % Rüstung und +8 % Lauftempo.',
+    'knowledge.not.zaeher_lauf.desc':   '+5 % Rüstung und +8 % Lauftempo.',
     'knowledge.not.aasgeier.label':     'Aasgeier',
     'knowledge.not.aasgeier.desc':      '+20 % Gold und +40 Aufsammelweite.',
     'knowledge.not.gelehrter.label':    'Gelehrter',
@@ -83,7 +83,7 @@
     'knowledge.key.blutrausch.label':  'Blutrausch',
     'knowledge.key.blutrausch.desc':   'Keine Rüstung mehr — dafür +40 % Schaden und +15 % Kritchance.',
     'knowledge.key.turmwache.label':   'Turmwache',
-    'knowledge.key.turmwache.desc':    '−40 % Schaden — dafür +20 % Rüstung und +40 Leben.',
+    'knowledge.key.turmwache.desc':    '−40 % Schaden — dafür +10 % Rüstung und +40 Leben.',
     'knowledge.key.leichter_schritt.label': 'Leichter Schritt',
     'knowledge.key.leichter_schritt.desc':  'Keine Rüstung mehr — dafür +20 % Schaden, +35 % Lauftempo und +60 Aufsammelweite.',
     'knowledge.key.zaeher_fund.label': 'Zäher Fund',
@@ -122,7 +122,7 @@
     'knowledge.node.damage.label':       'Strength of Knowledge',
     'knowledge.node.damage.desc':        '+5% damage per rank',
     'knowledge.node.armor.label':        'Hardened Skin',
-    'knowledge.node.armor.desc':         '+5% armor per rank',
+    'knowledge.node.armor.desc':         '+2.5% armor per rank',
     'knowledge.node.speed.label':        'Fleet Footed',
     'knowledge.node.speed.desc':         '+3% movement speed per rank',
     'knowledge.node.max_hp.label':       'Robust Body',
@@ -148,9 +148,9 @@
     'knowledge.not.schlagfolge.label':  'Cadence',
     'knowledge.not.schlagfolge.desc':   '+8% attack speed and +8% damage.',
     'knowledge.not.eisenhaut.label':    'Ironskin',
-    'knowledge.not.eisenhaut.desc':     '+15% armour and +30 life.',
+    'knowledge.not.eisenhaut.desc':     '+8% armour and +30 life.',
     'knowledge.not.zaeher_lauf.label':  'Steady Gait',
-    'knowledge.not.zaeher_lauf.desc':   '+10% armour and +8% move speed.',
+    'knowledge.not.zaeher_lauf.desc':   '+5% armour and +8% move speed.',
     'knowledge.not.aasgeier.label':     'Carrion Eye',
     'knowledge.not.aasgeier.desc':      '+20% gold and +40 pickup range.',
     'knowledge.not.gelehrter.label':    'Scholar',
@@ -161,7 +161,7 @@
     'knowledge.key.blutrausch.label':  'Blood Rage',
     'knowledge.key.blutrausch.desc':   'No more armour — but +40% damage and +15% crit chance.',
     'knowledge.key.turmwache.label':   'Tower Guard',
-    'knowledge.key.turmwache.desc':    '−40% damage — but +20% armour and +40 life.',
+    'knowledge.key.turmwache.desc':    '−40% damage — but +10% armour and +40 life.',
     'knowledge.key.leichter_schritt.label': 'Light Step',
     'knowledge.key.leichter_schritt.desc':  'No more armour — but +20% damage, +35% move speed and +60 pickup range.',
     'knowledge.key.zaeher_fund.label': 'Hard Bargain',
@@ -185,9 +185,16 @@
   //   'mult' — buff field = 1 + (rank * value)
   //   'add'  — buff field = rank * value
   // Stable IDs — never rename (persisted contract).
+  // #152: Die vier Ruestungsknoten sind HALBIERT (Rang 5 -> 2,5 je Rang,
+  // Turmwache 20 -> 10, Eisenhaut 15 -> 8, Zaeher Lauf 10 -> 5; zusammen
+  // hoechstens +35 statt +70). Gemessen: der Baum allein gab ohne jede
+  // Ausruestung 60-70 % Ruestung. Weil der Schaden mit (1 - Ruestung) sinkt,
+  // wird jeder Punkt wertvoller als der vorige; mit den Notables stand
+  // Zaehigkeit bei 8,0x Kampfwert gegen 2,15x fuer Kraft. Halbiert: 3,0x.
+  // Die Kampfwerte der Keystones im Kommentar unten stammen von VORHER.
   var CATALOG = [
     { id: 'node_damage',     labelKey: 'knowledge.node.damage.label',     descKey: 'knowledge.node.damage.desc',     maxRank: 5, perRank: { field: 'damageMult',     kind: 'mult', value: 0.05 } },
-    { id: 'node_armor',      labelKey: 'knowledge.node.armor.label',      descKey: 'knowledge.node.armor.desc',      maxRank: 5, perRank: { field: 'armorAdd',      kind: 'add',  value: 0.05 } },
+    { id: 'node_armor',      labelKey: 'knowledge.node.armor.label',      descKey: 'knowledge.node.armor.desc',      maxRank: 5, perRank: { field: 'armorAdd',      kind: 'add',  value: 0.025 } },
     { id: 'node_speed',      labelKey: 'knowledge.node.speed.label',      descKey: 'knowledge.node.speed.desc',      maxRank: 5, perRank: { field: 'speedMult',     kind: 'mult', value: 0.03 } },
     { id: 'node_max_hp',     labelKey: 'knowledge.node.max_hp.label',     descKey: 'knowledge.node.max_hp.desc',     maxRank: 5, perRank: { field: 'maxHpAdd',      kind: 'add',  value: 10   } },
     { id: 'node_crit',       labelKey: 'knowledge.node.crit.label',       descKey: 'knowledge.node.crit.desc',       maxRank: 5, perRank: { field: 'critAdd',       kind: 'add',  value: 0.02 } },
@@ -289,7 +296,7 @@
       labelKey: 'knowledge.key.turmwache.label', descKey: 'knowledge.key.turmwache.desc',
       effekte: [
         { field: 'damageMult', kind: 'mult', value: 0.60 },
-        { field: 'armorAdd',   kind: 'add',  value: 0.20 },
+        { field: 'armorAdd',   kind: 'add',  value: 0.10 },
         { field: 'maxHpAdd',   kind: 'add',  value: 40 }
       ] },
     { id: 'key_leichter_schritt', zweig: 'zaehigkeit',
@@ -365,11 +372,11 @@
                 { field: 'damageMult',      kind: 'mult', value: 1.08 }] },
     { id: 'not_eisenhaut', zweig: 'zaehigkeit',
       labelKey: 'knowledge.not.eisenhaut.label', descKey: 'knowledge.not.eisenhaut.desc',
-      effekte: [{ field: 'armorAdd', kind: 'add', value: 0.15 },
+      effekte: [{ field: 'armorAdd', kind: 'add', value: 0.08 },
                 { field: 'maxHpAdd', kind: 'add', value: 30 }] },
     { id: 'not_zaeher_lauf', zweig: 'zaehigkeit',
       labelKey: 'knowledge.not.zaeher_lauf.label', descKey: 'knowledge.not.zaeher_lauf.desc',
-      effekte: [{ field: 'armorAdd',  kind: 'add',  value: 0.10 },
+      effekte: [{ field: 'armorAdd',  kind: 'add',  value: 0.05 },
                 { field: 'speedMult', kind: 'mult', value: 1.08 }] },
     { id: 'not_aasgeier', zweig: 'gier',
       labelKey: 'knowledge.not.aasgeier.label', descKey: 'knowledge.not.aasgeier.desc',

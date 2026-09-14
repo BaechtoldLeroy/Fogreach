@@ -98,7 +98,7 @@ test('Auch die englischen Fassungen nennen die Achse', () => {
 
 test('Ruestung im Wissensbaum steht als PROZENT, nicht als roher Bruch', () => {
   // armorAdd 0,15 heisst 15 Prozentpunkte auf playerArmor (dort ein Bruch
-  // 0..0,85). Drei Beschreibungen schrieben den rohen Bruch hin ("+0,15
+  // 0..RUESTUNG_DECKEL). Drei Beschreibungen schrieben den rohen Bruch hin ("+0,15
   // Ruestung"), eine schrieb ihn richtig als Prozent. "0,15" ist fuer den
   // Spieler keine Groesse, die er mit irgendetwas vergleichen kann — der
   // Charakterbogen zeigt Ruestung in Prozent.

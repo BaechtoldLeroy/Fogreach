@@ -2584,7 +2584,7 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
     return 0;
   }
 
-  const armor = Phaser.Math.Clamp(playerArmor || 0, 0, 0.9);
+  const armor = Phaser.Math.Clamp(playerArmor || 0, 0, window.RUESTUNG_DECKEL || 0.80);
   const mitigated = Math.max(1, Math.round(rawDamage * (1 - armor)));
 
   // Feature 059 WP03: Zweiter Atem (revive) — once per run, lethal damage is

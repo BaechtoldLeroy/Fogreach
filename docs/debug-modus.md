@@ -236,7 +236,7 @@ In der Browser-Konsole aufrufen. `__ruestung()` gibt es immer, auch auf der ausg
 
 | Befehl | Wirkung |
 |---|---|
-| `__ruestung()` | Zeigt, woher die Ruestung kommt: Grundwerte der Stuecke, Affix-Topf, die vier Buff-Schichten und den Endwert gegen den 85-%-Deckel. Gibt dasselbe als Objekt zurueck. (#152) |
+| `__ruestung()` | Zeigt, woher die Ruestung kommt: Grundwerte der Stuecke, Affix-Topf, die vier Buff-Schichten und den Endwert gegen den Deckel (80 %). Gibt dasselbe als Objekt zurueck. (#152) |
 | `__perfDump()` | Leistungsbericht als JSON, nur mit `?perf=1`. |
 
 ## Fuer Entwickler

@@ -7,7 +7,7 @@
  *
  * Liest den AKTUELLEN Spielstand und zeigt Schicht fuer Schicht, woher die
  * Ruestung kommt: Grundwerte der Stuecke, der Affix-Topf, die vier
- * Buff-Schichten, und der Endwert gegen den 85-%-Deckel. Gibt dasselbe
+ * Buff-Schichten, und der Endwert gegen den Deckel (RUESTUNG_DECKEL, 80 %). Gibt dasselbe
  * zusaetzlich als Objekt zurueck.
  *
  * Zwei Fallen, an denen ein nachgebautes Werkzeug scheitert:
@@ -20,7 +20,7 @@
  *
  * Die Beitraege der Buff-Schichten werden ermittelt, indem jede einmal
  * abgeschaltet und recalcDerived neu gerufen wird. So zaehlt auch, was die
- * Klemmung bei 0,85 ihnen wegnimmt.
+ * Klemmung am Deckel ihnen wegnimmt.
  *
  * Bewusst NICHT hinter DebugGate (#88): der Befehl soll auch auf der
  * ausgelieferten Seite ohne ?debug=1 laufen. Er liest nur und aendert am
@@ -38,7 +38,7 @@
     ['Tiefen-Buffs', 'tiefenBuffs'],
     ['Wissensbaum', 'knowledgeTreeBuffs']
   ];
-  var DECKEL = 0.85;
+  var DECKEL = window.RUESTUNG_DECKEL || 0.80;
 
   function prozent(x) { return Math.round((x || 0) * 1000) / 10; }
 
@@ -107,7 +107,7 @@
       ? window.KnowledgeTree.getRank('node_armor') : null;
 
     // ROHWERTE. Die Spalte '%' oben misst jede Buff-Schicht durch Abschalten —
-    // am Deckel zaehlt sie also nur, was UNTER 85 % ankommt. Wer wissen will,
+    // am Deckel zaehlt sie also nur, was UNTER dem Deckel ankommt. Wer wissen will,
     // wie weit er darueber liegt, braucht die ungeklemmten Zahlen. Die Schichten
     // tragen sie als armorAdd (bei eventBuffs/tiefenBuffs zusaetzlich armorMult).
     var rohSumme = ausGrundwerten + prozent(affixTopf);
@@ -133,7 +133,12 @@
     var baumKnoten = [];
     var KT = window.KnowledgeTree;
     if (KT && typeof KT.getRank === 'function') {
-      if (baumRang) baumKnoten.push('node_armor Rang ' + baumRang + ' (+' + (baumRang * 5) + ')');
+      // Wert je Rang aus dem Katalog, nicht eingetippt: er wurde in #152 halbiert.
+      var jeRang = 0;
+      (typeof KT.getCatalog === 'function' ? KT.getCatalog() : []).forEach(function (n) {
+        if (n && n.id === 'node_armor' && n.perRank) jeRang = n.perRank.value || 0;
+      });
+      if (baumRang) baumKnoten.push('node_armor Rang ' + baumRang + ' (+' + Math.round(baumRang * jeRang * 1000) / 10 + ')');
       var buendel = []
         .concat(typeof KT.getKeystones === 'function' ? KT.getKeystones() : [])
         .concat(typeof KT.getNotables === 'function' ? KT.getNotables() : []);

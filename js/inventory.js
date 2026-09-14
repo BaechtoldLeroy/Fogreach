@@ -158,6 +158,16 @@ const computeItemPower = (it) => {
 if (typeof window !== 'undefined') window.computeItemPower = computeItemPower; // #56 (Anzeige/Test)
 
 // --------------------------------------------------
+//  Ruestungsdeckel
+// ---------------------------------------------------------------------------
+// #152: EINE Zahl fuer alle Klemmungen der Ruestung, statt sieben eingetippter
+// 0,85. Gesenkt auf 0,80: der Schaden sinkt mit (1 - Ruestung), die letzten
+// Punkte sind also die wertvollsten — von 80 auf 85 % faellt der Schaden
+// noch einmal um ein Viertel. enemy.js und ruestungsquellen.js lesen dieselbe
+// Zahl ueber window.
+const RUESTUNG_DECKEL = 0.80;
+window.RUESTUNG_DECKEL = RUESTUNG_DECKEL;
+
 //  Material Management (Eisenbrocken counter)
 // --------------------------------------------------
 const MATERIAL_DISPLAY_NAMES = {
@@ -1460,7 +1470,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
   attackRange = Math.max(20, baseStats.range + sum.range);
   // Lauftempo aus der Ausruestung wirkt jetzt PROZENTUAL — 0,16 heisst +16 %.
   playerSpeed = Math.max(60, baseStats.move * (1 + Math.max(0, sum.move)));
-  playerArmor = Phaser.Math.Clamp((baseStats.armor || 0) + sum.armor, 0, 0.85);
+  playerArmor = Phaser.Math.Clamp((baseStats.armor || 0) + sum.armor, 0, RUESTUNG_DECKEL);
   // #124: Die drei Nebenhand-Wirkungen. Immer frisch geschrieben (auch auf 0),
   // damit nichts haengen bleibt, wenn das Stueck abgelegt wird.
   //
@@ -1498,7 +1508,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     // Tooltip schrieb beide Zahlen gleich an.
     attackRange = Math.max(20, attackRange + Math.max(0, _gb('range') || 0));
     playerSpeed = Math.max(60, playerSpeed * (1 + Math.max(0, _gb('move') || 0)));
-    playerArmor = Phaser.Math.Clamp(playerArmor + (_gb('armor') || 0), 0, 0.85);
+    playerArmor = Phaser.Math.Clamp(playerArmor + (_gb('armor') || 0), 0, RUESTUNG_DECKEL);
     playerCritChance = Phaser.Math.Clamp(playerCritChance + (_gb('crit') || 0), 0, 0.9);
   }
 
@@ -1711,7 +1721,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     weaponDamage += endlessBuffs.weaponDamage || 0;
     weaponAttackSpeed += endlessBuffs.weaponAttackSpeed || 0;
     attackRange += endlessBuffs.attackRange || 0;
-    playerArmor = Math.min(0.85, playerArmor + (endlessBuffs.playerArmor || 0));
+    playerArmor = Math.min(RUESTUNG_DECKEL, playerArmor + (endlessBuffs.playerArmor || 0));
     playerSpeed += endlessBuffs.playerSpeed || 0;
     playerCritChance = Math.min(0.95, playerCritChance + (endlessBuffs.playerCritChance || 0));
     if (endlessBuffs.dodgeChance > 0) {
@@ -1756,7 +1766,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     playerArmor = Phaser.Math.Clamp(
       (playerArmor + (buffs.armorAdd || 0)) * (buffs.armorMult || 1),
       0,
-      0.85
+      RUESTUNG_DECKEL
     );
     playerSpeed = Math.max(60, Math.round(playerSpeed * (buffs.speedMult || 1)));
     // Angriffstempo: der Schrein zieht seit #71 auch dieses als Segen ODER
@@ -1774,7 +1784,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     playerArmor = Phaser.Math.Clamp(
       playerArmor + (bb.armorAdd || 0),
       0,
-      0.85
+      RUESTUNG_DECKEL
     );
     playerSpeed = Math.max(60, Math.round(playerSpeed * (bb.speedMult || 1)));
   }
@@ -1787,7 +1797,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     playerArmor = Phaser.Math.Clamp(
       (playerArmor + (tb.armorAdd || 0)) * (tb.armorMult || 1),
       0,
-      0.85
+      RUESTUNG_DECKEL
     );
     playerSpeed = Math.max(60, Math.round(playerSpeed * (tb.speedMult || 1)));
     weaponAttackSpeed = Math.max(0.2, weaponAttackSpeed * (tb.attackSpeedMult || 1));
@@ -1813,7 +1823,7 @@ function recalcDerived(oldItemHp = 0, newItemHp = 0) {
     playerArmor = Phaser.Math.Clamp(
       playerArmor + (kb.armorAdd || 0),
       0,
-      0.85
+      RUESTUNG_DECKEL
     );
     playerSpeed = Math.max(60, Math.round(playerSpeed * (kb.speedMult || 1)));
     // #116: Angriffstempo aus dem Wissensbaum (loest node_cdr ab — die
