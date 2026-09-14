@@ -1880,7 +1880,7 @@ function markRoomCleared(opts) {
       // guaranteed tier-2/3 chest (rare/legendary) — far too generous. Now it
       // mostly drops ordinary loot / consumables, with the special chest as the
       // minority case. Buckets: 25% special chest, 30% normal-item chest,
-      // 25% potion, 20% town-portal scroll.
+      // 25% potion, 20% scroll (ein Drittel davon Treppenrolle, #151).
       const _depthNow = Math.max(1, window.DUNGEON_DEPTH || 1);
       const _rewardRoll = Math.random();
       let _rewardItem;
@@ -1893,7 +1893,9 @@ function markRoomCleared(opts) {
       } else if (_rewardRoll < 0.80) {
         _rewardItem = (typeof window.makePotionDrop === 'function') ? window.makePotionDrop(_depthNow) : null;
       } else {
-        _rewardItem = (typeof window.makePortalScrollDrop === 'function') ? window.makePortalScrollDrop() : null;
+        // #151: makeScrollDrop statt makePortalScrollDrop, damit auch der
+        // abgeschlossene Proc-Raum Treppenrollen vergeben kann.
+        _rewardItem = (typeof window.makeScrollDrop === 'function') ? window.makeScrollDrop() : null;
       }
       // Defensive fallback so the room always grants *something*.
       if (!_rewardItem) _rewardItem = { type: 'chest_small', locked: false, tier: 0 };

@@ -3264,7 +3264,7 @@ function _fireBowArrow(scene, opts) {
     player.y + dir.y * spawnOffset,
     'playerArrow'
   );
-  projectile.setDepth(70);
+  projectile.setDepth(window.WELT_TIEFEN ? window.WELT_TIEFEN.GESCHOSS : 70);
   projectile.setRotation(dir.angle());
   projectile.setOrigin(0.5, 0.5);
   projectile.body?.setAllowGravity?.(false);
@@ -3735,7 +3735,7 @@ function castTwistingBlades() {
     player.y + dir.y * spawnOffset,
     'playerDagger'
   );
-  projectile.setDepth(70);
+  projectile.setDepth(window.WELT_TIEFEN ? window.WELT_TIEFEN.GESCHOSS : 70);
   projectile.setRotation(dir.angle());
   projectile.setOrigin(0.3, 0.5);
   projectile.setScale(0.85);

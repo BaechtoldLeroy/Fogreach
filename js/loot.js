@@ -860,7 +860,7 @@ function randomLoot(qualityBias, opts) {
   // Der Anteil kommt aus DIESEM Wurf, nicht aus einem eigenen: sonst haette
   // sich die Gesamtzahl der Rollen erhoeht, und das war nicht gewollt.
   if (roll <= 92) {
-    return (Math.random() < 1 / 3) ? _makeStairScrollDrop() : _makePortalScrollDrop();
+    return _makeScrollDrop();
   }
 
   // Crafting material (Eisenbrocken).
@@ -920,6 +920,19 @@ function _legacyEquipmentFallback(depth) {
  * Bis auf Schluessel, Name und Symbol identisch zur Portalrolle — beide sind
  * Material, beide zaehlen in materialCounts, beide haben keine Werte.
  */
+/**
+ * Eine Rolle aus einer Beutequelle: ein Drittel Treppenrolle, zwei Drittel
+ * Portalrolle.
+ *
+ * EINE Stelle fuer das Verhaeltnis. Bis b246 stand die Verzweigung nur im
+ * Gegner-Abwurf; Kisten, Destructibles und die Belohnung eines Proc-Raums
+ * riefen direkt makePortalScrollDrop und konnten gar keine Treppenrolle
+ * liefern. Gemeldet: "Treppenrollen werden nie fallen gelassen" (#151).
+ */
+function _makeScrollDrop() {
+  return (Math.random() < 1 / 3) ? _makeStairScrollDrop() : _makePortalScrollDrop();
+}
+
 function _makeStairScrollDrop() {
   return {
     type: 'material',
@@ -983,6 +996,10 @@ if (typeof window !== 'undefined') {
   window.collectLoot = collectLoot;
   window.makePotionDrop = _makePotionDrop;
   window.makePortalScrollDrop = _makePortalScrollDrop;
+  window.makeStairScrollDrop = _makeStairScrollDrop;
+  // Fuer jede Beutequelle, die eine Rolle vergibt. Nicht makePortalScrollDrop
+  // direkt rufen, sonst faellt die Treppenrolle an dieser Quelle wieder weg.
+  window.makeScrollDrop = _makeScrollDrop;
   window.computeItemLevelFromStats = computeItemLevelFromStats;
   window.rollItemStatPotentials = rollItemStatPotentials;
   window.addBoostsToItem = addBoostsToItem;

@@ -230,6 +230,15 @@ wer `autostart` frueher einmal gesetzt hat, traegt ihn im Spielstand weiter, und
 Auto-Start loescht den Spielstand bei **jedem** Start. Die Werte bleiben
 gespeichert, sie greifen bloss nicht.
 
+## Konsolenbefehle
+
+Nur bei eingeschaltetem Debug-Modus vorhanden. In der Browser-Konsole aufrufen.
+
+| Befehl | Wirkung |
+|---|---|
+| `__ruestung()` | Zeigt, woher die Ruestung kommt: Grundwerte der Stuecke, Affix-Topf, die vier Buff-Schichten und den Endwert gegen den 85-%-Deckel. Gibt dasselbe als Objekt zurueck. (#152) |
+| `__perfDump()` | Leistungsbericht als JSON, nur mit `?perf=1`. |
+
 ## Fuer Entwickler
 
 Der Schalter selbst ist [`js/debugGate.js`](../js/debugGate.js) und muss als

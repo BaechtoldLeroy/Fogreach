@@ -1760,8 +1760,10 @@ function breakDestructibleObstacle(scene, obs) {
     const potion = window.makePotionDrop(window.DUNGEON_DEPTH || 1);
     if (potion) spawnLoot.call(scene, x + potionOffsetX, y + potionOffsetY, potion, null);
   }
-  if (Math.random() < scrollChance && typeof window.makePortalScrollDrop === 'function' && typeof spawnLoot === 'function') {
-    const scroll = window.makePortalScrollDrop();
+  // #151: ueber makeScrollDrop, nicht makePortalScrollDrop. Sonst kann eine
+  // Kiste keine Treppenrolle enthalten, egal welchen Tier sie hat.
+  if (Math.random() < scrollChance && typeof window.makeScrollDrop === 'function' && typeof spawnLoot === 'function') {
+    const scroll = window.makeScrollDrop();
     if (scroll) spawnLoot.call(scene, x - potionOffsetX, y + potionOffsetY, scroll, null);
   }
 

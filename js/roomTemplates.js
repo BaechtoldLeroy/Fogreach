@@ -25,7 +25,13 @@
     PROP: 40,            // Fass, Kiste, Geroell
     UEBER_PROP: 41,      // Fackel-Licht und Deko-Saeulen: vor flachen Props
     PROP_HOCH: 42,       // Statue, Saeule, Altar, Tuer — vor allem anderen Prop
-    GEGNER: 50           // ab hier gehoert die Ebene den Figuren (Spieler >= 100)
+    GEGNER: 50,          // ab hier gehoert die Ebene den Figuren (Spieler >= 100)
+    // Geschosse fliegen UEBER allem, was am Boden liegt oder steht. Die
+    // Gegner-Geschosse hatten bis b246 gar keine Tiefe und lagen damit auf 0,
+    // also unter der Treppe (34). Gemeldet: "Treppen sind oberhalb von
+    // Geschossen". Spieler-Geschosse standen schon auf 70; beide lesen jetzt
+    // dieselbe Zahl.
+    GESCHOSS: 70
   });
 })(window);
 

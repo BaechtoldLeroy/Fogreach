@@ -1662,6 +1662,10 @@ function acquireEnemyProjectile(scene, x, y, texKey) {
     proj = scene.physics.add.sprite(x, y, texKey);
     if (enemyProjectiles && enemyProjectiles.add) enemyProjectiles.add(proj);
   }
+  // Tiefe bei JEDEM Abruf setzen, nicht nur beim Neubau: ein Geschoss aus dem
+  // Pool kaeme sonst mit der Tiefe zurueck, die es zuletzt hatte. Ohne diese
+  // Zeile lag jedes Gegner-Geschoss auf 0 und damit unter der Treppe (34).
+  proj.setDepth(window.WELT_TIEFEN ? window.WELT_TIEFEN.GESCHOSS : 70);
   // Re-apply mask if the scene needs it (vision FX)
   if (scene._enemyVisionMask && proj.setMask) {
     proj.setMask(scene._enemyVisionMask);
@@ -3331,6 +3335,8 @@ function bossFireProjectile(scene, boss, angle, speed, size, tint, damageOverrid
   proj.body.setCircle(size / 2);
   if (tint !== undefined) proj.setTint(tint);
   enemyProjectiles.add(proj);
+  // Wie acquireEnemyProjectile: ohne Tiefe laege das Boss-Geschoss unter der Treppe.
+  proj.setDepth(window.WELT_TIEFEN ? window.WELT_TIEFEN.GESCHOSS : 70);
   proj.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
 
   const dmg = damageOverride || boss.damage || 1;
