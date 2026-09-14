@@ -106,21 +106,67 @@
     var baumRang = (window.KnowledgeTree && typeof window.KnowledgeTree.getRank === 'function')
       ? window.KnowledgeTree.getRank('node_armor') : null;
 
+    // ROHWERTE. Die Spalte '%' oben misst jede Buff-Schicht durch Abschalten —
+    // am Deckel zaehlt sie also nur, was UNTER 85 % ankommt. Wer wissen will,
+    // wie weit er darueber liegt, braucht die ungeklemmten Zahlen. Die Schichten
+    // tragen sie als armorAdd (bei eventBuffs/tiefenBuffs zusaetzlich armorMult).
+    var rohSumme = ausGrundwerten + prozent(affixTopf);
+    SCHICHTEN.forEach(function (s) {
+      var b = window[s[1]];
+      var add = (b && typeof b.armorAdd === 'number') ? prozent(b.armorAdd) : 0;
+      var mult = (b && typeof b.armorMult === 'number' && b.armorMult !== 1) ? b.armorMult : null;
+      for (var i = 0; i < quellen.length; i++) {
+        if (quellen[i].Quelle === s[0]) {
+          quellen[i]['roh %'] = add;
+          if (mult) quellen[i]['roh x'] = mult;
+        }
+      }
+      rohSumme += add;
+    });
+    quellen[0]['roh %'] = Math.round(ausGrundwerten * 10) / 10;
+    quellen[1]['roh %'] = prozent(affixTopf);
+    rohSumme = Math.round(rohSumme * 10) / 10;
+
+    // Welche Baum-Knoten Ruestung geben: der Rang-Knoten und alle gewaehlten
+    // Notables/Keystones mit armorAdd. Gewaehlt heisst getRank(id) > 0 — so
+    // fuehrt knowledgeTree.js beides (getActiveKeystone liest dieselbe Zahl).
+    var baumKnoten = [];
+    var KT = window.KnowledgeTree;
+    if (KT && typeof KT.getRank === 'function') {
+      if (baumRang) baumKnoten.push('node_armor Rang ' + baumRang + ' (+' + (baumRang * 5) + ')');
+      var buendel = []
+        .concat(typeof KT.getKeystones === 'function' ? KT.getKeystones() : [])
+        .concat(typeof KT.getNotables === 'function' ? KT.getNotables() : []);
+      buendel.forEach(function (k) {
+        if (!k || !(KT.getRank(k.id) > 0)) return;
+        (k.effekte || []).forEach(function (f) {
+          if (f.field === 'armorAdd') {
+            baumKnoten.push(k.id + ' (' + (f.value > 0 ? '+' : '') + Math.round(f.value * 100) + ')');
+          }
+        });
+      });
+    }
+
     console.log('%cRuestung: ' + prozent(endwert) + ' % von hoechstens ' + prozent(DECKEL) + ' %'
       + '   (Tiefe ' + (window.DUNGEON_DEPTH || 1) + ', Wissensbaum-Rang ' + baumRang + ')',
       'font-weight:bold;font-size:13px');
     console.table(stuecke);
     console.table(quellen);
+    console.log('Summe roh (ohne Deckel, ohne armorMult): ' + rohSumme + ' %');
+    if (baumKnoten.length) console.log('Ruestung aus dem Wissensbaum: ' + baumKnoten.join(', '));
     if (endwert >= DECKEL - 0.0005) {
-      console.warn('Am Deckel. Was darueber liegt, ist verschenkt, deshalb summieren sich die Quellen nicht auf den Endwert.');
+      console.warn('Am Deckel: ' + Math.round((rohSumme - prozent(DECKEL)) * 10) / 10
+        + ' Punkte verschenkt. Die Spalte "%" zaehlt nur, was unter dem Deckel ankommt; "roh %" zeigt die vollen Werte.');
     }
 
     return {
       endwert: prozent(endwert),
       deckel: prozent(DECKEL),
+      rohSumme: rohSumme,
       stuecke: stuecke,
       quellen: quellen,
-      wissensbaumRang: baumRang
+      wissensbaumRang: baumRang,
+      wissensbaumKnoten: baumKnoten
     };
   };
 })();

@@ -505,6 +505,14 @@
 
   function _spawnEliteBonusDrops(enemy) {
     if (!enemy || !enemy._isElite) return;
+    // Nur fuer einen ERLEGTEN Gegner. Der Haken sitzt an destroy(), und das
+    // faellt auch beim Raumwechsel (enemies.clear), beim Abraeumen der
+    // Boss-Beschwoerungen und beim aufgeloesten Rudel. Gemessen: ein Unique,
+    // der beim Raumwechsel nur weggeraeumt wurde, liess eine Waffe fallen,
+    // die sofort mit weggeraeumt wurde — und der Zaehler der Beute-Bremse
+    // stieg trotzdem um eins. Jeder Todesweg laeuft ueber handleEnemyHit mit
+    // hp <= 0; wer noch Leben hat, wurde nicht erlegt.
+    if (typeof enemy.hp === 'number' && enemy.hp > 0) return;
     const scene = enemy.scene;
     if (!scene) return;
     if (typeof window === 'undefined' || typeof window.spawnLoot !== 'function') return;
@@ -519,8 +527,22 @@
       try { window.spawnLoot.call(scene, x, y, null, enemy); } catch (e) { /* swallow */ }
     }
 
-    // Unique: guaranteed Magic+ item via LootSystem.rollItem(base, level, forceTier=1)
-    if (tier === 'unique' && window.LootSystem && typeof window.LootSystem.rollItem === 'function') {
+    // Unique: Magic+ item via LootSystem.rollItem(base, level, forceTier=1).
+    //
+    // Frueher GARANTIERT, und damit an Schwelle und Bremse (loot.js) vorbei.
+    // Gemessen auf Tiefe 30: ~0,4 Uniques je Raum (Einzel-Wurf plus der
+    // Bannertraeger der Kriegsschar in 23 % der Raeume) -> rund fuenf sichere
+    // Magisch+-Stuecke je Durchgang, waehrend alle normalen Gegner zusammen
+    // gebremst nicht einmal eines brachten. Die Uniques WAREN der Beutestrom.
+    //
+    // Jetzt: sicher, solange im Lauf erst wenige Stuecke gefallen sind, danach
+    // eine Chance. Derselbe Zaehler wie die Bremse in loot.js.
+    const UNIQUE_SICHER_BIS = 2;      // die ersten zwei Stuecke des Laufs: 100 %
+    const UNIQUE_CHANCE_DANACH = 0.25;
+    const _gefallen = window.__runItemsDropped || 0;
+    const _uniqueChance = (_gefallen < UNIQUE_SICHER_BIS) ? 1 : UNIQUE_CHANCE_DANACH;
+    if (tier === 'unique' && Math.random() < _uniqueChance
+        && window.LootSystem && typeof window.LootSystem.rollItem === 'function') {
       try {
         const lvl = enemy.iLevel || enemy.mLevel || window.currentWave || 5;
         const guaranteed = window.LootSystem.rollItem(null, lvl, 1);
