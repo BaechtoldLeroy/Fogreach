@@ -263,6 +263,27 @@
     if (!enemy) return;
     if (eliteTier !== 'champion' && eliteTier !== 'unique') return;
 
+    // Schon Elite? Dann erst das alte Elite zuruecknehmen.
+    //
+    // Gemeldet: "schon wieder eine Aura und ein Label eines Mobs". Der Pfad:
+    // der Bannertraeger der Kriegsschar (wave.js) kommt aus spawnEnemy, das
+    // selbst schon Champion wuerfeln kann, und wird danach auf 'unique'
+    // gesetzt. Die neue Aura und der neue Zug ueberschrieben die Referenzen —
+    // die alten gehoerten niemandem mehr und blieben an der Spawnstelle stehen,
+    // bis der Raum wechselte. Gemessen: nach dem Aufwerten 2 Auren, 2 Zuege,
+    // je einer verwaist. Dazu stapelten sich die LP (x1,5 und dann x2).
+    //
+    // Hier statt am Aufrufer: jeder kuenftige Aufwerter faellt sonst wieder
+    // in dieselbe Grube.
+    if (enemy._isElite) {
+      const alterFaktor = enemy._eliteHpMul || 1;
+      removeEliteFromEnemy(enemy);
+      if (alterFaktor !== 1) {
+        if (typeof enemy.hp === 'number') enemy.hp = Math.max(1, Math.round(enemy.hp / alterFaktor));
+        if (typeof enemy.maxHp === 'number') enemy.maxHp = Math.max(1, Math.round(enemy.maxHp / alterFaktor));
+      }
+    }
+
     const picked = rollEliteAffixes(eliteTier, rng);
 
     // Apply affix mutations
@@ -278,6 +299,8 @@
     else enemy.maxHp = enemy.hp;
     if (typeof enemy.maxHealth === 'number') enemy.maxHealth = enemy.hp;
     if (typeof enemy.health === 'number') enemy.health = enemy.hp;
+    // Gemerkt, damit ein spaeteres Aufwerten den Faktor zuruecknehmen kann.
+    enemy._eliteHpMul = hpMul;
 
     // Mark enemy
     enemy._isElite = true;
