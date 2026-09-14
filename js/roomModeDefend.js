@@ -119,7 +119,7 @@
   }
 
   function DefendMode() {
-    var scene = null, sprite = null, playerCollider = null;
+    var scene = null, sprite = null, playerCollider = null, altarCollider = [];
     var maxHp = BASE_HP, hp = BASE_HP;
     var objX = 0, objY = 0;
     var duration = _depthSeconds(), remaining = duration, spawnAcc = 0;
@@ -141,9 +141,12 @@
         if (sprite && typeof window !== 'undefined' && window.RoomModeAnchor) {
           window.RoomModeAnchor.ruhend(sprite);
         }
-        // #82: solider Physics-Body NUR fuer den Spieler — Gegner sollen den
-        // Altar weiterhin umringen/erreichen koennen (Drain ist radiusbasiert
-        // ueber DRAIN_RADIUS, nicht beruehrungsbasiert, s. _enemiesNearAltar).
+        // #82: solider Physics-Body. Frueher NUR fuer den Spieler, damit Gegner
+        // den Altar umringen koennen. Gemeldet: "Altar soll auch fuer Gegner und
+        // Projektile nicht durchgehbar sein." Jetzt blockiert er alle drei.
+        // Das Umringen bleibt: der Drain ist radiusbasiert (DRAIN_RADIUS 190),
+        // nicht beruehrungsbasiert (s. _enemiesNearAltar), und das Podest ist
+        // mit 48x22 klein genug, dass sich Gegner darum herum draengen.
         // Body-Groesse an das sichtbare Steinpodest angepasst (nicht das volle
         // 64x60-Sprite-Rechteck, sonst blockiert der schwebende Kristall/Halo
         // mit, der optisch weit ueber das Podest hinausragt).
@@ -155,6 +158,37 @@
             if (typeof sprite.body.updateFromGameObject === 'function') sprite.body.updateFromGameObject();
             if (window.player) {
               playerCollider = scene.physics.add.collider(window.player, sprite);
+            }
+            // Dasselbe Verhalten wie an jedem Hindernis (main.js / roomManager.js):
+            // Gegner prallen ab, Gegnergeschosse gehen zurueck in den Pool,
+            // Spielergeschosse vergehen — ausser Wirbelklingen, die kehren um.
+            //
+            // ACHTUNG Argument-Reihenfolge: bei collider(GRUPPE, SPRITE) ruft Phaser
+            // den Callback mit (Sprite, Gruppenmitglied) — das erste Argument ist
+            // der ALTAR. Ein erster Entwurf gab darum den Altar selbst in den
+            // Geschoss-Pool. Deshalb wird das Geschoss hier ausgesucht.
+            var _geschoss = function (a, b) { return (a === sprite) ? b : a; };
+            if (typeof enemies !== 'undefined' && enemies) {
+              altarCollider.push(scene.physics.add.collider(enemies, sprite));
+            }
+            if (typeof enemyProjectiles !== 'undefined' && enemyProjectiles) {
+              altarCollider.push(scene.physics.add.collider(enemyProjectiles, sprite, function (a, b) {
+                var proj = _geschoss(a, b);
+                if (!proj || !proj.active) return;
+                if (typeof window.releaseEnemyProjectile === 'function') window.releaseEnemyProjectile(proj);
+                else proj.destroy();
+              }));
+            }
+            if (typeof playerProjectiles !== 'undefined' && playerProjectiles) {
+              altarCollider.push(scene.physics.add.collider(playerProjectiles, sprite, function (a, b) {
+                var proj = _geschoss(a, b);
+                if (!proj || !proj.active) return;
+                if (proj.getData && proj.getData('twistingBlades')) {
+                  var sr = proj.getData('twStartReturn');
+                  if (typeof sr === 'function') { sr(); return; }
+                }
+                proj.destroy();
+              }));
             }
           } catch (e) { /* nie den Raum-Modus crashen */ }
         }
@@ -220,6 +254,8 @@
       // alten Altar-Punkt.
       stop: function () {
         if (playerCollider) { try { playerCollider.destroy(); } catch (e) {} playerCollider = null; }
+        altarCollider.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+        altarCollider = [];
         if (sprite) { try { sprite.destroy(); } catch (e) {} sprite = null; }
         if (typeof window !== 'undefined') window.__ENEMY_CHASE_OVERRIDE__ = null;
       },
