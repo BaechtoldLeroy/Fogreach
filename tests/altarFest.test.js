@@ -11,12 +11,12 @@
 // arm(scene) — genau der Weg, auf dem der Raum den Altar hinstellt.
 //
 // WARUM OHNE FLUG. Ein erster Entwurf schoss Geschosse ueber gepumpte Frames
-// auf den Altar. Der Testkopf faengt die simulierte Zeit aber bei jedem
-// step()-Aufruf wieder bei 0 an; die Physik stand dabei still, und die
-// Geschosse kamen nie an. Stattdessen wird das Geschoss hier AUF den
-// Altar-Koerper gelegt und der Collider des Modus direkt ausgeloest — das
-// prueft genau die Collider und Callbacks aus roomModeDefend.js, ohne sich auf
-// die Uhr zu verlassen.
+// auf den Altar. Damals fing der Testkopf die simulierte Zeit bei jedem
+// step()-Aufruf wieder bei 0 an (inzwischen behoben); die Physik stand still,
+// und die Geschosse kamen nie an. Das Geschoss wird hier AUF den Altar-Koerper
+// gelegt und der Collider des Modus direkt ausgeloest — das prueft genau die
+// Collider und Callbacks aus roomModeDefend.js, unabhaengig von Flugbahn,
+// Tempo und anderen Hindernissen auf dem Weg.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');

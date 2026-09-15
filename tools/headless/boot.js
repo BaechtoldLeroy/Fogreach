@@ -162,6 +162,15 @@ function boot(opts) {
    * Taktet die Phaser-Loop von Hand um `frames` Schritte mit fixem dt.
    * Kein requestAnimationFrame -> deterministisch und so schnell wie moeglich.
    */
+  // Die simulierte Uhr laeuft UEBER alle step()-Aufrufe weiter.
+  //
+  // Vorher begann sie bei jedem Aufruf wieder bei 0. Der rAF-Zeitstempel sprang
+  // damit zurueck, und Phaser sah keinen Fortschritt: viele step(1)
+  // hintereinander lieferten immer denselben Stempel, und ein step(60) direkt
+  // nach einem step(60) stand ganz still. Gemessen an einem Geschoss mit
+  // 360 px/s: 344 -> 344 nach 60 Frames.
+  let uhr = 0;
+
   function step(frames, dtMs) {
     const dt = typeof dtMs === 'number' ? dtMs : 16.666;
     let simulated = 0;
@@ -169,7 +178,8 @@ function boot(opts) {
       const cb = dom.getRafCallback();
       if (!cb) break;
       simulated += dt;
-      try { cb(simulated); } catch (e) { errors.push({ level: 'error', msg: `[STEP] ${e && e.message}` }); }
+      uhr += dt;
+      try { cb(uhr); } catch (e) { errors.push({ level: 'error', msg: `[STEP] ${e && e.message}` }); }
     }
     return simulated;
   }

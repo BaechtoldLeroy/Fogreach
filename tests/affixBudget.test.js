@@ -338,17 +338,29 @@ test2('#104: Ruestungsbasen wuerfeln in einem Band, und das Band waechst mit der
 });
 
 test2('#104: ein Satz der passenden Tiefe ist ueberall gleich stark', () => {
+  // MITTEL AUS 40 SAETZEN je Tiefe, nicht ein einzelner Wurf.
+  //
+  // Frueher wurde pro Tiefe genau EIN Satz gewuerfelt. Jedes Stueck streut
+  // 80 bis 120 %, ein Satz aus drei Stuecken also bis zum Faktor 1,5 — die
+  // Schranke von 1,35 konnte ein korrektes Spiel damit reissen. Gemessen im
+  // Gesamtlauf: 34 / 31 / 26 / 38 %, allein 8 von 8 gruen. Die Behauptung
+  // "gleich stark" gilt dem Durchschnitt; die Streuung des Einzelstuecks
+  // prueft der Test darueber.
   const r = H.run(`(function () {
     var LS = window.LootSystem, raus = {};
     [1, 10, 20, 30].forEach(function (t) {
       window.DUNGEON_DEPTH = t; window.currentWave = t;
-      ['weapon','offhand','head','body','boots','amulet']
-        .forEach(function(k){ window.equipment[k]=null; });
-      window.equipment.head  = LS.rollItem('HD_BRONZEHELM', t, 0);
-      window.equipment.body  = LS.rollItem('BD_PLATTENPANZER', t, 0);
-      window.equipment.boots = LS.rollItem('BT_STAHLSOHLEN', t, 0);
-      LS.recomputeBonuses(); recalcDerived(0, 0);
-      raus[t] = playerArmor;
+      var summe = 0, N = 40;
+      for (var i = 0; i < N; i++) {
+        ['weapon','offhand','head','body','boots','amulet']
+          .forEach(function(k){ window.equipment[k]=null; });
+        window.equipment.head  = LS.rollItem('HD_BRONZEHELM', t, 0);
+        window.equipment.body  = LS.rollItem('BD_PLATTENPANZER', t, 0);
+        window.equipment.boots = LS.rollItem('BT_STAHLSOHLEN', t, 0);
+        LS.recomputeBonuses(); recalcDerived(0, 0);
+        summe += playerArmor;
+      }
+      raus[t] = summe / N;
     });
     return raus;
   })()`);

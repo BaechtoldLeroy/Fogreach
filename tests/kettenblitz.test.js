@@ -33,16 +33,11 @@ let H = null;
 before(async () => {
   H = await launch({ search: '?autostart=1&dungeon=20', renderer: 'canvas', waitFor: 'StartScene' });
   assert.ok(await H.waitForScene('GameScene', { maxRounds: 400 }), 'GameScene nicht erreicht');
-  let gefunden = 0;
-  for (let runde = 0; runde < 40 && gefunden < 2; runde++) {
-    H.step(40);
-    gefunden = H.run('(function(){ var n = 0;'
-      + ' if (typeof enemies !== "undefined" && enemies && enemies.children)'
-      + ' enemies.children.iterate(function (e) { if (e && e.active) n++; });'
-      + ' return n; })()');
-  }
-  assert.ok(gefunden >= 2, 'im Raum stehen nur ' + gefunden + ' Gegner');
-
+  // Frueher wartete dieser Haken, bis mindestens zwei Gegner im Raum standen.
+  // Seit wirbeln() eigene Sonden setzt, braucht niemand mehr die Raumgegner —
+  // und mit laufender Uhr war der Raum im Gesamtlauf manchmal schon leer, was
+  // alle acht Tests auf einmal fallen liess ("im Raum stehen nur 0 Gegner").
+  H.step(60);
 });
 after(async () => { if (H) await H.shutdown(); });
 
@@ -76,28 +71,65 @@ function wirbeln(weite, hpImKanal) {
   // der neue fand dann niemanden und sprang nicht.
   H.step(90);
 
+  // ZWEI FRISCHE, EINGEFRORENE SONDEN je Einsatz.
+  //
+  // Frueher nahm der Helfer die ersten beiden Gegner im Raum und stellte sie
+  // hin. Das ging nur, weil die Uhr im Testkopf still stand (boot.js setzte sie
+  // bei jedem step() auf 0 zurueck): nichts bewegte sich, nichts regenerierte.
+  // Mit laufender Uhr liefen die Gegner in den Kanal (33 Schaden OHNE Knoten),
+  // Regeneration frass vom Sprung (46 statt 50), und nach ein paar Einsaetzen
+  // war der Raum leer ("nur 0 Gegner").
+  //
+  // Deshalb: eigene Sonden, keine Elites (deren Affixe aendern den Schaden),
+  // body.moves aus, alle uebrigen Gegner weit weg und ebenfalls eingefroren.
+  // Gezaehlt wird jeder LP-VERLUST von g2 pro Frame — Regeneration zaehlt
+  // nicht gegen, und der Messwert ist, was der Blitz wirklich abzieht.
   const start = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
-    var alle = [];
-    enemies.children.iterate(function (e) { if (e && e.active) alle.push(e); });
-    if (alle.length < 2) return { fehler: 'nur ' + alle.length + ' Gegner' };
-
+    var EE = window.EliteEnemies;
+    (window.__sonden || []).forEach(function (s) { try { if (s.active) { s.hp = 0; s.destroy(); } } catch (e) {} });
     var px = player.x, py = player.y;
+    enemies.children.iterate(function (e) {
+      if (!e || !e.active) return;
+      e.x = px + 4000; e.y = py + 4000;
+      if (e.body) { e.body.reset(e.x, e.y); e.body.moves = false; }
+    });
+
+    var echtWurf = EE && EE.shouldSpawnElite, echtZufall = Math.random;
+    if (EE) EE.shouldSpawnElite = function () { return null; };
+    Math.random = function () { return 0.99; };   // kein Legacy-Elite (8 %)
+    var g1, g2;
+    try {
+      g1 = spawnEnemy.call(sc, px + 4000, py + 4000, 1);
+      g2 = spawnEnemy.call(sc, px + 4000, py + 4000, 1);
+    } finally { if (EE) EE.shouldSpawnElite = echtWurf; Math.random = echtZufall; }
+    if (!g1 || !g2) return { fehler: 'Sonden liessen sich nicht setzen' };
+    window.__sonden = [g1, g2];
+
     // Der Kanal reicht 0,6 der Spin-Reichweite — nicht die volle.
     var kanal = Math.round(window.getSpinRange() * 0.6);
-    var g1 = alle[0], g2 = alle[1];
     g1.x = px + Math.round(kanal * 0.5);  g1.y = py;
     g2.x = g1.x + ${JSON.stringify(weite)}; g2.y = py;
-    for (var j = 2; j < alle.length; j++) { alle[j].x = px + 4000; alle[j].y = py + 4000; }
-    alle.forEach(function (g) { if (g.body && g.body.reset) g.body.reset(g.x, g.y); });
+    [g1, g2].forEach(function (g) {
+      if (g.body) { g.body.reset(g.x, g.y); g.body.moves = false; }
+    });
     g1.hp = ${JSON.stringify(typeof hpImKanal === 'number' ? hpImKanal : 99999)}; g1.maxHp = 99999;
     g2.hp = 99999; g2.maxHp = 99999;
 
     weaponDamage = 100;
     playerCritChance = 0;   // Krit verdoppelt sonst einen der Treffer
+    playerMaxHealth = 99999; playerHealth = 99999;
 
     window.__g1 = g1; window.__g2 = g2;
-    window.__vorG2 = g2.hp;
+    var mess = { letzte: g2.hp, verlust: 0 };
+    mess.fn = function () {
+      if (!g2.active) return;
+      if (g2.hp < mess.letzte) mess.verlust += mess.letzte - g2.hp;
+      mess.letzte = g2.hp;
+    };
+    if (window.__messung) sc.events.off('postupdate', window.__messung.fn);
+    window.__messung = mess;
+    sc.events.on('postupdate', mess.fn);
     window.castWhirlwind.call(sc);
     return {
       kanal: kanal,
@@ -110,9 +142,13 @@ function wirbeln(weite, hpImKanal) {
   H.step(30);   // der Kanal schlaegt in Ticks zu, nicht sofort
 
   return Object.assign(start, H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var m = window.__messung;
+    m.fn();                                   // den letzten Stand noch mitnehmen
+    sc.events.off('postupdate', m.fn);
     return {
       rang: window.skillRang('combat_chain_lightning'),
-      schadenG2: window.__vorG2 - window.__g2.hp,
+      schadenG2: Math.round(m.verlust),
       g1Lebt: !!window.__g1.active,
       reichweite: Math.round(window.kettenReichweite())
     };

@@ -736,14 +736,13 @@ test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
       return { treppe: window.__naechsteTreppe(e) };
     })()`);
     if (!start) return null;
-    // EIN step()-Aufruf, nicht mehrere.
+    // Ein step()-Aufruf ueber die ganze Strecke.
     //
-    // Ein frueherer Versuch pumpte in acht Abschnitten, um den Verlauf zu
-    // messen. Das war falsch: boot.js:166 setzt `simulated` bei JEDEM
-    // step()-Aufruf auf 0 zurueck — die Spieluhr springt also zwischen den
-    // Abschnitten rueckwaerts, und _dashUntil (= time + 900) laeuft nie ab.
-    // Der Pluenderer blieb im ersten Satz stecken. Gemessen: 13,1 s Laufzeit
-    // statt 5,1 s, und der Test fiel zuverlaessiger als vorher.
+    // Frueher war das ZWINGEND: boot.js setzte die simulierte Uhr bei jedem
+    // step()-Aufruf auf 0 zurueck, die Spieluhr sprang zwischen Abschnitten
+    // rueckwaerts, und _dashUntil (= time + 900) lief nie ab. Seit die Uhr in
+    // boot.js ueber alle Aufrufe weiterlaeuft, ginge es auch in Abschnitten;
+    // der eine Aufruf bleibt, weil hier nur der Endstand gemessen wird.
     H.step(400);
     const ende = H.run(`(function () {
       var e = window.__p;
@@ -914,15 +913,47 @@ test('Der Pluenderer klaut beim ersten Treffer und rennt erst dann los', () => {
     var e = spawnEnemy.call(sc, player.x + 200, player.y, 3);
     e._istPluenderer = true; e.setData('pluendererGold', 100); e.hp = 9999;
     window.__pl = e;
+    // SEINE Treffer auf den Spieler zaehlen. "Treffer" heisst hier: er trifft
+    // DICH (enemy.js, Nahkampf und Koerperkontakt) — erst dann greift er in
+    // den Beutel.
+    window.__plTreffer = 0;
+    if (!window.__plSchadenHaken) {
+      window.__plSchadenHaken = true;
+      var echt = applyPlayerDamage;
+      applyPlayerDamage = function (roh, szene, angreifer) {
+        if (angreifer && angreifer === window.__pl) window.__plTreffer++;
+        return echt.apply(this, arguments);
+      };
+    }
     return { start: start, hatGeklaut: !!e._hatGeklaut, gerannt: !!e._letzteFlucht };
   })()`);
   assert.strictEqual(lauf.hatGeklaut, false);
 
   // Ungeschlagen bleibt er stehen — sonst waere er nie einzuholen.
+  //
+  // EINGEFROREN, AN SEINEM PLATZ. Frueher lief er 200 Bilder lang frei. Ob er
+  // in dieser Zeit herankam und zuschlug, war Zufall — und dann klaute er zu
+  // Recht. Der Test fiel so in 2 von 5 Laeufen mit "er klaut ohne Treffer",
+  // obwohl es einen Treffer GAB. Behauptet wird "ohne Treffer kein Diebstahl
+  // und keine Flucht"; dafuer muss der Treffer sicher ausbleiben, und die
+  // Zaehlung belegt es.
+  //
+  // Bewusst NICHT weit weg gestellt: ein erster Umbau schob ihn 900 px zur
+  // Seite, oft aus dem Raum. Dort findet die Flucht keinen Ausgang, und
+  // "er rennt nicht" stimmte auch dann, wenn er ohne Diebstahl haette rennen
+  // wollen — die Mutation "_laeuft = true" blieb gruen. 200 px vor dem
+  // Spieler steht er im Raum und ausserhalb der Schlagweite.
+  H.run(`(function () {
+    var e = window.__pl;
+    if (e.body) { e.body.setVelocity(0, 0); e.body.moves = false; }
+  })()`);
   H.step(200);
-  const ohne = H.run('(function(){var e=window.__pl;return {geklaut:!!e._hatGeklaut,gerannt:!!e._letzteFlucht};})()');
+  const ohne = H.run('(function(){var e=window.__pl;return {geklaut:!!e._hatGeklaut,gerannt:!!e._letzteFlucht,treffer:window.__plTreffer};})()');
+  assert.strictEqual(ohne.treffer, 0, 'die Probe ist verdorben: er hat ' + ohne.treffer + '-mal getroffen');
   assert.strictEqual(ohne.geklaut, false, 'er klaut ohne Treffer');
   assert.strictEqual(ohne.gerannt, false, 'er rennt schon vor dem ersten Treffer los');
+  // Fuer die Flucht weiter unten muss er sich wieder bewegen koennen.
+  H.run('(function(){var e=window.__pl;if(e&&e.body)e.body.moves=true;})()');
 
   // Der Griff in den Beutel.
   const klau = H.run(`(function () {
