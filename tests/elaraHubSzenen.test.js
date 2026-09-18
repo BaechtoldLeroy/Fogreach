@@ -72,13 +72,13 @@ test('In Akt 3 sieht Harren seine Tochter wieder, genau einmal', () => {
   assert.strictEqual(Array.from(dann.szenen).length, 0, 'das Wiedersehen kam ein zweites Mal');
 });
 
-test('Die Nacht nach dem Bruch: beim ersten Gespraech mit Elara in Akt 4', () => {
+test('Die Nacht nach dem Bruch spielt nicht im Hub, sondern in Elaras Versteck (#161)', () => {
   stand(4, { bruch_confrontation: { status: 'completed', objectives: [] } }, { elaraReturnedToHub: true });
   const erst = H.run(`window.__reden('elara')`);
   assert.ok(!erst.fehler, erst.fehler);
-  assert.deepStrictEqual(Array.from(erst.szenen), ['playNachtNachDemBruch'], 'die Nacht kam nicht');
-  const dann = H.run(`window.__reden('elara')`);
-  assert.strictEqual(Array.from(dann.szenen).length, 0, 'die Nacht kam ein zweites Mal');
+  assert.strictEqual(Array.from(erst.szenen).length, 0, 'die Nacht kommt noch im Hub');
+  assert.strictEqual(H.run(`window.versteckBesuchFaellig()`), 'bruch_nacht',
+    'nach dem Bruch ist kein Besuch im Versteck faellig');
 });
 
 test('Die Abgabe des Maulwurfs zeigt Elara mit Aldric und schliesst ab', () => {

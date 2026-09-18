@@ -1276,13 +1276,8 @@ class HubSceneV2 extends Phaser.Scene {
         _szeneSz('elara_ist_lene', 'playWiedersehen');
         return;
       }
-      // Die Nacht nach dem Bruch: beim ersten Gespraech mit Elara im Hub
-      // (sie steht erst ab Akt 4 dort, siehe elaraReturnedToHub).
-      if (npcId === 'elara' && _aktSz >= 4 && !_flagSz('bruch_nacht_gesehen')
-          && typeof window.storyScenes.playNachtNachDemBruch === 'function') {
-        _szeneSz('bruch_nacht_gesehen', 'playNachtNachDemBruch');
-        return;
-      }
+      // (#161: Die Nacht nach dem Bruch spielt nicht mehr hier, sondern in
+      // Elaras Versteck im Dungeon — roomManager, versteckBesuchFaellig.)
     }
 
     // #155: Der Maulwurf. Bei der Abgabe an Mara die Enthuellung — Du bist dem

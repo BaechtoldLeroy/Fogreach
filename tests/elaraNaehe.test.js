@@ -153,18 +153,37 @@ test('Nach dem Ratsdokument zeigt sie ihr Versteck', () => {
   stand({ harren_daughter_investigation: { status: 'completed', objectives: [] },
           widerstand_proof: { status: 'active', objectives: [{ type: 'fetch', target: 'council_document', current: 1, required: 1 }] } },
         { elaraMet: true }, 1);
+  // #161: Das Versteck ist ein Raum. Nach der Uebergabe kuendigt sie es an,
+  // der naechste Raum des Laufs IST das Versteck, und dort spielt die Szene.
   const r = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
+    enterRoom(sc, 1);
+    window.__durchklicken();
     _showElaraDialog(sc, 2);
     window.__klick(0);                       // Uebergabe bestaetigen
     var text = window.__dialogText();
     window.__durchklicken();
     return { text: text, fertig: window.questSystem.getCompletedQuests().some(function (q) { return q.id === 'widerstand_proof'; }),
+             naechster: dungeonRun.templateOrder[2],
              versteck: window.questSystem.hasFlag('elara_versteck_gesehen') };
   })()`);
   assert.strictEqual(r.fertig, true, 'die Uebergabe schliesst den Auftrag nicht ab');
-  assert.strictEqual(r.versteck, true, 'das Versteck wurde nicht gezeigt');
-  assert.ok(/Spalt|crack/.test(r.text), 'der Dialog nach der Uebergabe ist nicht das Versteck: ' + r.text);
+  assert.ok(/Komm mit/.test(r.text), 'sie kuendigt das Versteck nicht an: ' + r.text);
+  assert.strictEqual(r.naechster, 'ElarasVersteck', 'der naechste Raum ist nicht ihr Versteck');
+  assert.strictEqual(r.versteck, false, 'die Versteck-Szene lief schon vor dem Raum');
+
+  const d = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    enterRoom(sc, 2);
+    var besuch = sc._versteckBesuch;
+    window._versteckSzeneSpielen(sc, besuch);
+    var text = window.__dialogText();
+    window.__durchklicken();
+    return { besuch: besuch, text: text, versteck: window.questSystem.hasFlag('elara_versteck_gesehen') };
+  })()`);
+  assert.strictEqual(d.besuch, 'versteck');
+  assert.ok(/Spalt|crack/.test(d.text), 'im Versteck spielt nicht die Versteck-Szene: ' + d.text);
+  assert.strictEqual(d.versteck, true, 'das Versteck wurde nicht gezeigt');
 });
 
 test('Das Buendel ist ihr naechster Auftrag, und danach spricht sie ueber ihre Familie', () => {

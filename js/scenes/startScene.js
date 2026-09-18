@@ -205,8 +205,9 @@ StartScene.prototype.preload = function () {
     "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove",
     // Feature 055: curated espionage stealth rooms
     "CouncilWarehouse", "SealedArchive", "InformantDen",
-    // #161: Die Quelle, Finalarena auf Tiefe 30 (nur als Boss-Arena)
-    "DieQuelle"
+    // #161: Die Quelle, Finalarena auf Tiefe 30 (nur als Boss-Arena),
+    // und Elaras Versteck (nur, wenn ein Besuch faellig ist)
+    "DieQuelle", "ElarasVersteck"
   ];
   for (const name of templateNames) {
     this.load.json(name, `js/roomTemplates/${name}.json?v=073`);
@@ -751,8 +752,8 @@ StartScene.prototype.create = function () {
       // Feature 055: curated espionage stealth rooms (registered in RT.TEMPLATES
       // so EspionageSystem can build them by name; not part of the random pool)
       "CouncilWarehouse", "SealedArchive", "InformantDen",
-      // #161: Finalarena, nur ueber BOSS_ARENAS (roomManager)
-      "DieQuelle"
+      // #161: Finalarena (BOSS_ARENAS) und Elaras Versteck (versteckBesuchFaellig)
+      "DieQuelle", "ElarasVersteck"
     ];
 
     for (const name of allTemplateNames) {

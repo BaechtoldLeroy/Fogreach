@@ -184,7 +184,8 @@ const ROOM_DESCRIPTIONS = {
   'CouncilChamber': 'Ratskammer \u2014 Der Thron des Kettenrats steht verlassen...',
   'ForgottenCrypt': 'Vergessene Krypta \u2014 Uralte Siegel leuchten schwach...',
   // #161: die Finalarena
-  'DieQuelle':      'Die Quelle \u2014 Hier beginnt der Nebel.'
+  'DieQuelle':      'Die Quelle \u2014 Hier beginnt der Nebel.',
+  'ElarasVersteck': 'Elaras Versteck \u2014 Hier findet Dich keiner.'
 };
 
 // #161: Wie die Tiefen heissen (Story-Bibel v5, Abschnitt 11). Kein neuer Ort,
@@ -316,7 +317,7 @@ function initDungeonRun() {
   // erscheinen NUR per quest-gesteuertem Force-Inject (s. unten), nie zufällig.
   const ESPIONAGE_ROOM_NAMES = ['CouncilWarehouse', 'SealedArchive', 'InformantDen'];
   // #161: Die Quelle erscheint nur als Finalarena (BOSS_ARENAS).
-  const NUR_ALS_ARENA = ['DieQuelle'];
+  const NUR_ALS_ARENA = ['DieQuelle', 'ElarasVersteck'];
   const allStoryNames = [].concat(STORY_ROOMS.act2, STORY_ROOMS.act3, STORY_ROOMS.act4, ESPIONAGE_ROOM_NAMES, NUR_ALS_ARENA);
   const regularNames = allNames.filter(function(n) { return allStoryNames.indexOf(n) === -1; });
 
@@ -512,6 +513,17 @@ function initDungeonRun() {
       templateOrder.unshift(_espForce);
       if (templateOrder.length > totalRooms) templateOrder.length = totalRooms;
       try { console.log('[054-test] Spionage-Raum erzwungen als Raum 1 (?spy=1)'); } catch (e) {}
+    }
+  }
+
+  // #161: Ist ein Besuch in Elaras Versteck faellig (z. B. weil im letzten
+  // Lauf kein Raum mehr frei war), liegt es gleich hinter dem ersten Raum.
+  if (versteckBesuchFaellig()) {
+    for (var _vi = 1; _vi < templateOrder.length - 1; _vi++) {
+      if (ESPIONAGE_ROOM_NAMES.indexOf(templateOrder[_vi]) === -1 && templateOrder[_vi] !== finalRoom) {
+        templateOrder[_vi] = VERSTECK_RAUM;
+        break;
+      }
     }
   }
 
@@ -987,13 +999,17 @@ function enterRoom(scene, roomId) {
     window.__isFinalDungeonRoom = (roomId === (_tR - 1));
   }
 
+  // #161: Elaras Versteck ist ein ruhiger Raum — keine Ereignisse, keine
+  // Zufallsbegegnung, keine Welle (siehe unten). Nur sie und die Szene.
+  var _versteckRaum = (templateName === VERSTECK_RAUM);
+
   // Trigger random event system
-  if (window.EventSystem && typeof window.EventSystem.onRoomEnter === 'function') {
+  if (!_versteckRaum && window.EventSystem && typeof window.EventSystem.onRoomEnter === 'function') {
     window.EventSystem.onRoomEnter(scene, roomId);
   }
 
   // Story-driven Elara cellar encounter — see _maybeFireElaraCellarEncounter.
-  _maybeFireElaraCellarEncounter(scene, roomId);
+  if (!_versteckRaum) _maybeFireElaraCellarEncounter(scene, roomId);
 
   // Feature 055: Espionage-Mission starten, wenn dieser Raum espionage-
   // Metadaten trägt UND eine passende observe-Quest aktiv ist.
@@ -1359,6 +1375,11 @@ function enterRoom(scene, roomId) {
   const nowMs = scene.time?.now ?? performance.now();
   scene._enemyAttackGraceUntil = nowMs + 500;
 
+  // #161: Elaras Versteck — Einrichtung zeichnen, Elara hinstellen.
+  if (templateName === VERSTECK_RAUM) {
+    try { _versteckBetreten(scene, builtWidth - rightPadding, builtHeight); } catch (e) {}
+  }
+
   // #161: Die Quelle leuchtet in der Mitte der Finalarena.
   if (templateName === 'DieQuelle') {
     try { _quelleZeichnen(scene, (builtWidth - rightPadding) / 2, builtHeight / 2); } catch (e) {}
@@ -1486,7 +1507,7 @@ function enterRoom(scene, roomId) {
   var _espionageRoom = !!(window.EspionageSystem
     && typeof window.EspionageSystem.isActive === 'function'
     && window.EspionageSystem.isActive());
-  if (!_espionageRoom && typeof startNextWave === "function") {
+  if (!_espionageRoom && !_versteckRaum && typeof startNextWave === "function") {
     startNextWave.call(scene, false);
     window.currentWave = currentWave;
   }
@@ -1499,7 +1520,7 @@ function enterRoom(scene, roomId) {
       window.RoomMode.beginRoom(scene, {
         roomIndex: roomId,
         isBoss: !!window.__isFinalDungeonRoom,
-        isEspionage: _espionageRoom,
+        isEspionage: _espionageRoom || _versteckRaum,
         depth: Math.max(1, window.DUNGEON_DEPTH || currentWave || 1)
       });
     } catch (e) { /* nie den Raumaufbau brechen */ }
@@ -3139,8 +3160,9 @@ function _elaraT(de, en) {
 
 // Welche Szene nach welcher Abgabe folgt.
 var ELARA_NACH_ABGABE = {
-  resistance_fetch_01: 'familie',
-  elara_meeting: 'werkstatt'
+  resistance_fetch_01: 'familie'
+  // elara_meeting -> 'werkstatt' spielt seit #161 in ihrem Versteck
+  // (versteckBesuchFaellig), nicht mehr direkt nach der Abgabe.
 };
 
 var ELARA_SZENEN = {
@@ -3203,6 +3225,112 @@ var ELARA_SZENEN = {
       ] }
   ]; } }
 };
+
+// ---------------------------------------------------------------------------
+// #161: Elaras Versteck — ein fester Raum, dreimal besucht (Bibel v5, Abschnitt 11).
+//
+//   versteck     nach dem Ratsdokument: sie zeigt Dir den Ort zum ersten Mal
+//   werkstatt    nach elara_meeting: das Werkzeug aus Deiner alten Werkstatt
+//   bruch_nacht  nach dem Bruch (Akt 4): sie versteckt Dich eine Nacht lang
+//
+// Ist ein Besuch faellig, wird der naechste Raum des Laufs zum Versteck (oder,
+// wenn keiner mehr frei ist, der zweite Raum des naechsten Laufs). Im Raum
+// gibt es keine Gegner und keine Ereignisse; Elara wartet, und ein Gespraech
+// mit ihr spielt die Szene.
+// ---------------------------------------------------------------------------
+var VERSTECK_RAUM = 'ElarasVersteck';
+
+function _versteckFlag(n) {
+  var qs = window.questSystem;
+  return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag(n));
+}
+function _versteckErledigt(id) {
+  var qs = window.questSystem;
+  if (!qs || typeof qs.getCompletedQuests !== 'function') return false;
+  return (qs.getCompletedQuests() || []).some(function (q) { return q && q.id === id; });
+}
+
+/** Welcher Besuch ist faellig? 'versteck' | 'werkstatt' | 'bruch_nacht' | null */
+function versteckBesuchFaellig() {
+  if (_versteckErledigt('widerstand_proof') && !_versteckFlag('elara_versteck_gesehen')) return 'versteck';
+  if (_versteckErledigt('elara_meeting') && !_versteckFlag('elara_camp_seen')) return 'werkstatt';
+  var akt = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+    ? window.storySystem.getCurrentActIndex() : 0;
+  // Die Nacht nur VOR dem Verrat: danach waere sie kein Vertrauen mehr, sondern Hohn.
+  if (akt >= 4 && !_versteckFlag('bruch_nacht_gesehen') && !_versteckFlag('elara_verrat_gesehen')) return 'bruch_nacht';
+  return null;
+}
+if (typeof window !== 'undefined') window.versteckBesuchFaellig = versteckBesuchFaellig;
+
+/** Macht den naechsten Raum zum Versteck. false, wenn keiner mehr frei ist. */
+function _versteckAlsNaechsterRaum() {
+  if (!dungeonRun || !Array.isArray(dungeonRun.templateOrder)) return false;
+  if (dungeonRun.templateOrder.indexOf(VERSTECK_RAUM) > dungeonRun.currentIndex) return true;
+  var ziel = dungeonRun.currentIndex + 1;
+  if (ziel >= dungeonRun.totalRooms - 1) return false;   // nie der Finalraum
+  dungeonRun.templateOrder[ziel] = VERSTECK_RAUM;
+  return true;
+}
+
+function _versteckAnkuendigen(scene) {
+  var gleich = _versteckAlsNaechsterRaum();
+  if (!window.EventSystem || typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
+  window.EventSystem.showEventChoiceDialog(scene, gleich
+    ? _elaraT('ELARA: Komm mit. Hinter der nächsten Treppe ist ein Ort, den niemand kennt.',
+              'ELARA: Come with me. Past the next stairs there is a place nobody knows.')
+    : _elaraT('ELARA: Beim nächsten Mal, wenn Du hinabsteigst, zeige ich Dir etwas. Ich finde Dich.',
+              'ELARA: Next time you come down, I will show you something. I will find you.'),
+    [{ label: _elaraT('Weiter', 'Continue'), callback: function () {} }]);
+}
+
+/** Einrichtung: Schlaflager, Karten der Kanaele an der Wand, Kerzenstummel. */
+function _versteckZeichnen(scene, w, h) {
+  if (!scene || !scene.add) return null;
+  var g = scene.add.graphics().setDepth(31);
+  // Schlaflager links unten
+  g.fillStyle(0x4a3a2a, 1); g.fillRoundedRect(w * 0.16, h * 0.62, 120, 52, 10);
+  g.fillStyle(0x6b5540, 1); g.fillRoundedRect(w * 0.16 + 6, h * 0.62 + 6, 108, 40, 8);
+  g.fillStyle(0x8a7a60, 1); g.fillEllipse(w * 0.16 + 24, h * 0.62 + 26, 30, 22);   // Kissen
+  // Karten der Kanaele an der Nordwand
+  var kx = w * 0.62, ky = h * 0.16;
+  g.fillStyle(0xcab98f, 1); g.fillRect(kx, ky, 96, 64);
+  g.lineStyle(2, 0x5a4a30, 0.9);
+  g.lineBetween(kx + 10, ky + 20, kx + 60, ky + 24); g.lineBetween(kx + 60, ky + 24, kx + 84, ky + 50);
+  g.lineBetween(kx + 30, ky + 22, kx + 26, ky + 54); g.lineBetween(kx + 26, ky + 54, kx + 70, ky + 56);
+  g.fillStyle(0x8a2a2a, 1); g.fillCircle(kx + 70, ky + 40, 4);                     // markierte Stelle
+  // Kerzenstummel neben dem Lager
+  [[w * 0.16 + 136, h * 0.62 + 8], [w * 0.16 + 150, h * 0.62 + 30], [w * 0.16 + 128, h * 0.62 + 44]].forEach(function (p) {
+    g.fillStyle(0xe8dcc0, 1); g.fillRect(p[0] - 3, p[1] - 8, 6, 10);
+    g.fillStyle(0xffcc55, 0.9); g.fillCircle(p[0], p[1] - 11, 3);
+    g.fillStyle(0xffaa33, 0.18); g.fillCircle(p[0], p[1] - 10, 16);
+  });
+  scene._versteckDeko = g;
+  return g;
+}
+
+function _versteckBetreten(scene, w, h) {
+  _versteckZeichnen(scene, w, h);
+  var besuch = versteckBesuchFaellig();
+  scene._versteckBesuch = besuch;
+  if (!besuch || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
+  window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, 'Elara', function () {
+    _versteckSzeneSpielen(scene, besuch);
+  }, { scale: 0.16 });
+}
+
+function _versteckSzeneSpielen(scene, besuch) {
+  if (besuch === 'bruch_nacht') {
+    if (_versteckFlag('bruch_nacht_gesehen')) return;
+    var qs = window.questSystem;
+    if (qs && typeof qs.setFlag === 'function') qs.setFlag('bruch_nacht_gesehen');
+    if (window.storyScenes && typeof window.storyScenes.playNachtNachDemBruch === 'function') {
+      try { window.storyScenes.playNachtNachDemBruch(scene, function () {}); } catch (e) {}
+    }
+    return;
+  }
+  _elaraSzene(scene, besuch);
+}
+if (typeof window !== 'undefined') window._versteckSzeneSpielen = _versteckSzeneSpielen;
 
 /**
  * Spielt eine von Elaras Szenen im Dungeon, einmalig (Flag).
@@ -3418,8 +3546,8 @@ function _showElaraDialog(scene, stage, opts) {
       : '"Du hast es gefunden." Elara nimmt das Dokument, fährt mit einem Finger über die drei Siegel. Magistrat. Klerus. Garde.\n\n"Drei Unterschriften, die nie auf einer Seite stehen sollten. Sie behaupten Rivalen zu sein — hinter verschlossenen Türen stimmen sie überein. Bring das zum Bürgermeister. Er traut keinem der drei. Dir vielleicht."';
     onContinue = function () {
       if (qs && typeof qs.completeQuest === 'function') qs.completeQuest('widerstand_proof');
-      // #155: danach zeigt sie Dir ihr Versteck.
-      _elaraSzene(scene, 'versteck');
+      // #155/#161: danach zeigt sie Dir ihr Versteck — als Raum, gleich der naechste.
+      _versteckAnkuendigen(scene);
     };
   } else {
     text = isEn
@@ -3474,6 +3602,7 @@ function _elaraAuftragsDialog(scene, auftrag, btnLabel, isEn) {
         qs.completeQuest(auftrag.id);
         // #155: nach bestimmten Abgaben ein ruhiger Moment mit ihr.
         if (ELARA_NACH_ABGABE[auftrag.id]) _elaraSzene(scene, ELARA_NACH_ABGABE[auftrag.id]);
+        else if (versteckBesuchFaellig()) _versteckAnkuendigen(scene);
         return;
       }
       qs.acceptQuest(auftrag.id);

@@ -137,6 +137,7 @@ const ROOM_THEMES = {
   'CouncilChamber':    { floor: 'floor_tile_ornate', wall: 'wall_stone_large' },
   'ForgottenCrypt':    { floor: 'floor_cobble', wall: 'wall_dungeon' },
   'DieQuelle':         { floor: 'floor_stone_dark', wall: 'wall_dungeon' },
+  'ElarasVersteck':    { floor: 'floor_stone', wall: 'wall_brick' },
   '_default':          { floor: 'floor_stone', wall: 'obstacleWall' }
 };
 
