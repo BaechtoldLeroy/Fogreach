@@ -140,11 +140,75 @@ Das Ende steht fest: Endkampf, Presse, der Nebel bricht. Die Entscheidungen best
 - **Der Schattenrat als eigener Endgegner**: Er geht in der besessenen Elara auf.
 - **Die Nebelschleuse** im Druckhaus als Finalort: Das Finale liegt unten an der Quelle, die Presse ist der Epilog.
 
-## 11. Umsetzung, grob
+## 11. Orte
 
-1. **Ansehen ausbauen**, Quest-Tore und Belohnungen umstellen.
-2. **Elara-Strang**: Rettungsszene, Versteck, Werkstatt-Szene, Wiedersehen, Nacht nach dem Bruch, Maulwurf-Verfolgung mit Reveal.
-3. **Zeichen des Schattenrats**: ein Symbol, auf Siegeln, Bündel, Klinge, Befehl und Ring.
-4. **Endgegner Elara, besessen**, auf Tiefe 30, mit den Nebel-Mechaniken des Zeremonienmeisters gesteigert.
-5. **Finale und Epilog** auf die Entscheidungen aus Abschnitt 9 umstellen.
-6. **Texte**: Elaras Dialoge, Harrens Nachfragen, die öffentliche Ratssitzung.
+Die Story braucht **drei neue Orte**. Alles andere trägt, was da ist. Ein Hauptquartier für den Widerstand oder eigene Häuser für Klerus und Garde braucht es nicht: Elaras Versteck ist der Ort des Widerstands, und dass die drei Fraktionen keine eigenen Adressen haben, passt zu einem Rat, der in Wahrheit einer ist.
+
+Zuordnung der Akte: Die Akte 1–4 dieser Bibel entsprechen den Akt-Indizes 1–4 im Code (`storySystem.STORY_ACTS`). Index 0 („Der Dienst“) ist der Prolog.
+
+### Bleibt, wie es ist
+
+| Ort | Wann | Rolle |
+|---|---|---|
+| **Hub** (ein Bildschirm, vier Phasen) | immer | Rathaus, Schmiede, Druckerei, Brunnen. Nach dem Bruch ist das Rathaus feindlich (Phase `broken`), nach dem Ende die Phase `epilogue`. |
+| **Rathauskeller**, Tiefe 1–9 | Akt 0–1 | Die ersten Aufträge. Vorlagen: rathauskeller, PrisonCells, SewageTunnel, DungeonLibrary, RathausArchive. |
+| **Katakomben**, Tiefe 10–19 | ab Akt 2 | Die okkulte Ebene öffnet sich. Kein neuer Ort, sondern ein Name und eine Stimmung für diese Tiefen. Vorlagen: ForgottenCrypt, Crypt_Small_Altar, Cathedral, RitualChamber. |
+| **Ritualebene**, Tiefe 20–29 | ab Akt 3 | Wo der Rat die Quelle nährt. Vorlagen: RitualVault, ThroneRoom, PrisonDepths, ArmoryVault. |
+| **Lagerhaus** (CouncilWarehouse) | Akt 2 | Der Konvoi, Spionage. |
+| **Versiegeltes Archiv** (SealedArchive) | Akt 2–3 | Spionage im Archiv. |
+| **Treffpunkt** (InformantDen) | Akt 3 | Maulwurf-Suche. |
+| **Ratskammer bei Nacht** (CouncilChamber) | Akt 1 und 3 | Die geheime Sitzung in Akt 1; am Ende von Akt 3 der Ort, an dem Du Elara mit Aldric siehst. Derselbe Raum, zweimal, das zweite Mal mit Dir als Wissendem. |
+| **Flucht** (Raum-Modus `escape`) | Akt 3, nach dem Bruch | Die Kettenwache jagt Dich durch den Keller zu Elaras Versteck. |
+
+### Neu
+
+| Ort | Wann | Was er leistet |
+|---|---|---|
+| **Der Ratssaal** | Akt 1 | Die öffentliche Sitzung: Die drei Fraktionen streiten vor den Bürgern. Klein, eine Szene oder ein Hub-Ereignis. Ohne ihn fehlt der Kontrast zur geheimen Sitzung. |
+| **Elaras Versteck** | Akt 1–3 | **Ein** fester Raum, dreimal besucht: nach der Rettung (sie zeigt ihn Dir), für die Werkstatt-Szene, in der Nacht nach dem Bruch. Der Ort sammelt die Nähe, die der Verrat später zerstört. Ersetzt das bisherige \"Elaras Lager\". |
+| **Die Quelle**, Tiefe 30 | Akt 4 | Eigene Finalarena statt eines normalen Bossraums. Die Quelle des Nebels, Schauplatz von Harrens Tod und dem Endkampf gegen Elara. |
+
+### Zu prüfen
+
+Die Phase `epilogue` des Hubs: Zeigt sie, was die Bibel verspricht (dünner Nebel, Menschen, die auf Plätzen vorlesen), und zeigt sie die Unterschiede aus Abschnitt 9?
+
+## 12. Gegner
+
+**Es braucht keine neuen Gegnertypen.** Die vorhandenen zehn tragen die Story, wenn sie eine Bedeutung bekommen. Neu ist nur der Endgegner Elara. Was sich ändert, sind Namen, Beschreibungen und die Freischaltung nach Akt.
+
+| Gegner | Ab Tiefe | Ab Akt | Bedeutung in der Story |
+|---|---|---|---|
+| Ratte, Fledermaus, Wolf | 1 | 0 | Ungeziefer der Keller. Harmlos, alltäglich. |
+| Imp | 3 | 0 | Die kleinsten **Nebelwesen**: Der Nebel sickert von unten herauf. |
+| Bogenschütze | 3 | 1 | **Kellerwächter** des Rats. Menschen, die bewachen, was unten liegt. |
+| Brute | 5 | 1 | **Nebelbestie**, gewachsen aus dem, was die Quelle frisst. |
+| Magier | 5 | 2 | **Kultisten** des Klerus. Ab dem Doppelspiel sieht der Spieler, wer die Rituale ausführt. |
+| Schatten | 7 | 3 | **Die Vergessenen**: was von den Verschwundenen übrig bleibt. Ab der Enttarnung weiss der Spieler, dass er gegen Bürger kämpft, die der Rat geopfert hat. |
+| Kettenwache | 9 | **3** (bisher 4) | **Garde des Schattenrats**. Jagt Dich nach dem Bruch. Deshalb schon ab Akt 3. |
+| Flammenweber | 9 | 4 | **Ritualisten der Quelle**. Nur ganz unten. |
+
+**Bosse:**
+
+| Boss | Tiefe | Akt | Rolle |
+|---|---|---|---|
+| Kettenmeister | 10 | 2 | Der Folterknecht der Garde. Fesselung: Der Rat greift und hält fest. |
+| Zeremonienmeister | 20 | 3 | Der oberste Ritualist des Klerus. Auslöschung: das Vergessen selbst, Vorspiel auf Elara. |
+| **Elara, besessen** | 30 | 4 | Endgegner, siehe Abschnitt 8. Im Kampf kehren Vergessene (Schatten) zurück. |
+
+Die Kriegsschar und die Minibosse bleiben, wie sie sind.
+
+## 13. Umsetzung, grob
+
+| Ticket | Inhalt |
+|---|---|
+| #154 | Ansehen ausbauen, Quest-Tore und Belohnungen umstellen (schliesst #85). |
+| #155 | Elara-Strang: Rettung, Versteck, Werkstatt-Szene, Wiedersehen, Nacht nach dem Bruch, Maulwurf-Verfolgung. |
+| #156 | Das Zeichen des Schattenrats an fünf Stellen. |
+| #157 | Endgegner Elara, besessen, auf Tiefe 30 (berührt #144). |
+| #158 | Finale und Epilog auf die Entscheidungen aus Abschnitt 9 (berührt #145, #146, #84). |
+| #159 | Öffentliche Ratssitzung vor der geheimen (berührt #147, #76). |
+| #160 | Abstimmung über das Edikt der Woche (berührt #68). |
+| #161 | Drei neue Orte: Ratssaal, Elaras Versteck, die Quelle; Katakomben als Stimmung. |
+| #162 | Gegnern eine Bedeutung geben, Kettenwache ab Akt 3. |
+
+Sinnvolle Reihenfolge: #154 zuerst (räumt auf und macht Elaras ersten Auftrag erreichbar), dann #155 und #156 zusammen (der Kern der Story), dann #161, #157 und #158 (das Finale), zuletzt #159, #160 und #162.
