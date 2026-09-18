@@ -148,25 +148,28 @@
         { label: 'Es ist wahr.', response: 'ELARA: Vieles ist wahr. Nicht alles hilft. Frag Dich, wem es nützt, bevor Du es druckst.' }
       ]
     },
-    elara_second_truth: {
-      prompt: 'ELARA: Ich erfinde nichts. Ich wähle aus.',
+    // #155: Die Hub-Szenen aus Story-Bibel v5, Abschnitt 6. (Die frueheren
+    // Eintraege elara_second_truth, elara_camp und bruch waren ungenutzt oder
+    // gehoerten zur Blaetter-Fassung aus v4.)
+    wiedersehen: {
+      prompt: 'HARREN: (leise, als sie gegangen ist) Du wusstest es?',
       choices: [
-        { label: 'Dann bist Du nicht besser als der Rat.', response: 'ELARA: Doch. Ich erfinde nichts. Ich wähle aus. Merk Dir den Unterschied, er ist alles.' },
-        { label: 'Warum sagst Du mir das?', response: 'ELARA: Weil Du gleich die Presse in der Hand hast. Und weil auch ich Dir etwas verkaufen würde, wenn Du mich lässt.' }
+        { label: 'Nein. Ich wusste es nicht.', response: 'HARREN: Sie nennt sich jetzt Elara. Für mich bleibt sie Lene. Pass auf sie auf, da unten.' },
+        { label: 'Ich habe es geahnt.', response: 'HARREN: Dann bist Du klüger als ich. Pass auf sie auf, da unten. Sie lässt sich nicht helfen.' }
       ]
     },
-    elara_camp: {
-      prompt: 'ELARA: (legt Dein altes Zeichen vor Dich hin)',
+    bruch_nacht: {
+      prompt: 'ELARA: Du hast mir vertraut. Die ganze Zeit.',
       choices: [
-        { label: 'Wer war ich?', response: 'ELARA: Jemand, der nicht aufhören konnte zu fragen. Wie jetzt. Frag Branka, sie weiss mehr.' },
-        { label: 'Warum tust Du das?', response: 'ELARA: Ich habe Angst, Archivschmied. Davor, das Falsche zu werden, wenn das hier vorbei ist. Jemand muss danach entscheiden, was die Stadt erfährt. Und ich vertraue niemandem damit. Nicht einmal mir.' }
+        { label: 'Das tue ich noch.', response: 'ELARA: (leise) Ich weiss.' },
+        { label: 'Hätte ich es nicht sollen?', response: '(Sie antwortet nicht. Sie sieht zur Tür.)' }
       ]
     },
-    bruch: {
-      prompt: 'BRANKA: Es gibt kein Zurück. Bist Du dabei?',
+    maulwurf_reveal: {
+      prompt: 'MARA: (als Du zurückkommst) Und? Wer ist es?',
       choices: [
-        { label: 'Es gibt kein Zurück mehr.', response: 'BRANKA: Nein. Aber es gibt ein Nach vorn. Mara, Thom, ich, wir sind bereit.' },
-        { label: 'Was ist mit Elara?', response: 'BRANKA: Sie führt uns an. Ohne sie wären wir nichts. (Du sagst nichts. Du hast die drei Blätter gesehen.)' }
+        { label: 'Elara.', response: 'MARA: (lange Stille) Dann hat sie uns alle geführt. Direkt in seine Hände.' },
+        { label: 'Ich weiss es nicht.', response: 'MARA: Du lügst schlecht, Archivschmied. Gut. Behalt es, bis Du weisst, was Du tust.' }
       ]
     },
     // Die Elara-Schicksal-Entscheidung im Finale (nur zeigen, wenn spareable:

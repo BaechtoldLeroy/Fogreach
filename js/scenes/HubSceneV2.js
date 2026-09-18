@@ -1254,20 +1254,55 @@ class HubSceneV2 extends Phaser.Scene {
       return;
     }
 
-    // Feature 063: Elara-Lager (Story v4 §13.2) — ruhiger Akt-3-Moment ohne
-    // Auftrag. Einmalig und nur im Flavor-Gespräch, damit es nie ein Quest-
-    // Angebot verdrängt.
-    // Persistenter Guard (nicht instanzweit): sonst spielt das Lager nach jeder
-    // Dungeon-Rueckkehr erneut ab, weil die Hub-Szene neu aufgebaut wird.
-    const _elaraCampSeen = !!(window.questSystem && typeof window.questSystem.hasFlag === 'function'
-      && window.questSystem.hasFlag('elara_camp_seen'));
-    if (questMode === 'flavor' && npcId === 'elara' && !_elaraCampSeen
-        && window.storyScenes && typeof window.storyScenes.playElaraCamp === 'function'
-        && window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function'
-        && window.storySystem.getCurrentActIndex() >= 3) {
-      if (window.questSystem && typeof window.questSystem.setFlag === 'function') window.questSystem.setFlag('elara_camp_seen');
-      const selfEC = this;
-      window.storyScenes.playElaraCamp(this, function () { selfEC._closeDialog(null); });
+    // #155: Elaras Szenen im Hub (Story-Bibel v5, Abschnitt 6). Jede genau
+    // einmal — persistentes Flag, nicht instanzweit, sonst spielte sie nach
+    // jeder Dungeon-Rueckkehr erneut, weil die Hub-Szene neu aufgebaut wird.
+    // Sie laufen VOR dem normalen Gespraech; danach spricht man die Figur
+    // erneut an. (Das fruehere Elara-Lager ist jetzt die Werkstatt-Szene im
+    // Dungeon, nach "Elaras Geheimnis".)
+    const _qsSz = window.questSystem;
+    const _aktSz = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+      ? window.storySystem.getCurrentActIndex() : 0;
+    const _flagSz = (f) => !!(_qsSz && typeof _qsSz.hasFlag === 'function' && _qsSz.hasFlag(f));
+    const _szeneSz = (flag, name) => {
+      if (_qsSz && typeof _qsSz.setFlag === 'function') _qsSz.setFlag(flag);
+      const selfSz = this;
+      window.storyScenes[name](this, function () { selfSz._closeDialog(null); });
+    };
+    if (window.storyScenes) {
+      // Das Wiedersehen: Ende Akt 2, beim ersten Gespraech mit Harren in Akt 3.
+      if (npcId === 'harren' && _aktSz >= 3 && !_flagSz('elara_ist_lene')
+          && typeof window.storyScenes.playWiedersehen === 'function') {
+        _szeneSz('elara_ist_lene', 'playWiedersehen');
+        return;
+      }
+      // Die Nacht nach dem Bruch: beim ersten Gespraech mit Elara im Hub
+      // (sie steht erst ab Akt 4 dort, siehe elaraReturnedToHub).
+      if (npcId === 'elara' && _aktSz >= 4 && !_flagSz('bruch_nacht_gesehen')
+          && typeof window.storyScenes.playNachtNachDemBruch === 'function') {
+        _szeneSz('bruch_nacht_gesehen', 'playNachtNachDemBruch');
+        return;
+      }
+    }
+
+    // #155: Der Maulwurf. Bei der Abgabe an Mara die Enthuellung — Du bist dem
+    // Zettel gefolgt und siehst Elara mit Aldric. Danach der Abschluss (setzt
+    // mole_evidence). Faellt die Szene aus, wird trotzdem abgeschlossen.
+    if (questData && questData.id === 'espionage_informant' && questMode === 'turnin') {
+      const selfMw = this;
+      const qsMw = window.questSystem;
+      if (qsMw && typeof qsMw.setFlag === 'function') qsMw.setFlag('elara_verrat_gesehen');
+      const abschlussMw = function () {
+        try { if (qsMw) qsMw.completeQuest('espionage_informant'); } catch (e) {}
+        selfMw._refreshQuestIndicators();
+        selfMw._closeDialog(null);
+      };
+      if (window.storyScenes && typeof window.storyScenes.playMaulwurfEnthuellung === 'function') {
+        try { window.storyScenes.playMaulwurfEnthuellung(this, abschlussMw); }
+        catch (e) { abschlussMw(); }
+      } else {
+        abschlussMw();
+      }
       return;
     }
 

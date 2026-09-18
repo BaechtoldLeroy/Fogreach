@@ -76,22 +76,28 @@ test('Elara rettet den Spieler, wenn er in Bedraengnis geraet', () => {
     var sc = window.game.scene.getScene('GameScene');
     // Am ECHTEN Einstieg: enterRoom ruft _maybeFireElaraCellarEncounter, und
     // der stellt die Rettung scharf. Raum >= 2, darunter erscheint sie nie.
+    // Raeume sind zufaellig und manchmal so klein, dass kein Punkt ausserhalb
+    // des Nebels liegt (gemessen: weitester 264 px). Bis zu sechs Raeume
+    // betreten, bis einer gross genug ist.
     var raum = Math.max(2, (sc.currentRoom && sc.currentRoom.id || 0) + 1);
-    enterRoom(sc, raum);
-    enemies.clear(true, true);
+    var weit = null, weiteste = 0;
+    for (var versuch = 0; versuch < 6 && !weit; versuch++, raum++) {
+      enterRoom(sc, raum);
+      enemies.clear(true, true);
+      weiteste = 0;
+      for (var v = 0; v < 60; v++) {
+        var p = sc.pickAccessibleSpawnPoint ? sc.pickAccessibleSpawnPoint({ maxAttempts: 8 }) : null;
+        var d = p ? Math.hypot(p.x - player.x, p.y - player.y) : 0;
+        if (d > weiteste) { weiteste = d; if (d > ELARA_RETTUNG_RADIUS + 30) weit = p; }
+      }
+    }
+    if (!weit) return { fehler: 'in sechs Raeumen kein Punkt ausserhalb des Nebels (zuletzt ' + Math.round(weiteste) + ' px)' };
     // Ein Gegner nah am Spieler, einer weit weg.
     var nah = spawnEnemy.call(sc, 0, 0, 8), fern = spawnEnemy.call(sc, 0, 0, 8);
     nah.x = player.x + 60; nah.y = player.y;
     // Der ferne Gegner an einen ERREICHBAREN Punkt im Raum, ausserhalb des
     // Nebels. Fest "x + 700" lag je nach Raum ausserhalb und wurde entfernt;
     // eine feste Mindestweite von 400 px gab es in kleinen Raeumen nicht.
-    var weit = null, weiteste = 0;
-    for (var v = 0; v < 60; v++) {
-      var p = sc.pickAccessibleSpawnPoint ? sc.pickAccessibleSpawnPoint({ maxAttempts: 8 }) : null;
-      var d = p ? Math.hypot(p.x - player.x, p.y - player.y) : 0;
-      if (d > weiteste) { weiteste = d; weit = p; }
-    }
-    if (!weit || weiteste <= ELARA_RETTUNG_RADIUS + 30) return { fehler: 'kein Punkt ausserhalb des Nebels im Raum (weitester ' + Math.round(weiteste) + ' px)' };
     fern.x = weit.x; fern.y = weit.y;
     [nah, fern].forEach(function (g) { if (g.body) { g.body.reset(g.x, g.y); g.body.moves = false; } g.hp = 9999; });
     window.__nah = nah; window.__fern = fern;

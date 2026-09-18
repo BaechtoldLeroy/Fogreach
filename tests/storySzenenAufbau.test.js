@@ -91,7 +91,7 @@ test('Die Lesepause laeuft erst NACH dem Aufbau an', () => {
   // Bei langsamem Tempo haette sie den Text mitten im Satz abgeschnitten.
   const S = ladeStoryScenes();
   const A = attrappe();
-  S.playElaraCamp(A.scene, () => {});
+  S.playNachtNachDemBruch(A.scene, () => {});
   assert.strictEqual(A.verzoegert.length, 0,
     'die Lesepause laeuft schon, bevor ein Wort geschrieben ist');
   A.takte(60);

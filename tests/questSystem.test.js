@@ -374,7 +374,9 @@ test('055: Espionage-Quests existieren mit observe-Objective, ohne gate', () => 
   const EXPECTED = {
     espionage_convoy: { target: 'convoy_intel', npcId: 'mara', prereq: 'mara_contact', act: 2 },
     espionage_archive: { target: 'archive_record', npcId: 'harren', prereq: 'espionage_convoy', act: 3 },
-    espionage_informant: { target: 'informant_id', npcId: 'mara', prereq: 'espionage_archive', act: 3 }
+    // #155: der Maulwurf liegt jetzt NACH dem Bruch (Akt 4) — erst die Nacht
+    // in Elaras Versteck, dann die Spur zu ihr.
+    espionage_informant: { target: 'informant_id', npcId: 'mara', prereq: 'espionage_archive', act: 4 }
   };
   Object.keys(EXPECTED).forEach((id) => {
     const q = defs[id];

@@ -417,11 +417,14 @@
       // Feature 062: setzt mole_evidence (Regler 3 im Finale). observe informant_id
       // von WP05 (espionageSystem) verdrahtet.
       completionFlags: ['mole_evidence'],
-      prerequisites: ['espionage_archive'],
-      requiredAct: 3,
+      // #155: Nach dem Bruch (Story-Bibel v5): erst die Nacht, in der Elara Dich
+      // versteckt, dann die Spur zu ihr. Vorher konnte der Maulwurf VOR dem
+      // Bruch fallen, und der Verrat kam vor dem tiefsten Vertrauen.
+      prerequisites: ['espionage_archive', 'bruch_confrontation'],
+      requiredAct: 4,
       dialogueOffer: 'Jemand verrät uns. Was wir hinter verschlossenen Türen beschliessen, weiss der Rat am nächsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.\n\nFindest du den Verräter?',
       dialogueProgress: 'Noch hast du den Maulwurf nicht. Bleib unauffällig am Treffpunkt und hör ab, wer Nachrichten nach draussen schmuggelt.',
-      dialogueComplete: 'Du hast die Übergabe gesehen. Ein gefalteter Zettel, eine Hand, ein Wort — und in der Handschrift derselbe sauber gezogene Bogen wie auf den Belegen, die uns jemand aus dem Inneren des Rats zugespielt hat. Die Spur zeigt nach innen, näher als uns lieb ist. Ich nenne keinen Namen. Aber vertrau ab jetzt niemandem blind — nicht einmal denen, die uns "die Wahrheit" bringen.'
+dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neben Aldric. An ihrem Ring das Zeichen der drei Ketten. Sie hat uns alle geführt — direkt in seine Hände.'
     },
 
     // =======================================================
@@ -916,7 +919,7 @@
       'quest.espionage_informant.description': "Unmask a council mole within the resistance's ranks, in disguise.",
       'quest.espionage_informant.dialogueOffer': 'Someone is betraying us. Whatever we decide behind closed doors, the council knows it by next morning. Blend in disguised among our own people at the meeting point and find out who the mole is. Move quietly — they do not know your face in this getup.\n\nWill you find the traitor?',
       'quest.espionage_informant.dialogueProgress': "You don't have the mole yet. Stay inconspicuous at the meeting point and listen for who smuggles messages outside.",
-      'quest.espionage_informant.dialogueComplete': "You saw the handoff. A folded note, a hand, a word — and in the handwriting the same cleanly drawn curve as on the records someone from inside the council slipped us. The trail points inward, closer than we'd like. I name no name. But from now on, trust no one blindly — not even those who bring us \"the truth.\"",
+      'quest.espionage_informant.dialogueComplete': 'You followed the note all the way into the council chamber. Elara, beside Aldric. On her ring the sign of the three chains. She led us all — straight into his hands.',
 
       'quest.elara_ritual.dialogueOffer': "Deep below there is a chamber... I'll show you where. Reach wave 20.\n\nAre you ready for the truth?",
       'quest.elara_ritual.dialogueProgress': 'You must press deeper. The ritual chamber lies at wave 20.',

@@ -5,7 +5,10 @@
 //   playCollusionSession  -> geheime Sitzung mit "Zuhören"-Leiste, feuert
 //                            observe collusion_reveal_seen bei Abschluss.
 //   playElaraFirstCrack   -> Elaras erster Riss, feuert observe three_hands_seen.
-//   playElaraCamp         -> Elara-Lager, atmosphärisch, KEIN Trigger.
+//   playWiedersehen       -> #155: Harren sieht seine Tochter wieder (Ende Akt 2).
+//   playNachtNachDemBruch -> #155: Elara versteckt Dich nach dem Bruch.
+//   playMaulwurfEnthuellung -> #155: Du siehst Elara mit Aldric, das Zeichen am Ring.
+//   (Das fruehere Elara-Lager ist die Werkstatt-Szene im Dungeon, roomManager.js.)
 //
 // Einheitliche Signatur (scene, onDone). Defensiv: fehlt DialogChoice/questSystem,
 // läuft die Szene minimal ab statt zu crashen. Alle GameObjects scrollFactor(0).
@@ -93,7 +96,8 @@
     var done = false;
 
     var auf = _zeilenAufbauen(scene, [
-      '(Die drei legen die Farben ab. Ein Blatt. Drei Siegel.)',
+      // #156: Hier lernt der Spieler das Zeichen des Schattenrats kennen.
+      '(Die drei legen die Farben ab. Ein Blatt. Drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)',
       'ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.',
       '(Du bleibst im Schatten und hörst zu.)'
     ], cx, cy);
@@ -163,33 +167,71 @@
     }
   }
 
-  // --- 13.2 Elara-Lager (atmosphärisch, KEIN Trigger) -----------------------
-  function playElaraCamp(scene, onDone) {
+  /**
+   * Zeilen aufbauen, Lesepause, dann die Auswahl aus storyDialog.byScene.
+   * Die Lesepause laeuft erst, wenn der Text fertig geschrieben ist.
+   */
+  function _szeneSpielen(scene, zeilen, sceneKey, onDone) {
     var cam = scene.cameras.main;
     var cx = cam.width / 2, cy = cam.height / 2 - 20;
-    // Die Lesepause laeuft erst, wenn der Text fertig geschrieben ist.
-    // Vorher stand hier eine feste Verzoegerung von 900 ms — sie haette
-    // den Aufbau mitten im Satz abgeschnitten.
-    var auf = _zeilenAufbauen(scene, [
-      '(Elara legt etwas Kleines vor Dich hin, abgegriffen, alt. Dein Zeichen.)',
-      'ELARA: Das lag in Deiner alten Werkstatt, bevor der Nebel Dich holte. Ich habe es aufgehoben.'
-    ], cx, cy, function () {
+    var weiter = false;
+    var auf = _zeilenAufbauen(scene, zeilen, cx, cy, function () {
       if (scene.time && scene.time.delayedCall) scene.time.delayedCall(LESEPAUSE_MS, step);
       else step();
     });
     var intro = auf.text;
     function step() {
+      if (weiter) return;
+      weiter = true;
       if (auf.lauf) auf.lauf.abbrechen();
       if (intro && intro.destroy) intro.destroy();
-      _choiceOrDone(scene, 'elara_camp', function () {
-        if (typeof onDone === 'function') onDone();   // kein Objective-Trigger
+      _choiceOrDone(scene, sceneKey, function () {
+        if (typeof onDone === 'function') onDone();
       });
     }
+  }
+
+  // --- #155 Das Wiedersehen (Ende Akt 2) -------------------------------------
+  // Hier erfaehrt der Spieler, wer Elara ist. Das Licht im Fenster hat sie ihm
+  // im Dungeon beschrieben ("jemand, der jeden Abend auf mich wartet").
+  function playWiedersehen(scene, onDone) {
+    _szeneSpielen(scene, [
+      '(Spät am Abend. Im Fenster des Bürgermeisters brennt ein Licht, wie jeden Abend.)',
+      '(Eine Gestalt in der Gasse. Die Kapuze fällt. Es ist Elara.)',
+      'HARREN: Lene.',
+      '(Sie zögert einen Atemzug zu lang. Dann liegt sie in seinen Armen.)',
+      'ELARA: Ich kann nicht bleiben, Vater. Noch nicht.'
+    ], 'wiedersehen', onDone);
+  }
+
+  // --- #155 Die Nacht nach dem Bruch ------------------------------------------
+  // Das tiefste Vertrauen, direkt vor dem Verrat.
+  function playNachtNachDemBruch(scene, onDone) {
+    _szeneSpielen(scene, [
+      '(Die Nacht nach dem Bruch. Aldrics Wachen durchkämmen die Gassen. Elara zieht Dich in ihr Versteck unter der Stadt.)',
+      'ELARA: Hier findet Dich keiner. Schlaf. Ich halte Wache.',
+      '(Du wachst einmal auf. Sie sitzt an der Tür, die Klinge über den Knien, und sieht Dich an. Lange.)'
+    ], 'bruch_nacht', onDone);
+  }
+
+  // --- #155 Der Maulwurf: Elara mit Aldric --------------------------------------
+  // Der Verrat. #156: das Zeichen an ihrem Ring — dasselbe wie auf den Siegeln
+  // der geheimen Sitzung und auf dem Buendel, das der Spieler ihr gebracht hat.
+  function playMaulwurfEnthuellung(scene, onDone) {
+    _szeneSpielen(scene, [
+      '(Du bist dem gefalteten Zettel gefolgt. Durch die Kanäle, hinauf ins Rathaus, in die Ratskammer. Es ist Nacht.)',
+      '(Aldric steht am Tisch. Ihm gegenüber, ohne Kapuze: Elara.)',
+      'ALDRIC: Er vertraut Dir. Gut. Sorg dafür, dass er hinabsteigt.',
+      'ELARA: Er wird gehen. Er hat niemanden mehr ausser mir.',
+      '(Als sie den Zettel übergibt, fällt Licht auf ihre Hand. Ein Ring: drei Ketten, ineinander verschlungen. Dasselbe Zeichen wie auf den Siegeln der geheimen Sitzung. Wie auf dem Bündel, das Du ihr gebracht hast.)'
+    ], 'maulwurf_reveal', onDone);
   }
 
   window.storyScenes = {
     playCollusionSession: playCollusionSession,
     playElaraFirstCrack: playElaraFirstCrack,
-    playElaraCamp: playElaraCamp
+    playWiedersehen: playWiedersehen,
+    playNachtNachDemBruch: playNachtNachDemBruch,
+    playMaulwurfEnthuellung: playMaulwurfEnthuellung
   };
 })();
