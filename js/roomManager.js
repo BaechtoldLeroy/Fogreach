@@ -305,7 +305,9 @@ function initDungeonRun() {
   var BOSS_ARENAS = {
     chainMaster: 'PrisonDepths',
     ceremonyMaster: 'RitualVault',
-    shadowCouncillor: 'CouncilChamber'
+    shadowCouncillor: 'CouncilChamber',
+    // #157: Die Quelle liegt unter den Ritualkammern. Eine eigene Arena folgt (#161).
+    elaraBesessen: 'RitualVault'
   };
   if (depth >= 10 && depth % 10 === 0 && typeof getBossDefinition === 'function') {
     try {

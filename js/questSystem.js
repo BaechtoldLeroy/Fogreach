@@ -598,7 +598,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     schattenrat_finale: {
       id: 'schattenrat_finale',
       title: 'Die Quelle',
-      description: 'Steige auf Tiefe 30 hinab und besiege den Schattenrat, der die Quelle des Nebels hält.',
+      description: 'Steige auf Tiefe 30 hinab, zur Quelle des Nebels. Elara ist schon dort.',
       npcId: 'harren',
       type: 'boss',
       chain: 2,
@@ -608,9 +608,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       rewards: { xp: 250 },
       prerequisites: [],
       requiredAct: 4,
-      dialogueOffer: 'Unter der Stadt sitzt das, dem der Nebel dient, über Rat und Widerstand hinaus. Der Schattenrat hält die Quelle auf Tiefe 30. Steig hinab. Danach entscheidest du, was die Stadt erfährt.',
-      dialogueProgress: 'Der Schattenrat lebt noch, Tiefe 30.',
-      dialogueComplete: 'Der Schattenrat ist gefallen, die Quelle liegt offen. Jetzt gehört die Presse dir. Komm hoch, es ist Zeit.'
+      // #157: Nicht mehr der Schattenrat — Elara ist zur Quelle hinabgestiegen.
+      dialogueOffer: 'Elara ist hinabgestiegen. Zur Quelle, auf Tiefe 30. Ich weiss jetzt, was sie ist, Archivschmied. Sie ist trotzdem meine Tochter. Geh. Ich komme nach.',
+      dialogueProgress: 'Die Quelle liegt auf Tiefe 30. Beeil Dich.',
+      dialogueComplete: 'Die Quelle ist zerbrochen. Jetzt gehört die Presse Dir. Geh zu Thom, es ist Zeit.'
     },
 
     // =======================================================
@@ -815,7 +816,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // entfernt (-> the_reckoning). Neue/umbenannte Quests ohne EN fallen über
       // die i18n-Kaskade auf Deutsch zurück (Deutsch = Source-of-Truth).
       'quest.schattenrat_finale.title': 'The Source',
-      'quest.schattenrat_finale.description': 'Descend to depth 30 and defeat the Shadow Council that holds the source of the fog.',
+      'quest.schattenrat_finale.description': 'Descend to depth 30, to the source of the fog. Elara is already there.',
 
       // === Quest dialogues — English ===
       'quest.aldric_cleanup.dialogueOffer': 'Wild beasts in the cellars. Clear them out.\n\nWill you take this task?',
@@ -945,9 +946,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.mara_assault.dialogueProgress': 'The council waits in the depths. Press on — wave 30.',
       'quest.mara_assault.dialogueComplete': 'The council has fallen! Fogreach breathes again. But the shadows are not yet defeated...',
 
-      'quest.schattenrat_finale.dialogueOffer': 'Beneath the city sits that which the fog serves, beyond council and resistance. The Shadow Council holds the source at depth 30. Descend. Then you decide what the city learns.',
-      'quest.schattenrat_finale.dialogueProgress': 'The Shadow Council still lives, depth 30.',
-      'quest.schattenrat_finale.dialogueComplete': 'The Shadow Council has fallen, the source lies open. The press is yours now. Come up, it is time.',
+      'quest.schattenrat_finale.dialogueOffer': 'Elara has gone down. To the source, at depth 30. I know now what she is, Archivesmith. She is still my daughter. Go. I will follow.',
+      'quest.schattenrat_finale.dialogueProgress': 'The source lies at depth 30. Hurry.',
+      'quest.schattenrat_finale.dialogueComplete': 'The source is broken. The press is yours now. Go to Thom, it is time.',
 
       // === Quest reward strings ===
       'quest.reward.info.mara_contact': "Mara's network revealed",

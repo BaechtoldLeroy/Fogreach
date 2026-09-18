@@ -2854,7 +2854,40 @@ const BOSS_DEFINITIONS = {
     attacks: ['shadowDash', 'darknessWave', 'shadowClones'],
     attackCooldown: 3000,
   },
+  // #157 (Story-Bibel v5, Abschnitt 8): Der Schattenrat geht in der besessenen
+  // Elara auf. Sie nimmt seinen Platz auf Tiefe 30 ein, solange die Geschichte
+  // laeuft (getBossDefinition). Dieselbe Staerke wie er — sie IST jetzt die
+  // Quelle —, aber ihre Angriffe sind die des Nebels: Auslöschung, die
+  // Vergessenen, der Griff nach der Erinnerung.
+  elaraBesessen: {
+    id: 'elaraBesessen',
+    name: 'Elara, besessen',
+    texture: 'boss_elara_right0',
+    fallbackTexture: 'elara_right0',
+    baseHP: 123,
+    baseSpeed: 75,
+    baseDamage: 16,
+    scale: 3.0,
+    loreIntro: 'Die Quelle hat sie genommen. Was einmal Elara war, greift nach allem, woran Du Dich erinnerst.',
+    attacks: ['shadowDash', 'vergesseneRufen', 'nebelAusloeschung'],
+    attackCooldown: 3000,
+  },
 };
+
+/**
+ * Wartet Elara auf Tiefe 30? Nur waehrend der letzten Quest (schattenrat_finale):
+ * vorher weiss der Spieler nichts von ihr — schon der Bossname in der
+ * Tiefenwahl des Hubs haette es verraten —, und nach dem Ende (story_ending)
+ * soll man ihr in einem spaeteren Boss-Lauf nicht wieder gegenueberstehen.
+ */
+function _elaraWartet() {
+  try {
+    var qs = window.questSystem;
+    if (!qs || typeof qs.getActiveQuests !== 'function') return false;
+    if (typeof qs.hasFlag === 'function' && qs.hasFlag('story_ending')) return false;
+    return (qs.getActiveQuests() || []).some(function (q) { return q && q.id === 'schattenrat_finale'; });
+  } catch (e) { return false; }
+}
 
 // Debug: welchen Boss meint ?boss=<name>? Akzeptiert die interne Id und den
 // deutschen Namen, klein geschrieben und ohne Umlaute — beim Tippen in die
@@ -2862,7 +2895,9 @@ const BOSS_DEFINITIONS = {
 const BOSS_ALIASE = {
   chainmaster: 'chainMaster', kettenmeister: 'chainMaster', ketten: 'chainMaster', '1': 'chainMaster',
   ceremonymaster: 'ceremonyMaster', zeremonienmeister: 'ceremonyMaster', zeremonie: 'ceremonyMaster', '2': 'ceremonyMaster',
-  shadowcouncillor: 'shadowCouncillor', schattenrat: 'shadowCouncillor', schatten: 'shadowCouncillor', '3': 'shadowCouncillor'
+  shadowcouncillor: 'shadowCouncillor', schattenrat: 'shadowCouncillor', schatten: 'shadowCouncillor', '3': 'shadowCouncillor',
+  // #157
+  elara: 'elaraBesessen', elarabesessen: 'elaraBesessen', besessen: 'elaraBesessen', quelle: 'elaraBesessen'
 };
 
 /**
@@ -2903,7 +2938,10 @@ function getBossDefinition(wave) {
   // Unter Welle 10 ist bossIndex negativ und der Zugriff undefined — bisher
   // unerreichbar (Tier-Gate), aber ein Absturz, sobald ein Aufrufer frueher
   // fragt. Erster Boss als Rueckfall.
-  const id = bossOrder[bossIndex] || bossOrder[0];
+  let id = bossOrder[bossIndex] || bossOrder[0];
+  // #157: Waehrend der letzten Quest steht auf dem Platz des Schattenrats
+  // die besessene Elara.
+  if (id === 'shadowCouncillor' && _elaraWartet()) id = 'elaraBesessen';
   return { def: BOSS_DEFINITIONS[id], cycle: cycle };
 }
 
@@ -3224,6 +3262,153 @@ function makeBoss(boss, def, cycle) {
   boss.baseCooldown = def.attackCooldown;
   boss._baseMoveSpeed = boss.speed;
   boss._lastAttack = null;
+
+  if (def.id === 'elaraBesessen') _elaraBesessenAufbauen.call(this, boss);
+}
+
+// ---------------------------------------------------------------------------
+// #157: Elara, besessen — was sie von den anderen Bossen unterscheidet.
+// ---------------------------------------------------------------------------
+var ELARA_ZEICHEN_START = 0.85;        // Zeichen erkannt: sie beginnt angeschlagen
+var ELARA_MARA_TAKT_MS = 7000;         // so oft trifft Maras Pfeil
+var ELARA_MARA_ANTEIL = 0.03;          // Anteil der Max-LP je Pfeil
+var ELARA_GRIFF_SPERRE_MS = 3000;      // so lange sind die Faehigkeiten gesperrt
+
+function _elaraToast(scene, de, en) {
+  try {
+    var istEn = !!(window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
+    if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
+      window.EventSystem.showEventToast(scene, istEn ? en : de, 'elara_besessen');
+    }
+  } catch (e) {}
+}
+
+function _elaraBesessenAufbauen(boss) {
+  const scene = this;
+  // Besessen: violett durchscheinend, der Nebel quillt um sie.
+  if (typeof boss.setTint === 'function') boss.setTint(0xc4a8ff);
+  const aura = scene.add.graphics().setDepth((boss.depth || 50) - 1);
+  aura.fillStyle(0x8866cc, 0.28);
+  aura.fillCircle(0, 0, 70);
+  aura.fillStyle(0xaa88ee, 0.18);
+  aura.fillCircle(0, 0, 110);
+  const auraTakt = scene.time.addEvent({ delay: 16, loop: true, callback: () => {
+    if (!boss.active) return;
+    aura.setPosition(boss.x, boss.y);
+  } });
+  scene.tweens.add({ targets: aura, alpha: { from: 0.6, to: 1 }, duration: 900, yoyo: true, repeat: -1 });
+
+  const qs = window.questSystem;
+  const flags = (qs && typeof qs.getFlags === 'function') ? qs.getFlags() : {};
+
+  // Das Zeichen auf der Klinge erkannt (#156): vorbereitet statt kalt erwischt.
+  if (flags.zeichen_bemerkt) {
+    boss.hp = Math.max(1, Math.ceil(boss.hp * ELARA_ZEICHEN_START));
+    _elaraToast(scene, 'Du kennst das Zeichen an ihrem Ring. Du warst vorbereitet.',
+      'You know the sign on her ring. You came prepared.');
+  }
+
+  // Mara kommt zu Hilfe, wenn das Finale sie an Deiner Seite sieht
+  // (questFinale: Gesuche behalten oder Maulwurf enthuellt, nicht aufgeflogen).
+  let maraTakt = null;
+  let maraHilft = false;
+  try {
+    maraHilft = !!(window.QuestFinale && window.QuestFinale.computeFinaleState(flags).allies.mara);
+  } catch (e) { maraHilft = false; }
+  if (maraHilft) {
+    let ersterPfeil = true;
+    maraTakt = scene.time.addEvent({ delay: ELARA_MARA_TAKT_MS, loop: true, callback: () => {
+      if (!boss.active || boss.hp <= 0) return;
+      if (ersterPfeil) {
+        ersterPfeil = false;
+        _elaraToast(scene, 'Mara ist da. Ihre Pfeile kommen aus dem Dunkel.', 'Mara is here. Her arrows come out of the dark.');
+      }
+      // Pfeil vom Rand des Blickfelds auf Elara.
+      const cam = scene.cameras && scene.cameras.main;
+      const sx = cam ? cam.scrollX : boss.x - 400;
+      const sy = cam ? cam.scrollY + cam.height * 0.2 : boss.y - 300;
+      const pfeil = scene.add.graphics().setDepth(1003);
+      pfeil.lineStyle(3, 0xe8d8a0, 1);
+      pfeil.lineBetween(-10, 0, 10, 0);
+      pfeil.setPosition(sx, sy);
+      pfeil.setRotation(Math.atan2(boss.y - sy, boss.x - sx));
+      scene.tweens.add({ targets: pfeil, x: boss.x, y: boss.y, duration: 350, onComplete: () => {
+        pfeil.destroy();
+        if (!boss.active || boss.hp <= 0) return;
+        boss.hp = Math.max(1, boss.hp - Math.ceil(boss.maxHp * ELARA_MARA_ANTEIL));
+      } });
+    } });
+  }
+  boss._maraHilft = maraHilft;
+
+  boss.on('destroy', () => {
+    try { auraTakt.remove(); } catch (e) {}
+    try { if (maraTakt) maraTakt.remove(); } catch (e) {}
+    try { aura.destroy(); } catch (e) {}
+  });
+}
+
+// Auslöschung: der Nebel loescht Teile der Arena. Drei Zonen um den Spieler,
+// die laenger stehen als beim Zeremonienmeister — die Arena wird kleiner.
+function bossNebelAusloeschung(boss) {
+  const scene = this;
+  for (let i = 0; i < 3; i++) {
+    const w = (i / 3) * Math.PI * 2 + Math.random();
+    const zx = player.x + Math.cos(w) * Phaser.Math.Between(60, 160);
+    const zy = player.y + Math.sin(w) * Phaser.Math.Between(60, 160);
+    spawnPersistentHazard(scene, boss, zx, zy, 90, 8000);
+  }
+}
+
+// Die Vergessenen kehren zurueck: Schatten, die der Nebel wieder ausspuckt.
+function bossVergesseneRufen(boss) {
+  const scene = this;
+  const warn = scene.add.graphics().setDepth(1001);
+  warn.fillStyle(0x8866cc, 0.3);
+  warn.fillCircle(boss.x, boss.y, 70);
+  scene.time.delayedCall(400, () => warn.destroy());
+  scene.time.delayedCall(600, () => {
+    if (!boss.active) return;
+    for (let i = 0; i < 3; i++) {
+      const mx = boss.x + Phaser.Math.Between(-110, 110);
+      const my = boss.y + Phaser.Math.Between(-110, 110);
+      const g = spawnEnemy.call(scene, mx, my, 5);   // 5 = Schatten, die Vergessenen
+      if (g) {
+        g.hp = Math.max(4, Math.ceil(boss.maxHp * 0.02));
+        g._vergessen = true;
+        g.setTint(0xb8a8d8);
+      }
+    }
+  });
+}
+
+// Signatur: der Griff nach der Erinnerung. Langer, deutlicher Vorlauf; dann
+// sind alle Faehigkeiten fuer kurze Zeit weg — man kaempft nur noch mit der
+// Waffe. Mit ihrer eigenen Klinge.
+function bossErinnerungsGriff(boss) {
+  const scene = this;
+  const overlay = scene.add.graphics().setDepth(1050).setScrollFactor(0);
+  overlay.fillStyle(0x3a2a55, 1);
+  overlay.fillRect(0, 0, scene.scale.width, scene.scale.height);
+  overlay.setAlpha(0);
+  _elaraToast(scene, 'Elara greift nach Deiner Erinnerung.', 'Elara reaches for your memory.');
+  scene.tweens.add({
+    targets: overlay, alpha: 0.5, duration: 900,
+    onComplete: () => {
+      if (boss.active && boss.hp > 0) {
+        const AS = window.AbilitySystem;
+        const jetzt = (typeof window.gameNow === 'function') ? window.gameNow(scene) : scene.time.now;
+        if (AS && typeof AS.getActiveLoadout === 'function' && typeof AS.setCooldown === 'function') {
+          const belegung = AS.getActiveLoadout();
+          Object.keys(belegung).forEach((slot) => {
+            if (belegung[slot]) AS.setCooldown(belegung[slot], ELARA_GRIFF_SPERRE_MS, jetzt);
+          });
+        }
+        boss._letzterGriff = jetzt;
+      }
+      scene.tweens.add({ targets: overlay, alpha: 0, duration: 600, onComplete: () => overlay.destroy() });
+    },
+  });
 }
 
 function handleBossAI(time, boss, scene) {
@@ -3322,6 +3507,7 @@ function drawBossBar(boss) {
   if (boss.bossType === 'chainMaster') barColor = 0xaaaaaa;
   else if (boss.bossType === 'ceremonyMaster') barColor = 0xaa00aa;
   else if (boss.bossType === 'shadowCouncillor') barColor = 0xff0000;
+  else if (boss.bossType === 'elaraBesessen') barColor = 0xaa66ff;
   g.fillStyle(barColor, 1);
   g.fillRect(x, y, barW * pct, barH);
 }
@@ -3775,6 +3961,7 @@ const BOSS_SIGNATURE = {
   chainMaster: 'chainReel',       // harter Ranzieh-Zug -> Kiting-Puzzle
   ceremonyMaster: 'ritualHazard', // dauerhafte Gefahrenzonen
   shadowCouncillor: 'cloneSlam',  // Fake-out-Slams (nur einer echt)
+  elaraBesessen: 'erinnerungsGriff', // #157: Faehigkeiten kurz weg
 };
 
 // Gewichtet-zufällige Attackenwahl ohne Sofort-Wiederholung. Ab Phase 2 wandert
@@ -3982,6 +4169,10 @@ const BOSS_ATTACK_MAP = {
   chainReel: bossChainReel,
   ritualHazard: bossRitualHazard,
   cloneSlam: bossCloneSlam,
+  // #157
+  nebelAusloeschung: bossNebelAusloeschung,
+  vergesseneRufen: bossVergesseneRufen,
+  erinnerungsGriff: bossErinnerungsGriff,
 };
 
 // ---------------------------------------------------------------------------

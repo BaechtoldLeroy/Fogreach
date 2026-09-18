@@ -1060,6 +1060,11 @@ function preload() {
   if (!this.textures.exists('elara_right0')) {
     this.load.image('elara_right0', 'assets/npc/elara/right0.png');
   }
+  // #157: Die besessene Elara als Endgegner. Dieselben Bilder unter dem
+  // boss_-Praefix, damit Skalierung und Richtungswechsel der Boss-KI greifen.
+  ['left0', 'left1', 'left2', 'right0', 'right1', 'right2'].forEach((f) => {
+    if (!this.textures.exists('boss_elara_' + f)) this.load.image('boss_elara_' + f, 'assets/npc/elara/' + f + '.png');
+  });
 
   // 052 WP03: apply LINEAR to painterly cellar assets after preload
   // completes. These are not in the StartScene preload list so they need
@@ -1067,7 +1072,9 @@ function preload() {
   this.load.once('complete', () => {
     if (window.RenderQuality) {
       window.RenderQuality.applyLinearFilter(this, [
-        'rathauskeller_bg', 'elara_right0'
+        'rathauskeller_bg', 'elara_right0',
+        'boss_elara_left0', 'boss_elara_left1', 'boss_elara_left2',
+        'boss_elara_right0', 'boss_elara_right1', 'boss_elara_right2'
       ]);
     }
   });

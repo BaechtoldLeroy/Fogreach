@@ -803,6 +803,9 @@ function updatePlayerColliderDebug(sprite) {
   g.setVisible(true);
 }
 
+// #157: Faktor fuer Elaras Klinge gegen die besessene Elara.
+const ELARAS_KLINGE_GEGEN_ELARA = 1.5;
+
 function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', opts = {}) {
   if (!enemy) return { damage: 0, isCrit: false };
 
@@ -836,6 +839,15 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
       else if (!_w) _wTier = 0; // ohne Waffe: wie Common behandeln
     } catch (e) { /* defensiv: volle Wirkung lassen */ }
     if (_wTier < 1) multiplier *= 0.35;
+  }
+
+  // #157: Elaras Klinge trifft die besessene Elara haerter. Das Geschenk
+  // "fuer den Fall, dass..." ist die Waffe, die gegen sie wirkt.
+  if (enemy.bossType === 'elaraBesessen') {
+    try {
+      const _wk = (typeof equipment === 'object' && equipment) ? equipment.weapon : null;
+      if (_wk && _wk.key === 'ELARAS_KLINGE') multiplier *= ELARAS_KLINGE_GEGEN_ELARA;
+    } catch (e) { /* defensiv */ }
   }
 
   // Kettenwächter (Chain Guard): shield blocks the first hit then breaks
@@ -1848,6 +1860,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
         const bossColor = enemy.bossType === 'chainMaster' ? 0xcccccc
           : enemy.bossType === 'ceremonyMaster' ? 0xaa33ff
           : enemy.bossType === 'shadowCouncillor' ? 0xff3322
+          : enemy.bossType === 'elaraBesessen' ? 0xaa66ff
           : 0xff8844;
         window.particleFactory.bossDeath(enemy.x, enemy.y, bossColor);
       } else {
@@ -1925,7 +1938,9 @@ function handleEnemyHit(scene, enemy, options = {}) {
         var bossMapping = {
           'chainMaster': 'kettenmeister',
           'ceremonyMaster': 'zeremonienmeister',
-          'shadowCouncillor': 'schattenrat'
+          'shadowCouncillor': 'schattenrat',
+          // #157: Die besessene Elara erfuellt denselben Auftrag — die Quelle.
+          'elaraBesessen': 'schattenrat'
         };
         var questBossId = bossMapping[enemy.bossType] || enemy.bossType;
         if (typeof window.questSystem.onBossKilled === 'function') {
