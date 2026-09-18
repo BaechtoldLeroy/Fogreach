@@ -197,6 +197,28 @@ Die Phase `epilogue` des Hubs: Zeigt sie, was die Bibel verspricht (dünner Nebe
 
 Die Kriegsschar und die Minibosse bleiben, wie sie sind.
 
+### Spätere Gegnertypen und Gegner je Ort
+
+Die Story braucht keine neuen Typen. Wenn welche kommen (#12, Verhaltensmatrix in `reference/enemy_ideas.md`), sollen sie eine Rolle in der Story haben und, wie #12 fordert, eine eigene Antwort vom Spieler verlangen statt nur mehr Schaden:
+
+| Verhaltenstyp | Rolle in der Story | Ort | Verlangt vom Spieler |
+|---|---|---|---|
+| Beschwörer | Kultist des Klerus, der Nebelwesen ruft | Katakomben | Fokus: den Rufer zuerst ausschalten |
+| Heiler / Buffer | Priester, der die Kultisten stärkt | Katakomben | Fokus-Feuer, solange er lebt |
+| Teleportierer | Die Vergessenen, die durch den Nebel springen | Katakomben, Ritualebene | Positionierung, Flächenschaden |
+| Verfolger | Die Hunde der Kettenwache | Flucht nach dem Bruch | Kontrolle, Ausweichen |
+| Flüchtend | Imps, die fliehen und Verstärkung rufen | Keller | Nachsetzen, bevor Verstärkung kommt |
+| Explodierer | Nebelgeschwür | Ritualebene | Abstand |
+
+**Gegner je Ort.** Statt eines gemeinsamen Pools für alle Räume (heute nur nach Tiefe und Akt gestaffelt) hat jeder Ort seine eigenen Gegner, gewichtet statt ausschliesslich:
+
+| Ort | Überwiegend |
+|---|---|
+| Keller (Tiefe 1–9) | Ungeziefer, Kellerwächter, Imps |
+| Katakomben (Tiefe 10–19) | Kultisten, Vergessene, Nebelbestien |
+| Ritualebene (Tiefe 20–29) | Ritualisten, Kettenwache, Vergessene |
+| Die Quelle (Tiefe 30) | Elara, zurückkehrende Vergessene |
+
 ## 13. Umsetzung, grob
 
 | Ticket | Inhalt |
