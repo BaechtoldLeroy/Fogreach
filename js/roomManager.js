@@ -2817,7 +2817,7 @@ let _elaraStage2SpawnTarget = null;
 function _resetElaraEncounterRunState() {
   _elaraDocSpawnTarget = null;
   _elaraStage2SpawnTarget = null;
-  _elaraRettungAbbrechen();
+  _hinterhaltAbbrechen();
 }
 
 function _rollDistance() {
@@ -2989,10 +2989,10 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
   }
 
   // Stage 1: Q1 done, Q5 not yet active, !elaraMet → die erste Begegnung.
-  // #155: nicht mehr sofort beim Betreten, sondern als RETTUNG (siehe
-  // _elaraRettungScharfstellen).
+  // Sie ist eine RETTUNG aus einem Hinterhalt (siehe _hinterhaltStarten) —
+  // ab Raum 3, damit der Lauf erst anlaeuft, bevor der Rat zuschlaegt.
   if (!qs.hasFlag('elaraMet') && !q5Done) {
-    _elaraRettungScharfstellen(scene, roomId);
+    if (roomId >= HINTERHALT_AB_RAUM) _hinterhaltStarten(scene, roomId);
     return;
   }
 
@@ -3081,8 +3081,8 @@ var ELARA_NACH_ABGABE = {
 var ELARA_SZENEN = {
   rettung: { flag: 'elara_rettung_gesehen', seiten: function () { return [
     { text: _elaraT(
-        '(Nebel quillt aus den Fugen. Die Gegner um Dich weichen zurück, als hätte etwas sie gerufen, und lösen sich im Grau auf. Aus dem Dunkel tritt eine junge Frau, die Kapuze tief im Gesicht.)\n\n"Du lebst. Gut. Noch ein Atemzug, und Du wärst einer von denen, an die sich keiner erinnert."',
-        '(Fog seeps from the cracks. The enemies around you fall back as if something called them, and dissolve into the grey. A young woman steps out of the dark, hood pulled low.)\n\n"You are alive. Good. One more breath and you would have been one of those nobody remembers."'),
+        '(Nebel quillt aus den Fugen. Die Kettenwache weicht zurück, als hätte etwas sie gerufen, und löst sich im Grau auf. Aus dem Dunkel tritt eine junge Frau, die Kapuze tief im Gesicht.)\n\n"Du lebst. Gut. Du hast gelesen, was Du nicht lesen solltest — und der Rat vergisst so etwas nicht. Noch ein Atemzug, und Du wärst einer von denen, an die sich keiner erinnert."',
+        '(Fog seeps from the cracks. The chain guard falls back as if something called it, and dissolves into the grey. A young woman steps out of the dark, hood pulled low.)\n\n"You are alive. Good. You read what you were not supposed to read — and the council does not forget such things. One more breath and you would have been one of those nobody remembers."'),
       wahlen: [
         { label: _elaraT('Wie hast Du das gemacht?', 'How did you do that?'),
           antwort: _elaraT('"Der Nebel gehorcht dem, der ihn kennt. Frag nicht weiter."', '"The fog obeys those who know it. Don\'t ask further."') },
@@ -3170,82 +3170,140 @@ function _elaraSzene(scene, key, amEnde) {
 }
 
 // ---------------------------------------------------------------------------
-// #155: Die erste Begegnung ist eine RETTUNG.
+// Die erste Begegnung mit Elara: der HINTERHALT.
 //
-// Vorher stand Elara einfach beim Betreten im Raum. Jetzt wird die Begegnung
-// scharfgestellt und wartet: faellt der Spieler in diesem Raum unter die
-// Haelfte seiner Lebenspunkte, vertreibt Nebel die Gegner um ihn, und sie
-// tritt heraus. Dass der Nebel ihr gehorcht, ist die erste Spur auf das, was
-// sie ist (Story-Bibel v5). Wer den Raum ohne Not raeumt, trifft sie danach
-// wie bisher — die Geschichte haengt nicht daran, dass man in Bedraengnis
-// geraet.
+// Wann: im ersten Lauf nach Harrens erstem Auftrag. Dort liest der Spieler
+// das Tagebuch der Tochter, in dem alle drei Ratsfraktionen namentlich
+// stehen — zum ersten Mal weiss er mehr, als der Rat ihm erzaehlt. Darauf
+// muss der Rat reagieren: er schickt seine Kettenwache, um den neugierigen
+// Handwerker vergessen zu machen.
+//
+// Der Raum ist bewusst nicht zu gewinnen. Die Kettenwache kommt in Akt 1
+// sonst gar nicht vor, und hier traegt sie das Vierfache an Leben. Faellt
+// der Spieler unter die Haelfte seiner Lebenspunkte — oder haelt er sich 30
+// Sekunden lang, weil er gut ausweicht —, quillt Nebel aus den Fugen, loest
+// den ganzen Hinterhalt auf, und Elara tritt heraus. Dass der Nebel ihr
+// gehorcht, ist die erste Spur auf das, was sie ist (Story-Bibel v5).
+//
+// Sterben kann der Spieler hier nicht: ein Treffer, der ihn toeten wuerde,
+// wird abgefangen. Die Szene ist eine Rettung, keine Pruefung.
+//
+// Vorher lauerte die Rettung in JEDEM Raum und kam nur, wenn man zufaellig
+// in Not geriet; wer gut spielte, erlebte sie nie.
 // ---------------------------------------------------------------------------
+var HINTERHALT_AB_RAUM = 3;          // erst ab dem dritten Raum des Laufs
+var HINTERHALT_GEGNER = 4;           // so viele Kettenwachen
+var HINTERHALT_LEBEN_FAKTOR = 4;     // unbesiegbar, nicht nur schwer
+var HINTERHALT_SCHADEN_FAKTOR = 1.5;
+var HINTERHALT_RING_PX = 190;        // so weit um den Spieler tauchen sie auf
 var ELARA_RETTUNG_ANTEIL = 0.5;      // unter diesem LP-Anteil greift sie ein
-var ELARA_RETTUNG_RADIUS = 280;      // so weit vertreibt der Nebel die Gegner
-var ELARA_RETTUNG_WARTE_MS = 1500;   // erst danach gilt ein leerer Raum als geraeumt
-var _elaraRettung = null;
+var HINTERHALT_SPAETESTENS_MS = 30000;
+var _hinterhalt = null;
 
-function _elaraRettungAbbrechen() {
-  if (_elaraRettung && _elaraRettung.timer) {
-    try { _elaraRettung.timer.remove(false); } catch (e) {}
+function _hinterhaltAbbrechen() {
+  if (_hinterhalt) {
+    if (_hinterhalt.timer) { try { _hinterhalt.timer.remove(false); } catch (e) {} }
+    if (_hinterhalt.echtSchaden && window.applyPlayerDamage === _hinterhalt.schutz) {
+      window.applyPlayerDamage = _hinterhalt.echtSchaden;
+    }
   }
-  _elaraRettung = null;
+  _hinterhalt = null;
 }
 
-function _elaraAktiveGegner() {
-  var n = 0;
-  if (typeof enemies !== 'undefined' && enemies && enemies.children) {
-    enemies.children.iterate(function (e) { if (e && e.active && !(e.hp <= 0)) n++; });
-  }
-  return n;
+/** Faengt Treffer ab, die den Spieler im Hinterhalt toeten wuerden. */
+function _hinterhaltSchutzEinbauen(h) {
+  var echt = window.applyPlayerDamage;
+  if (typeof echt !== 'function') return;
+  h.echtSchaden = echt;
+  h.schutz = function (roh) {
+    if (_hinterhalt === h && typeof playerHealth === 'number' && playerHealth <= (Number(roh) || 0) + 1) {
+      var vorher = window._playerInvincible;
+      window._playerInvincible = true;
+      try { return echt.apply(this, arguments); }
+      finally { window._playerInvincible = vorher; }
+    }
+    return echt.apply(this, arguments);
+  };
+  window.applyPlayerDamage = h.schutz;
 }
 
-function _elaraRettungScharfstellen(scene, roomId) {
-  if (_elaraRettung && _elaraRettung.raum === roomId) return;
-  _elaraRettungAbbrechen();
-  if (!scene || !scene.time || typeof scene.time.addEvent !== 'function') { _spawnElaraSprite(scene, 1); return; }
-  var r = { raum: roomId, timer: null, seit: 0 };
-  r.timer = scene.time.addEvent({ delay: 200, loop: true, callback: function () {
-    if (_elaraRettung !== r) return;
+function _hinterhaltGegnerSetzen(scene, h) {
+  if (typeof spawnEnemy !== 'function' || typeof player === 'undefined' || !player) return;
+  // Was der Raum sonst an Gegnern gebracht hat, weicht dem Hinterhalt.
+  if (typeof enemies !== 'undefined' && enemies && typeof enemies.clear === 'function') enemies.clear(true, true);
+  for (var i = 0; i < HINTERHALT_GEGNER; i++) {
+    var g = null;
+    try { g = spawnEnemy.call(scene, 0, 0, 6); } catch (e) { g = null; }
+    if (!g) continue;
+    var w = (i / HINTERHALT_GEGNER) * Math.PI * 2 + 0.4;
+    var x = player.x + Math.cos(w) * HINTERHALT_RING_PX;
+    var y = player.y + Math.sin(w) * HINTERHALT_RING_PX;
+    if (typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(x, y)
+        && typeof scene.pickAccessibleSpawnPoint === 'function') {
+      var p = scene.pickAccessibleSpawnPoint({ maxAttempts: 12 });
+      if (p) { x = p.x; y = p.y; }
+    }
+    g.x = x; g.y = y;
+    if (g.body && typeof g.body.reset === 'function') g.body.reset(x, y);
+    g.hp = Math.round((g.hp || 10) * HINTERHALT_LEBEN_FAKTOR);
+    g.maxHp = g.hp;
+    g.damage = Math.max(1, Math.round((g.damage || 1) * HINTERHALT_SCHADEN_FAKTOR));
+    if (typeof g.baseDamage === 'number') g.baseDamage = g.damage;
+    g._hinterhalt = true;
+    h.gegner.push(g);
+  }
+  try {
+    if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
+      window.EventSystem.showEventToast(scene, _elaraT('Hinterhalt! Die Kettenwache des Rats sperrt den Raum.',
+        'Ambush! The council\'s chain guard seals the room.'), 'hinterhalt');
+    }
+  } catch (e) {}
+}
+
+function _hinterhaltStarten(scene, roomId) {
+  if (_hinterhalt && _hinterhalt.raum === roomId) return;
+  _hinterhaltAbbrechen();
+  if (!scene || !scene.time || typeof scene.time.addEvent !== 'function') return;
+  var h = { raum: roomId, timer: null, seit: 0, gegner: [], gesetzt: false };
+  _hinterhalt = h;
+  _hinterhaltSchutzEinbauen(h);
+  h.timer = scene.time.addEvent({ delay: 100, loop: true, callback: function () {
+    if (_hinterhalt !== h) return;
     var qs = window.questSystem;
     if (!scene.currentRoom || scene.currentRoom.id !== roomId
         || (qs && typeof qs.hasFlag === 'function' && qs.hasFlag('elaraMet'))) {
-      _elaraRettungAbbrechen();
+      _hinterhaltAbbrechen();
       return;
     }
     if (window.eventChoiceOpen) return;
-    r.seit += 200;
+    // Erst setzen, wenn der Raum seine eigene Welle gebracht hat (die kommt
+    // per delayedCall NACH enterRoom) — sonst stuende sie neben dem Hinterhalt.
+    if (!h.gesetzt) { h.gesetzt = true; _hinterhaltGegnerSetzen(scene, h); return; }
+    h.seit += 100;
     var max = (typeof playerMaxHealth === 'number' && playerMaxHealth > 0) ? playerMaxHealth : 0;
     var lp = (typeof playerHealth === 'number') ? playerHealth : max;
-    if (max > 0 && lp > 0 && lp / max < ELARA_RETTUNG_ANTEIL) {
-      _elaraRettungAbbrechen();
+    var inNot = max > 0 && lp / max < ELARA_RETTUNG_ANTEIL;
+    if (inNot || h.seit >= HINTERHALT_SPAETESTENS_MS) {
+      _hinterhaltAbbrechen();
       _elaraRettet(scene);
-      return;
-    }
-    if (r.seit >= ELARA_RETTUNG_WARTE_MS && _elaraAktiveGegner() === 0) {
-      _elaraRettungAbbrechen();
-      _spawnElaraSprite(scene, 1);
     }
   } });
-  _elaraRettung = r;
 }
 
 function _elaraRettet(scene) {
   var px = (typeof player !== 'undefined' && player) ? player.x : 0;
   var py = (typeof player !== 'undefined' && player) ? player.y : 0;
-  // Nebel, der sich um den Spieler ausbreitet.
+  // Nebel, der sich vom Spieler aus durch den ganzen Raum ausbreitet.
   try {
     var ring = scene.add.circle(px, py, 20, 0x8866cc, 0.35).setDepth(90);
-    scene.tweens.add({ targets: ring, scale: ELARA_RETTUNG_RADIUS / 20, alpha: 0, duration: 700,
+    scene.tweens.add({ targets: ring, scale: 30, alpha: 0, duration: 900,
       onComplete: function () { try { ring.destroy(); } catch (e) {} } });
   } catch (e) {}
-  // Die Gegner in Reichweite loesen sich auf. Bosse und Minibosse bleiben —
-  // sie sind die Pruefung des Raums, keine Kulisse. Kein Loot: sie wurden
-  // vertrieben, nicht erschlagen (hp bleibt > 0).
+  // Der ganze Raum loest sich auf. Kein Loot: sie wurden vertrieben, nicht
+  // erschlagen (hp bleibt > 0).
   if (typeof enemies !== 'undefined' && enemies && enemies.children) {
     enemies.getChildren().slice().forEach(function (e) {
-      if (!e || !e.active || e.isBoss || e.isMiniBoss) return;
-      if (Math.hypot(e.x - px, e.y - py) > ELARA_RETTUNG_RADIUS) return;
+      if (!e || !e.active || e.isBoss) return;
       e._vomNebelVertrieben = true;
       if (e.body) e.body.enable = false;
       try {

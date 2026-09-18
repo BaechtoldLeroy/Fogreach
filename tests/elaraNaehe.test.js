@@ -70,81 +70,83 @@ function stand(quests, flags, akt) {
   })()`);
 }
 
-test('Elara rettet den Spieler, wenn er in Bedraengnis geraet', () => {
-  stand({ harren_daughter_investigation: { status: 'completed', objectives: [] } }, {}, 1);
-  const r = H.run(`(function () {
+/** Betritt einen frischen Raum mit der angegebenen Nummer (ueber enterRoom). */
+function raumBetreten(nummer) {
+  return H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
-    // Am ECHTEN Einstieg: enterRoom ruft _maybeFireElaraCellarEncounter, und
-    // der stellt die Rettung scharf. Raum >= 2, darunter erscheint sie nie.
-    // Raeume sind zufaellig und manchmal so klein, dass kein Punkt ausserhalb
-    // des Nebels liegt (gemessen: weitester 264 px). Bis zu sechs Raeume
-    // betreten, bis einer gross genug ist.
-    var raum = Math.max(2, (sc.currentRoom && sc.currentRoom.id || 0) + 1);
-    var weit = null, weiteste = 0;
-    for (var versuch = 0; versuch < 6 && !weit; versuch++, raum++) {
-      enterRoom(sc, raum);
-      enemies.clear(true, true);
-      weiteste = 0;
-      for (var v = 0; v < 60; v++) {
-        var p = sc.pickAccessibleSpawnPoint ? sc.pickAccessibleSpawnPoint({ maxAttempts: 8 }) : null;
-        var d = p ? Math.hypot(p.x - player.x, p.y - player.y) : 0;
-        if (d > weiteste) { weiteste = d; if (d > ELARA_RETTUNG_RADIUS + 30) weit = p; }
-      }
-    }
-    if (!weit) return { fehler: 'in sechs Raeumen kein Punkt ausserhalb des Nebels (zuletzt ' + Math.round(weiteste) + ' px)' };
-    // Ein Gegner nah am Spieler, einer weit weg.
-    var nah = spawnEnemy.call(sc, 0, 0, 8), fern = spawnEnemy.call(sc, 0, 0, 8);
-    nah.x = player.x + 60; nah.y = player.y;
-    // Der ferne Gegner an einen ERREICHBAREN Punkt im Raum, ausserhalb des
-    // Nebels. Fest "x + 700" lag je nach Raum ausserhalb und wurde entfernt;
-    // eine feste Mindestweite von 400 px gab es in kleinen Raeumen nicht.
-    fern.x = weit.x; fern.y = weit.y;
-    [nah, fern].forEach(function (g) { if (g.body) { g.body.reset(g.x, g.y); g.body.moves = false; } g.hp = 9999; });
-    window.__nah = nah; window.__fern = fern;
-    playerHealth = Math.floor(playerMaxHealth * 0.4);
-    return raum;
+    window.__durchklicken();
+    enterRoom(sc, ${nummer});
+    return sc.currentRoom.id;
   })()`);
-  assert.ok(!(r && r.fehler), r && r.fehler);
-  H.step(30);
+}
+
+function hinterhaltGegner() {
+  return H.run(`(function () {
+    var n = 0, kette = 0;
+    enemies.getChildren().forEach(function (e) {
+      if (e && e.active && e._hinterhalt) { n++; if (e.isChainGuard) kette++; }
+    });
+    return { n: n, kette: kette };
+  })()`);
+}
+
+test('Der Hinterhalt: ab Raum 3 stellt die Kettenwache den Spieler, Elara rettet ihn', () => {
+  stand({ harren_daughter_investigation: { status: 'completed', objectives: [] } }, {}, 1);
+  H.run('playerHealth = playerMaxHealth; window._playerInvincible = false;');
+  raumBetreten(3);
+  H.step(10);
+  const g = hinterhaltGegner();
+  assert.strictEqual(g.n, 4, g.n + ' Gegner im Hinterhalt statt 4');
+  assert.strictEqual(g.kette, 4, 'der Hinterhalt besteht nicht aus Kettenwachen');
+
+  // Sterben kann man hier nicht: ein Treffer, der toeten wuerde, wird abgefangen.
+  const schutz = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var angreifer = enemies.getChildren().filter(function (e) { return e && e._hinterhalt; })[0];
+    playerHealth = 3;
+    applyPlayerDamage(500, sc, angreifer);
+    return playerHealth;
+  })()`);
+  assert.ok(schutz >= 1, 'ein Treffer im Hinterhalt hat den Spieler getoetet (LP ' + schutz + ')');
+
+  H.step(5);
   const a = H.run(`({ offen: !!window.eventChoiceOpen, text: window.__dialogText(),
     rettung: window.questSystem.hasFlag('elara_rettung_gesehen') })`);
-  assert.strictEqual(a.offen, true, 'bei 40 % Leben kam kein Dialog');
-  assert.strictEqual(a.rettung, true, 'die Rettung wurde nicht gespielt');
-  assert.ok(/Nebel/.test(a.text), 'der Dialog erzaehlt keine Rettung: ' + a.text);
-  // Durchklicken: Rettung, Antwort, dann ihr Auftrag.
+  assert.strictEqual(a.offen, true, 'in Not kam keine Rettung');
+  assert.strictEqual(a.rettung, true);
+  assert.ok(/Kettenwache/.test(a.text), 'die Rettung erzaehlt nicht vom Hinterhalt: ' + a.text);
+
   H.run('window.__durchklicken()');
-  // Die Gegner blenden per Tween aus; im Testkopf braucht das mehr Bilder
-  // als die 450 ms vermuten lassen (gemessen: nach 40 Bildern Alpha 0,31).
   H.step(120);
-  const b = H.run(`({ nah: !!(window.__nah && window.__nah.active), fern: !!(window.__fern && window.__fern.active),
+  const b = H.run(`({ rest: enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; }).length,
     getroffen: window.questSystem.hasFlag('elaraMet'),
-    auftrag: window.questSystem.getActiveQuests().map(function (q) { return q.id; }) })`);
-  assert.strictEqual(b.nah, false, 'der Gegner neben dem Spieler steht noch');
-  assert.strictEqual(b.fern, true, 'der Nebel hat auch den weit entfernten Gegner geholt');
+    auftrag: window.questSystem.getActiveQuests().map(function (q) { return q.id; }),
+    lebt: !!(player && player.active) })`);
+  assert.strictEqual(b.rest, 0, 'vom Hinterhalt stehen noch ' + b.rest + ' Gegner');
+  assert.strictEqual(b.lebt, true, 'der Spieler hat den Hinterhalt nicht ueberlebt');
   assert.strictEqual(b.getroffen, true, 'nach der Rettung gilt Elara nicht als getroffen');
   assert.ok(Array.from(b.auftrag).indexOf('widerstand_proof') >= 0, 'ihr erster Auftrag wurde nicht vergeben');
 });
 
-test('Ohne Not erscheint sie wie bisher, ohne Rettung', () => {
+test('Wer gut ausweicht, wird spaetestens nach 30 Sekunden gerettet', () => {
   stand({ harren_daughter_investigation: { status: 'completed', objectives: [] } }, {}, 1);
-  H.run(`(function () {
-    var sc = window.game.scene.getScene('GameScene');
-    sc.children.list.filter(function (o) { return o.texture && o.texture.key === 'elara_right0'; })
-      .forEach(function (o) { try { o.destroy(); } catch (e) {} });
-    playerHealth = playerMaxHealth;
-    _elaraRettungScharfstellen(sc, sc.currentRoom.id);
-  })()`);
-  // Den Raum waehrend des Wartens leer halten: die Welle des Raums kann
-  // nachspawnen, und dann waere er nicht "geraeumt".
-  for (let i = 0; i < 6; i++) {
-    H.run('enemies.clear(true, true)');
-    H.step(20);
-  }
-  const r = H.run(`({ da: window.game.scene.getScene('GameScene').children.list.some(function (o) { return o.texture && o.texture.key === 'elara_right0'; }),
-    offen: !!window.eventChoiceOpen, rettung: window.questSystem.hasFlag('elara_rettung_gesehen') })`);
-  assert.strictEqual(r.da, true, 'in einem leeren Raum erscheint sie nicht');
-  assert.strictEqual(r.offen, false, 'ohne Not oeffnet sich trotzdem ein Dialog');
-  assert.strictEqual(r.rettung, false, 'ohne Not wurde eine Rettung gespielt');
+  H.run('playerHealth = playerMaxHealth; window._playerInvincible = true;');
+  raumBetreten(4);
+  H.step(1500);                                   // 25 s: noch nicht
+  const frueh = H.run(`!!window.questSystem.hasFlag('elara_rettung_gesehen')`);
+  H.step(400);                                    // ueber 30 s
+  const spaet = H.run(`({ rettung: !!window.questSystem.hasFlag('elara_rettung_gesehen'), offen: !!window.eventChoiceOpen })`);
+  H.run('window._playerInvincible = false; window.__durchklicken();');
+  assert.strictEqual(frueh, false, 'die Rettung kam schon vor 30 s, ohne dass der Spieler in Not war');
+  assert.strictEqual(spaet.rettung, true, 'nach 30 s kam keine Rettung');
+  assert.strictEqual(spaet.offen, true);
+});
+
+test('Vor Raum 3 gibt es keinen Hinterhalt', () => {
+  stand({ harren_daughter_investigation: { status: 'completed', objectives: [] } }, {}, 1);
+  raumBetreten(2);
+  H.step(20);
+  assert.strictEqual(hinterhaltGegner().n, 0, 'schon in Raum 2 ein Hinterhalt');
 });
 
 test('Nach dem Ratsdokument zeigt sie ihr Versteck', () => {
