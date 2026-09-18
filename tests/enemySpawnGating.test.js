@@ -34,7 +34,7 @@ function depthRosterRef(depth) {
 test('ENEMY_MIN_ACT has the exact §4.1 mapping', () => {
   const M = freshModule();
   assert.deepStrictEqual(M.ENEMY_MIN_ACT,
-    { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 4, 7: 4, 8: 0, 9: 0, 10: 0 });
+    { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0 });
 });
 
 test('getAvailableEnemyTypes filters by act at depth 9', () => {
@@ -43,7 +43,11 @@ test('getAvailableEnemyTypes filters by act at depth 9', () => {
   assert.ok(![5, 6, 7].some((t) => a0.includes(t)), 'act0 excludes 5/6/7');
   const a3 = M.getAvailableEnemyTypes(9, 3);
   assert.ok(a3.includes(5), 'act3 includes 5 (Shadow)');
-  assert.ok(!a3.includes(6) && !a3.includes(7), 'act3 excludes 6/7');
+  // #162: Die Kettenwache jagt Dich nach dem Bruch — schon in Akt 3.
+  assert.ok(a3.includes(6), 'act3 includes 6 (Kettenwache)');
+  assert.ok(!a3.includes(7), 'act3 excludes 7 (Flammenweber)');
+  const a2 = M.getAvailableEnemyTypes(9, 2);
+  assert.ok(!a2.includes(6), 'act2 excludes 6');
   const a4 = M.getAvailableEnemyTypes(9, 4);
   assert.ok(a4.includes(6) && a4.includes(7), 'act4 includes 6 and 7');
 });

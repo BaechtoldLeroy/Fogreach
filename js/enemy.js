@@ -2819,7 +2819,8 @@ const BOSS_DEFINITIONS = {
     baseSpeed: 70,
     baseDamage: 6,
     scale: 1.6,
-    loreIntro: 'Der Kettenmeister fesselt, was der Rat verschwinden lässt. Hinter ihm liegen die ersten Siegel — der erste harte Beweis.',
+    // #162: der Folterknecht der Garde.
+    loreIntro: 'Der Folterknecht der Garde. Der Kettenmeister fesselt, was der Rat verschwinden lässt. Hinter ihm liegen die ersten Siegel — der erste harte Beweis.',
     attacks: ['chainWhip', 'chainPull', 'groundChains'],
     attackCooldown: 2900,
   },
@@ -2832,7 +2833,8 @@ const BOSS_DEFINITIONS = {
     baseSpeed: 45,
     baseDamage: 9,
     scale: 1.7,
-    loreIntro: 'Der Zeremonienmeister vollzieht die verbotenen Rituale des Rats — jedes Siegel, das er zieht, kettet die Stadt fester.',
+    // #162: der oberste Ritualist des Klerus. Seine Auslöschung ist das Vorspiel auf Elara.
+    loreIntro: 'Der oberste Ritualist des Klerus. Der Zeremonienmeister nährt die Quelle mit dem, was die Stadt vergisst — jedes Siegel, das er zieht, kettet sie fester.',
     attacks: ['ritualCircle', 'summonMinions', 'darkBlast'],
     attackCooldown: 4000,
   },

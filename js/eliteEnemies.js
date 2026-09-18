@@ -221,6 +221,12 @@
 
   function _enemyTypeName(enemy) {
     if (!enemy) return 'Enemy';
+    // #162: Der Name aus der Geschichte (enemySpawnGating.ENEMY_NAMEN).
+    var G = (typeof window !== 'undefined') ? window.EnemySpawnGating : null;
+    if (G && typeof G.enemyName === 'function' && typeof enemy.enemyType === 'number') {
+      var lang = (window.i18n && typeof window.i18n.getLanguage === 'function') ? window.i18n.getLanguage() : 'de';
+      return G.enemyName(enemy.enemyType, lang);
+    }
     if (enemy.isBrute) return 'Brute';
     if (enemy.isImp) return 'Imp';
     if (enemy.isArcher) return 'Archer';
