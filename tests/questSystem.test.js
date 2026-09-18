@@ -216,25 +216,21 @@ test('feature 050: Q6 unlocks only after all 4 parallel quests complete', () => 
     'Q6 must be offered after all 4 parallel quests complete');
 });
 
-test('feature 050: rewards.factionStanding applies via FactionSystem.adjustStanding', () => {
+// #154: Das Ansehen ist entfernt. Elaras erster Auftrag hing daran (Widerstand
+// >= 25) und war bei +1 je Quest praktisch nie erreichbar (#85).
+test('#154: Elaras erster Auftrag steht in Akt 0 offen, ohne Ansehen', () => {
   const qs = freshSystem();
-  const standingCalls = [];
-  globalThis.window.FactionSystem = {
-    adjustStanding: function (factionId, delta) { standingCalls.push([factionId, delta]); }
-  };
-  // Clear pre-Q1 warmup standings via fresh tracker AFTER warmup completion.
-  qs.acceptQuest('aldric_cleanup');
-  qs.updateQuestProgress('kill', 'enemy', 10);
-  qs.completeQuest('aldric_cleanup');
-  qs.acceptQuest('aldric_patrol');
-  qs.updateQuestProgress('explore', 'room', 3);
-  qs.completeQuest('aldric_patrol');
-  standingCalls.length = 0; // ignore warmup-quest standing grants (if any)
-  qs.acceptQuest('harren_daughter_investigation');
-  qs.updateQuestProgress('fetch', 'journal_fragment', 1);
-  qs.completeQuest('harren_daughter_investigation');
-  // Q1 grants +1 independent
-  assert.deepStrictEqual(standingCalls, [['independent', 1]]);
+  globalThis.window.storySystem = { getCurrentActIndex: () => 0 };
+  delete globalThis.window.FactionSystem;
+  const avail = qs.getAvailableQuests('elara');
+  assert.ok(avail.find(q => q.id === 'resistance_fetch_01'),
+    'resistance_fetch_01 wird Elara in Akt 0 nicht angeboten: ' + avail.map(q => q.id).join(', '));
+});
+
+test('#154: keine Quest vergibt noch Ansehen', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'questSystem.js'), 'utf8');
+  assert.ok(!/factionStanding/.test(src), 'questSystem.js vergibt noch factionStanding');
+  assert.ok(!/FactionSystem/.test(src), 'questSystem.js liest noch FactionSystem');
 });
 
 test('feature 050: rewards.fragments applies via KnowledgeTree.addFragments', () => {

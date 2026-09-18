@@ -63,8 +63,7 @@
     // =======================================================
     // 6-quest linear chain. Q1 (Harren) unlocks Q2-Q5 simultaneously;
     // Q6 unlocks when all 4 Council/Widerstand jobs are done. Player does
-    // all 6 in one playthrough — faction-standing accumulates as a
-    // consequence, not a content-gate. The Council-collusion reveal in Q6
+    // all 6 in one playthrough. The Council-collusion reveal in Q6
     // is the political-thesis payoff (constitution §Setting).
     //
     // Legacy Akt-1 quests deleted: aldric_intruders, harren_daughter,
@@ -84,7 +83,7 @@
       objectives: [
         { type: 'fetch', target: 'journal_fragment', current: 0, required: 1 }
       ],
-      rewards: { xp: 50, factionStanding: { independent: 1 }, fragments: 1 },
+      rewards: { xp: 50, fragments: 1 },
       // Akt 0 onboarding gates Akt 1: the player must complete Aldric's two
       // warmup quests (cleanup + patrol) before Harren approaches with the
       // mayor's-daughter investigation. Keeps the tutorial-to-narrative
@@ -113,7 +112,7 @@
       objectives: [
         { type: 'fetch', target: 'verification_seal', current: 0, required: 1 }
       ],
-      rewards: { xp: 75, factionStanding: { magistrat: 1 } },
+      rewards: { xp: 75 },
       completionFlags: ['verification_sealed'],
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
@@ -132,7 +131,7 @@
       objectives: [
         { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
       ],
-      rewards: { xp: 90, factionStanding: { klerus: 1 } },
+      rewards: { xp: 90 },
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand geführt — die untere Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anführer dieser ketzerischen Präsenz lauern noch dort unten, tiefer als die ersten Gänge — steige bis Tiefe 3 hinab. Fälle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
@@ -153,7 +152,7 @@
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 10 }
       ],
-      rewards: { xp: 75, factionStanding: { garde: 1 } },
+      rewards: { xp: 75 },
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Wenn eine Tochter aus dem Rathaus verschwinden kann, ist das ein Versagen der Garde — und das wird sich ändern. Ich brauche eine Patrouillen-Erweiterung. Heute. Geh in die unteren Kammern und demonstriere Kraft — zehn Störer fallen, das Edikt trägt sich von selbst durch die Strassen.\n\nFrag nicht, ob die Patrouillen schoner Lebensweise zuträglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalität ist die einzige Münze, die zählt. Das Edikt ist die Münze, die du in meine Hand legst.\n\nNimmst du den Auftrag an, Archivschmied?',
@@ -172,7 +171,7 @@
       objectives: [
         { type: 'fetch', target: 'council_document', current: 0, required: 1 }
       ],
-      rewards: { xp: 100, factionStanding: { widerstand: 1 }, fragments: 1 },
+      rewards: { xp: 100, fragments: 1 },
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung. Aldric will mich zurückholen. Der Klerus will mich verbrennen. Die Garde will mich kassieren.\n\nUnd ich? Ich will dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
@@ -429,10 +428,9 @@
     // === Act 4: Die Wahrheit sickert durch ===
     // =======================================================
     // -------------------------------------------------------
-    // Faction-gated showcase quest (feature 045). Only offered
-    // when Resistance standing >= 25. Demonstrates the gate()
-    // predicate path; QA can adjust standing via DevTools to
-    // surface or hide the offer at will.
+    // Elaras erster Auftrag. Bis #154 nur ab Widerstands-Ansehen
+    // >= 25 angeboten — bei +1 je Quest praktisch nie (#85). Das
+    // Ansehen ist entfernt, der Auftrag steht von Anfang an offen.
     // -------------------------------------------------------
     resistance_fetch_01: {
       id: 'resistance_fetch_01',
@@ -447,11 +445,6 @@
       rewards: { xp: 25, materials: { MAT: 3 } },
       prerequisites: [],
       requiredAct: 0,
-      gate: function () {
-        return !!(window.FactionSystem
-          && typeof window.FactionSystem.getStanding === 'function'
-          && window.FactionSystem.getStanding('widerstand') >= 25);
-      },
       dialogueOffer: 'Es gibt da etwas im Keller... ein Bündel, versiegelt. Bring es mir, ohne dass jemand sieht.\n\nNimmst du den Auftrag an?',
       dialogueProgress: 'Schau dich im Keller um. Räum ein paar Wachen aus dem Weg, falls nötig.',
       dialogueComplete: 'Du hast es. Niemand hat dich gesehen — gut. Die Resistance vergisst das nicht.'
@@ -627,7 +620,7 @@
       objectives: [
         { type: 'fetch', target: 'proclamation', current: 0, required: 3 }
       ],
-      rewards: { xp: 60, factionStanding: { magistrat: 1 } },
+      rewards: { xp: 60 },
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Die Stadt muss wissen, wer die Ordnung hält, während die anderen schwatzen. Häng die drei Edikte an den Anschlagtafeln aus. Wer oben klebt, hat recht.',
@@ -644,7 +637,7 @@
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 8 }
       ],
-      rewards: { xp: 70, factionStanding: { klerus: 1 } },
+      rewards: { xp: 70 },
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Ein Bezirk ist befallen. Reinige ihn. Wer das Licht scheut, hat etwas zu verbergen. Bring mir die Namen der Befallenen.',
@@ -662,7 +655,7 @@
       objectives: [
         { type: 'observe', target: 'escort_route', current: 0, required: 1 }
       ],
-      rewards: { xp: 90, factionStanding: { garde: 1 } },
+      rewards: { xp: 90 },
       prerequisites: [],
       requiredAct: 3,
       dialogueOffer: 'Heute Nacht geht ein Transport. Sicher die Route, frag nicht, was drin ist. Loyalität zahlt sich aus.',
@@ -1129,9 +1122,8 @@
         }
       }
       // Optional gate predicate (feature 045). When set, the quest is only
-      // offered if the predicate returns true. Used for faction-standing
-      // gating; the predicate runs on every offer-list refresh, so it
-      // dynamically appears/disappears as standing changes.
+      // offered if the predicate returns true. The predicate runs on every
+      // offer-list refresh, so the quest appears/disappears dynamically.
       if (typeof def.gate === 'function') {
         try {
           if (!def.gate()) return false;
@@ -1478,25 +1470,6 @@
           console.log('[QuestSystem] XP bonus now:', window._questXpBonus);
         }
       });
-    }
-
-    // Feature 050: faction-standing reward dispatcher. Each entry in
-    // rewards.factionStanding is applied via FactionSystem.adjustStanding
-    // (which fires its existing toast subscribers). Backward-compatible —
-    // legacy quests without this field are unaffected.
-    if (rewards && rewards.factionStanding && window.FactionSystem
-        && typeof window.FactionSystem.adjustStanding === 'function') {
-      try {
-        Object.keys(rewards.factionStanding).forEach(function (factionId) {
-          var delta = rewards.factionStanding[factionId];
-          if (typeof delta === 'number' && delta !== 0) {
-            window.FactionSystem.adjustStanding(factionId, delta);
-            console.log('[QuestSystem] Granted ' + (delta > 0 ? '+' : '') + delta + ' ' + factionId + ' standing');
-          }
-        });
-      } catch (err) {
-        console.warn('[QuestSystem] factionStanding grant failed', err);
-      }
     }
 
     // Feature 050: Knowledge-Tree fragment reward dispatcher (C-05). Used

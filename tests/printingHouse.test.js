@@ -1,7 +1,7 @@
 // Unit tests for js/printingHouse.js
 //
 // PrintingHouse is an IIFE attaching window.PrintingHouse. Pattern mirrors
-// tutorialSystem / factionSystem: load + register at IIFE eval, mutate via
+// tutorialSystem: load + register at IIFE eval, mutate via
 // public API, persist after every change, expose a _configureForTest seam.
 
 const { test, beforeEach } = require('node:test');
@@ -30,9 +30,11 @@ function makePrimitives(overrides) {
       t: (k) => k,
       onChange: () => () => {}
     },
-    factionSystem: {
-      _standing: { magistrat: 0, klerus: 0, garde: 0, widerstand: 0, independent: 0 },
-      getStanding(id) { return this._standing[id] || 0; }
+    // #154: Die Stufen oeffnen sich mit dem Story-Akt, nicht mehr mit dem
+    // Widerstands-Ansehen.
+    storySystem: {
+      _act: 0,
+      getCurrentActIndex() { return this._act; }
     },
     questSystem: {
       _completed: [],
@@ -174,7 +176,7 @@ test('getEdictCatalog returns at least 7 edicts across three tiers', () => {
   assert.ok(tiers.has('risky'));
 });
 
-test('catalog entries report unlocked state based on resistance standing', () => {
+test('catalog entries report unlocked state based on the story act', () => {
   const { PH, p } = fresh();
   PH.init();
   const cat0 = PH.getEdictCatalog();
@@ -184,11 +186,14 @@ test('catalog entries report unlocked state based on resistance standing', () =>
   assert.strictEqual(mild0.isUnlocked, true);
   assert.strictEqual(strong0.isUnlocked, false);
   assert.strictEqual(risky0.isUnlocked, false);
-  p.factionSystem._standing.widerstand = 30;
+  // Akt 1 reicht noch nicht: die Grenze liegt bei 2, nicht irgendwo darunter.
+  p.storySystem._act = 1;
+  assert.strictEqual(PH.getEdictCatalog().find(e => e.id === strong0.id).isUnlocked, false);
+  p.storySystem._act = 2;
   const cat1 = PH.getEdictCatalog();
   assert.strictEqual(cat1.find(e => e.id === strong0.id).isUnlocked, true);
   assert.strictEqual(cat1.find(e => e.id === risky0.id).isUnlocked, false);
-  p.factionSystem._standing.widerstand = 60;
+  p.storySystem._act = 3;
   const cat2 = PH.getEdictCatalog();
   assert.strictEqual(cat2.find(e => e.id === risky0.id).isUnlocked, true);
 });
@@ -231,7 +236,26 @@ test('publishEdict fails when tier is locked', () => {
   const strong = cat.find(e => e.tier === 'strong');
   const result = PH.publishEdict(strong.id);
   assert.strictEqual(result.success, false);
-  assert.ok(/lock|standing/i.test(result.reason || ''));
+  assert.ok(/lock|act/i.test(result.reason || ''));
+});
+
+test('publishEdict succeeds for a strong edict once its act is reached', () => {
+  const { PH, p } = fresh();
+  PH.init();
+  PH.addDruckblaetter(50);
+  p.storySystem._act = 2;
+  const strong = PH.getEdictCatalog().find(e => e.tier === 'strong');
+  const result = PH.publishEdict(strong.id);
+  assert.strictEqual(result.success, true, result.reason);
+});
+
+test('the catalog no longer exposes a standing requirement', () => {
+  const { PH } = fresh();
+  PH.init();
+  PH.getEdictCatalog().forEach((e) => {
+    assert.strictEqual(e.requireStanding, undefined, e.id + ' traegt noch requireStanding');
+    assert.strictEqual(typeof e.requireAct, 'number', e.id + ' hat kein requireAct');
+  });
 });
 
 test('publishEdict fails when an edict is already active', () => {

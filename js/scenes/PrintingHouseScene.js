@@ -21,7 +21,7 @@
       'printingHouse.ui.tier.mild.sub': 'unter dem Radar',
       'printingHouse.ui.tier.strong.sub': 'beobachtet',
       'printingHouse.ui.tier.risky.sub': 'Council schlägt zurück',
-      'printingHouse.ui.status.locked': 'Standing {req}',
+      'printingHouse.ui.status.locked': 'Ab Akt {req}',
       'printingHouse.ui.status.unaffordable': 'Zu wenig Papier',
       'printingHouse.ui.status.active': 'Aktiv',
       'printingHouse.ui.status.available': 'Verfügbar',
@@ -32,7 +32,7 @@
       'printingHouse.ui.legend.paper': 'Kosten',
       'printingHouse.ui.legend.suspicion': 'Verdacht',
       'printingHouse.ui.locked_summary': 'Noch verschlossen:',
-      'printingHouse.ui.empty_state': 'Noch keine Edikte freigeschaltet — verbessere deinen Stand bei der Resistance, um stärkere Botschaften drucken zu lassen.'
+      'printingHouse.ui.empty_state': 'Noch keine Edikte freigeschaltet — stärkere Botschaften öffnen sich im Lauf der Geschichte.'
     });
     window.i18n.register('en', {
       'printingHouse.ui.title': 'Printing House',
@@ -47,7 +47,7 @@
       'printingHouse.ui.tier.mild.sub': 'under the radar',
       'printingHouse.ui.tier.strong.sub': 'watched',
       'printingHouse.ui.tier.risky.sub': 'Council retaliates',
-      'printingHouse.ui.status.locked': 'Standing {req}',
+      'printingHouse.ui.status.locked': 'From act {req}',
       'printingHouse.ui.status.unaffordable': 'Not enough paper',
       'printingHouse.ui.status.active': 'Active',
       'printingHouse.ui.status.available': 'Available',
@@ -58,7 +58,7 @@
       'printingHouse.ui.legend.paper': 'Cost',
       'printingHouse.ui.legend.suspicion': 'Suspicion',
       'printingHouse.ui.locked_summary': 'Still locked:',
-      'printingHouse.ui.empty_state': 'No edicts unlocked yet — raise your standing with the Resistance to print stronger messages.'
+      'printingHouse.ui.empty_state': 'No edicts unlocked yet — stronger messages open up as the story unfolds.'
     });
   }
 
@@ -109,7 +109,7 @@
         fontFamily: 'serif', fontSize: '11px', color: '#888', fontStyle: 'italic'
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
 
-      // Status bar (paper / standing / suspicion / active edict) — 4 cells
+      // Status bar (paper / act / suspicion / active edict) — 4 cells
       this._renderStatusBar(panelLeft, panelTop + 64, panelW);
 
       // Filter to edicts the player can consider right now (tier-unlocked)
@@ -151,14 +151,16 @@
       }
     }
 
-    // ---- status bar (4 cells: Paper | Standing | Suspicion | Active) ----
+    // ---- status bar (4 cells: Paper | Act | Suspicion | Active) ----
     _renderStatusBar(left, top, w) {
       const ph = window.PrintingHouse;
       const paper = ph.getDruckblaetter();
       const suspicion = ph.getSuspicion();
       const active = ph.getActivePublication();
-      const standing = (window.FactionSystem && typeof window.FactionSystem.getStanding === 'function')
-        ? window.FactionSystem.getStanding('widerstand') | 0
+      // #154: Statt des Widerstands-Ansehens zeigt die Zelle den Story-Akt —
+      // er entscheidet jetzt, welche Stufen offen sind (mild 0, strong 2, risky 3).
+      const akt = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+        ? window.storySystem.getCurrentActIndex() | 0
         : 0;
 
       // Background strip behind the status bar so it visually separates from
@@ -185,24 +187,24 @@
         barG.fillStyle(0xffd166, 1).fillRoundedRect(cx + 12, cellTop + 42, Math.round(barW * (paper / 50)), 4, 2);
       }
 
-      // === Cell 2: Standing (Resistance) — new ===
+      // === Cell 2: Story-Akt ===
       {
         const cx = left + sidePad + cellW * 1;
-        this.add.text(cx + 12, cellTop, 'STANDING', labelStyle)
+        this.add.text(cx + 12, cellTop, 'AKT', labelStyle)
           .setScrollFactor(0).setDepth(2003);
-        // Color-coded by tier threshold (0 / 25 / 50)
-        const stColor = standing >= 50 ? '#ff8888' : standing >= 25 ? '#ffd166' : '#88ddaa';
-        this.add.text(cx + 12, cellTop + 14, String(standing), {
+        // Farbe nach offener Stufe (Akt 0 / 2 / 3)
+        const stColor = akt >= 3 ? '#ff8888' : akt >= 2 ? '#ffd166' : '#88ddaa';
+        this.add.text(cx + 12, cellTop + 14, String(akt), {
           fontFamily: 'monospace', fontSize: '18px', color: stColor, fontStyle: 'bold'
         }).setScrollFactor(0).setDepth(2003);
         // Tier hint right of the number
-        const tierName = standing >= 50 ? T('printingHouse.tier.risky')
-                       : standing >= 25 ? T('printingHouse.tier.strong')
+        const tierName = akt >= 3 ? T('printingHouse.tier.risky')
+                       : akt >= 2 ? T('printingHouse.tier.strong')
                        : T('printingHouse.tier.mild');
         this.add.text(cx + 50, cellTop + 18, '· ' + tierName, {
           fontFamily: 'monospace', fontSize: '11px', color: '#aaa6a0'
         }).setScrollFactor(0).setDepth(2003);
-        // Three-segment threshold meter (0..25 mild, 25..50 strong, 50+ risky)
+        // Drei Segmente: mild (immer offen), strong (ab Akt 2), risky (ab Akt 3)
         const meterW = cellW - 24;
         const meterH = 4;
         const meterX = cx + 12;
@@ -210,9 +212,9 @@
         const segW = meterW / 3;
         const meterG = this.add.graphics().setScrollFactor(0).setDepth(2003);
         meterG.fillStyle(0x2a2a2a, 1).fillRoundedRect(meterX, meterY, meterW, meterH, 2);
-        meterG.fillStyle(0x88ddaa, 1).fillRect(meterX,             meterY, segW * Math.min(1, standing / 25), meterH);
-        meterG.fillStyle(0xffd166, 1).fillRect(meterX + segW,      meterY, segW * Math.max(0, Math.min(1, (standing - 25) / 25)), meterH);
-        meterG.fillStyle(0xff8888, 1).fillRect(meterX + segW * 2,  meterY, segW * Math.max(0, Math.min(1, (standing - 50) / 25)), meterH);
+        meterG.fillStyle(0x88ddaa, 1).fillRect(meterX,             meterY, segW, meterH);
+        if (akt >= 2) meterG.fillStyle(0xffd166, 1).fillRect(meterX + segW,     meterY, segW, meterH);
+        if (akt >= 3) meterG.fillStyle(0xff8888, 1).fillRect(meterX + segW * 2, meterY, segW, meterH);
         meterG.lineStyle(1, 0x10131c, 1);
         meterG.lineBetween(meterX + segW,     meterY, meterX + segW,     meterY + meterH);
         meterG.lineBetween(meterX + segW * 2, meterY, meterX + segW * 2, meterY + meterH);
@@ -294,18 +296,18 @@
 
       // Footer: locked-tier summary
       const lockedByTier = { strong: 0, risky: 0 };
-      const lockedReq = { strong: 25, risky: 50 };
+      const lockedReq = { strong: 2, risky: 3 };
       ph.getEdictCatalog().forEach((e) => {
         if (!e.isUnlocked && e.tier in lockedByTier) lockedByTier[e.tier] += 1;
       });
       const parts = [];
       if (lockedByTier.strong > 0) {
         parts.push(lockedByTier.strong + 'x ' + T('printingHouse.tier.strong')
-          + ' (Standing ' + lockedReq.strong + ')');
+          + ' (' + T('printingHouse.ui.status.locked').replace('{req}', lockedReq.strong) + ')');
       }
       if (lockedByTier.risky > 0) {
         parts.push(lockedByTier.risky + 'x ' + T('printingHouse.tier.risky')
-          + ' (Standing ' + lockedReq.risky + ')');
+          + ' (' + T('printingHouse.ui.status.locked').replace('{req}', lockedReq.risky) + ')');
       }
       if (parts.length > 0) {
         const footerY = y + h - footerReserveH + 4;

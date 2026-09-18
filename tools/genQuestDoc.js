@@ -28,7 +28,6 @@ function rew(r) {
   if (r.materials) Object.entries(r.materials).forEach(([k, v]) => p.push(v + ' ' + k));
   if (r.druckblaetter) p.push(r.druckblaetter + ' Druckblätter');
   if (r.fragments) p.push(r.fragments + ' Wissens-Fragment(e)');
-  if (r.factionStanding) Object.entries(r.factionStanding).forEach(([k, v]) => p.push('+' + v + ' Ansehen (' + k + ')'));
   if (r.items) r.items.forEach((i) => p.push('**' + i.name + '** (' + (i.rarityLabel || '?') + ', iLvl ' + (i.itemLevel || '?') + ')'));
   if (r.unlocks) p.push('schaltet frei: ' + r.unlocks.join(', '));
   if (r.info) p.push('Info: ' + r.info);
@@ -68,11 +67,10 @@ out += '| **Setzer Thom** | Hinterhaus-Druckerei | Widerstand-nah | Macht Wahrhe
 out += '| **Klerus-Priester** | Geistlicher | Klerus | Nennt Flucht „Besessenheit" und Aufräumen „Reinigung". |\n';
 out += '| **Stadtwache** | Garde-Offizier | Garde | Antwortet auf alles mit mehr Patrouillen. |\n\n';
 out += '## Fraktionen\n\n';
-out += 'Ansehen wird pro Fraktion getrackt (`js/factionSystem.js`): feindlich < −25 · neutral · freundlich > 25 · verbündet > 50.\n\n';
 out += '- **Magistrat**, **Klerus**, **Garde** — die drei *ratsinternen* Fraktionen. Konkurrieren nach außen, dienen innen derselben Agenda.\n';
 out += '- **Widerstand** — die Opposition außerhalb des Systems.\n';
 out += '- **Unabhängig** — neutrale Flagge.\n\n';
-out += 'In Akt 1 arbeitest du **für alle vier** — das Ansehen ist Konsequenz deines Handelns, kein Content-Gate.\n\n';
+out += 'In Akt 1 arbeitest du **für alle vier**.\n\n';
 out += '## Akt-Struktur\n\n';
 out += 'Der Bogen ist **rein quest-getrieben**: ein Akt steigt nur, wenn eine Quest ihn per `advanceAct` hochsetzt. Tiefen-basierter Aufstieg wurde in Feature 050 entfernt.\n\n';
 out += '| Index | Akt | Wird erreicht durch |\n|---|---|---|\n';

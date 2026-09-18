@@ -2,7 +2,8 @@
 //
 // Players collect Druckblätter (paper currency), spend them at the Druckerei
 // to publish edicts that buff the player for one dungeon run. Higher tiers
-// require Resistance standing (#25) and cost more paper. Publishing builds
+// open with the story act (#154; frueher hing das am Widerstands-Ansehen,
+// das es nicht mehr gibt) and cost more paper. Publishing builds
 // Council suspicion which decays naturally and triggers retaliation when
 // it crosses thresholds.
 //
@@ -38,7 +39,7 @@
     'printingHouse.toast.published': 'Edikt veröffentlicht: {name}',
     'printingHouse.toast.bribed': 'Aldric beschwichtigt — Verdacht -5',
     'printingHouse.toast.tradegold': '+1 Druckblatt',
-    'printingHouse.toast.locked': 'Tier benötigt Resistance-Standing {req}',
+    'printingHouse.toast.locked': 'Diese Stufe öffnet sich ab Akt {req}',
     'printingHouse.toast.no_paper': 'Nicht genug Druckblätter',
     'printingHouse.toast.already_active': 'Ein Edikt ist bereits aktiv für den nächsten Run',
     'printingHouse.tier.mild': 'Mild',
@@ -80,7 +81,7 @@
     'printingHouse.toast.published': 'Edict published: {name}',
     'printingHouse.toast.bribed': 'Aldric appeased — suspicion -5',
     'printingHouse.toast.tradegold': '+1 paper',
-    'printingHouse.toast.locked': 'Tier requires Resistance standing {req}',
+    'printingHouse.toast.locked': 'This tier opens in act {req}',
     'printingHouse.toast.no_paper': 'Not enough paper',
     'printingHouse.toast.already_active': 'An edict is already active for the next run',
     'printingHouse.tier.mild': 'Mild',
@@ -109,9 +110,13 @@
   };
 
   // --- Edict catalog (data-driven) ---------------------------------------
-  // tier: 'mild'   — cost 1, suspicionCost 1, requireStanding 0
-  // tier: 'strong' — cost 3, suspicionCost 3, requireStanding 25
-  // tier: 'risky'  — cost 5, suspicionCost 5, requireStanding 50
+  // tier: 'mild'   — cost 1, suspicionCost 1, requireAct 0
+  // tier: 'strong' — cost 3, suspicionCost 3, requireAct 2 (Das Doppelspiel)
+  // tier: 'risky'  — cost 5, suspicionCost 5, requireAct 3 (Die Enttarnung)
+  //
+  // #154: Das Tor war Widerstands-Ansehen >= 25 / >= 50. Weil jede Quest nur
+  // +1 gab, waren die beiden oberen Stufen praktisch nie erreichbar. Jetzt
+  // oeffnen sie sich mit der Geschichte.
   //
   // effect.kind:
   //   damage_mult        — multiply weapon damage in recalcDerived
@@ -126,27 +131,27 @@
   //   potion_disabled    — boolean flag (LootSystem.consumePotion checks)
   var EDICT_CATALOG = [
     // Mild (3)
-    { id: 'tip_to_guards',         tier: 'mild', cost: 1, suspicionCost: 1, requireStanding: 0,
+    { id: 'tip_to_guards',         tier: 'mild', cost: 1, suspicionCost: 1, requireAct: 0,
       effect: { kind: 'shop_price_mult',  value: 0.90 } },
-    { id: 'iron_discipline',       tier: 'mild', cost: 1, suspicionCost: 1, requireStanding: 0,
+    { id: 'iron_discipline',       tier: 'mild', cost: 1, suspicionCost: 1, requireAct: 0,
       effect: { kind: 'damage_mult',      value: 1.05 } },
-    { id: 'amulets_distributed',   tier: 'mild', cost: 1, suspicionCost: 1, requireStanding: 0,
+    { id: 'amulets_distributed',   tier: 'mild', cost: 1, suspicionCost: 1, requireAct: 0,
       effect: { kind: 'maxhp_add',        value: 10 } },
     // Strong (4)
-    { id: 'market_reform',         tier: 'strong', cost: 3, suspicionCost: 3, requireStanding: 25,
+    { id: 'market_reform',         tier: 'strong', cost: 3, suspicionCost: 3, requireAct: 2,
       effect: { kind: 'shop_price_mult',  value: 0.75 } },
-    { id: 'war_cry',               tier: 'strong', cost: 3, suspicionCost: 3, requireStanding: 25,
+    { id: 'war_cry',               tier: 'strong', cost: 3, suspicionCost: 3, requireAct: 2,
       effect: { kind: 'damage_mult',      value: 1.15 } },
-    { id: 'hero_paths',            tier: 'strong', cost: 3, suspicionCost: 3, requireStanding: 25,
+    { id: 'hero_paths',            tier: 'strong', cost: 3, suspicionCost: 3, requireAct: 2,
       effect: { kind: 'maxhp_add',        value: 25 } },
-    { id: 'smuggling_network',     tier: 'strong', cost: 3, suspicionCost: 3, requireStanding: 25,
+    { id: 'smuggling_network',     tier: 'strong', cost: 3, suspicionCost: 3, requireAct: 2,
       effect: { kind: 'loot_rarity_bias', value: 1.20 } },
     // Risky (3)
-    { id: 'open_rebellion',        tier: 'risky', cost: 5, suspicionCost: 5, requireStanding: 50,
+    { id: 'open_rebellion',        tier: 'risky', cost: 5, suspicionCost: 5, requireAct: 3,
       effect: { kind: 'open_rebellion' /* compound: gold_mult + enemy_hp_mult */ } },
-    { id: 'black_market',          tier: 'risky', cost: 5, suspicionCost: 5, requireStanding: 50,
+    { id: 'black_market',          tier: 'risky', cost: 5, suspicionCost: 5, requireAct: 3,
       effect: { kind: 'black_market'  /* compound: rare_item_at_mara + enemy_tier_bonus */ } },
-    { id: 'last_battle',           tier: 'risky', cost: 5, suspicionCost: 5, requireStanding: 50,
+    { id: 'last_battle',           tier: 'risky', cost: 5, suspicionCost: 5, requireAct: 3,
       effect: { kind: 'last_battle'   /* compound: damage + maxhp + potion_disabled */ } }
   ];
 
@@ -155,12 +160,6 @@
       if (EDICT_CATALOG[i].id === id) return EDICT_CATALOG[i];
     }
     return null;
-  }
-
-  function _tierUnlockStanding(tier) {
-    if (tier === 'strong') return 25;
-    if (tier === 'risky')  return 50;
-    return 0;
   }
 
   // --- Internal state -----------------------------------------------------
@@ -190,7 +189,9 @@
       i18n: (hasWindow && window.i18n) || {
         register: function () {}, t: function (k) { return k; }, onChange: function () { return function () {}; }
       },
-      factionSystem: (hasWindow && window.FactionSystem) || { getStanding: function () { return 0; } },
+      // Wird erst beim Aufruf gelesen (_aktuellerAkt), nicht hier: so greift
+      // auch ein storySystem, das nach dieser Datei laedt.
+      storySystem: null,
       questSystem: (hasWindow && window.questSystem) || { getCompletedQuests: function () { return []; } },
       lootSystem: (hasWindow && window.LootSystem) || {
         getGold: function () { return 0; },
@@ -332,21 +333,28 @@
     return false;
   }
 
+  /** Aktueller Story-Akt (storySystem.STORY_ACTS-Index). Ohne Story: 0. */
+  function _aktuellerAkt() {
+    var s = primitives.storySystem || (typeof window !== 'undefined' ? window.storySystem : null);
+    try {
+      return (s && typeof s.getCurrentActIndex === 'function') ? (s.getCurrentActIndex() | 0) : 0;
+    } catch (_) { return 0; }
+  }
+
   // Returns a frozen-by-convention list of edict descriptors enriched with
-  // isUnlocked (combines tier-standing + active-edict-conflict — the dialog
-  // UI greys them out).
+  // isUnlocked (the tier's story act has been reached — the dialog UI greys
+  // the others out).
   function getEdictCatalog() {
-    var standing = 0;
-    try { standing = primitives.factionSystem.getStanding('widerstand') | 0; } catch (_) {}
+    var akt = _aktuellerAkt();
     return EDICT_CATALOG.map(function (e) {
       return {
         id: e.id,
         tier: e.tier,
         cost: e.cost,
         suspicionCost: e.suspicionCost,
-        requireStanding: e.requireStanding,
+        requireAct: e.requireAct,
         effect: { kind: e.effect.kind, value: e.effect.value },
-        isUnlocked: standing >= e.requireStanding
+        isUnlocked: akt >= e.requireAct
       };
     });
   }
@@ -365,10 +373,8 @@
     var def = _edictById(edictId);
     if (!def) return { success: false, reason: 'unknown edict id' };
     if (state.active) return { success: false, reason: 'already active publication' };
-    var standing = 0;
-    try { standing = primitives.factionSystem.getStanding('widerstand') | 0; } catch (_) {}
-    if (standing < def.requireStanding) {
-      return { success: false, reason: 'tier locked: requires widerstand standing >= ' + def.requireStanding };
+    if (_aktuellerAkt() < def.requireAct) {
+      return { success: false, reason: 'tier locked: requires story act >= ' + def.requireAct };
     }
     if (state.druckblaetter < def.cost) {
       return { success: false, reason: 'insufficient druckblaetter (cost ' + def.cost + ')' };
@@ -452,7 +458,7 @@
     if (p && typeof p === 'object') {
       if (p.storage)        primitives.storage        = p.storage;
       if (p.i18n)           primitives.i18n           = p.i18n;
-      if (p.factionSystem)  primitives.factionSystem  = p.factionSystem;
+      if (p.storySystem)    primitives.storySystem    = p.storySystem;
       if (p.questSystem)    primitives.questSystem    = p.questSystem;
       if (p.lootSystem)     primitives.lootSystem     = p.lootSystem;
       if (typeof p.now === 'function') primitives.now = p.now;

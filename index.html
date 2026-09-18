@@ -106,14 +106,14 @@
     <!-- #63 Speicherslots: MUSS als erstes Save-Modul laden. Migriert beim Laden
          den Alt-Spielstand nach Slot 1 und stellt window.SlotStorage bereit —
          jedes Subsystem, das danach seinen Key liest, sieht schon den Slot. -->
-    <script src="js/saveSlots.js?v=002"></script>
-    <script src="js/persistence.js?v=062"></script>
+    <script src="js/saveSlots.js?v=003"></script>
+    <script src="js/persistence.js?v=063"></script>
     <script src="js/runDepth.js?v=003"></script>
     <script src="js/i18n.js"></script>
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=232"></script>
+    <script src="js/version.js?v=233"></script>
     <script src="js/soundManager.js?v=002"></script>
     <script src="js/performanceMonitor.js?v=002"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -169,7 +169,7 @@
     <!-- #95: Kriegsschar — braucht EliteEnemies (Affix-Definitionen) -->
     <script src="js/kriegsschar.js?v=004"></script>
     <script src="js/loot.js?v=025"></script>
-    <script src="js/questSystem.js?v=018"></script>
+    <script src="js/questSystem.js?v=019"></script>
     <script src="js/storySystem.js?v=005"></script>
     <!-- Feature 063: Story-Inszenierung (Logik/Daten/Komponente vor HubSceneV2) -->
     <script src="js/questFinale.js?v=003"></script>
@@ -186,13 +186,10 @@
          any scene file so scenes can reference the globals at construction. -->
     <script src="js/tutorialSystem.js?v=002"></script>
     <script src="js/scenes/tutorialOverlay.js"></script>
-    <!-- Faction subsystem (feature 045). Same load-order rules as tutorial:
-         must load before any scene file. -->
-    <script src="js/factionSystem.js?v=002"></script>
-    <!-- Printing House (feature 046 / Issue #24). Depends on FactionSystem
+    <!-- Printing House (feature 046 / Issue #24). Depends on storySystem
          + questSystem at runtime (lazy via window globals; load order only
          requires it to be before any scene that opens its dialog UI). -->
-    <script src="js/printingHouse.js?v=002"></script>
+    <script src="js/printingHouse.js?v=003"></script>
     <!-- Knowledge Tree (feature 047 / Issue #26). Auto-inits on load. Must
          load after i18n.js (uses i18n.register) and before HubSceneV2.js
          (the modal UI calls window.KnowledgeTree.*). -->
@@ -209,12 +206,12 @@
     <!-- Feature 064: Hub-Evolution (Phasen-Logik + Darstellung vor HubSceneV2) -->
     <script src="js/hubPhase.js?v=003"></script>
     <script src="js/hubPhaseView.js?v=007"></script>
-    <script src="js/scenes/HubSceneV2.js?v=120"></script>
+    <script src="js/scenes/HubSceneV2.js?v=121"></script>
     <script src="js/scenes/CraftingScene.js?v=072"></script>
     <script src="js/scenes/ShopScene.js?v=086"></script>
     <script src="js/scenes/SkillTreeScene.js?v=066"></script>
     <script src="js/scenes/SettingsScene.js?v=006"></script>
-    <script src="js/scenes/PrintingHouseScene.js"></script>
+    <script src="js/scenes/PrintingHouseScene.js?v=001"></script>
     <script src="js/scenes/TestTerrainScene.js"></script>
     <!-- DEAKTIVIERT (kein Netzwerk): <script type="module" src="js/leaderboard.js"></script> -->
     <script src="js/minimap.js?v=063"></script>

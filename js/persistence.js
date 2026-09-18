@@ -33,7 +33,8 @@
     // Dadurch log clearEverything() ("wipe ABSOLUTELY everything") und
     // listAllKeys() beide. Nachgetragen; die Slot-Zuordnung für diese Keys
     // hält js/saveSlots.js (SLOT_KEYS/GLOBAL_KEYS).
-    /** Fraktions-Ansehen (feature 045). */
+    /** Fraktions-Ansehen (feature 045) — seit #154 entfernt. Der Key bleibt,
+     *  damit clearEverything die Daten alter Spielstaende mit abraeumt. */
     FACTIONS: 'demonfall_factions_v1',
     /** Druckerei-Zustand (feature 046). */
     PRINTING_HOUSE: 'demonfall_printinghouse_v1',

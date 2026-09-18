@@ -35,7 +35,7 @@ test('hub: Szene laeuft und ist bevoelkert', () => {
 });
 
 test('hub: alle Meta-Systeme sind verfuegbar', () => {
-  const systems = ['questSystem', 'PrintingHouse', 'FactionSystem', 'SkillTree',
+  const systems = ['questSystem', 'PrintingHouse', 'SkillTree',
     'KnowledgeTree', 'AbilitySystem', 'LootSystem', 'storySystem'];
   const missing = systems.filter((s) => H.run(`typeof window.${s}`) !== 'object');
   assert.deepStrictEqual(missing, [], 'fehlende Systeme: ' + missing.join(', '));
@@ -62,16 +62,20 @@ test('hub: Quest-Fluss verfuegbar -> annehmen -> aktiv', () => {
     'angenommene Quest ist nicht aktiv: ' + Array.from(res.aktiv).join(', '));
 });
 
-test('hub: Fraktions-Ansehen laesst sich aendern und lesen', () => {
+// #154: Das Ansehen ist entfernt. Am laufenden Hub pruefen, dass es wirklich
+// weg ist und dass Elaras erster Auftrag, der daran hing (#85), angeboten wird.
+test('hub: kein Ansehen mehr, Elara bietet ihren ersten Auftrag an', () => {
   const res = H.run(`(function () {
-    var fs = window.FactionSystem;
-    var before = fs.getStanding('widerstand');
-    fs.adjustStanding('widerstand', 5);
-    var after = fs.getStanding('widerstand');
-    return { before: before, after: after };
+    var akt = window.storySystem.getCurrentActIndex();
+    var avail = window.questSystem.getAvailableQuests('elara').map(function (q) { return q.id; });
+    var aktiv = window.questSystem.getActiveQuests().map(function (q) { return q.id; });
+    return { fs: typeof window.FactionSystem, akt: akt,
+             offen: avail.indexOf('resistance_fetch_01') >= 0 || aktiv.indexOf('resistance_fetch_01') >= 0,
+             avail: avail.join(', ') };
   })()`);
-  assert.strictEqual(res.after, res.before + 5,
-    'Ansehen aenderte sich nicht wie erwartet: ' + res.before + ' -> ' + res.after);
+  assert.strictEqual(res.fs, 'undefined', 'FactionSystem ist noch geladen');
+  assert.strictEqual(res.offen, true,
+    'Elara bietet resistance_fetch_01 in Akt ' + res.akt + ' nicht an (angeboten: ' + res.avail + ')');
 });
 
 test('hub: Druckerei kennt ihre Edikte, Blaetter und den Verdacht', () => {

@@ -9,7 +9,8 @@
 //
 // Darum hier: saveSlots.js + Subsystem zusammen laden, Slot wechseln, pruefen.
 // Abgedeckt sind beide Verdrahtungs-Muster, die im Code vorkommen:
-//   - Adapter-Muster  (_defaultPrimitives().storage) -> factionSystem
+//   - Adapter-Muster  (_defaultPrimitives().storage) -> printingHouse
+//     (bis #154 factionSystem; das Ansehen ist entfernt)
 //   - Direktzugriff   ((window.SlotStorage || localStorage)) -> skillTree, storage.js
 
 const { test, beforeEach } = require('node:test');
@@ -28,39 +29,39 @@ function bootWithSlots(modules) {
 
 beforeEach(() => { resetStore(); });
 
-test('Adapter-Muster: FactionSystem-Ansehen ist pro Slot getrennt', () => {
-  delete globalThis.window.FactionSystem;
-  const S = bootWithSlots(['js/factionSystem.js']);
-  const F = globalThis.window.FactionSystem;
+test('Adapter-Muster: Druckerei-Blaetter sind pro Slot getrennt', () => {
+  delete globalThis.window.PrintingHouse;
+  const S = bootWithSlots(['js/printingHouse.js']);
+  const P = globalThis.window.PrintingHouse;
 
   S.setActiveSlot(1);
-  F.init();
-  F.setStanding('magistrat', 40);
-  assert.strictEqual(F.getStanding('magistrat'), 40);
+  P.init();
+  P.addDruckblaetter(7);
+  assert.strictEqual(P.getDruckblaetter(), 7);
 
   // Slot wechseln + Subsystem neu laden (entspricht einem Neustart im Slot 2)
   S.setActiveSlot(2);
-  delete globalThis.window.FactionSystem;
-  loadGameModule('js/factionSystem.js');
-  const F2 = globalThis.window.FactionSystem;
-  F2.init();
-  assert.strictEqual(F2.getStanding('magistrat'), 0,
-    'Slot 2 darf das Ansehen aus Slot 1 nicht erben');
+  delete globalThis.window.PrintingHouse;
+  loadGameModule('js/printingHouse.js');
+  const P2 = globalThis.window.PrintingHouse;
+  P2.init();
+  assert.strictEqual(P2.getDruckblaetter(), 0,
+    'Slot 2 darf die Blaetter aus Slot 1 nicht erben');
 
-  F2.setStanding('magistrat', -30);
+  P2.addDruckblaetter(3);
 
   // Zurueck zu Slot 1
   S.setActiveSlot(1);
-  delete globalThis.window.FactionSystem;
-  loadGameModule('js/factionSystem.js');
-  const F3 = globalThis.window.FactionSystem;
-  F3.init();
-  assert.strictEqual(F3.getStanding('magistrat'), 40, 'Slot 1 ist unveraendert');
+  delete globalThis.window.PrintingHouse;
+  loadGameModule('js/printingHouse.js');
+  const P3 = globalThis.window.PrintingHouse;
+  P3.init();
+  assert.strictEqual(P3.getDruckblaetter(), 7, 'Slot 1 ist unveraendert');
 
   // Und die Rohdaten liegen wirklich unter getrennten Keys
-  assert.ok(localStorage.getItem('demonfall.slot1.demonfall_factions_v1'));
-  assert.ok(localStorage.getItem('demonfall.slot2.demonfall_factions_v1'));
-  assert.strictEqual(localStorage.getItem('demonfall_factions_v1'), null,
+  assert.ok(localStorage.getItem('demonfall.slot1.demonfall_printinghouse_v1'));
+  assert.ok(localStorage.getItem('demonfall.slot2.demonfall_printinghouse_v1'));
+  assert.strictEqual(localStorage.getItem('demonfall_printinghouse_v1'), null,
     'kein un-praefixierter Schreibzugriff mehr');
 });
 

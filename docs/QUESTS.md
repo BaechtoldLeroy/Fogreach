@@ -30,13 +30,11 @@ Auslöser ist die verschwundene Tochter des Bürgermeisters. Jede Fraktion hat e
 
 ## Fraktionen
 
-Ansehen wird pro Fraktion getrackt (`js/factionSystem.js`): feindlich < −25 · neutral · freundlich > 25 · verbündet > 50.
-
 - **Magistrat**, **Klerus**, **Garde** — die drei *ratsinternen* Fraktionen. Konkurrieren nach außen, dienen innen derselben Agenda.
 - **Widerstand** — die Opposition außerhalb des Systems.
 - **Unabhängig** — neutrale Flagge.
 
-In Akt 1 arbeitest du **für alle vier** — das Ansehen ist Konsequenz deines Handelns, kein Content-Gate.
+In Akt 1 arbeitest du **für alle vier**.
 
 ## Akt-Struktur
 
@@ -179,7 +177,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `journal_fragment` ×1
 - **Vorbedingung:** Säuberung der Keller **+** Keller-Patrouille
-- **Belohnung:** 50 XP · 1 Wissens-Fragment(e) · +1 Ansehen (independent)
+- **Belohnung:** 50 XP · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -233,7 +231,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `verification_seal` ×1
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 75 XP · +1 Ansehen (magistrat)
+- **Belohnung:** 75 XP
 
 **Angebot**
 
@@ -260,7 +258,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `elite_enemy` ×3
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 90 XP · +1 Ansehen (klerus)
+- **Belohnung:** 90 XP
 
 **Angebot**
 
@@ -287,7 +285,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `enemy` ×10
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 75 XP · +1 Ansehen (garde)
+- **Belohnung:** 75 XP
 
 **Angebot**
 
@@ -314,7 +312,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `council_document` ×1
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 100 XP · 1 Wissens-Fragment(e) · +1 Ansehen (widerstand)
+- **Belohnung:** 100 XP · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -364,7 +362,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `proclamation` ×3
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 60 XP · +1 Ansehen (magistrat)
+- **Belohnung:** 60 XP
 
 **Angebot**
 
@@ -568,7 +566,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `enemy` ×8
 - **Vorbedingung:** keine
-- **Belohnung:** 70 XP · +1 Ansehen (klerus)
+- **Belohnung:** 70 XP
 
 **Angebot**
 
@@ -693,7 +691,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `observe` → `escort_route` ×1
 - **Vorbedingung:** keine
-- **Belohnung:** 90 XP · +1 Ansehen (garde)
+- **Belohnung:** 90 XP
 
 **Angebot**
 

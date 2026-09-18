@@ -54,7 +54,7 @@
     'demonfall_abilities_v1',       // abilitySystem
     'demonfall.knowledgeTree.v1',   // knowledgeTree
     'demonfall.skillTree.v1',       // skillTree
-    'demonfall_factions_v1',        // factionSystem
+    'demonfall_factions_v1',        // factionSystem (seit #154 entfernt; bleibt zum Aufraeumen)
     'demonfall_printinghouse_v1',   // printingHouse
     'demonfall_tutorial_v1',        // tutorialSystem
     'demonfall_maxDepth',           // persistence
