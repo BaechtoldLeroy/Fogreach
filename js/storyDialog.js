@@ -93,9 +93,9 @@
       ]
     },
     elara_meeting: {
-      prompt: 'ELARA: (zeigt Dir das Tagebuchfragment) Lies. Und dann sag mir, wem Du noch glaubst.',
+      prompt: 'ELARA: (legt Dir ein Blatt hin) Lies. Und dann sag mir, wem Du noch glaubst.',
       choices: [
-        { label: 'Deine Handschrift ist sehr sauber für eine Flucht.', response: 'ELARA: (hält kurz inne) Ich war immer ordentlich. Auch, wenn ich Angst hatte. (Etwas an ihrem Blick bleibt.)' }
+        { label: 'Woher hast Du das?', response: 'ELARA: Man hebt auf, was der Rat wegwirft. Irgendwer muss es tun.' }
       ]
     },
 

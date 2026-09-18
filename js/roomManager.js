@@ -3081,15 +3081,15 @@ function _showElaraDialog(scene, stage) {
   let onContinue;
   if (stage === 2) {
     text = isEn
-      ? '"You found it." Elara takes the document, traces the three seals with one finger. Magistrate. Clergy. Guard.\n\n"Three signatures that should never share a page. They claim to be rivals — behind closed doors they agree. Bring this to Father. He has been waiting for the moment you understand."'
-      : '"Du hast es gefunden." Elara nimmt das Dokument, fährt mit einem Finger über die drei Siegel. Magistrat. Klerus. Garde.\n\n"Drei Unterschriften, die nie auf einer Seite stehen sollten. Sie behaupten Rivalen zu sein — hinter verschlossenen Türen stimmen sie überein. Bring das zu Vater. Er wartet darauf, dass du verstehst."';
+      ? '"You found it." Elara takes the document, traces the three seals with one finger. Magistrate. Clergy. Guard.\n\n"Three signatures that should never share a page. They claim to be rivals — behind closed doors they agree. Take this to the mayor. He trusts none of the three. He might trust you."'
+      : '"Du hast es gefunden." Elara nimmt das Dokument, fährt mit einem Finger über die drei Siegel. Magistrat. Klerus. Garde.\n\n"Drei Unterschriften, die nie auf einer Seite stehen sollten. Sie behaupten Rivalen zu sein — hinter verschlossenen Türen stimmen sie überein. Bring das zum Bürgermeister. Er traut keinem der drei. Dir vielleicht."';
     onContinue = function () {
       if (qs && typeof qs.completeQuest === 'function') qs.completeQuest('widerstand_proof');
     };
   } else {
     text = isEn
-      ? '"You. The Archivesmith. So Father did send someone."\n\nElara — Harren\'s daughter, alive — leans against the chamber wall.\n\n"I am not coming back. Not yet. Down here lies a document, sealed by all three Council factions. They would never sign such a thing in the open — and yet. Bring it to me when you find it."'
-      : '"Du. Der Archivschmied. Vater hat also doch jemanden geschickt."\n\nElara — Harrens Tochter, lebendig — lehnt an der Kammerwand.\n\n"Ich komme nicht zurück. Noch nicht. Unten liegt ein Dokument, versiegelt von allen drei Ratsfraktionen. Öffentlich würden sie so etwas nie unterzeichnen — und doch. Bring es mir, sobald du es findest."';
+      ? '"You. The Archivesmith. So the mayor did send someone."\n\nA young woman leans against the chamber wall, hood pulled low. "They call me Elara. I am one of those the council calls troublemakers."\n\n"Down here lies a document, sealed by all three Council factions. They would never sign such a thing in the open — and yet. Bring it to me when you find it."'
+      : '"Du. Der Archivschmied. Der Bürgermeister hat also doch jemanden geschickt."\n\nEine junge Frau lehnt an der Kammerwand, die Kapuze tief im Gesicht. "Man nennt mich Elara. Ich gehöre zu denen, die der Rat Störer nennt."\n\n"Unten liegt ein Dokument, versiegelt von allen drei Ratsfraktionen. Öffentlich würden sie so etwas nie unterzeichnen — und doch. Bring es mir, sobald du es findest."';
     onContinue = function () {
       if (!qs) return;
       if (typeof qs.setFlag === 'function') qs.setFlag('elaraMet', true);

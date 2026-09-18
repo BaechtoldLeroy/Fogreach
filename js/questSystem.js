@@ -174,7 +174,7 @@
       rewards: { xp: 100, fragments: 1 },
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
-      dialogueOffer: 'Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung. Aldric will mich zurückholen. Der Klerus will mich verbrennen. Die Garde will mich kassieren.\n\nUnd ich? Ich will dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
+      dialogueOffer: 'Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung.\n\nIch will, dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
       dialogueProgress: 'Such die Ritualkammer. Drei Räume tiefer. Das Dokument ist klein, aber das Siegel darauf wird dir den Atem nehmen.',
       dialogueComplete: 'Drei Siegel. Eine Unterschrift. Magistrat, Klerus, Garde — sie behaupten in der Öffentlichkeit, sie wären Rivalen. Hinter verschlossenen Türen stimmen sie überein. Geh zu Harren. Er wartet auf den Moment, in dem du das verstehst.'
     },
@@ -238,9 +238,9 @@
       completionFlags: ['elara_trust'],
       prerequisites: [],
       requiredAct: 2,
-      dialogueOffer: 'Ich bin nicht entführt worden. Ich bin geflohen. Hier — lies das.\n\nFinde zwei Dokumente, die ich im Keller versteckt habe.',
+      dialogueOffer: 'Du willst wissen, wofür wir das tun? Hier — lies das.\n\nFinde zwei Dokumente, die ich im Keller versteckt habe.',
       dialogueProgress: 'Die Dokumente sind gut versteckt. Suche weiter.',
-      dialogueComplete: 'Jetzt siehst du die Wahrheit. Der Rat hat mich benutzt — für ihre Rituale.\n\n(Die Abschriften sind in einer ruhigen, geübten Hand. Für etwas, das sie angeblich in Panik im Keller versteckt hat, wirken sie seltsam ordentlich. Du schiebst den Gedanken beiseite.)'
+      dialogueComplete: 'Jetzt siehst du es. Das tut der Rat mit denen, die verschwinden: Er braucht sie für seine Rituale. Namen, die niemand mehr ausspricht, weil sich niemand an sie erinnert.'
     },
     branka_doubt: {
       id: 'branka_doubt',
@@ -401,7 +401,7 @@
       requiredAct: 3,
       dialogueOffer: 'Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Geh als Schreiber verkleidet hinein, hör ab, was die anderen flüstern, und birg den Akt. Werde nicht gesehen.\n\nTust du das für mich?',
       dialogueProgress: 'Die Schreiber haben noch nichts Verwertbares gesagt. Bleib im Archiv, unauffällig, und hör weiter ab, bis du an den versiegelten Akt kommst.',
-      dialogueComplete: 'Du hast den Akt. "Vermisst, Fall geschlossen" — Elaras Verschwinden, sauber abgelegt, Datum, Siegel, Unterschrift. Zu sauber. Wer in Panik flieht, hinterlässt kein ordentlich abgeheftetes Protokoll. Und das Datum... es liegt vor dem Tag, von dem Harren mir erzählt hat. Ich sage noch nichts. Aber irgendwas an dieser Akte stimmt nicht.'
+      dialogueComplete: 'Du hast den Akt. "Vermisst, Fall geschlossen" — das Verschwinden der Bürgermeistertochter, sauber abgelegt, Datum, Siegel, Unterschrift. Und das Datum... es liegt vor dem Tag, an dem sie verschwand. Jemand im Rat hat ihr Verschwinden abgeheftet, bevor es geschah. Ich sage Harren noch nichts. Erst will ich wissen, wer.'
     },
     espionage_informant: {
       id: 'espionage_informant',
@@ -708,7 +708,7 @@
       requiredAct: 3,
       dialogueOffer: 'Bevor du das Letzte tust, sollst du wissen, für wen. Komm, nur wir zwei.',
       dialogueProgress: 'Elara wartet mit den drei Blättern.',
-      dialogueComplete: 'Drei Blätter, eine Hand. Elara ist Harrens Tochter, und der Widerstand hat kuratiert, nicht der Rat allein. Nicht Branka, nicht Mara. Sie. Aber sie erfindet nichts, sie wählt aus. Merk dir den Unterschied.'
+      dialogueComplete: 'Sie hat das Blatt verbrannt. Eine wahre Meldung, und niemand wird sie je lesen. "Nicht alles hilft", hat sie gesagt. Du schiebst den Gedanken beiseite. Noch.'
     },
 
     // Feature 062: 'final_truth' entfernt (ging ins Finale auf). the_reckoning
@@ -840,7 +840,7 @@
       'quest.garde_patrol_expansion.dialogueProgress': 'Ten troublemakers remain. Each fallen body is one more line in the report. The Guard waits on the outcome.',
       'quest.garde_patrol_expansion.dialogueComplete': 'The edict is published. Patrols double tomorrow. No one else will vanish — or at least no one who matters. The Guard remembers who answers quickly.',
 
-      'quest.widerstand_proof.dialogueOffer': "So you found the fragment. Good — you no longer live entirely inside their story. Aldric wants to bring me back. The Clergy wants to burn me. The Guard wants to collect me.\n\nAnd me? I want YOU to see what I have seen before you go on running their errands. Down in the Rathauskeller there is a ritual chamber. There lies a document the three Council factions should never have signed together — and yet all three seals are upon it.\n\nBring it to me. Then we will talk.",
+      'quest.widerstand_proof.dialogueOffer': "So you found the fragment. Good — you no longer live entirely inside their story.\n\nI want YOU to see what I have seen before you go on running their errands. Down in the Rathauskeller there is a ritual chamber. There lies a document the three Council factions should never have signed together — and yet all three seals are upon it.\n\nBring it to me. Then we will talk.",
       'quest.widerstand_proof.dialogueProgress': 'Find the ritual chamber. Three rooms deeper. The document is small, but the seal upon it will take your breath away.',
       'quest.widerstand_proof.dialogueComplete': 'Three seals. One signature. Magistrate, Clergy, Guard — in public they pretend to be rivals. Behind closed doors they agree. Go to Harren. He has been waiting for the moment you would understand.',
 
@@ -856,9 +856,9 @@
       'quest.mara_contact.dialogueProgress': 'Not enough seen yet. Three rooms — and burn each one into your memory.',
       'quest.mara_contact.dialogueComplete': "Three rooms, the same in each: empty cells, fresh chains, lists of names. The missing don't vanish by chance — the Council makes them vanish, and every faction covers for the others.\n\nNow I know you're still the one you were. My network is open to you — there's work only someone no one remembers can do. Like you.",
 
-      'quest.elara_meeting.dialogueOffer': "I wasn't kidnapped. I escaped. Here — read this.\n\nFind two documents I hid in the cellar.",
+      'quest.elara_meeting.dialogueOffer': "You want to know what we do this for? Here — read this.\n\nFind two documents I hid in the cellar.",
       'quest.elara_meeting.dialogueProgress': 'The documents are well hidden. Keep searching.',
-      'quest.elara_meeting.dialogueComplete': 'Now you see the truth. The council used me — for their rituals.\n\n(The transcripts are in a calm, practiced hand. For something she supposedly hid in the cellar in a panic, they look strangely neat. You push the thought aside.)',
+      'quest.elara_meeting.dialogueComplete': 'Now you see it. This is what the council does with the ones who disappear: it needs them for its rituals. Names nobody says any more, because nobody remembers them.',
 
       'quest.branka_doubt.dialogueOffer': 'This armor is for prisoners, not soldiers. Help me find proof.\n\nDefeat five elite guards and bring me their orders.',
       'quest.branka_doubt.dialogueProgress': 'The elite guards carry the proof on them. Keep fighting.',
@@ -906,7 +906,7 @@
       'quest.espionage_archive.description': 'Infiltrate the council archive in disguise, eavesdrop on the scribes and recover the sealed file.',
       'quest.espionage_archive.dialogueOffer': "In the council's archive lies a sealed file — and I must know what it holds. Go in disguised as a scribe, listen to what the others whisper, and recover the file. Do not be seen.\n\nWill you do this for me?",
       'quest.espionage_archive.dialogueProgress': 'The scribes have said nothing useful yet. Stay in the archive, inconspicuous, and keep eavesdropping until you reach the sealed file.',
-      'quest.espionage_archive.dialogueComplete': '"Missing, case closed" — Elara\'s disappearance, neatly filed, date, seal, signature. Too neat. Someone fleeing in panic leaves no tidily archived record. And the date... it falls before the day Harren told me about. I say nothing yet. But something about this file is wrong.',
+      'quest.espionage_archive.dialogueComplete': '"Missing, case closed" — the disappearance of the mayor\'s daughter, neatly filed, date, seal, signature. And the date... it falls before the day she vanished. Someone in the council filed her disappearance before it happened. I will not tell Harren yet. First I want to know who.',
 
       'quest.espionage_informant.title': 'The Mole',
       'quest.espionage_informant.description': "Unmask a council mole within the resistance's ranks, in disguise.",

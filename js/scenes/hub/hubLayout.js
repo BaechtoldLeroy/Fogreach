@@ -24,7 +24,7 @@ if (window.i18n) {
     'hub.npc.aldric.line.2': 'Du hast Talent. Der Rat könnte jemanden wie dich gut gebrauchen — langfristig.',
     'hub.npc.elara.line.0': 'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
     'hub.npc.elara.line.1': 'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.',
-    'hub.npc.harren.line.0': 'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
+    'hub.npc.harren.line.0': 'Meine Tochter Lene... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
     'hub.npc.harren.line.1': 'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'
   });
   window.i18n.register('en', {
@@ -46,7 +46,7 @@ if (window.i18n) {
     'hub.npc.aldric.line.2': 'You have talent. The council could use someone like you — in the long run.',
     'hub.npc.elara.line.0': "You don't remember me, do you? I... knew you. Before the accident.",
     'hub.npc.elara.line.1': 'Do not ask the council. Ask the walls. They remember better than people do.',
-    'hub.npc.harren.line.0': 'My daughter Elara... she has disappeared. Please, help me find her.',
+    'hub.npc.harren.line.0': 'My daughter Lene... she has disappeared. Please, help me find her.',
     'hub.npc.harren.line.1': 'I was once proud of this city. Now I barely recognize it.'
   });
 }
@@ -225,7 +225,7 @@ window.HUB_HITBOXES = {
       // pre-050 narrative when Harren was a late-game NPC.)
       visibleFromAct: 'auftrag',
       lines: [
-        'Meine Tochter Elara... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
+        'Meine Tochter Lene... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
         'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'
       ]
     },

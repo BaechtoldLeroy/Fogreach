@@ -140,39 +140,39 @@
     harren: {
       auftrag: [
         'Ich bin nur ein alter Handwerker. Aber meine Tochter... sie ist alles, was ich habe.',
-        'Hast du Elara gesehen? Sie ist seit Wochen verschwunden.',
+        'Hast du Lene gesehen? Sie ist seit Wochen verschwunden.',
         'Der Rat sagt, sie sei in Sicherheit. Aber ich glaube ihnen nicht.'
       ],
       treuer_diener: [
         'Bitte, finde meine Tochter. Ich flehe dich an.',
         'Mara hat mir erzählt, du seist vertrauenswürdig. Hilf mir.',
-        'Elara hat ein Tagebuch geführt. Wenn du es findest...'
+        'Lene hat ein Tagebuch geführt. Wenn du es findest...'
       ],
       erste_risse: [
         'Du hast Hinweise gefunden? Erzähl mir alles!',
-        'Elara lebt... das ist alles, was zählt.',
+        'Lene lebt... das ist alles, was zählt.',
         'Was hat der Rat mit meiner Tochter zu tun?'
       ],
       wahrheit: [
-        'Der Rat hat meine Tochter benutzt? Für ihre Rituale?',
-        'Ich werde ihnen nie vergeben. Nie.',
-        'Finde Elara. Bring sie zurück. Bitte.'
+        'Sie nennt sich jetzt Elara. Für mich bleibt sie Lene.',
+        'Sie war hier. Eine Nacht. Dann ist sie wieder gegangen.',
+        'Pass auf sie auf, da unten. Sie lässt sich nicht helfen.'
       ],
       bruch: [
-        'Aldric hat uns alle belogen. Auch über Elara.',
+        'Aldric hat uns alle belogen. Auch über meine Tochter.',
         'Meine Tochter ist stärker, als sie denken. Sie wird überleben.',
         'Ich bin zu alt zum Kämpfen. Aber ich kann helfen.'
       ]
     },
     elara: {
       erste_risse: [
-        'Ich bin nicht entführt worden. Ich bin geflohen.',
+        'Der Rat hört mit. Immer. Auch hier unten.',
         'Hier — lies das. Dann verstehst du.',
-        'Der Rat hat mich benutzt. Aber ich habe gelernt.'
+        'Ich habe gelernt, leise zu sein.'
       ],
       wahrheit: [
         'Tief unten ist eine Kammer... ich zeige dir wo.',
-        'Die Rituale des Rats nutzen menschliche Energie. Meine Energie.',
+        'Die Rituale des Rats fressen die, die verschwinden.',
         'Ich kenne ihre Geheimnisse. Alle.'
       ],
       bruch: [
@@ -314,27 +314,27 @@
 
       // harren — the missing daughter's father
       'story.npc.harren.auftrag.0': "I'm only an old craftsman. But my daughter... she's all I have.",
-      'story.npc.harren.auftrag.1': "Have you seen Elara? She's been missing for weeks.",
+      'story.npc.harren.auftrag.1': "Have you seen Lene? She's been missing for weeks.",
       'story.npc.harren.auftrag.2': "The council says she's safe. But I don't believe them.",
       'story.npc.harren.treuer_diener.0': "Please, find my daughter. I'm begging you.",
       'story.npc.harren.treuer_diener.1': "Mara told me you're trustworthy. Help me.",
-      'story.npc.harren.treuer_diener.2': "Elara kept a diary. If you find it...",
+      'story.npc.harren.treuer_diener.2': "Lene kept a diary. If you find it...",
       'story.npc.harren.erste_risse.0': "You found leads? Tell me everything!",
-      'story.npc.harren.erste_risse.1': "Elara is alive... that's all that matters.",
+      'story.npc.harren.erste_risse.1': "Lene is alive... that's all that matters.",
       'story.npc.harren.erste_risse.2': "What does the council want with my daughter?",
-      'story.npc.harren.wahrheit.0': "The council used my daughter? For their rituals?",
-      'story.npc.harren.wahrheit.1': "I will never forgive them. Never.",
-      'story.npc.harren.wahrheit.2': "Find Elara. Bring her back. Please.",
-      'story.npc.harren.bruch.0': "Aldric lied to us all. Even about Elara.",
+      'story.npc.harren.wahrheit.0': "She calls herself Elara now. To me she is still Lene.",
+      'story.npc.harren.wahrheit.1': "She was here. One night. Then she was gone again.",
+      'story.npc.harren.wahrheit.2': "Look after her down there. She won't let anyone help her.",
+      'story.npc.harren.bruch.0': "Aldric lied to us all. Even about my daughter.",
       'story.npc.harren.bruch.1': "My daughter is stronger than they think. She will survive.",
       'story.npc.harren.bruch.2': "I'm too old to fight. But I can help.",
 
       // elara — the daughter / morally complex
-      'story.npc.elara.erste_risse.0': "I wasn't kidnapped. I escaped.",
+      'story.npc.elara.erste_risse.0': "The council is listening. Always. Even down here.",
       'story.npc.elara.erste_risse.1': "Here — read this. Then you'll understand.",
-      'story.npc.elara.erste_risse.2': "The council used me. But I learned.",
+      'story.npc.elara.erste_risse.2': "I have learned to be quiet.",
       'story.npc.elara.wahrheit.0': "Deep below there is a chamber... I'll show you where.",
-      'story.npc.elara.wahrheit.1': "The council's rituals use human energy. My energy.",
+      'story.npc.elara.wahrheit.1': "The council's rituals devour the ones who disappear.",
       'story.npc.elara.wahrheit.2': "I know all their secrets.",
       'story.npc.elara.bruch.0': "Take this. I forged it for you. In case...",
       'story.npc.elara.bruch.1': "Aldric will hunt you. Be careful.",
