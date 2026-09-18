@@ -2026,7 +2026,7 @@ function _pickMiniBossEnchant(depth) {
 }
 function _enchantLabel(e) {
   const isEn = (typeof window !== 'undefined' && window.i18n
-    && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
+    && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
   return isEn ? e.en : e.de;
 }
 

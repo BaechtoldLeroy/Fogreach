@@ -3070,7 +3070,7 @@ function _elaraSpaetereAuftraege(scene, roomId) {
 // Jede Szene setzt ein Flag, damit sie genau einmal laeuft.
 // ---------------------------------------------------------------------------
 function _elaraT(de, en) {
-  var istEn = !!(window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
+  var istEn = !!(window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
   return istEn ? en : de;
 }
 
@@ -3324,7 +3324,7 @@ function _spawnElaraSprite(scene, stage) {
   // 'stage' ist entweder eine Zahl (die alten Akt-1-Stufen) oder
   // { id, modus } fuer die spaeteren Auftraege.
   if (!scene || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
-  const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
+  const isEn = (window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
   const promptLabel = isEn ? 'Elara' : 'Elara';
   // Subtle violet glow to match the Widerstand-faction colour key.
   // Scale 0.16 mirrors the hub-layout entry — the source PNG is full-res
@@ -3337,7 +3337,7 @@ function _spawnElaraSprite(scene, stage) {
 function _showElaraDialog(scene, stage, opts) {
   if (!scene || !window.EventSystem || typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
   const qs = window.questSystem;
-  const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
+  const isEn = (window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
   const btnContinueLabel = isEn ? 'Continue' : 'Weiter';
 
   // Die spaeteren Auftraege: Text kommt aus der Quest-Definition selbst, damit
