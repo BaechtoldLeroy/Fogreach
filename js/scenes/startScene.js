@@ -204,7 +204,9 @@ StartScene.prototype.preload = function () {
     // Feature 049: new procedural layouts
     "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove",
     // Feature 055: curated espionage stealth rooms
-    "CouncilWarehouse", "SealedArchive", "InformantDen"
+    "CouncilWarehouse", "SealedArchive", "InformantDen",
+    // #161: Die Quelle, Finalarena auf Tiefe 30 (nur als Boss-Arena)
+    "DieQuelle"
   ];
   for (const name of templateNames) {
     this.load.json(name, `js/roomTemplates/${name}.json?v=073`);
@@ -748,7 +750,9 @@ StartScene.prototype.create = function () {
       "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove",
       // Feature 055: curated espionage stealth rooms (registered in RT.TEMPLATES
       // so EspionageSystem can build them by name; not part of the random pool)
-      "CouncilWarehouse", "SealedArchive", "InformantDen"
+      "CouncilWarehouse", "SealedArchive", "InformantDen",
+      // #161: Finalarena, nur ueber BOSS_ARENAS (roomManager)
+      "DieQuelle"
     ];
 
     for (const name of allTemplateNames) {

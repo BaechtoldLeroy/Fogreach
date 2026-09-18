@@ -182,8 +182,43 @@ const ROOM_DESCRIPTIONS = {
   'RitualVault':    'Ritualkammer \u2014 Dämonische Energie pulsiert in der Luft...',
   'PrisonDepths':   'Kerkertiefen \u2014 Schreie hallen durch die Gänge...',
   'CouncilChamber': 'Ratskammer \u2014 Der Thron des Kettenrats steht verlassen...',
-  'ForgottenCrypt': 'Vergessene Krypta \u2014 Uralte Siegel leuchten schwach...'
+  'ForgottenCrypt': 'Vergessene Krypta \u2014 Uralte Siegel leuchten schwach...',
+  // #161: die Finalarena
+  'DieQuelle':      'Die Quelle \u2014 Hier beginnt der Nebel.'
 };
+
+// #161: Wie die Tiefen heissen (Story-Bibel v5, Abschnitt 11). Kein neuer Ort,
+// aber ein Name und eine Stimmung: der Rathauskeller der ersten Auftraege, die
+// Katakomben, sobald das Doppelspiel beginnt (Akt 2), die Ritualebene, wo der
+// Rat die Quelle naehrt (ab Akt 3).
+function gebietsName(depth, actIndex, lang) {
+  var d = Math.max(1, Number(depth) || 1);
+  var a = (typeof actIndex === 'number' && isFinite(actIndex)) ? actIndex : 0;
+  var en = (lang === 'en');
+  if (d >= 20 && a >= 3) return en ? 'The Ritual Depths' : 'Ritualebene';
+  if (d >= 10 && a >= 2) return en ? 'The Catacombs' : 'Katakomben';
+  return en ? 'The Town Hall Cellar' : 'Rathauskeller';
+}
+if (typeof window !== 'undefined') window.gebietsName = gebietsName;
+
+// #161: Die Quelle selbst — ein pulsierender Schacht aus Licht in der Mitte
+// der Finalarena. Erlischt, wenn Elara besiegt ist (Finale.nachKampf).
+function _quelleZeichnen(scene, x, y) {
+  if (!scene || !scene.add) return null;
+  var g = scene.add.graphics().setDepth(31);   // ueber der Bodendeko, unter den Props
+  g.fillStyle(0x3a2a55, 0.55); g.fillCircle(0, 0, 118);
+  g.fillStyle(0x6a4aa0, 0.35); g.fillCircle(0, 0, 82);
+  g.fillStyle(0xaa88ee, 0.45); g.fillCircle(0, 0, 48);
+  g.fillStyle(0xe8dcff, 0.7);  g.fillCircle(0, 0, 20);
+  g.setPosition(x, y);
+  if (scene.tweens) {
+    scene.tweens.add({ targets: g, alpha: { from: 0.65, to: 1 }, scale: { from: 0.96, to: 1.04 },
+      duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+  scene._quelleGlow = g;
+  return g;
+}
+if (typeof window !== 'undefined') window._quelleZeichnen = _quelleZeichnen;
 
 // Story-themed room pools by act/wave depth
 const STORY_ROOMS = {
@@ -280,7 +315,9 @@ function initDungeonRun() {
   // Espionage-Räume sind aus dem regulären Pool ausgeschlossen — sie
   // erscheinen NUR per quest-gesteuertem Force-Inject (s. unten), nie zufällig.
   const ESPIONAGE_ROOM_NAMES = ['CouncilWarehouse', 'SealedArchive', 'InformantDen'];
-  const allStoryNames = [].concat(STORY_ROOMS.act2, STORY_ROOMS.act3, STORY_ROOMS.act4, ESPIONAGE_ROOM_NAMES);
+  // #161: Die Quelle erscheint nur als Finalarena (BOSS_ARENAS).
+  const NUR_ALS_ARENA = ['DieQuelle'];
+  const allStoryNames = [].concat(STORY_ROOMS.act2, STORY_ROOMS.act3, STORY_ROOMS.act4, ESPIONAGE_ROOM_NAMES, NUR_ALS_ARENA);
   const regularNames = allNames.filter(function(n) { return allStoryNames.indexOf(n) === -1; });
 
   // Determine which story rooms are available for this act
@@ -306,8 +343,8 @@ function initDungeonRun() {
     chainMaster: 'PrisonDepths',
     ceremonyMaster: 'RitualVault',
     shadowCouncillor: 'CouncilChamber',
-    // #157: Die Quelle liegt unter den Ritualkammern. Eine eigene Arena folgt (#161).
-    elaraBesessen: 'RitualVault'
+    // #157/#161: Die Quelle, eine eigene Finalarena.
+    elaraBesessen: 'DieQuelle'
   };
   if (depth >= 10 && depth % 10 === 0 && typeof getBossDefinition === 'function') {
     try {
@@ -453,6 +490,16 @@ function initDungeonRun() {
   // Trim if over (Espionage-Räume sitzen früh -> überleben den Trim)
   if (templateOrder.length > totalRooms) {
     templateOrder.length = totalRooms;
+  }
+  // #161: Die Boss-Arena gehoert ans Ende. Die 2-4 prozeduralen Raeume oben
+  // machen den Lauf IMMER laenger als totalRooms, und der Trim schnitt dann
+  // genau den zuletzt angehaengten Finalraum ab — die Arenen aus #62 waren nie
+  // der letzte Raum, der Boss stand in irgendeinem Zufallsraum.
+  if (finalRoom && templateOrder[templateOrder.length - 1] !== finalRoom) {
+    var _fi = templateOrder.indexOf(finalRoom);
+    if (_fi !== -1) templateOrder.splice(_fi, 1);
+    if (templateOrder.length >= totalRooms) templateOrder.length = totalRooms - 1;
+    templateOrder.push(finalRoom);
   }
 
   // #54-Test (?spy=1): ersten Raum auf einen Spionage-Raum zwingen.
@@ -1312,8 +1359,24 @@ function enterRoom(scene, roomId) {
   const nowMs = scene.time?.now ?? performance.now();
   scene._enemyAttackGraceUntil = nowMs + 500;
 
+  // #161: Die Quelle leuchtet in der Mitte der Finalarena.
+  if (templateName === 'DieQuelle') {
+    try { _quelleZeichnen(scene, (builtWidth - rightPadding) / 2, builtHeight / 2); } catch (e) {}
+  }
+
   // Show story room description overlay
   var roomDescText = ROOM_DESCRIPTIONS[templateName];
+  // #161: Im ersten Raum eines Laufs sagt ein Name, wo man ist.
+  if (!roomDescText && roomId === 0) {
+    try {
+      var _akt = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+        ? window.storySystem.getCurrentActIndex() : 0;
+      var _lang = (window.i18n && typeof window.i18n.getLanguage === 'function') ? window.i18n.getLanguage() : 'de';
+      var _t = Math.max(1, window.DUNGEON_DEPTH || 1);
+      roomDescText = gebietsName(_t, _akt, _lang) + ' \u2014 ' + (_lang === 'en' ? 'Depth ' : 'Tiefe ') + _t;
+    } catch (e) { roomDescText = null; }
+  }
+  scene._raumBeschriftung = roomDescText || null;
   if (roomDescText && scene && scene.add) {
     var camW = scene.cameras.main.width;
     var descLabel = scene.add.text(camW / 2, 60, roomDescText, {

@@ -136,6 +136,7 @@ const ROOM_THEMES = {
   'PrisonDepths':      { floor: 'floor_stone_dark', wall: 'wall_brick' },
   'CouncilChamber':    { floor: 'floor_tile_ornate', wall: 'wall_stone_large' },
   'ForgottenCrypt':    { floor: 'floor_cobble', wall: 'wall_dungeon' },
+  'DieQuelle':         { floor: 'floor_stone_dark', wall: 'wall_dungeon' },
   '_default':          { floor: 'floor_stone', wall: 'obstacleWall' }
 };
 

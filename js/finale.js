@@ -163,6 +163,17 @@
         callback: function () { _quelleAbschliessen(scene); }
       }]);
     };
+    // #161: Die Quelle in der Arena erlischt.
+    try {
+      var glut = scene._quelleGlow;
+      if (glut && glut.active && scene.tweens) {
+        scene.tweens.killTweensOf(glut);
+        scene.tweens.add({ targets: glut, alpha: 0, scale: 0.3, duration: 1200,
+          onComplete: function () { try { glut.destroy(); } catch (e) {} } });
+      } else if (glut && glut.destroy) glut.destroy();
+      scene._quelleGlow = null;
+    } catch (e) {}
+
     _seiten(scene, [
       { text: _t(
         '(Die Quelle zerbricht. Der Nebel fällt in sich zusammen wie ein nasses Tuch.)\n\n(Elara liegt am Boden. Wieder sie selbst. Gebrochen.)',
