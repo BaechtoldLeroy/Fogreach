@@ -353,7 +353,9 @@ test('055: fetch-Quests nutzen nur Targets mit Loot-Item (C-05)', () => {
   const LOOTED = new Set(['document', 'print_plate', 'journal_fragment',
     'council_document', 'seized_writings', 'interrogation_record',
     // v4/WP05: neue fetch-Quest-Items, in loot.js questItemDefs verdrahtet.
-    'verification_seal', 'proclamation', 'memory_shard']);
+    'verification_seal', 'proclamation', 'memory_shard',
+    // #155: Elaras Buendel (vorher kill x5 ohne Gegenstand).
+    'sealed_bundle']);
   Object.keys(defs).forEach((id) => {
     (defs[id].objectives || []).forEach((o) => {
       if (o.type === 'fetch') {
@@ -773,7 +775,8 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
     dialogue: '*',       // Auto-Complete beim Annehmen
     fetch: new Set(['journal_fragment', 'council_document', 'document',
       'seized_writings', 'interrogation_record', 'print_plate',
-      'verification_seal', 'proclamation', 'memory_shard']),   // WP05
+      'verification_seal', 'proclamation', 'memory_shard',     // WP05
+      'sealed_bundle']),                                        // #155
     observe: new Set(['convoy_intel', 'archive_record', 'informant_id',
       'escort_route',                                           // WP05 (062)
       'collusion_reveal_seen', 'three_hands_seen'])             // 063 WP04: Szenen-Trigger

@@ -2817,6 +2817,7 @@ let _elaraStage2SpawnTarget = null;
 function _resetElaraEncounterRunState() {
   _elaraDocSpawnTarget = null;
   _elaraStage2SpawnTarget = null;
+  _elaraRettungAbbrechen();
 }
 
 function _rollDistance() {
@@ -2987,9 +2988,11 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
     return;
   }
 
-  // Stage 1: Q1 done, Q5 not yet active, !elaraMet → spawn Elara for the offer
+  // Stage 1: Q1 done, Q5 not yet active, !elaraMet → die erste Begegnung.
+  // #155: nicht mehr sofort beim Betreten, sondern als RETTUNG (siehe
+  // _elaraRettungScharfstellen).
   if (!qs.hasFlag('elaraMet') && !q5Done) {
-    _spawnElaraSprite(scene, /* stage */ 1);
+    _elaraRettungScharfstellen(scene, roomId);
     return;
   }
 
@@ -3016,7 +3019,11 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
  * vorbei ist — sie steht damit immer noch vor einem, nie dahinter. Eine
  * pflichtgemaesse Story-Quest darf keine Zufallsbegegnung sein.
  */
-var ELARA_AUFTRAEGE = ['elara_meeting', 'elara_ritual', 'elara_second_truth'];
+// #155: Das Buendel steht vorn (Akt 1, direkt nach dem Versteck), die Klinge
+// zwischen Ritualkammer und Riss (Akt 3). Vorher gab es beide nur im Hub, und
+// Elara steht erst ab Akt 4 im Hub — die Klinge kam damit NACH dem Bruch, fuer
+// den sie gedacht ist.
+var ELARA_AUFTRAEGE = ['resistance_fetch_01', 'elara_meeting', 'elara_ritual', 'elara_blade', 'elara_second_truth'];
 var _elaraSpaetSpawnZiel = null;
 
 function _elaraSpaetereAuftraege(scene, roomId) {
@@ -3048,6 +3055,209 @@ function _elaraSpaetereAuftraege(scene, roomId) {
   _spawnElaraSprite(scene, faellig);
 }
 
+// ---------------------------------------------------------------------------
+// #155: Elaras ruhige Momente im Dungeon (Story-Bibel v5, Abschnitt 6).
+//
+// Der Verrat am Ende trifft nur, wenn man sie mag, ihr vertraut und mit ihr
+// fuehlt. Vorher gab sie nur Auftraege. Jetzt: sie rettet Dich, zeigt Dir ihr
+// Versteck, spricht ueber den Menschen, zu dem sie nicht darf, gibt Dir ein
+// Stueck Deiner Vergangenheit zurueck und schenkt Dir ihre Klinge.
+//
+// Gezeigt ueber dieselben Dungeon-Dialoge wie ihre Auftraege
+// (showEventChoiceDialog): Seite fuer Seite, das Spiel steht dabei still.
+// Jede Szene setzt ein Flag, damit sie genau einmal laeuft.
+// ---------------------------------------------------------------------------
+function _elaraT(de, en) {
+  var istEn = !!(window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
+  return istEn ? en : de;
+}
+
+// Welche Szene nach welcher Abgabe folgt.
+var ELARA_NACH_ABGABE = {
+  resistance_fetch_01: 'familie',
+  elara_meeting: 'werkstatt'
+};
+
+var ELARA_SZENEN = {
+  rettung: { flag: 'elara_rettung_gesehen', seiten: function () { return [
+    { text: _elaraT(
+        '(Nebel quillt aus den Fugen. Die Gegner um Dich weichen zurück, als hätte etwas sie gerufen, und lösen sich im Grau auf. Aus dem Dunkel tritt eine junge Frau, die Kapuze tief im Gesicht.)\n\n"Du lebst. Gut. Noch ein Atemzug, und Du wärst einer von denen, an die sich keiner erinnert."',
+        '(Fog seeps from the cracks. The enemies around you fall back as if something called them, and dissolve into the grey. A young woman steps out of the dark, hood pulled low.)\n\n"You are alive. Good. One more breath and you would have been one of those nobody remembers."'),
+      wahlen: [
+        { label: _elaraT('Wie hast Du das gemacht?', 'How did you do that?'),
+          antwort: _elaraT('"Der Nebel gehorcht dem, der ihn kennt. Frag nicht weiter."', '"The fog obeys those who know it. Don\'t ask further."') },
+        { label: _elaraT('Danke.', 'Thank you.'),
+          antwort: _elaraT('"Dank mir, wenn Du weisst, wofür."', '"Thank me when you know what for."') }
+      ] }
+  ]; } },
+  versteck: { flag: 'elara_versteck_gesehen', seiten: function () { return [
+    { text: _elaraT(
+        '(Elara führt Dich durch einen Spalt in der Kellerwand, den Du allein nie gesehen hättest. Dahinter ein trockener Raum: ein Lager, Kerzenstummel, Karten der Kanäle an der Wand.)',
+        '(Elara leads you through a crack in the cellar wall you would never have found alone. Behind it, a dry room: a bedroll, candle stubs, maps of the sewers on the wall.)') },
+    { text: _elaraT(
+        'ELARA: Hier vergisst der Nebel einen nicht so schnell. Wenn es oben brennt, komm hierher. Niemand sonst kennt diesen Ort.',
+        'ELARA: Down here the fog does not make you forget so quickly. If things burn up there, come here. Nobody else knows this place.'),
+      wahlen: [
+        { label: _elaraT('Warum zeigst Du mir das?', 'Why show me this?'),
+          antwort: _elaraT('ELARA: Weil Du zurückgekommen bist. Das tun nicht viele.', 'ELARA: Because you came back. Not many do.') },
+        { label: _elaraT('Wer weiss noch davon?', 'Who else knows?'),
+          antwort: _elaraT('ELARA: Niemand. Und so bleibt es.', 'ELARA: Nobody. And it stays that way.') }
+      ] }
+  ]; } },
+  familie: { flag: 'elara_familie_gehoert', seiten: function () { return [
+    { text: _elaraT(
+        '(Sie dreht das Bündel in den Händen, ohne es anzusehen. Dann, leiser:)\n\nELARA: Es gibt jemanden, der jeden Abend auf mich wartet. Er stellt ein Licht ins Fenster. Ich sehe es von der Gasse aus. Ich kann nicht zu ihm. Noch nicht.',
+        '(She turns the bundle in her hands without looking at it. Then, quieter:)\n\nELARA: There is someone who waits for me every evening. He puts a light in the window. I can see it from the alley. I cannot go to him. Not yet.'),
+      wahlen: [
+        { label: _elaraT('Warum nicht?', 'Why not?'),
+          antwort: _elaraT('ELARA: Weil der Rat ihn beobachtet. Weil ich ihn in Gefahr bringe, wenn ich gehe. (Sie sieht weg.)', 'ELARA: Because the council watches him. Because I put him in danger if I go. (She looks away.)') },
+        { label: _elaraT('Das tut mir leid.', 'I am sorry.'),
+          antwort: _elaraT('ELARA: Muss es nicht. Es ist meine Wahl.', 'ELARA: It need not be. It is my choice.') }
+      ] }
+  ]; } },
+  werkstatt: { flag: 'elara_camp_seen', seiten: function () { return [
+    { text: _elaraT(
+        '(Elara legt etwas Kleines vor Dich hin, abgegriffen, alt. Ein Werkzeug. Deins.)\n\nELARA: Das lag in Deiner alten Werkstatt, bevor der Nebel Dich holte. Ich habe es aufgehoben.',
+        '(Elara puts something small in front of you, worn, old. A tool. Yours.)\n\nELARA: This was in your old workshop before the fog took you. I kept it.'),
+      wahlen: [
+        { label: _elaraT('Wer war ich?', 'Who was I?'),
+          antwort: _elaraT('ELARA: Jemand, der nicht aufhören konnte zu fragen. Wie jetzt. Frag Branka, sie weiss mehr.', 'ELARA: Someone who could not stop asking. Like now. Ask Branka, she knows more.') },
+        { label: _elaraT('Warum tust Du das?', 'Why are you doing this?'),
+          antwort: _elaraT('ELARA: Weil niemand etwas aufhebt, wenn ich es nicht tue. (Sie lächelt. Es erreicht ihre Augen nicht ganz.)', 'ELARA: Because nobody keeps anything if I do not. (She smiles. It does not quite reach her eyes.)') }
+      ] }
+  ]; } },
+  klinge: { flag: 'elara_klinge_erhalten', seiten: function () { return [
+    { text: _elaraT(
+        'ELARA: Nimm das. Ich habe es für Dich geschmiedet. Für den Fall, dass...\n\n(Eine schmale Klinge, gut ausgewogen. Nahe am Heft ist etwas Kleines eingraviert.)',
+        'ELARA: Take this. I forged it for you. In case...\n\n(A slender blade, well balanced. Something small is engraved near the hilt.)'),
+      wahlen: [
+        { label: _elaraT('Für welchen Fall?', 'In case of what?'),
+          antwort: _elaraT('ELARA: (zögert) Für jeden. Man weiss nie, wer am Ende vor einem steht.', 'ELARA: (hesitates) Any. You never know who will stand before you in the end.') },
+        { label: _elaraT('Danke, Elara.', 'Thank you, Elara.'),
+          antwort: _elaraT('ELARA: Möge sie Dich beschützen. Egal was kommt.', 'ELARA: May it protect you. Whatever comes.') }
+      ] }
+  ]; } }
+};
+
+/**
+ * Spielt eine von Elaras Szenen im Dungeon, einmalig (Flag).
+ * @param {function} [amEnde]  laeuft danach — auch, wenn die Szene schon gesehen war
+ */
+function _elaraSzene(scene, key, amEnde) {
+  var def = ELARA_SZENEN[key];
+  var qs = window.questSystem;
+  var fertig = function () { if (typeof amEnde === 'function') amEnde(); };
+  if (!def || !scene || !window.EventSystem || typeof window.EventSystem.showEventChoiceDialog !== 'function') { fertig(); return; }
+  if (qs && typeof qs.hasFlag === 'function' && qs.hasFlag(def.flag)) { fertig(); return; }
+  if (qs && typeof qs.setFlag === 'function') qs.setFlag(def.flag);
+  var seiten = def.seiten();
+  var weiterLabel = _elaraT('Weiter', 'Continue');
+  var i = 0;
+  var naechste = function () {
+    if (i >= seiten.length) { fertig(); return; }
+    var s = seiten[i++];
+    var wahlen = (s.wahlen && s.wahlen.length)
+      ? s.wahlen.map(function (w) {
+          return { label: w.label, callback: function () {
+            if (w.antwort) window.EventSystem.showEventChoiceDialog(scene, w.antwort, [{ label: weiterLabel, callback: naechste }]);
+            else naechste();
+          } };
+        })
+      : [{ label: weiterLabel, callback: naechste }];
+    window.EventSystem.showEventChoiceDialog(scene, s.text, wahlen);
+  };
+  naechste();
+}
+
+// ---------------------------------------------------------------------------
+// #155: Die erste Begegnung ist eine RETTUNG.
+//
+// Vorher stand Elara einfach beim Betreten im Raum. Jetzt wird die Begegnung
+// scharfgestellt und wartet: faellt der Spieler in diesem Raum unter die
+// Haelfte seiner Lebenspunkte, vertreibt Nebel die Gegner um ihn, und sie
+// tritt heraus. Dass der Nebel ihr gehorcht, ist die erste Spur auf das, was
+// sie ist (Story-Bibel v5). Wer den Raum ohne Not raeumt, trifft sie danach
+// wie bisher — die Geschichte haengt nicht daran, dass man in Bedraengnis
+// geraet.
+// ---------------------------------------------------------------------------
+var ELARA_RETTUNG_ANTEIL = 0.5;      // unter diesem LP-Anteil greift sie ein
+var ELARA_RETTUNG_RADIUS = 280;      // so weit vertreibt der Nebel die Gegner
+var ELARA_RETTUNG_WARTE_MS = 1500;   // erst danach gilt ein leerer Raum als geraeumt
+var _elaraRettung = null;
+
+function _elaraRettungAbbrechen() {
+  if (_elaraRettung && _elaraRettung.timer) {
+    try { _elaraRettung.timer.remove(false); } catch (e) {}
+  }
+  _elaraRettung = null;
+}
+
+function _elaraAktiveGegner() {
+  var n = 0;
+  if (typeof enemies !== 'undefined' && enemies && enemies.children) {
+    enemies.children.iterate(function (e) { if (e && e.active && !(e.hp <= 0)) n++; });
+  }
+  return n;
+}
+
+function _elaraRettungScharfstellen(scene, roomId) {
+  if (_elaraRettung && _elaraRettung.raum === roomId) return;
+  _elaraRettungAbbrechen();
+  if (!scene || !scene.time || typeof scene.time.addEvent !== 'function') { _spawnElaraSprite(scene, 1); return; }
+  var r = { raum: roomId, timer: null, seit: 0 };
+  r.timer = scene.time.addEvent({ delay: 200, loop: true, callback: function () {
+    if (_elaraRettung !== r) return;
+    var qs = window.questSystem;
+    if (!scene.currentRoom || scene.currentRoom.id !== roomId
+        || (qs && typeof qs.hasFlag === 'function' && qs.hasFlag('elaraMet'))) {
+      _elaraRettungAbbrechen();
+      return;
+    }
+    if (window.eventChoiceOpen) return;
+    r.seit += 200;
+    var max = (typeof playerMaxHealth === 'number' && playerMaxHealth > 0) ? playerMaxHealth : 0;
+    var lp = (typeof playerHealth === 'number') ? playerHealth : max;
+    if (max > 0 && lp > 0 && lp / max < ELARA_RETTUNG_ANTEIL) {
+      _elaraRettungAbbrechen();
+      _elaraRettet(scene);
+      return;
+    }
+    if (r.seit >= ELARA_RETTUNG_WARTE_MS && _elaraAktiveGegner() === 0) {
+      _elaraRettungAbbrechen();
+      _spawnElaraSprite(scene, 1);
+    }
+  } });
+  _elaraRettung = r;
+}
+
+function _elaraRettet(scene) {
+  var px = (typeof player !== 'undefined' && player) ? player.x : 0;
+  var py = (typeof player !== 'undefined' && player) ? player.y : 0;
+  // Nebel, der sich um den Spieler ausbreitet.
+  try {
+    var ring = scene.add.circle(px, py, 20, 0x8866cc, 0.35).setDepth(90);
+    scene.tweens.add({ targets: ring, scale: ELARA_RETTUNG_RADIUS / 20, alpha: 0, duration: 700,
+      onComplete: function () { try { ring.destroy(); } catch (e) {} } });
+  } catch (e) {}
+  // Die Gegner in Reichweite loesen sich auf. Bosse und Minibosse bleiben —
+  // sie sind die Pruefung des Raums, keine Kulisse. Kein Loot: sie wurden
+  // vertrieben, nicht erschlagen (hp bleibt > 0).
+  if (typeof enemies !== 'undefined' && enemies && enemies.children) {
+    enemies.getChildren().slice().forEach(function (e) {
+      if (!e || !e.active || e.isBoss || e.isMiniBoss) return;
+      if (Math.hypot(e.x - px, e.y - py) > ELARA_RETTUNG_RADIUS) return;
+      e._vomNebelVertrieben = true;
+      if (e.body) e.body.enable = false;
+      try {
+        scene.tweens.add({ targets: e, alpha: 0, duration: 450,
+          onComplete: function () { try { if (e.active) e.destroy(); } catch (x) {} } });
+      } catch (x) { try { e.destroy(); } catch (y) {} }
+    });
+  }
+  _spawnElaraSprite(scene, 1);
+  _showElaraDialog(scene, 1, { gerettet: true });
+}
+
 // Spawn Elara as an interactive [E]-prompt sprite in the current room.
 // `stage` selects which dialog to show on interact: 1 = offer, 2 = turn-in.
 function _spawnElaraSprite(scene, stage) {
@@ -3064,7 +3274,7 @@ function _spawnElaraSprite(scene, stage) {
   }, { scale: 0.16 });
 }
 
-function _showElaraDialog(scene, stage) {
+function _showElaraDialog(scene, stage, opts) {
   if (!scene || !window.EventSystem || typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
   const qs = window.questSystem;
   const isEn = (window.i18n && typeof window.i18n.getLang === 'function' && window.i18n.getLang() === 'en');
@@ -3085,6 +3295,8 @@ function _showElaraDialog(scene, stage) {
       : '"Du hast es gefunden." Elara nimmt das Dokument, fährt mit einem Finger über die drei Siegel. Magistrat. Klerus. Garde.\n\n"Drei Unterschriften, die nie auf einer Seite stehen sollten. Sie behaupten Rivalen zu sein — hinter verschlossenen Türen stimmen sie überein. Bring das zum Bürgermeister. Er traut keinem der drei. Dir vielleicht."';
     onContinue = function () {
       if (qs && typeof qs.completeQuest === 'function') qs.completeQuest('widerstand_proof');
+      // #155: danach zeigt sie Dir ihr Versteck.
+      _elaraSzene(scene, 'versteck');
     };
   } else {
     text = isEn
@@ -3096,10 +3308,18 @@ function _showElaraDialog(scene, stage) {
       if (typeof qs.acceptQuest === 'function') qs.acceptQuest('widerstand_proof');
     };
   }
-  window.EventSystem.showEventChoiceDialog(scene, text, [{
-    label: btnContinueLabel,
-    callback: onContinue
-  }]);
+  var zeigen = function () {
+    window.EventSystem.showEventChoiceDialog(scene, text, [{
+      label: btnContinueLabel,
+      callback: onContinue
+    }]);
+  };
+  // #155: Kam sie als Rettung, geht die Rettung voraus.
+  if (stage === 1 && opts && opts.gerettet) {
+    _elaraSzene(scene, 'rettung', zeigen);
+    return;
+  }
+  zeigen();
 }
 
 /**
@@ -3129,9 +3349,19 @@ function _elaraAuftragsDialog(scene, auftrag, btnLabel, isEn) {
     try {
       if (abgabe) {
         qs.completeQuest(auftrag.id);
+        // #155: nach bestimmten Abgaben ein ruhiger Moment mit ihr.
+        if (ELARA_NACH_ABGABE[auftrag.id]) _elaraSzene(scene, ELARA_NACH_ABGABE[auftrag.id]);
         return;
       }
       qs.acceptQuest(auftrag.id);
+      // #155: Die Klinge ist ein Geschenk, kein Auftrag. Annehmen und
+      // uebergeben in EINEM Gespraech — sonst muesste man ihr ein zweites
+      // Mal begegnen, nur um ein Geschenk abzuholen.
+      if (auftrag.id === 'elara_blade') {
+        try { qs.completeQuest('elara_blade'); } catch (e) {}
+        _elaraSzene(scene, 'klinge');
+        return;
+      }
       // #131: elara_second_truth wird beim ANNEHMEN ueber die Riss-Szene
       // abgeschlossen — ihr einziges Ziel ist ein observe-Trigger, den nur
       // diese Szene feuert. Faellt die Szene aus, wird trotzdem

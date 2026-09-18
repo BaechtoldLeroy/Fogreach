@@ -11,6 +11,7 @@ if (window.i18n) {
     'loot.quest_item.QUEST_PLATE': 'Verbotene Druckplatte',
     'loot.quest_item.JOURNAL_FRAGMENT': 'Tagebuchfragment der Tochter',
     'loot.quest_item.COUNCIL_DOCUMENT': 'Versiegeltes Ratsdokument',
+    'loot.quest_item.SEALED_BUNDLE': 'Versiegeltes Bündel',
     'loot.quest_item.SEIZED_WRITINGS': 'Beschlagnahmte Schriften',
     'loot.quest_item.INTERROGATION_RECORD': 'Verhörprotokoll',
     // Feature 062: neue fetch-Ziele.
@@ -30,6 +31,7 @@ if (window.i18n) {
     'loot.quest_item.QUEST_PLATE': 'Forbidden Print Plate',
     'loot.quest_item.JOURNAL_FRAGMENT': "Daughter's Journal Fragment",
     'loot.quest_item.COUNCIL_DOCUMENT': 'Sealed Council Document',
+    'loot.quest_item.SEALED_BUNDLE': 'Sealed bundle',
     'loot.quest_item.SEIZED_WRITINGS': 'Seized Writings',
     'loot.quest_item.INTERROGATION_RECORD': 'Interrogation Record',
     // Feature 062: neue fetch-Ziele.
@@ -304,7 +306,10 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       { target: 'memory_shard',      name: _LOOT_T('loot.quest_item.MEMORY_SHARD'),      nameKey: 'loot.quest_item.MEMORY_SHARD',      key: 'MEMORY_SHARD',      tint: 0x88ccff },
       // Ritualkammer-Beweis (Q5 widerstand_proof). Erhoehte Chance, damit der
       // Spieler ihn nicht ewig sucht; deterministische Platzierung bleibt zusaetzlich.
-      { target: 'council_document',  name: _LOOT_T('loot.quest_item.COUNCIL_DOCUMENT'),  nameKey: 'loot.quest_item.COUNCIL_DOCUMENT',  key: 'COUNCIL_DOCUMENT',  tint: 0xcc88dd, chance: 0.20 }
+      { target: 'council_document',  name: _LOOT_T('loot.quest_item.COUNCIL_DOCUMENT'),  nameKey: 'loot.quest_item.COUNCIL_DOCUMENT',  key: 'COUNCIL_DOCUMENT',  tint: 0xcc88dd, chance: 0.20 },
+      // #155/#156: Elaras Buendel. Erhoehte Chance wie beim Ratsdokument — ein
+      // Botengang, den man ewig sucht, ist keiner.
+      { target: 'sealed_bundle',     name: _LOOT_T('loot.quest_item.SEALED_BUNDLE'),     nameKey: 'loot.quest_item.SEALED_BUNDLE',     key: 'SEALED_BUNDLE',     tint: 0x6e5a82, chance: 0.25 }
     ];
 
     for (var qi = 0; qi < questItemDefs.length; qi++) {

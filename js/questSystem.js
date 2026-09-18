@@ -434,20 +434,24 @@
     // -------------------------------------------------------
     resistance_fetch_01: {
       id: 'resistance_fetch_01',
-      title: 'Botengang für die Resistance',
-      description: 'Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen.',
+      title: 'Das versiegelte Bündel',
+      description: 'Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen, und öffne es nicht.',
       npcId: 'elara',
-      type: 'kill',
+      // #155/#156: Vorher "kill enemy x5" — der Auftrag sprach von einem Buendel,
+      // es gab aber keines. Jetzt ein echter Fund (loot.js: sealed_bundle). Das
+      // Siegel traegt das Zeichen des Schattenrats: der Spieler bringt Elara
+      // ihre eigenen Befehle, ohne es zu wissen (Story-Bibel v5, Abschnitt 5).
+      type: 'fetch',
       chain: 0,
       objectives: [
-        { type: 'kill', target: 'enemy', current: 0, required: 5 }
+        { type: 'fetch', target: 'sealed_bundle', current: 0, required: 1 }
       ],
       rewards: { xp: 25, materials: { MAT: 3 } },
       prerequisites: [],
       requiredAct: 0,
-      dialogueOffer: 'Es gibt da etwas im Keller... ein Bündel, versiegelt. Bring es mir, ohne dass jemand sieht.\n\nNimmst du den Auftrag an?',
-      dialogueProgress: 'Schau dich im Keller um. Räum ein paar Wachen aus dem Weg, falls nötig.',
-      dialogueComplete: 'Du hast es. Niemand hat dich gesehen — gut. Die Resistance vergisst das nicht.'
+      dialogueOffer: 'Es gibt da etwas im Keller... ein Bündel, versiegelt. Bring es mir, ohne dass jemand es sieht. Und öffne es nicht.\n\nNimmst du den Auftrag an?',
+      dialogueProgress: 'Das Bündel liegt irgendwo da unten. Sieh dich um — und lass es zu.',
+      dialogueComplete: 'Du hast es. Und du hast es nicht geöffnet. Gut.\n\n(Auf dem Wachs des Siegels: drei Ketten, ineinander verschlungen. Du hast dieses Zeichen noch nie gesehen.)'
     },
 
     elara_ritual: {

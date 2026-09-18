@@ -69,6 +69,12 @@ function wirbeln(weite, hpImKanal) {
   // aufbaut. Genau daran ist die Probe mit dem sterbenden Gegner gefallen: ein
   // ALTER Tick hat ihn getoetet, bevor der neue Wirbel ihn erfassen konnte —
   // der neue fand dann niemanden und sprang nicht.
+  // Unverwundbar VOR dem Vorlauf: mit laufender Uhr greifen die Gegner des
+  // Raums wirklich an. Im Gesamtlauf starb der Spieler waehrend dieser 90
+  // Bilder gelegentlich, die GameScene wechselte, und alle folgenden Tests
+  // fielen mit "enemies.children is undefined". Gemessen wird hier der
+  // Kettenblitz, nicht das Ueberleben.
+  H.run('window._playerInvincible = true; playerMaxHealth = 99999; playerHealth = 99999;');
   H.step(90);
 
   // ZWEI FRISCHE, EINGEFRORENE SONDEN je Einsatz.

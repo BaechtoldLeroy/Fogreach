@@ -1145,6 +1145,8 @@ test('Elara vergibt ihre spaeteren Auftraege im Dungeon (#131)', () => {
     var st = qs.getQuestSaveData();
     st.quests['harren_daughter_investigation'] = { status: 'completed', objectives: [] };
     st.quests['widerstand_proof'] = { status: 'completed', objectives: [] };
+    // #155: Das Buendel liegt jetzt VOR ihrem Geheimnis (Akt 1).
+    st.quests['resistance_fetch_01'] = { status: 'completed', objectives: [] };
     st.quests['elara_meeting'] = { status: 'available', objectives: null };
     st.flags = { elaraMet: true };
     qs.loadQuestSaveData(st);
