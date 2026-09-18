@@ -781,7 +781,7 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
       'sealed_bundle']),                                        // #155
     observe: new Set(['convoy_intel', 'archive_record', 'informant_id',
       'escort_route',                                           // WP05 (062)
-      'collusion_reveal_seen', 'three_hands_seen'])             // 063 WP04: Szenen-Trigger
+      'collusion_reveal_seen', 'erster_riss_gesehen'])          // 063 WP04 / #156: Szenen-Trigger
   };
   Object.keys(D).forEach((id) => {
     (D[id].objectives || []).forEach((o) => {
@@ -802,7 +802,7 @@ test('063 WP04: szenengebundene Reveals sind observe-verdrahtet (kein Platzhalte
   const D = freshSystem().QUEST_DEFINITIONS;
   const expect = {
     council_collusion_reveal: 'collusion_reveal_seen',
-    elara_second_truth: 'three_hands_seen'
+    elara_second_truth: 'erster_riss_gesehen'
   };
   Object.keys(expect).forEach((id) => {
     const obs = (D[id].objectives || []).find((o) => o.type === 'observe');

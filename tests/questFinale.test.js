@@ -17,8 +17,11 @@ const compute = load();
 test('R1: mole_evidence => betrayalForeseen true', () => {
   assert.strictEqual(compute({ mole_evidence: true }).betrayalForeseen, true);
 });
-test('R1: three_hands_seen => betrayalForeseen true', () => {
-  assert.strictEqual(compute({ three_hands_seen: true }).betrayalForeseen, true);
+test('R1: zeichen_bemerkt => betrayalForeseen true (#156)', () => {
+  assert.strictEqual(compute({ zeichen_bemerkt: true }).betrayalForeseen, true);
+});
+test('R1: three_hands_seen zaehlt nicht mehr (#156)', () => {
+  assert.strictEqual(compute({ three_hands_seen: true }).betrayalForeseen, false);
 });
 test('R1: ohne Spur => betrayalForeseen false', () => {
   assert.strictEqual(compute({}).betrayalForeseen, false);
@@ -64,7 +67,7 @@ test('R2: mit einem Verbuendeten => aloneAtEnd false', () => {
 // --- Regler 3: elara lebt nur bei Vertrauen UND Beweis -----------------------
 test('R3: elara_trust + Beweis => lives', () => {
   assert.strictEqual(compute({ elara_trust: true, mole_evidence: true }).elara, 'lives');
-  assert.strictEqual(compute({ elara_trust: true, three_hands_seen: true }).elara, 'lives');
+  assert.strictEqual(compute({ elara_trust: true, zeichen_bemerkt: true }).elara, 'lives');
 });
 test('R3: Vertrauen ohne Beweis => dies', () => {
   assert.strictEqual(compute({ elara_trust: true }).elara, 'dies');

@@ -179,7 +179,7 @@
       choices: [
         {
           label: 'Mit Worten aufhalten', setFlags: ['elara_spared'],
-          showIf: function (f) { return !!(f.elara_trust && (f.mole_evidence || f.three_hands_seen)); },
+          showIf: function (f) { return !!(f.elara_trust && (f.mole_evidence || f.zeichen_bemerkt)); },
           response: 'Du sagst ihr, was sie schon weiss. Sie lässt den Hebel los. Sie lebt, gebrochen an dem, was sie tat.'
         },
         {

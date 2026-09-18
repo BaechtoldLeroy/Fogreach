@@ -119,29 +119,31 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 # Akt-Index 0 — Der Dienst
 
-## Botengang für die Resistance
+## Das versiegelte Bündel
 
 `resistance_fetch_01` · **NPC:** Elara · **Kette:** 0
 
-> Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen.
+> Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen, und öffne es nicht.
 
-- **Ziel:** `kill` → `enemy` ×5
+- **Ziel:** `fetch` → `sealed_bundle` ×1
 - **Vorbedingung:** keine
 - **Belohnung:** 25 XP · 3 MAT
 
 **Angebot**
 
-> Es gibt da etwas im Keller... ein Bündel, versiegelt. Bring es mir, ohne dass jemand sieht.
+> Es gibt da etwas im Keller... ein Bündel, versiegelt. Bring es mir, ohne dass jemand es sieht. Und öffne es nicht.
 > 
 > Nimmst du den Auftrag an?
 
 **Unterwegs**
 
-> Schau dich im Keller um. Räum ein paar Wachen aus dem Weg, falls nötig.
+> Das Bündel liegt irgendwo da unten. Sieh dich um — und lass es zu.
 
 **Abschluss**
 
-> Du hast es. Niemand hat dich gesehen — gut. Die Resistance vergisst das nicht.
+> Du hast es. Und du hast es nicht geöffnet. Gut.
+> 
+> (Auf dem Wachs des Siegels: drei Ketten, ineinander verschlungen. Du hast dieses Zeichen noch nie gesehen.)
 
 
 ## Säuberung der Keller
@@ -316,9 +318,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung. Aldric will mich zurückholen. Der Klerus will mich verbrennen. Die Garde will mich kassieren.
+> Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung.
 > 
-> Und ich? Ich will dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.
+> Ich will, dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.
 > 
 > Bring es mir. Dann reden wir.
 
@@ -418,7 +420,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Ich bin nicht entführt worden. Ich bin geflohen. Hier — lies das.
+> Du willst wissen, wofür wir das tun? Hier — lies das.
 > 
 > Finde zwei Dokumente, die ich im Keller versteckt habe.
 
@@ -428,9 +430,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Jetzt siehst du die Wahrheit. Der Rat hat mich benutzt — für ihre Rituale.
-> 
-> (Die Abschriften sind in einer ruhigen, geübten Hand. Für etwas, das sie angeblich in Panik im Keller versteckt hat, wirken sie seltsam ordentlich. Du schiebst den Gedanken beiseite.)
+> Jetzt siehst du es. Das tut der Rat mit denen, die verschwinden: Er braucht sie für seine Rituale. Namen, die niemand mehr ausspricht, weil sich niemand an sie erinnert.
 
 
 ## Beschlagnahme
@@ -760,7 +760,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 > Elara zeigt dir, für wen du das Letzte tust.
 
-- **Ziel:** `observe` → `three_hands_seen` ×1
+- **Ziel:** `observe` → `erster_riss_gesehen` ×1
 - **Vorbedingung:** Verbotene Wahrheiten **+** Die Ritualkammer
 - **Belohnung:** 200 XP · 2 Wissens-Fragment(e)
 
@@ -774,7 +774,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Drei Blätter, eine Hand. Elara ist Harrens Tochter, und der Widerstand hat kuratiert, nicht der Rat allein. Nicht Branka, nicht Mara. Sie. Aber sie erfindet nichts, sie wählt aus. Merk dir den Unterschied.
+> Sie hat das Blatt verbrannt. Eine wahre Meldung, und niemand wird sie je lesen. "Nicht alles hilft", hat sie gesagt. Du schiebst den Gedanken beiseite. Noch.
 
 
 ## Der Bruch
@@ -822,32 +822,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Du hast den Akt. "Vermisst, Fall geschlossen" — Elaras Verschwinden, sauber abgelegt, Datum, Siegel, Unterschrift. Zu sauber. Wer in Panik flieht, hinterlässt kein ordentlich abgeheftetes Protokoll. Und das Datum... es liegt vor dem Tag, von dem Harren mir erzählt hat. Ich sage noch nichts. Aber irgendwas an dieser Akte stimmt nicht.
-
-
-## Der Maulwurf
-
-`espionage_informant` · **NPC:** Mara vom Untergrund · **Kette:** 8
-
-> Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands.
-
-- **Ziel:** `observe` → `informant_id` ×1
-- **Vorbedingung:** Das versiegelte Archiv
-- **Belohnung:** 120 XP · 1 Wissens-Fragment(e)
-
-**Angebot**
-
-> Jemand verrät uns. Was wir hinter verschlossenen Türen beschliessen, weiss der Rat am nächsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.
-> 
-> Findest du den Verräter?
-
-**Unterwegs**
-
-> Noch hast du den Maulwurf nicht. Bleib unauffällig am Treffpunkt und hör ab, wer Nachrichten nach draussen schmuggelt.
-
-**Abschluss**
-
-> Du hast die Übergabe gesehen. Ein gefalteter Zettel, eine Hand, ein Wort — und in der Handschrift derselbe sauber gezogene Bogen wie auf den Belegen, die uns jemand aus dem Inneren des Rats zugespielt hat. Die Spur zeigt nach innen, näher als uns lieb ist. Ich nenne keinen Namen. Aber vertrau ab jetzt niemandem blind — nicht einmal denen, die uns "die Wahrheit" bringen.
+> Du hast den Akt. "Vermisst, Fall geschlossen" — das Verschwinden der Bürgermeistertochter, sauber abgelegt, Datum, Siegel, Unterschrift. Und das Datum... es liegt vor dem Tag, an dem sie verschwand. Jemand im Rat hat ihr Verschwinden abgeheftet, bevor es geschah. Ich sage Harren noch nichts. Erst will ich wissen, wer.
 
 
 # Akt-Index 4 — Der Verrat und die Presse
@@ -971,4 +946,29 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 **Abschluss**
 
 > Der Nebel dünnt aus — nicht weil jemand ihn vertreibt, sondern weil zu viele Menschen sich zu vieles gleichzeitig merken. Hart erkämpft, unvollständig, und frei.
+
+
+## Der Maulwurf
+
+`espionage_informant` · **NPC:** Mara vom Untergrund · **Kette:** 8
+
+> Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands.
+
+- **Ziel:** `observe` → `informant_id` ×1
+- **Vorbedingung:** Das versiegelte Archiv **+** Der Bruch
+- **Belohnung:** 120 XP · 1 Wissens-Fragment(e)
+
+**Angebot**
+
+> Jemand verrät uns. Was wir hinter verschlossenen Türen beschliessen, weiss der Rat am nächsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.
+> 
+> Findest du den Verräter?
+
+**Unterwegs**
+
+> Noch hast du den Maulwurf nicht. Bleib unauffällig am Treffpunkt und hör ab, wer Nachrichten nach draussen schmuggelt.
+
+**Abschluss**
+
+> Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neben Aldric. An ihrem Ring das Zeichen der drei Ketten. Sie hat uns alle geführt — direkt in seine Hände.
 

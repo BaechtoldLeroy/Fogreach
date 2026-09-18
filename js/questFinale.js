@@ -18,8 +18,9 @@
   // `flags` ist ein einfaches Objekt { flagName: true, ... }. Fehlende Flags
   // gelten als false. Das Eingabeobjekt wird NICHT mutiert.
   function computeFinaleState(flags) {
-    // Regler 1 — Verrat vorhergesehen: Maulwurf- ODER Handschriften-Spur.
-    var betrayalForeseen = flag(flags, 'mole_evidence') || flag(flags, 'three_hands_seen');
+    // Regler 1 — Verrat vorhergesehen: Maulwurf-Spur ODER das Zeichen auf der
+    // Klinge erkannt (#156; vorher die Handschriften-Spur three_hands_seen).
+    var betrayalForeseen = flag(flags, 'mole_evidence') || flag(flags, 'zeichen_bemerkt');
 
     // Regler 4 — Selbst erinnert: allein aus who_you_were (self_remembered).
     var remembered = flag(flags, 'self_remembered');
@@ -41,7 +42,7 @@
     // mit Vertrauen UND Beweisen -> lebt, gebrochen; sonst ihre eigene Klinge.
     // Damit stimmt der Zustand mit dem überein, was der Spieler tatsächlich
     // gewählt hat, statt es nur zu prognostizieren.
-    var hasProof = flag(flags, 'mole_evidence') || flag(flags, 'three_hands_seen');
+    var hasProof = flag(flags, 'mole_evidence') || flag(flags, 'zeichen_bemerkt');
     var elara;
     if (flag(flags, 'elara_spared')) {
       elara = 'lives';

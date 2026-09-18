@@ -8,6 +8,8 @@ if (window.i18n) {
     'inventory.tier.rare': 'Selten',
     'inventory.tier.legendary': 'Legendär',
     'inventory.material.MAT': 'Eisenbrocken',
+    'inventory.inschrift.ELARAS_KLINGE': 'Nahe am Heft eingraviert: drei Ketten, ineinander verschlungen.',
+    'inventory.inschrift.erkannt': '(Du kennst dieses Zeichen. Es stand auf den Siegeln der geheimen Sitzung.)',
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Seltenheit',
     'inventory.label.power': 'Item-Stärke',
@@ -46,6 +48,8 @@ if (window.i18n) {
     'inventory.tier.rare': 'Rare',
     'inventory.tier.legendary': 'Legendary',
     'inventory.material.MAT': 'Iron Chunk',
+    'inventory.inschrift.ELARAS_KLINGE': 'Engraved near the hilt: three chains, interlocked.',
+    'inventory.inschrift.erkannt': '(You know this sign. It was on the seals of the secret session.)',
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Rarity',
     'inventory.label.power': 'Item Power',
@@ -608,6 +612,22 @@ function initInventoryUI() {
     if (tooltip?.compareBox) tooltip.compareBox.setVisible(false);
   };
 
+  // #156: Inschriften — ein Satz, den man nur liest, wenn man hinsieht.
+  // Nach KEY, nicht als Feld am Stueck: so zeigt auch eine Klinge aus einem
+  // alten Spielstand ihre Gravur.
+  const ITEM_INSCHRIFTEN = { ELARAS_KLINGE: 'inventory.inschrift.ELARAS_KLINGE' };
+
+  /**
+   * Hat der Spieler das Zeichen des Schattenrats schon gesehen (geheime
+   * Sitzung)? Dann erkennt er es auf der Klinge wieder — und das zaehlt im
+   * Finale als "Verrat vorhergesehen" (zeichen_bemerkt, questFinale.js).
+   */
+  const _zeichenBekannt = () => {
+    const qs = window.questSystem;
+    if (!qs || typeof qs.getCompletedQuests !== 'function') return false;
+    return (qs.getCompletedQuests() || []).some((q) => q && q.id === 'council_collusion_reveal');
+  };
+
   const formatItemTooltip = (it, heading) => {
     if (!it) return { title: '', body: '' };
     const bodyLines = [];
@@ -694,6 +714,21 @@ function initInventoryUI() {
     }
     // Issue #36 Phase 2: legacy attackEffects tooltip lines removed — per-ability
     // bonuses now render via the standard affix lines above.
+    // #156: Die Gravur. Wer das Zeichen kennt, erkennt es — und haelt es fest.
+    // Das Flag entsteht hier, weil genau hier gelesen wird: im Inventar wie in
+    // der Truhe (beide nutzen diese Formatierung).
+    const _inschrift = ITEM_INSCHRIFTEN[it.key];
+    if (_inschrift) {
+      bodyLines.push('', _INV_T(_inschrift));
+      if (_zeichenBekannt()) {
+        bodyLines.push(_INV_T('inventory.inschrift.erkannt'));
+        const qs = window.questSystem;
+        if (qs && typeof qs.hasFlag === 'function' && !qs.hasFlag('zeichen_bemerkt')
+            && typeof qs.setFlag === 'function') {
+          qs.setFlag('zeichen_bemerkt');
+        }
+      }
+    }
     return {
       title: getItemDisplayName(it) || it.name || _INV_T('inventory.unknown_item'),
       body: bodyLines.join('\n')

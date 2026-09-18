@@ -1999,7 +1999,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     if (action === 'accept') {
       if (qs && questData) qs.acceptQuest(questData.id);
-      // Feature 063 WP05: elara_second_truth ist jetzt observe (three_hands_seen).
+      // Feature 063 WP05: elara_second_truth ist jetzt observe (erster_riss_gesehen, #156).
       // Statt still auto-zu-completen spielt die Riss-Szene (feuert den observe-
       // Trigger) und schliesst danach ab.
       if (questData && questData.id === 'elara_second_truth') {

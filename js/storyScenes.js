@@ -4,7 +4,7 @@
 // über window.DialogChoice (WP02) + einfache Tweens/Kamera. Story v4 §13.1-13.3.
 //   playCollusionSession  -> geheime Sitzung mit "Zuhören"-Leiste, feuert
 //                            observe collusion_reveal_seen bei Abschluss.
-//   playElaraFirstCrack   -> Elaras erster Riss, feuert observe three_hands_seen.
+//   playElaraFirstCrack   -> Elaras erster Riss, feuert observe erster_riss_gesehen.
 //   playWiedersehen       -> #155: Harren sieht seine Tochter wieder (Ende Akt 2).
 //   playNachtNachDemBruch -> #155: Elara versteckt Dich nach dem Bruch.
 //   playMaulwurfEnthuellung -> #155: Du siehst Elara mit Aldric, das Zeichen am Ring.
@@ -161,7 +161,7 @@
       if (auf.lauf) auf.lauf.abbrechen();
       if (intro && intro.destroy) intro.destroy();
       _choiceOrDone(scene, 'elara_first_crack', function () {
-        _fireObserve('three_hands_seen');             // Trigger am Ende der Szene
+        _fireObserve('erster_riss_gesehen');          // Trigger am Ende der Szene
         if (typeof onDone === 'function') onDone();
       });
     }

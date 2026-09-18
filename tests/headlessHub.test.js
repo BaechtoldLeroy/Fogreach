@@ -194,29 +194,24 @@ test('hub: the_reckoning schaltet den Epilog-Zustand frei (#100)', () => {
 // Quest-Stand. Mitten in der Datei platziert hat er den #84-Test darunter
 // verfaelscht (convoy_blown schlug ploetzlich um). Gleiche Begruendung wie beim
 // #100-Test daneben.
-test('hub: Abschluss von elara_second_truth setzt three_hands_seen (#83)', () => {
-  // Der Flag wird beim ABSCHLUSS gesetzt (completionFlags, questSystem.js:1496),
-  // nicht schon beim Fortschritt. Der Test durchlaeuft deshalb den echten Weg:
-  // annehmen -> Objective erfuellen -> abschliessen. Die Vorgaengerfassung
-  // feuerte nur updateQuestProgress und haette am Fix vorbeigeprueft.
+// #156: Die Blaetter-Enthuellung (three_hands_seen, #83) gibt es nicht mehr.
+// elara_second_truth ist Elaras erster Riss; der Finale-Regler "Verrat
+// vorhergesehen" haengt am Zeichen auf der Klinge (zeichen_bemerkt).
+test('hub: elara_second_truth laesst sich abschliessen, ohne Blaetter-Flag (#156)', () => {
   const res = H.run(`(function () {
     var qs = window.questSystem;
     var id = 'elara_second_truth';
     ['thom_truth', 'elara_ritual'].forEach(function (v) {
       if (qs.QUEST_DEFINITIONS[v]) { qs.acceptQuest(v); qs.completeQuest(v); }
     });
-    var vorher = !!qs.getFlags().three_hands_seen;
     qs.acceptQuest(id);
-    qs.updateQuestProgress('observe', 'three_hands_seen', 1);
+    qs.updateQuestProgress('observe', 'erster_riss_gesehen', 1);
     var fertig = qs.completeQuest(id);
     var flags = qs.getFlags();
-    return { vorher: vorher, fertig: fertig, flag: !!flags.three_hands_seen,
-             regler: window.QuestFinale.computeFinaleState(flags).betrayalForeseen };
+    return { fertig: fertig, alt: !!flags.three_hands_seen };
   })()`);
-  assert.strictEqual(res.vorher, false, 'Flag darf vorher nicht gesetzt sein');
   assert.strictEqual(res.fertig, true, 'Quest liess sich nicht abschliessen: ' + JSON.stringify(res));
-  assert.strictEqual(res.flag, true, 'three_hands_seen wurde beim Abschluss nicht gesetzt');
-  assert.strictEqual(res.regler, true, 'Finale-Regler bleibt false');
+  assert.strictEqual(res.alt, false, 'three_hands_seen wird noch gesetzt');
 });
 test('hub: ein Aktwechsel zieht das Phasen-Overlay sofort nach', async () => {
   // Vorher wurde die Phase EINMAL in create() berechnet. Wechselte der Akt,
