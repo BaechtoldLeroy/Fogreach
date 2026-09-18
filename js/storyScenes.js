@@ -102,6 +102,13 @@
       '(Du bleibst im Schatten und hörst zu.)'
     ], cx, cy);
     var intro = auf.text;
+    // #156: Das Zeichen auf den Siegeln — hier lernt der Spieler es kennen.
+    var zeichenBild = window.Zeichen ? window.Zeichen.bild(scene, cx, cy - 150, 64) : null;
+    if (zeichenBild) {
+      zeichenBild.setDepth(1551).setScrollFactor(0).setAlpha(0);
+      if (scene.tweens) scene.tweens.add({ targets: zeichenBild, alpha: 1, duration: 900 });
+      else zeichenBild.setAlpha(1);
+    }
 
     // Zuhören-Leiste
     var barW = 360, barH = 16;
@@ -116,7 +123,7 @@
     var progress = { v: 0 };
     function cleanup() {
       if (auf.lauf) auf.lauf.abbrechen();
-      [intro, frame, fill, label].forEach(function (o) { if (o && o.destroy) o.destroy(); });
+      [intro, frame, fill, label, zeichenBild].forEach(function (o) { if (o && o.destroy) o.destroy(); });
     }
     function finish() {
       if (done) return;
@@ -171,10 +178,17 @@
    * Zeilen aufbauen, Lesepause, dann die Auswahl aus storyDialog.byScene.
    * Die Lesepause laeuft erst, wenn der Text fertig geschrieben ist.
    */
-  function _szeneSpielen(scene, zeilen, sceneKey, onDone) {
+  function _szeneSpielen(scene, zeilen, sceneKey, onDone, mitZeichen) {
     var cam = scene.cameras.main;
     var cx = cam.width / 2, cy = cam.height / 2 - 20;
     var weiter = false;
+    // #156: Szenen, in denen das Zeichen vorkommt, zeigen es auch.
+    var zeichenBild = (mitZeichen && window.Zeichen) ? window.Zeichen.bild(scene, cx, cy - 170, 64) : null;
+    if (zeichenBild) {
+      zeichenBild.setDepth(1551).setScrollFactor(0).setAlpha(0);
+      if (scene.tweens) scene.tweens.add({ targets: zeichenBild, alpha: 1, duration: 900, delay: 600 });
+      else zeichenBild.setAlpha(1);
+    }
     var auf = _zeilenAufbauen(scene, zeilen, cx, cy, function () {
       if (scene.time && scene.time.delayedCall) scene.time.delayedCall(LESEPAUSE_MS, step);
       else step();
@@ -185,6 +199,7 @@
       weiter = true;
       if (auf.lauf) auf.lauf.abbrechen();
       if (intro && intro.destroy) intro.destroy();
+      if (zeichenBild && zeichenBild.destroy) zeichenBild.destroy();
       _choiceOrDone(scene, sceneKey, function () {
         if (typeof onDone === 'function') onDone();
       });
@@ -224,7 +239,7 @@
       'ALDRIC: Er vertraut Dir. Gut. Sorg dafür, dass er hinabsteigt.',
       'ELARA: Er wird gehen. Er hat niemanden mehr ausser mir.',
       '(Als sie den Zettel übergibt, fällt Licht auf ihre Hand. Ein Ring: drei Ketten, ineinander verschlungen. Dasselbe Zeichen wie auf den Siegeln der geheimen Sitzung. Wie auf dem Bündel, das Du ihr gebracht hast.)'
-    ], 'maulwurf_reveal', onDone);
+    ], 'maulwurf_reveal', onDone, true);
   }
 
   window.storyScenes = {

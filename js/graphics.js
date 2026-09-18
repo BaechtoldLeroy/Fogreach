@@ -1454,6 +1454,14 @@ function createItemGraphics() {
   const gBasis = g;
   const SIZE = 48;
 
+  // #156: Das Zeichen des Schattenrats als Symbol (das versiegelte Buendel).
+  // Gezeichnet in js/zeichen.js — an EINER Stelle, damit Siegel, Buendel,
+  // Klinge und Ring gleich aussehen. Hier nur als Textur angelegt.
+  g.clear();
+  if (window.Zeichen && typeof window.Zeichen.zeichnen === 'function') window.Zeichen.zeichnen(g);
+  g.generateTexture('zeichen_schattenrat', 64, 64);
+  g.clear();
+
   // --- Bausteine fuer die Ausruestungs-Symbole (#125) -----------------------
   //
   // Vierzehn Amulette teilten sich EIN Bild, dazu je drei Helme, Ruestungen und

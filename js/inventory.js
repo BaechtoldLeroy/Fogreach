@@ -750,6 +750,20 @@ function initInventoryUI() {
     box.body.setText(info.body || '');
     box.body.setStyle({ color: '#ffffff' });
     layoutTooltipBox(box);
+    // #156: Stuecke mit Inschrift zeigen das Zeichen selbst, oben rechts im
+    // Kasten. Dieselbe Grafik wie auf den Siegeln und am Ring (js/zeichen.js).
+    const _mitZeichen = !!ITEM_INSCHRIFTEN[item.key];
+    if (_mitZeichen && !box.zeichen && window.Zeichen) {
+      box.zeichen = window.Zeichen.bild(scene, 0, 0, 30);
+      if (box.zeichen) {
+        if (typeof box.zeichen.setScrollFactor === 'function') box.zeichen.setScrollFactor(0);
+        box.add(box.zeichen);
+      }
+    }
+    if (box.zeichen) {
+      box.zeichen.setVisible(_mitZeichen);
+      box.zeichen.setPosition(box._width - 22, 20);
+    }
     return true;
   };
 

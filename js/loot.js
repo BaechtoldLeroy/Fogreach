@@ -309,7 +309,9 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       { target: 'council_document',  name: _LOOT_T('loot.quest_item.COUNCIL_DOCUMENT'),  nameKey: 'loot.quest_item.COUNCIL_DOCUMENT',  key: 'COUNCIL_DOCUMENT',  tint: 0xcc88dd, chance: 0.20 },
       // #155/#156: Elaras Buendel. Erhoehte Chance wie beim Ratsdokument — ein
       // Botengang, den man ewig sucht, ist keiner.
-      { target: 'sealed_bundle',     name: _LOOT_T('loot.quest_item.SEALED_BUNDLE'),     nameKey: 'loot.quest_item.SEALED_BUNDLE',     key: 'SEALED_BUNDLE',     tint: 0x6e5a82, chance: 0.25 }
+      // Das Buendel liegt mit dem Zeichen auf dem Siegel da (#156) — der
+      // Spieler sieht es, bevor er weiss, was es bedeutet.
+      { target: 'sealed_bundle',     name: _LOOT_T('loot.quest_item.SEALED_BUNDLE'),     nameKey: 'loot.quest_item.SEALED_BUNDLE',     key: 'SEALED_BUNDLE',     tint: 0xffffff, chance: 0.25, iconKey: 'zeichen_schattenrat' }
     ];
 
     for (var qi = 0; qi < questItemDefs.length; qi++) {
@@ -325,10 +327,14 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
           key: qiDef.key,
           name: qiDef.name,
           nameKey: qiDef.nameKey,
-          iconKey: 'itMat',
+          iconKey: qiDef.iconKey || 'itMat',
           isQuestItem: true,
           questTarget: qiDef.target
         };
+        // Eigenes Symbol (#156): die Textur entsteht bei Bedarf in dieser Szene.
+        if (qiDef.iconKey && window.Zeichen && qiDef.iconKey === window.Zeichen.KEY) {
+          window.Zeichen.sicherstellen(scene || (lootGroup && lootGroup.scene));
+        }
         // Refs #22: ensure quest items spawn on walkable tiles. If the
         // enemy died inside/atop a non-walkable tile, nudge the spawn to
         // an accessible point so the fetch quest stays completable.
@@ -339,7 +345,9 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
           }
         }
         var questLoot = lootGroup.create(x, y, questItem.iconKey || 'itMat');
-        questLoot.setDisplaySize(28, 22);
+        // Das Zeichen ist quadratisch; gestaucht auf 28x22 saehe es wie ein Ei aus.
+        if (qiDef.iconKey) questLoot.setDisplaySize(26, 26);
+        else questLoot.setDisplaySize(28, 22);
         questLoot.setData('item', questItem);
         questLoot.setData('questItem', true);
         questLoot.setDepth(80);

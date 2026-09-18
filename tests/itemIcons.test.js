@@ -41,7 +41,13 @@ function basen() {
  *  genau wie in Phaser (generateTexture ueberschreibt). */
 function symbolKarte() {
   const karte = new Map();
-  for (const s of sammleSymbole()) karte.set(s.key, s);
+  for (const s of sammleSymbole()) {
+    // Das Zeichen des Schattenrats (#156) ist kein Ausruestungssymbol: es wird
+    // aus Linien in js/zeichen.js gezeichnet, nicht aus Flaechen, und hat
+    // eigene Tests (zeichenKlinge). Hier ohne window.Zeichen bliebe es leer.
+    if (s.key === 'zeichen_schattenrat') continue;
+    karte.set(s.key, s);
+  }
   return karte;
 }
 

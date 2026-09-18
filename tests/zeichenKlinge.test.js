@@ -73,3 +73,54 @@ test('Andere Stuecke tragen keine Gravur', () => {
   })()`);
   assert.ok(!/drei Ketten|eingraviert/.test(r), 'ein gewoehnliches Stueck traegt die Gravur');
 });
+
+// --- Das Zeichen als Grafik (js/zeichen.js) ---------------------------------
+
+test('Das Zeichen ist eine Grafik, an einer Stelle gezeichnet', () => {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var key = window.Zeichen && window.Zeichen.sicherstellen(sc);
+    if (!key) return { fehler: 'window.Zeichen fehlt' };
+    var src = sc.textures.get(key).getSourceImage();
+    return { key: key, w: src.width, h: src.height };
+  })()`);
+  assert.ok(!r.fehler, r.fehler);
+  assert.strictEqual(r.key, 'zeichen_schattenrat');
+  assert.strictEqual(r.w, 64);
+  assert.strictEqual(r.h, 64);
+});
+
+test('Das Buendel liegt mit dem Zeichen auf dem Siegel am Boden', () => {
+  stand({ resistance_fetch_01: { status: 'active', objectives: [{ type: 'fetch', target: 'sealed_bundle', current: 0, required: 1 }] } });
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    lootGroup.clear(true, true);
+    var echt = Math.random;
+    Math.random = function () { return 0; };       // jeder Wurf gelingt, auch der Quest-Fund
+    try { spawnLoot.call(sc, player.x + 40, player.y, null, null); }
+    finally { Math.random = echt; }
+    var b = lootGroup.getChildren().filter(function (s) {
+      var it = s.getData && s.getData('item');
+      return it && it.key === 'SEALED_BUNDLE';
+    })[0];
+    return b ? { textur: b.texture.key } : { fehler: 'kein Buendel gefallen' };
+  })()`);
+  assert.ok(!r.fehler, r.fehler);
+  assert.strictEqual(r.textur, 'zeichen_schattenrat', 'das Buendel liegt ohne Zeichen da');
+});
+
+test('Die Enthuellung zeigt das Zeichen am Ring als Bild', () => {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    window.storyScenes.playMaulwurfEnthuellung(sc, function () {});
+    // Nur die Szenen-Ebene zaehlen: das Buendel aus dem Test davor liegt mit
+    // derselben Textur am Boden und liess eine fehlende Szene gruen aussehen.
+    var da = sc.children.list.some(function (o) {
+      return o.texture && o.texture.key === 'zeichen_schattenrat' && o.active && o.depth >= 1550 && o.depth < 1560;
+    });
+    sc.children.list.filter(function (o) { return o.depth >= 1550 && o.depth < 1560; })
+      .forEach(function (o) { try { o.destroy(); } catch (e) {} });
+    return da;
+  })()`);
+  assert.strictEqual(r, true, 'die Enthuellung zeigt das Zeichen nicht');
+});
