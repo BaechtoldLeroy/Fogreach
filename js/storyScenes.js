@@ -2,8 +2,10 @@
 //
 // Drei Beats als Overlay-Inszenierungen im bestehenden Szenen-Kontext, gerendert
 // über window.DialogChoice (WP02) + einfache Tweens/Kamera. Story v4 §13.1-13.3.
-//   playCollusionSession  -> geheime Sitzung mit "Zuhören"-Leiste, feuert
-//                            observe collusion_reveal_seen bei Abschluss.
+//   playOeffentlicheSitzung -> #159: die Ratssitzung vor den Buergern (Ratssaal),
+//                            feuert observe oeffentliche_sitzung.
+//   playGeheimeSitzung    -> #159: die geheime Sitzung, belauscht im Dungeon
+//                            (Spionage in der Ratskammer), mit dem Zeichen.
 //   playElaraFirstCrack   -> Elaras erster Riss, feuert observe erster_riss_gesehen.
 //   playWiedersehen       -> #155: Harren sieht seine Tochter wieder (Ende Akt 2).
 //   playNachtNachDemBruch -> #155: Elara versteckt Dich nach dem Bruch.
@@ -88,65 +90,99 @@
     }
   }
 
-  // --- 13.1 Geheime Sitzung mit "Zuhören"-Fortschrittsleiste -----------------
-  function playCollusionSession(scene, onDone) {
+  // --- #159 Die oeffentliche Ratssitzung (Ratssaal) --------------------------
+  // Die Scheindemokratie ZEIGEN statt erklaeren (Story-Bibel v5): drei Pulte,
+  // drei Farben, die Buerger rufen durcheinander — es sieht aus wie eine Wahl.
+  // Direkt danach belauscht der Spieler dieselben drei in der Nacht.
+  function _ratssaal(scene, cx, cy) {
+    var teile = [];
     var cam = scene.cameras.main;
-    var cx = cam.width / 2;
-    var cy = cam.height / 2 - 40;
-    var done = false;
-
-    var auf = _zeilenAufbauen(scene, [
-      // #156: Hier lernt der Spieler das Zeichen des Schattenrats kennen.
-      '(Die drei legen die Farben ab. Ein Blatt. Drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)',
-      'ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.',
-      '(Du bleibst im Schatten und hörst zu.)'
-    ], cx, cy);
-    var intro = auf.text;
-    // #156: Das Zeichen auf den Siegeln — hier lernt der Spieler es kennen.
-    var zeichenBild = window.Zeichen ? window.Zeichen.bild(scene, cx, cy - 150, 64) : null;
-    if (zeichenBild) {
-      zeichenBild.setDepth(1551).setScrollFactor(0).setAlpha(0);
-      if (scene.tweens) scene.tweens.add({ targets: zeichenBild, alpha: 1, duration: 900 });
-      else zeichenBild.setAlpha(1);
+    var w = cam.width, h = cam.height;
+    var g = scene.add.graphics().setDepth(1548).setScrollFactor(0);
+    g.fillStyle(0x0c0b10, 0.9); g.fillRect(0, 0, w, h);
+    // Drei Pulte in den Farben der Fraktionen, oben im Bild.
+    var farben = [0x3a5a9a, 0xc8b26a, 0x9a3a3a];
+    var namen = ['MAGISTRAT', 'KLERUS', 'GARDE'];
+    for (var i = 0; i < 3; i++) {
+      var px = w / 2 + (i - 1) * 170;
+      g.fillStyle(farben[i], 0.9); g.fillRect(px - 50, 40, 100, 58);
+      g.fillStyle(0x2a2420, 1); g.fillRect(px - 60, 98, 120, 16);
+      var t = scene.add.text(px, 69, namen[i], {
+        fontFamily: 'monospace', fontSize: 12, color: '#f0ead8'
+      }).setOrigin(0.5).setDepth(1549).setScrollFactor(0);
+      teile.push(t);
     }
-
-    // Zuhören-Leiste
-    var barW = 360, barH = 16;
-    var barX = cx - barW / 2, barY = cy + 110;
-    var frame = scene.add.graphics().setDepth(1551).setScrollFactor(0);
-    frame.lineStyle(2, 0x8a8270, 0.9).strokeRect(barX, barY, barW, barH);
-    var fill = scene.add.graphics().setDepth(1552).setScrollFactor(0);
-    var label = scene.add.text(cx, barY - 18, 'Zuhören...', {
-      fontFamily: 'monospace', fontSize: 13, color: '#b9b090'
-    }).setOrigin(0.5, 0.5).setDepth(1552).setScrollFactor(0);
-
-    var progress = { v: 0 };
-    function cleanup() {
-      if (auf.lauf) auf.lauf.abbrechen();
-      [intro, frame, fill, label, zeichenBild].forEach(function (o) { if (o && o.destroy) o.destroy(); });
+    // Die Buerger: eine Reihe Koepfe am unteren Rand.
+    g.fillStyle(0x1e1c24, 1);
+    for (var k = 0; k < 22; k++) {
+      var bx = 20 + k * (w - 40) / 21, by = h - 34 + (k % 3) * 6;
+      g.fillCircle(bx, by, 14); g.fillRect(bx - 16, by + 10, 32, 30);
     }
-    function finish() {
-      if (done) return;
-      done = true;
-      _fireObserve('collusion_reveal_seen');          // echter Trigger NUR bei Abschluss
-      cleanup();
-      // Harrens Doppelspiel-Weiche als Auswahl, dann onDone.
-      _choiceOrDone(scene, 'collusion_session', function () {
+    teile.push(g);
+    return teile;
+  }
+
+  function playOeffentlicheSitzung(scene, onDone) {
+    _szeneSpielen(scene, [
+      '(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)',
+      'MAGISTRAT: Die Abgaben bleiben. Ordnung kostet.',
+      'KLERUS: Ordnung? Die Stadt verliert ihre Seele, und der Magistrat zählt Münzen!',
+      'GARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.',
+      '(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)'
+    ], 'oeffentliche_sitzung', function () {
+      _fireObserve('oeffentliche_sitzung');
+      if (typeof onDone === 'function') onDone();
+    }, false, _ratssaal);
+  }
+
+  // --- #159 Die geheime Sitzung, belauscht in der Ratskammer ----------------
+  // Laeuft im Dungeon, wenn die Abhoerzone der Ratskammer abgehoert ist
+  // (espionageSystem). Dieselben drei, dieselbe Nacht — und in zwei Saetzen
+  // einig. Die Dialoge halten die Spieluhr an, die Wachen warten also.
+  function playGeheimeSitzung(scene, onDone) {
+    var ES = window.EventSystem;
+    if (!scene || !ES || typeof ES.showEventChoiceDialog !== 'function') {
+      if (typeof onDone === 'function') onDone();
+      return false;
+    }
+    var qs = window.questSystem;
+    var flag = function (n) { return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag(n)); };
+    // #145: Die Siegel-Entscheidung aus Akt 1 kommt hier zurueck.
+    var siegel = flag('verification_sealed')
+      ? 'Eines der drei Siegel kennst Du. Du hast es selbst unter ein Dokument gesetzt, damals, als es eine Formalie war.'
+      : flag('verification_refused')
+        ? 'Unter dem Siegel des Magistrats steht Brankas Zeichen. Das Dokument, das Du nicht siegeln wolltest. Geändert hat es nichts.'
+        : null;
+    var seiten = [
+      '(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)',
+      'ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.'
+    ];
+    if (siegel) seiten.push(siegel);
+    seiten.push('(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)');
+
+    // Das Zeichen ueber dem ersten Blatt: hier lernt der Spieler es kennen (#156).
+    var bild = null;
+    try {
+      if (window.Zeichen && scene.cameras && scene.cameras.main) {
+        var cam = scene.cameras.main;
+        bild = window.Zeichen.bild(scene, cam.width / 2, cam.height / 2 - 150, 64);
+        if (bild) bild.setDepth(2600).setScrollFactor(0);
+      }
+    } catch (e) { bild = null; }
+
+    var i = 0;
+    var naechste = function () {
+      if (i === 1 && bild) { try { bild.destroy(); } catch (e) {} bild = null; }
+      if (i >= seiten.length) {
+        _fireObserve('collusion_reveal_seen');
         if (typeof onDone === 'function') onDone();
-      });
-    }
-
-    var tween = scene.tweens.add({
-      targets: progress, v: 1, duration: 4200, ease: 'Linear',
-      onUpdate: function () {
-        fill.clear();
-        fill.fillStyle(0xc8b26a, 0.95).fillRect(barX + 2, barY + 2, (barW - 4) * progress.v, barH - 4);
-      },
-      onComplete: finish
-    });
-
-    // Defensive: falls tweens fehlen, direkt abschliessen.
-    if (!tween) finish();
+        return;
+      }
+      var text = seiten[i++];
+      ES.showEventChoiceDialog(scene, text, [{ label: 'Weiter', callback: naechste }]);
+    };
+    naechste();
+    return true;
   }
 
   // --- 13.3 Elaras erster Riss -----------------------------------------------
@@ -178,10 +214,12 @@
    * Zeilen aufbauen, Lesepause, dann die Auswahl aus storyDialog.byScene.
    * Die Lesepause laeuft erst, wenn der Text fertig geschrieben ist.
    */
-  function _szeneSpielen(scene, zeilen, sceneKey, onDone, mitZeichen) {
+  function _szeneSpielen(scene, zeilen, sceneKey, onDone, mitZeichen, kulisse) {
     var cam = scene.cameras.main;
     var cx = cam.width / 2, cy = cam.height / 2 - 20;
     var weiter = false;
+    // #159: optional ein gezeichneter Ort hinter dem Text (der Ratssaal).
+    var kulissenTeile = (typeof kulisse === 'function') ? (kulisse(scene, cx, cy) || []) : [];
     // #156: Szenen, in denen das Zeichen vorkommt, zeigen es auch.
     var zeichenBild = (mitZeichen && window.Zeichen) ? window.Zeichen.bild(scene, cx, cy - 170, 64) : null;
     if (zeichenBild) {
@@ -200,6 +238,7 @@
       if (auf.lauf) auf.lauf.abbrechen();
       if (intro && intro.destroy) intro.destroy();
       if (zeichenBild && zeichenBild.destroy) zeichenBild.destroy();
+      kulissenTeile.forEach(function (o) { if (o && o.destroy) o.destroy(); });
       _choiceOrDone(scene, sceneKey, function () {
         if (typeof onDone === 'function') onDone();
       });
@@ -243,7 +282,8 @@
   }
 
   window.storyScenes = {
-    playCollusionSession: playCollusionSession,
+    playOeffentlicheSitzung: playOeffentlicheSitzung,
+    playGeheimeSitzung: playGeheimeSitzung,
     playElaraFirstCrack: playElaraFirstCrack,
     playWiedersehen: playWiedersehen,
     playNachtNachDemBruch: playNachtNachDemBruch,

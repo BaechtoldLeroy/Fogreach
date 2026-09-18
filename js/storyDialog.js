@@ -135,11 +135,12 @@
 
   // Szenen-gebundene Auswahlen (von storyScenes/WP04 bzw. dem Finale/WP05 genutzt).
   var byScene = {
-    collusion_session: {
-      prompt: 'HARREN: Jetzt hast Du es gesehen. Ein Gesicht, drei Masken. Was tust Du?',
+    // #159: nach der oeffentlichen Sitzung, beim Hinausgehen.
+    oeffentliche_sitzung: {
+      prompt: 'HARREN: (leise, beim Hinausgehen) Heute Nacht treffen sie sich noch einmal. Unten, in der Ratskammer. Ohne Publikum.',
       choices: [
-        { label: 'Dann breche ich mit ihnen. Jetzt.', response: 'HARREN: Nein. Ein Flüchtiger sieht nichts mehr. Ein Handwerker, der weiter aus und ein geht, sieht alles.' },
-        { label: 'Was soll ich tun?', response: 'HARREN: Bleib, wo Du bist. Räum weiter für sie, und räum heimlich für uns. Es ist gefährlicher. Es ist auch das Einzige, was nützt.' }
+        { label: 'Und dann?', response: 'HARREN: Dann hörst Du zu, was sie sagen, wenn keiner zusieht. Zieh die Uniform der Wache an. Bleib im Schatten.' },
+        { label: 'Warum ich?', response: 'HARREN: Weil man Dich dort unten kennt. Ein Handwerker, der Akten trägt, fällt keinem auf.' }
       ]
     },
     elara_first_crack: {

@@ -181,11 +181,15 @@
     council_collusion_reveal: {
       id: 'council_collusion_reveal',
       title: 'Die geheime Sitzung',
-      description: 'Folge Harren zur geheimen Sitzung der drei Ratsfraktionen.',
+      description: 'Sieh Dir die öffentliche Ratssitzung an. Dann belausche die geheime Sitzung in der Ratskammer unter dem Rathaus.',
       npcId: 'harren',
-      type: 'dialogue',
+      // #159/#147: zwei echte Schritte statt Abhaken beim Annehmen — erst die
+      // oeffentliche Sitzung (Hub, storyScenes.playOeffentlicheSitzung), dann
+      // die geheime (Spionage in der Ratskammer, storyScenes.playGeheimeSitzung).
+      type: 'observe',
       chain: 3,
       objectives: [
+        { type: 'observe', target: 'oeffentliche_sitzung', current: 0, required: 1 },
         { type: 'observe', target: 'collusion_reveal_seen', current: 0, required: 1 }
       ],
       rewards: { xp: 150, fragments: 1 },
@@ -198,8 +202,8 @@
       // Scope: Rückgrat, keine Szenen). Ein Wechsel auf 'observe' ohne diese
       // Szene machte Akt 2 unerreichbar.
       advanceAct: 2,
-      dialogueOffer: 'Komm mit. Kein Wort, keine Klinge. Was du gleich siehst, kannst du nicht mehr vergessen, auch nicht, wenn der Nebel es versucht.',
-      dialogueProgress: 'Folge mir. Es ist Zeit.',
+      dialogueOffer: 'Heute tagt der Rat öffentlich, im Ratssaal. Magistrat, Klerus, Garde, vor allen Bürgern. Geh hin und hör zu, wie sie streiten. Und dann folge ihnen in der Nacht, wenn sie glauben, dass keiner zusieht.',
+      dialogueProgress: 'Die Ratskammer liegt unten im Keller. Zieh die Uniform der Wache an, bleib im Schatten und hör zu, was sie sagen, wenn keiner zusieht.',
       dialogueComplete: 'Jetzt hast du es gesehen. Ein Gesicht, drei Masken. Du hast für jede gearbeitet. Du könntest fliehen — aber ein Handwerker, der weiter im Rathaus aus und ein geht, sieht Dinge, die ein Flüchtiger nie sieht. Bleib, wo du bist. Räum weiter für sie, und räum heimlich für uns. Es ist gefährlicher. Es ist auch das Einzige, was nützt.'
     },
 
@@ -791,7 +795,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.widerstand_proof.title': 'Evidence from the Ritual Chamber',
       'quest.widerstand_proof.description': 'Find a hidden Council document in a ritual chamber in the Rathauskeller.',
       'quest.council_collusion_reveal.title': 'The Secret Meeting',
-      'quest.council_collusion_reveal.description': 'Follow Harren to the secret meeting of the three Council factions.',
+      'quest.council_collusion_reveal.description': 'Watch the public council session. Then eavesdrop on the secret session in the council chamber beneath the town hall.',
       'quest.mara_contact.title': 'The Scout',
       'quest.mara_contact.description': 'Scout three Council cellar rooms for Mara.',
       'quest.elara_meeting.title': "Elara's Secret",
@@ -848,8 +852,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.widerstand_proof.dialogueProgress': 'Find the ritual chamber. Three rooms deeper. The document is small, but the seal upon it will take your breath away.',
       'quest.widerstand_proof.dialogueComplete': 'Three seals. One signature. Magistrate, Clergy, Guard — in public they pretend to be rivals. Behind closed doors they agree. Go to Harren. He has been waiting for the moment you would understand.',
 
-      'quest.council_collusion_reveal.dialogueOffer': 'Come with me. You must see something. (Climax scene ships in WP03 — this 1-page placeholder keeps Q6 playable in WP02; full 4-page reveal arrives with the next work package.)',
-      'quest.council_collusion_reveal.dialogueProgress': 'Follow me. It is time.',
+      'quest.council_collusion_reveal.dialogueOffer': 'Today the council meets in public, in the council hall. Magistrate, Clergy, Guard, before all the citizens. Go and listen to them argue. And then follow them in the night, when they think nobody is watching.',
+      'quest.council_collusion_reveal.dialogueProgress': 'The council chamber lies down in the cellar. Put on the guard uniform, stay in the shadows and listen to what they say when nobody is watching.',
       'quest.council_collusion_reveal.dialogueComplete': 'You have seen it now. The fog was never the weather — it was a story. You have already worked for each of the three masks, and it is only a single face. Act 2 begins here — in the same city, beneath the same masks.',
 
       // === Feature 050 side-dialogue keys (consumed by WP03) ===

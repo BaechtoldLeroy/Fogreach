@@ -470,6 +470,11 @@
                     && typeof window.questSystem.updateQuestProgress === 'function') {
                   try { window.questSystem.updateQuestProgress('observe', z.questTarget, 1); } catch (_) {}
                 }
+                // #159: Die geheime Sitzung ist belauscht — sie spielt jetzt.
+                if (z.questTarget === 'collusion_reveal_seen' && typeof window !== 'undefined'
+                    && window.storyScenes && typeof window.storyScenes.playGeheimeSitzung === 'function') {
+                  try { window.storyScenes.playGeheimeSitzung(scene); } catch (_) {}
+                }
                 // #158: Am Konvoi faellt eine Entscheidung (Bibel v5, Abschnitt 9).
                 if (z.questTarget === 'convoy_intel' && typeof window !== 'undefined'
                     && window.Finale && typeof window.Finale.konvoi === 'function') {

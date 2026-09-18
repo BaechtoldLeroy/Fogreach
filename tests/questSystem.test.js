@@ -282,7 +282,8 @@ test('feature 050: Q6 completion advances storySystem to act index 2', () => {
   qs.updateQuestProgress('fetch', 'council_document', 1);
   qs.completeQuest('widerstand_proof');
   qs.acceptQuest('council_collusion_reveal');
-  qs.updateQuestProgress('dialogue', 'collusion_reveal_seen', 1);
+  qs.updateQuestProgress('observe', 'oeffentliche_sitzung', 1);
+  qs.updateQuestProgress('observe', 'collusion_reveal_seen', 1);
   qs.completeQuest('council_collusion_reveal');
   assert.strictEqual(advancedTo, 2, 'Q6 must call advanceToAct(2)');
 });
@@ -591,9 +592,16 @@ test('Q6 reveal: acceptQuest + completeQuest completes it and advances to Act 2'
   loadGameModule('js/questSystem.js');
   const qs = globalThis.window.questSystem;
 
-  // finalize() sequence: accept (activates + auto-completes the dialogue
-  // objective for a type:'dialogue' quest), then complete.
+  // #159/#147: kein Abhaken mehr beim Annehmen — erst die oeffentliche
+  // Sitzung (Hub), dann die geheime (Spionage in der Ratskammer).
   assert.strictEqual(qs.acceptQuest('council_collusion_reveal'), true);
+  assert.strictEqual(qs.completeQuest('council_collusion_reveal'), false,
+    'die Sitzung hakt sich beim Annehmen ab');
+  qs.updateQuestProgress('observe', 'collusion_reveal_seen', 1);
+  assert.strictEqual(qs.isQuestReadyToComplete('council_collusion_reveal'), false,
+    'die geheime Sitzung zaehlt vor der oeffentlichen');
+  qs.updateQuestProgress('observe', 'oeffentliche_sitzung', 1);
+  qs.updateQuestProgress('observe', 'collusion_reveal_seen', 1);
   assert.strictEqual(qs.completeQuest('council_collusion_reveal'), true);
   assert.ok(qs.getCompletedQuests().some((q) => q.id === 'council_collusion_reveal'),
     'Q6 should be completed');
@@ -630,7 +638,7 @@ function systemWithAdvanceSpy() {
 test('062 T011: die vier Akt-Trigger feuern advanceToAct(1..4) beim Abschluss', () => {
   const cases = [
     { id: 'harren_daughter_investigation', fulfil: (qs) => qs.updateQuestProgress('fetch', 'journal_fragment', 1), act: 1 },
-    { id: 'council_collusion_reveal', fulfil: () => {}, act: 2 }, // dialogue: Auto-Complete
+    { id: 'council_collusion_reveal', fulfil: (qs) => { qs.updateQuestProgress('observe', 'oeffentliche_sitzung', 1); qs.updateQuestProgress('observe', 'collusion_reveal_seen', 1); }, act: 2 },
     { id: 'mara_warning', fulfil: (qs) => qs.onBossKilled('kettenmeister'), act: 3 },
     { id: 'bruch_confrontation', fulfil: (qs) => qs.updateQuestProgress('kill', 'elite_enemy', 99), act: 4 }
   ];
@@ -781,7 +789,8 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
       'sealed_bundle']),                                        // #155
     observe: new Set(['convoy_intel', 'archive_record', 'informant_id',
       'escort_route',                                           // WP05 (062)
-      'collusion_reveal_seen', 'erster_riss_gesehen'])          // 063 WP04 / #156: Szenen-Trigger
+      'collusion_reveal_seen', 'erster_riss_gesehen',
+      'oeffentliche_sitzung'])                                  // #159: Ratssaal (Hub-Szene)          // 063 WP04 / #156: Szenen-Trigger
   };
   Object.keys(D).forEach((id) => {
     (D[id].objectives || []).forEach((o) => {
@@ -805,7 +814,9 @@ test('063 WP04: szenengebundene Reveals sind observe-verdrahtet (kein Platzhalte
     elara_second_truth: 'erster_riss_gesehen'
   };
   Object.keys(expect).forEach((id) => {
-    const obs = (D[id].objectives || []).find((o) => o.type === 'observe');
+    // #159: die Sitzung hat zwei observe-Ziele (oeffentlich, geheim) — gesucht
+    // wird das Reveal-Ziel selbst.
+    const obs = (D[id].objectives || []).find((o) => o.type === 'observe' && o.target === expect[id]);
     assert.ok(obs, id + ' muss ein observe-Objective haben');
     assert.strictEqual(obs.target, expect[id], id + ' observe-Ziel ' + expect[id]);
     const types = (D[id].objectives || []).map((o) => o.type);

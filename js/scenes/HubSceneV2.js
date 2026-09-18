@@ -1230,27 +1230,18 @@ class HubSceneV2 extends Phaser.Scene {
     // (turnin), bypass the standard _showDialoguePages flow and invoke
     // the dedicated 4-page reveal in _showCollusionReveal(). Returns
     // early — the reveal method handles completion + completeQuest call.
-    if (questData && questData.id === 'council_collusion_reveal'
-        && (questMode === 'offer' || questMode === 'turnin' || questMode === 'progress')) {
-      // Feature 063: Die Sitzung wird jetzt GESPIELT statt nur erzählt — erst
-      // die "Zuhören"-Fortschrittsleiste (feuert observe collusion_reveal_seen),
-      // danach die bestehende Reveal-Prosa ab Seite 2. Harrens "Komm mit"
-      // (Seite 1) entfällt dann, weil die Szene Dich schon dort hat.
-      // Bricht der Spieler die Szene ab, greift beim nächsten Gespräch der
-      // unveränderte Reveal-Pfad (dessen finalize den Trigger ebenfalls feuert).
-      if (!this._collusionScenePlayed
-          && window.storyScenes && typeof window.storyScenes.playCollusionSession === 'function') {
-        this._collusionScenePlayed = true;
-        const selfCS = this;
-        window.storyScenes.playCollusionSession(this, function () {
-          // Index 2 = die Entscheidungsseite. Sie trägt die Sitzungs-Prosa
-          // ohnehin im Text, deshalb entfallen "Komm mit" (0) und die separate
-          // Beschreibungsseite (1) — sonst läse man die Sitzung dreimal.
-          selfCS._showCollusionReveal(npcData, questData, 2);
-        });
-        return;
-      }
-      this._showCollusionReveal(npcData, questData);
+    // #159: Die geheime Sitzung wird im Dungeon belauscht (Ratskammer). Harren
+    // hoert bei der Abgabe, was Du gesehen hast — ab der Entscheidungsseite (2),
+    // die Sitzung selbst hat der Spieler unten schon erlebt.
+    if (questData && questData.id === 'council_collusion_reveal' && questMode === 'turnin') {
+      this._showCollusionReveal(npcData, questData, 2);
+      return;
+    }
+    // Noch nicht bei der oeffentlichen Sitzung gewesen (z. B. abgebrochen):
+    // Harren schickt Dich hin.
+    if (questData && questData.id === 'council_collusion_reveal' && questMode === 'progress'
+        && !this._oeffentlicheSitzungGesehen()) {
+      this._oeffentlicheSitzungSpielen();
       return;
     }
 
@@ -1994,6 +1985,12 @@ class HubSceneV2 extends Phaser.Scene {
 
     if (action === 'accept') {
       if (qs && questData) qs.acceptQuest(questData.id);
+      // #159: Nach dem Annehmen geht es gleich in den Ratssaal.
+      if (questData && questData.id === 'council_collusion_reveal') {
+        this._closeDialog(keyClosers);
+        this._oeffentlicheSitzungSpielen();
+        return;
+      }
       // Feature 063 WP05: elara_second_truth ist jetzt observe (erster_riss_gesehen, #156).
       // Statt still auto-zu-completen spielt die Riss-Szene (feuert den observe-
       // Trigger) und schliesst danach ab.
@@ -3964,6 +3961,28 @@ class HubSceneV2 extends Phaser.Scene {
   // (storyScenes.playCollusionSession) wird mit 2 eingestiegen — Seite 0
   // ("Komm mit") und Seite 1 (Sitzungs-Beschreibung) entfallen dann, weil die
   // Szene beides schon geliefert hat. Ohne Argument: normal ab 0.
+  // #159: Die oeffentliche Ratssitzung (Ratssaal). Feuert observe
+  // oeffentliche_sitzung; danach liegt die Ratskammer im naechsten Lauf.
+  _oeffentlicheSitzungGesehen() {
+    const qs = window.questSystem;
+    const aktiv = (qs && typeof qs.getActiveQuests === 'function') ? qs.getActiveQuests() : [];
+    const q = aktiv.filter((x) => x && x.id === 'council_collusion_reveal')[0];
+    const o = q && (q.objectives || []).filter((x) => x.target === 'oeffentliche_sitzung')[0];
+    return !!(o && (o.current || 0) >= (o.required || 1));
+  }
+
+  _oeffentlicheSitzungSpielen() {
+    const self = this;
+    const fertig = function () { self._refreshQuestIndicators(); };
+    if (window.storyScenes && typeof window.storyScenes.playOeffentlicheSitzung === 'function') {
+      try { window.storyScenes.playOeffentlicheSitzung(this, fertig); return; } catch (_) {}
+    }
+    // Ohne Szene trotzdem weiterkommen: die Szene ist Inszenierung, der Schritt Mechanik.
+    const qs = window.questSystem;
+    if (qs && typeof qs.updateQuestProgress === 'function') qs.updateQuestProgress('observe', 'oeffentliche_sitzung', 1);
+    fertig();
+  }
+
   _showCollusionReveal(npcData, questData, startIndex) {
     const T = (window.i18n && window.i18n.t) ? window.i18n.t.bind(window.i18n) : (k) => k;
     const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';

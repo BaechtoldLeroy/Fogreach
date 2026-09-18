@@ -468,13 +468,17 @@ function initDungeonRun() {
       // Feature 062: garde_night_escort teilt sich das Konvoi-Lager (thematisch
       // ein nächtlicher Transport). CouncilWarehouse trägt jetzt zusätzlich
       // die observe-Zone escort_route.
-      { qid: 'garde_night_escort',  room: 'CouncilWarehouse' }
+      { qid: 'garde_night_escort',  room: 'CouncilWarehouse' },
+      // #159: die geheime Sitzung in der Ratskammer (erst nach der oeffentlichen)
+      { qid: 'council_collusion_reveal', room: 'CouncilChamber' }
     ];
     var activeNow = (window.questSystem && typeof window.questSystem.getActiveQuests === 'function')
       ? window.questSystem.getActiveQuests() : [];
     ESP_MISSIONS.forEach(function (m) {
-      var on = activeNow.some(function (q) { return q.id === m.qid; });
       var known = window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[m.room];
+      var zonen = (known && known.espionage && known.espionage.observe) || [];
+      var ziele = zonen.map(function (z) { return z.questTarget; });
+      var on = activeNow.some(function (q) { return q.id === m.qid && _observeZielOffen(q, ziele); });
       if (on && known && templateOrder.indexOf(m.room) === -1) {
         var pos = Math.min(templateOrder.length, 1 + Math.floor(Math.random() * 2));
         templateOrder.splice(pos, 0, m.room);
@@ -520,7 +524,11 @@ function initDungeonRun() {
   // Lauf kein Raum mehr frei war), liegt es gleich hinter dem ersten Raum.
   if (versteckBesuchFaellig()) {
     for (var _vi = 1; _vi < templateOrder.length - 1; _vi++) {
-      if (ESPIONAGE_ROOM_NAMES.indexOf(templateOrder[_vi]) === -1 && templateOrder[_vi] !== finalRoom) {
+      // Nie einen Spionage-Raum verdraengen (auch die Ratskammer der geheimen
+      // Sitzung, #159) und nie den Finalraum.
+      var _vTpl = window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[templateOrder[_vi]];
+      if (ESPIONAGE_ROOM_NAMES.indexOf(templateOrder[_vi]) === -1 && !(_vTpl && _vTpl.espionage)
+          && templateOrder[_vi] !== finalRoom) {
         templateOrder[_vi] = VERSTECK_RAUM;
         break;
       }
@@ -2951,6 +2959,26 @@ function _forceEspionageDebug() {
   } catch (e) { return false; }
 }
 
+/**
+ * Hat die Quest ein offenes observe-Ziel aus `targets`? #159: Ziele gelten der
+ * Reihe nach — die geheime Sitzung zaehlt erst, wenn die oeffentliche gesehen
+ * ist. Fuer Quests mit nur einem Ziel aendert sich nichts.
+ */
+function _observeZielOffen(q, targets) {
+  var obs = (q && q.objectives) || [];
+  for (var j = 0; j < obs.length; j++) {
+    var o = obs[j];
+    var offen = (o.current || 0) < (o.required || 1);
+    if (o.type === 'observe' && targets.indexOf(o.target) !== -1 && offen) {
+      for (var k = 0; k < j; k++) {
+        if ((obs[k].current || 0) < (obs[k].required || 1)) return false;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 function _maybeStartEspionage(scene, templateName, builtMeta) {
   try {
     if (!templateName || !window.EspionageSystem || !window.RoomTemplates) return;
@@ -2962,12 +2990,7 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
     var targets = (esp.observe || []).map(function (z) { return z.questTarget; });
     var active = (window.questSystem && typeof window.questSystem.getActiveQuests === 'function')
       ? window.questSystem.getActiveQuests() : [];
-    var match = active.some(function (q) {
-      return (q.objectives || []).some(function (o) {
-        return o.type === 'observe' && targets.indexOf(o.target) !== -1
-          && (o.current || 0) < (o.required || 1);
-      });
-    });
+    var match = active.some(function (q) { return _observeZielOffen(q, targets); });
     if (!match && !_forceEspionageDebug()) return;  // #54-Test: ?spy=1 umgeht das Quest-Gating
 
     var T = (tpl.size && tpl.size.tile) || 32;
@@ -3266,10 +3289,15 @@ if (typeof window !== 'undefined') window.versteckBesuchFaellig = versteckBesuch
 function _versteckAlsNaechsterRaum() {
   if (!dungeonRun || !Array.isArray(dungeonRun.templateOrder)) return false;
   if (dungeonRun.templateOrder.indexOf(VERSTECK_RAUM) > dungeonRun.currentIndex) return true;
-  var ziel = dungeonRun.currentIndex + 1;
-  if (ziel >= dungeonRun.totalRooms - 1) return false;   // nie der Finalraum
-  dungeonRun.templateOrder[ziel] = VERSTECK_RAUM;
-  return true;
+  var T = (window.RoomTemplates && window.RoomTemplates.TEMPLATES) || {};
+  // Der naechste freie Raum — nie der Finalraum, nie ein Spionage-Raum.
+  for (var ziel = dungeonRun.currentIndex + 1; ziel < dungeonRun.totalRooms - 1; ziel++) {
+    var name = dungeonRun.templateOrder[ziel];
+    if (T[name] && T[name].espionage) continue;
+    dungeonRun.templateOrder[ziel] = VERSTECK_RAUM;
+    return true;
+  }
+  return false;
 }
 
 function _versteckAnkuendigen(scene) {
