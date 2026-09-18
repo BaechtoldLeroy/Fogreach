@@ -95,14 +95,24 @@ function wirbeln(weite, hpImKanal) {
       if (e.body) { e.body.reset(e.x, e.y); e.body.moves = false; }
     });
 
-    var echtWurf = EE && EE.shouldSpawnElite, echtZufall = Math.random;
+    // Kein Champion/Unique: shouldSpawnElite festhalten. Den alten Legacy-
+    // Elite (8 %) NICHT ueber Math.random verhindern — spawnEnemy wuerfelt
+    // damit auch die Position, und mit festem Zufall fand es je nach Raum
+    // keinen Platz ("Sonden liessen sich nicht setzen", im Gesamtlauf 7 Tests
+    // auf einmal). Stattdessen normal wuerfeln und Legacy-Elites verwerfen.
+    var echtWurf = EE && EE.shouldSpawnElite;
     if (EE) EE.shouldSpawnElite = function () { return null; };
-    Math.random = function () { return 0.99; };   // kein Legacy-Elite (8 %)
+    var sonde = function () {
+      for (var v = 0; v < 30; v++) {
+        var s = spawnEnemy.call(sc, px + 4000, py + 4000, 1);
+        if (s && !s.isElite && !s._isElite) return s;
+        if (s) { try { s.destroy(); } catch (e) {} }
+      }
+      return null;
+    };
     var g1, g2;
-    try {
-      g1 = spawnEnemy.call(sc, px + 4000, py + 4000, 1);
-      g2 = spawnEnemy.call(sc, px + 4000, py + 4000, 1);
-    } finally { if (EE) EE.shouldSpawnElite = echtWurf; Math.random = echtZufall; }
+    try { g1 = sonde(); g2 = sonde(); }
+    finally { if (EE) EE.shouldSpawnElite = echtWurf; }
     if (!g1 || !g2) return { fehler: 'Sonden liessen sich nicht setzen' };
     window.__sonden = [g1, g2];
 
