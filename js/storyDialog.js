@@ -12,8 +12,9 @@
 //   branka_ally                               -> who_you_were (Branka-Vertrauen)
 //   thom_ally                                 -> thom_truth   (Thom-Vertrauen)
 //   mole_evidence/self_remembered/elara_trust -> 062-Quests (nicht hier)
-// Weitere Skript-Flags (truth_told, convoy_blade_drawn, elara_spared/killed ...)
-// treiben Reaktivität und werden hier ebenfalls gesetzt.
+// Weitere Skript-Flags (truth_told ...) treiben Reaktivität und werden hier
+// ebenfalls gesetzt. convoy_*, harren_dead und elara_spared/killed setzt das
+// Finale an der Quelle bzw. der Konvoi (js/finale.js, #158).
 (function () {
   'use strict';
 
@@ -172,22 +173,8 @@
         { label: 'Ich weiss es nicht.', response: 'MARA: Du lügst schlecht, Archivschmied. Gut. Behalt es, bis Du weisst, was Du tust.' }
       ]
     },
-    // Die Elara-Schicksal-Entscheidung im Finale (nur zeigen, wenn spareable:
-    // elara_trust UND Beweis). WP05 nutzt das; sonst erzwungener elara_killed.
-    reckoning_elara_fate: {
-      prompt: 'Sie greift nach der Nebelschleuse. Was tust Du?',
-      choices: [
-        {
-          label: 'Mit Worten aufhalten', setFlags: ['elara_spared'],
-          showIf: function (f) { return !!(f.elara_trust && (f.mole_evidence || f.zeichen_bemerkt)); },
-          response: 'Du sagst ihr, was sie schon weiss. Sie lässt den Hebel los. Sie lebt, gebrochen an dem, was sie tat.'
-        },
-        {
-          label: 'Mit ihrer Klinge', setFlags: ['elara_killed'],
-          response: 'Du beendest es mit dem Geschenk, das sie Dir gab. Egal, was kommt.'
-        }
-      ]
-    }
+    // (#158: reckoning_elara_fate entfernt. Die Wahl ueber Elara faellt jetzt
+    // unten an der Quelle, nach dem Kampf — js/finale.js.)
   };
 
   window.storyDialog = {

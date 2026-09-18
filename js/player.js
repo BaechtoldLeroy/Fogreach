@@ -1950,6 +1950,11 @@ function handleEnemyHit(scene, enemy, options = {}) {
         if (window.AbilitySystem && typeof window.AbilitySystem.onBossKilled === 'function') {
           window.AbilitySystem.onBossKilled(enemy.bossType);
         }
+        // #158: Die Quelle zerbricht — Elara liegt am Boden, die letzte Wahl.
+        if (enemy.bossType === 'elaraBesessen' && window.Finale
+            && typeof window.Finale.nachKampf === 'function') {
+          try { window.Finale.nachKampf(scene); } catch (e) { /* defensiv */ }
+        }
       }
     }
     return;

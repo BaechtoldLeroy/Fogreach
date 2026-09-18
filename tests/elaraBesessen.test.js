@@ -30,14 +30,16 @@ beforeEach(() => {
   flaggen({});
 });
 
-// Standard: die letzte Quest laeuft — nur dann wartet Elara.
+// Standard: die letzte Quest laeuft — nur dann wartet Elara. harren_dead:
+// die Szene vor dem Kampf (#158, finaleQuelle.test.js) ist schon gespielt;
+// sie haelt die Spieluhr an, und hier geht es um den Kampf selbst.
 function flaggen(flags, mitQuest) {
   const quests = mitQuest === false ? {}
     : { schattenrat_finale: { status: 'active', objectives: [{ type: 'kill', target: 'schattenrat', current: 0, required: 1 }] } };
   H.run(`(function () {
     var qs = window.questSystem, st = qs.getQuestSaveData();
     st.quests = ${JSON.stringify(quests)};
-    st.flags = ${JSON.stringify(flags)};
+    st.flags = ${JSON.stringify(Object.assign({ harren_dead: true }, flags))};
     qs.loadQuestSaveData(st);
   })()`);
 }

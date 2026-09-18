@@ -224,6 +224,8 @@ window.HUB_HITBOXES = {
       // from game start. (Was gated to 'treuer_diener' / Akt 2 from the
       // pre-050 narrative when Harren was a late-game NPC.)
       visibleFromAct: 'auftrag',
+      // #158: Harren stirbt an der Quelle (Bibel v5, Abschnitt 8).
+      hiddenAfterFlag: 'harren_dead',
       lines: [
         'Meine Tochter Lene... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
         'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'

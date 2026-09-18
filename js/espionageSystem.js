@@ -365,6 +365,9 @@
     },
 
     isDetected: function () { return !!(state.active && state.exposed); },
+    // #158: Die Verkleidung faellt auf Wunsch der Geschichte (Konvoi: Klinge
+    // gezogen) — dieselbe Folge wie ein entdeckter Angriff.
+    enttarnen: function () { if (state.active) _expose(); },
     getDetection: function () { return state.active ? state.detection : 0; },
 
     registerObserveZone: function (zone) {
@@ -466,6 +469,11 @@
                 if (z.questTarget && typeof window !== 'undefined' && window.questSystem
                     && typeof window.questSystem.updateQuestProgress === 'function') {
                   try { window.questSystem.updateQuestProgress('observe', z.questTarget, 1); } catch (_) {}
+                }
+                // #158: Am Konvoi faellt eine Entscheidung (Bibel v5, Abschnitt 9).
+                if (z.questTarget === 'convoy_intel' && typeof window !== 'undefined'
+                    && window.Finale && typeof window.Finale.konvoi === 'function') {
+                  try { window.Finale.konvoi(scene); } catch (_) {}
                 }
               }
             } else {

@@ -4,9 +4,8 @@
 // vollstaendig ungetestet — die 600 Unit-Tests laden nur einzelne IIFE-Module
 // und sehen keine Szene. Hier laeuft der echte Hub.
 //
-// Enthaelt am Ende zwei `todo`-Tests, die bekannte Defekte AUSFUEHRBAR
-// dokumentieren (#83/#84). Sie machen die Suite nicht rot, melden aber
-// automatisch Vollzug, sobald der Fehler behoben ist.
+// Die frueheren `todo`-Tests fuer #83/#84 sind behoben und stehen als
+// Regressionstests bzw. in tests/finaleQuelle.test.js.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
@@ -121,19 +120,62 @@ test('hub: Verdacht steigt und wird vom Vergeltungssystem gelesen', () => {
 // (#83 ist behoben — der Regressionstest steht am Dateiende, weil er den
 //  Quest-Stand veraendert.)
 
-test('hub: convoy_blown ist irgendwo setzbar (#84)',
-  { todo: 'Bug #84 — der Flag wird im ganzen Projekt nur GELESEN, nie gesetzt' },
-  () => {
-    // Es existiert kein Spielpfad, der den Flag setzt. Der Test haelt fest,
-    // dass Maras Anwesenheit im Finale damit keine echte Bedingung hat.
-    const canBeUnset = H.run(`(function () {
-      var qs = window.questSystem;
-      var flags = qs.getFlags();
-      return !flags.convoy_blown;
-    })()`);
-    assert.strictEqual(canBeUnset, false,
-      'convoy_blown ist nie gesetzt — Maras Finale-Bedingung ist wirkungslos');
-  });
+// (#84 ist behoben: convoy_blown setzt die Konvoi-Entscheidung in js/finale.js,
+//  geprueft in tests/finaleQuelle.test.js.)
+
+// ---------------------------------------------------------------------------
+// #158: Nach dem Finale an der Quelle
+// ---------------------------------------------------------------------------
+
+test('hub: Harren ist nach seinem Tod an der Quelle nicht mehr auf dem Platz (#158)', () => {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    var qs = window.questSystem;
+    var harren = function () {
+      var n = sc.npcs.filter(function (x) { return x.data && x.data.id === 'harren'; })[0];
+      return n && n.sprite ? !!n.sprite.active : null;
+    };
+    sc._refreshNpcVisibility();
+    var vorher = harren();
+    qs.setFlag('harren_dead', true);
+    sc._refreshNpcVisibility();
+    var nachher = harren();
+    qs.setFlag('harren_dead', false);
+    sc._refreshNpcVisibility();
+    return { vorher: vorher, nachher: nachher };
+  })()`);
+  assert.strictEqual(r.vorher, true, 'Harren war schon vorher nicht da');
+  assert.strictEqual(r.nachher, false, 'Harren steht nach seinem Tod noch auf dem Platz');
+});
+
+test('hub: die Presse erzaehlt den Epilog aus den Entscheidungen (#158)', () => {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    var qs = window.questSystem;
+    var alt = qs.getFlags();
+    ['harren_dead', 'elara_spared', 'petitions_kept'].forEach(function (f) { qs.setFlag(f, true); });
+    var seiten = null;
+    var echt = sc._showDialoguePages;
+    sc._showDialoguePages = function (npc, titel, pages) { seiten = pages; };
+    try { sc._showReckoningFinale({ id: 'setzer_thom', name: 'Thom' }, { id: 'the_reckoning' }); }
+    finally { sc._showDialoguePages = echt; }
+    ['harren_dead', 'elara_spared', 'petitions_kept'].forEach(function (f) { qs.setFlag(f, !!alt[f]); });
+    if (!seiten) return { fehler: 'keine Seiten' };
+    var letzte = seiten[seiten.length - 1];
+    return {
+      text: seiten.map(function (p) { return p.text; }).join('\\n'),
+      knopf: letzte.choices && letzte.choices[0] && letzte.choices[0].action,
+      finalize: typeof sc._pendingReckoningFinalize
+    };
+  })()`);
+  assert.ok(!r.fehler, r.fehler);
+  assert.ok(/Lene/.test(r.text), 'Harrens Grab fehlt im Epilog');
+  assert.ok(/hinter den Gittern/.test(r.text), 'Elaras Schicksal fehlt');
+  assert.ok(/Viele der Verschwundenen/.test(r.text), 'die Gesuche fehlen');
+  assert.ok(!/Nebelschleuse|Harren tritt aus dem Schatten/.test(r.text), 'die alte Fassung (v4) ist noch drin');
+  assert.strictEqual(r.knopf, 'reckoning_done');
+  assert.strictEqual(r.finalize, 'function');
+});
 
 // ---------------------------------------------------------------------------
 // Behobene Defekte — Regression

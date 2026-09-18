@@ -3017,6 +3017,16 @@ function spawnBoss() {
       _beatLaeuft = window.BossIntro.inszeniere(this, boss, def.name, _bossIntroLore(def));
     } catch (e) { _beatLaeuft = false; }
   }
+  // #158: Vor der besessenen Elara spielt das Finale an der Quelle — Elara,
+  // Harren, sein Tod. Der Banner folgt danach. Laeuft die Szene nicht (schon
+  // gesehen), gleich der Banner.
+  if (!_beatLaeuft && def.id === 'elaraBesessen' && typeof window !== 'undefined'
+      && window.Finale && typeof window.Finale.vorKampf === 'function') {
+    const _szene = this;
+    try {
+      _beatLaeuft = window.Finale.vorKampf(_szene, boss, () => showBossIntro.call(_szene, def));
+    } catch (e) { _beatLaeuft = false; }
+  }
   if (!_beatLaeuft) showBossIntro.call(this, def);
 
   // #109: Der Aufrufer braucht den Boss, um ihn als Klimax-Gegner zu fuehren

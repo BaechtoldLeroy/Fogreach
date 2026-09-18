@@ -4059,34 +4059,18 @@ class HubSceneV2 extends Phaser.Scene {
       (typeof startIndex === 'number' ? startIndex : 0));
   }
 
-  // Feature 063 WP05: Die Abrechnung (the_reckoning). Berechnet den Ausgang aus
-  // computeFinaleState(flags), spielt Vatermord + Druck und präsentiert die vier
-  // Regler. Schliesst danach the_reckoning ab (schaltet story_ending frei).
+  // #158: Die Presse ist der Epilog (Story-Bibel v5, Abschnitt 8/9). Harrens Tod
+  // und die Wahl ueber Elara sind unten an der Quelle gefallen (js/finale.js);
+  // hier druckt Thom, und der Epilog erzaehlt, was die Entscheidungen
+  // unterwegs daraus gemacht haben (questFinale.epilog). Schliesst danach
+  // the_reckoning ab (schaltet story_ending frei).
   _showReckoningFinale(npcData, questData) {
     const qs = window.questSystem;
     const flags = (qs && typeof qs.getFlags === 'function') ? qs.getFlags() : {};
-    const st = (window.QuestFinale && typeof window.QuestFinale.computeFinaleState === 'function')
-      ? window.QuestFinale.computeFinaleState(flags)
-      : { betrayalForeseen: false, allies: { branka: false, mara: false, thom: false }, elara: 'dies', remembered: false, aloneAtEnd: true, namelessEnding: true };
-
-    // Ausgangs-Bausteine aus den vier Reglern.
-    const alliesNames = [];
-    if (st.allies.branka) alliesNames.push('Branka');
-    if (st.allies.mara) alliesNames.push('Mara');
-    if (st.allies.thom) alliesNames.push('Thom');
-
-    const pForesee = st.betrayalForeseen
-      ? 'Du hast die Spur verfolgt. Du bist schneller an der Schleuse — der Nebel steigt nicht.'
-      : 'Du hast es nicht kommen sehen. Der Nebel steigt um Deine Knie, Deine ältesten Erinnerungen dünnen, während Du kämpfst, Dich zu erinnern, warum Du hier bist.';
-    const pAllies = st.aloneAtEnd
-      ? 'Niemand tritt neben Dich. Du stehst allein.'
-      : (alliesNames.join(', ') + ' treten dazu, entsetzt, dass Elara eine von ihnen war.');
-    const pElara = (st.elara === 'lives')
-      ? 'Mit Vertrauen und Beweisen hältst Du sie mit Worten auf. Sie lebt, gebrochen an dem, was sie tat.'
-      : 'Es bleibt nur ihre eigene Klinge, das Geschenk. Du beendest es.';
-    const pRemember = st.remembered
-      ? 'In dem Moment, in dem die Presse anläuft, kehrt zurück, wer Du warst. Der letzte Satz gehört Dir.'
-      : 'Du druckst, namenlos. Wer Du warst, bleibt im Nebel.';
+    const lang = (window.i18n && typeof window.i18n.getLanguage === 'function') ? window.i18n.getLanguage() : 'de';
+    const absaetze = (window.QuestFinale && typeof window.QuestFinale.epilog === 'function')
+      ? window.QuestFinale.epilog(flags, lang)
+      : ['Der Nebel bricht.'];
 
     const finalize = () => {
       if (!qs) return;
@@ -4097,37 +4081,21 @@ class HubSceneV2 extends Phaser.Scene {
       this._refreshQuestIndicators();
     };
 
-    const pages = [
-      { text: 'ELARA: Ich drucke eine Wahrheit, mit der die Stadt leben kann. Und dann bleibt nur noch einer, der das ganze Bild trägt. Du. Der Nebel wird sanft sein.', choices: null },
-      { text: '(Harren tritt aus dem Schatten. Er hat alles gehört.)\nHARREN: Nein. Nicht das. Nicht Du.\n(Es geht schnell und ist nicht geplant. Danach steht sie über ihm.)\nELARA, tonlos: Ich wollte das nie.', choices: null, _patricide: true },
-      { text: pForesee + '\n\n' + pAllies, choices: null }
-    ];
-
-    // Feature 063: Elaras Schicksal ist eine echte Spieler-Entscheidung.
-    // storyDialog.byScene.reckoning_elara_fate zeigt "Mit Worten aufhalten" nur,
-    // wenn verschonbar (elara_trust UND Beweis) — sonst bleibt nur ihre Klinge.
-    // Die Antwortzeile der Wahl IST der Ausgangstext. Fallback: statischer Text
-    // aus computeFinaleState, falls Daten/Komponente fehlen.
-    const fateCfg = (window.storyDialog && window.storyDialog.byScene
-      && window.storyDialog.byScene.reckoning_elara_fate) || null;
-    if (fateCfg && window.DialogChoice && typeof window.DialogChoice.present === 'function') {
-      pages.push({ text: fateCfg.prompt || '', choices: null, _choiceConfig: fateCfg });
-    } else {
-      pages.push({ text: pElara, choices: null });
+    const en = (lang === 'en');
+    const pages = [{ text: en
+      ? 'THOM: The plates are set. Everything you saw goes on them: the council, Aldric, the resistance, her. Pull the lever when you are ready.'
+      : 'THOM: Die Platten liegen. Alles, was Du gesehen hast, kommt drauf: der Rat, Aldric, der Widerstand, sie. Zieh den Hebel, wenn Du so weit bist.',
+      choices: null }];
+    // Zwei Absaetze je Seite: lang genug, um zu tragen, kurz genug fuer Mobile.
+    for (let i = 0; i < absaetze.length; i += 2) {
+      pages.push({ text: absaetze.slice(i, i + 2).join('\n\n'), choices: null });
     }
-
-    pages.push({ text: 'Du druckst. Elara verbrennt zuvor das eine belastende Blatt, und Du lässt sie. Die Wahrheit geht raus, unvollständig, und Du weisst es.\n\n' + pRemember, choices: [ { label: '[ Die Presse läuft an ]', action: 'reckoning_done' } ], _isFinal: true });
+    const letzte = pages[pages.length - 1];
+    letzte.choices = [{ label: en ? '[ The press starts ]' : '[ Die Presse läuft an ]', action: 'reckoning_done' }];
+    letzte._isFinal = true;
 
     this._pendingReckoningFinalize = finalize;
     this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData, 0);
-
-    // Kamera-Beat für den Vatermord: kurzer Shake, wenn die Seite erreicht wird.
-    // (Vereinfachte Inszenierung über ein verzögertes Shake beim Start.)
-    if (this.cameras && this.cameras.main && this.time && this.time.delayedCall) {
-      this.time.delayedCall(400, () => {
-        try { this.cameras.main.shake(220, 0.006); } catch (_) {}
-      });
-    }
   }
 
   // Feature 051 FR-01/FR-02: demo intro splash — frames the world before

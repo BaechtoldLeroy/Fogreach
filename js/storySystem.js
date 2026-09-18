@@ -377,6 +377,15 @@
     return _i18nLookup('story.act.' + actId + '.narrative', ACT_NARRATIVES[actId] || '');
   }
   function getAllQuestsEnding() {
+    // #158: Der Epilog haengt an den Entscheidungen (questFinale.epilog).
+    // Der feste Text bleibt nur als Rueckfall, falls das Modul fehlt.
+    try {
+      if (window.QuestFinale && typeof window.QuestFinale.epilog === 'function'
+          && window.questSystem && typeof window.questSystem.getFlags === 'function') {
+        var lang = (window.i18n && typeof window.i18n.getLanguage === 'function') ? window.i18n.getLanguage() : 'de';
+        return window.QuestFinale.epilog(window.questSystem.getFlags(), lang).join('\n\n');
+      }
+    } catch (e) { /* Rueckfall unten */ }
     return _i18nLookup('story.all_quests_ending', ALL_QUESTS_ENDING);
   }
 
