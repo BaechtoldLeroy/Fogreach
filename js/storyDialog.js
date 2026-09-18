@@ -50,14 +50,8 @@
         { label: 'Verweigern', setFlags: ['verification_refused'], response: 'ALDRIC: Ein Handwerker mit Gewissen. Ich merke mir das. Branka siegelt es dann eben selbst. Geändert hat sich nichts, ausser dass ich jetzt weiss, wo Du stehst.' }
       ]
     },
-    faction_campaign: {
-      prompt: 'Aldrics Auftrag: dieselbe Woche, drei Edikte — Magistrat, Klerus, Garde, alle auf einem Karren, damit die Stadt glaubt, sie stritten. Nur eines kann ganz oben hängen, wo es zuerst gelesen wird. Wessen Farbe zeigst Du am deutlichsten?',
-      choices: [
-        { label: 'Magistrat oben — Recht und Ordnung', setFlags: ['rep_magistrat'], response: 'Du hängst das Magistrats-Siegel nach oben. Wer es liest, denkt an Gesetze, nicht an Ketten.' },
-        { label: 'Klerus oben — das Licht des Rats', setFlags: ['rep_klerus'], response: 'Das Klerus-Edikt kommt zuoberst. Segen und Drohung im selben Satz — die Leute senken den Blick.' },
-        { label: 'Garde oben — Schutz durch Stärke', setFlags: ['rep_garde'], response: 'Die Garde-Order ganz oben. Mehr Patrouillen, weniger Fragen. Man nickt und geht schneller weiter.' }
-      ]
-    },
+    // #160: Die Wahl, welches Edikt oben haengt, faellt jetzt an der
+    // Anschlagtafel selbst (byScene.edikt_anschlag).
 
     // ------------------------------------------------------------------ AKT 2
     hub_buerger_a2: {
@@ -135,6 +129,16 @@
 
   // Szenen-gebundene Auswahlen (von storyScenes/WP04 bzw. dem Finale/WP05 genutzt).
   var byScene = {
+    // #160: An der Anschlagtafel — welches Edikt haengt ganz oben? Wer oben
+    // haengt, gewinnt die Abstimmung. Das merkt der Spieler erst beim Ergebnis.
+    edikt_anschlag: {
+      prompt: 'Drei Edikte, eine Tafel. Nur eines hängt ganz oben, wo es zuerst gelesen wird. Wessen Farbe hängst Du nach oben?',
+      choices: [
+        { label: 'Magistrat oben — Recht und Ordnung', setFlags: ['edikt_magistrat'], response: 'Das Magistrats-Siegel kommt nach oben. Wer es liest, denkt an Gesetze, nicht an Ketten.' },
+        { label: 'Klerus oben — das Licht des Rats', setFlags: ['edikt_klerus'], response: 'Das Klerus-Edikt kommt zuoberst. Segen und Drohung im selben Satz.' },
+        { label: 'Garde oben — Schutz durch Stärke', setFlags: ['edikt_garde'], response: 'Die Garde-Order ganz oben. Mehr Patrouillen, weniger Fragen.' }
+      ]
+    },
     // #159: nach der oeffentlichen Sitzung, beim Hinausgehen.
     oeffentliche_sitzung: {
       prompt: 'HARREN: (leise, beim Hinausgehen) Heute Nacht treffen sie sich noch einmal. Unten, in der Ratskammer. Ohne Publikum.',

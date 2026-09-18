@@ -155,5 +155,12 @@ test('Dungeon: wer verweigert hat, sieht Brankas Zeichen (#145)', async () => {
   const r = ratskammerBelauschen({ verification_refused: true });
   assert.ok(r.texte.some((t) => /Brankas Zeichen/.test(t)), JSON.stringify(r.texte));
   assert.ok(!r.texte.some((t) => /selbst unter ein Dokument/.test(t)));
+});
+
+test('Dungeon: alte Staende mit beiden Siegel-Flaggen gelten als verweigert (#145)', async () => {
+  // magistrat_verification setzte frueher verification_sealed als Vorgabe —
+  // auch bei Verweigerung. Solche Staende tragen beide Flaggen.
+  const r = ratskammerBelauschen({ verification_refused: true, verification_sealed: true });
+  assert.ok(r.texte.some((t) => /Brankas Zeichen/.test(t)), JSON.stringify(r.texte));
   await D.shutdown();
 });

@@ -17,6 +17,13 @@ if (window.i18n) {
     'hub.dialog.choice.decline': 'Ablehnen',
     'hub.dialog.choice.collect': 'Belohnung abholen',
     'hub.druckerei.name': 'Druckerei',
+    // #160
+    'hub.anschlag.prompt': 'Anschlagtafel [E]',
+    'hub.anschlag.ausgehaengt': 'Die Edikte hängen. Die Stadt stimmt bis zum Ende der Woche ab.',
+    'hub.edikt.gedruckt': 'Drei Edikte gedruckt. Jetzt an die Anschlagtafeln vor dem Rathaus.',
+    'hub.abstimmung.ergebnis.magistrat': 'Die Abstimmung ist ausgezählt: Das Edikt des Magistrats hat gewonnen. Es hing ganz oben.',
+    'hub.abstimmung.ergebnis.klerus': 'Die Abstimmung ist ausgezählt: Das Edikt des Klerus hat gewonnen. Es hing ganz oben.',
+    'hub.abstimmung.ergebnis.garde': 'Die Abstimmung ist ausgezählt: Das Edikt der Garde hat gewonnen. Es hing ganz oben.',
     'hub.druckerei.line1': 'Die Druckerpresse ruht.',
     'hub.druckerei.line2': 'Setzer Thom wird sie bald wieder anwerfen.',
     'hub.wave_select.title': 'Der Hinabstieg',
@@ -66,6 +73,13 @@ if (window.i18n) {
     'hub.dialog.choice.decline': 'Decline',
     'hub.dialog.choice.collect': 'Collect reward',
     'hub.druckerei.name': 'Print Shop',
+    // #160
+    'hub.anschlag.prompt': 'Notice board [E]',
+    'hub.anschlag.ausgehaengt': 'The edicts are up. The city votes until the end of the week.',
+    'hub.edikt.gedruckt': 'Three edicts printed. Now to the notice boards in front of the town hall.',
+    'hub.abstimmung.ergebnis.magistrat': 'The vote is counted: the Magistrate\'s edict has won. It hung on top.',
+    'hub.abstimmung.ergebnis.klerus': 'The vote is counted: the Clergy\'s edict has won. It hung on top.',
+    'hub.abstimmung.ergebnis.garde': 'The vote is counted: the Guard\'s edict has won. It hung on top.',
     'hub.druckerei.line1': 'The printing press is idle.',
     'hub.druckerei.line2': 'Setter Thom will fire it up again soon.',
     'hub.wave_select.title': 'The Descent',
@@ -245,6 +259,8 @@ class HubSceneV2 extends Phaser.Scene {
     if (sceneData && sceneData.gameState && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
       window.TutorialSystem.report('hub.returned', {});
     }
+    // #160: Die Woche ist um, sobald man aus dem Dungeon zurueckkommt.
+    this._ausDemDungeon = !!(sceneData && sceneData.gameState);
 
     // Bind InputScheme BEFORE createPlayer — the player's first
     // updatePlayerSpriteAnimation call reads getAimDirection in ARPG mode,
@@ -272,6 +288,14 @@ class HubSceneV2 extends Phaser.Scene {
     this.createColliders();
     this.createEntrances();
     this.createNPCs();
+    // #160: Abstimmung auszaehlen (nach einem Abstieg) und die verdoppelten
+    // Patrouillen auf den Platz stellen.
+    if (this._ausDemDungeon) {
+      try {
+        if (this._ediktAuszaehlen()) this._patrouillenAufstellen();
+      } catch (_) {}
+    }
+    try { this._patrouillenAufstellen(); } catch (_) {}
     this.createPlayer();
     this.createPrompt();
     
@@ -1117,6 +1141,18 @@ class HubSceneV2 extends Phaser.Scene {
       }
     }
 
+    // #160: Die Anschlagtafeln, solange die Edikte gedruckt, aber noch nicht
+    // ausgehaengt sind.
+    if (!active && this._ediktSchritt() === 1 && this._hubPhaseRefs && Array.isArray(this._hubPhaseRefs.posterSpots)) {
+      for (const p of this._hubPhaseRefs.posterSpots) {
+        if (p && Phaser.Math.Distance.Between(this.player.x, this.player.y, p.x, p.y - 40) < 90) {
+          active = { type: 'anschlag' };
+          activeLabel = _HUB_T('hub.anschlag.prompt');
+          break;
+        }
+      }
+    }
+
     if (active) {
       this._activeInteractable = active;
       this.prompt.setText(activeLabel);
@@ -1152,7 +1188,90 @@ class HubSceneV2 extends Phaser.Scene {
       this._showNpcDialogue(current.data);
     } else if (current.type === 'entrance') {
       this._enterLocation(current.data);
+    } else if (current.type === 'anschlag') {
+      this._ediktAushaengen();
     }
+  }
+
+  // --- #160: Das Edikt der Woche als Abstimmung ------------------------------
+  // Welcher Schritt von faction_campaign ist dran? 0 drucken, 1 aushaengen,
+  // 2 auszaehlen, -1 nichts (nicht aktiv oder fertig).
+  _ediktSchritt() {
+    const qs = window.questSystem;
+    if (!qs || typeof qs.getActiveQuests !== 'function') return -1;
+    const q = (qs.getActiveQuests() || []).filter((x) => x && x.id === 'faction_campaign')[0];
+    if (!q) return -1;
+    const obs = q.objectives || [];
+    for (let i = 0; i < obs.length; i++) {
+      if ((obs[i].current || 0) < (obs[i].required || 1)) return i;
+    }
+    return -1;
+  }
+
+  // In der Druckerei: Thom druckt die drei Edikte.
+  _ediktDrucken() {
+    const npcData = { id: 'setzer_thom', name: 'Setzer Thom', lines: [] };
+    this._dialogOpen = true;
+    this._showDialoguePages(npcData, 'Setzer Thom', [{
+      text: 'THOM: Drei Edikte für die Abstimmung. Magistrat in Gold, Klerus in Weiss, Garde in Rot. (Er legt drei Stapel nebeneinander.) Dasselbe Papier für alle drei. Ich habe nur eine Sorte.',
+      choices: [{ label: '[ Drucken ]', action: 'edikt_drucken' }]
+    }], 'flavor', null, 0);
+  }
+
+  // An der Tafel: welches Edikt haengt oben?
+  _ediktAushaengen() {
+    const qs = window.questSystem;
+    const fertig = () => {
+      if (qs && typeof qs.updateQuestProgress === 'function') qs.updateQuestProgress('observe', 'edikte_plakatiert', 1);
+      this._dialogOpen = false;
+      this._refreshQuestIndicators();
+      this._hubHinweis(_HUB_T('hub.anschlag.ausgehaengt'));
+    };
+    const cfg = window.storyDialog && window.storyDialog.byScene && window.storyDialog.byScene.edikt_anschlag;
+    if (cfg && window.DialogChoice && typeof window.DialogChoice.present === 'function') {
+      this._dialogOpen = true;
+      window.DialogChoice.present(this, { prompt: cfg.prompt, choices: cfg.choices, onResolved: fertig });
+    } else {
+      fertig();
+    }
+  }
+
+  // Nach dem naechsten Abstieg ist die Woche um: die Stimmen sind ausgezaehlt.
+  // Gewonnen hat, was oben hing.
+  _ediktAuszaehlen() {
+    if (this._ediktSchritt() !== 2) return false;
+    const qs = window.questSystem;
+    qs.updateQuestProgress('observe', 'abstimmung_ausgezaehlt', 1);
+    const f = (n) => typeof qs.hasFlag === 'function' && qs.hasFlag(n);
+    const sieger = f('edikt_garde') ? 'garde' : f('edikt_klerus') ? 'klerus' : 'magistrat';
+    this._hubHinweis(_HUB_T('hub.abstimmung.ergebnis.' + sieger));
+    this._refreshQuestIndicators();
+    return sieger;
+  }
+
+  _hubHinweis(text) {
+    try {
+      if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
+        window.EventSystem.showEventToast(this, text, 'edikt');
+      }
+    } catch (_) {}
+  }
+
+  // Egal welches Edikt gewann: die Patrouillen verdoppeln sich. Im Hub stehen
+  // danach zwei Wachen mehr auf dem Platz — bis zum Epilog.
+  _patrouillenAufstellen() {
+    (this._patrouillen || []).forEach((s) => { try { s.destroy(); } catch (_) {} });
+    this._patrouillen = [];
+    const qs = window.questSystem;
+    if (!qs || typeof qs.hasFlag !== 'function' || !qs.hasFlag('patrouillen_verdoppelt')) return 0;
+    if (qs.hasFlag('story_ending')) return 0;
+    if (!this.textures || !this.textures.exists('garde')) return 0;
+    [[330, 420], [640, 440]].forEach(([x, y]) => {
+      const s = this.add.image(x * SCALE_FACTOR, y * SCALE_FACTOR, 'garde').setScale(0.23 * SCALE_FACTOR);
+      s.setDepth(y * SCALE_FACTOR);
+      this._patrouillen.push(s);
+    });
+    return this._patrouillen.length;
   }
 
   _showNpcDialogue(npcData) {
@@ -1983,6 +2102,15 @@ class HubSceneV2 extends Phaser.Scene {
       return;
     }
 
+    // #160: Thom druckt die Edikte.
+    if (action === 'edikt_drucken') {
+      if (qs && typeof qs.updateQuestProgress === 'function') qs.updateQuestProgress('observe', 'edikte_gedruckt', 1);
+      this._closeDialog(keyClosers);
+      this._refreshQuestIndicators();
+      this._hubHinweis(_HUB_T('hub.edikt.gedruckt'));
+      return;
+    }
+
     if (action === 'accept') {
       if (qs && questData) qs.acceptQuest(questData.id);
       // #159: Nach dem Annehmen geht es gleich in den Ratssaal.
@@ -2704,7 +2832,9 @@ class HubSceneV2 extends Phaser.Scene {
       // legacy inline choice dialog if the scene script isn't loaded.
       // Locked until aldric_cleanup is completed (FR-30).
       var ph = window.PrintingHouse;
-      if (!ph || !ph.isUnlocked()) {
+      if (this._ediktSchritt() === 0) {
+        this._ediktDrucken();
+      } else if (!ph || !ph.isUnlocked()) {
         this._showNpcDialogue({
           name: 'Setzer Thom',
           lines: [_HUB_T('printingHouse.dialog.locked')]

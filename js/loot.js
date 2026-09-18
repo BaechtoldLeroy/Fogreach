@@ -298,11 +298,11 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       { target: 'seized_writings',  name: _LOOT_T('loot.quest_item.SEIZED_WRITINGS'),       nameKey: 'loot.quest_item.SEIZED_WRITINGS',       key: 'SEIZED_WRITINGS',       tint: 0xe8d8a0 },
       { target: 'interrogation_record', name: _LOOT_T('loot.quest_item.INTERROGATION_RECORD'), nameKey: 'loot.quest_item.INTERROGATION_RECORD', key: 'INTERROGATION_RECORD', tint: 0xc09060 },
       // Feature 062: neue fetch-Ziele. verification_seal (magistrat_verification),
-      // proclamation (faction_campaign x3), memory_shard (who_you_were x3, minDepth 5).
+      // memory_shard (who_you_were x3, minDepth 5). (Die Proklamationen von
+      // faction_campaign sind seit #160 gedruckte Edikte, kein Fund mehr.)
       // Der needsItem-Check unten gated bereits auf aktive, unerfüllte Quest —
       // kein Drop ohne passende Quest (regressionssicher).
       { target: 'verification_seal', name: _LOOT_T('loot.quest_item.VERIFICATION_SEAL'), nameKey: 'loot.quest_item.VERIFICATION_SEAL', key: 'VERIFICATION_SEAL', tint: 0xb0b0c0 },
-      { target: 'proclamation',      name: _LOOT_T('loot.quest_item.PROCLAMATION'),      nameKey: 'loot.quest_item.PROCLAMATION',      key: 'PROCLAMATION',      tint: 0xd8c070 },
       { target: 'memory_shard',      name: _LOOT_T('loot.quest_item.MEMORY_SHARD'),      nameKey: 'loot.quest_item.MEMORY_SHARD',      key: 'MEMORY_SHARD',      tint: 0x88ccff },
       // Ritualkammer-Beweis (Q5 widerstand_proof). Erhoehte Chance, damit der
       // Spieler ihn nicht ewig sucht; deterministische Platzierung bleibt zusaetzlich.

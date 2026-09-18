@@ -790,7 +790,8 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
     observe: new Set(['convoy_intel', 'archive_record', 'informant_id',
       'escort_route',                                           // WP05 (062)
       'collusion_reveal_seen', 'erster_riss_gesehen',
-      'oeffentliche_sitzung'])                                  // #159: Ratssaal (Hub-Szene)          // 063 WP04 / #156: Szenen-Trigger
+      'oeffentliche_sitzung',                                   // #159: Ratssaal (Hub-Szene)
+      'edikte_gedruckt', 'edikte_plakatiert', 'abstimmung_ausgezaehlt'])  // #160: HubSceneV2 (_ediktDrucken/_ediktAushaengen/_ediktAuszaehlen)          // 063 WP04 / #156: Szenen-Trigger
   };
   Object.keys(D).forEach((id) => {
     (D[id].objectives || []).forEach((o) => {

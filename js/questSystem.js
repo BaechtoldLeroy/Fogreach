@@ -107,13 +107,14 @@
       chain: 2,
       // Feature 062: 'fetch verification_seal' — als Quest-Item-Drop von WP05
       // (js/loot.js) verdrahtet (Muster journal_fragment). Das Ratssiegel wird
-      // in der Archivschmiede gesetzt. completionFlags setzt den Backbone-Default
-      // 'verification_sealed' (die Szenen-Wahl sealed/refused folgt später).
+      // in der Archivschmiede gesetzt. Ob gesiegelt oder verweigert, setzt die
+      // Wahl beim Abgeben (storyDialog). Frueher setzte completionFlags hier
+      // 'verification_sealed' als Vorgabe — auch fuer den, der VERWEIGERT
+      // hatte; er trug danach beide Flaggen (#145).
       objectives: [
         { type: 'fetch', target: 'verification_seal', current: 0, required: 1 }
       ],
       rewards: { xp: 75 },
-      completionFlags: ['verification_sealed'],
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten müssen ordnungsgemäss geführt werden.\n\nDas ratsgesiegelte Verifikationsdokument liegt in der versunkenen Registratur — dort unten, wo der Nebel die alten Akten verschluckt hat. Steig hinab, birg das Ratssiegel und bring es mir. Was dir dabei begegnet, ist nicht mein Ressort. Der Magistrat trägt die Verantwortung, nicht der Bürger.\n\nNimmst du den Auftrag an?',
@@ -624,20 +625,26 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     faction_campaign: {
       id: 'faction_campaign',
       title: 'Das Edikt der Woche',
-      description: 'Plakatiere die drei Fraktions-Edikte an den Anschlagtafeln — sammle 3 Proklamationen.',
+      description: 'Die Stadt stimmt ab: drei Edikte, eines gewinnt. Lass sie bei Thom drucken, häng sie an die Anschlagtafeln vor dem Rathaus und warte, wie die Stadt wählt.',
       npcId: 'aldric',
-      type: 'fetch',
+      // #160 (#150, Vorschlag 5): Die demokratische Fassade sichtbar machen.
+      // Drucken (Druckerei), aushaengen (Anschlagtafel, dort faellt die Wahl,
+      // welches oben haengt), auszaehlen (nach dem naechsten Abstieg). Egal
+      // welches gewinnt: die Patrouillen verdoppeln sich.
+      type: 'observe',
       chain: 3,
-      // 'proclamation' als Quest-Item-Drop von WP05 (loot.js) verdrahtet.
       objectives: [
-        { type: 'fetch', target: 'proclamation', current: 0, required: 3 }
+        { type: 'observe', target: 'edikte_gedruckt', current: 0, required: 1 },
+        { type: 'observe', target: 'edikte_plakatiert', current: 0, required: 1 },
+        { type: 'observe', target: 'abstimmung_ausgezaehlt', current: 0, required: 1 }
       ],
       rewards: { xp: 60 },
+      completionFlags: ['patrouillen_verdoppelt'],
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
-      dialogueOffer: 'Die Stadt muss wissen, wer die Ordnung hält, während die anderen schwatzen. Häng die drei Edikte an den Anschlagtafeln aus. Wer oben klebt, hat recht.',
-      dialogueProgress: 'Noch nicht alle Edikte ausgehängt. Weiter.',
-      dialogueComplete: 'Drei Edikte, drei Farben, drei Versionen derselben Tochter. Erst beim letzten fällt dir das Papier auf. Dieselbe Körnung, alle drei. Du hast es in Thoms Druckerei gesehen. Du schiebst den Gedanken beiseite.'
+      dialogueOffer: 'Diese Woche stimmt die Stadt ab. Drei Edikte, Magistrat, Klerus, Garde, und die Bürger wählen eines. Lass sie bei Thom drucken und häng sie an die Tafeln vor dem Rathaus. So sieht Ordnung aus, die gewählt ist.',
+      dialogueProgress: 'Gedruckt, ausgehängt, ausgezählt. In dieser Reihenfolge. Die Druckerei ist gleich über dem Platz.',
+      dialogueComplete: 'Die Stadt hat gewählt. Ausgerechnet das Edikt, das ganz oben hing. (Aldric lächelt.) Die Patrouillen verdoppeln wir trotzdem. Das hätten wir bei jedem Ergebnis getan.\n\nErst beim Abhängen fällt Dir das Papier auf. Dieselbe Körnung, alle drei, aus Thoms Druckerei. Du schiebst den Gedanken beiseite.'
     },
     klerus_district_purge: {
       id: 'klerus_district_purge',

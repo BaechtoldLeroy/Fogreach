@@ -148,10 +148,12 @@
     var qs = window.questSystem;
     var flag = function (n) { return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag(n)); };
     // #145: Die Siegel-Entscheidung aus Akt 1 kommt hier zurueck.
-    var siegel = flag('verification_sealed')
-      ? 'Eines der drei Siegel kennst Du. Du hast es selbst unter ein Dokument gesetzt, damals, als es eine Formalie war.'
-      : flag('verification_refused')
-        ? 'Unter dem Siegel des Magistrats steht Brankas Zeichen. Das Dokument, das Du nicht siegeln wolltest. Geändert hat es nichts.'
+    // Verweigern hat Vorrang: alte Spielstaende tragen beide Flaggen, weil
+    // magistrat_verification frueher 'verification_sealed' als Vorgabe setzte.
+    var siegel = flag('verification_refused')
+      ? 'Unter dem Siegel des Magistrats steht Brankas Zeichen. Das Dokument, das Du nicht siegeln wolltest. Geändert hat es nichts.'
+      : flag('verification_sealed')
+        ? 'Eines der drei Siegel kennst Du. Du hast es selbst unter ein Dokument gesetzt, damals, als es eine Formalie war.'
         : null;
     var seiten = [
       '(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)',
