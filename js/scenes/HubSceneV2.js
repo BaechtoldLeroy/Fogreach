@@ -19,11 +19,8 @@ if (window.i18n) {
     'hub.druckerei.name': 'Druckerei',
     // #160
     'hub.anschlag.prompt': 'Anschlagtafel [E]',
-    'hub.anschlag.ausgehaengt': 'Die Edikte hängen. Die Stadt stimmt bis zum Ende der Woche ab.',
+    'hub.anschlag.ausgehaengt': 'Die Edikte hängen. Die Stadt stimmt ab. Das Ergebnis verkündet der Rat im Ratssaal.',
     'hub.edikt.gedruckt': 'Drei Edikte gedruckt. Jetzt an die Anschlagtafeln vor dem Rathaus.',
-    'hub.abstimmung.ergebnis.magistrat': 'Die Abstimmung ist ausgezählt: Das Edikt des Magistrats hat gewonnen. Es hing ganz oben.',
-    'hub.abstimmung.ergebnis.klerus': 'Die Abstimmung ist ausgezählt: Das Edikt des Klerus hat gewonnen. Es hing ganz oben.',
-    'hub.abstimmung.ergebnis.garde': 'Die Abstimmung ist ausgezählt: Das Edikt der Garde hat gewonnen. Es hing ganz oben.',
     'hub.druckerei.line1': 'Die Druckerpresse ruht.',
     'hub.druckerei.line2': 'Setzer Thom wird sie bald wieder anwerfen.',
     'hub.wave_select.title': 'Der Hinabstieg',
@@ -75,11 +72,8 @@ if (window.i18n) {
     'hub.druckerei.name': 'Print Shop',
     // #160
     'hub.anschlag.prompt': 'Notice board [E]',
-    'hub.anschlag.ausgehaengt': 'The edicts are up. The city votes until the end of the week.',
+    'hub.anschlag.ausgehaengt': 'The edicts are up. The city votes. The council announces the result in the council hall.',
     'hub.edikt.gedruckt': 'Three edicts printed. Now to the notice boards in front of the town hall.',
-    'hub.abstimmung.ergebnis.magistrat': 'The vote is counted: the Magistrate\'s edict has won. It hung on top.',
-    'hub.abstimmung.ergebnis.klerus': 'The vote is counted: the Clergy\'s edict has won. It hung on top.',
-    'hub.abstimmung.ergebnis.garde': 'The vote is counted: the Guard\'s edict has won. It hung on top.',
     'hub.druckerei.line1': 'The printing press is idle.',
     'hub.druckerei.line2': 'Setter Thom will fire it up again soon.',
     'hub.wave_select.title': 'The Descent',
@@ -259,8 +253,6 @@ class HubSceneV2 extends Phaser.Scene {
     if (sceneData && sceneData.gameState && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
       window.TutorialSystem.report('hub.returned', {});
     }
-    // #160: Die Woche ist um, sobald man aus dem Dungeon zurueckkommt.
-    this._ausDemDungeon = !!(sceneData && sceneData.gameState);
 
     // Bind InputScheme BEFORE createPlayer — the player's first
     // updatePlayerSpriteAnimation call reads getAimDirection in ARPG mode,
@@ -288,13 +280,7 @@ class HubSceneV2 extends Phaser.Scene {
     this.createColliders();
     this.createEntrances();
     this.createNPCs();
-    // #160: Abstimmung auszaehlen (nach einem Abstieg) und die verdoppelten
-    // Patrouillen auf den Platz stellen.
-    if (this._ausDemDungeon) {
-      try {
-        if (this._ediktAuszaehlen()) this._patrouillenAufstellen();
-      } catch (_) {}
-    }
+    // #160: Nach der geheimen Sitzung sind die Patrouillen verdoppelt.
     try { this._patrouillenAufstellen(); } catch (_) {}
     this.createPlayer();
     this.createPrompt();
@@ -1236,19 +1222,6 @@ class HubSceneV2 extends Phaser.Scene {
     }
   }
 
-  // Nach dem naechsten Abstieg ist die Woche um: die Stimmen sind ausgezaehlt.
-  // Gewonnen hat, was oben hing.
-  _ediktAuszaehlen() {
-    if (this._ediktSchritt() !== 2) return false;
-    const qs = window.questSystem;
-    qs.updateQuestProgress('observe', 'abstimmung_ausgezaehlt', 1);
-    const f = (n) => typeof qs.hasFlag === 'function' && qs.hasFlag(n);
-    const sieger = f('edikt_garde') ? 'garde' : f('edikt_klerus') ? 'klerus' : 'magistrat';
-    this._hubHinweis(_HUB_T('hub.abstimmung.ergebnis.' + sieger));
-    this._refreshQuestIndicators();
-    return sieger;
-  }
-
   _hubHinweis(text) {
     try {
       if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
@@ -1257,8 +1230,9 @@ class HubSceneV2 extends Phaser.Scene {
     } catch (_) {}
   }
 
-  // Egal welches Edikt gewann: die Patrouillen verdoppeln sich. Im Hub stehen
-  // danach zwei Wachen mehr auf dem Platz — bis zum Epilog.
+  // Egal welches Edikt gewann: die Patrouillen verdoppeln sich (gesetzt beim
+  // Abschluss der geheimen Sitzung). Im Hub stehen danach zwei Wachen mehr
+  // auf dem Platz — bis zum Epilog.
   _patrouillenAufstellen() {
     (this._patrouillen || []).forEach((s) => { try { s.destroy(); } catch (_) {} });
     this._patrouillen = [];

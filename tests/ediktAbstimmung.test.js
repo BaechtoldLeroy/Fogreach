@@ -3,7 +3,9 @@
 // #150, Vorschlag 5: Die Buerger waehlen zwischen drei Edikten, der Spieler
 // druckt und plakatiert sie. Egal welches gewinnt, die Patrouillen verdoppeln
 // sich. Die Wahl faellt an der Anschlagtafel: welches Edikt ganz oben haengt —
-// und genau das gewinnt. Am echten Hub.
+// und genau das gewinnt. Das Ergebnis verkuendet die oeffentliche Ratssitzung
+// (#159), die geheime zeigt, dass es vorher feststand (tests/ratssitzung).
+// Am echten Hub.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
@@ -34,11 +36,11 @@ const ziele = () => H.run(`(function () {
   return q ? q.objectives.map(function (o) { return o.current; }).join(',') : null;
 })()`);
 
-test('Annehmen hakt nichts ab: drucken, aushaengen, auszaehlen', () => {
+test('Annehmen hakt nichts ab: drucken, aushaengen', () => {
   stand({ harren_daughter_investigation: FERTIG, aldric_cleanup: FERTIG });
   const ok = H.run(`window.questSystem.acceptQuest('faction_campaign')`);
   assert.strictEqual(ok, true);
-  assert.strictEqual(ziele(), '0,0,0');
+  assert.strictEqual(ziele(), '0,0');
   assert.strictEqual(H.run(`${hub}._ediktSchritt()`), 0);
 });
 
@@ -56,7 +58,7 @@ test('In der Druckerei druckt Thom die drei Edikte', () => {
   assert.ok(/Dasselbe Papier/.test(r.text), 'das Papier kommt nicht vor: ' + r.text);
   assert.strictEqual(r.aktion, 'edikt_drucken');
   H.run(`(function () { var sc = ${hub}; sc._handleDialogueChoice('edikt_drucken', {}, '', [], 'flavor', null, 0, null); sc._dialogOpen = false; })()`);
-  assert.strictEqual(ziele(), '1,0,0');
+  assert.strictEqual(ziele(), '1,0');
 });
 
 test('Die Anschlagtafel wird ansprechbar, und oben haengt, was Du waehlst', () => {
@@ -78,42 +80,35 @@ test('Die Anschlagtafel wird ansprechbar, und oben haengt, was Du waehlst', () =
   })()`);
   assert.strictEqual(r.art, 'anschlag', 'an der Tafel gibt es nichts zu tun');
   assert.strictEqual(r.offen, false);
-  assert.strictEqual(ziele(), '1,1,0');
+  assert.strictEqual(ziele(), '1,1');
   assert.strictEqual(H.run(`window.questSystem.hasFlag('edikt_klerus')`), true);
 });
 
-test('Ausgezaehlt wird erst nach dem naechsten Abstieg — gewonnen hat, was oben hing', async () => {
-  // Ohne Abstieg: kein Ergebnis.
-  H.run(`${hub}.scene.restart({})`);
-  await H.waitForScene('HubSceneV2', { maxRounds: 100 });
-  H.step(10);
-  assert.strictEqual(ziele(), '1,1,0', 'ausgezaehlt, ohne dass eine Woche vergangen ist');
-
-  H.run(`(function () {
-    window.__hinweise = [];
-    var echt = window.EventSystem.showEventToast;
-    window.EventSystem.showEventToast = function (s, t) { window.__hinweise.push(String(t)); return echt.apply(this, arguments); };
-    ${hub}.scene.restart({ gameState: { hubPhase: 0 } });
-  })()`);
-  await H.waitForScene('HubSceneV2', { maxRounds: 100 });
-  H.step(10);
-  assert.strictEqual(ziele(), '1,1,1', 'nach dem Abstieg nicht ausgezaehlt');
-  const hinweise = H.run(`window.__hinweise`);
-  assert.ok(hinweise.some((t) => /Edikt des Klerus hat gewonnen/.test(t)), JSON.stringify(hinweise));
-});
-
-test('Abgabe: die Patrouillen verdoppeln sich — im Hub stehen zwei Wachen mehr', () => {
+test('Abgabe bei Aldric: das Ergebnis verkuendet der Rat im Ratssaal', () => {
   const r = H.run(`(function () {
     var qs = window.questSystem;
     var fertig = qs.completeQuest('faction_campaign');
-    var sc = ${hub};
-    return { fertig: fertig, flag: qs.hasFlag('patrouillen_verdoppelt'), wachen: sc._patrouillenAufstellen(),
-             text: qs.QUEST_DEFINITIONS.faction_campaign.dialogueComplete };
+    return { fertig: fertig, text: qs.QUEST_DEFINITIONS.faction_campaign.dialogueComplete,
+             patrouille: qs.hasFlag('patrouillen_verdoppelt') };
+  })()`);
+  assert.strictEqual(r.fertig, true, 'nach Drucken und Aushaengen nicht abgabebereit');
+  assert.ok(/Ratssaal/.test(r.text), 'Aldric verweist nicht auf die Verkuendung: ' + r.text);
+  // Die Patrouillen verdoppeln sich erst mit der geheimen Sitzung (#159).
+  assert.strictEqual(r.patrouille, false, 'die Patrouillen verdoppeln sich schon bei Aldric');
+});
+
+test('Nach der geheimen Sitzung stehen zwei Wachen mehr auf dem Platz', () => {
+  const r = H.run(`(function () {
+    var qs = window.questSystem;
+    qs.acceptQuest('council_collusion_reveal');
+    qs.updateQuestProgress('observe', 'oeffentliche_sitzung', 1);
+    qs.updateQuestProgress('observe', 'collusion_reveal_seen', 1);
+    var fertig = qs.completeQuest('council_collusion_reveal');
+    return { fertig: fertig, flag: qs.hasFlag('patrouillen_verdoppelt'), wachen: ${hub}._patrouillenAufstellen() };
   })()`);
   assert.strictEqual(r.fertig, true);
   assert.strictEqual(r.flag, true);
   assert.strictEqual(r.wachen, 2, 'keine zusaetzlichen Wachen');
-  assert.ok(/Patrouillen verdoppeln wir trotzdem/.test(r.text));
 });
 
 test('Danach oeffnet die Druckerei wieder ihr normales Menue', () => {

@@ -194,8 +194,12 @@
         { type: 'observe', target: 'collusion_reveal_seen', current: 0, required: 1 }
       ],
       rewards: { xp: 150, fragments: 1 },
-      prerequisites: ['magistrat_verification', 'klerus_purification', 'garde_patrol_expansion', 'widerstand_proof'],
+      // #160: Die oeffentliche Sitzung verkuendet das Ergebnis der Abstimmung
+      // aus faction_campaign — sie setzt sie deshalb voraus.
+      prerequisites: ['magistrat_verification', 'klerus_purification', 'garde_patrol_expansion', 'widerstand_proof', 'faction_campaign'],
       requiredAct: 1,
+      // Egal welches Edikt gewann: die Patrouillen verdoppeln sich (Hub).
+      completionFlags: ['patrouillen_verdoppelt'],
       // Trigger -> Akt 2 (Das Doppelspiel). advanceAct + der hartverdrahtete
       // advanceToAct(2) in completeQuest (idempotent) — beides führt auf 2.
       // Objective bleibt 'dialogue' (Auto-Complete): der observe-Trigger der
@@ -203,7 +207,7 @@
       // Scope: Rückgrat, keine Szenen). Ein Wechsel auf 'observe' ohne diese
       // Szene machte Akt 2 unerreichbar.
       advanceAct: 2,
-      dialogueOffer: 'Heute tagt der Rat öffentlich, im Ratssaal. Magistrat, Klerus, Garde, vor allen Bürgern. Geh hin und hör zu, wie sie streiten. Und dann folge ihnen in der Nacht, wenn sie glauben, dass keiner zusieht.',
+      dialogueOffer: 'Heute verkündet der Rat das Ergebnis der Abstimmung, öffentlich, im Ratssaal. Magistrat, Klerus, Garde, vor allen Bürgern. Geh hin und hör zu. Und dann folge ihnen in der Nacht, wenn sie glauben, dass keiner zusieht.',
       dialogueProgress: 'Die Ratskammer liegt unten im Keller. Zieh die Uniform der Wache an, bleib im Schatten und hör zu, was sie sagen, wenn keiner zusieht.',
       dialogueComplete: 'Jetzt hast du es gesehen. Ein Gesicht, drei Masken. Du hast für jede gearbeitet. Du könntest fliehen — aber ein Handwerker, der weiter im Rathaus aus und ein geht, sieht Dinge, die ein Flüchtiger nie sieht. Bleib, wo du bist. Räum weiter für sie, und räum heimlich für uns. Es ist gefährlicher. Es ist auch das Einzige, was nützt.'
     },
@@ -625,26 +629,25 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     faction_campaign: {
       id: 'faction_campaign',
       title: 'Das Edikt der Woche',
-      description: 'Die Stadt stimmt ab: drei Edikte, eines gewinnt. Lass sie bei Thom drucken, häng sie an die Anschlagtafeln vor dem Rathaus und warte, wie die Stadt wählt.',
+      description: 'Die Stadt stimmt ab: drei Edikte, eines gewinnt. Lass sie bei Thom drucken und häng sie an die Anschlagtafeln vor dem Rathaus.',
       npcId: 'aldric',
       // #160 (#150, Vorschlag 5): Die demokratische Fassade sichtbar machen.
       // Drucken (Druckerei), aushaengen (Anschlagtafel, dort faellt die Wahl,
-      // welches oben haengt), auszaehlen (nach dem naechsten Abstieg). Egal
-      // welches gewinnt: die Patrouillen verdoppeln sich.
+      // welches oben haengt). Das Ergebnis verkuendet der Rat in der
+      // oeffentlichen Sitzung (#159, council_collusion_reveal); in der geheimen
+      // hoert man, dass es vorher feststand.
       type: 'observe',
       chain: 3,
       objectives: [
         { type: 'observe', target: 'edikte_gedruckt', current: 0, required: 1 },
-        { type: 'observe', target: 'edikte_plakatiert', current: 0, required: 1 },
-        { type: 'observe', target: 'abstimmung_ausgezaehlt', current: 0, required: 1 }
+        { type: 'observe', target: 'edikte_plakatiert', current: 0, required: 1 }
       ],
       rewards: { xp: 60 },
-      completionFlags: ['patrouillen_verdoppelt'],
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Diese Woche stimmt die Stadt ab. Drei Edikte, Magistrat, Klerus, Garde, und die Bürger wählen eines. Lass sie bei Thom drucken und häng sie an die Tafeln vor dem Rathaus. So sieht Ordnung aus, die gewählt ist.',
-      dialogueProgress: 'Gedruckt, ausgehängt, ausgezählt. In dieser Reihenfolge. Die Druckerei ist gleich über dem Platz.',
-      dialogueComplete: 'Die Stadt hat gewählt. Ausgerechnet das Edikt, das ganz oben hing. (Aldric lächelt.) Die Patrouillen verdoppeln wir trotzdem. Das hätten wir bei jedem Ergebnis getan.\n\nErst beim Abhängen fällt Dir das Papier auf. Dieselbe Körnung, alle drei, aus Thoms Druckerei. Du schiebst den Gedanken beiseite.'
+      dialogueProgress: 'Erst drucken, dann aushängen. Die Druckerei ist gleich über dem Platz.',
+      dialogueComplete: 'Gut. Die Stimmen werden gezählt, und das Ergebnis verkündet der Rat öffentlich, im Ratssaal. So gehört sich das.\n\nBeim Zurückgehen fällt Dir das Papier auf. Dieselbe Körnung, alle drei, aus Thoms Druckerei. Du schiebst den Gedanken beiseite.'
     },
     klerus_district_purge: {
       id: 'klerus_district_purge',
@@ -859,7 +862,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.widerstand_proof.dialogueProgress': 'Find the ritual chamber. Three rooms deeper. The document is small, but the seal upon it will take your breath away.',
       'quest.widerstand_proof.dialogueComplete': 'Three seals. One signature. Magistrate, Clergy, Guard — in public they pretend to be rivals. Behind closed doors they agree. Go to Harren. He has been waiting for the moment you would understand.',
 
-      'quest.council_collusion_reveal.dialogueOffer': 'Today the council meets in public, in the council hall. Magistrate, Clergy, Guard, before all the citizens. Go and listen to them argue. And then follow them in the night, when they think nobody is watching.',
+      'quest.council_collusion_reveal.dialogueOffer': 'Today the council announces the result of the vote, in public, in the council hall. Magistrate, Clergy, Guard, before all the citizens. Go and listen. And then follow them in the night, when they think nobody is watching.',
       'quest.council_collusion_reveal.dialogueProgress': 'The council chamber lies down in the cellar. Put on the guard uniform, stay in the shadows and listen to what they say when nobody is watching.',
       'quest.council_collusion_reveal.dialogueComplete': 'You have seen it now. The fog was never the weather — it was a story. You have already worked for each of the three masks, and it is only a single face. Act 2 begins here — in the same city, beneath the same masks.',
 

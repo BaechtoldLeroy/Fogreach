@@ -122,14 +122,35 @@
     return teile;
   }
 
+  // #160: Welches Edikt hat die Abstimmung gewonnen? Das, das oben hing.
+  var SIEGER = {
+    magistrat: 'Die Stimmen sind gezählt. Gewonnen hat das Edikt des Magistrats.',
+    klerus: 'Die Stimmen sind gezählt. Gewonnen hat das Edikt des Klerus.',
+    garde: 'Die Stimmen sind gezählt. Gewonnen hat das Edikt der Garde.'
+  };
+  function ediktSieger() {
+    var qs = window.questSystem;
+    var f = function (n) { return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag(n)); };
+    if (f('edikt_garde')) return 'garde';
+    if (f('edikt_klerus')) return 'klerus';
+    if (f('edikt_magistrat')) return 'magistrat';
+    return null;
+  }
+
   function playOeffentlicheSitzung(scene, onDone) {
-    _szeneSpielen(scene, [
-      '(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)',
-      'MAGISTRAT: Die Abgaben bleiben. Ordnung kostet.',
-      'KLERUS: Ordnung? Die Stadt verliert ihre Seele, und der Magistrat zählt Münzen!',
+    var sieger = ediktSieger();
+    var zeilen = ['(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)'];
+    // #160: Die Sitzung verkuendet das Ergebnis der Abstimmung.
+    if (sieger) {
+      zeilen.push('MAGISTRAT: ' + SIEGER[sieger]);
+      zeilen.push('(Es ist das Plakat, das ganz oben hing.)');
+    }
+    zeilen.push(
+      'KLERUS: Ein Edikt ist beschlossen, und trotzdem verliert die Stadt ihre Seele, während der Magistrat Münzen zählt!',
       'GARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.',
       '(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)'
-    ], 'oeffentliche_sitzung', function () {
+    );
+    _szeneSpielen(scene, zeilen, 'oeffentliche_sitzung', function () {
       _fireObserve('oeffentliche_sitzung');
       if (typeof onDone === 'function') onDone();
     }, false, _ratssaal);
@@ -159,6 +180,10 @@
       '(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)',
       'ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.'
     ];
+    // #160: Die Abstimmung. Gewonnen hat, was oben hing — und das wussten sie.
+    if (ediktSieger()) {
+      seiten.push('ALDRIC: Und die Abstimmung? (Er lacht leise.) Wer oben hängt, gewinnt. Das weiss jeder, der je eine Wand beklebt hat. Wir lassen einen Handwerker kleben und nennen es den Willen der Stadt.\n\n(Du hast es selbst aufgehängt.)');
+    }
     if (siegel) seiten.push(siegel);
     seiten.push('(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)');
 
@@ -286,6 +311,7 @@
   window.storyScenes = {
     playOeffentlicheSitzung: playOeffentlicheSitzung,
     playGeheimeSitzung: playGeheimeSitzung,
+    ediktSieger: ediktSieger,
     playElaraFirstCrack: playElaraFirstCrack,
     playWiedersehen: playWiedersehen,
     playNachtNachDemBruch: playNachtNachDemBruch,

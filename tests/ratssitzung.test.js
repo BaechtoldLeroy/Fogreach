@@ -12,7 +12,8 @@ const assert = require('node:assert');
 const { launch, launchDungeon } = require('../tools/headless/index.js');
 
 const VORAUS = ['harren_daughter_investigation', 'magistrat_verification', 'klerus_purification',
-  'garde_patrol_expansion', 'widerstand_proof'];
+  'garde_patrol_expansion', 'widerstand_proof',
+  'faction_campaign'];   // #160: die Abstimmung, deren Ergebnis der Ratssaal verkuendet
 const FERTIG = { status: 'completed', objectives: [] };
 function vorausFertig() { const q = {}; VORAUS.forEach((id) => { q[id] = FERTIG; }); return q; }
 function sitzung(oeffentlich, geheim) {
@@ -39,11 +40,15 @@ test('Hub: Annehmen fuehrt in den Ratssaal, und die Quest ist danach NICHT ferti
   const H = await launch({ search: '?autostart=1', renderer: 'canvas', waitFor: 'StartScene' });
   try {
     assert.ok(await H.waitForScene('HubSceneV2', { maxRounds: 250 }), 'Hub nicht erreicht');
-    standSetzen(H, vorausFertig(), {}, 1);
+    standSetzen(H, vorausFertig(), { edikt_klerus: true }, 1);
     const r = H.run(`(function () {
       var sc = window.game.scene.getScene('HubSceneV2');
       var qs = window.questSystem;
       var gespielt = [];
+      // Den vollen Text mitschreiben, wie er an den Wort-fuer-Wort-Aufbau geht.
+      var texte = [];
+      var echtTW = window.DialogTypewriter.anTextobjekt;
+      window.DialogTypewriter.anTextobjekt = function (s, obj, voll) { texte.push(String(voll)); return echtTW.apply(this, arguments); };
       var echt = window.storyScenes.playOeffentlicheSitzung;
       window.storyScenes.playOeffentlicheSitzung = function (s, fertig) { gespielt.push('oeffentlich'); return echt.call(this, s, fertig); };
       // Die Auswahl am Ende der Szene sofort aufloesen.
@@ -57,13 +62,17 @@ test('Hub: Annehmen fuehrt in den Ratssaal, und die Quest ist danach NICHT ferti
       for (var i = 0; i < 600; i++) sc.sys.game.loop.step(sc.sys.game.loop.now + 16.7 * (i + 1));
       window.DialogChoice.present = echtWahl;
       window.storyScenes.playOeffentlicheSitzung = echt;
+      window.DialogTypewriter.anTextobjekt = echtTW;
       var aktiv = qs.getActiveQuests().filter(function (x) { return x.id === 'council_collusion_reveal'; })[0];
-      return { gespielt: gespielt, nachAnnahme: nachAnnahme,
+      return { gespielt: gespielt, nachAnnahme: nachAnnahme, text: texte.join('\\n'),
                ziele: aktiv ? aktiv.objectives.map(function (o) { return o.target + ':' + o.current; }) : null };
     })()`);
     assert.ok(!r.fehler, r.fehler);
     assert.strictEqual(JSON.stringify(r.gespielt), JSON.stringify(['oeffentlich']), 'der Ratssaal spielt nicht');
     assert.strictEqual(r.nachAnnahme, false, 'die Sitzung hakt sich beim Annehmen ab (#147)');
+    // #160: Der Ratssaal verkuendet das Ergebnis der Abstimmung — das Edikt, das oben hing.
+    assert.ok(/Gewonnen hat das Edikt des Klerus/.test(r.text), 'kein Ergebnis verkuendet: ' + r.text);
+    assert.ok(/ganz oben hing/.test(r.text), 'kein Hinweis, dass es oben hing');
     assert.strictEqual(JSON.stringify(r.ziele), JSON.stringify(['oeffentliche_sitzung:1', 'collusion_reveal_seen:0']),
       'nach dem Ratssaal: ' + JSON.stringify(r.ziele));
   } finally { await H.shutdown(); }
@@ -143,6 +152,16 @@ test('Dungeon: nach dem Ratssaal wird die Ratskammer zum Spionage-Raum, und die 
   assert.ok(r.texte.some((t) => /Ratskammer bei Nacht/.test(t)), 'die geheime Sitzung spielt nicht: ' + JSON.stringify(r.texte));
   assert.ok(r.texte.some((t) => /Patrouillen verdoppeln/.test(t)), 'die drei sind sich nicht einig');
   assert.strictEqual(r.bereit, true, 'nach dem Belauschen ist die Quest nicht abgabebereit');
+});
+
+test('Dungeon: sie wissen, dass gewinnt, was oben haengt (#160)', () => {
+  const mit = ratskammerBelauschen({ edikt_garde: true });
+  assert.ok(!mit.fehler, mit.fehler);
+  assert.ok(mit.texte.some((t) => /Wer oben hängt, gewinnt/.test(t)), JSON.stringify(mit.texte));
+  assert.ok(mit.texte.some((t) => /Du hast es selbst aufgehängt/.test(t)));
+  // Ohne Abstimmung (alter Stand) keine Zeile dazu.
+  const ohne = ratskammerBelauschen({});
+  assert.ok(!ohne.texte.some((t) => /Wer oben hängt/.test(t)));
 });
 
 test('Dungeon: wer gesiegelt hat, erkennt sein Siegel (#145)', () => {

@@ -210,6 +210,14 @@ test('feature 050: Q6 unlocks only after all 4 parallel quests complete', () => 
   qs.acceptQuest('widerstand_proof');
   qs.updateQuestProgress('fetch', 'council_document', 1);
   qs.completeQuest('widerstand_proof');
+  // #160: die Abstimmung, deren Ergebnis die oeffentliche Sitzung verkuendet
+  var harrenAvailOhneEdikt = qs.getAvailableQuests('harren') || [];
+  assert.ok(!harrenAvailOhneEdikt.find(function (q) { return q.id === 'council_collusion_reveal'; }),
+    'Q6 must wait for the vote (faction_campaign)');
+  qs.acceptQuest('faction_campaign');
+  qs.updateQuestProgress('observe', 'edikte_gedruckt', 1);
+  qs.updateQuestProgress('observe', 'edikte_plakatiert', 1);
+  qs.completeQuest('faction_campaign');
   // Now Q6 should be available
   var harrenAvail2 = qs.getAvailableQuests('harren') || [];
   assert.ok(harrenAvail2.find(function (q) { return q.id === 'council_collusion_reveal'; }),
@@ -758,8 +766,8 @@ test('062 T015: Stichproben gegen den Kontrakt (prereqs, npcIds/FR-022)', () => 
   const D = freshSystem().QUEST_DEFINITIONS;
   assert.deepStrictEqual(
     (D.council_collusion_reveal.prerequisites || []).slice().sort(),
-    ['garde_patrol_expansion', 'klerus_purification', 'magistrat_verification', 'widerstand_proof'],
-    'der Reveal setzt die vier Fraktionsquests voraus');
+    ['faction_campaign', 'garde_patrol_expansion', 'klerus_purification', 'magistrat_verification', 'widerstand_proof'],
+    'der Reveal setzt die vier Fraktionsquests und die Abstimmung (#160) voraus');
   assert.strictEqual(D.espionage_informant.npcId, 'mara',
     'der Informant liegt in v4 bei Mara');
   assert.ok((D.bruch_confrontation.prerequisites || []).includes('elara_second_truth'),
@@ -791,7 +799,7 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
       'escort_route',                                           // WP05 (062)
       'collusion_reveal_seen', 'erster_riss_gesehen',
       'oeffentliche_sitzung',                                   // #159: Ratssaal (Hub-Szene)
-      'edikte_gedruckt', 'edikte_plakatiert', 'abstimmung_ausgezaehlt'])  // #160: HubSceneV2 (_ediktDrucken/_ediktAushaengen/_ediktAuszaehlen)          // 063 WP04 / #156: Szenen-Trigger
+      'edikte_gedruckt', 'edikte_plakatiert'])  // #160: HubSceneV2 (_ediktDrucken/_ediktAushaengen/_ediktAuszaehlen)          // 063 WP04 / #156: Szenen-Trigger
   };
   Object.keys(D).forEach((id) => {
     (D[id].objectives || []).forEach((o) => {
