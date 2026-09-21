@@ -1529,7 +1529,15 @@ function handlePlayerMovement() {
     return;
   }
 
-  // Boss-Ranzieh-Fenster (Kettenmeister chainPull/chainReel): solange aktiv, die
+  // #144: Gefesselt (Kettenmeister) — keine Bewegung, bis die Kette bricht.
+  if (window.__fessel) {
+    _smoothVelX = 0; _smoothVelY = 0;
+    player.setVelocity(0, 0);
+    updatePlayerSpriteAnimation(player, 0, 0);
+    return;
+  }
+
+  // Boss-Ranzieh-Fenster (Kettenmeister chainPull): solange aktiv, die
   // vom Boss gesetzte Velocity NICHT mit der Spieler-Eingabe überschreiben — sonst
   // wird der Pull-Impuls im selben/nächsten Frame sofort annulliert und der Spieler
   // bewegt sich nicht. Für die kurze Pull-Dauer gleitet er Richtung Boss.
@@ -1851,6 +1859,13 @@ function handleEnemyHit(scene, enemy, options = {}) {
       } catch (_) { /* never crash gameplay */ }
     }
     if (window.soundManager) window.soundManager.playSFX('enemy_death');
+    // #144: Wer im Raum faellt, kann als Vergessener zurueckkehren
+    // (Zeremonienmeister, Ausloeschung). Nur gewoehnliche Gegner.
+    if (!enemy.isBoss && !enemy._vergessen && typeof enemy.enemyType === 'number') {
+      window.__gefalleneImRaum = window.__gefalleneImRaum || [];
+      window.__gefalleneImRaum.push({ typ: enemy.enemyType, x: enemy.x, y: enemy.y });
+      if (window.__gefalleneImRaum.length > 12) window.__gefalleneImRaum.shift();
+    }
     // Particle effects: death burst + screen shake. Bosse bekommen den
     // wuchtigeren bossDeath-Effekt (Wellen + Schockringe + Blitz) statt des
     // normalen Gegner-Bursts, damit ein Boss-Kill sich als Ereignis anfühlt.
@@ -1996,6 +2011,11 @@ function attack() {
   if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) return;
 
   isAttacking = true;
+
+  // #144: Gefesselt — jeder Schlag trifft die Kette.
+  if (window.__fessel && typeof window.fesselSchlag === 'function') {
+    try { window.fesselSchlag(this); } catch (e) {}
+  }
 
   // Espionage (Feature 055): Angreifen lässt die Verkleidung fallen und treibt
   // den Verdacht hoch (FR-04). No-op außerhalb einer aktiven Espionage-Mission.
@@ -2704,6 +2724,7 @@ function performRoll() {
   if (!this || !player || !player.active) return false;
   if (isRolling || rollCooldown || playerHealth <= 0) return false;
   if (isDashing || isAttacking || isChargingSlash) return false;
+  if (window.__fessel) return false;   // #144: die Kette haelt
   if (window.statusEffectManager && window.statusEffectManager.isStunned(player)) return false;
   // 054 WP07: Block roll während offenem NPC-Dialog/Workshop/Loadout-Overlay
   // (HubScene-Pattern). Inventory wird bereits in InputScheme.isRollTriggered
@@ -2881,6 +2902,7 @@ function shadowCharge() {
   var scene = this;
   if (!scene || !player || !player.active) return;
   if (isDashing || isSpinning || isChargingSlash || isRolling) return;
+  if (window.__fessel) return;   // #144: die Kette haelt
 
   var dmgMult = _shadowDmgMult('charge');
   var dashDir = _getAimVector2(scene);
@@ -2998,6 +3020,7 @@ function shadowTeleportDash() {
   var scene = this;
   if (!scene || !player || !player.active) return;
   if (isRolling || isDashing) return;
+  if (window.__fessel) return;   // #144: die Kette haelt
 
   var rank = _shadowRank('teleportDash');
   var dir = _getAimVector2(scene);

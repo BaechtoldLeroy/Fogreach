@@ -2853,7 +2853,8 @@ const BOSS_DEFINITIONS = {
     baseDamage: 16,
     scale: 3.6,
     loreIntro: 'Ein Mitglied des Kettenrats selbst tritt aus dem Schatten — und mit ihm die Quelle des Nebels, die er hütet.',
-    attacks: ['shadowDash', 'darknessWave', 'shadowClones'],
+    // #144: Die Quelle vereint Fesselung und Ausloeschung seiner Vorgaenger.
+    attacks: ['shadowDash', 'darknessWave', 'shadowClones', 'fesselung', 'ausloeschung'],
     attackCooldown: 3000,
   },
   // #157 (Story-Bibel v5, Abschnitt 8): Der Schattenrat geht in der besessenen
@@ -3970,8 +3971,9 @@ function bossPhaseTransitionFx(boss, scene, phase) {
 // #62: Signature-Mechanik pro Boss. Ab Phase 2 wandert der boss-eigene schwere
 // Move in den Pool (Phase 3 doppelt gewichtet). Unbekannter Boss -> heavySlam.
 const BOSS_SIGNATURE = {
-  chainMaster: 'chainReel',       // harter Ranzieh-Zug -> Kiting-Puzzle
-  ceremonyMaster: 'ritualHazard', // dauerhafte Gefahrenzonen
+  // #144 (Story-Bibel): Jede Signatur traegt das Thema ihres Aktes.
+  chainMaster: 'fesselung',       // der Rat greift und haelt fest
+  ceremonyMaster: 'ausloeschung', // das Vergessen selbst, Vorspiel auf Elara
   shadowCouncillor: 'cloneSlam',  // Fake-out-Slams (nur einer echt)
   elaraBesessen: 'erinnerungsGriff', // #157: Faehigkeiten kurz weg
 };
@@ -4033,50 +4035,162 @@ function bossHeavySlam(boss) {
   });
 }
 
-// --- Kettenmeister-Signature: chainReel ------------------------------------
-// Harter, stärker telegrafierter Ranzieh-Zug (Kette leuchtet ~500ms auf, dann
-// kräftiger Pull + Schaden). In Raserei häufig -> der Spieler wird immer wieder
-// herangerissen und muss sich per Dash/Roll neu absetzen = Kiting-Puzzle.
-function bossChainReel(boss) {
-  const scene = this;
-  const warn = scene.add.graphics().setDepth(1001);
-  warn.lineStyle(4, 0xffaa33, 0.75);
-  warn.beginPath();
-  warn.moveTo(boss.x, boss.y);
-  warn.lineTo(player.x, player.y);
-  warn.strokePath();
+// --- Kettenmeister-Signatur: Fesselung (#144) ------------------------------
+// Ein Ring zieht sich unter dem Spieler zusammen. Wer rechtzeitig herausrollt
+// oder -dasht, entkommt. Wer drin bleibt, liegt in Ketten: keine Bewegung,
+// kein Ausweichen, der Kettenmeister schlaegt zu. Drei Waffenschlaege
+// zerbrechen die Kette; nach spaetestens FESSEL_MAX_MS bricht sie von selbst,
+// damit niemand festhaengt. Thema: der Rat greift und haelt fest.
+var FESSEL_TELEGRAPH_MS = 800;
+var FESSEL_RADIUS = 58;
+var FESSEL_TREFFER = 3;
+var FESSEL_MAX_MS = 4000;
 
-  scene.time.delayedCall(500, () => {
-    warn.destroy();
+function _fesselLoesen(scene, grund) {
+  var f = window.__fessel;
+  if (!f) return;
+  window.__fessel = null;
+  try { if (f.uhr) f.uhr.remove(); } catch (e) {}
+  try { if (f.bild) f.bild.destroy(); } catch (e) {}
+  if (grund === 'zerschlagen' && scene && scene.cameras && scene.cameras.main) {
+    try { scene.cameras.main.shake(120, 0.004); } catch (e) {}
+  }
+}
+if (typeof window !== 'undefined') window._fesselLoesen = _fesselLoesen;
+
+/** Ein Waffenschlag des Spielers, waehrend er gefesselt ist (player.attack). */
+function fesselSchlag(scene) {
+  var f = window.__fessel;
+  if (!f) return false;
+  f.treffer++;
+  if (f.bild) {
+    f.bild.clear();
+    _fesselZeichnen(f.bild, f.x, f.y, FESSEL_TREFFER - f.treffer);
+  }
+  if (f.treffer >= FESSEL_TREFFER) _fesselLoesen(scene, 'zerschlagen');
+  return true;
+}
+if (typeof window !== 'undefined') window.fesselSchlag = fesselSchlag;
+
+function _fesselZeichnen(g, x, y, rest) {
+  // Vier Ketten vom Boden zum Spieler; je weniger Rest, desto duenner.
+  var dicke = 2 + rest;
+  for (var i = 0; i < 4; i++) {
+    var w = i * Math.PI / 2 + Math.PI / 4;
+    var ax = x + Math.cos(w) * 34, ay = y + Math.sin(w) * 22;
+    g.lineStyle(dicke + 2, 0x1a1410, 0.9);
+    g.lineBetween(ax, ay, x, y - 6);
+    g.lineStyle(dicke, 0x8a8a94, 1);
+    g.lineBetween(ax, ay, x, y - 6);
+    g.fillStyle(0x3a3a42, 1);
+    g.fillCircle(ax, ay, 4);
+  }
+}
+
+function bossFesselung(boss) {
+  var scene = this;
+  if (window.__fessel) return;
+  var zx = player.x, zy = player.y;
+  var ring = scene.add.graphics().setDepth(1001);
+  var start = scene.time.now;
+  var takt = scene.time.addEvent({ delay: 16, loop: true, callback: function () {
+    var p = Math.min(1, (scene.time.now - start) / FESSEL_TELEGRAPH_MS);
+    ring.clear();
+    ring.lineStyle(3, 0xcc8844, 0.9);
+    ring.strokeCircle(zx, zy, FESSEL_RADIUS * (1.8 - 0.8 * p));
+    ring.fillStyle(0xcc8844, 0.12 + 0.2 * p);
+    ring.fillCircle(zx, zy, FESSEL_RADIUS);
+  } });
+  scene.time.delayedCall(FESSEL_TELEGRAPH_MS, function () {
+    try { takt.remove(); } catch (e) {}
+    ring.destroy();
     if (!boss.active || !player.active) return;
-    const ang = Math.atan2(boss.y - player.y, boss.x - player.x);
-    const strength = 560; // deutlich stärker als chainPull (300)
-    if (player.body) {
-      player.body.setVelocity(Math.cos(ang) * strength, Math.sin(ang) * strength);
-      // Pull-Fenster: handlePlayerMovement überschreibt die Velocity sonst sofort.
-      window._pullUntil = Date.now() + 420;
-    }
-    const chainG = scene.add.graphics().setDepth(1001);
-    chainG.lineStyle(4, 0xcc8844, 0.9);
-    chainG.beginPath();
-    chainG.moveTo(boss.x, boss.y);
-    chainG.lineTo(player.x, player.y);
-    chainG.strokePath();
-    scene.time.delayedCall(300, () => chainG.destroy());
-    applyPlayerDamage(Math.ceil((boss.damage || 4) * 0.6), scene);
+    // Entkommen: aus dem Ring gerollt oder gedasht.
+    if (Phaser.Math.Distance.Between(zx, zy, player.x, player.y) > FESSEL_RADIUS) return;
+    var bild = scene.add.graphics().setDepth((player.depth || 100) + 1);
+    _fesselZeichnen(bild, player.x, player.y, FESSEL_TREFFER);
+    window.__fessel = { x: player.x, y: player.y, treffer: 0, bild: bild,
+      uhr: scene.time.delayedCall(FESSEL_MAX_MS, function () { _fesselLoesen(scene, 'zeit'); }) };
+    if (player.body) player.body.setVelocity(0, 0);
+    applyPlayerDamage(Math.ceil((boss.damage || 4) * 0.4), scene);
+    // Er nutzt es: der naechste Angriff kommt sofort.
+    boss.nextPatternAt = scene.time.now + 250;
+    boss.once('destroy', function () { _fesselLoesen(scene, 'boss'); });
   });
 }
 
-// --- Zeremonienmeister-Signature: ritualHazard -----------------------------
-// Legt 2 DAUERHAFTE Ritual-Gefahrenzonen nahe dem Spieler, die ~6s stehen
-// bleiben und beim Drinstehen ticken -> zwingt zu ständiger Positionierung,
-// verkleinert die nutzbare Arena. (Add-Wellen laufen über summonMinions weiter.)
-function bossRitualHazard(boss) {
-  const scene = this;
-  for (let i = 0; i < 2; i++) {
-    const zx = player.x + Phaser.Math.Between(-120, 120);
-    const zy = player.y + Phaser.Math.Between(-120, 120);
-    spawnPersistentHazard(scene, boss, zx, zy, 70, 6000);
+// --- Zeremonienmeister-Signatur: Ausloeschung (#144) ------------------------
+// Das Vergessen selbst, Vorspiel auf Elaras Nebelgriff im Finale:
+//   1) Nebel loescht Teile der Arena — nur Sicht, keine Kollision (sonst
+//      koennte er den Spieler einmauern).
+//   2) Gefallene kehren zurueck, weil vergessen: dieselben Typen an den
+//      Stellen, an denen sie in diesem Raum fielen (sonst Schatten).
+//   3) Eine Faehigkeit ist kurz weg (Elara nimmt spaeter alle).
+var AUSLOESCHUNG_NEBEL_MS = 6000;
+var AUSLOESCHUNG_RUECKKEHR = 3;
+var AUSLOESCHUNG_SPERRE_MS = 2000;
+
+function bossAusloeschung(boss) {
+  var scene = this;
+  // 1) Nebel: drei dichte Flecken um den Spieler, ueber den Figuren.
+  for (var i = 0; i < 3; i++) {
+    var w = (i / 3) * Math.PI * 2 + Math.random();
+    var nx = player.x + Math.cos(w) * Phaser.Math.Between(90, 170);
+    var ny = player.y + Math.sin(w) * Phaser.Math.Between(90, 170);
+    var nebel = scene.add.graphics().setDepth(1002);
+    // Weiche Kante: Lagen, die zur Mitte dichter werden (im Browser geprueft —
+    // zwei harte Scheiben sahen nach Muenzen aus, nicht nach Nebel).
+    for (var r = 115, al = 0.07; r >= 35; r -= 16, al += 0.07) {
+      nebel.fillStyle(0xc8c0d8, al);
+      nebel.fillCircle(0, 0, r);
+    }
+    nebel.setPosition(nx, ny);
+    nebel.setAlpha(0);
+    nebel._ausloeschung = true;
+    scene.tweens.add({ targets: nebel, alpha: 1, duration: 500 });
+    // Er treibt langsam — Nebel steht nicht still.
+    scene.tweens.add({ targets: nebel, x: nx + Phaser.Math.Between(-25, 25), y: ny + Phaser.Math.Between(-15, 15),
+      duration: AUSLOESCHUNG_NEBEL_MS, ease: 'Sine.easeInOut' });
+    (function (n) {
+      scene.time.delayedCall(AUSLOESCHUNG_NEBEL_MS, function () {
+        if (!n.active) return;
+        scene.tweens.add({ targets: n, alpha: 0, duration: 700, onComplete: function () { n.destroy(); } });
+      });
+      boss.once('destroy', function () { try { n.destroy(); } catch (e) {} });
+    })(nebel);
+  }
+
+  // 2) Die Vergessenen kehren zurueck.
+  var gefallene = (window.__gefalleneImRaum || []).slice(-AUSLOESCHUNG_RUECKKEHR);
+  scene.time.delayedCall(600, function () {
+    if (!boss.active) return;
+    var n = Math.max(1, gefallene.length);
+    for (var k = 0; k < Math.min(AUSLOESCHUNG_RUECKKEHR, n); k++) {
+      var g = gefallene[k];
+      var typ = g ? g.typ : 5;
+      var sx = g ? g.x : boss.x + Phaser.Math.Between(-100, 100);
+      var sy = g ? g.y : boss.y + Phaser.Math.Between(-100, 100);
+      var e = spawnEnemy.call(scene, sx, sy, typ);
+      if (e) {
+        e._vergessen = true;
+        e.setTint(0xb8a8d8);
+        e.setAlpha(0.8);
+        e.hp = Math.max(2, Math.ceil(e.hp * 0.5));
+        e.maxHp = e.hp;
+      }
+    }
+  });
+
+  // 3) Eine Faehigkeit ist kurz weg.
+  var AS = window.AbilitySystem;
+  if (AS && typeof AS.getActiveLoadout === 'function' && typeof AS.setCooldown === 'function') {
+    var belegt = [];
+    var bel = AS.getActiveLoadout();
+    Object.keys(bel).forEach(function (s) { if (bel[s]) belegt.push(bel[s]); });
+    if (belegt.length) {
+      var jetzt = (typeof window.gameNow === 'function') ? window.gameNow(scene) : scene.time.now;
+      AS.setCooldown(belegt[Math.floor(Math.random() * belegt.length)], AUSLOESCHUNG_SPERRE_MS, jetzt);
+    }
   }
 }
 
@@ -4178,8 +4292,9 @@ const BOSS_ATTACK_MAP = {
   darknessWave: bossDarknessWave,
   shadowClones: bossShadowClones,
   heavySlam: bossHeavySlam,
-  chainReel: bossChainReel,
-  ritualHazard: bossRitualHazard,
+  // #144
+  fesselung: bossFesselung,
+  ausloeschung: bossAusloeschung,
   cloneSlam: bossCloneSlam,
   // #157
   nebelAusloeschung: bossNebelAusloeschung,

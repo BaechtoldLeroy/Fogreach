@@ -891,6 +891,9 @@ function enterRoom(scene, roomId) {
   scene.cameras.main.setBounds(0, 0, ROOM_W + rightPadding, ROOM_H);
 
   enemies?.clear(true, true);
+  // #144: Gefallene und eine Fesselung gehoeren zum Raum.
+  window.__gefalleneImRaum = [];
+  if (typeof window._fesselLoesen === 'function') { try { window._fesselLoesen(scene, 'raum'); } catch (e) {} }
   // Kehraus fuer Auren und Namenszuege ohne Besitzer. Gemeldet als "tote Auren
   // und Labels, die beim Raumwechsel nicht abgeraeumt wurden".
   //
@@ -1522,7 +1525,11 @@ function enterRoom(scene, roomId) {
   var _espionageRoom = !!(window.EspionageSystem
     && typeof window.EspionageSystem.isActive === 'function'
     && window.EspionageSystem.isActive());
-  if (!_espionageRoom && !_versteckRaum && typeof startNextWave === "function") {
+  // #161: Im Fluchtraum nach dem Bruch jagt Dich nur die Kettenwache (escape-
+  // Modus). Eine normale Welle fuellte den Raum sonst bis an die Grenze des
+  // Modus (16 Gegner), und die Jaeger kamen gar nicht erst.
+  var _flucht = !!(dungeonRun && dungeonRun.fluchtRaum === roomId && versteckBesuchFaellig() === 'bruch_nacht');
+  if (!_espionageRoom && !_versteckRaum && !_flucht && typeof startNextWave === "function") {
     startNextWave.call(scene, false);
     window.currentWave = currentWave;
   }
@@ -1533,7 +1540,6 @@ function enterRoom(scene, roomId) {
   if (window.RoomMode && typeof window.RoomMode.beginRoom === 'function') {
     try {
       // #161: Der Fluchtraum nach dem Bruch — die Kettenwache jagt Dich zu Elara.
-      var _flucht = !!(dungeonRun && dungeonRun.fluchtRaum === roomId && versteckBesuchFaellig() === 'bruch_nacht');
       if (_flucht && window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
         try {
           window.EventSystem.showEventToast(scene, _elaraT('Die Kettenwache! Lauf. Elara wartet hinter der nächsten Treppe.',
