@@ -174,7 +174,7 @@
       var cby = topY + visible.length * rowH;
       var cbg = scene.add.graphics();
       cbg.fillStyle(0x241618, 0.95).fillRoundedRect(-panelWidth / 2 + pad, cby, panelWidth - pad * 2, rowH - 8, 8);
-      var clabel = scene.add.text(-panelWidth / 2 + pad + 12, cby + 6, '[ Abbrechen ]  (ESC)', {
+      var clabel = scene.add.text(-panelWidth / 2 + pad + 12, cby + 6, ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "[ Cancel ]  (ESC)" : "[ Abbrechen ]  (ESC)"), {
         fontFamily: 'monospace', fontSize: 15, color: '#c99'
       });
       var czone = scene.add.zone(0, cby + (rowH - 8) / 2, panelWidth - pad * 2, rowH - 8)

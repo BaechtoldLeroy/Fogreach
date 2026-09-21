@@ -23,6 +23,10 @@
   // laeuft sie erst NACH dem Aufbau an.
   var LESEPAUSE_MS = 900;
 
+  // #87: zweisprachig wie js/finale.js.
+  function _en() { return !!(window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en'); }
+  function _t(de, en) { return _en() ? en : de; }
+
   function _fireObserve(target) {
     if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
       window.questSystem.updateQuestProgress('observe', target, 1);
@@ -102,7 +106,7 @@
     g.fillStyle(0x0c0b10, 0.9); g.fillRect(0, 0, w, h);
     // Drei Pulte in den Farben der Fraktionen, oben im Bild.
     var farben = [0x3a5a9a, 0xc8b26a, 0x9a3a3a];
-    var namen = ['MAGISTRAT', 'KLERUS', 'GARDE'];
+    var namen = _en() ? ['MAGISTRATE', 'CLERGY', 'GUARD'] : ['MAGISTRAT', 'KLERUS', 'GARDE'];
     for (var i = 0; i < 3; i++) {
       var px = w / 2 + (i - 1) * 170;
       g.fillStyle(farben[i], 0.9); g.fillRect(px - 50, 40, 100, 58);
@@ -123,11 +127,19 @@
   }
 
   // #160: Welches Edikt hat die Abstimmung gewonnen? Das, das oben hing.
-  var SIEGER = {
-    magistrat: 'Die Stimmen sind gezählt. Gewonnen hat das Edikt des Magistrats.',
-    klerus: 'Die Stimmen sind gezählt. Gewonnen hat das Edikt des Klerus.',
-    garde: 'Die Stimmen sind gezählt. Gewonnen hat das Edikt der Garde.'
-  };
+  function _siegerText(s) {
+    var de = {
+      magistrat: 'Die Stimmen sind gezählt. Gewonnen hat das Edikt des Magistrats.',
+      klerus: 'Die Stimmen sind gezählt. Gewonnen hat das Edikt des Klerus.',
+      garde: 'Die Stimmen sind gezählt. Gewonnen hat das Edikt der Garde.'
+    };
+    var en = {
+      magistrat: "The votes are counted. The Magistrate's edict has won.",
+      klerus: "The votes are counted. The Clergy's edict has won.",
+      garde: "The votes are counted. The Guard's edict has won."
+    };
+    return (_en() ? en : de)[s];
+  }
   function ediktSieger() {
     var qs = window.questSystem;
     var f = function (n) { return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag(n)); };
@@ -139,16 +151,16 @@
 
   function playOeffentlicheSitzung(scene, onDone) {
     var sieger = ediktSieger();
-    var zeilen = ['(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)'];
+    var zeilen = [_t('(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)', '(The council hall is full. Citizens up to the walls. At the front three lecterns, three colours.)')];
     // #160: Die Sitzung verkuendet das Ergebnis der Abstimmung.
     if (sieger) {
-      zeilen.push('MAGISTRAT: ' + SIEGER[sieger]);
-      zeilen.push('(Es ist das Plakat, das ganz oben hing.)');
+      zeilen.push(_t('MAGISTRAT: ', 'MAGISTRATE: ') + _siegerText(sieger));
+      zeilen.push(_t('(Es ist das Plakat, das ganz oben hing.)', '(It is the poster that hung at the very top.)'));
     }
     zeilen.push(
-      'KLERUS: Ein Edikt ist beschlossen, und trotzdem verliert die Stadt ihre Seele, während der Magistrat Münzen zählt!',
-      'GARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.',
-      '(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)'
+      _t('KLERUS: Ein Edikt ist beschlossen, und trotzdem verliert die Stadt ihre Seele, während der Magistrat Münzen zählt!', 'CLERGY: An edict is passed, and still the city loses its soul while the Magistrate counts coins!'),
+      _t('GARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.', 'GUARD: You go on arguing. We hold the streets. More patrols, then there is peace.'),
+      _t('(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)', '(The citizens shout over each other. Everyone has picked a side. It looks like a choice.)')
     );
     _szeneSpielen(scene, zeilen, 'oeffentliche_sitzung', function () {
       _fireObserve('oeffentliche_sitzung');
@@ -172,20 +184,20 @@
     // Verweigern hat Vorrang: alte Spielstaende tragen beide Flaggen, weil
     // magistrat_verification frueher 'verification_sealed' als Vorgabe setzte.
     var siegel = flag('verification_refused')
-      ? 'Unter dem Siegel des Magistrats steht Brankas Zeichen. Das Dokument, das Du nicht siegeln wolltest. Geändert hat es nichts.'
+      ? _t('Unter dem Siegel des Magistrats steht Brankas Zeichen. Das Dokument, das Du nicht siegeln wolltest. Geändert hat es nichts.', 'Under the Magistrate\'s seal stands Branka\'s mark. The document you would not seal. It changed nothing.')
       : flag('verification_sealed')
-        ? 'Eines der drei Siegel kennst Du. Du hast es selbst unter ein Dokument gesetzt, damals, als es eine Formalie war.'
+        ? _t('Eines der drei Siegel kennst Du. Du hast es selbst unter ein Dokument gesetzt, damals, als es eine Formalie war.', 'You know one of the three seals. You put it under a document yourself, back when it was a formality.')
         : null;
     var seiten = [
-      '(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)',
-      'ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.'
+      _t('(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)', '(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)'),
+      _t('ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.', 'ALDRIC: As long as the city believes we quarrel, it believes it has a choice.\n\nCLERGY: We double the patrols anyway.\n\nGUARD: Like every week.')
     ];
     // #160: Die Abstimmung. Gewonnen hat, was oben hing — und das wussten sie.
     if (ediktSieger()) {
-      seiten.push('ALDRIC: Und die Abstimmung? (Er lacht leise.) Wer oben hängt, gewinnt. Das weiss jeder, der je eine Wand beklebt hat. Wir lassen einen Handwerker kleben und nennen es den Willen der Stadt.\n\n(Du hast es selbst aufgehängt.)');
+      seiten.push(_t('ALDRIC: Und die Abstimmung? (Er lacht leise.) Wer oben hängt, gewinnt. Das weiss jeder, der je eine Wand beklebt hat. Wir lassen einen Handwerker kleben und nennen es den Willen der Stadt.\n\n(Du hast es selbst aufgehängt.)', 'ALDRIC: And the vote? (He laughs quietly.) Whoever hangs on top wins. Anyone who has ever pasted up a wall knows that. We let a craftsman do the pasting and call it the will of the city.\n\n(You hung it up yourself.)'));
     }
     if (siegel) seiten.push(siegel);
-    seiten.push('(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)');
+    seiten.push(_t('(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)', '(You withdraw before the guards make their round. Harren is waiting upstairs.)'));
 
     // Das Zeichen ueber dem ersten Blatt: hier lernt der Spieler es kennen (#156).
     var bild = null;
@@ -206,7 +218,7 @@
         return;
       }
       var text = seiten[i++];
-      ES.showEventChoiceDialog(scene, text, [{ label: 'Weiter', callback: naechste }]);
+      ES.showEventChoiceDialog(scene, text, [{ label: _t('Weiter', 'Continue'), callback: naechste }]);
     };
     naechste();
     return true;
@@ -220,8 +232,8 @@
     // Vorher stand hier eine feste Verzoegerung von 900 ms — sie haette
     // den Aufbau mitten im Satz abgeschnitten.
     var auf = _zeilenAufbauen(scene, [
-      '(Ein Bote bringt eine Meldung. Elara liest, faltet das Blatt weg.)',
-      'ELARA: Das kommt nicht in die Presse.'
+      _t('(Ein Bote bringt eine Meldung. Elara liest, faltet das Blatt weg.)', '(A messenger brings a report. Elara reads it and folds the sheet away.)'),
+      _t('ELARA: Das kommt nicht in die Presse.', 'ELARA: This does not go to the press.')
     ], cx, cy, function () {
       if (scene.time && scene.time.delayedCall) scene.time.delayedCall(LESEPAUSE_MS, step);
       else step();
@@ -277,11 +289,11 @@
   // im Dungeon beschrieben ("jemand, der jeden Abend auf mich wartet").
   function playWiedersehen(scene, onDone) {
     _szeneSpielen(scene, [
-      '(Spät am Abend. Im Fenster des Bürgermeisters brennt ein Licht, wie jeden Abend.)',
-      '(Eine Gestalt in der Gasse. Die Kapuze fällt. Es ist Elara.)',
+      _t('(Spät am Abend. Im Fenster des Bürgermeisters brennt ein Licht, wie jeden Abend.)', '(Late in the evening. A light burns in the mayor\'s window, as it does every evening.)'),
+      _t('(Eine Gestalt in der Gasse. Die Kapuze fällt. Es ist Elara.)', '(A figure in the alley. The hood falls. It is Elara.)'),
       'HARREN: Lene.',
-      '(Sie zögert einen Atemzug zu lang. Dann liegt sie in seinen Armen.)',
-      'ELARA: Ich kann nicht bleiben, Vater. Noch nicht.'
+      _t('(Sie zögert einen Atemzug zu lang. Dann liegt sie in seinen Armen.)', '(She hesitates one breath too long. Then she is in his arms.)'),
+      _t('ELARA: Ich kann nicht bleiben, Vater. Noch nicht.', 'ELARA: I cannot stay, Father. Not yet.')
     ], 'wiedersehen', onDone);
   }
 
@@ -289,9 +301,9 @@
   // Das tiefste Vertrauen, direkt vor dem Verrat.
   function playNachtNachDemBruch(scene, onDone) {
     _szeneSpielen(scene, [
-      '(Die Nacht nach dem Bruch. Aldrics Wachen durchkämmen die Gassen. Elara zieht Dich in ihr Versteck unter der Stadt.)',
-      'ELARA: Hier findet Dich keiner. Schlaf. Ich halte Wache.',
-      '(Du wachst einmal auf. Sie sitzt an der Tür, die Klinge über den Knien, und sieht Dich an. Lange.)'
+      _t('(Die Nacht nach dem Bruch. Aldrics Wachen durchkämmen die Gassen. Elara zieht Dich in ihr Versteck unter der Stadt.)', '(The night after the break. Aldric\'s guards comb the alleys. Elara pulls you into her hideout beneath the city.)'),
+      _t('ELARA: Hier findet Dich keiner. Schlaf. Ich halte Wache.', 'ELARA: Nobody will find you here. Sleep. I will keep watch.'),
+      _t('(Du wachst einmal auf. Sie sitzt an der Tür, die Klinge über den Knien, und sieht Dich an. Lange.)', '(You wake once. She sits by the door, the blade across her knees, and looks at you. For a long time.)')
     ], 'bruch_nacht', onDone);
   }
 
@@ -300,11 +312,11 @@
   // der geheimen Sitzung und auf dem Buendel, das der Spieler ihr gebracht hat.
   function playMaulwurfEnthuellung(scene, onDone) {
     _szeneSpielen(scene, [
-      '(Du bist dem gefalteten Zettel gefolgt. Durch die Kanäle, hinauf ins Rathaus, in die Ratskammer. Es ist Nacht.)',
-      '(Aldric steht am Tisch. Ihm gegenüber, ohne Kapuze: Elara.)',
-      'ALDRIC: Er vertraut Dir. Gut. Sorg dafür, dass er hinabsteigt.',
-      'ELARA: Er wird gehen. Er hat niemanden mehr ausser mir.',
-      '(Als sie den Zettel übergibt, fällt Licht auf ihre Hand. Ein Ring: drei Ketten, ineinander verschlungen. Dasselbe Zeichen wie auf den Siegeln der geheimen Sitzung. Wie auf dem Bündel, das Du ihr gebracht hast.)'
+      _t('(Du bist dem gefalteten Zettel gefolgt. Durch die Kanäle, hinauf ins Rathaus, in die Ratskammer. Es ist Nacht.)', '(You followed the folded note. Through the canals, up into the town hall, into the council chamber. It is night.)'),
+      _t('(Aldric steht am Tisch. Ihm gegenüber, ohne Kapuze: Elara.)', '(Aldric stands at the table. Across from him, hood down: Elara.)'),
+      _t('ALDRIC: Er vertraut Dir. Gut. Sorg dafür, dass er hinabsteigt.', 'ALDRIC: He trusts you. Good. Make sure he goes down.'),
+      _t('ELARA: Er wird gehen. Er hat niemanden mehr ausser mir.', 'ELARA: He will go. He has no one left but me.'),
+      _t('(Als sie den Zettel übergibt, fällt Licht auf ihre Hand. Ein Ring: drei Ketten, ineinander verschlungen. Dasselbe Zeichen wie auf den Siegeln der geheimen Sitzung. Wie auf dem Bündel, das Du ihr gebracht hast.)', '(As she hands over the note, light falls on her hand. A ring: three chains, intertwined. The same sign as on the seals of the secret session. As on the bundle you brought her.)')
     ], 'maulwurf_reveal', onDone, true);
   }
 

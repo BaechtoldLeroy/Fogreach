@@ -405,7 +405,7 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     }).setOrigin(0.5, 0).setDepth(10);
 
     // --- Back button ---
-    const backBtn = this._createButton(W / 2, H - 25, 220, 32, 'Zurück zum Hub [ESC]', () => this._returnToHub());
+    const backBtn = this._createButton(W / 2, H - 25, 220, 32, ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Back to Hub [ESC]" : "Zurück zum Hub [ESC]"), () => this._returnToHub());
 
     // Initial render of inventory list
     this._refreshInventoryList();

@@ -1201,11 +1201,15 @@ class HubSceneV2 extends Phaser.Scene {
 
   // In der Druckerei: Thom druckt die drei Edikte.
   _ediktDrucken() {
-    const npcData = { id: 'setzer_thom', name: 'Setzer Thom', lines: [] };
+    const en = !!(window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en');
+    const name = en ? 'Setter Thom' : 'Setzer Thom';
+    const npcData = { id: 'setzer_thom', name, lines: [] };
     this._dialogOpen = true;
-    this._showDialoguePages(npcData, 'Setzer Thom', [{
-      text: 'THOM: Drei Edikte für die Abstimmung. Magistrat in Gold, Klerus in Weiss, Garde in Rot. (Er legt drei Stapel nebeneinander.) Dasselbe Papier für alle drei. Ich habe nur eine Sorte.',
-      choices: [{ label: '[ Drucken ]', action: 'edikt_drucken' }]
+    this._showDialoguePages(npcData, name, [{
+      text: en
+        ? 'THOM: Three edicts for the vote. Magistrate in gold, Clergy in white, Guard in red. (He lays three stacks side by side.) The same paper for all three. I only have one kind.'
+        : 'THOM: Drei Edikte für die Abstimmung. Magistrat in Gold, Klerus in Weiss, Garde in Rot. (Er legt drei Stapel nebeneinander.) Dasselbe Papier für alle drei. Ich habe nur eine Sorte.',
+      choices: [{ label: en ? '[ Print ]' : '[ Drucken ]', action: 'edikt_drucken' }]
     }], 'flavor', null, 0);
   }
 
@@ -3003,7 +3007,9 @@ class HubSceneV2 extends Phaser.Scene {
         && typeof window.RunDepth.isKettenmeisterGateOpen === 'function'
         && !window.RunDepth.isKettenmeisterGateOpen()) {
       const gateHint = this.add.text(0, subtitle.y + subtitle.height + 6,
-        'Tiefer zu steigen ist noch nicht sicher — warte, bis Mara Dir mehr verrät.', {
+        (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en')
+          ? 'Going deeper is not safe yet — wait until Mara tells you more.'
+          : 'Tiefer zu steigen ist noch nicht sicher — warte, bis Mara Dir mehr verrät.', {
         fontFamily: 'monospace', fontSize: 13, color: '#d0a070',
         wordWrap: { width: panelWidth - pad * 2 }, align: 'center'
       }).setOrigin(0.5, 0);

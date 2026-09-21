@@ -98,7 +98,7 @@
          (beide pruefen bereits per typeof). Zum Reaktivieren: diese Zeilen und den
          leaderboard.js-Script-Tag weiter unten wieder einkommentieren. -->
     <script src="js/mobileSafeArea.js"></script>
-    <script src="js/mobileControls.js?v=070"></script>
+    <script src="js/mobileControls.js?v=071"></script>
     <script src="js/mobileAbilityButtons.js?v=011"></script>
     <!-- mobileJoystick.js (floating joystick) disabled: rex plugin can't
          re-capture pointerdown after setVisible. Joystick stays fixed. -->
@@ -109,11 +109,11 @@
     <script src="js/saveSlots.js?v=003"></script>
     <script src="js/persistence.js?v=063"></script>
     <script src="js/runDepth.js?v=003"></script>
-    <script src="js/i18n.js"></script>
+    <script src="js/i18n.js?v=001"></script>
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=253"></script>
+    <script src="js/version.js?v=254"></script>
     <script src="js/soundManager.js?v=002"></script>
     <script src="js/performanceMonitor.js?v=002"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -123,14 +123,14 @@
     <script src="js/roomTemplates.js?v=023"></script>
     <script src="js/proceduralRooms.js?v=005"></script>
     <script src="js/caveGenerator.js?v=002"></script>
-    <script src="js/doorSystem.js?v=004"></script>
+    <script src="js/doorSystem.js?v=005"></script>
     <script src="js/inventoryGrid.js?v=006"></script>
     <script src="js/dialogTypewriter.js?v=003"></script>
     <script src="js/hubTruhe.js?v=005"></script>
     <script src="js/hubTruheUI.js?v=005"></script>
     <!-- #156: das Zeichen des Schattenrats, an EINER Stelle gezeichnet. -->
     <script src="js/zeichen.js?v=001"></script>
-    <script src="js/inventory.js?v=118"></script>
+    <script src="js/inventory.js?v=119"></script>
     <script src="js/lootSystem.js?v=116"></script>
     <script src="js/amuletEffects.js"></script>
     <script src="js/abilitySystem.js?v=070"></script>
@@ -154,7 +154,7 @@
     <script src="js/roomModeHunt.js?v=085"></script>
     <script src="js/roomModeEscape.js?v=085"></script>
     <script src="js/roomModeVisuals.js?v=086"></script>
-    <script src="js/roomManager.js?v=138"></script>
+    <script src="js/roomManager.js?v=139"></script>
     <script src="js/statusEffects.js?v=006"></script>
     <script src="js/particleEffects.js?v=002"></script>
     <!-- Reine Reichweiten-Mathematik für zerstörbare Props. Abhängigkeitsfrei
@@ -163,23 +163,23 @@
     <script src="js/player.js?v=117"></script>
     <script src="js/enemySpawnGating.js?v=002"></script>
     <script src="js/bossIntro.js?v=004"></script>
-    <script src="js/enemy.js?v=110"></script>
+    <script src="js/enemy.js?v=111"></script>
     <!-- Gegner-Sprite-Ladeliste (queueEnemySprites): Hintergrund-Load im Hub +
          Sicherheitsnetz in GameScene.preload. Raus aus startScene.preload -> schnellerer Boot. -->
     <script src="js/enemyAssets.js?v=003"></script>
-    <script src="js/eliteEnemies.js?v=011"></script>
+    <script src="js/eliteEnemies.js?v=012"></script>
     <!-- #95: Kriegsschar — braucht EliteEnemies (Affix-Definitionen) -->
     <script src="js/kriegsschar.js?v=004"></script>
     <script src="js/loot.js?v=028"></script>
-    <script src="js/questSystem.js?v=030"></script>
-    <script src="js/storySystem.js?v=009"></script>
+    <script src="js/questSystem.js?v=031"></script>
+    <script src="js/storySystem.js?v=010"></script>
     <!-- Feature 063: Story-Inszenierung (Logik/Daten/Komponente vor HubSceneV2) -->
     <script src="js/questFinale.js?v=005"></script>
     <!-- #158: Finale an der Quelle und die Entscheidung am Konvoi. -->
     <script src="js/finale.js?v=003"></script>
-    <script src="js/dialogChoice.js?v=003"></script>
-    <script src="js/storyDialog.js?v=008"></script>
-    <script src="js/storyScenes.js?v=009"></script>
+    <script src="js/dialogChoice.js?v=004"></script>
+    <script src="js/storyDialog.js?v=009"></script>
+    <script src="js/storyScenes.js?v=010"></script>
     <script src="js/wave.js?v=090"></script>
     <script src="js/graphics.js?v=017"></script>
     <script src="js/scenes/Archivschmiede.js"></script>
@@ -199,29 +199,29 @@
          (the modal UI calls window.KnowledgeTree.*). -->
     <script src="js/knowledgeTree.js?v=012"></script>
     <!-- 060: Skill-Baum-Progression (pure D2) — Punkte aus Level-Ups -->
-    <script src="js/skillTree.js?v=067"></script>
+    <script src="js/skillTree.js?v=068"></script>
     <!-- 055 WP01: Espionage-Mechanik (no-op außerhalb Espionage-Missionen) -->
     <script src="js/espionageSystem.js?v=074"></script>
     <!-- 055 follow-up: Sichtbarkeitsschicht (HUD-Banner + Zonen-/Wachen-Marker) -->
     <script src="js/espionageVisuals.js?v=072"></script>
     <script src="js/scenes/startScene.js?v=088"></script>
     <script src="js/scenes/HubScene.js?v=003"></script>
-    <script src="js/scenes/hub/hubLayout.js?v=018"></script>
+    <script src="js/scenes/hub/hubLayout.js?v=019"></script>
     <!-- Feature 064: Hub-Evolution (Phasen-Logik + Darstellung vor HubSceneV2) -->
-    <script src="js/hubPhase.js?v=004"></script>
+    <script src="js/hubPhase.js?v=005"></script>
     <script src="js/hubPhaseView.js?v=008"></script>
-    <script src="js/scenes/HubSceneV2.js?v=129"></script>
-    <script src="js/scenes/CraftingScene.js?v=072"></script>
+    <script src="js/scenes/HubSceneV2.js?v=130"></script>
+    <script src="js/scenes/CraftingScene.js?v=073"></script>
     <script src="js/scenes/ShopScene.js?v=086"></script>
     <script src="js/scenes/SkillTreeScene.js?v=066"></script>
     <script src="js/scenes/SettingsScene.js?v=006"></script>
-    <script src="js/scenes/PrintingHouseScene.js?v=001"></script>
+    <script src="js/scenes/PrintingHouseScene.js?v=002"></script>
     <script src="js/scenes/TestTerrainScene.js"></script>
     <!-- DEAKTIVIERT (kein Netzwerk): <script type="module" src="js/leaderboard.js"></script> -->
     <script src="js/minimap.js?v=063"></script>
     <script src="js/hudV2.js?v=086"></script>
     <script src="js/endlessMode.js?v=063"></script>
-    <script src="js/main.js?v=122"></script>
+    <script src="js/main.js?v=123"></script>
     <script src="js/mobileAutoAim.js"></script>
     <!-- 053 WP01: Mobile-Perf-Diagnose-Probe. No-Op außer bei ?perf=1.
          ?v bump erzwingt frischen Fetch (Pages cached Assets ~10min). -->

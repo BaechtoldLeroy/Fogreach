@@ -187,6 +187,22 @@ const ROOM_DESCRIPTIONS = {
   'DieQuelle':      'Die Quelle \u2014 Hier beginnt der Nebel.',
   'ElarasVersteck': 'Elaras Versteck \u2014 Hier findet Dich keiner.'
 };
+// #87: die deutschen Texte oben sind die Quelle; jedes Feld liefert danach
+// die aktive Sprache (Key room.desc.<Vorlage>).
+if (window.i18n && typeof window.i18n.binden === 'function') {
+  Object.keys(ROOM_DESCRIPTIONS).forEach(function (k) {
+    window.i18n.binden(ROOM_DESCRIPTIONS, k, 'room.desc.' + k);
+  });
+  window.i18n.register('en', {
+    'room.desc.RathausArchive': 'Town Hall Archive \u2014 Forbidden records are stored here...',
+    'room.desc.RitualVault':    'Ritual Chamber \u2014 Demonic energy pulses in the air...',
+    'room.desc.PrisonDepths':   'Dungeon Depths \u2014 Screams echo through the halls...',
+    'room.desc.CouncilChamber': 'Council Chamber \u2014 The throne of the Chain Council stands abandoned...',
+    'room.desc.ForgottenCrypt': 'Forgotten Crypt \u2014 Ancient seals glow faintly...',
+    'room.desc.DieQuelle':      'The Source \u2014 This is where the fog begins.',
+    'room.desc.ElarasVersteck': "Elara's Hideout \u2014 Nobody will find you here."
+  });
+}
 
 // #161: Wie die Tiefen heissen (Story-Bibel v5, Abschnitt 11). Kein neuer Ort,
 // aber ein Name und eine Stimmung: der Rathauskeller der ersten Auftraege, die

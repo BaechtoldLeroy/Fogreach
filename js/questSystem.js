@@ -813,7 +813,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.branka_doubt.title': "The Smith's Doubt",
       'quest.branka_doubt.description': "Defeat 5 elite enemies to find evidence for Branka's suspicions.",
       'quest.elara_ritual.title': 'The Ritual Chamber',
-      'quest.elara_ritual.description': 'Reach wave 20 to find the council\'s ritual chamber.',
+      'quest.elara_ritual.description': "Descend to depth 20 and defeat the Master of Ceremonies who holds the council's ritual chamber.",
       'quest.thom_truth.title': 'Forbidden Truths',
       'quest.thom_truth.description': 'Find 5 print plates with the forbidden truths about the council.',
       'quest.mara_warning.title': "Mara's Warning",
@@ -833,7 +833,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.schattenrat_finale.description': 'Descend to depth 30, to the source of the fog. Elara is already there.',
 
       // === Quest dialogues — English ===
-      'quest.aldric_cleanup.dialogueOffer': 'Wild beasts in the cellars. Clear them out.\n\nWill you take this task?',
+      'quest.aldric_cleanup.dialogueOffer': "Vermin has settled in the cellars down below. Wild beasts, the guards say. Clear them out — ten of them, then we talk again.\n\nWill you take this task?",
       'quest.aldric_cleanup.dialogueProgress': 'The cellars are not safe yet. Keep fighting.',
       'quest.aldric_cleanup.dialogueComplete': 'Good. The cellars are cleared. Here is your reward.',
 
@@ -850,7 +850,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.magistrat_verification.dialogueProgress': 'The Council Seal is still down there in the sunken registry. Descend further and recover it. Without the document the reclassification is not legally binding.',
       'quest.magistrat_verification.dialogueComplete': 'Excellent. The document is in the archive. The daughter is now officially a person of interest. What that means in practice is none of your concern. The Magistrate thanks you.',
 
-      'quest.klerus_purification.dialogueOffer': "You have seen the fragment, Archivesmith. Then you know the daughter did not flee of her own will. She was led by a dark hand — the lower chambers teem with such shadows.\n\nPurify them. Three leaders of this heretical presence still lurk down there. Strike them down in the name of Order. The daughter's soul will thank you — if the Light finds her again.\n\nPurification is a sacred duty. Accept it.",
+      'quest.klerus_purification.dialogueOffer': "You have seen the fragment, Archivesmith. Then you know the daughter did not flee of her own will. She was led by a dark hand — the lower chambers teem with such shadows.\n\nPurify them. Three leaders of this heretical presence still lurk down there, deeper than the first passages — descend to depth 3. Strike them down in the name of Order. The daughter's soul will thank you — if the Light finds her again.\n\nPurification is a sacred duty. Accept it.",
       'quest.klerus_purification.dialogueProgress': 'The leaders lurk deep — only from depth 3. Descend, find them, strike them down. Every heresy you end opens another path to purity.',
       'quest.klerus_purification.dialogueComplete': 'You have broken the heresy. The lower chambers breathe again. Order endures — through you. The Clergy blesses your hand. Bring it onward where the Light demands.',
 
@@ -864,8 +864,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       'quest.council_collusion_reveal.dialogueOffer': 'Today the council announces the result of the vote, in public, in the council hall. Magistrate, Clergy, Guard, before all the citizens. Go and listen. And then follow them in the night, when they think nobody is watching.',
       'quest.council_collusion_reveal.dialogueProgress': 'The council chamber lies down in the cellar. Put on the guard uniform, stay in the shadows and listen to what they say when nobody is watching.',
-      'quest.council_collusion_reveal.dialogueComplete': 'You have seen it now. The fog was never the weather — it was a story. You have already worked for each of the three masks, and it is only a single face. Act 2 begins here — in the same city, beneath the same masks.',
-
+      'quest.council_collusion_reveal.dialogueComplete': "Now you have seen it. One face, three masks. You worked for each of them. You could flee — but a craftsman who keeps walking in and out of the town hall sees things a fugitive never sees. Stay where you are. Keep cleaning for them, and clean for us in secret. It is more dangerous. It is also the only thing that helps.",
       // === Feature 050 side-dialogue keys (consumed by WP03) ===
       'sidedialog.branka.q2_eyebrow': 'Branka raises an eyebrow when she sees the Magistrat seal. "Another verification seal. Do you actually know what ends up written on these documents?"',
       'sidedialog.thom.q4_eyebrow': "Thom glances up, then back at the press. \"Patrol expansion. The edict sounds reasonable. Go ask someone at the gazebo what 'reasonable' has meant this month.\"",
@@ -910,10 +909,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       'quest.bruch_confrontation.title': 'The Break',
       'quest.bruch_confrontation.description': "Aldric set guards on you. Cut your way to Branka — defeat 3 elite guards. They only confront you in the depths (from depth 8).",
-      'quest.bruch_confrontation.dialogueOffer': 'You saw the chamber — and Aldric knows it. His guards are already on you. Cut through and come to me at the forge.\n\nWill you survive it?',
-      'quest.bruch_confrontation.dialogueProgress': "Aldric's elite guards hold the deep — you only meet them from depth 8. Descend and fight through.",
-      'quest.bruch_confrontation.dialogueComplete': '"You ask too many questions," he said. Now you ask none — you know. The break has come. Mara, Thom, I — we are ready. Act 3 begins.',
-
+      'quest.bruch_confrontation.dialogueOffer': "Aldric knows. Your double game is exposed, his elite guards are sealing off the deep passages, from depth 8 you will face them. Cut your way through and come to me.",
+      'quest.bruch_confrontation.dialogueProgress': "Aldric's elite guards hold the depths. From depth 8 you will face them.",
+      'quest.bruch_confrontation.dialogueComplete': "You ask too many questions, he said. Now you ask none at all, you know. The cover is burned, the break has come. Mara, Thom, I, we are ready.",
       'quest.espionage_convoy.title': 'The Convoy',
       'quest.espionage_convoy.description': 'Shadow a council convoy in the warehouse in disguise and eavesdrop on it.',
       'quest.espionage_convoy.dialogueOffer': 'Tonight they unload a council convoy at the old warehouse. Put on the guard uniform, stay in the shadows and listen — but draw no blade, or the disguise falls.\n\nWill you take this on?',
@@ -932,23 +930,21 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.espionage_informant.dialogueProgress': "You don't have the mole yet. Stay inconspicuous at the meeting point and listen for who smuggles messages outside.",
       'quest.espionage_informant.dialogueComplete': 'You followed the note all the way into the council chamber. Elara, beside Aldric. On her ring the sign of the three chains. She led us all — straight into his hands.',
 
-      'quest.elara_ritual.dialogueOffer': "Deep below there is a chamber... I'll show you where. Reach wave 20.\n\nAre you ready for the truth?",
-      'quest.elara_ritual.dialogueProgress': 'You must press deeper. The ritual chamber lies at wave 20.',
-      'quest.elara_ritual.dialogueComplete': "You found it. The council's summoning chamber. Take this amulet — it shields against their dark magic.",
-
+      'quest.elara_ritual.dialogueOffer': "Deep below there is a chamber — the council's summoning chamber. It is held by the Master of Ceremonies, master of the forbidden rituals. Descend to depth 20 and strike him down.\n\nAre you ready for the truth?",
+      'quest.elara_ritual.dialogueProgress': "The Master of Ceremonies still holds the chamber. You will find him at depth 20 — as long as he lives, you cannot reach the truth.",
+      'quest.elara_ritual.dialogueComplete': "The Master of Ceremonies has fallen. You found it — the council's summoning chamber. Take this amulet; it shields against their dark magic.",
       'quest.thom_truth.dialogueOffer': "I've printed enough of what the council wants. Time for the truth.\n\nFind five print plates in the cellar — they hold the real history.",
       'quest.thom_truth.dialogueProgress': 'The print plates are hidden somewhere in the town hall cellar. Keep searching.',
       'quest.thom_truth.dialogueComplete': 'Fantastic! These plates contain proof the council wanted to destroy. The truth goes to print.',
 
-      'quest.mara_warning.dialogueOffer': 'The Chainmaster guards the first real evidence. Defeat him.\n\nWithout that proof we can prove nothing.',
-      'quest.mara_warning.dialogueProgress': 'The Chainmaster still lives. Find and defeat him.',
-      'quest.mara_warning.dialogueComplete': 'The Chainmaster has fallen! The evidence is secure. Now no one can deny what the council has done.',
-
+      'quest.mara_warning.dialogueOffer': "The Chainmaster holds the seals at depth 10. He binds whatever he wants to catch. Bring him down, and we have the first hard evidence.",
+      'quest.mara_warning.dialogueProgress': "The Chainmaster still lives, at depth 10. If he chains you, strike the chain, or he holds you fast.",
+      'quest.mara_warning.dialogueComplete': "The Chainmaster has fallen, the evidence is secured. Now no one can deny that the council processes people.",
       'quest.branka_weapons.dialogueOffer': 'We need weapons. Not for the council — for US.\n\nCraft three items at the forge.',
       'quest.branka_weapons.dialogueProgress': 'The forge waits. Craft more items.',
       'quest.branka_weapons.dialogueComplete': 'Well forged. These weapons will make the difference.',
 
-      'quest.thom_pamphlets.dialogueOffer': 'Every run is a chance to spread leaflets.\n\nComplete three runs and all of Fogreach will read the truth.',
+      'quest.thom_pamphlets.dialogueOffer': "The upper passages already read our truth. Now we need the depths — where the council keeps its secrets.\n\nComplete three runs from depth 22, and all of Fogreach will read the truth.",
       'quest.thom_pamphlets.dialogueProgress': 'Only deep runs count — from depth 22. Complete three; each spreads our message into the lowest passages.',
       'quest.thom_pamphlets.dialogueComplete': 'The whole city reads our truths! The citizens have awakened. Your experience now grows faster. (+10% XP)',
 
@@ -963,6 +959,49 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.schattenrat_finale.dialogueOffer': 'Elara has gone down. To the source, at depth 30. I know now what she is, Archivesmith. She is still my daughter. Go. I will follow.',
       'quest.schattenrat_finale.dialogueProgress': 'The source lies at depth 30. Hurry.',
       'quest.schattenrat_finale.dialogueComplete': 'The source is broken. The press is yours now. Go to Thom, it is time.',
+
+      // #87: bisher ohne englische Fassung
+      'quest.resistance_fetch_01.title': "The Sealed Bundle",
+      'quest.resistance_fetch_01.description': "Fetch the sealed bundle from the cellar. No one may see it, and do not open it.",
+      'quest.resistance_fetch_01.dialogueOffer': "There is something in the cellar... a bundle, sealed. Bring it to me without anyone seeing it. And do not open it.\n\nWill you take the task?",
+      'quest.resistance_fetch_01.dialogueProgress': "The bundle lies somewhere down there. Look around — and leave it closed.",
+      'quest.resistance_fetch_01.dialogueComplete': "You have it. And you did not open it. Good.\n\n(On the wax of the seal: three chains, intertwined. You have never seen this sign before.)",
+
+      'quest.faction_campaign.title': "Edict of the Week",
+      'quest.faction_campaign.description': "The city votes: three edicts, one wins. Have them printed at Thom's and post them on the notice boards in front of the town hall.",
+      'quest.faction_campaign.dialogueOffer': "This week the city votes. Three edicts, Magistrate, Clergy, Guard, and the citizens choose one. Have them printed at Thom's and post them on the boards in front of the town hall. That is what order looks like when it is chosen.",
+      'quest.faction_campaign.dialogueProgress': "First print, then post. The print shop is just across the square.",
+      'quest.faction_campaign.dialogueComplete': "Good. The votes are being counted, and the council announces the result in public, in the council hall. As it should be.",
+
+      'quest.klerus_district_purge.title': "Purging a District",
+      'quest.klerus_district_purge.description': "Purge an \"infested\" district — defeat 8 enemies and bring back the names.",
+      'quest.klerus_district_purge.dialogueOffer': "A district is infested. Purge it. Whoever shuns the Light has something to hide. Bring me the names of the infested.",
+      'quest.klerus_district_purge.dialogueProgress': "Not purged yet. The infested show themselves in the depths.",
+      'quest.klerus_district_purge.dialogueComplete': "You bring the names. (A copy is already with Mara before the council sees the list. Whoever is on it disappears. But perhaps not all of them any more. Perhaps someone warns them in time.)",
+
+      'quest.garde_night_escort.title': "Night Escort",
+      'quest.garde_night_escort.description': "Covertly secure a night transport — watch the escort route.",
+      'quest.garde_night_escort.dialogueOffer': "A transport goes out tonight. Secure the route, don't ask what is inside. Loyalty pays.",
+      'quest.garde_night_escort.dialogueProgress': "The transport is not rolling yet. Keep an eye on the route, stay inconspicuous.",
+      'quest.garde_night_escort.dialogueComplete': "The route is secure. (And in your head, route, time and cargo, ready for Mara. They were not weapons. They were the same vials as in the convoy.)",
+
+      'quest.who_you_were.title': "Who You Were",
+      'quest.who_you_were.description': "Bring Branka three shards of your old file from the depths (from depth 5).",
+      'quest.who_you_were.dialogueOffer': "I found something that concerns you. A file with your mark, half eaten by the fog. Bring me three shards of it from the depths, and we will piece together who you were.",
+      'quest.who_you_were.dialogueProgress': "The shards lie deep — from depth 5. Keep searching.",
+      'quest.who_you_were.dialogueComplete': "There you are. Before the accident, before the fog. You did not always just clean up. Once you asked the same questions you are asking again now. The fog did not hit you by chance. It was sent after you.",
+
+      'quest.elara_second_truth.title': "Elara's Second Truth",
+      'quest.elara_second_truth.description': "Elara shows you who you are doing the last thing for.",
+      'quest.elara_second_truth.dialogueOffer': "Before you do the last thing, you should know for whom. Come, just the two of us.",
+      'quest.elara_second_truth.dialogueProgress': "Elara is waiting for you. Just the two of you.",
+      'quest.elara_second_truth.dialogueComplete': "She tucked the report away. A true report, and no one will ever read it. \"Not everything helps,\" she said. You push the thought aside. For now.",
+
+      'quest.the_reckoning.title': "The Reckoning",
+      'quest.the_reckoning.description': "The source is broken. Thom waits at the press. The city shall learn everything.",
+      'quest.the_reckoning.dialogueOffer': "The plates are set. Everything you have seen goes on them: the council, Aldric, the resistance, her. Tomorrow the whole city reads it.",
+      'quest.the_reckoning.dialogueProgress': "The press is waiting.",
+      'quest.the_reckoning.dialogueComplete': "The fog thins — not because someone drives it away, but because too many people remember too much at once. Hard-won, incomplete, and free.",
 
       // === Quest reward strings ===
       'quest.reward.info.mara_contact': "Mara's network revealed",

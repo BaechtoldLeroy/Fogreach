@@ -395,7 +395,7 @@
       // Bottom row: cost pill (left) + status badge (right)
       const bottomY = y + h - 24;
       this.add.text(x + 18, bottomY,
-        edict.cost + ' Druckblätter   +' + edict.suspicionCost + ' Verdacht', {
+        edict.cost + ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? " print sheets   +" : " Druckblätter   +") + edict.suspicionCost + ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? " suspicion" : " Verdacht"), {
           fontFamily: 'monospace', fontSize: '12px', color: costColor, fontStyle: 'bold'
         }
       ).setScrollFactor(0).setDepth(2003);

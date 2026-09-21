@@ -2354,7 +2354,7 @@ function handlePlayerDeath(scene) {
     scene.namePrompted = true;
     let name = _HUD_T('hud.default_player_name');
     try {
-      const response = window.prompt('Du bist gestorben! Name für die Rangliste:', name);
+      const response = window.prompt(((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "You died! Name for the leaderboard:" : "Du bist gestorben! Name für die Rangliste:"), name);
       if (typeof response === 'string' && response.trim().length) {
         name = response.trim();
       } else {
@@ -2399,7 +2399,7 @@ function handlePlayerDeath(scene) {
         .catch((err) => {
           if (!isSceneActive()) return;
           console.error('Highscores konnten nicht geladen werden:', err);
-          scene.add.text(400, 400, 'Fehler beim Laden der Highscores', {
+          scene.add.text(400, 400, ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Could not load the high scores" : "Fehler beim Laden der Highscores"), {
             fontSize: '18px',
             fill: '#ff0000'
           })

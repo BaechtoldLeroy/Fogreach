@@ -80,6 +80,33 @@
     }
   };
 
+  // #87: Die Flavor-Zeilen oben sind die deutsche Quelle; jede wird an einen
+  // Key gebunden (hub.phase.<phase>.<npc>.<n>) und liefert die aktive Sprache.
+  (function () {
+    var I = (typeof window !== 'undefined') ? window.i18n : null;
+    if (!I || typeof I.binden !== 'function') return;
+    Object.keys(npcFlavorByPhase).forEach(function (ph) {
+      Object.keys(npcFlavorByPhase[ph]).forEach(function (npc) {
+        npcFlavorByPhase[ph][npc].forEach(function (_z, n, arr) {
+          I.binden(arr, n, 'hub.phase.' + ph + '.' + npc + '.' + n);
+        });
+      });
+    });
+    I.register('en', {
+      'hub.phase.doubleAgent.aldric.0': 'The campaign is going splendidly, Archivesmith. Three colours, one result. Do not ask which.',
+      'hub.phase.doubleAgent.aldric.1': 'You clean up reliably. The council remembers who is reliable.',
+      'hub.phase.broken.aldric.0': 'You. I know what you are. A craftsman who has seen too much.',
+      'hub.phase.broken.aldric.1': 'The town hall is no longer your door. Disappear before the guard learns your name.',
+      'hub.phase.epilogue.buerger.0': '(The citizen stands on the square and reads aloud from a fresh sheet.)',
+      'hub.phase.epilogue.buerger.1': 'CITIZEN: "...and here are the names. All of them. Read along if you can."'
+    });
+  })();
+
+  function _t(de, en) {
+    var I = (typeof window !== 'undefined') ? window.i18n : null;
+    return (I && typeof I.getLanguage === 'function' && I.getLanguage() === 'en') ? en : de;
+  }
+
   // #161: Im Epilog sprechen die Verbuendeten so, wie die Geschichte fuer sie
   // ausgegangen ist (dieselbe Rechnung wie questFinale.epilog).
   function epilogFlavor(npcId, flags) {
@@ -88,18 +115,18 @@
     if (!st) return null;
     if (npcId === 'branka') {
       return st.allies.branka
-        ? ['BRANKA: Die Presse läuft seit drei Tagen, und niemand hat sie angehalten. Ich hätte nicht gedacht, dass ich das noch erlebe.']
-        : ['BRANKA: (nickt Dir knapp zu) Gedruckt ist gedruckt. Was davor war, vergesse ich nicht. Aber ich lese mit.'];
+        ? [_t('BRANKA: Die Presse läuft seit drei Tagen, und niemand hat sie angehalten. Ich hätte nicht gedacht, dass ich das noch erlebe.', 'BRANKA: The press has been running for three days, and nobody has stopped it. I did not think I would live to see this.')]
+        : [_t('BRANKA: (nickt Dir knapp zu) Gedruckt ist gedruckt. Was davor war, vergesse ich nicht. Aber ich lese mit.', 'BRANKA: (gives you a curt nod) Printed is printed. I do not forget what came before. But I read along.')];
     }
     if (npcId === 'thom') {
       return st.allies.thom
-        ? ['THOM: Die zweite Auflage ist schon weg. Die Leute kommen mit eigenem Papier.']
-        : ['THOM: Ich drucke weiter. Irgendwer muss.'];
+        ? [_t('THOM: Die zweite Auflage ist schon weg. Die Leute kommen mit eigenem Papier.', 'THOM: The second run is already gone. People bring their own paper.')]
+        : [_t('THOM: Ich drucke weiter. Irgendwer muss.', 'THOM: I keep printing. Somebody has to.')];
     }
     if (npcId === 'mara') {
       return st.allies.mara
-        ? ['MARA: Mein Netz verteilt die Blätter. Jede Gasse, jede Tür.']
-        : ['MARA: Ich habe die Liste noch. Einige kommen zurück. Nicht alle.'];
+        ? [_t('MARA: Mein Netz verteilt die Blätter. Jede Gasse, jede Tür.', 'MARA: My network hands out the sheets. Every alley, every door.')]
+        : [_t('MARA: Ich habe die Liste noch. Einige kommen zurück. Nicht alle.', 'MARA: I still have the list. Some come back. Not all.')];
     }
     return null;
   }

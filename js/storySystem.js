@@ -701,7 +701,7 @@
     narrativeText.setText(seiten[0] || '');
 
     // Dismiss hint — fest am unteren Rand, nicht unter dem Text.
-    var hintText = scene.add.text(0, h / 2 - 36, 'Weiter [LEERTASTE]', {
+    var hintText = scene.add.text(0, h / 2 - 36, ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Continue [SPACE]" : "Weiter [LEERTASTE]"), {
       fontFamily: 'monospace',
       fontSize: 16,
       color: '#888888'

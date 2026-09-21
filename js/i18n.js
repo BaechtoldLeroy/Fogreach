@@ -25,6 +25,11 @@
 
   function t(key, params) {
     let val = dicts[active] && dicts[active][key];
+    // #87: Im Debug-Modus (?debug=1&i18nstrict=1) zeigt eine fehlende
+    // englische Fassung sich sichtbar, statt still auf Deutsch zu fallen.
+    if (val === undefined && active !== DEFAULT_LANG && _strikt()) {
+      return '[EN-MISSING:' + key + ']';
+    }
     if (val === undefined && active !== DEFAULT_LANG) {
       val = dicts[DEFAULT_LANG] && dicts[DEFAULT_LANG][key];
     }
@@ -51,6 +56,36 @@
     return false;
   }
 
+  function _strikt() {
+    try {
+      var G = window.DebugGate;
+      return !!(G && typeof G.an === 'function' && G.an('i18nstrict'));
+    } catch (e) { return false; }
+  }
+
+  // #87: Nur lesen — fuer tools/checkI18n.js und den Test, der fehlende
+  // englische Fassungen meldet.
+  function _keys(lang) {
+    return isSupported(lang) ? Object.keys(dicts[lang]) : [];
+  }
+  function _wert(lang, key) {
+    return isSupported(lang) ? dicts[lang][key] : undefined;
+  }
+
+  // #87: Ein Textfeld eines Datensatzes an einen Key binden. Der Text, der im
+  // Datensatz steht, wird die deutsche Fassung; das Feld liefert danach immer
+  // die aktive Sprache. Die Daten bleiben lesbar, und tools/checkI18n.js sieht
+  // jede Stelle, an der die englische Fassung fehlt.
+  function binden(obj, feld, key) {
+    if (!obj || typeof obj[feld] !== 'string') return;
+    dicts[DEFAULT_LANG][key] = obj[feld];
+    Object.defineProperty(obj, feld, {
+      get: function () { return t(key); },
+      enumerable: true,
+      configurable: true
+    });
+  }
+
   function setLanguage(lang) {
     if (!isSupported(lang)) {
       console.warn('[i18n] setLanguage: invalid language, falling back to', DEFAULT_LANG, '(was:', lang, ')');
@@ -73,5 +108,5 @@
     return function () { subscribers.delete(callback); };
   }
 
-  window.i18n = { register, t, has, setLanguage, getLanguage, onChange };
+  window.i18n = { register, t, has, setLanguage, getLanguage, onChange, binden, _keys, _wert };
 })();

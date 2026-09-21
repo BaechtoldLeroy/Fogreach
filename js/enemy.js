@@ -2708,7 +2708,7 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
       player.setVelocity(0);
       enemies.clear(true, true);
       if (gameOverText) {
-        gameOverText.setText('DU BIST GESTORBEN\nZurück zur Stadt...');
+        gameOverText.setText((window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t('hud.dead') : 'DU BIST GESTORBEN\nZurück zur Stadt...');
         gameOverText.setVisible(true);
       }
       if (typeof handlePlayerDeath === 'function') {
@@ -2876,6 +2876,24 @@ const BOSS_DEFINITIONS = {
     attackCooldown: 3000,
   },
 };
+
+// #87: Name und Lore oben sind die deutsche Quelle (Key boss.<id>.name/.lore).
+if (window.i18n && typeof window.i18n.binden === 'function') {
+  Object.keys(BOSS_DEFINITIONS).forEach(function (k) {
+    window.i18n.binden(BOSS_DEFINITIONS[k], 'name', 'boss.' + k + '.name');
+    window.i18n.binden(BOSS_DEFINITIONS[k], 'loreIntro', 'boss.' + k + '.lore');
+  });
+  window.i18n.register('en', {
+    'boss.chainMaster.name': 'Chainmaster',
+    'boss.chainMaster.lore': "The Guard's torturer. The Chainmaster binds whatever the council makes disappear. Behind him lie the first seals — the first hard evidence.",
+    'boss.ceremonyMaster.name': 'Master of Ceremonies',
+    'boss.ceremonyMaster.lore': "The Clergy's highest ritualist. The Master of Ceremonies feeds the source with what the city forgets — every seal he draws chains it tighter.",
+    'boss.shadowCouncillor.name': 'Shadow Councillor',
+    'boss.shadowCouncillor.lore': 'A member of the Chain Council himself steps out of the shadows — and with him the source of the fog he guards.',
+    'boss.elaraBesessen.name': 'Elara, possessed',
+    'boss.elaraBesessen.lore': 'The source has taken her. What was once Elara reaches for everything you remember.'
+  });
+}
 
 /**
  * Wartet Elara auf Tiefe 30? Nur waehrend der letzten Quest (schattenrat_finale):
@@ -3065,9 +3083,13 @@ function _istInszenierteBegegnung(def) {
 
 function _bossIntroLore(def) {
   if (_istInszenierteBegegnung(def)) {
-    return 'Die Siegel, vor denen Mara warnte. Der Kettenmeister fesselt, '
-      + 'was der Rat verschwinden lässt — schlag die Ketten, sonst wirst Du '
-      + 'selbst zu einem Namen auf seinen Listen.';
+    var en = !!(window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
+    return en
+      ? 'The seals Mara warned about. The Chainmaster binds whatever the council '
+        + 'makes disappear — strike the chains, or you become a name on his lists yourself.'
+      : 'Die Siegel, vor denen Mara warnte. Der Kettenmeister fesselt, '
+        + 'was der Rat verschwinden lässt — schlag die Ketten, sonst wirst Du '
+        + 'selbst zu einem Namen auf seinen Listen.';
   }
   return def.loreIntro;
 }

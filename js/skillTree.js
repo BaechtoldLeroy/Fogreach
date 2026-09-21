@@ -108,6 +108,36 @@
     })
   });
 
+  // #87: Die Knotennamen oben sind die deutsche Quelle (Key skill.<id>.name).
+  if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.binden === 'function') {
+    Object.keys(SKILL_TREE.nodes).forEach(function (id) {
+      window.i18n.binden(SKILL_TREE.nodes[id], 'name', 'skill.' + id + '.name');
+    });
+    window.i18n.register('en', {
+      'skill.whirlwind.name': 'Whirlwind',
+      'skill.hammer.name': 'Hammer of the Ancestors',
+      'skill.frenzy.name': 'Frenzy',
+      'skill.berserk.name': 'Berserk',
+      'skill.twistingBlades.name': 'Twisting Blades',
+      'skill.steelGrasp.name': 'Steel Grasp',
+      'skill.cycloneStrike.name': 'Cyclone Strike',
+      'skill.frostNova.name': 'Frost Nova',
+      'skill.charge.name': 'Charge',
+      'skill.teleportDash.name': 'Shadow Step',
+      'skill.heilwunde.name': 'Heal Wound',
+      'skill.deathBlow.name': 'Death Blow',
+      'skill.combat_poison_blade.name': 'Poison Blade',
+      'skill.combat_lethal_thrust.name': 'Weak Spot',
+      'skill.combat_chain_lightning.name': 'Chain Lightning',
+      'skill.mobility_wind_gust.name': 'Wind Gust',
+      'skill.survival_thorn_armor.name': 'Thorn Armor',
+      'skill.survival_second_chance.name': 'Second Chance',
+      'skill.mobility_shadow_step.name': 'Long Leap',
+      'skill.mobility_lightning_reflex.name': 'Lightning Reflex',
+      'skill.survival_life_steal.name': 'Life Steal'
+    });
+  }
+
   function _defaultState() {
     return { version: SCHEMA_VERSION, skillPoints: 0, ranks: {} };
   }

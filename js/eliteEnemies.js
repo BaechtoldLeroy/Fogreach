@@ -231,10 +231,11 @@
     if (enemy.isImp) return 'Imp';
     if (enemy.isArcher) return 'Archer';
     if (enemy.isMage) return 'Mage';
-    if (enemy.isFlameWeaver) return 'Flammenweber';
-    if (enemy.isShadowCreeper || enemy.isShadow) return 'Schattenschleicher';
-    if (enemy.isChainGuard) return 'Kettenwächter';
-    return 'Gegner';
+    // #87: Archer/Mage heissen in beiden Sprachen gleich.
+    if (enemy.isFlameWeaver) return ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Flameweaver" : "Flammenweber");
+    if (enemy.isShadowCreeper || enemy.isShadow) return ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Shadow Creeper" : "Schattenschleicher");
+    if (enemy.isChainGuard) return ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Chain Warden" : "Kettenwächter");
+    return ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Enemy" : "Gegner");
   }
 
   // Sichtlinien-Test gegen das zwischengespeicherte Vision-Polygon (wird jeden
@@ -354,7 +355,7 @@
           // muss die Stufe lesbar sein.
           const istBanner = (eliteTier === 'unique');
           const tagText = istBanner
-            ? ('BANNERTRÄGER · ' + baseTypeName + '\n' + affixText)
+            ? (((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "BANNER BEARER" : "BANNERTRÄGER") + ' · ' + baseTypeName + '\n' + affixText)
             : (affixText + ' ' + baseTypeName);
           const tag = scene.add.text(enemy.x, enemy.y - 30, tagText, {
             fontFamily: 'monospace',

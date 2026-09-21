@@ -742,7 +742,7 @@ if (window.i18n) {
       .setScrollFactor(0).setDepth(4600).setInteractive();
     elements.push(overlay2);
 
-    var title = scene.add.text(cx, 40, 'Wähle Skill für ' + slot.toUpperCase(), {
+    var title = scene.add.text(cx, 40, ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Choose skill for " : "Wähle Skill für ") + slot.toUpperCase(), {
       fontSize: '16px', fill: '#ffd166', fontFamily: 'serif'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(4601);
     elements.push(title);
@@ -784,7 +784,7 @@ if (window.i18n) {
     var cancelBg = scene.add.rectangle(cx, rowY + 10, 120, 28, 0x3a3a3a)
       .setStrokeStyle(1, 0xd4a543).setScrollFactor(0).setDepth(4602)
       .setInteractive({ useHandCursor: true });
-    var cancelText = scene.add.text(cx, rowY + 10, 'Abbrechen', {
+    var cancelText = scene.add.text(cx, rowY + 10, ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Cancel" : "Abbrechen"), {
       fontSize: '12px', fill: '#f1e9d8', fontFamily: 'monospace'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(4603);
     elements.push(cancelBg);

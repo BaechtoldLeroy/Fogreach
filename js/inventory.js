@@ -1248,7 +1248,7 @@ function equipPos(key, index) {
         try {
           const _sz = invUI && invUI._scene;
           if (_sz && typeof window.showEventToast === "function") {
-            window.showEventToast(_sz, "Passt nicht in diesen Platz");
+            window.showEventToast(_sz, ((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Doesn't fit in this slot" : "Passt nicht in diesen Platz"));
           }
         } catch (e3) {}
       }
@@ -2175,7 +2175,7 @@ function equipSelectedItem() {
       } catch (e) { /* ein Hinweis darf nie den Tausch brechen */ }
     };
     if (slotKey === 'offhand' && equipment.weapon && equipment.weapon.zweihaendig) {
-      _melden('Zweihänder — die zweite Hand bleibt frei');
+      _melden(((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Two-handed — the off hand stays empty" : "Zweihänder — die zweite Hand bleibt frei"));
       return;
     }
     if (slotKey === 'weapon' && it.zweihaendig && equipment.offhand) {
@@ -2183,11 +2183,11 @@ function equipSelectedItem() {
       const _G = window.InventoryGrid;
       const _wohin = (_G && typeof _G.einlagern === 'function') ? _G.einlagern(_neben) : -1;
       if (_wohin < 0) {
-        _melden('Kein Platz für die zweite Hand');
+        _melden(((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "No room for the off-hand item" : "Kein Platz für die zweite Hand"));
         return;
       }
       equipment.offhand = null;
-      _melden('Zweihänder — die zweite Hand wird frei');
+      _melden(((window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? "Two-handed — the off hand is freed" : "Zweihänder — die zweite Hand wird frei"));
     }
 
     // HP-Bonus des alten Items in diesem Slot merken

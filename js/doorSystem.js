@@ -353,7 +353,7 @@
     // Show/hide [E] prompt above nearest door
     if (nearestDoor && player) {
       if (!scene._doorPrompt) {
-        scene._doorPrompt = scene.add.text(0, 0, '[E] Tür', {
+        scene._doorPrompt = scene.add.text(0, 0, (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en') ? '[E] Door' : '[E] Tür', {
           fontSize: '12px', fill: '#ffdd44', fontFamily: 'monospace',
           stroke: '#000', strokeThickness: 2
         }).setOrigin(0.5).setDepth(500).setScrollFactor(1);

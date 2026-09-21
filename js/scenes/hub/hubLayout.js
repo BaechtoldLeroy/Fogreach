@@ -47,7 +47,23 @@ if (window.i18n) {
     'hub.npc.elara.line.0': "You don't remember me, do you? I... knew you. Before the accident.",
     'hub.npc.elara.line.1': 'Do not ask the council. Ask the walls. They remember better than people do.',
     'hub.npc.harren.line.0': 'My daughter Lene... she has disappeared. Please, help me find her.',
-    'hub.npc.harren.line.1': 'I was once proud of this city. Now I barely recognize it.'
+    'hub.npc.harren.line.1': 'I was once proud of this city. Now I barely recognize it.',
+    'hub.npc.branka.line.0': "Steel alone does not cut through the council's lies. Only when every blade carries knowledge does their mask fall.",
+    'hub.npc.branka.line.1': 'The cellar beneath the town hall holds records of demon interrogations. Bring me copies, and I will refine your artifacts.',
+    'hub.npc.branka.line.2': "Speak quietly out there. The Chain Council's overseers wear the colours of the city guard now.",
+    'hub.npc.thom.line.0': 'The Chain Council decrees prayers, meals, even dreams. We answer with pamphlets full of names and numbers.',
+    'hub.npc.thom.line.1': 'Bring me evidence from the town hall cellar. Every column we print takes an inch from the fear.',
+    'hub.npc.thom.line.2': 'Hand out nothing unchecked. One false line, and they lock up ten more families.',
+    'hub.npc.mara.line.0': "The council's scribes mark houses with chalk chains. Whoever objects vanishes into ritual shafts.",
+    'hub.npc.mara.line.1': 'The Master of Ceremonies has new seals. They keep demons as a silent archive.',
+    'hub.npc.mara.line.2': 'Keep sharp eyes in the town hall cellar. Every seal you break loosens their chains on the city.',
+    'hub.npc.klerus_priester.line.0': 'The order of the Chain Council is sacred. Whoever questions it questions the Light itself.',
+    'hub.npc.klerus_priester.line.1': 'Heresy begins with the wrong question. Keep your lips pure.',
+    'hub.npc.klerus_priester.line.2': 'If the daughter fled, it was not of her own will. A dark hand guides her.',
+    'hub.npc.stadtwache.line.0': 'The patrols grow every month. That is how it must be — the city is restless.',
+    'hub.npc.stadtwache.line.1': 'Loyalty is the only coin that holds its value between the streets. Do not ask why.',
+    'hub.npc.stadtwache.line.2': 'When the Magistrate calls, the Guard answers. When the Clergy blesses, the Guard marches. That is how it works.',
+    'hub.npc.buerger.line.0': 'Forgive me. You go in and out of the town hall — surely you must know.'
   });
 }
 
@@ -319,6 +335,11 @@ if (window.i18n) {
     } catch (err) { /* swallow */ }
     if (Array.isArray(npc.lines)) {
       var fallbackLines = npc.lines.slice();
+      // #87: Die Zeilen im Datensatz sind die deutsche Fassung. Sie werden als
+      // Keys registriert, damit tools/checkI18n.js fehlende englische sieht.
+      var deZeilen = {};
+      fallbackLines.forEach(function (orig, i) { deZeilen['hub.npc.' + npc.id + '.line.' + i] = orig; });
+      window.i18n.register('de', deZeilen);
       var hasI18nLines = fallbackLines.some(function (_, i) {
         return _hubHasKey('hub.npc.' + npc.id + '.line.' + i);
       });

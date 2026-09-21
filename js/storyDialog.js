@@ -182,6 +182,138 @@
     // unten an der Quelle, nach dem Kampf — js/finale.js.)
   };
 
+  // #87: Die deutschen Texte oben sind die Quelle. Jedes Feld wird an einen
+  // Key gebunden (storydialog.<id>.prompt, storydialog.<id>.<n>.label/.response)
+  // und liefert danach die aktive Sprache.
+  var EN = {
+    'storydialog.hub_intro_a0.prompt': 'BRANKA: You seal files you do not remember the next day. Does that never unsettle you?',
+    'storydialog.hub_intro_a0.0.label': 'The fog takes something from everyone.',
+    'storydialog.hub_intro_a0.0.response': 'BRANKA: Everyone. It just takes more from some. Take care of yourself.',
+    'storydialog.hub_intro_a0.1.label': "I don't think about it.",
+    'storydialog.hub_intro_a0.1.response': 'BRANKA: No. Nobody here does. That is exactly the problem.',
+
+    'storydialog.resistance_fetch_01.prompt': 'ELARA: There is a bundle in the cellar, sealed. Bring it to me without anyone seeing.',
+    'storydialog.resistance_fetch_01.0.label': 'Who are you?',
+    'storydialog.resistance_fetch_01.0.response': 'ELARA: Someone who keeps what the council wants to make disappear. More later.',
+    'storydialog.resistance_fetch_01.1.label': "What's inside?",
+    'storydialog.resistance_fetch_01.1.response': 'ELARA: Nothing that puts you in danger. Not yet. Go.',
+
+    'storydialog.harren_daughter_investigation.prompt': 'HARREN: Find out what happened to my daughter. The truth, not comfort.',
+    'storydialog.harren_daughter_investigation.0.label': 'Why me?',
+    'storydialog.harren_daughter_investigation.0.response': 'HARREN: Because you belong to no faction. Not yet.',
+    'storydialog.harren_daughter_investigation.1.label': 'What if it looks bad for you?',
+    'storydialog.harren_daughter_investigation.1.response': 'HARREN: Then I still want to know. A father wants the truth, not comfort.',
+
+    'storydialog.magistrat_verification.prompt': 'ALDRIC: Put the seal on the document. A formality.',
+    'storydialog.magistrat_verification.0.label': 'Set the seal',
+    'storydialog.magistrat_verification.0.response': 'ALDRIC: The document is in the archive. What that means in practice is none of your concern. The Magistrate thanks you.',
+    'storydialog.magistrat_verification.1.label': 'Refuse',
+    'storydialog.magistrat_verification.1.response': 'ALDRIC: A craftsman with a conscience. I will remember that. Branka will seal it herself, then. Nothing has changed, except that now I know where you stand.',
+
+    'storydialog.hub_buerger_a2.prompt': 'CITIZEN: Whom should I believe, the council or the rumours? Whose are you?',
+    'storydialog.hub_buerger_a2.0.label': 'Neither.',
+    'storydialog.hub_buerger_a2.0.response': 'CITIZEN: (stares at you) That is no answer that helps a father.',
+    'storydialog.hub_buerger_a2.1.label': '(stay silent)',
+    'storydialog.hub_buerger_a2.1.response': '(You walk on. There is no answer that helps him.)',
+
+    'storydialog.council_seizure.prompt': 'ALDRIC: Bring me the confiscated petitions. All of them.',
+    'storydialog.council_seizure.0.label': 'Hand them over',
+    'storydialog.council_seizure.0.response': 'You hand them over.',
+    'storydialog.council_seizure.1.label': 'Keep them secretly',
+    'storydialog.council_seizure.1.response': 'You pocket them. Mara will want to know who is asking.',
+
+    'storydialog.council_seizure_followup.prompt': 'ALDRIC: Was everything there?',
+    'storydialog.council_seizure_followup.0.label': 'Everything was there.',
+    'storydialog.council_seizure_followup.0.response': 'ALDRIC: Hm. (lets it go, this time)',
+    'storydialog.council_seizure_followup.1.label': 'All handed over.',
+    'storydialog.council_seizure_followup.1.response': 'ALDRIC: Good.',
+
+    'storydialog.klerus_district_purge.prompt': 'PRIEST: Purge the district. Bring me the names.',
+    'storydialog.klerus_district_purge.0.label': 'And if they are innocent?',
+    'storydialog.klerus_district_purge.0.response': 'PRIEST: Innocence is a question for the Light, not for you. Bring the names.',
+
+    'storydialog.mara_contact.prompt': 'MARA: You used to ask questions, Archivesmith.',
+    'storydialog.mara_contact.0.label': 'I asked questions? Before?',
+    'storydialog.mara_contact.0.response': 'MARA: Oh, you did. Maybe that is why the fog took you. Think about it.',
+
+    'storydialog.elara_meeting.prompt': 'ELARA: (puts a sheet in front of you) Read. And then tell me whom you still believe.',
+    'storydialog.elara_meeting.0.label': 'Where did you get this?',
+    'storydialog.elara_meeting.0.response': 'ELARA: You keep what the council throws away. Somebody has to.',
+
+    'storydialog.elara_blade.prompt': 'ELARA: Take the blade. Just in case.',
+    'storydialog.elara_blade.0.label': 'In case of what?',
+    'storydialog.elara_blade.0.response': 'ELARA: (hesitates) Of anything. You never know who will stand before you in the end.',
+
+    'storydialog.who_you_were.prompt': 'BRANKA: This was in your old workshop. I kept it. Do you want to know who you were?',
+    'storydialog.who_you_were.0.label': 'Yes. Tell me.',
+    'storydialog.who_you_were.0.response': 'BRANKA: Someone who could not stop asking. Like now. We stand together when the time comes.',
+    'storydialog.who_you_were.1.label': 'Later. The council first.',
+    'storydialog.who_you_were.1.response': 'BRANKA: Fair enough. But I will not forget that you asked.',
+
+    'storydialog.thom_truth.prompt': 'THOM: I print what is true. Will you stand behind it when things get tight?',
+    'storydialog.thom_truth.0.label': 'I stand behind it.',
+    'storydialog.thom_truth.0.response': 'THOM: Then there are two of us. That is enough to start.',
+    'storydialog.thom_truth.1.label': 'Truth has a price.',
+    'storydialog.thom_truth.1.response': 'THOM: I will pay it. Good that you know it. We stick together.',
+
+    'storydialog.schattenrat_finale.prompt': 'HARREN: Go to the source. Bring me what you find.',
+    'storydialog.schattenrat_finale.0.label': 'And your daughter?',
+    'storydialog.schattenrat_finale.0.response': 'HARREN: (long pause) Bring me the truth. That one too. A father wants to know, not to dream.',
+
+    'storydialog.edikt_anschlag.prompt': 'Three edicts, one board. Only one hangs at the very top, where it is read first. Whose colour do you hang on top?',
+    'storydialog.edikt_anschlag.0.label': 'Magistrate on top — law and order',
+    'storydialog.edikt_anschlag.0.response': 'The Magistrate\'s seal goes on top. Whoever reads it thinks of laws, not of chains.',
+    'storydialog.edikt_anschlag.1.label': 'Clergy on top — the light of the council',
+    'storydialog.edikt_anschlag.1.response': 'The Clergy\'s edict goes uppermost. Blessing and threat in the same sentence.',
+    'storydialog.edikt_anschlag.2.label': 'Guard on top — protection through strength',
+    'storydialog.edikt_anschlag.2.response': 'The Guard\'s order at the very top. More patrols, fewer questions.',
+
+    'storydialog.oeffentliche_sitzung.prompt': 'HARREN: (quietly, on the way out) Tonight they meet once more. Down in the council chamber. Without an audience.',
+    'storydialog.oeffentliche_sitzung.0.label': 'And then?',
+    'storydialog.oeffentliche_sitzung.0.response': 'HARREN: Then you listen to what they say when nobody is watching. Put on the guard uniform. Stay in the shadows.',
+    'storydialog.oeffentliche_sitzung.1.label': 'Why me?',
+    'storydialog.oeffentliche_sitzung.1.response': 'HARREN: Because they know you down there. A craftsman carrying files catches nobody\'s eye.',
+
+    'storydialog.elara_first_crack.prompt': 'ELARA: (folds the sheet away) This does not go to the press.',
+    'storydialog.elara_first_crack.0.label': 'What does it say?',
+    'storydialog.elara_first_crack.0.response': 'ELARA: One of ours betrayed someone while drunk. A good one. It would split the movement.',
+    'storydialog.elara_first_crack.1.label': 'It is true.',
+    'storydialog.elara_first_crack.1.response': 'ELARA: Much is true. Not everything helps. Ask yourself who it serves before you print it.',
+
+    'storydialog.wiedersehen.prompt': 'HARREN: (quietly, once she has gone) You knew?',
+    'storydialog.wiedersehen.0.label': 'No. I did not know.',
+    'storydialog.wiedersehen.0.response': 'HARREN: She calls herself Elara now. To me she stays Lene. Look after her, down there.',
+    'storydialog.wiedersehen.1.label': 'I suspected it.',
+    'storydialog.wiedersehen.1.response': 'HARREN: Then you are wiser than I am. Look after her, down there. She will not let anyone help her.',
+
+    'storydialog.bruch_nacht.prompt': 'ELARA: You trusted me. All this time.',
+    'storydialog.bruch_nacht.0.label': 'I still do.',
+    'storydialog.bruch_nacht.0.response': 'ELARA: (quietly) I know.',
+    'storydialog.bruch_nacht.1.label': 'Should I not have?',
+    'storydialog.bruch_nacht.1.response': '(She does not answer. She looks at the door.)',
+
+    'storydialog.maulwurf_reveal.prompt': 'MARA: (as you return) Well? Who is it?',
+    'storydialog.maulwurf_reveal.0.label': 'Elara.',
+    'storydialog.maulwurf_reveal.0.response': 'MARA: (long silence) Then she led us all. Straight into his hands.',
+    'storydialog.maulwurf_reveal.1.label': "I don't know.",
+    'storydialog.maulwurf_reveal.1.response': 'MARA: You lie badly, Archivesmith. Good. Keep it until you know what you are doing.'
+  };
+
+  var I = window.i18n;
+  if (I && typeof I.binden === 'function') {
+    [byQuest, byScene].forEach(function (gruppe) {
+      Object.keys(gruppe).forEach(function (id) {
+        var e = gruppe[id], p = 'storydialog.' + id;
+        I.binden(e, 'prompt', p + '.prompt');
+        (e.choices || []).forEach(function (c, n) {
+          I.binden(c, 'label', p + '.' + n + '.label');
+          I.binden(c, 'response', p + '.' + n + '.response');
+        });
+      });
+    });
+    I.register('en', EN);
+  }
+
   window.storyDialog = {
     byQuest: byQuest,
     byScene: byScene
