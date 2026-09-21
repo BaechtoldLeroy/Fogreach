@@ -64,7 +64,8 @@ test('PHASE_STYLE: alle vier Phasen mit allen Feldern', () => {
     assert.strictEqual(typeof s.tint, 'number');
     assert.ok(s.desaturate >= 0 && s.desaturate <= 1, p + ' desaturate 0..1');
     assert.ok(s.fog >= 0 && s.fog <= 1, p + ' fog 0..1');
-    assert.ok(['fresh', 'faded', 'torn', 'gone'].indexOf(s.posters) >= 0, p + ' posters gueltig');
+    // #161: 'gedruckt' — im Epilog haengen Thoms Blaetter an den Tafeln.
+    assert.ok(['fresh', 'faded', 'torn', 'gone', 'gedruckt'].indexOf(s.posters) >= 0, p + ' posters gueltig');
     assert.strictEqual(typeof s.rathausHostile, 'boolean');
   });
   // Nur broken markiert das Rathaus feindlich.

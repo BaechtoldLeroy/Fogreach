@@ -681,8 +681,14 @@
     divider.lineBetween(-200, 0, 200, 0);
     container.add(divider);
 
+    // #161: Lange Texte (der Epilog aus den Entscheidungen hat sechs bis acht
+    // Absaetze) liefen unten aus dem Bild — samt dem Weiter-Hinweis. Jetzt in
+    // Seiten nach Absaetzen, so viele, wie in den Platz passen.
+    var absaetze = String(eventData.narrative || '').split('\n\n');
+    var maxH = Math.max(80, h / 2 - 40 - 70);
+
     // Narrative text in parchment color
-    var narrativeText = scene.add.text(0, 40, eventData.narrative, {
+    var narrativeText = scene.add.text(0, 40, '', {
       fontFamily: 'serif',
       fontSize: 20,
       color: '#f1e9d8',
@@ -692,8 +698,19 @@
     }).setOrigin(0.5, 0);
     container.add(narrativeText);
 
-    // Dismiss hint
-    var hintText = scene.add.text(0, narrativeText.y + narrativeText.height + 50, 'Weiter [LEERTASTE]', {
+    var seiten = [];
+    var aktuell = [];
+    absaetze.forEach(function (a) {
+      narrativeText.setText(aktuell.concat([a]).join('\n\n'));
+      if (aktuell.length && narrativeText.height > maxH) { seiten.push(aktuell.join('\n\n')); aktuell = [a]; }
+      else aktuell.push(a);
+    });
+    if (aktuell.length) seiten.push(aktuell.join('\n\n'));
+    var seite = 0;
+    narrativeText.setText(seiten[0] || '');
+
+    // Dismiss hint — fest am unteren Rand, nicht unter dem Text.
+    var hintText = scene.add.text(0, h / 2 - 36, 'Weiter [LEERTASTE]', {
       fontFamily: 'monospace',
       fontSize: 16,
       color: '#888888'
@@ -710,21 +727,30 @@
     });
 
     var dismissed = false;
+    var tasten = ['keydown-SPACE', 'keydown-ENTER', 'keydown-ESC'];
     var dismiss = function () {
       if (dismissed) return;
+      // Erst die naechste Seite, dann schliessen.
+      if (seite < seiten.length - 1) {
+        seite++;
+        narrativeText.setText(seiten[seite]);
+        return;
+      }
       dismissed = true;
+      tasten.forEach(function (t) { try { scene.input.keyboard.off(t, dismiss); } catch (e) {} });
       overlay.destroy();
       container.destroy(true);
       if (typeof onDismiss === 'function') onDismiss();
     };
 
-    scene.input.keyboard.once('keydown-SPACE', dismiss);
-    scene.input.keyboard.once('keydown-ENTER', dismiss);
-    scene.input.keyboard.once('keydown-ESC', dismiss);
+    tasten.forEach(function (t) { scene.input.keyboard.on(t, dismiss); });
     scene.time.delayedCall(500, function () {
+      if (dismissed) return;
       overlay.setInteractive();
-      overlay.once('pointerdown', dismiss);
+      overlay.on('pointerdown', dismiss);
     });
+    // Fuer Tests und Aufrufer: wie viele Seiten, welche gerade.
+    return { seiten: seiten, seite: function () { return seite; }, weiter: dismiss };
   }
 
   // ---- Journal Overlay UI ----

@@ -143,3 +143,36 @@ test('Mitten im Lauf: der naechste Raum wird zum Versteck, nie der Finalraum', (
   assert.strictEqual(r.ende, false, 'das Versteck ersetzt den Finalraum');
   assert.notStrictEqual(r.finale, 'ElarasVersteck');
 });
+
+// --- #161: Die Flucht nach dem Bruch -----------------------------------------
+
+test('Nach dem Bruch: erst die Flucht vor der Kettenwache, dann das Versteck', () => {
+  stand({ harren_daughter_investigation: FERTIG, widerstand_proof: FERTIG, elara_meeting: FERTIG },
+        { elaraMet: true, elara_versteck_gesehen: true, elara_camp_seen: true }, 4);
+  const r = H.run(`(function () {
+    window.DUNGEON_DEPTH = 5; initDungeonRun();
+    return { reihe: dungeonRun.templateOrder.slice(), flucht: dungeonRun.fluchtRaum };
+  })()`);
+  assert.strictEqual(r.reihe[2], 'ElarasVersteck', r.reihe.join(', '));
+  assert.strictEqual(r.flucht, 1, 'kein Fluchtraum vor dem Versteck');
+
+  const f = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    enemies.clear(true, true);
+    enterRoom(sc, 1);
+    return { modus: window.RoomMode.activeModeId() };
+  })()`);
+  assert.strictEqual(f.modus, 'escape', 'der Fluchtraum ist keine Flucht: ' + f.modus);
+  H.run('window._playerInvincible = true');
+  H.step(240);
+  H.run('window._playerInvincible = false');
+  const kette = H.run(`enemies.getChildren().filter(function (e) { return e && e.active && e.isChainGuard; }).length`);
+  assert.ok(kette > 0, 'die Kettenwache jagt nicht');
+});
+
+test('Die anderen Besuche kommen ohne Flucht', () => {
+  stand({ harren_daughter_investigation: FERTIG, widerstand_proof: FERTIG }, { elaraMet: true });
+  const r = H.run(`(function () { initDungeonRun(); return { reihe: dungeonRun.templateOrder.slice(), flucht: dungeonRun.fluchtRaum }; })()`);
+  assert.strictEqual(r.reihe[1], 'ElarasVersteck');
+  assert.strictEqual(r.flucht, null);
+});

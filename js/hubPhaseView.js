@@ -189,6 +189,21 @@
         g.fillPoints(_quad(sl.x - 1, sl.y - 1, sl.w + 2, sl.h + 2, sl.tilt), true);
       }
 
+      // #161: Im Epilog Thoms Blaetter — weiss, eng bedruckt, keine Farben mehr.
+      if (state === 'gedruckt') {
+        var blatt = _quad(sl.x, sl.y, sl.w, sl.h, sl.tilt);
+        g.fillStyle(0xf6f3ea, 1);
+        g.fillPoints(blatt, true);
+        g.lineStyle(1, 0x6a5c42, 0.6);
+        g.strokePoints(blatt, true);
+        g.fillStyle(0x2a2622, 0.75);
+        for (var z = 0; z < 5; z++) {
+          var zeile = _quad(sl.x + 3, sl.y + 3 + z * (sl.h - 6) / 5, (sl.w - 6) * (z === 4 ? 0.6 : 1), 1.5, sl.tilt);
+          g.fillPoints(zeile, true);
+        }
+        return;
+      }
+
       if (state === 'gone') {
         // Nur noch die Nagellöcher.
         g.fillStyle(0x2b2018, 0.8);

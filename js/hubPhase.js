@@ -52,7 +52,9 @@
     // ersten Mal klar — deshalb weder Nebel noch Entsättigung, nur ein heller,
     // sauberer Tint. (Vorher trug ausgerechnet der Epilog mit fog 0.30 den
     // dichtesten Nebel von allen Phasen; das lief der Geschichte zuwider.)
-    epilogue:    { tint: 0xeef0f2, desaturate: 0.00, fog: 0.00, posters: 'gone',  assetKey: 'hub_epilogue',    rathausHostile: false }
+    // #161: duenner, heller Nebel (er bricht, er ist nicht weg); an den Tafeln
+    // haengen Thoms gedruckte Blaetter statt der drei Fraktionsfarben.
+    epilogue:    { tint: 0xeef0f2, desaturate: 0.00, fog: 0.06, posters: 'gedruckt', assetKey: 'hub_epilogue', rathausHostile: false }
   };
 
   // Phasenabhängige NPC-Flavor-Overrides. Fehlt ein Eintrag, bleibt die
@@ -78,7 +80,41 @@
     }
   };
 
+  // #161: Im Epilog sprechen die Verbuendeten so, wie die Geschichte fuer sie
+  // ausgegangen ist (dieselbe Rechnung wie questFinale.epilog).
+  function epilogFlavor(npcId, flags) {
+    var QF = (typeof window !== 'undefined') ? window.QuestFinale : null;
+    var st = (QF && typeof QF.computeFinaleState === 'function') ? QF.computeFinaleState(flags || {}) : null;
+    if (!st) return null;
+    if (npcId === 'branka') {
+      return st.allies.branka
+        ? ['BRANKA: Die Presse läuft seit drei Tagen, und niemand hat sie angehalten. Ich hätte nicht gedacht, dass ich das noch erlebe.']
+        : ['BRANKA: (nickt Dir knapp zu) Gedruckt ist gedruckt. Was davor war, vergesse ich nicht. Aber ich lese mit.'];
+    }
+    if (npcId === 'thom') {
+      return st.allies.thom
+        ? ['THOM: Die zweite Auflage ist schon weg. Die Leute kommen mit eigenem Papier.']
+        : ['THOM: Ich drucke weiter. Irgendwer muss.'];
+    }
+    if (npcId === 'mara') {
+      return st.allies.mara
+        ? ['MARA: Mein Netz verteilt die Blätter. Jede Gasse, jede Tür.']
+        : ['MARA: Ich habe die Liste noch. Einige kommen zurück. Nicht alle.'];
+    }
+    return null;
+  }
+
+  /** Wie viele Buerger im Epilog auf dem Platz vorlesen (wie viele zurueckkamen). */
+  function epilogVorleser(flags) {
+    var f = flags || {};
+    if (f.petitions_kept) return 3;
+    if (f.petitions_surrendered) return 1;
+    return 2;
+  }
+
   window.HubPhase = {
+    epilogFlavor: epilogFlavor,
+    epilogVorleser: epilogVorleser,
     derivePhase: derivePhase,
     current: current,
     aldricBlocksQuests: aldricBlocksQuests,

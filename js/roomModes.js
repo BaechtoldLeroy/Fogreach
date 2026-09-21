@@ -135,7 +135,9 @@
     try { if (_current && _current.stop) _current.stop(); } catch (e) {}
     _ctx = info || {};
     _completedFired = false;
-    var id = _forcedMode(_ctx) || selectForRoom(_ctx, Math.random);
+    // #161: Die Geschichte kann einen Modus verlangen (der Fluchtraum nach dem Bruch).
+    var _gewuenscht = (_ctx.modus && has(_ctx.modus)) ? _ctx.modus : null;
+    var id = _forcedMode(_ctx) || _gewuenscht || selectForRoom(_ctx, Math.random);
     if (!has(id)) id = 'clear';
     _ctx.modeId = id;
     _scene = scene;

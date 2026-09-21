@@ -522,20 +522,27 @@ function initDungeonRun() {
 
   // #161: Ist ein Besuch in Elaras Versteck faellig (z. B. weil im letzten
   // Lauf kein Raum mehr frei war), liegt es gleich hinter dem ersten Raum.
-  if (versteckBesuchFaellig()) {
-    for (var _vi = 1; _vi < templateOrder.length - 1; _vi++) {
+  // #161: Die Nacht nach dem Bruch beginnt mit einer Flucht: der Raum davor
+  // ist ein Fluchtraum (Kettenwache, Raum-Modus escape), das Versteck liegt
+  // deshalb erst an zweiter Stelle.
+  var _fluchtRaum = null;
+  var _vBesuch = versteckBesuchFaellig();
+  if (_vBesuch) {
+    for (var _vi = (_vBesuch === 'bruch_nacht' ? 2 : 1); _vi < templateOrder.length - 1; _vi++) {
       // Nie einen Spionage-Raum verdraengen (auch die Ratskammer der geheimen
       // Sitzung, #159) und nie den Finalraum.
       var _vTpl = window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[templateOrder[_vi]];
       if (ESPIONAGE_ROOM_NAMES.indexOf(templateOrder[_vi]) === -1 && !(_vTpl && _vTpl.espionage)
           && templateOrder[_vi] !== finalRoom) {
         templateOrder[_vi] = VERSTECK_RAUM;
+        if (_vBesuch === 'bruch_nacht') _fluchtRaum = _vi - 1;
         break;
       }
     }
   }
 
   dungeonRun = {
+    fluchtRaum: _fluchtRaum,
     templateOrder: templateOrder,
     totalRooms: totalRooms,
     currentIndex: 0
@@ -1525,7 +1532,17 @@ function enterRoom(scene, roomId) {
   // Boss = Klimax-Raum (Finalraum), erster Raum + Espionage bleiben `clear`.
   if (window.RoomMode && typeof window.RoomMode.beginRoom === 'function') {
     try {
+      // #161: Der Fluchtraum nach dem Bruch — die Kettenwache jagt Dich zu Elara.
+      var _flucht = !!(dungeonRun && dungeonRun.fluchtRaum === roomId && versteckBesuchFaellig() === 'bruch_nacht');
+      if (_flucht && window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
+        try {
+          window.EventSystem.showEventToast(scene, _elaraT('Die Kettenwache! Lauf. Elara wartet hinter der nächsten Treppe.',
+            'The chain guard! Run. Elara is waiting past the next stairs.'), 'flucht');
+        } catch (e) {}
+      }
       window.RoomMode.beginRoom(scene, {
+        modus: _flucht ? 'escape' : null,
+        gegnerTyp: _flucht ? 6 : null,
         roomIndex: roomId,
         isBoss: !!window.__isFinalDungeonRoom,
         isEspionage: _espionageRoom || _versteckRaum,

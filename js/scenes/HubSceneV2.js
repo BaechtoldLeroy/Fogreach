@@ -282,6 +282,8 @@ class HubSceneV2 extends Phaser.Scene {
     this.createNPCs();
     // #160: Nach der geheimen Sitzung sind die Patrouillen verdoppelt.
     try { this._patrouillenAufstellen(); } catch (_) {}
+    // #161: Im Epilog lesen Buerger auf dem Platz vor.
+    try { this._vorleserAufstellen(); } catch (_) {}
     this.createPlayer();
     this.createPrompt();
     
@@ -735,6 +737,8 @@ class HubSceneV2 extends Phaser.Scene {
           && typeof window.questSystem.hasFlag === 'function') {
         if (window.questSystem.hasFlag(npc.hiddenAfterFlag)) isVisible = false;
       }
+      // #161: Mara fehlt im Epilog, wenn ihr Netz am Konvoi verbrannt ist.
+      if (isVisible && this._epilogOhne(npc)) isVisible = false;
 
       // Generate placeholder texture for NPCs without sprites (larger, more visible)
       if (!this.textures.exists(npc.texture)) {
@@ -1062,7 +1066,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     this.npcs.forEach(({ sprite, zone, nameText, questIndicator, data }) => {
       if (!data.visibleAfterQuest && !data.visibleAfterFlag
-          && !data.hiddenAfterFlag && !data.visibleFromAct) return;
+          && !data.hiddenAfterFlag && !data.visibleFromAct && data.id !== 'mara') return;
       let shouldBeVisible = true;
       if (data.visibleFromAct) {
         const requiredIndex = actOrder.indexOf(data.visibleFromAct);
@@ -1071,6 +1075,7 @@ class HubSceneV2 extends Phaser.Scene {
       if (data.visibleAfterQuest && !completedIds.has(data.visibleAfterQuest)) shouldBeVisible = false;
       if (data.visibleAfterFlag && !hasFlag(data.visibleAfterFlag)) shouldBeVisible = false;
       if (data.hiddenAfterFlag && hasFlag(data.hiddenAfterFlag)) shouldBeVisible = false;
+      if (this._epilogOhne(data)) shouldBeVisible = false;
       if (!sprite) return;
       if (shouldBeVisible && !sprite.active) {
         sprite.setActive(true).setVisible(true);
@@ -1233,6 +1238,39 @@ class HubSceneV2 extends Phaser.Scene {
   // Egal welches Edikt gewann: die Patrouillen verdoppeln sich (gesetzt beim
   // Abschluss der geheimen Sitzung). Im Hub stehen danach zwei Wachen mehr
   // auf dem Platz — bis zum Epilog.
+  // #161: Im Epilog fehlt Mara, wenn ihr Netz am Konvoi verbrannt ist
+  // (questFinale.epilog: "Mara bleibt verschwunden").
+  _epilogOhne(npc) {
+    if (!npc || npc.id !== 'mara' || this._hubPhase !== 'epilogue') return false;
+    const qs = window.questSystem;
+    return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag('convoy_blown'));
+  }
+
+  // #161: Epilog — Buerger, die auf dem Platz aus Thoms Blaettern vorlesen.
+  // Wie viele, haengt daran, wie viele der Verschwundenen zurueckkamen
+  // (die Gesuche aus council_seizure, HubPhase.epilogVorleser).
+  _vorleserAufstellen() {
+    (this._vorleser || []).forEach((s) => { try { s.destroy(); } catch (_) {} });
+    this._vorleser = [];
+    if (this._hubPhase !== 'epilogue') return 0;
+    const qs = window.questSystem;
+    if (!qs || !window.HubPhase || typeof window.HubPhase.epilogVorleser !== 'function') return 0;
+    if (!this.textures || !this.textures.exists('buerger')) return 0;
+    const n = window.HubPhase.epilogVorleser(qs.getFlags());
+    const plaetze = [[430, 400], [520, 405], [470, 440]];
+    for (let i = 0; i < n && i < plaetze.length; i++) {
+      const [x, y] = plaetze[i];
+      const s = this.add.image(x * SCALE_FACTOR, y * SCALE_FACTOR, 'buerger').setOrigin(0.5, 1).setScale(0.30);   // wie die Layout-NPCs: Fuesse am Punkt, ohne SCALE_FACTOR
+      s.setDepth(y * SCALE_FACTOR);
+      if (i % 2 === 1) s.setFlipX(true);
+      // Das Blatt in der Hand.
+      const b = this.add.rectangle(x * SCALE_FACTOR + (i % 2 ? -9 : 9), y * SCALE_FACTOR - 42, 10, 13, 0xf6f3ea)
+        .setDepth(y * SCALE_FACTOR + 1);
+      this._vorleser.push(s, b);
+    }
+    return n;
+  }
+
   _patrouillenAufstellen() {
     (this._patrouillen || []).forEach((s) => { try { s.destroy(); } catch (_) {} });
     this._patrouillen = [];
@@ -1241,7 +1279,7 @@ class HubSceneV2 extends Phaser.Scene {
     if (qs.hasFlag('story_ending')) return 0;
     if (!this.textures || !this.textures.exists('garde')) return 0;
     [[330, 420], [640, 440]].forEach(([x, y]) => {
-      const s = this.add.image(x * SCALE_FACTOR, y * SCALE_FACTOR, 'garde').setScale(0.23 * SCALE_FACTOR);
+      const s = this.add.image(x * SCALE_FACTOR, y * SCALE_FACTOR, 'garde').setOrigin(0.5, 1).setScale(0.23);   // wie die Layout-NPCs: Fuesse am Punkt, ohne SCALE_FACTOR
       s.setDepth(y * SCALE_FACTOR);
       this._patrouillen.push(s);
     });
@@ -1527,7 +1565,11 @@ class HubSceneV2 extends Phaser.Scene {
       const _phaseFlavor = (window.HubPhase && window.HubPhase.npcFlavorByPhase
         && window.HubPhase.npcFlavorByPhase[this._hubPhase]
         && window.HubPhase.npcFlavorByPhase[this._hubPhase][npcId]) || null;
-      const bodyLines = _phaseFlavor || storyLines || npcData.lines || [];
+      // #161: Im Epilog sprechen Branka, Thom und Mara vom Ausgang der Geschichte.
+      const _epilogZeilen = (this._hubPhase === 'epilogue' && window.HubPhase
+        && typeof window.HubPhase.epilogFlavor === 'function' && window.questSystem)
+        ? window.HubPhase.epilogFlavor(npcId, window.questSystem.getFlags()) : null;
+      const bodyLines = _epilogZeilen || _phaseFlavor || storyLines || npcData.lines || [];
       bodyLines.forEach(line => {
         pages.push({ text: line, choices: null });
       });

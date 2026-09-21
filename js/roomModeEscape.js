@@ -36,9 +36,13 @@
   }
 
   function EscapeMode() {
-    var scene = null, duration = _depthSeconds(), remaining = duration, spawnAcc = 0;
+    var scene = null, duration = _depthSeconds(), remaining = duration, spawnAcc = 0, typ = 'enemy';
     return {
-      start: function (sc) { scene = sc || null; duration = remaining = _depthSeconds(); spawnAcc = 0; },
+      // #161: ctx.gegnerTyp — nach dem Bruch jagt Dich die Kettenwache (6).
+      start: function (sc, ctx) {
+        scene = sc || null; duration = remaining = _depthSeconds(); spawnAcc = 0;
+        typ = (ctx && ctx.gegnerTyp) ? ctx.gegnerTyp : 'enemy';
+      },
       update: function (dtMs) {
         var dt = (typeof dtMs === 'number' && dtMs > 0 ? dtMs : 16) / 1000;
         if (remaining > 0) remaining = Math.max(0, remaining - dt);
@@ -48,7 +52,7 @@
             spawnAcc = 0;
             var active = (window.enemies && typeof window.enemies.countActive === 'function') ? window.enemies.countActive(true) : 0;
             var n = Math.min(SPAWN_BATCH, Math.max(0, MAX_CONCURRENT - active));
-            for (var i = 0; i < n; i++) { try { window.spawnEnemy.call(scene, 0, 0, 'enemy'); } catch (e) {} }
+            for (var i = 0; i < n; i++) { try { window.spawnEnemy.call(scene, 0, 0, typ); } catch (e) {} }
           }
         }
       },

@@ -144,18 +144,21 @@ test('Nebel und Schleier liegen UEBER den Figuren', () => {
 
 // council = Ausgangszustand, epilogue = der Nebel hat sich gehoben. Beide
 // zeigen die Stadt klar; nur der Grund ist ein anderer.
-test('council und epilogue haben keine Atmosphaere-Overlays', () => {
-  ['council', 'epilogue'].forEach((p) => {
+test('council hat keine Atmosphaere-Overlays, der Epilog nur den duennen Nebel', () => {
+  const zaehle = (p) => {
     const scene = makeScene(), refs = makeRefs();
     V.apply(scene, p, refs);
-    const full = scene.objects.filter((o) => o._kind === 'rect' && o.w === 800 && o.h === 480);
-    assert.strictEqual(full.length, 0, p + ': keine Vollbild-Overlays erwartet');
-  });
+    return scene.objects.filter((o) => o._kind === 'rect' && o.w === 800 && o.h === 480).length;
+  };
+  assert.strictEqual(zaehle('council'), 0, 'council: keine Vollbild-Overlays erwartet');
+  // #161 (Story-Bibel v5, Abschnitt 11): Der Nebel bricht, er ist nicht weg.
+  assert.ok(zaehle('epilogue') <= 1, 'epilogue: hoechstens der duenne Nebel');
 });
 
-test('der Nebel wird zum Epilog hin nicht dichter, sondern verschwindet', () => {
+test('der Nebel wird zum Epilog hin nicht dichter, sondern duenn', () => {
   const S = globalThis.window.HubPhase.PHASE_STYLE;
-  assert.strictEqual(S.epilogue.fog, 0, 'Epilog: kein Nebel mehr');
+  // #161: Story-Bibel v5 — duenner Nebel im Epilog, duenner als im Doppelspiel.
+  assert.ok(S.epilogue.fog > 0 && S.epilogue.fog < S.doubleAgent.fog, 'Epilog: duenner Nebel');
   assert.strictEqual(S.epilogue.desaturate, 0, 'Epilog: keine Entsaettigung mehr');
   // Dichtester Nebel gehoert zum Bruch, nicht ans Ende.
   assert.ok(S.broken.fog > S.doubleAgent.fog, 'broken dichter als doubleAgent');
