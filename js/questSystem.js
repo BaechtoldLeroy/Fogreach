@@ -647,7 +647,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       requiredAct: 1,
       dialogueOffer: 'Diese Woche stimmt die Stadt ab. Drei Edikte, Magistrat, Klerus, Garde, und die Bürger wählen eines. Lass sie bei Thom drucken und häng sie an die Tafeln vor dem Rathaus. So sieht Ordnung aus, die gewählt ist.',
       dialogueProgress: 'Erst drucken, dann aushängen. Die Druckerei ist gleich über dem Platz.',
-      dialogueComplete: 'Gut. Die Stimmen werden gezählt, und das Ergebnis verkündet der Rat öffentlich, im Ratssaal. So gehört sich das.\n\nBeim Zurückgehen fällt Dir das Papier auf. Dieselbe Körnung, alle drei, aus Thoms Druckerei. Du schiebst den Gedanken beiseite.'
+      dialogueComplete: 'Gut. Die Stimmen werden gezählt, und das Ergebnis verkündet der Rat öffentlich, im Ratssaal. So gehört sich das.'
     },
     klerus_district_purge: {
       id: 'klerus_district_purge',
