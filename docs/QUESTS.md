@@ -183,7 +183,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Meine Tochter ist verschwunden. Aldric sagt, Eindringlinge hätten sie entführt. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversäumnis.
+> Meine Tochter ist verschwunden. Aldric sagt, sie sei geflohen. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversäumnis.
 > 
 > Ich glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurückgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.
 > 
@@ -195,7 +195,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Du hast es. Sie ist nicht entführt worden. Sie ist geflohen. Und sie hatte Grund dazu — alle drei Ratsfraktionen werden im Fragment namentlich erwähnt. Du wirst gleich von allen vier Seiten gefragt werden. Hör dir alles an. Mach alle vier Aufträge. Dann komm zurück zu mir.
+> Du hast es. Alle drei Ratsfraktionen stehen darin, mit Namen. Lene ist nicht einfach geflohen, Archivschmied. Jemand hat sie verschwinden lassen.
+> 
+> Du wirst gleich von allen Seiten Aufträge bekommen. Nimm sie an. Hör Dir alles an. Dann komm zurück zu mir.
 
 
 ## Keller-Patrouille
@@ -303,14 +305,14 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Das Edikt ist veröffentlicht. Die Patrouillen verdoppeln sich ab morgen. Niemand wird mehr verschwinden — oder zumindest niemand, der zählt. Die Garde merkt sich, wer schnell antwortet.
+> Der Bericht ist geschrieben. Zehn Störer weniger, und die Garde kann dem Rat mehr Patrouillen vorschlagen. Niemand wird mehr verschwinden — oder zumindest niemand, der zählt. Die Garde merkt sich, wer schnell antwortet.
 
 
-## Beweise aus der Ritualkammer
+## Das Ratsdokument
 
 `widerstand_proof` · **NPC:** Elara · **Kette:** 2
 
-> Finde ein verstecktes Ratsdokument in einer Ritualkammer im Rathauskeller.
+> Finde ein verstecktes Ratsdokument im Rathauskeller, ein paar Räume tiefer.
 
 - **Ziel:** `fetch` → `council_document` ×1
 - **Vorbedingung:** Die verschwundene Tochter
@@ -320,13 +322,13 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 > Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung.
 > 
-> Ich will, dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.
+> Ich will, dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.
 > 
 > Bring es mir. Dann reden wir.
 
 **Unterwegs**
 
-> Such die Ritualkammer. Drei Räume tiefer. Das Dokument ist klein, aber das Siegel darauf wird dir den Atem nehmen.
+> Das Dokument liegt ein paar Räume tiefer. Es ist klein, aber das Siegel darauf wird dir den Atem nehmen.
 
 **Abschluss**
 
@@ -337,19 +339,19 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `council_collusion_reveal` · **NPC:** Bürgermeister Harren · **Kette:** 3
 
-> Folge Harren zur geheimen Sitzung der drei Ratsfraktionen.
+> Sieh Dir die öffentliche Ratssitzung an. Dann belausche die geheime Sitzung in der Ratskammer unter dem Rathaus.
 
-- **Ziel:** `observe` → `collusion_reveal_seen` ×1
-- **Vorbedingung:** Verifikation des Magistrats **+** Reinigung der unteren Kammern **+** Patrouillen-Erweiterung **+** Beweise aus der Ritualkammer
+- **Ziel:** `observe` → `oeffentliche_sitzung` ×1; `observe` → `collusion_reveal_seen` ×1
+- **Vorbedingung:** Verifikation des Magistrats **+** Reinigung der unteren Kammern **+** Patrouillen-Erweiterung **+** Das Ratsdokument **+** Das Edikt der Woche
 - **Belohnung:** 150 XP · 1 Wissens-Fragment(e)
 
 **Angebot**
 
-> Komm mit. Kein Wort, keine Klinge. Was du gleich siehst, kannst du nicht mehr vergessen, auch nicht, wenn der Nebel es versucht.
+> Heute verkündet der Rat das Ergebnis der Abstimmung, öffentlich, im Ratssaal. Magistrat, Klerus, Garde, vor allen Bürgern. Geh hin und hör zu. Und dann folge ihnen in der Nacht, wenn sie glauben, dass keiner zusieht.
 
 **Unterwegs**
 
-> Folge mir. Es ist Zeit.
+> Die Ratskammer liegt unten im Keller. Zieh die Uniform der Wache an, bleib im Schatten und hör zu, was sie sagen, wenn keiner zusieht.
 
 **Abschluss**
 
@@ -360,23 +362,23 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `faction_campaign` · **NPC:** Ratsherr Aldric · **Kette:** 3
 
-> Plakatiere die drei Fraktions-Edikte an den Anschlagtafeln — sammle 3 Proklamationen.
+> Die Stadt stimmt ab: drei Edikte, eines gewinnt. Lass sie bei Thom drucken und häng sie an die Anschlagtafeln vor dem Rathaus.
 
-- **Ziel:** `fetch` → `proclamation` ×3
+- **Ziel:** `observe` → `edikte_gedruckt` ×1; `observe` → `edikte_plakatiert` ×1
 - **Vorbedingung:** Die verschwundene Tochter
 - **Belohnung:** 60 XP
 
 **Angebot**
 
-> Die Stadt muss wissen, wer die Ordnung hält, während die anderen schwatzen. Häng die drei Edikte an den Anschlagtafeln aus. Wer oben klebt, hat recht.
+> Diese Woche stimmt die Stadt ab. Drei Edikte, Magistrat, Klerus, Garde, und die Bürger wählen eines. Lass sie bei Thom drucken und häng sie an die Tafeln vor dem Rathaus. So sieht Ordnung aus, die gewählt ist.
 
 **Unterwegs**
 
-> Noch nicht alle Edikte ausgehängt. Weiter.
+> Erst drucken, dann aushängen. Die Druckerei ist gleich über dem Platz.
 
 **Abschluss**
 
-> Drei Edikte, drei Farben, drei Versionen derselben Tochter. Erst beim letzten fällt dir das Papier auf. Dieselbe Körnung, alle drei. Du hast es in Thoms Druckerei gesehen. Du schiebst den Gedanken beiseite.
+> Gut. Die Stimmen werden gezählt, und das Ergebnis verkündet der Rat öffentlich, im Ratssaal. So gehört sich das.
 
 
 # Akt-Index 2 — Das Doppelspiel
@@ -457,7 +459,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 > Gib her.
 > 
-> (Bevor du sie abgibst, fällt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Bürger, die nach verschwundenen Angehörigen fragen. Du gibst sie trotzdem ab. Mara wird wissen wollen, wer da fragt.)
+> (Bevor du sie abgibst, fällt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Bürger, die nach verschwundenen Angehörigen fragen.)
 
 
 ## Zweifel der Schmiedin
@@ -603,7 +605,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Du hast es gehört. Keine Vorräte, keine Waffen. Reagenzien, versiegelte Phiolen, Kreidesteine — Ritual-Komponenten. Der Rat schickt keine Patrouille los. Er rüstet eine Beschwörung aus. Gut gemacht, dass du die Klinge stecken liessest.
+> Du hast es gehört. Keine Vorräte, keine Waffen. Reagenzien, versiegelte Phiolen, Kreidesteine — Ritual-Komponenten. Der Rat schickt keine Patrouille los. Er rüstet eine Beschwörung aus.
 
 
 # Akt-Index 3 — Die Enttarnung
@@ -770,11 +772,11 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Unterwegs**
 
-> Elara wartet mit den drei Blättern.
+> Elara wartet auf dich. Nur ihr zwei.
 
 **Abschluss**
 
-> Sie hat das Blatt verbrannt. Eine wahre Meldung, und niemand wird sie je lesen. "Nicht alles hilft", hat sie gesagt. Du schiebst den Gedanken beiseite. Noch.
+> Sie hat die Meldung weggesteckt. Eine wahre Meldung, und niemand wird sie je lesen. "Nicht alles hilft", hat sie gesagt. Du schiebst den Gedanken beiseite. Noch.
 
 
 ## Der Bruch
@@ -822,7 +824,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Du hast den Akt. "Vermisst, Fall geschlossen" — das Verschwinden der Bürgermeistertochter, sauber abgelegt, Datum, Siegel, Unterschrift. Und das Datum... es liegt vor dem Tag, an dem sie verschwand. Jemand im Rat hat ihr Verschwinden abgeheftet, bevor es geschah. Ich sage Harren noch nichts. Erst will ich wissen, wer.
+> Du hast den Akt. "Vermisst, Fall geschlossen" — das Verschwinden seiner Tochter, sauber abgelegt, Datum, Siegel, Unterschrift. Und das Datum liegt vor dem Tag, an dem sie verschwand.
+> 
+> (Harren liest es zweimal.) Sie haben es geplant. Jemand im Rat hat Lenes Verschwinden abgeheftet, bevor es geschah.
 
 
 # Akt-Index 4 — Der Verrat und die Presse
@@ -856,7 +860,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `schattenrat_finale` · **NPC:** Bürgermeister Harren · **Kette:** 2
 
-> Steige auf Tiefe 30 hinab und besiege den Schattenrat, der die Quelle des Nebels hält.
+> Steige auf Tiefe 30 hinab, zur Quelle des Nebels. Elara ist schon dort.
 
 - **Ziel:** `boss_kill` → `schattenrat` ×1
 - **Vorbedingung:** keine
@@ -864,15 +868,15 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Unter der Stadt sitzt das, dem der Nebel dient, über Rat und Widerstand hinaus. Der Schattenrat hält die Quelle auf Tiefe 30. Steig hinab. Danach entscheidest du, was die Stadt erfährt.
+> Elara ist hinabgestiegen. Zur Quelle, auf Tiefe 30. Ich weiss jetzt, was sie ist, Archivschmied. Sie ist trotzdem meine Tochter. Geh. Ich komme nach.
 
 **Unterwegs**
 
-> Der Schattenrat lebt noch, Tiefe 30.
+> Die Quelle liegt auf Tiefe 30. Beeil Dich.
 
 **Abschluss**
 
-> Der Schattenrat ist gefallen, die Quelle liegt offen. Jetzt gehört die Presse dir. Komm hoch, es ist Zeit.
+> Die Quelle ist zerbrochen. Jetzt gehört die Presse Dir. Geh zu Thom, es ist Zeit.
 
 
 ## Waffen für den Widerstand
@@ -900,11 +904,11 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Gut geschmiedet. Diese Waffen werden den Unterschied machen.
 
 
-## Der Sturm auf den Rat
+## Die letzte Wache
 
 `mara_assault` · **NPC:** Mara vom Untergrund · **Kette:** 3
 
-> Dringe bis Welle 30 vor, um den Rat zu stürzen.
+> Dring bis Welle 30 vor und zerschlag, was von der Kettenwache übrig ist.
 
 - **Ziel:** `wave` → `reach_wave` ×30
 - **Vorbedingung:** Die Quelle
@@ -912,24 +916,24 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Es ist soweit. Der Rat fällt heute. Dringe bis Welle 30 vor.
+> Aldric ist unter der Stadt verschwunden, mit dem Rest seiner Kettenwache. Solange sie da unten sind, schlafen die Gassen nicht. Dring bis Welle 30 vor und räum auf.
 > 
-> Bist du bereit für den Sturm?
+> Bist du dabei?
 
 **Unterwegs**
 
-> Der Rat wartet in der Tiefe. Dringe weiter vor — Welle 30.
+> Die Kettenwache hält sich noch in der Tiefe. Dring weiter vor — Welle 30.
 
 **Abschluss**
 
-> Der Rat ist gestürzt! Fogreach atmet auf. Aber die Schatten sind noch nicht besiegt...
+> Die Kettenwache ist zerschlagen. Die Gänge unter der Stadt gehören wieder niemandem. Das ist mehr, als diese Stadt lange hatte.
 
 
 ## Die Abrechnung
 
 `the_reckoning` · **NPC:** Setzer Thom · **Kette:** 6
 
-> Nach dem Sturz des Schattenrats gehört dir die Presse. Entscheide, was die Stadt erfährt.
+> Die Quelle ist zerbrochen. Thom wartet an der Presse. Die Stadt soll alles erfahren.
 
 - **Ziel:** `dialogue` → `press_decision` ×1
 - **Vorbedingung:** Die Quelle
@@ -937,7 +941,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Die Platten liegen, das Archiv ist entschlüsselt. Was ich setze, liest morgen die ganze Stadt. Es ist Zeit.
+> Die Platten liegen. Alles, was Du gesehen hast, kommt drauf: der Rat, Aldric, der Widerstand, sie. Morgen liest es die ganze Stadt.
 
 **Unterwegs**
 

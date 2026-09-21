@@ -94,9 +94,9 @@
       // vier Fraktionsaufträge ab. Der Akt existierte vorher nur dem Namen
       // nach — die Quests hingen alle in Akt 0, niemand sprang je auf 1.
       advanceAct: 1,
-      dialogueOffer: 'Meine Tochter ist verschwunden. Aldric sagt, Eindringlinge hätten sie entführt. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversäumnis.\n\nIch glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurückgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.\n\nVertrau niemandem, bis du es selbst gesehen hast.',
+      dialogueOffer: 'Meine Tochter ist verschwunden. Aldric sagt, sie sei geflohen. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversäumnis.\n\nIch glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurückgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.\n\nVertrau niemandem, bis du es selbst gesehen hast.',
       dialogueProgress: 'Such weiter — das Fragment ist da unten. Aldric, Klerus und Garde streiten sich oben, weil sie alle eine andere Version hören wollen. Du findest die echte.',
-      dialogueComplete: 'Du hast es. Sie ist nicht entführt worden. Sie ist geflohen. Und sie hatte Grund dazu — alle drei Ratsfraktionen werden im Fragment namentlich erwähnt. Du wirst gleich von allen vier Seiten gefragt werden. Hör dir alles an. Mach alle vier Aufträge. Dann komm zurück zu mir.'
+      dialogueComplete: 'Du hast es. Alle drei Ratsfraktionen stehen darin, mit Namen. Lene ist nicht einfach geflohen, Archivschmied. Jemand hat sie verschwinden lassen.\n\nDu wirst gleich von allen Seiten Aufträge bekommen. Nimm sie an. Hör Dir alles an. Dann komm zurück zu mir.'
     },
     magistrat_verification: {
       id: 'magistrat_verification',
@@ -158,12 +158,12 @@
       requiredAct: 1,
       dialogueOffer: 'Wenn eine Tochter aus dem Rathaus verschwinden kann, ist das ein Versagen der Garde — und das wird sich ändern. Ich brauche eine Patrouillen-Erweiterung. Heute. Geh in die unteren Kammern und demonstriere Kraft — zehn Störer fallen, das Edikt trägt sich von selbst durch die Strassen.\n\nFrag nicht, ob die Patrouillen schoner Lebensweise zuträglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalität ist die einzige Münze, die zählt. Das Edikt ist die Münze, die du in meine Hand legst.\n\nNimmst du den Auftrag an, Archivschmied?',
       dialogueProgress: 'Zehn Störer noch. Jeder gefallene Körper ist eine Zeile mehr im Bericht. Die Garde wartet auf das Ergebnis.',
-      dialogueComplete: 'Das Edikt ist veröffentlicht. Die Patrouillen verdoppeln sich ab morgen. Niemand wird mehr verschwinden — oder zumindest niemand, der zählt. Die Garde merkt sich, wer schnell antwortet.'
+      dialogueComplete: 'Der Bericht ist geschrieben. Zehn Störer weniger, und die Garde kann dem Rat mehr Patrouillen vorschlagen. Niemand wird mehr verschwinden — oder zumindest niemand, der zählt. Die Garde merkt sich, wer schnell antwortet.'
     },
     widerstand_proof: {
       id: 'widerstand_proof',
-      title: 'Beweise aus der Ritualkammer',
-      description: 'Finde ein verstecktes Ratsdokument in einer Ritualkammer im Rathauskeller.',
+      title: 'Das Ratsdokument',
+      description: 'Finde ein verstecktes Ratsdokument im Rathauskeller, ein paar Räume tiefer.',
       npcId: 'elara',
       type: 'fetch',
       chain: 2,
@@ -175,8 +175,8 @@
       rewards: { xp: 100, fragments: 1 },
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
-      dialogueOffer: 'Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung.\n\nIch will, dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller gibt es eine Ritualkammer. Dort liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
-      dialogueProgress: 'Such die Ritualkammer. Drei Räume tiefer. Das Dokument ist klein, aber das Siegel darauf wird dir den Atem nehmen.',
+      dialogueOffer: 'Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung.\n\nIch will, dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
+      dialogueProgress: 'Das Dokument liegt ein paar Räume tiefer. Es ist klein, aber das Siegel darauf wird dir den Atem nehmen.',
       dialogueComplete: 'Drei Siegel. Eine Unterschrift. Magistrat, Klerus, Garde — sie behaupten in der Öffentlichkeit, sie wären Rivalen. Hinter verschlossenen Türen stimmen sie überein. Geh zu Harren. Er wartet auf den Moment, in dem du das verstehst.'
     },
     council_collusion_reveal: {
@@ -293,7 +293,7 @@
       requiredAct: 2,
       dialogueOffer: 'Im Keller hortet Gesindel subversive Schriften gegen den Rat. Beschlagnahme sie — drei Bündel. Lies sie nicht. Bring sie.\n\nNimmst du den Auftrag an?',
       dialogueProgress: 'Noch nicht alle Schriften sichergestellt. Such weiter.',
-      dialogueComplete: 'Gib her.\n\n(Bevor du sie abgibst, fällt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Bürger, die nach verschwundenen Angehörigen fragen. Du gibst sie trotzdem ab. Mara wird wissen wollen, wer da fragt.)'
+      dialogueComplete: 'Gib her.\n\n(Bevor du sie abgibst, fällt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Bürger, die nach verschwundenen Angehörigen fragen.)'
     },
     council_surveillance: {
       id: 'council_surveillance',
@@ -410,7 +410,7 @@
       requiredAct: 3,
       dialogueOffer: 'Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Geh als Schreiber verkleidet hinein, hör ab, was die anderen flüstern, und birg den Akt. Werde nicht gesehen.\n\nTust du das für mich?',
       dialogueProgress: 'Die Schreiber haben noch nichts Verwertbares gesagt. Bleib im Archiv, unauffällig, und hör weiter ab, bis du an den versiegelten Akt kommst.',
-      dialogueComplete: 'Du hast den Akt. "Vermisst, Fall geschlossen" — das Verschwinden der Bürgermeistertochter, sauber abgelegt, Datum, Siegel, Unterschrift. Und das Datum... es liegt vor dem Tag, an dem sie verschwand. Jemand im Rat hat ihr Verschwinden abgeheftet, bevor es geschah. Ich sage Harren noch nichts. Erst will ich wissen, wer.'
+      dialogueComplete: 'Du hast den Akt. "Vermisst, Fall geschlossen" — das Verschwinden seiner Tochter, sauber abgelegt, Datum, Siegel, Unterschrift. Und das Datum liegt vor dem Tag, an dem sie verschwand.\n\n(Harren liest es zweimal.) Sie haben es geplant. Jemand im Rat hat Lenes Verschwinden abgeheftet, bevor es geschah.'
     },
     espionage_informant: {
       id: 'espionage_informant',
@@ -588,8 +588,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // =======================================================
     mara_assault: {
       id: 'mara_assault',
-      title: 'Der Sturm auf den Rat',
-      description: 'Dringe bis Welle 30 vor, um den Rat zu stürzen.',
+      title: 'Die letzte Wache',
+      description: 'Dring bis Welle 30 vor und zerschlag, was von der Kettenwache übrig ist.',
       npcId: 'mara',
       type: 'wave',
       chain: 3,
@@ -599,9 +599,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       rewards: { xp: 300 },
       prerequisites: ['schattenrat_finale'],
       requiredAct: 4,
-      dialogueOffer: 'Es ist soweit. Der Rat fällt heute. Dringe bis Welle 30 vor.\n\nBist du bereit für den Sturm?',
-      dialogueProgress: 'Der Rat wartet in der Tiefe. Dringe weiter vor — Welle 30.',
-      dialogueComplete: 'Der Rat ist gestürzt! Fogreach atmet auf. Aber die Schatten sind noch nicht besiegt...'
+      dialogueOffer: 'Aldric ist unter der Stadt verschwunden, mit dem Rest seiner Kettenwache. Solange sie da unten sind, schlafen die Gassen nicht. Dring bis Welle 30 vor und räum auf.\n\nBist du dabei?',
+      dialogueProgress: 'Die Kettenwache hält sich noch in der Tiefe. Dring weiter vor — Welle 30.',
+      dialogueComplete: 'Die Kettenwache ist zerschlagen. Die Gänge unter der Stadt gehören wieder niemandem. Das ist mehr, als diese Stadt lange hatte.'
     },
     // Feature 062: umbenannt von 'harren_rescue'. Akt 4, die Quelle selbst.
     schattenrat_finale: {
@@ -725,8 +725,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: ['thom_truth', 'elara_ritual'],
       requiredAct: 3,
       dialogueOffer: 'Bevor du das Letzte tust, sollst du wissen, für wen. Komm, nur wir zwei.',
-      dialogueProgress: 'Elara wartet mit den drei Blättern.',
-      dialogueComplete: 'Sie hat das Blatt verbrannt. Eine wahre Meldung, und niemand wird sie je lesen. "Nicht alles hilft", hat sie gesagt. Du schiebst den Gedanken beiseite. Noch.'
+      dialogueProgress: 'Elara wartet auf dich. Nur ihr zwei.',
+      dialogueComplete: 'Sie hat die Meldung weggesteckt. Eine wahre Meldung, und niemand wird sie je lesen. "Nicht alles hilft", hat sie gesagt. Du schiebst den Gedanken beiseite. Noch.'
     },
 
     // Feature 062: 'final_truth' entfernt (ging ins Finale auf). the_reckoning
@@ -802,8 +802,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.klerus_purification.description': 'Cleanse the lower Rathauskeller chambers — defeat 3 elite enemies. The heretic leaders only lurk from depth 3.',
       'quest.garde_patrol_expansion.title': 'Patrol Expansion',
       'quest.garde_patrol_expansion.description': 'Demonstrate force for the new patrols — defeat 10 trespassers.',
-      'quest.widerstand_proof.title': 'Evidence from the Ritual Chamber',
-      'quest.widerstand_proof.description': 'Find a hidden Council document in a ritual chamber in the Rathauskeller.',
+      'quest.widerstand_proof.title': "The Council Document",
+      'quest.widerstand_proof.description': "Find a hidden council document in the Rathauskeller, a few rooms deeper.",
       'quest.council_collusion_reveal.title': 'The Secret Meeting',
       'quest.council_collusion_reveal.description': 'Watch the public council session. Then eavesdrop on the secret session in the council chamber beneath the town hall.',
       'quest.mara_contact.title': 'The Scout',
@@ -824,8 +824,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.thom_pamphlets.description': 'Complete 3 deep dungeon runs (from depth 22) to spread the leaflets into the lowest passages.',
       'quest.elara_blade.title': "Elara's Gift",
       'quest.elara_blade.description': 'Elara has forged a special weapon for you.',
-      'quest.mara_assault.title': 'Storming the Council',
-      'quest.mara_assault.description': 'Reach wave 30 to topple the council.',
+      'quest.mara_assault.title': "The Last Watch",
+      'quest.mara_assault.description': "Reach wave 30 and break what is left of the chain guard.",
       // Feature 062: umbenannt harren_rescue -> schattenrat_finale; final_truth
       // entfernt (-> the_reckoning). Neue/umbenannte Quests ohne EN fallen über
       // die i18n-Kaskade auf Deutsch zurück (Deutsch = Source-of-Truth).
@@ -842,9 +842,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.aldric_patrol.dialogueComplete': 'All corridors are safe. Good work, Archivesmith.',
 
       // === Akt 1 Vertical Slice (feature 050) — quest dialogues ===
-      'quest.harren_daughter_investigation.dialogueOffer': "My daughter has vanished. Aldric says intruders abducted her. The Clergy speaks of possession. The Guard talks of dereliction of duty.\n\nI trust none of the three until I have read her own words. Bring me the journal fragment she left behind. You'll find it in the Rathauskeller — somewhere the Council has not looked.\n\nTrust no one until you have seen it yourself.",
+      'quest.harren_daughter_investigation.dialogueOffer': "My daughter has vanished. Aldric says she fled. The Clergy speaks of possession. The Guard talks of dereliction of duty.\n\nI trust none of the three until I have read her own words. Bring me the journal fragment she left behind. You will find it in the Rathauskeller — somewhere the council did not look.\n\nTrust no one until you have seen it yourself.",
       'quest.harren_daughter_investigation.dialogueProgress': 'Keep searching — the fragment is down there. Aldric, the Clergy and the Guard quarrel upstairs because each wants its own version. You will find the real one.',
-      'quest.harren_daughter_investigation.dialogueComplete': "You have it. She wasn't abducted. She fled. And she had reason — all three Council factions are named in the fragment. You will be approached from four sides now. Hear everyone out. Do all four jobs. Then come back to me.",
+      'quest.harren_daughter_investigation.dialogueComplete': "You have it. All three council factions are in it, by name. Lene did not simply flee, Archivesmith. Someone made her disappear.\n\nYou will get work from every side now. Take it. Listen to everything. Then come back to me.",
 
       'quest.magistrat_verification.dialogueOffer': 'You have seen the fragment. Good. Then you also know that the daughter must be reclassified — from "fled" to "missing person of interest". A pure administrative matter, you understand. Records must be kept properly.\n\nThe council-sealed verification document lies in the sunken registry — down there, where the fog swallowed the old records. Descend, recover the Council Seal, and bring it to me. Whatever you meet down there is not my department. The Magistrate carries the responsibility, not the citizen.\n\nDo you accept?',
       'quest.magistrat_verification.dialogueProgress': 'The Council Seal is still down there in the sunken registry. Descend further and recover it. Without the document the reclassification is not legally binding.',
@@ -856,10 +856,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       'quest.garde_patrol_expansion.dialogueOffer': 'If a daughter can vanish from the Town Hall itself, that is a failure of the Guard — and it will change. I need a patrol expansion. Today. Go into the lower chambers and demonstrate force — ten troublemakers fall, and the edict carries itself through the streets.\n\nDo not ask whether the patrols favor a comfortable way of life. Do not ask who decides where they run. Loyalty is the only coin that counts. The edict is the coin you place in my hand.\n\nDo you accept, Archivesmith?',
       'quest.garde_patrol_expansion.dialogueProgress': 'Ten troublemakers remain. Each fallen body is one more line in the report. The Guard waits on the outcome.',
-      'quest.garde_patrol_expansion.dialogueComplete': 'The edict is published. Patrols double tomorrow. No one else will vanish — or at least no one who matters. The Guard remembers who answers quickly.',
+      'quest.garde_patrol_expansion.dialogueComplete': "The report is written. Ten troublemakers fewer, and the Guard can propose more patrols to the council. No one else will vanish — or at least no one who matters. The Guard remembers who answers quickly.",
 
-      'quest.widerstand_proof.dialogueOffer': "So you found the fragment. Good — you no longer live entirely inside their story.\n\nI want YOU to see what I have seen before you go on running their errands. Down in the Rathauskeller there is a ritual chamber. There lies a document the three Council factions should never have signed together — and yet all three seals are upon it.\n\nBring it to me. Then we will talk.",
-      'quest.widerstand_proof.dialogueProgress': 'Find the ritual chamber. Three rooms deeper. The document is small, but the seal upon it will take your breath away.',
+      'quest.widerstand_proof.dialogueOffer': "So you found the fragment. Good — you no longer live entirely inside their story.\n\nI want YOU to see what I have seen before you go on running their errands. Down in the Rathauskeller lies a document the three council factions should never have signed together — and yet their seal is on it. All three.\n\nBring it to me. Then we talk.",
+      'quest.widerstand_proof.dialogueProgress': "The document lies a few rooms deeper. It is small, but the seal upon it will take your breath away.",
       'quest.widerstand_proof.dialogueComplete': 'Three seals. One signature. Magistrate, Clergy, Guard — in public they pretend to be rivals. Behind closed doors they agree. Go to Harren. He has been waiting for the moment you would understand.',
 
       'quest.council_collusion_reveal.dialogueOffer': 'Today the council announces the result of the vote, in public, in the council hall. Magistrate, Clergy, Guard, before all the citizens. Go and listen. And then follow them in the night, when they think nobody is watching.',
@@ -887,7 +887,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.council_seizure.description': 'Confiscate the "subversive writings" — collect 3 bundles from the cellars.',
       'quest.council_seizure.dialogueOffer': 'Rabble in the cellars is hoarding subversive writings against the council. Confiscate them — three bundles. Do not read them. Bring them.\n\nWill you take the task?',
       'quest.council_seizure.dialogueProgress': 'Not all writings secured yet. Keep looking.',
-      'quest.council_seizure.dialogueComplete': 'Hand them over.\n\n(Before you turn them in, your eye catches a line. These are not pamphlets. They are petitions — citizens asking after vanished kin. You hand them over anyway.)',
+      'quest.council_seizure.dialogueComplete': "Hand them over.\n\n(Before you turn them in, your eye catches a line. These are not pamphlets. They are petitions — citizens asking after vanished kin.)",
 
       'quest.council_surveillance.title': 'Surveillance',
       'quest.council_surveillance.description': 'Watch the cellar passages beneath the town hall for the council — search 3 chambers.',
@@ -924,7 +924,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.espionage_archive.description': 'Infiltrate the council archive in disguise, eavesdrop on the scribes and recover the sealed file.',
       'quest.espionage_archive.dialogueOffer': "In the council's archive lies a sealed file — and I must know what it holds. Go in disguised as a scribe, listen to what the others whisper, and recover the file. Do not be seen.\n\nWill you do this for me?",
       'quest.espionage_archive.dialogueProgress': 'The scribes have said nothing useful yet. Stay in the archive, inconspicuous, and keep eavesdropping until you reach the sealed file.',
-      'quest.espionage_archive.dialogueComplete': '"Missing, case closed" — the disappearance of the mayor\'s daughter, neatly filed, date, seal, signature. And the date... it falls before the day she vanished. Someone in the council filed her disappearance before it happened. I will not tell Harren yet. First I want to know who.',
+      'quest.espionage_archive.dialogueComplete': "\"Missing, case closed\" — his daughter's disappearance, neatly filed, date, seal, signature. And the date falls before the day she vanished.\n\n(Harren reads it twice.) They planned it. Someone in the council filed Lene's disappearance before it happened.",
 
       'quest.espionage_informant.title': 'The Mole',
       'quest.espionage_informant.description': "Unmask a council mole within the resistance's ranks, in disguise.",
@@ -956,9 +956,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_blade.dialogueProgress': 'The blade waits for you.',
       'quest.elara_blade.dialogueComplete': 'May it protect you. No matter what comes.',
 
-      'quest.mara_assault.dialogueOffer': "It's time. The council falls today. Reach wave 30.\n\nAre you ready for the assault?",
-      'quest.mara_assault.dialogueProgress': 'The council waits in the depths. Press on — wave 30.',
-      'quest.mara_assault.dialogueComplete': 'The council has fallen! Fogreach breathes again. But the shadows are not yet defeated...',
+      'quest.mara_assault.dialogueOffer': "Aldric has vanished beneath the city, with what is left of his chain guard. As long as they are down there, the alleys won't sleep. Reach wave 30 and clean up.\n\nAre you in?",
+      'quest.mara_assault.dialogueProgress': "The chain guard still holds out in the depths. Press on — wave 30.",
+      'quest.mara_assault.dialogueComplete': "The chain guard is broken. The tunnels beneath the city belong to no one again. That is more than this city has had in a long time.",
 
       'quest.schattenrat_finale.dialogueOffer': 'Elara has gone down. To the source, at depth 30. I know now what she is, Archivesmith. She is still my daughter. Go. I will follow.',
       'quest.schattenrat_finale.dialogueProgress': 'The source lies at depth 30. Hurry.',

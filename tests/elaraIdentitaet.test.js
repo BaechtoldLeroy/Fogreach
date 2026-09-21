@@ -73,7 +73,10 @@ test('Hub und Keller verbinden Lene und Elara nicht', () => {
   assert.ok(frueh, 'Harrens Zeilen fuer Akt 0-2 nicht gefunden');
   assert.ok(!/Elara/.test(frueh[0]), 'Harren nennt Elara in seinen Zeilen fuer Akt 0-2');
 
-  const elara = /elara: \{[\s\S]*?erste_risse: \[([\s\S]*?)\]/.exec(story);
+  // #89: Elara hat nur noch Zeilen fuer Akt 4 (erst dann steht sie im Hub).
+  // Keine davon darf verraten, dass sie die Tochter ist.
+  const elara = /\n    elara: \{([\s\S]*?)\n    \}/.exec(story);
   assert.ok(elara, 'Elaras Dialogtabelle nicht gefunden');
-  assert.ok(!/geflohen|entführt|Tochter/.test(elara[1]), 'Elaras Zeilen in Akt 2 verraten sie');
+  assert.ok(!/erste_risse|treuer_diener|auftrag/.test(elara[1]), 'Elara spricht im Hub schon vor Akt 4');
+  assert.ok(!/geflohen|entführt|Tochter/.test(elara[1]), 'Elaras Zeilen verraten sie');
 });
