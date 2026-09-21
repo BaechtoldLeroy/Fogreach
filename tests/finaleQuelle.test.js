@@ -82,8 +82,14 @@ test('Vor dem Kampf: Elara an der Quelle, Harren folgt ihr und stirbt', () => {
   assert.ok(/geführt werden/.test(d.text));
   d = klick(0);
   assert.ok(/HARREN: Lene/.test(d.text), 'Harren kommt nicht');
+  assert.strictEqual(H.run(`!!window.game.scene.getScene('GameScene').__quelleNahmSie`), false,
+    'der Moment kommt zu frueh');
   d = klick(0);
   assert.ok(/steht nicht mehr auf/.test(d.text));
+  // #89: Der Moment, in dem die Quelle sie nimmt, ist inszeniert (Blitz,
+  // Stoss, die Quelle flammt auf) — nicht nur eine Textseite.
+  assert.strictEqual(H.run(`!!window.game.scene.getScene('GameScene').__quelleNahmSie`), true,
+    'Harrens Tod ist nur eine Textseite');
   assert.strictEqual(flag('harren_dead'), false, 'Harren stirbt schon, bevor man es gelesen hat');
   klick(0);
   assert.strictEqual(flag('harren_dead'), true, 'harren_dead nicht gesetzt');

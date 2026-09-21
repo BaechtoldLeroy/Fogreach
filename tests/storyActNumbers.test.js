@@ -45,7 +45,7 @@ const EXPECTED = [
   { idx: 1, num: 2, id: 'treuer_diener', name: 'Treuer Diener' },
   { idx: 2, num: 3, id: 'erste_risse',   name: 'Das Doppelspiel' },
   { idx: 3, num: 4, id: 'wahrheit',      name: 'Die Enttarnung' },
-  { idx: 4, num: 5, id: 'bruch',         name: 'Der Verrat und die Presse' }
+  { idx: 4, num: 5, id: 'bruch',         name: 'Die Quelle' }
 ];
 
 test('STORY_ACTS hat genau 5 Akte in der erwarteten Reihenfolge', () => {

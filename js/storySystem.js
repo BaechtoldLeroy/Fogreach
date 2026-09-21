@@ -15,143 +15,147 @@
     { id: 'treuer_diener', name: 'Treuer Diener' },
     { id: 'erste_risse',   name: 'Das Doppelspiel' },
     { id: 'wahrheit',      name: 'Die Enttarnung' },
-    { id: 'bruch',         name: 'Der Verrat und die Presse' }
+    { id: 'bruch',         name: 'Die Quelle' }   // #89: Titel aus der Story-Bibel v5
   ];
 
   // ---- Narrative texts shown at act transitions ----
+  // #89: auf Story-Bibel v5 nachgezogen. Jeder Text passt zu dem Moment, in
+  // dem der Akt beginnt (Aufstieg quest-getrieben: harren_daughter_investigation,
+  // council_collusion_reveal, mara_warning, bruch_confrontation).
   const ACT_NARRATIVES = {
-    auftrag:       'Du erwachst in der Archivschmiede. Dein Kopf dröhnt. Ein Mann in Ratsketten steht über dir: \'Der Keller muss gesäubert werden, Archivschmied. Wilde Tiere treiben sich dort herum.\'',
-    treuer_diener: 'Ratsherr Aldric klopft dir auf die Schulter. \'Gut gemacht. Aber es gibt grössere Bedrohungen — Eindringlinge stehlen unsere Archive. Wir brauchen dich.\'',
-    erste_risse:   'Die Dokumente des besiegten Anführers tragen das Siegel des Kettenrats. Aldric lacht nervös: \'Fälschungen. Natürlich Fälschungen.\' Aber Branka blickt dir schweigend in die Augen.',
-    wahrheit:      'In der Ritualkammer: Blut, Symbole, Ketten. Das ist kein Lager der Eindringlinge. Das ist eine Beschwörungskammer. Der Rat lügt.',
-    bruch:         '\'Du stellst zu viele Fragen, Archivschmied.\' Aldrics Stimme ist kalt. Hinter ihm stehen bewaffnete Wachen. \'Erledige deinen Auftrag — oder wir erledigen dich.\''
+    auftrag: 'Du erwachst in der Archivschmiede. Woran Du Dich erinnerst: an Deinen Rang, an Dein Werkzeug, an nichts davor. Ratsherr Aldric wartet schon. \'Der Rat hat Arbeit für Dich, Archivschmied. Unten im Keller.\'',
+    treuer_diener: 'Im Tagebuch der Bürgermeistertochter stehen alle drei Fraktionen, mit Namen. Harren liest lange. \'Sie ist nicht geflohen. Jemand hat sie verschwinden lassen.\' Am nächsten Morgen hat der Rat neue Aufträge für Dich. Er lobt Dich. Er beobachtet Dich.',
+    erste_risse: 'Ein Gesicht, drei Masken, ein Zeichen: drei Ketten, ineinander verschlungen. Harren bittet Dich zu bleiben. \'Räum weiter für sie, und heimlich für uns.\' Von nun an gehst Du im Rathaus aus und ein und trägst jeden Abend etwas hinaus.',
+    wahrheit: 'Der Kettenmeister ist gefallen, das erste Siegel mit ihm. Doch der Widerstand verliert. Maras Leute werden verhaftet, noch bevor sie losgehen. Jemand verrät sie. Einer von euch.',
+    bruch: 'Aldric weiss es. Dein Doppelspiel ist aufgeflogen, die Kettenwache jagt Dich durch die Gänge. Oben ist das Rathaus zu. Unten, irgendwo unter der Stadt, liegt die Quelle des Nebels.'
   };
 
   // ---- Dynamic NPC dialogue per act ----
+  // #89: v5. Jede Figur weiss nur, was sie im jeweiligen Akt wissen kann.
   const NPC_DIALOGUE = {
     aldric: {
       auftrag: [
         'Der Keller ist voller Ungeziefer. Räum das auf, Archivschmied.',
-        'Der Rat hat dich aus gutem Grund hierher gestellt. Zeig, dass du nützlich bist.',
-        'Frag nicht so viel. Tu einfach, was man dir sagt.'
+        'Der Rat hat Dich aus gutem Grund in die Archivschmiede gestellt. Zeig, dass Du nützlich bist.',
+        'Frag nicht so viel. Tu, was man Dir sagt.'
       ],
       treuer_diener: [
-        'Du hast dich bewährt. Jetzt kommen die wahren Aufgaben.',
-        'Eindringlinge bedrohen unsere Archive. Stoppe sie, bevor sie Schaden anrichten.',
-        'Der Rat vertraut dir. Enttäusche uns nicht.'
+        'Du hast Dich bewährt. Magistrat, Klerus, Garde: Alle drei haben Arbeit für Dich.',
+        'Die Tochter des Bürgermeisters? Geflohen. Eine traurige Sache. Lass Dich davon nicht ablenken.',
+        'Der Rat streitet laut, damit die Stadt es hört. Das ist gesund.'
       ],
       erste_risse: [
-        'Fälschungen, sage ich dir! Glaub nicht alles, was du findest.',
-        'Manche Dokumente sind... vertraulich. Lass die Finger davon.',
-        'Du arbeitest für den Rat. Vergiss das nicht.'
+        'Du räumst zuverlässig. Der Rat merkt sich, wer zuverlässig ist.',
+        'Die Abstimmung hat gezeigt, was die Stadt will: Ordnung.',
+        'Manche Akten sind vertraulich. Lass die Finger davon.'
       ],
       wahrheit: [
-        'Was du gesehen hast, bleibt unter uns. Verstanden?',
-        'Der Rat hat seine Gründe. Hinterfrage sie nicht.',
-        'Noch kannst du zurück. Wähle weise, Archivschmied.'
+        'Der Widerstand hat in letzter Zeit viel Pech. Tragisch.',
+        'Man hört, Du triffst Dich mit Leuten, die man nicht treffen sollte. Man hört viel.',
+        'Noch gehst Du hier aus und ein. Noch.'
       ],
       bruch: [
         'Du stellst zu viele Fragen. Das endet nie gut.',
-        'Ich habe dich gewarnt. Der Rat ist nicht geduldig.',
-        'Letzte Chance, Archivschmied. Gehorche — oder verschwinde.'
+        'Das Rathaus ist nicht mehr Deine Tür.',
+        'Lauf ruhig, Archivschmied. Alle Wege führen nach unten.'
       ]
     },
     branka: {
       auftrag: [
-        'Stahl allein schneidet die Lügen des Rates nicht. Erst wenn jede Klinge Wissen trägt, fällt ihre Maske.',
-        'Im Keller unter dem Rathaus lagern Protokolle aus Dämonenverhören. Bring mir Abschriften, und ich veredele deine Artefakte.',
-        'Sprich draussen leise. Die Aufseher des Kettenrats tragen inzwischen die Farben der Stadtgarde.'
+        'Du siegelst Akten, an die Du Dich am nächsten Tag nicht erinnerst. Pass auf Dich auf.',
+        'Früher hast Du hier gestanden und Fragen gestellt, bis Aldric rot wurde. Weisst Du das noch?',
+        'Der Nebel nimmt jedem etwas. Manchen nimmt er mehr.'
       ],
       treuer_diener: [
-        'Deine Fortschritte sind bemerkenswert. Die alten Protokolle enthalten mehr, als der Rat zugeben will.',
-        'Ich habe verbotene Schmiedetechniken gefunden. Die Dämonen selbst haben sie einst gelehrt.',
-        'Der Rat verbietet bestimmte Legierungen. Frag dich, warum.'
+        'Der Magistrat will ein Siegel von Dir. Überleg Dir, was Du unterschreibst.',
+        'Drei Fraktionen, drei Farben, und doch holen alle ihr Eisen beim selben Schmied.',
+        'Harrens Tochter ist nicht die Erste, die verschwindet. Nur die Erste, nach der jemand fragt.'
       ],
       erste_risse: [
-        'Diese Rüstungen... die Masse stimmen nicht. Sie sind für Gefangene, nicht für Soldaten.',
-        'Ich schmiede, was der Rat verlangt. Aber ich beginne zu zweifeln.',
-        'Jemand muss die Wahrheit herausfinden. Bist du bereit?'
+        'Du gehst im Rathaus aus und ein und kommst jeden Abend schwerer beladen heraus. Ich frage nicht.',
+        'Ich schmiede, was der Rat bestellt. Aber ich lese mit, was er bestellt.',
+        'Wenn Du wissen willst, wer Du warst, komm zu mir. Ich habe Deine alte Werkstatt nicht vergessen.'
       ],
       wahrheit: [
-        'Die Siegel unter dem Rathaus pulsieren stärker. Jemand füttert sie mit Angst.',
-        'Ich schmiede jetzt im Verborgenen. Der Rat darf nichts von den neuen Klingen erfahren.',
-        'Jede Waffe, die ich fertige, trägt ein Zeichen des Widerstands.'
+        'Maras Leute werden verhaftet, bevor sie losgehen. Jemand weiss zu viel.',
+        'Die Kettenwache war heute zweimal hier. Sie sucht Dich noch nicht. Noch nicht.',
+        'Pass auf, wem Du Deine Wege erzählst. Auch mir nicht alles.'
       ],
       bruch: [
-        'Der Rat hat meine Werkstatt durchsucht. Sie wissen, dass ich zweifle.',
-        'Wir brauchen Waffen. Nicht für den Rat — für UNS.',
-        'Die Zeit der Geheimnisse ist vorbei. Wir müssen handeln.'
+        'Aldric weiss es. Hier bist Du nicht mehr sicher, aber meine Tür bleibt offen.',
+        'Zeig mir die Klinge. Wer sie Dir auch geschmiedet hat, sie ist gut.',
+        'Wenn Du hinabsteigst, komm zurück. Die Stadt braucht jemanden, der sich erinnert.'
       ]
     },
     thom: {
       auftrag: [
-        'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Träume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
-        'Bring mir Beweise aus dem Rathauskeller. Jede Spalte, die wir drucken, nimmt der Angst einen Zoll.',
-        'Verteile nichts Ungeprüftes. Eine falsche Zeile, und sie sperren wieder zehn Familien ein.'
+        'Ich drucke, was der Rat bestellt. Edikte, Verordnungen, Gebete.',
+        'Die Presse ruht selten. Die Stadt liest viel und erinnert sich an wenig.',
+        'Komm wieder, wenn Du etwas hast, das man drucken sollte.'
       ],
       treuer_diener: [
-        'Die ersten Beweise sind erschütternd. Der Rat hat Dämonen nicht verbannt — er hat sie eingeladen.',
-        'Meine Druckerpresse läuft heiss. Die Wahrheit will ans Licht.',
-        'Jedes Dokument, das du findest, ist eine Kugel gegen die Lügen des Rates.'
+        'Drei Fraktionen, drei Auftraggeber, eine Druckerei. Ich habe nur eine Sorte Papier.',
+        'Wenn der Rat streitet, verkaufe ich mehr Edikte. Merkwürdig, wie oft er streitet.',
+        'Harren war hier und hat nach seiner Tochter gefragt. Ich konnte ihm nichts drucken.'
       ],
       erste_risse: [
-        'Die Dokumente, die du gefunden hast... sie tragen das Siegel des Rats. Offiziell.',
-        'Ich drucke seit Jahren. Aber das hier — das ist grösser als alles zuvor.',
-        'Wir müssen vorsichtig sein. Der Rat hat Augen überall.'
+        'Was Du aus dem Rathaus trägst, landet nicht bei mir. Noch nicht. Aber ich habe Platz.',
+        'Eine falsche Zeile, und sie sperren zehn Familien ein. Ich drucke nur, was stimmt.',
+        'Drei Edikte habe ich für die Abstimmung gedruckt. Die Patrouillen hat keiner gedruckt, und doch sind sie da.'
       ],
       wahrheit: [
-        'Ich habe genug gedruckt, was der Rat will. Zeit für die Wahrheit.',
-        'Die Druckerpresse braucht mehr Tinte. Die Wahrheit ist umfangreicher als gedacht.',
-        'Ich drucke jetzt auch Karten der unterirdischen Gänge. Mara liefert die Skizzen.'
+        'Der Widerstand verliert Leute. Ich drucke keine Namen mehr, bis wir wissen, wer redet.',
+        'Irgendwann muss alles raus. Nicht das halbe Bild. Alles.',
+        'Ich habe eine zweite Presse im Keller. Man weiss ja nie.'
       ],
       bruch: [
-        'Der Rat hat meine alte Presse zerstört. Aber ich habe längst drei neue versteckt.',
-        'Jeder Durchlauf ist eine Chance, Flugblätter zu verteilen.',
-        'Die Bürger müssen wissen, was unter ihren Füssen geschieht.'
+        'Wenn Du zurückkommst, drucken wir alles. Den Rat, Aldric, den Widerstand. Alles.',
+        'Die Garde war hier. Die Presse steht noch.',
+        'Die Platten liegen bereit. Es fehlt nur noch das Ende.'
       ]
     },
     mara: {
       auftrag: [
-        'Die Schreiber des Rates markieren Häuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
-        'Der Zeremonienmeister besitzt neue Siegel. Sie holen Dämonen als stilles Archiv.',
-        'Sichere Augen im Rathauskeller. Jedes Siegel, das du brichst, lockert ihre Ketten an der Stadt.'
+        'Wer auf dem Schwarzmarkt fragt, zahlt doppelt. Wer im Rathaus fragt, verschwindet.',
+        'Die Schreiber markieren Häuser mit Kreideketten. Merk Dir, welche.',
+        'Du bist der Archivschmied? Man hört, Du hattest früher mehr Fragen.'
       ],
       treuer_diener: [
-        'Meine Späher haben neue Gänge unter dem Rathaus entdeckt. Die Siegel werden stärker.',
-        'Der Zeremonienmeister wechselt seine Routen. Er ahnt, dass wir ihm folgen.',
-        'Jedes gebrochene Siegel schwächt seinen Griff. Mach weiter.'
+        'Harrens Tochter ist nicht geflohen. Niemand flieht aus dieser Stadt, ohne dass ich davon weiss.',
+        'Die Kettenwache räumt nachts Häuser. Morgens erinnert sich kein Nachbar.',
+        'Halt die Augen offen, wenn Du unten bist.'
       ],
       erste_risse: [
-        'Du erinnerst dich nicht. Aber ich kenne dich.',
-        'Die Risse in der Fassade des Rats werden grösser. Nutze sie.',
-        'Vertraue nicht blind. Auch nicht mir. Aber hör zu.'
+        'Du hast früher Fragen gestellt, Archivschmied. Stell sie wieder.',
+        'Mein Netz reicht bis ins Lagerhaus des Rats. Mehr sage ich nicht.',
+        'Vertrau nicht blind. Auch mir nicht. Aber hör zu.'
       ],
       wahrheit: [
-        'Der Kettenmeister bewacht die ersten echten Beweise. Besiege ihn.',
-        'Die unterirdischen Gänge führen tiefer als gedacht. Dort unten lebt etwas.',
-        'Ich habe Karten gezeichnet. Die Siegel bilden ein Muster — ein Beschwörungskreis unter der ganzen Stadt.'
+        'Drei meiner Leute sind weg. Sie kannten den Treffpunkt erst einen Tag vorher.',
+        'Es gibt einen Maulwurf. Jemanden, dem wir alle vertrauen.',
+        'Wenn Du etwas hörst, egal von wem, sag es mir zuerst.'
       ],
       bruch: [
         'Aldric hat seine Maske fallen lassen. Gut. Jetzt wissen alle, woran sie sind.',
-        'Mein Netzwerk ist bereit. Wir brauchen nur noch den Funken.',
-        'Wir müssen vorsichtig sein. Der Zeremonienmeister weiss, dass wir kommen.'
+        'Ich folge einem Zettel, der zu oft den Besitzer wechselt. Bald weiss ich, wer redet.',
+        'Wenn Du hinabsteigst, bin ich nicht weit.'
       ]
     },
     harren: {
       auftrag: [
-        'Ich bin nur ein alter Handwerker. Aber meine Tochter... sie ist alles, was ich habe.',
-        'Hast du Lene gesehen? Sie ist seit Wochen verschwunden.',
-        'Der Rat sagt, sie sei in Sicherheit. Aber ich glaube ihnen nicht.'
+        'Meine Tochter Lene ist verschwunden. Aldric sagt, sie sei geflohen. Lene flieht nicht.',
+        'Ich stelle jeden Abend ein Licht ins Fenster. Falls sie den Weg sucht.',
+        'Ich bin Bürgermeister dieser Stadt und kann niemanden fragen, ohne dass der Rat mithört.'
       ],
       treuer_diener: [
-        'Bitte, finde meine Tochter. Ich flehe dich an.',
-        'Mara hat mir erzählt, du seist vertrauenswürdig. Hilf mir.',
-        'Lene hat ein Tagebuch geführt. Wenn du es findest...'
+        'Das Tagebuch... alle drei Fraktionen stehen darin. Alle drei.',
+        'Bleib in ihrer Nähe, Archivschmied. Du bist der Einzige, der dort aus und ein geht.',
+        'Der Rat behandelt mich wie ein Möbelstück. Gut. Möbel hören viel.'
       ],
       erste_risse: [
-        'Du hast Hinweise gefunden? Erzähl mir alles!',
-        'Lene lebt... das ist alles, was zählt.',
-        'Was hat der Rat mit meiner Tochter zu tun?'
+        'Räum weiter für sie, und heimlich für uns.',
+        'Jeden Abend brennt das Licht. Sie muss es sehen.',
+        'Ein Gesicht, drei Masken. Und ich habe ihnen jahrelang die Hand gegeben.'
       ],
       wahrheit: [
         'Sie nennt sich jetzt Elara. Für mich bleibt sie Lene.',
@@ -160,25 +164,15 @@
       ],
       bruch: [
         'Aldric hat uns alle belogen. Auch über meine Tochter.',
-        'Meine Tochter ist stärker, als sie denken. Sie wird überleben.',
-        'Ich bin zu alt zum Kämpfen. Aber ich kann helfen.'
+        'Wenn Du hinabsteigst, sag ihr, dass das Licht noch brennt.',
+        'Ich bin zu alt zum Kämpfen. Aber ich lasse sie da unten nicht allein.'
       ]
     },
     elara: {
-      erste_risse: [
-        'Der Rat hört mit. Immer. Auch hier unten.',
-        'Hier — lies das. Dann verstehst du.',
-        'Ich habe gelernt, leise zu sein.'
-      ],
-      wahrheit: [
-        'Tief unten ist eine Kammer... ich zeige dir wo.',
-        'Die Rituale des Rats fressen die, die verschwinden.',
-        'Ich kenne ihre Geheimnisse. Alle.'
-      ],
       bruch: [
-        'Nimm das. Ich habe es für dich geschmiedet. Für den Fall, dass...',
-        'Aldric wird dich jagen. Sei vorsichtig.',
-        'Ich muss allein weiter. Vertrau mir.'
+        'Der Rat hört mit. Immer. Auch hier.',
+        'Du hast mir vertraut, als es niemand tat. Das vergesse ich nicht.',
+        'Unten liegt die Quelle. Wenn Du hinabsteigst, bin ich schon da.'
       ]
     }
   };
@@ -191,7 +185,7 @@
   // kein Priority-2-Zweig in consumePendingEvent mehr.
 
   // ---- Special Ending Text ----
-  const ALL_QUESTS_ENDING = 'Die Ketten von Fogreach sind gebrochen.\n\nDie Druckerpresse verbreitet die Wahrheit.\nDie Schmiede hämmert für die Freiheit.\nDas Untergrund-Netzwerk wacht.\n\nDoch wo Elara einst stand, ist nur Leere. Sie verschwand mit dem Schattenrat — und mit ihr eine Wahrheit, die du nie ganz begreifen wirst.\n\nDu hast die Stadt befreit. Doch der Nebel flüstert noch ihren Namen.';
+  const ALL_QUESTS_ENDING = 'Der Nebel bricht. Nicht, weil ihn jemand vertreibt, sondern weil zu viele Menschen sich zu vieles zugleich merken.\n\nDie Presse läuft, und die Stadt erinnert sich.';
 
   // ---- i18n bootstrap ----
   // Auto-register all German strings so consumers + EN translations can layer
@@ -226,15 +220,15 @@
       'story.act.treuer_diener.name': 'The Loyal Servant',
       'story.act.erste_risse.name': 'The Double Game',
       'story.act.wahrheit.name': 'The Unmasking',
-      'story.act.bruch.name': 'The Betrayal and the Press',
+      'story.act.bruch.name': 'The Source',
 
-      'story.act.auftrag.narrative': "You wake in the Archive Forge. Your head throbs. A man in council chains stands over you: 'The cellar must be cleansed, Archivesmith. Wild beasts are loose down there.'",
-      'story.act.treuer_diener.narrative': "Councillor Aldric pats your shoulder. 'Well done. But greater threats remain — intruders are stealing our archives. We need you.'",
-      'story.act.erste_risse.narrative': "The defeated leader's documents bear the Chain Council's seal. Aldric laughs nervously: 'Forgeries. Forgeries, of course.' But Branka stares at you in silence.",
-      'story.act.wahrheit.narrative': 'In the ritual chamber: blood, symbols, chains. This is no intruder camp. This is a summoning chamber. The council lies.',
-      'story.act.bruch.narrative': "'You ask too many questions, Archivesmith.' Aldric's voice is cold. Armed guards stand behind him. 'Finish your assignment — or we will finish you.'",
+      'story.act.auftrag.narrative': "You wake in the Archive Forge. What you remember: your rank, your tools, nothing before. Councillor Aldric is already waiting. 'The council has work for you, Archivesmith. Down in the cellar.'",
+      'story.act.treuer_diener.narrative': "The mayor's daughter's diary names all three factions. Harren reads for a long time. 'She did not flee. Someone made her disappear.' The next morning the council has new work for you. It praises you. It watches you.",
+      'story.act.erste_risse.narrative': "One face, three masks, one sign: three chains, interlocked. Harren asks you to stay. 'Keep cleaning for them, and secretly for us.' From now on you come and go in the town hall and carry something out every evening.",
+      'story.act.wahrheit.narrative': "The Chain Master has fallen, and the first seal with him. But the resistance is losing. Mara's people are arrested before they even set out. Someone is betraying them. One of you.",
+      'story.act.bruch.narrative': "Aldric knows. Your double game is blown, the chain guard hunts you through the tunnels. Up above, the town hall is closed to you. Down below, somewhere beneath the city, lies the source of the fog.",
 
-      'story.all_quests_ending': "The chains of Fogreach are broken.\n\nThe printing press spreads the truth.\nThe forge hammers for freedom.\nThe underground network keeps watch.\n\nBut where Elara once stood, there is only emptiness. She vanished with the Shadow Council — and with her, a truth you may never fully grasp.\n\nYou have freed the city. Yet the fog still whispers her name.",
+      'story.all_quests_ending': "The fog breaks. Not because anyone drives it away, but because too many people remember too much at once.\n\nThe press is running, and the city remembers.",
 
       'story.epilog.label': 'Epilogue',
       'story.unlock.enhanced_crafting': 'Advanced Crafting',
@@ -243,102 +237,85 @@
       'story.unlock.story_ending': 'Epilogue',
       'story.unlock.elara_trust': "Elara's Trust",
 
-      // === NPC dialogues — English ===
-      // aldric — councillor / antagonist
+      // === NPC dialogues — English (#89: v5) ===
       'story.npc.aldric.auftrag.0': "The cellar is full of vermin. Clean it up, Archivesmith.",
-      'story.npc.aldric.auftrag.1': "The council placed you here for good reason. Show that you're useful.",
-      'story.npc.aldric.auftrag.2': "Don't ask so many questions. Just do what you're told.",
-      'story.npc.aldric.treuer_diener.0': "You've proven yourself. Now the real tasks begin.",
-      'story.npc.aldric.treuer_diener.1': "Intruders threaten our archives. Stop them before they cause damage.",
-      'story.npc.aldric.treuer_diener.2': "The council trusts you. Do not disappoint us.",
-      'story.npc.aldric.erste_risse.0': "Forgeries, I tell you! Don't believe everything you find.",
-      'story.npc.aldric.erste_risse.1': "Some documents are... confidential. Keep your hands off.",
-      'story.npc.aldric.erste_risse.2': "You work for the council. Don't forget that.",
-      'story.npc.aldric.wahrheit.0': "What you've seen stays between us. Understood?",
-      'story.npc.aldric.wahrheit.1': "The council has its reasons. Do not question them.",
-      'story.npc.aldric.wahrheit.2': "You can still turn back. Choose wisely, Archivesmith.",
+      'story.npc.aldric.auftrag.1': "The council put you in the Archive Forge for good reason. Show that you're useful.",
+      'story.npc.aldric.auftrag.2': "Don't ask so many questions. Do what you're told.",
+      'story.npc.aldric.treuer_diener.0': "You've proven yourself. Magistrate, Clergy, Guard: all three have work for you.",
+      'story.npc.aldric.treuer_diener.1': "The mayor's daughter? Fled. A sad affair. Don't let it distract you.",
+      'story.npc.aldric.treuer_diener.2': "The council argues loudly so the city can hear it. That is healthy.",
+      'story.npc.aldric.erste_risse.0': "You clean up reliably. The council remembers who is reliable.",
+      'story.npc.aldric.erste_risse.1': "The vote showed what the city wants: order.",
+      'story.npc.aldric.erste_risse.2': "Some files are confidential. Keep your hands off them.",
+      'story.npc.aldric.wahrheit.0': "The resistance has had a lot of bad luck lately. Tragic.",
+      'story.npc.aldric.wahrheit.1': "One hears you meet people one shouldn't meet. One hears a lot.",
+      'story.npc.aldric.wahrheit.2': "You still come and go here. For now.",
       'story.npc.aldric.bruch.0': "You ask too many questions. That never ends well.",
-      'story.npc.aldric.bruch.1': "I warned you. The council is not patient.",
-      'story.npc.aldric.bruch.2': "Last chance, Archivesmith. Obey — or disappear.",
-
-      // branka — smith / ally
-      'story.npc.branka.auftrag.0': "Steel alone does not cut the council's lies. Only when every blade carries knowledge does their mask fall.",
-      'story.npc.branka.auftrag.1': "Records of demon interrogations are stored beneath the town hall. Bring me transcripts and I'll refine your artifacts.",
-      'story.npc.branka.auftrag.2': "Speak quietly outside. The Chain Council's overseers now wear the city guard's colors.",
-      'story.npc.branka.treuer_diener.0': "Your progress is remarkable. The old records contain more than the council will admit.",
-      'story.npc.branka.treuer_diener.1': "I've found forbidden smithing techniques. The demons themselves once taught them.",
-      'story.npc.branka.treuer_diener.2': "The council forbids certain alloys. Ask yourself why.",
-      'story.npc.branka.erste_risse.0': "This armor... the dimensions are wrong. It's for prisoners, not soldiers.",
-      'story.npc.branka.erste_risse.1': "I forge what the council demands. But I am beginning to doubt.",
-      'story.npc.branka.erste_risse.2': "Someone has to find the truth. Are you ready?",
-      'story.npc.branka.wahrheit.0': "The seals beneath the town hall pulse stronger. Someone is feeding them with fear.",
-      'story.npc.branka.wahrheit.1': "I now forge in secret. The council must learn nothing of the new blades.",
-      'story.npc.branka.wahrheit.2': "Every weapon I finish carries a mark of the resistance.",
-      'story.npc.branka.bruch.0': "The council searched my workshop. They know I doubt.",
-      'story.npc.branka.bruch.1': "We need weapons. Not for the council — for US.",
-      'story.npc.branka.bruch.2': "The time of secrets is over. We must act.",
-
-      // thom — printer / propagandist-turned-rebel
-      'story.npc.thom.auftrag.0': "The Chain Council orders prayers, meals, even dreams. We answer with pamphlets full of names and numbers.",
-      'story.npc.thom.auftrag.1': "Bring me proof from the town hall cellar. Every column we print takes an inch from fear.",
-      'story.npc.thom.auftrag.2': "Distribute nothing unverified. One false line and they lock up ten more families.",
-      'story.npc.thom.treuer_diener.0': "The first proofs are devastating. The council did not banish demons — it invited them.",
-      'story.npc.thom.treuer_diener.1': "My printing press runs hot. The truth wants to come out.",
-      'story.npc.thom.treuer_diener.2': "Every document you find is a bullet against the council's lies.",
-      'story.npc.thom.erste_risse.0': "The documents you found... they bear the council's seal. Official.",
-      'story.npc.thom.erste_risse.1': "I've been printing for years. But this — this is bigger than anything before.",
-      'story.npc.thom.erste_risse.2': "We must be careful. The council has eyes everywhere.",
-      'story.npc.thom.wahrheit.0': "I've printed enough of what the council wants. Time for the truth.",
-      'story.npc.thom.wahrheit.1': "The press needs more ink. The truth is more extensive than thought.",
-      'story.npc.thom.wahrheit.2': "I now also print maps of the underground passages. Mara provides the sketches.",
-      'story.npc.thom.bruch.0': "The council destroyed my old press. But I hid three new ones long ago.",
-      'story.npc.thom.bruch.1': "Every run is a chance to spread leaflets.",
-      'story.npc.thom.bruch.2': "The citizens must know what happens beneath their feet.",
-
-      // mara — scout / network leader
-      'story.npc.mara.auftrag.0': "The council's scribes mark houses with chalk-chains. Whoever objects vanishes into ritual shafts.",
-      'story.npc.mara.auftrag.1': "The Ceremoniarch holds new seals. They summon demons as silent archives.",
-      'story.npc.mara.auftrag.2': "Watchful eyes in the town hall cellar. Every seal you break loosens their chains on the city.",
-      'story.npc.mara.treuer_diener.0': "My scouts have found new passages beneath the town hall. The seals grow stronger.",
-      'story.npc.mara.treuer_diener.1': "The Ceremoniarch changes his routes. He suspects we follow him.",
-      'story.npc.mara.treuer_diener.2': "Every broken seal weakens his grip. Keep going.",
-      'story.npc.mara.erste_risse.0': "You don't remember. But I know you.",
-      'story.npc.mara.erste_risse.1': "The cracks in the council's facade are growing. Use them.",
-      'story.npc.mara.erste_risse.2': "Don't trust blindly. Not even me. But listen.",
-      'story.npc.mara.wahrheit.0': "The Chainmaster guards the first real evidence. Defeat him.",
-      'story.npc.mara.wahrheit.1': "The underground passages run deeper than thought. Something lives down there.",
-      'story.npc.mara.wahrheit.2': "I've drawn maps. The seals form a pattern — a summoning circle beneath the entire city.",
+      'story.npc.aldric.bruch.1': "The town hall is no longer your door.",
+      'story.npc.aldric.bruch.2': "Run, Archivesmith. All roads lead down.",
+      'story.npc.branka.auftrag.0': "You seal files you can't remember the next day. Take care of yourself.",
+      'story.npc.branka.auftrag.1': "You used to stand here asking questions until Aldric turned red. Do you remember?",
+      'story.npc.branka.auftrag.2': "The fog takes something from everyone. From some it takes more.",
+      'story.npc.branka.treuer_diener.0': "The Magistrate wants your seal. Think about what you sign.",
+      'story.npc.branka.treuer_diener.1': "Three factions, three colours, and yet they all buy their iron from the same smith.",
+      'story.npc.branka.treuer_diener.2': "Harren's daughter isn't the first to disappear. Just the first anyone asks about.",
+      'story.npc.branka.erste_risse.0': "You come and go in the town hall and leave heavier every evening. I don't ask.",
+      'story.npc.branka.erste_risse.1': "I forge what the council orders. But I read what it orders.",
+      'story.npc.branka.erste_risse.2': "If you want to know who you were, come to me. I haven't forgotten your old workshop.",
+      'story.npc.branka.wahrheit.0': "Mara's people are arrested before they set out. Someone knows too much.",
+      'story.npc.branka.wahrheit.1': "The chain guard was here twice today. They aren't looking for you yet. Not yet.",
+      'story.npc.branka.wahrheit.2': "Be careful who you tell your routes. Don't tell me everything either.",
+      'story.npc.branka.bruch.0': "Aldric knows. You're not safe here any more, but my door stays open.",
+      'story.npc.branka.bruch.1': "Show me the blade. Whoever forged it for you, it's good.",
+      'story.npc.branka.bruch.2': "If you go down, come back. The city needs someone who remembers.",
+      'story.npc.thom.auftrag.0': "I print what the council orders. Edicts, decrees, prayers.",
+      'story.npc.thom.auftrag.1': "The press rarely rests. The city reads a lot and remembers little.",
+      'story.npc.thom.auftrag.2': "Come back when you have something worth printing.",
+      'story.npc.thom.treuer_diener.0': "Three factions, three clients, one print shop. I only have one kind of paper.",
+      'story.npc.thom.treuer_diener.1': "When the council argues, I sell more edicts. Strange how often it argues.",
+      'story.npc.thom.treuer_diener.2': "Harren came asking about his daughter. I had nothing to print for him.",
+      'story.npc.thom.erste_risse.0': "What you carry out of the town hall doesn't reach me. Not yet. But I have room.",
+      'story.npc.thom.erste_risse.1': "One wrong line and they lock up ten families. I only print what is true.",
+      'story.npc.thom.erste_risse.2': "I printed three edicts for the vote. Nobody printed the patrols, and yet there they are.",
+      'story.npc.thom.wahrheit.0': "The resistance is losing people. I print no more names until we know who talks.",
+      'story.npc.thom.wahrheit.1': "Sooner or later everything has to come out. Not half the picture. All of it.",
+      'story.npc.thom.wahrheit.2': "I have a second press in the cellar. You never know.",
+      'story.npc.thom.bruch.0': "When you come back, we print everything. The council, Aldric, the resistance. Everything.",
+      'story.npc.thom.bruch.1': "The guard was here. The press still stands.",
+      'story.npc.thom.bruch.2': "The plates are ready. All that's missing is the ending.",
+      'story.npc.mara.auftrag.0': "Ask on the black market and you pay double. Ask in the town hall and you disappear.",
+      'story.npc.mara.auftrag.1': "The scribes mark houses with chalk chains. Remember which ones.",
+      'story.npc.mara.auftrag.2': "You're the Archivesmith? They say you used to ask more questions.",
+      'story.npc.mara.treuer_diener.0': "Harren's daughter didn't flee. Nobody flees this city without me knowing.",
+      'story.npc.mara.treuer_diener.1': "The chain guard clears houses at night. In the morning no neighbour remembers.",
+      'story.npc.mara.treuer_diener.2': "Keep your eyes open when you're down there.",
+      'story.npc.mara.erste_risse.0': "You used to ask questions, Archivesmith. Ask them again.",
+      'story.npc.mara.erste_risse.1': "My network reaches into the council's warehouse. That's all I'll say.",
+      'story.npc.mara.erste_risse.2': "Don't trust blindly. Not me either. But listen.",
+      'story.npc.mara.wahrheit.0': "Three of my people are gone. They only knew the meeting place a day before.",
+      'story.npc.mara.wahrheit.1': "There is a mole. Someone we all trust.",
+      'story.npc.mara.wahrheit.2': "If you hear something, no matter from whom, tell me first.",
       'story.npc.mara.bruch.0': "Aldric has dropped his mask. Good. Now everyone knows where they stand.",
-      'story.npc.mara.bruch.1': "My network is ready. We just need the spark.",
-      'story.npc.mara.bruch.2': "We must be careful. The Ceremoniarch knows we are coming.",
-
-      // harren — the missing daughter's father
-      'story.npc.harren.auftrag.0': "I'm only an old craftsman. But my daughter... she's all I have.",
-      'story.npc.harren.auftrag.1': "Have you seen Lene? She's been missing for weeks.",
-      'story.npc.harren.auftrag.2': "The council says she's safe. But I don't believe them.",
-      'story.npc.harren.treuer_diener.0': "Please, find my daughter. I'm begging you.",
-      'story.npc.harren.treuer_diener.1': "Mara told me you're trustworthy. Help me.",
-      'story.npc.harren.treuer_diener.2': "Lene kept a diary. If you find it...",
-      'story.npc.harren.erste_risse.0': "You found leads? Tell me everything!",
-      'story.npc.harren.erste_risse.1': "Lene is alive... that's all that matters.",
-      'story.npc.harren.erste_risse.2': "What does the council want with my daughter?",
+      'story.npc.mara.bruch.1': "I'm following a note that changes hands too often. Soon I'll know who talks.",
+      'story.npc.mara.bruch.2': "When you go down, I won't be far.",
+      'story.npc.harren.auftrag.0': "My daughter Lene has disappeared. Aldric says she fled. Lene doesn't flee.",
+      'story.npc.harren.auftrag.1': "Every evening I put a light in the window. In case she's looking for the way.",
+      'story.npc.harren.auftrag.2': "I am mayor of this city and can't ask anyone without the council listening.",
+      'story.npc.harren.treuer_diener.0': "The diary... all three factions are in it. All three.",
+      'story.npc.harren.treuer_diener.1': "Stay close to them, Archivesmith. You're the only one who comes and goes there.",
+      'story.npc.harren.treuer_diener.2': "The council treats me like furniture. Good. Furniture hears a lot.",
+      'story.npc.harren.erste_risse.0': "Keep cleaning for them, and secretly for us.",
+      'story.npc.harren.erste_risse.1': "Every evening the light burns. She must see it.",
+      'story.npc.harren.erste_risse.2': "One face, three masks. And I shook their hands for years.",
       'story.npc.harren.wahrheit.0': "She calls herself Elara now. To me she is still Lene.",
-      'story.npc.harren.wahrheit.1': "She was here. One night. Then she was gone again.",
+      'story.npc.harren.wahrheit.1': "She was here. One night. Then she left again.",
       'story.npc.harren.wahrheit.2': "Look after her down there. She won't let anyone help her.",
-      'story.npc.harren.bruch.0': "Aldric lied to us all. Even about my daughter.",
-      'story.npc.harren.bruch.1': "My daughter is stronger than they think. She will survive.",
-      'story.npc.harren.bruch.2': "I'm too old to fight. But I can help.",
-
-      // elara — the daughter / morally complex
-      'story.npc.elara.erste_risse.0': "The council is listening. Always. Even down here.",
-      'story.npc.elara.erste_risse.1': "Here — read this. Then you'll understand.",
-      'story.npc.elara.erste_risse.2': "I have learned to be quiet.",
-      'story.npc.elara.wahrheit.0': "Deep below there is a chamber... I'll show you where.",
-      'story.npc.elara.wahrheit.1': "The council's rituals devour the ones who disappear.",
-      'story.npc.elara.wahrheit.2': "I know all their secrets.",
-      'story.npc.elara.bruch.0': "Take this. I forged it for you. In case...",
-      'story.npc.elara.bruch.1': "Aldric will hunt you. Be careful.",
-      'story.npc.elara.bruch.2': "I have to go on alone. Trust me."
+      'story.npc.harren.bruch.0': "Aldric lied to us all. About my daughter too.",
+      'story.npc.harren.bruch.1': "When you go down, tell her the light is still burning.",
+      'story.npc.harren.bruch.2': "I'm too old to fight. But I won't leave her alone down there.",
+      'story.npc.elara.bruch.0': "The council is listening. Always. Here too.",
+      'story.npc.elara.bruch.1': "You trusted me when nobody did. I won't forget that.",
+      'story.npc.elara.bruch.2': "The source lies below. When you go down, I'll already be there.",
     });
 
     // German registrations for unlock labels (DE source-of-truth, supplement)
@@ -640,14 +617,28 @@
    * @param {object} eventData - { actName, actNumber, narrative }
    * @param {function} [onDismiss] - callback when overlay is dismissed
    */
+  // #89: Jeder Akt hat seine Stimmung, statt fuenfmal dasselbe Schwarz. Grund,
+  // Titel- und Linienfarbe folgen der Geschichte: der Glanz des Rats, die kalte
+  // Verstellung, die Jagd, die Quelle, und der helle Morgen danach.
+  var AKT_STIMMUNG = {
+    auftrag:       { grund: 0x0b0d12, titel: '#d8d2c0', linie: 0xa8a090 },
+    treuer_diener: { grund: 0x14100a, titel: '#ffd700', linie: 0xffd700 },
+    erste_risse:   { grund: 0x0a1016, titel: '#9fb4cc', linie: 0x7f94ac },
+    wahrheit:      { grund: 0x1a0808, titel: '#e06a5a', linie: 0xb4483a },
+    bruch:         { grund: 0x120a1c, titel: '#c4a8ff', linie: 0x8866cc },
+    ending:        { grund: 0x2a2a30, titel: '#f4efe2', linie: 0xdfe4ea }
+  };
+  function aktStimmung(actId) { return AKT_STIMMUNG[actId] || AKT_STIMMUNG.treuer_diener; }
+
   function showStoryOverlay(scene, eventData, onDismiss) {
     if (!scene || !eventData) return;
 
     var cam = scene.cameras.main;
     var w = cam.width;
     var h = cam.height;
+    var stimmung = aktStimmung(eventData.actId);
 
-    var overlay = scene.add.rectangle(w / 2, h / 2, w + 40, h + 40, 0x000000, 0.85)
+    var overlay = scene.add.rectangle(w / 2, h / 2, w + 40, h + 40, stimmung.grund, 0.9)
       .setDepth(6000)
       .setScrollFactor(0);
 
@@ -670,14 +661,14 @@
     var titleText = scene.add.text(0, -40, eventData.actName, {
       fontFamily: 'serif',
       fontSize: 38,
-      color: '#ffd700',
+      color: stimmung.titel,
       fontStyle: 'bold'
     }).setOrigin(0.5);
     container.add(titleText);
 
     // Divider line
     var divider = scene.add.graphics();
-    divider.lineStyle(1, 0xffd700, 0.5);
+    divider.lineStyle(1, stimmung.linie, 0.6);
     divider.lineBetween(-200, 0, 200, 0);
     container.add(divider);
 
@@ -1040,6 +1031,7 @@
     getStorySaveData: getStorySaveData,
     loadStorySaveData: loadStorySaveData,
     showStoryOverlay: showStoryOverlay,
+    aktStimmung: aktStimmung,
     showJournalOverlay: showJournalOverlay
   };
 

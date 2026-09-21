@@ -49,6 +49,7 @@
     function zeige() {
       var s = seiten[i];
       if (!s) { if (typeof amEnde === 'function') amEnde(); return; }
+      if (typeof s.beiAnzeige === 'function') { try { s.beiAnzeige(); } catch (e) {} }
       var knoepfe = s.auswahl || [{
         label: s.weiter || _t('Weiter', 'Continue'),
         callback: function () { if (typeof s.danach === 'function') s.danach(); i++; zeige(); }
@@ -118,9 +119,31 @@
         '(Dann nimmt die Quelle sie. Was einmal Elara war, stösst ihn fort. Er fällt, und er steht nicht mehr auf.)',
         '(Then the source takes her. What was once Elara throws him aside. He falls, and he does not get up again.)'),
         weiter: _t('Kämpfen', 'Fight'),
+        // #89: Der Moment, in dem die Quelle sie nimmt und Harren faellt,
+        // ist mehr als eine Textseite.
+        beiAnzeige: function () { _quelleNimmtSie(scene); },
         danach: function () { _setzen('harren_dead'); } }
     ], function () { if (typeof weiter === 'function') weiter(); });
     return true;
+  }
+
+  // #89: Violetter Blitz, ein Stoss durch den Raum, die Quelle flammt auf.
+  function _quelleNimmtSie(scene) {
+    var kam = scene && scene.cameras && scene.cameras.main;
+    if (kam) {
+      try { kam.flash(700, 170, 136, 238); } catch (e) {}
+      try { kam.shake(450, 0.012); } catch (e) {}
+    }
+    var glut = scene && scene._quelleGlow;
+    if (glut && glut.active && scene.tweens) {
+      try {
+        scene.tweens.add({ targets: glut, scale: 1.6, duration: 380, yoyo: true, ease: 'Quad.easeOut' });
+      } catch (e) {}
+    }
+    if (window.soundManager && typeof window.soundManager.stopMusic === 'function') {
+      try { window.soundManager.stopMusic(); } catch (e) {}
+    }
+    scene.__quelleNahmSie = true;
   }
 
   // --- Tiefe 30: nach dem Kampf ------------------------------------------------
