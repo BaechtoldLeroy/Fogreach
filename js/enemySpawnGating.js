@@ -10,13 +10,15 @@
   // 3 Enttarnung, 4 Verrat und Presse.
   // Typen: 1=Imp 2=Archer 3=Brute 4=Mage 5=Shadow 6=ChainGuard 7=FlameWeaver
   //        8=Rat 9=Bat 10=Wolf 11=Nebelgeschwuer 12=Priester 13=Beschwoerer
-  //        14=Nebelspringer.
+  //        14=Nebelspringer 15=Kettenhund 16=Alarmwicht.
   // #12: Priester in den Katakomben (ab Akt 2), Nebelgeschwuer auf der
   // Ritualebene (ab Akt 3) — dieselben Schwellen wie gebietsName in roomManager.
   // Der Beschwoerer ruft in den Katakomben (ab Akt 2); der Nebelspringer ist
   // ein Vergessener und kommt wie diese erst mit der Enttarnung (Akt 3).
+  // Die Kettenhunde jagen ab dem Bruch (Akt 3, wie die Kettenwache), der
+  // Alarmwicht bleibt im Keller (Tiefe 3-9) und kommt ab Akt 1.
   // #162: Die Kettenwache kommt schon in Akt 3 — sie jagt Dich nach dem Bruch.
-  var ENEMY_MIN_ACT = { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0, 11: 3, 12: 2, 13: 2, 14: 3 };
+  var ENEMY_MIN_ACT = { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0, 11: 3, 12: 2, 13: 2, 14: 3, 15: 3, 16: 1 };
 
   // #162: Was die Gegner in der Geschichte sind. Keine neuen Typen, aber ein
   // Name, der sagt, gegen wen man kaempft: Ungeziefer der Keller, Wesen aus
@@ -36,7 +38,9 @@
     11: { de: 'Nebelgeschwür', en: 'Fog Blight' },   // #12: was die Quelle auswirft
     12: { de: 'Priester',      en: 'Priest' },       // #12: stärkt die Kultisten
     13: { de: 'Beschwörer',    en: 'Summoner' },     // #12: Kultist, der Nebelwesen ruft
-    14: { de: 'Nebelspringer', en: 'Fog Leaper' }    // #12: Vergessene, die durch den Nebel springen
+    14: { de: 'Nebelspringer', en: 'Fog Leaper' },   // #12: Vergessene, die durch den Nebel springen
+    15: { de: 'Kettenhund',    en: 'Chain Hound' },  // #12: die Hunde der Kettenwache
+    16: { de: 'Alarmwicht',    en: 'Alarm Imp' }     // #12: flieht und ruft Verstaerkung
   };
 
   /** Anzeigename eines Gegnertyps; unbekannte Typen heissen "Gegner". */
@@ -57,12 +61,12 @@
     // (enemy.js statScale), Bestien bleiben also unten relevant statt trivial.
     // Neue, gefährlichere Typen kommen mit der Tiefe oben drauf.
     if (d <= 2) return [8, 9, 10];
-    if (d <= 4) return [8, 9, 10, 1, 2];
-    if (d <= 6) return [8, 9, 10, 1, 2, 3, 4];
-    if (d <= 8) return [8, 9, 10, 1, 2, 3, 4, 5];
-    if (d <= 9) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7];
-    if (d <= 19) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14];
-    return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 11];
+    if (d <= 4) return [8, 9, 10, 1, 2, 16];
+    if (d <= 6) return [8, 9, 10, 1, 2, 3, 4, 16];
+    if (d <= 8) return [8, 9, 10, 1, 2, 3, 4, 5, 16];
+    if (d <= 9) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 16];
+    if (d <= 19) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 15];
+    return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 11, 15];
   }
 
   // Available enemy types for (depth, actIndex). GUARANTEE: never empty.

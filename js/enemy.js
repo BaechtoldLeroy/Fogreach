@@ -403,7 +403,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
   // Determine available types based on dungeon depth + story act (#40).
   const depth = window.DUNGEON_DEPTH || 1;
   let type;
-  if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 14) {
+  if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 16) {
     type = enemyType; // explicit request — never gated (FR-05)
   } else {
     let availableTypes;
@@ -531,6 +531,18 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       hp = 2;
       tint = null;
       break; // Nebelspringer (#12)
+    case 15:
+      key = scene.textures?.exists('hund_right0') ? 'hund_right0' : 'proc_hund';
+      speed = 150;
+      hp = 2;
+      tint = null;
+      break; // Kettenhund (#12)
+    case 16:
+      key = scene.textures?.exists('alarm_right0') ? 'alarm_right0' : 'proc_alarm';
+      speed = 125;
+      hp = 1;
+      tint = null;
+      break; // Alarmwicht (#12)
     default:
       key = scene.textures?.exists('mage_right0') ? 'mage_right0' : tex('sprite_mage', 'enemyMage');
       speed = 60;
@@ -807,6 +819,28 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.isSpringer = true;
     if (key === 'springer_right0') {
       enemy.setScale(50 / (enemy.height || 50));
+    }
+  } else if (type === 15) {
+    // Kettenhund — duckt sich und setzt auf den Spieler (Sondergegner).
+    enemy.sepWeight = 0.9;
+    enemy.cohWeight = 0.35;     // ein Rudel haelt zusammen
+    enemy.avoidWeight = 1.0;
+    enemy.sepRadius = 60;
+    enemy.cohRadius = 220;
+    enemy.isHund = true;
+    if (key === 'hund_right0') {
+      enemy.setScale(40 / (enemy.height || 40));
+    }
+  } else if (type === 16) {
+    // Alarmwicht — flieht und ruft Verstaerkung (Sondergegner).
+    enemy.sepWeight = 0.9;
+    enemy.cohWeight = 0.1;
+    enemy.avoidWeight = 1.2;
+    enemy.sepRadius = 70;
+    enemy.cohRadius = 150;
+    enemy.isAlarm = true;
+    if (key === 'alarm_right0') {
+      enemy.setScale(40 / (enemy.height || 40));
     }
   } else {
     // Mage (Fern/Support)
@@ -1156,6 +1190,8 @@ function handleEnemies(time, delta = 16) {
       if (enemy.isGeschwuer && window.Sondergegner.geschwuerTick(this, enemy, time, player)) return;
       if (enemy.isBeschwoerer) window.Sondergegner.beschwoererTick(this, enemy, time);
       if (enemy.isSpringer && window.Sondergegner.springerTick(this, enemy, time, player)) return;
+      if (enemy.isHund && window.Sondergegner.hundTick(this, enemy, time, player)) return;
+      if (enemy.isAlarm && window.Sondergegner.alarmTick(this, enemy, time, player)) return;
     }
 
     // Status effect: slow reduces max speed

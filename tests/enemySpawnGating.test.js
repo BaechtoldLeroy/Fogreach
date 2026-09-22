@@ -25,19 +25,19 @@ function depthRosterRef(depth) {
   const d = (typeof depth === 'number' && depth >= 1) ? depth : 1;
   // Kumulativ: Bestien (8/9/10) bleiben auch tiefer im Pool (Abwechslung).
   if (d <= 2) return [8, 9, 10];
-  if (d <= 4) return [8, 9, 10, 1, 2];
-  if (d <= 6) return [8, 9, 10, 1, 2, 3, 4];
-  if (d <= 8) return [8, 9, 10, 1, 2, 3, 4, 5];
-  if (d <= 9) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7];
+  if (d <= 4) return [8, 9, 10, 1, 2, 16];
+  if (d <= 6) return [8, 9, 10, 1, 2, 3, 4, 16];
+  if (d <= 8) return [8, 9, 10, 1, 2, 3, 4, 5, 16];
+  if (d <= 9) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 16];
   // #12: Priester ab den Katakomben (10), Nebelgeschwuer ab der Ritualebene (20).
-  if (d <= 19) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14];
-  return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 11];
+  if (d <= 19) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 15];
+  return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 11, 15];
 }
 
 test('ENEMY_MIN_ACT has the exact §4.1 mapping', () => {
   const M = freshModule();
   assert.deepStrictEqual(M.ENEMY_MIN_ACT,
-    { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0, 11: 3, 12: 2, 13: 2, 14: 3 });
+    { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0, 11: 3, 12: 2, 13: 2, 14: 3, 15: 3, 16: 1 });
 });
 
 test('getAvailableEnemyTypes filters by act at depth 9', () => {
@@ -61,7 +61,7 @@ test('result is NEVER empty across depth 1..30 x act 0..6 (FR-04)', () => {
     for (let act = 0; act <= 6; act++) {
       const r = M.getAvailableEnemyTypes(depth, act);
       assert.ok(Array.isArray(r) && r.length > 0, `non-empty at depth ${depth}, act ${act}`);
-      assert.ok(r.every((t) => Number.isInteger(t) && t >= 1 && t <= 14), `valid types at depth ${depth}, act ${act}`);
+      assert.ok(r.every((t) => Number.isInteger(t) && t >= 1 && t <= 16), `valid types at depth ${depth}, act ${act}`);
     }
   }
 });
@@ -127,4 +127,16 @@ test('#12: Beschwoerer in den Katakomben ab Akt 2, Nebelspringer ab Akt 3', () =
   assert.ok(M.getAvailableEnemyTypes(25, 4).includes(14), 'Springer auch auf der Ritualebene');
   assert.strictEqual(M.enemyName(13, 'de'), 'Beschwörer');
   assert.strictEqual(M.enemyName(14, 'en'), 'Fog Leaper');
+});
+
+test('#12: Alarmwicht nur im Keller ab Akt 1, Kettenhund ab Tiefe 10 und Akt 3', () => {
+  const M = freshModule();
+  assert.ok(!M.getAvailableEnemyTypes(2, 6).includes(16), 'kein Alarmwicht auf Tiefe 1-2');
+  assert.ok(!M.getAvailableEnemyTypes(5, 0).includes(16), 'kein Alarmwicht in Akt 0');
+  assert.ok(M.getAvailableEnemyTypes(5, 1).includes(16), 'Alarmwicht im Keller ab Akt 1');
+  assert.ok(!M.getAvailableEnemyTypes(12, 6).includes(16), 'Alarmwicht bleibt im Keller');
+  assert.ok(!M.getAvailableEnemyTypes(12, 2).includes(15), 'kein Hund vor dem Bruch');
+  assert.ok(M.getAvailableEnemyTypes(12, 3).includes(15), 'Hunde ab Akt 3');
+  assert.strictEqual(M.enemyName(15, 'de'), 'Kettenhund');
+  assert.strictEqual(M.enemyName(16, 'en'), 'Alarm Imp');
 });

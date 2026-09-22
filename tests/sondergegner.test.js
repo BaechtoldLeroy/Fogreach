@@ -128,11 +128,12 @@ const spielerWeg = () => H.run(`(function () {
 test('Priester heilt einen verwundeten Verbuendeten', () => {
   const brute = setze(3, 320, 0);
   setze(12, 360, 40);
-  H.run(`(function () { var e = window.__lab.refs[${brute}]; e.speed = 0; e.hp = 1; })()`);
+  // Genug Lebenspunkte, dass ein nachgespawnter Gegner ihn nicht umhaut.
+  H.run(`(function () { var e = window.__lab.refs[${brute}]; e.speed = 0; e.maxHp = 100; e.hp = 20; })()`);
   H.step(300);
   const b = zustand(brute);
   assert.ok(b.active, 'Kontrollgegner lebt nicht mehr');
-  assert.ok(b.hp > 1, 'nicht geheilt: hp ' + b.hp + '/' + b.maxHp);
+  assert.ok(b.hp > 20, 'nicht geheilt: hp ' + b.hp + '/' + b.maxHp);
 });
 
 test('Priester heilt keinen anderen Priester', () => {
@@ -424,4 +425,141 @@ test('Stirbt der Springer waehrend der Ankuendigung, verschwindet der Wirbel', (
   erschlagen(s);
   H.step(2);
   assert.strictEqual(H.run('!!(window.__w && window.__w.active)'), false);
+});
+
+// ------------------------------------------------ Kettenhund, Alarmwicht
+
+test('satzZiel: ueber die Stelle hinaus, nur im Fenster; satzSchaden: anderthalbfach', () => {
+  const p = { x: 500, y: 300 };
+  assert.deepStrictEqual(SG.satzZiel({ x: 640, y: 300 }, p), { x: 480, y: 300 });
+  assert.strictEqual(SG.satzZiel({ x: 540, y: 300 }, p), null, 'zu nah: er beisst normal');
+  assert.strictEqual(SG.satzZiel({ x: 700, y: 300 }, p), null, 'zu weit: er rennt erst heran');
+  assert.strictEqual(SG.satzSchaden({ damage: 6 }), 9);
+  assert.strictEqual(SG.satzSchaden({ damage: 1 }), 2);
+});
+
+/**
+ * Richtung suchen, in der der Gegner bei +vor und der Raum HINTER dem Spieler
+ * bis -hinter frei ist; notfalls die Figur an eine freie Stelle versetzen.
+ * @returns {[number, number]} Einheitsrichtung vom Spieler zum Gegner
+ */
+function freieRichtung(vor, hinter) {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var frei = function (x, y) {
+      if (sc.isPointAccessible && !sc.isPointAccessible(x, y)) return false;
+      if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(x, y)) return false;
+      return true;
+    };
+    var richt = [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]];
+    var suchen = function () {
+      for (var i = 0; i < richt.length; i++) {
+        var dx = richt[i][0], dy = richt[i][1], ok = true;
+        for (var s = 20; s <= ${vor}; s += 20) ok = ok && frei(player.x + dx * s, player.y + dy * s);
+        for (var t = 20; t <= ${hinter}; t += 20) ok = ok && frei(player.x - dx * t, player.y - dy * t);
+        // Sichtlinie eigens pruefen: sie rechnet mit allen Hindernis-Rechtecken
+        // (auch Deko), die Begehbarkeit nicht.
+        var ort = { x: player.x + dx * ${vor}, y: player.y + dy * ${vor} };
+        if (ok && window.Steering && !window.Steering.hasLineOfSight(ort, player, obstacles)) ok = false;
+        if (ok) return [dx, dy];
+      }
+      return null;
+    };
+    var r = suchen();
+    for (var v = 0; !r && v < 60 && typeof sc.pickAccessibleSpawnPoint === 'function'; v++) {
+      var p = sc.pickAccessibleSpawnPoint({ minDistance: 0, maxAttempts: 10 });
+      if (!p) continue;
+      if (player.body && player.body.reset) player.body.reset(p.x, p.y); else player.setPosition(p.x, p.y);
+      r = suchen();
+    }
+    return r;
+  })()`);
+  assert.ok(r, 'kein freier Platz um den Spieler');
+  return r;
+}
+const hundBereit = (abstand, hinter) => {
+  const d = freieRichtung(abstand, hinter || 40);
+  const ref = setze(15, Math.round(d[0] * abstand), Math.round(d[1] * abstand));
+  H.run(`(function () { var h = window.__lab.refs[${ref}]; h._naechsterSatz = 0; })()`);
+  return { ref, d };
+};
+
+test('Kettenhund duckt sich, setzt auf die Stelle und beisst, wer stehen bleibt', () => {
+  const { ref } = hundBereit(130);
+  H.step(3);
+  const an = H.run(`(function () { var h = window.__lab.refs[${ref}];
+    return { duck: typeof h._duckBis, linie: !!(h._satzLinie && h._satzLinie.active) }; })()`);
+  assert.strictEqual(an.duck, 'number', 'duckt sich nicht');
+  assert.ok(an.linie, 'keine Warnlinie');
+  trefferMitschreiben();
+  H.step(70);
+  assert.ok(treffer(15) >= 1, 'kein Biss beim Satz');
+  assert.strictEqual(H.run(`!!(window.__lab.refs[${ref}]._satzLinie)`), false, 'Warnlinie blieb liegen');
+});
+
+test('Wer nach dem Ducken ausweicht, entgeht dem Satz, und der Hund steht danach still', () => {
+  const { ref, d } = hundBereit(130, 160);
+  H.step(3);
+  assert.strictEqual(H.run(`typeof window.__lab.refs[${ref}]._duckBis`), 'number', 'duckt sich nicht');
+  // Zurueckweichen, weg vom Landepunkt (die Strecke ist frei geprueft).
+  H.run(`(function () {
+    var nx = player.x - ${d[0]} * 140, ny = player.y - ${d[1]} * 140;
+    if (player.body && player.body.reset) player.body.reset(nx, ny); else player.setPosition(nx, ny);
+  })()`);
+  trefferMitschreiben();
+  let n = 0;
+  while (!H.run(`window.__lab.refs[${ref}]._castingUntil > 0`) && n++ < 80) H.step(1);
+  assert.ok(n < 80, 'der Satz endete nicht');
+  assert.strictEqual(treffer(15), 0, 'trotz Ausweichen gebissen');
+  const r = H.run(`(function () { var h = window.__lab.refs[${ref}], sc = window.game.scene.getScene('GameScene');
+    return { rest: h._castingUntil - sc.time.now }; })()`);
+  assert.ok(r.rest > 400, 'keine Erholungspause nach dem Satz: ' + r.rest);
+});
+
+const alarmBereit = (abstand) => {
+  const d = freieRichtung(abstand + 200, 40);
+  const ref = setze(16, Math.round(d[0] * abstand), Math.round(d[1] * abstand));
+  return ref;
+};
+const alarm = (ref) => H.run(`(function () { var a = window.__lab.refs[${ref}];
+  return { zustand: a._alarm || null, aktiv: !!a.active,
+    d: Math.round(Math.hypot(a.x - player.x, a.y - player.y)),
+    verst: (a._gerufeneVerstaerkung || []).filter(function (e) { return e && e.active; }).length }; })()`);
+
+test('Alarmwicht flieht, sobald er den Spieler sieht', () => {
+  const ref = alarmBereit(150);
+  const vorher = alarm(ref).d;
+  H.step(40);
+  const a = alarm(ref);
+  const diag = H.run(`(function () { var e = window.__lab.refs[${ref}]; return JSON.stringify({ d: Math.round(Math.hypot(e.x - player.x, e.y - player.y)), los: window.Steering.hasLineOfSight(e, player, obstacles), stun: !!(window.statusEffectManager && window.statusEffectManager.isStunned(e)), cast: e._castingUntil, isAlarm: e.isAlarm, grace: window.game.scene.getScene('GameScene')._enemyAttackGraceUntil, t: Math.round(window.game.scene.getScene('GameScene').time.now) }); })()`);
+  assert.strictEqual(a.zustand, 'flieht', diag);
+  assert.ok(a.d > vorher + 20, 'flieht nicht: ' + vorher + ' -> ' + a.d);
+});
+
+test('Nach drei Sekunden Flucht ruft er, und dann kommt Verstaerkung', () => {
+  const ref = alarmBereit(150);
+  H.step(5);
+  assert.strictEqual(alarm(ref).zustand, 'flieht');
+  H.run(`(function () { var a = window.__lab.refs[${ref}]; a._fluchtSeit -= 3000; })()`);
+  H.step(5);
+  const r = alarm(ref);
+  assert.strictEqual(r.zustand, 'ruft');
+  assert.strictEqual(r.verst, 0, 'Verstaerkung ohne Vorwarnung');
+  H.step(80);
+  const n = alarm(ref);
+  assert.strictEqual(n.zustand, 'gerufen');
+  assert.strictEqual(n.verst, 2, 'Verstaerkung: ' + n.verst);
+});
+
+test('Erschlagen waehrend des Rufens: keine Verstaerkung', () => {
+  const ref = alarmBereit(150);
+  H.step(5);
+  H.run(`(function () { var a = window.__lab.refs[${ref}]; a._fluchtSeit -= 3000; })()`);
+  H.step(5);
+  assert.strictEqual(alarm(ref).zustand, 'ruft');
+  const vorher = H.run(`enemies.getChildren().filter(function (e) { return e && e.active; }).length`);
+  erschlagen(ref);
+  H.step(80);
+  const nachher = H.run(`enemies.getChildren().filter(function (e) { return e && e.active && e._verstaerkungVon; }).length`);
+  assert.strictEqual(nachher, 0, 'Verstaerkung trotz Tod (vorher ' + vorher + ' Gegner)');
 });

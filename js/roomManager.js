@@ -1564,7 +1564,8 @@ function enterRoom(scene, roomId) {
       }
       window.RoomMode.beginRoom(scene, {
         modus: _flucht ? 'escape' : null,
-        gegnerTyp: _flucht ? 6 : null,
+        // #12: die Kettenwache mit ihren Hunden — zwei Hunde auf einen Waechter.
+        gegnerTyp: _flucht ? [6, 15, 15] : null,
         roomIndex: roomId,
         isBoss: !!window.__isFinalDungeonRoom,
         isEspionage: _espionageRoom || _versteckRaum,

@@ -168,9 +168,12 @@ test('Nach dem Bruch: erst die Flucht vor der Kettenwache, dann das Versteck', (
   H.run('window._playerInvincible = false');
   const kette = H.run(`enemies.getChildren().filter(function (e) { return e && e.active && e.isChainGuard; }).length`);
   assert.ok(kette > 0, 'die Kettenwache jagt nicht');
+  // #12: und ihre Hunde.
+  const hunde = H.run(`enemies.getChildren().filter(function (e) { return e && e.active && e.isHund; }).length`);
+  assert.ok(hunde > 0, 'die Kettenhunde jagen nicht');
   // Nur sie: eine normale Welle fuellte den Raum sonst, und die Jaeger kamen
   // nicht (sporadisch rot im Gesamtlauf).
-  const andere = H.run(`enemies.getChildren().filter(function (e) { return e && e.active && !e.isChainGuard && !e.isBoss; }).length`);
+  const andere = H.run(`enemies.getChildren().filter(function (e) { return e && e.active && !e.isChainGuard && !e.isHund && !e.isBoss; }).length`);
   assert.strictEqual(andere, 0, andere + ' andere Gegner im Fluchtraum');
 });
 

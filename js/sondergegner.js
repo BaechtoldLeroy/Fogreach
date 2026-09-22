@@ -13,6 +13,11 @@
 //   Nebelspringer (14)    Katakomben/Ritualebene. Springt hinter den Spieler,
 //                         das Ziel kuendigt sich an. Antwort: in Bewegung
 //                         bleiben, Flaechenschaden.
+//   Kettenhund (15)       Hunde der Kettenwache, jagen nach dem Bruch. Ducken
+//                         sich, dann ein Satz auf die Stelle, an der man stand.
+//                         Antwort: ausweichen, Kontrolle (Verlangsamen, Betaeuben).
+//   Alarmwicht (16)       Keller. Flieht, sobald er den Spieler sieht, und ruft
+//                         nach drei Sekunden Verstaerkung. Antwort: nachsetzen.
 //
 // Die Rechnungen (wen heilt er, wie viel, wie hart knallt es) sind reine
 // Funktionen und ohne Phaser testbar. Die Ticks werden aus handleEnemies
@@ -24,6 +29,8 @@
   var TYP_PRIESTER = 12;
   var TYP_BESCHWOERER = 13;
   var TYP_SPRINGER = 14;
+  var TYP_HUND = 15;
+  var TYP_ALARM = 16;
   var TYP_WICHT = 1;         // was der Beschwoerer ruft (Nebelwicht)
 
   var PRIESTER = {
@@ -59,6 +66,27 @@
     hinterDem: 55,          // hoechstens so weit hinter dem Spieler landet er
     schlagNachMs: 350,      // Reaktionsfenster nach der Landung, dann schlaegt er
     maxImRaum: 3
+  };
+
+  var HUND = {
+    satzMin: 60,            // naeher dran beisst er normal
+    satzMax: 170,           // weiter weg rennt er erst heran
+    duckMs: 350,            // so lange duckt er sich (die Warnung)
+    satzTempo: 520,         // px/s im Satz — dreimal so schnell wie der Spieler
+    ueberschuss: 20,        // er springt ein Stueck UEBER die Stelle hinaus
+    trefferRadius: 36,      // so nah muss man bei der Landung noch stehen
+    erholMs: 700,           // danach steht er still (verwundbar)
+    taktMs: 2200,           // hoechstens alle 2,2 s ein Satz
+    schadenFaktor: 1.5,
+    maxImRaum: 4            // ein Rudel
+  };
+
+  var ALARM = {
+    sichtweite: 260,        // so nah, und er hat Dich gesehen
+    fluchtMs: 3000,         // so lange flieht er, bevor er ruft
+    rufMs: 1200,            // so lange ruft er (die letzte Chance)
+    verstaerkung: 2,        // so viele kommen
+    maxImRaum: 2
   };
 
   // ---------------------------------------------------------------- Rechnungen
@@ -112,7 +140,9 @@
     var grenze = typ === TYP_PRIESTER ? PRIESTER.maxImRaum
       : typ === TYP_GESCHWUER ? GESCHWUER.maxImRaum
       : typ === TYP_BESCHWOERER ? BESCHWOERER.maxImRaum
-      : typ === TYP_SPRINGER ? SPRINGER.maxImRaum : Infinity;
+      : typ === TYP_SPRINGER ? SPRINGER.maxImRaum
+      : typ === TYP_HUND ? HUND.maxImRaum
+      : typ === TYP_ALARM ? ALARM.maxImRaum : Infinity;
     if (!isFinite(grenze) || !Array.isArray(gegner)) return false;
     var n = 0;
     for (var i = 0; i < gegner.length; i++) {
@@ -123,7 +153,27 @@
 
   function istSondertyp(typ) {
     return typ === TYP_PRIESTER || typ === TYP_GESCHWUER
-      || typ === TYP_BESCHWOERER || typ === TYP_SPRINGER;
+      || typ === TYP_BESCHWOERER || typ === TYP_SPRINGER
+      || typ === TYP_HUND || typ === TYP_ALARM;
+  }
+
+  /**
+   * Wohin setzt der Kettenhund? Auf die Stelle, an der der Spieler beim
+   * Ducken stand, ein Stueck darueber hinaus. Ausserhalb des Fensters: nicht.
+   * @returns {{x:number,y:number}|null}
+   */
+  function satzZiel(hund, p) {
+    if (!hund || !p) return null;
+    var dx = p.x - hund.x, dy = p.y - hund.y;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    if (d < HUND.satzMin || d > HUND.satzMax) return null;
+    return { x: p.x + (dx / d) * HUND.ueberschuss, y: p.y + (dy / d) * HUND.ueberschuss };
+  }
+
+  /** Schaden des Satzes: anderthalbfacher Biss. */
+  function satzSchaden(hund) {
+    var basis = (hund && (hund.damage || hund.baseDamage)) || 1;
+    return Math.max(1, Math.round(basis * HUND.schadenFaktor));
   }
 
   /**
@@ -222,6 +272,42 @@
       s2.fillCircle(21, 10, 1.5);
       s2.generateTexture('proc_springer', 36, 52);
       s2.destroy();
+    }
+    if (!scene.textures.exists('proc_hund')) {
+      var d = scene.make.graphics({ add: false });
+      // Dunkler, hagerer Hund mit Kettenhalsband, seitlich.
+      d.fillStyle(0x3a302a, 1);
+      d.fillEllipse(22, 16, 30, 13);        // Rumpf
+      d.fillRect(8, 18, 4, 11);             // Beine
+      d.fillRect(15, 18, 4, 11);
+      d.fillRect(27, 18, 4, 11);
+      d.fillRect(33, 18, 4, 11);
+      d.fillTriangle(34, 8, 46, 14, 34, 18); // Kopf, Schnauze nach rechts
+      d.fillTriangle(35, 9, 37, 2, 40, 10);  // Ohr
+      d.fillStyle(0xaab0b8, 1);
+      d.fillRect(32, 9, 3, 9);              // Kettenhalsband
+      d.fillStyle(0xff5533, 1);
+      d.fillCircle(41, 12, 1.5);            // Auge
+      d.generateTexture('proc_hund', 48, 30);
+      d.destroy();
+    }
+    if (!scene.textures.exists('proc_alarm')) {
+      var a = scene.make.graphics({ add: false });
+      // Kleiner, magerer Wicht mit Horn um den Hals.
+      a.fillStyle(0x6b4a3a, 1);
+      a.fillCircle(14, 10, 7);              // Kopf
+      a.fillTriangle(8, 6, 6, 0, 11, 5);    // Hoerner
+      a.fillTriangle(20, 6, 22, 0, 17, 5);
+      a.fillEllipse(14, 24, 14, 16);        // Leib
+      a.fillRect(9, 30, 3, 7);
+      a.fillRect(16, 30, 3, 7);
+      a.fillStyle(0xd9b25a, 1);
+      a.fillTriangle(20, 18, 28, 14, 28, 24); // Horn
+      a.fillStyle(0xffe08a, 1);
+      a.fillCircle(11, 9, 1.5);
+      a.fillCircle(17, 9, 1.5);
+      a.generateTexture('proc_alarm', 30, 38);
+      a.destroy();
     }
   }
 
@@ -622,6 +708,187 @@
     return true;
   }
 
+  // ------------------------------------------------------------- Kettenhund
+
+  function _hundLinie(scene, von, zu) {
+    if (!scene || !scene.add || typeof scene.add.graphics !== 'function') return null;
+    try {
+      var g = _sichtbar(scene, scene.add.graphics());
+      g.lineStyle(3, 0xff5533, 0.7);
+      g.lineBetween(von.x, von.y, zu.x, zu.y);
+      g.fillStyle(0xff5533, 0.35);
+      g.fillCircle(zu.x, zu.y, HUND.trefferRadius);
+      return g;
+    } catch (e) { return null; }
+  }
+
+  function _sichtlinie(h, p) {
+    try {
+      if (typeof Steering !== 'undefined' && Steering && typeof Steering.hasLineOfSight === 'function') {
+        return Steering.hasLineOfSight(h, p, (typeof obstacles !== 'undefined') ? obstacles : null);
+      }
+    } catch (e) {}
+    return true;
+  }
+
+  /**
+   * Kettenhund: duckt sich duckMs lang (rote Linie auf die Stelle, an der
+   * der Spieler steht), dann ein Satz dorthin — ueber die Ansturm-Maschinerie
+   * in enemy.js (_dashTarget). Wer noch da steht, wird gebissen; danach steht
+   * der Hund erholMs still und ist verwundbar.
+   *
+   * @returns {boolean} true, solange er sich duckt
+   */
+  function hundTick(scene, h, zeit, p) {
+    if (!_lebt(h)) return false;
+    if (typeof h._duckBis === 'number') {
+      if (h.body && typeof h.body.setVelocity === 'function') h.body.setVelocity(0, 0);
+      if (zeit < h._duckBis) return true;
+      var ziel = h._satzZiel;
+      h._duckBis = null;
+      h._satzZiel = null;
+      if (h._satzLinie) { try { h._satzLinie.destroy(); } catch (e) {} h._satzLinie = null; }
+      try { if (typeof h.clearTint === 'function') h.clearTint(); h.setScale(h._grundSkala || h.scaleX); } catch (e) {}
+      if (!ziel) return false;
+      var dist = Math.hypot(ziel.x - h.x, ziel.y - h.y);
+      h._dashTarget = ziel;
+      h._dashSpeed = HUND.satzTempo;
+      h._dashUntil = zeit + Math.max(120, (dist / HUND.satzTempo) * 1000 + 80);
+      h._dashGleichmaessig = true;
+      h._dashOnArrive = function () {
+        var pl = (typeof player !== 'undefined' && player) ? player : window.player;
+        if (_lebt(h) && pl && pl.active !== false
+            && Math.hypot(pl.x - h.x, pl.y - h.y) <= HUND.trefferRadius
+            && typeof applyPlayerDamage === 'function') {
+          try { applyPlayerDamage(satzSchaden(h), scene, h); } catch (e) {}
+        }
+        var jetzt = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : zeit;
+        h._castingUntil = jetzt + HUND.erholMs;     // steht still, verwundbar
+        h._naechsterSatz = jetzt + HUND.taktMs;
+      };
+      return false;
+    }
+    if (typeof h._naechsterSatz !== 'number') { h._naechsterSatz = zeit + HUND.taktMs * 0.4; return false; }
+    if (zeit < h._naechsterSatz || !p || p.active === false) return false;
+    var z = satzZiel(h, p);
+    if (!z || !_sichtlinie(h, p)) return false;
+    // Landet der Ueberschuss in einer Wand, dann genau auf die Stelle.
+    if (!_frei(scene, z.x, z.y)) z = { x: p.x, y: p.y };
+    h._satzZiel = z;
+    h._duckBis = zeit + HUND.duckMs;
+    h._naechsterSatz = zeit + HUND.taktMs;
+    h._satzLinie = _hundLinie(scene, h, z);
+    if (!h._linieAufraeumen && typeof h.once === 'function') {
+      h._linieAufraeumen = true;
+      h.once('destroy', function () { if (h._satzLinie) { try { h._satzLinie.destroy(); } catch (e) {} h._satzLinie = null; } });
+    }
+    try {
+      h._grundSkala = h.scaleX;
+      h.setScale(h.scaleX * 1.1, h.scaleY * 0.8);   // geduckt
+      if (typeof h.setTint === 'function') h.setTint(0xff8866);
+    } catch (e) {}
+    if (h.body && typeof h.body.setVelocity === 'function') h.body.setVelocity(0, 0);
+    return true;
+  }
+
+  // ------------------------------------------------------------- Alarmwicht
+
+  function _ausruf(scene, a) {
+    if (!scene || !scene.add || typeof scene.add.text !== 'function') return null;
+    try {
+      var t = scene.add.text(a.x, a.y - 30, '!', {
+        fontFamily: 'monospace', fontSize: 20, color: '#ffd24a', stroke: '#000000', strokeThickness: 4
+      }).setOrigin(0.5);
+      _sichtbar(scene, t, 1002);
+      return t;
+    } catch (e) { return null; }
+  }
+
+  function _verstaerkungRufen(scene, a) {
+    var neu = [];
+    if (typeof spawnEnemy !== 'function') return neu;
+    var orte = _rufOrte(scene, a, ALARM.verstaerkung);
+    orte.forEach(function (o) {
+      var e = null;
+      try { e = spawnEnemy.call(scene, 0, 0, undefined, { ohneSonder: true }); } catch (x) { e = null; }
+      if (!e) return;
+      try {
+        if (e.body && typeof e.body.reset === 'function') e.body.reset(o.x, o.y);
+        else e.setPosition(o.x, o.y);
+        if (scene.tweens) { e.setAlpha(0); scene.tweens.add({ targets: e, alpha: 1, duration: 300 }); }
+      } catch (x) {}
+      e._verstaerkungVon = a;
+      neu.push(e);
+    });
+    return neu;
+  }
+
+  /**
+   * Alarmwicht: sieht er den Spieler, flieht er (Ausrufezeichen ueber dem
+   * Kopf). Nach fluchtMs bleibt er stehen und ruft rufMs lang — ein
+   * wachsender Ring zeigt es. Ist er dann noch am Leben, kommt Verstaerkung.
+   * Danach kaempft er wie ein gewoehnlicher Wicht.
+   *
+   * @returns {boolean} true, solange er flieht oder ruft (enemy.js steuert
+   *   ihn dann nicht)
+   */
+  function alarmTick(scene, a, zeit, p) {
+    if (!_lebt(a)) return false;
+    if (a._alarm === 'gerufen') return false;
+    if (a._alarm === 'ruft') {
+      if (a.body && typeof a.body.setVelocity === 'function') a.body.setVelocity(0, 0);
+      if (zeit < a._rufBis) return true;
+      a._alarm = 'gerufen';
+      if (a._rufRing) { try { a._rufRing.destroy(); } catch (e) {} a._rufRing = null; }
+      if (a._ausrufText) { try { a._ausrufText.destroy(); } catch (e) {} a._ausrufText = null; }
+      a._gerufeneVerstaerkung = _verstaerkungRufen(scene, a);
+      return false;
+    }
+    if (a._alarm === 'flieht') {
+      if (a._ausrufText) { try { a._ausrufText.setPosition(a.x, a.y - 30); } catch (e) {} }
+      if (zeit - a._fluchtSeit >= ALARM.fluchtMs) {
+        a._alarm = 'ruft';
+        a._rufBis = zeit + ALARM.rufMs;
+        if (a.body && typeof a.body.setVelocity === 'function') a.body.setVelocity(0, 0);
+        try {
+          if (scene && scene.add && typeof scene.add.circle === 'function') {
+            var ring = _sichtbar(scene, scene.add.circle(a.x, a.y, 40));
+            ring.setStrokeStyle(3, 0xffd24a, 0.9);
+            if (scene.tweens) scene.tweens.add({ targets: ring, scale: 2.2, alpha: 0.2, duration: 400, repeat: -1 });
+            a._rufRing = ring;
+          }
+        } catch (e) {}
+        return true;
+      }
+      // Weg vom Spieler. Waende bremsen ihn — in der Ecke holt man ihn ein.
+      if (p && a.body && typeof a.body.setVelocity === 'function') {
+        var dx = a.x - p.x, dy = a.y - p.y, d = Math.hypot(dx, dy) || 1;
+        var v = a.speed || 125;
+        try {
+          if (window.statusEffectManager && typeof window.statusEffectManager.getSpeedMultiplier === 'function') {
+            v *= window.statusEffectManager.getSpeedMultiplier(a);
+          }
+        } catch (e) {}
+        a.body.setVelocity((dx / d) * v, (dy / d) * v);
+      }
+      return true;
+    }
+    // Noch ahnungslos: sieht er den Spieler?
+    if (!p || p.active === false) return false;
+    if (Math.hypot(p.x - a.x, p.y - a.y) > ALARM.sichtweite || !_sichtlinie(a, p)) return false;
+    a._alarm = 'flieht';
+    a._fluchtSeit = zeit;
+    a._ausrufText = _ausruf(scene, a);
+    if (!a._alarmAufraeumen && typeof a.once === 'function') {
+      a._alarmAufraeumen = true;
+      a.once('destroy', function () {
+        if (a._ausrufText) { try { a._ausrufText.destroy(); } catch (e) {} a._ausrufText = null; }
+        if (a._rufRing) { try { a._rufRing.destroy(); } catch (e) {} a._rufRing = null; }
+      });
+    }
+    return true;
+  }
+
   /**
    * Aus handleEnemyHit (player.js), wenn ein Gegner faellt: was die
    * Sondertypen beim Tod tun.
@@ -630,7 +897,8 @@
     if (!e) return;
     if (e.isGeschwuer && !e._explodiert) todesPlatzer(scene, e);
     if (e.isBeschwoerer) rufAufloesen(scene, e);
-    if (e._wirbel) { try { e._wirbel.destroy(); } catch (x) {} e._wirbel = null; }
+    // Wirbel, Warnlinie, Ausrufezeichen und Rufring raeumen die destroy-Haken
+    // der Gegner selbst ab (springerTick, hundTick, alarmTick).
   }
 
   window.Sondergegner = {
@@ -638,10 +906,18 @@
     TYP_PRIESTER: TYP_PRIESTER,
     TYP_BESCHWOERER: TYP_BESCHWOERER,
     TYP_SPRINGER: TYP_SPRINGER,
+    TYP_HUND: TYP_HUND,
+    TYP_ALARM: TYP_ALARM,
     PRIESTER: PRIESTER,
     GESCHWUER: GESCHWUER,
     BESCHWOERER: BESCHWOERER,
     SPRINGER: SPRINGER,
+    HUND: HUND,
+    ALARM: ALARM,
+    satzZiel: satzZiel,
+    satzSchaden: satzSchaden,
+    hundTick: hundTick,
+    alarmTick: alarmTick,
     heilziele: heilziele,
     heilmenge: heilmenge,
     explosionsSchaden: explosionsSchaden,

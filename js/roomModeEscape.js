@@ -36,11 +36,12 @@
   }
 
   function EscapeMode() {
-    var scene = null, duration = _depthSeconds(), remaining = duration, spawnAcc = 0, typ = 'enemy';
+    var scene = null, duration = _depthSeconds(), remaining = duration, spawnAcc = 0, typ = 'enemy', zug = 0;
     return {
       // #161: ctx.gegnerTyp — nach dem Bruch jagt Dich die Kettenwache (6).
+      // #12: auch als Liste; sie wird reihum abgearbeitet (Waechter mit Hunden).
       start: function (sc, ctx) {
-        scene = sc || null; duration = remaining = _depthSeconds(); spawnAcc = 0;
+        scene = sc || null; duration = remaining = _depthSeconds(); spawnAcc = 0; zug = 0;
         typ = (ctx && ctx.gegnerTyp) ? ctx.gegnerTyp : 'enemy';
       },
       update: function (dtMs) {
@@ -52,7 +53,10 @@
             spawnAcc = 0;
             var active = (window.enemies && typeof window.enemies.countActive === 'function') ? window.enemies.countActive(true) : 0;
             var n = Math.min(SPAWN_BATCH, Math.max(0, MAX_CONCURRENT - active));
-            for (var i = 0; i < n; i++) { try { window.spawnEnemy.call(scene, 0, 0, typ); } catch (e) {} }
+            for (var i = 0; i < n; i++) {
+              var t = Array.isArray(typ) ? typ[(zug++) % typ.length] : typ;
+              try { window.spawnEnemy.call(scene, 0, 0, t); } catch (e) {}
+            }
           }
         }
       },
