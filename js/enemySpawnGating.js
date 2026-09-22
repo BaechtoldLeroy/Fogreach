@@ -43,6 +43,33 @@
     16: { de: 'Alarmwicht',    en: 'Alarm Imp' }     // #12: flieht und ruft Verstaerkung
   };
 
+  // #79: Manche Auftraege haben ihr eigenes Gegnerbild. Solange die Quest
+  // aktiv ist, zieht spawnEnemy aus dieser Liste statt aus dem Tiefen-Pool
+  // (Mehrfachnennung = Gewicht). Sondertypen darin unterliegen weiter ihren
+  // Obergrenzen je Raum.
+  //
+  //   council_surveillance (Aldric, Akt 2): Du sollst melden, wer sich in den
+  //     Kellergaengen versammelt. Die Kammern bewacht der Rat selbst —
+  //     Kellerwaechter, dazu Alarmwichte als seine Spaeher. Die Kettenwache
+  //     gehoert noch nicht dazu; sie tritt erst mit dem Bruch auf (#162).
+  var QUEST_PROFILE = {
+    council_surveillance: [2, 2, 2, 16, 3]
+  };
+
+  /**
+   * Gegnerliste der ersten aktiven Quest mit eigenem Profil, sonst null.
+   * @param {Array<string>} aktiveIds
+   * @returns {Array<number>|null}
+   */
+  function questProfil(aktiveIds) {
+    if (!Array.isArray(aktiveIds)) return null;
+    var ids = Object.keys(QUEST_PROFILE);
+    for (var i = 0; i < ids.length; i++) {
+      if (aktiveIds.indexOf(ids[i]) !== -1) return QUEST_PROFILE[ids[i]].slice();
+    }
+    return null;
+  }
+
   /** Anzeigename eines Gegnertyps; unbekannte Typen heissen "Gegner". */
   function enemyName(type, lang) {
     var n = ENEMY_NAMEN[type];
@@ -105,6 +132,8 @@
     ENEMY_MIN_ACT: ENEMY_MIN_ACT,
     ENEMY_NAMEN: ENEMY_NAMEN,
     enemyName: enemyName,
+    QUEST_PROFILE: QUEST_PROFILE,
+    questProfil: questProfil,
     depthRoster: depthRoster,
     getAvailableEnemyTypes: getAvailableEnemyTypes
   };

@@ -1545,6 +1545,18 @@ function enterRoom(scene, roomId) {
   // Modus). Eine normale Welle fuellte den Raum sonst bis an die Grenze des
   // Modus (16 Gegner), und die Jaeger kamen gar nicht erst.
   var _flucht = !!(dungeonRun && dungeonRun.fluchtRaum === roomId && versteckBesuchFaellig() === 'bruch_nacht');
+  // #79: Einmal pro Lauf sagen, wem die Kammern gehoeren, wenn eine Quest
+  // ihr eigenes Gegnerbild mitbringt (council_surveillance).
+  if (!_espionageRoom && !_versteckRaum && !_flucht && dungeonRun && !dungeonRun._questProfilGemeldet
+      && typeof _aktiveQuestProfil === 'function' && _aktiveQuestProfil()
+      && window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
+    dungeonRun._questProfilGemeldet = true;
+    try {
+      window.EventSystem.showEventToast(scene, _elaraT(
+        'Die Kammern sind bewacht. Kellerwächter des Rats, und ihre Späher.',
+        'The chambers are guarded. Council cellar wardens, and their lookouts.'), 'quest');
+    } catch (e) {}
+  }
   if (!_espionageRoom && !_versteckRaum && !_flucht && typeof startNextWave === "function") {
     startNextWave.call(scene, false);
     window.currentWave = currentWave;

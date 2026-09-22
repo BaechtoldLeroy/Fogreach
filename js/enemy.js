@@ -212,6 +212,16 @@ function getDifficultyMultiplierValue() {
 /**
  * Spawnt einen Gegner vom Typ 1–4 und benutzt den passenden Texture-Key.
  */
+/** #79: Gegnerliste der aktiven Quest mit eigenem Profil, sonst null. */
+function _aktiveQuestProfil() {
+  try {
+    const G = window.EnemySpawnGating, qs = window.questSystem;
+    if (!G || typeof G.questProfil !== 'function' || !qs || typeof qs.getActiveQuests !== 'function') return null;
+    const ids = (qs.getActiveQuests() || []).map((q) => q && q.id);
+    return G.questProfil(ids);
+  } catch (e) { return null; }
+}
+
 // opts.ohneSonder: keine Sondertypen (Priester, Nebelgeschwuer, Beschwoerer,
 // Nebelspringer) wuerfeln — fuer Minibosse und das Gefolge der Kriegsschar.
 // opts.ohneElite: kein Elite-Wurf — fuer gerufene Wichte des Beschwoerers (#12).
@@ -427,6 +437,10 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     } else {
       availableTypes = [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]; // Full roster (kumulativ)
     }
+    // #79: Eine aktive Quest kann ihr eigenes Gegnerbild haben (nicht im
+    // Finalraum — der gehoert dem Boss bzw. der Klimax).
+    const _profil = (!window.__isFinalDungeonRoom && typeof _aktiveQuestProfil === 'function') ? _aktiveQuestProfil() : null;
+    if (_profil && _profil.length) availableTypes = _profil;
     // #12: Sondertypen nur, wo sie hingehoeren, und nicht zu viele auf einmal.
     const SG = window.Sondergegner;
     if (SG && typeof SG.istSondertyp === 'function') {
