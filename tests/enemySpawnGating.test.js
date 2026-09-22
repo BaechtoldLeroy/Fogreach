@@ -28,13 +28,16 @@ function depthRosterRef(depth) {
   if (d <= 4) return [8, 9, 10, 1, 2];
   if (d <= 6) return [8, 9, 10, 1, 2, 3, 4];
   if (d <= 8) return [8, 9, 10, 1, 2, 3, 4, 5];
-  return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7];
+  if (d <= 9) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7];
+  // #12: Priester ab den Katakomben (10), Nebelgeschwuer ab der Ritualebene (20).
+  if (d <= 19) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12];
+  return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 11];
 }
 
 test('ENEMY_MIN_ACT has the exact §4.1 mapping', () => {
   const M = freshModule();
   assert.deepStrictEqual(M.ENEMY_MIN_ACT,
-    { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0 });
+    { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0, 11: 3, 12: 2 });
 });
 
 test('getAvailableEnemyTypes filters by act at depth 9', () => {
@@ -52,20 +55,20 @@ test('getAvailableEnemyTypes filters by act at depth 9', () => {
   assert.ok(a4.includes(6) && a4.includes(7), 'act4 includes 6 and 7');
 });
 
-test('result is NEVER empty across depth 1..12 x act 0..6 (FR-04)', () => {
+test('result is NEVER empty across depth 1..30 x act 0..6 (FR-04)', () => {
   const M = freshModule();
-  for (let depth = 1; depth <= 12; depth++) {
+  for (let depth = 1; depth <= 30; depth++) {
     for (let act = 0; act <= 6; act++) {
       const r = M.getAvailableEnemyTypes(depth, act);
       assert.ok(Array.isArray(r) && r.length > 0, `non-empty at depth ${depth}, act ${act}`);
-      assert.ok(r.every((t) => Number.isInteger(t) && t >= 1 && t <= 10), `valid types at depth ${depth}, act ${act}`);
+      assert.ok(r.every((t) => Number.isInteger(t) && t >= 1 && t <= 12), `valid types at depth ${depth}, act ${act}`);
     }
   }
 });
 
 test('at full act (6) the roster equals the pure depth roster (FR-07)', () => {
   const M = freshModule();
-  for (let depth = 1; depth <= 12; depth++) {
+  for (let depth = 1; depth <= 30; depth++) {
     assert.deepStrictEqual(
       M.getAvailableEnemyTypes(depth, 6).slice().sort((a, b) => a - b),
       depthRosterRef(depth).slice().sort((a, b) => a - b),
@@ -101,4 +104,16 @@ test('defensive defaults: NaN/undefined/out-of-range act → no throw, treated a
   const aNeg = M.getAvailableEnemyTypes(9, -5);
   assert.ok(Array.isArray(aNeg) && aNeg.length > 0, 'negative act clamped, non-empty');
   assert.ok(!aNeg.includes(5) && !aNeg.includes(6) && !aNeg.includes(7), 'negative act == act 0');
+});
+
+test('#12: Priester erst in den Katakomben ab Akt 2, Nebelgeschwuer erst auf der Ritualebene ab Akt 3', () => {
+  const M = freshModule();
+  assert.ok(!M.getAvailableEnemyTypes(9, 6).includes(12), 'kein Priester im Keller');
+  assert.ok(!M.getAvailableEnemyTypes(12, 1).includes(12), 'kein Priester vor Akt 2');
+  assert.ok(M.getAvailableEnemyTypes(12, 2).includes(12), 'Priester in den Katakomben ab Akt 2');
+  assert.ok(!M.getAvailableEnemyTypes(19, 6).includes(11), 'kein Geschwuer vor der Ritualebene');
+  assert.ok(!M.getAvailableEnemyTypes(22, 2).includes(11), 'kein Geschwuer vor Akt 3');
+  assert.ok(M.getAvailableEnemyTypes(22, 3).includes(11), 'Geschwuer auf der Ritualebene ab Akt 3');
+  assert.strictEqual(M.enemyName(11, 'de'), 'Nebelgeschwür');
+  assert.strictEqual(M.enemyName(12, 'en'), 'Priest');
 });

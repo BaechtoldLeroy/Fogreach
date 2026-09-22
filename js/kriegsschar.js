@@ -207,10 +207,14 @@
     var raus = [];
     if (!scene || !fuehrer || typeof spawnEnemy !== 'function') return raus;
     var typ = (typeof fuehrer.enemyType === 'number') ? fuehrer.enemyType : undefined;
+    // #12: Fuehrt ein Priester oder ein Geschwuer die Schar, ist das Gefolge
+    // gewoehnlich — der Priester mit seiner Gemeinde, nicht fuenf Priester.
+    var sonder = !!(window.Sondergegner && window.Sondergegner.istSondertyp(typ));
+    if (sonder) typ = undefined;
     var farbe = scharFarbe(fuehrer);
     for (var i = 0; i < anzahl; i++) {
       var g = null;
-      try { g = spawnEnemy.call(scene, 0, 0, typ); } catch (e) { g = null; }
+      try { g = spawnEnemy.call(scene, 0, 0, typ, sonder ? { ohneSonder: true } : undefined); } catch (e) { g = null; }
       if (!g) continue;
       var winkel = (Math.PI * 2 * i) / anzahl + r() * 0.6;
       var radius = RING_MIN + r() * (RING_MAX - RING_MIN);

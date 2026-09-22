@@ -212,7 +212,9 @@ function getDifficultyMultiplierValue() {
 /**
  * Spawnt einen Gegner vom Typ 1–4 und benutzt den passenden Texture-Key.
  */
-function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
+// opts.ohneSonder: keine Sondertypen (Priester, Nebelgeschwuer) wuerfeln —
+// fuer Minibosse und das Gefolge der Kriegsschar (#12).
+function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
   const scene =
     this && this.sys ? this : window.currentScene || obstacles?.scene;
   if (!scene) {
@@ -392,10 +394,15 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
     g.generateTexture('proc_wolf', 32, 24); g.destroy();
   }
 
+  // #12: Platzhalter fuer Priester und Nebelgeschwuer, bis die Sprites kommen.
+  if (window.Sondergegner && typeof window.Sondergegner.platzhalterTexturen === 'function') {
+    window.Sondergegner.platzhalterTexturen(scene);
+  }
+
   // Determine available types based on dungeon depth + story act (#40).
   const depth = window.DUNGEON_DEPTH || 1;
   let type;
-  if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 10) {
+  if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 12) {
     type = enemyType; // explicit request — never gated (FR-05)
   } else {
     let availableTypes;
@@ -418,6 +425,14 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       availableTypes = [8, 9, 10, 1, 2, 3, 4, 5]; // + Shadow
     } else {
       availableTypes = [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]; // Full roster (kumulativ)
+    }
+    // #12: Sondertypen nur, wo sie hingehoeren, und nicht zu viele auf einmal.
+    const SG = window.Sondergegner;
+    if (SG && typeof SG.istSondertyp === 'function') {
+      const _alle = (typeof enemies !== 'undefined' && enemies && enemies.getChildren) ? enemies.getChildren() : [];
+      const _erlaubt = availableTypes.filter((t) => !SG.istSondertyp(t)
+        || (!(opts && opts.ohneSonder) && !SG.voll(t, _alle)));
+      if (_erlaubt.length) availableTypes = _erlaubt;
     }
     type = availableTypes[Phaser.Math.Between(0, availableTypes.length - 1)];
   }
@@ -491,6 +506,18 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       hp = 2;
       tint = key.startsWith('wolf_') ? null : 0x808080;
       break; // Wolf
+    case 11:
+      key = scene.textures?.exists('geschwuer_right0') ? 'geschwuer_right0' : 'proc_geschwuer';
+      speed = 95;
+      hp = 2;
+      tint = null;
+      break; // Nebelgeschwuer (#12)
+    case 12:
+      key = scene.textures?.exists('priester_right0') ? 'priester_right0' : 'proc_priester';
+      speed = 75;
+      hp = 3;
+      tint = null;
+      break; // Priester (#12)
     default:
       key = scene.textures?.exists('mage_right0') ? 'mage_right0' : tex('sprite_mage', 'enemyMage');
       speed = 60;
@@ -563,7 +590,8 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
   // Store the enemy type for later reference
   enemy.enemyType = type;
   // Tier for loot/XP scaling: 0=animals, 1=basic, 2=standard, 3=elite
-  enemy.enemyTier = (type >= 8) ? 0 : (type <= 2 ? 1 : (type <= 4 ? 2 : 3));
+  // #12: nur 8-10 sind Tiere; die Sondertypen 11/12 zaehlen als Standard.
+  enemy.enemyTier = (type >= 8 && type <= 10) ? 0 : (type >= 11 ? 2 : (type <= 2 ? 1 : (type <= 4 ? 2 : 3)));
 
   // 6) Steering-Parameter je Typ (für handleEnemies + Steering.js) ---
   if (type === 1) {
@@ -715,6 +743,31 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType) {
       enemy.animalDirection = 'right';
     } else {
       enemy.setScale(0.9);
+    }
+  } else if (type === 11) {
+    // Nebelgeschwuer — kriecht heran, zuendet in Nahdistanz (Sondergegner).
+    enemy.sepWeight = 1.0;
+    enemy.cohWeight = 0.1;
+    enemy.avoidWeight = 1.0;
+    enemy.sepRadius = 70;
+    enemy.cohRadius = 150;
+    enemy.isGeschwuer = true;
+    if (key === 'geschwuer_right0') {
+      enemy.setScale(46 / (enemy.height || 46));
+    }
+  } else if (type === 12) {
+    // Priester — haelt Abstand und heilt Verbuendete (Sondergegner).
+    enemy.kiteRadius = 280;
+    enemy.strafeSpeed = 50;
+    enemy.strafeSign = Math.random() < 0.5 ? -1 : 1;
+    enemy.sepWeight = 0.9;
+    enemy.cohWeight = 0.2;
+    enemy.avoidWeight = 1.1;
+    enemy.sepRadius = 110;
+    enemy.cohRadius = 260;
+    enemy.isPriester = true;
+    if (key === 'priester_right0') {
+      enemy.setScale(50 / (enemy.height || 50));
     }
   } else {
     // Mage (Fern/Support)
@@ -1057,6 +1110,13 @@ function handleEnemies(time, delta = 16) {
       }
     }
 
+    // #12: Priester heilen, Nebelgeschwuere zuenden. Solange ein Geschwuer
+    // zuendet, steht es still und greift nicht normal an.
+    if (window.Sondergegner) {
+      if (enemy.isPriester) window.Sondergegner.priesterTick(this, enemy, time);
+      if (enemy.isGeschwuer && window.Sondergegner.geschwuerTick(this, enemy, time, player)) return;
+    }
+
     // Status effect: slow reduces max speed
     let speedMult = 1;
     if (window.statusEffectManager) {
@@ -1170,8 +1230,9 @@ function handleEnemies(time, delta = 16) {
     // Zielgeschwindigkeit
     let desired = new Phaser.Math.Vector2();
 
-    if (enemy.isRanged) {
-      // --- Fernkämpfer: Kiten + Strafen + LoS prüfen
+    if (enemy.isRanged || enemy.isPriester) {
+      // --- Fernkämpfer: Kiten + Strafen + LoS prüfen (der Priester haelt
+      // denselben Abstand, schiesst aber nicht)
       const kite = enemy.kiteRadius || 220;
 
       if (dToPlayer > kite + 30) {
@@ -1485,7 +1546,7 @@ function handleEnemies(time, delta = 16) {
           }
         }
       }
-    } else {
+    } else if (!enemy.isGeschwuer && !enemy.isPriester) {
       if (dToPlayer <= stopDist) {
         enemy.body.setVelocity(0);
         if (
@@ -2042,7 +2103,8 @@ function spawnMiniBoss(xCoord, yCoord, baseType) {
   if (typeof baseType === 'number' && baseType >= 1 && baseType <= 7) {
     enemy = spawnEnemy.call(scene, xCoord || 0, yCoord || 0, baseType);
   } else {
-    enemy = spawnEnemy.call(scene, xCoord || 0, yCoord || 0);
+    // #12: ein Priester oder Geschwuer als Miniboss ergibt keinen Kampf.
+    enemy = spawnEnemy.call(scene, xCoord || 0, yCoord || 0, undefined, { ohneSonder: true });
   }
   if (!enemy) return null;
 
