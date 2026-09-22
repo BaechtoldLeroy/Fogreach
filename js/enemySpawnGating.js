@@ -9,11 +9,14 @@
   // Akte (storySystem.STORY_ACTS): 0 Der Dienst, 1 Treuer Diener, 2 Doppelspiel,
   // 3 Enttarnung, 4 Verrat und Presse.
   // Typen: 1=Imp 2=Archer 3=Brute 4=Mage 5=Shadow 6=ChainGuard 7=FlameWeaver
-  //        8=Rat 9=Bat 10=Wolf 11=Nebelgeschwuer 12=Priester.
+  //        8=Rat 9=Bat 10=Wolf 11=Nebelgeschwuer 12=Priester 13=Beschwoerer
+  //        14=Nebelspringer.
   // #12: Priester in den Katakomben (ab Akt 2), Nebelgeschwuer auf der
   // Ritualebene (ab Akt 3) — dieselben Schwellen wie gebietsName in roomManager.
+  // Der Beschwoerer ruft in den Katakomben (ab Akt 2); der Nebelspringer ist
+  // ein Vergessener und kommt wie diese erst mit der Enttarnung (Akt 3).
   // #162: Die Kettenwache kommt schon in Akt 3 — sie jagt Dich nach dem Bruch.
-  var ENEMY_MIN_ACT = { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0, 11: 3, 12: 2 };
+  var ENEMY_MIN_ACT = { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0, 11: 3, 12: 2, 13: 2, 14: 3 };
 
   // #162: Was die Gegner in der Geschichte sind. Keine neuen Typen, aber ein
   // Name, der sagt, gegen wen man kaempft: Ungeziefer der Keller, Wesen aus
@@ -31,7 +34,9 @@
     9:  { de: 'Fledermaus',    en: 'Bat' },
     10: { de: 'Wolf',          en: 'Wolf' },
     11: { de: 'Nebelgeschwür', en: 'Fog Blight' },   // #12: was die Quelle auswirft
-    12: { de: 'Priester',      en: 'Priest' }        // #12: stärkt die Kultisten
+    12: { de: 'Priester',      en: 'Priest' },       // #12: stärkt die Kultisten
+    13: { de: 'Beschwörer',    en: 'Summoner' },     // #12: Kultist, der Nebelwesen ruft
+    14: { de: 'Nebelspringer', en: 'Fog Leaper' }    // #12: Vergessene, die durch den Nebel springen
   };
 
   /** Anzeigename eines Gegnertyps; unbekannte Typen heissen "Gegner". */
@@ -56,8 +61,8 @@
     if (d <= 6) return [8, 9, 10, 1, 2, 3, 4];
     if (d <= 8) return [8, 9, 10, 1, 2, 3, 4, 5];
     if (d <= 9) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7];
-    if (d <= 19) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12];
-    return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 11];
+    if (d <= 19) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14];
+    return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 11];
   }
 
   // Available enemy types for (depth, actIndex). GUARANTEE: never empty.

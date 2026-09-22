@@ -98,6 +98,23 @@ const zustand = (ref) => H.run(`(function () {
   return { hp: e.hp, maxHp: e.maxHp, active: !!e.active, typ: e.enemyType };
 })()`);
 const spielerHp = () => H.run('window.playerHealth');
+
+// Der Raum spawnt waehrend der Tests Gegner nach; ein fremder Schlag darf
+// nicht als Explosion zaehlen. Deshalb jeden Treffer mit Verursacher
+// mitschreiben: Explosionen kommen ohne Angreifer (applyPlayerDamage(d, sc)).
+function trefferMitschreiben() {
+  H.run(`(function () {
+    if (!window.__apdOrig) {
+      window.__apdOrig = applyPlayerDamage;
+      window.applyPlayerDamage = function (d, sc, a) {
+        (window.__treffer = window.__treffer || []).push({ d: d, typ: a ? a.enemyType : null });
+        return window.__apdOrig.apply(this, arguments);
+      };
+    }
+    window.__treffer = [];
+  })()`);
+}
+const treffer = (typ) => H.run(`(window.__treffer || []).filter(function (t) { return t.typ === ${typ === undefined ? 'null' : typ}; }).length`);
 // Spieler 300 px weg vom Geschehen. Steht er an der linken Wand, geht es nach
 // rechts (am Geschwuer vorbei) — sonst schoebe die Weltgrenze ihn zurueck.
 const spielerWeg = () => H.run(`(function () {
@@ -141,10 +158,11 @@ test('Wer nach dem Zuenden Abstand nimmt, entkommt', () => {
   H.step(8);                                  // es zuendet
   assert.ok(H.run(`typeof window.__lab.refs[${ref}]._zuendetBis === 'number'`), 'hat nicht gezuendet');
   spielerWeg();
+  trefferMitschreiben();
   H.step(90);
   assert.strictEqual(zustand(ref).active, false, 'Geschwuer ist nicht geplatzt');
-  // >= statt ===: der Spieler regeneriert in der Zwischenzeit.
-  assert.ok(spielerHp() >= vorher, 'Spieler wurde trotz Abstand getroffen: ' + vorher + ' -> ' + spielerHp());
+  assert.strictEqual(treffer(), 0, 'Spieler wurde trotz Abstand von der Explosion getroffen');
+  void vorher;
 });
 
 function erschlagen(ref) {
@@ -173,8 +191,10 @@ test('Erschlagen und wegtreten: der Todesplatzer verfehlt', () => {
   const ref = setze(11, 40, 0);
   erschlagen(ref);
   spielerWeg();
+  trefferMitschreiben();
   H.step(60);
-  assert.ok(spielerHp() >= vorher, 'getroffen: ' + vorher + ' -> ' + spielerHp());
+  assert.strictEqual(treffer(), 0, 'der Todesplatzer hat getroffen');
+  void vorher;
 });
 
 test('Die Explosion trifft auch andere Gegner', () => {
@@ -215,4 +235,193 @@ test('Obergrenze: nie mehr als zwei Priester gleichzeitig', () => {
     return enemies.getChildren().filter(function (e) { return e && e.active && e.enemyType === 12; }).length;
   })()`);
   assert.ok(r >= 1 && r <= 2, 'Priester im Raum: ' + r);
+});
+
+// ------------------------------------------------ Beschwoerer, Nebelspringer
+
+test('rufAnzahl: zwei je Ruf, hoechstens vier lebend und acht im ganzen Leben', () => {
+  assert.strictEqual(SG.rufAnzahl(0, 0), 2);
+  assert.strictEqual(SG.rufAnzahl(3, 3), 1);
+  assert.strictEqual(SG.rufAnzahl(4, 4), 0);
+  assert.strictEqual(SG.rufAnzahl(0, 7), 1);
+  assert.strictEqual(SG.rufAnzahl(0, 8), 0);
+});
+
+test('sprungZiel: hinter den Spieler, nur im Abstandsfenster', () => {
+  const p = { x: 500, y: 300 };
+  assert.deepStrictEqual(SG.sprungZiel({ x: 750, y: 300 }, p), { x: 445, y: 300 });
+  assert.deepStrictEqual(SG.sprungZiel({ x: 500, y: 100 }, p), { x: 500, y: 355 });
+  assert.strictEqual(SG.sprungZiel({ x: 560, y: 300 }, p), null, 'zu nah: er schlaegt, statt zu springen');
+  assert.strictEqual(SG.sprungZiel({ x: 1000, y: 300 }, p), null, 'zu weit');
+  assert.deepStrictEqual(SG.sprungZiel({ x: 750, y: 300 }, p, 30), { x: 470, y: 300 }, 'eigener Abstand');
+});
+
+const gerufene = (ref) => H.run(`(function () {
+  var b = window.__lab.refs[${ref}];
+  return enemies.getChildren().filter(function (e) {
+    return e && e.active && e._beschworenVon === b;
+  }).map(function (e) {
+    return { d: Math.round(Math.hypot(e.x - b.x, e.y - b.y)), typ: e.enemyType, elite: !!(e.isElite || e._eliteApplied) };
+  });
+})()`);
+const rufJetzt = (ref) => H.run(`(function () { var b = window.__lab.refs[${ref}]; b._naechsterRuf = 0; b.speed = 0; })()`);
+
+test('Beschwoerer steht still, ruft, und nach einer Sekunde stehen zwei Wichte bei ihm', () => {
+  const b = setze(13, 330, 0);
+  rufJetzt(b);
+  H.step(10);
+  assert.ok(H.run(`window.__lab.refs[${b}]._castingUntil > 0`), 'hat nicht zu rufen begonnen');
+  assert.strictEqual(gerufene(b).length, 0, 'Wichte kamen ohne Vorwarnung');
+  H.step(80);
+  const w = gerufene(b);
+  assert.strictEqual(w.length, 2, 'gerufen: ' + JSON.stringify(w));
+  assert.ok(w.every((x) => x.typ === 1 && x.d < 90), 'nicht bei ihm: ' + JSON.stringify(w));
+});
+
+test('Erschlagen waehrend des Rufens: es kommt niemand', () => {
+  const b = setze(13, 330, 0);
+  rufJetzt(b);
+  H.step(10);
+  erschlagen(b);
+  H.step(80);
+  const n = H.run(`enemies.getChildren().filter(function (e) { return e && e.active && e.enemyType === 1; }).length`);
+  assert.strictEqual(n, 0);
+});
+
+test('Faellt der Beschwoerer, loesen sich seine Wichte auf', () => {
+  const b = setze(13, 330, 0);
+  rufJetzt(b);
+  H.step(90);
+  assert.strictEqual(gerufene(b).length, 2);
+  erschlagen(b);
+  H.step(5);
+  const n = H.run(`enemies.getChildren().filter(function (e) { return e && e.active && e.enemyType === 1; }).length`);
+  assert.strictEqual(n, 0, 'Wichte leben weiter');
+});
+
+test('Beschwoerer: der Lebensdeckel gilt (acht insgesamt)', () => {
+  const b = setze(13, 330, 0);
+  H.run(`window.__lab.refs[${b}]._rufGesamt = 7`);
+  rufJetzt(b);
+  H.step(90);
+  assert.strictEqual(gerufene(b).length, 1);
+});
+
+test('Gerufene Wichte sind nie Elite', () => {
+  const b = setze(13, 330, 0);
+  const r = H.run(`(function () {
+    var EE = window.EliteEnemies, alt = EE.shouldSpawnElite;
+    EE.shouldSpawnElite = function () { return 'champion'; };
+    window.__eliteStub = alt;
+    return true;
+  })()`);
+  assert.ok(r);
+  try {
+    rufJetzt(b);
+    H.step(90);
+    const w = gerufene(b);
+    assert.strictEqual(w.length, 2);
+    assert.ok(w.every((x) => !x.elite), 'Elite-Wicht: ' + JSON.stringify(w));
+    // Gegenprobe: ein gewoehnlich gespawnter Wicht wird mit dem Stub Elite.
+    const k = H.run(`(function () {
+      var sc = window.game.scene.getScene('GameScene');
+      var e = spawnEnemy.call(sc, 0, 0, 1);
+      var elite = !!(e.isElite || e._eliteApplied);
+      e.destroy();
+      return elite;
+    })()`);
+    assert.ok(k, 'Gegenprobe: der Stub wirkt nicht');
+  } finally {
+    H.run(`window.EliteEnemies.shouldSpawnElite = window.__eliteStub`);
+  }
+});
+
+
+// Der Raum ist zufaellig: liegt der Punkt hinter dem Spieler in einer Wand,
+// springt der Nebelspringer (richtig) nicht. Also eine Richtung waehlen, in
+// der seine Startstelle UND das Sprungziel frei sind.
+function springerSetzen() {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var frei = function (x, y) {
+      if (sc.isPointAccessible && !sc.isPointAccessible(x, y)) return false;
+      if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(x, y)) return false;
+      return true;
+    };
+    var richt = [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]];
+    var suchen = function () {
+      for (var i = 0; i < richt.length; i++) {
+        var dx = richt[i][0], dy = richt[i][1];
+        if (frei(player.x + dx * 250, player.y + dy * 250) && frei(player.x - dx * 55, player.y - dy * 55)) {
+          return [Math.round(dx * 250), Math.round(dy * 250)];
+        }
+      }
+      return null;
+    };
+    var r = suchen();
+    // Eingeklemmt (Ecke, Saeulen)? Dann an eine andere freie Stelle im Raum.
+    for (var v = 0; !r && v < 40 && typeof sc.pickAccessibleSpawnPoint === 'function'; v++) {
+      var p = sc.pickAccessibleSpawnPoint({ minDistance: 0, maxAttempts: 10 });
+      if (!p) continue;
+      if (player.body && player.body.reset) player.body.reset(p.x, p.y); else player.setPosition(p.x, p.y);
+      r = suchen();
+    }
+    return r;
+  })()`);
+  assert.ok(r, 'kein freier Platz um den Spieler');
+  const ref = setze(14, r[0], r[1]);
+  H.run(`(function () { window.__lab.refs[${ref}]._naechsterSprung = 0; })()`);
+  return ref;
+}
+
+test('Nebelspringer kuendigt an und landet hinter dem Spieler', () => {
+  const s = springerSetzen();
+  H.step(3);
+  const an = H.run(`(function () {
+    var s = window.__lab.refs[${s}];
+    return { bis: typeof s._sprungBis, wirbel: !!(s._wirbel && s._wirbel.active),
+      ziel: s._sprungZiel, x: s.x, sy: s.y, px: player.x, py: player.y };
+  })()`);
+  assert.strictEqual(an.bis, 'number', 'keine Ankuendigung');
+  assert.ok(an.wirbel, 'kein Wirbel am Ziel');
+  // Hinter dem Spieler: das Ziel liegt vom Springer aus jenseits des Spielers.
+  const vorSp = Math.hypot(an.x - an.px, an.sy - an.py), zumZiel = Math.hypot(an.x - an.ziel.x, an.sy - an.ziel.y);
+  assert.ok(zumZiel > vorSp + 15, 'Ziel liegt nicht hinter dem Spieler: ' + JSON.stringify(an));
+  H.step(36);
+  const nach = H.run(`(function () {
+    var s = window.__lab.refs[${s}];
+    return { x: s.x, y: s.y, bis: s._sprungBis, wirbel: !!(s._wirbel) };
+  })()`);
+  assert.strictEqual(nach.bis, null, 'noch nicht gesprungen');
+  assert.ok(Math.hypot(nach.x - an.ziel.x, nach.y - an.ziel.y) < 30,
+    'nicht am Ziel gelandet: ' + JSON.stringify({ nach, ziel: an.ziel }));
+  assert.strictEqual(nach.wirbel, false, 'Wirbel blieb liegen');
+});
+
+test('Nebelspringer: nach der Landung ein kurzes Reaktionsfenster, dann der Schlag', () => {
+  const s = springerSetzen();
+  H.step(3);
+  const bis = H.run(`window.__lab.refs[${s}]._sprungBis`);
+  // Bis zur Landung pumpen (Takt ~16,7 ms), dann 200 ms: noch kein Schlag.
+  // Schon VOR der Landung mitschreiben: ohne Reaktionsfenster faellt der
+  // Schlag im Landebild selbst.
+  trefferMitschreiben();
+  let n = 0;
+  while (H.run(`typeof window.__lab.refs[${s}]._sprungBis === 'number'`) && n++ < 60) H.step(1);
+  assert.ok(n < 60, 'nicht gelandet (bis ' + bis + ')');
+  H.step(12);
+  assert.strictEqual(treffer(14), 0, 'Schlag ohne Reaktionsfenster');
+  H.step(80);
+  const lage = H.run(`(function () { var e = window.__lab.refs[${s}]; return JSON.stringify({ d: Math.round(Math.hypot(e.x - player.x, e.y - player.y)), aktiv: e.active, v: [Math.round(e.body.velocity.x), Math.round(e.body.velocity.y)], stun: !!(window.statusEffectManager && window.statusEffectManager.isStunned(e)), la: e.lastAttackTime, t: Math.round(window.game.scene.getScene('GameScene').time.now), p: player.active, grace: window.game.scene.getScene('GameScene')._enemyAttackGraceUntil, alle: window.__treffer }); })()`);
+  assert.ok(treffer(14) >= 1, 'kein Schlag des Springers nach der Landung ' + lage);
+});
+
+test('Stirbt der Springer waehrend der Ankuendigung, verschwindet der Wirbel', () => {
+  const s = springerSetzen();
+  H.step(3);
+  const w = H.run(`(function () { window.__w = window.__lab.refs[${s}]._wirbel; return !!window.__w; })()`);
+  assert.ok(w, 'kein Wirbel');
+  erschlagen(s);
+  H.step(2);
+  assert.strictEqual(H.run('!!(window.__w && window.__w.active)'), false);
 });

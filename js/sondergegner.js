@@ -8,6 +8,11 @@
 //   Nebelgeschwuer (11)   Ritualebene. Kriecht heran, zuendet in Nahdistanz und
 //                         platzt; stirbt es, platzt es nach kurzer Warnung
 //                         ebenfalls. Antwort: Abstand halten, von weitem toeten.
+//   Beschwoerer (13)      Katakomben. Haelt Abstand und ruft Nebelwichte; faellt
+//                         er, loesen sie sich auf. Antwort: den Rufer zuerst.
+//   Nebelspringer (14)    Katakomben/Ritualebene. Springt hinter den Spieler,
+//                         das Ziel kuendigt sich an. Antwort: in Bewegung
+//                         bleiben, Flaechenschaden.
 //
 // Die Rechnungen (wen heilt er, wie viel, wie hart knallt es) sind reine
 // Funktionen und ohne Phaser testbar. Die Ticks werden aus handleEnemies
@@ -17,6 +22,9 @@
 
   var TYP_GESCHWUER = 11;
   var TYP_PRIESTER = 12;
+  var TYP_BESCHWOERER = 13;
+  var TYP_SPRINGER = 14;
+  var TYP_WICHT = 1;         // was der Beschwoerer ruft (Nebelwicht)
 
   var PRIESTER = {
     heilTaktMs: 3500,       // alle 3,5 s ein Heilstoss
@@ -31,6 +39,25 @@
     zuendMs: 800,           // Warnzeit vor dem Platzen am Spieler
     todesMs: 450,           // Warnzeit, wenn es getoetet wurde
     radius: 100,            // Reichweite der Explosion
+    maxImRaum: 3
+  };
+
+  var BESCHWOERER = {
+    rufTaktMs: 6000,        // alle 6 s eine Beschwoerung
+    rufDauerMs: 1000,       // so lange steht er still und ruft (sichtbar)
+    proRuf: 2,              // zwei Wichte je Ruf
+    maxLebend: 4,           // hoechstens vier seiner Wichte gleichzeitig
+    maxGesamt: 8,           // und acht in seinem ganzen Leben (kein Farmen)
+    maxImRaum: 2
+  };
+
+  var SPRINGER = {
+    taktMs: 4000,           // alle 4 s ein Sprung
+    ankuendigungMs: 550,    // so lange zeigt der Nebelwirbel das Ziel an
+    minAbstand: 110,        // naeher dran springt er nicht, er schlaegt zu
+    maxAbstand: 420,
+    hinterDem: 55,          // hoechstens so weit hinter dem Spieler landet er
+    schlagNachMs: 350,      // Reaktionsfenster nach der Landung, dann schlaegt er
     maxImRaum: 3
   };
 
@@ -83,7 +110,9 @@
   /** Ist fuer diesen Typ im Raum schon genug los? (Obergrenze je Raum) */
   function voll(typ, gegner) {
     var grenze = typ === TYP_PRIESTER ? PRIESTER.maxImRaum
-      : typ === TYP_GESCHWUER ? GESCHWUER.maxImRaum : Infinity;
+      : typ === TYP_GESCHWUER ? GESCHWUER.maxImRaum
+      : typ === TYP_BESCHWOERER ? BESCHWOERER.maxImRaum
+      : typ === TYP_SPRINGER ? SPRINGER.maxImRaum : Infinity;
     if (!isFinite(grenze) || !Array.isArray(gegner)) return false;
     var n = 0;
     for (var i = 0; i < gegner.length; i++) {
@@ -92,7 +121,36 @@
     return n >= grenze;
   }
 
-  function istSondertyp(typ) { return typ === TYP_PRIESTER || typ === TYP_GESCHWUER; }
+  function istSondertyp(typ) {
+    return typ === TYP_PRIESTER || typ === TYP_GESCHWUER
+      || typ === TYP_BESCHWOERER || typ === TYP_SPRINGER;
+  }
+
+  /**
+   * Wie viele Wichte ruft der Beschwoerer diesmal? Beide Deckel zaehlen:
+   * gleichzeitig lebende und alle, die er je gerufen hat.
+   * @param {number} lebend  seine Wichte, die gerade leben
+   * @param {number} gesamt  alle, die er schon gerufen hat
+   */
+  function rufAnzahl(lebend, gesamt) {
+    var frei = Math.min(BESCHWOERER.maxLebend - (lebend || 0), BESCHWOERER.maxGesamt - (gesamt || 0));
+    return Math.max(0, Math.min(BESCHWOERER.proRuf, frei));
+  }
+
+  /**
+   * Wohin springt der Nebelspringer? Auf die Linie von ihm durch den Spieler,
+   * hinter px HINTER den Spieler (Standard hinterDem). Ausserhalb des
+   * Abstandsfensters: nirgends.
+   * @returns {{x:number,y:number}|null}
+   */
+  function sprungZiel(springer, p, hinter) {
+    var h = (typeof hinter === 'number' && hinter > 0) ? hinter : SPRINGER.hinterDem;
+    if (!springer || !p) return null;
+    var dx = p.x - springer.x, dy = p.y - springer.y;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    if (d < SPRINGER.minAbstand || d > SPRINGER.maxAbstand) return null;
+    return { x: p.x + (dx / d) * h, y: p.y + (dy / d) * h };
+  }
 
   // ------------------------------------------------------------------- Grafik
 
@@ -132,6 +190,38 @@
       h.fillCircle(17, 33, 3);
       h.generateTexture('proc_geschwuer', 44, 44);
       h.destroy();
+    }
+    if (!scene.textures.exists('proc_beschwoerer')) {
+      var b = scene.make.graphics({ add: false });
+      // Dunkle Kultistenrobe mit violett glimmender Kugel in der Hand.
+      b.fillStyle(0x2c2238, 1);
+      b.fillTriangle(20, 10, 3, 50, 37, 50);
+      b.fillStyle(0x4a3a60, 1);
+      b.fillRect(3, 46, 34, 4);
+      b.fillStyle(0x17121e, 1);
+      b.fillCircle(20, 11, 8);             // Kapuze
+      b.fillStyle(0xb58cff, 0.45);
+      b.fillCircle(33, 28, 8);             // Glimmen
+      b.fillStyle(0xe2d0ff, 1);
+      b.fillCircle(33, 28, 4);             // Kugel
+      b.generateTexture('proc_beschwoerer', 42, 52);
+      b.destroy();
+    }
+    if (!scene.textures.exists('proc_springer')) {
+      var s2 = scene.make.graphics({ add: false });
+      // Blasse, zerfaserte Gestalt aus Nebel: Umriss, der nach unten ausfranst.
+      s2.fillStyle(0x9aa6b8, 0.85);
+      s2.fillCircle(18, 10, 7);
+      s2.fillTriangle(18, 14, 5, 40, 31, 40);
+      s2.fillStyle(0x9aa6b8, 0.5);
+      s2.fillTriangle(6, 38, 10, 48, 14, 38);
+      s2.fillTriangle(15, 38, 19, 50, 23, 38);
+      s2.fillTriangle(24, 38, 28, 47, 31, 38);
+      s2.fillStyle(0xd9f2ff, 1);
+      s2.fillCircle(15, 10, 1.5);          // Augen
+      s2.fillCircle(21, 10, 1.5);
+      s2.generateTexture('proc_springer', 36, 52);
+      s2.destroy();
     }
   }
 
@@ -339,20 +429,234 @@
     return true;
   }
 
+  // ------------------------------------------------------------ Beschwoerer
+
+  /** Liegt der Punkt begehbar und frei von Hindernissen? */
+  function _frei(scene, x, y) {
+    try {
+      if (scene && typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(x, y)) return false;
+      if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(x, y)) return false;
+    } catch (e) { return false; }
+    return true;
+  }
+
+  /** n freie Plaetze im Kreis um den Beschwoerer, sonst seine eigene Stelle. */
+  function _rufOrte(scene, b, n) {
+    var orte = [];
+    for (var i = 0; i < n; i++) {
+      var ort = null;
+      for (var v = 0; v < 8 && !ort; v++) {
+        var w = (Math.PI * 2 * (i + v / 8)) / n;
+        var x = b.x + Math.cos(w) * 48, y = b.y + Math.sin(w) * 48;
+        if (_frei(scene, x, y)) ort = { x: x, y: y };
+      }
+      orte.push(ort || { x: b.x, y: b.y });
+    }
+    return orte;
+  }
+
+  function _wichtRufen(scene, b, ort) {
+    if (typeof spawnEnemy !== 'function') return null;
+    var w = null;
+    // Ohne Koordinaten erzeugen: spawnEnemy haelt 300 px Abstand zum Spieler
+    // und gibt null zurueck, wenn es so nah keinen Platz findet — dann fehlte
+    // ein Wicht. Erzeugt wird irgendwo, versetzt wird gleich danach.
+    try { w = spawnEnemy.call(scene, 0, 0, TYP_WICHT, { ohneElite: true }); } catch (e) { w = null; }
+    if (!w) return null;
+    // spawnEnemy schiebt Gegner weg vom Spieler; gerufene erscheinen aber
+    // genau dort, wo der Kreis am Boden war.
+    try {
+      if (w.body && typeof w.body.reset === 'function') w.body.reset(ort.x, ort.y);
+      else w.setPosition(ort.x, ort.y);
+    } catch (e) {}
+    w._beschworenVon = b;
+    b._gerufen.push(w);
+    b._rufGesamt = (b._rufGesamt || 0) + 1;
+    try {
+      if (scene.tweens) { w.setAlpha(0); scene.tweens.add({ targets: w, alpha: 1, duration: 300 }); }
+    } catch (e) {}
+    return w;
+  }
+
+  /**
+   * Beschwoerer: alle rufTaktMs eine Beschwoerung. Er steht dabei rufDauerMs
+   * still (enemy.js haelt Gegner mit _castingUntil an), die Kreise zeigen,
+   * wo die Wichte erscheinen. Wird er in der Zeit erschlagen, kommt keiner.
+   * @returns {Array<{x,y}>} die Orte, an denen gerufen wird (fuer Tests)
+   */
+  function beschwoererTick(scene, b, zeit) {
+    if (!_lebt(b)) return [];
+    if (typeof b._naechsterRuf !== 'number') {
+      b._naechsterRuf = zeit + BESCHWOERER.rufTaktMs * 0.4;
+      return [];
+    }
+    if (zeit < b._naechsterRuf) return [];
+    b._naechsterRuf = zeit + BESCHWOERER.rufTaktMs;
+    b._gerufen = (b._gerufen || []).filter(_lebt);
+    var n = rufAnzahl(b._gerufen.length, b._rufGesamt || 0);
+    if (!n) return [];
+    var orte = _rufOrte(scene, b, n);
+    b._castingUntil = zeit + BESCHWOERER.rufDauerMs;
+    if (b.body && typeof b.body.setVelocity === 'function') b.body.setVelocity(0, 0);
+
+    var zeichen = [];
+    try {
+      if (scene && scene.add && typeof scene.add.circle === 'function') {
+        var ring = _sichtbar(scene, scene.add.circle(b.x, b.y + 14, 30));
+        ring.setStrokeStyle(2, 0xb58cff, 0.9);
+        zeichen.push(ring);
+        orte.forEach(function (o) {
+          var k = _sichtbar(scene, scene.add.circle(o.x, o.y, 16, 0x6a4a9a, 0.35));
+          k.setStrokeStyle(2, 0xe2d0ff, 0.9);
+          if (scene.tweens) scene.tweens.add({ targets: k, scale: 1.25, duration: 250, yoyo: true, repeat: -1 });
+          zeichen.push(k);
+        });
+      }
+      if (typeof b.setTint === 'function') b.setTint(0xd8b8ff);
+    } catch (e) {}
+
+    var fertig = function () {
+      zeichen.forEach(function (z) { try { z.destroy(); } catch (e) {} });
+      try { if (b.active && typeof b.clearTint === 'function') b.clearTint(); } catch (e) {}
+      if (!_lebt(b)) return;
+      orte.forEach(function (o) { _wichtRufen(scene, b, o); });
+    };
+    if (scene && scene.time && typeof scene.time.delayedCall === 'function') {
+      scene.time.delayedCall(BESCHWOERER.rufDauerMs, fertig);
+    } else {
+      fertig();
+    }
+    return orte;
+  }
+
+  /** Faellt der Beschwoerer, loesen sich seine Wichte auf (ohne Beute). */
+  function rufAufloesen(scene, b) {
+    var weg = 0;
+    (b && b._gerufen || []).forEach(function (w) {
+      if (!_lebt(w)) return;
+      weg++;
+      try {
+        if (window.particleFactory && typeof window.particleFactory.hitSpark === 'function') {
+          window.particleFactory.hitSpark(w.x, w.y);
+        }
+      } catch (e) {}
+      try { w.destroy(); } catch (e) {}
+    });
+    if (b) b._gerufen = [];
+    return weg;
+  }
+
+  // ----------------------------------------------------------- Nebelspringer
+
+  function _wirbel(scene, x, y) {
+    if (!scene || !scene.add || typeof scene.add.circle !== 'function') return null;
+    try {
+      var k = _sichtbar(scene, scene.add.circle(x, y, 26, 0x3a4a66, 0.45));
+      k.setStrokeStyle(2, 0xd9f2ff, 0.9);
+      k.setScale(0.2);
+      if (scene.tweens) scene.tweens.add({ targets: k, scale: 1, duration: SPRINGER.ankuendigungMs * 0.8 });
+      return k;
+    } catch (e) { return null; }
+  }
+
+  /**
+   * Nebelspringer: alle taktMs ein Sprung hinter den Spieler. Der Wirbel am
+   * Ziel kuendigt ihn ankuendigungMs vorher an; wer sich bewegt, steht nicht
+   * mehr da, wo er landet. Nach der Landung schlaegt er fast sofort zu.
+   *
+   * @returns {boolean} true waehrend der Ankuendigung (handleEnemies haelt
+   *   ihn dann an)
+   */
+  function springerTick(scene, s, zeit, p) {
+    if (!_lebt(s)) return false;
+    if (typeof s._sprungBis === 'number') {
+      if (s.body && typeof s.body.setVelocity === 'function') s.body.setVelocity(0, 0);
+      if (zeit < s._sprungBis) return true;
+      var z = s._sprungZiel;
+      if (s._wirbel) { try { s._wirbel.destroy(); } catch (e) {} s._wirbel = null; }
+      s._sprungBis = null;
+      s._sprungZiel = null;
+      s._naechsterSprung = zeit + SPRINGER.taktMs;
+      if (z) {
+        try {
+          if (s.body && typeof s.body.reset === 'function') s.body.reset(z.x, z.y);
+          else s.setPosition(z.x, z.y);
+        } catch (e) {}
+        // Nach der Landung schlaegt er nach schlagNachMs zu, nicht frueher und
+        // nicht spaeter: der Nahkampftakt in enemy.js wartet 1500 ms (mal
+        // _attackCdMul) seit dem letzten Schlag. Die kurze Pause ist das Fenster,
+        // in dem der Spieler auf die Landung reagieren kann.
+        var cd = 1500 * ((typeof s._attackCdMul === 'number' && s._attackCdMul > 0) ? s._attackCdMul : 1);
+        s.lastAttackTime = zeit - cd + SPRINGER.schlagNachMs;
+      }
+      try {
+        s.setAlpha(0.3);
+        if (scene && scene.tweens) scene.tweens.add({ targets: s, alpha: 1, duration: 250 });
+        else s.setAlpha(1);
+      } catch (e) {}
+      return false;
+    }
+    if (typeof s._naechsterSprung !== 'number') {
+      s._naechsterSprung = zeit + SPRINGER.taktMs * 0.5;
+      return false;
+    }
+    if (zeit < s._naechsterSprung || !p || p.active === false) return false;
+    // In Schlagdistanz landen: enemy.js schlaegt zu, wenn der Abstand unter
+    // (Breite Gegner + Breite Spieler) / 1,5 liegt. Landet er weiter weg und
+    // steht ein Hindernis im Weg, rutscht er daran entlang und kommt nie an.
+    var schlag = ((s.body && s.body.width) || 36) + ((p.body && p.body.width) || 24);
+    var ziel = sprungZiel(s, p, Math.min(SPRINGER.hinterDem, (schlag / 1.5) * 0.85));
+    if (!ziel || !_frei(scene, ziel.x, ziel.y)) {
+      s._naechsterSprung = zeit + 500;          // gleich nochmal schauen
+      return false;
+    }
+    s._sprungZiel = ziel;
+    s._sprungBis = zeit + SPRINGER.ankuendigungMs;
+    s._wirbel = _wirbel(scene, ziel.x, ziel.y);
+    if (!s._wirbelAufraeumen && typeof s.once === 'function') {
+      s._wirbelAufraeumen = true;
+      s.once('destroy', function () { if (s._wirbel) { try { s._wirbel.destroy(); } catch (e) {} s._wirbel = null; } });
+    }
+    try { s.setAlpha(0.45); } catch (e) {}
+    if (s.body && typeof s.body.setVelocity === 'function') s.body.setVelocity(0, 0);
+    return true;
+  }
+
+  /**
+   * Aus handleEnemyHit (player.js), wenn ein Gegner faellt: was die
+   * Sondertypen beim Tod tun.
+   */
+  function beimTod(scene, e) {
+    if (!e) return;
+    if (e.isGeschwuer && !e._explodiert) todesPlatzer(scene, e);
+    if (e.isBeschwoerer) rufAufloesen(scene, e);
+    if (e._wirbel) { try { e._wirbel.destroy(); } catch (x) {} e._wirbel = null; }
+  }
+
   window.Sondergegner = {
     TYP_GESCHWUER: TYP_GESCHWUER,
     TYP_PRIESTER: TYP_PRIESTER,
+    TYP_BESCHWOERER: TYP_BESCHWOERER,
+    TYP_SPRINGER: TYP_SPRINGER,
     PRIESTER: PRIESTER,
     GESCHWUER: GESCHWUER,
+    BESCHWOERER: BESCHWOERER,
+    SPRINGER: SPRINGER,
     heilziele: heilziele,
     heilmenge: heilmenge,
     explosionsSchaden: explosionsSchaden,
+    rufAnzahl: rufAnzahl,
+    sprungZiel: sprungZiel,
     voll: voll,
     istSondertyp: istSondertyp,
     platzhalterTexturen: platzhalterTexturen,
     priesterTick: priesterTick,
     geschwuerTick: geschwuerTick,
+    beschwoererTick: beschwoererTick,
+    springerTick: springerTick,
+    rufAufloesen: rufAufloesen,
     explodieren: explodieren,
-    todesPlatzer: todesPlatzer
+    todesPlatzer: todesPlatzer,
+    beimTod: beimTod
   };
 })();

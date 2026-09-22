@@ -30,14 +30,14 @@ function depthRosterRef(depth) {
   if (d <= 8) return [8, 9, 10, 1, 2, 3, 4, 5];
   if (d <= 9) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7];
   // #12: Priester ab den Katakomben (10), Nebelgeschwuer ab der Ritualebene (20).
-  if (d <= 19) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12];
-  return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 11];
+  if (d <= 19) return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14];
+  return [8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 11];
 }
 
 test('ENEMY_MIN_ACT has the exact §4.1 mapping', () => {
   const M = freshModule();
   assert.deepStrictEqual(M.ENEMY_MIN_ACT,
-    { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0, 11: 3, 12: 2 });
+    { 1: 0, 2: 1, 3: 1, 4: 2, 5: 3, 6: 3, 7: 4, 8: 0, 9: 0, 10: 0, 11: 3, 12: 2, 13: 2, 14: 3 });
 });
 
 test('getAvailableEnemyTypes filters by act at depth 9', () => {
@@ -61,7 +61,7 @@ test('result is NEVER empty across depth 1..30 x act 0..6 (FR-04)', () => {
     for (let act = 0; act <= 6; act++) {
       const r = M.getAvailableEnemyTypes(depth, act);
       assert.ok(Array.isArray(r) && r.length > 0, `non-empty at depth ${depth}, act ${act}`);
-      assert.ok(r.every((t) => Number.isInteger(t) && t >= 1 && t <= 12), `valid types at depth ${depth}, act ${act}`);
+      assert.ok(r.every((t) => Number.isInteger(t) && t >= 1 && t <= 14), `valid types at depth ${depth}, act ${act}`);
     }
   }
 });
@@ -116,4 +116,15 @@ test('#12: Priester erst in den Katakomben ab Akt 2, Nebelgeschwuer erst auf der
   assert.ok(M.getAvailableEnemyTypes(22, 3).includes(11), 'Geschwuer auf der Ritualebene ab Akt 3');
   assert.strictEqual(M.enemyName(11, 'de'), 'Nebelgeschwür');
   assert.strictEqual(M.enemyName(12, 'en'), 'Priest');
+});
+
+test('#12: Beschwoerer in den Katakomben ab Akt 2, Nebelspringer ab Akt 3', () => {
+  const M = freshModule();
+  assert.ok(!M.getAvailableEnemyTypes(9, 6).includes(13), 'kein Beschwoerer im Keller');
+  assert.ok(M.getAvailableEnemyTypes(12, 2).includes(13), 'Beschwoerer ab Akt 2');
+  assert.ok(!M.getAvailableEnemyTypes(12, 2).includes(14), 'kein Springer vor Akt 3');
+  assert.ok(M.getAvailableEnemyTypes(12, 3).includes(14), 'Springer ab Akt 3');
+  assert.ok(M.getAvailableEnemyTypes(25, 4).includes(14), 'Springer auch auf der Ritualebene');
+  assert.strictEqual(M.enemyName(13, 'de'), 'Beschwörer');
+  assert.strictEqual(M.enemyName(14, 'en'), 'Fog Leaper');
 });

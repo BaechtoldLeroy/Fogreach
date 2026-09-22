@@ -1769,10 +1769,10 @@ function handleEnemyHit(scene, enemy, options = {}) {
     if (window.AmuletEffects && typeof window.AmuletEffects.onEnemyKilled === 'function') {
       try { window.AmuletEffects.onEnemyKilled(enemy, scene); } catch (e) { /* never crash */ }
     }
-    // #12: Ein Nebelgeschwuer platzt auch, wenn es erschlagen wird — nach
-    // einer kurzen Warnung. Nahkaempfer muessen danach weg.
-    if (enemy.isGeschwuer && !enemy._explodiert && window.Sondergegner) {
-      try { window.Sondergegner.todesPlatzer(scene, enemy); } catch (e) { /* nie den Tod brechen */ }
+    // #12: Sondertypen beim Tod — ein Nebelgeschwuer platzt nach kurzer
+    // Warnung, die Wichte eines Beschwoerers loesen sich auf.
+    if (window.Sondergegner && typeof window.Sondergegner.beimTod === 'function') {
+      try { window.Sondergegner.beimTod(scene, enemy); } catch (e) { /* nie den Tod brechen */ }
     }
     // #90 Elite-Affix 'lightning_enchanted': beim Tod entlaedt sich ein Blitzring.
     // Bestraft es, im Nahkampf stehen zu bleiben — der Kill selbst ist die Gefahr.

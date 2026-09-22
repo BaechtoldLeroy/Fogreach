@@ -212,8 +212,9 @@ function getDifficultyMultiplierValue() {
 /**
  * Spawnt einen Gegner vom Typ 1–4 und benutzt den passenden Texture-Key.
  */
-// opts.ohneSonder: keine Sondertypen (Priester, Nebelgeschwuer) wuerfeln —
-// fuer Minibosse und das Gefolge der Kriegsschar (#12).
+// opts.ohneSonder: keine Sondertypen (Priester, Nebelgeschwuer, Beschwoerer,
+// Nebelspringer) wuerfeln — fuer Minibosse und das Gefolge der Kriegsschar.
+// opts.ohneElite: kein Elite-Wurf — fuer gerufene Wichte des Beschwoerers (#12).
 function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
   const scene =
     this && this.sys ? this : window.currentScene || obstacles?.scene;
@@ -402,7 +403,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
   // Determine available types based on dungeon depth + story act (#40).
   const depth = window.DUNGEON_DEPTH || 1;
   let type;
-  if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 12) {
+  if (typeof enemyType === 'number' && enemyType >= 1 && enemyType <= 14) {
     type = enemyType; // explicit request — never gated (FR-05)
   } else {
     let availableTypes;
@@ -518,6 +519,18 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       hp = 3;
       tint = null;
       break; // Priester (#12)
+    case 13:
+      key = scene.textures?.exists('beschwoerer_right0') ? 'beschwoerer_right0' : 'proc_beschwoerer';
+      speed = 70;
+      hp = 3;
+      tint = null;
+      break; // Beschwoerer (#12)
+    case 14:
+      key = scene.textures?.exists('springer_right0') ? 'springer_right0' : 'proc_springer';
+      speed = 85;
+      hp = 2;
+      tint = null;
+      break; // Nebelspringer (#12)
     default:
       key = scene.textures?.exists('mage_right0') ? 'mage_right0' : tex('sprite_mage', 'enemyMage');
       speed = 60;
@@ -769,6 +782,32 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     if (key === 'priester_right0') {
       enemy.setScale(50 / (enemy.height || 50));
     }
+  } else if (type === 13) {
+    // Beschwoerer — haelt Abstand und ruft Nebelwichte (Sondergegner).
+    enemy.kiteRadius = 300;
+    enemy.strafeSpeed = 45;
+    enemy.strafeSign = Math.random() < 0.5 ? -1 : 1;
+    enemy.sepWeight = 0.9;
+    enemy.cohWeight = 0.2;
+    enemy.avoidWeight = 1.1;
+    enemy.sepRadius = 110;
+    enemy.cohRadius = 260;
+    enemy.isBeschwoerer = true;
+    enemy._gerufen = [];
+    if (key === 'beschwoerer_right0') {
+      enemy.setScale(50 / (enemy.height || 50));
+    }
+  } else if (type === 14) {
+    // Nebelspringer — springt hinter den Spieler (Sondergegner).
+    enemy.sepWeight = 0.8;
+    enemy.cohWeight = 0.15;
+    enemy.avoidWeight = 1.0;
+    enemy.sepRadius = 80;
+    enemy.cohRadius = 180;
+    enemy.isSpringer = true;
+    if (key === 'springer_right0') {
+      enemy.setScale(50 / (enemy.height || 50));
+    }
   } else {
     // Mage (Fern/Support)
     enemy.kiteRadius = 260;
@@ -814,14 +853,14 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     eliteChance = 0.03;
   }
 
-  if (Math.random() < eliteChance) {
+  if (!(opts && opts.ohneElite) && Math.random() < eliteChance) {
     makeElite.call(this, enemy);
     enemy._eliteApplied = true;
   }
 
   // WP05 — Champion/Unique. NUR wenn der Gegner nicht schon Legacy-Elite ist
   // (kein Doppel-Elite -> saubere Gesamt-Chance).
-  if (!enemy._eliteApplied && window.EliteEnemies && typeof window.EliteEnemies.shouldSpawnElite === 'function') {
+  if (!enemy._eliteApplied && !(opts && opts.ohneElite) && window.EliteEnemies && typeof window.EliteEnemies.shouldSpawnElite === 'function') {
     try {
       const depth = typeof currentWave === 'number' ? currentWave : (window.currentWave || 1);
       let tier = window.EliteEnemies.shouldSpawnElite(depth);
@@ -863,7 +902,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     if (window.PrintingHouse && typeof window.PrintingHouse.getRetaliationTier === 'function') {
       const tier = window.PrintingHouse.getRetaliationTier();
       if ((tier === 'high_alert' || tier === 'active_hunt')
-          && !enemy._eliteApplied
+          && !enemy._eliteApplied && !(opts && opts.ohneElite)
           && Math.random() < 0.20  // 20% chance per spawn → roughly +1 elite per room of 5 enemies
           && window.EliteEnemies && typeof window.EliteEnemies.applyEliteToEnemy === 'function') {
         try { window.EliteEnemies.applyEliteToEnemy(enemy, 'champion'); enemy._eliteApplied = true; }
@@ -1115,6 +1154,8 @@ function handleEnemies(time, delta = 16) {
     if (window.Sondergegner) {
       if (enemy.isPriester) window.Sondergegner.priesterTick(this, enemy, time);
       if (enemy.isGeschwuer && window.Sondergegner.geschwuerTick(this, enemy, time, player)) return;
+      if (enemy.isBeschwoerer) window.Sondergegner.beschwoererTick(this, enemy, time);
+      if (enemy.isSpringer && window.Sondergegner.springerTick(this, enemy, time, player)) return;
     }
 
     // Status effect: slow reduces max speed
@@ -1230,7 +1271,7 @@ function handleEnemies(time, delta = 16) {
     // Zielgeschwindigkeit
     let desired = new Phaser.Math.Vector2();
 
-    if (enemy.isRanged || enemy.isPriester) {
+    if (enemy.isRanged || enemy.isPriester || enemy.isBeschwoerer) {
       // --- Fernkämpfer: Kiten + Strafen + LoS prüfen (der Priester haelt
       // denselben Abstand, schiesst aber nicht)
       const kite = enemy.kiteRadius || 220;
@@ -1546,7 +1587,7 @@ function handleEnemies(time, delta = 16) {
           }
         }
       }
-    } else if (!enemy.isGeschwuer && !enemy.isPriester) {
+    } else if (!enemy.isGeschwuer && !enemy.isPriester && !enemy.isBeschwoerer) {
       if (dToPlayer <= stopDist) {
         enemy.body.setVelocity(0);
         if (
