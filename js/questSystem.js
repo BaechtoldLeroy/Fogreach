@@ -398,27 +398,31 @@
     espionage_archive: {
       id: 'espionage_archive',
       title: 'Das versiegelte Archiv',
-      description: 'Infiltriere verkleidet das Council-Archiv, höre die Schreiber ab und birg den versiegelten Akt.',
+      description: 'Infiltriere verkleidet das Council-Archiv (ab Tiefe 12), höre die Schreiber ab und birg den versiegelten Akt.',
       npcId: 'harren',
       type: 'observe',
       chain: 7,
+      // #72: gestaffelt, damit Akt 3 nicht in einem Lauf erledigt ist.
+      minDepth: 12,
       objectives: [
         { type: 'observe', target: 'archive_record', current: 0, required: 1 }
       ],
       rewards: { xp: 110, fragments: 1 },
       prerequisites: ['espionage_convoy'],
       requiredAct: 3,
-      dialogueOffer: 'Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Geh als Schreiber verkleidet hinein, hör ab, was die anderen flüstern, und birg den Akt. Werde nicht gesehen.\n\nTust du das für mich?',
-      dialogueProgress: 'Die Schreiber haben noch nichts Verwertbares gesagt. Bleib im Archiv, unauffällig, und hör weiter ab, bis du an den versiegelten Akt kommst.',
+      dialogueOffer: 'Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Das Archiv liegt tief unter dem Rathaus, ab Tiefe 12. Geh als Schreiber verkleidet hinein, hör ab, was die anderen flüstern, und birg den Akt. Werde nicht gesehen.\n\nTust du das für mich?',
+      dialogueProgress: 'Das Archiv liegt ab Tiefe 12. Die Schreiber haben noch nichts Verwertbares gesagt. Bleib im Archiv, unauffällig, und hör weiter ab, bis du an den versiegelten Akt kommst.',
       dialogueComplete: 'Du hast den Akt. "Vermisst, Fall geschlossen" — das Verschwinden seiner Tochter, sauber abgelegt, Datum, Siegel, Unterschrift. Und das Datum liegt vor dem Tag, an dem sie verschwand.\n\n(Harren liest es zweimal.) Sie haben es geplant. Jemand im Rat hat Lenes Verschwinden abgeheftet, bevor es geschah.'
     },
     espionage_informant: {
       id: 'espionage_informant',
       title: 'Der Maulwurf',
-      description: 'Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands.',
+      description: 'Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands (ab Tiefe 23).',
       npcId: 'mara',
       type: 'observe',
       chain: 8,
+      // #72: gestaffelt, damit Akt 4 nicht in einem Lauf erledigt ist.
+      minDepth: 23,
       objectives: [
         { type: 'observe', target: 'informant_id', current: 0, required: 1 }
       ],
@@ -431,8 +435,8 @@
       // Bruch fallen, und der Verrat kam vor dem tiefsten Vertrauen.
       prerequisites: ['espionage_archive', 'bruch_confrontation'],
       requiredAct: 4,
-      dialogueOffer: 'Jemand verrät uns. Was wir hinter verschlossenen Türen beschliessen, weiss der Rat am nächsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.\n\nFindest du den Verräter?',
-      dialogueProgress: 'Noch hast du den Maulwurf nicht. Bleib unauffällig am Treffpunkt und hör ab, wer Nachrichten nach draussen schmuggelt.',
+      dialogueOffer: 'Jemand verrät uns. Was wir hinter verschlossenen Türen beschliessen, weiss der Rat am nächsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt, tief unten, ab Tiefe 23, und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.\n\nFindest du den Verräter?',
+      dialogueProgress: 'Noch hast du den Maulwurf nicht. Bleib unauffällig am Treffpunkt (ab Tiefe 23) und hör ab, wer Nachrichten nach draussen schmuggelt.',
 dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neben Aldric. An ihrem Ring das Zeichen der drei Ketten. Sie hat uns alle geführt — direkt in seine Hände.'
     },
 
@@ -490,18 +494,20 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     thom_truth: {
       id: 'thom_truth',
       title: 'Verbotene Wahrheiten',
-      description: 'Finde 5 Druckplatten mit den verbotenen Wahrheiten über den Rat.',
+      description: 'Finde 5 Druckplatten mit den verbotenen Wahrheiten über den Rat (ab Tiefe 14).',
       npcId: 'thom',
       type: 'fetch',
       chain: 1,
+      // #72: gestaffelt.
+      minDepth: 14,
       objectives: [
         { type: 'fetch', target: 'print_plate', current: 0, required: 5 }
       ],
       rewards: { xp: 100, materials: { MAT: 20 } },
       prerequisites: [],
       requiredAct: 3,
-      dialogueOffer: 'Ich habe genug gedruckt, was der Rat will. Zeit für die Wahrheit.\n\nFinde fünf Druckplatten im Keller — sie enthalten die echte Geschichte.',
-      dialogueProgress: 'Die Druckplatten sind irgendwo im Rathauskeller verborgen. Suche weiter.',
+      dialogueOffer: 'Ich habe genug gedruckt, was der Rat will. Zeit für die Wahrheit.\n\nFinde fünf Druckplatten, tief im Keller, ab Tiefe 14 — sie enthalten die echte Geschichte.',
+      dialogueProgress: 'Die Druckplatten liegen tief im Rathauskeller, ab Tiefe 14. Suche weiter.',
       dialogueComplete: 'Fantastisch! Diese Platten enthalten Beweise, die der Rat vernichten wollte. Die Wahrheit geht in Druck.'
     },
     mara_warning: {
@@ -649,6 +655,45 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       dialogueProgress: 'Erst drucken, dann aushängen. Die Druckerei ist gleich über dem Platz.',
       dialogueComplete: 'Gut. Die Stimmen werden gezählt, und das Ergebnis verkündet der Rat öffentlich, im Ratssaal. So gehört sich das.'
     },
+    // #148 / Story-Bibel §14: zwei rein menschliche Nebenquests ohne Bezug zur
+    // These. Sie liegen genau in den Strecken, in denen die Hauptgeschichte
+    // sonst stillstand (#72): Tiefe 14-19 und 25-29.
+    buerger_hund: {
+      id: 'buerger_hund',
+      title: 'Ein Hund namens Bruno',
+      description: 'Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 15).',
+      npcId: 'buerger',
+      type: 'fetch',
+      chain: 1,
+      minDepth: 15,
+      objectives: [
+        { type: 'fetch', target: 'hundehalsband', current: 0, required: 1 }
+      ],
+      rewards: { xp: 80, gold: 40 },
+      prerequisites: [],
+      requiredAct: 3,
+      dialogueOffer: 'Du gehst doch da runter. Mein Hund, Bruno, ist mir vor einer Woche in die Kanäle gelaufen. Er jagt Ratten, er kann nicht anders. Wenn Du tief unten, ab Tiefe 15, ein Halsband mit einer Messingmarke findest, dann bring es mir. Dann weiss ich wenigstens Bescheid.',
+      dialogueProgress: 'Ein braunes Halsband, Messingmarke, "Bruno" eingeritzt. Tief unten, ab Tiefe 15.',
+      dialogueComplete: 'Das ist seins. (Er dreht die Marke in der Hand.) Und weisst Du was? Bruno kam gestern Nacht allein nach Hause, dreckig bis zu den Ohren und sehr zufrieden. Ohne Halsband. Er hat es sich abgestreift, um durch ein Gitter zu passen. (Er lacht, zum ersten Mal, seit Du ihn kennst.)'
+    },
+    branka_eichgewicht: {
+      id: 'branka_eichgewicht',
+      title: 'Das Eichgewicht',
+      description: 'Bring Branka das alte Eichgewicht der Zunft aus der Tiefe (ab Tiefe 26).',
+      npcId: 'branka',
+      type: 'fetch',
+      chain: 5,
+      minDepth: 26,
+      objectives: [
+        { type: 'fetch', target: 'eichgewicht', current: 0, required: 1 }
+      ],
+      rewards: { xp: 150, materials: { MAT: 15 } },
+      prerequisites: [],
+      requiredAct: 4,
+      dialogueOffer: 'Die zwei Händler vor meiner Werkstatt streiten seit Tagen, wessen Waage lügt. Jeden Morgen, laut, vor meiner Tür. Das alte Eichgewicht der Zunft liegt irgendwo unten, ab Tiefe 26, seit die Zunft sich aufgelöst hat. Bring es mir, und ich mache dem ein Ende. Bitte.',
+      dialogueProgress: 'Ein Messingzylinder mit dem Zunftstempel. Ab Tiefe 26. Und beeil Dich, sie haben heute schon zweimal angefangen.',
+      dialogueComplete: 'Das ist es. (Sie legt es auf beide Waagen.) Beide falsch. Um genau dasselbe. (Sie seufzt.) Jetzt streiten sie darüber, wer es zuerst gesagt hat. Aber leiser. Danke.'
+    },
     klerus_district_purge: {
       id: 'klerus_district_purge',
       title: 'Reinigung eines Bezirks',
@@ -664,15 +709,17 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       requiredAct: 2,
       dialogueOffer: 'Ein Bezirk ist befallen. Reinige ihn. Wer das Licht scheut, hat etwas zu verbergen. Bring mir die Namen der Befallenen.',
       dialogueProgress: 'Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe.',
-      dialogueComplete: 'Du bringst die Namen. (Eine Abschrift steckt schon bei Mara, bevor der Rat die Liste sieht. Wer draufsteht, verschwindet. Aber vielleicht nicht mehr alle. Vielleicht warnt jemand rechtzeitig.)'
+      dialogueComplete: 'Du bringst die Namen. (Die Befallenen hatten Gesichter. Keins davon kanntest Du, und doch kam Dir jedes bekannt vor.) (Eine Abschrift steckt schon bei Mara, bevor der Rat die Liste sieht. Wer draufsteht, verschwindet. Aber vielleicht nicht mehr alle. Vielleicht warnt jemand rechtzeitig.)'
     },
     garde_night_escort: {
       id: 'garde_night_escort',
       title: 'Nachteskorte',
-      description: 'Sichere verdeckt einen nächtlichen Transport — beobachte die Eskorten-Route.',
+      description: 'Sichere verdeckt einen nächtlichen Transport — beobachte die Eskorten-Route (ab Tiefe 16).',
       npcId: 'stadtwache',
       type: 'observe',
       chain: 3,
+      // #72: gestaffelt.
+      minDepth: 16,
       // 'escort_route' als Spionage-Zone von WP05 (espionageSystem.js) verdrahtet.
       objectives: [
         { type: 'observe', target: 'escort_route', current: 0, required: 1 }
@@ -680,18 +727,19 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       rewards: { xp: 90 },
       prerequisites: [],
       requiredAct: 3,
-      dialogueOffer: 'Heute Nacht geht ein Transport. Sicher die Route, frag nicht, was drin ist. Loyalität zahlt sich aus.',
-      dialogueProgress: 'Der Transport rollt noch nicht. Halt die Route im Auge, bleib unauffällig.',
+      dialogueOffer: 'Heute Nacht geht ein Transport. Die Route führt tief hinab, ab Tiefe 16. Sicher sie, frag nicht, was drin ist. Loyalität zahlt sich aus.',
+      dialogueProgress: 'Der Transport rollt erst ab Tiefe 16. Halt die Route im Auge, bleib unauffällig.',
       dialogueComplete: 'Die Route ist sicher. (Und in deinem Kopf, Weg, Zeit und Fracht, bereit für Mara. Es waren keine Waffen. Es waren dieselben Phiolen wie im Konvoi.)'
     },
     who_you_were: {
       id: 'who_you_were',
       title: 'Wer du warst',
-      description: 'Bring Branka drei Splitter deiner alten Akte aus der Tiefe (ab Tiefe 5).',
+      description: 'Bring Branka drei Splitter deiner alten Akte aus der Tiefe (ab Tiefe 17).',
       npcId: 'branka',
       type: 'fetch',
       chain: 4,
-      minDepth: 5,
+      // #72: von 5 auf 17 — Akt 3 beginnt ohnehin erst auf Tiefe 10.
+      minDepth: 17,
       // 'memory_shard' als Quest-Item-Drop von WP05 (loot.js) verdrahtet.
       objectives: [
         { type: 'fetch', target: 'memory_shard', current: 0, required: 3 }
@@ -702,7 +750,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: ['branka_doubt'],
       requiredAct: 3,
       dialogueOffer: 'Ich habe etwas gefunden, das dich betrifft. Eine Akte mit deinem Zeichen, halb vom Nebel gefressen. Bring mir drei Splitter davon aus der Tiefe, dann setzen wir zusammen, wer du warst.',
-      dialogueProgress: 'Die Splitter liegen tief — ab Tiefe 5. Such weiter.',
+      dialogueProgress: 'Die Splitter liegen tief — ab Tiefe 17. Such weiter.',
       dialogueComplete: 'Da bist du. Vor dem Unfall, vor dem Nebel. Du hast nicht immer nur aufgeräumt. Du hast einmal dieselben Fragen gestellt, die du jetzt wieder stellst. Der Nebel hat dich nicht zufällig getroffen. Man hat ihn nach dir geschickt.'
     },
     elara_second_truth: {
@@ -815,7 +863,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_ritual.title': 'The Ritual Chamber',
       'quest.elara_ritual.description': "Descend to depth 20 and defeat the Master of Ceremonies who holds the council's ritual chamber.",
       'quest.thom_truth.title': 'Forbidden Truths',
-      'quest.thom_truth.description': 'Find 5 print plates with the forbidden truths about the council.',
+      'quest.thom_truth.description': "Find 5 print plates with the forbidden truths about the council (from depth 14).",
       'quest.mara_warning.title': "Mara's Warning",
       'quest.mara_warning.description': 'Defeat the Chainmaster boss who guards the first real evidence.',
       'quest.branka_weapons.title': 'Weapons for the Resistance',
@@ -919,22 +967,22 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.espionage_convoy.dialogueComplete': "You heard it. No supplies, no weapons. Reagents, sealed vials, chalkstones — ritual components. The council isn't sending out a patrol. It's outfitting a summoning.",
 
       'quest.espionage_archive.title': 'The Sealed Archive',
-      'quest.espionage_archive.description': 'Infiltrate the council archive in disguise, eavesdrop on the scribes and recover the sealed file.',
-      'quest.espionage_archive.dialogueOffer': "In the council's archive lies a sealed file — and I must know what it holds. Go in disguised as a scribe, listen to what the others whisper, and recover the file. Do not be seen.\n\nWill you do this for me?",
-      'quest.espionage_archive.dialogueProgress': 'The scribes have said nothing useful yet. Stay in the archive, inconspicuous, and keep eavesdropping until you reach the sealed file.',
+      'quest.espionage_archive.description': "Infiltrate the council archive in disguise (from depth 12), eavesdrop on the scribes and recover the sealed file.",
+      'quest.espionage_archive.dialogueOffer': "In the council's archive lies a sealed file — and I must know what it holds. The archive lies deep beneath the town hall, from depth 12. Go in disguised as a scribe, listen to what the others whisper, and recover the file. Do not be seen.\n\nWill you do this for me?",
+      'quest.espionage_archive.dialogueProgress': "The archive lies from depth 12. The scribes have said nothing useful yet. Stay in the archive, inconspicuous, and keep eavesdropping until you reach the sealed file.",
       'quest.espionage_archive.dialogueComplete': "\"Missing, case closed\" — his daughter's disappearance, neatly filed, date, seal, signature. And the date falls before the day she vanished.\n\n(Harren reads it twice.) They planned it. Someone in the council filed Lene's disappearance before it happened.",
 
       'quest.espionage_informant.title': 'The Mole',
-      'quest.espionage_informant.description': "Unmask a council mole within the resistance's ranks, in disguise.",
-      'quest.espionage_informant.dialogueOffer': 'Someone is betraying us. Whatever we decide behind closed doors, the council knows it by next morning. Blend in disguised among our own people at the meeting point and find out who the mole is. Move quietly — they do not know your face in this getup.\n\nWill you find the traitor?',
-      'quest.espionage_informant.dialogueProgress': "You don't have the mole yet. Stay inconspicuous at the meeting point and listen for who smuggles messages outside.",
+      'quest.espionage_informant.description': "Unmask a council mole within the resistance's ranks, in disguise (from depth 23).",
+      'quest.espionage_informant.dialogueOffer': 'Someone is betraying us. Whatever we decide behind closed doors, the council knows it by next morning. Blend in disguised among our own people at the meeting point, deep down, from depth 23, and find out who the mole is. Move quietly — they do not know your face in this getup.\n\nWill you find the traitor?',
+      'quest.espionage_informant.dialogueProgress': "You don't have the mole yet. Stay inconspicuous at the meeting point (from depth 23) and listen for who smuggles messages outside.",
       'quest.espionage_informant.dialogueComplete': 'You followed the note all the way into the council chamber. Elara, beside Aldric. On her ring the sign of the three chains. She led us all — straight into his hands.',
 
       'quest.elara_ritual.dialogueOffer': "Deep below there is a chamber — the council's summoning chamber. It is held by the Master of Ceremonies, master of the forbidden rituals. Descend to depth 20 and strike him down.\n\nAre you ready for the truth?",
       'quest.elara_ritual.dialogueProgress': "The Master of Ceremonies still holds the chamber. You will find him at depth 20 — as long as he lives, you cannot reach the truth.",
       'quest.elara_ritual.dialogueComplete': "The Master of Ceremonies has fallen. You found it — the council's summoning chamber. Take this amulet; it shields against their dark magic.",
-      'quest.thom_truth.dialogueOffer': "I've printed enough of what the council wants. Time for the truth.\n\nFind five print plates in the cellar — they hold the real history.",
-      'quest.thom_truth.dialogueProgress': 'The print plates are hidden somewhere in the town hall cellar. Keep searching.',
+      'quest.thom_truth.dialogueOffer': "I've printed enough of what the council wants. Time for the truth.\n\nFind five print plates, deep in the cellar, from depth 14 — they hold the real history.",
+      'quest.thom_truth.dialogueProgress': "The print plates lie deep in the town hall cellar, from depth 14. Keep searching.",
       'quest.thom_truth.dialogueComplete': 'Fantastic! These plates contain proof the council wanted to destroy. The truth goes to print.',
 
       'quest.mara_warning.dialogueOffer': "The Chainmaster holds the seals at depth 10. He binds whatever he wants to catch. Bring him down, and we have the first hard evidence.",
@@ -960,6 +1008,18 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.schattenrat_finale.dialogueProgress': 'The source lies at depth 30. Hurry.',
       'quest.schattenrat_finale.dialogueComplete': 'The source is broken. The press is yours now. Go to Thom, it is time.',
 
+      // #148: die beiden menschlichen Nebenquests
+      'quest.buerger_hund.title': 'A Dog Named Bruno',
+      'quest.buerger_hund.description': "Find Bruno's collar in the canals beneath the city (from depth 15).",
+      'quest.buerger_hund.dialogueOffer': "You go down there, don't you. My dog, Bruno, ran off into the canals a week ago. He hunts rats, he can't help it. If you find a collar with a brass tag deep down, from depth 15, bring it to me. Then at least I'll know.",
+      'quest.buerger_hund.dialogueProgress': 'A brown collar, brass tag, "Bruno" scratched into it. Deep down, from depth 15.',
+      'quest.buerger_hund.dialogueComplete': "That's his. (He turns the tag in his hand.) And you know what? Bruno came home on his own last night, filthy up to the ears and very pleased with himself. Without the collar. He slipped out of it to fit through a grate. (He laughs, for the first time since you've known him.)",
+      'quest.branka_eichgewicht.title': 'The Standard Weight',
+      'quest.branka_eichgewicht.description': "Bring Branka the guild's old standard weight from the depths (from depth 26).",
+      'quest.branka_eichgewicht.dialogueOffer': "The two traders outside my workshop have been arguing for days about whose scales lie. Every morning, loudly, at my door. The guild's old standard weight lies somewhere down there, from depth 26, ever since the guild broke up. Bring it to me and I'll put an end to it. Please.",
+      'quest.branka_eichgewicht.dialogueProgress': 'A brass cylinder with the guild stamp. From depth 26. And hurry, they have already started twice today.',
+      'quest.branka_eichgewicht.dialogueComplete': "That's it. (She sets it on both scales.) Both wrong. By exactly the same amount. (She sighs.) Now they're arguing about who said it first. But more quietly. Thank you.",
+
       // #87: bisher ohne englische Fassung
       'quest.resistance_fetch_01.title': "The Sealed Bundle",
       'quest.resistance_fetch_01.description': "Fetch the sealed bundle from the cellar. No one may see it, and do not open it.",
@@ -977,18 +1037,18 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.klerus_district_purge.description': "Purge an \"infested\" district — defeat 8 enemies and bring back the names.",
       'quest.klerus_district_purge.dialogueOffer': "A district is infested. Purge it. Whoever shuns the Light has something to hide. Bring me the names of the infested.",
       'quest.klerus_district_purge.dialogueProgress': "Not purged yet. The infested show themselves in the depths.",
-      'quest.klerus_district_purge.dialogueComplete': "You bring the names. (A copy is already with Mara before the council sees the list. Whoever is on it disappears. But perhaps not all of them any more. Perhaps someone warns them in time.)",
+      'quest.klerus_district_purge.dialogueComplete': "You bring the names. (The infested had faces. You knew none of them, and yet every one seemed familiar.) (A copy is already with Mara before the council sees the list. Whoever is on it disappears. But perhaps not all of them any more. Perhaps someone warns them in time.)",
 
       'quest.garde_night_escort.title': "Night Escort",
-      'quest.garde_night_escort.description': "Covertly secure a night transport — watch the escort route.",
-      'quest.garde_night_escort.dialogueOffer': "A transport goes out tonight. Secure the route, don't ask what is inside. Loyalty pays.",
-      'quest.garde_night_escort.dialogueProgress': "The transport is not rolling yet. Keep an eye on the route, stay inconspicuous.",
+      'quest.garde_night_escort.description': "Covertly secure a night transport — watch the escort route (from depth 16).",
+      'quest.garde_night_escort.dialogueOffer': "A transport goes out tonight. The route leads deep down, from depth 16. Secure it, don't ask what is inside. Loyalty pays.",
+      'quest.garde_night_escort.dialogueProgress': "The transport only rolls from depth 16. Keep an eye on the route, stay inconspicuous.",
       'quest.garde_night_escort.dialogueComplete': "The route is secure. (And in your head, route, time and cargo, ready for Mara. They were not weapons. They were the same vials as in the convoy.)",
 
       'quest.who_you_were.title': "Who You Were",
-      'quest.who_you_were.description': "Bring Branka three shards of your old file from the depths (from depth 5).",
+      'quest.who_you_were.description': "Bring Branka three shards of your old file from the depths (from depth 17).",
       'quest.who_you_were.dialogueOffer': "I found something that concerns you. A file with your mark, half eaten by the fog. Bring me three shards of it from the depths, and we will piece together who you were.",
-      'quest.who_you_were.dialogueProgress': "The shards lie deep — from depth 5. Keep searching.",
+      'quest.who_you_were.dialogueProgress': "The shards lie deep — from depth 17. Keep searching.",
       'quest.who_you_were.dialogueComplete': "There you are. Before the accident, before the fog. You did not always just clean up. Once you asked the same questions you are asking again now. The fog did not hit you by chance. It was sent after you.",
 
       'quest.elara_second_truth.title': "Elara's Second Truth",
@@ -1270,6 +1330,19 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     if (!def || typeof def.minDepth !== 'number') return true;
     var d = (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number')
       ? window.DUNGEON_DEPTH : 1;
+    return d >= def.minDepth;
+  }
+
+  /**
+   * #72: Ist die Mindesttiefe dieser Quest im laufenden Lauf erreicht?
+   * (Oder mit Tiefe als zweitem Argument.) Beute und Spionageraeume fragen
+   * das, damit unterhalb der Tiefe nichts faellt, das dann nicht zaehlt.
+   */
+  function tiefeErreicht(id, tiefe) {
+    var def = QUEST_DEFINITIONS[id];
+    if (!def || typeof def.minDepth !== 'number') return true;
+    var d = (typeof tiefe === 'number') ? tiefe
+      : (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number') ? window.DUNGEON_DEPTH : 1;
     return d >= def.minDepth;
   }
 
@@ -1787,6 +1860,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     getCompletedQuests: getCompletedQuests,
     acceptQuest: acceptQuest,
     updateQuestProgress: updateQuestProgress,
+    tiefeErreicht: tiefeErreicht,
     onWaveCompleted: onWaveCompleted,
     onDungeonCompleted: onDungeonCompleted,
     onBossKilled: onBossKilled,

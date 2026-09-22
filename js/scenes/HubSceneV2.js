@@ -1199,6 +1199,28 @@ class HubSceneV2 extends Phaser.Scene {
     return -1;
   }
 
+  /**
+   * #72: Aktive Auftraege, deren Mindesttiefe ueber der tiefsten waehlbaren
+   * Tiefe liegt — nach Tiefe sortiert, hoechstens drei.
+   * @param {number} tiefste  die tiefste freigeschaltete Tiefe
+   * @returns {Array<{titel:string, tiefe:number}>}
+   */
+  _wartendeAuftraege(tiefste) {
+    const qs = window.questSystem;
+    if (!qs || typeof qs.getActiveQuests !== 'function' || !qs.QUEST_DEFINITIONS) return [];
+    const aus = [];
+    (qs.getActiveQuests() || []).forEach((q) => {
+      const def = q && qs.QUEST_DEFINITIONS[q.id];
+      if (!def || typeof def.minDepth !== 'number' || def.minDepth <= (tiefste || 1)) return;
+      const key = 'quest.' + q.id + '.title';
+      const titel = (window.i18n && typeof window.i18n.has === 'function' && window.i18n.has(key))
+        ? window.i18n.t(key) : (def.title || q.id);
+      aus.push({ titel: titel, tiefe: def.minDepth });
+    });
+    aus.sort((a, b) => a.tiefe - b.tiefe);
+    return aus.slice(0, 3);
+  }
+
   // In der Druckerei: Thom druckt die drei Edikte.
   _ediktDrucken() {
     const en = !!(window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en');
@@ -2966,7 +2988,16 @@ class HubSceneV2 extends Phaser.Scene {
     // (bis zu 3 Abstiegs- + 3 Boss-Optionen) auf den Screen, wird die Options-
     // liste scrollbar (Mausrad / Ziehen) statt das Panel über den Bildschirm
     // hinauswachsen zu lassen.
-    const headerH = 110;
+    // #72: Laufende Auftraege, die erst ab einer groesseren Tiefe weitergehen,
+    // stehen im Kopf des Dialogs — sonst sucht man sie in zu flachen Laeufen.
+    // Die Liste schiebt den Kopf nach unten, statt ueber die Optionen zu laufen.
+    const _wartend = this._wartendeAuftraege(lastKnown);
+    const _istEnDlg = !!(window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en');
+    const _wartendText = _wartend.length
+      ? (_istEnDlg ? 'Waiting for more depth:' : 'Wartet auf mehr Tiefe:') + '\n'
+        + _wartend.map((w) => '· ' + w.titel + (_istEnDlg ? ' (from depth ' : ' (ab Tiefe ') + w.tiefe + ')').join('\n')
+      : '';
+    const headerH = 110 + (_wartend.length ? 18 * (_wartend.length + 1) + 6 : 0);
     const optionH = 72;
     const optionGap = 14;
     const footerH = 70;
@@ -3014,6 +3045,15 @@ class HubSceneV2 extends Phaser.Scene {
         wordWrap: { width: panelWidth - pad * 2 }, align: 'center'
       }).setOrigin(0.5, 0);
       container.add(gateHint);
+    }
+
+    if (_wartendText) {
+      // Unter dem Tiefensperren-Hinweis, falls der steht; sonst unter dem Untertitel.
+      const _wy = -panelHeight / 2 + headerH - (18 * (_wartend.length + 1) + 6);
+      const wartendHint = this.add.text(0, _wy, _wartendText, {
+        fontFamily: 'monospace', fontSize: 13, color: '#b8c8a0', align: 'center', lineSpacing: 2
+      }).setOrigin(0.5, 0);
+      container.add(wartendHint);
     }
 
     const chooseDepth = (depth) => {

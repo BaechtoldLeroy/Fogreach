@@ -52,22 +52,29 @@
   //     Kellergaengen versammelt. Die Kammern bewacht der Rat selbst —
   //     Kellerwaechter, dazu Alarmwichte als seine Spaeher. Die Kettenwache
   //     gehoert noch nicht dazu; sie tritt erst mit dem Bruch auf (#162).
+  //   bruch_confrontation (Branka, Akt 3): Aldric hetzt seine Wachen auf Dich —
+  //     Kettenwache und ihre Hunde (#148).
+  //   klerus_district_purge (Klerus, Akt 2): Die "Befallenen" sind Vergessene,
+  //     die Verschwundenen selbst. Der Klerus nennt es Reinigung (#148).
   var QUEST_PROFILE = {
-    council_surveillance: [2, 2, 2, 16, 3]
+    council_surveillance: [2, 2, 2, 16, 3],
+    bruch_confrontation: [6, 6, 15, 15],
+    klerus_district_purge: [5, 5, 5]
   };
 
   /**
-   * Gegnerliste der ersten aktiven Quest mit eigenem Profil, sonst null.
+   * Gegnerliste aller aktiven Quests mit eigenem Profil, aneinandergehaengt
+   * (laufen zwei gleichzeitig, mischt sich ihr Bild), sonst null.
    * @param {Array<string>} aktiveIds
    * @returns {Array<number>|null}
    */
   function questProfil(aktiveIds) {
     if (!Array.isArray(aktiveIds)) return null;
-    var ids = Object.keys(QUEST_PROFILE);
-    for (var i = 0; i < ids.length; i++) {
-      if (aktiveIds.indexOf(ids[i]) !== -1) return QUEST_PROFILE[ids[i]].slice();
-    }
-    return null;
+    var out = [];
+    Object.keys(QUEST_PROFILE).forEach(function (id) {
+      if (aktiveIds.indexOf(id) !== -1) out = out.concat(QUEST_PROFILE[id]);
+    });
+    return out.length ? out : null;
   }
 
   /** Anzeigename eines Gegnertyps; unbekannte Typen heissen "Gegner". */

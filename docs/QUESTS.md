@@ -1,6 +1,6 @@
 # Quest-Übersicht — Fogreach
 
-_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 34 Quests._  
+_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 36 Quests._  
 _Neu erzeugen:_ `node tools/genQuestDoc.js`
 
 ---
@@ -580,7 +580,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Du bringst die Namen. (Eine Abschrift steckt schon bei Mara, bevor der Rat die Liste sieht. Wer draufsteht, verschwindet. Aber vielleicht nicht mehr alle. Vielleicht warnt jemand rechtzeitig.)
+> Du bringst die Namen. (Die Befallenen hatten Gesichter. Keins davon kanntest Du, und doch kam Dir jedes bekannt vor.) (Eine Abschrift steckt schon bei Mara, bevor der Rat die Liste sieht. Wer draufsteht, verschwindet. Aber vielleicht nicht mehr alle. Vielleicht warnt jemand rechtzeitig.)
 
 
 ## Der Konvoi
@@ -612,9 +612,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 ## Verbotene Wahrheiten
 
-`thom_truth` · **NPC:** Setzer Thom · **Kette:** 1
+`thom_truth` · **NPC:** Setzer Thom · **Kette:** 1 · **Fortschritt erst ab Tiefe 14**
 
-> Finde 5 Druckplatten mit den verbotenen Wahrheiten über den Rat.
+> Finde 5 Druckplatten mit den verbotenen Wahrheiten über den Rat (ab Tiefe 14).
 
 - **Ziel:** `fetch` → `print_plate` ×5
 - **Vorbedingung:** keine
@@ -624,15 +624,38 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 > Ich habe genug gedruckt, was der Rat will. Zeit für die Wahrheit.
 > 
-> Finde fünf Druckplatten im Keller — sie enthalten die echte Geschichte.
+> Finde fünf Druckplatten, tief im Keller, ab Tiefe 14 — sie enthalten die echte Geschichte.
 
 **Unterwegs**
 
-> Die Druckplatten sind irgendwo im Rathauskeller verborgen. Suche weiter.
+> Die Druckplatten liegen tief im Rathauskeller, ab Tiefe 14. Suche weiter.
 
 **Abschluss**
 
 > Fantastisch! Diese Platten enthalten Beweise, die der Rat vernichten wollte. Die Wahrheit geht in Druck.
+
+
+## Ein Hund namens Bruno
+
+`buerger_hund` · **NPC:** buerger · **Kette:** 1 · **Fortschritt erst ab Tiefe 15**
+
+> Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 15).
+
+- **Ziel:** `fetch` → `hundehalsband` ×1
+- **Vorbedingung:** keine
+- **Belohnung:** 80 XP
+
+**Angebot**
+
+> Du gehst doch da runter. Mein Hund, Bruno, ist mir vor einer Woche in die Kanäle gelaufen. Er jagt Ratten, er kann nicht anders. Wenn Du tief unten, ab Tiefe 15, ein Halsband mit einer Messingmarke findest, dann bring es mir. Dann weiss ich wenigstens Bescheid.
+
+**Unterwegs**
+
+> Ein braunes Halsband, Messingmarke, "Bruno" eingeritzt. Tief unten, ab Tiefe 15.
+
+**Abschluss**
+
+> Das ist seins. (Er dreht die Marke in der Hand.) Und weisst Du was? Bruno kam gestern Nacht allein nach Hause, dreckig bis zu den Ohren und sehr zufrieden. Ohne Halsband. Er hat es sich abgestreift, um durch ein Gitter zu passen. (Er lacht, zum ersten Mal, seit Du ihn kennst.)
 
 
 ## Die Ritualkammer
@@ -687,9 +710,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 ## Nachteskorte
 
-`garde_night_escort` · **NPC:** Stadtwache · **Kette:** 3
+`garde_night_escort` · **NPC:** Stadtwache · **Kette:** 3 · **Fortschritt erst ab Tiefe 16**
 
-> Sichere verdeckt einen nächtlichen Transport — beobachte die Eskorten-Route.
+> Sichere verdeckt einen nächtlichen Transport — beobachte die Eskorten-Route (ab Tiefe 16).
 
 - **Ziel:** `observe` → `escort_route` ×1
 - **Vorbedingung:** keine
@@ -697,11 +720,11 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Heute Nacht geht ein Transport. Sicher die Route, frag nicht, was drin ist. Loyalität zahlt sich aus.
+> Heute Nacht geht ein Transport. Die Route führt tief hinab, ab Tiefe 16. Sicher sie, frag nicht, was drin ist. Loyalität zahlt sich aus.
 
 **Unterwegs**
 
-> Der Transport rollt noch nicht. Halt die Route im Auge, bleib unauffällig.
+> Der Transport rollt erst ab Tiefe 16. Halt die Route im Auge, bleib unauffällig.
 
 **Abschluss**
 
@@ -735,9 +758,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 ## Wer du warst
 
-`who_you_were` · **NPC:** Schmiedemeisterin Branka · **Kette:** 4 · **Fortschritt erst ab Tiefe 5**
+`who_you_were` · **NPC:** Schmiedemeisterin Branka · **Kette:** 4 · **Fortschritt erst ab Tiefe 17**
 
-> Bring Branka drei Splitter deiner alten Akte aus der Tiefe (ab Tiefe 5).
+> Bring Branka drei Splitter deiner alten Akte aus der Tiefe (ab Tiefe 17).
 
 - **Ziel:** `fetch` → `memory_shard` ×3
 - **Vorbedingung:** Zweifel der Schmiedin
@@ -749,7 +772,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Unterwegs**
 
-> Die Splitter liegen tief — ab Tiefe 5. Such weiter.
+> Die Splitter liegen tief — ab Tiefe 17. Such weiter.
 
 **Abschluss**
 
@@ -804,9 +827,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 ## Das versiegelte Archiv
 
-`espionage_archive` · **NPC:** Bürgermeister Harren · **Kette:** 7
+`espionage_archive` · **NPC:** Bürgermeister Harren · **Kette:** 7 · **Fortschritt erst ab Tiefe 12**
 
-> Infiltriere verkleidet das Council-Archiv, höre die Schreiber ab und birg den versiegelten Akt.
+> Infiltriere verkleidet das Council-Archiv (ab Tiefe 12), höre die Schreiber ab und birg den versiegelten Akt.
 
 - **Ziel:** `observe` → `archive_record` ×1
 - **Vorbedingung:** Der Konvoi
@@ -814,13 +837,13 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Geh als Schreiber verkleidet hinein, hör ab, was die anderen flüstern, und birg den Akt. Werde nicht gesehen.
+> Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Das Archiv liegt tief unter dem Rathaus, ab Tiefe 12. Geh als Schreiber verkleidet hinein, hör ab, was die anderen flüstern, und birg den Akt. Werde nicht gesehen.
 > 
 > Tust du das für mich?
 
 **Unterwegs**
 
-> Die Schreiber haben noch nichts Verwertbares gesagt. Bleib im Archiv, unauffällig, und hör weiter ab, bis du an den versiegelten Akt kommst.
+> Das Archiv liegt ab Tiefe 12. Die Schreiber haben noch nichts Verwertbares gesagt. Bleib im Archiv, unauffällig, und hör weiter ab, bis du an den versiegelten Akt kommst.
 
 **Abschluss**
 
@@ -929,6 +952,29 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Die Kettenwache ist zerschlagen. Die Gänge unter der Stadt gehören wieder niemandem. Das ist mehr, als diese Stadt lange hatte.
 
 
+## Das Eichgewicht
+
+`branka_eichgewicht` · **NPC:** Schmiedemeisterin Branka · **Kette:** 5 · **Fortschritt erst ab Tiefe 26**
+
+> Bring Branka das alte Eichgewicht der Zunft aus der Tiefe (ab Tiefe 26).
+
+- **Ziel:** `fetch` → `eichgewicht` ×1
+- **Vorbedingung:** keine
+- **Belohnung:** 150 XP · 15 MAT
+
+**Angebot**
+
+> Die zwei Händler vor meiner Werkstatt streiten seit Tagen, wessen Waage lügt. Jeden Morgen, laut, vor meiner Tür. Das alte Eichgewicht der Zunft liegt irgendwo unten, ab Tiefe 26, seit die Zunft sich aufgelöst hat. Bring es mir, und ich mache dem ein Ende. Bitte.
+
+**Unterwegs**
+
+> Ein Messingzylinder mit dem Zunftstempel. Ab Tiefe 26. Und beeil Dich, sie haben heute schon zweimal angefangen.
+
+**Abschluss**
+
+> Das ist es. (Sie legt es auf beide Waagen.) Beide falsch. Um genau dasselbe. (Sie seufzt.) Jetzt streiten sie darüber, wer es zuerst gesagt hat. Aber leiser. Danke.
+
+
 ## Die Abrechnung
 
 `the_reckoning` · **NPC:** Setzer Thom · **Kette:** 6
@@ -954,9 +1000,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 ## Der Maulwurf
 
-`espionage_informant` · **NPC:** Mara vom Untergrund · **Kette:** 8
+`espionage_informant` · **NPC:** Mara vom Untergrund · **Kette:** 8 · **Fortschritt erst ab Tiefe 23**
 
-> Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands.
+> Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands (ab Tiefe 23).
 
 - **Ziel:** `observe` → `informant_id` ×1
 - **Vorbedingung:** Das versiegelte Archiv **+** Der Bruch
@@ -964,13 +1010,13 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Jemand verrät uns. Was wir hinter verschlossenen Türen beschliessen, weiss der Rat am nächsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.
+> Jemand verrät uns. Was wir hinter verschlossenen Türen beschliessen, weiss der Rat am nächsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt, tief unten, ab Tiefe 23, und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.
 > 
 > Findest du den Verräter?
 
 **Unterwegs**
 
-> Noch hast du den Maulwurf nicht. Bleib unauffällig am Treffpunkt und hör ab, wer Nachrichten nach draussen schmuggelt.
+> Noch hast du den Maulwurf nicht. Bleib unauffällig am Treffpunkt (ab Tiefe 23) und hör ab, wer Nachrichten nach draussen schmuggelt.
 
 **Abschluss**
 

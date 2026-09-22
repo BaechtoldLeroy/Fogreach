@@ -494,7 +494,13 @@ function initDungeonRun() {
       var known = window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[m.room];
       var zonen = (known && known.espionage && known.espionage.observe) || [];
       var ziele = zonen.map(function (z) { return z.questTarget; });
-      var on = activeNow.some(function (q) { return q.id === m.qid && _observeZielOffen(q, ziele); });
+      // #72: Spionageraeume erst ab der Mindesttiefe ihrer Quest — darunter
+      // zaehlte das Abhoeren nicht.
+      var tiefeOk = function (q) {
+        var QS = window.questSystem;
+        return !(QS && typeof QS.tiefeErreicht === 'function') || QS.tiefeErreicht(q.id, Math.max(1, window.DUNGEON_DEPTH || 1));
+      };
+      var on = activeNow.some(function (q) { return q.id === m.qid && tiefeOk(q) && _observeZielOffen(q, ziele); });
       if (on && known && templateOrder.indexOf(m.room) === -1) {
         var pos = Math.min(templateOrder.length, 1 + Math.floor(Math.random() * 2));
         templateOrder.splice(pos, 0, m.room);

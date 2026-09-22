@@ -17,7 +17,9 @@ if (window.i18n) {
     // Feature 062: neue fetch-Ziele.
     'loot.quest_item.VERIFICATION_SEAL': 'Ratssiegel',
     'loot.quest_item.PROCLAMATION': 'Edikt-Plakat',
-    'loot.quest_item.MEMORY_SHARD': 'Erinnerungssplitter'
+    'loot.quest_item.MEMORY_SHARD': 'Erinnerungssplitter',
+    'loot.quest_item.HUNDEHALSBAND': 'Brunos Halsband',
+    'loot.quest_item.EICHGEWICHT': 'Eichgewicht der Zunft'
   });
   window.i18n.register('en', {
     'loot.legacy.weapon': 'Sword',
@@ -37,7 +39,9 @@ if (window.i18n) {
     // Feature 062: neue fetch-Ziele.
     'loot.quest_item.VERIFICATION_SEAL': 'Council Seal',
     'loot.quest_item.PROCLAMATION': 'Edict Poster',
-    'loot.quest_item.MEMORY_SHARD': 'Memory Shard'
+    'loot.quest_item.MEMORY_SHARD': 'Memory Shard',
+    'loot.quest_item.HUNDEHALSBAND': "Bruno's Collar",
+    'loot.quest_item.EICHGEWICHT': 'Guild Standard Weight'
   });
 }
 const _LOOT_T = (key) => (window.i18n ? window.i18n.t(key) : key);
@@ -304,6 +308,9 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       // kein Drop ohne passende Quest (regressionssicher).
       { target: 'verification_seal', name: _LOOT_T('loot.quest_item.VERIFICATION_SEAL'), nameKey: 'loot.quest_item.VERIFICATION_SEAL', key: 'VERIFICATION_SEAL', tint: 0xb0b0c0 },
       { target: 'memory_shard',      name: _LOOT_T('loot.quest_item.MEMORY_SHARD'),      nameKey: 'loot.quest_item.MEMORY_SHARD',      key: 'MEMORY_SHARD',      tint: 0x88ccff },
+      // #148: die beiden menschlichen Nebenquests.
+      { target: 'hundehalsband',     name: _LOOT_T('loot.quest_item.HUNDEHALSBAND'),     nameKey: 'loot.quest_item.HUNDEHALSBAND',     key: 'HUNDEHALSBAND',     tint: 0x9a6a3a, chance: 0.15 },
+      { target: 'eichgewicht',       name: _LOOT_T('loot.quest_item.EICHGEWICHT'),       nameKey: 'loot.quest_item.EICHGEWICHT',       key: 'EICHGEWICHT',       tint: 0xc8a050, chance: 0.15 },
       // Ritualkammer-Beweis (Q5 widerstand_proof). Erhoehte Chance, damit der
       // Spieler ihn nicht ewig sucht; deterministische Platzierung bleibt zusaetzlich.
       { target: 'council_document',  name: _LOOT_T('loot.quest_item.COUNCIL_DOCUMENT'),  nameKey: 'loot.quest_item.COUNCIL_DOCUMENT',  key: 'COUNCIL_DOCUMENT',  tint: 0xcc88dd, chance: 0.20 },
@@ -317,6 +324,8 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     for (var qi = 0; qi < questItemDefs.length; qi++) {
       var qiDef = questItemDefs[qi];
       var needsItem = activeQuests.some(function (q) {
+        // #72: unterhalb der Mindesttiefe faellt nichts — es zaehlte ohnehin nicht.
+        if (typeof window.questSystem.tiefeErreicht === 'function' && !window.questSystem.tiefeErreicht(q.id)) return false;
         return q.objectives.some(function (o) {
           return o.type === 'fetch' && o.target === qiDef.target && o.current < o.required;
         });
