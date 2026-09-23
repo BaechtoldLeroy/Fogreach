@@ -118,14 +118,34 @@ test('Der Hinterhalt: ab Raum 3 stellt die Kettenwache den Spieler, Elara rettet
 
   H.run('window.__durchklicken()');
   H.step(120);
+  // Zweigeteilt: Die Rettung stellt sie vor, mehr nicht. Ihr Sprite bleibt im
+  // Raum stehen, der Auftrag kommt erst auf [E] — wie ein Hub-Gespraech.
   const b = H.run(`({ rest: enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; }).length,
     getroffen: window.questSystem.hasFlag('elaraMet'),
     auftrag: window.questSystem.getActiveQuests().map(function (q) { return q.id; }),
+    steht: !!window.game.scene.getScene('GameScene').children.list.filter(function (o) {
+      return o.texture && o.texture.key === 'elara_right0'; })[0],
     lebt: !!(player && player.active) })`);
   assert.strictEqual(b.rest, 0, 'vom Hinterhalt stehen noch ' + b.rest + ' Gegner');
   assert.strictEqual(b.lebt, true, 'der Spieler hat den Hinterhalt nicht ueberlebt');
-  assert.strictEqual(b.getroffen, true, 'nach der Rettung gilt Elara nicht als getroffen');
-  assert.ok(Array.from(b.auftrag).indexOf('widerstand_proof') >= 0, 'ihr erster Auftrag wurde nicht vergeben');
+  assert.strictEqual(b.steht, true, 'ihr Sprite steht nach der Rettung nicht im Raum');
+  assert.strictEqual(b.getroffen, false, 'der Auftrag kam ohne [E]');
+  assert.strictEqual(Array.from(b.auftrag).indexOf('widerstand_proof'), -1, 'die Quest lief ohne [E]');
+
+  // Zu ihr gehen und ansprechen.
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var s = sc.children.list.filter(function (o) { return o.texture && o.texture.key === 'elara_right0'; })[0];
+    player.body.reset(s.x + 20, s.y);
+    sc.input.keyboard.emit('keydown-E');
+  })()`);
+  assert.ok(/Archivschmied|Archivesmith/.test(H.run('window.__dialogText()')),
+    'auf [E] kam nicht ihr Auftrag: ' + H.run('window.__dialogText()'));
+  H.run('window.__durchklicken()');
+  const c = H.run(`({ getroffen: window.questSystem.hasFlag('elaraMet'),
+    auftrag: window.questSystem.getActiveQuests().map(function (q) { return q.id; }) })`);
+  assert.strictEqual(c.getroffen, true, 'nach dem Gespraech gilt Elara nicht als getroffen');
+  assert.ok(Array.from(c.auftrag).indexOf('widerstand_proof') >= 0, 'ihr erster Auftrag wurde nicht vergeben');
 });
 
 test('Wer gut ausweicht, wird spaetestens nach 30 Sekunden gerettet', () => {

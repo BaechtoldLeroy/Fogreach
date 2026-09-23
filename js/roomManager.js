@@ -2965,9 +2965,12 @@ function updateRoomCounter(roomIndex, totalRooms) {
 //                             (same rolling rule once Q5 is ready-to-complete).
 let _elaraDocSpawnTarget = null;
 let _elaraStage2SpawnTarget = null;
+// Wo sie nach der Rettung wieder auftaucht, falls man weitergegangen ist.
+let _elaraWartetZiel = null;
 
 function _resetElaraEncounterRunState() {
   _elaraDocSpawnTarget = null;
+  _elaraWartetZiel = null;
   _elaraStage2SpawnTarget = null;
   _hinterhaltAbbrechen();
 }
@@ -3159,6 +3162,16 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
   // Sie ist eine RETTUNG aus einem Hinterhalt (siehe _hinterhaltStarten) —
   // ab Raum 3, damit der Lauf erst anlaeuft, bevor der Rat zuschlaegt.
   if (!qs.hasFlag('elaraMet') && !q5Done) {
+    // Gerettet, aber noch nicht gesprochen: sie wartet ein paar Raeume
+    // weiter wieder auf Dich. Kein zweiter Hinterhalt — die Rettung ist ein
+    // einmaliger Auftritt, kein wiederkehrendes Ereignis.
+    if (qs.hasFlag(ELARA_SZENEN.rettung.flag)) {
+      if (_elaraWartetZiel === null || roomId > _elaraWartetZiel) {
+        _elaraWartetZiel = roomId + _rollDistance();
+      }
+      if (roomId === _elaraWartetZiel) _spawnElaraSprite(scene, 1);
+      return;
+    }
     if (roomId >= HINTERHALT_AB_RAUM) _hinterhaltStarten(scene, roomId);
     return;
   }
@@ -3592,7 +3605,11 @@ function _elaraRettet(scene) {
     });
   }
   _spawnElaraSprite(scene, 1);
-  _showElaraDialog(scene, 1, { gerettet: true });
+  // Zweigeteilt wie ein Hub-Gespraech: Der Nebel vertreibt den Hinterhalt und
+  // sie stellt sich vor — mehr nicht. Ihr Auftrag kommt erst, wenn man zu ihr
+  // geht und [E] drueckt. Vorher lief beides in einem Zug ab, und man stand
+  // mit einer angenommenen Quest da, ohne sie ueberhaupt erreicht zu haben.
+  _elaraSzene(scene, 'rettung');
 }
 
 // Spawn Elara as an interactive [E]-prompt sprite in the current room.
@@ -3611,7 +3628,7 @@ function _spawnElaraSprite(scene, stage) {
   }, { scale: 0.16 });
 }
 
-function _showElaraDialog(scene, stage, opts) {
+function _showElaraDialog(scene, stage) {
   if (!scene || !window.EventSystem || typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
   const qs = window.questSystem;
   const isEn = (window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
@@ -3645,18 +3662,10 @@ function _showElaraDialog(scene, stage, opts) {
       if (typeof qs.acceptQuest === 'function') qs.acceptQuest('widerstand_proof');
     };
   }
-  var zeigen = function () {
-    window.EventSystem.showEventChoiceDialog(scene, text, [{
-      label: btnContinueLabel,
-      callback: onContinue
-    }]);
-  };
-  // #155: Kam sie als Rettung, geht die Rettung voraus.
-  if (stage === 1 && opts && opts.gerettet) {
-    _elaraSzene(scene, 'rettung', zeigen);
-    return;
-  }
-  zeigen();
+  window.EventSystem.showEventChoiceDialog(scene, text, [{
+    label: btnContinueLabel,
+    callback: onContinue
+  }]);
 }
 
 /**
