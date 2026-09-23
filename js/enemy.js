@@ -792,7 +792,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 150;
     enemy.isGeschwuer = true;
     if (key === 'geschwuer_right0') {
-      enemy.setScale(46 / (enemy.height || 46));
+      enemy.setScale(52 / (enemy.height || 52));
+      enemy._spritePrefix = 'geschwuer';
+      enemy._spriteDir = 'right';
     }
   } else if (type === 12) {
     // Priester — haelt Abstand und heilt Verbuendete (Sondergegner).
@@ -806,7 +808,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 260;
     enemy.isPriester = true;
     if (key === 'priester_right0') {
-      enemy.setScale(50 / (enemy.height || 50));
+      enemy.setScale(54 / (enemy.height || 54));
+      enemy._spritePrefix = 'priester';
+      enemy._spriteDir = 'right';
     }
   } else if (type === 13) {
     // Beschwoerer — haelt Abstand und ruft Nebelwichte (Sondergegner).
@@ -821,7 +825,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.isBeschwoerer = true;
     enemy._gerufen = [];
     if (key === 'beschwoerer_right0') {
-      enemy.setScale(50 / (enemy.height || 50));
+      enemy.setScale(54 / (enemy.height || 54));
+      enemy._spritePrefix = 'beschwoerer';
+      enemy._spriteDir = 'right';
     }
   } else if (type === 14) {
     // Nebelspringer — springt hinter den Spieler (Sondergegner).
@@ -832,7 +838,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 180;
     enemy.isSpringer = true;
     if (key === 'springer_right0') {
-      enemy.setScale(50 / (enemy.height || 50));
+      enemy.setScale(52 / (enemy.height || 52));
+      enemy._spritePrefix = 'springer';
+      enemy._spriteDir = 'right';
     }
   } else if (type === 15) {
     // Kettenhund — duckt sich und setzt auf den Spieler (Sondergegner).
@@ -843,7 +851,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 220;
     enemy.isHund = true;
     if (key === 'hund_right0') {
-      enemy.setScale(40 / (enemy.height || 40));
+      enemy.setScale(44 / (enemy.height || 44));
+      enemy._spritePrefix = 'hund';
+      enemy._spriteDir = 'right';
     }
   } else if (type === 16) {
     // Alarmwicht — flieht und ruft Verstaerkung (Sondergegner).
@@ -1548,6 +1558,21 @@ function handleEnemies(time, delta = 16) {
           enemy._lastDirChange = time;
           const idleKey = `brute_${newDir}0`;
           if (this.textures.exists(idleKey)) enemy.setTexture(idleKey);
+        }
+      }
+    }
+
+    // #12: Richtungswechsel der Sondergegner. Sie tragen ihren Bildnamen an
+    // _spritePrefix, darum genuegt ein Block fuer alle fuenf. Waehrend einer
+    // Aktion (Ruf, Heilung, Satz) bleibt das Bild stehen.
+    if (enemy._spritePrefix && !enemy._spriteAktion) {
+      if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
+        const neuDir = desired.x > 0 ? 'right' : 'left';
+        if (neuDir !== enemy._spriteDir) {
+          enemy._spriteDir = neuDir;
+          enemy._lastDirChange = time;
+          const idle = enemy._spritePrefix + '_' + neuDir + '0';
+          if (this.textures.exists(idle)) enemy.setTexture(idle);
         }
       }
     }

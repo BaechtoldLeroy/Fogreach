@@ -441,9 +441,10 @@ test('satzZiel: ueber die Stelle hinaus, nur im Fenster; satzSchaden: anderthalb
 /**
  * Richtung suchen, in der der Gegner bei +vor und der Raum HINTER dem Spieler
  * bis -hinter frei ist; notfalls die Figur an eine freie Stelle versetzen.
- * @returns {[number, number]} Einheitsrichtung vom Spieler zum Gegner
+ * @param {boolean} [weich] true: null statt Abbruch, wenn nichts frei ist
+ * @returns {[number, number]|null} Einheitsrichtung vom Spieler zum Gegner
  */
-function freieRichtung(vor, hinter) {
+function freieRichtung(vor, hinter, weich) {
   const r = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     var frei = function (x, y) {
@@ -474,11 +475,18 @@ function freieRichtung(vor, hinter) {
     }
     return r;
   })()`);
-  assert.ok(r, 'kein freier Platz um den Spieler');
+  if (!weich) assert.ok(r, 'kein freier Platz um den Spieler (vor ' + vor + ', hinter ' + hinter + ')');
+  return r;
+}
+
+/** Erst grosszuegig suchen, dann enger — nicht jeder Raum hat 350 px am Stueck. */
+function platzSuchen(vor, hinter) {
+  const r = freieRichtung(vor, hinter, true) || freieRichtung(Math.round(vor * 0.7), hinter, true)
+    || freieRichtung(Math.round(vor * 0.5), Math.min(hinter, 20));
   return r;
 }
 const hundBereit = (abstand, hinter) => {
-  const d = freieRichtung(abstand, hinter || 40);
+  const d = platzSuchen(abstand, hinter || 40);
   const ref = setze(15, Math.round(d[0] * abstand), Math.round(d[1] * abstand));
   H.run(`(function () { var h = window.__lab.refs[${ref}]; h._naechsterSatz = 0; })()`);
   return { ref, d };
@@ -517,7 +525,7 @@ test('Wer nach dem Ducken ausweicht, entgeht dem Satz, und der Hund steht danach
 });
 
 const alarmBereit = (abstand) => {
-  const d = freieRichtung(abstand + 200, 40);
+  const d = platzSuchen(abstand + 200, 40);
   const ref = setze(16, Math.round(d[0] * abstand), Math.round(d[1] * abstand));
   return ref;
 };
@@ -562,4 +570,76 @@ test('Erschlagen waehrend des Rufens: keine Verstaerkung', () => {
   H.step(80);
   const nachher = H.run(`enemies.getChildren().filter(function (e) { return e && e.active && e._verstaerkungVon; }).length`);
   assert.strictEqual(nachher, 0, 'Verstaerkung trotz Tod (vorher ' + vorher + ' Gegner)');
+});
+
+// ------------------------------------------------------------------ Sprites
+
+const fs = require('fs');
+const TYPEN_SPRITES = { 11: 'geschwuer', 12: 'priester', 13: 'beschwoerer', 14: 'springer', 15: 'hund' };
+
+test('Die gelieferten Sprites liegen vollstaendig vor (drei Posen je Richtung)', () => {
+  const fehlt = [];
+  Object.values(TYPEN_SPRITES).forEach((t) => {
+    ['right0', 'right1', 'right2', 'left0', 'left1', 'left2'].forEach((f) => {
+      const p = 'assets/enemy/' + t + '/' + f + '.png';
+      if (!fs.existsSync(p)) fehlt.push(p);
+    });
+  });
+  assert.deepStrictEqual(fehlt, []);
+});
+
+test('Die Sondergegner tragen ihr Sprite statt der Platzhalter-Zeichnung', () => {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var out = {};
+    [11, 12, 13, 14, 15].forEach(function (t) {
+      var e = window.__labOhneElite(function () { return spawnEnemy.call(sc, 0, 0, t); });
+      out[t] = e ? { key: e.texture.key, prefix: e._spritePrefix || null,
+        hoehe: Math.round(e.displayHeight) } : null;
+      if (e) e.destroy();
+    });
+    return out;
+  })()`);
+  Object.keys(TYPEN_SPRITES).forEach((t) => {
+    const s = r[t];
+    assert.ok(s, 'Typ ' + t + ' nicht erzeugt');
+    assert.strictEqual(s.prefix, TYPEN_SPRITES[t], 'Typ ' + t + ' ohne Sprite: ' + JSON.stringify(s));
+    assert.strictEqual(s.key, TYPEN_SPRITES[t] + '_right0', JSON.stringify(s));
+    assert.ok(s.hoehe >= 30 && s.hoehe <= 70, 'Typ ' + t + ' ist ' + s.hoehe + ' px hoch');
+  });
+});
+
+/** Alle Bilder, die dieser Gegner waehrend der naechsten Takte zeigt. */
+function bilderWaehrend(ref, takte) {
+  const gesehen = new Set();
+  for (let i = 0; i < takte; i++) {
+    H.step(1);
+    gesehen.add(H.run(`window.__lab.refs[${ref}].texture.key`));
+  }
+  return [...gesehen];
+}
+
+test('Der Priester hebt beim Heilen das Buch und kehrt danach zur Ruhe zurueck', () => {
+  const brute = setze(3, 320, 0);
+  const p = setze(12, 360, 40);
+  H.run(`(function () { var e = window.__lab.refs[${brute}]; e.speed = 0; e.maxHp = 100; e.hp = 20;
+    var pr = window.__lab.refs[${p}]; pr.speed = 0; pr._naechsteHeilung = 0; })()`);
+  const bilder = bilderWaehrend(p, 120);
+  assert.ok(bilder.some((k) => /priester_(right|left)1$/.test(k)), 'kein Ansatz: ' + bilder.join(','));
+  assert.ok(bilder.some((k) => /priester_(right|left)2$/.test(k)), 'kein Lichtkreis: ' + bilder.join(','));
+  assert.match(H.run(`window.__lab.refs[${p}].texture.key`), /priester_(right|left)0$/, 'bleibt in der Pose stehen');
+});
+
+test('Der Kettenhund zeigt den Satz und danach den Biss', () => {
+  const { ref } = hundBereit(130);
+  H.step(3);
+  assert.match(H.run(`window.__lab.refs[${ref}].texture.key`), /hund_(right|left)1$/, 'nicht angesetzt');
+  const bilder = bilderWaehrend(ref, 90);
+  assert.ok(bilder.some((k) => /hund_(right|left)2$/.test(k)), 'kein Biss: ' + bilder.join(','));
+});
+
+test('Das Nebelgeschwuer schwillt sichtbar an, bevor es platzt', () => {
+  const ref = setze(11, 40, 0);
+  H.step(6);
+  assert.match(H.run(`window.__lab.refs[${ref}].texture.key`), /geschwuer_(right|left)1$/);
 });

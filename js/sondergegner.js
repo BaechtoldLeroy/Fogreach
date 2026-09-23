@@ -89,6 +89,38 @@
     maxImRaum: 2
   };
 
+  // --------------------------------------------------------------- Bilder
+
+  /**
+   * Bild eines Sondergegners setzen: 0 Ruhe, 1 Ansatz, 2 Wirkung. Ohne
+   * geliefertes Sprite (Platzhalter) passiert nichts.
+   * @param {object} e
+   * @param {number} n
+   */
+  function bild(e, n) {
+    if (!e || !e._spritePrefix || typeof e.setTexture !== 'function') return false;
+    var key = e._spritePrefix + '_' + (e._spriteDir || 'right') + n;
+    try {
+      if (e.scene && e.scene.textures && !e.scene.textures.exists(key)) return false;
+      e.setTexture(key);
+    } catch (x) { return false; }
+    return true;
+  }
+
+  /** Ansatz zeigen, nach ms die Wirkung, dann zurueck in die Ruhe. */
+  function bildFolge(scene, e, ansatzMs, wirkungMs) {
+    if (!bild(e, 1)) return;
+    e._spriteAktion = true;
+    var zurueck = function () {
+      if (!e || e.active === false) return;
+      bild(e, 0);
+      e._spriteAktion = false;
+    };
+    if (!scene || !scene.time || typeof scene.time.delayedCall !== 'function') { zurueck(); return; }
+    scene.time.delayedCall(ansatzMs, function () { if (e && e.active !== false) bild(e, 2); });
+    scene.time.delayedCall(ansatzMs + wirkungMs, zurueck);
+  }
+
   // ---------------------------------------------------------------- Rechnungen
 
   function _lebt(e) { return !!(e && e.active !== false && typeof e.hp === 'number' && e.hp > 0); }
@@ -205,8 +237,10 @@
   // ------------------------------------------------------------------- Grafik
 
   /**
-   * Platzhalter, bis die echten Sprites da sind. Liegen 'priester_right0' bzw.
-   * 'geschwuer_right0' geladen vor, nimmt spawnEnemy die.
+   * Gezeichnete Platzhalter. Seit b280 gibt es echte Sprites fuer alle Typen
+   * ausser dem Alarmwicht (assets/enemy/<typ>/), und spawnEnemy nimmt die,
+   * sobald sie geladen sind. Die Zeichnungen bleiben als Rueckfall, wenn ein
+   * Bild fehlt oder nicht laedt.
    */
   function platzhalterTexturen(scene) {
     if (!scene || !scene.textures || !scene.make) return;
@@ -396,6 +430,7 @@
     // Niemand verwundet: bald wieder schauen, statt den vollen Takt zu warten.
     if (!ziele.length) { priester._naechsteHeilung = zeit + 400; return []; }
     priester._naechsteHeilung = zeit + PRIESTER.heilTaktMs;
+    bildFolge(scene, priester, 220, 500);      // Buch heben, dann das Licht
     ziele.forEach(function (z) {
       var plus = heilmenge(z);
       if (plus <= 0) return;
@@ -481,13 +516,22 @@
     g._zuendetBis = zeit + GESCHWUER.zuendMs;
     if (g.body && typeof g.body.setVelocity === 'function') g.body.setVelocity(0, 0);
     g._warnung = _warnkreis(scene, g.x, g.y, GESCHWUER.zuendMs);
-    // Aufblaehen: das Geschwuer schwillt an, bevor es platzt.
+    // Aufblaehen: das Geschwuer schwillt an, bevor es platzt. Mit Sprite ist
+    // das eine eigene Pose, sonst faellt es auf Skalierung und Faerbung zurueck.
     try {
-      if (scene && scene.tweens) {
-        scene.tweens.add({ targets: g, scaleX: g.scaleX * 1.3, scaleY: g.scaleY * 1.3,
-          duration: GESCHWUER.zuendMs / 4, yoyo: true, repeat: 1 });
+      if (bild(g, 1)) {
+        g._spriteAktion = true;
+        if (scene && scene.tweens) {
+          scene.tweens.add({ targets: g, scaleX: g.scaleX * 1.12, scaleY: g.scaleY * 1.12,
+            duration: GESCHWUER.zuendMs / 3, yoyo: true, repeat: 1 });
+        }
+      } else {
+        if (scene && scene.tweens) {
+          scene.tweens.add({ targets: g, scaleX: g.scaleX * 1.3, scaleY: g.scaleY * 1.3,
+            duration: GESCHWUER.zuendMs / 4, yoyo: true, repeat: 1 });
+        }
+        if (typeof g.setTint === 'function') g.setTint(0xd6f0a0);
       }
-      if (typeof g.setTint === 'function') g.setTint(0xd6f0a0);
     } catch (e) {}
     return true;
   }
@@ -598,12 +642,25 @@
           zeichen.push(k);
         });
       }
-      if (typeof b.setTint === 'function') b.setTint(0xd8b8ff);
+      if (!bild(b, 1)) { if (typeof b.setTint === 'function') b.setTint(0xd8b8ff); }
+      b._spriteAktion = true;
     } catch (e) {}
 
     var fertig = function () {
       zeichen.forEach(function (z) { try { z.destroy(); } catch (e) {} });
-      try { if (b.active && typeof b.clearTint === 'function') b.clearTint(); } catch (e) {}
+      try {
+        if (b.active) {
+          if (!bild(b, 2)) { if (typeof b.clearTint === 'function') b.clearTint(); }
+          if (scene && scene.time && typeof scene.time.delayedCall === 'function') {
+            scene.time.delayedCall(350, function () {
+              if (!b || b.active === false) return;
+              bild(b, 0);
+              if (typeof b.clearTint === 'function') b.clearTint();
+              b._spriteAktion = false;
+            });
+          } else { bild(b, 0); b._spriteAktion = false; }
+        }
+      } catch (e) {}
       if (!_lebt(b)) return;
       orte.forEach(function (o) { _wichtRufen(scene, b, o); });
     };
@@ -679,6 +736,16 @@
         s.setAlpha(0.3);
         if (scene && scene.tweens) scene.tweens.add({ targets: s, alpha: 1, duration: 250 });
         else s.setAlpha(1);
+        // Gelandet: die Klauen, dann zurueck in die Ruhe.
+        if (bild(s, 2)) {
+          if (scene && scene.time && typeof scene.time.delayedCall === 'function') {
+            scene.time.delayedCall(SPRINGER.schlagNachMs + 200, function () {
+              if (!s || s.active === false) return;
+              bild(s, 0);
+              s._spriteAktion = false;
+            });
+          } else { bild(s, 0); s._spriteAktion = false; }
+        } else { s._spriteAktion = false; }
       } catch (e) {}
       return false;
     }
@@ -699,6 +766,7 @@
     s._sprungZiel = ziel;
     s._sprungBis = zeit + SPRINGER.ankuendigungMs;
     s._wirbel = _wirbel(scene, ziel.x, ziel.y);
+    if (bild(s, 1)) s._spriteAktion = true;     // in Nebel gehuellt
     if (!s._wirbelAufraeumen && typeof s.once === 'function') {
       s._wirbelAufraeumen = true;
       s.once('destroy', function () { if (s._wirbel) { try { s._wirbel.destroy(); } catch (e) {} s._wirbel = null; } });
@@ -748,7 +816,10 @@
       h._duckBis = null;
       h._satzZiel = null;
       if (h._satzLinie) { try { h._satzLinie.destroy(); } catch (e) {} h._satzLinie = null; }
-      try { if (typeof h.clearTint === 'function') h.clearTint(); h.setScale(h._grundSkala || h.scaleX); } catch (e) {}
+      try {
+        if (typeof h.clearTint === 'function') h.clearTint();
+        if (h._grundSkala) h.setScale(h._grundSkala);
+      } catch (e) {}
       if (!ziel) return false;
       var dist = Math.hypot(ziel.x - h.x, ziel.y - h.y);
       h._dashTarget = ziel;
@@ -756,6 +827,14 @@
       h._dashUntil = zeit + Math.max(120, (dist / HUND.satzTempo) * 1000 + 80);
       h._dashGleichmaessig = true;
       h._dashOnArrive = function () {
+        // Angekommen: zubeissen, dann zurueck in die Ruhe.
+        if (bild(h, 2) && scene && scene.time && typeof scene.time.delayedCall === 'function') {
+          scene.time.delayedCall(300, function () {
+            if (!h || h.active === false) return;
+            bild(h, 0);
+            h._spriteAktion = false;
+          });
+        } else { h._spriteAktion = false; }
         var pl = (typeof player !== 'undefined' && player) ? player : window.player;
         if (_lebt(h) && pl && pl.active !== false
             && Math.hypot(pl.x - h.x, pl.y - h.y) <= HUND.trefferRadius
@@ -783,9 +862,13 @@
       h.once('destroy', function () { if (h._satzLinie) { try { h._satzLinie.destroy(); } catch (e) {} h._satzLinie = null; } });
     }
     try {
-      h._grundSkala = h.scaleX;
-      h.setScale(h.scaleX * 1.1, h.scaleY * 0.8);   // geduckt
-      if (typeof h.setTint === 'function') h.setTint(0xff8866);
+      if (bild(h, 1)) {
+        h._spriteAktion = true;                     // zum Satz angesetzt
+      } else {
+        h._grundSkala = h.scaleX;
+        h.setScale(h.scaleX * 1.1, h.scaleY * 0.8); // geduckt
+        if (typeof h.setTint === 'function') h.setTint(0xff8866);
+      }
     } catch (e) {}
     if (h.body && typeof h.body.setVelocity === 'function') h.body.setVelocity(0, 0);
     return true;
@@ -926,6 +1009,7 @@
     voll: voll,
     istSondertyp: istSondertyp,
     platzhalterTexturen: platzhalterTexturen,
+    bild: bild,
     priesterTick: priesterTick,
     geschwuerTick: geschwuerTick,
     beschwoererTick: beschwoererTick,
