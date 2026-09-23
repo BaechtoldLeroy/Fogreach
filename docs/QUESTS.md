@@ -1,6 +1,6 @@
 # Quest-Übersicht — Fogreach
 
-_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 36 Quests._  
+_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 39 Quests._  
 _Neu erzeugen:_ `node tools/genQuestDoc.js`
 
 ---
@@ -200,6 +200,31 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Du wirst gleich von allen Seiten Aufträge bekommen. Nimm sie an. Hör Dir alles an. Dann komm zurück zu mir.
 
 
+## Aushang: Ruhe in den Kellern
+
+`brett_stoerer` · **NPC:** anschlagtafel · **Kette:** 1 · **Fortschritt erst ab Tiefe 3**
+
+> Ein Rats-Aushang: besiege 12 Gegner ab Tiefe 3.
+
+- **Ziel:** `kill` → `enemy` ×12
+- **Vorbedingung:** keine
+- **Belohnung:** 60 XP
+
+**Angebot**
+
+> MAGISTRAT: Für Ruhe in den unteren Gängen zahlt der Rat. Zwölf Störer ab Tiefe 3, abzugeben hier am Brett.
+> 
+> (Darunter, kleiner: "Eine Liste der Namen führt das Archiv.")
+
+**Unterwegs**
+
+> Der Aushang hängt noch. Zwölf Störer ab Tiefe 3.
+
+**Abschluss**
+
+> Du ritzt einen Strich unter den Aushang. Der Lohn liegt im Kasten darunter, abgezählt, ohne ein Wort.
+
+
 ## Keller-Patrouille
 
 `aldric_patrol` · **NPC:** Ratsherr Aldric · **Kette:** 2
@@ -223,6 +248,56 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 **Abschluss**
 
 > Alle Gänge sind sicher. Gute Arbeit, Archivschmied.
+
+
+## Aushang: Die Anführer
+
+`brett_anfuehrer` · **NPC:** anschlagtafel · **Kette:** 2 · **Fortschritt erst ab Tiefe 6**
+
+> Ein Rats-Aushang: besiege 3 Elite-Gegner ab Tiefe 6.
+
+- **Ziel:** `kill` → `elite_enemy` ×3
+- **Vorbedingung:** keine
+- **Belohnung:** 90 XP
+
+**Angebot**
+
+> GARDE: Drei Anführer, ab Tiefe 6. Wer zahlt, fragt nicht, wer sie waren.
+> 
+> (Der Aushang ist frisch. Der darunter, halb verdeckt, sucht eine vermisste Näherin.)
+
+**Unterwegs**
+
+> Drei Anführer, ab Tiefe 6. Der Aushang wartet.
+
+**Abschluss**
+
+> Die Garde zahlt bar und sofort. Den Aushang nimmt niemand ab; er hängt am nächsten Morgen wieder da.
+
+
+## Aufruf der Druckerei
+
+`brett_aufruf` · **NPC:** anschlagtafel · **Kette:** 3 · **Fortschritt erst ab Tiefe 10**
+
+> Ein Aufruf des Widerstands: räume 5 Kammern ab Tiefe 10.
+
+- **Ziel:** `explore` → `room` ×5
+- **Vorbedingung:** keine
+- **Belohnung:** 120 XP · 4 Druckblätter
+
+**Angebot**
+
+> Über den zerfetzten Rats-Plakaten klebt ein frisch gedrucktes Blatt:
+> 
+> "Wer unten aufräumt, macht Platz für die Wahrheit. Fünf Kammern, ab Tiefe 10. Papier gibt es bei Thom."
+
+**Unterwegs**
+
+> Fünf Kammern ab Tiefe 10. Das Blatt hängt noch, jemand hat es festgenagelt.
+
+**Abschluss**
+
+> Am Rand des Blattes steht jetzt ein Strich mehr. Thom legt Papier und Münzen unter den Stein daneben.
 
 
 # Akt-Index 1 — Treuer Diener

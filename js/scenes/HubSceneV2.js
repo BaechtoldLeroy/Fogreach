@@ -18,7 +18,9 @@ if (window.i18n) {
     'hub.dialog.choice.collect': 'Belohnung abholen',
     'hub.druckerei.name': 'Druckerei',
     // #160
-    'hub.anschlag.prompt': 'Anschlagtafel [E]',
+    'hub.anschlag.prompt': 'Edikte aushängen [E]',
+    'hub.brett.prompt': 'Anschlagtafel [E]',
+    'hub.brett.name': 'Anschlagtafel',
     'hub.anschlag.ausgehaengt': 'Die Edikte hängen. Die Stadt stimmt ab. Das Ergebnis verkündet der Rat im Ratssaal.',
     'hub.edikt.gedruckt': 'Drei Edikte gedruckt. Jetzt an die Anschlagtafeln vor dem Rathaus.',
     'hub.druckerei.line1': 'Die Druckerpresse ruht.',
@@ -71,7 +73,9 @@ if (window.i18n) {
     'hub.dialog.choice.collect': 'Collect reward',
     'hub.druckerei.name': 'Print Shop',
     // #160
-    'hub.anschlag.prompt': 'Notice board [E]',
+    'hub.anschlag.prompt': 'Post the edicts [E]',
+    'hub.brett.prompt': 'Notice board [E]',
+    'hub.brett.name': 'Notice board',
     'hub.anschlag.ausgehaengt': 'The edicts are up. The city votes. The council announces the result in the council hall.',
     'hub.edikt.gedruckt': 'Three edicts printed. Now to the notice boards in front of the town hall.',
     'hub.druckerei.line1': 'The printing press is idle.',
@@ -1132,13 +1136,14 @@ class HubSceneV2 extends Phaser.Scene {
       }
     }
 
-    // #160: Die Anschlagtafeln, solange die Edikte gedruckt, aber noch nicht
-    // ausgehaengt sind.
-    if (!active && this._ediktSchritt() === 1 && this._hubPhaseRefs && Array.isArray(this._hubPhaseRefs.posterSpots)) {
+    // #68: Die Anschlagtafeln sind immer ansprechbar — sie tragen die
+    // Aushaenge. Steht das Aushaengen der Edikte an (#160), hat das Vorrang.
+    if (!active && this._hubPhaseRefs && Array.isArray(this._hubPhaseRefs.posterSpots)) {
+      const ediktSchritt = this._ediktSchritt();
       for (const p of this._hubPhaseRefs.posterSpots) {
         if (p && Phaser.Math.Distance.Between(this.player.x, this.player.y, p.x, p.y - 40) < 90) {
-          active = { type: 'anschlag' };
-          activeLabel = _HUB_T('hub.anschlag.prompt');
+          active = { type: 'anschlag', edikt: ediktSchritt === 1 };
+          activeLabel = _HUB_T(ediktSchritt === 1 ? 'hub.anschlag.prompt' : 'hub.brett.prompt');
           break;
         }
       }
@@ -1180,8 +1185,25 @@ class HubSceneV2 extends Phaser.Scene {
     } else if (current.type === 'entrance') {
       this._enterLocation(current.data);
     } else if (current.type === 'anschlag') {
-      this._ediktAushaengen();
+      if (current.edikt) this._ediktAushaengen();
+      else this._brettOeffnen();
     }
+  }
+
+  /**
+   * #68: Das Brett als Auftragsbrett. Es laeuft ueber denselben Dialogfluss
+   * wie ein NPC (Angebot, Fortschritt, Abgabe) — die Aushaenge sind Quests
+   * mit npcId 'anschlagtafel'. Haengt gerade keiner, bleiben die Zeilen, die
+   * sonst am Brett stehen.
+   */
+  _brettOeffnen() {
+    const zeilen = (window.Anschlagtafel && typeof window.Anschlagtafel.zeilen === 'function')
+      ? window.Anschlagtafel.zeilen() : [];
+    this._showNpcDialogue({
+      id: 'anschlagtafel',
+      name: _HUB_T('hub.brett.name'),
+      lines: zeilen.length ? zeilen : ['...']
+    });
   }
 
   // --- #160: Das Edikt der Woche als Abstimmung ------------------------------

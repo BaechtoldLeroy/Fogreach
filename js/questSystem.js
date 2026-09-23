@@ -655,6 +655,73 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       dialogueProgress: 'Erst drucken, dann aushängen. Die Druckerei ist gleich über dem Platz.',
       dialogueComplete: 'Gut. Die Stimmen werden gezählt, und das Ergebnis verkündet der Rat öffentlich, im Ratssaal. So gehört sich das.'
     },
+    // #68: Die Anschlagtafel am Rathaus. Kopfgelder statt Kulisse — sie
+    // fuellen die Laeufe zwischen den Story-Beats und kippen mit der Hub-Phase:
+    // im Rats-Hub haengt der Rat aus, nach dem Bruch die Druckerei. Im Epilog
+    // haengt nur noch die gedruckte Wahrheit (kein Auftrag mehr).
+    //
+    // Wiederholbar (repeatable) und rotierend: welcher der beiden Rats-Aushaenge
+    // haengt, entscheidet die erreichte Tiefe, also wechselt er mit jedem Lauf.
+    brett_stoerer: {
+      id: 'brett_stoerer',
+      title: 'Aushang: Ruhe in den Kellern',
+      description: 'Ein Rats-Aushang: besiege 12 Gegner ab Tiefe 3.',
+      npcId: 'anschlagtafel',
+      type: 'kill',
+      chain: 1,
+      minDepth: 3,
+      repeatable: true,
+      objectives: [
+        { type: 'kill', target: 'enemy', current: 0, required: 12 }
+      ],
+      rewards: { xp: 60, gold: 120 },
+      prerequisites: [],
+      requiredAct: 0,
+      gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_stoerer'); },
+      dialogueOffer: 'MAGISTRAT: Für Ruhe in den unteren Gängen zahlt der Rat. Zwölf Störer ab Tiefe 3, abzugeben hier am Brett.\n\n(Darunter, kleiner: "Eine Liste der Namen führt das Archiv.")',
+      dialogueProgress: 'Der Aushang hängt noch. Zwölf Störer ab Tiefe 3.',
+      dialogueComplete: 'Du ritzt einen Strich unter den Aushang. Der Lohn liegt im Kasten darunter, abgezählt, ohne ein Wort.'
+    },
+    brett_anfuehrer: {
+      id: 'brett_anfuehrer',
+      title: 'Aushang: Die Anführer',
+      description: 'Ein Rats-Aushang: besiege 3 Elite-Gegner ab Tiefe 6.',
+      npcId: 'anschlagtafel',
+      type: 'kill',
+      chain: 2,
+      minDepth: 6,
+      repeatable: true,
+      objectives: [
+        { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
+      ],
+      rewards: { xp: 90, gold: 200 },
+      prerequisites: [],
+      requiredAct: 0,
+      gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_anfuehrer'); },
+      dialogueOffer: 'GARDE: Drei Anführer, ab Tiefe 6. Wer zahlt, fragt nicht, wer sie waren.\n\n(Der Aushang ist frisch. Der darunter, halb verdeckt, sucht eine vermisste Näherin.)',
+      dialogueProgress: 'Drei Anführer, ab Tiefe 6. Der Aushang wartet.',
+      dialogueComplete: 'Die Garde zahlt bar und sofort. Den Aushang nimmt niemand ab; er hängt am nächsten Morgen wieder da.'
+    },
+    brett_aufruf: {
+      id: 'brett_aufruf',
+      title: 'Aufruf der Druckerei',
+      description: 'Ein Aufruf des Widerstands: räume 5 Kammern ab Tiefe 10.',
+      npcId: 'anschlagtafel',
+      type: 'explore',
+      chain: 3,
+      minDepth: 10,
+      repeatable: true,
+      objectives: [
+        { type: 'explore', target: 'room', current: 0, required: 5 }
+      ],
+      rewards: { xp: 120, gold: 150, druckblaetter: 4 },
+      prerequisites: [],
+      requiredAct: 0,
+      gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_aufruf'); },
+      dialogueOffer: 'Über den zerfetzten Rats-Plakaten klebt ein frisch gedrucktes Blatt:\n\n"Wer unten aufräumt, macht Platz für die Wahrheit. Fünf Kammern, ab Tiefe 10. Papier gibt es bei Thom."',
+      dialogueProgress: 'Fünf Kammern ab Tiefe 10. Das Blatt hängt noch, jemand hat es festgenagelt.',
+      dialogueComplete: 'Am Rand des Blattes steht jetzt ein Strich mehr. Thom legt Papier und Münzen unter den Stein daneben.'
+    },
     // #148 / Story-Bibel §14: zwei rein menschliche Nebenquests ohne Bezug zur
     // These. Sie liegen genau in den Strecken, in denen die Hauptgeschichte
     // sonst stillstand (#72): Tiefe 14-19 und 25-29.
@@ -1007,6 +1074,23 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.schattenrat_finale.dialogueOffer': 'Elara has gone down. To the source, at depth 30. I know now what she is, Archivesmith. She is still my daughter. Go. I will follow.',
       'quest.schattenrat_finale.dialogueProgress': 'The source lies at depth 30. Hurry.',
       'quest.schattenrat_finale.dialogueComplete': 'The source is broken. The press is yours now. Go to Thom, it is time.',
+
+      // #68: die Aushaenge am Brett
+      'quest.brett_stoerer.title': 'Notice: Quiet in the Cellars',
+      'quest.brett_stoerer.description': 'A council notice: defeat 12 enemies from depth 3.',
+      'quest.brett_stoerer.dialogueOffer': 'MAGISTRATE: The council pays for quiet in the lower passages. Twelve troublemakers from depth 3, handed in here at the board.\n\n(Below, in smaller letters: "A list of the names is kept by the archive.")',
+      'quest.brett_stoerer.dialogueProgress': 'The notice is still up. Twelve troublemakers from depth 3.',
+      'quest.brett_stoerer.dialogueComplete': 'You scratch a mark under the notice. The pay lies in the box beneath it, counted out, without a word.',
+      'quest.brett_anfuehrer.title': 'Notice: The Leaders',
+      'quest.brett_anfuehrer.description': 'A council notice: defeat 3 elite enemies from depth 6.',
+      'quest.brett_anfuehrer.dialogueOffer': 'GUARD: Three leaders, from depth 6. Whoever pays does not ask who they were.\n\n(The notice is fresh. The one beneath it, half covered, is looking for a missing seamstress.)',
+      'quest.brett_anfuehrer.dialogueProgress': 'Three leaders, from depth 6. The notice is waiting.',
+      'quest.brett_anfuehrer.dialogueComplete': 'The Guard pays in cash, at once. Nobody takes the notice down; it hangs there again the next morning.',
+      'quest.brett_aufruf.title': 'Call of the Print Shop',
+      'quest.brett_aufruf.description': 'A call from the resistance: clear 5 chambers from depth 10.',
+      'quest.brett_aufruf.dialogueOffer': 'Over the torn council posters someone has pasted a freshly printed sheet:\n\n"Whoever clears up down there makes room for the truth. Five chambers, from depth 10. Paper is at Thom\'s."',
+      'quest.brett_aufruf.dialogueProgress': 'Five chambers from depth 10. The sheet is still up; someone nailed it down.',
+      'quest.brett_aufruf.dialogueComplete': 'There is one more mark along the edge of the sheet now. Thom leaves paper and coins under the stone beside it.',
 
       // #148: die beiden menschlichen Nebenquests
       'quest.buerger_hund.title': 'A Dog Named Bruno',
@@ -1536,7 +1620,14 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     var def = QUEST_DEFINITIONS[questId];
     if (!def) return false;
 
-    questState[questId].status = 'completed';
+    // #68: Kopfgelder vom Brett sind wiederholbar — sie kehren nach der
+    // Abgabe in die Auslage zurueck, mit zurueckgesetztem Fortschritt.
+    // Alles andere (Story) wird abgeschlossen und bleibt es.
+    questState[questId].status = def.repeatable ? 'available' : 'completed';
+    if (def.repeatable && Array.isArray(questState[questId].objectives)) {
+      questState[questId].objectives.forEach(function (o) { o.current = 0; });
+      questState[questId].abgeschlossen = (questState[questId].abgeschlossen || 0) + 1;
+    }
 
     // Grant rewards
     var rewards = def.rewards;
@@ -1548,6 +1639,16 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       else if (typeof window !== 'undefined' && typeof window.addXP === 'function') window.addXP(rewards.xp);
       else if (typeof window !== 'undefined') { window.playerXP = (window.playerXP || 0) + rewards.xp; }
       console.log('[QuestSystem] Granted ' + rewards.xp + ' XP');
+    }
+    // #68: Gold. Stand als Feld in den Daten (buerger_hund), wurde aber nie
+    // ausgezahlt — LootSystem.grantGold ist der einzige Weg, auf dem Gold beim
+    // Spieler ankommt.
+    if (typeof rewards.gold === 'number' && rewards.gold > 0
+        && window.LootSystem && typeof window.LootSystem.grantGold === 'function') {
+      try {
+        window.LootSystem.grantGold(rewards.gold | 0);
+        console.log('[QuestSystem] Granted ' + (rewards.gold | 0) + ' Gold');
+      } catch (_) {}
     }
     if (rewards.materials) {
       Object.keys(rewards.materials).forEach(function (key) {
