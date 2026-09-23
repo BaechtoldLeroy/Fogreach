@@ -1332,7 +1332,35 @@ if (window.i18n) {
     return 0;
   }
 
-  function rollItem(baseKey, iLevel, forceTier, qualityBias) {
+  /**
+   * Seltenheits-Deckel der flachen Tiefen.
+   *
+   * Frueh im Spiel fielen vereinzelt gelbe und orange Stuecke, und danach war
+   * der Aufstieg entwertet: Was auf Tiefe 2 liegt, haelt bis Tiefe 15. Auf den
+   * ersten Tiefen gibt es deshalb hoechstens Blau, danach hoechstens Gelb;
+   * Orange beginnt ab Tiefe 7.
+   *
+   * Der Deckel WUERFELT UM statt nur einzufaerben: rollItem zieht die Affixe
+   * erst nach dem Deckeln, ein gedeckeltes Stueck ist also ein richtiges
+   * blaues bzw. gelbes Stueck, kein beschnittenes oranges.
+   *
+   * @param {number} iLevel  Fundtiefe des Stuecks
+   * @returns {number} hoechste erlaubte Stufe (1 blau, 2 gelb, 3 orange)
+   */
+  function tierDeckel(iLevel) {
+    var l = (typeof iLevel === 'number' && isFinite(iLevel)) ? iLevel : 1;
+    if (l <= 3) return 1;
+    if (l <= 6) return 2;
+    return 3;
+  }
+
+  /**
+   * @param {object} [opts] { ohneDeckel: true } — kein Tiefen-Deckel. Fuer
+   *   Wege, die KEIN Fund sind: der Opferstein wuerfelt ein getragenes Stueck
+   *   um und muss dabei seine Seltenheit behalten, auch wenn er dafuer auf
+   *   Stufe 1 zieht.
+   */
+  function rollItem(baseKey, iLevel, forceTier, qualityBias, opts) {
     if (typeof iLevel !== 'number' || !Number.isFinite(iLevel)) iLevel = 1;
     let base;
     if (baseKey) {
@@ -1344,7 +1372,11 @@ if (window.i18n) {
       base = _pickWeightedBase(iLevel, Math.random);
     }
 
-    const tier = (forceTier !== undefined && forceTier !== null) ? forceTier : _rollTier(iLevel, Math.random, qualityBias);
+    const gewuerfelt = (forceTier !== undefined && forceTier !== null)
+      ? forceTier : _rollTier(iLevel, Math.random, qualityBias);
+    // Auch erzwungene Stufen (Ereignisse, Elite-Beute, Laden) gehen durch den
+    // Deckel — sonst haette die Zusage "nichts Oranges auf Tiefe 1-3" Loecher.
+    const tier = (opts && opts.ohneDeckel) ? gewuerfelt : Math.min(gewuerfelt, tierDeckel(iLevel));
     const affixCount = tier;
     const affixes = rollAffixes(iLevel, affixCount, Math.random, base.type);
 
@@ -2345,6 +2377,7 @@ if (window.i18n) {
     affixWirkung: affixWirkung,
     // #114: Bezug fuer flache Lebenspunkte — nach Tiefe, nicht nach Stufe.
     referenzLebenspunkte: referenzLebenspunkte,
+    tierDeckel: tierDeckel,
     vitalitaetLebenspunkte: vitalitaetLebenspunkte,
     AFFIX_ANTEIL_MIN: AFFIX_ANTEIL_MIN,
     AFFIX_ANTEIL_MAX: AFFIX_ANTEIL_MAX,

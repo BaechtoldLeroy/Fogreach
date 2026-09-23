@@ -1240,7 +1240,10 @@
    */
   function _umwurfKandidat(key, iLevel, stufe, ausbau) {
     var it = null;
-    try { it = window.LootSystem.rollItem(key, Math.max(1, Math.round(iLevel)), stufe); } catch (e) {}
+    // ohneDeckel: der Umwurf behaelt die Seltenheit des getragenen Stuecks —
+    // er zieht dafuer auch auf flachen Stufen, wo sonst der Tiefen-Deckel
+    // greifen wuerde (lootSystem.tierDeckel).
+    try { it = window.LootSystem.rollItem(key, Math.max(1, Math.round(iLevel)), stufe, undefined, { ohneDeckel: true }); } catch (e) {}
     if (it && typeof window._applyDifficultyToRolledItem === 'function') {
       try { it = window._applyDifficultyToRolledItem(it, Math.max(1, Math.round(iLevel))); } catch (e) {}
     }
