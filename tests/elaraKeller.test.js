@@ -27,6 +27,8 @@ beforeEach(() => {
     sc.children.list.filter(function (o) { return o.texture && o.texture.key === 'elara_right0'; })
       .forEach(function (o) { try { o.destroy(); } catch (x) {} });
     window.eventChoiceOpen = false;
+    _resetElaraEncounterRunState();   // auch die Treppensperre faellt weg
+    lockStairs(sc, false);
     // Dialoge mitschreiben statt im Szenenbaum suchen.
     if (!window.__dlgOrig) {
       window.__dlgOrig = window.EventSystem.showEventChoiceDialog;
@@ -121,4 +123,51 @@ test('Wer weitergeht, trifft sie wieder — aber ohne zweiten Hinterhalt', () =>
   })()`);
   assert.ok(r.gefunden, 'sie taucht nicht wieder auf');
   assert.strictEqual(r.hinterhalt, false, 'es wurde ein zweiter Hinterhalt gestartet');
+});
+
+/** Zustand der Treppen dieses Raums. */
+const treppen = () => H.run(`(function () {
+  var sc = window.game.scene.getScene('GameScene');
+  var alle = sc.stairsGroup ? sc.stairsGroup.getChildren() : [];
+  return { gesamt: alle.length,
+    offen: alle.filter(function (s) { return !s.getData('locked'); }).length,
+    grund: treppenSperrGrund(sc) };
+})()`);
+
+test('Solange sie wartet, bleibt die Treppe zu', () => {
+  H.run(`(function () { _elaraRettet(window.game.scene.getScene('GameScene')); })()`);
+  // Der Nebel raeumt den Raum, die Welle gilt danach als erledigt — genau da
+  // wollte die Treppe bisher aufgehen, noch bevor man sie erreicht hatte.
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    rooms[currentRoomId].cleared = true;
+    lockStairs(sc, false);
+  })()`);
+  const t = treppen();
+  assert.ok(t.gesamt > 0, 'der Raum hat gar keine Treppe');
+  assert.strictEqual(t.offen, 0, t.offen + ' von ' + t.gesamt + ' Treppen standen offen');
+  assert.ok(/Elara/.test(t.grund), 'der Sperrgrund nennt sie nicht: ' + t.grund);
+});
+
+test('Nach dem Gespraech gibt sie den Weg frei', () => {
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    _elaraRettet(sc);
+    rooms[currentRoomId].cleared = true;
+    lockStairs(sc, false);
+  })()`);
+  assert.strictEqual(treppen().offen, 0, 'die Treppe war schon vor dem Gespraech offen');
+  const s = elaraDa();
+  assert.ok(s, 'ihr Sprite steht nicht im Raum');
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    window.__dlg = [];
+    window.eventChoiceOpen = false;
+    player.body.reset(${s.x} + 20, ${s.y});
+    sc.input.keyboard.emit('keydown-E');
+    var d = (window.__dlg || [])[window.__dlg.length - 1];
+    if (d && d.knoepfe && d.knoepfe[0] && typeof d.knoepfe[0].callback === 'function') d.knoepfe[0].callback();
+  })()`);
+  const t = treppen();
+  assert.strictEqual(t.offen, t.gesamt, 'die Treppe blieb nach dem Gespraech zu: ' + t.grund);
 });

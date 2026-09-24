@@ -22,6 +22,7 @@ if (window.i18n) {
     'stairs.locked.escape': 'Der Weg nach unten ist erst frei, wenn du entkommen bist.',
     'stairs.locked.leader': 'Der Anführer lebt noch — er versperrt den Abstieg.',
     'stairs.locked.enemies': 'Noch {n} Gegner im Raum.',
+    'stairs.locked.elara': 'Elara wartet auf ein Wort — sprich mit ihr, bevor du weitergehst.',
     'stairs.locked.generic': 'Hier wartet noch eine Aufgabe.'
   });
   window.i18n.register('en', {
@@ -43,6 +44,7 @@ if (window.i18n) {
     'stairs.locked.escape': 'The way down opens once you have escaped.',
     'stairs.locked.leader': 'The leader still lives — he bars the descent.',
     'stairs.locked.enemies': '{n} enemies still in the room.',
+    'stairs.locked.elara': 'Elara is waiting for a word — speak to her before you move on.',
     'stairs.locked.generic': 'Something here still needs doing.'
   });
 }
@@ -1755,6 +1757,10 @@ function treppenSperrGrund(scene) {
     } catch (e) {}
     return f;
   };
+  if (_elaraHaeltTreppe()) {
+    return _t('stairs.locked.elara',
+      'Elara wartet auf ein Wort — sprich mit ihr, bevor du weitergehst.');
+  }
   try {
     if (window.RoomMode && typeof window.RoomMode.activeModeId === 'function') {
       var id = window.RoomMode.activeModeId();
@@ -1918,6 +1924,11 @@ function onStairOverlap(player, stair) {
 
 /** Türen/Treppen sperren/freischalten */
 function lockStairs(scene, lock) {
+  // Elaras Begegnung haelt den Abstieg zu, bis man mit ihr geredet hat.
+  // Die Pruefung gehoert HIERHER und nicht an den Aufrufer: der Raum wird
+  // waehrend der Begegnung gecleart (der Nebel vertreibt den Hinterhalt),
+  // und markRoomCleared wuerde die Treppe sofort wieder oeffnen.
+  if (!lock && _elaraHaeltTreppe()) return;
   scene.stairsGroup.children.iterate(
     (s) => s && s.setData("locked", !!lock) && s.setAlpha(lock ? 0.6 : 1),
   );
@@ -2967,9 +2978,14 @@ let _elaraDocSpawnTarget = null;
 let _elaraStage2SpawnTarget = null;
 // Wo sie nach der Rettung wieder auftaucht, falls man weitergegangen ist.
 let _elaraWartetZiel = null;
+// Raum, dessen Treppe Elara gerade blockiert (null = keine Sperre). Bewusst
+// die Raum-Id und kein Ja/Nein: verlaesst man den Raum doch (Notportal),
+// faellt die Sperre von selbst, statt den Abstieg dauerhaft zuzuhalten.
+let _elaraTreppeSperrRaum = null;
 
 function _resetElaraEncounterRunState() {
   _elaraDocSpawnTarget = null;
+  _elaraTreppeSperrRaum = null;
   _elaraWartetZiel = null;
   _elaraStage2SpawnTarget = null;
   _hinterhaltAbbrechen();
@@ -3626,6 +3642,43 @@ function _spawnElaraSprite(scene, stage) {
   window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, promptLabel, function () {
     _showElaraDialog(scene, stage);
   }, { scale: 0.16 });
+  // Nur die erste Begegnung haelt den Raum: sie ist der Grund, warum man
+  // ueberhaupt hier unten steht. Spaetere Auftraege sind freiwillig.
+  if (stage === 1) _elaraTreppeSperren(scene);
+}
+
+/** Haelt Elaras Begegnung den Abstieg gerade zu? */
+function _elaraHaeltTreppe() {
+  if (_elaraTreppeSperrRaum === null) return false;
+  if (currentRoomId !== _elaraTreppeSperrRaum) { _elaraTreppeSperrRaum = null; return false; }
+  // Wer mit ihr geredet hat, kommt weiter — egal, woher die Flagge kommt.
+  try {
+    var qs = window.questSystem;
+    if (qs && typeof qs.hasFlag === 'function' && qs.hasFlag('elaraMet')) {
+      _elaraTreppeSperrRaum = null;
+      return false;
+    }
+  } catch (e) {}
+  return true;
+}
+
+function _elaraTreppeSperren(scene) {
+  _elaraTreppeSperrRaum = currentRoomId;
+  try { lockStairs(scene, true); } catch (e) {}
+}
+
+/**
+ * Gibt den Abstieg nach dem Gespraech frei.
+ *
+ * Entsperrt NUR, wenn der Raum schon gecleart war — sonst wuerde das
+ * Gespraech eine Welle ueberspringen, die noch laeuft.
+ */
+function _elaraTreppeFreigeben(scene) {
+  _elaraTreppeSperrRaum = null;
+  try {
+    var raum = rooms[currentRoomId];
+    if (raum && raum.cleared) lockStairs(scene, false);
+  } catch (e) {}
 }
 
 function _showElaraDialog(scene, stage) {
@@ -3660,6 +3713,7 @@ function _showElaraDialog(scene, stage) {
       if (!qs) return;
       if (typeof qs.setFlag === 'function') qs.setFlag('elaraMet', true);
       if (typeof qs.acceptQuest === 'function') qs.acceptQuest('widerstand_proof');
+      _elaraTreppeFreigeben(scene);
     };
   }
   window.EventSystem.showEventChoiceDialog(scene, text, [{
