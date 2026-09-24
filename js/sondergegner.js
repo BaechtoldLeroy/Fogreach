@@ -121,6 +121,21 @@
     scene.time.delayedCall(ansatzMs + wirkungMs, zurueck);
   }
 
+  /**
+   * Ein Standbild halten, ohne jeden Takt setTexture zu rufen.
+   *
+   * Der Alarmwicht braucht das, weil enemy.js ihn waehrend Flucht und Ruf
+   * gar nicht mehr anfasst (alarmTick gibt true zurueck, der Aufrufer kehrt
+   * um) — auch den Richtungswechsel nicht. Er dreht sich also selbst.
+   */
+  function bildHalten(e, n) {
+    if (!e) return;
+    if (e._bildN === n && e._bildDir === e._spriteDir) return;
+    if (!bild(e, n)) return;
+    e._bildN = n;
+    e._bildDir = e._spriteDir;
+  }
+
   // ---------------------------------------------------------------- Rechnungen
 
   function _lebt(e) { return !!(e && e.active !== false && typeof e.hp === 'number' && e.hp > 0); }
@@ -917,8 +932,10 @@
    */
   function alarmTick(scene, a, zeit, p) {
     if (!_lebt(a)) return false;
-    if (a._alarm === 'gerufen') return false;
+    if (a._alarm === 'gerufen') { a._spriteAktion = false; bildHalten(a, 0); return false; }
     if (a._alarm === 'ruft') {
+      a._spriteAktion = true;                  // er steht und blaest, das Bild bleibt
+      bildHalten(a, 2);
       if (a.body && typeof a.body.setVelocity === 'function') a.body.setVelocity(0, 0);
       if (zeit < a._rufBis) return true;
       a._alarm = 'gerufen';
@@ -953,7 +970,11 @@
           }
         } catch (e) {}
         a.body.setVelocity((dx / d) * v, (dy / d) * v);
+        // Er schaut dorthin, wohin er laeuft. Die Schwelle daempft das
+        // Flackern, wenn er fast senkrecht vom Spieler weg rennt.
+        if (Math.abs(dx) > 12) a._spriteDir = dx > 0 ? 'right' : 'left';
       }
+      bildHalten(a, 1);
       return true;
     }
     // Noch ahnungslos: sieht er den Spieler?

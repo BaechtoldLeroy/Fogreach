@@ -16,9 +16,8 @@
 // Sicherheitsnetz-Aufruf kostet im Normalfall also nichts.
 (function () {
   var ENEMY_TYPES = ['brute', 'imp', 'shadow', 'flameweaver', 'chainguard', 'archer', 'mage', 'rat', 'bat', 'wolf',
-    // #12: die Sondergegner. Der Alarmwicht fehlt noch und laeuft solange mit
-    // der Platzhalter-Zeichnung aus js/sondergegner.js.
-    'geschwuer', 'hund', 'springer', 'priester', 'beschwoerer'];
+    // #12: die sechs Sondergegner.
+    'geschwuer', 'hund', 'springer', 'priester', 'beschwoerer', 'alarm'];
   var FRAMES = ['left0', 'left1', 'left2', 'right0', 'right1', 'right2'];
   // Einzel-Fallback-Sprites (enemy.js faellt darauf zurueck, wenn die gerichteten
   // Frames fehlen). Kein brute/rat/bat/wolf hier — brute nutzt brute_right0 direkt,

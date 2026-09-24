@@ -865,6 +865,8 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.isAlarm = true;
     if (key === 'alarm_right0') {
       enemy.setScale(40 / (enemy.height || 40));
+      enemy._spritePrefix = 'alarm';
+      enemy._spriteDir = 'right';
     }
   } else {
     // Mage (Fern/Support)

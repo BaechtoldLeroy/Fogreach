@@ -530,8 +530,14 @@ const alarmBereit = (abstand) => {
   return ref;
 };
 const alarm = (ref) => H.run(`(function () { var a = window.__lab.refs[${ref}];
+  var dx = a.x - player.x, dy = a.y - player.y, d = Math.hypot(dx, dy) || 1;
+  var v = a.body ? a.body.velocity : { x: 0, y: 0 };
   return { zustand: a._alarm || null, aktiv: !!a.active,
-    d: Math.round(Math.hypot(a.x - player.x, a.y - player.y)),
+    d: Math.round(d),
+    // Laeuft er vom Spieler WEG? Positiv heisst ja. Die blosse Entfernung
+    // taugt nicht: eine Wand haelt ihn auf, und genau das ist gewollt
+    // ("in der Ecke holt man ihn ein") — der Test wurde davon flatterig.
+    weg: Math.round(((v.x * dx) + (v.y * dy)) / d),
     verst: (a._gerufeneVerstaerkung || []).filter(function (e) { return e && e.active; }).length }; })()`);
 
 test('Alarmwicht flieht, sobald er den Spieler sieht', () => {
@@ -541,7 +547,8 @@ test('Alarmwicht flieht, sobald er den Spieler sieht', () => {
   const a = alarm(ref);
   const diag = H.run(`(function () { var e = window.__lab.refs[${ref}]; return JSON.stringify({ d: Math.round(Math.hypot(e.x - player.x, e.y - player.y)), los: window.Steering.hasLineOfSight(e, player, obstacles), stun: !!(window.statusEffectManager && window.statusEffectManager.isStunned(e)), cast: e._castingUntil, isAlarm: e.isAlarm, grace: window.game.scene.getScene('GameScene')._enemyAttackGraceUntil, t: Math.round(window.game.scene.getScene('GameScene').time.now) }); })()`);
   assert.strictEqual(a.zustand, 'flieht', diag);
-  assert.ok(a.d > vorher + 20, 'flieht nicht: ' + vorher + ' -> ' + a.d);
+  assert.ok(a.weg > 50, 'er laeuft nicht vom Spieler weg (' + a.weg + ' px/s): ' + diag);
+  assert.ok(a.d >= vorher, 'er kommt naeher: ' + vorher + ' -> ' + a.d);
 });
 
 test('Nach drei Sekunden Flucht ruft er, und dann kommt Verstaerkung', () => {
@@ -575,7 +582,8 @@ test('Erschlagen waehrend des Rufens: keine Verstaerkung', () => {
 // ------------------------------------------------------------------ Sprites
 
 const fs = require('fs');
-const TYPEN_SPRITES = { 11: 'geschwuer', 12: 'priester', 13: 'beschwoerer', 14: 'springer', 15: 'hund' };
+const TYPEN_SPRITES = { 11: 'geschwuer', 12: 'priester', 13: 'beschwoerer', 14: 'springer',
+  15: 'hund', 16: 'alarm' };
 
 test('Die gelieferten Sprites liegen vollstaendig vor (drei Posen je Richtung)', () => {
   const fehlt = [];
@@ -592,7 +600,7 @@ test('Die Sondergegner tragen ihr Sprite statt der Platzhalter-Zeichnung', () =>
   const r = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     var out = {};
-    [11, 12, 13, 14, 15].forEach(function (t) {
+    [11, 12, 13, 14, 15, 16].forEach(function (t) {
       var e = window.__labOhneElite(function () { return spawnEnemy.call(sc, 0, 0, t); });
       out[t] = e ? { key: e.texture.key, prefix: e._spritePrefix || null,
         hoehe: Math.round(e.displayHeight) } : null;
@@ -642,4 +650,48 @@ test('Das Nebelgeschwuer schwillt sichtbar an, bevor es platzt', () => {
   const ref = setze(11, 40, 0);
   H.step(6);
   assert.match(H.run(`window.__lab.refs[${ref}].texture.key`), /geschwuer_(right|left)1$/);
+});
+
+test('Der Alarmwicht rennt, blaest ins Horn und kommt danach zur Ruhe', () => {
+  // Waehrend Flucht und Ruf laesst enemy.js ihn ganz in Ruhe (alarmTick gibt
+  // true zurueck). Er setzt sein Bild also selbst — auch beim Umdrehen.
+  const ref = alarmBereit(150);
+  H.step(5);
+  assert.strictEqual(alarm(ref).zustand, 'flieht');
+  assert.match(H.run(`window.__lab.refs[${ref}].texture.key`), /alarm_(right|left)1$/,
+    'er rennt, zeigt aber nicht das Laufbild');
+
+  H.run(`(function () { var a = window.__lab.refs[${ref}]; a._fluchtSeit -= 3000; })()`);
+  H.step(5);
+  assert.strictEqual(alarm(ref).zustand, 'ruft');
+  assert.match(H.run(`window.__lab.refs[${ref}].texture.key`), /alarm_(right|left)2$/,
+    'kein Horn am Mund');
+
+  H.step(80);
+  assert.strictEqual(alarm(ref).zustand, 'gerufen');
+  assert.match(H.run(`window.__lab.refs[${ref}].texture.key`), /alarm_(right|left)0$/,
+    'das Horn bleibt am Mund, obwohl der Ruf durch ist');
+});
+
+test('Beim Umdrehen waehrend der Flucht dreht sich auch das Bild', () => {
+  const ref = alarmBereit(150);
+  H.step(5);
+  assert.strictEqual(alarm(ref).zustand, 'flieht');
+  // Ihn selbst umsetzen statt den Spieler: die Blickrichtung haengt allein an
+  // der Fluchtrichtung, nicht daran, ob eine Wand im Weg steht.
+  const seite = (vorzeichen) => {
+    H.run(`(function () {
+      var a = window.__lab.refs[${ref}];
+      a.body.reset(player.x + ${vorzeichen} * 150, player.y);
+    })()`);
+    H.step(3);
+    return H.run(`(function () { var a = window.__lab.refs[${ref}];
+      return { dir: a._spriteDir, key: a.texture.key }; })()`);
+  };
+  const links = seite(-1);
+  assert.strictEqual(links.dir, 'left', 'rechts vom Spieler steht er, flieht aber nicht nach links');
+  assert.strictEqual(links.key, 'alarm_left1', JSON.stringify(links));
+  const rechts = seite(1);
+  assert.strictEqual(rechts.dir, 'right', 'er dreht sich nicht mit');
+  assert.strictEqual(rechts.key, 'alarm_right1', JSON.stringify(rechts));
 });
