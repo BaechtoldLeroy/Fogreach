@@ -161,7 +161,7 @@ StartScene.prototype.preload = function () {
         'archer_', 'mage_', 'rat_', 'bat_', 'wolf_',
         'sprite_imp', 'sprite_archer', 'sprite_mage', 'sprite_shadow',
         'sprite_chainguard', 'sprite_flameweaver',
-        'boss_chain_', 'boss_ceremony_', 'boss_shadow_',
+        'boss_chain_', 'boss_ceremony_', 'boss_shadow_', 'boss_elara_',
         'sprite_boss_',
         'proj_',
         'dir'

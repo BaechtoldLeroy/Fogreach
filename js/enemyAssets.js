@@ -30,7 +30,9 @@
     sprite_chainguard: 'chainguard/chainguard.png',
     sprite_flameweaver: 'flameweaver/flameweaver.png'
   };
-  var BOSSES = ['boss_chain', 'boss_ceremony', 'boss_shadow'];
+  // boss_elara: die besessene Elara (#157) — sie nimmt auf Tiefe 30 den Platz
+  // des Schattenrats ein, solange die Geschichte laeuft.
+  var BOSSES = ['boss_chain', 'boss_ceremony', 'boss_shadow', 'boss_elara'];
 
   // Alle Gegner-Sprite-URLs (fuer den Hintergrund-Prefetch).
   function _allEnemyUrls() {

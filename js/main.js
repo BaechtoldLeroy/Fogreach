@@ -1060,11 +1060,10 @@ function preload() {
   if (!this.textures.exists('elara_right0')) {
     this.load.image('elara_right0', 'assets/npc/elara/right0.png');
   }
-  // #157: Die besessene Elara als Endgegner. Dieselben Bilder unter dem
-  // boss_-Praefix, damit Skalierung und Richtungswechsel der Boss-KI greifen.
-  ['left0', 'left1', 'left2', 'right0', 'right1', 'right2'].forEach((f) => {
-    if (!this.textures.exists('boss_elara_' + f)) this.load.image('boss_elara_' + f, 'assets/npc/elara/' + f + '.png');
-  });
+  // #157: Die besessene Elara traegt ihr EIGENES Bild (assets/enemy/boss_elara,
+  // ueber enemyAssets.BOSSES geladen). Bis hierher lief sie unter dem boss_-
+  // Praefix mit den Bildern der Elara aus dem Hub — derselbe Mantel, nur
+  // groesser gezogen, obwohl die Quelle sie laengst genommen hat.
 
   // 052 WP03: apply LINEAR to painterly cellar assets after preload
   // completes. These are not in the StartScene preload list so they need

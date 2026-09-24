@@ -187,3 +187,68 @@ test('Mara hilft, wenn das Finale sie an Deiner Seite sieht', () => {
   assert.ok(nach < vor.hp, 'Maras Pfeil hat nicht getroffen (' + vor.hp + ' -> ' + nach + ')');
   assert.ok(ohne.hp > 0);
 });
+
+// --------------------------------------------------------------- Ihr Bild
+
+const fs = require('fs');
+
+test('Ihre Sprites liegen vollstaendig vor', () => {
+  const fehlt = ['right0', 'right1', 'right2', 'left0', 'left1', 'left2', 'idle']
+    .map((f) => 'assets/enemy/boss_elara/' + f + '.png')
+    .filter((p) => !fs.existsSync(p));
+  assert.deepStrictEqual(fehlt, []);
+});
+
+/** Masse aus dem PNG-Kopf, ohne die Datei zu dekodieren. */
+function pngMasse(datei) {
+  const b = fs.readFileSync(datei);
+  return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+}
+
+test('Sie traegt ihr eigenes Bild, nicht das der Elara aus dem Hub', () => {
+  // Der Schluessel allein sagt nichts: boss_elara_* wurde frueher aus
+  // assets/npc/elara geladen — derselbe Mantel wie im Hub, nur groesser
+  // gezogen. Geprueft werden deshalb die MASSE der geladenen Textur.
+  L.spawnBoss();
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+    var q = sc.textures.get('boss_elara_right0').source[0];
+    return b ? { key: b.texture.key, prefix: b._bossPrefix || null,
+      hoehe: Math.round(b.displayHeight), w: q.width, h: q.height } : null;
+  })()`);
+  assert.ok(r, 'kein Boss erzeugt');
+  assert.strictEqual(r.key, 'boss_elara_right0', JSON.stringify(r));
+  assert.strictEqual(r.prefix, 'boss_elara', 'ohne Prefix gibt es keine Angriffs-Pose');
+  const soll = pngMasse('assets/enemy/boss_elara/right0.png');
+  assert.deepStrictEqual({ w: r.w, h: r.h }, soll,
+    'geladen wurde ein anderes Bild als assets/enemy/boss_elara/right0.png');
+  const hub = pngMasse('assets/npc/elara/right0.png');
+  assert.notDeepStrictEqual(soll, hub, 'die beiden Bilder sind nicht unterscheidbar');
+  // makeBoss normiert auf 96 * def.scale (3.0) — sie ueberragt alles im Raum.
+  assert.ok(Math.abs(r.hoehe - 288) <= 2, 'sie ist ' + r.hoehe + ' px hoch statt 288');
+});
+
+test('Beim Angriff holt sie aus und kehrt danach zur Ruhe zurueck', () => {
+  L.spawnBoss();
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+    b.nextPatternAt = sc.time.now;        // gleich im naechsten Takt
+    b.speed = 0; b.damage = 0;
+  })()`);
+  const gesehen = new Set();
+  for (let i = 0; i < 90; i++) {
+    H.step(1);
+    gesehen.add(H.run(`(function () {
+      var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+      return b ? b.texture.key : null; })()`));
+  }
+  const bilder = [...gesehen].join(',');
+  assert.ok(/boss_elara_(right|left)1/.test(bilder), 'kein Ansatz: ' + bilder);
+  assert.ok(/boss_elara_(right|left)2/.test(bilder), 'kein Schlag: ' + bilder);
+  assert.match(H.run(`(function () {
+    var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+    return b ? b.texture.key : ''; })()`), /boss_elara_(right|left)0$/,
+    'sie bleibt in der Angriffspose stehen');
+});
