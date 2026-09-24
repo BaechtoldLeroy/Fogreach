@@ -1089,12 +1089,68 @@ function hasLineOfSightToTarget(target) {
   }
 }
 
+// #164: Ursprung jedes Schlags — die sichtbare Koerpermitte, nicht die Fuesse.
+//
+// PLAYER_ORIGIN_Y liegt bei 0.92, player.y sitzt also fast am unteren
+// Sprite-Rand. Gegner tragen ihren Ursprung dagegen in der Mitte. Wer nach
+// oben schlug, mass vom Boden bis zum Gegner-Zentrum — rund 90 px bei 100
+// Reichweite, also staendig am Rand oder daneben. Nach unten war es fast
+// nichts, dort traf man immer. Die Asymmetrie war systematisch.
+function angriffsUrsprung(ziel) {
+  const p = ziel || ((typeof player !== 'undefined') ? player : null);
+  if (!p) return { x: 0, y: 0 };
+  const x = p.x ?? p.body?.x ?? 0;
+  let y = p.y ?? p.body?.y ?? 0;
+  const oy = (window.PLAYER_ORIGIN_Y != null) ? window.PLAYER_ORIGIN_Y : PLAYER_ORIGIN_Y;
+  let h = p.displayHeight;
+  if (!(typeof h === 'number' && h > 0)) {
+    h = (window.PLAYER_BASE_DISPLAY_HEIGHT || PLAYER_BASE_DISPLAY_HEIGHT)
+      * ((window.PLAYER_VISUAL_SCALE != null) ? window.PLAYER_VISUAL_SCALE : PLAYER_VISUAL_SCALE);
+  }
+  return { x: x, y: y - h * (oy - 0.5) };
+}
+if (typeof window !== 'undefined') window.angriffsUrsprung = angriffsUrsprung;
+
+/**
+ * Wie weit reicht ein Gegner von seinem Mittelpunkt in Richtung (dx,dy)?
+ *
+ * Gemessen wird bis zur KANTE seines Koerpers, nicht bis zum Mittelpunkt.
+ * Ein Gegner ist hoeher als breit: von oben fiel er aus der Reichweite,
+ * waehrend er von der Seite laengst getroffen wurde. Genau diese Not hatte
+ * frueher nur der Sonderfall der grossen Gegner (enemy.js fitBodyToSprite)
+ * geloest — und der war ein Kreis, also nach allen Seiten zu grosszuegig.
+ */
+function _gegnerKante(enemy, dx, dy) {
+  if (!enemy) return 0;
+  let hw = 0, hh = 0;
+  if (typeof enemy._hitHalfW === 'number' && typeof enemy._hitHalfH === 'number') {
+    // Aus fitBodyToSprite: die Figur ohne die leeren Raender des Frames.
+    hw = enemy._hitHalfW; hh = enemy._hitHalfH;
+  } else if (enemy.displayWidth > 0 && enemy.displayHeight > 0) {
+    hw = enemy.displayWidth / 2; hh = enemy.displayHeight / 2;
+  } else if (enemy.body && enemy.body.width > 0 && enemy.body.height > 0) {
+    // body.width traegt die Frame-Groesse OHNE Skalierung (gemessen: 259 px
+    // Body bei 44 px Anzeige) — ohne den Faktor waere die Reichweite absurd.
+    const sx = Math.abs(enemy.scaleX || 1), sy = Math.abs(enemy.scaleY || 1);
+    hw = (enemy.body.width * sx) / 2; hh = (enemy.body.height * sy) / 2;
+  }
+  if (!(hw > 0) && !(hh > 0)) return 0;
+  const len = Math.hypot(dx, dy);
+  if (!(len > 0)) return Math.max(hw, hh);
+  // Strecke vom Zentrum bis zur Rechteckkante entlang (dx,dy).
+  const ux = Math.abs(dx) / len, uy = Math.abs(dy) / len;
+  const tx = (ux > 1e-6) ? hw / ux : Infinity;
+  const ty = (uy > 1e-6) ? hh / uy : Infinity;
+  return Math.min(tx, ty);
+}
+
 function forEachEnemyInRange(range, callback, options = {}) {
   if (!enemies?.children || typeof callback !== 'function' || !player) return;
 
   const { requireLineOfSight = false } = options;
-  const px = player.x ?? player.body?.x ?? 0;
-  const py = player.y ?? player.body?.y ?? 0;
+  const _u = angriffsUrsprung();
+  const px = _u.x;
+  const py = _u.y;
 
   enemies.children.iterate((enemy) => {
     if (!enemy || !enemy.active) return;
@@ -1105,12 +1161,10 @@ function forEachEnemyInRange(range, callback, options = {}) {
     const dy = ey - py;
     const distance = Math.hypot(dx, dy);
 
-    // _hitReach (grosse Gegner mit gefittetem Body, enemy.js fitBodyToSprite)
-    // erweitert die Reichweite um den Trefferradius: der Schlag muss die
-    // Body-KANTE erreichen, nicht das Zentrum. Ohne das hält der solide
-    // Boss-Body den Spieler vom Zentrum weg -> vertikale Angriffe verfehlen.
-    // Normale Gegner haben kein _hitReach -> Verhalten unverändert.
-    const reach = enemy._hitReach || 0;
+    // Der Schlag muss die Body-KANTE erreichen, nicht das Zentrum — sonst
+    // haelt schon die eigene Ausdehnung des Gegners den Spieler aus der
+    // Reichweite, und zwar nach oben/unten staerker als zur Seite.
+    const reach = _gegnerKante(enemy, dx, dy);
     if (distance - reach > range) return;
     if (requireLineOfSight && !hasLineOfSightToEnemy(enemy)) return;
 
@@ -1137,8 +1191,9 @@ function breakDestructiblesInRange(scene, range, options = {}) {
   if (typeof window.breakDestructibleObstacle !== 'function') return 0;
 
   const { requireLineOfSight = false, cx = null, cy = null } = options;
-  const px = (cx != null) ? cx : (player.x ?? player.body?.x ?? 0);
-  const py = (cy != null) ? cy : (player.y ?? player.body?.y ?? 0);
+  const _u = angriffsUrsprung();
+  const px = (cx != null) ? cx : _u.x;
+  const py = (cy != null) ? cy : _u.y;
 
   // Erst sammeln, dann brechen: breakDestructibleObstacle ruft obs.destroy(),
   // und während children.iterate() aus der Gruppe zu entfernen überspringt
@@ -1710,11 +1765,14 @@ function showAttackEffect(scene, options = {}) {
   } = options;
 
   const angle = _getAimVector2(scene).angle();
+  // Aus derselben Mitte wie der Schadens-Kegel (forEachEnemyInRange) — die
+  // beiden sind hier schon einmal auseinandergelaufen.
+  const u = angriffsUrsprung();
   const g = scene.add.graphics();
   g.fillStyle(color, alpha);
   g.slice(
-    player.x,
-    player.y,
+    u.x,
+    u.y,
     range,
     angle - arcWidth / 2,
     angle + arcWidth / 2,
@@ -3118,12 +3176,13 @@ function _deathBlowFx(scene, forward, range, arc) {
   try {
     const CRIMSON = 0xff2233;
     const ang = Math.atan2(forward.y, forward.x);
+    const u = angriffsUrsprung();
     const g = scene.add.graphics().setDepth(70);
     g.fillStyle(CRIMSON, 0.26);
-    g.slice(player.x, player.y, range, ang - arc / 2, ang + arc / 2, false);
+    g.slice(u.x, u.y, range, ang - arc / 2, ang + arc / 2, false);
     g.fillPath();
     g.lineStyle(3, 0xff6677, 0.9);
-    g.beginPath(); g.arc(player.x, player.y, range * 0.92, ang - arc / 2, ang + arc / 2, false); g.strokePath();
+    g.beginPath(); g.arc(u.x, u.y, range * 0.92, ang - arc / 2, ang + arc / 2, false); g.strokePath();
     if (scene.tweens) scene.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => { try { g.destroy(); } catch (e) {} } });
     else scene.time.delayedCall(220, () => { try { g.destroy(); } catch (e) {} });
   } catch (e) { /* visual only */ }
@@ -3913,9 +3972,10 @@ function castCycloneStrike() {
     const swirlTimer = scene.time.addEvent({ delay: 16, loop: true, callback: () => {
       life += 16; a0 += 0.34;
       const k = Math.min(1, life / 360);                 // Sog zieht sich zusammen
+      const u = angriffsUrsprung();   // #164: Mitte des Koerpers, nicht die Fuesse
       swirl.clear();
       swirl.lineStyle(3, CYAN, 0.85 * (1 - k * 0.6));
-      swirl.strokeCircle(player.x, player.y, radius * (1 - k * 0.85));
+      swirl.strokeCircle(u.x, u.y, radius * (1 - k * 0.85));
       for (let s = 0; s < arms; s++) {
         swirl.lineStyle(2.5, s % 2 ? LIGHT : CYAN, 0.8 * (1 - k));
         swirl.beginPath();
@@ -3923,14 +3983,15 @@ function castCycloneStrike() {
         for (let t = 0; t <= 1.0001; t += 0.1) {
           const ang = base + t * turns * Math.PI * 2;
           const rr = radius * (1 - k) * (1 - t * 0.92);
-          const px = player.x + Math.cos(ang) * rr, py = player.y + Math.sin(ang) * rr;
+          const px = u.x + Math.cos(ang) * rr, py = u.y + Math.sin(ang) * rr;
           if (t === 0) swirl.moveTo(px, py); else swirl.lineTo(px, py);
         }
         swirl.strokePath();
       }
       if (life >= 380) { try { swirl.destroy(); } catch (e) {} swirlTimer.remove(); }
     }});
-    const core = scene.add.circle(player.x, player.y, 16, LIGHT, 0.8).setDepth(71);
+    const _uc = angriffsUrsprung();
+    const core = scene.add.circle(_uc.x, _uc.y, 16, LIGHT, 0.8).setDepth(71);
     if (scene.tweens) scene.tweens.add({ targets: core, scale: 2.2, alpha: 0, duration: 300, onComplete: () => { try { core.destroy(); } catch (e) {} } });
     else scene.time.delayedCall(300, () => { try { core.destroy(); } catch (e) {} });
     if (window.particleFactory) window.particleFactory.abilityTrail(player.x, player.y, CYAN);
@@ -4103,9 +4164,10 @@ function castWhirlwind() {
     const r = range * factor;
     gfx.clear();
     // schwacher Disc-Glow + zwei Ringe für die Scheibenkontur
-    gfx.fillStyle(STEEL, 0.06 * aFac); gfx.fillCircle(player.x, player.y, r);
-    gfx.lineStyle(2, 0x66f0ff, 0.30 * aFac); gfx.strokeCircle(player.x, player.y, r);
-    gfx.lineStyle(1, 0x66f0ff, 0.22 * aFac); gfx.strokeCircle(player.x, player.y, r * 0.42);
+    const u = angriffsUrsprung();   // #164: Scheibe sitzt am Koerper, nicht am Boden
+    gfx.fillStyle(STEEL, 0.06 * aFac); gfx.fillCircle(u.x, u.y, r);
+    gfx.lineStyle(2, 0x66f0ff, 0.30 * aFac); gfx.strokeCircle(u.x, u.y, r);
+    gfx.lineStyle(1, 0x66f0ff, 0.22 * aFac); gfx.strokeCircle(u.x, u.y, r * 0.42);
     // äußere Scheibe (CCW) + innere Scheibe (CW, gegenläufig)
     drawDisc(angle,  1, outerBlades, r * 0.66, r,        3.5, 0.9 * aFac, true);
     drawDisc(angle, -1, innerBlades, r * 0.12, r * 0.45, 3,   0.85 * aFac, false);

@@ -3386,13 +3386,15 @@ function fitBodyToSprite(sprite) {
   var sy = Math.abs(sprite.scaleY || 1);
   var sx = Math.abs(sprite.scaleX || 1);
   sprite._fitHalfH = (box.h * sy) / 2;
-  // Trefferradius für Nahkampf/Fähigkeiten (player.js forEachEnemyInRange).
-  // Der Body ist ein solider Block von ~box*scale Weltpixeln; die Reichweite
-  // wird aber Zentrum-zu-Zentrum gemessen. Bei einem grossen Boss (Figur ~87px)
-  // hält der Body den Spieler so weit vom Zentrum weg, dass ein vertikaler
-  // Angriff (Spieler ist höher als breit) aus der Reichweite fällt. Mit dem
-  // halben Figur-Radius als "reach" reicht der Schlag bis an die Body-Kante.
-  sprite._hitReach = (Math.max(box.w * sx, box.h * sy)) / 2;
+  // Trefferreichweite fuer Nahkampf/Faehigkeiten (player.js _gegnerKante).
+  // Der Body ist ein solider Block von ~box*scale Weltpixeln; gemessen wird
+  // aber Zentrum-zu-Zentrum. Bei einem grossen Boss (Figur ~87px) haelt der
+  // Body den Spieler so weit vom Zentrum weg, dass ein vertikaler Angriff aus
+  // der Reichweite faellt. Getrennt nach Achsen (#164), damit bis zur KANTE
+  // gemessen werden kann und nicht bis zu einem umschliessenden Kreis, der
+  // zur Seite zu weit reicht. Die leeren Raender des Frames bleiben draussen.
+  sprite._hitHalfW = (box.w * sx) / 2;
+  sprite._hitHalfH = (box.h * sy) / 2;
 }
 if (typeof window !== 'undefined') window.fitBodyToSprite = fitBodyToSprite;
 
