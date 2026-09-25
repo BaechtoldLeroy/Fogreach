@@ -893,6 +893,10 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     if (window.questSystem && typeof window.questSystem.onItemCrafted === 'function') {
       try { window.questSystem.onItemCrafted(); } catch (e) { /* swallow */ }
     }
+    // #143: Die Einfuehrungsquest zu diesem System haengt daran.
+    if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+      try { window.questSystem.onSystemUsed('upgrade'); } catch (e) { /* swallow */ }
+    }
     if (typeof saveGame === 'function') { try { saveGame(); } catch (e) {} }
 
     this._showFeedback(_CRAFT_T('crafting.feedback.ausbau_ok', { n: LS.ausbauStufe(item) }), '#44ff44');

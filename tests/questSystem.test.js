@@ -754,10 +754,10 @@ test('062 T014: entfernte/umbenannte IDs weg, v4-Nachfolger da', () => {
 
 // --- T015 — Struktur-Invarianten -------------------------------------------
 
-test('062 T015: 39 Quests (34 + zwei Nebenquests #148 + drei Aushaenge #68), keine doppelten ids/titles', () => {
+test('062 T015: 43 Quests (34 + zwei Nebenquests #148 + drei Aushaenge #68 + vier Einfuehrungen #143), keine doppelten ids/titles', () => {
   const D = freshSystem().QUEST_DEFINITIONS;
   const ids = Object.keys(D);
-  assert.strictEqual(ids.length, 39, 'die v4-Struktur hat 34 Quests, dazu zwei Nebenquests (#148) und drei Aushaenge am Brett (#68)');
+  assert.strictEqual(ids.length, 43, 'die v4-Struktur hat 34 Quests, dazu zwei Nebenquests (#148), drei Aushaenge am Brett (#68) und vier Einfuehrungsquests (#143)');
   const titles = ids.map((id) => D[id].title);
   assert.strictEqual(new Set(titles).size, titles.length, 'keine doppelten Titel');
   const idField = ids.map((id) => D[id].id).filter(Boolean);
@@ -785,7 +785,11 @@ test('062 T015: Stichproben gegen den Kontrakt (prereqs, npcIds/FR-022)', () => 
 
 test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
   const D = freshSystem().QUEST_DEFINITIONS;
+  const SYS = freshSystem();
   const WIRED = {
+    // #143: onSystemUsed nimmt genau diese Ziele an — ein Tippfehler in einer
+    // Quest waere ein Auftrag, den man nicht abschliessen kann.
+    system: new Set(SYS.SYSTEM_ZIELE || []),
     kill: '*',           // updateQuestProgress('kill', target)
     boss_kill: '*',      // onBossKilled(name)
     explore: new Set(['room']),

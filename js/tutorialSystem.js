@@ -1,5 +1,13 @@
 // tutorialSystem.js — first-time-player onboarding state machine.
 //
+// #143: Das Tutorial traegt nur noch den harten Kern — was man ohne Ansage
+// nicht herausfindet, weil es keine Figur und keinen Ort dafuer gibt:
+// Bewegen, ein NPC ansprechen, Angreifen, Aufheben, Anlegen, Trank, Journal,
+// Speichern. Alles andere hat im Hub eine Figur, die es sagen kann, und
+// kommt ueber eine Einfuehrungsquest herein (questSystem: einfuehrung_*).
+// Ein Tutorialschritt haelt das Spiel an und wartet; eine Quest ist ein
+// Grund, hinzugehen.
+//
 // Runs as an IIFE that attaches `window.TutorialSystem`. The module owns its
 // own localStorage key (`demonfall_tutorial_v1`) — never bundled into the main
 // save (Constraint C-07). Scenes report player events via report(eventName,
@@ -34,11 +42,6 @@
     'tutorial.step.movement.mobile':          'Joystick links benutzen zum Bewegen',
     'tutorial.step.quest_dialog':             'Sprich mit Ratsherr Aldric — [E] zum Reden',
     'tutorial.step.quest_dialog.mobile':      'Geh zu Ratsherr Aldric und tippe den Interaktions-Knopf',
-    'tutorial.step.quest_close':              'Nimm den Auftrag an und schließe den Dialog (ESC)',
-    'tutorial.step.quest_close.mobile':       'Nimm den Auftrag an und schließe den Dialog',
-    'tutorial.step.dungeon_approach':         'Geh zum Rathauskeller',
-    'tutorial.step.dungeon_enter':            '[E] um den Dungeon zu betreten',
-    'tutorial.step.dungeon_enter.mobile':     'Tippe den Interaktions-Knopf, um den Dungeon zu betreten',
     'tutorial.step.combat_basics':            'WASD bewegen, LMB/Space angreifen',
     'tutorial.step.combat_basics.classic':    'Pfeiltasten bewegen, Space angreifen',
     'tutorial.step.combat_basics.arpg':       'WASD bewegen, Linksklick angreifen',
@@ -47,12 +50,6 @@
     'tutorial.step.combat_potion.mobile':     'Tippe den Heiltrank-Knopf',
     'tutorial.step.journal_hint':             'Ratsherr Aldric hat dir einen Auftrag gegeben — drücke J, um dein Journal zu öffnen',
     'tutorial.step.journal_hint.mobile':      'Ratsherr Aldric hat dir einen Auftrag gegeben — tippe das Journal-Symbol oben rechts',
-    'tutorial.step.skill_loadout':            'Du hast eine neue Fähigkeit erlernt — drücke K, um sie ins Loadout zu legen',
-    'tutorial.step.skill_loadout.mobile':     'Du hast eine neue Fähigkeit erlernt — tippe das Loadout-Symbol oben',
-    'tutorial.step.skill_use':                'Im Dungeon kannst du die Fähigkeit mit Q/W/E/R einsetzen',
-    'tutorial.step.skill_use.classic':        'Im Dungeon kannst du die Fähigkeit mit Q/W/E/R einsetzen',
-    'tutorial.step.skill_use.arpg':           'Im Dungeon kannst du die Fähigkeit mit 1/2/3/4 einsetzen',
-    'tutorial.step.skill_use.mobile':         'Im Dungeon kannst du die Fähigkeit mit den Ability-Knöpfen unten einsetzen',
     // loot_wait has no banner (hintKey null in the step) — the banner stays
     // hidden between combat.basics and the first loot drop, so the player
     // isn't told to pick something up before there is anything to pick up.
@@ -75,11 +72,6 @@
     'tutorial.step.movement.mobile':          'Use the left joystick to move',
     'tutorial.step.quest_dialog':             'Talk to Councillor Aldric — press [E]',
     'tutorial.step.quest_dialog.mobile':      'Walk to Councillor Aldric and tap the interact button',
-    'tutorial.step.quest_close':              'Accept the task and close the dialog (ESC)',
-    'tutorial.step.quest_close.mobile':       'Accept the task and close the dialog',
-    'tutorial.step.dungeon_approach':         'Go to the town hall cellar',
-    'tutorial.step.dungeon_enter':            '[E] to enter the dungeon',
-    'tutorial.step.dungeon_enter.mobile':     'Tap the interact button to enter the dungeon',
     'tutorial.step.combat_basics':            'WASD to move, LMB/Space to attack',
     'tutorial.step.combat_basics.classic':    'Arrow keys to move, Space to attack',
     'tutorial.step.combat_basics.arpg':       'WASD to move, left-click to attack',
@@ -88,12 +80,6 @@
     'tutorial.step.combat_potion.mobile':     'Tap the potion button',
     'tutorial.step.journal_hint':             "Councillor Aldric gave you a task — press J to open your journal",
     'tutorial.step.journal_hint.mobile':      "Councillor Aldric gave you a task — tap the journal icon (top-right)",
-    'tutorial.step.skill_loadout':            'You learned a new ability — press K to slot it into your loadout',
-    'tutorial.step.skill_loadout.mobile':     'You learned a new ability — tap the loadout icon at the top',
-    'tutorial.step.skill_use':                'In the dungeon you can trigger the ability with Q/W/E/R',
-    'tutorial.step.skill_use.classic':        'In the dungeon you can trigger the ability with Q/W/E/R',
-    'tutorial.step.skill_use.arpg':           'In the dungeon you can trigger the ability with 1/2/3/4',
-    'tutorial.step.skill_use.mobile':         'In the dungeon you can trigger the ability with the ability buttons at the bottom',
     'tutorial.step.loot_pickup':              'An item dropped — just walk over it to pick it up',
     'tutorial.step.loot_pickup.mobile':       'An item dropped — move over it with the joystick to pick it up',
     'tutorial.step.loot_equip':               'Open the inventory (I), click the item, then click "Equip"',
@@ -165,27 +151,6 @@
       completion: { event: 'dialog.opened', matcher: function (p) { return _nameMatches(p && p.npc, 'aldric'); } }
     },
     {
-      id: 'quest.close',
-      scene: 'HubSceneV2',
-      hintKey: 'tutorial.step.quest_close',
-      targetRef: null,
-      completion: { event: 'dialog.closed', matcher: function (p) { return _nameMatches(p && p.npc, 'aldric'); } }
-    },
-    {
-      id: 'dungeon.approach',
-      scene: 'HubSceneV2',
-      hintKey: 'tutorial.step.dungeon_approach',
-      targetRef: { type: 'entrance', name: 'Rathaus' },
-      completion: { event: 'hub.entrance.approached', matcher: function (p) { return _nameMatches(p && p.name, 'rathaus'); } }
-    },
-    {
-      id: 'dungeon.enter',
-      scene: 'HubSceneV2',
-      hintKey: 'tutorial.step.dungeon_enter',
-      targetRef: { type: 'entrance', name: 'Rathaus' },
-      completion: { event: 'hub.entrance.entered', matcher: function (p) { return _nameMatches(p && p.name, 'rathaus'); } }
-    },
-    {
       id: 'combat.basics',
       scene: 'GameScene',
       hintKey: 'tutorial.step.combat_basics',
@@ -248,40 +213,6 @@
       completion: { event: 'journal.opened' }
     },
     {
-      // Skill mini-tutorial — silent wait until the player has learned an
-      // ability. Auto-unlocks fire on kill / wave / quest milestones,
-      // typically while the player is still in the dungeon, so this slot
-      // is positioned BEFORE hub.return.wait. If ability.learned fires
-      // earlier in the flow (e.g. during combat.basics) the event is
-      // buffered and replayed when this step is entered (see report()).
-      id: 'skill.wait',
-      scene: null,
-      hintKey: null,
-      targetRef: null,
-      completion: { event: 'ability.learned' }
-    },
-    {
-      // Loadout binding hint. K is bound to openLoadoutUI in both Hub
-      // (HubSceneV2._handleLoadout) and GameScene (main.js); the
-      // tutorial accepts a loadout-open from either.
-      id: 'skill.loadout',
-      scene: null,
-      hintKey: 'tutorial.step.skill_loadout',
-      targetRef: null,
-      completion: { event: 'loadout.opened' }
-    },
-    {
-      // Skill use binding hint. The .classic/.arpg/.mobile i18n variants
-      // render the correct keys for the active scheme. Advances on
-      // combat.ability.used. No softlock if the player never uses an
-      // ability — the tutorial just parks here.
-      id: 'skill.use',
-      scene: null,
-      hintKey: 'tutorial.step.skill_use',
-      targetRef: null,
-      completion: { event: 'combat.ability.used' }
-    },
-    {
       // Silent gate — the next visible step (save.notice) only fires once
       // the player has returned to the hub. Without this gate the save
       // notice could appear inside the dungeon, which makes no sense.
@@ -331,13 +262,7 @@
       // Used to enforce step.minDisplayMs — events that arrive before the
       // minimum has elapsed are dropped so a fast player can't blow past
       // the first banner without reading it.
-      currentStepShownAt: 0,
-      // True when ability.learned arrived before the player reached
-      // skill.wait. _advance checks this when entering skill.wait and
-      // immediately re-advances so the loadout hint appears without
-      // waiting for ANOTHER ability learn (auto-unlocks fire only once
-      // per ability, so a second learn could be a long time away).
-      pendingAbilityLearned: false
+      currentStepShownAt: 0
     };
   }
 
@@ -457,15 +382,6 @@
     _persist();
     _notify();
     if (next.autoDismissMs) _scheduleAutoDismiss(next);
-    // If ability.learned was buffered earlier in the flow, replay it now
-    // by advancing one more step. This drops the silent skill.wait gate
-    // and lands directly on skill.loadout so the player gets the hint
-    // immediately on reaching this slot.
-    if (next.id === 'skill.wait' && state.pendingAbilityLearned) {
-      state.pendingAbilityLearned = false;
-      _persist();
-      _advance();
-    }
   }
 
   // --- Public API ---------------------------------------------------------
@@ -558,27 +474,6 @@
     if (!isActive()) {
       _debugLog(eventName, payload, 'dropped: not active (currentStepId=' + state.currentStepId + ', skipped=' + state.skipped + ')');
       return;
-    }
-
-    // ---- Buffer: ability.learned before skill.wait ----------------------
-    // The skill mini-tutorial sits between journal.hint and hub.return.wait
-    // in the linear flow. Auto-unlocks (kill / wave / quest milestones)
-    // can fire ability.learned much earlier — during combat.basics, the
-    // loot loop, combat.potion, etc. We do NOT want to skip those steps
-    // (every other reorder request was specifically about preserving
-    // them). Instead, remember that an ability has been learned and let
-    // skill.wait advance immediately when the player reaches it.
-    if (eventName === 'ability.learned') {
-      var skillWaitIdx = _stepIndex('skill.wait');
-      var hereIdx = _stepIndex(state.currentStepId);
-      if (skillWaitIdx >= 0 && hereIdx >= 0 && hereIdx < skillWaitIdx) {
-        if (!state.pendingAbilityLearned) {
-          state.pendingAbilityLearned = true;
-          _persist();
-        }
-        _debugLog(eventName, payload, 'buffered for skill.wait (currently on ' + state.currentStepId + ')');
-        return;
-      }
     }
 
     var step = getCurrentStep();

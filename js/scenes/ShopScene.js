@@ -564,6 +564,7 @@
         return;
       }
       if (typeof window._refreshInventoryHUD === 'function') { try { window._refreshInventoryHUD(); } catch (e) {} }
+      this._kaufGemeldet();
       this._refreshGold();
       this._renderTab('items'); // Preis kann tiefenabhängig sein -> neu zeichnen
       const nm = (window.LootSystem && typeof window.LootSystem.getLocalizedDisplayName === 'function')
@@ -657,6 +658,19 @@
       return true;
     }
 
+    /**
+     * #143: Ein Kauf ist gelungen — Maras Einfuehrungsquest haengt daran.
+     *
+     * Vier Wege fuehren hier vorbei (Gegenstand, Amulett, Trank, Blindkauf);
+     * welcher es war, spielt fuer die Quest keine Rolle. Der Umwurf zaehlt
+     * NICHT — er kauft nichts, er wuerfelt Vorhandenes neu.
+     */
+    _kaufGemeldet() {
+      if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+        try { window.questSystem.onSystemUsed('markt'); } catch (e) { /* swallow */ }
+      }
+    }
+
     _tryBuyItem(stockIdx, price) {
       if (!window.LootSystem || !window.LootSystem.spendGold(price)) {
         this._showToast(_SHOP_T('shop.toast.not_enough_gold'));
@@ -673,6 +687,7 @@
       this._refreshGold();
       this._renderTab('items');
       this._showToast(_SHOP_T('shop.toast.bought', { name: item.displayName || item._baseName || 'Item' }));
+      this._kaufGemeldet();
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }
@@ -708,6 +723,7 @@
         ? window.LootSystem.getLocalizedDisplayName(amulet)
         : (amulet.displayName || amulet.name || 'Amulett');
       this._showToast(_SHOP_T('shop.toast.bought', { name: boughtName }));
+      this._kaufGemeldet();
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }
@@ -909,6 +925,7 @@
       this._refreshGold();
       const potName = (window.i18n ? window.i18n.t('loot.potion.t' + def.potionTier) : def.name);
       this._showToast(_SHOP_T('shop.toast.bought', { name: potName }));
+      this._kaufGemeldet();
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }

@@ -390,6 +390,10 @@
     if (state.history.length > MAX_HISTORY) {
       state.history = state.history.slice(-MAX_HISTORY);
     }
+    // #143: Die Einfuehrungsquest zu diesem System haengt daran.
+    if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+      try { window.questSystem.onSystemUsed('edikt'); } catch (e) { /* swallow */ }
+    }
     _persist();
     return { success: true };
   }

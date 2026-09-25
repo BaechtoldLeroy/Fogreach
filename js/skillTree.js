@@ -297,6 +297,10 @@
     state.skillPoints = (state.skillPoints | 0) - cost;
     _persist();
     _notify();
+    // #143: Die Einfuehrungsquest zu diesem System haengt daran.
+    if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+      try { window.questSystem.onSystemUsed('talent'); } catch (e) { /* swallow */ }
+    }
     return true;
   }
 

@@ -179,7 +179,9 @@ test('report() advances when event matches and matcher passes', () => {
   TS.report('player.moved', { dx: 1, dy: 0 });
   assert.strictEqual(TS.getCurrentStep().id, 'quest.dialog');
   TS.report('dialog.opened', { npc: 'aldric' });
-  assert.strictEqual(TS.getCurrentStep().id, 'quest.close');
+  // #143: quest.close, dungeon.approach und dungeon.enter sind raus —
+  // Aldrics Auftrag schickt einen selbst in den Keller.
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
 });
 
 // --- 7. report() does not advance when matcher returns false --------------
@@ -216,9 +218,6 @@ test('step 11 auto-dismisses after 5000 ms via the injected scheduler', () => {
   TS.report('inventory.equipped', { slot: 'mainhand' });                        // -> combat.potion
   TS.report('potion.attempted', {});                                            // -> journal.hint
   TS.report('journal.opened', {});                                              // -> skill.wait
-  TS.report('ability.learned', { abilityId: 'spinAttack' });                    // -> skill.loadout
-  TS.report('loadout.opened', {});                                              // -> skill.use
-  TS.report('combat.ability.used', { slot: 1 });                                // -> hub.return.wait
   TS.report('hub.returned', {});                                                // -> save.notice
   assert.strictEqual(TS.getCurrentStep().id, 'save.notice');
   // Auto-dismiss must NOT have fired yet.
@@ -354,36 +353,6 @@ test('stored blob with version > 1 is discarded on init', () => {
 
 // --- 15. final advance past last step completes the tutorial --------------
 
-// --- 16. ability.learned buffered before skill.wait, replays on entry ----
-
-test('ability.learned fired before skill.wait is buffered + replays on entry', () => {
-  const { TS } = fresh();
-  TS.init();
-  TS.maybeAutoSkip();
-  // Walk to combat.basics so we're past the gate.
-  TS.report('player.moved', {});
-  TS.report('dialog.opened', { npc: 'aldric' });
-  TS.report('dialog.closed', { npc: 'aldric' });
-  TS.report('hub.entrance.approached', { name: 'rathaus_entrance' });
-  TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });
-  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
-  // Player learns an ability deep in combat — should NOT advance, but
-  // should be buffered and stay on combat.basics.
-  TS.report('ability.learned', { abilityId: 'spinAttack' });
-  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics', 'still on combat.basics');
-  // Walk through the rest of the dungeon to journal.hint, then press J.
-  TS.report('combat.hit', { byPlayer: true });
-  TS.report('loot.dropped', { itemId: 'x' });
-  TS.report('loot.picked', { itemId: 'x' });
-  TS.report('inventory.equipped', { slot: 'mainhand' });
-  TS.report('potion.attempted', {});
-  TS.report('journal.opened', {});
-  // Pressing J advances journal.hint -> skill.wait. The buffered
-  // ability.learned then immediately advances skill.wait -> skill.loadout
-  // without waiting for another auto-unlock.
-  assert.strictEqual(TS.getCurrentStep().id, 'skill.loadout', 'buffered ability.learned replayed');
-});
-
 test('final advance past last step sets active:false, currentStepId:null and fires onChange(null)', () => {
   const { TS, p } = fresh();
   TS.init();
@@ -391,18 +360,12 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   // Walk all the way to the final step (save.notice).
   TS.report('player.moved', {});
   TS.report('dialog.opened', { npc: 'aldric' });
-  TS.report('dialog.closed', { npc: 'aldric' });
-  TS.report('hub.entrance.approached', { name: 'rathaus_entrance' });
-  TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });
   TS.report('combat.hit', { byPlayer: true });
   TS.report('loot.dropped', { itemId: 'x' });
   TS.report('loot.picked', { itemId: 'x' });
   TS.report('inventory.equipped', { slot: 'mainhand' });
   TS.report('potion.attempted', {});
   TS.report('journal.opened', {});                                               // -> skill.wait
-  TS.report('ability.learned', { abilityId: 'spinAttack' });                     // -> skill.loadout
-  TS.report('loadout.opened', {});                                               // -> skill.use
-  TS.report('combat.ability.used', { slot: 1 });                                 // -> hub.return.wait
   TS.report('hub.returned', {});                                                 // -> save.notice
   assert.strictEqual(TS.getCurrentStep().id, 'save.notice');
   // Final tick — save.notice auto-dismisses, completing the tutorial.

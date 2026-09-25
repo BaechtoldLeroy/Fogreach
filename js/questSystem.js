@@ -69,6 +69,86 @@
     // Legacy Akt-1 quests deleted: aldric_intruders, harren_daughter,
     // branka_armor (see WP02 T010). No save migration — unknown IDs in old
     // save files are silently dropped by loadQuestSaveData.
+    // -----------------------------------------------------------------------
+    // #143: Einfuehrungsquests — jedes System kommt ueber eine Quest herein,
+    // nicht ueber einen Tutorialkasten.
+    //
+    // Ein Tutorialschritt haelt das Spiel an, sagt etwas und wartet. Eine
+    // Quest ist ein Grund: nach ihr hat man in der Schmiede einmal etwas
+    // verbessert und weiss, wozu sie taugt. Die Belohnung ist bewusst klein
+    // — gross genug, sie anzunehmen, zu klein, um zum Pflichtweg zu werden.
+    //
+    // Wer sie liegen laesst, bekommt sie nicht nachgereicht: sie bleibt beim
+    // NPC stehen und ist jederzeit abholbar.
+    einfuehrung_schmiede: {
+      id: 'einfuehrung_schmiede',
+      title: 'Der erste Schliff',
+      description: 'Werte in der Archivschmiede ein Ausrüstungsstück auf.',
+      npcId: 'branka',
+      type: 'system',
+      chain: 1,
+      objectives: [
+        { type: 'system', target: 'upgrade', current: 0, required: 1 }
+      ],
+      rewards: { xp: 40, gold: 30 },
+      prerequisites: ['aldric_cleanup'],
+      requiredAct: 0,
+      dialogueOffer: 'Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.\n\nBring mir irgendetwas davon. Ich zeig Dir, wie man es ausbaut — Gold, ein paar Eisenbrocken, und es wird Deins. Danach machst Du es allein.',
+      dialogueProgress: 'Du hast es noch nicht gemacht. Leg ein Stück auf den Tisch und drück auf Ausbauen. Das Gold und die Brocken hast Du.',
+      dialogueComplete: '(Sie dreht es einmal ins Licht.) Siehst Du. Dasselbe Stück, nur nicht mehr dasselbe.\n\nJedes Mal, wenn Du hochkommst, kommst Du hier vorbei. Nicht weil ich das sage, sondern weil Du sonst mit dem runtergehst, was letzte Woche gereicht hat.'
+    },
+    einfuehrung_presse: {
+      id: 'einfuehrung_presse',
+      title: 'Eine Zeile, die bleibt',
+      description: 'Lass Setzer Thom ein Edikt drucken.',
+      npcId: 'thom',
+      type: 'system',
+      chain: 1,
+      objectives: [
+        { type: 'system', target: 'edikt', current: 0, required: 1 }
+      ],
+      rewards: { xp: 40, gold: 30 },
+      prerequisites: ['aldric_cleanup'],
+      requiredAct: 0,
+      dialogueOffer: 'Der Rat schreibt jede Woche vor, was die Stadt denken soll. Wir können dasselbe — kleiner, aber wir können es.\n\nDu hast Druckblätter dabei, ich sehe sie. Such Dir eine Zeile aus und lass sie mich setzen. Sie wirkt, solange sie hängt, und sie kostet Dich Aufmerksamkeit beim Rat. Beides sollst Du einmal gespürt haben, bevor es darauf ankommt.',
+      dialogueProgress: 'Noch hängt nichts. Geh rein, such eine Zeile aus, ich setze sie.',
+      dialogueComplete: '(Er wischt sich die Finger am Kittel ab.) Jetzt steht es an jeder Ecke, und irgendwer liest es laut vor.\n\nMerk Dir nur eins: Jede Zeile, die wir drucken, legt der Rat auf seine Waage. Druck nicht mehr, als Du unten wieder gutmachen kannst.'
+    },
+    einfuehrung_markt: {
+      id: 'einfuehrung_markt',
+      title: 'Was unter dem Tisch liegt',
+      description: 'Kauf Mara auf dem Schwarzmarkt etwas ab (ab Tiefe 4).',
+      npcId: 'mara',
+      type: 'system',
+      chain: 1,
+      minDepth: 4,
+      objectives: [
+        { type: 'system', target: 'markt', current: 0, required: 1 }
+      ],
+      rewards: { xp: 40, gold: 30 },
+      prerequisites: ['aldric_cleanup'],
+      requiredAct: 0,
+      dialogueOffer: 'Du schleppst Gold herum, als wüsstest Du nicht, wofür. Ich schon.\n\nAb Tiefe 4 habe ich einen Stand — nicht hier oben, frag nicht wo. Nimm irgendetwas, das Billigste reicht. Danach weisst Du, dass es ihn gibt, und das ist der ganze Punkt.',
+      dialogueProgress: 'Ab Tiefe 4. Nimm irgendetwas. Ich schreibe nicht auf, was.',
+      dialogueComplete: '(Sie zählt das Gold nicht nach.) Gut. Und jetzt vergiss, dass ich Dir das gezeigt habe.\n\nDer Stand wechselt seinen Platz, aber er ist jeden Lauf irgendwo. Wer mit vollen Taschen hochkommt und sie wieder mit runternimmt, hat etwas nicht verstanden.'
+    },
+    einfuehrung_talente: {
+      id: 'einfuehrung_talente',
+      title: 'Wofür du taugst',
+      description: 'Setz einen Punkt im Talentbaum.',
+      npcId: 'aldric',
+      type: 'system',
+      chain: 1,
+      objectives: [
+        { type: 'system', target: 'talent', current: 0, required: 1 }
+      ],
+      rewards: { xp: 40, gold: 30 },
+      prerequisites: ['aldric_cleanup'],
+      requiredAct: 0,
+      dialogueOffer: 'Der Rat führt über jeden Bürger eine Akte, und in Deiner steht ein Wort, das mich stört: unbestimmt.\n\nDas lässt sich ändern. Du sammelst unten Erfahrung, und Erfahrung wird zu Punkten. Setz einen. Wut, Ketten oder Schatten — such es Dir aus. Der Rat schätzt Leute, die sich festlegen.',
+      dialogueProgress: 'Noch immer unbestimmt. Öffne den Baum und setz einen Punkt. Welchen, ist Deine Sache.',
+      dialogueComplete: '(Er notiert etwas, ohne aufzusehen.) Festgelegt. Gut.\n\nDie Akte wird Dich überleben, Archivschmied. Das ist keine Drohung, das ist Verwaltung.'
+    },
     harren_daughter_investigation: {
       id: 'harren_daughter_investigation',
       title: 'Die verschwundene Tochter',
@@ -901,6 +981,31 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // up front; dialogues to follow.
     window.i18n.register('en', {
       'quest.tracker.progress': '{title}: {cur}/{required}',
+      // #143: Die vier Einfuehrungsquests.
+      'quest.einfuehrung_schmiede.title': 'The First Edge',
+      'quest.einfuehrung_schmiede.description': 'Upgrade a piece of equipment at the Archive Forge.',
+      'quest.einfuehrung_schmiede.dialogueOffer': "You wear what you found down there, and you wear it the way you carry a tool that is strange to you.\n\nBring me any of it. I will show you how it is upgraded - gold, a few iron lumps, and it becomes yours. After that you do it alone.",
+      'quest.einfuehrung_schmiede.dialogueProgress': 'You have not done it yet. Put a piece on the table and press Upgrade. You have the gold and the lumps.',
+      'quest.einfuehrung_schmiede.dialogueComplete': "(She turns it once into the light.) You see. The same piece, only no longer the same.\n\nEvery time you come back up, you stop by here. Not because I say so, but because otherwise you go back down with what was good enough last week.",
+
+      'quest.einfuehrung_presse.title': 'A Line That Stays',
+      'quest.einfuehrung_presse.description': 'Have Thom the typesetter print an edict.',
+      'quest.einfuehrung_presse.dialogueOffer': "The council prescribes every week what this city is to think. We can do the same - smaller, but we can do it.\n\nYou have printing sheets on you, I can see them. Pick a line and let me set it. It works as long as it hangs, and it costs you the council's attention. You should have felt both once, before it matters.",
+      'quest.einfuehrung_presse.dialogueProgress': 'Nothing is hanging yet. Go in, pick a line, I will set it.',
+      'quest.einfuehrung_presse.dialogueComplete': "(He wipes his fingers on his smock.) Now it is on every corner, and somebody is reading it out loud.\n\nJust remember one thing: every line we print, the council puts on its scales. Do not print more than you can make good again down below.",
+
+      'quest.einfuehrung_markt.title': 'What Lies Under the Table',
+      'quest.einfuehrung_markt.description': 'Buy something from Mara at the black market (from depth 4).',
+      'quest.einfuehrung_markt.dialogueOffer': "You lug gold around as if you did not know what for. I do.\n\nFrom depth 4 I keep a stall - not up here, do not ask where. Take anything, the cheapest will do. After that you know it exists, and that is the whole point.",
+      'quest.einfuehrung_markt.dialogueProgress': 'From depth 4. Take anything. I do not write down what.',
+      'quest.einfuehrung_markt.dialogueComplete': "(She does not count the gold.) Good. And now forget that I showed you.\n\nThe stall moves, but it is somewhere every run. Anyone who comes back up with full pockets and takes them down again has missed something.",
+
+      'quest.einfuehrung_talente.title': 'What You Are Good For',
+      'quest.einfuehrung_talente.description': 'Spend a point in the talent tree.',
+      'quest.einfuehrung_talente.dialogueOffer': "The council keeps a file on every citizen, and in yours there is a word that bothers me: undetermined.\n\nThat can be changed. You gather experience down there, and experience becomes points. Spend one. Fury, Chains or Shadow - take your pick. The council values people who commit.",
+      'quest.einfuehrung_talente.dialogueProgress': 'Still undetermined. Open the tree and spend a point. Which one is your business.',
+      'quest.einfuehrung_talente.dialogueComplete': "(He notes something without looking up.) Committed. Good.\n\nThe file will outlive you, archive-smith. That is not a threat, that is administration.",
+
       'quest.tracker.short_suffix': '..',
       'quest.toast.completed': 'Objective complete: {title}',
       // Akt 0 — Aldric warmup (tutorial extension)
@@ -1599,6 +1704,28 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   }
 
   /**
+   * #143: Ein System des Spiels wurde benutzt — Schmiede, Presse,
+   * Schwarzmarkt, Talentbaum. Traegt die Einfuehrungsquests, die diese
+   * Systeme vorstellen, statt sie ueber Tutorialkaesten zu erklaeren.
+   *
+   * Gueltige Ziele (mehr gibt es nicht; ein Tippfehler waere eine Quest,
+   * die sich nicht abschliessen laesst):
+   *   'upgrade'  ein Ausruestungsstueck aufgewertet (CraftingScene)
+   *   'edikt'    ein Edikt gedruckt (printingHouse.publishEdict)
+   *   'markt'    im Schwarzmarkt gekauft (ShopScene)
+   *   'talent'   einen Talentpunkt gesetzt (skillTree.investPoint)
+   */
+  var SYSTEM_ZIELE = ['upgrade', 'edikt', 'markt', 'talent'];
+
+  function onSystemUsed(ziel) {
+    if (SYSTEM_ZIELE.indexOf(ziel) === -1) {
+      try { console.warn('[quest] unbekanntes System-Ziel: ' + ziel); } catch (e) {}
+      return false;
+    }
+    return updateQuestProgress('system', ziel, 1);
+  }
+
+  /**
    * Check if all quest chains for all NPCs are completed.
    */
   function areAllQuestChainsComplete() {
@@ -1969,6 +2096,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // #131: fuer die Verifikation — holt Elara nach, wenn der Akt schon passt.
     elaraSichtbarkeitNachziehen: _elaraSichtbarkeitNachziehen,
     onItemCrafted: onItemCrafted,
+    onSystemUsed: onSystemUsed,
+    SYSTEM_ZIELE: SYSTEM_ZIELE,
     areAllQuestChainsComplete: areAllQuestChainsComplete,
     isQuestReadyToComplete: isQuestReadyToComplete,
     completeQuest: completeQuest,
