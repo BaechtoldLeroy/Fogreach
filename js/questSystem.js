@@ -149,6 +149,53 @@
       dialogueProgress: 'Noch immer unbestimmt. Öffne den Baum und setz einen Punkt. Welchen, ist Deine Sache.',
       dialogueComplete: '(Er notiert etwas, ohne aufzusehen.) Festgelegt. Gut.\n\nDie Akte wird Dich überleben, Archivschmied. Das ist keine Drohung, das ist Verwaltung.'
     },
+    // Der Wissensbaum bei Branka: ihre erste Zeile im Hub macht die Begruendung
+    // schon selbst — "Erst wenn jede Klinge Wissen traegt, faellt ihre Maske".
+    // Voraussetzung ist Harrens Auftrag, weil der ein Fragment auszahlt: ohne
+    // eines liesse sich der Auftrag nicht erfuellen, und genau das soll eine
+    // Einfuehrung nie sein.
+    einfuehrung_wissen: {
+      id: 'einfuehrung_wissen',
+      title: 'Was die Mauern wissen',
+      description: 'Verbau ein Erinnerungsfragment im Wissensbaum.',
+      npcId: 'branka',
+      type: 'system',
+      chain: 2,
+      objectives: [
+        { type: 'system', target: 'wissen', current: 0, required: 1 }
+      ],
+      rewards: { xp: 40, gold: 30 },
+      prerequisites: ['einfuehrung_schmiede', 'harren_daughter_investigation'],
+      // requiredAct 0, obwohl sie fruehestens in Akt 1 auftaucht: die
+      // Voraussetzung oeffnet den Akt selbst, und der Akt-1-Bestand soll eine
+      // Aussage ueber die GESCHICHTE bleiben, nicht ueber Einfuehrungen.
+      requiredAct: 0,
+      dialogueOffer: 'Stahl allein schneidet die Lügen des Rates nicht. Das sage ich jedem, und jeder nickt und versteht es nicht.\n\nDu trägst ein Fragment bei Dir. Ein Stück von etwas, das jemand aufgeschrieben und der Rat verbrannt hat. Verbau es — nicht in einer Klinge, in Dir. Dann weisst Du, was ich meine.',
+      dialogueProgress: 'Das Fragment liegt noch bei Dir herum. Öffne den Baum und setz es ein. Es wird nicht mehr wert, wenn Du wartest.',
+      dialogueComplete: '(Sie sieht Dich einen Moment zu lange an.) Und? Nichts blitzt, nichts klingelt. So ist Wissen.\n\nJedes Fragment, das Du unten findest, gehört da hinein. Der Rat sammelt sie auch — nur verbrennt er sie.'
+    },
+    // Die Amulette fuehrt NUR der wandernde Haendler unten (ShopScene mit
+    // _dungeonMerchant); Maras Stand hat sie nicht. Darum schickt sie einen
+    // hinunter, statt selbst zu verkaufen. Keine Mindesttiefe: der Haendler
+    // ist ein Ereignis, kein Versprechen — ihr eigener Stand (Tiefe 4) haengt
+    // als Voraussetzung ohnehin davor.
+    einfuehrung_amulett: {
+      id: 'einfuehrung_amulett',
+      title: 'Der Alte mit dem Karren',
+      description: 'Kauf dem wandernden Händler in der Tiefe ein Amulett ab.',
+      npcId: 'mara',
+      type: 'system',
+      chain: 2,
+      objectives: [
+        { type: 'system', target: 'amulett', current: 0, required: 1 }
+      ],
+      rewards: { xp: 40, gold: 30 },
+      prerequisites: ['einfuehrung_markt'],
+      requiredAct: 0,
+      dialogueOffer: 'Da unten läuft ein Alter mit einem Karren herum. Frag mich nicht, wie er hineinkommt — ich weiss es nicht, und ich will es nicht wissen.\n\nEr führt Amulette. Ich fasse die Dinger nicht an, aber Du solltest eines getragen haben, bevor Du entscheidest, ob Du sie magst. Sie ändern einen ganzen Lauf, nicht nur eine Zahl.',
+      dialogueProgress: 'Der Alte taucht auf, wenn er will. Lauf weiter runter, dann triffst Du ihn. Und nimm genug Gold mit — billig ist er nicht.',
+      dialogueComplete: '(Sie betrachtet es aus sicherem Abstand.) Du hast es also wirklich getan.\n\nBehalt es im Auge. Was ein Amulett Dir gibt, gilt nur für diesen einen Lauf — und was es Dir nimmt, merkst Du meistens später.'
+    },
     harren_daughter_investigation: {
       id: 'harren_daughter_investigation',
       title: 'Die verschwundene Tochter',
@@ -981,7 +1028,19 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // up front; dialogues to follow.
     window.i18n.register('en', {
       'quest.tracker.progress': '{title}: {cur}/{required}',
-      // #143: Die vier Einfuehrungsquests.
+      // #143: Die sechs Einfuehrungsquests.
+      'quest.einfuehrung_wissen.title': 'What the Walls Know',
+      'quest.einfuehrung_wissen.description': 'Spend a memory fragment in the knowledge tree.',
+      'quest.einfuehrung_wissen.dialogueOffer': "Steel alone does not cut through the council's lies. I say that to everyone, and everyone nods and does not understand it.\n\nYou are carrying a fragment. A piece of something somebody wrote down and the council burned. Spend it - not in a blade, in yourself. Then you will know what I mean.",
+      'quest.einfuehrung_wissen.dialogueProgress': 'The fragment is still lying around on you. Open the tree and spend it. It will not be worth more if you wait.',
+      'quest.einfuehrung_wissen.dialogueComplete': "(She looks at you a moment too long.) And? Nothing flashes, nothing chimes. That is what knowledge is like.\n\nEvery fragment you find down there belongs in that tree. The council collects them too - it just burns them.",
+
+      'quest.einfuehrung_amulett.title': 'The Old Man with the Cart',
+      'quest.einfuehrung_amulett.description': 'Buy an amulet from the wandering merchant in the depths.',
+      'quest.einfuehrung_amulett.dialogueOffer': "There is an old man wandering about down there with a cart. Do not ask me how he gets in - I do not know, and I do not want to know.\n\nHe carries amulets. I do not touch the things, but you should have worn one before you decide whether you like them. They change a whole run, not just a number.",
+      'quest.einfuehrung_amulett.dialogueProgress': 'The old man turns up when he feels like it. Keep going deeper and you will meet him. And bring enough gold - he is not cheap.',
+      'quest.einfuehrung_amulett.dialogueComplete': "(She studies it from a safe distance.) So you really did it.\n\nKeep an eye on it. What an amulet gives you lasts for this one run - and what it takes from you, you usually notice later.",
+
       'quest.einfuehrung_schmiede.title': 'The First Edge',
       'quest.einfuehrung_schmiede.description': 'Upgrade a piece of equipment at the Archive Forge.',
       'quest.einfuehrung_schmiede.dialogueOffer': "You wear what you found down there, and you wear it the way you carry a tool that is strange to you.\n\nBring me any of it. I will show you how it is upgraded - gold, a few iron lumps, and it becomes yours. After that you do it alone.",
@@ -1714,8 +1773,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
    *   'edikt'    ein Edikt gedruckt (printingHouse.publishEdict)
    *   'markt'    im Schwarzmarkt gekauft (ShopScene)
    *   'talent'   einen Talentpunkt gesetzt (skillTree.investPoint)
+   *   'wissen'   ein Fragment im Wissensbaum verbaut (knowledgeTree.invest)
+   *   'amulett'  ein Amulett beim wandernden Haendler gekauft (ShopScene)
    */
-  var SYSTEM_ZIELE = ['upgrade', 'edikt', 'markt', 'talent'];
+  var SYSTEM_ZIELE = ['upgrade', 'edikt', 'markt', 'talent', 'wissen', 'amulett'];
 
   function onSystemUsed(ziel) {
     if (SYSTEM_ZIELE.indexOf(ziel) === -1) {

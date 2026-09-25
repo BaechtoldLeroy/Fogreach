@@ -750,6 +750,10 @@
     _persist();
     _callRecalc();
     _notify();
+    // #143: Die Einfuehrungsquest zu diesem System haengt daran.
+    if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+      try { window.questSystem.onSystemUsed('wissen'); } catch (e) { /* swallow */ }
+    }
     return true;
   }
 
@@ -783,6 +787,10 @@
     _persist();
     _callRecalc();
     _notify();
+    // #143: Die Einfuehrungsquest zu diesem System haengt daran.
+    if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+      try { window.questSystem.onSystemUsed('wissen'); } catch (e) { /* swallow */ }
+    }
     return true;
   }
 
@@ -801,6 +809,10 @@
     _persist();
     _callRecalc();
     _notify();
+    // #143: Die Einfuehrungsquest zu diesem System haengt daran.
+    if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+      try { window.questSystem.onSystemUsed('wissen'); } catch (e) { /* swallow */ }
+    }
     return true;
   }
 

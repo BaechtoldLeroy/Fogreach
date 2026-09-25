@@ -724,6 +724,10 @@
         : (amulet.displayName || amulet.name || 'Amulett');
       this._showToast(_SHOP_T('shop.toast.bought', { name: boughtName }));
       this._kaufGemeldet();
+      // #143: Die Einfuehrungsquest zu diesem System haengt daran.
+      if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+        try { window.questSystem.onSystemUsed('amulett'); } catch (e) { /* swallow */ }
+      }
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }

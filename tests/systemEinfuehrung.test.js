@@ -28,12 +28,23 @@ function frisch() {
 
 beforeEach(() => { resetStore(); });
 
-/** System-Ziel -> Einfuehrungsquest -> Figur, die sie vergibt. */
+/**
+ * System-Ziel -> Einfuehrungsquest -> Figur, die sie vergibt.
+ *
+ * `vorher` sind die Auftraege, die davor liegen muessen. Die vier ersten
+ * haengen nur an Aldrics Auftakt; Wissensbaum und Amulette bauen auf einer
+ * frueheren Einfuehrung auf — den Wissensbaum kann man ohne Fragment gar
+ * nicht benutzen, und die Amulette fuehrt nur der Haendler in der Tiefe.
+ */
 const EINFUEHRUNGEN = [
-  { ziel: 'upgrade', quest: 'einfuehrung_schmiede', npc: 'branka' },
-  { ziel: 'edikt', quest: 'einfuehrung_presse', npc: 'thom' },
-  { ziel: 'markt', quest: 'einfuehrung_markt', npc: 'mara' },
-  { ziel: 'talent', quest: 'einfuehrung_talente', npc: 'aldric' }
+  { ziel: 'upgrade', quest: 'einfuehrung_schmiede', npc: 'branka', vorher: [] },
+  { ziel: 'edikt', quest: 'einfuehrung_presse', npc: 'thom', vorher: [] },
+  { ziel: 'markt', quest: 'einfuehrung_markt', npc: 'mara', vorher: [] },
+  { ziel: 'talent', quest: 'einfuehrung_talente', npc: 'aldric', vorher: [] },
+  { ziel: 'wissen', quest: 'einfuehrung_wissen', npc: 'branka',
+    vorher: ['aldric_patrol', 'einfuehrung_schmiede', 'harren_daughter_investigation'] },
+  { ziel: 'amulett', quest: 'einfuehrung_amulett', npc: 'mara',
+    vorher: ['einfuehrung_markt'] }
 ];
 
 /** Alle js-Dateien des Spiels, damit ein Ausloeser auffindbar ist. */
@@ -83,7 +94,16 @@ test('onSystemUsed nimmt nur bekannte Ziele an — und sagt es laut', () => {
   assert.strictEqual(qs.getActiveQuests()[0].objectives[0].current, 1);
 });
 
-EINFUEHRUNGEN.forEach(({ ziel, quest, npc }) => {
+/** Bringt einen Auftrag ohne Ruecksicht auf seine Ziele zum Abschluss. */
+function durchwinken(qs, id) {
+  assert.strictEqual(qs.acceptQuest(id), true, id + ' liess sich nicht annehmen');
+  (qs.getActiveQuests().find((q) => q.id === id).objectives || []).forEach((o) => {
+    qs.updateQuestProgress(o.type, o.target, o.required);
+  });
+  assert.strictEqual(qs.completeQuest(id), true, id + ' liess sich nicht abschliessen');
+}
+
+EINFUEHRUNGEN.forEach(({ ziel, quest, npc, vorher }) => {
   test('Die Einfuehrung zu "' + ziel + '" steht bei der richtigen Figur und wird fertig', () => {
     const qs = frisch();
     const def = qs.QUEST_DEFINITIONS[quest];
@@ -92,10 +112,10 @@ EINFUEHRUNGEN.forEach(({ ziel, quest, npc }) => {
     assert.ok(qs.getAvailableQuests(npc).some((q) => q.id === quest) === false,
       'sie steht schon vor dem ersten Lauf bereit');
 
-    // Nach Aldrics Auftakt-Auftrag haengt sie beim NPC.
-    qs.acceptQuest('aldric_cleanup');
-    qs.updateQuestProgress('kill', 'enemy', 10);
-    qs.completeQuest('aldric_cleanup');
+    // Nach Aldrics Auftakt-Auftrag (und ggf. ihren Vorlaeufern) haengt sie
+    // beim NPC.
+    durchwinken(qs, 'aldric_cleanup');
+    vorher.forEach((id) => durchwinken(qs, id));
     assert.ok(qs.getAvailableQuests(npc).some((q) => q.id === quest),
       'sie steht nach dem Auftakt nicht bereit');
 
@@ -117,6 +137,20 @@ test('Die Belohnung ist klein — Gold und Erfahrung, sonst nichts', () => {
       quest + ' belohnt mehr als Gold und Erfahrung: ' + Object.keys(r).join(','));
     assert.ok(r.gold <= 50 && r.xp <= 60, quest + ' belohnt zu gut');
   });
+});
+
+test('Wer den Wissensbaum-Auftrag bekommt, hat auch ein Fragment dafuer', () => {
+  // Der Baum kostet ein Erinnerungsfragment. Ohne eines waere der Auftrag
+  // angenommen und nicht erfuellbar — genau das darf eine Einfuehrung nie
+  // sein. Deshalb haengt er an einem Auftrag, der eines auszahlt.
+  const qs = frisch();
+  const def = qs.QUEST_DEFINITIONS.einfuehrung_wissen;
+  const zahlt = (def.prerequisites || []).filter((id) => {
+    const r = (qs.QUEST_DEFINITIONS[id] || {}).rewards || {};
+    return (r.fragments | 0) > 0;
+  });
+  assert.ok(zahlt.length > 0,
+    'keine Voraussetzung zahlt ein Fragment aus: ' + (def.prerequisites || []).join(', '));
 });
 
 test('Das Tutorial erklaert die Systeme nicht mehr selbst', () => {
