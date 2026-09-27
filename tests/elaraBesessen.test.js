@@ -143,14 +143,20 @@ test('Der Griff nach der Erinnerung sperrt die Faehigkeiten kurz', () => {
     return Object.keys(bel).filter(function (s) { return bel[s]; }).length;
   })()`);
   assert.ok(vorher > 0, 'keine Faehigkeit belegt — nichts zu pruefen');
-  H.step(90);   // Vorlauf 900 ms
-  const r = H.run(`(function () {
+  // Die Sperre haengt am onComplete eines Tweens (900 ms Laufzeit). Takten,
+  // bis sie steht, statt eine feste Zahl Frames zu raten: der Tween braucht
+  // getaktet rund 2000 ms fuer seine 900 — Phasers Tween-Delta passt nicht
+  // zum gepumpten dt. Mit den frueheren 90 Frames (1500 ms) mass der Test
+  // regelmaessig, BEVOR die Sperre gesetzt war, und las [0,0].
+  const rest = () => H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     var AS = window.AbilitySystem, bel = AS.getActiveLoadout();
     var jetzt = window.gameNow(sc);
     return Object.keys(bel).filter(function (s) { return bel[s]; })
       .map(function (s) { return AS.getCooldownRemaining(bel[s], jetzt); });
   })()`);
+  let r = rest();
+  for (let i = 0; i < 300 && !Array.from(r).some((ms) => ms > 0); i++) { H.step(1); r = rest(); }
   assert.ok(r.every((ms) => ms > 1500), 'nicht alle Faehigkeiten gesperrt: ' + JSON.stringify(r));
 });
 

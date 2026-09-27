@@ -53,11 +53,16 @@ function uniqueVorbereiten(zaehler, zufall) {
       }
     } finally { EE.shouldSpawnElite = echtWurf; }
     EE.applyEliteToEnemy(e, 'unique');
-    window.__probe = { gegner: e, stuecke: 0 };
+    window.__probe = { gegner: e, stuecke: 0, fremd: 0 };
     window.__echtLoot = window.spawnLoot;
     window.__echtZufall = Math.random;
+    var AUSRUESTUNG = { weapon: 1, offhand: 1, head: 1, body: 1, boots: 1, amulet: 1 };
     window.spawnLoot = function (x, y, item, quelle) {
       if (item && quelle === window.__probe.gegner) window.__probe.stuecke++;
+      // Der neue Raum bringt eigene Beute mit (Truhe, Raum-Lohn, Amulett),
+      // und die zaehlt derselbe Run-Zaehler. Mitschreiben, sonst misst die
+      // Zusicherung unten die Raumvorlage statt das Unique.
+      else if (item && AUSRUESTUNG[item.type]) window.__probe.fremd++;
       return window.__echtLoot.apply(this, arguments);
     };
     window.__runItemsDropped = ${zaehler};
@@ -118,11 +123,15 @@ test('Ein weggeraeumtes Unique laesst beim Raumwechsel nichts fallen', () => {
       var ziel = (sc.currentRoom && typeof sc.currentRoom.id === 'number') ? sc.currentRoom.id + 1 : 1;
       enterRoom(sc, ziel);
       return { stuecke: window.__probe.stuecke, zaehler: window.__runItemsDropped,
-               weg: !window.__probe.gegner.active };
+               fremd: window.__probe.fremd, weg: !window.__probe.gegner.active };
     })()`);
   } finally { aufraeumen(); }
   // Gegenprobe: ist das Unique wirklich weg? Sonst prueft der Test nichts.
   assert.strictEqual(r.weg, true, 'das Unique steht nach dem Raumwechsel noch');
   assert.strictEqual(r.stuecke, 0, 'das weggeraeumte Unique liess ein Magisch+-Stueck fallen');
-  assert.strictEqual(r.zaehler, 0, 'der Zaehler der Bremse stieg beim Raumwechsel auf ' + r.zaehler);
+  // Nicht der Rohwert: der neue Raum darf eigene Beute legen. Geprueft wird,
+  // dass NICHTS davon auf das weggeraeumte Unique zurueckgeht.
+  assert.strictEqual(r.zaehler - r.fremd, 0,
+    'der Zaehler der Bremse stieg um ' + (r.zaehler - r.fremd)
+    + ', die nicht vom Raum kamen (Zaehler ' + r.zaehler + ', fremd ' + r.fremd + ')');
 });

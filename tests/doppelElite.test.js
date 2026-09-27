@@ -61,9 +61,14 @@ test('Der Bannertraeger der Kriegsschar hinterlaesst keine Champion-Aura', () =>
   // ersten Entwurf dieses Tests passiert: er lief einmal, erwischte die 8 %
   // und blieb auch ohne Fix gruen. Deshalb wird gezaehlt, wie viele Wellen den
   // Doppelpfad WIRKLICH getroffen haben, und das muss mindestens eine sein.
-  const WELLEN = 4;
+  // Gedeckelte Schleife statt fester Wellenzahl: mit vier Wellen ging der
+  // Doppelpfad gelegentlich komplett daneben (im Gesamtlauf gemessen), und
+  // der Test fiel, obwohl nichts kaputt war. Jetzt wird gewellt, bis er
+  // einmal getroffen ist — und erst wenn auch das oft genug misslingt,
+  // stimmt wirklich etwas nicht.
+  const WELLEN = 12;
   let doppelt = 0;
-  for (let w = 0; w < WELLEN; w++) {
+  for (let w = 0; w < WELLEN && doppelt === 0; w++) {
     H.run(`(function () {
       var sc = window.game.scene.getScene('GameScene');
       enemies.clear(true, true);

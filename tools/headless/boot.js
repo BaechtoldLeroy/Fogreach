@@ -171,6 +171,24 @@ function boot(opts) {
   // 360 px/s: 344 -> 344 nach 60 Frames.
   let uhr = 0;
 
+  // Date.now() im Sandkasten folgt der getakteten Uhr, nicht der Wanduhr.
+  //
+  // 70 Stellen im Spiel messen mit Date.now() (enemy.js _pullUntil, der
+  // Heil-Blitz in player.js, die Ereignis-Abklingzeiten). Die Spielschleife
+  // laeuft hier aber auf einer simulierten Uhr mit festem dt. Beide liefen
+  // auseinander, und zwar je nach Rechnerlast verschieden weit: `node --test`
+  // startet die Dateien parallel, ein step(80) dauert dann mal 300 ms und mal
+  // drei Sekunden Wanduhr. Dieselbe Zahl getakteter Frames traf damit mal auf
+  // abgelaufene, mal auf laufende Cooldowns — genau das Flattern, bei dem ein
+  // Test allein gruen ist und im Gesamtlauf gelegentlich faellt.
+  //
+  // Nur `now` wird umgebogen, nicht der Konstruktor: `new Date()` und
+  // `instanceof Date` bleiben unangetastet.
+  const EPOCHE = Date.now();
+  try {
+    sandbox.Date.now = function () { return EPOCHE + uhr; };
+  } catch (e) { /* ohne Sandkasten-Date bleibt die Wanduhr */ }
+
   function step(frames, dtMs) {
     const dt = typeof dtMs === 'number' ? dtMs : 16.666;
     let simulated = 0;

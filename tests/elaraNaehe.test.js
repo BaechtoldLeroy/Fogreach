@@ -94,8 +94,12 @@ test('Der Hinterhalt: ab Raum 3 stellt die Kettenwache den Spieler, Elara rettet
   stand({ harren_daughter_investigation: { status: 'completed', objectives: [] } }, {}, 1);
   H.run('playerHealth = playerMaxHealth; window._playerInvincible = false;');
   raumBetreten(3);
-  H.step(10);
-  const g = hinterhaltGegner();
+  // Takten, bis die Wachen stehen — nicht eine feste Zahl Frames. Der
+  // Hinterhalt setzt sie im 100-ms-Takt und ueberspringt jeden Takt, in dem
+  // ein Dialog offen ist; ob das innerhalb von zehn Frames passt, haengt am
+  // Raum. Gemessen: rund jeder vierte Lauf kam mit 0 Gegnern heraus.
+  let g = hinterhaltGegner();
+  for (let i = 0; i < 120 && g.n === 0; i++) { H.step(1); g = hinterhaltGegner(); }
   assert.strictEqual(g.n, 4, g.n + ' Gegner im Hinterhalt statt 4');
   assert.strictEqual(g.kette, 4, 'der Hinterhalt besteht nicht aus Kettenwachen');
 
@@ -109,9 +113,15 @@ test('Der Hinterhalt: ab Raum 3 stellt die Kettenwache den Spieler, Elara rettet
   })()`);
   assert.ok(schutz >= 1, 'ein Treffer im Hinterhalt hat den Spieler getoetet (LP ' + schutz + ')');
 
-  H.step(5);
-  const a = H.run(`({ offen: !!window.eventChoiceOpen, text: window.__dialogText(),
-    rettung: window.questSystem.hasFlag('elara_rettung_gesehen') })`);
+  // Auch hier takten statt zaehlen: der Hinterhalt prueft die Not im
+  // 100-ms-Takt, fuenf Frames sind 83 ms und treffen ihn nur manchmal.
+  let a = null;
+  for (let i = 0; i < 120; i++) {
+    a = H.run(`({ offen: !!window.eventChoiceOpen, text: window.__dialogText(),
+      rettung: window.questSystem.hasFlag('elara_rettung_gesehen') })`);
+    if (a.offen) break;
+    H.step(1);
+  }
   assert.strictEqual(a.offen, true, 'in Not kam keine Rettung');
   assert.strictEqual(a.rettung, true);
   assert.ok(/Kettenwache/.test(a.text), 'die Rettung erzaehlt nicht vom Hinterhalt: ' + a.text);
