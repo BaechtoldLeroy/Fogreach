@@ -1818,8 +1818,19 @@ class HubSceneV2 extends Phaser.Scene {
     const hasChoices = page.choices && page.choices.length > 0;
     const choiceHeight = hasChoices ? (page.choices.length * 40 + 10) : 0;
     const hasNextPage = !hasChoices && pageIndex < pages.length - 1 && !pages[pageIndex + 1]._isInfoPage;
-    const isMaraFlavor = npcData.id === 'mara' && questMode === 'flavor' && !hasChoices;
-    const maraBtnHeight = isMaraFlavor ? 90 : 0; // Skills + Shop buttons
+    // Maras drei Dienste — Schwarzmarkt, Wissensbaum, Talente. Sie haengen
+    // NICHT an ihrem Auftragsstand: bis hierher stand hier zusaetzlich
+    // questMode === 'flavor', und sobald sie irgendeine Quest hatte, waren
+    // alle drei weg. Ihr eigener Einfuehrungsauftrag ("kauf mir etwas ab")
+    // sperrte damit genau den Laden, den er verlangt.
+    //
+    // Die einzige echte Bedingung ist der Platz: eine Seite mit Auswahl
+    // (annehmen/ablehnen) braucht ihn fuer die Auswahlknoepfe.
+    const isMaraFlavor = npcData.id === 'mara' && !hasChoices;
+    // Drei Knoepfe auf +0 / +38 / +76, jeder rund 26 hoch: der Block misst
+    // gut 100. Mit den alten 90 schob sich "Talente" ueber den ESC-Hinweis,
+    // sobald eine Zeile mehr im Text stand (etwa der Fortschritt einer Quest).
+    const maraBtnHeight = isMaraFlavor ? 108 : 0;
     const extraBtnHeight = hasChoices ? choiceHeight : maraBtnHeight;
     const panelHeight = Math.min(440, Math.max(180, Math.ceil(pad + headerHeight + 12 + bodyHeight + extraBtnHeight + pad + hintHeight + 10)));
 
@@ -2042,7 +2053,9 @@ class HubSceneV2 extends Phaser.Scene {
         }
       }
 
-      if (npcData.id === 'mara' && questMode === 'flavor' && !hasChoices) {
+      // Dieselbe Bedingung wie bei den Knoepfen oben — sonst steht "(M)" auf
+      // der Seite und M tut nichts.
+      if (npcData.id === 'mara' && !hasChoices) {
         const knowledgeHandler = () => {
           this._closeDialog(keyClosers);
           this.time.delayedCall(100, () => {
