@@ -613,7 +613,10 @@ test('Die Sondergegner tragen ihr Sprite statt der Platzhalter-Zeichnung', () =>
     assert.ok(s, 'Typ ' + t + ' nicht erzeugt');
     assert.strictEqual(s.prefix, TYPEN_SPRITES[t], 'Typ ' + t + ' ohne Sprite: ' + JSON.stringify(s));
     assert.strictEqual(s.key, TYPEN_SPRITES[t] + '_right0', JSON.stringify(s));
-    assert.ok(s.hoehe >= 30 && s.hoehe <= 70, 'Typ ' + t + ' ist ' + s.hoehe + ' px hoch');
+    // Enger als frueher (30-70): der Alarmwicht stand mit 40 px am unteren
+    // Rand und verschwand neben den anderen. Wer unter 44 faellt, ist im
+    // Raum nicht mehr zu lesen.
+    assert.ok(s.hoehe >= 44 && s.hoehe <= 58, 'Typ ' + t + ' ist ' + s.hoehe + ' px hoch');
   });
 });
 

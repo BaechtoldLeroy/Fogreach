@@ -864,7 +864,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 150;
     enemy.isAlarm = true;
     if (key === 'alarm_right0') {
-      enemy.setScale(40 / (enemy.height || 40));
+      // 48 wie der gewoehnliche Wicht. Mit 40 war er der kleinste Gegner des
+      // Spiels und in seiner dunkelbraunen Palette kaum von der Wand zu
+      // unterscheiden — ausgerechnet der Gegner, den man zuerst sehen muss,
+      // weil er wegrennt und Verstaerkung holt.
+      enemy.setScale(48 / (enemy.height || 48));
       enemy._spritePrefix = 'alarm';
       enemy._spriteDir = 'right';
     }
