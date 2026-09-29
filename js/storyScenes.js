@@ -21,7 +21,6 @@
   // Wie lange der fertige Text noch stehen bleibt, bevor die Szene weitergeht.
   // Frueher war das die GESAMTE Anzeigedauer (900 ms fuer zwei Saetze); jetzt
   // laeuft sie erst NACH dem Aufbau an.
-  var LESEPAUSE_MS = 900;
 
   // #87: zweisprachig wie js/finale.js.
   function _en() { return !!(window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en'); }
@@ -72,13 +71,79 @@
     if (scene.input && typeof scene.input.on === 'function') {
       var beiKlick = function () { lauf.ueberspringen(); };
       scene.input.on('pointerdown', beiKlick);
+      // Loesbar, BEVOR der Weiter-Halt bindet: sonst wuerde ein einziger
+      // Klick beides ausloesen — ueberspringen und gleich weiterschalten.
+      lauf.skipLoesen = function () {
+        try { scene.input.off('pointerdown', beiKlick); } catch (e) {}
+        lauf.skipLoesen = function () {};
+      };
       var altAbbrechen = lauf.abbrechen;
       lauf.abbrechen = function () {
-        try { scene.input.off('pointerdown', beiKlick); } catch (e) {}
+        lauf.skipLoesen();
         altAbbrechen();
       };
     }
     return { text: text, lauf: lauf };
+  }
+
+  /**
+   * Haelt die Szene an, bis der Spieler weiterwinkt.
+   *
+   * Vorher lief sie nach einer festen Lesepause von selbst weiter. Wer
+   * langsamer liest — oder waehrend der Zeile kurz wegschaut — verlor den
+   * Satz, und die Szenen tragen die Geschichte. Ein Hinweis sagt jetzt, dass
+   * es an einem liegt, und nichts verschwindet ungefragt.
+   *
+   * @param {object} auf  Rueckgabe von _zeilenAufbauen (fuer skipLoesen)
+   * @param {function} weiter  laeuft genau einmal
+   */
+  function _warteAufWeiter(scene, auf, cx, cy, weiter) {
+    var fertig = false;
+    var hinweis = null;
+    var loesen = function () {};
+    var ausloesen = function () {
+      if (fertig) return;
+      fertig = true;
+      loesen();
+      if (hinweis && hinweis.destroy) hinweis.destroy();
+      try { if (scene.__szeneWartet && scene.__szeneWartet.ausloesen === ausloesen) scene.__szeneWartet = null; } catch (e) {}
+      weiter();
+    };
+    // Ohne Eingabe (Testkopf ohne Tastatur) sofort weiter — eine Szene darf
+    // nie haengenbleiben, nur weil eine Bindung fehlt.
+    if (!scene || !scene.input) { ausloesen(); return { ausloesen: ausloesen }; }
+    if (auf && auf.lauf && typeof auf.lauf.skipLoesen === 'function') auf.lauf.skipLoesen();
+
+    try {
+      var cam = scene.cameras && scene.cameras.main;
+      hinweis = scene.add.text(cx, cy + (cam ? cam.height * 0.30 : 160),
+        _t('Taste druecken', 'Press any key'), {
+          fontFamily: 'monospace', fontSize: 13, color: '#8a8478'
+        }).setOrigin(0.5).setDepth(1552).setScrollFactor(0);
+      if (scene.tweens) {
+        scene.tweens.add({ targets: hinweis, alpha: 0.35, duration: 900,
+          yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      }
+    } catch (e) { hinweis = null; }
+
+    var beiTaste = function () { ausloesen(); };
+    var gebunden = [];
+    try {
+      if (scene.input.keyboard && typeof scene.input.keyboard.on === 'function') {
+        scene.input.keyboard.on('keydown', beiTaste);
+        gebunden.push(function () { scene.input.keyboard.off('keydown', beiTaste); });
+      }
+      if (typeof scene.input.on === 'function') {
+        scene.input.on('pointerdown', beiTaste);
+        gebunden.push(function () { scene.input.off('pointerdown', beiTaste); });
+      }
+    } catch (e) {}
+    loesen = function () { gebunden.forEach(function (f) { try { f(); } catch (e) {} }); };
+    // Offenlegen, damit der Testkopf den Halt aufloesen kann, ohne eine
+    // echte Tastatur nachzubauen.
+    scene.__szeneWartet = { ausloesen: ausloesen, gebunden: gebunden.length };
+    if (!gebunden.length) { ausloesen(); }
+    return { ausloesen: ausloesen };
   }
 
   function _choiceOrDone(scene, sceneKey, onFinished) {
@@ -235,8 +300,7 @@
       _t('(Ein Bote bringt eine Meldung. Elara liest, faltet das Blatt weg.)', '(A messenger brings a report. Elara reads it and folds the sheet away.)'),
       _t('ELARA: Das kommt nicht in die Presse.', 'ELARA: This does not go to the press.')
     ], cx, cy, function () {
-      if (scene.time && scene.time.delayedCall) scene.time.delayedCall(LESEPAUSE_MS, step);
-      else step();
+      _warteAufWeiter(scene, auf, cx, cy, step);
     });
     var intro = auf.text;
     function step() {
@@ -267,8 +331,7 @@
       else zeichenBild.setAlpha(1);
     }
     var auf = _zeilenAufbauen(scene, zeilen, cx, cy, function () {
-      if (scene.time && scene.time.delayedCall) scene.time.delayedCall(LESEPAUSE_MS, step);
-      else step();
+      _warteAufWeiter(scene, auf, cx, cy, step);
     });
     var intro = auf.text;
     function step() {

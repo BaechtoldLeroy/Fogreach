@@ -374,7 +374,16 @@
     if (!def) return { success: false, reason: 'unknown edict id' };
     if (state.active) return { success: false, reason: 'already active publication' };
     if (_aktuellerAkt() < def.requireAct) {
-      return { success: false, reason: 'tier locked: requires story act >= ' + def.requireAct };
+      // reason landet als Toast beim SPIELER (PrintingHouseScene._publish).
+      // Hier stand ein englischer Entwicklersatz mit der rohen Indexzahl —
+      // in einer deutschen Oberflaeche, und mit einer Aktnummer, die der
+      // Splashscreen anders zaehlt. Die passende Zeile lag ungenutzt daneben.
+      return {
+        success: false,
+        reasonKey: 'locked',
+        req: (def.requireAct | 0) + 1,
+        reason: 'tier locked: requires story act >= ' + def.requireAct
+      };
     }
     if (state.druckblaetter < def.cost) {
       return { success: false, reason: 'insufficient druckblaetter (cost ' + def.cost + ')' };

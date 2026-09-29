@@ -19,8 +19,16 @@
 (function () {
   'use strict';
 
-  var RATS_AUSHAENGE = ['brett_stoerer', 'brett_anfuehrer'];
-  var WIDERSTAND_AUFRUF = 'brett_aufruf';
+  // Fuenf Aushaenge statt zwei: mit zweien wechselte das Brett nur zwischen
+  // A und B, und nach dem dritten Lauf kannte man beide auswendig. Die
+  // Reihenfolge ist gemischt — Kopfgeld, Auftrag, Kopfgeld —, damit nicht
+  // zweimal hintereinander dieselbe Art Arbeit haengt.
+  var RATS_AUSHAENGE = ['brett_stoerer', 'brett_kammern', 'brett_anfuehrer',
+    'brett_laeufe', 'brett_welle'];
+  // Nach dem Bruch haengt die Druckerei aus. Auch hier zwei statt einem:
+  // der Widerstand hat mehr als eine Sorge.
+  var WIDERSTAND_AUFRUFE = ['brett_aufruf', 'brett_zeugen'];
+  var WIDERSTAND_AUFRUF = WIDERSTAND_AUFRUFE[0];   // Altbestand, einzeln gelesen
 
   function _phase() {
     try {
@@ -47,13 +55,15 @@
    */
   function haengt(id, phase, tiefe) {
     var p = phase || _phase();
+    var t = (typeof tiefe === 'number') ? tiefe : _tiefe();
     // Der Epilog braucht keine eigene Abfrage: er ist weder 'broken' noch
     // 'council'/'doubleAgent', faellt also unten von selbst heraus.
-    if (id === WIDERSTAND_AUFRUF) return p === 'broken';
-    var i = RATS_AUSHAENGE.indexOf(id);
-    if (i === -1) return false;
+    if (WIDERSTAND_AUFRUFE.indexOf(id) !== -1) {
+      if (p !== 'broken') return false;
+      return WIDERSTAND_AUFRUFE[t % WIDERSTAND_AUFRUFE.length] === id;
+    }
+    if (RATS_AUSHAENGE.indexOf(id) === -1) return false;
     if (p !== 'council' && p !== 'doubleAgent') return false;
-    var t = (typeof tiefe === 'number') ? tiefe : _tiefe();
     return RATS_AUSHAENGE[t % RATS_AUSHAENGE.length] === id;
   }
 
@@ -95,6 +105,7 @@
 
   window.Anschlagtafel = {
     RATS_AUSHAENGE: RATS_AUSHAENGE,
+    WIDERSTAND_AUFRUFE: WIDERSTAND_AUFRUFE,
     WIDERSTAND_AUFRUF: WIDERSTAND_AUFRUF,
     haengt: haengt,
     zeilen: zeilen

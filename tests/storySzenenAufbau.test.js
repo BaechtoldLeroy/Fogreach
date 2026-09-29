@@ -86,18 +86,18 @@ test('Die Elara-Szene setzt ihren Text nicht in einem Stueck', () => {
     'am Ende steht nicht der volle Text: ' + JSON.stringify(A.textObj.text));
 });
 
-test('Die Lesepause laeuft erst NACH dem Aufbau an', () => {
-  // Vorher stand hier eine feste Verzoegerung von 900 ms, gestartet sofort.
-  // Bei langsamem Tempo haette sie den Text mitten im Satz abgeschnitten.
+test('Nach dem Aufbau haelt die Szene an, statt weiterzulaufen', () => {
+  // Frueher lief hier eine feste Lesepause von 900 ms, danach ging es von
+  // selbst weiter. Wer langsamer liest, verlor den Satz — und diese Szenen
+  // tragen die Geschichte. Jetzt wartet sie auf den Spieler (b294).
   const S = ladeStoryScenes();
   const A = attrappe();
   S.playNachtNachDemBruch(A.scene, () => {});
-  assert.strictEqual(A.verzoegert.length, 0,
-    'die Lesepause laeuft schon, bevor ein Wort geschrieben ist');
+  assert.strictEqual(A.verzoegert.length, 0, 'es laeuft eine Verzoegerung mit');
   A.takte(60);
-  assert.strictEqual(A.verzoegert.length, 1,
-    'nach dem Aufbau wurde keine Lesepause gestartet');
-  assert.strictEqual(A.verzoegert[0].ms, 900, 'die Lesepause hat sich geaendert');
+  assert.strictEqual(A.verzoegert.length, 0,
+    'die Szene startet wieder eine Verzoegerung, statt zu halten');
+  assert.ok(A.scene.__szeneWartet, 'die Szene haelt nach dem Aufbau nicht an');
 });
 
 test('Der Sprecher wird aus der Zeile gelesen, nicht gepflegt', () => {

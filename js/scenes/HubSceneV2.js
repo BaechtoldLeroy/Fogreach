@@ -1333,7 +1333,11 @@ class HubSceneV2 extends Phaser.Scene {
     if (!qs || typeof qs.hasFlag !== 'function' || !qs.hasFlag('patrouillen_verdoppelt')) return 0;
     if (qs.hasFlag('story_ending')) return 0;
     if (!this.textures || !this.textures.exists('garde')) return 0;
-    [[330, 420], [640, 440]].forEach(([x, y]) => {
+    // Die linke stand auf [330, 420] und damit 30 px neben Branka (300/416)
+    // — zwischen ihr und Mara (372/416), beiden auf den Fuessen. Der neue
+    // Platz hat 120 px Luft zur naechsten Figur (gemessen ueber HUB_HITBOXES).
+    // Die rechte hat 65 px zu Thom; eng, aber sie steht niemandem im Weg.
+    [[260, 570], [640, 440]].forEach(([x, y]) => {
       const s = this.add.image(x * SCALE_FACTOR, y * SCALE_FACTOR, 'garde').setOrigin(0.5, 1).setScale(0.23);   // wie die Layout-NPCs: Fuesse am Punkt, ohne SCALE_FACTOR
       s.setDepth(y * SCALE_FACTOR);
       this._patrouillen.push(s);
@@ -2556,7 +2560,8 @@ class HubSceneV2 extends Phaser.Scene {
       var costLbl = '(' + e.cost + 'p, +' + e.suspicionCost + 'V)';
       var statusLbl = '';
       if (active) statusLbl = ' — gesperrt';
-      else if (!e.isUnlocked) statusLbl = ' — ab Akt ' + e.requireAct;
+      // +1 wie der Splashscreen: requireAct ist ein Index, keine Aktnummer.
+      else if (!e.isUnlocked) statusLbl = ' — ab Akt ' + ((e.requireAct | 0) + 1);
       else if (paper < e.cost) statusLbl = ' — zu wenig';
       var label = '[' + tierLbl + '] ' + lbl + ' ' + costLbl + statusLbl;
       var self = this;

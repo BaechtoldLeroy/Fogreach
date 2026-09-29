@@ -59,7 +59,13 @@ test('Hub: Annehmen fuehrt in den Ratssaal, und die Quest ist danach NICHT ferti
       if (!q) return { fehler: 'nicht angeboten' };
       sc._handleDialogueChoice('accept', harren, 'Harren', [], 'offer', q, 0, null);
       var nachAnnahme = qs.isQuestReadyToComplete('council_collusion_reveal');
-      for (var i = 0; i < 600; i++) sc.sys.game.loop.step(sc.sys.game.loop.now + 16.7 * (i + 1));
+      // Die Szene haelt seit b294 nach dem Aufbau an, bis der Spieler
+      // weiterwinkt (statt nach einer festen Lesepause von selbst zu
+      // laufen). Hier wird das Winken nachgestellt, sobald der Halt steht.
+      for (var i = 0; i < 600; i++) {
+        sc.sys.game.loop.step(sc.sys.game.loop.now + 16.7 * (i + 1));
+        if (sc.__szeneWartet) sc.__szeneWartet.ausloesen();
+      }
       window.DialogChoice.present = echtWahl;
       window.storyScenes.playOeffentlicheSitzung = echt;
       window.DialogTypewriter.anTextobjekt = echtTW;

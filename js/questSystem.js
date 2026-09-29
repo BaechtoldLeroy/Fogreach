@@ -182,19 +182,19 @@
     einfuehrung_amulett: {
       id: 'einfuehrung_amulett',
       title: 'Der Alte mit dem Karren',
-      description: 'Kauf dem wandernden Händler in der Tiefe ein Amulett ab.',
+      description: 'Kauf dem wandernden Händler in der Tiefe etwas ab.',
       npcId: 'mara',
       type: 'system',
       chain: 2,
       objectives: [
-        { type: 'system', target: 'amulett', current: 0, required: 1 }
+        { type: 'system', target: 'haendler', current: 0, required: 1 }
       ],
       rewards: { xp: 40, gold: 30 },
       prerequisites: ['einfuehrung_markt'],
       requiredAct: 0,
-      dialogueOffer: 'Da unten läuft ein Alter mit einem Karren herum. Frag mich nicht, wie er hineinkommt — ich weiss es nicht, und ich will es nicht wissen.\n\nEr führt Amulette. Ich fasse die Dinger nicht an, aber Du solltest eines getragen haben, bevor Du entscheidest, ob Du sie magst. Sie ändern einen ganzen Lauf, nicht nur eine Zahl.',
-      dialogueProgress: 'Der Alte taucht auf, wenn er will. Lauf weiter runter, dann triffst Du ihn. Und nimm genug Gold mit — billig ist er nicht.',
-      dialogueComplete: '(Sie betrachtet es aus sicherem Abstand.) Du hast es also wirklich getan.\n\nBehalt es im Auge. Was ein Amulett Dir gibt, gilt nur für diesen einen Lauf — und was es Dir nimmt, merkst Du meistens später.'
+      dialogueOffer: 'Da unten läuft ein Alter mit einem Karren herum. Frag mich nicht, wie er hineinkommt — ich weiss es nicht, und ich will es nicht wissen.\n\nKauf ihm etwas ab. Irgendetwas. Er führt Zeug, das über meinen Tisch nie gehen würde, und tiefer unten hängen Amulette an seinem Karren. Ich will nur, dass Du einmal bei ihm gestanden hast.',
+      dialogueProgress: 'Der Alte taucht auf, wenn er will. Lauf weiter runter, dann triffst Du ihn. Und nimm Gold mit — billig ist er nicht.',
+      dialogueComplete: '(Sie betrachtet es aus sicherem Abstand.) Du hast also bei ihm gekauft.\n\nGeh wieder hin, wenn Du tiefer kommst. Was er dann führt, ändert einen ganzen Lauf — und was es Dir nimmt, merkst Du meistens später.'
     },
     harren_daughter_investigation: {
       id: 'harren_daughter_investigation',
@@ -789,6 +789,90 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     //
     // Wiederholbar (repeatable) und rotierend: welcher der beiden Rats-Aushaenge
     // haengt, entscheidet die erreichte Tiefe, also wechselt er mit jedem Lauf.
+    // #68: Drei weitere Rats-Aushaenge und ein zweiter Aufruf. Sie nutzen
+    // nur Ziele, die im Spiel WIRKLICH gemeldet werden (explore:room,
+    // dungeon_run:dungeon_complete, wave:reach_wave, kill:elite_enemy) —
+    // ein Aushang, der nie fertig wird, waere schlimmer als keiner.
+    brett_kammern: {
+      id: 'brett_kammern',
+      title: 'Aushang: Die leeren Kammern',
+      description: 'Ein Rats-Aushang: räume 6 Kammern ab Tiefe 4.',
+      npcId: 'anschlagtafel',
+      type: 'explore',
+      chain: 1,
+      minDepth: 4,
+      repeatable: true,
+      objectives: [
+        { type: 'explore', target: 'room', current: 0, required: 6 }
+      ],
+      rewards: { xp: 70, gold: 140 },
+      prerequisites: [],
+      requiredAct: 0,
+      gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_kammern'); },
+      dialogueOffer: 'MAGISTRAT: Sechs Kammern ab Tiefe 4, geräumt und gemeldet. Das Archiv führt Buch über leere Räume.\n\n(Warum, steht nicht dabei.)',
+      dialogueProgress: 'Sechs Kammern ab Tiefe 4. Das Archiv wartet auf die Meldung.',
+      dialogueComplete: 'Ein Schreiber streicht sechs Zeilen an. Er sieht Dich dabei nicht an. Der Lohn liegt im Kasten.'
+    },
+    brett_laeufe: {
+      id: 'brett_laeufe',
+      title: 'Aushang: Zweimal hinab',
+      description: 'Ein Rats-Aushang: schliesse 2 Läufe ab Tiefe 8 ab.',
+      npcId: 'anschlagtafel',
+      type: 'dungeon_run',
+      chain: 2,
+      minDepth: 8,
+      repeatable: true,
+      objectives: [
+        { type: 'dungeon_run', target: 'dungeon_complete', current: 0, required: 2 }
+      ],
+      rewards: { xp: 110, gold: 220 },
+      prerequisites: [],
+      requiredAct: 0,
+      gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_laeufe'); },
+      dialogueOffer: 'GARDE: Zwei vollständige Gänge ab Tiefe 8. Nicht die Hälfte, nicht fast — ganz durch, beide Male.\n\n(Darunter jemand mit Kohle: "Sie zahlen für den Weg, nicht für das, was man sieht.")',
+      dialogueProgress: 'Zwei ganze Gänge ab Tiefe 8. Halbe zählen nicht.',
+      dialogueComplete: 'Die Garde zahlt ohne Nachfragen. Was Du unten gesehen hast, will niemand wissen.'
+    },
+    brett_welle: {
+      id: 'brett_welle',
+      title: 'Aushang: Standhalten',
+      description: 'Ein Rats-Aushang: überstehe Welle 12 ab Tiefe 6.',
+      npcId: 'anschlagtafel',
+      type: 'wave',
+      chain: 3,
+      minDepth: 6,
+      repeatable: true,
+      objectives: [
+        { type: 'wave', target: 'reach_wave', current: 0, required: 12 }
+      ],
+      rewards: { xp: 100, gold: 180 },
+      prerequisites: [],
+      requiredAct: 0,
+      gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_welle'); },
+      dialogueOffer: 'KLERUS: Zwölf Ansturmwellen, ab Tiefe 6, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.\n\n(Das Siegel darunter ist frisch. Die Tinte noch feucht.)',
+      dialogueProgress: 'Zwölf Wellen ab Tiefe 6. Weichen zählt nicht.',
+      dialogueComplete: 'Der Priester am Kasten segnet Dich, während er abzählt. Beides dauert gleich lang.'
+    },
+    brett_zeugen: {
+      id: 'brett_zeugen',
+      title: 'Aufruf: Nehmt ihnen die Anführer',
+      description: 'Ein Aufruf des Widerstands: besiege 4 Elite-Gegner ab Tiefe 12.',
+      npcId: 'anschlagtafel',
+      type: 'kill',
+      chain: 4,
+      minDepth: 12,
+      repeatable: true,
+      objectives: [
+        { type: 'kill', target: 'elite_enemy', current: 0, required: 4 }
+      ],
+      rewards: { xp: 130, gold: 160 },
+      prerequisites: [],
+      requiredAct: 0,
+      gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_zeugen'); },
+      dialogueOffer: 'Aus Thoms Presse, quer über ein zerfetztes Rats-Plakat geklebt:\n\n"Vier von denen, die unten befehlen. Ab Tiefe 12. Wer befiehlt, hat einen Namen — und wir drucken Namen."',
+      dialogueProgress: 'Vier Anführer ab Tiefe 12. Die Presse wartet auf die Namen.',
+      dialogueComplete: 'Am nächsten Morgen stehen vier Namen im Blatt. Zwei davon kennt die Stadt.'
+    },
     brett_stoerer: {
       id: 'brett_stoerer',
       title: 'Aushang: Ruhe in den Kellern',
@@ -1036,10 +1120,35 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.einfuehrung_wissen.dialogueComplete': "(She looks at you a moment too long.) And? Nothing flashes, nothing chimes. That is what knowledge is like.\n\nEvery fragment you find down there belongs in that tree. The council collects them too - it just burns them.",
 
       'quest.einfuehrung_amulett.title': 'The Old Man with the Cart',
-      'quest.einfuehrung_amulett.description': 'Buy an amulet from the wandering merchant in the depths.',
-      'quest.einfuehrung_amulett.dialogueOffer': "There is an old man wandering about down there with a cart. Do not ask me how he gets in - I do not know, and I do not want to know.\n\nHe carries amulets. I do not touch the things, but you should have worn one before you decide whether you like them. They change a whole run, not just a number.",
-      'quest.einfuehrung_amulett.dialogueProgress': 'The old man turns up when he feels like it. Keep going deeper and you will meet him. And bring enough gold - he is not cheap.',
-      'quest.einfuehrung_amulett.dialogueComplete': "(She studies it from a safe distance.) So you really did it.\n\nKeep an eye on it. What an amulet gives you lasts for this one run - and what it takes from you, you usually notice later.",
+
+      // #68: die vier zusaetzlichen Aushaenge.
+      'quest.brett_kammern.title': 'Notice: The Empty Chambers',
+      'quest.brett_kammern.description': 'A council notice: clear 6 chambers from depth 4.',
+      'quest.brett_kammern.dialogueOffer': "MAGISTRATE: Six chambers from depth 4, cleared and reported. The archive keeps a record of empty rooms.\n\n(It does not say why.)",
+      'quest.brett_kammern.dialogueProgress': 'Six chambers from depth 4. The archive is waiting for the report.',
+      'quest.brett_kammern.dialogueComplete': 'A scribe strikes through six lines. He does not look at you while he does it. The pay is in the box.',
+
+      'quest.brett_laeufe.title': 'Notice: Twice Below',
+      'quest.brett_laeufe.description': 'A council notice: complete 2 runs from depth 8.',
+      'quest.brett_laeufe.dialogueOffer': "GUARD: Two complete descents from depth 8. Not half, not nearly - all the way through, both times.\n\n(Below it, in charcoal: 'They pay for the walking, not for what you see.')",
+      'quest.brett_laeufe.dialogueProgress': 'Two whole descents from depth 8. Half ones do not count.',
+      'quest.brett_laeufe.dialogueComplete': 'The Guard pays without questions. Nobody wants to hear what you saw down there.',
+
+      'quest.brett_welle.title': 'Notice: Hold the Line',
+      'quest.brett_welle.description': 'A council notice: survive wave 12 from depth 6.',
+      'quest.brett_welle.dialogueOffer': "CLERGY: Twelve waves of assault, from depth 6, without giving ground. Steadfastness is a virtue, and the council rewards virtue.\n\n(The seal below it is fresh. The ink still wet.)",
+      'quest.brett_welle.dialogueProgress': 'Twelve waves from depth 6. Giving ground does not count.',
+      'quest.brett_welle.dialogueComplete': 'The priest at the box blesses you while he counts it out. Both take the same amount of time.',
+
+      'quest.brett_zeugen.title': 'Call: Take Their Leaders',
+      'quest.brett_zeugen.description': 'A resistance call: defeat 4 elite enemies from depth 12.',
+      'quest.brett_zeugen.dialogueOffer': "From Thom's press, pasted across a shredded council poster:\n\n'Four of those who give the orders down there. From depth 12. Whoever gives orders has a name - and we print names.'",
+      'quest.brett_zeugen.dialogueProgress': 'Four leaders from depth 12. The press is waiting for the names.',
+      'quest.brett_zeugen.dialogueComplete': 'The next morning four names are in the paper. Two of them the city knows.',
+      'quest.einfuehrung_amulett.description': 'Buy something from the wandering merchant in the depths.',
+      'quest.einfuehrung_amulett.dialogueOffer': "There is an old man wandering about down there with a cart. Do not ask me how he gets in - I do not know, and I do not want to know.\n\nBuy something off him. Anything. He carries stock that would never cross my table, and deeper down there are amulets hanging from that cart. I just want you to have stood in front of him once.",
+      'quest.einfuehrung_amulett.dialogueProgress': 'The old man turns up when he feels like it. Keep going deeper and you will meet him. And bring gold - he is not cheap.',
+      'quest.einfuehrung_amulett.dialogueComplete': "(She studies it from a safe distance.) So you bought from him after all.\n\nGo back when you get deeper. What he carries down there changes a whole run - and what it takes from you, you usually notice later.",
 
       'quest.einfuehrung_schmiede.title': 'The First Edge',
       'quest.einfuehrung_schmiede.description': 'Upgrade a piece of equipment at the Archive Forge.',
@@ -1774,9 +1883,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
    *   'markt'    im Schwarzmarkt gekauft (ShopScene)
    *   'talent'   einen Talentpunkt gesetzt (skillTree.investPoint)
    *   'wissen'   ein Fragment im Wissensbaum verbaut (knowledgeTree.invest)
-   *   'amulett'  ein Amulett beim wandernden Haendler gekauft (ShopScene)
+   *   'haendler' beim wandernden Haendler gekauft — irgendetwas (ShopScene)
    */
-  var SYSTEM_ZIELE = ['upgrade', 'edikt', 'markt', 'talent', 'wissen', 'amulett'];
+  var SYSTEM_ZIELE = ['upgrade', 'edikt', 'markt', 'talent', 'wissen', 'haendler'];
 
   function onSystemUsed(ziel) {
     if (SYSTEM_ZIELE.indexOf(ziel) === -1) {

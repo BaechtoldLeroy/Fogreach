@@ -296,7 +296,12 @@
 
       // Footer: locked-tier summary
       const lockedByTier = { strong: 0, risky: 0 };
-      const lockedReq = { strong: 2, risky: 3 };
+      // requireAct ist der INDEX in STORY_ACTS (0-basiert), der
+      // Splashscreen zeigt dagegen "Akt " + (index + 1). Roh angezeigt stand
+      // hier "Ab Akt 2" fuer eine Stufe, die aufgeht, waehrend oben "Akt 3"
+      // steht. Dem Spieler gegenueber zaehlt EINE Zaehlung, und das ist die
+      // des Splashscreens.
+      const lockedReq = { strong: 2 + 1, risky: 3 + 1 };
       ph.getEdictCatalog().forEach((e) => {
         if (!e.isUnlocked && e.tier in lockedByTier) lockedByTier[e.tier] += 1;
       });
@@ -483,6 +488,10 @@
       if (result.success) {
         this._toast(T('printingHouse.toast.published', { name: T('printingHouse.edict.' + edictId + '.label') }));
         this.time.delayedCall(900, () => this._close());
+      } else if (result.reasonKey === 'locked') {
+        // Lokalisiert und mit derselben Aktnummer wie der Splashscreen.
+        this._toast(T('printingHouse.toast.locked').replace('{req}', result.req));
+        this._refresh();
       } else {
         this._toast(result.reason || 'Publish fehlgeschlagen');
         this._refresh();

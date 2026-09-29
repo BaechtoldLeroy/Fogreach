@@ -659,15 +659,23 @@
     }
 
     /**
-     * #143: Ein Kauf ist gelungen — Maras Einfuehrungsquest haengt daran.
+     * #143: Ein Kauf ist gelungen — Maras Einfuehrungsquests haengen daran.
      *
      * Vier Wege fuehren hier vorbei (Gegenstand, Amulett, Trank, Blindkauf);
      * welcher es war, spielt fuer die Quest keine Rolle. Der Umwurf zaehlt
      * NICHT — er kauft nichts, er wuerfelt Vorhandenes neu.
+     *
+     * Wer beim wandernden Haendler kauft, erfuellt ZUSAETZLICH 'haendler'.
+     * Frueher hing Maras Folgeauftrag an 'amulett' — und Amulette fuehrt er
+     * erst ab Tiefe 10 (AMULET_SHOP_MIN_DEPTH). Bis dahin war der Auftrag
+     * angenommen und nicht erfuellbar.
      */
     _kaufGemeldet() {
-      if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
-        try { window.questSystem.onSystemUsed('markt'); } catch (e) { /* swallow */ }
+      const qs = window.questSystem;
+      if (!qs || typeof qs.onSystemUsed !== 'function') return;
+      try { qs.onSystemUsed('markt'); } catch (e) { /* swallow */ }
+      if (this.isDungeonMerchant) {
+        try { qs.onSystemUsed('haendler'); } catch (e) { /* swallow */ }
       }
     }
 
@@ -724,10 +732,6 @@
         : (amulet.displayName || amulet.name || 'Amulett');
       this._showToast(_SHOP_T('shop.toast.bought', { name: boughtName }));
       this._kaufGemeldet();
-      // #143: Die Einfuehrungsquest zu diesem System haengt daran.
-      if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
-        try { window.questSystem.onSystemUsed('amulett'); } catch (e) { /* swallow */ }
-      }
       if (typeof window._refreshInventoryHUD === 'function') {
         try { window._refreshInventoryHUD(); } catch (e) { /* swallow */ }
       }

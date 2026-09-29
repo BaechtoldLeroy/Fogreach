@@ -43,7 +43,7 @@ const EINFUEHRUNGEN = [
   { ziel: 'talent', quest: 'einfuehrung_talente', npc: 'aldric', vorher: [] },
   { ziel: 'wissen', quest: 'einfuehrung_wissen', npc: 'branka',
     vorher: ['aldric_patrol', 'einfuehrung_schmiede', 'harren_daughter_investigation'] },
-  { ziel: 'amulett', quest: 'einfuehrung_amulett', npc: 'mara',
+  { ziel: 'haendler', quest: 'einfuehrung_amulett', npc: 'mara',
     vorher: ['einfuehrung_markt'] }
 ];
 
@@ -152,6 +152,35 @@ test('Wer den Wissensbaum-Auftrag bekommt, hat auch ein Fragment dafuer', () => 
   assert.ok(zahlt.length > 0,
     'keine Voraussetzung zahlt ein Fragment aus: ' + (def.prerequisites || []).join(', '));
 });
+
+test('Der Haendler-Auftrag haengt nicht an Amuletten', () => {
+  // Er hing an 'amulett' — und Amulette fuehrt der wandernde Haendler erst
+  // ab Tiefe 10 (lootSystem AMULET_SHOP_MIN_DEPTH). Maras Auftrag kommt
+  // aber schon nach ihrem Marktauftrag (Tiefe 4). Dazwischen war er
+  // angenommen und nicht erfuellbar.
+  const qs = frisch();
+  const ziel = qs.QUEST_DEFINITIONS.einfuehrung_amulett.objectives[0].target;
+  assert.strictEqual(ziel, 'haendler',
+    'der Auftrag verlangt wieder "' + ziel + '"');
+  const src = fs.readFileSync(path.join('js', 'lootSystem.js'), 'utf8');
+  const m = /AMULET_SHOP_MIN_DEPTH = ([0-9]+)/.exec(src);
+  assert.ok(m, 'AMULET_SHOP_MIN_DEPTH nicht gefunden');
+  const amulettAb = Number(m[1]);
+  const vorher = qs.QUEST_DEFINITIONS.einfuehrung_markt.minDepth | 0;
+  assert.ok(amulettAb > vorher,
+    'Amulette gaebe es schon ab Tiefe ' + amulettAb + ' — dann waere der alte Weg in Ordnung gewesen');
+});
+
+test('Nur der wandernde Haendler erfuellt ihn, nicht Maras Stand', () => {
+  // Sonst koennte man ihn oben im Hub abhaken, ohne je unten gewesen zu sein.
+  const src = fs.readFileSync(path.join('js', 'scenes', 'ShopScene.js'), 'utf8');
+  const block = src.slice(src.indexOf('_kaufGemeldet() {'), src.indexOf('_tryBuyItem(stockIdx'));
+  assert.ok(/isDungeonMerchant/.test(block),
+    'der Haendler-Ausloeser unterscheidet nicht mehr, wo gekauft wurde');
+  assert.ok(block.indexOf("onSystemUsed('haendler')") > block.indexOf('isDungeonMerchant'),
+    'er meldet auch bei Mara');
+});
+
 
 test('Das Tutorial erklaert die Systeme nicht mehr selbst', () => {
   // Die andere Haelfte von #143: was eine Figur sagen kann, sagt kein Kasten

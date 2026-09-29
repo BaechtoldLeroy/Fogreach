@@ -40,12 +40,52 @@ test('Im Rats-Hub haengt genau ein Kopfgeld, und es wechselt mit der Tiefe', () 
   });
 });
 
-test('Nach dem Bruch haengt der Aufruf der Druckerei, sonst nichts vom Rat', () => {
-  assert.strictEqual(AT.haengt(AT.WIDERSTAND_AUFRUF, 'broken', 5), true);
+test('Nach dem Bruch haengt genau ein Aufruf, und auch der wechselt', () => {
+  // Zwei Aufrufe statt einem: der Widerstand hat mehr als eine Sorge, und
+  // ein Brett, an dem immer dasselbe haengt, sieht niemand mehr an.
+  [1, 2, 3, 4].forEach((tiefe) => {
+    const haengend = AT.WIDERSTAND_AUFRUFE.filter((id) => AT.haengt(id, 'broken', tiefe));
+    assert.strictEqual(haengend.length, 1, 'Tiefe ' + tiefe + ': ' + haengend.join(','));
+  });
+  const a = AT.WIDERSTAND_AUFRUFE.find((id) => AT.haengt(id, 'broken', 2));
+  const b = AT.WIDERSTAND_AUFRUFE.find((id) => AT.haengt(id, 'broken', 3));
+  assert.notStrictEqual(a, b, 'der Aufruf wechselt nicht mit dem Lauf: ' + a);
+  // Und nichts vom Rat.
   AT.RATS_AUSHAENGE.forEach((id) => {
     assert.strictEqual(AT.haengt(id, 'broken', 5), false, id + ' haengt nach dem Bruch');
   });
-  assert.strictEqual(AT.haengt(AT.WIDERSTAND_AUFRUF, 'council', 5), false, 'Aufruf haengt schon im Rats-Hub');
+  AT.WIDERSTAND_AUFRUFE.forEach((id) => {
+    assert.strictEqual(AT.haengt(id, 'council', 5), false, id + ' haengt schon im Rats-Hub');
+  });
+});
+
+test('Das Brett traegt genug Varianz, um nicht auswendig gelernt zu werden', () => {
+  // Mit zwei Rats-Aushaengen wechselte es nur zwischen A und B. Nach dem
+  // dritten Lauf kannte man beide.
+  assert.ok(AT.RATS_AUSHAENGE.length >= 5,
+    'nur ' + AT.RATS_AUSHAENGE.length + ' Rats-Aushaenge');
+  assert.ok(AT.WIDERSTAND_AUFRUFE.length >= 2,
+    'nur ' + AT.WIDERSTAND_AUFRUFE.length + ' Aufrufe');
+  // Ueber fuenf Laeufe muss jeder einmal drankommen.
+  const gesehen = new Set();
+  for (let t = 1; t <= AT.RATS_AUSHAENGE.length; t++) {
+    AT.RATS_AUSHAENGE.forEach((id) => { if (AT.haengt(id, 'council', t)) gesehen.add(id); });
+  }
+  assert.strictEqual(gesehen.size, AT.RATS_AUSHAENGE.length,
+    'nicht jeder Aushang kommt dran: ' + [...gesehen].join(','));
+});
+
+test('Zwei gleiche Arten haengen nie hintereinander', () => {
+  // Kopfgeld, Auftrag, Kopfgeld: sonst fuehlen sich zwei Laeufe gleich an,
+  // obwohl am Brett etwas anderes steht.
+  // D ist oben schon geladen (Zeile 27).
+  const arten = AT.RATS_AUSHAENGE.map((id) => (D[id] || {}).type);
+  assert.ok(arten.every(Boolean), 'ein Aushang hat keine Quest: ' + arten.join(','));
+  for (let i = 0; i < arten.length; i++) {
+    const naechste = arten[(i + 1) % arten.length];
+    assert.notStrictEqual(arten[i], naechste,
+      'zweimal hintereinander "' + arten[i] + '" (' + arten.join(', ') + ')');
+  }
 });
 
 test('Im Epilog haengt kein Auftrag mehr', () => {

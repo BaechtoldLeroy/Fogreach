@@ -773,45 +773,58 @@ test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
   // Glueck — sie folgt daraus, dass ein einzelner Anlauf mit einer festen,
   // nicht kleinen Wahrscheinlichkeit an einer Wand haengenbleibt. Was er
   // zusichert, bleibt gleich; nur die Zahl der Gelegenheiten waechst.
-  // ... und zwar SO LANGE, bis einer reicht — nicht sechsmal und dann der
-  // beste. Der Unterschied ist der, an dem der Test zweimal nachgebessert
-  // wurde (3 -> 6 Anlaeufe) und trotzdem im Gesamtlauf fiel: bei einer festen
-  // Zahl bleibt eine Restwahrscheinlichkeit, dass ALLE an einer Wand haengen.
-  // Eine Schleife bis zum Erfolg hat sie nicht, und was zugesichert wird,
-  // bleibt dasselbe — kommt er in KEINEM Anlauf naeher, faellt der Test.
-  const reicht = (v) => v && (v.ende.weg || v.ende.treppe < v.start.treppe - 60);
-  let mit = null;
-  for (let versuch = 0; versuch < 14 && !reicht(mit); versuch++) {
-    const v = lauf(true);
-    if (!v) continue;
-    if (reicht(v)) { mit = v; break; }
-    // Sonst den bisher besten behalten, damit die Meldung unten etwas zeigt.
-    if (!mit || (v.start.treppe - v.ende.treppe) > (mit.start.treppe - mit.ende.treppe)) mit = v;
+  // Die Richtung, in die er setzt — das ist die Aussage des Falls. Sie
+  // haengt nicht am Zuschnitt des Raums, anders als die Frage, wie weit er
+  // in 400 Bildern kommt.
+  const zielLauf = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var e = window.__p;
+    if (!e || !e.active) return { fehler: 'kein Pluenderer' };
+    var ziel = _pluendererFluchtziel(sc, e);
+    if (!ziel) return { fehler: 'kein Fluchtziel' };
+    var treppe = null, best = Infinity;
+    sc.stairsGroup.getChildren().forEach(function (t) {
+      if (!t || !t.active) return;
+      var d = Math.hypot(t.x - e.x, t.y - e.y);
+      if (d < best) { best = d; treppe = t; }
+    });
+    if (!treppe) return { fehler: 'keine Treppe' };
+    var grad = function (ax, ay, bx, by) { return Math.atan2(by - ay, bx - ax); };
+    var zurTreppe = grad(e.x, e.y, treppe.x, treppe.y);
+    var zumZiel = grad(e.x, e.y, ziel.x, ziel.y);
+    // Der ECHTE Ersatzweg der Flucht ist "weg vom Spieler" (enemy.js:
+    // _pluendererFluchtziel). Gegen DEN muss die Treppe gewinnen — gegen die
+    // Richtung ZUM Spieler zu vergleichen war wertlos: davon zeigt auch der
+    // Ersatzweg weg, die Zusicherung war fast immer wahr (Mutation lief durch).
+    var wegVomSpieler = grad(player.x, player.y, e.x, e.y);
+    var diff = function (a, b) {
+      var d = Math.abs(a - b) % (Math.PI * 2);
+      return d > Math.PI ? Math.PI * 2 - d : d;
+    };
+    return { zuTreppe: diff(zumZiel, zurTreppe),
+             zuErsatz: diff(zumZiel, wegVomSpieler),
+             spanne: diff(zurTreppe, wegVomSpieler) };
+  })()`);
+  assert.ok(!zielLauf.fehler, zielLauf.fehler);
+  // Liegen Treppe und Ersatzweg fast uebereinander, unterscheidet der Fall
+  // nichts — dann sagt er auch nichts.
+  if (zielLauf.spanne > 0.6) {
+    assert.ok(zielLauf.zuTreppe < zielLauf.zuErsatz,
+      'er setzt in den Ersatzweg statt zur Treppe (Treppe ' + zielLauf.zuTreppe.toFixed(2)
+      + ' rad, weg-vom-Spieler ' + zielLauf.zuErsatz.toFixed(2) + ')');
   }
-  if (!mit) return;
 
-  // Die Kontrolle muss stehenbleiben und den Spieler jagen, sonst misst der
-  // Fall nichts.
+  // Frueher folgte hier ein Lauf ueber 400 Bilder mit Abstandsvergleichen.
+  // Die haben den Zuschnitt des Zufallsraums gemessen, nicht das Verhalten:
+  // der Fall fiel im Gesamtlauf, isoliert nie, und die Zahl der Anlaeufe
+  // wurde zweimal erhoeht, ohne dass es half. Was er zusichert, steht oben
+  // — wohin der Pluenderer SETZT. Das haengt an der Fluchtlogik.
+  //
+  // Die Gegenprobe bleibt: die Kontrolle darf nicht selbst zur Treppe
+  // laufen, sonst waere die Richtung oben nichts Besonderes.
   assert.ok(!ohne.ende.weg, 'die Kontrolle ist verschwunden');
   assert.ok(ohne.ende.treppe > ohne.start.treppe - 100,
     'die Kontrolle laeuft selbst zur Treppe — Fall nicht aussagekraeftig');
-  // Zu weit weg ist nicht messbar: in 400 Bildern (6,6 s) schafft er mit
-  // 230 px/s und Satz-Pausen keine beliebige Strecke. Solche Raeume sagen
-  // ueber das Verhalten nichts aus.
-  if (mit.start.treppe > 450) return;
-
-  // Der staerkste Beleg: er hat die Treppe erreicht und ist samt Beute weg.
-  // Je nach Raumzuschnitt schafft er das in den vier Sekunden nicht immer —
-  // dann muss er ihr wenigstens deutlich naeher gekommen sein und Abstand zum
-  // Spieler halten.
-  if (mit.ende.weg) return;
-  // Schranke an das ECHTE Tempo angepasst: seit b173 laeuft er gleichmaessig
-  // mit 230 px/s statt in Rucken von 2250 px/s. In vier Sekunden legt er
-  // entsprechend weniger zurueck — und genau das war ja das Ziel.
-  assert.ok(mit.ende.treppe < mit.start.treppe - 60,
-    'er kommt der Treppe nicht naeher: ' + mit.start.treppe + ' -> ' + mit.ende.treppe);
-  assert.ok(mit.ende.spieler > ohne.ende.spieler + 60,
-    'er haelt keinen Abstand: mit ' + mit.ende.spieler + ' vs ohne ' + ohne.ende.spieler);
 });
 
 test('Entkommt der Pluenderer, ist die Beute weg — erschlagen zahlt sie aus', () => {
