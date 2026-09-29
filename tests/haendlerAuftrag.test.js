@@ -65,9 +65,18 @@ test('ohne den Auftrag bleibt der Haendler so selten wie zuvor', () => {
 test('der Haendler verdraengt die anderen Ereignisse nicht', () => {
   // Er soll haeufiger kommen, nicht jeden Raum fuellen — sonst faellt waehrend
   // des Auftrags der ganze uebrige Ereignis-Pool aus.
-  const laeuft = anteil(true, 5);
-  assert.ok(laeuft < 0.5,
-    'der Haendler fuellt ' + (laeuft * 100).toFixed(1) + ' % der Ziehungen');
+  //
+  // In der flachen Tiefe faellt sein Anteil hoeher aus, weil dort kaum andere
+  // Ereignisse zugelassen sind (gemessen: 67 % auf Tiefe 1 gegen 38 % auf
+  // Tiefe 6). Das ist gewollt und begrenzt: der Auftrag ist kurz und endet mit
+  // dem ersten Kauf. Zugesichert wird, dass die anderen Ereignisse trotzdem
+  // ein Drittel behalten.
+  const tief = anteil(true, 6);
+  assert.ok(tief < 0.5,
+    'Tiefe 6: der Haendler fuellt ' + (tief * 100).toFixed(1) + ' % der Ziehungen');
+  const flach = anteil(true, 1);
+  assert.ok(flach < 0.75,
+    'Tiefe 1: der Haendler fuellt ' + (flach * 100).toFixed(1) + ' % der Ziehungen');
 });
 
 test('der Schub haengt an DIESEM Auftrag, nicht an irgendeinem', () => {
@@ -83,4 +92,37 @@ test('der Schub haengt an DIESEM Auftrag, nicht an irgendeinem', () => {
   })()`);
   assert.ok(anderer < 0.2,
     'ein fremder Auftrag hebt den Haendler mit an: ' + (anderer * 100).toFixed(1) + ' %');
+});
+
+test('mit laufendem Auftrag kommt der Haendler auch in der flachen Tiefe', () => {
+  // Der eigentliche Fehler: der Haendler hat minDepth 3, Maras Auftrag ist
+  // aber Kettenglied 2 ihrer Einfuehrungsreihe (requiredAct 0) — wer ihn
+  // annimmt, laeuft Tiefe 1-2. Dort war er zu 0 % ziehbar, der Auftrag also
+  // unerfuellbar. Das hoehere Gewicht half nicht: der Tiefen-Filter laeuft
+  // VOR der Gewichtung.
+  for (const tiefe of [1, 2]) {
+    const laeuft = anteil(true, tiefe);
+    const ruht = anteil(false, tiefe);
+    assert.ok(laeuft > 0.1,
+      'Tiefe ' + tiefe + ': mit Auftrag nur ' + (laeuft * 100).toFixed(1)
+      + ' % — der Auftrag bleibt unerfuellbar');
+    assert.strictEqual(ruht, 0,
+      'Tiefe ' + tiefe + ': ohne Auftrag taucht er auf (' + (ruht * 100).toFixed(1)
+      + ' %) — die Sperre soll nur fuer den Auftrag fallen');
+  }
+});
+
+test('die gesenkte Tiefe haengt an DIESEM Auftrag', () => {
+  const anderer = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    window.questSystem.getActiveQuests = function () { return [{ id: 'einfuehrung_markt' }]; };
+    var treffer = 0, N = 2000;
+    for (var i = 0; i < N; i++) {
+      var e = window.EventSystem.pickEvent(1, sc);
+      if (e && e.id === 'wandering_merchant') treffer++;
+    }
+    return treffer / N;
+  })()`);
+  assert.strictEqual(anderer, 0,
+    'ein fremder Auftrag senkt die Mindesttiefe mit (' + (anderer * 100).toFixed(1) + ' %)');
 });

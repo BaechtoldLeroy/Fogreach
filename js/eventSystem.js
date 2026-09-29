@@ -395,6 +395,10 @@
       // Kauf, der Schub also auch.
       gewicht: function () { return _haendlerAuftragLaeuft() ? 75 : 15; },
       minDepth: 3,
+      // Solange der Auftrag laeuft, auch in der flachen Tiefe. Sonst ist er
+      // fuer den Spieler, der ihn gerade annimmt, gar nicht erreichbar: die
+      // Einfuehrungsreihe laeuft in Akt 0, also auf Tiefe 1-2.
+      mindestTiefe: function () { return _haendlerAuftragLaeuft() ? 1 : 3; },
       handler: function(scene) {
         try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
         spawnMerchant(scene);
@@ -1699,7 +1703,15 @@
    */
   function pickEvent(depth, scene) {
     var eligible = EVENT_TYPES.filter(function(e) {
-      if (depth < e.minDepth) return false;
+      // Ein Ereignis darf seine Mindesttiefe selbst bestimmen — wie schon
+      // sein Gewicht und passtZuRaum. Der Haendler senkt sie, solange Maras
+      // Auftrag laeuft; ohne das half auch das hoehere Gewicht nichts, weil
+      // dieser Filter VOR der Gewichtung laeuft.
+      var mind = e.minDepth;
+      if (typeof e.mindestTiefe === 'function') {
+        try { mind = e.mindestTiefe(scene); } catch (x) { mind = e.minDepth; }
+      }
+      if (depth < mind) return false;
       if (e.id === lastEventId) return false;
       if (typeof e.passtZuRaum === 'function') {
         var ok = true;
@@ -1731,7 +1743,7 @@
       // fuer den Tag, an dem jemand die Reihenfolge dreht.
       return { id: e.id, name: e.name, weight: Math.max(1, Math.floor(basis / (count + 1))),
                minDepth: e.minDepth, handler: e.handler, passtZuRaum: e.passtZuRaum,
-               gewicht: e.gewicht };
+               gewicht: e.gewicht, mindestTiefe: e.mindestTiefe };
     });
     if (!eligible.length) return null;
 
