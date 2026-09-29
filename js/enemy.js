@@ -1156,12 +1156,18 @@ function handleEnemies(time, delta = 16) {
         enemy.miniBossLabel.setPosition(enemy.x, enemy.y - _dh - 14);
         if (typeof enemy.alpha === 'number') enemy.miniBossLabel.setAlpha(enemy.visible ? 1 : 0);
       }
-      // #65 Phase 2: 'Zaeh' — Heal-over-time (~healFrac der maxHP pro Sekunde).
+      // #65 Phase 2: 'Zaeh' — Heal-over-time (healFrac der maxHP pro Sekunde).
+      // Der Rest wird MITGENOMMEN statt aufgerundet: mit dem alten
+      // `Math.max(1, Math.round(...))` heilte ein Miniboss mit 48 HP auch bei
+      // 1.5 % noch 1 HP je Sekunde (= 2 %), der Bruchteil war wirkungslos.
       if (enemy._enchant && enemy._enchant.healFrac && enemy.hp > 0 && enemy.hp < enemy.maxHp) {
         if (!enemy._lastHealMs) enemy._lastHealMs = time;
         if (time - enemy._lastHealMs >= 1000) {
           enemy._lastHealMs = time;
-          enemy.hp = Math.min(enemy.maxHp, enemy.hp + Math.max(1, Math.round(enemy.maxHp * enemy._enchant.healFrac)));
+          const _roh = enemy.maxHp * enemy._enchant.healFrac + (enemy._healRest || 0);
+          const _ganz = Math.floor(_roh);
+          enemy._healRest = _roh - _ganz;
+          if (_ganz > 0) enemy.hp = Math.min(enemy.maxHp, enemy.hp + _ganz);
         }
       }
     }
@@ -2184,7 +2190,7 @@ const MINIBOSS_ENCHANTS = [
   { id: 'bruiser',     de: 'Nahkampfhaut',    en: 'Melee Ward',  aura: 0xcc8844, resist: 'melee',  resistMul: 0.30, weight: 3, minDepth: 3 },
   { id: 'swift',       de: 'Rasend',          en: 'Swift',       aura: 0xffdd55, speedMul: 1.6,     weight: 2, minDepth: 4 },
   { id: 'thorns',      de: 'Dornen',          en: 'Thorns',      aura: 0xff5555, reflect: 0.35,     weight: 2, minDepth: 5 },
-  { id: 'regenerator', de: 'Zaeh',            en: 'Regenerating',aura: 0x66cc99, healFrac: 0.04,    weight: 2, minDepth: 6 },
+  { id: 'regenerator', de: 'Zaeh',            en: 'Regenerating',aura: 0x66cc99, healFrac: 0.015,   weight: 2, minDepth: 6 },
 ];
 // Tiefen-Skalierung: ab Tiefe 8 haerter. Gibt eine KOPIE zurueck, damit die
 // Registry-Basiswerte unveraendert bleiben.
@@ -2193,7 +2199,7 @@ function _scaleEnchant(e, depth) {
   const s = Object.assign({}, e);
   if (s.resistMul) s.resistMul = Math.max(0.15, s.resistMul - 0.10); // 0.30 -> 0.20 (staerker)
   if (s.reflect)   s.reflect   = Math.min(0.60, s.reflect + 0.15);   // 0.35 -> 0.50
-  if (s.healFrac)  s.healFrac  = Math.min(0.08, s.healFrac + 0.02);  // 0.04 -> 0.06
+  if (s.healFrac)  s.healFrac  = Math.min(0.02, s.healFrac + 0.005); // 0.015 -> 0.02
   if (s.speedMul)  s.speedMul  = Math.min(2.0,  s.speedMul + 0.2);   // 1.6 -> 1.8
   return s;
 }

@@ -187,9 +187,26 @@ test('Mara hilft, wenn das Finale sie an Deiner Seite sieht', () => {
   // Unverwundbar: stirbt der Spieler waehrend des Wartens, startet die Szene
   // neu und die Gegnergruppe ist weg (so unter Last im Gesamtlauf passiert).
   H.run(`window._playerInvincible = true`);
-  for (let i = 0; i < 8; i++) { H.step(60); L.healPlayer(); }  // ~8 s: ein Pfeil
+
+  // Takten, BIS der Pfeil einschlaegt — nicht 480 Bilder und dann messen.
+  //
+  // Nachgerechnet: Mara schiesst alle 7000 ms (Bild 420), der Pfeil fliegt
+  // als Tween ueber 350 ms. Getaktet braucht ein Tween aber rund das
+  // Doppelte (Phasers Tween-Delta passt nicht zum gepumpten dt), der
+  // Einschlag liegt also bei Bild ~466. Von 480 Bildern blieben 14 Bilder
+  // Marge — unter 3 %, und genau so oft fiel der Fall im Gesamtlauf.
+  const bossHp = () => H.run(`(function () {
+    var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+    return b ? b.hp : -1;
+  })()`);
+  let nach = bossHp();
+  for (let i = 0; i < 1200 && nach >= vor.hp; i++) {
+    H.step(10);
+    if (i % 6 === 0) L.healPlayer();
+    nach = bossHp();
+  }
   H.run(`window._playerInvincible = false`);
-  const nach = H.run(`enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0].hp`);
+  assert.ok(nach >= 0, 'der Boss ist waehrend des Wartens verschwunden');
   assert.ok(nach < vor.hp, 'Maras Pfeil hat nicht getroffen (' + vor.hp + ' -> ' + nach + ')');
   assert.ok(ohne.hp > 0);
 });
