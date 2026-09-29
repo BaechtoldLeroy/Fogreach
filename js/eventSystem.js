@@ -277,6 +277,16 @@
   }
   var T = function (key, params) { return window.i18n ? window.i18n.t(key, params) : key; };
 
+  // Laeuft Maras Auftrag 'Der Alte mit dem Karren'? Siehe das Gewicht am
+  // wandernden Haendler weiter unten.
+  function _haendlerAuftragLaeuft() {
+    try {
+      var qs = window.questSystem;
+      if (!qs || typeof qs.getActiveQuests !== 'function') return false;
+      return qs.getActiveQuests().some(function (q) { return q && q.id === 'einfuehrung_amulett'; });
+    } catch (e) { return false; }
+  }
+
   var EVENT_TYPES = [
     {
       id: 'treasure_cache',
@@ -379,6 +389,11 @@
       id: 'wandering_merchant',
       name: T('event.merchant.name'),
       weight: 15,
+      // Maras Auftrag verlangt EINEN Kauf bei ihm. Mit dem Grundgewicht kam
+      // er gemessen alle ~20 Raeume — fuer einen Einfuehrungsauftrag zu
+      // selten. Solange der Auftrag laeuft, alle ~6. Er endet mit dem ersten
+      // Kauf, der Schub also auch.
+      gewicht: function () { return _haendlerAuftragLaeuft() ? 75 : 15; },
       minDepth: 3,
       handler: function(scene) {
         try { window.soundManager && window.soundManager.playSFX('click'); } catch (e) {}
@@ -1694,22 +1709,29 @@
       // Anti-repetition: reduce weight if event appeared in last 3
       return true;
     });
-    // Soft anti-repetition: halve weight of recently seen events
+    // Das Gewicht aufloesen und kuerzlich Gesehenes daempfen. Ein Ereignis
+    // darf sein Gewicht ueber `gewicht(scene)` selbst bestimmen (der Haendler
+    // tut das, solange Maras Auftrag laeuft) — die Ziehung muss die Regel
+    // dahinter nicht kennen, genau wie bei `passtZuRaum`.
     eligible = eligible.map(function(e) {
+      var basis = e.weight;
+      if (typeof e.gewicht === 'function') {
+        try { basis = e.gewicht(scene); } catch (x) { basis = e.weight; }
+      }
+      basis = Math.max(1, basis || 1);
       var count = 0;
       for (var i = 0; i < recentEvents.length; i++) {
         if (recentEvents[i] === e.id) count++;
       }
-      if (count > 0) {
-        // passtZuRaum wird mitkopiert, damit das Abbild vollstaendig bleibt.
-        // Noetig ist es heute nicht — der Filter oben laeuft VOR dieser Stelle,
-        // ein ausgeschlossenes Ereignis kommt hier also gar nicht an (im
-        // Mutationstest belegt: das Weglassen aendert nichts). Es steht hier
-        // fuer den Tag, an dem jemand die Reihenfolge dreht.
-        return { id: e.id, name: e.name, weight: Math.max(1, Math.floor(e.weight / (count + 1))),
-                 minDepth: e.minDepth, handler: e.handler, passtZuRaum: e.passtZuRaum };
-      }
-      return e;
+      if (count === 0 && basis === e.weight) return e;
+      // passtZuRaum wird mitkopiert, damit das Abbild vollstaendig bleibt.
+      // Noetig ist es heute nicht — der Filter oben laeuft VOR dieser Stelle,
+      // ein ausgeschlossenes Ereignis kommt hier also gar nicht an (im
+      // Mutationstest belegt: das Weglassen aendert nichts). Es steht hier
+      // fuer den Tag, an dem jemand die Reihenfolge dreht.
+      return { id: e.id, name: e.name, weight: Math.max(1, Math.floor(basis / (count + 1))),
+               minDepth: e.minDepth, handler: e.handler, passtZuRaum: e.passtZuRaum,
+               gewicht: e.gewicht };
     });
     if (!eligible.length) return null;
 

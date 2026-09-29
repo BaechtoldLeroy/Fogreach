@@ -819,6 +819,34 @@ function raeumePropsAufTreppen(scene, obstaclesGroup) {
 }
 if (typeof window !== 'undefined') window.raeumePropsAufTreppen = raeumePropsAufTreppen;
 
+/**
+ * Haelt ein Treppenplatz den Freiraum zu ALLEN Tueren ein?
+ *
+ * Rein und damit pruefbar (wie shouldPlaceRunAmuletHere, #120). Ueber echte
+ * Raeume ist die Regel nicht sinnvoll zu messen: nur ~7 % der Raeume tragen
+ * eine Tuer, und die Verletzungsrate lag bei 6.7 % — genug Proben dafuer
+ * brauchten 162 Sekunden.
+ *
+ * @param {number} cx Mitte des Treppenplatzes
+ * @param {number} cy
+ * @param {Array<{x:number,y:number}>} tueren alle Tueren, gegen die geprueft wird
+ * @param {number} freiraum Mindestabstand Mitte-zu-Mitte in px
+ * @returns {boolean} true, wenn der Platz weit genug von jeder Tuer liegt
+ */
+function treppeHaeltTuerFrei(cx, cy, tueren, freiraum) {
+  if (!tueren || !tueren.length) return true;
+  const grenze = freiraum * freiraum;
+  for (let i = 0; i < tueren.length; i++) {
+    const t = tueren[i];
+    if (!t) continue;
+    const dx = cx - t.x;
+    const dy = cy - t.y;
+    if (dx * dx + dy * dy < grenze) return false;
+  }
+  return true;
+}
+if (typeof window !== 'undefined') window.treppeHaeltTuerFrei = treppeHaeltTuerFrei;   // rein/testbar
+
 // Zufällige Truhen-Platzierung pro Raum (ersetzt die fixen Template-Truhen).
 // Ziel: ~1 Truhe pro 2 durchschnittlich grosse Räume (Audit-Mittel ~861 Tiles).
 // Platziert NACH den Treppen, validiert gegen Treppen/Spieler-Spawn/Kamera/
@@ -1150,7 +1178,20 @@ function enterRoom(scene, roomId) {
   // Zentrum-zu-Zentrum, damit der Durchgang frei bleibt. Der Startversatz der
   // Kandidatenreihe (96px) ist bewusst groesser, sodass der erste Vorschlag die
   // Pruefung besteht und trotzdem in Tuernaehe bleibt.
-  const DOOR_CLEARANCE_SQ = 88 * 88;
+  const DOOR_CLEARANCE = 88;
+  // Die Tueren, die WIRKLICH stehen. doorList kommt aus tpl.entrances/exits —
+  // die Tuersprites dagegen aus tpl.doorways (die Durchgaenge zwischen den
+  // BSP-Kammern, roomTemplates.js:900). Zwei getrennte Listen: die Freiraum-
+  // Regel kannte nur die erste, und die Treppe landete auf einer Innentuer.
+  // Gegen die gesetzten Sprites zu pruefen kann nicht wieder auseinanderlaufen.
+  const STEHENDE_TUEREN = (scene && Array.isArray(scene._doors))
+    ? scene._doors.filter((t) => t && t.active)
+    : [];
+  // Eine Liste, eine Pruefung. Sie liegt an der Szene, damit pruefbar ist,
+  // dass die stehenden Tueren wirklich darin landen — ohne das war der Fix
+  // nicht messbar (ihn herauszunehmen liess jeden Fall gruen).
+  const TUEREN_FREIRAUM = doorList.concat(STEHENDE_TUEREN);
+  if (scene) scene.__treppenTuerListe = TUEREN_FREIRAUM;
 
   // Helper: does any object (physics obstacle OR visual-only template wall)
   // overlap a square area of side 2*STAIR_HALF centered on (cx, cy)?
@@ -1220,11 +1261,7 @@ function enterRoom(scene, roomId) {
     // ALLE Tueren pruefen, nicht nur die eigene — so blockiert eine Treppe auch
     // keinen benachbarten Durchgang.
     if (!r.doors) {
-      for (let i = 0; i < doorList.length; i++) {
-        const ddx = cx - doorList[i].x;
-        const ddy = cy - doorList[i].y;
-        if (ddx * ddx + ddy * ddy < DOOR_CLEARANCE_SQ) return false;
-      }
+      if (!treppeHaeltTuerFrei(cx, cy, TUEREN_FREIRAUM, DOOR_CLEARANCE)) return false;
     }
     // Distance from player spawn (only when we know where the player is)
     if (!r.spawn && playerSpawnX !== null) {
