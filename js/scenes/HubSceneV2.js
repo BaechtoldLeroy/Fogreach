@@ -1141,7 +1141,14 @@ class HubSceneV2 extends Phaser.Scene {
     if (!active && this._hubPhaseRefs && Array.isArray(this._hubPhaseRefs.posterSpots)) {
       const ediktSchritt = this._ediktSchritt();
       for (const p of this._hubPhaseRefs.posterSpots) {
-        if (p && Phaser.Math.Distance.Between(this.player.x, this.player.y, p.x, p.y - 40) < 90) {
+        // Reichweite in LAYOUT-Einheiten, wie die Lage der Tafeln selbst.
+        // Sie stand als blanke 90 hier und wurde gegen Welt-Abstaende geprueft,
+        // war also faktisch 90 statt 144 breit (SCALE_FACTOR 1.6). Zwischen den
+        // beiden Tafeln blieb dadurch eine tote Zone von rund 40 px — genau
+        // dort, wo man zur Rathaustreppe hochlaeuft: [E] tat dort nichts.
+        var _brettReichweite = 90 * SCALE_FACTOR;
+        var _by = p.y - 40 * SCALE_FACTOR;
+        if (p && Phaser.Math.Distance.Between(this.player.x, this.player.y, p.x, _by) < _brettReichweite) {
           active = { type: 'anschlag', edikt: ediktSchritt === 1 };
           activeLabel = _HUB_T(ediktSchritt === 1 ? 'hub.anschlag.prompt' : 'hub.brett.prompt');
           break;

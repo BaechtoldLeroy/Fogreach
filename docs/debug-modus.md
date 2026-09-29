@@ -76,7 +76,50 @@ der Boss-Zweig wird gar nicht erst betreten. Ohne diese Bedingung spawnte der
 Zweig einen Boss ohne Definition und riss das Spiel mit (gemessen mit
 `?boss=quatsch`: "Cannot read properties of undefined").
 
+### Elaras Kammer (#161)
+
+| Flagge | Wirkung |
+|---|---|
+| `?versteck=1` | Kammer als erster Raum, erste Szene (sie zeigt Dir ihr Versteck) |
+| `?versteck=werkstatt` | Kammer, Szene "ihre Werkstatt" |
+| `?versteck=bruch_nacht` | Kammer, "die Nacht nach dem Bruch" (setzt Akt 4) |
+| `?versteck=leer` | nur der Raum, ohne sie — zum Ansehen der Einrichtung |
+
+Der Raum allein genuegt nicht: ob Elara dasteht und welche Szene laeuft,
+entscheidet `versteckBesuchFaellig()` aus dem Queststand ueber mehrere Akte.
+Die Flagge stellt darum den Stand mit her, den die gewuenschte Szene braucht,
+und loescht die Gesehen-Flaggen der drei Szenen — sonst laeuft keine davon ein
+zweites Mal.
+
+```
+?debug=1&versteck=werkstatt
+```
+
+`leer` ruehrt den Queststand NICHT an.
+
+### Die sechs Sondergegner (#12)
+
+| Flagge | Wirkung |
+|---|---|
+| `?sonder=1` | alle sechs, im Kreis um den Spieler |
+| `?sonder=alarm,hund` | nur diese |
+
+Bekannte Namen: `geschwuer`, `priester`, `beschwoerer`, `springer`, `hund`,
+`alarm`. Ein unbekannter Name setzt nichts und wird auf der Konsole benannt.
+
+Solange die Flagge gesetzt ist, faellt die **normale Welle des Raums aus** —
+sechs Sondergegner plus eine volle Welle auf Tiefe 12 bedeuten den Tod, bevor
+man den ersten Ruf gehoert hat. Was trotzdem dazukommt, haben sie selbst
+gerufen: der Beschwoerer seine Wichte, der Alarmwicht seine Verstaerkung.
+
+Sie werden in **jedem** Raum neu gesetzt, nicht nur im ersten.
+
+```
+?debug=1&dungeon=12&sonder=1
+```
+
 ### Verborgene Funde (#113)
+
 
 | Flagge | Wirkung |
 |---|---|

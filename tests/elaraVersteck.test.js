@@ -61,7 +61,11 @@ function versteckBetreten() {
     if (i < 0) return { fehler: 'kein Versteck im Lauf' };
     enterRoom(sc, i);
     var gegner = enemies.getChildren().filter(function (e) { return e && e.active; }).length;
-    return { index: i, besuch: sc._versteckBesuch, gegner: gegner, deko: !!(sc._versteckDeko && sc._versteckDeko.active),
+    // Die Einrichtung haengt seit b293 an ZWEI Ebenen (Boden und Aufbauten,
+    // siehe versteckKammer.test.js) — frueher war es ein Objekt.
+    var d = sc._versteckDeko ? (Array.isArray(sc._versteckDeko) ? sc._versteckDeko : [sc._versteckDeko]) : [];
+    return { index: i, besuch: sc._versteckBesuch, gegner: gegner,
+             deko: d.length > 0 && d.every(function (o) { return o && o.scene; }),
              text: sc._raumBeschriftung };
   })()`);
 }

@@ -14,6 +14,19 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+
+// Wanduhr-Grenze fuer JEDEN vm-Aufruf. Ein Schutz gegen Endlosschleifen —
+// KEIN Zeitbudget.
+//
+// Sie stand auf 20 s, und genau 20 s dauerten die Bloecke, die im Gesamtlauf
+// reihenweise fielen: laeuft der Rechner voll (node --test startet die
+// Dateien parallel, 56 davon mit vollem Phaser), braucht ein einzelnes
+// h.run() mit vielen getakteten Bildern laenger als 20 s Wanduhr, obwohl es
+// simuliert nur Bruchteile einer Sekunde sind. Faellt der before-Haken
+// darueber, gilt JEDER Test seiner Datei als gefallen — daher 18 bis 37
+// Fehlschlaege in ganzen Bloecken, isoliert aber alles gruen.
+const VM_ZEITGRENZE = 120000;
+
 const { createDomStub } = require('./domStub');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -87,7 +100,7 @@ function boot(opts) {
     if (!fs.existsSync(abs)) { skipped.push({ file: rel, reason: 'fehlt' }); continue; }
     const code = fs.readFileSync(abs, 'utf8');
     try {
-      vm.runInContext(code, ctx, { filename: rel, timeout: opts.timeout || 20000 });
+      vm.runInContext(code, ctx, { filename: rel, timeout: opts.timeout || VM_ZEITGRENZE });
       loaded.push(rel);
     } catch (e) {
       errors.push({ level: 'error', msg: `[LOAD ${rel}] ${e && e.message}` });
@@ -217,7 +230,7 @@ function boot(opts) {
     letzterCode = String(code).replace(/s+/g, ' ').slice(0, 160);
     const t0 = Date.now();
     try {
-      return vm.runInContext(code, ctx, { filename: 'headless-eval', timeout: opts.timeout || 20000 });
+      return vm.runInContext(code, ctx, { filename: 'headless-eval', timeout: opts.timeout || VM_ZEITGRENZE });
     } finally {
       const dauer = Date.now() - t0;
       if (dauer > langsamste.ms) langsamste = { ms: dauer, code: letzterCode };

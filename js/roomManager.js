@@ -982,6 +982,10 @@ function enterRoom(scene, roomId) {
     scene.stairsGroup.clear(true, true);
   }
 
+  // #161: Die Story-Deko (Elaras Kammer, das Leuchten der Quelle) haengt an
+  // keiner Gruppe und ueberlebte den Raumwechsel sonst.
+  _storyDekoAbraeumen(scene);
+
   // Fog reset
   scene.exploredRT?.clear();
   scene._spotlightMaskGfx?.clear();
@@ -1001,6 +1005,10 @@ function enterRoom(scene, roomId) {
   var _erzwungen = (typeof _debugRaumFolge === 'function')
     ? _debugRaumFolge(Object.keys((window.RoomTemplates && window.RoomTemplates.TEMPLATES) || {}))
     : null;
+  // ?versteck= fuehrt direkt in Elaras Kammer — und stellt den Queststand
+  // gleich so, dass sie da ist. Ohne das baut die Vorlage zwar, aber der
+  // Raum ist leer, und genau das will man beim Testen nicht sehen.
+  if (_debugVersteck()) _erzwungen = [VERSTECK_RAUM];
   const templateName = (_erzwungen && _erzwungen.length)
     ? _erzwungen[roomId % _erzwungen.length]
     : (dungeonRun && dungeonRun.templateOrder[roomId]);
@@ -1040,6 +1048,9 @@ function enterRoom(scene, roomId) {
     var _tR = (dungeonRun && dungeonRun.totalRooms) ? dungeonRun.totalRooms : rooms.length;
     window.__isFinalDungeonRoom = (roomId === (_tR - 1));
   }
+
+  // ?sonder= setzt die Sondergegner in den fertigen Raum.
+  try { _debugSondergegnerSetzen(scene); } catch (e) {}
 
   // #161: Elaras Versteck ist ein ruhiger Raum — keine Ereignisse, keine
   // Zufallsbegegnung, keine Welle (siehe unten). Nur sie und die Szene.
@@ -1565,7 +1576,10 @@ function enterRoom(scene, roomId) {
         'The chambers are guarded. Council cellar wardens, and their lookouts.'), 'quest');
     } catch (e) {}
   }
-  if (!_espionageRoom && !_versteckRaum && !_flucht && typeof startNextWave === "function") {
+  // ?sonder= will die sechs ANSEHEN. Die normale Welle dazu bedeutet auf
+  // Tiefe 12 den sicheren Tod, bevor man den ersten Ruf gehoert hat.
+  if (!_espionageRoom && !_versteckRaum && !_flucht && !_debugSonderAn()
+      && typeof startNextWave === "function") {
     startNextWave.call(scene, false);
     window.currentWave = currentWave;
   }
@@ -2603,6 +2617,130 @@ function _debugRaumStil() {
  * @param {Array<string>} allNames alle bekannten Vorlagen
  * @returns {Array<string>|null}
  */
+/**
+ * Debug ?versteck=[szene] — direkt in Elaras Kammer.
+ *
+ * Der Raum allein genuegt nicht: ob Elara dasteht und welche Szene laeuft,
+ * entscheidet versteckBesuchFaellig() aus dem Queststand. Darum setzt der
+ * Schalter den Stand mit, den die gewuenschte Szene braucht.
+ *
+ *   ?versteck=1            die erste Szene (sie zeigt Dir ihr Versteck)
+ *   ?versteck=werkstatt    ihre Werkstatt
+ *   ?versteck=bruch_nacht  die Nacht nach dem Bruch (Akt 4)
+ *   ?versteck=leer         nur der Raum, ohne sie
+ */
+function _debugVersteck() {
+  try {
+    var G = window.DebugGate;
+    // Kein eigener aktiv()-Test: flagge() gibt bei geschlossenem Gate
+    // ohnehin null zurueck. Die Mutation hat gezeigt, dass die Zeile
+    // nichts haelt.
+    if (!G) return false;
+    var v = G.flagge('versteck');
+    if (v === null) return false;
+    var szene = (v === '' || v === '1' || v === 'true') ? 'versteck' : String(v).toLowerCase();
+    _debugVersteckStandSetzen(szene);
+    return true;
+  } catch (e) { return false; }
+}
+
+/** Setzt genau den Queststand, den die gewuenschte Versteck-Szene braucht. */
+function _debugVersteckStandSetzen(szene) {
+  var qs = window.questSystem;
+  if (!qs || typeof qs.getQuestSaveData !== 'function') return;
+  if (szene === 'leer') return;                     // Raum ohne sie
+  var st = qs.getQuestSaveData();
+  st.flags = st.flags || {};
+  // Alle drei Szenen-Flaggen loeschen: eine gesehene Szene laeuft nicht
+  // noch einmal, und beim Testen will man sie genau EINMAL sehen.
+  ['elara_versteck_gesehen', 'elara_camp_seen', 'bruch_nacht_gesehen',
+   'elara_verrat_gesehen'].forEach(function (f) { st.flags[f] = false; });
+  st.quests = st.quests || {};
+  var fertig = function (id) { st.quests[id] = { status: 'completed', objectives: [] }; };
+  if (szene === 'werkstatt') { fertig('widerstand_proof'); fertig('elara_meeting'); st.flags.elara_versteck_gesehen = true; }
+  else if (szene === 'bruch_nacht') { fertig('widerstand_proof'); fertig('elara_meeting'); st.flags.elara_versteck_gesehen = true; st.flags.elara_camp_seen = true; }
+  else fertig('widerstand_proof');
+  try { qs.loadQuestSaveData(st); } catch (e) {}
+  if (szene === 'bruch_nacht' && window.storySystem && typeof window.storySystem.advanceToAct === 'function') {
+    try { window.storySystem.advanceToAct(4); } catch (e) {}
+  }
+}
+
+/**
+ * Debug ?sonder=[liste] — die sechs Sondergegner (#12) in einem Raum.
+ *
+ * Sie treten im Spiel je nach Tiefe und Akt auf und nie zusammen; wer ihr
+ * Verhalten ansehen will, braucht sie nebeneinander.
+ *
+ *   ?sonder=1              alle sechs, im Kreis um den Spieler
+ *   ?sonder=alarm,hund     nur diese
+ */
+var DEBUG_SONDER = { geschwuer: 11, priester: 12, beschwoerer: 13,
+  springer: 14, hund: 15, alarm: 16 };
+
+/** Ist ?sonder= gesetzt? (Gate-gesichert ueber flagge().) */
+function _debugSonderAn() {
+  try {
+    var G = window.DebugGate;
+    return !!(G && G.flagge('sonder') !== null);
+  } catch (e) { return false; }
+}
+
+function _debugSondergegnerSetzen(scene) {
+  var G = window.DebugGate;
+  if (!G) return 0;                       // flagge() sperrt selbst
+  var v = G.flagge('sonder');
+  if (v === null) return 0;
+  if (typeof spawnEnemy !== 'function' || typeof player === 'undefined' || !player) return 0;
+  var namen = (v === '' || v === '1' || v === 'true')
+    ? Object.keys(DEBUG_SONDER)
+    : String(v).split(',').map(function (n) { return n.trim().toLowerCase(); }).filter(Boolean);
+  var unbekannt = namen.filter(function (n) { return !DEBUG_SONDER[n]; });
+  if (unbekannt.length) {
+    try { console.warn('[Sondergegner] unbekannt: ' + unbekannt.join(', ')
+      + ' — bekannt sind: ' + Object.keys(DEBUG_SONDER).join(', ')); } catch (e) {}
+  }
+  namen = namen.filter(function (n) { return DEBUG_SONDER[n]; });
+  if (!namen.length) return 0;
+  // Im Kreis um den Spieler, damit keiner den anderen verdeckt. Wer auf
+  // einer Wand landet, wird auf einen begehbaren Punkt verschoben.
+  var gesetzt = 0, fehlt = [];
+  namen.forEach(function (n, i) {
+    var winkel = (i / namen.length) * Math.PI * 2;
+    var x = player.x + Math.cos(winkel) * 200;
+    var y = player.y + Math.sin(winkel) * 200;
+    var e = null, grund = null;
+    try { e = spawnEnemy.call(scene, 0, 0, DEBUG_SONDER[n]); }
+    catch (err) { e = null; grund = (err && err.message) || String(err); }
+    if (!e) {
+      // Ein Werkzeug, das die Haelfte still verschluckt, ist schlimmer als
+      // keines: beim ersten Einsatz standen vier von sechs da, ohne ein Wort.
+      fehlt.push(n + (grund ? ' (' + grund + ')' : ''));
+      return;
+    }
+    if (typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(x, y)
+        && typeof scene.pickAccessibleSpawnPoint === 'function') {
+      var pkt = scene.pickAccessibleSpawnPoint({ maxAttempts: 16 });
+      if (pkt) { x = pkt.x; y = pkt.y; }
+    }
+    e.x = x; e.y = y;
+    if (e.body && typeof e.body.reset === 'function') e.body.reset(x, y);
+    e._debugSonder = n;
+    gesetzt++;
+  });
+  try {
+    console.log('[Sondergegner] gesetzt: ' + gesetzt + ' von ' + namen.length
+      + ' (' + namen.join(', ') + ')');
+    if (fehlt.length) console.warn('[Sondergegner] NICHT gesetzt: ' + fehlt.join(', '));
+  } catch (e) {}
+  return gesetzt;
+}
+if (typeof window !== 'undefined') {
+  window._debugSondergegnerSetzen = _debugSondergegnerSetzen;
+  window._debugVersteckStandSetzen = _debugVersteckStandSetzen;
+  window.DEBUG_SONDER = DEBUG_SONDER;
+}
+
 function _debugRaumFolge(allNames) {
   try {
     var G = window.DebugGate;
@@ -3399,29 +3537,168 @@ function _versteckAnkuendigen(scene) {
 }
 
 /** Einrichtung: Schlaflager, Karten der Kanaele an der Wand, Kerzenstummel. */
+/**
+ * Elaras Kammer einrichten.
+ *
+ * Sie lebt hier seit Wochen, versteckt vor dem Rat, und arbeitet: das soll
+ * der Raum erzaehlen. Darum keine Moebelsammlung, sondern drei Zonen — wo
+ * sie schlaeft, wo sie arbeitet, und was sie an die Wand genagelt hat.
+ *
+ * Gezeichnet wird in ZWEI Ebenen, damit nichts flach uebereinander liegt:
+ * was am Boden liegt (Teppich, Flecken, Schlagschatten, Lichtschacht) unter
+ * BODENDEKO_MAX, was steht (Lager, Kisten, Bohle, Wandkram) auf PROP.
+ */
 function _versteckZeichnen(scene, w, h) {
   if (!scene || !scene.add) return null;
-  var g = scene.add.graphics().setDepth(31);
-  // Schlaflager links unten
-  g.fillStyle(0x4a3a2a, 1); g.fillRoundedRect(w * 0.16, h * 0.62, 120, 52, 10);
-  g.fillStyle(0x6b5540, 1); g.fillRoundedRect(w * 0.16 + 6, h * 0.62 + 6, 108, 40, 8);
-  g.fillStyle(0x8a7a60, 1); g.fillEllipse(w * 0.16 + 24, h * 0.62 + 26, 30, 22);   // Kissen
-  // Karten der Kanaele an der Nordwand
-  var kx = w * 0.62, ky = h * 0.16;
-  g.fillStyle(0xcab98f, 1); g.fillRect(kx, ky, 96, 64);
-  g.lineStyle(2, 0x5a4a30, 0.9);
-  g.lineBetween(kx + 10, ky + 20, kx + 60, ky + 24); g.lineBetween(kx + 60, ky + 24, kx + 84, ky + 50);
-  g.lineBetween(kx + 30, ky + 22, kx + 26, ky + 54); g.lineBetween(kx + 26, ky + 54, kx + 70, ky + 56);
-  g.fillStyle(0x8a2a2a, 1); g.fillCircle(kx + 70, ky + 40, 4);                     // markierte Stelle
-  // Kerzenstummel neben dem Lager
-  [[w * 0.16 + 136, h * 0.62 + 8], [w * 0.16 + 150, h * 0.62 + 30], [w * 0.16 + 128, h * 0.62 + 44]].forEach(function (p) {
-    g.fillStyle(0xe8dcc0, 1); g.fillRect(p[0] - 3, p[1] - 8, 6, 10);
-    g.fillStyle(0xffcc55, 0.9); g.fillCircle(p[0], p[1] - 11, 3);
-    g.fillStyle(0xffaa33, 0.18); g.fillCircle(p[0], p[1] - 10, 16);
+  var T = (typeof window !== 'undefined' && window.WELT_TIEFEN) ? window.WELT_TIEFEN : null;
+  var boden = scene.add.graphics().setDepth(T ? T.BODENDEKO_MAX - 2 : 28);
+  var g = scene.add.graphics().setDepth(T ? T.PROP : 40);
+
+  // --- Boden: Teppich, Wasserflecken, Risse ------------------------------
+  // Der Teppich liegt schief. Gerade ausgerichtet sieht er aus wie
+  // eingerichtet; schief sieht er aus wie hingeworfen.
+  var tx = w * 0.30, ty = h * 0.44;
+  boden.fillStyle(0x3a2a33, 1); boden.fillRoundedRect(tx, ty, 260, 150, 6);
+  boden.fillStyle(0x4c3644, 1); boden.fillRoundedRect(tx + 8, ty + 8, 244, 134, 4);
+  // Fransen an den Schmalseiten — ohne die liest sich der Teppich als Block.
+  boden.lineStyle(2, 0x6b5560, 0.8);
+  for (var fr = 0; fr < 16; fr++) {
+    boden.lineBetween(tx + 10 + fr * 15, ty + 2, tx + 8 + fr * 15, ty - 6);
+    boden.lineBetween(tx + 10 + fr * 15, ty + 148, tx + 12 + fr * 15, ty + 156);
+  }
+  // Bordüre und eine Reihe Rauten: ein Muster bricht die Flaeche auf.
+  boden.lineStyle(2, 0x6b4a5e, 0.75); boden.strokeRect(tx + 20, ty + 20, 220, 110);
+  boden.lineStyle(1, 0x7d5a6e, 0.55); boden.strokeRect(tx + 28, ty + 28, 204, 94);
+  for (var d = 0; d < 4; d++) {
+    var dx = tx + 62 + d * 48, dy = ty + 75;
+    boden.lineStyle(2, 0x8a6478, 0.6);
+    boden.strokePoints([{ x: dx, y: dy - 20 }, { x: dx + 18, y: dy },
+      { x: dx, y: dy + 20 }, { x: dx - 18, y: dy }], true);
+    boden.fillStyle(0x5e4254, 0.7); boden.fillEllipse(dx, dy, 12, 14);
+  }
+  // Abgewetzt, wo sie immer sitzt: das Muster verschwindet darunter.
+  boden.fillStyle(0x2f2229, 0.6); boden.fillEllipse(tx + 200, ty + 96, 76, 48);
+  boden.fillStyle(0x3d2c38, 0.5); boden.fillEllipse(tx + 198, ty + 94, 52, 32);
+
+  // Wasser sickert durch die Decke — sie wohnt unter der Stadt.
+  [[w * 0.22, h * 0.30, 46, 26], [w * 0.70, h * 0.68, 34, 20], [w * 0.52, h * 0.22, 26, 16]]
+    .forEach(function (q) {
+      boden.fillStyle(0x1c2630, 0.5); boden.fillEllipse(q[0], q[1], q[2], q[3]);
+      boden.fillStyle(0x38505f, 0.35); boden.fillEllipse(q[0] - 3, q[1] - 2, q[2] * 0.5, q[3] * 0.5);
+    });
+  boden.lineStyle(1, 0x1a1418, 0.7);
+  boden.lineBetween(w * 0.12, h * 0.52, w * 0.24, h * 0.58);
+  boden.lineBetween(w * 0.24, h * 0.58, w * 0.20, h * 0.70);
+
+  // --- Schlafecke links unten --------------------------------------------
+  var lx = w * 0.13, ly = h * 0.60;
+  boden.fillStyle(0x000000, 0.35); boden.fillEllipse(lx + 62, ly + 58, 150, 30);
+  g.fillStyle(0x3b2d20, 1); g.fillRoundedRect(lx, ly, 128, 56, 10);
+  g.fillStyle(0x5c4a34, 1); g.fillRoundedRect(lx + 5, ly + 5, 118, 44, 8);
+  // Decke zurueckgeschlagen — sie ist eben erst aufgestanden.
+  g.fillStyle(0x4a3a52, 1); g.fillRoundedRect(lx + 52, ly + 8, 74, 40, 8);
+  g.lineStyle(2, 0x372a3d, 0.9);
+  g.lineBetween(lx + 66, ly + 12, lx + 62, ly + 44);
+  g.lineBetween(lx + 88, ly + 10, lx + 84, ly + 46);
+  g.lineBetween(lx + 108, ly + 14, lx + 104, ly + 42);
+  g.fillStyle(0x9d8a6c, 1); g.fillEllipse(lx + 26, ly + 26, 34, 24);
+  g.fillStyle(0x7d6b50, 1); g.fillEllipse(lx + 22, ly + 30, 22, 14);
+
+  // --- Arbeitsecke: Bohle auf zwei Kisten ---------------------------------
+  var ax = w * 0.56, ay = h * 0.52;
+  boden.fillStyle(0x000000, 0.35); boden.fillEllipse(ax + 80, ay + 74, 190, 34);
+  [[ax, ay + 26], [ax + 132, ay + 26]].forEach(function (k) {
+    g.fillStyle(0x4a3826, 1); g.fillRect(k[0], k[1], 44, 48);
+    g.fillStyle(0x5d4732, 1); g.fillRect(k[0] + 3, k[1] + 3, 38, 42);
+    g.lineStyle(2, 0x33261a, 0.9); g.strokeRect(k[0] + 3, k[1] + 3, 38, 42);
+    g.lineBetween(k[0] + 3, k[1] + 18, k[0] + 41, k[1] + 18);
+    g.lineBetween(k[0] + 3, k[1] + 32, k[0] + 41, k[1] + 32);
   });
-  scene._versteckDeko = g;
+  g.fillStyle(0x6b563c, 1); g.fillRect(ax - 8, ay + 14, 192, 14);
+  g.fillStyle(0x7d6749, 1); g.fillRect(ax - 8, ay + 14, 192, 5);
+
+  // Was auf dem Tisch liegt: Blaetter, Tintenfass, Feder, ein offenes Buch.
+  [[ax + 16, ay - 8], [ax + 30, ay - 12], [ax + 22, ay - 4]].forEach(function (b) {
+    g.fillStyle(0xd8cca8, 1); g.fillRect(b[0], b[1], 44, 30);
+    g.lineStyle(1, 0x8a7d5e, 0.8);
+    g.lineBetween(b[0] + 5, b[1] + 9, b[0] + 36, b[1] + 9);
+    g.lineBetween(b[0] + 5, b[1] + 16, b[0] + 30, b[1] + 16);
+    g.lineBetween(b[0] + 5, b[1] + 23, b[0] + 38, b[1] + 23);
+  });
+  g.fillStyle(0x23202c, 1); g.fillRect(ax + 96, ay - 10, 18, 20);
+  g.fillStyle(0x3a3550, 1); g.fillEllipse(ax + 105, ay - 10, 16, 7);
+  g.lineStyle(2, 0xe4dcc4, 0.95); g.lineBetween(ax + 108, ay - 14, ax + 128, ay - 40);
+  g.fillStyle(0x6b2f2f, 1); g.fillRect(ax + 132, ay - 6, 40, 16);
+  g.fillStyle(0xd8cca8, 1); g.fillRect(ax + 136, ay - 4, 15, 12);
+  g.fillStyle(0xc9bd99, 1); g.fillRect(ax + 153, ay - 4, 15, 12);
+
+  // --- Die Wand, an der sie denkt ----------------------------------------
+  // Karte, Zettel, rote Faeden dazwischen. Das ist der Kern des Raums: hier
+  // haengt, was sie ueber den Rat weiss — und es haengt durcheinander.
+  var kx = w * 0.58, ky = h * 0.12;
+  g.fillStyle(0x2a2118, 0.9); g.fillRect(kx - 8, ky - 8, 176, 108);
+  g.fillStyle(0xcab98f, 1); g.fillRect(kx, ky, 108, 72);
+  g.fillStyle(0xb9a87c, 1); g.fillRect(kx, ky, 108, 10);
+  g.lineStyle(2, 0x5a4a30, 0.9);
+  g.lineBetween(kx + 12, ky + 24, kx + 66, ky + 28);
+  g.lineBetween(kx + 66, ky + 28, kx + 92, ky + 56);
+  g.lineBetween(kx + 34, ky + 26, kx + 30, ky + 60);
+  g.lineBetween(kx + 30, ky + 60, kx + 78, ky + 62);
+  g.lineStyle(1, 0x5a4a30, 0.5); g.lineBetween(kx + 6, ky + 44, kx + 102, ky + 40);
+
+  var zettel = [[kx + 118, ky + 4, 40, 30], [kx + 120, ky + 42, 34, 26],
+                [kx + 116, ky + 76, 44, 22], [kx + 58, ky + 80, 38, 24]];
+  zettel.forEach(function (z, i) {
+    g.fillStyle(0x000000, 0.3); g.fillRect(z[0] + 2, z[1] + 3, z[2], z[3]);
+    g.fillStyle(i === 2 ? 0xe6d9b4 : 0xd8cca8, 1); g.fillRect(z[0], z[1], z[2], z[3]);
+    g.lineStyle(1, 0x8a7d5e, 0.85);
+    for (var r = 0; r < 3; r++) g.lineBetween(z[0] + 4, z[1] + 7 + r * 6, z[0] + z[2] - 6, z[1] + 7 + r * 6);
+    g.fillStyle(0x8a2a2a, 1); g.fillCircle(z[0] + z[2] / 2, z[1] + 3, 3);
+  });
+  var mitte = [kx + 92, ky + 44];
+  g.fillStyle(0x8a2a2a, 1); g.fillCircle(mitte[0], mitte[1], 4);
+  g.lineStyle(1, 0x9c3434, 0.8);
+  zettel.forEach(function (z) { g.lineBetween(mitte[0], mitte[1], z[0] + z[2] / 2, z[1] + 4); });
+
+  // --- Licht: Kerzenstummel und ein Gitter in der Decke -------------------
+  [[lx + 142, ly + 6], [lx + 156, ly + 28], [lx + 134, ly + 44]].forEach(function (c) {
+    g.fillStyle(0x3a2e20, 1); g.fillEllipse(c[0], c[1] - 1, 12, 5);   // Wachspfuetze
+    g.fillStyle(0xe8dcc0, 1); g.fillRect(c[0] - 3, c[1] - 9, 6, 10);
+    g.fillStyle(0xffcc55, 0.95); g.fillCircle(c[0], c[1] - 12, 3);
+    g.fillStyle(0xffaa33, 0.16); g.fillCircle(c[0], c[1] - 11, 18);
+    g.fillStyle(0xffaa33, 0.08); g.fillCircle(c[0], c[1] - 11, 30);
+  });
+  // Kaltes Licht faellt durch ein Gitter — oben ist die Stadt.
+  var sx = w * 0.42, sy = h * 0.08;
+  boden.fillStyle(0xaec4d6, 0.09);
+  boden.fillPoints([{ x: sx, y: sy }, { x: sx + 54, y: sy },
+    { x: sx + 96, y: sy + h * 0.5 }, { x: sx - 34, y: sy + h * 0.5 }], true);
+  g.lineStyle(3, 0x2a2a2e, 0.9);
+  for (var i = 0; i < 4; i++) g.lineBetween(sx + i * 18, sy, sx + i * 18, sy + 10);
+
+  scene._versteckDeko = [boden, g];
   return g;
 }
+
+/**
+ * Raeumt die Story-Deko ab — Elaras Kammer, das Leuchten der Quelle.
+ *
+ * Beides sind lose scene.add.graphics(); sie haengen an keiner Gruppe, die
+ * enterRoom leert, und niemand hat sie je zerstoert. Elaras Einrichtung stand
+ * danach mitten im naechsten Raum.
+ */
+function _storyDekoAbraeumen(scene) {
+  if (!scene) return;
+  ['_versteckDeko', '_quelleGlow'].forEach(function (feld) {
+    var d = scene[feld];
+    if (!d) return;
+    (Array.isArray(d) ? d : [d]).forEach(function (o) {
+      try { if (o && typeof o.destroy === 'function') o.destroy(); } catch (e) {}
+    });
+    scene[feld] = null;
+  });
+}
+if (typeof window !== 'undefined') window._storyDekoAbraeumen = _storyDekoAbraeumen;
 
 function _versteckBetreten(scene, w, h) {
   _versteckZeichnen(scene, w, h);

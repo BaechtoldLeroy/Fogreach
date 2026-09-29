@@ -87,7 +87,8 @@
   var BEKANNTE_FLAGGEN = [
     'dungeon', 'autostart', 'mode', 'modes', 'boss', 'beat',
     'perf', 'nofog', 'nomask', 'nospot', 'noexpl', 'explRes', 'fogInterval', 'rays',
-    'spy', 'roomsize', 'hubdebug'
+    'spy', 'roomsize', 'hubdebug',
+    'versteck', 'sonder'
   ];
 
   /**
