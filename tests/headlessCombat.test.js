@@ -756,63 +756,104 @@ test('Der Pluenderer flieht zur Treppe, statt den Spieler zu jagen', () => {
   const ohne = lauf(false);
   if (!ohne) return;                     // Raum ohne Treppe: nicht messbar
 
-  // SECHS ANLAEUFE, der beste zaehlt (#136).
+  // #169: die Lage wird AUFGEBAUT, nicht im Raum gesucht.
   //
-  // Die Flucht wuerfelt: _pluendererFluchtziel waehlt aus den erreichbaren
-  // Ausgaengen, und je nach Raumzuschnitt liegt der gezogene Weg mal um eine
-  // Wand herum. Ein einzelner Anlauf sagt deshalb wenig — der Test fiel im
-  // Gesamtlauf sporadisch, isoliert nie. Mit fixem dt (boot.js:165) ist die
-  // Physik deterministisch, der Zufall steckt allein in der Wegwahl.
+  // Eine offene Achse irgendwo im Raum: vorn die (einzige) Treppe, hinten der
+  // Pluenderer, der Spieler dazwischen. Damit zeigt 'weg vom Spieler' — der
+  // Ersatzweg der Flucht — genau von der Treppe FORT. Kommt er ihr trotzdem
+  // naeher, dann weil die Treppe in der Wegwahl steckt; das ist die Aussage
+  // des Falls, und sie haengt nicht mehr am Zuschnitt des Raums.
   //
-  // Die Behauptung des Tests ist "er KANN zur Treppe absetzen", nicht "er tut
-  // es bei jedem Wurf" — die Anlaeufe bilden das ab, ohne den Fall zu
-  // verwaessern: kaeme er nie naeher, faellt er weiterhin.
-  //
-  // Von drei auf sechs erhoeht: mit dreien fiel der Test im Gesamtlauf immer
-  // noch gelegentlich, isoliert nie. Die Zahl ist kein Zufallsschutz auf gut
-  // Glueck — sie folgt daraus, dass ein einzelner Anlauf mit einer festen,
-  // nicht kleinen Wahrscheinlichkeit an einer Wand haengenbleibt. Was er
-  // zusichert, bleibt gleich; nur die Zahl der Gelegenheiten waechst.
-  // Die Richtung, in die er setzt — das ist die Aussage des Falls. Sie
-  // haengt nicht am Zuschnitt des Raums, anders als die Frage, wie weit er
-  // in 400 Bildern kommt.
+  // Gemessen wird die STRECKE, nicht der Winkel: der Ersatzweg darf bis
+  // 1.6 rad abweichen (> pi/2) und schwenkte damit gerade weit genug zur
+  // Treppe, um einen Winkelvergleich zu schlagen. Die Strecke laesst sich so
+  // nicht schoenrechnen.
   const zielLauf = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
-    var e = window.__p;
-    if (!e || !e.active) return { fehler: 'kein Pluenderer' };
-    var ziel = _pluendererFluchtziel(sc, e);
-    if (!ziel) return { fehler: 'kein Fluchtziel' };
-    var treppe = null, best = Infinity;
-    sc.stairsGroup.getChildren().forEach(function (t) {
-      if (!t || !t.active) return;
-      var d = Math.hypot(t.x - e.x, t.y - e.y);
-      if (d < best) { best = d; treppe = t; }
+    var treppen = sc.stairsGroup.getChildren().filter(function (t) { return t && t.active; });
+    if (!treppen.length) return { fehler: 'keine Treppe' };
+    var e = spawnEnemy.call(sc, player.x + 300, player.y, 3);
+    if (!e) return { fehler: 'kein Pluenderer' };
+    e.hp = 9999; e._istPluenderer = true; e._hatGeklaut = true;
+    // Alles merken, was verschoben wird — die folgenden Faelle teilen sich
+    // diese Szene.
+    window.__messStand = {
+      gegner: e, px: player.x, py: player.y,
+      treppen: treppen.map(function (t) { return { t: t, x: t.x, y: t.y }; })
+    };
+    var frei = function (x, y) {
+      try {
+        if (sc.isPointAccessible && !sc.isPointAccessible(x, y)) return false;
+        if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(x, y)) return false;
+      } catch (ex) {}
+      return true;
+    };
+    // Von weit nach eng, damit die Lage so gross wird, wie der Raum sie
+    // hergibt. [Treppe, Pluenderer, sein Satz] — der Satz muss frei sein,
+    // sonst weicht die Flucht aus und die Strecke sagt nichts.
+    var MASSE = [[220, 100, 150], [180, 90, 110], [150, 75, 110], [130, 70, 75]];
+    var lage = null;
+    for (var mi = 0; mi < MASSE.length && !lage; mi++) {
+      var TD = MASSE[mi][0], ED = MASSE[mi][1], SCHRITT = MASSE[mi][2];
+      for (var v = 0; v < 200 && !lage; v++) {
+        var pk = (typeof sc.pickAccessibleSpawnPoint === 'function')
+          ? sc.pickAccessibleSpawnPoint({ minDistance: 0, maxAttempts: 8 }) : null;
+        if (!pk) break;
+        for (var i = 0; i < 32 && !lage; i++) {
+          var w = (i / 32) * Math.PI * 2, c = Math.cos(w), s2 = Math.sin(w);
+          var tx = pk.x + c * TD, ty = pk.y + s2 * TD;
+          var ex = pk.x - c * ED, ey = pk.y - s2 * ED;
+          if (frei(pk.x, pk.y) && frei(tx, ty) && frei(ex, ey)
+              && frei(ex + c * SCHRITT, ey + s2 * SCHRITT)) {
+            lage = { px: pk.x, py: pk.y, tx: tx, ty: ty, ex: ex, ey: ey };
+          }
+        }
+      }
+    }
+    if (!lage) return { fehler: 'keine offene Achse im Raum fuer die Messlage' };
+    player.x = lage.px; player.y = lage.py;
+    if (player.body && player.body.reset) player.body.reset(player.x, player.y);
+    // Genau EINE Treppe, in bekannter Richtung. Der Rest weit weg, damit
+    // _pluendererTreppe keine andere waehlt.
+    treppen.forEach(function (t, k) {
+      if (k === 0) { t.x = lage.tx; t.y = lage.ty; }
+      else { t.x = -100000; t.y = -100000; }
     });
-    if (!treppe) return { fehler: 'keine Treppe' };
-    var grad = function (ax, ay, bx, by) { return Math.atan2(by - ay, bx - ax); };
-    var zurTreppe = grad(e.x, e.y, treppe.x, treppe.y);
-    var zumZiel = grad(e.x, e.y, ziel.x, ziel.y);
-    // Der ECHTE Ersatzweg der Flucht ist "weg vom Spieler" (enemy.js:
-    // _pluendererFluchtziel). Gegen DEN muss die Treppe gewinnen — gegen die
-    // Richtung ZUM Spieler zu vergleichen war wertlos: davon zeigt auch der
-    // Ersatzweg weg, die Zusicherung war fast immer wahr (Mutation lief durch).
-    var wegVomSpieler = grad(player.x, player.y, e.x, e.y);
+    e.x = lage.ex; e.y = lage.ey;
+    if (e.body && e.body.reset) e.body.reset(e.x, e.y);
+    var t0 = _pluendererTreppe(sc, e);
+    if (t0 !== treppen[0]) return { fehler: 'die Messlage hat nicht gehalten' };
+    var ziel = _pluendererFluchtziel(sc, e);
+    if (!ziel) return { fehler: 'kein Fluchtziel in der Messlage' };
     var diff = function (a, b) {
       var d = Math.abs(a - b) % (Math.PI * 2);
       return d > Math.PI ? Math.PI * 2 - d : d;
     };
-    return { zuTreppe: diff(zumZiel, zurTreppe),
-             zuErsatz: diff(zumZiel, wegVomSpieler),
-             spanne: diff(zurTreppe, wegVomSpieler) };
+    return {
+      naeher: Math.round(Math.hypot(t0.x - e.x, t0.y - e.y)
+                         - Math.hypot(t0.x - ziel.x, t0.y - ziel.y)),
+      // Gegenprobe zur Lage selbst: Treppe und Ersatzweg muessen entgegen
+      // liegen, sonst misst die Strecke nichts.
+      spanne: diff(Math.atan2(t0.y - e.y, t0.x - e.x),
+                   Math.atan2(e.y - player.y, e.x - player.x))
+    };
+  })()`);
+  // Szene zuruecksetzen, bevor irgendetwas zusichert.
+  H.run(`(function () {
+    var m = window.__messStand;
+    if (!m) return;
+    if (m.gegner) { try { m.gegner.destroy(); } catch (x) {} }
+    player.x = m.px; player.y = m.py;
+    if (player.body && player.body.reset) player.body.reset(player.x, player.y);
+    m.treppen.forEach(function (s) { s.t.x = s.x; s.t.y = s.y; });
+    window.__messStand = null;
   })()`);
   assert.ok(!zielLauf.fehler, zielLauf.fehler);
-  // Liegen Treppe und Ersatzweg fast uebereinander, unterscheidet der Fall
-  // nichts — dann sagt er auch nichts.
-  if (zielLauf.spanne > 0.6) {
-    assert.ok(zielLauf.zuTreppe < zielLauf.zuErsatz,
-      'er setzt in den Ersatzweg statt zur Treppe (Treppe ' + zielLauf.zuTreppe.toFixed(2)
-      + ' rad, weg-vom-Spieler ' + zielLauf.zuErsatz.toFixed(2) + ')');
-  }
+  assert.ok(zielLauf.spanne > 3.0,
+    'die Messlage steht schief: Treppe und Ersatzweg liegen '
+    + zielLauf.spanne.toFixed(2) + ' rad auseinander statt ~pi');
+  assert.ok(zielLauf.naeher > 40,
+    'sein Fluchtziel bringt ihn der Treppe nicht naeher (' + zielLauf.naeher + ' px)');
 
   // Frueher folgte hier ein Lauf ueber 400 Bilder mit Abstandsvergleichen.
   // Die haben den Zuschnitt des Zufallsraums gemessen, nicht das Verhalten:
