@@ -793,6 +793,7 @@
         }
         scrollNameText.setText(_SHOP_T('shop.scroll.name', { count: window.materialCounts.PORTAL_SCROLL }));
         this._refreshGold();
+        this._kaufGemeldet();   // eine Rolle ist auch ein Kauf
         this._showToast(_SHOP_T('shop.toast.scroll_bought'));
       });
 
@@ -839,6 +840,7 @@
         window.materialCounts.STAIR_SCROLL += 1;
         stairNameText.setText(_SHOP_T('shop.stairscroll.name', { count: window.materialCounts.STAIR_SCROLL }));
         this._refreshGold();
+        this._kaufGemeldet();   // eine Rolle ist auch ein Kauf
         this._showToast(_SHOP_T('shop.toast.stairscroll_bought'));
       });
 
