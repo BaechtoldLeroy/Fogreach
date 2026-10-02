@@ -1835,9 +1835,16 @@ class HubSceneV2 extends Phaser.Scene {
     // alle drei weg. Ihr eigener Einfuehrungsauftrag ("kauf mir etwas ab")
     // sperrte damit genau den Laden, den er verlangt.
     //
-    // Die einzige echte Bedingung ist der Platz: eine Seite mit Auswahl
+    // Zwei echte Bedingungen. Erstens der Platz: eine Seite mit Auswahl
     // (annehmen/ablehnen) braucht ihn fuer die Auswahlknoepfe.
-    const isMaraFlavor = npcData.id === 'mara' && !hasChoices;
+    //
+    // Zweitens die ABGABE. Dort lag der Fehler in der anderen Richtung: die
+    // Seite sagt 'Aufgabe abgeschlossen!', der Abgabeknopf liegt aber erst auf
+    // der naechsten Seite — und darunter standen drei Knoepfe, die alle vom
+    // Abschluss WEGFUEHREN. Ein Klick darauf schliesst den Dialog, die Quest
+    // bleibt 'active', die Belohnung ist nicht abgeholt. Gemeldet als 'die
+    // Quest wurde nicht abgeschlossen'.
+    const isMaraFlavor = npcData.id === 'mara' && !hasChoices && questMode !== 'turnin';
     // Drei Knoepfe auf +0 / +38 / +76, jeder rund 26 hoch: der Block misst
     // gut 100. Mit den alten 90 schob sich "Talente" ueber den ESC-Hinweis,
     // sobald eine Zeile mehr im Text stand (etwa der Fortschritt einer Quest).
@@ -2064,9 +2071,11 @@ class HubSceneV2 extends Phaser.Scene {
         }
       }
 
-      // Dieselbe Bedingung wie bei den Knoepfen oben — sonst steht "(M)" auf
-      // der Seite und M tut nichts.
-      if (npcData.id === 'mara' && !hasChoices) {
+      // WIRKLICH dieselbe Bedingung wie bei den Knoepfen oben — sonst steht
+      // "(M)" auf der Seite und M tut nichts, oder schlimmer: die Taste tut
+      // etwas, wo der Knopf fehlt. Auf der Abgabe-Seite fuehrte das vom
+      // Abschluss weg (Dialog zu, Quest bleibt 'active').
+      if (isMaraFlavor) {
         const knowledgeHandler = () => {
           this._closeDialog(keyClosers);
           this.time.delayedCall(100, () => {

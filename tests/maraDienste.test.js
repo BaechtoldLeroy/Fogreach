@@ -118,3 +118,106 @@ test('Auf der Auswahlseite treten sie zurueck', () => {
   assert.ok(!/Schwarzmarkt/.test(alles),
     'die Dienste draengen sich zwischen die Auswahlknoepfe: ' + alles);
 });
+
+test('Auf der Abgabeseite treten sie ebenfalls zurueck', () => {
+  // Die andere Richtung desselben Fehlers. Die Bedingung stand erst zu eng
+  // (questMode === 'flavor' sperrte den Laden bei jeder Quest), dann zu weit
+  // (!hasChoices): auf der ABGABE-Seite standen die drei Dienste mit, der
+  // Abgabeknopf liegt aber erst auf der naechsten Seite. Die Seite sagte
+  // 'Aufgabe abgeschlossen!' und bot drei Wege an, die alle vom Abschluss
+  // wegfuehren — Dialog zu, Quest bleibt 'active', Belohnung nicht abgeholt.
+  // Gemeldet als 'die Quest wurde nicht abgeschlossen'.
+  const r = H.run(`(function () {
+    var qs = window.questSystem;
+    var sc = window.game.scene.getScene('HubSceneV2');
+    // Die Kette freischalten und den Auftrag abschlussreif machen.
+    ['einfuehrung_upgrade', 'einfuehrung_markt'].forEach(function (id) {
+      if (!qs.QUEST_DEFINITIONS || !qs.QUEST_DEFINITIONS[id]) return;
+      qs.acceptQuest(id);
+      var st = qs.getQuestSaveData();
+      if (st.quests[id]) { st.quests[id].status = 'completed'; qs.loadQuestSaveData(st); }
+    });
+    qs.acceptQuest('einfuehrung_amulett');
+    qs.onSystemUsed('haendler');
+    if (!qs.isQuestReadyToComplete('einfuehrung_amulett')) return { fehler: 'nicht abschlussreif' };
+    var m = sc.npcs.filter(function (n) { return n.data && n.data.id === 'mara'; })[0];
+    if (!m) return { fehler: 'Mara fehlt' };
+    if (typeof sc._closeDialog === 'function') { try { sc._closeDialog([]); } catch (e) {} }
+    sc._showNpcDialogue(m.data);
+    var texte = [];
+    (function sammeln(o) {
+      if (!o) return;
+      if (o.type === 'Text' && o.text) texte.push(String(o.text));
+      (o.list || []).forEach(sammeln);
+    })({ list: sc.children.list });
+    return { texte: texte };
+  })()`);
+  assert.ok(!r.fehler, r.fehler);
+  const alles = Array.from(r.texte).join(' | ');
+  // Die Seite muss sich als Abgabe zu erkennen geben, sonst misst der Fall
+  // den falschen Dialog.
+  assert.ok(/abgeschlossen|complete/i.test(alles),
+    'das ist keine Abgabeseite: ' + alles.slice(0, 200));
+  assert.ok(!/Schwarzmarkt/.test(alles),
+    'der Schwarzmarkt fuehrt von der Abgabe weg: ' + alles.slice(0, 200));
+  assert.ok(!/Talente/.test(alles),
+    'die Talente fuehren von der Abgabe weg: ' + alles.slice(0, 200));
+  assert.ok(!/Wissen lernen/.test(alles),
+    'das Wissen fuehrt von der Abgabe weg: ' + alles.slice(0, 200));
+});
+
+test('Die Abgabe fuehrt bis zur abgeholten Belohnung', () => {
+  // Die ganze Kette, damit der Fall oben nicht nur Text zusichert: blaettern
+  // bis zur Belohnung, abholen, Status pruefen.
+  const r = H.run(`(function () {
+    var qs = window.questSystem;
+    var sc = window.game.scene.getScene('HubSceneV2');
+    ['einfuehrung_upgrade', 'einfuehrung_markt'].forEach(function (id) {
+      if (!qs.QUEST_DEFINITIONS || !qs.QUEST_DEFINITIONS[id]) return;
+      qs.acceptQuest(id);
+      var st = qs.getQuestSaveData();
+      if (st.quests[id]) { st.quests[id].status = 'completed'; qs.loadQuestSaveData(st); }
+    });
+    qs.acceptQuest('einfuehrung_amulett');
+    qs.onSystemUsed('haendler');
+    var m = sc.npcs.filter(function (n) { return n.data && n.data.id === 'mara'; })[0];
+    if (typeof sc._closeDialog === 'function') { try { sc._closeDialog([]); } catch (e) {} }
+    sc._showNpcDialogue(m.data);
+    var text = function () {
+      var t = [];
+      (function s2(o) { if (!o) return; if (o.type === 'Text' && o.text) t.push(String(o.text)); (o.list || []).forEach(s2); })({ list: sc.children.list });
+      return t;
+    };
+    var hat = function (re) { return text().some(function (t) { return re.test(t); }); };
+    // Bis zur Belohnungsseite blaettern — BIS zur Bedingung, nicht feste Male.
+    for (var i = 0; i < 6 && !hat(/Belohnung abholen/); i++) {
+      if (sc._dialogPointerOnce) sc._dialogPointerOnce();
+      else sc.input.keyboard.emit('keydown-SPACE', { preventDefault: function () {} });
+    }
+    if (!hat(/Belohnung abholen/)) return { fehler: 'die Belohnungsseite ist nicht erreichbar' };
+    var vor = (qs.getQuestSaveData().quests.einfuehrung_amulett || {}).status;
+    // Phaser gibt dem Handler (pointer, localX, localY, event) — ohne das
+    // vierte Argument faellt er in event.stopPropagation().
+    var EV = [{}, 0, 0, { stopPropagation: function () {} }];
+    var ziel = null;
+    (function s3(o) {
+      if (!o || ziel) return;
+      if (o.type === 'Text' && /Belohnung abholen/.test(String(o.text || ''))) ziel = o;
+      (o.list || []).forEach(s3);
+    })({ list: sc.children.list });
+    var nah = [];
+    (function s4(o) {
+      if (!o) return;
+      if (o.input && o.input.enabled && typeof o.emit === 'function' && typeof o.x === 'number'
+          && Math.hypot(o.x - ziel.x, o.y - ziel.y) < 40) nah.push(o);
+      (o.list || []).forEach(s4);
+    })({ list: sc.children.list });
+    nah.forEach(function (o) { try { o.emit.apply(o, ['pointerdown'].concat(EV)); } catch (e) {} });
+    return { vor: vor, nach: (qs.getQuestSaveData().quests.einfuehrung_amulett || {}).status };
+  })()`);
+  assert.ok(!r.fehler, r.fehler);
+  assert.strictEqual(r.vor, 'active', 'die Quest war vor dem Abholen schon abgeschlossen');
+  assert.strictEqual(r.nach, 'completed',
+    'nach dem Abholen steht die Quest auf "' + r.nach + '" statt completed');
+});
+
