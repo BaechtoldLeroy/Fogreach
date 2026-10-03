@@ -123,6 +123,56 @@ test('Wer weitergeht, trifft sie wieder — aber ohne zweiten Hinterhalt', () =>
   })()`);
   assert.ok(r.gefunden, 'sie taucht nicht wieder auf');
   assert.strictEqual(r.hinterhalt, false, 'es wurde ein zweiter Hinterhalt gestartet');
+  // Und zwar im NAECHSTEN Raum. Vorher wartete sie 3..5 Raeume weiter — sie
+  // hat Dir gerade einen Hinterhalt abgenommen und will Dich sprechen; fuenf
+  // Raeume tiefer herumzustehen liest sich als Zufall, nicht als Verfolgung.
+  assert.strictEqual(r.gefunden, 4,
+    'sie wartet in Raum ' + r.gefunden + ' statt im naechsten (4)');
+});
+
+test('Sie tritt dort hervor, wo die Kettenwache stand', () => {
+  // Ohne Vorgabe zieht spawnEventObject einen beliebigen erreichbaren Punkt.
+  // Gemessen ueber acht Raeume stand sie 202-687 px vom Spieler entfernt
+  // (Median 345) und bis zu 553 px von der naechsten Wache — am anderen
+  // Raumende also. Das liest sich nicht als Rettung.
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var qs = window.questSystem;
+    var st = qs.getQuestSaveData(); st.quests = {}; st.flags = {};
+    qs.loadQuestSaveData(st);
+    _resetElaraEncounterRunState();
+    enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
+    sc.children.list.filter(function (o) { return o.texture && o.texture.key === 'elara_right0'; })
+      .forEach(function (o) { try { o.destroy(); } catch (x) {} });
+    window._playerInvincible = true;
+    // Den Hinterhalt aufbauen wie _hinterhaltStarten es tut.
+    var h = { raum: 3, timer: null, seit: 0, gegner: [], gesetzt: false };
+    _hinterhaltGegnerSetzen(sc, h);
+    var wachen = enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; })
+      .map(function (e) { return { x: e.x, y: e.y }; });
+    if (!wachen.length) return { fehler: 'keine Wachen gesetzt' };
+    var px = player.x, py = player.y;
+    _elaraRettet(sc);
+    var el = sc.children.list.filter(function (o) {
+      return o && o.active && o.texture && o.texture.key === 'elara_right0';
+    })[0];
+    if (!el) return { fehler: 'Elara ist nicht erschienen' };
+    return {
+      wachen: wachen.length,
+      zumSpieler: Math.round(Math.hypot(el.x - px, el.y - py)),
+      zurWache: Math.round(Math.min.apply(null, wachen.map(function (w) {
+        return Math.hypot(w.x - el.x, w.y - el.y);
+      }))),
+      ring: HINTERHALT_RING_PX
+    };
+  })()`);
+  assert.ok(!r.fehler, r.fehler);
+  // Auf dem Ring der Wachen, nicht irgendwo: so steht sie im Blickfeld.
+  assert.ok(Math.abs(r.zumSpieler - r.ring) <= 2,
+    'sie steht ' + r.zumSpieler + ' px vom Spieler statt auf dem Ring (' + r.ring + ')');
+  // Und neben einer Wache. Gemessen liegt sie bei 47-81 px, vorher bis 553.
+  assert.ok(r.zurWache <= 120,
+    'sie steht ' + r.zurWache + ' px von der naechsten Wache entfernt');
 });
 
 /** Zustand der Treppen dieses Raums. */

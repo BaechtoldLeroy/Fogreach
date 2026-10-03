@@ -3357,10 +3357,15 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
     // weiter wieder auf Dich. Kein zweiter Hinterhalt — die Rettung ist ein
     // einmaliger Auftritt, kein wiederkehrendes Ereignis.
     if (qs.hasFlag(ELARA_SZENEN.rettung.flag)) {
+      // Im NAECHSTEN Raum, nicht 3..5 weiter. Sie hat einen Hinterhalt von
+      // Dir genommen und will Dich sprechen — dass sie dann fuenf Raeume
+      // tiefer herumsteht, liest sich nicht als Verfolgung, sondern als
+      // Zufall. (Normalerweise greift das gar nicht: sie haelt die Treppe des
+      // Rettungsraums. Nur wer mit einer Portalrolle herausgeht, landet hier.)
       if (_elaraWartetZiel === null || roomId > _elaraWartetZiel) {
-        _elaraWartetZiel = roomId + _rollDistance();
+        _elaraWartetZiel = roomId + 1;
       }
-      if (roomId === _elaraWartetZiel) _spawnElaraSprite(scene, 1);
+      if (roomId >= _elaraWartetZiel) _spawnElaraSprite(scene, 1);
       return;
     }
     if (roomId >= HINTERHALT_AB_RAUM) _hinterhaltStarten(scene, roomId);
@@ -3912,9 +3917,55 @@ function _hinterhaltStarten(scene, roomId) {
   } });
 }
 
+/**
+ * Wo Elara nach der Rettung hervortritt: dort, wo die Kettenwache stand.
+ *
+ * Ohne Vorgabe zieht spawnEventObject einen beliebigen erreichbaren Punkt im
+ * Raum. Sie hat aber gerade vier Wachen aus einem Ring um den Spieler
+ * vertrieben (HINTERHALT_RING_PX) — steht sie dann am anderen Raumende, liest
+ * sich das nicht als Rettung.
+ *
+ * Gewaehlt wird die dem Spieler NAECHSTE Wache: so steht sie im Blickfeld.
+ * Der Platz liegt auf demselben Ring, leicht zur Seite versetzt, damit sie
+ * nicht genau auf dem Feld einer Wache klebt.
+ *
+ * @returns {{x:number,y:number}|null} null, wenn ringsum alles verbaut ist —
+ *          dann bleibt es beim bisherigen Verhalten.
+ */
+function _elaraRettungsPlatz(scene) {
+  if (typeof enemies === 'undefined' || !enemies || typeof enemies.getChildren !== 'function') return null;
+  if (typeof player === 'undefined' || !player) return null;
+  var wachen = enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; });
+  if (!wachen.length) return null;
+  var px = player.x, py = player.y;
+  wachen.sort(function (a, b) {
+    return Math.hypot(a.x - px, a.y - py) - Math.hypot(b.x - px, b.y - py);
+  });
+  var frei = function (x, y) {
+    try {
+      if (scene && typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(x, y)) return false;
+      if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(x, y)) return false;
+    } catch (e) {}
+    return true;
+  };
+  var versatz = [0.25, -0.25, 0.5, -0.5, 0, 0.9, -0.9];
+  for (var i = 0; i < wachen.length; i++) {
+    var ang = Math.atan2(wachen[i].y - py, wachen[i].x - px);
+    for (var v = 0; v < versatz.length; v++) {
+      var a = ang + versatz[v];
+      var x = px + Math.cos(a) * HINTERHALT_RING_PX;
+      var y = py + Math.sin(a) * HINTERHALT_RING_PX;
+      if (frei(x, y)) return { x: x, y: y };
+    }
+  }
+  return null;
+}
+
 function _elaraRettet(scene) {
   var px = (typeof player !== 'undefined' && player) ? player.x : 0;
   var py = (typeof player !== 'undefined' && player) ? player.y : 0;
+  // VOR dem Ausblenden: danach sind die Wachen weg und ihr Platz mit ihnen.
+  var _rettungsPlatz = _elaraRettungsPlatz(scene);
   // Nebel, der sich vom Spieler aus durch den ganzen Raum ausbreitet.
   try {
     var ring = scene.add.circle(px, py, 20, 0x8866cc, 0.35).setDepth(90);
@@ -3934,7 +3985,7 @@ function _elaraRettet(scene) {
       } catch (x) { try { e.destroy(); } catch (y) {} }
     });
   }
-  _spawnElaraSprite(scene, 1);
+  _spawnElaraSprite(scene, 1, _rettungsPlatz);
   // Zweigeteilt wie ein Hub-Gespraech: Der Nebel vertreibt den Hinterhalt und
   // sie stellt sich vor — mehr nicht. Ihr Auftrag kommt erst, wenn man zu ihr
   // geht und [E] drueckt. Vorher lief beides in einem Zug ab, und man stand
@@ -3944,7 +3995,7 @@ function _elaraRettet(scene) {
 
 // Spawn Elara as an interactive [E]-prompt sprite in the current room.
 // `stage` selects which dialog to show on interact: 1 = offer, 2 = turn-in.
-function _spawnElaraSprite(scene, stage) {
+function _spawnElaraSprite(scene, stage, platz) {
   // 'stage' ist entweder eine Zahl (die alten Akt-1-Stufen) oder
   // { id, modus } fuer die spaeteren Auftraege.
   if (!scene || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
@@ -3955,7 +4006,9 @@ function _spawnElaraSprite(scene, stage) {
   // (1536x1024-ish) and renders gigantic at 1:1 without it.
   window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, promptLabel, function () {
     _showElaraDialog(scene, stage);
-  }, { scale: 0.16 });
+    // `platz` setzt sie gezielt (nach der Rettung: wo die Wache stand).
+    // Ohne ihn zieht spawnEventObject wie bisher einen freien Punkt.
+  }, platz ? { scale: 0.16, spawnAt: platz } : { scale: 0.16 });
   // Nur die erste Begegnung haelt den Raum: sie ist der Grund, warum man
   // ueberhaupt hier unten steht. Spaetere Auftraege sind freiwillig.
   if (stage === 1) _elaraTreppeSperren(scene);
