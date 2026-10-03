@@ -1873,7 +1873,13 @@
   }
 
   function _placeMerchant(scene, texKey) {
-    if (!scene || !scene.add || !scene.physics) return;
+    // scene.physics.add MIT pruefen, nicht nur scene.physics: Phaser setzt
+    // die Arcade-Fabrik beim Abbau der Szene auf null, und die naechste Zeile
+    // benutzt sie. spawnMerchant laedt die Textur bei Bedarf nachtraeglich und
+    // ruft hierher erst im 'complete' des Laders — wechselt der Spieler in der
+    // Zwischenzeit den Raum oder verlaesst den Lauf, ist die Szene weg. Ohne
+    // die Pruefung fliegt dort ein ungefangener TypeError.
+    if (!scene || !scene.add || !scene.physics || !scene.physics.add) return;
 
     // Find an accessible position using the spawn system (nicht auf einer Treppe).
     var cx = 400, cy = 250;

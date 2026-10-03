@@ -118,3 +118,24 @@ test('ein Kauf beim Alten erfuellt seinen Auftrag', () => {
   assert.strictEqual(r.vorher, false, 'der Auftrag war schon vor dem Kauf abschlussreif');
   assert.strictEqual(r.nachher, true, 'der Kauf erfuellt den Auftrag nicht');
 });
+
+test('der Haendler stuerzt nicht ab, wenn die Szene schon abgebaut ist', () => {
+  // spawnMerchant laedt die Textur bei Bedarf nachtraeglich und platziert den
+  // Haendler erst im 'complete' des Laders. Wechselt der Spieler in der
+  // Zwischenzeit den Raum oder verlaesst den Lauf, ist die Szene abgebaut und
+  // Phaser hat scene.physics.add auf null gesetzt. Der Waechter prueft die
+  // Fabrik mit — vorher prueft er nur scene.physics und die naechste Zeile
+  // benutzte .add.sprite: ungefangener TypeError, selbst im Browser gesehen.
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var ev = window.EventSystem.EVENT_TYPES.filter(function (e) { return e.id === 'wandering_merchant'; })[0];
+    var fabrik = sc.physics.add;
+    sc.physics.add = null;                  // Szene im Abbau
+    var fehler = null;
+    try { ev.handler(sc); } catch (x) { fehler = String(x && x.message || x); }
+    sc.physics.add = fabrik;
+    return { fehler: fehler };
+  })()`);
+  assert.strictEqual(r.fehler, null,
+    'der Haendler ist der abgebauten Szene ins Messer gelaufen: ' + r.fehler);
+});
