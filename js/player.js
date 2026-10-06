@@ -80,6 +80,25 @@ const PLAYER_DIRECTION_LOOKUP = PLAYER_DIRECTION_SEQUENCE.reduce((acc, entry) =>
   return acc;
 }, {});
 
+/**
+ * Aus welchem Ordner kommen die Spielerbilder?
+ *
+ * Testmodus ?spieler=neu (nur bei offenem Debug-Tor): ein zweiter Satz unter
+ * assets/PlayerSpritesNeu, gleiche Dateinamen. So laesst sich ein neues
+ * Design im laufenden Spiel ansehen, ohne den ausgelieferten Satz anzufassen.
+ *
+ * Beide Ladestellen (Vorausladen und Nachladen einer Richtung) fragen hier,
+ * sonst mischt ein Lauf altes und neues Design.
+ */
+function _spielerBilderOrdner() {
+  try {
+    var v = window.DebugGate && window.DebugGate.flagge('spieler');
+    if (v && String(v).toLowerCase() === 'neu') return 'assets/PlayerSpritesNeu';
+  } catch (e) {}
+  return 'assets/PlayerSprites';
+}
+if (typeof window !== 'undefined') window._spielerBilderOrdner = _spielerBilderOrdner;
+
 function preloadPlayerDirectionalFrames(loader) {
   if (!loader) return;
   const textureManager = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
@@ -92,7 +111,7 @@ function preloadPlayerDirectionalFrames(loader) {
       const frameId = frame.toString().padStart(2, '0');
       const key = `dir${dirId}_f${frameId}`;
       if (textureManager?.exists?.(key)) continue;
-      loader.image(key, `assets/PlayerSprites/${key}.png`);
+      loader.image(key, `${_spielerBilderOrdner()}/${key}.png`);
     }
   }
 }
@@ -115,7 +134,7 @@ function ensureDirectionLoaded(scene, dd) {
     for (let f = 0; f < 8; f++) {
       const fk = `dir${dd}_f${f.toString().padStart(2, '0')}`;
       if (!scene.textures.exists(fk)) {
-        scene.load.image(fk, `assets/PlayerSprites/${fk}.png`);
+        scene.load.image(fk, `${_spielerBilderOrdner()}/${fk}.png`);
       }
     }
     scene.load.once('complete', () => {
@@ -729,6 +748,14 @@ function applyPlayerDisplaySettings(sprite) {
   if (isDirectionalImage) {
     targetHeight = baseHeight;
     targetWidth = Math.max(1, Math.round(baseWidth * PLAYER_WIDTH_STRETCH));
+    // Testmodus ?spieler=neu: die Breite aus dem BILD nehmen. Die feste
+    // Breite ist auf den ausgelieferten Satz gemuenzt (zugeschnitten 116x224,
+    // Verhaeltnis 0.52 gegen Ziel 0.40). Ein 44x61 grosser Sprite hat 0.72 und
+    // wuerde um das 1.8-fache in die Laenge gepresst — der Test zeigte dann
+    // einen Zerrspiegel statt des Entwurfs.
+    if (_spielerBilderOrdner() !== 'assets/PlayerSprites' && sourceWidth > 0 && sourceHeight > 0) {
+      targetWidth = Math.max(1, Math.round(targetHeight * (sourceWidth / sourceHeight)));
+    }
 
     const dd = textureKey.slice(3, 5);
     if (dd === '00' || dd === '04') {
