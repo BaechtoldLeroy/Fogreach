@@ -90,14 +90,28 @@ const PLAYER_DIRECTION_LOOKUP = PLAYER_DIRECTION_SEQUENCE.reduce((acc, entry) =>
  * Beide Ladestellen (Vorausladen und Nachladen einer Richtung) fragen hier,
  * sonst mischt ein Lauf altes und neues Design.
  */
+// Entwuerfe fuer den Spieler. Der ausgelieferte Satz steht NICHT hier — er
+// ist der Rueckfall und bleibt unberuehrt.
+var SPIELER_ENTWUERFE = {
+  neu: 'assets/PlayerSpritesNeu',
+  augen: 'assets/PlayerSpritesAugen'      // Kapuze schwarz, nur die Augen leuchten
+};
+
 function _spielerBilderOrdner() {
   try {
-    // EINE Abfrage fuer den ganzen Testmodus (js/testGrafik.js): ?grafik=neu
-    // schaltet Spieler, Gegner und Kacheln zusammen, ?spieler=neu bleibt als
-    // aelterer Name gueltig. Getrennte Abfragen hatten zur Folge, dass
+    // ?spieler=<entwurf> waehlt gezielt einen Entwurf. Frueher trug die
+    // Flagge nur den Wert 'neu'; sie nimmt jetzt den Namen, damit ein
+    // weiterer Entwurf keinen neuen Schalter braucht.
+    var v = window.DebugGate && window.DebugGate.flagge('spieler');
+    if (v) {
+      var ordner = SPIELER_ENTWUERFE[String(v).toLowerCase()];
+      if (ordner) return ordner;
+    }
+    // ?grafik=neu schaltet Spieler, Gegner und Kacheln zusammen um. EINE
+    // Abfrage (js/testGrafik.js): getrennte hatten zur Folge, dass
     // ?grafik=neu alles ausser dem Spieler umstellte.
     if (typeof window.testGrafikAktiv === 'function' && window.testGrafikAktiv()) {
-      return 'assets/PlayerSpritesNeu';
+      return SPIELER_ENTWUERFE.neu;
     }
   } catch (e) {}
   return 'assets/PlayerSprites';

@@ -1592,7 +1592,7 @@ function handleEnemies(time, delta = 16) {
     // #12: Richtungswechsel der Sondergegner. Sie tragen ihren Bildnamen an
     // _spritePrefix, darum genuegt ein Block fuer alle fuenf. Waehrend einer
     // Aktion (Ruf, Heilung, Satz) bleibt das Bild stehen.
-    if (enemy._spritePrefix && !enemy._spriteAktion) {
+    if (enemy._spritePrefix && !enemy._spriteAktion && !enemy._schlagBild) {
       if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const neuDir = desired.x > 0 ? 'right' : 'left';
         if (neuDir !== enemy._spriteDir) {
@@ -1605,7 +1605,9 @@ function handleEnemies(time, delta = 16) {
     }
 
     // Animal sprite direction switching (rat, bat, wolf)
-    if (enemy.isAnimalSprite) {
+    // `_schlagBild`: waehrend des Schlags bleibt das Bild stehen, sonst
+    // blitzt die Ruhepose dazwischen auf.
+    if (enemy.isAnimalSprite && !enemy._schlagBild) {
       if (Math.abs(desired.x) > DIR_THRESHOLD && (!enemy._lastDirChange || time - enemy._lastDirChange > DIR_COOLDOWN)) {
         const newDir = desired.x > 0 ? 'right' : 'left';
         if (newDir !== enemy.animalDirection) {
@@ -1764,6 +1766,13 @@ function handleEnemies(time, delta = 16) {
                 if (scene.textures.exists(`brute_${dir}0`)) enemy.setTexture(`brute_${dir}0`);
               }
             });
+          }
+
+          // Alle UEBRIGEN: Bogenschuetze, Magier, Flammenweber, die drei Tiere,
+          // die sechs Sondergegner und die Bosse. Sie haben dieselben drei
+          // Bilder, zeigten bisher aber nur das erste.
+          if (!enemy.isChainGuardSprite && !enemy.isShadowSprite && !enemy.isImp && !enemy.isBrute) {
+            _gegnerSchlagZeigen(this, enemy, 400);
           }
 
           // No temporary collider — prevents pushing player through walls
@@ -2388,6 +2397,54 @@ function drawEnemyHpBar(enemy) {
  * gern auf der anderen Raumseite, hinter dem Spieler: der Pluenderer rannte
  * dann quer an ihm vorbei und sah aus, als flöhe er ueberhaupt nicht.
  */
+/**
+ * Aus welchem Bildnamen besteht dieser Gegner gerade?
+ *
+ * Die Typen tragen ihre Richtung an verschiedenen Feldern — gewachsen, nicht
+ * geplant: _spriteDir bei den Sondergegnern, animalDirection bei den Tieren,
+ * impDirection, shadowDirection, chainGuardDirection, bruteDirection. Wer
+ * gar keines hat, wird aus dem laufenden Texturnamen gelesen (brute_right0).
+ *
+ * @returns {{pre:string,dir:string}|null} null, wenn der Gegner keine
+ *          gerichteten Bilder hat (prozedurale Notnaegel).
+ */
+function _gegnerBildTeile(enemy) {
+  if (!enemy) return null;
+  if (enemy._spritePrefix) return { pre: enemy._spritePrefix, dir: enemy._spriteDir || 'right' };
+  if (enemy.isAnimalSprite && enemy.animalPrefix) {
+    return { pre: enemy.animalPrefix, dir: enemy.animalDirection || 'right' };
+  }
+  var k = (enemy.texture && enemy.texture.key) || '';
+  var m = /^([a-z_]+)_(right|left)[0-9]$/.exec(k);
+  return m ? { pre: m[1], dir: m[2] } : null;
+}
+
+/**
+ * Spielt die zwei Schlagbilder und kehrt zur Ruhepose zurueck.
+ *
+ * Setzt `_schlagBild`, damit ein Richtungswechsel mitten im Schlag das Bild
+ * nicht zurueckstellt — ohne das blitzte die Ruhepose dazwischen auf.
+ *
+ * @returns {boolean} false, wenn der Gegner keine Schlagbilder hat.
+ */
+function _gegnerSchlagZeigen(scene, enemy, dauer) {
+  var t = _gegnerBildTeile(enemy);
+  if (!t || !scene || !scene.textures || !scene.time) return false;
+  var eins = t.pre + '_' + t.dir + '1', zwei = t.pre + '_' + t.dir + '2', null0 = t.pre + '_' + t.dir + '0';
+  if (!scene.textures.exists(eins)) return false;
+  enemy._schlagBild = true;
+  enemy.setTexture(eins);
+  scene.time.delayedCall(Math.round(dauer / 2), function () {
+    if (enemy && enemy.active && enemy._schlagBild && scene.textures.exists(zwei)) enemy.setTexture(zwei);
+  });
+  scene.time.delayedCall(dauer, function () {
+    if (!enemy || !enemy.active) return;
+    enemy._schlagBild = false;
+    if (scene.textures.exists(null0)) enemy.setTexture(null0);
+  });
+  return true;
+}
+
 function _pluendererTreppe(scene, enemy) {
   try {
     var grp = scene && scene.stairsGroup;
