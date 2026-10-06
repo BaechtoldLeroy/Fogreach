@@ -54,7 +54,11 @@
     prop_crate: 'prop_crate.png',
     prop_pillar: 'prop_pillar.png',
     prop_rubble: 'prop_rubble.png',
-    prop_cobweb: 'prop_cobweb.png'
+    prop_cobweb: 'prop_cobweb.png',
+    // Die Treppe ist der einzige Schluessel, der im Spiel ZWEIMAL entsteht:
+    // startScene laedt assets/tiles/stairDown.png, graphics.js zeichnet ihn
+    // danach neu. Der Tausch laeuft nach beidem und gewinnt deshalb.
+    stairDown: 'stairDown.png'
   };
 
   /**
