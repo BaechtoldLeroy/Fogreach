@@ -761,7 +761,12 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.sepRadius = 40;
     enemy.cohRadius = 120;
     if (key.startsWith('bat_')) {
-      enemy.setScale(0.22);
+      // Testmodus: die Austausch-Bilder sind Pixelgrafik und viel kleiner;
+      // der feste Faktor ist auf die alte Quelle geeicht. Siehe testGrafik.js.
+      if (!(typeof window.testGrafikTierSkalieren === 'function'
+            && window.testGrafikTierSkalieren(enemy, 'bat'))) {
+        enemy.setScale(0.22);
+      }
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'bat';
       enemy.animalDirection = 'right';
@@ -776,7 +781,12 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.sepRadius = 70;
     enemy.cohRadius = 180;
     if (key.startsWith('wolf_')) {
-      enemy.setScale(0.35);
+      // Testmodus: die Austausch-Bilder sind Pixelgrafik und viel kleiner;
+      // der feste Faktor ist auf die alte Quelle geeicht. Siehe testGrafik.js.
+      if (!(typeof window.testGrafikTierSkalieren === 'function'
+            && window.testGrafikTierSkalieren(enemy, 'wolf'))) {
+        enemy.setScale(0.35);
+      }
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'wolf';
       enemy.animalDirection = 'right';

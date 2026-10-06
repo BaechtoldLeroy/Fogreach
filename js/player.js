@@ -92,8 +92,13 @@ const PLAYER_DIRECTION_LOOKUP = PLAYER_DIRECTION_SEQUENCE.reduce((acc, entry) =>
  */
 function _spielerBilderOrdner() {
   try {
-    var v = window.DebugGate && window.DebugGate.flagge('spieler');
-    if (v && String(v).toLowerCase() === 'neu') return 'assets/PlayerSpritesNeu';
+    // EINE Abfrage fuer den ganzen Testmodus (js/testGrafik.js): ?grafik=neu
+    // schaltet Spieler, Gegner und Kacheln zusammen, ?spieler=neu bleibt als
+    // aelterer Name gueltig. Getrennte Abfragen hatten zur Folge, dass
+    // ?grafik=neu alles ausser dem Spieler umstellte.
+    if (typeof window.testGrafikAktiv === 'function' && window.testGrafikAktiv()) {
+      return 'assets/PlayerSpritesNeu';
+    }
   } catch (e) {}
   return 'assets/PlayerSprites';
 }

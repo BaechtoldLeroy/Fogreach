@@ -10,7 +10,9 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23121218'/%3E%3Cpath d='M32 8 L48 24 L40 56 L24 56 L16 24 Z' fill='%23c0392b'/%3E%3Ccircle cx='26' cy='28' r='3' fill='%23f1c40f'/%3E%3Ccircle cx='38' cy='28' r='3' fill='%23f1c40f'/%3E%3C/svg%3E" />
     <!-- #88: EIN Schalter fuer alle Debug-Oberflaechen. Steht vor dem
          Fehler-Overlay, weil das ihn schon braucht. Ohne Abhaengigkeiten. -->
-    <script src="js/debugGate.js?v=004"></script>
+    <script src="js/debugGate.js?v=005"></script>
+
+    <script src="js/testGrafik.js?v=001"></script>
     <!-- Mobile-Fehler-Overlay: zeigt uncaught JS-Fehler ON-SCREEN, weil man auf
          dem Handy die DevTools-Konsole nicht sieht. MUSS vor den Spiel-Skripten
          laufen, damit es deren Fehler faengt. Rein additiv, kein Eingriff ins
@@ -113,7 +115,7 @@
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=286"></script>
+    <script src="js/version.js?v=287"></script>
     <script src="js/soundManager.js?v=002"></script>
     <script src="js/performanceMonitor.js?v=002"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -160,14 +162,14 @@
     <!-- Reine Reichweiten-Mathematik für zerstörbare Props. Abhängigkeitsfrei
          und VOR player.js, das sie in breakDestructiblesInRange nutzt. -->
     <script src="js/propRange.js?v=002"></script>
-    <script src="js/player.js?v=121"></script>
+    <script src="js/player.js?v=122"></script>
     <script src="js/enemySpawnGating.js?v=007"></script>
     <script src="js/sondergegner.js?v=006"></script>
     <script src="js/bossIntro.js?v=004"></script>
-    <script src="js/enemy.js?v=120"></script>
+    <script src="js/enemy.js?v=121"></script>
     <!-- Gegner-Sprite-Ladeliste (queueEnemySprites): Hintergrund-Load im Hub +
          Sicherheitsnetz in GameScene.preload. Raus aus startScene.preload -> schnellerer Boot. -->
-    <script src="js/enemyAssets.js?v=006"></script>
+    <script src="js/enemyAssets.js?v=007"></script>
     <script src="js/eliteEnemies.js?v=012"></script>
     <!-- #95: Kriegsschar — braucht EliteEnemies (Affix-Definitionen) -->
     <script src="js/kriegsschar.js?v=005"></script>
@@ -223,7 +225,7 @@
     <script src="js/minimap.js?v=063"></script>
     <script src="js/hudV2.js?v=086"></script>
     <script src="js/endlessMode.js?v=063"></script>
-    <script src="js/main.js?v=124"></script>
+    <script src="js/main.js?v=125"></script>
     <script src="js/mobileAutoAim.js"></script>
     <!-- 053 WP01: Mobile-Perf-Diagnose-Probe. No-Op außer bei ?perf=1.
          ?v bump erzwingt frischen Fetch (Pages cached Assets ~10min). -->

@@ -19,6 +19,18 @@
     // #12: die sechs Sondergegner.
     'geschwuer', 'hund', 'springer', 'priester', 'beschwoerer', 'alarm'];
   var FRAMES = ['left0', 'left1', 'left2', 'right0', 'right1', 'right2'];
+  // Testmodus ?grafik=neu: Gegnerbilder aus einem zweiten Ordner, gleiche
+  // Dateinamen — aber nur fuer die Typen, die es dort WIRKLICH gibt. Pauschal
+  // umzuschalten liesse die uebrigen vierzehn Typen ins Leere laufen.
+  // Ohne die Flagge ist der Pfad Zeichen fuer Zeichen der alte.
+  function _gegnerOrdner(typ) {
+    try {
+      if (typeof window.testGrafikHatGegner === 'function' && window.testGrafikHatGegner(typ)) {
+        return 'assets/enemyNeu/';
+      }
+    } catch (e) {}
+    return 'assets/enemy/';
+  }
   // Einzel-Fallback-Sprites (enemy.js faellt darauf zurueck, wenn die gerichteten
   // Frames fehlen). Kein brute/rat/bat/wolf hier — brute nutzt brute_right0 direkt,
   // rat/bat/wolf haben prozedurale proc_*-Fallbacks.
@@ -38,14 +50,14 @@
   function _allEnemyUrls() {
     var urls = [];
     ENEMY_TYPES.forEach(function (t) {
-      FRAMES.forEach(function (f) { urls.push('assets/enemy/' + t + '/' + f + '.png'); });
+      FRAMES.forEach(function (f) { urls.push(_gegnerOrdner(t) + t + '/' + f + '.png'); });
     });
     Object.keys(SINGLE_FALLBACKS).forEach(function (key) {
-      urls.push('assets/enemy/' + SINGLE_FALLBACKS[key]);
+      urls.push(_gegnerOrdner(null) + SINGLE_FALLBACKS[key]);
     });
     BOSSES.forEach(function (b) {
-      FRAMES.forEach(function (f) { urls.push('assets/enemy/' + b + '/' + f + '.png'); });
-      urls.push('assets/enemy/' + b + '/idle.png');
+      FRAMES.forEach(function (f) { urls.push(_gegnerOrdner(b) + b + '/' + f + '.png'); });
+      urls.push(_gegnerOrdner(b) + b + '/idle.png');
     });
     return urls;
   }
@@ -88,14 +100,14 @@
       L.image(key, url);
     };
     ENEMY_TYPES.forEach(function (t) {
-      FRAMES.forEach(function (f) { img(t + '_' + f, 'assets/enemy/' + t + '/' + f + '.png'); });
+      FRAMES.forEach(function (f) { img(t + '_' + f, _gegnerOrdner(t) + t + '/' + f + '.png'); });
     });
     Object.keys(SINGLE_FALLBACKS).forEach(function (key) {
-      img(key, 'assets/enemy/' + SINGLE_FALLBACKS[key]);
+      img(key, _gegnerOrdner(null) + SINGLE_FALLBACKS[key]);
     });
     BOSSES.forEach(function (b) {
-      FRAMES.forEach(function (f) { img(b + '_' + f, 'assets/enemy/' + b + '/' + f + '.png'); });
-      img('sprite_' + b, 'assets/enemy/' + b + '/idle.png'); // sprite_boss_chain etc.
+      FRAMES.forEach(function (f) { img(b + '_' + f, _gegnerOrdner(b) + b + '/' + f + '.png'); });
+      img('sprite_' + b, _gegnerOrdner(b) + b + '/idle.png'); // sprite_boss_chain etc.
     });
   };
 })();
