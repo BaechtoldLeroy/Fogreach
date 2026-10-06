@@ -31,7 +31,11 @@
     wall_brick: 'wall_brick.png',
     wall_stone_large: 'wall_stone_large.png',
     wall_mossy: 'wall_mossy.png',
-    wall_dungeon: 'wall_dungeon.png'
+    wall_dungeon: 'wall_dungeon.png',
+    // Die FUENFTE Wand, und die haeufigste: obstacleWall ist die Vorgabe
+    // zweier Raumthemen (proceduralRooms 'dungeon', caveGenerator). Sie
+    // fehlte, deshalb sahen viele Raeume unveraendert aus.
+    obstacleWall: 'obstacleWall.png'
   };
 
   // Requisiten. Dieselbe Mechanik wie bei den Kacheln — auch sie werden in
@@ -89,7 +93,7 @@
   // kommt weiter aus assets/enemy — sonst sucht das Spiel sechzehn Typen und
   // vier Bosse in einem Ordner, in dem zwei liegen, und die uebrigen fallen
   // stumm auf ihre prozeduralen Notnaegel zurueck.
-  var NEUE_GEGNER = ['wolf', 'bat'];
+  var NEUE_GEGNER = ['wolf', 'bat', 'rat', 'imp'];
 
   /** Hat dieser Gegnertyp ein Austausch-Bild? */
   window.testGrafikHatGegner = function (typ) {
@@ -101,7 +105,9 @@
   // (Wolf 0.35, Fledermaus 0.22), die auf die alten gerenderten Quellen
   // geeicht sind (175x90 und 156x130). Die neuen Pixelbilder sind 51x32 und
   // 64x63 — derselbe Faktor machte daraus 18 und 14 px.
-  var ZIEL_BREITE = { wolf: 61, bat: 34 };
+  // Der Imp fehlt hier mit Absicht: er skaliert in enemy.js hoehenbasiert
+  // (48 / impH) und passt sich jeder Bildgroesse von selbst an.
+  var ZIEL_BREITE = { wolf: 61, bat: 34, rat: 50 };
 
   /**
    * Skaliert ein Tier auf seine gewohnte Anzeigebreite, wenn es aus dem

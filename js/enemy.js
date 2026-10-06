@@ -746,7 +746,12 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.sepRadius = 50;
     enemy.cohRadius = 150;
     if (key.startsWith('rat_')) {
-      enemy.setScale(0.28);
+      // Testmodus: das Austauschbild ist Pixelgrafik und viel kleiner; der
+      // feste Faktor ist auf die alte Quelle geeicht. Siehe testGrafik.js.
+      if (!(typeof window.testGrafikTierSkalieren === 'function'
+            && window.testGrafikTierSkalieren(enemy, 'rat'))) {
+        enemy.setScale(0.28);
+      }
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'rat';
       enemy.animalDirection = 'right';
