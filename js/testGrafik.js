@@ -34,6 +34,43 @@
     wall_dungeon: 'wall_dungeon.png'
   };
 
+  // Requisiten. Dieselbe Mechanik wie bei den Kacheln — auch sie werden in
+  // graphics.js gezeichnet, jede mit eigenem Mass (Fass 24x32, Statue 48x64,
+  // Geroell 32x24 ...). tools/requisitenBauen.js passt die Austauschbilder
+  // proportionstreu in genau diese Masse ein, unten buendig: die Dinge stehen
+  // auf dem Boden.
+  var REQUISITEN = {
+    barrel: 'barrel.png',
+    crate: 'crate.png',
+    pillar_small: 'pillar_small.png',
+    pillar_large: 'pillar_large.png',
+    statue_knight: 'statue_knight.png',
+    brazier: 'brazier.png',
+    rubble: 'rubble.png',
+    altar: 'altar.png',
+    cobweb: 'cobweb.png',
+    // Die kleinen Deko-Varianten (roomTemplates ruft createPropTextures).
+    prop_barrel: 'prop_barrel.png',
+    prop_crate: 'prop_crate.png',
+    prop_pillar: 'prop_pillar.png',
+    prop_rubble: 'prop_rubble.png',
+    prop_cobweb: 'prop_cobweb.png'
+  };
+
+  /**
+   * Alles, was ersetzt wird — Kacheln UND Requisiten.
+   *
+   * Beide Durchlaeufe (Vorladen und Anwenden) fragen hier, damit keiner von
+   * beiden eine Haelfte vergisst: geladen, aber nicht getauscht faellt nicht
+   * auf, es bleibt nur still beim alten Bild.
+   */
+  function _alleTexturen() {
+    var out = {};
+    Object.keys(KACHELN).forEach(function (k) { out[k] = KACHELN[k]; });
+    Object.keys(REQUISITEN).forEach(function (k) { out[k] = REQUISITEN[k]; });
+    return out;
+  }
+
   function _an() {
     try {
       for (var i = 0; i < FLAGGEN.length; i++) {
@@ -85,9 +122,10 @@
   /** In preload: die Austausch-Kacheln unter eigenem Namen laden. */
   window.testGrafikVorladen = function (scene) {
     if (!_an() || !scene || !scene.load || !scene.textures) return;
-    Object.keys(KACHELN).forEach(function (k) {
+    var alle = _alleTexturen();
+    Object.keys(alle).forEach(function (k) {
       if (scene.textures.exists(VORSATZ + k)) return;
-      scene.load.image(VORSATZ + k, ORDNER + KACHELN[k]);
+      scene.load.image(VORSATZ + k, ORDNER + alle[k]);
     });
   };
 
@@ -100,7 +138,7 @@
   window.testGrafikAnwenden = function (scene) {
     if (!_an() || !scene || !scene.textures) return 0;
     var ersetzt = 0, fehlend = [];
-    Object.keys(KACHELN).forEach(function (k) {
+    Object.keys(_alleTexturen()).forEach(function (k) {
       if (!scene.textures.exists(VORSATZ + k)) { fehlend.push(k); return; }
       var bild = scene.textures.get(VORSATZ + k).getSourceImage();
       if (!bild) { fehlend.push(k); return; }
@@ -110,7 +148,7 @@
     });
     try {
       if (typeof console !== 'undefined' && console.log) {
-        console.log('[Testgrafik] ' + ersetzt + ' Kacheln ersetzt'
+        console.log('[Testgrafik] ' + ersetzt + ' Texturen ersetzt'
           + (fehlend.length ? ', nicht geladen: ' + fehlend.join(', ') : ''));
       }
     } catch (e) {}
