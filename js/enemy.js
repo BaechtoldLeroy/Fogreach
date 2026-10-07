@@ -746,12 +746,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.sepRadius = 50;
     enemy.cohRadius = 150;
     if (key.startsWith('rat_')) {
-      // Testmodus: das Austauschbild ist Pixelgrafik und viel kleiner; der
-      // feste Faktor ist auf die alte Quelle geeicht. Siehe testGrafik.js.
-      if (!(typeof window.testGrafikTierSkalieren === 'function'
-            && window.testGrafikTierSkalieren(enemy, 'rat'))) {
-        enemy.setScale(0.28);
-      }
+      // Auf die gewohnte Anzeigebreite rechnen, nicht mit festem Faktor: der
+      // alte 0.28 war auf die gerenderte Quelle 179x90 geeicht (= 50 px
+      // breit). Mit dem kleineren Pixelbild kaeme daraus ein Zwerg. So haelt
+      // es auch, wenn das Bild wieder wechselt.
+      enemy.setScale(50 / (enemy.width || 50));
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'rat';
       enemy.animalDirection = 'right';
@@ -766,12 +765,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.sepRadius = 40;
     enemy.cohRadius = 120;
     if (key.startsWith('bat_')) {
-      // Testmodus: die Austausch-Bilder sind Pixelgrafik und viel kleiner;
-      // der feste Faktor ist auf die alte Quelle geeicht. Siehe testGrafik.js.
-      if (!(typeof window.testGrafikTierSkalieren === 'function'
-            && window.testGrafikTierSkalieren(enemy, 'bat'))) {
-        enemy.setScale(0.22);
-      }
+      // Auf die gewohnte Anzeigebreite rechnen, nicht mit festem Faktor: der
+      // alte 0.22 war auf die gerenderte Quelle 156x130 geeicht (= 34 px
+      // breit). Mit dem kleineren Pixelbild kaeme daraus ein Zwerg. So haelt
+      // es auch, wenn das Bild wieder wechselt.
+      enemy.setScale(34 / (enemy.width || 34));
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'bat';
       enemy.animalDirection = 'right';
@@ -786,12 +784,11 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.sepRadius = 70;
     enemy.cohRadius = 180;
     if (key.startsWith('wolf_')) {
-      // Testmodus: die Austausch-Bilder sind Pixelgrafik und viel kleiner;
-      // der feste Faktor ist auf die alte Quelle geeicht. Siehe testGrafik.js.
-      if (!(typeof window.testGrafikTierSkalieren === 'function'
-            && window.testGrafikTierSkalieren(enemy, 'wolf'))) {
-        enemy.setScale(0.35);
-      }
+      // Auf die gewohnte Anzeigebreite rechnen, nicht mit festem Faktor: der
+      // alte 0.35 war auf die gerenderte Quelle 175x90 geeicht (= 61 px
+      // breit). Mit dem kleineren Pixelbild kaeme daraus ein Zwerg. So haelt
+      // es auch, wenn das Bild wieder wechselt.
+      enemy.setScale(61 / (enemy.width || 61));
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'wolf';
       enemy.animalDirection = 'right';

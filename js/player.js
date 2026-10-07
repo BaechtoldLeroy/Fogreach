@@ -80,50 +80,6 @@ const PLAYER_DIRECTION_LOOKUP = PLAYER_DIRECTION_SEQUENCE.reduce((acc, entry) =>
   return acc;
 }, {});
 
-/**
- * Aus welchem Ordner kommen die Spielerbilder?
- *
- * Ohne Flagge: der ausgelieferte Satz. Mit ?spieler=<entwurf> oder
- * ?grafik=neu (beide nur bei offenem Debug-Tor) ein Entwurf aus
- * SPIELER_ENTWUERFE, gleiche Dateinamen. So laesst sich ein Design im
- * laufenden Spiel ansehen, ohne den ausgelieferten Satz anzufassen.
- *
- * Beide Ladestellen (Vorausladen und Nachladen einer Richtung) fragen hier,
- * sonst mischt ein Lauf zwei Entwuerfe.
- */
-// Entwuerfe fuer den Spieler. Der ausgelieferte Satz steht NICHT hier — er
-// ist der Rueckfall und bleibt unberuehrt.
-// Entwuerfe fuer den Spieler. Der ausgelieferte Satz steht NICHT hier — er
-// ist der Rueckfall ohne Flagge und bleibt unberuehrt.
-//
-// 'neu' zeigt auf denselben Ordner wie 'augen': der erste Entwurf (schwarze
-// Leere unter der Kapuze) ist weg, aber ?spieler=neu und ?grafik=neu sollen
-// weiter etwas zeigen statt ins Leere zu laufen.
-var SPIELER_ENTWUERFE = {
-  augen: 'assets/PlayerSpritesAugen',     // Kapuze schwarz, nur die Augen leuchten
-  neu: 'assets/PlayerSpritesAugen'
-};
-
-function _spielerBilderOrdner() {
-  try {
-    // ?spieler=<entwurf> waehlt gezielt einen Entwurf. Frueher trug die
-    // Flagge nur den Wert 'neu'; sie nimmt jetzt den Namen, damit ein
-    // weiterer Entwurf keinen neuen Schalter braucht.
-    var v = window.DebugGate && window.DebugGate.flagge('spieler');
-    if (v) {
-      var ordner = SPIELER_ENTWUERFE[String(v).toLowerCase()];
-      if (ordner) return ordner;
-    }
-    // ?grafik=neu schaltet Spieler, Gegner und Kacheln zusammen um. EINE
-    // Abfrage (js/testGrafik.js): getrennte hatten zur Folge, dass
-    // ?grafik=neu alles ausser dem Spieler umstellte.
-    if (typeof window.testGrafikAktiv === 'function' && window.testGrafikAktiv()) {
-      return SPIELER_ENTWUERFE.neu;
-    }
-  } catch (e) {}
-  return 'assets/PlayerSprites';
-}
-if (typeof window !== 'undefined') window._spielerBilderOrdner = _spielerBilderOrdner;
 
 function preloadPlayerDirectionalFrames(loader) {
   if (!loader) return;
@@ -137,7 +93,7 @@ function preloadPlayerDirectionalFrames(loader) {
       const frameId = frame.toString().padStart(2, '0');
       const key = `dir${dirId}_f${frameId}`;
       if (textureManager?.exists?.(key)) continue;
-      loader.image(key, `${_spielerBilderOrdner()}/${key}.png`);
+      loader.image(key, `assets/PlayerSprites/${key}.png`);
     }
   }
 }
@@ -160,7 +116,7 @@ function ensureDirectionLoaded(scene, dd) {
     for (let f = 0; f < 8; f++) {
       const fk = `dir${dd}_f${f.toString().padStart(2, '0')}`;
       if (!scene.textures.exists(fk)) {
-        scene.load.image(fk, `${_spielerBilderOrdner()}/${fk}.png`);
+        scene.load.image(fk, `assets/PlayerSprites/${fk}.png`);
       }
     }
     scene.load.once('complete', () => {
@@ -774,12 +730,13 @@ function applyPlayerDisplaySettings(sprite) {
   if (isDirectionalImage) {
     targetHeight = baseHeight;
     targetWidth = Math.max(1, Math.round(baseWidth * PLAYER_WIDTH_STRETCH));
-    // Testmodus ?spieler=neu: die Breite aus dem BILD nehmen. Die feste
-    // Breite ist auf den ausgelieferten Satz gemuenzt (zugeschnitten 116x224,
-    // Verhaeltnis 0.52 gegen Ziel 0.40). Ein 44x61 grosser Sprite hat 0.72 und
-    // wuerde um das 1.8-fache in die Laenge gepresst — der Test zeigte dann
-    // einen Zerrspiegel statt des Entwurfs.
-    if (_spielerBilderOrdner() !== 'assets/PlayerSprites' && sourceWidth > 0 && sourceHeight > 0) {
+    // Die BREITE folgt dem Bild, nicht einer festen Zahl.
+    //
+    // PLAYER_BASE_DISPLAY_WIDTH (60) war auf die alten gerenderten Bilder
+    // gemuenzt (zugeschnitten 116x224, Verhaeltnis 0.52 gegen Ziel 0.40). Die
+    // Pixelbilder haben 0.72 und wuerden damit um das 1.8-fache in die Laenge
+    // gepresst. Aus dem Bild zu rechnen haelt auch, wenn sie wieder wechseln.
+    if (sourceWidth > 0 && sourceHeight > 0) {
       targetWidth = Math.max(1, Math.round(targetHeight * (sourceWidth / sourceHeight)));
     }
 

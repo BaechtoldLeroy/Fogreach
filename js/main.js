@@ -1054,8 +1054,8 @@ function preload() {
   // Testmodus ?grafik=neu: die Austausch-Kacheln hier mitladen. Getauscht
   // werden sie erst nach createAllGraphics — vorher gibt es die Zielschluessel
   // noch nicht, weil graphics.js sie zeichnet.
-  if (typeof window.testGrafikVorladen === 'function') {
-    try { window.testGrafikVorladen(this); } catch (e) { /* nicht fatal */ }
+  if (typeof window.pixelTexturenVorladen === 'function') {
+    try { window.pixelTexturenVorladen(this); } catch (e) { /* nicht fatal */ }
   }
 
   // Rathauskeller background image
@@ -1376,8 +1376,8 @@ function create() {
   }
   createAllGraphics.call(this);
   // Testmodus: die eben gezeichneten Boden- und Wandtexturen ersetzen.
-  if (typeof window.testGrafikAnwenden === 'function') {
-    try { window.testGrafikAnwenden(this); } catch (e) { /* nicht fatal */ }
+  if (typeof window.pixelTexturenAnwenden === 'function') {
+    try { window.pixelTexturenAnwenden(this); } catch (e) { /* nicht fatal */ }
   }
   // #70: Welt-Objekt-Atlas bauen (Hindernisse/Props/Deko in EINE Textur) -> weniger
   // Draw-Calls in grossen Raeumen. Idempotent, degradiert bei Fehler auf Einzeltexturen.
