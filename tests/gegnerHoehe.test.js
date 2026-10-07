@@ -56,15 +56,30 @@ function gewoehnlicheHoehe(typ, name) {
   return null;
 }
 
-// Die Zahlen aus enemy.js — sie sind die HOEHE IN BILDSCHIRMPIXELN und wurden
-// aus der frueheren Darstellung uebernommen, damit der Bilderwechsel keinen
-// Gegner groesser oder kleiner macht.
+// Die Leiter aus enemy.js, in Bildschirmpixeln.
+//
+// Bis b317 waren das keine Entscheidung, sondern ein Rest: in b314 aus der
+// frueheren Darstellung zurueckgerechnet, damit der Bilderwechsel niemanden
+// groesser macht — und jene fruehere Darstellung war selbst schon schief,
+// weil auf die RAHMENhoehe skaliert wurde. Gemessen kam heraus:
+// Schattenschleicher 35, Magier 45, Priester 54, Brute 55.
 const ERWARTET = [
-  [1, 'Imp', 48], [2, 'Bogenschuetze', 47], [3, 'Brute', 55], [4, 'Magier', 45],
-  [5, 'Schattenschleicher', 35], [6, 'Kettenwache', 48], [7, 'Flammenweber', 45],
-  [11, 'Geschwuer', 51], [12, 'Priester', 54], [13, 'Beschwoerer', 53],
-  [14, 'Springer', 52], [15, 'Hund', 43], [16, 'Alarmwicht', 47]
+  // die Kleinen, mit Absicht
+  [1, 'Imp', 44], [16, 'Alarmwicht', 44],
+  // alles mit Menschengestalt — EINE Stufe
+  [2, 'Bogenschuetze', 52], [4, 'Magier', 52], [5, 'Schattenschleicher', 52],
+  [7, 'Flammenweber', 52], [12, 'Priester', 52], [13, 'Beschwoerer', 52],
+  [14, 'Springer', 52],
+  // darueber, der Reihe nach
+  [11, 'Geschwuer', 54], [6, 'Kettenwache', 56], [3, 'Brute', 60],
+  // Tiere
+  [8, 'Ratte', 30], [9, 'Fledermaus', 30], [10, 'Wolf', 42], [15, 'Hund', 46]
 ];
+
+// Die Typen, die dieselbe Hoehe haben MUESSEN. Genau das war vorher kaputt:
+// die Sondergegner standen durchweg hoeher als die Grundgegner, obwohl beide
+// Menschen sind.
+const MENSCHENGESTALT = [2, 4, 5, 7, 12, 13, 14];
 
 test('jeder Gegnertyp erscheint in seiner vorgesehenen Hoehe', () => {
   const daneben = [];
@@ -77,6 +92,21 @@ test('jeder Gegnertyp erscheint in seiner vorgesehenen Hoehe', () => {
     }
   });
   assert.strictEqual(daneben.length, 0, daneben.join('; '));
+});
+
+test('alles mit Menschengestalt ist gleich gross', () => {
+  // Der eigentliche Punkt der Leiter. Einzelwerte zu pruefen reicht nicht:
+  // verschoebe jemand alle sieben um denselben Betrag, waere das in Ordnung —
+  // dass sie AUSEINANDERLAUFEN, ist der Fehler.
+  const hoehen = MENSCHENGESTALT.map((t) => {
+    const name = (ERWARTET.find((e) => e[0] === t) || [, 'Typ ' + t])[1];
+    return { name: name, h: gewoehnlicheHoehe(t, name).hoehe };
+  });
+  const min = Math.min(...hoehen.map((x) => x.h));
+  const max = Math.max(...hoehen.map((x) => x.h));
+  assert.ok(max - min <= 1.5,
+    'sie laufen um ' + (max - min).toFixed(1) + ' px auseinander: '
+    + hoehen.map((x) => x.name + ' ' + x.h.toFixed(0)).join(', '));
 });
 
 test('ein dreimal so hoher Rahmen aendert die Groesse NICHT', () => {

@@ -655,7 +655,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 220;
     // Sprite-based imp with animation frames
     if (key.startsWith('imp_')) {
-      gegnerAufHoeheSkalieren(enemy, 48);
+      gegnerAufHoeheSkalieren(enemy, 44);
       enemy.isImp = true;
       enemy.impDirection = 'right';
       enemy.impAttacking = false;
@@ -674,7 +674,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     // Always flag as archer (independent of sprite variant)
     enemy.isArcher = true;
     if (key.startsWith('archer_')) {
-      gegnerAufHoeheSkalieren(enemy, 47);
+      gegnerAufHoeheSkalieren(enemy, 52);
       enemy.isArcherSprite = true;
       enemy.archerDirection = 'right';
       enemy.archerAttacking = false;
@@ -688,7 +688,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.sepRadius = 80;
     enemy.cohRadius = 160;
     // Scale down large sprites to fit game scale (~56px display height)
-    gegnerAufHoeheSkalieren(enemy, 55);
+    gegnerAufHoeheSkalieren(enemy, 60);
     // Mark as brute for animation handling
     enemy.isBrute = true;
     enemy.bruteDirection = 'right';
@@ -704,7 +704,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.isShadowCreeper = true;
     enemy.lastTeleportTime = 0;
     if (key.startsWith('shadow_')) {
-      gegnerAufHoeheSkalieren(enemy, 35);   // kleiner als die uebrigen
+      gegnerAufHoeheSkalieren(enemy, 52);
       enemy.isShadowSprite = true;
       enemy.shadowDirection = 'right';
       enemy.shadowAttacking = false;
@@ -721,7 +721,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.isChainGuard = true;
     enemy.shieldActive = true; // blocks first hit, then breaks
     if (key.startsWith('chainguard_')) {
-      gegnerAufHoeheSkalieren(enemy, 48);   // groesser als die uebrigen
+      gegnerAufHoeheSkalieren(enemy, 56);   // Panzer, groesser als die uebrigen
       enemy.isChainGuardSprite = true;
       enemy.chainGuardDirection = 'right';
       enemy.chainGuardAttacking = false;
@@ -740,7 +740,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 240;
     enemy.isFlameWeaver = true;
     if (key.startsWith('flameweaver_')) {
-      gegnerAufHoeheSkalieren(enemy, 45);
+      gegnerAufHoeheSkalieren(enemy, 52);
       enemy.isFlameWeaverSprite = true;
       enemy.flameWeaverDirection = 'right';
       enemy.flameWeaverAttacking = false;
@@ -757,7 +757,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       // alte 0.28 war auf die gerenderte Quelle 179x90 geeicht (= 50 px
       // breit). Mit dem kleineren Pixelbild kaeme daraus ein Zwerg. So haelt
       // es auch, wenn das Bild wieder wechselt.
-      enemy.setScale(50 / (enemy.width || 50));
+      gegnerAufHoeheSkalieren(enemy, 30);
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'rat';
       enemy.animalDirection = 'right';
@@ -776,7 +776,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       // alte 0.22 war auf die gerenderte Quelle 156x130 geeicht (= 34 px
       // breit). Mit dem kleineren Pixelbild kaeme daraus ein Zwerg. So haelt
       // es auch, wenn das Bild wieder wechselt.
-      enemy.setScale(34 / (enemy.width || 34));
+      gegnerAufHoeheSkalieren(enemy, 30);
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'bat';
       enemy.animalDirection = 'right';
@@ -795,7 +795,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       // alte 0.35 war auf die gerenderte Quelle 175x90 geeicht (= 61 px
       // breit). Mit dem kleineren Pixelbild kaeme daraus ein Zwerg. So haelt
       // es auch, wenn das Bild wieder wechselt.
-      enemy.setScale(61 / (enemy.width || 61));
+      gegnerAufHoeheSkalieren(enemy, 42);
       enemy.isAnimalSprite = true;
       enemy.animalPrefix = 'wolf';
       enemy.animalDirection = 'right';
@@ -811,7 +811,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 150;
     enemy.isGeschwuer = true;
     if (key === 'geschwuer_right0') {
-      gegnerAufHoeheSkalieren(enemy, 51);
+      gegnerAufHoeheSkalieren(enemy, 54);
       enemy._spritePrefix = 'geschwuer';
       enemy._spriteDir = 'right';
     }
@@ -827,7 +827,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 260;
     enemy.isPriester = true;
     if (key === 'priester_right0') {
-      gegnerAufHoeheSkalieren(enemy, 54);
+      gegnerAufHoeheSkalieren(enemy, 52);
       enemy._spritePrefix = 'priester';
       enemy._spriteDir = 'right';
     }
@@ -844,7 +844,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.isBeschwoerer = true;
     enemy._gerufen = [];
     if (key === 'beschwoerer_right0') {
-      gegnerAufHoeheSkalieren(enemy, 53);
+      gegnerAufHoeheSkalieren(enemy, 52);
       enemy._spritePrefix = 'beschwoerer';
       enemy._spriteDir = 'right';
     }
@@ -870,7 +870,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 220;
     enemy.isHund = true;
     if (key === 'hund_right0') {
-      gegnerAufHoeheSkalieren(enemy, 43);
+      gegnerAufHoeheSkalieren(enemy, 46);
       enemy._spritePrefix = 'hund';
       enemy._spriteDir = 'right';
     }
@@ -887,7 +887,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       // Spiels und in seiner dunkelbraunen Palette kaum von der Wand zu
       // unterscheiden — ausgerechnet der Gegner, den man zuerst sehen muss,
       // weil er wegrennt und Verstaerkung holt.
-      gegnerAufHoeheSkalieren(enemy, 47);
+      gegnerAufHoeheSkalieren(enemy, 44);
       enemy._spritePrefix = 'alarm';
       enemy._spriteDir = 'right';
     }
@@ -904,7 +904,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     // Always flag as mage (independent of sprite variant)
     enemy.isMage = true;
     if (key.startsWith('mage_')) {
-      gegnerAufHoeheSkalieren(enemy, 45);
+      gegnerAufHoeheSkalieren(enemy, 52);
       enemy.isMageSprite = true;
       enemy.mageDirection = 'right';
       enemy.mageAttacking = false;
@@ -3469,6 +3469,23 @@ function _computeSpriteAlphaBounds(sprite) {
  *
  * @param {Phaser.GameObjects.Sprite} enemy
  * @param {number} zielPx gewuenschte sichtbare Hoehe
+ *
+ * DIE LEITER (sichtbare Hoehe in Bildschirmpixeln):
+ *
+ *   44  Imp, Alarmwicht        — die Kleinen, mit Absicht
+ *   52  Bogenschuetze, Magier, Flammenweber, Schattenschleicher,
+ *       Priester, Beschwoerer, Springer — alles, was Menschengestalt hat
+ *   54  Geschwuer              — keine Gestalt, aber Masse
+ *   56  Kettenwache            — Panzer
+ *   60  Brute                  — der groesste gewoehnliche Gegner
+ *
+ *   30  Ratte, Fledermaus      — Ungeziefer
+ *   42  Wolf
+ *   46  Kettenhund             — groesser als der Wolf, er ist gezuechtet
+ *
+ * Zum Vergleich: der Spieler ist 67 Pixel hoch. Er ueberragt damit alles
+ * ausser dem Brute deutlich — das ist NICHT Teil dieser Leiter und waere
+ * eine eigene Entscheidung, weil die Hitbox mit dem Bild waechst.
  */
 function gegnerAufHoeheSkalieren(enemy, zielPx) {
   if (!enemy || !enemy.setScale || !(zielPx > 0)) return;
@@ -3482,6 +3499,24 @@ function gegnerAufHoeheSkalieren(enemy, zielPx) {
   // Rahmen der beste verfuegbare Anhalt.
   var hoehe = (box && box.h) ? box.h : (enemy.height || zielPx);
   enemy.setScale(zielPx / hoehe);
+
+  // Die TREFFERREICHWEITE an die Figur haengen, nicht an den Rahmen.
+  //
+  // player.js _gegnerKante misst, wie weit ein Gegner von seinem Mittelpunkt
+  // reicht, und greift ohne diese Felder auf displayWidth/displayHeight
+  // zurueck — also auf den ganzen Rahmen samt leerer Raender. Seit der Rahmen
+  // die Vereinigung aller drei Posen traegt, ist der Unterschied gross: der
+  // Imp sieht 36x44 aus und haette einen Block von 59x59 um sich. Angriffe
+  // haetten ihn elf Pixel frueher erreicht, als er aussieht — und umgekehrt.
+  //
+  // NUR diese beiden Felder, nicht der Body: fitBodyToSprite setzt zusaetzlich
+  // Groesse, Versatz und Ursprung, und das ist den Bossen vorbehalten. Hier
+  // geht es allein um die Reichweite.
+  if (box && box.w > 0 && box.h > 0) {
+    var s = Math.abs(enemy.scaleX || 1);
+    enemy._hitHalfW = (box.w * s) / 2;
+    enemy._hitHalfH = (box.h * Math.abs(enemy.scaleY || 1)) / 2;
+  }
 }
 if (typeof window !== 'undefined') window.gegnerAufHoeheSkalieren = gegnerAufHoeheSkalieren;
 
