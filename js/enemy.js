@@ -421,9 +421,22 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     // Defensive: a missing/uninitialised story system reads as "full" (act 6)
     // so spawns are never over-restricted; a missing gating module falls back
     // to the inline depth tiers (behaviour unchanged from before the feature).
-    const actIdx = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+    //
+    // ?akt=<n> setzt den Akt fuer das Durchtesten. Ohne das zeigt ein Sprung
+    // per ?dungeon=20 nur Ratte, Fledermaus, Wolf und Wicht: die Tiefe oeffnet
+    // die Liste, der AKT schliesst sie wieder, und ein frisch gestarteter
+    // Sprung steht in Akt 0. Wer die Gegner der spaeteren Akte ansehen will,
+    // musste bisher die halbe Geschichte spielen.
+    let actIdx = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
       ? window.storySystem.getCurrentActIndex()
       : 6;
+    try {
+      const _akt = window.DebugGate && window.DebugGate.flagge('akt');
+      if (_akt !== null && _akt !== undefined) {
+        const _n = parseInt(_akt, 10);
+        if (isFinite(_n)) actIdx = Math.max(0, Math.min(6, _n));
+      }
+    } catch (e) { /* eine kaputte Flagge darf das Spawnen nie brechen */ }
     if (window.EnemySpawnGating && typeof window.EnemySpawnGating.getAvailableEnemyTypes === 'function') {
       availableTypes = window.EnemySpawnGating.getAvailableEnemyTypes(depth, actIdx);
     } else if (depth <= 2) {
