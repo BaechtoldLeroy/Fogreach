@@ -83,18 +83,25 @@ const PLAYER_DIRECTION_LOOKUP = PLAYER_DIRECTION_SEQUENCE.reduce((acc, entry) =>
 /**
  * Aus welchem Ordner kommen die Spielerbilder?
  *
- * Testmodus ?spieler=neu (nur bei offenem Debug-Tor): ein zweiter Satz unter
- * assets/PlayerSpritesNeu, gleiche Dateinamen. So laesst sich ein neues
- * Design im laufenden Spiel ansehen, ohne den ausgelieferten Satz anzufassen.
+ * Ohne Flagge: der ausgelieferte Satz. Mit ?spieler=<entwurf> oder
+ * ?grafik=neu (beide nur bei offenem Debug-Tor) ein Entwurf aus
+ * SPIELER_ENTWUERFE, gleiche Dateinamen. So laesst sich ein Design im
+ * laufenden Spiel ansehen, ohne den ausgelieferten Satz anzufassen.
  *
  * Beide Ladestellen (Vorausladen und Nachladen einer Richtung) fragen hier,
- * sonst mischt ein Lauf altes und neues Design.
+ * sonst mischt ein Lauf zwei Entwuerfe.
  */
 // Entwuerfe fuer den Spieler. Der ausgelieferte Satz steht NICHT hier — er
 // ist der Rueckfall und bleibt unberuehrt.
+// Entwuerfe fuer den Spieler. Der ausgelieferte Satz steht NICHT hier — er
+// ist der Rueckfall ohne Flagge und bleibt unberuehrt.
+//
+// 'neu' zeigt auf denselben Ordner wie 'augen': der erste Entwurf (schwarze
+// Leere unter der Kapuze) ist weg, aber ?spieler=neu und ?grafik=neu sollen
+// weiter etwas zeigen statt ins Leere zu laufen.
 var SPIELER_ENTWUERFE = {
-  neu: 'assets/PlayerSpritesNeu',
-  augen: 'assets/PlayerSpritesAugen'      // Kapuze schwarz, nur die Augen leuchten
+  augen: 'assets/PlayerSpritesAugen',     // Kapuze schwarz, nur die Augen leuchten
+  neu: 'assets/PlayerSpritesAugen'
 };
 
 function _spielerBilderOrdner() {
