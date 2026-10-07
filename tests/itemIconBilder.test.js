@@ -39,7 +39,10 @@ function namen() {
 // Was graphics.js fuer diese Schluessel zeichnet; alles Uebrige ist 48x48.
 const SONDERMASS = {
   obstacleTree: [64, 64], obstacleRock: [48, 32], prop_puddle: [20, 12],
-  healthDrop: [16, 16], xpDrop: [16, 16], projectileTexture: [20, 20]
+  healthDrop: [16, 16], xpDrop: [16, 16], projectileTexture: [20, 20],
+  evt_treasure: [32, 32], evt_shrine: [32, 32], evt_opferstein: [32, 32],
+  evt_fountain: [32, 32], evt_gamble: [32, 32], evt_cursed: [32, 32],
+  evt_schloss: [32, 32], evt_lager: [32, 32], evt_falle: [32, 32], evt_nische: [32, 32]
 };
 
 test('zu jedem Namen gibt es eine Datei im richtigen Mass', async () => {

@@ -96,7 +96,15 @@
     'itMat'
   ].concat([
     'obstacleTree', 'obstacleRock', 'prop_puddle', 'healthDrop',
-    'xpDrop', 'projectileTexture'
+    'xpDrop', 'projectileTexture',
+  ]).concat([
+    // Fundstuecke und Ereignisobjekte. Sie entstehen LAZY in eventSystem.js
+    // und hiddenFinds.js (spawnEventObject zeichnet sie beim ersten Mal und
+    // nur, wenn es den Schluessel noch nicht gibt). Weil sie hier im preload
+    // geladen werden, kommt das Zeichnen gar nicht erst dran.
+    'evt_treasure', 'evt_shrine', 'evt_opferstein', 'evt_fountain',
+    'evt_gamble', 'evt_cursed', 'evt_schloss', 'evt_lager', 'evt_falle',
+    'evt_nische'
   ]);
 
   // Die Feuerschale flackert: neun Bilder, in denen nur die Flamme lebt.
