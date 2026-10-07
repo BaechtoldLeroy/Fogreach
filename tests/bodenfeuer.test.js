@@ -64,9 +64,19 @@ test('eine zerschlagene Feuerschale setzt ein brennendes Bild', () => {
   })()`);
   if (r.kein) assert.fail(r.kein);
   assert.strictEqual(r.anim, 'bodenfeuer_brennen', 'es laeuft ' + r.anim);
-  // radius 46 * 2.2 = etwa 101 px breit.
-  assert.ok(r.breite > 60 && r.breite < 160,
-    'das Feuer ist ' + r.breite + ' px breit — das passt nicht zum Wirkradius');
+
+  // Die Breite folgt dem Wirkradius mal BODENFEUER_BREITE. Der Faktor wird
+  // AUS DER QUELLE gelesen, nicht abgeschrieben: er ist schon zweimal
+  // gewandert (2.2 -> 1.76 -> 1.1), und ein abgeschriebener Wert haette den
+  // Fall jedes Mal grundlos fallen lassen. Geprueft wird, dass das Bild dem
+  // eingestellten Faktor FOLGT — nicht, wie gross jemand es haben will.
+  const quelle = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
+  const mf = /const BODENFEUER_BREITE = ([0-9.]+);/.exec(quelle);
+  assert.ok(mf, 'BODENFEUER_BREITE steht nicht mehr in js/main.js');
+  const soll = 46 * Number(mf[1]);          // radius 46 ist die Vorgabe in spawnFloorFire
+  assert.ok(Math.abs(r.breite - soll) <= 2,
+    'das Feuer ist ' + r.breite + ' px breit, der Faktor ' + mf[1]
+    + ' verlangt ' + soll.toFixed(0));
   // Hinter den Figuren, aber ueber dem Boden.
   const T = H.run('window.WELT_TIEFEN');
   assert.ok(r.tiefe < T.GEGNER, 'das Feuer (' + r.tiefe + ') liegt vor den Gegnern');

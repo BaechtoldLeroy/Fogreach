@@ -152,7 +152,7 @@ window.HUB_HITBOXES = {
       name: 'Schmiedemeisterin Branka',
       x: 300, y: 416,
       texture: 'schmiedemeisterin',
-      scale: 0.36,
+      hoehe: 54,   // Branka — Schmiedin, kraeftig, aber kein Riese
       lines: [
         'Stahl allein schneidet die Lügen des Rates nicht. Erst wenn jede Klinge Wissen trägt, fällt ihre Maske.',
         'Im Keller unter dem Rathaus lagern Protokolle aus Dämonenverhören. Bring mir Abschriften, und ich veredele deine Artefakte.',
@@ -164,7 +164,7 @@ window.HUB_HITBOXES = {
       name: 'Setzer Thom',
       x: 700, y: 416,
       texture: 'setzer_thom',
-      scale: 0.30,
+      hoehe: 54,   // Thom
       lines: [
         'Der Kettenrat verordnet Gebete, Mahlzeiten, sogar Träume. Wir antworten mit Pamphleten voller Namen und Zahlen.',
         'Bring mir Beweise aus dem Rathauskeller. Jede Spalte, die wir drucken, nimmt der Angst einen Zoll.',
@@ -178,7 +178,7 @@ window.HUB_HITBOXES = {
       // zugleich aus dem fountain-Collider (444-516 / 344-370) heraus.
       x: 372, y: 416,
       texture: 'spaeherin',
-      scale: 0.30,
+      hoehe: 54,   // Mara
       lines: [
         'Die Schreiber des Rates markieren Häuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
         'Der Zeremonienmeister besitzt neue Siegel. Sie holen Dämonen als stilles Archiv.',
@@ -190,7 +190,7 @@ window.HUB_HITBOXES = {
       name: 'Ratsherr Aldric',
       x: 480, y: 560,
       texture: 'aldric_right0',
-      scale: 0.18,
+      hoehe: 56,   // Aldric — Ratsherr, soll etwas ueberragen
       // Im Epilog ist der Rat enttarnt und die Wahrheit gedruckt — Aldric steht
       // dann nicht mehr auf dem Platz. In 'broken' (Akt 4) bleibt er sichtbar:
       // dort ist er Gegner und hat eigene feindliche Zeilen (HubPhase).
@@ -211,7 +211,7 @@ window.HUB_HITBOXES = {
       name: 'Elara',
       x: 180, y: 480,
       texture: 'elara_right0',
-      scale: 0.16,
+      hoehe: 54,   // Elara
       // Elara stays fully underground for Akt 1 — she offers Q5 in a
       // cellar encounter modal and accepts the council document in a
       // second cellar encounter (see _maybeFireElaraCellarEncounter in
@@ -235,7 +235,7 @@ window.HUB_HITBOXES = {
       name: 'Bürgermeister Harren',
       x: 720, y: 470,
       texture: 'harren_right0',
-      scale: 0.16,
+      hoehe: 52,   // Harren — alt und gebeugt
       // Feature 050 Vertical Slice: Harren gives Q1 + Q6 — must be visible
       // from game start. (Was gated to 'treuer_diener' / Akt 2 from the
       // pre-050 narrative when Harren was a late-game NPC.)
@@ -260,7 +260,7 @@ window.HUB_HITBOXES = {
       texture: 'klerus',
       // Source resized 1536→768 wide for crispness; scale 0.20 keeps the
       // ~102px display height that 0.10 produced from the original.
-      scale: 0.20,
+      hoehe: 58,   // der Klerus — hochgewachsen, mit Mitra
       visibleFromAct: 'auftrag',
       lines: [
         'Die Ordnung des Kettenrats ist heilig. Wer sie befragt, befragt das Licht selbst.',
@@ -276,7 +276,7 @@ window.HUB_HITBOXES = {
       // garde.png is 612×408 (user-provided clean removebg cutout).
       // Target display height = 90% of klerus's ~102px = ~92px.
       // 92 / 408 ≈ 0.225.
-      scale: 0.23,
+      hoehe: 58,   // die Stadtwache — gepanzert und aufrecht
       visibleFromAct: 'auftrag',
       lines: [
         'Die Patrouillen wachsen jeden Monat. So muss es sein — die Stadt ist unruhig.',
@@ -294,7 +294,7 @@ window.HUB_HITBOXES = {
       name: 'Ratloser Bürger',
       x: 600, y: 500,
       texture: 'buerger',
-      scale: 0.30,
+      hoehe: 52,   // Buerger — einfaches Volk
       visibleFromAct: 'erste_risse',
       placeholderColor: 0x6b5a44,
       placeholderAccent: 0x4a3d2c,

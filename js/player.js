@@ -1119,6 +1119,9 @@ window.PLAYER_FRAME_HEIGHT = PLAYER_FRAME_HEIGHT;
 window.PLAYER_ORIGIN_Y = PLAYER_ORIGIN_Y;
 window.PLAYER_BASE_DISPLAY_WIDTH = PLAYER_BASE_DISPLAY_WIDTH;
 window.PLAYER_BASE_DISPLAY_HEIGHT = PLAYER_BASE_DISPLAY_HEIGHT;
+// figurGrenzen misst die Figur in einer Textur. Der Hub braucht sie fuer
+// seine NPC — dieselbe Messung, nur an anderen Bildern.
+window.figurGrenzen = figurGrenzen;
 window.applyPlayerDisplaySettings = applyPlayerDisplaySettings;
 window.updatePlayerColliderDebug = updatePlayerColliderDebug;
 window.DEBUG_PLAYER_COLLIDER = DEBUG_PLAYER_COLLIDER;

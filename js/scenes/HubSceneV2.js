@@ -794,7 +794,22 @@ class HubSceneV2 extends Phaser.Scene {
       let sprite;
       sprite = this.add.sprite(sx, sy, npc.texture);
       sprite.setOrigin(0.5, 1);
-      if (npc.scale) sprite.setScale(npc.scale);
+      // Die Groesse haengt an der FIGUR im Bild, nicht an einem festen
+      // Faktor. Die alten scale-Werte waren auf je ein Bild geeicht; beim
+      // naechsten Austausch waeren sie alle wieder falsch (so geschehen
+      // bei Spieler und Gegnern, b313/b314).
+      if (npc.hoehe && typeof figurGrenzen === 'function') {
+        var _fig = figurGrenzen(this, npc.texture);
+        if (_fig && _fig.boundsHeight > 0) {
+          sprite.setScale(npc.hoehe / _fig.boundsHeight);
+        } else if (sprite.height > 0) {
+          // Ohne Messung (kein document, leeres Bild): der Rahmen als
+          // bester verfuegbarer Anhalt.
+          sprite.setScale(npc.hoehe / sprite.height);
+        }
+      } else if (npc.scale) {
+        sprite.setScale(npc.scale);
+      }
 
       sprite.setDepth(sy);
       sprite.setData('id', npc.id);

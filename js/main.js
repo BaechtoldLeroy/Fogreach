@@ -1541,6 +1541,11 @@ function updateStatusEffectHUD(scene) {
 // in Brand. Wer drinsteht (Spieler ODER Gegner), bekommt wiederholt den
 // 'burned'-Statuseffekt (der die eigentliche Feuer-DoT + orange Tint trägt).
 // Räumt sich nach `duration` selbst auf.
+// Wie breit das Flammenbild gegenueber dem Wirkradius liegt. Es begann bei
+// 2.2 (das Bild deckte den ganzen Schadensbereich und mehr), war mit 1.76
+// immer noch zu wuchtig fuer eine umgekippte Schale.
+const BODENFEUER_BREITE = 1.1;
+
 function spawnFloorFire(scene, x, y, opts) {
   opts = opts || {};
   const radius = opts.radius || 46;
@@ -1559,7 +1564,7 @@ function spawnFloorFire(scene, x, y, opts) {
   // GLUT (der weiche warme Kreis oben) bleibt gezeichnet — sie ist eine
   // Lichtstimmung, kein Gegenstand.
   const flammen = (typeof window.bodenfeuerSetzen === 'function')
-    ? window.bodenfeuerSetzen(scene, x, y, radius * 1.76, 37)
+    ? window.bodenfeuerSetzen(scene, x, y, radius * BODENFEUER_BREITE, 37)
     : null;
 
   function draw() {
