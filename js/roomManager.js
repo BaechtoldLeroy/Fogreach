@@ -4187,7 +4187,7 @@ function _spawnCouncilDocument(scene) {
   sprite.setDisplaySize(28, 22);
   sprite.setData('item', questItem);
   sprite.setData('questItem', true);
-  sprite.setDepth(80);
+  sprite.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_BEUTE : 45));
   sprite.setTint(0xcc88dd);
   if (typeof window.trackLootSprite === 'function') {
     window.trackLootSprite(scene, sprite);

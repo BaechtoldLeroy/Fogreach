@@ -25,6 +25,12 @@
     PROP: 40,            // Fass, Kiste, Geroell
     UEBER_PROP: 41,      // Fackel-Licht und Deko-Saeulen: vor flachen Props
     PROP_HOCH: 42,       // Statue, Saeule, Altar, Tuer — vor allem anderen Prop
+    // Was am Boden LIEGT: Beute, Gold, Questgegenstaende. Ueber allen
+    // Requisiten, aber HINTER den Figuren — ein Goldhaufen darf den
+    // Gegner nicht verdecken, der danebensteht. Lag bis b322 auf 80 und
+    // damit vor den Gegnern.
+    BODEN_SCHEIN: 44,    // der Schein unter dem Stueck
+    BODEN_BEUTE: 45,
     GEGNER: 50,          // ab hier gehoert die Ebene den Figuren (Spieler >= 100)
     // Geschosse fliegen UEBER allem, was am Boden liegt oder steht. Die
     // Gegner-Geschosse hatten bis b246 gar keine Tiefe und lagen damit auf 0,
@@ -1482,6 +1488,14 @@ function spawnObstacle(x, y, key) {
   // Standard-Setup
   o.setOrigin(0.5, 0.5);
   o.refreshBody();              // wichtig bei staticGroup
+
+  // Die Feuerschale flackert. Sie verlaesst damit den Sammel-Atlas (ein
+  // Zeichenaufruf mehr je Schale) — bei einer Handvoll Lichtquellen je
+  // Raum ist das zu verschmerzen, und eine tote Flamme sieht man sofort.
+  if (typeof key === 'string' && key.indexOf('brazier') === 0
+      && typeof window.feuerschaleFlackern === 'function') {
+    try { window.feuerschaleFlackern(scene, o); } catch (e) { /* nie fatal */ }
+  }
   // Props liegen VOR der Treppe — das war fuer Statue/Saeule/Altar schon so
   // gedacht und gilt seit #142 fuer JEDES Prop: sonst wird eine Treppe ueber
   // einem Fass gezeichnet und das Layout sieht falsch aus. Die Treppe liegt

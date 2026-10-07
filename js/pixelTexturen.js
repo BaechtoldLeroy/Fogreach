@@ -96,8 +96,18 @@
     'itMat'
   ].concat([
     'obstacleTree', 'obstacleRock', 'prop_puddle', 'healthDrop',
-    'xpDrop'
+    'xpDrop', 'projectileTexture'
   ]);
+
+  // Die Feuerschale flackert: neun Bilder, in denen nur die Flamme lebt.
+  var FEUERSCHALE_BILDER = 9;
+  var FEUERSCHALE_ANIM = 'feuerschale_flackern';
+
+  function _feuerschaleSchluessel() {
+    var out = [];
+    for (var i = 0; i < FEUERSCHALE_BILDER; i++) out.push('brazier' + i);
+    return out;
+  }
 
   var TREPPEN_ANZAHL = 16;
 
@@ -152,6 +162,11 @@
       if (scene.textures.exists(VORSATZ + k)) return;
       scene.load.image(VORSATZ + k, ORDNER + alle[k]);
     });
+    // Die Flammenbilder der Feuerschale, ebenfalls unter eigenem Namen.
+    _feuerschaleSchluessel().forEach(function (k) {
+      if (scene.textures.exists(k)) return;
+      scene.load.image(k, ORDNER + k + '.png');
+    });
     // Die Treppen direkt unter ihrem Endnamen: diese Schluessel sind frei.
     _treppenSchluessel().forEach(function (k) {
       if (scene.textures.exists(k)) return;
@@ -195,6 +210,36 @@
     var da = _variantenVon(basis).filter(function (k) { return scene.textures.exists(k); });
     if (!da.length) return basis;
     return da[Math.floor(Math.random() * da.length)];
+  };
+
+  /**
+   * Laesst eine Feuerschale flackern.
+   *
+   * Die Animation wird beim ersten Aufruf angelegt und danach nur noch
+   * gespielt. Fehlt ein Bild, passiert nichts und die Schale bleibt das
+   * stehende Bild — besser eine stille Flamme als gar keine.
+   *
+   * @param {Phaser.Scene} scene
+   * @param {Phaser.GameObjects.Sprite} sprite
+   * @returns {boolean} ob gespielt wird
+   */
+  window.feuerschaleFlackern = function (scene, sprite) {
+    if (!scene || !scene.anims || !sprite || typeof sprite.play !== 'function') return false;
+    var keys = _feuerschaleSchluessel();
+    for (var i = 0; i < keys.length; i++) {
+      if (!scene.textures.exists(keys[i])) return false;
+    }
+    if (!scene.anims.exists(FEUERSCHALE_ANIM)) {
+      scene.anims.create({
+        key: FEUERSCHALE_ANIM,
+        frames: keys.map(function (k) { return { key: k }; }),
+        frameRate: 10,
+        repeat: -1,
+        yoyo: true          // sonst faellt die Flamme in sich zusammen und springt hoch
+      });
+    }
+    try { sprite.play(FEUERSCHALE_ANIM); } catch (e) { return false; }
+    return true;
   };
 
   window.treppenBild = function (scene, zielHoehe) {

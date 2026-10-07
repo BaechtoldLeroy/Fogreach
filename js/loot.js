@@ -163,7 +163,7 @@ function _spawnGoldPile(scene, x, y, amount, gross) {
   if (!sprite) return null;
   sprite.setData('goldAmount', safeAmount);
   if (grossTex) sprite.setData('goldGross', true);
-  sprite.setDepth(80);
+  sprite.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_BEUTE : 45));
   if (window.goldGroup && typeof window.goldGroup.add === 'function') {
     window.goldGroup.add(sprite);
   }
@@ -279,7 +279,7 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
     const aloot = lootGroup.create(x, y, maybeItem.iconKey || 'itAmulet');
     aloot.setDisplaySize(28, 28);
     aloot.setData('item', maybeItem);
-    aloot.setDepth(80);
+    aloot.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_BEUTE : 45));
     trackLootSprite(aScene || aloot.scene, aloot);
     try { _attachRarityFx(aScene || aloot.scene, aloot, { tier: 3 }); } catch (e) { /* fx optional */ }
     return aloot;
@@ -363,7 +363,7 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
         else questLoot.setDisplaySize(28, 22);
         questLoot.setData('item', questItem);
         questLoot.setData('questItem', true);
-        questLoot.setDepth(80);
+        questLoot.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_BEUTE : 45));
         questLoot.setTint(qiDef.tint);
         trackLootSprite(scene || questLoot.scene, questLoot);
         return;
@@ -508,7 +508,7 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
         ? window.gameNow(scene || loot.scene) : Date.now();
       loot.setData('aufsammelbarAb', jetzt + AUFSAMMEL_SPERRE_MS);
     }
-    loot.setDepth(80);
+    loot.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_BEUTE : 45));
     trackLootSprite(scene || loot.scene, loot);
     _attachRarityFx(scene || loot.scene, loot, item);
     // Run-Zähler: nur ECHTE Ausrüstung zählen (Tränke/Rollen/Truhen ausgenommen)
@@ -545,7 +545,7 @@ function _attachRarityFx(scene, loot, item) {
   // Glow beacon under the loot sprite — je seltener, desto groesser und heller
   const radius = tier >= 3 ? 34 : (tier >= 2 ? 26 : 20);
   const glow = scene.add.circle(loot.x, loot.y, radius, tierHex, tier >= 2 ? 0.35 : 0.22);
-  glow.setDepth(79); // under the item sprite (80)
+  glow.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_SCHEIN : 44));   // eine Stufe unter dem Stueck
   glow.setBlendMode(Phaser.BlendModes.ADD);
 
   // Pulse tween
@@ -565,7 +565,7 @@ function _attachRarityFx(scene, loot, item) {
   if (tier >= 3) {
     ring = scene.add.circle(loot.x, loot.y, radius + 10, 0xffffff, 0);
     ring.setStrokeStyle(2, tierHex, 0.7);
-    ring.setDepth(79);
+    ring.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_SCHEIN : 44));
     ring.setBlendMode(Phaser.BlendModes.ADD);
     ringTween = scene.tweens.add({
       targets: ring,
@@ -616,7 +616,7 @@ function spawnPickup(x, y, type) {
   if (!targetScene?.physics) return null;
   const loot = targetScene.physics.add.sprite(x, y, key);
   loot.lootType = type;
-  loot.setDepth(80);
+  loot.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_BEUTE : 45));
   targetScene.physics.add.overlap(player, loot, collectLoot, null, targetScene);
   trackLootSprite(targetScene || loot.scene, loot);
 }

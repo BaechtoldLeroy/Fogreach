@@ -21,6 +21,13 @@ const DEBUG_PLAYER_COLLIDER = false;
 // Gegnern (52), deutlich unter dem Brute (60).
 const PLAYER_FIGUR_HOEHE = 54;
 
+// Das EINE Bild, an dem die Groesse gemessen wird — die Ruhepose nach
+// Sueden. Jedes andere Bild bekommt dieselbe Skala. Wuerde je Bild gemessen,
+// zoege die Regel jedes Gehbild auf genau 54 und nivellierte damit das
+// natuerliche Wippen des Gangs weg (und machte die Figur dabei mal breiter,
+// mal schmaler).
+const PLAYER_FIGUR_BEZUG = 'dir06_f00';
+
 // Die Verkleidung traegt das BILD DER KETTENWACHE (chainguard_right0), also
 // bekommt sie deren Hoehe aus derselben Leiter. Das fruehere *1.2 war nur
 // noetig, weil hier mit der Rahmenhoehe gerechnet wurde.
@@ -775,7 +782,20 @@ function applyPlayerDisplaySettings(sprite) {
     // damit erst 55 und dann 66 sichtbare Pixel. Hier wird deshalb
     // zurueckgerechnet, damit die FIGUR auf PLAYER_FIGUR_HOEHE landet —
     // das haelt auch beim naechsten Bildertausch.
-    const fig = figurGrenzen(sprite.scene, textureKey);
+    // Gemessen wird EIN Bezugsbild, nicht das gerade gezeigte.
+    //
+    // Der erste Anlauf mass jedes Einzelbild. Das klingt genauer, ist aber
+    // falsch: in einem Gehbild, in dem die Figur natuerlich tiefer steht
+    // (Knie gebeugt, Schritt unten), ist sie weniger Pixel hoch — und wurde
+    // dann auf 54 HOCHgezogen, mitsamt der Breite. Gemessen schwankte die
+    // Skala innerhalb einer Richtung zwischen 0.871 und 0.915: der Spieler
+    // wurde im Laufen fuenf Prozent breiter und wieder schmaler, und die
+    // natuerliche Auf-und-ab-Bewegung des Gangs war weg.
+    //
+    // Ein Bezugsbild fuer alle: die Ruhepose nach Sueden. Damit traegt jedes
+    // Gehbild dieselbe Skala, die Figur wippt wieder wie gezeichnet.
+    const fig = figurGrenzen(sprite.scene, PLAYER_FIGUR_BEZUG)
+      || figurGrenzen(sprite.scene, textureKey);
     if (fig && fig.boundsHeight > 0 && fig.sourceHeight > 0) {
       targetHeight = Math.max(1, Math.round(
         (PLAYER_FIGUR_HOEHE / PLAYER_VISUAL_SCALE) * (fig.sourceHeight / fig.boundsHeight)));
