@@ -1555,6 +1555,13 @@ function spawnFloorFire(scene, x, y, opts) {
   const fire = scene.add.graphics().setDepth(37);
   let fade = 1;   // blendet in den letzten ~600ms aus
 
+  // Das FEUER kommt als Bild, wenn die Flammenbilder geladen sind. Die
+  // GLUT (der weiche warme Kreis oben) bleibt gezeichnet — sie ist eine
+  // Lichtstimmung, kein Gegenstand.
+  const flammen = (typeof window.bodenfeuerSetzen === 'function')
+    ? window.bodenfeuerSetzen(scene, x, y, radius * 2.2, 37)
+    : null;
+
   function draw() {
     if (!fire.active) return;
     glow.clear();
@@ -1562,6 +1569,13 @@ function spawnFloorFire(scene, x, y, opts) {
     // weiche Basis-Glut
     glow.fillStyle(0x5a1200, 0.30 * fade).fillCircle(x, y, radius);
     glow.fillStyle(0xff4500, 0.16 * fade).fillCircle(x, y, radius * 0.8);
+
+    // Liegt das Flammenbild, braucht es die gezeichneten Zungen nicht —
+    // nur noch das Ausblenden am Ende.
+    if (flammen) {
+      if (flammen.active) flammen.setAlpha(fade);
+      return;
+    }
 
     // flackernde Flammenzungen (Dreiecke): aussen orange, innen gelb
     const tongues = 7;
@@ -1616,6 +1630,7 @@ function spawnFloorFire(scene, x, y, opts) {
         try { drawEv.remove(); } catch (_) {}
         if (glow && glow.destroy) glow.destroy();
         if (fire && fire.destroy) fire.destroy();
+        if (flammen && flammen.destroy) flammen.destroy();
       }
     }
   });

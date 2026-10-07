@@ -101,11 +101,29 @@
 
   // Die Feuerschale flackert: neun Bilder, in denen nur die Flamme lebt.
   var FEUERSCHALE_BILDER = 9;
+  // Und das Feuer, das aus einer zerschlagenen Schale auf den Boden laeuft.
+  var BODENFEUER_BILDER = 9;
+  var BODENFEUER_ANIM = 'bodenfeuer_brennen';
+  // Und das Feuer, das aus einer zerschlagenen Schale auf den Boden laeuft.
+  var BODENFEUER_BILDER = 9;
+  var BODENFEUER_ANIM = 'bodenfeuer_brennen';
   var FEUERSCHALE_ANIM = 'feuerschale_flackern';
 
   function _feuerschaleSchluessel() {
     var out = [];
     for (var i = 0; i < FEUERSCHALE_BILDER; i++) out.push('brazier' + i);
+    return out;
+  }
+
+  function _bodenfeuerSchluessel() {
+    var out = [];
+    for (var i = 0; i < BODENFEUER_BILDER; i++) out.push('floorFire' + i);
+    return out;
+  }
+
+  function _bodenfeuerSchluessel() {
+    var out = [];
+    for (var i = 0; i < BODENFEUER_BILDER; i++) out.push('floorFire' + i);
     return out;
   }
 
@@ -161,6 +179,16 @@
     Object.keys(alle).forEach(function (k) {
       if (scene.textures.exists(VORSATZ + k)) return;
       scene.load.image(VORSATZ + k, ORDNER + alle[k]);
+    });
+    // Die Flammenbilder des Bodenfeuers.
+    _bodenfeuerSchluessel().forEach(function (k) {
+      if (scene.textures.exists(k)) return;
+      scene.load.image(k, ORDNER + k + '.png');
+    });
+    // Die Flammenbilder des Bodenfeuers.
+    _bodenfeuerSchluessel().forEach(function (k) {
+      if (scene.textures.exists(k)) return;
+      scene.load.image(k, ORDNER + k + '.png');
     });
     // Die Flammenbilder der Feuerschale, ebenfalls unter eigenem Namen.
     _feuerschaleSchluessel().forEach(function (k) {
@@ -240,6 +268,80 @@
     }
     try { sprite.play(FEUERSCHALE_ANIM); } catch (e) { return false; }
     return true;
+  };
+
+  /**
+   * Setzt ein brennendes Bodenfeuer an eine Stelle.
+   *
+   * @param {Phaser.Scene} scene
+   * @param {number} x
+   * @param {number} y
+   * @param {number} breite gewuenschte Anzeigebreite
+   * @param {number} tiefe Zeichenebene
+   * @returns {Phaser.GameObjects.Sprite|null} null, wenn Bilder fehlen —
+   *          dann bleibt es beim gezeichneten Feuer des Aufrufers.
+   */
+  window.bodenfeuerSetzen = function (scene, x, y, breite, tiefe) {
+    if (!scene || !scene.add || !scene.anims || typeof scene.add.sprite !== 'function') return null;
+    var keys = _bodenfeuerSchluessel();
+    for (var i = 0; i < keys.length; i++) {
+      if (!scene.textures.exists(keys[i])) return null;
+    }
+    if (!scene.anims.exists(BODENFEUER_ANIM)) {
+      scene.anims.create({
+        key: BODENFEUER_ANIM,
+        frames: keys.map(function (k) { return { key: k }; }),
+        frameRate: 12,
+        repeat: -1,
+        yoyo: true
+      });
+    }
+    var s = scene.add.sprite(x, y, keys[0]);
+    // Das Bild ist quadratisch, das Feuer darin breiter als hoch. Auf die
+    // Breite rechnen und die Hoehe mitziehen — nicht quadratisch strecken.
+    var q = scene.textures.get(keys[0]).getSourceImage();
+    var f = (q && q.width) ? (breite / q.width) : 1;
+    s.setScale(f);
+    if (typeof tiefe === 'number') s.setDepth(tiefe);
+    try { s.play(BODENFEUER_ANIM); } catch (e) {}
+    return s;
+  };
+
+  /**
+   * Setzt ein brennendes Bodenfeuer an eine Stelle.
+   *
+   * @param {Phaser.Scene} scene
+   * @param {number} x
+   * @param {number} y
+   * @param {number} breite gewuenschte Anzeigebreite
+   * @param {number} tiefe Zeichenebene
+   * @returns {Phaser.GameObjects.Sprite|null} null, wenn Bilder fehlen —
+   *          dann bleibt es beim gezeichneten Feuer des Aufrufers.
+   */
+  window.bodenfeuerSetzen = function (scene, x, y, breite, tiefe) {
+    if (!scene || !scene.add || !scene.anims || typeof scene.add.sprite !== 'function') return null;
+    var keys = _bodenfeuerSchluessel();
+    for (var i = 0; i < keys.length; i++) {
+      if (!scene.textures.exists(keys[i])) return null;
+    }
+    if (!scene.anims.exists(BODENFEUER_ANIM)) {
+      scene.anims.create({
+        key: BODENFEUER_ANIM,
+        frames: keys.map(function (k) { return { key: k }; }),
+        frameRate: 12,
+        repeat: -1,
+        yoyo: true
+      });
+    }
+    var s = scene.add.sprite(x, y, keys[0]);
+    // Das Bild ist quadratisch, das Feuer darin breiter als hoch. Auf die
+    // Breite rechnen und die Hoehe mitziehen — nicht quadratisch strecken.
+    var q = scene.textures.get(keys[0]).getSourceImage();
+    var f = (q && q.width) ? (breite / q.width) : 1;
+    s.setScale(f);
+    if (typeof tiefe === 'number') s.setDepth(tiefe);
+    try { s.play(BODENFEUER_ANIM); } catch (e) {}
+    return s;
   };
 
   window.treppenBild = function (scene, zielHoehe) {
