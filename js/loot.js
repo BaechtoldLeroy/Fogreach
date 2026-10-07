@@ -130,7 +130,11 @@ function _spawnGoldPile(scene, x, y, amount, gross) {
   // beim normalen Haufen — sichtbar ist wichtiger als schoen.
   const grossTex = !!gross
     && (typeof scene.textures?.exists !== 'function' || scene.textures.exists('goldHoard'));
-  const tex = grossTex ? 'goldHoard' : 'goldPile';
+  // Auch das Gold wuerfelt sein Aussehen aus acht Varianten je Groesse
+  // (pixelTexturen.js). Sie liegen bereits in genau den Massen vor, die
+  // graphics.js zeichnet — hier aendert sich nur der Name.
+  const _basis = grossTex ? 'goldHoard' : 'goldPile';
+  const tex = (typeof window.beuteBild === 'function') ? window.beuteBild(scene, _basis) : _basis;
   // Perf (#70): nahe Gold-Piles ZUSAMMENFUEHREN statt fuer jeden Drop ein neues
   // Sprite zu spawnen. In grossen Raeumen mit vielen Kills waren das sonst
   // Dutzende Gold-Sprites — jedes ein eigener Draw-Call und ein Physik-Body.

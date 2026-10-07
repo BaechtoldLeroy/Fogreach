@@ -77,6 +77,23 @@
   // unter ihrem Namen geladen, nicht nachtraeglich getauscht.
   var TREPPEN_ANZAHL = 16;
 
+  // Beute mit Varianten: Schluessel -> wie viele es gibt. Anders als die
+  // Treppen brauchen diese keine Masse — tools/requisitenBauen.js hat jede
+  // Variante bereits in genau das Mass eingepasst, das graphics.js fuer
+  // ihren Schluessel zeichnet. Der Tausch ist damit reine Namenssache.
+  var BEUTE_VARIANTEN = {
+    chest_small: 8, chest_medium: 8, chest_large: 8,
+    goldPile: 8, goldHoard: 8
+  };
+
+  /** Alle Variantenschluessel eines Grundnamens, z. B. chest_small0..7. */
+  function _variantenVon(basis) {
+    var n = BEUTE_VARIANTEN[basis] || 0;
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(basis + i);
+    return out;
+  }
+
   function _treppenSchluessel() {
     var out = [];
     for (var i = 0; i < TREPPEN_ANZAHL; i++) out.push('stairDown' + i);
@@ -115,6 +132,13 @@
       if (scene.textures.exists(k)) return;
       scene.load.image(k, ORDNER + k + '.png');
     });
+    // Ebenso die Beute-Varianten (chest_small0..7, goldPile0..7, ...).
+    Object.keys(BEUTE_VARIANTEN).forEach(function (basis) {
+      _variantenVon(basis).forEach(function (k) {
+        if (scene.textures.exists(k)) return;
+        scene.load.image(k, ORDNER + k + '.png');
+      });
+    });
   };
 
   /**
@@ -130,6 +154,24 @@
    * @param {number} [zielHoehe] gewuenschte Anzeigehoehe, Vorgabe 80
    * @returns {{bild: string, breite: number, hoehe: number}}
    */
+  /**
+   * Eine Variante eines Beute-Schluessels auswuerfeln.
+   *
+   * Gibt den UNVERAENDERTEN Schluessel zurueck, wenn es keine Varianten
+   * gibt oder keine geladen ist — eine Truhe darf nie unsichtbar werden,
+   * in ihr liegt die Beute.
+   *
+   * @param {Phaser.Scene} scene
+   * @param {string} basis z. B. "chest_small" oder "goldHoard"
+   * @returns {string} der zu verwendende Texturschluessel
+   */
+  window.beuteBild = function (scene, basis) {
+    if (!basis || !scene || !scene.textures) return basis;
+    var da = _variantenVon(basis).filter(function (k) { return scene.textures.exists(k); });
+    if (!da.length) return basis;
+    return da[Math.floor(Math.random() * da.length)];
+  };
+
   window.treppenBild = function (scene, zielHoehe) {
     var h = (typeof zielHoehe === 'number' && zielHoehe > 0) ? zielHoehe : 80;
     var da = [];

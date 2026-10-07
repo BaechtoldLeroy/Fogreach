@@ -68,10 +68,13 @@ const ERWARTET = [
   [1, 'Imp', 44], [16, 'Alarmwicht', 44],
   // alles mit Menschengestalt — EINE Stufe
   [2, 'Bogenschuetze', 52], [4, 'Magier', 52], [5, 'Schattenschleicher', 52],
-  [7, 'Flammenweber', 52], [12, 'Priester', 52], [13, 'Beschwoerer', 52],
+  [12, 'Priester', 52], [13, 'Beschwoerer', 52],
   [14, 'Springer', 52],
   // darueber, der Reihe nach
-  [11, 'Geschwuer', 54], [6, 'Kettenwache', 56], [3, 'Brute', 60],
+  [11, 'Geschwuer', 54], [6, 'Kettenwache', 56],
+  // Der Flammenweber steht GEBUECKT: gleiche Figurhoehe wie die Aufrechten
+  // hiesse sichtbar kleiner als sie. 58 gleicht die Haltung aus.
+  [7, 'Flammenweber', 58], [3, 'Brute', 60],
   // Tiere
   [8, 'Ratte', 30], [9, 'Fledermaus', 30], [10, 'Wolf', 42], [15, 'Hund', 46]
 ];
@@ -79,7 +82,9 @@ const ERWARTET = [
 // Die Typen, die dieselbe Hoehe haben MUESSEN. Genau das war vorher kaputt:
 // die Sondergegner standen durchweg hoeher als die Grundgegner, obwohl beide
 // Menschen sind.
-const MENSCHENGESTALT = [2, 4, 5, 7, 12, 13, 14];
+// Der Flammenweber (7) fehlt hier mit Absicht: er ist der einzige, der
+// gebueckt steht, und wird deshalb hoeher gerechnet.
+const MENSCHENGESTALT = [2, 4, 5, 12, 13, 14];
 
 test('jeder Gegnertyp erscheint in seiner vorgesehenen Hoehe', () => {
   const daneben = [];

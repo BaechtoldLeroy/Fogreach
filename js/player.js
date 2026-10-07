@@ -9,6 +9,23 @@ const PLAYER_BASE_DISPLAY_WIDTH = 60;  // Increased from 36 for better sprite qu
 const PLAYER_BASE_DISPLAY_HEIGHT = 150; // Increased from 90 for better sprite quality
 const PLAYER_ORIGIN_Y = 0.92;
 const DEBUG_PLAYER_COLLIDER = false;
+// Sichtbare Hoehe der FIGUR in Bildschirmpixeln (nicht des Rahmens).
+//
+// 54 ist die Hoehe, die der Spieler bis b312 hatte: 150 * 0.456 gab eine
+// Rahmenhoehe von 68, und die alten gerenderten Bilder fuellten davon nur
+// 80 % (Figur 206 von 256 Zeilen) — sichtbar 55. Die Pixelbilder fuellen
+// ihren Rahmen fast ganz, dieselbe Formel gab seit b313 66. Gewachsen ist
+// er also durch den Bildertausch, nicht durch eine Entscheidung.
+//
+// Passt zur Gegnerleiter (enemy.js): eine Stufe ueber den menschlichen
+// Gegnern (52), deutlich unter dem Brute (60).
+const PLAYER_FIGUR_HOEHE = 54;
+
+// Die Verkleidung traegt das BILD DER KETTENWACHE (chainguard_right0), also
+// bekommt sie deren Hoehe aus derselben Leiter. Das fruehere *1.2 war nur
+// noetig, weil hier mit der Rahmenhoehe gerechnet wurde.
+const PLAYER_MONTUR_HOEHE = 56;
+
 const PLAYER_COLLIDER_WIDTH = 34;
 const PLAYER_COLLIDER_HEIGHT = 56;
 const PLAYER_COLLIDER_HEAD_CLEARANCE = 0;
@@ -250,8 +267,16 @@ function normalizeDirectionFrames(scene, dd) {
   });
 }
 
-function getDirectionalFrameMeta(scene, textureKey) {
-  if (!textureKey || typeof textureKey !== 'string' || !textureKey.startsWith('dir')) {
+/**
+ * Grenzen der FIGUR in einer Textur (Alpha ueber der Schwelle), gemessen
+ * und zwischengespeichert.
+ *
+ * Hiess getDirectionalFrameMeta und liess nur dir*-Schluessel durch. Die
+ * Verkleidung braucht dieselbe Messung fuer das Bild der Kettenwache, und
+ * die Messung selbst interessiert sich nicht fuer den Namen.
+ */
+function figurGrenzen(scene, textureKey) {
+  if (!textureKey || typeof textureKey !== 'string') {
     return null;
   }
   if (PLAYER_FRAME_METADATA[textureKey]) {
@@ -327,6 +352,14 @@ function getDirectionalFrameMeta(scene, textureKey) {
   };
   PLAYER_FRAME_METADATA[textureKey] = meta;
   return meta;
+}
+
+/** Nur fuer die Richtungsbilder — der alte Name, gleiche Messung. */
+function getDirectionalFrameMeta(scene, textureKey) {
+  if (!textureKey || typeof textureKey !== 'string' || !textureKey.startsWith('dir')) {
+    return null;
+  }
+  return figurGrenzen(scene, textureKey);
 }
 
 function normalizePlayerDirectionalFrames(scene) {
@@ -658,9 +691,13 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
     }
     // Grösse an die normale Spielerhöhe angleichen (etwas grösser, sonst
     // wirkt die Montur zu klein). Aspect aus dem Frame erhalten.
-    const baseH = window.PLAYER_BASE_DISPLAY_HEIGHT || PLAYER_BASE_DISPLAY_HEIGHT;
-    const vScale = (window.PLAYER_VISUAL_SCALE != null ? window.PLAYER_VISUAL_SCALE : PLAYER_VISUAL_SCALE) || 1;
-    const dH = Math.max(1, Math.round(baseH * vScale * 1.2));
+    // Gemessen wird auch hier die FIGUR: der Rahmen der Kettenwache traegt
+    // leere Raender (er fasst alle drei Posen), und das alte *1.2 war der
+    // Ausgleich dafuer. Jetzt direkt die Hoehe aus der Leiter.
+    const mFig = figurGrenzen(sprite.scene, dkey);
+    const dH = (mFig && mFig.boundsHeight > 0 && mFig.sourceHeight > 0)
+      ? Math.max(1, Math.round(PLAYER_MONTUR_HOEHE * (mFig.sourceHeight / mFig.boundsHeight)))
+      : Math.max(1, Math.round(PLAYER_MONTUR_HOEHE * 1.15));
     // Wachen sollen exakt so gross wie die verkleidete Spielerfigur sein.
     if (typeof window !== 'undefined') window.__ESP_GUARD_H = dH;
     const fw = (sprite.frame && (sprite.frame.cutWidth || sprite.frame.width)) || dH;
@@ -730,6 +767,19 @@ function applyPlayerDisplaySettings(sprite) {
   if (isDirectionalImage) {
     targetHeight = baseHeight;
     targetWidth = Math.max(1, Math.round(baseWidth * PLAYER_WIDTH_STRETCH));
+    // Die HOEHE folgt der FIGUR, nicht dem Rahmen.
+    //
+    // baseHeight * PLAYER_VISUAL_SCALE ist die Hoehe des RAHMENS. Wie viel
+    // davon Figur ist, haengt am Bild: die alten gerenderten Saetze
+    // fuellten 80 %, die Pixelbilder fast 100 %. Derselbe Rahmen trug
+    // damit erst 55 und dann 66 sichtbare Pixel. Hier wird deshalb
+    // zurueckgerechnet, damit die FIGUR auf PLAYER_FIGUR_HOEHE landet —
+    // das haelt auch beim naechsten Bildertausch.
+    const fig = figurGrenzen(sprite.scene, textureKey);
+    if (fig && fig.boundsHeight > 0 && fig.sourceHeight > 0) {
+      targetHeight = Math.max(1, Math.round(
+        (PLAYER_FIGUR_HOEHE / PLAYER_VISUAL_SCALE) * (fig.sourceHeight / fig.boundsHeight)));
+    }
     // Die BREITE folgt dem Bild, nicht einer festen Zahl.
     //
     // PLAYER_BASE_DISPLAY_WIDTH (60) war auf die alten gerenderten Bilder

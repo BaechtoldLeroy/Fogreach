@@ -740,7 +740,13 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 240;
     enemy.isFlameWeaver = true;
     if (key.startsWith('flameweaver_')) {
-      gegnerAufHoeheSkalieren(enemy, 52);
+      // 58 statt 52, und das BRICHT die Stufe der Menschengestalt mit Absicht:
+      // der Flammenweber steht GEBUECKT, doppelt vornuebergekruemmt. Bei
+      // gleicher Figurhoehe wie die aufrechten Magier, Bogenschuetzen und
+      // Priester wirkt er deutlich kleiner als sie — die Hoehe misst seinen
+      // Umriss, nicht seine Statur. Die saubere Loesung waere eine aufrechte
+      // Ruhepose; bis dahin gleicht die Zahl die Haltung aus.
+      gegnerAufHoeheSkalieren(enemy, 58);
       enemy.isFlameWeaverSprite = true;
       enemy.flameWeaverDirection = 'right';
       enemy.flameWeaverAttacking = false;

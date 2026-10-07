@@ -1466,6 +1466,14 @@ function spawnObstacle(x, y, key) {
     warnMissingTexture(scene, fallback, 'obstacle fallback');
     textureKey = fallback;
   }
+  // Truhen wuerfeln ihr Aussehen: zu jedem der drei Masse liegen acht
+  // Varianten bereit (pixelTexturen.js). Sie sind bereits auf genau dieses
+  // Mass eingepasst, also aendert sich hier nur der Name — Groesse, Koerper
+  // und alles Weitere bleiben, wie sie waren. Ohne Varianten kommt der
+  // Schluessel unveraendert zurueck.
+  if (typeof window.beuteBild === 'function') {
+    textureKey = window.beuteBild(scene, textureKey);
+  }
   // #70: Atlas-Frame statt Einzeltextur, wenn vorhanden (Batching). Auf den bereits
   // aufgeloesten textureKey anwenden (nach Fallback), damit auch 'pillar'->'pillar_small' greift.
   const _ta = (typeof window.worldTexArgs === 'function') ? window.worldTexArgs(textureKey) : [textureKey, undefined];
