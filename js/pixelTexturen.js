@@ -60,8 +60,28 @@
     // Die Treppe ist der einzige Schluessel, der im Spiel ZWEIMAL entsteht:
     // startScene laedt assets/tiles/stairDown.png, graphics.js zeichnet ihn
     // danach neu. Der Tausch laeuft nach beidem und gewinnt deshalb.
+    //
+    // 'stairDown' ist nur noch der RUECKGRIFF; im Raum wird aus TREPPEN
+    // gewuerfelt (siehe treppenBild unten).
     stairDown: 'stairDown.png'
   };
+
+  // Sechzehn Treppen, aus denen jeder Raum eine zieht.
+  //
+  // Die alte war ein Spiralabgang von GENAU oben — ein Rad mit schwarzer Nabe,
+  // das sich nicht als Treppe lesen liess. Die Kamera schaut schraeg (low
+  // top-down), also gehoert da ein Abgang hin, dessen Stufen nach hinten
+  // laufen.
+  //
+  // Diese Schluessel zeichnet graphics.js NICHT — sie werden darum direkt
+  // unter ihrem Namen geladen, nicht nachtraeglich getauscht.
+  var TREPPEN_ANZAHL = 16;
+
+  function _treppenSchluessel() {
+    var out = [];
+    for (var i = 0; i < TREPPEN_ANZAHL; i++) out.push('stairDown' + i);
+    return out;
+  }
 
   /**
    * Alles, was ersetzt wird — Kacheln UND Requisiten.
@@ -90,6 +110,42 @@
       if (scene.textures.exists(VORSATZ + k)) return;
       scene.load.image(VORSATZ + k, ORDNER + alle[k]);
     });
+    // Die Treppen direkt unter ihrem Endnamen: diese Schluessel sind frei.
+    _treppenSchluessel().forEach(function (k) {
+      if (scene.textures.exists(k)) return;
+      scene.load.image(k, ORDNER + k + '.png');
+    });
+  };
+
+  /**
+   * Eine Treppe auswuerfeln — Bild und Anzeigemasse.
+   *
+   * Die Masse gehoeren dazu, weil sie am BILD haengen muessen und nicht an
+   * einer festen Zahl: die Aufrufstelle setzte 80x80 quadratisch, geeicht auf
+   * die alte quadratische Zeichnung. Die neuen Treppen sind hochkant (etwa
+   * 48x61), ein Quadrat haette sie in die Breite gequetscht — dieselbe Falle
+   * wie bei Spieler und Tieren in b313.
+   *
+   * @param {Phaser.Scene} scene
+   * @param {number} [zielHoehe] gewuenschte Anzeigehoehe, Vorgabe 80
+   * @returns {{bild: string, breite: number, hoehe: number}}
+   */
+  window.treppenBild = function (scene, zielHoehe) {
+    var h = (typeof zielHoehe === 'number' && zielHoehe > 0) ? zielHoehe : 80;
+    var da = [];
+    if (scene && scene.textures) {
+      da = _treppenSchluessel().filter(function (k) { return scene.textures.exists(k); });
+    }
+    // Keine geladen (Test ohne Dateien, abgebrochener Ladevorgang): der alte
+    // Schluessel bleibt der Rueckgriff, damit nie eine Treppe FEHLT — sie ist
+    // der einzige Weg aus dem Raum.
+    var bild = da.length ? da[Math.floor(Math.random() * da.length)] : 'stairDown';
+    var b = h;
+    try {
+      var q = scene.textures.get(bild).getSourceImage();
+      if (q && q.width > 0 && q.height > 0) b = Math.round(h * (q.width / q.height));
+    } catch (e) {}
+    return { bild: bild, breite: b, hoehe: h };
   };
 
   /**

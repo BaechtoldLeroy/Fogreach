@@ -1365,11 +1365,15 @@ function enterRoom(scene, roomId) {
     }
 
     PLACED_STAIRS.push({ x: placedX, y: placedY });
-    const stair = scene.stairsGroup.create(placedX, placedY, "stairDown");
+    // Jeder Raum wuerfelt seine Treppe aus sechzehn (pixelTexturen.js). Die
+    // Masse kommen mit, weil sie am Bild haengen: 80x80 war auf die alte
+    // quadratische Zeichnung geeicht, die neuen sind hochkant.
+    const _t = window.treppenBild ? window.treppenBild(scene, 80)
+      : { bild: 'stairDown', breite: 80, hoehe: 80 };
+    const stair = scene.stairsGroup.create(placedX, placedY, _t.bild);
     stair.setData("locked", true);
     stair.setData("dir", d.dir || null);
-    // Scale 500x500 source down to ~80px tile-fit display size
-    stair.setDisplaySize(80, 80);
+    stair.setDisplaySize(_t.breite, _t.hoehe);
     // Die Treppe liegt ueber der Bodendeko, aber UNTER allen Props (#142).
     // Vorher teilte sie sich die 40 mit Fass und Kiste — bei gleicher Tiefe
     // entscheidet die Anzeigeliste, also der Zufall. Dass Props vorn liegen, ist
@@ -1408,10 +1412,12 @@ function enterRoom(scene, roomId) {
       var _emsp = scene.pickAccessibleSpawnPoint({ minDistance: 0, maxAttempts: 40 });
       if (_emsp) { _emx = _emsp.x; _emy = _emsp.y; }
     }
-    var _emStair = scene.stairsGroup.create(_emx, _emy, "stairDown");
+    var _emt = window.treppenBild ? window.treppenBild(scene, 80)
+      : { bild: 'stairDown', breite: 80, hoehe: 80 };
+    var _emStair = scene.stairsGroup.create(_emx, _emy, _emt.bild);
     _emStair.setData("locked", true);
     _emStair.setData("dir", null);
-    _emStair.setDisplaySize(80, 80);
+    _emStair.setDisplaySize(_emt.breite, _emt.hoehe);
     _emStair.setAlpha(0.95).setDepth(window.WELT_TIEFEN.TREPPE).refreshBody();
     try { console.warn('[stairs] Notfall-Treppe erzwungen — keine ERREICHBARE Treppe (Raum hatte ' + _stairCount + ')'); } catch (_) {}
   }
