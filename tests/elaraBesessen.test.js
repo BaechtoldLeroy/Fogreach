@@ -237,8 +237,12 @@ test('Sie traegt ihr eigenes Bild, nicht das der Elara aus dem Hub', () => {
     var sc = window.game.scene.getScene('GameScene');
     var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
     var q = sc.textures.get('boss_elara_right0').source[0];
+    // Die FIGUR messen, nicht den Rahmen: seit b314 skaliert makeBoss auf die
+    // sichtbaren Pixel, displayHeight traegt noch den leeren Rand mit.
+    var box = _computeSpriteAlphaBounds(b);
     return b ? { key: b.texture.key, prefix: b._bossPrefix || null,
-      hoehe: Math.round(b.displayHeight), w: q.width, h: q.height } : null;
+      hoehe: box ? Math.round(box.h * b.scaleY) : Math.round(b.displayHeight),
+      w: q.width, h: q.height } : null;
   })()`);
   assert.ok(r, 'kein Boss erzeugt');
   assert.strictEqual(r.key, 'boss_elara_right0', JSON.stringify(r));
@@ -248,8 +252,13 @@ test('Sie traegt ihr eigenes Bild, nicht das der Elara aus dem Hub', () => {
     'geladen wurde ein anderes Bild als assets/enemy/boss_elara/right0.png');
   const hub = pngMasse('assets/npc/elara/right0.png');
   assert.notDeepStrictEqual(soll, hub, 'die beiden Bilder sind nicht unterscheidbar');
-  // makeBoss normiert auf 96 * def.scale (3.0) — sie ueberragt alles im Raum.
-  assert.ok(Math.abs(r.hoehe - 288) <= 2, 'sie ist ' + r.hoehe + ' px hoch statt 288');
+  // makeBoss normiert auf 96 * def.scale — sie ueberragt alles im Raum.
+  //
+  // 283 statt der frueheren 288: gemessen wird jetzt die Figur. Sie ist
+  // GENAUSO gross wie vorher — ihr alter Rahmen war 256 hoch bei 252 Zeilen
+  // Figur, die vier leeren Zeilen fielen beim Umrechnen von scale 3.0 auf
+  // 2.95 weg (siehe gegnerAufHoeheSkalieren in js/enemy.js).
+  assert.ok(Math.abs(r.hoehe - 283) <= 3, 'sie ist ' + r.hoehe + ' px hoch statt 283');
 });
 
 test('Beim Angriff holt sie aus und kehrt danach zur Ruhe zurueck', () => {

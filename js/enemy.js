@@ -642,8 +642,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 220;
     // Sprite-based imp with animation frames
     if (key.startsWith('imp_')) {
-      const impH = enemy.height || 392;
-      enemy.setScale(48 / impH);
+      gegnerAufHoeheSkalieren(enemy, 48);
       enemy.isImp = true;
       enemy.impDirection = 'right';
       enemy.impAttacking = false;
@@ -662,8 +661,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     // Always flag as archer (independent of sprite variant)
     enemy.isArcher = true;
     if (key.startsWith('archer_')) {
-      const archerH = enemy.height || 212;
-      enemy.setScale(48 / archerH);
+      gegnerAufHoeheSkalieren(enemy, 47);
       enemy.isArcherSprite = true;
       enemy.archerDirection = 'right';
       enemy.archerAttacking = false;
@@ -677,8 +675,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.sepRadius = 80;
     enemy.cohRadius = 160;
     // Scale down large sprites to fit game scale (~56px display height)
-    const bruteH = enemy.height || 870;
-    enemy.setScale(56 / bruteH);
+    gegnerAufHoeheSkalieren(enemy, 55);
     // Mark as brute for animation handling
     enemy.isBrute = true;
     enemy.bruteDirection = 'right';
@@ -694,8 +691,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.isShadowCreeper = true;
     enemy.lastTeleportTime = 0;
     if (key.startsWith('shadow_')) {
-      const shadowH = enemy.height || 241;
-      enemy.setScale(44 / shadowH); // slightly smaller than others
+      gegnerAufHoeheSkalieren(enemy, 35);   // kleiner als die uebrigen
       enemy.isShadowSprite = true;
       enemy.shadowDirection = 'right';
       enemy.shadowAttacking = false;
@@ -712,8 +708,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.isChainGuard = true;
     enemy.shieldActive = true; // blocks first hit, then breaks
     if (key.startsWith('chainguard_')) {
-      const cgH = enemy.height || 253;
-      enemy.setScale(56 / cgH); // bigger than regular enemies
+      gegnerAufHoeheSkalieren(enemy, 48);   // groesser als die uebrigen
       enemy.isChainGuardSprite = true;
       enemy.chainGuardDirection = 'right';
       enemy.chainGuardAttacking = false;
@@ -732,8 +727,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 240;
     enemy.isFlameWeaver = true;
     if (key.startsWith('flameweaver_')) {
-      const fwH = enemy.height || 231;
-      enemy.setScale(48 / fwH);
+      gegnerAufHoeheSkalieren(enemy, 45);
       enemy.isFlameWeaverSprite = true;
       enemy.flameWeaverDirection = 'right';
       enemy.flameWeaverAttacking = false;
@@ -804,7 +798,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 150;
     enemy.isGeschwuer = true;
     if (key === 'geschwuer_right0') {
-      enemy.setScale(52 / (enemy.height || 52));
+      gegnerAufHoeheSkalieren(enemy, 51);
       enemy._spritePrefix = 'geschwuer';
       enemy._spriteDir = 'right';
     }
@@ -820,7 +814,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 260;
     enemy.isPriester = true;
     if (key === 'priester_right0') {
-      enemy.setScale(54 / (enemy.height || 54));
+      gegnerAufHoeheSkalieren(enemy, 54);
       enemy._spritePrefix = 'priester';
       enemy._spriteDir = 'right';
     }
@@ -837,7 +831,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.isBeschwoerer = true;
     enemy._gerufen = [];
     if (key === 'beschwoerer_right0') {
-      enemy.setScale(54 / (enemy.height || 54));
+      gegnerAufHoeheSkalieren(enemy, 53);
       enemy._spritePrefix = 'beschwoerer';
       enemy._spriteDir = 'right';
     }
@@ -850,7 +844,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 180;
     enemy.isSpringer = true;
     if (key === 'springer_right0') {
-      enemy.setScale(52 / (enemy.height || 52));
+      gegnerAufHoeheSkalieren(enemy, 52);
       enemy._spritePrefix = 'springer';
       enemy._spriteDir = 'right';
     }
@@ -863,7 +857,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     enemy.cohRadius = 220;
     enemy.isHund = true;
     if (key === 'hund_right0') {
-      enemy.setScale(44 / (enemy.height || 44));
+      gegnerAufHoeheSkalieren(enemy, 43);
       enemy._spritePrefix = 'hund';
       enemy._spriteDir = 'right';
     }
@@ -880,7 +874,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       // Spiels und in seiner dunkelbraunen Palette kaum von der Wand zu
       // unterscheiden — ausgerechnet der Gegner, den man zuerst sehen muss,
       // weil er wegrennt und Verstaerkung holt.
-      enemy.setScale(48 / (enemy.height || 48));
+      gegnerAufHoeheSkalieren(enemy, 47);
       enemy._spritePrefix = 'alarm';
       enemy._spriteDir = 'right';
     }
@@ -897,8 +891,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     // Always flag as mage (independent of sprite variant)
     enemy.isMage = true;
     if (key.startsWith('mage_')) {
-      const mageH = enemy.height || 268;
-      enemy.setScale(48 / mageH);
+      gegnerAufHoeheSkalieren(enemy, 45);
       enemy.isMageSprite = true;
       enemy.mageDirection = 'right';
       enemy.mageAttacking = false;
@@ -3077,7 +3070,8 @@ const BOSS_DEFINITIONS = {
     baseHP: 118,
     baseSpeed: 70,
     baseDamage: 6,
-    scale: 1.6,
+    // 1.6 auf den Rahmen = 127 px sichtbar; dieselbe Groesse, jetzt gemessen.
+    scale: 1.33,
     // #162: der Folterknecht der Garde.
     loreIntro: 'Der Folterknecht der Garde. Der Kettenmeister fesselt, was der Rat verschwinden lässt. Hinter ihm liegen die ersten Siegel — der erste harte Beweis.',
     attacks: ['chainWhip', 'chainPull', 'groundChains'],
@@ -3091,7 +3085,8 @@ const BOSS_DEFINITIONS = {
     baseHP: 120,
     baseSpeed: 45,
     baseDamage: 9,
-    scale: 1.7,
+    // 1.7 auf den Rahmen = 127 px sichtbar; dieselbe Groesse, jetzt gemessen.
+    scale: 1.32,
     // #162: der oberste Ritualist des Klerus. Seine Auslöschung ist das Vorspiel auf Elara.
     loreIntro: 'Der oberste Ritualist des Klerus. Der Zeremonienmeister nährt die Quelle mit dem, was die Stadt vergisst — jedes Siegel, das er zieht, kettet sie fester.',
     attacks: ['ritualCircle', 'summonMinions', 'darkBlast'],
@@ -3105,12 +3100,16 @@ const BOSS_DEFINITIONS = {
     // Finaler Boss der Leiter (Tiefe 30) — bewusst härter als die beiden davor
     // und als die 3x-Regel: 123 * 3.9 = 480 HP auf Tiefe 30 = 3.95x Mini-Boss.
     // Damit bleibt seine absolute HP gegenüber vorher exakt gleich (480), er
-    // skaliert jetzt aber in späteren Zyklen korrekt mit. 2x Schaden (8->16),
-    // scale 1.8->3.6 = doppelte Darstellungsgrösse (bossTargetPx = 96 * scale).
+    // skaliert jetzt aber in späteren Zyklen korrekt mit. 2x Schaden (8->16).
+    // (Das "scale 1.8->3.6 = doppelte Darstellungsgrösse" von damals stimmte
+    // nie: 3.6 traf den Rahmen, nicht die Figur — siehe unten.)
     baseHP: 123,
     baseSpeed: 70,
     baseDamage: 16,
-    scale: 3.6,
+    // 3.6 traf den 1024 px hohen Rahmen; sichtbar waren davon nur 87 px.
+    // Unveraendert uebernommen, damit er nicht ueber Nacht viermal so gross
+    // (und damit viermal so leicht zu treffen) wird — siehe #176.
+    scale: 0.91,
     loreIntro: 'Ein Mitglied des Kettenrats selbst tritt aus dem Schatten — und mit ihm die Quelle des Nebels, die er hütet.',
     // #144: Die Quelle vereint Fesselung und Ausloeschung seiner Vorgaenger.
     attacks: ['shadowDash', 'darknessWave', 'shadowClones', 'fesselung', 'ausloeschung'],
@@ -3129,7 +3128,8 @@ const BOSS_DEFINITIONS = {
     baseHP: 123,
     baseSpeed: 75,
     baseDamage: 16,
-    scale: 3.0,
+    // 3.0 auf den Rahmen = 284 px sichtbar; dieselbe Groesse, jetzt gemessen.
+    scale: 2.95,
     loreIntro: 'Die Quelle hat sie genommen. Was einmal Elara war, greift nach allem, woran Du Dich erinnerst.',
     attacks: ['shadowDash', 'vergesseneRufen', 'nebelAusloeschung'],
     attackCooldown: 3000,
@@ -3436,6 +3436,42 @@ function _computeSpriteAlphaBounds(sprite) {
     return { x: minX, y: minY, w: (maxX - minX + 1), h: (maxY - minY + 1) };
   } catch (e) { return null; }
 }
+/**
+ * Bringt einen Gegner auf eine SICHTBARE Hoehe in Bildschirmpixeln.
+ *
+ * Skaliert wurde bisher auf die RAHMENhoehe: setScale(48 / enemy.height).
+ * Das trifft nur, solange jedes Bild gleich viel leeren Rand mitbringt —
+ * und das tat es nicht. Der Schattenrat sass in der oberen Haelfte eines
+ * 1024 Pixel hohen Rahmens; seine 96*3.6 landeten auf dem RAHMEN und
+ * liessen die Figur 87 Pixel gross werden, kleiner als der Kettenmeister
+ * mit 127 — obwohl der Kommentar daneben von "doppelter Darstellungs-
+ * groesse" sprach.
+ *
+ * Mit den Pixelbildern waere die alte Regel vollends unbrauchbar geworden:
+ * die neuen Saetze sind eng zugeschnitten, derselbe Zielwert haette jede
+ * Figur um ihren frueheren Randanteil wachsen lassen (Schattenrat 3.7-fach).
+ *
+ * Gemessen wird deshalb die Figur, nicht der Rahmen. Die Zahlen an den
+ * Aufrufstellen sind damit das, wonach sie aussehen: Hoehe in Pixeln.
+ *
+ * @param {Phaser.GameObjects.Sprite} enemy
+ * @param {number} zielPx gewuenschte sichtbare Hoehe
+ */
+function gegnerAufHoeheSkalieren(enemy, zielPx) {
+  if (!enemy || !enemy.setScale || !(zielPx > 0)) return;
+  var key = enemy.texture && enemy.texture.key;
+  var box = key ? _spriteAlphaBoundsCache[key] : undefined;
+  if (box === undefined) {
+    box = _computeSpriteAlphaBounds(enemy);
+    if (key) _spriteAlphaBoundsCache[key] = box;   // null wird mitgecacht
+  }
+  // Ohne Alpha-Messung (kein document, voellig leeres Bild) bleibt der
+  // Rahmen der beste verfuegbare Anhalt.
+  var hoehe = (box && box.h) ? box.h : (enemy.height || zielPx);
+  enemy.setScale(zielPx / hoehe);
+}
+if (typeof window !== 'undefined') window.gegnerAufHoeheSkalieren = gegnerAufHoeheSkalieren;
+
 function fitBodyToSprite(sprite) {
   if (!sprite || !sprite.body || !sprite.body.setSize) return;
   var key = sprite.texture && sprite.texture.key;
@@ -3514,9 +3550,7 @@ function makeBoss(boss, def, cycle) {
   const bossKey = boss.texture?.key || '';
   const isSpriteBasedBoss = bossKey.startsWith('boss_') || bossKey.startsWith('sprite_');
   if (isSpriteBasedBoss) {
-    const bossTargetPx = 96 * (def.scale || 1);
-    const srcH = boss.height || 300;
-    boss.setScale(bossTargetPx / srcH);
+    gegnerAufHoeheSkalieren(boss, 96 * (def.scale || 1));
   } else {
     boss.setScale(def.scale);
   }
