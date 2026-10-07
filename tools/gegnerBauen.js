@@ -28,9 +28,9 @@ function arg(name, vorgabe) {
   return i === -1 ? vorgabe : process.argv[i + 1];
 }
 
-/** Inhaltsgrenzen eines Bildes (alles mit Alpha ueber der Schwelle). */
-async function grenzen(datei) {
-  const { data, info } = await sharp(datei).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+/** Inhaltsgrenzen eines Bildes (Pfad ODER Puffer), alles ueber der Alpha-Schwelle. */
+async function grenzen(bild) {
+  const { data, info } = await sharp(bild).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   let minX = info.width, maxX = -1, minY = info.height, maxY = -1;
   for (let y = 0; y < info.height; y++) {
     for (let x = 0; x < info.width; x++) {
@@ -41,7 +41,7 @@ async function grenzen(datei) {
       if (y > maxY) maxY = y;
     }
   }
-  if (maxX < 0) throw new Error('leeres Bild: ' + datei);
+  if (maxX < 0) throw new Error('leeres Bild');
   return { minX, maxX, minY, maxY, b: info.width, h: info.height };
 }
 
@@ -54,8 +54,35 @@ async function grenzen(datei) {
     process.exit(1);
   }
 
+  // Posen koennen auf verschieden grossen Leinwaenden liegen: eine erhobene
+  // Waffe braucht Platz ueber dem Kopf, den die enge Ruhe-Leinwand nicht hat,
+  // und wird sonst an der Kante abgeschnitten. PixelLab setzt die Figur dabei
+  // MITTIG auf die groessere Flaeche — nachgemessen am Priester: 64 -> 96
+  // verschob die Fusslinie um genau 16 Pixel, also (96-64)/2.
+  //
+  // Zuerst alle mittig auf die groesste Leinwand bringen. Ohne das verrutschen
+  // die Phasen gegeneinander, und der Gegner springt beim Schlag zur Seite.
+  const roh = [];
+  for (const b of bilder) roh.push(await sharp(b).ensureAlpha().metadata());
+  const LB = Math.max(...roh.map((m) => m.width));
+  const LH = Math.max(...roh.map((m) => m.height));
+  const gleich = [];
+  for (let i = 0; i < 3; i++) {
+    if (roh[i].width === LB && roh[i].height === LH) {
+      gleich.push(await sharp(bilder[i]).ensureAlpha().png().toBuffer());
+      continue;
+    }
+    gleich.push(await sharp(bilder[i]).ensureAlpha().extend({
+      left: Math.round((LB - roh[i].width) / 2),
+      right: LB - roh[i].width - Math.round((LB - roh[i].width) / 2),
+      top: Math.round((LH - roh[i].height) / 2),
+      bottom: LH - roh[i].height - Math.round((LH - roh[i].height) / 2),
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    }).png().toBuffer());
+  }
+
   const g = [];
-  for (const b of bilder) g.push(await grenzen(b));
+  for (const b of gleich) g.push(await grenzen(b));
 
   // Gemeinsame Box ueber alle drei Phasen.
   const box = {
@@ -71,8 +98,7 @@ async function grenzen(datei) {
   fs.mkdirSync(ordner, { recursive: true });
 
   for (let i = 0; i < 3; i++) {
-    const zugeschnitten = await sharp(bilder[i])
-      .ensureAlpha()
+    const zugeschnitten = await sharp(gleich[i])
       .extract({ left: box.minX, top: box.minY, width: breite, height: hoehe })
       .png()
       .toBuffer();

@@ -602,8 +602,13 @@ test('Die Sondergegner tragen ihr Sprite statt der Platzhalter-Zeichnung', () =>
     var out = {};
     [11, 12, 13, 14, 15, 16].forEach(function (t) {
       var e = window.__labOhneElite(function () { return spawnEnemy.call(sc, 0, 0, t); });
+      // Die FIGUR messen, nicht den Rahmen. Seit b315 ist der Rahmen die
+      // Vereinigung aller drei Posen — beim Priester reicht der erhobene Stab
+      // elf Pixel ueber den Kopf, displayHeight zaehlte die mit.
+      var box = e ? _computeSpriteAlphaBounds(e) : null;
       out[t] = e ? { key: e.texture.key, prefix: e._spritePrefix || null,
-        hoehe: Math.round(e.displayHeight) } : null;
+        hoehe: Math.round((box ? box.h : e.height) * e.scaleY),
+        breite: Math.round((box ? box.w : e.width) * e.scaleX) } : null;
       if (e) e.destroy();
     });
     return out;
@@ -616,7 +621,15 @@ test('Die Sondergegner tragen ihr Sprite statt der Platzhalter-Zeichnung', () =>
     // Enger als frueher (30-70): der Alarmwicht stand mit 40 px am unteren
     // Rand und verschwand neben den anderen. Wer unter 44 faellt, ist im
     // Raum nicht mehr zu lesen.
-    assert.ok(s.hoehe >= 44 && s.hoehe <= 58, 'Typ ' + t + ' ist ' + s.hoehe + ' px hoch');
+    //
+    // Der KETTENHUND (15) laeuft auf vier Beinen: er ist 43 px hoch und 75
+    // breit. Bei ihm sagt die Hoehe nichts ueber die Lesbarkeit, gemessen
+    // wird deshalb seine Laenge.
+    const mass = (t === '15') ? s.breite : s.hoehe;
+    const was = (t === '15') ? 'breit' : 'hoch';
+    assert.ok(mass >= 44 && mass <= 90,
+      'Typ ' + t + ' ist ' + mass + ' px ' + was + ' (Figur ' + s.breite + 'x' + s.hoehe + ')');
+    if (t !== '15') assert.ok(s.hoehe <= 58, 'Typ ' + t + ' ist mit ' + s.hoehe + ' px zu hoch');
   });
 });
 
