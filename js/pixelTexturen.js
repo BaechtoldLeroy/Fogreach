@@ -75,6 +75,30 @@
   //
   // Diese Schluessel zeichnet graphics.js NICHT — sie werden darum direkt
   // unter ihrem Namen geladen, nicht nachtraeglich getauscht.
+  // Gegenstands-Icons (48x48) und drei Weltrequisiten. Schluessel und
+  // Dateiname sind hier immer gleich, darum nur Namen statt einer Tabelle.
+  //
+  // Die Icons sind der groesste Posten, den graphics.js noch zeichnete: 41
+  // von Hand gesetzte Umrisse. Sie tragen den Charakter der Waffenart (kurz
+  // beim Dolch, ein Block beim Hammer) — die Pixelbilder muessen das
+  // halten, sonst erkennt man im 48er Feld nichts mehr.
+  var NAMENSGLEICH = [
+    'itWeapon', 'itSword', 'itDagger', 'itFlail',
+    'itAxe', 'itGreatsword', 'itHammer', 'itBow',
+    'itBowEsche', 'itBowHorn', 'itBowGlut', 'itBowNebel',
+    'itHead', 'itHeadBronze', 'itHeadKettenhaube', 'itHeadSchlangenmaske',
+    'itBody', 'itBodyLeder', 'itBodyPlatte', 'itBodySchattenkutte',
+    'itBoots', 'itBootsLeder', 'itBootsStahl', 'itBootsWindlaeufer',
+    'itOffBuchbinder', 'itOffPavese', 'itOffWandschirm', 'itOffTalglicht',
+    'itOffBannlaterne', 'itOffGlutschale', 'itOffFangdolch', 'itOffKettenhaken',
+    'itPotionMinor', 'itPotionNormal', 'itPotionMajor', 'itPotionSuper',
+    'itPortalScroll', 'itStairScroll', 'itAmulet', 'itConsumable',
+    'itMat'
+  ].concat([
+    'obstacleTree', 'obstacleRock', 'prop_puddle', 'healthDrop',
+    'xpDrop'
+  ]);
+
   var TREPPEN_ANZAHL = 16;
 
   // Beute mit Varianten: Schluessel -> wie viele es gibt. Anders als die
@@ -111,6 +135,7 @@
     var out = {};
     Object.keys(KACHELN).forEach(function (k) { out[k] = KACHELN[k]; });
     Object.keys(REQUISITEN).forEach(function (k) { out[k] = REQUISITEN[k]; });
+    NAMENSGLEICH.forEach(function (k) { out[k] = k + '.png'; });
     return out;
   }
 
