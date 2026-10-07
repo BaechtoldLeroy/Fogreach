@@ -137,18 +137,21 @@
 
   var TREPPEN_ANZAHL = 16;
 
-  // Beute mit Varianten: Schluessel -> wie viele es gibt. Anders als die
-  // Treppen brauchen diese keine Masse — tools/requisitenBauen.js hat jede
-  // Variante bereits in genau das Mass eingepasst, das graphics.js fuer
-  // ihren Schluessel zeichnet. Der Tausch ist damit reine Namenssache.
-  var BEUTE_VARIANTEN = {
+  // Was es mehrfach gibt: Schluessel -> Anzahl der Varianten. Anders als
+  // die Treppen brauchen diese keine Masse — tools/requisitenBauen.js hat
+  // jede Variante bereits in genau das Mass eingepasst, das graphics.js
+  // fuer ihren Schluessel zeichnet. Der Tausch ist reine Namenssache.
+  var VARIANTEN = {
     chest_small: 8, chest_medium: 8, chest_large: 8,
-    goldPile: 8, goldHoard: 8
+    goldPile: 8, goldHoard: 8,
+    // Boden-Deko: Risse und Flecken, zehn bis fuenfzehn je Raum. Vorher
+    // gab es GENAU ZWEI Bilder fuer alle.
+    floor_crack: 8, floor_stain: 8
   };
 
   /** Alle Variantenschluessel eines Grundnamens, z. B. chest_small0..7. */
   function _variantenVon(basis) {
-    var n = BEUTE_VARIANTEN[basis] || 0;
+    var n = VARIANTEN[basis] || 0;
     var out = [];
     for (var i = 0; i < n; i++) out.push(basis + i);
     return out;
@@ -209,7 +212,7 @@
       scene.load.image(k, ORDNER + k + '.png');
     });
     // Ebenso die Beute-Varianten (chest_small0..7, goldPile0..7, ...).
-    Object.keys(BEUTE_VARIANTEN).forEach(function (basis) {
+    Object.keys(VARIANTEN).forEach(function (basis) {
       _variantenVon(basis).forEach(function (k) {
         if (scene.textures.exists(k)) return;
         scene.load.image(k, ORDNER + k + '.png');
@@ -241,11 +244,16 @@
    * @param {string} basis z. B. "chest_small" oder "goldHoard"
    * @returns {string} der zu verwendende Texturschluessel
    */
-  window.beuteBild = function (scene, basis) {
+  window.variantenBild = function (scene, basis) {
     if (!basis || !scene || !scene.textures) return basis;
     var da = _variantenVon(basis).filter(function (k) { return scene.textures.exists(k); });
     if (!da.length) return basis;
     return da[Math.floor(Math.random() * da.length)];
+  };
+  // Der alte Name, als er nur Truhen und Gold zog. Bleibt als
+  // Durchreiche, damit die Umbenennung keine Aufrufstelle bricht.
+  window.beuteBild = function (scene, basis) {
+    return window.variantenBild(scene, basis);
   };
 
   /**

@@ -782,12 +782,20 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       if (isWalkableTile(dtx, dty)) {
         const dpx = ox + dtx * T + T / 2;
         const dpy = oy + dty * T + T / 2;
-        const detailKey = Math.random() < 0.5 ? 'floor_crack' : 'floor_stain';
+        const detailBasis = Math.random() < 0.5 ? 'floor_crack' : 'floor_stain';
+        // Acht Entwuerfe je Art statt EINEM. Ohne Varianten kommt der
+        // Grundname zurueck und alles bleibt wie vorher.
+        const detailKey = (typeof window.variantenBild === 'function')
+          ? window.variantenBild(scene, detailBasis) : detailBasis;
         if (scene.textures?.exists?.(detailKey)) {
           const detail = scene.add.image(dpx, dpy, detailKey);
           detail.setDepth(-4);
           detail.setAlpha(0.3 + Math.random() * 0.3);
-          if (detailKey === 'floor_crack') detail.setAngle(Math.random() * 360);
+          // Risse werden gedreht, Flecken nicht — ein Wasserfleck hat
+          // keine Richtung, ein Riss schon. Auf den GRUNDNAMEN pruefen:
+          // der Schluessel heisst jetzt floor_crack3 und nicht mehr nur
+          // floor_crack.
+          if (detailBasis === 'floor_crack') detail.setAngle(Math.random() * 360);
           templateWalls.push(detail);
         }
       }
