@@ -1559,7 +1559,7 @@ function spawnFloorFire(scene, x, y, opts) {
   // GLUT (der weiche warme Kreis oben) bleibt gezeichnet — sie ist eine
   // Lichtstimmung, kein Gegenstand.
   const flammen = (typeof window.bodenfeuerSetzen === 'function')
-    ? window.bodenfeuerSetzen(scene, x, y, radius * 2.2, 37)
+    ? window.bodenfeuerSetzen(scene, x, y, radius * 1.76, 37)
     : null;
 
   function draw() {

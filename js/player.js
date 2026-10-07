@@ -154,6 +154,20 @@ function ensureDirectionLoaded(scene, dd) {
       if (window.RenderQuality) {
         window.RenderQuality.applyLinearFilterByPrefix(scene, [`dir${dd}_`]);
       }
+      // Die GROESSE neu rechnen, jetzt wo die Bilder da sind.
+      //
+      // applyPlayerDisplaySettings misst die Figur im Bild. Laeuft es, bevor
+      // irgendein dir-Bild geladen ist, findet es nichts zu messen und faellt
+      // auf die Rahmenhoehe zurueck — 68 statt 54 Pixel. Im Dungeon fiel das
+      // nicht auf, weil updatePlayerSpriteAnimation bei jeder Bewegung neu
+      // rechnet; im HUB steht man aber erst einmal still, und der Spieler war
+      // dort ein Viertel zu gross, bis man den ersten Schritt tat.
+      try {
+        var _p = (scene && scene.player) || (typeof player !== 'undefined' ? player : null);
+        if (_p && _p.frame && typeof applyPlayerDisplaySettings === 'function') {
+          applyPlayerDisplaySettings(_p);
+        }
+      } catch (e) { /* nie den Ladevorgang brechen */ }
       resolve();
     });
     scene.load.start();

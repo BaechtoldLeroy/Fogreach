@@ -752,6 +752,10 @@ if (typeof window !== 'undefined') window.stairCandidatesFromDoor = stairCandida
 // Freiraum um eine Treppe: halbes Treppen-Sprite (80px/2) plus 4px Marge.
 // Dieselbe Zahl wie STAIR_HALF in der Platzierung — die Treppe reserviert diesen
 // Ring ohnehin, also wird er auch verteidigt.
+// Sichtbare Hoehe der Treppe. 80 war die Zahl der alten quadratischen
+// Zeichnung; die Torbogen-Treppen aus b317 wirken damit zu wuchtig.
+var TREPPEN_HOEHE = 64;
+
 var TREPPEN_FREIRAUM = 44;
 
 // Raeumt jedes Prop weg, das eine Treppe verdeckt.
@@ -1368,7 +1372,7 @@ function enterRoom(scene, roomId) {
     // Jeder Raum wuerfelt seine Treppe aus sechzehn (pixelTexturen.js). Die
     // Masse kommen mit, weil sie am Bild haengen: 80x80 war auf die alte
     // quadratische Zeichnung geeicht, die neuen sind hochkant.
-    const _t = window.treppenBild ? window.treppenBild(scene, 80)
+    const _t = window.treppenBild ? window.treppenBild(scene, TREPPEN_HOEHE)
       : { bild: 'stairDown', breite: 80, hoehe: 80 };
     const stair = scene.stairsGroup.create(placedX, placedY, _t.bild);
     stair.setData("locked", true);
@@ -1412,7 +1416,7 @@ function enterRoom(scene, roomId) {
       var _emsp = scene.pickAccessibleSpawnPoint({ minDistance: 0, maxAttempts: 40 });
       if (_emsp) { _emx = _emsp.x; _emy = _emsp.y; }
     }
-    var _emt = window.treppenBild ? window.treppenBild(scene, 80)
+    var _emt = window.treppenBild ? window.treppenBild(scene, TREPPEN_HOEHE)
       : { bild: 'stairDown', breite: 80, hoehe: 80 };
     var _emStair = scene.stairsGroup.create(_emx, _emy, _emt.bild);
     _emStair.setData("locked", true);
