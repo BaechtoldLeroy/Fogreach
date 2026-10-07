@@ -911,36 +911,6 @@ function createObstacleGraphics() {
 
   // ===== NEW TEXTURES =====
 
-  // floor_blood (32x32) — blood-stained stone floor variant
-  g.clear();
-  // Same stone base as floor_stone
-  g.fillStyle(0x585858, 1);
-  g.fillRect(0, 0, 32, 32);
-  g.fillStyle(0x5e5e5e, 1);
-  g.fillRect(0, 0, 32, 16);
-  // Stone grain
-  g.fillStyle(0x6a6a6a, 0.3);
-  g.fillCircle(10, 10, 5); g.fillCircle(22, 20, 6);
-  g.fillStyle(0x4a4a4a, 0.2);
-  g.fillCircle(14, 14, 4);
-  // Mortar lines
-  g.lineStyle(1, 0x3e3e3e, 0.3);
-  g.lineBetween(0, 16, 32, 16); g.lineBetween(16, 0, 16, 32);
-  // Blood stains — dark crimson pools
-  g.fillStyle(0x4a1010, 0.6);
-  g.fillCircle(12, 14, 7);
-  g.fillStyle(0x5a1818, 0.5);
-  g.fillCircle(18, 18, 5);
-  g.fillStyle(0x3a0808, 0.4);
-  g.fillCircle(8, 20, 4);
-  // Blood splatter
-  g.fillStyle(0x6a2020, 0.35);
-  g.fillCircle(22, 10, 3); g.fillCircle(26, 16, 2);
-  g.fillRect(14, 8, 2, 1); g.fillRect(20, 24, 1, 2);
-  // Dried blood — darker edges
-  g.fillStyle(0x2a0808, 0.3);
-  g.fillCircle(12, 16, 4);
-  g.generateTexture('floor_blood', 32, 32);
 
   // wall_mossy (64x64) — wall with heavy moss/vine growth
   g.clear();
@@ -984,20 +954,6 @@ function createObstacleGraphics() {
   g.fillCircle(12, 10, 4); g.fillCircle(32, 18, 5); g.fillCircle(48, 42, 4);
   g.generateTexture('wall_mossy', 64, 64);
 
-  // torch_glow (48x48) — warm light circle for behind braziers
-  g.clear();
-  // Outer warm glow — mostly transparent
-  g.fillStyle(0xff8800, 0.05);
-  g.fillCircle(24, 24, 24);
-  g.fillStyle(0xffaa22, 0.08);
-  g.fillCircle(24, 24, 20);
-  g.fillStyle(0xffcc44, 0.12);
-  g.fillCircle(24, 24, 14);
-  g.fillStyle(0xffdd66, 0.18);
-  g.fillCircle(24, 24, 8);
-  g.fillStyle(0xffee88, 0.22);
-  g.fillCircle(24, 24, 4);
-  g.generateTexture('torch_glow', 48, 48);
 
   // cobweb (32x32) — spider web on transparent background
   g.clear();
@@ -1127,44 +1083,6 @@ function createEnemyGraphics() {
     g.destroy();
   }
 
-  // 3) Brute (Panzer-Typ) - OLD GENERATED GRAPHICS (commented out, using sprite sheets now)
-  /*
-  {
-    const g = this.add.graphics();
-    // Helm
-    g.fillStyle(0x999999, 1);
-    g.fillRect(22, 4, 20, 16);
-    g.fillStyle(0x333333, 1);
-    g.fillRect(26, 8, 12, 4);
-    // Brustpanzer
-    g.fillStyle(0x777777, 1);
-    g.fillRect(18, 20, 28, 36);
-    // Stachel
-    g.fillStyle(0x444444, 1);
-    g.fillTriangle(18, 20, 14, 28, 18, 36);
-    g.fillTriangle(46, 20, 50, 28, 46, 36);
-    // Beine
-    g.fillStyle(0x555555, 1);
-    g.fillRect(18, 56, 12, 12);
-    g.fillRect(34, 56, 12, 12);
-    // Streitkolben
-    g.fillStyle(0xaaaaaa, 1);
-    g.fillRect(44, 24, 4, 24);
-    g.fillStyle(0x666666, 1);
-    g.fillRect(42, 24, 8, 4);
-    g.generateTexture('enemyBrute', 64, 64);
-    g.destroy();
-  }
-  */
-  // Brute now uses loaded sprites: brute_left0, brute_right0 (idle/walk), brute_left1/2, brute_right1/2 (attack)
-  // Default texture for spawning uses brute_right0
-  if (this.textures.exists('brute_right0')) {
-    // Create enemyBrute as alias to brute_right0 for initial spawn compatibility
-    if (!this.textures.exists('enemyBrute')) {
-      this.textures.addImage('enemyBrute', this.textures.get('brute_right0').getSourceImage());
-    }
-  }
-
   // 4) Magier (Support-Typ)
   {
     const g = this.add.graphics();
@@ -1259,83 +1177,7 @@ function createEnemyGraphics() {
 
   // ===== Boss Textures =====
 
-  // Boss 1 - Kettenmeister (Chain Master): large gray figure with chain patterns
-  {
-    const g = this.add.graphics();
-    // Large body - dark gray/silver
-    g.fillStyle(0x555555, 1);
-    g.fillRect(16, 12, 48, 56);
-    // Shoulders - broad armor plates
-    g.fillStyle(0x777777, 1);
-    g.fillRect(8, 16, 16, 16);
-    g.fillRect(56, 16, 16, 16);
-    // Helmet
-    g.fillStyle(0x888888, 1);
-    g.fillRect(24, 2, 32, 18);
-    g.fillStyle(0x444444, 1);
-    g.fillRect(28, 8, 24, 6); // visor slit
-    // Eyes behind visor - red glow
-    g.fillStyle(0xff3333, 1);
-    g.fillCircle(34, 10, 2);
-    g.fillCircle(46, 10, 2);
-    // Chain patterns across body - horizontal links
-    g.lineStyle(2, 0xaaaaaa, 0.9);
-    for (let cy = 24; cy < 64; cy += 10) {
-      g.strokeCircle(30, cy, 4);
-      g.strokeCircle(38, cy, 4);
-      g.strokeCircle(46, cy, 4);
-    }
-    // Chain whip in right hand
-    g.lineStyle(3, 0xcccccc, 1);
-    g.beginPath();
-    g.moveTo(64, 28); g.lineTo(72, 36); g.lineTo(68, 44); g.lineTo(74, 52);
-    g.strokePath();
-    // Legs
-    g.fillStyle(0x444444, 1);
-    g.fillRect(22, 68, 14, 12);
-    g.fillRect(44, 68, 14, 12);
-    g.generateTexture('bossChainMaster', 80, 80);
-    g.destroy();
-  }
 
-  // Boss 2 - Zeremonienmeister (Ceremony Master): purple robed figure with ritual symbols
-  {
-    const g = this.add.graphics();
-    // Robe - dark purple/red
-    g.fillStyle(0x440044, 1);
-    g.fillRect(16, 20, 48, 52);
-    // Robe hem - darker
-    g.fillStyle(0x330022, 1);
-    g.fillRect(12, 56, 56, 16);
-    // Hood - deep purple
-    g.fillStyle(0x550055, 1);
-    g.fillRect(20, 2, 40, 24);
-    g.fillStyle(0x330033, 1);
-    g.fillRect(24, 8, 32, 14); // face shadow
-    // Glowing eyes - yellow/orange
-    g.fillStyle(0xffaa00, 1);
-    g.fillCircle(32, 14, 3);
-    g.fillCircle(48, 14, 3);
-    // Ritual symbols on robe
-    g.lineStyle(1, 0xff0066, 0.8);
-    g.strokeCircle(40, 40, 10);
-    g.strokeCircle(40, 40, 6);
-    // Pentagram-like star
-    g.beginPath();
-    g.moveTo(40, 30); g.lineTo(44, 46); g.lineTo(32, 36); g.lineTo(48, 36); g.lineTo(36, 46); g.lineTo(40, 30);
-    g.strokePath();
-    // Hands with magic glow
-    g.fillStyle(0xff0066, 0.6);
-    g.fillCircle(14, 40, 6);
-    g.fillCircle(66, 40, 6);
-    // Staff
-    g.fillStyle(0x220011, 1);
-    g.fillRect(68, 10, 4, 58);
-    g.fillStyle(0xff0066, 1);
-    g.fillCircle(70, 10, 5);
-    g.generateTexture('bossCeremonyMaster', 80, 80);
-    g.destroy();
-  }
 
   // Boss 3 - Schattenrat (Shadow Councillor): dark figure with glowing red accents
   {
@@ -3481,20 +3323,6 @@ function createInventoryGraphics() {
   g.generateTexture('uiSlotSel', 96, 64);
   g.clear();
 
-  // ── hudFrame: 200x40 ornate bar frame ────────────────────────────────────
-  // Dark base
-  g.fillStyle(0x0a0a0a, 1);
-  g.fillRoundedRect(0, 0, 200, 40, 6);
-  // Gold inner border (2px)
-  g.lineStyle(2, 0xa87940, 1);
-  g.strokeRoundedRect(2, 2, 196, 36, 5);
-  // Repeating dots along top edge
-  g.fillStyle(0xa87940, 0.7);
-  for (let x = 10; x < 190; x += 10) {
-    g.fillCircle(x, 5, 1.5);  // top edge dots
-    g.fillCircle(x, 35, 1.5); // bottom edge dots
-  }
-  g.generateTexture('hudFrame', 200, 40);
   g.clear();
 
   // ── barFill: 196x36 health gradient (red) ────────────────────────────────
@@ -3514,20 +3342,6 @@ function createInventoryGraphics() {
   g.generateTexture('barFill', 196, 36);
   g.clear();
 
-  // ── barFillXP: 196x36 XP gradient (green) ────────────────────────────────
-  for (let i = 0; i < 36; i++) {
-    const t = i / 35;
-    // Interpolate top #00cc44 → bottom #006622
-    const r = 0x00;
-    const gv = Math.round(0xcc + t * (0x66 - 0xcc));
-    const b  = Math.round(0x44 + t * (0x22 - 0x44));
-    const col = (r << 16) | (gv << 8) | b;
-    g.fillStyle(col, 0.9);
-    g.fillRect(0, i, 196, 1);
-  }
-  g.fillStyle(0x44ff88, 0.25);
-  g.fillRect(0, 0, 196, 6);
-  g.generateTexture('barFillXP', 196, 36);
 
   g.destroy();
 }
