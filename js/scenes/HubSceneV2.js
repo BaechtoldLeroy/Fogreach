@@ -130,6 +130,9 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   preload() {
+    // #181: der gekachelte Hub, erreichbar nur ueber ?debug=1&hubneu=1.
+    // Ohne die Flagge meldet vorladen() nichts an und laedt nichts nach.
+    if (window.HubNeuWelt) window.HubNeuWelt.vorladen(this);
     this.load.image('hubscene_bg', 'assets/hubscene.png');
     // Hub-only NPC sprites — deferred from StartScene so the main menu loads
     // faster. Phaser only loads keys that aren't already in the texture cache,
@@ -188,6 +191,18 @@ class HubSceneV2 extends Phaser.Scene {
     bg.setOrigin(0, 0);
     bg.setScale(1.0);
 
+    // #181: Probe des gekachelten Hubs. Das gemalte Bild bleibt in der
+    // Szene, aber unsichtbar — die Phasen-Darstellung (Tint, Entsaettigung)
+    // haengt an EINEM Hintergrundobjekt, und das ist dann der neue Boden.
+    const neueWelt = (window.HubNeuWelt && window.HubNeuWelt.aktiv())
+      ? window.HubNeuWelt.bauen(this) : null;
+    if (neueWelt) {
+      bg.setVisible(false);
+      // Hinter der Stadtmauer liegt keine Kachel. Dort soll Nebel stehen,
+      // nicht das Schwarz der Leinwand.
+      this.cameras.main.setBackgroundColor('#171a20');
+    }
+
     // Feature 064: Hub-Phase (aus Akt-Index/Flags) ableiten und die
     // Darstellungs-Schicht anwenden (Tint/Nebel/Anschlagtafeln/feindliches
     // Rathaus). Phase in this._hubPhase merken — die Aldric-Quest-Sperre, die
@@ -204,7 +219,7 @@ class HubSceneV2 extends Phaser.Scene {
     // nachbauen und kann dabei auch nichts vergessen. Genau daran ist eine
     // Vorschau schon gescheitert: ohne posterSpots verschwanden die Tafeln.
     this._hubPhaseRefs = {
-      bg: bg,
+      bg: (neueWelt && neueWelt.boden) ? neueWelt.boden : bg,
       overlayDepth: 90,
       rathausRect: {
         x: 368 * SCALE_FACTOR, y: 110 * SCALE_FACTOR,
