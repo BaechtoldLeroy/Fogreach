@@ -283,3 +283,84 @@ test('die NPC stehen auf ihren Ankern, nicht mehr auf den alten Plaetzen', () =>
   assert.ok(gesehen >= 5, 'nur ' + gesehen + ' NPC standen im Hub — der Fall misst zu wenig');
   assert.deepStrictEqual(daneben, [], daneben.join('; '));
 });
+
+// --- Optimierungslauf: Groessen und Verdeckung ------------------------------
+//
+// Zwei Klagen nach b329: "gewisse Objekte sind zu gross" und "stehen hinter
+// anderen". Beide lassen sich messen, und beide hatten eine gemeinsame
+// Wurzel: Requisiten wurden ueber die BREITE gesetzt. Bei schraeg
+// gezeichneten Objekten sagt die Breite wenig ueber die sichtbare Masse —
+// eine Bank kam so 63 px hoch heraus, hoeher als die Spielerfigur (54).
+
+/** Alles, was im Hub steht, mit Bildschirmrechteck und Tiefe. */
+const STEHT = `(function () {
+  var sc = window.game.scene.getScene('HubSceneV2');
+  var out = [];
+  (sc.children.list || []).forEach(function (c) {
+    if (!c || !c.visible || !c.getBounds) return;
+    var k = c.texture && c.texture.key;
+    var id = c.getData && c.getData('id');
+    var art = null;
+    if (id && c.type === 'Sprite' || (id && c.type === 'Image')) art = 'npc';
+    else if (k && /^hub_(werkstatt|druckerei|kate_a|kate_b|rathaus_sockel|stuetzmauer)$/.test(k)) art = 'bau';
+    else if (k && /^hub_/.test(k) && !/boden|ueber|flaeche|nebel|kiefer|baum|freitreppe/.test(k)) art = 'ding';
+    if (!art) return;
+    var b = c.getBounds();
+    out.push({ art: art, name: id || k, x0: b.x, x1: b.x + b.width, y0: b.y, y1: b.y + b.height,
+      fuss: c.y, tiefe: c.depth, h: b.height });
+  });
+  return out;
+})()`;
+
+test('keine Requisite am Boden ist hoeher als die Spielerfigur', () => {
+  // Bank, Fass, Kisten, Holz, Karren, Trog, Kuebel, Schutt: alles, was
+  // ein Mensch ueberblickt. Groesser als er sind nur Bauten, Laternen,
+  // Tafeln, Schilder, der Marktstand und die Statue.
+  const NIEDRIG = /^hub_(bank|fass|kisten|holz|karren|trog|kuebel|schutt)$/;
+  const zuHoch = Array.prototype.slice.call(mit.run(STEHT))
+    .filter((o) => o.art === 'ding' && NIEDRIG.test(o.name) && o.h > 54)
+    .map((o) => o.name + ' ' + Math.round(o.h) + ' px');
+  assert.deepStrictEqual(zuHoch, [], 'hoeher als die Spielerfigur (54): ' + zuHoch.join(', '));
+});
+
+test('keine Requisite weicht von der Hoehe ab, die die Karte nennt', () => {
+  const K = karte();
+  const ist = {};
+  Array.prototype.slice.call(mit.run(STEHT)).forEach((o) => {
+    if (o.art === 'ding') (ist[o.name] = ist[o.name] || []).push(o.h);
+  });
+  const daneben = [];
+  K.requisiten.forEach((r) => {
+    if (!r.hoehe) return;
+    const hs = ist[r.bild] || [];
+    if (!hs.some((h) => Math.abs(h - r.hoehe) <= 1.5)) {
+      daneben.push(r.bild + ' soll ' + r.hoehe + ', ist ' + hs.map(Math.round).join('/'));
+    }
+  });
+  assert.ok(K.requisiten.filter((r) => r.hoehe).length >= 10,
+    'zu wenige Requisiten mit Hoehe — der Fall misst nichts');
+  assert.deepStrictEqual(daneben, [], daneben.join('; '));
+});
+
+test('nichts und niemand steht verdeckt hinter einem Bau', () => {
+  // Verdeckt heisst: das Rechteck ueberlappt das eines Baus spuerbar, und
+  // die Figur wird VOR dem Bau gezeichnet — liegt also dahinter. Baeume
+  // sind ausgenommen, die sollen hinter den Haeusern stehen.
+  const alle = Array.prototype.slice.call(mit.run(STEHT));
+  const baue = alle.filter((o) => o.art === 'bau');
+  const verdeckt = [];
+  alle.filter((o) => o.art !== 'bau').forEach((o) => {
+    baue.forEach((b) => {
+      const ux = Math.min(o.x1, b.x1) - Math.max(o.x0, b.x0);
+      const uy = Math.min(o.y1, b.y1) - Math.max(o.y0, b.y0);
+      if (ux <= 0 || uy <= 0) return;
+      // Spuerbar: mehr als ein Viertel der Figur liegt im Bau.
+      const anteil = (ux * uy) / ((o.x1 - o.x0) * (o.y1 - o.y0));
+      if (anteil > 0.25 && o.tiefe < b.tiefe) {
+        verdeckt.push(o.name + ' hinter ' + b.name + ' (' + Math.round(anteil * 100) + ' %)');
+      }
+    });
+  });
+  assert.deepStrictEqual(verdeckt, [], verdeckt.join('; '));
+});
+

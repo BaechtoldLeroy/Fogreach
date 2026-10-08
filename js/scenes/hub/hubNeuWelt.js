@@ -67,7 +67,7 @@
     // Das Rathaus steht mit dem Fuss auf Zeile 7 und ist hoeher als das,
     // was ueber ihm liegt — ohne diese Luft wuerde sein Dach abgeschnitten.
     // Die Physik bleibt bei 0: hinauslaufen kann niemand.
-    return { breite: K.breite * K.kachel, hoehe: K.hoehe * K.kachel, oben: -176 };
+    return { breite: K.breite * K.kachel, hoehe: K.hoehe * K.kachel, oben: -240 };
   }
 
   /**
@@ -256,15 +256,16 @@
    * mit setScale arbeitet, bekommt fuenf verschieden grosse Haeuser bei
    * gleicher eingetragener Breite — derselbe Fehler wie bei den Gegnern.
    */
-  function _stellen(scene, key, xK, yK, breiteK, spiegeln, farbe, tiefe) {
+  function _stellen(scene, key, xK, yK, mass, spiegeln, farbe, tiefe) {
     if (!scene.textures.exists(key)) return null;
     var K = karte();
     var px = xK * K.kachel, py = yK * K.kachel;
     var bild = scene.add.image(px, py, key).setOrigin(0.5, 1);
-    if (bild.width > 0) {
-      var s = (breiteK * K.kachel) / bild.width;
-      bild.setScale(spiegeln ? -s : s, s);
-    }
+    // mass ist entweder eine Zahl (Breite in Kacheln) oder { hoehe: px }.
+    var s = 1;
+    if (mass && mass.hoehe && bild.height > 0) s = mass.hoehe / bild.height;
+    else if (typeof mass === 'number' && bild.width > 0) s = (mass * K.kachel) / bild.width;
+    bild.setScale(spiegeln ? -s : s, s);
     if (farbe) bild.setTint(farbe);
     bild.setDepth(typeof tiefe === 'number' ? tiefe : py);
     return bild;
@@ -318,21 +319,38 @@
 
     erg.boden = _bodenZeichnen(scene);
 
-    // Die Terrasse: erst die Stuetzmauer ueber die ganze Kante, dann die
-    // Freitreppe darueber. Der Fusspunkt ist die Unterkante der Mauer, also
-    // die Kachelzeile unter der Terrasse.
+    // Die Terrasse. Ihr Gesicht sind zwei Mauerstuecke links und rechts der
+    // Treppe; die Treppe steht IN der Luecke, nicht davor.
+    //
+    // Die Mauer reicht von der Galeriekante bis zum Platz — nicht hoeher.
+    // In b329 begann sie 70 px ueber der Kante und verdeckte Aldric, die
+    // Statue, die Kuebel und den Sockel des Rathauses samt Portal. Daher
+    // stand das Rathaus "verloren hinter der Mauer".
+    // Weil sie erst an der Kante beginnt, ueberschneidet sie nichts, was
+    // auf der Galerie steht, und sortiert nach ihrem Fuss wie alles andere.
+    //
+    // Die Treppe dagegen liegt tiefer als alles, was auf ihr gehen kann —
+    // sie ist Boden, kein Moebel — und unter dem Rathaus, damit ihr oberer
+    // Absatz im Portal verschwindet, statt es zu ueberdecken.
     var T = K.terrasse;
-    if (T) {
-      var kante = T.y + T.h;
-      var stueck = 4;
-      for (var mx = T.x; mx < T.x + T.b; mx += stueck) {
-        var b = Math.min(stueck, T.x + T.b - mx);
-        var m = _stellen(scene, 'hub_stuetzmauer', mx + b / 2, kante, b, false, null,
-          kante * K.kachel - 4);
-        if (m) erg.haeuser.push(m);
-      }
-      var tr = _stellen(scene, 'hub_freitreppe', T.treppeX + T.treppeB / 2, kante + 1,
-        T.treppeB, false, null, kante * K.kachel - 2);
+    if (T && scene.textures.exists('hub_stuetzmauer')) {
+      var unten = T.y + T.h;                        // erste Platzzeile
+      var quelle = scene.textures.get('hub_stuetzmauer').getSourceImage();
+      var seitenverh = quelle.width / quelle.height;
+      var laeufe = [[T.x, T.treppeX], [T.treppeX + T.treppeB, T.x + T.b]];
+      laeufe.forEach(function (lauf) {
+        var lang = lauf[1] - lauf[0];
+        if (lang <= 0) return;
+        // Soviele Stuecke, dass jedes etwa 2 Kacheln hoch wird.
+        var n = Math.max(1, Math.round(lang / (2 * seitenverh)));
+        var b = lang / n;
+        for (var i = 0; i < n; i++) {
+          var m = _stellen(scene, 'hub_stuetzmauer', lauf[0] + b * (i + 0.5), unten, b);
+          if (m) erg.haeuser.push(m);
+        }
+      });
+      var tr = _stellen(scene, 'hub_freitreppe', T.treppeX + T.treppeB / 2, unten,
+        T.treppeB, false, null, (T.y + 1) * K.kachel);
       if (tr) erg.haeuser.push(tr);
     }
 
@@ -342,7 +360,7 @@
     });
 
     (K.requisiten || []).forEach(function (r) {
-      var b = _stellen(scene, r.bild, r.x, r.y, r.breite, r.spiegeln);
+      var b = _stellen(scene, r.bild, r.x, r.y, r.hoehe ? { hoehe: r.hoehe } : r.breite, r.spiegeln);
       if (b) erg.requisiten.push(b);
     });
 
