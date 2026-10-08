@@ -1288,8 +1288,12 @@ class HubSceneV2 extends Phaser.Scene {
       const ediktSchritt = this._ediktSchritt();
       for (const t of this._hubPhaseRefs.posterSpots) {
         if (!t) continue;
-        const d = Phaser.Math.Distance.Between(p.x, p.y, t.x, t.y - 40 * SCALE_FACTOR);
-        if (d < 90 * SCALE_FACTOR) {
+        // Vom FUSS der Tafel aus, wie bei den NPC. Der alte Weg mass von einem
+        // Punkt 64 px darueber (im gemalten Hub hing die Tafel an einer Wand).
+        // Wer direkt vor ihr stand, war jenem Punkt fern — und ein NPC daneben
+        // war "naeher". So gewann vor beiden Tafeln immer der Nachbar.
+        const d = Phaser.Math.Distance.Between(p.x, p.y, t.x, t.y);
+        if (d < 100) {
           nimm(d, { type: 'anschlag', edikt: ediktSchritt === 1 },
             _HUB_T(ediktSchritt === 1 ? 'hub.anschlag.prompt' : 'hub.brett.prompt'));
         }

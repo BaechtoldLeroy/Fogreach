@@ -402,7 +402,11 @@ function layoutMitFlagge() {
   return { HB: fenster.HUB_HITBOXES, K: fenster.HUB_NEU_KARTE, W: fenster.HubNeuWelt };
 }
 
-test('jeder NPC und jede Tuer ist mit dem echten Koerper erreichbar', () => {
+/**
+ * Alle Fusspunkte, die der Spieler vom Startpunkt aus erreicht — mit dem
+ * echten Koerper, allen NPC-Koerpern und etwas Luft. Raster 8 px.
+ */
+function erreichbar() {
   const { HB, K, W } = layoutMitFlagge();
   const M = 1536 / 960;
   const welt = W.welt();
@@ -427,7 +431,7 @@ test('jeder NPC und jede Tuer ist mit dem echten Koerper erreichbar', () => {
   };
   const S = 8;                                        // Raster in Weltpixeln
   const start = [Math.round(welt.start.x / S) * S, Math.round(welt.start.y / S) * S];
-  assert.ok(frei(start[0], start[1]), 'schon der Startpunkt ist zugebaut');
+  if (!frei(start[0], start[1])) return { HB, K, W, orte: [], M, startFrei: false };
   const gesehen = new Set([start.join(',')]);
   const offen = [start];
   while (offen.length) {
@@ -438,6 +442,12 @@ test('jeder NPC und jede Tuer ist mit dem echten Koerper erreichbar', () => {
     });
   }
   const orte = [...gesehen].map((k) => k.split(',').map(Number));
+  return { HB, K, W, orte, M, startFrei: true };
+}
+
+test('jeder NPC und jede Tuer ist mit dem echten Koerper erreichbar', () => {
+  const { HB, K, W, orte, M, startFrei } = erreichbar();
+  assert.ok(startFrei, 'schon der Startpunkt ist zugebaut');
 
   const fehlt = [];
   // NPC: HubSceneV2 spricht an, wenn der Fusspunkt naeher als 100 px ist.
@@ -709,4 +719,125 @@ test('die Figur ist im Hub kleiner als im Dungeon, auch nach einem Richtungswech
   assert.ok(Math.abs(nachher - K.spielerHoehe) <= 1.5,
     'nach dem Richtungswechsel ist die Figur ' + nachher + ' hoch statt ' + K.spielerHoehe);
   assert.ok(K.spielerHoehe < 54, 'die Hub-Figur ist nicht kleiner als die 54 des Dungeons');
+});
+
+test('jedes Ziel ist irgendwo die aktive Box', () => {
+  // Die Box nimmt das NAECHSTE Ziel. Steht ein Ziel so zwischen anderen,
+  // dass von ueberall ein anderes naeher ist, wird es nie aktiv — es ist
+  // dann so gut wie unerreichbar. So ging es der linken Anschlagtafel in
+  // b332: zwischen Mara, der Laterne und dem Klerus war fast immer ein
+  // NPC naeher.
+  const { K, orte } = erreichbar();
+  const proben = orte.filter((p, i) => i % 2 === 0);
+  const r = mit.run(`(function (proben) {
+    var sc = window.game.scene.getScene('HubSceneV2'), p = sc.player;
+    var x0 = p.x, y0 = p.y, gesehen = {};
+    proben.forEach(function (q) {
+      p.x = q[0]; p.y = q[1];
+      sc._refreshInteractionPrompt();
+      var a = sc._activeInteractable;
+      if (!a) return;
+      var id = a.type === 'npc' ? 'npc:' + a.data.id
+        : a.type === 'entrance' ? 'tuer:' + a.data.id
+        : 'tafel:' + Math.round(a.x || 0);
+      if (a.type === 'anschlag') {
+        // Welche Tafel? Die naechste.
+        var best = null, bd = Infinity;
+        sc._hubPhaseRefs.posterSpots.forEach(function (t, i) {
+          var d = Math.hypot(q[0] - t.x, q[1] - t.y); if (d < bd) { bd = d; best = i; }
+        });
+        id = 'tafel:' + best;
+      }
+      gesehen[id] = (gesehen[id] || 0) + 1;
+    });
+    p.x = x0; p.y = y0;
+    var sichtbar = (sc.npcs || []).filter(function (n) { return n.sprite.visible; }).map(function (n) { return 'npc:' + n.data.id; });
+    return { gesehen: gesehen, sichtbar: sichtbar };
+  })(${JSON.stringify(proben)})`);
+  const erwartet = Array.prototype.slice.call(r.sichtbar)
+    .concat(['tuer:rathaus_entrance', 'tuer:schmiede_entrance', 'tuer:druckerei_entrance', 'tuer:truhe_entrance'])
+    .concat(K.anschlagtafeln.map((t, i) => 'tafel:' + i));
+  // Ein fairer Anteil, nicht ein einziger Rasterpunkt. Gemessen in b332:
+  // NPC 37 bis 89, die rechte Tafel 17 — und die linke 7, Aldric 4. Tueren
+  // sind bewusst kleine Zonen (man muss davorstehen) und brauchen weniger.
+  const mindest = (id) => (id.indexOf('tuer:') === 0 ? 3 : 12);
+  const selten = erwartet.filter((id) => (r.gesehen[id] || 0) < mindest(id))
+    .map((id) => id + ' (' + (r.gesehen[id] || 0) + 'x)');
+
+  assert.ok(erwartet.length >= 10, 'nur ' + erwartet.length + ' Ziele — der Fall misst zu wenig');
+  assert.deepStrictEqual(selten, [], 'fast nie die aktive Box: ' + selten.join(', '));
+});
+
+test('die Kamera sieht nie ungezeichneten Boden', () => {
+  // Ueber dem Rathaus lagen zwei leere Zeilen ("Nebel"), und die Kamera
+  // durfte ueber den Kartenrand hinaus — dort stand die graue Hintergrund-
+  // farbe. Der gezeichnete Boden muss alles abdecken, was die Kamera zeigen
+  // KANN, nicht nur was sie meistens zeigt.
+  const r = mit.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2'), b = sc.cameras.main._bounds;
+    var rt = (sc.children.list || []).filter(function (c) { return c.type === 'RenderTexture'; })[0];
+    return { kam: [b.x, b.y, b.x + b.width, b.y + b.height],
+      boden: rt ? [rt.x, rt.y, rt.x + rt.width, rt.y + rt.height] : null };
+  })()`);
+  assert.ok(r.boden, 'kein Kachelboden');
+  const k = Array.prototype.slice.call(r.kam), b = Array.prototype.slice.call(r.boden);
+  assert.ok(b[0] <= k[0] && b[1] <= k[1] && b[2] >= k[2] && b[3] >= k[3],
+    'die Kamera reicht bis ' + k.join('/') + ', der Boden nur ' + b.join('/'));
+  // Und auf diesem Boden liegt ueberall etwas: keine Zelle bleibt leer.
+  const K = karte();
+  const leer = K.zeilen.reduce((n, z) => n + (z.match(/x/g) || []).length, 0);
+  assert.strictEqual(leer, 0, 'die Karte hat ' + leer + ' leere Zellen');
+});
+
+test('der Brunnen ist nicht breiter als sein Becken', () => {
+  // In b332 stand er 5,4 Kacheln breit auf einem Becken von 5 — er ragte
+  // ueber den eigenen Rand und wirkte zu gross.
+  const K = karte();
+  const brunnen = K.requisiten.find((r) => /kettenbrunnen/.test(r.bild));
+  let spalten = new Set();
+  K.zeilen.forEach((z) => { for (let x = 0; x < z.length; x++) if (z[x] === 'B') spalten.add(x); });
+  assert.ok(brunnen && spalten.size > 0, 'Brunnen oder Becken fehlt');
+  assert.ok(brunnen.breite <= spalten.size,
+    'der Brunnen ist ' + brunnen.breite + ' Kacheln breit, sein Becken ' + spalten.size);
+});
+
+test('wer direkt vor einem Ziel steht, spricht genau dieses an', () => {
+  // "Irgendwo aktiv" genuegte nicht: in b333 gewann die linke Tafel weiter
+  // links, aber direkt vor ihr gewann der Priester — sie mass ihren Abstand
+  // von einem Punkt 64 px UEBER ihrem Fuss (aus dem gemalten Hub, wo sie an
+  // einer Wand hing), die NPC vom Fuss. Hier: die erreichbare Stelle, die
+  // dem Fuss eines Ziels am naechsten liegt — dort muss es gewinnen.
+  const { K, orte } = erreichbar();
+  const ziele = K.npcs.map((n) => ({ id: 'npc:' + n.id, x: n.x * K.kachel, y: n.y * K.kachel }))
+    .concat(K.anschlagtafeln.map((t, i) => ({ id: 'tafel:' + i, x: t.x * K.kachel, y: t.y * K.kachel })));
+  ziele.forEach((z) => {
+    let best = null, bd = Infinity;
+    orte.forEach(([x, y]) => { const d = Math.hypot(x - z.x, y - z.y); if (d < bd) { bd = d; best = [x, y]; } });
+    z.stand = best;
+  });
+  const r = mit.run(`(function (ziele) {
+    var sc = window.game.scene.getScene('HubSceneV2'), p = sc.player;
+    var x0 = p.x, y0 = p.y, out = [];
+    var sichtbar = {};
+    (sc.npcs || []).forEach(function (n) { sichtbar[n.data.id] = n.sprite.visible; });
+    ziele.forEach(function (z) {
+      if (z.id.indexOf('npc:') === 0 && !sichtbar[z.id.slice(4)]) return;   // in diesem Akt nicht da
+      p.x = z.stand[0]; p.y = z.stand[1];
+      sc._refreshInteractionPrompt();
+      var a = sc._activeInteractable, id = null;
+      if (a && a.type === 'npc') id = 'npc:' + a.data.id;
+      else if (a && a.type === 'anschlag') {
+        var bi = null, bdd = Infinity;
+        sc._hubPhaseRefs.posterSpots.forEach(function (t, i) {
+          var d = Math.hypot(p.x - t.x, p.y - t.y); if (d < bdd) { bdd = d; bi = i; }
+        });
+        id = 'tafel:' + bi;
+      } else if (a) id = a.type;
+      if (id !== z.id) out.push(z.id + ' -> ' + id + ' (bei ' + z.stand.join('/') + ')');
+    });
+    p.x = x0; p.y = y0;
+    return out;
+  })(${JSON.stringify(ziele)})`);
+  const falsch = Array.prototype.slice.call(r);
+  assert.deepStrictEqual(falsch, [], 'direkt davor gewinnt ein anderes Ziel: ' + falsch.join('; '));
 });

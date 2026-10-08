@@ -30,6 +30,13 @@
 
   var BODEN_BILDER = 16;
   var TIEFE_BODEN = -20;
+
+  // Waldsaum ueber dem oberen Kartenrand, in Kachelzeilen. Die Kamera darf
+  // ueber den Rand hinaus (sonst schnitte sie das Rathaus ab), und dort lag
+  // bis b332 NICHTS — man sah die graue Hintergrundfarbe. Jetzt wird bis
+  // hierhin gezeichnet, und die Kamera reicht genau bis hierhin und nicht
+  // weiter. Begehbar ist der Saum nicht: die Physik endet am Kartenrand.
+  var SAUM = 4;
   // Bodennebel: direkt ueber dem Boden, unter allem, was steht. Bis b330
   // stand hier 95 — gemeint als "ueber allem", in einer Szene, die nach y
   // sortiert (100 bis 800), also faktisch genau das hier. Der Nebel lag
@@ -76,7 +83,7 @@
     // was ueber ihm liegt — ohne diese Luft wuerde sein Dach abgeschnitten.
     // Die Physik bleibt bei 0: hinauslaufen kann niemand.
     var start = K.start ? { x: K.start.x * K.kachel, y: K.start.y * K.kachel } : null;
-    return { breite: K.breite * K.kachel, hoehe: K.hoehe * K.kachel, oben: -300, start: start,
+    return { breite: K.breite * K.kachel, hoehe: K.hoehe * K.kachel, oben: -SAUM * K.kachel, start: start,
       spielerHoehe: K.spielerHoehe || null };
   }
 
@@ -95,6 +102,9 @@
   }
 
   function zeichenAn(K, tx, ty) {
+    // Ueber dem Kartenrand: der Waldsaum (nur zum Zeichnen, nie zum Laufen —
+    // die Kollisionen werden nur aus den Zeilen 0..hoehe gebaut).
+    if (ty < 0 && ty >= -SAUM && tx >= 0 && tx < K.breite) return 'g';
     if (tx < 0 || ty < 0 || tx >= K.breite || ty >= K.hoehe) return 'x';
     return (K.zeilen[ty] || '').charAt(tx) || 'x';
   }
@@ -251,7 +261,8 @@
     var K = karte();
     if (!K) return null;
     var z = K.kachel;
-    var rt = scene.add.renderTexture(0, 0, K.breite * z, K.hoehe * z).setOrigin(0, 0);
+    var oben = SAUM * z;
+    var rt = scene.add.renderTexture(0, -oben, K.breite * z, K.hoehe * z + oben).setOrigin(0, 0);
     rt.setDepth(TIEFE_BODEN);
     var stapel = (typeof rt.beginDraw === 'function');
     var male = function (key, x, y) {
@@ -262,14 +273,14 @@
 
     var tx, ty;
     // Grund: Erde ueberall, wo ueberhaupt Boden ist.
-    for (ty = 0; ty < K.hoehe; ty++) {
+    for (ty = -SAUM; ty < K.hoehe; ty++) {
       for (tx = 0; tx < K.breite; tx++) {
-        if (artAn(K, tx, ty)) male(ERDE, tx * z, ty * z);
+        if (artAn(K, tx, ty)) male(ERDE, tx * z, ty * z + oben);
       }
     }
     // Darueber die Schichten, jede mit ihren Uebergaengen.
     SCHICHTEN.forEach(function (s, si) {
-      for (ty = 0; ty < K.hoehe; ty++) {
+      for (ty = -SAUM; ty < K.hoehe; ty++) {
         for (tx = 0; tx < K.breite; tx++) {
           if (!artAn(K, tx, ty)) continue;
           var m = (_ecke(K, s.oben, tx, ty) << 3)
@@ -279,9 +290,9 @@
           if (m === 0) continue;
           if (m === 15) {
             var f = s.flaeche;
-            male(f[Math.floor(streu(tx, ty, 3 + si) * f.length) % f.length], tx * z, ty * z);
+            male(f[Math.floor(streu(tx, ty, 3 + si) * f.length) % f.length], tx * z, ty * z + oben);
           } else {
-            male('hub_ueber_' + s.name + m, tx * z, ty * z);
+            male('hub_ueber_' + s.name + m, tx * z, ty * z + oben);
           }
         }
       }
@@ -588,7 +599,7 @@
     // bleibt frei, weil Gras nur dort liegt, wo niemand laufen soll.
     var daBaum = BAUM_BILDER.filter(function (k) { return scene.textures.exists(k); });
     if (daBaum.length) {
-      for (var ty = 0; ty < K.hoehe; ty++) {
+      for (var ty = -SAUM; ty < K.hoehe; ty++) {
         for (var tx = 0; tx < K.breite; tx++) {
           // Nur auf Wald ('g'). Unter dem Rathaus liegt auch Wiese ('R'),
           // aber dort wuerden Baeume aus seinem Sockel wachsen.

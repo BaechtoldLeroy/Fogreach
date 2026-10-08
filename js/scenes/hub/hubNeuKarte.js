@@ -32,7 +32,7 @@
  *   H  Gebaeude      undurchlaessig
  *   R  Rathaus       undurchlaessig, Wiese darunter
  *   B  Brunnenbecken undurchlaessig
- *   x  nichts        hinter der Terrasse: Nebel
+ *   x  nichts        (wird nicht mehr benutzt — ueber dem Rathaus steht Wald)
  *
  * Stein stoesst nirgends direkt an Gras: dazwischen liegt immer Erde,
  * und fuer jede Grenze gibt es Uebergangskacheln (tools/uebergangBauen.js).
@@ -62,11 +62,11 @@
     },
 
     zeilen: [
-'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-      'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      'gggggggggggggggggggggggggggggggggggggggg',
       'gggggggggggggggRRRRRRRRRRggggggggggggggg',
       'gggggggggggggggRRRRRRRRRRggggggggggggggg',
       'gggggggggggggggRRRRRRRRRRggggggggggggggg',
+      'gggggggggggggggTTTTTTTTTTggggggggggggggg',
       'gggggggggggggggTTTTTTTTTTggggggggggggggg',
       'gggggggggggggggTTTTTTTTTTggggggggggggggg',
       'gggggggggggggggTTTTTTTTTTggggggggggggggg',
@@ -100,7 +100,7 @@
 
     tueren: [
       // Vor dem Rathausportal, auf dem Vorplatz.
-      { id: 'rathaus_entrance',   x: 18,  y: 5.1,  b: 4,   h: 2.4 },
+      { id: 'rathaus_entrance',   x: 18.75, y: 4.1, b: 2.5, h: 3.4 },   // so breit wie das Portal
       { id: 'schmiede_entrance',  x: 4,   y: 13.6, b: 3,   h: 1.3 },
       { id: 'druckerei_entrance', x: 33,  y: 13.6, b: 3,   h: 1.3 },
       // Neben der Werkstatt, ausserhalb des Hinterhofs der linken Kate.
@@ -111,12 +111,12 @@
     // gehoert, nie daneben: ein Haus in Schraegsicht ragt seitlich ueber
     // seine Grundflaeche hinaus, und wer dort steht, verschwindet dahinter.
     npcs: [
-      { id: 'aldric',          x: 23.4, y: 7.1 },   // auf dem Vorplatz des Rates
+      { id: 'aldric',          x: 24.0, y: 6.4 },   // rechte Ecke des Vorplatzes, neben der Tuerzone
       { id: 'klerus_priester', x: 16.8, y: 10.9 },  // am Fuss der Treppe, links
       { id: 'stadtwache',      x: 23.2, y: 10.9 },  // am Fuss der Treppe, rechts
       { id: 'branka',          x: 8.6,  y: 14.3 },  // an der Hauswand, nicht im Gang
       { id: 'thom',            x: 31.4, y: 14.3 },  // an der Hauswand, nicht im Gang
-      { id: 'mara',            x: 11.4, y: 10.5 },  // im Winkel zwischen Wald und Terrasse
+      { id: 'mara',            x: 10.2, y: 10.6 },  // tief im Winkel zwischen Wald und Werkstatt
       { id: 'harren',          x: 11.6, y: 21.1 },  // abseits, bei den Baenken
       { id: 'buerger',         x: 24.3, y: 21.0 },  // beim Marktstand
       { id: 'elara',           x: 10.4, y: 22.6 }   // am Rand, wenn sie je kommt
@@ -129,12 +129,12 @@
     // der Treppe. Vorher standen sie auf den alten Koordinaten und landeten
     // hinter dem Brunnen.
     anschlagtafeln: [
-      { x: 14.7, y: 10.9 },
+      { x: 14.3, y: 10.9 },
       { x: 25.3, y: 10.9 }
     ],
 
     haeuser: [
-      { bild: 'hub_rathaus_sockel', x: 20,   y: 5,  breite: 12,  farbe: 0xa9b2bf },
+      { bild: 'hub_rathaus_sockel', x: 20,   y: 4,  breite: 12,  farbe: 0xa9b2bf },
       { bild: 'hub_werkstatt',      x: 5.5,  y: 14, breite: 7.6 },
       { bild: 'hub_druckerei',      x: 34.5, y: 14, breite: 7.6 },
       { bild: 'hub_kate_a',         x: 30.5, y: 23, breite: 5.5 },
@@ -153,14 +153,16 @@
     //          oben am Bild.
     //   anim:  wird als Animation abgespielt.
     requisiten: [
-      { bild: 'hub_kettenbrunnen', x: 20.5, y: 17.1, breite: 5.4, anim: 'brunnen' },
+      { bild: 'hub_kettenbrunnen', x: 20.5, y: 17.0, breite: 4.5, anim: 'brunnen' },
 
-      // Der Vorplatz des Rates: Feuerkoerbe am Portal, Banner zu beiden
+      // Der Vorplatz des Rates: Feuerkoerbe an der Fassade (auf der Standlinie
+      // des Rathauses — einen halben Schritt davor ragten ihre Fuesse in den
+      // Streifen, in dem man vor Aldric stehen kann), Banner zu beiden
       // Seiten des Portals und die Statue an der Kante.
-      { bild: 'brazier0',      x: 17.0, y: 5.7,  hoehe: 44, anim: 'feuer', licht: 0.35, fest: 0.8 },
-      { bild: 'brazier0',      x: 23.0, y: 5.7,  hoehe: 44, anim: 'feuer', licht: 0.35, fest: 0.8, spiegeln: true },
-      { bild: 'hub_banner',    x: 15.6, y: 5.05, hoehe: 96 },
-      { bild: 'hub_banner',    x: 24.4, y: 5.05, hoehe: 96, spiegeln: true },
+      { bild: 'brazier0',      x: 17.0, y: 4.05, hoehe: 44, anim: 'feuer', licht: 0.35, fest: 0.8 },
+      { bild: 'brazier0',      x: 23.0, y: 4.05, hoehe: 44, anim: 'feuer', licht: 0.35, fest: 0.8, spiegeln: true },
+      { bild: 'hub_banner',    x: 15.6, y: 4.05, hoehe: 96 },
+      { bild: 'hub_banner',    x: 24.4, y: 4.05, hoehe: 96, spiegeln: true },
       { bild: 'hub_statue',    x: 16.2, y: 7.9,  hoehe: 88, fest: 0.9 },
 
       // Die Mauer endet nicht im Nichts: ein Pfeiler an jedem Ende, im Stil
@@ -170,7 +172,7 @@
       { bild: 'hub_mauerende', x: 27.0, y: 10.0, hoehe: 74 },
 
       // Strassenlaternen an den Ecken der Ringstrasse.
-      { bild: 'hub_laternenpfahl',   x: 12.4, y: 10.6, hoehe: 104, fest: 0.5, licht: 0.12 },
+      { bild: 'hub_laternenpfahl',   x: 12.2, y: 10.6, hoehe: 104, fest: 0.5, licht: 0.12 },
       { bild: 'hub_laternenpfahl_b', x: 27.6, y: 10.6, hoehe: 104, fest: 0.5, licht: 0.12 },
       { bild: 'hub_laternenpfahl',   x: 13.9, y: 20.5, hoehe: 104, fest: 0.5, licht: 0.12, spiegeln: true },
 
@@ -213,10 +215,12 @@
     // neben den schmalen Stadtleuten zu gross.
     spielerHoehe: 50,
 
-    // Die Terrasse: Rathaus in Zeile 2-4, Vorplatz 5-7, Mauer 8-9.
+    // Die Terrasse: Rathaus in Zeile 1-3, Vorplatz 4-7, Mauer 8-9. Der Vorplatz
+    // ist vier Zeilen tief: bei drei blieb fuer den 56 px hohen Koerper nur ein
+    // Streifen von 32 px, und Aldric war kaum ansprechbar.
     // h zaehlt die Mauerzeilen mit. Die Treppe fuellt die Luecke in der
     // Mauer; links und rechts davon steht je ein Mauerstueck.
-    terrasse: { x: 13, y: 2, b: 14, h: 8, treppeX: 18, treppeB: 4 }
+    terrasse: { x: 13, y: 1, b: 14, h: 9, treppeX: 18, treppeB: 4 }
   };
 
   if (typeof window !== 'undefined') window.HUB_NEU_KARTE = HUB_NEU_KARTE;
