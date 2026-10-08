@@ -28,6 +28,17 @@ const PLAYER_FIGUR_HOEHE = 54;
 // mal schmaler).
 const PLAYER_FIGUR_BEZUG = 'dir06_f00';
 
+// Eine Szene darf die Figur anders hoch wollen als die 54 des Dungeons:
+// scene.spielerFigurHoehe. Der gekachelte Hub (#181) setzt das, weil die
+// Figur neben den Hub-NPC zu gross wirkte — gleich hoch gemessen, aber mit
+// breitem hellem Umhang massiger als die schmalen Stadtleute. Einmal beim
+// Erzeugen zu skalieren reicht nicht: jedes Nachladen einer Laufrichtung
+// setzt die Darstellung neu, und dann hiesse es wieder 54.
+function _figurHoeheFuer(scene) {
+  const h = scene && scene.spielerFigurHoehe;
+  return (typeof h === 'number' && h > 0) ? h : PLAYER_FIGUR_HOEHE;
+}
+
 // Die Verkleidung traegt das BILD DER KETTENWACHE (chainguard_right0), also
 // bekommt sie deren Hoehe aus derselben Leiter. Das fruehere *1.2 war nur
 // noetig, weil hier mit der Rahmenhoehe gerechnet wurde.
@@ -812,7 +823,7 @@ function applyPlayerDisplaySettings(sprite) {
       || figurGrenzen(sprite.scene, textureKey);
     if (fig && fig.boundsHeight > 0 && fig.sourceHeight > 0) {
       targetHeight = Math.max(1, Math.round(
-        (PLAYER_FIGUR_HOEHE / PLAYER_VISUAL_SCALE) * (fig.sourceHeight / fig.boundsHeight)));
+        (_figurHoeheFuer(sprite.scene) / PLAYER_VISUAL_SCALE) * (fig.sourceHeight / fig.boundsHeight)));
     }
     // Die BREITE folgt dem Bild, nicht einer festen Zahl.
     //

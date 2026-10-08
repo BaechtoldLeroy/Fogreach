@@ -86,10 +86,17 @@ function rauschen(x, y) {
         const schwelle = 0.5
           + (BAYER[y & 3][x & 3] / 15 - 0.5) * 0.58
           + (rauschen(x, y) - 0.5) * 0.30;
-        const q = (f >= schwelle) ? O : U;
         const i = (y * W + x) * 4;
-        raus[i] = q.data[i]; raus[i + 1] = q.data[i + 1];
-        raus[i + 2] = q.data[i + 2]; raus[i + 3] = q.data[i + 3];
+        // Ausserhalb der oberen Art bleibt die Kachel DURCHSICHTIG. Bis b331
+        // wurde dort die untere Art eingesetzt — dann konnte eine Art nur an
+        // genau die eine grenzen, die eingebacken war. Wo Stein an Gras
+        // stiess, malte die Erdhaelfte der Steinkachel ueber das Gras, und
+        // es blieb eine harte Kante. Durchsichtig liegt jede Schicht sauber
+        // auf dem, was darunter schon gezeichnet ist.
+        if (f >= schwelle) {
+          raus[i] = O.data[i]; raus[i + 1] = O.data[i + 1];
+          raus[i + 2] = O.data[i + 2]; raus[i + 3] = O.data[i + 3];
+        }
       }
     }
     const datei = path.join(nach, 'ueber_' + name + maske + '.png');

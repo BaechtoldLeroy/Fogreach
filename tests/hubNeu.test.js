@@ -55,27 +55,31 @@ test('die Karte ist rechteckig und kennt jedes ihrer Zeichen', () => {
     'Kachelmass und Entwurfseinheit passen nicht zum SCALE_FACTOR');
 });
 
-test('Stein stoesst nirgends direkt an Gras', () => {
-  // Fuer Stein-an-Erde und Gras-an-Erde gibt es Uebergangskacheln, fuer
-  // Stein-an-Gras nicht. Wo die beiden sich direkt beruehren, bleibt genau
-  // die harte Kante stehen, derentwegen der Umbau ueberhaupt laeuft.
-  const K = karte();
-  const art = (x, y) => {
-    if (x < 0 || y < 0 || x >= K.breite || y >= K.hoehe) return null;
-    return K.arten[K.zeilen[y].charAt(x)] || null;
-  };
-  const stoss = [];
-  for (let y = 0; y < K.hoehe; y++) {
-    for (let x = 0; x < K.breite; x++) {
-      const a = art(x, y);
-      if (a !== 'platte' && a !== 'pflaster') continue;
-      [[1, 0], [0, 1], [-1, 0], [0, -1]].forEach(([dx, dy]) => {
-        if (art(x + dx, y + dy) === 'gras') stoss.push(x + ',' + y);
+test('die Uebergangskacheln sind ausserhalb ihrer Art durchsichtig', async () => {
+  // Bis b331 trugen sie die untere Art eingebacken (Stein UEBER Erde). Dann
+  // konnte Stein nur an Erde grenzen: wo er an Gras stiess, malte die
+  // Erdhaelfte ueber das Gras, und eine harte Kante blieb. Durchsichtig
+  // liegt jede Schicht auf dem, was darunter schon gezeichnet ist — Stein
+  // geht direkt in Wiese ueber.
+  const sharp = require('sharp');
+  const W = welt();
+  const zuDicht = [];
+  for (const sch of W._SCHICHTEN) {
+    for (let m = 1; m < 15; m++) {
+      const { data, info } = await sharp(path.join(HUB_ASSETS, 'ueber_' + sch.name + m + '.png'))
+        .ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      // Das Eckpixel jeder Ecke, die zur UNTEREN Art gehoert, muss
+      // durchsichtig sein. (Weiter innen reicht die Rasterung der oberen
+      // Art absichtlich hinein — das ist der weiche Rand.)
+      const ecken = [[0, 0, 8], [1, 0, 4], [0, 1, 2], [1, 1, 1]];   // NW NE SW SE
+      ecken.forEach(([ex, ey, bit]) => {
+        if (m & bit) return;
+        const x = ex ? info.width - 1 : 0, y = ey ? info.height - 1 : 0;
+        if (data[(y * info.width + x) * 4 + 3] !== 0) zuDicht.push(sch.name + m);
       });
     }
   }
-  assert.deepStrictEqual([...new Set(stoss)], [],
-    'Stein grenzt ohne Uebergang an Gras bei: ' + [...new Set(stoss)].join(' '));
+  assert.deepStrictEqual([...new Set(zuDicht)], [], 'diese Uebergaenge tragen die untere Art eingebacken: ' + [...new Set(zuDicht)].join(', '));
 });
 
 test('jedes Bild, das die Karte nennt, liegt auf der Platte', () => {
@@ -403,9 +407,21 @@ test('jeder NPC und jede Tuer ist mit dem echten Koerper erreichbar', () => {
   const M = 1536 / 960;
   const welt = W.welt();
   const wand = HB.colliders.map((c) => ({ x0: c.x * M, y0: c.y * M, x1: (c.x + c.w) * M, y1: (c.y + c.h) * M }));
-  // Koerper wie in player.js: 34 breit, 56 hoch, Fuesse unten.
+  // NPC sind feste Koerper (30 x 36 ueber dem Fuss, HubSceneV2). Mit ALLEN,
+  // auch den gerade ausgeblendeten: sie bekommen ihren Koerper zurueck,
+  // sobald sie im spaeteren Akt erscheinen. In b331 stand Thom mitten im
+  // einzigen Gang zur Druckerei — ohne NPC-Koerper sah dieser Test das nicht.
+  K.npcs.forEach((n) => {
+    const nx = n.x * K.kachel, ny = n.y * K.kachel;
+    wand.push({ x0: nx - 15, x1: nx + 15, y0: ny - 36, y1: ny });
+  });
+  // Koerper wie in player.js: 34 breit, 56 hoch, Fuesse unten — plus 4 px
+  // Luft ringsum. Ein Spalt, durch den man nur auf den Pixel genau passt,
+  // ist in der Hand des Spielers ein versperrter Weg (so stand Thom in b331
+  // im Gang zur Druckerei: 11 px Platz neben ihm).
+  const LUFT = 4;
   const frei = (x, y) => {
-    const x0 = x - 17, x1 = x + 17, y0 = y - 56, y1 = y;
+    const x0 = x - 17 - LUFT, x1 = x + 17 + LUFT, y0 = y - 56 - LUFT, y1 = y + LUFT;
     if (x0 < 0 || y0 < 0 || x1 > welt.breite || y1 > welt.hoehe) return false;
     return !wand.some((r) => x0 < r.x1 && x1 > r.x0 && y0 < r.y1 && y1 > r.y0);
   };
@@ -535,7 +551,7 @@ test('die Stuetzmauer endet an beiden Seiten in einem Pfeiler', () => {
   // Sie endete in b330 einfach im Gras — "in der Luft".
   const K = karte();
   const T = K.terrasse;
-  const pfeiler = K.requisiten.filter((r) => r.bild === 'hub_pfeiler');
+  const pfeiler = K.requisiten.filter((r) => r.bild === 'hub_mauerende');
   const fussZeile = T.y + T.h;
   [T.x, T.x + T.b].forEach((ende) => {
     const da = pfeiler.some((p) => Math.abs(p.x - ende) <= 1 && Math.abs(p.y - fussZeile) <= 0.5);
@@ -551,4 +567,146 @@ test('keine Laterne steht ohne Pfahl auf dem Boden', () => {
   assert.deepStrictEqual(ohne.map((r) => r.bild + ' bei ' + r.x + '/' + r.y), [],
     'Lichter ohne Pfahl: ' + ohne.map((r) => r.bild).join(', '));
   assert.ok(!K.requisiten.some((r) => r.bild === 'hub_laterne'), 'die Haengelaterne steht wieder auf dem Boden');
+});
+
+// --- Runde 3: Loop, eine Box, Figur, Wiese ------------------------------------
+
+test('das Wasserspiel ist ein Loop: vom letzten Bild zurueck zum ersten ist kein Sprung', async () => {
+  // Die erste Animation lief Strahl - Aufprall - Stille, und dann sprang sie
+  // zurueck auf den vollen Strahl. Ein Loop heisst: der Schritt vom letzten
+  // zum ersten Bild ist nicht groesser als die Schritte dazwischen.
+  const sharp = require('sharp');
+  const bilder = [];
+  for (let i = 0; i < 8; i++) {
+    const { data } = await sharp(path.join(HUB_ASSETS, 'kettenbrunnen' + i + '.png'))
+      .ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    bilder.push(data);
+  }
+  const diff = (a, b) => {
+    let n = 0;
+    for (let k = 0; k < a.length; k += 4) {
+      if (Math.abs(a[k] - b[k]) + Math.abs(a[k + 1] - b[k + 1]) + Math.abs(a[k + 2] - b[k + 2])
+        + Math.abs(a[k + 3] - b[k + 3]) > 24) n++;
+    }
+    return n;
+  };
+  const schritte = [];
+  for (let i = 0; i < 7; i++) schritte.push(diff(bilder[i], bilder[i + 1]));
+  const rueck = diff(bilder[7], bilder[0]);
+  // Gegen den TYPISCHEN Schritt (Median), nicht den groessten: ein einziger
+  // Sprung mitten in der Folge darf den Massstab nicht verschieben.
+  const typisch = schritte.slice().sort((a, b) => a - b)[3];
+  assert.ok(rueck <= typisch * 1.5,
+    'vom letzten zum ersten Bild aendern sich ' + rueck + ' Pixel, typisch sind ' + typisch);
+  assert.ok(Math.max(...schritte) <= typisch * 2.5,
+    'mitten in der Folge springt das Bild: ' + schritte.join(', '));
+
+  // Was man sieht, ist nicht der Pixelabstand, sondern ob der Strahl
+  // AUSSETZT: die erste Animation lief Strahl - Aufprall - Stille, und die
+  // Wassermenge schwankte um ein Viertel. Ein Loop fliesst gleichmaessig.
+  const wasser = (d, w, h) => {
+    let n = 0;
+    for (let y = 0; y < Math.floor(h * 0.6); y++) {
+      for (let x = 0; x < w; x++) {
+        const k = (y * w + x) * 4;
+        if (d[k + 3] > 200 && d[k + 2] > 170 && d[k + 1] > 140 && d[k + 2] > d[k] + 25) n++;
+      }
+    }
+    return n;
+  };
+  const m = await sharp(path.join(HUB_ASSETS, 'kettenbrunnen0.png')).metadata();
+  const menge = bilder.map((d) => wasser(d, m.width, m.height));
+  assert.ok(Math.min(...menge) / Math.max(...menge) >= 0.9,
+    'die Wassermenge schwankt von Bild zu Bild: ' + menge.join(' ') + ' — der Strahl setzt aus');
+});
+
+test('das Mauerende ist aus demselben Stein wie die Mauer', async () => {
+  // Der erste Pfeiler war hell und anders gemauert. Gemessen an der
+  // mittleren Farbe der sichtbaren Pixel.
+  const sharp = require('sharp');
+  const mittel = async (n) => {
+    const { data } = await sharp(path.join(HUB_ASSETS, n + '.png')).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    let r = 0, g = 0, b = 0, z = 0;
+    for (let k = 0; k < data.length; k += 4) if (data[k + 3] > 200) { r += data[k]; g += data[k + 1]; b += data[k + 2]; z++; }
+    return [r / z, g / z, b / z];
+  };
+  const K = karte();
+  const ende = K.requisiten.find((r) => /mauerende/.test(r.bild));
+  assert.ok(ende, 'kein Mauerende in der Karte');
+  const a = await mittel('stuetzmauer'), b = await mittel(ende.bild.slice(4));
+  const abstand = Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  assert.ok(abstand < 25, 'das Mauerende weicht um ' + abstand.toFixed(1) + ' in der Farbe von der Mauer ab');
+});
+
+test('neben dem Rathaus liegt kein Stein mehr, nur Wiese und Wald', () => {
+  // Der Vorplatz reicht genau so weit wie das Rathaus. Was links und rechts
+  // davon auf der Terrasse liegt, ist Wald.
+  const K = karte();
+  const R = [];
+  K.zeilen.forEach((z, y) => { for (let x = 0; x < z.length; x++) if (z[x] === 'R') R.push(x); });
+  const links = Math.min(...R), rechts = Math.max(...R);
+  const stein = [];
+  for (let y = K.terrasse.y; y < K.terrasse.y + K.terrasse.h - 2; y++) {
+    for (let x = K.terrasse.x; x < K.terrasse.x + K.terrasse.b; x++) {
+      if (x >= links && x <= rechts) continue;
+      const c = K.zeilen[y].charAt(x);
+      if (c !== 'g') stein.push(x + ',' + y + '=' + c);
+    }
+  }
+  assert.deepStrictEqual(stein, [], 'neben dem Rathaus liegt noch: ' + stein.join(' '));
+  assert.strictEqual(K.arten.R, 'gras', 'unter der schraegen Sockel-Ecke des Rathauses liegt keine Wiese');
+});
+
+test('nie mehr als eine Aktionsbox, und sie ist die gestaltete', () => {
+  // Vorher: Schild ueber der Tuer UND Box ueber dem Kopf, Namensschild ueber
+  // dem NPC UND Box — bei zwei NPC nebeneinander vier Kaestchen. Hier wird
+  // die Figur ueber den ganzen Platz gefuehrt und an jeder Stelle gezaehlt.
+  const r = mit.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2'), p = sc.player;
+    var gestaltet = !!(sc.prompt && sc.prompt._c);
+    var maxBoxen = 0, wo = null, mitZiel = 0, eckig = [];
+    for (var y = 150; y < 760; y += 12) {
+      for (var x = 20; x < 1260; x += 12) {
+        p.x = x; p.y = y;
+        sc._refreshInteractionPrompt();
+        var n = sc.prompt.visible ? 1 : 0;
+        (sc.entranceLabels || []).forEach(function (e) { if (e.label.visible) n++; });
+        (sc.npcs || []).forEach(function (q) { if (q.nameText && q.nameText.visible) n++; });
+        if (sc.prompt.visible) mitZiel++;
+        if (n > maxBoxen) { maxBoxen = n; wo = x + '/' + y; }
+      }
+    }
+    var text = sc.prompt._c ? sc.prompt._c.list.filter(function (o) { return o.type === 'Text'; })
+      .map(function (o) { return o.text; }) : [];
+    return { gestaltet: gestaltet, maxBoxen: maxBoxen, wo: wo, mitZiel: mitZiel, texte: text };
+  })()`);
+  assert.ok(r.gestaltet, 'die Aktionsbox ist noch das alte Textfeld');
+  assert.ok(r.mitZiel > 50, 'nur an ' + r.mitZiel + ' Stellen gab es ueberhaupt ein Ziel — der Fall misst nichts');
+  assert.ok(r.maxBoxen <= 1, 'bei ' + r.wo + ' standen ' + r.maxBoxen + ' Kaestchen gleichzeitig');
+  // Die Taste hat ein eigenes Schild; "[E]" steht nicht mehr im Text.
+  assert.ok(!Array.prototype.slice.call(r.texte).some((t) => /\[E\]/.test(t)), 'in der Box steht noch "[E]"');
+});
+
+test('die Figur ist im Hub kleiner als im Dungeon, auch nach einem Richtungswechsel', () => {
+  // Gleich hoch gemessen wie die NPC wirkte sie mit dem breiten hellen
+  // Umhang zu gross. Jedes Nachladen einer Laufrichtung setzt die
+  // Darstellung neu — darum wird nach einem Wechsel noch einmal gemessen.
+  const K = karte();
+  const miss = `(function () {
+    var sc = window.game.scene.getScene('HubSceneV2'), p = sc.player;
+    var f = figurGrenzen(sc, 'dir06_f00');
+    return f ? f.boundsHeight * Math.abs(p.scaleY) : null;
+  })()`;
+  const vorher = mit.run(miss);
+  mit.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2'), p = sc.player;
+    if (sc.textures.exists('dir02_f00')) p.setTexture('dir02_f00');
+    if (typeof applyPlayerDisplaySettings === 'function') applyPlayerDisplaySettings(p);
+    return 1;
+  })()`);
+  const nachher = mit.run(miss);
+  assert.ok(Math.abs(vorher - K.spielerHoehe) <= 1.5, 'die Figur ist ' + vorher + ' hoch statt ' + K.spielerHoehe);
+  assert.ok(Math.abs(nachher - K.spielerHoehe) <= 1.5,
+    'nach dem Richtungswechsel ist die Figur ' + nachher + ' hoch statt ' + K.spielerHoehe);
+  assert.ok(K.spielerHoehe < 54, 'die Hub-Figur ist nicht kleiner als die 54 des Dungeons');
 });

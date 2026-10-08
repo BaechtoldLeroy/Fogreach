@@ -649,6 +649,12 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   createPrompt() {
+    // #181: im gekachelten Hub die gestaltete Aktionsbox.
+    if (window.HubNeuWelt && window.HubNeuWelt.aktiv()) {
+      this._eineAktionsbox = true;
+      this.prompt = window.HubNeuWelt.aktionsbox(this);
+      return;
+    }
     this.prompt = this.add.text(0, 0, '', {
       fontFamily: 'monospace',
       fontSize: 16,
@@ -952,8 +958,10 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Etwas tiefer als 0.65 spawnen: der (vergroesserte) Brunnen-Collider reicht
     // bis ~y 640, bei 0.65 (y 666) stand der Spieler visuell im Becken.
-    // #181: Der gekachelte Platz bringt seinen eigenen Startpunkt mit.
+    // #181: Der gekachelte Platz bringt seinen eigenen Startpunkt mit —
+    // und eine eigene Hoehe der Figur (player.js liest sie an der Szene).
     const _neu = window.HubNeuWelt && window.HubNeuWelt.aktiv() && window.HubNeuWelt.welt();
+    if (_neu && _neu.spielerHoehe) this.spielerFigurHoehe = _neu.spielerHoehe;
     const _start = (_neu && _neu.start) || { x: W / 2, y: H * 0.72 };
     this.player = this.physics.add.sprite(_start.x, _start.y, textureKey)
       .setCollideWorldBounds(true);
@@ -1169,6 +1177,7 @@ class HubSceneV2 extends Phaser.Scene {
 
   _refreshInteractionPrompt() {
     if (this._dialogOpen || !this.player?.body) return;
+    if (this._eineAktionsbox) return this._naechstesZiel();
     
     const playerBounds = this.player.getBounds();
     let active = null;
@@ -1238,6 +1247,61 @@ class HubSceneV2 extends Phaser.Scene {
     // The name is the stable hubLayout id (e.g. "Werkstatt", "Rathauskeller",
     // "Druckerei") — not the localized label.
     const approachedName = (active && active.type === 'entrance') ? (active.data && (active.data.id || active.data.name || activeLabel)) : null;
+    if (approachedName !== this._lastApproachedName) {
+      this._lastApproachedName = approachedName;
+      if (approachedName && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
+        window.TutorialSystem.report('hub.entrance.approached', { name: approachedName });
+      }
+    }
+  }
+
+  /**
+   * #181: Genau EIN Ziel, genau EINE Box.
+   *
+   * Die alte Pruefung zeigte fuer jede ueberlappte Tuer ihr Schild UND die
+   * Box ueber dem Kopf, fuer jeden NPC in Reichweite sein Namensschild UND
+   * die Box — bei zwei NPC nebeneinander waren es vier Kaestchen, und [E]
+   * nahm einfach den zuletzt geprueften. Hier gewinnt das NAECHSTE Ziel,
+   * und nur die Box ueber dem Kopf zeigt, was [E] tun wird.
+   */
+  _naechstesZiel() {
+    const p = this.player;
+    const pb = p.getBounds();
+    let best = null, bestD = Infinity, bestLabel = null;
+    const nimm = (d, ziel, label) => { if (d < bestD) { bestD = d; best = ziel; bestLabel = label; } };
+
+    for (const { zone, label, data } of this.entranceLabels) {
+      label.setVisible(false);
+      const b = zone.getBounds();
+      if (Phaser.Geom.Rectangle.Overlaps(b, pb)) {
+        nimm(Phaser.Math.Distance.Between(p.x, p.y, b.centerX, b.bottom),
+          { type: 'entrance', data, zone }, data.label);
+      }
+    }
+    for (const { sprite, nameText, data } of this.npcs) {
+      if (nameText) nameText.setVisible(false);
+      if (!sprite.visible || !sprite.active) continue;
+      const d = Phaser.Math.Distance.Between(p.x, p.y, data.x * SCALE_FACTOR, data.y * SCALE_FACTOR);
+      if (d < 100) nimm(d, { type: 'npc', data }, data.name);
+    }
+    if (this._hubPhaseRefs && Array.isArray(this._hubPhaseRefs.posterSpots)) {
+      const ediktSchritt = this._ediktSchritt();
+      for (const t of this._hubPhaseRefs.posterSpots) {
+        if (!t) continue;
+        const d = Phaser.Math.Distance.Between(p.x, p.y, t.x, t.y - 40 * SCALE_FACTOR);
+        if (d < 90 * SCALE_FACTOR) {
+          nimm(d, { type: 'anschlag', edikt: ediktSchritt === 1 },
+            _HUB_T(ediktSchritt === 1 ? 'hub.anschlag.prompt' : 'hub.brett.prompt'));
+        }
+      }
+    }
+
+    this._activeInteractable = best;
+    if (best) { this.prompt.setText(bestLabel); this.prompt.setVisible(true); }
+    else this.prompt.setVisible(false);
+
+    // Tutorial: wie im alten Weg nur beim Wechsel der Tuer melden.
+    const approachedName = (best && best.type === 'entrance') ? (best.data && (best.data.id || best.data.name || bestLabel)) : null;
     if (approachedName !== this._lastApproachedName) {
       this._lastApproachedName = approachedName;
       if (approachedName && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {

@@ -30,6 +30,7 @@
  *   M  Stuetzmauer   die Kante der Terrasse — undurchlaessig
  *   S  Freitreppe    der einzige Weg hinauf
  *   H  Gebaeude      undurchlaessig
+ *   R  Rathaus       undurchlaessig, Wiese darunter
  *   B  Brunnenbecken undurchlaessig
  *   x  nichts        hinter der Terrasse: Nebel
  *
@@ -47,25 +48,28 @@
 
     // Welche Zeichen sind undurchlaessig. Daraus baut hubNeuWelt die
     // Kollisionsflaechen — es gibt keine zweite Liste.
-    fest: 'HBMxgh',
+    fest: 'HRBMxgh',
 
     // Bodenarten je Zeichen. Gezeichnet wird in Schichten: Erde als Grund,
     // darueber Gras und Platte, darueber Pflaster.
     arten: {
       '.': 'platte', '#': 'pflaster', 'd': 'erde', 'g': 'gras',
       'T': 'platte', 'M': 'erde', 'S': 'platte', 'B': 'platte',
-      'H': 'erde', 'h': 'erde', 'x': null
+      'H': 'erde', 'h': 'erde', 'x': null,
+      // Unter dem Rathaus liegt Wiese: an seiner schraegen Sockel-Ecke sieht
+      // man den Boden, und dort war es grauer Stein.
+      'R': 'gras'
     },
 
     zeilen: [
 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
       'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-      'gggggggggggggggHHHHHHHHHHggggggggggggggg',
-      'gggggggggggggggHHHHHHHHHHggggggggggggggg',
-      'gggggggggggggMMHHHHHHHHHHMMggggggggggggg',
-      'gggggggggggggMTTTTTTTTTTTTMggggggggggggg',
-      'gggggggggggggMTTTTTTTTTTTTMggggggggggggg',
-      'gggggggggggggMTTTTTTTTTTTTMggggggggggggg',
+      'gggggggggggggggRRRRRRRRRRggggggggggggggg',
+      'gggggggggggggggRRRRRRRRRRggggggggggggggg',
+      'gggggggggggggggRRRRRRRRRRggggggggggggggg',
+      'gggggggggggggggTTTTTTTTTTggggggggggggggg',
+      'gggggggggggggggTTTTTTTTTTggggggggggggggg',
+      'gggggggggggggggTTTTTTTTTTggggggggggggggg',
       'gggggggggggggMMMMMSSSSMMMMMggggggggggggg',
       'gghhhhhhhddddMMMMMSSSSMMMMMddddhhhhhhhgg',
       'gghHHHHHh.........####.........hHHHHHhgg',
@@ -74,7 +78,7 @@
       'gghHHHHHh.....##.........##....hHHHHHhgg',
       'ggddd###########..BBBBB..###########ddgg',
       'ggddd###########..BBBBB..###########ddgg',
-      'gghhhhhhh.....##..BBBBB..##hhhhhhhddddgg',
+      'ggdddddd......##..BBBBB..##.....ddddddgg',
       'gghhhhhhh.....##.........##hhhhhhhddddgg',
       'gghhhhhhh.....#############hhhhhhhddddgg',
       'gghHHHHHh.....#############hhhhhhhddddgg',
@@ -110,8 +114,8 @@
       { id: 'aldric',          x: 23.4, y: 7.1 },   // auf dem Vorplatz des Rates
       { id: 'klerus_priester', x: 16.8, y: 10.9 },  // am Fuss der Treppe, links
       { id: 'stadtwache',      x: 23.2, y: 10.9 },  // am Fuss der Treppe, rechts
-      { id: 'branka',          x: 8.4,  y: 14.9 },  // vor ihrer Esse
-      { id: 'thom',            x: 31.6, y: 14.9 },  // vor der Druckerei
+      { id: 'branka',          x: 8.6,  y: 14.3 },  // an der Hauswand, nicht im Gang
+      { id: 'thom',            x: 31.4, y: 14.3 },  // an der Hauswand, nicht im Gang
       { id: 'mara',            x: 11.4, y: 10.5 },  // im Winkel zwischen Wald und Terrasse
       { id: 'harren',          x: 11.6, y: 21.1 },  // abseits, bei den Baenken
       { id: 'buerger',         x: 24.3, y: 21.0 },  // beim Marktstand
@@ -133,8 +137,8 @@
       { bild: 'hub_rathaus_sockel', x: 20,   y: 5,  breite: 12,  farbe: 0xa9b2bf },
       { bild: 'hub_werkstatt',      x: 5.5,  y: 14, breite: 7.6 },
       { bild: 'hub_druckerei',      x: 34.5, y: 14, breite: 7.6 },
-      { bild: 'hub_kate_a',         x: 30.5, y: 23, breite: 6.2 },
-      { bild: 'hub_kate_b',         x: 5.5,  y: 23, breite: 6.2 }
+      { bild: 'hub_kate_a',         x: 30.5, y: 23, breite: 5.5 },
+      { bild: 'hub_kate_b',         x: 5.5,  y: 23, breite: 6.0 }
     ],
 
     // Requisiten stehen mit ihrer HOEHE in Pixeln, wie die Figuren (der
@@ -152,18 +156,18 @@
       { bild: 'hub_kettenbrunnen', x: 20.5, y: 17.1, breite: 5.4, anim: 'brunnen' },
 
       // Der Vorplatz des Rates: Feuerkoerbe am Portal, Banner zu beiden
-      // Seiten des Rathauses, Hecken und die Statue an der Kante.
+      // Seiten des Portals und die Statue an der Kante.
       { bild: 'brazier0',      x: 17.0, y: 5.7,  hoehe: 44, anim: 'feuer', licht: 0.35, fest: 0.8 },
       { bild: 'brazier0',      x: 23.0, y: 5.7,  hoehe: 44, anim: 'feuer', licht: 0.35, fest: 0.8, spiegeln: true },
-      { bild: 'hub_banner',    x: 14.6, y: 5.0,  hoehe: 96 },
-      { bild: 'hub_banner',    x: 25.4, y: 5.0,  hoehe: 96, spiegeln: true },
-      { bild: 'hub_hecke',     x: 14.7, y: 7.9,  hoehe: 34, fest: 1.2 },
-      { bild: 'hub_hecke',     x: 25.3, y: 7.9,  hoehe: 34, fest: 1.2, spiegeln: true },
+      { bild: 'hub_banner',    x: 15.6, y: 5.05, hoehe: 96 },
+      { bild: 'hub_banner',    x: 24.4, y: 5.05, hoehe: 96, spiegeln: true },
       { bild: 'hub_statue',    x: 16.2, y: 7.9,  hoehe: 88, fest: 0.9 },
 
-      // Die Mauer endet nicht im Nichts: ein Pfeiler an jedem Ende.
-      { bild: 'hub_pfeiler',   x: 13.4, y: 10.0, hoehe: 78 },
-      { bild: 'hub_pfeiler',   x: 26.6, y: 10.0, hoehe: 78, spiegeln: true },
+      // Die Mauer endet nicht im Nichts: ein Pfeiler an jedem Ende, im Stil
+      // der Mauer selbst (mit ihr als Vorlage erzeugt). Der erste war hell
+      // und anders gemauert und passte nicht.
+      { bild: 'hub_mauerende', x: 13.0, y: 10.0, hoehe: 74 },
+      { bild: 'hub_mauerende', x: 27.0, y: 10.0, hoehe: 74 },
 
       // Strassenlaternen an den Ecken der Ringstrasse.
       { bild: 'hub_laternenpfahl',   x: 12.4, y: 10.6, hoehe: 104, fest: 0.5, licht: 0.12 },
@@ -173,6 +177,9 @@
       // Westen arbeitet: vor der Werkstatt, nicht neben ihr.
       { bild: 'hub_fass',      x: 2.7,  y: 15.0, hoehe: 32, fest: 0.9 },
       { bild: 'hub_holz',      x: 3.8,  y: 15.3, hoehe: 26, fest: 1.4 },
+      // Der Karren steht bei der Werkstatt. Unten bei den Baenken schloss er
+      // mit Kate, Harren und Laterne Elaras Ecke ein.
+      { bild: 'hub_karren',    x: 5.6,  y: 16.7, hoehe: 36, fest: 1.8 },
 
       // Osten ist Amt: Blumen unter dem Fenster, Papier in Kisten.
       { bild: 'hub_blumenkasten', x: 36.4, y: 14.2, hoehe: 26, fest: 1.4 },
@@ -184,7 +191,6 @@
       { bild: 'hub_stand',     x: 22.4, y: 20.6, hoehe: 74, fest: 2.0 },
       { bild: 'hub_bank',      x: 10.6, y: 20.3, hoehe: 30, fest: 1.6 },
       { bild: 'hub_bank',      x: 12.8, y: 20.3, hoehe: 30, fest: 1.6, spiegeln: true },
-      { bild: 'hub_karren',    x: 16.4, y: 22.3, hoehe: 36, fest: 1.8 },
       { bild: 'hub_schild',    x: 21.8, y: 22.4, hoehe: 64, fest: 0.4 },
       { bild: 'hub_poller',    x: 17.5, y: 23.5, hoehe: 24, fest: 0.5 },
       { bild: 'hub_poller',    x: 21.5, y: 23.5, hoehe: 24, fest: 0.5 },
@@ -201,6 +207,11 @@
     // Startpunkt (Weltmitte, 72 % der Hoehe) war fuer das gemalte Bild
     // abgestimmt und stellte die Figur hier halb in das Brunnenbecken.
     start: { x: 20, y: 19.9 },
+
+    // Die Spielerfigur im Hub: etwas kleiner als die 54 des Dungeons. Gleich
+    // hoch gemessen wie die NPC, wirkte sie mit dem breiten hellen Umhang
+    // neben den schmalen Stadtleuten zu gross.
+    spielerHoehe: 50,
 
     // Die Terrasse: Rathaus in Zeile 2-4, Vorplatz 5-7, Mauer 8-9.
     // h zaehlt die Mauerzeilen mit. Die Treppe fuellt die Luecke in der

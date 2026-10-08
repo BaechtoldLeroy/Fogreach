@@ -76,7 +76,8 @@
     // was ueber ihm liegt — ohne diese Luft wuerde sein Dach abgeschnitten.
     // Die Physik bleibt bei 0: hinauslaufen kann niemand.
     var start = K.start ? { x: K.start.x * K.kachel, y: K.start.y * K.kachel } : null;
-    return { breite: K.breite * K.kachel, hoehe: K.hoehe * K.kachel, oben: -300, start: start };
+    return { breite: K.breite * K.kachel, hoehe: K.hoehe * K.kachel, oben: -300, start: start,
+      spielerHoehe: K.spielerHoehe || null };
   }
 
   /**
@@ -458,6 +459,59 @@
     };
   }
 
+  /**
+   * Die Aktionsbox: EIN Kaestchen ueber der Figur, das sagt, was [E] jetzt
+   * tut. Messing auf Russ — die Farben der Werkstatt —, der Name in einer
+   * Buchschrift, die Taste als eigenes kleines Schild links davon.
+   *
+   * Sie spricht dieselbe Sprache wie das alte Textfeld (setText, setVisible,
+   * setPosition), damit HubSceneV2 an keiner der Stellen etwas aendern
+   * muss, die die Box ein- und ausblenden.
+   */
+  function aktionsbox(scene) {
+    var MESSING = 0xc9a45c, RUSS = 0x15161b;
+    var c = scene.add.container(0, 0).setDepth(1000).setVisible(false);
+    var g = scene.add.graphics();
+    var taste = scene.add.text(0, 0, 'E', { fontFamily: 'monospace', fontSize: '11px',
+      fontStyle: 'bold', color: '#e9cf8f' }).setOrigin(0.5, 0.5);
+    var t = scene.add.text(0, 0, '', { fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '14px', color: '#f1e6c8' }).setOrigin(0, 0.5);
+    c.add([g, taste, t]);
+    var box = {
+      _c: c, visible: false,
+      setText: function (s) {
+        // "[E]" steckt in den alten Beschriftungen; hier traegt die Taste
+        // ihr eigenes Schild.
+        t.setText(String(s || '').replace(/\s*\[E\]\s*$/, ''));
+        var tw = 16, gap = 7, px = 8, h = 24;
+        var w = px + tw + gap + t.width + px;
+        var x0 = -w / 2, y0 = -h;
+        g.clear();
+        // Schatten, Flaeche, Rand
+        g.fillStyle(0x000000, 0.35); g.fillRoundedRect(x0 + 1, y0 + 2, w, h, 4);
+        g.fillStyle(RUSS, 0.94); g.fillRoundedRect(x0, y0, w, h, 4);
+        g.lineStyle(1, MESSING, 0.85); g.strokeRoundedRect(x0 + 0.5, y0 + 0.5, w - 1, h - 1, 4);
+        // Kleiner Zeiger nach unten, auf die Figur
+        g.fillStyle(RUSS, 0.94); g.fillTriangle(-5, 0, 5, 0, 0, 5);
+        g.lineStyle(1, MESSING, 0.85); g.lineBetween(-5, 0.5, 0, 5); g.lineBetween(0, 5, 5, 0.5);
+        // Tastenschild
+        var kx = x0 + px, ky = y0 + (h - tw) / 2;
+        g.fillStyle(0x2a2620, 1); g.fillRoundedRect(kx, ky, tw, tw, 3);
+        g.lineStyle(1, MESSING, 1); g.strokeRoundedRect(kx + 0.5, ky + 0.5, tw - 1, tw - 1, 3);
+        taste.setPosition(kx + tw / 2, ky + tw / 2);
+        t.setPosition(kx + tw + gap, y0 + h / 2);
+        return box;
+      },
+      setVisible: function (v) { box.visible = !!v; c.setVisible(!!v); return box; },
+      // Etwas Luft ueber dem Kopf: die Szene setzt die Box 52 px ueber den Fuss.
+      setPosition: function (x, y) { c.setPosition(Math.round(x), Math.round(y) - 6); return box; },
+      setDepth: function (d) { c.setDepth(d); return box; },
+      setOrigin: function () { return box; },
+      destroy: function () { c.destroy(); }
+    };
+    return box;
+  }
+
   /** Den ganzen Platz bauen. Gibt zurueck, was entstanden ist. */
   function bauen(scene) {
     if (!aktiv() || !scene || !scene.add) return null;
@@ -536,7 +590,9 @@
     if (daBaum.length) {
       for (var ty = 0; ty < K.hoehe; ty++) {
         for (var tx = 0; tx < K.breite; tx++) {
-          if (artAn(K, tx, ty) !== 'gras') continue;
+          // Nur auf Wald ('g'). Unter dem Rathaus liegt auch Wiese ('R'),
+          // aber dort wuerden Baeume aus seinem Sockel wachsen.
+          if (zeichenAn(K, tx, ty) !== 'g') continue;
           var w = streu(tx, ty, 11);
           if (w > 0.72) continue;                 // Luecken lassen
           var bx = tx + 0.5 + (streu(tx, ty, 17) - 0.5) * 0.7;
@@ -556,6 +612,7 @@
   var HubNeuWelt = {
     aktiv: aktiv, welt: welt, vorladen: vorladen,
     layoutUebernehmen: layoutUebernehmen, bauen: bauen, truheStellen: truheStellen, phasenAnker: phasenAnker,
+    aktionsbox: aktionsbox,
     _streu: streu, _festeFlaechen: _festeFlaechen, _artAn: artAn, _SCHICHTEN: SCHICHTEN
   };
   if (typeof window !== 'undefined') window.HubNeuWelt = HubNeuWelt;
