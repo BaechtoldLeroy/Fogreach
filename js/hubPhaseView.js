@@ -87,9 +87,23 @@
     }
   }
 
+  // Hoehe einer Anschlagtafel als Bild: gut eine Figur (54) hoch.
+  var TAFEL_HOEHE = 64;
+
   // cx = Mitte, baseY = Standlinie (Füsse), damit die Tafel auf dem Boden
   // steht und über die Depth ihrer Standlinie in die y-Sortierung passt.
   function _drawNoticeBoard(scene, cx, baseY, state) {
+    // Asset-Austauschpunkt (#181): gibt es die Tafel im Zustand dieser Phase
+    // als Bild, steht das Bild da. Die vier Zustaende sind EINE Tafel, die
+    // nur ihre Aushaenge wechselt — darum ein gemeinsames Mass. Im
+    // ausgelieferten Hub sind diese Bilder nicht geladen, dort bleibt es bei
+    // der Zeichnung.
+    var bildKey = 'hub_tafel_' + state;
+    if (scene.textures && scene.textures.exists && scene.textures.exists(bildKey)) {
+      var bild = scene.add.image(cx, baseY, bildKey).setOrigin(0.5, 1);
+      if (bild.height > 0) bild.setScale(TAFEL_HOEHE / bild.height);
+      return bild;
+    }
     var g = scene.add.graphics();
     var panelW = 56, panelH = 62, legH = 24, legW = 6;
     var bot = baseY - legH;

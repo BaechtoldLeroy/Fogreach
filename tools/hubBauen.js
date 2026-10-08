@@ -11,9 +11,15 @@
  * Darum hier EIN Schritt: auf die Alpha-Grenzen zuschneiden, sonst nichts.
  * Kein Skalieren, kein Einpassen — die Masse entscheidet das Spiel.
  *
- *   node tools/hubBauen.js <quellordner> [--nach assets/hub]
+ *   node tools/hubBauen.js <quellordner> [--nach assets/hub] [--gemeinsam]
  *
  * Jede .png des Quellordners wird unter demselben Namen abgelegt.
+ *
+ * --gemeinsam: alle Bilder bekommen DENSELBEN Zuschnitt — die Vereinigung
+ * ihrer Grenzen. Fuer Animationsbilder. Schneidet man jedes Bild einzeln
+ * zu, ist jedes verschieden gross, und die Figur zittert von Bild zu Bild:
+ * ein Wasserstrahl, der oben herausspritzt, macht das eine Bild hoeher,
+ * und mit dem Fusspunkt unten verschiebt sich der ganze Brunnen.
  */
 'use strict';
 
@@ -52,9 +58,23 @@ async function grenzen(datei) {
   }
   fs.mkdirSync(nach, { recursive: true });
   const dateien = fs.readdirSync(quelle).filter((f) => /\.png$/i.test(f));
+  let gemeinsam = null;
+  if (process.argv.indexOf('--gemeinsam') >= 0) {
+    for (const f of dateien) {
+      const g = await grenzen(path.join(quelle, f));
+      if (!g) continue;
+      if (!gemeinsam) { gemeinsam = Object.assign({}, g); continue; }
+      const r = Math.max(gemeinsam.left + gemeinsam.width, g.left + g.width);
+      const u = Math.max(gemeinsam.top + gemeinsam.height, g.top + g.height);
+      gemeinsam.left = Math.min(gemeinsam.left, g.left);
+      gemeinsam.top = Math.min(gemeinsam.top, g.top);
+      gemeinsam.width = r - gemeinsam.left;
+      gemeinsam.height = u - gemeinsam.top;
+    }
+  }
   for (const f of dateien) {
     const voll = path.join(quelle, f);
-    const g = await grenzen(voll);
+    const g = gemeinsam || await grenzen(voll);
     if (!g) { console.warn(f + ': leer, uebersprungen'); continue; }
     await sharp(voll).extract(g).png().toFile(path.join(nach, f));
     console.log(f.padEnd(16) + g.width + 'x' + g.height);

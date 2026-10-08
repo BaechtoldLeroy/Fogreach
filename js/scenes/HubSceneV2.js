@@ -263,6 +263,15 @@ class HubSceneV2 extends Phaser.Scene {
         { x: 548 * SCALE_FACTOR, y: 300 * SCALE_FACTOR }
       ]
     };
+    // #181: Im gekachelten Hub stehen Rathaus und Anschlagtafeln woanders.
+    // Die Werte oben sind aus dem gemalten Bild abgelesen; uebernommen, landeten
+    // die Tafeln hinter dem Brunnen.
+    const _anker = neueWelt && window.HubNeuWelt.phasenAnker();
+    if (_anker) {
+      if (_anker.posterSpots && _anker.posterSpots.length) this._hubPhaseRefs.posterSpots = _anker.posterSpots;
+      if (_anker.rathausRect) this._hubPhaseRefs.rathausRect = _anker.rathausRect;
+      if (_anker.rathausEntrance) this._hubPhaseRefs.rathausEntrance = _anker.rathausEntrance;
+    }
     this._dialogOpen = false;
     this._activeInteractable = null;
     this._dialogContainer = null;
@@ -699,8 +708,10 @@ class HubSceneV2 extends Phaser.Scene {
     HUB_HITBOXES.entrances.forEach(e => {
       // #127: Die Truhe hat kein Gebaeude im Hintergrundbild — sie braucht ein
       // eigenes Bild, sonst steht man vor einer unsichtbaren Zone.
-      if (e.target === 'truhe' && typeof this._zeichneTruhe === 'function') {
-        this._zeichneTruhe(e);
+      if (e.target === 'truhe') {
+        // #181: im gekachelten Hub steht eine der Truhen aus dem Dungeon.
+        const _alsBild = window.HubNeuWelt && window.HubNeuWelt.truheStellen(this, e);
+        if (!_alsBild && typeof this._zeichneTruhe === 'function') this._zeichneTruhe(e);
       }
       const sx = e.x * SCALE_FACTOR;
       const sy = e.y * SCALE_FACTOR;
@@ -941,7 +952,10 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Etwas tiefer als 0.65 spawnen: der (vergroesserte) Brunnen-Collider reicht
     // bis ~y 640, bei 0.65 (y 666) stand der Spieler visuell im Becken.
-    this.player = this.physics.add.sprite(W / 2, H * 0.72, textureKey)
+    // #181: Der gekachelte Platz bringt seinen eigenen Startpunkt mit.
+    const _neu = window.HubNeuWelt && window.HubNeuWelt.aktiv() && window.HubNeuWelt.welt();
+    const _start = (_neu && _neu.start) || { x: W / 2, y: H * 0.72 };
+    this.player = this.physics.add.sprite(_start.x, _start.y, textureKey)
       .setCollideWorldBounds(true);
 
     if (typeof applyPlayerDisplaySettings === 'function') {

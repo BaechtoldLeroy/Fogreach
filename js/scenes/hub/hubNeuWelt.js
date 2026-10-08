@@ -30,7 +30,12 @@
 
   var BODEN_BILDER = 16;
   var TIEFE_BODEN = -20;
-  var TIEFE_NEBEL = 95;
+  // Bodennebel: direkt ueber dem Boden, unter allem, was steht. Bis b330
+  // stand hier 95 — gemeint als "ueber allem", in einer Szene, die nach y
+  // sortiert (100 bis 800), also faktisch genau das hier. Der Nebel lag
+  // auf dem Pflaster und die Haeuser ragten heraus; das sieht richtig aus
+  // und bleibt so, jetzt aber mit Absicht.
+  var TIEFE_NEBEL = TIEFE_BODEN + 3;
 
   // Die drei Grenzen, fuer die tools/uebergangBauen.js Kacheln gebaut hat.
   // oben sagt, welche Arten als "obere" gelten; flaeche sind die Kacheln
@@ -44,12 +49,15 @@
   ];
   var ERDE = 'hub_boden9';
 
-  var REQUISITEN_BILDER = ['brunnen', 'bank', 'laterne', 'kuebel', 'fass', 'kisten',
-    'schild', 'karren', 'stand', 'tafel', 'statue', 'trog', 'holz', 'kiefer',
-    'baum', 'schutt'];
-  var BAU_BILDER = ['rathaus_sockel', 'werkstatt', 'druckerei', 'kate_a', 'kate_b',
-    'stuetzmauer', 'freitreppe'];
+  var BAU_BILDER = ['stuetzmauer', 'freitreppe', 'truhe',
+    'tafel_fresh', 'tafel_faded', 'tafel_torn', 'tafel_gedruckt'];
   var BAUM_BILDER = ['hub_kiefer', 'hub_baum'];
+  var FEUER_BILDER = 9;            // brazier0..8, wie im Dungeon
+  var BRUNNEN_BILDER = 8;          // hub_kettenbrunnen0..7
+
+  // Fuss-Collider: so hoch, dass man nicht hindurchlaeuft, und flach genug,
+  // dass er nur den Fuss eines Moebels traegt, nicht seinen Koerper.
+  var FUSS_HOEHE = 0.35;           // Kacheln
 
   /** Ist der neue Hub eingeschaltet? Nur ueber die Adresse, nie im Spielstand. */
   function aktiv() {
@@ -67,7 +75,8 @@
     // Das Rathaus steht mit dem Fuss auf Zeile 7 und ist hoeher als das,
     // was ueber ihm liegt — ohne diese Luft wuerde sein Dach abgeschnitten.
     // Die Physik bleibt bei 0: hinauslaufen kann niemand.
-    return { breite: K.breite * K.kachel, hoehe: K.hoehe * K.kachel, oben: -240 };
+    var start = K.start ? { x: K.start.x * K.kachel, y: K.start.y * K.kachel } : null;
+    return { breite: K.breite * K.kachel, hoehe: K.hoehe * K.kachel, oben: -300, start: start };
   }
 
   /**
@@ -153,6 +162,18 @@
       });
     });
 
+    // Feste Requisiten bekommen einen flachen Collider unter dem Fuss.
+    // Ohne ihn laeuft man durch Baenke und Faesser und steht dann, je nach
+    // Seite, davor oder dahinter — das sah nach Fehler aus.
+    (K.requisiten || []).forEach(function (r, i) {
+      if (!r.fest) return;
+      HB.colliders.push({
+        id: 'fuss_' + i,
+        x: (r.x - r.fest / 2) * E, y: (r.y - FUSS_HOEHE) * E,
+        w: r.fest * E, h: FUSS_HOEHE * E
+      });
+    });
+
     (K.tueren || []).forEach(function (t) {
       var e = HB.entrances.filter(function (q) { return q.id === t.id; })[0];
       if (!e) return;
@@ -187,8 +208,28 @@
     for (i = 0; i < 1; i++) {
       nimm('hub_flaeche_pflaster' + i, 'assets/hub/flaeche_pflaster' + i + '.png');
     }
-    BAU_BILDER.concat(REQUISITEN_BILDER).forEach(function (b) {
-      nimm('hub_' + b, 'assets/hub/' + b + '.png');
+    BAU_BILDER.forEach(function (b) { nimm('hub_' + b, 'assets/hub/' + b + '.png'); });
+    // Was die Karte nennt, wird geladen — keine zweite Liste, die veralten
+    // koennte. hub_* liegt in assets/hub, die Feuerkoerbe sind die des
+    // Dungeons und brauchen alle neun Bilder ihrer Animation.
+    var K = karte();
+    var bilder = [];
+    (K.haeuser || []).concat(K.requisiten || []).forEach(function (r) {
+      if (bilder.indexOf(r.bild) < 0) bilder.push(r.bild);
+    });
+    BAUM_BILDER.forEach(function (b) { if (bilder.indexOf(b) < 0) bilder.push(b); });
+    bilder.forEach(function (b) {
+      if (b.indexOf('hub_') === 0) nimm(b, 'assets/hub/' + b.slice(4) + '.png');
+    });
+    (K.requisiten || []).forEach(function (q) {
+      if (q.anim === 'feuer') {
+        for (var f = 0; f < FEUER_BILDER; f++) nimm('brazier' + f, 'assets/tiles/brazier' + f + '.png');
+      }
+      if (q.anim === 'brunnen') {
+        for (var w = 0; w < BRUNNEN_BILDER; w++) {
+          nimm(q.bild + w, 'assets/hub/' + q.bild.slice(4) + w + '.png');
+        }
+      }
     });
     return n;
   }
@@ -260,7 +301,9 @@
     if (!scene.textures.exists(key)) return null;
     var K = karte();
     var px = xK * K.kachel, py = yK * K.kachel;
-    var bild = scene.add.image(px, py, key).setOrigin(0.5, 1);
+    // Ein Sprite nur, wo etwas abgespielt wird; alles andere bleibt Bild.
+    var bild = (arguments[8] ? scene.add.sprite(px, py, key) : scene.add.image(px, py, key))
+      .setOrigin(0.5, 1);
     // mass ist entweder eine Zahl (Breite in Kacheln) oder { hoehe: px }.
     var s = 1;
     if (mass && mass.hoehe && bild.height > 0) s = mass.hoehe / bild.height;
@@ -308,6 +351,111 @@
     scene.events.on('update', treiben);
     scene.events.once('shutdown', function () { scene.events.off('update', treiben); });
     return schleier;
+  }
+
+  /** Feuer und Wasserspiel abspielen; fehlt die Animation, bleibt das Bild. */
+  function _abspielen(scene, sprite, r) {
+    if (r.anim === 'feuer') {
+      if (typeof window.feuerschaleFlackern === 'function') window.feuerschaleFlackern(scene, sprite);
+      return;
+    }
+    if (r.anim === 'brunnen') {
+      var key = 'hub_wasserspiel';
+      if (!scene.anims.exists(key)) {
+        var frames = [];
+        for (var i = 0; i < BRUNNEN_BILDER; i++) {
+          if (scene.textures.exists(r.bild + i)) frames.push({ key: r.bild + i });
+        }
+        if (frames.length < 2) return;
+        scene.anims.create({ key: key, frames: frames, frameRate: 8, repeat: -1 });
+      }
+      try { sprite.play(key); } catch (e) { /* bleibt stehen */ }
+    }
+  }
+
+  /** Ein warmer, weicher Schein — EIN Verlauf, fuer alle Lichter geteilt. */
+  function _schein(scene, x, y, groesse, tiefe) {
+    var key = 'hub_schein';
+    if (!scene.textures.exists(key)) {
+      var lw = scene.textures.createCanvas ? scene.textures.createCanvas(key, 64, 64) : null;
+      if (!lw) return null;
+      var ctx = lw.getContext();
+      var g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, 'rgba(255,196,120,0.55)');
+      g.addColorStop(0.45, 'rgba(255,150,70,0.18)');
+      g.addColorStop(1, 'rgba(255,120,40,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 64, 64);
+      lw.refresh();
+    }
+    // Ein Schein liegt UEBER dem, was leuchtet — sonst verdeckt das
+    // Feuerbecken seinen eigenen Glanz.
+    var s = scene.add.image(x, y, key).setDepth(tiefe);
+    s.setScale(groesse);
+    if (s.setBlendMode && window.Phaser) s.setBlendMode(Phaser.BlendModes.ADD);
+    s._grund = groesse;
+    s._phase = streu(Math.round(x), Math.round(y), 31) * 100;
+    return s;
+  }
+
+  /**
+   * Lichter leicht flackern lassen.
+   *
+   * Leicht: ein paar Prozent Helligkeit und Groesse, aus zwei Sinus mit
+   * krummen Frequenzen — sonst pulsiert alles im Gleichtakt wie eine
+   * Warnlampe. Jedes Licht hat seine eigene Phase.
+   */
+  function _flackern(scene, lichter) {
+    if (!lichter.length) return;
+    var tick = function (zeit) {
+      var t = (zeit || 0) / 1000;
+      for (var i = 0; i < lichter.length; i++) {
+        var l = lichter[i];
+        if (!l.active) continue;
+        var w = Math.sin(t * 7.3 + l._phase) * 0.5 + Math.sin(t * 13.1 + l._phase * 1.7) * 0.5;
+        l.setAlpha(0.82 + w * 0.12);
+        l.setScale(l._grund * (1 + w * 0.05));
+      }
+    };
+    scene.events.on('update', tick);
+    scene.events.once('shutdown', function () { scene.events.off('update', tick); });
+  }
+
+  /**
+   * Die Truhe als Bild statt als Zeichnung. Gibt true zurueck, wenn sie
+   * steht — dann zeichnet HubSceneV2 seine eigene nicht.
+   */
+  function truheStellen(scene, e) {
+    if (!aktiv() || !e || !scene.textures.exists('hub_truhe')) return false;
+    var M = 1536 / 960;
+    var x = (e.x + e.w / 2) * M, y = (e.y + e.h) * M;
+    var b = scene.add.image(x, y, 'hub_truhe').setOrigin(0.5, 1);
+    // Etwas schmaler als die Zone: die Zone ist zum Hingehen, das Bild zum
+    // Ansehen.
+    var s = (e.w * M * 0.9) / b.width;
+    b.setScale(s).setDepth(y);
+    scene._truheBild = b;
+    return true;
+  }
+
+  /**
+   * Die Anker der Phasen-Darstellung in Weltkoordinaten: wo die
+   * Anschlagtafeln haengen und wo das Rathaus steht. HubSceneV2 hatte sie
+   * aus dem alten Layout fest eingetragen — im neuen Platz landeten die
+   * Tafeln damit hinter dem Brunnen.
+   */
+  function phasenAnker() {
+    if (!aktiv()) return null;
+    var K = karte();
+    if (!K) return null;
+    var z = K.kachel, T = K.terrasse;
+    var rh = (K.haeuser || []).filter(function (h) { return h.bild === 'hub_rathaus_sockel'; })[0];
+    var tuer = (K.tueren || []).filter(function (t) { return t.id === 'rathaus_entrance'; })[0];
+    return {
+      posterSpots: (K.anschlagtafeln || []).map(function (p) { return { x: p.x * z, y: p.y * z }; }),
+      rathausRect: rh ? { x: (rh.x - rh.breite / 2) * z, y: T.y * z, w: rh.breite * z, h: (rh.y - T.y) * z } : null,
+      rathausEntrance: tuer ? { x: tuer.x * z, y: tuer.y * z, w: tuer.b * z, h: tuer.h * z } : null
+    };
   }
 
   /** Den ganzen Platz bauen. Gibt zurueck, was entstanden ist. */
@@ -359,10 +507,28 @@
       if (b) erg.haeuser.push(b);
     });
 
+    erg.lichter = [];
     (K.requisiten || []).forEach(function (r) {
-      var b = _stellen(scene, r.bild, r.x, r.y, r.hoehe ? { hoehe: r.hoehe } : r.breite, r.spiegeln);
-      if (b) erg.requisiten.push(b);
+      var mass = r.hoehe ? { hoehe: r.hoehe } : r.breite;
+      var tiefe = r.boden ? TIEFE_BODEN + 2 : undefined;
+      var b = _stellen(scene, r.bild, r.x, r.y, mass, r.spiegeln, null, tiefe, !!r.anim);
+      if (!b) return;
+      erg.requisiten.push(b);
+      if (r.anim) _abspielen(scene, b, r);
+      // Die Flamme sitzt im Bild, nicht am Fuss: Anteil von oben.
+      if (r.licht) {
+        var g = b.getBounds();
+        erg.lichter.push(_schein(scene, b.x, g.y + g.height * r.licht, 1.3, b.depth + 1));
+      }
     });
+    (K.lichter || []).forEach(function (l) {
+      // tiefe: ueber welchem Bau der Schein liegt (Kachelzeile seiner
+      // Standlinie). Ohne sie laege die Esse-Glut unter der Werkstatt.
+      var t = (l.tiefe != null ? l.tiefe : l.y) * K.kachel;
+      erg.lichter.push(_schein(scene, l.x * K.kachel, l.y * K.kachel, l.r || 1.3, t));
+    });
+    erg.lichter = erg.lichter.filter(Boolean);
+    _flackern(scene, erg.lichter);
 
     // Waldrand: auf die Grasflaechen Baeume streuen. Der begehbare Platz
     // bleibt frei, weil Gras nur dort liegt, wo niemand laufen soll.
@@ -389,7 +555,7 @@
 
   var HubNeuWelt = {
     aktiv: aktiv, welt: welt, vorladen: vorladen,
-    layoutUebernehmen: layoutUebernehmen, bauen: bauen,
+    layoutUebernehmen: layoutUebernehmen, bauen: bauen, truheStellen: truheStellen, phasenAnker: phasenAnker,
     _streu: streu, _festeFlaechen: _festeFlaechen, _artAn: artAn, _SCHICHTEN: SCHICHTEN
   };
   if (typeof window !== 'undefined') window.HubNeuWelt = HubNeuWelt;

@@ -85,10 +85,19 @@ test('jedes Bild, das die Karte nennt, liegt auf der Platte', () => {
   const pruefe = (datei) => {
     if (!fs.existsSync(path.join(HUB_ASSETS, datei))) fehlt.push(datei);
   };
-  K.haeuser.forEach((h) => pruefe(h.bild.replace(/^hub_/, '') + '.png'));
+  const ort = (b) => (b.indexOf('hub_') === 0)
+    ? path.join(HUB_ASSETS, b.slice(4) + '.png')
+    : path.join(WURZEL, 'assets', 'tiles', b + '.png');
+  const pruefeBild = (b) => { if (!fs.existsSync(ort(b))) fehlt.push(b); };
+  K.haeuser.forEach((h) => pruefeBild(h.bild));
   const req = new Set(K.requisiten.map((r) => r.bild));
   assert.ok(req.size >= 10, 'nur ' + req.size + ' verschiedene Requisiten');
-  req.forEach((b) => pruefe(b.replace(/^hub_/, '') + '.png'));
+  req.forEach(pruefeBild);
+  // Animationen: jedes Bild der Folge muss da sein, nicht nur das erste.
+  K.requisiten.forEach((r) => {
+    if (r.anim === 'brunnen') for (let i = 0; i < 8; i++) pruefeBild(r.bild + i);
+    if (r.anim === 'feuer') for (let i = 0; i < 9; i++) pruefeBild('brazier' + i);
+  });
   // Boden: Grund, Flaechen und alle vierzehn Uebergaenge je Grenze.
   pruefe('boden9.png');
   W._SCHICHTEN.forEach((s) => {
@@ -303,7 +312,10 @@ const STEHT = `(function () {
     var art = null;
     if (id && c.type === 'Sprite' || (id && c.type === 'Image')) art = 'npc';
     else if (k && /^hub_(werkstatt|druckerei|kate_a|kate_b|rathaus_sockel|stuetzmauer)$/.test(k)) art = 'bau';
-    else if (k && /^hub_/.test(k) && !/boden|ueber|flaeche|nebel|kiefer|baum|freitreppe/.test(k)) art = 'ding';
+    else if (k && /^brazier[0-9]$/.test(k)) { art = 'ding'; k = 'brazier0'; }
+    // Der Lichtschein liegt mit Absicht ueber dem, was leuchtet.
+    else if (k && /^hub_/.test(k) && !/boden|ueber|flaeche|nebel|kiefer|baum|freitreppe|schein/.test(k)) art = 'ding';
+    if (k && /^hub_kettenbrunnen[0-9]$/.test(k)) k = 'hub_kettenbrunnen';
     if (!art) return;
     var b = c.getBounds();
     out.push({ art: art, name: id || k, x0: b.x, x1: b.x + b.width, y0: b.y, y1: b.y + b.height,
@@ -364,3 +376,179 @@ test('nichts und niemand steht verdeckt hinter einem Bau', () => {
   assert.deepStrictEqual(verdeckt, [], verdeckt.join('; '));
 });
 
+
+// --- Erreichbarkeit ----------------------------------------------------------
+//
+// "Steht nicht in einer Wand" beweist nicht, dass man hinkommt: Aldric stand in
+// b330 auf freiem Boden, aber auf einer Galerie von 32 px Tiefe, und der
+// Spielerkoerper ist 56 px hoch. Darum hier der eigentliche Beweis — mit dem
+// echten Koerper vom Startpunkt aus ueber den ganzen Platz geflutet.
+
+/** HUB_HITBOXES so, wie HubSceneV2 sie mit Flagge vorfindet. */
+function layoutMitFlagge() {
+  const fenster = { console: { warn() {}, log() {} } };
+  fenster.window = fenster;
+  fenster.DebugGate = { an: (n) => n === 'hubneu' };
+  ['hubLayout.js', 'hubNeuKarte.js', 'hubNeuWelt.js'].forEach((d) => {
+    const q = fs.readFileSync(path.join(WURZEL, 'js', 'scenes', 'hub', d), 'utf8');
+    // eslint-disable-next-line no-new-func
+    new Function('window', 'module', 'console', q)(fenster, {}, fenster.console);
+  });
+  fenster.HubNeuWelt.layoutUebernehmen();
+  return { HB: fenster.HUB_HITBOXES, K: fenster.HUB_NEU_KARTE, W: fenster.HubNeuWelt };
+}
+
+test('jeder NPC und jede Tuer ist mit dem echten Koerper erreichbar', () => {
+  const { HB, K, W } = layoutMitFlagge();
+  const M = 1536 / 960;
+  const welt = W.welt();
+  const wand = HB.colliders.map((c) => ({ x0: c.x * M, y0: c.y * M, x1: (c.x + c.w) * M, y1: (c.y + c.h) * M }));
+  // Koerper wie in player.js: 34 breit, 56 hoch, Fuesse unten.
+  const frei = (x, y) => {
+    const x0 = x - 17, x1 = x + 17, y0 = y - 56, y1 = y;
+    if (x0 < 0 || y0 < 0 || x1 > welt.breite || y1 > welt.hoehe) return false;
+    return !wand.some((r) => x0 < r.x1 && x1 > r.x0 && y0 < r.y1 && y1 > r.y0);
+  };
+  const S = 8;                                        // Raster in Weltpixeln
+  const start = [Math.round(welt.start.x / S) * S, Math.round(welt.start.y / S) * S];
+  assert.ok(frei(start[0], start[1]), 'schon der Startpunkt ist zugebaut');
+  const gesehen = new Set([start.join(',')]);
+  const offen = [start];
+  while (offen.length) {
+    const [x, y] = offen.pop();
+    [[S, 0], [-S, 0], [0, S], [0, -S]].forEach(([dx, dy]) => {
+      const n = [x + dx, y + dy], k = n.join(',');
+      if (!gesehen.has(k) && frei(n[0], n[1])) { gesehen.add(k); offen.push(n); }
+    });
+  }
+  const orte = [...gesehen].map((k) => k.split(',').map(Number));
+
+  const fehlt = [];
+  // NPC: HubSceneV2 spricht an, wenn der Fusspunkt naeher als 100 px ist.
+  // Das genuegt hier NICHT: Aldric liess sich in b330 vom obersten
+  // Treppenabsatz aus gerade noch ansprechen, hinlaufen konnte man nicht.
+  // Erreichbar heisst: man kann neben ihm stehen — hoechstens zwei
+  // Kacheln vom Fusspunkt.
+  K.npcs.forEach((n) => {
+    const nx = n.x * K.kachel, ny = n.y * K.kachel;
+    if (!orte.some(([x, y]) => Math.hypot(x - nx, y - ny) < 64)) fehlt.push('NPC ' + n.id);
+  });
+  // Tueren: die Figur (34 x 54 ueber dem Fuss) muss die Zone ueberlappen.
+  HB.entrances.forEach((e) => {
+    const r = { x0: e.x * M, y0: e.y * M, x1: (e.x + e.w) * M, y1: (e.y + e.h) * M };
+    const ok = orte.some(([x, y]) => x - 17 < r.x1 && x + 17 > r.x0 && y - 54 < r.y1 && y > r.y0);
+    if (!ok) fehlt.push('Tuer ' + e.id);
+  });
+  // Die Anschlagtafeln: Reichweite 144 um (x, y - 64), wie in HubSceneV2.
+  (K.anschlagtafeln || []).forEach((p, i) => {
+    const px = p.x * K.kachel, py = p.y * K.kachel - 64;
+    if (!orte.some(([x, y]) => Math.hypot(x - px, y - py) < 130)) fehlt.push('Anschlagtafel ' + i);
+  });
+  assert.ok(orte.length > 2000, 'nur ' + orte.length + ' erreichbare Stellen — der Platz ist zugebaut');
+
+  // Hinter ein Haus laufen: die Figur steht noerdlich der Standlinie eines
+  // Hauses, und ihr Bild liegt spuerbar in dessen Bild. Gemessen an den
+  // echten Bildmassen (PNG-Kopf), nicht an der Grundflaeche — das Dach
+  // ragt in Schraegsicht weit ueber sie hinaus.
+  const pngMass = (b) => {
+    const d = fs.readFileSync(path.join(HUB_ASSETS, b.slice(4) + '.png'));
+    return { w: d.readUInt32BE(16), h: d.readUInt32BE(20) };
+  };
+  const haeuser = K.haeuser.map((h) => {
+    const m = pngMass(h.bild), w = h.breite * K.kachel, hh = w * m.h / m.w;
+    const cx = h.x * K.kachel, fuss = h.y * K.kachel;
+    return { bild: h.bild, x0: cx - w / 2, x1: cx + w / 2, y0: fuss - hh, y1: fuss };
+  });
+  const dahinter = new Set();
+  orte.forEach(([x, y]) => {
+    haeuser.forEach((h) => {
+      if (y >= h.y1) return;                        // davor: alles gut
+      const ux = Math.min(x + 17, h.x1) - Math.max(x - 17, h.x0);
+      const uy = Math.min(y, h.y1) - Math.max(y - 54, h.y0);
+      if (ux > 0 && uy > 0 && (ux * uy) / (34 * 54) > 0.25) dahinter.add(h.bild);
+    });
+  });
+  assert.deepStrictEqual([...dahinter], [], 'man kann hinter diese Haeuser laufen: ' + [...dahinter].join(', '));
+
+  // Durch feste Requisiten laeuft man nicht: kein erreichbarer Fusspunkt
+  // liegt mitten in einer Bank, einem Fass oder einer Laterne.
+  const durch = [];
+  K.requisiten.filter((q) => q.fest).forEach((q) => {
+    const x0 = (q.x - q.fest / 2) * K.kachel + 2, x1 = (q.x + q.fest / 2) * K.kachel - 2;
+    const y0 = (q.y - 0.3) * K.kachel, y1 = q.y * K.kachel;
+    if (orte.some(([x, y]) => x > x0 && x < x1 && y > y0 && y < y1)) durch.push(q.bild + ' bei ' + q.x + '/' + q.y);
+  });
+  assert.deepStrictEqual(durch, [], 'man laeuft hindurch: ' + durch.join(', '));
+  assert.deepStrictEqual(fehlt, [], 'nicht erreichbar: ' + fehlt.join(', '));
+});
+
+test('Truhe, Anschlagtafeln, Brunnen und Lichter sind die neuen und bewegen sich', () => {
+  const K = karte();
+  const r = mit.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    var liste = sc.children.list || [];
+    var truhe = sc._truheBild;
+    var tafeln = liste.filter(function (c) { return c.texture && /^hub_tafel_/.test(c.texture.key); })
+      .map(function (c) { return { x: c.x, y: c.y, key: c.texture.key }; });
+    var brunnen = liste.filter(function (c) { return c.texture && /^hub_kettenbrunnen/.test(c.texture.key); })[0];
+    var feuer = liste.filter(function (c) { return c.texture && /^brazier/.test(c.texture.key); });
+    var schein = liste.filter(function (c) { return c.texture && c.texture.key === 'hub_schein'; });
+    var schutt = liste.filter(function (c) { return c.texture && c.texture.key === 'hub_schutt'; })[0];
+    var a0 = schein.map(function (c) { return c.alpha; });
+    var b0 = brunnen && brunnen.frame ? brunnen.frame.name + '|' + brunnen.texture.key : null;
+    return {
+      truhe: truhe ? (truhe.texture && truhe.texture.key) : null,
+      tafeln: tafeln,
+      spots: (sc._hubPhaseRefs.posterSpots || []).map(function (p) { return { x: p.x, y: p.y }; }),
+      brunnenSpielt: !!(brunnen && brunnen.anims && brunnen.anims.isPlaying),
+      feuerSpielt: feuer.filter(function (c) { return c.anims && c.anims.isPlaying; }).length,
+      schein: schein.length, scheinVorher: a0,
+      schuttTiefe: schutt ? schutt.depth : null,
+      spielerTiefe: sc.player.depth
+    };
+  })()`);
+  assert.strictEqual(r.truhe, 'hub_truhe', 'die Truhe ist ' + r.truhe + ' statt der Truhe aus dem Dungeon');
+  // Die Tafeln stehen auf den Ankern der Karte, nicht auf den alten Koordinaten.
+  const soll = K.anschlagtafeln.map((p) => Math.round(p.x * K.kachel) + '/' + Math.round(p.y * K.kachel)).join(' ');
+  const ist = Array.prototype.slice.call(r.spots).map((p) => Math.round(p.x) + '/' + Math.round(p.y)).join(' ');
+  assert.strictEqual(ist, soll, 'die Anschlagtafeln stehen bei ' + ist + ' statt ' + soll);
+  assert.strictEqual(r.tafeln.length, K.anschlagtafeln.length,
+    'es stehen ' + r.tafeln.length + ' Tafelbilder statt ' + K.anschlagtafeln.length + ' — gezeichnet statt Bild?');
+  assert.ok(r.brunnenSpielt, 'der Brunnen spielt kein Wasserspiel');
+  assert.strictEqual(r.feuerSpielt, 2, 'es brennen ' + r.feuerSpielt + ' Feuerkoerbe statt 2');
+  assert.ok(r.schein >= 5, 'nur ' + r.schein + ' Lichtscheine');
+  // Schutt liegt flach: er wird nie ueber eine Figur gezeichnet.
+  assert.ok(r.schuttTiefe < 0, 'der Schutt liegt auf Tiefe ' + r.schuttTiefe + ' und kann eine Figur verdecken');
+
+  // Flackern: nach ein paar Bildern haben sich die Scheine veraendert.
+  mit.step(20);
+  const nachher = Array.prototype.slice.call(mit.run(`(window.game.scene.getScene('HubSceneV2').children.list || [])
+    .filter(function (c) { return c.texture && c.texture.key === 'hub_schein'; })
+    .map(function (c) { return c.alpha; })`));
+  const vorher = Array.prototype.slice.call(r.scheinVorher);
+  const bewegt = nachher.filter((a, i) => Math.abs(a - vorher[i]) > 0.005).length;
+  assert.ok(bewegt >= Math.ceil(vorher.length / 2),
+    'nur ' + bewegt + ' von ' + vorher.length + ' Lichtern flackern');
+});
+
+test('die Stuetzmauer endet an beiden Seiten in einem Pfeiler', () => {
+  // Sie endete in b330 einfach im Gras — "in der Luft".
+  const K = karte();
+  const T = K.terrasse;
+  const pfeiler = K.requisiten.filter((r) => r.bild === 'hub_pfeiler');
+  const fussZeile = T.y + T.h;
+  [T.x, T.x + T.b].forEach((ende) => {
+    const da = pfeiler.some((p) => Math.abs(p.x - ende) <= 1 && Math.abs(p.y - fussZeile) <= 0.5);
+    assert.ok(da, 'am Mauerende bei Spalte ' + ende + ' steht kein Pfeiler');
+  });
+});
+
+test('keine Laterne steht ohne Pfahl auf dem Boden', () => {
+  // Die erste Laterne war eine Haengelaterne, auf den Boden gestellt — "im
+  // Nirgendwo". Licht am Boden kommt von Laternenpfaehlen und Feuerkoerben.
+  const K = karte();
+  const ohne = K.requisiten.filter((r) => r.licht && !/laternenpfahl|^brazier/.test(r.bild));
+  assert.deepStrictEqual(ohne.map((r) => r.bild + ' bei ' + r.x + '/' + r.y), [],
+    'Lichter ohne Pfahl: ' + ohne.map((r) => r.bild).join(', '));
+  assert.ok(!K.requisiten.some((r) => r.bild === 'hub_laterne'), 'die Haengelaterne steht wieder auf dem Boden');
+});
