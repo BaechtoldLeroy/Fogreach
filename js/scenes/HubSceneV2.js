@@ -131,8 +131,16 @@ class HubSceneV2 extends Phaser.Scene {
 
   preload() {
     // #181: der gekachelte Hub, erreichbar nur ueber ?debug=1&hubneu=1.
-    // Ohne die Flagge meldet vorladen() nichts an und laedt nichts nach.
-    if (window.HubNeuWelt) window.HubNeuWelt.vorladen(this);
+    // Ohne die Flagge tun beide Aufrufe nichts.
+    //
+    // Das Layout MUSS hier uebernommen werden und nicht in create(): dort
+    // sind Kollisionen und NPC schon gebaut. Uebernommen wird in das
+    // bestehende HUB_HITBOXES-Objekt — die Konstante oben haelt seine
+    // Referenz seit dem Laden der Datei.
+    if (window.HubNeuWelt) {
+      window.HubNeuWelt.layoutUebernehmen();
+      window.HubNeuWelt.vorladen(this);
+    }
     this.load.image('hubscene_bg', 'assets/hubscene.png');
     // Hub-only NPC sprites — deferred from StartScene so the main menu loads
     // faster. Phaser only loads keys that aren't already in the texture cache,
@@ -161,10 +169,26 @@ class HubSceneV2 extends Phaser.Scene {
     // Hintergrund waehrend der Hub-Szene per Image()-Prefetch — siehe create().
   }
 
-  create() {
-    const W = 1536, H = 1024;
+  // Die Masse der Hub-Welt. Der gekachelte Platz (#181) ist kleiner als
+  // das gemalte Bild — 1280x768 statt 1536x1024 — damit der Ausschnitt
+  // von 960x480 fast alles fasst. Ein Hub, von dem man nie mehr als ein
+  // Drittel sieht, kann nicht komponiert werden.
+  _weltMass() {
+    if (window.HubNeuWelt && window.HubNeuWelt.aktiv()) {
+      const w = window.HubNeuWelt.welt();
+      if (w) return { W: w.breite, H: w.hoehe };
+    }
+    return { W: 1536, H: 1024 };
+  }
 
-    this.cameras.main.setBounds(0, 0, W, H);
+  create() {
+    const { W, H } = this._weltMass();
+
+    // Die Kamera darf weiter reichen als die Physik: im gekachelten Hub
+    // steigt das Rathaus ueber den oberen Kartenrand in den Nebel.
+    const _oben = (window.HubNeuWelt && window.HubNeuWelt.aktiv()
+      && window.HubNeuWelt.welt() && window.HubNeuWelt.welt().oben) || 0;
+    this.cameras.main.setBounds(0, _oben, W, H - _oben);
     this.physics.world.setBounds(0, 0, W, H);
     this.physics.world.TILE_BIAS = 24;
 
@@ -896,7 +920,7 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   createPlayer() {
-    const W = 1536, H = 1024;
+    const { W, H } = this._weltMass();
     
     const hasSheet = this.textures.exists('playerSprites');
     if (!hasSheet && !this.textures.exists('playerTexture')) {
