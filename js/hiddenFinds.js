@@ -458,6 +458,20 @@
         }
       });
       if (!schuttStuecke.length) return false;
+      // Kein Schutt im Freiraum einer Treppe. Das Netz (raeumePropsAufTreppen)
+      // ist da laengst gelaufen, und nachraeumen ginge auch nicht: das destroy
+      // eines Brockens oeffnet die Kammer samt Belohnung (unten). Also lieber
+      // eine offene, leere Nische als eine verdeckte Treppe — wie oben bei der
+      // unbetretbaren Kammer. Noch hoert niemand auf 'destroy'.
+      var _anTreppe = typeof window.imTreppenFreiraum === 'function'
+        && schuttStuecke.some(function (s) { return window.imTreppenFreiraum(scene, s); });
+      if (_anTreppe) {
+        schuttStuecke.forEach(function (s) {
+          try { if (s.body) s.body.enable = false; } catch (e) {}
+          try { s.destroy(); } catch (e) {}
+        });
+        return false;
+      }
       // Fuer den Minikarten-Marker im Debug-Modus (minimap.js).
       scene._kammerMarkierung = { kammer: kammerInfo.kammer, schutt: eingang };
       try {

@@ -188,6 +188,78 @@ test('Echte Raeume: kein Prop teilt die Tiefe der Treppe oder verdeckt sie', asy
 });
 
 // ---------------------------------------------------------------------------
+// Der Kammerschutt (#113) kommt NACH dem Netz
+// ---------------------------------------------------------------------------
+//
+// BEFUND (Flake im Gesamtlauf, b339): "Raum 7: rubble" x3 im Freiraum der
+// Treppe. Das war das Geroell einer verschuetteten Kammer — verschuetteKammer
+// laeuft als LETZTES im Raumaufbau, lange nach raeumePropsAufTreppen, und legt
+// Schutt ueber die ganze Oeffnung. Lag der Kammermund neben der Treppe, stand
+// der Schutt darauf. Nachraeumen ginge nicht: das destroy eines Brockens oeffnet
+// die Kammer samt Belohnung und Meldung. Also verschuettet sie dort gar nicht.
+
+test('Kammerschutt landet nie im Freiraum der Treppe', async (t) => {
+  const FREIRAUM = 44;
+  const H = await launchDungeon({ depth: 1 });
+  t.after(async () => { await H.shutdown(); });
+
+  const r = JSON.parse(H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var T = sc._minimapTileSize || 32;
+    var st = sc.stairsGroup.getChildren()[0];
+    var obs = window.obstacles.getChildren();
+    var zaehle = function () {
+      return obs.filter(function (o) { return o.active && o.getData('kammerSchutt'); }).length;
+    };
+    // Die Kammer genau unter die Treppe legen: die ist garantiert begehbar,
+    // also scheitert verschuetteKammer nicht schon an der Betretbarkeit.
+    var tx = Math.floor(st.x / T), ty = Math.floor(st.y / T);
+    var nah = { kammer: [{ x: tx, y: ty }, { x: tx, y: ty - 1 }], mund: { x: tx, y: ty + 1 } };
+    var vorher = zaehle();
+    var ergebnis = window.HiddenFinds.verschuetteKammer(sc, nah, 0, 0, T);
+    var schutt = obs.filter(function (o) { return o.active && o.getData('kammerSchutt'); })
+      .map(function (o) { return { x: o.x, y: o.y, w: o.displayWidth || 32, h: o.displayHeight || 32 }; });
+    var treppen = sc.stairsGroup.getChildren().map(function (s) { return { x: s.x, y: s.y }; });
+
+    // Gegenprobe: eine Kammer fern jeder Treppe wird weiter verschuettet —
+    // sonst bestuende "nie verschuetten" diesen Test.
+    // Kachelweise absuchen: pickAccessibleSpawnPoint haeuft sich am Spieler.
+    var fern = null, B = sc.physics.world.bounds;
+    for (var gy = 1; gy * T < B.height && !fern; gy++) {
+      for (var gx = 1; gx * T < B.width && !fern; gx++) {
+        var p = { x: (gx + 0.5) * T, y: (gy + 0.5) * T };
+        var weit = treppen.every(function (s) {
+          return Math.abs(p.x - s.x) > 100 || Math.abs(p.y - s.y) > 100;
+        });
+        if (weit && sc.isPointAccessible(p.x, p.y) && sc.isPointAccessible(p.x, p.y - T)) fern = p;
+      }
+    }
+    var fernErgebnis = null;
+    if (fern) {
+      var fx = Math.floor(fern.x / T), fy = Math.floor(fern.y / T);
+      fernErgebnis = window.HiddenFinds.verschuetteKammer(sc,
+        { kammer: [{ x: fx, y: fy }, { x: fx, y: fy - 1 }], mund: { x: fx, y: fy + 1 } }, 0, 0, T);
+    }
+    return JSON.stringify({ vorher: vorher, ergebnis: ergebnis, schutt: schutt, treppen: treppen,
+      fern: !!fern, fernErgebnis: fernErgebnis, nachFern: zaehle() });
+  })()`));
+
+  assert.strictEqual(r.vorher, 0, 'der Raum hatte schon Kammerschutt — die Probe misst nicht sauber');
+  const verdeckt = [];
+  r.treppen.forEach((s) => r.schutt.forEach((p) => {
+    if (Math.abs(p.x - s.x) - p.w / 2 < FREIRAUM && Math.abs(p.y - s.y) - p.h / 2 < FREIRAUM) {
+      verdeckt.push(Math.round(p.x) + '/' + Math.round(p.y));
+    }
+  }));
+  assert.deepStrictEqual(verdeckt, [], 'Kammerschutt steht im Freiraum der Treppe: ' + verdeckt.join(', '));
+  assert.strictEqual(r.ergebnis, false, 'die Kammer an der Treppe meldet sich trotzdem als verschuettet');
+
+  assert.ok(r.fern, 'kein begehbarer Punkt fern der Treppe — die Gegenprobe misst nichts');
+  assert.strictEqual(r.fernErgebnis, true, 'eine Kammer fern der Treppe wird nicht mehr verschuettet');
+  assert.ok(r.nachFern > 0, 'fern der Treppe liegt kein Schutt');
+});
+
+// ---------------------------------------------------------------------------
 // Das Sicherheitsnetz einzeln — im echten Raum feuert es zu selten
 // ---------------------------------------------------------------------------
 

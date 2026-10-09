@@ -758,6 +758,21 @@ var TREPPEN_HOEHE = 64;
 
 var TREPPEN_FREIRAUM = 44;
 
+// Ragt das Objekt (Mitte + Sprite-Masse) in den Freiraum irgendeiner Treppe?
+// Eigene Funktion, weil nicht nur das Netz unten fragt: was NACH ihm in den
+// Raum kommt (Kammerschutt, hiddenFinds.js), muss sich selbst daran halten.
+function imTreppenFreiraum(scene, o) {
+  if (!scene || !scene.stairsGroup || typeof scene.stairsGroup.getChildren !== 'function') return false;
+  if (!o || !Number.isFinite(o.x) || !Number.isFinite(o.y)) return false;
+  var ohw = (o.displayWidth || 32) / 2 + TREPPEN_FREIRAUM;
+  var ohh = (o.displayHeight || 32) / 2 + TREPPEN_FREIRAUM;
+  return scene.stairsGroup.getChildren().some(function (st) {
+    return st && Number.isFinite(st.x) && Number.isFinite(st.y)
+      && Math.abs(o.x - st.x) < ohw && Math.abs(o.y - st.y) < ohh;
+  });
+}
+if (typeof window !== 'undefined') window.imTreppenFreiraum = imTreppenFreiraum;
+
 // Raeumt jedes Prop weg, das eine Treppe verdeckt.
 //
 // WARUM (#142): seit die Zeichentiefen geordnet sind, liegen ALLE Props vor der
@@ -798,12 +813,7 @@ function raeumePropsAufTreppen(scene, obstaclesGroup) {
     // Lage schon selbst gegen die Treppen; betroffen waeren nur die aus den
     // Raumvorlagen.
     if (typeof typ === 'string' && typ.toLowerCase().indexOf('chest') === 0) return;
-    var ohw = (o.displayWidth || 32) / 2 + TREPPEN_FREIRAUM;
-    var ohh = (o.displayHeight || 32) / 2 + TREPPEN_FREIRAUM;
-    for (var i = 0; i < treppen.length; i++) {
-      var st = treppen[i];
-      if (!st || !Number.isFinite(st.x) || !Number.isFinite(st.y)) continue;
-      if (Math.abs(o.x - st.x) >= ohw || Math.abs(o.y - st.y) >= ohh) continue;
+    if (imTreppenFreiraum(scene, o)) {
       if ((typ === 'brazier' || typ === 'brazer') && window.RoomTemplates
           && typeof window.RoomTemplates.removeBrazierGlow === 'function') {
         try { window.RoomTemplates.removeBrazierGlow(scene, o.x, o.y); } catch (e) {}
@@ -816,7 +826,6 @@ function raeumePropsAufTreppen(scene, obstaclesGroup) {
       try { o.destroy(); } catch (e) {}
       entfernt++;
       try { console.warn('[stairs] Prop auf Treppe entfernt: ' + (typ || '?')); } catch (e) {}
-      return;
     }
   });
   return entfernt;
