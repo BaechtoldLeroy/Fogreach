@@ -3156,10 +3156,15 @@ const BOSS_DEFINITIONS = {
     baseHP: 123,
     baseSpeed: 70,
     baseDamage: 16,
-    // 3.6 traf den 1024 px hohen Rahmen; sichtbar waren davon nur 87 px.
-    // Unveraendert uebernommen, damit er nicht ueber Nacht viermal so gross
-    // (und damit viermal so leicht zu treffen) wird — siehe #176.
-    scale: 0.91,
+    // #176: 173 px Figur — ueber seinen Vorgaengern (127), klar unter Elara
+    // (283). Vorher 0.91 = 87 px: der finale Boss der Leiter war kaum
+    // groesser als ein Brute. (Die alte 3.6 traf einen 1024 px hohen Rahmen,
+    // nicht die Figur.)
+    // Die LP blieben: gemessen mit einem Nahkampf-Bot (Tiefe 30, alle Muster,
+    // 2x10 Kaempfe a 60 s je Groesse) kam bei 173 px einmal 35 % weniger und
+    // einmal 13 % mehr Schaden an — zusammen 1308 gegen 1518. Groesser heisst
+    // hier nicht messbar leichter zu treffen.
+    scale: 1.8,
     loreIntro: 'Ein Mitglied des Kettenrats selbst tritt aus dem Schatten — und mit ihm die Quelle des Nebels, die er hütet.',
     // #144: Die Quelle vereint Fesselung und Ausloeschung seiner Vorgaenger.
     attacks: ['shadowDash', 'darknessWave', 'shadowClones', 'fesselung', 'ausloeschung'],
