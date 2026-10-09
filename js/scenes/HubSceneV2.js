@@ -321,6 +321,7 @@ class HubSceneV2 extends Phaser.Scene {
     // #161: Im Epilog lesen Buerger auf dem Platz vor.
     try { this._vorleserAufstellen(); } catch (_) {}
     this.createPlayer();
+    this._vorDieTuerStellen();
     this.createPrompt();
     
     // Initialize sound manager and start hub ambient music
@@ -964,6 +965,56 @@ class HubSceneV2 extends Phaser.Scene {
         if (spr && _sm && typeof _sm.removeAllEffects === 'function') { try { _sm.removeAllEffects(spr); } catch (e) {} }
       });
     } catch (e) { /* nie den Hub-Aufbau brechen */ }
+  }
+
+  /**
+   * #186 (Flagge ?tuer=1): Wer aus einem Gebaeude kommt, steht vor dessen
+   * Tuer statt am Startpunkt in der Platzmitte, den Blick vom Haus weg.
+   *
+   * Der Eingang wird beim Betreten gemerkt (_enterLocation) und hier
+   * verbraucht — einmal, damit eine spaetere Rueckkehr aus dem Dungeon
+   * wieder am Startpunkt endet.
+   */
+  _vorDieTuerStellen() {
+    const von = window.__hubVonEingang;
+    window.__hubVonEingang = null;
+    if (!von || !(window.DebugGate && window.DebugGate.an('tuer'))) return;
+    const p = this.player;
+    if (!p || !p.body) return;
+    try {
+      const eintrag = (this.entranceLabels || []).filter((e) => e.data && e.data.id === von)[0];
+      if (!eintrag) return;
+      const rect = (b) => ({ x: b.x, y: b.y, w: b.width, h: b.height });
+      p.body.reset(p.x, p.y);
+      const pb = p.getBounds();
+      // Beim Aufbau traegt die Figur noch nicht ihr endgueltiges Bild: sie
+      // ist hier 24 px breit, ein paar Frames spaeter 43, und der Koerper
+      // rueckt mit. Darum waagrecht mittig und so breit, wie die Figur hoch
+      // ist — breiter wird sie nie.
+      const ub = Math.max(pb.width, pb.height);
+      const umriss = { x: -ub / 2, y: pb.y - p.y, w: ub, h: pb.height };
+      const koerper = { x: -p.body.width / 2, y: p.body.y - p.y, w: p.body.width, h: p.body.height };
+      const feste = []
+        .concat(this.colliderGroup ? this.colliderGroup.getChildren() : [])
+        .concat(this.npcGroup ? this.npcGroup.getChildren() : [])
+        .filter((o) => o && o.body && o.body.enable !== false && o.active !== false)
+        .map((o) => rect(o.body));
+      const zonen = this.entranceLabels.map((e) => rect(e.zone.getBounds()));
+      const w = window.HubNeuWelt.welt();
+      const platz = window.HubNeuWelt.platzVorTuer(rect(eintrag.zone.getBounds()), umriss, koerper,
+        feste, zonen, { breite: w.breite, hoehe: w.hoehe });
+      if (!platz) return;
+      p.setPosition(platz.x, platz.y);
+      p.body.reset(platz.x, platz.y);
+      // Blick vom Haus weg, also nach Sueden: alle Tueren liegen am Fuss
+      // ihrer Gebaeude. (Schraeg zur Tuer hin sah es aus, als wolle man
+      // gleich wieder hinein, wenn der Platz seitlich verrutscht ist.)
+      const st = p.getData && p.getData('animState');
+      if (st && typeof getDirectionFromVelocity === 'function') {
+        st.direction = getDirectionFromVelocity(0, 1, st.direction);
+        if (typeof updatePlayerSpriteAnimation === 'function') updatePlayerSpriteAnimation(p, 0, 0);
+      }
+    } catch (e) { console.warn('[HubSceneV2] vor die Tuer stellen fehlgeschlagen', e); }
   }
 
   update(t, dt) {
@@ -2951,6 +3002,10 @@ class HubSceneV2 extends Phaser.Scene {
       if (typeof saveGame === 'function') {
         try { saveGame(this); } catch (err) { console.warn('[HubSceneV2] saveGame before crafting failed', err); }
       }
+      // #186: Die Rueckkehr soll vor dieser Tuer enden (_vorDieTuerStellen).
+      // Nur die Schmiede wechselt die Szene; Druckerei und Truhe sind
+      // Ueberlagerungen, der Spieler bleibt dort ohnehin stehen.
+      if (window.DebugGate && window.DebugGate.an('tuer')) window.__hubVonEingang = entranceData.id;
       this.cameras.main.fadeOut(200, 0, 0, 0);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
         this.scene.start('CraftingScene');

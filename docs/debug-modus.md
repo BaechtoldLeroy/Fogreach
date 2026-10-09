@@ -255,6 +255,8 @@ Die gesamte Nebel-Analyse aus #70 lief ueber diese Flaggen.
 | `?spy=1` | Spionage-Mission erzwingen |
 | `?roomsize=1` | Verteilung der Raumgroessen mitzaehlen und ausgeben |
 | `?hubdebug=1` | Hub-Collider sichtbar machen |
+| `?tuer=1` | Vorschau #186: aus der Schmiede zurueck steht man vor ihrer Tuer statt in der Platzmitte |
+| `?schmiede=1` | Vorschau #188: der Hub-Eingang heisst "Schmiede" (EN "Forge") statt "Werkstatt" |
 
 ## Was sonst noch am Gate haengt
 

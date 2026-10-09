@@ -7,6 +7,8 @@ if (window.i18n) {
     'hub.entrance.rathaus': 'Rathauskeller [E]',
     'hub.entrance.truhe': 'Truhe [E]',
     'hub.entrance.schmiede': 'Werkstatt [E]',
+    // #188 (Flagge ?schmiede=1): der Eingang heisst wie die Szene dahinter.
+    'hub.entrance.schmiede.neu': 'Schmiede [E]',
     'hub.entrance.druckerei': 'Druckerei [E]',
     'hub.npc.branka.name': 'Schmiedemeisterin Branka',
     'hub.npc.thom.name': 'Setzer Thom',
@@ -31,6 +33,7 @@ if (window.i18n) {
     'hub.entrance.rathaus': 'Town Hall Cellar [E]',
     'hub.entrance.truhe': 'Stash [E]',
     'hub.entrance.schmiede': 'Workshop [E]',
+    'hub.entrance.schmiede.neu': 'Forge [E]',
     'hub.entrance.druckerei': 'Print Shop [E]',
     'hub.npc.branka.name': 'Smith Master Branka',
     'hub.npc.thom.name': 'Setter Thom',
@@ -318,7 +321,14 @@ if (window.i18n) {
     var fallback = e.label;
     try {
       Object.defineProperty(e, 'label', {
-        get: function () { return _hubT(key, fallback); },
+        get: function () {
+          // #188: Mit ?schmiede=1 heisst der Eingang wie die Szene dahinter.
+          // Beim Lesen gefragt, damit auch ein Sprachwechsel mitkommt.
+          if (key === 'hub.entrance.schmiede' && window.DebugGate && window.DebugGate.an('schmiede')) {
+            return _hubT('hub.entrance.schmiede.neu', fallback);
+          }
+          return _hubT(key, fallback);
+        },
         configurable: true, enumerable: true
       });
     } catch (err) { /* swallow */ }

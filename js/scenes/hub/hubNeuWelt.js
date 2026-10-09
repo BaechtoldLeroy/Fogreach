@@ -612,8 +612,53 @@
     return erg;
   }
 
+  /**
+   * #186: Wo steht man, wenn man aus einem Gebaeude zurueck auf den Platz
+   * tritt? Knapp VOR seiner Tuer — auf freiem Boden und ausserhalb jeder
+   * Tuerzone, sonst stuende man schon wieder vor dem [E] der Tuer, aus der
+   * man gerade kommt.
+   *
+   * Alles in Weltpixeln. Gesucht wird von der Unterkante der Tuer abwaerts,
+   * auf jeder Hoehe zuerst mittig, dann abwechselnd links und rechts; der
+   * erste freie Punkt gewinnt. So bleibt man so nah an der Tuer wie moeglich.
+   *
+   * @param {{x,y,w,h}} tuer        die Tuerzone, aus der man kommt
+   * @param {{x,y,w,h}} umriss      Bildumriss der Figur relativ zu ihrem Ursprung
+   *                                (daran misst der Hub die [E]-Naehe)
+   * @param {{x,y,w,h}} koerper     Physikkoerper relativ zum Ursprung
+   * @param {Array<{x,y,w,h}>} hindernisse  feste Flaechen
+   * @param {Array<{x,y,w,h}>} zonen        alle Tuerzonen
+   * @param {{breite,hoehe}} grenzen        Weltgroesse
+   * @returns {{x,y}|null} Ursprung der Figur, oder null wenn nichts frei ist
+   */
+  function platzVorTuer(tuer, umriss, koerper, hindernisse, zonen, grenzen) {
+    if (!tuer || !umriss || !koerper) return null;
+    var LUFT = 2, SCHRITT = 4, TIEFE = 160, BREITE = 160;
+    var ueber = function (a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    };
+    var cx = tuer.x + tuer.w / 2;
+    // Oberkante des Umrisses knapp unter der Tuerzone.
+    var y0 = tuer.y + tuer.h + LUFT - umriss.y;
+    for (var dy = 0; dy <= TIEFE; dy += SCHRITT) {
+      for (var i = 0; i <= BREITE / SCHRITT * 2; i++) {
+        var dx = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * SCHRITT;
+        var x = cx + dx, y = y0 + dy;
+        // Mit etwas Luft: buendig an einer Kante bliebe die Figur haengen.
+        var k = { x: x + koerper.x - LUFT, y: y + koerper.y - LUFT, w: koerper.w + 2 * LUFT, h: koerper.h + 2 * LUFT };
+        if (grenzen && (k.x < 0 || k.y < 0 || k.x + k.w > grenzen.breite || k.y + k.h > grenzen.hoehe)) continue;
+        var u = { x: x + umriss.x, y: y + umriss.y, w: umriss.w, h: umriss.h };
+        var frei = true, j;
+        for (j = 0; frei && j < (hindernisse || []).length; j++) if (ueber(k, hindernisse[j])) frei = false;
+        for (j = 0; frei && j < (zonen || []).length; j++) if (ueber(u, zonen[j])) frei = false;
+        if (frei) return { x: x, y: y };
+      }
+    }
+    return null;
+  }
+
   var HubNeuWelt = {
-    welt: welt, vorladen: vorladen,
+    welt: welt, vorladen: vorladen, platzVorTuer: platzVorTuer,
     layoutUebernehmen: layoutUebernehmen, bauen: bauen, truheStellen: truheStellen, phasenAnker: phasenAnker,
     aktionsbox: aktionsbox,
     _streu: streu, _festeFlaechen: _festeFlaechen, _artAn: artAn, _SCHICHTEN: SCHICHTEN
