@@ -117,20 +117,27 @@
     einfuehrung_markt: {
       id: 'einfuehrung_markt',
       title: 'Was unter dem Tisch liegt',
-      description: 'Kauf Mara auf dem Schwarzmarkt etwas ab (ab Tiefe 4).',
+      description: 'Kauf Mara auf dem Schwarzmarkt etwas ab.',
       npcId: 'mara',
       type: 'system',
       chain: 1,
-      minDepth: 4,
       objectives: [
         { type: 'system', target: 'markt', current: 0, required: 1 }
       ],
       rewards: { xp: 40, gold: 30 },
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
-      dialogueOffer: 'Du schleppst Gold herum, als wüsstest Du nicht, wofür. Ich schon.\n\nAb Tiefe 4 habe ich einen Stand — nicht hier oben, frag nicht wo. Nimm irgendetwas, das Billigste reicht. Danach weisst Du, dass es ihn gibt, und das ist der ganze Punkt.',
-      dialogueProgress: 'Ab Tiefe 4. Nimm irgendetwas. Ich schreibe nicht auf, was.',
-      dialogueComplete: '(Sie zählt das Gold nicht nach.) Gut. Und jetzt vergiss, dass ich Dir das gezeigt habe.\n\nDer Stand wechselt seinen Platz, aber er ist jeden Lauf irgendwo. Wer mit vollen Taschen hochkommt und sie wieder mit runternimmt, hat etwas nicht verstanden.'
+      // Angeboten erst, wenn ihr Stand offen ist (Schwarzmarkt ab erreichter
+      // Tiefe 4, LootSystem). Vorher stand die Tiefe als Hinweis im Text, und
+      // ein minDepth fror den Kauf ein, solange der LAUFENDE Lauf flacher war —
+      // gekauft wird aber oben bei ihr.
+      gate: function () {
+        var ls = (typeof window !== 'undefined') ? window.LootSystem : null;
+        return !ls || typeof ls.isBlackMarketUnlocked !== 'function' || ls.isBlackMarketUnlocked();
+      },
+      dialogueOffer: 'Du schleppst Gold herum, als wüsstest Du nicht, wofür. Ich schon.\n\nIch habe einen Stand — hier, unter dem Tisch. Frag nicht, woher die Ware kommt. Nimm irgendetwas, das Billigste reicht. Danach weisst Du, dass es ihn gibt, und das ist der ganze Punkt.',
+      dialogueProgress: 'Nimm irgendetwas. Ich schreibe nicht auf, was.',
+      dialogueComplete: '(Sie zählt das Gold nicht nach.) Gut. Und jetzt vergiss, dass ich Dir das gezeigt habe.\n\nWas ich nicht habe, hat vielleicht der Alte mit dem Karren, da unten. Wer mit vollen Taschen hochkommt und sie wieder mit runternimmt, hat etwas nicht verstanden.'
     },
     einfuehrung_talente: {
       id: 'einfuehrung_talente',
@@ -1163,10 +1170,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.einfuehrung_presse.dialogueComplete': "(He wipes his fingers on his smock.) Now it is on every corner, and somebody is reading it out loud.\n\nJust remember one thing: every line we print, the council puts on its scales. Do not print more than you can make good again down below.",
 
       'quest.einfuehrung_markt.title': 'What Lies Under the Table',
-      'quest.einfuehrung_markt.description': 'Buy something from Mara at the black market (from depth 4).',
-      'quest.einfuehrung_markt.dialogueOffer': "You lug gold around as if you did not know what for. I do.\n\nFrom depth 4 I keep a stall - not up here, do not ask where. Take anything, the cheapest will do. After that you know it exists, and that is the whole point.",
-      'quest.einfuehrung_markt.dialogueProgress': 'From depth 4. Take anything. I do not write down what.',
-      'quest.einfuehrung_markt.dialogueComplete': "(She does not count the gold.) Good. And now forget that I showed you.\n\nThe stall moves, but it is somewhere every run. Anyone who comes back up with full pockets and takes them down again has missed something.",
+      'quest.einfuehrung_markt.description': 'Buy something from Mara at the black market.',
+      'quest.einfuehrung_markt.dialogueOffer': "You lug gold around as if you did not know what for. I do.\n\nI keep a stall - right here, under the table. Do not ask where the goods come from. Take anything, the cheapest will do. After that you know it exists, and that is the whole point.",
+      'quest.einfuehrung_markt.dialogueProgress': 'Take anything. I do not write down what.',
+      'quest.einfuehrung_markt.dialogueComplete': "(She does not count the gold.) Good. And now forget that I showed you.\n\nWhat I do not have, the old man with the cart down there might. Anyone who comes back up with full pockets and takes them down again has missed something.",
 
       'quest.einfuehrung_talente.title': 'What You Are Good For',
       'quest.einfuehrung_talente.description': 'Spend a point in the talent tree.',

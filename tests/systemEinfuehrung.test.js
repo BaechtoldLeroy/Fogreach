@@ -199,16 +199,23 @@ test('Das Tutorial erklaert die Systeme nicht mehr selbst', () => {
     'aus dem harten Kern fehlt etwas — das findet ohne Ansage niemand heraus');
 });
 
-test('Maras Stand bleibt zu, solange man nicht tief genug war', () => {
-  resetStore();
-  delete globalThis.window.questSystem;
-  globalThis.window.storySystem = { getCurrentActIndex: () => 99 };
-  globalThis.window.DUNGEON_DEPTH = 2;             // flacher als ihre Tiefe 4
-  loadGameModule('js/questSystem.js');
-  const qs = globalThis.window.questSystem;
-  qs.acceptQuest('einfuehrung_markt');
-  assert.strictEqual(qs.onSystemUsed('markt'), false,
-    'der Auftrag rueckte vor, obwohl der Stand noch gar nicht erreichbar ist');
-  globalThis.window.DUNGEON_DEPTH = 4;
-  assert.strictEqual(qs.onSystemUsed('markt'), true, 'auf Tiefe 4 rueckt er nicht vor');
+test('Maras Stand-Auftrag kommt erst, wenn ihr Stand offen ist', () => {
+  // Frueher wurde er sofort angeboten und fror dann ein, solange der
+  // LAUFENDE Lauf flacher als 4 war — gekauft wird aber oben bei ihr. Jetzt
+  // sperrt das Angebot (Schwarzmarkt ab erreichter Tiefe 4), nicht das Zaehlen.
+  let offen = false;
+  globalThis.window.LootSystem = { isBlackMarketUnlocked: () => offen };
+  try {
+    const qs = frisch();
+    durchwinken(qs, 'aldric_cleanup');
+    globalThis.window.DUNGEON_DEPTH = 1;
+    const angeboten = () => qs.getAvailableQuests('mara').some((d) => d.id === 'einfuehrung_markt');
+    assert.strictEqual(angeboten(), false, 'angeboten, obwohl ihr Stand noch zu ist');
+    offen = true;
+    assert.strictEqual(angeboten(), true, 'mit offenem Stand nicht angeboten');
+    qs.acceptQuest('einfuehrung_markt');
+    assert.strictEqual(qs.onSystemUsed('markt'), true, 'der Kauf zaehlt nach einem flachen Lauf nicht');
+  } finally {
+    delete globalThis.window.LootSystem;
+  }
 });
