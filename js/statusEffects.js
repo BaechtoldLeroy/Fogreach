@@ -108,6 +108,10 @@ class StatusEffectManager {
   constructor() {
     // Map<target, Map<effectType, StatusEffect>>
     this._effects = new Map();
+    // Map<target, Sprite>: die Flamme auf einer brennenden Figur (#173).
+    // Vorher war Brand nur ein orangener Farbstich — und der wird bei vielen
+    // Figuren jeden Frame von der Animation ueberschrieben.
+    this._flammen = new Map();
   }
 
   /**
@@ -146,10 +150,12 @@ class StatusEffectManager {
     } else {
       targetEffects.set(effectType, new StatusEffect(effectType, source, schadenJeTick));
       this._applyVisual(target, effectType);
+      if (effectType === StatusEffectType.BURNED) this._flammeAn(target);
     }
   }
 
   removeEffect(target, effectType) {
+    if (effectType === StatusEffectType.BURNED) this._flammeAus(target);
     if (!this._effects.has(target)) return;
     const targetEffects = this._effects.get(target);
     targetEffects.delete(effectType);
@@ -164,6 +170,7 @@ class StatusEffectManager {
   }
 
   removeAllEffects(target) {
+    this._flammeAus(target);
     if (!this._effects.has(target)) return;
     this._effects.delete(target);
     this._clearVisual(target);
@@ -205,6 +212,65 @@ class StatusEffectManager {
         this.removeEffect(entry.target, entry.effectType);
       }
     }
+    this._flammenNachfuehren();
+  }
+
+  /**
+   * Flammen den Figuren nachfuehren — einmal je Bild. Steht hinter dem
+   * Aufraeumen, damit eine gerade erloschene Flamme nicht noch einmal
+   * gesetzt wird. Hier verschwindet auch die Flamme einer Figur, die
+   * gestorben oder entfernt ist — egal, ob sie noch andere Effekte traegt.
+   */
+  _flammenNachfuehren() {
+    this._flammen.forEach((f, target) => {
+      if (!f || !f.active || !target || target.active === false) { this._flammeAus(target); return; }
+      const l = this._flammenLage(target);
+      f.setPosition(l.x, l.fuss);
+      f.setDepth((target.depth || 0) + 1);
+      f.setVisible(target.visible !== false);
+    });
+  }
+
+  /**
+   * Wo und wie gross: ueber dem unteren Teil der Figur. Gemessen am
+   * Bildrahmen der Figur — die Gegnerbilder sind seit b314 eng auf die Figur
+   * zugeschnitten (tools/gegnerBauen.js), die Fuesse stehen am unteren Rand.
+   *
+   * Die Groesse richtet sich nach der HOEHE der Figur, nicht nach ihrer
+   * Breite: die Flammen sind breit und flach (51x29). Nach der Breite
+   * bemessen kam auf dem 24 px schmalen Spieler eine Flamme von 19x11 px
+   * heraus — ein Flackern an den Fuessen.
+   */
+  _flammenLage(target) {
+    const b = target.getBounds ? target.getBounds() : null;
+    if (!b) return { x: target.x, fuss: target.y, hoehe: 24, maxBreite: 40 };
+    return {
+      x: b.centerX,
+      fuss: b.bottom - b.height * 0.05,
+      hoehe: b.height * 0.5,          // bis etwa zur Huefte
+      maxBreite: b.width * 1.6        // und nicht viel breiter als die Figur
+    };
+  }
+
+  _flammeAn(target) {
+    if (!target || this._flammen.has(target)) return;
+    const scene = target.scene;
+    const f = (scene && typeof window !== 'undefined' && typeof window.brandFlamme === 'function')
+      ? window.brandFlamme(scene) : null;
+    if (!f) return;                       // ohne Bilder bleibt es beim Farbstich
+    const l = this._flammenLage(target);
+    f.setScale(Math.min(l.hoehe / (f.height || 1), l.maxBreite / (f.width || 1)));
+    f.setAlpha(0.92);
+    f.setPosition(l.x, l.fuss);
+    f.setDepth((target.depth || 0) + 1);
+    this._flammen.set(target, f);
+  }
+
+  _flammeAus(target) {
+    const f = this._flammen.get(target);
+    if (!f) return;
+    this._flammen.delete(target);
+    if (f.active && typeof f.destroy === 'function') f.destroy();
   }
 
   getActiveEffects(target) {

@@ -1835,8 +1835,35 @@ function getProjectileTextureFor(enemy) {
 // projectiles to keep the GC quiet.
 const ENEMY_PROJECTILE_POOL_MAX = 64;
 
+// Feuerball und Arkangeschoss flackern (#173): acht Bilder im Loop, aus dem
+// alten Einzelbild mit animate_image erzeugt und auf das Startbild
+// zurueckgefuehrt. Schluessel -> Animationsname.
+const GESCHOSS_ANIM = { proj_fireball: 'geschoss_feuerball', proj_arcane: 'geschoss_arkan' };
+const GESCHOSS_BILDER = 8;
+
+/** Die Flug-Animation eines Geschosses anlegen (einmal je Szene) und abspielen. */
+function _geschossAbspielen(proj, texKey) {
+  const name = GESCHOSS_ANIM[texKey];
+  const scene = proj.scene;
+  // Ein Geschoss aus dem Pool kann vorher ein Feuerball gewesen sein. Laeuft
+  // dessen Animation weiter, setzt sie dem Pfeil im naechsten Bild wieder
+  // Flammen ein — darum IMMER erst anhalten.
+  if (proj.anims && proj.anims.isPlaying) proj.anims.stop();
+  if (!name || !scene || !scene.anims || !proj.anims) return;
+  if (!scene.anims.exists(name)) {
+    const frames = [];
+    for (let i = 0; i < GESCHOSS_BILDER; i++) {
+      if (!scene.textures.exists(texKey + i)) return;   // Bilder fehlen: Einzelbild bleibt
+      frames.push({ key: texKey + i });
+    }
+    scene.anims.create({ key: name, frames: frames, frameRate: 14, repeat: -1 });
+  }
+  proj.play({ key: name, startFrame: Math.floor(Math.random() * GESCHOSS_BILDER) });
+}
+
 // Configure size + body for a projectile based on its texture key.
 function _configureProjectileShape(proj, texKey, ang) {
+  _geschossAbspielen(proj, texKey);
   if (texKey === 'proj_arrow') {
     proj.setDisplaySize(28, 8);
     if (proj.body && proj.body.setSize) proj.body.setSize(20, 6);
@@ -1844,6 +1871,10 @@ function _configureProjectileShape(proj, texKey, ang) {
   } else if (texKey === 'proj_fireball' || texKey === 'proj_arcane') {
     proj.setDisplaySize(20, 20);
     if (proj.body && proj.body.setCircle) proj.body.setCircle(8);
+    // Der Feuerball ist mit dem Schweif nach links gezeichnet, fliegt also
+    // nach rechts. Ungedreht flog er nach links mit dem Schweif VORAN.
+    // Das Arkangeschoss ist rund und braucht keine Richtung.
+    if (texKey === 'proj_fireball' && typeof ang === 'number') proj.setRotation(ang);
   } else {
     proj.setDisplaySize(14, 14);
     if (proj.body && proj.body.setCircle) proj.body.setCircle(6);

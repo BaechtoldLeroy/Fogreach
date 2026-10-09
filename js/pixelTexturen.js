@@ -112,20 +112,21 @@
   // Und das Feuer, das aus einer zerschlagenen Schale auf den Boden laeuft.
   var BODENFEUER_BILDER = 9;
   var BODENFEUER_ANIM = 'bodenfeuer_brennen';
-  // Und das Feuer, das aus einer zerschlagenen Schale auf den Boden laeuft.
-  var BODENFEUER_BILDER = 9;
-  var BODENFEUER_ANIM = 'bodenfeuer_brennen';
   var FEUERSCHALE_ANIM = 'feuerschale_flackern';
+  // Und die Flamme auf einer brennenden Figur (#173): die oberen Zungen des
+  // Bodenfeuers, gebaut von tools/brandBauen.js.
+  var BRAND_BILDER = 9;
+  var BRAND_ANIM = 'brand_flackern';
+
+  function _brandSchluessel() {
+    var out = [];
+    for (var i = 0; i < BRAND_BILDER; i++) out.push('brand' + i);
+    return out;
+  }
 
   function _feuerschaleSchluessel() {
     var out = [];
     for (var i = 0; i < FEUERSCHALE_BILDER; i++) out.push('brazier' + i);
-    return out;
-  }
-
-  function _bodenfeuerSchluessel() {
-    var out = [];
-    for (var i = 0; i < BODENFEUER_BILDER; i++) out.push('floorFire' + i);
     return out;
   }
 
@@ -203,6 +204,11 @@
     });
     // Die Flammenbilder der Feuerschale, ebenfalls unter eigenem Namen.
     _feuerschaleSchluessel().forEach(function (k) {
+      if (scene.textures.exists(k)) return;
+      scene.load.image(k, ORDNER + k + '.png');
+    });
+    // Die Flammen fuer brennende Figuren.
+    _brandSchluessel().forEach(function (k) {
       if (scene.textures.exists(k)) return;
       scene.load.image(k, ORDNER + k + '.png');
     });
@@ -324,39 +330,34 @@
   };
 
   /**
-   * Setzt ein brennendes Bodenfeuer an eine Stelle.
+   * Eine flackernde Flamme fuer eine brennende Figur (#173).
+   *
+   * Nur das Bild mit seiner Animation — wo es steht und wie lange, regelt
+   * der Brandstatus in statusEffects.js.
    *
    * @param {Phaser.Scene} scene
-   * @param {number} x
-   * @param {number} y
-   * @param {number} breite gewuenschte Anzeigebreite
-   * @param {number} tiefe Zeichenebene
-   * @returns {Phaser.GameObjects.Sprite|null} null, wenn Bilder fehlen —
-   *          dann bleibt es beim gezeichneten Feuer des Aufrufers.
+   * @returns {Phaser.GameObjects.Sprite|null} null, wenn die Bilder fehlen
+   *          (dann bleibt es beim Farbstich).
    */
-  window.bodenfeuerSetzen = function (scene, x, y, breite, tiefe) {
+  window.brandFlamme = function (scene) {
     if (!scene || !scene.add || !scene.anims || typeof scene.add.sprite !== 'function') return null;
-    var keys = _bodenfeuerSchluessel();
+    var keys = _brandSchluessel();
     for (var i = 0; i < keys.length; i++) {
       if (!scene.textures.exists(keys[i])) return null;
     }
-    if (!scene.anims.exists(BODENFEUER_ANIM)) {
+    if (!scene.anims.exists(BRAND_ANIM)) {
       scene.anims.create({
-        key: BODENFEUER_ANIM,
+        key: BRAND_ANIM,
         frames: keys.map(function (k) { return { key: k }; }),
-        frameRate: 12,
+        frameRate: 14,
         repeat: -1,
         yoyo: true
       });
     }
-    var s = scene.add.sprite(x, y, keys[0]);
-    // Das Bild ist quadratisch, das Feuer darin breiter als hoch. Auf die
-    // Breite rechnen und die Hoehe mitziehen — nicht quadratisch strecken.
-    var q = scene.textures.get(keys[0]).getSourceImage();
-    var f = (q && q.width) ? (breite / q.width) : 1;
-    s.setScale(f);
-    if (typeof tiefe === 'number') s.setDepth(tiefe);
-    try { s.play(BODENFEUER_ANIM); } catch (e) {}
+    var s = scene.add.sprite(0, 0, keys[0]).setOrigin(0.5, 1);
+    // Jede Flamme an anderer Stelle der Folge, sonst flackern zwei brennende
+    // Gegner im Gleichtakt.
+    try { s.play({ key: BRAND_ANIM, startFrame: Math.floor(Math.random() * keys.length) }); } catch (e) {}
     return s;
   };
 

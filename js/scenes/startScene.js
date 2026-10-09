@@ -191,6 +191,11 @@ StartScene.prototype.preload = function () {
   this.load.image('proj_arrow',    'assets/projectiles/proj_arrow.png');
   this.load.image('proj_arcane',   'assets/projectiles/proj_arcane.png');
   this.load.image('proj_fireball', 'assets/projectiles/proj_fireball.png');
+  // #173: die Flugbilder von Feuerball und Arkangeschoss (je acht, Loop).
+  for (let i = 0; i < 8; i++) {
+    this.load.image('proj_fireball' + i, 'assets/projectiles/proj_fireball' + i + '.png');
+    this.load.image('proj_arcane' + i, 'assets/projectiles/proj_arcane' + i + '.png');
+  }
   this.load.image('proj_default',  'assets/projectiles/proj_default.png');
 
   // Hub NPCs (Aldric, Elara, Harren) are also lazy-loaded inside HubSceneV2.preload()
