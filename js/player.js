@@ -86,6 +86,18 @@ function kettenReichweite() {
 }
 if (typeof window !== "undefined") window.kettenReichweite = kettenReichweite;
 const PLAYER_FRAME_METADATA = {};
+// Normalisiertes Gehbild -> Versatz zum Quellbild (Quelle = Leinwand + Versatz).
+// Die Rolle (#179) braucht ihn, um ihre Bilder auf dieselben Fuesse zu stellen.
+const PLAYER_NORM_VERSATZ = {};
+
+// #179: Die Ausweichrolle als eigene Bildfolge statt dreifach beschleunigter
+// Gehbilder. Erzeugt mit PixelLab (pixminimax) am Spielercharakter, also
+// gleich gross gezeichnet wie die Gehbilder — aber auf 92x92 statt 64x64:
+// PixelLab polstert die Leinwand um ROLLE_RAND Pixel je Seite, damit die
+// Rolle Platz hat. Ausgeliefert werden die acht Bilder NACH der Ruhepose
+// (rolleDD_f00..f07, bis er wieder steht); die Ruhepose liefern die Gehbilder.
+const ROLLE_BILDER = 8;
+const ROLLE_RAND = 14;
 const PLAYER_WIDTH_STRETCH = 1;
 const PLAYER_SIDEWAYS_SCALE = 0.8;
 const PLAYER_RIGHT_LEFT_WIDTH_MULT = 1.15;
@@ -130,7 +142,16 @@ function preloadPlayerDirectionalFrames(loader) {
       if (textureManager?.exists?.(key)) continue;
       loader.image(key, `assets/PlayerSprites/${key}.png`);
     }
+    for (let frame = 0; frame < ROLLE_BILDER; frame++) {
+      const key = rolleSchluessel(dirId, frame);
+      if (textureManager?.exists?.(key)) continue;
+      loader.image(key, `assets/PlayerSprites/${key}.png`);
+    }
   }
+}
+
+function rolleSchluessel(dd, frame) {
+  return `rolle${dd}_f${frame.toString().padStart(2, '0')}`;
 }
 
 // Track which directions are currently being loaded to avoid duplicate requests
@@ -154,6 +175,10 @@ function ensureDirectionLoaded(scene, dd) {
         scene.load.image(fk, `assets/PlayerSprites/${fk}.png`);
       }
     }
+    for (let f = 0; f < ROLLE_BILDER; f++) {
+      const rk = rolleSchluessel(dd, f);
+      if (!scene.textures.exists(rk)) scene.load.image(rk, `assets/PlayerSprites/${rk}.png`);
+    }
     scene.load.once('complete', () => {
       delete _directionLoadingPromises[dd];
       // Create walk animation for this direction now that frames are loaded
@@ -163,7 +188,7 @@ function ensureDirectionLoaded(scene, dd) {
       // 052 WP03: apply LINEAR post-normalization for THIS direction.
       // (Normalization swaps texture via addCanvas → wipes prior filter.)
       if (window.RenderQuality) {
-        window.RenderQuality.applyLinearFilterByPrefix(scene, [`dir${dd}_`]);
+        window.RenderQuality.applyLinearFilterByPrefix(scene, [`dir${dd}_`, `rolle${dd}_`]);
       }
       // Die GROESSE neu rechnen, jetzt wo die Bilder da sind.
       //
@@ -290,6 +315,7 @@ function normalizeDirectionFrames(scene, dd) {
     if (dy > maxDy) dy = maxDy;
 
     ctx.drawImage(src, meta.minX, meta.minY, cropWidth, cropHeight, dx, dy, cropWidth, cropHeight);
+    PLAYER_NORM_VERSATZ[key] = { x: meta.minX - dx, y: meta.minY - dy };
 
     canvasTex.refresh();
     texManager.remove(key);
@@ -483,6 +509,7 @@ function normalizePlayerDirectionalFrames(scene) {
         cropWidth,
         cropHeight
       );
+      PLAYER_NORM_VERSATZ[key] = { x: meta.minX - dx, y: meta.minY - dy };
 
       canvasTex.refresh();
       texManager.remove(key);
@@ -2967,24 +2994,31 @@ function performRoll() {
 
   const scene = this;
 
-  // WP04: Visual Choreography — Walk-Anim-Boost (timeScale 3) + Squash (yoyo
-  // scaleY 1.0 → 0.7 → 1.0) + Purple Tint. Während des Rolls läuft kein
-  // handlePlayerMovement (siehe gate oben), daher kein applyPlayerDisplay-
-  // Settings-Overwrite — tween hat freie Bahn.
+  // #179: Die Rolle als eigene Bildfolge (_rolleZeigen). Fehlen ihre Bilder
+  // (Richtung noch nicht geladen, Verkleidung), bleibt der alte Notbehelf:
+  // Gehbilder dreifach schnell, gestaucht, lila.
   const preRollScaleY = player.scaleY || 1;
   const preRollAnimTimeScale = (player.anims && player.anims.timeScale) || 1;
   const rollDir = getDirectionFromVelocity(dx, dy);
+  const rolle = _rolleZeigen(scene, rollDir, duration);
   const rollAnimKey = `walk_${rollDir}`;
-  if (scene.anims && scene.anims.exists(rollAnimKey)) {
+  if (!rolle && scene.anims && scene.anims.exists(rollAnimKey)) {
     player.anims.play(rollAnimKey, true);
     if (player.anims) player.anims.timeScale = 3;
     const animState = player.getData('animState') || {};
     animState.playing = rollAnimKey;
     animState.direction = rollDir;
     player.setData('animState', animState);
+  } else if (rolle) {
+    // Nach der Rolle steht er in der Richtung, in die er gerollt ist — der
+    // alte Weg setzte das nebenbei mit der Gehanimation.
+    const animState = player.getData('animState') || {};
+    animState.direction = rollDir;
+    animState.playing = null;
+    player.setData('animState', animState);
   }
-  if (player.setTint) player.setTint(0x8844cc);
-  const squashTween = scene.tweens.add({
+  if (!rolle && player.setTint) player.setTint(0x8844cc);
+  const squashTween = rolle ? null : scene.tweens.add({
     targets: player,
     scaleY: preRollScaleY * 0.7,
     duration: duration / 2,
@@ -2998,10 +3032,11 @@ function performRoll() {
     // MaxVelocity zurück auf normalen Player-Clamp (220 ist der base)
     if (player && player.body) player.body.setMaxVelocity(220, 220);
     // WP04: Visuals restoren
+    if (rolle) rolle.ende();
     if (squashTween && squashTween.isPlaying && squashTween.isPlaying()) {
       squashTween.stop();
     }
-    if (player) {
+    if (player && !rolle) {
       player.scaleY = preRollScaleY;
       if (player.anims) player.anims.timeScale = preRollAnimTimeScale;
       if (player.setTint) player.setTint(PLAYER_TINT_COLOR);
@@ -3029,6 +3064,80 @@ function performRoll() {
   }, null, scene);
 
   return true;
+}
+
+/**
+ * #179: Spielt die Rolle auf einem eigenen Bild, das dem Spieler folgt; der
+ * Spieler selbst ist so lange unsichtbar. Koerper, Skala und Ursprung des
+ * Spielers bleiben damit unberuehrt — die Rollbilder sind 92x92 und roh,
+ * die Gehbilder zugeschnitten (normalizeDirectionFrames).
+ *
+ * Ausgerichtet am Gehbild derselben Richtung: der Punkt der Zeichnung, auf
+ * dem der Spieler steht (sein Ursprung), liegt im Rollbild an derselben
+ * Stelle, und die Skala ist die, die das Gehbild bekaeme. So rollt er aus
+ * dem Stand los, ohne zu springen oder zu wachsen.
+ *
+ * @returns {{ende: function}|null} null, wenn Bilder oder Versatz fehlen.
+ */
+function _rolleZeigen(scene, dd, duration) {
+  const gehKey = `dir${dd}_f00`;
+  const aktuell = player.texture && player.texture.key;
+  const v = PLAYER_NORM_VERSATZ[gehKey];
+  if (!v || typeof aktuell !== 'string' || !aktuell.startsWith('dir')) return null;
+  if (!scene.textures.exists(gehKey)) return null;
+  const keys = [];
+  for (let f = 0; f < ROLLE_BILDER; f++) {
+    const k = rolleSchluessel(dd, f);
+    if (!scene.textures.exists(k)) return null;
+    keys.push(k);
+  }
+
+  // Masse vom FRAME, nicht von getSourceImage(): normalizeDirectionFrames
+  // gibt seine Leinwand nach addCanvas an Phasers Leinwand-Pool zurueck, und
+  // im Browser hat ein Textfeld sie danach wiederverwendet — gemessen
+  // 255x23 statt des Gehbilds. Die Grafikkarte hat das Bild laengst, der
+  // Spieler sieht richtig aus; nur die Quelle stimmt nicht mehr.
+  const geh = scene.textures.getFrame(gehKey);
+  const meta = getDirectionalFrameMeta(scene, gehKey);
+  const oy = (meta && typeof meta.originY === 'number') ? Phaser.Math.Clamp(meta.originY, 0, 1) : PLAYER_ORIGIN_Y;
+  const seite = scene.textures.getFrame(keys[0]).width;
+  const ursprungX = (0.5 * geh.width + v.x + ROLLE_RAND) / seite;
+  const ursprungY = (oy * geh.height + v.y + ROLLE_RAND) / seite;
+  // Alle Gehbilder werden auf dieselbe Anzeigehoehe gezogen
+  // (applyPlayerDisplaySettings) — das Gehbild dieser Richtung also auf die
+  // jetzige.
+  const skala = player.displayHeight / geh.height;
+
+  const animKey = `rolle_${dd}`;
+  if (!scene.anims.exists(animKey)) {
+    scene.anims.create({ key: animKey, frames: keys.map((key) => ({ key })), frameRate: 30, repeat: 0 });
+  }
+  const bild = scene.add.sprite(player.x, player.y, keys[0])
+    .setOrigin(ursprungX, ursprungY)
+    .setScale(skala)
+    .setDepth(player.depth)
+    // Ein heller Lila-Schimmer zeigt die Unverwundbarkeit an. Das kraeftige
+    // 0x8844cc des alten Notbehelfs faerbte die Zeichnung fast ganz magenta —
+    // im Browser war vom Mantel nichts mehr zu sehen.
+    .setTint(0xd0c4ff);
+  // Die ganze Folge in der Dauer der Rolle, nicht schneller und nicht langsamer.
+  bild.play({ key: animKey, frameRate: ROLLE_BILDER / (duration / 1000) });
+  player.setVisible(false);
+
+  const folgen = () => {
+    if (!bild.active || !player) return;
+    bild.setPosition(player.x, player.y);
+    bild.setDepth(player.depth);
+  };
+  scene.events.on('postupdate', folgen);
+  return {
+    bild,
+    ende() {
+      scene.events.off('postupdate', folgen);
+      bild.destroy();
+      if (player) player.setVisible(true);
+    }
+  };
 }
 
 // ============================================================

@@ -1371,7 +1371,7 @@ function create() {
     normalizePlayerDirectionalFrames(this);
     // 052 WP03: re-apply LINEAR post-normalization (canvas-swap wipes filter)
     if (window.RenderQuality) {
-      window.RenderQuality.applyLinearFilterByPrefix(this, ['dir']);
+      window.RenderQuality.applyLinearFilterByPrefix(this, ['dir', 'rolle']);  // #179: die Rolle wie das Gehen
     }
   }
   createAllGraphics.call(this);
