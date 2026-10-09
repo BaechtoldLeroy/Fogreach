@@ -1084,6 +1084,13 @@ function handleEnemies(time, delta = 16) {
   enemies.children.iterate((enemy) => {
     if (!enemy || !enemy.active) return;
 
+    // #170: Wer den Lauf-Takt unten nicht mehr erreicht (betaeubt, gezogen,
+    // Schonfrist ...), steht — dann nicht auf einem Laufbild einfrieren.
+    // _laufBild gibt es nur mit ?gegnerlauf=1.
+    if (enemy._laufBild && time - (enemy._laufZuletzt || 0) > GEGNER_LAUF_NACHLAUF) {
+      _gegnerLaufRuhe(this, enemy);
+    }
+
     // Camera culling: skip AI for off-screen enemies on mobile
     if (enemy.x < cullLeft || enemy.x > cullRight || enemy.y < cullTop || enemy.y > cullBottom) {
       if (enemy.body) enemy.body.setVelocity(0, 0);
@@ -1627,6 +1634,9 @@ function handleEnemies(time, delta = 16) {
         }
       }
     }
+
+    // #170: Laufbilder (nur mit ?gegnerlauf=1).
+    if (_gegnerLaufAn()) _gegnerLaufTakt(this, enemy, time);
 
     // --- Angriff / Schaden unverändert
     // #90 Nebenbefund: der Elite-Affix 'fanatic' setzt `_attackCdMul` (halbe
@@ -2483,6 +2493,96 @@ function _gegnerSchlagZeigen(scene, enemy, dauer) {
     if (scene.textures.exists(null0)) enemy.setTexture(null0);
   });
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// #170: Laufbilder — nur hinter ?gegnerlauf=1.
+//
+// Gegner glitten bisher mit der Ruhepose ueber den Boden. Mit der Flagge
+// spielen die Typen aus window.GEGNER_LAUFBILDER (enemyAssets.js) beim Laufen
+// ihre walk_<dir>N-Bilder, im Stand die Ruhepose. Schlag- und Sonderposen
+// haben Vorrang: solange einer der Angriffsschalter steht, fasst der Takt das
+// Bild nicht an — die Angriffsfolge setzt am Ende ohnehin selbst <dir>0.
+// ---------------------------------------------------------------------------
+var _gegnerLaufSchalter = null;
+function _gegnerLaufAn() {
+  // Die Adresse steht fest — einmal fragen genuegt (pro Bild und Gegner
+  // waere das sonst ein RegExp-Lauf).
+  if (_gegnerLaufSchalter === null) {
+    _gegnerLaufSchalter = !!(typeof window !== 'undefined' && window.DebugGate
+      && window.DebugGate.an('gegnerlauf'));
+  }
+  return _gegnerLaufSchalter;
+}
+
+var GEGNER_LAUF_MS = 760;        // ein ganzer Zyklus, gleich fuer 4 und 8 Bilder
+var GEGNER_LAUF_MIN_PX_S = 12;   // darunter gilt der Gegner als stehend
+var GEGNER_LAUF_NACHLAUF = 150;  // ms; kurze Stockungen lassen den Gang weiterlaufen
+
+/**
+ * Bildname und Richtung fuer den Lauf. Anders als _gegnerBildTeile NICHT aus
+ * dem Texturnamen gelesen: waehrend des Laufs steht dort ein walk_-Bild.
+ */
+function _gegnerLaufTeile(enemy) {
+  if (enemy._spritePrefix) return { pre: enemy._spritePrefix, dir: enemy._spriteDir || 'right' };
+  if (enemy.isAnimalSprite && enemy.animalPrefix) return { pre: enemy.animalPrefix, dir: enemy.animalDirection || 'right' };
+  if (enemy.isImp) return { pre: 'imp', dir: enemy.impDirection || 'right' };
+  if (enemy.isBrute) return { pre: 'brute', dir: enemy.bruteDirection || 'right' };
+  if (enemy.isShadowSprite) return { pre: 'shadow', dir: enemy.shadowDirection || 'right' };
+  if (enemy.isChainGuardSprite) return { pre: 'chainguard', dir: enemy.chainGuardDirection || 'right' };
+  if (enemy.isArcherSprite) return { pre: 'archer', dir: enemy.archerDirection || 'right' };
+  if (enemy.isMageSprite) return { pre: 'mage', dir: enemy.mageDirection || 'right' };
+  if (enemy.isFlameWeaverSprite) return { pre: 'flameweaver', dir: enemy.flameWeaverDirection || 'right' };
+  return null;
+}
+
+/** Zeigt der Gegner gerade eine Schlag- oder Sonderpose? Dann hat sie Vorrang. */
+function _gegnerPosiert(enemy) {
+  return !!(enemy._schlagBild || enemy._spriteAktion || enemy.impAttacking || enemy.bruteAttacking
+    || enemy.shadowAttacking || enemy.chainGuardAttacking || enemy.archerAttacking
+    || enemy.mageAttacking || enemy.flameWeaverAttacking);
+}
+
+/** Zurueck in die Ruhepose, falls gerade ein Laufbild steht. */
+function _gegnerLaufRuhe(scene, enemy) {
+  enemy._laufBild = false;
+  // Hat schon jemand anderes das Bild gesetzt (der fliehende Alarmwicht,
+  // der ansetzende Hund), gehoert es ihm. Ohne das stellte die Ruhe seine
+  // Pose zurueck, und bildHalten in sondergegner.js setzte sie nie wieder.
+  if (!/_walk_/.test((enemy.texture && enemy.texture.key) || '')) return;
+  var t = _gegnerLaufTeile(enemy);
+  if (!t || _gegnerPosiert(enemy)) return;
+  var ruhe = t.pre + '_' + t.dir + '0';
+  if (scene.textures.exists(ruhe)) enemy.setTexture(ruhe);
+}
+
+/**
+ * Ein Takt des Gangs. Gemessen wird die WIRKLICHE Bewegung seit dem letzten
+ * Takt, nicht die gewuenschte Geschwindigkeit: wer am Spieler steht und
+ * zuschlaegt, bekommt jedes Bild eine Wunschrichtung, wird aber vom
+ * Angriffsblock auf 0 gesetzt — er soll stehen, nicht auf der Stelle laufen.
+ */
+function _gegnerLaufTakt(scene, enemy, time) {
+  var t = _gegnerLaufTeile(enemy);
+  var n = t && window.GEGNER_LAUFBILDER ? window.GEGNER_LAUFBILDER[t.pre] : 0;
+  if (!n || !scene.textures.exists(t.pre + '_walk_' + t.dir + '0')) return;
+  var dt = enemy._laufT ? time - enemy._laufT : 0;
+  var weg = enemy._laufT ? Math.hypot(enemy.x - enemy._laufX, enemy.y - enemy._laufY) : 0;
+  enemy._laufT = time; enemy._laufX = enemy.x; enemy._laufY = enemy.y;
+  enemy._laufZuletzt = time;
+  if (dt > 0 && weg * 1000 / dt >= GEGNER_LAUF_MIN_PX_S) enemy._laufBis = time + GEGNER_LAUF_NACHLAUF;
+  if (_gegnerPosiert(enemy)) { enemy._laufBild = false; return; }
+  if (!(enemy._laufBis > time)) {
+    if (enemy._laufBild) _gegnerLaufRuhe(scene, enemy);
+    return;
+  }
+  // Eigene Uhr je Gegner, ab dem ersten Schritt: so laufen zwei Gegner nicht
+  // im Gleichschritt, und es braucht keinen Zufall.
+  if (!enemy._laufBild) enemy._laufAb = time;
+  var phase = Math.floor((time - enemy._laufAb) / (GEGNER_LAUF_MS / n)) % n;
+  var key = t.pre + '_walk_' + t.dir + phase;
+  if (enemy.texture.key !== key && scene.textures.exists(key)) enemy.setTexture(key);
+  enemy._laufBild = true;
 }
 
 function _pluendererTreppe(scene, enemy) {

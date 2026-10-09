@@ -34,6 +34,29 @@
   // des Schattenrats ein, solange die Geschichte laeuft.
   var BOSSES = ['boss_chain', 'boss_ceremony', 'boss_shadow', 'boss_elara'];
 
+  // #170: Laufbilder je Typ (walk_right<N>/walk_left<N>), Zahl = Bilder je
+  // Richtung. Nur hinter ?gegnerlauf=1 geladen und gespielt; ohne Flagge
+  // laedt das Spiel genau die Bilder wie vorher. Gebaut mit
+  // tools/gegnerLaufBauen.js, deckungsgleich mit right0.
+  var LAUFBILDER = {
+    imp: 4, rat: 4, brute: 8, chainguard: 8, mage: 8, archer: 8, wolf: 8, bat: 8,
+    shadow: 8, flameweaver: 8, priester: 8, beschwoerer: 8, springer: 8,
+    geschwuer: 8, hund: 8, alarm: 8
+  };
+  window.GEGNER_LAUFBILDER = LAUFBILDER;
+  function _laufAn() {
+    return !!(window.DebugGate && window.DebugGate.an('gegnerlauf'));
+  }
+  function _laufBilder(t) {
+    var out = [];
+    for (var i = 0; i < LAUFBILDER[t]; i++) {
+      ['right', 'left'].forEach(function (d) {
+        out.push({ key: t + '_walk_' + d + i, url: 'assets/enemy/' + t + '/walk_' + d + i + '.png' });
+      });
+    }
+    return out;
+  }
+
   // Alle Gegner-Sprite-URLs (fuer den Hintergrund-Prefetch).
   function _allEnemyUrls() {
     var urls = [];
@@ -47,6 +70,11 @@
       FRAMES.forEach(function (f) { urls.push('assets/enemy/' + b + '/' + f + '.png'); });
       urls.push('assets/enemy/' + b + '/idle.png');
     });
+    if (_laufAn()) {
+      Object.keys(LAUFBILDER).forEach(function (t) {
+        _laufBilder(t).forEach(function (l) { urls.push(l.url); });
+      });
+    }
     return urls;
   }
 
@@ -97,5 +125,10 @@
       FRAMES.forEach(function (f) { img(b + '_' + f, 'assets/enemy/' + b + '/' + f + '.png'); });
       img('sprite_' + b, 'assets/enemy/' + b + '/idle.png'); // sprite_boss_chain etc.
     });
+    if (_laufAn()) {
+      Object.keys(LAUFBILDER).forEach(function (t) {
+        _laufBilder(t).forEach(function (l) { img(l.key, l.url); });
+      });
+    }
   };
 })();
