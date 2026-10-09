@@ -97,7 +97,7 @@ test('Der ECHTE Wirbel legt Gift in Hoehe des Waffenschadens an', () => {
   const rang = H.run(`(function () {
     var ST = window.SkillTree;
     for (var i = 0; i < 60; i++) ST.grantSkillPoint();
-    for (var k = 0; k < 2; k++) ST.investPoint('whirlwind', 30);
+    for (var k = 0; k < 2; k++) ST.investPoint('hammer', 30);   // #175: Giftklinge haengt am Wut-Einstieg
     for (var m = 0; m < 3; m++) ST.investPoint('combat_poison_blade', 30);
     return window.skillRang('combat_poison_blade');
   })()`);

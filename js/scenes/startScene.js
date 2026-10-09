@@ -636,7 +636,12 @@ StartScene.prototype.create = function () {
 
   // ENDLOS-MODUS button (roguelike: no hub, descend forever, pick 1-of-3
   // upgrades after each cleared room)
-  const endlessBtn = this.add
+  // Seit #175 ON HOLD: der Talentbaum wurde fuer die Geschichte umgebaut
+  // (Stufen, Strang-Staffel), der Endlos-Modus lernt Faehigkeiten ueber eigene
+  // Aufwertungen und ist darauf nicht abgestimmt. Der Code bleibt; nur der
+  // Einstieg ist zu. Wieder aufmachen: ENDLOS_AKTIV = true.
+  const ENDLOS_AKTIV = false;
+  const endlessBtn = !ENDLOS_AKTIV ? null : this.add
     .text(cx, startY + 92, _START_T('endless.btn.start'), {
       fontFamily: 'serif', fontSize: '20px',
       fill: '#ff8866',
@@ -647,8 +652,8 @@ StartScene.prototype.create = function () {
     .setOrigin(0.5)
     .setInteractive({ useHandCursor: true })
     .setDepth(1001);
-  _trackI18n(endlessBtn, 'endless.btn.start');
-  endlessBtn
+  if (endlessBtn) _trackI18n(endlessBtn, 'endless.btn.start');
+  if (endlessBtn) endlessBtn
     .on('pointerdown', () => {
       if (window.clearSave) clearSave();
       if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
@@ -668,7 +673,7 @@ StartScene.prototype.create = function () {
 
   // EINSTELLUNGEN button below the start button
   const settingsBtn = this.add
-    .text(cx, startY + 140, _START_T('start.btn.settings'), {
+    .text(cx, startY + (ENDLOS_AKTIV ? 140 : 92), _START_T('start.btn.settings'), {
       fontFamily: 'monospace', fontSize: "16px",
       fill: "#aaaaaa",
       backgroundColor: "#1a1a1a",

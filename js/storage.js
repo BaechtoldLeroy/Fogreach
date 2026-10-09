@@ -377,8 +377,8 @@ function applySaveToState(scene, s) {
   // Feature 060 (WP05): Skill-Baum-State aus dem Haupt-Save anwenden.
   // - Save MIT `skillTree` → direkt via loadSaveData übernehmen.
   // - Pre-060-Save OHNE `skillTree` (Migration) → resetForNewGame() +
-  //   grantSkillPoint(playerLevel): der Spieler bekommt Skill-Punkte = sein
-  //   aktueller Level frei zum Verteilen. Kein Crash, kein Item-/Gold-Verlust.
+  //   grantSkillPoint(playerLevel - 1): der Spieler bekommt die Skill-Punkte, die
+  //   er beim Aufsteigen bekommen haette, frei zum Verteilen. Kein Crash, kein Item-/Gold-Verlust.
   // Defensiv: SkillTree ist optional (Script-Load-Order / Tests ohne Modul).
   if (typeof window !== 'undefined' && window.SkillTree) {
     try {
@@ -392,8 +392,10 @@ function applySaveToState(scene, s) {
           window.SkillTree.resetForNewGame();
         }
         if (typeof window.SkillTree.grantSkillPoint === 'function') {
+          // Level - 1, nicht Level: Punkte gibt es je AUFSTIEG, ein frischer
+          // Spieler auf Level 3 hat 2. Vorher bekam ein migrierter einen mehr (#175).
           const lvl = Math.max(0, Math.floor(Number(playerLevel) || 0));
-          if (lvl > 0) window.SkillTree.grantSkillPoint(lvl);
+          if (lvl > 1) window.SkillTree.grantSkillPoint(lvl - 1);
         }
       }
     } catch (err) {

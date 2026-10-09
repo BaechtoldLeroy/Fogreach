@@ -55,7 +55,27 @@
       'skilltree.passive.survival_life_steal': '+4 % Lebensraub je Rang.',
       'skilltree.toast.respec_done': 'Talente zurückgesetzt — {points} Punkte erstattet',
       'skilltree.toast.respec_nogold': 'Nicht genug Gold',
-      'skilltree.toast.respec_nothing': 'Nichts zum Zurücksetzen'
+      'skilltree.toast.respec_nothing': 'Nichts zum Zurücksetzen',
+      // #175: Stufen und Straenge erklaeren
+      'skilltree.lv': 'Lv {level}',
+      'skilltree.ab_lv': 'ab Lv {level}',
+      'skilltree.strang.frei': 'frei wählbar',
+      'skilltree.strang.jetzt': '{nr}. Strang wählbar',
+      'skilltree.strang.offen': 'geöffnet',
+      'skilltree.strang.gesperrt': '{nr}. Strang ab Lv {level}',
+      'skilltree.hinweis.start': 'Wähle deinen ersten Strang frei. Der zweite öffnet ab Lv 6, der dritte ab Lv 12.',
+      'skilltree.hinweis.naechste': 'Du bist Lv {level}. Nächste Freischaltung: Lv {next} — {was}.',
+      'skilltree.hinweis.alles': 'Du bist Lv {level}. Alle Stufen sind offen.',
+      'skilltree.was.5': 'erste Passive',
+      'skilltree.was.9': 'Mittelstufe',
+      'skilltree.was.14': 'mittlere Passive',
+      'skilltree.was.20': 'Krönung',
+      'skilltree.was.26': 'letzte Passive',
+      'skilltree.was.strang': '{nr}. Strang',
+      'skilltree.node.req_strang': '{nr}. Strang: ab Level {level}. Den ersten Strang wählst du frei, der zweite öffnet ab Lv 6, der dritte ab Lv 12.',
+      'skilltree.toast.req_strang': '{nr}. Strang erst ab Level {level}',
+      'skilltree.toast.req_level': 'Erst ab Level {level}',
+      'skilltree.toast.req_node': 'Erst {name} auf Rang {rank}'
     });
     window.i18n.register('en', {
       'skilltree.title': 'Talents',
@@ -87,7 +107,26 @@
       'skilltree.passive.survival_life_steal': '+4% life steal per rank.',
       'skilltree.toast.respec_done': 'Talents reset — {points} points refunded',
       'skilltree.toast.respec_nogold': 'Not enough gold',
-      'skilltree.toast.respec_nothing': 'Nothing to reset'
+      'skilltree.toast.respec_nothing': 'Nothing to reset',
+      'skilltree.lv': 'Lv {level}',
+      'skilltree.ab_lv': 'from lv {level}',
+      'skilltree.strang.frei': 'free to choose',
+      'skilltree.strang.jetzt': 'strand {nr} available',
+      'skilltree.strang.offen': 'opened',
+      'skilltree.strang.gesperrt': 'strand {nr} from lv {level}',
+      'skilltree.hinweis.start': 'Pick your first strand freely. The second opens at lv 6, the third at lv 12.',
+      'skilltree.hinweis.naechste': 'You are lv {level}. Next unlock: lv {next} — {was}.',
+      'skilltree.hinweis.alles': 'You are lv {level}. All tiers are open.',
+      'skilltree.was.5': 'first passives',
+      'skilltree.was.9': 'middle tier',
+      'skilltree.was.14': 'middle passives',
+      'skilltree.was.20': 'crown skills',
+      'skilltree.was.26': 'last passives',
+      'skilltree.was.strang': 'strand {nr}',
+      'skilltree.node.req_strang': 'Strand {nr}: from level {level}. You pick your first strand freely; the second opens at lv 6, the third at lv 12.',
+      'skilltree.toast.req_strang': 'Strand {nr} only from level {level}',
+      'skilltree.toast.req_level': 'Only from level {level}',
+      'skilltree.toast.req_node': 'First {name} to rank {rank}'
     });
   }
   const _ST_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
@@ -122,9 +161,56 @@
     return spent * 50;
   }
 
+  /**
+   * #175: Ein Rahmenbild in neun Teilen auf beliebige Groesse ziehen — die
+   * Ecken bleiben in Originalgroesse, Kanten und Mitte dehnen sich.
+   *
+   * Phasers add.nineslice kann das, laeuft in 3.70 aber NUR unter WebGL: im
+   * Canvas-Renderer (Headless-Tests, Geraete ohne WebGL) blieb der Rahmen
+   * unsichtbar. Hier sind es neun gewoehnliche Bilder mit eigenen Frames.
+   *
+   * @returns {Phaser.GameObjects.Image[]} die neun Teile (fuer nodeViews)
+   */
+  function neunteilig(scene, key, cx, cy, w, h, rand, depth, massstab) {
+    const tex = scene.textures.get(key);
+    const src = tex.getSourceImage();
+    const W = src.width, H = src.height;
+    if (!tex.has('n9_0')) {
+      const xs = [0, rand, W - rand, W], ys = [0, rand, H - rand, H];
+      for (let j = 0; j < 3; j++) {
+        for (let i = 0; i < 3; i++) {
+          tex.add('n9_' + (j * 3 + i), 0, xs[i], ys[j], xs[i + 1] - xs[i], ys[j + 1] - ys[j]);
+        }
+      }
+    }
+    // massstab verkleinert die Ecken (die Panel-Ecken sind im Original
+    // ~25 px stark und deckten Text zu). Ist die Flaeche kleiner als zwei
+    // Raender, schrumpfen sie mit.
+    const r = Math.min(Math.round(rand * (massstab || 1)), Math.floor(w / 2), Math.floor(h / 2));
+    const left = Math.round(cx - w / 2), top = Math.round(cy - h / 2);
+    const bx = [0, r, w - r], by = [0, r, h - r];
+    const bw = [r, w - 2 * r, r], bh = [r, h - 2 * r, r];
+    const teile = [];
+    for (let j = 0; j < 3; j++) {
+      for (let i = 0; i < 3; i++) {
+        if (bw[i] <= 0 || bh[j] <= 0) continue;
+        teile.push(scene.add.image(left + bx[i], top + by[j], key, 'n9_' + (j * 3 + i))
+          .setOrigin(0, 0).setDisplaySize(bw[i], bh[j]).setScrollFactor(0).setDepth(depth));
+      }
+    }
+    return teile;
+  }
+
   class SkillTreeScene extends Phaser.Scene {
     constructor() {
       super({ key: 'SkillTreeScene' });
+    }
+
+    // #175: Schloss und Strang-Embleme (PixelLab, assets/ui).
+    preload() {
+      ['talent_schloss', 'talent_wut', 'talent_ketten', 'talent_schatten', 'talent_panel', 'talent_karte'].forEach((k) => {
+        if (!this.textures.exists(k)) this.load.image(k, 'assets/ui/' + k + '.png');
+      });
     }
 
     create(data) {
@@ -219,15 +305,22 @@
         .setScrollFactor(0).setDepth(2000);
 
       // Panel — fills most of the screen but respects safe area.
-      const panelW = Math.min(760, cw - 24 - this._safe.left - this._safe.right);
-      const panelH = Math.min(500, ch - 24 - this._safe.top - this._safe.bottom);
+      const panelW = Math.min(780, cw - 16 - this._safe.left - this._safe.right);
+      const panelH = Math.min(500, ch - 12 - this._safe.top - this._safe.bottom);
       const px = cw / 2;
       const py = (this._safe.top - this._safe.bottom) / 2 + ch / 2;
-      const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
-      panel.fillStyle(0x10131c, 0.97)
-        .fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
-      panel.lineStyle(3, 0xffd166, 0.9)
-        .strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+      // #175: Messingrahmen aus PixelLab (create_ui_asset) in neun Teilen
+      // (neunteilig): die verzierten Ecken bleiben in Originalgroesse, Kanten
+      // und Mitte dehnen sich. Ohne das Bild der alte gezeichnete Rahmen.
+      if (this.textures.exists('talent_panel')) {
+        neunteilig(this, 'talent_panel', px, py, panelW, panelH, 72, 2001, 0.55);
+      } else {
+        const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
+        panel.fillStyle(0x10131c, 0.97)
+          .fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+        panel.lineStyle(3, 0xffd166, 0.9)
+          .strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+      }
 
       // Title
       this.add.text(px, py - panelH / 2 + 12, _ST_T('skilltree.title'), {
@@ -235,16 +328,16 @@
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
 
       // Points counter (top-left of panel)
-      this.pointsText = this.add.text(px - panelW / 2 + 16, py - panelH / 2 + 16,
+      this.pointsText = this.add.text(px - panelW / 2 + 34, py - panelH / 2 + 18,
         _ST_T('skilltree.points', { amount: 0 }), {
           fontFamily: 'monospace', fontSize: '14px', color: '#ffd166'
         }).setScrollFactor(0).setDepth(2002);
 
       // Close button (top-right of panel)
-      const closeBg = this.add.rectangle(px + panelW / 2 - 110, py - panelH / 2 + 22, 200, 28, 0x3a3a3a)
+      const closeBg = this.add.rectangle(px + panelW / 2 - 122, py - panelH / 2 + 26, 200, 28, 0x3a3a3a)
         .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(2002)
         .setInteractive({ useHandCursor: true });
-      this.add.text(px + panelW / 2 - 110, py - panelH / 2 + 22, _ST_T('skilltree.close'), {
+      this.add.text(px + panelW / 2 - 122, py - panelH / 2 + 26, _ST_T('skilltree.close'), {
         fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       closeBg.on('pointerdown', () => this._close());
@@ -252,21 +345,21 @@
       // --- Respec-Cluster: direkt NEBEN/UNTER den Punkten (nicht in einer Ecke,
       // um Fehlklicks zu vermeiden). Button auf der Punkte-Zeile, Kosten + Gold
       // als kleine Info-Zeile darunter. ---
-      this.respecBg = this.add.rectangle(px - panelW / 2 + 156, py - panelH / 2 + 24, 96, 24, 0x3a2a2a)
+      this.respecBg = this.add.rectangle(px - panelW / 2 + 168, py - panelH / 2 + 26, 96, 24, 0x3a2a2a)
         .setStrokeStyle(2, 0xd46a43).setScrollFactor(0).setDepth(2002)
         .setInteractive({ useHandCursor: true });
-      this.add.text(px - panelW / 2 + 156, py - panelH / 2 + 24, _ST_T('skilltree.respec.btn'), {
+      this.add.text(px - panelW / 2 + 168, py - panelH / 2 + 26, _ST_T('skilltree.respec.btn'), {
         fontFamily: 'monospace', fontSize: '12px', color: '#f1e9d8'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(2003);
       this.respecBg.on('pointerdown', () => this._doRespec());
       this.respecBg.on('pointerover', () => this.respecBg.setFillStyle(0x553333));
       this.respecBg.on('pointerout', () => this.respecBg.setFillStyle(0x3a2a2a));
 
-      this.respecCostText = this.add.text(px - panelW / 2 + 16, py - panelH / 2 + 38,
+      this.respecCostText = this.add.text(px - panelW / 2 + 34, py - panelH / 2 + 40,
         _ST_T('skilltree.respec.cost', { cost: 0 }), {
           fontFamily: 'monospace', fontSize: '11px', color: '#cccccc'
         }).setOrigin(0, 0).setScrollFactor(0).setDepth(2002);
-      this.goldText = this.add.text(px - panelW / 2 + 152, py - panelH / 2 + 38,
+      this.goldText = this.add.text(px - panelW / 2 + 164, py - panelH / 2 + 40,
         _ST_T('skilltree.respec.gold', { amount: 0 }), {
           fontFamily: 'monospace', fontSize: '11px', color: '#ffd166'
         }).setOrigin(0, 0).setScrollFactor(0).setDepth(2002);
@@ -274,12 +367,19 @@
       // Layout geometry for the columns. Header (Punkte+Respec+Info ~58); der
       // Footer entfällt, daher reichen die Knoten fast bis zum Panel-Rand.
       this._panel = { px, py, panelW, panelH };
+      // #175: links ein Rand fuer die Levelleiter, unten eine Erklaerzeile.
+      const LEITER = 40;
       this._grid = {
         top: py - panelH / 2 + 58,
-        bottom: py + panelH / 2 - 18,
-        left: px - panelW / 2 + 14,
-        width: panelW - 28
+        bottom: py + panelH / 2 - 50,
+        left: px - panelW / 2 + 14 + LEITER,
+        width: panelW - 28 - LEITER,
+        leiterX: px - panelW / 2 + 14 + LEITER / 2
       };
+      this.hinweisText = this.add.text(px, py + panelH / 2 - 32, '', {
+        fontFamily: 'monospace', fontSize: '12px', color: '#e8dcc0',
+        align: 'center', wordWrap: { width: panelW - 40 }
+      }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2003);
     }
 
     _destroyNodeViews() {
@@ -311,12 +411,27 @@
       STRANDS.forEach((strand, ci) => {
         const cx = left + ci * colW + colW / 2;
 
-        // Column header
-        const hdr = this.add.text(cx, top, _ST_T('skilltree.strand.' + strand), {
+        // Column header: Emblem + Name, darunter der Zustand des Strangs (#175).
+        const hdr = this.add.text(cx + 10, top, _ST_T('skilltree.strand.' + strand), {
           fontFamily: 'monospace', fontSize: '13px', color: STRAND_COLORS_HEX[strand],
-          fontStyle: 'bold', align: 'center', wordWrap: { width: colW - 8 }
+          fontStyle: 'bold', align: 'center', wordWrap: { width: colW - 40 }
         }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
         this.nodeViews.push(hdr);
+        if (this.textures.exists('talent_' + strand)) {
+          const emb = this.add.image(Math.round(hdr.x - hdr.width / 2 - 14), top + 8, 'talent_' + strand)
+            .setScale(0.75).setScrollFactor(0).setDepth(2003);
+          this.nodeViews.push(emb);
+        }
+        const zustand = this._strangZustand(strand, lvl);
+        const zst = this.add.text(cx, top + 19, zustand.text, {
+          fontFamily: 'monospace', fontSize: '11px', color: zustand.farbe, align: 'center'
+        }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+        this.nodeViews.push(zst);
+        if (zustand.schloss && this.textures.exists('talent_schloss')) {
+          const sl = this.add.image(Math.round(zst.x - zst.width / 2 - 9), top + 26, 'talent_schloss')
+            .setScale(0.4).setScrollFactor(0).setDepth(2003);
+          this.nodeViews.push(sl);
+        }
 
         // Nodes of this strand, ordered by tier (minLevel asc, then prereq depth).
         const nodes = all.filter(n => n && n.strand === strand);
@@ -337,10 +452,18 @@
           else zeilen.push({ tier: t, knoten: [n] });
         });
 
-        const rowsTop = top + 30;
+        const rowsTop = top + 40;
         const rowGap = (bottom - rowsTop) / Math.max(1, zeilen.length);
         const cardH = Math.min(rowGap - 10, 74);
 
+        // Die Zeilen tragen in allen Straengen dieselben Stufen — die Leiter
+        // links liest sie aus dem ersten Strang.
+        if (ci === 0) {
+          this._leiter = zeilen.map((z, ri) => ({
+            lvl: ((z.knoten[0] && z.knoten[0].requires) || {}).minLevel || 1,
+            y: Math.round(rowsTop + ri * rowGap + rowGap / 2)
+          }));
+        }
         zeilen.forEach((z, ri) => {
           const cy = rowsTop + ri * rowGap + rowGap / 2;
           const anzahl = z.knoten.length;
@@ -371,6 +494,8 @@
           });
         });
       });
+
+      this._renderLeiter(lvl);
 
       // Erst die Pfeile (unter den Karten), dann die Karten darueber.
       this._renderPfeile(lvl);
@@ -450,6 +575,83 @@
       });
     }
 
+    /**
+     * #175: Die Levelleiter links — an jeder Zeile ihre Stufe. Erreichte
+     * Stufen leuchten, die naechste ist markiert. So sieht man, dass der Baum
+     * ueber das ganze Spiel aufgeht, statt dass graue Karten nur "gesperrt"
+     * sagen.
+     */
+    _renderLeiter(lvl) {
+      if (!this._leiter || !this._leiter.length) return;
+      const x = this._grid.leiterX;
+      const g = this.add.graphics().setScrollFactor(0).setDepth(2001);
+      this.nodeViews.push(g);
+      const erste = this._leiter[0].y, letzte = this._leiter[this._leiter.length - 1].y;
+      g.lineStyle(2, 0x3a3428, 0.9).lineBetween(x, erste, x, letzte);
+      const naechste = this._leiter.filter((z) => z.lvl > lvl).map((z) => z.lvl)[0];
+      this._leiter.forEach((z) => {
+        const erreicht = lvl >= z.lvl;
+        const ist = z.lvl === naechste;
+        g.fillStyle(erreicht ? 0xffd166 : (ist ? 0xb09860 : 0x5a5448), 1).fillCircle(x, z.y, erreicht ? 4 : 3);
+        const txt = this.add.text(x, z.y + 6, _ST_T('skilltree.lv', { level: z.lvl }), {
+          fontFamily: 'monospace', fontSize: '10px',
+          color: erreicht ? '#ffd166' : (ist ? '#d8c080' : '#8a8272'),
+          fontStyle: ist ? 'bold' : 'normal'
+        }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+        this.nodeViews.push(txt);
+      });
+    }
+
+    /**
+     * #175: Zustand eines Strangs fuer den Spaltenkopf:
+     * offen | frei waehlbar (noch keiner offen) | jetzt oeffnen | ab Lv N.
+     */
+    _strangZustand(strand, lvl) {
+      const ST = window.SkillTree;
+      if (!ST || typeof ST.strangStufe !== 'function') return { text: '', farbe: '#888888' };
+      const stufe = ST.strangStufe(strand);
+      if (stufe === 0) return { text: _ST_T('skilltree.strang.offen'), farbe: STRAND_COLORS_HEX[strand] };
+      const offen = ST.geoeffneteStraenge().length;
+      if (lvl >= stufe) {
+        return { text: _ST_T(offen === 0 ? 'skilltree.strang.frei' : 'skilltree.strang.jetzt', { nr: offen + 1 }), farbe: '#ffe9a8' };
+      }
+      return { text: _ST_T('skilltree.strang.gesperrt', { nr: offen + 1, level: stufe }), farbe: '#8a8070', schloss: true };
+    }
+
+    /** #175: Was als Naechstes aufgeht — fuer die Erklaerzeile unten. */
+    _hinweis(lvl) {
+      const ST = window.SkillTree;
+      if (!ST || typeof ST.geoeffneteStraenge !== 'function') return '';
+      const offen = ST.geoeffneteStraenge().length;
+      if (offen === 0) return _ST_T('skilltree.hinweis.start');
+      const kandidaten = [5, 9, 14, 20, 26].filter((l) => l > lvl)
+        .map((l) => ({ lvl: l, was: _ST_T('skilltree.was.' + l) }));
+      if (offen < 3) {
+        const l = ST.STRANG_STUFEN[Math.min(offen, ST.STRANG_STUFEN.length - 1)];
+        if (l > lvl) kandidaten.push({ lvl: l, was: _ST_T('skilltree.was.strang', { nr: offen + 1 }) });
+      }
+      kandidaten.sort((a, b) => a.lvl - b.lvl);
+      if (!kandidaten.length) return _ST_T('skilltree.hinweis.alles', { level: lvl });
+      return _ST_T('skilltree.hinweis.naechste', { level: lvl, next: kandidaten[0].lvl, was: kandidaten[0].was });
+    }
+
+    /** #175: Sperrt die Strang-Staffel diesen Einstieg? -> { nr, level } */
+    _strangSperre(node, lvl) {
+      const ST = window.SkillTree;
+      if (!ST || typeof ST.istEinstieg !== 'function' || !ST.istEinstieg(node.id)) return null;
+      const stufe = ST.strangStufe(node.strand);
+      if (!stufe || lvl >= stufe) return null;
+      return { nr: ST.geoeffneteStraenge().length + 1, level: stufe };
+    }
+
+    /** #175: Ab welchem Level geht dieser Knoten auf (null = Level ist nicht das Problem)? */
+    _sperrLevel(node, lvl) {
+      const strang = this._strangSperre(node, lvl);
+      const min = ((node.requires || {}).minLevel) || 0;
+      const lv = Math.max(min > lvl ? min : 0, strang ? strang.level : 0);
+      return lv || null;
+    }
+
     // Tier ordering: T1 (no prereq) -> T2 (prereq) -> Capstone (maxRank 3).
     _tierOf(node) {
       const req = node.requires || {};
@@ -474,7 +676,7 @@
       // State: locked (prereq not met), maxed, invested (>0), available.
       let fill, stroke, nameColor;
       if (!prereqOk && rank === 0) {
-        fill = 0x1c1c22; stroke = 0x3a3a3a; nameColor = '#666666';
+        fill = 0x1c1c22; stroke = 0x3a3a3a; nameColor = '#9a948a';
       } else if (isMax) {
         fill = 0x243024; stroke = 0x66cc66; nameColor = '#cfffcf';
       } else if (rank > 0) {
@@ -486,13 +688,25 @@
         fill = 0x222226; stroke = 0x555555; nameColor = '#cccccc';
       }
 
-      const card = this.add.rectangle(cx, cy, w, h, fill)
-        .setStrokeStyle(2, stroke).setScrollFactor(0).setDepth(2002);
+      // #175: Kartenplatte aus PixelLab (create_ui_asset), neunteilig. Der
+      // Zustand bleibt lesbar: Toenung der Platte (gesperrt dunkel, offen hell)
+      // und die farbige Linie darueber (investiert / investierbar / voll).
+      const platte = this.textures.exists('talent_karte');
+      if (platte) {
+        const ton = (!prereqOk && rank === 0) ? 0x7a7a84 : (investable ? 0xfff2cc : (rank > 0 ? 0xffffff : 0xa8a8b0));
+        neunteilig(this, 'talent_karte', cx, cy, w, h, 14, 2002).forEach((teil) => {
+          teil.setTint(ton);
+          this.nodeViews.push(teil);
+        });
+      }
+      const gesperrt = !prereqOk && rank === 0;
+      const card = this.add.rectangle(cx, cy, w, h, fill, platte ? 0 : 1)
+        .setStrokeStyle(2, stroke, platte && gesperrt ? 0 : 1).setScrollFactor(0).setDepth(2002);
       this.nodeViews.push(card);
       if (investable) {
         card.setInteractive({ useHandCursor: true });
-        card.on('pointerover', () => card.setFillStyle(0x3a3522));
-        card.on('pointerout', () => card.setFillStyle(fill));
+        card.on('pointerover', () => card.setFillStyle(0x3a3522, platte ? 0.35 : 1));
+        card.on('pointerout', () => card.setFillStyle(fill, platte ? 0 : 1));
       } else {
         // still interactive so a tap gives feedback (locked / maxed / no points)
         card.setInteractive({ useHandCursor: true });
@@ -504,16 +718,35 @@
       const nameText = this.add.text(cx, topY, node.name || node.id, {
         fontFamily: 'monospace', fontSize: '12px', color: nameColor, fontStyle: 'bold'
       }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+      // Lange Namen (Wirbelklingen, Schattenschritt) liefen in den schmalen
+      // Zweierreihen ueber den Kartenrand.
+      if (nameText.width > w - 8) nameText.setScale((w - 8) / nameText.width);
       this.nodeViews.push(nameText);
 
-      // Rank pips: filled = invested, hollow = remaining.
-      const pips = [];
-      for (let i = 0; i < maxRank; i++) pips.push(i < rank ? '◆' : '◇');
-      const pipText = this.add.text(cx, topY + 16, pips.join(' '), {
-        fontFamily: 'monospace', fontSize: '12px',
-        color: rank > 0 ? STRAND_COLORS_HEX[node.strand] : '#666666'
-      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
-      this.nodeViews.push(pipText);
+      // #175: Sperrt das Level (oder die Strang-Staffel), steht unter dem
+      // Namen Schloss + "ab Lv N" statt der Rang-Rauten. Grau allein sagte
+      // nur "gesperrt", nicht WANN; leere Rauten sagen dort ohnehin nichts.
+      const sperrLevel = (rank === 0) ? this._sperrLevel(node, playerLevel) : null;
+      if (sperrLevel) {
+        const lvTxt = this.add.text(Math.round(cx + 7), topY + 17, _ST_T('skilltree.ab_lv', { level: sperrLevel }), {
+          fontFamily: 'monospace', fontSize: '11px', color: '#b0a080'
+        }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+        this.nodeViews.push(lvTxt);
+        if (this.textures.exists('talent_schloss')) {
+          const sl = this.add.image(Math.round(lvTxt.x - lvTxt.width / 2 - 8), topY + 23, 'talent_schloss')
+            .setScale(0.4).setScrollFactor(0).setDepth(2003);
+          this.nodeViews.push(sl);
+        }
+      } else {
+        // Rank pips: filled = invested, hollow = remaining.
+        const pips = [];
+        for (let i = 0; i < maxRank; i++) pips.push(i < rank ? '◆' : '◇');
+        const pipText = this.add.text(cx, topY + 16, pips.join(' '), {
+          fontFamily: 'monospace', fontSize: '12px',
+          color: rank > 0 ? STRAND_COLORS_HEX[node.strand] : '#666666'
+        }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2003);
+        this.nodeViews.push(pipText);
+      }
 
       // UNTER DEN PIPS STEHT NICHTS MEHR.
       //
@@ -547,6 +780,11 @@
             }));
           });
         }
+      }
+      // #175: Die Strang-Staffel erklaeren, wenn sie diesen Einstieg sperrt.
+      const strangSperre = this._strangSperre(node, playerLevel);
+      if (strangSperre) {
+        infoZeilen.push(_ST_T('skilltree.node.req_strang', { nr: strangSperre.nr, level: strangSperre.level }));
       }
       // Das Level-Tor auch dann nennen, wenn die Knoten-Bedingung erfuellt
       // ist — sonst steht man vor einem gesperrten Knoten ohne Grund.
@@ -603,6 +841,8 @@
         ? window.LootSystem.getGold() : 0;
       if (this.goldText) this.goldText.setText(_ST_T('skilltree.respec.gold', { amount: gold }));
 
+      if (this.hinweisText) this.hinweisText.setText(this._hinweis(_playerLevel()));
+
       const cost = _respecCost();
       if (this.respecCostText) {
         this.respecCostText.setText(_ST_T('skilltree.respec.cost', { cost: cost }));
@@ -621,7 +861,11 @@
       const lvl = _playerLevel();
 
       if (rank >= maxRank) { this._shake(); this._toast(_ST_T('skilltree.toast.maxed'), '#ffaa66'); return; }
-      if (!ST.isNodeAvailable(node.id, lvl)) { this._shake(); this._toast(_ST_T('skilltree.toast.locked'), '#cc6666'); return; }
+      if (!ST.isNodeAvailable(node.id, lvl)) {
+        this._shake();
+        this._toast(this._sperrGrund(node, lvl), '#cc6666');
+        return;
+      }
       const nextCost = (typeof ST.getNextRankCost === 'function') ? ST.getNextRankCost(node.id) : 1;
       if (ST.getSkillPoints() < nextCost) { this._shake(); this._toast(_ST_T('skilltree.toast.no_points'), '#cc6666'); return; }
 
@@ -630,6 +874,24 @@
       // onChange may already re-render; render again to be safe (idempotent).
       this._render();
       this._toast(_ST_T('skilltree.toast.invested', { name: node.name || node.id, rank: ST.getRank(node.id) }), '#88ff88');
+    }
+
+    /** #175: Warum ist der Knoten zu? Der konkrete Grund statt "gesperrt". */
+    _sperrGrund(node, lvl) {
+      const ST = window.SkillTree;
+      const strang = this._strangSperre(node, lvl);
+      if (strang) return _ST_T('skilltree.toast.req_strang', strang);
+      const req = node.requires || {};
+      if (req.minLevel && lvl < req.minLevel) return _ST_T('skilltree.toast.req_level', { level: req.minLevel });
+      const quellen = [];
+      if (req.node) quellen.push({ node: req.node, rank: req.rank || 1 });
+      (req.nodes || []).forEach((q) => { if (q && q.node) quellen.push({ node: q.node, rank: q.rank || 1 }); });
+      const fehlt = quellen.filter((q) => ST.getRank(q.node) < q.rank)[0];
+      if (fehlt) {
+        const n = ST.getNode(fehlt.node);
+        return _ST_T('skilltree.toast.req_node', { name: (n && n.name) || fehlt.node, rank: fehlt.rank });
+      }
+      return _ST_T('skilltree.toast.locked');
     }
 
     _doRespec() {

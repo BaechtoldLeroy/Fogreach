@@ -25,38 +25,43 @@
   // synergies = jeder Rang von `from` gibt diesem Knoten +perRank auf `stat`
   // 12-Knoten-Roster (genehmigt #58): 3 Stränge x 4, Diablo-inspiriert.
   // `strand` gruppiert für die UI (WP04). node-id == abilityId (1:1).
-  // Tier-Gating: T1 minLevel 1, T2 minLevel 4 (+ Vorgänger@2), Capstone minLevel 8
-  //   (+ BEIDE T2-Knoten des Strangs@2 — `requires.nodes`).
-  // Caps: T1/T2 maxRank 5, Capstone maxRank 3.
-  // Rang-Kosten steigen: Rang r kostet (2·r−1) Punkte (1/3/5/7/9). Die Gesamt-
-  // Punkte in einem Knoten auf Rang R sind damit R² (Summe ungerader Zahlen).
-  // HINWEIS: 6 Abilities sind NEU (whirlwind/hammer ← spin/charge umbenannt;
-  // frenzy/steelGrasp/cycloneStrike/twistingBlades/deathBlow/charge neu) — die
-  // `activate`-Funktionen folgen in WP02. WP01 definiert nur die Baum-Daten.
+  // #175: Stufen ueber den ganzen Lauf gespreizt, wie bei Diablo 2.
+  //   Lv 1  Einstieg            Lv 5  erste Passive
+  //   Lv 9  Mitte (beide @2 des Einstiegs)
+  //   Lv 14 mittlere Passive    Lv 20 Kroenung (+ BEIDE Mitten @2, `requires.nodes`)
+  //   Lv 26 letzte Passive
+  // Hochgerechnet aus gemessener Erfahrung je Lauf: Lv 20 um Lauf 12-19,
+  // Lv 26 um Lauf 21-26, Story-Ende (Tiefe 30) um Lv 29-33. Vorher war mit
+  // Lv 14 alles offen — nach Lauf 6-11 ging nichts Neues mehr auf.
+  // Dazu oeffnen sich die STRAENGE gestaffelt (STRANG_STUFEN unten): den
+  // ersten waehlt man frei, der zweite geht ab Lv 6, der dritte ab Lv 12.
+  // Und die starken Angriffe stehen hinten: Wirbelwind ist die Kroenung des
+  // Wut-Strangs (bei D2 Lv 30), der Einstieg ein einzelner Schlag.
+  // Caps: Einstieg/Mitte maxRank 5, Kroenung maxRank 3.
   var SKILL_TREE = Object.freeze({
     nodes: Object.freeze({
       // === Strang I — WUT & WUCHT (Melee/Burst, Barb-Kern) ===
-      whirlwind:     { abilityId: 'whirlwind', name: 'Wirbelwind',        strand: 'wut',    maxRank: 5, requires: { minLevel: 1 },
-                       synergies: [{ from: 'frenzy', perRank: 0.04, stat: 'damage' }] },
-      hammer:        { abilityId: 'hammer',    name: 'Hammer der Ahnen',  strand: 'wut',    maxRank: 5, requires: { minLevel: 4, node: 'whirlwind', rank: 2 },
+      hammer:        { abilityId: 'hammer',    name: 'Hammer der Ahnen',  strand: 'wut',    maxRank: 5, requires: { minLevel: 1 },
                        synergies: [{ from: 'whirlwind', perRank: 0.06, stat: 'damage' }] },
-      frenzy:        { abilityId: 'frenzy',    name: 'Raserei',           strand: 'wut',    maxRank: 5, requires: { minLevel: 4, node: 'whirlwind', rank: 2 } },
-      berserk:       { abilityId: 'berserk',   name: 'Berserker',         strand: 'wut',    maxRank: 3, requires: { minLevel: 8, nodes: [{ node: 'hammer', rank: 2 }, { node: 'frenzy', rank: 2 }] },
+      frenzy:        { abilityId: 'frenzy',    name: 'Raserei',           strand: 'wut',    maxRank: 5, requires: { minLevel: 9, node: 'hammer', rank: 2 } },
+      berserk:       { abilityId: 'berserk',   name: 'Berserker',         strand: 'wut',    maxRank: 5, requires: { minLevel: 9, node: 'hammer', rank: 2 },
                        synergies: [{ from: 'hammer', perRank: 0.05, stat: 'buff' }] },
+      whirlwind:     { abilityId: 'whirlwind', name: 'Wirbelwind',        strand: 'wut',    maxRank: 3, requires: { minLevel: 20, nodes: [{ node: 'frenzy', rank: 2 }, { node: 'berserk', rank: 2 }] },
+                       synergies: [{ from: 'frenzy', perRank: 0.04, stat: 'damage' }] },
 
       // === Strang II — KETTEN & KONTROLLE (Pull/Ranged/CC — Lore) ===
-      twistingBlades:{ abilityId: 'twistingBlades', name: 'Wirbelklingen', strand: 'ketten', maxRank: 5, requires: { minLevel: 1 } },
-      steelGrasp:    { abilityId: 'steelGrasp',     name: 'Stahlgriff',    strand: 'ketten', maxRank: 5, requires: { minLevel: 4, node: 'twistingBlades', rank: 2 },
+      steelGrasp:    { abilityId: 'steelGrasp',     name: 'Stahlgriff',    strand: 'ketten', maxRank: 5, requires: { minLevel: 1 },
                        synergies: [{ from: 'cycloneStrike', perRank: 0.08, stat: 'damage' }] },
-      cycloneStrike: { abilityId: 'cycloneStrike',  name: 'Wirbelsog',     strand: 'ketten', maxRank: 5, requires: { minLevel: 4, node: 'twistingBlades', rank: 2 } },
-      frostNova:     { abilityId: 'frostNova',      name: 'Frostnova',     strand: 'ketten', maxRank: 3, requires: { minLevel: 8, nodes: [{ node: 'steelGrasp', rank: 2 }, { node: 'cycloneStrike', rank: 2 }] },
+      twistingBlades:{ abilityId: 'twistingBlades', name: 'Wirbelklingen', strand: 'ketten', maxRank: 5, requires: { minLevel: 9, node: 'steelGrasp', rank: 2 } },
+      cycloneStrike: { abilityId: 'cycloneStrike',  name: 'Wirbelsog',     strand: 'ketten', maxRank: 5, requires: { minLevel: 9, node: 'steelGrasp', rank: 2 } },
+      frostNova:     { abilityId: 'frostNova',      name: 'Frostnova',     strand: 'ketten', maxRank: 3, requires: { minLevel: 20, nodes: [{ node: 'twistingBlades', rank: 2 }, { node: 'cycloneStrike', rank: 2 }] },
                        synergies: [{ from: 'cycloneStrike', perRank: 0.05, stat: 'damage' }] },
 
       // === Strang III — SCHATTEN & JAGD (Mobility/Execute/Sustain) ===
       charge:        { abilityId: 'charge',       name: 'Ansturm',         strand: 'schatten', maxRank: 5, requires: { minLevel: 1 } },
-      teleportDash:  { abilityId: 'teleportDash', name: 'Schattenschritt', strand: 'schatten', maxRank: 5, requires: { minLevel: 4, node: 'charge', rank: 2 } },
-      heilwunde:     { abilityId: 'heilwunde',    name: 'Heilwunde',       strand: 'schatten', maxRank: 5, requires: { minLevel: 4, node: 'charge', rank: 2 } },
-      deathBlow:     { abilityId: 'deathBlow',    name: 'Todesstoss',      strand: 'schatten', maxRank: 3, requires: { minLevel: 8, nodes: [{ node: 'teleportDash', rank: 2 }, { node: 'heilwunde', rank: 2 }] },
+      teleportDash:  { abilityId: 'teleportDash', name: 'Schattenschritt', strand: 'schatten', maxRank: 5, requires: { minLevel: 9, node: 'charge', rank: 2 } },
+      heilwunde:     { abilityId: 'heilwunde',    name: 'Heilwunde',       strand: 'schatten', maxRank: 5, requires: { minLevel: 9, node: 'charge', rank: 2 } },
+      deathBlow:     { abilityId: 'deathBlow',    name: 'Todesstoss',      strand: 'schatten', maxRank: 3, requires: { minLevel: 20, nodes: [{ node: 'teleportDash', rank: 2 }, { node: 'heilwunde', rank: 2 }] },
                        synergies: [{ from: 'charge', perRank: 0.03, stat: 'threshold' },
                                    { from: 'frenzy', perRank: 0.02, stat: 'threshold' }] },
 
@@ -74,37 +79,37 @@
       // Sonderpreis noetig ist.
       //
       // Die Lage ist der Preis: ein Strang-Finale haengt hinter dem Capstone.
-      // Der Weg dorthin kostet 13 Punkte (whirlwind@2 + hammer@2 + frenzy@2 +
-      // berserk@1), das Finale auf Rang 3 weitere 9 — zusammen 22 von rund 28
-      // Punkten am Story-Ende. Damit sind zwei Finalen rechnerisch unmoeglich,
+      // Der Weg dorthin kostet 13 Punkte (hammer@2 + frenzy@2 + berserk@2 +
+      // whirlwind@1), das Finale auf Rang 3 weitere 9 — zusammen 22 von rund 28-32
+      // Punkten am Story-Ende (#175). Damit sind zwei Finalen rechnerisch unmoeglich,
       // ohne dass es dafuer eine Sonderregel braucht.
 
       // --- Strang I: Wut & Wucht ---
       combat_poison_blade:   { passiv: true, name: 'Giftklinge',     strand: 'wut',      maxRank: 3,
-                               requires: { minLevel: 2, node: 'whirlwind', rank: 1 } },
+                               requires: { minLevel: 5, node: 'hammer', rank: 1 } },
       combat_lethal_thrust:  { passiv: true, name: 'Schwachstelle',  strand: 'wut',      maxRank: 3,
-                               requires: { minLevel: 6, node: 'hammer', rank: 2 } },
+                               requires: { minLevel: 14, node: 'hammer', rank: 2 } },
       combat_chain_lightning:{ passiv: true, name: 'Kettenblitz',    strand: 'wut',      maxRank: 3,
-                               requires: { minLevel: 14, node: 'berserk', rank: 1 } },
+                               requires: { minLevel: 26, node: 'whirlwind', rank: 1 } },
 
       // --- Strang II: Ketten & Kontrolle ---
       mobility_wind_gust:    { passiv: true, name: 'Windstoss',      strand: 'ketten',   maxRank: 3,
-                               requires: { minLevel: 2, node: 'twistingBlades', rank: 1 } },
+                               requires: { minLevel: 5, node: 'steelGrasp', rank: 1 } },
       survival_thorn_armor:  { passiv: true, name: 'Dornenruestung', strand: 'ketten',   maxRank: 3,
-                               requires: { minLevel: 6, node: 'steelGrasp', rank: 2 } },
+                               requires: { minLevel: 14, node: 'steelGrasp', rank: 2 } },
       survival_second_chance:{ passiv: true, name: 'Zweite Chance',  strand: 'ketten',   maxRank: 3,
-                               requires: { minLevel: 14, node: 'frostNova', rank: 1 } },
+                               requires: { minLevel: 26, node: 'frostNova', rank: 1 } },
 
       // --- Strang III: Schatten & Jagd ---
       // "Weiter Satz" statt "Schattenschritt": den Namen traegt bereits
       // teleportDash. Dasselbe bei "Schwachstelle" oben — "Todesstoss" ist
       // deathBlow.
       mobility_shadow_step:     { passiv: true, name: 'Weiter Satz', strand: 'schatten', maxRank: 3,
-                                  requires: { minLevel: 2, node: 'charge', rank: 1 } },
+                                  requires: { minLevel: 5, node: 'charge', rank: 1 } },
       mobility_lightning_reflex:{ passiv: true, name: 'Blitzreflex',  strand: 'schatten', maxRank: 3,
-                                  requires: { minLevel: 6, node: 'teleportDash', rank: 2 } },
+                                  requires: { minLevel: 14, node: 'teleportDash', rank: 2 } },
       survival_life_steal:      { passiv: true, name: 'Lebensraub',   strand: 'schatten', maxRank: 3,
-                                  requires: { minLevel: 14, node: 'deathBlow', rank: 1 } }
+                                  requires: { minLevel: 26, node: 'deathBlow', rank: 1 } }
     })
   });
 
@@ -254,6 +259,39 @@
     return { skillPoints: state.skillPoints | 0, ranks: _copyRanks(state.ranks), spent: getSpentPoints() };
   }
 
+  // #175: Die Straenge oeffnen sich gestaffelt. Den ERSTEN waehlt man frei ab
+  // Lv 1, der zweite geht ab Lv 6, der dritte ab Lv 12 — welcher der erste
+  // ist, entscheidet der erste Punkt. Vorher hatte man auf Lv 4 schon drei
+  // Angriffe aus drei Straengen; bei D2 hat ein Barbar dort einen (Hieb).
+  // Gilt nur fuers OEFFNEN: wer einen Strang schon hat (auch aus einem alten
+  // Spielstand), behaelt ihn. Nach dem Zuruecksetzen zaehlt es neu.
+  var STRANG_STUFEN = [1, 6, 12];
+
+  /** Der Einstieg eines Strangs: aktiv, ohne Vorgaenger-Knoten. */
+  function istEinstieg(nodeId) {
+    var node = SKILL_TREE.nodes[nodeId];
+    if (!node || node.passiv) return false;
+    var req = node.requires || {};
+    return !req.node && !Array.isArray(req.nodes);
+  }
+
+  /** Die Straenge, in denen schon ein Punkt steckt. */
+  function geoeffneteStraenge() {
+    var aus = [];
+    Object.keys(SKILL_TREE.nodes).forEach(function (id) {
+      var st = SKILL_TREE.nodes[id].strand;
+      if (getRank(id) > 0 && aus.indexOf(st) < 0) aus.push(st);
+    });
+    return aus;
+  }
+
+  /** Ab welchem Level sich dieser Strang oeffnen laesst (0 = schon offen). */
+  function strangStufe(strand) {
+    var offen = geoeffneteStraenge();
+    if (offen.indexOf(strand) >= 0) return 0;
+    return STRANG_STUFEN[Math.min(offen.length, STRANG_STUFEN.length - 1)];
+  }
+
   // Voraussetzungen erfüllt? (Min-Level + Vorgänger-Knoten@Rang). `requires.node`
   // ist EINE Vorbedingung; `requires.nodes` (Array) verlangt ALLE gelisteten
   // Knoten (z. B. Capstones = beide T2-Knoten des Strangs).
@@ -263,6 +301,7 @@
     var req = node.requires || {};
     var lvl = (typeof playerLevel === 'number') ? playerLevel : 0;
     if (req.minLevel && lvl < req.minLevel) return false;
+    if (istEinstieg(nodeId) && lvl < strangStufe(node.strand)) return false;
     if (req.node && getRank(req.node) < (req.rank || 1)) return false;
     if (Array.isArray(req.nodes)) {
       for (var i = 0; i < req.nodes.length; i++) {
@@ -464,6 +503,10 @@
     getState: getState,
     isNodeAvailable: isNodeAvailable,
     grantSkillPoint: grantSkillPoint,
+    STRANG_STUFEN: STRANG_STUFEN,
+    istEinstieg: istEinstieg,
+    geoeffneteStraenge: geoeffneteStraenge,
+    strangStufe: strangStufe,
     investPoint: investPoint,
     getSynergyValue: getSynergyValue,
     getAbilityDamageMult: getAbilityDamageMult,

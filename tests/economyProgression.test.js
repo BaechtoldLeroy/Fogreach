@@ -6,7 +6,7 @@
 //   2. Save-Roundtrip: SkillTree-State (Punkte + Ränge) bettet in einen
 //      Save-Payload ein und lädt sich verlustfrei wieder.
 //   3. Migration alter Saves (Pre-060): ein Save OHNE skillTree-Block migriert
-//      zu skillPoints = playerLevel, ohne Item-/Gold-Verlust.
+//      zu skillPoints = playerLevel - 1 (Punkte je Aufstieg, #175), ohne Item-/Gold-Verlust.
 //
 // main.js/storage.js sind keine ladbaren IIFE-Module (sie referenzieren viele
 // freie Script-Scope-Globals), darum:
@@ -51,7 +51,7 @@ function applySkillTreeFromSave(save) {
   } else {
     SkillTree.resetForNewGame();
     const lvl = Math.max(0, Math.floor(Number(save.playerLevel) || 0));
-    if (lvl > 0) SkillTree.grantSkillPoint(lvl);
+    if (lvl > 1) SkillTree.grantSkillPoint(lvl - 1);   // wie storage.js (#175)
   }
 }
 
@@ -129,7 +129,7 @@ test('Save-Roundtrip: SkillTree-State bettet ein und lädt verlustfrei', () => {
 
 // ──────────────────────────── Migration Pre-060 ─────────────────────────────
 
-test('Migration: Pre-060-Save ohne skillTree -> skillPoints = playerLevel', () => {
+test('Migration: Pre-060-Save ohne skillTree -> skillPoints = playerLevel - 1', () => {
   const save = {
     playerLevel: 7,
     materials: { GOLD: 1234 },
@@ -139,7 +139,7 @@ test('Migration: Pre-060-Save ohne skillTree -> skillPoints = playerLevel', () =
   ST._configureForTest({});
   applySkillTreeFromSave(save);
 
-  assert.strictEqual(ST.getSkillPoints(), 7, 'Migration: skillPoints != playerLevel');
+  assert.strictEqual(ST.getSkillPoints(), 6, 'Migration: skillPoints != playerLevel - 1');
   assert.strictEqual(ST.getSpentPoints(), 0, 'Migration sollte nichts investieren');
   // Kein Item-/Gold-Verlust: der Save-Payload bleibt unangetastet.
   assert.strictEqual(save.materials.GOLD, 1234);

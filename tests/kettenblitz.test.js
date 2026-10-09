@@ -41,12 +41,12 @@ before(async () => {
 });
 after(async () => { if (H) await H.shutdown(); });
 
-/** Investiert den Knoten samt seiner Vorbedingung (Berserker Rang 1). */
+/** Investiert den Knoten samt seiner Vorbedingung (Wirbelwind Rang 1, seit #175 die Wut-Kroenung). */
 function knotenSetzen() {
   return H.run(`(function () {
     var ST = window.SkillTree;
     for (var i = 0; i < 60; i++) ST.grantSkillPoint();
-    [['whirlwind',2],['hammer',2],['frenzy',2],['berserk',1]].forEach(function (p) {
+    [['hammer',2],['frenzy',2],['berserk',2],['whirlwind',1]].forEach(function (p) {
       for (var k = 0; k < p[1]; k++) ST.investPoint(p[0], 30);
     });
     ST.investPoint('combat_chain_lightning', 30);

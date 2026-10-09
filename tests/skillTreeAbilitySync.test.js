@@ -69,24 +69,24 @@ test('neues Spiel = 0 gelernt (Sync nach leerem Baum)', () => {
 test('investPoint (Rang>=1) -> AbilitySystem.isLearned === true', () => {
   const { AS, ST } = freshModules();
   ST._configureForTest({ skillPoints: 5 });
-  assert.strictEqual(AS.isLearned('whirlwind'), false);
-  assert.strictEqual(ST.investPoint('whirlwind', 1), true);
-  assert.strictEqual(AS.isLearned('whirlwind'), true, 'Sync nach investPoint');
-  assert.strictEqual(ST.getRank('whirlwind'), 1);
+  assert.strictEqual(AS.isLearned('hammer'), false);
+  assert.strictEqual(ST.investPoint('hammer', 1), true);
+  assert.strictEqual(AS.isLearned('hammer'), true, 'Sync nach investPoint');
+  assert.strictEqual(ST.getRank('hammer'), 1);
 });
 
 test('respec -> alle Baum-Abilities verlernt + Slots leer', () => {
   const { AS, ST } = freshModules();
   ST._configureForTest({ skillPoints: 10 });
-  ST.investPoint('whirlwind', 1);
-  ST.investPoint('charge', 1);
-  assert.strictEqual(AS.isLearned('whirlwind'), true);
+  ST.investPoint('hammer', 1);
+  ST.investPoint('charge', 6);    // #175: zweiter Strang ab Lv 6
+  assert.strictEqual(AS.isLearned('hammer'), true);
   assert.strictEqual(AS.isLearned('charge'), true);
   // ausrüsten, damit der Slot-Cleanup geprüft wird
-  AS.setSlot('slot1', 'whirlwind');
+  AS.setSlot('slot1', 'hammer');
   AS.setSlot('slot2', 'charge');
   ST.respec();
-  assert.strictEqual(AS.isLearned('whirlwind'), false, 'nach respec verlernt');
+  assert.strictEqual(AS.isLearned('hammer'), false, 'nach respec verlernt');
   assert.strictEqual(AS.isLearned('charge'), false, 'nach respec verlernt');
   assert.deepStrictEqual(AS.getLearnedAbilities(), [], 'alle Baum-Abilities verlernt');
   const lo = AS.getActiveLoadout();
@@ -97,12 +97,12 @@ test('respec -> alle Baum-Abilities verlernt + Slots leer', () => {
 test('Mehrfach-Invest hält denselben Skill gelernt (idempotenter Sync)', () => {
   const { AS, ST } = freshModules();
   ST._configureForTest({ skillPoints: 9 }); // Rang 1+2+3 kostet 1+3+5 = 9
-  ST.investPoint('whirlwind', 1);
-  ST.investPoint('whirlwind', 1);
-  ST.investPoint('whirlwind', 1);
-  assert.strictEqual(ST.getRank('whirlwind'), 3);
-  assert.strictEqual(AS.isLearned('whirlwind'), true);
-  assert.deepStrictEqual(AS.getLearnedAbilities(), ['whirlwind'], 'genau einmal gelernt');
+  ST.investPoint('hammer', 1);
+  ST.investPoint('hammer', 1);
+  ST.investPoint('hammer', 1);
+  assert.strictEqual(ST.getRank('hammer'), 3);
+  assert.strictEqual(AS.isLearned('hammer'), true);
+  assert.deepStrictEqual(AS.getLearnedAbilities(), ['hammer'], 'genau einmal gelernt');
 });
 
 test('getRespecCost skaliert mit getSpentPoints (100 + spent*50)', () => {
@@ -111,11 +111,11 @@ test('getRespecCost skaliert mit getSpentPoints (100 + spent*50)', () => {
   assert.strictEqual(ST.getSpentPoints(), 0);
   assert.strictEqual(ST.getRespecCost(), 100, '0 Punkte -> Grundkosten 100');
   ST._configureForTest({ skillPoints: 10 });
-  ST.investPoint('whirlwind', 1); // whirlwind Rang 1 -> spent 1²=1
+  ST.investPoint('hammer', 1); // hammer Rang 1 -> spent 1²=1
   assert.strictEqual(ST.getSpentPoints(), 1);
   assert.strictEqual(ST.getRespecCost(), 150, '1 Punkt -> 150');
-  ST.investPoint('whirlwind', 1); // whirlwind Rang 2 -> 2²=4
-  ST.investPoint('charge', 1);    // charge Rang 1 -> 1²=1  => Summe 5
+  ST.investPoint('hammer', 1); // hammer Rang 2 -> 2²=4
+  ST.investPoint('charge', 6);    // zweiter Strang ab Lv 6: charge Rang 1 -> 1²=1  => Summe 5
   assert.strictEqual(ST.getSpentPoints(), 5);
   assert.strictEqual(ST.getRespecCost(), 350, 'spent 5 -> 100 + 5*50 = 350');
   // Ganzzahlig
