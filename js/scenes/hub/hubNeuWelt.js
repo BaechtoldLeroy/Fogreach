@@ -455,6 +455,7 @@
     var tuer = (K.tueren || []).filter(function (t) { return t.id === 'rathaus_entrance'; })[0];
     return {
       posterSpots: (K.anschlagtafeln || []).map(function (p) { return { x: p.x * z, y: p.y * z }; }),
+      patrouillen: (K.patrouillen || []).map(function (p) { return { x: p.x * z, y: p.y * z }; }),
       rathausRect: rh ? { x: (rh.x - rh.breite / 2) * z, y: T.y * z, w: rh.breite * z, h: (rh.y - T.y) * z } : null,
       rathausEntrance: tuer ? { x: tuer.x * z, y: tuer.y * z, w: tuer.b * z, h: tuer.h * z } : null
     };

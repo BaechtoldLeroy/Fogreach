@@ -88,7 +88,7 @@
     'dungeon', 'autostart', 'mode', 'modes', 'boss', 'beat',
     'perf', 'nofog', 'nomask', 'nospot', 'noexpl', 'explRes', 'fogInterval', 'rays',
     'spy', 'roomsize', 'hubdebug',
-    'versteck', 'sonder', 'akt', 'stark', 'tuer', 'schmiede'
+    'versteck', 'sonder', 'akt', 'stark', 'tuer', 'schmiede', 'patrouille'
   ];
 
   /**

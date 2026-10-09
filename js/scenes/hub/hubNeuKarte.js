@@ -133,6 +133,14 @@
       { x: 25.3, y: 10.9 }
     ],
 
+    // Die verdoppelten Patrouillen (ab der geheimen Ratssitzung): links und
+    // rechts des Brunnens auf der Ringstrasse, je 5 Kacheln und mehr von der
+    // naechsten Figur — niemand verwechselt sie mit dem Wachtmeister.
+    patrouillen: [
+      { x: 14.6, y: 16.4 },
+      { x: 25.9, y: 16.4 }
+    ],
+
     haeuser: [
       { bild: 'hub_rathaus_sockel', x: 20,   y: 4,  breite: 12,  farbe: 0xa9b2bf },
       { bild: 'hub_werkstatt',      x: 5.5,  y: 14, breite: 7.6 },

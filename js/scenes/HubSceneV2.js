@@ -122,6 +122,21 @@ const HUB_DEBUG = (function () {
   try { return !!(window.DebugGate && window.DebugGate.an('hubdebug')); }   // #88
   catch (e) { return false; }
 })();
+// #168 (Testschalter): ?patrouille=neu stellt die Patrouillen sofort auf, im
+// eigenen Sprite; jeder andere Wert (z. B. ?patrouille=alt) stellt sie im
+// alten Sprite der Stadtwache auf — zum Vergleich. Ohne Flagge: null.
+function _patrouilleTest() {
+  try { return (window.DebugGate && window.DebugGate.an('patrouille')) ? window.DebugGate.flagge('patrouille') : null; }
+  catch (e) { return null; }
+}
+// Fuer Bilder ausserhalb des hubLayout: die Groesse an der FIGUR messen, wie
+// createNPCs es tut (b326) — ein fester Faktor stimmt nur fuer EIN Bild.
+function _aufFigurHoehe(scene, bild, hoehe) {
+  const f = (typeof figurGrenzen === 'function') ? figurGrenzen(scene, bild.texture.key) : null;
+  const h = (f && f.boundsHeight > 0) ? f.boundsHeight : bild.height;
+  if (h > 0) bild.setScale(hoehe / h);
+  return bild;
+}
 const SCALE_FACTOR = 1536 / 960;
 
 class HubSceneV2 extends Phaser.Scene {
@@ -152,6 +167,8 @@ class HubSceneV2 extends Phaser.Scene {
     // following the Branka/Thom/Mara loading pattern.
     if (!tex.exists('klerus'))            this.load.image('klerus', 'assets/sprites/klerus.png');
     if (!tex.exists('garde'))             this.load.image('garde', 'assets/sprites/garde.png');
+    // #168: Die Patrouille im eigenen Sprite — vorerst nur hinter ?patrouille=neu.
+    if (_patrouilleTest() === 'neu' && !tex.exists('patrouille')) this.load.image('patrouille', 'assets/sprites/patrouille.png');
     // Feature 063 (#66): der ratlose Bürger (ab Akt 2). Fehlt die Datei noch,
     // fängt das Spawn-System es mit dem Platzhalter ab (der 404 im Loader ist
     // dann erwartbar, bis assets/sprites/buerger.png vorliegt).
@@ -1397,7 +1414,9 @@ class HubSceneV2 extends Phaser.Scene {
     const plaetze = [[430, 400], [520, 405], [470, 440]];
     for (let i = 0; i < n && i < plaetze.length; i++) {
       const [x, y] = plaetze[i];
-      const s = this.add.image(x * SCALE_FACTOR, y * SCALE_FACTOR, 'buerger').setOrigin(0.5, 1).setScale(0.30);   // wie die Layout-NPCs: Fuesse am Punkt, ohne SCALE_FACTOR
+      // Fuesse am Punkt; Hoehe wie der Buerger im hubLayout. Der feste Faktor
+      // 0.30 stammte vom Grossbild vor b326 und machte sie 19 px klein.
+      const s = _aufFigurHoehe(this, this.add.image(x * SCALE_FACTOR, y * SCALE_FACTOR, 'buerger').setOrigin(0.5, 1), 52);
       s.setDepth(y * SCALE_FACTOR);
       if (i % 2 === 1) s.setFlipX(true);
       // Das Blatt in der Hand.
@@ -1412,16 +1431,24 @@ class HubSceneV2 extends Phaser.Scene {
     (this._patrouillen || []).forEach((s) => { try { s.destroy(); } catch (_) {} });
     this._patrouillen = [];
     const qs = window.questSystem;
-    if (!qs || typeof qs.hasFlag !== 'function' || !qs.hasFlag('patrouillen_verdoppelt')) return 0;
+    const test = _patrouilleTest();
+    if (!qs || typeof qs.hasFlag !== 'function') return 0;
+    if (!test && !qs.hasFlag('patrouillen_verdoppelt')) return 0;
     if (qs.hasFlag('story_ending')) return 0;
-    if (!this.textures || !this.textures.exists('garde')) return 0;
-    // Die linke stand auf [330, 420] und damit 30 px neben Branka (300/416)
-    // — zwischen ihr und Mara (372/416), beiden auf den Fuessen. Der neue
-    // Platz hat 108 px Luft zur naechsten Figur (gemessen ueber HUB_HITBOXES).
-    // Die rechte hat 65 px zu Thom; eng, aber sie steht niemandem im Weg.
-    [[290, 600], [640, 440]].forEach(([x, y]) => {
-      const s = this.add.image(x * SCALE_FACTOR, y * SCALE_FACTOR, 'garde').setOrigin(0.5, 1).setScale(0.23);   // wie die Layout-NPCs: Fuesse am Punkt, ohne SCALE_FACTOR
-      s.setDepth(y * SCALE_FACTOR);
+    // #168: einfache Patrouille statt Wachtmeister — sonst stehen drei gleiche
+    // Figuren auf dem Platz und nur eine antwortet auf [E].
+    const bild = (test === 'neu' && this.textures && this.textures.exists('patrouille')) ? 'patrouille' : 'garde';
+    if (!this.textures || !this.textures.exists(bild)) return 0;
+    // Die Plaetze stehen in der Karte (hubNeuKarte.patrouillen). Die alten
+    // Entwurfskoordinaten [290, 600] / [640, 440] stammten vom gemalten Hub:
+    // im neuen (#181) lag die linke Wache UNTER dem Kartenrand, die rechte
+    // in der Ecke darueber.
+    const anker = window.HubNeuWelt && window.HubNeuWelt.phasenAnker && window.HubNeuWelt.phasenAnker();
+    ((anker && anker.patrouillen) || []).forEach(({ x, y }) => {
+      // Fuesse am Punkt, so hoch wie die Stadtwache im hubLayout. Der feste
+      // Faktor 0.23 stammte vom Grossbild vor b326 und machte sie 14 px klein.
+      const s = _aufFigurHoehe(this, this.add.image(x, y, bild).setOrigin(0.5, 1), 58);
+      s.setDepth(y);
       this._patrouillen.push(s);
     });
     return this._patrouillen.length;
