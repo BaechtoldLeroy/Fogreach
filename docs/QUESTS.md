@@ -1,6 +1,6 @@
 # Quest-Übersicht — Fogreach
 
-_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 39 Quests._  
+_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 49 Quests._  
 _Neu erzeugen:_ `node tools/genQuestDoc.js`
 
 ---
@@ -9,32 +9,32 @@ _Neu erzeugen:_ `node tools/genQuestDoc.js`
 
 ## Prämisse
 
-Du spielst den **Archivschmied** — Handwerker im Dienst des Stadtrats, der Akten, Waffen und Siegel instand hält. Unter der Stadt liegt der Nebel: ein Kellerlabyrinth, in das der Rat dich zum Aufräumen schickt.
+Du spielst den **Archivschmied**, einen Handwerker im Dienst des Rats, ohne Erinnerung an die Zeit vor dem Unfall in der Schmiede. Unter der Stadt liegt der Nebel: ein Kellerlabyrinth, in das der Rat Dich zum Aufräumen schickt.
 
-Der Rat gibt sich als drei rivalisierende Fraktionen, die sich öffentlich bekämpfen. Tatsächlich **dienen sie alle derselben okkulten Agenda** — und der Spieler ist genau die Art von nützlichem Handwerker, der ihre Spuren beseitigt, ohne Fragen zu stellen.
+Nach außen streiten Magistrat, Klerus und Garde; innen gehören ihre Spitzen demselben Kreis an, dem **Schattenrat**. Er nährt die Quelle des Nebels mit den Erinnerungen der Bürger. Und weil ein Volk ohne Ventil gefährlich wird, führt er auch den Widerstand selbst: durch **Elara**, die Tochter des Bürgermeisters, deren Flucht inszeniert war.
 
-Auslöser ist die verschwundene Tochter des Bürgermeisters. Jede Fraktion hat eine eigene Version: entführt, besessen, pflichtvergessen. Ihr Tagebuchfragment sagt etwas anderes — **sie ist geflohen**, und alle drei Ratsfraktionen stehen namentlich darin. Von da an ist die Frage nicht mehr *was ist passiert*, sondern *wem gehorchst du noch*.
+> Du hast geglaubt, Du arbeitest für den Rat, dann gegen ihn. In Wahrheit hast Du die ganze Zeit für ihn gearbeitet, auch auf der anderen Seite.
 
 ## Charaktere
 
-| Figur | Rolle | Steht für | Funktion im Bogen |
-|---|---|---|---|
-| **Ratsherr Aldric** | Ratsherr, dein Auftraggeber | Magistrat | Gibt die harmlosen Anfangsjobs. Schickt dich später in die Ritualkammer, um die **eigene Spur des Rats zu verwischen** — der Moment, in dem der Auftraggeber zum Gegner wird. |
-| **Bürgermeister Harren** | Vater der Verschwundenen | (unabhängig) | Traut keiner der drei Versionen. Startet die Untersuchung und hält den Reveal in der Hand. |
-| **Elara** | Kontakt im Untergrund | Widerstand | Gesicht der Opposition. Führt dich zur Beschwörungskammer, schenkt am Ende ihre Klinge. |
-| **Mara vom Untergrund** | Späherin, Schwarzmarkt | Widerstand-nah | Netzwerk & Spionage-Aufträge; treibt die Boss-Konfrontationen. Betreibt auch den Schwarzmarkt. |
-| **Schmiedemeisterin Branka** | Archivschmiede | (unabhängig) | Stellt Fragen, die man nicht stellen soll. Ihre Zweifel eskalieren zum **Bruch**. |
-| **Setzer Thom** | Hinterhaus-Druckerei | Widerstand-nah | Macht Wahrheit zu Pamphleten — die Presse als Waffe. |
-| **Klerus-Priester** | Geistlicher | Klerus | Nennt Flucht „Besessenheit" und Aufräumen „Reinigung". |
-| **Stadtwache** | Garde-Offizier | Garde | Antwortet auf alles mit mehr Patrouillen. |
+| Figur | Rolle | Kern |
+|---|---|---|
+| **Archivschmied** (Du) | Handwerker im Ratsdienst | Amnesie. Der Jedermann, der anfängt zu fragen. |
+| **Elara** | Harrens Tochter, Gesicht des Widerstands, **Mitglied des Schattenrats** | Lenkt den Widerstand für den Rat. Braucht Dich, um die Quelle zu öffnen. Endgegnerin, besessen von der Quelle. |
+| **Ratsherr Aldric** | Auftraggeber, Stimme des Schattenrats im Rat | Elaras Mentor. Der Einzige im offenen Rat, der von ihr weiss. |
+| **Bürgermeister Harren** | Vater, ehrlich | Will sein Kind zurück. Stirbt im Finale, als er zu ihr durchdringen will. |
+| **Mara** | Späherin, Schwarzmarkt | Merkt als Erste, dass der Widerstand verraten wird. |
+| **Branka** | Archivschmiedin | Moralischer Kompass, hilft Dir, Dich zu erinnern. |
+| **Setzer Thom** | Druckerei | Die Presse ist die Bühne des Endes. |
+| **Klerus-Priester**, **Stadtwache** | Fraktionsstimmen | Nennen Flucht „Besessenheit“ und Aufräumen „Reinigung“; antworten mit mehr Patrouillen. |
 
 ## Fraktionen
 
-- **Magistrat**, **Klerus**, **Garde** — die drei *ratsinternen* Fraktionen. Konkurrieren nach außen, dienen innen derselben Agenda.
-- **Widerstand** — die Opposition außerhalb des Systems.
-- **Unabhängig** — neutrale Flagge.
+- **Magistrat**, **Klerus**, **Garde**: die drei ratsinternen Fraktionen. Streiten nach außen, gehören innen dem Schattenrat.
+- **Widerstand**: die Opposition, in Wahrheit vom Schattenrat geführt (durch Elara).
+- Ansehen bei Fraktionen gibt es seit Story v5 nicht mehr.
 
-In Akt 1 arbeitest du **für alle vier**.
+Die eine Spur durch das Spiel ist das **Siegel des Schattenrats**, ein Kreis aus drei ineinandergreifenden Ketten.
 
 ## Akt-Struktur
 
@@ -46,7 +46,7 @@ Der Bogen ist **rein quest-getrieben**: ein Akt steigt nur, wenn eine Quest ihn 
 | `1` | Treuer Diener | Abschluss von **Die verschwundene Tochter** |
 | `2` | Das Doppelspiel | Abschluss von **Die geheime Sitzung** |
 | `3` | Die Enttarnung | Abschluss von **Maras Warnung** |
-| `4` | Der Verrat und die Presse | Abschluss von **Der Bruch** |
+| `4` | Die Quelle | Abschluss von **Der Bruch** |
 
 Jeder Akt hat einen Trigger — die Leiter ist lückenlos.
 
@@ -62,11 +62,11 @@ Ein NPC bietet eine Quest an, wenn **alle** Bedingungen gelten:
 2. Die Quest gehört diesem NPC (`npcId`)
 3. `currentAct >= requiredAct`
 4. **Alle** `prerequisites` sind abgeschlossen
-5. Optionales `gate()` liefert `true` _(aktuell nutzt keine Quest ein Gate)_
+5. Optionales `gate()` liefert `true` _(z. B. Maras Schwarzmarkt-Auftrag erst ab erreichter Tiefe 4)_
 
 **`minDepth` gated nicht das Angebot, sondern den Fortschritt:** Ziele zählen erst, wenn der laufende Run auf mindestens dieser Tiefe ist.
 
-**Akt-Index → Name:** `0` Der Dienst · `1` Treuer Diener · `2` Das Doppelspiel · `3` Die Enttarnung · `4` Der Verrat und die Presse
+**Akt-Index → Name:** `0` Der Dienst · `1` Treuer Diener · `2` Das Doppelspiel · `3` Die Enttarnung · `4` Die Quelle
 
 ## Ziel-Typen und ihre Trigger
 
@@ -171,6 +171,114 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Gut. Die Keller sind gesäubert. Hier ist dein Lohn.
 
 
+## Der erste Schliff
+
+`einfuehrung_schmiede` · **NPC:** Schmiedemeisterin Branka · **Kette:** 1
+
+> Werte in der Archivschmiede ein Ausrüstungsstück auf.
+
+- **Ziel:** `system` → `upgrade` ×1
+- **Vorbedingung:** Säuberung der Keller
+- **Belohnung:** 40 XP
+
+**Angebot**
+
+> Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.
+> 
+> Bring mir irgendetwas davon. Ich zeig Dir, wie man es ausbaut, und es wird Deins. Diesmal geht es auf mich — danach kostet es Gold und Eisenbrocken, und Du machst es allein.
+
+**Unterwegs**
+
+> Du hast es noch nicht gemacht. Leg ein Stück auf den Tisch und drück auf Ausbauen. Diesmal zahle ich.
+
+**Abschluss**
+
+> (Sie dreht es einmal ins Licht.) Siehst Du. Dasselbe Stück, nur nicht mehr dasselbe.
+> 
+> Jedes Mal, wenn Du hochkommst, kommst Du hier vorbei. Nicht weil ich das sage, sondern weil Du sonst mit dem runtergehst, was letzte Woche gereicht hat.
+
+
+## Eine Zeile, die bleibt
+
+`einfuehrung_presse` · **NPC:** Setzer Thom · **Kette:** 1
+
+> Lass Setzer Thom ein Edikt drucken.
+
+- **Ziel:** `system` → `edikt` ×1
+- **Vorbedingung:** Säuberung der Keller
+- **Belohnung:** 40 XP
+
+**Angebot**
+
+> Der Rat schreibt jede Woche vor, was die Stadt denken soll. Wir können dasselbe — kleiner, aber wir können es.
+> 
+> Du hast Druckblätter dabei, ich sehe sie. Such Dir eine Zeile aus und lass sie mich setzen. Sie wirkt, solange sie hängt, und sie kostet Dich Aufmerksamkeit beim Rat. Beides sollst Du einmal gespürt haben, bevor es darauf ankommt.
+
+**Unterwegs**
+
+> Noch hängt nichts. Geh rein, such eine Zeile aus, ich setze sie.
+
+**Abschluss**
+
+> (Er wischt sich die Finger am Kittel ab.) Jetzt steht es an jeder Ecke, und irgendwer liest es laut vor.
+> 
+> Merk Dir nur eins: Jede Zeile, die wir drucken, legt der Rat auf seine Waage. Druck nicht mehr, als Du unten wieder gutmachen kannst.
+
+
+## Was unter dem Tisch liegt
+
+`einfuehrung_markt` · **NPC:** Mara vom Untergrund · **Kette:** 1
+
+> Kauf Mara auf dem Schwarzmarkt etwas ab.
+
+- **Ziel:** `system` → `markt` ×1
+- **Vorbedingung:** Säuberung der Keller
+- **Belohnung:** 40 XP
+
+**Angebot**
+
+> Du schleppst Gold herum, als wüsstest Du nicht, wofür. Ich schon.
+> 
+> Ich habe einen Stand — hier, unter dem Tisch. Frag nicht, woher die Ware kommt. Nimm irgendetwas, das Billigste reicht. Danach weisst Du, dass es ihn gibt, und das ist der ganze Punkt.
+
+**Unterwegs**
+
+> Nimm irgendetwas. Ich schreibe nicht auf, was.
+
+**Abschluss**
+
+> (Sie zählt das Gold nicht nach.) Gut. Und jetzt vergiss, dass ich Dir das gezeigt habe.
+> 
+> Was ich nicht habe, hat vielleicht der Alte mit dem Karren, da unten. Wer mit vollen Taschen hochkommt und sie wieder mit runternimmt, hat etwas nicht verstanden.
+
+
+## Wofür du taugst
+
+`einfuehrung_talente` · **NPC:** Ratsherr Aldric · **Kette:** 1
+
+> Setz einen Punkt im Talentbaum.
+
+- **Ziel:** `system` → `talent` ×1
+- **Vorbedingung:** Säuberung der Keller
+- **Belohnung:** 40 XP
+
+**Angebot**
+
+> Der Rat führt über jeden Bürger eine Akte, und in Deiner steht ein Wort, das mich stört: unbestimmt.
+> 
+> Das lässt sich ändern. Du sammelst unten Erfahrung, und Erfahrung wird zu Punkten. Setz einen. Wut, Ketten oder Schatten — such es Dir aus. Der Rat schätzt Leute, die sich festlegen.
+
+**Unterwegs**
+
+> Noch immer unbestimmt. Öffne den Baum und setz einen Punkt. Welchen, ist Deine Sache.
+
+**Abschluss**
+
+> (Er notiert etwas, ohne aufzusehen.) Festgelegt. Gut.
+> 
+> Die Akte wird Dich überleben, Archivschmied. Das ist keine Drohung, das ist Verwaltung.
+
+
 ## Die verschwundene Tochter
 
 `harren_daughter_investigation` · **NPC:** Bürgermeister Harren · **Kette:** 1
@@ -198,6 +306,31 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Du hast es. Alle drei Ratsfraktionen stehen darin, mit Namen. Lene ist nicht einfach geflohen, Archivschmied. Jemand hat sie verschwinden lassen.
 > 
 > Du wirst gleich von allen Seiten Aufträge bekommen. Nimm sie an. Hör Dir alles an. Dann komm zurück zu mir.
+
+
+## Aushang: Die leeren Kammern
+
+`brett_kammern` · **NPC:** anschlagtafel · **Kette:** 1 · **Fortschritt erst ab Tiefe 4**
+
+> Ein Rats-Aushang: räume 6 Kammern ab Tiefe 4.
+
+- **Ziel:** `explore` → `room` ×6
+- **Vorbedingung:** keine
+- **Belohnung:** 70 XP
+
+**Angebot**
+
+> MAGISTRAT: Sechs Kammern ab Tiefe 4, geräumt und gemeldet. Das Archiv führt Buch über leere Räume.
+> 
+> (Warum, steht nicht dabei.)
+
+**Unterwegs**
+
+> Sechs Kammern ab Tiefe 4. Das Archiv wartet auf die Meldung.
+
+**Abschluss**
+
+> Ein Schreiber streicht sechs Zeilen an. Er sieht Dich dabei nicht an. Der Lohn liegt im Kasten.
 
 
 ## Aushang: Ruhe in den Kellern
@@ -250,6 +383,85 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Alle Gänge sind sicher. Gute Arbeit, Archivschmied.
 
 
+## Was die Mauern wissen
+
+`einfuehrung_wissen` · **NPC:** Schmiedemeisterin Branka · **Kette:** 2
+
+> Verbau ein Erinnerungsfragment im Wissensbaum.
+
+- **Ziel:** `system` → `wissen` ×1
+- **Vorbedingung:** Der erste Schliff **+** Die verschwundene Tochter
+- **Belohnung:** 40 XP
+
+**Angebot**
+
+> Stahl allein schneidet die Lügen des Rates nicht. Das sage ich jedem, und jeder nickt und versteht es nicht.
+> 
+> Du trägst ein Fragment bei Dir. Ein Stück von etwas, das jemand aufgeschrieben und der Rat verbrannt hat. Verbau es — nicht in einer Klinge, in Dir. Dann weisst Du, was ich meine.
+
+**Unterwegs**
+
+> Das Fragment liegt noch bei Dir herum. Öffne den Baum und setz es ein. Es wird nicht mehr wert, wenn Du wartest.
+
+**Abschluss**
+
+> (Sie sieht Dich einen Moment zu lange an.) Und? Nichts blitzt, nichts klingelt. So ist Wissen.
+> 
+> Jedes Fragment, das Du unten findest, gehört da hinein. Der Rat sammelt sie auch — nur verbrennt er sie.
+
+
+## Der Alte mit dem Karren
+
+`einfuehrung_amulett` · **NPC:** Mara vom Untergrund · **Kette:** 2
+
+> Kauf dem wandernden Händler in der Tiefe etwas ab.
+
+- **Ziel:** `system` → `haendler` ×1
+- **Vorbedingung:** Was unter dem Tisch liegt
+- **Belohnung:** 40 XP
+
+**Angebot**
+
+> Da unten läuft ein Alter mit einem Karren herum. Frag mich nicht, wie er hineinkommt — ich weiss es nicht, und ich will es nicht wissen.
+> 
+> Kauf ihm etwas ab. Irgendetwas. Er führt Zeug, das über meinen Tisch nie gehen würde, und tiefer unten hängen Amulette an seinem Karren. Ich will nur, dass Du einmal bei ihm gestanden hast.
+
+**Unterwegs**
+
+> Der Alte taucht auf, wenn er will. Lauf weiter runter, dann triffst Du ihn. Und nimm Gold mit — billig ist er nicht.
+
+**Abschluss**
+
+> (Sie betrachtet es aus sicherem Abstand.) Du hast also bei ihm gekauft.
+> 
+> Geh wieder hin, wenn Du tiefer kommst. Was er dann führt, ändert einen ganzen Lauf — und was es Dir nimmt, merkst Du meistens später.
+
+
+## Aushang: Zweimal hinab
+
+`brett_laeufe` · **NPC:** anschlagtafel · **Kette:** 2 · **Fortschritt erst ab Tiefe 8**
+
+> Ein Rats-Aushang: schliesse 2 Läufe ab Tiefe 8 ab.
+
+- **Ziel:** `dungeon_run` → `dungeon_complete` ×2
+- **Vorbedingung:** keine
+- **Belohnung:** 110 XP
+
+**Angebot**
+
+> GARDE: Zwei vollständige Gänge ab Tiefe 8. Nicht die Hälfte, nicht fast — ganz durch, beide Male.
+> 
+> (Darunter jemand mit Kohle: "Sie zahlen für den Weg, nicht für das, was man sieht.")
+
+**Unterwegs**
+
+> Zwei ganze Gänge ab Tiefe 8. Halbe zählen nicht.
+
+**Abschluss**
+
+> Die Garde zahlt ohne Nachfragen. Was Du unten gesehen hast, will niemand wissen.
+
+
 ## Aushang: Die Anführer
 
 `brett_anfuehrer` · **NPC:** anschlagtafel · **Kette:** 2 · **Fortschritt erst ab Tiefe 6**
@@ -275,6 +487,31 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Die Garde zahlt bar und sofort. Den Aushang nimmt niemand ab; er hängt am nächsten Morgen wieder da.
 
 
+## Aushang: Standhalten
+
+`brett_welle` · **NPC:** anschlagtafel · **Kette:** 3 · **Fortschritt erst ab Tiefe 6**
+
+> Ein Rats-Aushang: überstehe Welle 12 ab Tiefe 6.
+
+- **Ziel:** `wave` → `reach_wave` ×12
+- **Vorbedingung:** keine
+- **Belohnung:** 100 XP
+
+**Angebot**
+
+> KLERUS: Zwölf Ansturmwellen, ab Tiefe 6, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.
+> 
+> (Das Siegel darunter ist frisch. Die Tinte noch feucht.)
+
+**Unterwegs**
+
+> Zwölf Wellen ab Tiefe 6. Weichen zählt nicht.
+
+**Abschluss**
+
+> Der Priester am Kasten segnet Dich, während er abzählt. Beides dauert gleich lang.
+
+
 ## Aufruf der Druckerei
 
 `brett_aufruf` · **NPC:** anschlagtafel · **Kette:** 3 · **Fortschritt erst ab Tiefe 10**
@@ -298,6 +535,31 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 **Abschluss**
 
 > Am Rand des Blattes steht jetzt ein Strich mehr. Thom legt Papier und Münzen unter den Stein daneben.
+
+
+## Aufruf: Nehmt ihnen die Anführer
+
+`brett_zeugen` · **NPC:** anschlagtafel · **Kette:** 4 · **Fortschritt erst ab Tiefe 12**
+
+> Ein Aufruf des Widerstands: besiege 4 Elite-Gegner ab Tiefe 12.
+
+- **Ziel:** `kill` → `elite_enemy` ×4
+- **Vorbedingung:** keine
+- **Belohnung:** 130 XP
+
+**Angebot**
+
+> Aus Thoms Presse, quer über ein zerfetztes Rats-Plakat geklebt:
+> 
+> "Vier von denen, die unten befehlen. Ab Tiefe 12. Wer befiehlt, hat einen Namen — und wir drucken Namen."
+
+**Unterwegs**
+
+> Vier Anführer ab Tiefe 12. Die Presse wartet auf die Namen.
+
+**Abschluss**
+
+> Am nächsten Morgen stehen vier Namen im Blatt. Zwei davon kennt die Stadt.
 
 
 # Akt-Index 1 — Treuer Diener
@@ -927,7 +1189,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > (Harren liest es zweimal.) Sie haben es geplant. Jemand im Rat hat Lenes Verschwinden abgeheftet, bevor es geschah.
 
 
-# Akt-Index 4 — Der Verrat und die Presse
+# Akt-Index 4 — Die Quelle
 
 ## Die Pamphlete
 

@@ -12,8 +12,8 @@ global.window = {};
 require(path.join(ROOT, 'js', 'questSystem.js'));
 const D = window.questSystem.QUEST_DEFINITIONS;
 
-// Story v4 (Feature 062): fünf Akte, Index 0 = Startzustand. Kein Akt 5/6 mehr.
-const ACTS = ['Der Dienst', 'Treuer Diener', 'Das Doppelspiel', 'Die Enttarnung', 'Der Verrat und die Presse'];
+// Story v5: fünf Akte (Index 0 = Der Dienst), Namen wie in js/storySystem.js.
+const ACTS = ['Der Dienst', 'Treuer Diener', 'Das Doppelspiel', 'Die Enttarnung', 'Die Quelle'];
 const NPC = {
   aldric: 'Ratsherr Aldric', harren: 'Bürgermeister Harren', elara: 'Elara',
   mara: 'Mara vom Untergrund', branka: 'Schmiedemeisterin Branka', thom: 'Setzer Thom',
@@ -52,25 +52,26 @@ out += '_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFI
 out += '_Neu erzeugen:_ `node tools/genQuestDoc.js`\n\n';
 out += '---\n\n';
 out += '# Kontext\n\n';
+// Kontext nach der Story-Bibel v5 (kitty-specs/062-story-v4-quest-backbone/research/Fogreach_Story_v5.md).
 out += '## Prämisse\n\n';
-out += 'Du spielst den **Archivschmied** — Handwerker im Dienst des Stadtrats, der Akten, Waffen und Siegel instand hält. Unter der Stadt liegt der Nebel: ein Kellerlabyrinth, in das der Rat dich zum Aufräumen schickt.\n\n';
-out += 'Der Rat gibt sich als drei rivalisierende Fraktionen, die sich öffentlich bekämpfen. Tatsächlich **dienen sie alle derselben okkulten Agenda** — und der Spieler ist genau die Art von nützlichem Handwerker, der ihre Spuren beseitigt, ohne Fragen zu stellen.\n\n';
-out += 'Auslöser ist die verschwundene Tochter des Bürgermeisters. Jede Fraktion hat eine eigene Version: entführt, besessen, pflichtvergessen. Ihr Tagebuchfragment sagt etwas anderes — **sie ist geflohen**, und alle drei Ratsfraktionen stehen namentlich darin. Von da an ist die Frage nicht mehr *was ist passiert*, sondern *wem gehorchst du noch*.\n\n';
+out += 'Du spielst den **Archivschmied**, einen Handwerker im Dienst des Rats, ohne Erinnerung an die Zeit vor dem Unfall in der Schmiede. Unter der Stadt liegt der Nebel: ein Kellerlabyrinth, in das der Rat Dich zum Aufräumen schickt.\n\n';
+out += 'Nach außen streiten Magistrat, Klerus und Garde; innen gehören ihre Spitzen demselben Kreis an, dem **Schattenrat**. Er nährt die Quelle des Nebels mit den Erinnerungen der Bürger. Und weil ein Volk ohne Ventil gefährlich wird, führt er auch den Widerstand selbst: durch **Elara**, die Tochter des Bürgermeisters, deren Flucht inszeniert war.\n\n';
+out += '> Du hast geglaubt, Du arbeitest für den Rat, dann gegen ihn. In Wahrheit hast Du die ganze Zeit für ihn gearbeitet, auch auf der anderen Seite.\n\n';
 out += '## Charaktere\n\n';
-out += '| Figur | Rolle | Steht für | Funktion im Bogen |\n|---|---|---|---|\n';
-out += '| **Ratsherr Aldric** | Ratsherr, dein Auftraggeber | Magistrat | Gibt die harmlosen Anfangsjobs. Schickt dich später in die Ritualkammer, um die **eigene Spur des Rats zu verwischen** — der Moment, in dem der Auftraggeber zum Gegner wird. |\n';
-out += '| **Bürgermeister Harren** | Vater der Verschwundenen | (unabhängig) | Traut keiner der drei Versionen. Startet die Untersuchung und hält den Reveal in der Hand. |\n';
-out += '| **Elara** | Kontakt im Untergrund | Widerstand | Gesicht der Opposition. Führt dich zur Beschwörungskammer, schenkt am Ende ihre Klinge. |\n';
-out += '| **Mara vom Untergrund** | Späherin, Schwarzmarkt | Widerstand-nah | Netzwerk & Spionage-Aufträge; treibt die Boss-Konfrontationen. Betreibt auch den Schwarzmarkt. |\n';
-out += '| **Schmiedemeisterin Branka** | Archivschmiede | (unabhängig) | Stellt Fragen, die man nicht stellen soll. Ihre Zweifel eskalieren zum **Bruch**. |\n';
-out += '| **Setzer Thom** | Hinterhaus-Druckerei | Widerstand-nah | Macht Wahrheit zu Pamphleten — die Presse als Waffe. |\n';
-out += '| **Klerus-Priester** | Geistlicher | Klerus | Nennt Flucht „Besessenheit" und Aufräumen „Reinigung". |\n';
-out += '| **Stadtwache** | Garde-Offizier | Garde | Antwortet auf alles mit mehr Patrouillen. |\n\n';
+out += '| Figur | Rolle | Kern |\n|---|---|---|\n';
+out += '| **Archivschmied** (Du) | Handwerker im Ratsdienst | Amnesie. Der Jedermann, der anfängt zu fragen. |\n';
+out += '| **Elara** | Harrens Tochter, Gesicht des Widerstands, **Mitglied des Schattenrats** | Lenkt den Widerstand für den Rat. Braucht Dich, um die Quelle zu öffnen. Endgegnerin, besessen von der Quelle. |\n';
+out += '| **Ratsherr Aldric** | Auftraggeber, Stimme des Schattenrats im Rat | Elaras Mentor. Der Einzige im offenen Rat, der von ihr weiss. |\n';
+out += '| **Bürgermeister Harren** | Vater, ehrlich | Will sein Kind zurück. Stirbt im Finale, als er zu ihr durchdringen will. |\n';
+out += '| **Mara** | Späherin, Schwarzmarkt | Merkt als Erste, dass der Widerstand verraten wird. |\n';
+out += '| **Branka** | Archivschmiedin | Moralischer Kompass, hilft Dir, Dich zu erinnern. |\n';
+out += '| **Setzer Thom** | Druckerei | Die Presse ist die Bühne des Endes. |\n';
+out += '| **Klerus-Priester**, **Stadtwache** | Fraktionsstimmen | Nennen Flucht „Besessenheit“ und Aufräumen „Reinigung“; antworten mit mehr Patrouillen. |\n\n';
 out += '## Fraktionen\n\n';
-out += '- **Magistrat**, **Klerus**, **Garde** — die drei *ratsinternen* Fraktionen. Konkurrieren nach außen, dienen innen derselben Agenda.\n';
-out += '- **Widerstand** — die Opposition außerhalb des Systems.\n';
-out += '- **Unabhängig** — neutrale Flagge.\n\n';
-out += 'In Akt 1 arbeitest du **für alle vier**.\n\n';
+out += '- **Magistrat**, **Klerus**, **Garde**: die drei ratsinternen Fraktionen. Streiten nach außen, gehören innen dem Schattenrat.\n';
+out += '- **Widerstand**: die Opposition, in Wahrheit vom Schattenrat geführt (durch Elara).\n';
+out += '- Ansehen bei Fraktionen gibt es seit Story v5 nicht mehr.\n\n';
+out += 'Die eine Spur durch das Spiel ist das **Siegel des Schattenrats**, ein Kreis aus drei ineinandergreifenden Ketten.\n\n';
 out += '## Akt-Struktur\n\n';
 out += 'Der Bogen ist **rein quest-getrieben**: ein Akt steigt nur, wenn eine Quest ihn per `advanceAct` hochsetzt. Tiefen-basierter Aufstieg wurde in Feature 050 entfernt.\n\n';
 out += '| Index | Akt | Wird erreicht durch |\n|---|---|---|\n';
@@ -107,7 +108,7 @@ out += '1. Status ist `available` (noch nicht angenommen/abgeschlossen)\n';
 out += '2. Die Quest gehört diesem NPC (`npcId`)\n';
 out += '3. `currentAct >= requiredAct`\n';
 out += '4. **Alle** `prerequisites` sind abgeschlossen\n';
-out += '5. Optionales `gate()` liefert `true` _(aktuell nutzt keine Quest ein Gate)_\n\n';
+out += '5. Optionales `gate()` liefert `true` _(z. B. Maras Schwarzmarkt-Auftrag erst ab erreichter Tiefe 4)_\n\n';
 out += '**`minDepth` gated nicht das Angebot, sondern den Fortschritt:** Ziele zählen erst, wenn der laufende Run auf mindestens dieser Tiefe ist.\n\n';
 out += '**Akt-Index → Name:** ' + ACTS.map((a, i) => '`' + i + '` ' + a).join(' · ') + '\n\n';
 out += '## Ziel-Typen und ihre Trigger\n\n';

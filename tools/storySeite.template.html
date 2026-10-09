@@ -1,0 +1,210 @@
+<title>Fogreach Dossier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Ein Akten-Dossier aus dem Archiv von Fogreach: eine Spalte zum Lesen,
+   Akte als Kapitel, Quests als aufklappbare Aktenzeilen. */
+:root {
+  --grund: #ecebe6;        /* Nebelpapier */
+  --flaeche: #f7f6f2;
+  --tinte: #24221d;
+  --tinte-leise: #5d594f;
+  --messing: #8a6a1f;
+  --messing-leise: #c9b27a;
+  --eisen: #4f6378;
+  --glut: #a5432f;
+  --linie: #d4d0c4;
+  --display: 'IM Fell English SC', 'Iowan Old Style', Georgia, serif;
+  --text: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --grund: #121419; --flaeche: #1a1d24; --tinte: #e6dfcd; --tinte-leise: #a29b8b;
+    --messing: #d4ad5a; --messing-leise: #6e5a2e; --eisen: #8fa6c0; --glut: #e07a63; --linie: #2c3039;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --grund: #121419; --flaeche: #1a1d24; --tinte: #e6dfcd; --tinte-leise: #a29b8b;
+  --messing: #d4ad5a; --messing-leise: #6e5a2e; --eisen: #8fa6c0; --glut: #e07a63; --linie: #2c3039;
+  color-scheme: dark;
+}
+body { background: var(--grund); color: var(--tinte); font-family: var(--text); font-size: 17px; line-height: 1.6; }
+.seite { max-width: 52rem; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); letter-spacing: 0.01em; }
+h2 { font-size: 1.9rem; }
+h3 { font-size: 1.3rem; }
+p { margin: 0; max-width: 65ch; }
+a { color: var(--messing); }
+.kopf { display: grid; gap: 10px; padding-bottom: 28px; border-bottom: 1px solid var(--linie); }
+.kopf .stand { font-family: var(--mono); font-size: 0.8rem; color: var(--tinte-leise); letter-spacing: 0.04em; }
+.siegel { display: inline-flex; align-items: center; gap: 10px; color: var(--messing); }
+.siegel svg { width: 34px; height: 34px; flex: none; }
+.etikett { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--tinte-leise); }
+section { padding-block: 34px; border-bottom: 1px solid var(--linie); display: grid; gap: 16px; }
+blockquote { margin: 0; padding: 4px 0 4px 18px; border-left: 2px solid var(--messing); font-style: italic; max-width: 60ch; }
+.figuren { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 10px; }
+.figur { background: var(--flaeche); border: 1px solid var(--linie); padding: 12px 14px; display: grid; gap: 4px; min-width: 0; }
+.figur b { font-weight: 700; }
+.figur .rolle { color: var(--tinte-leise); font-size: 0.92rem; }
+.figur.rat b { color: var(--glut); }
+nav.akte { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--grund); padding-block: 10px; border-bottom: 1px solid var(--linie); display: flex; flex-wrap: wrap; gap: 6px 14px; }
+nav.akte a { font-family: var(--mono); font-size: 0.8rem; text-decoration: none; color: var(--tinte-leise); }
+nav.akte a:hover, nav.akte a:focus-visible { color: var(--messing); }
+.akt-kopf { display: grid; gap: 4px; }
+.akt-kopf .boss { font-family: var(--mono); font-size: 0.8rem; color: var(--glut); }
+.erzaehlt { color: var(--tinte-leise); font-style: italic; }
+.momente { display: grid; gap: 6px; padding: 0; margin: 0; list-style: none; }
+.momente li { padding-left: 18px; position: relative; max-width: 62ch; }
+.momente li::before { content: ''; position: absolute; left: 2px; top: 0.72em; width: 7px; height: 7px; border: 1px solid var(--messing); transform: rotate(45deg); }
+.werkzeug { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-block: 6px; }
+.werkzeug input { font: inherit; font-size: 0.95rem; padding: 6px 10px; border: 1px solid var(--linie); background: var(--flaeche); color: var(--tinte); min-width: 0; flex: 1 1 12rem; }
+.chip { font-family: var(--mono); font-size: 0.75rem; padding: 4px 9px; border: 1px solid var(--linie); background: transparent; color: var(--tinte-leise); cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--messing); color: var(--messing); }
+.chip:focus-visible, .werkzeug input:focus-visible, summary:focus-visible { outline: 2px solid var(--messing); outline-offset: 2px; }
+.quests { display: grid; gap: 0; border-top: 1px solid var(--linie); }
+details.quest { border-bottom: 1px solid var(--linie); }
+details.quest summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 14px; padding: 10px 2px; }
+details.quest summary::-webkit-details-marker { display: none; }
+.q-titel { font-weight: 700; }
+.q-titel::before { content: '+'; display: inline-block; width: 1.1em; color: var(--messing); font-family: var(--mono); }
+details[open] .q-titel::before { content: '–'; }
+.q-wer { font-family: var(--mono); font-size: 0.78rem; color: var(--tinte-leise); text-align: right; white-space: nowrap; }
+.q-was { grid-column: 1 / -1; color: var(--tinte-leise); font-size: 0.95rem; padding-left: 1.1em; }
+.q-detail { padding: 2px 2px 16px 1.1em; display: grid; gap: 10px; }
+.q-fakten { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--mono); font-size: 0.76rem; color: var(--tinte-leise); }
+.q-fakten span b { color: var(--tinte); font-weight: 500; }
+.dialog { background: var(--flaeche); border-left: 2px solid var(--messing-leise); padding: 10px 14px; white-space: pre-line; font-size: 0.97rem; max-width: 65ch; }
+.dialog .etikett { display: block; margin-bottom: 4px; }
+.leer { color: var(--tinte-leise); font-style: italic; padding-block: 8px; }
+.tabelle { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--linie); vertical-align: top; }
+th { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tinte-leise); font-weight: 400; }
+footer { padding-top: 26px; font-size: 0.85rem; color: var(--tinte-leise); display: grid; gap: 6px; }
+footer code { font-family: var(--mono); font-size: 0.8rem; }
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  details.quest summary { grid-template-columns: 1fr; }
+  .q-wer { text-align: left; padding-left: 1.1em; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  details.quest[open] .q-detail { animation: auf 180ms ease-out; }
+  @keyframes auf { from { opacity: 0.4; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+}
+</style>
+
+<div class="seite">
+  <header class="kopf">
+    <span class="siegel" title="Das Siegel des Schattenrats: drei ineinandergreifende Ketten">
+      <svg viewBox="0 0 40 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2">
+        <ellipse cx="20" cy="12" rx="7" ry="5" transform="rotate(0 20 12)"/>
+        <ellipse cx="13" cy="25" rx="7" ry="5" transform="rotate(60 13 25)"/>
+        <ellipse cx="27" cy="25" rx="7" ry="5" transform="rotate(-60 27 25)"/>
+      </svg>
+      <span class="etikett">Archiv der Archivschmiede · Akte Fogreach</span>
+    </span>
+    <h1>Geschichte und Aufträge</h1>
+    <p>Wer bestimmt, woran sich eine Stadt erinnert, beherrscht sie. Diese Akte fasst die Geschichte von Fogreach zusammen, wie sie im Spiel erzählt wird, und listet jeden Auftrag mit Auftraggeber, Ziel, Lohn und Dialog.</p>
+    <span class="stand">Stand __STAND__ · Geschichte: Story-Bibel v5 · Aufträge: aus dem Spielcode, __ANZAHL__ Stück</span>
+  </header>
+
+  <section id="kern">
+    <span class="etikett">Der Kern</span>
+    <h2>Wem gehorchst Du noch?</h2>
+    <p>Fogreach liegt unter ewigem Nebel. Der Kettenrat regiert scheinbar als drei streitende Fraktionen, Magistrat, Klerus und Garde. Innen gehören ihre Spitzen demselben Kreis an, dem Schattenrat. Er nährt die Quelle des Nebels unter der Stadt mit den Erinnerungen der Bürger: Wer vergisst, lässt sich lenken; wer verschwindet, wird der Quelle geopfert. Und weil ein Volk ohne Ventil gefährlich wird, gibt er ihm eines: einen Widerstand, den er selbst anführt.</p>
+    <p>Du bist der Archivschmied, ein Handwerker im Dienst des Rats, ohne Erinnerung an die Zeit vor dem Unfall in der Schmiede.</p>
+    <blockquote>Du hast geglaubt, Du arbeitest für den Rat, dann gegen ihn. In Wahrheit hast Du die ganze Zeit für ihn gearbeitet, auch auf der anderen Seite.</blockquote>
+    <p>Die einzige Waffe, die sich nicht vereinnahmen lässt, ist verteiltes, unkuratiertes Wissen. Am Ende druckst Du alles, der Nebel bricht, die Stadt erinnert sich.</p>
+  </section>
+
+  <section id="figuren">
+    <span class="etikett">Figuren</span>
+    <h2>Wer in der Akte steht</h2>
+    <div class="figuren">
+      <div class="figur"><b>Der Archivschmied</b><span class="rolle">Du. Handwerker im Ratsdienst, ohne Erinnerung.</span><span>Der Jedermann, der anfängt zu fragen.</span></div>
+      <div class="figur rat"><b>Elara</b><span class="rolle">Harrens Tochter, Gesicht des Widerstands, Mitglied des Schattenrats</span><span>Ihre Flucht war inszeniert. Sie führt den Widerstand und lenkt dessen Wut dorthin, wo sie dem Rat nicht schadet. Sie braucht Dich, um die Quelle zu öffnen.</span></div>
+      <div class="figur rat"><b>Ratsherr Aldric</b><span class="rolle">Dein Auftraggeber, Stimme des Schattenrats im Rat</span><span>Elaras Mentor. Der Einzige im offenen Rat, der von ihr weiss.</span></div>
+      <div class="figur"><b>Bürgermeister Harren</b><span class="rolle">Vater der Verschwundenen</span><span>Ehrlich, will sein Kind zurück. Stirbt im Finale, als er zu ihr durchdringen will.</span></div>
+      <div class="figur"><b>Mara</b><span class="rolle">Späherin, Schwarzmarkt</span><span>Merkt als Erste, dass der Widerstand verraten wird.</span></div>
+      <div class="figur"><b>Branka</b><span class="rolle">Schmiedemeisterin der Archivschmiede</span><span>Moralischer Kompass. Hilft Dir, Dich zu erinnern.</span></div>
+      <div class="figur"><b>Setzer Thom</b><span class="rolle">Druckerei</span><span>Die Presse ist die Bühne des Endes.</span></div>
+      <div class="figur"><b>Klerus-Priester, Stadtwache</b><span class="rolle">Stimmen der Fraktionen</span><span>Nennen Flucht „Besessenheit“ und Aufräumen „Reinigung“; antworten auf alles mit mehr Patrouillen.</span></div>
+    </div>
+    <p><b>Das Zeichen.</b> Eine einzige Spur zieht sich durch das Spiel: das Siegel des Schattenrats, ein Kreis aus drei ineinandergreifenden Ketten. Man sieht es auf den Siegeln der geheimen Sitzung, auf dem Bündel aus Elaras erstem Auftrag, eingraviert in ihrer Klinge, auf dem Befehl des Maulwurfs und zuletzt an Elaras Ring.</p>
+  </section>
+
+  <nav class="akte" aria-label="Akte">__NAV__</nav>
+
+  <div class="werkzeug" role="search">
+    <input id="suche" type="search" placeholder="Auftrag suchen (Titel, Text, Dialog)" aria-label="Aufträge durchsuchen">
+    <span id="chips"></span>
+  </div>
+
+  __AKTE__
+
+  <section id="entscheidungen">
+    <span class="etikett">Ein Ende, gefärbt von Entscheidungen</span>
+    <h2>Was Deine Wahl verändert</h2>
+    <p>Das Ende steht fest: Endkampf, Presse, der Nebel bricht. Die Entscheidungen bestimmen, wie es sich anfühlt und was der Epilog erzählt.</p>
+    <div class="tabelle"><table>
+      <thead><tr><th>Entscheidung</th><th>Wo</th><th>Was sie im Ende ändert</th></tr></thead>
+      <tbody>
+        <tr><td>Das Ratssiegel setzen oder verweigern</td><td>Treuer Diener</td><td>Ob Branka Dir vertraut und im Epilog neben Dir steht.</td></tr>
+        <tr><td>Maras Namensliste: die Leute warnen oder abliefern</td><td>Das Doppelspiel</td><td>Wie viele der Verschwundenen im Epilog zurückkehren.</td></tr>
+        <tr><td>Beim Konvoi still bleiben oder die Klinge ziehen</td><td>Das Doppelspiel</td><td>Ob Mara Dir im Endkampf zu Hilfe kommt.</td></tr>
+        <tr><td>Das Zeichen auf der Klinge bemerkt?</td><td>Die Enttarnung</td><td>Ob Du im Finale vorbereitet bist (Startvorteil im Kampf).</td></tr>
+        <tr><td>Elara nach dem Kampf: verschonen oder richten</td><td>Die Quelle</td><td>Ob sie im Epilog gefangen lebt oder stirbt.</td></tr>
+        <tr><td>Wer Du warst (optionaler Auftrag)</td><td>Die Enttarnung</td><td>Nur dann gehört Dir der letzte Satz, sonst bleibst Du namenlos.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <footer>
+    <span>Die Geschichte folgt der Story-Bibel v5. Die Aufträge stammen direkt aus <code>js/questSystem.js</code>; „ab Akt“ ist der früheste Akt, in dem ein Auftrag angeboten wird, Vorgänger stehen beim Auftrag.</span>
+    <span>Neu erzeugen: <code>node tools/storySeite.js</code></span>
+  </footer>
+</div>
+
+<script id="daten" type="application/json">__DATEN__</script>
+<script>
+(function () {
+  var daten = JSON.parse(document.getElementById('daten').textContent);
+  var suche = document.getElementById('suche');
+  var chipsEl = document.getElementById('chips');
+  var wer = null;
+  var figuren = {};
+  document.querySelectorAll('details.quest').forEach(function (d) { figuren[d.dataset.wer] = d.dataset.werName; });
+  Object.keys(daten.reihenfolge).forEach(function () {});
+  daten.reihenfolge.forEach(function (id) {
+    if (!figuren[id]) return;
+    var b = document.createElement('button');
+    b.className = 'chip'; b.type = 'button'; b.textContent = figuren[id];
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', function () {
+      wer = (wer === id) ? null : id;
+      chipsEl.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', 'false'); });
+      if (wer) b.setAttribute('aria-pressed', 'true');
+      filtern();
+    });
+    chipsEl.appendChild(b);
+  });
+  function filtern() {
+    var q = (suche.value || '').trim().toLowerCase();
+    document.querySelectorAll('.akt').forEach(function (akt) {
+      var sichtbar = 0;
+      akt.querySelectorAll('details.quest').forEach(function (d) {
+        var passt = (!wer || d.dataset.wer === wer) && (!q || d.textContent.toLowerCase().indexOf(q) >= 0);
+        d.hidden = !passt;
+        if (passt) sichtbar++;
+        if (q && passt) d.open = true;
+      });
+      var leer = akt.querySelector('.leer');
+      if (leer) leer.hidden = sichtbar > 0;
+    });
+  }
+  suche.addEventListener('input', filtern);
+})();
+</script>
