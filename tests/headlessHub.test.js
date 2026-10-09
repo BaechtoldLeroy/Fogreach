@@ -267,12 +267,11 @@ test('hub: ein Aktwechsel zieht das Phasen-Overlay sofort nach', async () => {
              objekte: sc._hubPhaseViewObjs ? sc._hubPhaseViewObjs.length : 0 };
   })()`);
 
-  // Die Pruefung laeuft gedrosselt (400 ms Wanduhr) — also echte Zeit
-  // verstreichen lassen und danach takten.
-  const nachziehen = async () => {
-    await new Promise((r) => setTimeout(r, 450));
-    H.step(5);
-  };
+  // Die Pruefung ist gedrosselt (400 ms, gemessen mit Date.now). Im
+  // Sandkasten folgt Date.now seit b336 der getakteten Uhr: 450 ms sind
+  // 27 Frames. Frueher schlief der Test echte 450 ms — unter Last mal genug,
+  // mal zu viel, je nachdem, wie weit die Wanduhr der Spielzeit vorauslief.
+  const nachziehen = async () => { H.step(27); };
 
   H.run(`(function () {
     window.questSystem.setFlag('story_ending', false);

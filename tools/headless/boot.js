@@ -88,7 +88,67 @@ function boot(opts) {
   sandbox.global = sandbox;
   sandbox.process = process; // manche Tools pruefen darauf; harmlos
 
+  // ---------------------------------------------------------------------
+  // EINE Uhr im Sandkasten.
+  //
+  // Die Spielschleife laeuft auf einer simulierten Uhr mit festem dt (step).
+  // Date.now folgte ihr schon; setTimeout, setInterval und performance.now
+  // aber liefen auf der Wanduhr. Ein Beispiel, was das anrichtet: nach einem
+  // Treffer ist der Spieler 1,5 s unverwundbar, per setTimeout
+  // (enemy.js). Node ist einthreadig — der Timer kann erst feuern, wenn der
+  // Test das naechste Mal wartet. Auf einem schnellen Rechner sind bis dahin
+  // Millisekunden vergangen, und der Spieler bleibt viele getaktete Frames
+  // unverwundbar; unter Last ist die Zeit abgelaufen, er stirbt mitten im
+  // Test, die Szene startet neu, und die Gegnergruppe ist zerstoert. Dasselbe
+  // Programm, je nach Rechnerlast verschieden — das Flattern der Gesamtlaeufe.
+  //
+  // Jetzt feuern Timer, wenn die getaktete Uhr sie erreicht, in der
+  // Reihenfolge ihrer Faelligkeit, und nirgends sonst. Die Dateien selbst
+  // (Bilder, Daten) laden weiter echt: der DOM-Stub benutzt Nodes eigene
+  // Timer, nicht diese.
+  // ---------------------------------------------------------------------
+  let uhr = 0;
+  const timer = new Map();     // id -> { faellig, fn, args, intervall }
+  let naechsteTimerId = 1;
+  function planen(fn, ms, args, wiederholen) {
+    const id = naechsteTimerId++;
+    const d = Math.max(0, Number(ms) || 0);
+    timer.set(id, { faellig: uhr + d, fn: fn, args: args, intervall: wiederholen ? Math.max(1, d) : 0 });
+    return id;
+  }
+  sandbox.setTimeout = function (fn, ms, ...args) { return planen(fn, ms, args, false); };
+  sandbox.setInterval = function (fn, ms, ...args) { return planen(fn, ms, args, true); };
+  sandbox.clearTimeout = function (id) { timer.delete(id); };
+  sandbox.clearInterval = function (id) { timer.delete(id); };
+  const PERF_START = Number(process.hrtime.bigint() / 1000000n);
+  sandbox.performance = { now: function () { return PERF_START + uhr; } };
+
+  /** Alle Timer feuern, die die Uhr erreicht hat — frueheste zuerst. */
+  function faelligeTimer() {
+    // Ein Timer kann neue planen, auch sofort faellige. Die Grenze schuetzt
+    // vor einem setTimeout(fn, 0), das sich endlos selbst neu plant.
+    for (let runde = 0; runde < 10000; runde++) {
+      let wahl = null, wahlId = 0;
+      timer.forEach(function (t, id) {
+        if (t.faellig > uhr) return;
+        if (!wahl || t.faellig < wahl.faellig || (t.faellig === wahl.faellig && id < wahlId)) { wahl = t; wahlId = id; }
+      });
+      if (!wahl) return;
+      if (wahl.intervall) wahl.faellig += wahl.intervall; else timer.delete(wahlId);
+      try {
+        if (typeof wahl.fn === 'function') wahl.fn.apply(null, wahl.args);
+      } catch (e) { errors.push({ level: 'error', msg: '[TIMER] ' + (e && e.message) }); }
+    }
+  }
+
   const ctx = vm.createContext(sandbox);
+
+  // Date.now im Kontext auf dieselbe Uhr. Nur `now` wird umgebogen, nicht
+  // der Konstruktor: `new Date()` und `instanceof Date` bleiben unangetastet.
+  const EPOCHE = Date.now();
+  try {
+    vm.runInContext('Date', ctx).now = function () { return EPOCHE + uhr; };
+  } catch (e) { /* ohne Kontext-Date bleibt die Wanduhr */ }
 
   const scripts = readScriptOrder();
   const loaded = [];
@@ -175,32 +235,10 @@ function boot(opts) {
    * Taktet die Phaser-Loop von Hand um `frames` Schritte mit fixem dt.
    * Kein requestAnimationFrame -> deterministisch und so schnell wie moeglich.
    */
-  // Die simulierte Uhr laeuft UEBER alle step()-Aufrufe weiter.
-  //
-  // Vorher begann sie bei jedem Aufruf wieder bei 0. Der rAF-Zeitstempel sprang
-  // damit zurueck, und Phaser sah keinen Fortschritt: viele step(1)
-  // hintereinander lieferten immer denselben Stempel, und ein step(60) direkt
-  // nach einem step(60) stand ganz still. Gemessen an einem Geschoss mit
-  // 360 px/s: 344 -> 344 nach 60 Frames.
-  let uhr = 0;
-
-  // Date.now() im Sandkasten folgt der getakteten Uhr, nicht der Wanduhr.
-  //
-  // 70 Stellen im Spiel messen mit Date.now() (enemy.js _pullUntil, der
-  // Heil-Blitz in player.js, die Ereignis-Abklingzeiten). Die Spielschleife
-  // laeuft hier aber auf einer simulierten Uhr mit festem dt. Beide liefen
-  // auseinander, und zwar je nach Rechnerlast verschieden weit: `node --test`
-  // startet die Dateien parallel, ein step(80) dauert dann mal 300 ms und mal
-  // drei Sekunden Wanduhr. Dieselbe Zahl getakteter Frames traf damit mal auf
-  // abgelaufene, mal auf laufende Cooldowns — genau das Flattern, bei dem ein
-  // Test allein gruen ist und im Gesamtlauf gelegentlich faellt.
-  //
-  // Nur `now` wird umgebogen, nicht der Konstruktor: `new Date()` und
-  // `instanceof Date` bleiben unangetastet.
-  const EPOCHE = Date.now();
-  try {
-    sandbox.Date.now = function () { return EPOCHE + uhr; };
-  } catch (e) { /* ohne Sandkasten-Date bleibt die Wanduhr */ }
+  // Die simulierte Uhr (uhr, oben) laeuft UEBER alle step()-Aufrufe weiter.
+  // Vorher begann sie bei jedem Aufruf wieder bei 0: der rAF-Zeitstempel
+  // sprang zurueck, und Phaser sah keinen Fortschritt (ein Geschoss mit
+  // 360 px/s stand nach 60 Frames noch bei 344 -> 344).
 
   function step(frames, dtMs) {
     const dt = typeof dtMs === 'number' ? dtMs : 16.666;
@@ -210,6 +248,11 @@ function boot(opts) {
       if (!cb) break;
       simulated += dt;
       uhr += dt;
+      // Erst angekommene Dateien und die Timer, die in diesem Frame faellig
+      // werden, dann das Bild — wie im Browser, wo beides zwischen zwei
+      // Frames laeuft.
+      dom.ladungenAbarbeiten();
+      faelligeTimer();
       try { cb(uhr); } catch (e) { errors.push({ level: 'error', msg: `[STEP] ${e && e.message}` }); }
     }
     return simulated;

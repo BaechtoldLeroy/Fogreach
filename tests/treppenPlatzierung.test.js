@@ -210,3 +210,53 @@ test('Raeume: keine Treppe liegt ausserhalb der begehbaren Flaeche', async (t) =
   assert.strictEqual(erreichbar, gesamt,
     'nur ' + erreichbar + ' von ' + gesamt + ' Treppen erreichbar');
 });
+
+test('Raeume: eine unerreichbare Treppe bleibt nicht stehen', async (t) => {
+  // Selten (gemessen: ein Raum von 400, TerracedHall) landet eine Treppe
+  // ausserhalb der begehbaren Flaeche. War es die einzige, setzte der
+  // Notfallpfad eine zweite — und liess die erste in der Wand stehen. Der
+  // Fall oben ('keine Treppe liegt ausserhalb') sah das nur in jedem
+  // sechzehnten Lauf. Hier wird er erzwungen: die ERSTE Treppe jedes Raums
+  // gilt als unerreichbar. Raeume mit einer Tuer brauchen dann die
+  // Notfall-Treppe, Raeume mit mehreren behalten die anderen.
+  const h = await launchDungeon({ depth: 1 });
+  t.after(async () => { await h.shutdown(); });
+  h.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    // Jeder Raum setzt isPointAccessible neu (recomputeAccessibleArea) —
+    // darum jede neue Fassung beim Zuweisen umhuellen.
+    var echt = sc.isPointAccessible;
+    var huelle = function (x, y) {
+      var st = sc.stairsGroup ? sc.stairsGroup.getChildren() : [];
+      for (var i = 0; i < st.length; i++) {
+        if (st[i]._gesperrt && Math.abs(st[i].x - x) < 1 && Math.abs(st[i].y - y) < 1) return false;
+      }
+      return echt.apply(this, arguments);
+    };
+    Object.defineProperty(sc, 'isPointAccessible', {
+      configurable: true,
+      get: function () { return echt ? huelle : echt; },
+      set: function (f) { echt = f; }
+    });
+    var proto = Phaser.Physics.Arcade.StaticGroup.prototype;
+    var create = proto.create;
+    proto.create = function () {
+      var s = create.apply(this, arguments);
+      // Nur die erste je Raum — nicht die Notfall-Treppe, die danach als
+      // einzige in der Gruppe steht.
+      if (this === sc.stairsGroup && window.__ersteTreppe) { s._gesperrt = true; window.__ersteTreppe = false; }
+      return s;
+    };
+  })()`);
+  for (let i = 0; i < 8; i++) {
+    h.run(`window.__ersteTreppe = true; window.enterRoom(window.game.scene.getScene('GameScene'));`);
+    const r = h.run(`(function () {
+      var sc = window.game.scene.getScene('GameScene');
+      var st = sc.stairsGroup.getChildren();
+      return { n: st.length, tot: st.filter(function (s) { return !sc.isPointAccessible(s.x, s.y); }).length };
+    })()`);
+    assert.ok(r.n > 0, 'Raum ' + i + ' ohne Treppe');
+    assert.strictEqual(r.tot, 0, 'Raum ' + i + ': ' + r.tot + ' von ' + r.n + ' Treppen unerreichbar');
+    await h.settle(() => false, { maxRounds: 2 });
+  }
+});

@@ -35,6 +35,23 @@ function createDomStub(opts) {
     return path.join(rootDir, u.replace(/^\//, ''));
   }
 
+  // ---- Ladeschlange: Dateien kommen im naechsten Takt an ------------------
+  // Bilder und JSON lasen frueher mit Nodes eigenen Timern (fs.readFile,
+  // setTimeout). Wann sie ankamen, hing an der Rechnerlast — ein Bild, das
+  // das Spiel mitten im Lauf nachlaedt, kam auf einem freien Rechner nach
+  // wenigen getakteten Frames, unter Last erst nach hunderten. Jetzt wird die
+  // Datei sofort gelesen, aber erst im naechsten step() uebergeben: wie im
+  // Browser asynchron, und doch fuer jeden Lauf gleich.
+  const ladeschlange = [];
+  function ladungenAbarbeiten() {
+    // Eine fertige Datei kann die naechste anstossen (Phasers Loader); die
+    // laufen im selben Takt mit. Die Grenze schuetzt vor Endlosschleifen.
+    for (let n = 0; ladeschlange.length && n < 100000; n++) {
+      const fn = ladeschlange.shift();
+      try { fn(); } catch (e) { /* wie ein fehlgeschlagener Ladevorgang */ }
+    }
+  }
+
   // ---- Image: node-canvas mit Pfad-Aufloesung -----------------------------
   // Phaser laedt Bilder ueber `new Image(); img.src = url`. node-canvas kann
   // lokale Dateien laden, kennt aber die Repo-Wurzel nicht — deshalb wird die
@@ -48,11 +65,11 @@ function createDomStub(opts) {
         // mit Nicht-ASCII-Zeichen (hier: Umlaut im Benutzerordner) und meldet
         // "No such file or directory", obwohl fs.existsSync die Datei findet.
         // Der Umweg ueber den Puffer umgeht das Dateisystem komplett und ist
-        // zugleich asynchron — genau das erwartet Phasers Loader.
-        fs.readFile(abs, (err, buf) => {
-          if (err) { super.src = v; return; }
-          super.src = buf;
-        });
+        // Uebergeben wird er erst im naechsten Takt (Ladeschlange oben) —
+        // asynchron, wie Phasers Loader es erwartet.
+        let buf = null;
+        try { buf = fs.readFileSync(abs); } catch (e) { buf = null; }
+        ladeschlange.push(() => { super.src = buf || v; });
       } else {
         super.src = v;
       }
@@ -84,8 +101,9 @@ function createDomStub(opts) {
       },
       send() {
         // Asynchron nachbilden, damit Phasers Loader-Zustandsmaschine wie im
-        // Browser laeuft (sonst feuert 'load' noch waehrend send()).
-        setTimeout(() => {
+        // Browser laeuft (sonst feuert 'load' noch waehrend send()) — ueber
+        // die Ladeschlange, also im naechsten Takt.
+        ladeschlange.push(() => {
           const abs = resolveAsset(self._url);
           if (abs && fs.existsSync(abs)) {
             const buf = fs.readFileSync(abs);
@@ -104,7 +122,7 @@ function createDomStub(opts) {
             self._fire('error');
           }
           self._fire('loadend');
-        }, 0);
+        });
       },
     };
     return self;
@@ -315,6 +333,7 @@ function createDomStub(opts) {
     // Der Treiber braucht Zugriff auf den registrierten rAF-Callback, um die
     // Loop von Hand zu takten.
     getRafCallback: () => rafCb,
+    ladungenAbarbeiten,
     dispatch,
   };
 }

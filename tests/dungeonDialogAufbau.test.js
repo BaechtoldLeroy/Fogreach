@@ -62,7 +62,12 @@ function helferSetzen() {
   })()`);
 }
 
-const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+// Zeit vergeht im Sandkasten nur durch Takten: Date.now, setTimeout und
+// setInterval folgen seit b336 der getakteten Uhr (tools/headless/boot.js).
+// Frueher schlief der Test echte Millisekunden und verliess sich darauf, dass
+// das echte Intervall des Textaufbaus derweil feuert — unter Last mal mehr,
+// mal weniger. Ein Frame sind 16,666 ms.
+const warte = async (ms) => { H.step(Math.ceil(ms / 16.666)); };
 
 test('Der Text steht nicht sofort ganz da, sondern waechst', async () => {
   helferSetzen();

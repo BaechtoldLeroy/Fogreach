@@ -1399,17 +1399,18 @@ function enterRoom(scene, roomId) {
   // Deshalb pro Treppe die tatsaechliche Erreichbarkeit pruefen (isPointAccessible,
   // aus dem BFS-Flood-Fill). Ist KEINE erreichbar, eine Notfall-Treppe an einem
   // garantiert begehbaren Punkt erzwingen (alle Constraints fallen gelassen).
-  var _hasReachableStair = false;
+  //
+  // Unerreichbare Treppen kommen vorher weg: blieben sie stehen, saehe der
+  // Spieler eine Treppe in der Wand oder hinter Truemmern, an die er nie
+  // herankommt (gemessen: rund ein Raum von 400, TerracedHall).
   var _stairCount = (scene.stairsGroup.children && scene.stairsGroup.children.size) || 0;
-  if (_stairCount > 0) {
-    if (typeof scene.isPointAccessible === 'function') {
-      scene.stairsGroup.getChildren().forEach(function (s) {
-        if (s && scene.isPointAccessible(s.x, s.y)) _hasReachableStair = true;
-      });
-    } else {
-      _hasReachableStair = true; // ohne Erreichbarkeits-Check defensiv akzeptieren
-    }
+  if (typeof scene.isPointAccessible === 'function') {
+    scene.stairsGroup.getChildren().slice().forEach(function (s) {
+      if (s && !scene.isPointAccessible(s.x, s.y)) s.destroy();
+    });
   }
+  // Ohne Erreichbarkeits-Check gilt jede Treppe als erreichbar.
+  var _hasReachableStair = scene.stairsGroup.getChildren().length > 0;
   if (!_hasReachableStair) {
     var _emx = builtWidth / 2, _emy = builtHeight / 2;
     if (typeof scene.pickAccessibleSpawnPoint === 'function') {

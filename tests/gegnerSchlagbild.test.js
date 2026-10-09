@@ -39,8 +39,17 @@ function gegnerBereitstellen(typ) {
     // Nur gerichtete Bilder koennen wechseln; die prozeduralen Notnaegel
     // (proc_*) haben nur eines und sind hier nicht gemeint.
     if (!/_(right|left)[0-9]$/.test(e.texture.key)) return { ohneBilder: true };
-    // Dicht an den Spieler und schlagbereit machen.
-    e.x = player.x + 24; e.y = player.y;
+    // Dicht an den Spieler und schlagbereit machen — auf einer Seite mit
+    // freier Sicht. Fernkaempfer schiessen nur mit Sichtlinie; steht im
+    // Zufallsraum ein Hindernis rechts neben dem Spieler, schlugen Bogen-
+    // schuetze, Magier und Flammenweber nie zu (gemessen: 1 von 16 Laeufen).
+    var seiten = [[24, 0], [-24, 0], [0, 24], [0, -24], [17, 17], [-17, 17], [17, -17], [-17, -17]];
+    window.__seite = seiten[0];
+    for (var i = 0; i < seiten.length; i++) {
+      e.x = player.x + seiten[i][0]; e.y = player.y + seiten[i][1];
+      if (Steering.hasLineOfSight(e, player, obstacles)) { window.__seite = seiten[i]; break; }
+    }
+    e.x = player.x + window.__seite[0]; e.y = player.y + window.__seite[1];
     if (e.body && e.body.reset) e.body.reset(e.x, e.y);
     e.lastAttackTime = 0;
     window.__g = e;
@@ -61,7 +70,7 @@ function ziffernImSchlag() {
       var e = window.__g;
       if (!e || !e.active) return null;
       // Immer wieder dicht heranstellen: manche Typen weichen aus.
-      e.x = player.x + 24; e.y = player.y;
+      e.x = player.x + window.__seite[0]; e.y = player.y + window.__seite[1];
       if (e.body && e.body.reset) e.body.reset(e.x, e.y);
       return e.texture.key;
     })()`);

@@ -69,12 +69,31 @@ function decorate(h) {
     return typeof pred === 'function' ? !!pred(h) : true;
   };
 
-  /** Wartet, bis eine bestimmte Szene laeuft. */
-  h.waitForScene = function waitForScene(key, opts) {
-    return h.settle((x) => {
+  /**
+   * Wartet, bis eine bestimmte Szene laeuft.
+   *
+   * Begrenzt nach WANDUHR, nicht nur nach Runden. Bis zur Szene wird vor
+   * allem geladen — Bilder und Daten von der Platte —, und das ist echte
+   * Arbeit, die unter Last laenger braucht. Mit einer festen Rundenzahl lief
+   * die Zeit davon, waehrend die Dateien noch kamen: "GameScene wurde nicht
+   * erreicht", allein immer gruen. Jetzt gibt es auf, wenn die Runden UND
+   * die Frist (Standard 60 s) verbraucht sind.
+   */
+  h.waitForScene = async function waitForScene(key, opts) {
+    opts = opts || {};
+    const da = (x) => {
       const s = x.scenes().find((sc) => sc.key === key);
       return !!(s && s.status === 'RUNNING' && s.active);
-    }, opts);
+    };
+    const maxRounds = opts.maxRounds || 80;
+    const perRound = opts.framesPerRound || 10;
+    const frist = Date.now() + (opts.maxWallMs || 60000);
+    for (let i = 0; ; i++) {
+      if (da(h)) return true;
+      if (i >= maxRounds && Date.now() > frist) return false;
+      h.step(perRound);
+      await flush();
+    }
   };
 
   /** Nur echte Fehler (ohne Warnungen). */
