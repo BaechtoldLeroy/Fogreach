@@ -16,7 +16,8 @@ if (window.i18n) {
     'start.slot.broken': 'beschädigt',
     'start.slot.confirm_delete': 'Slot {n} wirklich löschen?',
     'start.slot.confirm_yes': 'Ja, löschen',
-    'start.slot.confirm_no': 'Abbrechen'
+    'start.slot.confirm_no': 'Abbrechen',
+    'start.hint.rotate': 'Bitte das Gerät quer halten\n↻'
   });
   window.i18n.register('en', {
 
@@ -34,7 +35,8 @@ if (window.i18n) {
     'start.slot.broken': 'corrupted',
     'start.slot.confirm_delete': 'Really delete slot {n}?',
     'start.slot.confirm_yes': 'Yes, delete',
-    'start.slot.confirm_no': 'Cancel'
+    'start.slot.confirm_no': 'Cancel',
+    'start.hint.rotate': 'Please turn your device sideways\n↻'
   });
 }
 const _START_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
@@ -52,6 +54,177 @@ const _NEW_GAME_FLAG = 'demonfall.pendingNewGame';
 // in den Settings — kein Auto-Restore beim normalen Start, kein Focus-Regain-
 // Hijack (genau der Bug, der die alte settings.fullscreen-Persistenz killte).
 const _RESUME_FS_FLAG = 'demonfall.resumeFullscreen';
+
+// #190: Endlos-Modus ist on hold. Seit #175 wurde der Talentbaum fuer die
+// Geschichte umgebaut (Stufen, Strang-Staffel); der Endlos-Modus lernt
+// Faehigkeiten ueber eigene Aufwertungen und ist darauf nicht abgestimmt. Der
+// Knopf im Startmenue entsteht nur, wenn dieser Schalter an ist — der Code
+// dahinter bleibt. Wieder aufmachen: ENDLOS_AKTIV = true.
+const ENDLOS_AKTIV = false;
+
+// ---- Startmenue-Kulisse ---------------------------------------------------
+// Alle Bilder in assets/start sind Pixelgrafik in halber Aufloesung
+// (Hintergrund 480x240) und werden einheitlich verdoppelt, damit die Pixel
+// ueberall gleich gross sind.
+const _START_PX = 2;
+// Leuchtende Fenster im Hintergrundbild (Basis-Pixel), aus dem Bild vermessen.
+const _START_FENSTER = [
+  [100, 124], [41, 127], [460, 131], [397, 141], [460, 138], [371, 142], [77, 148],
+  [237, 149], [121, 150], [368, 162], [376, 163], [468, 164], [397, 165], [116, 170],
+  [109, 171], [468, 171], [308, 177], [357, 177], [262, 181], [270, 182], [128, 186],
+  [358, 186], [302, 191], [28, 198], [274, 200], [230, 206], [211, 207]
+];
+const _START_RATSFENSTER = [172, 78];   // das rote Fenster im Turm des Kettenrats
+const _START_MOND = [222, 57];
+
+// Ein Knopf aus Messingplatte (Spritesheet: 0 normal, 1 hover, 2 gedrueckt)
+// und Beschriftung. Die Aktion haengt der Aufrufer selbst an platte
+// ('pointerdown'), wie vorher an den Text-Knoepfen.
+function _messingKnopf(scene, x, y, sheet, label, stil, opts) {
+  opts = opts || {};
+  const ruhe = opts.ruhe || 0;
+  const tiefe = opts.tiefe || 1001;
+  const farbe = stil.fill;
+  const platte = scene.add.sprite(x, y, sheet, ruhe).setScale(_START_PX).setDepth(tiefe)
+    .setInteractive({ useHandCursor: true });
+  const text = scene.add.text(x, y, label, Object.assign({
+    shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 0, fill: true }
+  }, stil)).setOrigin(0.5).setDepth(tiefe + 1);
+  const knopf = { platte, text };
+  const setze = (bild, dy, f) => { platte.setFrame(bild); text.y = y + dy; text.setColor(f); };
+  platte.on('pointerover', () => setze(1, 0, opts.hover || farbe));
+  platte.on('pointerout', () => setze(ruhe, 0, farbe));
+  platte.on('pointerdown', () => setze(2, 2, opts.hover || farbe));
+  platte.on('pointerup', () => setze(1, 0, opts.hover || farbe));
+  knopf.zerstoeren = () => { platte.destroy(); text.destroy(); };
+  return knopf;
+}
+
+// Handy hochkant? Dann ist das Querformat-Spiel zu klein zum Bedienen.
+function _istHandyHochkant(scene) {
+  const touch = !!(scene.sys.game.device && scene.sys.game.device.input && scene.sys.game.device.input.touch);
+  return touch && (window.innerHeight || 0) > (window.innerWidth || 0);
+}
+
+// Baut die animierte Kulisse: Stadt, Mondschein, flackernde Fenster, Nebel in
+// drei Ebenen, Bruestung, Archivschmied im Wind, Laterne und aufsteigende Glut.
+function _baueKulisse(scene) {
+  const S = _START_PX;
+  const cw = scene.cameras.main.width, ch = scene.cameras.main.height;
+  const ADD = Phaser.BlendModes.ADD;
+  const k = {};
+
+  scene.add.image(0, 0, 'start_hintergrund').setOrigin(0).setScale(S).setDepth(0);
+
+  k.mond = scene.add.image(_START_MOND[0] * S, _START_MOND[1] * S, 'start_schein')
+    .setScale(5).setTint(0xb8c8ff).setAlpha(0.2).setBlendMode(ADD).setDepth(1);
+  scene.tweens.add({ targets: k.mond, alpha: 0.34, scale: 5.4, duration: 4200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+  // Fensterlicht: jedes Fenster bekommt einen warmen Schein; ein Taktgeber
+  // laesst laufend zufaellige Fenster auf- und abglimmen.
+  k.fenster = _START_FENSTER.map(([x, y]) => scene.add.image(x * S, y * S, 'start_schein')
+    .setScale(0.3 + Math.random() * 0.12).setAlpha(0.3 + Math.random() * 0.4)
+    .setBlendMode(ADD).setDepth(2));
+  k.flackern = scene.time.addEvent({
+    delay: 110, loop: true, callback: () => {
+      const g = k.fenster[Math.floor(Math.random() * k.fenster.length)];
+      scene.tweens.add({ targets: g, alpha: 0.15 + Math.random() * 0.6, duration: 200 + Math.random() * 700 });
+    }
+  });
+
+  // Das rote Fenster des Kettenrats pulsiert langsam und bedrohlich.
+  k.ratsfenster = scene.add.image(_START_RATSFENSTER[0] * S, _START_RATSFENSTER[1] * S, 'start_schein')
+    .setScale(0.7).setTint(0xff2a1a).setAlpha(0.35).setBlendMode(ADD).setDepth(2);
+  scene.tweens.add({ targets: k.ratsfenster, alpha: 0.95, scale: 0.9, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+  // Ein kleiner Kraehenschwarm zieht regelmaessig ueber den Himmel. Halber
+  // Pixelmassstab, weil weit weg.
+  if (!scene.anims.exists('start_kraehe_flug')) {
+    scene.anims.create({
+      key: 'start_kraehe_flug', frames: scene.anims.generateFrameNumbers('start_kraehe', { start: 0, end: 7 }),
+      frameRate: 12, repeat: -1
+    });
+  }
+  k.kraehen = [0, 1, 2].map((i) => scene.add.sprite(-80, 0, 'start_kraehe', 0).setDepth(2)
+    .play({ key: 'start_kraehe_flug', startFrame: i * 3 }));
+  const kraehenFlug = () => {
+    const y0 = 50 + Math.random() * 80;
+    k.kraehen.forEach((c, i) => {
+      c.setPosition(-40 - i * 38 - Math.random() * 20, y0 + i * 14 + Math.random() * 10);
+      scene.tweens.add({ targets: c, x: cw + 60, duration: 9000 + i * 700 });
+      scene.tweens.add({ targets: c, y: c.y - 16, duration: 1300 + i * 200, yoyo: true, repeat: 3, ease: 'Sine.easeInOut' });
+    });
+  };
+  kraehenFlug();
+  k.kraehenTakt = scene.time.addEvent({ delay: 17000, loop: true, callback: kraehenFlug });
+
+  // Nebel: drei kachelbare Baender, je weiter vorn, desto schneller.
+  const nebel = (key, y, h, alpha, tiefe, tempo, versatz) => {
+    const ts = scene.add.tileSprite(0, y, cw / S, h, key).setOrigin(0).setScale(S)
+      .setAlpha(alpha).setDepth(tiefe);
+    ts.tilePositionX = versatz || 0;
+    return { ts, tempo };
+  };
+  k.nebel = [
+    nebel('start_nebel_b', 196, 60, 0.6, 3, 2.5, 0),
+    nebel('start_nebel_a', 270, 90, 0.75, 4, 5, 120),
+    nebel('start_nebel_a', 372, 90, 0.8, 7, 11, 300)
+  ];
+
+  scene.add.image(0, ch, 'start_bruestung').setOrigin(0, 1).setScale(S).setDepth(5);
+
+  // Der Archivschmied auf der Bruestung, Mantel und Kapuze im Wind
+  // (PixelLab-Animation, hin und zurueck abgespielt).
+  if (!scene.anims.exists('start_held_wind')) {
+    scene.anims.create({
+      key: 'start_held_wind', frames: scene.anims.generateFrameNumbers('start_held', { start: 0, end: 8 }),
+      frameRate: 7, yoyo: true, repeat: -1, repeatDelay: 500
+    });
+  }
+  k.held = scene.add.sprite(214, 470, 'start_held', 0).setOrigin(0.5, 75 / 92).setScale(S).setDepth(6);
+  k.held.play('start_held_wind');
+  k.augen = scene.add.image(214 - 7, 470 - 100, 'start_schein')
+    .setScale(0.32, 0.18).setTint(0xffb040).setAlpha(0.5).setBlendMode(ADD).setDepth(6);
+  scene.tweens.add({ targets: k.augen, alpha: 0.95, duration: 1700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+  // Laterne am Pfeiler neben dem Wasserspeier (Flackerschleife Bild 0..7).
+  if (!scene.anims.exists('start_laterne_flackern')) {
+    scene.anims.create({
+      key: 'start_laterne_flackern', frames: scene.anims.generateFrameNumbers('start_laterne', { start: 0, end: 7 }),
+      frameRate: 9, repeat: -1
+    });
+  }
+  k.laterne = scene.add.sprite(78, 334, 'start_laterne', 0).setOrigin(0).setScale(S).setDepth(6);
+  k.laterne.play('start_laterne_flackern');
+  k.laternenSchein = scene.add.image(78 + 19 * S, 334 + 44 * S, 'start_schein')
+    .setScale(2.2).setAlpha(0.55).setBlendMode(ADD).setDepth(6);
+  k.laternenTakt = scene.time.addEvent({
+    delay: 90, loop: true, callback: () => {
+      k.laternenSchein.setAlpha(0.45 + Math.random() * 0.25).setScale(2.1 + Math.random() * 0.25);
+    }
+  });
+
+  // Glut steigt aus der Stadt auf — die Funken der Rebellion.
+  k.funken = scene.add.particles(0, 0, 'start_funke', {
+    x: { min: 0, max: cw }, y: ch + 4,
+    lifespan: { min: 5000, max: 9000 },
+    speedY: { min: -46, max: -16 }, speedX: { min: -10, max: 16 },
+    scale: { start: S, end: 1 }, alpha: { start: 1, end: 0 },
+    tint: [0xffb347, 0xff7a2a, 0xffd27a, 0xff5a1a],
+    blendMode: 'ADD', frequency: 140, quantity: 1
+  }).setDepth(8);
+  if (typeof k.funken.fastForward === 'function') k.funken.fastForward(6000, 50);
+
+  scene.add.image(0, 0, 'start_vignette').setOrigin(0).setScale(S).setDepth(9);
+
+  // Nebel ziehen lassen (eigener update-Hoerer, beim Verlassen wieder weg)
+  const ziehen = (zeit, dt) => {
+    k.nebel.forEach((n) => { n.ts.tilePositionX += n.tempo * dt / 1000; });
+  };
+  scene.events.on('update', ziehen);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('update', ziehen));
+  return k;
+}
 
 // 1) Scene-Konstruktor
 function StartScene() {
@@ -186,6 +359,15 @@ StartScene.prototype.preload = function () {
 
   // UI/environment sprites
   this.load.image('stairDown', 'assets/tiles/stairDown.png');
+
+  // Startmenue-Kulisse (PixelLab-Pixelgrafik, siehe _baueKulisse)
+  ['hintergrund', 'bruestung', 'vignette', 'nebel_a', 'nebel_b', 'schein', 'funke'].forEach((n) => {
+    this.load.image('start_' + n, 'assets/start/start_' + n + '.png');
+  });
+  [['held', 92, 92], ['laterne', 32, 64], ['titel', 199, 40], ['kraehe', 32, 32],
+    ['knopf', 130, 26], ['slot', 172, 18], ['klein', 22, 18]].forEach(([n, w, h]) => {
+    this.load.spritesheet('start_' + n, 'assets/start/start_' + n + '.png', { frameWidth: w, frameHeight: h });
+  });
 
   // Enemy projectile sprites — distinct per enemy archetype
   this.load.image('proj_arrow',    'assets/projectiles/proj_arrow.png');
@@ -368,30 +550,80 @@ StartScene.prototype.create = function () {
     if (!this.scale.isFullscreen) this.scale.startFullscreen();
   });*/
 
-  // Titel
   const cw = this.cameras.main.width;
   const ch = this.cameras.main.height;
   const cx = cw / 2;
 
-  this.add
-    .text(cx, ch * 0.18, "Demonfall", {
-      fontFamily: 'serif', fontSize: "48px", fill: "#ffd166", fontStyle: 'bold'
-    })
-    .setOrigin(0.5);
+  // Kulisse: Fogreach im Nebel, Laterne, Archivschmied, Glut (alles animiert).
+  this.kulisse = _baueKulisse(this);
 
-  // Subtitle
+  // Menuespalte rechts neben dem Ratsturm. Auf Handys mit Notch rechts um den
+  // Safe-Area-Rand einruecken (CSS-px -> Spiel-px ueber displayScale).
+  let _safeRechts = 0;
+  try {
+    const sa = window.__SAFE_AREA__ || {};
+    const ds = (this.scale && this.scale.displayScale) ? this.scale.displayScale.x : 1;
+    _safeRechts = Math.max(0, (sa.right || 0) * ds - 10);
+  } catch (e) { /* ohne Safe-Area einfach nicht einruecken */ }
+  const mx = Math.round(cw * 0.765 - _safeRechts);
+  this.menuKnoepfe = {};
+
+  // Titel-Schriftzug in Messing (Pixelschrift aus PixelLab) mit wanderndem Glanz.
+  if (!this.anims.exists('start_titel_glanz')) {
+    this.anims.create({
+      key: 'start_titel_glanz',
+      frames: this.anims.generateFrameNumbers('start_titel', { start: 1, end: 11 })
+        .concat([{ key: 'start_titel', frame: 0 }]),
+      frameRate: 20, repeat: -1, repeatDelay: 3800
+    });
+  }
+  const titelSchein = this.add.image(mx, 62, 'start_schein')
+    .setScale(7, 1.6).setAlpha(0.22).setBlendMode(Phaser.BlendModes.ADD).setDepth(1000);
+  this.tweens.add({ targets: titelSchein, alpha: 0.34, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  this.titel = this.add.sprite(mx, 62, 'start_titel', 0).setScale(_START_PX).setDepth(1002);
+  this.titel.play('start_titel_glanz');
+  this.tweens.add({ targets: [this.titel, titelSchein], y: 60, duration: 2800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+  // Untertitel
   const subtitleText = this.add
-    .text(cx, ch * 0.18 + 50, _START_T('start.subtitle'), {
-      fontFamily: 'serif', fontSize: "16px", fill: "#888888"
+    .text(mx, 114, _START_T('start.subtitle'), {
+      fontFamily: 'serif', fontSize: '17px', fill: '#cdb78c', fontStyle: 'italic',
+      stroke: '#0d0a12', strokeThickness: 4
     })
-    .setOrigin(0.5);
+    .setOrigin(0.5).setDepth(1002);
   _trackI18n(subtitleText, 'start.subtitle');
 
   // Versionsnummer unten rechts — zum Pruefen, ob ein Release live ist.
-  this.add.text(this.cameras.main.width - 8, this.cameras.main.height - 6,
+  this.add.text(this.cameras.main.width - 8 - _safeRechts, this.cameras.main.height - 6,
     'v ' + (window.GAME_VERSION || '?'), {
-      fontFamily: 'monospace', fontSize: '11px', fill: '#666666'
+      fontFamily: 'monospace', fontSize: '11px', fill: '#8a8296'
     }).setOrigin(1, 1).setScrollFactor(0).setDepth(9999);
+
+  // Hochformat auf dem Handy: das Spiel ist ein Querformat-Spiel (960x480,
+  // FIT) und wird hochkant winzig. Statt eines unlesbaren Menues einen
+  // grossen Hinweis zeigen, das Geraet zu drehen. Er verschwindet von selbst,
+  // sobald gedreht wird (resize).
+  const drehHinweis = this.add.text(cx, ch * 0.5, _START_T('start.hint.rotate'), {
+    fontFamily: 'serif', fontSize: '44px', fill: '#ffe2a0', fontStyle: 'bold',
+    stroke: '#0d0a12', strokeThickness: 8, align: 'center'
+  }).setOrigin(0.5).setDepth(3000);
+  _trackI18n(drehHinweis, 'start.hint.rotate');
+  const drehSchleier = this.add.rectangle(cx, ch / 2, cw, ch, 0x07060c, 0.72).setDepth(2999)
+    .setInteractive();
+  // Wer die Drehsperre an hat, kann den Hinweis wegtippen (gilt bis zum Reload).
+  let _drehWeg = false;
+  drehSchleier.on('pointerdown', () => { _drehWeg = true; _pruefeHochformat(); });
+  const _pruefeHochformat = () => {
+    const hoch = !_drehWeg && _istHandyHochkant(this);
+    drehHinweis.setVisible(hoch);
+    drehSchleier.setVisible(hoch);   // unsichtbar trifft ihn kein Tap (Phaser-Hit-Test)
+  };
+  this.drehHinweis = drehHinweis;
+  this.drehSchleier = drehSchleier;
+  _pruefeHochformat();
+  // Der ScaleManager meldet auch das Drehen des Geraets als 'resize' (refresh).
+  this.scale.on('resize', _pruefeHochformat);
+  this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', _pruefeHochformat));
 
   // ---- #63 Speicherslots -------------------------------------------------
   // Die Slot-Zeilen WAEHLEN nur aus; FORTSETZEN/NEUES SPIEL darunter behalten
@@ -446,7 +678,10 @@ StartScene.prototype.create = function () {
     // Dazwischen müssen 3 Slot-Zeilen + bis zu 4 Buttons passen. Die Werte
     // sind an camH=480 ausgemessen (Überlappung mit dem Untertitel darüber
     // und FORTSETZEN darunter) — beim Ändern nachmessen.
-    const rowY = [ch * 0.335, ch * 0.395, ch * 0.455];
+    // Neu (Startmenue-Kulisse): feste Zeilen in der Menuespalte rechts, je
+    // eine Messingleiste (344 px) plus ✕-Knopf (44 px) daneben.
+    const rowY = [158, 198, 238];
+    const zeileX = mx - 26, loeschX = mx + 176;
     _slots.listSlots().forEach((meta, i) => {
       const isActive = meta.slot === activeSlot;
       let info;
@@ -464,21 +699,15 @@ StartScene.prototype.create = function () {
       const label = (isActive ? '▸ ' : '  ') + _START_T('start.slot.label', { n: meta.slot })
         + '   ' + info;
 
-      const row = this.add
-        .text(cx, rowY[i], label, {
-          fontFamily: 'monospace', fontSize: '15px',
-          fill: isActive ? '#ffd166' : '#8a8a8a',
-          backgroundColor: isActive ? '#241d10' : '#141414',
-          padding: { x: 12, y: 5 },
-          fixedWidth: 0
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .setDepth(1001);
+      // Der aktive Slot leuchtet dauerhaft (Bild 1), die anderen nur beim Hover.
+      const row = _messingKnopf(this, zeileX, rowY[i], 'start_slot', label, {
+        fontFamily: 'monospace', fontSize: '14px',
+        fill: isActive ? '#ffd166' : '#a8997c'
+      }, { ruhe: isActive ? 1 : 0, hover: isActive ? '#ffd166' : '#fff1cc' });
+      row.text.setX(zeileX - 156).setOrigin(0, 0.5);
+      this.menuKnoepfe['slot' + meta.slot] = row;
 
-      row.on('pointerover', () => { if (!isActive) row.setStyle({ fill: '#cccccc' }); });
-      row.on('pointerout', () => { if (!isActive) row.setStyle({ fill: '#8a8a8a' }); });
-      row.on('pointerdown', () => {
+      row.platte.on('pointerdown', () => {
         if (isActive) return;
         _slots.setActiveSlot(meta.slot);
         _reloadForSlotChange();
@@ -486,18 +715,11 @@ StartScene.prototype.create = function () {
 
       // Löschen nur für belegte Slots.
       if (meta.exists) {
-        const del = this.add
-          .text(cx + row.width / 2 + 18, rowY[i], '✕', {
-            fontFamily: 'monospace', fontSize: '15px',
-            fill: '#ff6666', backgroundColor: '#141414',
-            padding: { x: 7, y: 5 }
-          })
-          .setOrigin(0.5)
-          .setInteractive({ useHandCursor: true })
-          .setDepth(1001);
-        del.on('pointerover', () => del.setStyle({ fill: '#ff9999' }));
-        del.on('pointerout', () => del.setStyle({ fill: '#ff6666' }));
-        del.on('pointerdown', () => _confirmDeleteSlot.call(this, meta.slot));
+        const del = _messingKnopf(this, loeschX, rowY[i], 'start_klein', '✕', {
+          fontFamily: 'monospace', fontSize: '16px', fill: '#ff7b6b', fontStyle: 'bold'
+        }, { hover: '#ffb0a6' });
+        this.menuKnoepfe['loeschen' + meta.slot] = del;
+        del.platte.on('pointerdown', () => _confirmDeleteSlot.call(this, meta.slot));
       }
     });
   }
@@ -508,21 +730,24 @@ StartScene.prototype.create = function () {
     const scene = this;
     const veil = scene.add.rectangle(cx, ch / 2, cw, ch, 0x000000, 0.75)
       .setDepth(2000).setInteractive();
-    const q = scene.add.text(cx, ch * 0.45, _START_T('start.slot.confirm_delete', { n: slot }), {
-      fontFamily: 'serif', fontSize: '22px', fill: '#ffdddd'
+    const q = scene.add.text(cx, ch * 0.42, _START_T('start.slot.confirm_delete', { n: slot }), {
+      fontFamily: 'serif', fontSize: '26px', fill: '#ffe0d6', fontStyle: 'bold',
+      stroke: '#0d0a12', strokeThickness: 5
     }).setOrigin(0.5).setDepth(2001);
-    const yes = scene.add.text(cx - 90, ch * 0.55, _START_T('start.slot.confirm_yes'), {
-      fontFamily: 'monospace', fontSize: '16px', fill: '#ff8888',
-      backgroundColor: '#2a1414', padding: { x: 12, y: 6 }
-    }).setOrigin(0.5).setDepth(2001).setInteractive({ useHandCursor: true });
-    const no = scene.add.text(cx + 90, ch * 0.55, _START_T('start.slot.confirm_no'), {
-      fontFamily: 'monospace', fontSize: '16px', fill: '#cccccc',
-      backgroundColor: '#1a1a1a', padding: { x: 12, y: 6 }
-    }).setOrigin(0.5).setDepth(2001).setInteractive({ useHandCursor: true });
+    const knopfText = { fontFamily: 'serif', fontSize: '20px', fontStyle: 'bold', stroke: '#1a0f06', strokeThickness: 4 };
+    const yes = _messingKnopf(scene, cx - 140, ch * 0.57, 'start_knopf', _START_T('start.slot.confirm_yes'),
+      Object.assign({ fill: '#ff9a88' }, knopfText), { tiefe: 2001, hover: '#ffc4b8' });
+    const no = _messingKnopf(scene, cx + 140, ch * 0.57, 'start_knopf', _START_T('start.slot.confirm_no'),
+      Object.assign({ fill: '#f3e2b3' }, knopfText), { tiefe: 2001 });
+    scene.menuKnoepfe.loeschenJa = yes;
+    scene.menuKnoepfe.loeschenNein = no;
 
-    const close = () => { veil.destroy(); q.destroy(); yes.destroy(); no.destroy(); };
-    no.on('pointerdown', close);
-    yes.on('pointerdown', () => {
+    const close = () => {
+      veil.destroy(); q.destroy(); yes.zerstoeren(); no.zerstoeren();
+      delete scene.menuKnoepfe.loeschenJa; delete scene.menuKnoepfe.loeschenNein;
+    };
+    no.platte.on('pointerdown', close);
+    yes.platte.on('pointerdown', () => {
       // deleteSlot statt clearSave: es müssen ALLE Keys des Slots weg
       // (Skillbaum, Fraktionen, Druckerei, ...). clearSave räumt nur den
       // Hauptsave — der Rest wäre sonst Altlast im nächsten Spiel dort.
@@ -536,27 +761,23 @@ StartScene.prototype.create = function () {
 
   const hasExistingSave = window.hasSave && hasSave();
 
-  // Startpunkt der Buttons liegt unter den Slot-Zeilen (bis ch*0.44).
-  let startY = hasExistingSave ? ch * 0.65 : ch * 0.55;
-
-  let btn;
+  // Die grossen Knoepfe stehen unter den Slot-Zeilen (bis y=256), im Raster
+  // von 56 px (Knopf 52 px hoch, touch-tauglich).
+  let knopfY = hasExistingSave ? 296 : 300;
+  const naechsteY = () => { const y = knopfY; knopfY += 56; return y; };
+  const knopfStil = (farbe, groesse) => ({
+    fontFamily: 'serif', fontSize: groesse || '24px', fill: farbe, fontStyle: 'bold',
+    stroke: '#1a0f06', strokeThickness: 4
+  });
 
   // Fortsetzen zuerst, wenn Save vorhanden ist. Bezieht sich auf den oben
   // gewählten Slot — hasSave() liest über SlotStorage bereits den aktiven.
   if (hasExistingSave) {
-    const contBtn = this.add
-      .text(cx, ch * 0.55, _START_T('start.btn.continue'), {
-        fontFamily: 'serif', fontSize: "32px",
-        fill: "#ffea6a",
-        backgroundColor: "#111",
-        padding: { x: 16, y: 8 },
-        fontStyle: 'bold'
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .setDepth(1001);
+    const cont = _messingKnopf(this, mx, naechsteY(), 'start_knopf', _START_T('start.btn.continue'),
+      knopfStil('#ffe08a', '26px'), { hover: '#fff2c0' });
+    this.menuKnoepfe.fortsetzen = cont;
 
-    contBtn.on("pointerdown", async () => {
+    cont.platte.on("pointerdown", async () => {
       try {
         const save = window.loadGame.length ? await loadGame() : loadGame();
         window.pendingLoadedSave = save || null;
@@ -565,37 +786,23 @@ StartScene.prototype.create = function () {
         console.error("[StartScene] loadGame failed:", e);
       }
     });
-
-    contBtn.on('pointerover', () => contBtn.setStyle({ fill: '#fff27c' }));
-    contBtn.on('pointerout', () => contBtn.setStyle({ fill: '#ffea6a' }));
-    _trackI18n(contBtn, 'start.btn.continue');
+    _trackI18n(cont.text, 'start.btn.continue');
 
     // Der frühere "Spielstand löschen"-Button ist entfallen: jede Slot-Zeile
     // hat jetzt ihr eigenes ✕. Zwei Lösch-Wege nebeneinander wären
     // mehrdeutig ("welcher Stand?") — und der alte räumte ohnehin nur den
     // Hauptsave, nicht Skillbaum/Fraktionen.
     //
-    // startY wird NICHT mehr hier gesetzt: der Ternär bei der Deklaration ist
-    // die einzige Quelle. Vorher stand hier eine zweite Zuweisung, die den
-    // Ternär überschrieb — der war dadurch toter Code (im Original ebenso).
   }
 
   // START GAME
   const startKey = hasExistingSave ? 'start.btn.new_game' : 'start.btn.start_game';
-  btn = this.add
-    .text(cx, startY, _START_T(startKey), {
-      fontFamily: 'serif', fontSize: hasExistingSave ? "24px" : "28px",
-      fill: hasExistingSave ? "#88ff88" : "#88ff88",
-      backgroundColor: "#1a1a1a",
-      padding: { x: 14, y: 6 },
-      fontStyle: 'bold'
-    })
-    .setOrigin(0.5)
-    .setInteractive({ useHandCursor: true })
-    .setDepth(1001);
-  _trackI18n(btn, startKey);
+  const neu = _messingKnopf(this, mx, naechsteY(), 'start_knopf', _START_T(startKey),
+    knopfStil('#b8e6a0', hasExistingSave ? '24px' : '26px'), { hover: '#e2ffd2' });
+  this.menuKnoepfe.neuesSpiel = neu;
+  _trackI18n(neu.text, startKey);
 
-  btn
+  neu.platte
     .on("pointerdown", () => {
       // #63: den gewählten Slot komplett leeren. clearSave() allein räumte nur
       // den Hauptsave + Tutorial — Skillbaum, Fraktionen und Druckerei
@@ -630,64 +837,40 @@ StartScene.prototype.create = function () {
         window.pendingLoadedSave = null;
       }
       loadRoomTemplatesAndStart.call(this);
-    })
-    .on("pointerover", () => btn.setStyle({ fill: '#b0ffb0' }))
-    .on("pointerout", () => btn.setStyle({ fill: '#88ff88' }));
+    });
 
   // ENDLOS-MODUS button (roguelike: no hub, descend forever, pick 1-of-3
-  // upgrades after each cleared room)
-  // Seit #175 ON HOLD: der Talentbaum wurde fuer die Geschichte umgebaut
-  // (Stufen, Strang-Staffel), der Endlos-Modus lernt Faehigkeiten ueber eigene
-  // Aufwertungen und ist darauf nicht abgestimmt. Der Code bleibt; nur der
-  // Einstieg ist zu. Wieder aufmachen: ENDLOS_AKTIV = true.
-  const ENDLOS_AKTIV = false;
-  const endlessBtn = !ENDLOS_AKTIV ? null : this.add
-    .text(cx, startY + 92, _START_T('endless.btn.start'), {
-      fontFamily: 'serif', fontSize: '20px',
-      fill: '#ff8866',
-      backgroundColor: '#1a1a1a',
-      padding: { x: 12, y: 5 },
-      fontStyle: 'bold'
-    })
-    .setOrigin(0.5)
-    .setInteractive({ useHandCursor: true })
-    .setDepth(1001);
-  if (endlessBtn) _trackI18n(endlessBtn, 'endless.btn.start');
-  if (endlessBtn) endlessBtn
-    .on('pointerdown', () => {
-      if (window.clearSave) clearSave();
-      if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
-        window.AbilitySystem.resetForNewGame();
-      }
-      if (typeof window.pendingLoadedSave !== 'undefined') {
-        window.pendingLoadedSave = null;
-      }
-      // Activate endless run BEFORE GameScene boots so initUI sees the flag
-      if (window.Endless && typeof window.Endless.start === 'function') {
-        window.Endless.start();
-      }
-      loadRoomTemplatesAndStart.call(this);
-    })
-    .on('pointerover', () => endlessBtn.setStyle({ fill: '#ffaa88' }))
-    .on('pointerout',  () => endlessBtn.setStyle({ fill: '#ff8866' }));
+  // upgrades after each cleared room). #190: on hold — nur bei ENDLOS_AKTIV.
+  if (ENDLOS_AKTIV) {
+    const endless = _messingKnopf(this, mx, naechsteY(), 'start_knopf', _START_T('endless.btn.start'),
+      knopfStil('#ff9a7a', '22px'), { hover: '#ffc0a8' });
+    this.menuKnoepfe.endlos = endless;
+    _trackI18n(endless.text, 'endless.btn.start');
+    endless.platte
+      .on('pointerdown', () => {
+        if (window.clearSave) clearSave();
+        if (window.AbilitySystem && typeof window.AbilitySystem.resetForNewGame === 'function') {
+          window.AbilitySystem.resetForNewGame();
+        }
+        if (typeof window.pendingLoadedSave !== 'undefined') {
+          window.pendingLoadedSave = null;
+        }
+        // Activate endless run BEFORE GameScene boots so initUI sees the flag
+        if (window.Endless && typeof window.Endless.start === 'function') {
+          window.Endless.start();
+        }
+        loadRoomTemplatesAndStart.call(this);
+      });
+  }
 
   // EINSTELLUNGEN button below the start button
-  const settingsBtn = this.add
-    .text(cx, startY + (ENDLOS_AKTIV ? 140 : 92), _START_T('start.btn.settings'), {
-      fontFamily: 'monospace', fontSize: "16px",
-      fill: "#aaaaaa",
-      backgroundColor: "#1a1a1a",
-      padding: { x: 10, y: 4 }
-    })
-    .setOrigin(0.5)
-    .setInteractive({ useHandCursor: true })
-    .setDepth(1001);
-  _trackI18n(settingsBtn, 'start.btn.settings');
-  settingsBtn.on("pointerdown", () => {
+  const settings = _messingKnopf(this, mx, naechsteY(), 'start_knopf', _START_T('start.btn.settings'),
+    knopfStil('#d8cbb0', '20px'), { hover: '#ffffff' });
+  this.menuKnoepfe.einstellungen = settings;
+  _trackI18n(settings.text, 'start.btn.settings');
+  settings.platte.on("pointerdown", () => {
     if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
   });
-  settingsBtn.on("pointerover", () => settingsBtn.setStyle({ fill: '#ffffff' }));
-  settingsBtn.on("pointerout", () => settingsBtn.setStyle({ fill: '#aaaaaa' }));
 
   // Optional: Highscores
   if (window.loadScores) {
