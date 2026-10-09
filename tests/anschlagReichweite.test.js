@@ -1,10 +1,16 @@
 // tests/anschlagReichweite.test.js — die Tafeln muessen erreichbar sein.
 //
-// Die Reichweite stand als blanke `90` im Code und wurde gegen WELT-Abstaende
-// geprueft — die Lage der Tafeln ist aber in Layout-Einheiten angegeben und
-// mit SCALE_FACTOR (1.6) skaliert. Die Tafeln reichten damit 90 statt 144 px
-// weit, und genau zwischen ihnen blieb eine tote Zone von rund 40 px: dort,
-// wo man zur Rathaustreppe hochlaeuft, tat [E] nichts.
+// Im gemalten Hub standen die Tafeln dicht beiderseits der Rathaustreppe, die
+// Tuer direkt darueber. Die Reichweite stand als blanke `90` im Code und
+// wurde gegen WELT-Abstaende geprueft; zwischen den Tafeln blieb eine tote
+// Zone, und wer dort [E] drueckte, bekam nichts.
+//
+// Im gekachelten Platz (#181, seit b334) stehen sie an der Stuetzmauer,
+// 352 px auseinander, dazwischen Klerus, Treppe und Garde; die Tuer liegt
+// oben auf dem Vorplatz. Die Pruefung "keine tote Zone zwischen den Tafeln"
+// beschrieb die alte Lage und ist ersetzt durch das, was sie eigentlich
+// wollte: wer zur Tafel geht, spricht die Tafel an. Wie fair die Tafeln
+// gegen benachbarte NPC antreten, prueft tests/hubNeu.test.js.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
@@ -43,33 +49,23 @@ test('Beide Tafeln sind da und stehen links und rechts der Treppe', () => {
   assert.ok(s[1].x > s[0].x, 'die beiden liegen nicht nebeneinander');
 });
 
-test('Zwischen den Tafeln gibt es keine tote Zone', () => {
-  // Der eigentliche Fehler: genau in der Mitte war weder die eine Tafel noch
-  // die andere in Reichweite, und der Rathaus-Eingang liegt ein paar Pixel
-  // tiefer. Wer dort [E] drueckte, bekam nichts.
+test('Vor jeder Tafel ist die Tafel ansprechbar', () => {
+  // Ein Schritt vor ihrem Fuss — dort, wo man stehen bleibt, um zu lesen.
   const s = tafeln();
-  const y = s[0].y - 10;
-  const mitte = Math.round((s[0].x + s[1].x) / 2);
-  const tot = [];
-  for (let x = Math.round(s[0].x); x <= Math.round(s[1].x); x += 12) {
-    if (beiX(x, y) === null) tot.push(x);
-  }
-  assert.deepStrictEqual(tot, [],
-    'tote Stellen zwischen den Tafeln (Mitte ' + mitte + '): ' + tot.join(', '));
+  const falsch = [];
+  s.forEach((t, i) => {
+    const typ = beiX(Math.round(t.x), Math.round(t.y) + 30);
+    if (typ !== 'anschlag') falsch.push('Tafel ' + i + ': ' + typ);
+  });
+  assert.deepStrictEqual(falsch, [], 'vor der Tafel ist etwas anderes aktiv: ' + falsch.join('; '));
 });
 
-test('Die Reichweite waechst mit dem Layout-Massstab', () => {
-  // Der Kern des Fehlers in einer Zahl: der Abstand der beiden Tafeln ist
-  // skaliert, die Reichweite war es nicht. Ist sie kleiner als der halbe
-  // Abstand, klafft in der Mitte wieder eine Luecke.
+test('Die Tafeln stehen links und rechts der Freitreppe', () => {
+  // "Vor dem Rathaus", wie die Edikt-Quest sagt: die Treppe liegt dazwischen.
   const s = tafeln();
-  const halberAbstand = (s[1].x - s[0].x) / 2;
-  // SCALE_FACTOR ist ein Modul-const in HubSceneV2, kein Fensterfeld — ueber
-  // window gelesen kaeme 1 heraus, und der Test waere gruen, ohne zu messen.
-  const reichweite = H.run(`SCALE_FACTOR * 90`);
-  assert.strictEqual(typeof reichweite, 'number', 'SCALE_FACTOR nicht lesbar');
-  assert.ok(reichweite >= halberAbstand,
-    'Reichweite ' + reichweite + ' deckt den halben Tafelabstand ' + halberAbstand + ' nicht');
+  const K = H.run(`(function () { var K = window.HUB_NEU_KARTE;
+    return { a: K.terrasse.treppeX * K.kachel, b: (K.terrasse.treppeX + K.terrasse.treppeB) * K.kachel }; })()`);
+  assert.ok(s[0].x < K.a && s[1].x > K.b, 'die Treppe (' + K.a + '-' + K.b + ') liegt nicht zwischen den Tafeln');
 });
 
 test('Weit weg ist nichts ansprechbar', () => {

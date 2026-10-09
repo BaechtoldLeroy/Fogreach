@@ -1,17 +1,13 @@
-// tests/hubNeu.test.js — der gekachelte Marktplatz (#181) als Probe.
+// tests/hubNeu.test.js — der gekachelte Marktplatz (#181).
 //
-// Der neue Platz haengt an EINER Flagge: ?debug=1&hubneu=1. Zwei Dinge muessen
-// darum nachweisbar sein, und sie sind verschieden wichtig:
+// Bis b333 lag der Platz hinter der Flagge ?debug=1&hubneu=1. Seit b334 IST
+// er der Hub: diese Pruefungen laufen darum bewusst OHNE jeden Parameter —
+// so, wie ein Spieler das Spiel oeffnet.
 //
-//   1. OHNE Flagge aendert sich nichts. Der Hub ist das Erste, was ein Spieler
-//      sieht; ein halbfertiger Umbau, der sich aus Versehen einschaltet, waere
-//      der teuerste aller Fehler. Das ist der Fall, der hier wirklich zaehlt.
-//   2. MIT Flagge steht der Platz da — und zwar so, wie die Karte es sagt.
-//
-// Der wichtigste neue Fall ist der dritte: KEIN NPC UND KEINE TUER STEHT IN
-// EINER WAND. Genau dafuer leitet hubNeuWelt die Kollisionen aus der Karte ab,
-// statt sie in einer zweiten Liste zu pflegen. Faellt dieser Fall, ist die
-// Ableitung umsonst gewesen.
+// Der wichtigste Fall ist: KEIN NPC UND KEINE TUER STEHT IN EINER WAND, und
+// alles ist mit dem echten Koerper erreichbar. Genau dafuer leitet
+// hubNeuWelt die Kollisionen aus der Karte ab, statt sie in einer zweiten
+// Liste zu pflegen.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
@@ -151,49 +147,34 @@ const BESTAND = `(function () {
   var gemalt = null, rt = 0, neu = 0;
   (sc.children.list || []).forEach(function (c) {
     var k = c.texture && c.texture.key;
-    if (k === 'hubscene_bg') gemalt = c.visible;
+    if (k === 'hubscene_bg') gemalt = true;
     if (c.type === 'RenderTexture') rt++;
     if (k && k.indexOf('hub_') === 0) neu++;
   });
-  return { gemaltSichtbar: gemalt, renderTexturen: rt, neueBilder: neu,
-           flagge: !!(window.HubNeuWelt && window.HubNeuWelt.aktiv()),
+  return { gemaltDa: gemalt, gemaltGeladen: sc.textures.exists('hubscene_bg'), renderTexturen: rt, neueBilder: neu,
            welt: [sc.physics.world.bounds.width, sc.physics.world.bounds.height],
            collider: window.HUB_HITBOXES.colliders.length };
 })()`;
 
-// Die beiden Laeufe duerfen sich nicht ueberschneiden: zwei offene Spiele
-// im selben Prozess teilen sich Fenster-Globale, und dann misst man den
-// einen Hub mit den Werten des anderen.
-let ohneWerte = null, mit = null;
-before(async () => {
-  const h = await imHub('');
-  ohneWerte = h.run(BESTAND);
-  await h.shutdown();
-  mit = await imHub('?debug=1&hubneu=1');
-});
+// EIN Spiel, ohne jeden Parameter in der Adresse.
+let mit = null;
+before(async () => { mit = await imHub(''); });
 after(async () => { if (mit) await mit.shutdown(); });
 
-test('ohne Flagge bleibt der gemalte Hub genau wie er war', () => {
-  const r = ohneWerte;
-  assert.strictEqual(r.flagge, false, 'die Flagge ist ohne Adresse an');
-  assert.strictEqual(r.gemaltSichtbar, true, 'das gemalte Hub-Bild ist nicht mehr sichtbar');
-  assert.strictEqual(r.neueBilder, 0,
-    'im ausgelieferten Hub stehen ' + r.neueBilder + ' Bilder des neuen Platzes');
-  assert.strictEqual(r.welt[0] + 'x' + r.welt[1], '1536x1024',
-    'die alte Hub-Welt misst ' + r.welt[0] + 'x' + r.welt[1]);
-});
-
-test('mit Flagge steht der gekachelte Platz da und das Gemaelde ist weg', () => {
+test('ohne jeden Parameter steht der gekachelte Platz da, das Gemaelde wird nicht geladen', () => {
+  // Das gemalte Bild war 6,2 MB, bei jedem Betreten des Hubs. Es wird nicht
+  // nur versteckt, es wird gar nicht mehr geladen.
   const K = karte();
   const r = mit.run(BESTAND);
-  assert.strictEqual(r.flagge, true, 'die Flagge greift nicht');
-  assert.strictEqual(r.gemaltSichtbar, false, 'das gemalte Hub-Bild liegt noch obenauf');
+  assert.strictEqual(r.gemaltDa, null, 'das gemalte Hub-Bild steht noch in der Szene');
+  assert.strictEqual(r.gemaltGeladen, false, 'das gemalte Hub-Bild wird noch geladen');
+  assert.ok(!fs.existsSync(path.join(WURZEL, 'assets', 'hubscene.png')), 'assets/hubscene.png liegt noch im Projekt');
   assert.ok(r.renderTexturen >= 1, 'der Kachelboden fehlt');
   assert.strictEqual(r.welt[0] + 'x' + r.welt[1],
     (K.breite * K.kachel) + 'x' + (K.hoehe * K.kachel),
     'die Welt misst ' + r.welt[0] + 'x' + r.welt[1] + ', die Karte sagt etwas anderes');
   assert.ok(r.neueBilder > 100,
-    'nur ' + r.neueBilder + ' Bilder des neuen Platzes — da fehlt etwas');
+    'nur ' + r.neueBilder + ' Bilder des Platzes — da fehlt etwas');
 });
 
 test('kein NPC und keine Tuer steht in einer Wand', () => {
@@ -388,11 +369,10 @@ test('nichts und niemand steht verdeckt hinter einem Bau', () => {
 // Spielerkoerper ist 56 px hoch. Darum hier der eigentliche Beweis — mit dem
 // echten Koerper vom Startpunkt aus ueber den ganzen Platz geflutet.
 
-/** HUB_HITBOXES so, wie HubSceneV2 sie mit Flagge vorfindet. */
-function layoutMitFlagge() {
+/** HUB_HITBOXES so, wie HubSceneV2 sie nach dem Vorladen vorfindet. */
+function layoutWieImSpiel() {
   const fenster = { console: { warn() {}, log() {} } };
   fenster.window = fenster;
-  fenster.DebugGate = { an: (n) => n === 'hubneu' };
   ['hubLayout.js', 'hubNeuKarte.js', 'hubNeuWelt.js'].forEach((d) => {
     const q = fs.readFileSync(path.join(WURZEL, 'js', 'scenes', 'hub', d), 'utf8');
     // eslint-disable-next-line no-new-func
@@ -407,7 +387,7 @@ function layoutMitFlagge() {
  * echten Koerper, allen NPC-Koerpern und etwas Luft. Raster 8 px.
  */
 function erreichbar() {
-  const { HB, K, W } = layoutMitFlagge();
+  const { HB, K, W } = layoutWieImSpiel();
   const M = 1536 / 960;
   const welt = W.welt();
   const wand = HB.colliders.map((c) => ({ x0: c.x * M, y0: c.y * M, x1: (c.x + c.w) * M, y1: (c.y + c.h) * M }));

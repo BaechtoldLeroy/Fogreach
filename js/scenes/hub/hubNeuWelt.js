@@ -1,10 +1,8 @@
 /* =====================================================================
  * hubNeuWelt.js — den Marktplatz aus der Karte bauen (#181)
  * ---------------------------------------------------------------------
- * ERREICHBAR NUR UEBER DIE ADRESSE: ?debug=1&hubneu=1. Ohne die Flagge
- * laedt nichts nach und aendert sich nichts. Der Platz ist das Erste,
- * was ein Spieler sieht; ein halbfertiger Umbau waere dort der teuerste
- * aller Fehler.
+ * Seit b334 IST das der Hub. Bis b333 lag er hinter der Flagge
+ * ?debug=1&hubneu=1, und das gemalte Bild (6,2 MB) war der ausgelieferte.
  *
  * Drei Dinge macht diese Datei, und die Reihenfolge ist der Punkt:
  *
@@ -65,12 +63,6 @@
   // Fuss-Collider: so hoch, dass man nicht hindurchlaeuft, und flach genug,
   // dass er nur den Fuss eines Moebels traegt, nicht seinen Koerper.
   var FUSS_HOEHE = 0.35;           // Kacheln
-
-  /** Ist der neue Hub eingeschaltet? Nur ueber die Adresse, nie im Spielstand. */
-  function aktiv() {
-    try { return !!(window.DebugGate && window.DebugGate.an('hubneu')); }
-    catch (e) { return false; }
-  }
 
   function karte() { return (typeof window !== 'undefined') ? window.HUB_NEU_KARTE : null; }
 
@@ -160,7 +152,6 @@
    * Sichtbarkeitsflaggen erhalten bleiben.
    */
   function layoutUebernehmen() {
-    if (!aktiv()) return null;
     var K = karte();
     var HB = (typeof window !== 'undefined') ? window.HUB_HITBOXES : null;
     if (!K || !HB) return null;
@@ -203,7 +194,7 @@
   // ----------------------------------------------------------------- Laden
 
   function vorladen(scene) {
-    if (!aktiv() || !scene || !scene.load || !scene.textures) return 0;
+    if (!scene || !scene.load || !scene.textures) return 0;
     var n = 0;
     var nimm = function (key, pfad) {
       if (scene.textures.exists(key)) return;
@@ -438,7 +429,7 @@
    * steht — dann zeichnet HubSceneV2 seine eigene nicht.
    */
   function truheStellen(scene, e) {
-    if (!aktiv() || !e || !scene.textures.exists('hub_truhe')) return false;
+    if (!e || !scene.textures.exists('hub_truhe')) return false;
     var M = 1536 / 960;
     var x = (e.x + e.w / 2) * M, y = (e.y + e.h) * M;
     var b = scene.add.image(x, y, 'hub_truhe').setOrigin(0.5, 1);
@@ -457,7 +448,6 @@
    * Tafeln damit hinter dem Brunnen.
    */
   function phasenAnker() {
-    if (!aktiv()) return null;
     var K = karte();
     if (!K) return null;
     var z = K.kachel, T = K.terrasse;
@@ -489,11 +479,13 @@
       fontSize: '14px', color: '#f1e6c8' }).setOrigin(0, 0.5);
     c.add([g, taste, t]);
     var box = {
-      _c: c, visible: false,
+      // text: wie beim alten Textfeld lesbar — Code und Tests fragen danach.
+      _c: c, visible: false, text: '',
       setText: function (s) {
         // "[E]" steckt in den alten Beschriftungen; hier traegt die Taste
         // ihr eigenes Schild.
         t.setText(String(s || '').replace(/\s*\[E\]\s*$/, ''));
+        box.text = t.text;
         var tw = 16, gap = 7, px = 8, h = 24;
         var w = px + tw + gap + t.width + px;
         var x0 = -w / 2, y0 = -h;
@@ -525,7 +517,7 @@
 
   /** Den ganzen Platz bauen. Gibt zurueck, was entstanden ist. */
   function bauen(scene) {
-    if (!aktiv() || !scene || !scene.add) return null;
+    if (!scene || !scene.add) return null;
     var K = karte();
     if (!K) return null;
     var erg = { boden: null, haeuser: [], requisiten: [], baeume: [], nebel: [] };
@@ -621,7 +613,7 @@
   }
 
   var HubNeuWelt = {
-    aktiv: aktiv, welt: welt, vorladen: vorladen,
+    welt: welt, vorladen: vorladen,
     layoutUebernehmen: layoutUebernehmen, bauen: bauen, truheStellen: truheStellen, phasenAnker: phasenAnker,
     aktionsbox: aktionsbox,
     _streu: streu, _festeFlaechen: _festeFlaechen, _artAn: artAn, _SCHICHTEN: SCHICHTEN

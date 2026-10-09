@@ -130,18 +130,16 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   preload() {
-    // #181: der gekachelte Hub, erreichbar nur ueber ?debug=1&hubneu=1.
-    // Ohne die Flagge tun beide Aufrufe nichts.
+    // #181: Der Hub ist ein gekachelter Platz (hubNeuKarte + hubNeuWelt).
+    // Bis b333 war er ein gemaltes Bild von 6,2 MB; das wird nicht mehr
+    // geladen.
     //
     // Das Layout MUSS hier uebernommen werden und nicht in create(): dort
     // sind Kollisionen und NPC schon gebaut. Uebernommen wird in das
     // bestehende HUB_HITBOXES-Objekt — die Konstante oben haelt seine
     // Referenz seit dem Laden der Datei.
-    if (window.HubNeuWelt) {
-      window.HubNeuWelt.layoutUebernehmen();
-      window.HubNeuWelt.vorladen(this);
-    }
-    this.load.image('hubscene_bg', 'assets/hubscene.png');
+    window.HubNeuWelt.layoutUebernehmen();
+    window.HubNeuWelt.vorladen(this);
     // Hub-only NPC sprites — deferred from StartScene so the main menu loads
     // faster. Phaser only loads keys that aren't already in the texture cache,
     // so re-entering the hub from a dungeon is essentially free.
@@ -169,25 +167,20 @@ class HubSceneV2 extends Phaser.Scene {
     // Hintergrund waehrend der Hub-Szene per Image()-Prefetch — siehe create().
   }
 
-  // Die Masse der Hub-Welt. Der gekachelte Platz (#181) ist kleiner als
-  // das gemalte Bild — 1280x768 statt 1536x1024 — damit der Ausschnitt
-  // von 960x480 fast alles fasst. Ein Hub, von dem man nie mehr als ein
-  // Drittel sieht, kann nicht komponiert werden.
+  // Die Masse der Hub-Welt kommen aus der Karte: 1280x768, damit der
+  // Ausschnitt von 960x480 fast alles fasst (#181). Das gemalte Bild war
+  // 1536x1024 — man sah nie mehr als ein Drittel davon.
   _weltMass() {
-    if (window.HubNeuWelt && window.HubNeuWelt.aktiv()) {
-      const w = window.HubNeuWelt.welt();
-      if (w) return { W: w.breite, H: w.hoehe };
-    }
-    return { W: 1536, H: 1024 };
+    const w = window.HubNeuWelt.welt();
+    return { W: w.breite, H: w.hoehe };
   }
 
   create() {
     const { W, H } = this._weltMass();
 
-    // Die Kamera darf weiter reichen als die Physik: im gekachelten Hub
-    // steigt das Rathaus ueber den oberen Kartenrand in den Nebel.
-    const _oben = (window.HubNeuWelt && window.HubNeuWelt.aktiv()
-      && window.HubNeuWelt.welt() && window.HubNeuWelt.welt().oben) || 0;
+    // Die Kamera darf weiter reichen als die Physik — bis zur Kante des
+    // Waldsaums ueber dem Kartenrand, nicht weiter.
+    const _oben = window.HubNeuWelt.welt().oben || 0;
     this.cameras.main.setBounds(0, _oben, W, H - _oben);
     this.physics.world.setBounds(0, 0, W, H);
     this.physics.world.TILE_BIAS = 24;
@@ -200,7 +193,7 @@ class HubSceneV2 extends Phaser.Scene {
     // filter on the hub assets via the shared RenderQuality helper (052 WP03).
     if (window.RenderQuality) {
       window.RenderQuality.applyLinearFilter(this, [
-        'hubscene_bg', 'schmiedemeisterin', 'setzer_thom', 'spaeherin',
+        'schmiedemeisterin', 'setzer_thom', 'spaeherin',
         'klerus', 'garde',
         'aldric_left0', 'aldric_left1', 'aldric_left2',
         'aldric_right0', 'aldric_right1', 'aldric_right2',
@@ -211,21 +204,12 @@ class HubSceneV2 extends Phaser.Scene {
       ]);
     }
 
-    const bg = this.add.image(0, 0, 'hubscene_bg');
-    bg.setOrigin(0, 0);
-    bg.setScale(1.0);
-
-    // #181: Probe des gekachelten Hubs. Das gemalte Bild bleibt in der
-    // Szene, aber unsichtbar — die Phasen-Darstellung (Tint, Entsaettigung)
-    // haengt an EINEM Hintergrundobjekt, und das ist dann der neue Boden.
-    const neueWelt = (window.HubNeuWelt && window.HubNeuWelt.aktiv())
-      ? window.HubNeuWelt.bauen(this) : null;
-    if (neueWelt) {
-      bg.setVisible(false);
-      // Hinter der Stadtmauer liegt keine Kachel. Dort soll Nebel stehen,
-      // nicht das Schwarz der Leinwand.
-      this.cameras.main.setBackgroundColor('#171a20');
-    }
+    // #181: Den Platz bauen. Die Phasen-Darstellung (Tint, Entsaettigung)
+    // haengt an EINEM Hintergrundobjekt — das ist der Kachelboden.
+    const neueWelt = window.HubNeuWelt.bauen(this);
+    const bg = neueWelt.boden;
+    // Falls doch einmal ein Rand frei bleibt: Nebelgrau, nicht Schwarz.
+    this.cameras.main.setBackgroundColor('#171a20');
 
     // Feature 064: Hub-Phase (aus Akt-Index/Flags) ableiten und die
     // Darstellungs-Schicht anwenden (Tint/Nebel/Anschlagtafeln/feindliches
@@ -263,10 +247,10 @@ class HubSceneV2 extends Phaser.Scene {
         { x: 548 * SCALE_FACTOR, y: 300 * SCALE_FACTOR }
       ]
     };
-    // #181: Im gekachelten Hub stehen Rathaus und Anschlagtafeln woanders.
-    // Die Werte oben sind aus dem gemalten Bild abgelesen; uebernommen, landeten
+    // #181: Rathaus und Anschlagtafeln stehen dort, wo die Karte sie hat.
+    // Die Werte oben stammen aus dem gemalten Bild; uebernommen, landeten
     // die Tafeln hinter dem Brunnen.
-    const _anker = neueWelt && window.HubNeuWelt.phasenAnker();
+    const _anker = window.HubNeuWelt.phasenAnker();
     if (_anker) {
       if (_anker.posterSpots && _anker.posterSpots.length) this._hubPhaseRefs.posterSpots = _anker.posterSpots;
       if (_anker.rathausRect) this._hubPhaseRefs.rathausRect = _anker.rathausRect;
@@ -649,18 +633,8 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   createPrompt() {
-    // #181: im gekachelten Hub die gestaltete Aktionsbox.
-    if (window.HubNeuWelt && window.HubNeuWelt.aktiv()) {
-      this._eineAktionsbox = true;
-      this.prompt = window.HubNeuWelt.aktionsbox(this);
-      return;
-    }
-    this.prompt = this.add.text(0, 0, '', {
-      fontFamily: 'monospace',
-      fontSize: 16,
-      backgroundColor: '#000a',
-      padding: { x: 6, y: 3 }
-    }).setOrigin(0.5, 1).setDepth(1000).setVisible(false);
+    // #181: die gestaltete Aktionsbox (Messing auf Russ, Taste als Schild).
+    this.prompt = window.HubNeuWelt.aktionsbox(this);
   }
 
   createColliders() {
@@ -715,8 +689,8 @@ class HubSceneV2 extends Phaser.Scene {
       // #127: Die Truhe hat kein Gebaeude im Hintergrundbild — sie braucht ein
       // eigenes Bild, sonst steht man vor einer unsichtbaren Zone.
       if (e.target === 'truhe') {
-        // #181: im gekachelten Hub steht eine der Truhen aus dem Dungeon.
-        const _alsBild = window.HubNeuWelt && window.HubNeuWelt.truheStellen(this, e);
+        // #181: eine der Truhen aus dem Dungeon; fehlt das Bild, die Zeichnung.
+        const _alsBild = window.HubNeuWelt.truheStellen(this, e);
         if (!_alsBild && typeof this._zeichneTruhe === 'function') this._zeichneTruhe(e);
       }
       const sx = e.x * SCALE_FACTOR;
@@ -958,11 +932,11 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Etwas tiefer als 0.65 spawnen: der (vergroesserte) Brunnen-Collider reicht
     // bis ~y 640, bei 0.65 (y 666) stand der Spieler visuell im Becken.
-    // #181: Der gekachelte Platz bringt seinen eigenen Startpunkt mit —
-    // und eine eigene Hoehe der Figur (player.js liest sie an der Szene).
-    const _neu = window.HubNeuWelt && window.HubNeuWelt.aktiv() && window.HubNeuWelt.welt();
-    if (_neu && _neu.spielerHoehe) this.spielerFigurHoehe = _neu.spielerHoehe;
-    const _start = (_neu && _neu.start) || { x: W / 2, y: H * 0.72 };
+    // #181: Startpunkt und Hoehe der Figur kommen aus der Karte (player.js
+    // liest die Hoehe an der Szene).
+    const _neu = window.HubNeuWelt.welt();
+    if (_neu.spielerHoehe) this.spielerFigurHoehe = _neu.spielerHoehe;
+    const _start = _neu.start || { x: W / 2, y: H * 0.72 };
     this.player = this.physics.add.sprite(_start.x, _start.y, textureKey)
       .setCollideWorldBounds(true);
 
@@ -1175,86 +1149,6 @@ class HubSceneV2 extends Phaser.Scene {
     });
   }
 
-  _refreshInteractionPrompt() {
-    if (this._dialogOpen || !this.player?.body) return;
-    if (this._eineAktionsbox) return this._naechstesZiel();
-    
-    const playerBounds = this.player.getBounds();
-    let active = null;
-    let activeLabel = null;
-
-    for (const { zone, label, data } of this.entranceLabels) {
-      const bounds = zone.getBounds();
-      if (Phaser.Geom.Rectangle.Overlaps(bounds, playerBounds)) {
-        active = { type: 'entrance', data, zone };
-        activeLabel = data.label;
-        label.setVisible(true);
-      } else {
-        label.setVisible(false);
-      }
-    }
-
-    const interactDist = 100;
-    for (const { sprite, nameText, data } of this.npcs) {
-      // Skip hidden/inactive NPCs
-      if (!sprite.visible || !sprite.active) {
-        nameText.setVisible(false);
-        continue;
-      }
-      const npcX = data.x * SCALE_FACTOR;
-      const npcY = data.y * SCALE_FACTOR;
-      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npcX, npcY);
-      if (dist < interactDist) {
-        active = { type: 'npc', data };
-        activeLabel = `${data.name} [E]`;
-        nameText.setVisible(true);
-      } else {
-        nameText.setVisible(false);
-      }
-    }
-
-    // #68: Die Anschlagtafeln sind immer ansprechbar — sie tragen die
-    // Aushaenge. Steht das Aushaengen der Edikte an (#160), hat das Vorrang.
-    if (!active && this._hubPhaseRefs && Array.isArray(this._hubPhaseRefs.posterSpots)) {
-      const ediktSchritt = this._ediktSchritt();
-      for (const p of this._hubPhaseRefs.posterSpots) {
-        // Reichweite in LAYOUT-Einheiten, wie die Lage der Tafeln selbst.
-        // Sie stand als blanke 90 hier und wurde gegen Welt-Abstaende geprueft,
-        // war also faktisch 90 statt 144 breit (SCALE_FACTOR 1.6). Zwischen den
-        // beiden Tafeln blieb dadurch eine tote Zone von rund 40 px — genau
-        // dort, wo man zur Rathaustreppe hochlaeuft: [E] tat dort nichts.
-        var _brettReichweite = 90 * SCALE_FACTOR;
-        var _by = p.y - 40 * SCALE_FACTOR;
-        if (p && Phaser.Math.Distance.Between(this.player.x, this.player.y, p.x, _by) < _brettReichweite) {
-          active = { type: 'anschlag', edikt: ediktSchritt === 1 };
-          activeLabel = _HUB_T(ediktSchritt === 1 ? 'hub.anschlag.prompt' : 'hub.brett.prompt');
-          break;
-        }
-      }
-    }
-
-    if (active) {
-      this._activeInteractable = active;
-      this.prompt.setText(activeLabel);
-      this.prompt.setVisible(true);
-    } else {
-      this._activeInteractable = null;
-      this.prompt.setVisible(false);
-    }
-
-    // Tutorial: emit hub.entrance.approached when the active entrance
-    // changes (steps 3, 5, 12). Edge-triggered to avoid per-frame spam.
-    // The name is the stable hubLayout id (e.g. "Werkstatt", "Rathauskeller",
-    // "Druckerei") — not the localized label.
-    const approachedName = (active && active.type === 'entrance') ? (active.data && (active.data.id || active.data.name || activeLabel)) : null;
-    if (approachedName !== this._lastApproachedName) {
-      this._lastApproachedName = approachedName;
-      if (approachedName && window.TutorialSystem && typeof window.TutorialSystem.report === 'function') {
-        window.TutorialSystem.report('hub.entrance.approached', { name: approachedName });
-      }
-    }
-  }
-
   /**
    * #181: Genau EIN Ziel, genau EINE Box.
    *
@@ -1264,7 +1158,8 @@ class HubSceneV2 extends Phaser.Scene {
    * nahm einfach den zuletzt geprueften. Hier gewinnt das NAECHSTE Ziel,
    * und nur die Box ueber dem Kopf zeigt, was [E] tun wird.
    */
-  _naechstesZiel() {
+  _refreshInteractionPrompt() {
+    if (this._dialogOpen || !this.player?.body) return;
     const p = this.player;
     const pb = p.getBounds();
     let best = null, bestD = Infinity, bestLabel = null;
