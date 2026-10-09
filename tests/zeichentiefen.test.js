@@ -208,16 +208,18 @@ test('Kammerschutt landet nie im Freiraum der Treppe', async (t) => {
     var T = sc._minimapTileSize || 32;
     var st = sc.stairsGroup.getChildren()[0];
     var obs = window.obstacles.getChildren();
-    var zaehle = function () {
-      return obs.filter(function (o) { return o.active && o.getData('kammerSchutt'); }).length;
+    // Der Raum kann schon seine eigene verschuettete Kammer haben (#113,
+    // rund jeder zweite Gesamtlauf) — gezaehlt wird nur, was die Probe legt.
+    var alt = obs.filter(function (o) { return o.active && o.getData('kammerSchutt'); });
+    var neuerSchutt = function () {
+      return obs.filter(function (o) { return o.active && o.getData('kammerSchutt') && alt.indexOf(o) < 0; });
     };
     // Die Kammer genau unter die Treppe legen: die ist garantiert begehbar,
     // also scheitert verschuetteKammer nicht schon an der Betretbarkeit.
     var tx = Math.floor(st.x / T), ty = Math.floor(st.y / T);
     var nah = { kammer: [{ x: tx, y: ty }, { x: tx, y: ty - 1 }], mund: { x: tx, y: ty + 1 } };
-    var vorher = zaehle();
     var ergebnis = window.HiddenFinds.verschuetteKammer(sc, nah, 0, 0, T);
-    var schutt = obs.filter(function (o) { return o.active && o.getData('kammerSchutt'); })
+    var schutt = neuerSchutt()
       .map(function (o) { return { x: o.x, y: o.y, w: o.displayWidth || 32, h: o.displayHeight || 32 }; });
     var treppen = sc.stairsGroup.getChildren().map(function (s) { return { x: s.x, y: s.y }; });
 
@@ -240,11 +242,10 @@ test('Kammerschutt landet nie im Freiraum der Treppe', async (t) => {
       fernErgebnis = window.HiddenFinds.verschuetteKammer(sc,
         { kammer: [{ x: fx, y: fy }, { x: fx, y: fy - 1 }], mund: { x: fx, y: fy + 1 } }, 0, 0, T);
     }
-    return JSON.stringify({ vorher: vorher, ergebnis: ergebnis, schutt: schutt, treppen: treppen,
-      fern: !!fern, fernErgebnis: fernErgebnis, nachFern: zaehle() });
+    return JSON.stringify({ ergebnis: ergebnis, schutt: schutt, treppen: treppen,
+      fern: !!fern, fernErgebnis: fernErgebnis, nachFern: neuerSchutt().length });
   })()`));
 
-  assert.strictEqual(r.vorher, 0, 'der Raum hatte schon Kammerschutt — die Probe misst nicht sauber');
   const verdeckt = [];
   r.treppen.forEach((s) => r.schutt.forEach((p) => {
     if (Math.abs(p.x - s.x) - p.w / 2 < FREIRAUM && Math.abs(p.y - s.y) - p.h / 2 < FREIRAUM) {

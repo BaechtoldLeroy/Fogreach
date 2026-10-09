@@ -126,7 +126,11 @@ test('Der Hinterhalt: ab Raum 3 stellt die Kettenwache den Spieler, Elara rettet
   assert.strictEqual(a.rettung, true);
   assert.ok(/Kettenwache/.test(a.text), 'die Rettung erzaehlt nicht vom Hinterhalt: ' + a.text);
 
-  H.run('window.__durchklicken()');
+  // Nach der Rettung ist der Hinterhalt vorbei und mit ihm sein Schutz. Mit
+  // 3 LP genuegt dann ein Brand-Tick oder ein Nachzuegler, und der Tod
+  // traefe erst den naechsten Fall ("nach 30 s kam keine Rettung", danach
+  // fallen alle folgenden mit — der Rueckweg zum Hub nimmt die Szene mit).
+  H.run('window.__durchklicken(); playerHealth = playerMaxHealth;');
   H.step(120);
   // Zweigeteilt: Die Rettung stellt sie vor, mehr nicht. Ihr Sprite bleibt im
   // Raum stehen, der Auftrag kommt erst auf [E] — wie ein Hub-Gespraech.
@@ -156,6 +160,31 @@ test('Der Hinterhalt: ab Raum 3 stellt die Kettenwache den Spieler, Elara rettet
     auftrag: window.questSystem.getActiveQuests().map(function (q) { return q.id; }) })`);
   assert.strictEqual(c.getroffen, true, 'nach dem Gespraech gilt Elara nicht als getroffen');
   assert.ok(Array.from(c.auftrag).indexOf('widerstand_proof') >= 0, 'ihr erster Auftrag wurde nicht vergeben');
+});
+
+test('Auch Schaden ueber Zeit toetet im Hinterhalt nicht', () => {
+  stand({ harren_daughter_investigation: { status: 'completed', objectives: [] } }, {}, 1);
+  H.run('playerHealth = playerMaxHealth; window._playerInvincible = false;');
+  raumBetreten(3);
+  let g = hinterhaltGegner();
+  for (let i = 0; i < 120 && g.n === 0; i++) { H.step(1); g = hinterhaltGegner(); }
+  assert.strictEqual(g.n, 4, 'kein Hinterhalt');
+
+  // Brand, Blutung und Gift ziehen nicht ueber applyPlayerDamage ab, sondern
+  // direkt im Tick des Statuseffekts. Der Todescheck in GameScene.update
+  // feuert danach trotzdem — ein Fass Glut im Hinterhalt war toedlich.
+  const r = H.run(`(function () {
+    playerHealth = 3;
+    window.statusEffectManager._applyTickDamage(player, 500, StatusEffectType.BURNED);
+    return playerHealth;
+  })()`);
+  H.step(2);
+  const tot = H.run('!!playerDeathHandled');
+  H.run('window.__durchklicken()');
+  H.step(120);
+  H.run('playerHealth = playerMaxHealth;');
+  assert.ok(r >= 1, 'ein Brand-Tick im Hinterhalt hat den Spieler auf ' + r + ' LP gebracht');
+  assert.strictEqual(tot, false, 'der Spieler ist im Hinterhalt am Brand gestorben');
 });
 
 test('Wer gut ausweicht, wird spaetestens nach 30 Sekunden gerettet', () => {

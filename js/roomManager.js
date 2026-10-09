@@ -3853,12 +3853,31 @@ function _hinterhaltAbbrechen() {
     if (_hinterhalt.echtSchaden && window.applyPlayerDamage === _hinterhalt.schutz) {
       window.applyPlayerDamage = _hinterhalt.echtSchaden;
     }
+    if (_hinterhalt.echtLeben && window.addPlayerHealth === _hinterhalt.lebenSchutz) {
+      window.addPlayerHealth = _hinterhalt.echtLeben;
+    }
   }
   _hinterhalt = null;
 }
 
 /** Faengt Treffer ab, die den Spieler im Hinterhalt toeten wuerden. */
 function _hinterhaltSchutzEinbauen(h) {
+  // Schaden ueber Zeit (Brand, Blutung, Gift) laeuft NICHT ueber
+  // applyPlayerDamage, sondern zieht direkt per addPlayerHealth ab — und der
+  // Todescheck in GameScene.update greift trotzdem. Darum haelt der
+  // Hinterhalt auch dort eine Untergrenze von 1 LP.
+  var echtLeben = window.addPlayerHealth;
+  if (typeof echtLeben === 'function') {
+    h.echtLeben = echtLeben;
+    h.lebenSchutz = function (delta) {
+      var args = Array.prototype.slice.call(arguments);
+      if (_hinterhalt === h && typeof playerHealth === 'number' && delta < 0 && playerHealth + delta < 1) {
+        args[0] = Math.min(0, 1 - playerHealth);
+      }
+      return echtLeben.apply(this, args);
+    };
+    window.addPlayerHealth = h.lebenSchutz;
+  }
   var echt = window.applyPlayerDamage;
   if (typeof echt !== 'function') return;
   h.echtSchaden = echt;
