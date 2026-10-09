@@ -19,6 +19,11 @@ let H = null;
 before(async () => {
   H = await launch({ search: '?autostart=1&dungeon=12', renderer: 'canvas', waitFor: 'StartScene' });
   assert.ok(await H.waitForScene('GameScene', { maxRounds: 400 }), 'GameScene nicht erreicht');
+  // Unverwundbar: Auf Tiefe 12 steht der Spieler mit 30 LP still in der
+  // ersten Welle. Gemessen unter Last (10 parallel): in 5 von 150 Laeufen
+  // schlugen ihn die Gegner bis Bild ~200 tot, der Tod raeumte die
+  // Gegnergruppe, und der Wirbel-Fall fand 'keine Gegner' (wie #178).
+  H.run('window._playerInvincible = true;');
   H.step(60);
 });
 after(async () => { if (H) await H.shutdown(); });
