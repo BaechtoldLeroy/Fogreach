@@ -3874,22 +3874,60 @@ function _hinterhaltSchutzEinbauen(h) {
   window.applyPlayerDamage = h.schutz;
 }
 
+/** Ob an (x, y) eine Wache oder Elara stehen kann. */
+function _hinterhaltPlatzFrei(scene, x, y) {
+  try {
+    if (scene && typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(x, y)) return false;
+    if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(x, y)) return false;
+  } catch (e) {}
+  return true;
+}
+
+/**
+ * Freier Platz fuer eine Wache moeglichst nah an ihrem Ringwinkel.
+ *
+ * Vorher zog eine Wache, deren Ringpunkt verbaut war, an einen beliebigen
+ * Punkt im Raum — der Ring zerfiel, und Elara stellte sich spaeter neben die
+ * naechste Wache auf dem Ring, die es dort gar nicht gab (247 px daneben).
+ * Jetzt gewinnt der freie Punkt, der dem eigentlichen Ringpunkt am naechsten
+ * liegt — gesucht rings um den Spieler, etwas naeher oder weiter weg.
+ *
+ * @returns {{x:number,y:number}|null} null nur, wenn rundum alles verbaut ist.
+ */
+function _hinterhaltRingPlatz(scene, w) {
+  var zielX = player.x + Math.cos(w) * HINTERHALT_RING_PX;
+  var zielY = player.y + Math.sin(w) * HINTERHALT_RING_PX;
+  var kandidaten = [];
+  [0, -40, 40, -80, 80].forEach(function (dr) {
+    var rad = HINTERHALT_RING_PX + dr;
+    for (var k = -31; k <= 31; k++) {
+      var x = player.x + Math.cos(w + k * 0.1) * rad;
+      var y = player.y + Math.sin(w + k * 0.1) * rad;
+      kandidaten.push({ x: x, y: y, d: Math.hypot(x - zielX, y - zielY) });
+    }
+  });
+  kandidaten.sort(function (a, b) { return a.d - b.d; });
+  for (var i = 0; i < kandidaten.length; i++) {
+    if (_hinterhaltPlatzFrei(scene, kandidaten[i].x, kandidaten[i].y)) return kandidaten[i];
+  }
+  return null;
+}
+
 function _hinterhaltGegnerSetzen(scene, h) {
   if (typeof spawnEnemy !== 'function' || typeof player === 'undefined' || !player) return;
   // Was der Raum sonst an Gegnern gebracht hat, weicht dem Hinterhalt.
   if (typeof enemies !== 'undefined' && enemies && typeof enemies.clear === 'function') enemies.clear(true, true);
   for (var i = 0; i < HINTERHALT_GEGNER; i++) {
-    var g = null;
-    try { g = spawnEnemy.call(scene, 0, 0, 6); } catch (e) { g = null; }
-    if (!g) continue;
     var w = (i / HINTERHALT_GEGNER) * Math.PI * 2 + 0.4;
-    var x = player.x + Math.cos(w) * HINTERHALT_RING_PX;
-    var y = player.y + Math.sin(w) * HINTERHALT_RING_PX;
-    if (typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(x, y)
-        && typeof scene.pickAccessibleSpawnPoint === 'function') {
-      var p = scene.pickAccessibleSpawnPoint({ maxAttempts: 12 });
-      if (p) { x = p.x; y = p.y; }
-    }
+    var p = _hinterhaltRingPlatz(scene, w);
+    if (!p && typeof scene.pickAccessibleSpawnPoint === 'function') p = scene.pickAccessibleSpawnPoint({ maxAttempts: 12 });
+    var x = p ? p.x : player.x + Math.cos(w) * HINTERHALT_RING_PX;
+    var y = p ? p.y : player.y + Math.sin(w) * HINTERHALT_RING_PX;
+    // Den Platz mitgeben: Ohne Vorgabe sucht spawnEnemy 300 px Abstand zum
+    // Spieler und gibt in kleinen Raeumen null zurueck — dann fehlten Wachen.
+    var g = null;
+    try { g = spawnEnemy.call(scene, x, y, 6); } catch (e) { g = null; }
+    if (!g) continue;
     g.x = x; g.y = y;
     if (g.body && typeof g.body.reset === 'function') g.body.reset(x, y);
     g.hp = Math.round((g.hp || 10) * HINTERHALT_LEBEN_FAKTOR);
@@ -3946,8 +3984,10 @@ function _hinterhaltStarten(scene, roomId) {
  * sich das nicht als Rettung.
  *
  * Gewaehlt wird die dem Spieler NAECHSTE Wache: so steht sie im Blickfeld.
- * Der Platz liegt auf demselben Ring, leicht zur Seite versetzt, damit sie
- * nicht genau auf dem Feld einer Wache klebt.
+ * Der Platz liegt im selben Abstand zum Spieler wie diese Wache, leicht zur
+ * Seite versetzt, damit sie nicht genau auf ihrem Feld klebt. Meist ist das
+ * der Ring; in engen Raeumen weicht die Wache nach innen aus, und Elara mit.
+ * Zuerst nur Plaetze in Reichweite einer Wache, erst dann irgendeiner.
  *
  * @returns {{x:number,y:number}|null} null, wenn ringsum alles verbaut ist —
  *          dann bleibt es beim bisherigen Verhalten.
@@ -3961,21 +4001,19 @@ function _elaraRettungsPlatz(scene) {
   wachen.sort(function (a, b) {
     return Math.hypot(a.x - px, a.y - py) - Math.hypot(b.x - px, b.y - py);
   });
-  var frei = function (x, y) {
-    try {
-      if (scene && typeof scene.isPointAccessible === 'function' && !scene.isPointAccessible(x, y)) return false;
-      if (typeof isBlockedByObstacle === 'function' && isBlockedByObstacle(x, y)) return false;
-    } catch (e) {}
-    return true;
-  };
   var versatz = [0.25, -0.25, 0.5, -0.5, 0, 0.9, -0.9];
-  for (var i = 0; i < wachen.length; i++) {
-    var ang = Math.atan2(wachen[i].y - py, wachen[i].x - px);
-    for (var v = 0; v < versatz.length; v++) {
-      var a = ang + versatz[v];
-      var x = px + Math.cos(a) * HINTERHALT_RING_PX;
-      var y = py + Math.sin(a) * HINTERHALT_RING_PX;
-      if (frei(x, y)) return { x: x, y: y };
+  var reichweite = [100, Infinity];
+  for (var r = 0; r < reichweite.length; r++) {
+    for (var i = 0; i < wachen.length; i++) {
+      var ang = Math.atan2(wachen[i].y - py, wachen[i].x - px);
+      var abstand = Math.hypot(wachen[i].x - px, wachen[i].y - py);
+      for (var v = 0; v < versatz.length; v++) {
+        var a = ang + versatz[v];
+        var x = px + Math.cos(a) * abstand;
+        var y = py + Math.sin(a) * abstand;
+        if (Math.hypot(x - wachen[i].x, y - wachen[i].y) > reichweite[r]) continue;
+        if (_hinterhaltPlatzFrei(scene, x, y)) return { x: x, y: y };
+      }
     }
   }
   return null;

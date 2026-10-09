@@ -167,10 +167,73 @@ test('Sie tritt dort hervor, wo die Kettenwache stand', () => {
     };
   })()`);
   assert.ok(!r.fehler, r.fehler);
-  // Auf dem Ring der Wachen, nicht irgendwo: so steht sie im Blickfeld.
-  assert.ok(Math.abs(r.zumSpieler - r.ring) <= 2,
+  // Auf dem Ring der Wachen, nicht irgendwo: so steht sie im Blickfeld. In
+  // engen Raeumen weichen die Wachen bis 80 px nach innen/aussen, sie mit.
+  assert.ok(Math.abs(r.zumSpieler - r.ring) <= 80,
     'sie steht ' + r.zumSpieler + ' px vom Spieler statt auf dem Ring (' + r.ring + ')');
   // Und neben einer Wache. Gemessen liegt sie bei 47-81 px, vorher bis 553.
+  assert.ok(r.zurWache <= 120,
+    'sie steht ' + r.zurWache + ' px von der naechsten Wache entfernt');
+});
+
+test('Ist der Ringplatz einer Wache verbaut, rueckt sie auf dem Ring zur Seite', () => {
+  // Einmal im Gesamtlauf stand Elara 247 px von der naechsten Wache: War der
+  // Ringpunkt einer Wache unerreichbar, zog sie an einen beliebigen Punkt im
+  // Raum — und Elara stellte sich neben eine Wache, die gar nicht da war.
+  // Hier erzwungen: rund um JEDEN Ringwinkel ist alles unerreichbar.
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var qs = window.questSystem;
+    var st = qs.getQuestSaveData(); st.quests = {}; st.flags = {};
+    qs.loadQuestSaveData(st);
+    _resetElaraEncounterRunState();
+    enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
+    sc.children.list.filter(function (o) { return o.texture && o.texture.key === 'elara_right0'; })
+      .forEach(function (o) { try { o.destroy(); } catch (x) {} });
+    window._playerInvincible = true;
+    var px = player.x, py = player.y;
+    var winkel = [];
+    for (var i = 0; i < HINTERHALT_GEGNER; i++) winkel.push((i / HINTERHALT_GEGNER) * Math.PI * 2 + 0.4);
+    var gesperrt = function (x, y) {
+      var a = Math.atan2(y - py, x - px);
+      return winkel.some(function (w) {
+        return Math.abs(Math.atan2(Math.sin(a - w), Math.cos(a - w))) < 0.3;
+      });
+    };
+    var echt = sc.isPointAccessible;
+    sc.isPointAccessible = function (x, y) {
+      if (gesperrt(x, y)) return false;
+      return echt.apply(this, arguments);
+    };
+    try {
+      var h = { raum: 3, timer: null, seit: 0, gegner: [], gesetzt: false };
+      _hinterhaltGegnerSetzen(sc, h);
+      var wachen = enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; })
+        .map(function (e) { return { x: e.x, y: e.y, frei: !gesperrt(e.x, e.y) }; });
+      if (!wachen.length) return { fehler: 'keine Wachen gesetzt' };
+      _elaraRettet(sc);
+      var el = sc.children.list.filter(function (o) {
+        return o && o.active && o.texture && o.texture.key === 'elara_right0';
+      })[0];
+      if (!el) return { fehler: 'Elara ist nicht erschienen' };
+      return {
+        wachenAmSpieler: wachen.map(function (w) { return Math.round(Math.hypot(w.x - px, w.y - py)); }),
+        aufGesperrtem: wachen.filter(function (w) { return !w.frei; }).length,
+        zurWache: Math.round(Math.min.apply(null, wachen.map(function (w) {
+          return Math.hypot(w.x - el.x, w.y - el.y);
+        }))),
+        ring: HINTERHALT_RING_PX
+      };
+    } finally { sc.isPointAccessible = echt; }
+  })()`);
+  assert.ok(!r.fehler, r.fehler);
+  assert.strictEqual(r.aufGesperrtem, 0, r.aufGesperrtem + ' Wachen stehen auf gesperrtem Boden');
+  // Nahe am Ring, nicht irgendwo im Raum (die Suche weicht hoechstens 80 px
+  // nach innen oder aussen aus).
+  r.wachenAmSpieler.forEach((d) => {
+    assert.ok(Math.abs(d - r.ring) <= 80,
+      'eine Wache steht ' + d + ' px vom Spieler statt am Ring (' + r.ring + '): ' + r.wachenAmSpieler.join(', '));
+  });
   assert.ok(r.zurWache <= 120,
     'sie steht ' + r.zurWache + ' px von der naechsten Wache entfernt');
 });
