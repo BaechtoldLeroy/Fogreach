@@ -98,6 +98,17 @@ const PLAYER_NORM_VERSATZ = {};
 // (rolleDD_f00..f07, bis er wieder steht); die Ruhepose liefern die Gehbilder.
 const ROLLE_BILDER = 8;
 const ROLLE_RAND = 14;
+
+// #171: Der Nahkampfschlag als eigene Bildfolge (schlagDD_f00..f07), genauso
+// gebaut wie die Rolle: PixelLab pixminimax am Spielercharakter, 92x92 mit
+// demselben Rand, tools/schlagBauen.js. Vorerst nur hinter ?schlag=neu.
+const SCHLAG_BILDER = 8;
+function schlagSchluessel(dd, frame) {
+  return `schlag${dd}_f${frame.toString().padStart(2, '0')}`;
+}
+function _schlagFlagge() {
+  return !!(window.DebugGate && window.DebugGate.an('schlag'));
+}
 const PLAYER_WIDTH_STRETCH = 1;
 const PLAYER_SIDEWAYS_SCALE = 0.8;
 const PLAYER_RIGHT_LEFT_WIDTH_MULT = 1.15;
@@ -147,6 +158,14 @@ function preloadPlayerDirectionalFrames(loader) {
       if (textureManager?.exists?.(key)) continue;
       loader.image(key, `assets/PlayerSprites/${key}.png`);
     }
+    // #171: Ohne Flagge wird nichts zusaetzlich geladen.
+    if (_schlagFlagge()) {
+      for (let frame = 0; frame < SCHLAG_BILDER; frame++) {
+        const key = schlagSchluessel(dirId, frame);
+        if (textureManager?.exists?.(key)) continue;
+        loader.image(key, `assets/PlayerSprites/${key}.png`);
+      }
+    }
   }
 }
 
@@ -179,6 +198,12 @@ function ensureDirectionLoaded(scene, dd) {
       const rk = rolleSchluessel(dd, f);
       if (!scene.textures.exists(rk)) scene.load.image(rk, `assets/PlayerSprites/${rk}.png`);
     }
+    if (_schlagFlagge()) {
+      for (let f = 0; f < SCHLAG_BILDER; f++) {
+        const sk = schlagSchluessel(dd, f);
+        if (!scene.textures.exists(sk)) scene.load.image(sk, `assets/PlayerSprites/${sk}.png`);
+      }
+    }
     scene.load.once('complete', () => {
       delete _directionLoadingPromises[dd];
       // Create walk animation for this direction now that frames are loaded
@@ -188,7 +213,7 @@ function ensureDirectionLoaded(scene, dd) {
       // 052 WP03: apply LINEAR post-normalization for THIS direction.
       // (Normalization swaps texture via addCanvas → wipes prior filter.)
       if (window.RenderQuality) {
-        window.RenderQuality.applyLinearFilterByPrefix(scene, [`dir${dd}_`, `rolle${dd}_`]);
+        window.RenderQuality.applyLinearFilterByPrefix(scene, [`dir${dd}_`, `rolle${dd}_`, `schlag${dd}_`]);
       }
       // Die GROESSE neu rechnen, jetzt wo die Bilder da sind.
       //
@@ -2247,8 +2272,14 @@ function attack() {
 
   if (window.soundManager) window.soundManager.playSFX('attack');
 
+  // #171 (?schlag=neu): Statt nur des Kegels holt die Figur mit dem Flegel
+  // aus. Der Kegel bleibt als schwacher Schatten stehen — er zeigt die
+  // Reichweite, und die stimmt mit dem Schadensbereich ueberein. Fehlen die
+  // Schlagbilder (Richtung nicht geladen, Verkleidung), bleibt alles wie bisher.
+  const schlagDd = _schlagFlagge() ? _schlagRichtung(this) : null;
+  const schlagBereit = !!(schlagDd && _schlagBilder(this, schlagDd));
   // Längerer, schwererer Swing-Kegel (Default ist 100ms).
-  showAttackEffect(this, { duration: 170 });
+  showAttackEffect(this, schlagBereit ? { duration: 170, alpha: SCHLAG_KEGEL_ALPHA } : { duration: 170 });
 
   const toEnemy = new Phaser.Math.Vector2();
   // Schadens-Kegel MUSS dieselbe Richtung wie der sichtbare Kegel
@@ -2370,6 +2401,8 @@ function attack() {
   const baseCd = getMeleeCooldown();
   const cd = applyCooldownModifier(baseCd, 'attack');
 
+  if (schlagBereit) _schlagZeigen(this, schlagDd, schlagDauer(cd));
+
   startCooldownTimer(this, cd, {
     button: attackBtn,
     label: attackBtnCooldownText,
@@ -2378,6 +2411,87 @@ function attack() {
       attackCooldown = false;
     }
   });
+}
+
+// #171: Deckkraft des Kegels, wenn die Figur selbst schlaegt (sonst 0.2).
+const SCHLAG_KEGEL_ALPHA = 0.07;
+
+/**
+ * Dauer der Schlagfolge: folgt dem Angriffstempo, endet aber spaetestens mit
+ * dem Schlagfenster (isAttacking, 300 ms). Danach darf schon gerollt werden,
+ * und zwei Bildfolgen, die beide den Spieler verstecken, wuerden sich die
+ * Sichtbarkeit gegenseitig zuruecksetzen.
+ */
+function schlagDauer(cd) {
+  return Phaser.Math.Clamp(cd * 0.45, 200, 300);
+}
+
+/** Richtung (dd) des Schlags: dieselbe Zielrichtung wie Kegel und Treffer. */
+function _schlagRichtung(scene) {
+  const a = _getAimVector2(scene);
+  return getDirectionFromVelocity(a.x, a.y);
+}
+
+/** Schluessel der Schlagbilder dieser Richtung, oder null, wenn eines fehlt. */
+function _schlagBilder(scene, dd) {
+  const aktuell = player && player.texture && player.texture.key;
+  if (!PLAYER_NORM_VERSATZ[`dir${dd}_f00`] || typeof aktuell !== 'string' || !aktuell.startsWith('dir')) return null;
+  if (!scene.textures.exists(`dir${dd}_f00`)) return null;
+  const keys = [];
+  for (let f = 0; f < SCHLAG_BILDER; f++) {
+    const k = schlagSchluessel(dd, f);
+    if (!scene.textures.exists(k)) return null;
+    keys.push(k);
+  }
+  return keys;
+}
+
+/**
+ * #171: Spielt den Schlag auf einem eigenen Bild, das dem Spieler folgt —
+ * dieselbe Ausrichtung wie _rolleZeigen (Ursprung und Skala vom Gehbild
+ * derselben Richtung), nur in den Farben des Spielers statt lila.
+ */
+function _schlagZeigen(scene, dd, dauer) {
+  const keys = _schlagBilder(scene, dd);
+  if (!keys) return null;
+  const gehKey = `dir${dd}_f00`;
+  const v = PLAYER_NORM_VERSATZ[gehKey];
+  // Masse vom FRAME (siehe _rolleZeigen: die Quellleinwand kann im Pool sein).
+  const geh = scene.textures.getFrame(gehKey);
+  const meta = getDirectionalFrameMeta(scene, gehKey);
+  const oy = (meta && typeof meta.originY === 'number') ? Phaser.Math.Clamp(meta.originY, 0, 1) : PLAYER_ORIGIN_Y;
+  const seite = scene.textures.getFrame(keys[0]).width;
+  const animKey = `schlag_${dd}`;
+  if (!scene.anims.exists(animKey)) {
+    scene.anims.create({ key: animKey, frames: keys.map((key) => ({ key })), frameRate: 30, repeat: 0 });
+  }
+  const bild = scene.add.sprite(player.x, player.y, keys[0])
+    .setOrigin((0.5 * geh.width + v.x + ROLLE_RAND) / seite, (oy * geh.height + v.y + ROLLE_RAND) / seite)
+    .setScale(player.displayHeight / geh.height)
+    .setDepth(player.depth)
+    .setAlpha(player.alpha);
+  if (player.isTinted) bild.setTint(player.tintTopLeft);
+  bild.play({ key: animKey, frameRate: SCHLAG_BILDER / (dauer / 1000) });
+  player.setVisible(false);
+
+  const folgen = () => {
+    if (!bild.active || !player) return;
+    bild.setPosition(player.x, player.y);
+    bild.setDepth(player.depth);
+  };
+  scene.events.on('postupdate', folgen);
+  // Nach dem Schlag schaut er in die Schlagrichtung (wie nach der Rolle).
+  const animState = player.getData('animState') || {};
+  animState.direction = dd;
+  animState.playing = null;
+  player.setData('animState', animState);
+  const ende = () => {
+    scene.events.off('postupdate', folgen);
+    if (bild.active) bild.destroy();
+    if (player) player.setVisible(true);
+  };
+  scene.time.delayedCall(dauer, ende);
+  return { bild, ende };
 }
 
 function _abilityGate(id) {
