@@ -1847,14 +1847,32 @@
   // --- Wandering Merchant ---
   var activeMerchant = null;
 
+  // #165: eigenes Bild fuer den Haendler (alter Mann + Handkarren in EINEM
+  // Bild, PixelLab). Die alten 120 px waren mehr als doppelt so gross wie der
+  // Spieler (54 px); der Alte soll daneben stehen wie ein Mensch, nicht wie
+  // ein Riese. Seine Kapuze ist der hoechste Punkt des Bildes, also misst die
+  // Bildhoehe zugleich den Mann.
+  var HAENDLER_NEU = {
+    key: 'haendler_karren',
+    pfad: 'assets/sprites/haendler_karren.png?v=1',
+    hoehe: 62,                    // Spielpixel; gebeugt, mit Kapuze knapp ueber Spielergroesse
+    laterne: { x: -27, y: -12.5 } // Flamme relativ zur Bildmitte, in Bildpixeln (103x89)
+  };
+  function _haendlerNeu() {
+    try { return !!(window.DebugGate && window.DebugGate.an('haendler')); } catch (e) { return false; }
+  }
+
   function spawnMerchant(scene) {
     if (!scene || !scene.add) return;
     cleanupMerchant();
 
     // Load merchant texture on-demand if not available
-    var texKey = 'spaeherin';
+    // #165 (Flagge ?haendler=neu): der Alte mit dem Karren bekommt sein
+    // eigenes Bild. Ohne Flagge traegt er weiter Maras Sprite.
+    var neu = _haendlerNeu();
+    var texKey = neu ? HAENDLER_NEU.key : 'spaeherin';
     if (!scene.textures.exists(texKey)) {
-      scene.load.image(texKey, 'assets/sprites/spaeherin.png');
+      scene.load.image(texKey, neu ? HAENDLER_NEU.pfad : 'assets/sprites/spaeherin.png');
       scene.load.once('complete', function() {
         // 052 WP03: filter the painterly merchant sprite after lazy-load
         if (window.RenderQuality) {
@@ -1906,7 +1924,27 @@
 
     // Scale to reasonable NPC size (~120px tall)
     var h = merchant.height || 200;
-    merchant.setScale(120 / h);
+    var istNeu = texKey === HAENDLER_NEU.key;
+    if (istNeu) merchant.setScale(HAENDLER_NEU.hoehe / h);
+    else merchant.setScale(120 / h);
+    // Abstand des [E]-Hinweises zur Mitte: beim Karrenbild ueber dessen Oberkante.
+    var promptDy = istNeu ? Math.round(merchant.displayHeight / 2 + 12) : 70;
+
+    // Die Laterne am Karren flackert: ein warmer Schein, der unruhig atmet.
+    // Der Haendler steht still, also bleibt der Schein an seinem Platz.
+    var schein = null;
+    if (istNeu && scene.add.circle) {
+      var sk = merchant.scaleX;
+      schein = scene.add.circle(cx + HAENDLER_NEU.laterne.x * sk, cy + HAENDLER_NEU.laterne.y * sk,
+        6, 0xffb347, 0.3).setDepth(150.5);
+      if (schein.setBlendMode && window.Phaser) schein.setBlendMode(Phaser.BlendModes.ADD);
+      if (scene.tweens) {
+        scene.tweens.add({
+          targets: schein, alpha: { from: 0.14, to: 0.36 }, scale: { from: 0.85, to: 1.2 },
+          duration: 180, yoyo: true, repeat: -1, repeatDelay: 60, ease: 'Sine.easeInOut'
+        });
+      }
+    }
 
     // Interaction prompt (floating text above merchant)
     var scaledH = 120;
@@ -1935,7 +1973,7 @@
         inRange = dist < 80;
         prompt.setVisible(inRange);
         // Update prompt position to follow merchant
-        prompt.setPosition(merchant.x, merchant.y - 70);
+        prompt.setPosition(merchant.x, merchant.y - promptDy);
       };
       scene.events.on('update', distanceHandler);
 
@@ -1967,6 +2005,7 @@
     activeMerchant = {
       sprite: merchant,
       prompt: prompt,
+      schein: schein,
       interactHandler: interactHandler,
       distanceHandler: (typeof distanceHandler !== 'undefined') ? distanceHandler : null,
       mobileHandler: (typeof mobileHandler !== 'undefined') ? mobileHandler : null,
@@ -1980,6 +2019,10 @@
     if (!activeMerchant) return;
     if (activeMerchant.sprite && activeMerchant.sprite.destroy) activeMerchant.sprite.destroy();
     if (activeMerchant.prompt && activeMerchant.prompt.destroy) activeMerchant.prompt.destroy();
+    if (activeMerchant.schein) {
+      if (activeMerchant.scene && activeMerchant.scene.tweens) activeMerchant.scene.tweens.killTweensOf(activeMerchant.schein);
+      if (activeMerchant.schein.destroy) activeMerchant.schein.destroy();
+    }
     if (activeMerchant.interactHandler && activeMerchant.scene &&
         activeMerchant.scene.input && activeMerchant.scene.input.keyboard) {
       activeMerchant.scene.input.keyboard.off('keydown-E', activeMerchant.interactHandler);
@@ -2733,6 +2776,8 @@
     // Verzoegerung. Nur so laesst sich pruefen, dass eine Raum-Bedingung
     // (passtZuRaum) wirklich greift, statt nur im Code zu stehen.
     pickEvent: pickEvent,
+    // #165: fuer Tests — welcher Haendler steht gerade (Sprite, Hinweis).
+    aktiverHaendler: function () { return activeMerchant; },
     // #71: reine Ziehung, damit das Balancing pruefbar bleibt.
     // weckeWachen ebenso: nur so laesst sich pruefen, dass die Wachen
     // tatsaechlich als Champion/Unique erscheinen und nah genug stehen.
