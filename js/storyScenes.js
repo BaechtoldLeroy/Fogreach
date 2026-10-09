@@ -227,10 +227,23 @@
       _t('GARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.', 'GUARD: You go on arguing. We hold the streets. More patrols, then there is peace.'),
       _t('(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)', '(The citizens shout over each other. Everyone has picked a side. It looks like a choice.)')
     );
-    _szeneSpielen(scene, zeilen, 'oeffentliche_sitzung', function () {
+    var ende = function () {
       _fireObserve('oeffentliche_sitzung');
       if (typeof onDone === 'function') onDone();
-    }, false, _ratssaal);
+    };
+    // #166: mit ?sitzung= die gemalte Buehne statt der Kaesten.
+    var SB = _buehne();
+    if (SB) {
+      SB.laden(scene, function () { _szeneSpielen(scene, zeilen, 'oeffentliche_sitzung', ende, false, SB.oeffentlich); });
+      return;
+    }
+    _szeneSpielen(scene, zeilen, 'oeffentliche_sitzung', ende, false, _ratssaal);
+  }
+
+  // #166/#167: die gemalte Buehne (js/sitzungsBuehne.js), nur hinter der Flagge.
+  function _buehne() {
+    var SB = window.SitzungsBuehne;
+    return (SB && typeof SB.aktiv === 'function' && SB.aktiv()) ? SB : null;
   }
 
   // --- #159 Die geheime Sitzung, belauscht in der Ratskammer ----------------
@@ -264,6 +277,16 @@
     if (siegel) seiten.push(siegel);
     seiten.push(_t('(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)', '(You withdraw before the guards make their round. Harren is waiting upstairs.)'));
 
+    // #167: mit ?sitzung= sitzen die drei sichtbar am Tisch. Das Zeichen
+    // steht dann auf den drei Siegeln des Blattes statt gross darueber.
+    var SB = _buehne();
+    if (SB) {
+      // Bis die Bilder da sind, darf im Dungeon nichts weiterlaufen.
+      if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
+      SB.laden(scene, function () { _geheimMitBuehne(scene, SB, seiten, onDone); });
+      return true;
+    }
+
     // Das Zeichen ueber dem ersten Blatt: hier lernt der Spieler es kennen (#156).
     var bild = null;
     try {
@@ -287,6 +310,29 @@
     };
     naechste();
     return true;
+  }
+
+  // Dieselben Seiten wie oben, aber vor der Kammer mit den drei am Tisch.
+  // Der Dialog rueckt unter die Figuren; wer spricht, tritt hervor.
+  function _geheimMitBuehne(scene, SB, seiten, onDone) {
+    var ES = window.EventSystem;
+    var buehne = SB.geheim(scene);
+    var i = 0;
+    var naechste = function () {
+      if (i >= seiten.length) {
+        buehne.destroy();
+        _fireObserve('collusion_reveal_seen');
+        if (typeof onDone === 'function') onDone();
+        return;
+      }
+      var text = seiten[i++];
+      var vorher = scene.children.list.slice();
+      ES.showEventChoiceDialog(scene, text, [{ label: _t('Weiter', 'Continue'), callback: naechste }]);
+      var neue = scene.children.list.filter(function (o) { return vorher.indexOf(o) < 0; });
+      var titel = SB.dialogUnterBuehne(scene, neue, buehne.textOben);
+      if (titel) buehne.folgen(titel);
+    };
+    naechste();
   }
 
   // --- 13.3 Elaras erster Riss -----------------------------------------------
@@ -323,6 +369,9 @@
     var weiter = false;
     // #159: optional ein gezeichneter Ort hinter dem Text (der Ratssaal).
     var kulissenTeile = (typeof kulisse === 'function') ? (kulisse(scene, cx, cy) || []) : [];
+    // #166: Die gemalte Buehne kommt als ein Objekt mit eigener Texttafel.
+    var buehne = Array.isArray(kulissenTeile) ? null : kulissenTeile;
+    if (buehne) kulissenTeile = [buehne];
     // #156: Szenen, in denen das Zeichen vorkommt, zeigen es auch.
     var zeichenBild = (mitZeichen && window.Zeichen) ? window.Zeichen.bild(scene, cx, cy - 170, 64) : null;
     if (zeichenBild) {
@@ -331,9 +380,17 @@
       else zeichenBild.setAlpha(1);
     }
     var auf = _zeilenAufbauen(scene, zeilen, cx, cy, function () {
-      _warteAufWeiter(scene, auf, cx, cy, step);
+      // Mit Buehne steht der Hinweis am unteren Rand der Tafel.
+      if (buehne) _warteAufWeiter(scene, auf, buehne.hinweisX, buehne.hinweisY - scene.cameras.main.height * 0.30, step);
+      else _warteAufWeiter(scene, auf, cx, cy, step);
     });
     var intro = auf.text;
+    if (buehne && intro) {
+      // Oben buendig: der Text waechst nach unten in die Tafel hinein.
+      intro.setOrigin(0.5, 0).setPosition(cx, buehne.textY).setWordWrapWidth(buehne.textBreite)
+        .setFontSize(14).setLineSpacing(2);
+      buehne.folgen(intro);
+    }
     function step() {
       if (weiter) return;
       weiter = true;

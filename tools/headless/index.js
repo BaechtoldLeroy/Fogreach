@@ -1952,7 +1952,7 @@ async function launchDungeon(opts) {
   opts = opts || {};
   const depth = opts.depth || 1;
   const h = await launch(Object.assign({}, opts, {
-    search: '?dungeon=' + depth,
+    search: '?dungeon=' + depth + (opts.zusatz || ''),   // zusatz: weitere Flaggen, z. B. '&sitzung=neu'
     renderer: opts.renderer || 'canvas',
     waitFor: 'StartScene',
   }));
