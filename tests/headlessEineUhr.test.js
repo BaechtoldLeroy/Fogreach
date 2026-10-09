@@ -64,3 +64,20 @@ test('ein nachgeladenes Bild kommt im naechsten Takt — und nur dann', async ()
   assert.strictEqual(H.run(`window.game.textures.exists('uhrTestBild')`), true,
     'das Bild kam drei Takte spaeter noch nicht an');
 });
+
+test('Zufallsereignisse beim Raumbetreten sind im Test aus (#178)', () => {
+  // Der Elite-Hinterhalt (ab Tiefe 5) oeffnet 800 ms nach dem Betreten eine
+  // Wahl und haelt die Spieluhr an. Je nach Wurf standen dann alle
+  // delayedCalls, und in einer Datei fielen mehrere Faelle auf einmal
+  // (elaraBesessen: etwa jeder vierte Lauf, bossSignaturen, ...).
+  // Erzwungen: ein Ereignis, das beim Betreten kommen MUESSTE.
+  const r = H.run(`(function () {
+    window.DEBUG_FORCE_EVENT = { roomId: 99, eventId: 'elite_ambush' };
+    try { window.EventSystem.onRoomEnter(window.game.scene.getScenes(true)[0], 99); }
+    finally { window.DEBUG_FORCE_EVENT = null; }
+    return { offen: !!window.eventChoiceOpen, geplant: window.game.scene.getScenes(true)[0].time._pendingInsertion.length };
+  })()`);
+  H.step(60);
+  assert.strictEqual(H.run('!!window.eventChoiceOpen'), false, 'das Ereignis kam trotzdem');
+  assert.strictEqual(r.geplant, 0, 'das Ereignis wurde eingeplant');
+});

@@ -1958,7 +1958,14 @@ async function launchDungeon(opts) {
   }));
   const ok = await h.waitForScene('GameScene', { maxRounds: opts.maxRounds || 250 });
   if (!ok) throw new Error('GameScene wurde nicht erreicht');
+  // Das Aufwaermen unverwundbar: auf grosser Tiefe hat ein frischer Spieler
+  // 30 LP, und die erste Welle schlaegt schon zu. Gemessen auf Tiefe 30:
+  // in 1 von 40 Starts war er tot, bevor der erste Fall begann — der
+  // Rueckweg zum Hub feuerte dann 1,5 s spaeter mitten in einem fremden Fall
+  // und riss alle folgenden mit (#178). Danach gilt wieder das Spiel.
+  h.run('window._playerInvincible = true');
   await h.settle(() => false, { maxRounds: opts.warmupRounds || 10 });
+  h.run('window._playerInvincible = false');
   return h;
 }
 
@@ -1967,7 +1974,10 @@ async function launchDungeon(opts) {
  * @param {object} [opts] width/height/verbose/waitFor
  */
 async function launch(opts) {
-  opts = opts || {};
+  // Zufallsereignisse beim Raumbetreten sind im Test aus: sie koennen die
+  // Spieluhr anhalten (#178). Wer sie braucht, setzt die Option auf false;
+  // die Ereignis-Tests rufen pickEvent oder die Handler ohnehin direkt.
+  opts = Object.assign({ ohneZufallsereignisse: true }, opts || {});
   const h = decorate(boot(opts));
   await flush();                       // Phasers eigenen Boot-Timer durchlassen
   const target = opts.waitFor || 'StartScene';

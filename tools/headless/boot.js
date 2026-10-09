@@ -162,6 +162,16 @@ function boot(opts) {
     try {
       vm.runInContext(code, ctx, { filename: rel, timeout: opts.timeout || VM_ZEITGRENZE });
       loaded.push(rel);
+      // Ohne Zufallsereignisse beim Raumbetreten (#178): sofort nach dem
+      // Laden abklemmen, also VOR dem ersten Raum. Ab Tiefe 5 kann sonst der
+      // Elite-Hinterhalt kommen, 800 ms nach dem Betreten eine Wahl oeffnen
+      // und die Spieluhr anhalten — dann standen alle delayedCalls, und je
+      // nach Wurf fielen in einer Datei mehrere Faelle auf einmal.
+      if (opts.ohneZufallsereignisse && sandbox.EventSystem
+          && typeof sandbox.EventSystem.onRoomEnter === 'function' && !sandbox.EventSystem.__ohneZufall) {
+        sandbox.EventSystem.onRoomEnter = function () {};
+        sandbox.EventSystem.__ohneZufall = true;
+      }
     } catch (e) {
       errors.push({ level: 'error', msg: `[LOAD ${rel}] ${e && e.message}` });
       skipped.push({ file: rel, reason: (e && e.message) || 'Fehler' });

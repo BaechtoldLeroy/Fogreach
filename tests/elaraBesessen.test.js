@@ -22,6 +22,13 @@ before(async () => {
 after(async () => { if (H) await H.shutdown(); });
 
 beforeEach(() => {
+  // Unverwundbar in JEDEM Fall (#178). Stirbt der Spieler, friert der Fall
+  // ein, und 1,5 s spaeter verlaesst das Spiel den Dungeon — die
+  // Gegnergruppe ist weg, und alle folgenden Faelle fallen mit ("vier Faelle
+  // auf einmal"). Gemessen: in 3 von 40 Laeufen starb er im Angriffsfall,
+  // obwohl dort b.damage = 0 steht — jeder Treffer kostet mindestens 1 LP
+  // (applyPlayerDamage), und Elara schlaegt dort ungebremst zu.
+  H.run('window._playerInvincible = true');
   L.clearEnemies();
   L.disableCrit();
   L.setWeaponDamage(20);
@@ -184,9 +191,6 @@ test('Mara hilft, wenn das Finale sie an Deiner Seite sieht', () => {
     return { hilft: b._maraHilft, hp: b.hp };
   })()`);
   assert.strictEqual(vor.hilft, true);
-  // Unverwundbar: stirbt der Spieler waehrend des Wartens, startet die Szene
-  // neu und die Gegnergruppe ist weg (so unter Last im Gesamtlauf passiert).
-  H.run(`window._playerInvincible = true`);
 
   // Takten, BIS der Pfeil einschlaegt — nicht 480 Bilder und dann messen.
   //
@@ -205,7 +209,6 @@ test('Mara hilft, wenn das Finale sie an Deiner Seite sieht', () => {
     if (i % 6 === 0) L.healPlayer();
     nach = bossHp();
   }
-  H.run(`window._playerInvincible = false`);
   assert.ok(nach >= 0, 'der Boss ist waehrend des Wartens verschwunden');
   assert.ok(nach < vor.hp, 'Maras Pfeil hat nicht getroffen (' + vor.hp + ' -> ' + nach + ')');
   assert.ok(ohne.hp > 0);

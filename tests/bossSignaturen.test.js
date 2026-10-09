@@ -17,12 +17,6 @@ let L = null;
 before(async () => {
   H = await launchDungeon({ depth: 10 });
   L = H.lab;
-  // Keine Zufallsereignisse beim Raumbetreten. Ab Tiefe 5 kann der
-  // Elite-Hinterhalt kommen: 800 ms nach enterRoom oeffnet er eine Wahl und
-  // haelt die Spieluhr an. Ein Test, der danach endet, laesst ihn offen —
-  // und der NAECHSTE laeuft auf stehender Uhr: seine delayedCalls feuern nie
-  // ('Ohne Gefallene kommen Schatten' fand so 0 Schatten, je nach Wurf).
-  H.run('window.EventSystem.onRoomEnter = function () {};');
 });
 after(async () => { if (H) await H.shutdown(); });
 
