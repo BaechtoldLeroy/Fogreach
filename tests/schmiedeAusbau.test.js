@@ -268,3 +268,55 @@ test('Ein zu teurer Preis wird eingefaerbt, der Knopf bleibt', () => {
     'die Farbe aendert sich nicht, wenn das Gold fehlt (beide ' + r.arm + ')');
   assert.strictEqual(r.knopf, true, 'der Knopf verschwindet, statt sich nur zu faerben');
 });
+
+// #185: Den ersten Schliff zahlt Branka.
+const MIT_AUFTRAG = `
+  (function () {
+    var qs = window.questSystem, st = qs.getQuestSaveData();
+    st.quests = { aldric_cleanup: { status: 'completed', objectives: [] } };
+    qs.loadQuestSaveData(st);
+    qs.acceptQuest('einfuehrung_schmiede');
+  })();
+`;
+
+test('Mit Brankas Einfuehrung ist der erste Ausbau gratis — der zweite nicht', () => {
+  const r = H.run(`(function () {
+    ${AUFBAU}
+    ${MIT_AUFTRAG}
+    var LS = window.LootSystem;
+    window.materialCounts.GOLD = 0;
+    window.materialCounts.MAT = 0;          // nichts in der Tasche
+    sc._selection = { kind: 'equip', key: 'body' };
+    sc._refreshAll();
+    var anzeige = sc.kostenAusbau.text;
+    var s0 = LS.ausbauStufe(window.equipment.body);
+    sc._ausbauen();
+    var s1 = LS.ausbauStufe(window.equipment.body);
+    sc._ausbauen();                          // jetzt wieder mit Preis — und nichts da
+    var s2 = LS.ausbauStufe(window.equipment.body);
+    var st = window.questSystem.getQuestSaveData().quests.einfuehrung_schmiede;
+    return { anzeige: anzeige, s0: s0, s1: s1, s2: s2, ziel: st.objectives[0].current,
+             gold: LS.getGold(), mat: window.materialCounts.MAT };
+  })()`);
+  assert.ok(/Branka/.test(r.anzeige), 'die Schmiede sagt nicht, dass Branka zahlt: ' + r.anzeige);
+  assert.strictEqual(r.s1, r.s0 + 1, 'der Gratis-Ausbau ging ohne Gold nicht durch');
+  assert.strictEqual(r.ziel, 1, 'der Auftrag rueckte nicht vor');
+  assert.strictEqual(r.s2, r.s1, 'auch der zweite Ausbau war gratis');
+  assert.strictEqual(r.gold, 0); assert.strictEqual(r.mat, 0);
+});
+
+test('Ohne den Auftrag kostet der Ausbau wie immer', () => {
+  const r = H.run(`(function () {
+    ${AUFBAU}
+    var qs = window.questSystem, st = qs.getQuestSaveData();
+    st.quests = {}; qs.loadQuestSaveData(st);
+    var LS = window.LootSystem;
+    window.materialCounts.GOLD = 0;
+    window.materialCounts.MAT = 0;
+    sc._selection = { kind: 'equip', key: 'body' };
+    var s0 = LS.ausbauStufe(window.equipment.body);
+    sc._ausbauen();
+    return { s0: s0, s1: LS.ausbauStufe(window.equipment.body) };
+  })()`);
+  assert.strictEqual(r.s1, r.s0, 'ohne Auftrag und ohne Gold wurde trotzdem ausgebaut');
+});

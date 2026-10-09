@@ -93,8 +93,8 @@
       rewards: { xp: 40, gold: 30 },
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
-      dialogueOffer: 'Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.\n\nBring mir irgendetwas davon. Ich zeig Dir, wie man es ausbaut — Gold, ein paar Eisenbrocken, und es wird Deins. Danach machst Du es allein.',
-      dialogueProgress: 'Du hast es noch nicht gemacht. Leg ein Stück auf den Tisch und drück auf Ausbauen. Das Gold und die Brocken hast Du.',
+      dialogueOffer: 'Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.\n\nBring mir irgendetwas davon. Ich zeig Dir, wie man es ausbaut, und es wird Deins. Diesmal geht es auf mich — danach kostet es Gold und Eisenbrocken, und Du machst es allein.',
+      dialogueProgress: 'Du hast es noch nicht gemacht. Leg ein Stück auf den Tisch und drück auf Ausbauen. Diesmal zahle ich.',
       dialogueComplete: '(Sie dreht es einmal ins Licht.) Siehst Du. Dasselbe Stück, nur nicht mehr dasselbe.\n\nJedes Mal, wenn Du hochkommst, kommst Du hier vorbei. Nicht weil ich das sage, sondern weil Du sonst mit dem runtergehst, was letzte Woche gereicht hat.'
     },
     einfuehrung_presse: {
@@ -1159,8 +1159,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       'quest.einfuehrung_schmiede.title': 'The First Edge',
       'quest.einfuehrung_schmiede.description': 'Upgrade a piece of equipment at the Archive Forge.',
-      'quest.einfuehrung_schmiede.dialogueOffer': "You wear what you found down there, and you wear it the way you carry a tool that is strange to you.\n\nBring me any of it. I will show you how it is upgraded - gold, a few iron lumps, and it becomes yours. After that you do it alone.",
-      'quest.einfuehrung_schmiede.dialogueProgress': 'You have not done it yet. Put a piece on the table and press Upgrade. You have the gold and the lumps.',
+      'quest.einfuehrung_schmiede.dialogueOffer': "You wear what you found down there, and you wear it the way you carry a tool that is strange to you.\n\nBring me any of it. I will show you how it is upgraded, and it becomes yours. This one is on me - after that it costs gold and iron lumps, and you do it alone.",
+      'quest.einfuehrung_schmiede.dialogueProgress': 'You have not done it yet. Put a piece on the table and press Upgrade. This time I pay.',
       'quest.einfuehrung_schmiede.dialogueComplete': "(She turns it once into the light.) You see. The same piece, only no longer the same.\n\nEvery time you come back up, you stop by here. Not because I say so, but because otherwise you go back down with what was good enough last week.",
 
       'quest.einfuehrung_presse.title': 'A Line That Stays',

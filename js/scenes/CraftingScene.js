@@ -1,5 +1,19 @@
 // js/scenes/CraftingScene.js — Archivschmiede Crafting Scene
 
+/**
+ * #185: Brankas Einfuehrung "Der erste Schliff" verlangt einen Ausbau — und
+ * den zahlt sie: "Ich zeig Dir, wie man es ausbaut." Solange ihr Ziel offen
+ * ist, kostet der Ausbau nichts. Danach (auch nach Neuladen: das Ziel steht
+ * im Questzustand) wieder der volle Preis. Wer zu Beginn zu wenig Gold oder
+ * Brocken hatte, kam sonst gar nicht durch die Einfuehrung.
+ */
+function _ersterSchliffGratis() {
+  const qs = window.questSystem;
+  if (!qs || typeof qs.getActiveQuests !== 'function') return false;
+  const q = (qs.getActiveQuests() || []).filter((x) => x && x.id === 'einfuehrung_schmiede')[0];
+  return !!(q && (q.objectives || []).some((o) => o.target === 'upgrade' && o.current < o.required));
+}
+
 if (window.i18n) {
   window.i18n.register('de', {
     'crafting.title': 'ARCHIVSCHMIEDE',
@@ -12,6 +26,7 @@ if (window.i18n) {
     'crafting.ausbau.stufe': 'Stufe {n} von {max}',
     'crafting.ausbau.wirkung': 'Jede Stufe hebt alle Werte um {pct} %.',
     'crafting.ausbau.kosten': 'Nächste Stufe: {gold} Gold + {brocken} Eisenbrocken',
+    'crafting.ausbau.gratis': 'Nächste Stufe: Branka übernimmt die Kosten.',
     'crafting.ausbau.voll': 'Voll ausgebaut. Eine höhere Seltenheit gibt mehr Stufen.',
     'crafting.ausbau.rueckgabe': 'Beim Zerlegen kommen {n} Eisenbrocken zurück.',
     'crafting.btn.ausbau': 'Ausbauen',
@@ -60,6 +75,7 @@ if (window.i18n) {
     'crafting.ausbau.stufe': 'Level {n} of {max}',
     'crafting.ausbau.wirkung': 'Each level raises all values by {pct}%.',
     'crafting.ausbau.kosten': 'Next level: {gold} gold + {brocken} iron chunks',
+    'crafting.ausbau.gratis': 'Next level: Branka covers the cost.',
     'crafting.ausbau.voll': 'Fully upgraded. A higher rarity grants more levels.',
     'crafting.ausbau.rueckgabe': 'Salvaging returns {n} iron chunks.',
     'crafting.btn.ausbau': 'Upgrade',
@@ -809,6 +825,7 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     // Preise: was fehlt, steht rot da. Rot heisst hier nicht "verboten",
     // sondern "dafuer reicht es noch nicht" — deshalb bleibt der Knopf sichtbar.
     const kosten = (LS && typeof LS.ausbauKosten === 'function') ? LS.ausbauKosten(item) : null;
+    const gratis = _ersterSchliffGratis();
     const gold = (LS && typeof LS.getGold === 'function') ? LS.getGold() : 0;
     const brocken = getMaterialCount('MAT');
 
@@ -832,8 +849,9 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
       this.kostenAusbau.setText(
         _CRAFT_T('crafting.ausbau.wirkung', { pct: Math.round(LS.AUSBAU_JE_STUFE * 100) })
         + String.fromCharCode(10)
-        + _CRAFT_T('crafting.ausbau.kosten', { gold: kosten.gold, brocken: kosten.brocken }));
-      const reicht = gold >= kosten.gold && brocken >= kosten.brocken;
+        + (gratis ? _CRAFT_T('crafting.ausbau.gratis')
+          : _CRAFT_T('crafting.ausbau.kosten', { gold: kosten.gold, brocken: kosten.brocken })));
+      const reicht = gratis || (gold >= kosten.gold && brocken >= kosten.brocken);
       this.kostenAusbau.setColor(reicht ? '#f1e9d8' : '#ff8844');
     } else {
       this.kostenAusbau.setText(_CRAFT_T('crafting.ausbau.voll')).setColor('#8f8f8f');
@@ -857,11 +875,13 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     const LS = window.LootSystem;
     const item = this._getSelectedItem();
     if (!LS || typeof LS.ausbauen !== 'function' || !item) return;
-    const kosten = LS.ausbauKosten(item);
-    if (!kosten) {
+    const voll = LS.ausbauKosten(item);
+    if (!voll) {
       this._showFeedback(_CRAFT_T('crafting.feedback.ausbau_voll'), '#ff4444');
       return;
     }
+    // #185: Den ersten Schliff zahlt Branka (_ersterSchliffGratis).
+    const kosten = _ersterSchliffGratis() ? { gold: 0, brocken: 0 } : voll;
     // BEIDE Vorraete pruefen, BEVOR einer abgebucht wird. Sonst zahlt man
     // das Gold und scheitert dann an den Brocken.
     const gold = (typeof LS.getGold === 'function') ? LS.getGold() : 0;
