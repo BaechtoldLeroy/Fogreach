@@ -1040,6 +1040,8 @@ let tooltip;
 // 3) PRELOAD
 // ==================================================
 function preload() {
+  // #189: gestaltete Rahmen/Toasts mitladen (nur mit ?debug=1&ui=neu).
+  if (window.uiRahmen) window.uiRahmen.vorladen(this);
   // Player sprites are preloaded in StartScene (dir00 only);
   // other directions lazy-load via ensureDirectionLoaded().
 

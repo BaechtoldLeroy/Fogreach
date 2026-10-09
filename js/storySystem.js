@@ -777,10 +777,17 @@
 
     var container = scene.add.container(w / 2, h / 2).setDepth(6001).setScrollFactor(0);
 
-    var bg = scene.add.graphics();
-    bg.fillStyle(0x0c0c14, 0.95).fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
-    bg.lineStyle(2, 0x484850, 0.9).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
-    container.add(bg);
+    // #189: gestaltete Platte mit ?debug=1&ui=neu (lokal im Container), sonst
+    // wie bisher.
+    var platte = window.uiRahmen && window.uiRahmen.menuePlatte(scene, 0, 0, panelW, panelH, 0);
+    if (platte) {
+      platte.forEach(function (t) { container.add(t); });
+    } else {
+      var bg = scene.add.graphics();
+      bg.fillStyle(0x0c0c14, 0.95).fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
+      bg.lineStyle(2, 0x484850, 0.9).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
+      container.add(bg);
+    }
 
     var innerW = panelW - pad * 2;
     var leftX = -panelW / 2 + pad;

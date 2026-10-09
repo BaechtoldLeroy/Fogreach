@@ -145,6 +145,8 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   preload() {
+    // #189: gestaltete Rahmen/Toasts mitladen (nur mit ?debug=1&ui=neu).
+    if (window.uiRahmen) window.uiRahmen.vorladen(this);
     // #181: Der Hub ist ein gekachelter Platz (hubNeuKarte + hubNeuWelt).
     // Bis b333 war er ein gemaltes Bild von 6,2 MB; das wird nicht mehr
     // geladen.

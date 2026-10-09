@@ -10,7 +10,7 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23121218'/%3E%3Cpath d='M32 8 L48 24 L40 56 L24 56 L16 24 Z' fill='%23c0392b'/%3E%3Ccircle cx='26' cy='28' r='3' fill='%23f1c40f'/%3E%3Ccircle cx='38' cy='28' r='3' fill='%23f1c40f'/%3E%3C/svg%3E" />
     <!-- #88: EIN Schalter fuer alle Debug-Oberflaechen. Steht vor dem
          Fehler-Overlay, weil das ihn schon braucht. Ohne Abhaengigkeiten. -->
-    <script src="js/debugGate.js?v=013"></script>
+    <script src="js/debugGate.js?v=014"></script>
 
     <script src="js/pixelTexturen.js?v=009"></script>
     <!-- Mobile-Fehler-Overlay: zeigt uncaught JS-Fehler ON-SCREEN, weil man auf
@@ -115,7 +115,7 @@
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=331"></script>
+    <script src="js/version.js?v=332"></script>
     <script src="js/soundManager.js?v=002"></script>
     <script src="js/performanceMonitor.js?v=002"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -141,7 +141,8 @@
     <script src="js/hiddenFinds.js?v=017"></script>
     <!-- #71: Kettenschloss-Minispiel — vor eventSystem (dort registriert) -->
     <script src="js/kettenschloss.js?v=005"></script>
-    <script src="js/eventSystem.js?v=045"></script>
+    <script src="js/uiRahmen.js?v=001"></script>
+    <script src="js/eventSystem.js?v=046"></script>
     <!-- 061: Raum-Ziel-Modi. roomModes.js (Framework + ClearMode) MUSS vor
          roomManager/wave/main laden. Die Modus-Dateien (survival/defend/hunt/
          visuals/escape) registrieren sich selbst und kommen in späteren WPs;
@@ -175,7 +176,7 @@
     <script src="js/kriegsschar.js?v=005"></script>
     <script src="js/loot.js?v=031"></script>
     <script src="js/questSystem.js?v=038"></script>
-    <script src="js/storySystem.js?v=010"></script>
+    <script src="js/storySystem.js?v=011"></script>
     <!-- Feature 063: Story-Inszenierung (Logik/Daten/Komponente vor HubSceneV2) -->
     <script src="js/questFinale.js?v=005"></script>
     <!-- #158: Finale an der Quelle und die Entscheidung am Konvoi. -->
@@ -217,18 +218,18 @@
     <script src="js/hubPhase.js?v=005"></script>
     <script src="js/anschlagtafel.js?v=002"></script>
     <script src="js/hubPhaseView.js?v=009"></script>
-    <script src="js/scenes/HubSceneV2.js?v=149"></script>
-    <script src="js/scenes/CraftingScene.js?v=075"></script>
-    <script src="js/scenes/ShopScene.js?v=090"></script>
+    <script src="js/scenes/HubSceneV2.js?v=150"></script>
+    <script src="js/scenes/CraftingScene.js?v=076"></script>
+    <script src="js/scenes/ShopScene.js?v=091"></script>
     <script src="js/scenes/SkillTreeScene.js?v=067"></script>
-    <script src="js/scenes/SettingsScene.js?v=006"></script>
-    <script src="js/scenes/PrintingHouseScene.js?v=003"></script>
+    <script src="js/scenes/SettingsScene.js?v=007"></script>
+    <script src="js/scenes/PrintingHouseScene.js?v=004"></script>
     <script src="js/scenes/TestTerrainScene.js"></script>
     <!-- DEAKTIVIERT (kein Netzwerk): <script type="module" src="js/leaderboard.js"></script> -->
     <script src="js/minimap.js?v=063"></script>
     <script src="js/hudV2.js?v=086"></script>
     <script src="js/endlessMode.js?v=063"></script>
-    <script src="js/main.js?v=130"></script>
+    <script src="js/main.js?v=131"></script>
     <script src="js/mobileAutoAim.js"></script>
     <!-- 053 WP01: Mobile-Perf-Diagnose-Probe. No-Op außer bei ?perf=1.
          ?v bump erzwingt frischen Fetch (Pages cached Assets ~10min). -->

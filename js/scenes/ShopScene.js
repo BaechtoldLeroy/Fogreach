@@ -137,11 +137,14 @@
       const panelH = Math.min(460, ch - 20);
       const px = cw / 2;
       const py = ch / 2;
-      const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
-      panel.fillStyle(0x10131c, 0.96)
-        .fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
-      panel.lineStyle(3, 0xffd166, 0.9)
-        .strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+      // #189: gestaltete Platte mit ?debug=1&ui=neu, sonst wie bisher.
+      if (!(window.uiRahmen && window.uiRahmen.menuePlatte(this, px, py, panelW, panelH, 2000.5))) {
+        const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
+        panel.fillStyle(0x10131c, 0.96)
+          .fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+        panel.lineStyle(3, 0xffd166, 0.9)
+          .strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+      }
 
       // Title
       this.add.text(px, py - panelH / 2 + 14, _SHOP_T('shop.title'), {
@@ -183,6 +186,9 @@
         bg.on('pointerdown', () => this._renderTab(t));
         this._tabButtons[t] = bg;
       });
+
+      // #189: alle Knoepfe im Messing-Stil, auch die je Reiter neu gebauten.
+      if (window.uiRahmen) window.uiRahmen.einkleiden(this);
 
       // ESC handler
       this._escHandler = () => this._close();

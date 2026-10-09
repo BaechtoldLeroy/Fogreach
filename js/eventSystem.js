@@ -1765,8 +1765,20 @@
     environmental_hazard: 0xff8833
   };
 
-  function showEventToast(scene, message, eventId) {
+  function showEventToast(scene, message, eventId, _nachgeladen) {
     if (!scene || !scene.add) return;
+    // #189: gestalteter Toast nur mit ?debug=1&ui=neu. Fehlen die Grafiken
+    // noch, einmal nachladen und dann zeigen; scheitert das Laden, faellt
+    // der Toast auf den alten Stil zurueck statt zu verschwinden.
+    var UR = window.uiRahmen;
+    var neu = !!(UR && UR.an());
+    if (neu && !UR.bereit(scene)) {
+      if (!_nachgeladen) {
+        UR.nachladen(scene, function () { showEventToast(scene, message, eventId, true); });
+        return;
+      }
+      neu = false;
+    }
     var cam = scene.cameras && scene.cameras.main;
     var camW = cam ? cam.width : 800;
     var cx = camW / 2;
@@ -1780,9 +1792,12 @@
         var _old = scene._activeEventToast;
         if (_old.panel && _old.panel.destroy) _old.panel.destroy();
         if (_old.label && _old.label.destroy) _old.label.destroy();
+        (_old.teile || []).forEach(function (t) { if (t && t.destroy) t.destroy(); });
       } catch (e) {}
       scene._activeEventToast = null;
     }
+
+    if (neu) { _gestalteterToast(scene, message, eventId, camW, cx, cy); return; }
 
     var accentHex = EVENT_ACCENT_COLORS[eventId] || 0xffdd44;
 
@@ -1841,6 +1856,51 @@
         if (label && label.destroy) label.destroy();
         if (scene._activeEventToast && scene._activeEventToast.label === label) scene._activeEventToast = null;
       }, 4000);
+    }
+  }
+
+  // #189: Toast im neuen Stil — Messing-Banner (neunteilig), Symbol je Art
+  // und ein weiches Hereingleiten statt Aufploppen.
+  function _gestalteterToast(scene, message, eventId, camW, cx, cy) {
+    var UR = window.uiRahmen;
+    var SYM = 32, padL = 18 + SYM + 10, padR = 22, padY = 14;
+    var label = scene.add.text(0, cy, message, {
+      fontSize: '17px', fill: '#f1e9d8', fontFamily: 'serif', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 3, align: 'center',
+      wordWrap: { width: camW - 100 - padL, useAdvancedWrap: true },
+      resolution: 2
+    }).setOrigin(0.5).setDepth(2000).setScrollFactor(0);
+    var panelW = Math.min(camW - 40, Math.ceil(label.width) + padL + padR);
+    var panelH = Math.max(52, Math.ceil(label.height) + padY * 2);
+    var links = cx - panelW / 2;
+    label.setX(links + padL + (panelW - padL - padR) / 2);
+    var teile = UR.banner(scene, cx, cy, panelW, panelH, 1999);
+    var sym = scene.add.image(links + 18 + SYM / 2, cy, UR.symbol(eventId))
+      .setDisplaySize(SYM, SYM).setScrollFactor(0).setDepth(2000);
+    teile.push(sym);
+    teile.push(label);
+    // Nur die Kennung fuer Tests und das Wegraeumen beim naechsten Toast.
+    var eintrag = { label: label, teile: teile, art: UR.symbol(eventId), gestaltet: true };
+    scene._activeEventToast = eintrag;
+
+    var weg = function () {
+      teile.forEach(function (t) { if (t && t.destroy) t.destroy(); });
+      if (scene._activeEventToast === eintrag) scene._activeEventToast = null;
+    };
+    teile.forEach(function (t) { t.setAlpha(0); t.y -= 14; });
+    if (scene.tweens && scene.tweens.add) {
+      scene.tweens.add({
+        targets: teile, alpha: 1, y: '+=14', duration: 420, ease: 'Sine.easeOut',
+        onComplete: function () {
+          scene.tweens.add({
+            targets: teile, alpha: 0, y: '-=10', delay: 3200, duration: 650,
+            ease: 'Sine.easeIn', onComplete: weg
+          });
+        }
+      });
+    } else {
+      teile.forEach(function (t) { t.setAlpha(1); });
+      setTimeout(weg, 4000);
     }
   }
 
@@ -2521,6 +2581,7 @@
       wordWrap: { width: camW - 100 }
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2501);
     elements.push(titleText);
+    var _titelBreite = titleText.width; // #189: vor dem Wort-fuer-Wort-Aufbau
 
     // Layout-Fix (Mobile): langer Text (z.B. Elaras 3-Absatz-Dialog) wuchs bei
     // fixem Titel-Zentrum ueber die Bildschirmmitte hinaus und ueberlappte den
@@ -2575,6 +2636,12 @@
       }
     };
 
+    // #189: neuer Stil (?debug=1&ui=neu) nur, wenn die Grafiken schon geladen
+    // sind — der Dialog muss sofort stehen.
+    var _UR = window.uiRahmen;
+    var _neuStil = !!(_UR && _UR.an() && _UR.bereit(scene));
+    if (_UR && _UR.an() && !_neuStil) _UR.nachladen(scene);
+
     // Buttons — dynamic height so long labels wrap cleanly inside the box.
     var BTN_W = Math.min(520, camW - 40);
     var BTN_PAD_X = 16;
@@ -2593,6 +2660,7 @@
         .setStrokeStyle(2, 0xd4a543)
         .setScrollFactor(0).setDepth(2502)
         .setInteractive({ useHandCursor: true });
+      if (_neuStil) _UR.knopf(btnBg);
       btnText.setPosition(cx, by);
       (function (bg, choice) {
         bg.on('pointerover', function () { bg.setFillStyle(0x555555); });
@@ -2605,6 +2673,13 @@
       elements.push(btnBg);
       elements.push(btnText);
       cursorY = by + btnH / 2 + BTN_GAP;
+    }
+    if (_neuStil) {
+      // Platte hinter Titel und Knoepfen (zwischen Abdunklung und Inhalt).
+      var _oben = _blockTop - 22, _unten = cursorY - BTN_GAP + 22;
+      var _pw = Math.min(camW - 16, Math.max(BTN_W, _titelBreite) + 56);
+      _UR.platte(scene, cx, (_oben + _unten) / 2, _pw, _unten - _oben, 2500.5)
+        .forEach(function (t) { elements.push(t); });
     }
 
     // Ein-Knopf-Dialoge ("Weiter") sind reine Bestätigungen — z. B. Elaras
@@ -2767,6 +2842,10 @@
     // can reuse the same panel-styled, scroll-fixed toast instead of rolling
     // a new one.
     showToast: showEventToast,
+    // Mehrere Stellen (Hinterhalt, Elara, Finale, Edikt im Hub) fragen nach
+    // EventSystem.showEventToast — das gab es nie, ihre Hinweise blieben
+    // stumm. Dieselbe Funktion unter beiden Namen.
+    showEventToast: showEventToast,
     // Fuer tests/wissensfragmentAbstand.test.js: die Bandgrenzen messbar machen.
     LORE_ABSTAND_MIN: LORE_ABSTAND_MIN,
     LORE_ABSTAND_MAX: LORE_ABSTAND_MAX,
@@ -2790,4 +2869,7 @@
     SCHREIN_SEGEN: SCHREIN_SEGEN,
     SCHREIN_PREISE: SCHREIN_PREISE
   };
+  // inventory.js fragt nach window.showEventToast ("Passt nicht in diesen
+  // Platz", "Kein Platz im Inventar") — auch das gab es nie.
+  window.showEventToast = showEventToast;
 })();

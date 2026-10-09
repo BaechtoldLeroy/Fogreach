@@ -89,7 +89,8 @@
     'perf', 'nofog', 'nomask', 'nospot', 'noexpl', 'explRes', 'fogInterval', 'rays',
     'spy', 'roomsize', 'hubdebug',
     'versteck', 'sonder', 'akt', 'stark', 'tuer', 'schmiede', 'patrouille', 'haendler',
-    'sitzung'
+    'sitzung',
+    'ui'
   ];
 
   /**

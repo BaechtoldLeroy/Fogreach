@@ -213,9 +213,13 @@
       const px = cw / 2;
       const py = ch / 2;
 
-      const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
-      panel.fillStyle(0x10131c, 0.96).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
-      panel.lineStyle(3, 0xffd166, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+      // #189: gestaltete Platte mit ?debug=1&ui=neu, sonst wie bisher. Tiefe
+      // 2000.5: einige Knoepfe hier liegen auf 2001 (unter ihrem Wert-Text).
+      if (!(window.uiRahmen && window.uiRahmen.menuePlatte(this, px, py, panelW, panelH, 2000.5))) {
+        const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
+        panel.fillStyle(0x10131c, 0.96).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+        panel.lineStyle(3, 0xffd166, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+      }
 
       // Title (centered)
       this.add.text(px, py - panelH / 2 + 16, T('settings.title'), {
@@ -350,6 +354,9 @@
         'v ' + (window.GAME_VERSION || '?'), {
           fontFamily: 'monospace', fontSize: '10px', color: '#777777'
         }).setOrigin(1, 1).setScrollFactor(0).setDepth(2003);
+
+      // #189: alle Knoepfe im Messing-Stil (nur mit ?debug=1&ui=neu).
+      if (window.uiRahmen) window.uiRahmen.einkleiden(this);
 
       this.input.keyboard.on('keydown-ESC', () => this._close());
       this.input.keyboard.on('keydown-O', () => this._close());

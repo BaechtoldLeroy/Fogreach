@@ -94,11 +94,14 @@
       const panelTop  = py - panelH / 2;
 
       // Panel background
-      const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
-      panel.fillStyle(0x10131c, 0.97).fillRoundedRect(panelLeft, panelTop, panelW, panelH, 16);
-      panel.lineStyle(3, 0xffd166, 0.92).strokeRoundedRect(panelLeft, panelTop, panelW, panelH, 16);
-      // Subtle gradient overlay (top is lighter)
-      panel.fillStyle(0x1c2030, 0.35).fillRoundedRect(panelLeft, panelTop, panelW, 56, 16);
+      // #189: gestaltete Platte mit ?debug=1&ui=neu, sonst wie bisher.
+      if (!(window.uiRahmen && window.uiRahmen.menuePlatte(this, px, py, panelW, panelH, 2000.5))) {
+        const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
+        panel.fillStyle(0x10131c, 0.97).fillRoundedRect(panelLeft, panelTop, panelW, panelH, 16);
+        panel.lineStyle(3, 0xffd166, 0.92).strokeRoundedRect(panelLeft, panelTop, panelW, panelH, 16);
+        // Subtle gradient overlay (top is lighter)
+        panel.fillStyle(0x1c2030, 0.35).fillRoundedRect(panelLeft, panelTop, panelW, 56, 16);
+      }
 
       // Compact header — title only, no subtitle. Saves vertical space for
       // the card grid.
@@ -135,6 +138,9 @@
 
       // Keys: ESC closes; E (interaction key) also closes so the player
       // doesn't get stuck pressing it again at the entrance.
+      // #189: Knoepfe im Messing-Stil (nur mit ?debug=1&ui=neu).
+      if (window.uiRahmen) window.uiRahmen.einkleiden(this);
+
       this.input.keyboard.on('keydown-ESC', () => this._close());
       this.input.keyboard.on('keydown-E',   () => this._close());
 
@@ -469,6 +475,8 @@
       const bg = this.add.rectangle(cx, cy, w, h, bgColor)
         .setStrokeStyle(2, borderColor)
         .setScrollFactor(0).setDepth(2002);
+      // #189: auch ein gesperrter Knopf bekommt den neuen Stil (entsaettigt).
+      if (!enabled) bg._uiAus = true;
       this.add.text(cx, cy, label, {
         fontFamily: 'monospace', fontSize: '11px', color: txtColor, align: 'center',
         wordWrap: { width: w - 12, useAdvancedWrap: true }, lineSpacing: 1
