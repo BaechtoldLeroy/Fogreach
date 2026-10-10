@@ -52,6 +52,7 @@ test('Startmenue: die Kulisse ist animiert (Bilder, Nebel, Glut, Licht)', () => 
   const k = start().kulisse;
   assert.ok(k, 'keine Kulisse gebaut');
   const gesehen = { held: new Set(), laterne: new Set(), titel: new Set() };
+  const schein = new Set();
   const nebelVorher = k.nebel.map((n) => n.ts.tilePositionX);
   const fensterVorher = k.fenster.map((f) => f.alpha);
   const ratVorher = k.ratsfenster.alpha;
@@ -62,6 +63,7 @@ test('Startmenue: die Kulisse ist animiert (Bilder, Nebel, Glut, Licht)', () => 
     H.step(5);
     gesehen.held.add(k.held.frame.name);
     gesehen.laterne.add(k.laterne.frame.name);
+    schein.add(k.laternenSchein.alpha.toFixed(3) + '/' + k.laternenSchein.scaleX.toFixed(3));
     gesehen.titel.add(start().titel.frame.name);
     kraehenBilder.add(k.kraehen[0].frame.name);
   }
@@ -69,9 +71,10 @@ test('Startmenue: die Kulisse ist animiert (Bilder, Nebel, Glut, Licht)', () => 
     'Kraehe ' + i + ' fliegt nicht (' + kraehenVorher[i] + ' -> ' + c.x + ')'));
   assert.ok(kraehenBilder.size >= 6, 'Kraehe schlaegt nicht mit den Fluegeln');
   assert.ok(gesehen.held.size >= 6, 'Archivschmied bewegt sich nicht: ' + [...gesehen.held]);
-  assert.ok(gesehen.laterne.size >= 6, 'Laterne flackert nicht: ' + [...gesehen.laterne]);
+  // Die Laterne haelt still — flackernd zog sie zu viel Aufmerksamkeit.
+  assert.strictEqual(gesehen.laterne.size, 1, 'die Laterne flackert: ' + [...gesehen.laterne]);
+  assert.strictEqual(schein.size, 1, 'ihr Schein flackert: ' + [...schein].slice(0, 4));
   assert.ok(gesehen.titel.size >= 6, 'Titelglanz laeuft nicht: ' + [...gesehen.titel]);
-  assert.ok(![...gesehen.laterne].includes(8), 'Laterne zeigt Bild 8 (Doppel von Bild 0)');
   k.nebel.forEach((n, i) => assert.ok(n.ts.tilePositionX > nebelVorher[i] + 5,
     'Nebelband ' + i + ' zieht nicht (' + nebelVorher[i] + ' -> ' + n.ts.tilePositionX + ')'));
   assert.ok(k.funken.getAliveParticleCount() >= 10,

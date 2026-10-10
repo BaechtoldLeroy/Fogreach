@@ -193,18 +193,13 @@ function _baueKulisse(scene) {
     .setScale(0.32, 0.18).setTint(0xffb040).setAlpha(0.5).setBlendMode(ADD).setDepth(6);
   scene.tweens.add({ targets: k.augen, alpha: 0.95, duration: 1700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-  // Die Laterne des Archivschmieds, rechts neben ihm auf der Zinne
-  // abgestellt (Flackerschleife Bild 0..7). Bis b352 hing sie an einem
+  // Die Laterne des Archivschmieds, rechts neben ihm auf der Zinne. Sie steht
+  // STILL (ein Bild, ruhiger Schein): flackernd zog sie zu viel Aufmerksamkeit
+  // vom Menue ab. Bis b352 hing sie an einem
   // Wandhalter neben dem Wasserspeier — der Halter griff aber in die Luft,
   // und fuer eine Wandlaterne ist unter der Bruestung kein Platz mehr. Darum
   // traegt das Bild nur noch Ring und Laterne; ihr Fuss (Bildzeile 55 von 64)
   // sitzt auf dem Teller eines kurzen Stabs, der auf der Zinne steht.
-  if (!scene.anims.exists('start_laterne_flackern')) {
-    scene.anims.create({
-      key: 'start_laterne_flackern', frames: scene.anims.generateFrameNumbers('start_laterne', { start: 0, end: 7 }),
-      frameRate: 9, repeat: -1
-    });
-  }
   const lx = _START_LATERNE[0] * S, zinne = ch - (72 - _START_LATERNE[1]) * S;
   // Der Stab: Fussplatte auf der Zinne, zwei Pixel Eisen (Licht links, Schatten
   // rechts), oben ein Teller, auf dem die Laternenspitze sitzt.
@@ -218,15 +213,9 @@ function _baueKulisse(scene) {
   // Fuer die Pruefung: wo der Stab steht und wo er endet.
   k.laternenStab.setData({ x: lx, oben: ly, unten: zinne });
   k.laterne = scene.add.sprite(lx, ly, 'start_laterne', 0).setOrigin(19.5 / 32, 55 / 64).setScale(S).setDepth(6);
-  k.laterne.play('start_laterne_flackern');
   // Der Schein sitzt auf dem Glas, 13 Bildpixel ueber dem Fuss.
   k.laternenSchein = scene.add.image(lx, ly - 13 * S, 'start_schein')
     .setScale(2.2).setAlpha(0.55).setBlendMode(ADD).setDepth(6);
-  k.laternenTakt = scene.time.addEvent({
-    delay: 90, loop: true, callback: () => {
-      k.laternenSchein.setAlpha(0.45 + Math.random() * 0.25).setScale(2.1 + Math.random() * 0.25);
-    }
-  });
 
   // Glut steigt aus der Stadt auf — die Funken der Rebellion.
   k.funken = scene.add.particles(0, 0, 'start_funke', {
@@ -578,7 +567,7 @@ StartScene.prototype.create = function () {
   const ch = this.cameras.main.height;
   const cx = cw / 2;
 
-  // Kulisse: Fogreach im Nebel, Laterne, Archivschmied, Glut (alles animiert).
+  // Kulisse: Fogreach im Nebel, Archivschmied und Glut animiert, die Laterne steht still.
   this.kulisse = _baueKulisse(this);
 
   // Menuespalte rechts neben dem Ratsturm. Auf Handys mit Notch rechts um den
