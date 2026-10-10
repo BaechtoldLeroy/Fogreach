@@ -1,10 +1,15 @@
 /**
- * tools/partikelBauen.js — die Partikeltafel fuer ?partikel=neu (#183).
+ * tools/partikelBauen.js — die Partikeltafel (#183).
  *
- *   node tools/partikelBauen.js <rohordner> [--bogen vorschau/partikel_bogen.png]
+ *   node tools/partikelBauen.js [rohordner] [--bogen vorschau/partikel_bogen.png]
  *
- * Der Rohordner haelt die PixelLab-Boegen (je Zweck ein Bild mit neun
- * kleinen Teilen, 96x96, Name = Zweck, z. B. funken.png). Heraus kommt
+ * Der Rohordner (Vorgabe tools/rohbilder/partikel/) haelt die PixelLab-Boegen
+ * (je Zweck ein Bild mit neun kleinen Teilen, 96x96, Name = Zweck, z. B.
+ * funken.png). Die Boegen dort sind genau die, aus denen die ausgelieferte
+ * Tafel gebaut ist: PixelLab create_image_pixflux, je Zweck ein Bogen (die
+ * Bild-IDs sind nicht festgehalten), holz und metall nachgereicht in b365;
+ * verworfene Entwuerfe liegen nicht im Repo. Ein Neubau ergibt die Tafel
+ * pixelgleich. Heraus kommt
  * assets/tiles/partikel_atlas.png: eine Zeile je Zweck, 16x16 je Bild,
  * acht Spalten. Reihenfolge und Anzahl muessen zu PARTIKEL_ZWECKE in
  * js/particleEffects.js passen.
@@ -26,8 +31,8 @@ const ZWECKE = ['funken', 'blut', 'daemonenblut', 'splitter', 'glut', 'staub', '
 const WAHL = {};
 
 (async () => {
-  const roh = process.argv[2];
-  if (!roh) { console.error('Rohordner fehlt'); process.exit(1); }
+  const arg = process.argv[2];
+  const roh = (arg && arg !== '--bogen') ? arg : path.join(__dirname, 'rohbilder', 'partikel');
   const bogenArg = process.argv.indexOf('--bogen');
   const ziel = path.join(__dirname, '..', 'assets', 'tiles', 'partikel_atlas.png');
   const teile = [];

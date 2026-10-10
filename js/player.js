@@ -101,13 +101,28 @@ const ROLLE_RAND = 14;
 
 // #171: Der Nahkampfschlag als eigene Bildfolge (schlagDD_f00..f07), genauso
 // gebaut wie die Rolle: PixelLab pixminimax am Spielercharakter, 92x92 mit
-// demselben Rand, tools/schlagBauen.js. Vorerst nur hinter ?schlag=neu.
+// demselben Rand, tools/schlagBauen.js.
 const SCHLAG_BILDER = 8;
 function schlagSchluessel(dd, frame) {
   return `schlag${dd}_f${frame.toString().padStart(2, '0')}`;
 }
-function _schlagFlagge() {
-  return !!(window.DebugGate && window.DebugGate.an('schlag'));
+
+/**
+ * #171: Die Schlagbilder erst mit dem Dungeon laden (GameScene.preload), nicht
+ * schon beim Start: im Menue und im Hub wird nicht zugeschlagen. Was schon da
+ * ist, wird uebersprungen; ein Raumwechsel laedt also nichts nach.
+ */
+function schlagBilderVorladen(loader) {
+  if (!loader) return;
+  const textures = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
+  for (let dir = 0; dir < 8; dir++) {
+    const dd = dir.toString().padStart(2, '0');
+    for (let frame = 0; frame < SCHLAG_BILDER; frame++) {
+      const key = schlagSchluessel(dd, frame);
+      if (textures?.exists?.(key)) continue;
+      loader.image(key, `assets/PlayerSprites/${key}.png`);
+    }
+  }
 }
 const PLAYER_WIDTH_STRETCH = 1;
 const PLAYER_SIDEWAYS_SCALE = 0.8;
@@ -158,14 +173,7 @@ function preloadPlayerDirectionalFrames(loader) {
       if (textureManager?.exists?.(key)) continue;
       loader.image(key, `assets/PlayerSprites/${key}.png`);
     }
-    // #171: Ohne Flagge wird nichts zusaetzlich geladen.
-    if (_schlagFlagge()) {
-      for (let frame = 0; frame < SCHLAG_BILDER; frame++) {
-        const key = schlagSchluessel(dirId, frame);
-        if (textureManager?.exists?.(key)) continue;
-        loader.image(key, `assets/PlayerSprites/${key}.png`);
-      }
-    }
+    // Die Schlagbilder (#171) kommen erst mit dem Dungeon: schlagBilderVorladen.
   }
 }
 
@@ -198,11 +206,9 @@ function ensureDirectionLoaded(scene, dd) {
       const rk = rolleSchluessel(dd, f);
       if (!scene.textures.exists(rk)) scene.load.image(rk, `assets/PlayerSprites/${rk}.png`);
     }
-    if (_schlagFlagge()) {
-      for (let f = 0; f < SCHLAG_BILDER; f++) {
-        const sk = schlagSchluessel(dd, f);
-        if (!scene.textures.exists(sk)) scene.load.image(sk, `assets/PlayerSprites/${sk}.png`);
-      }
+    for (let f = 0; f < SCHLAG_BILDER; f++) {
+      const sk = schlagSchluessel(dd, f);
+      if (!scene.textures.exists(sk)) scene.load.image(sk, `assets/PlayerSprites/${sk}.png`);
     }
     scene.load.once('complete', () => {
       delete _directionLoadingPromises[dd];
@@ -1191,6 +1197,7 @@ window.DEBUG_PLAYER_COLLIDER = DEBUG_PLAYER_COLLIDER;
 window.preloadPlayerDirectionalFrames = preloadPlayerDirectionalFrames;
 window.normalizePlayerDirectionalFrames = normalizePlayerDirectionalFrames;
 window.ensureDirectionLoaded = ensureDirectionLoaded;
+window.schlagBilderVorladen = schlagBilderVorladen;
 window.beginChargedSlash = beginChargedSlash;
 window.releaseChargedSlash = releaseChargedSlash;
 window.performRoll = performRoll;
@@ -2198,9 +2205,9 @@ function handleEnemyHit(scene, enemy, options = {}) {
     return;
   }
   if (window.soundManager) window.soundManager.playSFX('hit_enemy');
-  // Particle effects: blood splat on hit
+  // Blut am Gegner, vor ihm (#183)
   if (window.particleFactory) {
-    window.particleFactory.bloodSplat(enemy.x, enemy.y);
+    window.particleFactory.bloodSplat(enemy.x, enemy.y, enemy);
   }
 
   const {
@@ -2272,13 +2279,12 @@ function attack() {
 
   if (window.soundManager) window.soundManager.playSFX('attack');
 
-  // #171 (?schlag=neu): Statt des Kegels holt die Figur mit dem Flegel aus,
-  // und im Aufschlag zieht eine kurze Wischspur (_schlagSpur). Der Kegel
-  // faellt dann ganz weg. Fehlen die Schlagbilder (Richtung nicht geladen,
-  // Verkleidung), bleibt alles wie bisher.
-  const schlagDd = _schlagFlagge() ? _schlagRichtung(this) : null;
-  const schlagBereit = !!(schlagDd && _schlagBilder(this, schlagDd));
-  // Längerer, schwererer Swing-Kegel (Default ist 100ms).
+  // #171: Die Figur holt mit dem Flegel aus, und im Aufschlag zieht eine
+  // kurze Wischspur (_schlagSpur). Nur wenn die Schlagbilder fehlen (noch
+  // nicht geladen, Verkleidung), zeigt der alte Kegel den Schlag.
+  const schlagDd = _schlagRichtung(this);
+  const schlagBereit = !!_schlagBilder(this, schlagDd);
+  // Rueckfall: laengerer, schwererer Swing-Kegel (Default ist 100ms).
   if (!schlagBereit) showAttackEffect(this, { duration: 170 });
 
   const toEnemy = new Phaser.Math.Vector2();

@@ -307,10 +307,9 @@ class StatusEffectManager {
       } else if (typeof playerHealth !== 'undefined') {
         playerHealth = Math.max(0, playerHealth - damage);
       }
-      // #183 ?partikel=neu: eine Blutung tropft sichtbar. Brand und Gift
-      // bleiben bei der Toenung — die sind kein Blut.
-      if (effectType === StatusEffectType.BLEED && window.particleFactory
-          && typeof window.partikelNeuAn === 'function' && window.partikelNeuAn(target.scene)) {
+      // #183: eine Blutung tropft sichtbar. Brand und Gift bleiben bei der
+      // Toenung — die sind kein Blut.
+      if (effectType === StatusEffectType.BLEED && window.particleFactory) {
         window.particleFactory.playerHit(target.x, target.y);
       }
       // Flash tint for DoT

@@ -1,28 +1,24 @@
-// tests/pixelPartikel.test.js — #183: Pixelpartikel je Zweck hinter ?partikel=neu.
+// tests/pixelPartikel.test.js — #183: Pixelpartikel je Zweck.
 //
 // Drei Dinge muessen halten:
-//   1. OHNE Flagge bleibt alles beim Alten: weder wird die Tafel geladen,
-//      noch tragen die Emitter etwas anderes als die zwei weichen Punkte.
-//   2. MIT Flagge zieht jeder Effekt aus SEINER Zeile der Tafel — ein Funke
-//      ist kein Blutstropfen.
+//   1. Jeder Effekt zieht aus SEINER Zeile der Tafel — ein Funke ist kein
+//      Blutstropfen. Spieler- und Gegnerblut liegen VOR der Figur, ein Prop
+//      zerbricht in sein Material.
+//   2. Fehlt die Tafel (Ladefehler), bleiben die alten zwei weichen Punkte,
+//      und ein Prop zerbricht wie der alte Gegnertod.
 //   3. Die Teilchenzahl bleibt dieselbe (Mobile): neue Bilder, keine neuen
 //      Massen.
+//
+// Ein Spiel genuegt: erst mit der Tafel messen, dann die Tafel entfernen und
+// den Rueckfall messen.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const path = require('path');
 const sharp = require('sharp');
-const { launch, launchDungeon } = require('../tools/headless/index.js');
+const { launchDungeon } = require('../tools/headless/index.js');
 
 const TAFEL = path.join(__dirname, '..', 'assets', 'tiles', 'partikel_atlas.png');
-
-async function startenMit(search) {
-  const h = await launch({ search: search, renderer: 'canvas', waitFor: 'StartScene' });
-  const ok = await h.waitForScene('GameScene', { maxRounds: 250 });
-  if (!ok) { await h.shutdown(); throw new Error('GameScene wurde nicht erreicht'); }
-  await h.settle(() => false, { maxRounds: 10 });
-  return h;
-}
 
 // Jeden Effekt einmal ausloesen und festhalten, was der Emitter traegt.
 const AUSLOESEN = `(function () {
@@ -53,9 +49,9 @@ const AUSLOESEN = `(function () {
 
 // Die echten Spielwege statt der Fabrik: ein Treffer am Spieler ueber
 // applyPlayerDamage (dort landen die Schlaege der Gegner-KI und der Bosse),
-// ein Geschoss ueber hitByProjectile, und zerschlagene Props ueber
-// breakDestructibleObstacle. Festgehalten wird jeder Emitter, den die
-// ParticleFactory dabei erzeugt.
+// ein Geschoss ueber hitByProjectile, ein Treffer am Gegner ueber
+// handleEnemyHit, und zerschlagene Props ueber breakDestructibleObstacle.
+// Festgehalten wird jeder Emitter, den die ParticleFactory dabei erzeugt.
 const SPIELWEGE = `(function () {
   var pf = window.particleFactory;
   var sc = window.game.scene.getScene('GameScene');
@@ -99,6 +95,16 @@ const SPIELWEGE = `(function () {
   var sem = window.statusEffectManager, SET = window.StatusEffectType;
   out.blutung = fang(function () { sem._applyTickDamage(player, 1, SET.BLEED); });
   out.brand = fang(function () { sem._applyTickDamage(player, 1, SET.BURN); });
+  // Ein echter Gegner in der Gegner-Ebene: getroffen, aber nicht tot.
+  var g = spawnEnemy.call(sc, player.x + 150, player.y, 1);
+  if (g) {
+    g.hp = 1000; g.maxHp = 1000;
+    out.gegnerTiefe = (g.displayList && g.displayList !== sc.sys.displayList) ? g.displayList.depth : g.depth;
+    out.gegnerInEbene = !!(sc.enemyLayer && g.displayList === sc.enemyLayer);
+    out.gegnerBlut = fang(function () { handleEnemyHit(sc, g, {}); })
+      .filter(function (e) { return e.teilchen === 4; });
+    g.destroy();
+  }
   out.fass = fang(function () { breakDestructibleObstacle(sc, prop('barrel')); });
   out.kiste = fang(function () { breakDestructibleObstacle(sc, prop('crate')); });
   out.statue = fang(function () { breakDestructibleObstacle(sc, prop('statue')); });
@@ -112,51 +118,58 @@ const SPIELWEGE = `(function () {
   return out;
 })()`;
 
-let ohne = null, mit = null, wegeOhne = null, wegeMit = null;
+let mit = null, ohne = null, wegeMit = null, wegeOhne = null;
 before(async () => {
-  const H1 = await launchDungeon({ depth: 5 });
-  try { ohne = H1.run(AUSLOESEN); wegeOhne = H1.run(SPIELWEGE); } finally { await H1.shutdown(); }
-  const H2 = await startenMit('?dungeon=5&partikel=neu');
-  try { mit = H2.run(AUSLOESEN); wegeMit = H2.run(SPIELWEGE); } finally { await H2.shutdown(); }
+  const H = await launchDungeon({ depth: 5 });
+  try {
+    mit = H.run(AUSLOESEN); wegeMit = H.run(SPIELWEGE);
+    // Erst alle Emitter auf der Tafel auslaufen lassen, dann die Tafel weg.
+    H.step(120);
+    H.run(`window.game.textures.remove('partikel_atlas')`);
+    ohne = H.run(AUSLOESEN); wegeOhne = H.run(SPIELWEGE);
+  } finally { await H.shutdown(); }
 });
 
 const zeilenVon = (bilder) => [...new Set(Array.prototype.map.call(bilder, (b) => Math.floor(Number(b) / 8)))].sort((a, b) => a - b);
 
-test('ohne Flagge: Spielertreffer und zerschlagene Props wie bisher', () => {
-  // applyPlayerDamage hatte nie einen Effekt; das Geschoss den alten roten Punkt.
-  assert.strictEqual(wegeOhne.treffer.length, 0, 'applyPlayerDamage erzeugt ohne Flagge Teilchen');
-  assert.strictEqual(wegeOhne.geschoss.length, 1);
-  assert.strictEqual(wegeOhne.geschoss[0].bild, 'particle');
-  // Ein Fass zerbrach bisher als Gegnertod: 12 rote Punkte.
-  ['fass', 'kiste', 'statue'].forEach((k) => {
-    assert.strictEqual(wegeOhne[k].length, 1, k);
-    assert.strictEqual(wegeOhne[k][0].bild, 'particle', k + ' traegt ' + wegeOhne[k][0].bild);
-    assert.strictEqual(wegeOhne[k][0].teilchen, ohne.deathBurst.teilchen, k + ': nicht mehr der alte Gegnertod');
-    // deathBurst: rot/orange getoent, ohne Schwerkraft.
-    assert.ok(wegeOhne[k][0].toenung && wegeOhne[k][0].toenung.indexOf(0xff2222) >= 0,
-      k + ': die alte Toenung fehlt (' + JSON.stringify(wegeOhne[k][0].toenung) + ')');
-    assert.strictEqual(wegeOhne[k][0].schwerkraft, 0, k + ': faellt ohne Flagge');
-  });
+test('die Tafel wird im Dungeon geladen', () => {
+  assert.strictEqual(mit.tafelGeladen, true, 'die Tafel wurde nicht geladen');
+  assert.strictEqual(ohne.tafelGeladen, false, 'die Tafel liess sich fuer den Rueckfall nicht entfernen');
 });
 
-test('mit Flagge: ein Treffer am Spieler spritzt rotes Blut vor der Figur', () => {
-  assert.strictEqual(wegeMit.treffer.length, 1, 'applyPlayerDamage erzeugt ' + wegeMit.treffer.length + ' Emitter');
-  const t = wegeMit.treffer[0];
-  assert.strictEqual(t.bild, 'partikel_atlas');
-  assert.deepStrictEqual(zeilenVon(t.bilder), [1], 'Spielerblut zieht aus den Zeilen ' + zeilenVon(t.bilder).join(','));
-  assert.ok(t.tiefe > wegeMit.spielerTiefe, 'das Blut liegt hinter der Figur (Tiefe ' + t.tiefe + ')');
-  assert.strictEqual(t.teilchen, ohne.playerHit.teilchen, 'andere Teilchenzahl als bisher');
-  // Das Geschoss spritzt genau einmal — nicht zusaetzlich zum Schadensweg.
-  assert.strictEqual(wegeMit.geschoss.length, 1, 'das Geschoss erzeugt ' + wegeMit.geschoss.length + ' Emitter');
+test('ein Treffer am Spieler spritzt rotes Blut vor der Figur, genau einmal', () => {
+  for (const [w, mitTafel] of [[wegeMit, true], [wegeOhne, false]]) {
+    const was = mitTafel ? 'mit Tafel' : 'ohne Tafel';
+    assert.strictEqual(w.treffer.length, 1, was + ': applyPlayerDamage erzeugt ' + w.treffer.length + ' Emitter');
+    const t = w.treffer[0];
+    assert.ok(t.tiefe > w.spielerTiefe, was + ': das Blut liegt hinter der Figur (Tiefe ' + t.tiefe + ')');
+    assert.strictEqual(t.teilchen, 8, was + ': andere Teilchenzahl als bisher');
+    // Das Geschoss spritzt genau einmal — nicht zusaetzlich zum Schadensweg.
+    assert.strictEqual(w.geschoss.length, 1, was + ': das Geschoss erzeugt ' + w.geschoss.length + ' Emitter');
+    // Eine Blutung tropft, ein Brand nicht.
+    assert.strictEqual(w.blutung.length, 1, was + ': die Blutung tropft nicht');
+    assert.strictEqual(w.brand.length, 0, was + ': ein Brand blutet');
+  }
+  assert.strictEqual(wegeMit.treffer[0].bild, 'partikel_atlas');
+  assert.deepStrictEqual(zeilenVon(wegeMit.treffer[0].bilder), [1], 'Spielerblut zieht aus den Zeilen ' + zeilenVon(wegeMit.treffer[0].bilder).join(','));
   assert.deepStrictEqual(zeilenVon(wegeMit.geschoss[0].bilder), [1]);
-  // Eine Blutung tropft, ein Brand nicht; ohne Flagge beide still wie bisher.
-  assert.strictEqual(wegeMit.blutung.length, 1, 'die Blutung tropft nicht');
   assert.deepStrictEqual(zeilenVon(wegeMit.blutung[0].bilder), [1]);
-  assert.strictEqual(wegeMit.brand.length, 0, 'ein Brand blutet');
-  assert.strictEqual(wegeOhne.blutung.length + wegeOhne.brand.length, 0, 'DoT ohne Flagge mit Teilchen');
+  // Rueckfall: der alte rote Punkt.
+  assert.strictEqual(wegeOhne.treffer[0].bild, 'particle');
 });
 
-test('mit Flagge: ein Fass zerbricht in Holz, kein Blut, kein Daemonenblut', () => {
+test('ein Treffer am Gegner spritzt Blut VOR den Gegner', () => {
+  for (const [w, was] of [[wegeMit, 'mit Tafel'], [wegeOhne, 'ohne Tafel']]) {
+    assert.ok(w.gegnerBlut, was + ': kein Gegner erzeugt');
+    assert.strictEqual(w.gegnerInEbene, true, was + ': der Gegner steckt nicht in der Gegner-Ebene — der Fall misst nichts');
+    assert.strictEqual(w.gegnerBlut.length, 1, was + ': handleEnemyHit erzeugt ' + w.gegnerBlut.length + ' Blut-Emitter');
+    assert.ok(w.gegnerBlut[0].tiefe > w.gegnerTiefe,
+      was + ': das Blut liegt hinter dem Gegner (Tiefe ' + w.gegnerBlut[0].tiefe + ' <= ' + w.gegnerTiefe + ')');
+  }
+  assert.deepStrictEqual(zeilenVon(wegeMit.gegnerBlut[0].bilder), [1]);
+});
+
+test('ein Fass zerbricht in Holz, die Statue in Stein — kein Blut', () => {
   ['fass', 'kiste'].forEach((k) => {
     assert.strictEqual(wegeMit[k].length, 1, k);
     const z = zeilenVon(wegeMit[k][0].bilder);
@@ -167,6 +180,18 @@ test('mit Flagge: ein Fass zerbricht in Holz, kein Blut, kein Daemonenblut', () 
   assert.deepStrictEqual(s, [3, 5], 'die Statue zieht aus den Zeilen ' + s.join(','));
   // Der Gegnertod bleibt Daemonenblut + Splitter.
   assert.deepStrictEqual(zeilenVon(mit.deathBurst.bilder), [2, 3]);
+});
+
+test('Rueckfall ohne Tafel: ein Prop zerbricht wie der alte Gegnertod', () => {
+  ['fass', 'kiste', 'statue'].forEach((k) => {
+    assert.strictEqual(wegeOhne[k].length, 1, k);
+    assert.strictEqual(wegeOhne[k][0].bild, 'particle', k + ' traegt ' + wegeOhne[k][0].bild);
+    assert.strictEqual(wegeOhne[k][0].teilchen, ohne.deathBurst.teilchen, k + ': nicht mehr der alte Gegnertod');
+    // deathBurst: rot/orange getoent, ohne Schwerkraft.
+    assert.ok(wegeOhne[k][0].toenung && wegeOhne[k][0].toenung.indexOf(0xff2222) >= 0,
+      k + ': die alte Toenung fehlt (' + JSON.stringify(wegeOhne[k][0].toenung) + ')');
+    assert.strictEqual(wegeOhne[k][0].schwerkraft, 0, k + ': faellt im Rueckfall');
+  });
 });
 
 test('Material je Prop-Typ (alle zerschlagbaren Typen aus roomTemplates.js)', () => {
@@ -193,8 +218,7 @@ test('die Tafel: elf Zeilen zu sechs Bildern, keines leer', async () => {
   }
 });
 
-test('ohne Flagge: keine Tafel, die alten zwei Punkte', () => {
-  assert.strictEqual(ohne.tafelGeladen, false, 'die Tafel wird auch ohne Flagge geladen');
+test('Rueckfall ohne Tafel: die alten zwei Punkte', () => {
   const erwartet = {
     hitSpark: 'particle', bloodSplat: 'particle', deathBurst: 'particle', playerHit: 'particle',
     lootSparkle: 'particle_soft', feuerSpur: 'particle_soft', frostSpur: 'particle_soft', lilaSpur: 'particle_soft'
@@ -204,21 +228,19 @@ test('ohne Flagge: keine Tafel, die alten zwei Punkte', () => {
   });
 });
 
-test('mit Flagge: jeder Effekt zieht aus seiner eigenen Zeile', () => {
-  assert.strictEqual(mit.tafelGeladen, true, 'die Tafel wurde mit ?partikel=neu nicht geladen');
-  const zeilen = (bilder) => [...new Set(Array.prototype.map.call(bilder, (b) => Math.floor(Number(b) / 8)))].sort();
+test('jeder Effekt zieht aus seiner eigenen Zeile', () => {
   const erwartet = {
     hitSpark: [0], bloodSplat: [1], playerHit: [1], deathBurst: [2, 3],
     feuerSpur: [4], lilaSpur: [6], frostSpur: [7], lootSparkle: [8]
   };
   Object.keys(erwartet).forEach((k) => {
     assert.strictEqual(mit[k].bild, 'partikel_atlas', k + ' traegt ' + mit[k].bild);
-    assert.deepStrictEqual(zeilen(mit[k].bilder), erwartet[k],
-      k + ' zieht aus den Zeilen ' + zeilen(mit[k].bilder).join(','));
+    assert.deepStrictEqual(zeilenVon(mit[k].bilder), erwartet[k],
+      k + ' zieht aus den Zeilen ' + zeilenVon(mit[k].bilder).join(','));
   });
 });
 
-test('mit Flagge: gleich viele Teilchen wie ohne', () => {
+test('mit Tafel gleich viele Teilchen wie die alten Punkte', () => {
   Object.keys(ohne).forEach((k) => {
     if (k === 'tafelGeladen') return;
     assert.strictEqual(mit[k].teilchen, ohne[k].teilchen,
@@ -227,8 +249,8 @@ test('mit Flagge: gleich viele Teilchen wie ohne', () => {
   });
 });
 
-test('mit Flagge: Bilder mit eigener Farbe werden nicht getoent, die Magiespur schon', () => {
-  assert.strictEqual(ohne.bloodSplat.getoent, true, 'ohne Flagge war Blut ein roter Punkt — der Fall misst nichts');
+test('Bilder mit eigener Farbe werden nicht getoent, die Magiespur schon', () => {
+  assert.strictEqual(ohne.bloodSplat.getoent, true, 'im Rueckfall war Blut ein roter Punkt — der Fall misst nichts');
   assert.strictEqual(mit.bloodSplat.getoent, false, 'der Blutstropfen wird umgefaerbt');
   assert.strictEqual(mit.hitSpark.getoent, false, 'der Funke wird umgefaerbt');
   assert.strictEqual(mit.lilaSpur.getoent, true, 'die Magiespur verliert die Farbe der Faehigkeit');

@@ -1044,6 +1044,8 @@ function preload() {
   if (window.uiRahmen) window.uiRahmen.vorladen(this);
   // Player sprites are preloaded in StartScene (dir00 only);
   // other directions lazy-load via ensureDirectionLoaded().
+  // #171: Die Schlagfolge des Nahkampfs gibt es nur hier unten.
+  if (typeof window.schlagBilderVorladen === 'function') window.schlagBilderVorladen(this.load);
 
   // Gegner-Sprites: SICHERHEITSNETZ. Normalerweise hat HubSceneV2 sie schon im
   // Hintergrund geladen; hier abgedeckt werden der Endlos-Modus (kein Hub) und
@@ -1654,14 +1656,9 @@ function breakDestructibleObstacle(scene, obs) {
   const y = obs.y;
 
   // Visual feedback: particles + screen shake
-  // #183: objektBricht ist ohne ?partikel=neu der alte deathBurst; mit Flagge
-  // fliegen Holz, Stein oder Eisen statt Daemonenblut.
+  // #183: Holz, Stein oder Eisen fliegen, kein Daemonenblut.
   if (window.particleFactory) {
-    if (typeof window.particleFactory.objektBricht === 'function') {
-      window.particleFactory.objektBricht(x, y, type);
-    } else {
-      window.particleFactory.deathBurst(x, y);
-    }
+    window.particleFactory.objektBricht(x, y, type);
     window.particleFactory.screenShake(50, 0.002);
   }
 

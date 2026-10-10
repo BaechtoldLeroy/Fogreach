@@ -2,11 +2,12 @@
  * ParticleFactory - Reusable particle effect system for Demonfall
  * Uses Phaser 3.60+ particle API
  */
-// #183: Pixelpartikel je Zweck statt zweier weicher Punkte — nur mit
-// ?partikel=neu. Alle Formen liegen in EINER Bildtafel (16x16 je Bild, eine
+// #183: Pixelpartikel je Zweck statt zweier weicher Punkte. Alle Formen
+// liegen in EINER Bildtafel (16x16 je Bild, eine
 // Zeile je Zweck), damit es bei einem Zeichenaufruf bleibt. Die Emitter und
 // ihre Teilchenzahl bleiben genau dieselben; getauscht werden nur Bild,
 // Groesse und — wo das Bild seine Farbe selbst traegt — die Toenung.
+// Fehlt die Tafel (Ladefehler), bleiben die alten weichen Punkte.
 const PARTIKEL_ATLAS = 'partikel_atlas';
 const PARTIKEL_SPALTEN = 8;    // Bilder je Zeile der Tafel
 // Zeile der Tafel und Anzahl Bilder darin. `toenen`: das Bild ist hell und
@@ -26,7 +27,7 @@ const PARTIKEL_ZWECKE = {
 };
 
 // Woraus ein zerschlagbares Prop besteht (Typ-Anfang -> Material). Ein Fass
-// blutet nicht: mit ?partikel=neu fliegt, was es wirklich ist.
+// blutet nicht: es fliegt, was es wirklich ist.
 const OBJEKT_MATERIAL = [
   ['barrel', 'holz'], ['crate', 'holz'], ['chest', 'holz'],
   ['rubble', 'stein'], ['statue', 'stein'], ['pillar', 'stein'], ['altar', 'stein'],
@@ -60,9 +61,18 @@ const SPUR_ZWECK = {
   0x66ccff: 'frost'   // Eisschritt
 };
 
-function partikelNeuAn(scene) {
-  if (!(window.DebugGate && window.DebugGate.an('partikel'))) return false;
+function partikelTafelDa(scene) {
   return !!(scene && scene.textures && scene.textures.exists(PARTIKEL_ATLAS));
+}
+
+/**
+ * Tiefe, auf der ein Objekt in der Szene gezeichnet wird. Gegner stecken in
+ * scene.enemyLayer: dort zaehlt die Tiefe der Ebene, nicht ihre eigene.
+ */
+function weltTiefe(obj) {
+  const liste = obj && obj.displayList;
+  const ebene = liste && obj.scene && liste !== obj.scene.sys.displayList;
+  return (ebene && typeof liste.depth === 'number') ? liste.depth : ((obj && obj.depth) || 0);
 }
 
 /** Die Bildnummern eines oder mehrerer Zwecke in der Tafel. */
@@ -95,14 +105,14 @@ class ParticleFactory {
 
   /**
    * Create a one-shot burst of particles at a position, auto-cleanup after done.
-   * `zweck` (#183) waehlt mit ?partikel=neu das Pixelbild; ohne Flagge bleibt
-   * es beim uebergebenen Punkt.
+   * `zweck` (#183) waehlt das Pixelbild der Tafel; fehlt sie, bleibt es beim
+   * uebergebenen Punkt.
    */
   burst(x, y, textureKey, config, zweck) {
     const scene = this.scene;
     if (!scene || !scene.add) return null;
 
-    if (zweck && partikelNeuAn(scene)) {
+    if (zweck && partikelTafelDa(scene)) {
       const zwecke = [].concat(zweck);
       const bilder = partikelBilder(zwecke);
       if (bilder.length) {
@@ -149,16 +159,22 @@ class ParticleFactory {
     }, 'funken');
   }
 
-  /** Red particles on enemy damage */
-  bloodSplat(x, y) {
-    return this.burst(x, y, 'particle', {
-      speed: { min: 30, max: 80 },
-      scale: { start: 0.3, end: 0 },
-      lifespan: 300,
+  /**
+   * Blut am getroffenen Gegner. Wie beim Spielerblut (playerHit): es lag auf
+   * Tiefe 0 hinter dem Gegner und war kaum zu sehen; jetzt spritzt es weiter,
+   * faellt und liegt VOR ihm. `gegner` ist optional (ohne: Tiefe 0 wie frueher).
+   */
+  bloodSplat(x, y, gegner) {
+    const e = this.burst(x, y, 'particle', {
+      speed: { min: 50, max: 110 },
+      scale: { start: 0.45, end: 0.1 },
+      lifespan: 340,
       quantity: 4,
       tint: 0xff2222,
-      gravityY: 50
+      gravityY: 240
     }, 'blut');
+    if (e && e.setDepth && gegner) e.setDepth(weltTiefe(gegner) + 1);
+    return e;
   }
 
   /** Larger red/orange burst on enemy death */
@@ -172,38 +188,33 @@ class ParticleFactory {
     }, ['daemonenblut', 'splitter']);
   }
 
-  /** Red flash particles when player takes damage */
+  /**
+   * Blut, wenn der Spieler Schaden nimmt (#183). Frueher flogen die Tropfen
+   * auf Tiefe 0 HINTER der Spielerfigur (100) los und waren weg, bevor sie
+   * unter ihr hervorkamen. Jetzt spritzen sie weiter, fallen und liegen VOR
+   * der Figur.
+   */
   playerHit(x, y) {
-    const config = {
-      speed: { min: 40, max: 80 },
-      scale: { start: 0.4, end: 0 },
-      lifespan: 250,
+    const e = this.burst(x, y, 'particle', {
+      speed: { min: 70, max: 130 },
+      scale: { start: 0.6, end: 0.1 },
+      lifespan: 380,
       quantity: 8,
-      tint: 0xff0000
-    };
-    const neu = partikelNeuAn(this.scene);
-    if (neu) {
-      // Bisher flogen die Tropfen auf Tiefe 0 HINTER der Spielerfigur (100)
-      // los und waren weg, bevor sie unter ihr hervorkamen. Jetzt spritzen
-      // sie weiter, fallen und liegen VOR der Figur.
-      config.speed = { min: 70, max: 130 };
-      config.scale = { start: 0.6, end: 0.1 };
-      config.lifespan = 380;
-      config.gravityY = 260;
-    }
-    const e = this.burst(x, y, 'particle', config, 'blut');
+      tint: 0xff0000,
+      gravityY: 260
+    }, 'blut');
     const p = (typeof player !== 'undefined') ? player : null;
-    if (neu && e && e.setDepth) e.setDepth(((p && p.depth) || 100) + 1);
+    if (e && e.setDepth) e.setDepth(((p && p.depth) || 100) + 1);
     return e;
   }
 
   /**
-   * Ein zerschlagenes Prop. Ohne ?partikel=neu genau der alte Gegnertod;
-   * mit Flagge Splitter aus dem Material des Props (OBJEKT_MATERIAL), kein
-   * Blut. Gleiche Teilchenzahl wie deathBurst.
+   * Ein zerschlagenes Prop: Splitter aus seinem Material (OBJEKT_MATERIAL),
+   * kein Blut, gleiche Teilchenzahl wie deathBurst. Fehlt die Tafel, saehe
+   * man nur ungetoente Punkte; dann bleibt es beim alten Gegnertod.
    */
   objektBricht(x, y, typ) {
-    if (!partikelNeuAn(this.scene)) return this.deathBurst(x, y);
+    if (!partikelTafelDa(this.scene)) return this.deathBurst(x, y);
     const m = MATERIAL_BILD[objektMaterial(typ)];
     const config = {
       speed: { min: 60, max: 130 },
@@ -314,5 +325,5 @@ class ParticleFactory {
 // Expose globally
 window.ParticleFactory = ParticleFactory;
 window.PARTIKEL_ZWECKE = PARTIKEL_ZWECKE;
-window.partikelNeuAn = partikelNeuAn;
+window.partikelTafelDa = partikelTafelDa;
 window.objektMaterial = objektMaterial;

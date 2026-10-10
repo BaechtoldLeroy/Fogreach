@@ -1,19 +1,20 @@
 // tests/schlagFolge.test.js — der Nahkampfschlag ist eine Bewegung der Figur (#171).
 //
 // Vorher zeigte attack() nur einen halbdurchsichtigen grauen Kegel; die
-// Figur stand still. Hinter ?schlag=neu spielt jetzt eine eigene Bildfolge
+// Figur stand still. Jetzt spielt eine eigene Bildfolge
 // (assets/PlayerSprites/schlagDD_f00..f07, PixelLab, tools/schlagBauen.js)
 // auf einem Bild, das dem Spieler folgt — gebaut wie die Rolle (#179).
 //
 // Geprueft am echten Weg (attack), in allen acht Richtungen:
-//   - mit Flagge: das Schlagbild der Angriffsrichtung erscheint, an der Stelle
-//     der Figur, der Spieler ist so lange unsichtbar, danach ist alles zurueck;
-//     der Kegel wird gar nicht mehr gezeichnet. Stattdessen zieht im
+//   - das Schlagbild der Angriffsrichtung erscheint, an der Stelle der Figur,
+//     der Spieler ist so lange unsichtbar, danach ist alles zurueck; der
+//     Kegel wird gar nicht mehr gezeichnet. Stattdessen zieht im
 //     Aufschlagbild (f04) eine kurze Wischspur in Schlagrichtung, die nach
 //     hoechstens 200 ms spurlos verschwindet — auch beim Szenenneustart.
-//   - die TREFFER sind mit und ohne Flagge dieselben.
-//   - ohne Flagge: kein Schlagbild, keine Spur, keine Schlagtextur geladen,
-//     Kegel wie bisher.
+//   - Rueckfall: fehlen die Schlagbilder einer Richtung oder traegt der
+//     Spieler ein fremdes Bild (Verkleidung), zeigt der alte Kegel den
+//     Schlag, ohne Spur. Die TREFFER sind in jedem Fall dieselben.
+//   - geladen wird die Folge erst mit dem Dungeon, nicht schon beim Start.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
@@ -38,8 +39,10 @@ const RICHTUNGEN = {
  * Schlaegt in Richtung dd. Misst Figur und Schlagbild im ersten Bild, den
  * Kegel und die getroffenen Puppen. Die Puppen stehen fest um den Spieler:
  * eine vor ihm, eine hinter ihm — die vordere muss getroffen werden.
+ * `fremdBild`: der Spieler traegt beim Schlag dieses Bild statt seines
+ * Gehbildes (wie in einer Verkleidung).
  */
-function schlagen(H, dd) {
+function schlagen(H, dd, fremdBild) {
   const [x, y] = RICHTUNGEN[dd];
   return JSON.parse(H.run(`JSON.stringify((function () {
     var sc = window.game.scene.getScene('GameScene');
@@ -90,7 +93,10 @@ function schlagen(H, dd) {
     };
     var h0 = handleEnemyHit; handleEnemyHit = function () {};
     var hoererVorher = sc.events.listeners('postupdate');
+    var fremd = ${JSON.stringify(fremdBild || null)};
+    if (fremd) player.setTexture(fremd);
     try { attack.call(sc); } finally {
+      if (fremd) player.setTexture('dir${dd}_f00');
       sc.add.graphics = g0; dealDamageToEnemy = d0; forEachEnemyInRange = fe0; handleEnemyHit = h0;
       if (window.__zielAlt) { window.InputScheme.getAimDirection = window.__zielAlt; window.__zielAlt = null; }
     }
@@ -160,13 +166,13 @@ const nachher = `({ sichtbar: player.visible, w: player.displayWidth, h: player.
   hoererRest: (function () { var l = window.game.scene.getScene('GameScene').events.listeners('postupdate');
     return (window.__schlagHoerer || []).filter(function (f) { return l.indexOf(f) >= 0; }).length; })() })`;
 
-let MIT = null, OHNE = null;
+let MIT = null;
 before(async () => {
-  MIT = await startenMit('?debug=1&dungeon=1&schlag=neu');
+  MIT = await startenMit('?debug=1&dungeon=1');
 });
-after(async () => { if (MIT) await MIT.shutdown(); if (OHNE) await OHNE.shutdown(); });
+after(async () => { if (MIT) await MIT.shutdown(); });
 
-test('mit ?schlag=neu: in jeder Richtung schlaegt die Figur selbst', () => {
+test('in jeder Richtung schlaegt die Figur selbst', () => {
   const abweichung = [];
   for (const dd of Object.keys(RICHTUNGEN)) {
     const r = schlagen(MIT, dd);
@@ -231,24 +237,61 @@ test('Szenenneustart mitten im Schlag (Tod, Abstieg): Spur und Hoerer sind weg',
   assert.strictEqual(n.hoererRest, 0, 'ein postupdate-Hoerer des Schlags ueberlebt den Neustart');
 });
 
-test('ohne Flagge: Kegel wie bisher, kein Schlagbild, nichts geladen, gleiche Treffer', async () => {
-  await MIT.shutdown(); MIT = null;
-  OHNE = await startenMit('?debug=1&dungeon=1');
-  for (const dd of ['04', '06']) {
-    const r = schlagen(OHNE, dd);
-    assert.strictEqual(r.key, null, dd + ': Schlagbild ohne Flagge');
-    assert.strictEqual(r.sichtbar, true, dd + ': Spieler ohne Flagge versteckt');
-    assert.deepStrictEqual(r.treffer, ['vorn'], dd + ': Treffer');
-    assert.deepStrictEqual(r.alphas, [0.2], dd + ': Kegel');
-    assert.strictEqual(r.spuren, 0, dd + ': Wischspur ohne Flagge');
-    for (let i = 0; i < 20; i++) {
-      OHNE.step(1);
-      const s = OHNE.run(`window.game.scene.getScene('GameScene').children.list.filter(function (o) {
-        return o.name === 'schlagSpur'; }).length`);
-      assert.strictEqual(s, 0, dd + ': Wischspur ohne Flagge (spaeter)');
-    }
-    OHNE.step(60);
+/** Rueckfall: der alte Kegel, kein Schlagbild, keine Spur — auch spaeter nicht. */
+function kegelStattSchlag(r, dd, was) {
+  assert.strictEqual(r.key, null, dd + ': Schlagbild trotz ' + was);
+  assert.strictEqual(r.sichtbar, true, dd + ': Spieler versteckt trotz ' + was);
+  assert.deepStrictEqual(r.treffer, ['vorn'], dd + ': Treffer');
+  assert.deepStrictEqual(r.alphas, [0.2], dd + ': kein Kegel bei ' + was);
+  assert.strictEqual(r.spuren, 0, dd + ': Wischspur trotz ' + was);
+  for (let i = 0; i < 20; i++) {
+    MIT.step(1);
+    const s = MIT.run(`window.game.scene.getScene('GameScene').children.list.filter(function (o) {
+      return o.name === 'schlagSpur'; }).length`);
+    assert.strictEqual(s, 0, dd + ': Wischspur trotz ' + was + ' (spaeter)');
   }
-  const geladen = OHNE.run(`Object.keys(window.game.textures.list).filter(function (k) { return /^schlag/.test(k); }).length`);
-  assert.strictEqual(geladen, 0, 'ohne Flagge wurden Schlagbilder geladen');
+  MIT.step(60);
+}
+
+test('Rueckfall: ein fremdes Bild am Spieler (Verkleidung) schlaegt mit dem Kegel', () => {
+  kegelStattSchlag(schlagen(MIT, '06', 'particle'), '06', 'fremdem Bild');
+});
+
+test('Rueckfall: fehlen die Schlagbilder einer Richtung, zeigt der Kegel den Schlag', () => {
+  MIT.run(`(function () {
+    var t = window.game.textures;
+    for (var f = 0; f < 8; f++) t.remove('schlag04_f0' + f);
+  })()`);
+  kegelStattSchlag(schlagen(MIT, '04'), '04', 'fehlenden Bildern');
+  // Die anderen Richtungen schlagen weiter selbst.
+  const r = schlagen(MIT, '06');
+  assert.strictEqual(r.key, 'schlag06_f00', '06: der Rueckfall einer Richtung trifft alle');
+  assert.deepStrictEqual(r.alphas, [], '06: Kegel');
+  zuEnde(MIT);
+  MIT.step(60);
+});
+
+test('Laden: die Schlagbilder kommen mit dem Dungeon, nicht beim Start, und nie doppelt', () => {
+  const r = JSON.parse(MIT.run(`JSON.stringify((function () {
+    function fang(fn, gibts) {
+      var keys = [];
+      fn({ image: function (k) { keys.push(k); },
+           textureManager: { exists: function (k) { return gibts(k); } } });
+      return keys.filter(function (k) { return /^schlag/.test(k); });
+    }
+    var t = window.game.textures;
+    return {
+      // Im Dungeon: alle 64 (bis auf die oben entfernten) liegen vor.
+      da: Object.keys(t.list).filter(function (k) { return /^schlag/.test(k); }).length,
+      // Der Start (StartScene) laedt keine Schlagbilder mit.
+      start: fang(preloadPlayerDirectionalFrames, function () { return false; }).length,
+      // GameScene.preload: ohne Textur alle 64, mit allen vorhandenen keine.
+      leer: fang(schlagBilderVorladen, function () { return false; }).length,
+      voll: fang(schlagBilderVorladen, function () { return true; }).length
+    };
+  })())`));
+  assert.strictEqual(r.da, 56, 'im Dungeon fehlen Schlagbilder: ' + r.da);
+  assert.strictEqual(r.start, 0, 'der Start laedt ' + r.start + ' Schlagbilder');
+  assert.strictEqual(r.leer, 64);
+  assert.strictEqual(r.voll, 0, 'vorhandene Schlagbilder werden noch einmal geladen');
 });

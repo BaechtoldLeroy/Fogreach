@@ -224,10 +224,8 @@
         scene.load.image(k, ORDNER + k + '.png');
       });
     });
-    // Testflaggen: die Tafeln nur mit gesetzter Flagge laden — ohne sie
-    // aendert sich nicht einmal die Ladeliste.
-    // #183 ?partikel=neu: Pixelpartikel je Zweck (js/particleEffects.js).
-    if (window.DebugGate && window.DebugGate.an('partikel') && !scene.textures.exists('partikel_atlas')) {
+    // #183: Pixelpartikel je Zweck (js/particleEffects.js), eine Tafel.
+    if (!scene.textures.exists('partikel_atlas')) {
       // ?v=: die Tafel ist mit Holz und Metall gewachsen (11 Zeilen).
       scene.load.spritesheet('partikel_atlas', ORDNER + 'partikel_atlas.png?v=2', { frameWidth: 16, frameHeight: 16 });
     }
