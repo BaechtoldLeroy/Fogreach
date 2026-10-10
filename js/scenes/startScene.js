@@ -79,6 +79,9 @@ const _START_MOND = [222, 57];
 // Wo die Laterne steht: Mitte der Zinne rechts vom Archivschmied, auf ihrer
 // Oberkante (Pixel im Bruestungsbild 480x72, das unten buendig liegt).
 const _START_LATERNE = [144.5, 40];
+// Die Laterne sitzt auf einem kurzen Eisenstab, damit ihr spitzer Fuss nicht
+// auf der Zinne zu schweben scheint: so viele Bildpixel hoch.
+const _START_STAB = 8;
 
 // Ein Knopf aus Messingplatte (Spritesheet: 0 normal, 1 hover, 2 gedrueckt)
 // und Beschriftung. Die Aktion haengt der Aufrufer selbst an platte
@@ -195,14 +198,25 @@ function _baueKulisse(scene) {
   // Wandhalter neben dem Wasserspeier — der Halter griff aber in die Luft,
   // und fuer eine Wandlaterne ist unter der Bruestung kein Platz mehr. Darum
   // traegt das Bild nur noch Ring und Laterne; ihr Fuss (Bildzeile 55 von 64)
-  // steht auf der Oberkante der Zinne.
+  // sitzt auf dem Teller eines kurzen Stabs, der auf der Zinne steht.
   if (!scene.anims.exists('start_laterne_flackern')) {
     scene.anims.create({
       key: 'start_laterne_flackern', frames: scene.anims.generateFrameNumbers('start_laterne', { start: 0, end: 7 }),
       frameRate: 9, repeat: -1
     });
   }
-  const lx = _START_LATERNE[0] * S, ly = ch - (72 - _START_LATERNE[1]) * S;
+  const lx = _START_LATERNE[0] * S, zinne = ch - (72 - _START_LATERNE[1]) * S;
+  // Der Stab: Fussplatte auf der Zinne, zwei Pixel Eisen (Licht links, Schatten
+  // rechts), oben ein Teller, auf dem die Laternenspitze sitzt.
+  const ly = zinne - _START_STAB * S;
+  const px = (x) => Math.round(lx + x * S);
+  k.laternenStab = scene.add.graphics().setDepth(5.9);
+  k.laternenStab.fillStyle(0x1b1816, 1).fillRect(px(-2.5), zinne - S, 5 * S, S);
+  k.laternenStab.fillStyle(0x6b5f55, 1).fillRect(px(-1), ly, S, zinne - ly - S);
+  k.laternenStab.fillStyle(0x2c2724, 1).fillRect(px(0), ly, S, zinne - ly - S);
+  k.laternenStab.fillStyle(0x3a332e, 1).fillRect(px(-2.5), ly, 5 * S, S);
+  // Fuer die Pruefung: wo der Stab steht und wo er endet.
+  k.laternenStab.setData({ x: lx, oben: ly, unten: zinne });
   k.laterne = scene.add.sprite(lx, ly, 'start_laterne', 0).setOrigin(19.5 / 32, 55 / 64).setScale(S).setDepth(6);
   k.laterne.play('start_laterne_flackern');
   // Der Schein sitzt auf dem Glas, 13 Bildpixel ueber dem Fuss.

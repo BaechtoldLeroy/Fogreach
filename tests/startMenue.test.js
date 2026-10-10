@@ -81,9 +81,11 @@ test('Startmenue: die Kulisse ist animiert (Bilder, Nebel, Glut, Licht)', () => 
   assert.notStrictEqual(k.ratsfenster.alpha, ratVorher, 'Ratsfenster pulsiert nicht');
 });
 
-test('Startmenue: die Laterne steht auf der Bruestung, nicht in der Luft', async () => {
+test('Startmenue: die Laterne sitzt auf einem Stab auf der Bruestung, nicht in der Luft', async () => {
   // Bis b352 hing sie an einem Wandhalter neben dem Wasserspeier, dessen
-  // Platte in die Luft griff. Jetzt steht sie ohne Halter auf einer Zinne.
+  // Platte in die Luft griff. Dann stand sie ohne Halter auf einer Zinne, mit
+  // ihrem spitzen Fuss sah sie aber schwebend aus. Jetzt sitzt sie auf einem
+  // kurzen Stab, der auf der Zinne steht.
   const sharp = require('sharp');
   const path = require('path');
   const pfad = (n) => path.join(__dirname, '..', 'assets', 'start', n + '.png');
@@ -115,8 +117,15 @@ test('Startmenue: die Laterne steht auf der Bruestung, nicht in der Luft', async
   }
   const hoechste = Math.min(...kanten), tiefste = Math.max(...kanten);
   assert.ok(tiefste - hoechste <= 2 * S, 'die Laterne steht ueber einer Zinnenluecke: Kanten ' + hoechste + '..' + tiefste);
-  assert.ok(fuss >= hoechste && fuss <= hoechste + 5 * S,
-    'Fuss der Laterne bei ' + fuss + ', Oberkante der Zinne bei ' + hoechste + ' — sie schwebt oder versinkt');
+  const stab = s.kulisse.laternenStab;
+  assert.ok(stab && stab.visible, 'kein Stab unter der Laterne');
+  const st = stab.data.getAll();
+  assert.ok(Math.abs(st.x - l.x) <= S, 'der Stab steht nicht unter der Laterne: ' + st.x + ' / ' + l.x);
+  assert.ok(st.unten - st.oben >= 4 * S, 'der Stab ist zu kurz: ' + (st.unten - st.oben) + ' px');
+  assert.ok(st.unten >= hoechste && st.unten <= hoechste + 5 * S,
+    'Fuss des Stabs bei ' + st.unten + ', Oberkante der Zinne bei ' + hoechste + ' — er schwebt oder versinkt');
+  assert.ok(Math.abs(fuss - st.oben) <= S,
+    'Fuss der Laterne bei ' + fuss + ', Oberkante des Stabs bei ' + st.oben + ' — sie sitzt nicht auf ihm');
   // Der Schein sitzt auf dem Glas, nicht daneben.
   const sch = s.kulisse.laternenSchein;
   assert.ok(Math.abs(sch.x - l.x) <= 4 && sch.y > oben0 && sch.y < fuss, 'der Schein liegt nicht auf der Laterne');
