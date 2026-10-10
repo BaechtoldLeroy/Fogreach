@@ -20,8 +20,33 @@ const PARTIKEL_ZWECKE = {
   staub:        { zeile: 5, n: 6, toenen: true },
   magie:        { zeile: 6, n: 6, toenen: true },
   frost:        { zeile: 7, n: 6 },
-  glanz:        { zeile: 8, n: 6 }
+  glanz:        { zeile: 8, n: 6 },
+  holz:         { zeile: 9, n: 6 },   // Spaene und Brettsplitter (Fass, Kiste, Truhe)
+  metall:       { zeile: 10, n: 6 }   // Eisenstuecke (Feuerschale)
 };
+
+// Woraus ein zerschlagbares Prop besteht (Typ-Anfang -> Material). Ein Fass
+// blutet nicht: mit ?partikel=neu fliegt, was es wirklich ist.
+const OBJEKT_MATERIAL = [
+  ['barrel', 'holz'], ['crate', 'holz'], ['chest', 'holz'],
+  ['rubble', 'stein'], ['statue', 'stein'], ['pillar', 'stein'], ['altar', 'stein'],
+  ['brazier', 'metall'], ['brazer', 'metall']
+];
+// Material -> Zwecke der Tafel und Toenung (nur die grauen Bilder nehmen sie an).
+const MATERIAL_BILD = {
+  holz:   { zwecke: ['holz'] },
+  stein:  { zwecke: ['splitter', 'staub'], tint: [0x8a8478, 0x6e685e, 0xa49c8c] },
+  metall: { zwecke: ['metall', 'funken'] },
+  staub:  { zwecke: ['staub'], tint: [0x8a8478, 0x6e685e] }
+};
+
+function objektMaterial(typ) {
+  const t = String(typ || '').toLowerCase();
+  for (let i = 0; i < OBJEKT_MATERIAL.length; i++) {
+    if (t.indexOf(OBJEKT_MATERIAL[i][0]) === 0) return OBJEKT_MATERIAL[i][1];
+  }
+  return 'staub';
+}
 // Die alten Punkte sind 8 px gross, die neuen Bilder 16 px. Ganz auf 8 px
 // heruntergerechnet waere von der Form nichts mehr zu sehen; etwas groesser
 // als vorher, damit Funke und Tropfen als solche lesbar sind.
@@ -149,13 +174,46 @@ class ParticleFactory {
 
   /** Red flash particles when player takes damage */
   playerHit(x, y) {
-    return this.burst(x, y, 'particle', {
+    const config = {
       speed: { min: 40, max: 80 },
       scale: { start: 0.4, end: 0 },
       lifespan: 250,
       quantity: 8,
       tint: 0xff0000
-    }, 'blut');
+    };
+    const neu = partikelNeuAn(this.scene);
+    if (neu) {
+      // Bisher flogen die Tropfen auf Tiefe 0 HINTER der Spielerfigur (100)
+      // los und waren weg, bevor sie unter ihr hervorkamen. Jetzt spritzen
+      // sie weiter, fallen und liegen VOR der Figur.
+      config.speed = { min: 70, max: 130 };
+      config.scale = { start: 0.6, end: 0.1 };
+      config.lifespan = 380;
+      config.gravityY = 260;
+    }
+    const e = this.burst(x, y, 'particle', config, 'blut');
+    const p = (typeof player !== 'undefined') ? player : null;
+    if (neu && e && e.setDepth) e.setDepth(((p && p.depth) || 100) + 1);
+    return e;
+  }
+
+  /**
+   * Ein zerschlagenes Prop. Ohne ?partikel=neu genau der alte Gegnertod;
+   * mit Flagge Splitter aus dem Material des Props (OBJEKT_MATERIAL), kein
+   * Blut. Gleiche Teilchenzahl wie deathBurst.
+   */
+  objektBricht(x, y, typ) {
+    if (!partikelNeuAn(this.scene)) return this.deathBurst(x, y);
+    const m = MATERIAL_BILD[objektMaterial(typ)];
+    const config = {
+      speed: { min: 60, max: 130 },
+      scale: { start: 0.8, end: 0.2 },
+      lifespan: 450,
+      quantity: 12,
+      gravityY: 220
+    };
+    if (m.tint) config.tint = m.tint;
+    return this.burst(x, y, 'particle', config, m.zwecke);
   }
 
   /** Gold sparkle on loot pickup */
@@ -256,3 +314,5 @@ class ParticleFactory {
 // Expose globally
 window.ParticleFactory = ParticleFactory;
 window.PARTIKEL_ZWECKE = PARTIKEL_ZWECKE;
+window.partikelNeuAn = partikelNeuAn;
+window.objektMaterial = objektMaterial;

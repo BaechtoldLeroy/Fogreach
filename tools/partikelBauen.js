@@ -20,7 +20,9 @@ const sharp = require('sharp');
 const { teileSchneiden, einpassen } = require('./teileSchneiden.js');
 
 const FELD = 16, SPALTEN = 8, ANZAHL = 6;
-const ZWECKE = ['funken', 'blut', 'daemonenblut', 'splitter', 'glut', 'staub', 'magie', 'frost', 'glanz'];
+const ZWECKE = ['funken', 'blut', 'daemonenblut', 'splitter', 'glut', 'staub', 'magie', 'frost', 'glanz',
+  // Nachgereicht: Material zerschlagener Props (Fass/Kiste, Feuerschale).
+  'holz', 'metall'];
 const WAHL = {};
 
 (async () => {

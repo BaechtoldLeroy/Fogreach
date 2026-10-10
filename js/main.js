@@ -1654,8 +1654,14 @@ function breakDestructibleObstacle(scene, obs) {
   const y = obs.y;
 
   // Visual feedback: particles + screen shake
+  // #183: objektBricht ist ohne ?partikel=neu der alte deathBurst; mit Flagge
+  // fliegen Holz, Stein oder Eisen statt Daemonenblut.
   if (window.particleFactory) {
-    window.particleFactory.deathBurst(x, y);
+    if (typeof window.particleFactory.objektBricht === 'function') {
+      window.particleFactory.objektBricht(x, y, type);
+    } else {
+      window.particleFactory.deathBurst(x, y);
+    }
     window.particleFactory.screenShake(50, 0.002);
   }
 

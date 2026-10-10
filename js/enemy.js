@@ -2790,6 +2790,13 @@ function _pluendererText() {
   return 'Der Pluenderer ist mit der Beute die Treppe hinunter.';
 }
 
+// #183: mit ?partikel=neu kommt das Spielerblut aus applyPlayerDamage — sonst
+// spritzte es bei Koerperkontakt und Geschoss doppelt (und auch beim Ausweichen).
+function _blutKommtVomSchaden(scene) {
+  return typeof window.partikelNeuAn === 'function'
+    && window.partikelNeuAn((scene && scene.textures) ? scene : (player && player.scene));
+}
+
 function hitByMelee(playerSprite, enemy) {
   if (!enemy || !enemy.active) return;
   // Zeitbasis: die Szenenuhr — DIESELBE, mit der die Angriffs-KI rechnet.
@@ -2834,7 +2841,8 @@ function hitByMelee(playerSprite, enemy) {
     }
     // Particle effects: player hit + screen shake
     if (window.particleFactory && playerSprite) {
-      window.particleFactory.playerHit(playerSprite.x, playerSprite.y);
+      // Mit ?partikel=neu spritzt das Blut in applyPlayerDamage (#183).
+      if (!_blutKommtVomSchaden(this)) window.particleFactory.playerHit(playerSprite.x, playerSprite.y);
       window.particleFactory.screenShake(100, 0.005);
     }
   }
@@ -2872,7 +2880,7 @@ function hitByProjectile(player, projectile) {
   applyPlayerDamage(dmg, this);
   // Particle effects: player hit by projectile + screen shake
   if (window.particleFactory && player) {
-    window.particleFactory.playerHit(player.x, player.y);
+    if (!_blutKommtVomSchaden(this)) window.particleFactory.playerHit(player.x, player.y);
     window.particleFactory.screenShake(100, 0.005);
   }
 
@@ -3016,6 +3024,15 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
   }
 
   if (window.soundManager) window.soundManager.playSFX('hit_player');
+
+  // #183 ?partikel=neu: Blut, wo der Schaden wirklich ankommt. Die alten
+  // Aufrufe sassen nur am Koerperkontakt und am Geschoss — die Schlaege der
+  // Gegner-KI (der haeufigste Treffer) und alle Bossangriffe liefen ohne
+  // jeden Effekt hierher. Dafuer schweigen jene beiden mit Flagge.
+  if (window.particleFactory && player && typeof window.partikelNeuAn === 'function'
+      && window.partikelNeuAn((scene && scene.textures) ? scene : player.scene)) {
+    window.particleFactory.playerHit(player.x, player.y);
+  }
 
   // #90 Elite-Affix 'vampiric': der Angreifer heilt sich am zugefuegten Schaden.
   // Auf maxHp gedeckelt; ohne maxHp (normale Gegner tragen es erst ab dem ersten

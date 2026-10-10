@@ -228,7 +228,8 @@
     // aendert sich nicht einmal die Ladeliste.
     // #183 ?partikel=neu: Pixelpartikel je Zweck (js/particleEffects.js).
     if (window.DebugGate && window.DebugGate.an('partikel') && !scene.textures.exists('partikel_atlas')) {
-      scene.load.spritesheet('partikel_atlas', ORDNER + 'partikel_atlas.png', { frameWidth: 16, frameHeight: 16 });
+      // ?v=: die Tafel ist mit Holz und Metall gewachsen (11 Zeilen).
+      scene.load.spritesheet('partikel_atlas', ORDNER + 'partikel_atlas.png?v=2', { frameWidth: 16, frameHeight: 16 });
     }
   };
 
