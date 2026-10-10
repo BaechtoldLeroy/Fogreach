@@ -8,9 +8,12 @@
 // Geprueft am echten Weg (attack), in allen acht Richtungen:
 //   - mit Flagge: das Schlagbild der Angriffsrichtung erscheint, an der Stelle
 //     der Figur, der Spieler ist so lange unsichtbar, danach ist alles zurueck;
-//     der Kegel ist nur noch ein Hauch.
+//     der Kegel wird gar nicht mehr gezeichnet. Stattdessen zieht im
+//     Aufschlagbild (f04) eine kurze Wischspur in Schlagrichtung, die nach
+//     hoechstens 200 ms spurlos verschwindet — auch beim Szenenneustart.
 //   - die TREFFER sind mit und ohne Flagge dieselben.
-//   - ohne Flagge: kein Schlagbild, keine Schlagtextur geladen, Kegel wie bisher.
+//   - ohne Flagge: kein Schlagbild, keine Spur, keine Schlagtextur geladen,
+//     Kegel wie bisher.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
@@ -86,37 +89,76 @@ function schlagen(H, dd) {
       puppen.forEach(function (p) { cb(p, { dx: p.x - u.x, dy: p.y - u.y }); });
     };
     var h0 = handleEnemyHit; handleEnemyHit = function () {};
+    var hoererVorher = sc.events.listeners('postupdate');
     try { attack.call(sc); } finally {
       sc.add.graphics = g0; dealDamageToEnemy = d0; forEachEnemyInRange = fe0; handleEnemyHit = h0;
       if (window.__zielAlt) { window.InputScheme.getAimDirection = window.__zielAlt; window.__zielAlt = null; }
     }
+    // Die neuen postupdate-Hoerer dieses Schlags merken: sie muessen wieder weg.
+    window.__schlagHoerer = sc.events.listeners('postupdate').filter(function (f) {
+      return hoererVorher.indexOf(f) < 0; });
+    // Die Wischspur: nur unser eigenes Objekt (Name), nicht Fass-Splitter.
+    // Ihre Strichpunkte je Bild mitschreiben (clear beginnt ein neues Bild).
+    var spuren = sc.children.list.filter(function (o) { return o.name === 'schlagSpur'; });
+    spuren.forEach(function (g) {
+      g.__p = [];
+      var c0 = g.clear, m0 = g.moveTo, l0 = g.lineTo;
+      g.clear = function () { g.__p = []; return c0.apply(this, arguments); };
+      g.moveTo = function (px, py) { g.__p.push([px, py]); return m0.apply(this, arguments); };
+      g.lineTo = function (px, py) { g.__p.push([px, py]); return l0.apply(this, arguments); };
+    });
     var bild = sc.children.list.filter(function (o) {
       return o.active && o.texture && /^schlag/.test(o.texture.key);
     })[0];
     return { treffer: treffer, alphas: alphas, sichtbar: player.visible, vorher: vorher, geh: geh,
+             spuren: spuren.length, spurSichtbar: spuren.some(function (g) { return g.visible; }),
+             hoerer: window.__schlagHoerer.length,
              key: bild ? bild.texture.key : null, schlag: bild ? welt(bild, bild.texture.key) : null };
   })())`));
 }
 
-/** Taktet den Schlag zu Ende und sammelt die gezeigten Schlagbilder. */
+/**
+ * Taktet den Schlag zu Ende und sammelt die gezeigten Schlagbilder — und wann
+ * und wo die Wischspur zu sehen war: das Schlagbild beim ersten Auftauchen,
+ * der Mittelpunkt ihrer Strichpunkte relativ zum Angriffsursprung, die Zeit.
+ */
 function zuEnde(H) {
   const gesehen = new Set();
+  let spur = null;
   for (let i = 0; i < 60; i++) {
-    const k = H.run(`(function () {
-      var o = window.game.scene.getScene('GameScene').children.list.filter(function (o) {
+    const z = JSON.parse(H.run(`JSON.stringify((function () {
+      var sc = window.game.scene.getScene('GameScene');
+      var o = sc.children.list.filter(function (o) {
         return o.active && o.texture && /^schlag/.test(o.texture.key); })[0];
-      return o ? o.texture.key : null; })()`);
-    if (!k) break;
-    gesehen.add(k);
+      var g = sc.children.list.filter(function (o) { return o.name === 'schlagSpur'; })[0];
+      var u = angriffsUrsprung();
+      var p = (g && g.visible && g.__p) ? g.__p : [];
+      var mx = 0, my = 0;
+      p.forEach(function (q) { mx += q[0]; my += q[1]; });
+      return { key: o ? o.texture.key : null, bild: o ? o.frame.texture.key : null, jetzt: sc.time.now,
+               da: !!g, spur: p.length ? { dx: mx / p.length - u.x, dy: my / p.length - u.y } : null };
+    })())`));
+    if (z.spur) {
+      if (!spur) spur = { bild: z.bild, ab: z.jetzt, dx: z.spur.dx, dy: z.spur.dy };
+      spur.sichtbarBis = z.jetzt;
+    }
+    // Wie lange das Objekt selbst lebt — gezeichnet oder nicht.
+    if (z.da && spur) spur.bis = z.jetzt;
+    if (!z.key) break;
+    gesehen.add(z.key);
     H.step(1);
   }
-  return gesehen;
+  return { gesehen, spur };
 }
 
 const nachher = `({ sichtbar: player.visible, w: player.displayWidth, h: player.displayHeight,
   ox: player.originX, oy: player.originY, richtung: (player.getData('animState') || {}).direction,
   rest: window.game.scene.getScene('GameScene').children.list.filter(function (o) {
-    return o.active && o.texture && /^schlag/.test(o.texture.key); }).length })`;
+    return o.active && o.texture && /^schlag/.test(o.texture.key); }).length,
+  spurRest: window.game.scene.getScene('GameScene').children.list.filter(function (o) {
+    return o.name === 'schlagSpur'; }).length,
+  hoererRest: (function () { var l = window.game.scene.getScene('GameScene').events.listeners('postupdate');
+    return (window.__schlagHoerer || []).filter(function (f) { return l.indexOf(f) >= 0; }).length; })() })`;
 
 let MIT = null, OHNE = null;
 before(async () => {
@@ -131,14 +173,30 @@ test('mit ?schlag=neu: in jeder Richtung schlaegt die Figur selbst', () => {
     assert.strictEqual(r.key, 'schlag' + dd + '_f00', dd + ': kein oder falsches Schlagbild: ' + r.key);
     assert.strictEqual(r.sichtbar, false, dd + ': der Spieler steht sichtbar neben seinem Schlag');
     assert.deepStrictEqual(r.treffer, ['vorn'], dd + ': Treffer');
-    assert.deepStrictEqual(r.alphas, [0.07], dd + ': der Kegel ist nicht zurueckgenommen');
+    assert.deepStrictEqual(r.alphas, [], dd + ': der Kegel wird noch gezeichnet');
+    assert.strictEqual(r.spuren, 1, dd + ': keine (oder mehr als eine) Wischspur angelegt');
+    assert.strictEqual(r.spurSichtbar, false, dd + ': die Wischspur steht schon beim Ausholen');
     const dm = Math.abs(r.schlag.mitte - r.geh.mitte), df = Math.abs(r.schlag.fuss - r.geh.fuss);
     if (dm > 4 || df > 4) abweichung.push(dd + ' Mitte ' + dm.toFixed(1) + ' Fuss ' + df.toFixed(1));
 
-    const gesehen = zuEnde(MIT);
+    const { gesehen, spur } = zuEnde(MIT);
     assert.ok(gesehen.size >= 6, dd + ': nur ' + gesehen.size + ' Schlagbilder gezeigt: ' + [...gesehen]);
+    assert.ok(spur, dd + ': die Wischspur war nie zu sehen');
+    assert.strictEqual(spur.bild, 'schlag' + dd + '_f04', dd + ': die Spur erscheint nicht im Aufschlagbild');
+    // Mittelpunkt des Bogens in Schlagrichtung (8 Richtungen liegen 45 Grad
+    // auseinander; 10 Grad Spiel trennt sie sicher).
+    const [x, y] = RICHTUNGEN[dd];
+    const ln = Math.hypot(x, y), weit = Math.hypot(spur.dx, spur.dy);
+    const cos = (spur.dx * x + spur.dy * y) / (ln * weit);
+    assert.ok(cos > Math.cos(Math.PI / 18), dd + ': Spur liegt nicht in Schlagrichtung: ' + JSON.stringify(spur));
+    assert.ok(weit > 30 && weit < 100, dd + ': Spur nicht in Waffenreichweite: ' + weit.toFixed(1));
+    // Etwa 100 ms zu sehen, dann sofort weg — nicht erst mit dem Schlagbild.
+    assert.ok(spur.sichtbarBis - spur.ab >= 50, dd + ': Spur nur ' + (spur.sichtbarBis - spur.ab) + ' ms zu sehen');
+    assert.ok(spur.bis - spur.ab <= 130, dd + ': Spur lebt ' + (spur.bis - spur.ab) + ' ms');
     const n = MIT.run(nachher);
     assert.strictEqual(n.rest, 0, dd + ': das Schlagbild bleibt stehen');
+    assert.strictEqual(n.spurRest, 0, dd + ': die Wischspur bleibt liegen');
+    assert.strictEqual(n.hoererRest, 0, dd + ': ein postupdate-Hoerer des Schlags bleibt haengen');
     assert.strictEqual(n.sichtbar, true, dd + ': der Spieler bleibt unsichtbar');
     assert.strictEqual(n.richtung, dd, dd + ': danach schaut er nicht in die Schlagrichtung');
     assert.deepStrictEqual([n.w, n.h, n.ox, n.oy], [r.vorher.w, r.vorher.h, r.vorher.ox, r.vorher.oy],
@@ -153,6 +211,26 @@ test('die Schlagfolge dauert hoechstens das Schlagfenster und folgt dem Tempo', 
   assert.deepStrictEqual(d.map(Math.round), [293, 200, 300]);
 });
 
+test('Szenenneustart mitten im Schlag (Tod, Abstieg): Spur und Hoerer sind weg', async () => {
+  const r = schlagen(MIT, '04');
+  assert.strictEqual(r.spuren, 1);
+  for (let i = 0; i < 40; i++) {
+    MIT.step(1);
+    if (MIT.run(`window.game.scene.getScene('GameScene').children.list.some(function (o) {
+      return o.name === 'schlagSpur' && o.visible; })`)) break;
+  }
+  MIT.run('player.__vorNeustart = true');
+  MIT.run(`window.game.scene.getScene('GameScene').scene.restart()`);
+  MIT.step(1);
+  const ok = await MIT.waitForScene('GameScene', { maxRounds: 250 });
+  assert.ok(ok, 'GameScene kam nach dem Neustart nicht wieder');
+  assert.strictEqual(MIT.run('!!player.__vorNeustart'), false, 'die Szene wurde gar nicht neu gestartet');
+  MIT.step(5);
+  const n = MIT.run(nachher);
+  assert.strictEqual(n.spurRest, 0, 'die Wischspur ueberlebt den Neustart');
+  assert.strictEqual(n.hoererRest, 0, 'ein postupdate-Hoerer des Schlags ueberlebt den Neustart');
+});
+
 test('ohne Flagge: Kegel wie bisher, kein Schlagbild, nichts geladen, gleiche Treffer', async () => {
   await MIT.shutdown(); MIT = null;
   OHNE = await startenMit('?debug=1&dungeon=1');
@@ -162,6 +240,13 @@ test('ohne Flagge: Kegel wie bisher, kein Schlagbild, nichts geladen, gleiche Tr
     assert.strictEqual(r.sichtbar, true, dd + ': Spieler ohne Flagge versteckt');
     assert.deepStrictEqual(r.treffer, ['vorn'], dd + ': Treffer');
     assert.deepStrictEqual(r.alphas, [0.2], dd + ': Kegel');
+    assert.strictEqual(r.spuren, 0, dd + ': Wischspur ohne Flagge');
+    for (let i = 0; i < 20; i++) {
+      OHNE.step(1);
+      const s = OHNE.run(`window.game.scene.getScene('GameScene').children.list.filter(function (o) {
+        return o.name === 'schlagSpur'; }).length`);
+      assert.strictEqual(s, 0, dd + ': Wischspur ohne Flagge (spaeter)');
+    }
     OHNE.step(60);
   }
   const geladen = OHNE.run(`Object.keys(window.game.textures.list).filter(function (k) { return /^schlag/.test(k); }).length`);

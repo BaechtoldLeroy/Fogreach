@@ -2272,14 +2272,14 @@ function attack() {
 
   if (window.soundManager) window.soundManager.playSFX('attack');
 
-  // #171 (?schlag=neu): Statt nur des Kegels holt die Figur mit dem Flegel
-  // aus. Der Kegel bleibt als schwacher Schatten stehen — er zeigt die
-  // Reichweite, und die stimmt mit dem Schadensbereich ueberein. Fehlen die
-  // Schlagbilder (Richtung nicht geladen, Verkleidung), bleibt alles wie bisher.
+  // #171 (?schlag=neu): Statt des Kegels holt die Figur mit dem Flegel aus,
+  // und im Aufschlag zieht eine kurze Wischspur (_schlagSpur). Der Kegel
+  // faellt dann ganz weg. Fehlen die Schlagbilder (Richtung nicht geladen,
+  // Verkleidung), bleibt alles wie bisher.
   const schlagDd = _schlagFlagge() ? _schlagRichtung(this) : null;
   const schlagBereit = !!(schlagDd && _schlagBilder(this, schlagDd));
   // Längerer, schwererer Swing-Kegel (Default ist 100ms).
-  showAttackEffect(this, schlagBereit ? { duration: 170, alpha: SCHLAG_KEGEL_ALPHA } : { duration: 170 });
+  if (!schlagBereit) showAttackEffect(this, { duration: 170 });
 
   const toEnemy = new Phaser.Math.Vector2();
   // Schadens-Kegel MUSS dieselbe Richtung wie der sichtbare Kegel
@@ -2413,8 +2413,17 @@ function attack() {
   });
 }
 
-// #171: Deckkraft des Kegels, wenn die Figur selbst schlaegt (sonst 0.2).
-const SCHLAG_KEGEL_ALPHA = 0.07;
+// #171: Wischspur im Aufschlag. Sie beginnt mit Bild f04 der Schlagfolge —
+// dort zieht der Flegel in allen acht Richtungen durch, in f05 liegt die
+// Kugel schon am Boden. Hell und leicht warm wie blankes Eisen im
+// Laternenlicht; nach SCHLAG_SPUR_DAUER ist sie fort.
+const SCHLAG_SPUR_BILD = 4;
+const SCHLAG_SPUR_DAUER = 110;
+// Knapp zwei Drittel der Reichweite: dort liegt die Kugel im Aufschlagbild,
+// weiter draussen hing der Bogen losgeloest in der Luft.
+const SCHLAG_SPUR_RADIUS = 0.62;
+const SCHLAG_SPUR_FARBE = 0xf2e2bc;
+const SCHLAG_SPUR_SAUM = 0xc89a5a;
 
 /**
  * Dauer der Schlagfolge: folgt dem Angriffstempo, endet aber spaetestens mit
@@ -2485,13 +2494,72 @@ function _schlagZeigen(scene, dd, dauer) {
   animState.direction = dd;
   animState.playing = null;
   player.setData('animState', animState);
+  const spur = _schlagSpur(scene, dauer * SCHLAG_SPUR_BILD / SCHLAG_BILDER);
   const ende = () => {
     scene.events.off('postupdate', folgen);
+    scene.events.off('shutdown', ende);
+    spur.ende();
     if (bild.active) bild.destroy();
     if (player) player.setVisible(true);
   };
   scene.time.delayedCall(dauer, ende);
+  // Raumwechsel/Tod per Szenenneustart: die Timer verfallen, die Hoerer nicht.
+  scene.events.once('shutdown', ende);
   return { bild, ende };
+}
+
+/**
+ * #171: Kurze Wischspur des Flegels — ein schmaler Bogen um den Angriffs-
+ * ursprung, so breit wie der fruehere Kegel (60 Grad) und knapp innerhalb der
+ * Reichweite. Er laeuft im Uhrzeigersinn; die Spitze (Ende des Schwungs) ist
+ * am breitesten und hellsten und verblasst zuerst. Ein Graphics je Schlag,
+ * pro Bild wird es nur geleert und neu gezeichnet.
+ */
+function _schlagSpur(scene, verzoegerung) {
+  const g = scene.add.graphics().setName('schlagSpur').setVisible(false)
+    .setDepth(player.depth + 1).setBlendMode(Phaser.BlendModes.ADD);
+  const winkel = _getAimVector2(scene).angle();
+  const bogen = Math.PI / 3;
+  const STUECKE = 10;
+  let beginn = null;
+  const ende = () => {
+    scene.events.off('postupdate', zeichnen);
+    if (g.active) g.destroy();
+  };
+  const zeichnen = () => {
+    if (!g.active || beginn === null || !player) return;
+    const t = (scene.time.now - beginn) / SCHLAG_SPUR_DAUER;
+    if (t >= 1) { ende(); return; }
+    const u = angriffsUrsprung();
+    const r = Math.max(24, attackRange * SCHLAG_SPUR_RADIUS);
+    g.clear();
+    // Erst der breite warme Saum, darueber der helle Grat.
+    for (let saum = 1; saum >= 0; saum--) {
+      for (let i = 0; i < STUECKE; i++) {
+        const s = (i + 1) / STUECKE;                  // 0 = Ausholen, 1 = Spitze
+        // Die Ausblende wandert von der Spitze zum Anfang des Bogens.
+        const da = Phaser.Math.Clamp((1 - t) * 2 - s, 0, 1) * (0.25 + 0.75 * s);
+        if (da <= 0.02) continue;
+        const breite = 1.5 + 3.5 * s;
+        g.lineStyle(saum ? breite + 3 : breite, saum ? SCHLAG_SPUR_SAUM : SCHLAG_SPUR_FARBE,
+          saum ? da * 0.35 : da * 0.85);
+        const a0 = winkel - bogen / 2 + bogen * i / STUECKE;
+        const a1 = winkel - bogen / 2 + bogen * (i + 1) / STUECKE;
+        g.beginPath();
+        g.moveTo(u.x + Math.cos(a0) * r, u.y + Math.sin(a0) * r);
+        g.lineTo(u.x + Math.cos(a1) * r, u.y + Math.sin(a1) * r);
+        g.strokePath();
+      }
+    }
+  };
+  scene.events.on('postupdate', zeichnen);
+  scene.time.delayedCall(verzoegerung, () => {
+    if (!g.active) return;
+    beginn = scene.time.now;
+    g.setVisible(true);
+    zeichnen();
+  });
+  return { g, ende };
 }
 
 function _abilityGate(id) {
