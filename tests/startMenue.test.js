@@ -81,6 +81,47 @@ test('Startmenue: die Kulisse ist animiert (Bilder, Nebel, Glut, Licht)', () => 
   assert.notStrictEqual(k.ratsfenster.alpha, ratVorher, 'Ratsfenster pulsiert nicht');
 });
 
+test('Startmenue: die Laterne steht auf der Bruestung, nicht in der Luft', async () => {
+  // Bis b352 hing sie an einem Wandhalter neben dem Wasserspeier, dessen
+  // Platte in die Luft griff. Jetzt steht sie ohne Halter auf einer Zinne.
+  const sharp = require('sharp');
+  const path = require('path');
+  const pfad = (n) => path.join(__dirname, '..', 'assets', 'start', n + '.png');
+  const lat = await sharp(pfad('start_laterne')).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const br = await sharp(pfad('start_bruestung')).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const alpha = (b, x, y) => b.data[(y * b.info.width + x) * 4 + 3];
+  // Kein Halter mehr: links der Laterne (Spalten 0..6 jedes Bildes) ist alles leer.
+  let halter = 0;
+  for (let f = 0; f < 8; f++) for (let y = 0; y < 64; y++) for (let x = 0; x < 7; x++) if (alpha(lat, f * 32 + x, y) > 24) halter++;
+  assert.strictEqual(halter, 0, 'die Laterne traegt noch ihren Wandhalter (' + halter + ' Pixel)');
+
+  // Inhalt von Bild 0: Spalten und unterste Zeile.
+  let x0 = 99, x1 = -1, unten = -1;
+  for (let y = 0; y < 64; y++) for (let x = 0; x < 32; x++) if (alpha(lat, x, y) > 24) {
+    x0 = Math.min(x0, x); x1 = Math.max(x1, x); unten = Math.max(unten, y);
+  }
+  const s = start(), l = s.kulisse.laterne, S = l.scaleX;
+  const ch = s.cameras.main.height;
+  const links = l.x - l.originX * l.displayWidth, oben0 = l.y - l.originY * l.displayHeight;
+  const fuss = oben0 + (unten + 1) * S;
+  // Oberkante der Bruestung unter jeder Spalte der Laterne: ueberall gleich
+  // hoch (sie steht auf EINER Zinne, nicht ueber einer Luecke) und am Fuss.
+  const kanten = [];
+  for (let x = x0; x <= x1; x++) {
+    const bx = Math.floor((links + (x + 0.5) * S) / S);
+    let r = 0;
+    while (r < br.info.height && alpha(br, bx, r) <= 24) r++;
+    kanten.push(ch - (br.info.height - r) * S);
+  }
+  const hoechste = Math.min(...kanten), tiefste = Math.max(...kanten);
+  assert.ok(tiefste - hoechste <= 2 * S, 'die Laterne steht ueber einer Zinnenluecke: Kanten ' + hoechste + '..' + tiefste);
+  assert.ok(fuss >= hoechste && fuss <= hoechste + 5 * S,
+    'Fuss der Laterne bei ' + fuss + ', Oberkante der Zinne bei ' + hoechste + ' — sie schwebt oder versinkt');
+  // Der Schein sitzt auf dem Glas, nicht daneben.
+  const sch = s.kulisse.laternenSchein;
+  assert.ok(Math.abs(sch.x - l.x) <= 4 && sch.y > oben0 && sch.y < fuss, 'der Schein liegt nicht auf der Laterne');
+});
+
 test('Startmenue ohne Spielstand: Start + Einstellungen, kein Fortsetzen, kein Endlos', () => {
   const s = start();
   const m = s.menuKnoepfe;

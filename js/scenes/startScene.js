@@ -76,6 +76,9 @@ const _START_FENSTER = [
 ];
 const _START_RATSFENSTER = [172, 78];   // das rote Fenster im Turm des Kettenrats
 const _START_MOND = [222, 57];
+// Wo die Laterne steht: Mitte der Zinne rechts vom Archivschmied, auf ihrer
+// Oberkante (Pixel im Bruestungsbild 480x72, das unten buendig liegt).
+const _START_LATERNE = [144.5, 40];
 
 // Ein Knopf aus Messingplatte (Spritesheet: 0 normal, 1 hover, 2 gedrueckt)
 // und Beschriftung. Die Aktion haengt der Aufrufer selbst an platte
@@ -187,16 +190,23 @@ function _baueKulisse(scene) {
     .setScale(0.32, 0.18).setTint(0xffb040).setAlpha(0.5).setBlendMode(ADD).setDepth(6);
   scene.tweens.add({ targets: k.augen, alpha: 0.95, duration: 1700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-  // Laterne am Pfeiler neben dem Wasserspeier (Flackerschleife Bild 0..7).
+  // Die Laterne des Archivschmieds, rechts neben ihm auf der Zinne
+  // abgestellt (Flackerschleife Bild 0..7). Bis b352 hing sie an einem
+  // Wandhalter neben dem Wasserspeier — der Halter griff aber in die Luft,
+  // und fuer eine Wandlaterne ist unter der Bruestung kein Platz mehr. Darum
+  // traegt das Bild nur noch Ring und Laterne; ihr Fuss (Bildzeile 55 von 64)
+  // steht auf der Oberkante der Zinne.
   if (!scene.anims.exists('start_laterne_flackern')) {
     scene.anims.create({
       key: 'start_laterne_flackern', frames: scene.anims.generateFrameNumbers('start_laterne', { start: 0, end: 7 }),
       frameRate: 9, repeat: -1
     });
   }
-  k.laterne = scene.add.sprite(78, 334, 'start_laterne', 0).setOrigin(0).setScale(S).setDepth(6);
+  const lx = _START_LATERNE[0] * S, ly = ch - (72 - _START_LATERNE[1]) * S;
+  k.laterne = scene.add.sprite(lx, ly, 'start_laterne', 0).setOrigin(19.5 / 32, 55 / 64).setScale(S).setDepth(6);
   k.laterne.play('start_laterne_flackern');
-  k.laternenSchein = scene.add.image(78 + 19 * S, 334 + 44 * S, 'start_schein')
+  // Der Schein sitzt auf dem Glas, 13 Bildpixel ueber dem Fuss.
+  k.laternenSchein = scene.add.image(lx, ly - 13 * S, 'start_schein')
     .setScale(2.2).setAlpha(0.55).setBlendMode(ADD).setDepth(6);
   k.laternenTakt = scene.time.addEvent({
     delay: 90, loop: true, callback: () => {

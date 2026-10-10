@@ -317,6 +317,72 @@
     return bild;
   }
 
+  /**
+   * Das Rechteck, das ein Bild auf dem Platz einnimmt — in Kacheln, genau so,
+   * wie _stellen es setzt (Fuss unten Mitte, mass = Breite oder {hoehe}).
+   * masse(key) liefert {w,h} des Bildes; im Spiel aus der Textur, im Test
+   * aus der PNG-Datei.
+   */
+  function bildFlaeche(K, key, xK, yK, mass, masse) {
+    var m = masse(key);
+    if (!m || !m.w || !m.h) return null;
+    var b, h;
+    if (mass && mass.hoehe) { h = mass.hoehe / K.kachel; b = h * m.w / m.h; }
+    else { b = mass; h = b * m.h / m.w; }
+    return { x: xK - b / 2, y: yK - h, b: b, h: h };
+  }
+
+  /** Die Bildflaechen aller Haeuser, in Kacheln. */
+  function gebaeudeFlaechen(K, masse) {
+    return (K.haeuser || []).map(function (h) {
+      var f = bildFlaeche(K, h.bild, h.x, h.y, h.breite, masse);
+      if (f) f.bild = h.bild;
+      return f;
+    }).filter(Boolean);
+  }
+
+  function _schneiden(a, b) {
+    return a.x < b.x + b.b && a.x + a.b > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  /**
+   * Wo die Baeume des Waldrands stehen. Reine Rechnung, damit ein Test sie
+   * ohne Szene gegen die Haeuser pruefen kann.
+   *
+   * Gestreut wird auf Wald ('g') — auch auf den Saum ueber dem Kartenrand.
+   * Kein Baum darf mit seinem Bild in ein Haus hineinreichen: bis b352
+   * standen Baeume HINTER dem Rathaus (im Saum und neben dem Sockel), wurden
+   * von ihm verdeckt und lugten unter ihm hervor, als wuechsen sie aus der
+   * Mauer. Das Rathausbild ist hoeher und breiter als seine 'R'-Zellen, darum
+   * reicht die Karte allein nicht: gemessen wird am Bild.
+   */
+  function baeume(K, masse) {
+    var daBaum = BAUM_BILDER.filter(function (k) { return !!masse(k); });
+    if (!daBaum.length) return [];
+    var haeuser = gebaeudeFlaechen(K, masse);
+    var liste = [];
+    for (var ty = -SAUM; ty < K.hoehe; ty++) {
+      for (var tx = 0; tx < K.breite; tx++) {
+        // Nur auf Wald ('g'). Unter dem Rathaus liegt auch Wiese ('R'),
+        // aber dort wuerden Baeume aus seinem Sockel wachsen.
+        if (zeichenAn(K, tx, ty) !== 'g') continue;
+        var w = streu(tx, ty, 11);
+        if (w > 0.72) continue;                 // Luecken lassen
+        var t = {
+          bild: daBaum[Math.floor(w * daBaum.length) % daBaum.length],
+          x: tx + 0.5 + (streu(tx, ty, 17) - 0.5) * 0.7,
+          y: ty + 1 + (streu(tx, ty, 19) - 0.5) * 0.5,
+          breite: 1.4 + w * 0.9,
+          spiegeln: w > 0.36
+        };
+        var f = bildFlaeche(K, t.bild, t.x, t.y, t.breite, masse);
+        if (f && haeuser.some(function (hf) { return _schneiden(f, hf); })) continue;
+        liste.push(t);
+      }
+    }
+    return liste;
+  }
+
   /** Nebel: zwei langsam treibende Schleier ueber dem ganzen Platz. */
   function _nebel(scene, w, h) {
     var key = 'hub_nebelfleck';
@@ -456,6 +522,7 @@
     return {
       posterSpots: (K.anschlagtafeln || []).map(function (p) { return { x: p.x * z, y: p.y * z }; }),
       patrouillen: (K.patrouillen || []).map(function (p) { return { x: p.x * z, y: p.y * z }; }),
+      vorleser: (K.vorleser || []).map(function (p) { return { x: p.x * z, y: p.y * z, bild: p.bild }; }),
       rathausRect: rh ? { x: (rh.x - rh.breite / 2) * z, y: T.y * z, w: rh.breite * z, h: (rh.y - T.y) * z } : null,
       rathausEntrance: tuer ? { x: tuer.x * z, y: tuer.y * z, w: tuer.b * z, h: tuer.h * z } : null
     };
@@ -590,23 +657,15 @@
 
     // Waldrand: auf die Grasflaechen Baeume streuen. Der begehbare Platz
     // bleibt frei, weil Gras nur dort liegt, wo niemand laufen soll.
-    var daBaum = BAUM_BILDER.filter(function (k) { return scene.textures.exists(k); });
-    if (daBaum.length) {
-      for (var ty = -SAUM; ty < K.hoehe; ty++) {
-        for (var tx = 0; tx < K.breite; tx++) {
-          // Nur auf Wald ('g'). Unter dem Rathaus liegt auch Wiese ('R'),
-          // aber dort wuerden Baeume aus seinem Sockel wachsen.
-          if (zeichenAn(K, tx, ty) !== 'g') continue;
-          var w = streu(tx, ty, 11);
-          if (w > 0.72) continue;                 // Luecken lassen
-          var bx = tx + 0.5 + (streu(tx, ty, 17) - 0.5) * 0.7;
-          var by = ty + 1 + (streu(tx, ty, 19) - 0.5) * 0.5;
-          var key = daBaum[Math.floor(w * daBaum.length) % daBaum.length];
-          var bb = _stellen(scene, key, bx, by, 1.4 + w * 0.9, w > 0.36);
-          if (bb) erg.baeume.push(bb);
-        }
-      }
-    }
+    var masse = function (key) {
+      if (!scene.textures.exists(key)) return null;
+      var f = scene.textures.getFrame(key);
+      return f ? { w: f.width, h: f.height } : null;
+    };
+    baeume(K, masse).forEach(function (t) {
+      var bb = _stellen(scene, t.bild, t.x, t.y, t.breite, t.spiegeln);
+      if (bb) erg.baeume.push(bb);
+    });
 
     var W = welt();
     erg.nebel = _nebel(scene, W.breite, W.hoehe);
@@ -661,7 +720,7 @@
   var HubNeuWelt = {
     welt: welt, vorladen: vorladen, platzVorTuer: platzVorTuer,
     layoutUebernehmen: layoutUebernehmen, bauen: bauen, truheStellen: truheStellen, phasenAnker: phasenAnker,
-    aktionsbox: aktionsbox,
+    aktionsbox: aktionsbox, baeume: baeume, gebaeudeFlaechen: gebaeudeFlaechen, bildFlaeche: bildFlaeche,
     _streu: streu, _festeFlaechen: _festeFlaechen, _artAn: artAn, _SCHICHTEN: SCHICHTEN
   };
   if (typeof window !== 'undefined') window.HubNeuWelt = HubNeuWelt;

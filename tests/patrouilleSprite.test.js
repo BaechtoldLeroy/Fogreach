@@ -86,8 +86,7 @@ describe('ohne Flagge', () => {
       sc._hubPhase = 'epilogue';
       try {
         var n = sc._vorleserAufstellen();
-        return { n: n, h: sc._vorleser.filter(function (s) { return s.texture && s.texture.key === 'buerger'; })
-          .map(function (s) { return Math.round(s.displayHeight); }) };
+        return { n: n, h: sc._vorleser.map(function (s) { return Math.round(s.displayHeight); }) };
       } finally {
         window.HubPhase.epilogVorleser = echt; sc._hubPhase = phase; sc._vorleserAufstellen();
       }

@@ -141,6 +141,19 @@
       { x: 25.9, y: 16.4 }
     ],
 
+    // Die Vorleser im Epilog (#161): Buerger, die Thoms Blaetter vorlesen.
+    // Jeder hat sein eigenes Bild — bis b352 trugen sie das des Ratlosen
+    // Buergers und standen mit Koordinaten des gemalten Hubs am und HINTER
+    // dem Marktstand, neben dem echten Buerger: der stand dann zweimal da.
+    // Hier auf freiem Boden, je gut drei Kacheln von jeder Figur und jedem
+    // Moebel. Der erste steht dem Startpunkt am naechsten — kommt nur einer
+    // zurueck, sieht man ihn sofort.
+    vorleser: [
+      { x: 16.0, y: 18.2, bild: 'vorleser_frau' },    // Ringstrasse, links unter dem Brunnen
+      { x: 12.6, y: 13.6, bild: 'vorleser_alter' },   // westlicher Platz, zwischen Werkstatt und Mauer
+      { x: 28.5, y: 16.5, bild: 'vorleser_junge' }    // oestlicher Platz, vor der Druckerei
+    ],
+
     haeuser: [
       { bild: 'hub_rathaus_sockel', x: 20,   y: 4,  breite: 12,  farbe: 0xa9b2bf },
       { bild: 'hub_werkstatt',      x: 5.5,  y: 14, breite: 7.6 },

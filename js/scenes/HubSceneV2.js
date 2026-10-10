@@ -175,6 +175,10 @@ class HubSceneV2 extends Phaser.Scene {
     // fängt das Spawn-System es mit dem Platzhalter ab (der 404 im Loader ist
     // dann erwartbar, bis assets/sprites/buerger.png vorliegt).
     if (!tex.exists('buerger'))           this.load.image('buerger', 'assets/sprites/buerger.png?v=2');
+    // #161: die Vorleser im Epilog — eigene Figuren, nicht der Ratlose Buerger.
+    ['vorleser_frau', 'vorleser_alter', 'vorleser_junge'].forEach((k) => {
+      if (!tex.exists(k)) this.load.image(k, 'assets/sprites/' + k + '.png');
+    });
     ['aldric', 'elara', 'harren'].forEach((npc) => {
       ['left0','left1','left2','right0','right1','right2'].forEach((frame) => {
         const key = npc + '_' + frame;
@@ -1414,22 +1418,22 @@ class HubSceneV2 extends Phaser.Scene {
     if (this._hubPhase !== 'epilogue') return 0;
     const qs = window.questSystem;
     if (!qs || !window.HubPhase || typeof window.HubPhase.epilogVorleser !== 'function') return 0;
-    if (!this.textures || !this.textures.exists('buerger')) return 0;
+    if (!this.textures) return 0;
     const n = window.HubPhase.epilogVorleser(qs.getFlags());
-    const plaetze = [[430, 400], [520, 405], [470, 440]];
+    // Plaetze und Bilder stehen in der Karte (hubNeuKarte.vorleser). Jeder
+    // Vorleser hat sein eigenes Bild mit dem Blatt in der Hand: bis b352
+    // trugen sie das des Ratlosen Buergers, der damit doppelt dastand.
+    const anker = window.HubNeuWelt && window.HubNeuWelt.phasenAnker && window.HubNeuWelt.phasenAnker();
+    const plaetze = (anker && anker.vorleser) || [];
     for (let i = 0; i < n && i < plaetze.length; i++) {
-      const [x, y] = plaetze[i];
-      // Fuesse am Punkt; Hoehe wie der Buerger im hubLayout. Der feste Faktor
-      // 0.30 stammte vom Grossbild vor b326 und machte sie 19 px klein.
-      const s = _aufFigurHoehe(this, this.add.image(x * SCALE_FACTOR, y * SCALE_FACTOR, 'buerger').setOrigin(0.5, 1), 52);
-      s.setDepth(y * SCALE_FACTOR);
-      if (i % 2 === 1) s.setFlipX(true);
-      // Das Blatt in der Hand.
-      const b = this.add.rectangle(x * SCALE_FACTOR + (i % 2 ? -9 : 9), y * SCALE_FACTOR - 42, 10, 13, 0xf6f3ea)
-        .setDepth(y * SCALE_FACTOR + 1);
-      this._vorleser.push(s, b);
+      const { x, y, bild } = plaetze[i];
+      if (!this.textures.exists(bild)) continue;
+      // Fuesse am Punkt; so hoch wie der Buerger im hubLayout.
+      const s = _aufFigurHoehe(this, this.add.image(x, y, bild).setOrigin(0.5, 1), 52);
+      s.setDepth(y);
+      this._vorleser.push(s);
     }
-    return n;
+    return this._vorleser.length;
   }
 
   _patrouillenAufstellen() {

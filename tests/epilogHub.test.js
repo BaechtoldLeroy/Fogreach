@@ -47,11 +47,64 @@ test('Der Epilog hat duennen Nebel und Thoms Blaetter an den Tafeln', async () =
 
 test('Buerger lesen vor — so viele, wie zurueckkamen', async () => {
   await epilog({ petitions_kept: true });
-  const viele = H.run(`${hub}._vorleser.length / 2`);
+  const viele = H.run(`${hub}._vorleser.length`);
   await epilog({ petitions_surrendered: true });
-  const wenige = H.run(`${hub}._vorleser.length / 2`);
+  const wenige = H.run(`${hub}._vorleser.length`);
   assert.strictEqual(viele, 3, 'Gesuche behalten: ' + viele + ' Vorleser');
   assert.strictEqual(wenige, 1, 'Gesuche abgeliefert: ' + wenige + ' Vorleser');
+});
+
+test('Kein Doppelgaenger: die Vorleser sind eigene Figuren auf freiem Boden', async () => {
+  // Bis b352 trugen die Vorleser das Bild des Ratlosen Buergers und standen
+  // auf Koordinaten des gemalten Hubs am und hinter dem Marktstand — direkt
+  // neben dem echten Buerger. "Im Hub steht der ratlose Buerger zweimal."
+  await epilog({ petitions_kept: true });
+  const r = H.run(`(function () {
+    var sc = ${hub};
+    var figuren = [];
+    (sc.npcs || []).forEach(function (n) {
+      if (n.sprite && n.sprite.active && n.sprite.visible) figuren.push({ was: n.data.id, key: n.sprite.texture.key, x: n.sprite.x, y: n.sprite.y });
+    });
+    (sc._patrouillen || []).forEach(function (s, i) { figuren.push({ was: 'patrouille' + i, key: s.texture.key, x: s.x, y: s.y }); });
+    var vorleser = (sc._vorleser || []).map(function (s, i) {
+      var b = s.getBounds();
+      return { was: 'vorleser' + i, key: s.texture.key, x: s.x, y: s.y, b: { x: b.x, y: b.y, w: b.width, h: b.height } };
+    });
+    // Alles, was als Bild auf dem Platz steht: Haeuser, Requisiten, Baeume, Truhe.
+    var dinge = sc.children.list.filter(function (o) {
+      var k = o.texture && o.texture.key;
+      return (o.type === 'Image' || o.type === 'Sprite') && o.visible && k &&
+        (k.indexOf('hub_') === 0 || k.indexOf('brazier') === 0) && k !== 'hub_schein';
+    }).map(function (o) { var b = o.getBounds(); return { key: o.texture.key, x: b.x, y: b.y, w: b.width, h: b.height }; });
+    var M = 1536 / 960;
+    var fest = window.HUB_HITBOXES.colliders.map(function (c) { return { x: c.x * M, y: c.y * M, w: c.w * M, h: c.h * M }; });
+    var tueren = window.HUB_HITBOXES.entrances.map(function (c) { return { x: c.x * M, y: c.y * M, w: c.w * M, h: c.h * M }; });
+    return { figuren: figuren, vorleser: vorleser, dinge: dinge, fest: fest, tueren: tueren };
+  })()`);
+  assert.strictEqual(r.vorleser.length, 3, 'nicht drei Vorleser');
+  const ueber = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  const alle = r.figuren.concat(r.vorleser);
+  const doppelt = [];
+  for (let i = 0; i < alle.length; i++) for (let j = i + 1; j < alle.length; j++) {
+    const a = alle[i], b = alle[j];
+    if (a.key === b.key && Math.hypot(a.x - b.x, a.y - b.y) < 400) doppelt.push(a.was + ' und ' + b.was + ' (' + a.key + ')');
+  }
+  assert.deepStrictEqual(doppelt, [], 'gleiche Figur zweimal nah beieinander: ' + doppelt.join('; '));
+  r.vorleser.forEach((v) => {
+    // Der Fuss (eine Fusbreite) steht nicht in einer Wand oder einem Moebel-Collider,
+    // nicht in einer Tuerzone.
+    const fuss = { x: v.x - 10, y: v.y - 8, w: 20, h: 8 };
+    r.fest.forEach((f) => assert.ok(!ueber(fuss, f), v.was + ' steht in einer Kollision'));
+    r.tueren.forEach((t) => assert.ok(!ueber(fuss, t), v.was + ' steht in einer Tuerzone'));
+    // Die Figur steckt in keinem Bild auf dem Platz (nicht hinter dem Stand).
+    r.dinge.forEach((d) => assert.ok(!ueber(v.b, d), v.was + ' ueberlappt ' + d.key));
+    // Abstand zu jeder anderen Figur: gut zwei Kacheln.
+    alle.forEach((o) => {
+      if (o === v) return;
+      const d = Math.hypot(o.x - v.x, o.y - v.y);
+      assert.ok(d >= 80, v.was + ' steht nur ' + Math.round(d) + ' px neben ' + o.was);
+    });
+  });
 });
 
 test('Vor dem Epilog liest niemand vor', async () => {
