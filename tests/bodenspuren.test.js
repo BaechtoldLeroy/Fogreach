@@ -121,3 +121,42 @@ test('ein echter Raum legt verschiedene Spuren', () => {
     'es lagen nur ' + gesehen.size + ' verschiedene Spuren (' + [...gesehen].join(', ')
     + ') — der Raum fragt den Wuerfel nicht');
 });
+
+test('Spuren versperren keiner Treppe den Platz', () => {
+  // Eine Spur ist Boden. Lag sie in _templateWalls ohne isFloor, hielt die
+  // Treppensuche (checkBucket) jeden Riss fuer ein Prop und verwarf den Platz.
+  // Um das sichtbar zu machen, wird der Boden mit Spuren zugedeckt: statt
+  // zehn bis fuenfzehn liefert der Wuerfel fuer diesen Aufruf 1500. Ohne die
+  // Marke findet die Suche dann keinen Platz mehr und greift zur Notfall-Treppe.
+  const marke = H.errors.length;
+  const r = H.run(`(function () {
+    var M = window.Phaser.Math, alt = M.Between;
+    M.Between = function (a, b) { return (a === 10 && b === 15) ? 1500 : alt.apply(this, arguments); };
+    var raeume = [];
+    try {
+      for (var i = 0; i < 3; i++) {
+        var sc = window.game.scene.getScene('GameScene');
+        window.enterRoom(sc);
+        var spuren = (sc._templateWalls || []).filter(function (c) {
+          return c && c.texture && /^floor_(crack|stain)/.test(c.texture.key);
+        });
+        raeume.push({
+          spuren: spuren.length,
+          ohneMarke: spuren.filter(function (c) { return !c.getData('isFloor'); }).length,
+          treppen: sc.stairsGroup ? sc.stairsGroup.getChildren().length : 0
+        });
+      }
+    } finally { M.Between = alt; }
+    return JSON.stringify(raeume);
+  })()`);
+  const raeume = JSON.parse(r);
+  const notfall = H.errors.slice(marke)
+    .filter((e) => e.level === 'warn' && String(e.msg).indexOf('Notfall-Treppe') >= 0).length;
+  raeume.forEach((x, i) => {
+    assert.ok(x.spuren > 100, 'Raum ' + i + ': nur ' + x.spuren + ' Spuren — der Boden ist nicht zugedeckt, der Fall misst nichts');
+    assert.strictEqual(x.ohneMarke, 0, 'Raum ' + i + ': ' + x.ohneMarke + ' Spuren ohne isFloor');
+    assert.ok(x.treppen > 0, 'Raum ' + i + ' ohne Treppe');
+  });
+  assert.strictEqual(notfall, 0, 'Notfall-Treppe in ' + notfall + ' von ' + raeume.length
+    + ' Raeumen — die Spuren gelten als Hindernis');
+});

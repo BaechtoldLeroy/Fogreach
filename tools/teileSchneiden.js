@@ -7,7 +7,7 @@
  * feste Zellen: was sich beruehrt (oder fast), ist EIN Teil.
  *
  * Gemeinsam genutzt von tools/partikelBauen.js (#183) und
- * tools/bodenDekoBauen.js (#184).
+ * (frueher auch fuer die verworfene Boden-Deko #184).
  */
 'use strict';
 

@@ -1445,8 +1445,6 @@ function enterRoom(scene, roomId) {
   // alte Block hier war deshalb an seiner eigenen Bedingung stumm gescheitert
   // und hat nie ein einziges Objekt geraeumt.
   raeumePropsAufTreppen(scene, obstacles);
-  // #184 (?boden=neu): Themen-Deko unter einer Treppe wegnehmen.
-  if (window.BodenDeko) window.BodenDeko.treppenFrei(scene);
 
   // Truhen werden NICHT mehr aus den Templates gespawnt (spawns.loot-Truhen
   // entfernt), sondern hier ZUFAELLIG platziert — nach den Treppen, damit die

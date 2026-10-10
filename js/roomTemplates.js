@@ -796,16 +796,13 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
           // der Schluessel heisst jetzt floor_crack3 und nicht mehr nur
           // floor_crack.
           if (detailBasis === 'floor_crack') detail.setAngle(Math.random() * 360);
+          // Eine Spur ist Boden, kein Hindernis: ohne die Marke hielt die
+          // Treppensuche (checkBucket in roomManager) jeden Riss fuer ein
+          // Prop und verwarf Plaetze, auf denen eine Treppe gut Platz hat.
+          detail.setData('isFloor', true);
           templateWalls.push(detail);
         }
       }
-    }
-
-    // #184: Deko passend zum Raumthema, nur mit ?boden=neu (sonst leer).
-    if (window.BodenDeko) {
-      window.BodenDeko.streuen(scene, {
-        tpl, W, H, T, ox, oy, istBegehbar: isWalkableTile, boden: floorKey, tint: floorTint, ablage: templateWalls
-      });
     }
 
     // Cobweb sprites in corners (where two walls meet at 90 degrees)
