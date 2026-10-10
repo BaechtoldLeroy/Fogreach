@@ -2601,6 +2601,13 @@ function initUI() {
     // abilityStatusDisplay fuehrt nur attack und roll — Trank und die vier
     // Slot-Kacheln standen deshalb waehrend des Boss-Beats weiter da.
     const alleKacheln = [];
+    // Neue Oberflaeche (#182, ?oberflaeche=neu): jede Kachel liegt auf einer
+    // kleinen Messing-Platte. Sie wird EINMAL gebacken (eine Textur fuer alle
+    // Kacheln); das alte Rechteck faellt weg, damit updateAbilityStatus es
+    // nicht jedes Bild neu einfaerbt.
+    const _UR = window.uiRahmen;
+    const kachelNeu = !!(_UR && _UR.neu() && _UR.bereit(this));
+    const kachelTex = kachelNeu ? _UR.kachelBild(this, tileWidth, tileHeight) : null;
     const buildTile = (initialLabel, initialKeyLabel, color) => {
       const container = this.add.container(0, 0).setDepth(1001).setScrollFactor(0);
       const bg = this.add.rectangle(0, 0, tileWidth, tileHeight, 0x10131c, 0.65)
@@ -2655,13 +2662,22 @@ function initUI() {
         fill: '#ffdd66'
       }).setOrigin(1, 1).setVisible(false);
       container.add([bg, fill, iconBg, radialOverlay, iconText, nameText, keyBadge, keyText, statusText, bonusBadge]);
+      if (kachelTex) {
+        bg.destroy();
+        container.addAt(this.add.image(0, 0, kachelTex).setOrigin(0, 0), 0);
+        // Bereitschaftsschimmer nur innerhalb des Beschlags.
+        fill.setPosition(5, 5).setSize(tileWidth - 10, tileHeight - 10);
+        // Tastenschrift war dunkel auf dunkel (#0d1525); auf der Platte hell.
+        keyText.setColor('#efe6d2');
+        _UR.lesbarAlle([nameText, statusText, bonusBadge]);
+      }
       nameText.setWordWrapWidth(badgeX - tilePadding - ICON_R * 2 - 12);
       nameText.setMaxLines(2);
       const kachel = {
-        container, fill, bg, statusText, nameText, keyText, keyBadge,
+        container, fill, bg: kachelTex ? null : bg, statusText, nameText, keyText, keyBadge,
         iconText, iconBg, radialOverlay, bonusBadge,
         iconCx: ICON_CX, iconCy: ICON_CY, iconR: ICON_R,
-        width: tileWidth, durationMs: 0, color,
+        width: kachelTex ? tileWidth - 10 : tileWidth, durationMs: 0, color,
         labelWidth: badgeX - tilePadding
       };
       alleKacheln.push(kachel);

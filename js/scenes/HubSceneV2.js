@@ -1970,10 +1970,27 @@ class HubSceneV2 extends Phaser.Scene {
     const extraBtnHeight = hasChoices ? choiceHeight : maraBtnHeight;
     const panelHeight = Math.min(440, Math.max(180, Math.ceil(pad + headerHeight + 12 + bodyHeight + extraBtnHeight + pad + hintHeight + 10)));
 
-    const g = this.add.graphics();
-    g.fillStyle(0x0c0c11, 0.94).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
-    g.lineStyle(2, 0x484850, 0.9).strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
-    container.add(g);
+    // Neue Oberflaeche (#182, ?oberflaeche=neu): Messing-Platte statt des
+    // gezeichneten Kastens, Messingknoepfe statt Farbkaesten. Die Platte
+    // liegt als neun Teile im Container — der Sweep in _closeDialog raeumt
+    // sie mit ihm ab, die Bildlauf-Weitergabe unten erfasst sie. Bewusst
+    // nicht gebacken: die Hoehe folgt dem Text, jede neue Hoehe waere eine
+    // neue Textur, die bis zum Neuladen im Speicher bliebe.
+    const UR = window.uiRahmen;
+    const NEU = !!(UR && UR.neu() && UR.bereit(this));
+    if (NEU) {
+      container.add(UR.platte(this, 0, 0, panelWidth, panelHeight, 0, 0.6));
+    } else {
+      const g = this.add.graphics();
+      g.fillStyle(0x0c0c11, 0.94).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
+      g.lineStyle(2, 0x484850, 0.9).strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
+      container.add(g);
+    }
+    // Die alte Kastenfarbe lebt als Farbton der Knopfmitte weiter
+    // (gruen = annehmen, rot = ablehnen); die Schrift wird hell.
+    const alsKnopf = (btn) => {
+      if (NEU) UR.textKnopf(this, btn, '#f4efe2');
+    };
 
     header.setPosition(-panelWidth / 2 + pad, -panelHeight / 2 + pad).setVisible(true);
     bodyText.setPosition(-panelWidth / 2 + pad, header.y + headerHeight + 12).setVisible(true);
@@ -2021,6 +2038,7 @@ class HubSceneV2 extends Phaser.Scene {
           this._handleDialogueChoice(choice.action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers);
         });
         container.add(btn);
+        alsKnopf(btn);
 
         // Number key shortcut (1, 2, 3)
         const keyName = 'keydown-' + (idx + 1);
@@ -2058,6 +2076,7 @@ class HubSceneV2 extends Phaser.Scene {
         });
       });
       container.add(skillsBtn);
+      alsKnopf(skillsBtn);
 
       // WP06: Schwarzmarkt (shop) button — opens the Mara ShopScene overlay.
       // #51: Der Schwarzmarkt ist erst ab erreichter Tiefe 4 freigeschaltet —
@@ -2084,6 +2103,7 @@ class HubSceneV2 extends Phaser.Scene {
           });
         });
         container.add(shopBtn);
+        alsKnopf(shopBtn);
       }
 
       // Feature 060 WP04: Talente (Skill-Baum) button — opens the
@@ -2106,6 +2126,7 @@ class HubSceneV2 extends Phaser.Scene {
         });
       });
       container.add(talentsBtn);
+      alsKnopf(talentsBtn);
     }
 
     // Hint text
@@ -3508,23 +3529,34 @@ class HubSceneV2 extends Phaser.Scene {
     const overlay = this.add.rectangle(0, 0, cw, ch, 0x000000, 0.7).setScrollFactor(0);
     container.add(overlay);
 
-    // Panel bg
-    const bg = this.add.graphics();
-    bg.fillStyle(0x0c0c14, 0.97);
-    bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
-    bg.lineStyle(2, 0xd4a543, 0.7);
-    bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
-    container.add(bg);
+    // Neue Oberflaeche (#182, ?oberflaeche=neu): Messing-Platte (ein
+    // gebackenes Bild) statt Kasten und Kopfleiste; Titel und Zaehler
+    // ruecken vom Beschlag weg nach innen.
+    const UR = window.uiRahmen;
+    const NEU = !!(UR && UR.neu() && UR.bereit(this));
+    this._ktNeu = NEU;
+    const kopfEin = NEU ? 10 : 0;
+    if (NEU) {
+      container.add(this.add.image(0, 0, UR.kachelBild(this, panelW, panelH)));
+    } else {
+      // Panel bg
+      const bg = this.add.graphics();
+      bg.fillStyle(0x0c0c14, 0.97);
+      bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
+      bg.lineStyle(2, 0xd4a543, 0.7);
+      bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
+      container.add(bg);
 
-    // Header bar
-    const headerH = 32;
-    const headerBg = this.add.graphics();
-    headerBg.fillStyle(0x1a1a28, 0.9);
-    headerBg.fillRect(-panelW / 2 + 2, -panelH / 2 + 2, panelW - 4, headerH);
-    container.add(headerBg);
+      // Header bar
+      const headerH = 32;
+      const headerBg = this.add.graphics();
+      headerBg.fillStyle(0x1a1a28, 0.9);
+      headerBg.fillRect(-panelW / 2 + 2, -panelH / 2 + 2, panelW - 4, headerH);
+      container.add(headerBg);
+    }
 
     const titleText = this.add.text(
-      -panelW / 2 + 14, -panelH / 2 + 8,
+      -panelW / 2 + 14 + kopfEin, -panelH / 2 + 8 + kopfEin / 2,
       _HUB_T('knowledge.title'),
       { fontFamily: 'serif', fontSize: 18, color: '#ffd166', fontStyle: 'bold', resolution: 2 }
     );
@@ -3533,7 +3565,7 @@ class HubSceneV2 extends Phaser.Scene {
     // Fragment counter - right side of header.
     const state0 = window.KnowledgeTree.getState();
     const fragText = this.add.text(
-      panelW / 2 - 14, -panelH / 2 + 8,
+      panelW / 2 - 14 - kopfEin, -panelH / 2 + 8 + kopfEin / 2,
       _HUB_T('knowledge.fragments', { count: state0.fragments }),
       { fontFamily: 'serif', fontSize: 16, color: '#dde0e6', resolution: 2 }
     ).setOrigin(1, 0);
@@ -3712,7 +3744,7 @@ class HubSceneV2 extends Phaser.Scene {
         : _HUB_T('knowledge.not.locked', { n: braucht }), {
         fontFamily: 'monospace', fontSize: 12,
         color: torOffen ? '#8fd6a0' : '#6a6a72',
-        backgroundColor: '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
+        backgroundColor: this._ktNeu ? '#1c191f' : '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
       }).setOrigin(0.5, 0.5));
       y = torY + 14;
 
@@ -3758,7 +3790,7 @@ class HubSceneV2 extends Phaser.Scene {
         this._ktCardLayer.add(this._ktTxt(cx, kantenY + 9,
           _HUB_T('knowledge.key.needs_notable'), {
             fontFamily: 'monospace', fontSize: 12, color: '#6a6a72',
-            backgroundColor: '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
+            backgroundColor: this._ktNeu ? '#1c191f' : '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
           }).setOrigin(0.5, 0.5));
       }
       keystones.filter((k) => k.zweig === zw.id).forEach((k) => {
@@ -3793,6 +3825,15 @@ class HubSceneV2 extends Phaser.Scene {
         y += kyH + 5;
       });
     });
+
+    // Neue Oberflaeche: gesperrtes Grau (#5f5f68) hatte auf der Messing-
+    // Platte nur 2,8:1. Anheben (bleibt sichtbar grauer als aktive Schrift),
+    // danach wieder scharf stellen — setColor nimmt den Filter mit.
+    if (this._ktNeu && window.uiRahmen) {
+      window.uiRahmen.lesbarAlle(this._ktCardLayer.list);
+      const scharf = (l) => l.forEach((o) => { if (o.list) scharf(o.list); else if (o.type === 'Text') this._ktScharf(o); });
+      scharf(this._ktCardLayer.list);
+    }
   }
 
   /**
@@ -3990,16 +4031,19 @@ class HubSceneV2 extends Phaser.Scene {
 
     const panelW = this._ktPanelW || 920;
     const panelH = this._ktPanelH || 460;
-    const footerY = panelH / 2 - 32;
+    const NEU = !!this._ktNeu;
+    const footerY = panelH / 2 - 32 - (NEU ? 8 : 0);
+    const ein = NEU ? 12 : 0;   // vom Beschlag der Platte weg
 
     // Respec button (left, red bg)
     const respecBtn = this.add.text(
-      -panelW / 2 + 14, footerY,
+      -panelW / 2 + 14 + ein, footerY,
       _HUB_T('knowledge.btn.respec'),
       { fontFamily: 'serif', fontSize: 14, color: '#ffdada', backgroundColor: '#7a3a3a', padding: { x: 10, y: 6 }, resolution: 2 }
     );
     respecBtn.setInteractive({ useHandCursor: true });
     this._ktFooterLayer.add(respecBtn);
+    if (NEU) window.uiRahmen.textKnopf(this, respecBtn, '#f4efe2');
 
     respecBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
@@ -4012,13 +4056,14 @@ class HubSceneV2 extends Phaser.Scene {
     // "Zuruecksetzen", und vergibt die Waehrung, die das Spiel sonst nur ueber
     // seltene Lore-Fragmente im Dungeon ausschuettet. Nur noch im Debug-Modus.
     const giveBtn = (window.DebugGate && window.DebugGate.aktiv()) ? this.add.text(
-      -panelW / 2 + 14 + respecBtn.width + 10, footerY,
+      -panelW / 2 + 14 + ein + respecBtn.width + 10, footerY,
       _HUB_T('knowledge.btn.test_give'),
       { fontFamily: 'serif', fontSize: 14, color: '#e6ffd2', backgroundColor: '#3a5a3a', padding: { x: 10, y: 6 }, resolution: 2 }
     ) : null;
     if (giveBtn) {
       giveBtn.setInteractive({ useHandCursor: true });
       this._ktFooterLayer.add(giveBtn);
+      if (NEU) window.uiRahmen.textKnopf(this, giveBtn, '#f4efe2');
       giveBtn.on('pointerdown', (pointer, x, y, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
         try { window.KnowledgeTree.addFragments(1); }
@@ -4028,12 +4073,13 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Close button (right, grey bg)
     const closeBtn = this.add.text(
-      panelW / 2 - 14, footerY,
+      panelW / 2 - 14 - ein, footerY,
       _HUB_T('knowledge.btn.close'),
       { fontFamily: 'serif', fontSize: 14, color: '#ffffff', backgroundColor: '#3a3a4a', padding: { x: 10, y: 6 }, resolution: 2 }
     ).setOrigin(1, 0);
     closeBtn.setInteractive({ useHandCursor: true });
     this._ktFooterLayer.add(closeBtn);
+    if (NEU) window.uiRahmen.textKnopf(this, closeBtn, '#f4efe2');
 
     closeBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
@@ -4051,12 +4097,17 @@ class HubSceneV2 extends Phaser.Scene {
     const dim = this.add.rectangle(0, 0, cam.width, cam.height, 0x000000, 0.55).setScrollFactor(0);
     dlg.add(dim);
 
-    const panel = this.add.graphics();
-    panel.fillStyle(0x1a1a28, 0.98);
-    panel.fillRoundedRect(-200, -80, 400, 160, 10);
-    panel.lineStyle(2, 0xd4a543, 0.7);
-    panel.strokeRoundedRect(-200, -80, 400, 160, 10);
-    dlg.add(panel);
+    const NEU = !!this._ktNeu;
+    if (NEU) {
+      dlg.add(this.add.image(0, 0, window.uiRahmen.kachelBild(this, 400, 160)));
+    } else {
+      const panel = this.add.graphics();
+      panel.fillStyle(0x1a1a28, 0.98);
+      panel.fillRoundedRect(-200, -80, 400, 160, 10);
+      panel.lineStyle(2, 0xd4a543, 0.7);
+      panel.strokeRoundedRect(-200, -80, 400, 160, 10);
+      dlg.add(panel);
+    }
 
     // #116: Respec kostet Gold (gleich viel wie im Talentbaum). Der Preis
     // steht im Dialog, damit niemand ihn erst nach dem Klick bemerkt.
@@ -4095,6 +4146,8 @@ class HubSceneV2 extends Phaser.Scene {
       this._ktCloseConfirm();
     });
     dlg.add(yes);
+    // Unbezahlbar: der entsaettigte Knopf, Schrift bleibt grau.
+    if (NEU) window.uiRahmen.textKnopf(this, yes, bezahlbar ? '#f4efe2' : '#b9b2a6', { aus: !bezahlbar });
 
     const no = this.add.text(60, 30, _HUB_T('knowledge.respec.no'), {
       fontFamily: 'serif', fontSize: 14, color: '#fff', backgroundColor: '#3a3a4a', padding: { x: 14, y: 6 }, resolution: 2
@@ -4104,6 +4157,7 @@ class HubSceneV2 extends Phaser.Scene {
       this._ktCloseConfirm();
     });
     dlg.add(no);
+    if (NEU) window.uiRahmen.textKnopf(this, no, '#f4efe2');
 
     // CRITICAL (gleiche Falle wie der Haupt-Modal, Z. ~2816): der Container hat
     // scrollFactor(0), aber Phaser propagiert das NICHT auf die interaktiven

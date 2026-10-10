@@ -41,14 +41,29 @@
   var ALLE = [RAHMEN, TOAST, KNOPF_ZUSTAND.normal, KNOPF_ZUSTAND.hover,
     KNOPF_ZUSTAND.gedrueckt, KNOPF_ZUSTAND.aus].concat(SYMBOLE);
 
+  // Zweite Runde (#182) hinter ?debug=1&oberflaeche=neu: Inventarfelder,
+  // HUD-Leiste und Messingring. Geladen nur mit Flagge, damit das Spiel
+  // ohne sie exakt so bleibt wie heute.
+  var FELD = 'ui_feld', FELD_GEWAEHLT = 'ui_feld_gewaehlt', FELD_RAND = 34;
+  var RING = 'ui_ring';
+  var LEISTE = 'ui_leiste', LEISTE_RAND = 40;
+  var NEU = [FELD, FELD_GEWAEHLT, RING, LEISTE];
+
+  /** Ist die neue Oberflaeche (#182) eingeschaltet? */
+  function neu() {
+    var g = (typeof window !== 'undefined') ? window.DebugGate : null;
+    return !!(g && g.flagge('oberflaeche') === 'neu');
+  }
+  function _liste() { return neu() ? ALLE.concat(NEU) : ALLE; }
+
   // Cache-Buster je Bild: die Platte wurde nachtraeglich abgedunkelt (#189),
   // sonst zeigt der Browser noch die alte, helle Mitte.
   var BILD_V = { ui_rahmen: 2 };
   function _pfad(k) { return 'assets/ui/' + k + '.png' + (BILD_V[k] ? '?v=' + BILD_V[k] : ''); }
 
   function _fehlend(scene) {
-    if (!scene || !scene.textures) return ALLE.slice();
-    return ALLE.filter(function (k) { return !scene.textures.exists(k); });
+    if (!scene || !scene.textures) return _liste().slice();
+    return _liste().filter(function (k) { return !scene.textures.exists(k); });
   }
 
   /** Alle Grafiken da? */
@@ -357,7 +372,156 @@
     return platte(scene, cx, cy, w, h, depth, 0.55);
   }
 
+  // ---- Gebackene Neunteiler (#182) ---------------------------------------
+  // Inventarzellen, HUD-Leiste und Faehigkeitskacheln haben feste Groessen,
+  // werden aber zu Dutzenden gezeigt (das HUD sogar jedes Bild). Statt je
+  // neun Bild-Objekte anzulegen, wird der Neunteiler EINMAL je Groesse in
+  // eine Canvas-Textur gezeichnet. Ein einzelnes Bild bleibt Trefferflaeche,
+  // laesst sich tonen (Seltenheit im WebGL) und kostet pro Bild nichts extra.
+
+  /** Neunteiler von key in eine eigene Textur w x h backen; liefert ihren Schluessel. */
+  function gebacken(scene, key, w, h, rand, massstab, ton) {
+    w = Math.max(2, Math.round(w)); h = Math.max(2, Math.round(h));
+    var m = massstab || 1;
+    var name = key + '@' + w + 'x' + h + '_' + Math.round(m * 100) + (ton ? '_' + ton : '');
+    if (!scene || !scene.textures) return null;
+    if (scene.textures.exists(name)) return name;
+    if (!scene.textures.exists(key)) return null;
+    // Ausdruecklich __BASE: get() ohne Namen liefert nach dem ersten tex.add()
+    // (neunteilig legt u9-Frames an) den ERSTEN Teil-Frame, also eine Ecke.
+    var basis = scene.textures.get(key).get('__BASE');
+    var src = basis.source.image;
+    var W = basis.cutWidth, H = basis.cutHeight, ox = basis.cutX, oy = basis.cutY;
+    var r = Math.min(Math.round(rand * m), Math.floor(w / 2), Math.floor(h / 2));
+    var ct = scene.textures.createCanvas(name, w, h);
+    if (!ct) return null;
+    var ctx = ct.getContext();
+    // Verkleinerte Ecken glatt rechnen, sonst fallen Nieten-Pixel zufaellig weg.
+    ctx.imageSmoothingEnabled = m < 1;
+    if (m < 1) ctx.imageSmoothingQuality = 'high';
+    var sx = [0, rand, W - rand, W], sy = [0, rand, H - rand, H];
+    var dx = [0, r, w - r, w], dy = [0, r, h - r, h];
+    for (var j = 0; j < 3; j++) {
+      for (var i = 0; i < 3; i++) {
+        var bw = dx[i + 1] - dx[i], bh = dy[j + 1] - dy[j];
+        if (bw <= 0 || bh <= 0) continue;
+        ctx.drawImage(src, ox + sx[i], oy + sy[j], sx[i + 1] - sx[i], sy[j + 1] - sy[j], dx[i], dy[j], bw, bh);
+      }
+    }
+    if (ton) {
+      // Farbton nur auf der Mitte (innerhalb der Beschlaege), das Messing
+      // bleibt Messing. So traegt ein Knopf weiter seine Bedeutung
+      // (gruen = annehmen, rot = ablehnen) — in Canvas wie in WebGL.
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = ton;
+      var ein = Math.max(2, Math.round(r * 0.45));
+      ctx.fillRect(ein, ein, w - 2 * ein, h - 2 * ein);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    ct.refresh();
+    return name;
+  }
+
+  /** Inventarfeld (normal oder gewaehlt) in genau dieser Groesse. */
+  function feldBild(scene, w, h, gewaehlt) {
+    // Die Eckbeschlaege sollen etwa ein Fuenftel der kurzen Seite einnehmen.
+    var m = Math.min(1, Math.max(0.2, Math.min(w, h) * 0.24 / FELD_RAND));
+    return gebacken(scene, gewaehlt ? FELD_GEWAEHLT : FELD, w, h, FELD_RAND, m);
+  }
+
+  /** Messingleiste (Rahmen eines Balkens) in genau dieser Groesse. */
+  function leisteBild(scene, w, h) {
+    return gebacken(scene, LEISTE, w, h, LEISTE_RAND, Math.min(1, h / 92 * 1.1));
+  }
+
+  /** Kleine Platte (Kachel) aus dem Menue-Rahmen. */
+  function kachelBild(scene, w, h) {
+    return gebacken(scene, RAHMEN, w, h, RAHMEN_RAND, Math.min(0.6, h / 135 * 1.0));
+  }
+
+  /** Messingring um ein rundes Element (Portraet, Menue-Knopf, Faehigkeit). */
+  function ring(scene, x, y, durchmesser, depth) {
+    if (!scene || !scene.textures || !scene.textures.exists(RING)) return null;
+    return scene.add.image(x, y, RING).setDisplaySize(durchmesser, durchmesser)
+      .setScrollFactor(0).setDepth(depth);
+  }
+
+  /**
+   * Ein Text-Knopf (Text mit backgroundColor und padding, so in den
+   * Hub-Dialogen und im Wissensbaum) bekommt den Messingknopf als Bild
+   * dahinter. Der Text bleibt Trefferflaeche und behaelt seine Klick-Logik;
+   * nur sein Farbkasten faellt weg. Hover wechselt das Bild.
+   *
+   * @param {string} farbe Schriftfarbe auf dem Knopf
+   * @param {object} [opts] { aus: true } = gesperrt: entsaettigtes Bild, kein Hover
+   */
+  function textKnopf(scene, btn, farbe, opts) {
+    var aus = !!(opts && opts.aus);
+    if (!btn || !scene || !bereit(scene)) return null;
+    // Die alte Kastenfarbe wird zum Farbton der Knopfmitte.
+    var ton = (btn.style && /^#[0-9a-f]{6}$/i.test(btn.style.backgroundColor || '')) ? btn.style.backgroundColor : null;
+    if (btn.setBackgroundColor) btn.setBackgroundColor(null);
+    if (farbe) btn.setColor(farbe);
+    var w = btn.width, h = btn.height;
+    var m = h < 30 ? 0.5 : (h < 40 ? 0.75 : 1);
+    var tex = function (z) { return gebacken(scene, KNOPF_ZUSTAND[z], w, h, KNOPF_RAND, m, z === 'aus' ? null : ton); };
+    var cx = btn.x + (0.5 - btn.originX) * w, cy = btn.y + (0.5 - btn.originY) * h;
+    var bild = scene.add.image(cx, cy, tex(aus ? 'aus' : 'normal'))
+      .setScrollFactor(btn.scrollFactorX, btn.scrollFactorY).setDepth(btn.depth - 0.01);
+    var cont = btn.parentContainer;
+    if (cont) cont.addAt(bild, Math.max(0, cont.getIndex(btn)));
+    if (!aus) {
+      btn.on('pointerover', function () { if (bild.scene) bild.setTexture(tex('hover')); });
+      btn.on('pointerout', function () { if (bild.scene) bild.setTexture(tex('normal')); });
+      btn.on('pointerdown', function () { if (bild.scene) bild.setTexture(tex('gedrueckt')); });
+    }
+    btn.once('destroy', function () { if (bild.scene) bild.destroy(); });
+    btn._uiTextKnopf = bild;
+    return bild;
+  }
+
+  /**
+   * Eine Auswahlzeile (Rechteck, das die Szene zum Markieren umfaerbt, so in
+   * der Schmiede) liegt auf einem Messingfeld. Das Rechteck bleibt
+   * Trefferflaeche; seine Farbsignale werden zu Bildern:
+   *   Rand gold (0xd4a543)        -> gewaehltes Feld (heller Beschlag)
+   *   Fuellung opts.hover          -> zarter heller Schleier (Hover)
+   *   alles andere                 -> normales Feld
+   */
+  function feldZeile(rect, opts) {
+    opts = opts || {};
+    var scene = rect && rect.scene;
+    if (!scene || !bereit(scene) || rect._uiFeld) return null;
+    var w = rect.width, h = rect.height;
+    var cx = rect.x + (0.5 - rect.originX) * w, cy = rect.y + (0.5 - rect.originY) * h;
+    var gewaehlt = rect.isStroked && rect.strokeColor === 0xd4a543;
+    var bild = scene.add.image(cx, cy, feldBild(scene, w, h, gewaehlt))
+      .setDepth(rect.depth - 0.01).setScrollFactor(rect.scrollFactorX, rect.scrollFactorY);
+    var proto = Object.getPrototypeOf(rect);
+    proto.setFillStyle.call(rect, 0xffffff, 0);
+    rect.isStroked = false;
+    var hover = opts.hover || [];
+    rect.setFillStyle = function (farbe) {
+      proto.setFillStyle.call(rect, 0xffffff, hover.indexOf(farbe) >= 0 ? 0.08 : 0);
+      return rect;
+    };
+    rect.setStrokeStyle = function (breite, farbe) {
+      gewaehlt = farbe === 0xd4a543;
+      if (bild.scene) bild.setTexture(feldBild(scene, w, h, gewaehlt));
+      return rect;
+    };
+    var altSichtbar = rect.setVisible;
+    rect.setVisible = function (v) { if (bild.scene) bild.setVisible(v); return altSichtbar.call(rect, v); };
+    rect.once('destroy', function () { if (bild.scene) bild.destroy(); });
+    rect._uiFeld = bild;
+    return bild;
+  }
+
   var uiRahmen = {
+    neu: neu, textKnopf: textKnopf, feldZeile: feldZeile, gebacken: gebacken, feldBild: feldBild, leisteBild: leisteBild,
+    kachelBild: kachelBild, ring: ring, NEU: NEU,
     bereit: bereit, vorladen: vorladen, nachladen: nachladen,
     neunteilig: neunteilig, platte: platte, banner: banner, knopf: knopf, symbol: symbol,
     einkleiden: einkleiden, menuePlatte: menuePlatte,

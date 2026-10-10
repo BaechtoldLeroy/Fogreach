@@ -184,7 +184,15 @@
       }
     }
 
+    // Neue Oberflaeche (#182, ?oberflaeche=neu): ein Messingring um den
+    // farbigen Knopf. Die Faehigkeitsfarbe bleibt im Loch sichtbar; der Ring
+    // ist reine Zier und nimmt keine Eingabe an (Treffer bleibt der Kreis).
+    const UR = window.uiRahmen;
+    const ring = (UR && UR.neu() && UR.bereit(scene))
+      ? UR.ring(scene, circle.x, circle.y, radius * 2.2, 1200.5) : null;
+
     const place = () => {
+      if (ring) ring.setPosition(circle.x, circle.y);
       icon.setPosition(circle.x, circle.y - radius * 0.12);
       label.setPosition(circle.x, circle.y + radius * 0.55);
       if (cdOverlay) cdOverlay.setPosition(circle.x, circle.y - radius * 0.12);
@@ -213,6 +221,7 @@
       cdText,
       cdOverlay,
       chargePips,
+      ring,
       originalColor: circle.fillColor,
       place,
       // Track per-decoration state for polling
@@ -472,6 +481,7 @@
       // laeuft die laufende Emit-Schleife genau da hinein.
       scene.events.off('update', prev.poll);
       prev.decorations.forEach((d) => {
+        d.ring && d.ring.destroy();
         d.icon && d.icon.destroy();
         d.label && d.label.destroy();
         d.cdOverlay && d.cdOverlay.destroy();
@@ -514,6 +524,7 @@
       window.removeEventListener('demonfall:mobile-layout-changed', onChanged);
       if (typeof unsubI18n === 'function') { try { unsubI18n(); } catch (e) {} }
       decorations.forEach((d) => {
+        d.ring && d.ring.destroy();
         d.icon && d.icon.destroy();
         d.label && d.label.destroy();
         d.cdOverlay && d.cdOverlay.destroy();
@@ -546,7 +557,7 @@
         // Zustand merken statt blind einblenden: cdText und cdOverlay sind
         // meist versteckt (nur waehrend eines Cooldowns sichtbar) und wuerden
         // sonst nach dem Beat auf allen Buttons stehen.
-        var teile = [d.circle, d.icon, d.label, d.cdText, d.cdOverlay].concat(d.chargePips || []);
+        var teile = [d.circle, d.ring, d.icon, d.label, d.cdText, d.cdOverlay].concat(d.chargePips || []);
         if (!sichtbar) d.__warSichtbar = teile.map(function (o) { return !!(o && o.visible); });
         teile.forEach(function (o, i) {
           if (!o || typeof o.setVisible !== 'function') return;

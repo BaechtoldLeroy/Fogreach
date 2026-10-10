@@ -513,8 +513,19 @@ function initInventoryUI() {
   // fallen Klicks in die Fugen zwischen den Zellen durch bis zur
   // Verdunkelung dahinter — und die schliesst das Inventar. Ein Fehlklick
   // zwischen zwei Faechern warf den Spieler bisher aus dem Menue.
-  const panelBg = scene.add.image(0, 0, 'uiPanel').setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0).setInteractive();
+  // Neue Oberflaeche (#182, ?oberflaeche=neu): Messing-Platte statt der
+  // gezeichneten Holzplatte, Messingfelder statt grauer Kaesten. Die Platte
+  // ist EIN gebackenes Bild und bleibt so die klickbare Flaeche.
+  const _UR = window.uiRahmen;
+  const NEU = !!(_UR && _UR.neu() && _UR.bereit(scene));
+  invUI._neu = NEU;
+  const panelBg = scene.add.image(0, 0, NEU ? _UR.kachelBild(scene, PANEL_W, PANEL_H) : 'uiPanel')
+    .setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0).setInteractive();
   panel.add(panelBg);
+  // Zellen-, Feld- und Rahmenbild: alt die festen Texturen, neu je Groesse
+  // gebackene Messingfelder (gewaehlt = heller Beschlag mit Goldsaum).
+  const feldTex = (w, h, gewaehlt, alt) => (NEU ? _UR.feldBild(scene, w, h, gewaehlt) : alt);
+  invUI._feldTex = feldTex;
 
   const title = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 12, _INV_T('inventory.title'), {
     fontFamily: 'serif', fontSize: '26px', fill: '#ffd166', fontStyle: 'bold',
@@ -867,7 +878,7 @@ function equipPos(key, index) {
     const y = _lage.y;
     const _ex = _lage.x;
 
-    const slot = scene.add.image(_ex, y, 'uiZelle')
+    const slot = scene.add.image(_ex, y, feldTex(_lage.w, _lage.h, false, 'uiZelle'))
       .setOrigin(0.5).setDisplaySize(_lage.w, _lage.h)
       .setScrollFactor(0).setInteractive({ useHandCursor: true });
     slot.on('pointerdown', (pointer) => {
@@ -900,7 +911,7 @@ function equipPos(key, index) {
     // Das Overlay lag auf der Naturgroesse der uiSlot-Textur (96x64) und war
     // damit BREITER als der Platz, seit die Plaetze eigene Masse haben. Es
     // muss dem Platz folgen, sonst faerbt die Seltenheit ueber den Rand.
-    const highlight = scene.add.image(_ex, y, 'uiZelle')
+    const highlight = scene.add.image(_ex, y, feldTex(_lage.w, _lage.h, false, 'uiZelle'))
       .setOrigin(0.5).setDisplaySize(_lage.w, _lage.h)
       .setScrollFactor(0).setVisible(false).setAlpha(SLOT_BASE_ALPHA);
     panel.add(highlight);
@@ -937,7 +948,13 @@ function equipPos(key, index) {
       decor = { frame, badge, lock };
     }
 
-    invUI.equip[equipKeys[i]] = { slot, icon, highlight, decor };
+    let seltenheit = null;
+    if (NEU) {
+      seltenheit = scene.add.rectangle(_ex, y, _lage.w, _lage.h).setOrigin(0.5)
+        .setScrollFactor(0).setVisible(false);
+      panel.addAt(seltenheit, panel.getIndex(icon) + 1);
+    }
+    invUI.equip[equipKeys[i]] = { slot, icon, highlight, decor, seltenheit };
   }
 
   // --- Grid rechts ---
@@ -1004,7 +1021,7 @@ function equipPos(key, index) {
   for (let r = 0; r < GRID_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
       const m = zelleMitte(c, r);
-      const bg = scene.add.image(m.x, m.y, "uiZelle").setOrigin(0.5)
+      const bg = scene.add.image(m.x, m.y, feldTex(zelleBild, zelleBild, false, "uiZelle")).setOrigin(0.5)
         .setDisplaySize(zelleBild, zelleBild).setScrollFactor(0)
         .setInteractive({ useHandCursor: true });
       bg.spalte = c;
@@ -1041,7 +1058,7 @@ function equipPos(key, index) {
       });
       panel.add(bg);
 
-      const highlight = scene.add.image(m.x, m.y, "uiZelle").setOrigin(0.5)
+      const highlight = scene.add.image(m.x, m.y, feldTex(zelleBild, zelleBild, false, "uiZelle")).setOrigin(0.5)
         .setDisplaySize(zelleBild, zelleBild).setScrollFactor(0)
         .setVisible(false).setAlpha(SLOT_BASE_ALPHA);
       panel.add(highlight);
@@ -1281,6 +1298,17 @@ function equipPos(key, index) {
       .setScrollFactor(0).setVisible(false);
     panel.add(icon);
 
+    // Neu: Die Seltenheit liegt als farbiger Saum IM Messingfeld, statt das
+    // ganze Feld einzufaerben. Ein Rechteck zeichnet in Canvas wie in WebGL
+    // gleich (setTintFill wirkt nur unter WebGL). Es liegt UEBER dem Symbol
+    // und ist nur Linie — so bleibt es sichtbar, ohne das Symbol zu verkleinern.
+    let seltenheit = null;
+    if (NEU) {
+      seltenheit = scene.add.rectangle(0, 0, 10, 10).setOrigin(0.5)
+        .setScrollFactor(0).setVisible(false);
+      panel.add(seltenheit);
+    }
+
     const indicator = scene.add.image(0, 0, "uiItemBetter").setOrigin(0.5)
       .setScale(0.5).setScrollFactor(0).setVisible(false);
     indicator.setAlpha(0.9);
@@ -1292,7 +1320,7 @@ function equipPos(key, index) {
     }).setOrigin(0.5, 1).setScrollFactor(0).setVisible(false);
     panel.add(label);
 
-    invUI.slots.push({ bg: rahmen, icon, label, highlight: null, indicator });
+    invUI.slots.push({ bg: rahmen, icon, label, highlight: null, indicator, seltenheit });
   }
 
   // --- Buttons ---
@@ -1421,6 +1449,24 @@ function equipPos(key, index) {
   invUI._placeHandler = place;
   place();
   scene.scale.on('resize', place);
+}
+
+/**
+ * Neue Oberflaeche (#182): Seltenheit als Saum innen am Messingfeld —
+ * eine 3-px-Linie in der Seltenheitsfarbe, ueber dem Symbol.
+ * Ohne Gegenstand unsichtbar.
+ */
+function seltenheitSaum(saum, it, cx, cy, w, h) {
+  if (!isValidGameObject(saum)) return;
+  if (!it) { saum.setVisible(false); return; }
+  const farbe = parseTintColor(getItemTierColor(it), 0xcccccc);
+  // Innen am Beschlag: ein Zehntel der kurzen Seite einruecken, mind. 3 px.
+  const ein = Math.max(3, Math.round(Math.min(w, h) * 0.1));
+  // Ganzzahlig gesetzt und 3 px breit: so bleibt die Linie auch bei
+  // skaliertem Panel satt in ihrer Farbe statt in den Grund zu verlaufen.
+  const sw = Math.max(4, Math.round(w - 2 * ein)), sh = Math.max(4, Math.round(h - 2 * ein));
+  saum.setSize(sw, sh).setPosition(Math.round(cx - sw / 2) + sw / 2, Math.round(cy - sh / 2) + sh / 2);
+  saum.setStrokeStyle(3, farbe, 1).setVisible(true);
 }
 
 function selectInventorySlot(i) {
@@ -2026,7 +2072,8 @@ function refreshInventoryUI() {
     if (!bg) return;
     const i = (G && typeof G.indexAn === "function") ? G.indexAn(inventory, z.c, z.r) : -1;
     const it = i >= 0 ? inventory[i] : null;
-    bg.setTexture(i >= 0 && i === invSelected ? "uiZelleSel" : "uiZelle");
+    const _sel = i >= 0 && i === invSelected;
+    bg.setTexture(invUI._feldTex ? invUI._feldTex(zBild, zBild, _sel, _sel ? "uiZelleSel" : "uiZelle") : (_sel ? "uiZelleSel" : "uiZelle"));
     bg.setDisplaySize(zBild, zBild);
     setSlotHighlight(bg, it);
   });
@@ -2046,6 +2093,7 @@ function refreshInventoryUI() {
       // Ohne Lage nicht zeichnen — sonst klebte ein Gegenstand bei 0,0 und
       // ueberdeckte den, der dort wirklich liegt.
       if (rahmen) rahmen.setVisible(false);
+      if (isValidGameObject(slot.seltenheit)) slot.seltenheit.setVisible(false);
       if (icon) icon.setVisible(false);
       if (label) label.setVisible(false);
       if (indicator) indicator.setVisible(false);
@@ -2060,7 +2108,11 @@ function refreshInventoryUI() {
     const breite = g.b * zW * 0.94;
     const hoehe = g.h * zH * 0.94;
 
-    if (rahmen) {
+    if (rahmen && invUI._neu) {
+      rahmen.setTexture(invUI._feldTex(breite, hoehe, i === invSelected));
+      rahmen.setPosition(cx, cy).setDisplaySize(breite, hoehe).setVisible(true);
+      seltenheitSaum(slot.seltenheit, it, cx, cy, breite, hoehe);
+    } else if (rahmen) {
       rahmen.setTexture(i === invSelected ? "uiSlotSel" : "uiSlot");
       rahmen.setPosition(cx, cy).setDisplaySize(breite, hoehe).setVisible(true);
       setSlotHighlight(rahmen, it);
@@ -2116,6 +2168,7 @@ function refreshInventoryUI() {
     const icon = isValidGameObject(ui.icon) ? ui.icon : null;
     if (!slot) return;
     setSlotHighlight(slot, it);
+    if (invUI._neu) seltenheitSaum(ui.seltenheit, it, slot.x, slot.y, slot.displayWidth, slot.displayHeight);
     if (it) {
       const iconKey = resolveItemIconKey(it);
       if (icon && iconKey) icon.setTexture(iconKey);
