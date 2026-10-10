@@ -327,7 +327,7 @@ class CraftingScene extends Phaser.Scene {
     this.werkbankRahmen = this.add.rectangle(
       rightX + rightW / 2, werkY + 158, rightW, 316, COL_PANEL
     ).setDepth(8).setStrokeStyle(1, 0x444444);
-    // #189: Werktisch als Messing-Platte (nur mit ?debug=1&ui=neu).
+    // #189: Werktisch als Messing-Platte; das Rechteck bleibt Rueckfall.
     if (window.uiRahmen && window.uiRahmen.menuePlatte(this, rightX + rightW / 2, werkY + 158, rightW, 316, 7.5)) {
       this.werkbankRahmen.setVisible(false);
     }
@@ -446,7 +446,7 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     [this.invUpBtn, this.invDownBtn].forEach((b) => { if (b && b.container) b.container.setDepth(12); });
     this._setInvScrollButtons(false, 0, 0);
 
-    // #189: Knoepfe im Messing-Stil (nur mit ?debug=1&ui=neu). Die
+    // #189: Knoepfe im Messing-Stil. Die
     // Ausruestungs- und Inventarzeilen sind breiter als ein Knopf und
     // bleiben, wie sie sind (#182: Felder).
     if (window.uiRahmen) window.uiRahmen.einkleiden(this);

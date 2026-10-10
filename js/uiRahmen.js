@@ -2,9 +2,10 @@
  * uiRahmen.js — gestaltete Rahmen, Knoepfe und Toast-Banner (#189, #182)
  * ---------------------------------------------------------------------
  * Ein gemeinsamer Satz PixelLab-Grafiken (assets/ui/ui_*.png) im Stil des
- * Talentbaums (Messing, dunkles Anthrazit, Nieten). Noch NICHT fest im
- * Spiel: alles wirkt nur mit der Debug-Flagge `?debug=1&ui=neu`. Ohne
- * Flagge liefert an() false und jede Aufrufstelle zeichnet wie bisher.
+ * Talentbaums (Messing, dunkles Anthrazit, Nieten). Fest im Spiel (bis
+ * zur Abnahme nur hinter `?debug=1&ui=neu`). Hub und Dungeon laden die
+ * Bilder im preload(); fehlen sie trotzdem (Laden gescheitert), zeichnet
+ * jede Aufrufstelle ein schlichtes Rueckfall-Panel.
  *
  * Neunteilig statt Phaser add.nineslice: das laeuft in 3.70 nur unter
  * WebGL und bleibt im Canvas-Renderer (und headless) unsichtbar. Das
@@ -40,11 +41,6 @@
   var ALLE = [RAHMEN, TOAST, KNOPF_ZUSTAND.normal, KNOPF_ZUSTAND.hover,
     KNOPF_ZUSTAND.gedrueckt, KNOPF_ZUSTAND.aus].concat(SYMBOLE);
 
-  /** Ist der neue Stil eingeschaltet? (?debug=1&ui=neu) */
-  function an() {
-    try { return !!(window.DebugGate && window.DebugGate.an('ui')); } catch (e) { return false; }
-  }
-
   // Cache-Buster je Bild: die Platte wurde nachtraeglich abgedunkelt (#189),
   // sonst zeigt der Browser noch die alte, helle Mitte.
   var BILD_V = { ui_rahmen: 2 };
@@ -58,9 +54,9 @@
   /** Alle Grafiken da? */
   function bereit(scene) { return _fehlend(scene).length === 0; }
 
-  /** Im preload() einer Szene: die Grafiken mitladen (nur mit Flagge). */
+  /** Im preload() einer Szene: die noch fehlenden Grafiken mitladen. */
   function vorladen(scene) {
-    if (!an() || !scene || !scene.load) return;
+    if (!scene || !scene.load) return;
     _fehlend(scene).forEach(function (k) { scene.load.image(k, _pfad(k)); });
   }
 
@@ -329,7 +325,7 @@
    * rect._uiOhne; einen deaktivierten Knopf markiert rect._uiAus.
    */
   function einkleiden(scene, opts) {
-    if (!an() || !scene || !scene.sys || scene._uiEinkleiden) return;
+    if (!scene || !scene.sys || scene._uiEinkleiden) return;
     if (!bereit(scene)) { nachladen(scene, function () { einkleiden(scene, opts); }); return; }
     opts = opts || {};
     var maxW = opts.maxBreite || 320, maxH = opts.maxHoehe || 48;
@@ -355,14 +351,14 @@
     lauf();
   }
 
-  /** Menue-Platte, wenn der neue Stil an und geladen ist; sonst null. */
+  /** Menue-Platte, wenn die Grafiken geladen sind; sonst null (Rueckfall-Panel). */
   function menuePlatte(scene, cx, cy, w, h, depth) {
-    if (!an() || !bereit(scene)) return null;
+    if (!bereit(scene)) return null;
     return platte(scene, cx, cy, w, h, depth, 0.55);
   }
 
   var uiRahmen = {
-    an: an, bereit: bereit, vorladen: vorladen, nachladen: nachladen,
+    bereit: bereit, vorladen: vorladen, nachladen: nachladen,
     neunteilig: neunteilig, platte: platte, banner: banner, knopf: knopf, symbol: symbol,
     einkleiden: einkleiden, menuePlatte: menuePlatte,
     heben: heben, lesbar: lesbar, lesbarAlle: lesbarAlle,

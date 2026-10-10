@@ -213,7 +213,7 @@
       const px = cw / 2;
       const py = ch / 2;
 
-      // #189: gestaltete Platte mit ?debug=1&ui=neu, sonst wie bisher. Tiefe
+      // #189: Messing-Platte; Graphics-Panel nur, falls die Bilder fehlen. Tiefe
       // 2000.5: einige Knoepfe hier liegen auf 2001 (unter ihrem Wert-Text).
       if (!(window.uiRahmen && window.uiRahmen.menuePlatte(this, px, py, panelW, panelH, 2000.5))) {
         const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
@@ -355,7 +355,7 @@
           fontFamily: 'monospace', fontSize: '10px', color: '#777777'
         }).setOrigin(1, 1).setScrollFactor(0).setDepth(2003);
 
-      // #189: alle Knoepfe im Messing-Stil (nur mit ?debug=1&ui=neu).
+      // #189: alle Knoepfe im Messing-Stil.
       if (window.uiRahmen) window.uiRahmen.einkleiden(this);
 
       this.input.keyboard.on('keydown-ESC', () => this._close());

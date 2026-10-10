@@ -90,7 +90,7 @@
     'spy', 'roomsize', 'hubdebug',
     'versteck', 'sonder', 'akt', 'stark', 'patrouille', 'haendler',
     'sitzung',
-    'ui', 'schlag', 'gegnerlauf', 'partikel'
+    'schlag', 'gegnerlauf', 'partikel'
   ];
 
   /**

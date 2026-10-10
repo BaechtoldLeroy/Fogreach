@@ -1756,28 +1756,18 @@
     return eligible[eligible.length - 1];
   }
 
-  var EVENT_ACCENT_COLORS = {
-    treasure_cache:      0xf5c518,
-    ambush:              0xff3333,
-    wandering_merchant:  0x44ddaa,
-    trapped_chest:       0xaa44ff,
-    lore_fragment:       0x66bbff,
-    environmental_hazard: 0xff8833
-  };
-
+  // #189: Toast im Messing-Stil — neunteiliges Banner, Symbol je Art und ein
+  // weiches Hereingleiten statt Aufploppen.
   function showEventToast(scene, message, eventId, _nachgeladen) {
     if (!scene || !scene.add) return;
-    // #189: gestalteter Toast nur mit ?debug=1&ui=neu. Fehlen die Grafiken
-    // noch, einmal nachladen und dann zeigen; scheitert das Laden, faellt
-    // der Toast auf den alten Stil zurueck statt zu verschwinden.
+    // Fehlen die Grafiken noch (Szene ohne Vorladen), einmal nachladen und
+    // dann zeigen. Scheitert das Laden, steht der Text auf einem schlichten
+    // Panel, statt zu verschwinden.
     var UR = window.uiRahmen;
-    var neu = !!(UR && UR.an());
-    if (neu && !UR.bereit(scene)) {
-      if (!_nachgeladen) {
-        UR.nachladen(scene, function () { showEventToast(scene, message, eventId, true); });
-        return;
-      }
-      neu = false;
+    var bereit = !!(UR && UR.bereit(scene));
+    if (UR && !bereit && !_nachgeladen) {
+      UR.nachladen(scene, function () { showEventToast(scene, message, eventId, true); });
+      return;
     }
     var cam = scene.cameras && scene.cameras.main;
     var camW = cam ? cam.width : 800;
@@ -1789,80 +1779,11 @@
     // sichtbar) und der Treffer/Ausweich-Toast (t≈1,5s). Vorherigen sofort weg.
     if (scene._activeEventToast) {
       try {
-        var _old = scene._activeEventToast;
-        if (_old.panel && _old.panel.destroy) _old.panel.destroy();
-        if (_old.label && _old.label.destroy) _old.label.destroy();
-        (_old.teile || []).forEach(function (t) { if (t && t.destroy) t.destroy(); });
+        (scene._activeEventToast.teile || []).forEach(function (t) { if (t && t.destroy) t.destroy(); });
       } catch (e) {}
       scene._activeEventToast = null;
     }
 
-    if (neu) { _gestalteterToast(scene, message, eventId, camW, cx, cy); return; }
-
-    var accentHex = EVENT_ACCENT_COLORS[eventId] || 0xffdd44;
-
-    // Create label first to measure its width, then size the panel around it.
-    var maxTextWidth = camW - 100;
-    var label = scene.add.text(cx, cy, message, {
-      fontSize: '18px', fill: '#ffffff', fontFamily: 'monospace',
-      stroke: '#000000', strokeThickness: 3, align: 'center',
-      wordWrap: { width: maxTextWidth, useAdvancedWrap: true },
-      resolution: 2
-    }).setOrigin(0.5).setDepth(2000).setScrollFactor(0).setAlpha(0);
-
-    // Panel sized to fit the rendered text (+padding)
-    var padX = 20, padY = 10;
-    var panelW = Math.min(camW - 40, Math.ceil(label.width) + padX * 2);
-    var panelH = Math.ceil(label.height) + padY * 2;
-
-    var panel = scene.add.graphics();
-    panel.fillStyle(0x0d0d1a, 0.88);
-    panel.fillRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 12);
-    panel.lineStyle(2, accentHex, 0.9);
-    panel.strokeRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 12);
-    panel.setDepth(1999).setScrollFactor(0).setAlpha(0);
-
-    scene._activeEventToast = { panel: panel, label: label };
-
-    var targets = [panel, label];
-
-    if (scene.tweens && scene.tweens.add) {
-      // Simple fade in (no scale — scale caused text to overflow panel)
-      scene.tweens.add({
-        targets: targets,
-        alpha: 1,
-        duration: 250,
-        ease: 'Power2',
-        onComplete: function() {
-          // Hold, then fade out with upward drift
-          scene.tweens.add({
-            targets: targets,
-            alpha: 0,
-            y: '+=-30',
-            delay: 3200,
-            duration: 550,
-            ease: 'Power2',
-            onComplete: function() {
-              panel.destroy();
-              label.destroy();
-              if (scene._activeEventToast && scene._activeEventToast.label === label) scene._activeEventToast = null;
-            }
-          });
-        }
-      });
-    } else {
-      setTimeout(function() {
-        if (panel && panel.destroy) panel.destroy();
-        if (label && label.destroy) label.destroy();
-        if (scene._activeEventToast && scene._activeEventToast.label === label) scene._activeEventToast = null;
-      }, 4000);
-    }
-  }
-
-  // #189: Toast im neuen Stil — Messing-Banner (neunteilig), Symbol je Art
-  // und ein weiches Hereingleiten statt Aufploppen.
-  function _gestalteterToast(scene, message, eventId, camW, cx, cy) {
-    var UR = window.uiRahmen;
     var SYM = 32, padL = 18 + SYM + 10, padR = 22, padY = 14;
     var label = scene.add.text(0, cy, message, {
       fontSize: '17px', fill: '#f1e9d8', fontFamily: 'serif', fontStyle: 'bold',
@@ -1874,13 +1795,21 @@
     var panelH = Math.max(52, Math.ceil(label.height) + padY * 2);
     var links = cx - panelW / 2;
     label.setX(links + padL + (panelW - padL - padR) / 2);
-    var teile = UR.banner(scene, cx, cy, panelW, panelH, 1999);
-    var sym = scene.add.image(links + 18 + SYM / 2, cy, UR.symbol(eventId))
-      .setDisplaySize(SYM, SYM).setScrollFactor(0).setDepth(2000);
-    teile.push(sym);
+    var teile;
+    if (bereit) {
+      teile = UR.banner(scene, cx, cy, panelW, panelH, 1999);
+      teile.push(scene.add.image(links + 18 + SYM / 2, cy, UR.symbol(eventId))
+        .setDisplaySize(SYM, SYM).setScrollFactor(0).setDepth(2000));
+    } else {
+      var panel = scene.add.graphics().setScrollFactor(0).setDepth(1999);
+      panel.fillStyle(0x1c191f, 0.92).fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 10);
+      panel.lineStyle(2, 0xd4a543, 0.9).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 10);
+      panel.setPosition(cx, cy);
+      teile = [panel];
+    }
     teile.push(label);
-    // Nur die Kennung fuer Tests und das Wegraeumen beim naechsten Toast.
-    var eintrag = { label: label, teile: teile, art: UR.symbol(eventId), gestaltet: true };
+    // Kennung fuer Tests und das Wegraeumen beim naechsten Toast.
+    var eintrag = { label: label, teile: teile, art: bereit ? UR.symbol(eventId) : null };
     scene._activeEventToast = eintrag;
 
     var weg = function () {
@@ -1899,7 +1828,7 @@
         }
       });
     } else {
-      teile.forEach(function (t) { t.setAlpha(1); });
+      teile.forEach(function (t) { t.setAlpha(1); t.y += 14; });
       setTimeout(weg, 4000);
     }
   }
@@ -2636,11 +2565,12 @@
       }
     };
 
-    // #189: neuer Stil (?debug=1&ui=neu) nur, wenn die Grafiken schon geladen
-    // sind — der Dialog muss sofort stehen.
+    // #189: Messing-Platte und -Knoepfe, sofern die Grafiken schon geladen
+    // sind — der Dialog muss sofort stehen. Sonst schlichte Rechtecke und
+    // fuer den naechsten Dialog nachladen.
     var _UR = window.uiRahmen;
-    var _neuStil = !!(_UR && _UR.an() && _UR.bereit(scene));
-    if (_UR && _UR.an() && !_neuStil) _UR.nachladen(scene);
+    var _neuStil = !!(_UR && _UR.bereit(scene));
+    if (_UR && !_neuStil) _UR.nachladen(scene);
 
     // Buttons — dynamic height so long labels wrap cleanly inside the box.
     var BTN_W = Math.min(520, camW - 40);

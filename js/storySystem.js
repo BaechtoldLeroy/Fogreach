@@ -777,8 +777,8 @@
 
     var container = scene.add.container(w / 2, h / 2).setDepth(6001).setScrollFactor(0);
 
-    // #189: gestaltete Platte mit ?debug=1&ui=neu (lokal im Container), sonst
-    // wie bisher.
+    // #189: Messing-Platte (lokal im Container); das Graphics-Panel nur,
+    // falls die Bilder fehlen.
     var platte = window.uiRahmen && window.uiRahmen.menuePlatte(scene, 0, 0, panelW, panelH, 0);
     if (platte) {
       platte.forEach(function (t) { container.add(t); });
@@ -955,7 +955,7 @@
       color: '#888888'
     }).setOrigin(0.5, 1);
     container.add(hint);
-    // #189: graue Kleinschrift auf der Platte anheben (nur mit ?ui=neu).
+    // #189: graue Kleinschrift auf der Platte anheben.
     if (platte) window.uiRahmen.lesbarAlle(container.list);
 
     // Sichtbarer Ausschnitt zwischen Titel-Unterkante und Hinweis-Oberkante.

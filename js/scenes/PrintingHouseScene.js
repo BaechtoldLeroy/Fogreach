@@ -94,7 +94,7 @@
       const panelTop  = py - panelH / 2;
 
       // Panel background
-      // #189: gestaltete Platte mit ?debug=1&ui=neu, sonst wie bisher.
+      // #189: Messing-Platte; das Graphics-Panel nur, falls die Bilder fehlen.
       if (!(window.uiRahmen && window.uiRahmen.menuePlatte(this, px, py, panelW, panelH, 2000.5))) {
         const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
         panel.fillStyle(0x10131c, 0.97).fillRoundedRect(panelLeft, panelTop, panelW, panelH, 16);
@@ -138,7 +138,7 @@
 
       // Keys: ESC closes; E (interaction key) also closes so the player
       // doesn't get stuck pressing it again at the entrance.
-      // #189: Knoepfe im Messing-Stil (nur mit ?debug=1&ui=neu).
+      // #189: Knoepfe im Messing-Stil.
       if (window.uiRahmen) window.uiRahmen.einkleiden(this);
 
       this.input.keyboard.on('keydown-ESC', () => this._close());

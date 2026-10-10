@@ -137,7 +137,7 @@
       const panelH = Math.min(460, ch - 20);
       const px = cw / 2;
       const py = ch / 2;
-      // #189: gestaltete Platte mit ?debug=1&ui=neu, sonst wie bisher.
+      // #189: Messing-Platte; das Graphics-Panel nur, falls die Bilder fehlen.
       if (!(window.uiRahmen && window.uiRahmen.menuePlatte(this, px, py, panelW, panelH, 2000.5))) {
         const panel = this.add.graphics().setScrollFactor(0).setDepth(2001);
         panel.fillStyle(0x10131c, 0.96)

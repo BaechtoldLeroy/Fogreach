@@ -1,9 +1,10 @@
-// tests/uiRahmen.test.js — gestaltete Toasts und Dialoge hinter ?ui=neu (#189, #182).
+// tests/uiRahmen.test.js — gestaltete Toasts, Dialoge und Menues (#189, #182).
 //
-// Mit ?debug=1&ui=neu zeichnen Toast und Wahl-Dialog den Messing-Satz aus
-// assets/ui (neunteilig, Symbol je Art, Knopfzustaende). OHNE Flagge muss
-// alles exakt wie vorher aussehen: Graphics-Panel, keine ui_*-Bilder.
-// Geprueft am echten Hub (headless, Canvas-Renderer) und einmal im Dungeon.
+// Der Messing-Satz aus assets/ui (neunteilig, Symbol je Art, Knopfzustaende)
+// ist fest im Spiel: ohne jede Flagge zeichnen Toast, Wahl-Dialog und die
+// Menues ihn, kein altes Graphics-Panel mehr darunter. Fehlen die Bilder,
+// laedt der erste Toast sie nach; scheitert das, steht er auf einem
+// schlichten Panel. Geprueft am echten Hub (headless, Canvas-Renderer).
 
 const { test, before, after, describe } = require('node:test');
 const assert = require('node:assert');
@@ -47,14 +48,18 @@ function schliessen(H) {
   H.step(2);
 }
 
-describe('mit ?ui=neu', () => {
+describe('Messing-Stil ohne Flagge', () => {
   let H = null;
-  before(async () => { H = await hub('?autostart=1&debug=1&ui=neu'); });
+  before(async () => { H = await hub('?autostart=1&debug=1'); });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('die Grafiken sind im Hub vorgeladen', () => {
-    assert.strictEqual(H.run('window.uiRahmen.an()'), true);
+  test('die Grafiken sind im Hub vorgeladen, ein zweites Vorladen laedt nichts', () => {
     assert.strictEqual(H.run(`window.uiRahmen.bereit(window.game.scene.getScene('HubSceneV2'))`), true);
+    // Die Flagge gibt es nicht mehr; sie darf auch nichts mehr schalten.
+    assert.strictEqual(H.run('typeof window.uiRahmen.an'), 'undefined');
+    const n = H.run(`(function () { var sc = window.game.scene.getScene('HubSceneV2');
+      window.uiRahmen.vorladen(sc); var n = sc.load.list.size; sc.load.reset(); return n; })()`);
+    assert.strictEqual(n, 0, 'schon geladene Bilder werden doppelt angefordert');
   });
 
   test('Toast: Banner neunteilig, Symbol je Art, voll eingeblendet', () => {
@@ -62,10 +67,10 @@ describe('mit ?ui=neu', () => {
     const b = bilder(H, 'HubSceneV2');
     assert.strictEqual(b.filter((k) => k === 'ui_toast').length, 9, 'kein neunteiliges Banner: ' + b.join(','));
     assert.ok(b.includes('ui_symbol_gefahr'), 'Hinterhalt zeigt kein Gefahr-Symbol');
-    const t = H.run(`(function () { var a = window.game.scene.getScene('HubSceneV2')._activeEventToast;
-      return { gestaltet: a.gestaltet, alpha: a.label.alpha, panel: !!a.panel, y: a.label.y }; })()`);
-    assert.strictEqual(t.gestaltet, true);
-    assert.strictEqual(t.panel, false, 'das alte Graphics-Panel liegt noch darunter');
+    const t = H.run(`(function () { var sc = window.game.scene.getScene('HubSceneV2'); var a = sc._activeEventToast;
+      return { alpha: a.label.alpha, y: a.label.y,
+        graphics: sc.children.list.filter(function (o) { return o.type === 'Graphics' && o.depth === 1999; }).length }; })()`);
+    assert.strictEqual(t.graphics, 0, 'das alte Graphics-Panel liegt noch darunter');
     assert.ok(t.alpha > 0.99, 'nicht eingeblendet: ' + t.alpha);
     assert.ok(Math.abs(t.y - 80) < 0.5, 'nicht an seinem Platz: ' + t.y);
   });
@@ -286,10 +291,10 @@ const HUB_TEXTE = (minDepth) => `(function () { var r = []; (function lauf(l, ti
   if (o.type === 'Container') { if (o.visible && o.alpha > 0.5 && (tief || o.depth >= ${minDepth})) lauf(o.list, true); return; }
   if (o.type === 'Text' && (tief || o.depth >= ${minDepth})) r.push(o); }); })(window.game.scene.getScene('HubSceneV2').children.list, false); return r; })()`;
 
-describe('Lesbarkeit mit ?ui=neu (gemessener Kontrast)', () => {
+describe('Lesbarkeit (gemessener Kontrast)', () => {
   let H = null;
   before(async () => {
-    H = await launch({ search: '?autostart=1&debug=1&ui=neu', renderer: 'canvas' });
+    H = await launch({ search: '?autostart=1&debug=1', renderer: 'canvas' });
     await H.waitForScene('HubSceneV2', { maxRounds: 600 });
     // Der Einfuehrungstext des Hubs laege sonst ueber allem.
     H.run(`(window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1')`);
@@ -363,80 +368,54 @@ describe('Lesbarkeit mit ?ui=neu (gemessener Kontrast)', () => {
   });
 });
 
-describe('ohne Flagge: alles wie vorher', () => {
+describe('Hinweise und fehlende Bilder', () => {
   let H = null;
   before(async () => { H = await hub('?autostart=1&debug=1'); });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('nichts geladen, Toast mit Graphics-Panel', () => {
-    assert.strictEqual(H.run('window.uiRahmen.an()'), false);
-    assert.strictEqual(H.run(`window.game.textures.exists('ui_toast')`), false, 'Grafiken ohne Flagge geladen');
-    toast(H, 'hinterhalt');
-    const t = H.run(`(function () { var a = window.game.scene.getScene('HubSceneV2')._activeEventToast;
-      return { gestaltet: !!a.gestaltet, panel: a.panel && a.panel.type }; })()`);
-    assert.strictEqual(t.gestaltet, false);
-    assert.strictEqual(t.panel, 'Graphics');
-    assert.ok(!bilder(H, 'HubSceneV2').some((k) => /^ui_/.test(k)));
-  });
-
-  test('Wahl-Dialog mit grauen Rechtecken wie gehabt', () => {
-    dialog(H);
-    assert.ok(!bilder(H, 'HubSceneV2').some((k) => /^ui_/.test(k)));
-    const r = H.run(`(function () {
-      var sc = window.game.scene.getScene('HubSceneV2');
-      var r = sc.children.list.filter(function (o) { return o.type === 'Rectangle' && o.depth === 2502; })[0];
-      r.emit('pointerover');
-      return { gefuellt: r.isFilled, farbe: r.fillColor, rand: r.isStroked };
-    })()`);
-    assert.strictEqual(r.gefuellt, true);
-    assert.strictEqual(r.farbe, 0x555555);
-    assert.strictEqual(r.rand, true);
-    schliessen(H);
-  });
-
-  test('Einstellungen, Schwarzmarkt, Druckerei, Journal: altes Panel, keine ui-Bilder', () => {
-    for (const [o, k] of [['window.openSettingsScene', 'SettingsScene'], ['window.openPrintingHouseScene', 'PrintingHouseScene']]) {
-      const r = menue(H, o, k);
-      assert.strictEqual(r.platte, 0, k);
-      assert.ok(r.graphics >= 1, k + ': altes Panel fehlt');
-      assert.strictEqual(r.knoepfe, 0, k);
-      // Textfarben bleiben unangetastet (graues "AUS" bleibt #888888).
-      const gehoben = H.run(`window.game.scene.getScene('${k}').children.list.filter(function (o) { return o._uiLesbar; }).length`);
-      assert.strictEqual(gehoben, 0, k + ': Texte ohne Flagge umgefaerbt');
-      H.run(`window.game.scene.getScene('${k}')._close()`);
-      H.step(5);
-    }
-    H.run('window._dungeonMerchant = true');
-    const s = menue(H, 'window.openShopScene', 'ShopScene');
-    assert.strictEqual(s.platte + s.knoepfe, 0);
-    assert.strictEqual(s.graphics, 1);
-    assert.strictEqual(H.run(`window.game.scene.getScene('ShopScene')._tabButtons.items.strokeColor`), 0xffd166);
-    H.run(`window.game.scene.getScene('ShopScene')._close()`);
-    H.run('window._dungeonMerchant = false');
-    H.step(5);
-    H.run(`window.storySystem.showJournalOverlay(window.game.scene.getScene('HubSceneV2'), function () {})`);
-    H.step(3);
-    const j = H.run(`(function () {
-      var c = window.game.scene.getScene('HubSceneV2').children.list.filter(function (o) { return o.type === 'Container' && o.depth === 6001; })[0];
-      return c.list.filter(function (o) { return o.type === 'Graphics'; }).length + ':' + c.list.filter(function (o) { return o.type === 'Image'; }).length;
-    })()`);
-    assert.strictEqual(j, '1:0');
-    H.run(`window.game.scene.getScene('HubSceneV2').children.list.filter(function (o) { return o.depth >= 6000 && o.depth < 6100; }).forEach(function (o) { o.destroy(); })`);
-    H.run('window.resumeGameClock && window.resumeGameClock()');
-    H.step(2);
-  });
-
-  // Fehler, unabhaengig von der Flagge behoben: Hinweise blieben stumm.
-
+  // Frueher fehlte showEventToast, und Hinweise wie "Hinterhalt!" oder der
+  // Edikt-Text blieben stumm.
   test('beide Namen zeigen denselben Toast', () => {
     assert.strictEqual(H.run(`typeof window.EventSystem.showEventToast`), 'function');
     assert.strictEqual(H.run(`window.EventSystem.showEventToast === window.EventSystem.showToast`), true);
     assert.strictEqual(H.run(`window.showEventToast === window.EventSystem.showToast`), true);
   });
 
-  test('der Edikt-Hinweis im Hub erscheint jetzt wirklich', () => {
+  test('der Edikt-Hinweis im Hub erscheint als Messing-Toast', () => {
     H.run(`window.game.scene.getScene('HubSceneV2')._hubHinweis('Das Edikt gilt.')`);
-    H.step(2);
+    H.step(40);
     assert.strictEqual(H.run(`window.game.scene.getScene('HubSceneV2')._activeEventToast.label.text`), 'Das Edikt gilt.');
+    assert.strictEqual(bilder(H, 'HubSceneV2').filter((k) => k === 'ui_toast').length, 9);
+    H.step(400);
+  });
+
+  test('fehlen die Bilder, laedt der erste Toast sie nach und zeigt dann das Banner', async () => {
+    H.run(`window.uiRahmen.ALLE.forEach(function (k) { window.game.textures.remove(k); })`);
+    assert.strictEqual(H.run(`window.uiRahmen.bereit(window.game.scene.getScene('HubSceneV2'))`), false);
+    H.run(`window.EventSystem.showEventToast(window.game.scene.getScene('HubSceneV2'), 'Fund', 'treasure_cache')`);
+    // Das Laden laeuft ausserhalb der Spieluhr: bis zum Toast takten.
+    for (let i = 0; i < 200 && !H.run(`!!window.game.scene.getScene('HubSceneV2')._activeEventToast`); i++) {
+      await new Promise((r) => setTimeout(r, 20));
+      H.step(1);
+    }
+    H.step(40);
+    const b = bilder(H, 'HubSceneV2');
+    assert.strictEqual(b.filter((k) => k === 'ui_toast').length, 9, 'nach dem Nachladen kein Banner: ' + b.join(','));
+    assert.ok(b.includes('ui_symbol_fund'));
+    H.step(400);
+  });
+
+  test('scheitert das Laden, steht der Text auf einem Panel statt zu verschwinden', () => {
+    const r = H.run(`(function () {
+      var UR = window.uiRahmen, alt = UR.nachladen;
+      UR.ALLE.forEach(function (k) { window.game.textures.remove(k); });
+      UR.nachladen = function (s, fertig) { if (fertig) fertig(); };  // Laden gescheitert
+      var sc = window.game.scene.getScene('HubSceneV2');
+      try { window.EventSystem.showEventToast(sc, 'Kein Platz im Inventar', 'x'); } finally { UR.nachladen = alt; }
+      var a = sc._activeEventToast;
+      return { text: a && a.label.text, graphics: a ? a.teile.filter(function (t) { return t.type === 'Graphics'; }).length : -1 };
+    })()`);
+    assert.strictEqual(r.text, 'Kein Platz im Inventar');
+    assert.strictEqual(r.graphics, 1);
   });
 });
