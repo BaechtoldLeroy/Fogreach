@@ -45,6 +45,11 @@
     try { return !!(window.DebugGate && window.DebugGate.an('ui')); } catch (e) { return false; }
   }
 
+  // Cache-Buster je Bild: die Platte wurde nachtraeglich abgedunkelt (#189),
+  // sonst zeigt der Browser noch die alte, helle Mitte.
+  var BILD_V = { ui_rahmen: 2 };
+  function _pfad(k) { return 'assets/ui/' + k + '.png' + (BILD_V[k] ? '?v=' + BILD_V[k] : ''); }
+
   function _fehlend(scene) {
     if (!scene || !scene.textures) return ALLE.slice();
     return ALLE.filter(function (k) { return !scene.textures.exists(k); });
@@ -56,7 +61,7 @@
   /** Im preload() einer Szene: die Grafiken mitladen (nur mit Flagge). */
   function vorladen(scene) {
     if (!an() || !scene || !scene.load) return;
-    _fehlend(scene).forEach(function (k) { scene.load.image(k, 'assets/ui/' + k + '.png'); });
+    _fehlend(scene).forEach(function (k) { scene.load.image(k, _pfad(k)); });
   }
 
   /**
@@ -67,7 +72,7 @@
     var fehlt = _fehlend(scene);
     if (!fehlt.length) { if (fertig) fertig(); return; }
     if (!scene || !scene.load) return;
-    fehlt.forEach(function (k) { scene.load.image(k, 'assets/ui/' + k + '.png'); });
+    fehlt.forEach(function (k) { scene.load.image(k, _pfad(k)); });
     scene.load.once('complete', function () {
       if (fertig && scene.sys && scene.sys.isActive && scene.sys.isActive()) fertig();
     });
@@ -114,7 +119,12 @@
     return teile;
   }
 
-  /** Grosse Platte fuer Menues und Dialoge. */
+  /**
+   * Grosse Platte fuer Menues und Dialoge. Ihre Mitte ist im Bild selbst
+   * abgedunkelt (#189): das PixelLab-Mauve (#423940) mit rosa Schlieren
+   * ist auf ruhiges Anthrazit (#1c191f) gezogen, Abweichungen auf 35 %
+   * gestaucht; Messing und Konturen blieben unberuehrt.
+   */
   function platte(scene, cx, cy, w, h, depth, massstab) {
     return neunteilig(scene, RAHMEN, cx, cy, w, h, RAHMEN_RAND, depth, massstab || 0.6);
   }
@@ -127,6 +137,94 @@
   /** Symbolschluessel fuer eine Toast-Art. */
   function symbol(eventId) {
     return 'ui_symbol_' + (ART_SYMBOL[eventId] || 'ereignis');
+  }
+
+  // ---- Lesbarkeit (#189) ------------------------------------------------
+  // Die Szenen faerben Nebentext grau (#666 … #888), gedacht fuer das alte
+  // tiefe Dunkelblau. Auf Platte und Knoepfen fehlt ihm der Kontrast. Statt
+  // jede Farbe in jeder Szene umzuschreiben, hebt lesbar() zu dunkle Farben
+  // in Richtung Pergament an — gerade so weit, dass sie auf den dunklen
+  // Flaechen mind. 4,5:1 erreichen. Was schon hell genug ist (Messing,
+  // Pergament, Gruen, Blau), bleibt unveraendert; Grau bleibt erkennbar
+  // grauer als normaler Text, damit "aus" weiter "aus" aussieht.
+  var PERGAMENT = [0xef, 0xe6, 0xd2];
+  // Relative Leuchtdichte (WCAG). 0,40 ergibt 4,5:1 auf Flaechen bis 0,05
+  // — so hell ist die Mitte des Knopfbildes (#423940), die hellste Flaeche,
+  // auf der grauer Text steht (Einstellungen: "AUS").
+  var MIN_HELL = 0.40;
+  var MIN_PX = 11;   // kleinere Schrift waechst auf 11 px, wenn keine Zeile dazukommt
+
+  function _kanal(c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+  function _hell(rgb) { return 0.2126 * _kanal(rgb[0]) + 0.7152 * _kanal(rgb[1]) + 0.0722 * _kanal(rgb[2]); }
+  function _rgb(farbe) {
+    var m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(farbe || '').trim());
+    if (!m) return null;
+    var h = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1];
+    var n = parseInt(h, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function _hex(rgb) {
+    return '#' + rgb.map(function (c) { return ('0' + Math.round(c).toString(16)).slice(-2); }).join('');
+  }
+
+  /** Farbe so weit Richtung Pergament mischen, bis sie MIN_HELL erreicht. */
+  function heben(farbe) {
+    var rgb = _rgb(farbe);
+    if (!rgb || _hell(rgb) >= MIN_HELL) return farbe;
+    var mix = rgb;
+    for (var t = 0.05; t <= 1.0001; t += 0.05) {
+      mix = rgb.map(function (c, i) { return c + (PERGAMENT[i] - c) * t; });
+      if (_hell(mix) >= MIN_HELL) break;
+    }
+    return _hex(mix);
+  }
+
+  /**
+   * Einen Text auf dunklem Grund lesbar machen: Farbe anheben, kleine
+   * Schrift vergroessern (nur wenn dadurch keine Zeile dazukommt) und
+   * kleinem Text ohne Kontur einen harten Pixelschatten geben. Faerbt die
+   * Szene den Text spaeter um (z. B. "AN"/"AUS"), hebt der naechste Aufruf
+   * die neue Farbe wieder an.
+   */
+  function lesbar(text) {
+    if (!text || text.type !== 'Text' || !text.style || !text.scene) return;
+    var merk = text._uiLesbar;
+    if (merk && merk.farbe === text.style.color) return;
+    var neu = heben(text.style.color);
+    if (neu !== text.style.color) text.setColor(neu);
+    if (!merk) {
+      var px = parseFloat(text.style.fontSize);
+      if (px && px < MIN_PX) {
+        var vorher = text.height, alt = text.style.fontSize;
+        text.setFontSize(MIN_PX + 'px');
+        // Kein Platz: eine Zeile mehr oder ueber den Bildrand hinaus.
+        var b = text.getBounds(), cam = text.scene.cameras && text.scene.cameras.main;
+        var breit = cam ? cam.width : 960;
+        if (text.height > vorher * 1.25 || b.x < 0 || b.x + b.width > breit) text.setFontSize(alt);
+      }
+      if ((parseFloat(text.style.fontSize) || 0) < 15 && !text.style.strokeThickness) {
+        text.setShadow(1, 1, '#000000', 0, false, true);
+      }
+    }
+    text._uiLesbar = { farbe: text.style.color };
+  }
+
+  /** lesbar() fuer eine Liste (auch Container), z. B. das Journal. */
+  function lesbarAlle(liste) {
+    (liste || []).forEach(function (o) {
+      if (o && o.type === 'Container') lesbarAlle(o.list);
+      else lesbar(o);
+    });
+  }
+
+  /** Der Beschriftungstext eines Knopfes: mittig auf dem Rechteck. */
+  function _knopfText(rect, cx, cy, h) {
+    var liste = rect.parentContainer ? rect.parentContainer.list : rect.scene.children.list;
+    for (var i = 0; i < liste.length; i++) {
+      var t = liste[i];
+      if (t.type === 'Text' && t.originX === 0.5 && Math.abs(t.x - cx) < 2 && Math.abs(t.y - cy) < h / 2) return t;
+    }
+    return null;
   }
 
   /**
@@ -155,6 +253,16 @@
     if (!scene || !bereit(scene)) return null;
     var w = rect.width * Math.abs(rect.scaleX || 1), h = rect.height * Math.abs(rect.scaleY || 1);
     var cx = rect.x + (0.5 - rect.originX) * w, cy = rect.y + (0.5 - rect.originY) * h;
+    // Zu enge Knoepfe (Schwarzmarkt: 60 px fuer "Blindkauf") wachsen um
+    // die Mitte, bis die Beschriftung samt Rand hineinpasst — Trefferflaeche
+    // inklusive. Nur bei mittig sitzenden Rechtecken, sonst wandert der Knopf.
+    var beschriftung = _knopfText(rect, cx, cy, h);
+    var noetig = beschriftung ? Math.ceil(beschriftung.width) + (h < 30 ? 18 : 28) : 0;
+    if (noetig > w && rect.originX === 0.5 && Math.abs(rect.scaleX || 1) === 1) {
+      rect.setSize(noetig, rect.height);
+      if (rect.input && rect.input.hitArea && rect.input.hitArea.setSize) rect.input.hitArea.setSize(noetig, rect.height);
+      w = noetig;
+    }
     function ruheAus(farbe) {
       if (opts.deaktiviert || rect._enabled === false) return 'aus';
       return farbe === 0xffd166 ? 'hover' : 'normal';
@@ -226,13 +334,18 @@
     opts = opts || {};
     var maxW = opts.maxBreite || 320, maxH = opts.maxHoehe || 48;
     function pruefe(o) {
-      if (o.type === 'Container') { o.list.forEach(pruefe); return; }
+      if (o.type === 'Container') { o.list.slice().forEach(pruefe); return; }
       if (o.type !== 'Rectangle' || o._uiKnopf || o._uiOhne || !o.isStroked) return;
       if (!o._uiAus && (!o.input || !o.input.enabled)) return;
       if (o.width > maxW || o.height > maxH) return;
       knopf(o, { deaktiviert: !!o._uiAus });
     }
-    function lauf() { scene.children.list.slice().forEach(pruefe); }
+    // Erst die Texte (Groesse steht dann fest), dann die Knoepfe, die sich
+    // nach ihrer Beschriftung verbreitern.
+    function lauf() {
+      lesbarAlle(scene.children.list);
+      scene.children.list.slice().forEach(pruefe);
+    }
     scene._uiEinkleiden = lauf;
     scene.sys.events.on('postupdate', lauf);
     scene.sys.events.once('shutdown', function () {
@@ -252,6 +365,7 @@
     an: an, bereit: bereit, vorladen: vorladen, nachladen: nachladen,
     neunteilig: neunteilig, platte: platte, banner: banner, knopf: knopf, symbol: symbol,
     einkleiden: einkleiden, menuePlatte: menuePlatte,
+    heben: heben, lesbar: lesbar, lesbarAlle: lesbarAlle,
     ALLE: ALLE
   };
   if (typeof window !== 'undefined') window.uiRahmen = uiRahmen;

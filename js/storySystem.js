@@ -955,6 +955,8 @@
       color: '#888888'
     }).setOrigin(0.5, 1);
     container.add(hint);
+    // #189: graue Kleinschrift auf der Platte anheben (nur mit ?ui=neu).
+    if (platte) window.uiRahmen.lesbarAlle(container.list);
 
     // Sichtbarer Ausschnitt zwischen Titel-Unterkante und Hinweis-Oberkante.
     var viewTopScreen = h / 2 + contentTopRel;
