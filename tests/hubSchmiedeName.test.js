@@ -1,13 +1,9 @@
 // tests/hubSchmiedeName.test.js — Der Eingang heisst "Schmiede" (#188).
 //
-// Mit ?schmiede=1 heisst der Hub-Eingang zur Archivschmiede "Schmiede"
-// (EN "Forge") statt "Werkstatt"/"Workshop". Gemessen an der Aktionsbox
-// ueber der Figur, wenn sie in der Tuerzone steht — das ist, was man sieht.
-// Ohne Flagge bleibt "Werkstatt". Die Erzaehltexte ("Deine alte Werkstatt")
-// sind nicht betroffen: sie meinen die Werkstatt vor dem Unfall.
-//
-// Der Lauf mit Flagge setzt auch ?tuer=1: beide Flaggen muessen zusammen
-// funktionieren.
+// Der Hub-Eingang zur Archivschmiede heisst "Schmiede" (EN "Forge"), wie
+// die Szene dahinter. Gemessen an der Aktionsbox ueber der Figur, wenn sie in
+// der Tuerzone steht — das ist, was man sieht. Die Erzaehltexte ("Deine alte
+// Werkstatt") sind nicht betroffen: sie meinen die Werkstatt vor dem Unfall.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -38,22 +34,8 @@ function boxVorDerSchmiede(H, sprache) {
   })()`);
 }
 
-test('ohne Flagge: der Eingang heisst Werkstatt / Workshop', async () => {
+test('der Eingang heisst Schmiede / Forge', async () => {
   const H = await hubMit('?autostart=1');
-  try {
-    const de = boxVorDerSchmiede(H, 'de');
-    assert.strictEqual(de.ziel, 'schmiede_entrance', 'die Figur steht nicht an der Schmiedetuer');
-    assert.strictEqual(de.text, 'Werkstatt');
-    const en = boxVorDerSchmiede(H, 'en');
-    assert.strictEqual(en.text, 'Workshop');
-  } finally {
-    try { H.run("window.i18n.setLanguage('de')"); } catch (e) {}
-    await H.shutdown();
-  }
-});
-
-test('?schmiede=1 (mit ?tuer=1): der Eingang heisst Schmiede / Forge', async () => {
-  const H = await hubMit('?autostart=1&tuer=1&schmiede=1');
   try {
     const de = boxVorDerSchmiede(H, 'de');
     assert.strictEqual(de.ziel, 'schmiede_entrance', 'die Figur steht nicht an der Schmiedetuer');

@@ -1,6 +1,6 @@
 // tests/hubTuerRueckkehr.test.js — Nach der Schmiede vor ihrer Tuer (#186).
 //
-// Mit ?tuer=1 kommt man aus einem Gebaeude vor dessen Tuer heraus, nicht am
+// Man kommt aus einem Gebaeude vor dessen Tuer heraus, nicht am
 // Startpunkt in der Platzmitte. Geprueft am echten Weg: die Tuer per
 // _enterLocation betreten (wie [E] es tut), in der Schmiede _returnToHub
 // (wie ESC/Zurueck es tut), dann messen, wo die Figur steht.
@@ -9,8 +9,6 @@
 // Ueberlagerungen ueber dem laufenden Hub, das Rathaus fuehrt in den Dungeon
 // — dessen Rueckkehr bleibt am Startpunkt (hier nachgestellt durch einen
 // Hub-Start ohne gemerkte Tuer, genau das tut main.js nach dem Dungeon).
-//
-// Ohne Flagge muss alles bleiben wie vorher: Startpunkt.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -66,18 +64,8 @@ function lage(H) {
   })()`);
 }
 
-test('ohne Flagge: zurueck aus der Schmiede am Startpunkt', async () => {
+test('vor der Schmiedetuer, frei und ausserhalb der Tuerzone; Dungeon-Rueckkehr am Start', async () => {
   const H = await hubMit('?autostart=1');
-  try {
-    await durchDieSchmiede(H);
-    const l = lage(H);
-    assert.ok(Math.abs(l.x - l.start.x) < 1 && Math.abs(l.y - l.start.y) < 1,
-      'ohne ?tuer=1 sollte die Figur am Startpunkt stehen, steht bei ' + l.x + ',' + l.y);
-  } finally { await H.shutdown(); }
-});
-
-test('?tuer=1: vor der Schmiedetuer, frei und ausserhalb der Tuerzone; Dungeon-Rueckkehr am Start', async () => {
-  const H = await hubMit('?autostart=1&tuer=1');
   try {
     await durchDieSchmiede(H);
     const l = lage(H);
@@ -106,8 +94,8 @@ test('?tuer=1: vor der Schmiedetuer, frei und ausserhalb der Tuerzone; Dungeon-R
 // Nur die Schmiede fuehrt heute in eine eigene Szene. Damit eine kuenftige
 // Gebaeudeszene nicht in einer Wand landet, gilt dieselbe Pruefung fuer
 // JEDE Tuer des Platzes (die gemerkte Tuer von Hand gesetzt).
-test('?tuer=1: vor jeder Tuer des Platzes ein freier Platz ausserhalb aller Tuerzonen', async () => {
-  const H = await hubMit('?autostart=1&tuer=1');
+test('vor jeder Tuer des Platzes ein freier Platz ausserhalb aller Tuerzonen', async () => {
+  const H = await hubMit('?autostart=1');
   try {
     const ids = H.run(`window.game.scene.getScene('HubSceneV2').entranceLabels.map(function (e) { return e.data.id; })`);
     assert.ok(ids.length >= 4, 'zu wenige Tueren: ' + ids.length);

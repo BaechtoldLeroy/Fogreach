@@ -990,7 +990,7 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   /**
-   * #186 (Flagge ?tuer=1): Wer aus einem Gebaeude kommt, steht vor dessen
+   * #186: Wer aus einem Gebaeude kommt, steht vor dessen
    * Tuer statt am Startpunkt in der Platzmitte, den Blick vom Haus weg.
    *
    * Der Eingang wird beim Betreten gemerkt (_enterLocation) und hier
@@ -1000,7 +1000,7 @@ class HubSceneV2 extends Phaser.Scene {
   _vorDieTuerStellen() {
     const von = window.__hubVonEingang;
     window.__hubVonEingang = null;
-    if (!von || !(window.DebugGate && window.DebugGate.an('tuer'))) return;
+    if (!von) return;
     const p = this.player;
     if (!p || !p.body) return;
     try {
@@ -3037,7 +3037,7 @@ class HubSceneV2 extends Phaser.Scene {
       // #186: Die Rueckkehr soll vor dieser Tuer enden (_vorDieTuerStellen).
       // Nur die Schmiede wechselt die Szene; Druckerei und Truhe sind
       // Ueberlagerungen, der Spieler bleibt dort ohnehin stehen.
-      if (window.DebugGate && window.DebugGate.an('tuer')) window.__hubVonEingang = entranceData.id;
+      window.__hubVonEingang = entranceData.id;
       this.cameras.main.fadeOut(200, 0, 0, 0);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
         this.scene.start('CraftingScene');
