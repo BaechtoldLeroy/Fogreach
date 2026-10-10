@@ -2,6 +2,67 @@
  * ParticleFactory - Reusable particle effect system for Demonfall
  * Uses Phaser 3.60+ particle API
  */
+// #183: Pixelpartikel je Zweck statt zweier weicher Punkte — nur mit
+// ?partikel=neu. Alle Formen liegen in EINER Bildtafel (16x16 je Bild, eine
+// Zeile je Zweck), damit es bei einem Zeichenaufruf bleibt. Die Emitter und
+// ihre Teilchenzahl bleiben genau dieselben; getauscht werden nur Bild,
+// Groesse und — wo das Bild seine Farbe selbst traegt — die Toenung.
+const PARTIKEL_ATLAS = 'partikel_atlas';
+const PARTIKEL_SPALTEN = 8;    // Bilder je Zeile der Tafel
+// Zeile der Tafel und Anzahl Bilder darin. `toenen`: das Bild ist hell und
+// grau gezeichnet und nimmt die Farbe des Aufrufers an (Faehigkeiten, Bosse).
+const PARTIKEL_ZWECKE = {
+  funken:       { zeile: 0, n: 6 },
+  blut:         { zeile: 1, n: 6 },
+  daemonenblut: { zeile: 2, n: 6 },
+  splitter:     { zeile: 3, n: 6, toenen: true },
+  glut:         { zeile: 4, n: 6 },
+  staub:        { zeile: 5, n: 6, toenen: true },
+  magie:        { zeile: 6, n: 6, toenen: true },
+  frost:        { zeile: 7, n: 6 },
+  glanz:        { zeile: 8, n: 6 }
+};
+// Die alten Punkte sind 8 px gross, die neuen Bilder 16 px. Ganz auf 8 px
+// heruntergerechnet waere von der Form nichts mehr zu sehen; etwas groesser
+// als vorher, damit Funke und Tropfen als solche lesbar sind.
+const PARTIKEL_MASS = 0.75;
+
+// Faehigkeitsfarben, die ein eigenes Bild haben. Alles andere wird zu
+// getoenten Splittern — die Farbe bleibt die des Aufrufers.
+const SPUR_ZWECK = {
+  0xff7a1a: 'glut',   // Raserei, Feuerstoss
+  0x9fe8ff: 'frost',  // Frostnova
+  0x66ccff: 'frost'   // Eisschritt
+};
+
+function partikelNeuAn(scene) {
+  if (!(window.DebugGate && window.DebugGate.an('partikel'))) return false;
+  return !!(scene && scene.textures && scene.textures.exists(PARTIKEL_ATLAS));
+}
+
+/** Die Bildnummern eines oder mehrerer Zwecke in der Tafel. */
+function partikelBilder(zwecke) {
+  const out = [];
+  zwecke.forEach((z) => {
+    const d = PARTIKEL_ZWECKE[z];
+    if (!d) return;
+    for (let i = 0; i < d.n; i++) out.push(d.zeile * PARTIKEL_SPALTEN + i);
+  });
+  return out;
+}
+
+/** Skaliert {start,end} oder eine Zahl. */
+function partikelSkala(scale, f) {
+  if (typeof scale === 'number') return scale * f;
+  if (scale && typeof scale === 'object') {
+    const out = Object.assign({}, scale);
+    if (typeof out.start === 'number') out.start *= f;
+    if (typeof out.end === 'number') out.end *= f;
+    return out;
+  }
+  return scale;
+}
+
 class ParticleFactory {
   constructor(scene) {
     this.scene = scene;
@@ -9,10 +70,28 @@ class ParticleFactory {
 
   /**
    * Create a one-shot burst of particles at a position, auto-cleanup after done.
+   * `zweck` (#183) waehlt mit ?partikel=neu das Pixelbild; ohne Flagge bleibt
+   * es beim uebergebenen Punkt.
    */
-  burst(x, y, textureKey, config) {
+  burst(x, y, textureKey, config, zweck) {
     const scene = this.scene;
     if (!scene || !scene.add) return null;
+
+    if (zweck && partikelNeuAn(scene)) {
+      const zwecke = [].concat(zweck);
+      const bilder = partikelBilder(zwecke);
+      if (bilder.length) {
+        config = Object.assign({}, config);
+        textureKey = PARTIKEL_ATLAS;
+        config.frame = bilder;
+        config.scale = partikelSkala(config.scale, PARTIKEL_MASS);
+        // Ein Blutstropfen in Gold getoent waere keiner mehr.
+        if (!zwecke.some((z) => PARTIKEL_ZWECKE[z].toenen)) delete config.tint;
+        // Funken und Splitter fliegen nicht alle gleich ausgerichtet; eine
+        // Staubwolke hat keine Richtung.
+        if (zwecke.indexOf('staub') < 0) config.rotate = { min: 0, max: 360 };
+      }
+    }
 
     // Reduced effects mode: halve particle count (037-mobile-performance)
     if (window.__REDUCED_EFFECTS__) {
@@ -42,7 +121,7 @@ class ParticleFactory {
       quantity: 6,
       tint: [0xffffff, 0xffff00, 0xffffaa],
       gravityY: 100
-    });
+    }, 'funken');
   }
 
   /** Red particles on enemy damage */
@@ -54,7 +133,7 @@ class ParticleFactory {
       quantity: 4,
       tint: 0xff2222,
       gravityY: 50
-    });
+    }, 'blut');
   }
 
   /** Larger red/orange burst on enemy death */
@@ -65,7 +144,7 @@ class ParticleFactory {
       lifespan: 400,
       quantity: 12,
       tint: [0xff2222, 0xff6600, 0xff4400]
-    });
+    }, ['daemonenblut', 'splitter']);
   }
 
   /** Red flash particles when player takes damage */
@@ -76,7 +155,7 @@ class ParticleFactory {
       lifespan: 250,
       quantity: 8,
       tint: 0xff0000
-    });
+    }, 'blut');
   }
 
   /** Gold sparkle on loot pickup */
@@ -88,7 +167,7 @@ class ParticleFactory {
       quantity: 5,
       tint: 0xffd700,
       gravityY: -40
-    });
+    }, 'glanz');
   }
 
   /** Colored trail for abilities */
@@ -99,7 +178,7 @@ class ParticleFactory {
       lifespan: 150,
       quantity: 3,
       tint: color || 0x00ffff
-    });
+    }, SPUR_ZWECK[color] || 'magie');
   }
 
   /** Camera shake helper */
@@ -136,7 +215,7 @@ class ParticleFactory {
       lifespan: 750,
       quantity: 44,
       tint: [tint, 0xffcc44, 0xffffff]
-    });
+    }, 'splitter');
     scene.time.delayedCall(140, () => {
       if (scene.add) this.burst(x, y, 'particle', {
         speed: { min: 40, max: 160 },
@@ -144,7 +223,7 @@ class ParticleFactory {
         lifespan: 900,
         quantity: 26,
         tint: [tint, 0x662222]
-      });
+      }, 'staub');
     });
 
     // 3) Zwei expandierende Schockwellen-Ringe (Graphics, getweent + aufgeräumt).
@@ -176,3 +255,4 @@ class ParticleFactory {
 
 // Expose globally
 window.ParticleFactory = ParticleFactory;
+window.PARTIKEL_ZWECKE = PARTIKEL_ZWECKE;

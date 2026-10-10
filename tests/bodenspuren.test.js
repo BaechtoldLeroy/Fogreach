@@ -108,12 +108,10 @@ test('ein echter Raum legt verschiedene Spuren', () => {
     })()`);
     Array.prototype.forEach.call(keys || [], (k) => gesehen.add(k));
     if ((keys || []).length) raeume++;
-    // Naechsten Raum bauen
+    // Naechsten Raum bauen. Hier stand RoomManager.naechsterRaum — das gibt
+    // es nicht; der Fall zaehlte achtmal denselben Raum.
     H.run(`(function () {
-      var sc = window.game.scene.getScene('GameScene');
-      if (window.RoomManager && typeof window.RoomManager.naechsterRaum === 'function') {
-        try { window.RoomManager.naechsterRaum(sc); } catch (e) {}
-      }
+      window.enterRoom(window.game.scene.getScene('GameScene'));
       return 1;
     })()`);
     H.step(8);

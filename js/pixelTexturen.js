@@ -224,6 +224,14 @@
         scene.load.image(k, ORDNER + k + '.png');
       });
     });
+    // Testflaggen: die Tafeln nur mit gesetzter Flagge laden — ohne sie
+    // aendert sich nicht einmal die Ladeliste.
+    // #183 ?partikel=neu: Pixelpartikel je Zweck (js/particleEffects.js).
+    if (window.DebugGate && window.DebugGate.an('partikel') && !scene.textures.exists('partikel_atlas')) {
+      scene.load.spritesheet('partikel_atlas', ORDNER + 'partikel_atlas.png', { frameWidth: 16, frameHeight: 16 });
+    }
+    // #184 ?boden=neu: Boden-Deko je Raumthema (js/bodenDeko.js).
+    if (window.BodenDeko) window.BodenDeko.vorladen(scene);
   };
 
   /**

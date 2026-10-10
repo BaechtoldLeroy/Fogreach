@@ -801,6 +801,13 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       }
     }
 
+    // #184: Deko passend zum Raumthema, nur mit ?boden=neu (sonst leer).
+    if (window.BodenDeko) {
+      window.BodenDeko.streuen(scene, {
+        tpl, W, H, T, ox, oy, istBegehbar: isWalkableTile, boden: floorKey, tint: floorTint, ablage: templateWalls
+      });
+    }
+
     // Cobweb sprites in corners (where two walls meet at 90 degrees)
     if (scene.textures?.exists?.('cobweb')) {
       // Check corner positions for wall adjacency
