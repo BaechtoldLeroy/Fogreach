@@ -104,3 +104,37 @@ test('Schwierigkeit: hp und maxHp bleiben im Gleichschritt', async () => {
     await H.shutdown();
   }
 });
+
+// ---------------------------------------------------------------------------
+// Der goldene Elite (makeElite, ab Tiefe 3) verdoppelte hp, aber nicht maxHp.
+// Gemessen ueber vier Tiefen: jeder dieser Elite stand bei 2/1, 4/2, 6/3,
+// 14/7. Gemeldet als "gewisse Gegner verlieren trotz Schlaegen nichts an der
+// Lebensleiste" — die erste Haelfte ihrer Lebenspunkte ging unsichtbar weg.
+// ---------------------------------------------------------------------------
+
+test('goldener Elite: hp und maxHp bleiben im Gleichschritt, der Balken sinkt ab dem ersten Treffer', async () => {
+  const H = await launch({ search: '?autostart=1&dungeon=5', renderer: 'canvas', waitFor: 'StartScene' });
+  try {
+    const ok = await H.waitForScene('GameScene', { maxRounds: 400 });
+    assert.ok(ok, 'GameScene wurde nicht erreicht');
+    const m = H.run(`(function () {
+      var sc = window.game.scene.getScene('GameScene');
+      var e = spawnEnemy.call(sc, 400, 300, 5, { ohneElite: true });
+      if (!e) return null;
+      var vorher = e.hp;
+      makeElite.call(sc, e);
+      var r = { vorher: vorher, hp: e.hp, maxHp: e.maxHp };
+      // Ein Treffer ueber ein Viertel: der Balken muss darunter fallen.
+      e.hp -= Math.max(1, Math.floor(e.hp / 4));
+      r.anteil = e.hp / (e.maxHp || e.hp);
+      e.destroy();
+      return r;
+    })()`);
+    assert.ok(m, 'kein Gegner gespawnt');
+    assert.ok(m.hp > m.vorher, 'makeElite erhoeht die Lebenspunkte nicht mehr: ' + m.vorher + ' -> ' + m.hp);
+    assert.strictEqual(m.hp, m.maxHp, 'goldener Elite steht bei ' + m.hp + '/' + m.maxHp);
+    assert.ok(m.anteil < 1, 'nach dem Treffer zeigt der Balken noch ' + Math.round(m.anteil * 100) + ' %');
+  } finally {
+    await H.shutdown();
+  }
+});

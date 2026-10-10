@@ -3170,6 +3170,10 @@ function makeElite(enemy) {
 
   // Stats: 2x HP, 1.5x damage, 1.2x speed
   enemy.hp = Math.ceil(enemy.hp * 2);
+  // maxHp waechst mit. Ohne diese Zeile stand ein goldener Elite bei 4/2:
+  // drawEnemyHpBar klemmt hp/maxHp auf 1, der Balken blieb voll, bis die
+  // Haelfte der Lebenspunkte weg war — Schlaege sahen wirkungslos aus.
+  enemy.maxHp = enemy.hp;
   enemy.baseDamage = Math.ceil((enemy.baseDamage || enemy.damage || 1) * 1.5);
   enemy.damage = enemy.baseDamage;
   const difficulty = getDifficultyMultiplierValue();
