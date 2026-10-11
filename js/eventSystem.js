@@ -881,42 +881,67 @@
     var obj = scene.physics.add.sprite(cx, cy, texKey);
     obj.setDepth(45).setImmovable(true);
     obj.body.setAllowGravity(false);
-    // Optional scale override for full-resolution painterly sprites that
-    // would otherwise render gigantic at 1:1 (e.g. NPC portraits). The
-    // built-in 32×32 evt_* textures don't pass this and stay at scale 1.
-    if (opts && typeof opts.scale === 'number') {
-      obj.setScale(opts.scale);
+    // Figuren (Elara) bringen ihre Groesse als opts.figurHoehe mit: gemessen
+    // an der FIGUR im Bild, nicht am Rahmen (#192). Der fruehere feste
+    // Faktor 0.16 stammte aus der Zeit der Grossbilder und machte die
+    // Pixel-Elara (34x63) 5x10 px klein. opts.scale bleibt als fester
+    // Faktor fuer Aufrufer, die ihn wirklich wollen.
+    var skala = (opts && typeof opts.scale === 'number') ? opts.scale : null;
+    var figur = null;
+    if (opts && typeof opts.figurHoehe === 'number' && opts.figurHoehe > 0) {
+      figur = (typeof window.figurGrenzen === 'function') ? window.figurGrenzen(scene, texKey) : null;
+      var fh = (figur && figur.boundsHeight > 0) ? figur.boundsHeight : (obj.height || 32);
+      skala = opts.figurHoehe / fh;
+    }
+    // Die eingebauten 32x32-evt_*-Bilder bleiben bei 1.
+    if (skala !== null) {
+      obj.setScale(skala);
       // Resize physics body to roughly match the displayed sprite so the
       // [E] proximity check still feels accurate.
       if (obj.body && typeof obj.body.setSize === 'function') {
-        var bw = Math.max(8, (obj.width || 32) * opts.scale);
-        var bh = Math.max(8, (obj.height || 32) * opts.scale);
+        var bw = Math.max(8, (obj.width || 32) * skala);
+        var bh = Math.max(8, (obj.height || 32) * skala);
         obj.body.setSize(bw, bh, true);
       }
     }
 
     // Prompt text — positioned just above the (possibly-scaled) sprite so
     // it isn't hidden behind a tall NPC body. Default of -24 is preserved
-    // for the small built-in evt_* textures.
+    // for the small built-in evt_* textures. Bei einer gemessenen Figur
+    // zaehlt deren Oberkante (Kopf), nicht die des Rahmens.
     var promptOffset = Math.max(24, (obj.displayHeight || 32) / 2 + 12);
+    if (figur && skala !== null) {
+      promptOffset = (obj.height * 0.5 - figur.minY) * skala + 10;
+    }
     var prompt = scene.add.text(cx, cy - promptOffset, '[E] ' + label, {
       fontSize: '12px', fill: '#ffdd44', fontFamily: 'monospace',
       stroke: '#000', strokeThickness: 2
     }).setOrigin(0.5).setDepth(500).setVisible(false);
 
     // Glow effect
+    // Bei einer Figur ein flacher Schein zu ihren Fuessen, so breit wie sie
+    // gross ist — der runde 30-px-Kreis um die Bildmitte war fuer die
+    // 32-px-Ereignisbilder gemacht und saesse ihr sonst auf der Brust.
     var glow = scene.add.graphics();
     glow.fillStyle(glowColor, 0.15);
-    glow.fillCircle(cx, cy, 30);
+    if (figur && skala !== null) {
+      var fussY = cy + (figur.maxY + 1 - obj.height * 0.5) * skala;
+      var gb = Math.max(30, opts.figurHoehe * 0.9);
+      glow.fillEllipse(cx, fussY - 2, gb, gb * 0.4);
+      glow.fillStyle(glowColor, 0.08);
+      glow.fillEllipse(cx, cy, gb, opts.figurHoehe * 1.2);
+    } else {
+      glow.fillCircle(cx, cy, 30);
+    }
     glow.setDepth(44);
 
     // Zeichenreihenfolge (#165): steht der Spieler hinter dem Objekt (Bilder
     // decken sich, seine Fuesse hoeher als dessen Unterkante), hebt der
     // gemeinsame Durchlauf es vor ihn, der Schein folgt knapp darunter. Sonst
-    // bleibt die Ruhetiefe. Gemalte Figuren (Elara, mit opts.scale) ruhen
+    // bleibt die Ruhetiefe. Figuren (Elara, mit Groessenvorgabe) ruhen
     // wie der Haendler auf der NPC-Ebene statt unter dem Gegnerlayer. Das [E]
     // bleibt obenauf (500).
-    if (opts && typeof opts.scale === 'number' && window.WELT_TIEFEN && window.WELT_TIEFEN.NPC) {
+    if (skala !== null && window.WELT_TIEFEN && window.WELT_TIEFEN.NPC) {
       obj.setDepth(window.WELT_TIEFEN.NPC);
     }
     if (typeof window.sortiereZumSpieler === 'function') {

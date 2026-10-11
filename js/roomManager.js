@@ -3549,6 +3549,9 @@ var ELARA_SZENEN = {
 // mit ihr spielt die Szene.
 // ---------------------------------------------------------------------------
 var VERSTECK_RAUM = 'ElarasVersteck';
+// Elaras sichtbare Figurhoehe im Keller (#192): so gross wie der Spieler
+// (PLAYER_FIGUR_HOEHE 54), wie ihr Eintrag im Hub-Layout.
+var ELARA_FIGUR_HOEHE = 54;
 
 function _versteckFlag(n) {
   var qs = window.questSystem;
@@ -3769,7 +3772,7 @@ function _versteckBetreten(scene, w, h) {
   if (!besuch || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
   window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, 'Elara', function () {
     _versteckSzeneSpielen(scene, besuch);
-  }, { scale: 0.16 });
+  }, { figurHoehe: ELARA_FIGUR_HOEHE });
 }
 
 function _versteckSzeneSpielen(scene, besuch) {
@@ -4079,13 +4082,12 @@ function _spawnElaraSprite(scene, stage, platz) {
   const isEn = (window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
   const promptLabel = isEn ? 'Elara' : 'Elara';
   // Subtle violet glow to match the Widerstand-faction colour key.
-  // Scale 0.16 mirrors the hub-layout entry — the source PNG is full-res
-  // (1536x1024-ish) and renders gigantic at 1:1 without it.
+  // Groesse an der Figur gemessen, wie im Versteck (#192).
   window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, promptLabel, function () {
     _showElaraDialog(scene, stage);
     // `platz` setzt sie gezielt (nach der Rettung: wo die Wache stand).
     // Ohne ihn zieht spawnEventObject wie bisher einen freien Punkt.
-  }, platz ? { scale: 0.16, spawnAt: platz } : { scale: 0.16 });
+  }, platz ? { figurHoehe: ELARA_FIGUR_HOEHE, spawnAt: platz } : { figurHoehe: ELARA_FIGUR_HOEHE });
   // Nur die erste Begegnung haelt den Raum: sie ist der Grund, warum man
   // ueberhaupt hier unten steht. Spaetere Auftraege sind freiwillig.
   if (stage === 1) _elaraTreppeSperren(scene);

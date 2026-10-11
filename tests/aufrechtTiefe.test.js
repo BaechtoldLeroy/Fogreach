@@ -127,7 +127,7 @@ test('Schrein: vor und hinter dem Spieler, der Schein knapp darunter', () => {
 });
 
 test('Elara (gemalte Figur): ruht auf der NPC-Ebene und sortiert sich gegen den Spieler', () => {
-  assert.ok(ereignisObjekt('elara_right0', { scale: 0.16 }), 'Elara ist nicht erschienen');
+  assert.ok(ereignisObjekt('elara_right0', { figurHoehe: 54 }), 'Elara ist nicht erschienen');
   const r = hinUndZurueck('Elara', +4, -3, 2);
   assert.strictEqual(r.a.objTiefe, 90, 'Elara liegt nicht mehr auf der NPC-Ebene (vorher unter dem Gegnerlayer)');
   assert.ok(r.a.obj > r.a.gegner, 'Elara liegt unter dem Gegnerlayer: ' + JSON.stringify(r.a));
