@@ -1038,6 +1038,8 @@ function preload() {
   // other directions lazy-load via ensureDirectionLoaded().
   // #171: Die Schlagfolge des Nahkampfs gibt es nur hier unten.
   if (typeof window.schlagBilderVorladen === 'function') window.schlagBilderVorladen(this.load);
+  // #174: die Spezialangriffe als Bildfolgen — nur im Testmodus ?spezial=neu.
+  if (typeof window.spezialBilderVorladen === 'function') window.spezialBilderVorladen(this.load);
 
   // Gegner-Sprites: SICHERHEITSNETZ. Normalerweise hat HubSceneV2 sie schon im
   // Hintergrund geladen; hier abgedeckt werden der Endlos-Modus (kein Hub) und

@@ -2487,7 +2487,7 @@ function _schlagZeigen(scene, dd, dauer) {
     .setAlpha(player.alpha);
   if (player.isTinted) bild.setTint(player.tintTopLeft);
   bild.play({ key: animKey, frameRate: SCHLAG_BILDER / (dauer / 1000) });
-  player.setVisible(false);
+  _folgeAnmelden(bild, FOLGE_RANG.schlag);
 
   const folgen = () => {
     if (!bild.active || !player) return;
@@ -2505,8 +2505,8 @@ function _schlagZeigen(scene, dd, dauer) {
     scene.events.off('postupdate', folgen);
     scene.events.off('shutdown', ende);
     spur.ende();
+    _folgeAbmelden(bild);
     if (bild.active) bild.destroy();
-    if (player) player.setVisible(true);
   };
   scene.time.delayedCall(dauer, ende);
   // Raumwechsel/Tod per Szenenneustart: die Timer verfallen, die Hoerer nicht.
@@ -2757,6 +2757,11 @@ function beginChargedSlash() {
   }
 
   if (player?.setTint) player.setTint(0xffd27f);
+  // #174 (?spezial=neu): beim Aufladen holt die Figur aus und haelt den
+  // Flegel ueber dem Kopf, bis losgelassen wird (releaseChargedSlash).
+  if (_hammerAusholen) _hammerAusholen.ende();
+  _hammerAusholen = _spezialZeigen(this, 'hammer', _getAimVector2(this), CHARGED_SLASH_MAX_CHARGE + 200,
+    { von: 0, bis: SPEZIAL_HAMMER_SCHLAG - 1, laufzeit: CHARGED_SLASH_MIN_CHARGE });
 
   if (chargeSlashMaxTimer) {
     chargeSlashMaxTimer.remove(false);
@@ -2840,6 +2845,10 @@ function releaseChargedSlash(forceMaxCharge = false) {
   const iy = player.y + forward.y * impactDist;
   const slamRadius = range * 0.78;
   _hammerSlamFx(scene, ix, iy, slamRadius, chargeRatio);
+  // #174 (?spezial=neu): der Flegel kracht herunter — der Einschlag oben
+  // faellt genau jetzt, also gleich ab dem Schwung nach unten.
+  if (_hammerAusholen) { _hammerAusholen.ende(); _hammerAusholen = null; }
+  _spezialZeigen(scene, 'hammer', forward, SPEZIAL_DAUER.hammer, { von: SPEZIAL_HAMMER_SCHLAG });
 
   // Tödlicher Stoß (Lethal Thrust): +25% crit chance
   let _savedCritChance;
@@ -3310,7 +3319,7 @@ function _rolleZeigen(scene, dd, duration) {
     .setTint(0xd0c4ff);
   // Die ganze Folge in der Dauer der Rolle, nicht schneller und nicht langsamer.
   bild.play({ key: animKey, frameRate: ROLLE_BILDER / (duration / 1000) });
-  player.setVisible(false);
+  _folgeAnmelden(bild, FOLGE_RANG.rolle);
 
   const folgen = () => {
     if (!bild.active || !player) return;
@@ -3322,10 +3331,236 @@ function _rolleZeigen(scene, dd, duration) {
     bild,
     ende() {
       scene.events.off('postupdate', folgen);
+      _folgeAbmelden(bild);
       bild.destroy();
-      if (player) player.setVisible(true);
     }
   };
+}
+
+// ============================================================
+// Wer gerade den Spieler vertritt (#174)
+// ------------------------------------------------------------
+// Rolle, Schlag und Spezialangriff spielen je auf einem eigenen Bild, und
+// der Spieler ist so lange unsichtbar. Bis #174 lief immer hoechstens eine
+// Folge: Rolle und Schlag sperren sich gegenseitig (isAttacking/isRolling).
+// Die Spezialangriffe sperren nichts davon — ein Schlag mitten im Wirbel ist
+// erlaubt. Jede Folge, die bei ihrem Ende einfach den Spieler wieder
+// einblendet, wuerde dann die andere mittendrin entbloessen.
+//
+// Darum meldet sich jede Folge hier an und ab. Sichtbar ist genau eine: die
+// mit dem hoechsten Rang, bei gleichem Rang die juengste. Die anderen laufen
+// unsichtbar weiter (Takt, Position) und kommen wieder, wenn die obere
+// endet. Der Spieler selbst ist sichtbar, sobald keine mehr angemeldet ist.
+//   Rolle vor Spezialangriff: das Ausweichen muss man sehen.
+//   Spezialangriff vor Schlag: ein Schlag im Wirbel unterbricht die Drehung
+//   nicht; seine Wischspur zeigt ihn trotzdem.
+// Laeuft nur eine Folge (ohne ?spezial=neu immer), ist das genau das alte
+// Verhalten: anmelden versteckt den Spieler, abmelden zeigt ihn.
+// ============================================================
+const FOLGE_RANG = { schlag: 1, spezial: 2, rolle: 3 };
+const _folgen = [];
+let _folgenNr = 0;
+
+function _folgenZeigen() {
+  // Bilder einer beendeten Szene (Neustart ohne Abmelden) fallen hier heraus.
+  for (let i = _folgen.length - 1; i >= 0; i--) {
+    if (!_folgen[i].bild.active) _folgen.splice(i, 1);
+  }
+  let oben = null;
+  _folgen.forEach((f) => {
+    if (!oben || f.rang > oben.rang || (f.rang === oben.rang && f.nr > oben.nr)) oben = f;
+  });
+  _folgen.forEach((f) => f.bild.setVisible(f === oben));
+  if (player) player.setVisible(!oben);
+}
+
+function _folgeAnmelden(bild, rang) {
+  _folgen.push({ bild, rang, nr: ++_folgenNr });
+  _folgenZeigen();
+}
+
+function _folgeAbmelden(bild) {
+  const i = _folgen.findIndex((f) => f.bild === bild);
+  if (i >= 0) _folgen.splice(i, 1);
+  _folgenZeigen();
+}
+
+// ============================================================
+// #174: Spezialangriffe als Bewegung der Figur (Testmodus ?spezial=neu)
+// ------------------------------------------------------------
+// Gebaut wie Rolle und Schlag: PixelLab pixminimax am Spielercharakter,
+// 92x92 mit demselben Rand, acht Bilder nach der Ruhepose,
+// tools/spezialBauen.js. Die Linienbilder der Angriffe bleiben als Zusatz
+// darueber; Treffer, Abklingzeiten und Wirkung ruehren die Folgen nicht an.
+//
+// Richtungslose Angriffe (wirken rundherum) haben EINE Folge, nach Sueden
+// gezeichnet: spezial_<angriff>_f00..f07. Gerichtete haben alle acht
+// Richtungen: spezial_<angriff>_DD_f00..f07.
+//
+// Ohne Flagge wird nichts geladen und nichts gezeigt — die Angriffe sehen
+// genau aus wie vorher.
+// ============================================================
+const SPEZIAL_BILDER = 8;
+const SPEZIAL_FOLGEN = {
+  wirbel: { gerichtet: false },   // castWhirlwind: Drehung, als Schleife
+  frost: { gerichtet: false },    // castFrostNova: Stampfen
+  zyklon: { gerichtet: false },   // castCycloneStrike: Heranziehen
+  hammer: { gerichtet: true },    // releaseChargedSlash: Ueberkopfschlag
+  sturm: { gerichtet: true },     // shadowCharge: Lauf mit gesenkter Schulter
+  sprung: { gerichtet: true }     // shadowTeleportDash: Absprung und Landung
+};
+// Eine Umdrehung des Wirbels. Die Linien drehen schneller; der Koerper soll
+// lesbar bleiben (8 Bilder in 320 ms = 25 Bilder je Sekunde).
+const SPEZIAL_WIRBEL_RUNDE = 320;
+// Dauer der Folgen, deren Angriff selbst keine Wirkdauer hat (ms). Hammer:
+// etwa das Schlagfenster (isAttacking 220 ms) plus Aufrichten; Frost und
+// Zyklon: so lang wie ihre Ringe/ihr Sog. Der Blitzsprung dauert 110 ms —
+// das reicht fuer den Absprung, die Landung haengt hinten an.
+const SPEZIAL_DAUER = { hammer: 240, frost: 420, zyklon: 400, sprungFaktor: 2.4 };
+// Der Hammer ist zweigeteilt: Bilder 0..2 holen beim Aufladen aus (und
+// bleiben oben stehen), ab Bild 3 kracht er beim Loslassen herunter. Der
+// Aufschlag liegt je nach Richtung in Bild 3 oder 4 — Bild 2 ist in allen
+// acht der Flegel hoch oben.
+const SPEZIAL_HAMMER_SCHLAG = 3;
+let _hammerAusholen = null;
+
+function spezialAn() {
+  return !!(typeof window !== 'undefined' && window.DebugGate
+    && window.DebugGate.flagge('spezial') === 'neu');
+}
+
+function spezialSchluessel(angriff, dd, frame) {
+  return `spezial_${angriff}${dd ? '_' + dd : ''}_f${frame.toString().padStart(2, '0')}`;
+}
+
+/** #174: Die Spezialfolgen mit dem Dungeon laden — nur mit ?spezial=neu. */
+function spezialBilderVorladen(loader) {
+  if (!loader || !spezialAn()) return;
+  const textures = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
+  Object.keys(SPEZIAL_FOLGEN).forEach((angriff) => {
+    const dds = SPEZIAL_FOLGEN[angriff].gerichtet ? ['00', '01', '02', '03', '04', '05', '06', '07'] : [null];
+    dds.forEach((dd) => {
+      for (let f = 0; f < SPEZIAL_BILDER; f++) {
+        const key = spezialSchluessel(angriff, dd, f);
+        if (textures?.exists?.(key)) continue;
+        loader.image(key, `assets/PlayerSprites/${key}.png`);
+      }
+    });
+  });
+}
+
+/**
+ * #174: Spielt einen Spezialangriff auf einem eigenen Bild, das dem Spieler
+ * folgt — ausgerichtet wie _schlagZeigen am Gehbild derselben Richtung
+ * (richtungslos: am Gehbild nach Sueden, so ist die Folge gezeichnet).
+ *
+ * @param {string} angriff   Schluessel in SPEZIAL_FOLGEN
+ * @param {{x:number,y:number}|null} richtung Zielrichtung (nur gerichtete)
+ * @param {number} dauer     ms, so lange steht das Bild (danach ist er wieder er selbst)
+ * @param {object} [wie]
+ * @param {boolean} [wie.schleife] die Bilder wiederholen sich bis zum Ende
+ * @param {number} [wie.von] erstes Bild (0..7), Vorgabe 0
+ * @param {number} [wie.bis] letztes Bild (0..7), Vorgabe 7 — ohne Schleife
+ *   bleibt es danach stehen, bis die Dauer um ist
+ * @param {number} [wie.laufzeit] ms fuer von..bis (Vorgabe: die Dauer, in der
+ *   Schleife eine Wirbelrunde)
+ * @returns {{bild, ende: function}|null} null ohne Flagge, ohne Bilder, in
+ *   Verkleidung — dann bleibt alles wie vorher.
+ */
+function _spezialZeigen(scene, angriff, richtung, dauer, wie) {
+  wie = wie || {};
+  if (!spezialAn() || !scene || !player || !player.active) return null;
+  const def = SPEZIAL_FOLGEN[angriff];
+  if (!def) return null;
+  const dd = def.gerichtet ? getDirectionFromVelocity(richtung ? richtung.x : 0, richtung ? richtung.y : 0) : null;
+  const gehKey = `dir${dd || '06'}_f00`;
+  const aktuell = player.texture && player.texture.key;
+  const v = PLAYER_NORM_VERSATZ[gehKey];
+  if (!v || typeof aktuell !== 'string' || !aktuell.startsWith('dir')) return null;
+  if (!scene.textures.exists(gehKey)) return null;
+  const keys = [];
+  for (let f = 0; f < SPEZIAL_BILDER; f++) {
+    const k = spezialSchluessel(angriff, dd, f);
+    if (!scene.textures.exists(k)) return null;
+    keys.push(k);
+  }
+  // Masse vom FRAME (siehe _rolleZeigen: die Quellleinwand kann im Pool sein).
+  const geh = scene.textures.getFrame(gehKey);
+  const meta = getDirectionalFrameMeta(scene, gehKey);
+  const oy = (meta && typeof meta.originY === 'number') ? Phaser.Math.Clamp(meta.originY, 0, 1) : PLAYER_ORIGIN_Y;
+  const seite = scene.textures.getFrame(keys[0]).width;
+  const von = wie.von || 0;
+  const bis = (typeof wie.bis === 'number') ? wie.bis : SPEZIAL_BILDER - 1;
+  const animKey = `spezial_${angriff}${dd ? '_' + dd : ''}_${von}${bis}`;
+  if (!scene.anims.exists(animKey)) {
+    scene.anims.create({ key: animKey, frames: keys.slice(von, bis + 1).map((key) => ({ key })), frameRate: 30, repeat: 0 });
+  }
+  const bild = scene.add.sprite(player.x, player.y, keys[von])
+    .setOrigin((0.5 * geh.width + v.x + ROLLE_RAND) / seite, (oy * geh.height + v.y + ROLLE_RAND) / seite)
+    .setScale(player.displayHeight / geh.height)
+    .setDepth(player.depth)
+    .setName('spezialFolge');
+  const laufzeit = wie.laufzeit || (wie.schleife ? Math.min(dauer, SPEZIAL_WIRBEL_RUNDE) : dauer);
+  bild.play({ key: animKey, frameRate: (bis - von + 1) / (laufzeit / 1000), repeat: wie.schleife ? -1 : 0 });
+
+  let vorbei = false;
+  const folgen = () => {
+    if (!bild.active || !player) return;
+    // Tod: die Figur gehoert wieder dem Spieler (Sterbebild, Ueberlagerung).
+    if (typeof playerHealth === 'number' && playerHealth <= 0) { ende(); return; }
+    bild.setPosition(player.x, player.y);
+    bild.setDepth(player.depth);
+    // Durchsichtig und eingefaerbt wie der Spieler: der Blitzsprung blendet
+    // ihn fast aus, der Ansturm faerbt ihn blau.
+    bild.setAlpha(player.alpha);
+    if (player.isTinted) bild.setTint(player.tintTopLeft); else bild.clearTint();
+  };
+  function ende() {
+    if (vorbei) return;
+    vorbei = true;
+    scene.events.off('postupdate', folgen);
+    scene.events.off('shutdown', ende);
+    _folgeAbmelden(bild);
+    if (bild.active) bild.destroy();
+  }
+  // Gezeichnet, damit sich liegengebliebene Hoerer nachzaehlen lassen.
+  folgen.spezialFolge = ende.spezialFolge = angriff;
+  folgen();
+  _folgeAnmelden(bild, FOLGE_RANG.spezial);
+  scene.events.on('postupdate', folgen);
+  // Nach einem gerichteten Angriff schaut er in dessen Richtung (wie nach
+  // Rolle und Schlag); nach einem richtungslosen bleibt er, wie er stand.
+  if (dd) {
+    const animState = player.getData('animState') || {};
+    animState.direction = dd;
+    animState.playing = null;
+    player.setData('animState', animState);
+  }
+  scene.time.delayedCall(dauer, ende);
+  // Raumwechsel/Tod per Szenenneustart: die Timer verfallen, die Hoerer nicht.
+  scene.events.once('shutdown', ende);
+  return { bild, ende };
+}
+
+/**
+ * #174, nur Testmodus: lernt die Angriffe mit Bildfolge und legt sie auf
+ * die Tasten, ohne den Skillbaum anzufassen. Aus der Konsole:
+ *   __spezialProbe()                         Wirbel, Hammer, Ansturm, Schattenschritt
+ *   __spezialProbe('frostNova', 'cycloneStrike')
+ */
+function _spezialProbe(...ids) {
+  const AS = window.AbilitySystem;
+  if (!AS) return null;
+  const liste = ids.length ? ids : ['whirlwind', 'hammer', 'charge', 'teleportDash'];
+  liste.slice(0, 4).forEach((id, i) => {
+    AS.learnAbility(id, { silent: true });
+    AS.setSlot('slot' + (i + 1), id);
+  });
+  return AS.getActiveLoadout();
+}
+if (typeof window !== 'undefined') {
+  window.spezialBilderVorladen = spezialBilderVorladen;
+  if (spezialAn()) window.__spezialProbe = _spezialProbe;
 }
 
 // ============================================================
@@ -3388,6 +3623,8 @@ function shadowCharge() {
   if (player.setTint) player.setTint(0x66ccff);
   if (player.body) player.body.setMaxVelocity(dashSpeed, dashSpeed);
   if (player.setVelocity) player.setVelocity(dashDir.x * dashSpeed, dashDir.y * dashSpeed);
+  // #174 (?spezial=neu): Lauf mit gesenkter Schulter, so lang wie der Ansturm.
+  _spezialZeigen(scene, 'sturm', dashDir, dashDuration);
 
   var chargeHits = new Set();
   var tmp = new Phaser.Math.Vector2();
@@ -3505,6 +3742,9 @@ function shadowTeleportDash() {
   _blinkPoof(scene, player.x, player.y, 'out');     // Vanish am Start
   if (player.setAlpha) player.setAlpha(0.12);         // fast unsichtbar im Blink
   if (player.setTint) player.setTint(0x9966ff);
+  // #174 (?spezial=neu): Absprung im (fast unsichtbaren) Blink, die Landung
+  // danach am Ziel — darum laenger als der Blink selbst.
+  _spezialZeigen(scene, 'sprung', dir, duration * SPEZIAL_DAUER.sprungFaktor);
   if (player.body) player.body.setMaxVelocity(speedPxPerSec, speedPxPerSec);
   if (player.setVelocity) player.setVelocity(dir.x * speedPxPerSec, dir.y * speedPxPerSec);
 
@@ -4368,6 +4608,8 @@ function castCycloneStrike() {
   const radius = 290 + (rank - 1) * 25;           // größerer Sog-Radius (290..390)
   const aoeMult = 0.5 * dmgMult * (1 + (rank - 1) * 0.1);
   const CYAN = 0x66ddff, LIGHT = 0xbff2ff;
+  // #174 (?spezial=neu): die Figur zieht mit beiden Armen heran.
+  _spezialZeigen(scene, 'zyklon', null, SPEZIAL_DAUER.zyklon);
 
   // --- Vortex-Visual: spiralige, nach innen rotierende Sog-Arme + Ring ---
   try {
@@ -4428,6 +4670,8 @@ function castFrostNova() {
   const totalMult = dmgMult * (1 + synergy);
   const range = 180;
   const ICE = 0x9fe8ff, DEEP = 0x4aa6e0, WHITE = 0xffffff;
+  // #174 (?spezial=neu): die Figur stampft die Nova in den Boden.
+  _spezialZeigen(scene, 'frost', null, SPEZIAL_DAUER.frost);
   const cx = Math.round(player.x), cy = Math.round(player.y);
   const T = scene.tweens, fade = (obj, cfg, dur) => {
     if (T) T.add(Object.assign({ targets: obj, onComplete: () => { try { obj.destroy(); } catch (e) {} } }, cfg));
@@ -4529,6 +4773,8 @@ function castWhirlwind() {
   const innerBlades = 4 + Math.min(3, rank - 1);    // 4..7
   const STEEL = 0x33e0ff, GLINT = 0xffffff;
   if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
+  // #174 (?spezial=neu): die Figur dreht sich, solange der Kanal laeuft.
+  _spezialZeigen(scene, 'wirbel', null, durationMs, { schleife: true });
 
   // easeOutBack für den "Deploy"-Overshoot beim Hochdrehen.
   const easeBack = (t) => { const c1 = 1.9, c3 = c1 + 1; const u = t - 1; return 1 + c3 * u * u * u + c1 * u * u; };
