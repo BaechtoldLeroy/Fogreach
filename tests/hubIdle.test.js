@@ -114,18 +114,32 @@ describe('mit ?idle=1', () => {
       x.name + ' hat keine Idle-Schleife (' + x.schleife + ')'));
   });
 
-  test('jede sichtbare Figur zeigt ueber die Zeit mehrere Bilder', () => {
-    const gesehen = {};
-    for (let r = 0; r < 40; r++) {
-      H.step(6);   // ~0,1 s je Runde, zusammen rund vier Sekunden
+  test('jede sichtbare Figur bewegt sich und steht zwischendurch still', () => {
+    // Zwischen zwei Durchlaeufen steht jede Figur 2,5 bis 6,5 s still
+    // (HubIdle.pause). Gemessen ueber rund 16 s: jede zeigt mehrere Bilder,
+    // und jede steht mindestens einmal 2 s am Stueck auf demselben Bild.
+    const gesehen = {}, still = {}, letzt = {}, seit = {};
+    for (let r = 0; r < 160; r++) {
+      H.step(6);   // ~0,1 s je Runde
       figuren(H).forEach((x) => {
         if (!x.sichtbar) return;
         (gesehen[x.name] = gesehen[x.name] || new Set()).add(x.bild);
+        if (letzt[x.name] === x.bild) seit[x.name] = (seit[x.name] || 0) + 1;
+        else { letzt[x.name] = x.bild; seit[x.name] = 0; }
+        still[x.name] = Math.max(still[x.name] || 0, seit[x.name]);
       });
     }
     const namen = Object.keys(gesehen);
     assert.ok(namen.length >= 8, 'nur ' + namen.length + ' sichtbare Figuren — der Fall misst zu wenig');
     namen.forEach((n) => assert.ok(gesehen[n].size >= 6, n + ' zeigte nur ' + gesehen[n].size + ' Bilder'));
+    namen.forEach((n) => assert.ok(still[n] >= 20, n + ' stand nie 2 s still (laengstens ' + (still[n] / 10).toFixed(1) + ' s)'));
+  });
+
+  test('die Pausen sind je Figur verschieden und fest', () => {
+    const p = run(H, `window.HubIdle.FIGUREN.map(function (f, i) { return window.HubIdle.pause(i, 0); })`);
+    p.forEach((ms) => assert.ok(ms >= 2500 && ms <= 6500, 'Pause ' + ms + ' ms ausserhalb 2,5..6,5 s'));
+    assert.ok(new Set(p).size >= 5, 'zu wenig verschiedene Pausen: ' + p.join(','));
+    assert.deepStrictEqual(run(H, `window.HubIdle.FIGUREN.map(function (f, i) { return window.HubIdle.pause(i, 0); })`), p);
   });
 
   test('Lage, Groesse und Fusspunkt gleich wie das Standbild', () => {

@@ -88,6 +88,16 @@
   }
 
   /**
+   * Stillstand nach jedem Durchlauf, je Figur fest zwischen 2,5 und 6,5 s.
+   * Ohne Pause bewegten sich alle Figuren ununterbrochen — zu unruhig. Die
+   * Pause steht auf dem letzten Bild, das dem Standbild gleicht (die
+   * Schleifen enden auf ihrem Startbild).
+   */
+  function pause(i, nr) {
+    return 2500 + ((i * 7 + (nr || 0) * 3) % 9) * 500;
+  }
+
+  /**
    * Laesst ein Hub-Sprite seine Schleife spielen. `nr` unterscheidet
    * mehrere Figuren mit demselben Bild (Patrouillen).
    * Liefert true, wenn eine Schleife laeuft.
@@ -105,7 +115,7 @@
         scene.textures.get(streifen(i)).setFilter(lin);
       } catch (e) { /* nicht fatal */ }
     }
-    sprite.play({ key: name, startFrame: phase(i, nr) });
+    sprite.play({ key: name, startFrame: phase(i, nr), repeatDelay: pause(i, nr) });
     return true;
   }
 
@@ -114,6 +124,6 @@
     return an() ? scene.add.sprite(x, y, standbild) : scene.add.image(x, y, standbild);
   }
 
-  window.HubIdle = { an: an, vorladen: vorladen, spielen: spielen, figur: figur, phase: phase,
+  window.HubIdle = { an: an, vorladen: vorladen, spielen: spielen, figur: figur, phase: phase, pause: pause,
     FIGUREN: FIGUREN, BILDER: BILDER };
 })();
