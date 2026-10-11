@@ -184,3 +184,47 @@ test('keine zwei Ausruestungsbilder sind zu aehnlich', async () => {
   assert.strictEqual(zuNah.length, 0,
     zuNah.length + ' Paare sind im Umriss nicht zu unterscheiden: ' + zuNah.slice(0, 6).join('; '));
 });
+
+test('auch im Hub zeigen die Gegenstands-Icons ihre Datei, schon vor dem ersten Abstieg', async () => {
+  // Nur die GameScene tauschte die Icons. Wer die Seite frisch lud und im Hub
+  // Inventar, Schmiede oder Schwarzmarkt oeffnete, sah die alten gezeichneten
+  // Icons — erst nach dem ersten Abstieg die Pixelbilder.
+  const { launch } = require('../tools/headless/index.js');
+  const hub = await launch({ renderer: 'canvas', search: '?autostart=1' });
+  try {
+    assert.ok(await hub.waitForScene('HubSceneV2'), 'Hub nicht erreicht');
+    hub.step(10);
+    const gegenstaende = namen().filter((n) => /^it[A-Z]/.test(n));
+    assert.ok(gegenstaende.length >= 40, 'nur ' + gegenstaende.length + ' Gegenstands-Icons in der Liste');
+    const imHub = hub.run(`(function () {
+      var out = {};
+      ${JSON.stringify(gegenstaende)}.forEach(function (n) {
+        var q = window.game.textures.exists(n) ? window.game.textures.get(n).getSourceImage() : null;
+        if (!q) { out[n] = 'fehlt'; return; }
+        var c = document.createElement('canvas');
+        c.width = q.width; c.height = q.height;
+        var ctx = c.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(q, 0, 0);
+        var d = ctx.getImageData(0, 0, q.width, q.height).data;
+        var a = 0, b = 0;
+        for (var i = 0; i < d.length; i += 4) {
+          a += d[i + 3];
+          b += (d[i] + d[i + 1] + d[i + 2]) * (d[i + 3] > 0 ? 1 : 0);
+        }
+        out[n] = q.width + 'x' + q.height + '|' + a + ':' + b;
+      });
+      return out;
+    })()`);
+    const falsch = [];
+    for (const n of gegenstaende) {
+      const { data, info } = await sharp(path.join(ORDNER, n + '.png')).ensureAlpha().raw()
+        .toBuffer({ resolveWithObject: true });
+      const soll = info.width + 'x' + info.height + '|' + abdruck(data);
+      if (imHub[n] !== soll) falsch.push(n);
+    }
+    assert.strictEqual(falsch.length, 0,
+      falsch.length + ' von ' + gegenstaende.length + ' Icons im Hub noch gezeichnet: ' + falsch.slice(0, 6).join(', '));
+  } finally {
+    await hub.shutdown();
+  }
+});

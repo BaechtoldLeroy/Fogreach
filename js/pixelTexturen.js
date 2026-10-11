@@ -184,6 +184,28 @@
   // fragen — eine Konstante haette dieselben Stellen anfassen muessen.
   function _an() { return true; }
 
+  /**
+   * Die Gegenstands-Icons (itSword, itPotionNormal, ...) allein.
+   *
+   * Der Hub zeigt sie in Inventar, Schmiede und Schwarzmarkt, laedt aber
+   * nicht den ganzen Dungeon-Satz. Ohne diesen Weg tauschte nur die
+   * GameScene: nach einem frischen Laden zeigte der Hub die alten
+   * gezeichneten Icons, erst nach dem ersten Abstieg die Pixelbilder.
+   */
+  function _gegenstandsBilder() {
+    return NAMENSGLEICH.filter(function (k) { return /^it[A-Z]/.test(k); });
+  }
+  window.gegenstandsBilderVorladen = function (scene) {
+    if (!scene || !scene.load || !scene.textures) return;
+    _gegenstandsBilder().forEach(function (k) {
+      if (scene.textures.exists(VORSATZ + k)) return;
+      scene.load.image(VORSATZ + k, ORDNER + k + '.png');
+    });
+  };
+  window.gegenstandsBilderAnwenden = function (scene) {
+    return window.pixelTexturenAnwenden(scene, _gegenstandsBilder());
+  };
+
   /** In preload: die Austausch-Kacheln unter eigenem Namen laden. */
   window.pixelTexturenVorladen = function (scene) {
     if (!_an() || !scene || !scene.load || !scene.textures) return;
@@ -191,11 +213,6 @@
     Object.keys(alle).forEach(function (k) {
       if (scene.textures.exists(VORSATZ + k)) return;
       scene.load.image(VORSATZ + k, ORDNER + alle[k]);
-    });
-    // Die Flammenbilder des Bodenfeuers.
-    _bodenfeuerSchluessel().forEach(function (k) {
-      if (scene.textures.exists(k)) return;
-      scene.load.image(k, ORDNER + k + '.png');
     });
     // Die Flammenbilder des Bodenfeuers.
     _bodenfeuerSchluessel().forEach(function (k) {
@@ -390,10 +407,10 @@
    * noch nicht, und das Zeichnen wuerde den Austausch gleich wieder
    * ueberschreiben.
    */
-  window.pixelTexturenAnwenden = function (scene) {
+  window.pixelTexturenAnwenden = function (scene, nurDiese) {
     if (!_an() || !scene || !scene.textures) return 0;
     var ersetzt = 0, fehlend = [];
-    Object.keys(_alleTexturen()).forEach(function (k) {
+    (nurDiese || Object.keys(_alleTexturen())).forEach(function (k) {
       if (!scene.textures.exists(VORSATZ + k)) { fehlend.push(k); return; }
       var bild = scene.textures.get(VORSATZ + k).getSourceImage();
       if (!bild) { fehlend.push(k); return; }

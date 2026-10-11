@@ -147,6 +147,9 @@ class HubSceneV2 extends Phaser.Scene {
   preload() {
     // #189: Messing-Rahmen und Toast-Bilder mitladen (nur die fehlenden).
     if (window.uiRahmen) window.uiRahmen.vorladen(this);
+    // Die Pixel-Icons der Gegenstaende (pixelTexturen.js): ohne sie zeigte
+    // der Hub nach frischem Laden die alten gezeichneten Icons.
+    if (typeof window.gegenstandsBilderVorladen === 'function') window.gegenstandsBilderVorladen(this);
     // #181: Der Hub ist ein gekachelter Platz (hubNeuKarte + hubNeuWelt).
     // Bis b333 war er ein gemaltes Bild von 6,2 MB; das wird nicht mehr
     // geladen.
@@ -199,6 +202,9 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   create() {
+    if (typeof window.gegenstandsBilderAnwenden === 'function') {
+      try { window.gegenstandsBilderAnwenden(this); } catch (e) { /* nicht fatal */ }
+    }
     const { W, H } = this._weltMass();
 
     // Die Kamera darf weiter reichen als die Physik — bis zur Kante des
