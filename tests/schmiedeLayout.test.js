@@ -249,10 +249,13 @@ test('Die Liste nutzt den Platz unter der Spalte, ohne aus dem Bild zu laufen', 
   // Beide Richtungen. Zu kurz: der Platz unter der Spalte bleibt leer, obwohl
   // die Werte nach rechts gewandert sind. Zu lang: die Liste schiebt sich
   // ueber die Rueckmeldung und den Zurueck-Knopf am unteren Rand.
+  // Gemessen an der Listenhoehe, nicht an der Zeilenzahl: seit #193 sind die
+  // Messingzeilen 36 px hoch, drei davon (108 px) fuellen denselben Platz wie
+  // frueher vier zu 28 px (112 px). Zwei Zeilen (72 px) liessen ihn leer.
   const m = balken();
-  assert.ok(m.maxZeilen >= 4,
-    'die Liste zeigt nur ' + m.maxZeilen + ' Zeilen, unter ihr bleiben '
-    + Math.round(m.bildHoehe - m.kasten.unten) + ' px ungenutzt');
+  assert.ok(m.maxZeilen >= 3 && m.kasten.unten - m.kasten.oben >= 108,
+    'die Liste zeigt nur ' + m.maxZeilen + ' Zeilen (' + Math.round(m.kasten.unten - m.kasten.oben)
+    + ' px), unter ihr bleiben ' + Math.round(m.bildHoehe - m.kasten.unten) + ' px ungenutzt');
   assert.ok(m.kasten.unten <= m.bildHoehe - 50,
     'die Liste endet bei y=' + m.kasten.unten + ' und laesst nur noch '
     + Math.round(m.bildHoehe - m.kasten.unten) + ' px fuer die untere Knopfreihe');

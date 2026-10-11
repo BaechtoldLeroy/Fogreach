@@ -434,16 +434,9 @@
     return gebacken(scene, RAHMEN, w, h, RAHMEN_RAND, Math.min(0.6, h / 135 * 1.0), ton);
   }
 
-  // ---- Dritte Runde (#193) hinter ?debug=1&oberflaeche2=neu ---------------
+  // ---- Dritte Runde (#193) ----------------------------------------------
   // Tooltips, Wissensbaum-Kacheln, HUD-Overlays, Inventarknoepfe und die
-  // Inventarzeilen der Schmiede. Ohne Flagge bleibt alles wie in b376; neue
-  // Bilder braucht es nicht, nur den vorhandenen Satz.
-
-  /** Ist die dritte Runde (#193) eingeschaltet? */
-  function oberflaeche2() {
-    var g = (typeof window !== 'undefined') ? window.DebugGate : null;
-    return !!(g && g.flagge('oberflaeche2') === 'neu');
-  }
+  // Inventarzeilen der Schmiede; nur der vorhandene Bildsatz.
 
   /**
    * Eine Platte fuer Tooltips, die mitwaechst, ohne Neues anzulegen: neun
@@ -571,7 +564,7 @@
 
   var uiRahmen = {
     textKnopf: textKnopf, feldZeile: feldZeile, gebacken: gebacken, feldBild: feldBild, leisteBild: leisteBild,
-    kachelBild: kachelBild, ring: ring, oberflaeche2: oberflaeche2, tipPlatte: tipPlatte,
+    kachelBild: kachelBild, ring: ring, tipPlatte: tipPlatte,
     bereit: bereit, vorladen: vorladen, nachladen: nachladen,
     neunteilig: neunteilig, platte: platte, banner: banner, knopf: knopf, symbol: symbol,
     einkleiden: einkleiden, menuePlatte: menuePlatte,

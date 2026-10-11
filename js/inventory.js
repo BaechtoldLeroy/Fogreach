@@ -527,10 +527,8 @@ function initInventoryUI() {
   // (gewaehlt = heller Beschlag mit Goldsaum); Rueckfall die festen Texturen.
   const feldTex = (w, h, gewaehlt, alt) => (MESSING ? _UR.feldBild(scene, w, h, gewaehlt) : alt);
   invUI._feldTex = feldTex;
-  // Dritte Runde (#193, ?oberflaeche2=neu): Tooltips auf Messing-Platte,
-  // Messingknoepfe statt Farbkaesten. Ohne Flagge oder ohne Bilder wie bisher.
-  const NEU2 = MESSING && typeof _UR.oberflaeche2 === 'function' && _UR.oberflaeche2();
-  invUI._neu2 = NEU2;
+  // #193: Tooltips auf Messing-Platte, Messingknoepfe statt Farbkaesten.
+  // Fehlen die Bilder, bleiben Kasten und Farbknoepfe (Rueckfall).
   // Schrift auf einem gesperrten Knopf: grauer als aktiv, aber lesbar.
   const KNOPF_AUS_SCHRIFT = '#c4bcae';
 
@@ -572,7 +570,7 @@ function initInventoryUI() {
     container.setVisible(false);
     // #193: Die Platte liegt unter allem; der Graphics-Kasten traegt dann nur
     // noch die Seltenheitslinie unter dem Titel.
-    const platte = NEU2 ? _UR.tipPlatte(scene, 0) : null;
+    const platte = MESSING ? _UR.tipPlatte(scene, 0) : null;
     if (platte) container.add(platte.teile);
     container.platte = platte;
     const bg = scene.add.graphics();
@@ -1389,7 +1387,7 @@ function equipPos(key, index) {
     });
   };
   window._refreshPortalButton();
-  if (NEU2) {
+  if (MESSING) {
     _UR.textKnopf(scene, btnPortal, null, { ton: '#486c1d', loslassen: true });
     window._refreshPortalButton();
   }
@@ -1433,7 +1431,7 @@ function equipPos(key, index) {
     });
   };
   window._refreshStairButton();
-  if (NEU2) {
+  if (MESSING) {
     _UR.textKnopf(scene, btnStair, null, { ton: '#1d4a6c', loslassen: true });
     window._refreshStairButton();
   }
@@ -1461,7 +1459,7 @@ function equipPos(key, index) {
     });
   panel.add(btnStats);
   invUI.statsBtn = btnStats;
-  if (NEU2) _UR.textKnopf(scene, btnStats, '#ffd166', { loslassen: true });
+  if (MESSING) _UR.textKnopf(scene, btnStats, '#ffd166', { loslassen: true });
 
   // Die Knoepfe klebten am unteren Panelrand, 100 px unter dem Raster —
   // dazwischen lag nichts als Leere. Jetzt direkt darunter.
@@ -1471,7 +1469,7 @@ function equipPos(key, index) {
   const btnDrop = scene.add.text(70, btnY, _INV_T('inventory.btn.drop'), { fontSize: '14px', fill: '#fff', backgroundColor: '#a44', padding: { x: 10, y: 5 } })
     .setOrigin(0.5, 1).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => dropSelectedItem());
   panel.add([btnEquip, btnDrop]);
-  if (NEU2) {
+  if (MESSING) {
     // Die alten Kurzfarben (#47a, #a44) als dunklere Toene: weisse Schrift
     // bleibt darauf lesbar, die Bedeutung (blau anlegen, rot weg) bleibt.
     _UR.textKnopf(scene, btnEquip, '#ffffff', { ton: '#2f4f7a', loslassen: true });

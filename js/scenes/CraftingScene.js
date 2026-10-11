@@ -282,21 +282,17 @@ class CraftingScene extends Phaser.Scene {
     }).setDepth(10);
 
     this.invListY = invHeaderY + 14;
-    this.invRowH = 28;
-    // Vier Zeilen statt zwei. Seit die Werte nach rechts gewandert sind, endet
-    // die linke Spalte bei y 370 und darunter liegen 110 px Leerraum: der
-    // Zurueck-Knopf steht mittig ab x 370, die Rueckmeldung ebenfalls mittig.
-    // Vier Zeilen enden bei y 426 und bleiben davon frei.
-    this.invMaxRows = 4;
-    // #193 (?oberflaeche2=neu): Auf einem 24 px hohen Messingfeld stand die
-    // Wertezeile auf dem unteren Beschlag. Zwei Zeilen Schrift brauchen innen
-    // gut 24 px, also hoehere Felder; drei statt vier, damit die Liste
-    // gleich lang bleibt (3 x 36 = 108 <= 4 x 28) und nichts darunter ueberdeckt.
-    this._neu2 = this._messing && typeof _UR.oberflaeche2 === 'function' && _UR.oberflaeche2();
-    if (this._neu2) {
-      this.invRowH = 36;
-      this.invMaxRows = 3;
-    }
+    // Seit die Werte nach rechts gewandert sind, endet die linke Spalte bei
+    // y 370 und darunter liegen 110 px Leerraum: der Zurueck-Knopf steht
+    // mittig ab x 370, die Rueckmeldung ebenfalls mittig. Die Liste endet
+    // bei y 426 und bleibt davon frei.
+    // #193: Auf einem 24 px hohen Messingfeld stand die Wertezeile auf dem
+    // unteren Beschlag. Zwei Zeilen Schrift brauchen innen gut 24 px, also
+    // hoehere Felder; drei statt vier, damit die Liste gleich lang bleibt
+    // (3 x 36 = 108 <= 4 x 28) und nichts darunter ueberdeckt. Fehlen die
+    // Bilder, bleiben die gezeichneten vier 28-px-Zeilen (Rueckfall).
+    this.invRowH = this._messing ? 36 : 28;
+    this.invMaxRows = this._messing ? 3 : 4;
     // Die Balken der Liste sind so breit wie die Ausruestungsplaetze darueber.
     // _refreshInventoryList rechnete sie frueher selbst aus (Bildbreite / 2
     // minus 50 = 430) — 97 px breiter als ihr eigener Kasten, sodass sie bis
@@ -1184,8 +1180,8 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
       const color = _getTierColor(entry.item);
       // #193: auf dem hoeheren Feld beide Zeilen um die Mitte, innerhalb der
       // Beschlaege (gemessen an der Tinte, tests/oberflaeche2.test.js).
-      const nameY = this._neu2 ? ry - 12 : ry - 8;
-      const statsY = this._neu2 ? ry + 1 : ry + 3;
+      const nameY = this._messing ? ry - 12 : ry - 8;
+      const statsY = this._messing ? ry + 1 : ry + 3;
       const nameText = this.add.text(leftX + 12, nameY, `[${labelTxt}] ${_composeItemName(entry.item)}`, {
         fontFamily: 'monospace', fontSize: '11px', color
       }).setDepth(10);

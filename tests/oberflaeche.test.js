@@ -212,7 +212,12 @@ describe('Messing-Oberflaeche: Inventar, Dialoge, Wissensbaum, Mobile, Schmiede'
     alleLesbar(kontraste(H, TEXTE_IN(`${HUB}._dialogContainer.list`)), 'NPC-Dialog');
     run(H, `${HUB}._closeDialog(null)`);
     H.step(2);
-    const rest = run(H, BILDER(HUB)).filter((k) => k.indexOf('ui_knopf') === 0 || k === 'ui_rahmen');
+    // Das (geschlossene) Inventar traegt seit #193 selbst Messingknoepfe und
+    // Tooltip-Platten; die gehoeren nicht zum Dialog und bleiben ausgenommen.
+    const rest = run(H, `(function () { var r = [], aus = [invUI.panel, tooltip, tooltip && tooltip.compareBox];
+      (function lauf(l) { l.forEach(function (o) { if (aus.indexOf(o) >= 0) return;
+        if (o.type === 'Container') return lauf(o.list); if (o.type === 'Image') r.push(o.texture.key); }); })(${HUB}.children.list);
+      return r; })()`).filter((k) => k.indexOf('ui_knopf') === 0 || k === 'ui_rahmen');
     assert.deepStrictEqual(rest, [], 'Teile ueberleben den Dialog');
   });
 

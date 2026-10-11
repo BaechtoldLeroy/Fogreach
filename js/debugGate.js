@@ -90,8 +90,7 @@
     'spy', 'roomsize', 'hubdebug',
     'versteck', 'sonder', 'akt', 'stark',
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
-    'gegnerlauf',
-    'oberflaeche2'      // oberflaeche2=neu: Messing fuer Tooltips, Wissensbaum-Kacheln, HUD-Overlays (#193)
+    'gegnerlauf'
   ];
 
   /**

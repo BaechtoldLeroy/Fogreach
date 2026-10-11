@@ -101,13 +101,6 @@
     return !!(UR && UR.bereit(scene));
   }
 
-  // Dritte Runde (#193, ?oberflaeche2=neu): Charakterwerte und Menue auf
-  // Messing-Platte mit Messingknoepfen. Ohne Flagge oder Bilder wie bisher.
-  function _neu2(scene) {
-    const UR = window.uiRahmen;
-    return _messing(scene) && typeof UR.oberflaeche2 === 'function' && UR.oberflaeche2();
-  }
-
   function build(scene) {
     if (!scene || !scene.add) return;
 
@@ -407,15 +400,15 @@
 
     const overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7)
       .setScrollFactor(0).setDepth(2500).setInteractive();
-    // #193 (?oberflaeche2=neu): Messing-Platte statt gezeichnetem Kasten.
-    // Ein gebackenes Bild je Groesse; Titel, Liste und Knopf ruecken um
-    // "ein" vom Beschlag weg.
-    const neu2 = _neu2(scene);
-    const ein = neu2 ? 8 : 0;
-    const panel = neu2
+    // #193: Messing-Platte statt gezeichnetem Kasten (Rueckfall: der Kasten,
+    // wenn die Bilder fehlen). Ein gebackenes Bild je Groesse; Titel, Liste
+    // und Knopf ruecken um "ein" vom Beschlag weg.
+    const messing = _messing(scene);
+    const ein = messing ? 8 : 0;
+    const panel = messing
       ? scene.add.image(px, py, window.uiRahmen.kachelBild(scene, panelW, panelH)).setScrollFactor(0).setDepth(2501)
       : scene.add.graphics().setScrollFactor(0).setDepth(2501);
-    if (!neu2) {
+    if (!messing) {
       panel.fillStyle(0x10131c, 0.97).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
       panel.lineStyle(3, 0xd4a543, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
     }
@@ -610,7 +603,7 @@
       fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8',
       backgroundColor: '#3a3a3a', padding: { x: 12, y: 5 }
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2505).setInteractive({ useHandCursor: true });
-    if (neu2) window.uiRahmen.textKnopf(scene, closeBtn, '#f1e9d8', { loslassen: true });
+    if (messing) window.uiRahmen.textKnopf(scene, closeBtn, '#f1e9d8', { loslassen: true });
 
     const close = () => {
       if (wheelHandler) { try { scene.input.off('wheel', wheelHandler); } catch (e) {} }
@@ -667,8 +660,8 @@
 
     const panelW = 280;
     // #193: auf der Messing-Platte je 8 px mehr oben und unten (Beschlag).
-    const neu2 = _neu2(scene);
-    const ein = neu2 ? 8 : 0;
+    const messing = _messing(scene);
+    const ein = messing ? 8 : 0;
     // 60 px Kopfzeile, je Eintrag 56 px, 40 px fuer den Schliessen-Knopf.
     const panelH = 60 + items.length * 56 + 40 + 2 * ein;
     const px = cw / 2;
@@ -676,10 +669,10 @@
 
     const overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7)
       .setScrollFactor(0).setDepth(2500).setInteractive();
-    const panel = neu2
+    const panel = messing
       ? scene.add.image(px, py, window.uiRahmen.kachelBild(scene, panelW, panelH)).setScrollFactor(0).setDepth(2501)
       : scene.add.graphics().setScrollFactor(0).setDepth(2501);
-    if (!neu2) {
+    if (!messing) {
       panel.fillStyle(0x10131c, 0.97).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
       panel.lineStyle(3, 0xd4a543, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
     }
@@ -711,14 +704,14 @@
       btns.push(bg, lbl);
       // Messingknopf: das Rechteck bleibt Trefferflaeche, Hover und Druck
       // wechseln das Bild (seine Umfaerbung oben wird dabei abgeschaltet).
-      if (neu2) window.uiRahmen.knopf(bg);
+      if (messing) window.uiRahmen.knopf(bg);
     });
 
     const closeBtn = scene.add.text(px, py + panelH / 2 - 26 - ein, T('hud.menu.btn.close'), {
       fontFamily: 'monospace', fontSize: '14px', color: '#f1e9d8',
       backgroundColor: '#3a3a3a', padding: { x: 14, y: 6 }
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2502).setInteractive({ useHandCursor: true });
-    if (neu2) window.uiRahmen.textKnopf(scene, closeBtn, '#f1e9d8', { loslassen: true });
+    if (messing) window.uiRahmen.textKnopf(scene, closeBtn, '#f1e9d8', { loslassen: true });
 
     const close = () => {
       try { overlay.destroy(); } catch (e) {}

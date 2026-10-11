@@ -3534,9 +3534,8 @@ class HubSceneV2 extends Phaser.Scene {
     const UR = window.uiRahmen;
     const MESSING = !!(UR && UR.bereit(this));
     this._ktMessing = MESSING;
-    // Dritte Runde (#193, ?oberflaeche2=neu): Kacheln auf Messingfeldern,
-    // Hover-Tooltip auf Messing-Platte. Ohne Flagge wie bisher.
-    this._ktNeu2 = MESSING && typeof UR.oberflaeche2 === 'function' && UR.oberflaeche2();
+    // #193: auch Kacheln (Messingfelder) und Hover-Tooltip (Messing-Platte)
+    // haengen an this._ktMessing.
     const kopfEin = MESSING ? 10 : 0;
     if (MESSING) {
       container.add(this.add.image(0, 0, UR.kachelBild(this, panelW, panelH)));
@@ -3898,8 +3897,8 @@ class HubSceneV2 extends Phaser.Scene {
     const c = this.add.container(cx, oben + hoch / 2);
     this._ktCardLayer.add(c);
 
-    if (this._ktNeu2) {
-      this._ktKachelNeu2(c, breite, hoch, o);
+    if (this._ktMessing) {
+      this._ktKachelMessing(c, breite, hoch, o);
     } else {
       this._ktKachelGrund(c, breite, hoch, o);
     }
@@ -3925,7 +3924,7 @@ class HubSceneV2 extends Phaser.Scene {
       c.add(btn);
       // #193: der aktive Knopf ist ein kleiner Messingknopf in seiner
       // Bedeutungsfarbe (gruen setzen, rot loesen).
-      if (this._ktNeu2 && an) window.uiRahmen.textKnopf(this, btn, o.gesetzt ? '#ffe4e4' : '#d8ffd8', { loslassen: true });
+      if (this._ktMessing && an) window.uiRahmen.textKnopf(this, btn, o.gesetzt ? '#ffe4e4' : '#d8ffd8', { loslassen: true });
       knopfB = btn.width + 8;
       btn.on('pointerdown', (pointer, x, yy, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
@@ -3975,7 +3974,7 @@ class HubSceneV2 extends Phaser.Scene {
    * Grundsaetze (sechseck) tragen die Platte statt des Feldes: groessere
    * Beschlaege, damit man den Rang erkennt, bevor man liest.
    */
-  _ktKachelNeu2(c, breite, hoch, o) {
+  _ktKachelMessing(c, breite, hoch, o) {
     const UR = window.uiRahmen;
     // Die Zweigfarbe stark abgedunkelt: Mitte farbig, Schrift bleibt lesbar.
     // Grundsaetze tragen ihr Violett auch offen (schwach) — die Sechseckform
@@ -3992,7 +3991,7 @@ class HubSceneV2 extends Phaser.Scene {
     c.add(bild);
   }
 
-  /** Der gezeichnete Kachelgrund (ohne Flagge, oder wenn die Bilder fehlen). */
+  /** Der gezeichnete Kachelgrund (Rueckfall, wenn die Bilder fehlen). */
   _ktKachelGrund(c, breite, hoch, o) {
     const bg = this.add.graphics();
     const fill = o.gesetzt ? 0x243024 : 0x16161f;
@@ -4025,7 +4024,7 @@ class HubSceneV2 extends Phaser.Scene {
       wordWrap: { width: 300 }, lineSpacing: 3
     }).setDepth(2061).setScrollFactor(0).setVisible(false);
     // #193: Messing-Platte, einmal angelegt; jeder Hover legt sie nur neu.
-    const platte = this._ktNeu2 ? window.uiRahmen.tipPlatte(this, 2060) : null;
+    const platte = this._ktMessing ? window.uiRahmen.tipPlatte(this, 2060) : null;
     this._ktTip = { bg: bg, kopf: kopf, txt: txt, platte: platte };
     if (this._dialogContainer) {
       if (platte) this._dialogContainer.add(platte.teile);

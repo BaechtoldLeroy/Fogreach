@@ -1,14 +1,13 @@
-// tests/oberflaeche2.test.js — dritte Runde Messing-Oberflaeche (#193) hinter
-// ?debug=1&oberflaeche2=neu: Inventar-Tooltip (samt Vergleich), Inventar-
-// knoepfe, Charakterwerte- und Menue-Overlay des HUD, Wissensbaum (Kacheln und
-// Tooltip) und die Inventarzeilen der Schmiede.
+// tests/oberflaeche2.test.js — dritte Runde Messing-Oberflaeche (#193), fest
+// eingebaut (frueher hinter ?oberflaeche2=neu): Inventar-Tooltip (samt
+// Vergleich), Inventarknoepfe, Charakterwerte- und Menue-Overlay des HUD,
+// Wissensbaum (Kacheln und Tooltip) und die Inventarzeilen der Schmiede.
 //
-// Mit Flagge: Messing-Bilder, Kontrast aller Texte mind. 4,5:1, Tooltips
+// Normalfall: Messing-Bilder, Kontrast aller Texte mind. 4,5:1, Tooltips
 // legen pro Hover nichts neu an, Overlays bleiben bildschirmfest, in der
 // Schmiede steht die Schrift innerhalb der Beschlaege.
-// Ohne Flagge: exakt die bisherige Zeichnung. Rueckfall (Flagge an, Bilder
-// fehlen): ebenfalls die bisherige Zeichnung. Geprueft am echten Spiel
-// (headless, Canvas).
+// Rueckfall (Bilder fehlen): die bisherige Zeichnung. Geprueft am echten
+// Spiel (headless, Canvas).
 
 const { test, before, after, describe } = require('node:test');
 const assert = require('node:assert');
@@ -23,8 +22,8 @@ function run(H, js) {
 const HUB = `window.game.scene.getScene('HubSceneV2')`;
 const SCHMIEDE = `window.game.scene.getScene('CraftingScene')`;
 
-async function hub(flagge) {
-  const H = await launch({ search: '?autostart=1&debug=1' + (flagge ? '&oberflaeche2=neu' : ''), renderer: 'canvas' });
+async function hub() {
+  const H = await launch({ search: '?autostart=1&debug=1', renderer: 'canvas' });
   await H.waitForScene('HubSceneV2', { maxRounds: 600 });
   // Der Einfuehrungstext des Hubs laege sonst ueber allem.
   run(H, `(window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1')`);
@@ -103,15 +102,16 @@ const TINTE = `function tinte(t) { var c = t.canvas, d = c.getContext('2d').getI
   for (var y = 0; y < c.height; y++) for (var x = 0; x < c.width; x++) if (d[(y * c.width + x) * 4 + 3] > 40) { if (lo < 0) lo = y; hi = y; break; }
   var s = t.style.resolution || 1; return lo < 0 ? null : [t.y - t.originY * t.height + lo / s, t.y - t.originY * t.height + (hi + 1) / s]; }`;
 
-describe('mit ?oberflaeche2=neu', () => {
+describe('Normalfall: Bilder geladen, keine Flagge', () => {
   let H = null;
-  before(async () => { H = await hub(true); });
+  before(async () => { H = await hub(); });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('Flagge erkannt und als bekannte Debug-Flagge gefuehrt', () => {
-    assert.strictEqual(run(H, 'window.uiRahmen.oberflaeche2()'), true);
+  test('die Vorschau-Flagge ist weg: keine Abfrage, keine bekannte Debug-Flagge', () => {
+    assert.strictEqual(run(H, `window.uiRahmen.bereit(${HUB})`), true);
+    assert.strictEqual(run(H, 'typeof window.uiRahmen.oberflaeche2'), 'undefined');
     const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'debugGate.js'), 'utf8');
-    assert.ok(/'oberflaeche2'/.test(src), 'oberflaeche2 fehlt in BEKANNTE_FLAGGEN');
+    assert.ok(!/'oberflaeche2'/.test(src), 'oberflaeche2 steht noch in BEKANNTE_FLAGGEN');
   });
 
   test('Inventar-Tooltip und Vergleich auf Messing-Platte, Seltenheit im Titel und als Linie', () => {
@@ -329,35 +329,10 @@ describe('mit ?oberflaeche2=neu', () => {
   });
 });
 
-describe('ohne Flagge: alles wie bisher', () => {
-  let H = null;
-  before(async () => { H = await hub(false); });
-  after(async () => { if (H) await H.shutdown(); });
-
-  test('Inventar: schwarzer Tooltip-Kasten, Farbkaesten als Knoepfe', () => {
-    assert.strictEqual(run(H, 'window.uiRahmen.oberflaeche2()'), false);
-    assert.strictEqual(run(H, `window.uiRahmen.bereit(${HUB})`), true, 'Bilder geladen — der Unterschied kommt nur von der Flagge');
-    inventarMitTooltip(H);
-    alteZeichnungInventar(H);
-  });
-
-  test('Charakterwerte und Menue: gezeichnete Kaesten, Rechteck-Knoepfe', () => {
-    alteOverlays(H);
-  });
-
-  test('Wissensbaum: gezeichnete Kacheln und Tooltip', () => {
-    alterWissensbaum(H);
-  });
-
-  test('Schmiede: vier Zeilen zu 28 px, Schrift an der alten Stelle', async () => {
-    await alteSchmiede(H);
-  });
-});
-
-describe('Rueckfall: Flagge an, aber die Bilder fehlen', () => {
+describe('Rueckfall: die Bilder fehlen', () => {
   let H = null;
   before(async () => {
-    H = await hub(true);
+    H = await hub();
     bilderWeg(H);
     // Das Inventar wird beim Betreten gebaut; neu bauen wie beim naechsten Szenenwechsel.
     run(H, `destroyInventoryUI(); initInventoryUI.call(${HUB}); null`);
@@ -375,7 +350,7 @@ describe('Rueckfall: Flagge an, aber die Bilder fehlen', () => {
   test('Schmiede: alte Zeilen', async () => { await alteSchmiede(H); });
 });
 
-// ---- Pruefungen der alten Zeichnung (ohne Flagge und im Rueckfall) ---------
+// ---- Pruefungen der alten Zeichnung (Rueckfall) ----------------------------
 
 function alteZeichnungInventar(H) {
   const r = run(H, TOOLTIP);
