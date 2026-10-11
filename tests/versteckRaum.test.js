@@ -133,7 +133,6 @@ test('Hinter der Werkbank steht der Spieler hinter ihr, davor vor ihr', () => {
   }
   const hinten = messen(-24);
   assert.ok(hinten.bank > hinten.spieler, 'die Werkbank liegt unter dem Spieler, der dahinter steht: ' + JSON.stringify(hinten));
-  assert.ok(hinten.kerzen > hinten.bank, 'die Kerzen verschwinden unter der Bank: ' + JSON.stringify(hinten));
   const vorn = messen(+20);
   assert.ok(vorn.bank < vorn.spieler, 'die Werkbank verdeckt den Spieler davor: ' + JSON.stringify(vorn));
   H.run('player.body.enable = true');
@@ -165,4 +164,8 @@ test('Licht nur, wo eine Kerze steht; die Bodenkerzen stehen nicht am Tisch', ()
   const k = tab.find((d) => d.bild === 'kerzen_boden'), ti = tab.find((d) => d.bild === 'tisch'), b = tab.find((d) => d.bild === 'bett');
   assert.ok(Math.hypot(k.x - ti.x, k.y - ti.y) >= 120, 'Bodenkerzen nur ' + Math.round(Math.hypot(k.x - ti.x, k.y - ti.y)) + ' px vom Tisch');
   assert.ok(Math.hypot(k.x - b.x, k.y - b.y) <= 70, 'Bodenkerzen nicht beim Lager');
+  // Die Kerzen an der Werkstatt stehen frei neben der Werkbank, mit Luft.
+  const kt = tab.find((d) => d.bild === 'kerzen_teller'), wb = tab.find((d) => d.bild === 'werkbank');
+  const luft = (wb.x - 40) - (kt.x + 16);   // Bildkanten: Werkbank 80 breit, Kerzen 32
+  assert.ok(luft >= 8, 'Kerzen nur ' + luft + ' px neben der Werkbank');
 });

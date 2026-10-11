@@ -3848,7 +3848,9 @@ var VERSTECK_EINRICHTUNG = [
   // Werkstatt rechts: Werkbank mit dem Werkzeug, Hocker, Regal an der Wand.
   { bild: 'regal',         x: 630, y: 262, ebene: 'steht', fuss: { w: 40, h: 16 } },
   { bild: 'werkbank',      x: 560, y: 330, ebene: 'steht', fuss: { w: 72, h: 26 } },
-  { bild: 'kerzen_teller', x: 528, y: 300, ebene: 'auf', auf: 'werkbank', licht: { x: 0, y: -18 } },
+  // Die Kerzen stehen NEBEN der Werkbank auf dem Boden, mit Luft dazwischen —
+  // auf der Bankkante hingen sie halb ueber und draengten sich an sie.
+  { bild: 'kerzen_teller', x: 492, y: 332, ebene: 'steht', licht: { x: 0, y: -18 } },
   { bild: 'hocker',        x: 556, y: 362, ebene: 'steht', tint: 0xc0a8a0 },
   // Die versteckte Ecke: Vorhang vor der Nische, dahinter ihre Kiste.
   { bild: 'vorhang',       x: 520, y: 452, ebene: 'steht', fuss: { w: 44, h: 20 } }
