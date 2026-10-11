@@ -154,3 +154,15 @@ test('Der Raumwechsel raeumt die Einrichtung samt Koerpern ab', () => {
   assert.strictEqual(r.bilder, 0, 'Requisiten stehen im naechsten Raum');
   assert.strictEqual(r.koerper, 0, 'Koerper der Requisiten blockieren den naechsten Raum');
 });
+
+test('Licht nur, wo eine Kerze steht; die Bodenkerzen stehen nicht am Tisch', () => {
+  // Rueckmeldung: der Tisch leuchtete ohne Kerze, und die Bodenkerzen standen
+  // direkt neben ihm statt am Kopfende des Lagers.
+  const tab = H.run(`(window.versteckEinrichtung || []).map(function (d) { return { bild: d.bild, x: d.x, y: d.y, licht: !!d.licht }; })`);
+  assert.ok(tab.length >= 10, 'Einrichtungstabelle nicht erreichbar');
+  const mitLicht = tab.filter((d) => d.licht).map((d) => d.bild).sort();
+  assert.strictEqual(mitLicht.join(','), 'kerzen_boden,kerzen_teller,leuchter', 'Licht an: ' + mitLicht.join(', '));
+  const k = tab.find((d) => d.bild === 'kerzen_boden'), ti = tab.find((d) => d.bild === 'tisch'), b = tab.find((d) => d.bild === 'bett');
+  assert.ok(Math.hypot(k.x - ti.x, k.y - ti.y) >= 120, 'Bodenkerzen nur ' + Math.round(Math.hypot(k.x - ti.x, k.y - ti.y)) + ' px vom Tisch');
+  assert.ok(Math.hypot(k.x - b.x, k.y - b.y) <= 70, 'Bodenkerzen nicht beim Lager');
+});

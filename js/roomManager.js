@@ -3838,11 +3838,13 @@ var VERSTECK_EINRICHTUNG = [
   { bild: 'waffenstaender', x: 196, y: 124, ebene: 'steht' },
   // Schlafecke links: Lager, Kerzen am Kopfende, Buecher, Vorraete.
   { bild: 'bett',          x: 176, y: 352, ebene: 'steht', fuss: { w: 56, h: 26 } },
-  { bild: 'kerzen_boden',  x: 228, y: 356, ebene: 'steht', licht: { x: 0, y: -16 } },
+  // Die Kerzen am KOPFende (links beim Kissen), nicht zwischen Lager und Tisch.
+  { bild: 'kerzen_boden',  x: 128, y: 330, ebene: 'steht', licht: { x: 0, y: -16 } },
   { bild: 'buecher',       x: 196, y: 420, ebene: 'steht' },
   { bild: 'vorraete',      x: 104, y: 256, ebene: 'steht', fuss: { w: 44, h: 18 } },
   // Mitte: der Tisch, an dem sie isst und schreibt.
-  { bild: 'tisch',         x: 312, y: 352, ebene: 'steht', fuss: { w: 36, h: 14 }, licht: { x: -8, y: -30 } },
+  // Ohne eigenes Licht: auf dem Tisch steht keine Kerze.
+  { bild: 'tisch',         x: 312, y: 352, ebene: 'steht', fuss: { w: 36, h: 14 } },
   // Werkstatt rechts: Werkbank mit dem Werkzeug, Hocker, Regal an der Wand.
   { bild: 'regal',         x: 630, y: 262, ebene: 'steht', fuss: { w: 40, h: 16 } },
   { bild: 'werkbank',      x: 560, y: 330, ebene: 'steht', fuss: { w: 72, h: 26 } },
@@ -3851,6 +3853,9 @@ var VERSTECK_EINRICHTUNG = [
   // Die versteckte Ecke: Vorhang vor der Nische, dahinter ihre Kiste.
   { bild: 'vorhang',       x: 520, y: 452, ebene: 'steht', fuss: { w: 44, h: 20 } }
 ];
+
+// Fuer die Pruefung (Licht nur an Kerzen, Abstaende).
+if (typeof window !== 'undefined') window.versteckEinrichtung = VERSTECK_EINRICHTUNG;
 
 /**
  * Richtet die Kammer ein. Gibt die angelegten Objekte zurueck (auch in
