@@ -89,7 +89,7 @@
     'perf', 'nofog', 'nomask', 'nospot', 'noexpl', 'explRes', 'fogInterval', 'rays',
     'spy', 'roomsize', 'hubdebug',
     'versteck', 'sonder', 'akt', 'stark',
-    'sitzung',
+    'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
     'gegnerlauf'
   ];
 

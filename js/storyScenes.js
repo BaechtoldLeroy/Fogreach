@@ -6,6 +6,8 @@
 //                            feuert observe oeffentliche_sitzung.
 //   playGeheimeSitzung    -> #159: die geheime Sitzung, belauscht im Dungeon
 //                            (Spionage in der Ratskammer), mit dem Zeichen.
+//   Beide Sitzungen spielen auf der gemalten Buehne (js/sitzungsBuehne.js,
+//   #166/#167), ein Sprecher pro Seite, und halten nach jeder Seite an.
 //   playElaraFirstCrack   -> Elaras erster Riss, feuert observe erster_riss_gesehen.
 //   playWiedersehen       -> #155: Harren sieht seine Tochter wieder (Ende Akt 2).
 //   playNachtNachDemBruch -> #155: Elara versteckt Dich nach dem Bruch.
@@ -117,7 +119,7 @@
     try {
       var cam = scene.cameras && scene.cameras.main;
       hinweis = scene.add.text(cx, cy + (cam ? cam.height * 0.30 : 160),
-        _t('Taste druecken', 'Press any key'), {
+        _t('Taste drücken', 'Press any key'), {
           fontFamily: 'monospace', fontSize: 13, color: '#8a8478'
         }).setOrigin(0.5).setDepth(1552).setScrollFactor(0);
       if (scene.tweens) {
@@ -126,7 +128,9 @@
       }
     } catch (e) { hinweis = null; }
 
-    var beiTaste = function () { ausloesen(); };
+    // Eine gehaltene Taste wiederholt sich; sie soll nicht durch alle Seiten
+    // einer Sitzung blaettern.
+    var beiTaste = function (ev) { if (ev && ev.repeat) return; ausloesen(); };
     var gebunden = [];
     try {
       if (scene.input.keyboard && typeof scene.input.keyboard.on === 'function') {
@@ -214,7 +218,11 @@
     return null;
   }
 
-  function playOeffentlicheSitzung(scene, onDone) {
+  // Die Seiten der oeffentlichen Sitzung. Jeder Sprecher und jede Erzaehlzeile
+  // ist eine eigene Seite: die Szene haelt nach jeder an, bis der Spieler
+  // weiterwinkt. Frueher stand alles auf einer Seite und lief in einem Zug
+  // durch — der Streit der drei soll aber Wortmeldung fuer Wortmeldung kommen.
+  function _seitenOeffentlich() {
     var sieger = ediktSieger();
     var zeilen = [_t('(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)', '(The council hall is full. Citizens up to the walls. At the front three lecterns, three colours.)')];
     // #160: Die Sitzung verkuendet das Ergebnis der Abstimmung.
@@ -227,35 +235,36 @@
       _t('GARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.', 'GUARD: You go on arguing. We hold the streets. More patrols, then there is peace.'),
       _t('(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)', '(The citizens shout over each other. Everyone has picked a side. It looks like a choice.)')
     );
+    return zeilen;
+  }
+
+  function playOeffentlicheSitzung(scene, onDone) {
+    var seiten = _seitenOeffentlich();
     var ende = function () {
       _fireObserve('oeffentliche_sitzung');
       if (typeof onDone === 'function') onDone();
     };
-    // #166: mit ?sitzung= die gemalte Buehne statt der Kaesten.
-    var SB = _buehne();
+    // #166: fest auf der gemalten Buehne (js/sitzungsBuehne.js). Die
+    // gezeichneten Kaesten (_ratssaal) bleiben nur der Rueckfall, falls die
+    // Buehne fehlt.
+    var SB = window.SitzungsBuehne || null;
     if (SB) {
-      SB.laden(scene, function () { _szeneSpielen(scene, zeilen, 'oeffentliche_sitzung', ende, false, SB.oeffentlich); });
+      SB.laden(scene, function () { _szeneSpielen(scene, seiten, 'oeffentliche_sitzung', ende, false, SB.oeffentlich, true); });
       return;
     }
-    _szeneSpielen(scene, zeilen, 'oeffentliche_sitzung', ende, false, _ratssaal);
-  }
-
-  // #166/#167: die gemalte Buehne (js/sitzungsBuehne.js), nur hinter der Flagge.
-  function _buehne() {
-    var SB = window.SitzungsBuehne;
-    return (SB && typeof SB.aktiv === 'function' && SB.aktiv()) ? SB : null;
+    _szeneSpielen(scene, seiten, 'oeffentliche_sitzung', ende, false, _ratssaal, true);
   }
 
   // --- #159 Die geheime Sitzung, belauscht in der Ratskammer ----------------
   // Laeuft im Dungeon, wenn die Abhoerzone der Ratskammer abgehoert ist
   // (espionageSystem). Dieselben drei, dieselbe Nacht — und in zwei Saetzen
   // einig. Die Dialoge halten die Spieluhr an, die Wachen warten also.
-  function playGeheimeSitzung(scene, onDone) {
-    var ES = window.EventSystem;
-    if (!scene || !ES || typeof ES.showEventChoiceDialog !== 'function') {
-      if (typeof onDone === 'function') onDone();
-      return false;
-    }
+  //
+  // Ein Sprecher pro Seite, wie in der oeffentlichen Sitzung: die Einigung
+  // der drei waren frueher drei Saetze auf einer Seite, jetzt hat jeder seine.
+  // Die Erzaehlzeile nach Aldrics Lachen ("Du hast es selbst aufgehaengt")
+  // steht allein: sie ist der Schlag, der sitzen soll.
+  function _seitenGeheim() {
     var qs = window.questSystem;
     var flag = function (n) { return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag(n)); };
     // #145: Die Siegel-Entscheidung aus Akt 1 kommt hier zurueck.
@@ -268,14 +277,33 @@
         : null;
     var seiten = [
       _t('(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)', '(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)'),
-      _t('ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.', 'ALDRIC: As long as the city believes we quarrel, it believes it has a choice.\n\nCLERGY: We double the patrols anyway.\n\nGUARD: Like every week.')
+      _t('ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.', 'ALDRIC: As long as the city believes we quarrel, it believes it has a choice.'),
+      _t('KLERUS: Die Patrouillen verdoppeln wir trotzdem.', 'CLERGY: We double the patrols anyway.'),
+      _t('GARDE: Wie jede Woche.', 'GUARD: Like every week.')
     ];
     // #160: Die Abstimmung. Gewonnen hat, was oben hing — und das wussten sie.
     if (ediktSieger()) {
-      seiten.push(_t('ALDRIC: Und die Abstimmung? (Er lacht leise.) Wer oben hängt, gewinnt. Das weiss jeder, der je eine Wand beklebt hat. Wir lassen einen Handwerker kleben und nennen es den Willen der Stadt.\n\n(Du hast es selbst aufgehängt.)', 'ALDRIC: And the vote? (He laughs quietly.) Whoever hangs on top wins. Anyone who has ever pasted up a wall knows that. We let a craftsman do the pasting and call it the will of the city.\n\n(You hung it up yourself.)'));
+      seiten.push(
+        _t('ALDRIC: Und die Abstimmung? (Er lacht leise.) Wer oben hängt, gewinnt. Das weiss jeder, der je eine Wand beklebt hat. Wir lassen einen Handwerker kleben und nennen es den Willen der Stadt.', 'ALDRIC: And the vote? (He laughs quietly.) Whoever hangs on top wins. Anyone who has ever pasted up a wall knows that. We let a craftsman do the pasting and call it the will of the city.'),
+        _t('(Du hast es selbst aufgehängt.)', '(You hung it up yourself.)'));
     }
     if (siegel) seiten.push(siegel);
     seiten.push(_t('(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)', '(You withdraw before the guards make their round. Harren is waiting upstairs.)'));
+    return seiten;
+  }
+
+  /** Die Seiten einer Sitzung ('oeffentlich' oder 'geheim'), so wie sie gerade spielen wuerde. */
+  function sitzungSeiten(art) {
+    return art === 'geheim' ? _seitenGeheim() : _seitenOeffentlich();
+  }
+
+  function playGeheimeSitzung(scene, onDone) {
+    var ES = window.EventSystem;
+    if (!scene || !ES || typeof ES.showEventChoiceDialog !== 'function') {
+      if (typeof onDone === 'function') onDone();
+      return false;
+    }
+    var seiten = _seitenGeheim();
 
     // #167: die drei sitzen sichtbar am Tisch (fest eingebaut, ohne Flagge).
     // Das Zeichen steht auf den drei Siegeln des Blattes statt gross darueber.
@@ -306,17 +334,50 @@
         if (typeof onDone === 'function') onDone();
         return;
       }
-      var text = seiten[i++];
-      ES.showEventChoiceDialog(scene, text, [{ label: _t('Weiter', 'Continue'), callback: naechste }]);
+      _sitzungsSeite(scene, seiten[i++], naechste);
     };
     naechste();
     return true;
   }
 
+  /**
+   * Eine Seite der geheimen Sitzung als Dialog mit "Weiter". Der Dialog nimmt
+   * Leertaste, Enter und ESC schon selbst; E kommt hier dazu, weil es im
+   * Dungeon die Taste fuer "weiter/benutzen" ist. Nur fuer die Sitzung: bei
+   * anderen Ein-Knopf-Dialogen bliebe E der Faehigkeit vorbehalten.
+   * Gibt die neu angelegten Objekte des Dialogs zurueck.
+   */
+  function _sitzungsSeite(scene, text, weiter) {
+    var ES = window.EventSystem;
+    var mitE = null;
+    var tasteLoesen = function () {
+      if (!mitE) return;
+      try { scene.input.keyboard.off('keydown-E', mitE); } catch (e) {}
+      mitE = null;
+    };
+    var vorher = scene.children ? scene.children.list.slice() : [];
+    ES.showEventChoiceDialog(scene, text, [{ label: _t('Weiter', 'Continue'), callback: function () {
+      tasteLoesen();
+      weiter();
+    } }]);
+    var neue = scene.children ? scene.children.list.filter(function (o) { return vorher.indexOf(o) < 0; }) : [];
+    var knopf = neue.filter(function (o) { return o && o.type === 'Rectangle' && o.depth === 2502 && o.input; })[0];
+    if (knopf && scene.input && scene.input.keyboard && typeof scene.input.keyboard.on === 'function') {
+      mitE = function (ev) {
+        // Gehaltenes E blaettert nicht durch alle Seiten.
+        if (ev && ev.repeat) return;
+        // Dasselbe E darf nicht zusaetzlich die Faehigkeit auf Slot 3 ausloesen.
+        try { window.__eventConsumedEAt = Date.now(); window.__eventConsumedE = true; } catch (e) {}
+        knopf.emit('pointerdown');
+      };
+      scene.input.keyboard.on('keydown-E', mitE);
+    }
+    return neue;
+  }
+
   // Dieselben Seiten wie oben, aber vor der Kammer mit den drei am Tisch.
   // Der Dialog rueckt unter die Figuren; wer spricht, tritt hervor.
   function _geheimMitBuehne(scene, SB, seiten, onDone) {
-    var ES = window.EventSystem;
     var buehne = SB.geheim(scene);
     var i = 0;
     var naechste = function () {
@@ -326,10 +387,7 @@
         if (typeof onDone === 'function') onDone();
         return;
       }
-      var text = seiten[i++];
-      var vorher = scene.children.list.slice();
-      ES.showEventChoiceDialog(scene, text, [{ label: _t('Weiter', 'Continue'), callback: naechste }]);
-      var neue = scene.children.list.filter(function (o) { return vorher.indexOf(o) < 0; });
+      var neue = _sitzungsSeite(scene, seiten[i++], naechste);
       var titel = SB.dialogUnterBuehne(scene, neue, buehne.textOben);
       if (titel) buehne.folgen(titel);
     };
@@ -363,11 +421,17 @@
   /**
    * Zeilen aufbauen, Lesepause, dann die Auswahl aus storyDialog.byScene.
    * Die Lesepause laeuft erst, wenn der Text fertig geschrieben ist.
+   *
+   * @param {boolean} [jeSeite]  jede Zeile eine eigene Seite: nach jeder haelt
+   *   die Szene an, bis der Spieler weiterwinkt (die Ratssitzung, ein Sprecher
+   *   pro Seite). Ohne steht alles auf einer Seite.
    */
-  function _szeneSpielen(scene, zeilen, sceneKey, onDone, mitZeichen, kulisse) {
+  function _szeneSpielen(scene, zeilen, sceneKey, onDone, mitZeichen, kulisse, jeSeite) {
     var cam = scene.cameras.main;
     var cx = cam.width / 2, cy = cam.height / 2 - 20;
     var weiter = false;
+    var seiten = jeSeite ? zeilen.map(function (z) { return [z]; }) : [zeilen];
+    var nr = 0;
     // #159: optional ein gezeichneter Ort hinter dem Text (der Ratssaal).
     var kulissenTeile = (typeof kulisse === 'function') ? (kulisse(scene, cx, cy) || []) : [];
     // #166: Die gemalte Buehne kommt als ein Objekt mit eigener Texttafel.
@@ -380,23 +444,42 @@
       if (scene.tweens) scene.tweens.add({ targets: zeichenBild, alpha: 1, duration: 900, delay: 600 });
       else zeichenBild.setAlpha(1);
     }
-    var auf = _zeilenAufbauen(scene, zeilen, cx, cy, function () {
-      // Mit Buehne steht der Hinweis am unteren Rand der Tafel.
-      if (buehne) _warteAufWeiter(scene, auf, buehne.hinweisX, buehne.hinweisY - scene.cameras.main.height * 0.30, step);
-      else _warteAufWeiter(scene, auf, cx, cy, step);
-    });
-    var intro = auf.text;
-    if (buehne && intro) {
-      // Oben buendig: der Text waechst nach unten in die Tafel hinein.
-      intro.setOrigin(0.5, 0).setPosition(cx, buehne.textY).setWordWrapWidth(buehne.textBreite)
-        .setFontSize(14).setLineSpacing(2);
-      buehne.folgen(intro);
+    // Eine Seite aufbauen; ist sie fertig geschrieben, haelt die Szene an.
+    function seiteZeigen() {
+      var seite = { auf: null, bereit: false };
+      var halten = function () {
+        var naechste = function () { seiteWeg(seite); };
+        // Mit Buehne steht der Hinweis am unteren Rand der Tafel.
+        if (buehne) _warteAufWeiter(scene, seite.auf, buehne.hinweisX, buehne.hinweisY - scene.cameras.main.height * 0.30, naechste);
+        else _warteAufWeiter(scene, seite.auf, cx, cy, naechste);
+      };
+      // Ohne Aufbau meldet _zeilenAufbauen "fertig", bevor es zurueckkehrt —
+      // dann erst halten, wenn die Seite vollstaendig steht.
+      seite.auf = _zeilenAufbauen(scene, seiten[nr], cx, cy, function () {
+        if (seite.auf) halten(); else seite.bereit = true;
+      });
+      var intro = seite.auf.text;
+      if (buehne && intro) {
+        // Oben buendig: der Text waechst nach unten in die Tafel hinein.
+        intro.setOrigin(0.5, 0).setPosition(cx, buehne.textY).setWordWrapWidth(buehne.textBreite)
+          .setFontSize(14).setLineSpacing(2);
+        buehne.folgen(intro);
+      }
+      if (seite.bereit) halten();
     }
+    function seiteWeg(seite) {
+      if (weiter || seite.weg) return;
+      seite.weg = true;
+      if (seite.auf.lauf) seite.auf.lauf.abbrechen();
+      if (seite.auf.text && seite.auf.text.destroy) seite.auf.text.destroy();
+      nr++;
+      if (nr < seiten.length) { seiteZeigen(); return; }
+      step();
+    }
+    seiteZeigen();
     function step() {
       if (weiter) return;
       weiter = true;
-      if (auf.lauf) auf.lauf.abbrechen();
-      if (intro && intro.destroy) intro.destroy();
       if (zeichenBild && zeichenBild.destroy) zeichenBild.destroy();
       kulissenTeile.forEach(function (o) { if (o && o.destroy) o.destroy(); });
       _choiceOrDone(scene, sceneKey, function () {
@@ -445,6 +528,7 @@
     playOeffentlicheSitzung: playOeffentlicheSitzung,
     playGeheimeSitzung: playGeheimeSitzung,
     ediktSieger: ediktSieger,
+    sitzungSeiten: sitzungSeiten,
     playElaraFirstCrack: playElaraFirstCrack,
     playWiedersehen: playWiedersehen,
     playNachtNachDemBruch: playNachtNachDemBruch,

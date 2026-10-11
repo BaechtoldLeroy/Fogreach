@@ -40,6 +40,10 @@ test('Hub: Annehmen fuehrt in den Ratssaal, und die Quest ist danach NICHT ferti
   const H = await launch({ search: '?autostart=1', renderer: 'canvas', waitFor: 'StartScene' });
   try {
     assert.ok(await H.waitForScene('HubSceneV2', { maxRounds: 250 }), 'Hub nicht erreicht');
+    // #166: die Sitzung spielt fest auf der gemalten Buehne. Deren Bilder
+    // einmal vorladen, dann laeuft sie unten in einem Zug durch.
+    H.run("window.__buehne = false; window.SitzungsBuehne.laden(window.game.scene.getScene('HubSceneV2'), function () { window.__buehne = true; })");
+    assert.ok(await H.settle(() => H.run('window.__buehne'), { maxRounds: 200 }), 'die Bilder der Sitzungsbuehne laden nicht');
     standSetzen(H, vorausFertig(), { edikt_klerus: true }, 1);
     const r = H.run(`(function () {
       var sc = window.game.scene.getScene('HubSceneV2');
@@ -59,10 +63,17 @@ test('Hub: Annehmen fuehrt in den Ratssaal, und die Quest ist danach NICHT ferti
       if (!q) return { fehler: 'nicht angeboten' };
       sc._handleDialogueChoice('accept', harren, 'Harren', [], 'offer', q, 0, null);
       var nachAnnahme = qs.isQuestReadyToComplete('council_collusion_reveal');
+      // Waehrend der Sitzung gilt der Hub als im Dialog: E blaettert die
+      // Seiten um und darf nicht zugleich Harren daneben ansprechen.
+      var imDialog = sc._dialogOpen === true;
       // Die Szene haelt seit b294 nach dem Aufbau an, bis der Spieler
       // weiterwinkt (statt nach einer festen Lesepause von selbst zu
-      // laufen). Hier wird das Winken nachgestellt, sobald der Halt steht.
-      for (var i = 0; i < 600; i++) {
+      // laufen), seit #166 nach JEDER Seite. Hier wird das Winken
+      // nachgestellt, sobald ein Halt steht.
+      var gesehen = function () {
+        return qs.getActiveQuests().some(function (x) { return x.id === 'council_collusion_reveal' && x.objectives[0].current >= 1; });
+      };
+      for (var i = 0; i < 6000 && !gesehen(); i++) {
         sc.sys.game.loop.step(sc.sys.game.loop.now + 16.7 * (i + 1));
         if (sc.__szeneWartet) sc.__szeneWartet.ausloesen();
       }
@@ -70,12 +81,15 @@ test('Hub: Annehmen fuehrt in den Ratssaal, und die Quest ist danach NICHT ferti
       window.storyScenes.playOeffentlicheSitzung = echt;
       window.DialogTypewriter.anTextobjekt = echtTW;
       var aktiv = qs.getActiveQuests().filter(function (x) { return x.id === 'council_collusion_reveal'; })[0];
-      return { gespielt: gespielt, nachAnnahme: nachAnnahme, text: texte.join('\\n'),
+      return { gespielt: gespielt, nachAnnahme: nachAnnahme, imDialog: imDialog, danachDialog: sc._dialogOpen,
+               text: texte.join('\\n'),
                ziele: aktiv ? aktiv.objectives.map(function (o) { return o.target + ':' + o.current; }) : null };
     })()`);
     assert.ok(!r.fehler, r.fehler);
     assert.strictEqual(JSON.stringify(r.gespielt), JSON.stringify(['oeffentlich']), 'der Ratssaal spielt nicht');
     assert.strictEqual(r.nachAnnahme, false, 'die Sitzung hakt sich beim Annehmen ab (#147)');
+    assert.strictEqual(r.imDialog, true, 'waehrend der Sitzung nimmt der Hub E fuer Gespraeche an');
+    assert.strictEqual(r.danachDialog, false, 'nach der Sitzung bleibt der Hub im Dialog haengen');
     // #160: Der Ratssaal verkuendet das Ergebnis der Abstimmung — das Edikt, das oben hing.
     assert.ok(/Gewonnen hat das Edikt des Klerus/.test(r.text), 'kein Ergebnis verkuendet: ' + r.text);
     assert.ok(/ganz oben hing/.test(r.text), 'kein Hinweis, dass es oben hing');
@@ -88,7 +102,8 @@ test('Hub: der Ratssaal zeigt drei Pulte und die Buerger — es sieht aus wie ei
   // Inhalt der Szene, am Quelltext der echten Szene (voller Text, wie er an
   // den Wort-fuer-Wort-Aufbau geht).
   const quelle = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'storyScenes.js'), 'utf8');
-  const teil = quelle.slice(quelle.indexOf('function playOeffentlicheSitzung'), quelle.indexOf('function playGeheimeSitzung'));
+  const teil = quelle.slice(quelle.indexOf('function _seitenOeffentlich'), quelle.indexOf('function playOeffentlicheSitzung'));
+  assert.ok(teil.length > 200, 'die Seiten der oeffentlichen Sitzung nicht gefunden');
   ['MAGISTRAT:', 'KLERUS:', 'GARDE:', 'wie eine Wahl'].forEach((w) => assert.ok(teil.includes(w), 'fehlt: ' + w));
 });
 

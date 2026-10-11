@@ -1,0 +1,88 @@
+{
+ "oeffentlich": {
+  "de|-": "(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)\n\nKLERUS: Ein Edikt ist beschlossen, und trotzdem verliert die Stadt ihre Seele, während der Magistrat Münzen zählt!\n\nGARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.\n\n(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)",
+  "de|magistrat": "(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)\n\nMAGISTRAT: Die Stimmen sind gezählt. Gewonnen hat das Edikt des Magistrats.\n\n(Es ist das Plakat, das ganz oben hing.)\n\nKLERUS: Ein Edikt ist beschlossen, und trotzdem verliert die Stadt ihre Seele, während der Magistrat Münzen zählt!\n\nGARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.\n\n(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)",
+  "de|klerus": "(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)\n\nMAGISTRAT: Die Stimmen sind gezählt. Gewonnen hat das Edikt des Klerus.\n\n(Es ist das Plakat, das ganz oben hing.)\n\nKLERUS: Ein Edikt ist beschlossen, und trotzdem verliert die Stadt ihre Seele, während der Magistrat Münzen zählt!\n\nGARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.\n\n(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)",
+  "de|garde": "(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)\n\nMAGISTRAT: Die Stimmen sind gezählt. Gewonnen hat das Edikt der Garde.\n\n(Es ist das Plakat, das ganz oben hing.)\n\nKLERUS: Ein Edikt ist beschlossen, und trotzdem verliert die Stadt ihre Seele, während der Magistrat Münzen zählt!\n\nGARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.\n\n(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)",
+  "en|-": "(The council hall is full. Citizens up to the walls. At the front three lecterns, three colours.)\n\nCLERGY: An edict is passed, and still the city loses its soul while the Magistrate counts coins!\n\nGUARD: You go on arguing. We hold the streets. More patrols, then there is peace.\n\n(The citizens shout over each other. Everyone has picked a side. It looks like a choice.)",
+  "en|magistrat": "(The council hall is full. Citizens up to the walls. At the front three lecterns, three colours.)\n\nMAGISTRATE: The votes are counted. The Magistrate's edict has won.\n\n(It is the poster that hung at the very top.)\n\nCLERGY: An edict is passed, and still the city loses its soul while the Magistrate counts coins!\n\nGUARD: You go on arguing. We hold the streets. More patrols, then there is peace.\n\n(The citizens shout over each other. Everyone has picked a side. It looks like a choice.)",
+  "en|klerus": "(The council hall is full. Citizens up to the walls. At the front three lecterns, three colours.)\n\nMAGISTRATE: The votes are counted. The Clergy's edict has won.\n\n(It is the poster that hung at the very top.)\n\nCLERGY: An edict is passed, and still the city loses its soul while the Magistrate counts coins!\n\nGUARD: You go on arguing. We hold the streets. More patrols, then there is peace.\n\n(The citizens shout over each other. Everyone has picked a side. It looks like a choice.)",
+  "en|garde": "(The council hall is full. Citizens up to the walls. At the front three lecterns, three colours.)\n\nMAGISTRATE: The votes are counted. The Guard's edict has won.\n\n(It is the poster that hung at the very top.)\n\nCLERGY: An edict is passed, and still the city loses its soul while the Magistrate counts coins!\n\nGUARD: You go on arguing. We hold the streets. More patrols, then there is peace.\n\n(The citizens shout over each other. Everyone has picked a side. It looks like a choice.)"
+ },
+ "geheim": {
+  "de|-|-": [
+   "(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)",
+   "ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.",
+   "(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)"
+  ],
+  "de|-|verification_sealed": [
+   "(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)",
+   "ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.",
+   "Eines der drei Siegel kennst Du. Du hast es selbst unter ein Dokument gesetzt, damals, als es eine Formalie war.",
+   "(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)"
+  ],
+  "de|-|verification_refused": [
+   "(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)",
+   "ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.",
+   "Unter dem Siegel des Magistrats steht Brankas Zeichen. Das Dokument, das Du nicht siegeln wolltest. Geändert hat es nichts.",
+   "(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)"
+  ],
+  "de|edikt|-": [
+   "(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)",
+   "ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.",
+   "ALDRIC: Und die Abstimmung? (Er lacht leise.) Wer oben hängt, gewinnt. Das weiss jeder, der je eine Wand beklebt hat. Wir lassen einen Handwerker kleben und nennen es den Willen der Stadt.\n\n(Du hast es selbst aufgehängt.)",
+   "(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)"
+  ],
+  "de|edikt|verification_sealed": [
+   "(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)",
+   "ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.",
+   "ALDRIC: Und die Abstimmung? (Er lacht leise.) Wer oben hängt, gewinnt. Das weiss jeder, der je eine Wand beklebt hat. Wir lassen einen Handwerker kleben und nennen es den Willen der Stadt.\n\n(Du hast es selbst aufgehängt.)",
+   "Eines der drei Siegel kennst Du. Du hast es selbst unter ein Dokument gesetzt, damals, als es eine Formalie war.",
+   "(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)"
+  ],
+  "de|edikt|verification_refused": [
+   "(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)",
+   "ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.\n\nKLERUS: Die Patrouillen verdoppeln wir trotzdem.\n\nGARDE: Wie jede Woche.",
+   "ALDRIC: Und die Abstimmung? (Er lacht leise.) Wer oben hängt, gewinnt. Das weiss jeder, der je eine Wand beklebt hat. Wir lassen einen Handwerker kleben und nennen es den Willen der Stadt.\n\n(Du hast es selbst aufgehängt.)",
+   "Unter dem Siegel des Magistrats steht Brankas Zeichen. Das Dokument, das Du nicht siegeln wolltest. Geändert hat es nichts.",
+   "(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)"
+  ],
+  "en|-|-": [
+   "(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)",
+   "ALDRIC: As long as the city believes we quarrel, it believes it has a choice.\n\nCLERGY: We double the patrols anyway.\n\nGUARD: Like every week.",
+   "(You withdraw before the guards make their round. Harren is waiting upstairs.)"
+  ],
+  "en|-|verification_sealed": [
+   "(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)",
+   "ALDRIC: As long as the city believes we quarrel, it believes it has a choice.\n\nCLERGY: We double the patrols anyway.\n\nGUARD: Like every week.",
+   "You know one of the three seals. You put it under a document yourself, back when it was a formality.",
+   "(You withdraw before the guards make their round. Harren is waiting upstairs.)"
+  ],
+  "en|-|verification_refused": [
+   "(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)",
+   "ALDRIC: As long as the city believes we quarrel, it believes it has a choice.\n\nCLERGY: We double the patrols anyway.\n\nGUARD: Like every week.",
+   "Under the Magistrate's seal stands Branka's mark. The document you would not seal. It changed nothing.",
+   "(You withdraw before the guards make their round. Harren is waiting upstairs.)"
+  ],
+  "en|edikt|-": [
+   "(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)",
+   "ALDRIC: As long as the city believes we quarrel, it believes it has a choice.\n\nCLERGY: We double the patrols anyway.\n\nGUARD: Like every week.",
+   "ALDRIC: And the vote? (He laughs quietly.) Whoever hangs on top wins. Anyone who has ever pasted up a wall knows that. We let a craftsman do the pasting and call it the will of the city.\n\n(You hung it up yourself.)",
+   "(You withdraw before the guards make their round. Harren is waiting upstairs.)"
+  ],
+  "en|edikt|verification_sealed": [
+   "(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)",
+   "ALDRIC: As long as the city believes we quarrel, it believes it has a choice.\n\nCLERGY: We double the patrols anyway.\n\nGUARD: Like every week.",
+   "ALDRIC: And the vote? (He laughs quietly.) Whoever hangs on top wins. Anyone who has ever pasted up a wall knows that. We let a craftsman do the pasting and call it the will of the city.\n\n(You hung it up yourself.)",
+   "You know one of the three seals. You put it under a document yourself, back when it was a formality.",
+   "(You withdraw before the guards make their round. Harren is waiting upstairs.)"
+  ],
+  "en|edikt|verification_refused": [
+   "(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)",
+   "ALDRIC: As long as the city believes we quarrel, it believes it has a choice.\n\nCLERGY: We double the patrols anyway.\n\nGUARD: Like every week.",
+   "ALDRIC: And the vote? (He laughs quietly.) Whoever hangs on top wins. Anyone who has ever pasted up a wall knows that. We let a craftsman do the pasting and call it the will of the city.\n\n(You hung it up yourself.)",
+   "Under the Magistrate's seal stands Branka's mark. The document you would not seal. It changed nothing.",
+   "(You withdraw before the guards make their round. Harren is waiting upstairs.)"
+  ]
+ }
+}

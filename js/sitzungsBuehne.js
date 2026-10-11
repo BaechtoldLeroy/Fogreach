@@ -6,13 +6,14 @@
 // gezeichneter Kaesten stehen hier PixelLab-Bilder, die Sprecher sind sichtbar,
 // und wer gerade redet, tritt aus dem Halbdunkel.
 //
-// Vorerst nur hinter der Debug-Flagge `sitzung` (?debug=1&sitzung=neu). Ohne
-// Flagge bleibt alles, wie es war — storyScenes fragt aktiv() und faellt sonst
-// auf den alten Weg zurueck. Mit sitzung=oeffentlich bzw. sitzung=geheim
-// spielt die Szene zusaetzlich gleich nach dem Betreten des Hubs (Vorschau).
+// Fest eingebaut: die geheime Sitzung seit b370 (#167), die oeffentliche seit
+// #166. Die Debug-Flagge `sitzung` dient nur noch der Vorschau:
+// ?debug=1&sitzung=oeffentlich bzw. sitzung=geheim spielt die Szene gleich
+// nach dem Betreten des Hubs.
 //
 // Der Text der Szenen bleibt unberuehrt: die Buehne LIEST nur mit, was gerade
-// auf dem Bildschirm steht, und hebt danach den Sprecher hervor.
+// auf dem Bildschirm steht, und hebt danach den Sprecher hervor. Jede Seite
+// hat hoechstens einen Sprecher (storyScenes), also genau den.
 (function () {
   'use strict';
 
@@ -26,10 +27,13 @@
   };
   var DUNKEL = 0x5a5a68;   // Tönung der Schweigenden
 
-  function aktiv() {
-    return !!(window.DebugGate && typeof window.DebugGate.an === 'function' && window.DebugGate.an('sitzung'));
+  // Welche Sitzung die Debug-Vorschau spielen soll ('oeffentlich' / 'geheim'),
+  // sonst null. Die Flagge ist zu, solange das Debug-Gate zu ist.
+  function vorschauArt() {
+    var DG = window.DebugGate;
+    var art = (DG && typeof DG.flagge === 'function') ? DG.flagge('sitzung') : null;
+    return (art === 'oeffentlich' || art === 'geheim') ? art : null;
   }
-
 
   /**
    * Wer spricht gerade? Massgeblich ist der LETZTE Absatz des bisher
@@ -46,7 +50,7 @@
   /**
    * Laedt die Bilder der Buehne nach, falls die Szene sie noch nicht hat.
    * Der Ratssaal spielt im Hub, die Kammer im Dungeon — beide sollen sie nicht
-   * beim Start mitschleppen, solange die Buehne nur hinter der Flagge haengt.
+   * beim Start mitschleppen: jede Sitzung spielt nur ein einziges Mal.
    */
   function laden(scene, fertig) {
     var tex = scene && scene.textures;
@@ -222,7 +226,6 @@
     var schwarz = scene.add.rectangle(w / 2, h / 2, w, h, 0x050407, 1).setScrollFactor(0).setDepth(T);
     teile.push(schwarz);
     // Das Gewoelbe oben ist verzichtbar; die Tribuene soll ins obere Drittel.
-    // Das Gewoelbe oben ist verzichtbar; die Tribuene soll ins obere Drittel.
     var hoch = 140;
     var bg = _bild(scene, teile, 'sitzung_saal', w / 2, h / 2 - hoch, T + 1);
     if (bg) bg.setDisplaySize(w, h);
@@ -262,8 +265,10 @@
     var buehne = {
       teile: teile, figuren: figuren,
       textY: tafelY + 10, textBreite: w - 60, hinweisX: w - 70, hinweisY: h - 12,
+      // Jede Seite bringt ihr eigenes Textobjekt; der vorige Mitleser geht.
       folgen: function (textObj) {
-        folgen = _sprecherFolgen(scene, figuren, function () { return (textObj && textObj.scene) ? textObj.text : null; }, licht);
+        if (folgen) folgen.loesen();
+        folgen =_sprecherFolgen(scene, figuren, function () { return (textObj && textObj.scene) ? textObj.text : null; }, licht);
         buehne.mitleser = folgen;
         return folgen;
       },
@@ -385,10 +390,9 @@
    */
   var _vorschauGespielt = false;
   function vorschau(scene) {
-    if (_vorschauGespielt || !aktiv()) return false;
-    var art = window.DebugGate.flagge('sitzung');
+    var art = vorschauArt();
     var S = window.storyScenes;
-    if (!S || (art !== 'oeffentlich' && art !== 'geheim')) return false;
+    if (_vorschauGespielt || !art || !S) return false;
     _vorschauGespielt = true;
     // Die Begruessungstafel eines frischen Spiels laege sonst ueber der Szene.
     try { (window.SlotStorage || window.localStorage).setItem('demonfall_seen_intro_splash', '1'); } catch (e) {}
@@ -402,7 +406,7 @@
   }
 
   window.SitzungsBuehne = {
-    aktiv: aktiv, laden: laden, sprecherAus: sprecherAus,
+    vorschauArt: vorschauArt, laden: laden, sprecherAus: sprecherAus,
     oeffentlich: oeffentlich, geheim: geheim,
     dialogUnterBuehne: dialogUnterBuehne, vorschau: vorschau
   };

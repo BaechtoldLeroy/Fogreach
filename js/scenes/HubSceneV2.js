@@ -4396,9 +4396,13 @@ class HubSceneV2 extends Phaser.Scene {
 
   _oeffentlicheSitzungSpielen() {
     const self = this;
-    const fertig = function () { self._refreshQuestIndicators(); };
+    // Die Sitzung blaettert per Taste weiter, auch mit E. Solange sie laeuft,
+    // gilt der Hub als "im Dialog" — sonst oeffnete dasselbe E das Gespraech
+    // mit Harren daneben, und der schickte einen erneut in den Ratssaal.
+    const fertig = function () { self._dialogOpen = false; self._refreshQuestIndicators(); };
     if (window.storyScenes && typeof window.storyScenes.playOeffentlicheSitzung === 'function') {
-      try { window.storyScenes.playOeffentlicheSitzung(this, fertig); return; } catch (_) {}
+      this._dialogOpen = true;
+      try { window.storyScenes.playOeffentlicheSitzung(this, fertig); return; } catch (_) { this._dialogOpen = false; }
     }
     // Ohne Szene trotzdem weiterkommen: die Szene ist Inszenierung, der Schritt Mechanik.
     const qs = window.questSystem;
