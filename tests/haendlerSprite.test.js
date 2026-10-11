@@ -2,7 +2,8 @@
 // dem Handkarren (eigenes Bild statt Maras Sprite), fest eingebaut ohne Flagge.
 //
 // Maras Sprite ('spaeherin', 120 px) bleibt nur als Notbild, falls das
-// Karrenbild fehlt. Und der Spieler wird VOR dem Haendler gezeichnet.
+// Karrenbild fehlt. Gezeichnet wird er nach Bildhoehe gegen den Spieler:
+// steht der Spieler unterhalb des Karrens, ist er davor, sonst dahinter.
 
 const { test, before, after, afterEach } = require('node:test');
 const assert = require('node:assert');
@@ -88,34 +89,67 @@ test('der Haendler ist der Alte mit dem Karren, in Spielergroesse', () => {
   assert.strictEqual(H.run(scheinObj + '.active'), false, 'der Schein bleibt nach dem Aufraeumen stehen');
 });
 
-test('der Spieler wird vor dem Haendler, dem Karren und dem Laternenschein gezeichnet', () => {
-  const h = haendlerHerbei();
-  assert.ok(h, 'der Haendler erscheint nicht');
-  // Gemessen wird die Reihenfolge, in der Phaser wirklich zeichnet: die
-  // sortierte Anzeigeliste der Szene. Haengt ein Objekt in einem Layer
-  // (enemyLayer), zaehlt der Platz des Layers, nicht die eigene Tiefe.
-  const r = H.run(`(function () {
+// Gemessen wird die Reihenfolge, in der Phaser wirklich zeichnet: die
+// sortierte Anzeigeliste der Szene. Haengt ein Objekt in einem Layer
+// (enemyLayer), zaehlt der Platz des Layers, nicht die eigene Tiefe.
+const PLATZ = `function platz(sc, o) {
+  var liste = sc.sys.displayList;
+  var oben = o;
+  while (oben && oben.displayList && oben.displayList !== liste) oben = oben.displayList;
+  while (oben && oben.parentContainer) oben = oben.parentContainer;
+  return liste.getIndex(oben);
+}`;
+
+// Stellt den Spieler mit den Fuessen dy Pixel unter (+) bzw. ueber (-) die
+// untere Kante des Karrens, leicht seitlich, damit sich die Bilder decken.
+// Ein Bild takten, dann die sortierte Anzeigeliste lesen.
+function spielerAnKarren(dy) {
+  H.run(`(function () {
+    var m = window.EventSystem.aktiverHaendler().sprite;
+    player.x = m.x + 12; player.y = m.y + m.displayHeight * (1 - m.originY) + (${dy});
+    if (player.body) { player.body.reset(player.x, player.y); }
+  })()`);
+  H.step(16);
+  return H.run(`(function () {
+    ${PLATZ}
     var sc = window.game.scene.getScene('GameScene');
     var a = window.EventSystem.aktiverHaendler();
-    var liste = sc.sys.displayList;
-    liste.depthSort();
-    function platz(o) {
-      var oben = o;
-      while (oben && oben.displayList && oben.displayList !== liste) oben = oben.displayList;
-      while (oben && oben.parentContainer) oben = oben.parentContainer;
-      return liste.getIndex(oben);
-    }
-    return { spieler: platz(player), haendler: platz(a.sprite), schein: platz(a.schein),
-             spielerTiefe: player.depth, haendlerTiefe: a.sprite.depth, scheinTiefe: a.schein.depth };
+    var m = a.sprite;
+    sc.sys.displayList.depthSort();
+    return { spieler: platz(sc, player), haendler: platz(sc, m), schein: platz(sc, a.schein),
+             hinweis: platz(sc, a.prompt),
+             fussSpieler: player.y, fussKarren: m.y + m.displayHeight * (1 - m.originY),
+             spielerTiefe: player.depth, haendlerTiefe: m.depth, scheinTiefe: a.schein.depth };
   })()`);
+}
+
+test('Spieler unterhalb des Karrens: er wird vor Haendler, Karren und Laternenschein gezeichnet', () => {
+  const h = haendlerHerbei();
+  assert.ok(h, 'der Haendler erscheint nicht');
+  const r = spielerAnKarren(+15);
   assert.ok(r.spieler >= 0 && r.haendler >= 0 && r.schein >= 0, 'nicht in der Anzeigeliste: ' + JSON.stringify(r));
-  assert.ok(r.spieler > r.haendler,
-    'Haendler (Figur+Karren) liegt ueber dem Spieler: ' + JSON.stringify(r));
-  assert.ok(r.spieler > r.schein,
-    'Laternenschein liegt ueber dem Spieler: ' + JSON.stringify(r));
-  assert.ok(r.spielerTiefe > r.haendlerTiefe && r.spielerTiefe > r.scheinTiefe, JSON.stringify(r));
+  assert.ok(r.fussSpieler > r.fussKarren, 'Aufbau: Spieler steht nicht unterhalb: ' + JSON.stringify(r));
+  assert.ok(r.spieler > r.haendler, 'Haendler (Figur+Karren) liegt ueber dem Spieler: ' + JSON.stringify(r));
+  assert.ok(r.spieler > r.schein, 'Laternenschein liegt ueber dem Spieler: ' + JSON.stringify(r));
   // Der Schein gehoert zur Laterne: ueber dem Karren, sonst ist er unsichtbar.
   assert.ok(r.schein > r.haendler, 'Schein liegt unter dem Karren: ' + JSON.stringify(r));
+  assert.ok(r.hinweis > r.spieler, '[E] liegt nicht obenauf: ' + JSON.stringify(r));
+  assert.strictEqual(r.spielerTiefe, 100, 'der Spieler soll seine feste Tiefe behalten');
+});
+
+test('Spieler oberhalb (hinter) dem Karren: Haendler und Schein werden vor ihm gezeichnet', () => {
+  const h = haendlerHerbei();
+  assert.ok(h, 'der Haendler erscheint nicht');
+  const r = spielerAnKarren(-15);
+  assert.ok(r.spieler >= 0 && r.haendler >= 0 && r.schein >= 0, 'nicht in der Anzeigeliste: ' + JSON.stringify(r));
+  assert.ok(r.fussSpieler < r.fussKarren, 'Aufbau: Spieler steht nicht oberhalb: ' + JSON.stringify(r));
+  assert.ok(r.haendler > r.spieler, 'der Spieler liegt ueber dem Karren, obwohl er dahinter steht: ' + JSON.stringify(r));
+  assert.ok(r.schein > r.haendler, 'Schein liegt unter dem Karren: ' + JSON.stringify(r));
+  assert.ok(r.hinweis > r.haendler, '[E] liegt nicht obenauf: ' + JSON.stringify(r));
+  // Und zurueck nach vorn: je Bild nachgefuehrt, nicht nur beim Erscheinen.
+  const zurueck = spielerAnKarren(+15);
+  assert.ok(zurueck.spieler > zurueck.haendler && zurueck.spieler > zurueck.schein,
+    'nach dem Zuruecklaufen bleibt der Karren vorn: ' + JSON.stringify(zurueck));
 });
 
 test('Notfall: fehlt das Karrenbild, traegt er Maras Sprite (120 px)', () => {

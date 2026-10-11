@@ -1905,10 +1905,11 @@
       }
     }
 
-    // Zeichenreihenfolge (#165): der Spieler (100) steht VOR dem Haendler.
-    // Figur, Karren und Laternenschein liegen alle unter ihm; geht er vor dem
-    // Karren her, verdeckt er auch die Laterne — ein Schein, der auf seiner
-    // Brust schwebt, saehe falsch aus.
+    // Zeichenreihenfolge (#165): nach Bildhoehe gegen den Spieler (100), s.
+    // tiefeZumSpieler in roomTemplates.js. Steht er unterhalb des Karrens,
+    // verdeckt er Figur, Karren und Laterne — ein Schein, der auf seiner Brust
+    // schwebt, saehe falsch aus. Steht er dahinter, verdeckt ihn der Karren.
+    // Hier nur der Startwert; nachgefuehrt wird unten je Bild.
     var tiefe = (window.WELT_TIEFEN && window.WELT_TIEFEN.NPC) || 90;
     var merchant = scene.physics.add.sprite(cx, cy, texKey);
     merchant.setDepth(tiefe);
@@ -1928,7 +1929,7 @@
     if (istKarren && scene.add.circle) {
       var sk = merchant.scaleX;
       schein = scene.add.circle(cx + HAENDLER_BILD.laterne.x * sk, cy + HAENDLER_BILD.laterne.y * sk,
-        6, 0xffb347, 0.3).setDepth(tiefe + 0.5);
+        6, 0xffb347, 0.3).setDepth(tiefe + 0.25);
       if (schein.setBlendMode && window.Phaser) schein.setBlendMode(Phaser.BlendModes.ADD);
       if (scene.tweens) {
         scene.tweens.add({
@@ -1944,6 +1945,22 @@
       fontSize: '14px', fill: '#ffdd44', fontFamily: 'monospace',
       stroke: '#000', strokeThickness: 2, align: 'center'
     }).setOrigin(0.5).setDepth(151);
+
+    // Je Bild nach der Bewegung (postupdate, also mit der Spielerposition, die
+    // gleich gezeichnet wird): vor oder hinter den Spieler? Der Schein folgt
+    // knapp ueber dem Karren. Das [E] bleibt obenauf.
+    var sortHandler = null;
+    if (typeof window.tiefeZumSpieler === 'function') {
+      sortHandler = function () {
+        if (!merchant.active) return;
+        var t = window.tiefeZumSpieler(merchant);
+        if (t === merchant.depth) return;
+        merchant.setDepth(t);
+        if (schein) schein.setDepth(t + 0.25);
+      };
+      sortHandler();
+      scene.events.on('postupdate', sortHandler);
+    }
 
     // Track overlap with player
     var playerRef = window.player || (scene.physics && scene.physics.world &&
@@ -2001,6 +2018,7 @@
       interactHandler: interactHandler,
       distanceHandler: (typeof distanceHandler !== 'undefined') ? distanceHandler : null,
       mobileHandler: (typeof mobileHandler !== 'undefined') ? mobileHandler : null,
+      sortHandler: sortHandler,
       scene: scene
     };
 
@@ -2024,6 +2042,7 @@
     if (activeMerchant.scene && activeMerchant.scene.events) {
       if (activeMerchant.distanceHandler) activeMerchant.scene.events.off('update', activeMerchant.distanceHandler);
       if (activeMerchant.mobileHandler) activeMerchant.scene.events.off('update', activeMerchant.mobileHandler);
+      if (activeMerchant.sortHandler) activeMerchant.scene.events.off('postupdate', activeMerchant.sortHandler);
     }
     window.__merchantInteractConsumed = false;
     activeMerchant = null;

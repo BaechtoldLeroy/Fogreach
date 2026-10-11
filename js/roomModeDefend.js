@@ -119,7 +119,7 @@
   }
 
   function DefendMode() {
-    var scene = null, sprite = null, playerCollider = null, altarCollider = [];
+    var scene = null, sprite = null, playerCollider = null, altarCollider = [], sortHandler = null;
     var maxHp = BASE_HP, hp = BASE_HP;
     var objX = 0, objY = 0;
     var duration = _depthSeconds(), remaining = duration, spawnAcc = 0;
@@ -136,6 +136,21 @@
           _ensureTex(scene);
           try { sprite = scene.add.sprite(objX, objY, DEPTH_TEX).setDepth(400).setScrollFactor(1); }
           catch (e) { sprite = null; }
+        }
+        // Nach Bildhoehe gegen den Spieler sortieren (s. tiefeZumSpieler in
+        // roomTemplates.js): steht er unterhalb des Podests, steht er davor,
+        // sonst verdeckt ihn der Altar. Lag frueher fest auf 400 — da war der
+        // Spieler immer dahinter, auch wenn er vor dem Altar stand. Je Bild
+        // nachgefuehrt, auch solange der Altar noch ruht (update() laeuft
+        // dann noch nicht).
+        if (sprite && scene.events && typeof window.tiefeZumSpieler === 'function') {
+          sortHandler = function () {
+            if (!sprite || !sprite.active) return;
+            var t = window.tiefeZumSpieler(sprite);
+            if (t !== sprite.depth) sprite.setDepth(t);
+          };
+          sortHandler();
+          scene.events.on('postupdate', sortHandler);
         }
         // Ruhend darstellen: sichtbar, aber erkennbar noch nicht scharf.
         if (sprite && typeof window !== 'undefined' && window.RoomModeAnchor) {
@@ -256,6 +271,8 @@
         if (playerCollider) { try { playerCollider.destroy(); } catch (e) {} playerCollider = null; }
         altarCollider.forEach(function (c) { try { c.destroy(); } catch (e) {} });
         altarCollider = [];
+        if (sortHandler && scene && scene.events) { scene.events.off('postupdate', sortHandler); }
+        sortHandler = null;
         if (sprite) { try { sprite.destroy(); } catch (e) {} sprite = null; }
         if (typeof window !== 'undefined') window.__ENEMY_CHASE_OVERRIDE__ = null;
       },

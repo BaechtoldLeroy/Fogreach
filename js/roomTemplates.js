@@ -33,10 +33,12 @@
     BODEN_BEUTE: 45,
     GEGNER: 50,          // ab hier gehoert die Ebene den Figuren (Spieler >= 100)
     // Stehende Figuren im Keller, die keine Gegner sind (der wandernde
-    // Haendler samt Karren und Laternenschein): ueber Gegnern und Geschossen,
-    // aber UNTER dem Spieler (100). Gemeldet zu #165: der Spieler soll vor
-    // dem Haendler stehen, nicht hinter ihm verschwinden. Lag vorher auf 150.
+    // Haendler samt Karren und Laternenschein): ueber Gegnern und Geschossen.
+    // Gemeldet zu #165: der Spieler soll vor dem Haendler stehen, nicht hinter
+    // ihm verschwinden. Lag vorher auf 150. Seit b376 nur noch der Startwert,
+    // danach sortiert tiefeZumSpieler() den Haendler gegen den Spieler.
     NPC: 90,
+    SPIELER: 100,        // der Spieler im Keller (main.js), fest
     // Geschosse fliegen UEBER allem, was am Boden liegt oder steht. Die
     // Gegner-Geschosse hatten bis b246 gar keine Tiefe und lagen damit auf 0,
     // also unter der Treppe (34). Gemeldet: "Treppen sind oberhalb von
@@ -44,6 +46,27 @@
     // dieselbe Zahl.
     GESCHOSS: 70
   });
+
+  // Grosse aufrechte Dinge, um die der Spieler herumlaufen kann (Haendler mit
+  // Karren, Altar im Verteidigungsmodus), sortieren sich wie im Hub nach der
+  // Bildhoehe — aber NUR gegen den Spieler. Liegt ihre Fusslinie tiefer im
+  // Bild als seine, stehen sie vor ihm (knapp ueber 100), sonst hinter ihm
+  // (knapp unter 100). So bleibt die uebrige Kellerschichtung (Gegnerlayer,
+  // Geschosse, Effekte, Nebel, Oberflaeche) unberuehrt, und der Spieler
+  // behaelt seine feste 100.
+  //
+  // Fusslinie = untere Bildkante, nicht die Mitte: wer vor der Deichsel des
+  // Karrens steht, steht vor dem Karren. Beim Spieler ist es player.y, sein
+  // Ursprung sitzt auf den Fuessen (PLAYER_ORIGIN_Y).
+  // Die Aufrufer setzen die Tiefe nur, wenn sie sich aendert — sonst sortiert
+  // Phaser die Anzeigeliste jedes Bild neu.
+  w.tiefeZumSpieler = function (obj) {
+    var T = w.WELT_TIEFEN.SPIELER;
+    var p = w.player;
+    if (!obj || !p || !p.active) return T - 0.5;
+    var fuss = obj.y + obj.displayHeight * (1 - obj.originY);
+    return fuss > p.y ? T + 0.5 : T - 0.5;
+  };
 })(window);
 
 (function(w) {
