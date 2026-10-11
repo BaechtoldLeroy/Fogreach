@@ -288,6 +288,15 @@ class CraftingScene extends Phaser.Scene {
     // Zurueck-Knopf steht mittig ab x 370, die Rueckmeldung ebenfalls mittig.
     // Vier Zeilen enden bei y 426 und bleiben davon frei.
     this.invMaxRows = 4;
+    // #193 (?oberflaeche2=neu): Auf einem 24 px hohen Messingfeld stand die
+    // Wertezeile auf dem unteren Beschlag. Zwei Zeilen Schrift brauchen innen
+    // gut 24 px, also hoehere Felder; drei statt vier, damit die Liste
+    // gleich lang bleibt (3 x 36 = 108 <= 4 x 28) und nichts darunter ueberdeckt.
+    this._neu2 = this._messing && typeof _UR.oberflaeche2 === 'function' && _UR.oberflaeche2();
+    if (this._neu2) {
+      this.invRowH = 36;
+      this.invMaxRows = 3;
+    }
     // Die Balken der Liste sind so breit wie die Ausruestungsplaetze darueber.
     // _refreshInventoryList rechnete sie frueher selbst aus (Bildbreite / 2
     // minus 50 = 430) — 97 px breiter als ihr eigener Kasten, sodass sie bis
@@ -1173,10 +1182,14 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
       const SLOT_LABEL = { weapon: 'W', offhand: 'N', head: 'H', body: 'R', boots: 'S' };
       const labelTxt = SLOT_LABEL[entry.item.type] || '?';
       const color = _getTierColor(entry.item);
-      const nameText = this.add.text(leftX + 12, ry - 8, `[${labelTxt}] ${_composeItemName(entry.item)}`, {
+      // #193: auf dem hoeheren Feld beide Zeilen um die Mitte, innerhalb der
+      // Beschlaege (gemessen an der Tinte, tests/oberflaeche2.test.js).
+      const nameY = this._neu2 ? ry - 12 : ry - 8;
+      const statsY = this._neu2 ? ry + 1 : ry + 3;
+      const nameText = this.add.text(leftX + 12, nameY, `[${labelTxt}] ${_composeItemName(entry.item)}`, {
         fontFamily: 'monospace', fontSize: '11px', color
       }).setDepth(10);
-      const statsText = this.add.text(leftX + 12, ry + 3, this._getStatsLine(entry.item), {
+      const statsText = this.add.text(leftX + 12, statsY, this._getStatsLine(entry.item), {
         fontFamily: 'monospace', fontSize: '9px', color: '#888888'
       }).setDepth(10);
 

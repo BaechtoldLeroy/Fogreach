@@ -101,6 +101,13 @@
     return !!(UR && UR.bereit(scene));
   }
 
+  // Dritte Runde (#193, ?oberflaeche2=neu): Charakterwerte und Menue auf
+  // Messing-Platte mit Messingknoepfen. Ohne Flagge oder Bilder wie bisher.
+  function _neu2(scene) {
+    const UR = window.uiRahmen;
+    return _messing(scene) && typeof UR.oberflaeche2 === 'function' && UR.oberflaeche2();
+  }
+
   function build(scene) {
     if (!scene || !scene.add) return;
 
@@ -400,11 +407,20 @@
 
     const overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7)
       .setScrollFactor(0).setDepth(2500).setInteractive();
-    const panel = scene.add.graphics().setScrollFactor(0).setDepth(2501);
-    panel.fillStyle(0x10131c, 0.97).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
-    panel.lineStyle(3, 0xd4a543, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+    // #193 (?oberflaeche2=neu): Messing-Platte statt gezeichnetem Kasten.
+    // Ein gebackenes Bild je Groesse; Titel, Liste und Knopf ruecken um
+    // "ein" vom Beschlag weg.
+    const neu2 = _neu2(scene);
+    const ein = neu2 ? 8 : 0;
+    const panel = neu2
+      ? scene.add.image(px, py, window.uiRahmen.kachelBild(scene, panelW, panelH)).setScrollFactor(0).setDepth(2501)
+      : scene.add.graphics().setScrollFactor(0).setDepth(2501);
+    if (!neu2) {
+      panel.fillStyle(0x10131c, 0.97).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+      panel.lineStyle(3, 0xd4a543, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+    }
 
-    const title = scene.add.text(px, py - panelH / 2 + 10, T('hud.stats.title'), {
+    const title = scene.add.text(px, py - panelH / 2 + 10 + ein, T('hud.stats.title'), {
       fontFamily: 'serif', fontSize: '20px', color: '#ffd166', fontStyle: 'bold'
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2502);
 
@@ -517,8 +533,8 @@
     ];
 
     // Scrollbereich zwischen Titel und Close-Button.
-    const viewTop = py - panelH / 2 + 40;
-    const viewBottom = py + panelH / 2 - 40;
+    const viewTop = py - panelH / 2 + 40 + ein;
+    const viewBottom = py + panelH / 2 - 40 - ein;
     const viewH = viewBottom - viewTop;
 
     // Inhalt kommt in einen Container -> bei Überlauf scrollbar (Maske + Leiste).
@@ -529,7 +545,7 @@
       content.add(scene.add.text(px - panelW / 2 + 20, cy, r[0] + ':', {
         fontFamily: 'monospace', fontSize: '13px', color: '#cfd0ff'
       }).setScrollFactor(0));
-      content.add(scene.add.text(px + panelW / 2 - 20, cy, r[1], {
+      content.add(scene.add.text(px + panelW / 2 - 20 - ein, cy, r[1], {
         fontFamily: 'monospace', fontSize: '13px', color: '#ffe28a'
       }).setOrigin(1, 0).setScrollFactor(0));
       cy += ROW_H;
@@ -543,7 +559,7 @@
       content.add(scene.add.text(px - panelW / 2 + 20, cy, a.label + ':', {
         fontFamily: 'monospace', fontSize: '13px', color: '#cfd0ff'
       }).setScrollFactor(0));
-      content.add(scene.add.text(px + panelW / 2 - 20, cy, String(a.val), {
+      content.add(scene.add.text(px + panelW / 2 - 20 - ein, cy, String(a.val), {
         fontFamily: 'monospace', fontSize: '13px', color: '#ffe28a'
       }).setOrigin(1, 0).setScrollFactor(0));
       content.add(scene.add.text(px - panelW / 2 + 32, cy + 15, a.desc, {
@@ -566,7 +582,7 @@
       maskG.fillStyle(0xffffff).fillRect(px - panelW / 2 + 4, viewTop, panelW - 8, viewH);
       content.setMask(maskG.createGeometryMask());
 
-      const trackX = px + panelW / 2 - 10;
+      const trackX = px + panelW / 2 - 10 - ein;   // #193: nicht auf dem Beschlag
       track = scene.add.rectangle(trackX, viewTop + viewH / 2, 6, viewH, 0x000000, 0.35)
         .setScrollFactor(0).setDepth(2503);
       const thumbH = Math.max(24, Math.round(viewH * (viewH / contentH)));
@@ -590,10 +606,11 @@
       scene.input.on('wheel', wheelHandler);
     }
 
-    const closeBtn = scene.add.text(px, py + panelH / 2 - 22, T('hud.menu.btn.close'), {
+    const closeBtn = scene.add.text(px, py + panelH / 2 - 22 - ein, T('hud.menu.btn.close'), {
       fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8',
       backgroundColor: '#3a3a3a', padding: { x: 12, y: 5 }
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2505).setInteractive({ useHandCursor: true });
+    if (neu2) window.uiRahmen.textKnopf(scene, closeBtn, '#f1e9d8', { loslassen: true });
 
     const close = () => {
       if (wheelHandler) { try { scene.input.off('wheel', wheelHandler); } catch (e) {} }
@@ -649,23 +666,30 @@
     ];
 
     const panelW = 280;
+    // #193: auf der Messing-Platte je 8 px mehr oben und unten (Beschlag).
+    const neu2 = _neu2(scene);
+    const ein = neu2 ? 8 : 0;
     // 60 px Kopfzeile, je Eintrag 56 px, 40 px fuer den Schliessen-Knopf.
-    const panelH = 60 + items.length * 56 + 40;
+    const panelH = 60 + items.length * 56 + 40 + 2 * ein;
     const px = cw / 2;
     const py = ch / 2;
 
     const overlay = scene.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 0.7)
       .setScrollFactor(0).setDepth(2500).setInteractive();
-    const panel = scene.add.graphics().setScrollFactor(0).setDepth(2501);
-    panel.fillStyle(0x10131c, 0.97).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
-    panel.lineStyle(3, 0xd4a543, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
-    const title = scene.add.text(px, py - panelH / 2 + 14, T('hud.menu.title'), {
+    const panel = neu2
+      ? scene.add.image(px, py, window.uiRahmen.kachelBild(scene, panelW, panelH)).setScrollFactor(0).setDepth(2501)
+      : scene.add.graphics().setScrollFactor(0).setDepth(2501);
+    if (!neu2) {
+      panel.fillStyle(0x10131c, 0.97).fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+      panel.lineStyle(3, 0xd4a543, 0.9).strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 14);
+    }
+    const title = scene.add.text(px, py - panelH / 2 + 14 + ein, T('hud.menu.title'), {
       fontFamily: 'serif', fontSize: '22px', color: '#ffd166', fontStyle: 'bold'
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2502);
 
     const btns = [];
     items.forEach((it, i) => {
-      const by = py - panelH / 2 + 60 + i * 56;
+      const by = py - panelH / 2 + 60 + ein + i * 56;
       const bg = scene.add.rectangle(px, by, panelW - 40, 44, 0x2a2a3d)
         .setScrollFactor(0).setDepth(2502).setStrokeStyle(2, 0x4a4a6a).setInteractive({ useHandCursor: true });
       const lbl = scene.add.text(px, by, it.label, {
@@ -685,12 +709,16 @@
         close();
       });
       btns.push(bg, lbl);
+      // Messingknopf: das Rechteck bleibt Trefferflaeche, Hover und Druck
+      // wechseln das Bild (seine Umfaerbung oben wird dabei abgeschaltet).
+      if (neu2) window.uiRahmen.knopf(bg);
     });
 
-    const closeBtn = scene.add.text(px, py + panelH / 2 - 26, T('hud.menu.btn.close'), {
+    const closeBtn = scene.add.text(px, py + panelH / 2 - 26 - ein, T('hud.menu.btn.close'), {
       fontFamily: 'monospace', fontSize: '14px', color: '#f1e9d8',
       backgroundColor: '#3a3a3a', padding: { x: 14, y: 6 }
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2502).setInteractive({ useHandCursor: true });
+    if (neu2) window.uiRahmen.textKnopf(scene, closeBtn, '#f1e9d8', { loslassen: true });
 
     const close = () => {
       try { overlay.destroy(); } catch (e) {}

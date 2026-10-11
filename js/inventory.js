@@ -527,6 +527,12 @@ function initInventoryUI() {
   // (gewaehlt = heller Beschlag mit Goldsaum); Rueckfall die festen Texturen.
   const feldTex = (w, h, gewaehlt, alt) => (MESSING ? _UR.feldBild(scene, w, h, gewaehlt) : alt);
   invUI._feldTex = feldTex;
+  // Dritte Runde (#193, ?oberflaeche2=neu): Tooltips auf Messing-Platte,
+  // Messingknoepfe statt Farbkaesten. Ohne Flagge oder ohne Bilder wie bisher.
+  const NEU2 = MESSING && typeof _UR.oberflaeche2 === 'function' && _UR.oberflaeche2();
+  invUI._neu2 = NEU2;
+  // Schrift auf einem gesperrten Knopf: grauer als aktiv, aber lesbar.
+  const KNOPF_AUS_SCHRIFT = '#c4bcae';
 
   const title = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 12, _INV_T('inventory.title'), {
     fontFamily: 'serif', fontSize: '26px', fill: '#ffd166', fontStyle: 'bold',
@@ -564,6 +570,11 @@ function initInventoryUI() {
       container.setScrollFactor(0);
     }
     container.setVisible(false);
+    // #193: Die Platte liegt unter allem; der Graphics-Kasten traegt dann nur
+    // noch die Seltenheitslinie unter dem Titel.
+    const platte = NEU2 ? _UR.tipPlatte(scene, 0) : null;
+    if (platte) container.add(platte.teile);
+    container.platte = platte;
     const bg = scene.add.graphics();
     if (typeof bg.setScrollFactor === 'function') bg.setScrollFactor(0);
     container.add(bg);
@@ -583,8 +594,9 @@ function initInventoryUI() {
 
   const layoutTooltipBox = (box) => {
     if (!box || !box.title || !box.body || !box.bg) return;
-    const paddingX = 10;
-    const paddingY = 8;
+    // Auf der Messing-Platte bleibt die Schrift innerhalb der Beschlaege.
+    const paddingX = box.platte ? 16 : 10;
+    const paddingY = box.platte ? 14 : 8;
     const gap = box.title.text && box.body.text ? 6 : 0;
     box.title.setPosition(paddingX, paddingY);
     box.body.setPosition(paddingX, paddingY + (box.title.text ? box.title.height + gap : 0));
@@ -597,6 +609,19 @@ function initInventoryUI() {
     const totalWidth = Math.max(32, paddingX * 2 + contentWidth);
     const totalHeight = Math.max(24, paddingY * 2 + contentHeight);
     box.bg.clear();
+    if (box.platte) {
+      // Messing statt Kasten; die Seltenheit bleibt im Titel und als Linie
+      // darunter erkennbar (#56 D2: Raritaet auf einen Blick).
+      box.platte.lege(0, 0, totalWidth, totalHeight);
+      if (typeof box._tierColor === 'number' && box.title.text) {
+        const ly = Math.round(paddingY + box.title.height + gap / 2);
+        box.bg.lineStyle(2, box._tierColor, 0.9);
+        box.bg.lineBetween(paddingX, ly, totalWidth - paddingX, ly);
+      }
+      box._width = totalWidth;
+      box._height = totalHeight;
+      return;
+    }
     box.bg.fillStyle(box.bgColor, 0.92);
     box.bg.fillRoundedRect(0, 0, totalWidth, totalHeight, 8);
     // #56 D2: Tooltip-Rahmen in der Tier-Farbe -> Rarität auf einen Blick.
@@ -1352,12 +1377,22 @@ function equipPos(key, index) {
     const count = (window.materialCounts && typeof window.materialCounts.PORTAL_SCROLL === 'number')
       ? window.materialCounts.PORTAL_SCROLL : 0;
     btnPortal.setText(_INV_T('inventory.btn.portal', { count: count }));
+    if (btnPortal._uiTextKnopf) {
+      // #193: Messingknopf; ohne Rolle "aus" (entsaettigt, kein Hover).
+      btnPortal.setColor(count > 0 ? '#ffffff' : KNOPF_AUS_SCHRIFT);
+      btnPortal._uiTextKnopf.anpassen(count <= 0);
+      return;
+    }
     btnPortal.setStyle({
       backgroundColor: count > 0 ? '#486c1d' : '#333333',
       fill: count > 0 ? '#fff' : '#888'
     });
   };
   window._refreshPortalButton();
+  if (NEU2) {
+    _UR.textKnopf(scene, btnPortal, null, { ton: '#486c1d', loslassen: true });
+    window._refreshPortalButton();
+  }
 
   // Treppenrolle-Button: teleportiert den Spieler zur nächsten Treppe im Raum
   // (verbraucht die Rolle nur, wenn eine Treppe gefunden wurde).
@@ -1387,12 +1422,21 @@ function equipPos(key, index) {
     const count = (window.materialCounts && typeof window.materialCounts.STAIR_SCROLL === 'number')
       ? window.materialCounts.STAIR_SCROLL : 0;
     btnStair.setText(_INV_T('inventory.btn.stair', { count: count }));
+    if (btnStair._uiTextKnopf) {
+      btnStair.setColor(count > 0 ? '#ffffff' : KNOPF_AUS_SCHRIFT);
+      btnStair._uiTextKnopf.anpassen(count <= 0);
+      return;
+    }
     btnStair.setStyle({
       backgroundColor: count > 0 ? '#1d4a6c' : '#333333',
       fill: count > 0 ? '#fff' : '#888'
     });
   };
   window._refreshStairButton();
+  if (NEU2) {
+    _UR.textKnopf(scene, btnStair, null, { ton: '#1d4a6c', loslassen: true });
+    window._refreshStairButton();
+  }
 
   // Charakterwerte — dieselbe Ansicht wie im Burger-Menue und hinter dem
   // Portrait. Der Knopf SCHLIESST das Inventar, bevor er sie oeffnet: die
@@ -1417,6 +1461,7 @@ function equipPos(key, index) {
     });
   panel.add(btnStats);
   invUI.statsBtn = btnStats;
+  if (NEU2) _UR.textKnopf(scene, btnStats, '#ffd166', { loslassen: true });
 
   // Die Knoepfe klebten am unteren Panelrand, 100 px unter dem Raster —
   // dazwischen lag nichts als Leere. Jetzt direkt darunter.
@@ -1426,6 +1471,12 @@ function equipPos(key, index) {
   const btnDrop = scene.add.text(70, btnY, _INV_T('inventory.btn.drop'), { fontSize: '14px', fill: '#fff', backgroundColor: '#a44', padding: { x: 10, y: 5 } })
     .setOrigin(0.5, 1).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => dropSelectedItem());
   panel.add([btnEquip, btnDrop]);
+  if (NEU2) {
+    // Die alten Kurzfarben (#47a, #a44) als dunklere Toene: weisse Schrift
+    // bleibt darauf lesbar, die Bedeutung (blau anlegen, rot weg) bleibt.
+    _UR.textKnopf(scene, btnEquip, '#ffffff', { ton: '#2f4f7a', loslassen: true });
+    _UR.textKnopf(scene, btnDrop, '#ffffff', { ton: '#7a3434', loslassen: true });
+  }
 
   updateMaterialCounterUI();
 

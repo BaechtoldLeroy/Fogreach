@@ -3534,6 +3534,9 @@ class HubSceneV2 extends Phaser.Scene {
     const UR = window.uiRahmen;
     const MESSING = !!(UR && UR.bereit(this));
     this._ktMessing = MESSING;
+    // Dritte Runde (#193, ?oberflaeche2=neu): Kacheln auf Messingfeldern,
+    // Hover-Tooltip auf Messing-Platte. Ohne Flagge wie bisher.
+    this._ktNeu2 = MESSING && typeof UR.oberflaeche2 === 'function' && UR.oberflaeche2();
     const kopfEin = MESSING ? 10 : 0;
     if (MESSING) {
       container.add(this.add.image(0, 0, UR.kachelBild(this, panelW, panelH)));
@@ -3895,25 +3898,14 @@ class HubSceneV2 extends Phaser.Scene {
     const c = this.add.container(cx, oben + hoch / 2);
     this._ktCardLayer.add(c);
 
-    const bg = this.add.graphics();
-    const fill = o.gesetzt ? 0x243024 : 0x16161f;
-    const alpha = o.gesperrt ? 0.5 : 0.94;
-    const rand = o.gesetzt ? 0x8fd6a0 : o.farbe;
-    const w = breite / 2, h = hoch / 2;
-    if (o.sechseck) {
-      const e = 8;
-      const pts = [{ x: -w + e, y: -h }, { x: w - e, y: -h }, { x: w, y: 0 },
-        { x: w - e, y: h }, { x: -w + e, y: h }, { x: -w, y: 0 }];
-      bg.fillStyle(fill, alpha); bg.fillPoints(pts, true);
-      bg.lineStyle(o.gesetzt ? 2 : 1.5, rand, o.gesperrt ? 0.3 : 0.8); bg.strokePoints(pts, true);
+    if (this._ktNeu2) {
+      this._ktKachelNeu2(c, breite, hoch, o);
     } else {
-      bg.fillStyle(fill, alpha); bg.fillRoundedRect(-w, -h, breite, hoch, 4);
-      bg.lineStyle(o.gesetzt ? 2 : 1, rand, o.gesperrt ? 0.3 : 0.6);
-      bg.strokeRoundedRect(-w, -h, breite, hoch, 4);
+      this._ktKachelGrund(c, breite, hoch, o);
     }
-    c.add(bg);
 
     // Der Knopf steht rechts; Name und Pips teilen sich den Rest.
+    const w = breite / 2;
     let knopfB = 0;
     if (o.knopf) {
       const an = !!o.knopfAn;
@@ -3931,6 +3923,9 @@ class HubSceneV2 extends Phaser.Scene {
       }).setOrigin(1, 0.5);
       btn.setInteractive({ useHandCursor: an });
       c.add(btn);
+      // #193: der aktive Knopf ist ein kleiner Messingknopf in seiner
+      // Bedeutungsfarbe (gruen setzen, rot loesen).
+      if (this._ktNeu2 && an) window.uiRahmen.textKnopf(this, btn, o.gesetzt ? '#ffe4e4' : '#d8ffd8', { loslassen: true });
       knopfB = btn.width + 8;
       btn.on('pointerdown', (pointer, x, yy, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
@@ -3957,7 +3952,7 @@ class HubSceneV2 extends Phaser.Scene {
     }).setOrigin(0, 0.5);
     if (t.width > platz && platz > 20) {
       let txt = o.titel;
-      while (txt.length > 4 && t.width > platz) { txt = txt.slice(0, -1); t.setText(txt + '\u2026'); }
+      while (txt.length > 4 && t.width > platz) { txt = txt.slice(0, -1); t.setText(txt + '…'); }
     }
     this._ktScharf(t);
     c.add(t);
@@ -3971,6 +3966,53 @@ class HubSceneV2 extends Phaser.Scene {
     treffer.on('pointerout', () => this._ktHideTip());
   }
 
+  /**
+   * #193: Kachelgrund aus dem Messing-Satz. Die drei Zustaende lesen sich am
+   * Bild, nicht nur an der Schriftfarbe:
+   *   gelernt  -> heller Beschlag mit Goldsaum, Mitte in der Zweigfarbe
+   *   lernbar  -> normales Messingfeld
+   *   gesperrt -> dasselbe Feld, halb durchsichtig (tritt zurueck)
+   * Grundsaetze (sechseck) tragen die Platte statt des Feldes: groessere
+   * Beschlaege, damit man den Rang erkennt, bevor man liest.
+   */
+  _ktKachelNeu2(c, breite, hoch, o) {
+    const UR = window.uiRahmen;
+    // Die Zweigfarbe stark abgedunkelt: Mitte farbig, Schrift bleibt lesbar.
+    // Grundsaetze tragen ihr Violett auch offen (schwach) — die Sechseckform
+    // des alten Kachelgrunds faellt auf der Platte weg, die Farbe bleibt.
+    const dunkel = o.gesetzt ? 0.4 : (o.sechseck && !o.gesperrt ? 0.22 : 0);
+    const tonHex = dunkel
+      ? '#' + [16, 8, 0].map((s) => ('0' + Math.round(((o.farbe >> s) & 255) * dunkel).toString(16)).slice(-2)).join('')
+      : null;
+    const key = o.sechseck
+      ? UR.kachelBild(this, breite, hoch, tonHex)
+      : UR.feldBild(this, breite, hoch, !!o.gesetzt, tonHex);
+    const bild = this.add.image(0, 0, key).setAlpha(o.gesperrt ? 0.45 : 1);
+    bild._ktZustand = o.gesetzt ? 'gelernt' : (o.gesperrt ? 'gesperrt' : 'lernbar');
+    c.add(bild);
+  }
+
+  /** Der gezeichnete Kachelgrund (ohne Flagge, oder wenn die Bilder fehlen). */
+  _ktKachelGrund(c, breite, hoch, o) {
+    const bg = this.add.graphics();
+    const fill = o.gesetzt ? 0x243024 : 0x16161f;
+    const alpha = o.gesperrt ? 0.5 : 0.94;
+    const rand = o.gesetzt ? 0x8fd6a0 : o.farbe;
+    const w = breite / 2, h = hoch / 2;
+    if (o.sechseck) {
+      const e = 8;
+      const pts = [{ x: -w + e, y: -h }, { x: w - e, y: -h }, { x: w, y: 0 },
+        { x: w - e, y: h }, { x: -w + e, y: h }, { x: -w, y: 0 }];
+      bg.fillStyle(fill, alpha); bg.fillPoints(pts, true);
+      bg.lineStyle(o.gesetzt ? 2 : 1.5, rand, o.gesperrt ? 0.3 : 0.8); bg.strokePoints(pts, true);
+    } else {
+      bg.fillStyle(fill, alpha); bg.fillRoundedRect(-w, -h, breite, hoch, 4);
+      bg.lineStyle(o.gesetzt ? 2 : 1, rand, o.gesperrt ? 0.3 : 0.6);
+      bg.strokeRoundedRect(-w, -h, breite, hoch, 4);
+    }
+    c.add(bg);
+  }
+
   /** Gemeinsamer Hover-Kasten; ueberlebt Re-Renders (nicht im Card-Layer). */
   _ktBuildTip() {
     if (this._ktTip) return;
@@ -3982,8 +4024,11 @@ class HubSceneV2 extends Phaser.Scene {
       fontFamily: 'serif', fontSize: 15, color: '#dde0e6', resolution: 2,
       wordWrap: { width: 300 }, lineSpacing: 3
     }).setDepth(2061).setScrollFactor(0).setVisible(false);
-    this._ktTip = { bg: bg, kopf: kopf, txt: txt };
+    // #193: Messing-Platte, einmal angelegt; jeder Hover legt sie nur neu.
+    const platte = this._ktNeu2 ? window.uiRahmen.tipPlatte(this, 2060) : null;
+    this._ktTip = { bg: bg, kopf: kopf, txt: txt, platte: platte };
     if (this._dialogContainer) {
+      if (platte) this._dialogContainer.add(platte.teile);
       this._dialogContainer.add(bg);
       this._dialogContainer.add(kopf);
       this._dialogContainer.add(txt);
@@ -3998,8 +4043,10 @@ class HubSceneV2 extends Phaser.Scene {
     t.txt.setText(text || '');
     this._ktScharf(t.kopf);
     this._ktScharf(t.txt);
-    const b = Math.round(Math.max(t.kopf.width, t.txt.width)) + 24;
-    const h = Math.round(t.kopf.height + t.txt.height) + 26;
+    // Auf der Platte mehr Rand, damit die Schrift nicht auf dem Beschlag steht.
+    const rand = t.platte ? 16 : 12;
+    const b = Math.round(Math.max(t.kopf.width, t.txt.width)) + 2 * rand;
+    const h = Math.round(t.kopf.height + t.txt.height) + 26 + (t.platte ? 10 : 0);
     const panelW = this._ktPanelW || 920;
     const panelH = this._ktPanelH || 460;
     // Neben der Kachel, an der Panelkante umklappend.
@@ -4008,19 +4055,27 @@ class HubSceneV2 extends Phaser.Scene {
     let py = Math.round(y + hoch / 2 + 8);
     if (py + h > panelH / 2 - 8) py = Math.round(y - hoch / 2 - 8 - h);
     t.bg.clear();
-    t.bg.fillStyle(0x0c0c14, 0.98).fillRoundedRect(px - b / 2, py, b, h, 6);
-    t.bg.lineStyle(1.5, 0xd4a543, 0.9).strokeRoundedRect(px - b / 2, py, b, h, 6);
-    t.bg.setVisible(true);
+    if (t.platte) {
+      t.platte.lege(px - b / 2, py, b, h);
+    } else {
+      t.bg.fillStyle(0x0c0c14, 0.98).fillRoundedRect(px - b / 2, py, b, h, 6);
+      t.bg.lineStyle(1.5, 0xd4a543, 0.9).strokeRoundedRect(px - b / 2, py, b, h, 6);
+      t.bg.setVisible(true);
+    }
+    const oben = t.platte ? 14 : 8;
     // Ganzzahlig setzen: auf Sub-Pixeln rastert die Leinwand die Schrift weich.
-    t.kopf.setPosition(Math.round(px - b / 2 + 12), Math.round(py + 8)).setVisible(true);
-    t.txt.setPosition(Math.round(px - b / 2 + 12),
-      Math.round(py + 10 + t.kopf.height)).setVisible(true);
+    t.kopf.setPosition(Math.round(px - b / 2 + rand), Math.round(py + oben)).setVisible(true);
+    t.txt.setPosition(Math.round(px - b / 2 + rand),
+      Math.round(py + oben + 2 + t.kopf.height)).setVisible(true);
   }
 
   _ktHideTip() {
     const t = this._ktTip;
     if (!t) return;
-    try { t.bg.clear().setVisible(false); t.kopf.setVisible(false); t.txt.setVisible(false); } catch (e) {}
+    try {
+      t.bg.clear().setVisible(false); t.kopf.setVisible(false); t.txt.setVisible(false);
+      if (t.platte) t.platte.verstecke();
+    } catch (e) {}
   }
 
 

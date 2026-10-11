@@ -264,6 +264,7 @@ Die gesamte Nebel-Analyse aus #70 lief ueber diese Flaggen.
 | `?roomsize=1` | Verteilung der Raumgroessen mitzaehlen und ausgeben |
 | `?hubdebug=1` | Hub-Collider sichtbar machen |
 | `?sitzung=oeffentlich` | (#166) Spielt die oeffentliche Ratssitzung gleich nach dem Betreten des Hubs, ohne passenden Spielstand (Vorschau). `?sitzung=geheim` spielt ebenso die geheime Sitzung. Beide laufen auch ohne Flagge auf der gemalten Buehne; die Flagge ist nur die Abkuerzung dorthin. |
+| `?oberflaeche2=neu` | (#193) Messing-Stil auch fuer die restlichen Kästen: Inventar-Tooltip (samt Vergleich), Knöpfe Portal/Treppe/Charakterwerte/Ausrüsten/Entfernen, Charakterwerte- und Menü-Overlay des HUD, Wissensbaum-Kacheln und -Tooltip, Inventarzeilen der Schmiede (höher, drei statt vier). Ohne Flagge alles wie bisher. Zum Vergleichen: `?debug=1&oberflaeche2=neu` |
 
 ## Was sonst noch am Gate haengt
 

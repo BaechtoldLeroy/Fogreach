@@ -417,11 +417,11 @@
     return name;
   }
 
-  /** Inventarfeld (normal oder gewaehlt) in genau dieser Groesse. */
-  function feldBild(scene, w, h, gewaehlt) {
+  /** Inventarfeld (normal oder gewaehlt) in genau dieser Groesse; ton faerbt die Mitte. */
+  function feldBild(scene, w, h, gewaehlt, ton) {
     // Die Eckbeschlaege sollen etwa ein Fuenftel der kurzen Seite einnehmen.
     var m = Math.min(1, Math.max(0.2, Math.min(w, h) * 0.24 / FELD_RAND));
-    return gebacken(scene, gewaehlt ? FELD_GEWAEHLT : FELD, w, h, FELD_RAND, m);
+    return gebacken(scene, gewaehlt ? FELD_GEWAEHLT : FELD, w, h, FELD_RAND, m, ton);
   }
 
   /** Messingleiste (Rahmen eines Balkens) in genau dieser Groesse. */
@@ -430,8 +430,48 @@
   }
 
   /** Kleine Platte (Kachel) aus dem Menue-Rahmen. */
-  function kachelBild(scene, w, h) {
-    return gebacken(scene, RAHMEN, w, h, RAHMEN_RAND, Math.min(0.6, h / 135 * 1.0));
+  function kachelBild(scene, w, h, ton) {
+    return gebacken(scene, RAHMEN, w, h, RAHMEN_RAND, Math.min(0.6, h / 135 * 1.0), ton);
+  }
+
+  // ---- Dritte Runde (#193) hinter ?debug=1&oberflaeche2=neu ---------------
+  // Tooltips, Wissensbaum-Kacheln, HUD-Overlays, Inventarknoepfe und die
+  // Inventarzeilen der Schmiede. Ohne Flagge bleibt alles wie in b376; neue
+  // Bilder braucht es nicht, nur den vorhandenen Satz.
+
+  /** Ist die dritte Runde (#193) eingeschaltet? */
+  function oberflaeche2() {
+    var g = (typeof window !== 'undefined') ? window.DebugGate : null;
+    return !!(g && g.flagge('oberflaeche2') === 'neu');
+  }
+
+  /**
+   * Eine Platte fuer Tooltips, die mitwaechst, ohne Neues anzulegen: neun
+   * Bild-Teile entstehen EINMAL, jeder Hover verschiebt und dehnt sie nur.
+   * Gebacken waere hier falsch — Tooltips haben bei jedem Gegenstand eine
+   * andere Groesse, und jede Groesse bliebe als eigene Textur liegen.
+   */
+  function tipPlatte(scene, depth, massstab) {
+    if (!bereit(scene)) return null;
+    var pre = _frames(scene, RAHMEN, RAHMEN_RAND);
+    var m = massstab || 0.4;
+    var teile = [];
+    for (var n = 0; n < 9; n++) {
+      teile.push(scene.add.image(0, 0, RAHMEN, pre + n).setOrigin(0, 0)
+        .setScrollFactor(0).setDepth(depth || 0).setVisible(false));
+    }
+    function lege(left, top, w, h) {
+      var r = Math.min(Math.round(RAHMEN_RAND * m), Math.floor(w / 2), Math.floor(h / 2));
+      var bx = [0, r, w - r], by = [0, r, h - r], bw = [r, w - 2 * r, r], bh = [r, h - 2 * r, r];
+      teile.forEach(function (t, k) {
+        var i = k % 3, j = Math.floor(k / 3);
+        var da = bw[i] > 0 && bh[j] > 0;
+        t.setVisible(da);
+        if (da) t.setPosition(Math.round(left + bx[i]), Math.round(top + by[j])).setDisplaySize(bw[i], bh[j]);
+      });
+    }
+    function verstecke() { teile.forEach(function (t) { if (t.scene) t.setVisible(false); }); }
+    return { teile: teile, lege: lege, verstecke: verstecke };
   }
 
   /** Messingring um ein rundes Element (Portraet, Menue-Knopf, Faehigkeit). */
@@ -448,13 +488,15 @@
    * nur sein Farbkasten faellt weg. Hover wechselt das Bild.
    *
    * @param {string} farbe Schriftfarbe auf dem Knopf
-   * @param {object} [opts] { aus: true } = gesperrt: entsaettigtes Bild, kein Hover
+   * @param {object} [opts] { aus: true } = gesperrt: entsaettigtes Bild, kein Hover;
+   *   ton: Farbton der Mitte (sonst die alte Kastenfarbe); loslassen: nach dem
+   *   Druck zurueck auf Hover (Knoepfe, die offen bleiben, z. B. im Inventar)
    */
   function textKnopf(scene, btn, farbe, opts) {
     var aus = !!(opts && opts.aus);
     if (!btn || !scene || !bereit(scene)) return null;
     // Die alte Kastenfarbe wird zum Farbton der Knopfmitte.
-    var ton = (btn.style && /^#[0-9a-f]{6}$/i.test(btn.style.backgroundColor || '')) ? btn.style.backgroundColor : null;
+    var ton = (opts && opts.ton) || ((btn.style && /^#[0-9a-f]{6}$/i.test(btn.style.backgroundColor || '')) ? btn.style.backgroundColor : null);
     if (btn.setBackgroundColor) btn.setBackgroundColor(null);
     if (farbe) btn.setColor(farbe);
     var w = btn.width, h = btn.height;
@@ -465,12 +507,27 @@
       .setScrollFactor(btn.scrollFactorX, btn.scrollFactorY).setDepth(btn.depth - 0.01);
     var cont = btn.parentContainer;
     if (cont) cont.addAt(bild, Math.max(0, cont.getIndex(btn)));
-    if (!aus) {
-      btn.on('pointerover', function () { if (bild.scene) bild.setTexture(tex('hover')); });
-      btn.on('pointerout', function () { if (bild.scene) bild.setTexture(tex('normal')); });
-      btn.on('pointerdown', function () { if (bild.scene) bild.setTexture(tex('gedrueckt')); });
+    btn.on('pointerover', function () { if (!aus && bild.scene) bild.setTexture(tex('hover')); });
+    btn.on('pointerout', function () { if (!aus && bild.scene) bild.setTexture(tex('normal')); });
+    btn.on('pointerdown', function () { if (!aus && bild.scene) bild.setTexture(tex('gedrueckt')); });
+    if (opts && opts.loslassen) {
+      btn.on('pointerup', function () { if (!aus && bild.scene) bild.setTexture(tex('hover')); });
     }
     btn.once('destroy', function () { if (bild.scene) bild.destroy(); });
+    /**
+     * Nach setText (Portal-Knopf: "Portal (3)" -> "Portal (0)"): Groesse,
+     * Lage und Sperre neu uebernehmen. Jede Groesse ist einmal gebacken.
+     */
+    bild.anpassen = function (neuAus) {
+      if (!bild.scene) return;
+      aus = !!neuAus;
+      if (btn.style && btn.style.backgroundColor && btn.setBackgroundColor) btn.setBackgroundColor(null);
+      w = btn.width; h = btn.height;
+      m = h < 30 ? 0.5 : (h < 40 ? 0.75 : 1);
+      bild.setPosition(btn.x + (0.5 - btn.originX) * w, btn.y + (0.5 - btn.originY) * h);
+      bild.setTexture(tex(aus ? 'aus' : 'normal'));
+      bild.setDisplaySize(w, h);
+    };
     btn._uiTextKnopf = bild;
     return bild;
   }
@@ -514,7 +571,7 @@
 
   var uiRahmen = {
     textKnopf: textKnopf, feldZeile: feldZeile, gebacken: gebacken, feldBild: feldBild, leisteBild: leisteBild,
-    kachelBild: kachelBild, ring: ring,
+    kachelBild: kachelBild, ring: ring, oberflaeche2: oberflaeche2, tipPlatte: tipPlatte,
     bereit: bereit, vorladen: vorladen, nachladen: nachladen,
     neunteilig: neunteilig, platte: platte, banner: banner, knopf: knopf, symbol: symbol,
     einkleiden: einkleiden, menuePlatte: menuePlatte,
