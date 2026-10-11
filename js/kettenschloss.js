@@ -191,7 +191,9 @@
    * Eingabe: Pfeiltasten (oder A/D) führen den Dietrich, LEERTASTE setzt den
    * Stift, E hört auf und nimmt das bisher verdiente Gold. Auf der Leiste
    * tippen oder ziehen setzt den Dietrich direkt dorthin — auf dem Handy ist
-   * das die eigentliche Steuerung.
+   * das die eigentliche Steuerung. Setzen und Aufhören gibt es zusätzlich als
+   * Knöpfe unter der Leiste: auf dem Handy gibt es keine Leertaste und kein E,
+   * ohne sie hing das Spiel dort bis zur Frist.
    *
    * Die Kampfeingabe wird über window.eventChoiceOpen unterdrückt und die
    * Spieluhr angehalten — sonst greift man beim Setzen an oder wird nebenher
@@ -233,6 +235,13 @@
     var leisteB = Math.min(440, camW - 120);
     var leisteX = cx - leisteB / 2;
     var leisteY = camH / 2;
+    // Nur ein Druck, der HIER beginnt, führt den Dietrich: das Schloss samt
+    // Dietrich-Griff. Die Knöpfe darunter liegen bewusst ausserhalb, sonst
+    // verschöbe jeder Tipp auf "Setzen" den Dietrich an die Knopfstelle.
+    var ZIEH_OBEN = leisteY - 50;
+    var ZIEH_UNTEN = leisteY + 40;
+    var KNOPF_Y = leisteY + 142;
+    var KNOPF_H = 46;
 
     var tol = toleranz(0, anzahl);
     var ziel = zielPosition(tol, Math.random);
@@ -253,7 +262,13 @@
       return o;
     };
 
-    halten(scene.add.rectangle(cx, camH / 2, camW, camH, 0x000000, 0.7));
+    // Die Abdunklung ist eine Trefferfläche: sie fängt jeden Tipp ab, bevor er
+    // die Handy-Knöpfe darunter (Angriff, Rolle, Fähigkeiten) oder das
+    // Tippen-zum-Laufen erreicht — wie die Platte der übrigen Ereignis-Dialoge.
+    halten(scene.add.rectangle(cx, camH / 2, camW, camH, 0x000000, 0.7)).setInteractive();
+    // Ein Laufziel von vorher (Tippen-zum-Laufen) würde sonst von jedem Ziehen
+    // auf der Leiste nachgeführt, und danach liefe die Figur dorthin.
+    try { window.__MOBILE_MOVE_TARGET__ = null; } catch (e) {}
     halten(scene.add.text(cx, leisteY - 110, _t('lock.title', 'Kettenschloss'), {
       fontFamily: 'serif', fontSize: '26px', color: '#ffd166', fontStyle: 'bold',
       stroke: '#2a1c00', strokeThickness: 4
@@ -265,18 +280,20 @@
         .replace('{n}', String(anzahl)), {
       fontFamily: 'serif', fontSize: '15px', color: '#e8d9a8'
     }).setOrigin(0.5));
-    // Die Tastenbelegung steht unten: sie schlägt man nach, das Ziel liest man.
-    halten(scene.add.text(cx, leisteY + 138,
-      _t('lock.hint', '← → tasten · Leertaste setzen · E aufhören'), {
+    // Die Bedienung steht unten: sie schlägt man nach, das Ziel liest man. Auf
+    // dem Handy nennt sie keine Tasten, die es dort nicht gibt.
+    halten(scene.add.text(cx, leisteY + 190, istBeruehrung(scene)
+      ? _t('lock.hint_touch', 'Leiste antippen oder ziehen · Setzen · Aufhören')
+      : _t('lock.hint', '← → tasten · Leertaste setzen · E aufhören'), {
       fontFamily: 'monospace', fontSize: '12px', color: '#8d8798'
     }).setOrigin(0.5));
     var gefuehl = halten(scene.add.text(cx, leisteY - 50, '', {
       fontFamily: 'serif', fontSize: '17px', color: '#cfd4dd'
     }).setOrigin(0.5));
-    var stand = halten(scene.add.text(cx, leisteY + 88, '', {
+    var stand = halten(scene.add.text(cx, leisteY + 80, '', {
       fontFamily: 'monospace', fontSize: '14px', color: '#ffffff'
     }).setOrigin(0.5));
-    var meldung = halten(scene.add.text(cx, leisteY + 112, '', {
+    var meldung = halten(scene.add.text(cx, leisteY + 104, '', {
       fontFamily: 'serif', fontSize: '16px', color: '#ff9d6b'
     }).setOrigin(0.5));
     halten(scene.add.text(cx - 108, leisteY + 51, _t('lock.resist', 'Widerstand'), {
@@ -445,11 +462,45 @@
     var aufhoeren = function () { schliesse(false, false); };
 
     // Tippen oder Ziehen auf der Leiste setzt den Dietrich direkt dorthin.
+    // Massgeblich ist, wo der Druck BEGANN (downY): wer auf der Leiste
+    // ansetzt, darf beim Ziehen mit dem Finger abrutschen; ein Tipp auf einen
+    // Knopf darunter bewegt den Dietrich nie.
     var zeigen = function (zeiger) {
       if (beendet || !zeiger || !zeiger.isDown) return;
-      if (zeiger.y < leisteY - 70 || zeiger.y > leisteY + 70) return;
+      var y0 = (typeof zeiger.downY === 'number') ? zeiger.downY : zeiger.y;
+      if (y0 < ZIEH_OBEN || y0 > ZIEH_UNTEN) return;
       pos = Math.max(0, Math.min(1, (zeiger.x - leisteX) / leisteB));
     };
+
+    // Knöpfe für Setzen und Aufhören — auf dem Handy der einzige Weg, am
+    // Rechner zusätzlich zur Tastatur. Messing wie die übrigen Dialoge, wenn
+    // die Bilder schon geladen sind; sonst ein schlichter Kasten mit Goldrand.
+    // Ausgelöst wird beim Drücken (wie die Ereignis-Knöpfe); ein zweiter
+    // Druck kurz danach (Touch plus nachgeschobenes Maus-Ereignis mancher
+    // Browser) zählt nicht doppelt.
+    var letzterKnopf = 0;
+    var UR = window.uiRahmen;
+    var messing = !!(UR && typeof UR.bereit === 'function' && UR.bereit(scene));
+    var knopf = function (x, text, wirkung) {
+      var beschriftung = scene.add.text(x, KNOPF_Y, text, {
+        fontFamily: 'serif', fontSize: '18px', color: '#f1e9d8', fontStyle: 'bold'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(4003);
+      var breite = Math.max(140, Math.ceil(beschriftung.width) + 40);
+      var flaeche = scene.add.rectangle(x, KNOPF_Y, breite, KNOPF_H, 0x2a2a2a)
+        .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(4002)
+        .setInteractive({ useHandCursor: true });
+      if (messing) { try { UR.knopf(flaeche); } catch (e) {} }
+      flaeche.on('pointerdown', function () {
+        var jetzt = Date.now();
+        if (beendet || jetzt - letzterKnopf < 150) return;
+        letzterKnopf = jetzt;
+        wirkung();
+      });
+      elemente.push(flaeche, beschriftung);
+      return flaeche;
+    };
+    var knopfSetzen = knopf(cx - 90, _t('lock.btn.set', 'Setzen'), function () { setzen(); });
+    var knopfAufhoeren = knopf(cx + 90, _t('lock.btn.stop', 'Aufhören'), function () { aufhoeren(); });
 
     var tick = function () {
       if (beendet) return;
@@ -508,8 +559,22 @@
     return {
       setzen: setzen,
       position: function () { return pos; },
+      stand: function () { return { gesetzt: gesetzt, dietriche: dietriche, beendet: beendet }; },
+      // Für die Tests: die Knöpfe und wo die Leiste liegt.
+      knoepfe: { setzen: knopfSetzen, aufhoeren: knopfAufhoeren },
+      leiste: { x: leisteX, y: leisteY, breite: leisteB },
       abbrechen: function () { schliesse(false, false); }
     };
+  }
+
+  // Über die Szene, nicht über window.isMobile: das ist in main.js ein
+  // script-weites `let` und liegt nicht auf window.
+  function istBeruehrung(scene) {
+    try {
+      var d = scene && scene.sys && scene.sys.game && scene.sys.game.device;
+      if (d && d.input) return !!d.input.touch;
+    } catch (e) {}
+    return false;
   }
 
   function _t(key, fallback) {
