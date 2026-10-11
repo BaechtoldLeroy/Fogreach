@@ -67,6 +67,99 @@
     var fuss = obj.y + obj.displayHeight * (1 - obj.originY);
     return fuss > p.y ? T + 0.5 : T - 0.5;
   };
+
+  // Weitere Dinge, hinter die der Spieler laufen kann (Ereignisobjekte wie
+  // Schrein, Brunnen oder Elara, Deko-Saeulen ohne Koerper), sortieren sich
+  // ebenso — aber in EINEM gemeinsamen Durchlauf je Szene statt mit einem
+  // Handler je Objekt, damit auch viele Eintraege nur eine Schleife kosten.
+  // (Statuen, Saeulen, Altaere und Tueren nicht: s. spawnObstacle bzw.
+  // doorSystem.js.)
+  //
+  // Anders als Haendler und Altar behalten diese Dinge ihre gewohnte Tiefe
+  // (Deko 41, Ereignis 45, Figur 90) und werden NUR angehoben (100.5), wenn
+  // der Spieler wirklich dahinter steht: Bilder ueberlappen sich und seine
+  // Fuesse liegen hoeher als ihre Fusslinie. Steht er davor oder weit weg,
+  // bleibt alles wie bisher — so rutscht nicht jede Saeule im Raum ueber den
+  // Gegnerlayer, nur weil der Spieler irgendwo weiter oben steht.
+  //
+  // Je Bild: wenige Vergleiche je Eintrag, setDepth nur beim Wechsel (sonst
+  // sortiert Phaser die Anzeigeliste jedes Bild neu). Zerstoerte Objekte
+  // (Raumwechsel, Zerschlagen, Benutzen) fallen beim naechsten Durchlauf aus
+  // der Liste; ist sie leer, meldet sich der Durchlauf ab. Szenenende
+  // ('shutdown') raeumt alles.
+  //
+  // begleiter: [{ o, versatz }] — z. B. der Schein eines Ereignisobjekts. Er
+  // behaelt in Ruhe seine eigene Tiefe und liegt angehoben bei 100.5 + versatz.
+  function tiefenLauf(scene, st) {
+    var p = w.player;
+    var da = !!(p && p.active && p.scene);
+    var pl = 0, pr = 0, po = 0, pu = 0, pFuss = 0;
+    if (da) {
+      pl = p.x - p.displayWidth * p.originX; pr = pl + p.displayWidth;
+      pu = p.y + p.displayHeight * (1 - p.originY); po = pu - p.displayHeight;
+      pFuss = p.y;
+    }
+    var hoch = w.WELT_TIEFEN.SPIELER + 0.5;
+    var L = st.liste, n = 0;
+    for (var i = 0; i < L.length; i++) {
+      var e = L[i], o = e.o;
+      if (!o || !o.scene) continue;            // zerstoert: faellt heraus
+      L[n++] = e;
+      if (!o.active) continue;
+      // Hat jemand anderes die Tiefe umgestellt, gilt das als neue Ruhetiefe.
+      if (o.depth !== e.t) { e.ruhe = o.depth; e.t = o.depth; }
+      var dahinter = false;
+      if (da) {
+        var ol = o.x - o.displayWidth * o.originX, or_ = ol + o.displayWidth;
+        var ou = o.y + o.displayHeight * (1 - o.originY), oo = ou - o.displayHeight;
+        dahinter = pr > ol && pl < or_ && pu > oo && po < ou && ou > pFuss;
+      }
+      var t = dahinter ? hoch : e.ruhe;
+      if (t === e.t) continue;
+      e.t = t;
+      o.setDepth(t);
+      if (e.b) {
+        for (var k = 0; k < e.b.length; k++) {
+          var b = e.b[k];
+          if (!b.o || !b.o.scene) continue;
+          b.o.setDepth(dahinter ? hoch + b.versatz : b.ruhe);
+        }
+      }
+    }
+    L.length = n;
+    if (!n) tiefenSortierungEnde(scene);
+  }
+
+  function tiefenSortierungEnde(scene) {
+    var st = scene && scene.__tiefenSortierung;
+    if (!st) return;
+    if (scene.events) {
+      scene.events.off('postupdate', st.lauf);
+      scene.events.off('shutdown', st.ende);
+    }
+    st.liste.length = 0;
+    scene.__tiefenSortierung = null;
+  }
+
+  w.sortiereZumSpieler = function (scene, obj, begleiter) {
+    if (!scene || !scene.events || !obj) return;
+    var st = scene.__tiefenSortierung;
+    if (!st) {
+      st = { liste: [], lauf: null, ende: null };
+      st.lauf = function () { tiefenLauf(scene, st); };
+      st.ende = function () { tiefenSortierungEnde(scene); };
+      scene.__tiefenSortierung = st;
+      scene.events.on('postupdate', st.lauf);
+      scene.events.once('shutdown', st.ende);
+    }
+    var b = null;
+    if (begleiter && begleiter.length) {
+      b = begleiter.filter(function (x) { return x && x.o; }).map(function (x) {
+        return { o: x.o, ruhe: x.o.depth, versatz: x.versatz || 0 };
+      });
+    }
+    st.liste.push({ o: obj, ruhe: obj.depth, t: obj.depth, b: b });
+  };
 })(window);
 
 (function(w) {
@@ -981,6 +1074,11 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
         .setAlpha(alphaVar)
         .setScale(scaleVar);
       templateWalls.push(prop);
+      // Die Deko-Saeule hat keinen Koerper: der Spieler laeuft wirklich
+      // hinter ihr durch (#165).
+      if (d.type === 'prop_pillar' && typeof window.sortiereZumSpieler === 'function') {
+        window.sortiereZumSpieler(scene, prop);
+      }
     }
   }
 
@@ -1545,6 +1643,13 @@ function spawnObstacle(x, y, key) {
   var _lk = String(key).toLowerCase();
   var _tall = _lk.indexOf('statue') === 0 || _lk.indexOf('pillar') === 0 || _lk.indexOf('altar') === 0;
   o.setDepth(_tall ? window.WELT_TIEFEN.PROP_HOCH : window.WELT_TIEFEN.PROP);
+  // Bewusst NICHT nach Bildhoehe sortiert (#165, anders als Ereignisobjekte
+  // und Deko-Saeulen): der Koerper eines Hindernisses ist genau so gross wie
+  // sein Bild, und der Spielerkoerper umschliesst sein eigenes Bild. Die
+  // Bilder koennen sich also nie ueberlappen — gemessen: an Statue, Saeulen
+  // und Altar aus acht Richtungen hoechstens Kantenberuehrung, nie Deckung.
+  // Wer das Hindernis spaeter auf einen Fusskoerper verkleinert, gibt es mit
+  // window.sortiereZumSpieler(scene, o) in den gemeinsamen Durchlauf.
 
   // Optionale Metadaten
   o.setData('type', key);

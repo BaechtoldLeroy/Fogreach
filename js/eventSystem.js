@@ -904,6 +904,19 @@
     glow.fillCircle(cx, cy, 30);
     glow.setDepth(44);
 
+    // Zeichenreihenfolge (#165): steht der Spieler hinter dem Objekt (Bilder
+    // decken sich, seine Fuesse hoeher als dessen Unterkante), hebt der
+    // gemeinsame Durchlauf es vor ihn, der Schein folgt knapp darunter. Sonst
+    // bleibt die Ruhetiefe. Gemalte Figuren (Elara, mit opts.scale) ruhen
+    // wie der Haendler auf der NPC-Ebene statt unter dem Gegnerlayer. Das [E]
+    // bleibt obenauf (500).
+    if (opts && typeof opts.scale === 'number' && window.WELT_TIEFEN && window.WELT_TIEFEN.NPC) {
+      obj.setDepth(window.WELT_TIEFEN.NPC);
+    }
+    if (typeof window.sortiereZumSpieler === 'function') {
+      window.sortiereZumSpieler(scene, obj, [{ o: glow, versatz: -0.25 }]);
+    }
+
     var used = false;
     var updateHandler = function () {
       if (used || !obj.active || typeof player === 'undefined' || !player) return;

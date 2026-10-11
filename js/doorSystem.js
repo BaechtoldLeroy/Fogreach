@@ -221,6 +221,10 @@
     // Eine Tuer ist hohe Architektur wie Statue und Saeule: sie steht aufrecht
     // im Rahmen und darf von keinem Prop geschnitten werden.
     door.setDepth(window.WELT_TIEFEN.PROP_HOCH);
+    // Nicht nach Bildhoehe sortiert (#165): geschlossen ist der Koerper genau
+    // das Bild, der Spieler kommt nie dahinter. Offen fuellt das Bild den
+    // Durchgang mit dunklem Boden; angehoben laege dieses Rechteck ueber den
+    // Beinen des Spielers, waehrend die Wand daneben (39) unter ihm bleibt.
 
     // Set the physics body to match the texture size exactly (no rotation needed)
     if (door.body) {
