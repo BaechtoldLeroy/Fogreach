@@ -277,9 +277,10 @@
     if (siegel) seiten.push(siegel);
     seiten.push(_t('(Du ziehst Dich zurück, bevor die Wachen die Runde drehen. Harren wartet oben.)', '(You withdraw before the guards make their round. Harren is waiting upstairs.)'));
 
-    // #167: mit ?sitzung= sitzen die drei sichtbar am Tisch. Das Zeichen
-    // steht dann auf den drei Siegeln des Blattes statt gross darueber.
-    var SB = _buehne();
+    // #167: die drei sitzen sichtbar am Tisch (fest eingebaut, ohne Flagge).
+    // Das Zeichen steht auf den drei Siegeln des Blattes statt gross darueber.
+    // Die gezeichnete Fassung unten bleibt der Rueckfall ohne Buehne.
+    var SB = window.SitzungsBuehne || null;
     if (SB) {
       // Bis die Bilder da sind, darf im Dungeon nichts weiterlaufen.
       if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);

@@ -164,8 +164,8 @@ test('Hub mit ?sitzung=oeffentlich: die Szene spielt gleich nach dem Betreten (V
 
 // --- Dungeon: die geheime Sitzung ---------------------------------------------------
 
-test('Dungeon mit ?sitzung=neu: die drei sitzen sichtbar am Tisch, der Dialog darunter', async () => {
-  const D = await launchDungeon({ depth: 5, zusatz: '&sitzung=neu' });
+test('Dungeon (fest, ohne Flagge, #167): die drei sitzen sichtbar am Tisch, der Dialog darunter', async () => {
+  const D = await launchDungeon({ depth: 5 });
   try {
     standSetzen(D, Object.assign(vorausFertig(), { council_collusion_reveal: sitzung(true) }), { edikt_garde: true });
     const start = D.run(`(function () {

@@ -97,6 +97,11 @@ test('Hub: der Ratssaal zeigt drei Pulte und die Buerger — es sieht aus wie ei
 let D = null;
 test('Dungeon: vor dem Ratssaal liegt keine Ratskammer im Lauf', async () => {
   D = await launchDungeon({ depth: 5 });
+  // #167: die geheime Sitzung spielt auf der gemalten Buehne. Deren Bilder
+  // einmal vorladen, dann spielt sie so sofort wie die gezeichnete Fassung,
+  // und die Faelle unten koennen die Dialoge in einem Zug durchklicken.
+  D.run("window.__buehne = false; window.SitzungsBuehne.laden(window.game.scene.getScene('GameScene'), function () { window.__buehne = true; })");
+  assert.ok(await D.settle(() => D.run('window.__buehne'), { maxRounds: 200 }), 'die Bilder der Sitzungsbuehne laden nicht');
   standSetzen(D, Object.assign(vorausFertig(), { council_collusion_reveal: sitzung(false, false) }), {}, 1);
   for (let i = 0; i < 10; i++) {
     const reihe = D.run(`(function () { initDungeonRun(); return dungeonRun.templateOrder.slice(); })()`);
