@@ -92,7 +92,8 @@
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
     'gegnerlauf',
     'spezial',          // spezial=neu: Spezialangriffe als Bildfolgen (#174)
-    'versteckraum'      // versteckraum=neu: Elaras Kammer eingerichtet (#192)
+    'versteckraum',     // versteckraum=neu: Elaras Kammer eingerichtet (#192)
+    'idle'              // idle=1: Idle-Schleifen der Hub-Figuren (#194)
   ];
 
   /**

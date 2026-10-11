@@ -272,6 +272,7 @@ Die gesamte Nebel-Analyse aus #70 lief ueber diese Flaggen.
 | `?roomsize=1` | Verteilung der Raumgroessen mitzaehlen und ausgeben |
 | `?hubdebug=1` | Hub-Collider sichtbar machen |
 | `?spezial=neu` | (#174) Testmodus: Wirbel, Hammer, Ansturm, Schattenschritt (Blitzsprung), Frostnova und Wirbelsog zeigen eine Bewegung der Figur (PixelLab-Bildfolgen `spezial_*`), die Linienbilder bleiben darueber. Die Bilder werden nur mit der Flagge geladen; Treffer und Abklingzeiten sind dieselben. In der Konsole legt `__spezialProbe()` Wirbel, Hammer, Ansturm und Schattenschritt auf Q/W/E/R, `__spezialProbe('frostNova', 'cycloneStrike')` die beiden anderen. Beispiel: `?debug=1&spezial=neu&dungeon=5&autostart=1&stark=1` |
+| `?idle=1` | (#194) Vergleichsmodus: die Hub-Figuren (neun NPC, Patrouillen, Epilog-Vorleser) spielen eine dezente Idle-Schleife (atmen, Gewicht verlagern, kleine Geste; PixelLab-Bildfolgen unter `assets/sprites/hubidle/`). Lage, Groesse und [E]-Zone sind die des Standbilds, jede Figur startet mit eigener Phase. Ohne Flagge werden die Bilder nicht geladen. Beispiel: `?debug=1&idle=1` |
 | `?sitzung=oeffentlich` | (#166) Spielt die oeffentliche Ratssitzung gleich nach dem Betreten des Hubs, ohne passenden Spielstand (Vorschau). `?sitzung=geheim` spielt ebenso die geheime Sitzung. Beide laufen auch ohne Flagge auf der gemalten Buehne; die Flagge ist nur die Abkuerzung dorthin. |
 
 ## Was sonst noch am Gate haengt

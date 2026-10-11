@@ -153,6 +153,8 @@ class HubSceneV2 extends Phaser.Scene {
     // Referenz seit dem Laden der Datei.
     window.HubNeuWelt.layoutUebernehmen();
     window.HubNeuWelt.vorladen(this);
+    // #194: Idle-Schleifen der Figuren — laedt nur mit ?idle=1 etwas.
+    if (window.HubIdle) window.HubIdle.vorladen(this);
     // Hub-only NPC sprites — deferred from StartScene so the main menu loads
     // faster. Phaser only loads keys that aren't already in the texture cache,
     // so re-entering the hub from a dungeon is essentially free.
@@ -868,6 +870,8 @@ class HubSceneV2 extends Phaser.Scene {
       }
 
       sprite.setDepth(sy);
+      // #194: Schleife erst NACH der Groessenmessung — sie hat das Mass des Standbilds.
+      if (window.HubIdle) window.HubIdle.spielen(this, sprite, npc.texture);
       sprite.setData('id', npc.id);
       sprite.setData('name', npc.name);
 
@@ -1411,6 +1415,11 @@ class HubSceneV2 extends Phaser.Scene {
   // #161: Epilog — Buerger, die auf dem Platz aus Thoms Blaettern vorlesen.
   // Wie viele, haengt daran, wie viele der Verschwundenen zurueckkamen
   // (die Gesuche aus council_seizure, HubPhase.epilogVorleser).
+  // Bild wie bisher; mit ?idle=1 ein Sprite, damit es eine Schleife spielen kann (#194).
+  _hubFigur(x, y, bild) {
+    return window.HubIdle ? window.HubIdle.figur(this, x, y, bild) : this.add.image(x, y, bild);
+  }
+
   _vorleserAufstellen() {
     (this._vorleser || []).forEach((s) => { try { s.destroy(); } catch (_) {} });
     this._vorleser = [];
@@ -1428,8 +1437,9 @@ class HubSceneV2 extends Phaser.Scene {
       const { x, y, bild } = plaetze[i];
       if (!this.textures.exists(bild)) continue;
       // Fuesse am Punkt; so hoch wie der Buerger im hubLayout.
-      const s = _aufFigurHoehe(this, this.add.image(x, y, bild).setOrigin(0.5, 1), 52);
+      const s = _aufFigurHoehe(this, this._hubFigur(x, y, bild).setOrigin(0.5, 1), 52);
       s.setDepth(y);
+      if (window.HubIdle) window.HubIdle.spielen(this, s, bild);
       this._vorleser.push(s);
     }
     return this._vorleser.length;
@@ -1455,8 +1465,10 @@ class HubSceneV2 extends Phaser.Scene {
     ((anker && anker.patrouillen) || []).forEach(({ x, y }) => {
       // Fuesse am Punkt, so hoch wie die Stadtwache im hubLayout. Der feste
       // Faktor 0.23 stammte vom Grossbild vor b326 und machte sie 14 px klein.
-      const s = _aufFigurHoehe(this, this.add.image(x, y, bild).setOrigin(0.5, 1), 58);
+      const s = _aufFigurHoehe(this, this._hubFigur(x, y, bild).setOrigin(0.5, 1), 58);
       s.setDepth(y);
+      // Zwei Patrouillen mit demselben Bild: die zweite laeuft versetzt.
+      if (window.HubIdle) window.HubIdle.spielen(this, s, bild, this._patrouillen.length);
       this._patrouillen.push(s);
     });
     return this._patrouillen.length;
