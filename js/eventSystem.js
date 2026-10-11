@@ -1841,42 +1841,41 @@
   // Spieler (54 px); der Alte soll daneben stehen wie ein Mensch, nicht wie
   // ein Riese. Seine Kapuze ist der hoechste Punkt des Bildes, also misst die
   // Bildhoehe zugleich den Mann.
-  var HAENDLER_NEU = {
+  var HAENDLER_BILD = {
     key: 'haendler_karren',
     pfad: 'assets/sprites/haendler_karren.png?v=1',
     hoehe: 62,                    // Spielpixel; gebeugt, mit Kapuze knapp ueber Spielergroesse
     laterne: { x: -27, y: -12.5 } // Flamme relativ zur Bildmitte, in Bildpixeln (103x89)
   };
-  function _haendlerNeu() {
-    try { return !!(window.DebugGate && window.DebugGate.an('haendler')); } catch (e) { return false; }
+  // Nur fuer den Notfall: fehlt das Karrenbild, traegt er wieder Maras Sprite,
+  // statt gar nicht zu erscheinen (oder als Phasers gruenes Fehlerkaestchen).
+  var HAENDLER_NOTBILD = { key: 'spaeherin', pfad: 'assets/sprites/spaeherin.png' };
+
+  // Laedt die Textur bei Bedarf nach und meldet danach, ob sie wirklich da ist.
+  function _haendlerTextur(scene, bild, weiter) {
+    if (scene.textures.exists(bild.key)) { weiter(true); return; }
+    scene.load.image(bild.key, bild.pfad);
+    scene.load.once('complete', function () { weiter(scene.textures.exists(bild.key)); });
+    scene.load.start();
   }
 
   function spawnMerchant(scene) {
     if (!scene || !scene.add) return;
     cleanupMerchant();
 
-    // Load merchant texture on-demand if not available
-    // #165 (Flagge ?haendler=neu): der Alte mit dem Karren bekommt sein
-    // eigenes Bild. Ohne Flagge traegt er weiter Maras Sprite.
-    var neu = _haendlerNeu();
-    var texKey = neu ? HAENDLER_NEU.key : 'spaeherin';
-    if (!scene.textures.exists(texKey)) {
-      scene.load.image(texKey, neu ? HAENDLER_NEU.pfad : 'assets/sprites/spaeherin.png');
-      scene.load.once('complete', function() {
-        // 052 WP03: filter the painterly merchant sprite after lazy-load
-        if (window.RenderQuality) {
-          window.RenderQuality.applyLinearFilter(scene, [texKey]);
-        }
-        _placeMerchant(scene, texKey);
-      });
-      scene.load.start();
-    } else {
-      // Already loaded — re-apply in case filter was wiped by a scene boot
-      if (window.RenderQuality) {
-        window.RenderQuality.applyLinearFilter(scene, [texKey]);
-      }
+    var stellen = function (texKey) {
+      // 052 WP03: das gemalte Bild weich filtern — nach dem Nachladen und
+      // erneut, falls ein Szenen-Neustart den Filter verworfen hat.
+      if (window.RenderQuality) window.RenderQuality.applyLinearFilter(scene, [texKey]);
       _placeMerchant(scene, texKey);
-    }
+    };
+    _haendlerTextur(scene, HAENDLER_BILD, function (da) {
+      if (da) { stellen(HAENDLER_BILD.key); return; }
+      try { console.warn('[eventSystem] Haendlerbild fehlt, Notbild ' + HAENDLER_NOTBILD.key); } catch (e) {}
+      _haendlerTextur(scene, HAENDLER_NOTBILD, function (notDa) {
+        if (notDa) stellen(HAENDLER_NOTBILD.key);
+      });
+    });
   }
 
   function _placeMerchant(scene, texKey) {
@@ -1906,26 +1905,30 @@
       }
     }
 
+    // Zeichenreihenfolge (#165): der Spieler (100) steht VOR dem Haendler.
+    // Figur, Karren und Laternenschein liegen alle unter ihm; geht er vor dem
+    // Karren her, verdeckt er auch die Laterne — ein Schein, der auf seiner
+    // Brust schwebt, saehe falsch aus.
+    var tiefe = (window.WELT_TIEFEN && window.WELT_TIEFEN.NPC) || 90;
     var merchant = scene.physics.add.sprite(cx, cy, texKey);
-    merchant.setDepth(150);
+    merchant.setDepth(tiefe);
     merchant.body.setImmovable(true);
     merchant.body.setAllowGravity(false);
 
-    // Scale to reasonable NPC size (~120px tall)
     var h = merchant.height || 200;
-    var istNeu = texKey === HAENDLER_NEU.key;
-    if (istNeu) merchant.setScale(HAENDLER_NEU.hoehe / h);
-    else merchant.setScale(120 / h);
+    var istKarren = texKey === HAENDLER_BILD.key;
+    // Notbild (Maras Sprite) wie frueher auf ~120 px.
+    merchant.setScale((istKarren ? HAENDLER_BILD.hoehe : 120) / h);
     // Abstand des [E]-Hinweises zur Mitte: beim Karrenbild ueber dessen Oberkante.
-    var promptDy = istNeu ? Math.round(merchant.displayHeight / 2 + 12) : 70;
+    var promptDy = istKarren ? Math.round(merchant.displayHeight / 2 + 12) : 70;
 
     // Die Laterne am Karren flackert: ein warmer Schein, der unruhig atmet.
     // Der Haendler steht still, also bleibt der Schein an seinem Platz.
     var schein = null;
-    if (istNeu && scene.add.circle) {
+    if (istKarren && scene.add.circle) {
       var sk = merchant.scaleX;
-      schein = scene.add.circle(cx + HAENDLER_NEU.laterne.x * sk, cy + HAENDLER_NEU.laterne.y * sk,
-        6, 0xffb347, 0.3).setDepth(150.5);
+      schein = scene.add.circle(cx + HAENDLER_BILD.laterne.x * sk, cy + HAENDLER_BILD.laterne.y * sk,
+        6, 0xffb347, 0.3).setDepth(tiefe + 0.5);
       if (schein.setBlendMode && window.Phaser) schein.setBlendMode(Phaser.BlendModes.ADD);
       if (scene.tweens) {
         scene.tweens.add({

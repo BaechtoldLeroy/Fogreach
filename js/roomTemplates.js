@@ -32,6 +32,11 @@
     BODEN_SCHEIN: 44,    // der Schein unter dem Stueck
     BODEN_BEUTE: 45,
     GEGNER: 50,          // ab hier gehoert die Ebene den Figuren (Spieler >= 100)
+    // Stehende Figuren im Keller, die keine Gegner sind (der wandernde
+    // Haendler samt Karren und Laternenschein): ueber Gegnern und Geschossen,
+    // aber UNTER dem Spieler (100). Gemeldet zu #165: der Spieler soll vor
+    // dem Haendler stehen, nicht hinter ihm verschwinden. Lag vorher auf 150.
+    NPC: 90,
     // Geschosse fliegen UEBER allem, was am Boden liegt oder steht. Die
     // Gegner-Geschosse hatten bis b246 gar keine Tiefe und lagen damit auf 0,
     // also unter der Treppe (34). Gemeldet: "Treppen sind oberhalb von

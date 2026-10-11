@@ -195,12 +195,12 @@ Bekannte Namen: `treasure_cache`, `ambush`, `wandering_merchant`,
 ?debug=1&dungeon=10&event=chain_lock
 ```
 
-`?haendler=neu` (#165) gibt dem wandernden Händler sein eigenes Bild (alter
-Mann mit Handkarren, Amuletten und flackernder Laterne) statt Maras Sprite.
-Sofort zu sehen ab dem zweiten Raum:
+Der wandernde Händler (#165, fest eingebaut, keine Flagge mehr) ist der Alte
+mit Handkarren, Amuletten und flackernder Laterne; der Spieler wird vor ihm
+gezeichnet. Sofort zu sehen ab dem zweiten Raum:
 
 ```
-?debug=1&dungeon=3&event=wandering_merchant&haendler=neu
+?debug=1&dungeon=3&event=wandering_merchant
 ```
 
 Das **Kettenschloss** (`chain_lock`) startet ein Minispiel: ein Zeiger wandert

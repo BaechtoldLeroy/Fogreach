@@ -1,8 +1,8 @@
-// tests/haendlerSprite.test.js — #165: der wandernde Haendler bekommt ein
-// eigenes Bild (alter Mann mit Handkarren) statt Maras Sprite.
+// tests/haendlerSprite.test.js — #165: der wandernde Haendler ist der Alte mit
+// dem Handkarren (eigenes Bild statt Maras Sprite), fest eingebaut ohne Flagge.
 //
-// Nur mit der URL-Flagge ?haendler=neu. Ohne Flagge muss er exakt wie vorher
-// aussehen: Textur 'spaeherin', 120 px hoch, [E]-Hinweis 70 px ueber der Mitte.
+// Maras Sprite ('spaeherin', 120 px) bleibt nur als Notbild, falls das
+// Karrenbild fehlt. Und der Spieler wird VOR dem Haendler gezeichnet.
 
 const { test, before, after, afterEach } = require('node:test');
 const assert = require('node:assert');
@@ -11,24 +11,21 @@ const path = require('path');
 const { launchDungeon } = require('../tools/headless/index.js');
 
 let H = null;
-let SUCHE = '';
 
 before(async () => {
   H = await launchDungeon({ depth: 3 });
-  SUCHE = H.run('window.location.search');
   H.run(`window.__shopOrig = window.openShopScene`);
 });
 after(async () => { if (H) await H.shutdown(); });
 afterEach(() => {
-  H.run(`window.location.search = ${JSON.stringify(SUCHE)};
-    window.openShopScene = window.__shopOrig; window._dungeonMerchant = false;`);
+  H.run(`window.openShopScene = window.__shopOrig; window._dungeonMerchant = false;`);
 });
 
-// Laesst den Haendler erscheinen und taktet, bis er steht (das neue Bild
-// wird erst nachgeladen).
-function haendlerHerbei(suche) {
+// Laesst den Haendler erscheinen und taktet, bis er steht (das Bild wird
+// erst nachgeladen).
+function haendlerHerbei() {
   H.run(`(function () {
-    window.location.search = ${JSON.stringify(suche)};
+    window.EventSystem.reset && window.EventSystem.reset();
     var sc = window.game.scene.getScene('GameScene');
     var m = window.EventSystem.EVENT_TYPES.filter(function (e) { return e.id === 'wandering_merchant'; })[0];
     m.handler(sc);
@@ -61,20 +58,8 @@ function handelMitE() {
   return Object.assign(hinweis, { laden: H.run('window.__shopAufgerufen') });
 }
 
-test('ohne Flagge: Maras Sprite, 120 px, Hinweis 70 px ueber der Mitte', () => {
-  const h = haendlerHerbei('?dungeon=3');
-  assert.ok(h, 'der Haendler erscheint nicht');
-  assert.strictEqual(h.key, 'spaeherin');
-  assert.ok(Math.abs(h.hoehe - 120) < 0.5, 'Hoehe ' + h.hoehe);
-  assert.strictEqual(h.schein, false, 'ohne Flagge darf keine Laterne flackern');
-  const e = handelMitE();
-  assert.ok(e.sichtbar, '[E] nicht sichtbar');
-  assert.strictEqual(e.dy, 70);
-  assert.strictEqual(e.laden, 1, 'der Laden oeffnet sich nicht');
-});
-
-test('mit ?haendler=neu: eigenes Karrenbild, Mann in Spielergroesse', () => {
-  const h = haendlerHerbei('?dungeon=3&haendler=neu');
+test('der Haendler ist der Alte mit dem Karren, in Spielergroesse', () => {
+  const h = haendlerHerbei();
   assert.ok(h, 'der Haendler erscheint nicht (Bild nicht geladen?)');
   assert.strictEqual(h.key, 'haendler_karren');
   // Die Textur muss echt geladen sein, nicht Phasers __MISSING-Platzhalter.
@@ -103,7 +88,70 @@ test('mit ?haendler=neu: eigenes Karrenbild, Mann in Spielergroesse', () => {
   assert.strictEqual(H.run(scheinObj + '.active'), false, 'der Schein bleibt nach dem Aufraeumen stehen');
 });
 
-test('das Bild liegt im Repo', () => {
+test('der Spieler wird vor dem Haendler, dem Karren und dem Laternenschein gezeichnet', () => {
+  const h = haendlerHerbei();
+  assert.ok(h, 'der Haendler erscheint nicht');
+  // Gemessen wird die Reihenfolge, in der Phaser wirklich zeichnet: die
+  // sortierte Anzeigeliste der Szene. Haengt ein Objekt in einem Layer
+  // (enemyLayer), zaehlt der Platz des Layers, nicht die eigene Tiefe.
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var a = window.EventSystem.aktiverHaendler();
+    var liste = sc.sys.displayList;
+    liste.depthSort();
+    function platz(o) {
+      var oben = o;
+      while (oben && oben.displayList && oben.displayList !== liste) oben = oben.displayList;
+      while (oben && oben.parentContainer) oben = oben.parentContainer;
+      return liste.getIndex(oben);
+    }
+    return { spieler: platz(player), haendler: platz(a.sprite), schein: platz(a.schein),
+             spielerTiefe: player.depth, haendlerTiefe: a.sprite.depth, scheinTiefe: a.schein.depth };
+  })()`);
+  assert.ok(r.spieler >= 0 && r.haendler >= 0 && r.schein >= 0, 'nicht in der Anzeigeliste: ' + JSON.stringify(r));
+  assert.ok(r.spieler > r.haendler,
+    'Haendler (Figur+Karren) liegt ueber dem Spieler: ' + JSON.stringify(r));
+  assert.ok(r.spieler > r.schein,
+    'Laternenschein liegt ueber dem Spieler: ' + JSON.stringify(r));
+  assert.ok(r.spielerTiefe > r.haendlerTiefe && r.spielerTiefe > r.scheinTiefe, JSON.stringify(r));
+  // Der Schein gehoert zur Laterne: ueber dem Karren, sonst ist er unsichtbar.
+  assert.ok(r.schein > r.haendler, 'Schein liegt unter dem Karren: ' + JSON.stringify(r));
+});
+
+test('Notfall: fehlt das Karrenbild, traegt er Maras Sprite (120 px)', () => {
+  // Das Bild "entfernen": Textur weg und der Lader findet die Datei nicht.
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    window.EventSystem.reset && window.EventSystem.reset();
+    if (sc.textures.exists('haendler_karren')) sc.textures.remove('haendler_karren');
+    window.__ladeOrig = sc.load.image;
+    sc.load.image = function (key, pfad) {
+      if (key === 'haendler_karren') pfad = 'assets/sprites/gibt_es_nicht_165.png';
+      return window.__ladeOrig.apply(this, [key, pfad].concat([].slice.call(arguments, 2)));
+    };
+  })()`);
+  try {
+    const h = haendlerHerbei();
+    assert.ok(h, 'ohne Karrenbild erscheint gar kein Haendler');
+    assert.strictEqual(h.key, 'spaeherin');
+    assert.ok(Math.abs(h.hoehe - 120) < 0.5, 'Hoehe ' + h.hoehe);
+    assert.strictEqual(h.schein, false, 'ohne Karren darf keine Laterne flackern');
+    const e = handelMitE();
+    assert.ok(e.sichtbar, '[E] nicht sichtbar');
+    assert.strictEqual(e.dy, 70);
+    assert.strictEqual(e.laden, 1, 'der Laden oeffnet sich nicht');
+  } finally {
+    H.run(`(function () {
+      var sc = window.game.scene.getScene('GameScene');
+      sc.load.image = window.__ladeOrig;
+      window.EventSystem.reset && window.EventSystem.reset();
+    })()`);
+  }
+});
+
+test('das Bild liegt im Repo, die Flagge ist weg', () => {
   const p = path.join(__dirname, '..', 'assets', 'sprites', 'haendler_karren.png');
   assert.ok(fs.existsSync(p), p + ' fehlt');
+  const quelle = fs.readFileSync(path.join(__dirname, '..', 'js', 'eventSystem.js'), 'utf8');
+  assert.ok(quelle.indexOf("an('haendler')") === -1, 'spawnMerchant fragt noch die Flagge ab');
 });
