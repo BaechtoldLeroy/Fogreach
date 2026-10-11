@@ -91,7 +91,8 @@
     'versteck', 'sonder', 'akt', 'stark',
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
     'gegnerlauf',
-    'spezial'           // spezial=neu: Spezialangriffe als Bildfolgen (#174)
+    'spezial',          // spezial=neu: Spezialangriffe als Bildfolgen (#174)
+    'versteckraum'      // versteckraum=neu: Elaras Kammer eingerichtet (#192)
   ];
 
   /**

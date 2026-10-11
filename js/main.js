@@ -1065,6 +1065,10 @@ function preload() {
   if (!this.textures.exists('elara_right0')) {
     this.load.image('elara_right0', 'assets/npc/elara/right0.png');
   }
+  // #192: Elaras eingerichtete Kammer — Requisiten nur mit ?versteckraum=neu.
+  if (typeof window.versteckBilderVorladen === 'function') {
+    try { window.versteckBilderVorladen(this); } catch (e) { /* nicht fatal */ }
+  }
   // #157: Die besessene Elara traegt ihr EIGENES Bild (assets/enemy/boss_elara,
   // ueber enemyAssets.BOSSES geladen). Bis hierher lief sie unter dem boss_-
   // Praefix mit den Bildern der Elara aus dem Hub — derselbe Mantel, nur
@@ -1076,7 +1080,9 @@ function preload() {
   this.load.once('complete', () => {
     if (window.RenderQuality) {
       window.RenderQuality.applyLinearFilter(this, [
-        'rathauskeller_bg', 'elara_right0',
+        // elara_right0 nicht mehr (#192): seit b326 ein Pixelbild, das
+        // weichgezeichnet im Keller (und danach im Hub) verschwamm.
+        'rathauskeller_bg',
         'boss_elara_left0', 'boss_elara_left1', 'boss_elara_left2',
         'boss_elara_right0', 'boss_elara_right1', 'boss_elara_right2'
       ]);

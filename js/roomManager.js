@@ -1057,7 +1057,10 @@ function enterRoom(scene, roomId) {
     try { console.log('[Raumtypen] Raum ' + roomId + ': ' + templateName); } catch (e) {}
   }
   if (templateName) {
-    builtMeta = buildTemplateRoom(scene, templateName);
+    // #192: Mit ?versteckraum=neu baut die Kammer ohne die Lagerkisten der
+    // Vorlage — sie wird danach von _versteckKammerNeu eingerichtet.
+    builtMeta = buildTemplateRoom(scene, (templateName === VERSTECK_RAUM && _versteckRaumNeu())
+      ? _versteckNeuVorlage() : templateName);
     pickedType = "template";
   }
   if (!builtMeta) {
@@ -1678,7 +1681,11 @@ function enterRoom(scene, roomId) {
   // #113: ein verborgener Fund abseits des Wegs — als LETZTES, weil er die
   // Treppenposition braucht (die Strecke Eingang->Treppe ist der Weg, von dem
   // er wegliegen soll).
-  _maybeSpawnHiddenFind(scene);
+  // #192: In der eingerichteten Kammer kein Fund — ein fremdes Lagerfeuer
+  // mitten in Elaras Versteck sah aus, als wohne dort noch jemand.
+  if (!(scene.currentRoom && scene.currentRoom.name === VERSTECK_RAUM && _versteckRaumNeu())) {
+    _maybeSpawnHiddenFind(scene);
+  }
 
   // Die Markierung der VORIGEN Kammer muss weg, sonst zeigt die Minikarte im
   // neuen Raum auf eine Stelle, an der nichts ist.
@@ -3765,14 +3772,246 @@ function _storyDekoAbraeumen(scene) {
 }
 if (typeof window !== 'undefined') window._storyDekoAbraeumen = _storyDekoAbraeumen;
 
+// ---------------------------------------------------------------------------
+// #192: Elaras Kammer als eingerichteter Raum, hinter ?versteckraum=neu.
+//
+// "Hier vergisst der Nebel einen nicht so schnell." Der Raum soll das zeigen:
+// Kerzenlicht gegen das Grau, die Wand mit der Kanalkarte und den Notizen
+// des Widerstands, ihr Schlaflager, die Werkbank mit dem Werkzeug aus der
+// alten Werkstatt — und hinter dem Vorhang die Kiste, die niemand sehen soll.
+// Die Requisiten sind PixelLab-Bilder im Stil der Dungeon-Kacheln (Rohbilder
+// unter tools/rohbilder/versteck/).
+// ---------------------------------------------------------------------------
+var VERSTECK_BILDER = ['bett', 'werkbank', 'kartenwand', 'notizen', 'regal', 'kerzen_teller',
+  'kerzen_boden', 'buecher', 'vorhang', 'teppich', 'hocker', 'tisch', 'kartenkiste', 'vorraete',
+  'waffenstaender', 'leuchter'];
+
+function _versteckRaumNeu() {
+  try {
+    return !!(window.DebugGate && window.DebugGate.flagge('versteckraum') === 'neu');
+  } catch (e) { return false; }
+}
+if (typeof window !== 'undefined') window._versteckRaumNeu = _versteckRaumNeu;
+
+/** Laedt die Requisiten — nur mit der Flagge (GameScene.preload). */
+function versteckBilderVorladen(scene) {
+  if (!_versteckRaumNeu() || !scene || !scene.load) return;
+  VERSTECK_BILDER.forEach(function (n) {
+    if (!scene.textures.exists('versteck_' + n)) scene.load.image('versteck_' + n, 'assets/versteck/' + n + '.png');
+  });
+}
+if (typeof window !== 'undefined') window.versteckBilderVorladen = versteckBilderVorladen;
+
+/**
+ * Die Vorlage ohne ihre Objekte: Kisten, Faesser und Feuerschalen machten die
+ * Kammer zum Lagerraum. Waende, Eingang und Startplatz bleiben dieselben, der
+ * Name auch (er waehlt Boden und Wand der Kammer).
+ */
+function _versteckNeuVorlage() {
+  var T = (window.RoomTemplates && window.RoomTemplates.TEMPLATES) || {};
+  var basis = T[VERSTECK_RAUM];
+  if (!basis) return VERSTECK_RAUM;
+  var schluessel = VERSTECK_RAUM + '@neu';
+  if (!T[schluessel]) {
+    var kopie = JSON.parse(JSON.stringify(basis));
+    kopie.objects = [];
+    T[schluessel] = kopie;
+  }
+  return schluessel;
+}
+
+// Wo Elara mit Flagge steht: vor ihrer Kartenwand, im Blick vom Eingang.
+var VERSTECK_ELARA_PLATZ = { x: 420, y: 168 };
+
+// Die Einrichtung. x/y = Mitte der Unterkante (dort steht das Ding auf dem
+// Boden). fuss = Koerper an der Unterkante (w x h), sonst laeuft man drueber.
+// ebene: 'boden' liegt flach, 'steht' sortiert sich gegen den Spieler,
+// 'auf' liegt auf einem anderen Stueck (Kerzen auf der Werkbank).
+var VERSTECK_EINRICHTUNG = [
+  { bild: 'teppich',       x: 330, y: 372, ebene: 'boden' },
+  // Die Wand, an der sie denkt: Kanalkarte und Zettel, an die Nordwand
+  // gelehnt, daneben ein Leuchter, die Kiste mit den Karten davor.
+  { bild: 'kartenwand',    x: 440, y: 92,  ebene: 'steht', fuss: { w: 64, h: 12 } },
+  { bild: 'notizen',       x: 268, y: 86,  ebene: 'steht', fuss: { w: 44, h: 10 } },
+  { bild: 'leuchter',      x: 384, y: 108, ebene: 'steht', fuss: { w: 14, h: 8 }, licht: { x: 0, y: -48 } },
+  { bild: 'kartenkiste',   x: 476, y: 232, ebene: 'steht', fuss: { w: 36, h: 16 } },
+  { bild: 'waffenstaender', x: 196, y: 124, ebene: 'steht' },
+  // Schlafecke links: Lager, Kerzen am Kopfende, Buecher, Vorraete.
+  { bild: 'bett',          x: 176, y: 352, ebene: 'steht', fuss: { w: 56, h: 26 } },
+  { bild: 'kerzen_boden',  x: 228, y: 356, ebene: 'steht', licht: { x: 0, y: -16 } },
+  { bild: 'buecher',       x: 196, y: 420, ebene: 'steht' },
+  { bild: 'vorraete',      x: 104, y: 256, ebene: 'steht', fuss: { w: 44, h: 18 } },
+  // Mitte: der Tisch, an dem sie isst und schreibt.
+  { bild: 'tisch',         x: 312, y: 352, ebene: 'steht', fuss: { w: 36, h: 14 }, licht: { x: -8, y: -30 } },
+  // Werkstatt rechts: Werkbank mit dem Werkzeug, Hocker, Regal an der Wand.
+  { bild: 'regal',         x: 630, y: 262, ebene: 'steht', fuss: { w: 40, h: 16 } },
+  { bild: 'werkbank',      x: 560, y: 330, ebene: 'steht', fuss: { w: 72, h: 26 } },
+  { bild: 'kerzen_teller', x: 528, y: 300, ebene: 'auf', auf: 'werkbank', licht: { x: 0, y: -18 } },
+  { bild: 'hocker',        x: 556, y: 362, ebene: 'steht', tint: 0xc0a8a0 },
+  // Die versteckte Ecke: Vorhang vor der Nische, dahinter ihre Kiste.
+  { bild: 'vorhang',       x: 520, y: 452, ebene: 'steht', fuss: { w: 44, h: 20 } }
+];
+
+/**
+ * Richtet die Kammer ein. Gibt die angelegten Objekte zurueck (auch in
+ * scene._versteckDeko, damit _storyDekoAbraeumen sie mitnimmt).
+ *
+ * Ein Stueck, dessen Koerper eine Treppe beruehrt oder den Weg vom Eingang
+ * zur Treppe bzw. zu Elara abschneiden wuerde, verliert seinen Koerper —
+ * stehen bleibt es trotzdem (dann laeuft man eben darueber).
+ */
+function _versteckKammerNeu(scene) {
+  if (!scene || !scene.add) return [];
+  var T = window.WELT_TIEFEN || {};
+  var deko = [];
+  var koerper = [];
+  var lichter = [];
+  var stuecke = [];
+
+  // Kaltes Grau des Kellers, warm gebrochen: ein weicher Schein ueber der
+  // ganzen Kammer, darunter die Kerzen.
+  var schein = scene.add.graphics().setDepth((T.BODENDEKO_MAX || 30) - 1);
+  schein.fillStyle(0xffa64d, 0.07); schein.fillEllipse(352, 290, 580, 380);
+  schein.fillStyle(0xffa64d, 0.06); schein.fillEllipse(352, 290, 380, 240);
+  deko.push(schein);
+
+  VERSTECK_EINRICHTUNG.forEach(function (d) {
+    var key = 'versteck_' + d.bild;
+    if (!scene.textures.exists(key)) return;
+    var bild = scene.add.image(d.x, d.y, key).setOrigin(0.5, 1);
+    if (d.tint) bild.setTint(d.tint);
+    var tiefe = d.ebene === 'boden' ? (T.BODENDEKO_MAX || 30) - 2
+      : d.ebene === 'auf' ? (T.PROP_HOCH || 42) + 0.5 : (T.PROP || 40);
+    bild.setDepth(tiefe);
+    bild.setData('versteckStueck', d.bild);
+    deko.push(bild);
+
+    if (d.fuss && typeof obstacles !== 'undefined' && obstacles && typeof obstacles.create === 'function') {
+      var k = obstacles.create(d.x, d.y - d.fuss.h / 2, '__WHITE');
+      k.setVisible(false).setDisplaySize(d.fuss.w, d.fuss.h);
+      if (typeof k.refreshBody === 'function') k.refreshBody();
+      k.setData('versteckStueck', d.bild);
+      koerper.push(k);
+      deko.push(k);
+    }
+    stuecke.push({ d: d, bild: bild });
+    if (d.licht) lichter.push({ x: d.x + d.licht.x, y: d.y + d.licht.y, stueck: stuecke[stuecke.length - 1] });
+  });
+
+  // Kerzenlicht: ein weicher warmer Schein, der unruhig atmet — jede Kerze in
+  // ihrem Takt. Weich, weil harte Kreise wie aufgeklebte Scheiben aussahen.
+  var scheinBild = _versteckScheinTextur(scene);
+  lichter.forEach(function (l, i) {
+    var kreis = scene.add.image(l.x, l.y, scheinBild).setDisplaySize(64, 64).setTint(0xffc070)
+      .setAlpha(0.6).setDepth((T.UEBER_PROP || 41) + 2);
+    if (kreis.setBlendMode && window.Phaser) kreis.setBlendMode(Phaser.BlendModes.ADD);
+    kreis.setData('versteckLicht', true);
+    l.stueck.licht = kreis;
+    deko.push(kreis);
+    var hof = scene.add.image(l.x, l.y + 14, scheinBild).setDisplaySize(190, 170).setTint(0xff9a40)
+      .setAlpha(0.3).setDepth((T.BODENDEKO_MAX || 30) - 1);
+    if (hof.setBlendMode && window.Phaser) hof.setBlendMode(Phaser.BlendModes.ADD);
+    deko.push(hof);
+    if (scene.tweens) {
+      var s = kreis.scaleX;
+      scene.tweens.add({ targets: kreis, alpha: { from: 0.45, to: 0.8 }, scale: { from: s * 0.9, to: s * 1.12 },
+        duration: 170 + i * 53, yoyo: true, repeat: -1, repeatDelay: 40 + i * 21, ease: 'Sine.easeInOut' });
+      scene.tweens.add({ targets: hof, alpha: { from: 0.22, to: 0.38 },
+        duration: 420 + i * 90, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
+  });
+
+  // Nach Bildhoehe gegen den Spieler (#165): steht er dahinter, kommt das
+  // Stueck vor ihn — mit allem, was darauf liegt, samt dessen Licht.
+  if (typeof window.sortiereZumSpieler === 'function') {
+    stuecke.forEach(function (s) {
+      if (s.d.ebene !== 'steht') return;
+      var begleiter = [];
+      if (s.licht) begleiter.push({ o: s.licht, versatz: 0.3 });
+      stuecke.forEach(function (a) {
+        if (a.d.auf !== s.d.bild) return;
+        begleiter.push({ o: a.bild, versatz: 0.1 });
+        if (a.licht) begleiter.push({ o: a.licht, versatz: 0.2 });
+      });
+      window.sortiereZumSpieler(scene, s.bild, begleiter);
+    });
+  }
+
+  _versteckWegeFreihalten(scene, koerper);
+  scene._versteckDeko = deko;
+  return deko;
+}
+
+/** Ein weicher runder Lichtfleck (weiss, zur Mitte hin voll), einmal je Spiel. */
+function _versteckScheinTextur(scene) {
+  var key = 'versteck_schein';
+  if (scene.textures.exists(key)) return key;
+  var c = scene.textures.createCanvas(key, 64, 64);
+  if (!c || !c.context) return '__WHITE';
+  var g = c.context.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.35, 'rgba(255,255,255,0.55)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.context.fillStyle = g;
+  c.context.fillRect(0, 0, 64, 64);
+  c.refresh();
+  return key;
+}
+
+/** Die Punkte, die vom Eingang aus erreichbar bleiben muessen. */
+function _versteckZiele(scene) {
+  var ziele = [VERSTECK_ELARA_PLATZ];
+  if (scene.stairsGroup && typeof scene.stairsGroup.getChildren === 'function') {
+    scene.stairsGroup.getChildren().forEach(function (s) {
+      if (s && s.active) ziele.push({ x: s.x, y: s.y, treppe: s });
+    });
+  }
+  return ziele;
+}
+
+function _versteckWegeFreihalten(scene, koerper) {
+  if (!koerper.length) return;
+  var neuRechnen = function () {
+    try { if (typeof recomputeAccessibleArea === 'function') recomputeAccessibleArea(scene); } catch (e) {}
+  };
+  var zieleFrei = function () {
+    if (typeof scene.isPointAccessible !== 'function') return true;
+    return _versteckZiele(scene).every(function (z) { return scene.isPointAccessible(z.x, z.y); });
+  };
+  var weg = function (k) {
+    if (k.body) k.body.enable = false;
+    k.setData('versteckOhneKoerper', true);
+  };
+  // Erst: nichts auf eine Treppe stellen.
+  _versteckZiele(scene).forEach(function (z) {
+    if (!z.treppe || typeof z.treppe.getBounds !== 'function') return;
+    var tb = z.treppe.getBounds();
+    koerper.forEach(function (k) {
+      if (k.body && k.body.enable && Phaser.Geom.Intersects.RectangleToRectangle(tb, k.getBounds())) weg(k);
+    });
+  });
+  neuRechnen();
+  // Dann: schneidet ein Koerper einen Weg ab, faellt er weg — der letzte
+  // zuerst, bis alle Ziele erreichbar sind.
+  for (var i = koerper.length - 1; i >= 0 && !zieleFrei(); i--) {
+    if (!koerper[i].body || !koerper[i].body.enable) continue;
+    weg(koerper[i]);
+    neuRechnen();
+  }
+}
+
 function _versteckBetreten(scene, w, h) {
-  _versteckZeichnen(scene, w, h);
+  var neu = _versteckRaumNeu();
+  if (neu) _versteckKammerNeu(scene);
+  else _versteckZeichnen(scene, w, h);
   var besuch = versteckBesuchFaellig();
   scene._versteckBesuch = besuch;
   if (!besuch || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
+  var opts = { figurHoehe: ELARA_FIGUR_HOEHE };
+  if (neu) opts.spawnAt = VERSTECK_ELARA_PLATZ;
   window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, 'Elara', function () {
     _versteckSzeneSpielen(scene, besuch);
-  }, { figurHoehe: ELARA_FIGUR_HOEHE });
+  }, opts);
 }
 
 function _versteckSzeneSpielen(scene, besuch) {

@@ -97,6 +97,14 @@ zweites Mal.
 
 `leer` ruehrt den Queststand NICHT an.
 
+| Flagge | Wirkung |
+|---|---|
+| `?versteckraum=neu` | (#192) Testmodus: die Kammer eingerichtet — Lager, Werkbank mit dem Werkzeug, Kartenwand und Notizen, Leuchter und flackernde Kerzen, Tisch, Regal, Vorraete, Waffenstaender und der Vorhang vor der versteckten Ecke (PixelLab-Bilder unter `assets/versteck/`, Rohbilder `tools/rohbilder/versteck/`). Ohne die Lagerkisten der Vorlage und ohne verborgenen Fund; Elara steht vor ihrer Kartenwand. Die Bilder werden nur mit der Flagge geladen. |
+
+```
+?debug=1&versteckraum=neu&versteck=1
+```
+
 ### Die sechs Sondergegner (#12)
 
 | Flagge | Wirkung |
