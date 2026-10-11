@@ -2,8 +2,8 @@
 //
 // Nach der geheimen Ratssitzung stehen zwei Patrouillen mehr auf dem Platz.
 // Sie trugen das Sprite des Wachtmeisters (der Questgeber ist) — drei gleiche
-// Figuren, nur eine antwortet auf [E]. Das eigene Sprite steht vorerst hinter
-// ?patrouille=neu.
+// Figuren, nur eine antwortet auf [E]. Seit b372 tragen sie fest ein eigenes
+// Sprite (Kettenrat-Patrouille); die Stadtwache bleibt nur der Rueckfall.
 //
 // Unterwegs behoben (gilt auch ohne Flagge): die Patrouillen standen auf
 // Koordinaten des alten, gemalten Hubs — die linke UNTER dem Kartenrand — und
@@ -48,7 +48,7 @@ function aufstellen(H, flaggen) {
   })()`);
 }
 
-describe('ohne Flagge', () => {
+describe('im Hub', () => {
   let H = null;
   before(async () => { H = await hubStarten(''); });
   after(async () => { if (H) await H.shutdown(); });
@@ -57,11 +57,18 @@ describe('ohne Flagge', () => {
     assert.strictEqual(aufstellen(H, []).n, 0);
   });
 
-  test('danach zwei, im Sprite der Stadtwache — das neue wird nicht einmal geladen', () => {
+  test('danach zwei, im eigenen Sprite (nicht in dem des Wachtmeisters)', () => {
+    const r = aufstellen(H, ['patrouillen_verdoppelt']);
+    assert.strictEqual(r.geladen, true, 'patrouille.png wird nicht geladen');
+    assert.strictEqual(r.n, 2);
+    r.wachen.forEach((w) => assert.strictEqual(w.key, 'patrouille'));
+  });
+
+  test('fehlt das Bild, stehen sie im Sprite der Stadtwache (Rueckfall)', () => {
+    H.run(`${hub}.textures.remove('patrouille')`);
     const r = aufstellen(H, ['patrouillen_verdoppelt']);
     assert.strictEqual(r.n, 2);
     r.wachen.forEach((w) => assert.strictEqual(w.key, 'garde'));
-    assert.strictEqual(r.geladen, false, 'patrouille.png wird ohne Flagge geladen');
   });
 
   test('sie stehen IN der Karte, figurhoch und abseits der NPC', () => {
@@ -93,43 +100,6 @@ describe('ohne Flagge', () => {
     })()`);
     assert.strictEqual(r.n, 3);
     assert.strictEqual(r.h.join(','), '52,52,52');
-  });
-});
-
-describe('?patrouille=neu', () => {
-  let H = null;
-  before(async () => { H = await hubStarten('&patrouille=neu'); });
-  after(async () => { if (H) await H.shutdown(); });
-
-  test('die Patrouillen stehen sofort, im eigenen Sprite', () => {
-    const r = aufstellen(H, []);
-    assert.strictEqual(r.geladen, true, 'patrouille.png nicht geladen');
-    assert.strictEqual(r.n, 2);
-    r.wachen.forEach((w) => {
-      assert.strictEqual(w.key, 'patrouille');
-      assert.strictEqual(w.h, 58);
-    });
-  });
-
-  test('beim Betreten des Hubs stehen sie schon (create ruft das Aufstellen)', () => {
-    const r = H.run(`${hub}._patrouillen.length`);
-    assert.strictEqual(r, 2);
-  });
-
-  test('auch mit Flagge: im Epilog keine', () => {
-    assert.strictEqual(aufstellen(H, ['story_ending']).n, 0);
-  });
-});
-
-describe('?patrouille=alt (Vergleich)', () => {
-  let H = null;
-  before(async () => { H = await hubStarten('&patrouille=alt'); });
-  after(async () => { if (H) await H.shutdown(); });
-
-  test('stellt sie sofort auf, aber im alten Sprite', () => {
-    const r = aufstellen(H, []);
-    assert.strictEqual(r.n, 2);
-    r.wachen.forEach((w) => assert.strictEqual(w.key, 'garde'));
   });
 });
 

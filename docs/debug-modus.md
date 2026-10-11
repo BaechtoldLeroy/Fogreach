@@ -263,7 +263,6 @@ Die gesamte Nebel-Analyse aus #70 lief ueber diese Flaggen.
 | `?spy=1` | Spionage-Mission erzwingen |
 | `?roomsize=1` | Verteilung der Raumgroessen mitzaehlen und ausgeben |
 | `?hubdebug=1` | Hub-Collider sichtbar machen |
-| `?patrouille=neu` | (#168) Die zwei Patrouillen stehen sofort auf dem Platz (links und rechts des Brunnens), im eigenen Sprite `assets/sprites/patrouille.png` statt in dem des Wachtmeisters. `?patrouille=alt` stellt sie im alten Sprite auf, zum Vergleich. Ohne Flagge erscheinen sie erst nach der geheimen Ratssitzung. |
 
 ## Was sonst noch am Gate haengt
 

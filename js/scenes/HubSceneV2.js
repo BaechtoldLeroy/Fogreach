@@ -122,13 +122,6 @@ const HUB_DEBUG = (function () {
   try { return !!(window.DebugGate && window.DebugGate.an('hubdebug')); }   // #88
   catch (e) { return false; }
 })();
-// #168 (Testschalter): ?patrouille=neu stellt die Patrouillen sofort auf, im
-// eigenen Sprite; jeder andere Wert (z. B. ?patrouille=alt) stellt sie im
-// alten Sprite der Stadtwache auf — zum Vergleich. Ohne Flagge: null.
-function _patrouilleTest() {
-  try { return (window.DebugGate && window.DebugGate.an('patrouille')) ? window.DebugGate.flagge('patrouille') : null; }
-  catch (e) { return null; }
-}
 // Fuer Bilder ausserhalb des hubLayout: die Groesse an der FIGUR messen, wie
 // createNPCs es tut (b326) — ein fester Faktor stimmt nur fuer EIN Bild.
 function _aufFigurHoehe(scene, bild, hoehe) {
@@ -172,8 +165,8 @@ class HubSceneV2 extends Phaser.Scene {
     // following the Branka/Thom/Mara loading pattern.
     if (!tex.exists('klerus'))            this.load.image('klerus', 'assets/sprites/klerus.png');
     if (!tex.exists('garde'))             this.load.image('garde', 'assets/sprites/garde.png');
-    // #168: Die Patrouille im eigenen Sprite — vorerst nur hinter ?patrouille=neu.
-    if (_patrouilleTest() === 'neu' && !tex.exists('patrouille')) this.load.image('patrouille', 'assets/sprites/patrouille.png');
+    // #168: Die Patrouille im eigenen Sprite (Kettenrat-Patrouille).
+    if (!tex.exists('patrouille')) this.load.image('patrouille', 'assets/sprites/patrouille.png');
     // Feature 063 (#66): der ratlose Bürger (ab Akt 2). Fehlt die Datei noch,
     // fängt das Spawn-System es mit dem Platzhalter ab (der 404 im Loader ist
     // dann erwartbar, bis assets/sprites/buerger.png vorliegt).
@@ -1446,13 +1439,13 @@ class HubSceneV2 extends Phaser.Scene {
     (this._patrouillen || []).forEach((s) => { try { s.destroy(); } catch (_) {} });
     this._patrouillen = [];
     const qs = window.questSystem;
-    const test = _patrouilleTest();
     if (!qs || typeof qs.hasFlag !== 'function') return 0;
-    if (!test && !qs.hasFlag('patrouillen_verdoppelt')) return 0;
+    if (!qs.hasFlag('patrouillen_verdoppelt')) return 0;
     if (qs.hasFlag('story_ending')) return 0;
     // #168: einfache Patrouille statt Wachtmeister — sonst stehen drei gleiche
-    // Figuren auf dem Platz und nur eine antwortet auf [E].
-    const bild = (test === 'neu' && this.textures && this.textures.exists('patrouille')) ? 'patrouille' : 'garde';
+    // Figuren auf dem Platz und nur eine antwortet auf [E]. Fehlt das Bild,
+    // bleibt die Stadtwache der Rueckfall.
+    const bild = (this.textures && this.textures.exists('patrouille')) ? 'patrouille' : 'garde';
     if (!this.textures || !this.textures.exists(bild)) return 0;
     // Die Plaetze stehen in der Karte (hubNeuKarte.patrouillen). Die alten
     // Entwurfskoordinaten [290, 600] / [640, 440] stammten vom gemalten Hub:
