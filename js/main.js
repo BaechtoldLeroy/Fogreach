@@ -111,7 +111,7 @@ const config = {
     fps: 60,
     arcade: { gravity: { y: 0 }, debug: false, overlapBias: 8, tileBias: 32 }
   },
-  scene: [StartScene, HubSceneV2, CraftingScene, SettingsScene, PrintingHouseScene, TestTerrainScene, GameScene],
+  scene: [StartScene, HubSceneV2, CraftingScene, SettingsScene, PrintingHouseScene, GameScene],
   // Joystick-Plugin defensiv: fehlt das Global (CDN-Fehler/Tracking-Prevention),
   // bootet das Spiel trotzdem — nur der Mobile-Joystick fällt dann aus.
   plugins: (typeof rexvirtualjoystickplugin !== 'undefined') ? {
@@ -137,14 +137,6 @@ if (typeof window !== 'undefined') {
   }
   if (typeof window.__DEV_SKIP_WALL_OBSTACLES__ === 'undefined') {
     window.__DEV_SKIP_WALL_OBSTACLES__ = false;
-  }
-  window.gotoTestTerrainScene = () => {
-    if (!game) return;
-    game.scene.stop('StartScene');
-    game.scene.start('TestTerrainScene', { source: 'gotoTestTerrainScene' });
-  };
-  if (window.__DEV_AUTO_TEST_TERRAIN__ === true) {
-    setTimeout(() => window.gotoTestTerrainScene(), 50);
   }
 }
 

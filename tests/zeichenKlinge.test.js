@@ -11,6 +11,8 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
+const path = require('path');
+const sharp = require('sharp');
 const { launch } = require('../tools/headless/index.js');
 
 let H = null;
@@ -76,18 +78,82 @@ test('Andere Stuecke tragen keine Gravur', () => {
 
 // --- Das Zeichen als Grafik (js/zeichen.js) ---------------------------------
 
-test('Das Zeichen ist eine Grafik, an einer Stelle gezeichnet', () => {
+// Seit #177 ist das Zeichen ein Pixelbild (assets/tiles/zeichen_schattenrat.png),
+// getauscht ueber pixelTexturen.js. Verglichen wird der INHALT, nicht nur das
+// Mass — die gezeichnete Fassung ist ebenfalls 64x64.
+const BILD = path.join(__dirname, '..', 'assets', 'tiles', 'zeichen_schattenrat.png');
+const ABDRUCK_IM_SPIEL = `function (q) {
+  var c = document.createElement('canvas');
+  c.width = q.width; c.height = q.height;
+  var ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(q, 0, 0);
+  var d = ctx.getImageData(0, 0, q.width, q.height).data;
+  var a = 0, b = 0;
+  for (var i = 0; i < d.length; i += 4) {
+    a += d[i + 3];
+    b += (d[i] + d[i + 1] + d[i + 2]) * (d[i + 3] > 0 ? 1 : 0);
+  }
+  return q.width + 'x' + q.height + '|' + a + ':' + b;
+}`;
+async function abdruckDerDatei() {
+  const { data, info } = await sharp(BILD).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let a = 0, b = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    a += data[i + 3];
+    b += (data[i] + data[i + 1] + data[i + 2]) * (data[i + 3] > 0 ? 1 : 0);
+  }
+  return info.width + 'x' + info.height + '|' + a + ':' + b;
+}
+
+test('Das Zeichen zeigt im Dungeon das Pixelbild aus der Datei', async () => {
   const r = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     var key = window.Zeichen && window.Zeichen.sicherstellen(sc);
     if (!key) return { fehler: 'window.Zeichen fehlt' };
-    var src = sc.textures.get(key).getSourceImage();
-    return { key: key, w: src.width, h: src.height };
+    return { key: key, abdruck: (${ABDRUCK_IM_SPIEL})(sc.textures.get(key).getSourceImage()) };
   })()`);
   assert.ok(!r.fehler, r.fehler);
   assert.strictEqual(r.key, 'zeichen_schattenrat');
+  assert.strictEqual(r.abdruck, await abdruckDerDatei(), 'im Dungeon steht noch das gezeichnete Zeichen');
+});
+
+test('Fehlt das Bild, zeichnet zeichen.js das Zeichen als Rueckfall, gleich gross', () => {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var datei = sc.textures.get('zeichen_schattenrat').getSourceImage();
+    sc.textures.remove('zeichen_schattenrat');
+    try {
+      var key = window.Zeichen.sicherstellen(sc);
+      var src = sc.textures.get(key).getSourceImage();
+      return { key: key, w: src.width, h: src.height, gezeichnet: src !== datei };
+    } finally {
+      // Fuer die folgenden Faelle wieder das Pixelbild einsetzen.
+      sc.textures.remove('zeichen_schattenrat');
+      sc.textures.addImage('zeichen_schattenrat', datei);
+    }
+  })()`);
+  assert.strictEqual(r.key, 'zeichen_schattenrat');
   assert.strictEqual(r.w, 64);
   assert.strictEqual(r.h, 64);
+  assert.strictEqual(r.gezeichnet, true);
+});
+
+test('Das Zeichen zeigt auch im Hub das Pixelbild, schon vor dem ersten Abstieg', async () => {
+  // Sitzungsbuehne und Inventar-Gravur stehen im Hub. Der Hub tauschte bis
+  // #177 nur die it*-Icons — das Zeichen blieb dort gezeichnet.
+  const hub = await launch({ renderer: 'canvas', search: '?autostart=1' });
+  try {
+    assert.ok(await hub.waitForScene('HubSceneV2'), 'Hub nicht erreicht');
+    hub.step(10);
+    const imHub = hub.run(`(function () {
+      var sc = window.game.scene.getScene('HubSceneV2');
+      var key = window.Zeichen.sicherstellen(sc);
+      return (${ABDRUCK_IM_SPIEL})(sc.textures.get(key).getSourceImage());
+    })()`);
+    assert.strictEqual(imHub, await abdruckDerDatei(), 'im Hub steht noch das gezeichnete Zeichen');
+  } finally {
+    await hub.shutdown();
+  }
 });
 
 test('Das Buendel liegt mit dem Zeichen auf dem Siegel am Boden', () => {

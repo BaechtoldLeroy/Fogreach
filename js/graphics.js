@@ -977,6 +977,8 @@ function createObstacleGraphics() {
   g.destroy();
 }
 
+// Seit #183 nur noch Rueckfall: particleEffects.js nimmt die Pixelpartikel
+// aus partikel_atlas und faellt auf diese Punkte zurueck, wenn die Tafel fehlt.
 function createParticleTextures() {
   // Hard-edge particle: 8x8 white filled circle
   const g = this.add.graphics();
@@ -1020,7 +1022,15 @@ function createProjectileGraphics() {
 }
 
 /**
- * Erzeugt ausgiebig alle vier Enemy-Texturen.
+ * Rueckfall-Formen der Gegner (#177).
+ *
+ * Gesehen werden die Sprite-Saetze aus assets/enemy (enemyAssets.js). Diese
+ * Formen greifen nur, wenn weder die gerichteten Bilder noch das Einzelbild
+ * geladen sind (Datei fehlt, Ladefehler) — dann steht der Gegner wenigstens
+ * als erkennbare Figur da statt als Phasers gruenes Fehlerkaestchen.
+ * enemy.js (spawnEnemy, Boss-Rueckgriff 'enemyMage') und espionageVisuals.js
+ * (Wachen) fragen sie ab. Die Boss-Form des Schattenrats ist entfernt: der
+ * Klon nimmt immer die Textur des Bosses, sie wurde nie erreicht.
  */
 function createEnemyGraphics() {
   // 1) Imp-Dämon (Nahkämpfer)
@@ -1172,51 +1182,6 @@ function createEnemyGraphics() {
     g.fillCircle(28, 28, 3);
     g.fillCircle(36, 28, 3);
     g.generateTexture('enemyFlameWeaver', 64, 64);
-    g.destroy();
-  }
-
-  // ===== Boss Textures =====
-
-
-
-  // Boss 3 - Schattenrat (Shadow Councillor): dark figure with glowing red accents
-  {
-    const g = this.add.graphics();
-    // Body - pure black
-    g.fillStyle(0x111111, 1);
-    g.fillRect(18, 16, 44, 52);
-    // Cloak billowing
-    g.fillStyle(0x0a0a0a, 1);
-    g.fillTriangle(10, 20, 18, 16, 14, 68);
-    g.fillTriangle(70, 20, 62, 16, 66, 68);
-    // Hood
-    g.fillStyle(0x080808, 1);
-    g.fillRect(22, 2, 36, 22);
-    // Face is void - just eyes
-    g.fillStyle(0x050505, 1);
-    g.fillRect(26, 6, 28, 14);
-    // Glowing red eyes - prominent
-    g.fillStyle(0xff0000, 1);
-    g.fillCircle(34, 12, 4);
-    g.fillCircle(46, 12, 4);
-    // Inner eye glow
-    g.fillStyle(0xff4444, 0.6);
-    g.fillCircle(34, 12, 6);
-    g.fillCircle(46, 12, 6);
-    // Red energy veins across body
-    g.lineStyle(1, 0xcc0000, 0.7);
-    g.beginPath();
-    g.moveTo(30, 24); g.lineTo(26, 40); g.lineTo(30, 56); g.strokePath();
-    g.beginPath();
-    g.moveTo(50, 24); g.lineTo(54, 40); g.lineTo(50, 56); g.strokePath();
-    g.beginPath();
-    g.moveTo(34, 30); g.lineTo(46, 30); g.strokePath();
-    g.beginPath();
-    g.moveTo(32, 44); g.lineTo(48, 44); g.strokePath();
-    // Shadow wisps at base
-    g.fillStyle(0x1a0000, 0.5);
-    g.fillEllipse(40, 68, 50, 10);
-    g.generateTexture('bossShadowCouncillor', 80, 80);
     g.destroy();
   }
 }
@@ -3252,6 +3217,9 @@ function createItemGraphics() {
   g.destroy();
 }
 
+// uiPanel, uiSlot und uiSlotSel sind seit #182 nur noch Rueckfall: das
+// Inventar traegt die Messing-Rahmen (uiRahmen.js) und greift auf diese
+// Formen nur zurueck, wenn deren Bilder nicht geladen sind.
 function createInventoryGraphics() {
   const g = this.add.graphics();
 
@@ -3323,26 +3291,6 @@ function createInventoryGraphics() {
   g.generateTexture('uiSlotSel', 96, 64);
   g.clear();
 
-  g.clear();
-
-  // ── barFill: 196x36 health gradient (red) ────────────────────────────────
-  // Simulate gradient via stacked horizontal slices from #cc0000 to #660000
-  for (let i = 0; i < 36; i++) {
-    const t = i / 35;
-    // Interpolate R channel 0xcc → 0x66, keep G/B at 0
-    const r = Math.round(0xcc + t * (0x66 - 0xcc));
-    const col = (r << 16) | 0x000000;
-    const alpha = 0.85 + t * 0.15;
-    g.fillStyle(col, alpha);
-    g.fillRect(0, i, 196, 1);
-  }
-  // Bright highlight strip at top
-  g.fillStyle(0xff4444, 0.30);
-  g.fillRect(0, 0, 196, 6);
-  g.generateTexture('barFill', 196, 36);
-  g.clear();
-
-
   g.destroy();
 }
 
@@ -3370,6 +3318,8 @@ function createLootGraphics() {
     g.destroy();
 }
 
+// Rueckfall: gesehen wird das Spieler-Spritesheet; diese Figur steht nur da,
+// wenn es nicht geladen ist (main.js, HubSceneV2.js).
 function createPlayerGraphics() {
   if (this.textures.exists('playerTexture') || this.textures.exists('playerSprites')) {
     return;

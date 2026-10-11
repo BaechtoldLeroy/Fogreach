@@ -93,7 +93,11 @@
     'itOffBannlaterne', 'itOffGlutschale', 'itOffFangdolch', 'itOffKettenhaken',
     'itPotionMinor', 'itPotionNormal', 'itPotionMajor', 'itPotionSuper',
     'itPortalScroll', 'itStairScroll', 'itAmulet', 'itConsumable',
-    'itMat'
+    'itMat',
+    // Das Zeichen des Schattenrats (#177), 64x64 wie die gezeichnete Fassung
+    // in zeichen.js — die bleibt Rueckfall. Es steht auch im Hub (Sitzung,
+    // Inventar-Gravur), deshalb tauscht der Hub es mit (_gegenstandsBilder).
+    'zeichen_schattenrat'
   ].concat([
     'obstacleTree', 'obstacleRock', 'prop_puddle', 'healthDrop',
     'xpDrop', 'projectileTexture',
@@ -193,7 +197,9 @@
    * gezeichneten Icons, erst nach dem ersten Abstieg die Pixelbilder.
    */
   function _gegenstandsBilder() {
-    return NAMENSGLEICH.filter(function (k) { return /^it[A-Z]/.test(k); });
+    return NAMENSGLEICH.filter(function (k) {
+      return /^it[A-Z]/.test(k) || k === 'zeichen_schattenrat';
+    });
   }
   window.gegenstandsBilderVorladen = function (scene) {
     if (!scene || !scene.load || !scene.textures) return;

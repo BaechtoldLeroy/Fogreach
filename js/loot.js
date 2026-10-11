@@ -1034,8 +1034,7 @@ if (typeof window !== 'undefined') {
   // bekommt welches Signal) und wird deshalb einzeln ansprechbar — sonst
   // waere sie nur ueber den ganzen spawnLoot-Pfad zu erreichen.
   window.attachRarityFx = _attachRarityFx;
-  // Legacy aliases for any loose references that haven't been migrated yet
-  // (e.g. js/scenes/HubScene.js is parsed but never instantiated).
+  // Legacy aliases for any loose references that haven't been migrated yet.
   window.getRarityValueFromKey = getTierFromLegacyRarityKey;
   window.ITEM_RARITIES = [];
   // WP03: expose gold-drop helpers so chest-open code and future systems can

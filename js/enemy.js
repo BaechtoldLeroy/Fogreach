@@ -472,7 +472,9 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     tint,
     rangedAttackRange = null;
 
-  // Helper: prefer loaded sprite, fall back to procedural texture
+  // Helper: prefer loaded sprite, fall back to procedural texture.
+  // Rueckfall (#177): die enemy*-Formen aus graphics.js greifen nur, wenn
+  // Richtungsbild UND Einzelbild fehlen (Datei fehlt / Ladefehler).
   const tex = (spriteKey, fallback) => scene.textures?.exists(spriteKey) ? spriteKey : fallback;
 
   switch (type) {
@@ -4408,8 +4410,8 @@ function bossShadowClones(boss) {
       // Boss-Scale, der auf dessen ~300px-Sprite normiert ist — auf die 80px-
       // Textur angewandt ergab das winzige Klone (~37px statt ~138px).
       // Mit derselben Textur stimmen Aussehen UND Grösse wieder.
-      const textureKey = boss.texture?.key
-        || (scene.textures?.exists('bossShadowCouncillor') ? 'bossShadowCouncillor' : 'enemyMage');
+      // Die alte Form ist seit #177 entfernt; 'enemyMage' bleibt Rueckfall.
+      const textureKey = boss.texture?.key || 'enemyMage';
       const clone = enemies.create(cx, cy, textureKey);
       clone.hp = 1;
       clone.maxHp = 1;

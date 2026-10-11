@@ -42,6 +42,8 @@
 
   // Echte Wachen-Textur auflösen (ChainGuard passt zum Kettenrat-Warenhaus);
   // Fallback: einmalig eine simple Wachen-Figur generieren.
+  // enemyChainGuard/enemyImp sind die Rueckfall-Formen aus graphics.js (#177),
+  // nur gesehen, wenn die Sprite-Dateien fehlen.
   function _resolveGuardTex(scene) {
     var cands = ['chainguard_right0', 'sprite_chainguard', 'enemyChainGuard', 'imp_right0', 'sprite_imp', 'enemyImp'];
     for (var i = 0; i < cands.length; i++) {
