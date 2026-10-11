@@ -1,11 +1,12 @@
-// tests/oberflaeche.test.js — zweite Runde Messing-Oberflaeche (#182) hinter
-// ?debug=1&oberflaeche=neu: Inventar, HUD-Leisten (Desktop und Mobile),
-// NPC-Dialoge im Hub, Wissensbaum und die Zeilen der Schmiede.
+// tests/oberflaeche.test.js — zweite Runde Messing-Oberflaeche (#182), fest
+// eingebaut: Inventar, HUD-Leisten (Desktop und Mobile), NPC-Dialoge im Hub,
+// Wissensbaum und die Zeilen der Schmiede.
 //
-// Ohne Flagge muss alles exakt so bleiben wie heute (alte Texturen, alte
-// Graphics, keine neuen Bilder geladen). Mit Flagge: gebackene Messingfelder,
-// Seltenheit weiter klar erkennbar, Kontrast aller Texte mind. 4,5:1, und das
-// HUD legt pro Bild nichts neu an. Geprueft am echten Spiel (headless, Canvas).
+// Normalfall: gebackene Messingfelder, Seltenheit weiter klar erkennbar,
+// Kontrast aller Texte mind. 4,5:1, und das HUD legt pro Bild nichts neu an.
+// Rueckfall: fehlen die Bilder (Laden gescheitert), zeichnet jede Stelle
+// ihre alte Form statt leer zu bleiben. Geprueft am echten Spiel (headless,
+// Canvas).
 
 const { test, before, after, describe } = require('node:test');
 const assert = require('node:assert');
@@ -18,16 +19,26 @@ function run(H, js) {
   return v === undefined ? v : JSON.parse(JSON.stringify(v));
 }
 
-const FLAGGE = '&oberflaeche=neu';
 const HUB = `window.game.scene.getScene('HubSceneV2')`;
+const NEUE_BILDER = ['ui_feld', 'ui_feld_gewaehlt', 'ui_ring', 'ui_leiste'];
 
-async function hub(zusatz) {
-  const H = await launch({ search: '?autostart=1&debug=1' + zusatz, renderer: 'canvas' });
+async function hub() {
+  const H = await launch({ search: '?autostart=1&debug=1', renderer: 'canvas' });
   await H.waitForScene('HubSceneV2', { maxRounds: 600 });
   // Der Einfuehrungstext des Hubs laege sonst ueber allem.
   run(H, `(window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1')`);
   H.step(30);
   return H;
+}
+
+/**
+ * Laden gescheitert nachstellen: Vor- und Nachladen tun nichts, die Bilder
+ * sind weg. Danach muss jede Stelle ihren Rueckfall zeichnen.
+ */
+function bilderWeg(H) {
+  run(H, `(function () { var UR = window.uiRahmen;
+    UR.vorladen = function () {}; UR.nachladen = function () {};
+    UR.ALLE.forEach(function (k) { window.game.textures.remove(k); }); })()`);
 }
 
 /** Vier Gegenstaende je Seltenheit ins Raster, eine Waffe anlegen, Inventar auf. */
@@ -57,85 +68,33 @@ function wahlDialog(H) {
   H.step(3);
 }
 
+/** Mobile-Faehigkeitsknopf im Hub schmuecken; liefert die Messingringe der Szene. */
+const MOBILE_KNOPF = `var sc = ${HUB};
+  var c = sc.add.circle(200, 300, 38, 0xff0000, 0.6).setScrollFactor(0).setDepth(1200);
+  var los = function () { window.mobileAbilityButtonsDecorate({ detail: { scene: sc, buttons: [{ spec: { key: 'attack' }, circle: c }] } }); };
+  var ringe = function () { return sc.children.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'ui_ring'; }); };`;
+
 /** Bilder (auch in Containern) einer Szene mit ihrem Texturschluessel. */
 const BILDER = (szeneJs) => `(function () { var r = []; (function lauf(l) { l.forEach(function (o) {
   if (o.type === 'Container') return lauf(o.list); if (o.type === 'Image') r.push(o.texture.key); }); })(${szeneJs}.children.list); return r; })()`;
 
-describe('ohne Flagge: alles wie bisher', () => {
+const SCHMIEDE = `window.game.scene.getScene('CraftingScene')`;
+
+describe('Messing-Oberflaeche: Inventar, Dialoge, Wissensbaum, Mobile, Schmiede', () => {
   let H = null;
-  before(async () => { H = await hub(''); });
+  before(async () => { H = await hub(); });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('die neuen Bilder werden nicht geladen', () => {
-    assert.strictEqual(run(H, `window.uiRahmen.neu()`), false);
-    assert.strictEqual(run(H, `window.uiRahmen.NEU.filter(function (k) { return window.game.textures.exists(k); }).length`), 0);
-  });
-
-  test('Inventar: alte Platte, alte Zellen und Rahmen, kein Seltenheitssaum', () => {
-    inventarOeffnen(H);
-    const r = run(H, `(function () {
-      var p = invUI.panel.list;
-      return { platte: p[0].texture.key, zelle: invUI.zellen[5].bg.texture.key,
-        rahmen: invUI.slots[0].bg.texture.key, saum: invUI.slots.filter(function (s) { return s.seltenheit; }).length,
-        platz: invUI.equip.weapon.slot.texture.key, neu: invUI._neu };
-    })()`);
-    assert.deepStrictEqual(r, { platte: 'uiPanel', zelle: 'uiZelle', rahmen: 'uiSlot', saum: 0, platz: 'uiZelle', neu: false });
-    inventarZu(H);
-  });
-
-  test('NPC-Dialog: gezeichneter Kasten, Farbkaesten als Knoepfe', () => {
-    wahlDialog(H);
-    const r = run(H, `(function () {
-      var c = ${HUB}._dialogContainer;
-      return { graphics: c.list.filter(function (o) { return o.type === 'Graphics'; }).length,
-        bilder: c.list.filter(function (o) { return o.type === 'Image'; }).length,
-        kasten: c.list.filter(function (o) { return o.type === 'Text' && o.style.backgroundColor === '#3d6a3d'; }).length };
-    })()`);
-    assert.deepStrictEqual(r, { graphics: 1, bilder: 0, kasten: 1 });
-    run(H, `${HUB}._closeDialog(null)`);
-    H.step(2);
-  });
-
-  test('Wissensbaum: gezeichnete Platte, Farbkaesten unten', () => {
-    run(H, `${HUB}._showKnowledgeTreeUI()`);
-    H.step(3);
-    const r = run(H, `(function () {
-      var c = ${HUB}._dialogContainer;
-      return { bilder: c.list.filter(function (o) { return o.type === 'Image'; }).length,
-        knoepfe: ${HUB}._ktFooterLayer.list.filter(function (o) { return o._uiTextKnopf; }).length };
-    })()`);
-    assert.deepStrictEqual(r, { bilder: 0, knoepfe: 0 });
-    run(H, `${HUB}._ktCloseModal()`);
-    H.step(2);
-  });
-
-  test('Mobile-Knopf: kein Ring', () => {
-    const n = run(H, `(function () { var sc = ${HUB};
-      var c = sc.add.circle(200, 300, 38, 0xff0000, 0.6).setScrollFactor(0).setDepth(1200);
-      window.mobileAbilityButtonsDecorate({ detail: { scene: sc, buttons: [{ spec: { key: 'attack' }, circle: c }] } });
-      return sc.children.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'ui_ring'; }).length; })()`);
-    assert.strictEqual(n, 0);
-  });
-
-  test('Schmiede: Zeilen bleiben Rechtecke', async () => {
-    run(H, `window.InventoryGrid.einlagern(window.LootSystem.rollItem('WPN_EISENKLINGE', 8, 2)); ${HUB}.scene.start('CraftingScene'); null`);
-    await H.waitForScene('CraftingScene', { maxRounds: 200 });
-    H.step(3);
-    const r = run(H, `(function () { var sc = window.game.scene.getScene('CraftingScene');
-      return { felder: Object.keys(sc.equipSlotBgs).filter(function (k) { return sc.equipSlotBgs[k]._uiFeld; }).length,
-        zeilen: sc.invRows.filter(function (z) { return z.bg._uiFeld; }).length, liste: sc.invListBg.visible }; })()`);
-    assert.deepStrictEqual(r, { felder: 0, zeilen: 0, liste: true });
-  });
-});
-
-describe('mit Flagge: Inventar, Dialoge, Wissensbaum, Mobile, Schmiede', () => {
-  let H = null;
-  before(async () => { H = await hub(FLAGGE); });
-  after(async () => { if (H) await H.shutdown(); });
-
-  test('die neuen Bilder sind im Hub vorgeladen', () => {
-    assert.strictEqual(run(H, `window.uiRahmen.neu()`), true);
+  test('die neuen Bilder sind im Hub vorgeladen, ein zweites Vorladen laedt nichts', () => {
+    // Die Flagge gibt es nicht mehr.
+    assert.strictEqual(run(H, 'typeof window.uiRahmen.neu'), 'undefined');
+    assert.deepStrictEqual(NEUE_BILDER.filter((k) => !run(H, `window.uiRahmen.ALLE.indexOf('${k}') >= 0`)), [],
+      'nicht im Satz, den Hub und Dungeon vorladen');
+    assert.deepStrictEqual(NEUE_BILDER.filter((k) => !run(H, `window.game.textures.exists('${k}')`)), []);
     assert.strictEqual(run(H, `window.uiRahmen.bereit(${HUB})`), true);
+    const n = run(H, `(function () { var sc = ${HUB};
+      window.uiRahmen.vorladen(sc); var n = sc.load.list.size; sc.load.reset(); return n; })()`);
+    assert.strictEqual(n, 0, 'schon geladene Bilder werden doppelt angefordert');
   });
 
   test('gebackene Platte stimmt auch, nachdem neunteilig Teil-Frames angelegt hat', () => {
@@ -283,10 +242,7 @@ describe('mit Flagge: Inventar, Dialoge, Wissensbaum, Mobile, Schmiede', () => {
   });
 
   test('Mobile-Knopf: Ring folgt dem Knopf, blendet mit aus und wird abgebaut', () => {
-    const r = run(H, `(function () { var sc = ${HUB};
-      var c = sc.add.circle(200, 300, 38, 0xff0000, 0.6).setScrollFactor(0).setDepth(1200);
-      var los = function () { window.mobileAbilityButtonsDecorate({ detail: { scene: sc, buttons: [{ spec: { key: 'attack' }, circle: c }] } }); };
-      var ringe = function () { return sc.children.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'ui_ring'; }); };
+    const r = run(H, `(function () { ${MOBILE_KNOPF}
       los();
       var ring = ringe()[0];
       var vorher = { x: ring.x, y: ring.y, b: ring.displayWidth, tiefe: ring.depth };
@@ -312,8 +268,7 @@ describe('mit Flagge: Inventar, Dialoge, Wissensbaum, Mobile, Schmiede', () => {
       ${HUB}.scene.start('CraftingScene'); })()`);
     await H.waitForScene('CraftingScene', { maxRounds: 200 });
     H.step(3);
-    const SC = `window.game.scene.getScene('CraftingScene')`;
-    const r = run(H, `(function () { var sc = ${SC};
+    const r = run(H, `(function () { var sc = ${SCHMIEDE};
       return { felder: Object.keys(sc.equipSlotBgs).filter(function (k) { return sc.equipSlotBgs[k]._uiFeld; }).length,
         plaetze: Object.keys(sc.equipSlotBgs).length,
         zeilen: sc.invRows.filter(function (z) { return z.bg._uiFeld; }).length, alle: sc.invRows.length,
@@ -321,7 +276,7 @@ describe('mit Flagge: Inventar, Dialoge, Wissensbaum, Mobile, Schmiede', () => {
     assert.strictEqual(r.felder, r.plaetze);
     assert.ok(r.alle >= 2 && r.zeilen === r.alle, r.zeilen + ' von ' + r.alle + ' Zeilen');
     assert.strictEqual(r.liste, false, 'der graue Listenkasten steht noch');
-    const wahl = run(H, `(function () { var sc = ${SC};
+    const wahl = run(H, `(function () { var sc = ${SCHMIEDE};
       sc.invRows[1].bg.emit('pointerdown');
       var z = sc.invRows.map(function (z) { return z.bg._uiFeld.texture.key.split('@')[0]; });
       sc.equipSlotBgs.weapon.emit('pointerdown');
@@ -333,10 +288,103 @@ describe('mit Flagge: Inventar, Dialoge, Wissensbaum, Mobile, Schmiede', () => {
     assert.strictEqual(wahl.p, 'ui_feld_gewaehlt');
     assert.ok(wahl.z2.every((k) => k === 'ui_feld'), 'alte Auswahl bleibt hell: ' + wahl.z2.join(','));
     H.step(2);
-    const SZ = `(function () { var sc = ${SC}, r = [];
+    const SZ = `(function () { var sc = ${SCHMIEDE}, r = [];
       Object.keys(sc.equipSlots).forEach(function (k) { var e = sc.equipSlots[k]; r.push(e.label, e.nameText, e.statsText); });
       sc.invRows.forEach(function (z) { r.push(z.nameText, z.statsText); }); return r; })()`;
     alleLesbar(kontraste(H, SZ), 'Schmiede-Zeilen');
+  });
+
+  test('Schmiede: die Schrift eines Ausruestungsplatzes bleibt innerhalb der Beschlaege', () => {
+    // Gemessen an der Tinte (nicht am Textkasten) gegen das gebackene Feld:
+    // die Zeilen in seiner Mitte, die nicht Messing sind. Vorher stand die
+    // Zeile "Legendaer · Gst 8" bis zu 6 px auf dem unteren Beschlag.
+    const r = run(H, `(function () { var sc = ${SCHMIEDE};
+      function tinte(t) { var c = t.canvas, d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, lo = -1, hi = -1;
+        for (var y = 0; y < c.height; y++) for (var x = 0; x < c.width; x++) if (d[(y * c.width + x) * 4 + 3] > 40) { if (lo < 0) lo = y; hi = y; break; }
+        var s = t.style.resolution || 1; return lo < 0 ? null : [t.y - t.originY * t.height + lo / s, t.y - t.originY * t.height + (hi + 1) / s]; }
+      return Object.keys(sc.equipSlots).map(function (k) { var e = sc.equipSlots[k], f = e.bg._uiFeld;
+        var ctx = window.game.textures.get(f.texture.key).getSourceImage().getContext('2d');
+        var spalte = ctx.getImageData(Math.round(f.width / 2), 0, 1, f.height).data, innen = [];
+        // Innen = dunkle Mitte (Anthrazit #1c191f, keine Messingfarbe).
+        for (var y = 0; y < f.height; y++) if (spalte[y * 4] + spalte[y * 4 + 1] + spalte[y * 4 + 2] < 120) innen.push(y);
+        var oben = f.y - f.height / 2;
+        return { platz: k, innen: [oben + innen[0], oben + innen[innen.length - 1] + 1],
+          tinte: [e.label, e.nameText, e.statsText].map(tinte).filter(Boolean),
+          text: e.statsText.text }; }); })()`);
+    assert.ok(r.some((p) => p.text.trim()), 'kein Platz traegt eine Seltenheitszeile');
+    r.forEach((p) => {
+      p.tinte.forEach((t) => {
+        assert.ok(t[0] >= p.innen[0] && t[1] <= p.innen[1],
+          p.platz + ': Schrift ' + t.join('..') + ' ragt ueber den Beschlag (innen ' + p.innen.join('..') + ')');
+      });
+    });
+  });
+});
+
+describe('Rueckfall im Hub: fehlen die Bilder, bleibt die alte Zeichnung', () => {
+  let H = null;
+  before(async () => { H = await hub(); bilderWeg(H); });
+  after(async () => { if (H) await H.shutdown(); });
+
+  test('Inventar: alte Platte, alte Zellen und Rahmen, kein Seltenheitssaum', () => {
+    assert.strictEqual(run(H, `window.uiRahmen.bereit(${HUB})`), false);
+    // Das Inventar wird beim Betreten des Hubs gebaut; neu bauen wie beim
+    // naechsten Szenenwechsel.
+    run(H, `destroyInventoryUI(); initInventoryUI.call(${HUB}); null`);
+    inventarOeffnen(H);
+    const r = run(H, `(function () {
+      var p = invUI.panel.list;
+      return { platte: p[0].texture.key, zelle: invUI.zellen[5].bg.texture.key,
+        rahmen: invUI.slots[0].bg.texture.key, saum: invUI.slots.filter(function (s) { return s.seltenheit; }).length,
+        platz: invUI.equip.weapon.slot.texture.key, messing: invUI._messing };
+    })()`);
+    assert.deepStrictEqual(r, { platte: 'uiPanel', zelle: 'uiZelle', rahmen: 'uiSlot', saum: 0, platz: 'uiZelle', messing: false });
+    inventarZu(H);
+  });
+
+  test('NPC-Dialog: gezeichneter Kasten, Farbkaesten als Knoepfe', () => {
+    wahlDialog(H);
+    const r = run(H, `(function () {
+      var c = ${HUB}._dialogContainer;
+      return { graphics: c.list.filter(function (o) { return o.type === 'Graphics'; }).length,
+        bilder: c.list.filter(function (o) { return o.type === 'Image'; }).length,
+        kasten: c.list.filter(function (o) { return o.type === 'Text' && o.style.backgroundColor === '#3d6a3d'; }).length };
+    })()`);
+    assert.deepStrictEqual(r, { graphics: 1, bilder: 0, kasten: 1 });
+    run(H, `${HUB}._closeDialog(null)`);
+    H.step(2);
+  });
+
+  test('Wissensbaum: gezeichnete Platte, Farbkaesten unten', () => {
+    run(H, `${HUB}._showKnowledgeTreeUI()`);
+    H.step(3);
+    const r = run(H, `(function () {
+      var c = ${HUB}._dialogContainer;
+      return { bilder: c.list.filter(function (o) { return o.type === 'Image'; }).length,
+        graphics: c.list.filter(function (o) { return o.type === 'Graphics'; }).length,
+        knoepfe: ${HUB}._ktFooterLayer.list.filter(function (o) { return o._uiTextKnopf; }).length };
+    })()`);
+    assert.deepStrictEqual(r, { bilder: 0, graphics: 2, knoepfe: 0 });
+    run(H, `${HUB}._ktCloseModal()`);
+    H.step(2);
+  });
+
+  test('Mobile-Knopf: kein Ring, der Knopf selbst bleibt', () => {
+    const r = run(H, `(function () { ${MOBILE_KNOPF} los(); return { ringe: ringe().length, kreis: c.visible && !!c.scene }; })()`);
+    assert.deepStrictEqual(r, { ringe: 0, kreis: true });
+  });
+
+  // Zuletzt: die Schmiede kleidet ihre Knoepfe ein und laedt dazu nach.
+  test('Schmiede: Zeilen bleiben Rechtecke, der Listenkasten steht', async () => {
+    run(H, `window.InventoryGrid.einlagern(window.LootSystem.rollItem('WPN_EISENKLINGE', 8, 2)); ${HUB}.scene.start('CraftingScene'); null`);
+    await H.waitForScene('CraftingScene', { maxRounds: 200 });
+    H.step(3);
+    const r = run(H, `(function () { var sc = ${SCHMIEDE};
+      return { felder: Object.keys(sc.equipSlotBgs).filter(function (k) { return sc.equipSlotBgs[k]._uiFeld; }).length,
+        zeilen: sc.invRows.filter(function (z) { return z.bg._uiFeld; }).length, alle: sc.invRows.length,
+        liste: sc.invListBg.visible, deckend: sc.equipSlotBgs.weapon.fillAlpha }; })()`);
+    assert.ok(r.alle >= 1);
+    assert.deepStrictEqual(r, { felder: 0, zeilen: 0, alle: r.alle, liste: true, deckend: 1 });
   });
 });
 
@@ -347,24 +395,15 @@ const HUD_BILDER = `(function () { var sc = window.game.scene.getScene('GameScen
     if (o.type === 'Image') r.push({ key: o.texture.key, tiefe: tiefe === null ? o.depth : tiefe, sichtbar: o.visible });
   }); })(sc.children.list, null); return r; })()`;
 
-describe('HUD im Dungeon ohne Flagge', () => {
-  let H = null;
-  before(async () => { H = await launchDungeon({ depth: 3, zusatz: '&debug=1' }); });
-  after(async () => { if (H) await H.shutdown(); });
+/** Erstes Element jeder Faehigkeitskachel (Bild-Schluessel oder Typ). */
+const KACHEL_GRUND = `(function () { var sc = window.game.scene.getScene('GameScene');
+  return sc.children.list.filter(function (o) { return o.type === 'Container' && o.depth === 1001; })
+    .map(function (c) { return c.list[0].type === 'Image' ? c.list[0].texture.key : c.list[0].type; }); })()`;
 
-  test('kein Ring, keine Leiste, Kacheln auf dem alten Rechteck', () => {
-    const b = run(H, HUD_BILDER);
-    assert.strictEqual(b.filter((x) => x.key === 'ui_ring' || x.key.indexOf('ui_leiste') === 0 || x.key.indexOf('ui_rahmen@') === 0).length, 0);
-    const erstes = run(H, `(function () { var sc = window.game.scene.getScene('GameScene');
-      return sc.children.list.filter(function (o) { return o.type === 'Container' && o.depth === 1001; }).map(function (c) { return c.list[0].type; }); })()`);
-    assert.ok(erstes.length >= 3 && erstes.every((t) => t === 'Rectangle'), erstes.join(','));
-  });
-});
-
-describe('HUD im Dungeon mit Flagge', () => {
+describe('HUD im Dungeon', () => {
   let H = null;
   before(async () => {
-    H = await launchDungeon({ depth: 3, zusatz: '&debug=1' + FLAGGE });
+    H = await launchDungeon({ depth: 3, zusatz: '&debug=1' });
     run(H, 'window._playerInvincible = true');
   });
   after(async () => { if (H) await H.shutdown(); });
@@ -377,9 +416,7 @@ describe('HUD im Dungeon mit Flagge', () => {
   });
 
   test('Faehigkeitskacheln auf einer gebackenen Messing-Platte', () => {
-    const r = run(H, `(function () { var sc = window.game.scene.getScene('GameScene');
-      var k = sc.children.list.filter(function (o) { return o.type === 'Container' && o.depth === 1001; });
-      return k.map(function (c) { return c.list[0].type === 'Image' ? c.list[0].texture.key : c.list[0].type; }); })()`);
+    const r = run(H, KACHEL_GRUND);
     assert.ok(r.length >= 3, 'zu wenige Kacheln: ' + r.length);
     assert.ok(r.every((k) => k.indexOf('ui_rahmen@220x42') === 0), r.join(','));
     // Eine Textur fuer alle Kacheln.
@@ -406,5 +443,22 @@ describe('HUD im Dungeon mit Flagge', () => {
         if (o.type === 'Container' && o.depth === 1001 && o.visible) o.list.forEach(function (t) { if (t.type === 'Text') r.push(t); });
       }); return r; })()`;
     alleLesbar(kontraste(H, auswahl), 'HUD');
+  });
+
+  test('Rueckfall: ohne Bilder baut das HUD Goldraender und Kachel-Rechtecke', async () => {
+    // Laden gescheitert nachstellen und die Spielszene neu aufbauen lassen.
+    bilderWeg(H);
+    run(H, `window.game.scene.getScene('GameScene').scene.restart(); null`);
+    H.step(2);
+    await H.waitForScene('GameScene', { maxRounds: 250 });
+    H.step(10);
+    const b = run(H, HUD_BILDER);
+    assert.strictEqual(b.filter((x) => x.key === 'ui_ring' || x.key.indexOf('ui_leiste') === 0).length, 0);
+    const grund = run(H, KACHEL_GRUND);
+    assert.ok(grund.length >= 3 && grund.every((t) => t === 'Rectangle'), grund.join(','));
+    // Die gezeichneten Goldraender der runden Knoepfe stehen wieder.
+    const e = run(H, `({ menue: window.HUDv2.elements.burgerBg.lineWidth, inv: window.HUDv2.elements.invBg.lineWidth, hp: window.HUDv2.elements.hpFill.visible })`);
+    assert.ok(e.menue > 0 && e.inv > 0, JSON.stringify(e));
+    assert.strictEqual(e.hp, true);
   });
 });

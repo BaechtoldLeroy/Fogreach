@@ -2598,13 +2598,13 @@ function initUI() {
     // abilityStatusDisplay fuehrt nur attack und roll — Trank und die vier
     // Slot-Kacheln standen deshalb waehrend des Boss-Beats weiter da.
     const alleKacheln = [];
-    // Neue Oberflaeche (#182, ?oberflaeche=neu): jede Kachel liegt auf einer
+    // Messing-Oberflaeche (#182): jede Kachel liegt auf einer
     // kleinen Messing-Platte. Sie wird EINMAL gebacken (eine Textur fuer alle
     // Kacheln); das alte Rechteck faellt weg, damit updateAbilityStatus es
     // nicht jedes Bild neu einfaerbt.
     const _UR = window.uiRahmen;
-    const kachelNeu = !!(_UR && _UR.neu() && _UR.bereit(this));
-    const kachelTex = kachelNeu ? _UR.kachelBild(this, tileWidth, tileHeight) : null;
+    const kachelMessing = !!(_UR && _UR.bereit(this));
+    const kachelTex = kachelMessing ? _UR.kachelBild(this, tileWidth, tileHeight) : null;
     const buildTile = (initialLabel, initialKeyLabel, color) => {
       const container = this.add.container(0, 0).setDepth(1001).setScrollFactor(0);
       const bg = this.add.rectangle(0, 0, tileWidth, tileHeight, 0x10131c, 0.65)

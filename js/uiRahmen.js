@@ -2,8 +2,8 @@
  * uiRahmen.js — gestaltete Rahmen, Knoepfe und Toast-Banner (#189, #182)
  * ---------------------------------------------------------------------
  * Ein gemeinsamer Satz PixelLab-Grafiken (assets/ui/ui_*.png) im Stil des
- * Talentbaums (Messing, dunkles Anthrazit, Nieten). Fest im Spiel (bis
- * zur Abnahme nur hinter `?debug=1&ui=neu`). Hub und Dungeon laden die
+ * Talentbaums (Messing, dunkles Anthrazit, Nieten). Fest im Spiel (#189
+ * seit b363, #182 seit b371). Hub und Dungeon laden die
  * Bilder im preload(); fehlen sie trotzdem (Laden gescheitert), zeichnet
  * jede Aufrufstelle ein schlichtes Rueckfall-Panel.
  *
@@ -38,23 +38,16 @@
     lore_fragment: 'ereignis', shrine_buff: 'ereignis', healing_fountain: 'ereignis'
   };
 
-  var ALLE = [RAHMEN, TOAST, KNOPF_ZUSTAND.normal, KNOPF_ZUSTAND.hover,
-    KNOPF_ZUSTAND.gedrueckt, KNOPF_ZUSTAND.aus].concat(SYMBOLE);
-
-  // Zweite Runde (#182) hinter ?debug=1&oberflaeche=neu: Inventarfelder,
-  // HUD-Leiste und Messingring. Geladen nur mit Flagge, damit das Spiel
-  // ohne sie exakt so bleibt wie heute.
+  // Zweite Runde (#182): Inventarfelder, HUD-Leiste und Messingring.
   var FELD = 'ui_feld', FELD_GEWAEHLT = 'ui_feld_gewaehlt', FELD_RAND = 34;
   var RING = 'ui_ring';
   var LEISTE = 'ui_leiste', LEISTE_RAND = 40;
-  var NEU = [FELD, FELD_GEWAEHLT, RING, LEISTE];
 
-  /** Ist die neue Oberflaeche (#182) eingeschaltet? */
-  function neu() {
-    var g = (typeof window !== 'undefined') ? window.DebugGate : null;
-    return !!(g && g.flagge('oberflaeche') === 'neu');
-  }
-  function _liste() { return neu() ? ALLE.concat(NEU) : ALLE; }
+  // Ein Satz fuer alles: fehlt auch nur ein Bild, zeichnet jede Aufrufstelle
+  // ihren Rueckfall, statt halb Messing, halb Kasten zu zeigen.
+  var ALLE = [RAHMEN, TOAST, KNOPF_ZUSTAND.normal, KNOPF_ZUSTAND.hover,
+    KNOPF_ZUSTAND.gedrueckt, KNOPF_ZUSTAND.aus].concat(SYMBOLE)
+    .concat([FELD, FELD_GEWAEHLT, RING, LEISTE]);
 
   // Cache-Buster je Bild: die Platte wurde nachtraeglich abgedunkelt (#189),
   // sonst zeigt der Browser noch die alte, helle Mitte.
@@ -62,8 +55,8 @@
   function _pfad(k) { return 'assets/ui/' + k + '.png' + (BILD_V[k] ? '?v=' + BILD_V[k] : ''); }
 
   function _fehlend(scene) {
-    if (!scene || !scene.textures) return _liste().slice();
-    return _liste().filter(function (k) { return !scene.textures.exists(k); });
+    if (!scene || !scene.textures) return ALLE.slice();
+    return ALLE.filter(function (k) { return !scene.textures.exists(k); });
   }
 
   /** Alle Grafiken da? */
@@ -520,8 +513,8 @@
   }
 
   var uiRahmen = {
-    neu: neu, textKnopf: textKnopf, feldZeile: feldZeile, gebacken: gebacken, feldBild: feldBild, leisteBild: leisteBild,
-    kachelBild: kachelBild, ring: ring, NEU: NEU,
+    textKnopf: textKnopf, feldZeile: feldZeile, gebacken: gebacken, feldBild: feldBild, leisteBild: leisteBild,
+    kachelBild: kachelBild, ring: ring,
     bereit: bereit, vorladen: vorladen, nachladen: nachladen,
     neunteilig: neunteilig, platte: platte, banner: banner, knopf: knopf, symbol: symbol,
     einkleiden: einkleiden, menuePlatte: menuePlatte,

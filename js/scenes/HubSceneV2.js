@@ -1976,15 +1976,15 @@ class HubSceneV2 extends Phaser.Scene {
     const extraBtnHeight = hasChoices ? choiceHeight : maraBtnHeight;
     const panelHeight = Math.min(440, Math.max(180, Math.ceil(pad + headerHeight + 12 + bodyHeight + extraBtnHeight + pad + hintHeight + 10)));
 
-    // Neue Oberflaeche (#182, ?oberflaeche=neu): Messing-Platte statt des
+    // Messing-Oberflaeche (#182): Messing-Platte statt des
     // gezeichneten Kastens, Messingknoepfe statt Farbkaesten. Die Platte
     // liegt als neun Teile im Container — der Sweep in _closeDialog raeumt
     // sie mit ihm ab, die Bildlauf-Weitergabe unten erfasst sie. Bewusst
     // nicht gebacken: die Hoehe folgt dem Text, jede neue Hoehe waere eine
     // neue Textur, die bis zum Neuladen im Speicher bliebe.
     const UR = window.uiRahmen;
-    const NEU = !!(UR && UR.neu() && UR.bereit(this));
-    if (NEU) {
+    const MESSING = !!(UR && UR.bereit(this));
+    if (MESSING) {
       container.add(UR.platte(this, 0, 0, panelWidth, panelHeight, 0, 0.6));
     } else {
       const g = this.add.graphics();
@@ -1995,7 +1995,7 @@ class HubSceneV2 extends Phaser.Scene {
     // Die alte Kastenfarbe lebt als Farbton der Knopfmitte weiter
     // (gruen = annehmen, rot = ablehnen); die Schrift wird hell.
     const alsKnopf = (btn) => {
-      if (NEU) UR.textKnopf(this, btn, '#f4efe2');
+      if (MESSING) UR.textKnopf(this, btn, '#f4efe2');
     };
 
     header.setPosition(-panelWidth / 2 + pad, -panelHeight / 2 + pad).setVisible(true);
@@ -3535,14 +3535,14 @@ class HubSceneV2 extends Phaser.Scene {
     const overlay = this.add.rectangle(0, 0, cw, ch, 0x000000, 0.7).setScrollFactor(0);
     container.add(overlay);
 
-    // Neue Oberflaeche (#182, ?oberflaeche=neu): Messing-Platte (ein
+    // Messing-Oberflaeche (#182): Messing-Platte (ein
     // gebackenes Bild) statt Kasten und Kopfleiste; Titel und Zaehler
     // ruecken vom Beschlag weg nach innen.
     const UR = window.uiRahmen;
-    const NEU = !!(UR && UR.neu() && UR.bereit(this));
-    this._ktNeu = NEU;
-    const kopfEin = NEU ? 10 : 0;
-    if (NEU) {
+    const MESSING = !!(UR && UR.bereit(this));
+    this._ktMessing = MESSING;
+    const kopfEin = MESSING ? 10 : 0;
+    if (MESSING) {
       container.add(this.add.image(0, 0, UR.kachelBild(this, panelW, panelH)));
     } else {
       // Panel bg
@@ -3750,7 +3750,7 @@ class HubSceneV2 extends Phaser.Scene {
         : _HUB_T('knowledge.not.locked', { n: braucht }), {
         fontFamily: 'monospace', fontSize: 12,
         color: torOffen ? '#8fd6a0' : '#6a6a72',
-        backgroundColor: this._ktNeu ? '#1c191f' : '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
+        backgroundColor: this._ktMessing ? '#1c191f' : '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
       }).setOrigin(0.5, 0.5));
       y = torY + 14;
 
@@ -3796,7 +3796,7 @@ class HubSceneV2 extends Phaser.Scene {
         this._ktCardLayer.add(this._ktTxt(cx, kantenY + 9,
           _HUB_T('knowledge.key.needs_notable'), {
             fontFamily: 'monospace', fontSize: 12, color: '#6a6a72',
-            backgroundColor: this._ktNeu ? '#1c191f' : '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
+            backgroundColor: this._ktMessing ? '#1c191f' : '#0c0c14', padding: { x: 6, y: 1 }, resolution: 2
           }).setOrigin(0.5, 0.5));
       }
       keystones.filter((k) => k.zweig === zw.id).forEach((k) => {
@@ -3832,10 +3832,10 @@ class HubSceneV2 extends Phaser.Scene {
       });
     });
 
-    // Neue Oberflaeche: gesperrtes Grau (#5f5f68) hatte auf der Messing-
+    // Messing-Oberflaeche: gesperrtes Grau (#5f5f68) hatte auf der Messing-
     // Platte nur 2,8:1. Anheben (bleibt sichtbar grauer als aktive Schrift),
     // danach wieder scharf stellen — setColor nimmt den Filter mit.
-    if (this._ktNeu && window.uiRahmen) {
+    if (this._ktMessing && window.uiRahmen) {
       window.uiRahmen.lesbarAlle(this._ktCardLayer.list);
       const scharf = (l) => l.forEach((o) => { if (o.list) scharf(o.list); else if (o.type === 'Text') this._ktScharf(o); });
       scharf(this._ktCardLayer.list);
@@ -4037,9 +4037,9 @@ class HubSceneV2 extends Phaser.Scene {
 
     const panelW = this._ktPanelW || 920;
     const panelH = this._ktPanelH || 460;
-    const NEU = !!this._ktNeu;
-    const footerY = panelH / 2 - 32 - (NEU ? 8 : 0);
-    const ein = NEU ? 12 : 0;   // vom Beschlag der Platte weg
+    const MESSING = !!this._ktMessing;
+    const footerY = panelH / 2 - 32 - (MESSING ? 8 : 0);
+    const ein = MESSING ? 12 : 0;   // vom Beschlag der Platte weg
 
     // Respec button (left, red bg)
     const respecBtn = this.add.text(
@@ -4049,7 +4049,7 @@ class HubSceneV2 extends Phaser.Scene {
     );
     respecBtn.setInteractive({ useHandCursor: true });
     this._ktFooterLayer.add(respecBtn);
-    if (NEU) window.uiRahmen.textKnopf(this, respecBtn, '#f4efe2');
+    if (MESSING) window.uiRahmen.textKnopf(this, respecBtn, '#f4efe2');
 
     respecBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
@@ -4069,7 +4069,7 @@ class HubSceneV2 extends Phaser.Scene {
     if (giveBtn) {
       giveBtn.setInteractive({ useHandCursor: true });
       this._ktFooterLayer.add(giveBtn);
-      if (NEU) window.uiRahmen.textKnopf(this, giveBtn, '#f4efe2');
+      if (MESSING) window.uiRahmen.textKnopf(this, giveBtn, '#f4efe2');
       giveBtn.on('pointerdown', (pointer, x, y, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
         try { window.KnowledgeTree.addFragments(1); }
@@ -4085,7 +4085,7 @@ class HubSceneV2 extends Phaser.Scene {
     ).setOrigin(1, 0);
     closeBtn.setInteractive({ useHandCursor: true });
     this._ktFooterLayer.add(closeBtn);
-    if (NEU) window.uiRahmen.textKnopf(this, closeBtn, '#f4efe2');
+    if (MESSING) window.uiRahmen.textKnopf(this, closeBtn, '#f4efe2');
 
     closeBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
@@ -4103,8 +4103,8 @@ class HubSceneV2 extends Phaser.Scene {
     const dim = this.add.rectangle(0, 0, cam.width, cam.height, 0x000000, 0.55).setScrollFactor(0);
     dlg.add(dim);
 
-    const NEU = !!this._ktNeu;
-    if (NEU) {
+    const MESSING = !!this._ktMessing;
+    if (MESSING) {
       dlg.add(this.add.image(0, 0, window.uiRahmen.kachelBild(this, 400, 160)));
     } else {
       const panel = this.add.graphics();
@@ -4153,7 +4153,7 @@ class HubSceneV2 extends Phaser.Scene {
     });
     dlg.add(yes);
     // Unbezahlbar: der entsaettigte Knopf, Schrift bleibt grau.
-    if (NEU) window.uiRahmen.textKnopf(this, yes, bezahlbar ? '#f4efe2' : '#b9b2a6', { aus: !bezahlbar });
+    if (MESSING) window.uiRahmen.textKnopf(this, yes, bezahlbar ? '#f4efe2' : '#b9b2a6', { aus: !bezahlbar });
 
     const no = this.add.text(60, 30, _HUB_T('knowledge.respec.no'), {
       fontFamily: 'serif', fontSize: 14, color: '#fff', backgroundColor: '#3a3a4a', padding: { x: 14, y: 6 }, resolution: 2
@@ -4163,7 +4163,7 @@ class HubSceneV2 extends Phaser.Scene {
       this._ktCloseConfirm();
     });
     dlg.add(no);
-    if (NEU) window.uiRahmen.textKnopf(this, no, '#f4efe2');
+    if (MESSING) window.uiRahmen.textKnopf(this, no, '#f4efe2');
 
     // CRITICAL (gleiche Falle wie der Haupt-Modal, Z. ~2816): der Container hat
     // scrollFactor(0), aber Phaser propagiert das NICHT auf die interaktiven

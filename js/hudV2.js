@@ -92,12 +92,13 @@
     lowHpStage: 0 // 0=ok, 1=below 40%, 2=below 20%
   };
 
-  // Neue Oberflaeche (#182, ?oberflaeche=neu): Messingringe um Portraet und
-  // Knoepfe, Messingleiste um den Lebensbalken. Alles einmal beim Aufbau
-  // angelegt; update() aendert wie bisher nur die Breite der Fuellung.
-  function _neu(scene) {
+  // Messing-Oberflaeche (#182): Messingringe um Portraet und Knoepfe,
+  // Messingleiste um den Lebensbalken. Alles einmal beim Aufbau angelegt;
+  // update() aendert wie bisher nur die Breite der Fuellung. Fehlen die
+  // Bilder (Laden gescheitert), bleiben die gezeichneten Raender.
+  function _messing(scene) {
     const UR = window.uiRahmen;
-    return !!(UR && UR.neu() && UR.bereit(scene));
+    return !!(UR && UR.bereit(scene));
   }
 
   function build(scene) {
@@ -166,8 +167,8 @@
       if (event && event.stopPropagation) event.stopPropagation();
       _openStatsMenu(scene);
     });
-    const NEU = _neu(scene);
-    if (NEU) {
+    const MESSING = _messing(scene);
+    if (MESSING) {
       // Der Ring ersetzt den gezeichneten Goldrand; das Gluehen bei wenig
       // Leben liegt aussen und bleibt sichtbar.
       portraitBg.setStrokeStyle(0);
@@ -183,7 +184,7 @@
       .setOrigin(0).setScrollFactor(0).setDepth(HUD_DEPTH);
     const hpFill = scene.add.rectangle(hpX + 2, hpY + 2, HP_BAR_W - 4, HP_BAR_H - 4, 0xc0392b, 1)
       .setOrigin(0).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
-    if (NEU) {
+    if (MESSING) {
       // Messingleiste um den Balken: ein gebackenes Bild, 5 px Rand rundum.
       hpFrame.setVisible(false);
       scene.add.image(hpX - 5, hpY - 5, window.uiRahmen.leisteBild(scene, HP_BAR_W + 10, HP_BAR_H + 10))
@@ -197,9 +198,9 @@
 
     // XP bar (thinner, below HP)
     const xpX = hpX;
-    const xpY = hpY + HP_BAR_H + 4 + (NEU ? 3 : 0);
+    const xpY = hpY + HP_BAR_H + 4 + (MESSING ? 3 : 0);
     const xpFrame = scene.add.rectangle(xpX, xpY, XP_BAR_W, XP_BAR_H, 0x000000, 0.8)
-      .setOrigin(0).setStrokeStyle(1, NEU ? 0xb08d57 : 0x666666).setScrollFactor(0).setDepth(HUD_DEPTH);
+      .setOrigin(0).setStrokeStyle(1, MESSING ? 0xb08d57 : 0x666666).setScrollFactor(0).setDepth(HUD_DEPTH);
     const xpFill = scene.add.rectangle(xpX + 1, xpY + 1, XP_BAR_W - 2, XP_BAR_H - 2, 0x88ff88, 1)
       .setOrigin(0).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
     const levelText = scene.add.text(xpX, xpY + XP_BAR_H + 2, '', {
@@ -239,8 +240,8 @@
       if (event && event.stopPropagation) event.stopPropagation();
       _openMenuOverlay(scene);
     });
-    const NEU = _neu(scene);
-    if (NEU) {
+    const MESSING = _messing(scene);
+    if (MESSING) {
       burgerBg.setStrokeStyle(0);
       window.uiRahmen.ring(scene, burgerCx, burgerCy, ICON_R * 2 + 10, HUD_DEPTH + 0.5);
     }
@@ -256,7 +257,7 @@
     const invHit = scene.add.rectangle(invCx, invCy, ICON_R * 2, ICON_R * 2, 0x000000, 0)
       .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
-    if (NEU) {
+    if (MESSING) {
       invBg.setStrokeStyle(0);
       window.uiRahmen.ring(scene, invCx, invCy, ICON_R * 2 + 10, HUD_DEPTH + 0.5);
     }

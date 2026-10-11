@@ -220,7 +220,7 @@ class CraftingScene extends Phaser.Scene {
     this.equipSlotBgs = {};
 
     const _UR = window.uiRahmen;
-    this._oberflaecheNeu = !!(_UR && _UR.neu() && _UR.bereit(this));
+    this._messing = !!(_UR && _UR.bereit(this));
     const slotStartY = panelY + 24;
     const slotH = 36;
     const slotGap = 2;
@@ -236,21 +236,23 @@ class CraftingScene extends Phaser.Scene {
       const nameStr = item ? _composeItemName(item) : _CRAFT_T('crafting.empty_slot');
       const color = item ? _getTierColor(item) : COL_DISABLED;
 
-      // Compact one-line layout: [Slot] Name (stats)
+      // Zwei Zeilen: oben [Platz] links und Seltenheit/Ausbau rechts, darunter
+      // der Name. Drei Zeilen passten nicht in 36 px — die dritte stand auf
+      // dem unteren Messing-Beschlag (#182).
       const label = this.add.text(leftX + 8, sy + 4, '[' + slotLabels[slot] + ']', {
         fontFamily: 'monospace', fontSize: '10px', color: COL_GOLD
       }).setDepth(10);
 
-      const nameText = this.add.text(leftX + 8, sy + 16, nameStr, {
+      const nameText = this.add.text(leftX + 8, sy + 17, nameStr, {
         fontFamily: 'monospace', fontSize: '11px', color: color
       }).setDepth(10);
 
       // Statt der Wertezeile: Seltenheit und, wenn vorhanden, Ausbaustufe.
       // Beides entscheidet, ob sich ein Blick lohnt — die Einzelwerte liest
       // man rechts.
-      const statsText = this.add.text(leftX + 8, sy + 26, this._platzZeile(item), {
+      const statsText = this.add.text(leftX + slotW - 8, sy + 4, this._platzZeile(item), {
         fontFamily: 'monospace', fontSize: '9px', color: '#8f8f8f'
-      }).setDepth(10);
+      }).setOrigin(1, 0).setDepth(10);
 
       bg.on('pointerdown', () => this._selectEquip(slot));
       bg.on('pointerover', () => {
@@ -260,9 +262,9 @@ class CraftingScene extends Phaser.Scene {
         if (!this._isSelected('equip', slot)) bg.setFillStyle(COL_SLOT);
       });
 
-      // Neue Oberflaeche (#182, ?oberflaeche=neu): der Platz liegt auf
+      // Messing-Oberflaeche (#182): der Platz liegt auf
       // einem Messingfeld; gewaehlt = heller Beschlag statt Goldrand.
-      if (this._oberflaecheNeu) window.uiRahmen.feldZeile(bg, { hover: [COL_BTN_HOVER] });
+      if (this._messing) window.uiRahmen.feldZeile(bg, { hover: [COL_BTN_HOVER] });
 
       this.equipSlots[slot] = { bg, label, nameText, statsText };
       this.equipSlotBgs[slot] = bg;
@@ -299,9 +301,9 @@ class CraftingScene extends Phaser.Scene {
       this.invListY + (this.invRowH * this.invMaxRows) / 2,
       slotW, this.invRowH * this.invMaxRows, 0x1f1f1f
     ).setDepth(8).setStrokeStyle(1, 0x444444);
-    // Neu tragen die Zeilen selbst ein Feld; der graue Listenkasten darunter
+    // Die Zeilen tragen selbst ein Feld; der graue Listenkasten darunter
     // bliebe sonst als Rechteck um sie herum stehen.
-    if (this._oberflaecheNeu) this.invListBg.setVisible(false);
+    if (this._messing) this.invListBg.setVisible(false);
 
     this.invEmptyText = this.add.text(
       leftX + slotW / 2,
@@ -1178,7 +1180,7 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
         fontFamily: 'monospace', fontSize: '9px', color: '#888888'
       }).setDepth(10);
 
-      if (this._oberflaecheNeu) window.uiRahmen.feldZeile(bg, { hover: [0x3a3a3a] });
+      if (this._messing) window.uiRahmen.feldZeile(bg, { hover: [0x3a3a3a] });
 
       bg.on('pointerdown', () => this._selectInventory(entry.idx));
       bg.on('pointerover', () => {

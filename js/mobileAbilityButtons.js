@@ -184,11 +184,11 @@
       }
     }
 
-    // Neue Oberflaeche (#182, ?oberflaeche=neu): ein Messingring um den
+    // Messing-Oberflaeche (#182): ein Messingring um den
     // farbigen Knopf. Die Faehigkeitsfarbe bleibt im Loch sichtbar; der Ring
     // ist reine Zier und nimmt keine Eingabe an (Treffer bleibt der Kreis).
     const UR = window.uiRahmen;
-    const ring = (UR && UR.neu() && UR.bereit(scene))
+    const ring = (UR && UR.bereit(scene))
       ? UR.ring(scene, circle.x, circle.y, radius * 2.2, 1200.5) : null;
 
     const place = () => {

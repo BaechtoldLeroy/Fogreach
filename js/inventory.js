@@ -513,18 +513,19 @@ function initInventoryUI() {
   // fallen Klicks in die Fugen zwischen den Zellen durch bis zur
   // Verdunkelung dahinter — und die schliesst das Inventar. Ein Fehlklick
   // zwischen zwei Faechern warf den Spieler bisher aus dem Menue.
-  // Neue Oberflaeche (#182, ?oberflaeche=neu): Messing-Platte statt der
-  // gezeichneten Holzplatte, Messingfelder statt grauer Kaesten. Die Platte
-  // ist EIN gebackenes Bild und bleibt so die klickbare Flaeche.
+  // Messing-Oberflaeche (#182): Messing-Platte statt der gezeichneten
+  // Holzplatte, Messingfelder statt grauer Kaesten. Die Platte ist EIN
+  // gebackenes Bild und bleibt so die klickbare Flaeche. Die alten Texturen
+  // bleiben nur Rueckfall, falls die Bilder nicht geladen sind.
   const _UR = window.uiRahmen;
-  const NEU = !!(_UR && _UR.neu() && _UR.bereit(scene));
-  invUI._neu = NEU;
-  const panelBg = scene.add.image(0, 0, NEU ? _UR.kachelBild(scene, PANEL_W, PANEL_H) : 'uiPanel')
+  const MESSING = !!(_UR && _UR.bereit(scene));
+  invUI._messing = MESSING;
+  const panelBg = scene.add.image(0, 0, MESSING ? _UR.kachelBild(scene, PANEL_W, PANEL_H) : 'uiPanel')
     .setOrigin(0.5).setDisplaySize(PANEL_W, PANEL_H).setScrollFactor(0).setInteractive();
   panel.add(panelBg);
-  // Zellen-, Feld- und Rahmenbild: alt die festen Texturen, neu je Groesse
-  // gebackene Messingfelder (gewaehlt = heller Beschlag mit Goldsaum).
-  const feldTex = (w, h, gewaehlt, alt) => (NEU ? _UR.feldBild(scene, w, h, gewaehlt) : alt);
+  // Zellen-, Feld- und Rahmenbild: je Groesse gebackene Messingfelder
+  // (gewaehlt = heller Beschlag mit Goldsaum); Rueckfall die festen Texturen.
+  const feldTex = (w, h, gewaehlt, alt) => (MESSING ? _UR.feldBild(scene, w, h, gewaehlt) : alt);
   invUI._feldTex = feldTex;
 
   const title = scene.add.text(-PANEL_W / 2 + 20, -PANEL_H / 2 + 12, _INV_T('inventory.title'), {
@@ -949,7 +950,7 @@ function equipPos(key, index) {
     }
 
     let seltenheit = null;
-    if (NEU) {
+    if (MESSING) {
       seltenheit = scene.add.rectangle(_ex, y, _lage.w, _lage.h).setOrigin(0.5)
         .setScrollFactor(0).setVisible(false);
       panel.addAt(seltenheit, panel.getIndex(icon) + 1);
@@ -1298,12 +1299,12 @@ function equipPos(key, index) {
       .setScrollFactor(0).setVisible(false);
     panel.add(icon);
 
-    // Neu: Die Seltenheit liegt als farbiger Saum IM Messingfeld, statt das
+    // Die Seltenheit liegt als farbiger Saum IM Messingfeld, statt das
     // ganze Feld einzufaerben. Ein Rechteck zeichnet in Canvas wie in WebGL
     // gleich (setTintFill wirkt nur unter WebGL). Es liegt UEBER dem Symbol
     // und ist nur Linie — so bleibt es sichtbar, ohne das Symbol zu verkleinern.
     let seltenheit = null;
-    if (NEU) {
+    if (MESSING) {
       seltenheit = scene.add.rectangle(0, 0, 10, 10).setOrigin(0.5)
         .setScrollFactor(0).setVisible(false);
       panel.add(seltenheit);
@@ -1452,7 +1453,7 @@ function equipPos(key, index) {
 }
 
 /**
- * Neue Oberflaeche (#182): Seltenheit als Saum innen am Messingfeld —
+ * Messing-Oberflaeche (#182): Seltenheit als Saum innen am Messingfeld —
  * eine 3-px-Linie in der Seltenheitsfarbe, ueber dem Symbol.
  * Ohne Gegenstand unsichtbar.
  */
@@ -2073,7 +2074,7 @@ function refreshInventoryUI() {
     const i = (G && typeof G.indexAn === "function") ? G.indexAn(inventory, z.c, z.r) : -1;
     const it = i >= 0 ? inventory[i] : null;
     const _sel = i >= 0 && i === invSelected;
-    bg.setTexture(invUI._feldTex ? invUI._feldTex(zBild, zBild, _sel, _sel ? "uiZelleSel" : "uiZelle") : (_sel ? "uiZelleSel" : "uiZelle"));
+    bg.setTexture(invUI._feldTex(zBild, zBild, _sel, _sel ? "uiZelleSel" : "uiZelle"));
     bg.setDisplaySize(zBild, zBild);
     setSlotHighlight(bg, it);
   });
@@ -2108,7 +2109,7 @@ function refreshInventoryUI() {
     const breite = g.b * zW * 0.94;
     const hoehe = g.h * zH * 0.94;
 
-    if (rahmen && invUI._neu) {
+    if (rahmen && invUI._messing) {
       rahmen.setTexture(invUI._feldTex(breite, hoehe, i === invSelected));
       rahmen.setPosition(cx, cy).setDisplaySize(breite, hoehe).setVisible(true);
       seltenheitSaum(slot.seltenheit, it, cx, cy, breite, hoehe);
@@ -2168,7 +2169,7 @@ function refreshInventoryUI() {
     const icon = isValidGameObject(ui.icon) ? ui.icon : null;
     if (!slot) return;
     setSlotHighlight(slot, it);
-    if (invUI._neu) seltenheitSaum(ui.seltenheit, it, slot.x, slot.y, slot.displayWidth, slot.displayHeight);
+    if (invUI._messing) seltenheitSaum(ui.seltenheit, it, slot.x, slot.y, slot.displayWidth, slot.displayHeight);
     if (it) {
       const iconKey = resolveItemIconKey(it);
       if (icon && iconKey) icon.setTexture(iconKey);
