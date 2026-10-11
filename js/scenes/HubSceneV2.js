@@ -157,7 +157,7 @@ class HubSceneV2 extends Phaser.Scene {
     // faster. Phaser only loads keys that aren't already in the texture cache,
     // so re-entering the hub from a dungeon is essentially free.
     const tex = this.textures;
-    if (!tex.exists('schmiedemeisterin')) this.load.image('schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png');
+    if (!tex.exists('schmiedemeisterin')) this.load.image('schmiedemeisterin', 'assets/sprites/schmiedemeisterin.png?v=2');   // #187: Hautton der anderen
     if (!tex.exists('setzer_thom'))       this.load.image('setzer_thom', 'assets/sprites/setzer_thom.png');
     if (!tex.exists('spaeherin'))         this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
     // Feature 050: Klerus (priest) + Garde (city watch) NPCs added in the
