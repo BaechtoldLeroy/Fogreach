@@ -133,51 +133,60 @@ describe('Messing-Oberflaeche: Inventar, Dialoge, Wissensbaum, Mobile, Schmiede'
     assert.strictEqual(r.platz, 'ui_feld@64x64_45');
   });
 
-  test('Inventar: Seltenheit als farbiger Saum, je Stufe deutlich im Bild', () => {
-    const saeume = run(H, `(function () {
+  test('Inventar: Seltenheit als farbiger Grund unter dem Symbol, ohne Rand', () => {
+    // Rueckmeldung: die farbigen Raender waren zu unruhig, ein farbiger
+    // Hintergrund reicht. Der Grund liegt UNTER dem Symbol (verdeckt es nicht
+    // und macht es nicht kleiner, siehe inventarSymbolgroesse.test.js).
+    const gruende = run(H, `(function () {
       return invUI.slots.map(function (s, i) {
         var it = inventory[i];
         if (!it || typeof it.gridX !== 'number') return null;
         var r = s.seltenheit, b = r.getBounds();
-        return { tier: getItemTier(it), rahmen: s.bg.texture.key, sichtbar: r.visible, farbe: r.strokeColor,
-          ueberSymbol: invUI.panel.getIndex(r) > invUI.panel.getIndex(s.icon),
+        return { tier: getItemTier(it), rahmen: s.bg.texture.key, sichtbar: r.visible,
+          fuellung: r.isFilled ? r.fillColor : null, deckung: r.fillAlpha, rand: !!r.isStroked,
+          unterSymbol: invUI.panel.getIndex(r) < invUI.panel.getIndex(s.icon),
           soll: parseTintColor(getItemTierColor(it), 0), x: b.x, y: b.y, w: b.width, h: b.height };
       }).filter(Boolean);
     })()`);
-    const stufen = saeume.filter((s) => s.tier >= 0 && s.tier <= 3);
-    assert.ok(new Set(stufen.map((s) => s.tier)).size >= 4, 'nicht alle vier Seltenheiten im Test: ' + JSON.stringify(stufen.map((s) => s.tier)));
-    stufen.forEach((s) => {
-      assert.ok(s.sichtbar, 'Saum unsichtbar');
-      // Ueber dem Symbol, sonst verdeckt es ihn (und kleiner machen darf
-      // man das Symbol nicht, siehe inventarSymbolgroesse.test.js).
-      assert.ok(s.ueberSymbol, 'Saum liegt unter dem Symbol');
-      assert.strictEqual(s.farbe, s.soll, 'Saum nicht in der Seltenheitsfarbe');
-      assert.ok(/^ui_feld(_gewaehlt)?@/.test(s.rahmen), 'Gegenstand nicht auf einem Messingfeld: ' + s.rahmen);
+    const stufen = gruende.filter((g) => g.tier >= 0 && g.tier <= 3);
+    assert.ok(new Set(stufen.map((g) => g.tier)).size >= 4, 'nicht alle vier Seltenheiten im Test: ' + JSON.stringify(stufen.map((g) => g.tier)));
+    stufen.forEach((g) => {
+      assert.ok(g.sichtbar, 'Grund unsichtbar');
+      assert.strictEqual(g.rand, false, 'Seltenheit traegt noch einen Rand');
+      assert.ok(g.unterSymbol, 'Grund liegt ueber dem Symbol');
+      assert.strictEqual(g.fuellung, g.soll, 'Grund nicht in der Seltenheitsfarbe');
+      assert.ok(g.deckung >= 0.25 && g.deckung <= 0.6, 'Deckung ' + g.deckung);
+      assert.ok(/^ui_feld(_gewaehlt)?@/.test(g.rahmen), 'Gegenstand nicht auf einem Messingfeld: ' + g.rahmen);
     });
-    // Im gerenderten Bild: die Saumfarbe steht wirklich da (Canvas kennt kein
-    // setTintFill). Gemessen ohne Symbole und Stapelzahl — eine graue Klinge
-    // zaehlte sonst als grauer Saum.
+    // Im gerenderten Bild: der Grund zieht die Feldfarbe zur Seltenheitsfarbe.
+    // Verglichen mit demselben Feld ohne Grund; Symbole und Zahlen aus.
     run(H, `invUI.slots.forEach(function (s) { s._warIcon = s.icon.visible; s._warLabel = s.label.visible; s.icon.visible = false; s.label.visible = false; s.indicator.visible = false; })`);
-    H.step(1);
     const c = H.window.game.canvas, ctx = c.getContext('2d');
-    const bild = stufen.map((s) => ctx.getImageData(Math.round(s.x), Math.round(s.y), Math.round(s.w), Math.round(s.h)).data);
-    run(H, `invUI.slots.forEach(function (s) { s.icon.visible = s._warIcon; s.label.visible = s._warLabel; }); refreshInventoryUI()`);
-    stufen.forEach((s, k) => {
-      const d = bild[k];
-      const R = (s.soll >> 16) & 255, G = (s.soll >> 8) & 255, B = s.soll & 255;
-      let n = 0;
-      for (let i = 0; i < d.length; i += 4) {
-        if (Math.abs(d[i] - R) + Math.abs(d[i + 1] - G) + Math.abs(d[i + 2] - B) < 60) n++;
-      }
-      assert.ok(n >= (s.w + s.h) * 0.5, 'Seltenheit ' + s.tier + ' kaum im Bild: ' + n + ' Pixel');
-      console.log('# Saum Stufe ' + s.tier + ': ' + n + ' Pixel (Soll ' + Math.round((s.w + s.h) * 0.5) + ')');
+    const mittel = () => stufen.map((g) => {
+      const d = ctx.getImageData(Math.round(g.x), Math.round(g.y), Math.round(g.w), Math.round(g.h)).data;
+      let r = 0, gr = 0, bl = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { r += d[i]; gr += d[i + 1]; bl += d[i + 2]; n++; }
+      return [r / n, gr / n, bl / n];
+    });
+    H.step(1);
+    const mit = mittel();
+    run(H, `invUI.slots.forEach(function (s) { if (s.seltenheit) { s._warGrund = s.seltenheit.visible; s.seltenheit.visible = false; } })`);
+    H.step(1);
+    const ohne = mittel();
+    run(H, `invUI.slots.forEach(function (s) { s.icon.visible = s._warIcon; s.label.visible = s._warLabel; if (s.seltenheit) s.seltenheit.visible = s._warGrund; }); refreshInventoryUI()`);
+    stufen.forEach((g, k) => {
+      const ziel = [(g.soll >> 16) & 255, (g.soll >> 8) & 255, g.soll & 255];
+      const ab = (m) => Math.hypot(m[0] - ziel[0], m[1] - ziel[1], m[2] - ziel[2]);
+      assert.ok(ab(mit[k]) < ab(ohne[k]) - 8, 'Seltenheit ' + g.tier + ' faerbt das Feld nicht: ' + ab(ohne[k]).toFixed(0) + ' -> ' + ab(mit[k]).toFixed(0));
     });
   });
 
-  test('Inventar: Ausruestung traegt den Saum, leere Plaetze nicht', () => {
-    const r = run(H, `({ waffe: invUI.equip.weapon.seltenheit.visible, farbe: invUI.equip.weapon.seltenheit.strokeColor,
+  test('Inventar: Ausruestung traegt den Grund, leere Plaetze nicht', () => {
+    const r = run(H, `({ waffe: invUI.equip.weapon.seltenheit.visible, farbe: invUI.equip.weapon.seltenheit.fillColor,
+      rand: !!invUI.equip.weapon.seltenheit.isStroked,
+      unterSymbol: invUI.panel.getIndex(invUI.equip.weapon.seltenheit) < invUI.panel.getIndex(invUI.equip.weapon.icon),
       soll: parseTintColor(getItemTierColor(equipment.weapon), 0), kopf: invUI.equip.head.seltenheit.visible })`);
-    assert.deepStrictEqual(r, { waffe: true, farbe: r.soll, soll: r.soll, kopf: false });
+    assert.strictEqual(JSON.stringify(r), JSON.stringify({ waffe: true, farbe: r.soll, rand: false, unterSymbol: true, soll: r.soll, kopf: false }));
     assert.strictEqual(r.soll, 0xff8844, 'die angelegte Waffe ist legendaer (orange)');
   });
 

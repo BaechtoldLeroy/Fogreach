@@ -976,7 +976,8 @@ function equipPos(key, index) {
     if (MESSING) {
       seltenheit = scene.add.rectangle(_ex, y, _lage.w, _lage.h).setOrigin(0.5)
         .setScrollFactor(0).setVisible(false);
-      panel.addAt(seltenheit, panel.getIndex(icon) + 1);
+      // Unter dem Symbol: die Seltenheit ist der Grund, auf dem es liegt.
+      panel.addAt(seltenheit, panel.getIndex(icon));
     }
     invUI.equip[equipKeys[i]] = { slot, icon, highlight, decor, seltenheit };
   }
@@ -1322,15 +1323,14 @@ function equipPos(key, index) {
       .setScrollFactor(0).setVisible(false);
     panel.add(icon);
 
-    // Die Seltenheit liegt als farbiger Saum IM Messingfeld, statt das
-    // ganze Feld einzufaerben. Ein Rechteck zeichnet in Canvas wie in WebGL
-    // gleich (setTintFill wirkt nur unter WebGL). Es liegt UEBER dem Symbol
-    // und ist nur Linie — so bleibt es sichtbar, ohne das Symbol zu verkleinern.
+    // Die Seltenheit ist ein farbiger GRUND im Messingfeld, unter dem Symbol
+    // (frueher ein Saum darueber — zu unruhig). Ein Rechteck zeichnet in
+    // Canvas wie in WebGL gleich (setTintFill wirkt nur unter WebGL).
     let seltenheit = null;
     if (MESSING) {
       seltenheit = scene.add.rectangle(0, 0, 10, 10).setOrigin(0.5)
         .setScrollFactor(0).setVisible(false);
-      panel.add(seltenheit);
+      panel.addAt(seltenheit, panel.getIndex(icon));
     }
 
     const indicator = scene.add.image(0, 0, "uiItemBetter").setOrigin(0.5)
@@ -1502,11 +1502,12 @@ function equipPos(key, index) {
 }
 
 /**
- * Messing-Oberflaeche (#182): Seltenheit als Saum innen am Messingfeld —
- * eine 3-px-Linie in der Seltenheitsfarbe, ueber dem Symbol.
+ * Messing-Oberflaeche (#182): Seltenheit als farbiger Grund innen im
+ * Messingfeld, halb durchsichtig unter dem Symbol, ohne Rand.
  * Ohne Gegenstand unsichtbar.
  */
-function seltenheitSaum(saum, it, cx, cy, w, h) {
+const SELTENHEIT_GRUND_ALPHA = 0.38;
+function seltenheitGrund(saum, it, cx, cy, w, h) {
   if (!isValidGameObject(saum)) return;
   if (!it) { saum.setVisible(false); return; }
   const farbe = parseTintColor(getItemTierColor(it), 0xcccccc);
@@ -1516,7 +1517,8 @@ function seltenheitSaum(saum, it, cx, cy, w, h) {
   // skaliertem Panel satt in ihrer Farbe statt in den Grund zu verlaufen.
   const sw = Math.max(4, Math.round(w - 2 * ein)), sh = Math.max(4, Math.round(h - 2 * ein));
   saum.setSize(sw, sh).setPosition(Math.round(cx - sw / 2) + sw / 2, Math.round(cy - sh / 2) + sh / 2);
-  saum.setStrokeStyle(3, farbe, 1).setVisible(true);
+  saum.setStrokeStyle();
+  saum.setFillStyle(farbe, SELTENHEIT_GRUND_ALPHA).setVisible(true);
 }
 
 function selectInventorySlot(i) {
@@ -2161,7 +2163,7 @@ function refreshInventoryUI() {
     if (rahmen && invUI._messing) {
       rahmen.setTexture(invUI._feldTex(breite, hoehe, i === invSelected));
       rahmen.setPosition(cx, cy).setDisplaySize(breite, hoehe).setVisible(true);
-      seltenheitSaum(slot.seltenheit, it, cx, cy, breite, hoehe);
+      seltenheitGrund(slot.seltenheit, it, cx, cy, breite, hoehe);
     } else if (rahmen) {
       rahmen.setTexture(i === invSelected ? "uiSlotSel" : "uiSlot");
       rahmen.setPosition(cx, cy).setDisplaySize(breite, hoehe).setVisible(true);
@@ -2217,8 +2219,10 @@ function refreshInventoryUI() {
     const slot = isValidGameObject(ui.slot) ? ui.slot : null;
     const icon = isValidGameObject(ui.icon) ? ui.icon : null;
     if (!slot) return;
-    setSlotHighlight(slot, it);
-    if (invUI._messing) seltenheitSaum(ui.seltenheit, it, slot.x, slot.y, slot.displayWidth, slot.displayHeight);
+    // Mit Messing traegt der Grund die Seltenheit; das Feld selbst nicht
+    // zusaetzlich einfaerben, sonst liegt die Farbe doppelt.
+    if (invUI._messing) seltenheitGrund(ui.seltenheit, it, slot.x, slot.y, slot.displayWidth, slot.displayHeight);
+    else setSlotHighlight(slot, it);
     if (it) {
       const iconKey = resolveItemIconKey(it);
       if (icon && iconKey) icon.setTexture(iconKey);
