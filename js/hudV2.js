@@ -281,6 +281,36 @@
 
     HUDv2.elements.burgerBg = burgerBg;
     HUDv2.elements.invBg = invBg;
+    HUDv2.elements.burgerHit = burgerHit;
+    HUDv2.elements.invHit = invHit;
+    HUDv2.elements.burgerText = burgerIcon;
+    HUDv2.elements.invText = invIcon;
+
+    // ?hud=neu: Pixel-Icons (Zahnrad, Lederranzen) statt der Zeichen, die
+    // im Canvas grob bzw. als Kaestchen erscheinen. Ring und Klickflaeche
+    // bleiben; das Icon reagiert auf Hover (heller, groesser) und Druck.
+    const HL = window.hudLeiste;
+    if (HL && HL.aktiv() && HL.bereit(scene)) {
+      const GROESSE = ICON_R * 2 - 8;
+      const tauschen = (text, hit, id) => {
+        text.setVisible(false);
+        const bild = scene.add.image(text.x, text.y, HL.KEY, HL.frame(id))
+          .setDisplaySize(GROESSE, GROESSE).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
+        const basis = bild.scaleX;
+        const zustand = (faktor, alpha) => bild.setScale(basis * faktor).setAlpha(alpha);
+        hit.on('pointerover', () => zustand(1.1, 1));
+        hit.on('pointerout', () => zustand(1, 1));
+        // Druck federt nach kurzer Zeit selbst zurueck: auf dem Handy oeffnet
+        // der Tap ein Menue darueber, und dessen pointerup erreicht uns nie.
+        hit.on('pointerdown', () => {
+          zustand(0.9, 0.85);
+          scene.time.delayedCall(140, () => { if (bild.scene) zustand(1, 1); });
+        });
+        return bild;
+      };
+      HUDv2.elements.burgerIcon = tauschen(burgerIcon, burgerHit, 'menu');
+      HUDv2.elements.invIcon = tauschen(invIcon, invHit, 'inventory');
+    }
   }
 
   function _buildVignette(scene) {

@@ -24,12 +24,14 @@
   // Reihenfolge der Bilder im Streifen — tools/hudIconsBauen.js liest sie hier.
   var REIHE = ['angriff', 'rolle', 'trank', 'aktion', 'portraet',
     'hammer', 'steelGrasp', 'charge', 'frenzy', 'berserk', 'whirlwind',
-    'twistingBlades', 'cycloneStrike', 'frostNova', 'teleportDash', 'heilwunde', 'deathBlow'];
+    'twistingBlades', 'cycloneStrike', 'frostNova', 'teleportDash', 'heilwunde', 'deathBlow',
+    'inventar', 'menue'];
   var KEY = 'hud_icons';
   var KANTE = 48;
-  var BILD_V = 1;
+  var BILD_V = 2;
   // Feste Knoepfe -> Bildname; Faehigkeiten heissen wie ihre ID.
-  var NAME = { attack: 'angriff', roll: 'rolle', potion: 'trank', interact: 'aktion', portrait: 'portraet' };
+  var NAME = { attack: 'angriff', roll: 'rolle', potion: 'trank', interact: 'aktion', portrait: 'portraet',
+    inventory: 'inventar', menu: 'menue' };
 
   // Leiste (Desktop): Feldkante, Icon darin, Abstand, Rand unten.
   var FELD = 52, ICON = 40, ABSTAND = 6, RAND_UNTEN = 8;

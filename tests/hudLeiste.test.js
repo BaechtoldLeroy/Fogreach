@@ -87,6 +87,16 @@ function bannerUnterkante(H) {
 }
 
 let ohneMobil = null; // Trefferflaechen ohne Flagge, Vergleichsmass fuer Mobile mit Flagge
+let ohneKnoepfe = null; // Menue-/Inventarknopf ohne Flagge
+
+/** Menue- und Inventarknopf oben rechts: Zeichen, Pixel-Icons, Klickflaechen. */
+const MENUE_KNOEPFE = `(function () { var e = window.HUDv2.elements, s = window.game.scene.getScene('GameScene');
+  var flaeche = function (h) { var b = h.getBounds(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height), !!(h.input && h.input.enabled)]; };
+  var icon = function (b) { return b ? { frame: b.frame.name, sichtbar: b.visible, w: Math.round(b.displayWidth), x: b.x, y: b.y } : null; };
+  return { burgerText: e.burgerText.visible, invText: e.invText.visible,
+    burgerHit: flaeche(e.burgerHit), invHit: flaeche(e.invHit),
+    burger: icon(e.burgerIcon), inv: icon(e.invIcon),
+    bilder: s.children.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'hud_icons' && o.y < 120 && o.x > 880; }).length }; })()`;
 
 describe('ohne Flagge: alles wie bisher', () => {
   let H = null;
@@ -115,6 +125,13 @@ describe('ohne Flagge: alles wie bisher', () => {
     const bilder = H.run(`window.game.scene.getScene('GameScene').children.list
       .filter(function (o) { return o.type === 'Image' && o.texture && o.texture.key === 'hud_icons'; }).length`);
     assert.strictEqual(bilder, 0);
+  });
+
+  test('Menue- und Inventarknopf: gezeichnete Zeichen wie bisher', () => {
+    const k = H.run(MENUE_KNOEPFE);
+    ohneKnoepfe = k;
+    assert.ok(k.burgerText && k.invText, 'Zeichen der Knoepfe unsichtbar: ' + JSON.stringify(k));
+    assert.strictEqual(k.bilder, 0, 'Pixel-Icons ohne Flagge');
   });
 
   test('Mobile: farbige Kreise, keine Ringe der Leiste', async () => {
@@ -183,6 +200,32 @@ describe('mit ?hud=neu', () => {
     const portraet = H.run(`window.game.scene.getScene('GameScene').children.list.filter(function (o) {
       return o.type === 'Image' && o.texture.key === 'hud_icons' && o.visible; }).map(function (o) { return o.frame.name; })`);
     assert.ok(portraet.includes(H.run(`window.hudLeiste.frame('portrait')`)), 'kein Pixel-Portraet: ' + portraet.join(','));
+  });
+
+  test('Menue- und Inventarknopf: Pixel-Icons im Ring, Klickflaechen gleich, Hover/Druck', () => {
+    const k = H.run(MENUE_KNOEPFE);
+    const f = (id) => H.run(`window.hudLeiste.frame('${id}')`);
+    assert.ok(!k.burgerText && !k.invText, 'gezeichnete Zeichen stehen noch da');
+    assert.ok(k.burger && k.burger.sichtbar && k.burger.frame === f('menu'), 'kein Menue-Icon: ' + JSON.stringify(k.burger));
+    assert.ok(k.inv && k.inv.sichtbar && k.inv.frame === f('inventory'), 'kein Inventar-Icon: ' + JSON.stringify(k.inv));
+    assert.ok(k.burger.w >= 32 && k.inv.w >= 32, 'Icons zu klein fuer den Knopf');
+    assert.ok(ohneKnoepfe, 'Vergleichsmass ohne Flagge fehlt');
+    assert.deepStrictEqual(JSON.stringify([k.burgerHit, k.invHit]), JSON.stringify([ohneKnoepfe.burgerHit, ohneKnoepfe.invHit]),
+      'Klickflaechen veraendert');
+    // Zustaende: Hover hebt, Verlassen setzt zurueck, Druck drueckt und federt nach.
+    const skala = (n) => H.run(`window.HUDv2.elements.${n}Icon.scaleX`);
+    const s0 = skala('inv');
+    H.run(`window.HUDv2.elements.invHit.emit('pointerover')`);
+    assert.ok(skala('inv') > s0, 'kein Hover');
+    H.run(`window.HUDv2.elements.invHit.emit('pointerout')`);
+    assert.strictEqual(skala('inv'), s0);
+    // Druck: nur den Zustands-Lauscher rufen (der erste oeffnet das Menue,
+    // das wuerde die folgenden Faelle verdecken). Ein Tap auf dem Handy ist
+    // derselbe pointerdown; ein pointerup kommt dort nicht an.
+    H.run(`(function () { var l = window.HUDv2.elements.burgerHit.listeners('pointerdown'); l[l.length - 1](); })()`);
+    assert.ok(skala('burger') < s0, 'kein Druckzustand');
+    H.step(20);
+    assert.strictEqual(skala('burger'), s0, 'Druckzustand federt nicht zurueck');
   });
 
   test('Desktop: Tastenbeschriftung und Trankzahl lesbar (>= 4,5:1)', () => {
