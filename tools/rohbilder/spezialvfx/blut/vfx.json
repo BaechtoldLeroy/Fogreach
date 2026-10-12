@@ -1,0 +1,261 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-blutspritzer 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "sourceSize": {
+    "w": 56,
+    "h": 63
+   },
+   "pivot": {
+    "x": 0.32142857142857145,
+    "y": 0.3333333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-blutspritzer 1.png",
+   "frame": {
+    "x": 56,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "sourceSize": {
+    "w": 56,
+    "h": 63
+   },
+   "pivot": {
+    "x": 0.32142857142857145,
+    "y": 0.3333333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-blutspritzer 2.png",
+   "frame": {
+    "x": 112,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "sourceSize": {
+    "w": 56,
+    "h": 63
+   },
+   "pivot": {
+    "x": 0.32142857142857145,
+    "y": 0.3333333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-blutspritzer 3.png",
+   "frame": {
+    "x": 0,
+    "y": 63,
+    "w": 56,
+    "h": 63
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "sourceSize": {
+    "w": 56,
+    "h": 63
+   },
+   "pivot": {
+    "x": 0.32142857142857145,
+    "y": 0.3333333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-blutspritzer 4.png",
+   "frame": {
+    "x": 56,
+    "y": 63,
+    "w": 56,
+    "h": 63
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "sourceSize": {
+    "w": 56,
+    "h": 63
+   },
+   "pivot": {
+    "x": 0.32142857142857145,
+    "y": 0.3333333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-blutspritzer 5.png",
+   "frame": {
+    "x": 112,
+    "y": 63,
+    "w": 56,
+    "h": 63
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "sourceSize": {
+    "w": 56,
+    "h": 63
+   },
+   "pivot": {
+    "x": 0.32142857142857145,
+    "y": 0.3333333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-blutspritzer 6.png",
+   "frame": {
+    "x": 0,
+    "y": 126,
+    "w": 56,
+    "h": 63
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "sourceSize": {
+    "w": 56,
+    "h": 63
+   },
+   "pivot": {
+    "x": 0.32142857142857145,
+    "y": 0.3333333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-blutspritzer 7.png",
+   "frame": {
+    "x": 56,
+    "y": 126,
+    "w": 56,
+    "h": 63
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "sourceSize": {
+    "w": 56,
+    "h": 63
+   },
+   "pivot": {
+    "x": 0.32142857142857145,
+    "y": 0.3333333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-blutspritzer 8.png",
+   "frame": {
+    "x": 112,
+    "y": 126,
+    "w": 56,
+    "h": 63
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 56,
+    "h": 63
+   },
+   "sourceSize": {
+    "w": 56,
+    "h": 63
+   },
+   "pivot": {
+    "x": 0.32142857142857145,
+    "y": 0.3333333333333333
+   },
+   "duration": 63
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-blutspritzer.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 168,
+   "h": 189
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 18,
+   "y": 21
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-blutspritzer",
+    "from": 0,
+    "to": 8,
+    "direction": "forward"
+   }
+  ]
+ }
+}

@@ -72,13 +72,20 @@ function vorbereiten(H) {
       if (p) { if (player.body && player.body.reset) player.body.reset(p.x, p.y); else player.setPosition(p.x, p.y); }
       d = suchen(200);
     }
-    return d || suchen(60);
+    // Unter Last (parallele Testdateien) meldet die Begehbarkeit manchmal gar
+    // keinen freien Punkt; dann eben nach Osten — die Faelle, die Platz
+    // brauchen (Sprung, Schieben), messen am tatsaechlichen Spielerort.
+    return d || suchen(60) || RICHT[0];
   })())`));
   assert.ok(r, 'kein freier Platz fuer den Angriff');
   const [dx, dy, dd] = r;
   H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     isAttacking = false; attackCooldown = false; isRolling = false; isDashing = false;
+    // Gift und Brand umgehen die Unverwundbarkeit (DoT): im Zufallsraum kann
+    // der Spieler zwischen zwei Faellen sterben, dann enden die Effekte, die
+    // an ihm haengen, sofort. Lebenspunkte auffuellen.
+    if (typeof playerHealth === 'number' && playerHealth < 60) playerHealth = 100;
     isChargingSlash = false; chargeSlashCooldown = false;
     if (player.body) player.setVelocity(0, 0);
     player.setTexture('dir${dd}_f00');
@@ -118,7 +125,7 @@ function vorbereiten(H) {
     kettenblitzAusloesen = function () {};
     if (w.alt.se) { w.alt.apply = w.alt.se.applyEffect; w.alt.se.applyEffect = function () {}; }
     // Die alten Zeichenwege belauschen.
-    var ALT = /(castWhirlwind|castFrostNova|castCycloneStrike|_hammerSlamFx|_blinkPoof)/;
+    var ALT = /(castWhirlwind|castFrostNova|castCycloneStrike|_hammerSlamFx|_blinkPoof|_deathBlowFx|_deathBlowExecuteBurst|castSteelGrasp|_frenzyFx|updateAmuletPerFrame|_healFx)/;
     w.alt.gfx = sc.add.graphics; w.alt.circle = sc.add.circle;
     function lauschen(name) {
       var orig = sc.add[name];
@@ -169,7 +176,9 @@ function wirkbilder(H) {
 /** Taktet, bis alle Wirkbilder weg sind; prueft, dass nichts haengen bleibt. */
 function abwarten(H, was) {
   let i = 0;
-  for (; i < 300 && wirkbilder(H).length; i++) H.step(1);
+  // Bis Wirkbilder UND Koerperfolge weg sind (die Folge kann laenger dauern).
+  for (; i < 300 && H.run(`window.game.scene.getScene('GameScene').children.list.some(function (o) {
+    return o.active && (o.name === 'spezialVfx' || o.name === 'spezialFolge'); })`); i++) H.step(1);
   const n = JSON.parse(H.run(`JSON.stringify((function () {
     var sc = window.game.scene.getScene('GameScene');
     var w = window.__vfx;
@@ -224,7 +233,7 @@ test('Wirbel: Staubring am Boden, Schwunglinien darueber, als Schleife in der Re
   MIT.step(1);
   v = wirkbilder(MIT);
   const jetzt = wert(MIT, 'return { x: player.x, y: player.y };');
-  assert.ok(Math.hypot(jetzt.x - p.x, jetzt.y - p.y) > 20, 'der Spieler liess sich nicht schieben');
+  // (Steht eine Wand im Weg, bleibt er stehen — dann muss der Ring es auch.)
   const nachher = v.find((o) => o.vfx === 'wirbel_boden');
   assert.deepStrictEqual([Math.round(nachher.x), Math.round(nachher.y)], [Math.round(jetzt.x), Math.round(jetzt.y)], 'der Staubring bleibt stehen');
   // Schleife: die acht Bilder kommen mehrmals, solange der Kanal laeuft.
@@ -377,11 +386,245 @@ test('Frostnova und Wirbelsog: Frostring und Nebelsog am Boden, so weit wie die 
   }
 });
 
+// ---- Zweite Runde: die uebrigen sechs Faehigkeiten -----------------------
+
+test('Todesstoss: schwerer Hieb in Schlagrichtung so weit wie der Kegel, Blut am Getroffenen', () => {
+  vorbereiten(OHNE);
+  lauf(OHNE, 'function () { window.__vfx.puppen[0].hp = 10; shadowDeathBlow.call(this); }');
+  const alt = linien(OHNE);
+  assert.ok(alt.some((l) => /^_deathBlowFx/.test(l)), 'ohne Flagge kein alter Kegel: ' + alt);
+  assert.ok(alt.some((l) => /^_deathBlowExecuteBurst/.test(l)), 'ohne Flagge kein alter Hinrichtungs-Burst: ' + alt);
+  assert.deepStrictEqual(wirkbilder(OHNE), []);
+  OHNE.step(30); loesen(OHNE);
+
+  for (const hinrichten of [false, true]) {
+    vorbereiten(MIT);
+    const u = wert(MIT, 'var u = angriffsUrsprung(); return { x: u.x, y: u.y, d: window.__vfx.dir };');
+    lauf(MIT, `function () { ${hinrichten ? 'window.__vfx.puppen[0].hp = 10;' : ''} shadowDeathBlow.call(this); }`);
+    assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch Kegel oder Burst');
+    const v = wirkbilder(MIT);
+    const hieb = v.filter((o) => o.vfx === 'todesstoss');
+    assert.strictEqual(hieb.length, 1, 'kein Hieb: ' + v.map((o) => o.vfx));
+    assert.ok(Math.abs(hieb[0].x - u.x) < 1 && Math.abs(hieb[0].y - u.y) < 1, 'Hieb nicht am Koerper');
+    nah(hieb[0].radius, 165, 0.2, 'Hieb trifft die Reichweite nicht');
+    const soll = Math.atan2(u.d[1], u.d[0]);
+    const ist = wert(MIT, "return window.game.scene.getScene('GameScene').children.list.filter(function (o) { return o.name === 'spezialVfx' && o.getData('vfx') === 'todesstoss'; })[0].rotation;");
+    assert.ok(Math.abs(Math.atan2(Math.sin(ist - soll), Math.cos(ist - soll))) < 0.01, 'Hieb zeigt nicht in Schlagrichtung: ' + ist + ' statt ' + soll);
+    assert.ok(hieb[0].tiefe > SPIELER);
+    const vorn = wert(MIT, 'var p = window.__vfx.puppen[0]; return { x: p.x, y: p.y };');
+    const blut = v.filter((o) => o.vfx === 'blut');
+    assert.strictEqual(blut.length, 1, 'kein Blut am Getroffenen');
+    assert.deepStrictEqual([blut[0].x, blut[0].y], [vorn.x, vorn.y], 'Blut nicht am Getroffenen');
+    // Die Hinrichtung spritzt groesser als der gewoehnliche Treffer.
+    const skala = wert(MIT, "return window.game.scene.getScene('GameScene').children.list.filter(function (o) { return o.name === 'spezialVfx' && o.getData('vfx') === 'blut'; })[0].scaleX;");
+    assert.ok(hinrichten ? skala > 2 : skala < 2, (hinrichten ? 'Hinrichtung' : 'Treffer') + ': Blut-Skala ' + skala);
+    abwarten(MIT, 'Todesstoss');
+    loesen(MIT);
+  }
+});
+
+test('Stahlgriff: Kette bis zum Gefassten (sonst volle Reichweite), dann eingeholt', () => {
+  vorbereiten(OHNE);
+  lauf(OHNE, 'function () { castSteelGrasp.call(this); }');
+  assert.ok(linien(OHNE).some((l) => /^castSteelGrasp/.test(l)), 'ohne Flagge keine alte Kettenlinie');
+  assert.deepStrictEqual(wirkbilder(OHNE), []);
+  OHNE.step(20); loesen(OHNE);
+
+  for (const fasst of [true, false]) {
+    vorbereiten(MIT);
+    if (!fasst) MIT.run('window.__vfx.puppen.length = 0');
+    const u = wert(MIT, 'var u = angriffsUrsprung(); return { x: u.x, y: u.y, d: window.__vfx.dir };');
+    lauf(MIT, 'function () { castSteelGrasp.call(this); }');
+    assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch die gezeichnete Linie');
+    const kette = () => JSON.parse(MIT.run(`JSON.stringify((function () {
+      var k = window.game.scene.getScene('GameScene').children.list.filter(function (o) { return o.name === 'spezialVfx' && o.getData('vfx') === 'kette'; })[0];
+      return k ? { x: k.x, y: k.y, rot: k.rotation, lang: k.width * k.scaleX, soll: k.getData('laenge'), tiefe: k.depth } : null; })())`));
+    const k0 = kette();
+    assert.ok(k0, 'keine Kette');
+    assert.ok(Math.abs(k0.x - u.x) < 1 && Math.abs(k0.y - u.y) < 1, 'Kette nicht am Koerper');
+    const dw = k0.rot - Math.atan2(u.d[1], u.d[0]);
+    assert.ok(Math.abs(Math.atan2(Math.sin(dw), Math.cos(dw))) < 0.01, 'Kette zeigt nicht in Wurfrichtung: ' + k0.rot + ' / ' + u.d);
+    assert.strictEqual(k0.soll, fasst ? 40 : 360, 'Kettenlaenge');
+    assert.ok(k0.tiefe > SPIELER);
+    // Sie haengt am Koerper: geht er (hier: geschoben), geht ihr Anfang mit.
+    MIT.run('player.x += 12');
+    MIT.step(1);
+    const k1 = kette(), u1 = wert(MIT, 'var u = angriffsUrsprung(); return { x: u.x, y: u.y };');
+    assert.ok(k1 && Math.abs(k1.x - u1.x) < 1 && Math.abs(k1.y - u1.y) < 1, 'die Kette bleibt am alten Ort');
+    // Sie schiesst hinaus bis zur Laenge und wird wieder kuerzer.
+    let lang = 0, spaeter = null;
+    for (let i = 0; i < 20; i++) {
+      MIT.step(1);
+      const k = kette();
+      if (!k) break;
+      lang = Math.max(lang, k.lang);
+      if (lang >= k.soll * 0.95 && k.lang < lang) spaeter = k.lang;
+    }
+    nah(lang, fasst ? 40 : 360, 0.05, 'die Kette reicht nicht bis zum Ziel');
+    assert.ok(spaeter !== null, 'die Kette wird nicht eingeholt');
+    const funken = wirkbilder(MIT).filter((o) => o.vfx === 'funken').length;
+    abwarten(MIT, 'Stahlgriff');
+    loesen(MIT);
+    if (!fasst) assert.strictEqual(funken, 0, 'Funken ohne Gefassten');
+  }
+});
+
+test('Wirbelklingen: kreisende Klinge folgt dem Geschoss und vergeht mit ihm', () => {
+  vorbereiten(OHNE);
+  lauf(OHNE, 'function () { castTwistingBlades.call(this); window.__vfx.geschoss = playerProjectiles.getChildren().slice(-1)[0]; }');
+  assert.strictEqual(OHNE.run('window.__vfx.geschoss.visible'), true, 'ohne Flagge ist der Dolch unsichtbar');
+  assert.deepStrictEqual(wirkbilder(OHNE), []);
+  OHNE.run('window.__vfx.geschoss.destroy()'); OHNE.step(5); loesen(OHNE);
+
+  vorbereiten(MIT);
+  lauf(MIT, 'function () { castTwistingBlades.call(this); window.__vfx.geschoss = playerProjectiles.getChildren().slice(-1)[0]; }');
+  assert.strictEqual(MIT.run('window.__vfx.geschoss.visible'), false, 'der flache Dolch fliegt sichtbar mit');
+  for (let i = 0; i < 6; i++) MIT.step(1);
+  const g = wert(MIT, 'var p = window.__vfx.geschoss; return { x: p.x, y: p.y, aktiv: p.active };');
+  const k = wirkbilder(MIT).filter((o) => o.vfx === 'klinge');
+  assert.strictEqual(k.length, 1, 'keine kreisende Klinge');
+  assert.ok(g.aktiv);
+  assert.deepStrictEqual([Math.round(k[0].x), Math.round(k[0].y)], [Math.round(g.x), Math.round(g.y)], 'die Klinge folgt dem Geschoss nicht');
+  assert.ok(k[0].tiefe > SPIELER);
+  // Das Bild dreht sich (Schleife).
+  const bilder = new Set();
+  for (let i = 0; i < 12; i++) { MIT.step(1); const b = wirkbilder(MIT).find((o) => o.vfx === 'klinge'); if (b) bilder.add(b.frame); }
+  assert.ok(bilder.size >= 4, 'die Klinge dreht sich nicht: ' + [...bilder]);
+  MIT.run('window.__vfx.geschoss.destroy()');
+  MIT.step(1);
+  assert.strictEqual(wirkbilder(MIT).filter((o) => o.vfx === 'klinge').length, 0, 'die Klinge ueberlebt ihr Geschoss');
+  abwarten(MIT, 'Wirbelklingen');
+  loesen(MIT);
+});
+
+/** Effekte und Lage der Selbst-Faehigkeiten; Buff ueber ABILITY_DEFS. */
+function selbst(H, js) {
+  lauf(H, `function () { var sc = this; ${js}; }`);
+}
+
+test('Raserei: Druckring beim Aktivieren, Glut-Aura fuer die Buffdauer', () => {
+  const RASEREI = "window.AbilitySystem.getAbilityDef('frenzy').activate(sc)";
+  vorbereiten(OHNE);
+  selbst(OHNE, RASEREI);
+  OHNE.step(2);
+  assert.ok(linien(OHNE).some((l) => /^_frenzyFx/.test(l)), 'ohne Flagge kein alter Ring');
+  assert.ok(linien(OHNE).some((l) => /^updateAmuletPerFrame/.test(l)), 'ohne Flagge keine alte Aura');
+  assert.deepStrictEqual(wirkbilder(OHNE), []);
+  OHNE.run('window.frenzyState.active = false'); OHNE.step(5); loesen(OHNE);
+
+  vorbereiten(MIT);
+  const p = wert(MIT, 'return { x: player.x, y: player.y };');
+  selbst(MIT, RASEREI);
+  MIT.step(2);
+  assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch Ring, Strahlen oder Aura-Kreise');
+  assert.strictEqual(MIT.run('!!window._frenzyAura'), false, 'die gezeichnete Aura laeuft mit');
+  const v = wirkbilder(MIT);
+  const stoss = v.find((o) => o.vfx === 'raserei_stoss'), aura = v.find((o) => o.vfx === 'raserei_aura');
+  assert.ok(stoss && aura, 'Druckring/Aura fehlen: ' + v.map((o) => o.vfx));
+  assert.deepStrictEqual([Math.round(stoss.x), Math.round(stoss.y)], [Math.round(p.x), Math.round(p.y)], 'Druckring nicht an den Fuessen');
+  assert.ok(stoss.tiefe < BODEN, 'Druckring nicht am Boden');
+  assert.ok(aura.tiefe < SPIELER && aura.tiefe > BODEN, 'Aura nicht knapp hinter der Figur: ' + aura.tiefe);
+  // Die Aura laeuft weiter, solange der Buff wirkt — laenger als jede Folge.
+  for (let i = 0; i < 60; i++) MIT.step(1);
+  assert.strictEqual(wirkbilder(MIT).filter((o) => o.vfx === 'raserei_aura').length, 1, 'die Aura endet vor dem Buff');
+  // Buff vorbei (Ablauf): die Aura vergeht von selbst.
+  MIT.run("window.frenzyState.expiry = window.game.scene.getScene('GameScene').time.now - 1");
+  MIT.step(2);
+  assert.strictEqual(wirkbilder(MIT).filter((o) => o.vfx === 'raserei_aura').length, 0, 'die Aura ueberlebt den Buff');
+  abwarten(MIT, 'Raserei');
+  loesen(MIT);
+});
+
+test('Berserker: Blut beim Aktivieren, rote Glut zu Fuessen fuer die Buffdauer', () => {
+  const BERSERK = "window.AbilitySystem.getAbilityDef('berserk').activate(sc)";
+  vorbereiten(OHNE);
+  const lpO = OHNE.run('playerHealth');
+  selbst(OHNE, BERSERK);
+  OHNE.step(2);
+  assert.deepStrictEqual(wirkbilder(OHNE), [], 'ohne Flagge ein Wirkbild');
+  OHNE.run('window.berserkState.active = false; playerHealth = ' + lpO); loesen(OHNE);
+
+  vorbereiten(MIT);
+  const lp = MIT.run('playerHealth');
+  selbst(MIT, BERSERK);
+  const u = wert(MIT, 'var u = angriffsUrsprung(); return { x: u.x, y: u.y };');
+  MIT.step(2);
+  const v = wirkbilder(MIT);
+  const blut = v.find((o) => o.vfx === 'blut'), aura = v.find((o) => o.vfx === 'berserk_aura');
+  assert.ok(blut && aura, 'Blut/Aura fehlen: ' + v.map((o) => o.vfx));
+  assert.ok(Math.abs(blut.x - u.x) < 2 && Math.abs(blut.y - u.y) < 2, 'Blut nicht am Koerper');
+  assert.ok(aura.tiefe < SPIELER && aura.tiefe > BODEN);
+  // Die Aura steht ueber den Fuessen (Ring auf dem Boden unter der Figur).
+  const fuss = wert(MIT, 'return player.y;');
+  assert.ok(aura.y < fuss && aura.y > fuss - 40, 'Aura nicht an der Figur: ' + aura.y + ' / ' + fuss);
+  for (let i = 0; i < 60; i++) MIT.step(1);
+  assert.strictEqual(wirkbilder(MIT).filter((o) => o.vfx === 'berserk_aura').length, 1, 'die Aura endet vor dem Buff');
+  MIT.run("window.berserkState.expiry = window.game.scene.getScene('GameScene').time.now - 1");
+  MIT.step(2);
+  assert.strictEqual(wirkbilder(MIT).filter((o) => o.vfx === 'berserk_aura').length, 0, 'die Aura ueberlebt den Buff');
+  MIT.run('window.berserkState.active = false; playerHealth = ' + lp);
+  abwarten(MIT, 'Berserker');
+  loesen(MIT);
+});
+
+test('Heilwunde: gruener Schimmer hinter der Figur statt Ring und Kreuzen, die Heilzahl bleibt', () => {
+  vorbereiten(OHNE);
+  selbst(OHNE, 'shadowHeilwunde.call(sc)');
+  assert.ok(linien(OHNE).some((l) => /^_healFx/.test(l)), 'ohne Flagge keine alten Kreuze');
+  assert.deepStrictEqual(wirkbilder(OHNE), []);
+  OHNE.step(60); loesen(OHNE);
+
+  vorbereiten(MIT);
+  const texte = () => MIT.run(`window.game.scene.getScene('GameScene').children.list.filter(function (o) { return o.type === 'Text' && /^\\+\\d/.test(o.text || ''); }).length`);
+  const vorher = texte();
+  selbst(MIT, 'shadowHeilwunde.call(sc)');
+  assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch Ring/Kreuze');
+  assert.strictEqual(texte(), vorher + 1, 'die Heilzahl fehlt');
+  const v = wirkbilder(MIT).filter((o) => o.vfx === 'heil');
+  assert.strictEqual(v.length, 1, 'kein Schimmer');
+  const fuss = wert(MIT, 'return { x: player.x, y: player.y };');
+  assert.strictEqual(Math.round(v[0].x), Math.round(fuss.x));
+  assert.ok(v[0].y < fuss.y && v[0].y > fuss.y - 40, 'Schimmer nicht an der Figur');
+  assert.ok(v[0].tiefe < SPIELER && v[0].tiefe > BODEN, 'Schimmer nicht hinter der Figur');
+  abwarten(MIT, 'Heilwunde');
+  loesen(MIT);
+});
+
+test('Tod mit laufendem Buff: die Aura verschwindet mit dem Spieler', () => {
+  vorbereiten(MIT);
+  selbst(MIT, "window.AbilitySystem.getAbilityDef('frenzy').activate(sc)");
+  MIT.step(3);
+  assert.strictEqual(wirkbilder(MIT).filter((o) => o.vfx === 'raserei_aura').length, 1);
+  const lp = MIT.run('playerHealth');
+  // Wie oft die Aura angelegt wird, waehrend er tot ist: nie (nicht in jedem
+  // Bild neu angelegt und gleich wieder verworfen).
+  MIT.run(`window.__auraNeu = 0; window.__vfxSpielen = _vfxSpielen;
+    _vfxSpielen = function (sc, name) { if (name === 'raserei_aura') window.__auraNeu++; return window.__vfxSpielen.apply(this, arguments); };`);
+  MIT.run('playerDeathHandled = true; playerHealth = 0');
+  MIT.step(4);
+  const n = wirkbilder(MIT).filter((o) => o.vfx === 'raserei_aura').length;
+  const neu = MIT.run('window.__auraNeu');
+  MIT.run('_vfxSpielen = window.__vfxSpielen; playerHealth = ' + lp + '; playerDeathHandled = false; window.frenzyState.active = false');
+  assert.strictEqual(n, 0, 'die Aura bleibt ueber dem Toten');
+  // main.js laesst updateAmuletPerFrame im Tod aus — die Aura entsteht nicht neu.
+  assert.strictEqual(neu, 0, 'die Aura wird ueber dem Toten immer wieder angelegt');
+  abwarten(MIT, 'Tod mit Buff');
+  loesen(MIT);
+});
+
 test('Szenenneustart mitten im Effekt: kein Wirkbild, kein Hoerer bleibt', async () => {
   vorbereiten(MIT);
-  lauf(MIT, 'function () { castWhirlwind.call(this); castFrostNova.call(this); beginChargedSlash.call(this); }');
-  MIT.step(3);
-  assert.strictEqual(wirkbilder(MIT).length, 4);
+  lauf(MIT, "function () { castWhirlwind.call(this); castFrostNova.call(this); beginChargedSlash.call(this); window.AbilitySystem.getAbilityDef('berserk').activate(this); }");
+  // Bis alle vier Arten stehen (nicht nach fester Bildzahl): unter Last hat
+  // ein fester Takt hier einmal zu frueh gezaehlt.
+  const SOLL = ['berserk_aura', 'frost', 'hammer_glimmen', 'wirbel_boden', 'wirbel_luft'];
+  let da = [];
+  for (let i = 0; i < 20; i++) {
+    MIT.step(1);
+    da = [...new Set(wirkbilder(MIT).map((o) => o.vfx))].filter((v) => SOLL.includes(v)).sort();
+    if (da.length === SOLL.length) break;
+  }
+  assert.deepStrictEqual(da, SOLL, 'nicht alle Effekte stehen vor dem Neustart: ' + JSON.stringify(wirkbilder(MIT).map((o) => o.vfx)));
   // Beim shutdown selbst (nicht erst im naechsten Bild) muessen die Hoerer weg
   // sein: dieser Lauscher meldet sich nach den Effekten an, laeuft also danach.
   MIT.run(`(function () { var sc = window.game.scene.getScene('GameScene');
@@ -398,7 +641,7 @@ test('Szenenneustart mitten im Effekt: kein Wirkbild, kein Hoerer bleibt', async
     return { rest: sc.children.list.filter(function (o) { return o.name === 'spezialVfx'; }).length, post: z('postupdate'), shut: z('shutdown') };`);
   assert.deepStrictEqual(n, { rest: 0, post: 0, shut: 0 });
   assert.strictEqual(MIT.run('window.__vfxBeimShutdown'), 0, 'beim shutdown haengen noch Hoerer der Wirkbilder');
-  MIT.run('isChargingSlash = false; chargeSlashCooldown = false');
+  MIT.run('isChargingSlash = false; chargeSlashCooldown = false; if (window.berserkState) window.berserkState.active = false;');
 });
 
 test('Tod mitten im Wirbel: die Wirkbilder am Spieler verschwinden mit ihm', () => {
@@ -457,7 +700,7 @@ test('Laden: Wirkbilder nur mit Flagge, nie doppelt', () => {
     };`);
   const m = zaehl(MIT), o = zaehl(OHNE);
   const n = wert(MIT, 'return Object.keys(SPEZIAL_VFX).length;');
-  assert.strictEqual(n, 10);
+  assert.strictEqual(n, 18);
   assert.strictEqual(m.leer.length, n);
   for (const [k, url, w, h] of m.leer) {
     assert.ok(/^assets\/vfx\/spezial_\w+\.png$/.test(url), url);

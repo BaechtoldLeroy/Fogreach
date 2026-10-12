@@ -1,0 +1,235 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-raserei-stoss 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "sourceSize": {
+    "w": 94,
+    "h": 52
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.46153846153846156
+   },
+   "duration": 71
+  },
+  {
+   "filename": "fogreach-raserei-stoss 1.png",
+   "frame": {
+    "x": 94,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "sourceSize": {
+    "w": 94,
+    "h": 52
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.46153846153846156
+   },
+   "duration": 71
+  },
+  {
+   "filename": "fogreach-raserei-stoss 2.png",
+   "frame": {
+    "x": 188,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "sourceSize": {
+    "w": 94,
+    "h": 52
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.46153846153846156
+   },
+   "duration": 71
+  },
+  {
+   "filename": "fogreach-raserei-stoss 3.png",
+   "frame": {
+    "x": 0,
+    "y": 52,
+    "w": 94,
+    "h": 52
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "sourceSize": {
+    "w": 94,
+    "h": 52
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.46153846153846156
+   },
+   "duration": 71
+  },
+  {
+   "filename": "fogreach-raserei-stoss 4.png",
+   "frame": {
+    "x": 94,
+    "y": 52,
+    "w": 94,
+    "h": 52
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "sourceSize": {
+    "w": 94,
+    "h": 52
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.46153846153846156
+   },
+   "duration": 71
+  },
+  {
+   "filename": "fogreach-raserei-stoss 5.png",
+   "frame": {
+    "x": 188,
+    "y": 52,
+    "w": 94,
+    "h": 52
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "sourceSize": {
+    "w": 94,
+    "h": 52
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.46153846153846156
+   },
+   "duration": 71
+  },
+  {
+   "filename": "fogreach-raserei-stoss 6.png",
+   "frame": {
+    "x": 0,
+    "y": 104,
+    "w": 94,
+    "h": 52
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "sourceSize": {
+    "w": 94,
+    "h": 52
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.46153846153846156
+   },
+   "duration": 71
+  },
+  {
+   "filename": "fogreach-raserei-stoss 7.png",
+   "frame": {
+    "x": 94,
+    "y": 104,
+    "w": 94,
+    "h": 52
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 52
+   },
+   "sourceSize": {
+    "w": 94,
+    "h": 52
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.46153846153846156
+   },
+   "duration": 71
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-raserei-stoss.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 282,
+   "h": 156
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 47,
+   "y": 24
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-raserei-stoss",
+    "from": 0,
+    "to": 7,
+    "direction": "forward"
+   }
+  ]
+ }
+}

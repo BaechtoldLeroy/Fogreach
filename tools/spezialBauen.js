@@ -93,6 +93,64 @@ const ANGRIFFE = {
   }
 };
 
+// Zweite Runde (#174): die uebrigen sechs Faehigkeiten.
+// Gruppe spezial_todesstoss (0ef79db5-4848-47e1-950c-1410acfc3e3a):
+//   "execution strike: steps forward and swings the flail down hard in a
+//    heavy diagonal blow in front of him, holds the low follow-through for a
+//    moment, then straightens back up to the starting stance"
+ANGRIFFE.todesstoss = {
+  '00': 'ac5ad272-111f-4c5a-bea1-c1c57d720c4c',
+  // Nordwest neu gewuerfelt (spezial_todesstoss_nw, 1af23ce6-...): im ersten
+  // Wurf wurde der Flegel in Bild 2/3 zur langen Stange.
+  '01': '186c5509-716a-4bed-a31e-817cb2212ceb',
+  '02': 'f3022835-2a55-4fb8-8edf-6360e0802ee2',
+  '03': 'd9ec69ae-37b7-4711-8751-9bf60ab9b2e5',
+  '04': '40c814f1-3d0a-4b8d-8b31-cddf37bafcdf',
+  '05': '31745675-b094-4b9c-a620-7627b48fecae',
+  '06': 'c6afeaae-f38b-4dcb-8b8d-d8838f3b2ab5',
+  '07': 'e868f8d4-b107-4273-a96d-541b6eca0697'
+};
+// Gruppe spezial_raserei (f121cb5b-c945-4094-90ae-fc96af594678):
+//   "frenzied battle cry: hunches forward clenching both fists, then throws
+//    his head back and roars with arms flexed at his sides ..."
+ANGRIFFE.raserei = { '': 'dcecbe0d-545f-489a-990f-ab433c1cc6ab' };
+// Gruppe spezial_berserk (72150009-b627-4cce-aa98-5427f9507b39):
+//   "blood rage: strikes his own chest hard with one fist and doubles over in
+//    pain, then rises and spreads both arms wide in a wild berserker pose ..."
+ANGRIFFE.berserk = { '': '398dbdf2-eb4d-4459-b663-b98e27f5559a' };
+// Gruppe spezial_heil (0c948e71-2acf-4dc7-8a9b-fe5ea74fce32):
+//   "healing gesture: bows his head and presses the free hand flat against
+//    his chest, holds still for a calm breath, then lifts his head ..."
+ANGRIFFE.heil = { '': '12aaea74-21e7-4035-8025-bb80c65d9fdc' };
+// Gruppe spezial_greif (8a1b323c-9725-4d0b-84fa-8ff9efb6e371):
+//   "chain grab: thrusts one arm straight forward as if hurling a chain hook,
+//    holds the arm extended, then yanks it back hard toward his chest ..."
+ANGRIFFE.greif = {
+  '00': 'f26fb527-d404-4ddb-a83f-6d86bcf57e2e',
+  '01': '866762dc-8b2a-4a6f-abff-486ca8b84dc6',
+  '02': '223da9df-50fd-4592-b650-dee3a70e9efb',
+  '03': '00b4f551-8cbb-4971-a0d3-74e83d4af63c',
+  '04': '77043e53-a1d6-4e02-8306-248f0c0b3971',
+  '05': '66bc8269-6747-4e19-a7ca-01a652acadd7',
+  '06': '3688de32-9f14-4b0a-adb6-a854b72707c5',
+  '07': '9814b089-1987-4dd6-9ed8-04281bccb303'
+};
+// Gruppe spezial_klingen (fd2c73ef-0f07-4df7-b7da-1f4565a60a4d):
+//   "blade throw: winds the free arm back across the body, then whips it
+//    forward in a fast sidearm throw releasing a spinning blade ..."
+ANGRIFFE.klingen = {
+  '00': '07bdd8e8-8d82-47f9-b342-05723b654569',
+  '01': '03a5a335-75a2-411a-bef6-49da05f4853a',
+  '02': '3414647d-398c-432e-b45f-9398413382d9',
+  '03': '73a40596-da40-4eaf-9953-ba710ded15c0',
+  // Ost und Sued neu gewuerfelt (spezial_klingen_neu, 33b40b52-...): Ost drehte
+  // sich im ersten Wurf mitten im Wurf weg, Sued endete mit erhobenem Flegel.
+  '04': '46454562-1c77-4f19-8817-c7d9d53a3e43',
+  '05': '3c67dfc5-3df1-4ce2-af44-2ec2c036a75f',
+  '06': 'd807f204-dda6-47b6-8730-795f4b7e096d',
+  '07': '76904495-335b-4ce6-8eea-7bcab792984f'
+};
+
 const ZIEL = path.join(__dirname, '..', 'assets', 'PlayerSprites');
 const ROH = path.join(__dirname, 'rohbilder', 'spezial');
 const VORSCHAU = path.join(__dirname, '..', 'vorschau');

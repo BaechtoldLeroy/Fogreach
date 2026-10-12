@@ -44,8 +44,48 @@ const EFFEKTE = {
   staub:          { effekt: 'ac149a31-342a-4677-a3fe-5545915d16d2', bild: 'fa194d67-9717-4102-9bbb-9351b2c5d718', datei: 'fogreach-staubtritt', anker: [20, 18] },
   funken:         { effekt: '487b9a37-a8b0-4777-b8ba-5f071c78d2e6', bild: 'cf9c77c2-b14b-40c1-8332-bc5127d0be94', datei: 'fogreach-aufprall-funken', anker: [33, 22] },
   schatten:       { effekt: '3cdc3b9b-b64f-4bec-bfee-9ebbf26b1cf8', bild: '35338270-1fa1-4771-b0fd-8c2d8fdd0ee1', datei: 'fogreach-schatten-puff', anker: [30, 27] },
-  zyklon:         { effekt: 'c49e3d18-b07e-4134-8605-4ba689decbe0', bild: '4e169a83-aacc-4948-add3-45c4afbdc832', datei: 'fogreach-wirbelsog', anker: [148, 148] }
+  zyklon:         { effekt: 'c49e3d18-b07e-4134-8605-4ba689decbe0', bild: '4e169a83-aacc-4948-add3-45c4afbdc832', datei: 'fogreach-wirbelsog', anker: [148, 148] },
+  // Zweite Runde (#174): die uebrigen sechs Faehigkeiten.
+  todesstoss:     { effekt: '46b9c565-6322-4d50-a5dd-f89d3f77ba18', bild: '7d5fb8df-32a4-419d-afad-7d4bf8c580d0', datei: 'fogreach-todesstoss', anker: [72, 72] },
+  blut:           { effekt: '4e917fdd-6dec-4216-b5b9-c47a7e5174dc', bild: '88fdfd5a-43fc-405c-a99a-44b39519dba8', datei: 'fogreach-blutspritzer', anker: [18, 21] },
+  klinge:         { effekt: '391ed0ee-2a14-4ed4-9647-b54938779236', bild: '6c8e138b-d818-4781-861f-330bb7cf6acc', datei: 'fogreach-wirbelklinge', anker: [20, 20] },
+  heil:           { effekt: '51e288b5-26e4-42fa-a436-404a953aa70e', bild: 'a67f1177-97ba-429b-9f7a-db46350dfb47', datei: 'fogreach-heilwunde', anker: [32, 52] },
+  raserei_aura:   { effekt: 'ed3bf344-5346-4ae1-aad2-de034ba828c8', bild: 'a68fe0c8-814b-402a-83ff-472bdeb3a82d', datei: 'fogreach-raserei-aura', anker: [32, 52] },
+  raserei_stoss:  { effekt: 'e63bc6d8-0e9d-4ebc-aba9-4be6d5fd0229', bild: '4efab847-0f1d-4b22-8242-7d36c2efcea5', datei: 'fogreach-raserei-stoss', anker: [47, 24] },
+  berserk_aura:   { effekt: 'e828f0f8-4288-48bc-90c2-ad85527555ef', bild: '46154915-a299-401a-928d-80c0d3610a2e', datei: 'fogreach-berserker-aura', anker: [32, 52] }
 };
+
+// Die Kette des Stahlgriffs ist kein Ablauf, sondern ein Glied, das im Spiel
+// als Kachel vom Spieler bis zum Ziel wiederholt wird (TileSprite). Von Hand
+// gezeichnet: 1..5 = Eisen dunkel..hell, '.' = leer. Ein liegendes Glied und
+// der Steg zum naechsten; Spalte 11 stoesst an Spalte 0 der naechsten Kachel.
+const KETTE = [
+  '............',
+  '.244442.....',
+  '21....12....',
+  '3......35553',
+  '21....12....',
+  '.244442.....',
+  '............'
+];
+const EISEN = ['#1a1c20', '#3a3f47', '#6b747f', '#a7b0ba', '#dfe5ea'];
+
+async function ketteBauen() {
+  const w = KETTE[0].length, h = KETTE.length;
+  const px = Buffer.alloc(w * h * 4);
+  KETTE.forEach((zeile, y) => [...zeile].forEach((z, x) => {
+    if (z === '.') return;
+    const c = EISEN[Number(z) - 1];
+    const i = (y * w + x) * 4;
+    px[i] = parseInt(c.slice(1, 3), 16); px[i + 1] = parseInt(c.slice(3, 5), 16);
+    px[i + 2] = parseInt(c.slice(5, 7), 16); px[i + 3] = 255;
+  }));
+  const ziel = path.join(ZIEL, 'spezial_kette.png');
+  fs.mkdirSync(ZIEL, { recursive: true });
+  await sharp(px, { raw: { width: w, height: h, channels: 4 } }).png().toFile(ziel);
+  console.log('kette: 1 Bild ' + w + 'x' + h + ' -> ' + path.relative(process.cwd(), ziel));
+  return { name: 'kette', ziel, fw: w, fh: h, n: 1 };
+}
 
 async function holen(name, e) {
   const ordner = path.join(ROH, name);
@@ -94,9 +134,9 @@ async function bauen(name) {
   const args = process.argv.slice(2);
   const b = args.indexOf('--bogen');
   const bogen = b >= 0 ? args.splice(b, 2)[1] : null;
-  const namen = args.length ? args : Object.keys(EFFEKTE);
+  const namen = args.length ? args : Object.keys(EFFEKTE).concat('kette');
   const fertig = [];
-  for (const n of namen) fertig.push(await bauen(n));
+  for (const n of namen) fertig.push(n === 'kette' ? await ketteBauen() : await bauen(n));
   if (bogen) {
     // Kontaktbogen: eine Zeile je Effekt, doppelt gross, auf Kellerboden-Dunkel.
     const zeilen = [];

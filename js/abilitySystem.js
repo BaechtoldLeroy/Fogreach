@@ -164,6 +164,8 @@
               if (window.berserkState) window.berserkState.active = false;
             });
           }
+          // #174: Bewegung und Aura nur im Testmodus ?spezial=neu (player.js).
+          if (typeof window._berserkFx === 'function') window._berserkFx(scene);
           console.log('[Abilities] Berserker aktiviert: Schaden x' + mult.toFixed(2) + ' (Rang ' + rank + ', Synergie ' + synBuff.toFixed(2) + ')');
         } catch (err) {
           console.warn('[Abilities] Berserker failed', err);

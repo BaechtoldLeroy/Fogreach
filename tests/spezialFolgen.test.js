@@ -57,6 +57,10 @@ function vorbereiten(H, dd) {
     var sc = window.game.scene.getScene('GameScene');
     isAttacking = false; attackCooldown = false; isRolling = false; isDashing = false;
     isChargingSlash = false; chargeSlashCooldown = false;
+    // Gift und Brand umgehen die Unverwundbarkeit (DoT), und der Berserker
+    // kostet Lebenspunkte: auffuellen, sonst stirbt er im Zufallsraum und die
+    // Szene ist weg.
+    if (typeof playerHealth === 'number' && playerHealth < 60) playerHealth = 100;
     if (player.body) player.setVelocity(0, 0);
     player.setTexture('dir${dd}_f00');
     applyPlayerDisplaySettings(player);
@@ -197,9 +201,9 @@ function masse(H) {
 }
 
 /** Ausrichtung: das erste Bild der Folge steht auf den Fuessen der Figur. */
-function ausgerichtet(b, was, abweichung) {
+function ausgerichtet(b, was, abweichung, mitteErlaubt) {
   const dm = Math.abs(b.bild.mitte - b.geh.mitte), df = Math.abs(b.bild.fuss - b.geh.fuss);
-  if (dm > 6 || df > 4) abweichung.push(was + ' Mitte ' + dm.toFixed(1) + ' Fuss ' + df.toFixed(1));
+  if (dm > (mitteErlaubt || 6) || df > 4) abweichung.push(was + ' Mitte ' + dm.toFixed(1) + ' Fuss ' + df.toFixed(1));
 }
 
 /**
@@ -342,6 +346,107 @@ test('Hammer: Ausholen beim Aufladen, Schlag beim Loslassen, in jeder Richtung',
     assert.strictEqual(erg.ohne.erst.anzahl + erg.ohne.schlag.anzahl, 0, dd + ': Zusatzbild ohne Flagge');
   }
   assert.deepStrictEqual(abw, [], 'der Hammer steht neben der Figur: ' + abw.join('; '));
+});
+
+// ---- Zweite Runde: die uebrigen sechs Faehigkeiten -----------------------
+
+const TODESSTOSS = 'function () { shadowDeathBlow.call(this); }';
+const GREIF = 'function () { castSteelGrasp.call(this); }';
+
+test('Todesstoss und Stahlgriff: in jeder Richtung die Folge der Zielrichtung, an der Figur', () => {
+  const abw = [];
+  for (const [ausloesen, name] of [[TODESSTOSS, 'todesstoss'], [GREIF, 'greif']]) {
+    for (const dd of Object.keys(RICHTUNGEN)) {
+      const r = angriff(dd, ausloesen);
+      assert.strictEqual(r.erst.key, 'spezial_' + name + '_' + dd + '_f00', name + ' ' + dd);
+      ausgerichtet(r.erst, name + ' ' + dd, abw);
+      assert.ok(r.gesehen.length >= 6, name + ' ' + dd + ': nur ' + r.gesehen.join(','));
+      assert.strictEqual(r.gesehen[r.gesehen.length - 1], 'spezial_' + name + '_' + dd + '_f07', name + ' ' + dd);
+    }
+  }
+  assert.deepStrictEqual(abw, [], 'Todesstoss/Stahlgriff stehen neben der Figur: ' + abw.join('; '));
+});
+
+test('Wirbelklingen: Wurf in jeder Richtung, ohne Flagge kein Zusatzbild', () => {
+  const abw = [];
+  // Die Zielhilfe dreht den Wurf auf echte Gegner des Zufallsraums — hier
+  // soll er genau in die gestellte Richtung gehen.
+  MIT.run('window.__zielhilfe = _aimAssistVector; _aimAssistVector = function (d) { return d; }');
+  for (const dd of Object.keys(RICHTUNGEN)) {
+    vorbereiten(MIT, dd);
+    const vorher = masse(MIT);
+    MIT.run(`castTwistingBlades.call(window.game.scene.getScene('GameScene'))`);
+    const erst = blick(MIT);
+    assert.strictEqual(erst.key, 'spezial_klingen_' + dd + '_f00', dd);
+    assert.strictEqual(erst.sichtbar, false, dd + ': Spieler sichtbar');
+    // Im ersten Bild holt der Arm mit der Klinge schon seitlich aus: der
+    // Umriss wird breiter, seine Mitte wandert. Die Ruhepose selbst richtet
+    // tools/spezialBauen.js auf +-6 px aus; hier 8 px fuer den Arm.
+    ausgerichtet(erst, 'klingen ' + dd, abw, 8);
+    const { gesehen } = zuEnde(MIT);
+    assert.strictEqual(gesehen[gesehen.length - 1], 'spezial_klingen_' + dd + '_f07', dd);
+    aufgeraeumt(MIT, 'klingen ' + dd, vorher);
+    loesen(MIT);
+  }
+  MIT.run('_aimAssistVector = window.__zielhilfe');
+  assert.deepStrictEqual(abw, [], 'der Wurf steht neben der Figur: ' + abw.join('; '));
+  vorbereiten(OHNE, '04');
+  OHNE.run(`castTwistingBlades.call(window.game.scene.getScene('GameScene'))`);
+  const o = blick(OHNE);
+  assert.strictEqual(o.anzahl, 0, 'Zusatzbild ohne Flagge');
+  assert.strictEqual(o.sichtbar, true);
+  OHNE.step(80);
+  loesen(OHNE);
+});
+
+/**
+ * Buffs und Heilung ueber den echten Weg (ABILITY_DEFS.activate bzw.
+ * shadowHeilwunde). Die Folge ist nur das Aktivieren: sie endet lange vor
+ * dem Buff, danach laeuft die Figur wieder mit ihren eigenen Bildern.
+ */
+const SELBST = {
+  raserei: { js: "window.AbilitySystem.getAbilityDef('frenzy').activate(sc)", buff: 'window.frenzyState' },
+  berserk: { js: "window.AbilitySystem.getAbilityDef('berserk').activate(sc)", buff: 'window.berserkState' },
+  heil: { js: 'shadowHeilwunde.call(sc)', buff: null }
+};
+
+test('Raserei, Berserker, Heilwunde: kurze Folge beim Aktivieren, kein Dauer-Override', () => {
+  for (const [name, s] of Object.entries(SELBST)) {
+    for (const H of [MIT, OHNE]) {
+      vorbereiten(H, '02');
+      const lp = H.run('playerHealth');
+      H.run(`(function () { var sc = window.game.scene.getScene('GameScene'); ${s.js}; })()`);
+      const erst = blick(H);
+      if (H === OHNE) {
+        assert.strictEqual(erst.anzahl, 0, name + ': Zusatzbild ohne Flagge');
+        assert.strictEqual(erst.sichtbar, true, name + ': Spieler ohne Flagge versteckt');
+      } else {
+        // Auch nach Norden schauend die eine (nach Sueden gezeichnete) Folge.
+        assert.strictEqual(erst.key, 'spezial_' + name + '_f00', name);
+        assert.strictEqual(erst.sichtbar, false, name + ': Spieler sichtbar');
+        const abw = []; ausgerichtet(erst, name, abw);
+        assert.deepStrictEqual(abw, [], name + ' steht neben der Figur');
+        let schritte = 0, gesehen = [];
+        for (; schritte < 120 && blick(H).anzahl; schritte++) {
+          const b = blick(H); if (b.key && gesehen[gesehen.length - 1] !== b.key) gesehen.push(b.key);
+          H.step(1);
+        }
+        assert.ok(gesehen.length >= 6, name + ': nur ' + gesehen.join(','));
+        assert.ok(schritte < 50, name + ': die Folge dauert zu lang (' + schritte + ' Bilder)');
+        assert.strictEqual(blick(H).sichtbar, true, name + ': danach bleibt der Spieler unsichtbar');
+        if (s.buff) {
+          assert.strictEqual(H.run(`!!(${s.buff} && ${s.buff}.active)`), true, name + ': der Buff ist schon vorbei');
+        }
+      }
+      // Buff beenden, damit die Aura vergeht und der naechste Fall frei ist.
+      if (s.buff) H.run(`if (${s.buff}) { ${s.buff}.active = false; }`);
+      H.run('playerHealth = ' + lp);
+      for (let i = 0; i < 200 && wirkbilder(H) > 0; i++) H.step(1);
+      H.step(5);
+      if (H === MIT) aufgeraeumt(H, name);
+      loesen(H);
+    }
+  }
 });
 
 test('Vorrang: ein Schlag im Wirbel verdeckt die Drehung nicht, eine Rolle schon', () => {
@@ -489,11 +594,11 @@ test('Laden: nur mit Flagge, erst mit dem Dungeon, nie doppelt', () => {
     };
   })())`));
   const m = zaehl(MIT), o = zaehl(OHNE);
-  // 3 richtungslose + 3 gerichtete x 8 Richtungen, je 8 Bilder; eines hat der
+  // 6 richtungslose + 6 gerichtete x 8 Richtungen, je 8 Bilder; eines hat der
   // Rueckfall-Fall oben entfernt.
-  assert.strictEqual(m.leer, 3 * 8 + 3 * 8 * 8);
+  assert.strictEqual(m.leer, 6 * 8 + 6 * 8 * 8);
   assert.strictEqual(m.voll, 0, 'vorhandene Bilder werden noch einmal geladen');
-  assert.strictEqual(m.da, 3 * 8 + 3 * 8 * 8 - 1, 'im Dungeon fehlen Spezialbilder: ' + m.da);
+  assert.strictEqual(m.da, 6 * 8 + 6 * 8 * 8 - 1, 'im Dungeon fehlen Spezialbilder: ' + m.da);
   assert.strictEqual(m.start, 0, 'der Start laedt Spezialbilder');
   assert.strictEqual(o.da, 0, 'ohne Flagge sind Spezialbilder geladen');
   assert.strictEqual(o.leer, 0, 'ohne Flagge wuerden Spezialbilder geladen');

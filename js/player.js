@@ -3063,7 +3063,19 @@ function updateAmuletPerFrame(scene, delta) {
   // Spieler — laufendes Feedback zusätzlich zum Aktivierungs-Burst (_frenzyFx).
   var fsr = window.frenzyState;
   var frenzyActive = !!(fsr && fsr.active && (typeof fsr.expiry !== 'number' || now < fsr.expiry));
-  if (frenzyActive) {
+  // #174 (?spezial=neu): statt Ring und Partikeln eine Glut-Aura als
+  // Pixelbild; sie endet von selbst mit dem Buff (solange).
+  var frenzyVfx = frenzyActive && _vfxDa(scene, 'raserei_aura');
+  if (frenzyVfx) {
+    // (Tot laeuft dieser Takt nicht: main.js kehrt vorher um.)
+    if (!window._frenzyAuraVfx || !window._frenzyAuraVfx.bild.active) {
+      window._frenzyAuraVfx = _buffAura(scene, 'raserei_aura', function () {
+        var f = window.frenzyState;
+        return !!(f && f.active && (typeof f.expiry !== 'number' || scene.time.now < f.expiry));
+      });
+    }
+    if (window._frenzyAura) { try { window._frenzyAura.destroy(); } catch (e) {} window._frenzyAura = null; }
+  } else if (frenzyActive) {
     // Pulsierender Aura-Ring um den Spieler für die GANZE Buff-Dauer (damit der
     // Effekt sichtbar bleibt, nicht nur der kurze Aktivierungs-Burst).
     if (!window._frenzyAura || !window._frenzyAura.scene) {
@@ -3425,7 +3437,14 @@ const SPEZIAL_FOLGEN = {
   zyklon: { gerichtet: false },   // castCycloneStrike: Heranziehen
   hammer: { gerichtet: true },    // releaseChargedSlash: Ueberkopfschlag
   sturm: { gerichtet: true },     // shadowCharge: Lauf mit gesenkter Schulter
-  sprung: { gerichtet: true }     // shadowTeleportDash: Absprung und Landung
+  sprung: { gerichtet: true },    // shadowTeleportDash: Absprung und Landung
+  // Zweite Runde: die uebrigen sechs Faehigkeiten.
+  todesstoss: { gerichtet: true }, // shadowDeathBlow: schwerer Hieb nach vorn
+  greif: { gerichtet: true },     // castSteelGrasp: Kette werfen und einholen
+  klingen: { gerichtet: true },   // castTwistingBlades: Klinge werfen
+  raserei: { gerichtet: false },  // Raserei: Kampfschrei (nur beim Aktivieren)
+  berserk: { gerichtet: false },  // Berserker: Schlag auf die Brust, Kampfpose
+  heil: { gerichtet: false }      // Heilwunde: Hand auf die Brust
 };
 // Eine Umdrehung des Wirbels. Die Linien drehen schneller; der Koerper soll
 // lesbar bleiben (8 Bilder in 320 ms = 25 Bilder je Sekunde).
@@ -3434,7 +3453,10 @@ const SPEZIAL_WIRBEL_RUNDE = 320;
 // etwa das Schlagfenster (isAttacking 220 ms) plus Aufrichten; Frost und
 // Zyklon: so lang wie ihre Ringe/ihr Sog. Der Blitzsprung dauert 110 ms —
 // das reicht fuer den Absprung, die Landung haengt hinten an.
-const SPEZIAL_DAUER = { hammer: 240, frost: 420, zyklon: 400, sprungFaktor: 2.4 };
+const SPEZIAL_DAUER = { hammer: 240, frost: 420, zyklon: 400, sprungFaktor: 2.4,
+  // Raserei und Berserker wirken Sekunden lang; die Figur zeigt nur das
+  // Aktivieren, danach laeuft sie wieder mit ihren eigenen Bildern.
+  todesstoss: 300, greif: 300, klingen: 280, raserei: 480, berserk: 520, heil: 520 };
 // Der Hammer ist zweigeteilt: Bilder 0..2 holen beim Aufladen aus (und
 // bleiben oben stehen), ab Bild 3 kracht er beim Loslassen herunter. Der
 // Aufschlag liegt je nach Richtung in Bild 3 oder 4 — Bild 2 ist in allen
@@ -3567,6 +3589,8 @@ function _spezialZeigen(scene, angriff, richtung, dauer, wie) {
  * die Tasten, ohne den Skillbaum anzufassen. Aus der Konsole:
  *   __spezialProbe()                         Wirbel, Hammer, Ansturm, Schattenschritt
  *   __spezialProbe('frostNova', 'cycloneStrike')
+ *   __spezialProbe('deathBlow', 'steelGrasp', 'twistingBlades', 'heilwunde')
+ *   __spezialProbe('frenzy', 'berserk')
  */
 function _spezialProbe(...ids) {
   const AS = window.AbilitySystem;
@@ -3610,13 +3634,26 @@ const SPEZIAL_VFX = {
   funken:         { w: 68, h: 52, n: 8 },                 // Aufprall-Funken am Getroffenen
   schatten:       { w: 60, h: 54, n: 10 },                // Schattenwolke bei Absprung und Landung
   frost:          { w: 196, h: 196, n: 10, radius: 90 },  // Frostring, Eiskristalle, Reif
-  zyklon:         { w: 296, h: 296, n: 10, radius: 142 }  // Nebelsog, der sich zusammenzieht
+  zyklon:         { w: 296, h: 296, n: 10, radius: 142 }, // Nebelsog, der sich zusammenzieht
+  // Zweite Runde. Die Bilder um den Koerper (heil, Auren) haben den Anker
+  // 20 px ueber den Fuessen — FUSS_VERSATZ.
+  todesstoss:     { w: 144, h: 144, n: 8, radius: 62 },   // schwerer Hieb nach rechts (+x), wird gedreht
+  blut:           { w: 76, h: 84, n: 9 },                 // Lichtblitz und Blutspritzer am Getroffenen
+  klinge:         { w: 40, h: 40, n: 6 },                 // kreisende Wurfklinge (Schleife)
+  kette:          { w: 12, h: 7, n: 1 },                  // ein Kettenglied, als Kachel bis zum Ziel
+  heil:           { w: 64, h: 104, n: 10 },               // gruener Schimmer, Funkeln, Pluszeichen
+  raserei_aura:   { w: 64, h: 104, n: 8 },                // Glutring und Funken (Schleife, Buffdauer)
+  raserei_stoss:  { w: 94, h: 56, n: 8 },                 // Druckring beim Aktivieren
+  berserk_aura:   { w: 64, h: 104, n: 8 }                 // rote Glut zu Fuessen (Schleife, Buffdauer)
 };
+const SPEZIAL_VFX_FUSS = 20;   // Anker der Koerper-Bilder ueber den Fuessen (Bildpixel)
 
 function _vfxTiefe(wo) {
   const T = window.WELT_TIEFEN || {};
   // Boden: ueber Beute und Schein (45), unter dem Gegnerlayer (50).
   // Luft: ueber dem Spieler (100) und den angehobenen Requisiten (100.5).
+  // Hinter: knapp hinter der Figur, aber vor allem am Boden (Auren, Schimmer).
+  if (wo === 'hinter') return (T.SPIELER || 100) - 0.5;
   return wo === 'boden' ? (T.BODEN_BEUTE || 45) + 1 : (T.SPIELER || 100) + 2;
 }
 
@@ -3655,6 +3692,9 @@ function spezialVfxVorladen(loader) {
  * @param {number} [wie.aufbau]  ms, in denen es aus 40 % Groesse aufgeht (Schleife)
  * @param {number} [wie.abbau]   ms vor dem Ende, in denen es ausblendet (Schleife)
  * @param {function} [wie.folgen] () => {x, y}: die Stelle in jedem Bild neu
+ * @param {function} [wie.solange] () => bool: endet, sobald false (Buff vorbei, Klinge weg)
+ * @param {number} [wie.drehung] Drehung im Bogenmass (der Hieb zeigt nach +x)
+ * @param {number} [wie.alpha]   Grund-Deckkraft (Vorgabe 1)
  * @returns {{bild, ende: function}|null} null ohne Flagge oder ohne Bild
  */
 function _vfxSpielen(scene, name, x, y, wie) {
@@ -3670,9 +3710,12 @@ function _vfxSpielen(scene, name, x, y, wie) {
   const bild = scene.add.sprite(x, y, key, 0)
     .setOrigin(0.5, 0.5)
     .setScale(skala)
+    .setRotation(wie.drehung || 0)
+    .setAlpha(typeof wie.alpha === 'number' ? wie.alpha : 1)
     .setDepth(_vfxTiefe(wie.tiefe))
     .setName('spezialVfx')
     .setData('vfx', name);
+  const grundAlpha = bild.alpha;
   bild.play({ key: animKey, frameRate: d.n / (Math.max(1, wie.laufzeit) / 1000), repeat: wie.schleife ? -1 : 0 });
 
   const start = scene.time.now;
@@ -3682,18 +3725,20 @@ function _vfxSpielen(scene, name, x, y, wie) {
     if (!bild.active) { ende(); return; }
     // Was am Spieler haengt, verschwindet mit seinem Tod (wie die Folgen).
     if (wie.folgen && typeof playerHealth === 'number' && playerHealth <= 0) { ende(); return; }
+    // Haengt an etwas, das vergehen kann (Buff, Wurfklinge): mit ihm vorbei.
+    if (wie.solange && !wie.solange()) { ende(); return; }
     if (wie.folgen) { const p = wie.folgen(); bild.setPosition(p.x, p.y); }
     if (wie.schleife) {
       const t = scene.time.now - start;
       const auf = wie.aufbau ? Math.min(1, t / wie.aufbau) : 1;
       const ab = (wie.abbau && wie.dauer) ? Phaser.Math.Clamp((wie.dauer - t) / wie.abbau, 0, 1) : 1;
       bild.setScale(skala * (0.4 + 0.6 * auf));
-      bild.setAlpha(Math.min(auf, ab));
+      bild.setAlpha(grundAlpha * Math.min(auf, ab));
     } else if (liegtSeit !== null) {
       // Das letzte Bild bleibt kurz liegen und blendet aus (Reif, kalte Risse).
       const k = (scene.time.now - liegtSeit) / (wie.halten || 1);
       if (k >= 1) { ende(); return; }
-      bild.setAlpha(1 - k);
+      bild.setAlpha(grundAlpha * (1 - k));
     }
   };
   function ende() {
@@ -3766,6 +3811,92 @@ function _hammerSlamVfx(scene, x, y, radius) {
   _vfxSpielen(scene, 'hammer_luft', x, y, { tiefe: 'luft', laufzeit: 520, radius });
   return true;
 }
+
+// Bilder um den Koerper (Schimmer, Auren): Anker SPEZIAL_VFX_FUSS ueber den
+// Fuessen, so steht ihr Ring auf dem Boden unter der Figur.
+const KOERPER_SKALA = 1.4;
+function _amKoerper() {
+  return { x: player.x, y: player.y - SPEZIAL_VFX_FUSS * KOERPER_SKALA };
+}
+
+/**
+ * Stahlgriff: die Kette schiesst vom Koerper bis zum Ziel (oder bis zur
+ * Reichweite), haelt kurz und wird eingeholt. Ein Kettenglied als Kachel
+ * (TileSprite), damit die Glieder bei jeder Laenge gleich gross bleiben.
+ */
+const KETTE_SKALA = 1.5;
+const KETTE_ZEIT = { raus: 70, halten: 60, rein: 120 };
+function _greifKette(scene, dir, laenge) {
+  if (!_vfxDa(scene, 'kette')) return null;
+  const key = spezialVfxSchluessel('kette');
+  const u = angriffsUrsprung();
+  const kette = scene.add.tileSprite(u.x, u.y, 1, SPEZIAL_VFX.kette.h, key, 0)
+    .setOrigin(0, 0.5)
+    .setScale(KETTE_SKALA)
+    .setRotation(Math.atan2(dir.y, dir.x))
+    .setDepth(_vfxTiefe('luft'))
+    .setName('spezialVfx')
+    .setData('vfx', 'kette')
+    .setData('laenge', laenge);
+  const start = scene.time.now;
+  const gesamt = KETTE_ZEIT.raus + KETTE_ZEIT.halten + KETTE_ZEIT.rein;
+  const folgen = () => {
+    const t = scene.time.now - start;
+    if (!kette.active || t >= gesamt || !player || (typeof playerHealth === 'number' && playerHealth <= 0)) { weg(); return; }
+    const k = t < KETTE_ZEIT.raus ? t / KETTE_ZEIT.raus
+      : t < KETTE_ZEIT.raus + KETTE_ZEIT.halten ? 1
+        : 1 - (t - KETTE_ZEIT.raus - KETTE_ZEIT.halten) / KETTE_ZEIT.rein;
+    const o = angriffsUrsprung();
+    kette.setPosition(o.x, o.y);
+    kette.width = Math.max(1, (laenge * k) / KETTE_SKALA);
+  };
+  function weg() {
+    scene.events.off('postupdate', folgen);
+    scene.events.off('shutdown', weg);
+    if (kette.active) kette.destroy();
+  }
+  folgen.spezialFolge = weg.spezialFolge = 'vfx_kette';
+  scene.events.on('postupdate', folgen);
+  scene.events.once('shutdown', weg);
+  folgen();
+  return { bild: kette, ende: weg };
+}
+
+/**
+ * Aura eines Buffs mit Dauer (Raserei, Berserker): eine Schleife zu Fuessen,
+ * solange der Buff wirkt — sie endet mit ihm, mit dem Tod und beim shutdown.
+ */
+function _buffAura(scene, name, aktiv) {
+  return _vfxSpielen(scene, name, player.x, player.y, {
+    tiefe: 'hinter', schleife: true, laufzeit: 660, skala: KOERPER_SKALA, aufbau: 160,
+    folgen: _amKoerper, solange: aktiv
+  });
+}
+
+function _berserkAktiv() {
+  const bs = window.berserkState;
+  // Dieselbe Uhr wie abilitySystem.js beim Setzen von expiry (Szenenzeit).
+  const now = (player && player.scene) ? player.scene.time.now : Date.now();
+  return !!(bs && bs.active && (typeof bs.expiry !== 'number' || now < bs.expiry));
+}
+
+/**
+ * Berserker (abilitySystem.js ruft das nach dem Aktivieren). Bis #174 gab es
+ * dafuer nur die rote Toenung — ohne Flagge bleibt es dabei, hier passiert
+ * dann nichts.
+ */
+function _berserkFx(scene) {
+  // Die Flagge prueft jeder Helfer selbst (_spezialZeigen, _vfxDa).
+  if (!scene || !player || !player.active) return;
+  _spezialZeigen(scene, 'berserk', null, SPEZIAL_DAUER.berserk);
+  const u = angriffsUrsprung();
+  _vfxSpielen(scene, 'blut', u.x, u.y, { tiefe: 'luft', laufzeit: 420, skala: 1.6 });
+  if (_vfxDa(scene, 'berserk_aura')) {
+    if (window._berserkAuraVfx) window._berserkAuraVfx.ende();
+    window._berserkAuraVfx = _buffAura(scene, 'berserk_aura', _berserkAktiv);
+  }
+}
+if (typeof window !== 'undefined') window._berserkFx = _berserkFx;
 
 // ============================================================
 // === 060 Strang SCHATTEN — Helper-Funktionen ===
@@ -4000,20 +4131,29 @@ function _healFx(scene, amount) {
     // Charakter blieb dort grün. Date.now ist szenenübergreifend konsistent.
     window._healFlashUntil = Date.now() + 320;
     if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
-    const ring = scene.add.graphics().setDepth(72);
-    ring.lineStyle(3, GREEN, 0.9); ring.strokeCircle(0, 0, 30); ring.setPosition(cx, cy);
-    if (T) T.add({ targets: ring, scaleX: 1.6, scaleY: 1.6, alpha: 0, y: cy - 18, duration: 520, ease: 'Sine.easeOut', onComplete: () => { try { ring.destroy(); } catch (e) {} } });
-    else scene.time.delayedCall(520, () => { try { ring.destroy(); } catch (e) {} });
-    const glow = scene.add.circle(cx, cy, 34, SOFT, 0.32).setDepth(41);
-    if (T) T.add({ targets: glow, scale: 1.5, alpha: 0, duration: 500, onComplete: () => { try { glow.destroy(); } catch (e) {} } });
-    else scene.time.delayedCall(500, () => { try { glow.destroy(); } catch (e) {} });
-    for (let i = 0; i < 6; i++) {
-      const px = cx + (Math.random() - 0.5) * 44, py = cy + (Math.random() - 0.5) * 20;
-      const g = scene.add.graphics().setDepth(73);
-      g.lineStyle(3, GREEN, 0.95);
-      g.lineBetween(px - 5, py, px + 5, py); g.lineBetween(px, py - 5, px, py + 5); // Pluszeichen
-      if (T) T.add({ targets: g, y: -(36 + Math.random() * 16), alpha: 0, duration: 600 + Math.random() * 200, ease: 'Sine.easeOut', onComplete: () => { try { g.destroy(); } catch (e) {} } });
-      else scene.time.delayedCall(820, () => { try { g.destroy(); } catch (e) {} });
+    // #174 (?spezial=neu): Heilgeste der Figur, dahinter ein gruener Schimmer
+    // mit Funkeln und Pluszeichen statt Ring, Schein und gezeichneter Kreuze.
+    // Die Heilzahl bleibt (unten).
+    _spezialZeigen(scene, 'heil', null, SPEZIAL_DAUER.heil);
+    const heilVfx = _vfxSpielen(scene, 'heil', cx, cy, {
+      tiefe: 'hinter', laufzeit: 620, skala: KOERPER_SKALA, alpha: 0.85, folgen: _amKoerper
+    });
+    if (!heilVfx) {
+      const ring = scene.add.graphics().setDepth(72);
+      ring.lineStyle(3, GREEN, 0.9); ring.strokeCircle(0, 0, 30); ring.setPosition(cx, cy);
+      if (T) T.add({ targets: ring, scaleX: 1.6, scaleY: 1.6, alpha: 0, y: cy - 18, duration: 520, ease: 'Sine.easeOut', onComplete: () => { try { ring.destroy(); } catch (e) {} } });
+      else scene.time.delayedCall(520, () => { try { ring.destroy(); } catch (e) {} });
+      const glow = scene.add.circle(cx, cy, 34, SOFT, 0.32).setDepth(41);
+      if (T) T.add({ targets: glow, scale: 1.5, alpha: 0, duration: 500, onComplete: () => { try { glow.destroy(); } catch (e) {} } });
+      else scene.time.delayedCall(500, () => { try { glow.destroy(); } catch (e) {} });
+      for (let i = 0; i < 6; i++) {
+        const px = cx + (Math.random() - 0.5) * 44, py = cy + (Math.random() - 0.5) * 20;
+        const g = scene.add.graphics().setDepth(73);
+        g.lineStyle(3, GREEN, 0.95);
+        g.lineBetween(px - 5, py, px + 5, py); g.lineBetween(px, py - 5, px, py + 5); // Pluszeichen
+        if (T) T.add({ targets: g, y: -(36 + Math.random() * 16), alpha: 0, duration: 600 + Math.random() * 200, ease: 'Sine.easeOut', onComplete: () => { try { g.destroy(); } catch (e) {} } });
+        else scene.time.delayedCall(820, () => { try { g.destroy(); } catch (e) {} });
+      }
     }
     if (scene.add.text) {
       const txt = scene.add.text(cx, cy - 24, '+' + amount, { fontFamily: 'monospace', fontSize: '16px', color: '#7dffa0', fontStyle: 'bold' }).setOrigin(0.5).setDepth(74);
@@ -4048,6 +4188,9 @@ function _deathBlowFx(scene, forward, range, arc) {
     const CRIMSON = 0xff2233;
     const ang = Math.atan2(forward.y, forward.x);
     const u = angriffsUrsprung();
+    // #174 (?spezial=neu): ein schwerer karmesinroter Hieb mit Lichtblitz an
+    // der Spitze, so weit wie der Kegel reicht, statt der gefuellten Scheibe.
+    if (_vfxSpielen(scene, 'todesstoss', u.x, u.y, { tiefe: 'luft', laufzeit: 300, radius: range, drehung: ang })) return;
     const g = scene.add.graphics().setDepth(70);
     g.fillStyle(CRIMSON, 0.26);
     g.slice(u.x, u.y, range, ang - arc / 2, ang + arc / 2, false);
@@ -4062,6 +4205,9 @@ function _deathBlowFx(scene, forward, range, arc) {
 // Dramatischer Exekutions-Burst (Instakill): Flash + Crimson-Ring + dunkle Splitter.
 function _deathBlowExecuteBurst(scene, x, y) {
   try {
+    // #174 (?spezial=neu): Lichtblitz und Blutspritzer, doppelt so gross wie
+    // beim gewoehnlichen Treffer.
+    if (_vfxSpielen(scene, 'blut', x, y, { tiefe: 'luft', laufzeit: 520, skala: 2.2 })) return;
     const CRIMSON = 0xff2233, DARK = 0x550008, WHITE = 0xffffff;
     const T = scene.tweens;
     const flash = scene.add.circle(x, y, 18, WHITE, 0.9).setDepth(72);
@@ -4100,6 +4246,8 @@ function shadowDeathBlow() {
   var killed = 0;
 
   if (window.soundManager) try { window.soundManager.playSFX('attack'); } catch (e) {}
+  // #174 (?spezial=neu): die Figur holt aus und schlaegt nach vorn.
+  _spezialZeigen(scene, 'todesstoss', forward, SPEZIAL_DAUER.todesstoss);
   _deathBlowFx(scene, forward, range, arc);
 
   var targets = [];
@@ -4125,6 +4273,8 @@ function shadowDeathBlow() {
       handleEnemyHit(scene, enemy, { tint: 0xff2233, duration: 180 });
       killed++;
     } else {
+      // #174 (?spezial=neu): Blutspritzer auch beim gewoehnlichen Treffer.
+      _vfxSpielen(scene, 'blut', enemy.x, enemy.y, { tiefe: 'luft', laufzeit: 480, skala: 1.4 });
       var res = dealDamageToEnemy(scene, enemy, 2.2 * dmgMult, 'deathBlow');   // schwerer Finisher
       var hpNow = _shadowEnemyHp(enemy).hp;
       handleEnemyHit(scene, enemy, { tint: res && res.isCrit ? 0xfff2a6 : 0xff5566, duration: res && res.isCrit ? 200 : 140 });
@@ -4147,6 +4297,14 @@ window.shadowDeathBlow = shadowDeathBlow;
 function _frenzyFx(scene) {
   try {
     if (!scene || !player) return;
+    // #174 (?spezial=neu): Kampfschrei der Figur und ein Druckring aus Glut
+    // statt Ring und Strahlen; die Aura fuer die Buffdauer haengt in
+    // updateAmuletPerFrame.
+    _spezialZeigen(scene, 'raserei', null, SPEZIAL_DAUER.raserei);
+    if (_vfxSpielen(scene, 'raserei_stoss', player.x, player.y, { tiefe: 'boden', laufzeit: 480, skala: KOERPER_SKALA })) {
+      if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
+      return;
+    }
     const ORANGE = 0xff7a1a, RED = 0xff3a2a;
     const T = scene.tweens, cx = player.x, cy = player.y;
     const ring = scene.add.graphics().setDepth(72);
@@ -4729,6 +4887,18 @@ function castTwistingBlades() {
   projectile.setData('twPhase', 'out');
   playerProjectiles.add(projectile);
 
+  // #174 (?spezial=neu): die Figur wirft, und statt des flachen Dolchs fliegt
+  // eine kreisende Klinge mit — sie folgt dem (unsichtbaren) Geschoss, das
+  // weiter trifft und zurueckkehrt wie bisher, und vergeht mit ihm.
+  _spezialZeigen(scene, 'klingen', dir, SPEZIAL_DAUER.klingen);
+  if (_vfxSpielen(scene, 'klinge', projectile.x, projectile.y, {
+    tiefe: 'luft', schleife: true, laufzeit: 160, skala: 1.5,
+    folgen: () => ({ x: projectile.x, y: projectile.y }),
+    solange: () => projectile.active
+  })) {
+    projectile.setVisible(false);
+  }
+
   const speed = (typeof getDaggerThrowSpeed === 'function') ? getDaggerThrowSpeed() : 420;
   projectile.body.setVelocity(dir.x * speed, dir.y * speed);
 
@@ -4782,8 +4952,12 @@ function castSteelGrasp() {
   const range = 360;
   const halfArcCos = Math.cos(Math.PI / 5); // ~36° Halbkegel
 
-  // Visuelle Kette: kurze Linie in Blickrichtung.
-  try {
+  // #174 (?spezial=neu): die Figur wirft die Kette und holt sie ein.
+  _spezialZeigen(scene, 'greif', dir, SPEZIAL_DAUER.greif);
+  const ketteVfx = _vfxDa(scene, 'kette');
+
+  // Visuelle Kette: kurze Linie in Blickrichtung (Rueckfall ohne Kettenbild).
+  if (!ketteVfx) try {
     const fx = scene.add.graphics();
     fx.lineStyle(3, 0xbfc7d6, 0.85);
     fx.beginPath();
@@ -4803,6 +4977,13 @@ function castSteelGrasp() {
     if (dir.dot(tmp) < halfArcCos) return; // außerhalb des Vorwärts-Kegels
     if (distance < bestDist) { bestDist = distance; target = enemy; }
   });
+
+  // Die Kette reicht bis zum Gefassten, sonst bis zur vollen Reichweite.
+  if (ketteVfx) {
+    const fasst = !!(target && target.active);
+    _greifKette(scene, dir, fasst ? bestDist : range);
+    if (fasst) _vfxSpielen(scene, 'funken', target.x, target.y, { tiefe: 'luft', laufzeit: 340, skala: 1.5 });
+  }
 
   if (!target || !target.active) return;
 

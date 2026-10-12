@@ -1,0 +1,287 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-heilwunde 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-heilwunde 1.png",
+   "frame": {
+    "x": 64,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-heilwunde 2.png",
+   "frame": {
+    "x": 128,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-heilwunde 3.png",
+   "frame": {
+    "x": 192,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-heilwunde 4.png",
+   "frame": {
+    "x": 0,
+    "y": 88,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-heilwunde 5.png",
+   "frame": {
+    "x": 64,
+    "y": 88,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-heilwunde 6.png",
+   "frame": {
+    "x": 128,
+    "y": 88,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-heilwunde 7.png",
+   "frame": {
+    "x": 192,
+    "y": 88,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-heilwunde 8.png",
+   "frame": {
+    "x": 0,
+    "y": 176,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-heilwunde 9.png",
+   "frame": {
+    "x": 64,
+    "y": 176,
+    "w": 64,
+    "h": 88
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 88
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 88
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5909090909090909
+   },
+   "duration": 63
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-heilwunde.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 256,
+   "h": 264
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 32,
+   "y": 52
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-heilwunde",
+    "from": 0,
+    "to": 9,
+    "direction": "forward"
+   }
+  ]
+ }
+}
