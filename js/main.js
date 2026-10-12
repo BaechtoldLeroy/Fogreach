@@ -732,7 +732,7 @@ function ensureEnemyDirectionIndicators(scene) {
 
   const positions = [
     { dir: 'north', glyph: '↑', x: cam.width / 2, y: 48 },
-    { dir: 'south', glyph: '↓', x: cam.width / 2, y: cam.height - 48 },
+    { dir: 'south', glyph: '↓', x: cam.width / 2, y: cam.height - _suedAbstand(scene) },
     { dir: 'west',  glyph: '←', x: 48, y: cam.height / 2 },
     { dir: 'east',  glyph: '→', x: cam.width - 48, y: cam.height / 2 }
   ];
@@ -749,6 +749,12 @@ function ensureEnemyDirectionIndicators(scene) {
 
   scene._enemyDirectionIndicators = indicators;
   return indicators;
+}
+
+// Der Suedpfeil sitzt ueber der Faehigkeitsleiste (?hud=neu), nicht auf ihr.
+function _suedAbstand(scene) {
+  const frei = (window.hudLeiste && window.hudLeiste.freiraumUnten(scene)) || 0;
+  return frei > 0 ? frei + 20 : 48;
 }
 
 function updateEnemyDirectionHint(scene, now) {
@@ -789,7 +795,7 @@ function updateEnemyDirectionHint(scene, now) {
   const cam = scene.cameras.main;
   const positions = {
     north: { x: cam.width / 2, y: 48 },
-    south: { x: cam.width / 2, y: cam.height - 48 },
+    south: { x: cam.width / 2, y: cam.height - _suedAbstand(scene) },
     west:  { x: 48, y: cam.height / 2 },
     east:  { x: cam.width - 48, y: cam.height / 2 }
   };
@@ -1034,6 +1040,8 @@ let tooltip;
 function preload() {
   // #189: Messing-Rahmen und Toast-Bilder mitladen (nur die fehlenden).
   if (window.uiRahmen) window.uiRahmen.vorladen(this);
+  // ?hud=neu: Icon-Streifen der Faehigkeitsleiste (ohne Flagge nichts).
+  if (window.hudLeiste) window.hudLeiste.vorladen(this);
   // Player sprites are preloaded in StartScene (dir00 only);
   // other directions lazy-load via ensureDirectionLoaded().
   // #171: Die Schlagfolge des Nahkampfs gibt es nur hier unten.
@@ -2586,7 +2594,13 @@ function initUI() {
     updateAbilityCooldownPositions(gameSize.width, gameSize.height);
   });
 
-  if (!isMobile) {
+  // ?hud=neu: Aktionsleiste unten mittig statt der Kacheln oben rechts.
+  // Fehlt der Icon-Streifen (Laden gescheitert), bleibt es bei den Kacheln.
+  const _hudNeu = !isMobile && window.hudLeiste && window.hudLeiste.aktiv() && window.hudLeiste.bereit(this);
+  if (_hudNeu) {
+    abilityStatusDisplay = {};
+    window.hudLeiste.bauen(this);
+  } else if (!isMobile) {
     abilityStatusDisplay = {};
     const tileWidth = 220;
     const tileHeight = 42;

@@ -158,6 +158,15 @@
     const portraitIcon = scene.add.text(portraitCx, portraitCy, '\u2694', {
       fontFamily: 'serif', fontSize: '28px', color: '#ffd166'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
+    // ?hud=neu: Pixel-Portraet statt des Schwert-Zeichens (das im Canvas als
+    // Kaestchen erscheint).
+    const HL = window.hudLeiste;
+    if (HL && HL.aktiv() && HL.bereit(scene)) {
+      portraitIcon.setVisible(false);
+      scene.add.image(portraitCx, portraitCy, HL.KEY, HL.frame('portrait'))
+        .setDisplaySize(PORTRAIT_R * 2 - 4, PORTRAIT_R * 2 - 4)
+        .setScrollFactor(0).setDepth(HUD_DEPTH + 1);
+    }
     // Dedicated rectangle hit zone above the visual circle (rectangles have
     // reliable hit-testing across Phaser versions).
     const portraitHit = scene.add.rectangle(portraitCx, portraitCy, PORTRAIT_R * 2, PORTRAIT_R * 2, 0x000000, 0)

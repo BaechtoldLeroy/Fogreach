@@ -467,6 +467,9 @@
     const detail = event && event.detail;
     if (!detail || !detail.scene || !Array.isArray(detail.buttons)) return;
     const scene = detail.scene;
+    // ?hud=neu: die Knoepfe dekoriert hudLeiste.mobil (von mobileControls aus).
+    const HL = window.hudLeiste;
+    if (HL && HL.aktiv() && HL.bereit(scene)) return;
 
     // i18n ist beim Datei-Load evtl. noch nicht da (Load-Order) — hier definitiv.
     // Idempotent: registriert die mobile.btn.*-Labels genau einmal.
@@ -551,6 +554,8 @@
   // Trefferflaechen bleiben unangetastet (sie haengen an mobileControls).
   window.mobileAbilityLeisteSichtbar = function (sichtbar) {
     var n = 0;
+    // ?hud=neu: die Ringe mit Icon gehoeren hudLeiste.
+    if (window.hudLeiste && window.hudLeiste.aktiv()) n += window.hudLeiste.mobilSichtbar(sichtbar);
     try {
       (_letzteDekorationen || []).forEach(function (d) {
         if (!d) return;

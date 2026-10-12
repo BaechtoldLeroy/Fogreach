@@ -44,6 +44,11 @@
   var HIGHLIGHT_DEPTH   = 1492;
   var BANNER_HEIGHT   = 64;
   var BANNER_BOTTOM_OFFSET = 32; // distance from bottom edge of camera
+  // ?hud=neu: die Box sitzt ueber der Faehigkeitsleiste unten mittig.
+  function _untenAbstand(scene) {
+    var frei = (window.hudLeiste && window.hudLeiste.freiraumUnten(scene)) || 0;
+    return Math.max(BANNER_BOTTOM_OFFSET, frei);
+  }
   var BANNER_BG_COLOR = 0x000000;
   var BANNER_BG_ALPHA = 0.78;
   var BANNER_TEXT_STYLE = {
@@ -258,7 +263,7 @@
       var txt = s.add.text(x, 0, text, txtStyle).setOrigin(0.5).setScrollFactor(0).setDepth(BANNER_TEXT_DEPTH);
 
       var bgHeight = Math.max(BANNER_HEIGHT, Math.ceil(txt.height + paddingY * 2));
-      var y = Math.floor(cam.height - BANNER_BOTTOM_OFFSET - bgHeight / 2);
+      var y = Math.floor(cam.height - _untenAbstand(s) - bgHeight / 2);
       txt.setY(y);
 
       var bg = s.add.rectangle(x, y, bgWidth, bgHeight, BANNER_BG_COLOR, BANNER_BG_ALPHA)
@@ -325,7 +330,7 @@
           if (s && s.cameras && s.cameras.main && this.banner.bg) {
             var cam = s.cameras.main;
             var newHeight = Math.max(BANNER_HEIGHT, Math.ceil(this.banner.text.height + (this.banner.paddingY || 12) * 2));
-            var newY = Math.floor(cam.height - BANNER_BOTTOM_OFFSET - newHeight / 2);
+            var newY = Math.floor(cam.height - _untenAbstand(s) - newHeight / 2);
             if (newHeight !== this.banner.height) {
               this.banner.bg.setSize(this.banner.width, newHeight);
               this.banner.height = newHeight;

@@ -422,6 +422,16 @@ if (window.i18n) {
       inventoryBtn: state.inventoryBtn,
       cooldownTexts: Object.assign({}, state.cooldownTexts),
     });
+    _hudNeu(scene);
+  }
+
+  // ?hud=neu: Messingringe mit Pixel-Icons auf die Kreise legen. Direkt
+  // gerufen statt ueber das Fenster-Ereignis, damit es auch headless greift;
+  // mobileAbilityButtons haelt sich mit Flagge heraus.
+  function _hudNeu(scene) {
+    const HL = window.hudLeiste;
+    if (!HL || !HL.aktiv() || !HL.bereit(scene)) return;
+    HL.mobil(scene, state.buttons.map(({ spec, circle }) => ({ spec, circle })));
   }
 
   // Shared build logic für initMobileControls + _rebuildAbilityButtons.
@@ -537,6 +547,7 @@ if (window.i18n) {
       inventoryBtn: state.inventoryBtn,
       cooldownTexts: Object.assign({}, state.cooldownTexts),
     });
+    _hudNeu(scene);
 
     // --- Tap-to-move + hold-to-move (038-mobile-d2-controls) ---
     const JOYSTICK_ZONE_RADIUS = 120; // px from joystick center
