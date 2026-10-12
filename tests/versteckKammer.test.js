@@ -93,11 +93,14 @@ test('Zweimal zeichnen haeuft nichts an', () => {
   assert.strictEqual(dekoLebt(), 2, 'nach dem zweiten Besuch haengen nicht genau zwei Ebenen');
 });
 
-test('Ohne ?versteckraum=neu bleibt die Kammer wie bisher (#192)', () => {
-  // Die eingerichtete Kammer steht hinter der Flagge. Ohne sie: die beiden
-  // gezeichneten Ebenen, die Kisten und Faesser der Vorlage, keine Requisiten.
+test('Fehlen die Requisiten-Bilder, bleibt die gezeichnete Kammer (#192, Rueckfall)', () => {
+  // Die eingerichtete Kammer ist fest eingebaut. Sind ihre Bilder nicht
+  // geladen: die beiden gezeichneten Ebenen, die Kisten und Faesser der
+  // Vorlage, keine Requisiten.
   const r = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
+    Object.keys(sc.textures.list).filter(function (k) { return /^versteck_/.test(k); })
+      .forEach(function (k) { sc.textures.remove(k); });
     dungeonRun.templateOrder[1] = 'ElarasVersteck';
     enterRoom(sc, 1);
     var d = sc._versteckDeko || [];
@@ -111,6 +114,6 @@ test('Ohne ?versteckraum=neu bleibt die Kammer wie bisher (#192)', () => {
   })()`);
   assert.strictEqual(r.name, 'ElarasVersteck');
   assert.strictEqual(r.ebenen, 2, 'die gezeichnete Kammer fehlt');
-  assert.strictEqual(r.requisiten, 0, 'Requisiten ohne Flagge');
-  assert.ok(r.lager > 0, 'die Kisten der Vorlage fehlen ohne Flagge');
+  assert.strictEqual(r.requisiten, 0, 'Requisiten ohne Bilder');
+  assert.ok(r.lager > 0, 'die Kisten der Vorlage fehlen im Rueckfall');
 });

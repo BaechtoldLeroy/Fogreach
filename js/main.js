@@ -1065,7 +1065,7 @@ function preload() {
   if (!this.textures.exists('elara_right0')) {
     this.load.image('elara_right0', 'assets/npc/elara/right0.png');
   }
-  // #192: Elaras eingerichtete Kammer — Requisiten nur mit ?versteckraum=neu.
+  // #192: Elaras eingerichtete Kammer — die Requisiten.
   if (typeof window.versteckBilderVorladen === 'function') {
     try { window.versteckBilderVorladen(this); } catch (e) { /* nicht fatal */ }
   }

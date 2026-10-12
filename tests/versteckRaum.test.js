@@ -1,5 +1,5 @@
 // tests/versteckRaum.test.js — Elaras Kammer eingerichtet, hinter
-// ?versteckraum=neu (#192).
+// fest seit b389 (#192, frueher ?versteckraum=neu).
 //
 // Statt der gezeichneten Flaechen und der Lagerkisten der Vorlage: Lager,
 // Werkbank, Kartenwand, Notizen, Regal, Kerzen, Buecher, Teppich, Hocker und
@@ -15,7 +15,7 @@ const { launchDungeon } = require('../tools/headless/index.js');
 let H = null;
 
 before(async () => {
-  H = await launchDungeon({ depth: 3, zusatz: '&debug=1&versteckraum=neu&versteck=1' });
+  H = await launchDungeon({ depth: 3, zusatz: '&debug=1&versteck=1' });
   H.run('window._playerInvincible = true');
 });
 after(async () => { if (H) await H.shutdown(); });

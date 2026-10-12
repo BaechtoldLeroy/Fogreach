@@ -1057,9 +1057,9 @@ function enterRoom(scene, roomId) {
     try { console.log('[Raumtypen] Raum ' + roomId + ': ' + templateName); } catch (e) {}
   }
   if (templateName) {
-    // #192: Mit ?versteckraum=neu baut die Kammer ohne die Lagerkisten der
-    // Vorlage — sie wird danach von _versteckKammerNeu eingerichtet.
-    builtMeta = buildTemplateRoom(scene, (templateName === VERSTECK_RAUM && _versteckRaumNeu())
+    // #192: Die eingerichtete Kammer baut ohne die Lagerkisten der Vorlage —
+    // sie wird danach von _versteckKammerNeu eingerichtet.
+    builtMeta = buildTemplateRoom(scene, (templateName === VERSTECK_RAUM && _versteckRaumNeu(scene))
       ? _versteckNeuVorlage() : templateName);
     pickedType = "template";
   }
@@ -1683,7 +1683,7 @@ function enterRoom(scene, roomId) {
   // er wegliegen soll).
   // #192: In der eingerichteten Kammer kein Fund — ein fremdes Lagerfeuer
   // mitten in Elaras Versteck sah aus, als wohne dort noch jemand.
-  if (!(scene.currentRoom && scene.currentRoom.name === VERSTECK_RAUM && _versteckRaumNeu())) {
+  if (!(scene.currentRoom && scene.currentRoom.name === VERSTECK_RAUM && _versteckRaumNeu(scene))) {
     _maybeSpawnHiddenFind(scene);
   }
 
@@ -3773,7 +3773,7 @@ function _storyDekoAbraeumen(scene) {
 if (typeof window !== 'undefined') window._storyDekoAbraeumen = _storyDekoAbraeumen;
 
 // ---------------------------------------------------------------------------
-// #192: Elaras Kammer als eingerichteter Raum, hinter ?versteckraum=neu.
+// #192: Elaras Kammer als eingerichteter Raum (fest seit b389).
 //
 // "Hier vergisst der Nebel einen nicht so schnell." Der Raum soll das zeigen:
 // Kerzenlicht gegen das Grau, die Wand mit der Kanalkarte und den Notizen
@@ -3786,16 +3786,18 @@ var VERSTECK_BILDER = ['bett', 'werkbank', 'kartenwand', 'notizen', 'regal', 'ke
   'kerzen_boden', 'buecher', 'vorhang', 'teppich', 'hocker', 'tisch', 'kartenkiste', 'vorraete',
   'waffenstaender', 'leuchter'];
 
-function _versteckRaumNeu() {
+// Eingerichtet, sobald die Requisiten geladen sind. Fehlen sie, bleibt die
+// gezeichnete Kammer (_versteckZeichnen) samt Lagerkisten der Rueckfall.
+function _versteckRaumNeu(scene) {
   try {
-    return !!(window.DebugGate && window.DebugGate.flagge('versteckraum') === 'neu');
+    return !!(scene && scene.textures && scene.textures.exists('versteck_werkbank'));
   } catch (e) { return false; }
 }
 if (typeof window !== 'undefined') window._versteckRaumNeu = _versteckRaumNeu;
 
-/** Laedt die Requisiten — nur mit der Flagge (GameScene.preload). */
+/** Laedt die Requisiten (GameScene.preload). */
 function versteckBilderVorladen(scene) {
-  if (!_versteckRaumNeu() || !scene || !scene.load) return;
+  if (!scene || !scene.load) return;
   VERSTECK_BILDER.forEach(function (n) {
     if (!scene.textures.exists('versteck_' + n)) scene.load.image('versteck_' + n, 'assets/versteck/' + n + '.png');
   });
@@ -4008,7 +4010,7 @@ function _versteckWegeFreihalten(scene, koerper) {
 }
 
 function _versteckBetreten(scene, w, h) {
-  var neu = _versteckRaumNeu();
+  var neu = _versteckRaumNeu(scene);
   if (neu) _versteckKammerNeu(scene);
   else _versteckZeichnen(scene, w, h);
   var besuch = versteckBesuchFaellig();
