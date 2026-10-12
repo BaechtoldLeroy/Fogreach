@@ -91,8 +91,7 @@
     'versteck', 'sonder', 'akt', 'stark',
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
     'gegnerlauf',
-    'spezial',          // spezial=neu: Spezialangriffe als Bildfolgen (#174)
-    'idle'              // idle=1: Idle-Schleifen der Hub-Figuren (#194)
+    'spezial'           // spezial=neu: Spezialangriffe als Bildfolgen (#174)
   ];
 
   /**

@@ -40,7 +40,7 @@ function aufstellen(H, flaggen) {
       n: n,
       wachen: sc._patrouillen.map(function (s) {
         var naechste = npcs.reduce(function (m, q) { return Math.min(m, Math.hypot(q.x - s.x, q.y - s.y)); }, Infinity);
-        return { key: s.texture.key, h: Math.round(s.displayHeight), x: s.x, y: s.y, naechste: naechste };
+        return { key: (s.getData && s.getData('standbild')) || s.texture.key, h: Math.round(s.displayHeight), x: s.x, y: s.y, naechste: naechste };
       }),
       breite: w.breite, hoehe: w.hoehe, npcZahl: npcs.length,
       geladen: sc.textures.exists('patrouille')

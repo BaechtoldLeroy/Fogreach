@@ -153,7 +153,7 @@ class HubSceneV2 extends Phaser.Scene {
     // Referenz seit dem Laden der Datei.
     window.HubNeuWelt.layoutUebernehmen();
     window.HubNeuWelt.vorladen(this);
-    // #194: Idle-Schleifen der Figuren — laedt nur mit ?idle=1 etwas.
+    // #194: Idle-Schleifen der Figuren (nur fehlende Streifen).
     if (window.HubIdle) window.HubIdle.vorladen(this);
     // Hub-only NPC sprites — deferred from StartScene so the main menu loads
     // faster. Phaser only loads keys that aren't already in the texture cache,
@@ -1415,7 +1415,7 @@ class HubSceneV2 extends Phaser.Scene {
   // #161: Epilog — Buerger, die auf dem Platz aus Thoms Blaettern vorlesen.
   // Wie viele, haengt daran, wie viele der Verschwundenen zurueckkamen
   // (die Gesuche aus council_seizure, HubPhase.epilogVorleser).
-  // Bild wie bisher; mit ?idle=1 ein Sprite, damit es eine Schleife spielen kann (#194).
+  // Ein Sprite, damit es seine Idle-Schleife spielen kann (#194).
   _hubFigur(x, y, bild) {
     return window.HubIdle ? window.HubIdle.figur(this, x, y, bild) : this.add.image(x, y, bild);
   }

@@ -50,7 +50,7 @@ test('jeder Hub-NPC erscheint in seiner vorgesehenen Hoehe', async () => {
       (sc.children.list || []).forEach(function (c) {
         if (!c.texture || !c.texture.key || !c.getData) return;
         if (!c.getData('id')) return;              // nur die NPC-Sprites
-        out[c.texture.key] = c.displayHeight;
+        out[c.getData('standbild') || c.texture.key] = c.displayHeight;   // Idle-Streifen (#194)
       });
       return out;
     })()`);
@@ -80,7 +80,7 @@ test('kein NPC ueberragt den Spieler um mehr als eine Handbreit', async () => {
       var npc = [];
       (sc.children.list || []).forEach(function (c) {
         if (c.getData && c.getData('id') && c.texture) {
-          npc.push({ k: c.texture.key, h: c.displayHeight });
+          npc.push({ k: c.getData('standbild') || c.texture.key, h: c.displayHeight });
         }
       });
       return { spieler: p ? p.displayHeight : null, npc: npc };

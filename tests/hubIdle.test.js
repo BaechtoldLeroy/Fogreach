@@ -1,12 +1,12 @@
-// tests/hubIdle.test.js — Idle-Schleifen der Hub-Figuren hinter ?idle=1 (#194).
+// tests/hubIdle.test.js — Idle-Schleifen der Hub-Figuren (#194, fest seit b391).
 //
-// Mit der Flagge spielt jede Figur (die neun NPC, die Patrouillen, die
+// Jede Figur spielt jede Figur (die neun NPC, die Patrouillen, die
 // Epilog-Vorleser) eine kurze Schleife. Geprueft am laufenden Hub:
 //   - jede Figur zeigt ueber die Zeit mehrere Bilder (H.step, eine Uhr),
 //   - Lage, Groesse und [E]-Zone sind GENAU die des Standbilds — verglichen
-//     mit einem Hub ohne Flagge, nicht mit abgeschriebenen Zahlen,
+//     mit einem Hub ohne Streifen (Rueckfall), nicht mit abgeschriebenen Zahlen,
 //   - die Figuren laufen nicht im Gleichschritt (eigene Startphase, fest).
-// Ohne Flagge: kein Streifen geladen, keine Schleife, die Bilder wie bisher.
+// Rueckfall ohne Streifen: keine Schleife, jede Figur zeigt ihr Standbild.
 
 const { test, before, after, describe } = require('node:test');
 const assert = require('node:assert');
@@ -20,9 +20,10 @@ function run(H, js) {
   return v === undefined ? v : JSON.parse(JSON.stringify(v));
 }
 
-async function hubStarten(search) {
+async function hubStarten(search, ohneStreifen) {
   const H = await launch({ search: search, renderer: 'canvas', waitFor: 'StartScene' });
   run(H, `(window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1')`);
+  if (ohneStreifen) run(H, `window.HubIdle.vorladen = function () { return 0; }; 1`);
   H.run(`window.game.scene.start('HubSceneV2')`);
   assert.ok(await H.waitForScene('HubSceneV2', { maxRounds: 250 }), 'Hub nicht erreicht');
   H.step(10);
@@ -74,14 +75,14 @@ function standbildMass(H, keys) {
     return o; })()`);
 }
 
-describe('ohne Flagge', () => {
+describe('Rueckfall: Streifen fehlen', () => {
   let H = null, f = null;
-  before(async () => { H = await hubStarten('?debug=1'); f = figuren(H); });
+  before(async () => { H = await hubStarten('?debug=1', true); f = figuren(H); });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('kein Idle-Streifen geladen, keine Schleife', () => {
+  test('ohne Streifen keine Schleife, jede Figur zeigt ihr Standbild', () => {
     const geladen = run(H, `${HUB}.textures.getTextureKeys().filter(function (k) { return k.indexOf('hubidle_') === 0; })`);
-    assert.deepStrictEqual(geladen, [], 'geladen ohne Flagge: ' + geladen.join(', '));
+    assert.deepStrictEqual(geladen, [], 'Streifen trotz Rueckfall geladen: ' + geladen.join(', '));
     assert.ok(f.length >= 14, 'nur ' + f.length + ' Figuren aufgestellt');
     f.forEach((x) => {
       assert.strictEqual(x.schleife, null, x.name + ' spielt ' + x.schleife);
@@ -89,17 +90,14 @@ describe('ohne Flagge', () => {
     });
   });
 
-  test('Patrouillen und Vorleser bleiben Bilder wie bisher', () => {
-    f.filter((x) => /^(patrouille|vorleser)/.test(x.name)).forEach((x) => assert.strictEqual(x.typ, 'Image', x.name));
-  });
 });
 
-describe('mit ?idle=1', () => {
+describe('Idle-Schleifen (fest, ohne Flagge)', () => {
   let H = null, ohne = null, ohneZonen = null, mit = null;
   before(async () => {
-    const O = await hubStarten('?debug=1');
+    const O = await hubStarten('?debug=1', true);
     try { ohne = figuren(O); ohneZonen = zonen(O); } finally { await O.shutdown(); }
-    H = await hubStarten('?debug=1&idle=1');
+    H = await hubStarten('?debug=1');
     mit = figuren(H);
   });
   after(async () => { if (H) await H.shutdown(); });
@@ -147,7 +145,7 @@ describe('mit ?idle=1', () => {
     const mass = standbildMass(H, mit.map((x) => x.standbild));
     mit.forEach((x) => {
       const o = ohne.find((y) => y.name === x.name);
-      assert.ok(o, x.name + ' fehlt ohne Flagge');
+      assert.ok(o, x.name + ' fehlt im Rueckfall');
       for (const k of ['x', 'y', 'ox', 'oy']) assert.strictEqual(x[k], o[k], x.name + ' ' + k + ': ' + x[k] + ' statt ' + o[k]);
       for (const k of ['w', 'h']) assert.ok(Math.abs(x[k] - o[k]) < 0.01, x.name + ' ' + k + ': ' + x[k] + ' statt ' + o[k]);
       // Jedes Schleifenbild hat das Mass des Standbilds.

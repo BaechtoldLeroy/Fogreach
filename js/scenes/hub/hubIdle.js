@@ -1,4 +1,4 @@
-// Idle-Schleifen der Hub-Figuren (#194) — nur hinter ?idle=1.
+// Idle-Schleifen der Hub-Figuren (#194, fest seit b391).
 //
 // Die NPC im Hub stehen als Standbild da. Mit der Flagge spielt jede Figur
 // eine kurze PixelLab-Schleife (atmen, Gewicht verlagern, eine kleine Geste).
@@ -33,9 +33,9 @@
   // Ruhiger Takt: eine Schleife dauert rund 1,6 s.
   const TAKT = 5;
 
-  function an() {
-    try { return !!(window.DebugGate && window.DebugGate.an('idle')); } catch (e) { return false; }
-  }
+  // Frueher die Abfrage von ?idle=1. Fest eingebaut: immer an. Fehlt ein
+  // Streifen, spielt die Figur keine Schleife und zeigt ihr Standbild.
+  function an() { return true; }
 
   function eintrag(standbild) {
     for (let i = 0; i < FIGUREN.length; i++) if (FIGUREN[i][0] === standbild) return i;
@@ -44,7 +44,7 @@
   const streifen = (i) => 'hubidle_' + FIGUREN[i][1];
   const animName = (i) => 'hubidle_' + FIGUREN[i][1] + '_schleife';
 
-  /** Laedt die Streifen (nur mit Flagge, nur fehlende). */
+  /** Laedt die Streifen (nur fehlende). */
   function vorladen(scene) {
     if (!an()) return 0;
     let n = 0;
@@ -115,6 +115,9 @@
         scene.textures.get(streifen(i)).setFilter(lin);
       } catch (e) { /* nicht fatal */ }
     }
+    // Die Figur bleibt an ihrem Standbild erkennbar, auch wenn sie einen
+    // Streifen zeigt (Tests, Groessenpruefung, Patrouillen-Rueckfall).
+    if (typeof sprite.setData === 'function') sprite.setData('standbild', standbild);
     sprite.play({ key: name, startFrame: phase(i, nr), repeatDelay: pause(i, nr) });
     return true;
   }
