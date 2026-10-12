@@ -1,4 +1,4 @@
-// js/storySystem.js — Narrative Story Progression for Demonfall
+// js/storySystem.js — Narrative Story Progression for Fogreach
 
 (function () {
   'use strict';

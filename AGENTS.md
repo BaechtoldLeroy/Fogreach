@@ -1,4 +1,4 @@
-# SPEC.md — Fogreach (Codename: Demonfall)
+# SPEC.md — Fogreach
 
 ## Tech Stack
 - **Engine**: Phaser (JavaScript)

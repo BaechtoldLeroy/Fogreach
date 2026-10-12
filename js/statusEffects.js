@@ -1,4 +1,4 @@
-// statusEffects.js — Status Effect System for Demonfall
+// statusEffects.js — Status Effect System for Fogreach
 // Manages poison, stun, slow, and bleed effects on player and enemies.
 
 const StatusEffectType = {

@@ -1,4 +1,4 @@
-// js/questSystem.js — Quest System for Demonfall
+// js/questSystem.js — Quest System for Fogreach
 
 (function () {
   'use strict';

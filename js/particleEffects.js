@@ -1,5 +1,5 @@
 /**
- * ParticleFactory - Reusable particle effect system for Demonfall
+ * ParticleFactory - Reusable particle effect system for Fogreach
  * Uses Phaser 3.60+ particle API
  */
 // #183: Pixelpartikel je Zweck statt zweier weicher Punkte. Alle Formen

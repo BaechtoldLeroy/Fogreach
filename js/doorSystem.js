@@ -1,4 +1,4 @@
-// js/doorSystem.js — Door sprite system for Demonfall
+// js/doorSystem.js — Door sprite system for Fogreach
 // Spawns door sprites at procedural room doorway positions.
 // Doors auto-open when the player approaches and auto-close when they leave.
 

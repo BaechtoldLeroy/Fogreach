@@ -1,6 +1,6 @@
 # Overview
 
-Demonfall Prototype is a browser-based 2D action game built with Phaser.js. The game features a dungeon crawler with procedural room generation, combat mechanics, inventory management, and a hub world. Players fight through waves of enemies in different rooms, collect loot, and upgrade their equipment. The game includes a Firebase-powered leaderboard system, a skill progression system with Eisenbrocken (iron chunks) currency, and supports both desktop and mobile controls.
+Fogreach is a browser-based 2D action game built with Phaser.js. The game features a dungeon crawler with procedural room generation, combat mechanics, inventory management, and a hub world. Players fight through waves of enemies in different rooms, collect loot, and upgrade their equipment. The game includes a Firebase-powered leaderboard system, a skill progression system with Eisenbrocken (iron chunks) currency, and supports both desktop and mobile controls.
 
 # User Preferences
 

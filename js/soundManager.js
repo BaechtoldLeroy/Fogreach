@@ -1,4 +1,4 @@
-﻿// soundManager.js — Procedural audio for Demonfall using Web Audio API
+﻿// soundManager.js — Procedural audio for Fogreach using Web Audio API
 // No audio files needed; all sounds are generated with oscillators, noise, and filters.
 
 class SoundManager {
