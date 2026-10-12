@@ -1,0 +1,235 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-staubtritt 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 39,
+    "h": 29
+   },
+   "pivot": {
+    "x": 0.5128205128205128,
+    "y": 0.6206896551724138
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-staubtritt 1.png",
+   "frame": {
+    "x": 39,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 39,
+    "h": 29
+   },
+   "pivot": {
+    "x": 0.5128205128205128,
+    "y": 0.6206896551724138
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-staubtritt 2.png",
+   "frame": {
+    "x": 78,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 39,
+    "h": 29
+   },
+   "pivot": {
+    "x": 0.5128205128205128,
+    "y": 0.6206896551724138
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-staubtritt 3.png",
+   "frame": {
+    "x": 0,
+    "y": 29,
+    "w": 39,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 39,
+    "h": 29
+   },
+   "pivot": {
+    "x": 0.5128205128205128,
+    "y": 0.6206896551724138
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-staubtritt 4.png",
+   "frame": {
+    "x": 39,
+    "y": 29,
+    "w": 39,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 39,
+    "h": 29
+   },
+   "pivot": {
+    "x": 0.5128205128205128,
+    "y": 0.6206896551724138
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-staubtritt 5.png",
+   "frame": {
+    "x": 78,
+    "y": 29,
+    "w": 39,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 39,
+    "h": 29
+   },
+   "pivot": {
+    "x": 0.5128205128205128,
+    "y": 0.6206896551724138
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-staubtritt 6.png",
+   "frame": {
+    "x": 0,
+    "y": 58,
+    "w": 39,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 39,
+    "h": 29
+   },
+   "pivot": {
+    "x": 0.5128205128205128,
+    "y": 0.6206896551724138
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-staubtritt 7.png",
+   "frame": {
+    "x": 39,
+    "y": 58,
+    "w": 39,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 39,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 39,
+    "h": 29
+   },
+   "pivot": {
+    "x": 0.5128205128205128,
+    "y": 0.6206896551724138
+   },
+   "duration": 83
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-staubtritt.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 117,
+   "h": 87
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 20,
+   "y": 18
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-staubtritt",
+    "from": 0,
+    "to": 7,
+    "direction": "forward"
+   }
+  ]
+ }
+}

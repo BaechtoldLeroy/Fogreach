@@ -1,0 +1,287 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 1.png",
+   "frame": {
+    "x": 140,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 2.png",
+   "frame": {
+    "x": 280,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 3.png",
+   "frame": {
+    "x": 420,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 4.png",
+   "frame": {
+    "x": 0,
+    "y": 140,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 5.png",
+   "frame": {
+    "x": 140,
+    "y": 140,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 6.png",
+   "frame": {
+    "x": 280,
+    "y": 140,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 7.png",
+   "frame": {
+    "x": 420,
+    "y": 140,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 8.png",
+   "frame": {
+    "x": 0,
+    "y": 280,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-boden 9.png",
+   "frame": {
+    "x": 140,
+    "y": 280,
+    "w": 140,
+    "h": 140
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 140,
+    "h": 140
+   },
+   "sourceSize": {
+    "w": 140,
+    "h": 140
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-hammer-aufschlag-boden.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 560,
+   "h": 420
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 70,
+   "y": 70
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-hammer-aufschlag-boden",
+    "from": 0,
+    "to": 9,
+    "direction": "forward"
+   }
+  ]
+ }
+}

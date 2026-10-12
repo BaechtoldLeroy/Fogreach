@@ -1,0 +1,287 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-wirbelsog 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-wirbelsog 1.png",
+   "frame": {
+    "x": 296,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-wirbelsog 2.png",
+   "frame": {
+    "x": 592,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-wirbelsog 3.png",
+   "frame": {
+    "x": 888,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-wirbelsog 4.png",
+   "frame": {
+    "x": 0,
+    "y": 296,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-wirbelsog 5.png",
+   "frame": {
+    "x": 296,
+    "y": 296,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-wirbelsog 6.png",
+   "frame": {
+    "x": 592,
+    "y": 296,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-wirbelsog 7.png",
+   "frame": {
+    "x": 888,
+    "y": 296,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-wirbelsog 8.png",
+   "frame": {
+    "x": 0,
+    "y": 592,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-wirbelsog 9.png",
+   "frame": {
+    "x": 296,
+    "y": 592,
+    "w": 296,
+    "h": 296
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 296,
+    "h": 296
+   },
+   "sourceSize": {
+    "w": 296,
+    "h": 296
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-wirbelsog.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 1184,
+   "h": 888
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 148,
+   "y": 148
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-wirbelsog",
+    "from": 0,
+    "to": 9,
+    "direction": "forward"
+   }
+  ]
+ }
+}

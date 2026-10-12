@@ -1,0 +1,339 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 1.png",
+   "frame": {
+    "x": 179,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 2.png",
+   "frame": {
+    "x": 358,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 3.png",
+   "frame": {
+    "x": 537,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 4.png",
+   "frame": {
+    "x": 0,
+    "y": 158,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 5.png",
+   "frame": {
+    "x": 179,
+    "y": 158,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 6.png",
+   "frame": {
+    "x": 358,
+    "y": 158,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 7.png",
+   "frame": {
+    "x": 537,
+    "y": 158,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 8.png",
+   "frame": {
+    "x": 0,
+    "y": 316,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 9.png",
+   "frame": {
+    "x": 179,
+    "y": 316,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 10.png",
+   "frame": {
+    "x": 358,
+    "y": 316,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-hammer-aufschlag-luft 11.png",
+   "frame": {
+    "x": 537,
+    "y": 316,
+    "w": 179,
+    "h": 158
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 179,
+    "h": 158
+   },
+   "sourceSize": {
+    "w": 179,
+    "h": 158
+   },
+   "pivot": {
+    "x": 0.49162011173184356,
+    "y": 0.31645569620253167
+   },
+   "duration": 63
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-hammer-aufschlag-luft.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 716,
+   "h": 474
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 88,
+   "y": 50
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-hammer-aufschlag-luft",
+    "from": 0,
+    "to": 11,
+    "direction": "forward"
+   }
+  ]
+ }
+}

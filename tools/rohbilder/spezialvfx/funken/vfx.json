@@ -1,0 +1,235 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-aufprall-funken 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 67,
+    "h": 48
+   },
+   "pivot": {
+    "x": 0.4925373134328358,
+    "y": 0.4583333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-aufprall-funken 1.png",
+   "frame": {
+    "x": 67,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 67,
+    "h": 48
+   },
+   "pivot": {
+    "x": 0.4925373134328358,
+    "y": 0.4583333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-aufprall-funken 2.png",
+   "frame": {
+    "x": 134,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 67,
+    "h": 48
+   },
+   "pivot": {
+    "x": 0.4925373134328358,
+    "y": 0.4583333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-aufprall-funken 3.png",
+   "frame": {
+    "x": 0,
+    "y": 48,
+    "w": 67,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 67,
+    "h": 48
+   },
+   "pivot": {
+    "x": 0.4925373134328358,
+    "y": 0.4583333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-aufprall-funken 4.png",
+   "frame": {
+    "x": 67,
+    "y": 48,
+    "w": 67,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 67,
+    "h": 48
+   },
+   "pivot": {
+    "x": 0.4925373134328358,
+    "y": 0.4583333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-aufprall-funken 5.png",
+   "frame": {
+    "x": 134,
+    "y": 48,
+    "w": 67,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 67,
+    "h": 48
+   },
+   "pivot": {
+    "x": 0.4925373134328358,
+    "y": 0.4583333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-aufprall-funken 6.png",
+   "frame": {
+    "x": 0,
+    "y": 96,
+    "w": 67,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 67,
+    "h": 48
+   },
+   "pivot": {
+    "x": 0.4925373134328358,
+    "y": 0.4583333333333333
+   },
+   "duration": 63
+  },
+  {
+   "filename": "fogreach-aufprall-funken 7.png",
+   "frame": {
+    "x": 67,
+    "y": 96,
+    "w": 67,
+    "h": 48
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 67,
+    "h": 48
+   },
+   "sourceSize": {
+    "w": 67,
+    "h": 48
+   },
+   "pivot": {
+    "x": 0.4925373134328358,
+    "y": 0.4583333333333333
+   },
+   "duration": 63
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-aufprall-funken.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 201,
+   "h": 144
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 33,
+   "y": 22
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-aufprall-funken",
+    "from": 0,
+    "to": 7,
+    "direction": "forward"
+   }
+  ]
+ }
+}

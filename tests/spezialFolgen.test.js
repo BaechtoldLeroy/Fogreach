@@ -143,7 +143,18 @@ function blick(H) {
   })())`));
 }
 
-/** Taktet, bis kein Zusatzbild mehr da ist; sammelt die gezeigten Bilder. */
+/** Wie viele Wirkbilder (Effekte, Nachbilder) gerade in der Szene stehen. */
+function wirkbilder(H) {
+  return H.run(`window.game.scene.getScene('GameScene').children.list.filter(function (o) {
+    return o.active && o.name === 'spezialVfx'; }).length`);
+}
+
+/**
+ * Taktet, bis kein Zusatzbild mehr da ist; sammelt die gezeigten Bilder.
+ * Danach weiter, bis auch die Wirkbilder weg sind (Reif und Risse bleiben
+ * etwas laenger liegen als die Figur sich bewegt) — `schritte` zaehlt nur
+ * die Folge.
+ */
 function zuEnde(H, max) {
   const gesehen = [];
   let ende = null, schritte = 0;
@@ -153,6 +164,7 @@ function zuEnde(H, max) {
     if (b.key && gesehen[gesehen.length - 1] !== b.key) gesehen.push(b.key);
     H.step(1);
   }
+  for (let i = 0; i < 200 && wirkbilder(H) > 0; i++) H.step(1);
   return { gesehen, ende, schritte };
 }
 
@@ -167,9 +179,11 @@ function aufgeraeumt(H, was, vorher) {
     return { sichtbar: player.visible, w: player.displayWidth, h: player.displayHeight,
              ox: player.originX, oy: player.originY,
              rest: sc.children.list.filter(function (o) { return o.name === 'spezialFolge'; }).length,
+             vfx: sc.children.list.filter(function (o) { return o.name === 'spezialVfx'; }).length,
              post: neu('postupdate', w.hoerer.post), shut: neu('shutdown', w.hoerer.shut) };
   })())`));
   assert.strictEqual(n.rest, 0, was + ': das Zusatzbild bleibt stehen');
+  assert.strictEqual(n.vfx, 0, was + ': ein Wirkbild bleibt stehen');
   assert.strictEqual(n.sichtbar, true, was + ': der Spieler bleibt unsichtbar');
   assert.strictEqual(n.post, 0, was + ': ein postupdate-Hoerer bleibt haengen');
   assert.strictEqual(n.shut, 0, was + ': ein shutdown-Hoerer bleibt haengen');
@@ -365,7 +379,8 @@ test('Vorrang: ein Schlag im Wirbel verdeckt die Drehung nicht, eine Rolle schon
 });
 
 // Hoerer der Spezialfolgen (in player.js mit spezialFolge gezeichnet).
-const ZAEHL = "function zaehl(sc, n) { return sc.events.listeners(n).filter(function (f) { return f.spezialFolge; }).length; }";
+// Die Wirkbilder (#174 Nachbesserung) zeichnen ihre Hoerer mit 'vfx_<effekt>'.
+const ZAEHL = "function zaehl(sc, n, nurFolge) { return sc.events.listeners(n).filter(function (f) { return f.spezialFolge && !(nurFolge && /^vfx_/.test(f.spezialFolge)); }).length; }";
 
 test('Szenenneustart mitten im Wirbel: kein Bild, kein Hoerer bleibt', async () => {
   vorbereiten(MIT, '06');
@@ -380,9 +395,12 @@ test('Szenenneustart mitten im Wirbel: kein Bild, kein Hoerer bleibt', async () 
   const waehrend = JSON.parse(MIT.run(`JSON.stringify((function () {
     var sc = window.game.scene.getScene('GameScene');
     ${ZAEHL}
-    return { post: zaehl(sc, 'postupdate'), shut: zaehl(sc, 'shutdown') };
+    return { post: zaehl(sc, 'postupdate', true), shut: zaehl(sc, 'shutdown', true),
+             alle: zaehl(sc, 'postupdate') };
   })())`));
   assert.deepStrictEqual([vorher.post, vorher.shut, waehrend.post, waehrend.shut], [0, 0, 1, 1], 'Hoerer des Wirbels');
+  // Dazu Staubring und Schwunglinien, je ein Hoerer.
+  assert.strictEqual(waehrend.alle, 3, 'Hoerer der Wirkbilder des Wirbels');
   loesen(MIT);
   MIT.run('player.__vorNeustart = true');
   MIT.run(`window.game.scene.getScene('GameScene').scene.restart()`);
@@ -394,7 +412,7 @@ test('Szenenneustart mitten im Wirbel: kein Bild, kein Hoerer bleibt', async () 
   const n = JSON.parse(MIT.run(`JSON.stringify((function () {
     var sc = window.game.scene.getScene('GameScene');
     ${ZAEHL}
-    return { rest: sc.children.list.filter(function (o) { return o.name === 'spezialFolge'; }).length,
+    return { rest: sc.children.list.filter(function (o) { return o.name === 'spezialFolge' || o.name === 'spezialVfx'; }).length,
              sichtbar: player.visible,
              // Hoerer, die noch auf ein Bild der alten Szene zeigen.
              post: zaehl(sc, 'postupdate'),

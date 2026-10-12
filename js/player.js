@@ -2762,6 +2762,16 @@ function beginChargedSlash() {
   if (_hammerAusholen) _hammerAusholen.ende();
   _hammerAusholen = _spezialZeigen(this, 'hammer', _getAimVector2(this), CHARGED_SLASH_MAX_CHARGE + 200,
     { von: 0, bis: SPEZIAL_HAMMER_SCHLAG - 1, laufzeit: CHARGED_SLASH_MIN_CHARGE });
+  // Dazu glimmt der hochgehaltene Flegel ueber dem Kopf, bis er niederfaehrt.
+  if (_hammerGlimmen) _hammerGlimmen.ende();
+  const _blick = _getAimVector2(this);
+  _hammerGlimmen = _vfxSpielen(this, 'hammer_glimmen', player.x, player.y, {
+    tiefe: 'luft', schleife: true, laufzeit: 500, dauer: CHARGED_SLASH_MAX_CHARGE + 200, skala: 2, aufbau: CHARGED_SLASH_MIN_CHARGE,
+    folgen: () => {
+      const u = angriffsUrsprung();
+      return { x: u.x + _blick.x * 10, y: u.y - player.displayHeight * 0.62 };
+    }
+  });
 
   if (chargeSlashMaxTimer) {
     chargeSlashMaxTimer.remove(false);
@@ -2777,6 +2787,13 @@ function beginChargedSlash() {
 // radiale Bodenrisse, Staub-Puffs, Screenshake (skaliert mit Ladung).
 function _hammerSlamFx(scene, x, y, radius, charge) {
   try {
+    // #174 (?spezial=neu): Druckwelle, Risse, Splitter und Staub als
+    // Pixelbilder statt Kreis, Ring und Linien. Erschuetterung und Klang bleiben.
+    if (_hammerSlamVfx(scene, x, y, radius)) {
+      if (scene.cameras && scene.cameras.main) { try { scene.cameras.main.shake(130, 0.004 + charge * 0.004); } catch (e) {} }
+      if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
+      return;
+    }
     const GOLD = 0xffcf6a, BRONZE = 0xb8862f, WHITE = 0xffffff;
     const T = scene.tweens;
     const kill = (o, dur) => { if (scene.time) scene.time.delayedCall(dur, () => { try { o.destroy(); } catch (e) {} }); };
@@ -2848,6 +2865,7 @@ function releaseChargedSlash(forceMaxCharge = false) {
   // #174 (?spezial=neu): der Flegel kracht herunter — der Einschlag oben
   // faellt genau jetzt, also gleich ab dem Schwung nach unten.
   if (_hammerAusholen) { _hammerAusholen.ende(); _hammerAusholen = null; }
+  if (_hammerGlimmen) { _hammerGlimmen.ende(); _hammerGlimmen = null; }
   _spezialZeigen(scene, 'hammer', forward, SPEZIAL_DAUER.hammer, { von: SPEZIAL_HAMMER_SCHLAG });
 
   // Tödlicher Stoß (Lethal Thrust): +25% crit chance
@@ -3423,6 +3441,7 @@ const SPEZIAL_DAUER = { hammer: 240, frost: 420, zyklon: 400, sprungFaktor: 2.4 
 // acht der Flegel hoch oben.
 const SPEZIAL_HAMMER_SCHLAG = 3;
 let _hammerAusholen = null;
+let _hammerGlimmen = null;   // Wirkbild am Flegel waehrend des Aufladens
 
 function spezialAn() {
   return !!(typeof window !== 'undefined' && window.DebugGate
@@ -3436,6 +3455,7 @@ function spezialSchluessel(angriff, dd, frame) {
 /** #174: Die Spezialfolgen mit dem Dungeon laden — nur mit ?spezial=neu. */
 function spezialBilderVorladen(loader) {
   if (!loader || !spezialAn()) return;
+  spezialVfxVorladen(loader);
   const textures = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
   Object.keys(SPEZIAL_FOLGEN).forEach((angriff) => {
     const dds = SPEZIAL_FOLGEN[angriff].gerichtet ? ['00', '01', '02', '03', '04', '05', '06', '07'] : [null];
@@ -3564,6 +3584,190 @@ if (typeof window !== 'undefined') {
 }
 
 // ============================================================
+// #174 Nachbesserung: Wirkbilder der Spezialangriffe (Testmodus ?spezial=neu)
+// ------------------------------------------------------------
+// Die Figur bewegt sich seit b380 mit eigener Bildfolge, die Wirkung drumherum
+// waren aber noch die gezeichneten Linien und Kreise (Saegeblatt-Scheiben,
+// Ringe, Spiralarme). Mit Flagge kommen dafuer Pixel-Effekte aus dem PixelLab
+// vfx_workbench (tools/spezialVfxBauen.js): je Effekt eine Zeile Bilder
+// unter assets/vfx/, der Anker in der Bildmitte.
+//
+// `radius` ist der Wirkradius IM BILD (Pixel): so weit reicht der Ring, die
+// Risse, der Sog. Im Spiel wird das Bild so skaliert, dass dieser Radius
+// genau die Reichweite des Angriffs trifft — man sieht, wo er wirkt.
+//
+// Boden-Effekte (Ringe, Risse, Reif, Sog, Staub) liegen unter den Figuren,
+// Luft-Effekte (Schwunglinien, Splitter, Funken, Schattenwolke) darueber.
+// Fehlt ein Bild, bleibt der Angriff bei seinen alten Linien.
+// ============================================================
+const SPEZIAL_VFX = {
+  wirbel_boden:   { w: 128, h: 128, n: 8, radius: 54 },   // Staubring um die Fuesse (Schleife)
+  wirbel_luft:    { w: 128, h: 128, n: 8, radius: 54 },   // Schwunglinien um den Koerper (Schleife)
+  hammer_glimmen: { w: 48, h: 48, n: 8 },                 // Funkeln am Flegel beim Aufladen (Schleife)
+  hammer_boden:   { w: 140, h: 140, n: 10, radius: 64 },  // Druckwelle und gluehende Risse
+  hammer_luft:    { w: 182, h: 216, n: 12, radius: 64 },  // Blitz, Staubkranz, Steinsplitter
+  staub:          { w: 40, h: 36, n: 8 },                 // Staubtritt an den Fuessen (Ansturm)
+  funken:         { w: 68, h: 52, n: 8 },                 // Aufprall-Funken am Getroffenen
+  schatten:       { w: 60, h: 54, n: 10 },                // Schattenwolke bei Absprung und Landung
+  frost:          { w: 196, h: 196, n: 10, radius: 90 },  // Frostring, Eiskristalle, Reif
+  zyklon:         { w: 296, h: 296, n: 10, radius: 142 }  // Nebelsog, der sich zusammenzieht
+};
+
+function _vfxTiefe(wo) {
+  const T = window.WELT_TIEFEN || {};
+  // Boden: ueber Beute und Schein (45), unter dem Gegnerlayer (50).
+  // Luft: ueber dem Spieler (100) und den angehobenen Requisiten (100.5).
+  return wo === 'boden' ? (T.BODEN_BEUTE || 45) + 1 : (T.SPIELER || 100) + 2;
+}
+
+function spezialVfxSchluessel(name) {
+  return 'spezialvfx_' + name;
+}
+
+/** Sind die Wirkbilder dieser Effekte geladen? Ohne Flagge nie. */
+function _vfxDa(scene, ...namen) {
+  if (!spezialAn() || !scene || !scene.textures) return false;
+  return namen.every((n) => scene.textures.exists(spezialVfxSchluessel(n)));
+}
+
+/** #174: Die Wirkbilder mit dem Dungeon laden — nur mit ?spezial=neu. */
+function spezialVfxVorladen(loader) {
+  if (!loader || typeof loader.spritesheet !== 'function' || !spezialAn()) return;
+  const textures = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
+  Object.keys(SPEZIAL_VFX).forEach((name) => {
+    const key = spezialVfxSchluessel(name);
+    if (textures?.exists?.(key)) return;
+    const d = SPEZIAL_VFX[name];
+    loader.spritesheet(key, `assets/vfx/spezial_${name}.png`, { frameWidth: d.w, frameHeight: d.h, endFrame: d.n - 1 });
+  });
+}
+
+/**
+ * Spielt ein Wirkbild ab. Bildmitte = Stelle (x, y).
+ *
+ * @param {object} wie
+ * @param {'boden'|'luft'} wie.tiefe
+ * @param {number} wie.laufzeit  ms fuer alle Bilder (Schleife: eine Runde)
+ * @param {number} [wie.radius]  Wirkradius in der Welt -> Skala (sonst wie.skala, Vorgabe 1.5)
+ * @param {boolean} [wie.schleife] wiederholen, bis wie.dauer um ist oder ende() kommt
+ * @param {number} [wie.dauer]   ms, so lange steht eine Schleife
+ * @param {number} [wie.halten]  ms, die das letzte Bild danach ausblendet (Reif, Risse)
+ * @param {number} [wie.aufbau]  ms, in denen es aus 40 % Groesse aufgeht (Schleife)
+ * @param {number} [wie.abbau]   ms vor dem Ende, in denen es ausblendet (Schleife)
+ * @param {function} [wie.folgen] () => {x, y}: die Stelle in jedem Bild neu
+ * @returns {{bild, ende: function}|null} null ohne Flagge oder ohne Bild
+ */
+function _vfxSpielen(scene, name, x, y, wie) {
+  wie = wie || {};
+  if (!_vfxDa(scene, name)) return null;
+  const d = SPEZIAL_VFX[name];
+  const key = spezialVfxSchluessel(name);
+  const animKey = key + (wie.schleife ? '_schleife' : '_einmal');
+  if (!scene.anims.exists(animKey)) {
+    scene.anims.create({ key: animKey, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: d.n - 1 }), frameRate: 24, repeat: wie.schleife ? -1 : 0 });
+  }
+  const skala = (wie.radius && d.radius) ? wie.radius / d.radius : (wie.skala || 1.5);
+  const bild = scene.add.sprite(x, y, key, 0)
+    .setOrigin(0.5, 0.5)
+    .setScale(skala)
+    .setDepth(_vfxTiefe(wie.tiefe))
+    .setName('spezialVfx')
+    .setData('vfx', name);
+  bild.play({ key: animKey, frameRate: d.n / (Math.max(1, wie.laufzeit) / 1000), repeat: wie.schleife ? -1 : 0 });
+
+  const start = scene.time.now;
+  let vorbei = false;
+  let liegtSeit = null;   // Einmal-Effekt durchgespielt: ab hier blendet er aus
+  const folgen = () => {
+    if (!bild.active) { ende(); return; }
+    // Was am Spieler haengt, verschwindet mit seinem Tod (wie die Folgen).
+    if (wie.folgen && typeof playerHealth === 'number' && playerHealth <= 0) { ende(); return; }
+    if (wie.folgen) { const p = wie.folgen(); bild.setPosition(p.x, p.y); }
+    if (wie.schleife) {
+      const t = scene.time.now - start;
+      const auf = wie.aufbau ? Math.min(1, t / wie.aufbau) : 1;
+      const ab = (wie.abbau && wie.dauer) ? Phaser.Math.Clamp((wie.dauer - t) / wie.abbau, 0, 1) : 1;
+      bild.setScale(skala * (0.4 + 0.6 * auf));
+      bild.setAlpha(Math.min(auf, ab));
+    } else if (liegtSeit !== null) {
+      // Das letzte Bild bleibt kurz liegen und blendet aus (Reif, kalte Risse).
+      const k = (scene.time.now - liegtSeit) / (wie.halten || 1);
+      if (k >= 1) { ende(); return; }
+      bild.setAlpha(1 - k);
+    }
+  };
+  function ende() {
+    if (vorbei) return;
+    vorbei = true;
+    scene.events.off('postupdate', folgen);
+    scene.events.off('shutdown', ende);
+    if (bild.active) bild.destroy();
+  }
+  folgen.spezialFolge = ende.spezialFolge = 'vfx_' + name;
+  scene.events.on('postupdate', folgen);
+  // Raumwechsel/Tod per Szenenneustart: das Bild geht mit der Szene, der Hoerer nicht.
+  scene.events.once('shutdown', ende);
+  if (wie.schleife) {
+    if (wie.dauer) scene.time.delayedCall(wie.dauer, ende);
+  } else {
+    bild.once('animationcomplete', () => { liegtSeit = scene.time.now; });
+  }
+  folgen();
+  return { bild, ende };
+}
+
+/**
+ * Nachbild: ein Abzug der Figur, wie sie gerade aussieht (Spezialfolge oder
+ * Spieler), bleibt stehen und verblasst — Schattenspur von Ansturm und
+ * Schattenschritt. Liegt knapp hinter dem Spieler.
+ */
+function _nachbild(scene, quelle, tint, alpha, dauer) {
+  if (!scene || !quelle || !quelle.active || !quelle.texture) return null;
+  const g = scene.add.image(quelle.x, quelle.y, quelle.texture.key, quelle.frame.name)
+    .setOrigin(quelle.originX, quelle.originY)
+    .setScale(quelle.scaleX, quelle.scaleY)
+    .setFlipX(!!quelle.flipX)
+    .setDepth((player ? player.depth : 100) - 0.6)
+    .setTint(tint)
+    .setAlpha(alpha)
+    .setName('spezialVfx')
+    .setData('vfx', 'nachbild');
+  const t0 = scene.time.now;
+  const blassen = () => {
+    const k = (scene.time.now - t0) / dauer;
+    if (!g.active || k >= 1) { weg(); return; }
+    g.setAlpha(alpha * (1 - k));
+  };
+  function weg() {
+    scene.events.off('postupdate', blassen);
+    scene.events.off('shutdown', weg);
+    if (g.active) g.destroy();
+  }
+  blassen.spezialFolge = weg.spezialFolge = 'vfx_nachbild';
+  scene.events.on('postupdate', blassen);
+  scene.events.once('shutdown', weg);
+  return g;
+}
+
+/** Fussstaub und Nachbild des Ansturms, je Takt (40 ms). */
+function _sturmSpur(scene, folge, dir, takt) {
+  const quelle = (folge && folge.bild && folge.bild.active) ? folge.bild : player;
+  _nachbild(scene, quelle, 0x3a5a9a, 0.55, 220);
+  // Staub nur jeden zweiten Takt, etwas hinter den Fuessen.
+  if (takt % 2 === 0) {
+    _vfxSpielen(scene, 'staub', player.x - dir.x * 10, player.y - dir.y * 6, { tiefe: 'boden', laufzeit: 360, skala: 1.4 });
+  }
+}
+
+/** Der Hammer schlaegt ein: Druckwelle und Risse am Boden, Splitter und Staub darueber. */
+function _hammerSlamVfx(scene, x, y, radius) {
+  if (!_vfxDa(scene, 'hammer_boden', 'hammer_luft')) return false;
+  _vfxSpielen(scene, 'hammer_boden', x, y, { tiefe: 'boden', laufzeit: 440, radius, halten: 260 });
+  _vfxSpielen(scene, 'hammer_luft', x, y, { tiefe: 'luft', laufzeit: 520, radius });
+  return true;
+}
+
+// ============================================================
 // === 060 Strang SCHATTEN — Helper-Funktionen ===
 // Saubere, selbstständige Helfer für die vier neuen SkillTree-
 // Abilities (charge / teleportDash / heilwunde / deathBlow).
@@ -3624,7 +3828,11 @@ function shadowCharge() {
   if (player.body) player.body.setMaxVelocity(dashSpeed, dashSpeed);
   if (player.setVelocity) player.setVelocity(dashDir.x * dashSpeed, dashDir.y * dashSpeed);
   // #174 (?spezial=neu): Lauf mit gesenkter Schulter, so lang wie der Ansturm.
-  _spezialZeigen(scene, 'sturm', dashDir, dashDuration);
+  var sturmFolge = _spezialZeigen(scene, 'sturm', dashDir, dashDuration);
+  // #174 (?spezial=neu): Schattenspur (Nachbilder), Staub an den Fuessen und
+  // Aufprall-Funken statt der getoenten Partikelspur.
+  var sturmVfx = _vfxDa(scene, 'staub', 'funken');
+  var sturmTakt = 0;
 
   var chargeHits = new Set();
   var tmp = new Phaser.Math.Vector2();
@@ -3649,6 +3857,7 @@ function shadowCharge() {
       if (proj > dashDistance + lineRadius) return;
 
       chargeHits.add(enemy);
+      if (sturmVfx) _vfxSpielen(scene, 'funken', enemy.x, enemy.y, { tiefe: 'luft', laufzeit: 340, skala: 1.5 });
       var res = dealDamageToEnemy(scene, enemy, 0.8 * dmgMult, 'charge');
       handleEnemyHit(scene, enemy, {
         tint: res && res.isCrit ? 0xfff2a6 : 0x66ccff,
@@ -3666,7 +3875,8 @@ function shadowCharge() {
   };
 
   applyLineDamage();
-  if (window.particleFactory && player) {
+  if (sturmVfx) _sturmSpur(scene, sturmFolge, dashDir, sturmTakt++);
+  else if (window.particleFactory && player) {
     try { window.particleFactory.abilityTrail(player.x, player.y, 0x66ccff); } catch (e) {}
   }
   var tick = 40;
@@ -3675,7 +3885,8 @@ function shadowCharge() {
     scene.time.delayedCall(i * tick, function () {
       if (!isDashing || !player || !player.active) return;
       applyLineDamage();
-      if (window.particleFactory) {
+      if (sturmVfx) _sturmSpur(scene, sturmFolge, dashDir, sturmTakt++);
+      else if (window.particleFactory) {
         try { window.particleFactory.abilityTrail(player.x, player.y, 0x66ccff); } catch (e) {}
       }
     });
@@ -3696,6 +3907,10 @@ function shadowCharge() {
 function _blinkPoof(scene, x, y, mode) {
   try {
     if (!scene || !scene.add) return;
+    // #174 (?spezial=neu): eine Schattenwolke aus Pixelrauch um den Koerper,
+    // bei Absprung und Landung gleich, statt Ring und Strahlen.
+    const h = player ? player.displayHeight : 68;
+    if (_vfxSpielen(scene, 'schatten', x, y - h * 0.42, { tiefe: 'luft', laufzeit: 420, skala: 1.6 })) return;
     const PURPLE = 0x9b6bff, LIGHT = 0xd6bcff;
     const T = scene.tweens;
     const ring = scene.add.graphics().setDepth(73);
@@ -3744,7 +3959,18 @@ function shadowTeleportDash() {
   if (player.setTint) player.setTint(0x9966ff);
   // #174 (?spezial=neu): Absprung im (fast unsichtbaren) Blink, die Landung
   // danach am Ziel — darum laenger als der Blink selbst.
-  _spezialZeigen(scene, 'sprung', dir, duration * SPEZIAL_DAUER.sprungFaktor);
+  var sprungFolge = _spezialZeigen(scene, 'sprung', dir, duration * SPEZIAL_DAUER.sprungFaktor);
+  // #174 (?spezial=neu): kurze Schattenspur — drei Nachbilder entlang des
+  // Blinks, deutlicher als die fast unsichtbare Figur selbst.
+  if (_vfxDa(scene, 'schatten')) {
+    [0, 1, 2].forEach(function (k) {
+      scene.time.delayedCall(k * duration / 3, function () {
+        if (!player || !player.active) return;
+        var q = (sprungFolge && sprungFolge.bild && sprungFolge.bild.active) ? sprungFolge.bild : player;
+        _nachbild(scene, q, 0x5a3a9a, 0.5 - k * 0.1, 260);
+      });
+    });
+  }
   if (player.body) player.body.setMaxVelocity(speedPxPerSec, speedPxPerSec);
   if (player.setVelocity) player.setVelocity(dir.x * speedPxPerSec, dir.y * speedPxPerSec);
 
@@ -4611,8 +4837,15 @@ function castCycloneStrike() {
   // #174 (?spezial=neu): die Figur zieht mit beiden Armen heran.
   _spezialZeigen(scene, 'zyklon', null, SPEZIAL_DAUER.zyklon);
 
+  // #174 (?spezial=neu): Nebelschlieren als Pixelbild, die sich vom Rand der
+  // Reichweite zur Figur zusammenziehen — am Boden, unter den Gegnern, die
+  // gerade herangezogen werden.
+  const sogVfx = _vfxSpielen(scene, 'zyklon', player.x, player.y,
+    { tiefe: 'boden', laufzeit: 380, radius, folgen: () => ({ x: player.x, y: player.y }) });
+
   // --- Vortex-Visual: spiralige, nach innen rotierende Sog-Arme + Ring ---
-  try {
+  // (Rueckfall ohne Wirkbild)
+  if (!sogVfx) try {
     const swirl = scene.add.graphics().setDepth(70);
     let a0 = 0, life = 0;
     const arms = 4, turns = 2.2;
@@ -4678,7 +4911,11 @@ function castFrostNova() {
     else if (scene.time) scene.time.delayedCall(dur, () => { try { obj.destroy(); } catch (e) {} });
   };
 
-  try {
+  // #174 (?spezial=neu): Frostring, Eiskristalle und Reif als Pixelbild am
+  // Boden; der Ring laeuft genau bis zur Reichweite, der Reif bleibt kurz liegen.
+  // Ohne Bild (oder ohne Flagge) die alten gezeichneten Ringe und Kristalle.
+  const frostVfx = _vfxSpielen(scene, 'frost', cx, cy, { tiefe: 'boden', laufzeit: 420, radius: range, halten: 380 });
+  if (!frostVfx) try {
     // 1) Doppel-Schockwelle (weiß außen + cyan innen, leicht gestaffelt)
     const ring1 = scene.add.graphics().setDepth(70);
     ring1.lineStyle(4, WHITE, 0.9); ring1.strokeCircle(0, 0, range); ring1.setPosition(cx, cy).setScale(0.1);
@@ -4775,11 +5012,23 @@ function castWhirlwind() {
   if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
   // #174 (?spezial=neu): die Figur dreht sich, solange der Kanal laeuft.
   _spezialZeigen(scene, 'wirbel', null, durationMs, { schleife: true });
+  // #174 (?spezial=neu): statt der gezeichneten Saegeblaetter ein Staubring
+  // an den Fuessen und Schwunglinien um den Koerper, eine Runde je
+  // Koerperdrehung. Der Ring trifft die Reichweite der Ticks.
+  const wirbelVfx = _vfxDa(scene, 'wirbel_boden', 'wirbel_luft');
+  if (wirbelVfx) {
+    const schleife = { schleife: true, dauer: durationMs, laufzeit: SPEZIAL_WIRBEL_RUNDE, radius: range, aufbau: 200, abbau: 160 };
+    _vfxSpielen(scene, 'wirbel_boden', player.x, player.y,
+      Object.assign({ tiefe: 'boden', folgen: () => ({ x: player.x, y: player.y }) }, schleife));
+    _vfxSpielen(scene, 'wirbel_luft', player.x, player.y,
+      Object.assign({ tiefe: 'luft', folgen: () => angriffsUrsprung() }, schleife));
+  }
 
   // easeOutBack für den "Deploy"-Overshoot beim Hochdrehen.
   const easeBack = (t) => { const c1 = 1.9, c3 = c1 + 1; const u = t - 1; return 1 + c3 * u * u * u + c1 * u * u; };
 
-  const gfx = scene.add.graphics().setDepth(69);
+  // Die gezeichneten Scheiben nur ohne Wirkbilder (Rueckfall).
+  const gfx = wirbelVfx ? null : scene.add.graphics().setDepth(69);
   let angle = 0;
   let elapsed = 0;
   // Eine rotierende Klingenscheibe mit Motion-Blur-Trail zeichnen.
@@ -4804,7 +5053,7 @@ function castWhirlwind() {
     }
   };
 
-  const spinTimer = scene.time.addEvent({ delay: 16, loop: true, callback: () => {
+  const spinTimer = wirbelVfx ? null : scene.time.addEvent({ delay: 16, loop: true, callback: () => {
     if (!player || !player.active) { try { gfx.destroy(); } catch (e) {} spinTimer.remove(); return; }
     elapsed += 16;
     const up = Math.min(1, elapsed / 240);                         // Hochdrehen 0..240ms
@@ -4823,7 +5072,7 @@ function castWhirlwind() {
     drawDisc(angle,  1, outerBlades, r * 0.66, r,        3.5, 0.9 * aFac, true);
     drawDisc(angle, -1, innerBlades, r * 0.12, r * 0.45, 3,   0.85 * aFac, false);
   }});
-  if (window.particleFactory) { try { window.particleFactory.abilityTrail(player.x, player.y, STEEL); } catch (e) {} }
+  if (window.particleFactory && !wirbelVfx) { try { window.particleFactory.abilityTrail(player.x, player.y, STEEL); } catch (e) {} }
 
   // Die passiven Knoten des Strangs haengen am Wirbel — und zwar EINMAL je
   // Einsatz, nicht je Tick. Der Kanal tickt sieben- bis elfmal; wuerde jeder
@@ -4900,7 +5149,7 @@ function castWhirlwind() {
     }
   }});
 
-  scene.time.delayedCall(durationMs, () => { try { gfx.destroy(); } catch (e) {} try { spinTimer.remove(); } catch (e) {} });
+  if (gfx) scene.time.delayedCall(durationMs, () => { try { gfx.destroy(); } catch (e) {} try { spinTimer.remove(); } catch (e) {} });
 }
 window.castWhirlwind = castWhirlwind;
 

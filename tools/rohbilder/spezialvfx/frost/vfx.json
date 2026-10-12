@@ -1,0 +1,287 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-frostnova-boden 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-frostnova-boden 1.png",
+   "frame": {
+    "x": 196,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-frostnova-boden 2.png",
+   "frame": {
+    "x": 392,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-frostnova-boden 3.png",
+   "frame": {
+    "x": 588,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-frostnova-boden 4.png",
+   "frame": {
+    "x": 0,
+    "y": 196,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-frostnova-boden 5.png",
+   "frame": {
+    "x": 196,
+    "y": 196,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-frostnova-boden 6.png",
+   "frame": {
+    "x": 392,
+    "y": 196,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-frostnova-boden 7.png",
+   "frame": {
+    "x": 588,
+    "y": 196,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-frostnova-boden 8.png",
+   "frame": {
+    "x": 0,
+    "y": 392,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  },
+  {
+   "filename": "fogreach-frostnova-boden 9.png",
+   "frame": {
+    "x": 196,
+    "y": 392,
+    "w": 196,
+    "h": 196
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 196,
+    "h": 196
+   },
+   "sourceSize": {
+    "w": 196,
+    "h": 196
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "duration": 42
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-frostnova-boden.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 784,
+   "h": 588
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 98,
+   "y": 98
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-frostnova-boden",
+    "from": 0,
+    "to": 9,
+    "direction": "forward"
+   }
+  ]
+ }
+}
