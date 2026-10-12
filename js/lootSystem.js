@@ -1347,6 +1347,27 @@ if (window.i18n) {
    * @param {number} iLevel  Fundtiefe des Stuecks
    * @returns {number} hoechste erlaubte Stufe (1 blau, 2 gelb, 3 orange)
    */
+  /**
+   * Die Tiefe, auf der gerade gefunden wird — nur im laufenden Dungeon.
+   *
+   * Der Deckel hing am iLevel, und das ist bei Truhen und Ereignissen
+   * GEHOBEN (grosse Belohnungstruhe Tiefe + 8, Schatz Tiefe + 5, Brunnen
+   * Tiefe + 3). Auf Tiefe 1 wuerfelte die Truhe nach dem Raeumen so auf
+   * iLevel 9 — und der Deckel liess Gelb und Orange durch. Der Bonus soll
+   * die Werte heben, nicht die Zusage "auf Tiefe 1-3 nichts ueber Blau"
+   * brechen. Ausserhalb des Dungeons (Laden, Blindkauf im Hub): unbegrenzt,
+   * dort zaehlt das iLevel wie bisher.
+   */
+  function _fundTiefe() {
+    try {
+      var g = (typeof window !== 'undefined') ? window.game : null;
+      var imDungeon = !!(g && g.scene && typeof g.scene.isActive === 'function' && g.scene.isActive('GameScene'));
+      var d = (typeof window !== 'undefined') ? window.DUNGEON_DEPTH : null;
+      if (imDungeon && typeof d === 'number' && d > 0) return d;
+    } catch (e) {}
+    return Infinity;
+  }
+
   function tierDeckel(iLevel) {
     var l = (typeof iLevel === 'number' && isFinite(iLevel)) ? iLevel : 1;
     if (l <= 3) return 1;
@@ -1376,7 +1397,10 @@ if (window.i18n) {
       ? forceTier : _rollTier(iLevel, Math.random, qualityBias);
     // Auch erzwungene Stufen (Ereignisse, Elite-Beute, Laden) gehen durch den
     // Deckel — sonst haette die Zusage "nichts Oranges auf Tiefe 1-3" Loecher.
-    const tier = (opts && opts.ohneDeckel) ? gewuerfelt : Math.min(gewuerfelt, tierDeckel(iLevel));
+    // Gedeckelt nach der echten Fundtiefe, wenn sie flacher ist als das
+    // (durch Truhe/Ereignis gehobene) iLevel — siehe _fundTiefe.
+    const tier = (opts && opts.ohneDeckel) ? gewuerfelt
+      : Math.min(gewuerfelt, tierDeckel(Math.min(iLevel, _fundTiefe())));
     const affixCount = tier;
     const affixes = rollAffixes(iLevel, affixCount, Math.random, base.type);
 

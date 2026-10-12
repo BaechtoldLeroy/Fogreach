@@ -66,3 +66,40 @@ test('Der Opferstein darf am Deckel vorbei — er behaelt die Seltenheit', () =>
   assert.strictEqual(ohne.tier, 2, 'der Umwurf wurde gedeckelt');
   assert.strictEqual(LS.rollItem(null, 1, 2).tier, 1, 'ohne die Ausnahme greift der Deckel nicht mehr');
 });
+
+// ---------------------------------------------------------------------------
+// Der Deckel gilt nach der ECHTEN Tiefe, nicht nach dem gehobenen iLevel.
+// Gemeldet: "ein seltenes Item aus der Truhe, weil ich einen Raum gecleared
+// habe, auf Tiefe 1". Die grosse Belohnungstruhe wuerfelt mit Tiefe + 8
+// (main.js breakDestructibleObstacle), auf Tiefe 1 also iLevel 9 — und
+// tierDeckel(9) liess Orange zu. Im laufenden Spiel geprueft.
+// ---------------------------------------------------------------------------
+test('Im Dungeon auf Tiefe 1 bleibt auch eine Truhe mit iLevel 9 blau; im Hub (Laden) nicht gedeckelt', async () => {
+  const { launchDungeon, launch } = require('../tools/headless/index.js');
+  const D = await launchDungeon({ depth: 1 });
+  try {
+    const r = D.run(`(function () {
+      var out = { tiefe: window.DUNGEON_DEPTH, stufen: {}, ilevel: null };
+      for (var i = 0; i < 60; i++) {
+        var it = window.LootSystem.rollItem(null, 9, 1 + (i % 3));   // wie die Truhe: erzwungen 1..3
+        out.stufen[it.tier] = (out.stufen[it.tier] || 0) + 1;
+        out.ilevel = it.iLevel || it.itemLevel;
+      }
+      window.DUNGEON_DEPTH = 8;
+      out.tief = window.LootSystem.rollItem(null, 9, 3).tier;
+      window.DUNGEON_DEPTH = 1;
+      return JSON.stringify(out);
+    })()`);
+    const o = JSON.parse(r);
+    assert.strictEqual(o.tiefe, 1);
+    assert.strictEqual(JSON.stringify(Object.keys(o.stufen)), '["1"]', 'auf Tiefe 1 fielen Stufen ' + JSON.stringify(o.stufen));
+    assert.strictEqual(o.ilevel, 9, 'der Truhenbonus hebt die Werte nicht mehr (iLevel ' + o.ilevel + ')');
+    assert.strictEqual(o.tief, 3, 'auf Tiefe 8 wurde Orange gedeckelt');
+  } finally { await D.shutdown(); }
+  const H = await launch({ renderer: 'canvas', search: '?autostart=1' });
+  try {
+    assert.ok(await H.waitForScene('HubSceneV2'), 'Hub nicht erreicht');
+    const t = H.run(`window.DUNGEON_DEPTH = 1; window.LootSystem.rollItem(null, 9, 3).tier`);
+    assert.strictEqual(t, 3, 'im Hub (Laden) wurde nach der alten Dungeon-Tiefe gedeckelt');
+  } finally { await H.shutdown(); }
+});
