@@ -371,3 +371,32 @@ test('Begruessung: jeder NPC in seinem Ton, Fassungen wechseln', () => {
     assert.strictEqual(gruss(angebotsTexte(npc), titel).length, 0, npc + ': Begruessung beim zweiten Gespraech');
   });
 });
+
+test('Begruessung: nach dem Abgeben beim NPC keine zweite Wuerdigung desselben Auftrags', () => {
+  // Das Abgabegespraech wuerdigt den Auftrag schon. Bis b413 begann das
+  // naechste Angebot trotzdem mit "Dein Erfolg bei ..." ueber denselben.
+  stand({ aldric_cleanup: FERTIG, aldric_patrol: FERTIG });
+  H.run(`(function () {
+    var sc = ${hub}, qs = window.questSystem;
+    qs.acceptQuest('einfuehrung_markt');
+    var q = (qs.getActiveQuests() || []).filter(function (x) { return x.id === 'einfuehrung_markt'; })[0];
+    (q.objectives || []).forEach(function (o) { o.current = o.required; });
+    var n = sc.npcs.filter(function (x) { return x.data.id === 'mara'; })[0];
+    sc._handleDialogueChoice('complete', n.data, '', [], 'turnin', q, 0, null);
+    sc._dialogOpen = false;
+    while (window.storySystem.consumePendingEvent()) {}
+  })()`);
+  assert.strictEqual(H.run(`window.questSystem.isQuestCompleted
+    ? window.questSystem.isQuestCompleted('einfuehrung_markt')
+    : window.questSystem.getQuestSaveData().quests.einfuehrung_markt.status === 'completed'`), true,
+    'der Auftrag wurde nicht abgegeben — Test misst nichts');
+  const titel = H.run(`window.i18n.t('quest.einfuehrung_markt.title')`);
+  const texte = angebotsTexte('mara');
+  assert.ok(texte.length > 0, 'Mara bietet nichts an — Test misst nichts');
+  assert.strictEqual(gruss(texte, titel).length, 0, 'Gruss nach der Abgabe: ' + texte.join(' || '));
+});
+
+test('Kein NPC sagt mehr "hat mir Mut gemacht"', () => {
+  const quelle = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'scenes', 'HubSceneV2.js'), 'utf8');
+  assert.ok(!/Mut gemacht|gave me courage/.test(quelle), 'der abgenutzte Satz steht noch drin');
+});

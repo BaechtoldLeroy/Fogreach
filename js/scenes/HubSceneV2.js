@@ -8,7 +8,7 @@ if (window.i18n) {
     'hub.dialog.npc_quest.completed_suffix': '— Aufgabe abgeschlossen!',
     // Begruessung nach einem Abschluss — je NPC eigene Fassungen, reihum
     // (HubSceneV2._grussNachAbschluss). Fehlt ein NPC, gilt 'allgemein'.
-    'hub.dialog.npc_quest.greeting_returning.allgemein.1': 'Gut, dass Du wieder da bist. Dein Erfolg bei "{title}" hat mir Mut gemacht. Es gibt mehr zu tun.',
+    'hub.dialog.npc_quest.greeting_returning.allgemein.1': 'Gut, dass Du wieder da bist. "{title}" ist erledigt, das hat sich herumgesprochen. Es gibt mehr zu tun.',
     'hub.dialog.npc_quest.greeting_returning.allgemein.2': 'Du bist zurück. Nach "{title}" traue ich Dir mehr zu als vorher. Hör zu.',
     'hub.dialog.npc_quest.greeting_returning.aldric.1': '(Er blättert, ohne aufzusehen.) "{title}" — erledigt und abgelegt. Der Rat merkt sich Zuverlässigkeit. Die nächste Akte liegt schon bereit.',
     'hub.dialog.npc_quest.greeting_returning.aldric.2': 'Dein Bericht zu "{title}" liegt beim Rat. Man war zufrieden, soweit der Rat zufrieden sein kann. Weiter.',
@@ -75,7 +75,7 @@ if (window.i18n) {
     'hub.dialog.greeting': 'Talk',
     'hub.dialog.npc_quest.new_task_suffix': '— New Task',
     'hub.dialog.npc_quest.completed_suffix': '— Task Complete!',
-    'hub.dialog.npc_quest.greeting_returning.allgemein.1': 'Good to see you again. Your success on "{title}" gave me courage. There is more to do.',
+    'hub.dialog.npc_quest.greeting_returning.allgemein.1': 'Good to see you again. Word of "{title}" has got around. There is more to do.',
     'hub.dialog.npc_quest.greeting_returning.allgemein.2': 'You are back. After "{title}" I trust you more than before. Listen.',
     'hub.dialog.npc_quest.greeting_returning.aldric.1': '(He leafs through papers without looking up.) "{title}" — done and filed. The Council remembers reliability. The next file is already waiting.',
     'hub.dialog.npc_quest.greeting_returning.aldric.2': 'Your report on "{title}" is with the Council. They were pleased, as far as the Council can be pleased. Onward.',
@@ -2524,7 +2524,12 @@ class HubSceneV2 extends Phaser.Scene {
       this._refreshQuestIndicators();
       this._closeDialog(keyClosers);
     } else if (action === 'complete') {
-      if (qs && questData) qs.completeQuest(questData.id);
+      if (qs && questData) {
+        qs.completeQuest(questData.id);
+        // Das Abgabegespraech hat den Auftrag gerade gewuerdigt — ein Gruss
+        // darueber beim naechsten Angebot waere dieselbe Nachricht zweimal.
+        if (typeof qs.setFlag === 'function') qs.setFlag('gruss_' + questData.id);
+      }
       this._refreshQuestIndicators();
       this._closeDialog(keyClosers);
     } else if (action === 'decline') {
