@@ -200,6 +200,48 @@ function pickAccessibleSpawnPosition(scene, boundsRect, margin, maxAttempts = 6,
   return null;
 }
 
+/**
+ * Spawn-Bug B: Gegnerplatz aus den erreichbaren Zellen des Raums, gewaehlt
+ * nach SpawnRegeln.waehleGegnerPlatz (Mindestabstand zum Spieler, Abstand zu
+ * den schon stehenden Gegnern). Die gefuetterte Liste liegt offen an
+ * scene.__letzteGegnerWahl, damit Tests sehen, WOMIT die Regel arbeitet.
+ */
+function gegnerPlatzNachRegel(scene, boundsRect, margin, minDist) {
+  const R = window.SpawnRegeln;
+  const grid = scene && scene._accessibleArea;
+  if (!R || !grid) return null;
+  // Alle erreichbaren Stehplaetze, nicht nur die wandfernen spawnCandidates:
+  // im ThroneRoom blieben von denen weit weg vom Spieler nur zwei, drei
+  // Zellen, und die ganze Welle stapelte sich darauf (0 px auseinander).
+  const pool = (grid.reachableCells && grid.reachableCells.length) ? grid.reachableCells
+    : (grid.spawnCandidates && grid.spawnCandidates.length) ? grid.spawnCandidates : grid.fallbackCandidates;
+  if (!pool || !pool.length) return null;
+  const left = boundsRect.left + margin, right = boundsRect.right - margin;
+  const top = boundsRect.top + margin, bottom = boundsRect.bottom - margin;
+  const kandidaten = pool.filter((c) => c.x >= left && c.x <= right && c.y >= top && c.y <= bottom);
+  const vorhandene = [];
+  try {
+    if (typeof enemies !== 'undefined' && enemies && typeof enemies.getChildren === 'function') {
+      enemies.getChildren().forEach((e) => { if (e && e.active) vorhandene.push({ x: e.x, y: e.y }); });
+    }
+  } catch (_) { /* Gruppe noch nicht bereit */ }
+  const spieler = (player && player.active) ? { x: player.x, y: player.y } : null;
+  scene.__letzteGegnerWahl = {
+    kandidaten: kandidaten.length,
+    mindest: minDist,
+    weitGenug: spieler ? kandidaten.filter((k) => Math.hypot(k.x - spieler.x, k.y - spieler.y) >= minDist).length : kandidaten.length,
+  };
+  // isSpawnBlocked ist teuer: erst nach der Wahl pruefen, Verbautes streichen.
+  for (let versuch = 0; versuch < 4 && kandidaten.length; versuch++) {
+    const p = R.waehleGegnerPlatz(kandidaten, spieler, vorhandene, { mindest: minDist });
+    if (!p) return null;
+    if (!isSpawnBlocked(p.x, p.y)) return p;
+    const i = kandidaten.findIndex((k) => k.x === p.x && k.y === p.y);
+    if (i >= 0) kandidaten.splice(i, 1);
+  }
+  return null;
+}
+
 function getDifficultyMultiplierValue() {
   const fn = typeof window?.getDifficultyMultiplier === 'function'
     ? window.getDifficultyMultiplier
@@ -277,14 +319,27 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
   }
   x = bestX;
   y = bestY;
-  // Minimum spawn distance from player — enemies should NOT spawn on top of player
-  const MIN_SPAWN_DISTANCE = 300;
+  // Minimum spawn distance from player — enemies should NOT spawn on top of player.
+  // Spawn-Bug B: abhaengig von der Raumgroesse (220..300 px, SpawnRegeln).
+  const _raum = scene.currentRoom;
+  const MIN_SPAWN_DISTANCE = window.SpawnRegeln
+    ? window.SpawnRegeln.mindestAbstand(_raum ? _raum.w : baseWidth, _raum ? _raum.h : baseHeight)
+    : 300;
+
+  // Spawn-Bug B: der Platz der Regel. Ist er gesetzt, ueberschreiben ihn die
+  // Zufalls-Rueckgriffe unten nicht mehr — die zogen in einer kleinen Tasche
+  // einen beliebigen Punkt, also einen neben dem Spieler.
+  let regelPlatz = null;
 
   if (xCoordinates > 0 && yCoordinates > 0) {
     x = xCoordinates;
     y = yCoordinates;
   } else {
-    const preferred = pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
+    // Zufallsplatz nach der Regel: Mindestabstand zum Spieler und Abstand zu
+    // den schon stehenden Gegnern (verteilt die Welle).
+    regelPlatz = gegnerPlatzNachRegel(scene, usableBounds, margin, MIN_SPAWN_DISTANCE);
+    const preferred = regelPlatz
+      || pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
     if (preferred) {
       x = preferred.x;
       y = preferred.y;
@@ -308,7 +363,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     return true;
   };
 
-  if (!ensureValidSpot()) {
+  if (!regelPlatz && !ensureValidSpot()) {
     const retry = pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
     if (retry) {
       x = retry.x;
@@ -361,7 +416,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     }
   }
 
-  if (!ensureValidSpot()) {
+  if (!regelPlatz && !ensureValidSpot()) {
     const fallback = pickAccessibleSpawnPosition(scene, usableBounds, margin, 6, MIN_SPAWN_DISTANCE);
     if (fallback) {
       x = fallback.x;
@@ -374,9 +429,15 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     const fdx = x - player.x;
     const fdy = y - player.y;
     if (fdx * fdx + fdy * fdy < MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE) {
-      if (scene.pickAccessibleSpawnPoint) {
-        const pick = scene.pickAccessibleSpawnPoint({ minDistance: MIN_SPAWN_DISTANCE, maxAttempts: 30 });
-        if (pick) { x = pick.x; y = pick.y; }
+      // pickAccessibleSpawnPoint gibt nach erfolglosen Versuchen IRGENDEINEN
+      // Punkt zurueck — in einer kleinen Tasche den neben dem Spieler (0 px
+      // gemessen). Die Regel nimmt dann wenigstens den entferntesten.
+      const pick = gegnerPlatzNachRegel(scene, usableBounds, margin, MIN_SPAWN_DISTANCE)
+        || (scene.pickAccessibleSpawnPoint
+          ? scene.pickAccessibleSpawnPoint({ minDistance: MIN_SPAWN_DISTANCE, maxAttempts: 30 }) : null);
+      if (pick) {
+        const pdx = pick.x - player.x, pdy = pick.y - player.y;
+        if (pdx * pdx + pdy * pdy > fdx * fdx + fdy * fdy) { x = pick.x; y = pick.y; }
       }
     }
   }

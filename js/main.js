@@ -1967,6 +1967,20 @@ function update(time, delta) {
       }
     });
   }
+
+  // Spawn-Bug A, Sicherheitsnetz: steckt der Spieler laenger als 0,5 s in
+  // einer Wand (keine Richtung frei), auf den naechsten freien Platz — ohne
+  // Schaden. Alle 100 ms geprueft, das reicht fuer die Frist.
+  if (window.SpawnRegeln && player && player.active && player.body
+      && !(this._steckPruefNaechste > time)) {
+    this._steckPruefNaechste = time + 100;
+    const wb = this.physics.world.bounds;
+    window.SpawnRegeln.steckWaechter(player,
+      window.SpawnRegeln.festeRechtecke([obstacles, this._doorGroup]), time, {
+        welt: { x: wb.x, y: wb.y, w: wb.width, h: wb.height },
+        erreichbar: typeof this.isPointAccessible === 'function' ? (x, y) => this.isPointAccessible(x, y) : null,
+      });
+  }
 }
 
 function leaveDungeonForHub(scene, options = {}) {

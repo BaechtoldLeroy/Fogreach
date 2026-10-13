@@ -351,6 +351,15 @@ class HubSceneV2 extends Phaser.Scene {
     try { this._vorleserAufstellen(); } catch (_) {}
     this.createPlayer();
     this._vorDieTuerStellen();
+    // Spawn-Bug A: Start- und Tuerplatz nie in einem Gebaeude oder NPC.
+    if (window.SpawnRegeln && this.player) {
+      try {
+        const wb = this.physics.world.bounds;
+        window.SpawnRegeln.freiStellen(this.player,
+          window.SpawnRegeln.festeRechtecke([this.colliderGroup, this.npcGroup]),
+          { welt: { x: wb.x, y: wb.y, w: wb.width, h: wb.height } });
+      } catch (e) { /* nie den Hub-Aufbau brechen */ }
+    }
     this.createPrompt();
     
     // Initialize sound manager and start hub ambient music
@@ -1065,6 +1074,17 @@ class HubSceneV2 extends Phaser.Scene {
     if (!this.player) return;
 
     const p = this.player;
+
+    // Spawn-Bug A, Sicherheitsnetz wie im Dungeon (main.js): steckt die
+    // Figur laenger als 0,5 s in einem Gebaeude oder NPC fest, freistellen.
+    if (window.SpawnRegeln && p.body && !(this._steckPruefNaechste > t)) {
+      this._steckPruefNaechste = t + 100;
+      const wb = this.physics.world.bounds;
+      window.SpawnRegeln.steckWaechter(p,
+        window.SpawnRegeln.festeRechtecke([this.colliderGroup, this.npcGroup]), t,
+        { welt: { x: wb.x, y: wb.y, w: wb.width, h: wb.height } });
+    }
+
     let inputX = 0, inputY = 0;
     
     if (!this._dialogOpen) {

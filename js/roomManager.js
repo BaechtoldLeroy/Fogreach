@@ -1702,7 +1702,39 @@ function enterRoom(scene, roomId) {
       scene._kammer = null;   // nur einmal je Raum
     }
   } catch (e) { /* nie den Raumaufbau brechen */ }
+
+  // Spawn-Bug A: erst JETZT steht alles (Truhen, Fund, Kammerschutt, Amulett,
+  // Tueren). Steht der Spielerkoerper in einer Wand oder einem Hindernis,
+  // auf den naechsten freien, erreichbaren Platz.
+  _spielerSpawnPruefen(scene);
 }
+
+/**
+ * Spawn-Bug A ("Spieler spawnt auf Mauern und kann sich nicht bewegen"):
+ * prueft den Spielerkoerper nach dem vollstaendigen Raumaufbau gegen alle
+ * festen Koerper und stellt ihn notfalls frei. Der Vorlagen-Spawn kennt nur
+ * die Vorlagen-Objekte; was danach kommt, sah er nie.
+ */
+function _spielerSpawnPruefen(scene) {
+  try {
+    var R = window.SpawnRegeln;
+    if (!R || !scene || typeof player === 'undefined' || !player || !player.body) return null;
+    var feste = R.festeRechtecke([obstacles, scene._doorGroup]);
+    var b = scene.physics && scene.physics.world && scene.physics.world.bounds;
+    var p = R.freiStellen(player, feste, {
+      welt: b ? { x: b.x, y: b.y, w: b.width, h: b.height } : null,
+      erreichbar: typeof scene.isPointAccessible === 'function'
+        ? function (x, y) { return scene.isPointAccessible(x, y); } : null,
+    });
+    scene.__spawnKorrektur = p ? { x: p.x, y: p.y } : null;
+    if (p) {
+      try { console.warn('[Spawn] Spieler stand in einer Wand — versetzt auf', Math.round(p.x), Math.round(p.y)); } catch (e) {}
+      if (scene.cameras && scene.cameras.main) scene.cameras.main.centerOn(p.x, p.y);
+    }
+    return p;
+  } catch (e) { return null; }
+}
+window._spielerSpawnPruefen = _spielerSpawnPruefen;
 
 /**
  * Legt einen verborgenen Fund ab — abseits der Strecke Eingang -> Treppe (#113).
@@ -3038,8 +3070,47 @@ function recomputeAccessibleArea(scene, options = {}) {
     return null;
   }
 
+  // Durchgang: kann der Spielerkoerper diese Zelle DURCHQUEREN? isBlocked
+  // prueft nur den Koerper genau auf der Zellmitte. Die liegt immer mitten
+  // in einer Kachel, der Koerper (34x56) ueberdeckt dort drei Kacheln — eine
+  // 2 Kacheln breite Luecke galt so als zu (gemeldet: "in der Ritual Chamber
+  // spawnen die Gegner fast immer beim Spieler"). Dort sperrten Kohlebecken,
+  // Saeulen und Statue den Spawn in eine Tasche von 20 Zellen ein, obwohl der
+  // Spieler gemessen in die Kammer hinauslaeuft; alle Gegner der Welle zogen
+  // ihren Platz aus dieser Tasche, also auf den Spieler.
+  // Jetzt darf die Koerpermitte irgendwo in der Zelle liegen (Versatz bis
+  // 14 px). Gestanden wird weiter nur auf Zellen, die isBlocked frei gibt —
+  // die Tasche wird nur VERBUNDEN, nicht gelockert. 1-Kachel-Gaenge bleiben zu.
+  const PASS_VERSATZ = [-14, 0, 14];
+  const passCache = new Map();
+  const isPassable = (cx, cy) => {
+    if (cx < 0 || cy < 0 || cx >= cols || cy >= rows) return false;
+    if (!isBlocked(cx, cy)) return true;
+    const key = keyFor(cx, cy);
+    if (passCache.has(key)) return passCache.get(key);
+    const centerX = bounds.x + cx * cellSize + cellSize / 2;
+    const centerY = bounds.y + cy * cellSize + cellSize / 2;
+    let frei = false;
+    for (let i = 0; i < PASS_VERSATZ.length && !frei; i++) {
+      for (let j = 0; j < PASS_VERSATZ.length && !frei; j++) {
+        if (i === 1 && j === 1) continue;   // die Mitte prueft isBlocked
+        const px = centerX + PASS_VERSATZ[i];
+        const py = centerY + PASS_VERSATZ[j];
+        if (px - ROOM_SPAWN_HALF_SIZE < bounds.x || px + ROOM_SPAWN_HALF_SIZE > bounds.x + bounds.width
+            || py - ROOM_SPAWN_HALF_SIZE < bounds.y || py + ROOM_SPAWN_HALF_SIZE > bounds.y + bounds.height) continue;
+        if (!isSpawnPositionBlocked(px, py, ROOM_SPAWN_HALF_SIZE)) frei = true;
+      }
+    }
+    passCache.set(key, frei);
+    return frei;
+  };
+  // Liegt fuer die Suche offen (Tests): wie viele Zellen nur ueber den
+  // Durchgang erreicht wurden.
+  let nurDurchgang = 0;
+
   const queue = [{ cx: startCX, cy: startCY }];
   const visited = new Set([keyFor(startCX, startCY)]);
+  const gesehen = new Set([keyFor(startCX, startCY)]);   // auch reine Durchgaenge
   const reachableCells = [];
   const fallbackCandidates = [];
   const spawnCandidates = [];
@@ -3050,6 +3121,25 @@ function recomputeAccessibleArea(scene, options = {}) {
     const { cx, cy } = queue.shift();
     const centerX = bounds.x + cx * cellSize + cellSize / 2;
     const centerY = bounds.y + cy * cellSize + cellSize / 2;
+
+    const nachbarnVon = [
+      { cx: cx + 1, cy },
+      { cx: cx - 1, cy },
+      { cx, cy: cy + 1 },
+      { cx, cy: cy - 1 },
+    ];
+    for (let i = 0; i < nachbarnVon.length; i++) {
+      const n = nachbarnVon[i];
+      const key = keyFor(n.cx, n.cy);
+      if (gesehen.has(key)) continue;
+      if (!isPassable(n.cx, n.cy)) continue;
+      gesehen.add(key);
+      queue.push(n);
+    }
+
+    // Reiner Durchgang: weiterreichen, aber hier steht niemand.
+    if (isBlocked(cx, cy)) { nurDurchgang++; continue; }
+    visited.add(keyFor(cx, cy));
 
     reachableCells.push({ cx, cy, x: centerX, y: centerY });
     fallbackCandidates.push({ x: centerX, y: centerY });
@@ -3068,23 +3158,6 @@ function recomputeAccessibleArea(scene, options = {}) {
     if (dx * dx + dy * dy >= minDistSq && !adjacentToWall) {
       spawnCandidates.push({ x: centerX, y: centerY });
     }
-
-    const neighbors = [
-      { cx: cx + 1, cy },
-      { cx: cx - 1, cy },
-      { cx, cy: cy + 1 },
-      { cx, cy: cy - 1 },
-    ];
-
-    for (let i = 0; i < neighbors.length; i++) {
-      const n = neighbors[i];
-      if (n.cx < 0 || n.cy < 0 || n.cx >= cols || n.cy >= rows) continue;
-      const key = keyFor(n.cx, n.cy);
-      if (visited.has(key)) continue;
-      if (isBlocked(n.cx, n.cy)) continue;
-      visited.add(key);
-      queue.push(n);
-    }
   }
 
   const candidates = spawnCandidates.length ? spawnCandidates : fallbackCandidates.slice();
@@ -3100,6 +3173,7 @@ function recomputeAccessibleArea(scene, options = {}) {
     },
     reachableCells,
     visited,
+    nurDurchgang,
     spawnCandidates: candidates,
     fallbackCandidates,
     minSpawnDistance: minDist,
