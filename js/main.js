@@ -950,6 +950,10 @@ function preload() {
     }
   });
 
+  // Ladebildschirm wie im Hub: der erste Abstieg laedt viele Bilder
+  // (Gegner, Keller), bis dahin war nur Schwarz zu sehen.
+  if (window.Ladebildschirm) window.Ladebildschirm.zeigen(this, { status: 'start.loading_dungeon', verzoegerung: 250 });
+
   // nur Loot-Placeholder (wir generieren Textures im Create)
   if (!this.textures.exists('lootTexture')) {
     this.textures.generate('lootTexture', {

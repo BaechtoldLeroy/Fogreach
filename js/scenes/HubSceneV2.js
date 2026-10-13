@@ -138,6 +138,9 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   preload() {
+    // Beim ersten Betreten laedt der Hub dutzende Bilder: statt Schwarz der
+    // Ladebildschirm, aber erst nach 250 ms (schnelle Ladungen blitzen nicht).
+    if (window.Ladebildschirm) window.Ladebildschirm.zeigen(this, { status: 'start.loading_hub', verzoegerung: 250 });
     // #189: Messing-Rahmen und Toast-Bilder mitladen (nur die fehlenden).
     if (window.uiRahmen) window.uiRahmen.vorladen(this);
     // Pixel-Icons der Faehigkeiten (#195) — das Loadout zeigt sie auch im Hub.

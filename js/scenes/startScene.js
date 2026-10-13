@@ -241,16 +241,17 @@ function _baueKulisse(scene) {
 
 // 1) Scene-Konstruktor
 function StartScene() {
-  Phaser.Scene.call(this, { key: "StartScene" });
+  // pack: die wenigen Bilder des Ladebildschirms, geladen VOR preload().
+  Phaser.Scene.call(this, {
+    key: "StartScene",
+    pack: { files: window.Ladebildschirm ? window.Ladebildschirm.PACK : [] }
+  });
 }
 StartScene.prototype = Object.create(Phaser.Scene.prototype);
 StartScene.prototype.constructor = StartScene;
 
 // 2) preload / create / update der Menu-Scene
 StartScene.prototype.preload = function () {
-  const width = this.cameras.main.width;
-  const height = this.cameras.main.height;
-
   // Load-time instrumentation: how long does the initial preload take?
   const preloadStart = performance.now();
   this.load.once('complete', () => {
@@ -258,85 +259,12 @@ StartScene.prototype.preload = function () {
     console.log(`[StartScene] preload complete in ${elapsed}ms`);
   });
 
-  // Dark background for loading screen
-  const bg = this.add.graphics();
-  bg.fillStyle(0x1a1a1a, 1);
-  bg.fillRect(0, 0, width, height);
-
-  if (window.i18n) {
-    window.i18n.register('de', {
-      'start.loading': 'Laden...',
-      'start.loading_file': 'Lade: {file}'
-    });
-    window.i18n.register('en', {
-      'start.loading': 'Loading...',
-      'start.loading_file': 'Loading: {file}'
-    });
-  }
-  const T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
-
-  // Progress bar container (outline)
-  const progressBox = this.add.graphics();
-  progressBox.lineStyle(2, 0x666666, 1);
-  progressBox.strokeRect(width / 2 - 200, height / 2 - 10, 400, 20);
-
-  // Progress bar fill
-  const progressBar = this.add.graphics();
-
-  // "Laden..." text above the bar
-  const loadingText = this.make.text({
-    x: width / 2,
-    y: height / 2 - 30,
-    text: T('start.loading'),
-    style: {
-      font: '20px monospace',
-      fill: '#ccaa33'
-    }
-  });
-  loadingText.setOrigin(0.5, 0.5);
-
-  // Percentage text below the bar
-  const percentText = this.make.text({
-    x: width / 2,
-    y: height / 2 + 25,
-    text: '0%',
-    style: {
-      font: '16px monospace',
-      fill: '#ffffff'
-    }
-  });
-  percentText.setOrigin(0.5, 0.5);
-
-  // Currently-loading file name
-  const fileText = this.make.text({
-    x: width / 2,
-    y: height / 2 + 50,
-    text: '',
-    style: {
-      font: '12px monospace',
-      fill: '#888888'
-    }
-  });
-  fileText.setOrigin(0.5, 0.5);
-
-  this.load.on('progress', function (value) {
-    percentText.setText(parseInt(value * 100) + '%');
-    progressBar.clear();
-    progressBar.fillStyle(0xccaa33, 1);
-    progressBar.fillRect(width / 2 - 198, height / 2 - 8, 396 * value, 16);
-  });
-
-  this.load.on('fileprogress', function (file) {
-    fileText.setText(T('start.loading_file', { file: file.key }));
-  });
+  // Ladebildschirm im Messing-Stil (js/ladeBildschirm.js). Seine Bilder kamen
+  // ueber den Szenen-pack schon vor diesem preload; nach create() blendet er
+  // sich kurz aus und raeumt sich selbst ab.
+  if (window.Ladebildschirm) window.Ladebildschirm.zeigen(this, { status: 'start.loading' });
 
   this.load.on('complete', function () {
-    bg.destroy();
-    progressBar.destroy();
-    progressBox.destroy();
-    loadingText.destroy();
-    percentText.destroy();
-    fileText.destroy();
     // 052 WP03: apply LINEAR filter to all painterly assets that the
     // preload just put into the TextureManager. Procedural textures from
     // graphics.js / proceduralRooms.js stay NEAREST (they aren't loaded
@@ -374,11 +302,14 @@ StartScene.prototype.preload = function () {
   this.load.image('stairDown', 'assets/tiles/stairDown.png');
 
   // Startmenue-Kulisse (PixelLab-Pixelgrafik, siehe _baueKulisse)
+  // Was der Szenen-pack schon brachte (Ladebildschirm), nicht noch einmal.
   ['hintergrund', 'bruestung', 'vignette', 'nebel_a', 'nebel_b', 'schein', 'funke'].forEach((n) => {
+    if (this.textures.exists('start_' + n)) return;
     this.load.image('start_' + n, 'assets/start/start_' + n + '.png');
   });
   [['held', 92, 92], ['laterne', 32, 64], ['titel', 199, 40], ['kraehe', 32, 32],
     ['knopf', 130, 26], ['slot', 172, 18], ['klein', 22, 18]].forEach(([n, w, h]) => {
+    if (this.textures.exists('start_' + n)) return;
     this.load.spritesheet('start_' + n, 'assets/start/start_' + n + '.png', { frameWidth: w, frameHeight: h });
   });
 
