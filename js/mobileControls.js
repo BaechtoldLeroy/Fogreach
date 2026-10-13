@@ -93,9 +93,7 @@ if (window.i18n) {
     const refs = CLASSIC_REFS[id] || {};
     return {
       color: def.color || 0x888888,
-      glyph: def.icon || '?',
-      label: def.name || id,
-      decKey: id, // ability-id wird als spec.key benutzt; mobileAbilityButtons fällt auf spec._glyph/_label zurück
+      decKey: id, // ability-id wird als spec.key benutzt
       btnRef: refs.btnRef || null,
       cdRef: refs.cdRef || null,
       onDown: function () {
@@ -133,8 +131,6 @@ if (window.i18n) {
       key: info.decKey,
       color: info.color,
       _abilityId: info.id,
-      _glyph: info.glyph,
-      _label: info.label,
       _onDown: info.onDown,
       _onUp: info.onUp,
       _btnRef: info.btnRef,
@@ -422,15 +418,15 @@ if (window.i18n) {
       inventoryBtn: state.inventoryBtn,
       cooldownTexts: Object.assign({}, state.cooldownTexts),
     });
-    _hudNeu(scene);
+    _ringe(scene);
   }
 
-  // ?hud=neu: Messingringe mit Pixel-Icons auf die Kreise legen. Direkt
-  // gerufen statt ueber das Fenster-Ereignis, damit es auch headless greift;
-  // mobileAbilityButtons haelt sich mit Flagge heraus.
-  function _hudNeu(scene) {
+  // Messingringe mit Pixel-Icons, Sweep und Zahl auf die Kreise legen
+  // (hudLeiste.js). Direkt gerufen statt ueber das Fenster-Ereignis, damit es
+  // auch headless greift.
+  function _ringe(scene) {
     const HL = window.hudLeiste;
-    if (!HL || !HL.aktiv() || !HL.bereit(scene)) return;
+    if (!HL) return;
     HL.mobil(scene, state.buttons.map(({ spec, circle }) => ({ spec, circle })));
   }
 
@@ -547,7 +543,7 @@ if (window.i18n) {
       inventoryBtn: state.inventoryBtn,
       cooldownTexts: Object.assign({}, state.cooldownTexts),
     });
-    _hudNeu(scene);
+    _ringe(scene);
 
     // --- Tap-to-move + hold-to-move (038-mobile-d2-controls) ---
     const JOYSTICK_ZONE_RADIUS = 120; // px from joystick center

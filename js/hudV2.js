@@ -155,15 +155,11 @@
       .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(HUD_DEPTH);
     const portraitGlow = scene.add.circle(portraitCx, portraitCy, PORTRAIT_R + 2, 0xff4040, 0)
       .setStrokeStyle(3, 0xff4040, 0).setScrollFactor(0).setDepth(HUD_DEPTH);
-    const portraitIcon = scene.add.text(portraitCx, portraitCy, '\u2694', {
-      fontFamily: 'serif', fontSize: '28px', color: '#ffd166'
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
-    // ?hud=neu: Pixel-Portraet statt des Schwert-Zeichens (das im Canvas als
-    // Kaestchen erscheint).
+    // Portraet als Pixelbild (hud_icons, #195). Fehlt der Streifen, bleibt die
+    // Scheibe leer — das fruehere Schwert-Zeichen erschien im Canvas als Kaestchen.
     const HL = window.hudLeiste;
-    if (HL && HL.aktiv() && HL.bereit(scene)) {
-      portraitIcon.setVisible(false);
-      scene.add.image(portraitCx, portraitCy, HL.KEY, HL.frame('portrait'))
+    if (HL && HL.bereit(scene)) {
+      HUDv2.elements.portraitIcon = scene.add.image(portraitCx, portraitCy, HL.KEY, HL.frame('portrait'))
         .setDisplaySize(PORTRAIT_R * 2 - 4, PORTRAIT_R * 2 - 4)
         .setScrollFactor(0).setDepth(HUD_DEPTH + 1);
     }
@@ -239,9 +235,6 @@
     const burgerCy = 12 + ICON_R;
     const burgerBg = scene.add.circle(burgerCx, burgerCy, ICON_R, 0x10131c, 0.95)
       .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(HUD_DEPTH);
-    const burgerIcon = scene.add.text(burgerCx, burgerCy, '\u2630', {
-      fontFamily: 'serif', fontSize: '24px', color: '#ffd166'
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
     const burgerHit = scene.add.rectangle(burgerCx, burgerCy, ICON_R * 2, ICON_R * 2, 0x000000, 0)
       .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
@@ -260,9 +253,6 @@
     const invCy = burgerCy + (ICON_R * 2 + 8);
     const invBg = scene.add.circle(invCx, invCy, ICON_R, 0x10131c, 0.95)
       .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(HUD_DEPTH);
-    const invIcon = scene.add.text(invCx, invCy, '\u{1F392}', {
-      fontFamily: 'serif', fontSize: '22px'
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
     const invHit = scene.add.rectangle(invCx, invCy, ICON_R * 2, ICON_R * 2, 0x000000, 0)
       .setScrollFactor(0).setDepth(HUD_DEPTH + 2)
       .setInteractive({ useHandCursor: true });
@@ -283,34 +273,34 @@
     HUDv2.elements.invBg = invBg;
     HUDv2.elements.burgerHit = burgerHit;
     HUDv2.elements.invHit = invHit;
-    HUDv2.elements.burgerText = burgerIcon;
-    HUDv2.elements.invText = invIcon;
+    HUDv2.elements.burgerIcon = _knopfIcon(scene, burgerCx, burgerCy, burgerHit, 'menu', '\u2630');
+    HUDv2.elements.invIcon = _knopfIcon(scene, invCx, invCy, invHit, 'inventory', 'I');
+  }
 
-    // ?hud=neu: Pixel-Icons (Zahnrad, Lederranzen) statt der Zeichen, die
-    // im Canvas grob bzw. als Kaestchen erscheinen. Ring und Klickflaeche
-    // bleiben; das Icon reagiert auf Hover (heller, groesser) und Druck.
+  /**
+   * Icon eines runden Knopfs oben rechts: Pixelbild aus hud_icons (Zahnrad,
+   * Lederranzen, #195); ohne Streifen ein schlichtes Zeichen (Menue-Striche,
+   * I wie die Inventartaste). Ring und Klickflaeche bleiben beim Knopf; das
+   * Icon hebt sich beim Hover und gibt beim Druck nach.
+   */
+  function _knopfIcon(scene, x, y, hit, id, zeichen) {
     const HL = window.hudLeiste;
-    if (HL && HL.aktiv() && HL.bereit(scene)) {
-      const GROESSE = ICON_R * 2 - 8;
-      const tauschen = (text, hit, id) => {
-        text.setVisible(false);
-        const bild = scene.add.image(text.x, text.y, HL.KEY, HL.frame(id))
-          .setDisplaySize(GROESSE, GROESSE).setScrollFactor(0).setDepth(HUD_DEPTH + 1);
-        const basis = bild.scaleX;
-        const zustand = (faktor, alpha) => bild.setScale(basis * faktor).setAlpha(alpha);
-        hit.on('pointerover', () => zustand(1.1, 1));
-        hit.on('pointerout', () => zustand(1, 1));
-        // Druck federt nach kurzer Zeit selbst zurueck: auf dem Handy oeffnet
-        // der Tap ein Menue darueber, und dessen pointerup erreicht uns nie.
-        hit.on('pointerdown', () => {
-          zustand(0.9, 0.85);
-          scene.time.delayedCall(140, () => { if (bild.scene) zustand(1, 1); });
-        });
-        return bild;
-      };
-      HUDv2.elements.burgerIcon = tauschen(burgerIcon, burgerHit, 'menu');
-      HUDv2.elements.invIcon = tauschen(invIcon, invHit, 'inventory');
-    }
+    const icon = (HL && HL.bereit(scene))
+      ? scene.add.image(x, y, HL.KEY, HL.frame(id)).setDisplaySize(ICON_R * 2 - 8, ICON_R * 2 - 8)
+      : scene.add.text(x, y, zeichen, { fontFamily: 'serif', fontSize: '24px', fontStyle: 'bold', color: '#ffd166' })
+        .setOrigin(0.5);
+    icon.setScrollFactor(0).setDepth(HUD_DEPTH + 1);
+    const basis = icon.scaleX;
+    const zustand = (faktor, alpha) => icon.setScale(basis * faktor).setAlpha(alpha);
+    hit.on('pointerover', () => zustand(1.1, 1));
+    hit.on('pointerout', () => zustand(1, 1));
+    // Druck federt nach kurzer Zeit selbst zurueck: auf dem Handy oeffnet der
+    // Tap ein Menue darueber, und dessen pointerup erreicht den Knopf nie.
+    hit.on('pointerdown', () => {
+      zustand(0.9, 0.85);
+      scene.time.delayedCall(140, () => { if (icon.scene) zustand(1, 1); });
+    });
+    return icon;
   }
 
   function _buildVignette(scene) {

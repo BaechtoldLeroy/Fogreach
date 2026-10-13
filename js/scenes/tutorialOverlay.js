@@ -44,7 +44,7 @@
   var HIGHLIGHT_DEPTH   = 1492;
   var BANNER_HEIGHT   = 64;
   var BANNER_BOTTOM_OFFSET = 32; // distance from bottom edge of camera
-  // ?hud=neu: die Box sitzt ueber der Faehigkeitsleiste unten mittig.
+  // Die Box sitzt ueber der Faehigkeitsleiste unten mittig (Desktop, #195).
   function _untenAbstand(scene) {
     var frei = (window.hudLeiste && window.hudLeiste.freiraumUnten(scene)) || 0;
     return Math.max(BANNER_BOTTOM_OFFSET, frei);

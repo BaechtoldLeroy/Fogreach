@@ -11,18 +11,7 @@ if (window.i18n) {
     'hud.gold_popup': '+{amount} Gold',
     'hud.level_up': 'LEVEL UP!',
     'hud.dead': 'DU BIST GESTORBEN\nZurück zur Stadt...',
-    'hud.default_player_name': 'Spieler',
-    'hud.slot.attack': 'Angriff',
-    'hud.slot.empty': 'Leer',
-    'hud.potion.empty_label': 'Kein Trank',
-    'hud.potion.ready': 'Bereit',
-    'hud.potion.no_potion': 'Leer',
-    'hud.potion.name.t1': 'Heiltrank (S)',
-    'hud.potion.name.t2': 'Heiltrank (M)',
-    'hud.potion.name.t3': 'Heiltrank (L)',
-    'hud.potion.name.t4': 'Heiltrank (XL)',
-    'hud.potion.name.default': 'Trank',
-    'hud.ability.ready': 'Bereit'
+    'hud.default_player_name': 'Spieler'
   });
   window.i18n.register('en', {
     'hud.health': 'Health: {cur}/{max}',
@@ -33,24 +22,13 @@ if (window.i18n) {
     'hud.gold_popup': '+{amount} gold',
     'hud.level_up': 'LEVEL UP!',
     'hud.dead': 'YOU ARE DEAD\nReturning to town...',
-    'hud.default_player_name': 'Player',
-    'hud.slot.attack': 'Attack',
-    'hud.slot.empty': 'Empty',
-    'hud.potion.empty_label': 'No Potion',
-    'hud.potion.ready': 'Ready',
-    'hud.potion.no_potion': 'Empty',
-    'hud.potion.name.t1': 'Healing Potion (S)',
-    'hud.potion.name.t2': 'Healing Potion (M)',
-    'hud.potion.name.t3': 'Healing Potion (L)',
-    'hud.potion.name.t4': 'Healing Potion (XL)',
-    'hud.potion.name.default': 'Potion',
-    'hud.ability.ready': 'Ready'
+    'hud.default_player_name': 'Player'
   });
 }
 const _HUD_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
 
 // Re-render living HUD elements on language change. Registered once per
-// page-lifetime; safe because updateHUD/_refreshHUD/_refreshPotionTile are
+// page-lifetime; safe because updateHUD/_refreshHUD are
 // guarded with typeof-checks (they may not exist before initUI runs).
 if (window.i18n && !window._i18nHudWired) {
   window._i18nHudWired = true;
@@ -60,9 +38,6 @@ if (window.i18n && !window._i18nHudWired) {
     }
     if (typeof window._refreshHUD === 'function') {
       try { window._refreshHUD(); } catch (e) { /* ignore */ }
-    }
-    if (typeof window._refreshPotionTile === 'function') {
-      try { window._refreshPotionTile(); } catch (e) { /* ignore */ }
     }
   });
 }
@@ -429,17 +404,7 @@ let attackBtn, shieldBashBtn;
 let attackBtnCooldownText, chargeSlashCooldownText, shieldBashCooldownText;
 let weaponStatsText, playerHealthText,
   playerXPText, waveText, gameOverText, levelUpText, defeatedEnemiesInWave, joystick;
-let abilityStatusDisplay = {};
 let statusEffectHudIcons = []; // HUD icons for active status effects on player
-const ABILITY_STATUS_STYLES = {
-  attack: 0xff4d5a,
-  spin: 0x4eddff,
-  charge: 0xffb347,
-  dash: 0x5aa9ff,
-  dagger: 0xff8856,
-  shield: 0x7cf8d4
-};
-
 const ABILITY_KEYS = ['attack', 'spin', 'charge', 'dash', 'dagger', 'shield'];
 const ABILITY_LABELS = {
   attack: 'Basic Attack',
@@ -478,28 +443,6 @@ window.ABILITY_LABELS = ABILITY_LABELS;
 window.abilityBonuses = abilityBonuses;
 window.resetAbilityBonuses = resetAbilityBonuses;
 window.applyAbilityEffect = applyAbilityEffect;
-
-// Nur noch, was es wirklich gibt. Hier standen die sechs Namen von vor 060 —
-// spin, charge, dash und dagger zeigten auf Faehigkeiten, die seither anders
-// heissen, und der Nachschlag lief ins Leere.
-const ABILITY_STATUS_CONFIG = [
-  { key: 'attack', label: 'Attack', control: 'SPACE' },
-  { key: 'shield', label: 'Shield Bash', control: '—' }
-];
-
-// Maps statusKey (used in updateAbilityStatus) ↔ AbilitySystem ability id
-const STATUS_KEY_TO_ABILITY_ID = {
-  shield: 'shieldBash'
-};
-const ABILITY_ID_TO_STATUS_KEY = Object.fromEntries(
-  Object.entries(STATUS_KEY_TO_ABILITY_ID).map(([k, v]) => [v, k])
-);
-const SLOT_KEY_LABELS = { slot1: 'Q', slot2: 'W', slot3: 'E', slot4: 'R' };
-
-const ABILITY_STATUS_LOOKUP = ABILITY_STATUS_CONFIG.reduce((acc, entry) => {
-  acc[entry.key] = entry;
-  return acc;
-}, {});
 
 let pendingLoadedSave = null;
 let playerHealth = 30;
@@ -560,96 +503,6 @@ let exploredRT;   // stores permanently revealed areas
 const FOW_ALPHA = 0.9;   // darkness
 const FOW_RADIUS = 220;
 const LARGE_ROOM_HINT_DELAY = 60_000;
-
-function updateAbilityStatus(key, info = {}) {
-  if (typeof info === 'number') {
-    info = { remainingMs: info };
-  }
-  const { remainingMs = 0, durationMs = null, customText = null } = info;
-  const display = abilityStatusDisplay[key];
-  if (!display) return;
-
-  if (Number.isFinite(durationMs)) {
-    display.durationMs = durationMs;
-  }
-
-  const duration = Number.isFinite(display.durationMs) && display.durationMs > 0
-    ? display.durationMs
-    : (Number.isFinite(durationMs) ? durationMs : null);
-
-  const ready = remainingMs <= 0 && !customText;
-  let statusText;
-  if (typeof customText === 'string' && customText.length) {
-    statusText = customText;
-  } else if (!ready && remainingMs > 0) {
-    statusText = `${(remainingMs / 1000).toFixed(1)}s`;
-  } else {
-    statusText = _HUD_T('hud.ability.ready');
-  }
-
-  if (display.statusText) {
-    display.statusText.setText(statusText);
-    display.statusText.setColor(customText ? '#ffba6b' : (ready ? '#78f3c7' : '#ffd966'));
-  }
-
-  if (display.fill && Number.isFinite(display.width)) {
-    const effectiveDuration = (duration && duration > 0) ? duration : null;
-    if (customText) {
-      display.fill.setVisible(true);
-      display.fill.displayWidth = display.width;
-      display.fill.setAlpha(0.28);
-    } else if (effectiveDuration) {
-      const clampedRemaining = Phaser.Math.Clamp(remainingMs, 0, effectiveDuration);
-      const progress = 1 - (clampedRemaining / effectiveDuration);
-      if (ready) {
-        display.fill.setVisible(true);
-        display.fill.displayWidth = display.width;
-        display.fill.setAlpha(0.16);
-      } else if (progress > 0) {
-        display.fill.setVisible(true);
-        display.fill.displayWidth = Math.max(2, display.width * progress);
-        display.fill.setAlpha(0.38);
-      } else {
-        display.fill.setVisible(false);
-      }
-    } else if (ready) {
-      display.fill.setVisible(true);
-      display.fill.displayWidth = display.width;
-      display.fill.setAlpha(0.16);
-    } else {
-      display.fill.setVisible(false);
-    }
-  }
-
-  if (display.bg) {
-    const readyFill = ready && !customText;
-    const strokeColor = display.color ?? 0x78f3c7;
-    display.bg.setFillStyle(readyFill ? 0x182136 : 0x10131c, readyFill ? 0.85 : 0.65);
-    display.bg.setStrokeStyle(1, readyFill ? strokeColor : 0xffffff, readyFill ? 0.5 : 0.18);
-  }
-
-  // Radial pie wedge — primary cooldown visual on the icon disk
-  if (display.radialOverlay && Number.isFinite(display.iconR)) {
-    const overlay = display.radialOverlay;
-    overlay.clear();
-    const effectiveDuration = (duration && duration > 0) ? duration : null;
-    if (effectiveDuration && remainingMs > 0 && !ready && !customText) {
-      const clamped = Phaser.Math.Clamp(remainingMs, 0, effectiveDuration);
-      const remainingFraction = clamped / effectiveDuration;
-      // Draw a clockwise wedge from -π/2 (top) covering the REMAINING fraction
-      const startAngle = -Math.PI / 2;
-      const endAngle = startAngle + remainingFraction * Math.PI * 2;
-      overlay.fillStyle(0x000000, 0.55);
-      overlay.beginPath();
-      overlay.moveTo(display.iconCx, display.iconCy);
-      overlay.arc(display.iconCx, display.iconCy, display.iconR, startAngle, endAngle, false);
-      overlay.closePath();
-      overlay.fillPath();
-    }
-  }
-}
-
-window.updateAbilityStatus = updateAbilityStatus;
 
 function clampPlayerHealth(value) {
   const max = Math.max(1, playerMaxHealth || 1);
@@ -751,7 +604,7 @@ function ensureEnemyDirectionIndicators(scene) {
   return indicators;
 }
 
-// Der Suedpfeil sitzt ueber der Faehigkeitsleiste (?hud=neu), nicht auf ihr.
+// Der Suedpfeil sitzt ueber der Faehigkeitsleiste (Desktop), nicht auf ihr.
 function _suedAbstand(scene) {
   const frei = (window.hudLeiste && window.hudLeiste.freiraumUnten(scene)) || 0;
   return frei > 0 ? frei + 20 : 48;
@@ -1040,7 +893,7 @@ let tooltip;
 function preload() {
   // #189: Messing-Rahmen und Toast-Bilder mitladen (nur die fehlenden).
   if (window.uiRahmen) window.uiRahmen.vorladen(this);
-  // ?hud=neu: Icon-Streifen der Faehigkeitsleiste (ohne Flagge nichts).
+  // Icon-Streifen der Faehigkeitsleiste und der HUD-Knoepfe (#195).
   if (window.hudLeiste) window.hudLeiste.vorladen(this);
   // Player sprites are preloaded in StartScene (dir00 only);
   // other directions lazy-load via ensureDirectionLoaded().
@@ -1150,7 +1003,6 @@ function create() {
   isRolling = false;
   rollCooldown = false;
   rollCooldownStartTime = 0;
-  abilityStatusDisplay = {};
   const updateWorldBounds = (width, height) => {
     // Guard: scale resize events can fire after the GameScene has been
     // shut down (e.g., player accepts a quest in the hub which spawns a
@@ -1919,66 +1771,11 @@ function update(time, delta) {
     try { window.updateAmuletPerFrame(this, delta); } catch (e) { /* ignore */ }
   }
 
-  // WP04: Redraw potion cooldown HUD indicator
-  // Drive the potion HUD tile (best-in-inventory + cooldown radial)
-  if (typeof window._refreshPotionTile === 'function') {
-    try { window._refreshPotionTile(); } catch (e) { /* ignore */ }
-  }
-  if (window.LootSystem && typeof window.LootSystem.isPotionOnCooldown === 'function'
-      && window._potionCdGfx && window._potionCdPos) {
-    window._potionCdGfx.clear();
-    if (window.LootSystem.isPotionOnCooldown()) {
-      const remainMs = (typeof window.LootSystem._getPotionCooldownRemaining === 'function')
-        ? window.LootSystem._getPotionCooldownRemaining() : 0;
-      const total = window.LootSystem.POTION_GLOBAL_CD_MS || 2000;
-      const fraction = Math.max(0, Math.min(1, remainMs / total));
-      const cx = window._potionCdPos.x;
-      const cy = window._potionCdPos.y;
-      window._potionCdGfx.fillStyle(0x222222, 0.6);
-      window._potionCdGfx.fillCircle(cx, cy, 14);
-      window._potionCdGfx.fillStyle(0x44ff44, 0.5);
-      window._potionCdGfx.beginPath();
-      window._potionCdGfx.moveTo(cx, cy);
-      window._potionCdGfx.arc(cx, cy, 14, -Math.PI / 2, -Math.PI / 2 + fraction * Math.PI * 2, false);
-      window._potionCdGfx.closePath();
-      window._potionCdGfx.fillPath();
-      if (window._potionCdLabel) window._potionCdLabel.setVisible(true);
-    } else {
-      if (window._potionCdLabel) window._potionCdLabel.setVisible(false);
-    }
-  }
-
-  // Non-classic ability cooldown tick — classic abilities drive their own HUD
-  // via startCooldownTimer; new abilities (heilwunde, frostnova, blutopfer,
-  // schattenschritt, …) only touch state.cooldowns, so poll per frame.
-  if (window.AbilitySystem && typeof window.AbilitySystem.getCooldownRemaining === 'function') {
-    const loadout = window.AbilitySystem.getActiveLoadout ? window.AbilitySystem.getActiveLoadout() : null;
-    if (loadout) {
-      const now = gameNow(this); // pausierte Spannen rausgerechnet (s. Pause-Uhr)
-      const defs = window.AbilitySystem.ABILITY_DEFS || {};
-      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slot) => {
-        const id = loadout[slot];
-        if (!id) return;
-        if (ABILITY_ID_TO_STATUS_KEY[id]) return; // classic ability — handled elsewhere
-        const def = defs[id];
-        // Dauer aus def.cooldownMs ODER (für selbst-verwaltete Abilities wie
-        // Hammer, die kein statisches def.cooldownMs haben) aus der zuletzt
-        // registrierten Cooldown-Dauer (AbilitySystem.setCooldown).
-        const dur = (def && def.cooldownMs)
-          ? def.cooldownMs
-          : (window.AbilitySystem.getCooldownDuration ? window.AbilitySystem.getCooldownDuration(id) : 0);
-        if (!dur) return;
-        const rem = window.AbilitySystem.getCooldownRemaining(id, now);
-        updateAbilityStatus(id, { remainingMs: rem, durationMs: dur });
-      });
-    }
-  }
-
-  // 054 WP02: Roll-Cooldown HUD-Tick. rollCooldownStartTime wird in
+  // 054 WP02: Roll-Abklingzeit. rollCooldownStartTime wird in
   // performRoll() gestempelt; hier counten wir gegen RollConfig.cooldown.
   // #47: rollCooldown/rollCooldownStartTime sind script-scoped `let` (keine
   // window-Props), daher publishen wir das Restwert hier nach window, damit der
-  // Mobile-Dash(Roll)-Button (mobileAbilityButtons.js) den Cooldown anzeigen
+  // Rollen-Knopf (hudLeiste.js, Desktop und Mobile) die Abklingzeit anzeigen
   // kann — der lief vorher leer, weil performRoll() weder startCooldownTimer
   // noch einen Mobile-Button-Ref anfasst (anders als die klassischen Abilities).
   {
@@ -1990,9 +1787,6 @@ function update(time, delta) {
     }
     window.__rollCooldownRemainingMs__ = _rollRem;
     window.__rollCooldownDurationMs__ = _rollCfg.cooldown;
-    if (abilityStatusDisplay && abilityStatusDisplay.roll) {
-      updateAbilityStatus('roll', { remainingMs: _rollRem, durationMs: _rollCfg.cooldown });
-    }
   }
 
   // Health regen tick — applies PLAYER_HEALTH_REGEN (HP/sec) when below max.
@@ -2559,11 +2353,6 @@ function initUI() {
     // _roomCounterText is positioned by minimap.js below the minimap; keep visible.
   }
 
-  // WP04 standalone potion CD indicator removed — replaced by the potion
-  // tile in the attack bar (see buildTile / refreshPotionTile above).
-  window._potionCdGfx = null;
-  window._potionCdLabel = null;
-  window._potionCdPos = null;
   gameOverText = this.add.text(400, 300, _HUD_T('hud.dead'), { fontSize: '40px', fill: '#f00', align: 'center' })
     .setDepth(1001).setScrollFactor(0)
     .setOrigin(0.5).setVisible(false);
@@ -2594,420 +2383,9 @@ function initUI() {
     updateAbilityCooldownPositions(gameSize.width, gameSize.height);
   });
 
-  // ?hud=neu: Aktionsleiste unten mittig statt der Kacheln oben rechts.
-  // Fehlt der Icon-Streifen (Laden gescheitert), bleibt es bei den Kacheln.
-  const _hudNeu = !isMobile && window.hudLeiste && window.hudLeiste.aktiv() && window.hudLeiste.bereit(this);
-  if (_hudNeu) {
-    abilityStatusDisplay = {};
-    window.hudLeiste.bauen(this);
-  } else if (!isMobile) {
-    abilityStatusDisplay = {};
-    const tileWidth = 220;
-    const tileHeight = 42;
-    const tileSpacing = 48;
-    const tilePadding = 12;
-
-    // Build a single tile (used for both fixed attack tile and 4 slot tiles)
-    // #77: JEDE gebaute Kachel, unabhaengig davon, wo sie spaeter landet.
-    // abilityStatusDisplay fuehrt nur attack und roll — Trank und die vier
-    // Slot-Kacheln standen deshalb waehrend des Boss-Beats weiter da.
-    const alleKacheln = [];
-    // Messing-Oberflaeche (#182): jede Kachel liegt auf einer
-    // kleinen Messing-Platte. Sie wird EINMAL gebacken (eine Textur fuer alle
-    // Kacheln); das alte Rechteck faellt weg, damit updateAbilityStatus es
-    // nicht jedes Bild neu einfaerbt.
-    const _UR = window.uiRahmen;
-    const kachelMessing = !!(_UR && _UR.bereit(this));
-    const kachelTex = kachelMessing ? _UR.kachelBild(this, tileWidth, tileHeight) : null;
-    const buildTile = (initialLabel, initialKeyLabel, color) => {
-      const container = this.add.container(0, 0).setDepth(1001).setScrollFactor(0);
-      const bg = this.add.rectangle(0, 0, tileWidth, tileHeight, 0x10131c, 0.65)
-        .setOrigin(0, 0)
-        .setStrokeStyle(1, 0xffffff, 0.2);
-      // Lower-opacity background fill (kept as a secondary indicator while
-      // the radial overlay is the primary cooldown visual).
-      const fill = this.add.rectangle(0, 0, tileWidth, tileHeight, color, 0.15)
-        .setOrigin(0, 0)
-        .setVisible(false);
-
-      // Radial cooldown icon area on the left of the tile
-      const ICON_R = 14;
-      const ICON_CX = ICON_R + 4;
-      const ICON_CY = tileHeight / 2;
-      const iconBg = this.add.circle(ICON_CX, ICON_CY, ICON_R, 0x1a2238, 0.9)
-        .setStrokeStyle(2, color, 0.8);
-      const iconText = this.add.text(ICON_CX, ICON_CY, '?', {
-        fontSize: '16px', fill: '#ffffff'
-      }).setOrigin(0.5);
-      // Pie wedge overlay (depleted from full to empty as cooldown progresses)
-      const radialOverlay = this.add.graphics();
-
-      const nameText = this.add.text(tilePadding + ICON_R * 2 + 8, 6, initialLabel, {
-        fontSize: '13px',
-        fill: '#f5f7ff',
-        fontStyle: 'bold'
-      });
-      const keyText = this.add.text(0, 0, initialKeyLabel, {
-        fontSize: '12px',
-        fill: '#0d1525',
-        fontStyle: 'bold'
-      }).setOrigin(0.5, 0.5);
-      const badgeWidth = 52;
-      const badgeHeight = 22;
-      const badgeX = tileWidth - tilePadding - badgeWidth;
-      const badgeY = 6;
-      const keyBadge = this.add.rectangle(badgeX, badgeY, badgeWidth, badgeHeight, color, 0.18)
-        .setOrigin(0, 0)
-        .setStrokeStyle(1, color, 0.6);
-      keyText.setPosition(badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
-      const statusText = this.add.text(tilePadding + ICON_R * 2 + 8, tileHeight - 6, _HUD_T('hud.ability.ready'), {
-        fontSize: '11px',
-        fill: '#78f3c7'
-      }).setOrigin(0, 1);
-      // WP08 T046: small bonus badge (bottom-right of tile) that surfaces
-      // aggregated per-ability damage / cooldown affix bonuses. Hidden when
-      // no bonuses apply so it never clutters the HUD.
-      const bonusBadge = this.add.text(tileWidth - tilePadding, tileHeight - 4, '', {
-        fontSize: '10px',
-        fontFamily: 'monospace',
-        fill: '#ffdd66'
-      }).setOrigin(1, 1).setVisible(false);
-      container.add([bg, fill, iconBg, radialOverlay, iconText, nameText, keyBadge, keyText, statusText, bonusBadge]);
-      if (kachelTex) {
-        bg.destroy();
-        container.addAt(this.add.image(0, 0, kachelTex).setOrigin(0, 0), 0);
-        // Bereitschaftsschimmer nur innerhalb des Beschlags.
-        fill.setPosition(5, 5).setSize(tileWidth - 10, tileHeight - 10);
-        // Tastenschrift war dunkel auf dunkel (#0d1525); auf der Platte hell.
-        keyText.setColor('#efe6d2');
-        _UR.lesbarAlle([nameText, statusText, bonusBadge]);
-      }
-      nameText.setWordWrapWidth(badgeX - tilePadding - ICON_R * 2 - 12);
-      nameText.setMaxLines(2);
-      const kachel = {
-        container, fill, bg: kachelTex ? null : bg, statusText, nameText, keyText, keyBadge,
-        iconText, iconBg, radialOverlay, bonusBadge,
-        iconCx: ICON_CX, iconCy: ICON_CY, iconR: ICON_R,
-        width: kachelTex ? tileWidth - 10 : tileWidth, durationMs: 0, color,
-        labelWidth: badgeX - tilePadding
-      };
-      alleKacheln.push(kachel);
-      return kachel;
-    };
-
-    // Fixed attack tile — uses a sword emoji icon since there's no entry in ABILITY_DEFS
-    const attackTile = buildTile(_HUD_T('hud.slot.attack'), 'SPACE', ABILITY_STATUS_STYLES.attack);
-    if (attackTile.iconText) attackTile.iconText.setText('\u2694'); // ⚔
-    abilityStatusDisplay.attack = attackTile;
-
-    // #77: Die Faehigkeitsleiste waehrend eines inszenierten Moments
-    // ausblenden. abilityStatusDisplay ist ein top-level let und damit fuer
-    // andere Dateien NICHT sichtbar (Classic-Script-Falle) — deshalb eine
-    // Funktion statt eines Verweises. Rueckgabe: wieviele Kacheln
-    // umgeschaltet wurden, damit der Aufrufer weiss, ob es ueberhaupt
-    // etwas auszublenden gab.
-    window.faehigkeitsLeisteSichtbar = function (sichtbar) {
-      var n = 0;
-      try {
-        alleKacheln.forEach(function (kachel) {
-          var c = kachel && kachel.container;
-          if (!c || typeof c.setVisible !== 'function') return;
-          if (sichtbar) {
-            // NUR das wiederherstellen, was vorher auch sichtbar war: leere
-            // Slot-Kacheln sind absichtlich versteckt und wuerden sonst beim
-            // Einblenden auftauchen (gemessen: 3 sichtbar vorher, 7 danach).
-            if (kachel.__warSichtbar) c.setVisible(true);
-          } else {
-            kachel.__warSichtbar = !!c.visible;
-            c.setVisible(false);
-          }
-          n++;
-        });
-      } catch (e) {}
-      return n;
-    };
-
-    // 054 WP02: Roll-Tile (zwischen Attack und Loadout-Slots). Cooldown wird
-    // per Frame in der update-loop getickt — siehe rollCooldownStartTime.
-    const rollTile = buildTile('Dash', 'SHIFT', 0x8844cc);
-    if (rollTile.iconText) rollTile.iconText.setText('↻'); // ↻
-    rollTile.durationMs = (window.RollConfig && window.RollConfig.cooldown) || 600;
-    abilityStatusDisplay.roll = rollTile;
-    updateAbilityStatus('roll', { remainingMs: 0, durationMs: rollTile.durationMs });
-
-    // WP04+: Potion tile (always visible, F key). Shows best inventory potion
-    // + stack count, with a cooldown radial driven by LootSystem (Dauer wird im
-    // Refresh dynamisch gesetzt: 8s normal / 30s lange Pause nach dem 5. Trank).
-    const potionTile = buildTile(_HUD_T('hud.potion.empty_label'), 'F', 0x44ff66);
-    if (potionTile.iconText) potionTile.iconText.setText('\u269A'); // ⚚ caduceus
-    if (potionTile.statusText) potionTile.statusText.setText(_HUD_T('hud.potion.no_potion'));
-    potionTile.durationMs = 2000; // global potion cooldown
-    // Force the potion name onto a single line — the default tile config
-    // allows 2 lines for long ability names but on the potion tile a wrap
-    // pushes the (S/M/L/XL) tier suffix down onto the "bereit" / cooldown
-    // status row, covering it.
-    if (potionTile.nameText && typeof potionTile.nameText.setMaxLines === 'function') {
-      potionTile.nameText.setMaxLines(1);
-    }
-    const POTION_NAME_KEYS = {
-      1: 'hud.potion.name.t1',
-      2: 'hud.potion.name.t2',
-      3: 'hud.potion.name.t3',
-      4: 'hud.potion.name.t4'
-    };
-    const refreshPotionTile = () => {
-      if (!window.LootSystem) return;
-      // Find highest-tier potion in inventory
-      let bestTier = 0;
-      let bestStack = 0;
-      const inv = window.inventory || [];
-      for (let i = 0; i < inv.length; i++) {
-        const it = inv[i];
-        if (it && it.type === 'potion' && (it.potionTier || 0) > bestTier) {
-          bestTier = it.potionTier;
-          bestStack = it.stack || 1;
-        }
-      }
-      const onCd = typeof window.LootSystem.isPotionOnCooldown === 'function'
-        && window.LootSystem.isPotionOnCooldown();
-      const remainMs = (typeof window.LootSystem._getPotionCooldownRemaining === 'function')
-        ? window.LootSystem._getPotionCooldownRemaining() : 0;
-      // Cooldown-Dauer dynamisch: 8s normal, 30s in der langen Pause bei leerem
-      // Kontingent — sonst füllt die Radiale gegen die falsche Dauer.
-      if (typeof window.LootSystem.getPotionCooldownDuration === 'function') {
-        potionTile.durationMs = window.LootSystem.getPotionCooldownDuration();
-      }
-      // Aufladungs-Indikator: ●=frei, ○=verbraucht (z.B. "●●○").
-      let chargeStr = '';
-      if (typeof window.LootSystem.getPotionCharges === 'function'
-          && typeof window.LootSystem.getPotionChargesMax === 'function') {
-        const _ch = window.LootSystem.getPotionCharges();
-        const _chMax = window.LootSystem.getPotionChargesMax();
-        if (_chMax > 0) {
-          chargeStr = '  ' + '●'.repeat(Math.max(0, _ch))
-            + '○'.repeat(Math.max(0, _chMax - _ch));
-        }
-      }
-      if (bestTier > 0) {
-        const potName = _HUD_T(POTION_NAME_KEYS[bestTier] || 'hud.potion.name.default');
-        // Only render the stack suffix when more than one — saves ~3 chars
-        // ("Heiltrank (S) x1" -> "Heiltrank (S)") so the (S) suffix stays
-        // on the same line as the name.
-        const stackSuffix = bestStack > 1 ? ' x' + bestStack : '';
-        potionTile.nameText.setText(potName + stackSuffix);
-        if (potionTile.statusText) {
-          potionTile.statusText.setText(
-            (onCd ? (remainMs / 1000).toFixed(1) + 's' : _HUD_T('hud.potion.ready')) + chargeStr);
-          potionTile.statusText.setColor(onCd ? '#ffd966' : '#78f3c7');
-        }
-        if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, onCd ? 0xffd966 : 0x44ff66, 0.85);
-      } else {
-        potionTile.nameText.setText(_HUD_T('hud.potion.empty_label'));
-        if (potionTile.statusText) {
-          potionTile.statusText.setText(_HUD_T('hud.potion.no_potion'));
-          potionTile.statusText.setColor('#888888');
-        }
-        if (potionTile.iconBg) potionTile.iconBg.setStrokeStyle(2, 0x555555, 0.5);
-      }
-      // Cooldown radial — bright green wedge that DEPLETES from full to empty.
-      const overlay = potionTile.radialOverlay;
-      if (overlay) {
-        overlay.clear();
-        if (onCd && remainMs > 0) {
-          const fraction = Math.max(0, Math.min(1, remainMs / 2000));
-          const startAngle = -Math.PI / 2;
-          const endAngle = startAngle + fraction * Math.PI * 2;
-          // Solid black backdrop wedge so the icon emoji is dimmed
-          overlay.fillStyle(0x000000, 0.7);
-          overlay.beginPath();
-          overlay.moveTo(potionTile.iconCx, potionTile.iconCy);
-          overlay.arc(potionTile.iconCx, potionTile.iconCy, potionTile.iconR, startAngle, endAngle, false);
-          overlay.closePath();
-          overlay.fillPath();
-          // Bright outline arc for visibility
-          overlay.lineStyle(3, 0xffd966, 1);
-          overlay.beginPath();
-          overlay.arc(potionTile.iconCx, potionTile.iconCy, potionTile.iconR - 1, startAngle, endAngle, false);
-          overlay.strokePath();
-        }
-      }
-    };
-    window._refreshPotionTile = refreshPotionTile;
-
-    // Four slot tiles (Q/W/E/R) — names reassigned dynamically by loadout
-    const slotTiles = {
-      slot1: buildTile(_HUD_T('hud.slot.empty'), 'Q', 0x888888),
-      slot2: buildTile(_HUD_T('hud.slot.empty'), 'W', 0x888888),
-      slot3: buildTile(_HUD_T('hud.slot.empty'), 'E', 0x888888),
-      slot4: buildTile(_HUD_T('hud.slot.empty'), 'R', 0x888888)
-    };
-
-    const ABILITY_DEFS = window.AbilitySystem?.ABILITY_DEFS || {};
-
-    const refreshSlotMappings = () => {
-      // Tear down old ability→tile mappings (keep attack).
-      // Classic status keys are removed; non-classic ability-id keys are wiped
-      // below when the slot iteration re-registers the current loadout.
-      Object.keys(STATUS_KEY_TO_ABILITY_ID).forEach((statusKey) => {
-        delete abilityStatusDisplay[statusKey];
-      });
-      Object.keys(abilityStatusDisplay).forEach((k) => {
-        if (k !== 'attack' && k !== 'roll') delete abilityStatusDisplay[k];
-      });
-
-      const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
-      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey, idx) => {
-        const tile = slotTiles[slotKey];
-        const abilityId = loadout ? loadout[slotKey] : null;
-        // Scheme-aware key label (Q/W/E/R in classic, 1/2/3/4 in arpg).
-        if (tile.keyText && window.InputScheme && typeof window.InputScheme.getSlotLabel === 'function') {
-          tile.keyText.setText(window.InputScheme.getSlotLabel(idx + 1));
-        }
-        if (abilityId) {
-          const def = ABILITY_DEFS[abilityId] || window.AbilitySystem?.ABILITY_DEFS?.[abilityId];
-          const displayName = def?.name || abilityId;
-          const statusKey = ABILITY_ID_TO_STATUS_KEY[abilityId];
-          tile.nameText.setText(displayName);
-          // Classic abilities use STATUS_STYLES; new abilities fall back to def.color.
-          const color = statusKey
-            ? (ABILITY_STATUS_STYLES[statusKey] ?? 0xffffff)
-            : (def && typeof def.color === 'number' ? def.color : 0xffffff);
-          tile.color = color;
-          tile.keyBadge.setFillStyle(color, 0.18);
-          tile.keyBadge.setStrokeStyle(1, color, 0.6);
-          tile.fill.setFillStyle(color);
-          // Set icon emoji + recolor radial border
-          if (tile.iconBg) tile.iconBg.setStrokeStyle(2, color, 0.85);
-          if (tile.iconText && def && def.icon) tile.iconText.setText(def.icon);
-          if (statusKey) {
-            abilityStatusDisplay[statusKey] = tile;
-            updateAbilityStatus(statusKey, { remainingMs: 0, durationMs: 0 });
-          } else if (def && (def.cooldownMs || def.type === 'charge')) {
-            // Non-classic Abilities mit Cooldown (heilwunde, frostnova, …) UND
-            // charge-Typ-Abilities (Hammer) — Hammer verwaltet seinen Cooldown
-            // selbst (kein def.cooldownMs), muss aber trotzdem registriert sein,
-            // sonst zeigt die HUD seinen Cooldown nie an.
-            abilityStatusDisplay[abilityId] = tile;
-            updateAbilityStatus(abilityId, { remainingMs: 0, durationMs: 0 });
-          }
-
-          // WP08 T046: refresh the per-ability bonus badge from LootSystem.
-          const dmgKey = 'dmg_' + abilityId;
-          const cdKey = 'cd_' + abilityId;
-          const dmgBonus = window.LootSystem
-            ? (window.LootSystem.getBonus(dmgKey) + window.LootSystem.getBonus('dmg_all_abilities'))
-            : 0;
-          const cdBonus = window.LootSystem
-            ? (window.LootSystem.getBonus(cdKey) + window.LootSystem.getBonus('cd_all_abilities'))
-            : 0;
-          if (tile.bonusBadge) {
-            if (dmgBonus > 0 || cdBonus > 0) {
-              const parts = [];
-              if (dmgBonus > 0) parts.push(`+${Math.round(dmgBonus * 100)}%`);
-              if (cdBonus > 0) parts.push(`-${Math.round(cdBonus * 100)}% CD`);
-              tile.bonusBadge.setText(parts.join(' '));
-              tile.bonusBadge.setVisible(true);
-            } else {
-              tile.bonusBadge.setText('');
-              tile.bonusBadge.setVisible(false);
-            }
-          }
-        } else {
-          tile.nameText.setText(_HUD_T('hud.slot.empty'));
-          tile.color = 0x555555;
-          tile.keyBadge.setFillStyle(0x555555, 0.12);
-          tile.keyBadge.setStrokeStyle(1, 0x555555, 0.4);
-          if (tile.iconText) tile.iconText.setText('');
-          if (tile.iconBg) tile.iconBg.setStrokeStyle(2, 0x555555, 0.5);
-          if (tile.radialOverlay) tile.radialOverlay.clear();
-          if (tile.bonusBadge) { tile.bonusBadge.setText(''); tile.bonusBadge.setVisible(false); }
-        }
-      });
-    };
-
-    const positionStatusTiles = (width, height) => {
-      const baseX = width - 20 - tileWidth;
-      const baseY = 150;
-      const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
-
-      // Attack tile always first
-      attackTile.container.setVisible(true);
-      attackTile.container.setPosition(baseX, baseY);
-      let visibleIndex = 1;
-
-      // 054: Roll tile always second (between attack and loadout slots)
-      rollTile.container.setVisible(true);
-      rollTile.container.setPosition(baseX, baseY + visibleIndex * tileSpacing);
-      visibleIndex++;
-
-      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
-        const tile = slotTiles[slotKey];
-        const equipped = loadout && loadout[slotKey];
-        if (equipped) {
-          tile.container.setVisible(true);
-          tile.container.setPosition(baseX, baseY + visibleIndex * tileSpacing);
-          visibleIndex++;
-        } else {
-          tile.container.setVisible(false);
-        }
-      });
-
-      // Potion tile always LAST (bottom of the bar, below all visible slots)
-      potionTile.container.setVisible(true);
-      potionTile.container.setPosition(baseX, baseY + visibleIndex * tileSpacing);
-    };
-
-    // Public refresh: rebuild mappings + reposition (called when loadout changes)
-    window._refreshAbilityHUD = () => {
-      refreshSlotMappings();
-      positionStatusTiles(this.scale.width, this.scale.height);
-    };
-
-    // Dev/test helper: inspect HUD tile visibility
-    window._getAbilityHUDState = () => {
-      const loadout = window.AbilitySystem ? window.AbilitySystem.getActiveLoadout() : null;
-      const list = [{
-        key: 'attack',
-        slot: null,
-        abilityId: null,
-        label: attackTile.nameText.text,
-        keyLabel: attackTile.keyText.text,
-        visible: attackTile.container.visible,
-        x: Math.round(attackTile.container.x),
-        y: Math.round(attackTile.container.y)
-      }];
-      ['slot1', 'slot2', 'slot3', 'slot4'].forEach((slotKey) => {
-        const tile = slotTiles[slotKey];
-        list.push({
-          key: slotKey,
-          slot: slotKey,
-          abilityId: loadout ? loadout[slotKey] : null,
-          label: tile.nameText.text,
-          keyLabel: tile.keyText.text,
-          visible: tile.container.visible,
-          x: Math.round(tile.container.x),
-          y: Math.round(tile.container.y)
-        });
-      });
-      return list;
-    };
-
-    // WP08 T048: aggregate affix bonuses once the HUD refresh hook exists so
-    // the first tile paint already reflects equipped items from the save.
-    if (window.LootSystem && typeof window.LootSystem.recomputeBonuses === 'function') {
-      try { window.LootSystem.recomputeBonuses(); } catch (e) { /* swallow */ }
-    }
-
-    refreshSlotMappings();
-    positionStatusTiles(this.scale.width, this.scale.height);
-    this.scale.on('resize', (gameSize) => {
-      positionStatusTiles(gameSize.width, gameSize.height);
-    });
-
-    updateAbilityStatus('attack', { remainingMs: 0, durationMs: 0 });
-  } else {
-    abilityStatusDisplay = {};
-  }
+  // Faehigkeitsleiste unten mittig (Desktop); Mobile legt hudLeiste.mobil
+  // die Ringe auf die Kreise von mobileControls.
+  if (!isMobile && window.hudLeiste) window.hudLeiste.bauen(this);
 
   // Quest-Tracker-HUD entfernt: aktive Quests stehen jetzt im Journal.
 }

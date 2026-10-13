@@ -91,8 +91,7 @@
     'versteck', 'sonder', 'akt', 'stark',
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
     'gegnerlauf',
-    'spezial',          // spezial=neu: Spezialangriffe als Bildfolgen (#174)
-    'hud'               // hud=neu: Faehigkeitsleiste mit Pixel-Icons (#195)
+    'spezial'           // spezial=neu: Spezialangriffe als Bildfolgen (#174)
   ];
 
   /**

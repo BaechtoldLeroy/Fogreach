@@ -1,5 +1,5 @@
 /**
- * tools/hudIconsBauen.js — Icon-Streifen fuer die Faehigkeitsleiste (?hud=neu).
+ * tools/hudIconsBauen.js — Icon-Streifen fuer die Faehigkeitsleiste und die HUD-Knoepfe (#195).
  *
  * Rohbilder: PixelLab create_1_direction_object, 48x48, unter
  * tools/rohbilder/hudicons/<name>.png (Name = Eintrag in hudLeiste.REIHE).

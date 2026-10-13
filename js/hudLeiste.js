@@ -1,13 +1,10 @@
 /* =====================================================================
- * hudLeiste.js — Faehigkeitsleiste mit Pixel-Icons (Vergleichsmodus ?hud=neu)
+ * hudLeiste.js — Faehigkeitsleiste mit Pixel-Icons (#195)
  * ---------------------------------------------------------------------
- * Nur mit ?debug=1&hud=neu. Ohne Flagge bleibt das HUD exakt wie bisher
- * (Kacheln oben rechts in main.js, farbige Kreise in mobileControls.js).
- *
  * Desktop: klassische Aktionsleiste unten mittig — quadratische
  * Messingfelder in der Reihenfolge der Tasten (Angriff, Rolle, Q W E R,
- * Trank). Mobile: dieselben Icons in Messingringen auf den unveraenderten
- * Kreisen von mobileControls (die bleiben Trefferflaeche).
+ * Trank). Mobile: dieselben Icons in Messingringen auf den Kreisen von
+ * mobileControls (die bleiben Trefferflaeche, Lage und Groesse unveraendert).
  *
  * Beide lesen ihren Zustand aus EINER Funktion (zustand) und zeichnen
  * ihn mit EINER Anzeige (Sweep + Restsekunden + Aufleuchten), damit
@@ -17,11 +14,16 @@
  * Icons: assets/ui/hud_icons.png, ein Streifen aus 48x48-Feldern, oben
  * farbig, darunter entsaettigt (gesperrt). Gebaut von tools/hudIconsBauen.js
  * aus den PixelLab-Rohbildern unter tools/rohbilder/hudicons/.
+ *
+ * Rueckfall, wenn der Streifen nicht geladen ist: Felder und Ringe stehen
+ * trotzdem, statt des Icons zeigen sie einen kurzen Namen (ersatz), und
+ * Sweep, Zahl und Zustaende laufen wie sonst.
  * ===================================================================== */
 (function () {
   'use strict';
 
   // Reihenfolge der Bilder im Streifen — tools/hudIconsBauen.js liest sie hier.
+  // Neue Icons nur hinten anhaengen, sonst verschieben sich die Frames.
   var REIHE = ['angriff', 'rolle', 'trank', 'aktion', 'portraet',
     'hammer', 'steelGrasp', 'charge', 'frenzy', 'berserk', 'whirlwind',
     'twistingBlades', 'cycloneStrike', 'frostNova', 'teleportDash', 'heilwunde', 'deathBlow',
@@ -39,8 +41,20 @@
   var MESSING = '#f3e6c4';
 
   if (typeof window !== 'undefined' && window.i18n) {
-    window.i18n.register('de', { 'hud.leiste.taste.leer': 'Leer' });
-    window.i18n.register('en', { 'hud.leiste.taste.leer': 'Space' });
+    window.i18n.register('de', {
+      'hud.leiste.taste.leer': 'Leer',
+      'hud.leiste.ersatz.attack': 'Hieb',
+      'hud.leiste.ersatz.roll': 'Rolle',
+      'hud.leiste.ersatz.potion': 'Trank',
+      'hud.leiste.ersatz.interact': 'Aktion'
+    });
+    window.i18n.register('en', {
+      'hud.leiste.taste.leer': 'Space',
+      'hud.leiste.ersatz.attack': 'Hit',
+      'hud.leiste.ersatz.roll': 'Roll',
+      'hud.leiste.ersatz.potion': 'Potion',
+      'hud.leiste.ersatz.interact': 'Use'
+    });
   }
   function T(key, rueck) {
     try {
@@ -49,14 +63,9 @@
     } catch (e) { return rueck; }
   }
 
-  /** Vergleichsmodus an? (nur ueber das Debug-Gate) */
-  function aktiv() {
-    try { return !!(window.DebugGate && window.DebugGate.flagge('hud') === 'neu'); } catch (e) { return false; }
-  }
-
-  /** Im preload(): den Icon-Streifen laden (nur mit Flagge, nur einmal). */
+  /** Im preload(): den Icon-Streifen laden, falls er noch fehlt. */
   function vorladen(scene) {
-    if (!aktiv() || !scene || !scene.load || scene.textures.exists(KEY)) return;
+    if (!scene || !scene.load || !scene.textures || scene.textures.exists(KEY)) return;
     scene.load.spritesheet(KEY, 'assets/ui/hud_icons.png?v=' + BILD_V, { frameWidth: KANTE, frameHeight: KANTE });
   }
 
@@ -67,6 +76,15 @@
     var n = REIHE.indexOf(NAME[id] || id);
     if (n < 0) return -1;
     return grau ? n + REIHE.length : n;
+  }
+
+  /** Kurzer Name fuer den Rueckfall ohne Icon-Streifen. */
+  function ersatzName(id) {
+    if (NAME[id]) return T('hud.leiste.ersatz.' + id, id);
+    var defs = window.AbilitySystem && window.AbilitySystem.ABILITY_DEFS;
+    var name = (defs && defs[id] && defs[id].name) || String(id || '');
+    // Erstes Wort, hoechstens 7 Zeichen: passt bei 11 px in ein Feld.
+    return name.split(' ')[0].slice(0, 7);
   }
 
   function _zahlTraenke() {
@@ -156,12 +174,19 @@
   }
 
   /**
-   * Eine Knopf-Anzeige: Icon, Sweep, Restsekunden, Aufleuchten. In einem
-   * Container (Mitte = 0,0). form 'quadrat' (Desktop) oder 'kreis' (Mobile),
-   * r = halbe Kante bzw. Radius der Sweep-Flaeche.
+   * Eine Knopf-Anzeige: Icon (bzw. Ersatzname), Sweep, Restsekunden,
+   * Aufleuchten. In einem Container (Mitte = 0,0). form 'quadrat' (Desktop)
+   * oder 'kreis' (Mobile), r = halbe Kante bzw. Radius der Sweep-Flaeche.
    */
   function baueAnzeige(scene, c, form, r, iconGroesse, schrift) {
-    var icon = scene.add.image(0, 0, KEY, 0).setDisplaySize(iconGroesse, iconGroesse).setScrollFactor(0);
+    var mitBild = bereit(scene);
+    // Ohne Streifen ein leeres Bild statt Phasers gruenem Platzhalter.
+    var icon = scene.add.image(0, 0, mitBild ? KEY : '__DEFAULT', mitBild ? 0 : undefined)
+      .setDisplaySize(iconGroesse, iconGroesse).setScrollFactor(0).setVisible(false);
+    var ersatz = scene.add.text(0, 0, '', {
+      fontFamily: 'monospace', fontSize: Math.max(10, Math.round(schrift * 0.7)) + 'px', fontStyle: 'bold',
+      color: MESSING, stroke: '#000000', strokeThickness: 3, align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setVisible(false);
     var sweep = scene.add.graphics().setScrollFactor(0);
     var blitz = form === 'kreis'
       ? scene.add.circle(0, 0, r, 0xffe7a3, 1)
@@ -171,20 +196,25 @@
       fontFamily: 'monospace', fontSize: schrift + 'px', fontStyle: 'bold',
       color: '#ffffff', stroke: '#000000', strokeThickness: 4
     }).setOrigin(0.5).setScrollFactor(0).setVisible(false);
-    c.add([icon, sweep, blitz, zahl]);
+    c.add([icon, ersatz, sweep, blitz, zahl]);
     return {
-      form: form, r: r, icon: icon, sweep: sweep, blitz: blitz, zahl: zahl,
+      form: form, r: r, mitBild: mitBild, icon: icon, ersatz: ersatz, sweep: sweep, blitz: blitz, zahl: zahl,
       id: null, grau: null, anteil: 0, rest: 0, dauer: 0, zahlText: '', zeichnungen: 0
     };
   }
 
-  /** Icon setzen (nur bei Wechsel). */
-  function setzeIcon(a, id, grau) {
-    if (a.id === id && a.grau === !!grau) return;
+  /** Icon setzen (nur bei Wechsel); ohne Bild der Ersatzname, gesperrt grau. */
+  function setzeIcon(a, id, grau, erzwingen) {
+    if (!erzwingen && a.id === id && a.grau === !!grau) return;
     a.id = id; a.grau = !!grau;
-    var f = frame(id, grau);
+    var f = a.mitBild ? frame(id, grau) : -1;
     a.icon.setVisible(f >= 0);
     if (f >= 0) a.icon.setFrame(f);
+    a.ersatz.setVisible(f < 0 && !!id);
+    if (f < 0 && id) {
+      a.ersatz.setText(ersatzName(id));
+      a.ersatz.setColor(grau ? '#bdb4a6' : MESSING);
+    }
   }
 
   /** Den Zustand eines Bildes auftragen; zeichnet nur bei sichtbarer Aenderung. */
@@ -285,11 +315,12 @@
       if (f.slotIdx) {
         var id = loadout ? loadout['slot' + f.slotIdx] : null;
         f.abilityId = id || null;
-        f.c.setVisible(!!id && frame(id) >= 0);
-        if (!f.c.visible) return;
-        setzeIcon(f.a, id, false);
+        f.c.setVisible(!!id);
+        if (!id) return;
+        setzeIcon(f.a, id, false, true);
       } else {
-        setzeIcon(f.a, f.key, false);
+        // erzwingen: der Ersatzname folgt so auch einem Sprachwechsel.
+        setzeIcon(f.a, f.key, f.a.grau, true);
       }
       sichtbar.push(f);
     });
@@ -326,11 +357,10 @@
   }
 
   /**
-   * Leiste in der GameScene bauen (nur Desktop, nur mit Flagge). Uebernimmt
-   * die Rueckrufe, die sonst die Kacheln in main.js stellen.
+   * Leiste in der GameScene bauen (Desktop). Stellt die Rueckrufe, ueber
+   * die AbilitySystem, LootSystem und die Boss-Inszenierung sie ansprechen.
    */
   function bauen(scene) {
-    if (!bereit(scene)) return null;
     var wurzel = scene.add.container(0, 0).setDepth(TIEFE).setScrollFactor(0);
     var felder = [
       ['attack', 0], ['roll', 0], ['slot1', 1], ['slot2', 2], ['slot3', 3], ['slot4', 4], ['potion', 0]
@@ -338,16 +368,19 @@
     _leiste = { scene: scene, wurzel: wurzel, felder: felder };
 
     window._refreshAbilityHUD = _auffrischen;
-    window._refreshPotionTile = function () {};  // der Takt liest den Trank selbst
+    // #77: waehrend eines inszenierten Moments ausblenden. Rueckgabe: wie viele
+    // Felder umgeschaltet wurden (der Aufrufer merkt sich, ob es etwas gab).
     window.faehigkeitsLeisteSichtbar = function (an) {
       if (!_leiste || !_leiste.wurzel.scene) return 0;
       _leiste.wurzel.setVisible(!!an);
       return _leiste.felder.length;
     };
+    // Pruefhilfe (tools/testGame.js): Angriff und die vier Slots.
     window._getAbilityHUDState = function () {
-      return felder.map(function (f) {
+      return felder.filter(function (f) { return f.key === 'attack' || f.slotIdx; }).map(function (f) {
         return { key: f.key, slot: f.slotIdx ? 'slot' + f.slotIdx : null, abilityId: f.abilityId,
-          keyLabel: f.taste.text, visible: f.c.visible, x: Math.round(f.c.x), y: Math.round(f.c.y) };
+          label: ersatzName(f.abilityId || f.key), keyLabel: f.taste.text, visible: f.c.visible,
+          x: Math.round(f.c.x), y: Math.round(f.c.y) };
       });
     };
 
@@ -356,13 +389,15 @@
     scene.events.on('update', _taktLeiste);
     var beiGroesse = function () { _auffrischen(); };
     scene.scale.on('resize', beiGroesse);
-    // Steuerungswechsel (Q/W/E/R <-> 1-4) aendert die Tastenmarken.
+    // Steuerungswechsel (Q/W/E/R <-> 1-4) und Sprache aendern die Beschriftung.
     var IS = window.InputScheme;
-    var ab = (IS && typeof IS.onChange === 'function') ? IS.onChange(_auffrischen) : null;
+    var abIS = (IS && typeof IS.onChange === 'function') ? IS.onChange(_auffrischen) : null;
+    var abSprache = (window.i18n && typeof window.i18n.onChange === 'function') ? window.i18n.onChange(_auffrischen) : null;
     scene.events.once('shutdown', function () {
       scene.events.off('update', _taktLeiste);
       scene.scale.off('resize', beiGroesse);
-      if (typeof ab === 'function') ab();
+      if (typeof abIS === 'function') abIS();
+      if (typeof abSprache === 'function') abSprache();
       if (_leiste && _leiste.scene === scene) _leiste = null;
     });
     return _leiste;
@@ -370,13 +405,13 @@
 
   /**
    * Wie viel Platz die Leiste unten braucht (Abstand vom unteren Rand bis
-   * knapp ueber ihre Oberkante). 0 ohne Leiste — Tutorialbox und
-   * Richtungspfeil rutschen nur dann hoch. Aus Flagge und Szene bestimmt,
-   * nicht aus der gebauten Leiste: die Tutorialbox entsteht teils schon
-   * beim Szenenstart, vor dem HUD.
+   * knapp ueber ihre Oberkante); 0, wo es keine gibt (Hub, Mobile).
+   * Tutorialbox und Richtungspfeil rutschen darueber. Aus der Szene
+   * bestimmt, nicht aus der gebauten Leiste: die Tutorialbox entsteht teils
+   * schon beim Szenenstart, vor dem HUD.
    */
   function freiraumUnten(scene) {
-    if (!aktiv() || !scene || !scene.sys || !scene.sys.settings) return 0;
+    if (!scene || !scene.sys || !scene.sys.settings) return 0;
     if (scene.sys.settings.key !== 'GameScene') return 0;
     var g = scene.sys.game;
     if (g && g.device && g.device.input && g.device.input.touch) return 0;
@@ -403,8 +438,11 @@
    */
   function mobil(scene, buttons) {
     _mobilAbbauen();
-    if (!bereit(scene) || !Array.isArray(buttons)) return [];
+    if (!scene || !Array.isArray(buttons)) return [];
     var UR = window.uiRahmen;
+    if (_mobil.scene !== scene) {
+      scene.events.once('shutdown', function () { if (_mobil.scene === scene) { _mobilAbbauen(); _mobil.scene = null; } });
+    }
     _mobil.scene = scene;
     _mobil.deko = buttons.map(function (b) {
       var spec = b.spec, kreis = b.circle;
@@ -435,16 +473,28 @@
       setzeIcon(a, d.abilityId || key, false);
       return d;
     });
-    _mobil.takt = function () { _taktMobil(scene); };
+    _mobil.takt = function () { taktMobil(_mobil.deko, scene); };
     scene.events.on('update', _mobil.takt);
-    scene.events.once('shutdown', function () { if (_mobil.scene === scene) { _mobilAbbauen(); _mobil.scene = null; } });
-    _taktMobil(scene);
+    taktMobil(_mobil.deko, scene);
     return _mobil.deko;
   }
 
-  function _taktMobil(scene) {
-    _mobil.deko.forEach(function (d) {
-      if (!d.c.scene || !d.kreis.scene) return;
+  /**
+   * Lebt eine Dekoration noch? Ein zerstoertes Phaser-Objekt ist weiterhin
+   * truthy, destroy() setzt aber `scene` zurueck. setText auf einem toten
+   * Text rendert die Textur neu und stuerzt ab ("reading 'glTexture'") —
+   * darum wird eine Dekoration als Einheit geprueft und sonst uebergangen.
+   */
+  function lebtDeko(d) {
+    if (!d || !d.c || !d.c.scene || !d.kreis || !d.kreis.scene || !d.a) return false;
+    var teile = [d.a.icon, d.a.ersatz, d.a.sweep, d.a.blitz, d.a.zahl, d.anzahl].concat(d.pips || []);
+    for (var i = 0; i < teile.length; i++) if (teile[i] && !teile[i].scene) return false;
+    return true;
+  }
+
+  function taktMobil(liste, scene) {
+    liste.forEach(function (d) {
+      if (!lebtDeko(d)) return;
       // Kreis kann sich verschieben (Groessenwechsel) — Ring folgt.
       if (d.c.x !== d.kreis.x || d.c.y !== d.kreis.y) d.c.setPosition(d.kreis.x, d.kreis.y);
       if (d.c.visible !== d.kreis.visible) d.c.setVisible(d.kreis.visible);
@@ -477,11 +527,11 @@
     });
   }
 
-  /** Fuer #77 (Boss-Inszenierung): die Ringe mit ausblenden. */
+  /** #77 (Boss-Inszenierung): Kreise samt Ringen aus- und wieder einblenden. */
   function mobilSichtbar(an) {
     var n = 0;
     _mobil.deko.forEach(function (d) {
-      if (!d.c.scene || !d.kreis.scene) return;
+      if (!lebtDeko(d)) return;
       // Der Ring folgt im Takt der Sichtbarkeit seines Kreises.
       if (!an) { d.warSichtbar = d.kreis.visible; d.kreis.setVisible(false); d.c.setVisible(false); }
       else if (d.warSichtbar) { d.kreis.setVisible(true); d.c.setVisible(true); }
@@ -491,11 +541,14 @@
   }
 
   var hudLeiste = {
-    aktiv: aktiv, vorladen: vorladen, bereit: bereit, frame: frame, zustand: zustand,
+    vorladen: vorladen, bereit: bereit, frame: frame, ersatzName: ersatzName, zustand: zustand,
     bauen: bauen, freiraumUnten: freiraumUnten, mobil: mobil, mobilSichtbar: mobilSichtbar,
-    zeichneSweep: zeichneSweep, REIHE: REIHE, KEY: KEY,
+    zeichneSweep: zeichneSweep, taktMobil: taktMobil, lebtDeko: lebtDeko, REIHE: REIHE, KEY: KEY,
     _leiste: function () { return _leiste; }, _mobil: function () { return _mobil.deko; }
   };
-  if (typeof window !== 'undefined') window.hudLeiste = hudLeiste;
+  if (typeof window !== 'undefined') {
+    window.hudLeiste = hudLeiste;
+    window.mobileAbilityLeisteSichtbar = mobilSichtbar;
+  }
   if (typeof module !== 'undefined' && module.exports) module.exports = hudLeiste;
 })();

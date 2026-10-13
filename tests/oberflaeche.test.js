@@ -68,11 +68,17 @@ function wahlDialog(H) {
   H.step(3);
 }
 
-/** Mobile-Faehigkeitsknopf im Hub schmuecken; liefert die Messingringe der Szene. */
+/**
+ * Mobile-Faehigkeitsknopf im Hub schmuecken (hudLeiste.mobil, #195); liefert
+ * die Messingringe der Szene. Die Ringe liegen in einem Container je Knopf.
+ */
 const MOBILE_KNOPF = `var sc = ${HUB};
-  var c = sc.add.circle(200, 300, 38, 0xff0000, 0.6).setScrollFactor(0).setDepth(1200);
-  var los = function () { window.mobileAbilityButtonsDecorate({ detail: { scene: sc, buttons: [{ spec: { key: 'attack' }, circle: c }] } }); };
-  var ringe = function () { return sc.children.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'ui_ring'; }); };`;
+  window.__knopf = window.__knopf || sc.add.circle(200, 300, 38, 0xff0000, 0.6).setScrollFactor(0).setDepth(1200);
+  var c = window.__knopf;
+  var los = function () { window.hudLeiste.mobil(sc, [{ spec: { key: 'attack' }, circle: c }]); };
+  var ringe = function () { var r = []; (function lauf(l) { l.forEach(function (o) {
+    if (o.type === 'Container') return lauf(o.list);
+    if (o.type === 'Image' && o.texture.key === 'ui_ring') r.push(o); }); })(sc.children.list); return r; };`;
 
 /** Bilder (auch in Containern) einer Szene mit ihrem Texturschluessel. */
 const BILDER = (szeneJs) => `(function () { var r = []; (function lauf(l) { l.forEach(function (o) {
@@ -256,19 +262,23 @@ describe('Messing-Oberflaeche: Inventar, Dialoge, Wissensbaum, Mobile, Schmiede'
   });
 
   test('Mobile-Knopf: Ring folgt dem Knopf, blendet mit aus und wird abgebaut', () => {
+    // Der Ring sitzt im Container seines Knopfs; Lage = die des Containers.
+    const lage = (ringJs) => `(function (ring) { var k = ring.parentContainer;
+      return { x: k.x + ring.x, y: k.y + ring.y, b: ring.displayWidth, tiefe: k.depth }; })(${ringJs})`;
+    const vorher = run(H, `(function () { ${MOBILE_KNOPF} los(); window.__ring = ringe()[0]; return ${lage('window.__ring')}; })()`);
+    run(H, 'window.__knopf.setPosition(260, 320)');
+    H.step(1);   // der Ring folgt im Takt der Szene
     const r = run(H, `(function () { ${MOBILE_KNOPF}
-      los();
-      var ring = ringe()[0];
-      var vorher = { x: ring.x, y: ring.y, b: ring.displayWidth, tiefe: ring.depth };
-      c.setPosition(260, 320);
-      window.dispatchEvent('demonfall:mobile-layout-changed');   // Testkopf: dispatch(typ)
-      var nachher = { x: ring.x, y: ring.y };
-      window.mobileAbilityLeisteSichtbar(false); var aus = ring.visible;
-      window.mobileAbilityLeisteSichtbar(true); var an = ring.visible;
+      var ring = window.__ring;
+      var nachher = ${lage('ring')};
+      window.mobileAbilityLeisteSichtbar(false); var aus = ring.parentContainer.visible && c.visible;
+      window.mobileAbilityLeisteSichtbar(true); var an = ring.parentContainer.visible && c.visible;
       los();   // Neuaufbau des Layouts: der alte Ring muss weg
-      return { vorher: vorher, nachher: nachher, aus: aus, an: an, anzahl: ringe().length, alt: !!ring.scene };
+      var anzahl = ringe().length, alt = !!ring.scene;
+      window.hudLeiste.mobil(sc, []); c.destroy(); window.__knopf = null;
+      return { nachher: { x: nachher.x, y: nachher.y }, aus: aus, an: an, anzahl: anzahl, alt: alt };
     })()`);
-    assert.deepStrictEqual(r.vorher, { x: 200, y: 300, b: 38 * 2.2, tiefe: 1200.5 });
+    assert.deepStrictEqual(vorher, { x: 200, y: 300, b: 38 * 2.2, tiefe: 1201 });
     assert.deepStrictEqual(r.nachher, { x: 260, y: 320 });
     assert.strictEqual(r.aus, false);
     assert.strictEqual(r.an, true);
@@ -384,7 +394,9 @@ describe('Rueckfall im Hub: fehlen die Bilder, bleibt die alte Zeichnung', () =>
   });
 
   test('Mobile-Knopf: kein Ring, der Knopf selbst bleibt', () => {
-    const r = run(H, `(function () { ${MOBILE_KNOPF} los(); return { ringe: ringe().length, kreis: c.visible && !!c.scene }; })()`);
+    const r = run(H, `(function () { ${MOBILE_KNOPF} los();
+      var e = { ringe: ringe().length, kreis: c.visible && !!c.scene };
+      window.hudLeiste.mobil(sc, []); c.destroy(); window.__knopf = null; return e; })()`);
     assert.deepStrictEqual(r, { ringe: 0, kreis: true });
   });
 
@@ -409,10 +421,10 @@ const HUD_BILDER = `(function () { var sc = window.game.scene.getScene('GameScen
     if (o.type === 'Image') r.push({ key: o.texture.key, tiefe: tiefe === null ? o.depth : tiefe, sichtbar: o.visible });
   }); })(sc.children.list, null); return r; })()`;
 
-/** Erstes Element jeder Faehigkeitskachel (Bild-Schluessel oder Typ). */
-const KACHEL_GRUND = `(function () { var sc = window.game.scene.getScene('GameScene');
-  return sc.children.list.filter(function (o) { return o.type === 'Container' && o.depth === 1001; })
-    .map(function (c) { return c.list[0].type === 'Image' ? c.list[0].texture.key : c.list[0].type; }); })()`;
+/** Grund jedes Felds der Faehigkeitsleiste (#195): Bild-Schluessel oder Typ. */
+const KACHEL_GRUND = `(function () {
+  return window.hudLeiste._leiste().felder.map(function (f) { var g = f.c.list[0];
+    return g.type === 'Image' ? g.texture.key : g.type; }); })()`;
 
 describe('HUD im Dungeon', () => {
   let H = null;
@@ -429,11 +441,11 @@ describe('HUD im Dungeon', () => {
     assert.strictEqual(run(H, `window.HUDv2.elements.hpFill.visible`), true);
   });
 
-  test('Faehigkeitskacheln auf einer gebackenen Messing-Platte', () => {
+  test('Faehigkeitsleiste auf gebackenen Messingfeldern', () => {
     const r = run(H, KACHEL_GRUND);
-    assert.ok(r.length >= 3, 'zu wenige Kacheln: ' + r.length);
-    assert.ok(r.every((k) => k.indexOf('ui_rahmen@220x42') === 0), r.join(','));
-    // Eine Textur fuer alle Kacheln.
+    assert.strictEqual(r.length, 7, 'Felder der Leiste: ' + r.length);
+    assert.ok(r.every((k) => k.indexOf('ui_feld@52x52') === 0), r.join(','));
+    // Eine Textur fuer alle Felder.
     assert.strictEqual(new Set(r).size, 1);
   });
 
@@ -454,12 +466,15 @@ describe('HUD im Dungeon', () => {
     const auswahl = `(function () { var sc = window.game.scene.getScene('GameScene'), r = [];
       sc.children.list.forEach(function (o) {
         if (o.type === 'Text' && o.depth >= 1600 && o.depth < 1700) r.push(o);
-        if (o.type === 'Container' && o.depth === 1001 && o.visible) o.list.forEach(function (t) { if (t.type === 'Text') r.push(t); });
-      }); return r; })()`;
+      });
+      // Tasten und Trankzahl der Faehigkeitsleiste
+      window.hudLeiste._leiste().felder.forEach(function (f) { if (!f.c.visible) return;
+        r.push(f.taste); if (f.anzahl) r.push(f.anzahl); });
+      return r; })()`;
     alleLesbar(kontraste(H, auswahl), 'HUD');
   });
 
-  test('Rueckfall: ohne Bilder baut das HUD Goldraender und Kachel-Rechtecke', async () => {
+  test('Rueckfall: ohne Bilder baut das HUD Goldraender und Feld-Rechtecke', async () => {
     // Laden gescheitert nachstellen und die Spielszene neu aufbauen lassen.
     bilderWeg(H);
     run(H, `window.game.scene.getScene('GameScene').scene.restart(); null`);
@@ -469,7 +484,7 @@ describe('HUD im Dungeon', () => {
     const b = run(H, HUD_BILDER);
     assert.strictEqual(b.filter((x) => x.key === 'ui_ring' || x.key.indexOf('ui_leiste') === 0).length, 0);
     const grund = run(H, KACHEL_GRUND);
-    assert.ok(grund.length >= 3 && grund.every((t) => t === 'Rectangle'), grund.join(','));
+    assert.ok(grund.length === 7 && grund.every((t) => t === 'Rectangle'), grund.join(','));
     // Die gezeichneten Goldraender der runden Knoepfe stehen wieder.
     const e = run(H, `({ menue: window.HUDv2.elements.burgerBg.lineWidth, inv: window.HUDv2.elements.invBg.lineWidth, hp: window.HUDv2.elements.hpFill.visible })`);
     assert.ok(e.menue > 0 && e.inv > 0, JSON.stringify(e));

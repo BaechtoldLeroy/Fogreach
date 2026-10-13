@@ -1,10 +1,14 @@
-// tests/hudLeiste.test.js — Faehigkeitsleiste mit Pixel-Icons (?hud=neu).
+// tests/hudLeiste.test.js — Faehigkeitsleiste mit Pixel-Icons (#195).
 //
-// Mit Flagge: Desktop zeigt eine Aktionsleiste unten mittig (Messingfelder,
-// Icon aus assets/ui/hud_icons.png, Taste klein in der Ecke, dunkler Sweep
-// fuer die Abklingzeit), Mobile legt dieselben Icons in Messingringe auf die
-// unveraenderten Kreise. Ohne Flagge bleibt alles wie vorher: Kacheln oben
-// rechts, farbige Kreise, Tutorialbox 32 px ueber dem Rand.
+// Desktop: Aktionsleiste unten mittig (Messingfelder, Icon aus
+// assets/ui/hud_icons.png, Taste klein in der Ecke, dunkler Sweep fuer die
+// Abklingzeit). Mobile: dieselben Icons in Messingringen auf den Kreisen von
+// mobileControls, deren Lage und Trefferflaechen unveraendert bleiben.
+// Portraet, Menue- und Inventarknopf als Pixel-Icons.
+//
+// Rueckfall, wenn der Icon-Streifen nicht geladen ist: dieselbe Leiste und
+// dieselben Ringe, statt der Icons ein kurzer Name; Portraet leer, Menue und
+// Inventar als schlichte Zeichen.
 //
 // Geprueft am echten Dungeon (headless, Canvas). Der Dungeon selbst rendert
 // headless schwarz, das HUD aber sichtbar — genau das wird gemessen.
@@ -35,9 +39,9 @@ function schutz(H) {
     window._playerInvincible = true; if (playerHealth < playerMaxHealth) playerHealth = playerMaxHealth; })`);
 }
 
-/** Nach Touch umschalten und die GameScene neu starten (Mobile-Aufbau). */
-async function mobilNeustart(H) {
-  H.run(`(function () { window.game.device.input.touch = true;
+/** GameScene neu starten (optional als Touch-Geraet) und wieder belegen. */
+async function neustart(H, touch) {
+  H.run(`(function () { window.game.device.input.touch = ${!!touch};
     window.game.scene.getScene('GameScene').scene.restart(); })()`);
   assert.ok(await H.waitForScene('GameScene', { maxRounds: 250 }), 'GameScene nach dem Neustart nicht erreicht');
   schutz(H);
@@ -46,14 +50,20 @@ async function mobilNeustart(H) {
   H.step(5);
 }
 
+/** Laden des Icon-Streifens gescheitert nachstellen (bleibt fuer die Sitzung so). */
+function ohneStreifen(H) {
+  H.run(`(function () { window.hudLeiste.vorladen = function () {};
+    window.game.textures.remove('hud_icons'); })()`);
+}
+
 /** Objekte unter der Leiste, durch Container hindurch gezaehlt. */
 const LEISTE_OBJEKTE = `(function () { var n = 0; (function lauf(l) { l.forEach(function (o) { n++;
   if (o.type === 'Container') lauf(o.list); }); })(window.hudLeiste._leiste().wurzel.list); return n; })()`;
 
 /**
- * Trefferflaechen der Mobile-Knoepfe, nach Schluessel: das gemeldete
- * Rechteck aus mobileControls UND die echte Eingabeflaeche des Kreises
- * (Radius, Breite der hitArea) — der Kreis selbst ist das Tap-Ziel.
+ * Trefferflaechen der Mobile-Knoepfe, nach Schluessel: das gemeldete Rechteck
+ * aus mobileControls, der Radius des Kreises (er ist das Tap-Ziel) und die
+ * Groesse seiner Eingabeflaeche.
  */
 function trefferflaechen(H) {
   const l = H.run(`(function () { var s = window.game.scene.getScene('GameScene');
@@ -65,6 +75,24 @@ function trefferflaechen(H) {
   const m = {};
   for (let i = 0; i < l.length; i++) m[l[i][0]] = l[i].slice(1);
   return m;
+}
+
+/**
+ * Radius je Knopf, wie mobileControls ihn festlegt (BASE_RADIUS 38 mal Faktor
+ * bei Knopfgroesse 1): Primaer 1,71, Ring 0,9, Trank 1,0. Die Ringe duerfen
+ * daran nichts aendern.
+ */
+const SOLL_RADIUS = { attack: 38 * 1.71, roll: 38 * 0.9, potion: 38, hammer: 38 * 0.9, steelGrasp: 38 * 0.9, charge: 38 * 0.9, frostNova: 38 * 0.9 };
+
+function pruefeTrefferflaechen(tr) {
+  assert.deepStrictEqual(Object.keys(tr).sort().join(','), Object.keys(SOLL_RADIUS).sort().join(','));
+  Object.keys(SOLL_RADIUS).forEach((k) => {
+    const [halbW, halbH, radius, flaeche] = tr[k];
+    assert.ok(Math.abs(halbW - SOLL_RADIUS[k]) < 0.01 && Math.abs(halbH - SOLL_RADIUS[k]) < 0.01,
+      k + ' Trefferrechteck ' + halbW + ' statt ' + SOLL_RADIUS[k]);
+    assert.ok(Math.abs(radius - SOLL_RADIUS[k]) < 0.01, k + ' Kreisradius ' + radius + ' statt ' + SOLL_RADIUS[k]);
+    assert.ok(flaeche >= 2 * SOLL_RADIUS[k] - 0.01, k + ' Eingabeflaeche ' + flaeche + ' zu klein');
+  });
 }
 
 /** Mittlere Helligkeit (0..255) eines Bildschirm-Rechtecks im gerenderten Bild. */
@@ -86,83 +114,79 @@ function bannerUnterkante(H) {
     var r = b.bg.getBounds(); b.bg.destroy(); b.text.destroy(); return r.bottom; })()`);
 }
 
-let ohneMobil = null; // Trefferflaechen ohne Flagge, Vergleichsmass fuer Mobile mit Flagge
-let ohneKnoepfe = null; // Menue-/Inventarknopf ohne Flagge
-
-/** Menue- und Inventarknopf oben rechts: Zeichen, Pixel-Icons, Klickflaechen. */
-const MENUE_KNOEPFE = `(function () { var e = window.HUDv2.elements, s = window.game.scene.getScene('GameScene');
+/**
+ * Menue- und Inventarknopf oben rechts: Icon (Bild oder Zeichen) und
+ * Klickflaeche. Die Klickflaechen liegen fest: ICON_R 22, 12 px vom Rand,
+ * 8 px Abstand untereinander.
+ */
+const MENUE_KNOEPFE = `(function () { var e = window.HUDv2.elements;
   var flaeche = function (h) { var b = h.getBounds(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height), !!(h.input && h.input.enabled)]; };
-  var icon = function (b) { return b ? { frame: b.frame.name, sichtbar: b.visible, w: Math.round(b.displayWidth), x: b.x, y: b.y } : null; };
-  return { burgerText: e.burgerText.visible, invText: e.invText.visible,
-    burgerHit: flaeche(e.burgerHit), invHit: flaeche(e.invHit),
-    burger: icon(e.burgerIcon), inv: icon(e.invIcon),
-    bilder: s.children.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'hud_icons' && o.y < 120 && o.x > 880; }).length }; })()`;
+  var icon = function (b) { return { typ: b.type, frame: b.frame ? b.frame.name : null, tex: b.texture ? b.texture.key : null,
+    text: b.text || null, sichtbar: b.visible, w: Math.round(b.displayWidth) }; };
+  return { burgerHit: flaeche(e.burgerHit), invHit: flaeche(e.invHit), burger: icon(e.burgerIcon), inv: icon(e.invIcon),
+    portraet: e.portraitIcon ? icon(e.portraitIcon) : null }; })()`;
+const KLICK_MENUE = JSON.stringify([[904, 12, 44, 44, true], [904, 64, 44, 44, true]]);
 
-describe('ohne Flagge: alles wie bisher', () => {
+/** Hover hebt das Knopf-Icon, Verlassen setzt zurueck, Druck gibt nach und federt zurueck. */
+function pruefeKnopfZustaende(H) {
+  const skala = (n) => H.run(`window.HUDv2.elements.${n}Icon.scaleX`);
+  const s0 = skala('inv');
+  H.run(`window.HUDv2.elements.invHit.emit('pointerover')`);
+  assert.ok(skala('inv') > s0, 'kein Hover');
+  H.run(`window.HUDv2.elements.invHit.emit('pointerout')`);
+  assert.strictEqual(skala('inv'), s0);
+  // Druck: nur den Zustands-Lauscher rufen (der erste oeffnet das Menue, das
+  // wuerde die folgenden Faelle verdecken). Ein Tap auf dem Handy ist derselbe
+  // pointerdown; ein pointerup kommt dort nicht an.
+  const b0 = skala('burger');
+  H.run(`(function () { var l = window.HUDv2.elements.burgerHit.listeners('pointerdown'); l[l.length - 1](); })()`);
+  assert.ok(skala('burger') < b0, 'kein Druckzustand');
+  H.step(20);
+  assert.strictEqual(skala('burger'), b0, 'Druckzustand federt nicht zurueck');
+}
+
+const felder = (H) => H.run(`window.hudLeiste._leiste().felder.filter(function (f) { return f.c.visible; })
+  .map(function (f) { var b = f.c.getBounds(); return { key: f.key, id: f.abilityId, taste: f.taste.text,
+    tex: f.a.icon.texture.key, frame: f.a.icon.frame.name, iconSichtbar: f.a.icon.visible,
+    ersatz: f.a.ersatz.visible ? f.a.ersatz.text : null,
+    x: b.x, y: b.y, r: b.right, u: b.bottom }; })`);
+
+/** Sweep des Felds an Position idx: erscheint beim Ausloesen, dunkelt ab, schrumpft. */
+function pruefeSweep(H, idx) {
+  const lese = () => H.run(`(function () { var f = window.hudLeiste._leiste().felder[${idx}];
+    return { anteil: f.a.anteil, zahl: f.a.zahl.visible ? f.a.zahl.text : '', befehle: f.a.sweep.commandBuffer.length,
+      blitz: f.a.blitz.alpha }; })()`);
+  for (let n = 0; lese().anteil > 0 && n < 200; n++) H.step(10);
+  assert.strictEqual(lese().anteil, 0, 'Sweep ohne Abklingzeit');
+  // Gemessen am Bild: das Feld wird sichtbar dunkler (Feld ohne Rand).
+  const feld = H.run(`(function () { var f = window.hudLeiste._leiste().felder[${idx}], b = f.c.getBounds();
+    return { x: b.x + 8, y: b.y + 16, r: b.right - 8, u: b.bottom - 8 }; })()`);
+  const hellFrei = helligkeit(H, feld);
+  H.run(`window.AbilitySystem.tryActivate('slot${idx - 1}', window.game.scene.getScene('GameScene'))`);
+  H.step(3);
+  const a = lese();
+  assert.ok(a.anteil > 0.9 && a.befehle > 0, 'kein Sweep nach dem Ausloesen: ' + JSON.stringify(a));
+  const hellCd = helligkeit(H, feld);
+  assert.ok(hellCd < hellFrei * 0.75, 'Sweep dunkelt das Feld nicht ab: ' + hellFrei.toFixed(1) + ' -> ' + hellCd.toFixed(1));
+  assert.ok(/^\d+$/.test(a.zahl), 'keine Restsekunden: ' + a.zahl);
+  H.step(120);
+  const b = lese();
+  assert.ok(b.anteil < a.anteil && b.anteil > 0, 'Sweep schrumpft nicht: ' + a.anteil + ' -> ' + b.anteil);
+  return lese;
+}
+
+describe('Normalfall: Leiste, Ringe und Knoepfe mit Pixel-Icons', () => {
   let H = null;
   before(async () => {
     H = await launchDungeon({ depth: 5, zusatz: '&debug=1' });
-    // Unverwundbar: die Faelle takten bis zu 15 s Spielzeit, ein Tod wuerde
-    // die Szene wechseln (gemessen im Gesamtlauf: Leiste weg mitten im Fall).
     schutz(H);
     H.step(20);
     belegen(H, BELEGUNG);
   });
   after(async () => { if (H) await H.shutdown(); });
-
-  test('Desktop: die alten Kacheln stehen oben rechts, keine Leiste, kein Icon-Streifen', () => {
-    const r = H.run(`(function () { var s = window.game.scene.getScene('GameScene');
-      var st = window._getAbilityHUDState();
-      return { leiste: window.hudLeiste._leiste(), streifen: s.textures.exists('hud_icons'),
-        label: st[0].label, x: st[0].x, y: st[0].y }; })()`);
-    assert.strictEqual(r.leiste, null, 'die neue Leiste steht ohne Flagge da');
-    assert.strictEqual(r.streifen, false, 'der Icon-Streifen wird ohne Flagge geladen');
-    assert.ok(r.label && r.x > 600 && r.y === 150, 'die Angriffskachel steht nicht mehr oben rechts: ' + JSON.stringify(r));
-  });
-
-  test('Tutorialbox und Portraet unveraendert', () => {
-    assert.strictEqual(bannerUnterkante(H), 480 - 32);
-    const bilder = H.run(`window.game.scene.getScene('GameScene').children.list
-      .filter(function (o) { return o.type === 'Image' && o.texture && o.texture.key === 'hud_icons'; }).length`);
-    assert.strictEqual(bilder, 0);
-  });
-
-  test('Menue- und Inventarknopf: gezeichnete Zeichen wie bisher', () => {
-    const k = H.run(MENUE_KNOEPFE);
-    ohneKnoepfe = k;
-    assert.ok(k.burgerText && k.invText, 'Zeichen der Knoepfe unsichtbar: ' + JSON.stringify(k));
-    assert.strictEqual(k.bilder, 0, 'Pixel-Icons ohne Flagge');
-  });
-
-  test('Mobile: farbige Kreise, keine Ringe der Leiste', async () => {
-    await mobilNeustart(H);
-    ohneMobil = trefferflaechen(H);
-    assert.ok(Object.keys(ohneMobil).length >= 6, 'zu wenige Mobile-Knoepfe: ' + Object.keys(ohneMobil).join(','));
-    assert.strictEqual(H.run('window.hudLeiste._mobil().length'), 0);
-    const farbe = H.run(`window.attackBtn.fillColor`);
-    assert.strictEqual(farbe, 0xff0000, 'der Angriffsknopf hat seine Farbe verloren');
-  });
-});
-
-describe('mit ?hud=neu', () => {
-  let H = null;
-  before(async () => {
-    H = await launchDungeon({ depth: 5, zusatz: '&debug=1&hud=neu' });
-    // Unverwundbar: die Faelle takten bis zu 15 s Spielzeit, ein Tod wuerde
-    // die Szene wechseln (gemessen im Gesamtlauf: Leiste weg mitten im Fall).
-    schutz(H);
-    H.step(20);
-    belegen(H, BELEGUNG);
-  });
-  after(async () => { if (H) await H.shutdown(); });
-
-  const felder = () => H.run(`window.hudLeiste._leiste().felder.filter(function (f) { return f.c.visible; })
-    .map(function (f) { var b = f.c.getBounds(); return { key: f.key, id: f.abilityId, taste: f.taste.text,
-      tex: f.a.icon.texture.key, frame: f.a.icon.frame.name, iconSichtbar: f.a.icon.visible,
-      x: b.x, y: b.y, r: b.right, u: b.bottom }; })`);
 
   test('Desktop: Leiste unten mittig, ein Feld je belegtem Slot, in Tastenreihenfolge', () => {
-    let f = felder();
+    let f = felder(H);
     assert.deepStrictEqual(f.map((x) => x.key).join(','), 'attack,roll,slot1,slot2,slot3,slot4,potion');
     const links = Math.min(...f.map((x) => x.x)), rechts = Math.max(...f.map((x) => x.r));
     assert.ok(Math.abs((links + rechts) / 2 - 480) <= 2, 'nicht mittig: ' + links + '..' + rechts);
@@ -170,62 +194,57 @@ describe('mit ?hud=neu', () => {
     assert.deepStrictEqual(f.map((x) => x.taste).join(','), 'Leer,Shift,Q,W,E,R,F');
     // Zwei Slots leer -> zwei Felder weniger, weiterhin mittig.
     belegen(H, { slot1: 'hammer', slot2: null, slot3: 'charge', slot4: null });
-    f = felder();
+    f = felder(H);
     assert.deepStrictEqual(f.map((x) => x.key).join(','), 'attack,roll,slot1,slot3,potion');
     const l2 = Math.min(...f.map((x) => x.x)), r2 = Math.max(...f.map((x) => x.r));
     assert.ok(Math.abs((l2 + r2) / 2 - 480) <= 2, 'nicht mittig nach Umbelegung');
     belegen(H, BELEGUNG);
   });
 
+  test('Desktop: die alten Kacheln oben rechts gibt es nicht mehr', () => {
+    const r = H.run(`(function () { var s = window.game.scene.getScene('GameScene');
+      return { kacheln: s.children.list.filter(function (o) { return o.type === 'Container' && o.depth === 1001
+          && o !== window.hudLeiste._leiste().wurzel; }).length,
+        status: typeof window.updateAbilityStatus, zustand: window._getAbilityHUDState().map(function (t) {
+          return t.key + ':' + t.keyLabel + ':' + t.label; }).join(',') }; })()`);
+    assert.strictEqual(r.kacheln, 0, 'Kachel-Container stehen noch da');
+    assert.strictEqual(r.status, 'undefined', 'updateAbilityStatus lebt noch');
+    assert.strictEqual(r.zustand, 'attack:Leer:Hieb,slot1:Q:Hammer,slot2:W:Stahlgr,slot3:E:Ansturm,slot4:R:Frostno');
+  });
+
   test('Desktop: jedes Feld zeigt ein Pixel-Icon, kein Emoji-Text; Portraet als Bild', () => {
-    const f = felder();
+    const f = felder(H);
     const reihe = H.run('window.hudLeiste.REIHE.slice()');
     const erwartet = { attack: 'angriff', roll: 'rolle', potion: 'trank' };
     f.forEach((x) => {
       assert.strictEqual(x.tex, 'hud_icons', x.key + ' ohne Icon-Textur');
-      assert.ok(x.iconSichtbar, x.key + ' Icon unsichtbar');
+      assert.ok(x.iconSichtbar && x.ersatz === null, x.key + ' Icon unsichtbar oder Ersatzname sichtbar');
       assert.strictEqual(reihe[Number(x.frame) % reihe.length], erwartet[x.key] || x.id, x.key + ' falsches Icon');
     });
-    // Kein sichtbarer Text in der Leiste oder auf dem Portraet enthaelt ein
-    // Symbol-Zeichen (Emoji, Dingbats) — die erscheinen im Canvas als Kaestchen.
+    // Kein sichtbarer Text im HUD enthaelt ein Symbol-Zeichen (Emoji,
+    // Dingbats) — die erscheinen im Canvas als Kaestchen.
     const emoji = H.run(`(function () { var r = [];
       (function lauf(l) { l.forEach(function (o) { if (o.type === 'Container') return lauf(o.list);
         if (o.type !== 'Text' || !o.visible) return;
-        var b = o.getBounds(), portraet = b.right < 80 && b.bottom < 80;
+        var b = o.getBounds(), oben = b.bottom < 120 && (b.right < 80 || b.x > 880);
         var leiste = o.parentContainer && o.parentContainer.parentContainer === window.hudLeiste._leiste().wurzel;
-        if ((portraet || leiste) && /[\\u2190-\\u2BFF\\uD83C-\\uD83E]/.test(o.text)) r.push(o.text); }); })
+        if ((oben || leiste) && /[\\u2190-\\u2BFF\\uD83C-\\uD83E]/.test(o.text)) r.push(o.text); }); })
         (window.game.scene.getScene('GameScene').children.list);
       return r; })()`);
     assert.strictEqual(emoji.length, 0, 'Emoji-Text sichtbar: ' + emoji.join(' | '));
-    const portraet = H.run(`window.game.scene.getScene('GameScene').children.list.filter(function (o) {
-      return o.type === 'Image' && o.texture.key === 'hud_icons' && o.visible; }).map(function (o) { return o.frame.name; })`);
-    assert.ok(portraet.includes(H.run(`window.hudLeiste.frame('portrait')`)), 'kein Pixel-Portraet: ' + portraet.join(','));
+    const k = H.run(MENUE_KNOEPFE);
+    assert.ok(k.portraet && k.portraet.sichtbar && k.portraet.frame === H.run(`window.hudLeiste.frame('portrait')`),
+      'kein Pixel-Portraet: ' + JSON.stringify(k.portraet));
   });
 
-  test('Menue- und Inventarknopf: Pixel-Icons im Ring, Klickflaechen gleich, Hover/Druck', () => {
+  test('Menue- und Inventarknopf: Pixel-Icons im Ring, Klickflaechen fest, Hover/Druck', () => {
     const k = H.run(MENUE_KNOEPFE);
     const f = (id) => H.run(`window.hudLeiste.frame('${id}')`);
-    assert.ok(!k.burgerText && !k.invText, 'gezeichnete Zeichen stehen noch da');
-    assert.ok(k.burger && k.burger.sichtbar && k.burger.frame === f('menu'), 'kein Menue-Icon: ' + JSON.stringify(k.burger));
-    assert.ok(k.inv && k.inv.sichtbar && k.inv.frame === f('inventory'), 'kein Inventar-Icon: ' + JSON.stringify(k.inv));
+    assert.ok(k.burger.typ === 'Image' && k.burger.sichtbar && k.burger.frame === f('menu'), 'kein Menue-Icon: ' + JSON.stringify(k.burger));
+    assert.ok(k.inv.typ === 'Image' && k.inv.sichtbar && k.inv.frame === f('inventory'), 'kein Inventar-Icon: ' + JSON.stringify(k.inv));
     assert.ok(k.burger.w >= 32 && k.inv.w >= 32, 'Icons zu klein fuer den Knopf');
-    assert.ok(ohneKnoepfe, 'Vergleichsmass ohne Flagge fehlt');
-    assert.deepStrictEqual(JSON.stringify([k.burgerHit, k.invHit]), JSON.stringify([ohneKnoepfe.burgerHit, ohneKnoepfe.invHit]),
-      'Klickflaechen veraendert');
-    // Zustaende: Hover hebt, Verlassen setzt zurueck, Druck drueckt und federt nach.
-    const skala = (n) => H.run(`window.HUDv2.elements.${n}Icon.scaleX`);
-    const s0 = skala('inv');
-    H.run(`window.HUDv2.elements.invHit.emit('pointerover')`);
-    assert.ok(skala('inv') > s0, 'kein Hover');
-    H.run(`window.HUDv2.elements.invHit.emit('pointerout')`);
-    assert.strictEqual(skala('inv'), s0);
-    // Druck: nur den Zustands-Lauscher rufen (der erste oeffnet das Menue,
-    // das wuerde die folgenden Faelle verdecken). Ein Tap auf dem Handy ist
-    // derselbe pointerdown; ein pointerup kommt dort nicht an.
-    H.run(`(function () { var l = window.HUDv2.elements.burgerHit.listeners('pointerdown'); l[l.length - 1](); })()`);
-    assert.ok(skala('burger') < s0, 'kein Druckzustand');
-    H.step(20);
-    assert.strictEqual(skala('burger'), s0, 'Druckzustand federt nicht zurueck');
+    assert.strictEqual(JSON.stringify([k.burgerHit, k.invHit]), KLICK_MENUE, 'Klickflaechen veraendert');
+    pruefeKnopfZustaende(H);
   });
 
   test('Desktop: Tastenbeschriftung und Trankzahl lesbar (>= 4,5:1)', () => {
@@ -252,31 +271,14 @@ describe('mit ?hud=neu', () => {
 
   test('Desktop: Tutorialbox sitzt ueber der Leiste', () => {
     const unten = bannerUnterkante(H);
-    const oben = Math.min(...felder().map((x) => x.y));
+    const oben = Math.min(...felder(H).map((x) => x.y));
     assert.ok(unten <= oben - 4, 'Tutorialbox (bis ' + unten + ') ueberdeckt die Leiste (ab ' + oben + ')');
   });
 
   test('Desktop: Abklingzeit als Sweep, schrumpft mit der Zeit, Aufleuchten beim Freiwerden', () => {
-    const lese = () => H.run(`(function () { var f = window.hudLeiste._leiste().felder[2];
-      return { anteil: f.a.anteil, zahl: f.a.zahl.visible ? f.a.zahl.text : '', befehle: f.a.sweep.commandBuffer.length,
-        blitz: f.a.blitz.alpha }; })()`);
     H.run(`window.AbilitySystem.setSlot('slot1', 'frostNova'); window._refreshAbilityHUD()`);
-    assert.strictEqual(lese().anteil, 0, 'Sweep ohne Abklingzeit');
-    // Gemessen am Bild: das Feld wird sichtbar dunkler (Feld ohne Rand).
-    const feld = H.run(`(function () { var f = window.hudLeiste._leiste().felder[2], b = f.c.getBounds();
-      return { x: b.x + 8, y: b.y + 16, r: b.right - 8, u: b.bottom - 8 }; })()`);
-    const hellFrei = helligkeit(H, feld);
-    H.run(`window.AbilitySystem.tryActivate('slot1', window.game.scene.getScene('GameScene'))`);
-    H.step(3);
-    const a = lese();
-    assert.ok(a.anteil > 0.9 && a.befehle > 0, 'kein Sweep nach dem Ausloesen: ' + JSON.stringify(a));
-    const hellCd = helligkeit(H, feld);
-    assert.ok(hellCd < hellFrei * 0.75, 'Sweep dunkelt das Feld nicht ab: ' + hellFrei.toFixed(1) + ' -> ' + hellCd.toFixed(1));
-    assert.ok(/^\d+$/.test(a.zahl), 'keine Restsekunden: ' + a.zahl);
-    H.step(120);
-    const b = lese();
-    assert.ok(b.anteil < a.anteil && b.anteil > 0, 'Sweep schrumpft nicht: ' + a.anteil + ' -> ' + b.anteil);
-    let c = b, n = 0;
+    const lese = pruefeSweep(H, 2);
+    let c = lese(), n = 0;
     while (c.anteil > 0 && n++ < 200) { H.step(10); c = lese(); }
     assert.strictEqual(c.anteil, 0, 'Sweep verschwindet nicht');
     assert.strictEqual(c.zahl, '', 'Restsekunden bleiben stehen');
@@ -334,26 +336,23 @@ describe('mit ?hud=neu', () => {
     assert.strictEqual(falsch.join(','), '');
   });
 
-  test('Mobile: Ringe mit Icon, Trefferflaechen wie bisher, Sweep', async () => {
-    await mobilNeustart(H);
+  test('Mobile: Ringe mit Icon, Trefferflaechen unveraendert, Sweep, kein Emoji', async () => {
+    await neustart(H, true);
     const deko = H.run(`window.hudLeiste._mobil().map(function (d) { return { key: d.key, id: d.abilityId,
-      tex: d.a.icon.texture.key, ring: d.c.list.some(function (o) { return o.type === 'Image' && o.texture.key === 'ui_ring'; }),
+      tex: d.a.icon.texture.key, icon: d.a.icon.visible, ersatz: d.a.ersatz.visible,
+      ring: d.c.list.some(function (o) { return o.type === 'Image' && o.texture.key === 'ui_ring'; }),
       sf: d.c.scrollFactorX === 0 && d.c.list.every(function (o) { return o.scrollFactorX === 0; }) }; })`);
     const tr = trefferflaechen(H);
     assert.strictEqual(deko.length, Object.keys(tr).length, 'nicht jeder Knopf hat einen Ring');
     deko.forEach((d) => {
-      assert.strictEqual(d.tex, 'hud_icons', d.key + ' ohne Icon');
+      assert.ok(d.tex === 'hud_icons' && d.icon && !d.ersatz, d.key + ' ohne Icon');
       assert.ok(d.ring, d.key + ' ohne Messingring');
       assert.ok(d.sf, d.key + ' nicht scrollFactor 0');
     });
-    assert.ok(ohneMobil, 'Vergleichsmass ohne Flagge fehlt');
-    Object.keys(ohneMobil).forEach((k) => {
-      assert.ok(tr[k], 'Knopf ' + k + ' fehlt mit Flagge');
-      assert.ok(tr[k][3] > 0 && tr[k][3] >= ohneMobil[k][3], k + ' Kreis nicht gefunden oder kleiner');
-      for (let i = 0; i < 4; i++) {
-        assert.ok(tr[k][i] >= ohneMobil[k][i], k + ' Trefferflaeche kleiner: ' + tr[k] + ' statt ' + ohneMobil[k]);
-      }
-    });
+    pruefeTrefferflaechen(tr);
+    const emoji = H.run(`window.game.scene.getScene('GameScene').children.list.filter(function (o) {
+      return o.type === 'Text' && o.visible && o.depth >= 1200 && o.depth < 1300; }).map(function (o) { return o.text; })`);
+    assert.strictEqual(emoji.join('|'), '', 'Texte (Emoji/Beschriftung) auf den Knoepfen');
     // Sweep: dieselbe Anzeige wie am Desktop.
     const anteil = () => H.run(`window.hudLeiste._mobil().filter(function (d) { return d.abilityId === 'frostNova'; })[0].a.anteil`);
     // Frostnova kann vom Desktop-Teil noch abklingen: erst frei werden lassen.
@@ -365,16 +364,6 @@ describe('mit ?hud=neu', () => {
     H.step(120);
     const b = anteil();
     assert.ok(a > 0.9 && b < a && b > 0, 'Mobile-Sweep laeuft nicht: ' + a + ' -> ' + b);
-  });
-
-  test('Mobile: die alte Emoji-Dekoration haelt sich mit Flagge heraus', () => {
-    // Im Browser feuert mobileControls zusaetzlich das Fenster-Ereignis; ohne
-    // die Sperre laegen Emoji und Beschriftung doppelt auf den Ringen.
-    const n = H.run(`(function () { var s = window.game.scene.getScene('GameScene'); var vor = s.children.list.length;
-      window.mobileAbilityButtonsDecorate({ detail: { scene: s, buttons: window.hudLeiste._mobil().map(function (d) {
-        return { spec: { key: d.key, _abilityId: d.abilityId, _glyph: d.abilityId ? '?' : null }, circle: d.kreis }; }) } });
-      return s.children.list.length - vor; })()`);
-    assert.strictEqual(n, 0, 'die alte Dekoration legt ' + n + ' Objekte an');
   });
 
   test('Mobile: Primaerknopf wechselt das Icon zwischen Angriff und Aktion', () => {
@@ -399,5 +388,59 @@ describe('mit ?hud=neu', () => {
     H.run('window.mobileAbilityLeisteSichtbar(true)');
     H.step(1);
     assert.ok(sicht().every(Boolean), 'Ringe kommen nicht zurueck');
+  });
+});
+
+describe('Rueckfall: Icon-Streifen nicht geladen', () => {
+  let H = null;
+  before(async () => {
+    H = await launchDungeon({ depth: 5, zusatz: '&debug=1' });
+    schutz(H);
+    H.step(10);
+    ohneStreifen(H);
+    await neustart(H, false);
+  });
+  after(async () => { if (H) await H.shutdown(); });
+
+  test('Desktop: dieselbe Leiste, statt Icons kurze Namen, kein Platzhalterbild', () => {
+    const f = felder(H);
+    assert.deepStrictEqual(f.map((x) => x.key).join(','), 'attack,roll,slot1,slot2,slot3,slot4,potion');
+    assert.deepStrictEqual(f.map((x) => x.ersatz).join(','), 'Hieb,Rolle,Hammer,Stahlgr,Ansturm,Frostno,Trank');
+    f.forEach((x) => assert.ok(!x.iconSichtbar && x.tex !== '__MISSING', x.key + ': Icon/Platzhalter sichtbar (' + x.tex + ')'));
+    assert.deepStrictEqual(f.map((x) => x.taste).join(','), 'Leer,Shift,Q,W,E,R,F');
+    const l = kontraste(H, `window.hudLeiste._leiste().felder.filter(function (f) { return f.c.visible; })
+      .map(function (f) { return f.a.ersatz; })`);
+    assert.strictEqual(l.length, 7);
+    alleLesbar(l, 'Ersatznamen');
+    assert.ok(bannerUnterkante(H) <= Math.min(...f.map((x) => x.y)) - 4, 'Tutorialbox ueberdeckt die Leiste');
+  });
+
+  test('Desktop: Sweep und Grau laufen auch ohne Icons', () => {
+    pruefeSweep(H, 5);
+    H.run(`window.__inv = window.inventory.slice(); for (var i = 0; i < window.inventory.length; i++)
+      if (window.inventory[i] && window.inventory[i].type === 'potion') window.inventory[i] = null;`);
+    H.step(2);
+    assert.strictEqual(H.run(`window.hudLeiste._leiste().felder[6].a.ersatz.style.color`), '#bdb4a6', 'leerer Trank nicht grau');
+    H.run(`for (var i = 0; i < window.__inv.length; i++) window.inventory[i] = window.__inv[i];`);
+    H.step(2);
+  });
+
+  test('Portraet leer, Menue und Inventar als Zeichen, Klickflaechen fest, Hover/Druck', () => {
+    const k = H.run(MENUE_KNOEPFE);
+    assert.strictEqual(k.portraet, null, 'Portraet ohne Streifen');
+    assert.deepStrictEqual([k.burger.typ, k.burger.text, k.burger.sichtbar], ['Text', '☰', true]);
+    assert.deepStrictEqual([k.inv.typ, k.inv.text, k.inv.sichtbar], ['Text', 'I', true]);
+    assert.strictEqual(JSON.stringify([k.burgerHit, k.invHit]), KLICK_MENUE, 'Klickflaechen veraendert');
+    pruefeKnopfZustaende(H);
+  });
+
+  test('Mobile: Ringe mit kurzem Namen, Trefferflaechen unveraendert', async () => {
+    await neustart(H, true);
+    const deko = H.run(`window.hudLeiste._mobil().map(function (d) { return { key: d.key, icon: d.a.icon.visible,
+      ersatz: d.a.ersatz.visible ? d.a.ersatz.text : null,
+      ring: d.c.list.some(function (o) { return o.type === 'Image' && o.texture.key === 'ui_ring'; }) }; })`);
+    assert.strictEqual(deko.length, 7);
+    deko.forEach((d) => assert.ok(!d.icon && d.ersatz && d.ring, JSON.stringify(d)));
+    pruefeTrefferflaechen(trefferflaechen(H));
   });
 });

@@ -392,9 +392,9 @@ const mode = args[0] || '--smoke';
         console.log('  ✗ Unequipped tiles leaking into HUD:', leaked.map(t => t.key));
       }
 
-      // Verify visible tiles stack without gaps (y positions strictly increasing)
-      const ys = visible.map(t => t.y).sort((a, b) => a - b);
-      const stacked = ys.every((y, i) => i === 0 || y > ys[i - 1]);
+      // Felder der Leiste unten mittig (#195): nebeneinander, x streng steigend
+      const ys = visible.map(t => t.x).sort((a, b) => a - b);
+      const stacked = ys.every((x, i) => i === 0 || x > ys[i - 1]);
       console.log(stacked ? '  ✓ Tiles stacked without overlap' : '  ✗ Tiles overlap/misaligned');
     } else {
       console.log('  ✗ window._getAbilityHUDState unavailable in GameScene');
