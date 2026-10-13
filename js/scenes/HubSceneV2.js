@@ -3365,22 +3365,35 @@ class HubSceneV2 extends Phaser.Scene {
     const maxScroll = Math.max(0, contentH - viewportH);
     const scrollable = maxScroll > 1;
 
-    const g = this.add.graphics();
-    g.fillStyle(0x101018, 0.95).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
-    g.lineStyle(2, 0x4a4a6a, 0.9).strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
-    container.add(g);
+    // Messing-Stil wie die Story-Wahlen (#182): Platte aus ui_rahmen, Optionen
+    // auf Messingfeldern, Abbrechen als Messingknopf. Fehlen die Bilder, der
+    // alte gezeichnete Kasten — und fuer den naechsten Abstieg nachladen.
+    const UR = window.uiRahmen;
+    const MESSING = !!(UR && typeof UR.bereit === 'function' && UR.bereit(this));
+    if (UR && !MESSING && typeof UR.nachladen === 'function') {
+      try { UR.nachladen(this); } catch (e) {}
+    }
+    if (MESSING) {
+      container.add(UR.platte(this, 0, 0, panelWidth, panelHeight, 0, 0.6));
+    } else {
+      const g = this.add.graphics();
+      g.fillStyle(0x101018, 0.95).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
+      g.lineStyle(2, 0x4a4a6a, 0.9).strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
+      container.add(g);
+    }
 
     const title = this.add.text(0, -panelHeight / 2 + pad, _HUB_T('hub.wave_select.title'), {
       fontFamily: 'serif',
       fontSize: 24,
-      color: '#f2e9d8'
+      fontStyle: MESSING ? 'bold' : 'normal',
+      color: MESSING ? '#ffd166' : '#f2e9d8'
     }).setOrigin(0.5, 0);
     container.add(title);
 
     const subtitle = this.add.text(0, title.y + title.height + 12, _HUB_T('hub.wave_select.subtitle'), {
       fontFamily: 'monospace',
       fontSize: 16,
-      color: '#c8c2b5'
+      color: MESSING ? '#efe6d2' : '#c8c2b5'
     }).setOrigin(0.5, 0);
     container.add(subtitle);
 
@@ -3452,8 +3465,16 @@ class HubSceneV2 extends Phaser.Scene {
       const arrows = '↑'.repeat(idx);
       const stratumName = _HUB_T('hub.descent.stratum.' + idx);
 
-      const box = this.add.graphics();
+      // Messing: ein gebackenes Feld je Zeile; Hover zeigt den hellen
+      // Beschlag (wie die gewaehlte Inventarzelle). Boss-Zeilen bernsteinfarben.
+      const box = MESSING
+        ? this.add.image(0, oy, UR.feldBild(this, bw, optionH, false, opt.boss ? '#3a2410' : null))
+        : this.add.graphics();
       const drawBox = (hover) => {
+        if (MESSING) {
+          if (box.scene) box.setTexture(UR.feldBild(this, bw, optionH, hover, opt.boss ? '#3a2410' : null));
+          return;
+        }
         box.clear();
         box.fillStyle(hover ? 0x2a2a3d : 0x1a1a26, 0.95)
           .fillRoundedRect(-bw / 2, oy - optionH / 2, bw, optionH, 10);
@@ -3531,7 +3552,7 @@ class HubSceneV2 extends Phaser.Scene {
       const trackG = this.add.graphics();
       trackG.fillStyle(0x000000, 0.35).fillRoundedRect(trackX - 3, optionsTop + 4, 6, trackH, 3);
       container.add(trackG);
-      thumb = this.add.rectangle(trackX, optionsTop, 6, 40, 0x8a8ad0, 0.9).setOrigin(0.5);
+      thumb = this.add.rectangle(trackX, optionsTop, 6, 40, MESSING ? 0xc9a25a : 0x8a8ad0, 0.9).setOrigin(0.5);
       container.add(thumb);
 
       // Mausrad (Desktop)
@@ -3577,7 +3598,21 @@ class HubSceneV2 extends Phaser.Scene {
     };
 
     const cancelY = panelHeight / 2 - pad - 12;
-    makeButton(_HUB_T('hub.wave_select.cancel'), 0, cancelY, cancel, { backgroundColor: '#6a3d3d' });
+    if (MESSING) {
+      // Schmaler, rot getoenter Messingknopf wie "Abbrechen" der Story-Wahlen;
+      // mind. 44 px hoch, damit der Finger trifft. Ausloesen wie bisher bei
+      // pointerdown — Klickverhalten bleibt gleich.
+      const cancelBtn = this.add.text(0, cancelY, _HUB_T('hub.wave_select.cancel'), {
+        fontFamily: 'monospace', fontSize: 18, color: '#eadbd3', align: 'center',
+        padding: { x: 40, y: 13 }
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      cancelBtn.setName('waveSelectAbbrechen');
+      cancelBtn.on('pointerdown', () => cancel());
+      container.add(cancelBtn);
+      UR.textKnopf(this, cancelBtn, null, { ton: '#4a1e22' });
+    } else {
+      makeButton(_HUB_T('hub.wave_select.cancel'), 0, cancelY, cancel, { backgroundColor: '#6a3d3d' });
+    }
 
     // Quick-Start (Mobile-Interact-Button + Enter/Space) = die "normale" Option
     // (Gewohnter Abstieg), NICHT die tiefste — kein versehentliches Pushen an
@@ -3644,6 +3679,7 @@ class HubSceneV2 extends Phaser.Scene {
     };
 
     this._dialogContainer = container;
+    container.setName('waveSelectDialog');
 
     // Same scrollFactor-propagation fix as _showDialoguePages (commit c69abfe).
     // Mobile + scrolled hub camera otherwise miss every button tap.
