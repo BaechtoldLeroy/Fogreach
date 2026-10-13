@@ -1168,8 +1168,8 @@ function equipPos(key, index) {
       if (key) schemen.setTexture(key);
       // Auch der Schemen traegt die Rechteckform — sonst saehe der gezogene
       // Gegenstand anders aus als der abgelegte.
-      schemen.setDisplaySize(g.b * zelleW * 0.94 * 0.86, g.h * zelleH * 0.94 * 0.86)
-        .setVisible(true);
+      symbolEinpassen(schemen, key, schemen.x, schemen.y, g.b * zelleW * 0.94 * 0.86, g.h * zelleH * 0.94 * 0.86, true);
+      schemen.setVisible(true);
       vorschau.setVisible(true);
       hideTooltip();
     }
@@ -1507,6 +1507,64 @@ function equipPos(key, index) {
  * Ohne Gegenstand unsichtbar.
  */
 const SELTENHEIT_GRUND_ALPHA = 0.38;
+/**
+ * Sichtbarer Umriss einer Symbol-Textur (Pixel mit Deckung), einmal je
+ * Textur gemessen. null, wenn sich die Textur nicht lesen laesst.
+ */
+const _symbolUmrisse = {};
+function symbolUmriss(scene, key) {
+  if (!key) return null;
+  if (key in _symbolUmrisse) return _symbolUmrisse[key];
+  let u = null;
+  try {
+    const tex = scene && scene.textures && scene.textures.exists(key) ? scene.textures.get(key) : null;
+    const quelle = tex && tex.getSourceImage();
+    const tw = quelle && quelle.width, th = quelle && quelle.height;
+    if (tw > 0 && th > 0 && typeof document !== 'undefined') {
+      const c = document.createElement('canvas');
+      c.width = tw; c.height = th;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(quelle, 0, 0);
+      const d = ctx.getImageData(0, 0, tw, th).data;
+      let x0 = tw, y0 = th, x1 = -1, y1 = -1;
+      for (let y = 0; y < th; y++) {
+        for (let x = 0; x < tw; x++) {
+          if (d[(y * tw + x) * 4 + 3] > 16) {
+            if (x < x0) x0 = x; if (x > x1) x1 = x;
+            if (y < y0) y0 = y; if (y > y1) y1 = y;
+          }
+        }
+      }
+      if (x1 >= x0 && y1 >= y0) u = { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, tw: tw, th: th };
+    }
+  } catch (e) { u = null; }
+  _symbolUmrisse[key] = u;
+  return u;
+}
+
+/**
+ * Passt ein Symbol OHNE Verzerrung in ein Rechteck: sein sichtbarer Umriss
+ * wird gleichmaessig so gross wie moeglich skaliert und mittig gesetzt.
+ * Ohne lesbaren Umriss wie bisher auf das Rechteck gezogen.
+ * nurSkala: Lage nicht setzen (der gezogene Schemen folgt dem Zeiger).
+ */
+function symbolEinpassen(icon, key, cx, cy, w, h, nurSkala) {
+  if (!icon) return;
+  const u = symbolUmriss(icon.scene, key);
+  if (!u) {
+    if (!nurSkala) icon.setPosition(cx, cy);
+    icon.setDisplaySize(w, h);
+    return;
+  }
+  const s = Math.min(w / u.w, h / u.h);
+  icon.setScale(s);
+  if (nurSkala) return;
+  // Die Mitte des Umrisses (nicht der Textur) auf die Mitte des Rechtecks.
+  const ox = (u.x + u.w / 2 - u.tw / 2) * s;
+  const oy = (u.y + u.h / 2 - u.th / 2) * s;
+  icon.setPosition(cx - ox, cy - oy);
+}
+
 function seltenheitGrund(saum, it, cx, cy, w, h) {
   if (!isValidGameObject(saum)) return;
   if (!it) { saum.setVisible(false); return; }
@@ -2187,14 +2245,12 @@ function refreshInventoryUI() {
       const _sx = (breite * 0.86) / 48;
       const _sy = (hoehe * 0.86) / 48;
       const _s = Math.min(_sx, _sy);
-      // Das Symbol fuellt sein Rechteck VOLL. Der Deckel von vorher machte
-      // den Bogen zwar weniger lang, aber nicht breiter — die Enge kam aus
-      // der Zeichnung selbst (in der 48er-Textur nur 21 px breit). Deshalb
-      // ist stattdessen die BOGEN-ZEICHNUNG verbreitert; hier darf wieder
-      // voll auf das Raster skaliert werden.
-      icon.setPosition(cx, cy)
-        .setDisplaySize(breite * 0.86, hoehe * 0.86)
-        .setVisible(true);
+      // Seit den Pixel-Icons (b321) steht die Waffe in der quadratischen
+      // Textur meist schmal und senkrecht. Auf ein 1x3-Rechteck GEZOGEN wurde
+      // sie gestaucht und duenn ("Boegen und Schwerter zu schmal"). Jetzt wird
+      // ihr sichtbarer Umriss gleichmaessig ins Rechteck gepasst.
+      symbolEinpassen(icon, icon.texture && icon.texture.key, cx, cy, breite * 0.86, hoehe * 0.86);
+      icon.setVisible(true);
     }
     if (label) {
       const stack = it.stack || 1;
@@ -2236,7 +2292,7 @@ function refreshInventoryUI() {
         const platzB = slot.displayWidth * 0.82;
         const platzH = slot.displayHeight * 0.82;
         const f = Math.min(platzB / gg.b, platzH / gg.h);
-        icon.setDisplaySize(gg.b * f, gg.h * f);
+        symbolEinpassen(icon, iconKey || (icon.texture && icon.texture.key), slot.x, slot.y, gg.b * f, gg.h * f);
         icon.setVisible(true);
       }
     } else if (icon) {

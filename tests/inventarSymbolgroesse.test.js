@@ -51,8 +51,11 @@ test('Inventar: das Symbol fuellt seine Zellen spuerbar aus', () => {
   // nur 21 px breit). Behoben wurde sie an der Quelle, indem die
   // Bogenzeichnung waagerecht gestreckt wird. Hier wird deshalb das Gegenteil
   // festgehalten: es darf voll auf das Rechteck skaliert werden.
-  assert.ok(QUELLE.includes("setDisplaySize(breite * 0.86, hoehe * 0.86)"),
-    "das Symbol fuellt sein Rechteck nicht mehr voll aus");
+  // Seit den Pixel-Icons: das Rechteck wird nicht mehr GEZOGEN (das stauchte
+  // Schwerter und Boegen), sondern der sichtbare Umriss gleichmaessig
+  // hineingepasst — Verhalten in tests/inventarSymbolForm.test.js.
+  assert.ok(QUELLE.includes("symbolEinpassen(icon, icon.texture && icon.texture.key, cx, cy, breite * 0.86, hoehe * 0.86)"),
+    "das Symbol wird nicht mehr in sein Rechteck eingepasst");
   const gfx = fs.readFileSync(path.join(__dirname, "..", "js", "graphics.js"), "utf8");
   const iBow = gfx.indexOf("key: 'itBow'");
   assert.ok(iBow > 0, "itBow nicht gefunden");
