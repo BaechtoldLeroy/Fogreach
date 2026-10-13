@@ -192,3 +192,35 @@ test('Am Brett wird der Aushang angeboten, den die Phase vorsieht', () => {
   assert.strictEqual(r.dialog, true, 'kein Dialog am Brett');
   assert.ok(r.text.length > 0, 'der Dialog blieb leer');
 });
+
+test('Ueber den Tafeln steht "!" fuer einen Aushang, "…" in Arbeit, "?" zur Abgabe', () => {
+  // Wie ueber den NPC: wer am Brett etwas tun kann, sieht es von weitem.
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    var qs = window.questSystem;
+    var zeichen = function () {
+      sc._refreshQuestIndicators();
+      return (sc._brettZeichen || []).map(function (t) { return t.visible ? t.text : ''; }).join(',');
+    };
+    var out = { tafeln: (sc._hubPhaseRefs.posterSpots || []).length, frei: zeichen() };
+    var id = qs.getAvailableQuests('anschlagtafel').map(function (q) { return q.id; })[0];
+    if (id) {
+      qs.acceptQuest(id);
+      out.arbeit = zeichen();
+      var q = qs.getActiveQuests().filter(function (x) { return x.id === id; })[0];
+      (q.objectives || []).forEach(function (o) { o.current = o.required || 1; });
+      out.abgabe = zeichen();
+    }
+    // Ueber der Tafel, nicht irgendwo: x wie die Tafel, y darueber.
+    var t = (sc._brettZeichen || [])[0], s = sc._hubPhaseRefs.posterSpots[0];
+    out.lage = t ? [Math.round(t.x - s.x), Math.round(s.y - t.y)] : null;
+    return JSON.stringify(out);
+  })()`);
+  const o = JSON.parse(r);
+  assert.ok(o.tafeln >= 2, 'keine Tafeln: ' + o.tafeln);
+  assert.strictEqual(o.frei, '!,!', 'verfuegbarer Aushang: ' + o.frei);
+  assert.strictEqual(o.arbeit, '…,…', 'angenommen: ' + o.arbeit);
+  assert.strictEqual(o.abgabe, '?,?', 'abgabebereit: ' + o.abgabe);
+  assert.strictEqual(o.lage[0], 0, 'Zeichen nicht ueber der Tafel');
+  assert.ok(o.lage[1] >= 64, 'Zeichen steckt in der Tafel: ' + o.lage[1] + ' px ueber dem Fuss');
+});

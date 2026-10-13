@@ -387,7 +387,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `einfuehrung_wissen` · **NPC:** Schmiedemeisterin Branka · **Kette:** 2
 
-> Verbau ein Erinnerungsfragment im Wissensbaum.
+> Geh zu Mara und verbau dort im Wissensbaum ein Erinnerungsfragment.
 
 - **Ziel:** `system` → `wissen` ×1
 - **Vorbedingung:** Der erste Schliff **+** Die verschwundene Tochter
@@ -397,11 +397,11 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 > Stahl allein schneidet die Lügen des Rates nicht. Das sage ich jedem, und jeder nickt und versteht es nicht.
 > 
-> Du trägst ein Fragment bei Dir. Ein Stück von etwas, das jemand aufgeschrieben und der Rat verbrannt hat. Verbau es — nicht in einer Klinge, in Dir. Dann weisst Du, was ich meine.
+> Du trägst ein Fragment bei Dir. Ein Stück von etwas, das jemand aufgeschrieben und der Rat verbrannt hat. Verbau es — nicht in einer Klinge, in Dir. Den Wissensbaum hütet Mara; geh zu ihr, sie zeigt ihn Dir. Dann weisst Du, was ich meine.
 
 **Unterwegs**
 
-> Das Fragment liegt noch bei Dir herum. Öffne den Baum und setz es ein. Es wird nicht mehr wert, wenn Du wartest.
+> Das Fragment liegt noch bei Dir herum. Geh zu Mara, lass Dir den Wissensbaum zeigen und setz es ein. Es wird nicht mehr wert, wenn Du wartest.
 
 **Abschluss**
 

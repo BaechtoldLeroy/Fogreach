@@ -510,6 +510,7 @@ class HubSceneV2 extends Phaser.Scene {
       window.questSystem.onQuestUpdate(this._questUpdateHandler);
     }
     // Initial render so quest indicators show the correct state at scene entry
+    this._brettZeichenAnlegen();
     this._refreshQuestIndicators();
 
     // Check for pending story events and show overlay
@@ -1128,6 +1129,40 @@ class HubSceneV2 extends Phaser.Scene {
     }
   }
 
+  /**
+   * Welches Zeichen steht ueber einem Questgeber: '?' (abgeben), '…' (in
+   * Arbeit), '!' (Auftrag verfuegbar) oder null. Fuer NPC und Anschlagtafel
+   * dieselbe Regel.
+   */
+  _questZeichen(npcId) {
+    const qs = window.questSystem;
+    if (!qs) return null;
+    // Check for available quests for this NPC
+    const available = qs.getAvailableQuests ? qs.getAvailableQuests(npcId) : [];
+    // Feature 064: nach dem Bruch bietet Aldric keine Quests mehr an — auch
+    // kein "!"-Indikator.
+    const aldricBlocked = (npcId === 'aldric' && window.HubPhase
+      && window.HubPhase.aldricBlocksQuests(this._hubPhase));
+    // Check for active quests for this NPC
+    const active = qs.getActiveQuests ? qs.getActiveQuests().filter(q => q.npcId === npcId) : [];
+    const readyToComplete = active.filter(q => qs.isQuestReadyToComplete && qs.isQuestReadyToComplete(q.id));
+    const inProgress = active.filter(q => !qs.isQuestReadyToComplete || !qs.isQuestReadyToComplete(q.id));
+    // Quest abgeschlossen → "?" zur Abgabe (höchste Prio). In Arbeit → "…"
+    // (Vorrang vor "!" — sonst bleibt "!" wenn der NPC weitere Quests anbietet).
+    if (readyToComplete.length > 0) return '?';
+    if (inProgress.length > 0) return '…';
+    if (available.length > 0 && !aldricBlocked) return '!';
+    return null;
+  }
+
+  _zeichenSetzen(indikator, zeichen) {
+    if (!indikator) return;
+    if (zeichen === '?') indikator.setText('?').setColor('#88ff88').setVisible(true);
+    else if (zeichen === '…') indikator.setText('…').setColor('#aaaaaa').setVisible(true);
+    else if (zeichen === '!') indikator.setText('!').setColor('#ffdd44').setVisible(true);
+    else indikator.setVisible(false);
+  }
+
   _refreshQuestIndicators() {
     const qs = window.questSystem;
     if (!qs || !this.npcs) return;
@@ -1137,35 +1172,34 @@ class HubSceneV2 extends Phaser.Scene {
         if (questIndicator) questIndicator.setVisible(false);
         return;
       }
-
-      const npcId = data.id;
-      // Check for available quests for this NPC
-      const available = qs.getAvailableQuests ? qs.getAvailableQuests(npcId) : [];
-      // Feature 064: nach dem Bruch bietet Aldric keine Quests mehr an — auch
-      // kein "!"-Indikator.
-      const aldricBlocked = (npcId === 'aldric' && window.HubPhase
-        && window.HubPhase.aldricBlocksQuests(this._hubPhase));
-      // Check for active quests for this NPC
-      const active = qs.getActiveQuests ? qs.getActiveQuests().filter(q => q.npcId === npcId) : [];
-      const readyToComplete = active.filter(q => qs.isQuestReadyToComplete && qs.isQuestReadyToComplete(q.id));
-      const inProgress = active.filter(q => !qs.isQuestReadyToComplete || !qs.isQuestReadyToComplete(q.id));
-
-      if (readyToComplete.length > 0) {
-        // Quest abgeschlossen → grünes "?" zur Abgabe (höchste Prio)
-        questIndicator.setText('?').setColor('#88ff88').setVisible(true);
-      } else if (inProgress.length > 0) {
-        // Quest angenommen, in Arbeit → graues "…"
-        // (Hat Vorrang vor "!" — sonst bleibt "!" wenn NPC noch weitere Quests anbietet)
-        questIndicator.setText('…').setColor('#aaaaaa').setVisible(true);
-      } else if (available.length > 0 && !aldricBlocked) {
-        // Nichts angenommen, aber Quest verfügbar → goldenes "!"
-        questIndicator.setText('!').setColor('#ffdd44').setVisible(true);
-      } else {
-        questIndicator.setVisible(false);
-      }
-
+      this._zeichenSetzen(questIndicator, this._questZeichen(data.id));
       // Keep position above sprite
       questIndicator.x = sprite.x;
+    });
+
+    // Die Anschlagtafeln tragen dieselben Zeichen fuer ihre Aushaenge
+    // (npcId 'anschlagtafel'). Steht das Aushaengen der Edikte an (#160),
+    // zeigen sie "!" — dort ist als Naechstes etwas zu tun.
+    if (Array.isArray(this._brettZeichen) && this._brettZeichen.length) {
+      const zeichen = this._ediktSchritt() === 1 ? '!' : this._questZeichen('anschlagtafel');
+      this._brettZeichen.forEach((t) => this._zeichenSetzen(t, zeichen));
+    }
+  }
+
+  /** Je Anschlagtafel ein schwebendes Quest-Zeichen, wie ueber den NPC. */
+  _brettZeichenAnlegen() {
+    (this._brettZeichen || []).forEach((t) => { try { t.destroy(); } catch (e) {} });
+    this._brettZeichen = [];
+    const spots = (this._hubPhaseRefs && this._hubPhaseRefs.posterSpots) || [];
+    spots.forEach((s) => {
+      if (!s) return;
+      // Die Tafel ist 64 px hoch (hubPhaseView TAFEL_HOEHE), Fuss auf s.y.
+      const t = this.add.text(s.x, s.y - 74, '', {
+        fontSize: '32px', fontFamily: 'serif', fontStyle: 'bold',
+        color: '#ffdd44', stroke: '#000000', strokeThickness: 4
+      }).setOrigin(0.5, 1).setDepth(s.y + 10).setVisible(false);
+      this.tweens.add({ targets: t, y: t.y - 6, duration: 700, ease: 'Sine.easeInOut', yoyo: true, repeat: -1 });
+      this._brettZeichen.push(t);
     });
   }
 

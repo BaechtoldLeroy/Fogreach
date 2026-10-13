@@ -164,7 +164,7 @@
     einfuehrung_wissen: {
       id: 'einfuehrung_wissen',
       title: 'Was die Mauern wissen',
-      description: 'Verbau ein Erinnerungsfragment im Wissensbaum.',
+      description: 'Geh zu Mara und verbau dort im Wissensbaum ein Erinnerungsfragment.',
       npcId: 'branka',
       type: 'system',
       chain: 2,
@@ -177,8 +177,8 @@
       // Voraussetzung oeffnet den Akt selbst, und der Akt-1-Bestand soll eine
       // Aussage ueber die GESCHICHTE bleiben, nicht ueber Einfuehrungen.
       requiredAct: 0,
-      dialogueOffer: 'Stahl allein schneidet die Lügen des Rates nicht. Das sage ich jedem, und jeder nickt und versteht es nicht.\n\nDu trägst ein Fragment bei Dir. Ein Stück von etwas, das jemand aufgeschrieben und der Rat verbrannt hat. Verbau es — nicht in einer Klinge, in Dir. Dann weisst Du, was ich meine.',
-      dialogueProgress: 'Das Fragment liegt noch bei Dir herum. Öffne den Baum und setz es ein. Es wird nicht mehr wert, wenn Du wartest.',
+      dialogueOffer: 'Stahl allein schneidet die Lügen des Rates nicht. Das sage ich jedem, und jeder nickt und versteht es nicht.\n\nDu trägst ein Fragment bei Dir. Ein Stück von etwas, das jemand aufgeschrieben und der Rat verbrannt hat. Verbau es — nicht in einer Klinge, in Dir. Den Wissensbaum hütet Mara; geh zu ihr, sie zeigt ihn Dir. Dann weisst Du, was ich meine.',
+      dialogueProgress: 'Das Fragment liegt noch bei Dir herum. Geh zu Mara, lass Dir den Wissensbaum zeigen und setz es ein. Es wird nicht mehr wert, wenn Du wartest.',
       dialogueComplete: '(Sie sieht Dich einen Moment zu lange an.) Und? Nichts blitzt, nichts klingelt. So ist Wissen.\n\nJedes Fragment, das Du unten findest, gehört da hinein. Der Rat sammelt sie auch — nur verbrennt er sie.'
     },
     // Die Amulette fuehrt NUR der wandernde Haendler unten (ShopScene mit
@@ -1121,9 +1121,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.tracker.progress': '{title}: {cur}/{required}',
       // #143: Die sechs Einfuehrungsquests.
       'quest.einfuehrung_wissen.title': 'What the Walls Know',
-      'quest.einfuehrung_wissen.description': 'Spend a memory fragment in the knowledge tree.',
-      'quest.einfuehrung_wissen.dialogueOffer': "Steel alone does not cut through the council's lies. I say that to everyone, and everyone nods and does not understand it.\n\nYou are carrying a fragment. A piece of something somebody wrote down and the council burned. Spend it - not in a blade, in yourself. Then you will know what I mean.",
-      'quest.einfuehrung_wissen.dialogueProgress': 'The fragment is still lying around on you. Open the tree and spend it. It will not be worth more if you wait.',
+      'quest.einfuehrung_wissen.description': 'Go to Mara and spend a memory fragment in the knowledge tree there.',
+      'quest.einfuehrung_wissen.dialogueOffer': "Steel alone does not cut through the council's lies. I say that to everyone, and everyone nods and does not understand it.\n\nYou are carrying a fragment. A piece of something somebody wrote down and the council burned. Spend it - not in a blade, in yourself. Mara keeps the knowledge tree; go to her, she will show it to you. Then you will know what I mean.",
+      'quest.einfuehrung_wissen.dialogueProgress': 'The fragment is still lying around on you. Go to Mara, have her show you the knowledge tree and spend it. It will not be worth more if you wait.',
       'quest.einfuehrung_wissen.dialogueComplete': "(She looks at you a moment too long.) And? Nothing flashes, nothing chimes. That is what knowledge is like.\n\nEvery fragment you find down there belongs in that tree. The council collects them too - it just burns them.",
 
       'quest.einfuehrung_amulett.title': 'The Old Man with the Cart',
