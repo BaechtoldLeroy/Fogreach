@@ -284,3 +284,28 @@ test('Nach dem Gespraech gibt sie den Weg frei', () => {
   const t = treppen();
   assert.strictEqual(t.offen, t.gesamt, 'die Treppe blieb nach dem Gespraech zu: ' + t.grund);
 });
+
+test('Waehrend des Hinterhalts ist die Treppe schon zu (nicht erst ab Elara)', () => {
+  // Gemeldet: beim Hinterhalt der Wachen konnte man einfach die Treppe
+  // nehmen — gesperrt wurde erst, wenn Elara nach der Rettung erscheint.
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    window.eventChoiceOpen = false;
+    // Ein voriger Fall liess einen Dialog offen und hielt die Spieluhr an.
+    if (typeof window.resumeGameClock === 'function') window.resumeGameClock(sc);
+    _hinterhaltStarten(sc, sc.currentRoom.id);
+    return 1;
+  })()`);
+  // Bis die Wachen stehen (erster Takt des Hinterhalts, 100 ms).
+  for (let i = 0; i < 40 && !H.run('!!(_hinterhalt && _hinterhalt.gesetzt)'); i++) H.step(6);
+  const zustand = H.run(`JSON.stringify({ h: !!_hinterhalt, eco: !!window.eventChoiceOpen,
+    met: questSystem.hasFlag('elaraMet'), raum: game.scene.getScene('GameScene').currentRoom.id,
+    cur: currentRoomId, pause: window.__GAME_PAUSE && window.__GAME_PAUSE.since })`);
+  assert.ok(H.run('!!(_hinterhalt && _hinterhalt.gesetzt)'), 'der Hinterhalt setzte keine Wachen: ' + zustand);
+  // Auch ein "Raum geraeumt" dazwischen oeffnet sie nicht.
+  H.run(`(function () { var sc = window.game.scene.getScene('GameScene'); lockStairs(sc, false); })()`);
+  const t = treppen();
+  H.run('_hinterhaltAbbrechen(); 1');
+  assert.ok(t.gesamt > 0, 'der Raum hat gar keine Treppe');
+  assert.strictEqual(t.offen, 0, t.offen + ' von ' + t.gesamt + ' Treppen standen waehrend des Hinterhalts offen');
+});

@@ -4233,7 +4233,16 @@ function _hinterhaltStarten(scene, roomId) {
     if (window.eventChoiceOpen) return;
     // Erst setzen, wenn der Raum seine eigene Welle gebracht hat (die kommt
     // per delayedCall NACH enterRoom) — sonst stuende sie neben dem Hinterhalt.
-    if (!h.gesetzt) { h.gesetzt = true; _hinterhaltGegnerSetzen(scene, h); return; }
+    if (!h.gesetzt) {
+      h.gesetzt = true;
+      _hinterhaltGegnerSetzen(scene, h);
+      // Kein Ausweg ueber die Treppe, solange die Wachen stehen: gesperrt
+      // wurde bisher erst, wenn Elara nach der Rettung auftaucht. Hier, nicht
+      // beim Start — die Treppen entstehen erst nach diesem Aufruf in
+      // enterRoom. Frei wird sie wie bisher nach dem Gespraech (elaraMet).
+      _elaraTreppeSperren(scene);
+      return;
+    }
     h.seit += 100;
     var max = (typeof playerMaxHealth === 'number' && playerMaxHealth > 0) ? playerMaxHealth : 0;
     var lp = (typeof playerHealth === 'number') ? playerHealth : max;
