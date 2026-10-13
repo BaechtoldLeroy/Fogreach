@@ -1,20 +1,22 @@
 // tests/spezialFolgen.test.js — Spezialangriffe als Bewegung der Figur (#174).
 //
 // Vorher waren die Spezialangriffe gezeichnete Linien um eine stillstehende
-// Figur. Im Testmodus ?spezial=neu spielt jetzt je Angriff eine eigene
-// Bildfolge (assets/PlayerSprites/spezial_*, PixelLab, tools/spezialBauen.js)
-// auf einem Bild, das dem Spieler folgt — gebaut wie Rolle (#179) und
-// Schlag (#171). Die Linien bleiben darueber.
+// Figur. Jetzt spielt je Angriff eine eigene Bildfolge
+// (assets/PlayerSprites/spezial_*, PixelLab, tools/spezialBauen.js) auf
+// einem Bild, das dem Spieler folgt — gebaut wie Rolle (#179) und
+// Schlag (#171).
 //
 // Geprueft am echten Weg (cast*/shadow*/beginChargedSlash), mit zwei Spielen
-// nebeneinander: eines MIT Flagge, eines OHNE.
-//   - mit Flagge: die richtige Folge erscheint (bei gerichteten Angriffen in
+// nebeneinander (tests/spezialStart.js): eines MIT allen Bildern, eines im
+// RUECKFALL (Bilder fehlen, Nachladen abgeklemmt).
+//   - mit Bildern: die richtige Folge erscheint (bei gerichteten Angriffen in
 //     allen acht Richtungen die der Zielrichtung), an der Stelle der Figur;
 //     der Spieler ist so lange unsichtbar, danach ist er unveraendert da,
 //     und weder Bild noch Hoerer bleiben liegen.
-//   - Treffer und Schaden sind mit und ohne Flagge Stueck fuer Stueck gleich.
-//   - ohne Flagge: kein Bild geladen, kein Zusatzbild, der Spieler bleibt
-//     sichtbar — alles wie vorher.
+//   - Treffer und Schaden sind mit Bildern und im Rueckfall Stueck fuer Stueck gleich.
+//   - im Rueckfall: kein Zusatzbild, der Spieler bleibt sichtbar — wie vor #174.
+//   - Laden: GameScene.preload nur fuer gelernte Faehigkeiten, der Rest wird
+//     beim ersten Einsatz nachgeladen.
 //   - Wirbel als Schleife, solange der Kanal laeuft; Hammer zweigeteilt
 //     (Ausholen beim Aufladen, Schlag beim Loslassen).
 //   - Vorrang: ein Schlag mitten im Wirbel verdeckt die Drehung nicht, eine
@@ -27,13 +29,12 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
-const { launchDungeon } = require('../tools/headless/index.js');
+const { mitBildern, imRueckfall } = require('./spezialStart.js');
 
-let MIT = null, OHNE = null;
+let MIT = null, OHNE = null;   // mit allen Bildern / im Rueckfall
 before(async () => {
-  MIT = await launchDungeon({ depth: 1, zusatz: '&debug=1&spezial=neu' });
-  OHNE = await launchDungeon({ depth: 1 });
-  for (const H of [MIT, OHNE]) H.run('window._playerInvincible = true');
+  MIT = await mitBildern();
+  OHNE = await imRueckfall();
 });
 after(async () => {
   if (MIT) await MIT.shutdown();
@@ -84,7 +85,7 @@ function vorbereiten(H, dd) {
     ];
     // Die Puppen halten ihren Abstand zum Angriffsursprung: wird der Spieler
     // im Zufallsraum geschoben (Gegner, Wand), soll das die Treffer mit und
-    // ohne Flagge nicht unterscheiden.
+    // im Rueckfall nicht unterscheiden.
     forEachEnemyInRange = function (r, cb) {
       var o = angriffsUrsprung();
       puppen.forEach(function (p) {
@@ -207,7 +208,7 @@ function ausgerichtet(b, was, abweichung, mitteErlaubt) {
 }
 
 /**
- * Ein Angriff, mit und ohne Flagge. `ausloesen` laeuft im Spiel (this = Szene).
+ * Ein Angriff, mit Bildern und im Rueckfall. `ausloesen` laeuft im Spiel (this = Szene).
  * Gibt das erste Bild, die gezeigten Bilder und die Treffer beider Spiele.
  */
 function angriff(dd, ausloesen, takte) {
@@ -219,7 +220,7 @@ function angriff(dd, ausloesen, takte) {
     H.run(`(function () { var sc = window.game.scene.getScene('GameScene'); (${ausloesen}).call(sc); })()`);
     const erst = blick(H);
     const { gesehen, schritte } = zuEnde(H, takte);
-    // Ohne Flagge gibt es kein Bild, an dessen Ende man sich halten kann:
+    // Im Rueckfall gibt es kein Bild, an dessen Ende man sich halten kann:
     // genauso lange takten wie mit, dann noch etwas fuer den letzten Tick.
     if (name === 'mit') takt = schritte; else H.step(takt);
     H.step(10);
@@ -228,11 +229,11 @@ function angriff(dd, ausloesen, takte) {
     loesen(H);
     erg[name] = { erst, gesehen, treffer };
   }
-  assert.deepStrictEqual(erg.mit.treffer, erg.ohne.treffer, dd + ': Treffer mit und ohne Flagge verschieden');
+  assert.deepStrictEqual(erg.mit.treffer, erg.ohne.treffer, dd + ': Treffer mit Bildern und im Rueckfall verschieden');
   assert.ok(erg.mit.treffer.length > 0, dd + ': gar keine Treffer — die Puppen stehen falsch');
-  // Ohne Flagge: kein Zusatzbild, der Spieler steht sichtbar da.
-  assert.strictEqual(erg.ohne.erst.anzahl, 0, dd + ': Zusatzbild ohne Flagge');
-  assert.strictEqual(erg.ohne.erst.sichtbar, true, dd + ': Spieler ohne Flagge versteckt');
+  // Im Rueckfall: kein Zusatzbild, der Spieler steht sichtbar da.
+  assert.strictEqual(erg.ohne.erst.anzahl, 0, dd + ': Zusatzbild im Rueckfall');
+  assert.strictEqual(erg.ohne.erst.sichtbar, true, dd + ': Spieler im Rueckfall versteckt');
   assert.strictEqual(erg.mit.erst.sichtbar, false, dd + ': der Spieler steht sichtbar neben seiner Folge');
   return erg.mit;
 }
@@ -341,9 +342,9 @@ test('Hammer: Ausholen beim Aufladen, Schlag beim Loslassen, in jeder Richtung',
     assert.strictEqual(m.schlag.key, 'spezial_hammer_' + dd + '_f03', dd + ': Schlag beginnt nicht mit dem Niederschwung');
     assert.strictEqual(m.schlag.anzahl, 1, dd + ': das Ausholbild bleibt neben dem Schlag stehen');
     assert.strictEqual(m.gesehen[m.gesehen.length - 1], 'spezial_hammer_' + dd + '_f07', dd);
-    assert.deepStrictEqual(m.treffer, erg.ohne.treffer, dd + ': Treffer mit und ohne Flagge verschieden');
+    assert.deepStrictEqual(m.treffer, erg.ohne.treffer, dd + ': Treffer mit Bildern und im Rueckfall verschieden');
     assert.ok(m.treffer.length > 0, dd + ': keine Treffer');
-    assert.strictEqual(erg.ohne.erst.anzahl + erg.ohne.schlag.anzahl, 0, dd + ': Zusatzbild ohne Flagge');
+    assert.strictEqual(erg.ohne.erst.anzahl + erg.ohne.schlag.anzahl, 0, dd + ': Zusatzbild im Rueckfall');
   }
   assert.deepStrictEqual(abw, [], 'der Hammer steht neben der Figur: ' + abw.join('; '));
 });
@@ -367,7 +368,7 @@ test('Todesstoss und Stahlgriff: in jeder Richtung die Folge der Zielrichtung, a
   assert.deepStrictEqual(abw, [], 'Todesstoss/Stahlgriff stehen neben der Figur: ' + abw.join('; '));
 });
 
-test('Wirbelklingen: Wurf in jeder Richtung, ohne Flagge kein Zusatzbild', () => {
+test('Wirbelklingen: Wurf in jeder Richtung, im Rueckfall kein Zusatzbild', () => {
   const abw = [];
   // Die Zielhilfe dreht den Wurf auf echte Gegner des Zufallsraums — hier
   // soll er genau in die gestellte Richtung gehen.
@@ -393,7 +394,7 @@ test('Wirbelklingen: Wurf in jeder Richtung, ohne Flagge kein Zusatzbild', () =>
   vorbereiten(OHNE, '04');
   OHNE.run(`castTwistingBlades.call(window.game.scene.getScene('GameScene'))`);
   const o = blick(OHNE);
-  assert.strictEqual(o.anzahl, 0, 'Zusatzbild ohne Flagge');
+  assert.strictEqual(o.anzahl, 0, 'Zusatzbild im Rueckfall');
   assert.strictEqual(o.sichtbar, true);
   OHNE.step(80);
   loesen(OHNE);
@@ -418,8 +419,8 @@ test('Raserei, Berserker, Heilwunde: kurze Folge beim Aktivieren, kein Dauer-Ove
       H.run(`(function () { var sc = window.game.scene.getScene('GameScene'); ${s.js}; })()`);
       const erst = blick(H);
       if (H === OHNE) {
-        assert.strictEqual(erst.anzahl, 0, name + ': Zusatzbild ohne Flagge');
-        assert.strictEqual(erst.sichtbar, true, name + ': Spieler ohne Flagge versteckt');
+        assert.strictEqual(erst.anzahl, 0, name + ': Zusatzbild im Rueckfall');
+        assert.strictEqual(erst.sichtbar, true, name + ': Spieler im Rueckfall versteckt');
       } else {
         // Auch nach Norden schauend die eine (nach Sueden gezeichnete) Folge.
         assert.strictEqual(erst.key, 'spezial_' + name + '_f00', name);
@@ -558,50 +559,72 @@ test('Tod mitten im Wirbel: die Figur gehoert sofort wieder dem Spieler', () => 
   loesen(MIT);
 });
 
-test('Rueckfall: in Verkleidung oder ohne Bilder bleibt es beim Alten', () => {
+test('Rueckfall: in Verkleidung oder ohne Bilder steht die Figur; fehlende Bilder kommen nach', async () => {
   vorbereiten(MIT, '04');
   MIT.run(`(function () { player.setTexture('particle'); castFrostNova.call(window.game.scene.getScene('GameScene'));
     player.setTexture('dir04_f00'); })()`);
   let b = blick(MIT);
   assert.strictEqual(b.anzahl, 0, 'Zusatzbild trotz Verkleidung');
   assert.strictEqual(b.sichtbar, true);
+  MIT.step(40);
   loesen(MIT);
+  // Ein Bild fehlt: diesmal keine Folge, aber es wird nachgeladen ...
   MIT.run(`window.game.textures.remove('spezial_sturm_04_f05')`);
   vorbereiten(MIT, '04');
   MIT.run(`shadowCharge.call(window.game.scene.getScene('GameScene'))`);
   b = blick(MIT);
   assert.strictEqual(b.anzahl, 0, 'Zusatzbild trotz fehlender Bilder');
   assert.strictEqual(b.sichtbar, true);
-  MIT.step(30);
+  const da = await MIT.settle(() => MIT.run(`window.game.textures.exists('spezial_sturm_04_f05')`), { maxRounds: 200, framesPerRound: 1 });
+  assert.ok(da, 'das fehlende Bild wird nicht nachgeladen');
+  zuEnde(MIT);
+  loesen(MIT);
+  // ... und beim naechsten Einsatz bewegt sich die Figur wieder.
+  vorbereiten(MIT, '04');
+  MIT.run(`shadowCharge.call(window.game.scene.getScene('GameScene'))`);
+  assert.strictEqual(blick(MIT).key, 'spezial_sturm_04_f00', 'nach dem Nachladen keine Folge');
+  zuEnde(MIT);
   loesen(MIT);
 });
 
-test('Laden: nur mit Flagge, erst mit dem Dungeon, nie doppelt', () => {
-  const zaehl = (H) => JSON.parse(H.run(`JSON.stringify((function () {
-    function fang(gibts) {
-      var keys = [];
-      spezialBilderVorladen({ image: function (k) { keys.push(k); },
-        textureManager: { exists: function (k) { return gibts(k); } } });
-      return keys.length;
-    }
-    return {
-      da: Object.keys(window.game.textures.list).filter(function (k) { return /^spezial_/.test(k); }).length,
-      leer: fang(function () { return false; }),
-      voll: fang(function () { return true; }),
-      start: (function () { var keys = []; preloadPlayerDirectionalFrames({ image: function (k) { keys.push(k); },
-        textureManager: { exists: function () { return false; } } });
-        return keys.filter(function (k) { return /^spezial_/.test(k); }).length; })()
-    };
+test('Laden: mit dem Dungeon nur die gelernten Faehigkeiten, nie doppelt', () => {
+  // Gefangen am Lader, im Rueckfall-Spiel (dort ist nichts geladen).
+  const fang = (gelernt, gibts) => JSON.parse(OHNE.run(`JSON.stringify((function () {
+    var AS = window.AbilitySystem, alt = AS.getLearnedAbilities;
+    AS.getLearnedAbilities = function () { return ${JSON.stringify(gelernt)}; };
+    var bilder = [], boegen = [];
+    try {
+      spezialBilderVorladen({ image: function (k) { bilder.push(k); }, spritesheet: function (k) { boegen.push(k); },
+        textureManager: { exists: function (k) { return ${gibts}; } } });
+    } finally { AS.getLearnedAbilities = alt; }
+    return { bilder: bilder, boegen: boegen };
   })())`));
-  const m = zaehl(MIT), o = zaehl(OHNE);
-  // 6 richtungslose + 6 gerichtete x 8 Richtungen, je 8 Bilder; eines hat der
-  // Rueckfall-Fall oben entfernt.
-  assert.strictEqual(m.leer, 6 * 8 + 6 * 8 * 8);
-  assert.strictEqual(m.voll, 0, 'vorhandene Bilder werden noch einmal geladen');
-  assert.strictEqual(m.da, 6 * 8 + 6 * 8 * 8 - 1, 'im Dungeon fehlen Spezialbilder: ' + m.da);
-  assert.strictEqual(m.start, 0, 'der Start laedt Spezialbilder');
-  assert.strictEqual(o.da, 0, 'ohne Flagge sind Spezialbilder geladen');
-  assert.strictEqual(o.leer, 0, 'ohne Flagge wuerden Spezialbilder geladen');
-  assert.strictEqual(OHNE.run('typeof window.__spezialProbe'), 'undefined', 'Konsolenhilfe ohne Flagge');
-  assert.strictEqual(MIT.run('typeof window.__spezialProbe'), 'function');
+  // Nichts gelernt: nichts geladen.
+  assert.deepStrictEqual(fang([], false), { bilder: [], boegen: [] });
+  // Raserei (richtungslos): 8 Koerperbilder, Druckring und Aura.
+  const r = fang(['frenzy'], false);
+  assert.strictEqual(r.bilder.length, 8);
+  assert.ok(r.bilder.every((k) => /^spezial_raserei_f0\d$/.test(k)), r.bilder.join(','));
+  assert.deepStrictEqual(r.boegen.sort(), ['spezialvfx_raserei_aura', 'spezialvfx_raserei_stoss']);
+  // Ansturm (gerichtet): 8 x 8 Bilder.
+  assert.strictEqual(fang(['charge'], false).bilder.length, 64);
+  // Alle zwoelf: 6 richtungslose + 6 gerichtete x 8 Richtungen, je 8 Bilder,
+  // und 18 Bildzeilen Wirkbilder (Funken und Blut nur einmal).
+  const alle = fang(['whirlwind', 'hammer', 'charge', 'teleportDash', 'frostNova', 'cycloneStrike',
+    'deathBlow', 'steelGrasp', 'twistingBlades', 'frenzy', 'berserk', 'heilwunde'], false);
+  assert.strictEqual(alle.bilder.length, 6 * 8 + 6 * 8 * 8);
+  assert.strictEqual(alle.boegen.length, 18);
+  // Was schon da ist, wird nicht noch einmal geladen.
+  assert.deepStrictEqual(fang(['frenzy', 'charge'], true), { bilder: [], boegen: [] });
+  // Der Start (Hub) laedt keine Spezialbilder.
+  const start = JSON.parse(OHNE.run(`JSON.stringify((function () { var keys = [];
+    preloadPlayerDirectionalFrames({ image: function (k) { keys.push(k); },
+      textureManager: { exists: function () { return false; } } });
+    return keys.filter(function (k) { return /^spezial/.test(k); }).length; })())`));
+  assert.strictEqual(start, 0, 'der Start laedt Spezialbilder');
+  // Die Konsolenhilfe gibt es genau im Debug-Modus.
+  for (const H of [MIT, OHNE]) {
+    assert.strictEqual(H.run('typeof window.__spezialProbe'), H.run('window.DebugGate.aktiv()') ? 'function' : 'undefined');
+  }
+  assert.strictEqual(MIT.run('typeof window.__spezialProbe'), 'function', 'mit ?debug=1 fehlt die Konsolenhilfe');
 });

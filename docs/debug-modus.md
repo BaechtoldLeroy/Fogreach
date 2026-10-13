@@ -264,7 +264,6 @@ Die gesamte Nebel-Analyse aus #70 lief ueber diese Flaggen.
 | `?spy=1` | Spionage-Mission erzwingen |
 | `?roomsize=1` | Verteilung der Raumgroessen mitzaehlen und ausgeben |
 | `?hubdebug=1` | Hub-Collider sichtbar machen |
-| `?spezial=neu` | (#174) Testmodus: Wirbel, Hammer, Ansturm, Schattenschritt (Blitzsprung), Frostnova und Wirbelsog zeigen eine Bewegung der Figur (PixelLab-Bildfolgen `spezial_*`), die Linienbilder bleiben darueber. Die Bilder werden nur mit der Flagge geladen; Treffer und Abklingzeiten sind dieselben. In der Konsole legt `__spezialProbe()` Wirbel, Hammer, Ansturm und Schattenschritt auf Q/W/E/R, `__spezialProbe('frostNova', 'cycloneStrike')` die beiden anderen. Beispiel: `?debug=1&spezial=neu&dungeon=5&autostart=1&stark=1` |
 | `?sitzung=oeffentlich` | (#166) Spielt die oeffentliche Ratssitzung gleich nach dem Betreten des Hubs, ohne passenden Spielstand (Vorschau). `?sitzung=geheim` spielt ebenso die geheime Sitzung. Beide laufen auch ohne Flagge auf der gemalten Buehne; die Flagge ist nur die Abkuerzung dorthin. |
 
 ## Was sonst noch am Gate haengt
@@ -286,12 +285,13 @@ gespeichert, sie greifen bloss nicht.
 
 ## Konsolenbefehle
 
-In der Browser-Konsole aufrufen. `__ruestung()` gibt es immer, auch auf der ausgelieferten Seite ohne `?debug=1`; `__perfDump()` nur im Debug-Modus.
+In der Browser-Konsole aufrufen. `__ruestung()` gibt es immer, auch auf der ausgelieferten Seite ohne `?debug=1`; `__perfDump()` und `__spezialProbe()` nur im Debug-Modus.
 
 | Befehl | Wirkung |
 |---|---|
 | `__ruestung()` | Zeigt, woher die Ruestung kommt: Grundwerte der Stuecke, Affix-Topf, die vier Buff-Schichten und den Endwert gegen den Deckel (80 %). Gibt dasselbe als Objekt zurueck. (#152) |
 | `__perfDump()` | Leistungsbericht als JSON, nur mit `?perf=1`. |
+| `__spezialProbe(...ids)` | (#174) Lernt bis zu vier Faehigkeiten und legt sie auf Q/W/E/R, ohne den Skillbaum anzufassen; ihre Bewegungs- und Wirkbilder werden nachgeladen. Ohne Angabe: Wirbel, Hammer, Ansturm, Schattenschritt. IDs: `whirlwind`, `hammer`, `charge`, `teleportDash`, `frostNova`, `cycloneStrike`, `deathBlow`, `steelGrasp`, `twistingBlades`, `frenzy`, `berserk`, `heilwunde`. Beispiel: `__spezialProbe('deathBlow', 'steelGrasp', 'twistingBlades', 'heilwunde')`, Adresse dazu `?debug=1&dungeon=5&autostart=1&stark=1`. |
 
 ## Fuer Entwickler
 

@@ -1,33 +1,35 @@
-// tests/spezialVfx.test.js — Wirkbilder der Spezialangriffe (#174, Nachbesserung).
+// tests/spezialVfx.test.js — Wirkbilder der Spezialangriffe (#174).
 //
-// Mit ?spezial=neu bewegt sich die Figur seit b380 mit eigener Bildfolge
-// (tests/spezialFolgen.test.js). Die Effekte drumherum waren aber noch die
-// gezeichneten Linien und Kreise. Jetzt spielen dafuer Pixel-Effekte aus dem
-// PixelLab vfx_workbench (assets/vfx/spezial_*.png, tools/spezialVfxBauen.js).
+// Die Figur bewegt sich mit eigener Bildfolge (tests/spezialFolgen.test.js);
+// die Effekte drumherum waren gezeichnete Linien und Kreise. Jetzt spielen
+// dafuer Pixel-Effekte aus dem PixelLab vfx_workbench
+// (assets/vfx/spezial_*.png, tools/spezialVfxBauen.js); die Linien bleiben
+// nur als Rueckfall, solange ein Bild fehlt.
 //
-// Geprueft am echten Weg, mit zwei Spielen nebeneinander (mit/ohne Flagge):
+// Geprueft am echten Weg, mit zwei Spielen nebeneinander (tests/spezialStart.js:
+// mit allen Bildern / im Rueckfall ohne Bilder):
 //   - je Angriff erscheinen die richtigen Wirkbilder (Textur, Anzahl), an der
 //     Stelle der Wirkung, und so gross, dass der Wirkradius im Bild die
 //     Reichweite des Angriffs trifft (+-20 %); Boden unter, Luft ueber den
 //     Figuren;
 //   - die alten Linien (scene.add.graphics/circle aus der Effektfunktion)
-//     werden mit Flagge NICHT mehr gezeichnet, ohne Flagge schon;
+//     werden mit Bildern NICHT mehr gezeichnet, im Rueckfall schon;
 //   - danach steht nichts mehr herum (Bild, postupdate-/shutdown-Hoerer);
-//   - fehlt ein Bild, gibt es die alten Linien;
-//   - ohne Flagge wird nichts geladen.
+//   - fehlt ein Bild, gibt es die alten Linien, und es wird nachgeladen;
+//   - geladen wird nur, was gelernt ist (tests/spezialFolgen.test.js), und
+//     jede Faehigkeit fragt genau ihre Wirkbilder an.
 //
 // Zufall und Zufallsraum: Treffer gehen nur an zwei feste Puppen, Requisiten
 // und Gegnerlogik sind abgeklemmt. Zeit nur per H.step.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
-const { launchDungeon } = require('../tools/headless/index.js');
+const { mitBildern, imRueckfall } = require('./spezialStart.js');
 
-let MIT = null, OHNE = null;
+let MIT = null, OHNE = null;   // mit allen Bildern / im Rueckfall
 before(async () => {
-  MIT = await launchDungeon({ depth: 1, zusatz: '&debug=1&spezial=neu' });
-  OHNE = await launchDungeon({ depth: 1 });
-  for (const H of [MIT, OHNE]) H.run('window._playerInvincible = true');
+  MIT = await mitBildern();
+  OHNE = await imRueckfall();
 });
 after(async () => {
   if (MIT) await MIT.shutdown();
@@ -209,14 +211,14 @@ function wert(H, js) { return JSON.parse(H.run(`JSON.stringify((function () { ${
 test('Wirbel: Staubring am Boden, Schwunglinien darueber, als Schleife in der Reichweite', () => {
   vorbereiten(OHNE);
   lauf(OHNE, 'function () { castWhirlwind.call(this); }');
-  assert.ok(linien(OHNE).length > 0, 'ohne Flagge zeichnet der Wirbel keine Scheiben (Lauscher kaputt?)');
-  assert.deepStrictEqual(wirkbilder(OHNE), [], 'ohne Flagge ein Wirkbild');
+  assert.ok(linien(OHNE).length > 0, 'im Rueckfall zeichnet der Wirbel keine Scheiben (Lauscher kaputt?)');
+  assert.deepStrictEqual(wirkbilder(OHNE), [], 'im Rueckfall ein Wirkbild');
   OHNE.step(90); loesen(OHNE);
 
   vorbereiten(MIT);
   const range = wert(MIT, 'return getSpinRange() * 0.6;');
   lauf(MIT, 'function () { castWhirlwind.call(this); }');
-  assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch die alten Saegeblaetter');
+  assert.deepStrictEqual(linien(MIT), [], 'mit Bildern noch die alten Saegeblaetter');
   MIT.step(15);   // nach dem Aufgehen (200 ms)
   let v = wirkbilder(MIT);
   assert.deepStrictEqual(v.map((o) => o.key).sort(), ['spezialvfx_wirbel_boden', 'spezialvfx_wirbel_luft']);
@@ -248,7 +250,7 @@ test('Wirbel: Staubring am Boden, Schwunglinien darueber, als Schleife in der Re
 test('Hammer: Glimmen am Flegel beim Aufladen, Aufschlag mit Rissen und Splittern in der Einschlagzone', () => {
   vorbereiten(OHNE);
   lauf(OHNE, 'function () { beginChargedSlash.call(this); releaseChargedSlash.call(this); }');
-  assert.ok(linien(OHNE).length > 0, 'ohne Flagge kein alter Einschlag');
+  assert.ok(linien(OHNE).length > 0, 'im Rueckfall kein alter Einschlag');
   assert.deepStrictEqual(wirkbilder(OHNE), []);
   OHNE.step(60); loesen(OHNE); OHNE.run('chargeSlashCooldown = false');
 
@@ -272,7 +274,7 @@ test('Hammer: Glimmen am Flegel beim Aufladen, Aufschlag mit Rissen und Splitter
     var d = window.__vfx.dir;
     return { x: player.x + d[0] * range * 0.35, y: player.y + d[1] * range * 0.35, radius: range * 0.78 };`);
   lauf(MIT, 'function () { releaseChargedSlash.call(this); }');
-  assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch Kreis, Ring und Risslinien');
+  assert.deepStrictEqual(linien(MIT), [], 'mit Bildern noch Kreis, Ring und Risslinien');
   v = wirkbilder(MIT);
   assert.deepStrictEqual(v.map((o) => o.key).sort(), ['spezialvfx_hammer_boden', 'spezialvfx_hammer_luft'], 'Glimmen bleibt oder Aufschlag fehlt');
   for (const o of v) {
@@ -290,7 +292,7 @@ test('Ansturm: Nachbilder und Fussstaub statt Partikelspur, Funken am Getroffene
   vorbereiten(OHNE);
   lauf(OHNE, 'function () { shadowCharge.call(this); }');
   OHNE.step(20);
-  assert.ok(OHNE.run('window.__vfx.spur') > 0, 'ohne Flagge keine Partikelspur (Lauscher kaputt?)');
+  assert.ok(OHNE.run('window.__vfx.spur') > 0, 'im Rueckfall keine Partikelspur (Lauscher kaputt?)');
   assert.deepStrictEqual(wirkbilder(OHNE), []);
   loesen(OHNE);
 
@@ -315,7 +317,7 @@ test('Ansturm: Nachbilder und Fussstaub statt Partikelspur, Funken am Getroffene
   assert.ok(nachbilder >= 3, 'keine Schattenspur: ' + nachbilder + ' Nachbilder');
   assert.ok(staub >= 2, 'kein Fussstaub: ' + staub);
   assert.ok(staubTief, 'der Staub liegt nicht am Boden');
-  assert.strictEqual(MIT.run('window.__vfx.spur'), 0, 'mit Flagge noch die alte Partikelspur');
+  assert.strictEqual(MIT.run('window.__vfx.spur'), 0, 'mit Bildern noch die alte Partikelspur');
   abwarten(MIT, 'Ansturm');
   loesen(MIT);
 });
@@ -324,7 +326,7 @@ test('Schattenschritt: Schattenwolke bei Absprung und Landung, Nachbilder dazwis
   vorbereiten(OHNE);
   lauf(OHNE, 'function () { shadowTeleportDash.call(this); }');
   OHNE.step(12);
-  assert.ok(linien(OHNE).length >= 2, 'ohne Flagge kein alter Blink-Ring');
+  assert.ok(linien(OHNE).length >= 2, 'im Rueckfall kein alter Blink-Ring');
   loesen(OHNE); OHNE.step(30);
 
   vorbereiten(MIT);
@@ -351,7 +353,7 @@ test('Schattenschritt: Schattenwolke bei Absprung und Landung, Nachbilder dazwis
   assert.ok(Math.abs(landung.x - ziel.x) < 4 && Math.abs(landung.y - ziel.y) < 4,
     'Landewolke nicht am Ziel: ' + JSON.stringify({ start, ziel, landung }));
   assert.ok(nachbilder >= 2, 'keine Schattenspur: ' + nachbilder);
-  assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch Ring und Strahlen');
+  assert.deepStrictEqual(linien(MIT), [], 'mit Bildern noch Ring und Strahlen');
   abwarten(MIT, 'Schattenschritt');
   loesen(MIT);
 });
@@ -363,7 +365,7 @@ test('Frostnova und Wirbelsog: Frostring und Nebelsog am Boden, so weit wie die 
   ]) {
     vorbereiten(OHNE);
     lauf(OHNE, js);
-    assert.ok(linien(OHNE).length > 0, name + ': ohne Flagge keine alten Linien');
+    assert.ok(linien(OHNE).length > 0, name + ': im Rueckfall keine alten Linien');
     assert.deepStrictEqual(wirkbilder(OHNE), []);
     OHNE.step(40); loesen(OHNE);
 
@@ -371,7 +373,7 @@ test('Frostnova und Wirbelsog: Frostring und Nebelsog am Boden, so weit wie die 
     const p = wert(MIT, 'return { x: player.x, y: player.y };');
     const soll = wert(MIT, radiusJs);
     lauf(MIT, js);
-    assert.deepStrictEqual(linien(MIT), [], name + ': mit Flagge noch Ringe/Arme');
+    assert.deepStrictEqual(linien(MIT), [], name + ': mit Bildern noch Ringe/Arme');
     const v = wirkbilder(MIT);
     assert.deepStrictEqual(v.map((o) => o.key), ['spezialvfx_' + name], name);
     assert.deepStrictEqual([Math.round(v[0].x), Math.round(v[0].y)], [Math.round(p.x), Math.round(p.y)], name + ' nicht an den Fuessen');
@@ -392,8 +394,8 @@ test('Todesstoss: schwerer Hieb in Schlagrichtung so weit wie der Kegel, Blut am
   vorbereiten(OHNE);
   lauf(OHNE, 'function () { window.__vfx.puppen[0].hp = 10; shadowDeathBlow.call(this); }');
   const alt = linien(OHNE);
-  assert.ok(alt.some((l) => /^_deathBlowFx/.test(l)), 'ohne Flagge kein alter Kegel: ' + alt);
-  assert.ok(alt.some((l) => /^_deathBlowExecuteBurst/.test(l)), 'ohne Flagge kein alter Hinrichtungs-Burst: ' + alt);
+  assert.ok(alt.some((l) => /^_deathBlowFx/.test(l)), 'im Rueckfall kein alter Kegel: ' + alt);
+  assert.ok(alt.some((l) => /^_deathBlowExecuteBurst/.test(l)), 'im Rueckfall kein alter Hinrichtungs-Burst: ' + alt);
   assert.deepStrictEqual(wirkbilder(OHNE), []);
   OHNE.step(30); loesen(OHNE);
 
@@ -401,7 +403,7 @@ test('Todesstoss: schwerer Hieb in Schlagrichtung so weit wie der Kegel, Blut am
     vorbereiten(MIT);
     const u = wert(MIT, 'var u = angriffsUrsprung(); return { x: u.x, y: u.y, d: window.__vfx.dir };');
     lauf(MIT, `function () { ${hinrichten ? 'window.__vfx.puppen[0].hp = 10;' : ''} shadowDeathBlow.call(this); }`);
-    assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch Kegel oder Burst');
+    assert.deepStrictEqual(linien(MIT), [], 'mit Bildern noch Kegel oder Burst');
     const v = wirkbilder(MIT);
     const hieb = v.filter((o) => o.vfx === 'todesstoss');
     assert.strictEqual(hieb.length, 1, 'kein Hieb: ' + v.map((o) => o.vfx));
@@ -426,7 +428,7 @@ test('Todesstoss: schwerer Hieb in Schlagrichtung so weit wie der Kegel, Blut am
 test('Stahlgriff: Kette bis zum Gefassten (sonst volle Reichweite), dann eingeholt', () => {
   vorbereiten(OHNE);
   lauf(OHNE, 'function () { castSteelGrasp.call(this); }');
-  assert.ok(linien(OHNE).some((l) => /^castSteelGrasp/.test(l)), 'ohne Flagge keine alte Kettenlinie');
+  assert.ok(linien(OHNE).some((l) => /^castSteelGrasp/.test(l)), 'im Rueckfall keine alte Kettenlinie');
   assert.deepStrictEqual(wirkbilder(OHNE), []);
   OHNE.step(20); loesen(OHNE);
 
@@ -435,7 +437,7 @@ test('Stahlgriff: Kette bis zum Gefassten (sonst volle Reichweite), dann eingeho
     if (!fasst) MIT.run('window.__vfx.puppen.length = 0');
     const u = wert(MIT, 'var u = angriffsUrsprung(); return { x: u.x, y: u.y, d: window.__vfx.dir };');
     lauf(MIT, 'function () { castSteelGrasp.call(this); }');
-    assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch die gezeichnete Linie');
+    assert.deepStrictEqual(linien(MIT), [], 'mit Bildern noch die gezeichnete Linie');
     const kette = () => JSON.parse(MIT.run(`JSON.stringify((function () {
       var k = window.game.scene.getScene('GameScene').children.list.filter(function (o) { return o.name === 'spezialVfx' && o.getData('vfx') === 'kette'; })[0];
       return k ? { x: k.x, y: k.y, rot: k.rotation, lang: k.width * k.scaleX, soll: k.getData('laenge'), tiefe: k.depth } : null; })())`));
@@ -472,14 +474,19 @@ test('Stahlgriff: Kette bis zum Gefassten (sonst volle Reichweite), dann eingeho
 test('Wirbelklingen: kreisende Klinge folgt dem Geschoss und vergeht mit ihm', () => {
   vorbereiten(OHNE);
   lauf(OHNE, 'function () { castTwistingBlades.call(this); window.__vfx.geschoss = playerProjectiles.getChildren().slice(-1)[0]; }');
-  assert.strictEqual(OHNE.run('window.__vfx.geschoss.visible'), true, 'ohne Flagge ist der Dolch unsichtbar');
+  assert.strictEqual(OHNE.run('window.__vfx.geschoss.visible'), true, 'im Rueckfall ist der Dolch unsichtbar');
   assert.deepStrictEqual(wirkbilder(OHNE), []);
   OHNE.run('window.__vfx.geschoss.destroy()'); OHNE.step(5); loesen(OHNE);
 
   vorbereiten(MIT);
   lauf(MIT, 'function () { castTwistingBlades.call(this); window.__vfx.geschoss = playerProjectiles.getChildren().slice(-1)[0]; }');
   assert.strictEqual(MIT.run('window.__vfx.geschoss.visible'), false, 'der flache Dolch fliegt sichtbar mit');
-  for (let i = 0; i < 6; i++) MIT.step(1);
+  // Im Zufallsraum prallt das Geschoss sonst an Wand oder Gegner ab und ist
+  // nach wenigen Bildern zurueck: hier haelt es still und wird von Hand
+  // versetzt — die Klinge muss trotzdem mitgehen.
+  MIT.run(`(function () { var p = window.__vfx.geschoss; p.body.moves = false; p.body.setVelocity(0, 0);
+    p.setPosition(p.x + 37, p.y + 11); })()`);
+  MIT.step(1);
   const g = wert(MIT, 'var p = window.__vfx.geschoss; return { x: p.x, y: p.y, aktiv: p.active };');
   const k = wirkbilder(MIT).filter((o) => o.vfx === 'klinge');
   assert.strictEqual(k.length, 1, 'keine kreisende Klinge');
@@ -507,8 +514,8 @@ test('Raserei: Druckring beim Aktivieren, Glut-Aura fuer die Buffdauer', () => {
   vorbereiten(OHNE);
   selbst(OHNE, RASEREI);
   OHNE.step(2);
-  assert.ok(linien(OHNE).some((l) => /^_frenzyFx/.test(l)), 'ohne Flagge kein alter Ring');
-  assert.ok(linien(OHNE).some((l) => /^updateAmuletPerFrame/.test(l)), 'ohne Flagge keine alte Aura');
+  assert.ok(linien(OHNE).some((l) => /^_frenzyFx/.test(l)), 'im Rueckfall kein alter Ring');
+  assert.ok(linien(OHNE).some((l) => /^updateAmuletPerFrame/.test(l)), 'im Rueckfall keine alte Aura');
   assert.deepStrictEqual(wirkbilder(OHNE), []);
   OHNE.run('window.frenzyState.active = false'); OHNE.step(5); loesen(OHNE);
 
@@ -516,7 +523,7 @@ test('Raserei: Druckring beim Aktivieren, Glut-Aura fuer die Buffdauer', () => {
   const p = wert(MIT, 'return { x: player.x, y: player.y };');
   selbst(MIT, RASEREI);
   MIT.step(2);
-  assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch Ring, Strahlen oder Aura-Kreise');
+  assert.deepStrictEqual(linien(MIT), [], 'mit Bildern noch Ring, Strahlen oder Aura-Kreise');
   assert.strictEqual(MIT.run('!!window._frenzyAura'), false, 'die gezeichnete Aura laeuft mit');
   const v = wirkbilder(MIT);
   const stoss = v.find((o) => o.vfx === 'raserei_stoss'), aura = v.find((o) => o.vfx === 'raserei_aura');
@@ -541,7 +548,7 @@ test('Berserker: Blut beim Aktivieren, rote Glut zu Fuessen fuer die Buffdauer',
   const lpO = OHNE.run('playerHealth');
   selbst(OHNE, BERSERK);
   OHNE.step(2);
-  assert.deepStrictEqual(wirkbilder(OHNE), [], 'ohne Flagge ein Wirkbild');
+  assert.deepStrictEqual(wirkbilder(OHNE), [], 'im Rueckfall ein Wirkbild');
   OHNE.run('window.berserkState.active = false; playerHealth = ' + lpO); loesen(OHNE);
 
   vorbereiten(MIT);
@@ -570,7 +577,7 @@ test('Berserker: Blut beim Aktivieren, rote Glut zu Fuessen fuer die Buffdauer',
 test('Heilwunde: gruener Schimmer hinter der Figur statt Ring und Kreuzen, die Heilzahl bleibt', () => {
   vorbereiten(OHNE);
   selbst(OHNE, 'shadowHeilwunde.call(sc)');
-  assert.ok(linien(OHNE).some((l) => /^_healFx/.test(l)), 'ohne Flagge keine alten Kreuze');
+  assert.ok(linien(OHNE).some((l) => /^_healFx/.test(l)), 'im Rueckfall keine alten Kreuze');
   assert.deepStrictEqual(wirkbilder(OHNE), []);
   OHNE.step(60); loesen(OHNE);
 
@@ -578,7 +585,7 @@ test('Heilwunde: gruener Schimmer hinter der Figur statt Ring und Kreuzen, die H
   const texte = () => MIT.run(`window.game.scene.getScene('GameScene').children.list.filter(function (o) { return o.type === 'Text' && /^\\+\\d/.test(o.text || ''); }).length`);
   const vorher = texte();
   selbst(MIT, 'shadowHeilwunde.call(sc)');
-  assert.deepStrictEqual(linien(MIT), [], 'mit Flagge noch Ring/Kreuze');
+  assert.deepStrictEqual(linien(MIT), [], 'mit Bildern noch Ring/Kreuze');
   assert.strictEqual(texte(), vorher + 1, 'die Heilzahl fehlt');
   const v = wirkbilder(MIT).filter((o) => o.vfx === 'heil');
   assert.strictEqual(v.length, 1, 'kein Schimmer');
@@ -660,55 +667,75 @@ test('Tod mitten im Wirbel: die Wirkbilder am Spieler verschwinden mit ihm', () 
   loesen(MIT);
 });
 
-test('Rueckfall: fehlt ein Wirkbild, zeichnet der Angriff seine alten Linien', () => {
+test('Rueckfall: fehlt ein Wirkbild, alte Linien und Nachladen; danach wieder das Bild', async () => {
   MIT.run(`window.game.textures.remove('spezialvfx_frost')`);
   vorbereiten(MIT);
   lauf(MIT, 'function () { castFrostNova.call(this); }');
   assert.ok(linien(MIT).length > 0, 'ohne Frostbild keine alten Ringe');
-  assert.deepStrictEqual(wirkbilder(MIT), []);
-  MIT.step(60);
+  assert.deepStrictEqual(wirkbilder(MIT).filter((o) => o.vfx === 'frost'), []);
+  const da = await MIT.settle(() => MIT.run(`window.game.textures.exists('spezialvfx_frost')`), { maxRounds: 200, framesPerRound: 1 });
+  assert.ok(da, 'das Frostbild wird nicht nachgeladen');
+  abwarten(MIT, 'Rueckfall');
+  loesen(MIT);
+  vorbereiten(MIT);
+  lauf(MIT, 'function () { castFrostNova.call(this); }');
+  assert.deepStrictEqual(linien(MIT), [], 'nach dem Nachladen noch die alten Ringe');
+  assert.strictEqual(wirkbilder(MIT).filter((o) => o.vfx === 'frost').length, 1, 'nach dem Nachladen kein Frostbild');
+  abwarten(MIT, 'nach dem Nachladen');
   loesen(MIT);
 });
 
-test('Ohne Flagge: selbst vorhandene Wirkbilder bleiben ungenutzt', () => {
-  // Die Flagge entscheidet, nicht ob ein Bild zufaellig im Speicher liegt.
-  OHNE.run(`Object.keys(SPEZIAL_VFX).forEach(function (n) { window.game.textures.createCanvas('spezialvfx_' + n, 8, 8); })`);
-  try {
+test('Nachladen beim Einsatz: jede Faehigkeit fragt genau ihre Bilder an', () => {
+  // Im Rueckfall-Spiel (keine Bilder) mitschreiben, was nachgeladen wuerde.
+  const SOLL = {
+    'castWhirlwind.call(sc)': ['wirbel', 'vfx:wirbel_boden', 'vfx:wirbel_luft'],
+    'beginChargedSlash.call(sc); releaseChargedSlash.call(sc)': ['hammer', 'vfx:hammer_boden', 'vfx:hammer_glimmen', 'vfx:hammer_luft'],
+    'shadowCharge.call(sc)': ['sturm', 'vfx:funken', 'vfx:staub'],
+    'shadowTeleportDash.call(sc)': ['sprung', 'vfx:schatten'],
+    'castFrostNova.call(sc)': ['frost', 'vfx:frost'],
+    'castCycloneStrike.call(sc)': ['vfx:zyklon', 'zyklon'],
+    'shadowDeathBlow.call(sc)': ['todesstoss', 'vfx:blut', 'vfx:todesstoss'],
+    'castSteelGrasp.call(sc)': ['greif', 'vfx:kette'],
+    'castTwistingBlades.call(sc)': ['klingen', 'vfx:klinge'],
+    "window.AbilitySystem.getAbilityDef('frenzy').activate(sc)": ['raserei', 'vfx:raserei_aura', 'vfx:raserei_stoss'],
+    "window.AbilitySystem.getAbilityDef('berserk').activate(sc)": ['berserk', 'vfx:berserk_aura', 'vfx:blut'],
+    'shadowHeilwunde.call(sc)': ['heil', 'vfx:heil']
+  };
+  for (const [js, soll] of Object.entries(SOLL)) {
     vorbereiten(OHNE);
-    lauf(OHNE, 'function () { castFrostNova.call(this); castCycloneStrike.call(this); }');
-    assert.deepStrictEqual(wirkbilder(OHNE), [], 'ohne Flagge ein Wirkbild');
-    assert.ok(linien(OHNE).length > 0, 'ohne Flagge keine alten Linien');
-    OHNE.step(60);
+    const lp = OHNE.run('playerHealth');
+    OHNE.run(`window.__angefragt = []; spezialNachladen = function (sc, ids, folgen, vfx) {
+      (folgen || []).forEach(function (f) { window.__angefragt.push(f); });
+      (vfx || []).forEach(function (v) { window.__angefragt.push('vfx:' + v); }); return 0; };`);
+    selbst(OHNE, js);
+    OHNE.step(20);   // Aura (Raserei) und Landewolke (Schattenschritt) kommen im Takt
+    const ist = JSON.parse(OHNE.run('JSON.stringify(window.__angefragt)'));
+    OHNE.run(`spezialNachladen = function () { return 0; }; playerHealth = ${lp};
+      if (window.frenzyState) window.frenzyState.active = false; if (window.berserkState) window.berserkState.active = false;
+      isChargingSlash = false; chargeSlashCooldown = false;`);
+    OHNE.step(40);
     loesen(OHNE);
-  } finally {
-    OHNE.run(`Object.keys(SPEZIAL_VFX).forEach(function (n) { window.game.textures.remove('spezialvfx_' + n); })`);
+    assert.deepStrictEqual([...new Set(ist)].sort(), soll.slice().sort(), js);
   }
 });
 
-test('Laden: Wirkbilder nur mit Flagge, nie doppelt', () => {
-  const zaehl = (H) => wert(H, `
-    function fang(gibts) {
-      var keys = [];
-      spezialVfxVorladen({ image: function () {}, spritesheet: function (k, url, cfg) { keys.push([k, url, cfg.frameWidth, cfg.frameHeight]); },
-        textureManager: { exists: function (k) { return gibts(k); } } });
-      return keys;
-    }
-    return {
-      da: Object.keys(window.game.textures.list).filter(function (k) { return /^spezialvfx_/.test(k); }).length,
-      leer: fang(function () { return false; }),
-      voll: fang(function () { return true; }).length
-    };`);
-  const m = zaehl(MIT), o = zaehl(OHNE);
+test('Laden: die Wirkbilder der gelernten Faehigkeiten, mit Bildmassen', () => {
+  const boegen = wert(OHNE, `var AS = window.AbilitySystem, alt = AS.getLearnedAbilities, keys = [];
+    AS.getLearnedAbilities = function () { return Object.keys(SPEZIAL_JE_FAEHIGKEIT); };
+    try {
+      spezialBilderVorladen({ image: function () {}, spritesheet: function (k, url, cfg) { keys.push([k, url, cfg.frameWidth, cfg.frameHeight, cfg.endFrame]); },
+        textureManager: { exists: function () { return false; } } });
+    } finally { AS.getLearnedAbilities = alt; }
+    return keys;`);
   const n = wert(MIT, 'return Object.keys(SPEZIAL_VFX).length;');
   assert.strictEqual(n, 18);
-  assert.strictEqual(m.leer.length, n);
-  for (const [k, url, w, h] of m.leer) {
-    assert.ok(/^assets\/vfx\/spezial_\w+\.png$/.test(url), url);
-    assert.ok(w > 0 && h > 0, k);
+  assert.strictEqual(boegen.length, n);
+  for (const [k, url, w, h, ende] of boegen) {
+    const name = k.replace(/^spezialvfx_/, '');
+    assert.strictEqual(url, 'assets/vfx/spezial_' + name + '.png');
+    const d = wert(MIT, `return SPEZIAL_VFX['${name}'];`);
+    assert.deepStrictEqual([w, h, ende], [d.w, d.h, d.n - 1], k);
   }
-  assert.strictEqual(m.voll, 0, 'vorhandene Wirkbilder werden noch einmal geladen');
-  // Eines hat der Rueckfall oben entfernt.
-  assert.strictEqual(m.da, n - 1, 'im Dungeon fehlen Wirkbilder: ' + m.da);
-  assert.strictEqual(o.da, 0, 'ohne Flagge sind Wirkbilder geladen');
-  assert.strictEqual(o.leer.length, 0, 'ohne Flagge wuerden Wirkbilder geladen');
+  // Im Dungeon mit allen Bildern sind alle Bildzeilen da (Nachladen oben inklusive).
+  assert.strictEqual(MIT.run("Object.keys(window.game.textures.list).filter(function (k) { return /^spezialvfx_/.test(k); }).length"), n);
 });

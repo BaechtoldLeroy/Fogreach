@@ -90,8 +90,7 @@
     'spy', 'roomsize', 'hubdebug',
     'versteck', 'sonder', 'akt', 'stark',
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
-    'gegnerlauf',
-    'spezial'           // spezial=neu: Spezialangriffe als Bildfolgen (#174)
+    'gegnerlauf'
   ];
 
   /**

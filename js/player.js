@@ -2757,7 +2757,7 @@ function beginChargedSlash() {
   }
 
   if (player?.setTint) player.setTint(0xffd27f);
-  // #174 (?spezial=neu): beim Aufladen holt die Figur aus und haelt den
+  // #174: beim Aufladen holt die Figur aus und haelt den
   // Flegel ueber dem Kopf, bis losgelassen wird (releaseChargedSlash).
   if (_hammerAusholen) _hammerAusholen.ende();
   _hammerAusholen = _spezialZeigen(this, 'hammer', _getAimVector2(this), CHARGED_SLASH_MAX_CHARGE + 200,
@@ -2787,7 +2787,7 @@ function beginChargedSlash() {
 // radiale Bodenrisse, Staub-Puffs, Screenshake (skaliert mit Ladung).
 function _hammerSlamFx(scene, x, y, radius, charge) {
   try {
-    // #174 (?spezial=neu): Druckwelle, Risse, Splitter und Staub als
+    // #174: Druckwelle, Risse, Splitter und Staub als
     // Pixelbilder statt Kreis, Ring und Linien. Erschuetterung und Klang bleiben.
     if (_hammerSlamVfx(scene, x, y, radius)) {
       if (scene.cameras && scene.cameras.main) { try { scene.cameras.main.shake(130, 0.004 + charge * 0.004); } catch (e) {} }
@@ -2862,7 +2862,7 @@ function releaseChargedSlash(forceMaxCharge = false) {
   const iy = player.y + forward.y * impactDist;
   const slamRadius = range * 0.78;
   _hammerSlamFx(scene, ix, iy, slamRadius, chargeRatio);
-  // #174 (?spezial=neu): der Flegel kracht herunter — der Einschlag oben
+  // #174: der Flegel kracht herunter — der Einschlag oben
   // faellt genau jetzt, also gleich ab dem Schwung nach unten.
   if (_hammerAusholen) { _hammerAusholen.ende(); _hammerAusholen = null; }
   if (_hammerGlimmen) { _hammerGlimmen.ende(); _hammerGlimmen = null; }
@@ -3063,7 +3063,7 @@ function updateAmuletPerFrame(scene, delta) {
   // Spieler — laufendes Feedback zusätzlich zum Aktivierungs-Burst (_frenzyFx).
   var fsr = window.frenzyState;
   var frenzyActive = !!(fsr && fsr.active && (typeof fsr.expiry !== 'number' || now < fsr.expiry));
-  // #174 (?spezial=neu): statt Ring und Partikeln eine Glut-Aura als
+  // #174: statt Ring und Partikeln eine Glut-Aura als
   // Pixelbild; sie endet von selbst mit dem Buff (solange).
   var frenzyVfx = frenzyActive && _vfxDa(scene, 'raserei_aura');
   if (frenzyVfx) {
@@ -3384,8 +3384,8 @@ function _rolleZeigen(scene, dd, duration) {
 //   Rolle vor Spezialangriff: das Ausweichen muss man sehen.
 //   Spezialangriff vor Schlag: ein Schlag im Wirbel unterbricht die Drehung
 //   nicht; seine Wischspur zeigt ihn trotzdem.
-// Laeuft nur eine Folge (ohne ?spezial=neu immer), ist das genau das alte
-// Verhalten: anmelden versteckt den Spieler, abmelden zeigt ihn.
+// Laeuft nur eine Folge, ist das genau das alte Verhalten: anmelden
+// versteckt den Spieler, abmelden zeigt ihn.
 // ============================================================
 const FOLGE_RANG = { schlag: 1, spezial: 2, rolle: 3 };
 const _folgen = [];
@@ -3416,19 +3416,19 @@ function _folgeAbmelden(bild) {
 }
 
 // ============================================================
-// #174: Spezialangriffe als Bewegung der Figur (Testmodus ?spezial=neu)
+// #174: Spezialangriffe als Bewegung der Figur
 // ------------------------------------------------------------
 // Gebaut wie Rolle und Schlag: PixelLab pixminimax am Spielercharakter,
 // 92x92 mit demselben Rand, acht Bilder nach der Ruhepose,
-// tools/spezialBauen.js. Die Linienbilder der Angriffe bleiben als Zusatz
-// darueber; Treffer, Abklingzeiten und Wirkung ruehren die Folgen nicht an.
+// tools/spezialBauen.js. Treffer, Abklingzeiten und Wirkung ruehren die
+// Folgen nicht an.
 //
 // Richtungslose Angriffe (wirken rundherum) haben EINE Folge, nach Sueden
 // gezeichnet: spezial_<angriff>_f00..f07. Gerichtete haben alle acht
 // Richtungen: spezial_<angriff>_DD_f00..f07.
 //
-// Ohne Flagge wird nichts geladen und nichts gezeigt — die Angriffe sehen
-// genau aus wie vorher.
+// Fehlen die Bilder (noch nicht geladen, Ladefehler) oder steckt der Spieler
+// in einer Verkleidung, gibt es keine Folge: die Figur steht wie bisher.
 // ============================================================
 const SPEZIAL_BILDER = 8;
 const SPEZIAL_FOLGEN = {
@@ -3465,30 +3465,135 @@ const SPEZIAL_HAMMER_SCHLAG = 3;
 let _hammerAusholen = null;
 let _hammerGlimmen = null;   // Wirkbild am Flegel waehrend des Aufladens
 
-function spezialAn() {
-  return !!(typeof window !== 'undefined' && window.DebugGate
-    && window.DebugGate.flagge('spezial') === 'neu');
-}
-
 function spezialSchluessel(angriff, dd, frame) {
   return `spezial_${angriff}${dd ? '_' + dd : ''}_f${frame.toString().padStart(2, '0')}`;
 }
 
-/** #174: Die Spezialfolgen mit dem Dungeon laden — nur mit ?spezial=neu. */
-function spezialBilderVorladen(loader) {
-  if (!loader || !spezialAn()) return;
-  spezialVfxVorladen(loader);
+// Welche Bilder zu welcher Faehigkeit gehoeren (ID wie in abilitySystem.js):
+// ihre Koerperfolge und ihre Wirkbilder.
+const SPEZIAL_JE_FAEHIGKEIT = {
+  whirlwind:      { folge: 'wirbel',     vfx: ['wirbel_boden', 'wirbel_luft'] },
+  hammer:         { folge: 'hammer',     vfx: ['hammer_glimmen', 'hammer_boden', 'hammer_luft'] },
+  charge:         { folge: 'sturm',      vfx: ['staub', 'funken'] },
+  teleportDash:   { folge: 'sprung',     vfx: ['schatten'] },
+  frostNova:      { folge: 'frost',      vfx: ['frost'] },
+  cycloneStrike:  { folge: 'zyklon',     vfx: ['zyklon'] },
+  deathBlow:      { folge: 'todesstoss', vfx: ['todesstoss', 'blut'] },
+  steelGrasp:     { folge: 'greif',      vfx: ['kette', 'funken'] },
+  twistingBlades: { folge: 'klingen',    vfx: ['klinge'] },
+  frenzy:         { folge: 'raserei',    vfx: ['raserei_stoss', 'raserei_aura'] },
+  berserk:        { folge: 'berserk',    vfx: ['blut', 'berserk_aura'] },
+  heilwunde:      { folge: 'heil',       vfx: ['heil'] }
+};
+
+// ------------------------------------------------------------
+// Laden. Alles zusammen sind 432 Koerperbilder (1,4 MB) und 18 Bildzeilen
+// Wirkbilder (0,2 MB) — als Anfragen beim ersten Dungeon zu viel fuer einen
+// Spieler, der zwei Faehigkeiten kann. Darum laedt GameScene.preload nur,
+// was zu den GELERNTEN Faehigkeiten gehoert (einmal je Sitzung, die
+// Texturen bleiben ueber Raumwechsel liegen). Wird eine Faehigkeit benutzt,
+// deren Bilder fehlen (im Dungeon gelernt, Ladefehler), zeichnet sie diesmal
+// ihre alten Linien und laedt ihre Bilder im Hintergrund nach.
+// ------------------------------------------------------------
+const _spezialAngefragt = new Set();   // Schluessel, die gerade in einer Ladeschlange stehen
+
+function _folgeDateien(angriff) {
+  const def = SPEZIAL_FOLGEN[angriff];
+  if (!def) return [];
+  const dds = def.gerichtet ? ['00', '01', '02', '03', '04', '05', '06', '07'] : [null];
+  const out = [];
+  dds.forEach((dd) => {
+    for (let f = 0; f < SPEZIAL_BILDER; f++) {
+      const key = spezialSchluessel(angriff, dd, f);
+      out.push({ key, url: `assets/PlayerSprites/${key}.png` });
+    }
+  });
+  return out;
+}
+
+/**
+ * Stellt fehlende Bilder in die Ladeschlange: Koerperfolgen (`folgen`) und
+ * Wirkbilder (`vfx`). Was schon da ist oder gerade geladen wird, bleibt
+ * aussen vor. Ist die Schlange durch, gelten die Schluessel wieder als frei:
+ * geladen sind sie dann da, fehlgeschlagen werden sie beim naechsten Einsatz
+ * neu versucht. Gibt die Zahl der neu angefragten Dateien zurueck.
+ */
+function _spezialAnfragen(loader, folgen, vfx) {
+  if (!loader) return 0;
   const textures = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
-  Object.keys(SPEZIAL_FOLGEN).forEach((angriff) => {
-    const dds = SPEZIAL_FOLGEN[angriff].gerichtet ? ['00', '01', '02', '03', '04', '05', '06', '07'] : [null];
-    dds.forEach((dd) => {
-      for (let f = 0; f < SPEZIAL_BILDER; f++) {
-        const key = spezialSchluessel(angriff, dd, f);
-        if (textures?.exists?.(key)) continue;
-        loader.image(key, `assets/PlayerSprites/${key}.png`);
-      }
+  const fehlt = (key) => !textures?.exists?.(key) && !_spezialAngefragt.has(key);
+  const neu = [];
+  (folgen || []).forEach((angriff) => {
+    _folgeDateien(angriff).forEach(({ key, url }) => {
+      if (!fehlt(key)) return;
+      neu.push(key);
+      loader.image(key, url);
     });
   });
+  if (typeof loader.spritesheet === 'function') {
+    (vfx || []).forEach((name) => {
+      const d = SPEZIAL_VFX[name];
+      const key = spezialVfxSchluessel(name);
+      if (!d || !fehlt(key)) return;
+      neu.push(key);
+      loader.spritesheet(key, `assets/vfx/spezial_${name}.png`, { frameWidth: d.w, frameHeight: d.h, endFrame: d.n - 1 });
+    });
+  }
+  if (neu.length && typeof loader.once === 'function') {
+    neu.forEach((k) => _spezialAngefragt.add(k));
+    loader.once('complete', () => neu.forEach((k) => _spezialAngefragt.delete(k)));
+  }
+  return neu.length;
+}
+
+/**
+ * Gibt es die Animation, und zeigen alle ihre Bilder auf die heutigen
+ * Texturen? Wurde ein Bild entfernt und nachgeladen, haengt die alte
+ * Animation an den verworfenen Frames — dann weg damit und neu bauen.
+ */
+function _animFrisch(scene, animKey) {
+  const a = scene.anims.get(animKey);
+  if (!a) return false;
+  const frisch = a.frames.every((f) => f.frame && f.frame.texture
+    && scene.textures.exists(f.textureKey) && f.frame.texture === scene.textures.get(f.textureKey));
+  if (!frisch) scene.anims.remove(animKey);
+  return frisch;
+}
+
+/** Folgen und Wirkbilder zu Faehigkeits-IDs. */
+function _spezialZuFaehigkeiten(ids) {
+  const folgen = [], vfx = [];
+  (ids || []).forEach((id) => {
+    const z = SPEZIAL_JE_FAEHIGKEIT[id];
+    if (!z) return;
+    if (!folgen.includes(z.folge)) folgen.push(z.folge);
+    z.vfx.forEach((v) => { if (!vfx.includes(v)) vfx.push(v); });
+  });
+  return { folgen, vfx };
+}
+
+function _gelernteFaehigkeiten() {
+  const AS = (typeof window !== 'undefined') ? window.AbilitySystem : null;
+  try { return (AS && typeof AS.getLearnedAbilities === 'function') ? AS.getLearnedAbilities() : []; } catch (e) { return []; }
+}
+
+/** #174: Mit dem Dungeon die Bilder der gelernten Faehigkeiten laden (nur fehlende). */
+function spezialBilderVorladen(loader) {
+  const { folgen, vfx } = _spezialZuFaehigkeiten(_gelernteFaehigkeiten());
+  return _spezialAnfragen(loader, folgen, vfx);
+}
+
+/**
+ * Laedt im laufenden Dungeon nach (Faehigkeits-IDs, oder direkt Folgen/
+ * Wirkbilder). Der Lader der Szene startet, wenn er nicht schon laeuft.
+ */
+function spezialNachladen(scene, ids, folgen, vfx) {
+  const load = scene && scene.load;
+  if (!load || !scene.sys || !scene.sys.isActive || !scene.sys.isActive()) return 0;
+  const z = _spezialZuFaehigkeiten(ids);
+  const n = _spezialAnfragen(load, z.folgen.concat(folgen || []), z.vfx.concat(vfx || []));
+  if (n > 0 && (typeof load.isLoading !== 'function' || !load.isLoading())) load.start();
+  return n;
 }
 
 /**
@@ -3506,12 +3611,12 @@ function spezialBilderVorladen(loader) {
  *   bleibt es danach stehen, bis die Dauer um ist
  * @param {number} [wie.laufzeit] ms fuer von..bis (Vorgabe: die Dauer, in der
  *   Schleife eine Wirbelrunde)
- * @returns {{bild, ende: function}|null} null ohne Flagge, ohne Bilder, in
- *   Verkleidung — dann bleibt alles wie vorher.
+ * @returns {{bild, ende: function}|null} null ohne Bilder (dann werden sie
+ *   nachgeladen) oder in Verkleidung — dann bewegt sich die Figur nicht.
  */
 function _spezialZeigen(scene, angriff, richtung, dauer, wie) {
   wie = wie || {};
-  if (!spezialAn() || !scene || !player || !player.active) return null;
+  if (!scene || !player || !player.active) return null;
   const def = SPEZIAL_FOLGEN[angriff];
   if (!def) return null;
   const dd = def.gerichtet ? getDirectionFromVelocity(richtung ? richtung.x : 0, richtung ? richtung.y : 0) : null;
@@ -3523,7 +3628,7 @@ function _spezialZeigen(scene, angriff, richtung, dauer, wie) {
   const keys = [];
   for (let f = 0; f < SPEZIAL_BILDER; f++) {
     const k = spezialSchluessel(angriff, dd, f);
-    if (!scene.textures.exists(k)) return null;
+    if (!scene.textures.exists(k)) { spezialNachladen(scene, null, [angriff]); return null; }
     keys.push(k);
   }
   // Masse vom FRAME (siehe _rolleZeigen: die Quellleinwand kann im Pool sein).
@@ -3534,7 +3639,7 @@ function _spezialZeigen(scene, angriff, richtung, dauer, wie) {
   const von = wie.von || 0;
   const bis = (typeof wie.bis === 'number') ? wie.bis : SPEZIAL_BILDER - 1;
   const animKey = `spezial_${angriff}${dd ? '_' + dd : ''}_${von}${bis}`;
-  if (!scene.anims.exists(animKey)) {
+  if (!_animFrisch(scene, animKey)) {
     scene.anims.create({ key: animKey, frames: keys.slice(von, bis + 1).map((key) => ({ key })), frameRate: 30, repeat: 0 });
   }
   const bild = scene.add.sprite(player.x, player.y, keys[von])
@@ -3585,8 +3690,9 @@ function _spezialZeigen(scene, angriff, richtung, dauer, wie) {
 }
 
 /**
- * #174, nur Testmodus: lernt die Angriffe mit Bildfolge und legt sie auf
- * die Tasten, ohne den Skillbaum anzufassen. Aus der Konsole:
+ * #174, nur im Debug-Modus: lernt Faehigkeiten und legt sie auf die Tasten,
+ * ohne den Skillbaum anzufassen; ihre Bilder werden nachgeladen. Aus der
+ * Konsole (docs/debug-modus.md):
  *   __spezialProbe()                         Wirbel, Hammer, Ansturm, Schattenschritt
  *   __spezialProbe('frostNova', 'cycloneStrike')
  *   __spezialProbe('deathBlow', 'steelGrasp', 'twistingBlades', 'heilwunde')
@@ -3600,21 +3706,24 @@ function _spezialProbe(...ids) {
     AS.learnAbility(id, { silent: true });
     AS.setSlot('slot' + (i + 1), id);
   });
+  const sc = window.game && window.game.scene && window.game.scene.getScene('GameScene');
+  if (sc) spezialNachladen(sc, liste);
   return AS.getActiveLoadout();
 }
 if (typeof window !== 'undefined') {
   window.spezialBilderVorladen = spezialBilderVorladen;
-  if (spezialAn()) window.__spezialProbe = _spezialProbe;
+  window.spezialNachladen = spezialNachladen;
+  if (window.DebugGate && window.DebugGate.aktiv()) window.__spezialProbe = _spezialProbe;
 }
 
 // ============================================================
-// #174 Nachbesserung: Wirkbilder der Spezialangriffe (Testmodus ?spezial=neu)
+// #174: Wirkbilder der Spezialangriffe
 // ------------------------------------------------------------
-// Die Figur bewegt sich seit b380 mit eigener Bildfolge, die Wirkung drumherum
-// waren aber noch die gezeichneten Linien und Kreise (Saegeblatt-Scheiben,
-// Ringe, Spiralarme). Mit Flagge kommen dafuer Pixel-Effekte aus dem PixelLab
-// vfx_workbench (tools/spezialVfxBauen.js): je Effekt eine Zeile Bilder
-// unter assets/vfx/, der Anker in der Bildmitte.
+// Statt gezeichneter Linien und Kreise (Saegeblatt-Scheiben, Ringe,
+// Spiralarme) spielen Pixel-Effekte aus dem PixelLab vfx_workbench
+// (tools/spezialVfxBauen.js): je Effekt eine Zeile Bilder unter assets/vfx/,
+// der Anker in der Bildmitte. Die alten Linien bleiben nur als Rueckfall,
+// solange ein Bild fehlt (es wird dann nachgeladen).
 //
 // `radius` ist der Wirkradius IM BILD (Pixel): so weit reicht der Ring, die
 // Risse, der Sog. Im Spiel wird das Bild so skaliert, dass dieser Radius
@@ -3661,22 +3770,15 @@ function spezialVfxSchluessel(name) {
   return 'spezialvfx_' + name;
 }
 
-/** Sind die Wirkbilder dieser Effekte geladen? Ohne Flagge nie. */
+/**
+ * Sind die Wirkbilder dieser Effekte geladen? Fehlt eines, wird es
+ * nachgeladen — diesmal zeichnet der Angriff seine alten Linien.
+ */
 function _vfxDa(scene, ...namen) {
-  if (!spezialAn() || !scene || !scene.textures) return false;
-  return namen.every((n) => scene.textures.exists(spezialVfxSchluessel(n)));
-}
-
-/** #174: Die Wirkbilder mit dem Dungeon laden — nur mit ?spezial=neu. */
-function spezialVfxVorladen(loader) {
-  if (!loader || typeof loader.spritesheet !== 'function' || !spezialAn()) return;
-  const textures = loader.textureManager || loader.scene?.textures || loader.scene?.sys?.textures;
-  Object.keys(SPEZIAL_VFX).forEach((name) => {
-    const key = spezialVfxSchluessel(name);
-    if (textures?.exists?.(key)) return;
-    const d = SPEZIAL_VFX[name];
-    loader.spritesheet(key, `assets/vfx/spezial_${name}.png`, { frameWidth: d.w, frameHeight: d.h, endFrame: d.n - 1 });
-  });
+  if (!scene || !scene.textures) return false;
+  const fehlt = namen.filter((n) => !scene.textures.exists(spezialVfxSchluessel(n)));
+  if (fehlt.length) spezialNachladen(scene, null, null, fehlt);
+  return fehlt.length === 0;
 }
 
 /**
@@ -3695,7 +3797,7 @@ function spezialVfxVorladen(loader) {
  * @param {function} [wie.solange] () => bool: endet, sobald false (Buff vorbei, Klinge weg)
  * @param {number} [wie.drehung] Drehung im Bogenmass (der Hieb zeigt nach +x)
  * @param {number} [wie.alpha]   Grund-Deckkraft (Vorgabe 1)
- * @returns {{bild, ende: function}|null} null ohne Flagge oder ohne Bild
+ * @returns {{bild, ende: function}|null} null ohne Bild (es wird nachgeladen)
  */
 function _vfxSpielen(scene, name, x, y, wie) {
   wie = wie || {};
@@ -3703,7 +3805,7 @@ function _vfxSpielen(scene, name, x, y, wie) {
   const d = SPEZIAL_VFX[name];
   const key = spezialVfxSchluessel(name);
   const animKey = key + (wie.schleife ? '_schleife' : '_einmal');
-  if (!scene.anims.exists(animKey)) {
+  if (!_animFrisch(scene, animKey)) {
     scene.anims.create({ key: animKey, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: d.n - 1 }), frameRate: 24, repeat: wie.schleife ? -1 : 0 });
   }
   const skala = (wie.radius && d.radius) ? wie.radius / d.radius : (wie.skala || 1.5);
@@ -3882,11 +3984,9 @@ function _berserkAktiv() {
 
 /**
  * Berserker (abilitySystem.js ruft das nach dem Aktivieren). Bis #174 gab es
- * dafuer nur die rote Toenung — ohne Flagge bleibt es dabei, hier passiert
- * dann nichts.
+ * dafuer nur die rote Toenung; fehlen die Bilder, bleibt es dabei.
  */
 function _berserkFx(scene) {
-  // Die Flagge prueft jeder Helfer selbst (_spezialZeigen, _vfxDa).
   if (!scene || !player || !player.active) return;
   _spezialZeigen(scene, 'berserk', null, SPEZIAL_DAUER.berserk);
   const u = angriffsUrsprung();
@@ -3958,9 +4058,9 @@ function shadowCharge() {
   if (player.setTint) player.setTint(0x66ccff);
   if (player.body) player.body.setMaxVelocity(dashSpeed, dashSpeed);
   if (player.setVelocity) player.setVelocity(dashDir.x * dashSpeed, dashDir.y * dashSpeed);
-  // #174 (?spezial=neu): Lauf mit gesenkter Schulter, so lang wie der Ansturm.
+  // #174: Lauf mit gesenkter Schulter, so lang wie der Ansturm.
   var sturmFolge = _spezialZeigen(scene, 'sturm', dashDir, dashDuration);
-  // #174 (?spezial=neu): Schattenspur (Nachbilder), Staub an den Fuessen und
+  // #174: Schattenspur (Nachbilder), Staub an den Fuessen und
   // Aufprall-Funken statt der getoenten Partikelspur.
   var sturmVfx = _vfxDa(scene, 'staub', 'funken');
   var sturmTakt = 0;
@@ -4038,7 +4138,7 @@ function shadowCharge() {
 function _blinkPoof(scene, x, y, mode) {
   try {
     if (!scene || !scene.add) return;
-    // #174 (?spezial=neu): eine Schattenwolke aus Pixelrauch um den Koerper,
+    // #174: eine Schattenwolke aus Pixelrauch um den Koerper,
     // bei Absprung und Landung gleich, statt Ring und Strahlen.
     const h = player ? player.displayHeight : 68;
     if (_vfxSpielen(scene, 'schatten', x, y - h * 0.42, { tiefe: 'luft', laufzeit: 420, skala: 1.6 })) return;
@@ -4088,10 +4188,10 @@ function shadowTeleportDash() {
   _blinkPoof(scene, player.x, player.y, 'out');     // Vanish am Start
   if (player.setAlpha) player.setAlpha(0.12);         // fast unsichtbar im Blink
   if (player.setTint) player.setTint(0x9966ff);
-  // #174 (?spezial=neu): Absprung im (fast unsichtbaren) Blink, die Landung
+  // #174: Absprung im (fast unsichtbaren) Blink, die Landung
   // danach am Ziel — darum laenger als der Blink selbst.
   var sprungFolge = _spezialZeigen(scene, 'sprung', dir, duration * SPEZIAL_DAUER.sprungFaktor);
-  // #174 (?spezial=neu): kurze Schattenspur — drei Nachbilder entlang des
+  // #174: kurze Schattenspur — drei Nachbilder entlang des
   // Blinks, deutlicher als die fast unsichtbare Figur selbst.
   if (_vfxDa(scene, 'schatten')) {
     [0, 1, 2].forEach(function (k) {
@@ -4131,7 +4231,7 @@ function _healFx(scene, amount) {
     // Charakter blieb dort grün. Date.now ist szenenübergreifend konsistent.
     window._healFlashUntil = Date.now() + 320;
     if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
-    // #174 (?spezial=neu): Heilgeste der Figur, dahinter ein gruener Schimmer
+    // #174: Heilgeste der Figur, dahinter ein gruener Schimmer
     // mit Funkeln und Pluszeichen statt Ring, Schein und gezeichneter Kreuze.
     // Die Heilzahl bleibt (unten).
     _spezialZeigen(scene, 'heil', null, SPEZIAL_DAUER.heil);
@@ -4188,7 +4288,7 @@ function _deathBlowFx(scene, forward, range, arc) {
     const CRIMSON = 0xff2233;
     const ang = Math.atan2(forward.y, forward.x);
     const u = angriffsUrsprung();
-    // #174 (?spezial=neu): ein schwerer karmesinroter Hieb mit Lichtblitz an
+    // #174: ein schwerer karmesinroter Hieb mit Lichtblitz an
     // der Spitze, so weit wie der Kegel reicht, statt der gefuellten Scheibe.
     if (_vfxSpielen(scene, 'todesstoss', u.x, u.y, { tiefe: 'luft', laufzeit: 300, radius: range, drehung: ang })) return;
     const g = scene.add.graphics().setDepth(70);
@@ -4205,7 +4305,7 @@ function _deathBlowFx(scene, forward, range, arc) {
 // Dramatischer Exekutions-Burst (Instakill): Flash + Crimson-Ring + dunkle Splitter.
 function _deathBlowExecuteBurst(scene, x, y) {
   try {
-    // #174 (?spezial=neu): Lichtblitz und Blutspritzer, doppelt so gross wie
+    // #174: Lichtblitz und Blutspritzer, doppelt so gross wie
     // beim gewoehnlichen Treffer.
     if (_vfxSpielen(scene, 'blut', x, y, { tiefe: 'luft', laufzeit: 520, skala: 2.2 })) return;
     const CRIMSON = 0xff2233, DARK = 0x550008, WHITE = 0xffffff;
@@ -4246,7 +4346,7 @@ function shadowDeathBlow() {
   var killed = 0;
 
   if (window.soundManager) try { window.soundManager.playSFX('attack'); } catch (e) {}
-  // #174 (?spezial=neu): die Figur holt aus und schlaegt nach vorn.
+  // #174: die Figur holt aus und schlaegt nach vorn.
   _spezialZeigen(scene, 'todesstoss', forward, SPEZIAL_DAUER.todesstoss);
   _deathBlowFx(scene, forward, range, arc);
 
@@ -4273,7 +4373,7 @@ function shadowDeathBlow() {
       handleEnemyHit(scene, enemy, { tint: 0xff2233, duration: 180 });
       killed++;
     } else {
-      // #174 (?spezial=neu): Blutspritzer auch beim gewoehnlichen Treffer.
+      // #174: Blutspritzer auch beim gewoehnlichen Treffer.
       _vfxSpielen(scene, 'blut', enemy.x, enemy.y, { tiefe: 'luft', laufzeit: 480, skala: 1.4 });
       var res = dealDamageToEnemy(scene, enemy, 2.2 * dmgMult, 'deathBlow');   // schwerer Finisher
       var hpNow = _shadowEnemyHp(enemy).hp;
@@ -4297,7 +4397,7 @@ window.shadowDeathBlow = shadowDeathBlow;
 function _frenzyFx(scene) {
   try {
     if (!scene || !player) return;
-    // #174 (?spezial=neu): Kampfschrei der Figur und ein Druckring aus Glut
+    // #174: Kampfschrei der Figur und ein Druckring aus Glut
     // statt Ring und Strahlen; die Aura fuer die Buffdauer haengt in
     // updateAmuletPerFrame.
     _spezialZeigen(scene, 'raserei', null, SPEZIAL_DAUER.raserei);
@@ -4887,7 +4987,7 @@ function castTwistingBlades() {
   projectile.setData('twPhase', 'out');
   playerProjectiles.add(projectile);
 
-  // #174 (?spezial=neu): die Figur wirft, und statt des flachen Dolchs fliegt
+  // #174: die Figur wirft, und statt des flachen Dolchs fliegt
   // eine kreisende Klinge mit — sie folgt dem (unsichtbaren) Geschoss, das
   // weiter trifft und zurueckkehrt wie bisher, und vergeht mit ihm.
   _spezialZeigen(scene, 'klingen', dir, SPEZIAL_DAUER.klingen);
@@ -4952,7 +5052,7 @@ function castSteelGrasp() {
   const range = 360;
   const halfArcCos = Math.cos(Math.PI / 5); // ~36° Halbkegel
 
-  // #174 (?spezial=neu): die Figur wirft die Kette und holt sie ein.
+  // #174: die Figur wirft die Kette und holt sie ein.
   _spezialZeigen(scene, 'greif', dir, SPEZIAL_DAUER.greif);
   const ketteVfx = _vfxDa(scene, 'kette');
 
@@ -5015,10 +5115,10 @@ function castCycloneStrike() {
   const radius = 290 + (rank - 1) * 25;           // größerer Sog-Radius (290..390)
   const aoeMult = 0.5 * dmgMult * (1 + (rank - 1) * 0.1);
   const CYAN = 0x66ddff, LIGHT = 0xbff2ff;
-  // #174 (?spezial=neu): die Figur zieht mit beiden Armen heran.
+  // #174: die Figur zieht mit beiden Armen heran.
   _spezialZeigen(scene, 'zyklon', null, SPEZIAL_DAUER.zyklon);
 
-  // #174 (?spezial=neu): Nebelschlieren als Pixelbild, die sich vom Rand der
+  // #174: Nebelschlieren als Pixelbild, die sich vom Rand der
   // Reichweite zur Figur zusammenziehen — am Boden, unter den Gegnern, die
   // gerade herangezogen werden.
   const sogVfx = _vfxSpielen(scene, 'zyklon', player.x, player.y,
@@ -5084,7 +5184,7 @@ function castFrostNova() {
   const totalMult = dmgMult * (1 + synergy);
   const range = 180;
   const ICE = 0x9fe8ff, DEEP = 0x4aa6e0, WHITE = 0xffffff;
-  // #174 (?spezial=neu): die Figur stampft die Nova in den Boden.
+  // #174: die Figur stampft die Nova in den Boden.
   _spezialZeigen(scene, 'frost', null, SPEZIAL_DAUER.frost);
   const cx = Math.round(player.x), cy = Math.round(player.y);
   const T = scene.tweens, fade = (obj, cfg, dur) => {
@@ -5092,9 +5192,9 @@ function castFrostNova() {
     else if (scene.time) scene.time.delayedCall(dur, () => { try { obj.destroy(); } catch (e) {} });
   };
 
-  // #174 (?spezial=neu): Frostring, Eiskristalle und Reif als Pixelbild am
+  // #174: Frostring, Eiskristalle und Reif als Pixelbild am
   // Boden; der Ring laeuft genau bis zur Reichweite, der Reif bleibt kurz liegen.
-  // Ohne Bild (oder ohne Flagge) die alten gezeichneten Ringe und Kristalle.
+  // Ohne Bild (Rueckfall) die alten gezeichneten Ringe und Kristalle.
   const frostVfx = _vfxSpielen(scene, 'frost', cx, cy, { tiefe: 'boden', laufzeit: 420, radius: range, halten: 380 });
   if (!frostVfx) try {
     // 1) Doppel-Schockwelle (weiß außen + cyan innen, leicht gestaffelt)
@@ -5191,9 +5291,9 @@ function castWhirlwind() {
   const innerBlades = 4 + Math.min(3, rank - 1);    // 4..7
   const STEEL = 0x33e0ff, GLINT = 0xffffff;
   if (window.soundManager) { try { window.soundManager.playSFX('ability_spin'); } catch (e) {} }
-  // #174 (?spezial=neu): die Figur dreht sich, solange der Kanal laeuft.
+  // #174: die Figur dreht sich, solange der Kanal laeuft.
   _spezialZeigen(scene, 'wirbel', null, durationMs, { schleife: true });
-  // #174 (?spezial=neu): statt der gezeichneten Saegeblaetter ein Staubring
+  // #174: statt der gezeichneten Saegeblaetter ein Staubring
   // an den Fuessen und Schwunglinien um den Koerper, eine Runde je
   // Koerperdrehung. Der Ring trifft die Reichweite der Ticks.
   const wirbelVfx = _vfxDa(scene, 'wirbel_boden', 'wirbel_luft');
