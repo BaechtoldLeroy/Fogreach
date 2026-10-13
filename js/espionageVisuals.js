@@ -319,19 +319,9 @@
       }
     });
 
-    // --- Detection-RING am Spieler (Kernstück) ------------------------------
-    if (pl && pl.active) {
-      var ringR = 30;
-      g.lineStyle(3, 0x000000, 0.22); g.strokeCircle(px, py, ringR); // dezenter Track
-      if (det > 0.02 || st.exposed) {
-        var fill = st.exposed ? 1 : det;
-        var col = st.exposed ? 0xff3b30 : (det < 0.5 ? 0xffd24a : (det < 0.85 ? 0xff8a2a : 0xff3b30));
-        g.lineStyle(4, col, st.exposed ? (0.7 + 0.3 * pulse) : 0.95);
-        g.beginPath();
-        g.arc(px, py, ringR, -Math.PI / 2, -Math.PI / 2 + fill * Math.PI * 2, false);
-        g.strokePath();
-      }
-    }
+    // Kein Ring mehr am Spieler: der Kreis um die Figur stoerte (User-Wunsch).
+    // Verdacht zeigen die Wachen selbst — Kegel und Figur faerben sich orange,
+    // bei Enttarnung rot.
 
     // --- Off-screen-Pfeil zur nächsten offenen Zone -------------------------
     gHud.clear();

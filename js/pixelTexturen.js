@@ -422,6 +422,12 @@
       if (!scene.textures.exists(VORSATZ + k)) { fehlend.push(k); return; }
       var bild = scene.textures.get(VORSATZ + k).getSourceImage();
       if (!bild) { fehlend.push(k); return; }
+      // Traegt der Schluessel das Bild schon, NICHT neu anlegen: remove()
+      // zerstoert die Textur, und ein Objekt, das sie noch haelt (Symbol im
+      // Toast, Inventar), rendert dann ins Leere — "Cannot read properties of
+      // null (reading 'isGLTexture')" beim Wechsel Dungeon -> Hub, wo der Hub
+      // die 42 Gegenstandsbilder bei jedem Eintritt erneut anwendet.
+      if (scene.textures.exists(k) && scene.textures.get(k).getSourceImage() === bild) { ersetzt++; return; }
       if (scene.textures.exists(k)) scene.textures.remove(k);
       scene.textures.addImage(k, bild);
       ersetzt++;
