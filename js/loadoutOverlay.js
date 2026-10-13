@@ -8,16 +8,16 @@
       'loadout.title': 'Fähigkeiten-Loadout',
       'loadout.hint': 'Klicke auf einen Slot, dann auf eine erlernte Fähigkeit. ESC zum Schliessen.',
       'loadout.pool_header': 'Erlernte & verfügbare Fähigkeiten',
-      'loadout.locked': '[Gesperrt: {hint}]',
-      'loadout.equipped': '[Ausgerüstet: {slot}]',
+      'loadout.locked': 'Gesperrt: {hint}',
+      'loadout.equipped': 'Ausgerüstet: {slot}',
       'loadout.empty_slot': '(leer)'
     });
     window.i18n.register('en', {
       'loadout.title': 'Ability Loadout',
       'loadout.hint': 'Click a slot, then a learned ability. Press ESC to close.',
       'loadout.pool_header': 'Learned & available abilities',
-      'loadout.locked': '[Locked: {hint}]',
-      'loadout.equipped': '[Equipped: {slot}]',
+      'loadout.locked': 'Locked: {hint}',
+      'loadout.equipped': 'Equipped: {slot}',
       'loadout.empty_slot': '(empty)'
     });
   }

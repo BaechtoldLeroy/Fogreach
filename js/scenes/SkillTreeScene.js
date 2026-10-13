@@ -825,7 +825,7 @@
           effect = (dloc && dloc.indexOf('[MISSING') !== 0 && dloc !== dkey) ? dloc : (adef.description || '');
         }
       }
-      const ttText = (node.name || node.id) + '   [' + strandName + ']'
+      const ttText = (node.name || node.id) + '  ·  ' + strandName
         + (effect ? '\n\n' + effect : '')
         + (sub ? '\n\n' + sub : '');
       card.on('pointerover', () => this._showTooltip(ttText, cx, cy, h));

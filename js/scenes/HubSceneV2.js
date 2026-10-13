@@ -7,7 +7,7 @@ if (window.i18n) {
     'hub.dialog.npc_quest.new_task_suffix': '— Neue Aufgabe',
     'hub.dialog.npc_quest.completed_suffix': '— Aufgabe abgeschlossen!',
     'hub.dialog.npc_quest.greeting_returning': 'Gut, dass du wieder da bist. Dein Erfolg bei "{title}" hat mir Mut gemacht. Es gibt mehr zu tun.',
-    'hub.dialog.npc_quest.task_header': '[Aufgabe {chain}/3: {title}]\n{description}{rewards}',
+    'hub.dialog.npc_quest.task_header': 'Aufgabe {chain}/3: {title}\n{description}{rewards}',
     'hub.dialog.npc_quest.info_text': '{description}\n\nDiese Aufgabe ist Teil einer Questkette ({chain}/3) für {npc}.{rewards}',
     'hub.dialog.npc_quest.progress_text': '{dialogue}\n\nFortschritt: {progress} ({pct}%)',
     'hub.dialog.npc_quest.reward_intro': 'Hier ist deine Belohnung:\n\n{rewards}\n\nNimm sie — du hast sie dir verdient.',
@@ -48,11 +48,11 @@ if (window.i18n) {
     'hub.skills.cost': 'Kosten: {cost} Eisenbrocken',
     'hub.skills.type_active': 'Typ: Aktive Fähigkeit',
     'hub.skills.requires': 'Benötigt:',
-    'hub.skills.respec': '[ Zurücksetzen ({cost} Eisenbrocken) ]',
-    'hub.skills.close': '[ Schließen ]',
-    'hub.knowledge.learn': '[ Wissen lernen ] (K)',
-    'hub.skills.shop': '[ Schwarzmarkt ] (M)',
-    'hub.skills.talents': '[ Talente ] (T)',
+    'hub.skills.respec': 'Zurücksetzen ({cost} Eisenbrocken)',
+    'hub.skills.close': 'Schließen',
+    'hub.knowledge.learn': 'Wissen lernen (K)',
+    'hub.skills.shop': 'Schwarzmarkt (M)',
+    'hub.skills.talents': 'Talente (T)',
     'hub.dialog.hint.next': 'Leer / Enter: weiter',
     'hub.dialog.hint.choose': '1-{count}: wählen',
     'hub.dialog.hint.close': 'ESC: schliessen'
@@ -62,7 +62,7 @@ if (window.i18n) {
     'hub.dialog.npc_quest.new_task_suffix': '— New Task',
     'hub.dialog.npc_quest.completed_suffix': '— Task Complete!',
     'hub.dialog.npc_quest.greeting_returning': 'Good to see you again. Your success on "{title}" gave me courage. There is more to do.',
-    'hub.dialog.npc_quest.task_header': '[Task {chain}/3: {title}]\n{description}{rewards}',
+    'hub.dialog.npc_quest.task_header': 'Task {chain}/3: {title}\n{description}{rewards}',
     'hub.dialog.npc_quest.info_text': '{description}\n\nThis task is part of a quest chain ({chain}/3) for {npc}.{rewards}',
     'hub.dialog.npc_quest.progress_text': '{dialogue}\n\nProgress: {progress} ({pct}%)',
     'hub.dialog.npc_quest.reward_intro': 'Here is your reward:\n\n{rewards}\n\nTake it — you have earned it.',
@@ -103,11 +103,11 @@ if (window.i18n) {
     'hub.skills.cost': 'Cost: {cost} Iron Chunks',
     'hub.skills.type_active': 'Type: Active Ability',
     'hub.skills.requires': 'Requires:',
-    'hub.skills.respec': '[ Respec ({cost} Iron Chunks) ]',
-    'hub.skills.close': '[ Close ]',
-    'hub.knowledge.learn': '[ Knowledge Tree ] (K)',
-    'hub.skills.shop': '[ Black Market ] (M)',
-    'hub.skills.talents': '[ Talents ] (T)',
+    'hub.skills.respec': 'Respec ({cost} Iron Chunks)',
+    'hub.skills.close': 'Close',
+    'hub.knowledge.learn': 'Knowledge Tree (K)',
+    'hub.skills.shop': 'Black Market (M)',
+    'hub.skills.talents': 'Talents (T)',
     'hub.dialog.hint.next': 'Space / Enter: next',
     'hub.dialog.hint.choose': '1-{count}: choose',
     'hub.dialog.hint.close': 'ESC: close'
@@ -1371,7 +1371,7 @@ class HubSceneV2 extends Phaser.Scene {
       text: en
         ? 'THOM: Three edicts for the vote. Magistrate in gold, Clergy in white, Guard in red. (He lays three stacks side by side.) The same paper for all three. I only have one kind.'
         : 'THOM: Drei Edikte für die Abstimmung. Magistrat in Gold, Klerus in Weiss, Garde in Rot. (Er legt drei Stapel nebeneinander.) Dasselbe Papier für alle drei. Ich habe nur eine Sorte.',
-      choices: [{ label: en ? '[ Print ]' : '[ Drucken ]', action: 'edikt_drucken' }]
+      choices: [{ label: en ? 'Print' : 'Drucken', action: 'edikt_drucken' }]
     }], 'flavor', null, 0);
   }
 
@@ -2036,7 +2036,7 @@ class HubSceneV2 extends Phaser.Scene {
         else if (choice.action === 'decline') bgColor = '#6a3d3d';
         else if (choice.action === 'info') bgColor = '#3d4a6a';
 
-        const btn = this.add.text(0, btnY, '[ ' + choice.label + ' ]', {
+        const btn = this.add.text(0, btnY, choice.label, {
           fontFamily: 'monospace',
           fontSize: 16,
           color: '#ffffff',
@@ -2708,7 +2708,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     var summaryLine = T('printingHouse.summary', { paper: paper, cap: 50, suspicion: suspicion });
     if (active) {
-      summaryLine += '\n[Aktiv: ' + T('printingHouse.edict.' + active.id + '.label') + ']';
+      summaryLine += '\nAktiv: ' + T('printingHouse.edict.' + active.id + '.label');
     }
 
     var choices = [];
@@ -2722,7 +2722,7 @@ class HubSceneV2 extends Phaser.Scene {
       // +1 wie der Splashscreen: requireAct ist ein Index, keine Aktnummer.
       else if (!e.isUnlocked) statusLbl = ' — ab Akt ' + ((e.requireAct | 0) + 1);
       else if (paper < e.cost) statusLbl = ' — zu wenig';
-      var label = '[' + tierLbl + '] ' + lbl + ' ' + costLbl + statusLbl;
+      var label = tierLbl + ' · ' + lbl + ' ' + costLbl + statusLbl;
       var self = this;
       choices.push({
         label: label,
@@ -4315,7 +4315,7 @@ class HubSceneV2 extends Phaser.Scene {
       gold: 'Gold gained',
       fragments: 'Lore fragments',
       duration: 'Duration',
-      close: '[ Continue ]'
+      close: 'Continue'
     } : {
       titleSuccess: 'Lauf abgeschlossen',
       titleDeath: 'Im Dungeon gefallen',
@@ -4328,7 +4328,7 @@ class HubSceneV2 extends Phaser.Scene {
       gold: 'Gold gewonnen',
       fragments: 'Lore-Fragmente',
       duration: 'Dauer',
-      close: '[ Weiter ]'
+      close: 'Weiter'
     };
 
     const cam = this.cameras.main;
@@ -4492,8 +4492,8 @@ class HubSceneV2 extends Phaser.Scene {
     const page3Prompt = isEN
       ? 'Will you turn away — or will you remember?'
       : 'Wirst du dich umdrehen — oder dich erinnern?';
-    const choiceTurnAway = isEN ? '[ Turn away — forget what I saw ]' : '[ Umdrehen — vergessen, was ich gesehen habe ]';
-    const choiceRemember = isEN ? '[ Remember — whatever it costs ]' : '[ Erinnern — was auch immer das kostet ]';
+    const choiceTurnAway = isEN ? 'Turn away — forget what I saw' : 'Umdrehen — vergessen, was ich gesehen habe';
+    const choiceRemember = isEN ? 'Remember — whatever it costs' : 'Erinnern — was auch immer das kostet';
 
     const page4 = isEN
       ? 'You walk back into the fog. What you heard cannot be unheard. The Chain Council is not three voices — it is one wearing three masks. And you? You have already worked for every mask.\n\nAct 2 begins here — in the same city, beneath the same masks.'
@@ -4598,7 +4598,7 @@ class HubSceneV2 extends Phaser.Scene {
       pages.push({ text: absaetze.slice(i, i + 2).join('\n\n'), choices: null });
     }
     const letzte = pages[pages.length - 1];
-    letzte.choices = [{ label: en ? '[ The press starts ]' : '[ Die Presse läuft an ]', action: 'reckoning_done' }];
+    letzte.choices = [{ label: en ? 'The press starts' : 'Die Presse läuft an', action: 'reckoning_done' }];
     letzte._isFinal = true;
 
     this._pendingReckoningFinalize = finalize;
@@ -4621,7 +4621,7 @@ class HubSceneV2 extends Phaser.Scene {
     const body = isEN
       ? "Fogreach — a city beneath an endless mist. The Chain Council keeps order: Clergy, Guard, and Administration — three factions openly vying for influence.\n\nYou were an Archivesmith, until an accident at the Forge tore your memory apart. What's left is your rank, a few tools — and the jobs no one else will take.\n\nToday you take what you're given, and descend into the cellars beneath the Archive-Forge."
       : "Fogreach — eine Stadt unter ewigem Nebel. Der Kettenrat wacht über die Ordnung: Klerus, Garde und Verwaltung, drei Fraktionen, die offen um Einfluss ringen.\n\nDu warst Archivschmied, bis ein Unfall in der Schmiede deine Erinnerung zerriss. Geblieben sind dein Rang, ein paar Werkzeuge — und Aufträge, die sonst keiner will.\n\nHeute nimmst du, was man dir gibt, und steigst hinab in die Keller unter der Archivschmiede.";
-    const close = isEN ? '[ Continue ]' : '[ Weiter ]';
+    const close = isEN ? 'Continue' : 'Weiter';
     this._showSplashModal(title, body, close, () => {
       try { (window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1'); } catch (_) {}
     });

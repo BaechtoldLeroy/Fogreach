@@ -236,10 +236,10 @@ class CraftingScene extends Phaser.Scene {
       const nameStr = item ? _composeItemName(item) : _CRAFT_T('crafting.empty_slot');
       const color = item ? _getTierColor(item) : COL_DISABLED;
 
-      // Zwei Zeilen: oben [Platz] links und Seltenheit/Ausbau rechts, darunter
+      // Zwei Zeilen: oben der Platz links und Seltenheit/Ausbau rechts, darunter
       // der Name. Drei Zeilen passten nicht in 36 px — die dritte stand auf
       // dem unteren Messing-Beschlag (#182).
-      const label = this.add.text(leftX + 8, sy + 4, '[' + slotLabels[slot] + ']', {
+      const label = this.add.text(leftX + 8, sy + 4, slotLabels[slot], {
         fontFamily: 'monospace', fontSize: '10px', color: COL_GOLD
       }).setDepth(10);
 
