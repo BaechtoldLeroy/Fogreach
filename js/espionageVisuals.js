@@ -241,8 +241,12 @@
       _guardTex = 'chainguard_right0';
       for (var sh = 0; sh < guardSprites.length; sh++) { try { guardSprites[sh].setTexture(_guardTex); } catch (e) {} }
     }
-    // Wachen genau so gross wie die verkleidete Spielerfigur (gleiches Sprite).
-    var _gH = (window.__ESP_GUARD_H && window.__ESP_GUARD_H > 0) ? window.__ESP_GUARD_H : 78;
+    // Wachen genau so gross wie die verkleidete Spielerfigur: derselbe feste
+    // Massstab wie die Montur (window.montureSkala), nicht deren Hoehe im
+    // gerade gezeigten Laufbild — die wechselte und liess die Wachen pumpen.
+    var _gSkala = (_guardTex === 'chainguard_right0' && typeof window.montureSkala === 'function')
+      ? window.montureSkala(scene) : 0;
+    var _gH = 78;
     var _gAspect = 0.82;
     try { var _gsrc = scene.textures.get(_guardTex).getSourceImage(); if (_gsrc && _gsrc.height) _gAspect = _gsrc.width / _gsrc.height; } catch (e) {}
     var _gW = Math.max(1, Math.round(_gH * _gAspect));
@@ -255,7 +259,8 @@
       var gd2 = guards[gi], spr = guardSprites[gi];
       if (!spr) continue;
       spr.setVisible(true);
-      spr.setDisplaySize(_gW, _gH);   // gleiche Grösse wie der verkleidete Spieler
+      if (_gSkala > 0) spr.setScale(_gSkala);   // gleiche Grösse wie der verkleidete Spieler
+      else spr.setDisplaySize(_gW, _gH);
       spr.setPosition(gd2.x, gd2.y);
       var ff = gd2._facing || 0;
       spr.setFlipX(Math.cos(ff) < 0);                 // nach links schauen -> spiegeln

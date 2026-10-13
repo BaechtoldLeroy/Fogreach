@@ -357,6 +357,16 @@ function normalizeDirectionFrames(scene, dd) {
 }
 
 /**
+ * Massstab der Verkleidung: die Figur im Standbild der Kettenwache wird
+ * PLAYER_MONTUR_HOEHE hoch. Gilt fuer alle Laufbilder UND fuer die Wachen der
+ * Spionage — beide sollen gleich gross sein und beim Laufen nicht pumpen.
+ */
+function montureSkala(scene) {
+  const m = figurGrenzen(scene, 'chainguard_right0');
+  return (m && m.boundsHeight > 0) ? PLAYER_MONTUR_HOEHE / m.boundsHeight : 0;
+}
+
+/**
  * Grenzen der FIGUR in einer Textur (Alpha ueber der Schwelle), gemessen
  * und zwischengespeichert.
  *
@@ -784,15 +794,14 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
     // Gemessen wird auch hier die FIGUR: der Rahmen der Kettenwache traegt
     // leere Raender (er fasst alle drei Posen), und das alte *1.2 war der
     // Ausgleich dafuer. Jetzt direkt die Hoehe aus der Leiter.
-    const mFig = figurGrenzen(sprite.scene, dkey);
-    const dH = (mFig && mFig.boundsHeight > 0 && mFig.sourceHeight > 0)
-      ? Math.max(1, Math.round(PLAYER_MONTUR_HOEHE * (mFig.sourceHeight / mFig.boundsHeight)))
-      : Math.max(1, Math.round(PLAYER_MONTUR_HOEHE * 1.15));
-    // Wachen sollen exakt so gross wie die verkleidete Spielerfigur sein.
-    if (typeof window !== 'undefined') window.__ESP_GUARD_H = dH;
-    const fw = (sprite.frame && (sprite.frame.cutWidth || sprite.frame.width)) || dH;
-    const fh = (sprite.frame && (sprite.frame.cutHeight || sprite.frame.height)) || dH;
-    const dW = Math.max(1, Math.round(dH * (fw / fh)));
+    // EIN Massstab fuer alle Laufbilder, gemessen am Standbild: pro Bild neu
+    // auf die Figurhoehe gezogen pumpte die Montur beim Laufen, weil die
+    // Laufbilder verschieden hohe Figuren tragen.
+    const fw = (sprite.frame && (sprite.frame.cutWidth || sprite.frame.width)) || PLAYER_MONTUR_HOEHE;
+    const fh = (sprite.frame && (sprite.frame.cutHeight || sprite.frame.height)) || PLAYER_MONTUR_HOEHE;
+    const skala = montureSkala(sprite.scene) || (PLAYER_MONTUR_HOEHE * 1.15 / fh);
+    const dH = Math.max(1, Math.round(fh * skala));
+    const dW = Math.max(1, Math.round(fw * skala));
     const doy = (window.PLAYER_ORIGIN_Y != null ? window.PLAYER_ORIGIN_Y : PLAYER_ORIGIN_Y);
     sprite.setOrigin(0.5, doy);
     sprite.setDisplaySize(dW, dH);
@@ -1191,6 +1200,7 @@ window.PLAYER_BASE_DISPLAY_HEIGHT = PLAYER_BASE_DISPLAY_HEIGHT;
 // figurGrenzen misst die Figur in einer Textur. Der Hub braucht sie fuer
 // seine NPC — dieselbe Messung, nur an anderen Bildern.
 window.figurGrenzen = figurGrenzen;
+window.montureSkala = montureSkala;
 window.applyPlayerDisplaySettings = applyPlayerDisplaySettings;
 window.updatePlayerColliderDebug = updatePlayerColliderDebug;
 window.DEBUG_PLAYER_COLLIDER = DEBUG_PLAYER_COLLIDER;
