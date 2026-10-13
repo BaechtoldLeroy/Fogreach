@@ -11,13 +11,20 @@ let H = null;
 before(async () => { H = await launchDungeon({ depth: 8 }); H.run('window._playerInvincible = true'); });
 after(async () => { if (H) await H.shutdown(); });
 
-test('ohne Flagge: keine Laufbilder geladen', () => {
+test('ohne Flagge: keine Laufbilder geladen (ausser der Kettenwache fuer die Verkleidung)', () => {
+  // Ausnahme seit b410: die Laufbilder der Kettenwache traegt der Spieler in
+  // der Spionage-Verkleidung (tests/verkleidungGroesse.test.js) — sie werden
+  // immer geladen. Die Gegner selbst spielen sie ohne Flagge trotzdem nicht.
   const r = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
-    var geladen = sc.textures.getTextureKeys().filter(function (k) { return /_walk_/.test(k); });
-    return { geladen: geladen, ruhe: sc.textures.exists('imp_right0') };
+    var geladen = sc.textures.getTextureKeys().filter(function (k) {
+      return /_walk_/.test(k) && !/^chainguard_walk_/.test(k);
+    });
+    return { geladen: geladen, ruhe: sc.textures.exists('imp_right0'),
+      wache: sc.textures.exists('chainguard_walk_right0') };
   })()`);
   assert.ok(r.ruhe, 'die gewoehnlichen Gegnerbilder fehlen — Test misst nichts');
+  assert.ok(r.wache, 'die Laufbilder der Kettenwache fehlen — die Verkleidung liefe mit Angriffsbildern');
   // Laenge statt deepStrictEqual: das Feld stammt aus dem vm-Realm.
   assert.strictEqual(r.geladen.length, 0, 'ohne Flagge geladen: ' + r.geladen.join(', '));
 });

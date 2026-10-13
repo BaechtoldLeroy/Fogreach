@@ -4535,8 +4535,8 @@ class HubSceneV2 extends Phaser.Scene {
     const choiceRemember = isEN ? 'Remember — whatever it costs' : 'Erinnern — was auch immer das kostet';
 
     const page4 = isEN
-      ? 'You walk back into the fog. What you heard cannot be unheard. The Chain Council is not three voices — it is one wearing three masks. And you? You have already worked for every mask.\n\nAct 2 begins here — in the same city, beneath the same masks.'
-      : 'Du gehst hinaus in den Nebel. Was du gehört hast, lässt sich nicht ungehört machen. Der Kettenrat ist nicht drei Stimmen — er ist eine, die drei Masken trägt. Und du? Du hast bereits für jede Maske gearbeitet.\n\nAkt 2 beginnt hier — in derselben Stadt, unter denselben Masken.';
+      ? 'You walk back into the fog. What you heard cannot be unheard. The Chain Council is not three voices — it is one wearing three masks. And you? You have already worked for every mask.\n\nThe Double Game begins here — in the same city, beneath the same masks.'
+      : 'Du gehst hinaus in den Nebel. Was du gehört hast, lässt sich nicht ungehört machen. Der Kettenrat ist nicht drei Stimmen — er ist eine, die drei Masken trägt. Und du? Du hast bereits für jede Maske gearbeitet.\n\nHier beginnt das Doppelspiel — in derselben Stadt, unter denselben Masken.';
 
     // Build the page array. Pages 1-2 + 4 are narration (no choices —
     // Space/Enter advances). Page 3 has the binary flavor choice that

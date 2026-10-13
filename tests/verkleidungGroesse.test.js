@@ -6,6 +6,8 @@
 // Figuren — der Massstab sprang also mit jedem Schritt, und die Wachen
 // uebernahmen die gerade gezeigte Hoehe (window.__ESP_GUARD_H) gleich mit.
 // Jetzt gilt ein fester Massstab, gemessen am Standbild (window.montureSkala).
+// Und gelaufen wird mit den Laufbildern der Wache (chainguard_walk_*), nicht
+// mit ihren Angriffsbildern right1/right2.
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
@@ -39,6 +41,11 @@ test('Verkleidet laufen: alle Laufbilder im selben Massstab', async () => {
   const montur = proben.filter((p) => /^chainguard_/.test(p.key));
   const bilder = new Set(montur.map((p) => p.key));
   assert.ok(bilder.size >= 3, 'zu wenige Laufbilder gesehen: ' + [...bilder].join(','));
+  // Laufbilder, nicht die Angriffsbilder der Wache (right1/right2, left1/left2).
+  const angriff = [...bilder].filter((k) => /^chainguard_(right|left)[12]$/.test(k));
+  assert.deepStrictEqual(angriff, [], 'die Montur laeuft mit Angriffsbildern: ' + angriff.join(','));
+  assert.ok([...bilder].some((k) => /^chainguard_walk_(right|left)[0-9]$/.test(k)),
+    'keine Laufbilder der Wache gesehen: ' + [...bilder].join(','));
   const sy = montur.map((p) => p.sy);
   const min = Math.min(...sy), max = Math.max(...sy);
   // Rundung auf ganze Pixel erlaubt ~2 %, das alte Pumpen lag weit darueber.

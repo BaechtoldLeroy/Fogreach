@@ -47,6 +47,13 @@
   function _laufAn() {
     return !!(window.DebugGate && window.DebugGate.an('gegnerlauf'));
   }
+  // Die Kettenwache laeuft immer: ihre Laufbilder traegt auch der Spieler in
+  // der Spionage-Verkleidung (player.js) — ohne sie lief er mit den
+  // Angriffsbildern der Wache (right1/right2) durchs Rathaus. Die Gegner
+  // selbst spielen Laufbilder weiterhin nur mit ?gegnerlauf=1 (enemy.js).
+  function _laufTypen() {
+    return _laufAn() ? Object.keys(LAUFBILDER) : ['chainguard'];
+  }
   function _laufBilder(t) {
     var out = [];
     for (var i = 0; i < LAUFBILDER[t]; i++) {
@@ -70,11 +77,9 @@
       FRAMES.forEach(function (f) { urls.push('assets/enemy/' + b + '/' + f + '.png'); });
       urls.push('assets/enemy/' + b + '/idle.png');
     });
-    if (_laufAn()) {
-      Object.keys(LAUFBILDER).forEach(function (t) {
-        _laufBilder(t).forEach(function (l) { urls.push(l.url); });
-      });
-    }
+    _laufTypen().forEach(function (t) {
+      _laufBilder(t).forEach(function (l) { urls.push(l.url); });
+    });
     return urls;
   }
 
@@ -125,10 +130,8 @@
       FRAMES.forEach(function (f) { img(b + '_' + f, 'assets/enemy/' + b + '/' + f + '.png'); });
       img('sprite_' + b, 'assets/enemy/' + b + '/idle.png'); // sprite_boss_chain etc.
     });
-    if (_laufAn()) {
-      Object.keys(LAUFBILDER).forEach(function (t) {
-        _laufBilder(t).forEach(function (l) { img(l.key, l.url); });
-      });
-    }
+    _laufTypen().forEach(function (t) {
+      _laufBilder(t).forEach(function (l) { img(l.key, l.url); });
+    });
   };
 })();

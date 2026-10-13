@@ -778,13 +778,15 @@ function updatePlayerSpriteAnimation(sprite, vx = 0, vy = 0) {
     if (facingX < -0.01) ddir = 'left';
     else if (facingX > 0.01) ddir = 'right';
     state._disguiseDir = ddir;
-    let dframe = 0;
-    if (moving) {
+    // Stehend das Standbild, laufend die Laufbilder der Wache. right1/right2
+    // sind ihre ANGRIFFSbilder (enemy.js) — damit lief die Montur frueher, als
+    // schluege sie bei jedem Schritt zu.
+    let dkey = `chainguard_${ddir}0`;
+    const laufN = (window.GEGNER_LAUFBILDER && window.GEGNER_LAUFBILDER.chainguard) || 0;
+    if (moving && laufN > 0 && sprite.scene.textures.exists(`chainguard_walk_${ddir}0`)) {
       const now = sprite.scene.time?.now || 0;
-      const c = Math.floor(now / 140) % 4;
-      dframe = (c === 1) ? 1 : (c === 3) ? 2 : 0;
+      dkey = `chainguard_walk_${ddir}${Math.floor(now / 100) % laufN}`;
     }
-    const dkey = `chainguard_${ddir}${dframe}`;
     if (sprite.scene.textures.exists(dkey) && sprite.texture.key !== dkey) {
       if (state.playing) { sprite.anims.stop(); state.playing = null; }
       sprite.setTexture(dkey);
