@@ -252,6 +252,8 @@
       // ?v=: die Tafel ist mit Holz und Metall gewachsen (11 Zeilen).
       scene.load.spritesheet('partikel_atlas', ORDNER + 'partikel_atlas.png?v=2', { frameWidth: 16, frameHeight: 16 });
     }
+    // Die Schriftstuecke (js/schriftstuecke.js) unter ihrem eigenen Namen.
+    if (window.Schriftstuecke) window.Schriftstuecke.vorladen(scene);
   };
 
   /**

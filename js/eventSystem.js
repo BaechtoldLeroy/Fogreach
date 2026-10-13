@@ -1802,7 +1802,9 @@
 
   // #189: Toast im Messing-Stil — neunteiliges Banner, Symbol je Art und ein
   // weiches Hereingleiten statt Aufploppen.
-  function showEventToast(scene, message, eventId, _nachgeladen) {
+  // opts.unter: zweite, kleinere Zeile unter dem Haupttext (z. B. beim
+  // Schriftstueck: wohin der Fund geht).
+  function showEventToast(scene, message, eventId, _nachgeladen, opts) {
     if (!scene || !scene.add) return;
     // Fehlen die Grafiken noch (Szene ohne Vorladen), einmal nachladen und
     // dann zeigen. Scheitert das Laden, steht der Text auf einem schlichten
@@ -1810,7 +1812,7 @@
     var UR = window.uiRahmen;
     var bereit = !!(UR && UR.bereit(scene));
     if (UR && !bereit && !_nachgeladen) {
-      UR.nachladen(scene, function () { showEventToast(scene, message, eventId, true); });
+      UR.nachladen(scene, function () { showEventToast(scene, message, eventId, true, opts); });
       return;
     }
     var cam = scene.cameras && scene.cameras.main;
@@ -1835,14 +1837,31 @@
       wordWrap: { width: camW - 100 - padL, useAdvancedWrap: true },
       resolution: 2
     }).setOrigin(0.5).setDepth(2000).setScrollFactor(0);
-    var panelW = Math.min(camW - 40, Math.ceil(label.width) + padL + padR);
-    var panelH = Math.max(52, Math.ceil(label.height) + padY * 2);
+    var unter = null, ABSTAND = 3;
+    if (opts && opts.unter) {
+      unter = scene.add.text(0, cy, opts.unter, {
+        fontSize: '13px', fill: '#ecd29c', fontFamily: 'serif', fontStyle: 'italic',
+        stroke: '#000000', strokeThickness: 3, align: 'center',
+        wordWrap: { width: camW - 100 - padL, useAdvancedWrap: true },
+        resolution: 2
+      }).setOrigin(0.5).setDepth(2000).setScrollFactor(0);
+    }
+    var textW = Math.max(label.width, unter ? unter.width : 0);
+    var textH = label.height + (unter ? unter.height + ABSTAND : 0);
+    var panelW = Math.min(camW - 40, Math.ceil(textW) + padL + padR);
+    var panelH = Math.max(52, Math.ceil(textH) + padY * 2);
     var links = cx - panelW / 2;
-    label.setX(links + padL + (panelW - padL - padR) / 2);
+    var mitteX = links + padL + (panelW - padL - padR) / 2;
+    label.setX(mitteX);
+    if (unter) {
+      // Beide Zeilen gemeinsam mittig im Banner.
+      label.setY(cy - textH / 2 + label.height / 2);
+      unter.setPosition(mitteX, cy + textH / 2 - unter.height / 2);
+    }
     var teile;
     if (bereit) {
       teile = UR.banner(scene, cx, cy, panelW, panelH, 1999);
-      teile.push(scene.add.image(links + 18 + SYM / 2, cy, UR.symbol(eventId))
+      teile.push(scene.add.image(links + 18 + SYM / 2, cy, UR.symbol(eventId, scene))
         .setDisplaySize(SYM, SYM).setScrollFactor(0).setDepth(2000));
     } else {
       var panel = scene.add.graphics().setScrollFactor(0).setDepth(1999);
@@ -1852,8 +1871,9 @@
       teile = [panel];
     }
     teile.push(label);
+    if (unter) teile.push(unter);
     // Kennung fuer Tests und das Wegraeumen beim naechsten Toast.
-    var eintrag = { label: label, teile: teile, art: bereit ? UR.symbol(eventId) : null };
+    var eintrag = { label: label, unter: unter, teile: teile, art: bereit ? UR.symbol(eventId, scene) : null };
     scene._activeEventToast = eintrag;
 
     var weg = function () {
@@ -2207,8 +2227,13 @@
       }
     }
 
+    // Eigenes Pixelbild (js/schriftstuecke.js); fehlt es, die alte gezeichnete
+    // Rolle mit gelbem Kreis.
+    var SS = window.Schriftstuecke;
+    var neuesBild = SS ? SS.bild(scene, 'fragment') : null;
+
     // Generate procedural scroll texture if missing
-    if (!scene.textures.exists('proc_scroll')) {
+    if (!neuesBild && !scene.textures.exists('proc_scroll')) {
       var g = scene.make.graphics({ add: false });
       g.fillStyle(0xeed8a0); g.fillRoundedRect(2, 4, 28, 24, 3);
       g.fillStyle(0x8b6a3a); g.fillRect(2, 4, 28, 3);
@@ -2221,18 +2246,24 @@
       g.destroy();
     }
 
-    var scroll = scene.physics.add.sprite(bx, by, 'proc_scroll');
+    var scroll = scene.physics.add.sprite(bx, by, neuesBild || 'proc_scroll');
+    // Fuer Tests und Suche: die Rolle unabhaengig vom Bild finden.
+    scroll.name = 'wissensfragment';
+    if (neuesBild) scroll.setDisplaySize(SS.ANZEIGE + 4, SS.ANZEIGE + 4);
     scroll.setDepth(50);
     scroll.body.setAllowGravity(false);
     scroll.body.setImmovable(true);
 
-    // Glow effect
-    var glow = scene.add.graphics();
-    glow.fillStyle(0xffdd44, 0.2);
-    glow.fillCircle(bx, by, 30);
-    glow.fillStyle(0xffeeaa, 0.15);
-    glow.fillCircle(bx, by, 20);
-    glow.setDepth(49);
+    // Glow effect: warmer Lichtfleck zum neuen Bild, sonst die alten Kreise.
+    var glow = neuesBild ? SS.schein(scene, bx, by, 49) : null;
+    if (!glow) {
+      glow = scene.add.graphics();
+      glow.fillStyle(0xffdd44, 0.2);
+      glow.fillCircle(bx, by, 30);
+      glow.fillStyle(0xffeeaa, 0.15);
+      glow.fillCircle(bx, by, 20);
+      glow.setDepth(49);
+    }
 
     // Tween bobbing
     if (scene.tweens) {
@@ -2259,7 +2290,9 @@
       'event.lore.text.fragment_council_pact',
       'event.lore.text.fragment_personal_amnesia'
     ];
-    var chosen = T(loreKeys[Math.floor(Math.random() * loreKeys.length)]);
+    var chosenKey = loreKeys[Math.floor(Math.random() * loreKeys.length)];
+    var chosen = T(chosenKey);
+    var loreTitel = SS ? SS.fragmentTitel(chosenKey) : '';
 
     activeLore = { sprite: scroll, glow: glow, scene: scene, text: chosen, picked: false };
 
@@ -2279,7 +2312,11 @@
           playerXP += xpBonus;
           window.playerXP = playerXP;
         }
-        showLoreDialog(scene, chosen, xpBonus);
+        // Der Aufsammel-Toast (Titel, wohin das Fragment geht) kommt, sobald
+        // der Lese-Dialog zu ist: darunter laege er im abgedunkelten Bild.
+        showLoreDialog(scene, chosen, xpBonus, loreTitel, function () {
+          if (SS) SS.toast(scene, loreTitel, T('schrift.hinweis.wissensbaum'));
+        });
         cleanupLore();
       }
     });
@@ -2287,7 +2324,55 @@
     showEventToast(scene, T('event.lore.toast_spawn'), 'lore_fragment');
   }
 
-  function showLoreDialog(scene, loreText, xpBonus) {
+  // Der Lese-Dialog im Messing-Stil: Platte wie die uebrigen Dialoge, der
+  // Fragmenttext dunkel auf einem Pergamentblatt — man liest ein Schriftstueck,
+  // keine Systemmeldung. Liefert alle Teile zum Wegraeumen.
+  function _loreMessing(scene, cw, ch, panelW, loreText, xpBonus, loreTitel) {
+    var cx = cw / 2;
+    var SS = window.Schriftstuecke;
+    var teile = [];
+    var txt = function (y, s, stil) {
+      var o = scene.add.text(cx, y, s, Object.assign({ fontFamily: 'serif', resolution: 2 }, stil))
+        .setOrigin(0.5, 0).setScrollFactor(0).setDepth(2503);
+      teile.push(o);
+      return o;
+    };
+    // Erst messen (Hoehe des Textes), dann die Platte darum legen.
+    var blattW = panelW - 56;
+    var body = txt(0, loreText, {
+      fontSize: '15px', fill: '#2b1d10', fontStyle: 'italic',
+      wordWrap: { width: blattW - 32, useAdvancedWrap: true }, align: 'center', lineSpacing: 3
+    });
+    var blattH = Math.ceil(body.height) + 26;
+    var panelH = 22 + 16 + 4 + 26 + 10 + blattH + 10 + 20 + 4 + 16 + 20;
+    var oben = ch / 2 - panelH / 2;
+    teile = window.uiRahmen.platte(scene, cx, ch / 2, panelW, panelH, 2501).concat(teile);
+
+    var y = oben + 22;
+    txt(y, T('schrift.art.fragment'), { fontSize: '13px', fill: '#d8b46c', fontStyle: 'bold' });
+    y += 20;
+    var titel = txt(y, loreTitel || T('event.lore.dialog_title'), {
+      fontSize: '21px', fill: '#f3dca0', fontStyle: 'bold italic', stroke: '#000000', strokeThickness: 2
+    });
+    var bildKey = SS ? SS.bild(scene, 'fragment') : null;
+    if (bildKey) {
+      teile.push(scene.add.image(cx - titel.width / 2 - 22, y + titel.height / 2, bildKey)
+        .setDisplaySize(30, 30).setScrollFactor(0).setDepth(2503));
+    }
+    y += 26 + 10;
+    // Das Pergament: warmer Grund, dunkler Rand wie gebraeuntes Papier.
+    var blatt = scene.add.rectangle(cx, y + blattH / 2, blattW, blattH, 0xe8d6ab, 1)
+      .setStrokeStyle(2, 0x7a5a2e).setScrollFactor(0).setDepth(2502);
+    teile.push(blatt);
+    body.setY(y + 13);
+    y += blattH + 10;
+    txt(y, '+' + xpBonus + ' XP', { fontSize: '16px', fill: '#9ee89e', fontStyle: 'bold' });
+    y += 24;
+    txt(y, T('event.lore.dialog_hint'), { fontSize: '12px', fill: '#cfc3aa' });
+    return teile;
+  }
+
+  function showLoreDialog(scene, loreText, xpBonus, loreTitel, nachher) {
     if (!scene || !scene.add) return;
     var cam = scene.cameras && scene.cameras.main;
     var cw = cam ? cam.width : 800;
@@ -2301,26 +2386,37 @@
       .setScrollFactor(0).setDepth(2500).setInteractive();
 
     var panelW = Math.min(560, cw - 40);
-    var panelH = 200;
-    var panel = scene.add.rectangle(cw / 2, ch / 2, panelW, panelH, 0x1a1a2a, 0.95)
-      .setScrollFactor(0).setDepth(2501).setStrokeStyle(2, 0xffdd44);
+    var teile;
+    var UR = window.uiRahmen;
+    var messing = !!(UR && UR.bereit(scene));
+    if (messing) {
+      teile = _loreMessing(scene, cw, ch, panelW, loreText, xpBonus, loreTitel);
+    } else {
+      // Rueckfall ohne Messing-Grafiken: der alte dunkle Kasten.
+      var panelH = 200;
+      var panel = scene.add.rectangle(cw / 2, ch / 2, panelW, panelH, 0x1a1a2a, 0.95)
+        .setScrollFactor(0).setDepth(2501).setStrokeStyle(2, 0xffdd44);
 
-    var title = scene.add.text(cw / 2, ch / 2 - 70, T('event.lore.dialog_title'), {
-      fontSize: '20px', fill: '#ffdd44', fontFamily: 'serif', fontStyle: 'italic'
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
+      var title = scene.add.text(cw / 2, ch / 2 - 70, T('event.lore.dialog_title'), {
+        fontSize: '20px', fill: '#ffdd44', fontFamily: 'serif', fontStyle: 'italic'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
 
-    var body = scene.add.text(cw / 2, ch / 2 - 10, loreText, {
-      fontSize: '14px', fill: '#e8e0c8', fontFamily: 'serif',
-      wordWrap: { width: panelW - 40 }, align: 'center'
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
+      var body = scene.add.text(cw / 2, ch / 2 - 10, loreText, {
+        fontSize: '14px', fill: '#e8e0c8', fontFamily: 'serif',
+        wordWrap: { width: panelW - 40 }, align: 'center'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
 
-    var bonus = scene.add.text(cw / 2, ch / 2 + 50, '+' + xpBonus + ' XP', {
-      fontSize: '16px', fill: '#88ff88', fontFamily: 'monospace'
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
+      var bonus = scene.add.text(cw / 2, ch / 2 + 50, '+' + xpBonus + ' XP', {
+        fontSize: '16px', fill: '#88ff88', fontFamily: 'monospace'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
 
-    var hint = scene.add.text(cw / 2, ch / 2 + 80, T('event.lore.dialog_hint'), {
-      fontSize: '12px', fill: '#888888', fontFamily: 'monospace'
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
+      var hint = scene.add.text(cw / 2, ch / 2 + 80, T('event.lore.dialog_hint'), {
+        fontSize: '12px', fill: '#888888', fontFamily: 'monospace'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2502);
+      teile = [panel, title, body, bonus, hint];
+    }
+    // Fuer Tests: was der Dialog gerade zeigt.
+    scene._loreDialog = { teile: teile, messing: messing };
 
     var closed = false;
     var autoT = null;
@@ -2330,9 +2426,12 @@
       if (autoT) { try { clearTimeout(autoT); } catch (e) {} autoT = null; }
       scene.input.keyboard.off('keydown-SPACE', close);
       scene.input.keyboard.off('keydown-ESC', close);
-      overlay.destroy(); panel.destroy(); title.destroy(); body.destroy(); bonus.destroy(); hint.destroy();
+      overlay.destroy();
+      teile.forEach(function (t) { if (t && t.destroy) t.destroy(); });
+      scene._loreDialog = null;
       // Spiel-Pause aufheben.
       if (typeof window.resumeGameClock === 'function') window.resumeGameClock(scene);
+      if (typeof nachher === 'function') { try { nachher(); } catch (e) {} }
     };
     overlay.on('pointerdown', close);
     scene.input.keyboard.on('keydown-SPACE', close);

@@ -35,8 +35,13 @@
     treasure_cache: 'fund', gambling: 'fund', chain_lock: 'fund',
     wandering_merchant: 'fund', sacrifice_altar: 'fund',
     quest_objective_done: 'quest', level_up: 'quest', finale: 'quest', edikt: 'quest',
-    lore_fragment: 'ereignis', shrine_buff: 'ereignis', healing_fountain: 'ereignis'
+    lore_fragment: 'schrift', shrine_buff: 'ereignis', healing_fountain: 'ereignis',
+    // Aufgehobene Schriftstuecke (js/schriftstuecke.js): Feder ueber Pergament.
+    schriftstueck: 'schrift'
   };
+  // Symbole ausserhalb von ALLE: fehlt eines, faellt nur dieses auf das
+  // Ereignis-Medaillon zurueck, statt den ganzen Messing-Satz abzuschalten.
+  var ZUSATZ_SYMBOLE = ['ui_symbol_schrift'];
 
   // Zweite Runde (#182): Inventarfelder, HUD-Leiste und Messingring.
   var FELD = 'ui_feld', FELD_GEWAEHLT = 'ui_feld_gewaehlt', FELD_RAND = 34;
@@ -63,9 +68,14 @@
   function bereit(scene) { return _fehlend(scene).length === 0; }
 
   /** Im preload() einer Szene: die noch fehlenden Grafiken mitladen. */
+  function _zusatzFehlend(scene) {
+    if (!scene || !scene.textures) return [];
+    return ZUSATZ_SYMBOLE.filter(function (k) { return !scene.textures.exists(k); });
+  }
+
   function vorladen(scene) {
     if (!scene || !scene.load) return;
-    _fehlend(scene).forEach(function (k) { scene.load.image(k, _pfad(k)); });
+    _fehlend(scene).concat(_zusatzFehlend(scene)).forEach(function (k) { scene.load.image(k, _pfad(k)); });
   }
 
   /**
@@ -76,7 +86,7 @@
     var fehlt = _fehlend(scene);
     if (!fehlt.length) { if (fertig) fertig(); return; }
     if (!scene || !scene.load) return;
-    fehlt.forEach(function (k) { scene.load.image(k, _pfad(k)); });
+    fehlt.concat(_zusatzFehlend(scene)).forEach(function (k) { scene.load.image(k, _pfad(k)); });
     scene.load.once('complete', function () {
       if (fertig && scene.sys && scene.sys.isActive && scene.sys.isActive()) fertig();
     });
@@ -139,8 +149,11 @@
   }
 
   /** Symbolschluessel fuer eine Toast-Art. */
-  function symbol(eventId) {
-    return 'ui_symbol_' + (ART_SYMBOL[eventId] || 'ereignis');
+  function symbol(eventId, scene) {
+    var k = 'ui_symbol_' + (ART_SYMBOL[eventId] || 'ereignis');
+    // Zusatzsymbol nicht geladen: das Ereignis-Medaillon wie vorher.
+    if (scene && scene.textures && !scene.textures.exists(k)) return 'ui_symbol_ereignis';
+    return k;
   }
 
   // ---- Lesbarkeit (#189) ------------------------------------------------
@@ -569,7 +582,7 @@
     neunteilig: neunteilig, platte: platte, banner: banner, knopf: knopf, symbol: symbol,
     einkleiden: einkleiden, menuePlatte: menuePlatte,
     heben: heben, lesbar: lesbar, lesbarAlle: lesbarAlle,
-    ALLE: ALLE
+    ALLE: ALLE, ZUSATZ_SYMBOLE: ZUSATZ_SYMBOLE
   };
   if (typeof window !== 'undefined') window.uiRahmen = uiRahmen;
 })();

@@ -365,6 +365,9 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
         questLoot.setData('questItem', true);
         questLoot.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_BEUTE : 45));
         questLoot.setTint(qiDef.tint);
+        // Geschriebenes traegt sein eigenes Bild mit warmem Schein; ohne Bild
+        // bleibt es beim eingefaerbten Erz.
+        if (window.Schriftstuecke) window.Schriftstuecke.schmuecken(scene || questLoot.scene, questLoot, qiDef.target);
         trackLootSprite(scene || questLoot.scene, questLoot);
         return;
       }
@@ -649,6 +652,9 @@ function collectLoot(playerSprite, loot) {
   if (loot.getData && loot.getData('questItem')) {
     var item = loot.getData('item');
     if (item && item.questTarget && window.questSystem) {
+      // Schriftstueck-Toast VOR dem Fortschritt: ist das Ziel damit erfuellt,
+      // uebernimmt dessen Toast den Platz.
+      if (window.Schriftstuecke) window.Schriftstuecke.aufgesammelt(loot.scene || this, item);
       window.questSystem.updateQuestProgress('fetch', item.questTarget, 1);
       console.log('[Loot] Collected quest item:', item.name);
     }

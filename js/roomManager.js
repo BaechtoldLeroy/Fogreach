@@ -4519,6 +4519,7 @@ function _spawnCouncilDocument(scene) {
   sprite.setData('questItem', true);
   sprite.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_BEUTE : 45));
   sprite.setTint(0xcc88dd);
+  if (window.Schriftstuecke) window.Schriftstuecke.schmuecken(scene, sprite, 'council_document');
   if (typeof window.trackLootSprite === 'function') {
     window.trackLootSprite(scene, sprite);
   } else if (typeof scene._activeLootSprites !== 'undefined' && Array.isArray(scene._activeLootSprites)) {

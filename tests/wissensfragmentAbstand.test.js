@@ -38,7 +38,9 @@ before(async () => {
       def.handler(sc);
       var rolle = null;
       sc.children.list.forEach(function (o) {
-        if (o.texture && o.texture.key === 'proc_scroll') rolle = o;
+        // Nach Namen, nicht nach Bild: seit dem Pixelbild heisst die Textur
+        // schrift_fragment, ohne Bild weiter proc_scroll.
+        if (o.name === 'wissensfragment') rolle = o;
       });
       if (!rolle) return { fehler: 'keine Rolle gesetzt (Durchgang ' + i + ')' };
       abstaende.push(Math.hypot(rolle.x - player.x, rolle.y - player.y));
