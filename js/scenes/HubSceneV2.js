@@ -6,7 +6,21 @@ if (window.i18n) {
     'hub.dialog.greeting': 'Gespräch',
     'hub.dialog.npc_quest.new_task_suffix': '— Neue Aufgabe',
     'hub.dialog.npc_quest.completed_suffix': '— Aufgabe abgeschlossen!',
-    'hub.dialog.npc_quest.greeting_returning': 'Gut, dass du wieder da bist. Dein Erfolg bei "{title}" hat mir Mut gemacht. Es gibt mehr zu tun.',
+    // Begruessung nach einem Abschluss — je NPC eigene Fassungen, reihum
+    // (HubSceneV2._grussNachAbschluss). Fehlt ein NPC, gilt 'allgemein'.
+    'hub.dialog.npc_quest.greeting_returning.allgemein.1': 'Gut, dass Du wieder da bist. Dein Erfolg bei "{title}" hat mir Mut gemacht. Es gibt mehr zu tun.',
+    'hub.dialog.npc_quest.greeting_returning.allgemein.2': 'Du bist zurück. Nach "{title}" traue ich Dir mehr zu als vorher. Hör zu.',
+    'hub.dialog.npc_quest.greeting_returning.aldric.1': '(Er blättert, ohne aufzusehen.) "{title}" — erledigt und abgelegt. Der Rat merkt sich Zuverlässigkeit. Die nächste Akte liegt schon bereit.',
+    'hub.dialog.npc_quest.greeting_returning.aldric.2': 'Dein Bericht zu "{title}" liegt beim Rat. Man war zufrieden, soweit der Rat zufrieden sein kann. Weiter.',
+    'hub.dialog.npc_quest.greeting_returning.aldric.3': '"{title}" ist vermerkt. Fleiss vergisst der Rat nicht. Versäumnisse übrigens auch nicht.',
+    'hub.dialog.npc_quest.greeting_returning.branka.1': 'Da bist Du ja. "{title}" hat gehalten — besser als mancher Stahl, der hier über den Amboss geht. Ich hab noch was.',
+    'hub.dialog.npc_quest.greeting_returning.branka.2': '(Sie wischt sich den Russ von der Stirn.) Nach "{title}" glaube ich Dir wieder ein Stück mehr. Komm her.',
+    'hub.dialog.npc_quest.greeting_returning.thom.1': '"{title}" ist durch? Gut. Ich hätte es beinahe gesetzt, aber das hätte uns beide den Kopf gekostet. Ich hab noch etwas.',
+    'hub.dialog.npc_quest.greeting_returning.thom.2': '(Druckerschwärze bis zu den Ellbogen.) Seit "{title}" schlafe ich ein wenig ruhiger. Nur ein wenig. Hör zu.',
+    'hub.dialog.npc_quest.greeting_returning.harren.1': 'Du hast "{title}" zu Ende gebracht. Ich bin es nicht mehr gewohnt, dass jemand Wort hält. Es gibt noch etwas.',
+    'hub.dialog.npc_quest.greeting_returning.harren.2': '(Er sieht müde aus, aber wacher als zuletzt.) Nach "{title}" wage ich wieder zu fragen. Hör mich an.',
+    'hub.dialog.npc_quest.greeting_returning.mara.1': 'Sieh an. "{title}" hat geklappt, und keiner hat nach Dir gefragt. So mag ich das. Ich hab noch was.',
+    'hub.dialog.npc_quest.greeting_returning.mara.2': '(Sie zählt etwas unter dem Tisch.) "{title}" war saubere Arbeit. Ich vergesse so etwas nicht — ich schreibe es nur nicht auf.',
     'hub.dialog.npc_quest.task_header': 'Aufgabe {chain}/3: {title}\n{description}{rewards}',
     'hub.dialog.npc_quest.info_text': '{description}\n\nDiese Aufgabe ist Teil einer Questkette ({chain}/3) für {npc}.{rewards}',
     'hub.dialog.npc_quest.progress_text': '{dialogue}\n\nFortschritt: {progress} ({pct}%)',
@@ -61,7 +75,19 @@ if (window.i18n) {
     'hub.dialog.greeting': 'Talk',
     'hub.dialog.npc_quest.new_task_suffix': '— New Task',
     'hub.dialog.npc_quest.completed_suffix': '— Task Complete!',
-    'hub.dialog.npc_quest.greeting_returning': 'Good to see you again. Your success on "{title}" gave me courage. There is more to do.',
+    'hub.dialog.npc_quest.greeting_returning.allgemein.1': 'Good to see you again. Your success on "{title}" gave me courage. There is more to do.',
+    'hub.dialog.npc_quest.greeting_returning.allgemein.2': 'You are back. After "{title}" I trust you more than before. Listen.',
+    'hub.dialog.npc_quest.greeting_returning.aldric.1': '(He leafs through papers without looking up.) "{title}" — done and filed. The Council remembers reliability. The next file is already waiting.',
+    'hub.dialog.npc_quest.greeting_returning.aldric.2': 'Your report on "{title}" is with the Council. They were pleased, as far as the Council can be pleased. Onward.',
+    'hub.dialog.npc_quest.greeting_returning.aldric.3': '"{title}" is noted. The Council does not forget diligence. Nor, by the way, negligence.',
+    'hub.dialog.npc_quest.greeting_returning.branka.1': 'There you are. "{title}" held — better than some steel that crosses this anvil. I have something else.',
+    'hub.dialog.npc_quest.greeting_returning.branka.2': '(She wipes the soot from her brow.) After "{title}" I believe you a little more again. Come here.',
+    'hub.dialog.npc_quest.greeting_returning.thom.1': '"{title}" is done? Good. I nearly set it in type, but that would have cost us both our heads. I have something else.',
+    'hub.dialog.npc_quest.greeting_returning.thom.2': '(Ink up to his elbows.) Since "{title}" I sleep a little easier. Only a little. Listen.',
+    'hub.dialog.npc_quest.greeting_returning.harren.1': 'You saw "{title}" through. I am no longer used to people keeping their word. There is something else.',
+    'hub.dialog.npc_quest.greeting_returning.harren.2': '(He looks tired, but more awake than last time.) After "{title}" I dare to ask again. Hear me out.',
+    'hub.dialog.npc_quest.greeting_returning.mara.1': 'Well, well. "{title}" worked, and nobody asked about you. That is how I like it. I have something else.',
+    'hub.dialog.npc_quest.greeting_returning.mara.2': '(She counts something under the table.) "{title}" was clean work. I do not forget such things — I just do not write them down.',
     'hub.dialog.npc_quest.task_header': 'Task {chain}/3: {title}\n{description}{rewards}',
     'hub.dialog.npc_quest.info_text': '{description}\n\nThis task is part of a quest chain ({chain}/3) for {npc}.{rewards}',
     'hub.dialog.npc_quest.progress_text': '{dialogue}\n\nProgress: {progress} ({pct}%)',
@@ -1446,7 +1472,13 @@ class HubSceneV2 extends Phaser.Scene {
     const cfg = window.storyDialog && window.storyDialog.byScene && window.storyDialog.byScene.edikt_anschlag;
     if (cfg && window.DialogChoice && typeof window.DialogChoice.present === 'function') {
       this._dialogOpen = true;
-      window.DialogChoice.present(this, { prompt: cfg.prompt, choices: cfg.choices, onResolved: fertig });
+      // Abbrechen (ESC) haengt nichts aus. Ohne onCancel ruft DialogChoice
+      // onResolved(null) — dann galten die Edikte als ausgehaengt, ohne dass
+      // eines oben hing.
+      window.DialogChoice.present(this, {
+        prompt: cfg.prompt, choices: cfg.choices, onResolved: fertig,
+        onCancel: () => { this._dialogOpen = false; }
+      });
     } else {
       fertig();
     }
@@ -1690,14 +1722,10 @@ class HubSceneV2 extends Phaser.Scene {
     if (questMode === 'offer' && questData) {
       titleStr = npcData.name + ' ' + _HUB_T('hub.dialog.npc_quest.new_task_suffix');
 
-      // Reference previous quests in greeting
-      if (completedCount > 0) {
-        const lastCompleted = completedForNpc[completedForNpc.length - 1];
-        pages.push({
-          text: _HUB_T('hub.dialog.npc_quest.greeting_returning', { title: lastCompleted.title }),
-          choices: null
-        });
-      }
+      // Rueckblick auf den letzten Auftrag — nur EINMAL nach einem frischen
+      // Abschluss (siehe _grussNachAbschluss), nicht vor jedem Angebot.
+      const gruss = completedCount > 0 ? this._grussNachAbschluss(npcId, completedForNpc) : null;
+      if (gruss) pages.push({ text: gruss, choices: null });
 
       // Optionale Auftakt-Seiten (dialogueIntro) VOR dem Angebotstext — nur bei
       // der ERSTEN Begegnung mit diesem NPC (noch keine Quest abgeschlossen), damit
@@ -1880,6 +1908,45 @@ class HubSceneV2 extends Phaser.Scene {
     }
 
     this._showDialoguePages(npcData, titleStr, pages, questMode, questData, 0);
+  }
+
+  /**
+   * Die Begruessung nach einem Abschluss ("Dein Erfolg bei X ...").
+   *
+   * Frueher stand sie vor JEDEM Angebot, sobald der NPC je einen Auftrag
+   * abgeschlossen hatte: nach jedem Ablehnen erneut, bei jedem Folgeauftrag
+   * mit demselben Satz, bei jedem NPC gleich. Gemeldet als "die NPCs
+   * sagen zu oft ...".
+   *
+   * Jetzt: genau EINMAL je Abschluss bei DIESEM NPC — beim ersten Angebot
+   * danach. Gemerkt als Flag 'gruss_<questId>' (im Spielstand, damit eine
+   * Rueckkehr aus dem Dungeon ihn nicht wieder aufleben laesst). Stehen
+   * mehrere Abschluesse offen, nennt er den letzten und wuerdigt alle auf
+   * einmal. Der Wortlaut passt zum NPC und
+   * wechselt zwischen zwei bis drei Fassungen.
+   * @returns {string|null} der Text, oder null, wenn nichts zu sagen ist
+   */
+  _grussNachAbschluss(npcId, erledigt) {
+    const qs = window.questSystem;
+    const i18n = window.i18n;
+    if (!npcId || !qs || typeof qs.hasFlag !== 'function') return null;
+    const offen = (erledigt || []).filter((q) => q && q.id && !qs.hasFlag('gruss_' + q.id));
+    if (!offen.length) return null;
+    offen.forEach((q) => qs.setFlag('gruss_' + q.id));
+
+    const satz = (stamm, n) => 'hub.dialog.npc_quest.greeting_returning.' + stamm + '.' + n;
+    const hat = (k) => !!(i18n && typeof i18n.has === 'function' && i18n.has(k));
+    const stamm = hat(satz(npcId, 1)) ? npcId : 'allgemein';
+    let anzahl = 0;
+    while (anzahl < 9 && hat(satz(stamm, anzahl + 1))) anzahl++;
+    if (!anzahl) return null;
+    // Reihum nach der Zahl der Abschluesse: aufeinanderfolgende Begruessungen
+    // desselben NPC klingen nie gleich.
+    const nr = ((erledigt.length - 1) % anzahl) + 1;
+    const letzte = offen[offen.length - 1];
+    const titelKey = 'quest.' + letzte.id + '.title';
+    const titel = hat(titelKey) ? i18n.t(titelKey) : (letzte.title || letzte.id);
+    return _HUB_T(satz(stamm, nr), { title: titel });
   }
 
   // Feature 063: storyDialog-Anbindung.
@@ -2596,6 +2663,19 @@ class HubSceneV2 extends Phaser.Scene {
   // (confirmed via a live display-list dump: Container@1500 + Container@1600 both
   // visible at y=300). Single funnel used by open + every page render + close.
   _sweepDialogSurfaces() {
+    // Den Tipp-Hoerer der VORIGEN Seite abhaengen. Er haengt an input.once
+    // und verfaellt nur, wenn wirklich getippt wird. Blaettert man mit
+    // E/Leertaste/Enter weiter, blieb er liegen — _dialogPointerOnce zeigte
+    // schon auf den der neuen Seite, und _closeDialog loeste nur diesen.
+    // Der liegengebliebene feuerte beim naechsten Klick in IRGENDEINEM
+    // Dialog (Aldric, Hinabstieg am Rathaus, Edikt-Wahl an der Tafel) und
+    // blaetterte mit seiner alten Closure den alten Dialog wieder auf:
+    // "Maras Dialog taucht bei Aldric wieder auf", "nach dem Aushaengen
+    // kommt nochmals Aldric".
+    if (this._dialogPointerOnce) {
+      try { this.input.off('pointerdown', this._dialogPointerOnce); } catch (_) {}
+      this._dialogPointerOnce = null;
+    }
     // Ein offenes DialogChoice-Panel ueber sein Handle schliessen — das haengt
     // den ESC-Handler der Komponente ab. Sonst leakt er beim erneuten Ansprechen
     // (das Panel wird unten per Container-Destroy zwar entfernt, der Handler
