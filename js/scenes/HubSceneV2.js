@@ -140,6 +140,8 @@ class HubSceneV2 extends Phaser.Scene {
   preload() {
     // #189: Messing-Rahmen und Toast-Bilder mitladen (nur die fehlenden).
     if (window.uiRahmen) window.uiRahmen.vorladen(this);
+    // Pixel-Icons der Faehigkeiten (#195) — das Loadout zeigt sie auch im Hub.
+    if (window.hudLeiste) window.hudLeiste.vorladen(this);
     // Die Pixel-Icons der Gegenstaende (pixelTexturen.js): ohne sie zeigte
     // der Hub nach frischem Laden die alten gezeichneten Icons.
     if (typeof window.gegenstandsBilderVorladen === 'function') window.gegenstandsBilderVorladen(this);

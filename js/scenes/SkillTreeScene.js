@@ -673,35 +673,44 @@
       const canAfford = ST.getSkillPoints() >= nextCost;
       const investable = prereqOk && !isMax && canAfford;
 
-      // State: locked (prereq not met), maxed, invested (>0), available.
-      let fill, stroke, nameColor;
+      // Zustand: gesperrt, voll, investiert (>0), lernbar, ohne Punkte.
+      // Seit b399 ohne farbigen Kartenrand (Strangfarbe/gold/gruen/grau) —
+      // der sah unruhig aus. Der Zustand steht jetzt in der Helligkeit der
+      // Platte, der Namensfarbe, den Rauten und dem Schloss; der Strang im
+      // Spaltenkopf und an den Pfeilen.
+      let fill, nameColor;
       if (!prereqOk && rank === 0) {
-        fill = 0x1c1c22; stroke = 0x3a3a3a; nameColor = '#9a948a';
+        fill = 0x1c1c22; nameColor = '#9a948a';
       } else if (isMax) {
-        fill = 0x243024; stroke = 0x66cc66; nameColor = '#cfffcf';
+        fill = 0x243024; nameColor = '#cfffcf';
       } else if (rank > 0) {
-        fill = 0x232830; stroke = STRAND_COLORS[node.strand]; nameColor = STRAND_COLORS_HEX[node.strand];
+        fill = 0x232830; nameColor = STRAND_COLORS_HEX[node.strand];
       } else if (investable) {
-        fill = 0x2c2a1a; stroke = 0xffd166; nameColor = '#ffe9a8';
+        fill = 0x2c2a1a; nameColor = '#ffe9a8';
       } else {
         // prereq met but no points to spend yet
-        fill = 0x222226; stroke = 0x555555; nameColor = '#cccccc';
+        fill = 0x222226; nameColor = '#cccccc';
       }
 
-      // #175: Kartenplatte aus PixelLab (create_ui_asset), neunteilig. Der
-      // Zustand bleibt lesbar: Toenung der Platte (gesperrt dunkel, offen hell)
-      // und die farbige Linie darueber (investiert / investierbar / voll).
+      // #175: Kartenplatte aus PixelLab (create_ui_asset), neunteilig. Die
+      // Helligkeit traegt den Zustand: gesperrt dunkel, ohne Punkte
+      // gedaempft, investiert und lernbar voll. Toenung wirkt nur unter
+      // WebGL; die Deckkraft dimmt auch im Canvas-Renderer (aeltere Geraete,
+      // headless), wo frueher allein der Rand den Unterschied zeigte.
       const platte = this.textures.exists('talent_karte');
       if (platte) {
-        const ton = (!prereqOk && rank === 0) ? 0x7a7a84 : (investable ? 0xfff2cc : (rank > 0 ? 0xffffff : 0xa8a8b0));
+        const gesperrt = !prereqOk && rank === 0;
+        const ton = gesperrt ? 0x7a7a84 : (investable ? 0xfff2cc : (rank > 0 ? 0xffffff : 0xa8a8b0));
+        const deck = gesperrt ? 0.55 : ((investable || rank > 0) ? 1 : 0.8);
         neunteilig(this, 'talent_karte', cx, cy, w, h, 14, 2002).forEach((teil) => {
-          teil.setTint(ton);
+          teil.setTint(ton).setAlpha(deck);
+          teil._talentId = node.id;
           this.nodeViews.push(teil);
         });
       }
-      const gesperrt = !prereqOk && rank === 0;
       const card = this.add.rectangle(cx, cy, w, h, fill, platte ? 0 : 1)
-        .setStrokeStyle(2, stroke, platte && gesperrt ? 0 : 1).setScrollFactor(0).setDepth(2002);
+        .setScrollFactor(0).setDepth(2002);
+      card._talentId = node.id;
       this.nodeViews.push(card);
       if (investable) {
         card.setInteractive({ useHandCursor: true });

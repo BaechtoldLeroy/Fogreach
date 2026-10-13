@@ -12,6 +12,7 @@
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const { launch } = require('../tools/headless/index.js');
+const { hintergrund } = require('./kontrastMessung.js');
 
 let H = null;
 before(async () => {
@@ -70,4 +71,73 @@ test('ein Klick auf einen gesperrten Einstieg nennt den Grund', () => {
 test('ab Level 6 ist der zweite Strang waehlbar, nicht "offen"', () => {
   const t = oeffnen(7, { charge: 2 }, 1);
   assert.strictEqual(t.filter((x) => x === '2. Strang wählbar').length, 2, t.join(' | '));
+});
+
+// b399: Die Karten tragen keinen farbigen Rand mehr (Strangfarbe bei
+// investiert, gold bei lernbar, gruen bei voll, grau sonst). Der Zustand
+// muss trotzdem ablesbar bleiben: Helligkeit der Platte, Schloss, Rauten.
+const RAENGE = { hammer: 5, frenzy: 2, steelGrasp: 2 };
+
+test('Talentkarten ohne farbigen Rand', () => {
+  oeffnen(12, RAENGE, 2);
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('SkillTreeScene'), geo = sc._nodeGeo;
+    var karten = Object.keys(geo).map(function (id) { return geo[id]; });
+    // Jedes Rechteck, das genau auf einer Karte liegt.
+    var aufKarte = sc.children.list.filter(function (o) {
+      if (o.type !== 'Rectangle') return false;
+      return karten.some(function (k) { return Math.abs(o.x - k.x) < 2 && Math.abs(o.y - k.y) < 2
+        && Math.abs(o.width - k.w) < 3 && Math.abs(o.height - k.h) < 3; });
+    });
+    return { karten: karten.length, rechtecke: aufKarte.length,
+      mitRand: aufKarte.filter(function (o) { return o.isStroked && o.strokeAlpha > 0 && o.lineWidth > 0; })
+        .map(function (o) { return o._talentId + ':' + o.strokeColor.toString(16); }) };
+  })()`);
+  assert.ok(r.karten >= 21, 'zu wenige Karten: ' + r.karten);
+  assert.strictEqual(r.rechtecke, r.karten, 'nicht jede Karte gefunden');
+  assert.strictEqual(r.mitRand.join(', '), '', 'Karten mit farbigem Rand');
+});
+
+test('Zustaende bleiben ohne Rand unterscheidbar (Helligkeit, Schloss, Rauten)', () => {
+  // Mittlere Leuchtdichte der ganzen Karte (Messing-Beschlag inklusive),
+  // Texte ausgeblendet. Gemessen im Canvas-Renderer: dort wirkt keine
+  // Toenung, nur die Deckkraft.
+  const mittel = (ids) => {
+    const geo = H.run(`window.game.scene.getScene('SkillTreeScene')._nodeGeo`);
+    const bereich = hintergrund(H);
+    const m = {};
+    ids.forEach((id) => {
+      const g = geo[id];
+      const L = bereich(g.x - g.w / 2, g.y - g.h / 2, g.w, g.h);
+      m[id] = L.reduce((s, x) => s + x, 0) / L.length;
+    });
+    return m;
+  };
+  // Ohne Punkte: Wirbelwind gesperrt (Lv 20), Berserker ohne Punkte,
+  // Raserei investiert, Hammer voll.
+  oeffnen(12, RAENGE, 0);
+  const a = mittel(['whirlwind', 'berserk', 'frenzy', 'hammer']);
+  const info = H.run(`(function () {
+    var sc = window.game.scene.getScene('SkillTreeScene'), geo = sc._nodeGeo;
+    function in_(o, id) { var g = geo[id]; return Math.abs(o.x - g.x) < g.w / 2 && Math.abs(o.y - g.y) < g.h / 2; }
+    var t = sc.children.list.filter(function (o) { return o.type === 'Text'; });
+    function name(id) { return t.filter(function (o) { return in_(o, id) && o.text === window.SkillTree.getNode(id).name; })[0]; }
+    function rauten(id) { var p = t.filter(function (o) { return in_(o, id) && /[◆◇]/.test(o.text); })[0]; return p ? p.text : null; }
+    return {
+      schloss: sc.children.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'talent_schloss' && in_(o, 'whirlwind'); }).length,
+      farben: { hammer: name('hammer').style.color, frenzy: name('frenzy').style.color, berserk: name('berserk').style.color },
+      rauten: { hammer: rauten('hammer'), frenzy: rauten('frenzy') }
+    };
+  })()`);
+  // Mit Punkten: Berserker wird lernbar.
+  oeffnen(12, RAENGE, 2);
+  const b = mittel(['berserk']);
+  assert.ok(a.whirlwind < a.berserk, 'gesperrt nicht dunkler als ohne Punkte: ' + JSON.stringify(a));
+  assert.ok(a.berserk < b.berserk, 'lernbar nicht heller als ohne Punkte: ' + a.berserk + ' / ' + b.berserk);
+  assert.ok(a.berserk < a.frenzy, 'investiert nicht heller als ohne Punkte: ' + JSON.stringify(a));
+  assert.strictEqual(info.schloss, 1, 'gesperrte Karte ohne Schloss');
+  assert.notStrictEqual(info.farben.hammer, info.farben.frenzy, 'voll und investiert gleich gefaerbt');
+  assert.notStrictEqual(info.farben.frenzy, info.farben.berserk, 'investiert und offen gleich gefaerbt');
+  assert.strictEqual(info.rauten.hammer, '◆ ◆ ◆ ◆ ◆');
+  assert.strictEqual(info.rauten.frenzy, '◆ ◆ ◇ ◇ ◇');
 });
