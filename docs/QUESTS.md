@@ -175,7 +175,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `einfuehrung_schmiede` · **NPC:** Schmiedemeisterin Branka · **Kette:** 1
 
-> Werte in der Archivschmiede ein Ausrüstungsstück auf.
+> Geh in die Schmiede und baue dort an der Werkbank ein Ausrüstungsstück aus.
 
 - **Ziel:** `system` → `upgrade` ×1
 - **Vorbedingung:** Säuberung der Keller
@@ -185,11 +185,11 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 > Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.
 > 
-> Bring mir irgendetwas davon. Ich zeig Dir, wie man es ausbaut, und es wird Deins. Diesmal geht es auf mich — danach kostet es Gold und Eisenbrocken, und Du machst es allein.
+> Komm mit in die Schmiede, die Tür gleich neben mir. Leg eines Deiner Stücke auf die Werkbank und drück auf „Ausbauen“ — dann wird es Deins. Diesmal geht es auf mich; danach kostet es Gold und Eisenbrocken, und Du machst es allein.
 
 **Unterwegs**
 
-> Du hast es noch nicht gemacht. Leg ein Stück auf den Tisch und drück auf Ausbauen. Diesmal zahle ich.
+> Du hast es noch nicht gemacht. Geh in die Schmiede, leg ein Stück auf die Werkbank und drück auf „Ausbauen“. Diesmal zahle ich.
 
 **Abschluss**
 
@@ -202,7 +202,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `einfuehrung_presse` · **NPC:** Setzer Thom · **Kette:** 1
 
-> Lass Setzer Thom ein Edikt drucken.
+> Geh in die Druckerei und lass Setzer Thom dort ein Edikt drucken.
 
 - **Ziel:** `system` → `edikt` ×1
 - **Vorbedingung:** Säuberung der Keller
@@ -212,11 +212,11 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 > Der Rat schreibt jede Woche vor, was die Stadt denken soll. Wir können dasselbe — kleiner, aber wir können es.
 > 
-> Du hast Druckblätter dabei, ich sehe sie. Such Dir eine Zeile aus und lass sie mich setzen. Sie wirkt, solange sie hängt, und sie kostet Dich Aufmerksamkeit beim Rat. Beides sollst Du einmal gespürt haben, bevor es darauf ankommt.
+> Du hast Druckblätter dabei, ich sehe sie. Komm rein in die Druckerei, gleich neben mir, und such Dir ein Edikt aus — ich setze es. Es wirkt, solange es hängt, und es kostet Dich Aufmerksamkeit beim Rat. Beides sollst Du einmal gespürt haben, bevor es darauf ankommt.
 
 **Unterwegs**
 
-> Noch hängt nichts. Geh rein, such eine Zeile aus, ich setze sie.
+> Noch hängt nichts. Geh in die Druckerei, such Dir ein Edikt aus, ich setze es.
 
 **Abschluss**
 

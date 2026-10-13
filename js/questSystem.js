@@ -83,7 +83,7 @@
     einfuehrung_schmiede: {
       id: 'einfuehrung_schmiede',
       title: 'Der erste Schliff',
-      description: 'Werte in der Archivschmiede ein Ausrüstungsstück auf.',
+      description: 'Geh in die Schmiede und baue dort an der Werkbank ein Ausrüstungsstück aus.',
       npcId: 'branka',
       type: 'system',
       chain: 1,
@@ -93,14 +93,14 @@
       rewards: { xp: 40, gold: 30 },
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
-      dialogueOffer: 'Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.\n\nBring mir irgendetwas davon. Ich zeig Dir, wie man es ausbaut, und es wird Deins. Diesmal geht es auf mich — danach kostet es Gold und Eisenbrocken, und Du machst es allein.',
-      dialogueProgress: 'Du hast es noch nicht gemacht. Leg ein Stück auf den Tisch und drück auf Ausbauen. Diesmal zahle ich.',
+      dialogueOffer: 'Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.\n\nKomm mit in die Schmiede, die Tür gleich neben mir. Leg eines Deiner Stücke auf die Werkbank und drück auf „Ausbauen“ — dann wird es Deins. Diesmal geht es auf mich; danach kostet es Gold und Eisenbrocken, und Du machst es allein.',
+      dialogueProgress: 'Du hast es noch nicht gemacht. Geh in die Schmiede, leg ein Stück auf die Werkbank und drück auf „Ausbauen“. Diesmal zahle ich.',
       dialogueComplete: '(Sie dreht es einmal ins Licht.) Siehst Du. Dasselbe Stück, nur nicht mehr dasselbe.\n\nJedes Mal, wenn Du hochkommst, kommst Du hier vorbei. Nicht weil ich das sage, sondern weil Du sonst mit dem runtergehst, was letzte Woche gereicht hat.'
     },
     einfuehrung_presse: {
       id: 'einfuehrung_presse',
       title: 'Eine Zeile, die bleibt',
-      description: 'Lass Setzer Thom ein Edikt drucken.',
+      description: 'Geh in die Druckerei und lass Setzer Thom dort ein Edikt drucken.',
       npcId: 'thom',
       type: 'system',
       chain: 1,
@@ -110,8 +110,8 @@
       rewards: { xp: 40, gold: 30 },
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
-      dialogueOffer: 'Der Rat schreibt jede Woche vor, was die Stadt denken soll. Wir können dasselbe — kleiner, aber wir können es.\n\nDu hast Druckblätter dabei, ich sehe sie. Such Dir eine Zeile aus und lass sie mich setzen. Sie wirkt, solange sie hängt, und sie kostet Dich Aufmerksamkeit beim Rat. Beides sollst Du einmal gespürt haben, bevor es darauf ankommt.',
-      dialogueProgress: 'Noch hängt nichts. Geh rein, such eine Zeile aus, ich setze sie.',
+      dialogueOffer: 'Der Rat schreibt jede Woche vor, was die Stadt denken soll. Wir können dasselbe — kleiner, aber wir können es.\n\nDu hast Druckblätter dabei, ich sehe sie. Komm rein in die Druckerei, gleich neben mir, und such Dir ein Edikt aus — ich setze es. Es wirkt, solange es hängt, und es kostet Dich Aufmerksamkeit beim Rat. Beides sollst Du einmal gespürt haben, bevor es darauf ankommt.',
+      dialogueProgress: 'Noch hängt nichts. Geh in die Druckerei, such Dir ein Edikt aus, ich setze es.',
       dialogueComplete: '(Er wischt sich die Finger am Kittel ab.) Jetzt steht es an jeder Ecke, und irgendwer liest es laut vor.\n\nMerk Dir nur eins: Jede Zeile, die wir drucken, legt der Rat auf seine Waage. Druck nicht mehr, als Du unten wieder gutmachen kannst.'
     },
     einfuehrung_markt: {
@@ -1158,15 +1158,15 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.einfuehrung_amulett.dialogueComplete': "(She studies it from a safe distance.) So you bought from him after all.\n\nGo back when you get deeper. What he carries down there changes a whole run - and what it takes from you, you usually notice later.",
 
       'quest.einfuehrung_schmiede.title': 'The First Edge',
-      'quest.einfuehrung_schmiede.description': 'Upgrade a piece of equipment at the Archive Forge.',
-      'quest.einfuehrung_schmiede.dialogueOffer': "You wear what you found down there, and you wear it the way you carry a tool that is strange to you.\n\nBring me any of it. I will show you how it is upgraded, and it becomes yours. This one is on me - after that it costs gold and iron lumps, and you do it alone.",
-      'quest.einfuehrung_schmiede.dialogueProgress': 'You have not done it yet. Put a piece on the table and press Upgrade. This time I pay.',
+      'quest.einfuehrung_schmiede.description': 'Go into the Forge and upgrade a piece of equipment at the workbench.',
+      'quest.einfuehrung_schmiede.dialogueOffer': "You wear what you found down there, and you wear it the way you carry a tool that is strange to you.\n\nCome with me into the Forge, the door right next to me. Put one of your pieces on the workbench and press \"Upgrade\" - then it becomes yours. This one is on me; after that it costs gold and iron chunks, and you do it alone.",
+      'quest.einfuehrung_schmiede.dialogueProgress': 'You have not done it yet. Go into the Forge, put a piece on the workbench and press "Upgrade". This time I pay.',
       'quest.einfuehrung_schmiede.dialogueComplete': "(She turns it once into the light.) You see. The same piece, only no longer the same.\n\nEvery time you come back up, you stop by here. Not because I say so, but because otherwise you go back down with what was good enough last week.",
 
       'quest.einfuehrung_presse.title': 'A Line That Stays',
-      'quest.einfuehrung_presse.description': 'Have Thom the typesetter print an edict.',
-      'quest.einfuehrung_presse.dialogueOffer': "The council prescribes every week what this city is to think. We can do the same - smaller, but we can do it.\n\nYou have printing sheets on you, I can see them. Pick a line and let me set it. It works as long as it hangs, and it costs you the council's attention. You should have felt both once, before it matters.",
-      'quest.einfuehrung_presse.dialogueProgress': 'Nothing is hanging yet. Go in, pick a line, I will set it.',
+      'quest.einfuehrung_presse.description': 'Go into the Print Shop and have Thom the typesetter print an edict there.',
+      'quest.einfuehrung_presse.dialogueOffer': "The council prescribes every week what this city is to think. We can do the same - smaller, but we can do it.\n\nYou have printing sheets on you, I can see them. Come into the Print Shop, right next to me, and pick an edict - I will set it. It works as long as it hangs, and it costs you the council's attention. You should have felt both once, before it matters.",
+      'quest.einfuehrung_presse.dialogueProgress': 'Nothing is hanging yet. Go into the Print Shop, pick an edict, I will set it.',
       'quest.einfuehrung_presse.dialogueComplete': "(He wipes his fingers on his smock.) Now it is on every corner, and somebody is reading it out loud.\n\nJust remember one thing: every line we print, the council puts on its scales. Do not print more than you can make good again down below.",
 
       'quest.einfuehrung_markt.title': 'What Lies Under the Table',
