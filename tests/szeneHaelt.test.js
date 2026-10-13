@@ -85,7 +85,8 @@ const laeuftNoch = () => Array.from(texte()).some((t) =>
 /** Wie oft steht die Schlussfrage der Sitzung im Bild? */
 const auswahlZahl = () => H.run(`(function () {
   var hub = window.game.scene.getScene('HubSceneV2');
-  var kurz = String(window.storyDialog.byScene.oeffentliche_sitzung.prompt).slice(0, 24);
+  // Nur die Rede zaehlen: der Sprecher steht im Messing-Panel als eigene Zeile.
+  var kurz = window.DialogChoice.sprecherTeilen(window.storyDialog.byScene.oeffentliche_sitzung.prompt).rede.slice(0, 24);
   var n = 0;
   (function s(o) {
     if (!o) return;
