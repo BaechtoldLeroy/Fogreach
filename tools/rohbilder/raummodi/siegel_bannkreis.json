@@ -1,0 +1,443 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-bannkreis 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 1.png",
+   "frame": {
+    "x": 102,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 2.png",
+   "frame": {
+    "x": 204,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 3.png",
+   "frame": {
+    "x": 306,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 4.png",
+   "frame": {
+    "x": 0,
+    "y": 50,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 5.png",
+   "frame": {
+    "x": 102,
+    "y": 50,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 6.png",
+   "frame": {
+    "x": 204,
+    "y": 50,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 7.png",
+   "frame": {
+    "x": 306,
+    "y": 50,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 8.png",
+   "frame": {
+    "x": 0,
+    "y": 100,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 9.png",
+   "frame": {
+    "x": 102,
+    "y": 100,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 10.png",
+   "frame": {
+    "x": 204,
+    "y": 100,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 11.png",
+   "frame": {
+    "x": 306,
+    "y": 100,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 12.png",
+   "frame": {
+    "x": 0,
+    "y": 150,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 13.png",
+   "frame": {
+    "x": 102,
+    "y": 150,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 14.png",
+   "frame": {
+    "x": 204,
+    "y": 150,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-bannkreis 15.png",
+   "frame": {
+    "x": 306,
+    "y": 150,
+    "w": 102,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 102,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 102,
+    "h": 50
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.56
+   },
+   "duration": 100
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-bannkreis.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 408,
+   "h": 200
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 51,
+   "y": 28
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-bannkreis",
+    "from": 0,
+    "to": 15,
+    "direction": "forward"
+   }
+  ]
+ }
+}

@@ -97,6 +97,8 @@ function _objectiveCompleteFx(scene) {
   if (!scene) return;
   try { if (scene.cameras && scene.cameras.main) scene.cameras.main.flash(300, 40, 190, 90); } catch (e) {}
   try { if (window.soundManager) window.soundManager.playSFX('level_up'); } catch (e) {}
+  // Vorschau raummodi=neu: Messing-Toast mit Modus-Symbol statt des Textes.
+  try { if (window.RoomModeBilder && window.RoomModeBilder.zielToast(scene, false)) return; } catch (e) {}
   if (!scene.add || !scene.tweens) return;
   try {
     const cw = scene.cameras && scene.cameras.main ? scene.cameras.main.width : scene.scale.width;
@@ -123,6 +125,7 @@ function _objectiveCompleteFx(scene) {
 function _objectiveFailedFx(scene) {
   if (!scene) return;
   try { if (scene.cameras && scene.cameras.main) scene.cameras.main.flash(300, 190, 50, 50); } catch (e) {}
+  try { if (window.RoomModeBilder && window.RoomModeBilder.zielToast(scene, true)) return; } catch (e) {}
   if (!scene.add || !scene.tweens) return;
   try {
     const cw = scene.cameras && scene.cameras.main ? scene.cameras.main.width : scene.scale.width;

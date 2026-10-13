@@ -152,7 +152,10 @@
         var alive = !!(target && target.active);
         return {
           mode: 'hunt', picked: picked, targetAlive: alive,
-          x: alive ? target.x : 0, y: alive ? target.y : 0
+          x: alive ? target.x : 0, y: alive ? target.y : 0,
+          // Fusslinie und Kopf fuer Bodensiegel und Kopfmarke (nur Anzeige).
+          fussY: alive ? target.y + (target.displayHeight || 0) * (1 - (target.originY == null ? 0.5 : target.originY)) : 0,
+          kopfY: alive ? target.y - (target.displayHeight || 0) * (target.originY == null ? 0.5 : target.originY) : 0
         };
       }
     };

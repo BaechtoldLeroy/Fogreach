@@ -133,8 +133,12 @@
         var mitte = (A && typeof A.mitteImRaum === 'function') ? A.mitteImRaum(scene) : { x: 0, y: 0 };
         objX = mitte.x; objY = mitte.y;
         if (scene && scene.add) {
-          _ensureTex(scene);
-          try { sprite = scene.add.sprite(objX, objY, DEPTH_TEX).setDepth(400).setScrollFactor(1); }
+          // Pixel-Altar (Vorschau raummodi=neu) — gleiche 64x60 wie die
+          // Zeichnung, Koerper und Fusspunkt bleiben deshalb unveraendert.
+          var _B = (typeof window !== 'undefined') ? window.RoomModeBilder : null;
+          var _key = (_B && _B.altarKey(scene)) || null;
+          if (!_key) { _ensureTex(scene); _key = DEPTH_TEX; }
+          try { sprite = scene.add.sprite(objX, objY, _key).setDepth(400).setScrollFactor(1); }
           catch (e) { sprite = null; }
         }
         // Nach Bildhoehe gegen den Spieler sortieren (s. tiefeZumSpieler in
@@ -253,7 +257,9 @@
         if (sprite) {
           try {
             var frac = maxHp > 0 ? hp / maxHp : 0;
-            if (hp <= 0) { sprite.setTint(0x555555); sprite.setAlpha(0.6); }
+            var _RB = window.RoomModeBilder;
+            if (_RB && _RB.altarZustand(sprite, frac, hp)) { /* das Bild zeigt den Zustand */ }
+            else if (hp <= 0) { sprite.setTint(0x555555); sprite.setAlpha(0.6); }
             else if (frac < 0.35) sprite.setTint(0xff6a6a);
             else sprite.clearTint();
           } catch (e) {}

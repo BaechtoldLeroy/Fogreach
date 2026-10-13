@@ -37,12 +37,39 @@
 
   function EscapeMode() {
     var scene = null, duration = _depthSeconds(), remaining = duration, spawnAcc = 0, typ = 'enemy', zug = 0;
+    var marken = [];
+    // Vorschau raummodi=neu: der Ausgang ist die Treppe — darunter ein gruenes
+    // Fluchtsiegel, darueber ein schwebender Pfeil. Rein zur Anzeige; ohne
+    // Bild bleibt die Treppe wie sie ist (heute gab es hier gar kein Objekt).
+    function _marken(sc) {
+      var B = (typeof window !== 'undefined') ? window.RoomModeBilder : null;
+      var grp = sc && sc.stairsGroup;
+      if (!B || !grp || typeof grp.getChildren !== 'function') return;
+      var T = window.WELT_TIEFEN;
+      grp.getChildren().forEach(function (s) {
+        if (!s || !s.active) return;
+        var fuss = s.y + s.displayHeight * (1 - s.originY);
+        // Knapp unter der Treppe, so umrahmt das Siegel sie, statt sie zu verdecken.
+        var sg = B.siegel(sc, 'flucht', s.x, fuss - s.displayHeight * 0.25, T ? T.TREPPE - 0.5 : 33.5);
+        if (!sg) return;
+        sg.setScale(Math.max(1, s.displayWidth * 1.35 / sg.width));
+        marken.push(sg);
+        var pf = B.schwebe(sc, 'fluchtpfeil', s.x, s.y - s.displayHeight * (s.originY) - 2);
+        if (pf) marken.push(pf);
+      });
+    }
     return {
       // #161: ctx.gegnerTyp — nach dem Bruch jagt Dich die Kettenwache (6).
       // #12: auch als Liste; sie wird reihum abgearbeitet (Waechter mit Hunden).
       start: function (sc, ctx) {
         scene = sc || null; duration = remaining = _depthSeconds(); spawnAcc = 0; zug = 0;
         typ = (ctx && ctx.gegnerTyp) ? ctx.gegnerTyp : 'enemy';
+        _marken(scene);
+      },
+      // Raum-/Modus-Wechsel: die Fluchtmarken bleiben nicht im naechsten Raum.
+      stop: function () {
+        marken.forEach(function (m) { try { m.destroy(); } catch (e) {} });
+        marken = [];
       },
       update: function (dtMs) {
         var dt = (typeof dtMs === 'number' && dtMs > 0 ? dtMs : 16) / 1000;

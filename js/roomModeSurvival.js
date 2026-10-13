@@ -123,7 +123,7 @@
     var duration = _depthSeconds();
     var remaining = duration;
     var spawnAcc = 0;
-    var sprite = null, ankerX = 0, ankerY = 0;
+    var sprite = null, uhr = null, ankerX = 0, ankerY = 0;
     return {
       // #112: Bannkreis hinlegen, ohne die Uhr zu starten.
       arm: function (sc) {
@@ -131,13 +131,20 @@
         var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
         var mitte = (A && typeof A.mitteImRaum === 'function') ? A.mitteImRaum(scene) : { x: 0, y: 0 };
         ankerX = mitte.x; ankerY = mitte.y;
-        if (scene && scene.add) {
+        // Vorschau raummodi=neu: animiertes Pixel-Siegel mit schwebender
+        // Sanduhr als Zeitanker. Ohne Bild bleibt der gezeichnete Bannkreis.
+        var B = (typeof window !== 'undefined') ? window.RoomModeBilder : null;
+        if (scene && scene.add && B) {
+          sprite = B.siegel(scene, 'bannkreis', ankerX, ankerY, -2);
+          if (sprite) uhr = B.schwebe(scene, 'sanduhr', ankerX, ankerY - 6);
+        }
+        if (!sprite && scene && scene.add) {
           _ensureTex(scene);
           // Depth -2: ueber der Bodenzeichnung (-5..-3), unter allem Beweglichen.
           try { sprite = scene.add.sprite(ankerX, ankerY, ANKER_TEX).setDepth(-2).setScrollFactor(1); }
           catch (e) { sprite = null; }
         }
-        if (sprite && A && typeof A.ruhend === 'function') A.ruhend(sprite);
+        if (sprite && A && typeof A.ruhend === 'function') { A.ruhend(sprite); if (uhr) A.ruhend(uhr); }
         return { x: ankerX, y: ankerY };
       },
       start: function (sc) {
@@ -147,11 +154,12 @@
         remaining = duration;
         spawnAcc = 0;
         var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
-        if (sprite && A && typeof A.geweckt === 'function') A.geweckt(sprite);
+        if (sprite && A && typeof A.geweckt === 'function') { A.geweckt(sprite); if (uhr) A.geweckt(uhr); }
       },
       // Raum-/Modus-Wechsel: der Bannkreis darf nicht in den naechsten Raum haengen.
       stop: function () {
         if (sprite) { try { sprite.destroy(); } catch (e) {} sprite = null; }
+        if (uhr) { try { uhr.destroy(); } catch (e) {} uhr = null; }
       },
       update: function (dtMs) {
         var dt = (typeof dtMs === 'number' && dtMs > 0 ? dtMs : 16) / 1000;

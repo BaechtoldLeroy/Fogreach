@@ -20,6 +20,17 @@
   var _prevMode = 'clear';
   var _bannerUntil = 0;
   var _bannerBottom = 90;  // Unterkante des Banner-Kastens (dynamisch, für HUD-Y)
+  // Vorschau raummodi=neu (roomModeBilder.js): Pixelbilder und Messing-Toasts.
+  // Alles hier ist null, solange die Flagge fehlt oder ein Bild nicht da ist.
+  var jagdSiegel = null, jagdKopf = null, altarLeiste = null, hudPlatte = null, hudSymbol = null;
+  var _gemeldet = {};      // Fortschritts-Toasts, je Raum hoechstens einmal
+  var MESSING_TEXT = '#f3e6c4', ERFUELLT_TEXT = '#8dffb0', VERFEHLT_TEXT = '#ffa0a0';
+
+  function _B() { return (typeof window !== 'undefined') ? window.RoomModeBilder : null; }
+  function _UR(scene) {
+    var U = (typeof window !== 'undefined') ? window.uiRahmen : null;
+    return (U && U.bereit(scene)) ? U : null;
+  }
 
   function _t(key, params) {
     return (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function')
@@ -98,13 +109,117 @@
     mounted = false;
     [g, gMask, banner, bannerInfo, bannerBg, hudText].forEach(function (o) { if (o) { try { o.destroy(); } catch (e) {} } });
     g = gMask = banner = bannerInfo = bannerBg = hudText = null;
+    _bilderWeg();
+  }
+
+  function _bilderWeg() {
+    [jagdSiegel, jagdKopf, altarLeiste, hudPlatte, hudSymbol].forEach(function (o) { if (o) { try { o.destroy(); } catch (e) {} } });
+    jagdSiegel = jagdKopf = altarLeiste = hudPlatte = hudSymbol = null;
+  }
+
+  // Ein Bild an die Sicht-Maske binden (wie gMask): der Rudelfuehrer bleibt im Nebel verborgen.
+  function _maske(scene, o) {
+    if (o && scene && scene._enemyVisionMask && typeof o.setMask === 'function') {
+      try { o.setMask(scene._enemyVisionMask); } catch (e) {}
+    }
+    return o;
+  }
+
+  // Rudelfuehrer: Bodensiegel unter den Fuessen + Modus-Medaillon ueber dem Kopf.
+  // false = kein Bild, der gezeichnete Kreis bleibt.
+  function _jagdBilder(scene, state) {
+    var B = _B();
+    if (!B || !B.aktiv()) return false;
+    if (!jagdSiegel) {
+      var T = window.WELT_TIEFEN;
+      jagdSiegel = _maske(scene, B.siegel(scene, 'jagd', state.x, state.fussY || state.y, T ? T.BODEN_SCHEIN : 44));
+      if (!jagdSiegel) return false;
+      var sym = B.symbolKey(scene, 'hunt');
+      if (sym) jagdKopf = _maske(scene, scene.add.image(state.x, 0, sym).setDisplaySize(18, 18).setDepth(DEPTH_WORLD));
+    }
+    var an = !!state.targetAlive;
+    jagdSiegel.setVisible(an);
+    if (an) jagdSiegel.setPosition(state.x, state.fussY || state.y);
+    if (jagdKopf) {
+      jagdKopf.setVisible(an);
+      if (an) {
+        var now = (scene.time && scene.time.now) || 0;
+        jagdKopf.setPosition(state.x, (state.kopfY || state.y - 40) - 12 - 2 * Math.sin(now / 220));
+      }
+    }
+    return true;
+  }
+
+  // Messingrahmen um den Altar-Lebensbalken (Balken selbst bleibt in g).
+  function _altarRahmen(scene, x, y) {
+    var B = _B(), U = _UR(scene);
+    if (!B || !B.aktiv() || !U || typeof U.leisteBild !== 'function') return false;
+    if (!altarLeiste) {
+      var key = U.leisteBild(scene, 58, 16);
+      if (!key) return false;
+      altarLeiste = scene.add.image(x, y, key).setScrollFactor(1).setDepth(DEPTH_WORLD - 1);
+    }
+    altarLeiste.setPosition(x, y);
+    return true;
+  }
+
+  // HUD-Zeile auf einer Messingplatte mit Modus-Symbol (Stil der HUD-Leiste).
+  function _hudPlatte(scene, modeId) {
+    var B = _B(), U = _UR(scene);
+    if (!B || !B.aktiv() || !U || typeof U.leisteBild !== 'function' || !hudText) return false;
+    var sym = B.symbolKey(scene, modeId);
+    var SYM = 22, pad = 12;
+    // Breite in 16er-Stufen: jede neue Groesse waere eine eigene Textur.
+    var w = Math.ceil((hudText.width + SYM + pad * 3) / 16) * 16, h = 34;
+    var key = U.leisteBild(scene, w, h);
+    if (!key) return false;
+    if (!hudPlatte) hudPlatte = scene.add.image(0, 0, key).setScrollFactor(0).setDepth(DEPTH_HUD - 1);
+    else if (hudPlatte.texture.key !== key) hudPlatte.setTexture(key);
+    hudPlatte.setPosition(hudText.x, hudText.y);
+    var links = hudText.x - w / 2;
+    if (sym) {
+      if (!hudSymbol) hudSymbol = scene.add.image(0, 0, sym).setScrollFactor(0).setDepth(DEPTH_HUD);
+      else if (hudSymbol.texture.key !== sym) hudSymbol.setTexture(sym);
+      hudSymbol.setDisplaySize(SYM, SYM).setPosition(links + pad + SYM / 2, hudText.y);
+    }
+    // Text rechts neben dem Symbol mittig in den Rest.
+    hudText.x = links + pad + SYM + (w - pad - SYM) / 2;
+    hudPlatte.setVisible(true);
+    if (hudSymbol) hudSymbol.setVisible(true);
+    return true;
+  }
+
+  // Fortschritt: einmal je Raum "noch 10 Sekunden" und "der Altar broeckelt".
+  function _fortschritt(scene, modeId, state, done) {
+    var B = _B();
+    if (!B || !B.aktiv() || done || state.failed) return;
+    var sek = state.seconds;
+    if ((modeId === 'survival' || modeId === 'escape' || modeId === 'defend')
+        && typeof sek === 'number' && sek > 0 && sek <= 10 && !_gemeldet.zehn) {
+      _gemeldet.zehn = true;
+      B.toast(scene, modeId, _t('roommode.toast.zehn'));
+    }
+    if (modeId === 'defend' && state.maxHp > 0 && state.hp > 0 && state.hp / state.maxHp < 0.35 && !_gemeldet.altar) {
+      _gemeldet.altar = true;
+      B.toast(scene, modeId, _t('roommode.toast.altar_broeckelt'));
+    }
+  }
+
+  // Unterkante des gerade sichtbaren Event-Toasts (oder 0).
+  function _toastUnten(scene) {
+    var e = scene && scene._activeEventToast;
+    if (!e || !e.label || !e.label.scene) return 0;
+    return e.label.y + e.label.height / 2 + 16;
   }
 
   function sync(scene) {
     var R = (typeof window !== 'undefined') ? window.RoomMode : null;
     if (!R || typeof R.isSpecialRoom !== 'function') { if (mounted) _unmount(); return; }
     // Stale-mount guard (Scene-Wechsel zerstört unsere Objekte).
-    if (mounted && (!g || !g.scene)) { mounted = false; g = gMask = banner = bannerInfo = bannerBg = hudText = null; }
+    if (mounted && (!g || !g.scene)) {
+      mounted = false; g = gMask = banner = bannerInfo = bannerBg = hudText = null;
+      jagdSiegel = jagdKopf = altarLeiste = hudPlatte = hudSymbol = null;
+    }
 
     var special = R.isSpecialRoom();
     if (!special) { if (mounted) _unmount(); _prevMode = 'clear'; return; }
@@ -126,11 +241,21 @@
     if (_prevMode !== modeId) {
       var _secs = state.seconds != null ? state.seconds : Math.ceil(state.remaining || 0);
       var bk = bannerKeyFor(modeId);
-      if (bk && banner) banner.setText(_t(bk, { seconds: _secs }));
       var ik = bannerInfoKeyFor(modeId);
-      if (bannerInfo) bannerInfo.setText(ik ? _t(ik, { seconds: _secs }) : '');
-      _layoutBanner(scene); // Kasten an die tatsächliche Texthöhe anpassen
-      if (bk) _bannerUntil = now + 4500;
+      _gemeldet = {};
+      _bilderWeg(); // Siegel/Rahmen gehoeren zum vorigen Raum
+      // Vorschau: Start als Messing-Toast mit Modus-Symbol statt des alten Kastens.
+      var _Bs = _B();
+      var _alsToast = !!(bk && _Bs && _Bs.aktiv() && _Bs.toast(scene, modeId,
+        _t(bk, { seconds: _secs }) + (ik ? '\n' + _t(ik, { seconds: _secs }) : '')));
+      if (_alsToast) {
+        _bannerUntil = 0;
+      } else {
+        if (bk && banner) banner.setText(_t(bk, { seconds: _secs }));
+        if (bannerInfo) bannerInfo.setText(ik ? _t(ik, { seconds: _secs }) : '');
+        _layoutBanner(scene); // Kasten an die tatsächliche Texthöhe anpassen
+        if (bk) _bannerUntil = now + 4500;
+      }
       _prevMode = modeId;
     }
     var showBanner = now < _bannerUntil;
@@ -138,18 +263,19 @@
     if (bannerInfo) bannerInfo.setVisible(showBanner);
     if (bannerBg) bannerBg.setVisible(showBanner);
     // HUD-Zeile unter den Banner rücken, solange er sichtbar ist (kein Überlappen).
-    if (hudText) hudText.y = showBanner ? (_bannerBottom + 16) : 104;
+    if (hudText) hudText.y = showBanner ? (_bannerBottom + 16) : Math.max(104, _toastUnten(scene) + 17);
 
     // HUD-Zeile. Bei ERFÜLLTEM Ziel (nicht verfehlt) grün + ✓ (der goldige Text
     // wird zur Erfolgsbestätigung); Fehlschlag (defend) bleibt rot.
     var _done = (typeof R.isObjectiveComplete === 'function') && R.isObjectiveComplete();
-    if (_done && !state.failed) {
-      hudText.setText('✓ ' + hudTextFor(modeId, state));
-      hudText.setColor('#66ff9c');
-    } else {
-      hudText.setText(hudTextFor(modeId, state));
-      hudText.setColor(state.failed ? '#ff7a7a' : '#ffe28a');
-    }
+    hudText.x = (scene && scene.cameras && scene.cameras.main) ? scene.cameras.main.width / 2 : hudText.x;
+    var _erfuellt = _done && !state.failed;
+    hudText.setText((_erfuellt ? '✓ ' : '') + hudTextFor(modeId, state));
+    // Platte erst nach dem Text: ihre Breite richtet sich nach ihm.
+    var _platte = _hudPlatte(scene, modeId);
+    if (_erfuellt) hudText.setColor(_platte ? ERFUELLT_TEXT : '#66ff9c');
+    else hudText.setColor(state.failed ? (_platte ? VERFEHLT_TEXT : '#ff7a7a') : (_platte ? MESSING_TEXT : '#ffe28a'));
+    _fortschritt(scene, modeId, state, _done);
 
     // Welt-Marker. g = UNmaskiert (Defend), gMask = maskiert (Hunt hinter Fog).
     g.clear();
@@ -167,10 +293,14 @@
       }
       var frac = (state.maxHp > 0) ? Math.max(0, Math.min(1, state.hp / state.maxHp)) : 0;
       var bw = 46, bh = 6, bx = state.x - bw / 2, by = state.y - 34;
+      _altarRahmen(scene, state.x, by + bh / 2);
       g.fillStyle(0x000000, 0.6); g.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
       g.fillStyle(0x3a0d0d, 1); g.fillRect(bx, by, bw, bh);
       var col = frac > 0.5 ? 0x53e07a : (frac > 0.25 ? 0xffd24a : 0xff5a5a);
       g.fillStyle(col, 1); g.fillRect(bx, by, bw * frac, bh);
+    } else if (modeId === 'hunt' && (jagdSiegel || state.targetAlive) && typeof state.x === 'number'
+               && _jagdBilder(scene, state)) {
+      // Pixel-Siegel und Kopfmarke folgen dem Anfuehrer (s. _jagdBilder).
     } else if (modeId === 'hunt' && state.targetAlive && typeof state.x === 'number') {
       var pulse = 0.5 + 0.5 * Math.sin(now / 180);
       gMask.lineStyle(3, 0xff5a5a, 0.6 + 0.4 * pulse);

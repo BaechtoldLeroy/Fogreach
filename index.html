@@ -115,7 +115,7 @@
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=395"></script>
+    <script src="js/version.js?v=396"></script>
     <script src="js/soundManager.js?v=003"></script>
     <script src="js/performanceMonitor.js?v=002"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -156,14 +156,16 @@
     <!-- 112: gemeinsamer Anker-Baustein (Platz + Sichtpruefung). MUSS vor den
          Modus-Dateien laden — deren arm() greift darauf zu. -->
     <script src="js/roomModeAnchor.js?v=002"></script>
+    <!-- Pixelbilder + Messing-Toasts der Modi, Vorschau ?raummodi=neu -->
+    <script src="js/roomModeBilder.js?v=001"></script>
     <!-- 061 Modus-Dateien (self-registrierend). -->
-    <script src="js/roomModeSurvival.js?v=086"></script>
-    <script src="js/roomModeDefend.js?v=089"></script>
-    <script src="js/roomModeHunt.js?v=085"></script>
-    <script src="js/roomModeEscape.js?v=086"></script>
-    <script src="js/roomModeVisuals.js?v=086"></script>
+    <script src="js/roomModeSurvival.js?v=087"></script>
+    <script src="js/roomModeDefend.js?v=090"></script>
+    <script src="js/roomModeHunt.js?v=086"></script>
+    <script src="js/roomModeEscape.js?v=087"></script>
+    <script src="js/roomModeVisuals.js?v=087"></script>
     <script src="js/spawnRegeln.js?v=001"></script>
-    <script src="js/roomManager.js?v=164"></script>
+    <script src="js/roomManager.js?v=165"></script>
     <script src="js/statusEffects.js?v=010"></script>
     <script src="js/particleEffects.js?v=006"></script>
     <!-- Reine Reichweiten-Mathematik für zerstörbare Props. Abhängigkeitsfrei
@@ -233,7 +235,7 @@
     <script src="js/minimap.js?v=063"></script>
     <script src="js/hudV2.js?v=093"></script>
     <script src="js/endlessMode.js?v=063"></script>
-    <script src="js/main.js?v=146"></script>
+    <script src="js/main.js?v=147"></script>
     <script src="js/mobileAutoAim.js"></script>
     <!-- 053 WP01: Mobile-Perf-Diagnose-Probe. No-Op außer bei ?perf=1.
          ?v bump erzwingt frischen Fetch (Pages cached Assets ~10min). -->

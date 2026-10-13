@@ -1,0 +1,443 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-fluchtsiegel 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 1.png",
+   "frame": {
+    "x": 92,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 2.png",
+   "frame": {
+    "x": 184,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 3.png",
+   "frame": {
+    "x": 276,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 4.png",
+   "frame": {
+    "x": 0,
+    "y": 45,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 5.png",
+   "frame": {
+    "x": 92,
+    "y": 45,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 6.png",
+   "frame": {
+    "x": 184,
+    "y": 45,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 7.png",
+   "frame": {
+    "x": 276,
+    "y": 45,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 8.png",
+   "frame": {
+    "x": 0,
+    "y": 90,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 9.png",
+   "frame": {
+    "x": 92,
+    "y": 90,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 10.png",
+   "frame": {
+    "x": 184,
+    "y": 90,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 11.png",
+   "frame": {
+    "x": 276,
+    "y": 90,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 12.png",
+   "frame": {
+    "x": 0,
+    "y": 135,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 13.png",
+   "frame": {
+    "x": 92,
+    "y": 135,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 14.png",
+   "frame": {
+    "x": 184,
+    "y": 135,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-fluchtsiegel 15.png",
+   "frame": {
+    "x": 276,
+    "y": 135,
+    "w": 92,
+    "h": 45
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 92,
+    "h": 45
+   },
+   "sourceSize": {
+    "w": 92,
+    "h": 45
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5555555555555556
+   },
+   "duration": 100
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-fluchtsiegel.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 368,
+   "h": 180
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 46,
+   "y": 25
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-fluchtsiegel",
+    "from": 0,
+    "to": 15,
+    "direction": "forward"
+   }
+  ]
+ }
+}

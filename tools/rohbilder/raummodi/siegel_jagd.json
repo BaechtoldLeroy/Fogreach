@@ -1,0 +1,443 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 1.png",
+   "frame": {
+    "x": 84,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 2.png",
+   "frame": {
+    "x": 168,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 3.png",
+   "frame": {
+    "x": 252,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 4.png",
+   "frame": {
+    "x": 0,
+    "y": 46,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 5.png",
+   "frame": {
+    "x": 84,
+    "y": 46,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 6.png",
+   "frame": {
+    "x": 168,
+    "y": 46,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 7.png",
+   "frame": {
+    "x": 252,
+    "y": 46,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 8.png",
+   "frame": {
+    "x": 0,
+    "y": 92,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 9.png",
+   "frame": {
+    "x": 84,
+    "y": 92,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 10.png",
+   "frame": {
+    "x": 168,
+    "y": 92,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 11.png",
+   "frame": {
+    "x": 252,
+    "y": 92,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 12.png",
+   "frame": {
+    "x": 0,
+    "y": 138,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 13.png",
+   "frame": {
+    "x": 84,
+    "y": 138,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 14.png",
+   "frame": {
+    "x": 168,
+    "y": 138,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-rudelfuehrer-siegel 15.png",
+   "frame": {
+    "x": 252,
+    "y": 138,
+    "w": 84,
+    "h": 46
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 46
+   },
+   "sourceSize": {
+    "w": 84,
+    "h": 46
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.6086956521739131
+   },
+   "duration": 100
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-rudelfuehrer-siegel.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 336,
+   "h": 184
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 42,
+   "y": 28
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-rudelfuehrer-siegel",
+    "from": 0,
+    "to": 15,
+    "direction": "forward"
+   }
+  ]
+ }
+}

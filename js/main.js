@@ -895,6 +895,8 @@ function preload() {
   if (window.uiRahmen) window.uiRahmen.vorladen(this);
   // Icon-Streifen der Faehigkeitsleiste und der HUD-Knoepfe (#195).
   if (window.hudLeiste) window.hudLeiste.vorladen(this);
+  // Bilder der Sonderraum-Modi, nur unter ?debug=1&raummodi=neu.
+  if (window.RoomModeBilder) window.RoomModeBilder.vorladen(this);
   // Player sprites are preloaded in StartScene (dir00 only);
   // other directions lazy-load via ensureDirectionLoaded().
   // #171: Die Schlagfolge des Nahkampfs gibt es nur hier unten.
