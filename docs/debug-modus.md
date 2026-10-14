@@ -342,7 +342,7 @@ Was die Flagge aendert:
 
 | Taste | Wirkung |
 |---|---|
-| `1`–`9` | Einstellung aus dem Drehbuch aufbauen (Tabelle unten) |
+| `0`–`9` | Einstellung aus dem Drehbuch aufbauen (Tabelle unten; `0` = Inventar) |
 | `R` | Aufnahme starten / stoppen — das Spiel nimmt sich selbst auf (siehe „Trailer aufnehmen“) |
 | `Z` | Zeitlupe an/aus — Spieluhr, Physik, Tweens, Animationen auf 0.3x; bleibt ueber Einstellungen hinweg an |
 | `L` | Letterbox-Balken an/aus |
@@ -358,6 +358,7 @@ ausgeblendet.
 
 | Taste | Einstellung | Was passiert |
 |---|---|---|
+| `0` | Inventar | Dungeon, Raster und Papierpuppe voller Beute aller Seltenheiten (legendaere Glutaxt, Amulette, Bannlaterne); nach 0,5 s geht das Inventar auf, nach 1,7 s der Tooltip eines legendaeren Stuecks. |
 | `1` | Nebelstadt | Hub aus Schwarz, Nebelschleier lichtet sich, Fahrt ueber den Platz zum Rathaus. Spieler ausgeblendet. |
 | `2` | Der Rat | Spieler vor Aldric, der Messing-Dialog geht auf: „Der Rat hat Arbeit für Dich, Archivschmied.“ |
 | `3` | Abstieg | Spieler an der Rathauskeller-Tuer, geht los, Abblende — erster Kellerraum, aus Schwarz, ohne Gegner. |

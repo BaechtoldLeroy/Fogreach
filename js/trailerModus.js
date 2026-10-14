@@ -2,11 +2,11 @@
  * trailerModus.js — Einstellungen fuer den 30-Sekunden-Trailer
  * ---------------------------------------------------------------------
  * Mit ?trailer=1 (Debug-Gate, lokal automatisch offen) wird das Spiel zum
- * Drehort: kein HUD, der Spieler stirbt nicht, und die Tasten 1-9 bauen je
+ * Drehort: kein HUD, der Spieler stirbt nicht, und die Tasten 0-9 bauen je
  * eine Einstellung aus docs/trailer-drehbuch.md auf — mit festem Zufall,
  * damit jeder Durchlauf gleich aussieht und man den besten nehmen kann.
  *
- *   1-9  Einstellung (Szene, Figuren, Kamerafahrt)
+ *   0-9  Einstellung (Szene, Figuren, Kamerafahrt; 0 = Inventar)
  *   R    Aufnahme starten/stoppen (Canvas + Spielton -> .webm-Download)
  *   Z    Zeitlupe an/aus (Spieluhr x0.3)
  *   L    Letterbox-Balken an/aus
@@ -35,7 +35,7 @@
   var HILFE_MS = 3000;
 
   var S = {
-    einstellung: 0,   // zuletzt gestartete Einstellung
+    einstellung: null, // zuletzt gestartete Einstellung (0 ist das Inventar)
     lauf: 0,          // zaehlt hoch; alte Ablaeufe erkennen sich daran als veraltet
     uhr: 0,           // Echtzeit seit Beginn der Einstellung (ms)
     plan: [],         // { ab, fn, lauf }
@@ -45,7 +45,7 @@
     letterbox: false,
     ruhe: null,       // null | 'alle' | 'fremde' | 'boss' — welche Gegner weichen
     verdacht: 0,      // erzwungener Verdacht in der Spionage-Einstellung
-    wartend: 0,       // Einstellung, die auf den ersten Hub wartet
+    wartend: null,    // Einstellung, die auf den ersten Hub wartet
     hubGesehen: false,
     gesperrt: false   // ein Szenenwechsel laeuft gerade
   };
@@ -274,7 +274,7 @@
   // Hinweise AUSSERHALB des Canvas (DOM): Tastenhilfe, Aufnahmepunkt,
   // kurze Meldungen. Was im Canvas steht, landet in der Aufnahme.
   // ---------------------------------------------------------------------
-  var HILFE_TEXT = 'TRAILER-MODUS — 1-9 Einstellung · R Aufnahme · Z Zeitlupe · '
+  var HILFE_TEXT = 'TRAILER-MODUS — 0-9 Einstellung · R Aufnahme · Z Zeitlupe · '
     + 'L Letterbox · H HUD · M Ton';
 
   function domElement(stil, text) {
@@ -738,9 +738,67 @@
   }
 
   // ---------------------------------------------------------------------
+  // Beute fuer Einstellung 0
+  // ---------------------------------------------------------------------
+  var BEUTE_RASTER = [
+    ['WPN_GLUTAXT', 3], ['WPN_NEBELBOGEN', 2], ['BD_SCHATTENKUTTE', 3], ['HD_SCHLANGENMASKE', 2],
+    ['BT_WINDLAEUFER', 2], ['WPN_RICHTSCHWERT', 2], ['WPN_KETTENMORGENSTERN', 1], ['OF_TALGLICHT', 2],
+    ['HD_KETTENHAUBE', 1], ['WPN_SCHATTENDOLCH', 1], ['OF_PAVESE', 0], ['BD_LEDERHARNISCH', 0]
+  ];
+  // Einhaendige Waffe: ein Zweihaender liesse die Nebenhand leer.
+  var BEUTE_ANGELEGT = {
+    weapon: ['WPN_EISENKLINGE', 3], offhand: ['OF_BANNLATERNE', 2], head: ['HD_BRONZEHELM', 2],
+    body: ['BD_PLATTENPANZER', 2], boots: ['BT_STAHLSOHLEN', 1]
+  };
+
+  /** Inventar und Ausruestung leeren und mit einer vorzeigbaren Auswahl fuellen. */
+  function beuteFuellen() {
+    var L = window.LootSystem, G = window.InventoryGrid;
+    var inv = window.inventory, eq = window.equipment;
+    if (!L || !G || !Array.isArray(inv) || !eq) return;
+    for (var i = 0; i < inv.length; i++) inv[i] = null;
+    S.prunkstueck = null;
+    Object.keys(BEUTE_ANGELEGT).forEach(function (slot) {
+      try { eq[slot] = L.rollItem(BEUTE_ANGELEGT[slot][0], 24, BEUTE_ANGELEGT[slot][1], 0, { ohneDeckel: true }); } catch (e) {}
+    });
+    try { eq.amulet = L.rollAmulet(18, Math.random); } catch (e) {}
+    BEUTE_RASTER.forEach(function (b) {
+      try {
+        var it = L.rollItem(b[0], 24, b[1], 0, { ohneDeckel: true });
+        if (G.einfuegen(inv, it) >= 0 && b[1] === 3 && !S.prunkstueck) S.prunkstueck = it;
+      } catch (e) {}
+    });
+    try { G.einfuegen(inv, L.rollAmulet(12, Math.random)); } catch (e) {}
+    try { if (typeof recalcDerived === 'function') recalcDerived(); } catch (e) {}
+  }
+
+  /** Den Tooltip eines Stuecks im Raster zeigen, als laege der Zeiger darauf. */
+  function tooltipZeigen(item) {
+    if (!item || typeof invUI === 'undefined' || !invUI || !invUI.zellen) return false;
+    var z = invUI.zellen.filter(function (zz) { return zz.c === item.gridX && zz.r === item.gridY; })[0];
+    if (!z || !z.bg) return false;
+    var b = z.bg.getBounds();
+    z.bg.emit('pointerover', { x: b.centerX, y: b.centerY, worldX: b.centerX, worldY: b.centerY });
+    // Nur das Stueck selbst: der Vergleich mit dem angelegten (zweiter Kasten)
+    // deckte im Bild das ganze Raster zu.
+    try { if (typeof tooltip !== 'undefined' && tooltip && tooltip.compareBox) tooltip.compareBox.setVisible(false); } catch (e) {}
+    return true;
+  }
+
+  // ---------------------------------------------------------------------
   // Die Einstellungen (docs/trailer-drehbuch.md)
   // ---------------------------------------------------------------------
   var EINSTELLUNGEN = {
+    // 0 — Inventar: die Beute nach der Montage. Raster und Papierpuppe voll
+    // mit Stuecken aller Seltenheiten, dann der Tooltip eines legendaeren.
+    0: { name: 'Inventar', kurz: 'inventar', ziel: 'dungeon', samen: 1410, aufbau: function (gs) {
+      S.ruhe = 'alle';
+      beuteFuellen();
+      gs.cameras.main.fadeIn(250, 0, 0, 0);
+      plan(500, function () { if (typeof openInventory === 'function') openInventory(); });
+      plan(1700, function () { tooltipZeigen(S.prunkstueck); });
+    } },
+
     // 1 — Nebelstadt: Schwarz, Nebel lichtet sich, Fahrt ueber den Platz zum Rathaus.
     1: { name: 'Nebelstadt', kurz: 'nebelstadt', ziel: 'hub', aufbau: function (hub) {
       if (hub.player) hub.player.setVisible(false);
@@ -1177,7 +1235,7 @@
       S.hubGesehen = true;
       var hub = szene('HubSceneV2');
       if (hub.player) hub.player.setVisible(true);
-      if (S.wartend) { var n = S.wartend; S.wartend = 0; einstellung(n); }
+      if (S.wartend != null) { var n = S.wartend; S.wartend = null; einstellung(n); }
     }
 
     planAbarbeiten();
@@ -1212,7 +1270,7 @@
   // ---------------------------------------------------------------------
   function taste(k) {
     k = String(k || '').toLowerCase();
-    if (/^[1-9]$/.test(k)) return einstellung(Number(k));
+    if (/^[0-9]$/.test(k)) return einstellung(Number(k));
     if (k === 'z') { S.zeitlupeTaste = !S.zeitlupe; zeitlupeSetzen(S.zeitlupeTaste); return true; }
     if (k === 'l') { letterboxSetzen(!S.letterbox); return true; }
     if (k === 'h') { S.hud = !S.hud; return true; }
@@ -1242,7 +1300,7 @@
     window.__SKIP_TUTORIAL__ = true;
     try { (window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1'); } catch (e) {}
     var n = parseInt((window.DebugGate && window.DebugGate.flagge('einstellung')) || '', 10);
-    if (n >= 1 && n <= 9) S.wartend = n;
+    if (n >= 0 && n <= 9) S.wartend = n;
   }
 
   drehregeln();

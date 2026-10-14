@@ -13,6 +13,13 @@ if (window.i18n) {
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Seltenheit',
     'inventory.label.power': 'Item-Stärke',
+    'inventory.label.type': 'Typ',
+    'inventory.type.weapon': 'Waffe',
+    'inventory.type.offhand': 'Nebenhand',
+    'inventory.type.head': 'Kopf',
+    'inventory.type.body': 'Rüstung',
+    'inventory.type.boots': 'Stiefel',
+    'inventory.type.amulet': 'Amulett',
     'inventory.label.damage': 'Schaden',
     'inventory.label.speed': 'Angriffstempo',
     'inventory.label.range': 'Reichweite',
@@ -53,6 +60,13 @@ if (window.i18n) {
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Rarity',
     'inventory.label.power': 'Item Power',
+    'inventory.label.type': 'Type',
+    'inventory.type.weapon': 'Weapon',
+    'inventory.type.offhand': 'Off-hand',
+    'inventory.type.head': 'Head',
+    'inventory.type.body': 'Armor',
+    'inventory.type.boots': 'Boots',
+    'inventory.type.amulet': 'Amulet',
     'inventory.label.damage': 'Damage',
     'inventory.label.speed': 'Attack Speed',
     'inventory.label.range': 'Range',
@@ -673,7 +687,12 @@ function initInventoryUI() {
     if (!it.isAmulet && it.type !== 'amulet') {
       bodyLines.push(`${_INV_T('inventory.label.power')}: ${computeItemPower(it)}`);
     }
-    if (it.type) bodyLines.push(`Typ: ${(it.type || '').toUpperCase()}`);
+    // Der Typ in der Sprache des Spiels — vorher stand "Typ: WEAPON" roh da.
+    if (it.type) {
+      const typKey = 'inventory.type.' + it.type;
+      const typ = (window.i18n && typeof window.i18n.has === 'function' && window.i18n.has(typKey)) ? _INV_T(typKey) : it.type;
+      bodyLines.push(`${_INV_T('inventory.label.type')}: ${typ}`);
+    }
 
     // Feature 059 (#42) WP05: run-amulets show their effect blurb + run hint
     // instead of stat lines (they carry no stats, only an `effect`).
