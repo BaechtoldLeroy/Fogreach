@@ -3510,10 +3510,10 @@ function spawnBoss() {
 
   // #77: Bei der inszenierten Erstbegegnung KEIN Blitz und kein Ruckeln —
   // beides zerschlaegt genau den ruhigen Moment, den der Beat herstellt.
-  // Vorschau ?bossintro=neu: vor JEDEM Boss die Zwischenszene
-  // (js/bossZwischenszene.js) statt Banner und Beat. Ohne Flagge wie bisher.
+  // Beim ersten Kampf gegen diesen Boss die Zwischenszene (js/bossZwischenszene.js)
+  // statt Banner und Beat; danach wieder Banner bzw. Beat. ?boss= zeigt sie immer.
   const _BZ = (typeof window !== 'undefined') ? window.BossZwischenszene : null;
-  const _zwischenszene = !!(_BZ && typeof _BZ.aktiv === 'function' && _BZ.aktiv());
+  const _zwischenszene = !!(_BZ && typeof _BZ.soll === 'function' && _BZ.soll(def));
   const _inszeniert = _zwischenszene || _istInszenierteBegegnung(def);
   if (!_inszeniert && this.cameras?.main) {
     this.cameras.main.flash(300, 255, 255, 255, true);

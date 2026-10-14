@@ -1,8 +1,10 @@
-// tests/bossZwischenszene.test.js — Zwischenszene vor jedem Boss
-// (Vorschau ?debug=1&bossintro=neu, js/bossZwischenszene.js).
+// tests/bossZwischenszene.test.js — Zwischenszene vor dem ersten Kampf
+// gegen jeden Boss (js/bossZwischenszene.js).
 //
-// Ohne Flagge: alles wie bisher (Banner, kein Halt, keine Bilder geladen).
-// Mit Flagge, je Boss: die Szene laeuft, die Spieluhr steht, die Plakette
+// Haeufigkeit: beim ersten Kampf die Szene, danach der Banner; gemerkt als
+// Quest-Flag bossintro_<bossId> im Spielstand. ?boss= zeigt sie immer.
+// Der Testkopf schaltet die Szene sonst ab (ohneBossIntro); hier ist sie an.
+// Je Boss: die Szene laeuft, die Spieluhr steht, die Plakette
 // zeigt Siegel, Name und Beiname, der Boss spricht Seite fuer Seite (weiter
 // per Taste und per Klick), ESC und der Knopf "Ueberspringen" beenden
 // jederzeit, danach ist alles zurueckgedreht und der Boss greift an. Keine
@@ -21,11 +23,18 @@ const BOSSE = ['chainMaster', 'ceremonyMaster', 'shadowCouncillor', 'elaraBesess
 const schritte = (ms) => Math.ceil(ms / 16.666);
 const ZS = `${SC}.__bossZwischenszene`;
 
-/** Boss erzwingen und erscheinen lassen; das Finale (Elara) haelt nicht auf. */
-function boss(H, id) {
+// Mit Zwischenszene starten (der Testkopf schaltet sie sonst ab).
+const starten = (zusatz) => launchDungeon({ depth: 10, zusatz: zusatz || '', ohneBossIntro: false });
+
+/**
+ * Boss erzwingen und erscheinen lassen; das Finale (Elara) haelt nicht auf.
+ * gesehen: false (Standard) = erste Begegnung, das Merk-Flag wird geloescht.
+ */
+function boss(H, id, gesehen) {
   H.lab.clearEnemies();
   H.run(`(function () {
     window._playerInvincible = true;
+    if (!${!!gesehen}) window.questSystem.setFlag(window.BossZwischenszene.merkFlagge('${id}'), false);
     window.__echtFinale = window.__echtFinale || (window.Finale && window.Finale.vorKampf);
     if (window.Finale) window.Finale.vorKampf = function () { return false; };
     debugForcedBoss = function () { return BOSS_DEFINITIONS['${id}']; };
@@ -70,30 +79,57 @@ function bisEnde(H) {
   for (let i = 0; i < 200 && lage(H).laeuft; i++) H.step(5);
 }
 
-describe('ohne Flagge: wie bisher', () => {
+describe('Haeufigkeit: erster Kampf Szene, danach Banner', () => {
   let H = null;
-  before(async () => { H = await launchDungeon({ depth: 10 }); });
+  before(async () => { H = await starten(); });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('kein Halt, keine Szene, Banner wie gehabt, keine Bilder geladen', () => {
-    assert.strictEqual(H.run('window.BossZwischenszene.aktiv()'), false);
-    boss(H, 'ceremonyMaster');
+  const banner = () => JSON.parse(H.run(`JSON.stringify(${SC}.children.list.filter(function (o) {
+    return o.type === 'Text' && o.depth === 1100; }).map(function (o) { return o.text; }))`));
+
+  test('keine Vorschau-Flagge mehr: weder in der Liste noch noetig', () => {
+    assert.strictEqual(H.run(`/[?&]bossintro=/.test(location.search)`), false);
+    assert.strictEqual(typeof H.run('window.BossZwischenszene.aktiv'), 'undefined', 'Flaggen-Abfrage noch da');
+    const quelle = fs.readFileSync(path.join(__dirname, '..', 'js', 'debugGate.js'), 'utf8');
+    assert.ok(!/'bossintro'/.test(quelle), 'bossintro steht noch in BEKANNTE_FLAGGEN');
+  });
+
+  test('der erste Kampf gegen einen Boss zeigt die Szene und merkt es im Spielstand', () => {
+    assert.strictEqual(H.run(`window.questSystem.hasFlag('bossintro_ceremonyMaster')`), false, 'Aufbau: frischer Spielstand');
+    boss(H, 'ceremonyMaster', true);    // NICHT zuruecksetzen: echter erster Kampf
+    assert.strictEqual(lage(H).phase, 'auftritt', 'erster Kampf ohne Szene');
+    assert.strictEqual(H.run(`window.questSystem.hasFlag('bossintro_ceremonyMaster')`), true, 'nicht gemerkt');
+    // Im Spielstand: die Quest-Daten tragen das Flag, auch nach dem Laden.
+    const r = JSON.parse(H.run(`(function () { var Q = window.questSystem, d = Q.getQuestSaveData();
+      var vorher = !!d.flags.bossintro_ceremonyMaster;
+      Q.loadQuestSaveData(JSON.parse(JSON.stringify(d)));
+      return JSON.stringify({ vorher: vorher, nachher: Q.hasFlag('bossintro_ceremonyMaster') }); })()`));
+    assert.deepStrictEqual(r, { vorher: true, nachher: true });
+    taste(H, 'Escape');
+    bisEnde(H);
+  });
+
+  test('beim zweiten Kampf gegen denselben Boss nur der kurze Banner', () => {
+    boss(H, 'ceremonyMaster', true);
     H.step(3);
     const l = lage(H);
-    assert.strictEqual(l.phase, null, 'Zwischenszene ohne Flagge');
-    assert.strictEqual(l.pausiert, false, 'Spieluhr angehalten ohne Flagge');
-    assert.strictEqual(l.halt, undefined, 'Boss stillgelegt ohne Flagge');
-    const banner = JSON.parse(H.run(`JSON.stringify(${SC}.children.list.filter(function (o) {
-      return o.type === 'Text' && o.depth === 1100; }).map(function (o) { return o.text; }))`));
-    assert.ok(banner.includes('Zeremonienmeister'), 'alter Banner fehlt: ' + banner);
-    const geladen = H.run(`${SC}.textures.getTextureKeys().filter(function (k) { return /^bossintro_/.test(k); }).length`);
-    assert.strictEqual(geladen, 0, 'Bilder ohne Flagge geladen');
+    assert.strictEqual(l.phase, null, 'Szene ein zweites Mal');
+    assert.strictEqual(l.pausiert, false, 'Spieluhr angehalten');
+    assert.strictEqual(l.halt, undefined, 'Boss stillgelegt');
+    assert.ok(banner().includes('Zeremonienmeister'), 'Banner fehlt: ' + banner());
+  });
+
+  test('ein anderer Boss bekommt trotzdem seine erste Szene', () => {
+    boss(H, 'shadowCouncillor', true);
+    assert.strictEqual(lage(H).phase, 'auftritt', 'Szene fuer neuen Boss fehlt');
+    taste(H, 'Escape');
+    bisEnde(H);
   });
 });
 
-describe('mit Flagge bossintro=neu', () => {
+describe('Zwischenszene je Boss', () => {
   let H = null;
-  before(async () => { H = await launchDungeon({ depth: 10, zusatz: '&debug=1&bossintro=neu' }); });
+  before(async () => { H = await starten(); });
   after(async () => { if (H) await H.shutdown(); });
 
   test('alle Siegel und Effekte sind vorgeladen', () => {
@@ -212,6 +248,7 @@ describe('mit Flagge bossintro=neu', () => {
   test('Elara: nach dem Finale an der Quelle folgt die Zwischenszene', () => {
     H.lab.clearEnemies();
     H.run(`(function () {
+      window.questSystem.setFlag('bossintro_elaraBesessen', false);
       window.Finale.vorKampf = function (sc, b, weiter) { window.__finaleWeiter = weiter; return true; };
       debugForcedBoss = function () { return BOSS_DEFINITIONS.elaraBesessen; };
     })()`);
@@ -243,10 +280,10 @@ describe('mit Flagge bossintro=neu', () => {
 // Boss noch im create() der Szene — vor Minikarte und Raumbalken, und bevor
 // der Nebel irgendetwas erkundet hat. Die Welt war schwarz, die Minikarte
 // lag ueber der Plakette.
-describe('mit Flagge, Boss per ?boss= beim Betreten des Raums', () => {
+describe('Debug-Weg: Boss per ?boss= beim Betreten des Raums', () => {
   let H = null;
   before(async () => {
-    H = await launchDungeon({ depth: 10, zusatz: '&debug=1&bossintro=neu&boss=kettenmeister' });
+    H = await starten('&debug=1&boss=kettenmeister');
     H.run('window._playerInvincible = true');
   });
   after(async () => { if (H) await H.shutdown(); });
@@ -401,6 +438,14 @@ describe('mit Flagge, Boss per ?boss= beim Betreten des Raums', () => {
     taste(H, 'Escape'); bisEnde(H);
   });
 
+  test('?boss= zeigt die Szene immer, auch wenn sie im Spielstand schon gesehen ist', () => {
+    taste(H, 'Escape'); bisEnde(H);
+    assert.strictEqual(H.run(`window.questSystem.hasFlag('bossintro_chainMaster')`), true, 'Aufbau: schon gesehen');
+    boss(H, 'chainMaster', true);
+    assert.strictEqual(lage(H).phase, 'auftritt', 'Debug-Weg zeigt die Szene nicht');
+    taste(H, 'Escape'); bisEnde(H);
+  });
+
   test('danach kommt alles zurueck: HUD, Nebel, Spotlight, Sichtmaske', () => {
     taste(H, 'Escape');
     bisEnde(H);
@@ -420,7 +465,7 @@ describe('mit Flagge, Boss per ?boss= beim Betreten des Raums', () => {
 // Standbilder je Boss (Auftritt + Plakette) nach vorschau/, nur auf Wunsch.
 if (process.env.VORSCHAU) {
   test('Standbilder', async () => {
-    const H = await launchDungeon({ depth: 10, zusatz: '&debug=1&bossintro=neu' });
+    const H = await starten();
     const ziel = path.join(__dirname, '..', 'vorschau');
     fs.mkdirSync(ziel, { recursive: true });
     const bild = (n) => {

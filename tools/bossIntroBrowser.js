@@ -32,7 +32,7 @@ fs.mkdirSync(ZIEL, { recursive: true });
     await page.addInitScript(() => {
       try { localStorage.setItem('demonfall_audio', JSON.stringify({ master: 0, sfx: 0, music: 0, muted: true })); } catch (e) {}
     });
-    await page.goto(`http://127.0.0.1:${PORT}/?debug=1&dungeon=1&boss=${boss}&bossintro=neu`, { waitUntil: 'load' });
+    await page.goto(`http://127.0.0.1:${PORT}/?debug=1&dungeon=1&boss=${boss}`, { waitUntil: 'load' });
     const phase = () => page.evaluate(() => {
       const g = window.game; const s = g && g.scene.getScene('GameScene');
       const z = s && s.__bossZwischenszene;

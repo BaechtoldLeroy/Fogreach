@@ -172,6 +172,14 @@ function boot(opts) {
         sandbox.EventSystem.onRoomEnter = function () {};
         sandbox.EventSystem.__ohneZufall = true;
       }
+      // Ohne Boss-Zwischenszene: sie haelt beim ersten Kampf gegen jeden Boss
+      // die Spieluhr an, bis jemand weiterdrueckt — Kampf-Tests sehen dann
+      // einen Boss, der nie angreift. Der Banner bleibt wie bisher.
+      if (opts.ohneBossIntro && sandbox.BossZwischenszene
+          && typeof sandbox.BossZwischenszene.soll === 'function' && !sandbox.BossZwischenszene.__ohne) {
+        sandbox.BossZwischenszene.soll = function () { return false; };
+        sandbox.BossZwischenszene.__ohne = true;
+      }
     } catch (e) {
       errors.push({ level: 'error', msg: `[LOAD ${rel}] ${e && e.message}` });
       skipped.push({ file: rel, reason: (e && e.message) || 'Fehler' });

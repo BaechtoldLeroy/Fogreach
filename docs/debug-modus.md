@@ -93,23 +93,27 @@ weg und betritt den Hub ueber den Startbildschirm. Bilder:
 `assets/sprites/aktwechsel/`, Standbilder aller Karten:
 `node tools/aktwechselVorschau.js [en]` (nach `vorschau/`).
 
-#### Zwischenszene vor dem Boss (Vorschau)
+#### Zwischenszene vor dem Boss
 
-| Flagge | Wirkung |
-|---|---|
-| `&bossintro=neu` | vor JEDEM Boss die Zwischenszene statt Banner und Beat: Balken, Kamerafahrt zum Boss, Auftritt mit Effekt, Messing-Plakette mit Siegel, zwei Seiten Rede (weiter per Taste, Klick oder Tipp; ESC oder "Überspringen" beendet) |
+Beim ERSTEN Kampf gegen jeden Boss laeuft eine Zwischenszene statt Banner und
+Beat: Balken, Kamerafahrt zum Boss, Auftritt mit Effekt, Messing-Plakette mit
+Siegel, zwei Seiten Rede (weiter per Taste, Klick oder Tipp; ESC oder
+"Überspringen" beendet). Gemerkt wird das pro Spielstand als Quest-Flag
+`bossintro_<bossId>` (z. B. `bossintro_chainMaster`); spaetere Kaempfe gegen
+denselben Boss zeigen wieder den kurzen Banner.
 
-Jeden Boss direkt ansehen — `?boss=` setzt ihn sofort in den ersten Raum:
+Jeden Boss direkt ansehen — `?boss=` setzt ihn sofort in den ersten Raum und
+zeigt die Szene IMMER, auch wenn sie im Spielstand schon gesehen ist:
 
 ```
-?debug=1&dungeon=1&boss=kettenmeister&bossintro=neu
-?debug=1&dungeon=1&boss=zeremonienmeister&bossintro=neu
-?debug=1&dungeon=1&boss=schattenrat&bossintro=neu
-?debug=1&dungeon=1&boss=elara&bossintro=neu
+?debug=1&dungeon=1&boss=kettenmeister
+?debug=1&dungeon=1&boss=zeremonienmeister
+?debug=1&dungeon=1&boss=schattenrat
+?debug=1&dungeon=1&boss=elara
 ```
 
 Bei Elara laeuft zuerst das Finale an der Quelle (sofern noch nicht gesehen),
-die Zwischenszene folgt danach. Ohne die Flagge bleibt alles wie bisher.
+die Zwischenszene folgt danach.
 Standbilder je Boss: `VORSCHAU=1 node --test tests/bossZwischenszene.test.js`
 schreibt `vorschau/bossintro_<boss>_auftritt.png` und `_plakette.png`
 (Canvas-Testkopf: ohne Nebel und Licht wie im Spiel). Wie der Spieler es

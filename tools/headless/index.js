@@ -1977,7 +1977,9 @@ async function launch(opts) {
   // Zufallsereignisse beim Raumbetreten sind im Test aus: sie koennen die
   // Spieluhr anhalten (#178). Wer sie braucht, setzt die Option auf false;
   // die Ereignis-Tests rufen pickEvent oder die Handler ohnehin direkt.
-  opts = Object.assign({ ohneZufallsereignisse: true }, opts || {});
+  // Ebenso die Boss-Zwischenszene beim ersten Kampf (Spieluhr steht, bis man
+  // weiterdrueckt); tests/bossZwischenszene.test.js schaltet sie wieder ein.
+  opts = Object.assign({ ohneZufallsereignisse: true, ohneBossIntro: true }, opts || {});
   const h = decorate(boot(opts));
   await flush();                       // Phasers eigenen Boot-Timer durchlassen
   const target = opts.waitFor || 'StartScene';

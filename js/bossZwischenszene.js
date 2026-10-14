@@ -1,8 +1,10 @@
 /* =====================================================================
  * bossZwischenszene.js — kurze Zwischenszene vor jedem Boss
  * ---------------------------------------------------------------------
- * Vorschau hinter ?debug=1&bossintro=neu. Ohne Flagge laeuft alles wie
- * bisher (Banner bzw. der Vorkampf-Beat aus js/bossIntro.js).
+ * Beim ERSTEN Kampf gegen jeden Boss (pro Spielstand gemerkt als
+ * Quest-Flag bossintro_<bossId>). Spaetere Kaempfe gegen denselben Boss
+ * zeigen den kurzen Banner — eine Szene, die man zum fuenften Mal sieht,
+ * ist eine Wartezeit. Debug: ?boss=<name> zeigt sie immer.
  *
  * Ablauf: Spieluhr steht, Letterbox-Balken fahren ein, die Kamera schwenkt
  * vom Spieler zum Boss, ein kurzer Zoom-Stoss zum Auftritt (ein Schritt
@@ -104,17 +106,33 @@
   var NOTAUSGANG_MS = 60000;
   var KNOPF_MIN_H = 44;
 
-  function aktiv() {
-    var G = (typeof window !== 'undefined') ? window.DebugGate : null;
-    try { return !!(G && G.flagge('bossintro') === 'neu'); } catch (e) { return false; }
+  function _merkFlagge(id) { return 'bossintro_' + id; }
+
+  /**
+   * Soll vor diesem Boss die Szene laufen? Beim ersten Kampf ja, danach
+   * nicht mehr. Ein per ?boss= erzwungener Boss zeigt sie immer: dieser
+   * Weg ist zum Ansehen da, auch wenn sie im Spielstand schon gesehen ist.
+   */
+  function soll(def) {
+    if (!def || !BOSSE[def.id]) return false;
+    var w = (typeof window !== 'undefined') ? window : {};
+    try { if (w.DebugGate && w.DebugGate.flagge('boss')) return true; } catch (e) {}
+    var Q = w.questSystem;
+    try { return !(Q && typeof Q.hasFlag === 'function' && Q.hasFlag(_merkFlagge(def.id))); } catch (e) { return true; }
+  }
+
+  /** Im Spielstand merken: diesen Boss hat man vorgestellt bekommen. */
+  function merken(def) {
+    var Q = (typeof window !== 'undefined') ? window.questSystem : null;
+    try { if (def && Q && typeof Q.setFlag === 'function') Q.setFlag(_merkFlagge(def.id), true); } catch (e) {}
   }
 
   function siegelKey(n) { return 'bossintro_siegel_' + n; }
   function vfxKey(n) { return 'bossintro_vfx_' + n; }
 
-  /** Im preload(): nur mit Flagge, nur die fehlenden. */
+  /** Im preload(): nur die fehlenden. */
   function vorladen(scene) {
-    if (!aktiv() || !scene || !scene.load || !scene.textures) return;
+    if (!scene || !scene.load || !scene.textures) return;
     ['ketten', 'kerze', 'maske', 'ring'].forEach(function (n) {
       var k = siegelKey(n);
       if (!scene.textures.exists(k)) scene.load.image(k, ORDNER + k + '.png?v=' + V);
@@ -192,6 +210,8 @@
     if (!scene || !scene.add || !scene.tweens || !scene.scale || !def) return false;
     if (scene.__bossIntroLaeuft) return false;
     scene.__bossIntroLaeuft = true;
+    // Schon beim Beginn: wer ueberspringt, hat sie auch gesehen.
+    merken(def);
 
     var f = Zwischenszene._TEMPO > 0 ? Zwischenszene._TEMPO : 1;
     var frist = function (ms) { return Math.max(1, Math.round(ms * f)); };
@@ -553,7 +573,7 @@
   }
 
   var Zwischenszene = {
-    aktiv: aktiv, vorladen: vorladen, spiele: spiele,
+    soll: soll, merken: merken, merkFlagge: _merkFlagge, vorladen: vorladen, spiele: spiele,
     BOSSE: BOSSE, VFX: VFX, siegelKey: siegelKey, vfxKey: vfxKey,
     _TEMPO: 1, _NOTAUSGANG_MS: NOTAUSGANG_MS, _EINGABE_AB: EINGABE_AB, _REDE_AB: REDE_AB
   };
