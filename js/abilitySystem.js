@@ -537,6 +537,15 @@
     if (state.learnedAbilities.includes(id)) return false;
     state.learnedAbilities.push(id);
     save();
+    // Wirkbilder gleich holen, wenn gerade ein Dungeon laeuft: geladen wird
+    // sonst nur beim Betreten (fuer schon Gelerntes), und der erste Einsatz
+    // einer frisch gelernten Faehigkeit zeigte die alten Linien.
+    try {
+      const gs = window.game && window.game.scene && window.game.scene.getScene('GameScene');
+      if (gs && gs.sys && gs.sys.isActive() && typeof window.spezialNachladen === 'function') {
+        window.spezialNachladen(gs, [id]);
+      }
+    } catch (_) { /* nie das Lernen verhindern */ }
     if (!opts.silent) {
       console.log('[AbilitySystem] Neue F\u00E4higkeit erlernt:', ABILITY_DEFS[id].name);
       _showLearnToast(ABILITY_DEFS[id].name);

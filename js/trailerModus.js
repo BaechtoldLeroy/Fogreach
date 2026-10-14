@@ -485,6 +485,11 @@
       window.DIFFICULTY_MULTIPLIER = (typeof window.getDifficultyMultiplier === 'function')
         ? (window.getDifficultyMultiplier() || 1) : 1;
     }
+    // Die Faehigkeiten der Montage VOR dem Abstieg lernen: GameScene.preload
+    // laedt die Wirkbilder nur fuer gelernte Faehigkeiten. Erst im Dungeon
+    // gelernt, fehlten sie bei den ersten Schlaegen — die Montage zeigte die
+    // alten Linien.
+    lernen(['whirlwind', 'charge', 'hammer']);
     nachCreate('GameScene', function (gs) {
       // Der erste Raum baut sich noch ein paar Bilder lang fertig.
       plan(400, function () { fertig(gs); });

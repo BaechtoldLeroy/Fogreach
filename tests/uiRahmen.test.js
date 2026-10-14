@@ -180,7 +180,7 @@ describe('Messing-Stil ohne Flagge', () => {
     H.run(`window.storySystem.showJournalOverlay(window.game.scene.getScene('HubSceneV2'), function () {})`);
     H.step(3);
     const r = H.run(`(function () {
-      var c = window.game.scene.getScene('HubSceneV2').children.list.filter(function (o) { return o.type === 'Container' && o.depth === 6001; })[0];
+      var c = window.game.scene.getScene('HubSceneV2').children.list.filter(function (o) { return o.type === 'Container' && o.depth === 6001; }).pop();   // das zuletzt geoeffnete (darunter evtl. die Akt-1-Karte)
       return { platte: c.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'ui_rahmen'; }).length,
                graphics: c.list.filter(function (o) { return o.type === 'Graphics'; }).length };
     })()`);

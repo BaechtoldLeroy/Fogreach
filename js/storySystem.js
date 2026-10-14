@@ -372,6 +372,10 @@
     highestWave: 0,
     eventsSeen: [],       // act IDs whose narrative overlay has been shown
     pendingEvent: null,   // act ID to show on next hub visit
+    // Weitere faellige Akte in Reihenfolge. pendingEvent war ein EINZELNER
+    // Platz: fielen zwei Aktwechsel in denselben Lauf, ueberschrieb der
+    // zweite den ersten, und dessen Karte kam nie.
+    pendingQueue: [],
     endingShown: false,   // whether the all-quests-complete ending has been shown
     totalKills: 0,
     totalRoomsCleared: 0,
@@ -410,11 +414,39 @@
     if (clamped <= storyState.currentActIndex) return false;
     var newAct = STORY_ACTS[clamped];
     storyState.currentActIndex = clamped;
-    if (storyState.eventsSeen.indexOf(newAct.id) === -1) {
-      storyState.pendingEvent = newAct.id;
-    }
+    // Ein Sprung ueber mehrere Akte (Altstand-Migration, Debug) zeigt nur den
+    // Zielakt; im Spiel folgen die Akte einzeln aufeinander. Vorgemerkt wird
+    // in der Warteschlange, damit ein zweiter Wechsel den ersten nicht
+    // ueberschreibt.
+    _aktVormerken(newAct.id);
     try { console.log('[StorySystem] Act jump -> ' + newAct.name + ' (Act ' + (clamped + 1) + ') via advanceToAct'); } catch (_) {}
     return true;
+  }
+
+  function _aktVormerken(id) {
+    if (storyState.eventsSeen.indexOf(id) !== -1) return;
+    if (storyState.pendingEvent === id || storyState.pendingQueue.indexOf(id) !== -1) return;
+    if (!storyState.pendingEvent) storyState.pendingEvent = id;
+    else storyState.pendingQueue.push(id);
+  }
+
+  /**
+   * Akt 1 ("Der Dienst") ist der Startakt — in ihn steigt man nie auf, also
+   * gab es fuer ihn nie eine Karte. Der Hub zeigt den Einfuehrungstext eines
+   * neuen Spiels deshalb ALS Karte von Akt 1 (eine Karte, nicht zwei
+   * hintereinander). Liefert das Ereignis und merkt den Akt als gesehen, oder
+   * null, wenn man schon weiter ist bzw. sie schon kam.
+   */
+  function startaktEreignis(text) {
+    var start = STORY_ACTS[0];
+    if (storyState.currentActIndex !== 0 || storyState.eventsSeen.indexOf(start.id) !== -1) return null;
+    storyState.eventsSeen.push(start.id);
+    return {
+      actId: start.id,
+      actName: _i18nLookup('story.act.' + start.id + '.name', start.name),
+      actNumber: 1,
+      narrative: text || getActNarrative(start.id)
+    };
   }
 
   // Feature 062: expliziter Reset auf Akt 0. advanceToAct ist monoton (nur
@@ -426,6 +458,7 @@
     storyState.currentActIndex = 0;
     storyState.eventsSeen = [];
     storyState.pendingEvent = null;
+    storyState.pendingQueue = [];
     storyState.endingShown = false;
     try { console.log('[StorySystem] Reset auf Akt 0 (Story v4).'); } catch (_) {}
     return true;
@@ -472,7 +505,7 @@
     // Priority 1: Act transitions
     if (storyState.pendingEvent) {
       var actId = storyState.pendingEvent;
-      storyState.pendingEvent = null;
+      storyState.pendingEvent = storyState.pendingQueue.length ? storyState.pendingQueue.shift() : null;
       storyState.eventsSeen.push(actId);
 
       var act = getActById(actId);
@@ -590,6 +623,7 @@
       highestWave: storyState.highestWave,
       eventsSeen: storyState.eventsSeen.slice(),
       pendingEvent: storyState.pendingEvent,
+      pendingQueue: storyState.pendingQueue.slice(),
       endingShown: storyState.endingShown || false,
       totalKills: storyState.totalKills || 0,
       totalRoomsCleared: storyState.totalRoomsCleared || 0,
@@ -603,6 +637,7 @@
     storyState.highestWave = typeof data.highestWave === 'number' ? data.highestWave : 0;
     storyState.eventsSeen = Array.isArray(data.eventsSeen) ? data.eventsSeen.slice() : [];
     storyState.pendingEvent = data.pendingEvent || null;
+    storyState.pendingQueue = Array.isArray(data.pendingQueue) ? data.pendingQueue.slice() : [];
     storyState.endingShown = !!data.endingShown;
     storyState.totalKills = typeof data.totalKills === 'number' ? data.totalKills : 0;
     storyState.totalRoomsCleared = typeof data.totalRoomsCleared === 'number' ? data.totalRoomsCleared : 0;
@@ -723,7 +758,7 @@
     });
 
     var dismissed = false;
-    var tasten = ['keydown-SPACE', 'keydown-ENTER', 'keydown-ESC'];
+    var tasten = ['keydown-SPACE', 'keydown-ENTER'];
     var dismiss = function () {
       if (dismissed) return;
       // Erst die naechste Seite, dann schliessen.
@@ -734,12 +769,18 @@
       }
       dismissed = true;
       tasten.forEach(function (t) { try { scene.input.keyboard.off(t, dismiss); } catch (e) {} });
+      try { scene.input.keyboard.off('keydown-ESC', ueberspringen); } catch (e) {}
       overlay.destroy();
       container.destroy(true);
       if (typeof onDismiss === 'function') onDismiss();
     };
 
+    // ESC ueberspringt die ganze Karte, nicht nur eine Seite — seit der
+    // Einfuehrungstext (mehrseitig) die Karte von Akt 1 ist, blieb man sonst
+    // mit ESC darin haengen. Wie die Zwischenszene unter ?aktwechsel=neu.
+    var ueberspringen = function () { seite = seiten.length - 1; dismiss(); };
     tasten.forEach(function (t) { scene.input.keyboard.on(t, dismiss); });
+    scene.input.keyboard.on('keydown-ESC', ueberspringen);
     scene.time.delayedCall(500, function () {
       if (dismissed) return;
       overlay.setInteractive();
@@ -1066,6 +1107,7 @@
     advanceToAct: advanceToAct,
     resetToAct0: resetToAct0,
     consumePendingEvent: consumePendingEvent,
+    startaktEreignis: startaktEreignis,
     getNpcDialogue: getNpcDialogue,
     getJournalData: getJournalData,
     getStorySaveData: getStorySaveData,

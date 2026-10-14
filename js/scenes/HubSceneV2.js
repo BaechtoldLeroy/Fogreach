@@ -2832,18 +2832,16 @@ class HubSceneV2 extends Phaser.Scene {
     if (!eventData) return;
 
     this._dialogOpen = true;
-    window.storySystem.showStoryOverlay(this, eventData, () => {
-      // Ein zweites fälliges Event nachziehen (z. B. der Epilog direkt nach
-      // einem Akt-Übergang, wenn damit die letzte Quest-Kette fällt).
-      const nextEvent = window.storySystem.consumePendingEvent();
-      if (nextEvent) {
-        window.storySystem.showStoryOverlay(this, nextEvent, () => {
-          this._dialogOpen = false;
-        });
-      } else {
-        this._dialogOpen = false;
-      }
-    });
+    // Alle faelligen Karten nacheinander (mehrere Aktwechsel in einem Lauf,
+    // der Epilog direkt nach einem Akt-Übergang) — nicht nur zwei.
+    const naechste = (daten) => {
+      window.storySystem.showStoryOverlay(this, daten, () => {
+        const weiter = window.storySystem.consumePendingEvent();
+        if (weiter) naechste(weiter);
+        else this._dialogOpen = false;
+      });
+    };
+    naechste(eventData);
   }
 
   _handleJournal() {
@@ -5216,9 +5214,20 @@ class HubSceneV2 extends Phaser.Scene {
       ? "Fogreach — a city beneath an endless mist. The Chain Council keeps order: Clergy, Guard, and Administration — three factions openly vying for influence.\n\nYou were an Archivesmith, until an accident at the Forge tore your memory apart. What's left is your rank, a few tools — and the jobs no one else will take.\n\nToday you take what you're given, and descend into the cellars beneath the Archive-Forge."
       : "Fogreach — eine Stadt unter ewigem Nebel. Der Kettenrat wacht über die Ordnung: Klerus, Garde und Verwaltung, drei Fraktionen, die offen um Einfluss ringen.\n\nDu warst Archivschmied, bis ein Unfall in der Schmiede deine Erinnerung zerriss. Geblieben sind dein Rang, ein paar Werkzeuge — und Aufträge, die sonst keiner will.\n\nHeute nimmst du, was man dir gibt, und steigst hinab in die Keller unter der Archivschmiede.";
     const close = isEN ? 'Continue' : 'Weiter';
-    this._showSplashModal(title, body, close, () => {
+    const gesehen = () => {
       try { (window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1'); } catch (_) {}
-    });
+    };
+    // Der Einfuehrungstext IST die Karte von Akt 1: der Startakt bekam sonst
+    // nie eine (Karten entstehen beim Aufstieg, in Akt 1 steigt man nie auf).
+    const ss = window.storySystem;
+    const start = (ss && typeof ss.startaktEreignis === 'function') ? ss.startaktEreignis(body) : null;
+    if (start && typeof ss.showStoryOverlay === 'function') {
+      // _dialogOpen bleibt wie beim frueheren Einfuehrungs-Splash unberuehrt:
+      // die Karte liegt obenauf, sperrt aber den Hub dahinter nicht.
+      ss.showStoryOverlay(this, start, gesehen);
+      return;
+    }
+    this._showSplashModal(title, body, close, gesehen);
   }
 
   // (Demo-Outro-Splash entfernt — siehe Kommentar an der früheren Aufrufstelle
