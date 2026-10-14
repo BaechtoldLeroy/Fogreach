@@ -99,6 +99,14 @@
     // Inventar-Gravur), deshalb tauscht der Hub es mit (_gegenstandsBilder).
     'zeichen_schattenrat'
   ].concat([
+    // Die vierzehn Lauf-Amulette (#42/#125). graphics.js zeichnet sie weiter
+    // als Rueckfall; die Bilder setzt tools/amuletteBauen.js ein. Sie stehen
+    // auch im Hub (Inventar, Truhe), deshalb tauscht der Hub sie mit.
+    'amuZwillingsklinge', 'amuKettenherz', 'amuSchnitterband', 'amuAderlass',
+    'amuBrandmal', 'amuSturmschritt', 'amuTrabantenstein', 'amuAschefunke',
+    'amuSchattenmantel', 'amuSchlaechterkrone', 'amuFrostsiegel', 'amuGlasherz',
+    'amuZweiterAtem', 'amuBlutpakt'
+  ]).concat([
     'obstacleTree', 'obstacleRock', 'prop_puddle', 'healthDrop',
     'xpDrop', 'projectileTexture',
   ]).concat([
@@ -198,7 +206,7 @@
    */
   function _gegenstandsBilder() {
     return NAMENSGLEICH.filter(function (k) {
-      return /^it[A-Z]/.test(k) || k === 'zeichen_schattenrat';
+      return /^(it|amu)[A-Z]/.test(k) || k === 'zeichen_schattenrat';
     });
   }
   window.gegenstandsBilderVorladen = function (scene) {

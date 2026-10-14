@@ -163,7 +163,7 @@ test('keine zwei Ausruestungsbilder sind zu aehnlich', async () => {
   const gleicheFamilie = (a, b) =>
     FAMILIE.some((f) => f.indexOf(a) >= 0 && f.indexOf(b) >= 0);
 
-  const liste = namen().filter((n) => n.startsWith('it'));
+  const liste = namen().filter((n) => /^(it|amu)[A-Z]/.test(n));
   const sil = {};
   for (const n of liste) sil[n] = await silhouette(path.join(ORDNER, n + '.png'));
 
@@ -195,7 +195,7 @@ test('auch im Hub zeigen die Gegenstands-Icons ihre Datei, schon vor dem ersten 
   try {
     assert.ok(await hub.waitForScene('HubSceneV2'), 'Hub nicht erreicht');
     hub.step(10);
-    const gegenstaende = namen().filter((n) => /^it[A-Z]/.test(n));
+    const gegenstaende = namen().filter((n) => /^(it|amu)[A-Z]/.test(n));
     assert.ok(gegenstaende.length >= 40, 'nur ' + gegenstaende.length + ' Gegenstands-Icons in der Liste');
     const imHub = hub.run(`(function () {
       var out = {};
