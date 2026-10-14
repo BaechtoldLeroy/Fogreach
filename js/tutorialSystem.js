@@ -42,6 +42,8 @@
     'tutorial.step.movement.mobile':          'Joystick links benutzen zum Bewegen',
     'tutorial.step.quest_dialog':             'Sprich mit Ratsherr Aldric — [E] zum Reden',
     'tutorial.step.quest_dialog.mobile':      'Geh zu Ratsherr Aldric und tippe den Interaktions-Knopf',
+    'tutorial.step.dungeon_enter':            'Steig in den Rathauskeller hinab — zur Kellertür, [E]',
+    'tutorial.step.dungeon_enter.mobile':     'Geh zur Kellertür des Rathauses und tippe den Interaktions-Knopf',
     'tutorial.step.combat_basics':            'WASD bewegen, LMB/Space angreifen',
     'tutorial.step.combat_basics.classic':    'Pfeiltasten bewegen, Space angreifen',
     'tutorial.step.combat_basics.arpg':       'WASD bewegen, Linksklick angreifen',
@@ -72,6 +74,8 @@
     'tutorial.step.movement.mobile':          'Use the left joystick to move',
     'tutorial.step.quest_dialog':             'Talk to Councillor Aldric — press [E]',
     'tutorial.step.quest_dialog.mobile':      'Walk to Councillor Aldric and tap the interact button',
+    'tutorial.step.dungeon_enter':            'Descend into the Town Hall cellar — go to the cellar door, [E]',
+    'tutorial.step.dungeon_enter.mobile':     'Walk to the Town Hall cellar door and tap the interact button',
     'tutorial.step.combat_basics':            'WASD to move, LMB/Space to attack',
     'tutorial.step.combat_basics.classic':    'Arrow keys to move, Space to attack',
     'tutorial.step.combat_basics.arpg':       'WASD to move, left-click to attack',
@@ -149,6 +153,16 @@
       hintKey: 'tutorial.step.quest_dialog',
       targetRef: { type: 'npc', name: 'Aldric' },
       completion: { event: 'dialog.opened', matcher: function (p) { return _nameMatches(p && p.npc, 'aldric'); } }
+    },
+    {
+      // Aldric schickt den Spieler in den Keller — ohne diesen Schritt stand
+      // zwischen "Sprich mit Aldric" und "Greif an" nichts, und keiner sagte,
+      // wo der Dungeon ist.
+      id: 'dungeon.enter',
+      scene: 'HubSceneV2',
+      hintKey: 'tutorial.step.dungeon_enter',
+      targetRef: { type: 'entrance', name: 'rathaus_entrance' },
+      completion: { event: 'hub.entrance.entered', matcher: function (p) { return _nameMatches(p && p.name, 'rathaus'); } }
     },
     {
       id: 'combat.basics',

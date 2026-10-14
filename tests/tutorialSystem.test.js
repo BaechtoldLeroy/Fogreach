@@ -179,8 +179,12 @@ test('report() advances when event matches and matcher passes', () => {
   TS.report('player.moved', { dx: 1, dy: 0 });
   assert.strictEqual(TS.getCurrentStep().id, 'quest.dialog');
   TS.report('dialog.opened', { npc: 'aldric' });
-  // #143: quest.close, dungeon.approach und dungeon.enter sind raus —
-  // Aldrics Auftrag schickt einen selbst in den Keller.
+  // #143 nahm dungeon.enter heraus, b428 holt ihn zurueck: nach Aldric weist
+  // das Tutorial zur Kellertuer, erst im Dungeon kommt "Greif an".
+  assert.strictEqual(TS.getCurrentStep().id, 'dungeon.enter');
+  TS.report('hub.entrance.entered', { name: 'schmiede' });
+  assert.strictEqual(TS.getCurrentStep().id, 'dungeon.enter', 'eine andere Tuer zaehlt nicht');
+  TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });
   assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
 });
 
@@ -360,6 +364,7 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   // Walk all the way to the final step (save.notice).
   TS.report('player.moved', {});
   TS.report('dialog.opened', { npc: 'aldric' });
+  TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });
   TS.report('combat.hit', { byPlayer: true });
   TS.report('loot.dropped', { itemId: 'x' });
   TS.report('loot.picked', { itemId: 'x' });

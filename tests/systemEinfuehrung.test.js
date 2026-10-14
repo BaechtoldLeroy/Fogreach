@@ -188,12 +188,15 @@ test('Das Tutorial erklaert die Systeme nicht mehr selbst', () => {
   const src = fs.readFileSync(path.join('js', 'tutorialSystem.js'), 'utf8');
   const drin = (id) => src.indexOf("id: '" + id + "'") >= 0;
 
-  const zuviel = ['quest.close', 'dungeon.approach', 'dungeon.enter',
+  // dungeon.enter ist seit b428 wieder drin (User: "zwischen aldric und greif
+  // an, sollte das tutorial den spieler ja in den dungeon weisen") — Aldrics
+  // Auftrag allein fuehrte nicht sichtbar zur Kellertuer.
+  const zuviel = ['quest.close', 'dungeon.approach',
     'skill.wait', 'skill.loadout', 'skill.use'].filter(drin);
   assert.deepStrictEqual(zuviel, [],
     'diese Schritte haben im Hub eine Figur und gehoeren in eine Quest');
 
-  const kern = ['movement', 'quest.dialog', 'combat.basics', 'loot.pickup',
+  const kern = ['movement', 'quest.dialog', 'dungeon.enter', 'combat.basics', 'loot.pickup',
     'loot.equip', 'combat.potion', 'journal.hint', 'save.notice'];
   assert.deepStrictEqual(kern.filter((id) => !drin(id)), [],
     'aus dem harten Kern fehlt etwas — das findet ohne Ansage niemand heraus');
