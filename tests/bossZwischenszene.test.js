@@ -239,6 +239,184 @@ describe('mit Flagge bossintro=neu', () => {
   });
 });
 
+// Der Weg, auf dem der Fehler im Browser auffiel (b424): ?boss= setzt den
+// Boss noch im create() der Szene — vor Minikarte und Raumbalken, und bevor
+// der Nebel irgendetwas erkundet hat. Die Welt war schwarz, die Minikarte
+// lag ueber der Plakette.
+describe('mit Flagge, Boss per ?boss= beim Betreten des Raums', () => {
+  let H = null;
+  before(async () => {
+    H = await launchDungeon({ depth: 10, zusatz: '&debug=1&bossintro=neu&boss=kettenmeister' });
+    H.run('window._playerInvincible = true');
+  });
+  after(async () => { if (H) await H.shutdown(); });
+
+  const sicht = () => JSON.parse(H.run(`(function () {
+    var sc = ${SC}, kam = sc.cameras.main, bd = kam.getBounds ? kam.getBounds() : kam._bounds;
+    var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+    var licht = sc.children.getByName('bossintroLicht');
+    var lb = b.getBounds();
+    return JSON.stringify({
+      nebel: !!(sc.fogUnseen && sc.fogUnseen.visible), spot: !!(sc.spotlightDim && sc.spotlightDim.visible),
+      maskeBoss: !!b.mask, maskeEbene: !!(sc.enemyLayer && sc.enemyLayer.mask),
+      licht: licht ? { x: licht.x, y: licht.y, a: licht.alpha } : null, boss: { x: lb.centerX, y: lb.centerY },
+      karte: !!(sc._minimapRT && sc._minimapRT.visible), rahmen: !!(sc._minimapBorder && sc._minimapBorder.visible),
+      balken: !!(window._roomProgressGfx && window._roomProgressGfx.visible),
+      kam: { x: kam.worldView.x, y: kam.worldView.y, w: kam.worldView.width, h: kam.worldView.height },
+      grenzen: { x: bd.x, y: bd.y, w: bd.width, h: bd.height }
+    });
+  })()`));
+
+  test('Minikarte und Raumbalken (erst nach dem Boss entstanden) sind waehrend der Szene aus', () => {
+    const s = sicht();
+    assert.strictEqual(s.karte, false, 'Minikarte sichtbar');
+    assert.strictEqual(s.rahmen, false, 'Rahmen der Minikarte (graues Rechteck) sichtbar');
+    assert.strictEqual(s.balken, false, 'Raumbalken (Punktreihe) sichtbar');
+    // Was jetzt erst entsteht, faellt ebenso weg.
+    H.run(`window.__spaet = ${SC}.add.rectangle(900, 60, 80, 80, 0x666666).setScrollFactor(0).setDepth(1500)`);
+    H.step(1);
+    assert.strictEqual(H.run('window.__spaet.visible'), false, 'spaet entstandenes HUD bleibt sichtbar');
+  });
+
+  test('Nebel, Spotlight und Sichtmaske treten zurueck, der Lichtkreis liegt auf dem Boss', () => {
+    const s = sicht();
+    assert.strictEqual(s.nebel, false, 'Kriegsnebel deckt die Szene zu');
+    assert.strictEqual(s.spot, false, 'Spotlight dunkelt die Szene ab');
+    assert.strictEqual(s.maskeBoss, false, 'Sichtmaske verdeckt den Boss');
+    assert.strictEqual(s.maskeEbene, false, 'Sichtmaske der Gegnerebene verdeckt den Boss');
+    assert.ok(s.licht, 'kein Lichtkreis');
+    assert.ok(s.licht.a > 0.9, 'Lichtkreis nicht eingeblendet');
+    assert.ok(Math.hypot(s.licht.x - s.boss.x, s.licht.y - s.boss.y) < 40, 'Lichtkreis nicht am Boss: ' + JSON.stringify(s));
+  });
+
+  test('die Plakette verdeckt den Kopf des Bosses nicht und Name/Beiname passen hinein', () => {
+    const r = JSON.parse(H.run(`(function () {
+      var sc = ${SC}, kam = sc.cameras.main;
+      var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0].getBounds();
+      var kopf = { x: b.x - kam.scrollX, y: b.y - kam.scrollY, w: b.width, h: b.height * 0.3 };
+      var t = ['bossintroName', 'bossintroBeiname'].map(function (n) { return sc.children.getByName(n).getBounds(); });
+      var p = sc.children.list.filter(function (o) { return sc.__bossZwischenszene.teile.indexOf(o) >= 0 && o.type === 'Image'
+        && o.depth === 1101; })[0].getBounds();
+      return JSON.stringify({ kopf: kopf, platte: { x: p.x, y: p.y, w: p.width, h: p.height },
+        texte: t.map(function (q) { return { x: q.x, r: q.right }; }) });
+    })()`));
+    const k = r.kopf, p = r.platte;
+    const schneidet = k.x < p.x + p.w && p.x < k.x + k.w && k.y < p.y + p.h && p.y < k.y + k.h;
+    assert.strictEqual(schneidet, false, 'Plakette ueber dem Kopf: ' + JSON.stringify(r));
+    r.texte.forEach((t) => assert.ok(t.r <= p.x + p.w - 8, 'Text ragt aus der Plakette: ' + JSON.stringify(r)));
+  });
+
+  // Der graue Streifen rechts (Browser, b424): dieser Raum ist schmaler als
+  // das Bild (768 gegen 960 px). Die Kamera bleibt in ihren Grenzen, zeigt
+  // aber zwangslaeufig ueber den Raum hinaus. Dort, wo sonst der Nebel
+  // deckt, muss jetzt der Lichtkreis dunkel decken — das ganze Bild lang.
+  test('die Kamera bleibt beim Schwenk in den Grenzen, und was ueber den Raum hinausragt, deckt der Lichtkreis', () => {
+    // Neu ansetzen: die erste Szene stand nach dem Aufwaermen schon bei der Rede.
+    taste(H, 'Escape'); bisEnde(H);
+    // Die Raeume sind zufaellig; der schmale Fall wird hergestellt: Kamera-
+    // grenzen schmaler als das Bild, wie im gemeldeten Raum.
+    H.run(`(function () { var k = ${SC}.cameras.main, b = k.getBounds();
+      window.__grenzenVorher = [b.x, b.y, b.width, b.height]; k.setBounds(b.x, b.y, 768, b.height); })()`);
+    boss(H, 'chainMaster');
+    assert.ok(lage(H).laeuft, 'Szene laeuft nicht');
+    let schmal = false;
+    for (let i = 0; i < 160 && lage(H).phase !== 'rede'; i++) {
+      H.step(2);
+      const s = sicht();
+      const r = H.run(`(function () { var l = ${SC}.children.getByName('bossintroLicht'); if (!l) return null;
+        var b = l.getBounds(); return JSON.stringify({ x: b.x, y: b.y, r: b.right, u: b.bottom }); })()`);
+      const L = r ? JSON.parse(r) : null;
+      const k = s.kam, g = s.grenzen, rand = 1;
+      // Der Zoom-Stoss verkleinert die Ansicht um die Mitte: Mass ist die Ansicht bei Zoom 1.
+      if (g.w >= k.w) assert.ok(k.x >= g.x - rand && k.x + k.w <= g.x + g.w + rand, 'Kamera links/rechts ausserhalb: ' + JSON.stringify(s));
+      else schmal = true;
+      if (g.h >= k.h) assert.ok(k.y >= g.y - rand && k.y + k.h <= g.y + g.h + rand, 'Kamera oben/unten ausserhalb: ' + JSON.stringify(s));
+      else schmal = true;
+      assert.ok(L && L.x <= k.x && L.y <= k.y && L.r >= k.x + k.w && L.u >= k.y + k.h,
+        'Lichtkreis deckt nicht das ganze Bild: ' + JSON.stringify({ kam: k, licht: L }));
+    }
+    assert.strictEqual(lage(H).phase, 'rede');
+    assert.ok(schmal, 'Aufbau: dieser Raum sollte schmaler sein als das Bild');
+    H.run(`${SC}.cameras.main.setBounds.apply(${SC}.cameras.main, window.__grenzenVorher)`);
+  });
+
+  test('ein Boss mit eigener Sichtmaske steht ohne sie in der Szene und bekommt sie danach zurueck', () => {
+    taste(H, 'Escape'); bisEnde(H);
+    const r = JSON.parse(H.run(`(function () {
+      var sc = ${SC}, b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+      var m = sc._enemyVisionMask; b.setMask(m);
+      window.BossZwischenszene.spiele(sc, b, BOSS_DEFINITIONS.chainMaster);
+      var waehrend = !!b.mask;
+      window.__bossMaske = m; window.__maskenBoss = b;
+      return JSON.stringify({ hatte: !!m, waehrend: waehrend });
+    })()`));
+    assert.ok(r.hatte, 'Aufbau: keine Sichtmaske in der Szene');
+    assert.strictEqual(r.waehrend, false, 'Sichtmaske verdeckt den Boss in der Szene');
+    taste(H, 'Escape'); bisEnde(H);
+    assert.strictEqual(H.run('window.__maskenBoss.mask === window.__bossMaske'), true, 'Boss bekommt seine Sichtmaske nicht zurueck');
+  });
+
+  // Wie im Browser gesehen: der Boss steht oben an der Wand, die Kamera kann
+  // ihn nicht in die Mitte holen — die Plakette muss nach unten ausweichen.
+  test('steht der Boss oben am Raumrand, weicht die Plakette nach unten aus', () => {
+    taste(H, 'Escape'); bisEnde(H);
+    H.run(`(function () {
+      var sc = ${SC}, g = sc.cameras.main.getBounds();
+      window.__lab = window.__lab || { refs: [] };
+      enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
+      debugForcedBoss = function () { return BOSS_DEFINITIONS.chainMaster; };
+      // Spieler an die obere Wand: spawnBoss setzt den Boss in seine Naehe.
+      player.setPosition(g.x + g.width / 2, g.y + 90); if (player.body) player.body.reset(player.x, player.y);
+      sc.cameras.main.centerOn(player.x, player.y);
+      window.__between = Phaser.Math.Between;
+      Phaser.Math.Between = function (a) { return a < 0 ? -40 : 0; };
+    })()`);
+    try { H.lab.spawnBoss(); } finally { H.run('Phaser.Math.Between = window.__between'); }
+    bisRede(H);
+    const r = JSON.parse(H.run(`(function () {
+      var sc = ${SC}, kam = sc.cameras.main;
+      var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0].getBounds();
+      var p = sc.children.list.filter(function (o) { return sc.__bossZwischenszene.teile.indexOf(o) >= 0 && o.type === 'Image' && o.depth === 1101; })[0].getBounds();
+      return JSON.stringify({ kopf: { x: b.x - kam.worldView.x, y: b.y - kam.worldView.y, w: b.width, h: b.height * 0.3 },
+        platte: { x: p.x, y: p.y, w: p.width, h: p.height }, h: kam.height });
+    })()`));
+    const k = r.kopf, p = r.platte;
+    assert.ok(k.y < r.h * 0.35, 'Aufbau: Boss steht nicht oben: ' + JSON.stringify(r));
+    const schneidet = k.x < p.x + p.w && p.x < k.x + k.w && k.y < p.y + p.h && p.y < k.y + k.h;
+    assert.strictEqual(schneidet, false, 'Plakette ueber dem Kopf: ' + JSON.stringify(r));
+    assert.ok(p.y > r.h / 2, 'Plakette ist nicht nach unten ausgewichen: ' + JSON.stringify(r));
+    taste(H, 'Escape'); bisEnde(H);
+  });
+
+  test('ein zu langer Name wird in die Plakette eingepasst', () => {
+    H.run(`(function () { var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+      window.BossZwischenszene.spiele(${SC}, b, { id: 'shadowCouncillor',
+        name: 'Ein ausserordentlich langer Name fuer einen Boss aus dem Kettenrat' }); })()`);
+    bisRede(H);
+    const r = JSON.parse(H.run(`(function () { var sc = ${SC};
+      var p = sc.children.list.filter(function (o) { return sc.__bossZwischenszene.teile.indexOf(o) >= 0 && o.type === 'Image' && o.depth === 1101; })[0].getBounds();
+      var n = sc.children.getByName('bossintroName').getBounds();
+      return JSON.stringify({ r: n.right, p: p.right, l: n.x, pl: p.x }); })()`));
+    assert.ok(r.r <= r.p - 8 && r.l >= r.pl, 'Name ragt aus der Plakette: ' + JSON.stringify(r));
+    taste(H, 'Escape'); bisEnde(H);
+  });
+
+  test('danach kommt alles zurueck: HUD, Nebel, Spotlight, Sichtmaske', () => {
+    taste(H, 'Escape');
+    bisEnde(H);
+    const s = sicht();
+    assert.strictEqual(s.karte, true, 'Minikarte fehlt danach');
+    assert.strictEqual(s.rahmen, true);
+    assert.strictEqual(s.balken, true);
+    assert.strictEqual(H.run('window.__spaet.visible'), true, 'spaet entstandenes HUD fehlt danach');
+    assert.strictEqual(s.nebel, true, 'Kriegsnebel fehlt danach');
+    assert.strictEqual(s.spot, true, 'Spotlight fehlt danach');
+    assert.strictEqual(s.licht, null, 'Lichtkreis bleibt liegen');
+    H.step(3);
+    assert.strictEqual(sicht().maskeEbene, true, 'Sichtmaske der Gegnerebene kommt nicht zurueck');
+  });
+});
+
 // Standbilder je Boss (Auftritt + Plakette) nach vorschau/, nur auf Wunsch.
 if (process.env.VORSCHAU) {
   test('Standbilder', async () => {

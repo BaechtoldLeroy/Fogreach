@@ -111,7 +111,11 @@ Jeden Boss direkt ansehen — `?boss=` setzt ihn sofort in den ersten Raum:
 Bei Elara laeuft zuerst das Finale an der Quelle (sofern noch nicht gesehen),
 die Zwischenszene folgt danach. Ohne die Flagge bleibt alles wie bisher.
 Standbilder je Boss: `VORSCHAU=1 node --test tests/bossZwischenszene.test.js`
-schreibt `vorschau/bossintro_<boss>_auftritt.png` und `_plakette.png`.
+schreibt `vorschau/bossintro_<boss>_auftritt.png` und `_plakette.png`
+(Canvas-Testkopf: ohne Nebel und Licht wie im Spiel). Wie der Spieler es
+sieht, nur im echten Browser (WebGL): `npx http-server -p 8080 -c-1 -s .`
+und `node tools/bossIntroBrowser.js [kettenmeister ...]` schreibt
+`vorschau/bossintro_browser_<boss>_<auftritt|plakette|rede|danach>.png`.
 
 ### Elaras Kammer (#161)
 

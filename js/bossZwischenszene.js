@@ -153,6 +153,33 @@
     return spr;
   }
 
+  // Lichtkreis: ein Weltbild mit hellem Loch um den Boss, aussen fast
+  // schwarz. Als Bild statt Maske: kein Neuzeichnen pro Bild, und es
+  // wirkt im Canvas-Renderer genauso wie unter WebGL.
+  var LICHT = 'bossintro_licht', LICHT_PX = 512, LICHT_WELT = 2200;
+  var LICHT_INNEN = 210, LICHT_AUSSEN = 380, LICHT_DUNKEL = 0.86;
+  function _lichtkreis(scene, boss) {
+    if (!scene.textures || !scene.add || !scene.add.image) return null;
+    try {
+      if (!scene.textures.exists(LICHT)) {
+        var ct = scene.textures.createCanvas(LICHT, LICHT_PX, LICHT_PX);
+        if (!ct) return null;
+        var ctx = ct.getContext(), m = LICHT_PX / 2, k = LICHT_PX / LICHT_WELT;
+        var g = ctx.createRadialGradient(m, m, LICHT_INNEN * k, m, m, LICHT_AUSSEN * k);
+        g.addColorStop(0, 'rgba(5,6,10,0)');
+        g.addColorStop(1, 'rgba(5,6,10,' + LICHT_DUNKEL + ')');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, LICHT_PX, LICHT_PX);
+        ct.refresh();
+        // Weich gestreckt, nicht in Pixelstufen (pixelArt: true waehlt NEAREST).
+        try { ct.setFilter(0); } catch (e) {}
+      }
+      var b = boss.getBounds ? boss.getBounds() : { centerX: boss.x, centerY: boss.y };
+      return scene.add.image(b.centerX, b.centerY, LICHT).setDisplaySize(LICHT_WELT, LICHT_WELT)
+        .setDepth(999).setAlpha(0).setName('bossintroLicht');
+    } catch (e) { return null; }
+  }
+
   /**
    * Spielt die Zwischenszene.
    *
@@ -208,15 +235,53 @@
     // sie stuende sonst auf den Balken und mitten im Bild. Gemerkt wird genau,
     // was hier ausgeblendet wurde — nur das kommt danach zurueck. Darunter
     // (Spotlight, Nebel) bleibt alles, das gehoert zur Welt.
+    //
+    // Nicht nur einmal: ein per ?boss= erzwungener Boss erscheint noch im
+    // create() der Szene, VOR der Minikarte und dem Raumbalken. Darum fegt
+    // die Szene jedes Bild nach (im Browser gemessen: graues Rechteck und
+    // Punktreihe oben rechts, ueber Plakette und Ueberspringen-Knopf).
     var hudAus = [];
-    try {
-      scene.children.list.forEach(function (o) {
-        if (o && o.visible && o.scrollFactorX === 0 && (o.depth || 0) >= 1000) {
-          o.setVisible(false);
-          hudAus.push(o);
-        }
-      });
-    } catch (e) {}
+    function hudFegen() {
+      try {
+        scene.children.list.forEach(function (o) {
+          if (o && o.visible && o.scrollFactorX === 0 && (o.depth || 0) >= 1000 && teile.indexOf(o) < 0) {
+            o.setVisible(false);
+            hudAus.push(o);
+          }
+        });
+      } catch (e) {}
+    }
+    hudFegen();
+    if (scene.events && typeof scene.events.on === 'function') {
+      scene.events.on('update', hudFegen);
+      abmelden.push(function () { scene.events.off('update', hudFegen); });
+    }
+
+    // --- Licht ----------------------------------------------------------------
+    // Waehrend der Szene steht die Spieluhr, und mit ihr der Nebel-Tick: der
+    // Kriegsnebel (fogUnseen) deckt alles noch Unerkundete schwarz zu, das
+    // Spotlight dunkelt alles ausser dem LETZTEN Sichtfeld des Spielers ab,
+    // und die Sichtmaske der Gegner laesst den Boss nur dort durch. Ein Boss,
+    // der beim Betreten des Raums erscheint, stand so im Schwarzen (im Browser
+    // gemessen: die ganze Welt schwarz). Fuer die Dauer der Szene treten diese
+    // drei zurueck; ein eigener Lichtkreis um den Boss haelt den Rest dunkel.
+    // Danach kommt alles zurueck, und ein erzwungener Nebel-Tick zeichnet das
+    // Sichtfeld neu. Erkundet wird dabei nichts.
+    var lichtAus = [];
+    ['fogUnseen', 'spotlightDim'].forEach(function (n) {
+      var o = scene[n];
+      if (o && o.visible && o.setVisible) { o.setVisible(false); lichtAus.push(o); }
+    });
+    var maskeBoss = boss && boss.mask ? boss.mask : null;
+    var ebene = scene.enemyLayer && scene.enemyLayer.mask ? scene.enemyLayer : null;
+    var maskeEbene = ebene ? ebene.mask : null;
+    try { if (maskeBoss && boss.clearMask) boss.clearMask(); } catch (e) {}
+    try { if (ebene && ebene.clearMask) ebene.clearMask(); } catch (e) {}
+    var licht = boss ? _lichtkreis(scene, boss) : null;
+    if (licht) {
+      teile.push(licht);
+      tween({ targets: licht, alpha: 1, duration: frist(BALKEN_MS) });
+    }
     try {
       window.eventChoiceOpen = true;
       if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
@@ -234,6 +299,11 @@
       teile.length = 0;
       hudAus.forEach(function (o) { if (o && o.scene) { try { o.setVisible(true); } catch (e) {} } });
       hudAus.length = 0;
+      lichtAus.forEach(function (o) { if (o && o.scene) { try { o.setVisible(true); } catch (e) {} } });
+      lichtAus.length = 0;
+      try { if (maskeBoss && boss && boss.scene && boss.setMask) boss.setMask(maskeBoss); } catch (e) {}
+      try { if (maskeEbene && ebene.scene && ebene.setMask) ebene.setMask(maskeEbene); } catch (e) {}
+      try { if (typeof window.forceFogUpdate === 'function') window.forceFogUpdate(); } catch (e) {}
       if (boss) {
         try {
           boss._introHaltBis = 0;
@@ -312,9 +382,15 @@
       var px = 24 + pw / 2 + 24, py = obenH + 14 + ph / 2;
       // Steht der Boss links im Bild (Kamera an der Raumkante), kommt die
       // Plakette nach rechts — sie soll ihn vorstellen, nicht verdecken.
+      // Ebenso nach unten, wenn er oben steht: an der Raumkante kann die
+      // Kamera ihn nicht in die Mitte holen (im Browser: Kopf unter der Plakette).
       try {
         var sicht = kam && kam.worldView;
-        if (boss && sicht && sicht.width && boss.x - sicht.x < b / 2) px = b - 24 - pw / 2;
+        if (boss && sicht && sicht.width) {
+          if (boss.x - sicht.x < b / 2) px = b - 24 - pw / 2;
+          var kopf = boss.getBounds ? boss.getBounds().top : boss.y;
+          if (kopf - sicht.y < obenH + 14 + ph + 10) py = h - untenH - 14 - ph / 2;
+        }
       } catch (e) {}
       var platte;
       if (messing && UR.kachelBild) {
