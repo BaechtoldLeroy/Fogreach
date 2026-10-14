@@ -304,9 +304,19 @@
       this._destroyHighlight();
     };
 
+    // Gehoert der Schritt in eine andere Szene (z. B. "Greif an" in die
+    // GameScene), zeigt ihn diese Szene nicht — er stand sonst schon im Hub,
+    // sobald Aldric angesprochen war. Die Overlay-Instanz der richtigen Szene
+    // zeigt ihn beim Betreten. scene: null = ueberall.
+    overlay._fremdeSzene = function (step) {
+      if (!step || !step.scene) return false;
+      var key = this.scene && this.scene.sys && this.scene.sys.settings && this.scene.sys.settings.key;
+      return !!key && key !== step.scene;
+    };
+
     overlay._renderBanner = function (step) {
       // Null step or no hintKey => banner must not be visible.
-      if (!step || step.hintKey === null || step.hintKey === undefined) {
+      if (!step || step.hintKey === null || step.hintKey === undefined || this._fremdeSzene(step)) {
         this._destroyBanner();
         return;
       }
@@ -408,7 +418,7 @@
     };
 
     overlay._renderHighlight = function (step) {
-      var ref = step ? step.targetRef : null;
+      var ref = (step && !this._fremdeSzene(step)) ? step.targetRef : null;
       var newKey = _refKey(ref);
 
       // No target → tear down any existing highlight.

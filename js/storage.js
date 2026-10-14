@@ -211,6 +211,10 @@ function hasSave() {
 
 function clearSave() {
   (window.SlotStorage || localStorage).removeItem(SAVE_KEY);
+  // Der Einfuehrungstext gehoert zum Spielstand: er ist die Karte von Akt 1.
+  // Blieb das Merkzeichen stehen, sah ein neues Spiel auf einem benutzten
+  // Platz (oder ?autostart=1) weder Einfuehrung noch Akt-1-Karte.
+  try { (window.SlotStorage || localStorage).removeItem('demonfall_seen_intro_splash'); } catch (_) {}
   // Tutorial state lives in its own key (demonfall_tutorial_v1) per spec
   // 044 C-07. Wiping the save means "I want a clean slate", so reset the
   // tutorial to its first step too — otherwise a player who deleted their
