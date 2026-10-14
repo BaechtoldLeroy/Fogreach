@@ -24,7 +24,8 @@ before(async () => {
     window.__altarModus = window.RoomMode.create('defend', {});
     window.__altarModus.arm(sc);
     window.__altarSprite = sc.children.list.filter(function (o) {
-      return o && o.texture && o.texture.key === 'roommode_defend_altar';
+      // Der Pixel-Altar (raummodus_altar); die alte Zeichnung nur ohne Bild.
+      return o && o.texture && o.texture.key === 'raummodus_altar';
     }).pop();
   })()`);
 });

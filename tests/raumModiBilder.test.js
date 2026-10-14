@@ -1,13 +1,13 @@
 // tests/raumModiBilder.test.js — Pixelbilder und Messing-Toasts der
-// Sonderraum-Modi (Vorschau ?debug=1&raummodi=neu, js/roomModeBilder.js).
+// Sonderraum-Modi (js/roomModeBilder.js, fest eingebaut — keine Flagge mehr).
 //
-// Mit Flagge: Rudelfuehrer-Siegel folgt dem Anfuehrer, Pixel-Altar in
+// Immer: Rudelfuehrer-Siegel folgt dem Anfuehrer, Pixel-Altar in
 // derselben Groesse mit demselben Koerper (beschaedigt als eigenes Bild),
 // Bannkreis-Siegel mit Sanduhr, Fluchtsiegel an der Treppe, Toasts mit
 // Modus-Symbol (Start, Fortschritt, Erfolg, Misserfolg), HUD-Zeile auf
-// Messingplatte mit Kontrast >= 4,5. Ohne Flagge — oder wenn ein Bild fehlt —
-// bleibt alles beim Alten. Die Mechanik (Altar-Leben, Koerper) ist in beiden
-// Laeufen dieselbe.
+// Messingplatte mit Kontrast >= 4,5. Nur wenn ein Bild (oder das Banner)
+// fehlt, bleibt die alte Zeichnung bzw. der alte Text. Die Mechanik
+// (Altar-Leben, Koerper) ist mit und ohne Bilder dieselbe.
 //
 // Die Modi werden wie in altarTiefe.test.js ueber RoomMode.create(...) und
 // arm/start gezielt aufgebaut. Fuer Anzeige und Toasts legt der Test eine
@@ -75,10 +75,11 @@ function altarLauf(H, n, schritte) {
   })()`);
 }
 
-describe('mit Vorschau-Flagge raummodi=neu', () => {
+describe('immer neu: Bilder ohne jede Flagge', () => {
   let H = null;
   before(async () => {
-    H = await launchDungeon({ depth: 3, zusatz: '&debug=1&raummodi=neu' });
+    // Bewusst ohne ?debug=1 und ohne raummodi — die Bilder gelten immer.
+    H = await launchDungeon({ depth: 3 });
     vorgabeLegen(H);
   });
   after(async () => { if (H) await H.shutdown(); });
@@ -323,16 +324,20 @@ describe('mit Vorschau-Flagge raummodi=neu', () => {
   });
 });
 
-describe('ohne Flagge: alles wie bisher', () => {
+describe('Rueckfall: ohne Modus-Bilder alles wie bisher', () => {
   let H = null;
   before(async () => {
-    H = await launchDungeon({ depth: 3, zusatz: '&debug=1' });
+    H = await launchDungeon({ depth: 3 });
     vorgabeLegen(H);
+    // Alle Modus-Bilder fehlen (z. B. Ladefehler): jede Stelle zeichnet wie frueher.
+    H.run(`(function () { var B = window.RoomModeBilder, sc = ${SC};
+      Object.keys(B.BILDER).forEach(function (n) { sc.textures.remove(B.BILDER[n]); });
+      Object.keys(B.SIEGEL).forEach(function (n) { sc.textures.remove(B.SIEGEL[n].key); });
+      Object.keys(B.SYMBOL).forEach(function (n) { sc.textures.remove(B.SYMBOL[n]); }); })()`);
   });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('keine Modus-Bilder geladen, Altar und Bannkreis gezeichnet, keine Fluchtmarke', () => {
-    assert.strictEqual(H.run('window.RoomModeBilder.aktiv()'), false);
+  test('Altar und Bannkreis gezeichnet, keine Fluchtmarke', () => {
     const r = H.run(`(function () { var sc = ${SC};
       var d = window.RoomMode.create('defend', {}); d.arm(sc);
       var s = window.RoomMode.create('survival', {}); s.arm(sc);
@@ -351,21 +356,26 @@ describe('ohne Flagge: alles wie bisher', () => {
     const r = altarLauf(H, 4, 80);
     assert.strictEqual(r.key, 'roommode_defend_altar');
     assert.strictEqual(r.bw + 'x' + r.bh + '@' + Math.round(r.bx) + ',' + Math.round(r.by), KOERPER);
-    // Derselbe Drain wie im Lauf mit Flagge (dort gemessen, hier nachgerechnet).
+    // Derselbe Drain wie im Lauf mit Bildern (dort gemessen, hier nachgerechnet).
     const erwartet = [];
     let hp = 100; const n = 4;
     for (let k = 0; k < 80; k++) { hp = Math.max(0, hp - n * 1.5 * (1 + (n - 1) * 0.2) * 0.25); erwartet.push(Math.ceil(hp)); }
     gleich(r.verlauf, erwartet);
   });
 
-  test('Start: altes Banner, kein Messing-Toast', () => {
+  test('Start: altes Banner, kein Messing-Toast; Zeitzeile ohne Symbol mittig auf der Platte', () => {
     H.run(`window.__mv = { id: 'defend', state: { mode: 'defend', seconds: 30, hp: 100, maxHp: 100, x: 0, y: 0 } }`);
     H.step(1);
     const r = H.run(`(function () { var sc = ${SC};
+      var p = sc.children.list.filter(function (o) { return o.texture && /^ui_leiste@/.test(o.texture.key) && o.depth === 1649 && o.visible; });
+      var t = sc.children.list.filter(function (o) { return o.type === 'Text' && o.depth === 1650 && o.visible && /\\d/.test(o.text); }).pop();
       return { toast: !!sc._activeEventToast,
         kasten: sc.children.list.filter(function (o) { return o.type === 'Rectangle' && o.depth === 1649 && o.visible; }).length,
-        platte: sc.children.list.filter(function (o) { return o.texture && /^ui_leiste@/.test(o.texture.key) && o.depth === 1649; }).length }; })()`);
-    gleich(r, { toast: false, kasten: 1, platte: 0 });
+        // Die Messingplatte haengt am Rahmen (uiRahmen), nicht an den Modus-Bildern.
+        platte: p.length,
+        symbol: sc.children.list.filter(function (o) { return o.texture && /^raummodus_symbol/.test(o.texture.key) && o.visible; }).length,
+        mittig: !!(p[0] && t && Math.abs(p[0].x - t.x) < 1) }; })()`);
+    gleich(r, { toast: false, kasten: 1, platte: 1, symbol: 0, mittig: true });
     H.run('window.__mv = null');
   });
 });

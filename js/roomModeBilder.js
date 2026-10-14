@@ -1,9 +1,9 @@
 /* =====================================================================
  * roomModeBilder.js — Pixelbilder und Messing-Toasts der Sonderraum-Modi
  * ---------------------------------------------------------------------
- * Vorschau hinter ?debug=1&raummodi=neu. Ohne Flagge (oder wenn ein Bild
- * fehlt) bleibt alles, wie es war: gezeichnete Kreise, der alte Altar, das
- * alte Banner. Die Modi selbst fragen hier nur "gibt es ein Bild?" — ihre
+ * Fest eingebaut (vorher Vorschau ?raummodi=neu). Fehlt ein Bild oder das
+ * Messing-Banner, faellt jede Stelle auf die alte Zeichnung bzw. den alten
+ * Text zurueck. Die Modi selbst fragen hier nur "gibt es ein Bild?" — ihre
  * Mechanik (Koerper, Timer, Ziele) haengt an nichts davon.
  *
  * Bilder: assets/sprites/raummodi/, gebaut von tools/raummodiBauen.js aus
@@ -64,12 +64,6 @@
     return (I && typeof I.t === 'function') ? I.t(key, params || {}) : key;
   }
 
-  /** Steht die Vorschau-Flagge? (?debug=1&raummodi=neu) */
-  function aktiv() {
-    var G = (typeof window !== 'undefined') ? window.DebugGate : null;
-    try { return !!(G && G.flagge('raummodi') === 'neu'); } catch (e) { return false; }
-  }
-
   function _alleKeys() {
     var k = [];
     Object.keys(BILDER).forEach(function (n) { k.push(BILDER[n]); });
@@ -78,9 +72,9 @@
     return k;
   }
 
-  /** Im preload(): nur mit Flagge, nur die fehlenden. */
+  /** Im preload(): immer, nur die fehlenden. */
   function vorladen(scene) {
-    if (!aktiv() || !scene || !scene.load || !scene.textures) return;
+    if (!scene || !scene.load || !scene.textures) return;
     Object.keys(BILDER).forEach(function (n) {
       var k = BILDER[n];
       if (!scene.textures.exists(k)) scene.load.image(k, ORDNER + k + '.png?v=' + V);
@@ -97,9 +91,9 @@
     });
   }
 
-  /** Bild verwendbar? Ohne Flagge nie — dann zeichnen die Modi wie bisher. */
+  /** Bild verwendbar? Sonst zeichnen die Modi wie bisher. */
   function hat(scene, key) {
-    return !!(key && aktiv() && scene && scene.textures && scene.textures.exists(key));
+    return !!(key && scene && scene.textures && scene.textures.exists(key));
   }
 
   // ---- Welt-Objekte ------------------------------------------------------
@@ -135,7 +129,7 @@
 
   /**
    * Ein Bodensiegel (jagd, bannkreis, flucht) an (x,y) = Bodenpunkt.
-   * null ohne Flagge oder Bild — der Aufrufer bleibt dann beim Alten.
+   * null ohne Bild — der Aufrufer bleibt dann beim Alten.
    */
   function siegel(scene, art, x, y, tiefe) {
     var s = SIEGEL[art];
@@ -215,7 +209,7 @@
   }
 
   var RoomModeBilder = {
-    aktiv: aktiv, vorladen: vorladen, hat: hat,
+    vorladen: vorladen, hat: hat,
     altarKey: altarKey, altarZustand: altarZustand,
     siegel: siegel, schwebe: schwebe,
     symbolKey: symbolKey, toast: toast, zielToast: zielToast,

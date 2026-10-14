@@ -20,8 +20,8 @@
   var _prevMode = 'clear';
   var _bannerUntil = 0;
   var _bannerBottom = 90;  // Unterkante des Banner-Kastens (dynamisch, für HUD-Y)
-  // Vorschau raummodi=neu (roomModeBilder.js): Pixelbilder und Messing-Toasts.
-  // Alles hier ist null, solange die Flagge fehlt oder ein Bild nicht da ist.
+  // Pixelbilder und Messing-Toasts (roomModeBilder.js). Alles hier bleibt null,
+  // solange ein Bild nicht da ist — dann zeichnet die alte Anzeige.
   var jagdSiegel = null, jagdKopf = null, altarLeiste = null, hudPlatte = null, hudSymbol = null;
   var _gemeldet = {};      // Fortschritts-Toasts, je Raum hoechstens einmal
   var MESSING_TEXT = '#f3e6c4', ERFUELLT_TEXT = '#8dffb0', VERFEHLT_TEXT = '#ffa0a0';
@@ -129,7 +129,7 @@
   // false = kein Bild, der gezeichnete Kreis bleibt.
   function _jagdBilder(scene, state) {
     var B = _B();
-    if (!B || !B.aktiv()) return false;
+    if (!B) return false;
     if (!jagdSiegel) {
       var T = window.WELT_TIEFEN;
       jagdSiegel = _maske(scene, B.siegel(scene, 'jagd', state.x, state.fussY || state.y, T ? T.BODEN_SCHEIN : 44));
@@ -170,7 +170,7 @@
   // Messingrahmen um den Altar-Lebensbalken (Balken selbst bleibt in g).
   function _altarRahmen(scene, x, y) {
     var B = _B(), U = _UR(scene);
-    if (!B || !B.aktiv() || !U || typeof U.leisteBild !== 'function') return false;
+    if (!B || !U || typeof U.leisteBild !== 'function') return false;
     if (!altarLeiste) {
       var key = U.leisteBild(scene, 58, 16);
       if (!key) return false;
@@ -183,11 +183,13 @@
   // HUD-Zeile auf einer Messingplatte mit Modus-Symbol (Stil der HUD-Leiste).
   function _hudPlatte(scene, modeId) {
     var B = _B(), U = _UR(scene);
-    if (!B || !B.aktiv() || !U || typeof U.leisteBild !== 'function' || !hudText) return false;
+    if (!B || !U || typeof U.leisteBild !== 'function' || !hudText) return false;
     var sym = B.symbolKey(scene, modeId);
     var SYM = 22, pad = 12;
+    // Platz links fuer das Symbol; fehlt sein Bild, steht der Text mittig.
+    var vorne = sym ? pad + SYM : 0;
     // Breite in 16er-Stufen: jede neue Groesse waere eine eigene Textur.
-    var w = Math.ceil((hudText.width + SYM + pad * 3) / 16) * 16, h = 34;
+    var w = Math.ceil((hudText.width + vorne + pad * 2) / 16) * 16, h = 34;
     var key = U.leisteBild(scene, w, h);
     if (!key) return false;
     if (!hudPlatte) hudPlatte = scene.add.image(0, 0, key).setScrollFactor(0).setDepth(DEPTH_HUD - 1);
@@ -200,16 +202,16 @@
       hudSymbol.setDisplaySize(SYM, SYM).setPosition(links + pad + SYM / 2, hudText.y);
     }
     // Text rechts neben dem Symbol mittig in den Rest.
-    hudText.x = links + pad + SYM + (w - pad - SYM) / 2;
+    hudText.x = links + vorne + (w - vorne) / 2;
     hudPlatte.setVisible(true);
-    if (hudSymbol) hudSymbol.setVisible(true);
+    if (hudSymbol) hudSymbol.setVisible(!!sym);
     return true;
   }
 
   // Fortschritt: einmal je Raum "noch 10 Sekunden" und "der Altar broeckelt".
   function _fortschritt(scene, modeId, state, done) {
     var B = _B();
-    if (!B || !B.aktiv() || done || state.failed) return;
+    if (!B || done || state.failed) return;
     var sek = state.seconds;
     if ((modeId === 'survival' || modeId === 'escape' || modeId === 'defend')
         && typeof sek === 'number' && sek > 0 && sek <= 10 && !_gemeldet.zehn) {
@@ -261,9 +263,9 @@
       var ik = bannerInfoKeyFor(modeId);
       _gemeldet = {};
       _bilderWeg(); // Siegel/Rahmen gehoeren zum vorigen Raum
-      // Vorschau: Start als Messing-Toast mit Modus-Symbol statt des alten Kastens.
+      // Start als Messing-Toast mit Modus-Symbol; ohne Bild/Banner der alte Kasten.
       var _Bs = _B();
-      var _alsToast = !!(bk && _Bs && _Bs.aktiv() && _Bs.toast(scene, modeId,
+      var _alsToast = !!(bk && _Bs && _Bs.toast(scene, modeId,
         _t(bk, { seconds: _secs }) + (ik ? '\n' + _t(ik, { seconds: _secs }) : '')));
       if (_alsToast) {
         _bannerUntil = 0;

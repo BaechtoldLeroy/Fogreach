@@ -133,7 +133,7 @@
         var mitte = (A && typeof A.mitteImRaum === 'function') ? A.mitteImRaum(scene) : { x: 0, y: 0 };
         objX = mitte.x; objY = mitte.y;
         if (scene && scene.add) {
-          // Pixel-Altar (Vorschau raummodi=neu) — gleiche 64x60 wie die
+          // Pixel-Altar (ohne Bild die alte Zeichnung) — gleiche 64x60 wie die
           // Zeichnung, Koerper und Fusspunkt bleiben deshalb unveraendert.
           var _B = (typeof window !== 'undefined') ? window.RoomModeBilder : null;
           var _key = (_B && _B.altarKey(scene)) || null;

@@ -910,7 +910,7 @@ function preload() {
   if (window.uiRahmen) window.uiRahmen.vorladen(this);
   // Icon-Streifen der Faehigkeitsleiste und der HUD-Knoepfe (#195).
   if (window.hudLeiste) window.hudLeiste.vorladen(this);
-  // Bilder der Sonderraum-Modi, nur unter ?debug=1&raummodi=neu.
+  // Bilder der Sonderraum-Modi (Siegel, Altar, Medaillons) — immer.
   if (window.RoomModeBilder) window.RoomModeBilder.vorladen(this);
   // Siegel und Effekte der Boss-Zwischenszenen.
   if (window.BossZwischenszene) window.BossZwischenszene.vorladen(this);

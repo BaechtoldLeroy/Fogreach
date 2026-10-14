@@ -38,7 +38,7 @@
   function EscapeMode() {
     var scene = null, duration = _depthSeconds(), remaining = duration, spawnAcc = 0, typ = 'enemy', zug = 0;
     var marken = [];
-    // Vorschau raummodi=neu: der Ausgang ist die Treppe — darunter ein gruenes
+    // Der Ausgang ist die Treppe — darunter ein gruenes
     // Fluchtsiegel, darueber ein schwebender Pfeil. Rein zur Anzeige; ohne
     // Bild bleibt die Treppe wie sie ist (heute gab es hier gar kein Objekt).
     function _marken(sc) {

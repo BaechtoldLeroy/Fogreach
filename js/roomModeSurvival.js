@@ -131,7 +131,7 @@
         var A = (typeof window !== 'undefined') ? window.RoomModeAnchor : null;
         var mitte = (A && typeof A.mitteImRaum === 'function') ? A.mitteImRaum(scene) : { x: 0, y: 0 };
         ankerX = mitte.x; ankerY = mitte.y;
-        // Vorschau raummodi=neu: animiertes Pixel-Siegel mit schwebender
+        // Animiertes Pixel-Siegel mit schwebender
         // Sanduhr als Zeitanker. Ohne Bild bleibt der gezeichnete Bannkreis.
         var B = (typeof window !== 'undefined') ? window.RoomModeBilder : null;
         if (scene && scene.add && B) {

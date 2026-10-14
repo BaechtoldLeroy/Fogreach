@@ -97,7 +97,7 @@ function _objectiveCompleteFx(scene) {
   if (!scene) return;
   try { if (scene.cameras && scene.cameras.main) scene.cameras.main.flash(300, 40, 190, 90); } catch (e) {}
   try { if (window.soundManager) window.soundManager.playSFX('level_up'); } catch (e) {}
-  // Vorschau raummodi=neu: Messing-Toast mit Modus-Symbol statt des Textes.
+  // Messing-Toast mit Modus-Symbol; ohne Bild/Banner der alte Text.
   try { if (window.RoomModeBilder && window.RoomModeBilder.zielToast(scene, false)) return; } catch (e) {}
   if (!scene.add || !scene.tweens) return;
   try {
