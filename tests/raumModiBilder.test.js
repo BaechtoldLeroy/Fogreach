@@ -136,19 +136,28 @@ describe('mit Vorschau-Flagge raummodi=neu', () => {
         maske: !!(s[0] && s[0].mask), kopf: k.length, kopfY: k[0] && k[0].y,
         tx: t.x, fuss: t.y + t.displayHeight * (1 - t.originY), oben: t.y - t.displayHeight * t.originY };
     })()`);
-    // Toleranz 4 px: das Siegel wird im update() nachgefuehrt, der Anfuehrer
-    // laeuft danach im selben Bild noch ein Stueck weiter (Physik).
+    // Exakt: das Siegel wird nach der Physik (postupdate) nachgezogen, nicht
+    // nur in update() — sonst hinkt es dem laufenden Anfuehrer ein Bild nach.
+    // Gemessen wird in einem Bild, in dem er WIRKLICH laeuft (Schub, dann
+    // takten, bis er sich bewegt hat) — sonst sieht man das Nachhinken nicht.
+    H.run('if (window.__ziel.body) window.__ziel.body.setVelocity(120, 60);');
     let a = lage();
+    for (let i = 0; i < 120; i++) {
+      const vorher = a;
+      H.step(1);
+      a = lage();
+      if (Math.abs(a.tx - vorher.tx) > 0.5 || Math.abs(a.fuss - vorher.fuss) > 0.5) break;
+    }
     assert.strictEqual(a.n, 1, 'kein Rudelfuehrer-Siegel: ' + JSON.stringify(a));
     assert.ok(a.sicht, 'Siegel unsichtbar');
-    assert.ok(Math.abs(a.sx - a.tx) < 4 && Math.abs(a.sy - a.fuss) < 4, 'Siegel nicht unter den Fuessen: ' + JSON.stringify(a));
+    assert.ok(Math.abs(a.sx - a.tx) < 0.01 && Math.abs(a.sy - a.fuss) < 0.01, 'Siegel nicht unter den Fuessen: ' + JSON.stringify(a));
     assert.ok(a.tiefe < 50, 'Siegel liegt nicht unter den Figuren (Gegnerlayer 50): ' + a.tiefe);
     assert.strictEqual(a.kopf, 1, 'keine Kopfmarke');
     assert.ok(a.kopfY < a.oben, 'Kopfmarke nicht ueber dem Kopf: ' + JSON.stringify(a));
     H.run('window.__ziel.x += 70; window.__ziel.y += 40; if (window.__ziel.body) window.__ziel.body.reset(window.__ziel.x, window.__ziel.y);');
     H.step(1);
     a = lage();
-    assert.ok(Math.abs(a.sx - a.tx) < 4 && Math.abs(a.sy - a.fuss) < 4, 'Siegel folgt nicht: ' + JSON.stringify(a));
+    assert.ok(Math.abs(a.sx - a.tx) < 0.01 && Math.abs(a.sy - a.fuss) < 0.01, 'Siegel folgt nicht: ' + JSON.stringify(a));
     // Anfuehrer tot -> Marke weg.
     H.run('window.__ziel.setActive(false)');
     H.step(1);

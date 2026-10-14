@@ -136,18 +136,35 @@
       if (!jagdSiegel) return false;
       var sym = B.symbolKey(scene, 'hunt');
       if (sym) jagdKopf = _maske(scene, scene.add.image(state.x, 0, sym).setDisplaySize(18, 18).setDepth(DEPTH_WORLD));
+      // sync() laeuft in update(), die Physik schreibt die Koerperposition aber
+      // erst in postupdate auf den Sprite: ohne Nachziehen hinkt das Siegel
+      // dem laufenden Anfuehrer ein Bild hinterher.
+      if (scene.events && !scene.__jagdNachziehen) {
+        scene.__jagdNachziehen = true;
+        scene.events.on('postupdate', _jagdNachziehen);
+      }
     }
     var an = !!state.targetAlive;
     jagdSiegel.setVisible(an);
-    if (an) jagdSiegel.setPosition(state.x, state.fussY || state.y);
-    if (jagdKopf) {
-      jagdKopf.setVisible(an);
-      if (an) {
-        var now = (scene.time && scene.time.now) || 0;
-        jagdKopf.setPosition(state.x, (state.kopfY || state.y - 40) - 12 - 2 * Math.sin(now / 220));
-      }
-    }
+    if (jagdKopf) jagdKopf.setVisible(an);
+    if (an) _jagdSetzen(scene, state);
     return true;
+  }
+
+  function _jagdSetzen(scene, state) {
+    jagdSiegel.setPosition(state.x, state.fussY || state.y);
+    if (jagdKopf) {
+      var now = (scene.time && scene.time.now) || 0;
+      jagdKopf.setPosition(state.x, (state.kopfY || state.y - 40) - 12 - 2 * Math.sin(now / 220));
+    }
+  }
+
+  function _jagdNachziehen() {
+    if (!jagdSiegel || !jagdSiegel.scene) return;
+    var R = window.RoomMode;
+    if (!R || typeof R.activeModeId !== 'function' || R.activeModeId() !== 'hunt') return;
+    var state = (typeof R.activeState === 'function') ? (R.activeState() || {}) : {};
+    if (state.targetAlive && typeof state.x === 'number') _jagdSetzen(jagdSiegel.scene, state);
   }
 
   // Messingrahmen um den Altar-Lebensbalken (Balken selbst bleibt in g).
