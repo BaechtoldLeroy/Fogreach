@@ -1,0 +1,443 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-schattenrat-schatten 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 1.png",
+   "frame": {
+    "x": 72,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 2.png",
+   "frame": {
+    "x": 144,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 3.png",
+   "frame": {
+    "x": 216,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 4.png",
+   "frame": {
+    "x": 0,
+    "y": 116,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 5.png",
+   "frame": {
+    "x": 72,
+    "y": 116,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 6.png",
+   "frame": {
+    "x": 144,
+    "y": 116,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 7.png",
+   "frame": {
+    "x": 216,
+    "y": 116,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 8.png",
+   "frame": {
+    "x": 0,
+    "y": 232,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 9.png",
+   "frame": {
+    "x": 72,
+    "y": 232,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 10.png",
+   "frame": {
+    "x": 144,
+    "y": 232,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 11.png",
+   "frame": {
+    "x": 216,
+    "y": 232,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 12.png",
+   "frame": {
+    "x": 0,
+    "y": 348,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 13.png",
+   "frame": {
+    "x": 72,
+    "y": 348,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 14.png",
+   "frame": {
+    "x": 144,
+    "y": 348,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-schattenrat-schatten 15.png",
+   "frame": {
+    "x": 216,
+    "y": 348,
+    "w": 72,
+    "h": 116
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 72,
+    "h": 116
+   },
+   "sourceSize": {
+    "w": 72,
+    "h": 116
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.8362068965517241
+   },
+   "duration": 83
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-schattenrat-schatten.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 288,
+   "h": 464
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 36,
+   "y": 97
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-schattenrat-schatten",
+    "from": 0,
+    "to": 15,
+    "direction": "forward"
+   }
+  ]
+ }
+}

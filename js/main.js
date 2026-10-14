@@ -912,6 +912,8 @@ function preload() {
   if (window.hudLeiste) window.hudLeiste.vorladen(this);
   // Bilder der Sonderraum-Modi, nur unter ?debug=1&raummodi=neu.
   if (window.RoomModeBilder) window.RoomModeBilder.vorladen(this);
+  // Siegel und Effekte der Boss-Zwischenszenen, nur unter ?debug=1&bossintro=neu.
+  if (window.BossZwischenszene) window.BossZwischenszene.vorladen(this);
   // Player sprites are preloaded in StartScene (dir00 only);
   // other directions lazy-load via ensureDirectionLoaded().
   // #171: Die Schlagfolge des Nahkampfs gibt es nur hier unten.

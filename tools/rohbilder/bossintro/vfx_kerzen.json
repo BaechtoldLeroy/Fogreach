@@ -1,0 +1,339 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 1.png",
+   "frame": {
+    "x": 144,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 2.png",
+   "frame": {
+    "x": 288,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 3.png",
+   "frame": {
+    "x": 432,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 4.png",
+   "frame": {
+    "x": 0,
+    "y": 74,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 5.png",
+   "frame": {
+    "x": 144,
+    "y": 74,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 6.png",
+   "frame": {
+    "x": 288,
+    "y": 74,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 7.png",
+   "frame": {
+    "x": 432,
+    "y": 74,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 8.png",
+   "frame": {
+    "x": 0,
+    "y": 148,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 9.png",
+   "frame": {
+    "x": 144,
+    "y": 148,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 10.png",
+   "frame": {
+    "x": 288,
+    "y": 148,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  },
+  {
+   "filename": "fogreach-zeremonienmeister-kerzenkreis 11.png",
+   "frame": {
+    "x": 432,
+    "y": 148,
+    "w": 144,
+    "h": 74
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 144,
+    "h": 74
+   },
+   "sourceSize": {
+    "w": 144,
+    "h": 74
+   },
+   "pivot": {
+    "x": 0.5,
+    "y": 0.5945945945945946
+   },
+   "duration": 83
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-zeremonienmeister-kerzenkreis.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 576,
+   "h": 222
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 72,
+   "y": 44
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-zeremonienmeister-kerzenkreis",
+    "from": 0,
+    "to": 11,
+    "direction": "forward"
+   }
+  ]
+ }
+}

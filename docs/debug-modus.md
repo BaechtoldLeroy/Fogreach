@@ -93,6 +93,26 @@ weg und betritt den Hub ueber den Startbildschirm. Bilder:
 `assets/sprites/aktwechsel/`, Standbilder aller Karten:
 `node tools/aktwechselVorschau.js [en]` (nach `vorschau/`).
 
+#### Zwischenszene vor dem Boss (Vorschau)
+
+| Flagge | Wirkung |
+|---|---|
+| `&bossintro=neu` | vor JEDEM Boss die Zwischenszene statt Banner und Beat: Balken, Kamerafahrt zum Boss, Auftritt mit Effekt, Messing-Plakette mit Siegel, zwei Seiten Rede (weiter per Taste, Klick oder Tipp; ESC oder "Überspringen" beendet) |
+
+Jeden Boss direkt ansehen — `?boss=` setzt ihn sofort in den ersten Raum:
+
+```
+?debug=1&dungeon=1&boss=kettenmeister&bossintro=neu
+?debug=1&dungeon=1&boss=zeremonienmeister&bossintro=neu
+?debug=1&dungeon=1&boss=schattenrat&bossintro=neu
+?debug=1&dungeon=1&boss=elara&bossintro=neu
+```
+
+Bei Elara laeuft zuerst das Finale an der Quelle (sofern noch nicht gesehen),
+die Zwischenszene folgt danach. Ohne die Flagge bleibt alles wie bisher.
+Standbilder je Boss: `VORSCHAU=1 node --test tests/bossZwischenszene.test.js`
+schreibt `vorschau/bossintro_<boss>_auftritt.png` und `_plakette.png`.
+
 ### Elaras Kammer (#161)
 
 | Flagge | Wirkung |

@@ -1,0 +1,651 @@
+{
+ "frames": [
+  {
+   "filename": "fogreach-elara-quellnebel 0.png",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 1.png",
+   "frame": {
+    "x": 174,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 2.png",
+   "frame": {
+    "x": 348,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 3.png",
+   "frame": {
+    "x": 522,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 4.png",
+   "frame": {
+    "x": 696,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 5.png",
+   "frame": {
+    "x": 0,
+    "y": 56,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 6.png",
+   "frame": {
+    "x": 174,
+    "y": 56,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 7.png",
+   "frame": {
+    "x": 348,
+    "y": 56,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 8.png",
+   "frame": {
+    "x": 522,
+    "y": 56,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 9.png",
+   "frame": {
+    "x": 696,
+    "y": 56,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 10.png",
+   "frame": {
+    "x": 0,
+    "y": 112,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 11.png",
+   "frame": {
+    "x": 174,
+    "y": 112,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 12.png",
+   "frame": {
+    "x": 348,
+    "y": 112,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 13.png",
+   "frame": {
+    "x": 522,
+    "y": 112,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 14.png",
+   "frame": {
+    "x": 696,
+    "y": 112,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 15.png",
+   "frame": {
+    "x": 0,
+    "y": 168,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 16.png",
+   "frame": {
+    "x": 174,
+    "y": 168,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 17.png",
+   "frame": {
+    "x": 348,
+    "y": 168,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 18.png",
+   "frame": {
+    "x": 522,
+    "y": 168,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 19.png",
+   "frame": {
+    "x": 696,
+    "y": 168,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 20.png",
+   "frame": {
+    "x": 0,
+    "y": 224,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 21.png",
+   "frame": {
+    "x": 174,
+    "y": 224,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 22.png",
+   "frame": {
+    "x": 348,
+    "y": 224,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  },
+  {
+   "filename": "fogreach-elara-quellnebel 23.png",
+   "frame": {
+    "x": 522,
+    "y": 224,
+    "w": 174,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 174,
+    "h": 56
+   },
+   "sourceSize": {
+    "w": 174,
+    "h": 56
+   },
+   "pivot": {
+    "x": 0.5344827586206896,
+    "y": 0.5535714285714286
+   },
+   "duration": 100
+  }
+ ],
+ "meta": {
+  "app": "PixelLab VFX Creator",
+  "image": "fogreach-elara-quellnebel.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 870,
+   "h": 280
+  },
+  "scale": "1",
+  "anchor": {
+   "kind": "origin",
+   "x": 93,
+   "y": 31
+  },
+  "frameTags": [
+   {
+    "name": "fogreach-elara-quellnebel",
+    "from": 0,
+    "to": 23,
+    "direction": "forward"
+   }
+  ]
+ }
+}

@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="assets/ui/apple-touch-icon.png?v=1" />
     <!-- #88: EIN Schalter fuer alle Debug-Oberflaechen. Steht vor dem
          Fehler-Overlay, weil das ihn schon braucht. Ohne Abhaengigkeiten. -->
-    <script src="js/debugGate.js?v=038"></script>
+    <script src="js/debugGate.js?v=039"></script>
 
     <script src="js/pixelTexturen.js?v=018"></script>
     <!-- Mobile-Fehler-Overlay: zeigt uncaught JS-Fehler ON-SCREEN, weil man auf
@@ -115,7 +115,7 @@
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=407"></script>
+    <script src="js/version.js?v=408"></script>
     <script src="js/soundManager.js?v=003"></script>
     <script src="js/performanceMonitor.js?v=002"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -175,7 +175,9 @@
     <script src="js/enemySpawnGating.js?v=007"></script>
     <script src="js/sondergegner.js?v=006"></script>
     <script src="js/bossIntro.js?v=004"></script>
-    <script src="js/enemy.js?v=137"></script>
+    <!-- Boss-Zwischenszene, nur unter ?debug=1&bossintro=neu -->
+    <script src="js/bossZwischenszene.js?v=001"></script>
+    <script src="js/enemy.js?v=138"></script>
     <!-- Gegner-Sprite-Ladeliste (queueEnemySprites): Hintergrund-Load im Hub +
          Sicherheitsnetz in GameScene.preload. Raus aus startScene.preload -> schnellerer Boot. -->
     <script src="js/enemyAssets.js?v=010"></script>
@@ -237,7 +239,7 @@
     <script src="js/minimap.js?v=063"></script>
     <script src="js/hudV2.js?v=093"></script>
     <script src="js/endlessMode.js?v=063"></script>
-    <script src="js/main.js?v=148"></script>
+    <script src="js/main.js?v=149"></script>
     <!-- Trailer-Modus (?trailer=1): Einstellungen fuer die Trailer-Aufnahme -->
     <script src="js/trailerModus.js?v=001"></script>
     <script src="js/mobileAutoAim.js"></script>

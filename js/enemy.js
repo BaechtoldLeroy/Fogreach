@@ -3510,7 +3510,11 @@ function spawnBoss() {
 
   // #77: Bei der inszenierten Erstbegegnung KEIN Blitz und kein Ruckeln —
   // beides zerschlaegt genau den ruhigen Moment, den der Beat herstellt.
-  const _inszeniert = _istInszenierteBegegnung(def);
+  // Vorschau ?bossintro=neu: vor JEDEM Boss die Zwischenszene
+  // (js/bossZwischenszene.js) statt Banner und Beat. Ohne Flagge wie bisher.
+  const _BZ = (typeof window !== 'undefined') ? window.BossZwischenszene : null;
+  const _zwischenszene = !!(_BZ && typeof _BZ.aktiv === 'function' && _BZ.aktiv());
+  const _inszeniert = _zwischenszene || _istInszenierteBegegnung(def);
   if (!_inszeniert && this.cameras?.main) {
     this.cameras.main.flash(300, 255, 255, 255, true);
     this.cameras.main.shake(400, 0.01);
@@ -3518,24 +3522,32 @@ function spawnBoss() {
 
   // #77: Vorkampf-Beat statt Banner — aber nur einmal, und nur wenn das Modul
   // da ist und den Beat auch wirklich uebernimmt. Sonst der bisherige Banner.
+  const _szene = this;
+  // Laeuft die Zwischenszene nicht an (keine Szene, schon eine offen), der Banner.
+  const _auftritt = () => {
+    let laeuft = false;
+    if (_zwischenszene) {
+      try { laeuft = _BZ.spiele(_szene, boss, def); } catch (e) { laeuft = false; }
+    }
+    if (!laeuft) showBossIntro.call(_szene, def);
+  };
   let _beatLaeuft = false;
-  if (_inszeniert && typeof window !== 'undefined'
+  if (!_zwischenszene && _inszeniert && typeof window !== 'undefined'
       && window.BossIntro && typeof window.BossIntro.inszeniere === 'function') {
     try {
       _beatLaeuft = window.BossIntro.inszeniere(this, boss, def.name, _bossIntroLore(def));
     } catch (e) { _beatLaeuft = false; }
   }
   // #158: Vor der besessenen Elara spielt das Finale an der Quelle — Elara,
-  // Harren, sein Tod. Der Banner folgt danach. Laeuft die Szene nicht (schon
-  // gesehen), gleich der Banner.
+  // Harren, sein Tod. Der Banner (bzw. die Zwischenszene) folgt danach. Laeuft
+  // die Szene nicht (schon gesehen), gleich der Banner.
   if (!_beatLaeuft && def.id === 'elaraBesessen' && typeof window !== 'undefined'
       && window.Finale && typeof window.Finale.vorKampf === 'function') {
-    const _szene = this;
     try {
-      _beatLaeuft = window.Finale.vorKampf(_szene, boss, () => showBossIntro.call(_szene, def));
+      _beatLaeuft = window.Finale.vorKampf(_szene, boss, _auftritt);
     } catch (e) { _beatLaeuft = false; }
   }
-  if (!_beatLaeuft) showBossIntro.call(this, def);
+  if (!_beatLaeuft) _auftritt();
 
   // #109: Der Aufrufer braucht den Boss, um ihn als Klimax-Gegner zu fuehren
   // (wave.js -> window.__climaxEnemy) und damit die Treppe zu sperren.
