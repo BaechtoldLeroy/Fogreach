@@ -3331,71 +3331,52 @@ class HubSceneV2 extends Phaser.Scene {
         if (!nm || seenBoss.has(nm)) continue;
         seenBoss.add(nm);
         if (options.some((o) => o.depth === d)) continue; // schon (markiert) vorhanden
-        bossOptions.push({ depth: d, label: '⚔ ' + nm, boss: true });
+        bossOptions.push({ depth: d, label: nm, boss: true });
         if (bossOptions.length >= 3) break;
       }
       for (const bo of bossOptions) options.push(bo);
       options.sort((a, b) => b.depth - a.depth); // absteigend (tief -> flach)
     }
 
-    // Panel- und Viewport-Maße. Zeilenhöhe konstant; passen nicht alle Optionen
-    // (bis zu 3 Abstiegs- + 3 Boss-Optionen) auf den Screen, wird die Options-
-    // liste scrollbar (Mausrad / Ziehen) statt das Panel über den Bildschirm
-    // hinauswachsen zu lassen.
     // #72: Laufende Auftraege, die erst ab einer groesseren Tiefe weitergehen,
     // stehen im Kopf des Dialogs — sonst sucht man sie in zu flachen Laeufen.
-    // Die Liste schiebt den Kopf nach unten, statt ueber die Optionen zu laufen.
     const _wartend = this._wartendeAuftraege(lastKnown);
     const _istEnDlg = !!(window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en');
     const _wartendText = _wartend.length
       ? (_istEnDlg ? 'Waiting for more depth:' : 'Wartet auf mehr Tiefe:') + '\n'
         + _wartend.map((w) => '· ' + w.titel + (_istEnDlg ? ' (from depth ' : ' (ab Tiefe ') + w.tiefe + ')').join('\n')
       : '';
-    const headerH = 110 + (_wartend.length ? 18 * (_wartend.length + 1) + 6 : 0);
-    const optionH = 72;
-    const optionGap = 14;
-    const footerH = 70;
-    const panelWidth = 460;
-    const rowH = optionH + optionGap;
-    const contentH = options.length * rowH;
-    const screenMargin = 40;
-    const maxViewportH = Math.max(rowH, cam.height - screenMargin * 2 - headerH - footerH);
-    const viewportH = Math.min(contentH, maxViewportH);
-    const panelHeight = headerH + viewportH + footerH;
-    const maxScroll = Math.max(0, contentH - viewportH);
-    const scrollable = maxScroll > 1;
 
     // Messing-Stil wie die Story-Wahlen (#182): Platte aus ui_rahmen, Optionen
-    // auf Messingfeldern, Abbrechen als Messingknopf. Fehlen die Bilder, der
-    // alte gezeichnete Kasten — und fuer den naechsten Abstieg nachladen.
+    // auf Messingfeldern mit Medaillon und Tiefen-Plakette, Abbrechen als
+    // Messingknopf. Fehlen die Bilder, der alte gezeichnete Kasten — und fuer
+    // den naechsten Abstieg nachladen.
     const UR = window.uiRahmen;
     const MESSING = !!(UR && typeof UR.bereit === 'function' && UR.bereit(this));
     if (UR && !MESSING && typeof UR.nachladen === 'function') {
       try { UR.nachladen(this); } catch (e) {}
     }
-    if (MESSING) {
-      container.add(UR.platte(this, 0, 0, panelWidth, panelHeight, 0, 0.6));
-    } else {
-      const g = this.add.graphics();
-      g.fillStyle(0x101018, 0.95).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
-      g.lineStyle(2, 0x4a4a6a, 0.9).strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
-      container.add(g);
-    }
 
-    const title = this.add.text(0, -panelHeight / 2 + pad, _HUB_T('hub.wave_select.title'), {
-      fontFamily: 'serif',
-      fontSize: 24,
+    const panelWidth = 540;
+    const bwVoll = panelWidth - pad * 2;
+
+    // Kopf: Texte zuerst anlegen, damit ihre Hoehe die Panelhoehe bestimmt —
+    // so kann kein Hinweis (Sperre, wartende Auftraege) in die Liste ragen.
+    const kopf = [];
+    const title = this.add.text(0, 0, _HUB_T('hub.wave_select.title'), {
+      fontFamily: 'serif', fontSize: 24,
       fontStyle: MESSING ? 'bold' : 'normal',
       color: MESSING ? '#ffd166' : '#f2e9d8'
     }).setOrigin(0.5, 0);
-    container.add(title);
-
-    const subtitle = this.add.text(0, title.y + title.height + 12, _HUB_T('hub.wave_select.subtitle'), {
-      fontFamily: 'monospace',
-      fontSize: 16,
-      color: MESSING ? '#efe6d2' : '#c8c2b5'
+    kopf.push([title, 6]);
+    const subtitle = this.add.text(0, 0, _HUB_T('hub.wave_select.subtitle'), {
+      fontFamily: 'monospace', fontSize: 15, color: MESSING ? '#efe6d2' : '#c8c2b5',
+      wordWrap: { width: bwVoll }, align: 'center'
     }).setOrigin(0.5, 0);
-    container.add(subtitle);
+    kopf.push([subtitle, 0]);
+    // Zierleiste unter dem Untertitel (Messing: Linie mit Raute).
+    const zierH = 18;
+    kopf.push([null, zierH]);
 
     // Variante C: An der Kettenmeister-Tiefensperre (Grenze 9, Quest noch nicht
     // angenommen) einen Hinweis zeigen — sonst wirkt der Tiefen-Deckel wie ein
@@ -3404,24 +3385,67 @@ class HubSceneV2 extends Phaser.Scene {
     if (lastKnown === _gateDepth && window.RunDepth
         && typeof window.RunDepth.isKettenmeisterGateOpen === 'function'
         && !window.RunDepth.isKettenmeisterGateOpen()) {
-      const gateHint = this.add.text(0, subtitle.y + subtitle.height + 6,
-        (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en')
+      const gateHint = this.add.text(0, 0,
+        _istEnDlg
           ? 'Going deeper is not safe yet — wait until Mara tells you more.'
           : 'Tiefer zu steigen ist noch nicht sicher — warte, bis Mara Dir mehr verrät.', {
-        fontFamily: 'monospace', fontSize: 13, color: '#d0a070',
-        wordWrap: { width: panelWidth - pad * 2 }, align: 'center'
+        fontFamily: 'monospace', fontSize: 13, color: '#e0b080',
+        wordWrap: { width: bwVoll }, align: 'center'
       }).setOrigin(0.5, 0);
-      container.add(gateHint);
+      kopf.push([gateHint, 8]);
     }
-
     if (_wartendText) {
-      // Unter dem Tiefensperren-Hinweis, falls der steht; sonst unter dem Untertitel.
-      const _wy = -panelHeight / 2 + headerH - (18 * (_wartend.length + 1) + 6);
-      const wartendHint = this.add.text(0, _wy, _wartendText, {
+      const wartendHint = this.add.text(0, 0, _wartendText, {
         fontFamily: 'monospace', fontSize: 13, color: '#b8c8a0', align: 'center', lineSpacing: 2
       }).setOrigin(0.5, 0);
-      container.add(wartendHint);
+      kopf.push([wartendHint, 8]);
     }
+    let headerH = pad;
+    kopf.forEach(([t, nach]) => { headerH += (t ? t.height : 0) + nach; });
+    headerH += 4;
+
+    // Zeilen: Medaillon links, Titel + Hinweis, Tiefe rechts als Plakette.
+    // Der Viewport zeigt nur ganze Zeilen; passen nicht alle Optionen (bis zu
+    // 3 Abstiegs- + 3 Boss-Optionen) auf den Schirm, wird die Liste scrollbar
+    // (Mausrad / Ziehen), statt das Panel ueber den Rand wachsen zu lassen.
+    const optionH = 60;
+    const optionGap = 8;
+    const footerH = 66;
+    const rowH = optionH + optionGap;
+    const contentH = options.length * rowH - optionGap;
+    const screenMargin = 12;
+    const platzH = Math.max(optionH, cam.height - screenMargin * 2 - headerH - footerH);
+    const ganzeZeilen = Math.max(1, Math.floor((platzH + optionGap) / rowH));
+    const viewportH = Math.min(contentH, ganzeZeilen * rowH - optionGap);
+    const panelHeight = headerH + viewportH + footerH;
+    const maxScroll = Math.max(0, contentH - viewportH);
+    const scrollable = maxScroll > 1;
+    // Mit Rollbalken ruecken die Zeilen nach links, der Balken bekommt eine
+    // eigene Spur zwischen Zeilen und Rahmen.
+    const bw = bwVoll - (scrollable ? 14 : 0);
+    const rowsX = scrollable ? -7 : 0;
+
+    if (MESSING) {
+      container.addAt(UR.platte(this, 0, 0, panelWidth, panelHeight, 0, 0.6), 0);
+    } else {
+      const g = this.add.graphics();
+      g.fillStyle(0x101018, 0.95).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
+      g.lineStyle(2, 0x4a4a6a, 0.9).strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
+      container.addAt(g, 0);
+    }
+    let _ky = -panelHeight / 2 + pad;
+    kopf.forEach(([t, nach]) => {
+      if (t) { t.setPosition(0, _ky); container.add(t); _ky += t.height + nach; return; }
+      if (MESSING) {
+        const zy = Math.round(_ky + nach / 2);
+        const zier = this.add.graphics();
+        zier.lineStyle(1, 0x000000, 0.6).lineBetween(-bwVoll / 2 + 60, zy + 1, bwVoll / 2 - 60, zy + 1);
+        zier.lineStyle(1, 0xc9a25a, 0.9).lineBetween(-bwVoll / 2 + 60, zy, -10, zy).lineBetween(10, zy, bwVoll / 2 - 60, zy);
+        zier.fillStyle(0xffd166, 1).fillPoints([{ x: 0, y: zy - 5 }, { x: 5, y: zy }, { x: 0, y: zy + 5 }, { x: -5, y: zy }], true);
+        container.add(zier);
+      }
+      _ky += nach;
+    });
 
     const chooseDepth = (depth) => {
       try { (window.SlotStorage || localStorage).setItem('demonfall_lastDepth', JSON.stringify(depth)); } catch (e) {}
@@ -3436,12 +3460,11 @@ class HubSceneV2 extends Phaser.Scene {
       cleanup();
     };
 
-    // Vertikale Abstiegs-Buttons in einem MASKIERTEN Sub-Container -> scrollbar,
+    // Vertikale Abstiegs-Zeilen in einem MASKIERTEN Sub-Container -> scrollbar,
     // wenn nicht alle Optionen in den Viewport passen. optsC-lokale y beginnen
     // bei 0; optsC.y = optionsTop - scroll verschiebt die Liste.
-    const bw = panelWidth - pad * 2;
     const optionsTop = -panelHeight / 2 + headerH;
-    const optsC = this.add.container(0, optionsTop).setScrollFactor(0);
+    const optsC = this.add.container(rowsX, optionsTop).setScrollFactor(0);
     container.add(optsC);
 
     // Geometrie-Maske auf den Viewport (Screen-Space, scrollFactor 0 -> folgt
@@ -3449,7 +3472,7 @@ class HubSceneV2 extends Phaser.Scene {
     const maskG = this.make.graphics({ add: false });
     maskG.setScrollFactor(0);
     maskG.fillStyle(0xffffff, 1);
-    maskG.fillRect(cx - bw / 2 - 8, cy + optionsTop, bw + 16, viewportH);
+    maskG.fillRect(cx + rowsX - bw / 2 - 4, cy + optionsTop - 2, bw + 8, viewportH + 4);
     const optsMask = maskG.createGeometryMask();
     optsC.setMask(optsMask);
 
@@ -3458,69 +3481,188 @@ class HubSceneV2 extends Phaser.Scene {
     let thumb = null;
     const hitRows = [];
 
+    // Medaillon je Option (Pixelbilder statt Schriftzeichen wie Schwert-Glyphe, die je
+    // nach Schrift als Kaestchen erschienen). Fehlt ein Bild: kein Symbol.
+    const SYMBOL = {
+      'hub.descent.option.limit': 'ui_symbol_gefahr',
+      'hub.descent.option.usual': 'ui_symbol_ereignis',
+      'hub.descent.option.familiar': 'ui_symbol_quest'
+    };
+    const symbolDa = (k) => !!(MESSING && k && this.textures.exists(k));
+    // Text in seine Spalte einpassen: erst kleiner, dann kuerzen — nie
+    // ueber die Plakette oder den Zeilenrand hinaus.
+    const einpassen = (t, breite, minPx) => {
+      let px = parseFloat(t.style.fontSize) || 14;
+      while (t.width > breite && px > minPx) { px -= 1; t.setFontSize(px + 'px'); }
+      if (t.width > breite) {
+        let s = String(t.text);
+        while (s.length > 1 && t.width > breite) { s = s.slice(0, -1); t.setText(s.trimEnd() + '...'); }
+      }
+      return t;
+    };
+    const tiefeWort = _HUB_T('hub.wave_select.dungeon_level').toUpperCase();
+    const PIPS = 4;
+
+    // Fokus: die Zeile unter dem Zeiger, sonst die Enter-Wahl ("Gewohnter
+    // Abstieg") — so sieht man, was Enter / der Interact-Knopf startet.
+    const usualOpt = options.find((o) => o.key === 'hub.descent.option.usual');
+    const quickStartDepth = usualOpt ? usualOpt.depth : (options[0] ? options[0].depth : lastKnown);
+    const quickIdx = Math.max(0, options.findIndex((o) => o.depth === quickStartDepth));
+    const zeilen = [];
+    const fokussiere = (idx) => zeilen.forEach((z, k) => z.zeichne(k === idx));
+
     options.forEach((opt, i) => {
       const oy = i * rowH + optionH / 2; // lokal in optsC (Top = 0)
       const idx = stratumOf(opt.depth);
       const color = STRATUM_COLORS[idx - 1] || '#cfd0ff';
-      const arrows = '↑'.repeat(idx);
+      const farbeZahl = Phaser.Display.Color.HexStringToColor(color).color;
       const stratumName = _HUB_T('hub.descent.stratum.' + idx);
+      const L = -bw / 2;
 
-      // Messing: ein gebackenes Feld je Zeile; Hover zeigt den hellen
-      // Beschlag (wie die gewaehlte Inventarzelle). Boss-Zeilen bernsteinfarben.
+      // Feld: Messing (gebacken, Fokus = heller Beschlag) bzw. alter Kasten.
+      const ton = opt.boss ? '#3a2410' : null;
       const box = MESSING
-        ? this.add.image(0, oy, UR.feldBild(this, bw, optionH, false, opt.boss ? '#3a2410' : null))
+        ? this.add.image(0, oy, UR.feldBild(this, bw, optionH, false, ton))
         : this.add.graphics();
-      const drawBox = (hover) => {
+      optsC.add(box);
+      // Fokusrahmen in Messinggold, deutlich auch auf kleinen Schirmen.
+      const fokusG = this.add.graphics();
+      fokusG.lineStyle(2, 0xffd166, 0.95).strokeRoundedRect(L - 1, oy - optionH / 2 - 1, bw + 2, optionH + 2, 8);
+      optsC.add(fokusG);
+      const zeichne = (an) => {
+        fokusG.setVisible(an);
         if (MESSING) {
-          if (box.scene) box.setTexture(UR.feldBild(this, bw, optionH, hover, opt.boss ? '#3a2410' : null));
+          if (box.scene) box.setTexture(UR.feldBild(this, bw, optionH, an, ton));
           return;
         }
         box.clear();
-        box.fillStyle(hover ? 0x2a2a3d : 0x1a1a26, 0.95)
-          .fillRoundedRect(-bw / 2, oy - optionH / 2, bw, optionH, 10);
-        box.lineStyle(2, Phaser.Display.Color.HexStringToColor(color).color, 0.9)
-          .strokeRoundedRect(-bw / 2, oy - optionH / 2, bw, optionH, 10);
+        box.fillStyle(an ? 0x2a2a3d : 0x1a1a26, 0.95)
+          .fillRoundedRect(L, oy - optionH / 2, bw, optionH, 10);
+        box.lineStyle(2, farbeZahl, 0.9)
+          .strokeRoundedRect(L, oy - optionH / 2, bw, optionH, 10);
       };
-      drawBox(false);
-      optsC.add(box);
+      zeilen.push({ zeichne });
 
-      let _lbl = opt.label || _HUB_T(opt.key);
-      if (opt.bossMark) _lbl += '   ⚔ ' + opt.bossMark;
-      const labelText = this.add.text(-bw / 2 + 16, oy - 16, _lbl, {
-        fontFamily: 'serif',
-        fontSize: 20,
-        color: opt.boss ? '#ffd27a' : '#f2e9d8'
+      // Medaillon
+      const symKey = opt.boss || opt.bossMark ? 'ui_symbol_boss' : SYMBOL[opt.key];
+      let textL = L + 14;
+      if (symbolDa(symKey)) {
+        const sym = this.add.image(L + 12 + 20, oy, symKey).setDisplaySize(40, 40);
+        sym.setName('waveSymbol');
+        optsC.add(sym);
+      }
+      if (MESSING) textL = L + 12 + 40 + 10;
+
+      // Plakette rechts: "TIEFE" klein, Zahl gross in der Stratum-Farbe.
+      const plW = 84, plH = optionH - 14;
+      const plX = bw / 2 - 10 - plW / 2;
+      const kachel = MESSING && typeof UR.kachelBild === 'function' ? UR.kachelBild(this, plW, plH) : null;
+      if (kachel) {
+        optsC.add(this.add.image(plX, oy, kachel));
+      } else {
+        const pg = this.add.graphics();
+        pg.fillStyle(0x0c0c12, 0.9).fillRoundedRect(plX - plW / 2, oy - plH / 2, plW, plH, 6);
+        pg.lineStyle(1, farbeZahl, 0.8).strokeRoundedRect(plX - plW / 2, oy - plH / 2, plW, plH, 6);
+        optsC.add(pg);
+      }
+      // Wort oben, Zahl darunter — gestapelt, nie uebereinander gezeichnet.
+      const plWort = this.add.text(plX, oy - plH / 2 + 5, tiefeWort, {
+        fontFamily: 'monospace', fontSize: 11, color: '#d8ccb4'
+      }).setOrigin(0.5, 0);
+      plWort.setName('wavePlakette');
+      einpassen(plWort, plW - 10, 9);
+      const plZahl = this.add.text(plX, 0, String(opt.depth), {
+        fontFamily: 'serif', fontSize: 22, fontStyle: 'bold', color
+      }).setOrigin(0.5, 0);
+      const zahlPlatz = oy + plH / 2 - 3 - (plWort.y + plWort.height);
+      einpassen(plZahl, plW - 10, 12);
+      while (plZahl.height > zahlPlatz && parseFloat(plZahl.style.fontSize) > 12) {
+        plZahl.setFontSize((parseFloat(plZahl.style.fontSize) - 1) + 'px');
+      }
+      plZahl.y = plWort.y + plWort.height + Math.max(0, Math.floor((zahlPlatz - plZahl.height) / 2));
+      plZahl.setName('waveTiefe');
+      optsC.add(plWort);
+      optsC.add(plZahl);
+
+      const textR = plX - plW / 2 - 10;
+      const textW = textR - textL;
+
+      // Titelzeile; ein Boss auf dieser Tiefe steht in Gold dahinter.
+      const titel = this.add.text(textL, oy - 11, opt.label || _HUB_T(opt.key), {
+        fontFamily: 'serif', fontSize: 19, color: opt.boss ? '#ffd27a' : '#f2e9d8'
       }).setOrigin(0, 0.5);
-      optsC.add(labelText);
+      titel.setName('waveTitel');
+      optsC.add(titel);
+      einpassen(titel, opt.bossMark ? textW * 0.55 : textW, 14);
+      if (opt.bossMark) {
+        const bossX = textL + titel.width + 10;
+        const bossT = this.add.text(bossX, oy - 11, opt.bossMark, {
+          fontFamily: 'serif', fontSize: 16, color: '#ffd27a'
+        }).setOrigin(0, 0.5);
+        bossT.setName('waveBossName');
+        optsC.add(bossT);
+        einpassen(bossT, textR - bossX, 12);
+      }
 
-      const hintStr = opt.boss
-        ? _HUB_T('hub.descent.bossrun')
-        : `${stratumName}   ${_HUB_T('hub.descent.danger')} ${arrows}   ${_HUB_T('hub.descent.loot')} ${arrows}`;
-      const hint = this.add.text(-bw / 2 + 16, oy + 14, hintStr, {
-        fontFamily: 'monospace',
-        fontSize: 13,
-        color: opt.boss ? '#ffce8a' : color
-      }).setOrigin(0, 0.5);
-      optsC.add(hint);
-
-      const depthText = this.add.text(bw / 2 - 16, oy,
-        `${_HUB_T('hub.wave_select.dungeon_level')} ${opt.depth}`, {
-        fontFamily: 'serif',
-        fontSize: 24,
-        color
-      }).setOrigin(1, 0.5);
-      optsC.add(depthText);
+      // Hinweiszeile: Boss-Lauf als Satz, sonst Stratum + Gefahr/Beute als
+      // Pixel-Punkte (statt Pfeilzeichen), gefuellt je Stratum.
+      const hy = oy + 13;
+      if (opt.boss) {
+        const h = this.add.text(textL, hy, _HUB_T('hub.descent.bossrun'), {
+          fontFamily: 'monospace', fontSize: 12, color: '#ffce8a'
+        }).setOrigin(0, 0.5);
+        h.setName('waveHinweis');
+        optsC.add(h);
+        einpassen(h, textW, 10);
+      } else {
+        const teile = [];
+        const hText = (s) => {
+          const t = this.add.text(0, hy, s, { fontFamily: 'monospace', fontSize: 12, color }).setOrigin(0, 0.5);
+          t.setName('waveHinweis');
+          optsC.add(t);
+          teile.push({ t });
+        };
+        const pips = () => {
+          const pg = this.add.graphics();
+          optsC.add(pg);
+          teile.push({ pg, w: PIPS * 8 - 2 });
+        };
+        hText(stratumName);
+        hText(_HUB_T('hub.descent.danger'));
+        pips();
+        hText(_HUB_T('hub.descent.loot'));
+        pips();
+        // Abstaende: grosse Luecke zwischen den Gruppen, kleine zum Punkt.
+        const luecken = [14, 5, 12, 5];
+        const breite = () => teile.reduce((s, p) => s + (p.t ? p.t.width : p.w), 0) + luecken.reduce((a, b) => a + b, 0);
+        let px = 12;
+        while (breite() > textW && px > 10) { px -= 1; teile.forEach((p) => p.t && p.t.setFontSize(px + 'px')); }
+        if (breite() > textW) einpassen(teile[0].t, Math.max(20, teile[0].t.width - (breite() - textW)), px);
+        let x = textL;
+        teile.forEach((p, k) => {
+          if (p.t) { p.t.x = x; x += p.t.width; } else {
+            for (let n = 0; n < PIPS; n++) {
+              const qx = x + n * 8, qy = hy - 3;
+              if (n < idx) p.pg.fillStyle(farbeZahl, 1).fillRect(qx, qy, 6, 6);
+              else p.pg.lineStyle(1, farbeZahl, 0.7).strokeRect(qx + 0.5, qy + 0.5, 5, 5);
+            }
+            x += p.w;
+          }
+          x += luecken[k] || 0;
+        });
+      }
 
       // Auswahl erst bei pointerUP und nur, wenn NICHT gescrollt/gezogen wurde
       // (sonst löst ein Wisch-Scroll versehentlich den Start aus).
       const hit = this.add.rectangle(0, oy, bw, optionH, 0x000000, 0)
         .setInteractive({ useHandCursor: true });
-      hit.on('pointerover', () => drawBox(true));
-      hit.on('pointerout', () => drawBox(false));
+      hit.on('pointerover', () => fokussiere(i));
+      hit.on('pointerout', () => fokussiere(quickIdx));
       hit.on('pointerup', () => { if (_dragMoved < 8) chooseDepth(opt.depth); });
       optsC.add(hit);
       hitRows.push({ hit, oy });
     });
+    fokussiere(quickIdx);
 
     // Scroll anwenden: Liste verschieben, Hit-Areas außerhalb des Viewports
     // deaktivieren (Maske versteckt sie nur optisch, klickbar blieben sie sonst),
@@ -3541,13 +3683,13 @@ class HubSceneV2 extends Phaser.Scene {
         const trackH = viewportH - 8;
         const thumbH = Math.max(24, trackH * (viewportH / contentH));
         const tt = maxScroll > 0 ? _scroll / maxScroll : 0;
-        thumb.setPosition(panelWidth / 2 - pad + 2, optionsTop + 4 + tt * (trackH - thumbH) + thumbH / 2);
+        thumb.setPosition(rowsX + bw / 2 + 8, optionsTop + 4 + tt * (trackH - thumbH) + thumbH / 2);
         thumb.setSize(6, thumbH);
       }
     };
 
     if (scrollable) {
-      const trackX = panelWidth / 2 - pad + 2;
+      const trackX = rowsX + bw / 2 + 8;
       const trackH = viewportH - 8;
       const trackG = this.add.graphics();
       trackG.fillStyle(0x000000, 0.35).fillRoundedRect(trackX - 3, optionsTop + 4, 6, trackH, 3);
@@ -3614,11 +3756,9 @@ class HubSceneV2 extends Phaser.Scene {
       makeButton(_HUB_T('hub.wave_select.cancel'), 0, cancelY, cancel, { backgroundColor: '#6a3d3d' });
     }
 
-    // Quick-Start (Mobile-Interact-Button + Enter/Space) = die "normale" Option
+    // Quick-Start (Mobile-Interact-Button + Enter/Space) = quickStartDepth
     // (Gewohnter Abstieg), NICHT die tiefste — kein versehentliches Pushen an
     // die Grenze. Fallback: flachste verfügbare Option.
-    const usualOpt = options.find((o) => o.key === 'hub.descent.option.usual');
-    const quickStartDepth = usualOpt ? usualOpt.depth : (options[0] ? options[0].depth : lastKnown);
     this._waveDialogConfirm = () => chooseDepth(quickStartDepth);
     // Gezielte Tiefenwahl fuer den Testlauf. _waveDialogConfirm nimmt bewusst
     // den "Gewohnten Abstieg", die Zifferntasten haengen an der Listenposition
