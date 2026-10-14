@@ -632,6 +632,11 @@
 
   function showStoryOverlay(scene, eventData, onDismiss) {
     if (!scene || !eventData) return;
+    // Vorschau ?aktwechsel=neu: Zwischenszene mit Tableau statt Titelkarte.
+    // Fehlt die Flagge oder das Bild des Akts, bleibt alles wie bisher.
+    if (window.Aktwechsel && window.Aktwechsel.kann(scene, eventData)) {
+      return window.Aktwechsel.zeigen(scene, eventData, onDismiss);
+    }
 
     var cam = scene.cameras.main;
     var w = cam.width;
@@ -742,6 +747,32 @@
     });
     // Fuer Tests und Aufrufer: wie viele Seiten, welche gerade.
     return { seiten: seiten, seite: function () { return seite; }, weiter: dismiss };
+  }
+
+  /**
+   * Debug (?aktprobe=N): die Karte von Akt N (1-5) bzw. des Epilogs (6 oder
+   * "epilog") so bauen, wie consumePendingEvent sie liefern wuerde — ohne
+   * den Spielstand anzufassen.
+   */
+  function probeEreignis(wert) {
+    var w = String(wert || '').toLowerCase();
+    if (w === 'epilog' || w === 'ending' || w === String(STORY_ACTS.length + 1)) {
+      return {
+        actId: 'ending',
+        actName: _i18nLookup('story.epilog.label', 'Epilog'),
+        actNumber: null,
+        narrative: getAllQuestsEnding()
+      };
+    }
+    var n = parseInt(w, 10);
+    if (!(n >= 1 && n <= STORY_ACTS.length)) return null;
+    var act = STORY_ACTS[n - 1];
+    return {
+      actId: act.id,
+      actName: act.name,
+      actNumber: STORY_ACTS.indexOf(act) + 1,
+      narrative: getActNarrative(act.id)
+    };
   }
 
   // ---- Journal Overlay UI ----
@@ -1040,6 +1071,7 @@
     getStorySaveData: getStorySaveData,
     loadStorySaveData: loadStorySaveData,
     showStoryOverlay: showStoryOverlay,
+    probeEreignis: probeEreignis,
     aktStimmung: aktStimmung,
     showJournalOverlay: showJournalOverlay
   };

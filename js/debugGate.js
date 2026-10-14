@@ -91,7 +91,8 @@
     'versteck', 'sonder', 'akt', 'stark',
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
     'gegnerlauf',
-    'trailer', 'einstellung'   // Trailer-Modus (js/trailerModus.js)
+    'trailer', 'einstellung',  // Trailer-Modus (js/trailerModus.js)
+    'aktwechsel', 'aktprobe'   // Vorschau Akt-Zwischenszenen: aktwechsel=neu, aktprobe=1..6
   ];
 
   /**

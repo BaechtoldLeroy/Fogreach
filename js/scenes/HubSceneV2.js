@@ -171,6 +171,8 @@ class HubSceneV2 extends Phaser.Scene {
     if (window.Ladebildschirm) window.Ladebildschirm.zeigen(this, { status: 'start.loading_hub', verzoegerung: 250 });
     // #189: Messing-Rahmen und Toast-Bilder mitladen (nur die fehlenden).
     if (window.uiRahmen) window.uiRahmen.vorladen(this);
+    // Vorschau ?aktwechsel=neu: Tableaus der Akt-Zwischenszenen.
+    if (window.Aktwechsel) window.Aktwechsel.vorladen(this);
     // Pixel-Icons der Faehigkeiten (#195) — das Loadout zeigt sie auch im Hub.
     if (window.hudLeiste) window.hudLeiste.vorladen(this);
     // Pixel-Symbole der Laufzusammenfassung (b418).
@@ -561,6 +563,10 @@ class HubSceneV2 extends Phaser.Scene {
 
     // Check for pending story events and show overlay
     this._checkStoryEvent();
+    // Debug ?aktprobe=N: eine Aktkarte direkt ansehen (einmal pro Laden).
+    if (!this._dialogOpen && window.Aktwechsel) {
+      this._dialogOpen = window.Aktwechsel.probe(this, () => { this._dialogOpen = false; });
+    }
 
     if (this.player) {
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
