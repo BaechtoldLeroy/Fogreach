@@ -447,6 +447,13 @@
     window.__FORCE_ESPIONAGE__ = false;
     try { if (window.EspionageSystem && window.EspionageSystem.isActive()) window.EspionageSystem.endMission(); } catch (e) {}
     window.lastRunSummary = null;
+    // Eine laufende Boss-Zwischenszene beenden, statt sie auf der naechsten
+    // Szene weiterlaufen zu lassen.
+    try {
+      var gsz = szene('GameScene');
+      var z = gsz && gsz.__bossZwischenszene;
+      if (z && typeof z.ueberspringen === 'function') z.ueberspringen();
+    } catch (e) {}
     // Wer mitten im Boss-Auftritt umschaltet, liesse die Spieluhr angehalten
     // zurueck — dann stuenden in jeder folgenden Einstellung die Abklingzeiten.
     try {
@@ -623,6 +630,83 @@
   function spielerPos() {
     try { if (typeof player !== 'undefined' && player) return { x: player.x, y: player.y }; } catch (e) {}
     return null;
+  }
+
+  function stellen(x, y) {
+    if (typeof player === 'undefined' || !player) return;
+    player.setPosition(x, y);
+    if (player.body && player.body.reset) player.body.reset(x, y);
+  }
+
+  // Was im Bossbild stoert: Treppen (Durchgaenge), Tueren — und zwischen den
+  // beiden Kaempfern auch Hindernisse wie Saeulen und Kisten.
+  function bildStoerer(gs) {
+    var out = [];
+    ((gs.children && gs.children.list) || []).forEach(function (o) {
+      if (o && o.visible && o.texture && /^(stair|proc_door|door)/i.test(o.texture.key)) out.push({ x: o.x, y: o.y });
+    });
+    (gs._doors || []).forEach(function (d) { if (d && d.active !== false) out.push({ x: d.x, y: d.y }); });
+    return out;
+  }
+
+  function hindernisse() {
+    try {
+      return (typeof obstacles !== 'undefined' && obstacles && obstacles.getChildren)
+        ? obstacles.getChildren().filter(function (o) { return o && o.active; }) : [];
+    } catch (e) { return []; }
+  }
+
+  function abstandZurStrecke(p, a, b) {
+    var dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy || 1;
+    var t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2));
+    return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+  }
+
+  /**
+   * Ein Platz fuer Spieler und Kettenmeister (Einstellung 7): beide auf
+   * begehbarem Boden, nichts zwischen ihnen, keine Treppe oder Tuer nah am
+   * Kampf — und moeglichst keine im Bild. Ohne das stand im Pfeilerhaus eine
+   * Treppe genau zwischen beiden ("eine Tuer im Weg").
+   */
+  function bossPlatz(gs) {
+    var wb = gs.physics.world.bounds;
+    var frei = function (x, y) { return typeof gs.isPointAccessible !== 'function' || gs.isPointAccessible(x, y); };
+    var stoerer = bildStoerer(gs), hind = hindernisse();
+    var halbB = gs.cameras.main.width / 2, halbH = gs.cameras.main.height / 2;
+    var ABSTAND = 170, RAND = 160, bester = null;
+    for (var y = wb.y + RAND; y <= wb.bottom - RAND; y += 32) {
+      for (var x = wb.x + RAND; x <= wb.right - RAND - ABSTAND; x += 32) {
+        var s = { x: x, y: y }, b = { x: x + ABSTAND, y: y - 10 };
+        var ok = true;
+        for (var i = 0; i <= 8 && ok; i++) {
+          var px = x + ABSTAND * i / 8, py = y - 10 * i / 8;
+          ok = frei(px, py) && frei(px, py - 40) && frei(px, py + 40);
+        }
+        if (!ok) continue;
+        var nah = Infinity;
+        stoerer.forEach(function (st) { nah = Math.min(nah, abstandZurStrecke(st, s, b)); });
+        if (nah < 180) continue;
+        if (hind.some(function (o) { return abstandZurStrecke(o, s, b) < 56; })) continue;
+        var mx = (s.x + b.x) / 2;
+        // Die Kamera steht mal auf dem Boss (Zwischenszene), mal auf dem
+        // Spieler — beide Ausschnitte, so wie die Weltgrenze sie einklemmt.
+        var bilder = [s, b].map(function (q) {
+          var x0 = Math.max(wb.x, Math.min(q.x - halbB, wb.right - 2 * halbB));
+          var y0 = Math.max(wb.y, Math.min(q.y + 30 - halbH, wb.bottom - 2 * halbH));
+          return { x0: x0 - 24, y0: y0 - 24, x1: x0 + 2 * halbB + 24, y1: y0 + 2 * halbH + 24 };
+        });
+        var imBild = stoerer.filter(function (st) {
+          return bilder.some(function (r) { return st.x > r.x0 && st.x < r.x1 && st.y > r.y0 && st.y < r.y1; });
+        }).length;
+        // Moeglichst mittig (der Kriegsnebel laesst am Rand wenig Raum), lieber
+        // ohne Treppe im Ausschnitt und mit Luft zu ihr; ausgeblendet wird sie ohnehin.
+        var wert = Math.hypot(mx - wb.centerX, y - wb.centerY) + imBild * 150 - Math.min(nah, 300) * 0.3;
+        if (!bester || wert < bester.wert) bester = { wert: wert, spieler: s, boss: b, imBild: imBild, nah: nah };
+      }
+    }
+    if (!bester) console.warn('[Trailer] kein freier Platz fuer den Bosskampf');
+    TM._bossPlatz = bester;
+    return bester;
   }
 
   function gehen(richtung, an) {
@@ -804,57 +888,71 @@
       });
     } },
 
-    // 7 — Boss: Kettenmeister-Auftritt, ein schwerer Treffer in Zeitlupe, Beben.
+    // 7 — Boss: die Zwischenszene des Kettenmeisters (Balken, Schwenk,
+    // Plakette, Rede) laeuft ohne Eingabe durch, dann ein schwerer Treffer
+    // in Zeitlupe, der Bildschirm bebt.
     7: { name: 'Boss', kurz: 'boss', ziel: 'dungeon', samen: 1307, aufbau: function (gs) {
       S.ruhe = 'boss';
       lernen(['whirlwind', 'charge', 'hammer']);
+      var wb = gs.physics.world.bounds;
+      var platz = bossPlatz(gs) || {
+        spieler: { x: wb.centerX - 85, y: wb.centerY + 60 }, boss: { x: wb.centerX + 85, y: wb.centerY + 50 }
+      };
       var boss = null;
+      var BZ = window.BossZwischenszene;
       var erzwungen = (typeof BOSS_DEFINITIONS !== 'undefined') ? BOSS_DEFINITIONS.chainMaster : null;
-      var alt1 = window.debugForcedBoss, alt2 = window._istInszenierteBegegnung;
-      // Der Kettenmeister mit seiner Inszenierung — ueber spawnBoss selbst.
-      // Der Boss erscheint um den Spieler herum — den also erst in die
-      // Raummitte stellen, sonst klebt der Kampf an der Wand.
-      try {
-        var wb = gs.physics.world.bounds;
-        player.setPosition(wb.centerX, wb.centerY + 60);
-        if (player.body && player.body.reset) player.body.reset(player.x, player.y);
-      } catch (e) {}
+      var alt = { forced: window.debugForcedBoss, soll: BZ && BZ.soll, between: Phaser.Math.Between };
+      // Der Boss erscheint um den Spieler herum, mit zwei Zufallsversaetzen.
+      // Darum steht der Spieler kurz auf dem Bossplatz, die Versaetze sind 0,
+      // und danach geht er an seinen eigenen Platz: so stehen beide frei.
+      stellen(platz.boss.x, platz.boss.y);
+      gs.cameras.main.centerOn(platz.spieler.x, platz.spieler.y);
+      var versatz = 2;
+      Phaser.Math.Between = function (a, b) { return versatz-- > 0 ? 0 : alt.between(a, b); };
       window.debugForcedBoss = function () { return erzwungen; };
-      window._istInszenierteBegegnung = function (def) { return !!(def && def.id === 'chainMaster'); };
+      // Die Zwischenszene laeuft beim ersten Kampf; im Trailer jedes Mal.
+      if (BZ) BZ.soll = function (def) { return !!(def && def.id === 'chainMaster'); };
+      gs.__bossIntroLaeuft = false;
       try {
         behalten(gs, function () { boss = spawnBoss.call(gs); });
       } catch (e) {
         console.error('[Trailer] Boss', e);
       } finally {
-        window.debugForcedBoss = alt1;
-        window._istInszenierteBegegnung = alt2;
+        Phaser.Math.Between = alt.between;
+        window.debugForcedBoss = alt.forced;
+        if (BZ) BZ.soll = alt.soll;
       }
+      stellen(platz.spieler.x, platz.spieler.y);
+      // Treppen und Tueren kommen in dieser Einstellung gar nicht ins Bild —
+      // auch nicht am Rand (die Treppe ist der Durchgang des Raums).
+      ((gs.children && gs.children.list) || []).forEach(function (o) {
+        if (o && o.texture && /^(stair|proc_door|door)/i.test(o.texture.key)) {
+          kameras(gs).forEach(function (k) { try { k.ignore(o); } catch (e) {} });
+          o.__trailerStoerer = true;
+        }
+      });
       if (!boss) return;
       boss.__trailer = true;
-      // Die Bedienzeile des Auftritts ("[Leertaste] ...") gehoert nicht ins Bild.
-      gs.children.list.forEach(function (o) {
-        if (o && o.__trailerBild && o.type === 'Text' && /Leertaste|Tippen/.test(String(o.text))) o.__trailerBild = false;
-      });
-      plan(3000, function () {
-        try { gs.input.keyboard.emit('keydown-SPACE'); } catch (e) {}
-      });
-      plan(3700, function () {
-        var p = spielerPos();
-        if (!p || !boss.active) return;
-        var dx = boss.x >= p.x ? 1 : -1;
-        if (typeof player !== 'undefined' && player) {
-          player.setPosition(boss.x - dx * 58, boss.y + 6);
-          if (player.body && player.body.reset) player.body.reset(player.x, player.y);
-        }
+      // Weiterblaettern ohne Taste: Rede ab ~1,8 s, jede Seite ~2 s lesbar.
+      var blaettern = function () {
+        var z = gs.__bossZwischenszene;
+        if (z && typeof z.weiter === 'function') z.weiter();
+      };
+      plan(3900, blaettern);
+      plan(5900, blaettern);
+      plan(7000, function () {
+        if (!boss.active) return;
+        var dx = boss.x >= player.x ? 1 : -1;
+        stellen(boss.x - dx * 58, boss.y + 6);
         boss.__trailerDx = dx;
         faehigkeit(gs, 'slot3', dx, 0);
       });
-      plan(4200, function () {
+      plan(7500, function () {
         zeitlupeSetzen(true);
         loslassen(gs, 'slot3', boss.__trailerDx || 1, 0);
         gs.cameras.main.shake(900, 0.018);
       });
-      plan(6400, function () { zeitlupeSetzen(S.zeitlupeTaste); });
+      plan(9700, function () { zeitlupeSetzen(S.zeitlupeTaste); });
     } },
 
     // 8 — Die Presse: die Presse stampft, Flugblaetter fliegen, dann die Druckerei.
@@ -1048,6 +1146,28 @@
   // ---------------------------------------------------------------------
   // Pro Bild
   // ---------------------------------------------------------------------
+  // Die Boss-Zwischenszene baut ihr Bild nach und nach auf (Plakette, Rede):
+  // alles davon gehoert ins Bild — nur ihre Knoepfe (Weiter, Ueberspringen)
+  // nicht, die Einstellung blaettert ja selbst.
+  function bossSzeneBehalten() {
+    var gs = laeuft('GameScene') ? szene('GameScene') : null;
+    var z = gs && gs.__bossZwischenszene;
+    var teile = (z && z.teile) || [];
+    for (var i = 0; i < teile.length; i++) {
+      var o = teile[i];
+      if (!o) continue;
+      // (Auch wenn behalten() sie beim Erscheinen schon markiert hat.)
+      if (/^bossintro(Weiter|Ueberspringen)$/.test(o.name || '')) {
+        o.__trailerBild = false;
+        // Die Messingplatte des Knopfs folgt ihm in der Liste.
+        var platte = teile[i + 1];
+        if (platte && !platte.name) { platte.__trailerBild = false; i++; }
+        continue;
+      }
+      if (o.__trailerBild === undefined) o.__trailerBild = true;
+    }
+  }
+
   function proBild(zeit, delta) {
     S.uhr += (typeof delta === 'number' && delta > 0) ? delta : 16.67;
     var g = spiel();
@@ -1062,6 +1182,7 @@
 
     planAbarbeiten();
 
+    bossSzeneBehalten();
     HAUPTSZENEN.forEach(function (key) {
       if (!laeuft(key)) return;
       var sc = szene(key);

@@ -364,7 +364,7 @@ ausgeblendet.
 | `4` | Kampf-Montage | Je ~1,3 s: Wirbelwind in fuenf Wichte, Ansturm durch drei Schlaeger, Hammer der Ahnen, eine Kettenwache faellt (Schild blitzt zuerst). |
 | `5` | Verkleidung | Lagerhaus-Spionageraum, Spieler in Wachen-Montur geht am blauen Kegel vorbei, nach 2 s faerbt sich der Kegel orange. |
 | `6` | Geheime Sitzung | Die Ratskammer-Buehne (Magistrat, Klerus, Garde, Kerzen), langsamer Zoom. |
-| `7` | Boss | Kettenmeister-Auftritt (bestaetigt sich nach 3 s selbst), dann der Hammer in Zeitlupe, Bildschirm bebt; danach wieder Normaltempo. |
+| `7` | Boss | Die Boss-Zwischenszene des Kettenmeisters (Balken, Schwenk, Plakette, zwei Redeseiten) laeuft ohne Taste durch — jede Seite ~2 s, Weiter/Ueberspringen-Knoepfe nicht im Bild —, dann der Hammer in Zeitlupe, Bildschirm bebt; danach wieder Normaltempo. Spieler und Boss stehen auf einem freien Platz ohne Treppe oder Tuer dazwischen; Treppen und Tueren sind in dieser Einstellung ausgeblendet. Dauer ~10 s. |
 | `8` | Die Presse | Kamera auf der Druckerei, drei Stoesse mit fliegenden Flugblaettern, dann geht die Druckerei-Ansicht auf. |
 | `9` | Titel | Schwarz, die Laterne vom Startbildschirm leuchtet auf, der Nebel reisst auf, FOGREACH in Messing. |
 

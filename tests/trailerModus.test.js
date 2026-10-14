@@ -109,7 +109,7 @@ const ERWARTET = {
   4: { szene: 'GameScene', bis: 6500 },
   5: { szene: 'GameScene', bis: 2600, pruef: `window.EspionageSystem.isActive() && window.EspionageSystem.isDisguised() && window.EspionageSystem.getDetection() > 0.5` },
   6: { szene: 'HubSceneV2', bis: 1500, pruef: `!!window.game.scene.getScene('HubSceneV2').__trailerBuehne` },
-  7: { szene: 'GameScene', bis: 4500, pruef: `enemies.getChildren().some(function (e) { return e.active && e.isBoss && e.bossType === 'chainMaster'; })` },
+  7: { szene: 'GameScene', bis: 7300, pruef: `!window.game.scene.getScene('GameScene').__bossZwischenszene && enemies.getChildren().some(function (e) { return e.active && e.isBoss && e.bossType === 'chainMaster'; })` },
   8: { szene: 'HubSceneV2', bis: 3000, auch: 'PrintingHouseScene' },
   9: { szene: 'TrailerTitel', bis: 3500, pruef: `window.game.scene.getScene('TrailerTitel').titel.alpha > 0.9` },
 };
@@ -128,6 +128,66 @@ for (const n of Object.keys(ERWARTET)) {
     assert.ok(aktiv('TrailerOverlay'), 'das Overlay ist verschwunden');
   });
 }
+
+// Einstellung 7 im Einzelnen. Beim Aufnehmen stand eine Treppe (der
+// Durchgang des Raums, "eine Tuer") genau zwischen Spieler und Kettenmeister.
+// Und seit die Boss-Zwischenszene fest eingebaut ist, darf sie die
+// Einstellung nicht anhalten: sie laeuft ohne Taste durch.
+// (Der Testkopf schaltet die Zwischenszene sonst ab; die Einstellung zeigt
+// sie bewusst und schaltet sie fuer den Kettenmeister selbst ein.)
+const STOERER = `function (o) { return o && o.texture && /^(stair|proc_door|door)/i.test(o.texture.key); }`;
+function bossBild() {
+  return H.run(`(function () {
+    var gs = window.game.scene.getScene('GameScene');
+    var cam = gs.cameras.main, wv = cam.worldView;
+    var boss = enemies.getChildren().filter(function (e) { return e.active && e.isBoss; })[0];
+    var z = gs.__bossZwischenszene;
+    var strecke = function (p, a, b) {
+      var dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy || 1;
+      var t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2));
+      return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+    };
+    var stoerer = gs.children.list.filter(${STOERER});
+    var sichtbar = stoerer.filter(function (o) {
+      return o.visible && (o.cameraFilter & cam.id) === 0
+        && o.x > wv.x - 40 && o.x < wv.right + 40 && o.y > wv.y - 40 && o.y < wv.bottom + 40;
+    });
+    var zwischen = boss ? Math.min.apply(null, stoerer.map(function (o) { return strecke(o, player, boss); }).concat([9999])) : -1;
+    var teil = function (n) { return z && z.teile.filter(function (o) { return o.name === n; })[0]; };
+    var weg = function (o) { return !o || (o.cameraFilter & cam.id) !== 0 || !o.visible; };
+    return {
+      phase: z ? z.phase + ':' + z.seite : null, boss: !!boss, stoerer: stoerer.length,
+      sichtbar: sichtbar.length, zwischen: Math.round(zwischen),
+      knoepfeWeg: z ? (weg(teil('bossintroWeiter')) && weg(teil('bossintroUeberspringen'))) : null,
+      redeDa: z ? !weg(teil('bossintroRede')) : null
+    };
+  })()`);
+}
+
+test('Einstellung 7: Zwischenszene laeuft ohne Taste durch, keine Treppe/Tuer im Bild', async () => {
+  const fehlerVorher = H.hardErrors().length;
+  H.run(`window.TrailerModus.taste('7')`);
+  assert.ok(await bisSeit(2600));
+  let b = bossBild();
+  assert.match(String(b.phase), /^rede:0/, 'die Rede des Kettenmeisters laeuft nicht: ' + b.phase);
+  assert.strictEqual(b.redeDa, true, 'die Rede ist ausgeblendet');
+  assert.strictEqual(b.knoepfeWeg, true, 'Weiter/Ueberspringen stehen im Bild');
+  assert.ok(b.stoerer > 0, 'der Raum hat keine Treppe — der Test misst nichts');
+  assert.strictEqual(b.sichtbar, 0, 'Treppe/Tuer im Bild');
+  assert.ok(b.zwischen >= 150, 'Treppe/Tuer zu nah an der Strecke Spieler-Boss: ' + b.zwischen);
+  assert.ok(await bisSeit(4600));
+  assert.match(String(bossBild().phase), /^rede:1/, 'zweite Seite kommt nicht von selbst');
+  assert.ok(await bisSeit(7600));
+  b = bossBild();
+  assert.strictEqual(b.phase, null, 'die Zwischenszene endet nicht von selbst');
+  assert.strictEqual(b.boss, true);
+  assert.strictEqual(b.sichtbar, 0, 'Treppe/Tuer im Bild (Kampf)');
+  assert.ok(b.zwischen >= 100, 'Treppe/Tuer zwischen Spieler und Boss: ' + b.zwischen);
+  assert.ok(await bisSeit(8200));
+  assert.strictEqual(zustand().zeitlupe, true, 'der Treffer laeuft nicht in Zeitlupe');
+  assert.strictEqual(H.run(`window.__GAME_PAUSE.since`), null, 'die Spieluhr steht noch');
+  assert.deepStrictEqual(H.hardErrors().slice(fehlerVorher).map((f) => f.msg), []);
+});
 
 test('im Dungeon ist das HUD weg (Lebensleiste, Faehigkeiten, Minikarte)', async () => {
   H.run("window.TrailerModus.taste('4')");
