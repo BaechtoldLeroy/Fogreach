@@ -65,7 +65,23 @@
 
   var SLOT_PREFIX = 'demonfall.slot';
 
+  // Trailer-Modus (?trailer=1): der Spielstand liegt nur im Speicher. Jede
+  // Aufnahme beginnt mit einem frischen Spiel und schreibt NICHTS auf die
+  // Platte — weder Fortschritt noch Einstellungen. Lesen darf er nur die
+  // globalen Praeferenzen (Lautstaerke, Sprache), damit das Spiel so klingt
+  // und spricht wie sonst auch.
+  var _sandkasten = null;
+  try {
+    if (window.DebugGate && window.DebugGate.an('trailer')) _sandkasten = Object.create(null);
+  } catch (e) { _sandkasten = null; }
+
   function _raw(op, key, value) {
+    if (_sandkasten) {
+      if (op === 'set') { _sandkasten[key] = String(value); return null; }
+      if (op === 'remove') { _sandkasten[key] = null; return null; }
+      if (Object.prototype.hasOwnProperty.call(_sandkasten, key)) return _sandkasten[key];
+      if (GLOBAL_KEYS.indexOf(key) === -1) return null;
+    }
     try {
       if (typeof localStorage === 'undefined' || !localStorage) return null;
       if (op === 'get') return localStorage.getItem(key);
@@ -228,6 +244,7 @@
     listSlots: listSlots,
     deleteSlot: deleteSlot,
     migrateLegacySave: migrateLegacySave,
+    imSandkasten: function () { return !!_sandkasten; },
     _resetForTest: _resetForTest
   };
   window.SlotStorage = SlotStorage;

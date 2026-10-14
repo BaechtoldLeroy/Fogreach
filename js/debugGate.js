@@ -90,7 +90,8 @@
     'spy', 'roomsize', 'hubdebug',
     'versteck', 'sonder', 'akt', 'stark',
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
-    'gegnerlauf'
+    'gegnerlauf',
+    'trailer', 'einstellung'   // Trailer-Modus (js/trailerModus.js)
   ];
 
   /**

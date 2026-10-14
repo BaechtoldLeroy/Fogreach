@@ -266,6 +266,99 @@ Die gesamte Nebel-Analyse aus #70 lief ueber diese Flaggen.
 | `?hubdebug=1` | Hub-Collider sichtbar machen |
 | `?sitzung=oeffentlich` | (#166) Spielt die oeffentliche Ratssitzung gleich nach dem Betreten des Hubs, ohne passenden Spielstand (Vorschau). `?sitzung=geheim` spielt ebenso die geheime Sitzung. Beide laufen auch ohne Flagge auf der gemalten Buehne; die Flagge ist nur die Abkuerzung dorthin. |
 
+### Trailer-Modus
+
+`?trailer=1` macht das Spiel zum Drehort fuer den 30-Sekunden-Trailer aus
+[`trailer-drehbuch.md`](trailer-drehbuch.md). Code: [`js/trailerModus.js`](../js/trailerModus.js).
+
+```
+http://localhost:8123/?trailer=1
+https://baechtoldleroy.github.io/Fogreach/?debug=1&trailer=1
+```
+
+Was die Flagge aendert:
+
+- **Kein HUD**: Lebensleiste, Faehigkeitenleiste, Minikarte, Questanzeige,
+  Hub-Knoepfe, [E]-Hinweise, Tutorial-Hinweise, Toasts — alles, was am
+  Bildschirm klebt (Tiefe 1001 bis 2400), wird per Kamera ausgeblendet.
+- **Unsterblich**: kein Schaden, kein Game Over, keine Erfahrung (ein
+  Stufenaufstieg blitzt sonst mitten durchs Bild).
+- **Kein Spielstand wird geschrieben.** Der Trailer beginnt immer mit einem
+  frischen Spiel im Speicher; `saveSlots.js` leitet jedes Schreiben in einen
+  Sandkasten um. Gelesen werden nur die globalen Einstellungen (Lautstaerke,
+  Sprache). Die Slots bleiben unberuehrt, auch wenn das Spiel speichert.
+- Der Startbildschirm wird uebersprungen, es geht direkt in den Hub.
+
+| Taste | Wirkung |
+|---|---|
+| `1`–`9` | Einstellung aus dem Drehbuch aufbauen (Tabelle unten) |
+| `R` | Aufnahme starten / stoppen — das Spiel nimmt sich selbst auf (siehe „Trailer aufnehmen“) |
+| `Z` | Zeitlupe an/aus — Spieluhr, Physik, Tweens, Animationen auf 0.3x; bleibt ueber Einstellungen hinweg an |
+| `L` | Letterbox-Balken an/aus |
+| `H` | HUD einblenden / wieder ausblenden (fuer Schnittbilder mit Oberflaeche) |
+| `M` | Ton an/aus |
+
+Im Trailer-Modus gehoeren diese Tasten dem Trailer: `1`–`4` und `R` loesen
+keine Faehigkeiten aus, `M` schaltet nur einmal um. Eine kurze Tastenhilfe
+steht beim Laden 3 s unten im Browserfenster — als Seitenelement ausserhalb
+des Spielbilds, sie landet also in keiner Aufnahme — und verschwindet
+spaetestens mit der ersten Einstellung. Der Mauszeiger ist ueber dem Spiel
+ausgeblendet.
+
+| Taste | Einstellung | Was passiert |
+|---|---|---|
+| `1` | Nebelstadt | Hub aus Schwarz, Nebelschleier lichtet sich, Fahrt ueber den Platz zum Rathaus. Spieler ausgeblendet. |
+| `2` | Der Rat | Spieler vor Aldric, der Messing-Dialog geht auf: „Der Rat hat Arbeit für Dich, Archivschmied.“ |
+| `3` | Abstieg | Spieler an der Rathauskeller-Tuer, geht los, Abblende — erster Kellerraum, aus Schwarz, ohne Gegner. |
+| `4` | Kampf-Montage | Je ~1,3 s: Wirbelwind in fuenf Wichte, Ansturm durch drei Schlaeger, Hammer der Ahnen, eine Kettenwache faellt (Schild blitzt zuerst). |
+| `5` | Verkleidung | Lagerhaus-Spionageraum, Spieler in Wachen-Montur geht am blauen Kegel vorbei, nach 2 s faerbt sich der Kegel orange. |
+| `6` | Geheime Sitzung | Die Ratskammer-Buehne (Magistrat, Klerus, Garde, Kerzen), langsamer Zoom. |
+| `7` | Boss | Kettenmeister-Auftritt (bestaetigt sich nach 3 s selbst), dann der Hammer in Zeitlupe, Bildschirm bebt; danach wieder Normaltempo. |
+| `8` | Die Presse | Kamera auf der Druckerei, drei Stoesse mit fliegenden Flugblaettern, dann geht die Druckerei-Ansicht auf. |
+| `9` | Titel | Schwarz, die Laterne vom Startbildschirm leuchtet auf, der Nebel reisst auf, FOGREACH in Messing. |
+
+Jede Einstellung saet den Zufall fest (Raumfolge, Gegner, Funken) und baut ihre
+Szene neu auf — dieselbe Taste ergibt dasselbe Bild, egal was vorher lief.
+Szenenwechsel laufen ueber die Wege des Spiels (Rueckweg aus dem Dungeon,
+Debug-Abstieg aus dem Hub); ein schwarzer Vorhang deckt sie ab.
+
+Zum Weiterreichen an Tests: `?trailer=1&einstellung=N` startet Einstellung N,
+sobald der Hub steht; `window.TrailerModus.taste('4')` wirkt wie der Tastendruck.
+
+#### Trailer aufnehmen
+
+Das Spiel nimmt sich selbst auf: Taste `R` zeichnet das Spielbild (60 fps) mit
+Spielton und Musik auf und legt beim Stoppen eine Videodatei in den
+Download-Ordner. Kein OBS noetig.
+
+1. Spiel lokal starten (`npx http-server -p 8123 -c-1 .`) und im Browser
+   (Chrome oder Edge) `http://localhost:8123/?trailer=1` oeffnen.
+2. `F11` druecken (Vollbild), damit das Spielbild gross aufgenommen wird.
+3. Einmal ins Spiel klicken, damit der Ton freigegeben ist, und warten, bis der
+   Hub steht.
+4. Die Taste der Einstellung druecken, z. B. `4`.
+5. Sofort `R` druecken — oben rechts im Fenster erscheint ein roter Punkt
+   (nicht im Video).
+6. Die Einstellung laufen lassen (5–8 s), bei Bedarf `Z` fuer Zeitlupe.
+7. `R` druecken — die Aufnahme stoppt, die Datei landet im Download-Ordner:
+   `fogreach_4_kampf_01.webm`, beim naechsten Mal `_02` usw. Ohne gewaehlte
+   Einstellung heisst sie `fogreach_frei_01.webm`.
+8. Pro Einstellung 3–5 Durchlaeufe aufnehmen und den besten nehmen. Die
+   Nummer zaehlt nur bis zum Neuladen der Seite; danach beginnt sie wieder bei
+   `_01` (der Browser haengt bei gleichem Namen selbst „(1)“ an).
+
+Format: WebM (VP9, sonst VP8), 12 Mbit/s, Ton Opus. DaVinci Resolve und CapCut
+lesen WebM; wer ein anderes Format braucht, wandelt mit
+`ffmpeg -i fogreach_4_kampf_01.webm -c:v libx264 -crf 16 fogreach_4_kampf_01.mp4`.
+Ist `M` (stumm) gedrueckt, ist auch die Aufnahme stumm. Kann der Browser nicht
+aufnehmen (kein MediaRecorder), erscheint unten eine Meldung statt einer
+Aufnahme.
+
+Texttafeln kommen im Schnitt dazu (siehe Drehbuch), nicht ins Spiel.
+
+Alternativ geht weiter OBS (1920×1080, 60 fps, Fenster- oder
+Bildschirmaufnahme); die Tastenhilfe ist dann 3 s nach dem Laden weg.
+
 ## Was sonst noch am Gate haengt
 
 **Debug-Sektion im Einstellungsmenue** — Auto-Start, „Kein Nebel",

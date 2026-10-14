@@ -742,7 +742,21 @@ function gameNow(scene) {
   const raw = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
   const p = window.__GAME_PAUSE;
   const span = (p.since != null) ? (raw - p.since) : 0; // laufende Pause-Spanne
-  return raw - p.offset - span;
+  const t = raw - p.offset - span;
+  // Zeitlupe (Trailer-Modus): ab dem Anker laeuft die Spieluhr um `faktor`
+  // langsamer. Ohne Anker bleibt alles wie vorher.
+  if (!p.anker) return t;
+  return p.anker.spiel + (t - p.anker.roh) * p.faktor;
+}
+// Spielzeit skalieren (1 = normal, 0.3 = Zeitlupe). Der Anker haelt die Uhr
+// beim Umschalten stetig: gameNow springt nie, es laeuft nur anders schnell.
+function setGameTimeScale(faktor, scene) {
+  const p = window.__GAME_PAUSE;
+  const raw = (scene && scene.time && typeof scene.time.now === 'number') ? scene.time.now : Date.now();
+  const span = (p.since != null) ? (raw - p.since) : 0;
+  const jetzt = gameNow(scene);
+  p.anker = { roh: raw - p.offset - span, spiel: jetzt };
+  p.faktor = (typeof faktor === 'number' && faktor > 0) ? faktor : 1;
 }
 function pauseGameClock(scene) {
   const p = window.__GAME_PAUSE;
@@ -765,6 +779,7 @@ function resumeGameClock(scene) {
 }
 if (typeof window !== 'undefined') {
   window.gameNow = gameNow;
+  window.setGameTimeScale = setGameTimeScale;
   window.pauseGameClock = pauseGameClock;
   window.resumeGameClock = resumeGameClock;
 }

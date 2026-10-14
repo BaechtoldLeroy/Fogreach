@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="assets/ui/apple-touch-icon.png?v=1" />
     <!-- #88: EIN Schalter fuer alle Debug-Oberflaechen. Steht vor dem
          Fehler-Overlay, weil das ihn schon braucht. Ohne Abhaengigkeiten. -->
-    <script src="js/debugGate.js?v=036"></script>
+    <script src="js/debugGate.js?v=037"></script>
 
     <script src="js/pixelTexturen.js?v=017"></script>
     <!-- Mobile-Fehler-Overlay: zeigt uncaught JS-Fehler ON-SCREEN, weil man auf
@@ -108,14 +108,14 @@
     <!-- #63 Speicherslots: MUSS als erstes Save-Modul laden. Migriert beim Laden
          den Alt-Spielstand nach Slot 1 und stellt window.SlotStorage bereit —
          jedes Subsystem, das danach seinen Key liest, sieht schon den Slot. -->
-    <script src="js/saveSlots.js?v=003"></script>
+    <script src="js/saveSlots.js?v=004"></script>
     <script src="js/persistence.js?v=063"></script>
     <script src="js/runDepth.js?v=003"></script>
     <script src="js/i18n.js?v=001"></script>
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=401"></script>
+    <script src="js/version.js?v=402"></script>
     <script src="js/soundManager.js?v=003"></script>
     <script src="js/performanceMonitor.js?v=002"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -216,7 +216,7 @@
     <script src="js/espionageSystem.js?v=074"></script>
     <!-- 055 follow-up: Sichtbarkeitsschicht (HUD-Banner + Zonen-/Wachen-Marker) -->
     <script src="js/espionageVisuals.js?v=075"></script>
-    <script src="js/scenes/startScene.js?v=096"></script>
+    <script src="js/scenes/startScene.js?v=097"></script>
     <script src="js/scenes/hub/hubLayout.js?v=022"></script>
     <script src="js/scenes/hub/hubNeuKarte.js?v=008"></script>
     <script src="js/scenes/hub/hubNeuWelt.js?v=010"></script>
@@ -235,7 +235,9 @@
     <script src="js/minimap.js?v=063"></script>
     <script src="js/hudV2.js?v=093"></script>
     <script src="js/endlessMode.js?v=063"></script>
-    <script src="js/main.js?v=147"></script>
+    <script src="js/main.js?v=148"></script>
+    <!-- Trailer-Modus (?trailer=1): Einstellungen fuer die Trailer-Aufnahme -->
+    <script src="js/trailerModus.js?v=001"></script>
     <script src="js/mobileAutoAim.js"></script>
     <!-- 053 WP01: Mobile-Perf-Diagnose-Probe. No-Op außer bei ?perf=1.
          ?v bump erzwingt frischen Fetch (Pages cached Assets ~10min). -->

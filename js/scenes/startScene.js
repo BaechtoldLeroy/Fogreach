@@ -460,6 +460,16 @@ StartScene.prototype.create = function () {
     return;
   }
 
+  // Trailer-Modus (?trailer=1): direkt in ein frisches Spiel. Kein clearSave —
+  // der Spielstand liegt im Trailer-Modus ohnehin nur im Speicher (saveSlots.js).
+  if (window.TrailerModus && window.TrailerModus.aktiv()) {
+    window.TrailerModus.vorbereiten();
+    if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
+    const selfT = this;
+    setTimeout(() => loadRoomTemplatesAndStart.call(selfT), 100);
+    return;
+  }
+
   // Auto-start support: ?autostart=1 in URL OR debug.autostart in settings.
   // Treated as a fresh new game — wipe persistent state so test runs are deterministic.
   // #88: Autostart LOESCHT den Spielstand (clearSave gleich unten). Beide
