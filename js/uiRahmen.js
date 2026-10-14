@@ -41,7 +41,7 @@
   };
   // Symbole ausserhalb von ALLE: fehlt eines, faellt nur dieses auf das
   // Ereignis-Medaillon zurueck, statt den ganzen Messing-Satz abzuschalten.
-  var ZUSATZ_SYMBOLE = ['ui_symbol_schrift', 'ui_symbol_boss'];
+  var ZUSATZ_SYMBOLE = ['ui_symbol_schrift', 'ui_symbol_boss', 'ui_symbol_laterne', 'ui_symbol_tod'];
 
   // Zweite Runde (#182): Inventarfelder, HUD-Leiste und Messingring.
   var FELD = 'ui_feld', FELD_GEWAEHLT = 'ui_feld_gewaehlt', FELD_RAND = 34;

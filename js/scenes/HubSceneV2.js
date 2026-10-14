@@ -140,6 +140,8 @@ if (window.i18n) {
   });
 }
 const _HUB_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+// Felder im Streifen assets/ui/ui_lauf_symbole.png (tools/laufSymboleBauen.js baut ihn in dieser Reihenfolge).
+const LAUF_SYMBOLE = ['raeume', 'gegner', 'elite', 'bosse', 'xp', 'gold', 'fragmente', 'dauer'];
 
 // Collider-Overlay: Spiel mit ?hubdebug=1 in der URL oeffnen, um alle
 // HUB_HITBOXES-Boxen (inkl. forest_*) beschriftet zu sehen — Werkzeug zum
@@ -171,6 +173,10 @@ class HubSceneV2 extends Phaser.Scene {
     if (window.uiRahmen) window.uiRahmen.vorladen(this);
     // Pixel-Icons der Faehigkeiten (#195) — das Loadout zeigt sie auch im Hub.
     if (window.hudLeiste) window.hudLeiste.vorladen(this);
+    // Pixel-Symbole der Laufzusammenfassung (b418).
+    if (!this.textures.exists('ui_lauf_symbole')) {
+      this.load.spritesheet('ui_lauf_symbole', 'assets/ui/ui_lauf_symbole.png?v=1', { frameWidth: 32, frameHeight: 32 });
+    }
     // Die Pixel-Icons der Gegenstaende (pixelTexturen.js): ohne sie zeigte
     // der Hub nach frischem Laden die alten gezeichneten Icons.
     if (typeof window.gegenstandsBilderVorladen === 'function') window.gegenstandsBilderVorladen(this);
@@ -691,6 +697,18 @@ class HubSceneV2 extends Phaser.Scene {
     // Run-summary modal: if leaveDungeonForHub stashed a summary, show it
     // once the scene is settled. Cleared from window inside _showRunSummary
     // so a hub-side reload doesn't re-trigger it.
+    // Debug-Abkuerzung ?lauf=erfolg|tod (b418): die Zusammenfassung mit
+    // Beispielwerten, ohne erst einen Lauf zu spielen.
+    const _laufVorschau = window.DebugGate && window.DebugGate.flagge('lauf');
+    if (_laufVorschau && !window.__laufVorschauGezeigt) {
+      window.__laufVorschauGezeigt = true;
+      window.lastRunSummary = {
+        reason: _laufVorschau === 'tod' ? 'death' : 'portal',
+        durationMs: 754000, startDepth: 4, deepestDepth: 9,
+        goldGained: 1284, fragmentsGained: 2, xpGained: 3460,
+        enemiesKilled: 87, elitesKilled: 5, bossesKilled: 1, roomsEntered: 14
+      };
+    }
     if (window.lastRunSummary) {
       this.time.delayedCall(300, () => {
         if (window.lastRunSummary) this._showRunSummary(window.lastRunSummary);
@@ -4618,8 +4636,14 @@ class HubSceneV2 extends Phaser.Scene {
   // snapshot leaveDungeonForHub stashed on window.lastRunSummary, renders a
   // stats card, then clears the global so a hub-scene re-create doesn't show
   // the same summary twice.
+  //
+  // b418: im Messing-Stil wie die Tiefenwahl — Platte, Medaillon neben dem
+  // Titel (Laterne = geschafft, Totenkopf auf Dunkelrot = gefallen), Tiefe
+  // und Dauer als Plaketten, die Werte als Raster aus Messingfeldern mit
+  // Pixel-Symbol, Name und rechtsbuendiger Zahl. Zahlen zaehlen kurz hoch
+  // (Klick auf die Flaeche ueberspringt), Weiter ist sofort bedienbar.
+  // Fehlen die Messing-Bilder: der alte Kasten.
   _showRunSummary(summary) {
-    const T = (window.i18n && window.i18n.t) ? window.i18n.t.bind(window.i18n) : (k) => k;
     const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';
     const isDeath = summary.reason === 'death';
 
@@ -4627,6 +4651,7 @@ class HubSceneV2 extends Phaser.Scene {
       titleSuccess: 'Run Complete',
       titleDeath: 'Fallen in the Dungeon',
       depth: 'Depth reached',
+      depthWord: 'DEPTH',
       rooms: 'Rooms entered',
       enemies: 'Enemies slain',
       elites: 'Elites',
@@ -4635,11 +4660,13 @@ class HubSceneV2 extends Phaser.Scene {
       gold: 'Gold gained',
       fragments: 'Lore fragments',
       duration: 'Duration',
+      durationWord: 'TIME',
       close: 'Continue'
     } : {
       titleSuccess: 'Lauf abgeschlossen',
       titleDeath: 'Im Dungeon gefallen',
       depth: 'Tiefe erreicht',
+      depthWord: 'TIEFE',
       rooms: 'Räume betreten',
       enemies: 'Gegner besiegt',
       elites: 'Elite',
@@ -4648,61 +4675,309 @@ class HubSceneV2 extends Phaser.Scene {
       gold: 'Gold gewonnen',
       fragments: 'Lore-Fragmente',
       duration: 'Dauer',
+      durationWord: 'DAUER',
       close: 'Weiter'
     };
+
+    const minutes = Math.floor(summary.durationMs / 60000);
+    const seconds = Math.floor((summary.durationMs % 60000) / 1000);
+    const durationStr = minutes + ':' + String(seconds).padStart(2, '0');
+    const abgestiegen = summary.deepestDepth > summary.startDepth;
+
+    // Die Werte in Anzeige-Reihenfolge; Elite, Bosse und Fragmente nur, wenn
+    // es welche gab (wie bisher).
+    const werte = [
+      { k: 'raeume', label: labels.rooms, n: summary.roomsEntered, vor: '', farbe: '#efe6d2' },
+      { k: 'gegner', label: labels.enemies, n: summary.enemiesKilled, vor: '', farbe: '#efe6d2' }
+    ];
+    if (summary.elitesKilled > 0) werte.push({ k: 'elite', label: labels.elites, n: summary.elitesKilled, vor: '', farbe: '#f0b070' });
+    if (summary.bossesKilled > 0) werte.push({ k: 'bosse', label: labels.bosses, n: summary.bossesKilled, vor: '', farbe: '#ff9a88' });
+    werte.push({ k: 'xp', label: labels.xp, n: summary.xpGained, vor: '+', farbe: '#9fe39f' });
+    werte.push({ k: 'gold', label: labels.gold, n: summary.goldGained, vor: '+', farbe: '#ffd166' });
+    if (summary.fragmentsGained > 0) werte.push({ k: 'fragmente', label: labels.fragments, n: summary.fragmentsGained, vor: '+', farbe: '#cdb8ff' });
+
+    // Clear the global so a scene restart or hub re-enter doesn't replay this
+    // same summary. The next dungeon run creates a fresh window.runStats and
+    // a fresh window.lastRunSummary on leave.
+    window.lastRunSummary = null;
+
+    const UR = window.uiRahmen;
+    const MESSING = !!(UR && typeof UR.bereit === 'function' && UR.bereit(this));
+    if (UR && !MESSING && typeof UR.nachladen === 'function') {
+      try { UR.nachladen(this); } catch (e) {}
+    }
+    if (!MESSING) {
+      this._showRunSummaryKasten(summary, labels, werte, isDeath, abgestiegen, durationStr);
+      return;
+    }
 
     const cam = this.cameras.main;
     const cw = cam.width, ch = cam.height;
     const container = this.add.container(cw / 2, ch / 2).setDepth(2100).setScrollFactor(0);
+    container.setName('runSummaryDialog');
 
-    // Backdrop dims the hub so the modal reads as a focus event.
-    const backdrop = this.add.rectangle(0, 0, cw, ch, 0x000000, 0.65).setScrollFactor(0);
+    // Backdrop dims the hub; ein Klick darauf ueberspringt das Hochzaehlen
+    // und faengt Klicks ins Hub ab.
+    const backdrop = this.add.rectangle(0, 0, cw, ch, 0x000000, 0.65).setInteractive();
+    backdrop.setName('laufHintergrund');
+    container.add(backdrop);
+
+    const pad = 20;
+    const panelW = Math.min(560, cw - 24);
+    const innerW = panelW - pad * 2;
+    const kopfH = 48, zierH = 16, plakH = 54, zelleH = 42, zelleGap = 8, fussH = 66;
+    const zeilenN = Math.ceil(werte.length / 2);
+    const rasterH = zeilenN * zelleH + (zeilenN - 1) * zelleGap;
+    const panelH = pad + kopfH + zierH + plakH + 12 + rasterH + fussH;
+    const top = -panelH / 2;
+
+    UR.platte(this, 0, 0, panelW, panelH, 0, 0.6).forEach((t) => container.add(t));
+    if (isDeath) {
+      // Dunkelrote Toenung der Plattenmitte: gefallen liest sich auf einen Blick.
+      const ton = this.add.rectangle(0, 0, panelW - 34, panelH - 34, 0x5a0f12, 0.28);
+      ton.setName('laufTodTon');
+      container.add(ton);
+    }
+
+    // Text in seine Breite einpassen: erst kleiner, dann kuerzen.
+    const einpassen = (t, breite, minPx) => {
+      let px = parseFloat(t.style.fontSize) || 14;
+      while (t.width > breite && px > minPx) { px -= 1; t.setFontSize(px + 'px'); }
+      if (t.width > breite) {
+        let s = String(t.text);
+        while (s.length > 1 && t.width > breite) { s = s.slice(0, -1); t.setText(s.trimEnd() + '...'); }
+      }
+      return t;
+    };
+    // Fehlt nur der Symbolstreifen: Raster ohne Symbole (nie ein Ersatzzeichen).
+    const symbolDa = this.textures.exists('ui_lauf_symbole');
+    const anim = [];   // Symbole, die nacheinander einblenden
+
+    // Kopf: Medaillon + Titel, gemeinsam mittig.
+    const kopfY = top + pad + kopfH / 2;
+    const medKey = isDeath ? 'ui_symbol_tod' : 'ui_symbol_laterne';
+    const title = this.add.text(0, kopfY, isDeath ? labels.titleDeath : labels.titleSuccess, {
+      fontFamily: 'serif', fontSize: 26, fontStyle: 'bold', color: isDeath ? '#ff9e8f' : '#ffd166'
+    }).setOrigin(0, 0.5);
+    title.setName('laufTitel');
+    einpassen(title, innerW - 60, 16);
+    const medDa = this.textures.exists(medKey);
+    let kx = -((medDa ? kopfH + 12 : 0) + title.width) / 2;
+    if (medDa) {
+      const med = this.add.image(kx + kopfH / 2, kopfY, medKey).setDisplaySize(kopfH, kopfH);
+      med.setName('laufMedaillon');
+      container.add(med);
+      kx += kopfH + 12;
+    }
+    title.x = kx;
+    container.add(title);
+
+    // Zierleiste mit Raute.
+    const zy = Math.round(top + pad + kopfH + zierH / 2);
+    const zier = this.add.graphics();
+    zier.lineStyle(1, 0x000000, 0.6).lineBetween(-innerW / 2 + 60, zy + 1, innerW / 2 - 60, zy + 1);
+    zier.lineStyle(1, 0xc9a25a, 0.9).lineBetween(-innerW / 2 + 60, zy, -10, zy).lineBetween(10, zy, innerW / 2 - 60, zy);
+    zier.fillStyle(isDeath ? 0xff9e8f : 0xffd166, 1).fillPoints([{ x: 0, y: zy - 5 }, { x: 5, y: zy }, { x: 0, y: zy + 5 }, { x: -5, y: zy }], true);
+    container.add(zier);
+
+    // Plaketten: Tiefe (Start, Pfeil, tiefste) und Dauer (Sanduhr).
+    const plW = 170, plY = top + pad + kopfH + zierH + plakH / 2;
+    const zahlY = plY + 8;
+    const plakette = (x, name, wort) => {
+      const bild = this.add.image(x, plY, UR.kachelBild(this, plW, plakH, isDeath ? '#3a1416' : null));
+      bild.setName(name);
+      container.add(bild);
+      const t = this.add.text(x, plY - plakH / 2 + 6, wort, {
+        fontFamily: 'monospace', fontSize: 11, color: '#d8ccb4'
+      }).setOrigin(0.5, 0);
+      t.setName('laufPlakettenWort');
+      container.add(t);
+    };
+    const STRATUM = ['#9fd98f', '#d9cf8f', '#d9a07a', '#d97a7a'];
+    const stratumFarbe = (d) => STRATUM[(d <= 5 ? 1 : d <= 10 ? 2 : d <= 15 ? 3 : 4) - 1];
+    const zahl = (d, name) => {
+      const t = this.add.text(0, zahlY, String(d), {
+        fontFamily: 'serif', fontSize: 22, fontStyle: 'bold', color: stratumFarbe(d)
+      }).setOrigin(0, 0.5);
+      t.setName(name);
+      container.add(t);
+      return t;
+    };
+
+    const tX = -plW / 2 - 8;
+    plakette(tX, 'laufTiefenPlakette', labels.depthWord);
+    const a = zahl(summary.startDepth, 'laufTiefeStart');
+    if (abgestiegen) {
+      const b = zahl(summary.deepestDepth, 'laufTiefeZiel');
+      const pfeilW = 16, luecke = 8;
+      a.x = tX - (a.width + luecke + pfeilW + luecke + b.width) / 2;
+      const px = a.x + a.width + luecke;
+      b.x = px + pfeilW + luecke;
+      // Pfeil als Pixel statt Schriftzeichen (das Pfeilzeichen erschien als Kaestchen).
+      const pf = this.add.graphics();
+      pf.fillStyle(0xd8ccb4, 1).fillRect(px, zahlY - 2, pfeilW - 6, 4)
+        .fillTriangle(px + pfeilW - 7, zahlY - 6, px + pfeilW, zahlY, px + pfeilW - 7, zahlY + 6);
+      pf.setName('laufTiefePfeil');
+      container.add(pf);
+    } else {
+      a.x = tX - a.width / 2;
+    }
+
+    const dX = plW / 2 + 8;
+    plakette(dX, 'laufDauerPlakette', labels.durationWord);
+    const dauerT = this.add.text(0, zahlY, durationStr, {
+      fontFamily: 'monospace', fontSize: 20, fontStyle: 'bold', color: '#efe6d2'
+    }).setOrigin(0, 0.5);
+    dauerT.setName('laufDauer');
+    if (symbolDa) {
+      const uhrW = 26;
+      const ux = dX - (uhrW + 6 + dauerT.width) / 2;
+      const uhr = this.add.image(ux + uhrW / 2, zahlY, 'ui_lauf_symbole', LAUF_SYMBOLE.indexOf('dauer')).setDisplaySize(uhrW, uhrW);
+      uhr.setName('laufSymbol');
+      container.add(uhr);
+      dauerT.x = ux + uhrW + 6;
+    } else {
+      dauerT.x = dX - dauerT.width / 2;
+    }
+    container.add(dauerT);
+
+    // Raster: zwei Spalten Messingfelder, Zahlen rechtsbuendig in Monospace
+    // (tabellarisch); eine ungerade letzte Zelle steht mittig.
+    const zelleW = Math.floor((innerW - zelleGap) / 2);
+    const rasterTop = top + pad + kopfH + zierH + plakH + 12;
+    const zaehler = [];
+    werte.forEach((w, i) => {
+      const allein = i === werte.length - 1 && werte.length % 2 === 1;
+      const zx = allein ? 0 : (i % 2 === 0 ? -1 : 1) * (zelleW + zelleGap) / 2;
+      const zyM = rasterTop + Math.floor(i / 2) * (zelleH + zelleGap) + zelleH / 2;
+      const L = zx - zelleW / 2, R = zx + zelleW / 2;
+      const feld = this.add.image(zx, zyM, UR.feldBild(this, zelleW, zelleH, false, isDeath ? '#2a1214' : null));
+      feld.setName('laufFeld');
+      container.add(feld);
+      let textL = L + 12;
+      if (symbolDa) {
+        const sym = this.add.image(L + 8 + 16, zyM, 'ui_lauf_symbole', LAUF_SYMBOLE.indexOf(w.k));
+        sym.setName('laufSymbol');
+        container.add(sym);
+        anim.push(sym);
+        textL = L + 8 + 32 + 8;
+      }
+      const ziel = w.vor + w.n;
+      const wert = this.add.text(R - 12, zyM, ziel, {
+        fontFamily: 'monospace', fontSize: 19, fontStyle: 'bold', color: w.farbe
+      }).setOrigin(1, 0.5);
+      wert.setName('laufWert_' + w.k);
+      wert.setData('ziel', ziel);
+      const lbl = this.add.text(textL, zyM, w.label, {
+        fontFamily: 'monospace', fontSize: 14, color: '#e6dcc6'
+      }).setOrigin(0, 0.5);
+      lbl.setName('laufName_' + w.k);
+      // Platz bis vor die (fertige) Zahl — sie waechst beim Zaehlen nie darueber.
+      einpassen(lbl, (R - 12 - wert.width - 10) - textL, 11);
+      container.add(lbl);
+      container.add(wert);
+      if (w.n > 0) zaehler.push({ t: wert, w });
+    });
+
+    // Weiter: gruen bzw. rot getoenter Messingknopf, mind. 44 px hoch.
+    const closeBtn = this.add.text(0, panelH / 2 - pad - 18, labels.close, {
+      fontFamily: 'monospace', fontSize: 18, color: '#f2e9d8', align: 'center',
+      padding: { x: 44, y: 13 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    closeBtn.setName('laufWeiter');
+    container.add(closeBtn);
+    UR.textKnopf(this, closeBtn, null, { ton: isDeath ? '#4a1e22' : '#24402a' });
+
+    // Hochzaehlen und Einblenden: kurz (unter 1 s), ueberspringbar.
+    const tweens = [];
+    anim.forEach((img, i) => {
+      img.setAlpha(0);
+      tweens.push(this.tweens.add({ targets: img, alpha: 1, duration: 160, delay: i * 60 }));
+    });
+    zaehler.forEach(({ t, w }) => {
+      t.setText(w.vor + '0');
+      tweens.push(this.tweens.addCounter({
+        from: 0, to: w.n, duration: 600, ease: 'Cubic.easeOut',
+        onUpdate: (tw) => { if (t.scene) t.setText(w.vor + Math.round(tw.getValue())); },
+        onComplete: () => { if (t.scene) t.setText(t.getData('ziel')); }
+      }));
+    });
+    const ueberspringen = () => {
+      tweens.forEach((tw) => { try { tw.stop(); } catch (e) {} });
+      tweens.length = 0;
+      anim.forEach((img) => { if (img.scene) img.setAlpha(1); });
+      zaehler.forEach(({ t }) => { if (t.scene) t.setText(t.getData('ziel')); });
+    };
+    backdrop.on('pointerdown', ueberspringen);
+
+    let geschlossen = false;
+    const close = () => {
+      if (geschlossen) return;
+      geschlossen = true;
+      ueberspringen();
+      this.input.keyboard.off('keydown-ESC', close);
+      this.input.keyboard.off('keydown-ENTER', close);
+      this.input.keyboard.off('keydown-SPACE', close);
+      this.events.off('shutdown', close);
+      container.destroy(true);
+    };
+    closeBtn.on('pointerdown', (pointer, x, y, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      close();
+    });
+    this.input.keyboard.on('keydown-ESC', close);
+    this.input.keyboard.on('keydown-ENTER', close);
+    this.input.keyboard.on('keydown-SPACE', close);
+    // Szene endet mit offenem Fenster: keine Tastenhoerer stehen lassen.
+    this.events.once('shutdown', close);
+
+    // Mobile + scrolled-camera safety: propagate scrollFactor=0 to every
+    // descendant or the close-button tap-area drifts (project memory:
+    // phaser_scrollfactor_dialogs). Must run after children are added.
+    this._ktPropagateScrollFactor(container, 0, 0);
+  }
+
+  // Rueckfall ohne Messing-Bilder: der schlichte gezeichnete Kasten.
+  _showRunSummaryKasten(summary, labels, werte, isDeath, abgestiegen, durationStr) {
+    const cam = this.cameras.main;
+    const cw = cam.width, ch = cam.height;
+    const container = this.add.container(cw / 2, ch / 2).setDepth(2100).setScrollFactor(0);
+    container.setName('runSummaryDialog');
+
+    const backdrop = this.add.rectangle(0, 0, cw, ch, 0x000000, 0.65).setInteractive();
     container.add(backdrop);
 
     const panelW = Math.min(520, cw - 40);
-    const panelH = Math.min(460, ch - 60);
+    const panelH = Math.min(460, ch - 20);
     const g = this.add.graphics();
     g.fillStyle(0x14141c, 0.95).fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
     g.lineStyle(2, isDeath ? 0x8a3030 : 0x4a6a8a, 0.95).strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 16);
     container.add(g);
 
-    const title = isDeath ? labels.titleDeath : labels.titleSuccess;
-    const titleColor = isDeath ? '#d88080' : '#f1e9d8';
-    const titleText = this.add.text(0, -panelH / 2 + 24, title, {
-      fontFamily: 'serif', fontSize: 28, color: titleColor
+    const titleText = this.add.text(0, -panelH / 2 + 18, isDeath ? labels.titleDeath : labels.titleSuccess, {
+      fontFamily: 'serif', fontSize: 28, color: isDeath ? '#e89090' : '#f1e9d8'
     }).setOrigin(0.5, 0);
+    titleText.setName('laufTitel');
     container.add(titleText);
 
-    // Depth pill: "1 → 6" if the player descended, "1" if they didn't.
-    const depthStr = (summary.deepestDepth > summary.startDepth)
-      ? (summary.startDepth + ' → ' + summary.deepestDepth)
-      : String(summary.startDepth);
-    const minutes = Math.floor(summary.durationMs / 60000);
-    const seconds = Math.floor((summary.durationMs % 60000) / 1000);
-    const durationStr = minutes + ':' + String(seconds).padStart(2, '0');
+    // Gedankenstrich statt Pfeilzeichen: der Pfeil erschien je nach Schrift als Kaestchen.
+    const depthStr = abgestiegen ? (summary.startDepth + ' – ' + summary.deepestDepth) : String(summary.startDepth);
+    const rows = [{ k: 'tiefe', label: labels.depth, value: depthStr, accent: '#d8c890' }]
+      .concat(werte.map((w) => ({ k: w.k, label: w.label, value: w.vor + w.n, accent: w.farbe })))
+      .concat([{ k: 'dauer', label: labels.duration, value: durationStr, accent: '#b8b8c4' }]);
 
-    const rows = [
-      { label: labels.depth, value: depthStr, accent: '#d8c890' },
-      { label: labels.rooms, value: String(summary.roomsEntered), accent: '#d8d2c3' },
-      { label: labels.enemies, value: String(summary.enemiesKilled), accent: '#d8d2c3' }
-    ];
-    if (summary.elitesKilled > 0) rows.push({ label: labels.elites, value: String(summary.elitesKilled), accent: '#d8a060' });
-    if (summary.bossesKilled > 0) rows.push({ label: labels.bosses, value: String(summary.bossesKilled), accent: '#d86060' });
-    rows.push({ label: labels.xp, value: '+' + summary.xpGained, accent: '#90d890' });
-    rows.push({ label: labels.gold, value: '+' + summary.goldGained, accent: '#d8c060' });
-    if (summary.fragmentsGained > 0) rows.push({ label: labels.fragments, value: '+' + summary.fragmentsGained, accent: '#a890d8' });
-    rows.push({ label: labels.duration, value: durationStr, accent: '#9090a0' });
-
-    let rowY = -panelH / 2 + 78;
-    const rowGap = 30;
+    let rowY = -panelH / 2 + 66;
+    const rowGap = Math.min(30, Math.floor((panelH - 66 - 70) / rows.length));
     const innerPad = 36;
     rows.forEach((r) => {
       const lbl = this.add.text(-panelW / 2 + innerPad, rowY, r.label, {
-        fontFamily: 'monospace', fontSize: 16, color: '#a8a8b0'
+        fontFamily: 'monospace', fontSize: 16, color: '#b8b8c0'
       }).setOrigin(0, 0);
       const val = this.add.text(panelW / 2 - innerPad, rowY, r.value, {
         fontFamily: 'monospace', fontSize: 17, color: r.accent
       }).setOrigin(1, 0);
+      lbl.setName('laufName_' + r.k);
+      val.setName('laufWert_' + r.k);
       container.add(lbl);
       container.add(val);
       rowY += rowGap;
@@ -4711,38 +4986,31 @@ class HubSceneV2 extends Phaser.Scene {
     const closeBtn = this.add.text(0, panelH / 2 - 32, labels.close, {
       fontFamily: 'monospace', fontSize: 18, color: '#ffffff',
       backgroundColor: isDeath ? '#6a3d3d' : '#3d6a4d',
-      padding: { x: 18, y: 10 }
+      padding: { x: 22, y: 13 }
     }).setOrigin(0.5, 0.5).setInteractive({ useHandCursor: true });
+    closeBtn.setName('laufWeiter');
     container.add(closeBtn);
 
+    let geschlossen = false;
     const close = () => {
-      if (escHandler) this.input.keyboard.off('keydown-ESC', escHandler);
-      if (enterHandler) this.input.keyboard.off('keydown-ENTER', enterHandler);
-      if (spaceHandler) this.input.keyboard.off('keydown-SPACE', spaceHandler);
+      if (geschlossen) return;
+      geschlossen = true;
+      this.input.keyboard.off('keydown-ESC', close);
+      this.input.keyboard.off('keydown-ENTER', close);
+      this.input.keyboard.off('keydown-SPACE', close);
+      this.events.off('shutdown', close);
       container.destroy(true);
     };
-
     closeBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
       close();
     });
+    this.input.keyboard.on('keydown-ESC', close);
+    this.input.keyboard.on('keydown-ENTER', close);
+    this.input.keyboard.on('keydown-SPACE', close);
+    this.events.once('shutdown', close);
 
-    const escHandler = () => close();
-    const enterHandler = () => close();
-    const spaceHandler = () => close();
-    this.input.keyboard.on('keydown-ESC', escHandler);
-    this.input.keyboard.on('keydown-ENTER', enterHandler);
-    this.input.keyboard.on('keydown-SPACE', spaceHandler);
-
-    // Mobile + scrolled-camera safety: propagate scrollFactor=0 to every
-    // descendant or the close-button tap-area drifts (project memory:
-    // phaser_scrollfactor_dialogs). Must run after children are added.
     this._ktPropagateScrollFactor(container, 0, 0);
-
-    // Clear the global so a scene restart or hub re-enter doesn't replay this
-    // same summary. The next dungeon run creates a fresh window.runStats and
-    // a fresh window.lastRunSummary on leave.
-    window.lastRunSummary = null;
   }
 
   // Feature 050 FR-07: side-dialogue helper. One-page, no-choices modal

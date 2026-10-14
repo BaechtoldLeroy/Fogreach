@@ -264,6 +264,7 @@ Die gesamte Nebel-Analyse aus #70 lief ueber diese Flaggen.
 | `?spy=1` | Spionage-Mission erzwingen |
 | `?roomsize=1` | Verteilung der Raumgroessen mitzaehlen und ausgeben |
 | `?hubdebug=1` | Hub-Collider sichtbar machen |
+| `?lauf=erfolg` | (b419) Zeigt nach dem Betreten des Hubs die Laufzusammenfassung ("Lauf abgeschlossen") mit Beispielwerten: Tiefe 4 bis 9, 14 Raeume, 87 Gegner, 5 Elite, 1 Boss, +3460 XP, +1284 Gold, +2 Fragmente, 12:34. `?lauf=tod` dasselbe als "Im Dungeon gefallen". Einmal je Seitenaufruf. Mit `&autostart=1` direkt in den Hub. |
 | `?sitzung=oeffentlich` | (#166) Spielt die oeffentliche Ratssitzung gleich nach dem Betreten des Hubs, ohne passenden Spielstand (Vorschau). `?sitzung=geheim` spielt ebenso die geheime Sitzung. Beide laufen auch ohne Flagge auf der gemalten Buehne; die Flagge ist nur die Abkuerzung dorthin. |
 
 ### Trailer-Modus
