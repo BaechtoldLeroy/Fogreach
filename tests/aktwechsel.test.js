@@ -1,11 +1,12 @@
-// tests/aktwechsel.test.js — Aktwechsel als Zwischenszene (Vorschau
-// ?debug=1&aktwechsel=neu, js/aktwechsel.js).
+// tests/aktwechsel.test.js — Aktwechsel als Zwischenszene (js/aktwechsel.js).
 //
 // Gemeldet: "splash texte bei aktwechsel brauchen neue grafiken oder
-// cutscenes". Mit Flagge zeigt jeder Aktwechsel ein Pixel-Tableau mit
-// Schwenk und Nebel, darueber eine Messing-Plakette "Akt N" + Aktname und
-// den Text Stueck fuer Stueck. Ohne Flagge — oder wenn das Bild fehlt —
-// bleibt die alte Titelkarte. Geprueft am echten Hub: Nummer = Index + 1,
+// cutscenes". Seit b430 fest (vorher Vorschau ?aktwechsel=neu): jeder
+// Aktwechsel zeigt ein Pixel-Tableau mit Schwenk und Nebel, darueber eine
+// Messing-Plakette "Akt N" + Aktname und den Text Stueck fuer Stueck. Nur
+// wenn das Bild fehlt, bleibt die alte Titelkarte. Der Einfuehrungstext
+// eines neuen Spiels ist die Szene von Akt 1 — sie sperrt den Hub nicht
+// (_dialogOpen bleibt, Uhr laeuft). Geprueft am echten Hub: Nummer = Index + 1,
 // Name aus STORY_ACTS/i18n, Seiten per Taste und Klick, ESC und
 // "Ueberspringen", die Spieluhr steht nur waehrenddessen, nichts bleibt
 // liegen, die Pending-Kette (Akt + Epilog) laeuft wie vorher.
@@ -59,31 +60,84 @@ function reste(H) {
   })()`);
 }
 
-describe('ohne Flagge', () => {
+describe('neues Spiel: Einfuehrungstext als Szene von Akt 1', () => {
+  let H = null;
+  before(async () => {
+    // Ohne debug=1: die Szene haengt an keiner Flagge mehr. autostart geht
+    // nur mit Debug — darum der Weg ueber den Startbildschirm.
+    H = await launch({ search: '', renderer: 'canvas', waitFor: 'StartScene' });
+    H.run(`window.game.scene.getScene('StartScene').scene.start('HubSceneV2')`);
+    assert.ok(await H.waitForScene('HubSceneV2', { maxRounds: 250 }), 'Hub nicht erreicht');
+  });
+  after(async () => { if (H) await H.shutdown(); });
+
+  test('Tableaus vorgeladen, die Einfuehrung erscheint als Szene, Hub frei', () => {
+    assert.strictEqual(H.run('window.DebugGate.flagge("aktprobe")'), null);
+    assert.ok(bis(H, `!!(${C})`), 'die Einfuehrung kam nicht als Szene');
+    const r = H.run(`(function () { var a = ${TEIL('aktwechselAkt')};
+      return { alle: window.Aktwechsel.AKTE.every(function (id) { return ${HUB}.textures.exists('aktwechsel_' + id); }),
+        bild: ${TEIL('aktwechselBild')}.texture.key, akt: a ? a.text : null, titel: ${TEIL('aktwechselTitel')}.text,
+        name: window.storySystem.STORY_ACTS[0].name, offen: !!${HUB}._dialogOpen,
+        uhr: window.__GAME_PAUSE.since, physik: ${HUB}.physics.world.isPaused }; })()`);
+    assert.strictEqual(r.alle, true, 'nicht alle Tableaus geladen');
+    assert.strictEqual(r.bild, 'aktwechsel_auftrag');
+    assert.strictEqual(r.akt, 'Akt 1');
+    assert.strictEqual(r.titel, r.name);
+    assert.strictEqual(r.offen, false, 'die Einfuehrung sperrt den Hub (_dialogOpen)');
+    assert.strictEqual(r.uhr, null, 'die Einfuehrung haelt die Spieluhr an');
+    assert.strictEqual(r.physik, false, 'die Einfuehrung haelt die Physik an');
+  });
+
+  test('der Einfuehrungstext seitenweise, jede Seite passt auf die Platte', () => {
+    assert.ok(eingeblendet(H), 'der Text blendet nicht ein');
+    const r = H.run(`(function () {
+      var t = ${TEIL('aktwechselText')}, w = ${TEIL('aktwechselWeiter')};
+      var seiten = [], schrift = [], passt = true;
+      // Seite fuer Seite blaettern, ohne zu schliessen (die letzte bleibt offen).
+      var kb = ${HUB}.input.keyboard;
+      for (var i = 0; i < 20; i++) {
+        t.setAlpha(1);
+        seiten.push(t.text); schrift.push(parseFloat(t.style.fontSize));
+        if (t.y + t.height > w.y - w.height + 2) passt = false;
+        var vorher = t.text;
+        kb.emit('keydown-SPACE'); if (t.alpha < 1) kb.emit('keydown-SPACE');
+        if (!${C}) break;
+        if (t.text === vorher) break;
+      }
+      return { seiten: seiten, schrift: schrift, passt: passt, zu: !${C},
+        gesehen: (window.SlotStorage || localStorage).getItem('demonfall_seen_intro_splash') };
+    })()`);
+    assert.ok(r.seiten.length >= 3, 'der Einfuehrungstext steht auf ' + r.seiten.length + ' Seite(n)');
+    assert.ok(/^Fogreach/.test(r.seiten[0]), 'erste Seite ist nicht der Einfuehrungstext: ' + r.seiten[0]);
+    assert.ok(/Keller/.test(r.seiten[r.seiten.length - 1]), 'letzte Seite fehlt');
+    assert.strictEqual(r.passt, true, 'eine Seite laeuft aus der Platte');
+    assert.ok(r.schrift.every((s) => s >= 17), 'Schrift notgedrungen verkleinert: ' + r.schrift);
+    assert.strictEqual(r.zu, true, 'die letzte Seite schliesst nicht');
+    assert.strictEqual(r.gesehen, '1', 'die Einfuehrung ist nicht als gesehen gemerkt');
+  });
+});
+
+describe('Einfuehrung: ESC schliesst ganz', () => {
   let H = null;
   before(async () => { H = await hub('?autostart=1&debug=1'); });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('die alte Titelkarte, keine Tableaus geladen', () => {
-    oeffnen(H, `window.storySystem.probeEreignis('3')`);
-    const r = H.run(`(function () {
-      var alt = ${HUB}.children.list.filter(function (o) { return o.type === 'Container' && o.depth === 6001; })[0];
-      return { neu: !!(window.__ov && window.__ov.neu), szene: !!(${C}),
-        hinweis: alt ? alt.list.some(function (o) { return o.text === 'Weiter [LEERTASTE]'; }) : false,
-        bild: ${HUB}.textures.exists('aktwechsel_erste_risse') };
-    })()`);
-    assert.strictEqual(r.neu, false, 'ohne Flagge lief die neue Szene');
-    assert.strictEqual(r.szene, false);
-    assert.strictEqual(r.hinweis, true, 'die alte Karte fehlt');
-    assert.strictEqual(r.bild, false, 'Tableaus ohne Flagge geladen');
-    H.run(`window.__ov.weiter(); window.__ov.weiter(); window.__ov.weiter();`);
-    assert.strictEqual(H.run('window.__zu'), 1);
+  test('ESC auf der ersten Seite schliesst die ganze Szene', () => {
+    assert.ok(bis(H, `!!(${C})`), 'die Einfuehrung kam nicht als Szene');
+    H.run(`${HUB}.input.keyboard.emit('keydown-ESC')`);
+    const r = H.run(`({ szene: !!(${C}), offen: !!${HUB}._dialogOpen, uhr: window.__GAME_PAUSE.since,
+      gesehen: (window.SlotStorage || localStorage).getItem('demonfall_seen_intro_splash') })`);
+    assert.strictEqual(r.szene, false, 'ESC schliesst die Einfuehrung nicht');
+    assert.strictEqual(r.offen, false);
+    assert.strictEqual(r.uhr, null);
+    assert.strictEqual(r.gesehen, '1');
+    assert.strictEqual(reste(H).objekte, 0, 'Teile der Szene bleiben liegen');
   });
 });
 
-describe('mit ?aktwechsel=neu', () => {
+describe('Zwischenszene', () => {
   let H = null;
-  before(async () => { H = await hub('?autostart=1&debug=1&aktwechsel=neu'); });
+  before(async () => { H = await hub('?autostart=1&debug=1'); });
   after(async () => { if (H) await H.shutdown(); });
 
   test('jeder Akt: eigenes Bild, Plakette mit Index+1 und Name, echter Weg ueber den Hub', () => {
@@ -277,7 +331,7 @@ describe('mit ?aktwechsel=neu', () => {
 
 describe('?aktprobe=N', () => {
   let H = null;
-  before(async () => { H = await hub('?autostart=1&debug=1&aktwechsel=neu&aktprobe=3'); });
+  before(async () => { H = await hub('?autostart=1&debug=1&aktprobe=3'); });
   after(async () => { if (H) await H.shutdown(); });
 
   test('zeigt Akt 3 beim Hub-Eintritt, Spielstand unberuehrt', () => {

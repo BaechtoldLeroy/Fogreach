@@ -665,12 +665,14 @@
   };
   function aktStimmung(actId) { return AKT_STIMMUNG[actId] || AKT_STIMMUNG.treuer_diener; }
 
-  function showStoryOverlay(scene, eventData, onDismiss) {
+  // optionen.nebenbei: die Karte liegt ueber dem Hub, haelt ihn aber nicht an
+  // (Einfuehrungstext eines neuen Spiels).
+  function showStoryOverlay(scene, eventData, onDismiss, optionen) {
     if (!scene || !eventData) return;
-    // Vorschau ?aktwechsel=neu: Zwischenszene mit Tableau statt Titelkarte.
-    // Fehlt die Flagge oder das Bild des Akts, bleibt alles wie bisher.
+    // Zwischenszene mit Tableau (js/aktwechsel.js). Nur wenn das Bild des
+    // Akts fehlt, die alte Titelkarte darunter.
     if (window.Aktwechsel && window.Aktwechsel.kann(scene, eventData)) {
-      return window.Aktwechsel.zeigen(scene, eventData, onDismiss);
+      return window.Aktwechsel.zeigen(scene, eventData, onDismiss, optionen);
     }
 
     var cam = scene.cameras.main;
@@ -777,7 +779,7 @@
 
     // ESC ueberspringt die ganze Karte, nicht nur eine Seite — seit der
     // Einfuehrungstext (mehrseitig) die Karte von Akt 1 ist, blieb man sonst
-    // mit ESC darin haengen. Wie die Zwischenszene unter ?aktwechsel=neu.
+    // mit ESC darin haengen. Wie die Zwischenszene.
     var ueberspringen = function () { seite = seiten.length - 1; dismiss(); };
     tasten.forEach(function (t) { scene.input.keyboard.on(t, dismiss); });
     scene.input.keyboard.on('keydown-ESC', ueberspringen);

@@ -92,7 +92,7 @@
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
     'gegnerlauf',
     'trailer', 'einstellung',  // Trailer-Modus (js/trailerModus.js)
-    'aktwechsel', 'aktprobe'   // Vorschau Akt-Zwischenszenen: aktwechsel=neu, aktprobe=1..6
+    'aktprobe'          // Akt-Zwischenszene ansehen: aktprobe=1..6 | epilog
   ];
 
   /**

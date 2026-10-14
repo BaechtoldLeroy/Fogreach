@@ -1,9 +1,9 @@
 /* =====================================================================
  * aktwechsel.js — Aktwechsel als kurze Zwischenszene statt Text-Splash
  * ---------------------------------------------------------------------
- * Vorschau hinter ?debug=1&aktwechsel=neu. Ohne Flagge (oder wenn das
- * Bild des Akts fehlt) zeigt storySystem.showStoryOverlay die alte
- * Titelkarte — dieses Modul wird dann gar nicht gefragt.
+ * Jeder Aktwechsel (und der Einfuehrungstext = Karte von Akt 1) laeuft
+ * als diese Szene. Fehlt das Bild eines Akts, zeigt
+ * storySystem.showStoryOverlay die alte Titelkarte.
  *
  * Aufbau: ein Pixel-Tableau je Akt (PixelLab, assets/sprites/aktwechsel/)
  * mit langsamem Schwenk/Zoom und treibendem Nebel, oben eine
@@ -11,7 +11,9 @@
  * der Text Stueck fuer Stueck erscheint. Weiter per Leertaste/Enter/Klick/
  * Tippen, ESC oder "Ueberspringen" schliesst sofort.
  *
- * Die Spieluhr steht, solange die Szene offen ist. Darum laeuft hier
+ * Die Spieluhr steht, solange die Szene offen ist (ausser bei
+ * { nebenbei: true }: der Einfuehrungstext liegt ueber dem Hub, ohne ihn
+ * anzuhalten — wie der fruehere Einfuehrungs-Splash). Darum laeuft hier
  * NICHTS ueber scene.time (pauseGameClock friert dessen Ereignisse ein):
  * Schwenk, Nebel und Einblenden sind Tweens bzw. Partikel, die Sperrfrist
  * gegen den ausloesenden Klick misst die Spiel-Schleife.
@@ -63,26 +65,20 @@
     return (typeof v === 'string' && v.indexOf('[') !== 0) ? v : rueckfall;
   }
 
-  /** Steht die Vorschau-Flagge? (?debug=1&aktwechsel=neu) */
-  function aktiv() {
-    var G = (typeof window !== 'undefined') ? window.DebugGate : null;
-    try { return !!(G && G.flagge('aktwechsel') === 'neu'); } catch (e) { return false; }
-  }
-
   function bildKey(actId) { return 'aktwechsel_' + actId; }
 
-  /** Im preload(): nur mit Flagge, nur die fehlenden. */
+  /** Im preload(): nur die fehlenden. */
   function vorladen(scene) {
-    if (!aktiv() || !scene || !scene.load || !scene.textures) return;
+    if (!scene || !scene.load || !scene.textures) return;
     AKTE.forEach(function (id) {
       var k = bildKey(id);
       if (!scene.textures.exists(k)) scene.load.image(k, ORDNER + k + '.png?v=' + V);
     });
   }
 
-  /** Neue Szene moeglich? Nur mit Flagge UND vorhandenem Bild des Akts. */
+  /** Szene moeglich? Nur mit vorhandenem Bild des Akts. */
   function kann(scene, eventData) {
-    if (!aktiv() || !scene || !scene.textures || !eventData) return false;
+    if (!scene || !scene.textures || !eventData) return false;
     return scene.textures.exists(bildKey(eventData.actId));
   }
 
@@ -173,7 +169,8 @@
    * Die Zwischenszene zeigen. Gleiches Rueckgabe-Format wie die alte Karte
    * ({ seiten, seite(), weiter }) plus ueberspringen().
    */
-  function zeigen(scene, eventData, onDismiss) {
+  function zeigen(scene, eventData, onDismiss, optionen) {
+    var anhalten = !(optionen && optionen.nebenbei);
     var cam = scene.cameras.main;
     var w = cam.width, h = cam.height;
     var S = window.storySystem;
@@ -185,7 +182,7 @@
     var tweens = [];
     function tween(cfg) { var t = scene.tweens.add(cfg); tweens.push(t); return t; }
 
-    if (typeof window.pauseGameClock === 'function') {
+    if (anhalten && typeof window.pauseGameClock === 'function') {
       try { window.pauseGameClock(scene); } catch (e) {}
     }
 
@@ -345,7 +342,7 @@
       try { scene.events.off('shutdown', beiEnde); } catch (e) {}
       tweens.forEach(function (t) { try { t.stop(); t.remove(); } catch (e) {} });
       try { c.destroy(true); } catch (e) {}
-      if (typeof window.resumeGameClock === 'function') {
+      if (anhalten && typeof window.resumeGameClock === 'function') {
         try { window.resumeGameClock(scene); } catch (e) {}
       }
       return true;
@@ -389,8 +386,8 @@
   /**
    * Debug-Abkuerzung: ?aktprobe=N zeigt beim Hub-Eintritt einmal pro Laden
    * die Karte von Akt N (1-5) bzw. den Epilog (6 / "epilog"). Laeuft durch
-   * showStoryOverlay — ohne ?aktwechsel=neu also die alte Karte, zum
-   * Vergleichen. Der Spielstand bleibt unberuehrt.
+   * showStoryOverlay (fehlt das Bild: die alte Karte). Der Spielstand
+   * bleibt unberuehrt.
    */
   var _probeGezeigt = false;
   function probe(scene, fertig) {
@@ -408,7 +405,6 @@
 
   window.Aktwechsel = {
     AKTE: AKTE,
-    aktiv: aktiv,
     vorladen: vorladen,
     kann: kann,
     zeigen: zeigen,

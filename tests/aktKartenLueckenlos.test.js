@@ -109,19 +109,24 @@ test('Wer schon weiter ist, bekommt keine Akt-1-Karte, sondern den alten Text', 
 });
 
 test('ESC ueberspringt eine mehrseitige Akt-Karte ganz, Leertaste blaettert', () => {
+  // Die alte Titelkarte (Rueckfall ohne Tableau): das Bild entfernen, sonst
+  // kaeme die Zwischenszene (die eigene Tests hat: tests/aktwechsel.test.js).
   const r = H.run(`(function () {
     var ss = window.storySystem, sc = ${hub};
+    if (sc.textures.exists('aktwechsel_auftrag')) sc.textures.remove('aktwechsel_auftrag');
     var ss2 = window.__echtOverlay || ss.showStoryOverlay;
     var zu = 0;
     var nl = String.fromCharCode(10, 10);
     var lang = 'Erster Absatz. '.repeat(30) + nl + 'Zweiter Absatz. '.repeat(30) + nl + 'Dritter. '.repeat(30);
     var k = ss2.call(ss, sc, { actId: 'auftrag', actName: 'Der Dienst', actNumber: 1, narrative: lang }, function () { zu++; });
+    if (k.neu) return 'neu';
     var seiten = k.seiten.length;
     sc.input.keyboard.emit('keydown-SPACE', {});
     var nachLeer = k.seite() + ':' + zu;
     sc.input.keyboard.emit('keydown-ESC', {});
     return seiten + '|' + nachLeer + '|' + zu;
   })()`);
+  assert.notStrictEqual(r, 'neu', 'ohne Bild lief trotzdem die Zwischenszene');
   const [seiten, nachLeer, zu] = r.split('|');
   assert.ok(Number(seiten) >= 3, 'die Karte hat nur ' + seiten + ' Seiten — Test misst nichts');
   assert.strictEqual(nachLeer, '1:0', 'Leertaste blaettert nicht eine Seite weiter');

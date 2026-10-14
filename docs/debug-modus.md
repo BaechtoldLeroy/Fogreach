@@ -76,16 +76,21 @@ der Boss-Zweig wird gar nicht erst betreten. Ohne diese Bedingung spawnte der
 Zweig einen Boss ohne Definition und riss das Spiel mit (gemessen mit
 `?boss=quatsch`: "Cannot read properties of undefined").
 
-### Akt-Zwischenszenen (Vorschau)
+### Akt-Zwischenszenen
+
+Jeder Aktwechsel laeuft als Zwischenszene (seit b430 fest, ohne Flagge):
+Pixel-Tableau je Akt mit Schwenk und Nebel, Messing-Plakette "Akt N" +
+Aktname, Text Stueck fuer Stueck (Leertaste/Enter/Klick/Tippen weiter, ESC
+oder "Überspringen" schliesst). Der Einfuehrungstext eines neuen Spiels ist
+die Szene von Akt 1. Fehlt das Bild eines Akts, kommt die alte Titelkarte.
 
 | Flagge | Wirkung |
 |---|---|
-| `?aktwechsel=neu` | Aktwechsel als Zwischenszene: Pixel-Tableau je Akt mit Schwenk und Nebel, Messing-Plakette "Akt N" + Aktname, Text Stueck fuer Stueck (Leertaste/Enter/Klick/Tippen weiter, ESC oder "Überspringen" schliesst). Ohne Flagge — oder wenn das Bild eines Akts fehlt — die alte Titelkarte. |
-| `?aktprobe=N` | zeigt beim Betreten des Hubs einmal die Karte von Akt N (`1`–`5`) bzw. den Epilog (`6` oder `epilog`). Der Spielstand bleibt unberuehrt. Ohne `aktwechsel=neu` die alte Karte — zum Vergleichen. |
+| `?aktprobe=N` | zeigt beim Betreten des Hubs einmal die Szene von Akt N (`1`–`5`) bzw. den Epilog (`6` oder `epilog`). Der Spielstand bleibt unberuehrt. |
 
 ```
-?debug=1&autostart=1&aktwechsel=neu&aktprobe=3
-?debug=1&autostart=1&aktwechsel=neu&aktprobe=epilog
+?debug=1&autostart=1&aktprobe=3
+?debug=1&autostart=1&aktprobe=epilog
 ```
 
 `autostart` loescht den Spielstand; wer seinen Stand behalten will, laesst es

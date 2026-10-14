@@ -171,7 +171,7 @@ class HubSceneV2 extends Phaser.Scene {
     if (window.Ladebildschirm) window.Ladebildschirm.zeigen(this, { status: 'start.loading_hub', verzoegerung: 250 });
     // #189: Messing-Rahmen und Toast-Bilder mitladen (nur die fehlenden).
     if (window.uiRahmen) window.uiRahmen.vorladen(this);
-    // Vorschau ?aktwechsel=neu: Tableaus der Akt-Zwischenszenen.
+    // Tableaus der Akt-Zwischenszenen (js/aktwechsel.js).
     if (window.Aktwechsel) window.Aktwechsel.vorladen(this);
     // Pixel-Icons der Faehigkeiten (#195) — das Loadout zeigt sie auch im Hub.
     if (window.hudLeiste) window.hudLeiste.vorladen(this);
@@ -5223,8 +5223,9 @@ class HubSceneV2 extends Phaser.Scene {
     const start = (ss && typeof ss.startaktEreignis === 'function') ? ss.startaktEreignis(body) : null;
     if (start && typeof ss.showStoryOverlay === 'function') {
       // _dialogOpen bleibt wie beim frueheren Einfuehrungs-Splash unberuehrt:
-      // die Karte liegt obenauf, sperrt aber den Hub dahinter nicht.
-      ss.showStoryOverlay(this, start, gesehen);
+      // die Karte liegt obenauf, sperrt aber den Hub dahinter nicht und
+      // haelt seine Uhr nicht an.
+      ss.showStoryOverlay(this, start, gesehen, { nebenbei: true });
       return;
     }
     this._showSplashModal(title, body, close, gesehen);

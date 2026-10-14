@@ -1,6 +1,6 @@
 /**
  * tools/aktwechselVorschau.js — Standbild je Akt-Zwischenszene nach vorschau/
- * (?aktwechsel=neu), headless gerendert. Nicht Teil des Spiels.
+ * headless gerendert. Nicht Teil des Spiels.
  *
  * Tableaus: assets/sprites/aktwechsel/aktwechsel_<aktId>.png, je ein
  * PixelLab-Bild (create_image_pro, 384x192) — unbearbeitet uebernommen.
@@ -16,7 +16,7 @@ const { launch } = require('./headless/index.js');
   const lang = process.argv[2] === 'en' ? 'en' : 'de';
   const ziel = path.join(__dirname, '..', 'vorschau');
   fs.mkdirSync(ziel, { recursive: true });
-  const H = await launch({ search: '?autostart=1&debug=1&aktwechsel=neu', renderer: 'canvas', waitFor: 'StartScene' });
+  const H = await launch({ search: '?autostart=1&debug=1', renderer: 'canvas', waitFor: 'StartScene' });
   try {
     if (!await H.waitForScene('HubSceneV2', { maxRounds: 250 })) throw new Error('Hub nicht erreicht');
     H.step(10);
