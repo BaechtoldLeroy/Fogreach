@@ -245,6 +245,13 @@
   // Kompat: "wird der Punkt von irgendeiner Wache gesehen?" (Kegel-basiert).
   function _seenByGuard(px, py) { return _guardExposure(px, py) > 0.02; }
 
+  // #197 (Vorschau): von einer Wache entdeckt -> kurzer Moment an der Wache.
+  // Nicht beim eigenen Angriff (onPlayerAttack), der ist kein Entdecktwerden.
+  function _entdeckt(scene) {
+    if (typeof window === 'undefined' || !window.SpionageSzenen) return;
+    try { window.SpionageSzenen.enttarnt(scene); } catch (_) {}
+  }
+
   function _expose() {
     if (state.exposed) return;
     state.exposed = true;
@@ -426,7 +433,7 @@
             // an ihnen kann man gefahrlos vorbei.
             if (intenAlert > 0.02) {
               state.detection = Math.min(1, state.detection + RISE_PER_SEC * (0.4 + 0.6 * intenAlert) * dt);
-              if (state.detection >= 1) _expose();
+              if (state.detection >= 1) { _expose(); _entdeckt(scene); }
             } else {
               state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
             }
@@ -434,7 +441,7 @@
             // Unverkleidet: jede Sicht (egal welcher Typ) treibt schnell hoch.
             if (intenAny > 0.02) {
               state.detection = Math.min(1, state.detection + RISE_PER_SEC * (0.4 + 0.6 * intenAny) * dt);
-              if (state.detection >= 1) _expose();
+              if (state.detection >= 1) { _expose(); _entdeckt(scene); }
             } else {
               state.detection = Math.max(0, state.detection - DECAY_PER_SEC * dt);
             }
@@ -474,6 +481,11 @@
                 if (z.questTarget === 'collusion_reveal_seen' && typeof window !== 'undefined'
                     && window.storyScenes && typeof window.storyScenes.playGeheimeSitzung === 'function') {
                   try { window.storyScenes.playGeheimeSitzung(scene); } catch (_) {}
+                }
+                // #197 (Vorschau): das mitgehoerte Gespraech als Zwischenszene.
+                if (typeof window !== 'undefined' && window.SpionageSzenen) {
+                  var alleGehoert = state.observeZones.every(function (oz) { return !oz || oz._done; });
+                  try { window.SpionageSzenen.belauscht(scene, z, alleGehoert); } catch (_) {}
                 }
                 // #158: Am Konvoi faellt eine Entscheidung (Bibel v5, Abschnitt 9).
                 if (z.questTarget === 'convoy_intel' && typeof window !== 'undefined'

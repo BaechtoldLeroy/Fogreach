@@ -786,6 +786,46 @@
   }
 
   // ---------------------------------------------------------------------
+  // Einstellung 8: die Presse
+  // ---------------------------------------------------------------------
+  /** Ohne Bild der Presse: die Fassade der Druckerei mit Kamerastoessen. */
+  function presseFassade(hub) {
+    var e = eingang(hub, 'druckerei_entrance') || { x: 1069, y: 534 };
+    var thom = npc(hub, 'thom');
+    if (hub.player) hub.player.setVisible(false);
+    var cam = kameraAuf(hub, e.x, e.y - 60, 1.3);
+    cam.fadeIn(400, 0, 0, 0);
+    if (thom) cam.pan((e.x + thom.sprite.x) / 2, e.y - 60, 2400, 'Sine.easeInOut');
+    [450, 1050, 1650].forEach(function (ab, i) {
+      plan(ab, function () {
+        cam.shake(140, 0.008);
+        var s = bildschirmPunkt(hub, e.x, e.y - 10);
+        flugblaetter(s.x, s.y, 10 + i * 4);
+      });
+    });
+    plan(2300, function () {
+      if (typeof window.openPrintingHouseScene === 'function') window.openPrintingHouseScene(hub);
+    });
+    plan(2700, function () {
+      var o = overlay();
+      if (o) flugblaetter(o.scale.width / 2, o.scale.height * 0.62, 26);
+    });
+  }
+
+  /** #198: die stampfende Presse gross im Bild, Flugblaetter bei jedem Stoss. */
+  function presseImBild(hub) {
+    var cam = hub.cameras.main, b = cam.width, h = cam.height;
+    if (hub.player) hub.player.setVisible(false);
+    behalten(hub, function () {
+      hub.add.rectangle(b / 2, h / 2, b, h, 0x07060a, 1).setScrollFactor(0).setDepth(2499).setName('trailerPresseGrund');
+      window.Druckerpresse.stampfen(hub, b / 2, h / 2 + 10, {
+        skala: Math.max(3, Math.floor(h / 170)), stoesse: 3, tiefe: 2500, fest: true, blaetter: 14
+      });
+    });
+    cam.fadeIn(400, 0, 0, 0);
+  }
+
+  // ---------------------------------------------------------------------
   // Die Einstellungen (docs/trailer-drehbuch.md)
   // ---------------------------------------------------------------------
   var EINSTELLUNGEN = {
@@ -1015,26 +1055,17 @@
 
     // 8 — Die Presse: die Presse stampft, Flugblaetter fliegen, dann die Druckerei.
     8: { name: 'Die Presse', kurz: 'presse', ziel: 'hub', aufbau: function (hub) {
-      var e = eingang(hub, 'druckerei_entrance') || { x: 1069, y: 534 };
-      var thom = npc(hub, 'thom');
-      if (hub.player) hub.player.setVisible(false);
-      var cam = kameraAuf(hub, e.x, e.y - 60, 1.3);
-      cam.fadeIn(400, 0, 0, 0);
-      if (thom) cam.pan((e.x + thom.sprite.x) / 2, e.y - 60, 2400, 'Sine.easeInOut');
-      [450, 1050, 1650].forEach(function (ab, i) {
-        plan(ab, function () {
-          cam.shake(140, 0.008);
-          var s = bildschirmPunkt(hub, e.x, e.y - 10);
-          flugblaetter(s.x, s.y, 10 + i * 4);
+      // #198: die stampfende Presse gross im Bild; ohne ihr Bild wie bisher
+      // die Fassade mit Kamerastoessen.
+      var lauf = S.lauf;
+      if (window.Druckerpresse) {
+        window.Druckerpresse.vorladen(hub, function (ok) {
+          if (lauf !== S.lauf) return;
+          if (ok) presseImBild(hub); else presseFassade(hub);
         });
-      });
-      plan(2300, function () {
-        if (typeof window.openPrintingHouseScene === 'function') window.openPrintingHouseScene(hub);
-      });
-      plan(2700, function () {
-        var o = overlay();
-        if (o) flugblaetter(o.scale.width / 2, o.scale.height * 0.62, 26);
-      });
+        return;
+      }
+      presseFassade(hub);
     } },
 
     // 9 — Titel: Schwarz, Laterne leuchtet auf, Nebel reisst auf: FOGREACH.

@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="assets/ui/apple-touch-icon.png?v=1" />
     <!-- #88: EIN Schalter fuer alle Debug-Oberflaechen. Steht vor dem
          Fehler-Overlay, weil das ihn schon braucht. Ohne Abhaengigkeiten. -->
-    <script src="js/debugGate.js?v=041"></script>
+    <script src="js/debugGate.js?v=042"></script>
 
     <script src="js/pixelTexturen.js?v=018"></script>
     <!-- Mobile-Fehler-Overlay: zeigt uncaught JS-Fehler ON-SCREEN, weil man auf
@@ -115,7 +115,7 @@
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=419"></script>
+    <script src="js/version.js?v=420"></script>
     <script src="js/soundManager.js?v=003"></script>
     <script src="js/performanceMonitor.js?v=002"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -165,7 +165,7 @@
     <script src="js/roomModeEscape.js?v=088"></script>
     <script src="js/roomModeVisuals.js?v=088"></script>
     <script src="js/spawnRegeln.js?v=001"></script>
-    <script src="js/roomManager.js?v=166"></script>
+    <script src="js/roomManager.js?v=167"></script>
     <script src="js/statusEffects.js?v=010"></script>
     <script src="js/particleEffects.js?v=006"></script>
     <!-- Reine Reichweiten-Mathematik für zerstörbare Props. Abhängigkeitsfrei
@@ -217,9 +217,11 @@
     <!-- 060: Skill-Baum-Progression (pure D2) — Punkte aus Level-Ups -->
     <script src="js/skillTree.js?v=070"></script>
     <!-- 055 WP01: Espionage-Mechanik (no-op außerhalb Espionage-Missionen) -->
-    <script src="js/espionageSystem.js?v=074"></script>
+    <script src="js/espionageSystem.js?v=075"></script>
     <!-- 055 follow-up: Sichtbarkeitsschicht (HUD-Banner + Zonen-/Wachen-Marker) -->
     <script src="js/espionageVisuals.js?v=075"></script>
+    <script src="js/spionageSzenen.js?v=001"></script>
+    <script src="js/druckerpresse.js?v=001"></script>
     <script src="js/scenes/startScene.js?v=097"></script>
     <script src="js/scenes/hub/hubLayout.js?v=022"></script>
     <script src="js/scenes/hub/hubNeuKarte.js?v=008"></script>
@@ -234,14 +236,14 @@
     <script src="js/scenes/ShopScene.js?v=092"></script>
     <script src="js/scenes/SkillTreeScene.js?v=069"></script>
     <script src="js/scenes/SettingsScene.js?v=008"></script>
-    <script src="js/scenes/PrintingHouseScene.js?v=005"></script>
+    <script src="js/scenes/PrintingHouseScene.js?v=006"></script>
     <!-- DEAKTIVIERT (kein Netzwerk): <script type="module" src="js/leaderboard.js"></script> -->
     <script src="js/minimap.js?v=063"></script>
     <script src="js/hudV2.js?v=093"></script>
     <script src="js/endlessMode.js?v=063"></script>
     <script src="js/main.js?v=151"></script>
     <!-- Trailer-Modus (?trailer=1): Einstellungen fuer die Trailer-Aufnahme -->
-    <script src="js/trailerModus.js?v=005"></script>
+    <script src="js/trailerModus.js?v=006"></script>
     <script src="js/mobileAutoAim.js"></script>
     <!-- 053 WP01: Mobile-Perf-Diagnose-Probe. No-Op außer bei ?perf=1.
          ?v bump erzwingt frischen Fetch (Pages cached Assets ~10min). -->

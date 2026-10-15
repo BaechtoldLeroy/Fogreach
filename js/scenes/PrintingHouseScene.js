@@ -76,6 +76,14 @@
   class PrintingHouseScene extends Phaser.Scene {
     constructor() { super({ key: 'PrintingHouseScene' }); }
 
+    preload() {
+      // #198 (Vorschau ?presse=neu): die Presse, die beim Drucken stampft.
+      const P = window.Druckerpresse;
+      if (P && P.an() && !P.da(this)) {
+        this.load.spritesheet(P.KEY, 'assets/sprites/presse/druckerpresse.png', { frameWidth: 128, frameHeight: 128 });
+      }
+    }
+
     create(data) {
       this.parentSceneKey = (data && data.from) || null;
       const cam = this.cameras.main;
@@ -495,6 +503,9 @@
       const result = ph.publishEdict(edictId);
       if (result.success) {
         this._toast(T('printingHouse.toast.published', { name: T('printingHouse.edict.' + edictId + '.label') }));
+        // #198 (Vorschau): erst stampft die Presse, dann schliesst die Druckerei.
+        const P = window.Druckerpresse;
+        if (P && P.an() && P.druckSzene(this, () => this._close())) return;
         this.time.delayedCall(900, () => this._close());
       } else if (result.reasonKey === 'locked') {
         // Lokalisiert und mit derselben Aktnummer wie der Splashscreen.
@@ -516,7 +527,9 @@
       const txt = this.add.text(cam.width / 2, cam.height - 100, msg, {
         fontFamily: 'monospace', fontSize: '14px', color: '#88ff88',
         backgroundColor: '#0c0c11dd', padding: { x: 10, y: 6 }
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(2010);
+      // Ueber der stampfenden Presse (#198, Tiefe 2400/2401), sonst laege die
+      // Meldung "gedruckt" hinter ihrem dunklen Grund.
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2450);
       this.tweens.add({
         targets: txt, alpha: 0, delay: 1500, duration: 400,
         onComplete: () => txt.destroy()

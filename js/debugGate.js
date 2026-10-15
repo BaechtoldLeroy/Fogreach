@@ -92,7 +92,9 @@
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
     'gegnerlauf',
     'trailer', 'einstellung',  // Trailer-Modus (js/trailerModus.js)
-    'aktprobe'          // Akt-Zwischenszene ansehen: aktprobe=1..6 | epilog
+    'aktprobe',         // Akt-Zwischenszene ansehen: aktprobe=1..6 | epilog
+    'spionszene',       // Vorschau #197: Zwischenszenen in der Spionage (spionszene=neu)
+    'presse'            // Vorschau #198: die Druckerpresse stampft beim Drucken (presse=neu)
   ];
 
   /**

@@ -110,7 +110,8 @@ const ERWARTET = {
   5: { szene: 'GameScene', bis: 2600, pruef: `window.EspionageSystem.isActive() && window.EspionageSystem.isDisguised() && window.EspionageSystem.getDetection() > 0.5` },
   6: { szene: 'HubSceneV2', bis: 1500, pruef: `!!window.game.scene.getScene('HubSceneV2').__trailerBuehne` },
   7: { szene: 'GameScene', bis: 7300, pruef: `!window.game.scene.getScene('GameScene').__bossZwischenszene && enemies.getChildren().some(function (e) { return e.active && e.isBoss && e.bossType === 'chainMaster'; })` },
-  8: { szene: 'HubSceneV2', bis: 3000, auch: 'PrintingHouseScene' },
+  // #198: die stampfende Presse gross im Bild (frueher Fassade + Druckerei-Ansicht).
+  8: { szene: 'HubSceneV2', bis: 3000, pruef: `window.game.scene.getScene('HubSceneV2').children.list.some(function (o) { return o.name === 'druckerpresse' && o.visible; })` },
   9: { szene: 'TrailerTitel', bis: 3500, pruef: `window.game.scene.getScene('TrailerTitel').titel.alpha > 0.9` },
 };
 

@@ -3403,6 +3403,13 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       blockedAt: blockedAt
     });
     window.EspionageSystem.setDisguise(true); // Auto-Verkleidung bei Mission-Start
+    // #197 (Vorschau ?spionszene=neu): der Auftrag als kurze Zwischenszene,
+    // sobald der Raum steht.
+    if (window.SpionageSzenen && window.SpionageSzenen.an() && scene.time) {
+      scene.time.delayedCall(600, function () {
+        if (window.EspionageSystem.isActive()) window.SpionageSzenen.start(scene, templateName);
+      });
+    }
     try { console.log('[055] Espionage-Mission gestartet:', templateName); } catch (_) {}
   } catch (e) {
     try { console.warn('[055] _maybeStartEspionage failed', e); } catch (_) {}
