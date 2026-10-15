@@ -35,6 +35,18 @@
 
   // Lauschposten mit eigener Story-Buehne (die geheime Sitzung).
   var STORY_ZIELE = { collusion_reveal_seen: true };
+  // Ein Pixel-Tableau je mitgehoertem Gespraech (PixelLab, 384x192, im Stil
+  // der Akt-Zwischenszenen). Fehlt eines, schwenkt die Kamera wie bisher auf
+  // den Lauschposten in der Spielwelt.
+  var BILDER = ['convoy_intel', 'escort_route', 'archive_record', 'informant_id'];
+  function bildKey(ziel) { return 'spionbild_' + ziel; }
+  function vorladen(scene) {
+    if (!scene || !scene.load || !scene.textures) return;
+    var fehlt = BILDER.filter(function (z) { return !scene.textures.exists(bildKey(z)); });
+    if (!fehlt.length) return;
+    fehlt.forEach(function (z) { scene.load.image(bildKey(z), 'assets/sprites/spionage/' + z + '.png'); });
+    try { if (!scene.load.isLoading()) scene.load.start(); } catch (e) {}
+  }
   // Nach dem Gespraech: was die Story an dieser Stelle weiter erzaehlt.
   var DANACH = {
     convoy_intel: function (scene) {
@@ -268,6 +280,18 @@
       } catch (e) {}
     }
 
+    // --- Tableau (das mitgehoerte Gespraech als Bild) --------------------------
+    // Fuellt das Bild zwischen den Balken und faehrt langsam heran.
+    if (cfg.bild && scene.textures && scene.textures.exists(cfg.bild)) {
+      var grundBild = neu(scene.add.rectangle(b / 2, h / 2, b, h, 0x05060a, 1).setDepth(1095).setAlpha(0));
+      var tab = neu(scene.add.image(b / 2, h / 2, cfg.bild).setDepth(1096).setAlpha(0)).setName('spionTableau');
+      var basis = Math.max(b / tab.width, h / tab.height);
+      tab.setScale(basis);
+      tween({ targets: [grundBild, tab], alpha: 1, duration: frist(500) });
+      tween({ targets: tab, scale: basis * 1.12, duration: frist(20000), ease: 'Sine.easeOut' });
+      zustand.tableau = cfg.bild;
+    }
+
     // --- Plakette -----------------------------------------------------------
     spaeter(PLAKETTE_AB, function () {
       var pw = Math.min(460, b - 40), ph = 70;
@@ -422,6 +446,8 @@
   /** Missionsstart: Auftrag und Regel, Kamera ueber Wachen und Lauschposten. */
   function start(scene, templateName) {
     if (!an()) return null;
+    // Die Tableaus der Gespraeche jetzt holen: sie werden erst beim Abhoeren gebraucht.
+    vorladen(scene);
     var st = window.EspionageSystem && window.EspionageSystem.getState ? window.EspionageSystem.getState() : null;
     var stamm = DE['spion.' + templateName + '.titel'] ? templateName : 'allgemein';
     var ziel = _mitte(((st && st.guards) || []).concat((st && st.observeZones) || []));
@@ -471,7 +497,7 @@
       if (_zielText) { seiten.push({ sprecher: '', text: _zielText, ziel: true }); _zielText = null; }
       var danach = DANACH[zone.questTarget];
       z = spiele(scene, {
-        art: 'belauscht', ziel: { x: zone.x, y: zone.y },
+        art: 'belauscht', ziel: { x: zone.x, y: zone.y }, bild: bildKey(zone.questTarget),
         kopf: _t('spion.belauscht'), titel: _t('spion.' + zone.questTarget + '.titel'),
         seiten: seiten,
         onEnde: danach ? function () { danach(scene); } : null
@@ -524,6 +550,7 @@
 
   var Szenen = {
     an: an, spiele: spiele, start: start, belauscht: belauscht, enttarnt: enttarnt, zielToast: zielToast,
+    vorladen: vorladen, bildKey: bildKey, BILDER: BILDER,
     GESPRAECHE: GESPRAECHE, STORY_ZIELE: STORY_ZIELE, _TEMPO: 1
   };
   window.SpionageSzenen = Szenen;

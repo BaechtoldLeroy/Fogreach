@@ -72,6 +72,35 @@ describe('mit ?spionszene=neu', () => {
     assert.ok(await bis(H, `!${GS}.__spionSzene`, 1500), 'der Abschluss bleibt stehen');
   });
 
+  test('Abgehoert: jedes Gespraech hat sein eigenes Bild (Tableau), ohne Bild die Spielwelt', async () => {
+    assert.ok(await bis(H, `window.SpionageSzenen.BILDER.every(function (z) { return ${GS}.textures.exists(window.SpionageSzenen.bildKey(z)); })`, 1500),
+      'die Tableaus werden beim Missionsstart nicht geladen');
+    for (const ziel of ['convoy_intel', 'escort_route', 'archive_record', 'informant_id']) {
+      H.run(`(function () { var p = window.player; window.__konvoiEcht = window.__konvoiEcht || window.Finale.konvoi;
+        window.Finale.konvoi = function () { return true; };
+        window.SpionageSzenen.belauscht(${GS}, { questTarget: '${ziel}', x: p.x, y: p.y }, false); })()`);
+      assert.ok(await bis(H, `!!(${GS}.__spionSzene && ${GS}.__spionSzene.teile.some(function (o) { return o.name === 'spionTableau'; }))`),
+        ziel + ': kein Tableau');
+      const r = H.run(`(function () { var z = ${GS}.__spionSzene;
+        var tab = z.teile.filter(function (o) { return o.name === 'spionTableau'; })[0];
+        var kam = ${GS}.cameras.main;
+        return { key: tab.texture.key, deckt: tab.displayWidth >= kam.width - 1 && tab.displayHeight >= kam.height - 1 }; })()`);
+      assert.strictEqual(r.key, 'spionbild_' + ziel);
+      assert.ok(r.deckt, ziel + ': das Bild fuellt den Schirm nicht');
+      H.run(`${GS}.__spionSzene.ueberspringen()`);
+      assert.ok(await bis(H, `!${GS}.__spionSzene`));
+    }
+    // Rueckfall: ohne Bild schwenkt die Kamera auf die Spielwelt, kein Tableau.
+    H.run(`(function () { var gs = ${GS}, k = 'spionbild_archive_record';
+      window.__tabBild = gs.textures.get(k).getSourceImage(); gs.textures.remove(k);
+      var p = window.player; window.SpionageSzenen.belauscht(gs, { questTarget: 'archive_record', x: p.x, y: p.y }, false); })()`);
+    assert.ok(await bis(H, `${GS}.__spionSzene && ${GS}.__spionSzene.phase === 'rede'`));
+    assert.strictEqual(H.run(`${GS}.__spionSzene.teile.some(function (o) { return o.name === 'spionTableau'; })`), false);
+    H.run(`(function () { var gs = ${GS}; gs.__spionSzene.ueberspringen();
+      gs.textures.addImage('spionbild_archive_record', window.__tabBild); window.Finale.konvoi = window.__konvoiEcht; })()`);
+    assert.ok(await bis(H, `!${GS}.__spionSzene`));
+  });
+
   test('Ratskammer: keine eigene Szene (die geheime Sitzung hat ihre Buehne)', () => {
     const r = H.run(`(function () { var p = window.player;
       var a = window.SpionageSzenen.belauscht(${GS}, { questTarget: 'collusion_reveal_seen', x: p.x, y: p.y }, true);
