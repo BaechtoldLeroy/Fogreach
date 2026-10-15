@@ -9,6 +9,15 @@
     <title>Fogreach</title>
     <link rel="icon" type="image/png" href="assets/ui/favicon.png?v=2" />
     <link rel="apple-touch-icon" href="assets/ui/apple-touch-icon.png?v=1" />
+    <!-- "Zum Home-Bildschirm": startet ohne Browserleiste wie eine App. Auf
+         iPhone/iPad der einzige Weg ins Vollbild (Safari kennt kein
+         Element-Vollbild); Android nutzt das Manifest. -->
+    <link rel="manifest" href="assets/manifest.webmanifest?v=1" />
+    <meta name="theme-color" content="#0b0d12" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Fogreach" />
     <!-- #88: EIN Schalter fuer alle Debug-Oberflaechen. Steht vor dem
          Fehler-Overlay, weil das ihn schon braucht. Ohne Abhaengigkeiten. -->
     <script src="js/debugGate.js?v=042"></script>
@@ -115,7 +124,7 @@
     <script>window.i18n.setLanguage(window.Persistence.getLanguage());</script>
     <script src="js/inputScheme.js?v=002"></script>
     <script src="js/gameState.js"></script>
-    <script src="js/version.js?v=424"></script>
+    <script src="js/version.js?v=425"></script>
     <script src="js/soundManager.js?v=003"></script>
     <script src="js/performanceMonitor.js?v=002"></script>
     <!-- Render Quality helper (feature 052). Provides window.RenderQuality
@@ -222,7 +231,7 @@
     <script src="js/espionageVisuals.js?v=075"></script>
     <script src="js/spionageSzenen.js?v=003"></script>
     <script src="js/druckerpresse.js?v=001"></script>
-    <script src="js/scenes/startScene.js?v=097"></script>
+    <script src="js/scenes/startScene.js?v=098"></script>
     <script src="js/scenes/hub/hubLayout.js?v=022"></script>
     <script src="js/scenes/hub/hubNeuKarte.js?v=008"></script>
     <script src="js/scenes/hub/hubNeuWelt.js?v=010"></script>
@@ -235,7 +244,7 @@
     <script src="js/scenes/CraftingScene.js?v=082"></script>
     <script src="js/scenes/ShopScene.js?v=092"></script>
     <script src="js/scenes/SkillTreeScene.js?v=069"></script>
-    <script src="js/scenes/SettingsScene.js?v=008"></script>
+    <script src="js/scenes/SettingsScene.js?v=009"></script>
     <script src="js/scenes/PrintingHouseScene.js?v=008"></script>
     <!-- DEAKTIVIERT (kein Netzwerk): <script type="module" src="js/leaderboard.js"></script> -->
     <script src="js/minimap.js?v=063"></script>

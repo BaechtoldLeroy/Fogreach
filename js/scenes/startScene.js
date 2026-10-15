@@ -4,6 +4,7 @@ if (window.i18n) {
   window.i18n.register('de', {
     'start.subtitle': 'Ein Dungeon-Crawler',
     'start.btn.continue': 'FORTSETZEN',
+    'start.hint.homescreen': 'Tipp für Vollbild: Teilen → „Zum Home-Bildschirm“',
     'start.btn.delete_save': 'Spielstand löschen',
     'start.btn.new_game': 'NEUES SPIEL',
     'start.btn.start_game': 'SPIEL STARTEN',
@@ -23,6 +24,7 @@ if (window.i18n) {
 
     'start.subtitle': 'A dungeon crawler',
     'start.btn.continue': 'CONTINUE',
+    'start.hint.homescreen': 'Tip for fullscreen: Share → "Add to Home Screen"',
     'start.btn.delete_save': 'Delete save',
     'start.btn.new_game': 'NEW GAME',
     'start.btn.start_game': 'START GAME',
@@ -54,6 +56,44 @@ const _NEW_GAME_FLAG = 'demonfall.pendingNewGame';
 // in den Settings — kein Auto-Restore beim normalen Start, kein Focus-Regain-
 // Hijack (genau der Bug, der die alte settings.fullscreen-Persistenz killte).
 const _RESUME_FS_FLAG = 'demonfall.resumeFullscreen';
+
+/**
+ * Ins Vollbild beim bewussten Start (Fortsetzen / Neues Spiel), wenn die
+ * Einstellung "Vollbild beim Start" an ist (Standard). Browser erlauben Vollbild
+ * nur aus einer Geste heraus — darum hier im Klick, nicht beim Laden. iPhone/
+ * iPad koennen es nicht (dort hilft "Zum Home-Bildschirm"), und als installierte
+ * App ist man ohnehin schon im Vollbild.
+ * @returns {boolean} ob Vollbild angefordert wurde
+ */
+function _vollbildBeimStart(scene) {
+  try {
+    const s = (typeof window.loadGameSettings === 'function') ? window.loadGameSettings() : null;
+    if (s && s.vollbildStart === false) return false;
+    const sc = scene && scene.scale;
+    if (!sc || sc.isFullscreen || !sc.fullscreen || !sc.fullscreen.available) return false;
+    if (_alsAppGestartet()) return false;
+    sc.startFullscreen();
+    return true;
+  } catch (e) { return false; }
+}
+
+/** Als App vom Home-Bildschirm gestartet (kein Browserrahmen)? */
+function _alsAppGestartet() {
+  try {
+    return !!((window.matchMedia && window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches)
+      || window.navigator.standalone);
+  } catch (e) { return false; }
+}
+
+/** iPhone/iPad im Browser: Element-Vollbild gibt es dort nicht. */
+function _iosImBrowser() {
+  try {
+    const ua = navigator.userAgent || '';
+    const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    return ios && !_alsAppGestartet();
+  } catch (e) { return false; }
+}
+window._vollbildBeimStart = _vollbildBeimStart;
 
 // #190: Endlos-Modus ist on hold. Seit #175 wurde der Talentbaum fuer die
 // Geschichte umgebaut (Stufen, Strang-Staffel); der Endlos-Modus lernt
@@ -732,6 +772,7 @@ StartScene.prototype.create = function () {
     this.menuKnoepfe.fortsetzen = cont;
 
     cont.platte.on("pointerdown", async () => {
+      _vollbildBeimStart(this);
       try {
         const save = window.loadGame.length ? await loadGame() : loadGame();
         window.pendingLoadedSave = save || null;
@@ -773,6 +814,15 @@ StartScene.prototype.create = function () {
       // stehen. Der Reload deckt alle ab, auch künftige.
       // Das Flag überlebt den Reload und startet danach automatisch.
       try { window.sessionStorage.setItem(_NEW_GAME_FLAG, String(activeSlot)); } catch (e) {}
+      // Vollbild beim Start: Die Seite laedt gleich neu, und Vollbild ueberlebt
+      // keinen Reload — darum das vorhandene Wiederherstellen nach dem Reload
+      // anstossen (erste Geste danach geht ins Vollbild, _armFullscreenResume).
+      try {
+        const _s = (typeof window.loadGameSettings === 'function') ? window.loadGameSettings() : null;
+        if (!(_s && _s.vollbildStart === false) && !_alsAppGestartet() && this.scale.fullscreen && this.scale.fullscreen.available) {
+          window.sessionStorage.setItem(_RESUME_FS_FLAG, '1');
+        }
+      } catch (e) {}
 
       // Falls sessionStorage fehlt (Privatmodus o. ae.): ohne Flag käme man
       // nach dem Reload nur ins Menü zurück — dann lieber wie bisher direkt
@@ -795,6 +845,15 @@ StartScene.prototype.create = function () {
 
   // ENDLOS-MODUS button (roguelike: no hub, descend forever, pick 1-of-3
   // upgrades after each cleared room). #190: on hold — nur bei ENDLOS_AKTIV.
+  // iPhone/iPad im Browser: Vollbild geht nur als App vom Home-Bildschirm.
+  if (_iosImBrowser()) {
+    const hinweis = this.add.text(mx, knopfY - 18, _START_T('start.hint.homescreen'), {
+      fontFamily: 'monospace', fontSize: '13px', color: '#d8ccb4', align: 'center',
+      stroke: '#000000', strokeThickness: 3, wordWrap: { width: 300 }
+    }).setOrigin(0.5, 0).setName('startHinweisHomescreen');
+    _trackI18n(hinweis, 'start.hint.homescreen');
+  }
+
   if (ENDLOS_AKTIV) {
     const endless = _messingKnopf(this, mx, naechsteY(), 'start_knopf', _START_T('endless.btn.start'),
       knopfStil('#ff9a7a', '22px'), { hover: '#ffc0a8' });

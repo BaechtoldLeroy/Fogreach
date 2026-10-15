@@ -22,6 +22,7 @@
       'settings.mobile.auto_aim': 'Auto-Aim',
       'settings.mobile.d2_controls': 'D2 Controls',
       'settings.display.fullscreen': 'Vollbild',
+      'settings.display.fullscreen_start': 'Vollbild beim Start',
       'settings.display.reduced_effects': 'Reduz. Effekte',
       'settings.display.language': 'Sprache',
       'settings.difficulty.label': 'Schwierigkeit',
@@ -62,6 +63,7 @@
       'settings.mobile.auto_aim': 'Auto-Aim',
       'settings.mobile.d2_controls': 'D2 Controls',
       'settings.display.fullscreen': 'Fullscreen',
+      'settings.display.fullscreen_start': 'Fullscreen on start',
       'settings.display.reduced_effects': 'Reduced FX',
       'settings.display.language': 'Language',
       'settings.difficulty.label': 'Difficulty',
@@ -98,6 +100,9 @@
     sfx: 0.7,
     muted: false,
     fullscreen: false,
+    // Beim Klick auf "Fortsetzen"/"Neues Spiel" ins Vollbild (ein bewusster
+    // Klick — nicht bei beliebigen Klicks im Spiel, siehe main.js 4.1).
+    vollbildStart: true,
     reducedEffects: false, // mobile performance: fewer particles, simpler fog
     movementWeight: 0.0, // 0 = instant (current), 1.0 = D2-like weight
     debug: {
@@ -262,6 +267,7 @@
 
       this._sectionLabel(LEFT_LBL, leftY, T('settings.section.display')); leftY += 18;
       this._fullscreenRow(LEFT_C, leftY, COL_W); leftY += 22;
+      this._toggleRow(LEFT_C, leftY, T('settings.display.fullscreen_start'), 'vollbildStart', COL_W); leftY += 22;
       this._toggleRow(LEFT_C, leftY, T('settings.display.reduced_effects'), 'reducedEffects', COL_W); leftY += 22;
       this._languageRow(LEFT_C, leftY, COL_W); leftY += 22;
 
