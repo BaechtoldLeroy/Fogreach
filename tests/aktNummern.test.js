@@ -63,9 +63,13 @@ test('Ist der Akt erreicht, faellt die Sperre', () => {
 test('Keine Oberflaeche zeigt requireAct mehr roh', () => {
   // Der eigentliche Fehler war ein Index in der Anzeige. Wer ihn wieder
   // einbaut, faellt hier auf.
+  // Die alte Textfassung der Druckerei im Hub ist weg (b436); die Sperre
+  // steht jetzt auf den Karten der Druckerei-Szene.
   const hub = fs.readFileSync('js/scenes/HubSceneV2.js', 'utf8');
   assert.ok(!/ab Akt ' \+ e\.requireAct\b/.test(hub),
     'der Hub zeigt den Index wieder roh');
-  assert.ok(/ab Akt ' \+ \(\(e\.requireAct \| 0\) \+ 1\)/.test(hub),
-    'im Hub fehlt die Umrechnung auf die Spieler-Zaehlung');
+  const druckerei = fs.readFileSync('js/scenes/PrintingHouseScene.js', 'utf8');
+  assert.ok(!/req: e\.requireAct\b/.test(druckerei), 'die Druckerei zeigt den Index roh');
+  assert.ok(/\(e\.requireAct \| 0\) \+ 1/.test(druckerei),
+    'in der Druckerei fehlt die Umrechnung auf die Spieler-Zaehlung');
 });

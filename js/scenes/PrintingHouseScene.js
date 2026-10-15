@@ -15,6 +15,9 @@
       'printingHouse.ui.title': 'Druckerei',
       'printingHouse.ui.paper': 'Druckblätter',
       'printingHouse.ui.suspicion': 'Council-Verdacht',
+      'printingHouse.ui.state.alert': 'wachsam',
+      'printingHouse.ui.state.hunt': 'Jagd',
+      'printingHouse.ui.suspicion_hint': 'Ab 10: mehr Elite-Gegner im Dungeon.\nAb 20: Aldric verweigert neue Aufträge.\nSinkt um 1 je Lauf ohne Edikt. Bestechen: -5 für 100 Gold.',
       'printingHouse.ui.act': 'Akt',
       'printingHouse.ui.active_edict': 'Aktives Edikt',
       'printingHouse.ui.no_active': 'Kein Edikt aktiv',
@@ -34,6 +37,9 @@
       'printingHouse.ui.title': 'Printing House',
       'printingHouse.ui.paper': 'Print sheets',
       'printingHouse.ui.suspicion': 'Council suspicion',
+      'printingHouse.ui.state.alert': 'alert',
+      'printingHouse.ui.state.hunt': 'hunt',
+      'printingHouse.ui.suspicion_hint': 'From 10: more elite enemies in the dungeon.\nFrom 20: Aldric refuses new assignments.\nDrops by 1 per run without an edict. Bribe: -5 for 100 gold.',
       'printingHouse.ui.act': 'Act',
       'printingHouse.ui.active_edict': 'Active edict',
       'printingHouse.ui.no_active': 'No edict active',
@@ -303,7 +309,13 @@
       {
         const cx = zellen[2], b = bw[2];
         this._plakette(cx, y, b, h);
-        label(cx, T('printingHouse.ui.suspicion'), b);
+        // Die Folgen stehen dabei: ab 10 mehr Elite-Gegner, ab 20 verweigert
+        // Aldric Auftraege (printingHouse.getRetaliationTier) — vorher zeigte
+        // der Balken nur eine Zahl, die Wirkung blieb unsichtbar.
+        const stufe = suspicion >= 20 ? 'hunt' : suspicion >= 10 ? 'alert' : null;
+        label(cx, T('printingHouse.ui.suspicion') + (stufe ? ': ' + T('printingHouse.ui.state.' + stufe) : ''), b)
+          .setName('druckLabelVerdacht');
+        this._verdachtHinweis(cx, y, b, h);
         const s = this._symbol('verdacht', cx + 10, wertY, 22);
         const farbe = suspicion >= 20 ? '#ff8a7a' : suspicion >= 10 ? '#ffb86a' : '#8fe0a8';
         const v = this._text(cx + 10 + s._breite + 6, wertY, String(suspicion), {
@@ -328,6 +340,39 @@
         v.setName('druckWertAktiv');
         einpassen(v, b - 20, 11);
       }
+    }
+
+    /** Hinweis mit den Regeln des Verdachts: beim Ueberfahren, auf Mobile per Tipp. */
+    _verdachtHinweis(x, y, w, h) {
+      const zone = this.add.rectangle(x + w / 2, y + h / 2, w, h, 0x000000, 0)
+        .setScrollFactor(0).setDepth(2004).setInteractive({ useHandCursor: true }).setName('druckVerdachtZone');
+      const text = this._text(0, 0, T('printingHouse.ui.suspicion_hint'), {
+        fontSize: '12px', color: '#efe6d2', lineSpacing: 4, wordWrap: { width: Math.max(260, w + 60) }
+      }).setDepth(2302).setVisible(false).setName('druckVerdachtHinweis');
+      const pad = 10, links = Math.max(8, x + w / 2 - (text.width + pad * 2) / 2), oben = y + h + 6;
+      text.setPosition(links + pad, oben + pad);
+      const UR = window.uiRahmen;
+      // Die Platte erst beim ersten Zeigen anlegen: sie besteht aus neun
+      // Rahmenteilen, die sonst schon beim Oeffnen in der Szene laegen.
+      let platte = null, grund = null;
+      let offen = false;
+      const zeigen = (an) => {
+        offen = an;
+        if (an && !platte && !grund) {
+          platte = this._messing && UR.tipPlatte ? UR.tipPlatte(this, 2301, 0.4) : null;
+          if (!platte) {
+            grund = this.add.rectangle(links, oben, text.width + pad * 2, text.height + pad * 2, 0x0c0c12, 0.96)
+              .setOrigin(0, 0).setStrokeStyle(1, 0xc9a25a, 0.9).setScrollFactor(0).setDepth(2301).setVisible(false);
+          }
+        }
+        text.setVisible(an);
+        if (platte) { if (an) platte.lege(links, oben, text.width + pad * 2, text.height + pad * 2); else platte.verstecke(); }
+        if (grund) grund.setVisible(an);
+      };
+      zone.on('pointerover', () => zeigen(true));
+      zone.on('pointerout', () => zeigen(false));
+      zone.on('pointerdown', () => zeigen(!offen));
+      this._verdachtZeigen = zeigen;
     }
 
     // ---- Edikt-Liste --------------------------------------------------------
