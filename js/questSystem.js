@@ -2103,6 +2103,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       var msg = (window.i18n && typeof window.i18n.t === 'function')
         ? window.i18n.t('quest.toast.completed', { title: title })
         : ('Quest-Ziel erfüllt: ' + title);
+      // #197 (Vorschau): waehrend einer Spionage-Mission wird der Text zur
+      // letzten Seite der Abhoer-Szene statt eines Toasts.
+      if (window.SpionageSzenen && typeof window.SpionageSzenen.zielToast === 'function'
+          && window.SpionageSzenen.zielToast(msg)) return;
       var scene = _resolveActiveScene();
       if (scene && window.EventSystem && typeof window.EventSystem.showToast === 'function') {
         window.EventSystem.showToast(scene, msg, 'quest_objective_done');

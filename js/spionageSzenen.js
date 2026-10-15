@@ -6,9 +6,12 @@
 // Messing-Plakette, Text Seite fuer Seite (Taste/Klick weiter, ESC beendet):
 //
 //   Missionsstart   Auftrag + Regel der Verkleidung, Kamera ueber die Wachen
-//   Belauscht       das mitgehoerte Gespraech, Sprecher fuer Sprecher
-//                   (Ratskammer und Konvoi haben ihre eigenen Story-Szenen)
-//   Enttarnt        kurzer harter Moment an der Wache, laeuft von selbst weiter
+//   Belauscht       das mitgehoerte Gespraech, Sprecher fuer Sprecher; der
+//                   Toast "Quest-Ziel erfuellt" wird zur letzten Seite. Am
+//                   Konvoi folgt danach die Entscheidung (Finale.konvoi).
+//                   Die Ratskammer hat ihre eigene Buehne (geheime Sitzung).
+//   Enttarnt        nur Blitz, Kamerastoss und der Ruf der Wache — haelt NICHTS
+//                   an: man muss sofort gegen die Wachen kaempfen koennen
 //   Alles gehoert   kurzer Abschluss
 //
 // "Verdacht steigt" bleibt bewusst ohne Szene: Kegel und Faerbung zeigen es,
@@ -30,8 +33,14 @@
   var NOTAUSGANG_MS = 45000;
   var KNOPF_MIN_H = 44;
 
-  // Lauschposten, die schon eine eigene Story-Szene haben.
-  var STORY_ZIELE = { collusion_reveal_seen: true, convoy_intel: true };
+  // Lauschposten mit eigener Story-Buehne (die geheime Sitzung).
+  var STORY_ZIELE = { collusion_reveal_seen: true };
+  // Nach dem Gespraech: was die Story an dieser Stelle weiter erzaehlt.
+  var DANACH = {
+    convoy_intel: function (scene) {
+      if (window.Finale && typeof window.Finale.konvoi === 'function') { try { window.Finale.konvoi(scene); } catch (e) {} }
+    }
+  };
 
   var DE = {
     'spion.ueberspringen': 'Überspringen (ESC)',
@@ -56,6 +65,10 @@
     'spion.archivar': 'Archivar',
     'spion.stimme': 'Gedämpfte Stimme',
     'spion.mann': 'Mann im Mantel',
+    'spion.convoy_intel.titel': 'Die Ladung',
+    'spion.convoy_intel.1': 'Noch drei Fuhren heute Nacht. Alles, was aus den Kellern kommt.',
+    'spion.convoy_intel.2': 'Und der da hinten, mit den gebundenen Händen?',
+    'spion.convoy_intel.3': 'Der kommt mit. Wer einmal auf der Liste steht, steht drauf.',
     'spion.escort_route.titel': 'Der Weg des Konvois',
     'spion.archive_record.titel': 'Akt einhundertsiebzehn',
     'spion.informant_id.titel': 'Das Treffen am Brunnen',
@@ -95,6 +108,10 @@
     'spion.archivar': 'Archivist',
     'spion.stimme': 'Muffled voice',
     'spion.mann': 'Cloaked man',
+    'spion.convoy_intel.titel': 'The Cargo',
+    'spion.convoy_intel.1': 'Three more loads tonight. Everything that comes up from the cellars.',
+    'spion.convoy_intel.2': 'And that one in the back, with his hands bound?',
+    'spion.convoy_intel.3': 'He comes along. Once you are on the list, you stay on it.',
     'spion.escort_route.titel': 'The Convoy Route',
     'spion.archive_record.titel': 'File One Hundred Seventeen',
     'spion.informant_id.titel': 'The Meeting at the Well',
@@ -120,6 +137,7 @@
 
   // Gespraeche an den Lauschposten: [Sprecher-Schluessel, Text-Schluessel].
   var GESPRAECHE = {
+    convoy_intel: [['spion.kutscher', 'spion.convoy_intel.1'], ['spion.wache', 'spion.convoy_intel.2'], ['spion.kutscher', 'spion.convoy_intel.3']],
     escort_route: [['spion.kutscher', 'spion.escort_route.1'], ['spion.wache', 'spion.escort_route.2'], ['spion.kutscher', 'spion.escort_route.3']],
     archive_record: [['spion.schreiber', 'spion.archive_record.1'], ['spion.archivar', 'spion.archive_record.2']],
     informant_id: [['spion.stimme', 'spion.informant_id.1'], ['spion.mann', 'spion.informant_id.2'], ['spion.stimme', 'spion.informant_id.3']]
@@ -294,6 +312,7 @@
       }
       sprecher.setText(String(s.sprecher || '').toUpperCase());
       rede.setText(String(s.text || ''));
+      rede.setColor(s.ziel ? '#7dffb0' : '#efe6d2');
       rede.setAlpha(0);
       tween({ targets: rede, alpha: 1, duration: frist(200) });
       bereitAb = Date.now() + frist(EINGABE_AB);
@@ -381,6 +400,13 @@
 
     zustand.weiter = weiter;
     zustand.ueberspringen = ueberspringen;
+    // Weitere Seiten, solange die Szene noch nicht ausklingt (der Ziel-Text).
+    zustand.seitenAnhaengen = function (neu) {
+      if (beendet || ausklangLaeuft) return false;
+      neu.forEach(function (s) { seiten.push(s); });
+      zustand.seiten = seiten.length;
+      return true;
+    };
     return zustand;
   }
 
@@ -406,6 +432,34 @@
     });
   }
 
+  // "Quest-Ziel erfuellt" waehrend einer Mission: wird zur letzten Seite der
+  // Szene statt eines Toasts. Kommt der Toast vor der Szene, wartet er hier.
+  var _zielText = null;
+
+  /**
+   * Vom QuestSystem gerufen, bevor es "Quest-Ziel erfuellt" zeigt. true = die
+   * Spionage-Szene uebernimmt den Text (kein Toast).
+   */
+  function zielToast(text) {
+    if (!an() || !text) return false;
+    if (!(window.EspionageSystem && window.EspionageSystem.isActive && window.EspionageSystem.isActive())) return false;
+    var sc = window.gameScene || (window.game && window.game.scene && window.game.scene.getScene('GameScene'));
+    var laufend = sc && sc.__spionSzene;
+    if (laufend && laufend.art === 'belauscht' && laufend.seitenAnhaengen) {
+      laufend.seitenAnhaengen([{ sprecher: '', text: text, ziel: true }]);
+      return true;
+    }
+    _zielText = text;
+    // Holt keine Szene den Text im selben Takt ab (Ratskammer: eigene Buehne),
+    // kommt er doch als Toast.
+    setTimeout(function () {
+      if (!_zielText) return;
+      var t = _zielText; _zielText = null;
+      try { if (sc && window.EventSystem && window.EventSystem.showToast) window.EventSystem.showToast(sc, t, 'quest_objective_done'); } catch (e) {}
+    }, 0);
+    return true;
+  }
+
   /** Ein Lauschposten ist abgehoert. */
   function belauscht(scene, zone, allesGehoert) {
     if (!an() || !zone) return null;
@@ -413,14 +467,19 @@
     var g = GESPRAECHE[zone.questTarget];
     var z = null;
     if (!story && g) {
+      var seiten = g.map(function (s) { return { sprecher: _t(s[0]), text: _t(s[1]) }; });
+      if (_zielText) { seiten.push({ sprecher: '', text: _zielText, ziel: true }); _zielText = null; }
+      var danach = DANACH[zone.questTarget];
       z = spiele(scene, {
         art: 'belauscht', ziel: { x: zone.x, y: zone.y },
         kopf: _t('spion.belauscht'), titel: _t('spion.' + zone.questTarget + '.titel'),
-        seiten: g.map(function (s) { return { sprecher: _t(s[0]), text: _t(s[1]) }; })
+        seiten: seiten,
+        onEnde: danach ? function () { danach(scene); } : null
       });
     }
     // Der Abschluss nur, wenn keine Story-Szene das Ende erzaehlt.
-    if (allesGehoert && !story) {
+    // Erzaehlt die Story danach weiter (Konvoi-Entscheidung), kein eigener Abschluss.
+    if (allesGehoert && !story && !DANACH[zone.questTarget]) {
       z = spiele(scene, {
         art: 'fertig', kopf: '', titel: _t('spion.fertig'), farbe: '#7dffb0',
         seiten: [{ sprecher: '', text: _t('spion.fertig.1') }], auto: 2200
@@ -429,9 +488,13 @@
     return z;
   }
 
-  /** Enttarnt: kurz, hart, laeuft von selbst weiter in den Kampf. */
+  /**
+   * Enttarnt: roter Blitz, Kamerastoss, der Ruf der Wache ueber ihrem Kopf.
+   * Haelt NICHTS an — keine Pause, keine Balken, keine Eingabesperre: die
+   * Wachen greifen sofort an, und man muss sich wehren koennen.
+   */
   function enttarnt(scene) {
-    if (!an()) return null;
+    if (!an() || !scene || !scene.add || !scene.tweens) return null;
     var st = window.EspionageSystem && window.EspionageSystem.getState ? window.EspionageSystem.getState() : null;
     var p = window.player, wache = null, best = Infinity;
     ((st && st.guards) || []).forEach(function (g) {
@@ -439,15 +502,28 @@
       var d = (g.x - p.x) * (g.x - p.x) + (g.y - p.y) * (g.y - p.y);
       if (d < best) { best = d; wache = g; }
     });
-    return spiele(scene, {
-      art: 'enttarnt', ziel: wache ? { x: wache.x, y: wache.y } : null, blitz: true,
-      kopf: '', titel: _t('spion.enttarnt'), farbe: '#ff7b6b',
-      seiten: [{ sprecher: _t('spion.wache'), text: _t('spion.enttarnt.1') }], auto: 1600
-    });
+    var b = scene.scale.width, h = scene.scale.height;
+    var blitz = scene.add.rectangle(b / 2, h / 2, b, h, 0xff2a2a, 0.35).setScrollFactor(0).setDepth(1097).setName('spionBlitz');
+    scene.tweens.add({ targets: blitz, alpha: 0, duration: 450, onComplete: function () { blitz.destroy(); } });
+    try { scene.cameras.main.shake(220, 0.006); } catch (e) {}
+    // Der Ruf steht ueber der Wache — ausser sie ist nicht im Bild (Nebel,
+    // Kante): dann ueber dem Spieler, sonst sieht ihn keiner.
+    var sicht = scene.cameras && scene.cameras.main && scene.cameras.main.worldView;
+    var imBild = wache && sicht && sicht.contains && sicht.contains(wache.x, wache.y);
+    var ort = imBild ? wache : (p || wache);
+    var ruf = null;
+    if (ort) {
+      ruf = scene.add.text(ort.x, ort.y - 56, _t('spion.enttarnt.1'), {
+        fontFamily: 'serif', fontSize: '18px', fontStyle: 'bold', color: '#ff9e8f',
+        stroke: '#000000', strokeThickness: 4
+      }).setOrigin(0.5, 1).setDepth(1096).setName('spionRuf');
+      scene.tweens.add({ targets: ruf, y: ruf.y - 14, alpha: 0, delay: 1300, duration: 500, onComplete: function () { ruf.destroy(); } });
+    }
+    return { art: 'enttarnt', ruf: ruf, blitz: blitz };
   }
 
   var Szenen = {
-    an: an, spiele: spiele, start: start, belauscht: belauscht, enttarnt: enttarnt,
+    an: an, spiele: spiele, start: start, belauscht: belauscht, enttarnt: enttarnt, zielToast: zielToast,
     GESPRAECHE: GESPRAECHE, STORY_ZIELE: STORY_ZIELE, _TEMPO: 1
   };
   window.SpionageSzenen = Szenen;

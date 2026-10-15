@@ -488,7 +488,9 @@
                   try { window.SpionageSzenen.belauscht(scene, z, alleGehoert); } catch (_) {}
                 }
                 // #158: Am Konvoi faellt eine Entscheidung (Bibel v5, Abschnitt 9).
+                // Mit ?spionszene=neu ruft die Abhoer-Szene sie danach selbst.
                 if (z.questTarget === 'convoy_intel' && typeof window !== 'undefined'
+                    && !(window.SpionageSzenen && window.SpionageSzenen.an())
                     && window.Finale && typeof window.Finale.konvoi === 'function') {
                   try { window.Finale.konvoi(scene); } catch (_) {}
                 }

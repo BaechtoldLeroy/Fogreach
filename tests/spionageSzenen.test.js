@@ -72,20 +72,92 @@ describe('mit ?spionszene=neu', () => {
     assert.ok(await bis(H, `!${GS}.__spionSzene`, 1500), 'der Abschluss bleibt stehen');
   });
 
-  test('Ratskammer und Konvoi: keine eigene Szene (die Story erzaehlt)', () => {
+  test('Ratskammer: keine eigene Szene (die geheime Sitzung hat ihre Buehne)', () => {
     const r = H.run(`(function () { var p = window.player;
       var a = window.SpionageSzenen.belauscht(${GS}, { questTarget: 'collusion_reveal_seen', x: p.x, y: p.y }, true);
-      var b = window.SpionageSzenen.belauscht(${GS}, { questTarget: 'convoy_intel', x: p.x, y: p.y }, false);
-      return [a, b, !!${GS}.__spionSzene]; })()`);
-    assert.deepStrictEqual(JSON.parse(JSON.stringify(r)), [null, null, false]);
+      return [a, !!${GS}.__spionSzene]; })()`);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(r)), [null, false]);
   });
 
-  test('Enttarnt: kurzer Moment an der Wache, laeuft ohne Eingabe weiter', async () => {
-    H.run(`window.SpionageSzenen.enttarnt(${GS})`);
-    assert.ok(await bis(H, `!!(${GS}.__spionSzene && ${GS}.__spionSzene.art === 'enttarnt')`), 'keine Enttarnungsszene');
-    const knopf = H.run(`${GS}.__spionSzene.teile.some(function (o) { return o.name === 'spionWeiter' || o.name === 'spionUeberspringen'; })`);
-    assert.strictEqual(knopf, false, 'die Enttarnung wartet auf Eingabe');
-    assert.ok(await bis(H, `!${GS}.__spionSzene`, 1500), 'die Enttarnung schliesst nicht von selbst');
+  test('Konvoi: das Gespraech als Szene, danach die Entscheidung', async () => {
+    H.run(`(function () { var p = window.player;
+      window.__konvoi = 0;
+      window.__echtKonvoi = window.Finale.konvoi;
+      window.Finale.konvoi = function () { window.__konvoi++; return true; };
+      window.SpionageSzenen.belauscht(${GS}, { questTarget: 'convoy_intel', x: p.x, y: p.y }, true); })()`);
+    assert.ok(await bis(H, `${GS}.__spionSzene && ${GS}.__spionSzene.phase === 'rede'`), 'keine Konvoi-Szene');
+    assert.strictEqual(H.run('window.__konvoi'), 0, 'die Entscheidung kommt vor dem Gespraech');
+    H.run(`${GS}.__spionSzene.ueberspringen()`);
+    assert.ok(await bis(H, `!${GS}.__spionSzene`), 'die Szene endet nicht');
+    for (let i = 0; i < 20; i++) { H.step(2); await flush(); }
+    const r = H.run(`(function () { var n = window.__konvoi; window.Finale.konvoi = window.__echtKonvoi;
+      return n + ':' + !!${GS}.__spionSzene; })()`);
+    assert.strictEqual(r, '1:false', 'Entscheidung genau einmal, kein "Alles gehoert" darueber: ' + r);
+  });
+
+  test('"Quest-Ziel erfuellt" kommt als letzte Seite der Szene, nicht als Toast', async () => {
+    const r = H.run(`(function () {
+      var toasts = [], echt = window.EventSystem.showToast;
+      window.EventSystem.showToast = function (sc, t) { toasts.push(t); };
+      window.__toasts = toasts; window.__echtToast = echt;
+      // Reihenfolge wie im Spiel: erst das Questsystem, dann die Szene.
+      var uebernommen = window.SpionageSzenen.zielToast('Quest-Ziel erfüllt: Der versiegelte Akt');
+      var p = window.player;
+      window.SpionageSzenen.belauscht(${GS}, { questTarget: 'archive_record', x: p.x, y: p.y }, false);
+      return uebernommen + ':' + ${GS}.__spionSzene.seiten;
+    })()`);
+    assert.strictEqual(r, 'true:3', 'zwei Gespraechsseiten + Ziel-Seite erwartet: ' + r);
+    for (let i = 0; i < 30; i++) { H.step(2); await flush(); }
+    assert.strictEqual(H.run('window.__toasts.length'), 0, 'trotzdem ein Toast');
+    // Bis zur letzten Seite blaettern: sie traegt den Ziel-Text.
+    for (let s = 0; s < 2; s++) {
+      for (let i = 0; i < 40; i++) { H.step(2); await flush(); }
+      H.run(`${GS}.__spionSzene.weiter()`);
+    }
+    assert.ok(await bis(H, `${GS}.__spionSzene && ${GS}.__spionSzene.seite === 2`), 'die Ziel-Seite kommt nicht');
+    const text = H.run(`${GS}.__spionSzene.teile.filter(function (o) { return o.name === 'spionRede'; })[0].text`);
+    assert.ok(/Quest-Ziel erfüllt/.test(text), 'letzte Seite: ' + text);
+    H.run(`${GS}.__spionSzene.ueberspringen()`);
+    assert.ok(await bis(H, `!${GS}.__spionSzene`));
+    H.run('window.EventSystem.showToast = window.__echtToast');
+  });
+
+  test('Ohne Szene (Ratskammer) bleibt "Quest-Ziel erfuellt" ein Toast', async () => {
+    H.run(`(function () {
+      var toasts = [], echt = window.EventSystem.showToast;
+      window.EventSystem.showToast = function (sc, t) { toasts.push(t); };
+      window.__toasts = toasts; window.__echtToast = echt;
+      window.SpionageSzenen.zielToast('Quest-Ziel erfüllt: Die geheime Sitzung');
+    })()`);
+    for (let i = 0; i < 10; i++) { H.step(2); await flush(); }
+    assert.strictEqual(H.run('window.__toasts.length'), 1, 'der Toast geht verloren');
+    H.run('window.EventSystem.showToast = window.__echtToast');
+  });
+
+  test('Enttarnt: Blitz und Ruf, aber NICHTS steht still — man kann sofort kaempfen', async () => {
+    const r = H.run(`(function () {
+      var z = window.SpionageSzenen.enttarnt(${GS});
+      return { art: z && z.art, ruf: !!(z && z.ruf && z.ruf.text), szene: !!${GS}.__spionSzene,
+        pause: !!(window.__GAME_PAUSE && window.__GAME_PAUSE.since != null), wahl: !!window.eventChoiceOpen };
+    })()`);
+    assert.strictEqual(r.art, 'enttarnt');
+    assert.ok(r.ruf, 'kein Ruf der Wache');
+    assert.strictEqual(r.szene, false, 'die Enttarnung blockiert als Szene');
+    assert.strictEqual(r.pause, false, 'die Spieluhr steht');
+    assert.strictEqual(r.wahl, false, 'die Eingabe ist gesperrt');
+    // Steht keine Wache im Bild, ruft es ueber dem Spieler (sonst saehe es keiner).
+    const ort = H.run(`(function () {
+      var st = window.EspionageSystem.getState(), p = window.player;
+      var alt = st.guards; st.guards = [{ x: p.x + 5000, y: p.y + 5000 }];
+      var z = window.SpionageSzenen.enttarnt(${GS});
+      st.guards = alt;
+      return Math.abs(z.ruf.x - p.x) < 1;
+    })()`);
+    assert.strictEqual(ort, true, 'der Ruf steht bei einer Wache ausserhalb des Bildes');
+    // Die Spieluhr laeuft weiter, waehrend Ruf und Blitz zu sehen sind.
+    const vorher = H.run('window.gameNow()');
+    for (let i = 0; i < 10; i++) { H.step(2); await flush(); }
+    assert.ok(H.run('window.gameNow()') > vorher, 'die Zeit steht');
   });
 
   test('Haken: Abhoeren und Entdecktwerden im EspionageSystem rufen die Szenen', () => {
