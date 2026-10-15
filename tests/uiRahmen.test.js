@@ -172,6 +172,13 @@ describe('Messing-Stil ohne Flagge', () => {
       .filter(function (o) { return o._uiKnopf; }).map(function (o) { return o._uiKnopf.teile[4].texture.key; }).join(',')`);
     // Ohne Gold: Bestechen und Tauschen gesperrt, Schliessen offen.
     assert.strictEqual(k, 'ui_knopf_aus,ui_knopf_aus,ui_knopf');
+    // b435: die Edikt-Karten liegen auf Messingfeldern, keine Taste in eckigen Klammern.
+    const r2 = H.run(`(function () { var sc = window.game.scene.getScene('PrintingHouseScene'), felder = 0, klammer = 0;
+      (function lauf(l) { l.forEach(function (o) { if (o.type === 'Container') return lauf(o.list);
+        if (o.type === 'Image' && /^ui_feld/.test(o.texture.key)) felder++;
+        if (o.type === 'Text' && /[[\\]]/.test(o.text)) klammer++; }); })(sc.children.list);
+      return felder + ':' + klammer; })()`);
+    assert.strictEqual(r2, H.run('window.PrintingHouse.getEdictCatalog().length') + ':0');
     H.run(`window.game.scene.getScene('PrintingHouseScene')._close()`);
     H.step(5);
   });
