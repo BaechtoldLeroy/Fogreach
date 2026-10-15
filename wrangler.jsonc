@@ -1,0 +1,11 @@
+// Cloudflare Workers (statische Seite). Der Build-Befehl im Dashboard kopiert
+// nur das Spiel nach public/ — Tests, Werkzeuge, Specs, Rohbilder, deploy/
+// und reference/ bleiben im Repo und kommen nicht ins Netz:
+//   mkdir -p public && cp -r index.html favicon.ico js assets public/
+{
+  "name": "fogreach",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public"
+  }
+}

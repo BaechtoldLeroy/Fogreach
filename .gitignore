@@ -38,3 +38,6 @@ node_modules/
 
 # Replit local state
 .local/
+
+# Cloudflare-Build (wrangler.jsonc): nur das Spiel
+/public/
