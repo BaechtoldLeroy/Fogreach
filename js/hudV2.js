@@ -677,15 +677,18 @@
       { label: T('hud.menu.btn.settings'), action: () => {
           if (typeof window.openSettingsScene === 'function') window.openSettingsScene(scene);
         } },
-      { label: 'FPS Overlay', action: () => {
-          if (!scene._perfMonitor && window.PerformanceMonitor) {
-            scene._perfMonitor = new window.PerformanceMonitor(scene);
-          }
-          if (scene._perfMonitor && typeof scene._perfMonitor.toggleOverlay === 'function') {
-            scene._perfMonitor.toggleOverlay();
-          }
-        } }
     ];
+    // Die FPS-Anzeige ist ein Entwicklerwerkzeug: nur im Debug-Modus (#88).
+    if (window.DebugGate && window.DebugGate.aktiv()) {
+      items.push({ label: 'FPS Overlay', action: () => {
+        if (!scene._perfMonitor && window.PerformanceMonitor) {
+          scene._perfMonitor = new window.PerformanceMonitor(scene);
+        }
+        if (scene._perfMonitor && typeof scene._perfMonitor.toggleOverlay === 'function') {
+          scene._perfMonitor.toggleOverlay();
+        }
+      } });
+    }
 
     const panelW = 280;
     // #193: auf der Messing-Platte je 8 px mehr oben und unten (Beschlag).

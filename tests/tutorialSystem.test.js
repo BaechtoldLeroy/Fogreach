@@ -385,3 +385,43 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   assert.strictEqual(stored.active, false);
   assert.strictEqual(stored.currentStepId, null);
 });
+
+// --- Beute vor dem ersten Treffer -----------------------------------------
+// Gemeldet: "hat nicht beim ersten item getriggert ... erst beim zweiten".
+// Ein Fund aus Truhe/Fass VOR dem ersten Treffer fiel weg (Schritt war noch
+// combat.basics). Jetzt vorgemerkt und beim Erreichen des Schritts eingeloest.
+
+function bisKampf(TS) {
+  TS.init();
+  TS.maybeAutoSkip();
+  TS.report('player.moved', {});
+  TS.report('dialog.opened', { npc: 'aldric' });
+  TS.report('hub.entrance.entered', { name: 'rathaus_entrance' });
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
+}
+
+test('Fund VOR dem ersten Treffer: nach dem Treffer gleich "aufheben", nicht warten', () => {
+  const { TS } = fresh();
+  bisKampf(TS);
+  TS.report('loot.dropped', { itemId: 'truhe' });   // Truhe vor dem ersten Gegner
+  TS.report('combat.hit', { byPlayer: true });
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.pickup', 'wartet auf einen zweiten Fund');
+});
+
+test('Schon aufgehoben, bevor der Hinweis kam: weiter zu "anlegen"', () => {
+  const { TS } = fresh();
+  bisKampf(TS);
+  TS.report('loot.dropped', { itemId: 'fass' });
+  TS.report('loot.picked', { itemId: 'fass' });
+  TS.report('combat.hit', { byPlayer: true });
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.equip', 'zeigt "lauf darueber", obwohl das Stueck schon im Inventar ist');
+});
+
+test('Ohne Fund vorher bleibt alles wie bisher: nach dem Treffer wird auf den ersten Fund gewartet', () => {
+  const { TS } = fresh();
+  bisKampf(TS);
+  TS.report('combat.hit', { byPlayer: true });
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.wait');
+  TS.report('loot.dropped', { itemId: 'x' });
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.pickup');
+});

@@ -195,8 +195,14 @@ describe('Rueckfall: Bilder nicht geladen', () => {
   before(async () => {
     H = await hub();
     H.run(`(function () { var t = window.game.textures;
-      window.uiRahmen.ALLE.forEach(function (k) { if (t.exists(k)) t.remove(k); });
-      if (t.exists('hud_icons')) t.remove('hud_icons'); })()`);
+      var weg = window.uiRahmen.ALLE.concat(['hud_icons']).filter(function (k) { return t.exists(k); });
+      weg.forEach(function (k) { t.remove(k); });
+      // Was schon mit diesen Bildern steht (seit b439 auch die Hub-Knoepfe oben
+      // rechts), zeigte jetzt auf geloeschte Texturen und stoerte das ganze
+      // Bild. Im Spiel werden Texturen nie nachtraeglich entfernt — abraeumen.
+      window.game.scene.getScenes(true).forEach(function (s) {
+        s.children.list.slice().forEach(function (o) { if (o.texture && weg.indexOf(o.texture.key) >= 0) o.destroy(); });
+      }); })()`);
     oeffnen(H);
   });
   after(async () => { if (H) await H.shutdown(); });

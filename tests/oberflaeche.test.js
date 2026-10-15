@@ -78,7 +78,9 @@ const MOBILE_KNOPF = `var sc = ${HUB};
   var los = function () { window.hudLeiste.mobil(sc, [{ spec: { key: 'attack' }, circle: c }]); };
   var ringe = function () { var r = []; (function lauf(l) { l.forEach(function (o) {
     if (o.type === 'Container') return lauf(o.list);
-    if (o.type === 'Image' && o.texture.key === 'ui_ring') r.push(o); }); })(sc.children.list); return r; };`;
+    // Nur Ringe der Mobil-Knoepfe (im Knopf-Container) — die Hub-Knoepfe oben
+    // rechts tragen seit b439 eigene Ringe direkt in der Szene.
+    if (o.type === 'Image' && o.texture.key === 'ui_ring' && o.parentContainer) r.push(o); }); })(sc.children.list); return r; };`;
 
 /** Bilder (auch in Containern) einer Szene mit ihrem Texturschluessel. */
 const BILDER = (szeneJs) => `(function () { var r = []; (function lauf(l) { l.forEach(function (o) {

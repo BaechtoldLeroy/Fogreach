@@ -371,6 +371,22 @@
     }, step.autoDismissMs);
   }
 
+  // Ereignisse der Beute-Kette, die VOR ihrem Schritt kommen koennen: ein
+  // Gegenstand aus einer Truhe oder einem zerbrochenen Fass, bevor der erste
+  // Gegner getroffen ist. Frueher fiel die Meldung weg, und das Tutorial
+  // reagierte erst beim ZWEITEN Fund (gemeldet). Jetzt wird sie vorgemerkt und
+  // beim Erreichen ihres Schritts eingeloest.
+  var VORMERKBAR = ['loot.dropped', 'loot.picked', 'inventory.equipped'];
+  var _vorgemerkt = {};
+
+  function _spaeterErwartet(eventName) {
+    var idx = _stepIndex(state.currentStepId);
+    for (var i = idx + 1; i < STEPS.length; i++) {
+      if (STEPS[i].completion && STEPS[i].completion.event === eventName) return true;
+    }
+    return false;
+  }
+
   function _advance() {
     var idx = _stepIndex(state.currentStepId);
     if (idx < 0) {
@@ -393,6 +409,14 @@
     var next = STEPS[nextIdx];
     state.currentStepId = next.id;
     state.currentStepShownAt = primitives.now();
+    // Schon geschehen (vorgemerkt)? Dann gleich weiter — ohne den Hinweis
+    // erst zu zeigen ("lauf darueber", obwohl das Stueck laengst im Inventar ist).
+    var ev = next.completion && next.completion.event;
+    if (ev && _vorgemerkt[ev] && !next.completion.matcher) {
+      delete _vorgemerkt[ev];
+      _advance();
+      return;
+    }
     _persist();
     _notify();
     if (next.autoDismissMs) _scheduleAutoDismiss(next);
@@ -500,6 +524,11 @@
       return;
     }
     if (step.completion.event !== eventName) {
+      if (VORMERKBAR.indexOf(eventName) >= 0 && _spaeterErwartet(eventName)) {
+        _vorgemerkt[eventName] = true;
+        _debugLog(eventName, payload, 'vorgemerkt fuer spaeter (step ' + step.id + ' expects ' + step.completion.event + ')');
+        return;
+      }
       _debugLog(eventName, payload, 'dropped: step ' + step.id + ' expects ' + step.completion.event);
       return;
     }
@@ -588,6 +617,7 @@
       state.pendingTimerId = null;
     }
     _clearPersisted();
+    _vorgemerkt = {};
     state.active = true;
     state.skipped = false;
     state.currentStepId = INIT_STEP_ID;
@@ -615,6 +645,7 @@
       if (p.persistence) primitives.persistence = p.persistence;
     }
     state = _freshState();
+    _vorgemerkt = {};
     subscribers.clear();
     _storageWarned = false;
   }

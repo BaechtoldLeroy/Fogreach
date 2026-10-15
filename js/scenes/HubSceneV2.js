@@ -468,12 +468,24 @@ class HubSceneV2 extends Phaser.Scene {
       const _mR = 22;
       const _mx = this.scale.width - 14 - (_saM.right || 0) - _mR;
       const _my = 14 + (_saM.top || 0) + _mR;
+      // Wie im Dungeon (hudV2._buildTopRight): Messingring und die Pixel-
+      // Symbole aus hud_icons (Zahnrad, Lederranzen). Vorher standen hier ein
+      // Text-"☰" und ein Emoji-Rucksack. Ohne die Bilder bleibt das Zeichen.
+      const _HL = window.hudLeiste, _UR = window.uiRahmen;
+      const _messing = !!(_UR && _UR.bereit && _UR.bereit(this) && _UR.ring);
+      const _symbol = (x, y, id, zeichen, stil) => {
+        const icon = (_HL && _HL.bereit(this) && _HL.frame(id) >= 0)
+          ? this.add.image(x, y, _HL.KEY, _HL.frame(id)).setDisplaySize(_mR * 2 - 8, _mR * 2 - 8)
+          : this.add.text(x, y, zeichen, stil).setOrigin(0.5);
+        return icon.setScrollFactor(0).setDepth(1301);
+      };
+      const _ring = (x, y) => (_messing ? _UR.ring(this, x, y, _mR * 2 + 10, 1300.5) : null);
       const menuBg = this.add.circle(_mx, _my, _mR, 0x10131c, 0.95)
-        .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(1300)
+        .setStrokeStyle(_messing ? 0 : 2, 0xd4a543).setScrollFactor(0).setDepth(1300)
         .setInteractive({ useHandCursor: true });
-      const menuIcon = this.add.text(_mx, _my, '☰', {
-        fontFamily: 'serif', fontSize: '22px', color: '#ffd166'
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(1301);
+      const menuRing = _ring(_mx, _my);
+      const menuIcon = _symbol(_mx, _my, 'menu', '☰', { fontFamily: 'serif', fontSize: '22px', color: '#ffd166' });
+      menuIcon.setName('hubMenueSymbol');
       menuBg.on('pointerdown', (pointer, lx, ly, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
         if (window.HUDv2 && typeof window.HUDv2.openMenu === 'function') window.HUDv2.openMenu(this);
@@ -485,6 +497,7 @@ class HubSceneV2 extends Phaser.Scene {
         const nx = this.scale.width - 14 - (s.right || 0) - _mR;
         const ny = 14 + (s.top || 0) + _mR;
         menuBg.setPosition(nx, ny); menuIcon.setPosition(nx, ny);
+        if (menuRing) menuRing.setPosition(nx, ny);
       });
 
       // Inventar-Icon UNTER dem Burger — spiegelt das In-Game-HUD (dort gibt es
@@ -493,11 +506,12 @@ class HubSceneV2 extends Phaser.Scene {
       // erreichbar. Toggle-Logik identisch zum I-Key-Handler weiter unten.
       const _invGap = _mR * 2 + 8;
       const invBg = this.add.circle(_mx, _my + _invGap, _mR, 0x10131c, 0.95)
-        .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(1300)
+        .setStrokeStyle(_messing ? 0 : 2, 0xd4a543).setScrollFactor(0).setDepth(1300)
         .setInteractive({ useHandCursor: true });
-      const invIcon = this.add.text(_mx, _my + _invGap, '\u{1F392}', {
-        fontFamily: 'serif', fontSize: '20px'
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(1301);
+      const invRing = _ring(_mx, _my + _invGap);
+      const invIcon = _symbol(_mx, _my + _invGap, 'inventory', 'I',
+        { fontFamily: 'serif', fontSize: '22px', fontStyle: 'bold', color: '#ffd166' });
+      invIcon.setName('hubInventarSymbol');
       invBg.on('pointerdown', (pointer, lx, ly, event) => {
         if (event && event.stopPropagation) event.stopPropagation();
         // invUI wird erst weiter unten in create() initialisiert; zur Tap-Zeit
@@ -513,6 +527,7 @@ class HubSceneV2 extends Phaser.Scene {
         const nx = this.scale.width - 14 - (s.right || 0) - _mR;
         const ny = 14 + (s.top || 0) + _mR + _invGap;
         invBg.setPosition(nx, ny); invIcon.setPosition(nx, ny);
+        if (invRing) invRing.setPosition(nx, ny);
       });
     }
 
@@ -540,6 +555,8 @@ class HubSceneV2 extends Phaser.Scene {
       }
     });
     this.input.keyboard.on('keydown-P', () => {
+      // FPS-Anzeige nur im Debug-Modus (#88).
+      if (!(window.DebugGate && window.DebugGate.aktiv())) return;
       if (!this._perfMonitor && window.PerformanceMonitor) {
         this._perfMonitor = new window.PerformanceMonitor(this);
       }

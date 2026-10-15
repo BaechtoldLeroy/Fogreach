@@ -1116,8 +1116,10 @@ function create() {
   this.input.keyboard.on('keydown-O', () => {
     if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
   });
-  // Performance overlay (P key) — shows FPS, memory, timing metrics
+  // Performance overlay (P key) — shows FPS, memory, timing metrics.
+  // Nur im Debug-Modus (#88): fuer Spieler kein Werkzeug.
   this.input.keyboard.on('keydown-P', () => {
+    if (!(window.DebugGate && window.DebugGate.aktiv())) return;
     if (!this._perfMonitor && window.PerformanceMonitor) {
       this._perfMonitor = new window.PerformanceMonitor(this);
     }
