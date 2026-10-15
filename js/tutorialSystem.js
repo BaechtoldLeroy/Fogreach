@@ -485,7 +485,13 @@
     // who wiped local storage but still wants to skip mechanics).
     var skipFlag = false;
     try { skipFlag = !!(window.__SKIP_TUTORIAL__); } catch (_) {}
-    if (hasSave || skipFlag) {
+    // Mit Spielstand nur ueberspringen, wenn es noch KEINEN Tutorial-Fortschritt
+    // gibt (Spielstand aus der Zeit vor dem Tutorial). Wer ein neues Spiel
+    // begonnen, das Tutorial halb gemacht und gespeichert hat, verlor es sonst
+    // beim naechsten "Fortsetzen" — gemeldet: "das tutorial wird nicht richtig
+    // gespeichert". Ein angefangenes Tutorial laeuft weiter.
+    var angefangen = !!(state.active && state.currentStepId) || state.completedSteps.length > 0;
+    if ((hasSave && !angefangen) || skipFlag) {
       state.active = false;
       state.skipped = true;
       state.currentStepId = null;

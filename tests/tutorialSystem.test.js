@@ -425,3 +425,34 @@ test('Ohne Fund vorher bleibt alles wie bisher: nach dem Treffer wird auf den er
   TS.report('loot.dropped', { itemId: 'x' });
   assert.strictEqual(TS.getCurrentStep().id, 'loot.pickup');
 });
+
+// --- Fortsetzen mitten im Tutorial ------------------------------------------
+// Gemeldet: "das tutorial wird nicht richtig gespeichert". maybeAutoSkip
+// uebersprang das Tutorial, sobald ein Spielstand existierte — auch wenn es
+// angefangen und gespeichert war. Jetzt nur ohne jeden Tutorial-Fortschritt.
+
+test('Fortsetzen mit Spielstand und angefangenem Tutorial: es geht dort weiter', () => {
+  const erst = fresh();
+  erst.TS.init();
+  erst.TS.maybeAutoSkip();
+  erst.TS.report('player.moved', {});
+  erst.TS.report('dialog.opened', { npc: 'aldric' });
+  assert.strictEqual(erst.TS.getCurrentStep().id, 'dungeon.enter');
+  // Neuer Seitenaufruf: derselbe Speicher, jetzt mit Spielstand.
+  const gespeichert = erst.p.storage._store;
+  const p2 = makePrimitives();
+  Object.assign(p2.storage._store, gespeichert);
+  p2.persistence = { hasSave: () => true };
+  const TS = ensureLoaded();
+  TS._configureForTest(p2);
+  TS.init();
+  assert.strictEqual(TS.maybeAutoSkip(), false, 'das angefangene Tutorial wird uebersprungen');
+  assert.strictEqual(TS.getCurrentStep().id, 'dungeon.enter');
+});
+
+test('Spielstand ohne jeden Tutorial-Fortschritt (aelter als das Tutorial): weiterhin uebersprungen', () => {
+  const { TS } = fresh({ persistence: { hasSave: () => true } });
+  TS.init();
+  assert.strictEqual(TS.maybeAutoSkip(), true);
+  assert.strictEqual(TS.getCurrentStep(), null);
+});
