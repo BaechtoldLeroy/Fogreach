@@ -22,6 +22,9 @@ function frisch() {
   delete globalThis.window.questSystem;
   globalThis.window.storySystem = { getCurrentActIndex: () => 99 };
   globalThis.window.DUNGEON_DEPTH = 99;
+  // Stufe und Laufzaehler offen; die Sperren selbst pruefen eigene Tests.
+  globalThis.window.playerLevel = 5;
+  globalThis.window.Persistence = { getMaxDepth: () => 3, hasSave: () => false };
   loadGameModule('js/questSystem.js');
   return globalThis.window.questSystem;
 }
@@ -40,12 +43,20 @@ const EINFUEHRUNGEN = [
   { ziel: 'upgrade', quest: 'einfuehrung_schmiede', npc: 'branka', vorher: [] },
   { ziel: 'edikt', quest: 'einfuehrung_presse', npc: 'thom', vorher: [] },
   { ziel: 'markt', quest: 'einfuehrung_markt', npc: 'mara', vorher: [] },
-  { ziel: 'talent', quest: 'einfuehrung_talente', npc: 'aldric', vorher: [] },
+  // Zwei Ziele, in dieser Reihenfolge: erst der Punkt, dann die Taste.
+  { ziel: 'talent', quest: 'einfuehrung_talente', npc: 'aldric', vorher: [], danach: ['loadout'] },
   { ziel: 'wissen', quest: 'einfuehrung_wissen', npc: 'branka',
     vorher: ['aldric_patrol', 'einfuehrung_schmiede', 'harren_daughter_investigation'] },
   { ziel: 'haendler', quest: 'einfuehrung_amulett', npc: 'mara',
-    vorher: ['einfuehrung_markt'] }
+    vorher: ['einfuehrung_markt'] },
+  // Erst nach dem ersten Stufenaufstieg (eigener Test unten).
+  { ziel: 'charakterwerte', quest: 'einfuehrung_akte', npc: 'aldric', vorher: [] },
+  // Erst nach dem ersten ganz durchgespielten Lauf (eigener Test unten).
+  { ziel: 'truhe', quest: 'einfuehrung_truhe', npc: 'branka', vorher: ['einfuehrung_schmiede'] }
 ];
+
+/** Alle System-Ziele, auch die zweiten Schritte. */
+const ALLE_ZIELE = EINFUEHRUNGEN.reduce((a, e) => a.concat([e.ziel], e.danach || []), []);
 
 /** Alle js-Dateien des Spiels, damit ein Ausloeser auffindbar ist. */
 function spielDateien(verzeichnis) {
@@ -65,17 +76,15 @@ test('Zu jedem System-Ziel gibt es eine Stelle im Spiel, die es meldet', () => {
     .filter((p) => !p.endsWith(path.join('js', 'questSystem.js')))   // die Meldestelle selbst zaehlt nicht
     .map((p) => fs.readFileSync(p, 'utf8'))
     .join('\n');
-  const ohne = EINFUEHRUNGEN
-    .filter((e) => quellen.indexOf("onSystemUsed('" + e.ziel + "')") === -1)
-    .map((e) => e.ziel + ' (' + e.quest + ')');
+  const ohne = ALLE_ZIELE
+    .filter((ziel) => quellen.indexOf("onSystemUsed('" + ziel + "')") === -1);
   assert.deepStrictEqual(ohne, [],
     'diese Ziele werden nirgends gemeldet — die Quests waeren unabschliessbar');
 });
 
 test('onSystemUsed nimmt nur bekannte Ziele an — und sagt es laut', () => {
   const qs = frisch();
-  assert.deepStrictEqual(Array.from(qs.SYSTEM_ZIELE).sort(),
-    EINFUEHRUNGEN.map((e) => e.ziel).sort());
+  assert.deepStrictEqual(Array.from(qs.SYSTEM_ZIELE).sort(), ALLE_ZIELE.slice().sort());
   qs.acceptQuest('einfuehrung_schmiede');
 
   // Ein Tippfehler bewegt nichts — aber das allein faellt niemandem auf:
@@ -103,7 +112,7 @@ function durchwinken(qs, id) {
   assert.strictEqual(qs.completeQuest(id), true, id + ' liess sich nicht abschliessen');
 }
 
-EINFUEHRUNGEN.forEach(({ ziel, quest, npc, vorher }) => {
+EINFUEHRUNGEN.forEach(({ ziel, quest, npc, vorher, danach }) => {
   test('Die Einfuehrung zu "' + ziel + '" steht bei der richtigen Figur und wird fertig', () => {
     const qs = frisch();
     const def = qs.QUEST_DEFINITIONS[quest];
@@ -123,6 +132,10 @@ EINFUEHRUNGEN.forEach(({ ziel, quest, npc, vorher }) => {
     assert.strictEqual(qs.onSystemUsed(ziel), true, 'der Auftrag rueckte nicht vor');
     const aktiv = qs.getActiveQuests().find((q) => q.id === quest);
     assert.strictEqual(aktiv.objectives[0].current, 1);
+    (danach || []).forEach((z) => {
+      assert.strictEqual(qs.completeQuest(quest), false, 'fertig, obwohl "' + z + '" noch fehlt');
+      assert.strictEqual(qs.onSystemUsed(z), true, 'der zweite Schritt "' + z + '" rueckte nicht vor');
+    });
     assert.strictEqual(qs.completeQuest(quest), true);
     assert.ok(qs.getCompletedQuests().some((q) => q.id === quest));
   });
@@ -197,7 +210,7 @@ test('Das Tutorial erklaert die Systeme nicht mehr selbst', () => {
     'diese Schritte haben im Hub eine Figur und gehoeren in eine Quest');
 
   const kern = ['movement', 'quest.dialog', 'dungeon.enter', 'combat.basics', 'loot.pickup',
-    'loot.equip', 'combat.potion', 'journal.hint', 'save.notice'];
+    'loot.equip', 'combat.potion', 'journal.hint', 'save.notice', 'settings.hint'];
   assert.deepStrictEqual(kern.filter((id) => !drin(id)), [],
     'aus dem harten Kern fehlt etwas — das findet ohne Ansage niemand heraus');
 });
@@ -221,4 +234,101 @@ test('Maras Stand-Auftrag kommt erst, wenn ihr Stand offen ist', () => {
   } finally {
     delete globalThis.window.LootSystem;
   }
+});
+
+// --- Sperren der neuen Einfuehrungen ---------------------------------------
+
+test('"Deine Akte" kommt erst nach dem ersten Stufenaufstieg', () => {
+  const qs = frisch();
+  durchwinken(qs, 'aldric_cleanup');
+  const angeboten = () => qs.getAvailableQuests('aldric').some((q) => q.id === 'einfuehrung_akte');
+  globalThis.window.playerLevel = 1;
+  assert.strictEqual(angeboten(), false, 'auf Stufe 1 angeboten — im Bogen hat sich noch nichts bewegt');
+  globalThis.window.playerLevel = 2;
+  assert.strictEqual(angeboten(), true, 'auf Stufe 2 nicht angeboten');
+});
+
+test('"Deine Akte" kommt nicht vor Aldrics erstem Auftrag', () => {
+  const qs = frisch();
+  globalThis.window.playerLevel = 9;
+  assert.strictEqual(qs.getAvailableQuests('aldric').some((q) => q.id === 'einfuehrung_akte'), false);
+});
+
+test('Brankas Truhen-Auftrag kommt erst nach dem ersten ganz durchgespielten Lauf', () => {
+  const qs = frisch();
+  let tiefe = 1;
+  globalThis.window.Persistence = { getMaxDepth: () => tiefe, hasSave: () => false };
+  durchwinken(qs, 'aldric_cleanup');
+  durchwinken(qs, 'einfuehrung_schmiede');
+  const angeboten = () => qs.getAvailableQuests('branka').some((q) => q.id === 'einfuehrung_truhe');
+  assert.strictEqual(angeboten(), false, 'vor dem ersten abgeschlossenen Lauf angeboten');
+  tiefe = 2;   // RunDepth.tryCompleteRun hebt die Grenze beim ersten Abschluss
+  assert.strictEqual(angeboten(), true, 'nach dem ersten Lauf nicht angeboten');
+});
+
+test('Brankas Truhen-Auftrag haengt an ihrer Schmiede-Einfuehrung', () => {
+  const qs = frisch();
+  durchwinken(qs, 'aldric_cleanup');
+  assert.strictEqual(qs.getAvailableQuests('branka').some((q) => q.id === 'einfuehrung_truhe'), false);
+});
+
+test('"Wofuer du taugst": erst der Talentpunkt, dann die Taste', () => {
+  const qs = frisch();
+  const ziele = qs.QUEST_DEFINITIONS.einfuehrung_talente.objectives.map((o) => o.target);
+  assert.deepStrictEqual(Array.from(ziele), ['talent', 'loadout']);
+  assert.match(qs.QUEST_DEFINITIONS.einfuehrung_talente.dialogueProgressNext,
+    /Ein Werkzeug, das Du nicht griffbereit hast, ist kein Werkzeug\. Leg es auf eine Taste/i);
+});
+
+// --- Alte Spielstaende -------------------------------------------------------
+
+function standMit(qs, eintraege) {
+  const st = qs.getQuestSaveData();
+  Object.keys(eintraege).forEach((id) => { st.quests[id] = eintraege[id]; });
+  qs.loadQuestSaveData(JSON.parse(JSON.stringify(st)));
+}
+
+test('Alter Stand: laufender Talent-Auftrag mit nur einem Ziel bekommt das Loadout-Ziel', () => {
+  const qs = frisch();
+  standMit(qs, {
+    aldric_cleanup: { status: 'completed', objectives: [] },
+    einfuehrung_talente: { status: 'active',
+      objectives: [{ type: 'system', target: 'talent', current: 1, required: 1 }] }
+  });
+  const q = qs.getActiveQuests().find((x) => x.id === 'einfuehrung_talente');
+  assert.strictEqual(q.objectives.length, 2);
+  assert.strictEqual(q.objectives[0].current, 1, 'der schon gesetzte Punkt ging verloren');
+  assert.strictEqual(q.objectives[1].target, 'loadout');
+  assert.strictEqual(qs.isQuestReadyToComplete('einfuehrung_talente'), false);
+  qs.onSystemUsed('loadout');
+  assert.strictEqual(qs.completeQuest('einfuehrung_talente'), true);
+});
+
+test('Alter Stand: abgeschlossener Talent-Auftrag bleibt abgeschlossen', () => {
+  const qs = frisch();
+  standMit(qs, { einfuehrung_talente: { status: 'completed',
+    objectives: [{ type: 'system', target: 'talent', current: 1, required: 1 }] } });
+  assert.ok(qs.getCompletedQuests().some((q) => q.id === 'einfuehrung_talente'));
+  assert.strictEqual(qs.getActiveQuests().some((q) => q.id === 'einfuehrung_talente'), false);
+});
+
+test('Alter Stand mit umbenanntem Ziel wird nicht ergaenzt', () => {
+  // Ein Ziel, das die Definition nicht mehr kennt: dann bleibt der Stand, wie
+  // er ist — ein zweites Ziel daneben machte ihn nicht besser.
+  const qs = frisch();
+  standMit(qs, { einfuehrung_amulett: { status: 'active',
+    objectives: [{ type: 'system', target: 'amulett', current: 0, required: 1 }] } });
+  const q = qs.getActiveQuests().find((x) => x.id === 'einfuehrung_amulett');
+  assert.strictEqual(q.objectives.length, 1);
+  assert.strictEqual(q.objectives[0].target, 'amulett');
+});
+
+// --- Journal-Hinweis ---------------------------------------------------------
+
+test('Aldrics erste Abgabe verweist aufs Journal (J und Symbol)', () => {
+  const qs = frisch();
+  const de = qs.QUEST_DEFINITIONS.aldric_cleanup.dialogueComplete;
+  assert.match(de, /Journal/);
+  assert.match(de, /J\b/);
+  assert.match(de, /Journal-Symbol/);
 });

@@ -227,8 +227,12 @@ test('step 11 auto-dismisses after 5000 ms via the injected scheduler', () => {
   // Auto-dismiss must NOT have fired yet.
   p.advanceClock(4999);
   assert.strictEqual(TS.getCurrentStep().id, 'save.notice');
-  // After the configured 5000 ms total the system advances past the
-  // last step and the tutorial completes.
+  // After the configured 5000 ms total the system advances to the
+  // settings hint, which dismisses itself after another 6000 ms.
+  p.advanceClock(1);
+  assert.strictEqual(TS.getCurrentStep().id, 'settings.hint');
+  p.advanceClock(5999);
+  assert.strictEqual(TS.getCurrentStep().id, 'settings.hint');
   p.advanceClock(1);
   assert.strictEqual(TS.isActive(), false);
   assert.strictEqual(TS.getCurrentStep(), null);
@@ -373,10 +377,12 @@ test('final advance past last step sets active:false, currentStepId:null and fir
   TS.report('journal.opened', {});                                               // -> skill.wait
   TS.report('hub.returned', {});                                                 // -> save.notice
   assert.strictEqual(TS.getCurrentStep().id, 'save.notice');
-  // Final tick — save.notice auto-dismisses, completing the tutorial.
+  p.advanceClock(5000);
+  assert.strictEqual(TS.getCurrentStep().id, 'settings.hint');
+  // Final tick — the settings hint auto-dismisses, completing the tutorial.
   let lastEvent = 'sentinel';
   TS.onChange((step) => { lastEvent = step; });
-  p.advanceClock(5000);
+  p.advanceClock(6000);
   assert.strictEqual(TS.isActive(), false);
   assert.strictEqual(TS.getCurrentStep(), null);
   assert.strictEqual(lastEvent, null, 'onChange fired with null on completion');
@@ -400,21 +406,99 @@ function bisKampf(TS) {
   assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
 }
 
-test('Fund VOR dem ersten Treffer: nach dem Treffer gleich "aufheben", nicht warten', () => {
+// Seit b440 wartet der Hinweis nicht mehr auf den ersten Treffer: faellt
+// etwas, solange combat.basics laeuft, kommt "lauf darueber" SOFORT (die
+// Beute-Kette wird vorgezogen), danach geht es zurueck zu combat.basics, und
+// beim Weitergehen werden die erledigten Beute-Schritte uebersprungen.
+
+/** Folge der gezeigten Schritte mitschreiben (onChange). */
+function mitschreiben(TS) {
+  const folge = [];
+  TS.onChange((s) => folge.push(s ? s.id : null));
+  return folge;
+}
+
+test('Fund VOR dem ersten Treffer: "aufheben" kommt sofort, nicht erst nach dem Treffer', () => {
   const { TS } = fresh();
   bisKampf(TS);
+  const folge = mitschreiben(TS);
   TS.report('loot.dropped', { itemId: 'truhe' });   // Truhe vor dem ersten Gegner
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.pickup', 'der Hinweis wartet auf den Treffer');
+  TS.report('loot.picked', { itemId: 'truhe' });
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.equip');
+  TS.report('inventory.equipped', { slot: 'weapon' });
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics', 'nicht zum uebersprungenen Schritt zurueck');
   TS.report('combat.hit', { byPlayer: true });
-  assert.strictEqual(TS.getCurrentStep().id, 'loot.pickup', 'wartet auf einen zweiten Fund');
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.potion',
+    'die erledigten Beute-Schritte wurden nicht uebersprungen');
+  // Jeder Hinweis genau einmal — kein zweites "lauf darueber"/"leg es an".
+  assert.deepStrictEqual(folge, ['loot.pickup', 'loot.equip', 'combat.basics', 'combat.potion']);
 });
 
-test('Schon aufgehoben, bevor der Hinweis kam: weiter zu "anlegen"', () => {
+test('Gegenstand schon aufgehoben, als der Hinweis kaeme: gleich "anlegen" (Vormerken bleibt)', () => {
   const { TS } = fresh();
   bisKampf(TS);
-  TS.report('loot.dropped', { itemId: 'fass' });
-  TS.report('loot.picked', { itemId: 'fass' });
+  TS.report('loot.picked', { itemId: 'fass' });     // vorgemerkt
+  TS.report('loot.dropped', { itemId: 'fass' });    // zieht die Kette vor
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.equip',
+    'zeigt "lauf darueber", obwohl das Stueck schon im Inventar ist');
+  TS.report('inventory.equipped', { slot: 'weapon' });
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
+});
+
+test('Schon angelegt, waehrend "aufheben" stand: nach dem Aufheben direkt zurueck zum Kampf', () => {
+  const { TS } = fresh();
+  bisKampf(TS);
+  TS.report('loot.dropped', {});
+  TS.report('inventory.equipped', { slot: 'weapon' }); // vorgemerkt fuer loot.equip
+  TS.report('loot.picked', {});
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
+});
+
+test('Der Rueckkehrpunkt ueberlebt das Neuladen', () => {
+  const { TS, p } = fresh();
+  bisKampf(TS);
+  TS.report('loot.dropped', {});
+  TS.report('loot.picked', {});
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.equip');
+  const blob = JSON.parse(p.storage.getItem(STORAGE_KEY));
+  assert.strictEqual(blob.rueckkehr, 'combat.basics');
+
+  // Neuer Start mit demselben Speicher.
+  const p2 = makePrimitives();
+  p2.storage.setItem(STORAGE_KEY, p.storage.getItem(STORAGE_KEY));
+  TS._configureForTest(p2);
+  TS.init();
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.equip');
+  TS.report('inventory.equipped', {});
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
   TS.report('combat.hit', { byPlayer: true });
-  assert.strictEqual(TS.getCurrentStep().id, 'loot.equip', 'zeigt "lauf darueber", obwohl das Stueck schon im Inventar ist');
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.potion');
+});
+
+test('Ein zweiter Fund nach der Rueckkehr zieht nichts mehr vor', () => {
+  const { TS } = fresh();
+  bisKampf(TS);
+  TS.report('loot.dropped', {});
+  TS.report('loot.picked', {});
+  TS.report('inventory.equipped', {});
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
+  const folge = mitschreiben(TS);
+  TS.report('loot.dropped', {});
+  TS.report('loot.picked', {});
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
+  assert.deepStrictEqual(folge, [], 'ein Beute-Hinweis kam doppelt');
+});
+
+test('Im Hub zieht ein Fund nichts vor (nur Schritte im Dungeon)', () => {
+  const { TS } = fresh();
+  TS.init();
+  TS.maybeAutoSkip();
+  TS.report('player.moved', {});
+  TS.report('dialog.opened', { npc: 'aldric' });
+  assert.strictEqual(TS.getCurrentStep().id, 'dungeon.enter');
+  TS.report('loot.dropped', {});
+  assert.strictEqual(TS.getCurrentStep().id, 'dungeon.enter');
 });
 
 test('Ohne Fund vorher bleibt alles wie bisher: nach dem Treffer wird auf den ersten Fund gewartet', () => {
@@ -455,4 +539,35 @@ test('Spielstand ohne jeden Tutorial-Fortschritt (aelter als das Tutorial): weit
   TS.init();
   assert.strictEqual(TS.maybeAutoSkip(), true);
   assert.strictEqual(TS.getCurrentStep(), null);
+});
+
+// --- Einstellungs-Hinweis -------------------------------------------------
+
+test('Letzter Schritt: Hinweis auf die Einstellungen, im Hub, blendet von selbst aus', () => {
+  const dicts = { de: {}, en: {} };
+  const { TS } = fresh({
+    i18n: { register: (l, d) => Object.assign(dicts[l], d), t: (k) => k, onChange: () => () => {} }
+  });
+  TS.init();
+  const steps = TS._STEPS;
+  const letzter = steps[steps.length - 1];
+  assert.strictEqual(letzter.id, 'settings.hint');
+  assert.strictEqual(steps[steps.length - 2].id, 'save.notice', 'nicht direkt nach save.notice');
+  assert.strictEqual(letzter.scene, 'HubSceneV2');
+  assert.ok(letzter.completion.auto, 'braucht kein Ziel');
+  assert.ok(letzter.autoDismissMs >= 5000 && letzter.autoDismissMs <= 8000, 'blendet nicht nach ~6 s aus');
+  assert.match(dicts.de['tutorial.step.settings_hint'], /Zahnrad oben rechts \(O\)/);
+  assert.match(dicts.de['tutorial.step.settings_hint.mobile'], /Zahnrad oben rechts$/);
+  assert.match(dicts.en['tutorial.step.settings_hint'], /gear .*\(O\)/);
+  assert.ok(dicts.en['tutorial.step.settings_hint.mobile']);
+});
+
+test('Ein Trank zieht die Beute-Kette nicht vor (er laesst sich nicht anlegen)', () => {
+  const { TS } = fresh();
+  bisKampf(TS);
+  TS.report('loot.dropped', { type: 'potion' });
+  assert.strictEqual(TS.getCurrentStep().id, 'combat.basics');
+  TS.report('loot.picked', { type: 'potion' });
+  TS.report('combat.hit', { byPlayer: true });
+  assert.strictEqual(TS.getCurrentStep().id, 'loot.wait', 'der Trank wurde vorgemerkt — danach staende "anlegen" ohne Anlegbares da');
 });

@@ -590,7 +590,13 @@
         return { title: qTitle, description: qDesc, rewards: rewardStr, npcId: q.npcId };
       });
       activeQuests = window.questSystem.getActiveQuests().map(function (q) {
-        var obj = q.objectives[0];
+        // Bei mehreren Zielen das erste offene (sonst stuende 1/1 da, obwohl
+        // der zweite Schritt noch fehlt).
+        var obj = null;
+        for (var oi = 0; oi < q.objectives.length && !obj; oi++) {
+          if (q.objectives[oi] && q.objectives[oi].current < q.objectives[oi].required) obj = q.objectives[oi];
+        }
+        if (!obj) obj = q.objectives[0];
         var progress = obj ? (obj.current + '/' + obj.required) : '';
         var progressPct = obj ? Math.floor((obj.current / obj.required) * 100) : 0;
         var qTitle = window.questSystem && window.questSystem.getQuestTitle

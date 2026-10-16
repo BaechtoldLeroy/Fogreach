@@ -1,6 +1,6 @@
 # Quest-Übersicht — Fogreach
 
-_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 49 Quests._  
+_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 51 Quests._  
 _Neu erzeugen:_ `node tools/genQuestDoc.js`
 
 ---
@@ -169,6 +169,8 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 **Abschluss**
 
 > Gut. Die Keller sind gesäubert. Hier ist dein Lohn.
+> 
+> (Was offen ist, steht in Deinem Journal — Taste J oder das Journal-Symbol oben rechts.)
 
 
 ## Der erste Schliff
@@ -256,9 +258,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `einfuehrung_talente` · **NPC:** Ratsherr Aldric · **Kette:** 1
 
-> Setz einen Punkt im Talentbaum.
+> Setz einen Punkt im Talentbaum (T) und leg die neue Fähigkeit im Loadout (K) auf eine Taste.
 
-- **Ziel:** `system` → `talent` ×1
+- **Ziel:** `system` → `talent` ×1; `system` → `loadout` ×1
 - **Vorbedingung:** Säuberung der Keller
 - **Belohnung:** 40 XP
 
@@ -267,6 +269,8 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Der Rat führt über jeden Bürger eine Akte, und in Deiner steht ein Wort, das mich stört: unbestimmt.
 > 
 > Das lässt sich ändern. Du sammelst unten Erfahrung, und Erfahrung wird zu Punkten. Setz einen. Wut, Ketten oder Schatten — such es Dir aus. Der Rat schätzt Leute, die sich festlegen.
+> 
+> Und dann: Ein Werkzeug, das Du nicht griffbereit hast, ist kein Werkzeug. Leg es auf eine Taste.
 
 **Unterwegs**
 
@@ -277,6 +281,33 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > (Er notiert etwas, ohne aufzusehen.) Festgelegt. Gut.
 > 
 > Die Akte wird Dich überleben, Archivschmied. Das ist keine Drohung, das ist Verwaltung.
+
+
+## Deine Akte
+
+`einfuehrung_akte` · **NPC:** Ratsherr Aldric · **Kette:** 1
+
+> Sieh Dir Deine Charakterwerte an (C oder Dein Porträt oben links).
+
+- **Ziel:** `system` → `charakterwerte` ×1
+- **Vorbedingung:** Säuberung der Keller
+- **Belohnung:** 40 XP
+
+**Angebot**
+
+> Der Rat führt eine Akte über Dich. Sieh nach, was darin steht.
+> 
+> Stärke, Geschick, Vitalität — das ist jetzt aktenkundig. Wer weiss, was über ihn geschrieben steht, kann sich danach richten. Die anderen werden danach gerichtet.
+
+**Unterwegs**
+
+> Du hast noch nicht hineingesehen. Die Akte liegt offen — C, oder Dein Porträt oben links.
+
+**Abschluss**
+
+> (Er schlägt die Akte zu.) Jetzt weisst Du, was der Rat weiss. Nicht mehr.
+> 
+> Sieh wieder hinein, wenn Du etwas Neues trägst. Die Akte lügt nicht — das überlässt sie anderen.
 
 
 ## Die verschwundene Tochter
@@ -381,6 +412,33 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 **Abschluss**
 
 > Alle Gänge sind sicher. Gute Arbeit, Archivschmied.
+
+
+## Was sich lohnt aufzuheben
+
+`einfuehrung_truhe` · **NPC:** Schmiedemeisterin Branka · **Kette:** 2
+
+> Leg in der Truhe unter der Schmiede einen Gegenstand ab.
+
+- **Ziel:** `system` → `truhe` ×1
+- **Vorbedingung:** Der erste Schliff
+- **Belohnung:** 40 XP
+
+**Angebot**
+
+> Du kommst mit vollen Taschen hoch und wirfst unten die Hälfte weg, weil kein Platz mehr ist. Das ist kein Abwägen, das ist Verschwendung.
+> 
+> Die Truhe unter der Schmiede gehört Dir. Was Du erst in drei Läufen brauchst, gehört hinein — sie bleibt, auch wenn Du unten liegen bleibst. Leg ein Stück hinein, dann weisst Du, wie es geht.
+
+**Unterwegs**
+
+> Die Truhe ist noch leer. Geh zu ihr, unter der Schmiede, mach sie auf und zieh ein Stück hinüber.
+
+**Abschluss**
+
+> (Sie nickt zur Truhe hin.) So. Jetzt hast Du einen Ort, an dem nichts verloren geht.
+> 
+> Aber pass auf: Eine Truhe voller Zeug, das Du nie wieder anfasst, ist auch nur ein Haufen. Leg hinein, was Du brauchen wirst — nicht, was Du nicht wegwerfen magst.
 
 
 ## Was die Mauern wissen

@@ -10,6 +10,23 @@
   // nicht kompatibel -> sauberer Reset statt fragiler Teilmigration.
   const STORY_VERSION = 4;
 
+  // Spielerstufe fuer Angebots-Sperren. playerLevel ist ein script-scoped
+  // `let` in main.js; der Spiegel auf window wird nur bei Erfahrungsgewinn
+  // nachgezogen (addXP) und kann nach dem Laden fehlen. Darum zuerst der echte.
+  function _spielerStufe() {
+    try { if (typeof playerLevel === 'number') return playerLevel; } catch (e) { /* nicht geladen */ }
+    if (typeof window !== 'undefined' && typeof window.playerLevel === 'number') return window.playerLevel;
+    return 1;
+  }
+
+  // Mindestens ein Lauf ganz durchgespielt? Jeder abgeschlossene Lauf an der
+  // Tiefengrenze hebt sie um eins (RunDepth.tryCompleteRun), der erste also
+  // von 1 auf 2. Gilt damit auch fuer Altstaende ohne eigenen Zaehler.
+  function _laeufeAbgeschlossen() {
+    var P = (typeof window !== 'undefined') ? window.Persistence : null;
+    return !!(P && typeof P.getMaxDepth === 'function' && P.getMaxDepth() >= 2);
+  }
+
   // ---- Quest Definitions ----
   const QUEST_DEFINITIONS = {
     // =======================================================
@@ -38,7 +55,9 @@
       ],
       dialogueOffer: 'Unten in den Kellern hat sich Ungeziefer eingenistet. Wilde Tiere, sagen die Wachen. Räum sie aus — zehn Stück, dann reden wir weiter.\n\nWillst du diese Aufgabe übernehmen?',
       dialogueProgress: 'Die Keller sind noch nicht sicher. Kämpfe weiter.',
-      dialogueComplete: 'Gut. Die Keller sind gesäubert. Hier ist dein Lohn.'
+      // Der Hinweis aufs Journal steht hier, weil ab jetzt mehrere Auftraege
+      // gleichzeitig offen sind (die Einfuehrungen haengen alle an diesem).
+      dialogueComplete: 'Gut. Die Keller sind gesäubert. Hier ist dein Lohn.\n\n(Was offen ist, steht in Deinem Journal — Taste J oder das Journal-Symbol oben rechts.)'
     },
     aldric_patrol: {
       id: 'aldric_patrol',
@@ -142,19 +161,67 @@
     einfuehrung_talente: {
       id: 'einfuehrung_talente',
       title: 'Wofür du taugst',
-      description: 'Setz einen Punkt im Talentbaum.',
+      description: 'Setz einen Punkt im Talentbaum (T) und leg die neue Fähigkeit im Loadout (K) auf eine Taste.',
       npcId: 'aldric',
       type: 'system',
       chain: 1,
+      // Zwei Schritte in dieser Reihenfolge: erst der Punkt (er lehrt die
+      // Faehigkeit), dann der Platz auf der Leiste. Ohne den zweiten liegt die
+      // gelernte Faehigkeit ungenutzt im Loadout — gelernt, aber nie benutzt.
       objectives: [
-        { type: 'system', target: 'talent', current: 0, required: 1 }
+        { type: 'system', target: 'talent', current: 0, required: 1 },
+        { type: 'system', target: 'loadout', current: 0, required: 1 }
       ],
       rewards: { xp: 40, gold: 30 },
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
-      dialogueOffer: 'Der Rat führt über jeden Bürger eine Akte, und in Deiner steht ein Wort, das mich stört: unbestimmt.\n\nDas lässt sich ändern. Du sammelst unten Erfahrung, und Erfahrung wird zu Punkten. Setz einen. Wut, Ketten oder Schatten — such es Dir aus. Der Rat schätzt Leute, die sich festlegen.',
+      dialogueOffer: 'Der Rat führt über jeden Bürger eine Akte, und in Deiner steht ein Wort, das mich stört: unbestimmt.\n\nDas lässt sich ändern. Du sammelst unten Erfahrung, und Erfahrung wird zu Punkten. Setz einen. Wut, Ketten oder Schatten — such es Dir aus. Der Rat schätzt Leute, die sich festlegen.\n\nUnd dann: Ein Werkzeug, das Du nicht griffbereit hast, ist kein Werkzeug. Leg es auf eine Taste.',
       dialogueProgress: 'Noch immer unbestimmt. Öffne den Baum und setz einen Punkt. Welchen, ist Deine Sache.',
+      // Wenn der Punkt gesetzt ist, die Faehigkeit aber noch auf keiner Taste liegt.
+      dialogueProgressNext: 'Festgelegt, gut. Aber ein Werkzeug, das Du nicht griffbereit hast, ist kein Werkzeug. Leg es auf eine Taste — im Loadout, K oder über das Menü.',
       dialogueComplete: '(Er notiert etwas, ohne aufzusehen.) Festgelegt. Gut.\n\nDie Akte wird Dich überleben, Archivschmied. Das ist keine Drohung, das ist Verwaltung.'
+    },
+    // Die Charakterwerte: vorher nur hinter dem Portraet und im Menue. Erst
+    // nach dem ersten Stufenaufstieg — vorher steht im Bogen nichts, was sich
+    // je veraendert haette.
+    einfuehrung_akte: {
+      id: 'einfuehrung_akte',
+      title: 'Deine Akte',
+      description: 'Sieh Dir Deine Charakterwerte an (C oder Dein Porträt oben links).',
+      npcId: 'aldric',
+      type: 'system',
+      chain: 1,
+      objectives: [
+        { type: 'system', target: 'charakterwerte', current: 0, required: 1 }
+      ],
+      rewards: { xp: 40, gold: 30 },
+      prerequisites: ['aldric_cleanup'],
+      requiredAct: 0,
+      gate: function () { return _spielerStufe() >= 2; },
+      dialogueOffer: 'Der Rat führt eine Akte über Dich. Sieh nach, was darin steht.\n\nStärke, Geschick, Vitalität — das ist jetzt aktenkundig. Wer weiss, was über ihn geschrieben steht, kann sich danach richten. Die anderen werden danach gerichtet.',
+      dialogueProgress: 'Du hast noch nicht hineingesehen. Die Akte liegt offen — C, oder Dein Porträt oben links.',
+      dialogueComplete: '(Er schlägt die Akte zu.) Jetzt weisst Du, was der Rat weiss. Nicht mehr.\n\nSieh wieder hinein, wenn Du etwas Neues trägst. Die Akte lügt nicht — das überlässt sie anderen.'
+    },
+    // Die Truhe im Hub (#127). Erst nach dem ersten abgeschlossenen Lauf: erst
+    // dann hat man mehr gefunden, als ins Laufinventar passt, und die Frage
+    // "was hebe ich auf" ist eine echte.
+    einfuehrung_truhe: {
+      id: 'einfuehrung_truhe',
+      title: 'Was sich lohnt aufzuheben',
+      description: 'Leg in der Truhe unter der Schmiede einen Gegenstand ab.',
+      npcId: 'branka',
+      type: 'system',
+      chain: 2,
+      objectives: [
+        { type: 'system', target: 'truhe', current: 0, required: 1 }
+      ],
+      rewards: { xp: 40, gold: 30 },
+      prerequisites: ['einfuehrung_schmiede'],
+      requiredAct: 0,
+      gate: function () { return _laeufeAbgeschlossen(); },
+      dialogueOffer: 'Du kommst mit vollen Taschen hoch und wirfst unten die Hälfte weg, weil kein Platz mehr ist. Das ist kein Abwägen, das ist Verschwendung.\n\nDie Truhe unter der Schmiede gehört Dir. Was Du erst in drei Läufen brauchst, gehört hinein — sie bleibt, auch wenn Du unten liegen bleibst. Leg ein Stück hinein, dann weisst Du, wie es geht.',
+      dialogueProgress: 'Die Truhe ist noch leer. Geh zu ihr, unter der Schmiede, mach sie auf und zieh ein Stück hinüber.',
+      dialogueComplete: '(Sie nickt zur Truhe hin.) So. Jetzt hast Du einen Ort, an dem nichts verloren geht.\n\nAber pass auf: Eine Truhe voller Zeug, das Du nie wieder anfasst, ist auch nur ein Haufen. Leg hinein, was Du brauchen wirst — nicht, was Du nicht wegwerfen magst.'
     },
     // Der Wissensbaum bei Branka: ihre erste Zeile im Hub macht die Begruendung
     // schon selbst — "Erst wenn jede Klinge Wissen traegt, faellt ihre Maske".
@@ -1097,7 +1164,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   // EN translation that is missing returns the German value via the i18n
   // lookup cascade (active → de → [MISSING:key]).
   if (window.i18n) {
-    var QUEST_FIELDS = ['title', 'description', 'dialogueOffer', 'dialogueProgress', 'dialogueComplete'];
+    var QUEST_FIELDS = ['title', 'description', 'dialogueOffer', 'dialogueProgress', 'dialogueProgressNext', 'dialogueComplete'];
     var _autoDe = {};
     Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
       var q = QUEST_DEFINITIONS[id];
@@ -1176,10 +1243,23 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.einfuehrung_markt.dialogueComplete': "(She does not count the gold.) Good. And now forget that I showed you.\n\nWhat I do not have, the old man with the cart down there might. Anyone who comes back up with full pockets and takes them down again has missed something.",
 
       'quest.einfuehrung_talente.title': 'What You Are Good For',
-      'quest.einfuehrung_talente.description': 'Spend a point in the talent tree.',
-      'quest.einfuehrung_talente.dialogueOffer': "The council keeps a file on every citizen, and in yours there is a word that bothers me: undetermined.\n\nThat can be changed. You gather experience down there, and experience becomes points. Spend one. Fury, Chains or Shadow - take your pick. The council values people who commit.",
+      'quest.einfuehrung_talente.description': 'Spend a point in the talent tree (T) and put the new ability on a key in the loadout (K).',
+      'quest.einfuehrung_talente.dialogueOffer': "The council keeps a file on every citizen, and in yours there is a word that bothers me: undetermined.\n\nThat can be changed. You gather experience down there, and experience becomes points. Spend one. Fury, Chains or Shadow - take your pick. The council values people who commit.\n\nAnd then: a tool you do not keep at hand is no tool. Put it on a key.",
       'quest.einfuehrung_talente.dialogueProgress': 'Still undetermined. Open the tree and spend a point. Which one is your business.',
+      'quest.einfuehrung_talente.dialogueProgressNext': 'Committed, good. But a tool you do not keep at hand is no tool. Put it on a key - in the loadout, K or through the menu.',
       'quest.einfuehrung_talente.dialogueComplete': "(He notes something without looking up.) Committed. Good.\n\nThe file will outlive you, archive-smith. That is not a threat, that is administration.",
+
+      'quest.einfuehrung_akte.title': 'Your File',
+      'quest.einfuehrung_akte.description': 'Look at your character stats (C or your portrait at the top left).',
+      'quest.einfuehrung_akte.dialogueOffer': "The council keeps a file on you. Go and see what it says.\n\nStrength, dexterity, vitality - that is on record now. Whoever knows what is written about him can act on it. The others are acted upon.",
+      'quest.einfuehrung_akte.dialogueProgress': 'You have not looked yet. The file is open - C, or your portrait at the top left.',
+      'quest.einfuehrung_akte.dialogueComplete': "(He closes the file.) Now you know what the council knows. No more.\n\nLook again whenever you wear something new. The file does not lie - it leaves that to others.",
+
+      'quest.einfuehrung_truhe.title': 'What Is Worth Keeping',
+      'quest.einfuehrung_truhe.description': 'Put an item into the stash below the Forge.',
+      'quest.einfuehrung_truhe.dialogueOffer': "You come up with full pockets and throw half of it away down there because there is no room left. That is not weighing things up, that is waste.\n\nThe stash below the Forge is yours. Whatever you will only need three runs from now belongs in it - it stays, even if you stay down there. Put one piece in, then you know how it works.",
+      'quest.einfuehrung_truhe.dialogueProgress': 'The stash is still empty. Go to it, below the Forge, open it and drag a piece across.',
+      'quest.einfuehrung_truhe.dialogueComplete': "(She nods towards the stash.) There. Now you have a place where nothing gets lost.\n\nBut mind this: a stash full of things you never touch again is just a heap. Put in what you will need - not what you cannot bring yourself to throw away.",
 
       'quest.tracker.short_suffix': '..',
       'quest.toast.completed': 'Objective complete: {title}',
@@ -1230,7 +1310,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // === Quest dialogues — English ===
       'quest.aldric_cleanup.dialogueOffer': "Vermin has settled in the cellars down below. Wild beasts, the guards say. Clear them out — ten of them, then we talk again.\n\nWill you take this task?",
       'quest.aldric_cleanup.dialogueProgress': 'The cellars are not safe yet. Keep fighting.',
-      'quest.aldric_cleanup.dialogueComplete': 'Good. The cellars are cleared. Here is your reward.',
+      'quest.aldric_cleanup.dialogueComplete': 'Good. The cellars are cleared. Here is your reward.\n\n(Whatever is still open is in your journal - key J or the journal icon at the top right.)',
 
       'quest.aldric_patrol.dialogueOffer': 'Make sure all corridors are secure. Patrol three rooms.\n\nReady?',
       'quest.aldric_patrol.dialogueProgress': 'Not all corridors are secure yet. Keep patrolling.',
@@ -1459,6 +1539,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
       var q = QUEST_DEFINITIONS[id];
       QUEST_FIELDS.forEach(function (field) {
+        // Optionales Feld: ohne Text kein Getter, sonst warnte jeder Lesezugriff
+        // (getActiveQuests kopiert alle Felder) ueber einen fehlenden Key.
+        if (field === 'dialogueProgressNext' && typeof q[field] !== 'string') return;
         var key = 'quest.' + id + '.' + field;
         var fallback = q[field];
         try {
@@ -1891,8 +1974,13 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
    *   'talent'   einen Talentpunkt gesetzt (skillTree.investPoint)
    *   'wissen'   ein Fragment im Wissensbaum verbaut (knowledgeTree.invest)
    *   'haendler' beim wandernden Haendler gekauft — irgendetwas (ShopScene)
+   *   'charakterwerte' die Charakterwerte geoeffnet, egal von wo (hudV2)
+   *   'loadout'  eine Faehigkeit vom Spieler auf eine Taste gelegt
+   *              (loadoutOverlay, mobile Slotwahl) — nicht beim Laden
+   *   'truhe'    ein Stueck in die Hub-Truhe gelegt (hubTruhe.hineinlegen)
    */
-  var SYSTEM_ZIELE = ['upgrade', 'edikt', 'markt', 'talent', 'wissen', 'haendler'];
+  var SYSTEM_ZIELE = ['upgrade', 'edikt', 'markt', 'talent', 'wissen', 'haendler',
+    'charakterwerte', 'loadout', 'truhe'];
 
   function onSystemUsed(ziel) {
     if (SYSTEM_ZIELE.indexOf(ziel) === -1) {
@@ -2180,6 +2268,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     Object.keys(srcQuests).forEach(function (id) {
       if (questState[id] && srcQuests[id] && typeof srcQuests[id] === 'object') {
         questState[id] = srcQuests[id];
+        _zieleNachziehen(id);
       }
       // Old quest IDs from previous saves are silently ignored,
       // preserving backward compatibility
@@ -2194,6 +2283,27 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // bleiben.
     _elaraSichtbarkeitNachziehen();
     _notifyUpdate();
+  }
+
+  // Ein laufender Auftrag, dessen Definition seit dem Speichern ein Ziel
+  // DAZUBEKOMMEN hat (einfuehrung_talente: Loadout), bekommt es angehaengt —
+  // sonst schloesse er mit dem alten Zielsatz ab und der neue Schritt fiele
+  // still weg. Nur bei einer reinen Erweiterung: liegt im Stand ein Ziel, das
+  // die Definition nicht mehr kennt (umbenannt), bleibt alles, wie es ist —
+  // ein angehaengtes zweites Ziel neben einem toten machte es nicht besser.
+  function _zieleNachziehen(id) {
+    var def = QUEST_DEFINITIONS[id];
+    var st = questState[id];
+    if (!def || !st || st.status !== 'active' || !Array.isArray(st.objectives)) return;
+    var gleich = function (a, b) { return a && b && a.type === b.type && a.target === b.target; };
+    var erweiterung = st.objectives.every(function (o) {
+      return def.objectives.some(function (d) { return gleich(o, d); });
+    });
+    if (!erweiterung) return;
+    def.objectives.forEach(function (d) {
+      if (st.objectives.some(function (o) { return gleich(o, d); })) return;
+      st.objectives.push({ type: d.type, target: d.target, current: 0, required: d.required });
+    });
   }
 
   // Migration: `advanceAct` feuert nur im Moment des Quest-Abschlusses. Saves,

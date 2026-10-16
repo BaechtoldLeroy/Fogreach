@@ -151,6 +151,12 @@
     item.gridX = platz.x;
     item.gridY = platz.y;
     f[frei] = item;                     // …dann hin
+    // Einfuehrung "Was sich lohnt aufzuheben" (Branka). Erst nach dem
+    // gelungenen Ablegen — eine Absage ist kein Einlagern.
+    if (typeof window !== 'undefined' && window.questSystem
+        && typeof window.questSystem.onSystemUsed === 'function') {
+      try { window.questSystem.onSystemUsed('truhe'); } catch (e) { /* swallow */ }
+    }
     return true;
   }
 

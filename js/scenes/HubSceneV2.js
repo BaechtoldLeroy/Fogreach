@@ -548,6 +548,9 @@ class HubSceneV2 extends Phaser.Scene {
     this.input.keyboard.on('keydown-O', () => {
       if (typeof window.openSettingsScene === 'function') window.openSettingsScene(this);
     });
+    // Charakterwerte (C), wie im Dungeon. Nicht ueber ein offenes Gespraech
+    // und nicht im Trailer-Modus.
+    this.input.keyboard.on('keydown-C', this._handleStats, this);
     // Inventory in Hub — only works if invUI was initialized (GameScene)
     this.input.keyboard.on('keydown-I', () => {
       if (typeof openInventory === 'function' && typeof invUI !== 'undefined' && invUI && invUI.overlay) {
@@ -675,6 +678,7 @@ class HubSceneV2 extends Phaser.Scene {
       this.input.keyboard.off('keydown-I');
       this.input.keyboard.off('keydown-J', this._handleJournal, this);
       this.input.keyboard.off('keydown-K', this._handleLoadout, this);
+      this.input.keyboard.off('keydown-C', this._handleStats, this);
       this.input.keyboard.off('keydown-T');
       this.input.keyboard.off('keydown-P');
       if (this._perfMonitor) {
@@ -1830,13 +1834,21 @@ class HubSceneV2 extends Phaser.Scene {
       });
 
     } else if (questMode === 'progress' && questData) {
-      const obj = questData.objectives[0];
+      // Bei mehreren Zielen zaehlt das erste offene. Ist das erste erledigt
+      // und hat der Auftrag eine Zeile fuer den naechsten Schritt
+      // (dialogueProgressNext), spricht die Figur von dem.
+      const obs = questData.objectives || [];
+      let offen = obs.findIndex((o) => o && o.current < o.required);
+      if (offen < 0) offen = 0;
+      const obj = obs[offen];
       const progressStr = obj ? (obj.current + '/' + obj.required) : '';
       const progressPct = obj ? Math.floor((obj.current / obj.required) * 100) : 0;
+      const dialogue = (offen > 0 && questData.dialogueProgressNext)
+        ? questData.dialogueProgressNext : questData.dialogueProgress;
       titleStr = npcData.name + ' — ' + questData.title;
       pages.push({
         text: _HUB_T('hub.dialog.npc_quest.progress_text', {
-          dialogue: questData.dialogueProgress, progress: progressStr, pct: progressPct
+          dialogue: dialogue, progress: progressStr, pct: progressPct
         }),
         choices: null
       });
@@ -2895,6 +2907,15 @@ class HubSceneV2 extends Phaser.Scene {
     } else {
       console.warn('[HubSceneV2] openLoadoutUI not loaded');
     }
+  }
+
+  _handleStats() {
+    if (window.TrailerModus && window.TrailerModus.aktiv()) return;
+    const HV = window.HUDv2;
+    if (!HV || typeof HV.toggleStats !== 'function') return;
+    // Schliessen geht immer; oeffnen nicht ueber ein Gespraech oder Panel.
+    if (this._dialogOpen && !HV._statsContainer) return;
+    HV.toggleStats(this);
   }
 
 

@@ -640,13 +640,23 @@
         if (o) { try { o.destroy(); } catch (e) {} }
       });
       scene.input.keyboard.off('keydown-ESC', close);
+      if (scene.events) scene.events.off('shutdown', close);
       HUDv2._statsContainer = null;
     };
     closeBtn.on('pointerdown', close);
     overlay.on('pointerdown', close);
     scene.input.keyboard.on('keydown-ESC', close);
+    // Mit Taste C laesst sich der Bogen auch waehrend eines Szenenwechsels
+    // offen halten; ohne das blieb _statsContainer gesetzt und er ging nie
+    // wieder auf.
+    if (scene.events) scene.events.once('shutdown', close);
 
-    HUDv2._statsContainer = { close };
+    HUDv2._statsContainer = { close, scene };
+
+    // Einfuehrungsquest "Deine Akte" — gleich, ueber welchen Weg geoeffnet.
+    if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+      try { window.questSystem.onSystemUsed('charakterwerte'); } catch (e) { /* swallow */ }
+    }
   }
 
   // ---- Menu burger overlay ----
@@ -772,6 +782,11 @@
   // Inventar, das in einer anderen Datei liegt.
   HUDv2.openStats = function (scene) {
     if (scene && scene.cameras && scene.cameras.main) _openStatsMenu(scene);
+  };
+  // Taste C (Hub und Dungeon): oeffnet die Charakterwerte bzw. schliesst sie.
+  HUDv2.toggleStats = function (scene) {
+    if (HUDv2._statsContainer) { HUDv2._statsContainer.close(); return; }
+    HUDv2.openStats(scene);
   };
   window.HUDv2 = HUDv2;
 })();

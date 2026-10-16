@@ -61,6 +61,18 @@
     return (window.AbilitySystem.SLOT_KEY_LABELS || {})[slot] || slot;
   }
 
+  /**
+   * Der Spieler hat selbst eine Faehigkeit auf eine Taste gelegt — das traegt
+   * die Einfuehrung "Wofuer du taugst". Bewusst hier und nicht in
+   * AbilitySystem.setSlot: dort landen auch Laden, Endlosmodus und Debug.
+   */
+  function loadoutGemeldet() {
+    if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
+      try { window.questSystem.onSystemUsed('loadout'); } catch (e) { /* swallow */ }
+    }
+  }
+  window.loadoutGemeldet = loadoutGemeldet;
+
   function openLoadoutUI(scene) {
     if (!scene || !window.AbilitySystem) {
       console.warn('[LoadoutOverlay] missing scene or AbilitySystem');
@@ -241,14 +253,16 @@
             tooltip.setVisible(true);
             return;
           }
+          let gelegt;
           if (!selectedSlot) {
             let target = AS.SLOT_KEYS.find((s) => !AS.getActiveLoadout()[s]);
             if (!target) target = 'slot1';
-            AS.setSlot(target, def.id);
+            gelegt = AS.setSlot(target, def.id);
           } else {
-            AS.setSlot(selectedSlot, def.id);
+            gelegt = AS.setSlot(selectedSlot, def.id);
             selectedSlot = null;
           }
+          if (gelegt) loadoutGemeldet();
           renderAll();
         });
       });

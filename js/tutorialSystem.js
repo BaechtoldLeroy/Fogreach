@@ -60,6 +60,8 @@
     'tutorial.step.loot_equip':               'Öffne das Inventar (I), klick das Item an und dann auf »Ausrüsten«',
     'tutorial.step.loot_equip.mobile':        'Öffne das Inventar, tippe das Item an und dann den passenden Ausrüstungs-Slot',
     'tutorial.step.save_notice':              'Dein Fortschritt wird automatisch gespeichert',
+    'tutorial.step.settings_hint':            'Lautstärke, Steuerung und Vollbild: Zahnrad oben rechts (O)',
+    'tutorial.step.settings_hint.mobile':     'Lautstärke, Steuerung und Vollbild: Zahnrad oben rechts',
     'tutorial.step.druckerei_visit':          'Geh zur Druckerei',
     'tutorial.druckerei.stub':                'Setzer Thom: »Die Druckerei ist noch in Arbeit. Komm bald wieder.«',
     'tutorial.skip.confirm':                  'Tutorial wirklich überspringen?',
@@ -89,6 +91,8 @@
     'tutorial.step.loot_equip':               'Open the inventory (I), click the item, then click "Equip"',
     'tutorial.step.loot_equip.mobile':        'Open the inventory, tap the item, then tap the matching equipment slot',
     'tutorial.step.save_notice':              'Your progress is saved automatically',
+    'tutorial.step.settings_hint':            'Volume, controls and fullscreen: gear icon at the top right (O)',
+    'tutorial.step.settings_hint.mobile':     'Volume, controls and fullscreen: gear icon at the top right',
     'tutorial.step.druckerei_visit':          'Go to the printing house',
     'tutorial.druckerei.stub':                "Setzer Thom: 'The printing house is still under construction. Come back soon.'",
     'tutorial.skip.confirm':                  'Really skip the tutorial?',
@@ -237,8 +241,8 @@
       completion: { event: 'hub.returned' }
     },
     {
-      // Final step — auto-dismisses 5s after appearing in the hub. Once
-      // it advances past the last index the tutorial completes for good.
+      // Auto-dismisses 5s after appearing in the hub; settings.hint follows,
+      // and once that advances past the last index the tutorial completes.
       // Druckerei was originally the narrative finale here, but it's a
       // stub (Issue #24 covers the real implementation) so it has been
       // removed from the tutorial flow until that feature ships.
@@ -248,6 +252,16 @@
       targetRef: null,
       completion: { auto: true },
       autoDismissMs: 5000
+    },
+    {
+      // Wo Lautstaerke, Steuerung und Vollbild stehen — das Zahnrad allein
+      // sagt es nicht. Letzter Schritt, blendet von selbst aus.
+      id: 'settings.hint',
+      scene: 'HubSceneV2',
+      hintKey: 'tutorial.step.settings_hint',
+      targetRef: null,
+      completion: { auto: true },
+      autoDismissMs: 6000
     }
   ];
 
@@ -270,6 +284,9 @@
       currentStepId: null,
       skipped: false,
       completedSteps: [],
+      // Schritt, zu dem das Tutorial nach einer vorgezogenen Beute-Kette
+      // zurueckkehrt (siehe _beuteVorziehen); sonst null. Persistiert.
+      rueckkehr: null,
       i18nRegistered: false,
       pendingTimerId: null,
       // Timestamp (primitives.now()) when the current step was entered.
@@ -310,7 +327,8 @@
       active: state.active,
       currentStepId: state.currentStepId,
       skipped: state.skipped,
-      completedSteps: state.completedSteps.slice()
+      completedSteps: state.completedSteps.slice(),
+      rueckkehr: state.rueckkehr || null
     });
     try {
       primitives.storage.setItem(STORAGE_KEY, blob);
@@ -379,29 +397,48 @@
   var VORMERKBAR = ['loot.dropped', 'loot.picked', 'inventory.equipped'];
   var _vorgemerkt = {};
 
+  function _erledigt(id) {
+    return state.completedSteps.indexOf(id) >= 0;
+  }
+
   function _spaeterErwartet(eventName) {
     var idx = _stepIndex(state.currentStepId);
     for (var i = idx + 1; i < STEPS.length; i++) {
+      if (_erledigt(STEPS[i].id)) continue;
       if (STEPS[i].completion && STEPS[i].completion.event === eventName) return true;
     }
     return false;
   }
 
-  function _advance() {
-    var idx = _stepIndex(state.currentStepId);
-    if (idx < 0) {
-      // Defensive: state is corrupt. Mark complete.
+  // Die Beute-Kette, die vorgezogen werden kann: faellt etwas, solange das
+  // Tutorial im Dungeon noch bei einem frueheren Schritt steht (combat.basics),
+  // kommt der Hinweis zum Aufheben SOFORT — sonst laeuft der Spieler achtlos
+  // ueber das Stueck, und der Hinweis kommt, wenn nichts mehr daliegt. Nach
+  // dem letzten Schritt der Kette geht es zurueck zum uebersprungenen Schritt
+  // (state.rueckkehr); beim Weitergehen werden die erledigten Beute-Schritte
+  // uebersprungen.
+  var BEUTE_WARTEN = 'loot.wait';
+  var BEUTE_ANFANG = 'loot.pickup';
+  var BEUTE_ENDE = 'loot.equip';
+
+  function _beuteVorziehbar(step) {
+    if (!step || step.scene !== 'GameScene' || state.rueckkehr) return false;
+    if (_erledigt(BEUTE_ANFANG)) return false;
+    return _stepIndex(step.id) < _stepIndex(BEUTE_WARTEN);
+  }
+
+  function _beuteVorziehen() {
+    state.rueckkehr = state.currentStepId;
+    if (!_erledigt(BEUTE_WARTEN)) state.completedSteps.push(BEUTE_WARTEN);
+    _betrete(_stepIndex(BEUTE_ANFANG));
+  }
+
+  /** Macht den Schritt mit diesem Index zum aktuellen (oder beendet das Tutorial). */
+  function _betrete(nextIdx) {
+    if (nextIdx < 0 || nextIdx >= STEPS.length) {
       state.active = false;
       state.currentStepId = null;
-      _persist();
-      _notify();
-      return;
-    }
-    state.completedSteps.push(state.currentStepId);
-    var nextIdx = idx + 1;
-    if (nextIdx >= STEPS.length) {
-      state.active = false;
-      state.currentStepId = null;
+      state.rueckkehr = null;
       _persist();
       _notify();
       return;
@@ -420,6 +457,31 @@
     _persist();
     _notify();
     if (next.autoDismissMs) _scheduleAutoDismiss(next);
+  }
+
+  function _advance() {
+    var idx = _stepIndex(state.currentStepId);
+    if (idx < 0) {
+      // Defensive: state is corrupt. Mark complete.
+      state.active = false;
+      state.currentStepId = null;
+      _persist();
+      _notify();
+      return;
+    }
+    if (!_erledigt(state.currentStepId)) state.completedSteps.push(state.currentStepId);
+    // Ende der vorgezogenen Beute-Kette: zurueck zum uebersprungenen Schritt.
+    if (state.rueckkehr && state.currentStepId === BEUTE_ENDE) {
+      var zurueck = _stepIndex(state.rueckkehr);
+      state.rueckkehr = null;
+      if (zurueck >= 0 && !_erledigt(STEPS[zurueck].id)) {
+        _betrete(zurueck);
+        return;
+      }
+    }
+    var nextIdx = idx + 1;
+    while (nextIdx < STEPS.length && _erledigt(STEPS[nextIdx].id)) nextIdx++;
+    _betrete(nextIdx);
   }
 
   // --- Public API ---------------------------------------------------------
@@ -446,6 +508,8 @@
       state.currentStepId = persisted.currentStepId || null;
       state.skipped = !!persisted.skipped;
       state.completedSteps = Array.isArray(persisted.completedSteps) ? persisted.completedSteps.slice() : [];
+      state.rueckkehr = (typeof persisted.rueckkehr === 'string' && _stepIndex(persisted.rueckkehr) >= 0)
+        ? persisted.rueckkehr : null;
 
       // If the persisted currentStepId is not a known step (e.g. saved under
       // an older version of this module before steps were renamed), don't
@@ -505,6 +569,7 @@
       state.active = true;
       state.currentStepId = INIT_STEP_ID;
       state.completedSteps = [];
+      state.rueckkehr = null;
       _advance();
     }
     return false;
@@ -529,8 +594,17 @@
       _debugLog(eventName, payload, 'dropped: step ' + step.id + ' is auto-dismiss only');
       return;
     }
+    // Ein Trank laesst sich nicht anlegen: zieht er die Kette vor (oder wird er
+    // vorgemerkt), stuende danach "leg es an" ohne etwas Anlegbares da. Dann
+    // lieber wie gehabt auf loot.wait warten — dort faellt sicher eine Waffe.
+    var trank = !!(payload && payload.type === 'potion');
+    if (eventName === 'loot.dropped' && step.completion.event !== eventName && !trank && _beuteVorziehbar(step)) {
+      _debugLog(eventName, payload, 'Beute-Kette vorgezogen (zurueck zu ' + step.id + ')');
+      _beuteVorziehen();
+      return;
+    }
     if (step.completion.event !== eventName) {
-      if (VORMERKBAR.indexOf(eventName) >= 0 && _spaeterErwartet(eventName)) {
+      if (VORMERKBAR.indexOf(eventName) >= 0 && !trank && _spaeterErwartet(eventName)) {
         _vorgemerkt[eventName] = true;
         _debugLog(eventName, payload, 'vorgemerkt fuer spaeter (step ' + step.id + ' expects ' + step.completion.event + ')');
         return;
@@ -628,6 +702,7 @@
     state.skipped = false;
     state.currentStepId = INIT_STEP_ID;
     state.completedSteps = [];
+    state.rueckkehr = null;
     // Advance past `init` to the first visible step, persist, notify.
     _advance();
   }

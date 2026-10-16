@@ -1108,6 +1108,12 @@ function create() {
       window.TutorialSystem.report('loadout.opened', {});
     }
   });
+  // Charakterwerte (C) — dieselbe Ansicht wie hinter dem Portraet. Im
+  // Trailer-Modus nicht: dort soll keine Tafel ins Bild springen.
+  this.input.keyboard.on('keydown-C', () => {
+    if (window.TrailerModus && window.TrailerModus.aktiv()) return;
+    if (window.HUDv2 && typeof window.HUDv2.toggleStats === 'function') window.HUDv2.toggleStats(this);
+  });
   // Skill-Baum / Talente (T key) — 060: auch im Dungeon öffnen, nicht nur im Hub.
   this.input.keyboard.on('keydown-T', () => {
     if (typeof window.openSkillTreeScene === 'function') window.openSkillTreeScene(this);
@@ -1210,6 +1216,7 @@ function create() {
     this.input.keyboard.off('keydown-J');
     this.input.keyboard.off('keydown-M');
     this.input.keyboard.off('keydown-K');
+    this.input.keyboard.off('keydown-C');
     this.input.keyboard.off('keydown-T');
     this.input.keyboard.off('keydown-O');
     this.input.keyboard.off('keydown-P');

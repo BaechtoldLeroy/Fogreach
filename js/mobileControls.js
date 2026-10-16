@@ -775,7 +775,9 @@ if (window.i18n) {
       elements.push(bg);
       elements.push(text);
       bg.on('pointerdown', function () {
-        window.AbilitySystem.setSlot(slot, id);
+        if (window.AbilitySystem.setSlot(slot, id) && typeof window.loadoutGemeldet === 'function') {
+          window.loadoutGemeldet();
+        }
         cleanup2();
         parentCleanup();
         // Refresh mobile buttons
