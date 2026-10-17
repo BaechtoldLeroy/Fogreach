@@ -1230,7 +1230,10 @@ function hasLineOfSightToEnemy(enemy) {
     scene._doorGroup.children.iterate(function (door) {
       if (blocked || !door || !door.active) return;
       if (door.getData && door.getData('walkthrough')) return; // open door
-      var r = door.getBounds();
+      // Der Koerper, nicht das Bild: die neuen Tore sind 64 px tief, der
+      // Riegel, der Sicht und Weg sperrt, bleibt 24 px.
+      var b = door.body;
+      var r = b ? new Phaser.Geom.Rectangle(b.x, b.y, b.width, b.height) : door.getBounds();
       if (Phaser.Geom.Intersects.LineToRectangle(line, r)) blocked = true;
     });
     if (blocked) return false;

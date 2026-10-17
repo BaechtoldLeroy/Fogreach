@@ -132,6 +132,142 @@
     return { closedKey: closedKey, openKey: openKey };
   }
 
+  // ─── Die neuen Tore (Vorschau ?debug=1&tueren=neu) ────────────────────────
+  //
+  // Schweres Eichentor mit Messingbaendern und Kette zwischen zwei Steinpfosten,
+  // Pixelbild aus PixelLab (tools/tuerenBauen.js). Von vorn fuer waagerechte
+  // Waende, von der Seite fuer senkrechte. Das Tor fuellt die ganze Wandtiefe
+  // (64 px); der Koerper bleibt der alte 24 px-Riegel — Kollision, Sicht und
+  // Durchgang verhalten sich genau wie bei der gezeichneten Tuer.
+  //
+  // Ein Tor ist 4-6 Kacheln lang. Gestreckt wird nichts: es wird aus Stuecken
+  // zusammengesetzt (Anfang | Fuellung* | Mitte | Fuellung* | Ende) und je
+  // Laenge und Richtung EINMAL als Textur mit vier Bildern abgelegt —
+  // Bild 0 zu, 1-2 halb, 3 offen (Fluegel an die Pfosten geklappt, dazwischen
+  // ist der Boden zu sehen).
+  //
+  // Fehlen die Bilder, gibt es KEINEN Rueckgriff auf die alte Zeichnung: das
+  // Tor zeigt dann Phasers Fehlbild, damit es auffaellt.
+
+  var TOR_ORDNER = 'assets/sprites/tueren/';
+  var TOR_TIEFE = 64;                        // Wandtiefe: 2 Kacheln
+  var TOR_BILDER = 4;
+  var TOR_OEFFNUNG = [1, 0.62, 0.32, 0.14];  // sichtbarer Anteil der Fluegel je Bild
+  var TOR_ART = {
+    // Stuecke in Reihenfolge: Anfang, Mitte, Ende, Fuellung vorn, Fuellung hinten.
+    // pfosten: wie weit Anfang/Ende in die Laenge reichen, ohne zu klappen.
+    horizontal: { name: 'waag', teile: ['links', 'mitte', 'rechts', 'fuell_l', 'fuell_r'], pfosten: [20, 20] },
+    vertical: { name: 'senk', teile: ['oben', 'mitte', 'unten', 'fuell_o', 'fuell_u'], pfosten: [20, 20] }
+  };
+
+  function neueTore() {
+    return !!(window.DebugGate && typeof window.DebugGate.flagge === 'function'
+      && window.DebugGate.flagge('tueren') === 'neu');
+  }
+
+  function torTeilKey(art, teil) { return 'tor_' + art.name + '_' + teil; }
+
+  /** Laedt die Torstuecke in preload der Kellerszene (nur mit Vorschau-Flagge). */
+  function bilderVorladen(scene) {
+    if (!neueTore() || !scene || !scene.load || !scene.textures) return;
+    Object.keys(TOR_ART).forEach(function (o) {
+      var art = TOR_ART[o];
+      art.teile.forEach(function (t) {
+        var k = torTeilKey(art, t);
+        if (!scene.textures.exists(k)) scene.load.image(k, TOR_ORDNER + k + '.png');
+      });
+    });
+  }
+
+  /**
+   * Setzt das Tor fuer eine Laenge zusammen und legt es als Textur mit vier
+   * Bildern ab (Bild i liegt quer zur Laenge versetzt bei i*64).
+   * @returns {string|null} Texturschluessel, null wenn Stuecke fehlen
+   */
+  function torTextur(scene, orientation, laenge) {
+    var art = TOR_ART[orientation === 'horizontal' ? 'horizontal' : 'vertical'];
+    var waag = art.name === 'waag';
+    var key = 'tor_neu_' + art.name + '_' + laenge;
+    if (scene.textures.exists(key)) return key;
+
+    var bilder = [];
+    for (var i = 0; i < art.teile.length; i++) {
+      var tk = torTeilKey(art, art.teile[i]);
+      if (!scene.textures.exists(tk)) return null;
+      bilder.push(scene.textures.get(tk).getSourceImage());
+    }
+    var lang = function (b) { return waag ? b.width : b.height; };
+    var anfang = bilder[0], mitte = bilder[1], ende = bilder[2];
+
+    var tex = scene.textures.createCanvas(key,
+      waag ? laenge : TOR_TIEFE * TOR_BILDER, waag ? TOR_TIEFE * TOR_BILDER : laenge);
+    var ctx = tex.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    // Rechteck entlang der Laenge (von, n) im Bild f -> Leinwandkoordinaten.
+    var rechteck = function (f, von, n) {
+      return waag ? [von, f * TOR_TIEFE, n, TOR_TIEFE] : [f * TOR_TIEFE, von, TOR_TIEFE, n];
+    };
+    var setzen = function (b, von, n) {
+      var r = rechteck(0, von, n);
+      ctx.drawImage(b, 0, 0, waag ? n : TOR_TIEFE, waag ? TOR_TIEFE : n, r[0], r[1], r[2], r[3]);
+    };
+    // Fuellung wiederholen; ein Rest (Laengen ausserhalb des 16er-Rasters) wird angeschnitten.
+    var fuellen = function (b, von, n) {
+      for (var p = 0; p < n; p += lang(b)) setzen(b, von + p, Math.min(lang(b), n - p));
+    };
+
+    // Bild 0: das geschlossene Tor.
+    var rest = Math.max(0, laenge - lang(anfang) - lang(mitte) - lang(ende));
+    var restVorn = Math.floor(rest / 32) * 16 + (rest % 32 ? Math.floor((rest % 32) / 2) : 0);
+    var pos = 0;
+    setzen(anfang, pos, lang(anfang)); pos += lang(anfang);
+    fuellen(bilder[3], pos, restVorn); pos += restVorn;
+    setzen(mitte, pos, lang(mitte)); pos += lang(mitte);
+    fuellen(bilder[4], pos, rest - restVorn); pos += rest - restVorn;
+    setzen(ende, laenge - lang(ende), lang(ende));
+
+    // Bilder 1-3: Pfosten bleiben, jeder Fluegel dreht sich um seinen Pfosten
+    // weg und wird dabei schmaler und dunkler (er wendet sich vom Licht ab).
+    var pa = art.pfosten[0], pb = art.pfosten[1];
+    var naht = Math.round(laenge / 2);
+    var quelle = tex.getSourceImage();
+    for (var f = 1; f < TOR_BILDER; f++) {
+      var k = TOR_OEFFNUNG[f];
+      var kopie = function (von, n, nach, m) {
+        var q = rechteck(0, von, n), z = rechteck(f, nach, m);
+        ctx.drawImage(quelle, q[0], q[1], q[2], q[3], z[0], z[1], z[2], z[3]);
+      };
+      kopie(0, pa, 0, pa);
+      kopie(laenge - pb, pb, laenge - pb, pb);
+      var na = Math.max(2, Math.round((naht - pa) * k));
+      var nb = Math.max(2, Math.round((laenge - pb - naht) * k));
+      kopie(pa, naht - pa, pa, na);
+      kopie(naht, laenge - pb - naht, laenge - pb - nb, nb);
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.fillStyle = 'rgba(8, 5, 2, ' + (0.55 * (1 - k)).toFixed(3) + ')';
+      var ra = rechteck(f, pa, na), rb = rechteck(f, laenge - pb - nb, nb);
+      ctx.fillRect(ra[0], ra[1], ra[2], ra[3]);
+      ctx.fillRect(rb[0], rb[1], rb[2], rb[3]);
+      ctx.restore();
+    }
+
+    for (var b = 0; b < TOR_BILDER; b++) {
+      var r = rechteck(b, 0, laenge);
+      tex.add(b, 0, r[0], r[1], r[2], r[3]);
+    }
+    tex.refresh();
+
+    if (scene.anims && !scene.anims.exists(key + '_auf')) {
+      var folge = [];
+      for (var a = 0; a < TOR_BILDER; a++) folge.push({ key: key, frame: a });
+      scene.anims.create({ key: key + '_auf', frames: folge, frameRate: 14, repeat: 0 });
+      scene.anims.create({ key: key + '_zu', frames: folge.slice().reverse(), frameRate: 14, repeat: 0 });
+    }
+    return key;
+  }
+
   // ─── Door spawning ────────────────────────────────────────────────────────
 
   var TILE_SIZE = 32;
@@ -144,9 +280,10 @@
    * @param {number} y       World pixel Y (center of doorway)
    * @param {string} orientation  'horizontal' or 'vertical'
    * @param {number} [doorWidthTiles]  width of the doorway in tiles (default 4)
+   * @param {number} [tint]  Wandfarbe des Raums; nur die neuen Tore nehmen sie an
    * @returns {Phaser.Physics.Arcade.Sprite|null}
    */
-  function spawnDoor(scene, x, y, orientation, doorWidthTiles) {
+  function spawnDoor(scene, x, y, orientation, doorWidthTiles, tint) {
     if (!scene || !scene.physics) return null;
 
     // Doors use their own static group — NOT the obstacles group.
@@ -211,10 +348,19 @@
       texH = doorWidthPx;
     }
 
-    var keys = generateDoorTextures(scene, texW, texH);
+    var neu = neueTore();
+    var keys;
+    if (neu) {
+      var torKey = torTextur(scene, orientation, doorWidthPx) || '__MISSING';
+      keys = { closedKey: torKey, openKey: torKey };
+    } else {
+      keys = generateDoorTextures(scene, texW, texH);
+    }
 
     // Create a static physics sprite in the door group (separate from obstacles)
-    var door = doorGroup.create(x, y, keys.closedKey);
+    var door = neu && keys.closedKey !== '__MISSING'
+      ? doorGroup.create(x, y, keys.closedKey, 0)
+      : doorGroup.create(x, y, keys.closedKey);
     if (!door) return null;
 
     door.setOrigin(0.5, 0.5);
@@ -227,7 +373,7 @@
     // Beinen des Spielers, waehrend die Wand daneben (39) unter ihm bleibt.
 
     // Set the physics body to match the texture size exactly (no rotation needed)
-    if (door.body) {
+    if (door.body && !neu) {
       door.body.setSize(texW, texH);
       door.body.setOffset(
         (door.width - texW) / 2,
@@ -241,8 +387,18 @@
     door.setData('closedKey', keys.closedKey);
     door.setData('openKey', keys.openKey);
     door.setData('walkthrough', false);
+    door.setData('neu', neu);
 
     door.refreshBody();
+    if (neu && door.body) {
+      // refreshBody nimmt die Bildgroesse (64 tief). Der Koerper bleibt der
+      // alte Riegel, mittig im Tor — sonst haelt die Tuer den Spieler schon
+      // 20 px vor der Wandflucht auf und verdeckt mehr Sicht als vorher.
+      door.body.setSize(texW, texH, false);
+      door.body.setOffset((door.displayWidth - texW) / 2, (door.displayHeight - texH) / 2);
+      // Das Tor nimmt die Wandfarbe des Raumthemas an (gefroren, bemoost, blutig…).
+      if (tint) door.setTint(tint);
+    }
 
     // Track all doors on the scene for the update loop
     if (!scene._doors) scene._doors = [];
@@ -261,7 +417,15 @@
    */
   function toggleDoor(door) {
     var state = door.getData('doorState');
-    if (state === 'closed') {
+    if (door.getData('neu')) {
+      // Zustand und Koerper wechseln sofort wie bei der alten Tuer; nur das
+      // Bild klappt in ~0,2 s nach.
+      var auf = state === 'closed';
+      var anim = door.texture.key + (auf ? '_auf' : '_zu');
+      if (door.anims && door.scene && door.scene.anims && door.scene.anims.exists(anim)) door.play(anim);
+      door.setData('doorState', auf ? 'open' : 'closed');
+      door.setData('walkthrough', auf);
+    } else if (state === 'closed') {
       door.setTexture(door.getData('openKey'));
       door.setData('doorState', 'open');
       door.setData('walkthrough', true);
@@ -421,6 +585,8 @@
 
   window.DoorSystem = {
     generateDoorTextures: generateDoorTextures,
+    bilderVorladen: bilderVorladen,
+    torTextur: torTextur,
     spawnDoor: spawnDoor,
     updateDoors: updateDoors,
     tryInteractDoor: tryInteractDoor,

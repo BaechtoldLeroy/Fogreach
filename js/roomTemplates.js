@@ -1039,7 +1039,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     (tpl.doorways || []).forEach(d => {
       const px = ox + gx(tpl, d.x) + T / 2;
       const py = oy + gy(tpl, d.y) + T / 2;
-      if (window.DoorSystem?.spawnDoor) window.DoorSystem.spawnDoor(scene, px, py, d.orientation, d.width);
+      if (window.DoorSystem?.spawnDoor) window.DoorSystem.spawnDoor(scene, px, py, d.orientation, d.width, wallTint);
     });
   }
 

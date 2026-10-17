@@ -94,7 +94,8 @@
     'trailer', 'einstellung',  // Trailer-Modus (js/trailerModus.js)
     'aktprobe',         // Akt-Zwischenszene ansehen: aktprobe=1..6 | epilog
     'spionszene',       // Vorschau #197: Zwischenszenen in der Spionage (spionszene=neu)
-    'presse'            // Vorschau #198: die Druckerpresse stampft beim Drucken (presse=neu)
+    'presse',           // Vorschau #198: die Druckerpresse stampft beim Drucken (presse=neu)
+    'tueren'            // Vorschau: Kellertore aus Pixelbildern statt gezeichnet (tueren=neu)
   ];
 
   /**

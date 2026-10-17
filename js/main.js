@@ -929,6 +929,9 @@ function preload() {
     try { window.queueEnemySprites(this); } catch (e) { /* nicht fatal */ }
   }
 
+  // Vorschau ?tueren=neu: die Stuecke der Kellertore (doorSystem.js).
+  if (window.DoorSystem && typeof window.DoorSystem.bilderVorladen === 'function') window.DoorSystem.bilderVorladen(this);
+
   // Testmodus ?grafik=neu: die Austausch-Kacheln hier mitladen. Getauscht
   // werden sie erst nach createAllGraphics — vorher gibt es die Zielschluessel
   // noch nicht, weil graphics.js sie zeichnet.

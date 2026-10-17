@@ -147,6 +147,19 @@ und `node tools/bossIntroBrowser.js [kettenmeister ...]` schreibt
 Die Presse (assets/sprites/presse/druckerpresse.png, 9 Bilder, gebaut mit
 `node tools/presseBauen.js`) zeigt auch die Trailer-Einstellung 8 — dort ohne Flagge.
 
+### Kellertore (Vorschau)
+
+| Flagge | Wirkung |
+|---|---|
+| `tueren=neu` | Die Tueren zwischen den Kammern sind schwere Eichentore mit Messing und Kette zwischen Steinpfosten (Pixelbild statt Zeichnung), fuellen die ganze Wandtiefe, klappen beim Oeffnen in 4 Bildern auf und nehmen die Wandfarbe des Raumthemas an. Kollision, Sicht und Durchgang wie bisher. Ohne Flagge die alten Tueren. |
+
+```
+?debug=1&dungeon=3&tueren=neu
+```
+
+Die Stuecke (assets/sprites/tueren/, gebaut mit `node tools/tuerenBauen.js` aus
+tools/rohbilder/tueren/) setzt doorSystem.js je Laenge (4-6 Kacheln) zusammen.
+
 ### Elaras Kammer (#161)
 
 | Flagge | Wirkung |
