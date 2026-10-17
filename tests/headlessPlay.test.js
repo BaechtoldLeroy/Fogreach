@@ -63,16 +63,24 @@ test('play: ein Nahkampfangriff toetet einen benachbarten Gegner', async () => {
   const before2 = H.world();
   assert.ok(before2.enemyList.length > 0, 'keine Gegner zum Testen da');
 
-  // Spieler direkt neben den ersten Gegner setzen.
-  H.run(`(function () {
+  // Spieler vor den ersten Gegner setzen — und zwar in Zielrichtung: der
+  // Schlag trifft nur im Kegel um die Cursor-Richtung (_getAimVector2). Fest
+  // "links vom Gegner" flatterte im Gesamtlauf, wenn der Cursor anderswo stand
+  // oder der Gegner weggestossen wurde. Darum vor jedem Schlag neu ausrichten.
+  const anstellen = () => H.run(`(function () {
     var e = enemies.getChildren().filter(function (x) { return x && x.active; })[0];
-    if (e && player) { player.x = e.x - 18; player.y = e.y; }
+    if (!e || !player) return;
+    var sc = player.scene, v = (typeof _getAimVector2 === 'function' && sc) ? _getAimVector2(sc) : null;
+    var ax = v && (v.x || v.y) ? v.x : 1, ay = v && (v.x || v.y) ? v.y : 0;
+    var l = Math.hypot(ax, ay) || 1;
+    player.x = e.x - ax / l * 18; player.y = e.y - ay / l * 18;
   })()`);
 
   const killsBefore = H.kills();
   // Mehrere Schlaege: attack() hat eine Sperre (isAttacking/attackCooldown),
   // die zwischen den Versuchen ablaufen muss.
   for (let i = 0; i < 25; i++) {
+    anstellen();
     H.input.attack();
     H.step(8);
     await H.flush();
